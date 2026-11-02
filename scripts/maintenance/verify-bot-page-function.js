@@ -137,6 +137,7 @@ async function call(
     fetchImpl,
     now = () => NOW,
     getSiteJsonLd,
+    getSeriesRows = async () => [],
     langMode,
   } = {},
 ) {
@@ -145,6 +146,7 @@ async function call(
     ...(langMode ? { langMode } : {}),
     getTodayJson: createTodayRacesSource({ fetchImpl: f, now }),
     now,
+    getSeriesRows,
     ...(getSiteJsonLd ? { getSiteJsonLd } : {}),
   });
   const res = fakeRes();
@@ -1255,6 +1257,83 @@ for (const code of [1, 24]) {
     ],
     [false, true],
   );
+}
+
+// BOA-1219: handler まで通して、取得条件・失敗・各言語・エスケープを確かめる。
+{
+  const json = fresh();
+  const races = json.data.find((v) => v.place_cd === 1).races;
+  const row = { start_date: "2026-10-06", end_date: "2026-10-11", title: "節", grade: "SG" };
+  let reads = 0;
+  const getSeriesRows = async () => { reads++; return [row]; };
+  for (const grade of ["SG", "G1", "G2"]) {
+    races.forEach((r) => { r.raceGrade = grade; r.raceTitle = '<節&"公式>'; });
+    for (const lang of ["ja", ...BOT_PAGE_PREFIXED_LANGS]) {
+      const tl = await getLocaleT(lang);
+      const prefix = lang === "ja" ? "" : `/${lang}`;
+      const { res } = await call("venue", `/api/bot-page${prefix}/venue/1`, {
+        json, getSeriesRows, ...(lang === "ja" ? {} : { langMode: "prefixed" }),
+      });
+      check(`${grade}/${lang}: リンク1件`, links(res.body).filter((h) => h.includes("/meet/")), [`${prefix}/venue/1/meet/2026-10-06`]);
+      check(`${lang}: 公式名と文言`, res.body.includes(`<span translate="no">${escapeHtml(`${grade} <節&"公式>`)}</span> ${escapeHtml(tl("venueMeetBanner.inProgress"))}`) && res.body.includes(`>${escapeHtml(tl("venueMeetBanner.link"))}</a>`), true);
+    }
+  }
+  for (const [grade, title] of [["ippan", "一般"], ["SG", "グランプリ"]]) {
+    races.forEach((r) => { r.raceGrade = grade; r.raceTitle = title; });
+    const before = reads;
+    const { res } = await call("venue", "/venue/1", { json, getSeriesRows });
+    check("対象外は取得なし・リンクなし", [reads - before, links(res.body).some((h) => h.includes("/meet/"))], [0, false]);
+  }
+  races.forEach((r) => { r.raceGrade = "G1"; r.raceTitle = "節"; });
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    for (const getRows of [async () => { throw new Error("取得失敗"); }, async () => ({}), async () => [null], async () => [{ ...row, end_date: "bad" }]]) {
+      const { res } = await call("venue", "/venue/1", { json, getSeriesRows: getRows });
+      check("節の取得失敗・不正な形: 503", [res.statusCode, res.headers["retry-after"], res.headers["cache-control"]], [503, "300", "no-store"]);
+    }
+  } finally { console.error = originalError; }
+}
+
+// REST の取り口は実接続せず検査する。失敗をキャッシュしない。
+{
+  const { createSeriesSource } = await import("../../api/_lib/botPage.js");
+  const row = { start_date: "2026-10-06", end_date: "2026-10-11", title: null, grade: "G1" };
+  const calls = [];
+  let clock = 0;
+  let broken = false;
+  const source = createSeriesSource({
+    env: { SUPABASE_URL: "https://example.invalid", SUPABASE_ANON_KEY: "fixture-anon" },
+    now: () => clock,
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      await Promise.resolve();
+      return jsonResponse(broken ? {} : [row]);
+    },
+  });
+  await Promise.all([source(1, "2026-10-11"), source(1, "2026-10-11")]);
+  check("節REST: 同時取得1回", calls.length, 1);
+  const url = new URL(calls[0].url);
+  check("節REST: 人と同じクエリ", Object.fromEntries(url.searchParams), {
+    venue_code: "eq.1", start_date: "lte.2026-10-11", order: "start_date.desc", limit: "1", select: "start_date,end_date,title,grade",
+  });
+  check("節REST: anon と timeout", [calls[0].options.headers.apikey, calls[0].options.headers.Authorization, calls[0].options.signal instanceof AbortSignal], ["fixture-anon", "Bearer fixture-anon", true]);
+  clock = 59000;
+  await source(1, "2026-10-11");
+  check("節REST: 59秒は使い回す", calls.length, 1);
+  clock = 61000;
+  broken = true;
+  check("節REST: 壊れた応答は例外", await source(1, "2026-10-11").then(() => false, () => true), true);
+  broken = false;
+  await source(1, "2026-10-11");
+  check("節REST: 失敗後は取り直す", calls.length, 3);
+  await source(2, "2026-10-11");
+  await source(1, "2026-10-12");
+  check("節REST: 会場・日付を混ぜない", calls.length, 5);
+  for (const response of [() => jsonResponse([], 500), () => new Response("not json"), () => { throw new Error("offline"); }]) {
+    const getRows = createSeriesSource({ env: { SUPABASE_URL: "https://example.invalid", SUPABASE_ANON_KEY: "fixture" }, fetchImpl: async () => response() });
+    check("節REST: HTTP/JSON/通信失敗は例外", await getRows(1, "2026-10-11").then(() => false, () => true), true);
+  }
 }
 
 if (failures.length > 0) {

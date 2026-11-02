@@ -39,6 +39,7 @@ import { formatDateShortLocalized, formatCapturedAtJst } from "./formatters.js";
 import { localizePath } from "../config/languages.js";
 import { buildFaqItems, isAssistShown, toFaqPageLd } from "./homeAiIntroFaq.js";
 import { getHomeBlogPosts } from "../data/blogPosts.js";
+import { meetBannerSeriesOf, seriesOfDate } from "./meetPageModel.js";
 
 const DEFAULT_LANG = "ja";
 
@@ -249,12 +250,12 @@ export function buildTopModel(todayJson, { t, today, lang = DEFAULT_LANG }) {
  *
  * @param {unknown} todayJson - /api/races/today の応答
  * @param {number} venueCode - 1〜24
- * @param {{t: (key: string, params?: object) => string, lang?: string}} options - lang は表示する言語（既定 ja）
+ * @param {{t: Function, lang?: string, today?: string, seriesRows?: object[]}} options - today は JST の日付、seriesRows は会場で絞った race_series
  */
 export function buildVenueModel(
   todayJson,
   venueCode,
-  { t, lang = DEFAULT_LANG },
+  { t, lang = DEFAULT_LANG, today, seriesRows = [] },
 ) {
   if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
     throw new RangeError(`会場コードが 1〜24 の整数でない: ${venueCode}`);
@@ -264,6 +265,8 @@ export function buildVenueModel(
   const races = racesByVenue(transformed).get(venueCode) || [];
   const venueName = venueNameOf(t, venueCode);
   const summary = venueSummaryLines(t, venueCode);
+  const bannerSeries = meetBannerSeriesOf(races);
+  const meet = bannerSeries && today ? seriesOfDate(seriesRows, today) : null;
 
   return {
     path: `/venue/${venueCode}`,
@@ -274,6 +277,17 @@ export function buildVenueModel(
     heading: `🏁 ${venueName} ${t("venueRaceList.todayTitle")}`,
     // 見出しの直下の要約2行（直近1年の1コースの1着率・決まり手）。開催の有無に関係なく出す（人の画面と同じ）
     summaryLines: summary ? [summary.course, summary.techniques] : [],
+    meetBannerEligible: Boolean(bannerSeries),
+    meetBanner: meet
+      ? {
+          href: localizePath(`/venue/${venueCode}/meet/${meet.start_date}`, lang),
+          name: bannerSeries.title
+            ? `${bannerSeries.grade} ${bannerSeries.title}`
+            : bannerSeries.grade,
+          inProgress: t("venueMeetBanner.inProgress"),
+          link: t("venueMeetBanner.link"),
+        }
+      : null,
     // 人の画面と同じく、0件なら「本日、このレース場での開催はありません」
     emptyText: races.length === 0 ? t("home.noRacesToday") : null,
     races: races.map((race) => {
