@@ -85,7 +85,9 @@ for (const stage of ["オオムラGP", "関ヶ原決戦"]) {
     { first: 1, second: 0, third: 0, finals: 1, wins: 1 });
   assert.equal(careerWinRate([row("01", stage)]), 11);
 }
-for (const stage of ["グランプリ特", "グランプリD", "準優勝戦", null, undefined])
+for (const stage of ["オオムラＧＰ", "オオムラGP ", "関ヶ原 決戦"])
+  assert.equal(isCareerFinalStage(stage), true);
+for (const stage of ["グランプリ特", "グランプリD", "準優勝戦", "オオムラGP特選", null, undefined])
   assert.equal(isCareerFinalStage(stage), false);
 const frozen = Object.freeze([Object.freeze(row("01", "優勝戦"))]);
 assert.equal(careerWinRate(frozen), 11);

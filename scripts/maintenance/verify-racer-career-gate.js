@@ -18,7 +18,7 @@
 import { writeFileSync } from "node:fs";
 import pg from "pg";
 import { checkRoUrl, RO_ROLE } from "../lib/roQuery.js";
-import { COUNT_COLUMNS } from "../lib/racerCareerJob.js";
+import { COUNT_COLUMNS, RULE_VERSION } from "../lib/racerCareerJob.js";
 import { isDirectRun } from "../lib/isDirectRun.js";
 
 /** 件数の列 → 着のコード（other_code は知らないコードなので純関数に渡さない） */
@@ -85,6 +85,16 @@ export async function loadCareerFunctions() {
       `src/pure/racerCareerStats.js に ${missing.join("・")} が無い（あるのは ${Object.keys(mod).join(", ")}）。この関門の読み込みを BOA-1193 の名前に合わせる`,
     );
   return mod;
+}
+
+/**
+ * 計算の記録のうち、今の判定の規則の版（RULE_VERSION）と違う層。規則を変えた後に計算し直していない層を
+ * 照合すると、規則の差を「公式とのずれ」と取り違えるので、関門の前に止める。
+ * @param {Array<{era: string, rule_version: string|null}>} meta
+ * @returns {string[]}
+ */
+export function staleRuleEras(meta, ruleVersion = RULE_VERSION) {
+  return meta.filter((m) => m.rule_version !== ruleVersion).map((m) => m.era);
 }
 
 const termOf = (date) => {
@@ -304,6 +314,11 @@ async function main() {
     )
       throw new Error(
         "kb 層か main 層（全選手）がまだ計算されていない（racer-career-backfill.js を先に実行する）",
+      );
+    const stale = staleRuleEras(meta);
+    if (stale.length > 0)
+      throw new Error(
+        `${stale.join("・")} 層の rule_version が今の ${RULE_VERSION} と違う（規則を変えた後に racer-career-backfill.js で計算し直す）`,
       );
     const cols = [
       "racer_id",

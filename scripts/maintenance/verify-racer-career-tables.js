@@ -1125,7 +1125,10 @@ test("CLI の引数: --era は必須、kb に --all・--today は付けない", 
 
 test("照合の関門（verify-racer-career-gate.js）の比べ方: 2層を足し、期・コード・優勝・優出（S0 を含む）を比べる", async () => {
   // BOA-1193（#2066）の実物の純関数で比べる。読み込みは関門と同じ loadCareerFunctions（名前が違えば止まる）
-  const { compareCareerToOfficial, loadCareerFunctions } = await import("./verify-racer-career-gate.js");
+  const { compareCareerToOfficial, loadCareerFunctions, staleRuleEras } = await import("./verify-racer-career-gate.js");
+  // 規則の版が古い層（優勝戦の判定を変える前の kb 等）は照合の前に止める
+  assert.deepEqual(staleRuleEras([{ era: "kb", rule_version: "career-v1(stage-v2,grade-v2,code-v1)" }, { era: "main", rule_version: RULE_VERSION }]), ["kb"]);
+  assert.deepEqual(staleRuleEras([{ era: "kb", rule_version: RULE_VERSION }]), []);
   const career = await loadCareerFunctions();
 
 

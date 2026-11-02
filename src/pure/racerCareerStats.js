@@ -28,12 +28,15 @@ const POINTS = {
  */
 export const CAREER_EXTRA_FINAL_STAGES = Object.freeze(["オオムラGP", "関ヶ原決戦"]);
 
-/** 選手の集計（勝率の加点・優出・優勝）で使う優勝戦の判定。
+/** 選手の集計（勝率の加点・優出・優勝）で使う優勝戦の判定。2つの名前は isFinalStage と同じく NFKC と空白の除去をしてから当てる
+ * （本体の race_stage は会場の表記がほぼ生で入り、全角の「ＧＰ」等が来る）。
  * @param {string|null|undefined} stage 種別の原文
  * @returns {boolean}
  */
 export function isCareerFinalStage(stage) {
-  return isFinalStage(stage) || CAREER_EXTRA_FINAL_STAGES.includes(stage ?? "");
+  if (isFinalStage(stage)) return true;
+  if (typeof stage !== "string") return false;
+  return CAREER_EXTRA_FINAL_STAGES.includes(stage.normalize("NFKC").replace(/\s/g, ""));
 }
 
 /** 勝率の分母。原文のコードのみ受け、NULL・00・責任外は除外する。
