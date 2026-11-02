@@ -19,6 +19,9 @@
 - 「適用済み」はそのマイグレーションだけが持つ差分で確かめる。他の版も入れるキーを見ても区別できない（063/068 の取り違え、memory migration_applied_check_needs_discriminating_observation）
 - CREATE OR REPLACE FUNCTION は古い定義を土台にすると、後のマイグレーションが足したキーを黙って消す。適用後に scripts/maintenance/verify-rpc-output-keys.js を実行する（BOA-363・BOA-431、ADR-0074 で PR 時の検査あり、.claude/CLAUDE.md）
 - PostgREST のバルク upsert はキーの集合が違う行を混ぜると、その列を持たない行に NULL を書く。scripts/lib/unchangedRows.js の diffRows で列をそろえる（2026-09-27 に1,729行が NULL、PR #870、memory technical_postgrest_bulk_upsert_nulls_missing_keys）
+- upsertChangedRows の既存行の読み取りは、chunkColumn の IN だけで読み、ほかの条件で絞れない。同じ racer_id に別の層（era）の行がある表では、chunkSize を両方の層を足した選手あたりの行数から決めないと、上限1000行で黙って切れて「変更の無い行」まで書き直す（2026-10-31、system-architect、unchangedRows.js:391・racerCareerJob.js:487。190 の書き手は fullPageRows・failOnFetchError で止める）
+- kb_archive_* は created_at だけで updated_at が無く、kb-backfill は upsertChangedRows で値を書き換える。件数と日付の指紋では、値だけの再投入を検知できない（2026-10-31、system-architect）
+- 多くの値を1つの jsonb で返す SELECT を `x->'a', x->'b'` のように何度も読むと、副問い合わせが展開されて同じ計算を何回も行い、実測が数倍になる。重さを測るときは `OFFSET 0` を付けるか、EXPLAIN ANALYZE の Execution Time で見る（2026-10-31、system-architect の実測）
 - 外部キー・制約の確認は pg_constraint で行う。information_schema の多段 JOIN は黙って0行を返す（races を参照する FK は18本、memory technical_pg_constraint_not_information_schema_for_fks）
 - PK のリネーム等は全種類の制約（FK・UNIQUE・CHECK 等）を洗い、1件で先に試す（ユーザー指摘、memory feedback_pk_migration_verify_all_constraints_and_single_row_test）
 - 既存の RPC の本文だけを差し替えるマイグレーションも、114番以降は関数ごとに GRANT/REVOKE か `-- function-exempt` を書かないと verify:migration-rls で CI が落ちる（2026-10-13、BOA-822 の 157、scripts/maintenance/verify-migration-rls.js:340）
@@ -30,7 +33,13 @@
 - 除外するものを DB から読んで集合にするとき、エラーを見ずに (data || []) にすると、読み取りの失敗で除外が空になりガードが外れる（BOA-512 で開催した32レースを中止に一括更新）。失敗は例外にする（ADR-0069、verify-query-errors.js）。一括 UPDATE の跡は updated_at がミリ秒まで同じ行で見分けられる（2026-09-20、memory technical_supabase_read_error_swallowed_flips_guard、PR #743）
 - verify-migration-rls.js は REVOKE/GRANT の1文につき先頭の関数名しか読まない。複数の関数を並べた文は1関数1文に分ける（2026-10-08、memory feedback_codex_patch_intake_checklist）
 - race_entries が別の日の出走表で上書きされる汚染は、race_results が正常に入るので欠損を探す検知では見つからない。日次の data_health_entries_duplicates（マイグレーション100）で検知する（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-423）
+- transition_sns_send_139 を置き換えるマイグレーションの先頭の照合は md5(prosrc) の一致で行う（LIKE は前の版の印が残るので版を区別できない）。182 の本文は c2b4835c416ff6e824a43fe9025c6518。PGlite の verify は now() を test_now() にした本文の md5 に照合の値を差し替えて当てる（2026-10-27、BOA-1169、189・verify-sns-today-thinking.js）
+- sns_auto_send_items と sns_auto_send_control を同じマイグレーションで ALTER するときは、先頭で SET LOCAL lock_timeout の後に control → items の順に LOCK TABLE … ACCESS EXCLUSIVE を取る（送り手の transition_sns_x_send が control → items の順に読むので、逆だとデッドロックしうる）（2026-10-27、BOA-1169、189）
 - 適用待ちキーを WARN にする RPC 検査は、終了コード0でも当該マイグレーションの成功証拠にならない。台帳・途中の WARN・対象日と同一 raceId の保存値/応答を併せて確認する（2026-10-13、2026-10-13-plan-review-20261013-22.md）
+- approve_sns_x_send の ON CONFLICT は、state が sending・reconcile・posted でない job の youtube_stage と external_post_id を NULL に戻す。cancelled 等で閉じた job は承認し直せるので、記録を残したいなら approve で拒むか、別の場所に残す（2026-10-27、system-architect、177:145）
+- transition_sns_x_send に足した新しい操作を古い DB に送ると、YouTube の分岐を素通りして transition_sns_send_139 の「不正な操作です」で落ちる。コードを先に出しても壊れない根拠になる（2026-10-27、system-architect、182:307）
+- verify-rpc-key-regression は `'値',` の形の文字列をキーとして集めるので、CASE の ELSE などで値の後ろに `,` が無くなると「消えた」と出る。元の文の形を残して後から上書きする（2026-10-27、BOA-1164、186）
+- 2分ごとに繰り返す理由を残す表は、UNIQUE と PostgREST の `on_conflict` ＋ `Prefer: resolution=ignore-duplicates` で初出だけを書く。同じ理由の繰り返しは行を書かず WAL を増やさない（2026-10-31、system-architect、BOA-1201・191 の sns_send_events）
 
 ## 画面からの読み取り
 - 画面から Supabase を読むのは src/services/supabaseClient.js の1つの入口だけ。.throwOnError() が既定で、失敗を「データなし」に化けさせない（BOA-359、.claude/rules/frontend-data-fetch.md）
@@ -42,6 +51,7 @@
 - 予想を作るときの「前日まで」はレースの日付で読む（race_date < 対象日）。「最新まで」で読むと過去の日を作り直したときに結果が混ざる（2026-10-12、BOA-628 と同じ系統、同 architecture-y.md）
 - fetchAll の .range() で全件を読むときは .order("race_id") 等の一意の並びを付ける。並びが無いとページの境目で行が重なったり抜けたりする（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-403）
 - Supabase は Small。Nano のときは get_predictions_by_date が2.3〜12秒かかり、anon の statement_timeout（3秒）を超えて「開催なし」と誤って表示した。DB は ap-southeast-2 で、api/cron/* も syd1 に固定している（2026-09-19、memory project_data_foundation_orchestration_2026_09_19、PR #747）
+- 本番の statement_timeout は authenticator 8s・anon 3s・authenticated 8s・service_role 未設定・claude_ro 30s で、authenticator には safeupdate も入っている。service_role の RPC も PostgREST 経由なら 8秒で打ち切られるので、重い集計は呼び出しを分ける（2026-10-31、pg_roles.rolconfig、system-architect、マイグレーション 190）
 
 - SNS の送信（承認・claim・runner・通知・容量）に関する知見は [sns-send-ops.md](sns-send-ops.md) へ移動（2026-10-18）
 - 複数 bundle の下書きを limit だけでまとめて読むと、取得の打切りが素材の本数不備に化ける。対象日の抽出前の上限と下書き集合の完全性を別に確認し、超過を不合格素材として確定しない（2026-10-14、2026-10-14-plan-review-20261014-01.md）
@@ -54,6 +64,7 @@
 - 新verifyの台帳登録を取り込み側へ委ねた場合、登録と品質ゲートでの実行確認が済むまで取り込み判定に残作業を明記する。（2026-10-13、2026-10-13-task-72-check-codex-patches.md）
 - 鍵を読まず本番接続を避けるローカル検証ではstrict replay・API_PROXY_TARGET空文字に加えViteのenvDirを空ディレクトリにし、複合npmスクリプトの引数転送先も確認する。（2026-10-13、2026-10-13-boa-744-part2.md）
 - verify実行前にimport先の秘密ファイル読込と実通信を確認し、本番接続禁止のレーンではmanualのDB検証をローカル純関数検査と区別して未実行と報告する。（2026-10-13、2026-10-13-boa-856.md）
+- 表・列・RPC を変える・止める・消す前に docs/reference/data-readers.md で読み手（src・api・scripts・sns-video-studio のファイル:行）・書き手・RPC の本体が読む表・取得のジョブ・repo の外の読み手（data-readers.extra.json）を確かめる。名前が式の箇所・Python・SQL の直書きは拾わないので「拾えなかったもの」の節も見る。台帳は master へのマージ後に CI が作り直す機械生成の文書で、PR に含めない（2026-10-27、基盤の計画 B、ADR-0078）
 - 表・関数を DROP する前の参照確認は、本番の pg_depend（deptype<>'i'）・prosrc の ILIKE・pg_views・pg_constraint の confrelid の4つで行う。plpgsql の本文は pg_depend に出ないので prosrc の検索が要る（2026-10-19、system-architect、163）
 - DROP だけのマイグレーションでも APPLIED.md の行が無いと verify-migration-numbers（--base origin/master）が CI で落ちる。display-coverage.md は手で直さず、マージ後の再生成に任せる（ADR-0078）（2026-10-19、163）
 - 本番に pg_cron は入っていない（cron.job が無い）。DB の DROP で cron の依存を気にしなくてよい（2026-10-19、system-architect の本番読み取り）
@@ -93,3 +104,21 @@
 - post-merge-checks.yml:69 は verify-no-undef.js を引数なしで直接呼ぶ。このスクリプトの既定の規則を増やすと、マージ後の Slack の範囲も広がる。規則を広げるのは引数（台帳の args）で行う（2026-10-24、system-architect の審査、ADR-0079 追記）
 - 共通ロジックの索引（generate-lib-index.js:39-55）の対象は scripts/lib・src/utils・src/services だけで、再 export の行は export に数えない。src/pure に移すときは TARGETS に足す（2026-10-24、system-architect の審査）
 - tsc の範囲を include で絞っても、JSDoc の import('...') 型と /// <reference> を伝って根の外が入る。既定の lib は DOM を含み、@types/* も自動で入る。閉じるには types: [] と DOM なしの lib（2026-10-24、system-architect の審査）
+- ブレーカーの段階は、開いている間（半開の試行でない）に届いた 429・403 では上げない。同時の要求12件の 429 で一気に段階4・60分になった（旧は8分）。上げるのは閉じている状態か半開から開くときだけ（2026-10-27、system-architect の審査、#1983、scripts/lib/scrapeJobs/circuitBreaker.js）
+- 403 と 429/503 は同じ breaker_level を使う（止める側に倒れるので共用を採る）。24時間で1段下げ・閉じた後24時間の絞りは 429 にも効く。期間の表だけ分ける（403 のホスト60分から倍・上限6時間、429 は5・10・20・60分）（2026-10-27、#1983 の審査の決定、ADR-0101 決定5 の追記）
+- Retry-After が10秒を超える 429/503 は再試行せず、その時間（上限60分）ホストを開く。段階は上げない（2026-10-27、#1983 の審査の決定、scripts/lib/scrapeJobs/politeFetch.js）
+- 利用者の要求（/api/odds/live）の 429 は段階を上げない（countOverload:false）。外から呼べる口で定時の取得の止め方を強めさせない。Retry-After>10秒ならその時間開くのは同じ（2026-10-27、#1983 の審査の決定、api/odds/live.js）
+- 本番の /api を叩く素の Node の呼び出しは、ブラウザの判定（Sec-Fetch-Site）では通らない。GHA の bot-html-parity（verify-bot-html-parity.js:169）と full-picture の stage.cjs:3（preflight）は見落としやすい（2026-10-27、system-architect、BOA-1110）
+- Vercel の環境変数を変えても既存のデプロイには効かず、Redeploy が要る。Edge Config なら即時に切り替わるが新しい資源になる（案。採るかはオーナー判断）（2026-10-27、system-architect、BOA-1110 の審査）
+- analogy_contribution_profiles（118:97-98）・race_history_cache（020:16）・accuracy_cache（013・013b）は匿名に SELECT がある。/api を閉じても同じ値は匿名キーで取れる（2026-10-27、DDL で確認。本番の権限は check-anon-access.js で要確認）
+- /api の関門は除外だけを名指しにし、デコードしたパスで判定する（matcher はデコード前で照合、adminAuth.js:4-8）。/%61pi/ のように api をエンコードした要求が関数に届くかは実測する（2026-10-27、system-architect、BOA-1110）
+- Googlebot には SPA を返しているので（ADR-0089:110）、/api を閉じる前に検索ボットの拒む候補を別に数える。WRS が Sec-Fetch-Site を送るかは未確認（2026-10-27、system-architect、BOA-1110）
+- WHATWG URL は %2F を区切りにしないので、pathname をデコードしてから前方一致で除外を判定すると /api/bot-page%2F..%2Fpredictions が /api/bot-page/ の除外に入る。デコード後に ..・.・//・\ のセグメントがあれば 400 にする（2026-10-27、node で実測、#1991 の代わりの審査）
+- 観測から強制へ進む条件を「自分の呼び出し元の拒否が0件」だけにすると母数0でも満たす。1日1回・手作業の呼び出し元は期間中に来ないことがあるので、秘密でない呼び出し元の名前のヘッダで群ごとの成功1件以上も条件にする（2026-10-27、#1991 の代わりの審査）
+- Search Console の URL 検査の取得の UA は Google-InspectionTool で、Googlebot の文字を含まない（Google の公開の一覧による、確度中・要確認）。UA を Googlebot に限った疎通試験は検索ボットの経路の証明にならない（2026-10-27、#1991 の代わりの審査）
+- e2e/fixtures.js の fetchRecorded は route.fetch() でブラウザの通信経路を通らずに出る（:47,317-320）。Sec-Fetch-Site で判定する関門では E2E の素通しがブラウザに見えないおそれがある（2026-10-27、#1991 の代わりの審査）
+- 関門の判定の順が「ブラウザ（Sec-Fetch-Site）→検索ボット（UA と IP）」だと、本物のボットがブラウザの経路で通り reason=search_bot は0件になりうる。経路の件数を進む条件にせず、UA と IP の確認の結果（bot_verified）を reason と別にログに出して数え、経路の正しさは固定の IP の verify で固める（2026-10-27、#1991 の再審査）
+- Cron の口は2つある。共通の createScrapeCronHandler と、オッズの createOddsCronHandlerWithPredictionOdds（api/cron/odds.js、予測オッズの導出つき）。共通の口だけに足した仕組み（取得の数え等）はオッズに効かない。両方が使う小さな関数（createCronFetchContext）にまとめる（2026-10-27、system-architect の審査、BOA-1145 P3・185）
+- 取得の数えを起動の終わりの1回だけで書くと、関数の打ち切り（maxDuration）で溜まった分を全部失う。20件か60秒で裏で書き、handler の終わりは try/finally で残りを書く（2026-10-27、同、scripts/lib/scrapeJobs/fetchCounter.js）
+- 取得の数えでは、呼び出し側の中断（init.signal の abort。ソフトデッドライン等）を数えない。politeFetch 自身の打ち切りは kind=timeout に分けて、接続の失敗（network）と区別する（2026-10-27、同、185 の CHECK）
+- 1分の上限（目安60）を見る数は、時の表をパスで割っても出ない。表を当てた後に分の列を足すとマイグレーションがもう1本要るので、最初から分の表（fetch_counts_minute、パス・種類なし）を一緒に作る（2026-10-27、同、185）

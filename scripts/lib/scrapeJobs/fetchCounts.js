@@ -1,18 +1,4 @@
 /** M1: 最終 outcome と累積 attempts からの固定ページ数による近似。純粋関数。 */
-const ODDS_PATHS = ["oddstf", "odds2tf", "oddsk", "odds3t", "odds3f"];
-const JOB_PAGES = {
-  odds: ODDS_PATHS,
-  odds_final: ODDS_PATHS,
-  exhibition: ["beforeinfo"],
-  result: ["raceresult"],
-  race_info: ["racelist"],
-  pcexpect: ["pcexpect"],
-  pit_reports: ["pitreport"],
-  // 動的なファイル名は同じ取得経路のテンプレートへまとめる（カナリアは含まない）。
-  boatcast_oriten: ["/txt/{jo}/bc_oriten_{YYYYMMDD}_{jo}_{RR}.txt"],
-  pseudo: [],
-};
-
 export const FETCH_COUNT_NOTES = [
   "対象は指定日の scrape_slots（race_date、JSTの開催日）。実際の取得日時別ではありません。",
   "再試行込みの attempts × 固定ページ数の近似。odds・odds_final は5パスへ各1ページ。",
@@ -42,15 +28,14 @@ export function dailyFetchCounts(rows, registry, targetDate) {
     if (!Object.hasOwn(registry, row.job) || registry[row.job].kind !== "window") {
       throw new Error(`窓型ジョブが未定義です: ${row.job}`);
     }
-    if (!Object.hasOwn(JOB_PAGES, row.job)) throw new Error(`ページ数が未定義です: ${row.job}`);
+    if (!Array.isArray(registry[row.job].fetchPaths)) throw new Error(`ページ数が未定義です: ${row.job}`);
     const n = typeof row.attempts === "string" && /^\d+$/.test(row.attempts)
       ? Number(row.attempts) : row.attempts;
     if (!Number.isSafeInteger(n) || n < 0) throw new Error("attempts は非負の安全な整数が必要です");
     if (n === 0 || row.outcome?.startsWith("skipped_") ||
         ["cancelled_race", "breaker_open", "budget_exhausted", "not_due"].includes(row.outcome)) continue;
     const host = row.job === "boatcast_oriten" ? "race.boatcast.jp" : "www.boatrace.jp";
-    for (const page of JOB_PAGES[row.job]) {
-      const path = page.startsWith("/") ? page : `/owpc/pc/race/${page}`;
+    for (const path of registry[row.job].fetchPaths) {
       const key = `${host}${path}`;
       const total = totals.get(key) ?? { host, path, attempts: 0, pages: 0 };
       total.attempts += n;

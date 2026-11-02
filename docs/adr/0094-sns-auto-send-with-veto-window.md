@@ -45,9 +45,66 @@
 - 残る壊れ方: 送り手（sns-send、2分ごと・リース300秒）の前の実行が長いと、締切の15分前に近い push は期限に間に合わず held（deadline_expired）になり得る。JST 23時台より後の締切は cron が動かず送れない
 
 ## 追記: 優勝戦の思考投稿の本投稿へのリプ2つ（投票・展示後）と、リプの子の枠の予約（2026-10-26、hq FT02・マイグレーション 177）
-- オーナー 2026-10-26 決定: daily_limit_x=8（全貌4・/today 1・優勝戦3）。優勝戦は本投稿（締切の約3時間前、展示前の版）・投票のリプ（本投稿の直後、4択、締切で閉じる）・展示後のリプ（締切の25〜13分前、画像4枚）の3本で、1本ずつ数える。許可は 176 の finals_image_enabled を3本に共通にする（全部か無し）
+- オーナー 2026-10-26 決定: daily_limit_x=8（全貌4・/today 1・優勝戦3）。2026-10-27 の本番は 9（数字で見たらの分を上げた。182 の読み取り）、思考投稿の後は 11（下の today_thinking の追記）。優勝戦は本投稿（締切の約3時間前、展示前の版）・投票のリプ（本投稿の直後、4択、締切で閉じる）・展示後のリプ（締切の25〜13分前、画像4枚）の3本で、1本ずつ数える。許可は 176 の finals_image_enabled を3本に共通にする（全部か無し）
 - 子は本投稿の job を deadline_queue.parent_job_id に持つ（/today の reply・全貌の Shorts と同じ待ち合わせ）。子の item も kind=finals_image で variant（finals_poll・finals_reply）だけを分ける。期限の5分・許可の照合・B 通り道の A の予定の数え・自動の承認者の notified の要求がそのまま効く
 - 投票は承認した版に入れる: 下書きの source_data.x_poll（選択肢と締切 closes_at）を snapshot.poll に写し、approve_sns_x_send が下書きとの一致を照合する。X の duration_minutes は送る時に「今から締切までの分（5〜10080）」で決める（承認するのは締切。分は送る時刻から決まる）
 - 枠の予約: transition_sns_send_139 は、通り道 B でない X の claim・begin_post で、まだ claim していないリプの子（素材のスレッドでない）を v_need に足す。親は自分の子の分の空きが無ければ claim できない（親だけ送って子が上限で止まる穴、174 の追記の (1) のうち日次の側を塞ぐ）。子でない job は、他の親（今日 claim 済み）の子の枠も取らない。子どうしは先に claim した方が通る
 - 残る壊れ方: (1) 枠に余りが無い（8＝予定の本数）。送れなかった試行も1枠使うので、その日に全貌のやり直しがあると本投稿は push の事前検査で落ちる (2) 月の予算の親子の対の予約はまだ無い（174 の追記の (1) のうち予算の側） (3) push（hq の Mac）と送り手（Vercel の cron）は別々にデプロイされるので、許可を入れるのは送り手の本番に 177 の対のコードが入った後だけ（古い送り手は snapshot.poll を無視して本文だけを送る） (4) X の投票の仕様（リプに付けられるか、和文の25字の数え方）は一次の文書で未確認。400 なら begin_post の後なので要照合に残る
 
+## 追記: 「数字で見たら」の集計の画像1枚（research_image）は、レースを持たず、送る時刻から60分の窓で送る（2026-10-27、hq XR01・マイグレーション 179・180）
+- X に週3本（月・水・金 19:00）出す集計ランキングの画像1枚の投稿。集計・画像・本文は hq が作り、scripts/sns/push-research-image.js が受け取る（15:00 に作り、送る時刻の予定に入れる）
+- レースを持たないので、item の race_id は research:{YYYY-MM-DD}:{slug}（送る日の JST と題の札）。1日1本は 179 の一意の索引 (channel, left(race_id, 19)) で守る（送った後も2本目は入らない）
+- 締切は送る時刻＋120分、期限は締切の60分前（送る時刻から60分）。この締切はレースの公式締切ではなく形の上の値（item の CHECK と期限の照合のため）。通知は push の時（15:00）に止める SQL と一緒に送り、3時間前の通知・止める窓は置かない。期限は finals_image と同じく item の kind で分ける（kind=research_image だけ60分）
+- 根拠の鮮度は集計の時刻から24時間（kind=research_image だけ）。直近1年の集計なので、他の kind の max_source_age_seconds（本番 14400）を当てると、15:00 に作り 19:00 に送る形で止まるため
+- 本文にリンクを置かない型なので、送る直前のリンク先の表示の確認（tasks 10）は無い。代わりに readCurrent が DB の item の kind・許可・同じ日に送ったか・本文（禁止表現・加重280・リンクなし）・画像1枚を読み直し、preflight は送る文にリンクが無いことを確かめる（public_check='none' を返すのは item が research_image のときだけ）
+- 自動送信の許可は `.claude/CLAUDE.md` の例外（(1)〜(3)）に無い。許可のフラグ `sns_auto_send_control.research_image_enabled`（x の行、既定 false）を置き、false の間は push が何も書かず、送り手も claim・check・begin_post で held（research_image_disabled）にする。true にするのはオーナーの yes の後で、`.claude/CLAUDE.md` の例外に足すのはオーナー本人
+
+## 追記: X の日の枠を出し物（item の kind）ごとに取り置く（2026-10-27、hq per-type-workflow-review P0-2・マイグレーション 182）
+- 取り置きの数は表 `sns_x_kind_reserves`（kind・daily_count・曜日）に置く。正本は hq の config/x-slots.json で、本番の送り手は hq のファイルを読めないので DB に写す。書くのはオーナー、照合は `scripts/sns/x-slots-check.js`（読み取りだけ）
+- claim（transition_sns_send_139）は、177 の全体の検査に加えて「他経路 + その出し物の試行と予定 + Σ他の出し物の max(取り置き, 試行と予定) + 必要な本数 ≤ daily_limit_x」を見る（関数 sns_x_slot_room。取り込みも同じ関数で予定に入れる前に確かめる）。先に claim した出し物が、他の出し物の取り置きの残りを使わない。取り置きを越えた分は取り置かれていない残りを早い者勝ちで使う
+- 止め方を変える: 取り置きで入らない claim は例外にせず held（error_code=kind_slot_full）にし、runner が Slack に1回知らせる（177 の「日次全体上限です」の例外は残す）。取り置きは後から空かないので、queued のまま2分ごとに知らせ続けない
+- 通り道 B と kind=race は取り置きが0なので、取り置かれていない残りだけを使い、無ければ held。子（リプ）にも同じ式を当てる（親の claim が子の分を数え、他の claim は claim 済みの親の子を予定に数える）
+- 残る壊れ方: (1) 取り置きの合計＋他経路が上限を越える日は、取り置きの中でも後から来た出し物が止まる（DB では拒まず、取り込みと照合が警告する） (2) 取り置きはその日の締切が過ぎても・許可が off でも解けない (3) 取り込みの確かめは目安で、同時に2本を受けると両方通りうる（正は claim）
+
+## 追記: X の月の予約は、送る文の URL の有無で決める（2026-10-27、Orchestrate 依頼・マイグレーション 188）
+- claim（transition_sns_send_139）の予約額は、送る文（snapshot の text）に URL があれば ceiling_x_url、無ければ ceiling_x_plain。素材のスレッドの兄弟と、まだ claim していない子の確かめも、それぞれの文で数える。182 までの「thread_index=0 を URL つきの額で引く」（158、上の /today の返信の型の追記）は古い
+- 額は X API の料金表（Post: Create $0.015、with URL $0.200、2026-10-27）。今の値が 250000・30000 のときだけ 200000・15000 に書き換えた（予約の上乗せの幅を外す。オーナーが Orchestrate 経由で了承）。予算は $20 のまま（2026-10-27 オーナー）
+- 残る壊れ方: 本文に URL が無く画像だけの投稿が $0.015 で請求されるかは未確認（X は画像に t.co を付ける）。外れていれば URL の無い投稿1本あたり $0.185 少なく予約する。最初の URL の無い投稿の翌日に Developer Console で確かめ、外れていれば media のある投稿を URL つきとして数える
+- 親の claim で子の分を予算から一緒に引かないのは今までどおり（v_rest は確かめだけ）
+
+## 追記: /today の対象レースの思考投稿（today_thinking）は、優勝戦の思考投稿と同じ型で別の種類にする（2026-10-27、オーナー決定・BOA-1169・マイグレーション 189）
+- 本投稿（画像4枚＋本文）・直後の4択の投票のリプ・締切の25〜13分前の展示後の画像4枚のリプの3本。push は scripts/sns/push-finals-image.js（bundle の format は today_thinking_image・today_thinking_reply）。item の kind は today_thinking、variant は thinking・thinking_poll・thinking_reply。時刻の窓・bundle の形・画像・投票は優勝戦と同じ
+- 期限は締切の5分前（transition_sns_send_139 の v_expiry_min、優勝戦と同じ）。優勝戦の段は見ず、代わりに race_id がその日の /today の X 投稿の対象（scripts/sns/today-picks.js の featured か list）であることを push の機械の検査に入れる。本文に URL を付けない（3本とも。extractUrls が1つでも返せば拒否。オーナー 2026-10-27）
+- 2026-10-31 オーナー決定（hq の a2。正本は hq の drafts/x-thinking-today-20261027.md v2）: その日の /today の X 投稿が posted であることは残したうえで、その日の格の最上位（SG ＞ PG1 ＞ G1、races.race_grade）の場の 10〜12R も /today の対象の外で受ける。同じ格が2場以上なら 12R の締切が遅い方の場（2026-11-02 オーナー決定の (a)、`thinkingGradeDayVenue`・`isThinkingGradeDayRace`）。races.race_grade は PG1 を G1 として持つので、今の DB では PG1 と G1 の場は同じ格として締切で比べる。hq がグレードの日に開催場の 12R→11R→10R から選んだレースが、/today の対象でないため毎回拒否されていた（10/31 午後・11/1 は0本）
+- 自動送信の許可は `sns_auto_send_control.today_thinking_enabled`（x の行、既定 false）。false の間は push が何も書かず、送り手も claim・check・begin_post で held（today_thinking_disabled）にする。true にするのはオーナーの yes の後で、`.claude/CLAUDE.md` の例外に足すのもその後
+- 枠: 取り置き today_thinking 6（2レース×3本）・full_picture 0・daily_limit_x 11（オーナー 2026-10-27）。月水金は取り置きの合計11＝上限で残り0。取り置きは旗が off でも解けないので、行と上限は 189 に入れず、旗 on と同じトランザクションで、その日の最初の X 送信より前にオーナーが当てる
+- readCurrent は source_data のキーで振り分けるので、新しい種類は別のキー（today_thinking）にし、枝の中で item の kind も確かめる（食い違えば投げる）
+- 残る壊れ方: (1) 全貌の X は取り置き0なので、月水金は送れず、他の曜日は取り置かれていない残りの1本を先に来た出し物と取り合う (2) 同じレースが優勝戦で、かつ /today の対象だと、優勝戦の3本と思考投稿の3本が両方の取り置きを使って出る（一意の索引は両立させる作り。出すかは hq・オーナーが決める）。push が受け取るのは、/today の X 投稿が送られた（status=posted）日の対象だけ
+
+## 追記: 締切・版が変わった全貌の束は送らず、作り手が作り直して差し替える（2026-10-31、system-architect・BOA-1201）
+- 全貌の束は締切の時刻（races.start_time）を動画・題・説明文に焼き込む（sns-video-studio/remotion/scripts/full-picture/bundle.mjs の raceHeader「締切HH:MM」）。締切が延びた束を送る側で通すと、違う時刻を出す。契約（docs/design/sns-hub-deadline-queue/contract.md）の「source_data の変更は再承認」のとおり、送る側では通さない
+- 送る直前の検査（createDeadlinePreflight、api/_lib/snsDeadlineQueue.js）は、版の違いを source_changed、締切だけの違いを deadline_changed で止める（全チャネル）。X は holdReasonOf がこの文字列のまま error_code に入れる
+- 作り手（hq）が作り直して push し直す。push（scripts/sns/push-full-picture.js）は、同じレースの生きた全貌の item（stopped・held_manual でないもの）があれば次で決める: 前の job が1つでも sending・reconcile・posted なら拒否する（held・failed・cancelled は試行の数によらず公開されていないので止めない。送る直前の検査の deadline_changed で held になった job こそ差し替える）。締切が全部同じなら重複として拒否する。締切が違っても版が同じ（作り直していない）なら拒否する。それ以外は差し替える
+- 版の違いだけでは、締切が変わる前の材料で作り直した束を見分けられない（前の item が無い初回も同じ）。push は束の文（x_text・youtube_full と、版2なら youtube_shorts の題・説明文）の「締切HH:MM」を全部拾い、1つでも今の締切と違えば、差し替えでも初回でも拒否する（時の0埋めの違いは同じと扱う。「締切HH:MM」が無い文は見ない）
+- 差し替えは、前の item を先に stopped（stopped_via=superseded、153 の CHECK にある値）にして一意の索引（172 の sns_auto_send_items_race_channel）から外し、続けて queued の job を transition_sns_x_send の hold（理由 superseded が error_code に入る、139 から同じ）にしてから、新しい束を作る。どこかで落ちたら新しい束を作らない（止めた item の job は claim で auto_stopped、残った item の job は送る前の検査の deadline_changed で止まる）。Slack に「締切 15:57→16:05 で差し替えた」の形で前と新の締切を書く。--dry-run は差し替えも書かない
+- 差し替えは全貌（full_picture）だけ。優勝戦・思考投稿・数字で見たら（push-finals-image.js・push-research-image.js）は今までの作り直しのまま
+- 却下: 締切が延びた束を送る側で通す（焼き込んだ時刻が違う）。push が前の束を黙って上書きする（送信を始めた束を差し替えると二重に出る）
+
+## 追記: 送らなかった理由は sns_send_events に (job, 段, 理由) ごとに1行残す（2026-10-31、system-architect の推奨・BOA-1201・マイグレーション 191）
+- 送る側（cron sns_send）が送らなかった理由は report.alerts（Slack）にしか残らず、hq の見張りは Slack を読めない。live の実行だけが、表 `sns_send_events` に (job_id, stage, reason) ごとに初出の1行を書く（shadow は DB を変えない）。stage は precheck（runner の送る前の検査に落ち、claim していない）・send（claim から begin_post までの送信の中で落ちた）・after_post（begin_post の後に落ちた。要照合で出たかもしれないので、送らなかった理由と分ける）。detail は元の文言の先頭300字
+- claim の DB の拒否は、snsXSendStore が全部「X送信のDB操作に失敗しました」に包む。元の文言（RAISE の文）を error.cause に持たせ、runner が短い code（claim_daily_limit・claim_monthly_budget・claim_paused_or_unpriced・claim_not_allowed 等、`CLAIM_REJECTION_CODES`）に写す。写せない文言は db_rejected で、detail に元の文言
+- 書き方は PostgREST の POST `sns_send_events?on_conflict=job_id,stage,reason` に `Prefer: resolution=ignore-duplicates`。2分ごとの同じ理由の繰り返しは UNIQUE で止まり行を書かない
+- YouTube の begin_post の前の失敗は、job の error_code が今までどおり youtube_preflight_failed（承認の hash・媒体・validate・親・preflight の全部）。原因は stage=send の reason（holdReasonOf の code、英小文字と _ の理由はそのまま）で見る
+- 書けなくても送信は止めない。表が無い（404・PGRST205）ときは console だけ（db-apply はマージの後に当たるので、その間 Slack を鳴らし続けない）。それ以外の失敗は report.alerts に出す
+- 残る壊れ方: 再承認は job の行を使い回す（177 の ON CONFLICT(draft_id) DO UPDATE）。再承認の後に同じ理由が出ても行は増えず、初出の時刻のまま残る。hq は e.at < j.approved_at の行を前の版のものとして読む
+
+## 追記: YouTube Shorts「節の機力」（setsu_kiryoku_short）は、レースを持たない単独の Shorts として1日1本送る（2026-11-02、オーナー 10/31・11/2・BOA-1209・マイグレーション 193）
+- 開催中の会場の節の機力を毎日1本の Shorts（約15〜17秒、声なし）で出す。集計・題の選び・bundle と mp4 は hq、動画の型は sns-video-studio/remotion/src/setsuKiryoku/、受け取りは scripts/sns/push-setsu-kiryoku-short.js。全貌の Shorts（172、親の完全版を待つ）とは別の出し物で、親を持たない
+- 題・説明欄は bundle の値をそのまま送る。push は型の検査（model.js の checkBundle）を送る前にもう一度通し、題・説明欄の YouTube の上限、説明欄のリンク（その会場のページちょうど1つ）、動画（縦・60秒まで・32 MiB まで）を見る
+- item の race_id は setsu:{YYYY-MM-DD}:{会場コード}（出す日の JST）。1日1本は 193 の一意の索引 (channel, left(race_id, 16)) で守る。final_gap は下書きの source_data.setsu_kiryoku_short.final_key（優勝戦の日と会場）で、前夜と当日に同じ優勝戦を2回出さない（push が見る）
+- 期限は送る時刻＋60分、締切は期限＋expiry_minutes（形の上の値）。期限・鮮度は research_image・finals_image と違い kind で分けず、共通の expiry_minutes・max_source_age_seconds を使う。186 の transition_sns_x_send の youtube_call の照合がこの2つを kind によらず見るため（kind で変えると youtube_call_guard で止まる）
+- 送る直前のリンク先の表示の確認は会場のページ（/venue/{n}）を、画面の印 venue（scripts/lib/snsScreenMarkers.js）で行う。readCurrent は item の kind・日・会場・許可・同じ日に送ったか、final_gap の当日なら優勝戦の中止・欠場を読み直す
+- 自動送信の許可は `sns_auto_send_control.setsu_kiryoku_short_enabled`（youtube の行、既定 false）。false の間は push が何も書かず、DB は claim・check・begin_post（transition_sns_send_139）で held（setsu_kiryoku_short_disabled）にする。youtube_call・youtube_publish_begin（186 の youtube_call_guard）は旗を見ないので、上げている最中の停止は JS の preflight（readCurrent が毎回見る）に頼る。DB で確実に止めるなら mode=manual か item の停止（auto_stopped）。旗を true にするのはオーナーの yes と `.claude/CLAUDE.md` の例外の追記の後
+- 自動モードでなければ push は何も書かない（この型は自動の道だけ。個別承認の道で1日1本の守りを外さない）。item が入らない・自動の承認に落ちた下書きは公開保留にする
+- 日の上限（daily_limit_youtube）とクォータ（1 upload・104 units）は今の YouTube の道のまま claim で数えて予約する。push も同じ式で数えるが、push-full-picture.js は日の上限を数えないので、受け取りは送る時刻の15分前からにする（早く受けると、後から入った全貌が先に claim し、この job が「日次全体上限です」で queued のまま鳴り続ける）
+- 残る壊れ方: (1) 21:30 ごろは1日の最後なので、全貌が多い日（YouTube 10本前後）はこの1本が push で落ちる。上限の値はオーナーが旗 on と同じ時に決める (2) 送る窓（60分）は太平洋時間の日付の境目（今は JST 17:00）をまたげる（BOA-973 は未解決。hq の型の 21:30 では当たらない） (3) when=today（「今日の優勝戦」）を優勝戦の後に送るかは中身の判断で、push は見ない (4) sns_daily の YouTube の行は format=full_picture だけを読むので、この型の日次の数は別に足す

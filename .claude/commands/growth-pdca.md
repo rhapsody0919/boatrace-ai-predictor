@@ -166,12 +166,12 @@ Search Consoleデータの反映ラグ（2〜3日）を踏まえると、**前�
 
 ## 月次統合サマリーへの誘導
 
-`data/analysis/growth-monthly-summary/`の最新ファイルの日付を確認し、前回の月次サマリーから1ヶ月以上経過している（またはファイル自体が無い）場合は、統合分析の最後に「そろそろ`/growth-monthly-summary`で月次の振り返りをしませんか」と一言提案する。SEO/X/note の実績を横断して事業ゴールへの進捗を確認する場は、このスキル単体では担わないため。
+`data/analysis/growth-monthly-summary/`の最新ファイルの日付を確認し、前回の月次サマリーから1ヶ月以上経過している（またはファイル自体が無い）場合は、統合分析の最後に「そろそろ`/growth-monthly-summary`で月次の振り返りをしませんか」と一言提案する。SEO/X の実績を横断して事業ゴールへの進捗を確認する場は、このスキル単体では担わないため。
 
 ## 関連
 
 - `/growth-report`: Search Console単体の定点観測（このスキルは内包しつつ施策立案まで踏み込む）
 - `/i18n-growth-report`: GA4多言語需要の定点観測（同上）
-- `/growth-monthly-summary`: SEO/X/note 集客PDCAの月次統合サマリー
+- `/growth-monthly-summary`: SEO/X 集客PDCAの月次統合サマリー（note は noindex の解除まで止めている）
 - `/analyze-vup-feature`: 大施策（新機能）の分析・チケット化
 - 会場ガイド拡充の経緯: memory `venue_guide_expansion_project`

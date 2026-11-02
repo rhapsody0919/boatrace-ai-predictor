@@ -10,25 +10,115 @@
  * - モードが live でない（shadow）か、そのチャネルの dry_run が true なら、送る前の検査までで止める（試運転、ADR 0094）
  * - トークンは claim の前に取る。取れなければ claim しない（xApiAdapter.js の説明）
  * - YouTube は同じ実行の中でアップロード→処理の確認→公開まで進める（2026-10-13 ユーザー決定）。処理の確認は1回の試行で3回まで。
- *   3回で終わらなければ非公開のまま残す（youtube_retain）
+ *   3回で終わらなければ非公開のまま残す（youtube_retain）。残した理由は error_code に残る（budget・processing・check_failed・pt_day、186）
+ * - 1回の実行の Chromium の上限（SNS_SEND_HEADLESS_BUDGET）を job ごとの必要数（headlessNeed）で見積もり、足りない job から先は
+ *   次の実行に回す（BOA-1164）
+ * - 非公開のまま期限を過ぎた YouTube は、自分の非公開の動画と確かめて公開しないで閉じる（youtube_close_private、186）
+ * - YouTube のサムネイル（thumbnails.set）が失敗しても動画は公開まで進め、理由を report.jobs の thumbnail_error に入れて Slack に1回知らせる
+ *   （BOA-1172。届かなければ report.alerts に残す）
  * - 保留の理由・要照合は report.alerts に入れ、監視（scrape-monitor）が Slack に流す（同じ key は再通知の間隔ごと）
- *   - 要照合は、毎回 DB の状態（state='reconcile'）から作る。オーナーが照合して解けるまで出し続ける。
+ *   - 要照合は、毎回 DB の状態（state='reconcile'）から作る。オーナーが照合して解けるまで出し続ける（非公開のまま期限を過ぎた YouTube は runner が閉じて解く、BOA-1164）。
  *     実行のメモリに置いた通知は、途中で落ちると保存されず、sweep（DB の now()）と runner の時刻のずれでも漏れるため
  *     （開発の補助の点検 2026-10-13-28 の D2）
  *   - 送る前の検査・トークンの失敗は、候補を20件ずつ巡回するので、次にその job・チャネルを見直すまで（最長 CONTINUING_ALERT_MINUTES）残す
+ * - 送らなかった理由（送る前の検査の失敗・送信の中の失敗）は、live のときだけ DB の sns_send_events（191）にも (job, 段, 理由) ごとに
+ *   初出の1行を残す。hq の見張りは Slack を読めないので DB で読む（BOA-1201）。書けなくても送信は止めない
+ *   - 段は precheck（claim の前）・send（claim から begin_post まで。claim の DB の拒否は CLAIM_REJECTION_CODES の code）・
+ *     after_post（begin_post の後。要照合で、出たかもしれないので送らなかった理由と分ける）
  */
 import { runXSendJob } from "../../api/_lib/snsXSend.js";
 import {
+  closeRetainedYoutubeJob,
   runYoutubePublishJob,
   runYoutubeQueueJob,
 } from "../../api/_lib/snsDeadlineQueue.js";
 
 export const SNS_SEND_MAX_JOBS = 3;
+/**
+ * 1回の実行で Chromium を開ける回数（api/cron/sns-send.js が createChromiumHeadless の maxInspections に同じ値を渡す）。
+ * 送る前の検査（preflight）1回が1回を使う。job ごとの必要数は headlessNeed（BOA-1164）
+ */
+export const SNS_SEND_HEADLESS_BUDGET = 6;
+/** 非公開のまま残した YouTube を閉じるのは1回の実行でこの件数まで。閉じられなかった job は CLOSE_RETRY_MINUTES は読み直さない */
+export const YOUTUBE_CLOSE_MAX = 3;
+export const CLOSE_RETRY_MINUTES = 30;
+
+/**
+ * job を最後まで送るのに要る送る前の検査の回数（BOA-1164）。X は runner の検査1と runXSendJob の2、
+ * YouTube は runner の1・送信の中の1・videos.insert の前の1・公開の準備の後の1・videos.update の前の1 の5
+ * （カバーがあれば thumbnails.set の前の1を足して6。videos.list の前は検査しない、snsDeadlineQueue.js）。試運転（送らない）は runner の検査の1だけ
+ */
+export function headlessNeed(job, sending) {
+  if (!sending) return 1;
+  if (job.channel !== "youtube") return 3;
+  return 5 + (job.snapshot?.media?.length === 2 ? 1 : 0);
+}
 export const YOUTUBE_MAX_POLLS = 3;
 export const YOUTUBE_POLL_WAIT_SEC = 30;
 
+// PT の日付境界の前10分・後5分は、新しい YouTube 試行を始めない。
+// 固定の UTC 時差ではなく、夏時間を含む現地時刻で判定する。
+const pacificClock = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "America/Los_Angeles",
+  hourCycle: "h23",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+function youtubeQuotaDayWait(now) {
+  const parts = Object.fromEntries(
+    pacificClock.formatToParts(now).map(({ type, value }) => [type, value]),
+  );
+  const minute = Number(parts.hour) * 60 + Number(parts.minute);
+  return minute >= 24 * 60 - 10 || minute < 5;
+}
+
 const slug = (message) =>
   /^[a-z_]{1,64}$/.test(message ?? "") ? message : "unexpected_error";
+
+/**
+ * claim の段で DB（transition_sns_x_send・transition_sns_send_139 の RAISE）が拒否した文言 → 送らなかった理由の code（BOA-1201）。
+ * 文言は 186・189 の claim で通る RAISE の全部。snsXSendStore は拒否を全部「X送信のDB操作に失敗しました」に包むので、
+ * 元の文言（error.cause.message）で引く。ここに無い文言は db_rejected にして detail に元の文言を残す
+ */
+export const CLAIM_REJECTION_CODES = Object.freeze({
+  // 189 transition_sns_send_139
+  jobが見つかりません: "claim_job_missing",
+  "X送信は停止中・費用未確認です": "claim_paused_or_unpriced",
+  再承認が必要です: "claim_reapproval_required",
+  "日次全体上限・他経路の本数が未確認です": "claim_daily_unconfirmed",
+  日次全体上限です: "claim_daily_limit",
+  claimできません: "claim_not_allowed",
+  月額上限です: "claim_monthly_budget",
+  // 186 transition_sns_x_send（139 の前後の X・YouTube 共通の段と、YouTube のクォータ）
+  auto_stopped: "claim_auto_stopped",
+  dry_run: "claim_dry_run",
+  veto_window_open: "claim_veto_window_open",
+  youtube_quota_unconfirmed: "claim_youtube_quota_unconfirmed",
+  youtube_quota_limit: "claim_youtube_quota_limit",
+});
+
+/**
+ * 送信の中の失敗 → sns_send_events の段・理由・detail（純粋関数、BOA-1201）
+ * - 段: begin_post の後（error.postStarted、要照合で出たかもしれない）は after_post、それ以外は send
+ * - 理由: 送信の関数が付けた holdReason → DB の拒否（claim の段は CLAIM_REJECTION_CODES、英小文字と _ の文言はそのまま、
+ *   ほかは db_rejected）→ 英小文字と _ の文言はそのまま、ほかは unexpected_error
+ * - detail: DB の拒否は元の文言（無ければ HTTP の状態）、それ以外は error.message
+ */
+export function sendFailureOf(error) {
+  const stage = error?.postStarted ? "after_post" : "send";
+  const rejected = error?.cause?.kind === "db_rejected" ? error.cause : null;
+  const detail = rejected
+    ? (rejected.message ?? `${error.message}（HTTP ${rejected.status}）`)
+    : String(error?.message ?? "");
+  if (error?.holdReason) return { stage, reason: error.holdReason, detail };
+  if (!rejected) return { stage, reason: slug(error?.message), detail };
+  const message = rejected.message ?? "";
+  const reason =
+    (stage === "send" && Object.hasOwn(CLAIM_REJECTION_CODES, message)
+      ? CLAIM_REJECTION_CODES[message]
+      : null) ?? (/^[a-z_]{1,64}$/.test(message) ? message : "db_rejected");
+  return { stage, reason, detail };
+}
 
 /** 1回の実行で読む候補（queued の行）の上限。送る前の検査に落ちた job は送信の件数（maxJobs）に数えない */
 export const SNS_SEND_MAX_CANDIDATES = 20;
@@ -40,6 +130,13 @@ export const CONTINUING_ALERT_MINUTES = 30;
 
 /** 親を待つ子の期限が、この分数より近くなったら知らせる */
 export const PARENT_WAIT_ALERT_MINUTES = 10;
+
+/** 送らなかった理由の detail の上限（191 の CHECK）。サロゲートペアを割らないよう文字単位で切る */
+const EVENT_DETAIL_MAX = 300;
+const clip = (text) =>
+  Array.from(String(text ?? ""))
+    .slice(0, EVENT_DETAIL_MAX)
+    .join("");
 
 /** 走査位置（scrape_job_state.cursor）: 送る時刻と id の組。次の実行はこの位置の後から読む（開発の補助の点検 D1） */
 const positionOf = (job) => ({ scheduled_at: job.scheduled_at, id: job.id });
@@ -62,6 +159,7 @@ export async function runSnsSend(
     wait = (sec) => new Promise((resolve) => setTimeout(resolve, sec * 1000)),
     maxJobs = SNS_SEND_MAX_JOBS,
     maxCandidates = SNS_SEND_MAX_CANDIDATES,
+    headlessBudget = SNS_SEND_HEADLESS_BUDGET,
     pollWaitSec = YOUTUBE_POLL_WAIT_SEC,
   },
 ) {
@@ -92,13 +190,94 @@ export async function runSnsSend(
         });
     }
   };
+  // 送らなかった理由を sns_send_events（191）に残す。shadow は DB を変えない。同じ (job, 段, 理由) は UNIQUE で書かない。
+  // 書けなくても送信は止めない。表が無い（191 は db-apply でコードのデプロイの後に当たる）間は console だけにし、Slack を鳴らし続けない
+  const recordEvent = async (job, stage, reason, message) => {
+    if (!live || !store.recordEvent) return;
+    try {
+      await store.recordEvent({
+        job_id: job.id,
+        stage,
+        reason,
+        detail: clip(message),
+      });
+    } catch (error) {
+      if (error.tableMissing) {
+        console.warn(
+          `送らなかった理由を残せない（sns_send_events が無い、191 未適用）: ${job.id} ${stage} ${reason}`,
+        );
+        return;
+      }
+      console.error(
+        `送らなかった理由を残せない: ${job.id} ${stage} ${reason}: ${error.message}`,
+      );
+      if (!alerts.some((a) => a.key === "send_events"))
+        alerts.push({
+          key: "send_events",
+          text: `SNS の送信: 送らなかった理由を sns_send_events に書けない（送信は続けた）: ${error.message}`,
+        });
+    }
+  };
   // shadow では DB の状態を変えない（sweep も行わない）
   if (live) await store.sweep();
+  // トークンは1回の実行でチャネルごとに1回だけ取る（失敗も覚えて、同じ実行の残りの job では取り直さない）
+  const adapterCache = new Map();
+  const tokenChecked = new Set();
+  const adapterFor = (channel) => {
+    if (!adapterCache.has(channel))
+      adapterCache.set(
+        channel,
+        adapters[channel]().then(
+          (adapter) => ({ adapter }),
+          (error) => ({ error }),
+        ),
+      );
+    return adapterCache.get(channel);
+  };
+  // 非公開のまま残した YouTube（期限・リースの後）を、自分の非公開の動画と確かめて閉じる（BOA-1164）。Chromium は使わない。
+  // 閉じられなかった job は理由を要照合の通知に足し、CLOSE_RETRY_MINUTES は読み直さない（videos.list のクォータを2分ごとに使わない）
+  const closeRetry = (ctx.state?.last_report?.close_retry ?? []).filter(
+    (r) => r?.id && Date.parse(r.until) > now.getTime(),
+  );
+  const closeNotes = new Map();
+  if (live && store.retainedYoutubeJobs) {
+    const waiting = new Set(closeRetry.map((r) => r.id));
+    const due = (
+      await store.retainedYoutubeJobs(now, YOUTUBE_CLOSE_MAX + waiting.size)
+    )
+      .filter((j) => !waiting.has(j.id))
+      .slice(0, YOUTUBE_CLOSE_MAX);
+    for (const job of due) {
+      if (ctx.shouldStop()) break;
+      const { adapter, error: tokenError } = await adapterFor("youtube");
+      try {
+        if (tokenError) throw tokenError;
+        const closed = await closeRetainedYoutubeJob(
+          { ...job, state: "reconcile" },
+          { store, lookup: (j) => adapter.lookup(j) },
+        );
+        await tell(
+          `closed:${job.id}`,
+          closed?.error_code === "youtube_closed_deleted"
+            ? `SNS の送信: YouTube job ${job.id} は非公開のまま期限を過ぎ、動画 ${job.external_post_id} は YouTube で削除済みだったので、公開しないで閉じた（${job.error_code ?? "理由なし"}）`
+            : `SNS の送信: YouTube job ${job.id} は非公開のまま期限を過ぎたので、公開しないで閉じた（${job.error_code ?? "理由なし"}）。動画 ${job.external_post_id} は YouTube に非公開で残る。Studio で消すか残すかはオーナー`,
+        );
+      } catch (error) {
+        closeNotes.set(job.id, error.message);
+        closeRetry.push({
+          id: job.id,
+          until: new Date(
+            now.getTime() + CLOSE_RETRY_MINUTES * 60000,
+          ).toISOString(),
+        });
+      }
+    }
+  }
   // 要照合は DB の状態から毎回作る（sweep で要照合になったもの・前の実行が保存の前に落ちたものも拾う）
   for (const job of await store.reconcileJobs())
     alerts.push({
       key: `reconcile:${job.id}`,
-      text: `SNS の送信が要照合: ${job.channel} job ${job.id}（${job.youtube_stage ?? job.error_code ?? "結果が不明"}）。管理画面で照合する`,
+      text: `SNS の送信が要照合: ${job.channel} job ${job.id}（${reconcileLabel(job)}）。管理画面で照合する${closeNotes.has(job.id) ? `（公開しないで閉じられない: ${closeNotes.get(job.id)}）` : ""}`,
     });
   // 親（スレッドの親・全貌の完全版）が公開されないまま、期限が近い子。子は候補から外れて検査の通知も出ず、
   // 期限の後に sweep で黙って held（deadline_expired）になるので、ここで知らせる（2026-10-20 system-architect の指摘）
@@ -117,22 +296,14 @@ export async function runSnsSend(
     maxCandidates,
     ctx.state?.cursor ?? null,
   );
-  // トークンは1回の実行でチャネルごとに1回だけ取る（失敗も覚えて、同じ実行の残りの job では取り直さない）
-  const adapterCache = new Map();
-  const tokenChecked = new Set();
-  const adapterFor = (channel) => {
-    if (!adapterCache.has(channel))
-      adapterCache.set(
-        channel,
-        adapters[channel]().then(
-          (adapter) => ({ adapter }),
-          (error) => ({ error }),
-        ),
-      );
-    return adapterCache.get(channel);
-  };
   let attempted = 0;
   let posted = 0;
+  // この実行で使った送る前の検査の回数（＝Chromium を開いた回数の上界）。送信の関数にも数える版を渡す
+  let checks = 0;
+  const countedPreflight = async (job) => {
+    checks += 1;
+    return preflight(job);
+  };
   // 途中で止めたら、最後に見た job の位置を次の実行の起点にする。最後まで見たら DB の読み取りの続き（読み切ったら先頭へ戻る）
   let cursor = nextCursor;
 
@@ -146,8 +317,40 @@ export async function runSnsSend(
     }
     const result = { id: job.id, channel: job.channel };
     results.push(result);
+    const deferYoutube = () => {
+      if (
+        job.channel !== "youtube" ||
+        !live ||
+        controls.youtube?.dry_run !== false ||
+        !youtubeQuotaDayWait(ctx.now())
+      )
+        return false;
+      result.outcome = "youtube_quota_day_wait";
+      alerts.push({
+        key: `youtube_quota_day_wait:${job.id}`,
+        text: `SNS の送信: YouTube job ${job.id} は太平洋時間の日付境界（前10分・後5分）のため待機（claim していない）。期限 ${job.expires_at}`,
+        until: continuingUntil,
+      });
+      return true;
+    };
+    if (deferYoutube()) continue;
+    // 検査の枠（BOA-1164）: この実行で既に検査を使い、残りでこの job を最後まで送れないなら、ここから先は次の実行に回す。
+    // 先に別のレースの X が枠を使い、YouTube が公開の準備の後の検査で public_check_budget になって非公開のまま残った（10/25 浜名湖10R）。
+    // 最初の job は必要数が上限を超えても進める（回し続けて永久に送らないことを避ける）
+    const need = headlessNeed(
+      job,
+      live && controls[job.channel]?.dry_run === false,
+    );
+    if (checks > 0 && checks + need > headlessBudget) {
+      result.outcome = "headless_budget_wait";
+      cursor =
+        index > 0
+          ? positionOf(candidates[index - 1])
+          : (ctx.state?.cursor ?? null);
+      break;
+    }
     try {
-      await preflight(job);
+      await countedPreflight(job);
     } catch (error) {
       result.outcome = "precheck_failed";
       result.reason = error.holdReason ?? slug(error.message);
@@ -156,6 +359,7 @@ export async function runSnsSend(
         text: `送る前の検査で止めた（claim していない）: ${job.channel} job ${job.id} 理由 ${result.reason}`,
         until: continuingUntil,
       });
+      await recordEvent(job, "precheck", result.reason, error.message);
       continue;
     }
     // dry_run の行が無い（153 未適用など）ときも送らない（fail-closed）
@@ -185,6 +389,8 @@ export async function runSnsSend(
       continue;
     }
     tokenChecked.add(job.channel);
+    // 検査やトークン取得を待つ間に停止窓へ入った場合も claim しない。
+    if (deferYoutube()) continue;
     attempted += 1;
     try {
       const done =
@@ -194,49 +400,67 @@ export async function runSnsSend(
               x: adapter,
               loadMedia,
               wait,
-              preflight,
+              preflight: countedPreflight,
             })
           : await sendYoutube(job, {
               store,
               youtube: adapter,
-              preflight,
+              preflight: countedPreflight,
               loadMedia,
               wait,
               shouldStop: ctx.shouldStop,
               pollWaitSec,
+              onThumbnailFailed: (reason) => {
+                result.thumbnail_error = reason;
+              },
             });
       result.outcome = done.state;
       result.error_code = done.error_code ?? null;
       if (done.state === "posted") posted += 1;
+      // 出し物ごとの取り置き（182）で claim が止めた。取り置きは後から空かないので一度きりの事象として知らせる
+      if (done.state === "held" && done.error_code === "kind_slot_full")
+        await tell(
+          `held:${job.id}`,
+          `SNS の送信を止めた（X の日の枠の出し物ごとの取り置きに入らない、kind_slot_full）: ${job.channel} job ${job.id}。送るなら取り置き（sns_x_kind_reserves）か daily_limit_x を見直して再承認する`,
+        );
       // 要照合になったら、この実行の report にも出す（次の実行からは DB の状態から作る）
       if (done.state === "reconcile")
         alerts.push({
           key: `reconcile:${job.id}`,
-          text: `SNS の送信が要照合: ${job.channel} job ${job.id}（${done.youtube_stage ?? done.error_code ?? "結果が不明"}）。管理画面で照合する`,
+          text: `SNS の送信が要照合: ${job.channel} job ${job.id}（${reconcileLabel(done)}）。管理画面で照合する`,
         });
     } catch (error) {
       // job の状態（held・要照合）は送信の関数が DB に残している。ここでは理由を知らせるだけ
       result.outcome = "error";
-      result.reason = error.holdReason ?? slug(error.message);
+      const failure = sendFailureOf(error);
+      result.reason = failure.reason;
+      await recordEvent(job, failure.stage, failure.reason, failure.detail);
       await tell(
         `send:${job.id}`,
         `SNS の送信が止まった: ${job.channel} job ${job.id}: ${error.message}`,
       );
     }
+    // サムネイルの失敗は一度きりの事象（動画の送信は続けた。後で公開に失敗したときも、サムネイルの理由は別に知らせる）
+    if (result.thumbnail_error)
+      await tell(
+        `thumbnail:${job.id}`,
+        `SNS の送信: YouTube job ${job.id} のサムネイルを設定できなかった（動画の送信は続けた）: ${result.thumbnail_error}。403 はチャンネルの確認（カスタムサムネイルの権限）が無いときにも返る。付けるなら Studio で設定する`,
+      );
   }
   // この実行で見直さなかった job の検査の理由・確かめなかったチャネルのトークンの失敗は、期限まで残す
   const examined = new Set(results.map((r) => r.id));
   for (const a of previous) {
     const [kind, subject] = a.key.split(":");
     if (
-      (kind === "precheck" && !examined.has(subject)) ||
+      (["precheck", "youtube_quota_day_wait"].includes(kind) &&
+        !examined.has(subject)) ||
       (kind === "token" && !tokenChecked.has(subject))
     )
       alerts.push(a);
   }
   return {
     rowsWritten: posted,
-    report: { jobs: results, alerts },
+    report: { jobs: results, alerts, close_retry: closeRetry },
     body: { jobs: results },
     cursor,
   };
@@ -245,13 +469,23 @@ export async function runSnsSend(
 /** YouTube: アップロード→処理の確認（最大3回）→公開。3回で処理が終わらなければ非公開のまま残す */
 async function sendYoutube(
   job,
-  { store, youtube, preflight, loadMedia, wait, shouldStop, pollWaitSec },
+  {
+    store,
+    youtube,
+    preflight,
+    loadMedia,
+    wait,
+    shouldStop,
+    pollWaitSec,
+    onThumbnailFailed,
+  },
 ) {
   let current = await runYoutubeQueueJob(job.id, {
     store,
     youtube,
     preflight,
     loadMedia,
+    onThumbnailFailed,
   });
   for (
     let poll = 1;
@@ -268,12 +502,27 @@ async function sendYoutube(
       preflight,
     });
   }
+  // 3回の確認・関数の時間の内に処理が終わらなかった（BOA-1164 の理由 processing）
   if (
     current.state === "reconcile" &&
     ["uploaded", "ready"].includes(current.youtube_stage)
   )
-    current = await store.transition(current.id, "youtube_retain");
+    current = await store
+      .transition(current.id, "youtube_retain", { reason: "processing" })
+      .catch((error) => {
+        // 上がった後（要照合）の失敗。送らなかった理由と分けて stage=after_post に残す（BOA-1201）
+        error.postStarted = true;
+        throw error;
+      });
   return current;
+}
+
+/** 要照合の通知に出す段と理由（非公開のまま残した理由は error_code、186） */
+function reconcileLabel(job) {
+  return (
+    [job.youtube_stage, job.error_code].filter(Boolean).join("・") ||
+    "結果が不明"
+  );
 }
 
 /** PostgREST の読み取り（service_role）。失敗は握りつぶさず投げる */
@@ -290,9 +539,42 @@ export function createPostgrestReader({ url, key, fetchImpl = fetch }) {
   };
 }
 
-/** 送信の job の読み書き。xSendStore（api/_lib/snsXSendStore.js）の送信の操作に、runner の読み取りを足す */
-export function createSnsSendStore({ db, xSendStore }) {
+/**
+ * PostgREST の書き込み（service_role）: 送らなかった理由を sns_send_events（191）に1行。同じ (job, 段, 理由) は UNIQUE で
+ * 止まり、resolution=ignore-duplicates で行を書かずに成功する（2分ごとの繰り返しで WAL を増やさない）。
+ * 失敗は投げる。表が無い（404・PGRST205）ときは tableMissing を付ける
+ */
+export function createPostgrestEventWriter({ url, key, fetchImpl = fetch }) {
+  return async (event) => {
+    const response = await fetchImpl(
+      `${url}/rest/v1/sns_send_events?on_conflict=job_id,stage,reason`,
+      {
+        method: "POST",
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          Prefer: "resolution=ignore-duplicates,return=minimal",
+        },
+        body: JSON.stringify(event),
+      },
+    );
+    if (response.ok) return;
+    // 本文は code だけ読む（message・details は残さない）
+    const code = (await response.json().catch(() => null))?.code ?? null;
+    const error = new Error(
+      `sns_send_events の書き込みに失敗: HTTP ${response.status}${code ? ` ${code}` : ""}`,
+    );
+    error.tableMissing =
+      response.status === 404 || code === "PGRST205" || code === "42P01";
+    throw error;
+  };
+}
+
+/** 送信の job の読み書き。xSendStore（api/_lib/snsXSendStore.js）の送信の操作に、runner の読み取りと送らなかった理由の書き込みを足す */
+export function createSnsSendStore({ db, xSendStore, writeEvent }) {
   return {
+    recordEvent: writeEvent,
     transition: (id, action, result) =>
       xSendStore.transition(id, action, result),
     parent: (id) => xSendStore.parent(id),
@@ -336,6 +618,13 @@ export function createSnsSendStore({ db, xSendStore }) {
       );
       const posted = new Set(pickDueJobs(children, parents).map((c) => c.id));
       return children.filter((c) => !posted.has(c.id));
+    },
+    // 非公開のまま残し、期限とリースの過ぎた YouTube の job（閉じる候補、BOA-1164）。閉じてよいかの最終の判定は DB の youtube_close_private
+    async retainedYoutubeJobs(now, limit) {
+      const at = encodeURIComponent(now.toISOString());
+      return db(
+        `sns_x_send_jobs?state=eq.reconcile&channel=eq.youtube&youtube_stage=eq.private_retained&expires_at=lte.${at}&or=${encodeURIComponent(`(lease_until.is.null,lease_until.lte.${now.toISOString()})`)}&order=id.asc&limit=${limit}&select=id,channel,state,youtube_stage,error_code,external_post_id,attempts,expires_at,snapshot`,
+      );
     },
     // 要照合の job（オーナーが照合するまで残る。件数は少ない）
     async reconcileJobs() {

@@ -149,7 +149,7 @@ check(
   ).some((p) => p.includes("同じ組に2回")),
   true,
 );
-for (const name of ["e2e-smoke-test.yml", "e2e-rerecord.yml"]) {
+for (const name of ["e2e-smoke-test.yml", "e2e-rerecord.yml", "e2e-live.yml"]) {
   const wf = readFileSync(
     path.join(repoRoot, ".github/workflows", name),
     "utf8",
@@ -183,6 +183,8 @@ if (config) {
 for (const [file, from] of [
   ["e2e-smoke-test.yml", "needs.e2e-scope.outputs.matrix"],
   ["e2e-rerecord.yml", "needs.record.outputs.matrix"],
+  // 本番データの E2E も同じ組に分ける（1ジョブでは7回とも60分で切れた。design.md 2.4）
+  ["e2e-live.yml", "needs.shards.outputs.matrix"],
 ]) {
   const wf = readFileSync(
     path.join(repoRoot, ".github/workflows", file),
@@ -195,6 +197,23 @@ for (const [file, from] of [
     true,
   );
   check(`${file} に組の spec を手で書かない`, /--grep-invert/.test(wf), false);
+}
+
+// --- 全ジョブに timeout-minutes（既定の360分で止まった組がランナーを使い続けない。design.md 2.4） ---
+for (const file of ["e2e-smoke-test.yml", "e2e-live.yml", "e2e-rerecord.yml"]) {
+  const wf = readFileSync(
+    path.join(repoRoot, ".github/workflows", file),
+    "utf8",
+  ).replace(/^\s*#.*\n/gm, "");
+  const body = wf.slice(wf.indexOf("\njobs:\n"));
+  const jobs = [
+    ...body.matchAll(/^ {2}([a-z0-9-]+):\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:\n|(?![\s\S]))/gm),
+  ];
+  check(`${file} のジョブを読めた`, jobs.length > 0, true);
+  const missing = jobs
+    .filter(([, , text]) => !/^ {4}timeout-minutes: \d+$/m.test(text))
+    .map(([, name]) => name);
+  check(`${file} の全ジョブに timeout-minutes がある`, missing, []);
 }
 
 if (failures.length > 0) {

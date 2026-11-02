@@ -11,7 +11,13 @@
  *   true・07:00 以降・races が1件以上 → 実行しない（Vercel が初期化済み。取りこぼし会場の確認・予測の再生成・unified も
  *                                    Vercel 側が担う）
  *   true・07:00 以降・races が0件      → 実行する（フェイルセーフ。この場合の pcexpect は、SKIP_PCEXPECT_ON_GHA に従う）
- *   true・07:00 以降・races の件数を確認できない（DB未設定・読み取り失敗） → 実行する（確認できないときは、止めない側に倒す）
+ *   true・07:00 以降・races の件数を確認できない（DB未設定・読み取り失敗） → 下の肩代わりの判定へ
+ *
+ * 上の「実行する」（フェイルセーフ）は、さらに GitHub の肩代わりの条件（scripts/lib/ghaSkipGate.js の races_init。
+ * mode=live・Vercel の races-init が指定時刻以降に起動していない・boatrace.jp のブレーカーが閉じている・直近の失敗が
+ * 403・接続の失敗でない）を満たすときだけ実行する。races_init が公式の 403・接続の失敗で止まった日に、GitHub の IP から
+ * 守りを通らない素の fetch（同時12）で公式を叩かない（docs/design/scraping-load-budget/spec.md §0・§8 の P0）。
+ * 肩代わりの判定を確かめられない（gateSkip が true 以外）ときも実行しない。
  */
 
 /** フェイルセーフが働き始める、JSTの時刻（時） */
@@ -22,16 +28,32 @@ export const FALLBACK_FROM_JST_HOUR = 7;
  * @param {boolean} params.skipVar SKIP_MORNING_INIT_ON_GHA が true か
  * @param {number} params.jstHour 現在のJSTの時（0〜23）
  * @param {number|null} params.racesCount 当日の races の件数。確認していない・できない場合は null
- * @returns {{run: boolean, reason: string}}
+ * @param {boolean} [params.gateSkip] 肩代わりの判定（shouldSkipOnGha の skip）。false のときだけフェイルセーフを実行する
+ * @returns {{run: boolean, reason: string, needsGate: boolean}}
+ *   needsGate: フェイルセーフの候補で、肩代わりの判定（gateSkip）がまだ渡されていない
  */
-export function decideMorningInitOnGha({ skipVar, jstHour, racesCount }) {
-  if (!skipVar) return { run: true, reason: "skip_var_off" };
+export function decideMorningInitOnGha({
+  skipVar,
+  jstHour,
+  racesCount,
+  gateSkip,
+}) {
+  if (!skipVar) return { run: true, reason: "skip_var_off", needsGate: false };
   if (jstHour < FALLBACK_FROM_JST_HOUR) {
-    return { run: false, reason: "vercel_window" };
+    return { run: false, reason: "vercel_window", needsGate: false };
   }
-  if (racesCount === null || racesCount === undefined) {
-    return { run: true, reason: "fallback_races_unknown" };
+  if (racesCount > 0) {
+    return { run: false, reason: "vercel_initialized", needsGate: false };
   }
-  if (racesCount > 0) return { run: false, reason: "vercel_initialized" };
-  return { run: true, reason: "fallback_no_races" };
+  const fallback =
+    racesCount === null || racesCount === undefined
+      ? "fallback_races_unknown"
+      : "fallback_no_races";
+  if (gateSkip === false)
+    return { run: true, reason: fallback, needsGate: false };
+  return {
+    run: false,
+    reason: `${fallback}_no_takeover`,
+    needsGate: gateSkip === undefined,
+  };
 }

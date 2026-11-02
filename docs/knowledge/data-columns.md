@@ -25,9 +25,11 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - boolean を some(x===true) で見ると、空配列・全 NULL が false になる。NULL が未判定の列では、読取成功・欠場 true なし・欠場なし確認済みを分け、確認済みにする取得源の false を契約に明示する（2026-10-13、2026-10-13-plan-review-20261013-32.md・2026-10-15-plan-review-20261015-09.md）
 - morning_digest_rows.course は生成時に当日の boat_number と同値で保存するが、参照する統計は選手の過去の実進入コース別実績。「当日の2号艇」と「過去の2コース」を分け、当日の実進入確定値として扱わない（2026-10-15、2026-10-15-plan-review-20261015-11.md）
 - 本番進入を表示する新カードは、統計用 actualCourse だけでなく既存の表示用 entryCourse の優先順位を引き継ぐ。当日の ST 進入が取れていても、K ファイル待ちの actualCourse は null（2026-10-16、2026-10-16-review-20261016-06.md）
+- racer_profiles.sex は全行 NULL（083 の列はあるが sync-profiles が未実行）。性別を前提にした判定（レディースのレースの見分け等）にはまだ使えない（2026-10-31、本番の読み取り、GS00 案2）
 
 ## 公式ファイル・公式ページと取得の時点
-- 公式の K/B ファイルは 2019-04 から全期間を取り込み済み（kb_archive_* テーブル、kb_archive_boats 約223万行）（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-403・BOA-422）
+- 公式の K/B ファイルは kb_archive_* に 2019-04-01〜2025-12-02 を取り込み済み（kb_archive_boats 約221万行）。2025-12-03 以降は race_entries・race_results 等にあり、kb は作りの上で止めている（kb-backfill.js の MAIN_TABLES_START、書き手の cron なし）。kb_archive は匿名で読めず、racer_id の索引も無い（2026-10-28、system-architect・本番の読み取り。元は 2026-09-25、BOA-403・BOA-422）
+- 公式の fan ファイルに現役の選手が載らないことがある。fan2604 には 4650 が無いが、公式の選手ページには 2026年後期（41走）がある。直近2週に出走した 1,407人のうち欠けはこの1人。画面で「それより後は未公開」と言い切らない（2026-10-28、data-accuracy-verifier、PR #2051）
 - B ファイルの体重は登録体重（整数）、race_entries.weight_kg は当日の体重（小数）で別の値。player_name は表記、local_win_rate は取得の時点が違う。B ファイルで上書きする前に同じ値かを確かめる（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、PR #840）
 - K ファイルは開催日の夜〜翌日に公開され、kfile-sync は JST 07:00・12:00 に動く。前日の進入コース（race_results.actual_course_*）を使う集計は当日の昼より後にそろう（2026-09-25、memory morning_data_digest_2026_09_25、ADR-0066）
 - 公式の直前情報（beforeinfo）と結果（raceresult）のページは HTML の作りが別。beforeinfo は .table1 の2番目→tbody 6つ→各4行で .table1_boatImage1 が無い。raceresult は .table1_boatImage1 で艇の情報を取れる（memory technical_supabase_scraping_turnpred_notes）
@@ -38,7 +40,9 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - 現行の気象取得は33〜7分前の展示窓で、展示タイム未公開でも気象を先に反映する。60分前の体重用窓は updateWeather=false。表示条件（思考アシストは展示後）と取得時点を分ける（2026-10-14、2026-10-14-ryujin-feature-catalog.md）
 
 ## オッズ
-- 公式は票が0の艇の単勝を「0.0」、複勝を「0.0-0.0」と出す。0 を欠損として扱うと単勝の解析が失敗扱いになり、解析済みの3連単も捨てる。scrape_slots.outcome="no_values" は「単勝の値が無い」だけを表し、「何も発売されていない」と区別できない（2026-09-28、memory feedback_verify_status_label_branch_before_using_as_evidence・project_data_foundation_orchestration_2026_09_19、BOA-486、scrape-odds.js の scrapeWinOdds。今も同じ実装かは要確認）
+- 公式は票が0の艇の単勝を「0.0」、複勝を「0.0-0.0」と出す。0 を欠損として扱うと単勝の解析が失敗扱いになり、解析済みの3連単も捨てる。scrape_slots.outcome="no_values" は「単勝の値が無い」だけを表し、「何も発売されていない」と区別できない（2026-09-28、memory feedback_verify_status_label_branch_before_using_as_evidence・project_data_foundation_orchestration_2026_09_19、BOA-486、scrape-odds.js の scrapeWinOdds。2026-10-28 に今も同じ実装と確認。race_odds は票0を null、race_odds_final は 0 で残す）
+- 発売中の単勝（race_odds.odds_win_N）の 1.0・null は公式のページの値そのまま（取得・解析の誤りではない）。公式の発売中の単勝は票が少なく、1番人気の艇が下限の 1.0 に張り付き、票0の艇は「0.0」（保存は null）になる。2026-10-28 児島5R の締切10分前に公式を1回取得し、1.0・0.0・15.5・15.5・23.2・23.2 で、12秒後の race_odds の -10 の行と一致。締切時の race_odds_final.win_all は 2026-10-26 桐生1R で公式の締切時オッズと6艇とも一致（2026-10-28、BOA-1174、scripts/analysis/check-win-odds-vs-final.js）
+- 10/20〜10/27 の race_odds で、6艇とも単勝があるのは -60 で 147/1333・-10 で 513/1321・0 で 998/1317、1号艇が 1.0 は -10 で 508・0 で 293。締切時（race_odds_final 1316 行）は 6艇そろうのが 1227、1号艇 1.0 は 154。発売中の単勝の1番人気が締切時の単勝の1番人気と同じなのは -10 で 835/1295・-5 で 890/1295、3連単の合成の1着人気は -10 で 1054/1295・-5 で 1074/1295。締切前に1着人気を出すなら、発売中の単勝より3連単の合成のほうが締切時の単勝に近い（2026-10-28、BOA-1174、scripts/analysis/check-win-odds-vs-final.js）
 - 締切60分前の窓でオッズが取れないのは、公式がまだ発売していないため（1分ごとに17〜30回試みても値が無い）。取得の不具合ではない（2026-09-28、memory project_data_foundation_orchestration_2026_09_19、BOA-465）
 - race_results.remark の「同着あり」は2着以下の同着も含む（12か月で18件のうち1着の同着は1件）。1着の同着は race_start_timings.finish_rank=1 が2艇以上かで判定する（2026-10-20、data-accuracy-verifier、docs/reference/venue-course-win-rate.md）
 - race_start_timings.entry_course は 2025-12-06 以降の約9,400レースにだけ入っていて、その範囲では race_results.actual_course_* と1着艇の進入コースが 9,386/9,386 で一致（2026-10-20、同）

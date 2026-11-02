@@ -3,7 +3,8 @@
  *
  * - 人の画面の部分集合にする。人のトップ（VenueGridPage・VenueGridCard）と会場ページ（VenueRaceListPage・
  *   RaceCard）が出している文字のうち、開催の予定（会場名・節の名前・レース番号・締切時刻・グレード・中止）
- *   と、ページの見出し・最終更新時刻・title・meta description・canonical・パンくず（BreadcrumbList 用）だけを入れる
+ *   と、ページの見出し・最終更新時刻・title・meta description・canonical・パンくず（BreadcrumbList 用）だけを入れる。
+ *   会場ページには、見出しの直下の常設の要約2行（VenueSummaryLines と同じ venueSummaryLines、BOA-1189）も入れる
  * - 整形は人の画面と同じ transformTodayRaces、文字は人の画面と同じ関数（raceListDisplay.js・pageMeta.js）と
  *   i18n のキーで作る。t は表示する言語の i18next の t を渡す（既定は ja。言語版は BOA-848 の第2段）
  * - リンク先・canonical・パンくずは、人の画面と同じく localizePath で言語の接頭辞を付ける（ja は接頭辞なし）
@@ -32,6 +33,7 @@ import {
   deadlineValueText,
 } from "./raceListDisplay.js";
 import { isRaceCancelled } from "./raceCancellation.js";
+import { venueSummaryLines } from "./venueSummary.js";
 import { getRaceId } from "./raceId.js";
 import { formatDateShortLocalized, formatCapturedAtJst } from "./formatters.js";
 import { localizePath } from "../config/languages.js";
@@ -261,6 +263,7 @@ export function buildVenueModel(
   const transformed = transformTodayRaces(todayJson);
   const races = racesByVenue(transformed).get(venueCode) || [];
   const venueName = venueNameOf(t, venueCode);
+  const summary = venueSummaryLines(t, venueCode);
 
   return {
     path: `/venue/${venueCode}`,
@@ -269,6 +272,8 @@ export function buildVenueModel(
     // 人の画面のパンくず（BreadcrumbList の JSON-LD に使う）
     breadcrumbItems: getTodayVenueBreadcrumbItems(t, venueCode, lang),
     heading: `🏁 ${venueName} ${t("venueRaceList.todayTitle")}`,
+    // 見出しの直下の要約2行（直近1年の1コースの1着率・決まり手）。開催の有無に関係なく出す（人の画面と同じ）
+    summaryLines: summary ? [summary.course, summary.techniques] : [],
     // 人の画面と同じく、0件なら「本日、このレース場での開催はありません」
     emptyText: races.length === 0 ? t("home.noRacesToday") : null,
     races: races.map((race) => {

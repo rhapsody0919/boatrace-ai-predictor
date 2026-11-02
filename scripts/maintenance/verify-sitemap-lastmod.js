@@ -13,6 +13,10 @@
 import { readFileSync } from "fs";
 import { execFileSync } from "child_process";
 import path from "path";
+import {
+  raceDetailFixture,
+  sitemapFixture,
+} from "./verify-sitemap-coverage.js";
 import { fileURLToPath } from "url";
 import {
   gitLastCommitDate,
@@ -123,6 +127,30 @@ check(
   /alternates:\s*alternatesFor\(/.test(source),
   "generate-sitemap.js が各URLに言語版の組（alternatesFor）を渡していない",
 );
+
+// BOA-1186: 結果の日は開催日。取得日・生成日（JST 10/31）に更新しない。
+try {
+  const pages = await raceDetailFixture(source, [
+    {
+      race_id: "2026-10-25-01-01",
+      race_date: "2026-10-25",
+      race_results: { rank1: 1 },
+    },
+  ]);
+  check(pages.length === 1, "確定済み /race が無い");
+  check(
+    pages[0]?.lastmod === "2026-10-25",
+    "/race の lastmod が結果の日ではない",
+  );
+  check(
+    (await sitemapFixture(source, pages)).includes(
+      "<lastmod>2026-10-25</lastmod>",
+    ),
+    "/race の XML に結果の日が出ていない",
+  );
+} catch (error) {
+  check(false, error.message);
+}
 
 if (failures.length > 0) {
   console.error("❌ sitemap の lastmod の検査に失敗:");

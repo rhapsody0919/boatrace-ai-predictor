@@ -17,6 +17,8 @@
 import { createScrapeCronHandler } from "../../scripts/lib/scrapeJobs/cronWrapper.js";
 import { postSlack } from "../../scripts/lib/scrapeJobs/monitor.js";
 import {
+  SNS_SEND_HEADLESS_BUDGET,
+  createPostgrestEventWriter,
   createPostgrestReader,
   createSnsSendStore,
   runSnsSend,
@@ -47,7 +49,10 @@ const notify = async (text) => {
 export default createScrapeCronHandler({
   job: "sns_send",
   run: async (ctx) => {
-    const headless = createChromiumHeadless();
+    // runner は同じ上限で job ごとの検査の回数を見積もり、足りない job を次の実行に回す（BOA-1164）
+    const headless = createChromiumHeadless({
+      maxInspections: SNS_SEND_HEADLESS_BUDGET,
+    });
     try {
       return await runSnsSend(ctx, {
         store: createSnsSendStore({
@@ -56,6 +61,11 @@ export default createScrapeCronHandler({
             key: SUPABASE_SERVICE_KEY,
           }),
           xSendStore,
+          // 送らなかった理由（sns_send_events、191）。live のときだけ runner が書く（BOA-1201）
+          writeEvent: createPostgrestEventWriter({
+            url: SUPABASE_URL,
+            key: SUPABASE_SERVICE_KEY,
+          }),
         }),
         adapters: {
           x: async () =>

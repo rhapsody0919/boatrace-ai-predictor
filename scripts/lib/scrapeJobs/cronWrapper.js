@@ -48,7 +48,11 @@ import { randomUUID, timingSafeEqual } from "node:crypto";
 import { SCRAPE_JOBS, SOFT_DEADLINE_MARGIN_SEC } from "./registry.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { resolveTargetDate } from "./dailyJob.js";
-import { BreakerOpenError, createCircuitBreaker } from "./circuitBreaker.js";
+import {
+  BreakerOpenError,
+  FetchStoppedError,
+  createCircuitBreaker,
+} from "./circuitBreaker.js";
 import { createPoliteFetch, hostKeyOf, pathKeyOf } from "./politeFetch.js";
 import {
   applyZeroRowGuard,
@@ -58,6 +62,7 @@ import {
 } from "./outcomes.js";
 import { jstStartOfDay, toJstDateString } from "./time.js";
 import { createSupabaseStore } from "./store.js";
+import { createFetchCounter } from "./fetchCounter.js";
 
 /** 予定表を生成し直す間隔（分）。races が後から増えた場合の追従（plan.md §3.5） */
 export const ENSURE_SLOTS_EVERY_MIN = 10;
@@ -103,17 +108,63 @@ async function isBreakerOpen(breaker, definition, nowMs) {
   ];
   for (const { key, host } of keys) {
     try {
-      await breaker.check(key);
-      // check() が半開の試行を予約した場合は、ここでは取得しないので戻す
-      breaker.abortProbe(key);
+      // 開いているかだけを見る（半開の試行を DB で予約しない。予約すると、この起動で取らないのに全体の試行を2分止める）
+      await breaker.check(key, { reserve: false });
     } catch (error) {
       if (error instanceof BreakerOpenError) {
-        return { open: true, until: error.until, host };
+        return {
+          open: true,
+          until: error.until,
+          host,
+          // 非常停止（fetch_stop、178）は応答で breaker_open と分ける（人が立てたものか、ブレーカーが開いたものか）
+          skipped:
+            error instanceof FetchStoppedError ? "fetch_stop" : "breaker_open",
+        };
       }
       throw error;
     }
   }
   return { open: false, until: nowMs };
+}
+
+/**
+ * 閉じた後24時間の絞り（spec §5.2）にあるブレーカーのキー（ホスト・ページのパス）。isBreakerOpen の後に呼ぶ
+ * （check の読み取りで DB の段階を同期済み）。1つでもあれば、その起動の1起動の上限（claimLimit）を半分にする
+ */
+function throttledKeys(breaker, definition) {
+  if (typeof breaker.isThrottled !== "function") return [];
+  const keys = [
+    ...(definition.hosts ?? []).map((host) => hostKeyOf(`https://${host}/`)),
+    ...(definition.breakerUrls ?? []).map(pathKeyOf),
+  ];
+  return keys.filter((key) => breaker.isThrottled(key));
+}
+
+/** 絞りのときの1起動の上限（半分、切り上げ。1未満にしない） */
+export const throttledClaimLimit = (claimLimit) =>
+  Math.max(1, Math.ceil(claimLimit / 2));
+
+/**
+ * Cron の1回の起動の取得の道具（ブレーカー・politeFetch・取得の数え。BOA-1145 P3）。Cron の口（createScrapeCronHandler と、
+ * オッズの口 createOddsCronHandlerWithPredictionOdds）が使う。数えは20件か60秒で裏で書き、finish() で残りを書く（取得0なら書かない）。
+ * finish は投げない（数える側の失敗は取得・応答に響かせない）。呼ぶ側は try/finally で必ず呼ぶ
+ */
+export function createCronFetchContext({ client, store, now }) {
+  const counter = createFetchCounter({
+    client,
+    source: "vercel",
+    ...(now ? { now } : {}),
+  });
+  const breaker = createCircuitBreaker({
+    store: store.breakerStore,
+    ...(now ? { now: () => now().getTime() } : {}),
+  });
+  return {
+    counter,
+    breaker,
+    politeFetch: createPoliteFetch({ breaker, counter }),
+    finish: () => counter.flush(),
+  };
 }
 
 /**
@@ -298,7 +349,7 @@ async function runWindow({
     return {
       failed: false,
       body: {
-        skipped: "breaker_open",
+        skipped: brk.skipped,
         host: brk.host,
         until: new Date(brk.until).toISOString(),
       },
@@ -314,7 +365,20 @@ async function runWindow({
     });
   }
 
-  const slots = await store.claimSlots({ job, worker, mode });
+  const throttled = throttledKeys(breaker, definition);
+  const throttleInfo =
+    throttled.length > 0
+      ? {
+          throttled,
+          claimLimit: throttledClaimLimit(definition.claimLimit),
+        }
+      : {};
+  const slots = await store.claimSlots({
+    job,
+    worker,
+    mode,
+    ...(throttleInfo.claimLimit ? { limit: throttleInfo.claimLimit } : {}),
+  });
   // offset ごとの許容幅の上書きが効かなかった（マイグレーション092が未適用で、既存の関数へフォールバックした）場合は、
   // 黙って延長が効かない状態を放置しないよう、応答・ジョブ状態の last_report（監視が通知する）に残す。
   // 上書きのあるジョブが、正常に取れた実行では、前回のフォールバックのアラートを消す
@@ -328,7 +392,7 @@ async function runWindow({
   if (slots.length === 0) {
     return {
       failed: false,
-      body: { claimed: 0, ensured, ...fallbackInfo },
+      body: { claimed: 0, ensured, ...fallbackInfo, ...throttleInfo },
     };
   }
 
@@ -461,6 +525,7 @@ async function runWindow({
     outcomes: tally,
     rowsWritten,
     ...fallbackInfo,
+    ...throttleInfo,
   };
   if (allFailed) {
     return { failed: true, firstError: processed[0].error, body };
@@ -500,7 +565,7 @@ async function runLeased({
     return {
       failed: false,
       body: {
-        skipped: "breaker_open",
+        skipped: brk.skipped,
         host: brk.host,
         until: new Date(brk.until).toISOString(),
       },
@@ -597,17 +662,26 @@ export function createScrapeCronHandler({
         .json({ success: false, job, error: "Supabase が設定されていません" });
     }
     const definition = SCRAPE_JOBS[job];
-    const { status, body } = await runScrapeJob({
-      job,
-      definition,
-      store: createStore(client),
-      handleSlot,
-      run,
-      onTick,
-      modeGated: modeGated ?? definition?.kind !== "monitor",
-      client,
-      query: req.query ?? {},
-    });
-    return res.status(status).json(body);
+    const store = createStore(client);
+    const fetching = createCronFetchContext({ client, store });
+    let result;
+    try {
+      result = await runScrapeJob({
+        job,
+        definition,
+        store,
+        handleSlot,
+        run,
+        onTick,
+        modeGated: modeGated ?? definition?.kind !== "monitor",
+        client,
+        query: req.query ?? {},
+        breaker: fetching.breaker,
+        politeFetch: fetching.politeFetch,
+      });
+    } finally {
+      await fetching.finish();
+    }
+    return res.status(result.status).json(result.body);
   };
 }

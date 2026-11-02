@@ -3,7 +3,7 @@ import { test, expect, e2eTodayJST } from "./fixtures.js";
 /**
  * 会場ページの title・description・h1（集客レーン Phase3）の固定。
  *
- * - 本日の /venue/:code: title は「{会場}競艇のAI予想…」で始まる。meta description にも「競艇」が入る
+ * - 本日の /venue/:code: title は「{会場}競艇の予想・出走表…」で始まる（BOA-1189 で「予想・出走表」寄りにした）。meta description にも「競艇」が入る
  *   （画面に表示されないメタ情報。code-style.md 例外1）
  * - 画面の h1 は「{会場} 本日のレース・AI予想」で、「競艇」は出さない
  * - 過去日付の /races/:date/:code は従来の title・h1 のまま
@@ -40,8 +40,10 @@ test.describe("会場ページの title・description・h1", () => {
     await expect(h1).toContainText(`${venue.name} 本日のレース・AI予想`);
     await expect(h1).not.toContainText("競艇");
 
-    await expect(page).toHaveTitle(new RegExp(`^${venue.name}競艇のAI予想`));
-    await expect(page).toHaveTitle(/｜本日の全レース - 龍神レーダー$/);
+    await expect(page).toHaveTitle(
+      new RegExp(`^${venue.name}競艇の予想・出走表`),
+    );
+    await expect(page).toHaveTitle(/｜本日の(全レース)?AI予想 - 龍神レーダー$/);
     const description = await page
       .locator('meta[name="description"]')
       .last()

@@ -4,6 +4,8 @@
  * データは update-outcome-distribution.js（夜間バッチ）が毎日更新する
  */
 
+import { badRequest, queryError, rules } from "../_lib/strictQuery.js";
+
 export const config = {
   runtime: "edge",
 };
@@ -51,18 +53,18 @@ export default async function handler(req) {
     });
   }
 
+  const url = new URL(req.url);
+  // 画面（getOutcomeDistribution）・全貌動画の材料（fetch-materials.mjs）は ?venue_code=1〜24 だけを送る。
+  // 他のキー・値はキャッシュ外しになるので、DB を読む前に拒む（api/_lib/strictQuery.js）
+  const invalid = queryError(
+    url,
+    { venue_code: rules.venueCode },
+    { required: ["venue_code"] },
+  );
+  if (invalid) return badRequest(invalid);
+
   try {
-    const url = new URL(req.url);
-    const venueCode = url.searchParams.get("venue_code");
-
-    if (!venueCode) {
-      throw new Error("venue_code query parameter is required");
-    }
-
-    const parsedVenueCode = parseInt(venueCode, 10);
-    if (isNaN(parsedVenueCode) || parsedVenueCode < 1 || parsedVenueCode > 24) {
-      throw new Error("venue_code must be a number between 1 and 24");
-    }
+    const parsedVenueCode = parseInt(url.searchParams.get("venue_code"), 10);
 
     // outcome_distribution テーブルから該当会場のデータを取得
     const response = await fetch(

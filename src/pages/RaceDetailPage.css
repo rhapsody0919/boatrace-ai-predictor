@@ -541,3 +541,12 @@
       3.6rem;
   }
 }
+
+/* 本日の締切前の見出しの締切時刻（BOA-1189 GS01-c）。日目の札と同じ大きさにそろえる */
+.race-detail-deadline {
+  font-size: 0.6em;
+  font-weight: 600;
+  vertical-align: middle;
+  color: var(--text-primary);
+  white-space: nowrap;
+}

@@ -12,6 +12,10 @@
  *   艇ごとの選手の進入コースの成績（決まり手・期のコース別・進入の分布）と体重、会場のコース別の決まり手も写し、レースの日より後の集計を記録する
  */
 import assert from "node:assert/strict";
+import { s02Check, s02Facts, s02Text } from "../../sns-video-studio/remotion/scripts/full-picture/s02.mjs";
+import { RANK_WORDS, SUB_MAX, VOICE, f01Check, f01Description, f01RacerCheck, f01Script, splitSubs, voiceText } from "../../sns-video-studio/remotion/scripts/full-picture/f01.mjs";
+import { NB, RIGHT, emWidth, layoutRight, racersOf } from "../../sns-video-studio/remotion/src/fullPicture/f01Right.js";
+import { diffOf, diffText, rankOf } from "../../sns-video-studio/remotion/scripts/full-picture/scenes/diff.mjs";
 import { templateLines } from "../../sns-video-studio/remotion/scripts/full-picture/scene2-data.mjs";
 import {
   MAX_WIDTH,
@@ -561,7 +565,8 @@ for (const f of fixtures) {
   const noWind = (scenes) => scenes.map((x) => (x.id === "scene1" ? { ...x, data: { ...x.data, steps: x.data.steps.filter((st) => st.id !== "s1-wind") } } : x));
   const low = noWind(load1("2026-10-12-01-12.json.gz"));
   const lowAns = templateText(allBeats(low)).answers;
-  assert.ok(lowAns["s1-day"].some((l) => l.includes("90日の1着率")), "前提: 完全版の水面の答えは会場の90日の1着率と比べる");
+  // BOA-1157: 当日の数は件数だけで、90日の1着率とも比べない（割合も書かない）
+  assert.ok(!lowAns["s1-day"].some((l) => l.includes("90日") || l.includes("%")), `当日の水面の答えは件数だけ: ${lowAns["s1-day"]}`);
   const eLow = entryScenes(low, lowAns, { race: "桐生12R" });
   assert.ok(!eLow.scenes[0].data.steps.some((st) => st.id === "s1-venue90"), "前提: |z|<1.96 で会場の棒を外す");
   assert.ok(eLow.scenes[0].data.steps.some((st) => st.id === "s1-day"), "前提: 当日の水面の段がある");
@@ -576,7 +581,7 @@ for (const f of fixtures) {
   const noConc = low.map((x) => (x.id === "scene4" ? { ...x, data: { ...x.data, conclusion: null } } : x));
   const eDay = entryScenes(noConc, lowAns, { race: "桐生12R" });
   assert.equal(eDay.hero.source, "day");
-  assert.match(eDay.hero.value, /^\d+\.\d%$/, `水面の数字は小数1桁: ${eDay.hero.value}`);
+  assert.match(eDay.hero.value, /^\d+\/\d+R$/, `水面の数字は件数だけ（BOA-1157）: ${eDay.hero.value}`);
   assert.ok(HERO_MIN_N > 0);
 }
 // 入口版は59秒を越えたら会場の棒、次に今日の条件を外し、それでも越えたら止める
@@ -1644,20 +1649,29 @@ for (const f of fixtures) {
 // ---- 投稿の型（hq PD02、type-spec.mjs・daily.mjs --type-spec）----
 // 型の表は今は空（オーナー 10/25: 中身を固めて試作を見てから載せる）。仕組みは試験用の表で確かめる
 {
-  const { resolveType, lengthRange, lengthReason, listTypes, TYPE_IMPL } = await import(`${R}/scripts/full-picture/type-spec.mjs`);
+  const { resolveType, lengthRange, lengthReason, listTypes, TYPE_IMPL, reviewReasons } = await import(`${R}/scripts/full-picture/type-spec.mjs`);
   const { buildBundle, checkBundle } = await import(`${R}/scripts/full-picture/bundle.mjs`);
   const { mkdtempSync, writeFileSync: wf3, readFileSync: rf3, existsSync: ex3 } = await import("node:fs");
   const { tmpdir } = await import("node:os");
   const { spawnSync } = await import("node:child_process");
   // 型の表に載せるのは関門を通った型だけ。各型に審査の記録と変えてよい幅を持たせる（docs/design/full-picture-type-gate/spec.md の 7）
-  assert.deepEqual(Object.keys(TYPE_IMPL), ["v2r1-answer-fill-explain"]);
-  for (const [id, impl] of Object.entries(TYPE_IMPL)) {
-    for (const k of ["direction", "blindCompare", "channels", "owner"]) assert.ok(typeof impl.review?.[k] === "string" && impl.review[k], `${id}: 審査の記録 ${k} がある`);
-    assert.equal(typeof impl.review.ownerMatchesGate, "boolean", `${id}: 評価役とオーナーの一致の記録`);
-    assert.ok(impl.range && typeof impl.range === "object", `${id}: 変えてよい幅（無ければ {}）`);
-    assert.ok(impl.approved && Object.keys(impl.approved).length, `${id}: 承認した文`);
+  assert.deepEqual(Object.keys(TYPE_IMPL), ["v2r1-answer-fill-explain", "f01-landscape-voice-full"]);
+  for (const [id, impl] of Object.entries(TYPE_IMPL)) assert.deepEqual(reviewReasons(id, impl), [], `${id}: 審査の記録`);
+  // 段5の記録は P0 審査1件（2026-10-27〜）。伏せた比較（blindCompare）は段8を回す型だけの任意
+  const base = { approved: { structure: "x" }, range: {}, review: { direction: "d", owner: "o" } };
+  assert.deepEqual(reviewReasons("t", { ...base, review: { ...base.review, p0Review: { role: "youtube-channel", verdict: "P0 0件", date: "2026-10-28" } } }), [], "P0 審査1件で足りる（伏せた比較なし）");
+  assert.ok(reviewReasons("t", base).some((w) => w.includes("段5の記録")), "段5の記録が無ければ落ちる");
+  assert.ok(reviewReasons("t", { ...base, review: { ...base.review, p0Review: { role: "x", verdict: "P0 0件" } } }).some((w) => w.includes("P0 審査の記録")), "日付が無ければ落ちる");
+  assert.ok(reviewReasons("t", { ...base, review: { ...base.review, channels: "c" }, approved: {} }).some((w) => w.includes("承認した文")));
+  assert.ok(reviewReasons("t", { ...base, review: { owner: "o", channels: "c" } }).some((w) => w.includes("direction")));
+  assert.deepEqual(listTypes().map((x) => x.id), ["v2r1-answer-fill-explain", "f01-landscape-voice-full"]);
+  // 型 f01: hq の文のまま渡せば完全版を f01 で作る印（full）が付く。length_s は完全版の尺の文で、入口版の尺の検査に使わない（run-full）
+  {
+    const f01t = resolveType(listTypes().find((x) => x.id === "f01-landscape-voice-full"));
+    assert.deepEqual(f01t.reasons, []);
+    assert.equal(f01t.impl.full, "f01");
+    assert.equal(lengthRange(f01t.attributes.length_s), null, "f01 の length_s は秒の範囲として読めない（入口版には当てない）");
   }
-  assert.deepEqual(listTypes().map((x) => x.id), ["v2r1-answer-fill-explain"]);
   // 試験用の表: 受け持つ項目と承認した文
   const T = { "t-test": { attrs: ["structure", "length_s"], approved: { structure: "要点1つ", length_s: "25〜30" } } };
   const ok = { id: "t-test", attributes: { structure: "要点1つ", length_s: "25〜30" } };
@@ -1667,7 +1681,9 @@ for (const f of fixtures) {
   assert.deepEqual(resolveType({ id: "e06-data-cheatsheet", attributes: { structure: "早見表", thumb: "表" } }, T).reasons, ["type_unsupported:structure（型 e06-data-cheatsheet は龍神の表に無い）", "type_unsupported:thumb（型 e06-data-cheatsheet は龍神の表に無い）"]);
   assert.deepEqual(resolveType({ ...ok, attributes: { ...ok.attributes, thumb: "表" } }, T).reasons, ["type_unsupported:thumb"], "表の型でも実装していない項目は止める");
   assert.deepEqual(resolveType({ ...ok, attributes: { ...ok.attributes, structure: "要点2つ" } }, T).reasons, ["type_unsupported:structure（文が変わった）"], "同じ id で文が変わった項目は止める（system-architect P2）");
-  assert.deepEqual(resolveType({ id: "x", attributes: { voice: "a" } }, T).reasons, ["type_unsupported:voice（知らない項目）"]);
+  // voice は hq が 10/27 に type_attrs へ足した（型 f01）。知らない項目の例は bgm
+  assert.deepEqual(resolveType({ id: "x", attributes: { bgm: "a" } }, T).reasons, ["type_unsupported:bgm（知らない項目）"]);
+  assert.deepEqual(resolveType({ id: "x", attributes: { voice: "a" } }, T).reasons, ["type_unsupported:voice（型 x は龍神の表に無い）"]);
   assert.match(resolveType({ id: "t-test", attributes: {} }, T).reasons[0], /^type_spec_invalid/);
   assert.ok(resolveType(ok).reasons.length > 0, "表に無い型は止まる");
   assert.deepEqual(lengthRange("25〜30"), [25, 30]);
@@ -1801,7 +1817,7 @@ for (const f of fixtures) {
     const r3 = runDaily(daily, ["--list-types"]);
     assert.equal(r3.status, 0);
     const lt = JSON.parse(r3.stdout);
-    assert.deepEqual(lt.types.map((x) => x.id), ["v2r1-answer-fill-explain"], "型の表は関門を通った型だけ");
+    assert.deepEqual(lt.types.map((x) => x.id), ["v2r1-answer-fill-explain", "f01-landscape-voice-full"], "型の表は関門を通った型だけ");
   }
   // 送信の鍵と一緒に起動されたら止める（--env-file=.env.local で起動した等）
   {
@@ -1944,6 +1960,360 @@ for (const f of fixtures) {
   assert.deepEqual(keyBoatsOf(m), { form: null, boats: [1] }, "鍵の艇も横一線に寄せない");
   const ans = templateText(allBeats(buildAll(m))).answers;
   for (const id of ["s4-slit-course"]) assert.deepEqual(checkLines(ans[id], dn.steps.find((st) => st.id === id).facts, null), [], "当てはまらない言い方も文の検査を通る");
+}
+
+// BOA-1157: 差の向き（高い・低い）は |z|>=1.96 のときだけ言い切る。z は hq の照合（fp_facts.py の pair_z）と同じ2標本の形。
+// 10/26 大村10R の3例は言い切らない（hq の値: s1-venue90 z=1.67、s3-rough 1.67、s1-day は 6/6 で件数が足りず z を出さない）
+{
+  const S = (ka, na, kb, nb) => ({ a: (ka / na) * 100, na, b: (kb / nb) * 100, nb });
+  const cases = [
+    [S(348, 599, 7640, 13985), 1.67, "全国との差は確認できない", "s1-venue90"],
+    [S(23, 33, 224035, 405581), 1.67, "全国との差は確認できない", "s3-rough"],
+    [S(6, 6, 348, 599), null, "全国とは比べられない", "s1-day 6/6"],
+  ];
+  for (const [smp, z, text, what] of cases) {
+    const f = diffOf(smp.a, smp.b, smp);
+    assert.equal(f.z, z, `${what} の z は hq と同じ`);
+    assert.equal(f.direction, null, `${what} は向きを言わない`);
+    assert.equal(diffText("全国", f), text, `${what} の文`);
+    assert.ok(checkLines(["大村の1号艇の1着率58.1%", "全国の54.6%より3.5ポイント高い"], f, null).some((w) => w.includes("z の根拠が無い")), `${what} で「高い」は文の検査で止まる`);
+  }
+  const g = diffOf(60, 50, S(600, 1000, 5000, 10000));
+  assert.equal(g.direction, "高い", "|z|>=1.96 なら今までどおり言い切る");
+  assert.equal(diffText("全国の50.0%", g), "全国の50.0%より10.0ポイント高い");
+  assert.equal(diffOf(40, 50, S(400, 1000, 5000, 10000)).direction, "低い");
+  assert.equal(diffOf(51, 50, null).direction, null, "件数が無ければ言い切らない");
+  assert.equal(diffText("全国", diffOf(50.5, 50, S(505, 1000, 5000, 10000))), "全国との差は1ポイント未満", "1ポイント未満は今までどおり");
+  // 小標本（どちらかが30件未満）は z を出さない。6/6 対 348/599 は z=2.07 でも止める（hq data-scientist 2026-10-27）
+  assert.equal(diffOf(60, 50, S(18, 29, 5000, 10000)).z, null, "29件は z を出さない");
+  // s1-day は件数だけ（割合・ポイント差・90日との比べを書かない。その日の1会場の比べは Bonferroni の線が約3.08）
+  const m = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+  const day = buildAll(m).find((x) => x.id === "scene1").data.steps.find((st) => st.id === "s1-day");
+  assert.ok(day, "前提: s1-day がある");
+  assert.equal(day.facts.direction, null);
+  assert.ok(day.lines.join("").includes("1着") && !/%|90日|高い|低い/.test(day.lines.join("")), `s1-day は件数だけ: ${day.lines.join(" / ")}`);
+  // 順位（最多）の言い切りも z で見る（hq 2026-10-27。7 対 6 は z≈0.28）
+  assert.deepEqual(rankOf(7, 6), { rankZ: 0.28, rankSig: false });
+  assert.equal(rankOf(30, 10).rankSig, true);
+  assert.equal(rankOf(5, 0).rankSig, true, "2位が無ければ言い切ってよい");
+  const sonar = { kind: "sonar", n: 20, top: { boat: 1, count: 7, pct: 35 }, next: { boat: 2, count: 6 }, ...rankOf(7, 6) };
+  assert.ok(checkLines(["類似レース20件で1着最多は1号艇", "7件（35%）、次は2号艇の6件"], sonar, null).some((w) => w.includes("順位を言い切った")), "7 対 6 で「最多」は止まる");
+  for (const st of buildAll(m).flatMap((x) => x.data.steps ?? [])) {
+    if (st.facts?.rankSig === false) assert.ok(!/最多|最高/.test(st.lines.join("")), `${st.id}: 線を通らない順位で最多と言わない: ${st.lines.join(" / ")}`);
+  }
+}
+
+// #1973 Codex P1・hq facts.py（2026-10-27）の再現
+{
+  // P1-1: 有意の判定は丸める前の件数・率で（700件中431勝・基準58.1%は生で z≈1.86、62%に丸めると2.09）
+  const raw = diffOf(62, 58.1, { a: (431 / 700) * 100, na: 700, b: 58.1, nb: 100000 });
+  assert.equal(raw.direction, null, `丸める前の率で判定する（z=${raw.z}）`);
+  // P1-2: 有意差の無い結論の文も字幕の幅（全角22字）に収める（709件・1号艇359・2号艇350）
+  const m = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+  m.api.scenario.scenario.cells.waku.forms.any = { n: 709, tri: { "1-2-3": 359, "2-1-3": 350 } };
+  const d4 = buildAll(m).find((x) => x.id === "scene4").data;
+  for (const c of [d4.conclusionAny, d4.conclusion].filter(Boolean)) {
+    if (c.facts.rankSig === false) assert.ok(!/最多/.test(c.lines.join("")), c.lines.join(" / "));
+    assert.deepEqual(checkLines(c.lines, c.facts, null).filter((w) => /幅|字/.test(w)), [], `結論の文が幅に収まる: ${c.lines.join(" / ")}`);
+  }
+  assert.equal(d4.conclusionAny.facts.rankSig, false, "359 対 350 は線を通らない");
+  // 30件未満の母数に割合を付けない（hq: s4-course-flow「15件の66.7%」）
+  const m2 = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+  m2.api.scenario.scenario.cells.waku.forms.flat = { n: 15, tri: { "1-2-3": 10, "2-1-3": 3, "3-1-2": 2 } };
+  m2.api.scenario.scenario.cells.waku.forms.any = m2.api.scenario.scenario.cells.waku.forms.flat;
+  for (const st of buildAll(m2).flatMap((x) => [...(x.data.steps ?? []), ...(x.data.conclusion ? [x.data.conclusion] : [])])) {
+    if ((st.facts?.n ?? 99) < 30 && /flow|tri|conclusion/.test(st.id)) assert.ok(!/%/.test(st.lines.join("")), `${st.id}: 30件未満に割合: ${st.lines.join(" / ")}`);
+  }
+  // 軸の文「1着なら2着は◯号艇」も2着の1位と2位の差が線を通ったときだけ
+  for (const st of buildAll(m).find((x) => x.id === "scene5").data.steps.filter((x) => x.facts?.kind === "followers" && x.lines.length)) {
+    if (st.facts.rankSig === false) assert.ok(!/2着は\d号艇/.test(st.lines.join("")), `${st.id}: ${st.lines.join(" / ")}`);
+  }
+}
+
+// 型 s02-loss-breakdown-card（関門の段4）: 10/26 大村10R の実数で数字・文・検査
+{
+  const tri = { "1-2-3": 150, "2-1-3": 24, "3-1-2": 14, "4-1-2": 17, "5-1-2": 6, "6-1-2": 1 };
+  const sc = { cells: { waku: { forms: { any: { n: 212, tri } } } }, period: ["2019-04-01", "2026-10-25"] };
+  const f = s02Facts(sc);
+  assert.deepEqual([f.n, f.k, f.m, f.p], [212, 150, 62, 70.8]);
+  assert.deepEqual(f.by.map((x) => x.count), [24, 14, 17, 6, 1], "艇番の順（順位で並べない）");
+  const tx = s02Text(f, { race: "大村10R 準優勝戦", date: "10/26", deadline: "19:36", url: "https://www.boat-ai.jp/race/2026-10-26-24-10" });
+  assert.deepEqual(tx.card.lines, ["過去の1号艇の1着は約7割", "負けた62件、勝ったのは？"], "冒頭は結論から");
+  assert.equal(f.top, null, "24 対 17 は線を通らないので強調しない");
+  assert.ok(tx.xText.includes("過去212件中（2019/4/1〜2026/10/25）、1号艇の1着は150件（70.8%）"), tx.xText);
+  assert.ok(tx.xText.includes("その62件で、勝ったのは何号艇？"));
+  assert.deepEqual(s02Check(f, tx, 39.5), []);
+  assert.ok(s02Check(f, tx, 59.5).some((w) => w.includes("59秒")));
+  assert.ok(s02Check(f, { ...tx, shortsTitle: tx.shortsTitle + " 最多は2号艇" }, 39.5).some((w) => w.includes("順位の語")));
+  assert.equal(s02Facts({ cells: { waku: { forms: { any: { n: 29, tri: {} } } } } }).kind, "thin_data", "30件未満は作らない");
+  assert.equal(s02Facts({ cells: { waku: { forms: { any: { n: 213, tri } } } } }).kind, "count_mismatch", "件数と3連単の和が合わない日は作らない");
+}
+
+// 型 f01 の写しの材料は build が読んだ所だけで、出走表の名前は1艇目だけ・級は無い（make-fixture.mjs が落とす）。
+// f01 の検査では、級を同じ写しの facts.today.classes から、名前を6字（race_entries の最長、2026-09〜の実測）の仮の名前で埋める
+const F01_LONG_NAMES = ["壱壱壱壱壱壱", "弐弐弐弐弐弐", "参参参参参参", "肆肆肆肆肆肆", "伍伍伍伍伍伍", "陸陸陸陸陸陸"];
+const F01_SHORT_NAMES = ["堤昇", "齋藤勇", "西村", "山田", "佐藤", "鈴木"];
+const f01Fixture = (name, names = F01_LONG_NAMES) => {
+  const mf = JSON.parse(gunzipSync(readFileSync(new URL(`${name}.json.gz`, FX))).toString("utf8"));
+  const race = mf.api.races.find((r) => r.raceId === mf.raceId);
+  race.entries = [1, 2, 3, 4, 5, 6].map((b) => ({ ...race.entries.find((e) => e.number === b), number: b, name: names[b - 1], grade: mf.api.facts.today.classes[b - 1] }));
+  return mf;
+};
+
+// 型 f01-landscape-voice-full（関門の段4の試作）: 順位の語は線を通ったときだけ・字幕の幅・声の読みの辞書・説明欄のクレジット・左の画面の照合
+{
+  for (const name of ["2026-10-12-01-12", "2026-10-15-15-10", "2026-10-16-24-11", "2026-10-19-19-10"]) {
+    const mf = f01Fixture(name);
+    const s = f01Script(mf);
+    assert.ok(s.ok, `${name}: ${s.reason}`);
+    for (const c of s.chapters) {
+      const sig = c.facts?.secRank?.rankSig || c.facts?.swap;
+      if (RANK_WORDS.test(c.voice)) assert.ok(sig, `${name} ${c.id}: 線を通らない順位の語: ${c.voice}`);
+      for (const l of c.subs) assert.ok(l.length <= SUB_MAX + 2, `${name} ${c.id}: 字幕 ${l.length}字`);
+    }
+    assert.equal(s.chapters[0].id, "open");
+    assert.equal(s.chapters[0].subs.length, 0, "冒頭は字幕を出さない（見本の「最も多く…次が」は線を通らない）");
+    const desc = f01Description(s, "0:00 冒頭\n");
+    // 今の完全版の説明文の約束（1行目40字以内・2/3行目に機能への導線・URL の utm_term=full）
+    assert.ok(desc.split("\n")[1].includes("tab=sonar") && desc.split("\n")[2].includes("/assist?") && desc.includes("utm_term=full"), desc);
+    assert.ok(desc.includes(VOICE.credit));
+    assert.ok(f01Check(s, { desc: desc.replace(VOICE.credit, ""), kana: {}, shots: {} }).some((w) => w.includes("VOICEVOX")), "クレジットが無ければ落とす");
+  }
+  assert.equal(voiceText("313件・今節"), "313けん・こんせつ");
+  assert.deepEqual(splitSubs("あ。い、う"), ["あ。", "い、う"]);
+  // 照合: 左の画面に右の列の数字が無ければ落とす。読みの辞書: 件がゲンと読まれたら落とす
+  const s0 = { chapters: [{ id: "c2", voice: "", subs: [], expect: ["313件"] }] };
+  assert.ok(f01Check(s0, { desc: VOICE.credit, kana: {}, shots: { c2: { text: "1号艇 78% 31 3件" } } }).length === 0, "空白の違いは同じとみなす");
+  assert.ok(f01Check(s0, { desc: VOICE.credit, kana: {}, shots: { c2: { text: "1号艇 78% 312件" } } }).some((w) => w.includes("313件")));
+  assert.ok(f01Check({ chapters: [] }, { desc: VOICE.credit, kana: { "c2-1": "サンビャクジュウサン/ゲン" }, shots: {} }).some((w) => w.includes("ゲン")));
+  // --bundle-only は作り済みの f01 を読む（読めないと voice_credit が false になり bundle が落ちた。Codex P1 #2011）
+  {
+    const { loadF01 } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const { mkdtempSync, writeFileSync: wf } = await import("node:fs");
+    const { tmpdir: td } = await import("node:os");
+    const dir = mkdtempSync(`${td()}/f01-`);
+    assert.deepEqual(loadF01(dir).reasons, ["type_unsupported:f01_missing"], "作り済みが無ければ止める（今の型で代えない）");
+    for (const f of ["f01.mp4", "thumb.png"]) wf(`${dir}/${f}`, "x");
+    wf(`${dir}/f01.json`, JSON.stringify({ title: "題", seconds: 137.6 }));
+    wf(`${dir}/description.txt`, `1行目\n音声: ${VOICE.credit}`);
+    wf(`${dir}/chapters.txt`, "0:00 冒頭\n");
+    const r = loadF01(dir);
+    assert.deepEqual(r.reasons, []);
+    assert.ok(r.description.includes(VOICE.credit) && r.title === "題" && r.thumb.endsWith("thumb.png"));
+  }
+  // ②の1着の件数は画面と同じ数え方（1〜3着がそろった類似レースだけ）。着順の欠けたレースを数えると画面と食い違い、照合で止まった（10/30 児島10R 293 対 291）
+  {
+    const mf = f01Fixture("2026-10-19-19-10");
+    const nb = mf.api.similar?.similar?.neighbors;
+    if (nb?.length) {
+      nb[0] = { ...nb[0], finish: [nb[0].finish?.[0] ?? 1] }; // 1着だけ分かっているレース
+      const c2 = f01Script(mf).chapters.find((c) => c.id === "c2");
+      const flow = buildAll(mf).find((x) => x.id === "scene2b").data.steps.find((x) => x.id === "s2b-flow-1");
+      assert.ok(c2 && flow, "類似レースの章と着順の流れがある");
+      assert.equal(c2.facts.counts.reduce((a, b) => a + b, 0), flow.page.n, "1着の件数の和は着順のそろった件数（画面の棒と同じ）");
+    }
+  }
+  // 字の小ささ（hq 11d 節、10/30 に7章が 13.5〜21px）: 線を下回る撮った物の章・最初のカットを撮れなかった章は出さない。
+  // ④は「軸のボタン → 2着の棒 → 軸のボタン（カーソル）→ 押した後 → 2着の棒」の順に、声の行に合わせて切り替える
+  {
+    const { f01SmallChapters, f01Timeline, MIN_FONT_PX, PLAN } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const sh = (k, px, clip = { x: 0, y: 0, w: 400, h: 150 }) => ({ file: `/x/${k}.png`, clip, scale: 2.8, minFontPx: px });
+    const s1 = { chapters: [{ id: "c2" }, { id: "c3" }, { id: "c4" }, { id: "c5" }] };
+    const shots1 = { c2: sh("c2", 26.4), c3: sh("c3", MIN_FONT_PX - 0.1), c4: sh("c4", 29.8), c4b: sh("c4b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };
+    assert.deepEqual(f01SmallChapters(s1, shots1).map((x) => x.id), ["c3", "c5"], "線の下（c3）と撮れなかった章（c5）を省く");
+    assert.deepEqual(PLAN.c4.map((p) => p.k), ["c4", "c4b", "c4", "c42", "c42b"]);
+    // オーナー 11/2「22.4px の章は2カットに分けて」: 線は 24px。着順の流れは押した後を上・下、形の札は図と名前の2カット
+    assert.equal(MIN_FONT_PX, 24);
+    assert.deepEqual(PLAN.c2.map((p) => p.k), ["c2", "c2-pre", "c22", "c22b"]);
+    assert.deepEqual(PLAN.c3.map((p) => p.k), ["c3i", "c3", "c3-pre", "c32", "c32b"]);
+    // 押す帯が下半分のとき、押す前のカット（下半分）のカーソルはそのカットの座標で、帯の中を指す（#2087 の審査）
+    {
+      const half = { x: 40, y: 0, w: 440, h: 233 };
+      const band = { x: 61, y: 300, w: 24, h: 90 }; // 元の図（高さ440）で下半分にある帯
+      const shift = 440 * 0.47;
+      const shots3 = {
+        c2: sh("c2", 26.4),
+        "c2-pre": { ...sh("c2-pre", 30.4, half), cursor: { ...band, y: band.y - shift } },
+        c22: { ...sh("c22", 30.4, half), cursor: band },
+        c22b: sh("c22b", 30.4, half),
+      };
+      const l3 = ["次に、類似レースのタブ。", "1号艇が勝った313件では、2着は2号艇が137件で最も多い。"];
+      const v3 = { lines: l3.map((sub, i) => ({ chapter: "c2", i, sub, file: `w${i}.wav`, sec: 4 })) };
+      const pre = f01Timeline({ chapters: [{ id: "c2", name: "類似レース", subs: l3 }] }, v3, shots3).props.chapters[0].cuts.find((c) => c.file === "c2-pre.png");
+      const cy = pre.cursor.y + pre.cursor.h / 2;
+      assert.ok(cy >= 0 && cy <= half.h && pre.cursor.y === band.y - shift, `カーソルが押す前のカットの中の帯を指す（y=${pre.cursor.y}）`);
+    }
+    assert.deepEqual(f01SmallChapters({ chapters: [{ id: "c2" }] }, { c2: sh("c2", 26.4), "c2-pre": sh("c2-pre", 30.4), c22: sh("c22", 22.4), c22b: sh("c22b", 30.4) }).map((x) => x.id), ["c2"], "1カットで 22.4px の着順の流れは線の下");
+    const lines = ["ここからは思考アシスト。", "軸を選ぶと、相手の割合が出る。", "大村で1号艇が1着の11,160件では、", "2着は2号艇が34.7%。", "軸を4号艇に変えると、1,375件で、", "2着は1号艇が37%に入れ替わる。"];
+    const voice = { lines: lines.map((sub, i) => ({ chapter: "c4", i, sub, file: `v${i}.wav`, sec: 2 })) };
+    const shots2 = { ...shots1, c42: { ...sh("c42", 29.8), cursorFrom: { x: 1, y: 1, w: 10, h: 10 } }, c42b: sh("c42b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };
+    const { props } = f01Timeline({ chapters: [{ id: "c4", name: "相手", subs: lines }] }, voice, shots2);
+    const cuts = props.chapters[0].cuts;
+    assert.deepEqual(cuts.map((c) => c.file), ["c4.png", "c4b.png", "c4.png", "c42.png", "c42b.png"]);
+    assert.ok(cuts.every((c, i) => i === 0 || c.from >= cuts[i - 1].from), "切り替えは時刻の順");
+    assert.ok(cuts[2].cursor && cuts[3].from === cuts[2].from + 15, "押す前の画面でカーソルを動かし、0.5秒後に押した後へ");
+    assert.equal(cuts[0].boxH, cuts[3].boxH, "同じ部品（軸のボタン）は同じ箱の高さ（切り替えで位置がずれない）");
+    // 章を省いても（声は voice.lines に残る）動画の時間の並びを作れる（Codex P1 #2075: audio.find が undefined で落ちた）
+    const voice2 = { lines: [...voice.lines, { chapter: "c3", i: 0, sub: "省いた章の声", file: "c3-0.wav", sec: 3 }] };
+    const r2 = f01Timeline({ chapters: [{ id: "c4", name: "相手", subs: lines }] }, voice2, shots2);
+    assert.ok(r2.props.total > 0 && !r2.props.audio.some((x) => x.file === "c3-0.wav"), "省いた章の声は置かない");
+  }
+  // 照合は桁区切りを比べない（画面「1,553件」・台本「1553件」で 11/01 14-10 が止まった）
+  {
+    const s4 = { chapters: [{ id: "c3", voice: "", subs: [], expect: ["横一線"], expect2: ["1553件"] }] };
+    assert.deepEqual(f01Check(s4, { desc: VOICE.credit, kana: {}, shots: { c3: { text: "横一線" }, c32: { text: "1 1,553件 2 512件" } } }), []);
+    const s5 = { chapters: [{ id: "c3", voice: "", subs: [], expect2: ["1,553件"] }] };
+    assert.deepEqual(f01Check(s5, { desc: VOICE.credit, kana: {}, shots: { c32: { text: "1553件" } } }), []);
+    assert.ok(f01Check(s5, { desc: VOICE.credit, kana: {}, shots: { c32: { text: "1,552件" } } }).length === 1, "違う数は落とす");
+  }
+  // 撮影の時間切れは1回だけ撮り直す（オーナー 11/2）。時間切れ以外はやり直さない、2回とも時間切れなら止める
+  {
+    const { retryOnTimeout } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const timeout = () => Object.assign(new Error("locator.click: Timeout 30000ms exceeded."), { name: "TimeoutError" });
+    let n = 0;
+    const warned = [];
+    const r1 = await retryOnTimeout(async () => {
+      n += 1;
+      if (n === 1) throw timeout();
+      return "shots";
+    }, (e) => warned.push(e.message));
+    assert.deepEqual([r1.value, r1.retries, n, warned.length], ["shots", 1, 2, 1], "1回目が時間切れ・2回目が通る");
+    n = 0;
+    await assert.rejects(
+      retryOnTimeout(async () => {
+        n += 1;
+        throw timeout();
+      }),
+      (e) => e.name === "TimeoutError" && e.retries === 1 && n === 2,
+      "2回とも時間切れなら止める（やり直しは1回だけ）",
+    );
+    n = 0;
+    await assert.rejects(
+      retryOnTimeout(async () => {
+        n += 1;
+        throw new Error("類似レースの1着の棒の行が見つからない");
+      }),
+      () => n === 1,
+      "時間切れ以外はやり直さない",
+    );
+    assert.deepEqual(await retryOnTimeout(async () => "ok"), { value: "ok", retries: 0 });
+  }
+  // 選手名を声で読まない
+  assert.ok(f01Check({ chapters: [{ id: "c1", voice: "西村は", subs: [] }] }, { desc: VOICE.credit, kana: {}, shots: {}, names: ["西村"] }).some((w) => w.includes("選手名")));
+
+  // 右の列と冒頭の棒に、艇番の隣の「フルネーム 級」（オーナーの恒久の決まり 2026-11-01。10/30 丸亀9R の f01.json では名前も級も0件だった）
+  {
+    for (const name of ["2026-10-12-01-12", "2026-10-15-15-10", "2026-10-16-24-11", "2026-10-19-19-10"]) {
+      const mf = f01Fixture(name);
+      const s = f01Script(mf);
+      const { racers } = racersOf(mf);
+      assert.deepEqual(f01RacerCheck(s, racers), [], `${name}: 名前と級が出走表と一致し、6字の名前でも右の列に収まる`);
+      let named = 0;
+      for (const id of ["open", "c1", "c2", "c3", "c4", "c5"]) {
+        const c = s.chapters.find((x) => x.id === id);
+        if (!c) continue;
+        const texts = c.open ? c.open.bars.map((b) => `${b.boat}号艇${NB}${b.name}${NB}${b.grade}`) : [c.scope, c.answer, c.answer2].filter(Boolean);
+        const boats = texts.join(" ").match(/\d号艇/g) ?? [];
+        named += boats.length;
+        // 今日の6艇の属性（c1・c5・冒頭の棒）は「N号艇 名前 級」、過去の集計（c2〜c4）は「N号艇（今日は名前 級）」
+        const form = (b) => (["c2", "c3", "c4"].includes(id) ? `${b}（今日は${racers[b[0]].name}${NB}${racers[b[0]].grade}）` : `${b}${NB}${racers[b[0]].name}${NB}${racers[b[0]].grade}`);
+        for (const b of boats) assert.ok(texts.join(" ").includes(form(b)), `${name} ${id}: ${b}の隣に名前と級`);
+        // 範囲の行に名前を入れない（集計が個人の成績に読まれる。x-channel P0 #2079）
+        for (const r of Object.values(racers)) assert.ok(!(c.scope ?? "").includes(r.name), `${name} ${id}: 範囲の行に名前`);
+        // 行ごとの幅（見積りは Noto Sans JP の実測以上。2026-11-01 に Chromium で 10 種を測って確かめた）
+        if (c.right) for (const k of ["scope", "answer", "answer2"]) for (const l of c.right[k].lines) assert.ok(emWidth(l) * c.right[k].size <= RIGHT.w, `${name} ${id}: 「${l}」が幅を越える`);
+      }
+      assert.ok(named >= 3, `${name}: 右の列に名前と級の付いた艇が出る（${named}）`);
+      // 声は艇番だけ（名前は読まない）
+      for (const c of s.chapters) for (const n of F01_LONG_NAMES) assert.ok(!c.voice.includes(n), `${name} ${c.id}: 声に名前`);
+    }
+    // 短い名前（2〜3字）でも、艇と、その艇の数字を別の行に分けない（行末が級・行頭が数字だと、数字が次の艇のものに読める。/code-review #2079）
+    for (const name of ["2026-10-12-01-12", "2026-10-15-15-10", "2026-10-16-24-11", "2026-10-19-19-10"]) {
+      const ms = f01Fixture(name, F01_SHORT_NAMES);
+      const s = f01Script(ms);
+      assert.deepEqual(f01RacerCheck(s, racersOf(ms).racers), [], name);
+      for (const c of s.chapters.filter((x) => x.right?.ok))
+        for (const k of ["answer2"])
+          for (const l of c.right[k].lines) assert.ok(!/^[\d,.]+(件|項目|%)(・|$)/.test(l), `${name} ${c.id} ${k}: 「${l}」が数字から始まる（前の行の艇の数字が落ちた）`);
+    }
+    // 艇と数字の組（例: c3 の2着の3艇）は、どの名前の長さでも同じ行
+    {
+      const lines = layoutRight({ answer2: `2着${NB}2号艇${NB}西村${NB}A1${NB}1,041件・3号艇${NB}山田${NB}A1${NB}30件・4号艇${NB}佐藤${NB}A1${NB}20件`, path: "p" }).answer2.lines;
+      assert.ok(lines.every((l) => /号艇\u00a0[^\u00a0]+\u00a0[AB][12]\u00a0[\d,]+件$/.test(l)), JSON.stringify(lines));
+    }
+    // 出走表の読み方（艇番の対応、名前の空白を詰める、級が A1〜B2 でなければ欠け）
+    {
+      const r = racersOf({ raceId: "x", api: { races: [{ raceId: "x", entries: [{ number: 2, name: "篠崎　　仁志", grade: "A1" }, { number: 1, name: "梶原　　　正", grade: "B1" }, { number: 3, name: "西村 拓也", grade: "x" }] }] } });
+      assert.deepEqual(r.racers, { 1: { name: "梶原正", grade: "B1" }, 2: { name: "篠崎仁志", grade: "A1" } });
+      assert.deepEqual(r.missing, [3, 4, 5, 6]);
+    }
+    const mf = f01Fixture("2026-10-19-19-10");
+    const s = f01Script(mf);
+    const { racers } = racersOf(mf);
+    // 範囲の行に名前を入れたら落とす。過去の集計の形「（今日は名前 級）」も出走表と照合する
+    assert.ok(f01RacerCheck({ chapters: [{ id: "c4", scope: `丸亀の全期間 3号艇${NB}${racers[3].name}${NB}${racers[3].grade}が1着`, answer: `軸 3号艇（今日は${racers[3].name}${NB}${racers[3].grade}）`, right: { ok: true, minFontPx: 32 } }] }, racers).some((w) => w.includes("範囲の行に選手名")));
+    assert.ok(f01RacerCheck({ chapters: [{ id: "c4", answer: `軸 3号艇（今日は別人${NB}A1）`, right: { ok: true, minFontPx: 32 } }] }, racers).some((w) => w.includes("出走表")));
+    // 出走表と違う名前・級は落とす
+    assert.ok(f01RacerCheck(s, { ...racers, 1: { ...racers[1], grade: racers[1].grade === "A1" ? "A2" : "A1" } }).some((w) => w.includes("出走表")), "級の違いを落とす");
+    assert.ok(f01RacerCheck(s, { ...racers, 1: { ...racers[1], name: "別人" } }).some((w) => w.includes("出走表")), "名前の違いを落とす");
+    // 艇番だけ（名前と級が隣に無い）を落とす
+    const bare = { chapters: [{ id: "c2", scope: "x", answer: "1着 1号艇 322件", right: layoutRight({ answer: "1着 1号艇 322件", path: "p" }) }] };
+    assert.ok(f01RacerCheck(bare, racers).some((w) => w.includes("名前と級が無い")), "艇番だけを落とす");
+    // 欠けたら作らない（黙って空にしない）
+    for (const drop of [{ grade: null }, { name: "" }, { grade: "C1" }]) {
+      const m2 = f01Fixture("2026-10-19-19-10");
+      const race = m2.api.races.find((r) => r.raceId === m2.raceId);
+      Object.assign(race.entries[2], drop);
+      const r2 = f01Script(m2);
+      assert.equal(r2.ok, false, JSON.stringify(drop));
+      assert.equal(r2.kind, "racer_name_grade");
+      assert.ok(r2.reason.includes("3号艇"));
+    }
+    // 右の列: 収まらなければ字を縮め、縮めても下の線を越えたら ok=false（その章は検査で落ちる）
+    const six = [1, 2, 3, 4, 5, 6].map((b) => `${b}号艇${NB}${F01_LONG_NAMES[b - 1]}${NB}A1`).join("・");
+    const lo = layoutRight({ tag: "龍神ソナー ＞ 差がつく材料", scope: "今日の6艇・5項目", answer: `${six}\nそれぞれ 2項目`, answer2: "5項目のうち2位以内に入った数", path: "p" });
+    assert.ok(!lo.ok || lo.answer.size < 64, "6艇が並ぶと字を縮めるか、収まらない");
+    const huge = layoutRight({ answer: `${six}・${six}`, answer2: six, path: "p" });
+    assert.equal(huge.ok, false, "下の線を越えたら収まらない");
+    assert.ok(f01RacerCheck({ chapters: [{ id: "c1", answer: "x", right: huge }] }, racers).some((w) => w.includes("右の列が収まらない")));
+    // 名前と級の塊は折り返さない（「品川二千翔」と「A1」が別の行に分かれない）
+    const one = layoutRight({ answer: `2着 1号艇${NB}${F01_LONG_NAMES[0]}${NB}A1 41.9%`, path: "p" });
+    assert.ok(one.ok && one.answer.lines.some((l) => l.includes(`1号艇${NB}${F01_LONG_NAMES[0]}${NB}A1`)));
+  }
+}
+
+// ---- f01 の c12: 撮る画面の時点を材料にそろえる（2026-11-02、10-30 15場9R・11-01 4場10R で「5項目中」対「6項目中」）----
+// 出走表の段の facts の応答も status は exhibition_ready で exhibition は null。画面は既定で展示後になり、値の無い展示タイムの軸を
+// 数えた（n だけ +1、値の無い軸は2位以内に数えないので k は同じ）。撮影は材料の時点（pageStageOf）を押してから撮る
+{
+  const { buildScene2 } = await import(`${R}/scripts/full-picture/scene2-data.mjs`);
+  const { pageStageOf } = await import(`${R}/scripts/full-picture/f01-capture.mjs`);
+  const { radarAxisItems, radarBoats, todayValues } = await import("../../src/utils/analogyFacts.js");
+  const m = JSON.parse(gunzipSync(readFileSync(new URL(fixtures[0], FX))).toString("utf8"));
+  const facts = m.api.facts?.data ?? m.api.facts;
+  const resp = { ...facts, status: "exhibition_ready", exhibition: null };
+  const s2 = buildScene2(resp);
+  const site = (stage) => {
+    const items = radarAxisItems(resp.today, stage === "exhibition");
+    const boats = radarBoats(resp.today, resp.facts, todayValues(resp.today, resp.exhibition), items, 1, null);
+    return { n: items.length, top2: boats.map((b) => b.top2) };
+  };
+  assert.equal(m.stage, "racecard");
+  assert.equal(pageStageOf(m), "racecard", "材料が出走表なら画面も出走表で撮る");
+  assert.equal(pageStageOf({ stage: "exhibition" }), "exhibition");
+  assert.equal(pageStageOf({}), "racecard", "時点の無い材料は出走表");
+  const want = site(pageStageOf(m));
+  assert.equal(want.n, s2.radar.axes.length, "撮る時点の画面の「N項目中」と f01 の項目の数が同じ");
+  assert.deepEqual(want.top2, s2.radar.boats.map((b) => b.top2), "「k 項目で2位以内」の k も同じ");
+  // 直す前（展示後のまま撮った）は n だけずれた
+  const old = site("exhibition");
+  assert.equal(old.n, s2.radar.axes.length + 1, "展示後の画面は値の無い展示タイムの軸を数える");
+  assert.deepEqual(old.top2, want.top2, "値の無い軸は k を変えない");
+  // 展示後の材料なら展示タイムの軸が入り、画面（展示後）と同じ
+  const ex = { ...resp, exhibition: { exh_time: [6.6, 6.7, 6.8, 6.75, 6.72, 6.81] } };
+  const s2e = buildScene2(ex);
+  assert.ok(s2e.radar.axes.some((a) => a.key === "exh_time"));
+  assert.equal(radarAxisItems(ex.today, true).length, s2e.radar.axes.length, "展示後の材料は展示後の画面と同じ項目の数");
 }
 
 console.log("verify-full-picture-scene2: OK");

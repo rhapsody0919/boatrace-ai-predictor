@@ -1,0 +1,15 @@
+{
+  "$comment": "repo の外の読み手（hq 等）を手で足す欄。docs/reference/data-readers.md に載る。kind は table か rpc、name は本番スキーマの写しにある名前、access は read か write、columns は任意（写しの列の名前。確かめた列だけを書き、分からなければ書かない＝全部の列を読みうる扱い）。表・列・RPC を止める・消す前に、ここに載った読み手の持ち主へ先に知らせる。消すのは読み手が参照を外したとき",
+  "readers": [
+    {
+      "kind": "table",
+      "name": "predictions",
+      "reader": "platform/finals_sheet.py",
+      "repo": "hq",
+      "access": "read",
+      "detail": "廃止した3モデルのうち safeBet の予想（BOA-1124 の記述では predictions.safeBet.top3）を「龍神の本線」として読む。読む経路（表・RPC・API のどれか）と列は未確認。3モデルの生成を止める前に hq 側の参照を外す",
+      "source": "BOA-1124",
+      "addedAt": "2026-10-27"
+    }
+  ]
+}

@@ -11,7 +11,8 @@
  * 1) xVideo        … data/analysis/x-posts/history.json の本日投稿状況
  * 2) racerNews     … 要確認リストの pending件数（DBの表 racer_news_pending＋移行期間の
  *                    data/analysis/racer-news-pending-review/pending.json を id で統合。DBが優先）
- * 3) growthSkills  … data/analysis/{x,note}-growth/ の最新レポート鮮度
+ * 3) growthSkills  … data/analysis/x-growth/ の最新レポート鮮度（note-growth は note.com/boatai の
+ *                    noindex が解除されるまで出さない。2026-10-27 オーナー決定、docs/knowledge/note.md）
  * 4) contentIndex  … docs/design/content-ops-flow/spec.md C5
  * 5) qualityBacklog… docs/design/content-ops-flow/spec.md C6
  * 6) recentFlowA   … docs/design/content-ops-flow/spec.md A4（sns-hub の型・題材の選び方への素材提示）
@@ -26,6 +27,11 @@
  * 10) pendingInsights… sns_strategy_insightsのstatus='proposed'（要判断）件数
  *     （content-ops.md フローC-11）。戦略メモの手動採用ボタン（PR #514）が
  *     セッション開始時チェックを欠いたまま滞留するのを防ぐ
+ * 11) schemaSnapshot… 本番スキーマの写し docs/reference/schema-snapshot.json が7日以上古いか、
+ *     台帳 docs/db-migration/APPLIED.md より古い（本番と食い違う）か（ADR-0102）。写しの後に
+ *     「適用済み」になったファイルがあるか、取得（capturedAt）から7日以上なら stale=true と理由・
+ *     取り直しのコマンドを出す。日数は台帳に載らない変更（SQL Editor で直に当てた等）を拾うため
+ *     （オーナー 2026-10-27）。写しの取得日と台帳を読むだけで、DB には触れない
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -47,10 +53,17 @@ import {
   createDbPendingStore,
   mergePendingLists,
 } from "../lib/racerNews/pendingReview.js";
+import {
+  LEDGER_FILE,
+  SNAPSHOT_FILE,
+  snapshotFreshness,
+} from "../lib/schemaSnapshot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
 const VISUAL_ASSET_STALE_DAYS = 90;
+// 本番スキーマの写しを日数でも取り直す（台帳に載らない変更を拾うため。オーナー 2026-10-27）
+const SCHEMA_SNAPSHOT_STALE_DAYS = 7;
 
 async function readJsonSafe(relPath, fallback) {
   try {
@@ -140,14 +153,55 @@ async function latestReportAgeDays(dirRelPath) {
 }
 
 async function checkGrowthSkillsFreshness() {
-  const [xGrowth, noteGrowth] = await Promise.all([
-    latestReportAgeDays("data/analysis/x-growth"),
-    latestReportAgeDays("data/analysis/note-growth"),
-  ]);
-  return {
-    xGrowth,
-    noteGrowth,
-  };
+  // note-growth の鮮度は出さない。note.com/boatai は noindex で、解除まで note の記事を作らず
+  // /note-growth-report も勧めない（2026-10-27 オーナー決定、docs/knowledge/note.md）。
+  // 解除されたら data/analysis/note-growth を戻す。
+  const xGrowth = await latestReportAgeDays("data/analysis/x-growth");
+  return { xGrowth };
+}
+
+async function checkSchemaSnapshot(now = new Date()) {
+  try {
+    const [snapshotText, ledger] = await Promise.all([
+      fs.readFile(path.join(REPO_ROOT, SNAPSHOT_FILE), "utf-8"),
+      fs.readFile(path.join(REPO_ROOT, LEDGER_FILE), "utf-8"),
+    ]);
+    const snapshot = JSON.parse(snapshotText);
+    const freshness = snapshotFreshness(snapshot, ledger);
+    const capturedMs = Date.parse(snapshot.capturedAt);
+    if (!Number.isFinite(capturedMs)) {
+      throw new Error(
+        `capturedAt が日時として読めない（${snapshot.capturedAt}）`,
+      );
+    }
+    const ageDays = Math.floor((now.getTime() - capturedMs) / 86400000);
+    // 台帳に載らない変更（SQL Editor で直に当てた等）は台帳の比較で出ないので、日数でも取り直す
+    const tooOld = ageDays >= SCHEMA_SNAPSHOT_STALE_DAYS;
+    const stale = freshness.stale || tooOld;
+    return {
+      ...freshness,
+      stale,
+      reasons: [
+        ...(freshness.stale
+          ? ["台帳で写しの後に適用済みになったファイルがある"]
+          : []),
+        ...(tooOld
+          ? [`取得から${ageDays}日（${SCHEMA_SNAPSHOT_STALE_DAYS}日以上）`]
+          : []),
+      ],
+      capturedAt: snapshot.capturedAt,
+      ageDays,
+      staleThresholdDays: SCHEMA_SNAPSHOT_STALE_DAYS,
+      command: stale
+        ? "gh pr list --search schema-snapshot.json で開いた取り直しの PR が無いことを確かめ、git fetch で master の台帳に合わせてから node --env-file=.env.local scripts/db/schema-snapshot.js で取り直し、PR にする（ADR-0102）"
+        : undefined,
+    };
+  } catch (error) {
+    return {
+      stale: null,
+      error: `${SNAPSHOT_FILE} の鮮度を確かめられない: ${error.message}`,
+    };
+  }
 }
 
 async function main() {
@@ -163,6 +217,7 @@ async function main() {
     missingContentIndex,
     contentQualityAudit,
     pendingInsights,
+    schemaSnapshot,
   ] = await Promise.all([
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
     checkRacerNewsPending(),
@@ -187,6 +242,7 @@ async function main() {
       error: error.message,
     })),
     checkPendingInsights(),
+    checkSchemaSnapshot(),
   ]);
 
   const staleVisualAssets = visualAssetAge.assets.filter(
@@ -218,6 +274,7 @@ async function main() {
           : undefined,
     },
     pendingInsights,
+    schemaSnapshot,
   };
 
   if (process.argv.includes("--json")) {

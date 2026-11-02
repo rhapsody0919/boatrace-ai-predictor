@@ -137,9 +137,11 @@ const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
 
 export default function RacerPerformanceStats({
   racerId,
+  racerName,
   stats,
   loading,
   todayVenueCode,
+  onHistoryStateChange,
 }) {
   const { t } = useTranslation();
   // 推移グラフのツールチップの見出し。日付だけだと同じ日の2走を見分けられない（BOA-583）
@@ -204,6 +206,16 @@ export default function RacerPerformanceStats({
     vcHistoryState.fetching;
   const vcHistoryError =
     vcHistoryState.racerId === racerId && vcHistoryState.error;
+
+  // 履歴はレース一覧・ST推移・条件別の共通入力。別選手の履歴は未完了とする。
+  const snapshotHistoryState = vcHistoryError
+    ? "error"
+    : vcHistory === null
+      ? "loading"
+      : vcHistory.length ? "done" : "empty";
+  useEffect(() => {
+    onHistoryStateChange?.({ racerId, state: snapshotHistoryState });
+  }, [racerId, snapshotHistoryState, onHistoryStateChange]);
 
   useEffect(() => {
     // 決まり手・推移・レース一覧を常時表示するため（ADR-0063）、フィルタ操作を
@@ -446,20 +458,31 @@ export default function RacerPerformanceStats({
     hasCourseStats ||
     hasVenueStats;
 
+  // 見出しに選手名を入れる（「選手名 成績」の語を見出しにも出す。seo-marketer GS00）
+  const heading = racerName ? (
+    <>
+      <span translate="no">{racerName}</span>の成績・調子
+    </>
+  ) : (
+    "成績・調子"
+  );
+
   if (loading) {
     return (
-      <div className="racer-performance-stats">
-        <h2>成績・調子</h2>
+      <div className="racer-performance-stats" data-snapshot-history={snapshotHistoryState}>
+        <h2>{heading}</h2>
         <p className="racer-stat-loading">読み込み中...</p>
       </div>
     );
   }
 
-  if (!hasAnyData) return null;
+  if (!hasAnyData) {
+    return <span hidden data-snapshot-history={snapshotHistoryState} />;
+  }
 
   return (
-    <div className="racer-performance-stats">
-      <h2>成績・調子</h2>
+    <div className="racer-performance-stats" data-snapshot-history={snapshotHistoryState}>
+      <h2>{heading}</h2>
 
       {/* フィルタ: 見出し直下・最上部に常時表示（ADR-0063）。venueStatsが
           空（出走実績が薄い選手）でも全会場を選べるようにするため、この
@@ -615,13 +638,19 @@ export default function RacerPerformanceStats({
               </span>
               {aggregatedStats?.flying_rate > 0 && (
                 <span className="racer-stat-sub">
+                  {/* 期間と走数を添える。公式の期別成績（その期の F の回数）と別の集計だと分かるように（ファン評価 GS00 3周目） */}
                   F率 {(aggregatedStats.flying_rate * 100).toFixed(1)}%
+                  （当サイト集計・2025年12月以降
+                  {aggregatedStats.total_races > 0
+                    ? `・${aggregatedStats.total_races}走`
+                    : ""}
+                  ）
                 </span>
               )}
             </div>
             <p className="racer-stat-note">
               {officialAvgSt?.period
-                ? `${slashDate(officialAvgSt.period.calcFrom)}〜${slashDate(officialAvgSt.period.calcTo)} の成績（勝率と同じ期の公式の期別成績）・全会場`
+                ? `${slashDate(officialAvgSt.period.calcFrom)}〜${slashDate(officialAvgSt.period.calcTo)} の公式の期別成績・全会場（「選手調子（全国勝率）」は出走表の値で、集計の期間が違います）`
                 : "公式の期別成績・全会場"}
             </p>
             <p className="racer-stat-note">
@@ -678,7 +707,7 @@ export default function RacerPerformanceStats({
           </h3>
           <StatBreakdownTable
             translateNo
-            headers={["会場", "出走数", "勝率", "2連率", "3連率"]}
+            headers={["会場", "出走数", "1着率", "2連率", "3連率"]}
             rows={venueStats.map((row) => ({
               key: row.venue_code,
               onClick: () => setVcVenue(String(row.venue_code)),
@@ -697,14 +726,14 @@ export default function RacerPerformanceStats({
       {!vcVenueFixed && !vcBoatFixed && hasCourseStats && (
         <div className="racer-technique-profile">
           <h3>
-            枠番別成績（全会場計）
+            枠番別成績（当サイト集計・2025年12月以降・全会場計）
             <span className="h3-hint">枠番をクリックで絞り込み →</span>
           </h3>
           <p className="racer-vc-note">
-            ※実際の進入コース変化（前づけ）は現時点では区別できないため、発走前に決まる枠番（艇番）基準で表示しています
+            ※何号艇で出たかで分けた成績です。実際に入ったコースで分けた成績は、公式の期別成績がある選手なら上の「進入コース別成績（公式）」にあります
           </p>
           <StatBreakdownTable
-            headers={["枠番", "出走数", "勝数", "勝率", "2連率", "3連率"]}
+            headers={["枠番", "出走数", "勝数", "1着率", "2連率", "3連率"]}
             rows={courseStats.map((row) => ({
               key: row.course,
               onClick: () => setVcBoat(String(row.course)),
@@ -729,7 +758,7 @@ export default function RacerPerformanceStats({
           </h3>
           {vcCrossData && vcCrossData.length > 0 ? (
             <StatBreakdownTable
-              headers={["枠番", "出走数", "勝率", "2連率", "3連率"]}
+              headers={["枠番", "出走数", "1着率", "2連率", "3連率"]}
               rows={vcCrossData.map((row) => ({
                 key: row.key,
                 onClick: () => setVcBoat(String(row.key)),
@@ -760,7 +789,7 @@ export default function RacerPerformanceStats({
           {vcCrossData && vcCrossData.length > 0 ? (
             <StatBreakdownTable
               translateNo
-              headers={["会場", "出走数", "勝率", "2連率", "3連率"]}
+              headers={["会場", "出走数", "1着率", "2連率", "3連率"]}
               rows={vcCrossData.map((row) => ({
                 key: row.key,
                 onClick: () => setVcVenue(String(row.key)),
@@ -836,7 +865,7 @@ export default function RacerPerformanceStats({
       {vcVenueFixed && vcBoatFixed && vcData && vcData.n > 0 && (
         <div className="racer-stat-cards-grid racer-vc-cards-grid">
           <div className="racer-stat-card">
-            <h3>勝率</h3>
+            <h3>1着率</h3>
             <span className="racer-stat-value">
               {vcData.winRate !== null ? formatPercent(vcData.winRate) : "-"}
             </span>

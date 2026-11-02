@@ -158,6 +158,10 @@ export const NUMERIC_SCALES = {
     trifecta_odds_upset_focus: 1,
     trio_odds_upset_focus: 1,
   },
+  // 得点率の日ごとの写し（BOA-1210、docs/db-migration/192_racer_series_points_daily.sql）。NUMERIC(4,2)
+  racer_series_points_daily: {
+    score_rate: 2,
+  },
 };
 
 /**
@@ -381,7 +385,13 @@ export function planWriteAll(rows) {
 export async function fetchExistingRows(
   client,
   table,
-  { columns, chunkColumn = "race_id", ids, chunkSize = 100 },
+  {
+    columns,
+    chunkColumn = "race_id",
+    ids,
+    chunkSize = 100,
+    fullPageRows = null,
+  },
 ) {
   const chunks = [];
   for (let i = 0; i < ids.length; i += chunkSize) {
@@ -395,9 +405,24 @@ export async function fetchExistingRows(
   );
   const failed = results.find((result) => result.error);
   if (failed) {
+    // code を残す（呼び出し側が「表が無い」等をコードで判定できるように）
+    const error = new Error(
+      `${table}既存行取得エラー: ${failed.error.message}`,
+    );
+    error.code = failed.error.code;
+    error.cause = failed.error;
+    return { rows: [], error };
+  }
+  // fullPageRows（PostgREST の上限の 1000 等）ちょうどで返ったチャンクは、黙って切れた可能性がある
+  if (
+    fullPageRows &&
+    results.some((r) => (r.data ?? []).length >= fullPageRows)
+  ) {
     return {
       rows: [],
-      error: new Error(`${table}既存行取得エラー: ${failed.error.message}`),
+      error: new Error(
+        `${table}既存行取得エラー: 1回の読みが ${fullPageRows} 行で返った（上限で切れた可能性。chunkSize を小さくする）`,
+      ),
     };
   }
   const rows = results.flatMap((result) => result.data ?? []);
@@ -426,6 +451,8 @@ export async function filterUnchangedRows(
     chunkColumn = "race_id",
     chunkSize = 100,
     writeMissing = true,
+    fullPageRows = null,
+    failOnFetchError = false,
   } = options;
 
   if (incomingRows.length === 0)
@@ -447,7 +474,11 @@ export async function filterUnchangedRows(
     chunkColumn,
     ids,
     chunkSize,
+    fullPageRows,
   });
+  if (fetched.error && failOnFetchError) {
+    return { ...planWriteAll([]), fallback: false, error: fetched.error };
+  }
   if (fetched.error) {
     // 既存行が分からない場合は従来どおり全行を書く（比較できないものを「変更なし」にしない）
     console.warn(`  ⚠️ ${fetched.error.message}（今回は全行を書き込みます）`);
@@ -513,20 +544,36 @@ export async function upsertChangedRows(
     stampUpdatedAt = false,
     optionalColumnGroups = {},
     now = null,
+    fullPageRows = null,
+    failOnFetchError = false,
   },
 ) {
   const {
     toWrite: changedRows,
     stats,
     fallback,
+    error: fetchError,
   } = await filterUnchangedRows(client, table, incomingRows, {
     keyColumns,
     chunkColumn,
     chunkSize,
+    fullPageRows,
+    failOnFetchError,
     ignoreColumns: stampUpdatedAt
       ? [...new Set([...ignoreColumns, UPDATED_AT_COLUMN])]
       : ignoreColumns,
   });
+  // failOnFetchError: 既存行が読めなければ全行を書かずに止める（読みの上限で切れたまま書かない）
+  if (fetchError) {
+    return {
+      written: 0,
+      skipped: 0,
+      error: fetchError,
+      stats,
+      toWrite: [],
+      droppedGroups: [],
+    };
+  }
   // 時刻は、既存行の取得が済んだ「書き込みの直前」に取る（created_at のDBの now() との差を小さくする）
   const updatedAt = (now ?? new Date()).toISOString();
   const toWrite = stampUpdatedAt

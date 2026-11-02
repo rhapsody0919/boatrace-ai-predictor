@@ -27,7 +27,7 @@ import {
   createPageOpener,
   renderWithFreshPage,
 } from "./lib/renderWithFreshPage.js";
-import { planRacerSnapshots } from "./lib/racerSnapshotPlan.js";
+import { canSaveRacerSnapshot, planRacerSnapshots } from "./lib/racerSnapshotPlan.js";
 import { launchChromium } from "./lib/launchChromium.js";
 import { exportBlogChartPngs, planBlogChartPngs } from "./lib/blogChartPng.js";
 import {
@@ -286,7 +286,7 @@ async function generateBlogListSnapshots(openPage, baseUrl) {
  * 選手ページ（/racer/{番号}）のスナップショット（BOA-848）。
  *
  * 人の画面を描いた HTML をそのまま保存するので、人の画面に無い文言は入らない（ADR 0089 決定3）。
- * 保存するのは、プロフィールと成績が揃った目印（RacerProfile.jsx の data-snapshot-ready）が付いてから。
+ * 保存するのは、プロフィール・成績・モーター・履歴が揃った目印（RacerProfile.jsx の data-snapshot-ready）が付いてから。
  * 失敗したページは保存しない（vercel.json の catch-all で SPA の外枠に戻る。ブログと同じ）。
  * 描いたページが noindex なら保存しない（sitemap が書かれた後に条件から外れた選手）。
  */
@@ -313,15 +313,25 @@ async function generateRacerSnapshots(openPage, baseUrl) {
         waitUntil: "networkidle",
         timeout: 30000,
       });
-      await page.waitForSelector('[data-snapshot-ready="true"]', {
-        timeout: 20000,
-      });
+      try {
+        await page.waitForSelector('[data-snapshot-ready="true"]', {
+          timeout: 20000,
+        });
+      } catch (err) {
+        if (err.name !== "TimeoutError") throw err;
+        skipped.push(id);
+        return;
+      }
       const robots = await page.getAttribute('meta[name="robots"]', "content");
       if (robots?.includes("noindex")) {
         skipped.push(id);
         return;
       }
       const html = dedupeDefaultTitle(await page.content());
+      if (!canSaveRacerSnapshot(html)) {
+        skipped.push(id);
+        return;
+      }
       writeFileSync(path.join(outDir, `${id}.html`), html, "utf-8");
     },
   });
@@ -335,7 +345,7 @@ async function generateRacerSnapshots(openPage, baseUrl) {
     `✓ 選手ページスナップショット: ${succeeded.length - skipped.length}/${ids.length}件（${seconds}秒、並列${RACER_CONCURRENCY}）`,
   );
   if (skipped.length > 0) {
-    console.log(`  noindex のため保存しなかった選手: ${skipped.join(", ")}`);
+    console.log(`  noindex・未完了・取得失敗のため保存しなかった選手: ${skipped.join(", ")}`);
   }
   if (failed.length > 0) {
     console.error(

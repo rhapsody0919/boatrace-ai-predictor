@@ -16,6 +16,7 @@
  */
 import { isAuthorized } from "../scrapeJobs/cronWrapper.js";
 import { createPoliteFetch } from "../scrapeJobs/politeFetch.js";
+import { createFetchCounter } from "../scrapeJobs/fetchCounter.js";
 import { createSupabaseStore } from "../scrapeJobs/store.js";
 import {
   CANARY_URL,
@@ -58,7 +59,8 @@ async function probeOne(url, deps) {
 export function createBoatcastProbeHandler({
   getClient = async () => (await import("../supabaseClient.js")).supabase,
   createStore = createSupabaseStore,
-  fetchImpl = createPoliteFetch(),
+  // 渡さなければ、起動ごとに取得の数を数える politeFetch を作る（BOA-1145 P3、185 の審査 P3）
+  fetchImpl,
   pacer = sharedPacer,
 } = {}) {
   return async function probeHandler(req, res) {
@@ -85,16 +87,30 @@ export function createBoatcastProbeHandler({
       });
     }
     const started = Date.now();
-    const deps = { fetchImpl, pacer };
-    const canary = await probeOne(CANARY_URL, deps);
-    const raceId = typeof req.query?.race === "string" ? req.query.race : null;
+    const counter = fetchImpl
+      ? null
+      : createFetchCounter({ client, source: "vercel" });
+    const deps = {
+      fetchImpl: fetchImpl ?? createPoliteFetch({ counter }),
+      pacer,
+    };
+    let canary;
     let sample = null;
-    if (raceId) {
-      try {
-        sample = await probeOne(buildOritenUrl(raceId), deps);
-      } catch (error) {
-        return res.status(400).json({ success: false, error: error.message });
+    try {
+      canary = await probeOne(CANARY_URL, deps);
+      const raceId =
+        typeof req.query?.race === "string" ? req.query.race : null;
+      if (raceId) {
+        try {
+          sample = await probeOne(buildOritenUrl(raceId), deps);
+        } catch (error) {
+          return res
+            .status(400)
+            .json({ success: false, error: error.message });
+        }
       }
+    } finally {
+      await counter?.flush();
     }
     return res.status(200).json({
       success: true,

@@ -48,13 +48,16 @@
 | 版 | `bundle_version: 2`。版の欄が無い bundle は、送信側で今までどおり X 1件・YouTube 1件として受ける |
 | ファイル | `full-x.mp4`（入口版、X）・`full-youtube.mp4`（完全版、YouTube の通常の動画）・`shorts.mp4`（入口版と同じバイト列、Shorts）。shorts は縦 1080×1920・60秒以下・32MiB 以下。送信側は中身を解析しないので、縦・秒数・大きさ・full-x.mp4 と同じバイト列（sha256）は run-full が確かめる |
 | 欄 | `format`・`race_id`・`x_text`（入口版の本文＋このレースの URL ちょうど1つ）・`youtube_full{title,description}`・`youtube_shorts{title,description}`・`qa{machine,bannedWords}` |
+| 送るチャネル | `channels`（任意、例 `["youtube","shorts"]`）。x を外すことだけができる（完全版は必須、shorts は版2と一致）。x が無いとき送信側は `x_text`・`full-x.mp4` を受けず、X の下書き・item・job を作らない。欄が無い bundle は今までどおり X も出す（BOA-1167、2026-10-27 オーナー決定「全貌の入口は Shorts、X は不要」）。束に書くのは hq |
 | 題名 | 1行・100字以下。完全版と Shorts は別の文 |
 | 完全版の URL | Shorts の description に `{full_url}` をちょうど1つ。送信側が、完全版の公開を確かめてから `https://youtu.be/<id>` に置き換える。置き換えた後も5000字以内（こちらは「置き場所を消した長さ＋40字」で検査） |
 | 必須 | v2 では `youtube_shorts` と `shorts.mp4` を必ず出す。出せないときは run-full が終了コード1で止まり、bundle を出さない |
 | qa.machine | `contract`・`text`・`post`・`entry_max59s`・`full_size`・`full_min185s`（完全版が3分以下だと Shorts 扱いになる）・`chapters`（自動チャプターの条件）・`shorts_vertical`・`shorts_max_60s`・`shorts_size`。全部 true のときだけ出す。送信側は `shorts_vertical`・`shorts_max_60s` が無いか false なら受け取りで不合格 |
+| サムネイル | 型 f01 だけ。`youtube_full.thumbnail` に `"thumb-full.png"`（フォルダの中のファイル名だけ。区切り・`.`・`..` は拒否）、`bundle/thumb-full.png`（run-full が置く）。送信側は欄があれば読み、中身が PNG か JPEG（先頭のバイト列）・空でない・32 MiB 以下（承認の snapshot のカバーの上限。YouTube の thumbnails.set は 50MB まで）を検査し、合わなければ束ごと拒否する（作り手の不具合なので黙って外さない）。`full-picture/{race_id}/{版}/thumb-full.{png\|jpg}` に保存し、完全版の下書きの `cover_image_path` に入れる（X・Shorts には付けない）。版の hash には動画の後にサムネイルのバイト列を足す（欄の無い束の式は今までどおり）。送るときは videos.insert の後に thumbnails.set で上げる。失敗（HTTP・通信）しても動画は公開まで進め、理由を runner の report.jobs の `thumbnail_error` と Slack に1回残す。thumbnails.set の前の検査・台帳への記録が落ちたときは今までどおり非公開のまま残す（BOA-1172） |
 | review | 出さない。2026-10-20 オーナー決定で、評価役の P0 は使わず機械の検査だけで判定する。受け取り側の `review.p0_count` の検査は別のレーン（全貌の自動送信を機械の検査だけにする）と #1714 が外す。daily.mjs の受け取りの検査は `p0_count: 0` を入れて当てる |
+| 差し替え | 締切（races.start_time）は動画・題・説明文に焼き込むので、締切が変わった束は送信側で送らない（送る直前の検査の `deadline_changed`）。hq は締切が延びたら作り直して push し直す。送信側は同じレースの生きた item を stopped（superseded）、queued の job を held（superseded）にしてから新しい束を入れ、Slack に「締切 15:57→16:05 で差し替えた」と書く。前の束の job が sending・reconcile・posted なら差し替えずに拒否する（held・failed・cancelled は試行の数によらず止めない）。束の文（x_text・完全版と Shorts の題・説明文）の「締切HH:MM」が1つでも今の締切と違えば、差し替えでも初回でも拒否する（文に無ければ見ない）。締切が同じ束（重複）・締切が違っても版が同じ束（作り直していない）も拒否する（BOA-1201、ADR 0094 の追記） |
 
-送る順は X → 完全版（X の4分後）→ Shorts（完全版の公開の後、早くて完全版の4分後）。締切の50分前を過ぎて届いた bundle は、送信側が Shorts だけ作らずに X・完全版を送る（完全版の公開を待つ時間が無いため。送信レーンの決まり）。
+送る順は X → 完全版（X の4分後）→ Shorts（完全版の公開の後、早くて完全版の4分後）。`channels` で X を外しても、完全版・Shorts の送る時刻は同じ（X の枠の時刻を空けたまま）。締切の50分前を過ぎて届いた bundle は、送信側が Shorts だけ作らずに X・完全版を送る（完全版の公開を待つ時間が無いため。送信レーンの決まり）。
 
 `verify-full-picture-scene2.js` で、この bundle（`p0_count: 0` を足したもの）が push-full-picture.js の `checkFullPicture` を通ることを固定している。
 

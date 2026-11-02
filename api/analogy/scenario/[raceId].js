@@ -164,7 +164,7 @@ export default createHandler(
         : null,
     ]);
     const exhibition =
-      stage === "exhibition" && snapshot?.status === "ok"
+      stage === "exhibition" && ["ok", "empty_layer"].includes(snapshot?.status)
         ? await readObject(
             objectPath(raceId, snapshot.run_id, "today-exhibition", raceId),
           )

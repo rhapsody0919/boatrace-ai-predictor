@@ -7,6 +7,7 @@ import {
   fetchRecorded,
 } from "./fixtures.js";
 import { contribution } from "./analogy-contribution-fixture.js";
+import { rewriteTodayRaces } from "./today-races-rewrite.js";
 import { ANALOGY_V16_RACE, routeAnalogyV16 } from "./analogy-v16-fixture.js";
 import {
   THINKING_ASSIST_RACE,
@@ -1967,6 +1968,148 @@ test.describe("レイアウト: 思考アシストの PC 表示（BOA-880）", (
   });
 });
 
+// 思考アシストの買い目の券種（BOA-990 ①）。「券種で比べる」の表・券種のタブ・マークシート（2連単で3着の段を薄く残す）が、
+// 375〜1920px で横にはみ出さず、タブ・ボタンは 44px 以上押せる
+test.describe("レイアウト: 思考アシストの買い目の券種（BOA-990）", () => {
+  test("券種で比べる・券種のタブ・マークシートが横にはみ出さない", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await page.goto(`/race/${THINKING_ASSIST_RACE}/assist`);
+    const lens = page.getByRole("tablist", { name: "見方" });
+    await expect(lens).toBeVisible({ timeout: 30000 });
+    await lens.getByRole("tab", { name: "買い目", exact: true }).click();
+    const cand = (b, p) =>
+      page.getByRole("button", { name: `${b}号艇を${p}着の候補に` });
+    await cand(1, 1).click();
+    for (const b of [2, 3, 4]) await cand(b, 2).click();
+    for (const b of [2, 3, 4, 5]) await cand(b, 3).click();
+    const cmp = page.locator(".ta-bettype-cmp");
+    await expect(cmp).toBeVisible();
+    // 1列の幅では券種のタブが艇の行より上、2列では右の列（ファン評価3周目 P2、2026-10-27 オーナー）
+    const tabs = page.getByRole("group", { name: "券種" });
+    await expect(tabs).toHaveCount(1);
+    const tabsBox = await tabs.boundingBox();
+    const laneBox = await page.locator(".ta-lane").first().boundingBox();
+    if (page.viewportSize().width < 1024)
+      expect(tabsBox.y + tabsBox.height).toBeLessThanOrEqual(laneBox.y);
+    else
+      expect(tabsBox.x).toBeGreaterThanOrEqual(laneBox.x + laneBox.width - 1);
+    // 図の見出し（どの券種の合成か）は 12px 以上（ファン評価2周目 P2-2）
+    expect(
+      await page
+        .locator(".ta-board-title.is-bet")
+        .evaluate((e) => parseFloat(getComputedStyle(e).fontSize)),
+    ).toBeGreaterThanOrEqual(12);
+    // 固定フッターの「（9点）」は数字と単位を別の行に分けない（ファン評価1周目 指摘3）
+    expect(
+      await page
+        .locator(".ta-foot .ta-nowrap")
+        .evaluate((e) => e.getClientRects().length),
+    ).toBe(1);
+    const overflow = (sel) =>
+      page.evaluate((s) => {
+        const e = document.querySelector(s);
+        return e.scrollWidth - e.clientWidth;
+      }, sel);
+    expect(await overflow(".ta-bettype-cmp")).toBeLessThanOrEqual(1);
+    const cmpBox = await cmp.boundingBox();
+    const cmpParent = await page
+      .locator(".ta-bettype-cmp")
+      .locator("xpath=..")
+      .boundingBox();
+    expect(cmpBox.x + cmpBox.width).toBeLessThanOrEqual(
+      cmpParent.x + cmpParent.width + 1,
+    );
+    for (const b of await page
+      .locator(".ta-bettype button:visible, .ta-bettype-cmp button")
+      .all()) {
+      const box = await b.boundingBox();
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.width).toBeGreaterThanOrEqual(44);
+    }
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(2);
+
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await sheet
+      .getByRole("group", { name: "券種" })
+      .getByRole("button", { name: "2連単" })
+      .click();
+    await expect(sheet.locator(".ta-ms-row.is-unused").first()).toBeAttached();
+    expect(await overflow(".ta-sheet")).toBeLessThanOrEqual(1);
+    for (const b of await sheet
+      .locator(".ta-bettype button, .ta-box-short button")
+      .all())
+      expect((await b.boundingBox()).height).toBeGreaterThanOrEqual(44);
+
+    // BOA-990 ②: 連複は段の見出しが「1艇目／順不同」の2行。見出しの文字が隣のマスにはみ出さず、6艇のマスは 44px 以上
+    // BOA-990 ③: 拡連複も同じ段（2艇の組）
+    for (const name of ["3連複", "2連複", "拡連複"]) {
+      await sheet
+        .getByRole("group", { name: "券種" })
+        .getByRole("button", { name, exact: true })
+        .click();
+      await expect(sheet.locator(".ta-ms.is-unordered")).toBeVisible();
+      expect(await overflow(".ta-sheet")).toBeLessThanOrEqual(1);
+      // 見出しは「1艇目」「順不同」の2行まで（折り返して3行以上にならない。セルフレビュー #5）
+      const heads = await sheet.locator(".ta-ms-h").evaluateAll((els) =>
+        els
+          .filter((e) => /艇目/.test(e.textContent))
+          .map((e) => ({
+            over: e.scrollWidth - e.clientWidth,
+            h: e.getBoundingClientRect().height,
+            fs: parseFloat(getComputedStyle(e).fontSize),
+          })),
+      );
+      expect(heads.length).toBe(3);
+      for (const d of heads) {
+        expect(d.over).toBeLessThanOrEqual(1);
+        expect(d.h).toBeLessThanOrEqual(d.fs * 2 * 1.8);
+      }
+      // マスは 44px 以上（4em の見出しで 375px が 41px になった。セルフレビュー #2）
+      for (const b of await sheet
+        .getByRole("button", { name: /艇目の候補に$/ })
+        .all()) {
+        const box = await b.boundingBox();
+        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(box.width).toBeGreaterThanOrEqual(44);
+      }
+    }
+    // BOA-990 ③: 拡連複の配分の表（オッズの列が「1.9〜2.3」、見出し「払戻（下限）」）がシートの幅に収まる
+    const wideTable = sheet.locator(".ta-table").last();
+    await expect(
+      wideTable.getByRole("columnheader", { name: "払戻（下限）" }),
+    ).toBeVisible();
+    const tBox = await wideTable.boundingBox();
+    const sBox = await sheet.boundingBox();
+    expect(tBox.x + tBox.width).toBeLessThanOrEqual(sBox.x + sBox.width + 1);
+    await sheet.getByRole("button", { name: "閉じる" }).first().click();
+    // 図の艇の行の候補のボタン「1艇目」も横にはみ出さない（最後に選んだ2連複のまま）
+    await expect(
+      page.getByRole("button", { name: "1号艇を1艇目の候補に" }),
+    ).toBeVisible();
+    const pos = await page
+      .locator(".ta-pos3 button")
+      .evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth));
+    for (const d of pos) expect(d).toBeLessThanOrEqual(1);
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(2);
+  });
+});
 // 過去に発生した割合を見る（BOA-635 T5-1）。スリットの7形の一覧と強さの段が、375〜1920px で横にはみ出さない。
 // layer は固定データで返す（録画の時刻より後の、v16 公開後の確定済みレース。予想・結果は素通し）
 test.describe("レイアウト: 過去に発生した割合を見る（BOA-635）", () => {
@@ -2048,4 +2191,176 @@ test.describe("レイアウト: 過去に発生した割合を見る（BOA-635�
     expect(m.right, "部品の右端").toBeLessThanOrEqual(m.vw + 1);
     expect(m.wide, "部品の枠からはみ出す要素の数").toBe(0);
   });
+});
+
+/**
+ * レース詳細の 1R〜12R の帯（BOA-1189 GS01-c）。レース数は会場・日で変わりうるので、
+ * 件数を差し替えて、スマホの2段目の残りが横いっぱいに伸びないこと・768px 以上で1行に並ぶことを見る
+ * （component-reuse.md「件数がデータで変わるグリッド」）。8件は会場16の 1〜7R と 12R
+ */
+/**
+ * レース詳細の出走6艇（BOA-1189 GS01-c、A案）。スマホの2行で、選手名のリンクの押せる高さが
+ * 44px 以上あり、上下・左右の選手のリンクと押せる範囲が重ならないこと（ui-layout.md。
+ * 32px で上下の行の間が4pxだった。ファン評価 A案の周 P2）
+ */
+test("レイアウト: レース詳細の出走6艇の選手名は 44px 以上で重ならない（BOA-1189）", async ({
+  page,
+}) => {
+  test.skip(
+    page.viewportSize().width >= 768,
+    viewportSkipReason("スマホ幅（2行になる幅）で確認"),
+  );
+  await gotoAndSettle(page, "/race/2026-09-29-16-12");
+  const links = page.locator(
+    '[data-testid="race-entrants"] a[href^="/racer/"]',
+  );
+  await expect(links).toHaveCount(6, { timeout: 30000 });
+  const rects = await links.evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+    }),
+  );
+  for (const r of rects) {
+    expect(
+      r.bottom - r.top,
+      `高さ ${JSON.stringify(r)}`,
+    ).toBeGreaterThanOrEqual(44);
+  }
+  // 2行に分かれている（検査の空振り防止）
+  expect(new Set(rects.map((r) => Math.round(r.top))).size).toBeGreaterThan(1);
+  for (let i = 0; i < rects.length; i += 1) {
+    for (let j = i + 1; j < rects.length; j += 1) {
+      const a = rects[i];
+      const b = rects[j];
+      const overlap =
+        a.left < b.right - 0.5 &&
+        b.left < a.right - 0.5 &&
+        a.top < b.bottom - 0.5 &&
+        b.top < a.bottom - 0.5;
+      expect(overlap, `重なり ${JSON.stringify([a, b])}`).toBe(false);
+    }
+  }
+});
+
+test.describe("レイアウト: レース詳細の 1R〜12R の帯は件数によらずそろう（BOA-1189）", () => {
+  for (const keep of [8, 12]) {
+    test(`帯が${keep}件のとき、項目の幅がそろう`, async ({ page }) => {
+      await page.route("**/api/predictions/2026-09-29**", async (route) => {
+        const response = await fetchRecorded(route);
+        const body = await response.json();
+        if (keep < 12) {
+          body.races = (body.races ?? []).filter(
+            (r) =>
+              r.venueCode !== 16 ||
+              r.raceNumber <= keep - 1 ||
+              r.raceNumber === 12,
+          );
+        }
+        await route.fulfill(response.fulfillOptions({ json: body }));
+      });
+      await gotoAndSettle(page, "/race/2026-09-29-16-12");
+      const items = page.locator(".race-number-strip__list > li");
+      await expect(items).toHaveCount(keep, { timeout: 30000 });
+      const boxes = await items.evaluateAll((els) =>
+        els.map((el) => {
+          const r = el.getBoundingClientRect();
+          return { w: Math.round(r.width), top: Math.round(r.top) };
+        }),
+      );
+      const widths = boxes.map((b) => b.w);
+      expect(
+        Math.max(...widths) - Math.min(...widths),
+        `帯の項目の幅がそろっていません: ${JSON.stringify(widths)}`,
+      ).toBeLessThanOrEqual(1);
+      if (page.viewportSize().width >= 768) {
+        expect(
+          new Set(boxes.map((b) => b.top)).size,
+          `768px 以上で帯が1行に並んでいません: ${JSON.stringify(boxes)}`,
+        ).toBe(1);
+      }
+    });
+  }
+});
+
+/**
+ * BOA-1199: トップの会場カードの日目の札。いちばん幅を取る組み合わせ（札・優勝戦・SG・時間帯の
+ * アイコン、英語の「Opening day」）でも、札がカードからはみ出さず、会場名を省略記号で削らず、
+ * 横スクロールが出ないこと。全会場を「次のレースあり」に書き換えて全カードで測る
+ */
+test.describe("レイアウト: トップの会場カードの日目の札（BOA-1199）", () => {
+  for (const { path, day, isFinalDay, label, stage } of [
+    { path: "/", day: 6, isFinalDay: true, label: "最終日", stage: "優勝戦" },
+    {
+      path: "/en",
+      day: 1,
+      isFinalDay: false,
+      label: "Opening day",
+      stage: "優勝戦",
+    },
+    {
+      path: "/en",
+      day: 5,
+      isFinalDay: false,
+      label: "Day 5",
+      stage: "準優勝戦",
+    },
+  ]) {
+    test(`${path} の「${label}」の札がカードに収まる`, async ({ page }) => {
+      await rewriteTodayRaces(page, (venues) => {
+        for (const v of venues)
+          (v.races ?? []).forEach((r, i, races) => {
+            r.startTime = "23:59";
+            r.seriesDay = day;
+            r.isFinalDay = isFinalDay;
+            r.cancellationStatus = null;
+            r.raceGrade = "SG";
+            r.raceStage = i === races.length - 1 ? stage : null;
+          });
+      });
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await expect(
+        page.locator(".venue-grid-card__series-day").first(),
+      ).toHaveText(label, { timeout: 30000 });
+      const problems = await page.evaluate((tolerance) => {
+        const out = [];
+        const de = document.documentElement;
+        if (de.scrollWidth > de.clientWidth + tolerance)
+          out.push({
+            scrollWidth: de.scrollWidth,
+            clientWidth: de.clientWidth,
+          });
+        for (const card of document.querySelectorAll(
+          ".venue-grid-card--open",
+        )) {
+          const badge = card.querySelector(".venue-grid-card__series-day");
+          if (!badge) continue;
+          const c = card.getBoundingClientRect();
+          const name = card.querySelector(".venue-grid-card__name");
+          // 日目の札と、同じ行に並べた優勝戦・準優勝戦のバッジ（A案）がカードに収まる
+          for (const el of card.querySelectorAll(
+            ".venue-grid-card__series-day, .venue-grid-card__stage",
+          )) {
+            const b = el.getBoundingClientRect();
+            if (b.right > c.right + tolerance || b.left < c.left - tolerance)
+              out.push({ card: card.getAttribute("href"), out: el.className });
+            // バッジの中で2行に割れない（英語の「Semifinal 9R」が時間帯のアイコンのある会場で割れた。ファン評価1周目）
+            if (b.height > badge.getBoundingClientRect().height + 1)
+              out.push({
+                card: card.getAttribute("href"),
+                split: el.className,
+                height: b.height,
+              });
+          }
+          if (name.scrollWidth > name.clientWidth + 1)
+            out.push({
+              card: card.getAttribute("href"),
+              nameClipped: name.textContent,
+            });
+        }
+        return out;
+      }, OVERFLOW_TOLERANCE_PX);
+      expect(problems, JSON.stringify(problems, null, 2)).toEqual([]);
+    });
+  }
 });

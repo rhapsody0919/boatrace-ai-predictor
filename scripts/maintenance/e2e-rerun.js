@@ -16,7 +16,8 @@
  *                         2回目以降なら再実行せず「上げる」。1回目と同じ shard が落ちたかも書く
  *
  * 止まったとみなす既定の 50分: 直近30回の成功で shard の所要は最長 36分（2026-10-18 実測）。
- * e2e-shard には timeout-minutes が無く、止まると GitHub の既定の 6時間まで終わらない。
+ * e2e-shard の timeout-minutes は 45分（2026-10-27、docs/design/ci-minutes-reduction/design.md 2.4）で、時間切れの結論は
+ * cancelled（FAILED_CONCLUSIONS に入る）。50分の判定は timeout が効かなかったときの予備。
  *
  * ワークフロー（workflow_run で再実行するジョブ）にしなかった理由:
  *   - 「止まったまま終わらない」は、そのワークフローの中からは検知できない（自分が止まっている）。

@@ -10,11 +10,19 @@
  * - mikuni: 非開催期間（テーブル自体が存在せず no_active_meet を返す）
  * - karatsu: table自体のclass名が他会場と異なる（com-table01 vs par-table01）
  *   場合でも、クラス名ではなく見出しテキストで解決できることの確認
+ *
+ * あわせて、若松（20）を取得の対象から外し、drift の知らせに数えないことを固定する（BOA-1165。
+ * 開催中の表の形が未確認で一度も取れていないため。戻す条件は venueConfig.js の冒頭）
  */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseEntryCourseHtml } from "../lib/venueEntryCourseStats/parser.js";
+import {
+  VENUE_ENTRY_COURSE_STATS_CONFIG,
+  EXCLUDED_VENUES,
+} from "../lib/venueEntryCourseStats/venueConfig.js";
+import { findEntryCourseStatsDriftAlerts } from "../lib/venueEntryCourseStats/driftHealth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_DIR = path.join(
@@ -91,6 +99,35 @@ function main() {
     "karatsu: 1枠目の選手名",
     karatsu.data?.[0]?.racerNameRaw,
     "芝田　　浩治",
+  );
+
+  // 若松（20）の一時除外（BOA-1165）
+  check(
+    "若松: 取得の対象に入らない",
+    VENUE_ENTRY_COURSE_STATS_CONFIG.some((v) => v.venueCode === 20),
+    false,
+  );
+  check("若松: 除外の理由がある", typeof EXCLUDED_VENUES[20], "string");
+  check(
+    "取得の対象は9会場",
+    VENUE_ENTRY_COURSE_STATS_CONFIG.map((v) => v.venueCode),
+    [5, 8, 10, 11, 13, 18, 19, 21, 23],
+  );
+  check(
+    "drift: 外した会場（若松）の残った失敗の連続は数えず、対象の会場（徳山）は数える",
+    findEntryCourseStatsDriftAlerts({
+      20: {
+        consecutiveFailDays: 22,
+        lastReason: "entry_course_table_not_found",
+        lastCheckedDate: "2026-10-26",
+      },
+      18: {
+        consecutiveFailDays: 22,
+        lastReason: "entry_course_table_not_found",
+        lastCheckedDate: "2026-10-26",
+      },
+    }).map((a) => a.venueCode),
+    ["18"],
   );
 
   console.log(failures === 0 ? "\n✅ 全テスト成功" : `\n❌ ${failures}件失敗`);

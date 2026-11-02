@@ -1,6 +1,6 @@
 // SNS の送信の runner（sns-pdca-loop tasks 19）・鍵の健全性 API・死活の稼働時間の再現テスト。
-// SQL153 までを PGlite に入れ、X・YouTube はモックの adapter。外部接続なし。
-import { test, before, beforeEach, after } from "node:test";
+// SQL153 と 186（BOA-1164 の閉じる遷移・残した理由）・191（送らなかった理由、BOA-1201）を PGlite に入れ、X・YouTube はモックの adapter。外部接続なし。
+import { test, before, beforeEach, after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
@@ -11,6 +11,7 @@ import {
 import { createMockYoutubeAdapter } from "../../api/_lib/snsDeadlineQueue.js";
 import {
   PARENT_WAIT_ALERT_MINUTES,
+  createPostgrestEventWriter,
   createSnsSendStore,
   pickDueJobs,
   runSnsSend,
@@ -20,6 +21,9 @@ import { handleTokenHealth } from "../../api/admin/sns-hub/token-health.js";
 import { livenessCheckable } from "../lib/scrapeJobs/monitor.js";
 import { SCRAPE_JOBS, activeMinutesOf } from "../lib/scrapeJobs/registry.js";
 
+// PT の日付境界の外に固定する。Date だけを止め、PGlite の now()・承認・期限も同じ時計で動かす。
+const TEST_NOW = Date.parse("2026-10-27T03:00:00Z");
+mock.timers.enable({ apis: ["Date"], now: TEST_NOW });
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
 const bytes = new Uint8Array([1, 2, 3]);
@@ -92,9 +96,27 @@ const store = {
         "SELECT id, channel, error_code, youtube_stage FROM sns_x_send_jobs WHERE state='reconcile' ORDER BY id",
       )
     ).rows,
+  // 本番の PostgREST の書き込み（createPostgrestEventWriter、on_conflict と resolution=ignore-duplicates）と同じ意味
+  recordEvent: async (e) => {
+    await db.query(
+      "INSERT INTO sns_send_events(job_id,stage,reason,detail) VALUES($1,$2,$3,$4) ON CONFLICT (job_id,stage,reason) DO NOTHING",
+      [e.job_id, e.stage, e.reason, e.detail],
+    );
+  },
+  // 本番の PostgREST の読み取り（createSnsSendStore の retainedYoutubeJobs）と同じ条件
+  retainedYoutubeJobs: async (now, limit) =>
+    (
+      await db.query(
+        `SELECT id, channel, state, youtube_stage, error_code, external_post_id, attempts, expires_at, snapshot FROM sns_x_send_jobs
+         WHERE state='reconcile' AND channel='youtube' AND youtube_stage='private_retained' AND expires_at<=$1
+           AND (lease_until IS NULL OR lease_until<=$1) ORDER BY id LIMIT $2`,
+        [now.toISOString(), limit],
+      )
+    ).rows,
 };
 
 before(async () => {
+  assert.equal((await first("SELECT now() AS at")).at.getTime(), TEST_NOW);
   await db.exec(
     "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;",
   );
@@ -115,6 +137,8 @@ before(async () => {
     "147_sns_draft_diff.sql",
     "148_sns_posted_approval_guard.sql",
     "153_sns_auto_send.sql",
+    "186_sns_youtube_close_private.sql",
+    "191_sns_send_events.sql",
   ])
     await db.exec(
       await readFile(
@@ -126,6 +150,7 @@ before(async () => {
     .id;
 });
 beforeEach(async () => {
+  mock.timers.setTime(TEST_NOW);
   await db.exec(
     "DELETE FROM sns_youtube_quota_reads; DELETE FROM sns_youtube_quota_attempts; UPDATE sns_x_send_jobs SET parent_job_id=NULL; DELETE FROM sns_x_send_jobs; DELETE FROM sns_drafts;",
   );
@@ -136,11 +161,17 @@ beforeEach(async () => {
     UPDATE sns_youtube_quota_control SET verified=true,baseline_day=(now() AT TIME ZONE 'America/Los_Angeles')::date,upload_limit=10,general_limit=10000,external_uploads=0,external_general=0;
     UPDATE sns_auto_send_control SET dry_run=false;`);
 });
-after(() => db.close());
+after(async () => {
+  try {
+    await db.close();
+  } finally {
+    mock.timers.reset();
+  }
+});
 
 async function approvedJob(
   platform = "x",
-  { parentJobId = null, scheduledOffsetMin = -1 } = {},
+  { parentJobId = null, scheduledOffsetMin = -1, cover = null } = {},
 ) {
   const deadline = new Date(Date.now() + 2 * 3600000).toISOString();
   const queue = {
@@ -152,8 +183,8 @@ async function approvedJob(
     ...(parentJobId ? { parent_job_id: parentJobId } : {}),
   };
   const draft = await first(
-    "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,video_storage_path,source_data) VALUES(gen_random_uuid(),'short',$1,'ja','全貌','本文','v.mp4',$2) RETURNING *",
-    [platform, { deadline_queue: queue }],
+    "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,video_storage_path,source_data,cover_image_path) VALUES(gen_random_uuid(),'short',$1,'ja','全貌','本文','v.mp4',$2,$3) RETURNING *",
+    [platform, { deadline_queue: queue }, cover],
   );
   return (
     await first("SELECT approve_sns_x_send($1,$2,$3,$4) r", [
@@ -176,7 +207,9 @@ const failingPreflight = async () => {
 const job = (id) => first("SELECT * FROM sns_x_send_jobs WHERE id=$1", [id]);
 const reserved = async () =>
   Number((await first("SELECT reserved_microusd r FROM sns_x_send_control")).r);
+// モックの送る前の検査は Chromium を開かないので、検査の枠（BOA-1164）は既定で無制限にする。枠を見る試験は headlessBudget: 6 を渡す
 const deps = (extra = {}) => ({
+  headlessBudget: Infinity,
   store,
   adapters: {
     x: async () => createMockXAdapter(),
@@ -263,6 +296,106 @@ test("live・dry_run=false: X と YouTube を送って posted、最大件数を�
     xAdapter.calls.filter((c) => c.method === "createPost").length,
     1,
   );
+});
+
+// 境界の検査では runner の時計だけを変える。SQL の now() と承認・失効は TEST_NOW のままにし、
+// dueJobs の取得時刻だけ合わせる（SQL の日次ガードを別の日に偽装しない）。
+for (const [at, paused] of [
+  ["2026-10-27T06:49:59Z", false],
+  ["2026-10-27T06:50:00Z", true],
+  ["2026-10-27T06:55:00Z", true],
+  ["2026-10-27T07:00:00Z", true],
+  ["2026-10-27T07:01:00Z", true],
+  ["2026-10-27T07:04:59Z", true],
+  ["2026-10-27T07:05:00Z", false],
+  ["2026-11-02T07:49:59Z", false],
+  ["2026-11-02T07:50:00Z", true],
+  ["2026-11-02T07:55:00Z", true],
+  ["2026-11-02T08:01:00Z", true],
+  ["2026-11-02T08:05:00Z", false],
+]) {
+  test(`YouTube の PT 日付境界: ${at} は${paused ? "待機" : "送信"}、X は送信`, async () => {
+    const y = await approvedJob("youtube", { scheduledOffsetMin: -2 });
+    const x = await approvedJob("x");
+    const notices = [];
+    const youtube = createMockYoutubeAdapter();
+    const result = await runSnsSend(
+      { ...ctx(), now: () => new Date(at) },
+      deps({
+        maxJobs: paused ? 1 : 2,
+        store: {
+          ...store,
+          dueJobs: (_, ...args) => store.dueJobs(new Date(), ...args),
+        },
+        adapters: {
+          x: async () => createMockXAdapter(),
+          youtube: async () => youtube,
+        },
+        notify: async (text) => notices.push(text),
+      }),
+    );
+    const row = await job(y.id);
+    assert.equal(row.state, paused ? "queued" : "posted");
+    assert.equal(row.attempts, paused ? 0 : 1);
+    assert.equal(
+      Number(
+        (await first("SELECT count(*) n FROM sns_youtube_quota_attempts")).n,
+      ),
+      paused ? 0 : 1,
+    );
+    assert.equal(
+      result.body.jobs.find((r) => r.id === y.id).outcome,
+      paused ? "youtube_quota_day_wait" : "posted",
+    );
+    assert.equal((await job(x.id)).state, "posted");
+    assert.deepEqual(
+      result.report.alerts.map((a) => a.key),
+      paused ? [`youtube_quota_day_wait:${y.id}`] : [],
+    );
+    assert.deepEqual(notices, []);
+    if (paused) assert.deepEqual(youtube.calls, []);
+  });
+}
+
+test("検査・トークン取得中に PT の停止窓へ入ったら claim せず、窓の後に同じ job を送る", async () => {
+  const y = await approvedJob("youtube");
+  let at = "2026-10-27T06:49:59Z";
+  const clock = { ...ctx(), now: () => new Date(at) };
+  const runnerStore = {
+    ...store,
+    dueJobs: (_, ...args) => store.dueJobs(new Date(), ...args),
+  };
+  const options = deps({
+    store: runnerStore,
+    adapters: {
+      youtube: async () => {
+        at = "2026-10-27T06:50:00Z";
+        return createMockYoutubeAdapter();
+      },
+    },
+  });
+  const waiting = await runSnsSend(clock, options);
+  assert.equal(waiting.body.jobs[0].outcome, "youtube_quota_day_wait");
+  assert.equal((await job(y.id)).attempts, 0);
+  assert.equal((await job(y.id)).state, "queued");
+  const carried = await runSnsSend(
+    { ...clock, state: { last_report: waiting.report } },
+    deps({
+      store: {
+        ...runnerStore,
+        dueJobs: async () => ({ jobs: [], nextCursor: null }),
+      },
+    }),
+  );
+  assert.deepEqual(carried.report.alerts, waiting.report.alerts);
+  at = "2026-10-27T07:05:00Z";
+  const resumed = await runSnsSend(
+    { ...clock, state: { last_report: waiting.report } },
+    deps({ store: runnerStore }),
+  );
+  assert.equal((await job(y.id)).state, "posted");
+  assert.equal((await job(y.id)).attempts, 1);
+  assert.deepEqual(resumed.report.alerts, []);
 });
 
 test("YouTube の処理が3回の確認で終わらなければ、公開せず非公開のまま残す", async () => {
@@ -988,3 +1121,876 @@ test("PostgREST の読み取り: 親を待つ子は queued・親あり・期限�
     [],
   );
 });
+
+test("182: claim が出し物ごとの取り置き（kind_slot_full）で held を返したら、一度きりの事象として Slack に知らせる", async () => {
+  const x = await approvedJob("x");
+  const notices = [];
+  // 182 の claim が返す形（held・kind_slot_full）を、153 までの PGlite の hold で作る
+  const holding = {
+    ...store,
+    transition: (id, action, result) =>
+      action === "claim"
+        ? store.transition(id, "hold", { reason: "kind_slot_full" })
+        : store.transition(id, action, result),
+  };
+  await runSnsSend(
+    ctx(),
+    deps({ store: holding, notify: async (t) => notices.push(t) }),
+  );
+  assert.equal((await job(x.id)).error_code, "kind_slot_full");
+  assert.equal(notices.filter((t) => t.includes("kind_slot_full")).length, 1);
+});
+// ---- BOA-1164: 検査の枠・残した理由・公開しないで閉じる ----
+
+// 本番の Chromium と同じく、1回の実行で6回を超えたら public_check_budget を投げる送る前の検査（実行ごとに作り直す）
+const budgetedPreflight = () => {
+  let used = 0;
+  return async () => {
+    used += 1;
+    if (used > 6) throw new Error("public_check_budget");
+  };
+};
+
+test("BOA-1172: サムネイルの設定に失敗しても YouTube は posted まで進め、理由を report.jobs に入れて Slack に1回知らせる。届かなければ report.alerts に残す", async () => {
+  const y = await approvedJob("youtube", { cover: "c.png" });
+  const notices = [];
+  const result = await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () =>
+          createMockYoutubeAdapter({
+            failAt: "thumbnail",
+            videoId: "thumbfail01",
+          }),
+      },
+      notify: async (t) => notices.push(t),
+    }),
+  );
+  assert.equal((await job(y.id)).state, "posted");
+  const row = result.body.jobs.find((r) => r.id === y.id);
+  assert.equal(row.outcome, "posted");
+  assert.equal(row.thumbnail_error, "mock_failure");
+  const told = notices.filter((t) => t.includes("サムネイル"));
+  assert.equal(told.length, 1);
+  assert.match(
+    told[0],
+    new RegExp(`job ${y.id} のサムネイルを設定できなかった`),
+  );
+  assert.match(told[0], /動画の送信は続けた/);
+
+  // Slack に届かなければ report.alerts に残す（一度きりの事象と同じ扱い）
+  const z = await approvedJob("youtube", { cover: "c.png" });
+  const undelivered = await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () =>
+          createMockYoutubeAdapter({
+            failAt: "thumbnail",
+            videoId: "thumbfail02",
+          }),
+      },
+      notify: async () => {
+        throw new Error("webhook_down");
+      },
+    }),
+  );
+  assert.equal((await job(z.id)).state, "posted");
+  assert.ok(
+    undelivered.report.alerts.some(
+      (a) => a.key === `undelivered:thumbnail:${z.id}`,
+    ),
+  );
+  // サムネイルが通れば知らせない
+  const w = await approvedJob("youtube", { cover: "c.png" });
+  const quiet = [];
+  await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () =>
+          createMockYoutubeAdapter({ videoId: "thumbpass01" }),
+      },
+      notify: async (t) => quiet.push(t),
+    }),
+  );
+  assert.equal((await job(w.id)).state, "posted");
+  assert.equal(quiet.filter((t) => t.includes("サムネイル")).length, 0);
+});
+
+test("BOA-1164 検査の枠: 先に別レースの X が検査を使った実行では YouTube を claim せず次の実行に回し、次の実行で公開する", async () => {
+  const x = await approvedJob("x", { scheduledOffsetMin: -3 });
+  const y = await approvedJob("youtube", { scheduledOffsetMin: -2 });
+  const firstRun = await runSnsSend(
+    ctx(),
+    deps({ preflight: budgetedPreflight(), headlessBudget: 6 }),
+  );
+  assert.equal((await job(x.id)).state, "posted");
+  // 修正前は X（3回）の後に YouTube（6回）が入り、公開の準備の後の検査で public_check_budget になって非公開のまま残った
+  assert.equal((await job(y.id)).state, "queued");
+  assert.equal((await job(y.id)).attempts, 0);
+  assert.equal(
+    firstRun.body.jobs.find((r) => r.id === y.id)?.outcome,
+    "headless_budget_wait",
+  );
+  await runSnsSend(
+    {
+      ...ctx(),
+      state: { cursor: firstRun.cursor, last_report: firstRun.report },
+    },
+    deps({ preflight: budgetedPreflight(), headlessBudget: 6 }),
+  );
+  assert.equal((await job(y.id)).state, "posted");
+});
+
+test("BOA-1164 検査の枠: X は1回の実行で2件まで（3件目は次の実行）。試運転は検査1回ずつで枠を待たない", async () => {
+  const xs = [];
+  for (const offset of [-4, -3, -2])
+    xs.push(await approvedJob("x", { scheduledOffsetMin: offset }));
+  // 投稿の ID は job ごとに違う（external_post_id は一意）
+  const base = createMockXAdapter();
+  let n = 0;
+  const xAdapter = {
+    ...base,
+    createPost: async (payload) => ({
+      ...(await base.createPost(payload)),
+      id: String(9000 + ++n),
+    }),
+  };
+  const run = await runSnsSend(
+    ctx(),
+    deps({
+      preflight: budgetedPreflight(),
+      headlessBudget: 6,
+      adapters: { x: async () => xAdapter },
+    }),
+  );
+  assert.deepEqual(
+    await Promise.all(xs.map(async (j) => (await job(j.id)).state)),
+    ["posted", "posted", "queued"],
+  );
+  assert.equal(run.body.jobs.at(-1).outcome, "headless_budget_wait");
+  await db.exec(
+    "UPDATE sns_auto_send_control SET dry_run=true WHERE channel='x'",
+  );
+  const extra = await approvedJob("x");
+  const dry = await runSnsSend(
+    ctx(),
+    deps({ preflight: budgetedPreflight(), headlessBudget: 6 }),
+  );
+  assert.deepEqual(
+    dry.body.jobs.map((r) => r.outcome),
+    ["dry_run", "dry_run"],
+  );
+  assert.equal((await job(extra.id)).state, "queued");
+});
+
+test("BOA-1164 残した理由: 処理の確認を使い切った・検査の枠・検査の失敗・太平洋時間の日付の境目を error_code に分ける", async () => {
+  const processing = await approvedJob("youtube");
+  await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () =>
+          createMockYoutubeAdapter({ processingStatus: "processing" }),
+      },
+    }),
+  );
+  assert.equal(
+    (await job(processing.id)).error_code,
+    "youtube_retained_processing",
+  );
+
+  // 公開の準備の後の検査（runner の検査から数えて4回目）で落ちる
+  for (const [message, code, videoId] of [
+    ["public_check_budget", "youtube_retained_budget", "bbbbbbbbbbb"],
+    [
+      "public_component_missing",
+      "youtube_retained_check_failed",
+      "ccccccccccc",
+    ],
+  ]) {
+    await db.exec(
+      "UPDATE sns_x_send_jobs SET state='cancelled' WHERE state IN ('queued','reconcile')",
+    );
+    const y = await approvedJob("youtube");
+    let n = 0;
+    await runSnsSend(
+      ctx(),
+      deps({
+        preflight: async () => {
+          n += 1;
+          if (n === 4) throw new Error(message);
+        },
+        adapters: {
+          youtube: async () => createMockYoutubeAdapter({ videoId }),
+        },
+        notify: async () => {},
+      }),
+    );
+    const row = await job(y.id);
+    assert.equal(row.youtube_stage, "private_retained");
+    assert.equal(row.error_code, code);
+  }
+
+  // アップロードの後に太平洋時間の日付が変わった（試行のクォータの日が今日でない）
+  await db.exec(
+    "UPDATE sns_x_send_jobs SET state='cancelled' WHERE state IN ('queued','reconcile')",
+  );
+  const crossing = await approvedJob("youtube");
+  await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () =>
+          createMockYoutubeAdapter({
+            videoId: "ddddddddddd",
+            afterUpload: () =>
+              db.exec(
+                "UPDATE sns_youtube_quota_attempts SET quota_day = quota_day - 1",
+              ),
+          }),
+      },
+      notify: async () => {},
+    }),
+  );
+  assert.equal((await job(crossing.id)).error_code, "youtube_retained_pt_day");
+});
+
+test("BOA-1164 残した理由: 理由を渡さない呼び出し（186 の前のコード）・知らない理由は今までの youtube_private_retained", async () => {
+  for (const [result, videoId] of [
+    [undefined, "eeeeeeeeeee"],
+    [{ reason: "other" }, "fffffffffff"],
+  ]) {
+    const y = await approvedJob("youtube");
+    await store.transition(y.id, "claim");
+    await store.transition(y.id, "begin_post");
+    await store.transition(y.id, "youtube_call", { method: "videos.insert" });
+    await store.transition(y.id, "youtube_uploaded", { id: videoId });
+    assert.equal(
+      (await store.transition(y.id, "youtube_retain", result)).error_code,
+      "youtube_private_retained",
+    );
+    await db.query("UPDATE sns_x_send_jobs SET state='cancelled' WHERE id=$1", [
+      y.id,
+    ]);
+  }
+});
+
+// 非公開のまま残した job を作り、期限とリースを過去にする
+async function retainedJob({ withChild = false } = {}) {
+  const y = await approvedJob("youtube");
+  await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () =>
+          createMockYoutubeAdapter({ processingStatus: "processing" }),
+      },
+    }),
+  );
+  const child = withChild
+    ? await approvedJob("youtube", { parentJobId: y.id })
+    : null;
+  await db.query(
+    "UPDATE sns_x_send_jobs SET expires_at=now()-interval '1 minute', lease_until=now()-interval '1 minute' WHERE id=$1",
+    [y.id],
+  );
+  return { y, child };
+}
+const lookupAdapter = (result) => {
+  const adapter = {
+    calls: 0,
+    async lookup(j) {
+      adapter.calls += 1;
+      return {
+        confirmed: false,
+        owned: true,
+        id: j.external_post_id,
+        privacyStatus: "private",
+        posted_at: null,
+        ...result,
+      };
+    },
+  };
+  return adapter;
+};
+
+test("BOA-1164 閉じる: 期限とリースの後、自分の非公開の動画と確かめたら公開しないで閉じ、子の Shorts は held（parent_closed）。要照合の通知は止まる", async () => {
+  const { y, child } = await retainedJob({ withChild: true });
+  const youtube = lookupAdapter({});
+  const notices = [];
+  const result = await runSnsSend(
+    ctx(),
+    deps({
+      adapters: { youtube: async () => youtube },
+      notify: async (t) => notices.push(t),
+    }),
+  );
+  const row = await job(y.id);
+  assert.equal(row.state, "cancelled");
+  assert.equal(row.error_code, "youtube_closed_private");
+  assert.equal(row.youtube_stage, "private_retained");
+  assert.equal(row.external_post_id, "abcdefghijk");
+  assert.equal((await job(child.id)).state, "held");
+  assert.equal((await job(child.id)).error_code, "parent_closed");
+  assert.equal(youtube.calls, 1);
+  assert.equal(
+    Number(
+      (
+        await first(
+          "SELECT count(*) n FROM sns_youtube_quota_reads WHERE job_id=$1",
+          [y.id],
+        )
+      ).n,
+    ),
+    1,
+  );
+  assert.equal(
+    result.report.alerts.some((a) => a.key === `reconcile:${y.id}`),
+    false,
+  );
+  assert.equal(
+    notices.filter((t) => t.includes("公開しないで閉じた")).length,
+    1,
+  );
+});
+
+test("BOA-1164 閉じない: 公開になっていたら要照合のまま理由を出し、30分は読み直さない。shadow では閉じない", async () => {
+  const { y } = await retainedJob();
+  const youtube = lookupAdapter({ privacyStatus: "public" });
+  const shadow = await runSnsSend(
+    ctx("shadow"),
+    deps({ adapters: { youtube: async () => youtube } }),
+  );
+  assert.equal(youtube.calls, 0);
+  assert.equal(
+    shadow.report.alerts.some((a) => a.key === `reconcile:${y.id}`),
+    true,
+  );
+  const firstRun = await runSnsSend(
+    ctx(),
+    deps({ adapters: { youtube: async () => youtube } }),
+  );
+  assert.equal((await job(y.id)).state, "reconcile");
+  assert.match(
+    firstRun.report.alerts.find((a) => a.key === `reconcile:${y.id}`).text,
+    /閉じられない: youtube_close_not_private/,
+  );
+  const again = await runSnsSend(
+    { ...ctx(), state: { last_report: firstRun.report } },
+    deps({ adapters: { youtube: async () => youtube } }),
+  );
+  assert.equal(youtube.calls, 1);
+  assert.deepEqual(
+    again.report.close_retry.map((r) => r.id),
+    [y.id],
+  );
+});
+
+test("BOA-1164 閉じる遷移の DB の条件: 読み取りなし・古い読み取り・非公開でない・他人の動画・ID 違い・期限の前・リース中・update_started は拒否する", async () => {
+  const { y } = await retainedJob();
+  const close = (r = {}) =>
+    store.transition(y.id, "youtube_close_private", {
+      owned: true,
+      privacyStatus: "private",
+      id: "abcdefghijk",
+      ...r,
+    });
+  await assert.rejects(close(), /youtube_close_lookup_missing/);
+  await store.transition(y.id, "youtube_lookup");
+  await db.query(
+    "UPDATE sns_youtube_quota_reads SET created_at=now()-interval '11 minutes' WHERE job_id=$1",
+    [y.id],
+  );
+  await assert.rejects(close(), /youtube_close_lookup_missing/);
+  await store.transition(y.id, "youtube_lookup");
+  await assert.rejects(
+    close({ privacyStatus: "unlisted" }),
+    /youtube_close_not_private/,
+  );
+  await assert.rejects(close({ owned: false }), /youtube_close_not_private/);
+  await assert.rejects(
+    close({ id: "zzzzzzzzzzz" }),
+    /youtube_close_not_private/,
+  );
+  await db.query(
+    "UPDATE sns_x_send_jobs SET expires_at=now()+interval '5 minutes' WHERE id=$1",
+    [y.id],
+  );
+  await assert.rejects(close(), /youtube_close_not_allowed/);
+  await db.query(
+    "UPDATE sns_x_send_jobs SET expires_at=now()-interval '1 minute', lease_until=now()+interval '1 minute' WHERE id=$1",
+    [y.id],
+  );
+  await assert.rejects(close(), /youtube_close_not_allowed/);
+  await db.query(
+    "UPDATE sns_x_send_jobs SET lease_until=NULL, youtube_stage='update_started' WHERE id=$1",
+    [y.id],
+  );
+  await assert.rejects(close(), /youtube_close_not_allowed/);
+  await db.query(
+    "UPDATE sns_x_send_jobs SET youtube_stage='private_retained' WHERE id=$1",
+    [y.id],
+  );
+  assert.equal((await close()).state, "cancelled");
+  // 閉じた後は要照合でないので、もう一度は閉じない
+  await assert.rejects(close(), /youtube_close_not_allowed/);
+});
+
+test("BOA-1164 PostgREST の読み取り: 閉じる候補は要照合・YouTube・private_retained・期限とリースの後だけを引く", async () => {
+  const calls = [];
+  const pg = createSnsSendStore({
+    db: async (path) => {
+      calls.push(decodeURIComponent(path));
+      return [];
+    },
+    xSendStore: {},
+  });
+  await pg.retainedYoutubeJobs(new Date("2026-10-27T03:00:00Z"), 4);
+  assert.equal(
+    calls[0],
+    "sns_x_send_jobs?state=eq.reconcile&channel=eq.youtube&youtube_stage=eq.private_retained&expires_at=lte.2026-10-27T03:00:00.000Z&or=(lease_until.is.null,lease_until.lte.2026-10-27T03:00:00.000Z)&order=id.asc&limit=4&select=id,channel,state,youtube_stage,error_code,external_post_id,attempts,expires_at,snapshot",
+  );
+});
+
+test("BOA-1164 検査の枠: cron は Chromium の上限に runner と同じ値を渡す", async () => {
+  const cron = await readFile(
+    new URL("../../api/cron/sns-send.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(cron, /maxInspections:\s*SNS_SEND_HEADLESS_BUDGET/);
+});
+test("BOA-1164 閉じる: YouTube で削除済み（videos.list の items が空）なら youtube_closed_deleted で閉じる。DB も found=false を受ける", async () => {
+  const { y } = await retainedJob();
+  const youtube = lookupAdapter({
+    found: false,
+    owned: false,
+    id: null,
+    privacyStatus: null,
+  });
+  const notices = [];
+  await runSnsSend(
+    ctx(),
+    deps({
+      adapters: { youtube: async () => youtube },
+      notify: async (t) => notices.push(t),
+    }),
+  );
+  const row = await job(y.id);
+  assert.equal(row.state, "cancelled");
+  assert.equal(row.error_code, "youtube_closed_deleted");
+  assert.equal(row.external_post_id, "abcdefghijk");
+  assert.equal(
+    notices.filter((t) => t.includes("公開しないで閉じた")).length,
+    1,
+  );
+  // found が false 以外（未指定・true）なら、非公開の確認が要る
+  const { y: other } = await retainedJob2();
+  await store.transition(other.id, "youtube_lookup");
+  await assert.rejects(
+    store.transition(other.id, "youtube_close_private", {}),
+    /youtube_close_not_private/,
+  );
+  await assert.rejects(
+    store.transition(other.id, "youtube_close_private", { found: true }),
+    /youtube_close_not_private/,
+  );
+  assert.equal(
+    (
+      await store.transition(other.id, "youtube_close_private", {
+        found: false,
+      })
+    ).error_code,
+    "youtube_closed_deleted",
+  );
+});
+
+// 動画 ID が違う2件目の非公開の残置（external_post_id は一意）
+async function retainedJob2() {
+  const y = await approvedJob("youtube");
+  await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () =>
+          createMockYoutubeAdapter({
+            processingStatus: "processing",
+            videoId: "secondvid01",
+          }),
+      },
+    }),
+  );
+  await db.query(
+    "UPDATE sns_x_send_jobs SET expires_at=now()-interval '1 minute', lease_until=now()-interval '1 minute' WHERE id=$1",
+    [y.id],
+  );
+  return { y };
+}
+
+// ---- BOA-1201: 送らなかった理由を sns_send_events（191）に (job, 段, 理由) ごとに初出だけ残す ----
+
+const events = async () =>
+  (
+    await db.query(
+      "SELECT job_id, stage, reason, detail FROM sns_send_events ORDER BY at, reason",
+    )
+  ).rows;
+
+test("BOA-1201 理由の記録: 送る前の検査に落ちると stage=precheck の1行が入る", async () => {
+  const j = await approvedJob("x");
+  await runSnsSend(ctx(), deps({ preflight: failingPreflight }));
+  assert.deepEqual(await events(), [
+    {
+      job_id: j.id,
+      stage: "precheck",
+      reason: "source_check_unconfigured",
+      detail: "source_check_unconfigured",
+    },
+  ]);
+});
+
+test("BOA-1201 理由の記録: 同じ理由で3回回しても1行のまま。理由が変わると2行になる", async () => {
+  const j = await approvedJob("x");
+  for (let i = 0; i < 3; i++)
+    await runSnsSend(ctx(), deps({ preflight: failingPreflight }));
+  assert.equal((await events()).length, 1);
+  // created_at 順の検査なので、別の理由を記録する前に固定時計を進める。
+  mock.timers.tick(1);
+  await runSnsSend(
+    ctx(),
+    deps({
+      preflight: async () => {
+        throw new Error("source_changed");
+      },
+    }),
+  );
+  assert.deepEqual(
+    (await events()).map((e) => [e.job_id, e.stage, e.reason]),
+    [
+      [j.id, "precheck", "source_check_unconfigured"],
+      [j.id, "precheck", "source_changed"],
+    ],
+  );
+});
+
+for (const [label, failure, alerted] of [
+  ["表が無い（404・PGRST205）", { tableMissing: true }, false],
+  ["それ以外の失敗", { tableMissing: false }, true],
+])
+  test(`BOA-1201 理由の記録: 書き込みが落ちても送信は続く（${label}）`, async () => {
+    const a = await approvedJob("x", { scheduledOffsetMin: -3 });
+    const b = await approvedJob("x", { scheduledOffsetMin: -1 });
+    const result = await runSnsSend(
+      ctx(),
+      deps({
+        store: {
+          ...store,
+          recordEvent: async () => {
+            throw Object.assign(
+              new Error("sns_send_events の書き込みに失敗"),
+              failure,
+            );
+          },
+        },
+        preflight: async (j) => {
+          if (j.id === a.id) throw new Error("source_changed");
+        },
+      }),
+    );
+    assert.deepEqual(
+      result.body.jobs.map((r) => [r.id, r.outcome]),
+      [
+        [a.id, "precheck_failed"],
+        [b.id, "posted"],
+      ],
+    );
+    assert.equal((await job(b.id)).state, "posted");
+    // 表が無い間（191 は db-apply でデプロイの後）は Slack を鳴らし続けない
+    assert.equal(
+      result.report.alerts.some((x) => x.key === "send_events"),
+      alerted,
+    );
+  });
+
+test("BOA-1201 理由の記録: shadow では書かない", async () => {
+  await approvedJob("x");
+  const result = await runSnsSend(
+    ctx("shadow"),
+    deps({ preflight: failingPreflight }),
+  );
+  assert.equal(result.body.jobs[0].outcome, "precheck_failed");
+  assert.deepEqual(await events(), []);
+});
+
+test("BOA-1201 理由の記録: YouTube の送信の中で public_component_missing なら held（youtube_preflight_failed）と stage=send の1行。日本語の失敗は holdReasonOf の code", async () => {
+  const y = await approvedJob("youtube");
+  // runner の検査（1回目）は通し、送信の中の検査（2回目）で落とす
+  let calls = 0;
+  const result = await runSnsSend(
+    ctx(),
+    deps({
+      preflight: async () => {
+        calls += 1;
+        if (calls >= 2) throw new Error("public_component_missing");
+      },
+    }),
+  );
+  assert.equal(result.body.jobs[0].reason, "public_component_missing");
+  const row = await job(y.id);
+  assert.equal(row.state, "held");
+  assert.equal(row.error_code, "youtube_preflight_failed");
+  assert.deepEqual(await events(), [
+    {
+      job_id: y.id,
+      stage: "send",
+      reason: "public_component_missing",
+      detail: "public_component_missing",
+    },
+  ]);
+  // 媒体の照合の失敗（日本語の文言）は「youtube_preflight_種類」の code、文言は detail
+  const z = await approvedJob("youtube");
+  await runSnsSend(
+    ctx(),
+    deps({ loadMedia: async () => new Uint8Array([9, 9, 9]) }),
+  );
+  assert.equal((await job(z.id)).error_code, "youtube_preflight_failed");
+  assert.deepEqual(
+    (await events()).filter((e) => e.job_id === z.id),
+    [
+      {
+        job_id: z.id,
+        stage: "send",
+        reason: "youtube_preflight_media_changed",
+        detail: "媒体が変更されています",
+      },
+    ],
+  );
+});
+
+test("BOA-1201 PostgREST の書き込み: on_conflict と ignore-duplicates で POST し、404・PGRST205 は tableMissing、ほかの失敗は投げる", async () => {
+  const calls = [];
+  const respond = (status, body) => async (url, init) => {
+    calls.push({ url, init });
+    return new Response(body === undefined ? null : JSON.stringify(body), {
+      status,
+    });
+  };
+  const event = {
+    job_id: "00000000-0000-0000-0000-000000000001",
+    stage: "precheck",
+    reason: "source_changed",
+    detail: "source_changed",
+  };
+  await createPostgrestEventWriter({
+    url: "https://db.example",
+    key: "k",
+    fetchImpl: respond(201),
+  })(event);
+  assert.equal(
+    calls[0].url,
+    "https://db.example/rest/v1/sns_send_events?on_conflict=job_id,stage,reason",
+  );
+  assert.equal(calls[0].init.method, "POST");
+  assert.equal(
+    calls[0].init.headers.Prefer,
+    "resolution=ignore-duplicates,return=minimal",
+  );
+  assert.deepEqual(JSON.parse(calls[0].init.body), event);
+  for (const [status, body, missing] of [
+    [404, { code: "PGRST205", message: "Could not find the table" }, true],
+    [404, null, true],
+    [409, { code: "23503", message: "fk" }, false],
+    [500, null, false],
+  ]) {
+    const error = await createPostgrestEventWriter({
+      url: "https://db.example",
+      key: "k",
+      fetchImpl: respond(status, body ?? undefined),
+    })(event).then(
+      () => null,
+      (e) => e,
+    );
+    assert.ok(error, `HTTP ${status} は投げる`);
+    assert.equal(error.tableMissing, missing, `HTTP ${status}`);
+    assert.doesNotMatch(error.message, /Could not find|fk$/);
+  }
+  // runner の store に渡す
+  assert.equal(
+    createSnsSendStore({ db: async () => [], xSendStore: {}, writeEvent: 1 })
+      .recordEvent,
+    1,
+  );
+});
+
+test("BOA-1201 理由の記録: detail は文字単位で300字までに切る", async () => {
+  await approvedJob("x");
+  const long = "あ".repeat(299) + "😀" + "い".repeat(10);
+  await runSnsSend(
+    ctx(),
+    deps({
+      preflight: async () => {
+        throw new Error(long);
+      },
+    }),
+  );
+  const [row] = await events();
+  assert.equal(row.reason, "unexpected_error");
+  assert.equal(Array.from(row.detail).length, 300);
+  assert.ok(row.detail.endsWith("😀"));
+});
+
+// ---- BOA-1201（#2070 の審査）: claim の DB の拒否を文言ごとの code に、begin_post の後は stage=after_post に ----
+
+// 本番の xSendStore（api/_lib/snsXSendStore.js）の transition を、PostgREST の応答の形で PGlite につなぐ。
+// RAISE は PostgREST と同じく HTTP 400 と {code, message, details, hint} で返す。override は action ごとに応答を差し替える
+async function withPostgrestTransition(fn, override = {}) {
+  const { xSendStore } = await import("../../api/_lib/snsXSendStore.js");
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    assert.match(String(url), /rpc\/transition_sns_x_send$/);
+    const body = JSON.parse(options.body);
+    if (override[body.p_action]) return override[body.p_action]();
+    try {
+      const r = await store.transition(
+        body.p_job_id,
+        body.p_action,
+        body.p_result,
+      );
+      return new Response(JSON.stringify(r), { status: 200 });
+    } catch (e) {
+      return new Response(
+        JSON.stringify({
+          code: e.code ?? "P0001",
+          message: e.message,
+          details: null,
+          hint: null,
+        }),
+        { status: 400 },
+      );
+    }
+  };
+  try {
+    return await fn({
+      ...store,
+      transition: (id, action, result) =>
+        xSendStore.transition(id, action, result),
+    });
+  } finally {
+    globalThis.fetch = original;
+  }
+}
+
+test("BOA-1201 claim の拒否: 日次全体上限と月額上限は別の reason の2行（detail は元の文言）、利用者に見せる文言は今までどおり", async () => {
+  const j = await approvedJob("x");
+  const notices = [];
+  await withPostgrestTransition(async (pgStore) => {
+    await db.exec("UPDATE sns_x_send_control SET daily_external_count=1000");
+    const daily = await runSnsSend(
+      ctx(),
+      deps({ store: pgStore, notify: async (t) => notices.push(t) }),
+    );
+    assert.equal(daily.body.jobs[0].reason, "claim_daily_limit");
+    await db.exec(
+      "UPDATE sns_x_send_control SET daily_external_count=0, reserved_microusd=budget_microusd",
+    );
+    const monthly = await runSnsSend(
+      ctx(),
+      deps({ store: pgStore, notify: async (t) => notices.push(t) }),
+    );
+    assert.equal(monthly.body.jobs[0].reason, "claim_monthly_budget");
+  });
+  assert.equal((await job(j.id)).state, "queued");
+  assert.deepEqual(await events(), [
+    {
+      job_id: j.id,
+      stage: "send",
+      reason: "claim_daily_limit",
+      detail: "日次全体上限です",
+    },
+    {
+      job_id: j.id,
+      stage: "send",
+      reason: "claim_monthly_budget",
+      detail: "月額上限です",
+    },
+  ]);
+  assert.match(notices[0], /X送信のDB操作に失敗しました/);
+});
+
+for (const [label, response, detail] of [
+  [
+    "表に無い文言",
+    () =>
+      new Response(
+        JSON.stringify({ code: "P0001", message: "知らない拒否です" }),
+        { status: 400 },
+      ),
+    "知らない拒否です",
+  ],
+  [
+    "本文の無い 503",
+    () => new Response("", { status: 503 }),
+    "X送信のDB操作に失敗しました（HTTP 503）",
+  ],
+])
+  test(`BOA-1201 claim の拒否: 写せない（${label}）は db_rejected で、detail に元の文言`, async () => {
+    const j = await approvedJob("x");
+    const result = await withPostgrestTransition(
+      (pgStore) => runSnsSend(ctx(), deps({ store: pgStore })),
+      { claim: response },
+    );
+    assert.equal(result.body.jobs[0].reason, "db_rejected");
+    assert.deepEqual(await events(), [
+      { job_id: j.id, stage: "send", reason: "db_rejected", detail },
+    ]);
+  });
+
+test("BOA-1201 claim の拒否: 英小文字と _ の文言（YouTube のクォータ）も code に写す", async () => {
+  const y = await approvedJob("youtube");
+  await db.exec("UPDATE sns_youtube_quota_control SET external_uploads=10");
+  const result = await withPostgrestTransition((pgStore) =>
+    runSnsSend(ctx(), deps({ store: pgStore })),
+  );
+  assert.equal(result.body.jobs[0].reason, "claim_youtube_quota_limit");
+  assert.deepEqual(await events(), [
+    {
+      job_id: y.id,
+      stage: "send",
+      reason: "claim_youtube_quota_limit",
+      detail: "youtube_quota_limit",
+    },
+  ]);
+});
+
+for (const [label, channel, adapters] of [
+  [
+    "X の投稿",
+    "x",
+    { x: async () => createMockXAdapter({ failAt: "createPost" }) },
+  ],
+  [
+    "YouTube のアップロード",
+    "youtube",
+    { youtube: async () => createMockYoutubeAdapter({ failAt: "upload" }) },
+  ],
+  [
+    "YouTube の公開",
+    "youtube",
+    { youtube: async () => createMockYoutubeAdapter({ failAt: "update" }) },
+  ],
+])
+  test(`BOA-1201 begin_post の後の失敗は stage=after_post（${label}、要照合）`, async () => {
+    const j = await approvedJob(channel);
+    const result = await runSnsSend(
+      ctx(),
+      deps({ adapters: { ...deps().adapters, ...adapters } }),
+    );
+    assert.equal(result.body.jobs[0].outcome, "error");
+    assert.equal((await job(j.id)).state, "reconcile");
+    assert.deepEqual(
+      (await events()).map((e) => [e.job_id, e.stage, e.reason]),
+      [[j.id, "after_post", "mock_failure"]],
+    );
+  });

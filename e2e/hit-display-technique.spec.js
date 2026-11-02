@@ -1,4 +1,8 @@
 import { test, expect } from "./fixtures.js";
+import { closeSrcLoader, loadSrc, srcFixedT } from "./src-modules.js";
+
+// 共有文の検査は src/ をテストの側（Node）で読む（e2e/src-modules.js。build した束の preview でも通るように）
+test.afterAll(closeSrcLoader);
 
 /**
  * 展開予測の的中は1着の艇だけで判定し、決まり手は見ない（判定と公開している的中率は変えない）。
@@ -9,16 +13,12 @@ import { test, expect } from "./fixtures.js";
  * - A-3: カードの「予想: 逃げ 54%」は、実際と違うときに「（実際: 差し）」を添える
  */
 
-test("A-2: 共有文は、決まり手もコースも予想どおりのときだけ「予想通りの展開でした」と書く", async ({
-  page,
-}) => {
-  await page.goto("/about", { waitUntil: "domcontentloaded" });
-  const texts = await page.evaluate(async () => {
-    const { generateTurnHitShareText } = await import("/src/utils/share.js");
-    const { default: i18n } = await import("/src/i18n.js");
-    // /hit-races は ja 専用なので ja の文面で確かめる（BOA-754 で文面を locale に移した）
-    const share = (race) =>
-      generateTurnHitShareText(race, i18n.getFixedT("ja"));
+test("A-2: 共有文は、決まり手もコースも予想どおりのときだけ「予想通りの展開でした」と書く", async () => {
+  const { generateTurnHitShareText } = await loadSrc("/src/utils/share.js");
+  // /hit-races は ja 専用なので ja の文面で確かめる（BOA-754 で文面を locale に移した）
+  const t = await srcFixedT("ja");
+  const share = (race) => generateTurnHitShareText(race, t);
+  const texts = (() => {
     const base = { venue: "鳴門", raceNo: 12, date: "2026-10-02" };
     return {
       asPredicted: share({
@@ -64,7 +64,7 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
         probability: 0.12,
       }),
     };
-  });
+  })();
   expect(texts.asPredicted).toContain(
     "1号艇が1着（AIの予想: 逃げ 54%）\n予想通りの展開でした ✅",
   );
@@ -90,22 +90,15 @@ test("A-2: 共有文は、決まり手もコースも予想どおりのときだ
   }
   // 共有はレース当日とは限らない
   for (let i = 0; i < 30; i += 1) {
-    const text = await page.evaluate(async () => {
-      const { generateTurnHitShareText } = await import("/src/utils/share.js");
-      const { default: i18n } = await import("/src/i18n.js");
-      // /hit-races は ja 専用なので ja の文面で確かめる（BOA-754 で文面を locale に移した）
-      const share = (race) =>
-        generateTurnHitShareText(race, i18n.getFixedT("ja"));
-      return share({
-        venue: "戸田",
-        raceNo: 11,
-        date: "2026-09-27",
-        winnerBoat: 1,
-        winnerEntryCourse: 1,
-        technique: "逃げ",
-        actualTechnique: "逃げ",
-        probability: 0.6,
-      });
+    const text = share({
+      venue: "戸田",
+      raceNo: 11,
+      date: "2026-09-27",
+      winnerBoat: 1,
+      winnerEntryCourse: 1,
+      technique: "逃げ",
+      actualTechnique: "逃げ",
+      probability: 0.6,
     });
     expect(text).not.toContain("今日も");
   }

@@ -130,9 +130,9 @@ const v16Cache = new Map();
 
 const V16_MAX_ENTRIES = 12;
 
-async function getV16(path) {
+async function getV16(path, fresh = false) {
   const hit = v16Cache.get(path);
-  if (hit && Date.now() - hit.at < V16_TTL_MS) return hit.body;
+  if (!fresh && hit && Date.now() - hit.at < V16_TTL_MS) return hit.body;
   v16Cache.delete(path);
   const res = await fetch(path);
   if (!res.ok)
@@ -201,9 +201,16 @@ export const getAnalogyScenarioRaces = (raceId, scope, stage, boat = 1) =>
     `/api/analogy/scenario/${encodeURIComponent(raceId)}?${stageQuery(stage)}&races=1&scope=${encodeURIComponent(scope)}${boat > 1 ? `&boat=${boat}` : ""}`,
   );
 
-export const getAnalogyScenario = (raceId, scope, stage, boats = false) =>
+export const getAnalogyScenario = (
+  raceId,
+  scope,
+  stage,
+  boats = false,
+  fresh = false,
+) =>
   getV16(
     `/api/analogy/scenario/${encodeURIComponent(raceId)}?${stageQuery(stage)}${boats ? "&boats=1" : ""}${
       scope ? `&scope=${encodeURIComponent(scope)}` : ""
     }`,
+    fresh,
   );
