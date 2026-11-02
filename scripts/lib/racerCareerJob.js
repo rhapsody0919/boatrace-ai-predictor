@@ -10,10 +10,11 @@
  *   - 数えるのは DB の RPC（compute_racer_career_counts）。ここは判定の材料（優勝戦の種別の原文・グレードの補正）を作り、
  *     返った件数を足し合わせ、upsertChangedRows で書き、消えたセルを消す
  *   - 「差分を足す」はしない。毎回その選手（kb は全選手）の層の全期間を計算し直して置き換える（Cron の重複・未配信に強い）
- *   - 優勝戦の判定は src/pure/raceStageConfig.js の isFinalStage（v2）。kb_archive_races.stage_kind は使わない
+ *   - 優勝戦の判定は src/pure/racerCareerStats.js の isCareerFinalStage（isFinalStage v2 と、公式が優勝戦として数える2つの名前）。
+ *     kb_archive_races.stage_kind は使わない
  *   - 勝率の着順点・出走の数え方は持たない（src/pure/racerCareerStats.js、BOA-1193 が読み手の側で使う）
  */
-import { isFinalStage } from "../../src/pure/raceStageConfig.js";
+import { isCareerFinalStage } from "../../src/pure/racerCareerStats.js";
 import { upsertChangedRows } from "./unchangedRows.js";
 import {
   KB_FIRST_DATE,
@@ -21,8 +22,8 @@ import {
   MAIN_TABLES_START,
 } from "./kbArchiveBoundary.js";
 
-/** 判定の規則の版。isFinalStage の v2・グレードの補正 v2（class_code の読み替え）・着のコードの体系 v1。規則を変えたら上げ、kb を計算し直す */
-export const RULE_VERSION = "career-v1(stage-v2,grade-v2,code-v1)";
+/** 判定の規則の版。優勝戦は isFinalStage の v2＋2つの名前（kb2）・グレードの補正 v2（class_code の読み替え）・着のコードの体系 v1。規則を変えたら上げ、kb を計算し直す */
+export const RULE_VERSION = "career-v2(stage-v2+kb2,grade-v2,code-v1)";
 
 /** 着のコードごとの件数の列（190 の表と RPC の戻り値で同じ名前） */
 export const COUNT_COLUMNS = Object.freeze([
@@ -83,7 +84,7 @@ export const MAX_STALE_RATIO = 0.2;
 export function finalStagesOf(stages) {
   if (!Array.isArray(stages)) throw new Error("種別の一覧が配列ではない");
   return [
-    ...new Set(stages.filter((s) => typeof s === "string" && isFinalStage(s))),
+    ...new Set(stages.filter((s) => typeof s === "string" && isCareerFinalStage(s))),
   ].sort();
 }
 

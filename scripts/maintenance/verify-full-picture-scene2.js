@@ -2122,6 +2122,28 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     const shots1 = { c2: sh("c2", 26.4), c3: sh("c3", MIN_FONT_PX - 0.1), c4: sh("c4", 29.8), c4b: sh("c4b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };
     assert.deepEqual(f01SmallChapters(s1, shots1).map((x) => x.id), ["c3", "c5"], "線の下（c3）と撮れなかった章（c5）を省く");
     assert.deepEqual(PLAN.c4.map((p) => p.k), ["c4", "c4b", "c4", "c42", "c42b"]);
+    // オーナー 11/2「22.4px の章は2カットに分けて」: 線は 24px。着順の流れは押した後を上・下、形の札は図と名前の2カット
+    assert.equal(MIN_FONT_PX, 24);
+    assert.deepEqual(PLAN.c2.map((p) => p.k), ["c2", "c2-pre", "c22", "c22b"]);
+    assert.deepEqual(PLAN.c3.map((p) => p.k), ["c3i", "c3", "c3-pre", "c32", "c32b"]);
+    // 押す帯が下半分のとき、押す前のカット（下半分）のカーソルはそのカットの座標で、帯の中を指す（#2087 の審査）
+    {
+      const half = { x: 40, y: 0, w: 440, h: 233 };
+      const band = { x: 61, y: 300, w: 24, h: 90 }; // 元の図（高さ440）で下半分にある帯
+      const shift = 440 * 0.47;
+      const shots3 = {
+        c2: sh("c2", 26.4),
+        "c2-pre": { ...sh("c2-pre", 30.4, half), cursor: { ...band, y: band.y - shift } },
+        c22: { ...sh("c22", 30.4, half), cursor: band },
+        c22b: sh("c22b", 30.4, half),
+      };
+      const l3 = ["次に、類似レースのタブ。", "1号艇が勝った313件では、2着は2号艇が137件で最も多い。"];
+      const v3 = { lines: l3.map((sub, i) => ({ chapter: "c2", i, sub, file: `w${i}.wav`, sec: 4 })) };
+      const pre = f01Timeline({ chapters: [{ id: "c2", name: "類似レース", subs: l3 }] }, v3, shots3).props.chapters[0].cuts.find((c) => c.file === "c2-pre.png");
+      const cy = pre.cursor.y + pre.cursor.h / 2;
+      assert.ok(cy >= 0 && cy <= half.h && pre.cursor.y === band.y - shift, `カーソルが押す前のカットの中の帯を指す（y=${pre.cursor.y}）`);
+    }
+    assert.deepEqual(f01SmallChapters({ chapters: [{ id: "c2" }] }, { c2: sh("c2", 26.4), "c2-pre": sh("c2-pre", 30.4), c22: sh("c22", 22.4), c22b: sh("c22b", 30.4) }).map((x) => x.id), ["c2"], "1カットで 22.4px の着順の流れは線の下");
     const lines = ["ここからは思考アシスト。", "軸を選ぶと、相手の割合が出る。", "大村で1号艇が1着の11,160件では、", "2着は2号艇が34.7%。", "軸を4号艇に変えると、1,375件で、", "2着は1号艇が37%に入れ替わる。"];
     const voice = { lines: lines.map((sub, i) => ({ chapter: "c4", i, sub, file: `v${i}.wav`, sec: 2 })) };
     const shots2 = { ...shots1, c42: { ...sh("c42", 29.8), cursorFrom: { x: 1, y: 1, w: 10, h: 10 } }, c42b: sh("c42b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };
@@ -2218,6 +2240,40 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     const one = layoutRight({ answer: `2着 1号艇${NB}${F01_LONG_NAMES[0]}${NB}A1 41.9%`, path: "p" });
     assert.ok(one.ok && one.answer.lines.some((l) => l.includes(`1号艇${NB}${F01_LONG_NAMES[0]}${NB}A1`)));
   }
+}
+
+// ---- f01 の c12: 撮る画面の時点を材料にそろえる（2026-11-02、10-30 15場9R・11-01 4場10R で「5項目中」対「6項目中」）----
+// 出走表の段の facts の応答も status は exhibition_ready で exhibition は null。画面は既定で展示後になり、値の無い展示タイムの軸を
+// 数えた（n だけ +1、値の無い軸は2位以内に数えないので k は同じ）。撮影は材料の時点（pageStageOf）を押してから撮る
+{
+  const { buildScene2 } = await import(`${R}/scripts/full-picture/scene2-data.mjs`);
+  const { pageStageOf } = await import(`${R}/scripts/full-picture/f01-capture.mjs`);
+  const { radarAxisItems, radarBoats, todayValues } = await import("../../src/utils/analogyFacts.js");
+  const m = JSON.parse(gunzipSync(readFileSync(new URL(fixtures[0], FX))).toString("utf8"));
+  const facts = m.api.facts?.data ?? m.api.facts;
+  const resp = { ...facts, status: "exhibition_ready", exhibition: null };
+  const s2 = buildScene2(resp);
+  const site = (stage) => {
+    const items = radarAxisItems(resp.today, stage === "exhibition");
+    const boats = radarBoats(resp.today, resp.facts, todayValues(resp.today, resp.exhibition), items, 1, null);
+    return { n: items.length, top2: boats.map((b) => b.top2) };
+  };
+  assert.equal(m.stage, "racecard");
+  assert.equal(pageStageOf(m), "racecard", "材料が出走表なら画面も出走表で撮る");
+  assert.equal(pageStageOf({ stage: "exhibition" }), "exhibition");
+  assert.equal(pageStageOf({}), "racecard", "時点の無い材料は出走表");
+  const want = site(pageStageOf(m));
+  assert.equal(want.n, s2.radar.axes.length, "撮る時点の画面の「N項目中」と f01 の項目の数が同じ");
+  assert.deepEqual(want.top2, s2.radar.boats.map((b) => b.top2), "「k 項目で2位以内」の k も同じ");
+  // 直す前（展示後のまま撮った）は n だけずれた
+  const old = site("exhibition");
+  assert.equal(old.n, s2.radar.axes.length + 1, "展示後の画面は値の無い展示タイムの軸を数える");
+  assert.deepEqual(old.top2, want.top2, "値の無い軸は k を変えない");
+  // 展示後の材料なら展示タイムの軸が入り、画面（展示後）と同じ
+  const ex = { ...resp, exhibition: { exh_time: [6.6, 6.7, 6.8, 6.75, 6.72, 6.81] } };
+  const s2e = buildScene2(ex);
+  assert.ok(s2e.radar.axes.some((a) => a.key === "exh_time"));
+  assert.equal(radarAxisItems(ex.today, true).length, s2e.radar.axes.length, "展示後の材料は展示後の画面と同じ項目の数");
 }
 
 console.log("verify-full-picture-scene2: OK");
