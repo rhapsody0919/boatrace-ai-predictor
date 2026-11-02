@@ -32,6 +32,18 @@ export const getTodayJST = () => {
 };
 
 /**
+ * 今日の日付をJSTで「2026年10月25日（日）」の形にする（成績の見出し、BOA-1094・BOA-1100）。
+ * 端末の getDate() 等で作ると、JST の朝は JST より西の端末で前日になるため、JST の暦日から作る。
+ * @param {Date} [now] - 基準時刻（既定は現在時刻）
+ * @returns {string}
+ */
+export const formatTodayHeadingJST = (now = new Date()) => {
+  const jst = getJSTNow(now);
+  const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+  return `${jst.getUTCFullYear()}年${jst.getUTCMonth() + 1}月${jst.getUTCDate()}日（${weekdays[jst.getUTCDay()]}）`;
+};
+
+/**
  * 昨日の日付をJSTで取得
  * @returns {string} YYYY-MM-DD形式
  */
