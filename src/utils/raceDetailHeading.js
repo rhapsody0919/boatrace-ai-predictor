@@ -151,15 +151,17 @@ export function getRaceDetailMeta(
   t,
   { raceId, venueCode, raceNo, date },
   lang,
+  { cancelled = false, finished = false } = {},
 ) {
+  const suffix = finished ? "Result" : cancelled ? "Cancelled" : "";
   const params = {
     venue: t(`venues.${venueCode}`),
     race: raceNo,
     date: formatDateLocalized(date, lang),
   };
   return {
-    title: t("raceDetailPage.metaTitle", params),
-    description: t("raceDetailPage.metaDescription", params),
+    title: t(`raceDetailPage.metaTitle${suffix}`, params),
+    description: t(`raceDetailPage.metaDescription${suffix}`, params),
     canonical: `${SITE_ORIGIN}${localizePath(`/race/${raceId}`, lang)}`,
   };
 }

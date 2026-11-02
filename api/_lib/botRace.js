@@ -327,7 +327,10 @@ export function buildRaceModel(races, key, t, series = null) {
   return {
     lang: key.lang,
     path: `/race/${key.raceId}`,
-    meta: getRaceDetailMeta(t, key, key.lang),
+    meta: getRaceDetailMeta(t, key, key.lang, {
+      cancelled: isRaceCancelled(race),
+      finished: !!race.result?.finished,
+    }),
     breadcrumbItems: getRaceDetailBreadcrumbItems(t, key, isToday, key.lang),
     gradeLabel: heading.gradeConfig?.label ?? null,
     seriesTitle: heading.seriesTitle,

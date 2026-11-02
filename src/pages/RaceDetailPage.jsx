@@ -228,7 +228,10 @@ function RaceDetailPage({ showViewSwitch = false }) {
     isToday,
     lang,
   );
-  const pageMeta = getRaceDetailMeta(t, raceKey, lang);
+  const pageMeta = getRaceDetailMeta(t, raceKey, lang, {
+    cancelled: isRaceCancelled(racePrediction),
+    finished: !!racePrediction?.result,
+  });
 
   return (
     <>
