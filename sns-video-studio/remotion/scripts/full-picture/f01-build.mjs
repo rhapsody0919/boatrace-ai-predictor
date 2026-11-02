@@ -145,6 +145,28 @@ export function f01SmallChapters(s, shots) {
   return out;
 }
 
+/**
+ * 撮影の時間切れ（Playwright の TimeoutError）のときだけ、1回だけ撮り直す（オーナー 2026-11-02「時間切れのときは1回だけ撮り直すようにして」。
+ * ソナーの時点のボタンを押す所が3回に1回止まった）。照合の不一致・字の小ささなど時間切れ以外の失敗はやり直さない（撮影はそれらを投げない）。
+ * 2回目も時間切れなら、その失敗を投げる（retries=1 を付ける）
+ * @template T @param {() => Promise<T>} fn @param {(e: Error) => void} [onRetry]
+ * @returns {Promise<{value: T, retries: number}>}
+ */
+export async function retryOnTimeout(fn, onRetry = () => {}) {
+  try {
+    return { value: await fn(), retries: 0 };
+  } catch (e) {
+    if (e?.name !== "TimeoutError") throw e;
+    onRetry(e);
+    try {
+      return { value: await fn(), retries: 1 };
+    } catch (e2) {
+      if (e2 && typeof e2 === "object") e2.retries = 1;
+      throw e2;
+    }
+  }
+}
+
 /** YouTube の章の行（「0:00 冒頭」）。10秒未満の章は前の章に含める */
 export const f01Chapters = (marks) => {
   const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
@@ -172,7 +194,15 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
   } catch (e) {
     return { reasons: ["type_unsupported:voice"], detail: `VOICEVOX: ${e instanceof Error ? e.message : String(e)}` };
   }
-  const shots = await captureAll(m, s, pub);
+  let shots;
+  let captureRetries = 0;
+  try {
+    ({ value: shots, retries: captureRetries } = await retryOnTimeout(() => captureAll(m, s, pub), (e) => console.warn(`[f01 の撮影を撮り直す] 時間切れ: ${e.message.split("\n")[0]}`)));
+  } catch (e) {
+    // 2回とも時間切れ（またはほかの失敗）は今までどおり止める。やり直した回数は f01.json に残す
+    writeFileSync(join(out, "f01.json"), JSON.stringify({ version: s.version, raceId: s.raceId, captureRetries: e?.retries ?? 0, captureError: String(e?.message ?? e).split("\n")[0] }, null, 2));
+    throw e;
+  }
   // 字の小ささの線（MIN_FONT_PX）: 下回る撮った物を含む章・撮れなかった章は出さず、警告として残す
   const small = f01SmallChapters(s, shots);
   if (small.length) {
@@ -198,6 +228,7 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     checks: why,
     minFontPx: Object.fromEntries(Object.entries(shots).map(([k, v]) => [k, v.minFontPx])),
     minFontLine: MIN_FONT_PX,
+    captureRetries,
     smallText: Object.fromEntries(Object.entries(shots).map(([k, v]) => [k, v.small ?? []])),
     dpr: DPR,
     chapters: s.chapters.map((c) => ({ id: c.id, name: c.name, voice: c.voice, answer: c.answer ?? null, answer2: c.answer2 ?? null, scope: c.scope ?? null, right: c.right ?? null, bars: c.open?.bars ?? null, openLayout: c.open?.layout ?? null, facts: c.facts })),
