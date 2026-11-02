@@ -250,6 +250,8 @@ export function successResponse(target, parsed, fetchedAt) {
  * @param {Record<string, unknown>} options.query
  * @param {string} [options.method]
  * @param {(url: string) => Promise<Response>} options.politeFetch createPoliteFetch の返り値（ブレーカー込み）
+ * @param {(raceId: string) => Promise<Date|null>} [options.getDeadline]
+ * @param {(raceId: string, page: string) => Promise<Object|null>} [options.getLatestSnapshot]
  * @param {() => Date} [options.now]
  * @param {string} [options.rawSearch] 生のクエリ（req.url の ? から。渡したときだけ isCanonicalLiveOddsSearch で検査する）
  */
@@ -259,6 +261,8 @@ export async function handleLiveOddsRequest({
   politeFetch,
   now = () => new Date(),
   rawSearch,
+  getDeadline = async () => null,
+  getLatestSnapshot = async () => null,
 }) {
   if (method !== "GET") {
     return { ...badRequestResponse("GET のみ"), status: 405 };
@@ -269,6 +273,20 @@ export async function handleLiveOddsRequest({
     return badRequestResponse(
       "クエリは ?raceId=…&page=… の順・エンコードなしで指定してください",
     );
+  }
+
+  const deadline = await getDeadline(target.raceId);
+  const minutes = deadline == null ? null : (deadline.getTime() - now().getTime()) / 60000;
+  if (minutes !== null && (minutes > 90 || minutes < -10)) {
+    const snapshot = await getLatestSnapshot(target.raceId, target.page);
+    if (!snapshot || !Object.values(snapshot.data ?? {}).some(
+      (values) => values && Object.keys(values).length > 0,
+    )) return upstreamErrorResponse("snapshot_unavailable", 60);
+    return json(200, CACHE_OK, {
+      ok: true, raceId: target.raceId, page: target.page,
+      fetchedAt: snapshot.fetchedAt, officialUpdatedAt: snapshot.officialUpdatedAt,
+      final: snapshot.final, data: snapshot.data,
+    });
   }
 
   let response;

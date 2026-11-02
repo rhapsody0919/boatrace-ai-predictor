@@ -2,7 +2,8 @@
  * オッズのライブ取得（BOA-487）: GET /api/odds/live?raceId=YYYY-MM-DD-VV-RR&page=tf|3t|3f|2tf|k
  *
  * オッズ一覧タブを開いたとき・「更新」を押したときに、公式のオッズページを1ページ取得して解析し、そのまま返す。
- * race_odds には書かない（スナップショットの窓・prediction_odds の導出と混ぜない）。
+ * 締切 -90〜+10分（両端を含む）だけ公式へ取得する。範囲外は race_odds の最新行を返す。
+ * 締切不明は従来どおり取得する。race_odds には書かない。
  *
  * - 受け付けるのは JST の当日のレースだけ。page は列挙値のみ、未知のクエリパラメータは 400（no-store）
  * - クエリの形は ?raceId=…&page=… の順・エンコードなしの1つだけ。違えば 400（BOA-1110、isCanonicalLiveOddsSearch）
@@ -24,6 +25,7 @@ import { createCircuitBreaker } from "../../scripts/lib/scrapeJobs/circuitBreake
 import { createPoliteFetch } from "../../scripts/lib/scrapeJobs/politeFetch.js";
 import { createSupabaseStore } from "../../scripts/lib/scrapeJobs/store.js";
 import { createFetchCounter } from "../../scripts/lib/scrapeJobs/fetchCounter.js";
+import { raceStartInstant } from "../../scripts/lib/scrapeJobs/time.js";
 import { waitUntil } from "@vercel/functions";
 
 export const config = {
@@ -55,21 +57,68 @@ function getPoliteFetch() {
           countOverload: false,
           counter,
         });
-        return { politeFetch, counter };
+        return { politeFetch, counter, ...createLiveOddsReaders(supabase) };
       },
     );
   }
   return politeFetchPromise;
 }
 
+/** DBの読み取りだけを注入する。最新行に要求ページの値が無ければ null。 */
+export function createLiveOddsReaders(supabase) {
+  return {
+    async getDeadline(raceId) {
+      if (!supabase) return null;
+      const { data, error } = await supabase.from("races")
+        .select("race_date, start_time").eq("race_id", raceId).maybeSingle();
+      if (error) throw error;
+      return data?.start_time ? raceStartInstant(data.race_date, data.start_time) : null;
+    },
+    async getLatestSnapshot(raceId, page) {
+      if (!supabase) throw new Error("Supabase client not initialized");
+      const { data: row, error } = await supabase.from("race_odds")
+        .select("*").eq("race_id", raceId)
+        .order("captured_at", { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      if (!row) return null;
+      const nonEmpty = (value) => value && Object.keys(value).length > 0;
+      const data = {};
+      const columns = {
+        "3t": { trifectaAll: "trifecta_all" }, "3f": { trioAll: "trio_all" },
+        "2tf": { exactaAll: "exacta_all", quinellaAll: "quinella_all" },
+        k: { wideAll: "wide_all" },
+      };
+      if (page === "tf") {
+        data.win = {}; data.place = {};
+        for (let n = 1; n <= 6; n++) {
+          const win = row[`odds_win_${n}`];
+          const low = row[`odds_place_${n}_low`];
+          const high = row[`odds_place_${n}_high`];
+          if (win != null) data.win[n] = win;
+          if (low != null && high != null) data.place[n] = { low, high };
+        }
+      } else {
+        for (const [key, column] of Object.entries(columns[page])) {
+          data[key] = row[column] ?? {};
+        }
+      }
+      if (!Object.values(data).some(nonEmpty)) return null;
+      // race_odds は発売中の窓。公式更新時刻と締切時の印は保存していない。
+      return { fetchedAt: row.captured_at, officialUpdatedAt: null, final: false, data };
+    },
+  };
+}
+
 export default async function handler(req, res) {
-  const { politeFetch, counter } = await getPoliteFetch();
+  const { politeFetch, counter, getDeadline, getLatestSnapshot } = await getPoliteFetch();
   const { status, cacheControl, body } = await handleLiveOddsRequest({
     query: req.query ?? {},
     method: req.method,
     // 生のクエリの形も検査する（並び替え・エンコードでキャッシュを外させない。BOA-1110）
     rawSearch: new URL(req.url ?? "", "http://localhost").search,
     politeFetch,
+    getDeadline,
+    getLatestSnapshot,
   });
   res.setHeader("Cache-Control", cacheControl);
   const sent = res.status(status).json(body);
