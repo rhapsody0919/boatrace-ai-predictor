@@ -839,15 +839,15 @@ test("グレードの日（hq の a2、オーナー 2026-10-31）: /today の対
       /まだ送られていない/,
     );
   }
-  // 別のレースの行では通さない（race_id の取り違えを防ぐ）
-  assert.notEqual(
-    todayTargetReason(posted, RACE, {
-      race_id: OTHER_RACE,
-      race_grade: "SG",
-      race_number: 11,
-    }),
+  // 別のレースの行・行が無いときは通さず、行が無いと書く（race_id の取り違えを防ぐ）
+  for (const race of [
+    { race_id: OTHER_RACE, race_grade: "SG", race_number: 11 },
     null,
-  );
+  ])
+    assert.match(
+      todayTargetReason(posted, RACE, race),
+      /races の行が無くグレードを確かめられない/,
+    );
 });
 
 test("優勝戦の段を見ない: race_conditions が無くても・準優勝戦でも通る。優勝戦の束は今までどおり段を見る", async () => {

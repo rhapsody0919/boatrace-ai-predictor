@@ -611,12 +611,14 @@ async function approveDraft(
 
 /**
  * グレードの日に /today の対象の外でも受けるグレード（races.race_grade の値。hq の a2、オーナー 2026-10-31）。
- * races.race_grade は raceListParser.js が SG・G1・G2・G3・ippan で書き、PG1 は G1 として入る（本番 2026 年の値に PG1 は0件）。
+ * races.race_grade は raceListParser.js が SG・G1・G2・G3・ippan で書き、PG1 は G1 として入る（本番 2026 年の値に PG1 は0件。
+ * BBCトーナメント・スピードクイーンメモリアル・マスターズチャンピオン・レディースチャンピオン・ヤングダービーの行は G1、2026-11-02 に読み取りで確認）。
  * 他の書き手が PG1 と書いても受けるよう PG1 も入れる
  */
 export const THINKING_GRADE_DAY_GRADES = Object.freeze(["SG", "PG1", "G1"]);
 /** グレードの日に受けるレース番号（hq は開催場の 12R→11R→10R から選ぶ） */
 export const THINKING_GRADE_DAY_MIN_RACE_NUMBER = 10;
+export const THINKING_GRADE_DAY_MAX_RACE_NUMBER = 12;
 
 /** races の行が SG・PG1・G1 の 10〜12R か（純粋関数） */
 export function isThinkingGradeDayRace(race) {
@@ -627,7 +629,7 @@ export function isThinkingGradeDayRace(race) {
     THINKING_GRADE_DAY_GRADES.includes(grade) &&
     Number.isInteger(n) &&
     n >= THINKING_GRADE_DAY_MIN_RACE_NUMBER &&
-    n <= 12
+    n <= THINKING_GRADE_DAY_MAX_RACE_NUMBER
   );
 }
 
@@ -647,8 +649,12 @@ export function todayTargetReason(picks, raceId, race = null) {
     .filter(Boolean)
     .map((r) => r.race_id);
   if (ids.includes(raceId)) return null;
-  if (race?.race_id === raceId && isThinkingGradeDayRace(race)) return null;
-  return `/today の X 投稿の対象でない（${raceId}）。SG・PG1・G1 の 10〜12R でもない（race_grade=${race?.race_grade ?? "不明"}・race_number=${race?.race_number ?? "不明"}）`;
+  const notToday = `/today の X 投稿の対象でない（${raceId}）`;
+  // races の行が無い・別のレースの行なら、グレードを見ずにそう書く（checkRace も行が無いことを別に書く）
+  if (race?.race_id !== raceId)
+    return `${notToday}。races の行が無くグレードを確かめられない`;
+  if (isThinkingGradeDayRace(race)) return null;
+  return `${notToday}。SG・PG1・G1 の ${THINKING_GRADE_DAY_MIN_RACE_NUMBER}〜${THINKING_GRADE_DAY_MAX_RACE_NUMBER}R でもない（race_grade=${race.race_grade ?? "不明"}・race_number=${race.race_number ?? "不明"}）`;
 }
 
 /**
