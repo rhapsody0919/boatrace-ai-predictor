@@ -11,6 +11,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
+import RacerLink from "../race/assist/RacerLink";
 import "./FeaturedRaceCard.css";
 
 /** 何を分母に何を数えた割合か、文で書く（RateWithBaseline と同じ方針） */
@@ -64,7 +65,7 @@ function FeaturedRaceCard({ row }) {
             {row.racer_id}
           </span>
           <span className="featured-race__racer-name" translate="no">
-            {row.racer_name}
+            <RacerLink racerId={row.racer_id}>{row.racer_name}</RacerLink>
           </span>
           {row.grade && (
             <span className="featured-race__grade" translate="no">
