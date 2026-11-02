@@ -351,6 +351,19 @@ for (const [lang, { retired, required }] of Object.entries(OFFICIAL_ST_WORDING))
   }
 }
 
+// 基本情報の期間説明は既存の E2E と同じ「期間 の成績」を保つ。
+// 平均STだけの期間と分かるようにし、全国勝率の集計期間へ広げない。
+checked += 1;
+if (
+  !locales.ja["termHints.basicInfoOfficial"]?.includes(
+    "平均STは {{from}}〜{{to}} の成績。公式の期別成績・全会場",
+  )
+) {
+  failures.push(
+    "ja: termHints.basicInfoOfficial は平均STの期間を「{{from}}〜{{to}} の成績」と明記してください（BOA-1192、basic-info-official-period.spec.js）",
+  );
+}
+
 if (failures.length > 0) {
   console.error(`NG: ${LANGS.length}言語のロケールが揃っていません`);
   for (const f of failures) console.error(`  - ${f}`);
