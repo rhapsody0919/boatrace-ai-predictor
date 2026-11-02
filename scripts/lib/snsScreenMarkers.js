@@ -19,6 +19,13 @@ export const SCREEN_MARKERS = {
     '[data-testid="morning-digest-title"]',
     '[data-testid="morning-digest-notes"]',
   ],
+  // 会場のページ（本日分、リンクは /venue/{会場コード}。YouTube Shorts「節の機力」の説明欄、BOA-1209）。見出しの直下の常設の要約2行と、
+  // 会場の特徴のカードの畳んだ見出し。どちらも開催・レースの有無によらず出る（2026-11-02 に本番の /venue/13・01・24・1 を未認証の
+  // Chromium（390×844）で開いて確かめた。次のレースのカード・節の帯は開催の時間帯でしか出ないので印にしない）
+  venue: [
+    '[data-testid="venue-summary-lines"]',
+    '[data-testid="venue-characteristics-teaser"]',
+  ],
 };
 
 // リンク先の URL に付けてよいタブ（?tab=）。UTM 以外で許すクエリはこれだけ

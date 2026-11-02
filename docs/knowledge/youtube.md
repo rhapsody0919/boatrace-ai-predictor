@@ -7,6 +7,7 @@ YouTube（Shorts 含む）の投稿・タイトル・構成に固有の知見。
 - 同じ BGM・同じ構図の画像・AI の台本で大量に投稿すると、YouTube のスパムポリシーの違反例に当たる。毎日の型の投稿では、レースごとのデータの発見を主役にし、冒頭・BGM を変える（2026-10-06、memory project_ai_multi_venture_ops_2026_10_05）
 - 長い題を上限で切るときは句の区切りで切って「…」を付け、本編と Shorts で切り方をそろえる。旧の全貌の作り手は youtube_full.title を100字で「…」なしに切り、Shorts は89字＋「…」でそろっていなかった（2026-10-18、youtube-channel。受け取り側 push-full-picture.js は100字以下かだけを見るので、ちょうど100字に切った題は通る。2026-10-20 整理）
 - 概要欄に章の名前だけを並べても YouTube の自動チャプターにならない。0:00 から始まる時刻を付ける（2026-10-18、youtube-channel。旧の全貌の作り手の指摘を一般化、2026-10-20 整理）
+- 送り手は題を `youtube_title` のまま `snippet.title` に入れる。API が拒否するのは題の100字超・< > と説明欄の5000バイト超・< > で、節の機力の送る口（push-setsu-kiryoku-short.js）の検査と同じ。題に `#Shorts` を入れても拒否されない。Shorts かは縦横と尺で決まる（2026-11-02、youtube-channel、api/_lib/youtubeQueueAdapter.js:39-41。実投稿での Shorts 扱いは未確認）
 - YouTube のギャンブル関係の調査は「予想は当たることを保証しない」旨の免責を題・説明文に入れることを推奨（確度中）（2026-10-18、youtube-channel、docs/reference/youtube-algorithm-and-growth-notes.md 157行目。旧の作り手に入っていない旨の記録は 2026-10-20 に整理）
 
 ## API の認可

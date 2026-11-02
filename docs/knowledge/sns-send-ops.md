@@ -29,6 +29,11 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - 差し替えを止める前の job は sending・reconcile・posted だけ。transition_sns_x_send の hold は queued・sending から、fail は sending からしか移さず、外への POST は begin_post で reconcile にした後なので、試行1以上の held・failed は公開されていない（2026-10-31、BOA-1201、docs/db-migration/153:414-423・189:252-261）
 - 版の違いでは「締切が変わる前の材料で作り直した束」を見分けられない。push は束の文の「締切HH:MM」と今の締切を比べて拒否する（2026-10-31、BOA-1201、scripts/sns/push-full-picture.js の bakedDeadlineReasons）
 - YouTube の job の error_code の youtube_preflight_failed は preflight だけでなく、begin_post の前の全部の失敗（承認の hash・媒体・validate・親・preflight）で書かれる。原因は sns_send_events（191）の stage=send の reason（holdReasonOf の code）で見る（2026-10-31、BOA-1201、api/_lib/snsDeadlineQueue.js:151）
+- 送った item を sent にする 186 の置き換え6は bundle_import_id での NOT EXISTS なので、下書きにひもづく kind（full_picture・setsu_kiryoku_short 等）では空集合になり sent に移る。新しい下書きの kind に専用の枝は要らない（2026-11-02、system-architect、186:204-210）
+- 旗を持つ YouTube の kind は、DB では claim・check・begin_post（transition_sns_send_139）でしか旗を見ない。youtube_call・youtube_publish_begin（186 の youtube_call_guard）は旗を見ず、上げている最中の停止は JS の preflight（readCurrent）が頼り。DB で止めるなら mode=manual か item の停止（2026-11-02、system-architect、186:136-157、BOA-1209）
+- YouTube の新しい kind の期限・鮮度は kind で分けない。186 の youtube_call_guard が expiry_minutes・max_source_age_seconds を kind によらず照合するので、kind ごとの値にすると上げる前に止まる（2026-11-02、system-architect、BOA-1209、193）
+- push-full-picture.js は YouTube の日の上限を数えない。後ろの時刻の出し物を早く push すると、後から入った全貌が先に claim し、後ろの出し物の claim が「日次全体上限です」の RAISE で queued のまま鳴り続ける。上限を数える push は送る時刻の直前に流す（節の機力は15分前から）（2026-11-02、system-architect、BOA-1209、本番 daily_limit_youtube=9・10/31 の YouTube の試行8）
+- checkPublicDisplay は finalUrl の完全一致を求める。新しい screen_key を足すときは、リンク先を未認証の Chromium で開いて page.url() が変わらないことも確かめる（/venue/{n} は 2026-11-02 に一致、snsDeadlineQueue.js:27）
 
 ## 容量・上限
 - 取り置き（sns_x_kind_reserves）は旗が off でも・締切が過ぎても解けない。新しい出し物の取り置きと daily_limit_x はマイグレーションに入れず、旗 on と同じトランザクションで、その日の最初の X 送信より前に当てる（先に入れると他の出し物の残りを食う）（2026-10-27、BOA-1169、ADR-0094 の 182 の追記の (2)・189 のヘッダー）
