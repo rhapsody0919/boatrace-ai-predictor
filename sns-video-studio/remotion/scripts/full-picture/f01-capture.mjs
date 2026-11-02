@@ -95,6 +95,13 @@ async function textIn(page, rect) {
   }, rect);
 }
 
+/** 撮る前と後に読んだ文字を合わせる（字の大きさは小さい方） */
+const mergeText = (a, b) => ({
+  text: `${b.text} ${a.text}`,
+  minFont: a.minFont === null ? b.minFont : b.minFont === null ? a.minFont : Math.min(a.minFont, b.minFont),
+  small: [...b.small, ...a.small].sort((x, y) => x[0] - y[0]).slice(0, 6),
+});
+
 const union = (rs) => {
   const x = Math.min(...rs.map((r) => r.x));
   const y = Math.min(...rs.map((r) => r.y));
@@ -120,8 +127,10 @@ async function shoot(page, clip, file, extra = {}) {
     return window.scrollY;
   }, clip.y);
   await page.waitForTimeout(300);
+  // 照合の文字は撮る前と後の両方から（撮る間に図が描き直されると片方で取れないことがあった。11/02 18-11 で c1 の項目名）
+  const t0 = await textIn(page, clip);
   await page.screenshot({ path: file, clip: { x: clip.x, y: clip.y - sy, width: clip.w, height: clip.h } });
-  const t = await textIn(page, clip);
+  const t = mergeText(t0, await textIn(page, clip));
   // 拡大は deviceScaleFactor まで（それ以上は撮った画素を引き伸ばすだけでぼける）
   const scale = Math.min(LEFT_BOX.h / clip.h, LEFT_BOX.w / clip.w, DPR);
   return { file, clip, scale, text: t.text, minFontPx: t.minFont === null ? null : Math.round(t.minFont * scale * 10) / 10, small: t.small.map(([px, s]) => [Math.round(px * scale * 10) / 10, s]), ...extra };
@@ -162,9 +171,10 @@ async function openTab(page, name) {
 async function shootEl(page, loc, file, extra = {}) {
   await loc.scrollIntoViewIfNeeded();
   await page.waitForTimeout(800);
+  const t0 = await textIn(page, await box(loc));
   await loc.screenshot({ path: file });
   const clip = await box(loc);
-  const t = await textIn(page, clip);
+  const t = mergeText(t0, await textIn(page, clip));
   const scale = Math.min(LEFT_BOX.h / clip.h, LEFT_BOX.w / clip.w, DPR);
   return { file, clip, scale, text: t.text, minFontPx: t.minFont === null ? null : Math.round(t.minFont * scale * 10) / 10, small: t.small.map(([px, s]) => [Math.round(px * scale * 10) / 10, s]), ...extra };
 }
