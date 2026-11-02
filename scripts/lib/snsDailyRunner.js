@@ -682,70 +682,68 @@ export function setsuShortLink(caption) {
 
 /**
  * 節の機力の Shorts の流入（users・sessions）。取り直しの範囲に投稿日か翌日が入る投稿済みの下書きだけ。下書きが無ければ GA4 を呼ばない。
- * GA4 の行は、landingPage の会場とリンクにある utm_* が一致する下書きのうち、投稿日（JST）が同じ日のもの、無ければ前の日のものに付ける。
- * 同じ会場・同じ utm の投稿が続く日は、その日の流入を当日の投稿に付ける（GA4 の行では前の日の投稿の翌日の分と見分けられない）
+ * リンク（会場と utm_*）ごとに1回読み、次元は日付だけにする（照合の条件を GA4 のフィルタに入れ、totalUsers を GA4 の側で重複なしに数える。
+ * campaign・大文字小文字・末尾の / で行を分けて足すと人数が重なるため。Codex の審査 P1）。
+ * その日の値は、同じリンクの下書きのうち投稿日（JST）が同じ日のもの、無ければ前の日のものに付ける。
+ * 同じ会場・同じ utm の投稿が続く日は、その日の流入を当日の投稿に付ける（GA4 では前の日の投稿の翌日の分と見分けられない）
  */
 async function collectSetsuShort({ runReport, store, jstDays, push }) {
   const since = `${addDays(jstDays[0], -1)}T00:00:00+09:00`;
-  const linked = (await store.setsuShortDrafts(since))
-    .filter((d) => d.posted_at)
-    .map((d) => ({ ...d, link: setsuShortLink(d.caption_text) }))
-    .filter((d) => d.link);
-  if (!linked.length) return;
-  const result = await runReport({
-    dateRanges: [{ startDate: jstDays[0], endDate: jstDays.at(-1) }],
-    dimensions: [
-      { name: "date" },
-      { name: "landingPage" },
-      ...SETSU_UTM_DIMS.map(({ dim }) => ({ name: dim })),
-    ],
-    metrics: [{ name: "totalUsers" }, { name: "sessions" }],
-    dimensionFilter: and(
-      hostFilter,
-      {
-        filter: {
-          fieldName: "landingPage",
-          stringFilter: { matchType: "BEGINS_WITH", value: "/venue/" },
-        },
-      },
-      inList("sessionSource", [
-        ...new Set(linked.map((d) => d.link.utm.sessionSource)),
-      ]),
-    ),
-  });
-  for (const [date, landingPage, ...rest] of result) {
-    const day = ga4Day(date);
-    const venue = VENUE_PATH.exec(String(landingPage));
-    if (!venue) continue;
-    const values = Object.fromEntries(
-      SETSU_UTM_DIMS.map(({ dim }, i) => [dim, String(rest[i]).toLowerCase()]),
-    );
-    const [users, sessions] = rest.slice(SETSU_UTM_DIMS.length);
-    const matches = linked.filter(
-      (d) =>
-        d.link.venue === Number(venue[1]) &&
-        Object.entries(d.link.utm).every(([dim, v]) => values[dim] === v),
-    );
-    const draft =
-      matches.find((d) => toJstDay(d.posted_at) === day) ??
-      matches.find((d) => addDays(toJstDay(d.posted_at), 1) === day);
-    if (!draft) continue;
-    for (const [metric, value] of [
-      ["users", users],
-      ["sessions", sessions],
-    ])
-      push({
-        day,
-        channel: "youtube",
-        draft_id: draft.id,
-        utm_content: values.sessionManualAdContent,
-        source: "site-analytics",
-        metric_name: metric,
-        metric_value: value,
-        missing_reason: null,
-        definition: def.ga4SetsuShort(metric),
-      });
+  const groups = new Map();
+  for (const d of await store.setsuShortDrafts(since)) {
+    const link = d.posted_at ? setsuShortLink(d.caption_text) : null;
+    if (!link) continue;
+    const key = JSON.stringify(link);
+    groups.set(key, [...(groups.get(key) ?? []), { ...d, link }]);
   }
+  const results = await Promise.all(
+    [...groups.values()].map((drafts) => {
+      const { venue, utm } = drafts[0].link;
+      return runReport({
+        dateRanges: [{ startDate: jstDays[0], endDate: jstDays.at(-1) }],
+        dimensions: [{ name: "date" }],
+        metrics: [{ name: "totalUsers" }, { name: "sessions" }],
+        dimensionFilter: and(
+          hostFilter,
+          {
+            filter: {
+              fieldName: "landingPage",
+              stringFilter: {
+                matchType: "FULL_REGEXP",
+                value: `^/venue/0?${venue}/?$`,
+              },
+            },
+          },
+          // GA4 の文字列のフィルタは既定で大文字小文字を区別しない
+          ...Object.entries(utm).map(([dim, v]) => exact(dim, v)),
+        ),
+      });
+    }),
+  );
+  [...groups.values()].forEach((drafts, g) => {
+    for (const [date, users, sessions] of results[g]) {
+      const day = ga4Day(date);
+      const draft =
+        drafts.find((d) => toJstDay(d.posted_at) === day) ??
+        drafts.find((d) => addDays(toJstDay(d.posted_at), 1) === day);
+      if (!draft) continue;
+      for (const [metric, value] of [
+        ["users", users],
+        ["sessions", sessions],
+      ])
+        push({
+          day,
+          channel: "youtube",
+          draft_id: draft.id,
+          utm_content: draft.link.utm.sessionManualAdContent,
+          source: "site-analytics",
+          metric_name: metric,
+          metric_value: value,
+          missing_reason: null,
+          definition: def.ga4SetsuShort(metric),
+        });
+    }
+  });
 }
 
 /** 一意キーが同じ行を1行にする（値は足す。欠測の行は値のある行に負ける）。GA4 の値はどれも人数・回数なので足せる */
