@@ -56,6 +56,11 @@ import {
 } from "../../src/utils/meetPageModel.js";
 
 const FETCH_TIMEOUT_MS = 8_000;
+// 節（race_series の1行）は材料の後に引くので、2つ合わせて関数の maxDuration（15秒）に収まる短さにする
+// （8秒＋3秒）。目安（根拠なし）。1行の SELECT なので、ふだんは数百ミリ秒で返る見込み
+const SERIES_FETCH_TIMEOUT_MS = 3_000;
+// 節が引けずに節のリンクを外したページは CDN に残さない（次のリクエストで引き直す）
+const DEGRADED_HEADERS = { ...SUCCESS_HEADERS, "Cache-Control": "no-store" };
 
 const LANG_ALT = BOT_PAGE_PREFIXED_LANGS.join("|");
 // 関数を直接呼ぶ形（/api/bot-page/race/{id}・/api/bot-page/{lang}/race/{id}）と、
@@ -152,7 +157,8 @@ export function pickHeadingFields(race) {
     result: race.result?.rank1
       ? { finished: true, rank1: race.result.rank1 }
       : null,
-    entrants: entrantRowsOf(race.entries),
+    // 形の違う entries で、その日の全レースを 503 にしない（出走6艇を出さないだけにする）
+    entrants: Array.isArray(race.entries) ? entrantRowsOf(race.entries) : [],
   };
 }
 
@@ -249,7 +255,7 @@ export function createSeriesSource({
           Authorization: `Bearer ${apiKey}`,
           accept: "application/json",
         },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        signal: AbortSignal.timeout(SERIES_FETCH_TIMEOUT_MS),
       });
     } catch (e) {
       throw new SeriesFetchError(`race_series を取れない: ${e?.message ?? e}`);
@@ -495,11 +501,15 @@ export async function respondRacePage(
     ]);
     const race = races.find((r) => r.raceId === key.raceId);
     if (!race) return plain(404, CLIENT_ERROR_HEADERS, "404 Not Found\n");
-    const series = needsMeetSeries(race.raceGrade)
-      ? await loadSeriesOrNull(getSeries, key)
-      : null;
+    const { series, failed } = needsMeetSeries(race.raceGrade)
+      ? await loadSeries(getSeries, key)
+      : { series: null, failed: false };
     const model = buildRaceModel(races, key, t, series);
-    return plain(200, SUCCESS_HEADERS, renderRaceHtml(model, { siteJsonLd }));
+    return plain(
+      200,
+      failed ? DEGRADED_HEADERS : SUCCESS_HEADERS,
+      renderRaceHtml(model, { siteJsonLd }),
+    );
   } catch (e) {
     const expected = e instanceof PredictionsFetchError;
     console.error(
@@ -512,17 +522,17 @@ export async function respondRacePage(
 
 /**
  * 節を引く。引けなかったら節のリンクだけを外してページは出す（人の画面も帯の中のエラー表示だけ）。
- * 失敗は使い回さないので、次のリクエストで引き直す
+ * 失敗は使い回さず、そのページは CDN に残さない（failed: true → no-store）ので、次のリクエストで引き直す
  */
-async function loadSeriesOrNull(getSeries, key) {
+async function loadSeries(getSeries, key) {
   try {
-    return await getSeries(key.venueCode, key.date);
+    return { series: await getSeries(key.venueCode, key.date), failed: false };
   } catch (e) {
     console.error(
       `[bot-page] race ${key.raceId}: 節（race_series）を引けないので節のリンクを出さない ${e?.name}: ${e?.message}`,
       ...(e instanceof SeriesFetchError ? [] : [e]),
     );
-    return null;
+    return { series: null, failed: true };
   }
 }
 

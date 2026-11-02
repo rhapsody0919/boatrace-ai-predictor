@@ -7,7 +7,9 @@
  * @returns {{number: number, name: string, racerId: number|null, grade: string|null}[]}
  */
 export function entrantRowsOf(players) {
+  // 艇番が無い行は並べられないので外す（並びが壊れ、key も重なるため）
   return (players ?? [])
+    .filter((p) => Number.isInteger(p?.number))
     .map((p) => ({
       number: p.number,
       name: (p.name ?? "").replace(/\s+/g, ""),

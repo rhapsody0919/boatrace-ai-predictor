@@ -610,13 +610,14 @@ const tJa = await getLocaleT("ja");
       },
     });
     check(
-      "節が引けない: 200 で節のリンクだけ無い（帯と選手は出る）",
+      "節が引けない: 200 で節のリンクだけ無い（帯と選手は出る）・CDN に残さない",
       [
         failed.res.statusCode,
         meetLinks(failed.res.body).length,
         racerLinks(failed.res.body).length,
+        failed.res.headers["cache-control"],
       ],
-      [200, 0, 6],
+      [200, 0, 6, "no-store"],
     );
   } finally {
     console.error = origError;
@@ -627,7 +628,33 @@ const tJa = await getLocaleT("ja");
     now: at("2026-09-29"),
     getSeries: seriesStub(null),
   });
-  check("節が無い: 節のリンクが無い", meetLinks(none.res.body), []);
+  check(
+    "節が無い: 節のリンクが無い（引けたので通常のキャッシュ）",
+    [meetLinks(none.res.body), none.res.headers["cache-control"]],
+    [[], SUCCESS_CC],
+  );
+  // 形の違う entries の1レースで、その日の全レースを 503 にしない
+  const broken = fixture("2026-09-29");
+  broken.races.find((r) => r.raceId !== id).entries = { bad: true };
+  broken.races
+    .find((r) => r.raceId === id)
+    .entries.push(null, {
+      name: "艇番なし",
+    });
+  const brokenRes = await call(`/api/bot-page/race/${id}`, {
+    json: broken,
+    now: at("2026-09-29"),
+    getSeries: seriesStub(KOJIMA_G1),
+  });
+  check(
+    "形の違う entries: 200 で、艇番の無い行は出さない",
+    [
+      brokenRes.res.statusCode,
+      racerLinks(brokenRes.res.body).length,
+      bodyOf(brokenRes.res.body).includes("艇番なし"),
+    ],
+    [200, 6, false],
+  );
   const gp = await call(`/api/bot-page/race/${id}`, {
     json: json29,
     now: at("2026-09-29"),
