@@ -1644,7 +1644,7 @@
         "runs": "{{n}} runs",
         "hintVenueFoot": "The average ST at {{venue}} is for reference (up to the last 30 races). ",
         "hintFewVenue": "Boat {{boats}} has few runs at this venue, so values can swing. ",
-        "hintExhPost": "Exhibition ST is for reference; its link to the race ST is weak (per-boat correlation 0.08, vs. 0.28 for avg. ST). F.09 = crossed the start line 0.09s early in the exhibition (no penalty in the exhibition).",
+        "hintExhPost": "Exhibition ST is for reference; its link to the race ST is weak (per-boat correlation 0.08, vs. 0.28 for avg. ST). F.09 = crossed the start line 0.09s early in the exhibition (an exhibition F is separate from a false start in the race and does not cost the boat its eligibility to race).",
         "hintExhPre": "Exhibition ST is available after the exhibition.",
         "hintConds": "Conditions today's line-up matches ({{src}} avg. ST)",
         "hints": {
