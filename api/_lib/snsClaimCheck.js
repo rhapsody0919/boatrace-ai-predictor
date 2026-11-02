@@ -271,7 +271,7 @@ export function createReadCurrent({
         source_revision: revision,
       };
     }
-    // 1日1本の画像の型（「数字で見たら」research_image 179・180、「節の機力」setsu_kiryoku 193。scripts/sns/push-research-image.js）:
+    // 1日1本の画像の型（「数字で見たら」research_image 179・180、「節の機力」setsu_kiryoku 194。scripts/sns/push-research-image.js）:
     // レースを持たないので、中止・欠場・締切は無く、リンク先の表示の確認も無い（本文にリンクを置かない型。preflight は
     // public_check='none' のとき本文にリンクが無いことだけを見る）。代わりに、item がその型であること・自動送信の許可（型ごとの列）・
     // 同じ日に送った同じ型が無いこと・禁止表現・加重280・リンクなし・画像1枚（節の機力は選手の名前と級も）を、DB の下書きから
@@ -315,10 +315,7 @@ export function createReadCurrent({
         }).length
       )
         throw new Error(daily.errors.textRejected);
-      if (
-        daily.errors.racers &&
-        setsuRacerReasons(source.racers).length
-      )
+      if (daily.hasRacers && setsuRacerReasons(source.racers).length)
         throw new Error(daily.errors.racers);
       return {
         withdrawn: false,

@@ -138,6 +138,18 @@ const RACERS = [
   { name: "伊藤 エ", class: "B2" },
   { name: "渡辺 ォ", class: "B1" },
 ];
+const researchBundle = () => ({
+  format: "research_image",
+  date: DAY,
+  slug: "not-wakunari",
+  send_time: "19:00",
+  x_text:
+    "【数字で見たら】5レースに1つは枠なりじゃない\n\n地元の会場、体感と合ってた？",
+  hashtags: ["#ボートレース"],
+  images: ["not-wakunari.png"],
+  source_observed_at: at("14:30:00").toISOString(),
+  review: { p0_count: 0, by: "machine" },
+});
 const bundle = (patch = {}) => ({
   format: "setsu_kiryoku_image",
   kind: "setsu_kiryoku",
@@ -527,6 +539,8 @@ test("検査: hq の見本の束は通る。選手の名前と級（racers を�
   );
   assert.match(reasons({ images: ["other.png"] }), /images/);
   assert.match(reasons({ slug: "V15" }), /slug/);
+  // 193 の Shorts の setsu:{日}:{会場2桁} と同じ race_id にならないよう、slug は英小文字で始める
+  assert.match(reasons({ slug: "15", images: ["15.png"] }), /slug/);
 });
 
 test("検査: 禁止表現（本文の「競艇」・risk-rules）・#競艇 のタグは可・本文＋改行2つ＋タグで加重280・リンクなし・本文のハッシュタグ", async () => {
@@ -586,6 +600,24 @@ test("許可が off なら検査が通っても何も書かない（disabled・e
   assert.equal(ahead.simulated_now, at("21:28:00").toISOString());
   assert.equal(ahead.limit_checked, false);
   assert.deepEqual(await counts(), NOTHING);
+  assert.match(
+    setsuLine(ahead).text,
+    /"simulated_now":"2037-11-03T12:28:00.000Z"/,
+  );
+  // 数字で見たら（research_image）の --dry-run は今までどおり今日の束だけ
+  const researchAhead = await pushResearchImage("/r", {
+    store: researchStore,
+    readBytes: readerOf({
+      "/r/bundle.json": new TextEncoder().encode(
+        JSON.stringify(researchBundle()),
+      ),
+      "/r/not-wakunari.png": IMAGE,
+    }),
+    riskRules,
+    dryRun: true,
+    now: at("15:00:00", "2037-11-02"),
+  });
+  assert.match(researchAhead.reasons.join(), /今日/);
   // 書く道（--dry-run でない）では今日でない束を拒む
   const notToday = await push(bundle(), { now: at("15:00:00", "2037-11-02") });
   assert.match(notToday.reasons.join(), /今日/);
@@ -609,10 +641,10 @@ test("許可が on・mode=auto: 画像1枚の job を 21:30 の予定に入れ�
   );
   assert.deepEqual(draft.source_data.setsu_kiryoku.racers, RACERS);
   assert.equal(draft.source_data.setsu_kiryoku.as_of, `${DAY} 11R まで`);
-  // as_of は時刻を持たないので、受け取った時刻を集計の時刻にする
+  // as_of は時刻を持たないので、その日の 00:00 JST を集計の時刻にする（受け取りの時刻にしない。作り直しで新しく見えないように）
   assert.equal(
     draft.source_data.deadline_queue.source_observed_at,
-    PUSHED_AT.toISOString(),
+    at("00:00:00").toISOString(),
   );
   const item = await first("SELECT * FROM sns_auto_send_items");
   assert.deepEqual(
@@ -679,18 +711,7 @@ test("鮮度は24時間（research_image と同じ）: 集計から4時間を越
     store: researchStore,
     readBytes: readerOf({
       "/r/bundle.json": new TextEncoder().encode(
-        JSON.stringify({
-          format: "research_image",
-          date: DAY,
-          slug: "not-wakunari",
-          send_time: "19:00",
-          x_text:
-            "【数字で見たら】5レースに1つは枠なりじゃない\n\n地元の会場、体感と合ってた？",
-          hashtags: ["#ボートレース"],
-          images: ["not-wakunari.png"],
-          source_observed_at: at("14:30:00").toISOString(),
-          review: { p0_count: 0, by: "machine" },
-        }),
+        JSON.stringify(researchBundle()),
       ),
       "/r/not-wakunari.png": IMAGE,
     }),
@@ -764,7 +785,7 @@ test("送り手の読み直し（readCurrent）と送る直前の検査: 許可�
     "UPDATE sns_drafts SET source_data=jsonb_set(source_data,'{setsu_kiryoku,racers}','[{\"name\":\"田中 イ\"}]') WHERE id=$1",
     [result.draft_id],
   );
-  await assert.rejects(readCurrent(result.draft_id), /setsu_racers_invalid/);
+  await assert.rejects(readCurrent(result.draft_id), /setsu_x_racers_invalid/);
   await db.query("UPDATE sns_drafts SET source_data=$2 WHERE id=$1", [
     result.draft_id,
     draft.source_data,
@@ -775,7 +796,7 @@ test("送り手の読み直し（readCurrent）と送る直前の検査: 許可�
   );
   await assert.rejects(
     readCurrent(result.draft_id),
-    /setsu_already_sent_today/,
+    /setsu_x_already_sent_today/,
   );
   await db.query(
     "UPDATE sns_auto_send_items SET state='notified' WHERE draft_id=$1",
@@ -785,7 +806,7 @@ test("送り手の読み直し（readCurrent）と送る直前の検査: 許可�
     result.draft_id,
     `${CAPTION}\n万舟券`,
   ]);
-  await assert.rejects(readCurrent(result.draft_id), /setsu_text_rejected/);
+  await assert.rejects(readCurrent(result.draft_id), /setsu_x_text_rejected/);
   await db.query("UPDATE sns_drafts SET caption_text=$2 WHERE id=$1", [
     result.draft_id,
     CAPTION,
@@ -807,6 +828,50 @@ test("送り手の読み直し（readCurrent）と送る直前の検査: 許可�
     }),
   };
   await assert.rejects(preflight(linked), /link_not_allowed/);
+});
+
+test("本番の取り置き（2026-11-02: digest1・finals3・research1 月水金・today_thinking6、上限11）: setsu の行なしだと月水金の 21:30 は kind_slot_full。オーナーの SQL（上限12・setsu 1）の後は送れる", async () => {
+  // 2037-11-04 は水曜（JST）
+  const WED = "2037-11-04";
+  const reserves = async (limit, withSetsu) => {
+    await db.exec(`DELETE FROM sns_x_kind_reserves;
+      INSERT INTO sns_x_kind_reserves(kind, daily_count, weekdays) VALUES ('digest',1,NULL),('finals_image',3,NULL),('full_picture',0,NULL),
+        ('research_image',1,'{1,3,5}'),('today_thinking',6,NULL)${withSetsu ? ",('setsu_kiryoku',1,NULL)" : ""};
+      UPDATE sns_x_send_control SET daily_limit_x=${limit};`);
+  };
+  const run = async () => {
+    await db.exec(
+      "DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items;",
+    );
+    await db.exec(
+      "ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
+    );
+    await setClock(at("21:05:00", WED));
+    const result = await push(
+      bundle({ date: WED, source_observed_at: `${WED} 11R まで` }),
+      {
+        now: at("21:05:00", WED),
+      },
+    );
+    assert.ok(result.job_id, JSON.stringify(result));
+    await setClock(at("21:30:00", WED));
+    return transition(result.job_id, "claim");
+  };
+  await reserves(11, false);
+  const held = await run();
+  assert.deepEqual([held.state, held.error_code], ["held", "kind_slot_full"]);
+  await reserves(12, true);
+  assert.equal((await run()).state, "sending");
+  // 月水金以外（木曜）の取り置きの合計は11で、上限12に1の空きが残る
+  const room = await first(
+    "SELECT public.sns_x_slot_room('setsu_kiryoku', 1, true, NULL, NULL) r",
+  );
+  assert.equal(room.r.reserved_total, 12);
+  await setClock(at("21:05:00", "2037-11-05"));
+  const thu = await first(
+    "SELECT public.sns_x_slot_room('setsu_kiryoku', 1, true, NULL, NULL) r",
+  );
+  assert.equal(thu.r.reserved_total, 11);
 });
 
 test("X の日の枠: hq の出し物の名前 setsu_kiryoku と取り込みの出し物は kind setsu_kiryoku", () => {

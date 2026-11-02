@@ -13,20 +13,24 @@ export const RESEARCH_IMAGE_KIND = "research_image";
 export const RESEARCH_SLUG = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const RESEARCH_ID = /^research:(\d{4}-\d{2}-\d{2}):([a-z0-9][a-z0-9-]{0,39})$/;
 
-export const researchIdOf = (date, slug) => `research:${date}:${slug}`;
 /** research_id の日（JST）と slug。形が違えば null */
 export function parseResearchId(id) {
   const m = RESEARCH_ID.exec(id ?? "");
   return m ? { date: m[1], slug: m[2] } : null;
 }
 
-/** X の「節の機力」（画像1枚、kind=setsu_kiryoku、21:30、BOA-1209、マイグレーション 193）。形は research_image と同じで、race_id の代わりは setsu:{日}:{slug} */
+/**
+ * X の「節の機力」（画像1枚、kind=setsu_kiryoku、21:30、BOA-1209、マイグレーション 194）。形は research_image と同じで、race_id の代わりは setsu:{日}:{slug}。
+ * slug は英小文字で始める（193 の YouTube Shorts の setsu:{日}:{会場2桁} と同じ race_id にならないように。194 の CHECK と同じ）
+ */
 export const SETSU_KIRYOKU_KIND = "setsu_kiryoku";
-const SETSU_ID = /^setsu:(\d{4}-\d{2}-\d{2}):([a-z0-9][a-z0-9-]{0,39})$/;
+const SETSU_SLUG = /^[a-z][a-z0-9-]{0,39}$/;
+const SETSU_ID = /^setsu:(\d{4}-\d{2}-\d{2}):([a-z][a-z0-9-]{0,39})$/;
 
 /**
  * 1日1本の画像の型（レースを持たない・リンクなし・送る時刻から60分）。取り込み（push-research-image.js）と送る直前の読み直し
- * （snsClaimCheck.js）が型ごとに読む。errors は readCurrent が投げる理由（runner の precheck の理由に残る）
+ * （snsClaimCheck.js）が型ごとに読む。errors は readCurrent が投げる理由（runner の precheck の理由に残る。193 の Shorts の setsu_* と分けるため
+ * 節の機力の X は setsu_x_*）。hasRacers は選手の名前と級（setsuRacerReasons）を取り込みと送る直前の両方で見るか
  */
 export const DAILY_IMAGE_TYPES = {
   research_image: {
@@ -38,6 +42,8 @@ export const DAILY_IMAGE_TYPES = {
     idField: "research_id",
     enabledColumn: "research_image_enabled",
     storagePrefix: "research-image",
+    slug: RESEARCH_SLUG,
+    hasRacers: false,
     parseId: parseResearchId,
     errors: {
       idInvalid: "research_id_invalid",
@@ -46,7 +52,6 @@ export const DAILY_IMAGE_TYPES = {
       alreadySent: "research_already_sent_today",
       imageCount: "research_image_count",
       textRejected: "research_text_rejected",
-      racers: null,
     },
   },
   setsu_kiryoku: {
@@ -58,18 +63,20 @@ export const DAILY_IMAGE_TYPES = {
     idField: "setsu_id",
     enabledColumn: "setsu_kiryoku_enabled",
     storagePrefix: "setsu-kiryoku",
+    slug: SETSU_SLUG,
+    hasRacers: true,
     parseId: (id) => {
       const m = SETSU_ID.exec(id ?? "");
       return m ? { date: m[1], slug: m[2] } : null;
     },
     errors: {
-      idInvalid: "setsu_id_invalid",
-      itemMismatch: "setsu_item_mismatch",
+      idInvalid: "setsu_x_id_invalid",
+      itemMismatch: "setsu_x_item_mismatch",
       disabled: "setsu_kiryoku_disabled",
-      alreadySent: "setsu_already_sent_today",
-      imageCount: "setsu_image_count",
-      textRejected: "setsu_text_rejected",
-      racers: "setsu_racers_invalid",
+      alreadySent: "setsu_x_already_sent_today",
+      imageCount: "setsu_x_image_count",
+      textRejected: "setsu_x_text_rejected",
+      racers: "setsu_x_racers_invalid",
     },
   },
 };

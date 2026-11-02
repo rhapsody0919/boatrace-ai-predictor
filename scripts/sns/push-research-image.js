@@ -3,7 +3,7 @@
  * X の下書きと自動送信の item を作って、送る時刻（19:00 等）の予定に入れる（hq XR01、マイグレーション 179・180）。
  * hq の作業役が同じ Mac の本リポジトリで実行する（15:00 に作り、--no-wait で入れて 19:00 に送り手が送る）。
  * 鍵は本リポジトリの .env.local（SUPABASE_URL・SUPABASE_SERVICE_KEY）だけを使う。
- * 同じ形の「節の機力」（kind=setsu_kiryoku、毎日 21:30、BOA-1209、マイグレーション 193）も、この口が型（DAILY_IMAGE_TYPES）ごとに受け取る。
+ * 同じ形の「節の機力」（kind=setsu_kiryoku、毎日 21:30、BOA-1209、マイグレーション 194）も、この口が型（DAILY_IMAGE_TYPES）ごとに受け取る。
  * 入口は scripts/sns/push-setsu-kiryoku.js（hq の setsu_sheet.py の出力）。違いは PUSH_RULES の注記を見る
  *
  * 使い方:
@@ -40,8 +40,6 @@ import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 import {
   DAILY_IMAGE_TYPES,
   dailyIdOf,
-  RESEARCH_IMAGE_KIND,
-  RESEARCH_SLUG,
   researchTextReasons,
   setsuRacerReasons,
 } from "../../api/_lib/snsResearchImage.js";
@@ -55,7 +53,6 @@ import {
   waitForSend,
 } from "./push-finals-image.js";
 
-export const RESEARCH_FORMAT = RESEARCH_IMAGE_KIND;
 export const RESEARCH_TYPE = DAILY_IMAGE_TYPES.research_image;
 export const SETSU_TYPE = DAILY_IMAGE_TYPES.setsu_kiryoku;
 /** 締切は送る時刻の120分後、期限は締切の60分前（180 の transition_sns_send_139 の research_image の期限と同じ値） */
@@ -74,8 +71,10 @@ export const SEND_TIME_LATEST = "21:30";
  * 節の機力: 送る時刻は 21:30 だけ（hq config/setsu-kiryoku.json の send_time、正本 hq drafts/x-setsu-kiryoku-20261031.md）。
  *   hq の作り手は review を出さない（関門は setsu_sheet.py の verify が作る前に見る）ので、review は有れば P0 が0件であることだけを見る。
  *   source_observed_at は時差つきの ISO か、hq の集計の as_of（「YYYY-MM-DD NR まで」、日は date と同じ）。as_of のときは
- *   時刻を持たないので、受け取った時刻を集計の時刻として DB の鮮度の照合（24時間）に渡し、as_of の文字列は下書きに残す。
- *   選手（racers）は必ず名前と級（setsuRacerReasons、オーナー 2026-11-01）
+ *   時刻を持たないので、その日の 00:00 JST（いちばん古い見積り）を集計の時刻として DB の鮮度の照合（24時間）に渡し、as_of の文字列は
+ *   下書きに残す（受け取った時刻にすると、作り直しのたびに新しく見え、鮮度の照合が名前だけになる。/code-review の指摘）。
+ *   選手（racers）は必ず名前と級（setsuRacerReasons、オーナー 2026-11-01）。dryRunAhead: --dry-run で今日でない束を送る時刻の時計で通す
+ *   （hq の見本を前の日に試すため。数字で見たらは今までどおり今日の束だけ）。extraSource: 下書きの source_data に足す欄
  */
 export const PUSH_RULES = {
   research_image: {
@@ -84,6 +83,8 @@ export const PUSH_RULES = {
     latest: SEND_TIME_LATEST,
     requireReview: true,
     allowAsOf: false,
+    dryRunAhead: false,
+    extraSource: () => ({}),
   },
   setsu_kiryoku: {
     tag: "SETSU_RESULT",
@@ -91,6 +92,14 @@ export const PUSH_RULES = {
     latest: "21:30",
     requireReview: false,
     allowAsOf: true,
+    dryRunAhead: true,
+    // 画像の材料の選手（名前と級。送る直前の読み直しが見る）と節・ネタ・集計の as_of
+    extraSource: (bundle) => ({
+      meet_id: bundle.meet_id ?? null,
+      neta: bundle.neta ?? null,
+      racers: bundle.racers,
+      as_of: bundle.source_observed_at,
+    }),
   },
 };
 const stopSql = (type) =>
@@ -107,7 +116,9 @@ const jstDate = (date) =>
 /** 時差（Z か ±HH:MM）つきの ISO だけ。時差の無い文字列は Node は手元の時刻、DB は接続の TimeZone で読み、別の時刻になる */
 const isIso = (v) =>
   typeof v === "string" &&
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(v) &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(
+    v,
+  ) &&
   Number.isFinite(Date.parse(v));
 
 /** bundle.json の検査（純粋関数）。時刻の窓は checkTiming が見る。type は DAILY_IMAGE_TYPES の1つ（既定は数字で見たら） */
@@ -124,8 +135,10 @@ export function checkResearchBundle(
     reasons.push(`kind が ${type.kind} でない（${bundle.kind}）`);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(bundle?.date ?? ""))
     reasons.push("date が YYYY-MM-DD でない");
-  if (!RESEARCH_SLUG.test(bundle?.slug ?? ""))
-    reasons.push("slug が英小文字・数字・ハイフンの40字までの形でない");
+  if (!type.slug.test(bundle?.slug ?? ""))
+    reasons.push(
+      `slug が ${type.slug.source} の形（英小文字・数字・ハイフンの40字まで）でない`,
+    );
   const sendTime = bundle?.send_time ?? "";
   if (
     !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(sendTime) ||
@@ -161,8 +174,7 @@ export function checkResearchBundle(
     bundle?.review?.p0_count !== 0
   )
     reasons.push(`機械の検査の P0 が0件でない（${bundle?.review?.p0_count}）`);
-  if (type.errors.racers)
-    reasons.push(...setsuRacerReasons(bundle?.racers));
+  if (type.hasRacers) reasons.push(...setsuRacerReasons(bundle?.racers));
   const fields = { caption: bundle?.x_text, hashtags: bundle?.hashtags };
   reasons.push(...researchTextReasons(fields));
   const hits = matchRiskRules(
@@ -217,11 +229,13 @@ export function dryRunClock(bundle, now) {
   );
 }
 
-/** 集計の時刻（ISO）。as_of（「YYYY-MM-DD NR まで」）は時刻を持たないので受け取った時刻にする（純粋関数。PUSH_RULES の注記） */
-export const observedAtOf = (bundle, now) =>
-  AS_OF.test(bundle?.source_observed_at ?? "")
-    ? now.toISOString()
+/** 集計の時刻（ISO）。as_of（「YYYY-MM-DD NR まで」）は時刻を持たないのでその日の 00:00 JST にする（純粋関数。PUSH_RULES の注記） */
+export const observedAtOf = (bundle) => {
+  const asOf = AS_OF.exec(bundle?.source_observed_at ?? "");
+  return asOf
+    ? new Date(`${asOf[1]}T00:00:00+09:00`).toISOString()
     : bundle.source_observed_at;
+};
 
 /** 時刻の検査（純粋関数）。date は今日（JST）、期限の10分前より前、集計の時刻は今より前で期限まで24時間以内 */
 export function checkTiming(
@@ -252,16 +266,7 @@ export function draftRow(
   type = RESEARCH_TYPE,
 ) {
   const researchId = dailyIdOf(type, bundle.date, bundle.slug);
-  // 節の機力は、画像の材料の選手（名前と級）と節・ネタ・集計の as_of を残す（送る直前の読み直しが選手を見る）
-  const extra =
-    type.kind === SETSU_TYPE.kind
-      ? {
-          meet_id: bundle.meet_id ?? null,
-          neta: bundle.neta ?? null,
-          racers: bundle.racers,
-          as_of: bundle.source_observed_at,
-        }
-      : {};
+  const extra = PUSH_RULES[type.kind].extraSource(bundle);
   return {
     content_group_id: randomUUID(),
     language: "ja",
@@ -396,16 +401,23 @@ export async function pushDailyImage(
   const bundle = JSON.parse(
     new TextDecoder().decode(await readBytes(path.join(folder, "bundle.json"))),
   );
-  // --dry-run で今日でない日の束（hq の見本・前日の試し）は、その日の送る時刻の2分前の時計で時刻の検査を通す（push-setsu-kiryoku-short.js と同じ）。
-  // その日の X の日の上限はまだ確かめられないので見ない（limit_checked=false を返す）。書く道（--dry-run でない）では使わない
-  const simulated = dryRun ? dryRunClock(bundle, realNow) : null;
+  // --dry-run で今日でない日の束（hq の見本・前日の試し）は、その日の送る時刻の2分前の時計で時刻の検査を通す（dryRunAhead の型だけ。
+  // push-setsu-kiryoku-short.js と同じ時計）。その日の X の日の上限はまだ決まらないので見ない（limit_checked=false、結果の1行に simulated_now）。
+  // Shorts は今の値で上限を見るが、X の上限は daily_baseline_date が今日の分しか無いので、別の日には当てられない。書く道では使わない
+  const simulated =
+    dryRun && PUSH_RULES[type.kind].dryRunAhead
+      ? dryRunClock(bundle, realNow)
+      : null;
+  const extra = simulated
+    ? { simulated_now: simulated.toISOString(), limit_checked: false }
+    : {};
   const now = simulated ?? realNow;
   const researchId =
     bundle?.date && bundle?.slug
       ? dailyIdOf(type, bundle.date, bundle.slug)
       : null;
   const controls = await store.controls();
-  // 列が無い（179・193 が未適用）・行が無いときも off（fail-closed）
+  // 列が無い（179・194 が未適用）・行が無いときも off（fail-closed）
   const enabled = controls.x?.[type.enabledColumn] === true;
   const writes = enabled && !dryRun;
   const reject = async (reasons) => {
@@ -415,13 +427,13 @@ export async function pushDailyImage(
       ).catch((error) =>
         console.error(`Slack に通知できません: ${error.message}`),
       );
-    return { [idKey]: researchId, reasons };
+    return { [idKey]: researchId, reasons, ...extra };
   };
   const reasons = checkResearchBundle(bundle, riskRules, type);
   if (reasons.length) return reject(reasons);
   if (!type.parseId(researchId)) return reject([`${idKey} が作れない`]);
   const when = schedule(bundle, now);
-  const observedAt = observedAtOf(bundle, now);
+  const observedAt = observedAtOf(bundle);
   const timing = checkTiming(bundle, when, now, observedAt);
   if (timing.length) return reject(timing);
   // 同じ日の生きている item・送った item があれば何も作らず、今の状態を返す（DB の一意の索引でも止まる、179）
@@ -438,14 +450,18 @@ export async function pushDailyImage(
   }
   const imageReasons = checkImages([name], { [name]: bytes });
   if (imageReasons.length) return reject(imageReasons);
-  const [sendControl, todayJobs] = await Promise.all([
-    store.sendControl(),
-    store.jobsAttemptedOn(jstDate(now)),
-  ]);
-  const limitReason = simulated
-    ? null
-    : dailyLimitReason({ sendControl, jobs: todayJobs, now });
-  if (limitReason) return reject([limitReason]);
+  if (!simulated) {
+    const [sendControl, todayJobs] = await Promise.all([
+      store.sendControl(),
+      store.jobsAttemptedOn(jstDate(now)),
+    ]);
+    const limitReason = dailyLimitReason({
+      sendControl,
+      jobs: todayJobs,
+      now,
+    });
+    if (limitReason) return reject([limitReason]);
+  }
   const hash = createHash("sha256").update(JSON.stringify(bundle));
   hash.update(bytes);
   const revision = hash.digest("hex").slice(0, 32);
@@ -458,9 +474,7 @@ export async function pushDailyImage(
       disabled: !dryRun,
       revision,
       when,
-      ...(simulated
-        ? { simulated_now: simulated.toISOString(), limit_checked: false }
-        : {}),
+      ...extra,
     };
 
   // 前の item を止め、下書きを公開保留に戻す（148 のトリガーが承認を外し、queued・held の job を取り消す）
@@ -569,7 +583,9 @@ export async function researchStatus(
       return null;
     });
     const prefix = `precheck:${job.id}:`;
-    const alert = (report?.alerts ?? []).find((a) => a?.key?.startsWith(prefix));
+    const alert = (report?.alerts ?? []).find((a) =>
+      a?.key?.startsWith(prefix),
+    );
     status.precheck_reason = alert ? alert.key.slice(prefix.length) : null;
   }
   if (
@@ -637,6 +653,8 @@ export function resultLine(
             ? `自動の承認に失敗したので job を作らなかった: ${result.error}`
             : "自動モードでないので job を作らなかった"
           : null),
+    // --dry-run を別の日の時計で通したとき（日の上限は見ていない）。hq は1行だけを読むので、ここに出す
+    ...(result.simulated_now ? { simulated_now: result.simulated_now } : {}),
   };
   return { code, text: `${PUSH_RULES[type.kind].tag} ${JSON.stringify(line)}` };
 }
@@ -670,7 +688,7 @@ export function createRestStore({
       get(
         `sns_auto_send_items?kind=eq.${type.kind}&channel=eq.x&race_id=like.${encodeURIComponent(`${type.idPrefix}:${date}:*`)}&select=id,state,draft_id,race_id,held_reason&order=created_at.desc`,
       ),
-    // 許可の列（research_image_enabled・setsu_kiryoku_enabled）が無い（179・193 が未適用）と PostgREST が 400 を返すので、
+    // 許可の列（research_image_enabled・setsu_kiryoku_enabled）が無い（179・194 が未適用）と PostgREST が 400 を返すので、
     // その時は列なしで読み直して off とする
     async controls() {
       let rows;

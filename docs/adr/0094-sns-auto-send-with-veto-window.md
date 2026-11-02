@@ -112,7 +112,8 @@
 ## 追記: X「節の機力」（setsu_kiryoku）は、数字で見たら（research_image）と同じ形で毎日 21:30 に画像1枚を送る（2026-11-02、hq SK04・BOA-1209・マイグレーション 194）
 - 集計・会場とネタの選び・画像（1080×1350）・本文・bundle は hq（platform/setsu_sheet.py）。受け取りは scripts/sns/push-setsu-kiryoku.js で、中身は push-research-image.js の型ごとの受け取り（api/_lib/snsResearchImage.js の DAILY_IMAGE_TYPES）。送り手の読み直し（snsClaimCheck.js）も同じ枝を型で分ける
 - 検査は research_image と同じ（禁止表現・#競艇 のタグだけ可・本文＋改行2つ＋タグで加重280・リンクなし・画像1枚 PNG 1080×1350・5MB・1日1本・送る時刻から60分）に、選手の名前と級（bundle の racers、A1・A2・B1・B2。オーナー 11/1 の恒久の決まり）を足す。本文からは拾わない（級が画像にだけ出る選手がいる）。送る時刻は 21:30 だけ
-- 集計の時刻: hq の source_observed_at は集計の as_of（「YYYY-MM-DD NR まで」）で時刻を持たないので、push が受け取った時刻を集計の時刻として DB の鮮度（24時間、research_image と同じ）に渡し、as_of は下書きに残す。hq が時差つきの ISO を出せばそれを使う
+- 集計の時刻: hq の source_observed_at は集計の as_of（「YYYY-MM-DD NR まで」）で時刻を持たないので、その日の 00:00 JST（いちばん古い見積り）を集計の時刻として DB の鮮度（24時間、research_image と同じ）に渡し、as_of は下書きに残す。受け取った時刻にすると作り直しのたびに新しく見え、鮮度の照合が名前だけになる（/code-review）。データの鮮度の守りは push の「as_of の日＝date＝今日」。hq が時差つきの ISO を出せばそれを使う
+- --dry-run は、今日でない束（hq の見本）を送る時刻の2分前の時計で検査し、その日の X の日の上限は見ない（結果の1行に simulated_now）。数字で見たらは今までどおり今日の束だけ
 - item の race_id は setsu:{YYYY-MM-DD}:{slug}。193 の Shorts と同じ接頭辞だが、kind・channel（x）・CHECK（sns_auto_send_items_setsu_x_id）・一意の索引（sns_auto_send_items_setsu_x_day）で分ける
 - 自動送信の許可は `sns_auto_send_control.setsu_kiryoku_enabled`（x の行、既定 false）。`.claude/CLAUDE.md` の例外に無いので、true にするのはオーナーの yes と例外 (6) の追記の後。止めるのはこのフラグ（全体は sns_x_send_control.paused）
 - 194 は 193 の transition の本文（md5）の上に4か所だけ足す。193 の後に当てる（先頭の DO が md5 を確かめる）

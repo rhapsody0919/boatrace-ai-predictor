@@ -39,6 +39,8 @@
 --   SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'sns_auto_send_items_kind_source';  期待: setsu_kiryoku の枝（x）と setsu_kiryoku_short の枝（youtube）
 --   SELECT indexdef FROM pg_indexes WHERE indexname = 'sns_auto_send_items_setsu_x_day';  期待: 1行
 --   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: 8d4f3caa34e30dda934e9b8698d970f4（この 194 の本文。verify-sns-setsu-kiryoku-x.js が照らす）
+--   SELECT proname, md5(prosrc) FROM pg_proc WHERE proname IN ('transition_sns_x_send', 'sns_x_slot_room') ORDER BY 1;
+--   期待: sns_x_slot_room e24b84a0895b5a86093d756404136066・transition_sns_x_send 06bd2a81976f9d0fa9d5f337899f5e5d（194 は触らない。2026-11-02 の本番の読み取り）
 --   node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js
 --
 -- 自動送信を許す（オーナーの yes と .claude/CLAUDE.md の例外の追記の後だけ。上限・取り置きと1つの BEGIN〜COMMIT で、
@@ -83,10 +85,11 @@ ALTER TABLE public.sns_auto_send_items ADD CONSTRAINT sns_auto_send_items_kind_s
   OR (kind = 'setsu_kiryoku_short' AND bundle_import_id IS NULL AND draft_id IS NOT NULL AND channel = 'youtube')
   OR (kind = 'setsu_kiryoku' AND bundle_import_id IS NULL AND draft_id IS NOT NULL AND channel = 'x'));
 
--- setsu_kiryoku の race_id は setsu:{YYYY-MM-DD}:{slug}（slug は英小文字・数字・ハイフン、40字まで。api/_lib/snsResearchImage.js の SETSU_ID と同じ）。版は main だけ
+-- setsu_kiryoku の race_id は setsu:{YYYY-MM-DD}:{slug}（slug は英小文字で始まる英小文字・数字・ハイフン、40字まで。api/_lib/snsResearchImage.js の SETSU_ID と同じ）。
+-- 英小文字で始めるのは、193 の Shorts の setsu:{日}:{会場2桁} と同じ race_id にしないため。版は main だけ
 ALTER TABLE public.sns_auto_send_items ADD CONSTRAINT sns_auto_send_items_setsu_x_id CHECK (
   kind <> 'setsu_kiryoku'
-  OR (race_id ~ '^setsu:[0-9]{4}-[0-9]{2}-[0-9]{2}:[a-z0-9][a-z0-9-]{0,39}$' AND variant = 'main'));
+  OR (race_id ~ '^setsu:[0-9]{4}-[0-9]{2}-[0-9]{2}:[a-z][a-z0-9-]{0,39}$' AND variant = 'main'));
 
 -- 1日1本（同じ JST の日に生きている・送った setsu_kiryoku は1つ）。直した版を入れ直すときは前の item を stopped（superseded）にしてから作る
 CREATE UNIQUE INDEX sns_auto_send_items_setsu_x_day ON public.sns_auto_send_items (channel, left(race_id, 16))
