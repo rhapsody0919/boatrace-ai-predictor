@@ -46,6 +46,7 @@
 -- 止める: UPDATE public.sns_auto_send_control SET setsu_kiryoku_short_enabled = false WHERE channel = 'youtube';
 --
 -- 戻し方:
+--   0. 194（#2113）が当たっていれば、先に setsu_kiryoku_enabled を false にし、194 を戻してから、下の 1〜3 で 193 を戻す
 --   1. 許可を false にする（上の「止める」）
 --   2. 関数を戻す: 189_sns_today_thinking.sql の transition_sns_send_139 の CREATE OR REPLACE と REVOKE だけを実行する（ファイル全体は流さない）
 --   3. CHECK・索引・列は残してよい（setsu_kiryoku_short の item が無ければ今までと同じ意味）

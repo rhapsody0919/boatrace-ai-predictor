@@ -12,7 +12,7 @@
 | RPC（写しの関数） | 68 |
 | 読んだファイル | 1585 |
 | 読み書きのあるファイル | 259 |
-| 表の読み手（箇所） | 907 |
+| 表の読み手（箇所） | 909 |
 | 表の書き手（箇所） | 186 |
 | RPC の呼び手（箇所） | 50 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 231 |
@@ -101,7 +101,7 @@
 | [sns_channel_daily](#t-sns_channel_daily) | table | service だけ | 1 | 1 |  |  | sns_daily |  |
 | [sns_content_types](#t-sns_content_types) | table | service だけ | 0 | 0 |  |  |  |  |
 | [sns_draft_metrics](#t-sns_draft_metrics) | table | service だけ | 0 | 0 |  |  |  |  |
-| [sns_drafts](#t-sns_drafts) | table | service だけ | 30 | 5 | append_sns_metric_observation, approve_sns_x_send, enqueue_sns_metric_jobs ほか10 | approve_sns_x_send, import_sns_preview_bundle, save_sns_draft_diff ほか7 | sns_auto_plan, sns_daily, sns_metrics ほか1 |  |
+| [sns_drafts](#t-sns_drafts) | table | service だけ | 32 | 5 | append_sns_metric_observation, approve_sns_x_send, enqueue_sns_metric_jobs ほか10 | approve_sns_x_send, import_sns_preview_bundle, save_sns_draft_diff ほか7 | sns_auto_plan, sns_daily, sns_metrics ほか1 |  |
 | [sns_metric_jobs](#t-sns_metric_jobs) | table | service だけ | 3 | 2 |  | enqueue_sns_metric_jobs | sns_metrics |  |
 | [sns_metric_observations](#t-sns_metric_observations) | table | service だけ | 4 | 0 | append_sns_metric_observation | append_sns_metric_observation |  |  |
 | [sns_oauth_tokens](#t-sns_oauth_tokens) | table | service だけ | 1 | 4 |  |  | sns_metrics, sns_send |  |
@@ -145,7 +145,7 @@
 | activate_analogy_model | service だけ |  | 名前の文字列: scripts/ml/analogy/db.py:136 |  | analogy_models | analogy_models |  |
 | add_fetch_counts | service だけ |  | scripts/lib/scrapeJobs/fetchCounter.js:140 / 名前の文字列: scripts/lib/scrapeJobs/fetchCounter.js:15 |  |  | fetch_counts, fetch_counts_minute |  |
 | analogy_feedback_guard | service だけ | yes | トリガー: analogy_feedback |  | analogy_feedback |  |  |
-| append_sns_metric_observation | service だけ |  | api/admin/sns-hub/observations.js:187, scripts/lib/snsDailyRunner.js:704, scripts/lib/snsMetricsRunner.js:501, scripts/maintenance/verify-sns-daily-runner.js:1078 |  | sns_drafts, sns_metric_observations | sns_metric_observations |  |
+| append_sns_metric_observation | service だけ |  | api/admin/sns-hub/observations.js:187, scripts/lib/snsDailyRunner.js:818, scripts/lib/snsMetricsRunner.js:501, scripts/maintenance/verify-sns-daily-runner.js:1278 |  | sns_drafts, sns_metric_observations | sns_metric_observations |  |
 | approve_sns_x_send | service だけ |  | api/_lib/snsXSendStore.js:114, scripts/lib/snsTodayPlanner.js:1164, scripts/sns/push-finals-image.js:1350, scripts/sns/push-full-picture.js:885 | sns_bundle_send_allowed | sns_approvers, sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs | sns_drafts, sns_x_send_jobs |  |
 | claim_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/store.js:216, scripts/maintenance/verify-scrape-slots-on-db.js:47 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:17 |  | races, scrape_slots | scrape_slots |  |
 | claim_scrape_slots_by_offset | service だけ |  | scripts/lib/scrapeJobs/store.js:197 |  | races, scrape_slots | scrape_slots |  |
@@ -1811,9 +1811,9 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 取得のジョブ: sns_daily
 - 読み手（1）: 
-  - `scripts/lib/snsDailyRunner.js:748` rest(rest) [channel, day, definition, draft_id, id, metric_name, metric_value, missing_reason, source, utm_content]
+  - `scripts/lib/snsDailyRunner.js:867` rest(rest) [channel, day, definition, draft_id, id, metric_name, metric_value, missing_reason, source, utm_content]
 - 書き手（1）: 
-  - `scripts/lib/snsDailyRunner.js:756` upsert(rest) [?]
+  - `scripts/lib/snsDailyRunner.js:875` upsert(rest) [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: observed_at
 
 ### <a id="t-sns_content_types"></a>sns_content_types
@@ -1836,7 +1836,7 @@
 - 本体で読む RPC: append_sns_metric_observation, approve_sns_x_send, enqueue_sns_metric_jobs, guard_sns_preview_bundle_draft, import_sns_preview_bundle, read_sns_draft_diff, save_sns_draft_diff, sns_claim_external, sns_finish_external, sns_x_slot_room, stop_sns_auto_item, transition_sns_send_139, transition_sns_x_send
 - 本体で書く RPC: approve_sns_x_send, import_sns_preview_bundle, save_sns_draft_diff, sns_claim_external, sns_finish_external, sns_record_external, sns_update_external_warning, stop_sns_auto_item, transition_sns_send_139, transition_sns_x_send
 - 取得のジョブ: sns_auto_plan, sns_daily, sns_metrics, sns_send
-- 読み手（30）: 
+- 読み手（32）: 
   - `api/_lib/snsClaimCheck.js:191` rest(rest) [bundle_import_id, id, source_data]
   - `api/_lib/snsClaimCheck.js:286` rest(rest) [caption_text, cover_image_path, hashtags, id, platform, video_storage_path]
   - `api/_lib/snsHubHelpers.js:119` select(rest) [*, id]
@@ -1850,8 +1850,9 @@
   - `scripts/lib/contentRevisionHistory.js:34` select [format, id, platform, revision_reason_codes, revision_reason_freetext, title, updated_at]
   - `scripts/lib/snsAutoPlanRunner.js:747` rest(rest) [bundle_import_id, caption_text, cover_image_path, format, hashtags, id, language, platform, publication_hold_reasons, publish_blocked, risk_flags, source_data, status, template_variant_id, thread_index, title, video_storage_path]
   - `scripts/lib/snsAutoPlanRunner.js:758` rest(rest) [format, id, status]
-  - `scripts/lib/snsDailyRunner.js:736` rest(rest) [format, id, platform, posted_at, source_data]
-  - `scripts/lib/snsDailyRunner.js:739` rest(rest) [id]
+  - `scripts/lib/snsDailyRunner.js:850` rest(rest) [format, id, platform, posted_at, source_data]
+  - `scripts/lib/snsDailyRunner.js:855` rest(rest) [caption_text, format, id, platform, posted_at]
+  - `scripts/lib/snsDailyRunner.js:858` rest(rest) [id]
   - `scripts/lib/snsMetricsRunner.js:493` rest(rest) [format, id, platform, posted_at, status]
   - `scripts/lib/snsTodayPlanner.js:1102` rest(rest) [format, id, send_lane, source_data, status]
   - `scripts/maintenance/verify-data-readers.js:183` rest(rest) [created_at, id, status] （検査）
@@ -1859,6 +1860,7 @@
   - `scripts/maintenance/verify-display-coverage.js:170` rest(rest) [*] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:617` rest(rest) [bundle_import_id] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:625` rest(rest) [id, status] （検査）
+  - `scripts/maintenance/verify-sns-daily-runner.js:965` rest(rest) [caption_text, format, id, platform, posted_at] （検査）
   - `scripts/maintenance/verify-sns-existing-fixes.js:142` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-metrics-runner.js:642` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-month-calendar.js:47` rest(rest) （検査）
@@ -1896,7 +1898,7 @@
 - 本体で書く RPC: append_sns_metric_observation
 - 読み手（4）: 
   - `api/_lib/snsXSendStore.js:76` rest(rest) [data_through, definition, draft_id, id, metric_name, metric_value, missing_reason, observed_at, period_end, source, window]
-  - `scripts/lib/snsDailyRunner.js:700` rest(rest) [definition, denominator_value, draft_id, metric_name, metric_value, observed_at, source, window]
+  - `scripts/lib/snsDailyRunner.js:814` rest(rest) [definition, denominator_value, draft_id, metric_name, metric_value, observed_at, source, window]
   - `scripts/lib/snsMetricsRunner.js:538` rest(rest) [draft_id, id, metric_value, source, window]
   - `scripts/maintenance/verify-sns-month-calendar.js:51` rest(rest) （検査）
 - 書き手（0）: なし
@@ -2028,7 +2030,7 @@
   - `api/_lib/snsXSendStore.js:69` rest(rest) [draft_id, error_code, expires_at, external_post_id, id, posted_at, scheduled_at, snapshot, state, youtube_stage]
   - `api/_lib/snsXSendStore.js:136` rest(rest) [attempts, draft_id, error_code, expires_at, external_post_url, id, posted_at, scheduled_at, state]
   - `scripts/lib/snsAutoPlanRunner.js:765` rest(rest) [draft_id, id, state]
-  - `scripts/lib/snsDailyRunner.js:731` rest(rest) [channel, draft_id, external_post_id, posted_at, state]
+  - `scripts/lib/snsDailyRunner.js:845` rest(rest) [channel, draft_id, external_post_id, posted_at, state]
   - `scripts/lib/snsMetricsRunner.js:495` rest(rest) [channel, draft_id, external_post_id, state]
   - `scripts/lib/snsSendRunner.js:594` rest(rest) [*, id, scheduled_at, state]
   - `scripts/lib/snsSendRunner.js:601` rest(rest) [external_post_id, id, state]
