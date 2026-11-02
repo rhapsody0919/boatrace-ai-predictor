@@ -351,11 +351,12 @@ export function buildTodayPost(
       .filter(
         (row, i, all) => all.findIndex((r) => r.race_id === row.race_id) === i,
       )
-      .map(({ race_id, venue_code, race_number, start_time }) => ({
+      .map(({ race_id, venue_code, race_number, start_time, boat_number }) => ({
         race_id,
         venue_code,
         race_number,
         start_time,
+        boat_number,
       })),
     // 送る直前に欠場・中止を読み直す対象（注目レースを含む）
     picks: [...(featured ? [featured] : []), ...picks].map((row) => ({
@@ -660,7 +661,7 @@ export async function runTodayPlan(
       }
       try {
         const shot = await headless.screenshot({
-          url: `${SITE_BASE_URL}/race/${race.race_id}?tab=sonar`,
+          url: `${SITE_BASE_URL}/race/${race.race_id}?tab=sonar&boat=${race.boat_number}`,
           requiredSelectors: SONAR_READY,
           viewport: { width: 390, height: 844 },
           element: SONAR_ELEMENT,
