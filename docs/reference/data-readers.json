@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1579,
+    "sourceFiles": 1582,
     "filesWithAccess": 257,
     "tableReaders": 904,
     "tableWriters": 186,
@@ -20870,7 +20870,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-metrics-runner.js:632",
+          "ref": "scripts/maintenance/verify-sns-metrics-runner.js:642",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -21571,7 +21571,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-sns-metrics-runner.js:622",
+          "ref": "scripts/maintenance/verify-sns-metrics-runner.js:632",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -21658,7 +21658,7 @@
             "scripts/lib/snsMetricsRunner.js:506",
             "scripts/lib/snsMetricsRunner.js:520",
             "scripts/lib/snsMetricsRunner.js:550",
-            "scripts/maintenance/verify-sns-metrics-runner.js:622"
+            "scripts/maintenance/verify-sns-metrics-runner.js:632"
           ],
           "writers": [],
           "sql": [
@@ -23335,7 +23335,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-sns-metrics-runner.js:641",
+          "ref": "scripts/maintenance/verify-sns-metrics-runner.js:651",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -23349,7 +23349,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-send-runner.js:480",
+          "ref": "scripts/maintenance/verify-sns-send-runner.js:491",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23362,7 +23362,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-send-runner.js:1543",
+          "ref": "scripts/maintenance/verify-sns-send-runner.js:1554",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23476,8 +23476,8 @@
             "scripts/lib/snsSendRunner.js:617",
             "scripts/lib/snsSendRunner.js:626",
             "scripts/lib/snsSendRunner.js:632",
-            "scripts/maintenance/verify-sns-send-runner.js:1543",
-            "scripts/maintenance/verify-sns-send-runner.js:480",
+            "scripts/maintenance/verify-sns-send-runner.js:1554",
+            "scripts/maintenance/verify-sns-send-runner.js:491",
             "scripts/sns/push-finals-image.js:1208",
             "scripts/sns/push-finals-image.js:1214",
             "scripts/sns/push-finals-image.js:1223",
@@ -23533,8 +23533,8 @@
             "scripts/lib/snsSendRunner.js:617",
             "scripts/lib/snsSendRunner.js:626",
             "scripts/lib/snsSendRunner.js:632",
-            "scripts/maintenance/verify-sns-send-runner.js:1543",
-            "scripts/maintenance/verify-sns-send-runner.js:480",
+            "scripts/maintenance/verify-sns-send-runner.js:1554",
+            "scripts/maintenance/verify-sns-send-runner.js:491",
             "scripts/sns/push-finals-image.js:1208",
             "scripts/sns/push-finals-image.js:1214",
             "scripts/sns/push-finals-image.js:1223",
@@ -23557,7 +23557,7 @@
           "readers": [
             "api/_lib/snsXSendStore.js:69",
             "scripts/lib/snsSendRunner.js:626",
-            "scripts/maintenance/verify-sns-send-runner.js:1543"
+            "scripts/maintenance/verify-sns-send-runner.js:1554"
           ],
           "writers": [],
           "sql": [
@@ -23622,7 +23622,7 @@
           "readers": [
             "api/_lib/snsXSendStore.js:136",
             "scripts/lib/snsSendRunner.js:626",
-            "scripts/maintenance/verify-sns-send-runner.js:1543",
+            "scripts/maintenance/verify-sns-send-runner.js:1554",
             "scripts/sns/push-finals-image.js:1214",
             "scripts/sns/push-full-picture.js:898"
           ],
@@ -23654,8 +23654,8 @@
             "api/_lib/snsXSendStore.js:69",
             "scripts/lib/snsSendRunner.js:626",
             "scripts/lib/snsSendRunner.js:632",
-            "scripts/maintenance/verify-sns-send-runner.js:1543",
-            "scripts/maintenance/verify-sns-send-runner.js:480",
+            "scripts/maintenance/verify-sns-send-runner.js:1554",
+            "scripts/maintenance/verify-sns-send-runner.js:491",
             "scripts/sns/push-finals-image.js:1223",
             "scripts/sns/push-research-image.js:562"
           ],
@@ -23677,7 +23677,7 @@
             "scripts/lib/snsSendRunner.js:601",
             "scripts/lib/snsSendRunner.js:617",
             "scripts/lib/snsSendRunner.js:626",
-            "scripts/maintenance/verify-sns-send-runner.js:1543",
+            "scripts/maintenance/verify-sns-send-runner.js:1554",
             "scripts/sns/push-finals-image.js:1223",
             "scripts/sns/push-research-image.js:562"
           ],
@@ -23734,8 +23734,8 @@
             "scripts/lib/snsSendRunner.js:613",
             "scripts/lib/snsSendRunner.js:626",
             "scripts/lib/snsSendRunner.js:632",
-            "scripts/maintenance/verify-sns-send-runner.js:1543",
-            "scripts/maintenance/verify-sns-send-runner.js:480",
+            "scripts/maintenance/verify-sns-send-runner.js:1554",
+            "scripts/maintenance/verify-sns-send-runner.js:491",
             "scripts/sns/push-finals-image.js:1214"
           ],
           "writers": [],
@@ -23753,7 +23753,7 @@
             "api/_lib/snsXSendStore.js:69",
             "scripts/lib/snsSendRunner.js:613",
             "scripts/lib/snsSendRunner.js:626",
-            "scripts/maintenance/verify-sns-send-runner.js:1543",
+            "scripts/maintenance/verify-sns-send-runner.js:1554",
             "scripts/sns/push-finals-image.js:1214",
             "scripts/sns/push-research-image.js:562"
           ],
@@ -23832,8 +23832,8 @@
             "api/_lib/snsXSendStore.js:69",
             "scripts/lib/snsSendRunner.js:626",
             "scripts/lib/snsSendRunner.js:632",
-            "scripts/maintenance/verify-sns-send-runner.js:1543",
-            "scripts/maintenance/verify-sns-send-runner.js:480"
+            "scripts/maintenance/verify-sns-send-runner.js:1554",
+            "scripts/maintenance/verify-sns-send-runner.js:491"
           ],
           "writers": [],
           "sql": [

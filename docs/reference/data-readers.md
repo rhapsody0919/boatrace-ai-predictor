@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1579 |
+| 読んだファイル | 1582 |
 | 読み書きのあるファイル | 257 |
 | 表の読み手（箇所） | 904 |
 | 表の書き手（箇所） | 186 |
@@ -1857,7 +1857,7 @@
   - `scripts/maintenance/verify-sns-auto-plan.js:617` rest(rest) [bundle_import_id] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:625` rest(rest) [id, status] （検査）
   - `scripts/maintenance/verify-sns-existing-fixes.js:142` rest(rest) （検査）
-  - `scripts/maintenance/verify-sns-metrics-runner.js:632` rest(rest) （検査）
+  - `scripts/maintenance/verify-sns-metrics-runner.js:642` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-month-calendar.js:47` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:723` rest(rest) [format, send_lane] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:747` rest(rest) [id, status] （検査）
@@ -1880,7 +1880,7 @@
 - 読み手（3）: 
   - `scripts/lib/snsMetricsRunner.js:488` rest(rest) [attempts, draft_id, due_at, id, last_error, source, state, window]
   - `scripts/lib/snsMetricsRunner.js:550` rest(rest) [done_at, id, state]
-  - `scripts/maintenance/verify-sns-metrics-runner.js:622` rest(rest) [state] （検査）
+  - `scripts/maintenance/verify-sns-metrics-runner.js:632` rest(rest) [state] （検査）
 - 書き手（2）: 
   - `scripts/lib/snsMetricsRunner.js:506` update(rest) [?]
   - `scripts/lib/snsMetricsRunner.js:520` update(rest) [?]
@@ -2033,10 +2033,10 @@
   - `scripts/lib/snsSendRunner.js:617` rest(rest) [external_post_id, id, state]
   - `scripts/lib/snsSendRunner.js:626` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage]
   - `scripts/lib/snsSendRunner.js:632` rest(rest) [channel, error_code, id, state, youtube_stage]
-  - `scripts/maintenance/verify-sns-metrics-runner.js:641` rest(rest) （検査）
+  - `scripts/maintenance/verify-sns-metrics-runner.js:651` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-month-calendar.js:46` rest(rest) （検査）
-  - `scripts/maintenance/verify-sns-send-runner.js:480` rest(rest) [channel, error_code, id, state, youtube_stage] （検査）
-  - `scripts/maintenance/verify-sns-send-runner.js:1543` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage] （検査）
+  - `scripts/maintenance/verify-sns-send-runner.js:491` rest(rest) [channel, error_code, id, state, youtube_stage] （検査）
+  - `scripts/maintenance/verify-sns-send-runner.js:1554` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage] （検査）
   - `scripts/sns/push-finals-image.js:1208` rest(rest) [attempt_channels, attempt_dates, id, state]
   - `scripts/sns/push-finals-image.js:1214` rest(rest) [attempts, channel, expires_at, id, parent_job_id, state]
   - `scripts/sns/push-finals-image.js:1223` rest(rest) [draft_id, error_code, external_post_id, external_post_url, id, posted_at, state]

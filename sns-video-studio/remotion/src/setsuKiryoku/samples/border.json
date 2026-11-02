@@ -1,0 +1,68 @@
+{
+ "format": "setsu_kiryoku_short",
+ "date": "2026-10-30",
+ "variant": "border",
+ "venue": "尼崎",
+ "grade": "SG",
+ "as_of": "2026-10-29 12R まで",
+ "border": {
+  "cut": 18,
+  "line": 6.0
+ },
+ "racers": [
+  {
+   "rank": 19,
+   "racer": "峰 竜太",
+   "rate": 5.8,
+   "race": "11R",
+   "boat": 4,
+   "need": "2着以上"
+  },
+  {
+   "rank": 20,
+   "racer": "小池 修平",
+   "rate": 5.75,
+   "race": "10R",
+   "boat": 3,
+   "need": "2着以上",
+   "tied": true
+  },
+  {
+   "rank": 23,
+   "racer": "篠崎 元志",
+   "rate": 5.6,
+   "race": "6R",
+   "boat": 3,
+   "need": "2着以上"
+  }
+ ],
+ "texts": {
+  "hook": [
+   "準優に残れるのは 18人",
+   "前夜の18位は",
+   {
+    "text": "得点率 6.00",
+    "em": true
+   },
+   "その下で 今日1走の3人",
+   {
+    "text": "何着なら 並ぶ？",
+    "em": true
+   }
+  ],
+  "close": [
+   "ボーダーは",
+   {
+    "text": "今日の結果で動く",
+    "em": true
+   },
+   "3人は 届く？",
+   "準優の18人は 今夜決まる"
+  ]
+ },
+ "youtube": {
+  "title": "尼崎SG 予選最終日 準優に残れるのは18人 ボーダー際の3人は何着なら並ぶ？ #ボートレース #Shorts",
+  "description": "尼崎SG 予選最終日（10/30）の朝。前夜の18位の得点率と、その下で今日1走の3人が並ぶのに要る着。\n集計: 10/29 12Rまで\n・得点率は龍神レーダーの計算（予選3日目まで、事故の減点を含まない）。公式の表とずれることがあります\n・要る着は、前夜の18位の得点率が動かない場合\n・ボーダーは今日の結果で動きます\n\n得点率の表は龍神レーダーで\nhttps://www.boat-ai.jp/venue/13?utm_source=youtube&utm_medium=shorts&utm_content=border\n\n#ボートレース"
+ },
+ "source_observed_at": "2026-10-30T05:10:00+09:00"
+}
