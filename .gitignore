@@ -82,3 +82,5 @@ sns-video-studio/published/
 e2e/recordings/
 # BOA-635 T0-1 の中間データ（label-threshold.py の LT_WORK の既定。再実行で作り直せる）
 data/analysis/past-rate-check/work/
+# GS00 data-scientist の中間データ（fetch-period-stats.mjs の出力。再実行で作り直せる）
+data/analysis/racer-period-stats/work/

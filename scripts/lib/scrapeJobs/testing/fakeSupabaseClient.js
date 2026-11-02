@@ -2,7 +2,7 @@
  * テスト用のインメモリの Supabase クライアント（PostgREST の、検証に必要な部分だけ）。DB・取得先に接続しない。
  * 検証スクリプト（scripts/maintenance/verify-*.js）専用。
  *
- * 対応: select / insert / upsert（onConflict・ignoreDuplicates）/ update / delete、
+ * 対応: select（{count: "exact", head: true} の件数を含む） / insert / upsert（onConflict・ignoreDuplicates）/ update / delete、
  *   eq・neq・in・like・gte・lt・is・not(is null)、JSON の項目の条件（`last_report->>hash`）、order・range・limit・maybeSingle、
  *   update・delete・upsert の select()（返り値の取得）。
  * rpc(name, args): rpcs に渡した関数を呼ぶ（呼び出しは rpcCalls に記録）。
@@ -46,12 +46,14 @@ export function createFakeSupabaseClient({
       limitN: null,
       single: false,
       returning: false,
+      countOpt: null,
       payload: null,
       opts: null,
     };
     const b = {
-      select() {
+      select(_columns, opts) {
         if (q.op !== "select") q.returning = true;
+        else if (opts?.count) q.countOpt = { head: !!opts.head };
         return b;
       },
       eq(c, v) {
@@ -161,6 +163,12 @@ export function createFakeSupabaseClient({
       const matched = () => rows.filter((r) => q.filters.every((f) => f(r)));
       if (q.op === "select") {
         let found = matched();
+        if (q.countOpt)
+          return {
+            data: q.countOpt.head ? null : found.map(clone),
+            count: found.length,
+            error: null,
+          };
         for (const [c, asc] of [...q.orders].reverse()) {
           found = [...found].sort(
             (x, y) => (x[c] < y[c] ? -1 : x[c] > y[c] ? 1 : 0) * (asc ? 1 : -1),

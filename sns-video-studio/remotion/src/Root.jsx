@@ -3,6 +3,8 @@ import { FullPictureScene2 } from "./fullPicture/Scene2Compare.jsx";
 import { scene2Duration } from "./fullPicture/scene2Timeline.js";
 import { FullPictureStep } from "./fullPicture/FullPictureStep.jsx";
 import { FullPicture } from "./fullPicture/FullPicture.jsx";
+import { S02Card, S02Overlay } from "./fullPicture/S02.jsx";
+import { F01Landscape, F01Thumb } from "./fullPicture/F01.jsx";
 import { fullPictureTimeline } from "./fullPicture/fullPictureTimeline.js";
 import { stepTimeline } from "./fullPicture/stepTimeline.js";
 import { AshiyaCM, AmagasakiCM } from "./AshiyaCM.jsx";
@@ -69,6 +71,7 @@ import {
 import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
 import { OnboardingFlowCM } from "./OnboardingFlowCM.jsx";
 import { AboutHeroDesktop, AboutHeroMobile } from "./AboutHeroCM.jsx";
+import { SetsuKiryokuShort, setsuKiryokuMetadata } from "./setsuKiryoku/SetsuKiryoku.jsx";
 
 export function RemotionRoot() {
   return (
@@ -606,6 +609,21 @@ export function RemotionRoot() {
           durationInFrames: props?.scenes?.length ? Math.max(30, fullPictureTimeline(props.scenes, props.answers).total) : 300,
         })}
       />
+      {/* 型 s02-loss-breakdown-card の札と重ね（静止画、scripts/full-picture/prototype-s02.mjs） */}
+      <Composition id="S02Card" component={S02Card} durationInFrames={1} fps={30} width={1080} height={1920} defaultProps={{ head: "", lines: [], band: { win: 1, loss: 1 } }} />
+      <Composition id="S02Overlay" component={S02Overlay} durationInFrames={1} fps={30} width={1080} height={1920} defaultProps={{}} />
+      {/* 型 f01 の試作（関門の段4。型の表には未登録）。尺は props.total（scripts/full-picture/prototype-f01.mjs） */}
+      <Composition
+        id="F01Landscape"
+        component={F01Landscape}
+        durationInFrames={30}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{ total: 30, chapters: [], subs: [], audio: [] }}
+        calculateMetadata={({ props }) => ({ durationInFrames: props.total })}
+      />
+      <Composition id="F01Thumb" component={F01Thumb} durationInFrames={1} fps={30} width={1280} height={720} defaultProps={{ head: "", question: "", number: "", numberLabel: "" }} />
       {/* 全貌動画の段の場面を1つ（場面ごとの確認用）。props: { scene, answers } */}
       <Composition
         id="FullPictureStep"
@@ -626,6 +644,16 @@ export function RemotionRoot() {
         fps={30}
         width={840}
         height={1434}
+      />
+      {/* YouTube Shorts「節の機力」（props は hq の bundle.json、型は variant）。defaultProps は置かない: Remotion は --props を defaultProps に浅く重ねるので、見本の束を置くと hq の束に無い欄（texts・class・grade 等）が見本の値で埋まり、欠けたら止める検査をすり抜ける（2026-11-02 実測） */}
+      <Composition
+        id="SetsuKiryokuShort"
+        component={SetsuKiryokuShort}
+        durationInFrames={450}
+        fps={30}
+        width={1080}
+        height={1920}
+        calculateMetadata={setsuKiryokuMetadata}
       />
     </>
   );

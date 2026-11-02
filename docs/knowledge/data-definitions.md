@@ -19,6 +19,17 @@
 - 基本情報タブの「前期」（直前に終わった期）は5〜6月・11〜12月に公式の期と値が違う（2026-10-10、同 APPROVED.md）
 - レース内のスタートの並びとの順位相関: 公式 0.223、直近30走 0.247、このコース 0.269〜0.272（2026-10-10、評価 2026-07-01〜10-08、同 APPROVED.md「根拠」）
 
+## 期別成績（fan、racer_period_stats）
+- (Y,1) は公式の「Y年前期」（集計 (Y-1)/5/1〜10/31、級の適用 Y/1〜6）、(Y,2) は「Y年後期」（集計 (Y-1)/11/1〜Y/4/30、適用 Y/7〜12）。2026年・期2 は「2026年後期」（2026-10-28、official-data-spec、公式 download.html のリンク 2026年前期=fan2510・後期=fan2604、layout.html の「2014年2期」の例）
+- starts＝Σc{N}_entries＋nc_k1＋nc_l1。末尾1は選手責任で出走に数え、0は責任外で数えない。S0/S1/S2 の区別は公式に説明が無く未確認。コースは進入コースで、top2_rate は2連対率（%・小数1桁、主に切り捨て）。3連対率は DB に無く着回数から出す（2026-10-28、official-data-spec、本番 fan2604 の 1,643人、公式 layout.html）
+- racer_period_stats.grade はその期の成績で決まった級（次の行の grade_prev と 22,167/22,167 一致、適用は算出期間の終わりの2か月後から半年）。コース別の2連率は 2021年1期まで四捨五入、2021年2期から切り捨て。コース別の進入数の合計は 13% の行で starts と ±1〜5 違う。勝率は着回数からは再現できない（2026-10-28、data-scientist、data/analysis/racer-period-stats/period-stats-display-scope.json）
+- 公式の優出回数（racer_period_stats.finals）は、優勝戦の着が S0・K0・L0 の走も数え、NULL は数えない。勝率の出走（L0・K0・S0 は数えない）とは別の決まり。優勝戦は isFinalStage（v2）に「オオムラGP」「関ヶ原決戦」の2レースを足すと、kb の選手×期 20,916行で finals・wins とも全件一致（2026-11-02、official-data-spec、src/pure/racerCareerStats.js の isCareerFinalAppearance・isCareerFinalStage）
+- 公式に準優出の統計は無い（racer_period_stats・fan に準優出の回数の列が無い）。準優出を出すなら当サイトの集計と書く（2026-11-02、official-data-spec、docs/design/racer-period-stats/plan.md §3 の fan の形式）
+- c{N}_avg_st=0 は、そのコースの進入が全部 F・L で ST が無い印（14セル）。期をまたいで平均するときは重みから外し、重みは (進入 − F − L) にする。3連対率 (first_count+second_count+Σc_p3)/starts は公式の選手ページ（season）と一致し、公式の表示は小数2桁の切り捨て（73.276→73.27%）（2026-10-28、data-accuracy-verifier、PR #2051）
+- racer_series_points は 2026-09-16 以降の SG・G1 の7節（358行）だけ。今節の得点率は一般戦では出せない（2026-10-28、data-scientist、本番の読み取り）
+- QC の節の種別の原文は年で変わる（QC優勝戦・QC順位決定・賞女順位決定・賞金女王決定・シリーズ優勝）。本体の races.race_grade は QC シリーズのレースも G1 で入るので、QC と QC シリーズの格はレースごとに分ける（2026-10-31、本番の読み取り、docs/design/racer-period-stats/plan.md §14.4）
+- race_series の class_code が Lady・Rookie・Takumi・Venus の節は grade が NULL で、races.race_grade も 2026-02 より前は NULL。kb と 2026-02 以降の races の値から、Lady・Takumi は G3、Rookie・Venus は ippan に写せる（2026-10-31、system-architect、本番の読み取り）
+
 ## 率の桁
 - 2連率・3連率は公式と同じ小数2桁で持つ。朝の初期化（generate-predictions）が1桁に丸めていたのを直した。過去の118レースは取り直さない（2026-10-11、BOA-829、PR #1388、オーケストレーター判断）
 - 事故率は小数第2位で切り捨てて判定する。2025-2期に 40÷57=0.7018 の選手2人が B1 だった。ボートレース日和は四捨五入で出す（2026-10-11、src/utils/accidentRate.js、docs/design/racer-accident-rate/mock/APPROVED.md）

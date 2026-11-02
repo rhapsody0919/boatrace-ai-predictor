@@ -100,20 +100,33 @@ export function createMemoryStore({
       return true;
     },
     // until: 全てのキーに効く期限（テストが直接入れる）。byKey: キーごとの期限（ブレーカーが open で書く。
-    // ホストのキーとパスのキー（BOA-1145）を分けて確かめるため）
+    // ホストのキーとパスのキー（BOA-1145）を分けて確かめるため）。fetchStop: キーごとの非常停止（テストが直接入れる。178）
     breakerStore: {
       until: 0,
       byKey: {},
+      fetchStop: {},
+      // levels: キーごとの段階と開いた時刻（{level, openedAtMs}。ブレーカーが 403 の open で書く。テストが直接入れてもよい）
+      levels: {},
+      // closedAt: キーごとの閉じた時刻（ブレーカーが close で書く）
+      closedAt: {},
       async read(hostKey) {
-        return Math.max(
-          store.breakerStore.until,
-          store.breakerStore.byKey[hostKey] ?? 0,
-        );
+        return {
+          untilMs: Math.max(
+            store.breakerStore.until,
+            store.breakerStore.byKey[hostKey] ?? 0,
+          ),
+          fetchStop: store.breakerStore.fetchStop[hostKey] === true,
+          level: store.breakerStore.levels[hostKey]?.level ?? 0,
+          openedAtMs: store.breakerStore.levels[hostKey]?.openedAtMs ?? 0,
+          closedAtMs: store.breakerStore.closedAt[hostKey] ?? 0,
+        };
       },
-      async open(hostKey, untilMs) {
+      async open(hostKey, untilMs, _reason, level) {
         store.breakerStore.byKey[hostKey] = untilMs;
+        if (level) store.breakerStore.levels[hostKey] = { ...level };
       },
-      async close(hostKey) {
+      async close(hostKey, closed) {
+        if (closed) store.breakerStore.closedAt[hostKey] = closed.closedAtMs;
         // until はホストのキーの閉鎖でだけ消す（パスのキーの閉鎖で、テストが入れたホストの開放を消さない）
         if (!String(hostKey).includes("/")) store.breakerStore.until = 0;
         delete store.breakerStore.byKey[hostKey];

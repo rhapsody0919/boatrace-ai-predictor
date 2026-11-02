@@ -11,7 +11,19 @@ async function db(path, options = {}) {
       Prefer: "return=representation",
     },
   });
-  if (!response.ok) throw new Error("X送信のDB操作に失敗しました");
+  if (!response.ok) {
+    // 利用者には今までどおりの文言を返す。DB の拒否の元の文言（RAISE の文）は cause に持たせ、送信の runner が
+    // 送らなかった理由（sns_send_events、191）の code に写す（BOA-1201）。PostgREST の本文は code・message だけ読む（details は残さない）
+    const body = await response.json().catch(() => null);
+    throw new Error("X送信のDB操作に失敗しました", {
+      cause: {
+        kind: "db_rejected",
+        status: response.status,
+        code: typeof body?.code === "string" ? body.code : null,
+        message: typeof body?.message === "string" ? body.message : null,
+      },
+    });
+  }
   // RETURNS void の RPC（sweep_sns_deadline_queue 等）は本文が空で返る。json() にすると
   // "Unexpected end of JSON input" で落ち、送信の cron が毎回失敗する（2026-10-14、L1 で sns_send を live にした後に304回連続）
   const text = await response.text();

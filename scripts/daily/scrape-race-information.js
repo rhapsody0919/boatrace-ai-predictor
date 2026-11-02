@@ -48,6 +48,7 @@ import * as cheerio from "cheerio";
 import { supabase, fetchAll } from "../lib/supabaseClient.js";
 import { diffRows } from "../lib/unchangedRows.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
+import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { archiveRawHtml } from "../lib/rawHtmlArchive.js";
 
 const USER_AGENT =
@@ -119,7 +120,8 @@ export function createInformationFetcher(politeFetch) {
       if (!res.ok) return { html: null, reason: `http_${res.status}` };
       return { html: await res.text(), reason: null };
     } catch (error) {
-      if (error?.name === "BreakerOpenError") {
+      // 子の FetchStoppedError（非常停止、178）も含める（名前ではなく instanceof で見る）
+      if (error instanceof BreakerOpenError) {
         return { html: null, reason: "breaker_open" };
       }
       return {

@@ -362,7 +362,8 @@ test("英語のレース詳細に公式の記号・円・日本語のラベル�
 });
 
 // BOA-656: 会場特性の要約は「水面・傾向」を日本語の中黒で連結していた（全言語で「Freshwater ・ Balanced」）
-test("会場特性の要約は言語ごとの区切りで連結する（BOA-656）", async ({
+// BOA-1202: 傾向（venues.cluster）の表示を外したので、要約は水面だけ。中黒・傾向の語が出ないことを守る
+test("会場特性の要約に日本語の中黒と傾向の語が出ない（BOA-656・BOA-1202）", async ({
   page,
 }) => {
   // venue-characteristics-teaser は VenueCharacteristicsCard が collapsible
@@ -395,15 +396,12 @@ test("会場特性の要約は言語ごとの区切りで連結する（BOA-656�
       json: { ...body, races },
     });
   });
-  for (const [path, sep] of [
-    ["/en/venue/2", ", "],
-    ["/zh-TW/venue/2", "、"],
-  ]) {
+  for (const path of ["/en/venue/2", "/zh-TW/venue/2"]) {
     await page.goto(path);
     const teaser = page.getByTestId("venue-characteristics-teaser");
     await teaser.waitFor({ timeout: 30000 });
     await expect(teaser).not.toContainText("・");
-    await expect(teaser).toContainText(sep);
+    await expect(teaser).not.toContainText(/Balanced|Inside|Outside/i);
   }
 });
 
@@ -528,6 +526,36 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
         page.getByRole("button", { name: new RegExp(`^${n}号艇\\s`) }),
       ).toBeVisible();
     await expect(page.getByRole("region", { name: "買い目" })).toBeVisible();
+  });
+
+  // BOA-990 ①: 思考アシストの買い目に券種（3連単・2連単）のタブと「券種で比べる」の小表を足した
+  test("思考アシストの買い目レンズに券種のタブ（3連単・3連複・2連単・2連複・拡連複）と券種で比べるの表が出る", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-10-06-18-10/assist");
+    await page
+      .getByRole("tablist", { name: "見方" })
+      .getByRole("tab", { name: "買い目", exact: true })
+      .click();
+    const types = page.getByRole("group", { name: "券種" });
+    await expect(types.getByRole("button", { name: "3連単" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(types.getByRole("button", { name: "2連単" })).toBeVisible();
+    // BOA-990 ②: 3連複・2連複のタブ。押すとフッターの頭がその券種になる
+    for (const name of ["3連複", "2連複", "拡連複"]) {
+      await types.getByRole("button", { name, exact: true }).click();
+      await expect(
+        types.getByRole("button", { name, exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByRole("region", { name: "買い目" })).toContainText(
+        name,
+      );
+    }
+    await expect(
+      page.getByRole("region", { name: "券種で比べる（同じ候補）" }),
+    ).toBeVisible();
   });
 
   test("翻訳済みページ（/en/guide）はリダイレクトされずlang=enで配信される", async ({
@@ -5383,28 +5411,49 @@ test.describe("レース詳細のモータ情報タブ: 連対率の桁（BOA-47
     // 2桁で出すと同じモーターが 54.80 と 54.84 に見えるため1桁に揃えた
     // 列は位置でなく見出しで引く。会場内順位の列（BOA-428、「2位/65」）は会場のスナップショットが
     // あるときだけ出るので、位置で決め打ちすると録画の日によって別の列を読む（BOA-929）
-    const rateColumns = await table.locator("thead th").evaluateAll((ths) =>
-      ths
+    // 見出しと本体は同じ1回の evaluate で読む。会場内順位の列は一覧表を出したあとに
+    // スナップショットの取得を待って差し込まれる（MotorConditionChart の setVenueRanks）。
+    // 見出しを数えたあとで列が増えると、nth-child で読む列が1つ右へずれ、「3位/65」を
+    // 2連率として読んでいた（2026-10-26、e2e-shard で繰り返し落ちた）
+    const cells = await table.evaluate((tableEl) => {
+      const heads = [...tableEl.querySelectorAll("thead th")];
+      const rateIndexes = heads
         .map((th, i) => ({
           i,
           text: th.textContent.trim(),
           venueRank: th.classList.contains("motor-venue-rank-head"),
         }))
         .filter((h) => /連率/.test(h.text) && !h.venueRank)
-        .map((h) => h.i + 1),
-    );
-    expect(rateColumns.length).toBeGreaterThan(0);
-    for (const column of rateColumns) {
-      const cells = table.locator(`tbody tr td:nth-child(${column})`);
-      const count = await cells.count();
-      expect(count).toBeGreaterThan(0);
-      for (let i = 0; i < count; i += 1) {
+        .map((h) => h.i);
+      const rows = [...tableEl.querySelectorAll("tbody tr")].map((tr) => [
+        ...tr.children,
+      ]);
+      return {
+        headCount: heads.length,
+        rateIndexes,
+        rows: rows.map((tds) => ({
+          width: tds.length,
+          texts: rateIndexes.map((i) => ({
+            column: i + 1,
+            header: heads[i].textContent.trim(),
+            text: (tds[i]?.innerText ?? "").trim(),
+          })),
+        })),
+      };
+    });
+    expect(cells.rateIndexes.length).toBeGreaterThan(0);
+    expect(cells.rows.length).toBeGreaterThan(0);
+    for (const row of cells.rows) {
+      // 本体の列の数が見出しと違えば、位置で引いた値は別の列のもの
+      expect(row.width, "見出しと本体の列の数").toBe(cells.headCount);
+      for (const { column, header, text } of row.texts) {
         // セルには数値のあとに注記・札（「前の節までの走り（N走）で出た数字」「初下ろし」等）が
         // 付くことがある。桁を見るのは先頭の数値だけ
-        const text = (await cells.nth(i).innerText()).trim();
         const value = text.match(/^\d+(?:\.\d+)?/)?.[0];
         if (value === undefined) continue;
-        expect(value, `${column}列目: ${text}`).toMatch(/^\d+\.\d$/);
+        expect(value, `${column}列目（${header}）: ${text}`).toMatch(
+          /^\d+\.\d$/,
+        );
       }
     }
   });
@@ -6027,19 +6076,29 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
     // 実データのまま（kicker・最終日の補完元として使う。useDatePredictions が
     // 同じ会場の他レースから値を拾う）
     await page.route("**/api/predictions/2026-09-04*", async (route) => {
-      // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
-      const response = await fetchRecorded(route);
-      const body = await response.json();
-      const races = (body.races || []).map((race) =>
-        race.raceId === "2026-09-04-06-09"
-          ? { ...race, raceStage: null, isFinalDay: null, raceTitle: null }
-          : race,
-      );
-      await route.fulfill({
-        status: response.status(),
-        headers: response.headers(),
-        json: { ...body, races },
-      });
+      try {
+        // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+        const response = await fetchRecorded(route);
+        const body = await response.json();
+        const races = (body.races || []).map((race) =>
+          race.raceId === "2026-09-04-06-09"
+            ? { ...race, raceStage: null, isFinalDay: null, raceTitle: null }
+            : race,
+        );
+        await route.fulfill({
+          status: response.status(),
+          headers: response.headers(),
+          json: { ...body, races },
+        });
+      } catch (e) {
+        // 本番データの定期実行（E2E_LIVE=1）では fetchRecorded が本番の応答を待つ。アサーションが
+        // 先に通ってページが閉じた後に2回目の取得の応答が届き、「Target page, context or browser
+        // has been closed」で失敗扱いになっていた（e2e-live.yml、10/02〜10/18 の15回すべて。
+        // アサーションは全部通っていた。BOA-1163）。ページが閉じた後の失敗だけ無視する
+        if (page.isClosed() || /has been closed/.test(String(e?.message)))
+          return;
+        throw e;
+      }
     });
     await page.goto("/race/2026-09-04-06-09");
     await expect(kicker(page)).toContainText("クラウンメロン杯", {

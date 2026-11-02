@@ -99,7 +99,7 @@ async function enable(limit = 1000) {
     "UPDATE sns_youtube_quota_control SET verified=true,baseline_day=(now() AT TIME ZONE 'America/Los_Angeles')::date,upload_limit=100,general_limit=10000",
   );
   await db.exec(
-    `UPDATE sns_x_send_control SET paused=false,timing_approved=true,daily_limit=${limit},daily_baseline_date=(now() AT TIME ZONE 'Asia/Tokyo')::date,daily_external_count=0,max_source_age_seconds=3600,period_start=date_trunc('month',now()),period_end=date_trunc('month',now())+interval '1 month',attempt_ceiling_microusd=1,reserved_microusd=0`,
+    `UPDATE sns_x_send_control SET paused=false,timing_approved=true,daily_limit=${limit},daily_baseline_date=(now() AT TIME ZONE 'Asia/Tokyo')::date,daily_external_count=0,max_source_age_seconds=3600,period_start=date_trunc('month',now())-interval '1 month',period_end=date_trunc('month',now())+interval '2 months',attempt_ceiling_microusd=1,reserved_microusd=0`,
   );
 }
 function preflight(
@@ -412,7 +412,9 @@ test("YouTube予約は時刻待ち、due時に再検査して公開、署名URL�
     ).state,
     "posted",
   );
-  assert.equal(checked, 5);
+  // begin_post の前・videos.insert の前・公開の準備の後・videos.update の前の4回。videos.list（公開の確認）の前は検査しない
+  // （videos.update の後で止められるものが無い。BOA-1164 の system-architect の指摘）
+  assert.equal(checked, 4);
   assert.equal(youtube.calls[0].payload.privacyStatus, "private");
   assert.equal(youtube.calls[0].payload.publishAt, null);
   assert.equal(youtube.calls[0].payload.snapshot.media[0].path, "demo/a.mp4");

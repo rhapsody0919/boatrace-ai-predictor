@@ -2,13 +2,23 @@
 
 Preview には Vercel Authentication（Standard Protection）がかかっている。そのまま開くと Vercel のログイン画面へ 302 で飛ばされる。本番（www.boat-ai.jp）と CI の e2e（localhost）は対象外。
 
-自動の確認（`boatrace-fan-reviewer`・`mock-diff-checker` 等）は Protection Bypass for Automation の秘密をヘッダーで送って開く。ヘッダー名は Vercel 公式（[Protection Bypass for Automation](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation)）に従う。
+評価役のサブエージェント（`boatrace-fan-reviewer`・`mock-diff-checker`）は鍵を読まず、依頼元が渡す Vercel の共有リンクで開く（下の「評価役に開かせるとき」）。依頼元のセッションが自分で開くときは Protection Bypass for Automation の秘密をヘッダーで送って開く（「開き方」以降）。ヘッダー名は Vercel 公式（[Protection Bypass for Automation](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation)）に従う。
 
 ## 守ること
 
 - **秘密の値を表示しない**。console・ログ・報告・スクショ・コミット・PR コメントに出さない。クエリ引数（`?x-vercel-protection-bypass=`）は URL がログに残るので使わない
 - **秘密を Codex 側に写さない**。置き場は本体の `.env.local`（Claude 側）だけ。Codex の作業場所・codexlane ユーザー・`/Users/Shared/codex-drop` には置かない。Codex の自己確認で Preview が要るときは Claude 側が代わりに開く
 - Preview には本番の管理者キーが入っている。秘密があれば誰でも管理者キー入りの Preview を開けるので、上の2つを破らない
+
+## 評価役に開かせるとき（依頼元の手順）
+
+評価役のサブエージェントには鍵（`.env.local`）を読ませない。依頼元が共有リンクを作って渡す。
+
+1. Vercel MCP の `get_access_to_vercel_url` に Preview の URL（`https://〜.vercel.app`。ページのパスまで）を渡す。チームの Preview なら `teamId` も渡す（不明なら `list_teams` で確かめる）
+2. 返ってきた `_vercel_share` つきの URL が共有リンク。開くと転送してクッキーを置き、以降の同じ origin は通る。新しく作ったリンクは23時間で失効する（既存の有効なリンクを使い回したときは元の期限のまま）
+3. 評価役への依頼に、共有リンク・共有リンクを除いた Preview の URL・開くページを書く。評価役は共有リンクで開き、止められたら回避の工夫をせず「開けない」と返す。失効したら作り直して渡す
+4. **共有リンクは報告・PR・PR コメント・Slack に書かない**。共有リンクがあれば誰でも本番の管理者キー入りの Preview を開ける（上の「守ること」と同じ理由）。報告には `_vercel_share` を除いた Preview の URL だけを書く
+5. 評価役のスクリプトと画像は、スクラッチパッドの中の評価役専用の新しいフォルダだけに置く。symlink は作らない
 
 ## 秘密の置き場
 

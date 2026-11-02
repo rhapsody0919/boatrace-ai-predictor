@@ -21,6 +21,7 @@ export default function AssistHeader({
   canPost,
   onStage,
   oddsAt,
+  oddsFinal = false,
   showSonar,
   tidal = false,
   onVenue,
@@ -148,7 +149,11 @@ export default function AssistHeader({
       <div className="ta-header-foot">
         {/* オッズが無いときは買い目レンズの図に「発売後に出る」を出す（screens「状態」）。ここでは出さない */}
         <span className="ta-num">
-          {oddsAt ? ASSIST_COPY.oddsAt(oddsAt) : ""}
+          {oddsFinal
+            ? ASSIST_COPY.oddsAtFinal
+            : oddsAt
+              ? ASSIST_COPY.oddsAt(oddsAt)
+              : ""}
         </span>
         {/* 龍神ソナーは別のタブ（BOA-271）。内部タブは指定せず、ソナーの既定（差がつく材料）で開く。
             以前は ?tab=aiPrediction のままで AI予想タブに移っていた（2026-10-17 オーナー指摘） */}

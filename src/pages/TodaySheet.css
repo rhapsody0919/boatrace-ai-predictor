@@ -1,0 +1,193 @@
+/*
+ * /share/today-sheet（X の /today 投稿の型 b の画像、1080×1350 をそのままの画素で撮る）。
+ * 試作 hq drafts/x-today-type/sheet-v4-20261026.html の寸法を写した。画像は自前の明るい背景を持つので、
+ * ダークのときも同じ色（生パレット値）のまま撮る（.claude/rules/component-reuse.md の Layer 1 の使い方）
+ */
+.today-sheet {
+  box-sizing: border-box;
+  width: 1080px;
+  height: 1350px;
+  overflow: hidden;
+  padding: 52px 60px 64px;
+  display: flex;
+  flex-direction: column;
+  background: var(--ryujin-ivory-600);
+  color: var(--color-gray-900);
+  /* 本番の撮影（Vercel の Chromium、scripts/lib/launchChromium.js）が入れる字体に固定する。指定しないと手元と本番で数字の幅・改行が違う */
+  font-family: "Noto Sans JP", sans-serif;
+}
+.today-sheet * {
+  box-sizing: border-box;
+}
+/* 行の大きさの倍率（行の数で JSX が入れる。5行で 1） */
+.today-sheet {
+  --s: var(--today-sheet-scale, 1);
+}
+.today-sheet__nowrap {
+  white-space: nowrap;
+}
+.today-sheet__kicker {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--ryujin-gold-800);
+}
+.today-sheet__title {
+  margin: 8px 0 0;
+  font-size: 54px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--color-gray-900);
+}
+.today-sheet__legend {
+  margin-top: 8px;
+  font-size: 26px;
+  font-weight: 700;
+}
+.today-sheet__legend b {
+  display: inline-block;
+  width: 6px;
+  height: 30px;
+  margin-right: 10px;
+  vertical-align: middle;
+  background: var(--color-gray-900);
+}
+.today-sheet__section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 22px 0 6px;
+  border-bottom: 2px solid var(--ryujin-ivory-300);
+  font-size: 32px;
+  font-weight: 800;
+}
+.today-sheet__axis {
+  font-size: 30px;
+  font-weight: 800;
+}
+.today-sheet__row {
+  padding-top: calc(8px * var(--s));
+}
+.today-sheet__row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  white-space: nowrap;
+}
+.today-sheet__row-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+}
+.today-sheet__rank {
+  width: calc(40px * var(--s));
+  font-size: calc(40px * var(--s));
+  font-weight: 900;
+  color: var(--ryujin-gold-800);
+}
+.today-sheet__time {
+  margin-right: 4px;
+  font-size: calc(30px * var(--s));
+  font-weight: 700;
+  color: var(--color-gray-600);
+}
+.today-sheet__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(48px * var(--s));
+  height: calc(48px * var(--s));
+  border-radius: 8px;
+  font-size: calc(30px * var(--s));
+  font-weight: 800;
+}
+.today-sheet__badge--1 {
+  background: var(--color-white);
+  border: 2px solid var(--color-gray-900);
+}
+.today-sheet__badge--4 {
+  background: var(--boat-4-strong);
+  color: var(--color-white);
+}
+.today-sheet__name {
+  font-size: calc(36px * var(--s));
+  font-weight: 800;
+}
+.today-sheet__grade {
+  padding: 0 6px;
+  border: 2px solid var(--color-gray-900);
+  border-radius: 6px;
+  font-size: calc(24px * var(--s));
+  font-weight: 800;
+}
+.today-sheet__value {
+  flex: none;
+  margin-left: 12px;
+  font-size: calc(46px * var(--s));
+  font-weight: 900;
+  line-height: 1;
+}
+.today-sheet__track {
+  position: relative;
+  width: 100%;
+  height: calc(30px * var(--s));
+  margin-top: calc(6px * var(--s));
+  border-radius: 4px;
+  background: var(--ryujin-ivory-300);
+}
+.today-sheet__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: var(--ryujin-gold-800);
+}
+.today-sheet__tick {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  width: 6px;
+  margin-left: -3px;
+  background: var(--color-gray-900);
+  box-shadow: 0 0 0 3px var(--ryujin-ivory-600);
+}
+.today-sheet__sub {
+  margin-top: calc(8px * var(--s));
+  font-size: calc(26px * var(--s));
+  font-weight: 600;
+  color: var(--color-gray-600);
+}
+/* 段は行の数に応じて残りの高さを分け合い、行は段の中で等間隔に置く（行が少ない日の空きを下にまとめない） */
+.today-sheet__section {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex-shrink: 0;
+}
+.today-sheet__foot {
+  margin-top: 6px;
+  font-size: 26px;
+  line-height: 1.4;
+  color: var(--color-gray-600);
+}
+.today-sheet__brand {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--ryujin-gold-800);
+}
+.today-sheet__brand-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.today-sheet__brand-name img {
+  height: 44px;
+}
+.today-sheet-error {
+  padding: 16px;
+  color: var(--text-primary);
+}

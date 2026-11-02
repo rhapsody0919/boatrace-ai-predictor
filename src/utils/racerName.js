@@ -13,3 +13,13 @@
 export function splitRacerName(name) {
   return (name ?? "").trim().split(/\s+/).filter(Boolean);
 }
+
+/**
+ * 選手のよみ（racer_profiles.name_kana。姓と名の間に全角スペースが入る）を、半角スペース1つで
+ * つなぎ直す。画面と JSON-LD で同じ表記にするため、表示はこれだけを使う。
+ * @param {string|null|undefined} kana
+ * @returns {string} よみが無ければ空文字
+ */
+export function formatRacerKana(kana) {
+  return splitRacerName(kana).join(" ");
+}

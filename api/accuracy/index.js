@@ -4,6 +4,8 @@
  * データは calculate-accuracy.js（夜間バッチ）が毎日更新する
  */
 
+import { badRequest, queryError } from "../_lib/strictQuery.js";
+
 export const config = {
   runtime: "edge",
 };
@@ -23,6 +25,10 @@ export default async function handler(req) {
       },
     });
   }
+
+  // 画面（src/services/supabaseDataService.js）はクエリを付けない。付いた要求はキャッシュ外しなので拒む（api/_lib/strictQuery.js）
+  const invalid = queryError(new URL(req.url), {});
+  if (invalid) return badRequest(invalid);
 
   try {
     // accuracy_cache テーブルから単一行読み込み（重い get_accuracy_summary RPC を廃止）

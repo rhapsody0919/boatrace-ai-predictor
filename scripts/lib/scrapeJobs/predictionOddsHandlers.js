@@ -25,7 +25,11 @@ import {
   summarizePredictionOddsDiff,
 } from "../predictionOddsDerive.js";
 import { createSupabaseStore } from "./store.js";
-import { isAuthorized, runScrapeJob } from "./cronWrapper.js";
+import {
+  createCronFetchContext,
+  isAuthorized,
+  runScrapeJob,
+} from "./cronWrapper.js";
 import { createOddsSlotHandler } from "./oddsHandlers.js";
 import { SCRAPE_JOBS } from "./registry.js";
 
@@ -289,6 +293,9 @@ export function createOddsCronHandlerWithPredictionOdds({
   getClient = async () => (await import("../supabaseClient.js")).supabase,
   derivePredictionOdds = runPredictionOddsDerivation,
   now = () => new Date(),
+  // テスト用の差し替え口（既定は本番のストアとオッズのスロットのハンドラー）
+  createStore = createSupabaseStore,
+  createSlotHandler = createOddsSlotHandler,
 } = {}) {
   return async function handler(req, res) {
     if (!isAuthorized(req.headers.authorization, process.env.CRON_SECRET)) {
@@ -303,17 +310,28 @@ export function createOddsCronHandlerWithPredictionOdds({
       });
     }
     const changed = new Set();
-    const { status, body } = await runScrapeJob({
-      job: "odds",
-      definition: SCRAPE_JOBS.odds,
-      store: createSupabaseStore(client),
-      handleSlot: createOddsSlotHandler({
-        onChanged: (raceId) => changed.add(raceId),
-      }),
-      modeGated: true,
-      client,
-      query: req.query ?? {},
-    });
+    const store = createStore(client);
+    // 取得の数を数える（共通の口と同じ道具。BOA-1145 P3、185 の審査 P1-1）
+    const fetching = createCronFetchContext({ client, store });
+    let result;
+    try {
+      result = await runScrapeJob({
+        job: "odds",
+        definition: SCRAPE_JOBS.odds,
+        store,
+        handleSlot: createSlotHandler({
+          onChanged: (raceId) => changed.add(raceId),
+        }),
+        modeGated: true,
+        client,
+        query: req.query ?? {},
+        breaker: fetching.breaker,
+        politeFetch: fetching.politeFetch,
+      });
+    } finally {
+      await fetching.finish();
+    }
+    const { status, body } = result;
     if (changed.size === 0) {
       return res.status(status).json(body);
     }

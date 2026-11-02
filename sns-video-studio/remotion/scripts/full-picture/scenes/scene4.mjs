@@ -53,10 +53,16 @@ function conclusionOf(flow, cell, form) {
     // 形が無ければ入口版の問いも「同じ並び」と言わない
     entryQuestion: form ? null : "過去のレースは、どう決まった？",
     // 過去の集計と分かるように「過去」を入れる（今日の結果と読まれない。2026-10-20 x-channel・youtube-channel P1）
-    lines: [
-      form ? `${formName(form)}の過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇` : `枠なりの過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇`,
-      `${f.count.toLocaleString("ja-JP")}件（${f.pct}%）`,
-    ],
+    lines: f.rankSig
+      ? [
+          form ? `${formName(form)}の過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇` : `枠なりの過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇`,
+          `${f.count.toLocaleString("ja-JP")}件（${f.pct}%）`,
+        ]
+      : // 1位と2位の差が線を通らなければ「最多」と言わない（BOA-1157）。件数が3桁・4桁でも22字に収まる短い形へ（Codex P1）
+        fitFirst(
+          [`${form ? formName(form) : "枠なり"}の過去${f.n.toLocaleString("ja-JP")}件の1着は${f.boat}号艇と${f.next.boat}号艇`, `${f.count.toLocaleString("ja-JP")}件と${f.next.count.toLocaleString("ja-JP")}件、差は確認できない`],
+          [`過去${f.n.toLocaleString("ja-JP")}件の1着は${f.boat}・${f.next.boat}号艇`, `${f.count.toLocaleString("ja-JP")}件と${f.next.count.toLocaleString("ja-JP")}件、差は確認できない`],
+        ),
   };
 }
 
@@ -76,7 +82,12 @@ function anyConclusion(sc, todayForm) {
     formKey: todayForm,
     page: { ...c.page, sub: `同じ級別の組み合わせ・枠なり（${cell.n.toLocaleString("ja-JP")}件）` },
     entryQuestion: "この組み合わせの過去は、どう決まった？",
-    lines: [`同じ級別の組み合わせ${c.facts.n.toLocaleString("ja-JP")}件で1着最多は${c.facts.boat}号艇`, c.lines[1]],
+    lines: c.facts.rankSig
+      ? [`同じ級別の組み合わせ${c.facts.n.toLocaleString("ja-JP")}件で1着最多は${c.facts.boat}号艇`, c.lines[1]]
+      : fitFirst(
+          [`同じ級別の組み合わせ${c.facts.n.toLocaleString("ja-JP")}件の1着は${c.facts.boat}号艇と${c.facts.next.boat}号艇`, c.lines[1]],
+          [`過去${c.facts.n.toLocaleString("ja-JP")}件の1着は${c.facts.boat}・${c.facts.next.boat}号艇`, c.lines[1]],
+        ),
   };
 }
 

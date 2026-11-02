@@ -56,7 +56,10 @@ test("リンクにしても、ボタンと同じ見た目（幅いっぱい・�
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 800 });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  // 締切後のカードは過去日付の会場ページで探す（結果が確定したレースは締切後の見た目になる。getRaceStatus）。
+  // 以前は本日の先頭の会場を開いていたが、撮影の時刻によっては先頭の会場（ナイター等）にまだ締切後の
+  // レースが無く、撮り直しの strict 再生で落ちた（2026-10-26 の JST 10:23・12:47・14:37 の3回、BOA-929）
+  await page.goto("/races/2026-07-13", { waitUntil: "domcontentloaded" });
   await page.locator(".venue-grid-card--open").first().click();
   const card = page.locator(".race-card.race-card--deadline-passed").first();
   await expect(card).toBeVisible({ timeout: 30000 });

@@ -17,9 +17,10 @@
  *       選手0人・展示未公開は再試行に戻す、1回の起動でスケジュールを1回だけ読む
  *   (e) 予測の再計算（案1）: live で変更を書いたレースについてのみ、全スロットの完了後に日付ごとに1回、mainRefresh（upsert方式）を呼ぶ。
  *       REFRESH_ON_VERCEL が有効でなければ呼ばない。変更なし・shadow は呼ばない。再計算の失敗は応答に残り、HTTPは失敗にしない
- *   (f) 展示のモード切り替え: off・行なし・テーブル未適用・読み取り失敗は従来の経路（cron-job.org 起点のみ。Vercel Cron の起動は何もしない）、
- *       shadow は従来の経路（cron-job.org 起点のみ）＋スロット（shadow）、live はスロットのみ（従来の経路は動かさない）、認証
- *   (g) 従来の経路（runLegacyExhibition）: 従来どおり、対象なしは200、対象ありは202で実処理をバックグラウンドへ、再計算は変更を書いたとき
+ *   (f) 展示のモード切り替え: off・行なし・テーブル未適用・読み取り失敗は何もしない（どちらの起点でも 200。どこからも取らない）、
+ *       shadow・live はスロットのみ、認証
+ *   (g) 従来の経路（runLegacyExhibition。素の fetch・ブレーカーなし）が消えていて、どの起点・mode でも呼ばれない
+ *       （docs/design/scraping-load-budget/spec.md §0・§8 の P0）
  *   (h) 設定の整合: レジストリ（窓・許容幅・再試行・リース）・maxDuration・vercel.json の cron（UTC→JST換算）・
  *       切り替えの仕組み（SKIP_RACE_INFO_ON_GHA は "true" のときだけ有効、既定は従来どおり）
  *   (i) 変異検証: shadow が書く・気象のために beforeinfo を取る・変更なしでも再計算する・モードを無視して従来の経路を動かす・
@@ -51,9 +52,9 @@ import {
   isVercelCronRequest,
   parsePreRaceId,
   readExhibitionMode,
-  runLegacyExhibition,
   runSlotsWithRefresh,
 } from "../lib/scrapeJobs/preRaceHandlers.js";
+import * as preRaceHandlersModule from "../lib/scrapeJobs/preRaceHandlers.js";
 import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
 import { computeRetryAt } from "../lib/scrapeJobs/outcomes.js";
 import {
@@ -1572,23 +1573,21 @@ const modeRow = (mode) => [{ job: "exhibition", mode }];
 async function routingIsCorrect(handlerFactory) {
   const results = [];
   const run = (opts) => routeExhibition({ ...opts, handlerFactory });
-  // off: 従来の経路は cron-job.org 起点のみ動く。Vercel Cron の起動は何もしない
+  // 再現（P0）: off は、cron-job.org の起動でも何もしない（修正前は従来の経路が素の fetch で beforeinfo を叩いた）
+  const idle = (x) =>
+    x.calls.legacy === 0 && x.calls.slots === 0 && x.res.statusCode === 200;
   let r = await run({ stateRows: modeRow("off"), ua: "cron-job.org" });
-  results.push(
-    r.calls.legacy === 1 && r.calls.slots === 0 && r.res.statusCode === 202,
-  );
+  results.push(idle(r));
   r = await run({ stateRows: modeRow("off"), ua: VERCEL_UA });
-  results.push(
-    r.calls.legacy === 0 && r.calls.slots === 0 && r.res.statusCode === 200,
-  );
-  // 行なし・読み取り失敗・テーブル未適用: 従来の経路（本番の現在の状態。従来から動いている展示を止めない）
+  results.push(idle(r));
+  // 行なし・読み取り失敗・テーブル未適用: 確かめられないため取らない
   r = await run({ stateRows: [], ua: "cron-job.org" });
-  results.push(r.calls.legacy === 1 && r.calls.slots === 0);
+  results.push(idle(r));
   r = await run({
     stateFail: { message: "boom", code: "XX000" },
     ua: "cron-job.org",
   });
-  results.push(r.calls.legacy === 1 && r.calls.slots === 0);
+  results.push(idle(r));
   r = await run({
     stateFail: {
       message:
@@ -1597,10 +1596,10 @@ async function routingIsCorrect(handlerFactory) {
     },
     ua: "cron-job.org",
   });
-  results.push(r.calls.legacy === 1 && r.calls.slots === 0);
-  // shadow: 従来の経路（cron-job.org 起点のみ）が書き続け、スロットは shadow
+  results.push(idle(r));
+  // shadow: スロットのみ（取得・解析だけ。書かない）
   r = await run({ stateRows: modeRow("shadow"), ua: "cron-job.org" });
-  results.push(r.calls.legacy === 1 && r.calls.slots === 1);
+  results.push(r.calls.legacy === 0 && r.calls.slots === 1);
   r = await run({ stateRows: modeRow("shadow"), ua: VERCEL_UA });
   results.push(r.calls.legacy === 0 && r.calls.slots === 1);
   // live: スロットのみ。従来の経路は動かさない（どちらの起点でも）
@@ -1614,7 +1613,7 @@ async function routingIsCorrect(handlerFactory) {
 {
   const results = await routingIsCorrect(createExhibitionCronHandler);
   check(
-    `展示のモード切り替え: off・行なし・読み取り失敗・テーブル未適用は従来の経路（cron-job.org起点のみ。Vercel Cronの起動は何もしない）、shadow は従来の経路（cron-job.org起点のみ）＋スロット、live はスロットのみ（${results.length}通り）`,
+    `展示のモード切り替え（再現 P0）: off・行なし・読み取り失敗・テーブル未適用は、どちらの起点でも何もしない（従来の経路を動かさない）、shadow・live はスロットのみ（${results.length}通り）`,
     results.every(Boolean),
     show(results),
   );
@@ -1663,10 +1662,10 @@ async function routingIsCorrect(handlerFactory) {
     ua: "cron-job.org",
   });
   check(
-    "展示（shadow）: cron-job.org の起動は、従来の経路の結果（legacy）を応答に含め、スロットは同時に動く（202）",
+    "展示（shadow）: cron-job.org の起動は、スロットだけをバックグラウンドで動かす（202）。従来の経路は動かさない",
     externalShadow.res.statusCode === 202 &&
-      externalShadow.res.body.legacy?.status === 202 &&
-      externalShadow.calls.legacy === 1 &&
+      externalShadow.res.body.legacy === undefined &&
+      externalShadow.calls.legacy === 0 &&
       externalShadow.calls.slots === 1,
     show(externalShadow.res),
   );
@@ -1720,124 +1719,18 @@ async function routingIsCorrect(handlerFactory) {
 }
 
 // ---------------------------------------------------------------------------
-// (g) 従来の経路（runLegacyExhibition）
+// (g) 従来の経路（runLegacyExhibition）が消えている（P0）
 // ---------------------------------------------------------------------------
 {
-  const deferred = [];
-  const noSchedule = await runLegacyExhibition({
-    date: DATE,
-    getSchedule: async () => [],
-    run: async () => {
-      throw new Error("呼ばれない");
-    },
-    defer: (p) => deferred.push(p),
-    env: {},
-  });
-  check(
-    "従来の経路: 対象なし（スケジュール未登録）は 200（no schedule）。取得しない",
-    noSchedule.status === 200 &&
-      noSchedule.body.accepted === false &&
-      deferred.length === 0,
-    show(noSchedule),
+  const source = fs.readFileSync(
+    new URL("../lib/scrapeJobs/preRaceHandlers.js", import.meta.url),
+    "utf8",
   );
-  const seen = [];
-  const refreshed = [];
-  const accepted = await runLegacyExhibition({
-    date: DATE,
-    getSchedule: async () => [{ race_id: RACE }],
-    run: async (schedule, date) => {
-      seen.push({ schedule, date });
-      return { updated: true, count: 6, changedRaceIds: [RACE] };
-    },
-    refresh: async (args) => {
-      refreshed.push(args);
-    },
-    defer: (p) => deferred.push(p),
-    env: ENV_ON,
-  });
-  await Promise.all(deferred);
   check(
-    "従来の経路: 対象ありは 202 で即座に応答し、実処理（run）はバックグラウンドへ。変更を書いたレースは、REFRESH_ON_VERCEL=true のとき再計算する",
-    accepted.status === 202 &&
-      accepted.body.accepted === true &&
-      seen.length === 1 &&
-      seen[0].date === DATE &&
-      refreshed.length === 1 &&
-      refreshed[0].specificRaceIds[0] === RACE &&
-      refreshed[0].writeMode === "upsert",
-    show({ accepted, refreshed }),
-  );
-  const deferred2 = [];
-  const refreshed2 = [];
-  await runLegacyExhibition({
-    date: DATE,
-    getSchedule: async () => [{ race_id: RACE }],
-    run: async () => ({ updated: true, count: 6, changedRaceIds: [RACE] }),
-    refresh: async (args) => refreshed2.push(args),
-    defer: (p) => deferred2.push(p),
-    env: {},
-  });
-  await Promise.all(deferred2);
-  check(
-    "従来の経路: REFRESH_ON_VERCEL が有効でなければ、再計算しない（従来どおり）",
-    refreshed2.length === 0,
-  );
-  const failed = await runLegacyExhibition({
-    date: DATE,
-    getSchedule: async () => {
-      throw new Error("DB down");
-    },
-    defer: () => {},
-    env: {},
-  });
-  check(
-    "従来の経路: スケジュール取得の例外は 500（従来どおり）",
-    failed.status === 500 && /DB down/.test(failed.body.error),
-    show(failed),
-  );
-  // BOA-352: 既定の getSchedule（実際の getRaceSchedule）で、DBエラーが「対象なし（200）」に化けず 500 になる
-  const dbErrorClient = {
-    from: () => {
-      const b = {
-        select: () => b,
-        like: () => b,
-        not: () =>
-          Promise.resolve({
-            data: null,
-            error: { message: "canceling statement due to statement timeout" },
-          }),
-      };
-      return b;
-    },
-  };
-  const dbDown = await runLegacyExhibition({
-    date: DATE,
-    client: dbErrorClient,
-    run: async () => {
-      throw new Error("呼ばれない");
-    },
-    defer: () => {},
-    env: {},
-  });
-  check(
-    "従来の経路: 既定の getSchedule は、DBエラーを「対象なし（200）」にせず 500 を返す（BOA-352）",
-    dbDown.status === 500 && /statement timeout/.test(dbDown.body.error),
-    show(dbDown),
-  );
-  const deferred3 = [];
-  await runLegacyExhibition({
-    date: DATE,
-    getSchedule: async () => [{ race_id: RACE }],
-    run: async () => {
-      throw new Error("取得エラー");
-    },
-    defer: (p) => deferred3.push(p),
-    env: {},
-  });
-  const settled = await Promise.allSettled(deferred3);
-  check(
-    "従来の経路: バックグラウンド処理の例外は、握りつぶさずログに出し、未処理の拒否にしない",
-    settled.every((s) => s.status === "fulfilled"),
+    "従来の経路（素の fetch で beforeinfo を叩く runLegacyExhibition）が消えている: export も、scrape-exhibition-data.js の run の import も無い",
+    !("runLegacyExhibition" in preRaceHandlersModule) &&
+      !/run as runExhibitionLegacy/.test(source) &&
+      !/legacy\s*=/.test(source),
   );
 }
 
@@ -2043,54 +1936,45 @@ async function routingIsCorrect(handlerFactory) {
   const decide = (varName, rows) => decideFromRows({ varName, rows, now });
 
   check(
-    "gate race_info: live で起動が新しければ、スキップ（Vercelが健全）。行なし・shadow・off・起動が古い・連続失敗が閾値以上なら、実行（GitHubが肩代わり）",
+    "gate race_info: live で起動が新しければ、連続失敗があってもスキップ。行なし・shadow・off もスキップ（どこからも取らない）。起動が古いときだけ実行（GitHubが肩代わり。P0）",
     decide("SKIP_RACE_INFO_ON_GHA", [row("race_info")]).skip === true &&
-      decide("SKIP_RACE_INFO_ON_GHA", []).skip === false &&
+      decide("SKIP_RACE_INFO_ON_GHA", []).skip === true &&
       decide("SKIP_RACE_INFO_ON_GHA", [row("race_info", { mode: "shadow" })])
-        .skip === false &&
+        .skip === true &&
       decide("SKIP_RACE_INFO_ON_GHA", [row("race_info", { mode: "off" })])
-        .skip === false &&
+        .skip === true &&
       decide("SKIP_RACE_INFO_ON_GHA", [
         row("race_info", { last_tick_at: tick(30) }),
       ]).skip === false &&
       decide("SKIP_RACE_INFO_ON_GHA", [
         row("race_info", { consecutive_failures: 50 }),
-      ]).skip === false,
+      ]).skip === true,
   );
   check(
-    "gate exhibition（従来の経路を持つジョブ）: mode が行なし・off・shadow の間は、従来どおり静的にスキップ（従来の経路が動いており、DBの状態では判定できない。GitHubが二重に動き出さない）",
-    decide("SKIP_EXHIBITION_ON_GHA", []).skip === true &&
-      decide("SKIP_EXHIBITION_ON_GHA", [
-        row("exhibition", { mode: "off", last_tick_at: null }),
-      ]).skip === true &&
-      decide("SKIP_EXHIBITION_ON_GHA", [
-        row("exhibition", { mode: "shadow", last_tick_at: null }),
-      ]).skip === true &&
-      decide("SKIP_EXHIBITION_ON_GHA", []).results[0].reason === "legacy_path",
+    "gate exhibition: mode・起動・失敗によらず常にスキップ（展示は GitHub で肩代わりしない。spec §8 G2）",
+    [
+      [],
+      [row("exhibition", { mode: "off", last_tick_at: null })],
+      [row("exhibition", { mode: "shadow", last_tick_at: null })],
+      [row("exhibition")],
+      [row("exhibition", { last_tick_at: tick(30) })],
+      [row("exhibition", { last_tick_at: null })],
+      [row("exhibition", { consecutive_failures: 50 })],
+    ].every((rows) => {
+      const d = decide("SKIP_EXHIBITION_ON_GHA", rows);
+      return d.skip === true && d.reason === "never_takeover";
+    }),
     show(decide("SKIP_EXHIBITION_ON_GHA", [])),
   );
   check(
-    "gate exhibition: mode が live になったら、他のジョブと同じ判定。起動が新しければスキップ、起動が古い・連続失敗が閾値以上なら実行（GitHubが肩代わり）",
-    decide("SKIP_EXHIBITION_ON_GHA", [row("exhibition")]).skip === true &&
-      decide("SKIP_EXHIBITION_ON_GHA", [
-        row("exhibition", { last_tick_at: tick(30) }),
-      ]).skip === false &&
-      decide("SKIP_EXHIBITION_ON_GHA", [
-        row("exhibition", { consecutive_failures: 50 }),
-      ]).skip === false &&
-      decide("SKIP_EXHIBITION_ON_GHA", [
-        row("exhibition", { last_tick_at: null }),
-      ]).skip === false,
-  );
-  check(
-    "gate: 従来の経路の扱い（LEGACY_PATH_JOBS）は exhibition だけ。他のジョブは、行なし・live でなければ、従来どおり不健全",
+    "gate: 行なし・live でないジョブは、どのジョブも肩代わりしない（healthy=true。どこからも取らない）",
     evaluateJobHealth({ job: "odds", rowsByJob: new Map(), now }).healthy ===
-      false &&
+      true &&
       evaluateJobHealth({
         job: "odds",
         rowsByJob: new Map([["odds", row("odds", { mode: "shadow" })]]),
         now,
-      }).healthy === false,
+      }).healthy === true,
   );
 }
 

@@ -4,6 +4,8 @@
  * accuracy/index.js と同じパターン（RPC 廃止、テーブル SELECT に変更）
  */
 
+import { badRequest, queryError } from "../_lib/strictQuery.js";
+
 export const config = {
   runtime: "edge",
 };
@@ -26,15 +28,15 @@ export default async function handler(req) {
     });
   }
 
-  try {
-    const url = new URL(req.url);
-    const days = Math.min(
-      Math.max(parseInt(url.searchParams.get("days") || "90", 10), 1),
-      365,
-    );
+  const url = new URL(req.url);
+  // 画面（getRaceHistorySummary(90)）は ?days=90 だけを送り、キャッシュも90日の1つしか無い。
+  // 他の値・他のキーはキャッシュ外しになるので拒む（api/_lib/strictQuery.js）
+  const invalid = queryError(url, { days: (v) => v === "90" });
+  if (invalid) return badRequest(invalid);
 
-    // race_history_cache テーブルから直接取得（RPC廃止）
-    const cacheKey = days <= 90 ? "race_history_summary_90" : "race_history_summary_90";
+  try {
+    // race_history_cache テーブルから直接取得（RPC廃止）。キャッシュは90日の1つだけ
+    const cacheKey = "race_history_summary_90";
 
     const response = await fetch(
       `${SUPABASE_URL}/rest/v1/race_history_cache?key=eq.${cacheKey}&select=data`,

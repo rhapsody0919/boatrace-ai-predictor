@@ -7,11 +7,16 @@
  * 行を作るところまでがこのフックで、文面の組み立て（前提の行・注記・出典など）は
  * 純関数の utils/aiCopyText.js が行う（BOA-770）。
  */
+import { useEffect, useState } from "react";
+import { supabaseDataService } from "../services/supabaseDataService";
 import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "./useRaceAnalysisData";
 import { useRaceEntryFlyingRows } from "./useRaceEntryFlyingRows";
 import { useCurrentMeetFlyingBoats } from "./useCurrentMeetFlyingBoats";
 import {
+  ORIGINAL_EXHIBITION_ROW_META,
+  buildOriginalExhibitionRows,
+  originalExhibitionKindLabels,
   toNumber,
   wakuRateOf,
   translateTechnique,
@@ -52,7 +57,14 @@ function buildMotorRow(t, players, motorByBoat) {
   };
 }
 
-function buildRows(t, players, analysis, flying, raceId) {
+function buildRows(t, players, analysis, flying, raceId, originalExhibition) {
+  const originalRows = buildOriginalExhibitionRows(t, originalExhibition);
+  const originalKeys = new Set(originalRows.map((r) => r.key));
+  const originalLabels = originalExhibitionKindLabels(t,
+    (originalExhibition?.kinds ?? []).filter((kind) =>
+      originalKeys.has(ORIGINAL_EXHIBITION_ROW_META[kind]?.key),
+    ),
+  );
   const motorByBoat = byBoat(analysis.motor);
   const formByBoat = byBoat(analysis.racerForm);
   const stByBoat = byBoat(analysis.stPredictability);
@@ -180,6 +192,13 @@ function buildRows(t, players, analysis, flying, raceId) {
         return DASH;
       }),
     },
+    // 直前情報表と同じ位置・行生成・値の整形を使う。
+    ...originalRows.map((r, i) => ({
+      key: r.key,
+      label: r.label,
+      originalExhibitionLabel: originalLabels[i],
+      values: players.map((p) => r.formatValue(p)),
+    })),
     // 展示進入（スタート展示のコース、直前情報タブの行と同じ値）。前づけで進入が変わると
     // 1マークの展開の前提が変わるため入れる。取得開始前のレースでは行ごと出さない（BOA-770 ファン評価）
     ...(isExhibitionCourseOutOfRange(raceId, analysis.motorMaintenance)
@@ -336,6 +355,24 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
   const flyingRows = useRaceEntryFlyingRows(raceId);
   const currentMeetFlying = useCurrentMeetFlyingBoats(raceId);
 
+  // レース切替時に前レースの値をコピーしない。取得失敗はこの行だけ省き、理由を記録する。
+  const [fetchedExhibition, setFetchedExhibition] = useState(null);
+  useEffect(() => {
+    if (!raceId) return undefined;
+    let cancelled = false;
+    supabaseDataService.getRaceOriginalExhibition(raceId)
+      .then((data) => {
+        if (!cancelled) setFetchedExhibition({ raceId, data });
+      })
+      .catch((err) => {
+        console.error("AI用コピーのオリジナル展示取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setFetchedExhibition({ raceId, data: null, failed: true });
+      });
+    return () => { cancelled = true; };
+  }, [raceId]);
+  const originalExhibition = fetchedExhibition?.raceId === raceId
+    ? fetchedExhibition.data : null;
+
   // 公式の全角空白の桁揃え（全角空白の連続）は外し、姓と名を半角空白1つで区切る。
   // 表と展開予測の両方で同じ名前にするため、ここで1回だけ整える
   const players = [...(prediction?.allPlayers ?? [])]
@@ -378,6 +415,7 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
         analysis,
         { rows: flyingRows, currentMeet: currentMeetFlying },
         raceId,
+        originalExhibition,
       ),
       // BOA-822: 機能フラグの側では展開予測を画面から外すので、コピーにも入れない
       turnPrediction: inCautionEnabled ? null : prediction?.turnPrediction,

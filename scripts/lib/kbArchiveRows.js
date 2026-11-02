@@ -12,6 +12,8 @@
  * アーカイブ=Bファイル由来で、同じレースでも数値が異なる場合がある）ため、混ぜずに別表にしている。
  */
 
+import { isFinalStage } from "../../src/pure/raceStageConfig.js";
+
 export const KB_ARCHIVE_TABLES = {
   venueDays: {
     table: "kb_archive_venue_days",
@@ -50,8 +52,8 @@ export function raceTimeToSeconds(raw) {
  */
 export function classifyStage(stage) {
   if (!stage) return null;
+  if (isFinalStage(stage)) return "final";
   if (stage.startsWith("準優")) return "semifinal";
-  if (stage.startsWith("優勝") || stage.startsWith("優出")) return "final";
   if (stage.includes("予選") || stage.includes("予")) return "qualifier";
   return "other";
 }

@@ -282,16 +282,18 @@ test("その日の型: 列の行があれば a・b どちらの日もその中�
   assert.notEqual(loadTodayVariants().reply_enabled, true);
 });
 
-test("リポジトリの config の案 a・b の型の id は today-a（2案が同じ中身の間は、hq の基準の型と同じ）", () => {
+test("リポジトリの config の案: a は今の型（today-a、リンクは見出しの直後）、b は型 b（today-b-course-win、2026-10-27 hq）", () => {
   const n = normalizeTodayVariants(loadTodayVariants());
   assert.deepEqual(
-    n.variants.map((v) => v.type_id),
-    ["today-a", "today-a"],
+    n.variants.map((v) => [v.type_id, v.body]),
+    [
+      ["today-a", null],
+      ["today-b-course-win", "course_win"],
+    ],
   );
   assert.ok(
-    n.variants.every(
-      (v) => v.link_position === "after_heading" && v.link_lead === null,
-    ),
+    n.variants[0].link_position === "after_heading" &&
+      n.variants[0].link_lead === null,
   );
 });
 
