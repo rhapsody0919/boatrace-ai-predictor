@@ -530,6 +530,31 @@ for (const [rel, re, label] of USES) {
     );
 }
 
+// BOA-1219: 今日のレースで対象を決め、初日は race_series を使う。
+{
+  const { seriesOfDate } = await import("../../src/utils/meetPageModel.js");
+  const row = { start_date: "2026-10-06", end_date: "2026-10-11", title: "節", grade: "G1" };
+  check("順延3日", seriesOfDate([row], "2026-10-14"), row);
+  check("順延4日", seriesOfDate([row], "2026-10-15"), null);
+  check("未来の節・空", seriesOfDate([row], "2026-10-05"), null);
+  const older = { ...row, start_date: "2026-09-01" };
+  check("初日降順の先頭", seriesOfDate([older, row], "2026-10-11"), row);
+  for (const lang of ["ja", "en", "zh-TW", "ko"]) {
+    const json = fresh();
+    json.data.find((v) => v.place_cd === 1).races.forEach((r) => { r.raceGrade = "G1"; r.raceTitle = "公式の節"; });
+    const options = { t, lang, today: "2026-10-11", seriesRows: [row] };
+    const model = buildVenueModel(json, 1, options);
+    check(`${lang}: 節リンク`, model.meetBanner, {
+      href: `${lang === "ja" ? "" : `/${lang}`}/venue/1/meet/2026-10-06`,
+      name: "G1 公式の節", inProgress: t("venueMeetBanner.inProgress"), link: t("venueMeetBanner.link"),
+    });
+    check("行なし", buildVenueModel(json, 1, { ...options, seriesRows: [] }).meetBanner, null);
+    check("期限切れ", buildVenueModel(json, 1, { ...options, today: "2026-10-15" }).meetBanner, null);
+    for (const race of json.data.find((v) => v.place_cd === 1).races) race.raceTitle = "グランプリ";
+    check("対象外", buildVenueModel(json, 1, options).meetBanner, null);
+  }
+}
+
 if (failures.length > 0) {
   console.error(
     `❌ verify-bot-page-model: ${failures.length}件の失敗（${checked}件中）`,
