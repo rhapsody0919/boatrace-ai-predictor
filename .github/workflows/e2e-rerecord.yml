@@ -98,7 +98,8 @@ permissions:
 
 jobs:
   record:
-    runs-on: ubuntu-latest
+    # Playwright 1.59 は ubuntu-26.04（ubuntu-latest の移行先）で chromium を入れられないため固定する。Playwright を 1.61 以上に上げたら ubuntu-latest に戻す
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     outputs:
       run: ${{ steps.gate.outputs.run }}
@@ -200,7 +201,8 @@ jobs:
   replay:
     needs: record
     if: needs.record.result == 'success' && needs.record.outputs.run == 'true'
-    runs-on: ubuntu-latest
+    # Playwright 1.59 は ubuntu-26.04（ubuntu-latest の移行先）で chromium を入れられないため固定する。Playwright を 1.61 以上に上げたら ubuntu-latest に戻す
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
