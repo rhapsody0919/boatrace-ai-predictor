@@ -821,7 +821,7 @@
     {
       "script": "verify-odds-live-api.js",
       "tier": "ci",
-      "guards": "オッズのライブ取得API（api/odds/live.js、BOA-487）: オッズ更新時間・締切時オッズの検出、票0を0で返す解析、当日のみ受け付けるクエリ検証、Cache-Control"
+      "guards": "オッズのライブ取得API（api/odds/live.js、BOA-487）: オッズ更新時間・締切時オッズの検出、票0を0で返す解析、当日のみ受け付けるクエリ検証、Cache-Control。api/odds/live.js・scripts/lib/liveOdds.js が race_odds に書かないこと（字句で書き込み・rpc・書くモジュールの import を探す。読むのは許す、BOA-1149 の土台）"
     },
     {
       "script": "verify-odds-math.js",
