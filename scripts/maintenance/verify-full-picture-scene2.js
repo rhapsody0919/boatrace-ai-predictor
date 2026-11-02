@@ -2166,6 +2166,38 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     assert.deepEqual(f01Check(s5, { desc: VOICE.credit, kana: {}, shots: { c32: { text: "1553件" } } }), []);
     assert.ok(f01Check(s5, { desc: VOICE.credit, kana: {}, shots: { c32: { text: "1,552件" } } }).length === 1, "違う数は落とす");
   }
+  // 撮影の時間切れは1回だけ撮り直す（オーナー 11/2）。時間切れ以外はやり直さない、2回とも時間切れなら止める
+  {
+    const { retryOnTimeout } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const timeout = () => Object.assign(new Error("locator.click: Timeout 30000ms exceeded."), { name: "TimeoutError" });
+    let n = 0;
+    const warned = [];
+    const r1 = await retryOnTimeout(async () => {
+      n += 1;
+      if (n === 1) throw timeout();
+      return "shots";
+    }, (e) => warned.push(e.message));
+    assert.deepEqual([r1.value, r1.retries, n, warned.length], ["shots", 1, 2, 1], "1回目が時間切れ・2回目が通る");
+    n = 0;
+    await assert.rejects(
+      retryOnTimeout(async () => {
+        n += 1;
+        throw timeout();
+      }),
+      (e) => e.name === "TimeoutError" && e.retries === 1 && n === 2,
+      "2回とも時間切れなら止める（やり直しは1回だけ）",
+    );
+    n = 0;
+    await assert.rejects(
+      retryOnTimeout(async () => {
+        n += 1;
+        throw new Error("類似レースの1着の棒の行が見つからない");
+      }),
+      () => n === 1,
+      "時間切れ以外はやり直さない",
+    );
+    assert.deepEqual(await retryOnTimeout(async () => "ok"), { value: "ok", retries: 0 });
+  }
   // 選手名を声で読まない
   assert.ok(f01Check({ chapters: [{ id: "c1", voice: "西村は", subs: [] }] }, { desc: VOICE.credit, kana: {}, shots: {}, names: ["西村"] }).some((w) => w.includes("選手名")));
 
