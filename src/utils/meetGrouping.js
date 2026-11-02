@@ -273,11 +273,13 @@ export function groupCurrentMeetFromRows(sortedAscEntries, conditions) {
   if (!sortedAscEntries?.length) return [];
   const rows = conditions ?? [];
   const targetDate = sortedAscEntries.at(-1).race_id.slice(0, 10);
-  // getVenueMeetStart と同じく、開催日は種別の行を基準にする。対象日の種別の行がまだ無い日
-  // （race_conditions だけ書けなかった日）でも前の節と繋がらないよう、対象日を開催日に足す。
-  // 種別の行が1つも無いときは足さず、従来の推定に戻す。
+  // 開催日は種別の行の日付に、選手の出走日（対象日を含む）を合わせる。種別の行だけが欠けた日
+  // （race_conditions だけ書けなかった日）を、開催休み（空き2日以上で別の節）や前の節の続きと
+  // 誤らないため（BOA-861 の審査 P1・P2）。種別の行が1つも無いときは従来の推定に戻す。
   const start = meetStartFromRows(
-    rows.length > 0 ? [...rows.map((row) => row.race_id.slice(0, 10)), targetDate] : [],
+    rows.length > 0
+      ? [...rows.map((row) => row.race_id.slice(0, 10)), ...sortedAscEntries.map((e) => e.race_id.slice(0, 10))]
+      : [],
     rows,
     targetDate,
   );

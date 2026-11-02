@@ -459,6 +459,12 @@ for (const firstDate of ["2026-10-12", "2026-10-13"]) {
   check("BOA-861: 対象日の種別の行が無くても前の節の走を混ぜない",
     groupCurrentMeetFromRows(entries, conditions), entries.slice(1));
 }
+// Codex P1: 途中の日（10/11）の種別の行だけが欠けても、開催休みとみなして節を切らない
+{
+  const entries = ["2026-10-10", "2026-10-11", "2026-10-12"].map((date) => ({ race_id: `${date}-02-01`, boat_number: 1 }));
+  check("BOA-861: 途中日の種別の行が欠けても今節の前半を落とさない",
+    groupCurrentMeetFromRows(entries, [cond("2026-10-10", 1), cond("2026-10-12", 3)]), entries);
+}
 check("BOA-861: 出走が空なら空", groupCurrentMeetFromRows([], []), []);
 
 // サービス本体に偽のクライアントを渡して実行する。本番クライアントは読み込まない。
