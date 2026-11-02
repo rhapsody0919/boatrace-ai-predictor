@@ -764,7 +764,11 @@ const pointRankFetch = (overrides = {}) =>
       const b = legacyFrom(table);
       const upsert = b.upsert.bind(b);
       b.upsert = (rows, opts) => {
-        if (rows.some((r) => "next_race_1" in r)) {
+        // 159 は racer_series_points の列。192 の写し（racer_series_points_daily）は作るときから列を持つ
+        if (
+          table === "racer_series_points" &&
+          rows.some((r) => "next_race_1" in r)
+        ) {
           rejected += 1;
           return Promise.resolve({
             data: null,

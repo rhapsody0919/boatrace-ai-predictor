@@ -317,7 +317,7 @@ flowchart LR
     MT[(races / race_entries / race_start_timings / race_results / race_conditions / race_series)]
   end
   CLI["racer-career-backfill.js --era=kb（オーナー）"] -->|"① racer_career_inputs（年ごと）"| KBT
-  CLI -->|"② isFinalStage・グレードの補正（JS）"| CLI
+  CLI -->|"② isCareerFinalStage・グレードの補正（JS）"| CLI
   CLI -->|"③ compute_racer_career_counts（半月ずつ約160回）"| KBT
   CRON["api/cron/racer-career-main.js（23:30・01:00 JST）"] -->|"① 直近3日の選手・種別・開催の題"| MT
   CRON -->|"③ compute（50人ずつ）"| MT
@@ -461,7 +461,7 @@ erDiagram
 
 ### 14.4 判定の材料（書き手、`scripts/lib/racerCareerJob.js`）
 
-1. 優勝戦: `racer_career_inputs` が返す種別の原文に `isFinalStage` を当て、当たる原文の一覧を `p_final_stages` に渡す（SQL は `stage = ANY(...)` だけ）。判定の正本は JS の1か所
+1. 優勝戦: `racer_career_inputs` が返す種別の原文に `isCareerFinalStage`（`isFinalStage` v2＋公式が優勝戦として数える「オオムラGP」「関ヶ原決戦」、spec §3）を当て、当たる原文の一覧を `p_final_stages` に渡す（SQL は `stage = ANY(...)` だけ）。判定の正本は JS の1か所
 2. グレードの補正（`SPECIAL_SERIES_RULES`）: 開催日の題を NFKC にして当て、連続した日を1つの節にまとめる。`racer_career_special_races` で節のレースと選手を読み、同じレースに出た選手を結んだ組（union-find）で分ける
    - QC: トライアルのレースを含む組が G1、残りが G3（kb の 2019〜2024 は「トライアル」が毎年6レース）
    - CC: 最終日の 12R を含む組が SG、残りが G2
@@ -485,7 +485,7 @@ erDiagram
 | 列に starts・finals・wins | 持たない | 出走は着のコードから純関数で出る。優出・優勝は racer_championships と is_final のキーから出る。同じ値を2か所に持たない |
 | 場別・期別に grade の軸（加点がグレード×種別で変わるなら） | race_grade（SG/G1/G2/G3/ippan/unknown）と is_final をキーに入れた | official-data-spec が、加点はグレードと優勝戦かで変わると確定した |
 | 年ごとに7回に分けて読む | 年ごとに種別・題を読み、件数は半月ずつ | 1か月で約3秒（本番の読み取り）。8秒の打ち切りに対して余裕を取る |
-| 優勝の行（wins） | 優勝戦に出た全艇（着のコードつき） | 優出の数え方（S0・K0 を含むか）が未決。着のコードを持てば読み手が決められる |
+| 優勝の行（wins） | 優勝戦に出た全艇（着のコードつき） | 着のコードを持てば読み手が数え方を決められる。優出は S0・K0・L0 を含め NULL を除く（`isCareerFinalAppearance`）。kb の選手×期 20,916行で公式の finals・wins と全件一致（2026-11-02、spec §3）。公式に準優出の統計は無い |
 
 ### 14.7 壊れ方と手当て（審査の10項目）
 
@@ -496,7 +496,7 @@ erDiagram
 | 3 | 列の集合が違う行のバルク upsert で NULL | 件数の列は RPC がいつも全部返し、`mergeCareerResult` が16列をそろえる |
 | 4 | 件数が0になったセルが残る | 新しい計算に無いキーを消す（多すぎれば止める） |
 | 5 | 読み取りの失敗が「優勝0回」に化ける | 書き手は失敗を例外にする。画面は「未計算」（記録が無い）と取得の失敗（InlineFetchError）を分ける（spec §4） |
-| 6 | stage_kind・is_final_day で GP 等の優勝を落とす | `isFinalStage` の原文の一覧だけを使う（PGlite の試験で stage_kind=other の GP優勝戦を数える） |
+| 6 | stage_kind・is_final_day で GP 等の優勝を落とす | `isCareerFinalStage` の原文の一覧だけを使う（PGlite の試験で stage_kind=other の GP優勝戦を数える） |
 | 7 | 成績コード NULL の艇を優出に数える | RPC はコード NULL の艇を数えない |
 | 8 | race_grade の欠けでグレードが空 | race_series.grade、その次に race_series.class_code（Lady・Takumi は G3、Rookie・Venus は ippan）で補い、無ければ unknown（件数は残る。関門は unknown_runs として出す） |
 | 9 | 暦年と期を取り違える | 表は期だけで持つ。画面で「年別」と言わない |

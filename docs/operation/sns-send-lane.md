@@ -8,20 +8,23 @@ SNS 配信の基盤レーン（範囲: sns-hub・`scripts/sns/push-*.js`・送�
 |---|---|---|---|
 | /today の X（毎朝 8:00） | `scripts/lib/snsTodayPlanner.js`（cron `sns_auto_plan`、7:30 に下書き） | `scripts/lib/snsSendRunner.js`（cron `sns_send`、2分ごと） | 自動の承認者（`approve_sns_x_send`） |
 | 全貌（X・YouTube 完全版・Shorts） | hq の作り手 → `scripts/sns/push-full-picture.js` | 同上 | 同上 |
+| YouTube Shorts「節の機力」（1日1本、単独の Shorts） | hq の作り手（bundle.json＋mp4、型は `sns-video-studio/remotion/src/setsuKiryoku/`）→ `scripts/sns/push-setsu-kiryoku-short.js` | 同上 | 同上。旗 `sns_auto_send_control.setsu_kiryoku_short_enabled`（youtube の行、既定 false、193）が true のときだけ |
 | 計測 | `sns_metrics`（投稿ごとの窓）・`sns_daily`（JST 10:00、`scripts/lib/snsDailyRunner.js`） | — | — |
 
 - /today の本文: 見出し（`config/today-variants.json` の案 a・b を日の偶奇で）→ 空行 → 「今日の一覧はこちら：{UTM 付き URL}」→ 注目レース・区分・一覧 → 末尾は注意書き（#1769）。重み付けの長さは 600 台で、長文（`thread_length=1`、25,000 まで）として送る。10/19 以降、この長さで毎日送れている
 - /today の画像: 龍神ソナーの図（`.af-hep .af-dark`）を最大4枚。`api/_lib/snsHeadless.js` の `captureElement` で、撮った後に位置を測り直し、上下の色が `--ryujin-navy-600` かを確かめる。合わなければ `screenshot_misframed`、CSS の変数が無ければ `screenshot_edge_color_missing`（#1802、BOA-1013）
 - 全貌: bundle の版2（`bundle_version: 2`）で YouTube の Shorts を足す。Shorts は `parent_job_id` で完全版の公開を待ち、説明文の `{full_url}` を送る時に完全版の URL に置き換える（#1714、ADR-0094 の追記、マイグレーション 172 の `sns_auto_send_items.variant`）。契約の表は `docs/design/full-picture-remotion/handoff.md`「送信の道への受け渡し」
 - 全貌の束の `channels`（例 `["youtube","shorts"]`）で X を外せる。外すと `x_text`・`full-x.mp4` を受けず、X の下書き・item・job と日の枠の確認（`sns_x_slot_room`）を作らない。完全版・Shorts の送る時刻は X があるときと同じ（BOA-1167）
+- 節の機力の Shorts（BOA-1209、マイグレーション 193）: 題・説明欄は bundle の値のまま。push で型の検査（`checkBundle`）をもう一度通し、説明欄のリンクはその会場のページ（`/venue/{会場コード}`）ちょうど1つ。送る直前の表示の確認は画面の印 `venue`（`scripts/lib/snsScreenMarkers.js`）。1日1本（`sns_auto_send_items_setsu_day`）、final_gap は前夜と当日で同じ優勝戦を出さない。YouTube の日の上限（`daily_limit_youtube`）とクォータ（1 upload・104 units）は push でも数え、claim で DB が予約する
 - 全貌の URL の UTM: `utm_campaign=race-full`・`utm_content=<race_id>`（YouTube は `utm_term=full|shorts`）。作り手が付ける（#1767）
+- 節の機力の計測: 48h・7d は posted のトリガー（169）が全貌以外の型と同じく作る（Shorts `setsu_kiryoku_short`・X `setsu_kiryoku` とも変更なし）。`sns_daily` の YouTube Analytics（動画ごとの日次・pt3d）は format で絞らないので Shorts も入る。GA4 は Shorts の説明欄の会場のページのリンクにある utm_* と `landingPage` で下書きに結びつけ、投稿日と翌日の users・sessions を残す（`snsDailyRunner.js` の collectSetsuShort）。リンクに `utm_source`・`utm_medium`・`utm_content` のどれかが無ければ結びつけない（同じ会場のページへの別の投稿の流入を拾わない）。同じ会場・同じ utm が続く日は、その日の流入を当日の投稿に付ける。X の節の機力は本文にリンクが無いので GA4 の行は無い
 
 ## 本番の設定（2026-10-20〜21 にオーナーが適用）
 
 | 表 | 値 |
 |---|---|
 | `sns_auto_send_control` | x・youtube とも `mode=auto`・`dry_run=false` |
-| `sns_x_send_control` | `daily_limit_x=3`・`daily_limit_youtube=3`（全貌 1レース/日 × 2件＋予備1）・`paused=false` |
+| `sns_x_send_control` | `daily_limit_x=11`・`daily_limit_youtube=9`・`paused=false`・`expiry_minutes=30`・`max_source_age_seconds=14400`（2026-11-02 に読み取りで確認。10/20 の適用時は X・YouTube とも 3） |
 | `sns_youtube_quota_control` | `verified=true`・`upload_limit=100`（videos.insert の別枠の既定）・`general_limit=10000`（Queries per day）。基準日は `sns_auto_plan` が live のときだけ `roll_sns_send_baselines` で進む |
 | `scrape_job_state` | `sns_auto_plan`・`sns_send`・`sns_metrics`・`sns_daily` とも live |
 | Linear の起票の関所 | 230件以上で止める（`scripts/lib/linearIssueGate.js`、AGENTS.md、#1708） |
@@ -32,7 +35,7 @@ SNS 配信の基盤レーン（範囲: sns-hub・`scripts/sns/push-*.js`・送�
 
 | チケット | 内容 | 状態 |
 |---|---|---|
-| BOA-1164 | 全貌の YouTube 完全版が `private_retained` で残り、要照合の知らせが止まらない | #2006 でマージ済み。マイグレーション 186 はオーナーの db-apply 待ち。当たった後の最初の sns_send の live で、job 0853d7d9・0883093d が cancelled・youtube_closed_deleted になるか、要照合の知らせが止まったか、verify-rpc-output-keys.js が通るかを見る |
+| BOA-1164 | 全貌の YouTube 完全版が `private_retained` で残り、要照合の知らせが止まらない | #2006 でマージ済み。マイグレーション 186 は 2026-10-27 に db-apply で適用済み（APPLIED.md、11/2 に本番の transition_sns_x_send に youtube_close_private があることを読み取りで確認）。残りの確認: sns_send の live で、job 0853d7d9・0883093d が cancelled・youtube_closed_deleted になるか、要照合の知らせが止まったか、verify-rpc-output-keys.js が通るかを見る |
 | BOA-988 | YouTube 初回で見えた3点: 一度 reconcile（`post_outcome_unknown`）に落ちてから posted に戻った／posted の後も `youtube_stage=update_started`／埋め込み無効（oEmbed 401） | Backlog |
 | BOA-981 | /today のまくりの行の図が、本文の注目の艇ではなく1号艇を強調する（/today の型の変更なので x-channel が要る） | Backlog |
 | BOA-973 | YouTube の送信が太平洋時間の日付の境目（JST 16:00、11/1 から 17:00）をまたぐと、非公開のまま `youtube_quota_unconfirmed` で止まる | 2026-10-27 に Linear で見つからない（アーカイブか削除）。直っていない |
