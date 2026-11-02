@@ -2770,7 +2770,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1215",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1249",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -3031,7 +3031,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1189",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1223",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -4825,7 +4825,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1031",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1065",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -5733,7 +5733,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1052",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1086",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -6546,7 +6546,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1213",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1247",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6614,7 +6614,7 @@
           ]
         },
         {
-          "ref": "scripts/verification/verify-series-points-official.mjs:155",
+          "ref": "scripts/verification/verify-series-points-official.mjs:158",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6763,13 +6763,13 @@
             "scripts/maintenance/backfill-race-series-meta.js:337",
             "scripts/maintenance/backfill-series-day.js:175",
             "scripts/maintenance/backfill-series-day.js:196",
-            "scripts/maintenance/verify-full-picture-scene2.js:1213",
+            "scripts/maintenance/verify-full-picture-scene2.js:1247",
             "scripts/ml/analogy/build-wind-basis.js:95",
             "scripts/sns/push-finals-image.js:1294",
             "scripts/sns/push-setsu-kiryoku-short.js:962",
             "scripts/verification/verify-series-points-border.mjs:79",
             "scripts/verification/verify-series-points-needed.mjs:74",
-            "scripts/verification/verify-series-points-official.mjs:155",
+            "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/supabaseDataService.js:3252",
             "src/services/supabaseDataService.js:630",
             "src/services/supabaseDataService.js:6750",
@@ -6892,7 +6892,7 @@
         "is_final_day": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:173",
-            "scripts/verification/verify-series-points-official.mjs:155",
+            "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/supabaseDataService.js:630",
             "src/services/supabaseDataService.js:6750",
             "src/services/supabaseDataService.js:7297"
@@ -6917,12 +6917,12 @@
             "api/_lib/snsClaimCheck.js:413",
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/lib/snsAutoPlanRunner.js:744",
-            "scripts/maintenance/verify-full-picture-scene2.js:1213",
+            "scripts/maintenance/verify-full-picture-scene2.js:1247",
             "scripts/sns/push-finals-image.js:1294",
             "scripts/sns/push-setsu-kiryoku-short.js:962",
             "scripts/verification/verify-series-points-border.mjs:79",
             "scripts/verification/verify-series-points-needed.mjs:74",
-            "scripts/verification/verify-series-points-official.mjs:155",
+            "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/supabaseDataService.js:3252",
             "src/services/supabaseDataService.js:6750",
             "src/services/supabaseDataService.js:7297"
@@ -7784,7 +7784,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1093",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1127",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -7843,7 +7843,7 @@
           ]
         },
         {
-          "ref": "scripts/verification/verify-series-points-official.mjs:146",
+          "ref": "scripts/verification/verify-series-points-official.mjs:149",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8530,7 +8530,7 @@
             "scripts/sns/push-setsu-kiryoku-short.js:968",
             "scripts/verification/verify-series-points-border.mjs:47",
             "scripts/verification/verify-series-points-needed.mjs:41",
-            "scripts/verification/verify-series-points-official.mjs:146",
+            "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/mycroftService.js:82",
             "src/services/racerService.js:138",
             "src/services/racerService.js:31",
@@ -8643,7 +8643,7 @@
             "scripts/maintenance/migrate-to-supabase.js:259",
             "scripts/verification/verify-series-points-border.mjs:47",
             "scripts/verification/verify-series-points-needed.mjs:41",
-            "scripts/verification/verify-series-points-official.mjs:146",
+            "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/mycroftService.js:82",
             "src/services/racerService.js:84",
             "src/services/sherlockService.js:77",
@@ -8711,7 +8711,7 @@
             "scripts/maintenance/backfill-race-entries-racer-id.js:155",
             "scripts/verification/verify-series-points-border.mjs:47",
             "scripts/verification/verify-series-points-needed.mjs:41",
-            "scripts/verification/verify-series-points-official.mjs:146",
+            "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/mycroftService.js:82",
             "src/services/sherlockService.js:77",
             "src/services/supabaseDataService.js:2661",
@@ -9038,7 +9038,7 @@
             "scripts/maintenance/verify-pretest-row-pick.js:93",
             "scripts/verification/verify-series-points-border.mjs:47",
             "scripts/verification/verify-series-points-needed.mjs:41",
-            "scripts/verification/verify-series-points-official.mjs:146",
+            "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/racerService.js:138",
             "src/services/racerService.js:31",
             "src/services/racerService.js:84",
@@ -11609,7 +11609,7 @@
           ]
         },
         {
-          "ref": "scripts/verification/verify-series-points-official.mjs:161",
+          "ref": "scripts/verification/verify-series-points-official.mjs:164",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12007,7 +12007,7 @@
             "scripts/maintenance/migrate-to-supabase.js:284",
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
-            "scripts/verification/verify-series-points-official.mjs:161",
+            "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
             "src/services/ruleMatchService.js:118",
             "src/services/supabaseDataService.js:2530",
@@ -12074,7 +12074,7 @@
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
-            "scripts/verification/verify-series-points-official.mjs:161",
+            "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
             "src/services/ruleMatchService.js:118",
             "src/services/supabaseDataService.js:2530",
@@ -12126,7 +12126,7 @@
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
-            "scripts/verification/verify-series-points-official.mjs:161",
+            "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
             "src/services/ruleMatchService.js:118",
             "src/services/supabaseDataService.js:2530",
@@ -12167,7 +12167,7 @@
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
-            "scripts/verification/verify-series-points-official.mjs:161",
+            "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
             "src/services/ruleMatchService.js:118",
             "src/services/supabaseDataService.js:2530",
@@ -12417,7 +12417,7 @@
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
-            "scripts/verification/verify-series-points-official.mjs:161",
+            "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/supabaseDataService.js:2530",
             "src/services/supabaseDataService.js:3061",
             "src/services/supabaseDataService.js:7309"
@@ -12436,7 +12436,7 @@
           "readers": [
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
-            "scripts/verification/verify-series-points-official.mjs:161",
+            "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/supabaseDataService.js:2530",
             "src/services/supabaseDataService.js:3061",
             "src/services/supabaseDataService.js:7309"
@@ -12455,7 +12455,7 @@
           "readers": [
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
-            "scripts/verification/verify-series-points-official.mjs:161",
+            "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/supabaseDataService.js:2530",
             "src/services/supabaseDataService.js:3061",
             "src/services/supabaseDataService.js:7309"
@@ -14551,14 +14551,14 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:978",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1012",
           "op": "rest",
           "via": "rest",
           "columns": [],
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1227",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1261",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -15750,7 +15750,7 @@
           ]
         },
         {
-          "ref": "scripts/verification/verify-series-points-official.mjs:45",
+          "ref": "scripts/verification/verify-series-points-official.mjs:46",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15767,7 +15767,7 @@
           ]
         },
         {
-          "ref": "scripts/verification/verify-series-points-official.mjs:132",
+          "ref": "scripts/verification/verify-series-points-official.mjs:135",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15827,8 +15827,8 @@
         "venue_code": {
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
-            "scripts/verification/verify-series-points-official.mjs:132",
-            "scripts/verification/verify-series-points-official.mjs:45",
+            "scripts/verification/verify-series-points-official.mjs:135",
+            "scripts/verification/verify-series-points-official.mjs:46",
             "src/services/supabaseDataService.js:6859",
             "src/services/supabaseDataService.js:7319"
           ],
@@ -15838,8 +15838,8 @@
         "meet_start_date": {
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
-            "scripts/verification/verify-series-points-official.mjs:132",
-            "scripts/verification/verify-series-points-official.mjs:45",
+            "scripts/verification/verify-series-points-official.mjs:135",
+            "scripts/verification/verify-series-points-official.mjs:46",
             "src/services/supabaseDataService.js:6859",
             "src/services/supabaseDataService.js:7319"
           ],
@@ -15849,8 +15849,8 @@
         "racer_id": {
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
-            "scripts/verification/verify-series-points-official.mjs:132",
-            "scripts/verification/verify-series-points-official.mjs:45",
+            "scripts/verification/verify-series-points-official.mjs:135",
+            "scripts/verification/verify-series-points-official.mjs:46",
             "src/services/supabaseDataService.js:6859"
           ],
           "writers": [],
@@ -15865,7 +15865,7 @@
         },
         "player_name": {
           "readers": [
-            "scripts/verification/verify-series-points-official.mjs:45"
+            "scripts/verification/verify-series-points-official.mjs:46"
           ],
           "writers": [],
           "sql": []
@@ -15878,7 +15878,7 @@
         "rank": {
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
-            "scripts/verification/verify-series-points-official.mjs:45"
+            "scripts/verification/verify-series-points-official.mjs:46"
           ],
           "writers": [],
           "sql": []
@@ -15886,14 +15886,14 @@
         "score_rate": {
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
-            "scripts/verification/verify-series-points-official.mjs:45"
+            "scripts/verification/verify-series-points-official.mjs:46"
           ],
           "writers": [],
           "sql": []
         },
         "placements": {
           "readers": [
-            "scripts/verification/verify-series-points-official.mjs:45",
+            "scripts/verification/verify-series-points-official.mjs:46",
             "src/services/supabaseDataService.js:6859"
           ],
           "writers": [],
@@ -15902,7 +15902,7 @@
         "total_points": {
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
-            "scripts/verification/verify-series-points-official.mjs:45",
+            "scripts/verification/verify-series-points-official.mjs:46",
             "src/services/supabaseDataService.js:6859"
           ],
           "writers": [],
@@ -15911,7 +15911,7 @@
         "penalty_points": {
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
-            "scripts/verification/verify-series-points-official.mjs:45",
+            "scripts/verification/verify-series-points-official.mjs:46",
             "src/services/supabaseDataService.js:6859"
           ],
           "writers": [],
@@ -15920,7 +15920,7 @@
         "remarks": {
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
-            "scripts/verification/verify-series-points-official.mjs:45",
+            "scripts/verification/verify-series-points-official.mjs:46",
             "src/services/supabaseDataService.js:6859"
           ],
           "writers": [],
@@ -19537,7 +19537,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1160",
+          "ref": "scripts/lib/snsTodayPlanner.js:1161",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19634,7 +19634,7 @@
             "api/_lib/snsXSendStore.js:151",
             "scripts/lib/snsAutoPlanRunner.js:719",
             "scripts/lib/snsSendRunner.js:584",
-            "scripts/lib/snsTodayPlanner.js:1160",
+            "scripts/lib/snsTodayPlanner.js:1161",
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
@@ -19653,7 +19653,7 @@
             "api/_lib/snsXSendStore.js:151",
             "scripts/lib/snsAutoPlanRunner.js:719",
             "scripts/lib/snsSendRunner.js:584",
-            "scripts/lib/snsTodayPlanner.js:1160",
+            "scripts/lib/snsTodayPlanner.js:1161",
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
@@ -19671,7 +19671,7 @@
             "api/_lib/snsXSendStore.js:151",
             "scripts/lib/snsAutoPlanRunner.js:719",
             "scripts/lib/snsSendRunner.js:584",
-            "scripts/lib/snsTodayPlanner.js:1160",
+            "scripts/lib/snsTodayPlanner.js:1161",
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
@@ -19706,7 +19706,7 @@
         "auto_approver_id": {
           "readers": [
             "scripts/lib/snsAutoPlanRunner.js:719",
-            "scripts/lib/snsTodayPlanner.js:1160",
+            "scripts/lib/snsTodayPlanner.js:1161",
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
@@ -19896,7 +19896,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1105",
+          "ref": "scripts/lib/snsTodayPlanner.js:1106",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20008,7 +20008,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1169",
+          "ref": "scripts/lib/snsTodayPlanner.js:1170",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -20053,8 +20053,8 @@
             "api/_lib/snsClaimCheck.js:351",
             "api/_lib/snsClaimCheck.js:398",
             "scripts/lib/snsAutoPlanRunner.js:775",
-            "scripts/lib/snsTodayPlanner.js:1105",
-            "scripts/lib/snsTodayPlanner.js:1169",
+            "scripts/lib/snsTodayPlanner.js:1106",
+            "scripts/lib/snsTodayPlanner.js:1170",
             "scripts/maintenance/verify-sns-auto-plan.js:621",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-finals-image.js:1393",
@@ -20114,7 +20114,7 @@
             "api/_lib/snsClaimCheck.js:396",
             "api/_lib/snsClaimCheck.js:398",
             "scripts/lib/snsAutoPlanRunner.js:750",
-            "scripts/lib/snsTodayPlanner.js:1105",
+            "scripts/lib/snsTodayPlanner.js:1106",
             "scripts/maintenance/verify-sns-today-plan.js:730",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
@@ -20153,8 +20153,8 @@
             "api/_lib/snsClaimCheck.js:351",
             "api/_lib/snsClaimCheck.js:398",
             "scripts/lib/snsAutoPlanRunner.js:775",
-            "scripts/lib/snsTodayPlanner.js:1105",
-            "scripts/lib/snsTodayPlanner.js:1169",
+            "scripts/lib/snsTodayPlanner.js:1106",
+            "scripts/lib/snsTodayPlanner.js:1170",
             "scripts/maintenance/verify-sns-auto-plan.js:621",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-finals-image.js:1393",
@@ -20241,7 +20241,7 @@
             "api/_lib/snsClaimCheck.js:351",
             "api/_lib/snsClaimCheck.js:396",
             "api/_lib/snsClaimCheck.js:398",
-            "scripts/lib/snsTodayPlanner.js:1105",
+            "scripts/lib/snsTodayPlanner.js:1106",
             "scripts/maintenance/verify-sns-today-plan.js:730",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
@@ -20260,7 +20260,7 @@
             "api/_lib/snsClaimCheck.js:288",
             "api/_lib/snsClaimCheck.js:348",
             "api/_lib/snsClaimCheck.js:396",
-            "scripts/lib/snsTodayPlanner.js:1105",
+            "scripts/lib/snsTodayPlanner.js:1106",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
@@ -21063,7 +21063,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1102",
+          "ref": "scripts/lib/snsTodayPlanner.js:1103",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -21234,7 +21234,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1146",
+          "ref": "scripts/lib/snsTodayPlanner.js:1147",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -21312,8 +21312,8 @@
             "scripts/lib/snsDailyRunner.js:855",
             "scripts/lib/snsDailyRunner.js:858",
             "scripts/lib/snsMetricsRunner.js:493",
-            "scripts/lib/snsTodayPlanner.js:1102",
-            "scripts/lib/snsTodayPlanner.js:1146",
+            "scripts/lib/snsTodayPlanner.js:1103",
+            "scripts/lib/snsTodayPlanner.js:1147",
             "scripts/maintenance/verify-data-readers.js:183",
             "scripts/maintenance/verify-data-readers.js:205",
             "scripts/maintenance/verify-sns-auto-plan.js:625",
@@ -21374,7 +21374,7 @@
             "scripts/lib/snsDailyRunner.js:850",
             "scripts/lib/snsDailyRunner.js:855",
             "scripts/lib/snsMetricsRunner.js:493",
-            "scripts/lib/snsTodayPlanner.js:1102",
+            "scripts/lib/snsTodayPlanner.js:1103",
             "scripts/maintenance/verify-sns-daily-runner.js:965",
             "scripts/maintenance/verify-sns-today-plan.js:723",
             "scripts/sns/push-setsu-kiryoku-short.js:918",
@@ -21451,8 +21451,8 @@
             "scripts/lib/snsAutoPlanRunner.js:758",
             "scripts/lib/snsAutoPlanRunner.js:785",
             "scripts/lib/snsMetricsRunner.js:493",
-            "scripts/lib/snsTodayPlanner.js:1102",
-            "scripts/lib/snsTodayPlanner.js:1146",
+            "scripts/lib/snsTodayPlanner.js:1103",
+            "scripts/lib/snsTodayPlanner.js:1147",
             "scripts/maintenance/verify-data-readers.js:183",
             "scripts/maintenance/verify-sns-auto-plan.js:625",
             "scripts/maintenance/verify-sns-today-plan.js:747",
@@ -21536,7 +21536,7 @@
             "api/_lib/snsXSendStore.js:72",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/lib/snsDailyRunner.js:850",
-            "scripts/lib/snsTodayPlanner.js:1102",
+            "scripts/lib/snsTodayPlanner.js:1103",
             "scripts/sns/push-full-picture.js:895",
             "scripts/sns/today-picks.js:75"
           ],
@@ -21819,7 +21819,7 @@
         },
         "send_lane": {
           "readers": [
-            "scripts/lib/snsTodayPlanner.js:1102",
+            "scripts/lib/snsTodayPlanner.js:1103",
             "scripts/maintenance/verify-sns-today-plan.js:723",
             "scripts/sns/today-picks.js:75"
           ],
@@ -22803,7 +22803,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1133",
+          "ref": "scripts/lib/snsTodayPlanner.js:1134",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22849,7 +22849,7 @@
       "columns": {
         "day": {
           "readers": [
-            "scripts/lib/snsTodayPlanner.js:1133",
+            "scripts/lib/snsTodayPlanner.js:1134",
             "scripts/maintenance/verify-sns-today-plan.js:740",
             "scripts/maintenance/verify-sns-today-variants.js:358",
             "scripts/sns/push-today-types.js:106"
@@ -22859,7 +22859,7 @@
         },
         "type_id": {
           "readers": [
-            "scripts/lib/snsTodayPlanner.js:1133",
+            "scripts/lib/snsTodayPlanner.js:1134",
             "scripts/maintenance/verify-sns-today-plan.js:740"
           ],
           "writers": [],
@@ -22867,7 +22867,7 @@
         },
         "post": {
           "readers": [
-            "scripts/lib/snsTodayPlanner.js:1133",
+            "scripts/lib/snsTodayPlanner.js:1134",
             "scripts/maintenance/verify-sns-today-plan.js:740"
           ],
           "writers": [],
@@ -25354,14 +25354,14 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1004",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1038",
           "op": "rest",
           "via": "rest",
           "columns": [],
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1336",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1370",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -26544,7 +26544,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1034",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1068",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -26772,7 +26772,7 @@
           "via": "rest"
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1164",
+          "ref": "scripts/lib/snsTodayPlanner.js:1165",
           "via": "rest"
         },
         {
@@ -29599,12 +29599,12 @@
         ],
         "sns_auto_send_items": [
           "scripts/lib/snsAutoPlanRunner.js:775",
-          "scripts/lib/snsTodayPlanner.js:1169"
+          "scripts/lib/snsTodayPlanner.js:1170"
         ],
         "sns_drafts": [
           "api/_lib/snsHubHelpers.js:136",
           "scripts/lib/snsAutoPlanRunner.js:785",
-          "scripts/lib/snsTodayPlanner.js:1146"
+          "scripts/lib/snsTodayPlanner.js:1147"
         ],
         "sns_post_tracking": [
           "scripts/lib/snsPostTracking.js:76"
