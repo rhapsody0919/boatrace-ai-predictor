@@ -7,6 +7,8 @@ import { isFinalStage } from "./raceStageConfig.js";
 
 const FINISHES = ["01", "02", "03", "04", "05", "06"];
 const ZERO_POINT_STARTS = ["F", "L1", "K1", "S1", "S2"];
+/** 出走には数えないが、優出には数える責任外のコード */
+const ABSENT_FINALS = ["S0", "K0", "L0"];
 /** @type {Record<CareerGrade, readonly number[]>} */
 const POINTS = {
   ippan: [10, 8, 6, 4, 2, 1],
@@ -16,6 +18,23 @@ const POINTS = {
   PG1: [11, 9, 7, 5, 3, 2],
   SG: [12, 10, 8, 6, 4, 3],
 };
+
+/** isFinalStage（v2）が優勝戦と判定しないが、公式の期別成績が優勝戦として数えるレースの名前（完全一致）。
+ * v2 は学習側（scripts/ml/analogy/features.py）と事前登録した規則で共有するため、選手の集計の側だけで足す。
+ * どちらも kb に1レースずつ、本体に0件（2026-11-02 の本番の読み取り）:
+ *   オオムラGP 2020-01-01-24-12（第2回オオムラグランプリ）、関ヶ原決戦 2023-07-30-06-12（浜名湖 G2 地区対抗戦）
+ * 足すと kb の選手×期 20,916行で優出・優勝が公式と全件一致し、この12人×期の勝率も優勝戦の加点で公式に合う
+ * （official-data-spec の照合、2026-11-02）
+ */
+export const CAREER_EXTRA_FINAL_STAGES = Object.freeze(["オオムラGP", "関ヶ原決戦"]);
+
+/** 選手の集計（勝率の加点・優出・優勝）で使う優勝戦の判定。
+ * @param {string|null|undefined} stage 種別の原文
+ * @returns {boolean}
+ */
+export function isCareerFinalStage(stage) {
+  return isFinalStage(stage) || CAREER_EXTRA_FINAL_STAGES.includes(stage ?? "");
+}
 
 /** 勝率の分母。原文のコードのみ受け、NULL・00・責任外は除外する。
  * @param {string|null} finishRaw
@@ -47,7 +66,7 @@ export function careerWinRate(rows) {
   let points = 0;
   let starts = 0;
   for (const row of rows) {
-    const score = careerFinishPoints(row.grade, isFinalStage(row.stage), row.finish_raw);
+    const score = careerFinishPoints(row.grade, isCareerFinalStage(row.stage), row.finish_raw);
     if (score === null) continue;
     points += score;
     starts++;
@@ -56,11 +75,20 @@ export function careerWinRate(rows) {
   return starts === 0 ? null : Math.floor((points * 200 + starts) / (starts * 2)) / 100;
 }
 
-/** 1行は1選手の1走。種別は原文から v2 判定し、stage_kind は受け取らない。
- * S0・K0 の優出扱いは未定。該当行があれば推測値を返さず止める。
+/** 優出（優勝戦の走）に数える着のコード。出走（isCareerStart）とは別で、公式の優出回数は
+ * 責任外の S0・K0・L0 も数え、NULL は数えない（kb の選手×期 20,916行で racer_period_stats.finals と全件一致、
+ * 2026-11-02、official-data-spec）。00 と知らないコードは kb の優勝戦に0件で未照合のため数えない。
+ * @param {string|null} finishRaw
+ * @returns {boolean}
+ */
+export function isCareerFinalAppearance(finishRaw) {
+  return isCareerStart(finishRaw) || ABSENT_FINALS.includes(finishRaw ?? "");
+}
+
+/** 1行は1選手の1走。種別は原文から isCareerFinalStage で判定し、stage_kind は受け取らない。
+ * 優出は isCareerFinalAppearance（S0・K0・L0 を含む）。公式に準優出の統計は無いので数えない。
  * @param {readonly CareerRow[]} rows
  * @returns {CareerCounts}
- * @throws {RangeError} 未定の優出条件（優勝戦の S0・K0）を含む場合
  */
 export function careerFinishCounts(rows) {
   const counts = { first: 0, second: 0, third: 0, finals: 0, wins: 0 };
@@ -69,11 +97,8 @@ export function careerFinishCounts(rows) {
     if (finish === "01") counts.first++;
     if (finish === "02") counts.second++;
     if (finish === "03") counts.third++;
-    if (!isFinalStage(row.stage)) continue;
-    if (finish === "S0" || finish === "K0") {
-      throw new RangeError("S0・K0 の優出条件は未定");
-    }
-    if (isCareerStart(finish)) counts.finals++;
+    if (!isCareerFinalStage(row.stage)) continue;
+    if (isCareerFinalAppearance(finish)) counts.finals++;
     if (finish === "01") counts.wins++;
   }
   return counts;

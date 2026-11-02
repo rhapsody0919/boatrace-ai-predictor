@@ -9,8 +9,8 @@
  *   出走（starts）・1着（first_count）・2着（second_count）・勝率（win_rate）  ← racer_term_stats
  *   優勝（wins）・優出（finals）                                             ← racer_championships（race_date が期の中）
  *   進入コース別の着のコード（c1〜c6 の p1〜p6・f・l0・l1・k0・k1・s0・s1・s2）   ← racer_course_stats
- * 出走・勝率の定義は src/pure/racerCareerStats.js（BOA-1193）の純関数を使う（この関門で二重に書かない）。
- * 優出に S0・K0・L0 を含めるかは未決（BOA-1193 の質問）。両方の数え方で一致の数を出し、合う方を報告する（失敗の判定には使わない）。
+ * 出走・勝率・優出の定義は src/pure/racerCareerStats.js（BOA-1193）の純関数を使う（この関門で二重に書かない）。
+ * 優出は isCareerFinalAppearance（S0・K0・L0 を含め、NULL は数えない。kb の選手×期 20,916行で公式と全件一致、2026-11-02）。
  *
  * 既定の期は 2019-05-01〜2025-11-01（kb だけの13期と、kb と本体をまたぐ 2025年11月の期）。2018-11 の期は kb に 2019-04 しか無いので照らさない。
  * 一致しない選手の一覧を出し、1つでもあれば終了コード 1。接続は claude_ro（scripts/db/ro-query.js と同じ。READ ONLY・最後に ROLLBACK）。
@@ -56,23 +56,18 @@ export const COURSE_COLUMNS = Object.freeze([
   "s1",
   "s2",
 ]);
-/** 優出の数え方の候補（S0・K0・L0 を含めるか、BOA-1193 の未決） */
-export const FINALS_VARIANTS = Object.freeze({
-  all_codes: () => true,
-  without_absent: (code) => !["S0", "K0", "L0"].includes(code),
-});
-
-/** BOA-1193（#2066）の src/pure/racerCareerStats.js の名前。関門はこの3つを使う */
+/** BOA-1193（#2066）の src/pure/racerCareerStats.js の名前。関門はこの4つを使う */
 export const CAREER_FUNCTION_NAMES = Object.freeze([
   "isCareerStart",
   "careerFinishPoints",
   "careerWinRate",
+  "isCareerFinalAppearance",
 ]);
 
 /**
  * BOA-1193 の純関数を読み込む。名前が違えば、何が要るかを出して止める。
  *   isCareerStart(finishRaw) → bool、careerFinishPoints(grade, isFinal, finishRaw) → 点 | null、
- *   careerWinRate(rows: {grade, stage, finish_raw}[]) → 小数2桁 | null
+ *   careerWinRate(rows: {grade, stage, finish_raw}[]) → 小数2桁 | null、isCareerFinalAppearance(finishRaw) → bool
  * @returns {Promise<Record<string, Function>>}
  */
 export async function loadCareerFunctions() {
@@ -101,7 +96,7 @@ const termOf = (date) => {
 /**
  * 照合（純関数。テストは verify-racer-career-tables.js）。
  * @param {{termRows: object[], courseRows: object[], champRows: object[], official: object[],
- *   career: {isCareerStart: Function, careerFinishPoints: Function, careerWinRate: Function}}} input
+ *   career: {isCareerStart: Function, careerFinishPoints: Function, careerWinRate: Function, isCareerFinalAppearance: Function}}} input
  */
 export function compareCareerToOfficial({
   termRows,
@@ -174,14 +169,12 @@ export function compareCareerToOfficial({
     "first_count",
     "second_count",
     "win_rate",
+    "finals",
     "wins",
     "course",
   ];
   const perTerm = {};
   const mismatches = [];
-  const finalsMatch = Object.fromEntries(
-    Object.keys(FINALS_VARIANTS).map((v) => [v, 0]),
-  );
   let compared = 0;
   const seen = new Set();
   const unknownRuns = [];
@@ -211,6 +204,7 @@ export function compareCareerToOfficial({
       first_count: o.first,
       second_count: o.second,
       win_rate: tally.winRate,
+      finals: o.champ.filter((c) => career.isCareerFinalAppearance(c)).length,
       wins: o.champ.filter((c) => c === "01").length,
     };
     const want = {
@@ -221,6 +215,7 @@ export function compareCareerToOfficial({
         off.win_rate === null || Number(off.starts ?? 0) === 0
           ? null
           : Number(off.win_rate),
+      finals: Number(off.finals ?? 0),
       wins: Number(off.wins ?? 0),
     };
     const diff = {};
@@ -245,9 +240,6 @@ export function compareCareerToOfficial({
           (diff.course ??= {})[`c${c}_${col}`] = { ours: a, official: b };
       }
     }
-    for (const [v, fn] of Object.entries(FINALS_VARIANTS))
-      if (o.champ.filter(fn).length === Number(off.finals ?? 0))
-        finalsMatch[v] += 1;
     compared += 1;
     t.racers += 1;
     if (Object.keys(diff).length > 0) {
@@ -267,7 +259,7 @@ export function compareCareerToOfficial({
     if (seen.has(k)) continue;
     if (tallyOf(o).starts > 0) extra.push(k);
   }
-  return { compared, perTerm, finalsMatch, mismatches, extra, unknownRuns };
+  return { compared, perTerm, mismatches, extra, unknownRuns };
 }
 
 function parseArgs(argv) {
@@ -368,9 +360,6 @@ async function main() {
   );
   console.log(
     `公式に無い選手×期で出走があるもの: ${res.extra.length}${res.extra.length ? `（例 ${res.extra.slice(0, 10).join(", ")}）` : ""}`,
-  );
-  console.log(
-    `優出の数え方ごとの一致: ${JSON.stringify(res.finalsMatch)}（${res.compared} 中）`,
   );
   for (const m of res.mismatches.slice(0, 30))
     console.log(`  不一致: ${JSON.stringify(m)}`);

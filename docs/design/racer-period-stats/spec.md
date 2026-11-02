@@ -28,7 +28,14 @@
   - 着順点: 一般・G3 は 10/8/6/4/2/1、G1・G2 は +1、SG は +2
   - 優勝戦はさらに 1〜3着 +1、4〜6着 +2
   - 出走: 着のコードが 01〜06・F・L1・K1・S1・S2（F・L1・K1・S1・S2 は0点）。L0・K0・S0・00・NULL は数えない
-- 優勝戦の判定: `src/pure/raceStageConfig.js` の `isFinalStage`（v2）。`kb_archive_races.stage_kind` は使わない（GP優勝戦・サントリー優・王座決定戦・賞金女王決定を落とす）
+- 公式の優出・優勝（official-data-spec、kb の選手×期 2019-05〜2025-05 の13期 20,916行で `racer_period_stats.finals`・`wins` と全件一致、2026-11-02）
+  - 優出: 優勝戦の走のうち、着のコードが NULL でないもの。出走に数えない S0・K0・L0 も数える（`isCareerFinalAppearance`）。00 は kb の優勝戦に0件で未照合のため数えない
+  - 優勝: 優勝戦の着が 01
+  - S0・K0・L0 を外すと 127行、NULL も数えると 403行が公式とずれる
+  - 公式に準優出の統計は無い。準優出の回数は出さない
+- 優勝戦の判定: `src/pure/racerCareerStats.js` の `isCareerFinalStage` ＝ `src/pure/raceStageConfig.js` の `isFinalStage`（v2）＋公式が優勝戦として数える2つの名前（「オオムラGP」2020-01-01 大村12R、「関ヶ原決戦」2023-07-30 浜名湖12R。どちらも kb に1レースずつ、本体に0件）。`kb_archive_races.stage_kind` は使わない（GP優勝戦・サントリー優・王座決定戦・賞金女王決定を落とす）
+  - v2 は学習側（`scripts/ml/analogy/features.py`）と事前登録で共有し、固定の82件で検査しているので変えない。2つの名前は選手の集計の側だけで足す
+  - 2つを足さないと優出・優勝が公式と12行ずれる。足すと12人×期の勝率も優勝戦の加点で公式に合う（グレードの補正が無い11人で一致。残る1人は QC の節に出ていて、補正なしの試算では比べられない）
 - グレード: kb は `kb_archive_venue_days.race_grade`、本体は `races.race_grade`、無ければ `race_series.grade`。次は書き手がレースごとに決める
   - QC/QCシリーズ: トライアルに出た選手とつながるレースが G1、残りが G3
   - CC/レディースCC: 最終日の 12R に出た選手とつながるレースが SG、残りが G2（推定。照合の関門の勝率で確かめる）
@@ -36,7 +43,7 @@
   - どれにも当たらず元の値も無いレースは `unknown`（勝率の点が決まらない。件数は数える）
 - 期: 5〜10月は その年の 5/1、11〜12月は その年の 11/1、1〜4月は 前の年の 11/1 を `term_start` にする（公式の期別成績の算出期間）
 - 境目: kb は race_date ≤ 2025-12-02、本体は ≥ 2025-12-03（`scripts/lib/kbArchiveBoundary.js`。kb-backfill.js・venueTechniquePeriod.js もここから読む）
-- 未照合: 2019〜2023-10 と 2025-05〜12-02 の勝率の定義、CC の組の分け方、優出に S0・K0・L0 を含めるか。照合の関門（§6）で確かめる
+- 未照合: 2019〜2023-10 と 2025-05〜12-02 の勝率の定義、CC の組の分け方。照合の関門（§6）で確かめる
 
 ## 4. 見せ方の注意（画面の PR への申し送り。data-scientist、[analysis/display-scope.md](./analysis/display-scope.md)）
 
@@ -56,7 +63,7 @@
 - `scripts/maintenance/verify-racer-career-gate.js`（manual、claude_ro）
 - 選手×期（2019-05-01〜2025-11-01 の14期）で、2つの層を足した値を `racer_period_stats` と比べる
   - 出走・1着・2着・勝率（BOA-1193 の純関数 isCareerStart・careerFinishPoints・careerWinRate。名前が違えば関門が止まる）← `racer_term_stats`
-  - 優勝・優出 ← `racer_championships`（優出は S0・K0・L0 を含める・含めない の両方で一致の数を出す）
+  - 優勝・優出 ← `racer_championships`（優出は `isCareerFinalAppearance`。S0・K0・L0 を含め、NULL は数えない）
   - 進入コース別の着のコード（c1〜c6 の p1〜p6・f・l0・l1・k0・k1・s0・s1・s2）← `racer_course_stats`
 - 一致しない選手の一覧を完了報告に出す。全期・全選手が一致するまで画面に出さない（一致しない理由が説明でき、オーナーが出すと決めたものを除く）
 

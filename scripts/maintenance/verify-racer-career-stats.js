@@ -1,9 +1,12 @@
 #!/usr/bin/env node
-// 合成データの定義検査のみ。実 fan 照合は未実施で、案2の集計表の照合の関門で行う。
+// 合成データの定義検査のみ。実 fan との照合は verify-racer-career-gate.js（manual）。
+// 優出の数え方と2つの名前は kb の選手×期 20,916行で racer_period_stats と照合済み（2026-11-02）。
 import assert from "node:assert/strict";
 import {
   careerFinishPoints, isCareerStart, careerWinRate, careerFinishCounts,
+  isCareerFinalAppearance, isCareerFinalStage,
 } from "../../src/pure/racerCareerStats.js";
+import { isFinalStage } from "../../src/pure/raceStageConfig.js";
 
 const finishes = ["01", "02", "03", "04", "05", "06"];
 const tables = {
@@ -55,13 +58,35 @@ assert.deepEqual(careerFinishCounts([
   row("01"), row("02"), row("03"), row("04"), row("01", "優勝戦"),
   ...["02", "03", "04", "05", "06", "F", "L1", "K1", "S1", "S2"].map(f => row(f, "優勝戦")),
   row("L0", "優勝戦"), row("00", "優勝戦"), row(null, "優勝戦"),
-]), { first: 2, second: 2, third: 2, finals: 11, wins: 1 });
+]), { first: 2, second: 2, third: 2, finals: 12, wins: 1 });
 assert.deepEqual(careerFinishCounts([]), { first: 0, second: 0, third: 0, finals: 0, wins: 0 });
-// 未定の優出条件を、勝率の分母から勝手に決めない。
-for (const mark of ["S0", "K0"]) {
-  assert.throws(() => careerFinishCounts([row(mark, "優勝戦")]), /未定/);
+// 公式の優出は S0・K0・L0 を数え、NULL は数えない（kb の選手×期 20,916行で全件一致、2026-11-02）。
+// 出走（勝率の分母）は変えない: S0・K0・L0 は出走0・点なしのまま。
+for (const mark of ["S0", "K0", "L0"]) {
+  assert.equal(isCareerFinalAppearance(mark), true);
+  assert.equal(isCareerStart(mark), false);
+  assert.deepEqual(careerFinishCounts([row(mark, "優勝戦")]),
+    { first: 0, second: 0, third: 0, finals: 1, wins: 0 });
   assert.equal(careerFinishCounts([row(mark)]).finals, 0);
+  assert.equal(careerWinRate([row(mark, "優勝戦")]), null);
 }
+for (const mark of [null, "00", "", "07"]) {
+  assert.equal(isCareerFinalAppearance(mark), false);
+  assert.equal(careerFinishCounts([row(mark, "優勝戦")]).finals, 0);
+}
+for (const f of ["01", "02", "03", "04", "05", "06", "F", "L1", "K1", "S1", "S2"])
+  assert.equal(isCareerFinalAppearance(f), true);
+// isFinalStage（v2）は拾わないが、公式が優勝戦として数える2つの名前（kb の照合で12行のずれ、2026-11-02）。
+// v2 は学習側と共有するので変えず、選手の集計の判定だけで足す。
+for (const stage of ["オオムラGP", "関ヶ原決戦"]) {
+  assert.equal(isFinalStage(stage), false);
+  assert.equal(isCareerFinalStage(stage), true);
+  assert.deepEqual(careerFinishCounts([row("01", stage)]),
+    { first: 1, second: 0, third: 0, finals: 1, wins: 1 });
+  assert.equal(careerWinRate([row("01", stage)]), 11);
+}
+for (const stage of ["グランプリ特", "グランプリD", "準優勝戦", null, undefined])
+  assert.equal(isCareerFinalStage(stage), false);
 const frozen = Object.freeze([Object.freeze(row("01", "優勝戦"))]);
 assert.equal(careerWinRate(frozen), 11);
 assert.equal(careerFinishCounts(frozen).wins, 1);
