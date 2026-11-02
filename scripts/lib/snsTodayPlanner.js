@@ -73,6 +73,10 @@ export const todayUtmContent = (date, sent) => `${date}-${sent}`;
 export const todayTrackingUrl = (date, sent = "a") =>
   `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${todayUtmContent(date, sent)}`;
 
+// 本文だけ短い道にする。追跡行には従来の UTM URL を保存する。
+const todayPostUrl = (date, sent) =>
+  `${new URL("/x/today", TODAY_URL)}?d=${todayUtmContent(date, sent)}`;
+
 // 型 b の画像の撮影用のページ（src/pages/TodaySheet.jsx）。1080×1350 をそのままの画素で撮る
 export const COURSE_WIN_SHEET_PATH = "/share/today-sheet";
 export const COURSE_WIN_SHEET_ELEMENT = "[data-today-sheet]";
@@ -120,7 +124,7 @@ export async function prepareCourseWin(digest, { date, sendAt, raceDb, t }) {
     excluded: new Set(skip),
   });
   if (!sheet.ok) return sheet;
-  const url = todayTrackingUrl(date, "b");
+  const url = todayPostUrl(date, "b");
   const venueName = (code) => t(`venues.${code}`);
   const text = buildCourseWinPost(sheet, { venueName, url });
   const problems = checkCourseWinPost(text, sheet, {
@@ -133,7 +137,7 @@ export async function prepareCourseWin(digest, { date, sendAt, raceDb, t }) {
   return {
     ok: true,
     sheet,
-    url,
+    url: todayTrackingUrl(date, "b"),
     sheetUrl: courseWinSheetUrl(date, sendAt, skip),
     post: {
       text,
@@ -154,7 +158,7 @@ export async function prepareCourseWin(digest, { date, sendAt, raceDb, t }) {
 export function courseWinFeasible(digest, { date, sendAt, t }) {
   const sheet = buildCourseWinSheet(digest.day?.notes?.courseWin, { sendAt });
   if (!sheet.ok) return { ok: false, reason: sheet.reason };
-  const url = todayTrackingUrl(date, "b");
+  const url = todayPostUrl(date, "b");
   const venueName = (code) => t(`venues.${code}`);
   const problems = checkCourseWinPost(
     buildCourseWinPost(sheet, { venueName, url }),
@@ -546,7 +550,7 @@ export async function runTodayPlan(
     const post = buildTodayPost(digest, {
       date,
       t,
-      url,
+      url: todayPostUrl(date, "a"),
       sendAt,
       excluded,
       heading: base.heading,

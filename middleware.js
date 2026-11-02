@@ -33,6 +33,7 @@ export const config = {
     // resolveSnapshotPath に対象を足すだけでは配信されない。Vercel は
     // matcher に一致したパスでしか middleware を起動しないため、必ず両方に足す
     "/today",
+    "/x/today",
     // BOA-848 第2段: 翻訳記事とブログ一覧（/blog は上の "/blog/:path*" に含まれる）
     "/en/blog/:path*",
     "/zh-TW/blog/:path*",
@@ -84,6 +85,18 @@ export default function middleware(request) {
 
   if (isAdminPath(url.pathname)) {
     return handleAdminAuth(request);
+  }
+
+  if (url.pathname === "/x/today") {
+    const target = new URL("/today", url);
+    target.searchParams.set("utm_source", "x");
+    target.searchParams.set("utm_medium", "social");
+    target.searchParams.set("utm_campaign", "today_digest");
+    const content = url.searchParams.get("d");
+    if (/^\d{4}-\d{2}-\d{2}-[ab]$/.test(content ?? "")) {
+      target.searchParams.set("utm_content", content);
+    }
+    return Response.redirect(target, 302);
   }
 
   const snapshotPath = resolveSnapshotPath(
