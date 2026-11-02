@@ -9,9 +9,10 @@
  *
  * フォルダ（hq の finals_run.py の出力）: bundle.json と PNG 4枚（1080×1350）。ほかのファイル（HTML 等）は読まない。bundle.format で2つに分ける
  *   本投稿（展示前の版、締切の約3時間前）: {format:"finals_image", race_id, x_text, deadline:"HH:MM"（JST）, images:[4つの名前],
- *     review:{p0_count, by}, poll:[4つの選択肢（各25字まで）], poll_text}
- *     本投稿と、その直後に本投稿へのリプで出す投票（本文 poll_text、締切で閉じる。177）の2つを作る。投票のリプは本投稿が posted になってから送る
- *   展示後のリプ（締切の25〜13分前）: {format:"finals_reply", race_id, x_text, deadline:"HH:MM", images:[4つの名前], review:{p0_count, by}}
+ *     review:{p0_count, by}, poll?:[4つの選択肢（各25字まで）], poll_text?}
+ *     poll・poll_text は任意（BOA-1208、オーナー 2026-10-31 に投票のリプをやめた）。無ければ本投稿1本だけを作る。
+ *     あれば本投稿と、その直後に本投稿へのリプで出す投票（本文 poll_text、締切で閉じる。177）の2つを作る。投票のリプは本投稿が posted になってから送る
+ *   展示後のリプ（締切の25〜13分前、任意。来なくても本投稿は完了。BOA-1208）: {format:"finals_reply", race_id, x_text, deadline:"HH:MM", images:[4つの名前], review:{p0_count, by}}
  *     本投稿（posted）へのリプで画像4枚と本文。13分前を過ぎたら受け取らない（出さない）
  *   images は <race_id>-1-map.png・-2-q12.png・-3-q3.png・-4-routes.png のこの順（この順で1投稿に付く）
  *
@@ -20,13 +21,13 @@
  *
  * 時刻: 全貌の 60分の遅らせ・45分の締め・30分の期限は当てない。送る時刻＝今すぐ、期限＝締切の5分前（3本とも）。
  * 本投稿は締切の15分前を過ぎて届いたら受け取らない。展示後のリプは締切の25分前より前・13分前を過ぎたら受け取らない（exit 1 と理由）。
- * X の日の上限（daily_limit_x）は1本ずつ数える。本投稿は投票のリプと対で2本分の空きが無ければ受け取らない（送り手の claim も対で数える、177）。
+ * X の日の上限（daily_limit_x）は1本ずつ数える。投票のある本投稿は投票のリプと対で2本分（投票が無ければ1本分）の空きが無ければ受け取らない（送り手の claim も対で数える、177）。
  * 優勝戦の取り置き（182、sns_x_kind_reserves の finals_image）に入らないときも受け取らない
  * 送るのは送り手（cron sns-send、2分ごと）。push は job を入れた後、送り終わる（posted・held 等）か期限を過ぎるまで待つ（--no-wait で待たない）。
- * 本投稿は投票のリプが送り終わるまで待つ
+ * 本投稿は投票のリプがあれば、それが送り終わるまで待つ（展示後のリプは別の push で、本投稿の完了はそれを待たない）
  *
  * /today の対象レースの思考投稿（BOA-1169、マイグレーション 189）も同じ型で受け取る。bundle の format は today_thinking_image（本投稿）・
- *   today_thinking_reply（展示後のリプ）で、形・時刻の窓・画像の名前・投票4択は優勝戦と同じ。違うのは次だけ:
+ *   today_thinking_reply（展示後のリプ）で、形・時刻の窓・画像の名前・投票4択（任意）は優勝戦と同じ。違うのは次だけ:
  *   item の kind は today_thinking・variant は thinking・thinking_poll・thinking_reply、下書きの format は3本とも today_thinking_image・
  *   source_data のキーは today_thinking、許可は today_thinking_enabled、取り置きは today_thinking、Storage は today-thinking/、
  *   優勝戦の段（race_stage）は見ない。代わりに、その日の /today の X 投稿が posted で、race_id がその対象（today-picks.js の featured か list）か、
@@ -235,9 +236,18 @@ function commonReasons(bundle, format, riskRules, text = {}) {
   ];
 }
 
-/** 本投稿の bundle.json の検査（純粋関数、format で優勝戦と思考投稿を分ける）。投票（poll 4択・poll_text）は必須 */
+/** bundle に投票（poll・poll_text のどちらか）があるか（純粋関数）。無ければ投票のリプを作らない（BOA-1208） */
+export function hasPoll(bundle) {
+  return bundle?.poll != null || bundle?.poll_text != null;
+}
+
+/**
+ * 本投稿の bundle.json の検査（純粋関数、format で優勝戦と思考投稿を分ける）。投票は任意（BOA-1208）。
+ * poll・poll_text のどちらかがあれば、両方そろって 4択・poll_text の検査が通ること
+ */
 function mainReasons(bundle, riskRules, format, text = {}) {
   const reasons = commonReasons(bundle, format, riskRules, text);
+  if (!hasPoll(bundle)) return reasons;
   const pollIssue = pollOptionsIssue(bundle?.poll);
   if (pollIssue) reasons.push(pollIssue);
   else if (bundle.poll.length !== POLL_OPTIONS)
@@ -254,7 +264,7 @@ function mainReasons(bundle, riskRules, format, text = {}) {
   ];
 }
 
-/** 本投稿の bundle.json の検査（純粋関数）。不合格は理由の配列を返す。投票（poll 4択・poll_text）は必須 */
+/** 本投稿の bundle.json の検査（純粋関数）。不合格は理由の配列を返す。投票（poll 4択・poll_text）は任意 */
 export function checkFinalsImage(bundle, riskRules = []) {
   return mainReasons(bundle, riskRules, FINALS_IMAGE_FORMAT);
 }
@@ -740,7 +750,7 @@ export async function pushFinalsImage(
   if (live.already) return { ...head, ...live.already };
   const retry = [...live.retry];
   if (!reply) {
-    // 投票のリプは本投稿と対で作り直す（本投稿を作り直すなら、前の投票のリプも止める）
+    // 投票のリプは本投稿と対で作り直す（今度の bundle に投票が無くても、前の投票のリプは止める）（本投稿を作り直すなら、前の投票のリプも止める）
     const poll = (
       await store.finalsItems(bundle.race_id, cfg.variants.poll, kind)
     ).filter((i) => !["stopped", "held_manual", "sent"].includes(i.state));
@@ -796,12 +806,13 @@ export async function pushFinalsImage(
         }
       : {}),
   });
-  // 本投稿が上限で入らなければ投票のリプも作らない（対で2本分）
+  // 本投稿が上限で入らなければ投票のリプも作らない（投票があれば対で2本分）
+  const need = !reply && hasPoll(bundle) ? 2 : 1;
   const limitReason = dailyLimitReason({
     sendControl,
     jobs: todayJobs,
     now,
-    need: reply ? 1 : 2,
+    need,
     children,
   });
   if (limitReason) raceCheck.reasons.push(limitReason);
@@ -817,7 +828,7 @@ export async function pushFinalsImage(
   // 出し物ごとの取り置き（182、docs/design/x-daily-slots/plan.md）。他の出し物の取り置きの残りを使わないか。
   // 182 の前・読めないときは上の日の上限だけで決める（送り手の claim が正）
   const xSlot = store.xSlotRoom
-    ? await checkXSlot(store.xSlotRoom, cfg.slot, reply ? 1 : 2)
+    ? await checkXSlot(store.xSlotRoom, cfg.slot, need)
     : null;
   if (xSlot?.blocked) raceCheck.reasons.push(xSlot.reason);
   if (xSlot?.note) console.error(xSlot.note);
@@ -878,13 +889,16 @@ export async function pushFinalsImage(
         byPath,
         kind,
       });
+  const withPoll = !reply && hasPoll(bundle);
   const line = out.send_at
-    ? `x: 今すぐ送る（送り手の次の実行、期限 ${jstTime(when.expires_at)}${reply ? "" : "。投票のリプは本投稿の公開の後"}）${controls.x?.dry_run !== false ? "（試運転中: claim の前で止まる）" : ""}`
+    ? `x: 今すぐ送る（送り手の次の実行、期限 ${jstTime(when.expires_at)}${withPoll ? "。投票のリプは本投稿の公開の後" : ""}）${controls.x?.dry_run !== false ? "（試運転中: claim の前で止まる）" : ""}`
     : out.error
-      ? `x: 自動の承認に失敗（${reply ? "個別承認に回した" : "本投稿・投票のリプとも止めた"}）: ${out.error}`
+      ? `x: 自動の承認に失敗（${reply ? "個別承認に回した" : withPoll ? "本投稿・投票のリプとも止めた" : "本投稿を止めた"}）: ${out.error}`
       : reply
         ? "x: 自動モードでないので個別承認で承認する"
-        : "x: 自動モードでないので送らない（投票のリプは自動の道だけでつなぐ。本投稿だけを出さない）";
+        : withPoll
+          ? "x: 自動モードでないので送らない（投票のリプは自動の道だけでつなぐ。本投稿だけを出さない）"
+          : "x: 自動モードでないので送らない";
   await notify(
     `SNS ${label} ${bundle.race_id}（締切 ${jstTime(when.deadline_at)}）\n${line}\n止めるには: ${cfg.stopSql}`,
   ).catch((error) => console.error(`Slack に通知できません: ${error.message}`));
@@ -892,7 +906,7 @@ export async function pushFinalsImage(
 }
 
 /**
- * 本投稿と投票のリプの行を作る。自動なら本投稿を承認し、その job を投票のリプの deadline_queue.parent_job_id に入れて公開保留を外してから承認する
+ * 本投稿と投票のリプの行を作る（投票の無い bundle は本投稿だけ。BOA-1208）。自動なら本投稿を承認し、その job を投票のリプの deadline_queue.parent_job_id に入れて公開保留を外してから承認する
  * （/today の reply と同じ順、snsTodayPlanner.js）。どこかで落ちたら親子とも held_manual（投票のリプの無い本投稿だけを出さない）。
  * 自動でないときも親子とも held_manual（子を親につなぐのが自動の道だけのため）
  */
@@ -912,15 +926,20 @@ async function pushMainRows(
 ) {
   const { variants } = KINDS[kind];
   const state = auto ? "notified" : "held_manual";
+  const withPoll = hasPoll(bundle);
   const draft = await store.insertDraft(
     draftRow(bundle, { revision, paths, when, observedAt, kind }),
   );
-  let pollDraft = await store.insertDraft(
-    draftRow(bundle, { revision, when, observedAt, part: "poll", kind }),
-  );
+  let pollDraft = withPoll
+    ? await store.insertDraft(
+        draftRow(bundle, { revision, when, observedAt, part: "poll", kind }),
+      )
+    : null;
   const heldReason = auto
     ? null
-    : "自動モードでない（投票のリプは自動の道だけでつなぐ）";
+    : withPoll
+      ? "自動モードでない（投票のリプは自動の道だけでつなぐ）"
+      : "自動モードでない";
   const item = await store.insertItem({
     ...itemRow(bundle, {
       draftId: draft.id,
@@ -932,51 +951,56 @@ async function pushMainRows(
     }),
     ...(heldReason ? { held_reason: heldReason } : {}),
   });
-  const pollItem = await store.insertItem({
-    ...itemRow(bundle, {
-      draftId: pollDraft.id,
-      variant: variants.poll,
-      when,
-      state,
-      observedAt,
-      kind,
-    }),
-    ...(heldReason ? { held_reason: heldReason } : {}),
-  });
+  const pollItem = pollDraft
+    ? await store.insertItem({
+        ...itemRow(bundle, {
+          draftId: pollDraft.id,
+          variant: variants.poll,
+          when,
+          state,
+          observedAt,
+          kind,
+        }),
+        ...(heldReason ? { held_reason: heldReason } : {}),
+      })
+    : null;
   const out = {
     draft_id: draft.id,
     item_id: item.id,
-    poll_draft_id: pollDraft.id,
-    poll_item_id: pollItem.id,
+    ...(pollItem
+      ? { poll_draft_id: pollDraft.id, poll_item_id: pollItem.id }
+      : {}),
     auto: Boolean(auto),
   };
   if (!auto) return out;
   try {
     const job = await approveDraft(store, draft, approverId, when, byPath);
     if (!job?.id) throw new Error("本投稿の job の id を受け取れない");
-    pollDraft = await store.updateDraft(pollDraft.id, {
-      source_data: {
-        ...pollDraft.source_data,
-        deadline_queue: {
-          ...pollDraft.source_data.deadline_queue,
-          parent_job_id: job.id,
+    if (pollDraft) {
+      pollDraft = await store.updateDraft(pollDraft.id, {
+        source_data: {
+          ...pollDraft.source_data,
+          deadline_queue: {
+            ...pollDraft.source_data.deadline_queue,
+            parent_job_id: job.id,
+          },
         },
-      },
-      publish_blocked: false,
-    });
-    const pollJob = await approveDraft(store, pollDraft, approverId, when);
+        publish_blocked: false,
+      });
+      const pollJob = await approveDraft(store, pollDraft, approverId, when);
+      out.poll_job_id = pollJob?.id ?? null;
+    }
     out.job_id = job.id;
-    out.poll_job_id = pollJob?.id ?? null;
     out.send_at = when.send_at;
   } catch (error) {
     out.error = error.message;
     delete out.job_id;
     // 承認した本投稿の job は、item が notified でないと claim で止まる（transition_sns_x_send の auto_stopped）
-    for (const row of [item, pollItem])
+    for (const row of [item, pollItem].filter(Boolean))
       await store
         .updateItem(row.id, "notified", {
           state: "held_manual",
-          held_reason: `投票のリプの自動の承認に失敗: ${error.message.split("\n")[0]}`,
+          held_reason: `${pollItem ? "投票のリプの" : ""}自動の承認に失敗: ${error.message.split("\n")[0]}`,
         })
         .catch((updateError) => {
           // item が notified のまま。次の呼び出しで superseded にして作り直す
@@ -1073,7 +1097,8 @@ async function variantStatus(raceId, variant, store, kind) {
 }
 
 /**
- * 送った時刻・tweet id（hq の記録用）。本投稿の状態に、投票のリプ（poll）・展示後のリプ（reply）の状態を添える。本投稿が無ければ null。
+ * 送った時刻・tweet id（hq の記録用）。本投稿の状態に、投票のリプ（poll）・展示後のリプ（reply）の状態を添える（無ければ null。
+ * どちらも任意で、本投稿の完了はリプを待たない。BOA-1208）。本投稿が無ければ null。
  * kind は KINDS のキー（既定は優勝戦）
  */
 export async function finalsStatus(
@@ -1136,10 +1161,12 @@ export function resultLine(
   status = null,
   { waited = Boolean(status) } = {},
 ) {
+  // 投票のリプを待つのは、この push が投票のリプを作った（待った結果に poll がある）ときだけ（BOA-1208）
   const pollPending =
     result.part !== "reply" &&
     status?.job_state === "posted" &&
-    status.poll?.job_state !== "posted";
+    status.poll != null &&
+    status.poll.job_state !== "posted";
   const outcome = result.reasons?.length
     ? "rejected"
     : result.already

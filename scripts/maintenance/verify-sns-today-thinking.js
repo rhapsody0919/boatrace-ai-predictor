@@ -1251,3 +1251,45 @@ test("優勝戦・数字で見たら・/today の claim は 188 と同じ結果�
     await base.close();
   }
 });
+test("BOA-1208: poll・poll_text の無い today_thinking_image は通り、本投稿だけを作る（投票のリプの item・下書きなし、取り置きは1本）。reply も無くても --status は完了", async () => {
+  const { poll: _poll, poll_text: _pollText, ...noPoll } = bundle();
+  assert.deepEqual(checkTodayThinkingImage(noPoll, riskRules), []);
+  // 片方だけは拒否（半端な束を送らない）
+  assert.match(
+    checkTodayThinkingImage(bundle({ poll_text: undefined }), riskRules).join(),
+    /poll_text が無い/,
+  );
+  const main = await push(noPoll);
+  assert.equal(main.reasons, undefined, JSON.stringify(main));
+  assert.equal(main.kind, "today_thinking");
+  assert.ok(main.job_id);
+  assert.equal(main.poll_draft_id, undefined);
+  assert.equal(main.poll_job_id, undefined);
+  assert.deepEqual(slotAsked, [["today_thinking", 1]]);
+  assert.deepEqual(
+    (
+      await all(
+        "SELECT kind, variant, state FROM sns_auto_send_items ORDER BY variant",
+      )
+    ).map((i) => [i.kind, i.variant, i.state]),
+    [["today_thinking", "thinking", "notified"]],
+  );
+  assert.deepEqual(await counts(), { drafts: 1, items: 1, jobs: 1, saved: 4 });
+  assert.equal(
+    (
+      await first(
+        "SELECT count(*) n FROM sns_x_send_jobs WHERE parent_job_id IS NOT NULL",
+      )
+    ).n,
+    0,
+  );
+  await setClock(NOW);
+  await post(main.job_id, "1890000000000000061", "2037-10-26T07:15:30Z");
+  const status = await finalsStatus(RACE, { store, kind: "today_thinking" });
+  assert.equal(status.job_state, "posted");
+  assert.equal(status.poll, null);
+  assert.equal(status.reply, null);
+  const line = resultLine(RACE, main, status);
+  assert.equal(line.code, 0);
+  assert.match(line.text, /"outcome":"posted"/);
+});
