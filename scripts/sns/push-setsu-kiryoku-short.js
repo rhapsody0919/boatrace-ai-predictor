@@ -150,9 +150,13 @@ export function mp4Info(bytes) {
         if (off + 8 <= at + size) {
           const w = view.getUint32(off) / 65536;
           const h = view.getUint32(off + 4) / 65536;
+          // 表示の行列（幅・高さの直前の36バイト、先頭の a・b は 16.16）が 90度・270度の回転なら、見える縦横は入れ替わる
+          const a = view.getInt32(off - 36) / 65536;
+          const b = view.getInt32(off - 32) / 65536;
+          const rotated = a === 0 && Math.abs(b) === 1;
           if (w > 0 && h > 0 && info.width == null) {
-            info.width = w;
-            info.height = h;
+            info.width = rotated ? h : w;
+            info.height = rotated ? w : h;
           }
         }
       }
@@ -549,8 +553,11 @@ export async function pushSetsuKiryokuShort(
   try {
     bytes = await readBytes(path.join(folder, name));
   } catch (error) {
-    if (error?.code && error.code !== "ENOENT")
-      return reject([`${name} を読めない（${error.code}: ${error.message}）`]);
+    // 無い（ENOENT）は checkVideo が「無い」と書く。それ以外（権限・I/O・code の無い失敗）は原因を残す
+    if (error?.code !== "ENOENT")
+      return reject([
+        `${name} を読めない（${error?.code ?? "code なし"}: ${error?.message ?? error}）`,
+      ]);
   }
   const videoReasons = checkVideo(name, bytes);
   if (videoReasons.length) return reject(videoReasons);
@@ -608,6 +615,17 @@ export async function pushSetsuKiryokuShort(
   hash.update(bytes);
   const revision = hash.digest("hex").slice(0, 32);
   const publicUrl = descriptionLink(bundle.youtube.description, venueCode).url;
+  const control = controls.youtube;
+  const auto = Boolean(control?.mode === "auto" && control?.auto_approver_id);
+  // この型は自動の道だけで送る。自動モードでなければ何も書かない（held_manual の下書きを毎回積まない。個別承認で1日1本の守りを外さない）
+  if (writes && !auto)
+    return {
+      setsu_id: setsuId,
+      manual: true,
+      reason:
+        "youtube の mode が auto でない（この型は自動の道だけで送る）ので何も書かなかった",
+      ...extra,
+    };
   if (!writes)
     return {
       setsu_id: setsuId,
@@ -615,6 +633,7 @@ export async function pushSetsuKiryokuShort(
       enabled,
       // --dry-run でなく、許可が off なので書かなかった（exit 3）
       disabled: !dryRun,
+      auto,
       revision,
       when,
       public_url: publicUrl,
@@ -634,8 +653,6 @@ export async function pushSetsuKiryokuShort(
   const videoPath = `setsu-kiryoku-short/${bundle.date}/${venueCode}/${revision}.mp4`;
   await store.saveFile(videoPath, bytes);
   const checkedAt = now.toISOString();
-  const control = controls.youtube;
-  const auto = control?.mode === "auto" && control?.auto_approver_id;
   const draft = await store.insertDraft(
     draftRow(bundle, {
       revision,
@@ -646,25 +663,39 @@ export async function pushSetsuKiryokuShort(
       publicUrl,
     }),
   );
-  const item = await store.insertItem(
-    itemRow({
-      setsuId,
-      draftId: draft.id,
-      when,
-      state: auto ? "notified" : "held_manual",
-      checkedAt,
-      heldReason: auto
-        ? null
-        : "自動モードでない（この型は自動の道だけで送る）",
-    }),
-  );
+  // 下書きを公開保留にする（承認できない形に倒す）。item が入らなかった・承認に落ちた下書きを、管理画面の個別承認で送らないため
+  const blockDraft = (why) =>
+    store
+      .updateDraft(draft.id, { publish_blocked: true })
+      .catch((error) =>
+        console.error(
+          `下書き ${draft.id} を公開保留にできない（${why}）: ${error.message}`,
+        ),
+      );
+  let item;
+  try {
+    item = await store.insertItem(
+      itemRow({
+        setsuId,
+        draftId: draft.id,
+        when,
+        state: "notified",
+        checkedAt,
+      }),
+    );
+  } catch (error) {
+    // 同じ日に並行して入れた束が先に一意の索引（193 の setsu_day）に入った等。下書きを残すと個別承認で送れてしまう
+    await blockDraft("item を作れない");
+    throw error;
+  }
   const out = {
     setsu_id: setsuId,
     draft_id: draft.id,
     item_id: item.id,
-    auto: Boolean(auto),
+    auto,
+    trial: control?.dry_run !== false,
   };
-  if (auto) {
+  {
     try {
       const snapshot = await createXSnapshot(draft, async (p) =>
         p === videoPath
@@ -682,6 +713,7 @@ export async function pushSetsuKiryokuShort(
       out.send_at = when.send_at;
     } catch (error) {
       out.error = error.message;
+      await blockDraft("自動の承認に失敗");
       // 承認に落ちた item は held_manual にして、次の呼び出しで作り直せるようにする（1日1本の索引から外れる）
       await store
         .updateItem(item.id, "notified", {
@@ -699,9 +731,7 @@ export async function pushSetsuKiryokuShort(
   }
   const line = out.send_at
     ? `youtube（Shorts）: ${jstTime(when.send_at)} に送る（期限 ${jstTime(when.expires_at)}）${control?.dry_run !== false ? "（試運転中: claim の前で止まる）" : ""}`
-    : out.error
-      ? `youtube（Shorts）: 自動の承認に失敗（送らない）: ${out.error}`
-      : "youtube（Shorts）: 自動モードでないので送らない";
+    : `youtube（Shorts）: 自動の承認に失敗（送らない。下書きは公開保留）: ${out.error}`;
   await notify(
     `SNS 節の機力（Shorts） ${setsuId}「${bundle.youtube.title}」\n${line}\n止めるには: ${STOP_SQL}`,
   ).catch((error) => console.error(`Slack に通知できません: ${error.message}`));
@@ -843,7 +873,12 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
           "sns_auto_send_control?select=channel,mode,dry_run,auto_approver_id,setsu_kiryoku_short_enabled",
         );
       } catch (error) {
-        if (!/HTTP 400/.test(error.message)) throw error;
+        // 列が無いときの 400（PostgREST の本文に列の名前が出る）だけを off に倒す。ほかの 400 は投げる
+        if (
+          !/HTTP 400/.test(error.message) ||
+          !error.message.includes("setsu_kiryoku_short_enabled")
+        )
+          throw error;
         console.error(
           "setsu_kiryoku_short_enabled の列が無い（マイグレーション 193 が未適用）。許可は off として扱う",
         );
@@ -994,7 +1029,8 @@ async function main() {
   }).catch(fail);
   console.log(JSON.stringify(result, null, 2));
   const status =
-    result.job_id && !args.includes("--no-wait")
+    // 試運転（youtube の dry_run が true）は送り手が claim しないので待たない（待つと期限＋90秒まで止まる）
+    result.job_id && !result.trial && !args.includes("--no-wait")
       ? await waitForSend({
           store,
           draftId: result.draft_id,

@@ -126,7 +126,13 @@ const FINAL = `${DAY}-13-12`;
 const SETSU_ID = `setsu:${DAY}:13`;
 
 /** 最小の MP4（ftyp と moov の mvhd（尺）・trak の tkhd（幅・高さ）だけ。検査はこの3つだけを読む） */
-function mp4({ width = 1080, height = 1920, seconds = 17, pad = 64 } = {}) {
+function mp4({
+  width = 1080,
+  height = 1920,
+  seconds = 17,
+  pad = 64,
+  rotate = false,
+} = {}) {
   const box = (type, payload) => {
     const out = new Uint8Array(8 + payload.length);
     new DataView(out.buffer).setUint32(0, out.length);
@@ -148,6 +154,9 @@ function mp4({ width = 1080, height = 1920, seconds = 17, pad = 64 } = {}) {
   new DataView(mvhd.buffer).setUint32(12, 1000);
   new DataView(mvhd.buffer).setUint32(16, seconds * 1000);
   const tkhd = new Uint8Array(84);
+  // 表示の行列（v0 の tkhd の40バイト目から）。a=1・b=0 は回転なし、a=0・b=1 は90度
+  new DataView(tkhd.buffer).setInt32(40, rotate ? 0 : 65536);
+  new DataView(tkhd.buffer).setInt32(44, rotate ? 65536 : 0);
   new DataView(tkhd.buffer).setUint32(76, width * 65536);
   new DataView(tkhd.buffer).setUint32(80, height * 65536);
   return cat(
@@ -989,6 +998,12 @@ test("動画の検査: MP4・縦・60秒まで・32 MiB まで。無い・横・
   assert.ok(
     checkVideo("v.mp4", mp4({ width: 1920, height: 1080 }))[0].includes("縦"),
   );
+  // 表示の行列で90度回すものは、見える縦横で判定する
+  assert.deepEqual(
+    checkVideo("v.mp4", mp4({ width: 1920, height: 1080, rotate: true })),
+    [],
+  );
+  assert.ok(checkVideo("v.mp4", mp4({ rotate: true }))[0].includes("縦"));
   assert.ok(checkVideo("v.mp4", mp4({ seconds: 61 }))[0].includes("60"));
   assert.deepEqual(
     checkVideo("v.mp4", mp4({ seconds: 60 })),
@@ -1080,16 +1095,63 @@ test("YouTube の日の上限とクォータ: ちょうど入る数は通し、1
   );
 });
 
-test("自動モードでなければ held_manual で job を作らない（exit 5）。自動の承認に失敗したら item を held_manual にする", async () => {
+test("自動モードでなければ何も書かない（何度入れても下書きを積まない、exit 5）。自動の承認に失敗したら item を held_manual・下書きを公開保留にする。item が入らなければ下書きを公開保留にして投げる", async () => {
   await db.exec("UPDATE sns_auto_send_control SET mode='manual'");
   const manual = await push();
-  assert.equal(manual.job_id, undefined);
-  assert.equal(
-    (await first("SELECT state FROM sns_auto_send_items")).state,
-    "held_manual",
-  );
+  await push(bundle(), { now: at("21:26:00") });
+  assert.equal(manual.manual, true);
+  assert.deepEqual(await counts(), NOTHING);
   assert.equal(resultLine(manual, null, { waited: false }).code, 5);
+  assert.match(resultLine(manual).text, /mode が auto でない/);
   await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
+  // 試運転（dry_run=true）は結果に trial を立てる（CLI は待たない）
+  await db.exec("UPDATE sns_auto_send_control SET dry_run=true");
+  const trial = await push();
+  assert.equal(trial.trial, true);
+  await db.exec(
+    "DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; UPDATE sns_auto_send_control SET dry_run=false",
+  );
+  await db.exec(
+    "ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER",
+  );
+  // item が入らない（並行して入れた束が先に1日1本の索引に入った等）: 下書きを公開保留にして投げる
+  const noItem = {
+    ...store,
+    insertItem: async () => {
+      throw new Error("duplicate key value violates unique constraint");
+    },
+  };
+  const g = {
+    "/f/bundle.json": new TextEncoder().encode(JSON.stringify(bundle())),
+    "/f/final_gap.mp4": VIDEO,
+  };
+  await assert.rejects(
+    pushSetsuKiryokuShort("/f", {
+      store: noItem,
+      readBytes: async (p) => g[p],
+      riskRules,
+      now: PUSHED_AT,
+    }),
+    /duplicate key/,
+  );
+  assert.equal(
+    (await first("SELECT publish_blocked FROM sns_drafts")).publish_blocked,
+    true,
+  );
+  await db.exec(
+    "ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER",
+  );
+  // 動画の読み取りの失敗は「無い」と書かず、原因を残す
+  const unreadable = await pushSetsuKiryokuShort("/f", {
+    store,
+    readBytes: async (p) => {
+      if (p.endsWith(".mp4")) throw new RangeError("too big");
+      return g[p];
+    },
+    riskRules,
+    now: PUSHED_AT,
+  });
+  assert.ok(unreadable.reasons[0].includes("読めない"), unreadable.reasons[0]);
   const failing = {
     ...store,
     approve: async () => {
@@ -1110,7 +1172,12 @@ test("自動モードでなければ held_manual で job を作らない（exit 
   const states = (
     await all("SELECT state FROM sns_auto_send_items ORDER BY created_at")
   ).map((i) => i.state);
-  assert.deepEqual(states, ["held_manual", "held_manual"]);
+  assert.deepEqual(states, ["held_manual"]);
+  assert.equal(
+    (await first("SELECT publish_blocked FROM sns_drafts")).publish_blocked,
+    true,
+    "承認に落ちた下書きは個別承認でも送れない形にする",
+  );
   assert.equal(resultLine(r, null, { waited: false }).code, 5);
 });
 
