@@ -889,6 +889,11 @@
       "guards": "新規テーブル・外部キーを導入する設計書（plan.md）のER図欠落"
     },
     {
+      "script": "verify-point-rank-daily.js",
+      "tier": "ci",
+      "guards": "得点率の日ごとの写し racer_series_points_daily（BOA-1210、マイグレーション192）。取得の対象日をキーに足して残し翌日に上書きしない、同じ日の再取得は値が変わった行だけ書く（NUMERIC の文字列表記でも変更なし）、表が無い間は飛ばして racer_series_points を書き続ける、ほかの読み書きの失敗は実行の失敗、192 の主キー・RLS・権限"
+    },
+    {
       "script": "verify-point-rank-parser.js",
       "tier": "ci",
       "guards": "今節得点率のパーサー（scripts/lib/pointRankParser.js、BOA-220/BOA-291）"
