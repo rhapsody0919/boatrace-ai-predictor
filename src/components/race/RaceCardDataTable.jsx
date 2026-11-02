@@ -6,6 +6,8 @@
  * 行定義はDataRaceTableと同じraceIndicators.jsxのbuildIndicatorRowsを共有する。
  */
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { racerPagePath } from "../../utils/racerPagePath";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
@@ -16,7 +18,14 @@ import "./RaceCardDataTable.css";
 
 const ALWAYS_VISIBLE_KEYS = ["winRate", "localWinRate", "motor"];
 
-function RaceCardDataTable({ raceId, players }) {
+const nameParts = (name) =>
+  splitRacerName(name).map((part, i) => (
+    <span key={i} className="rcdt-name-part">
+      {part}
+    </span>
+  ));
+
+function RaceCardDataTable({ raceId, players, linkRacerNames = false }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   // expanded=falseの間はraceIdの代わりにnullを渡し、フックの呼び出し順は
@@ -84,11 +93,13 @@ function RaceCardDataTable({ raceId, players }) {
                   {/* 姓と名を別の塊にして、折り返すなら境目で折る。1つの文字列だと
                       「小森信/雄」のように名前の途中で折れ、姓名の区切りを読み違える
                       （出走表の名前は姓と名の間を全角スペースで詰めてある。BOA-559） */}
-                  {splitRacerName(p.name).map((part, i) => (
-                    <span key={i} className="rcdt-name-part">
-                      {part}
-                    </span>
-                  ))}
+                  {linkRacerNames && p.racerId ? (
+                    <Link to={racerPagePath(p.racerId)} translate="no">
+                      {nameParts(p.name)}
+                    </Link>
+                  ) : (
+                    nameParts(p.name)
+                  )}
                 </th>
               ))}
             </tr>
