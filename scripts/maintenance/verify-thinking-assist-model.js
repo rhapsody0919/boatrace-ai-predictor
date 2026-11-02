@@ -14,6 +14,10 @@ import {
   parseAssistSession,
   serializeAssistSession,
 } from "../../src/utils/assistSession.js";
+import { build } from "esbuild";
+import { createRequire } from "node:module";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -167,13 +171,92 @@ const fewScope = sameClassScope({
 });
 const fewCard = roughCard(fewScope, na);
 check(
-  "NCR が30件未満なら NC（3,276件）に戻し、few で verdict は null（「件数少なめ」）",
+  "NCR が30件未満なら NC（3,276件）に戻し、few で verdict は null（D-37 を維持）",
   fewScope.kind === "NC" &&
     fewScope.cell.n === 3276 &&
     fewScope.few === true &&
     fewCard.b1.verdict === null &&
+    fewCard.manshu.verdict === null &&
     fewCard.few === true &&
     sameClassLabel(fewScope) === "全国・級の並びが同じ",
+);
+// BOA-893: 実際のカードを SSR し、NC の件数と NCR 不足の説明を分けて検査する。
+// ブラウザの見た目・親ページからの取得経路は E2E で別に確認する。
+const componentBundle = await build({
+  entryPoints: [path.join(here, "../../src/components/race/assist/RoughCard.jsx")],
+  bundle: true,
+  write: false,
+  platform: "node",
+  format: "cjs",
+  packages: "external",
+  jsx: "automatic",
+  loader: { ".css": "empty" },
+  define: { "import.meta.env": "{}" },
+});
+const componentModule = { exports: {} };
+new Function("require", "module", "exports", componentBundle.outputFiles[0].text)(
+  createRequire(import.meta.url),
+  componentModule,
+  componentModule.exports,
+);
+const RoughCard = componentModule.exports.default;
+const renderRough = (scope, inCautionMode, inCaution = null) => {
+  const rough = roughCard(scope, na);
+  return renderToStaticMarkup(createElement(RoughCard, {
+    scope,
+    rough: inCaution ? roughWithInCaution(rough, inCaution) : rough,
+    lineup: null,
+    classes: null,
+    status: "ready",
+    onOpen: () => {},
+    inCautionMode,
+  }));
+};
+for (const [round, label] of [["junyu", "準優勝戦"], ["yusho", "優勝戦"]]) {
+  const fallback = sameClassScope({
+    today: { ...fx.today, round }, scenarios: fewScenarios,
+  });
+  for (const mode of [false, true]) {
+    const html = renderRough(fallback, mode);
+    check(
+      `${label} NCR29件→NC3,276件（注意度モード${mode}）: 件数少なめを付けず、広げた理由と矢印なしを説明`,
+      !html.includes("件数少なめ") && html.includes("3,276件") &&
+        html.includes(`${label}だけでは30件未満のため、全ラウンドの値（矢印なし）`),
+    );
+  }
+}
+const lowSampleHtml = renderRough(fewScope, true, {
+  pct: 51, n: 200, nonWin: 101, basePct: 45, lowSample: true,
+});
+check(
+  "注意度の lowSample の件数少なめは残し、万舟の NC3,276件には付けない",
+  (lowSampleHtml.match(/件数少なめ/g) ?? []).length === 1 &&
+    lowSampleHtml.includes("件数少なめ・勝率差が同じくらい 200件") &&
+    lowSampleHtml.includes("級の並びが同じ 3,276件"),
+);
+for (const n of [30, 112]) {
+  const scenarios = structuredClone(fx.scenario);
+  Object.assign(scenarios[keys.NCR].scenario.cells.all.forms.any, {
+    n, b1_win: Math.round(n * 0.58), manshu: Math.round(n * 0.21), payout_known: n,
+  });
+  const enough = sameClassScope({ today: fx.today, scenarios });
+  const html = renderRough(enough, true);
+  check(
+    `NCR${n}件は同じラウンドのまま、広げた理由を出さない`,
+    enough.kind === "NCR" && !enough.few &&
+      roughCard(enough, na).manshu.verdict !== null &&
+      html.includes(`級の並びが同じ準優勝戦 ${n}件`) &&
+      !html.includes("全ラウンドの値"),
+  );
+}
+const qualifying = sameClassScope({
+  today: { ...fx.today, round: "yosen" }, scenarios: fx.scenario,
+});
+check(
+  "予選（round=null）は NC のまま、広げた理由を出さない",
+  qualifying.round === null && !qualifying.few &&
+    roughCard(qualifying, na).manshu.verdict !== null &&
+    !renderRough(qualifying, true).includes("全ラウンドの値"),
 );
 const noNcrToday = {
   ...fx.today,
