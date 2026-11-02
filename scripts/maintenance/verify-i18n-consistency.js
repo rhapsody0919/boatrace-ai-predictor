@@ -284,6 +284,30 @@ for (const { term, pattern, use, row } of KO_RETIRED_TERMS) {
   }
 }
 
+// 7. レース確定後・中止のメタ情報（BOA-1185。接続は BOA-1200）
+checked += 1;
+for (const lang of LANGS) {
+  for (const state of ["Result", "Cancelled"]) {
+    for (const field of ["metaTitle", "metaDescription"]) {
+      const key = `raceDetailPage.${field}${state}`;
+      const value = locales[lang][key];
+      if (
+        typeof value !== "string" ||
+        !sameSet(placeholdersOf(value), new Set(["venue", "race", "date"]))
+      ) {
+        failures.push(`${lang}: ${key} に venue・race・date の差し込みが必要です`);
+      }
+      const word = state === "Result" ? "結果" : "中止";
+      if (
+        lang === BASE_LANG &&
+        (typeof value !== "string" || !value.includes(word))
+      ) {
+        failures.push(`${lang}: ${key} に「${word}」が必要です`);
+      }
+    }
+  }
+}
+
 if (failures.length > 0) {
   console.error(`NG: ${LANGS.length}言語のロケールが揃っていません`);
   for (const f of failures) console.error(`  - ${f}`);
