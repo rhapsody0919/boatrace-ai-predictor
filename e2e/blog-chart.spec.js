@@ -524,3 +524,21 @@ test.describe("ブログの図（PNG の書き出しの形、ADR 0099） @blog",
     expect(site).toBe("none");
   });
 });
+
+test("記事の題は JSON の1回だけで本文の先頭 h1 を描かない @blog", async ({ page }) => {
+  const post = JSON.parse(
+    readFileSync(
+      new URL("../src/data/blog-posts/suji-funaken-guide.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  await page.goto("/blog/suji-funaken-guide");
+  const header = page.locator(".blog-post-header h1");
+  await expect(header).toHaveCount(1);
+  await expect(header).toHaveText(post.title);
+  await expect(page.locator(".blog-post-content")).toBeVisible();
+  await expect(page.locator(".blog-post-content h1")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { level: 1, name: post.title, exact: true }),
+  ).toHaveCount(1);
+});

@@ -29,6 +29,11 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - 差し替えを止める前の job は sending・reconcile・posted だけ。transition_sns_x_send の hold は queued・sending から、fail は sending からしか移さず、外への POST は begin_post で reconcile にした後なので、試行1以上の held・failed は公開されていない（2026-10-31、BOA-1201、docs/db-migration/153:414-423・189:252-261）
 - 版の違いでは「締切が変わる前の材料で作り直した束」を見分けられない。push は束の文の「締切HH:MM」と今の締切を比べて拒否する（2026-10-31、BOA-1201、scripts/sns/push-full-picture.js の bakedDeadlineReasons）
 - YouTube の job の error_code の youtube_preflight_failed は preflight だけでなく、begin_post の前の全部の失敗（承認の hash・媒体・validate・親・preflight）で書かれる。原因は sns_send_events（191）の stage=send の reason（holdReasonOf の code）で見る（2026-10-31、BOA-1201、api/_lib/snsDeadlineQueue.js:151）
+- 送った item を sent にする 186 の置き換え6は bundle_import_id での NOT EXISTS なので、下書きにひもづく kind（full_picture・setsu_kiryoku_short 等）では空集合になり sent に移る。新しい下書きの kind に専用の枝は要らない（2026-11-02、system-architect、186:204-210）
+- 旗を持つ YouTube の kind は、DB では claim・check・begin_post（transition_sns_send_139）でしか旗を見ない。youtube_call・youtube_publish_begin（186 の youtube_call_guard）は旗を見ず、上げている最中の停止は JS の preflight（readCurrent）が頼り。DB で止めるなら mode=manual か item の停止（2026-11-02、system-architect、186:136-157、BOA-1209）
+- YouTube の新しい kind の期限・鮮度は kind で分けない。186 の youtube_call_guard が expiry_minutes・max_source_age_seconds を kind によらず照合するので、kind ごとの値にすると上げる前に止まる（2026-11-02、system-architect、BOA-1209、193）
+- push-full-picture.js は YouTube の日の上限を数えない。後ろの時刻の出し物を早く push すると、後から入った全貌が先に claim し、後ろの出し物の claim が「日次全体上限です」の RAISE で queued のまま鳴り続ける。上限を数える push は送る時刻の直前に流す（節の機力は15分前から）（2026-11-02、system-architect、BOA-1209、本番 daily_limit_youtube=9・10/31 の YouTube の試行8）
+- checkPublicDisplay は finalUrl の完全一致を求める。新しい screen_key を足すときは、リンク先を未認証の Chromium で開いて page.url() が変わらないことも確かめる（/venue/{n} は 2026-11-02 に一致、snsDeadlineQueue.js:27）
 
 ## 容量・上限
 - 取り置き（sns_x_kind_reserves）は旗が off でも・締切が過ぎても解けない。新しい出し物の取り置きと daily_limit_x はマイグレーションに入れず、旗 on と同じトランザクションで、その日の最初の X 送信より前に当てる（先に入れると他の出し物の残りを食う）（2026-10-27、BOA-1169、ADR-0094 の 182 の追記の (2)・189 のヘッダー）
@@ -68,3 +73,16 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - claim が日次の上限で例外になると、job は queued のまま残り、runner が2分ごとに Slack へ「送信が止まった」を送り続ける。全貌の YouTube が1レース2件になると daily_limit_youtube=2 は1日1レースで使い切る（2026-10-20、system-architect、158:169・snsSendRunner.js:203-210、本番の値は同日の読み取り）
 - 全貌の束から X を外す（`channels`、BOA-1167）ときも、完全版・Shorts の送る時刻のずらし（X から4分・8分）は残す。Shorts の受付の上限（締切の50分前）がこの並びの上で計算されており、ずらしを詰めると別のレース・別の型の X と同じ送信の実行に重なりやすい（2026-10-27、push-full-picture.js の OFFSET_MIN・SHORTS_LATEST_BEFORE_MIN）
 - push-full-pictureの拒否理由をnotifyのthrow/reject後も保持できることと、CLIがWebhookのHTTP失敗を検出することは別に検証する。fetchは非2xxだけではrejectしないため、注入notifyの合格だけで実配達を保証しない（2026-10-21、BOA-909、scripts/sns/push-full-picture.js・scripts/maintenance/verify-sns-full-picture.js）
+- snsDraftDiff は source_data 欠落を空オブジェクトにし、長文分岐は共通前後を除いた長さの積が1000000を超えたときだけ使う。null・「100万以上」とする記述とは一致しない（2026-10-25、BOA-1083、verify-sns-draft-diff.js の KNOWN_GAPS）。
+- hqのpushとVercelの送り手は別々に配備される。snapshot に poll など新しいキーを足したら、送り手の本番対応を確認してから許可の旗を入れる。古い送り手は未知のキーを無視して送る（2026-10-26、system-architect、PR #1944）。
+- 親子の投稿を順に承認するときは、親の予定を受領の2分後にして、子の承認前に親が claim される窓を避ける（2026-10-26、PR #1944 の /code-review）。
+- sns_send のリースは300秒で、前の実行が長いと次の2回の起動が lease_held で飛ぶ。scheduled_at=今でも即時送信は保証されず、約7分待つ場合を期限設計に入れる（2026-10-26、system-architect、registry.js・cronWrapper.js）。
+- sns_send のcron最終起動は22:58 JST。締切数分前に送る型は、締切が約23:03より後のレースを扱えない場合があるため、型の先行分数と最終起動を照合する（2026-10-26、vercel.json、PR #1941）。
+- stop_sns_auto_item の158の定義は race・digest の下書きだけを公開保留へ戻す。full_picture・finals_image は送信が auto_stopped で止まっても、下書きの状態は戻らない（2026-10-26、system-architect、158_sns_lanes_digest_period.sql）。
+- 送り終わりを待つ処理では reconcile を終端状態に含めない。begin_post から complete までの送信途中でも reconcile になるため、posted と外部投稿IDまで確認する（2026-10-26、PR #1941 の /code-review、push-finals-image.js）。
+- PT日付境界でclaimを止める場合はpreflight・token取得後にも時計を確認する。候補が次回走査から外れても待機alertを保持し、完了見込みには完全版・次回runner・Shortsまで含める（2026-10-26、BOA-973、verify-sns-send-runner.js）。
+- snsHeadless の screenshot のlabelは要素の先頭へ文字を焼き込む。ソナー図の札用なので、完成画像そのものを撮るページには渡さない（2026-10-27、PR #1984のコードレビュー、scripts/lib/snsTodayPlanner.js）。
+- claim が held を返すと runXSendJob はそのまま返り、runnerはreconcileだけを知らせる。claimへ新しいheld理由を足すときは一度きりの通知経路も足す（2026-10-27、system-architect、snsXSend.js・snsSendRunner.js、PR #1979）。
+- 取り込み時に今日のqueued数で上限を見る場合は、同じ下書きの前の版を除外する。148のトリガーは中身が変わった場合だけ古いjobを取り消すため、作り直しで自分の旧jobを重複して扱いうる（2026-10-27、system-architect、マイグレーション179・PR #1979）。
+- hqから受け取る時刻はZまたは±HH:MM付きに限る。時差なしの文字列はNodeでは端末、DBでは接続のTimeZoneで解釈され、別の時刻になりうる（2026-10-27、コードレビュー、push-research-image.js・PR #1978）。
+- sns-x-posts.csv の caption_text に残る {full_url} は、承認版の保存値の場合がある。送信直前に公開済み完全版URLへ置換するため、未置換の不具合と断定する前に実際の概要欄か fillFullUrl を確認する（2026-10-27、measurement、ADR-0094・api/_lib/snsDeadlineQueue.js）。

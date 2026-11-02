@@ -10,6 +10,7 @@ import {
   createYoutubeAnalyticsClient,
   ptDate,
   runSnsDaily,
+  setsuShortLink,
 } from "../lib/snsDailyRunner.js";
 import { createGa4Client, getServiceAccountToken } from "../lib/snsGa4.js";
 import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
@@ -56,6 +57,13 @@ const store = {
         [raceIds],
       )
     ).map((d) => ({ ...d, posted_at: d.posted_at?.toISOString() ?? null })),
+  setsuShortDrafts: async (since) =>
+    (
+      await all(
+        "SELECT id, posted_at, caption_text FROM sns_drafts WHERE format='setsu_kiryoku_short' AND platform='youtube' AND posted_at >= $1",
+        [since],
+      )
+    ).map((d) => ({ ...d, posted_at: d.posted_at.toISOString() })),
   existingDrafts: async (ids) =>
     (await all("SELECT id FROM sns_drafts WHERE id = ANY($1)", [ids])).map(
       (r) => r.id,
@@ -169,11 +177,48 @@ function mockYoutube(calls = [], { channelDays } = {}) {
   });
 }
 
+const SETSU_COLS = [
+  "date",
+  "landingPage",
+  "sessionSource",
+  "sessionMedium",
+  "sessionCampaignName",
+  "sessionManualAdContent",
+];
+function setsuReport(body, sessions) {
+  const filters = body.dimensionFilter.andGroup.expressions
+    .map((e) => e.filter)
+    .filter((f) => f && f.fieldName !== "hostName");
+  const hit = (row) =>
+    filters.every((f) => {
+      const v = String(row[SETSU_COLS.indexOf(f.fieldName)]);
+      const { matchType, value } = f.stringFilter;
+      return matchType === "FULL_REGEXP"
+        ? new RegExp(value).test(v)
+        : v.toLowerCase() === value.toLowerCase();
+    });
+  const byDay = new Map();
+  for (const row of sessions.filter(hit)) {
+    const d = byDay.get(row[0]) ?? { users: new Set(), sessions: 0 };
+    d.users.add(row[6]);
+    d.sessions += row[7];
+    byDay.set(row[0], d);
+  }
+  return [...byDay].map(([date, d]) => [date, d.users.size, d.sessions]);
+}
+
 // UTM の行: [日付, 流入元, campaign, content, term, 指標...]
-function mockGa4(calls = [], { utm = [], utmSonar = [], utmAssist = [] } = {}) {
+function mockGa4(
+  calls = [],
+  { utm = [], utmSonar = [], utmAssist = [], setsu = [] } = {},
+) {
   return async () => async (body) => {
     calls.push(body);
     const dims = body.dimensions.map((d) => d.name).join(",");
+    // 節の機力の Shorts: setsu はセッションの行 [日付, landingPage, source, medium, campaign, content, 人の ID, sessions]。
+    // GA4 と同じく、フィルタ（landingPage の正規表現・次元の完全一致、大文字小文字を区別しない）で絞り、日付ごとに人を重複なしで数える
+    if (JSON.stringify(body.dimensionFilter).includes("landingPage"))
+      return setsuReport(body, setsu);
     const sonar = JSON.stringify(body.dimensionFilter).includes("race_tab");
     if (JSON.stringify(body.dimensionFilter).includes("pagePath")) return utmAssist;
     if (dims === "date,sessionSource")
@@ -763,6 +808,161 @@ test("全貌の完全版の機能への導線（utm_content=レース ID/sonar�
       )
     ).length,
     0,
+  );
+});
+
+test("節の機力の Shorts（setsu_kiryoku_short）: 説明欄のリンクの utm_* と landingPage で下書きに結びつけ、投稿日と翌日だけ残す（BOA-1209）", async () => {
+  const link = (venue, content) =>
+    `節の機力\nhttps://www.boat-ai.jp/venue/${venue}?utm_source=youtube&utm_medium=shorts&utm_content=${content}\n#ボートレース`;
+  const ins = (format, platform, caption, postedAt) =>
+    first(
+      "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,status,posted_at) VALUES(gen_random_uuid(),$1,$2,'ja','節の機力',$3,'posted',$4) RETURNING id",
+      [format, platform, caption, postedAt],
+    );
+  // JST 10/13 21:30 と 10/14 21:30 に同じ会場・同じ utm で投稿（10/14 の流入は当日の b に付ける）
+  const a = (
+    await ins("setsu_kiryoku_short", "youtube", link(13, "final_gap"), "2026-10-13T12:30:00Z")
+  ).id;
+  const b = (
+    await ins("setsu_kiryoku_short", "youtube", link(13, "final_gap"), "2026-10-14T12:30:00Z")
+  ).id;
+  // 別の会場の投稿（10/14）
+  const c = (
+    await ins("setsu_kiryoku_short", "youtube", link(24, "motor_up"), "2026-10-14T12:30:00Z")
+  ).id;
+  // utm_medium・utm_content の無いリンクは結びつけない（同じ会場のページへの別の投稿の流入を拾わない）。
+  // X の節の機力（リンクなし）は GA4 の行を持たない
+  await ins("setsu_kiryoku_short", "youtube", "https://www.boat-ai.jp/venue/1?utm_source=youtube", "2026-10-14T12:30:00Z");
+  await ins("setsu_kiryoku", "x", "本文", "2026-10-14T12:30:00Z");
+  const calls = [];
+  const S = "(not set)";
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: mockYoutube(),
+    ga4: mockGa4(calls, {
+      setsu: [
+        ["20261013", "/venue/13", "youtube", "shorts", S, "final_gap", "u1", 2], // a の投稿日
+        ["20261013", "/venue/13", "youtube", "shorts", S, "final_gap", "u2", 1],
+        // b の投稿日（a の翌日でもある）。同じ人が campaign・大文字小文字・末尾の / の違う2つのセッションで来ても1人
+        ["20261014", "/venue/13", "youtube", "shorts", S, "final_gap", "u3", 1],
+        ["20261014", "/venue/13/", "YouTube", "Shorts", "x", "Final_Gap", "u3", 1],
+        ["20261015", "/venue/13", "youtube", "shorts", S, "final_gap", "u4", 1], // b の翌日
+        ["20261016", "/venue/13", "youtube", "shorts", S, "final_gap", "u5", 1], // b の翌々日は範囲の外
+        ["20261014", "/venue/13", "youtube", "referral", S, "final_gap", "u6", 1], // medium が違う
+        ["20261014", "/venue/13", "youtube", "shorts", S, "motor_up", "u7", 1], // content が違う
+        ["20261014", "/venue/24", "youtube", "shorts", S, "motor_up", "u8", 1], // c の投稿日
+        ["20261014", "/venue/1", "youtube", "(none)", S, S, "u9", 1], // utm の無い下書きの会場
+      ],
+    }),
+  });
+  // リンクごとに1回、次元は日付だけ（GA4 が人を重複なしで数える）
+  const qs = calls.filter((c2) => JSON.stringify(c2.dimensionFilter).includes("landingPage"));
+  assert.equal(qs.length, 2);
+  for (const q of qs) assert.deepEqual(q.dimensions.map((d) => d.name), ["date"]);
+  assert.match(JSON.stringify(qs[0].dimensionFilter), /"matchType":"FULL_REGEXP","value":"\^\/venue\/0\?13\/\?\$"/);
+  const got = (
+    await all(
+      "SELECT day::text, channel, draft_id, utm_content, metric_name, metric_value::float v FROM sns_channel_daily WHERE definition LIKE '%setsu_kiryoku_short%'",
+    )
+  ).map((r) => [
+    r.day,
+    r.channel,
+    { [a]: "a", [b]: "b", [c]: "c" }[r.draft_id] ?? r.draft_id,
+    r.utm_content,
+    r.metric_name,
+    r.v,
+  ]);
+  assert.deepEqual(
+    got.sort((p, q2) => JSON.stringify(p).localeCompare(JSON.stringify(q2))),
+    [
+      ["2026-10-13", "youtube", "a", "final_gap", "sessions", 3],
+      ["2026-10-13", "youtube", "a", "final_gap", "users", 2],
+      ["2026-10-14", "youtube", "b", "final_gap", "sessions", 2],
+      ["2026-10-14", "youtube", "b", "final_gap", "users", 1],
+      ["2026-10-14", "youtube", "c", "motor_up", "sessions", 1],
+      ["2026-10-14", "youtube", "c", "motor_up", "users", 1],
+      ["2026-10-15", "youtube", "b", "final_gap", "sessions", 1],
+      ["2026-10-15", "youtube", "b", "final_gap", "users", 1],
+    ],
+  );
+});
+
+test("節の機力の Shorts のリンクの読み取り: 会場のページだけ、utm_source・utm_medium・utm_content が要る、0 埋めと句読点", () => {
+  const q = "utm_source=youtube&utm_medium=shorts&utm_content=final_gap";
+  assert.deepEqual(
+    setsuShortLink(
+      `見て\nhttps://www.boat-ai.jp/venue/01?${q}）。\n#ボートレース`,
+    ),
+    {
+      venue: 1,
+      utm: {
+        sessionSource: "youtube",
+        sessionMedium: "shorts",
+        sessionManualAdContent: "final_gap",
+      },
+    },
+  );
+  assert.equal(
+    setsuShortLink(`https://www.boat-ai.jp/venue/13?${q}&utm_campaign=Setsu`)
+      .utm.sessionCampaignName,
+    "setsu",
+  );
+  for (const caption of [
+    "https://www.boat-ai.jp/venue/13?utm_source=youtube",
+    `https://www.boat-ai.jp/venue/13/meet/2026-10-10?${q}`,
+    `https://example.com/venue/13?${q}`,
+    "リンクなし",
+    null,
+  ])
+    assert.equal(setsuShortLink(caption), null, String(caption));
+});
+
+test("節の機力の Shorts の読み取りに落ちても、ほかの GA4 の行は書き、分かる理由で失敗として返す", async () => {
+  const result = await runSnsDaily(ctx(), {
+    store: {
+      ...store,
+      setsuShortDrafts: async () => {
+        throw new Error(
+          "日次の取り込みの DB の読み取りに失敗: HTTP 500 sns_drafts",
+        );
+      },
+    },
+    youtube: mockYoutube(),
+    ga4: mockGa4(),
+  });
+  assert.equal(result.outcome, "error");
+  assert.match(result.error, /GA4（節の機力の Shorts）: .*HTTP 500/);
+  assert.ok((await rows("source='site-analytics'")).length > 0);
+});
+
+test("節の機力の Shorts の下書きが無ければ GA4 を余分に呼ばない", async () => {
+  await db.query("DELETE FROM sns_drafts WHERE format LIKE 'setsu_kiryoku%'");
+  const calls = [];
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: mockYoutube(),
+    ga4: mockGa4(calls),
+  });
+  assert.equal(
+    calls.some((c) => JSON.stringify(c.dimensionFilter).includes("landingPage")),
+    false,
+  );
+});
+
+test("PostgREST の store: 節の機力の Shorts は format と platform で引き、説明欄を読む", async () => {
+  const urls = [];
+  const pg = createSnsDailyStore({
+    url: "https://db",
+    key: "k",
+    fetchImpl: async (url) => {
+      urls.push(decodeURIComponent(String(url)));
+      return Response.json([]);
+    },
+  });
+  await pg.setsuShortDrafts("2026-10-12T00:00:00+09:00");
+  assert.equal(
+    urls[0],
+    "https://db/rest/v1/sns_drafts?format=eq.setsu_kiryoku_short&platform=eq.youtube&posted_at=gte.2026-10-12T00:00:00+09:00&select=id,posted_at,caption_text",
   );
 });
 

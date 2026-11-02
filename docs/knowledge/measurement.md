@@ -65,3 +65,9 @@
 - sns-post-metrics.csvで投稿24時間後の累積値を使うときは、window=24hかつobserved_atが投稿24時間後以降の行を選ぶ。day_endは別窓で、23:00 JSTの取得前に作った写しには当日分が無い。窓名・観測時刻・写しの取得時刻を照合し、未取得を0にしない（2026-10-22、measurement、company-in/sns-db/sns-post-metrics.csv）
 - Search ConsoleのURL検査で429などの取得失敗が特定の群に偏ると、indexed÷checkedは群全体の代表値にならない。再検査後も群ごとのerrors件数を併記し、取得失敗のある群と全件取得できた群の率を同条件として比較しない（2026-10-23、measurement、company-in/growth-main/2026-10-18/summary.json・inspect-retry.jsonl）
 - gsc_daily.jsonの更新待ちで日別値が欠ける場合、growth-mainのgsc-date.jsonを補完候補にできる。使う前に重なる日の値が一致するか確認し、補完した日と出典・更新時点を残す。一部の日の一致を将来の更新分まで同値である保証にしない（2026-10-23、measurement、company-in/growth-main/2026-10-18/gsc-date.json・hq/state/growth-dashboard/gsc_daily.json）
+- day_end の23:00 JSTより前に作った写しでは当日分が欠ける。翌周で観測値の有無を確認し、取得できた値を追記する。先に残した欠測行は消さず、観測時刻と補完の経過を追えるようにする（2026-10-24、measurement、sns-post-metrics.csv の day_end 行）。
+- GA4 の比較には9/29・10/1以外に、2026-08-29の同意前読み込み経路離脱、8/31の source による流入元上書き開始、9/15の link_source への是正も考慮する。8/29の影響量は未観測で、是正前の流入元は後の直接訪問に残る（2026-10-24、BOA-905、scripts/lib/ga4MeasurementBreaks.js）。
+- sns-channel-daily のUTM別行はGA4が行を返した日だけ作られる。行なしを投稿の sessions=0と断定せず欠測理由を残し、チャネル全体の値を代入しない。全体には他の投稿のUTMも含まれる（2026-10-25、measurement、sns-channel-daily.csv・scripts/lib/snsDailyRunner.js）。
+- sns_daily のYouTube日次は、取得成功でPTのD−3の日自体に行が無ければ件数3指標を0、平均2指標をNULLにする。規則による0の理由はrunnerのreportへ残し、DBではAPI明示0と区別しない（2026-10-26、BOA-998の回答1・2、snsDailyRunner.js・verify-sns-daily-runner.js）。
+- Xの返信・引用は取得済みの public_metrics.reply_count・quote_count を使えるため追加呼び出しは不要。reply_count は自分の返信も含むので、外部の反応数と同一視しない（2026-10-27、PR #1986、scripts/lib/snsMetricsRunner.js）。
+- 全貌のUTM別機能利用を保存するときは、訪問・ソナーの応答に無く機能の応答だけにある utm_content も下書き検索へ含める。投稿日・翌日の照合に必要な下書きが見つからず、利用行を落とすため（2026-10-26、BOA-1154、snsDailyRunner.js・verify-sns-daily-runner.js）。

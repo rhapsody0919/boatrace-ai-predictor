@@ -15,7 +15,8 @@
  *     二重にしない）
  *   - 失敗: 連続20件の失敗（サイトの停止・書き込みの系統的な失敗）と、新規プロフィールの保存のDBエラーは、実行の失敗
  *     （cursor を進めず、次の起動が同じチャンクをやり直す）。散発的な失敗は、進捗を止めない。サイクルの完了時に、期別成績の
- *     失敗率が MAX_SEASON_FAIL_RATE（従来の CLI と同じ5%）を超えていれば、last_report.alerts → scrape-monitor がSlackへ通知する
+ *     対象100人以上は失敗率が MAX_SEASON_FAIL_RATE（従来の CLI と同じ5%）超、100人未満は失敗5人以上で、
+ *     last_report.alerts → scrape-monitor がSlackへ通知する
  *   - git push（profile-scrape-report.json）はしない。結果は scrape_job_state.last_report
  *   - 起動しない日の未処理を誤報しないため、レジストリの runDaysOfMonth を monitor が見る
  *   - 手動の動作確認: GET /api/cron/racer-profiles?chunk=N（Authorization: Bearer {CRON_SECRET}）で、1回の処理人数を N 人にする
@@ -33,6 +34,10 @@ export const RACER_PROFILES_CHUNK = 300;
 export const RACER_PROFILES_CONCURRENCY = 4;
 /** 0件エラーの判定に必要な、期別成績を取得した選手数の下限 */
 const MIN_SAMPLE_FOR_ZERO_GUARD = 10;
+/** 率で通知を判定する母数の下限。目安（根拠なし） */
+const MIN_SAMPLE_FOR_SEASON_FAIL_RATE = 100;
+/** 小母数で通知を出す失敗人数。目安（根拠なし） */
+const SMALL_SAMPLE_SEASON_FAIL_COUNT = 5;
 /** 手動の動作確認（?chunk=N）の上限 */
 const MAX_CHUNK_OVERRIDE = 2000;
 /** 期別成績の失敗率の通知を出す期間（日）。次の月次の実行まで last_report が残るため */
@@ -199,7 +204,11 @@ export async function runRacerProfilesJob(
   const alerts = [];
   if (done && nextStats.seasonTargets > 0) {
     const failRate = nextStats.seasonFailed / nextStats.seasonTargets;
-    if (failRate > MAX_SEASON_FAIL_RATE) {
+    const shouldAlert =
+      nextStats.seasonTargets >= MIN_SAMPLE_FOR_SEASON_FAIL_RATE
+        ? failRate > MAX_SEASON_FAIL_RATE
+        : nextStats.seasonFailed >= SMALL_SAMPLE_SEASON_FAIL_COUNT;
+    if (shouldAlert) {
       alerts.push({
         key: "season_fail_rate",
         // 月次の1回きりの事象のため、last_report が残る間ずっと再通知しない（monitor は until を過ぎた通知を出さない）

@@ -285,7 +285,36 @@ for (const { term, pattern, use, row } of KO_RETIRED_TERMS) {
   }
 }
 
-// 7. 平均ST（公式）の集計期間は、出走表の全国勝率と別（BOA-1192）。
+// 7. レース確定後・中止のメタ情報（BOA-1185。接続は BOA-1200）
+const raceMetaKeys = [
+  "metaTitleResult",
+  "metaDescriptionResult",
+  "metaTitleCancelled",
+  "metaDescriptionCancelled",
+];
+const raceMetaPlaceholders = new Set(["venue", "race", "date"]);
+for (const lang of LANGS) {
+  for (const key of raceMetaKeys) {
+    checked += 1;
+    const fullKey = `raceDetailPage.${key}`;
+    const value = locales[lang][fullKey];
+    if (typeof value !== "string" || value.trim() === "") {
+      failures.push(`${lang}: ${fullKey} がありません、または空です`);
+      continue;
+    }
+    if (!sameSet(placeholdersOf(value), raceMetaPlaceholders)) {
+      failures.push(`${lang}: ${fullKey} の差し込みは venue・race・date が必要です`);
+    }
+    if (lang === BASE_LANG) {
+      const word = key.endsWith("Result") ? "結果" : "中止";
+      if (!value.includes(word)) {
+        failures.push(`${lang}: ${fullKey} に「${word}」がありません`);
+      }
+    }
+  }
+}
+
+// 8. 平均ST（公式）の集計期間は、出走表の全国勝率と別（BOA-1192）。
 // キー・変数の一致だけでは同じ誤訳を4言語に展開した回帰を検出できない。
 const OFFICIAL_ST_KEYS = [
   "aiCopy.note.avgSt",

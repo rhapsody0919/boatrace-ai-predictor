@@ -200,6 +200,11 @@
       "guards": "ブログ画像の実寸の表（BOA-908）。JPEG のヘッダーから幅と高さを読む処理（SOF0・SOF2、DHT を取り違えない）、public/images/blog の全画像が読めること、以前の手書きの表と同じ値（抜き取り）、記事の本文と JSON の image が参照する画像がすべて表にあること、vite.config.js の仮想モジュールと BlogPost.jsx の読み込み"
     },
     {
+      "script": "verify-blog-leading-h1.js",
+      "tier": "ci",
+      "guards": "ブログ本文の先頭 h1 だけを除く。全記事で h2・h3 と FAQ を保持し、ReactMarkdown の入力だけに適用する（BOA-919）"
+    },
+    {
       "script": "verify-blog-markdown-sanitize.js",
       "tier": "ci",
       "guards": "ブログ記事の HTML の許可リスト（src/utils/blogMarkdownSanitize.js、rehype-sanitize）。記事に紛れた script・iframe・form・base・meta refresh・embed・object・style 属性・on* 属性・javascript: の URL が描いた HTML に残らないこと、ブログの図のタグ ryujin-chart（src・rows）が残ること、既存の全記事の描画が許可リストを入れる前と同じこと"
@@ -249,7 +254,7 @@
     {
       "script": "verify-bot-race-function.js",
       "tier": "ci",
-      "guards": "ボット向け HTML のレース詳細の関数（ADR 0089 第2段・BOA-848。api/bot-page/race/[id].js・[lang]/race/[id].js、中身は api/_lib/botRace.js）。本番の /api/predictions のフィクスチャで、head が人のレース詳細と同じ関数（src/utils/raceDetailHeading.js）の値・hreflang 4言語・JSON-LD が共通の3つとパンくず、本文が人の初期表示の部分集合（パンくず・グレードと節タイトル・会場名と NR・種別・日目（他レースで補う、丸一日中止なら出さない）・レース一覧へのリンク・データ分析結果の見出しと締切（結果が出たら消す））、出走表の選手・オッズ・払戻・着順・タイムが入らないこと（ADR 0089 決定7）、本日（JST）の id だけで他は 404、取得の失敗・0件は 503、無い id は 404、60秒の使い回し、人の RaceDetailPage が同じ関数を使い続けていること"
+      "guards": "ボット向け HTML のレース詳細の関数（ADR 0089 第2段・BOA-848。api/bot-page/race/[id].js・[lang]/race/[id].js、中身は api/_lib/botRace.js）。本番の /api/predictions のフィクスチャで、head が人のレース詳細と同じ関数（src/utils/raceDetailHeading.js）の値・hreflang 4言語・JSON-LD が共通の3つとパンくず、本文が人の初期表示の部分集合（パンくず・グレードと節タイトル・会場名と NR・種別・日目（他レースで補う、丸一日中止なら出さない）・レース一覧へのリンク・データ分析結果の見出しと締切（結果が出たら消す）・タブの外の 1R〜12R の帯と出走6艇（/racer/N へのリンクと級別、ja 専用で接頭辞なし）・SG/G1/G2 の節のページへのリンク（人の RaceNumberStrip・RaceEntrantsSummary と同じ needsMeetSeries・meetLinkStartDateOf・seriesCoveringDate・entrantRowsOf。一般戦・G3 は節を引かない、節が引けなければリンクだけ外して 200、中止は出走6艇を出さない、BOA-1189 GS01））、出走表の勝率・モーター・オッズ・払戻・着順・タイムが入らないこと（ADR 0089 決定7）、本日（JST）の id だけで他は 404、取得の失敗・0件は 503、無い id は 404、60秒の使い回し、人の RaceDetailPage が同じ関数を使い続けていること"
     },
     {
       "script": "verify-bot-today-function.js",
@@ -397,6 +402,11 @@
       "script": "verify-e2e-recorded-network.js",
       "tier": "ci",
       "guards": "e2e/**/*.js（recordings/を除く）が録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと。コメント・文字列・正規表現リテラルの判定はverify-e2e-no-unroute.jsと共有するstripNonCode（scripts/lib/stripNonCode.js）で行い、文字列中の`//`をコメントの開始と誤らないことを自己テストで確かめる（BOA-663）。fixtures.js自身が正当に使う箇所はverify-e2e-recorded-network-allowlist.jsonに理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する"
+    },
+    {
+      "script": "verify-e2e-replay-har-path.js",
+      "tier": "ci",
+      "guards": "E2E の録画の再生（e2e/fixtures.js の replayHar）が HAR のコピーを api.har と同じ場所に置き、content._file を相対パスのまま渡すこと。Playwright 1.64 の routeFromHAR は _file が HAR の場所の外（絶対パスを含む）を指すと応答を返さず、全ての録画が空になる（#2102）。Playwright の Chromium がある所では、同じ場所の相対パスは読め・別の場所の絶対パスは読めないことを実測する（無ければ SKIP）"
     },
     {
       "script": "verify-e2e-rerun.js",
@@ -816,7 +826,7 @@
     {
       "script": "verify-odds-live-api.js",
       "tier": "ci",
-      "guards": "オッズのライブ取得API（api/odds/live.js、BOA-487）: オッズ更新時間・締切時オッズの検出、票0を0で返す解析、当日のみ受け付けるクエリ検証、Cache-Control"
+      "guards": "オッズのライブ取得API（api/odds/live.js、BOA-487）: オッズ更新時間・締切時オッズの検出、票0を0で返す解析、当日のみ受け付けるクエリ検証、Cache-Control。api/odds/live.js・scripts/lib/liveOdds.js が race_odds に書かないこと（字句で書き込み・rpc・書くモジュールの import を探す。読むのは許す、BOA-1149 の土台）"
     },
     {
       "script": "verify-odds-math.js",
@@ -887,6 +897,11 @@
       "script": "verify-plan-erd.js",
       "tier": "ci",
       "guards": "新規テーブル・外部キーを導入する設計書（plan.md）のER図欠落"
+    },
+    {
+      "script": "verify-point-rank-daily.js",
+      "tier": "ci",
+      "guards": "得点率の日ごとの写し racer_series_points_daily（BOA-1210、マイグレーション192）。取得の対象日をキーに足して残し翌日に上書きしない、同じ日の再取得は値が変わった行だけ書く（NUMERIC の文字列表記でも変更なし）、表が無い間は飛ばして racer_series_points を書き続ける、ほかの読み書きの失敗は実行の失敗、192 の主キー・RLS・権限"
     },
     {
       "script": "verify-point-rank-parser.js",
@@ -1054,12 +1069,12 @@
     {
       "script": "verify-racer-career-stats.js",
       "tier": "ci",
-      "guards": "BOA-1193 の勝率用着順点・優勝戦加点・出走の分母・丸め・着回数と優出優勝を合成データで固定する。実 fan 照合は別の集計表の関門で行う"
+      "guards": "BOA-1193 の勝率用着順点・優勝戦加点・出走の分母・丸め・着回数と優出優勝を合成データで固定する。優出は S0・K0・L0 を含め NULL を除く、優勝戦は isFinalStage v2＋「オオムラGP」「関ヶ原決戦」（公式の数え方、kb 20,916行で照合済み）。実 fan 照合は別の集計表の関門で行う"
     },
     {
       "script": "verify-racer-career-tables.js",
       "tier": "ci",
-      "guards": "選手ページの集計の表（マイグレーション190、GS00 案2）と書き手（scripts/lib/racerCareerJob.js・api/cron/racer-career-main.js・racer-career-backfill.js）。PGlite で 3つの RPC の着のコード・期・優勝戦（isFinalStage v2、stage_kind を使わない）・グレードの補正（QC・CC・唐津）・境目（kb ≤ 2025-12-02、本体 ≥ 2025-12-03）・権限（5表は匿名の SELECT だけ、RPC は service_role だけ）、kb の1回の計算と main の毎晩の計算の冪等・消えたセルの削除と多すぎるときの停止・kb の指紋の見張り、レジストリと vercel.json の時刻、照合の関門の比べ方"
+      "guards": "選手ページの集計の表（マイグレーション190、GS00 案2）と書き手（scripts/lib/racerCareerJob.js・api/cron/racer-career-main.js・racer-career-backfill.js）。PGlite で 3つの RPC の着のコード・期・優勝戦（isCareerFinalStage＝isFinalStage v2＋2つの名前、stage_kind を使わない）・グレードの補正（QC・CC・唐津）・境目（kb ≤ 2025-12-02、本体 ≥ 2025-12-03）・権限（5表は匿名の SELECT だけ、RPC は service_role だけ）、kb の1回の計算と main の毎晩の計算の冪等・消えたセルの削除と多すぎるときの停止・kb の指紋の見張り、レジストリと vercel.json の時刻、照合の関門の比べ方"
     },
     {
       "script": "verify-racer-condition-stats.js",
@@ -1317,9 +1332,14 @@
       "guards": "セッション長の検知（session-progress.js）。長くなっても黙るようになっていないこと"
     },
     {
+      "script": "verify-setsu-exhibition.js",
+      "tier": "ci",
+      "guards": "節の展示の読む口（BOA-1221）: 会場ごとに最新の節1つ（連続開催で前の節を混ぜない）・レース内の同タイム順位・欠場・欠損・中止（結果ありは除かない）・順延3日・級・初日のモーター2連率・1Rの締切・優勝戦の出場者（出走表/準優1・2着/空）・取得範囲・CLI（日付・stdout は JSON だけ）。外部接続なし（手元の偽の PostgREST のみ）"
+    },
+    {
       "script": "verify-setsu-kiryoku.js",
       "tier": "ci",
-      "guards": "YouTube Shorts「節の機力」（sns-video-studio/remotion/src/setsuKiryoku/、型 motor_gap・motor_up・final_six と「準優に残れるか」border）: 見本の bundle が検査を通る、尺が約15秒（border は3章）、border の3人・順位・得点率・要る着の形・同率（tied は bool か無し、true で「同率20位」）、検査が禁止語（risk-rules.json、説明欄末尾の #競艇 は例外）・言い切りの語（足が良い・上がった・化けた・節イチ）・リポジトリの禁止語（数える・似た・ふつう・いつも）・z・画面の文の bundle に無い数・2連率の下から何番目と all の食い違い・前半後半の平均とコースと runs の食い違い・6艇でない・走の値の範囲・必須の欄を落とす、hook・close が36px以上で y1400 より上、2連率の札が x60〜900。外部接続なし"
+      "guards": "YouTube Shorts「節の機力」（sns-video-studio/remotion/src/setsuKiryoku/、型 motor_gap・motor_up・final_gap と「準優に残れるか」border）: 見本の bundle が検査を通る、尺が約15秒（border は3章、final_gap は17秒・5章）、全部の型の名前と級 class（欠けたら止める、border の名前と級が得点率に重ならない）・hq の final_gap の束（texts・grade 無し）をそのまま通す・final_gap の date と final_date と when の照合・final_gap の名前と級・主役と6人と全機の2連率の照合・主役の選び・締め・final_six を選べない、border の3人・順位・得点率・要る着の形・同率（tied は bool か無し、true で「同率20位」）、検査が禁止語（risk-rules.json、説明欄末尾の #競艇 は例外）・言い切りの語（足が良い・上がった・化けた・節イチ）・リポジトリの禁止語（数える・似た・ふつう・いつも）・z・画面の文の bundle に無い数・2連率の下から何番目と all の食い違い・前半後半の平均とコースと runs の食い違い・6人でない・走の値の範囲・必須の欄を落とす、hook・close が36px以上で y1400 より上、2連率の札が x60〜900。外部接続なし"
     },
     {
       "script": "verify-sexagenary-cycle.js",
@@ -1470,6 +1490,16 @@
       "script": "verify-sns-send-runner.js",
       "tier": "ci",
       "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は毎回 DB の状態から report.alerts に作る（保存の前に落ちた実行・sweep と runner の時刻のずれでも漏らさない）・送る前の検査とトークンの失敗は見直すまで期限つきで残す・その場の通知が届かなければ report.alerts に期限つきで持ち越す、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし。BOA-1172: サムネイルの失敗でも YouTube は posted まで進め、理由を report.jobs の thumbnail_error と Slack に1回（届かなければ report.alerts）。BOA-1201: live のときだけ送らなかった理由を sns_send_events（191）に (job, 段, 理由) ごとに初出の1行（送る前の検査は stage=precheck、送信の中は stage=send、begin_post の後は stage=after_post、claim の DB の拒否は文言ごとの code（日次全体上限と月額上限は別の行）・写せない文言は db_rejected で detail に元の文言、YouTube の begin_post の前の失敗は job が held・youtube_preflight_failed のまま reason に holdReasonOf の code）、shadow は書かない、書き込みが落ちても送信は続け表が無い（404・PGRST205）ときは Slack に出さない、PostgREST の POST は on_conflict と resolution=ignore-duplicates、detail は文字単位で300字"
+    },
+    {
+      "script": "verify-sns-setsu-kiryoku-short.js",
+      "tier": "ci",
+      "guards": "YouTube Shorts「節の機力」の送る口（format・kind=setsu_kiryoku_short、マイグレーション 193、scripts/sns/push-setsu-kiryoku-short.js、BOA-1209）: item は YouTube・variant=main・race_id は setsu:{日}:{会場コード 01〜24} だけで1日1本（別の会場も・送った後も2本目は入らない、held_manual・stopped は外れる）、許可 setsu_kiryoku_short_enabled は既定 false で youtube の行だけ・off の間は push が何も書かない（Slack も、exit 3）・承認の後に off にすると claim で held（setsu_kiryoku_short_disabled）・他の kind の claim は 189 と同じ、--dry-run は書かない・見本の束（date が今日でない）はその日の送る時刻の2分前の時計で見る、on なら動画1本の YouTube の job を送る時刻に入れる（題・説明欄は bundle の値のまま、期限は送る時刻＋60分・締切は期限＋expiry_minutes、リンク先の確認は会場のページ venue）、claim で YouTube のクォータ（1 upload・104 units）を予約、検査（型の checkBundle をもう一度: 禁止表現・言い切り・級・数の照合・final_date。題100字・改行と < > なし、説明欄5000バイト・リンクはちょうど1つでその会場のページ・utm_* だけ、会場名、video の名前、send_time は 22:00 まで、今日、期限の10分前、集計の時刻の鮮度、動画は MP4・縦・60秒まで・32 MiB まで）、優勝戦が今日の型は優勝戦の有無・中止・欠場、二重送信（同じ束・同じ日・前夜と当日の同じ優勝戦、送らずに終わった束は superseded で作り直す）、YouTube の日の上限とクォータの境（ちょうどは通し+1は拒否、まだ claim していない予定も数える）、送り手の readCurrent（許可・同じ日に送った・item の kind と日と会場・優勝戦の中止）と preflight（会場のページの印2つ）、モックの adapter で公開まで通して item sent と動画 ID、結果の1行 SETSU_RESULT と exit、189 の transition_sns_send_139 の md5 が本番と一致し 193 は1行だけ足す、印の data-testid が部品に実在。SQL189 までと 193 を PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-setsu-kiryoku-x.js",
+      "tier": "ci",
+      "guards": "X の「節の機力」（kind=setsu_kiryoku、画像1枚＋本文、毎日 21:30、BOA-1209、マイグレーション 194、scripts/sns/push-setsu-kiryoku.js → push-research-image.js の型ごとの受け取り、hq SK04）: 194 の transition_sns_send_139 は 193 の本文（md5）から期限・鮮度・許可・A の予定の4か所だけ変わり、本文の md5 が台帳の値、item は X・variant=main・race_id は setsu:{日}:{slug} だけで1日1本（送った後も2本目は入らない、Shorts の setsu_kiryoku_short の同じ日の item とは両立）、許可 setsu_kiryoku_enabled は既定 false で x の行だけ・off の間は push が何も書かない（Slack も）・承認の後に off にすると claim で held（setsu_kiryoku_disabled）、--dry-run は書かず今日でない束（hq の見本）は送る時刻の2分前の時計で通す、on なら画像1枚の job を 21:30 に入れ（締切 23:30・期限 22:30）21:30 前は claim できず 22:30 で deadline_expired、鮮度は集計から24時間（as_of の束はその日の 00:00 JST を集計の時刻にする）、通り道 B の claim は今日の setsu_kiryoku の分を先に枠から引く、数字で見たら（research_image）は 194 の後も 19:00 に送れる、検査（hq の見本の束が通る・選手は racers の名前と級 A1・A2・B1・B2 を読み本文からは拾わない・format・kind・send_time 21:30 だけ・集計の as_of の日・review は有れば P0 0件・禁止表現と本文の競艇・#競艇 のタグだけ可・本文＋改行2つ＋タグで加重280・リンクなし・本文のハッシュタグ・画像1枚）、送り手の readCurrent（許可・同じ日に送った setsu_kiryoku・本文・選手の名前と級）と preflight（リンク先の表示を開かず、送る文にリンクがあれば止める）、結果の1行 SETSU_RESULT と exit、hq の出し物の名前 setsu_kiryoku。SQL194 までを PGlite、外部接続なし"
     },
     {
       "script": "verify-sns-shorts-send.js",

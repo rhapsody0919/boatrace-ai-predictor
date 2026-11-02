@@ -75,6 +75,7 @@
 ## 追記: /today の対象レースの思考投稿（today_thinking）は、優勝戦の思考投稿と同じ型で別の種類にする（2026-10-27、オーナー決定・BOA-1169・マイグレーション 189）
 - 本投稿（画像4枚＋本文）・直後の4択の投票のリプ・締切の25〜13分前の展示後の画像4枚のリプの3本。push は scripts/sns/push-finals-image.js（bundle の format は today_thinking_image・today_thinking_reply）。item の kind は today_thinking、variant は thinking・thinking_poll・thinking_reply。時刻の窓・bundle の形・画像・投票は優勝戦と同じ
 - 期限は締切の5分前（transition_sns_send_139 の v_expiry_min、優勝戦と同じ）。優勝戦の段は見ず、代わりに race_id がその日の /today の X 投稿の対象（scripts/sns/today-picks.js の featured か list）であることを push の機械の検査に入れる。本文に URL を付けない（3本とも。extractUrls が1つでも返せば拒否。オーナー 2026-10-27）
+- 2026-10-31 オーナー決定（hq の a2。正本は hq の drafts/x-thinking-today-20261027.md v2）: その日の /today の X 投稿が posted であることは残したうえで、その日の格の最上位（SG ＞ PG1 ＞ G1、races.race_grade）の場の 10〜12R も /today の対象の外で受ける。同じ格が2場以上なら 12R の締切が遅い方の場（2026-11-02 オーナー決定の (a)、`thinkingGradeDayVenue`・`isThinkingGradeDayRace`）。races.race_grade は PG1 を G1 として持つので、今の DB では PG1 と G1 の場は同じ格として締切で比べる。hq がグレードの日に開催場の 12R→11R→10R から選んだレースが、/today の対象でないため毎回拒否されていた（10/31 午後・11/1 は0本）
 - 自動送信の許可は `sns_auto_send_control.today_thinking_enabled`（x の行、既定 false）。false の間は push が何も書かず、送り手も claim・check・begin_post で held（today_thinking_disabled）にする。true にするのはオーナーの yes の後で、`.claude/CLAUDE.md` の例外に足すのもその後
 - 枠: 取り置き today_thinking 6（2レース×3本）・full_picture 0・daily_limit_x 11（オーナー 2026-10-27）。月水金は取り置きの合計11＝上限で残り0。取り置きは旗が off でも解けないので、行と上限は 189 に入れず、旗 on と同じトランザクションで、その日の最初の X 送信より前にオーナーが当てる
 - readCurrent は source_data のキーで振り分けるので、新しい種類は別のキー（today_thinking）にし、枝の中で item の kind も確かめる（食い違えば投げる）
@@ -96,3 +97,23 @@
 - YouTube の begin_post の前の失敗は、job の error_code が今までどおり youtube_preflight_failed（承認の hash・媒体・validate・親・preflight の全部）。原因は stage=send の reason（holdReasonOf の code、英小文字と _ の理由はそのまま）で見る
 - 書けなくても送信は止めない。表が無い（404・PGRST205）ときは console だけ（db-apply はマージの後に当たるので、その間 Slack を鳴らし続けない）。それ以外の失敗は report.alerts に出す
 - 残る壊れ方: 再承認は job の行を使い回す（177 の ON CONFLICT(draft_id) DO UPDATE）。再承認の後に同じ理由が出ても行は増えず、初出の時刻のまま残る。hq は e.at < j.approved_at の行を前の版のものとして読む
+
+## 追記: YouTube Shorts「節の機力」（setsu_kiryoku_short）は、レースを持たない単独の Shorts として1日1本送る（2026-11-02、オーナー 10/31・11/2・BOA-1209・マイグレーション 193）
+- 開催中の会場の節の機力を毎日1本の Shorts（約15〜17秒、声なし）で出す。集計・題の選び・bundle と mp4 は hq、動画の型は sns-video-studio/remotion/src/setsuKiryoku/、受け取りは scripts/sns/push-setsu-kiryoku-short.js。全貌の Shorts（172、親の完全版を待つ）とは別の出し物で、親を持たない
+- 題・説明欄は bundle の値をそのまま送る。push は型の検査（model.js の checkBundle）を送る前にもう一度通し、題・説明欄の YouTube の上限、説明欄のリンク（その会場のページちょうど1つ）、動画（縦・60秒まで・32 MiB まで）を見る
+- item の race_id は setsu:{YYYY-MM-DD}:{会場コード}（出す日の JST）。1日1本は 193 の一意の索引 (channel, left(race_id, 16)) で守る。final_gap は下書きの source_data.setsu_kiryoku_short.final_key（優勝戦の日と会場）で、前夜と当日に同じ優勝戦を2回出さない（push が見る）
+- 期限は送る時刻＋60分、締切は期限＋expiry_minutes（形の上の値）。期限・鮮度は research_image・finals_image と違い kind で分けず、共通の expiry_minutes・max_source_age_seconds を使う。186 の transition_sns_x_send の youtube_call の照合がこの2つを kind によらず見るため（kind で変えると youtube_call_guard で止まる）
+- 送る直前のリンク先の表示の確認は会場のページ（/venue/{n}）を、画面の印 venue（scripts/lib/snsScreenMarkers.js）で行う。readCurrent は item の kind・日・会場・許可・同じ日に送ったか、final_gap の当日なら優勝戦の中止・欠場を読み直す
+- 自動送信の許可は `sns_auto_send_control.setsu_kiryoku_short_enabled`（youtube の行、既定 false）。false の間は push が何も書かず、DB は claim・check・begin_post（transition_sns_send_139）で held（setsu_kiryoku_short_disabled）にする。youtube_call・youtube_publish_begin（186 の youtube_call_guard）は旗を見ないので、上げている最中の停止は JS の preflight（readCurrent が毎回見る）に頼る。DB で確実に止めるなら mode=manual か item の停止（auto_stopped）。旗を true にするのはオーナーの yes と `.claude/CLAUDE.md` の例外の追記の後
+- 自動モードでなければ push は何も書かない（この型は自動の道だけ。個別承認の道で1日1本の守りを外さない）。item が入らない・自動の承認に落ちた下書きは公開保留にする
+- 日の上限（daily_limit_youtube）とクォータ（1 upload・104 units）は今の YouTube の道のまま claim で数えて予約する。push も同じ式で数えるが、push-full-picture.js は日の上限を数えないので、受け取りは送る時刻の15分前からにする（早く受けると、後から入った全貌が先に claim し、この job が「日次全体上限です」で queued のまま鳴り続ける）
+- 残る壊れ方: (1) 21:30 ごろは1日の最後なので、全貌が多い日（YouTube 10本前後）はこの1本が push で落ちる。上限の値はオーナーが旗 on と同じ時に決める (2) 送る窓（60分）は太平洋時間の日付の境目（今は JST 17:00）をまたげる（BOA-973 は未解決。hq の型の 21:30 では当たらない） (3) when=today（「今日の優勝戦」）を優勝戦の後に送るかは中身の判断で、push は見ない (4) sns_daily の YouTube の行は format=full_picture だけを読むので、この型の日次の数は別に足す
+
+## 追記: X「節の機力」（setsu_kiryoku）は、数字で見たら（research_image）と同じ形で毎日 21:30 に画像1枚を送る（2026-11-02、hq SK04・BOA-1209・マイグレーション 194）
+- 集計・会場とネタの選び・画像（1080×1350）・本文・bundle は hq（platform/setsu_sheet.py）。受け取りは scripts/sns/push-setsu-kiryoku.js で、中身は push-research-image.js の型ごとの受け取り（api/_lib/snsResearchImage.js の DAILY_IMAGE_TYPES）。送り手の読み直し（snsClaimCheck.js）も同じ枝を型で分ける
+- 検査は research_image と同じ（禁止表現・#競艇 のタグだけ可・本文＋改行2つ＋タグで加重280・リンクなし・画像1枚 PNG 1080×1350・5MB・1日1本・送る時刻から60分）に、選手の名前と級（bundle の racers、A1・A2・B1・B2。オーナー 11/1 の恒久の決まり）を足す。本文からは拾わない（級が画像にだけ出る選手がいる）。送る時刻は 21:30 だけ
+- 集計の時刻: hq（33bd771 から）は source_observed_at に時差つきの ISO を出し、「NR まで」の表示は as_of の欄に分ける。push はその ISO で鮮度（24時間、research_image と同じ）を見て、as_of は下書きに残す。古い形（source_observed_at が「YYYY-MM-DD NR まで」）の束も受け、そのときはその日の 00:00 JST（いちばん古い見積り）を集計の時刻にする。受け取った時刻にすると作り直しのたびに新しく見え、鮮度の照合が名前だけになるため（/code-review）
+- --dry-run は、今日でない束（hq の見本）を送る時刻の2分前の時計で検査し、その日の X の日の上限は見ない（結果の1行に simulated_now）。数字で見たらは今までどおり今日の束だけ
+- item の race_id は setsu:{YYYY-MM-DD}:{slug}。193 の Shorts と同じ接頭辞だが、kind・channel（x）・CHECK（sns_auto_send_items_setsu_x_id）・一意の索引（sns_auto_send_items_setsu_x_day）で分ける
+- 自動送信の許可は `sns_auto_send_control.setsu_kiryoku_enabled`（x の行、既定 false）。`.claude/CLAUDE.md` の例外に無いので、true にするのはオーナーの yes と例外 (6) の追記の後。止めるのはこのフラグ（全体は sns_x_send_control.paused）
+- 194 は 193 の transition の本文（md5）の上に4か所だけ足す。193 の後に当てる（先頭の DO が md5 を確かめる）
