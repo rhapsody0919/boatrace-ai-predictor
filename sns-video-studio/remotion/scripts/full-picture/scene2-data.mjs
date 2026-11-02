@@ -16,6 +16,7 @@ import {
   hidesSeriesScoreLine,
   judgeLabelKey,
   judgeLabelParams,
+  radarAxisItems,
   radarBoats,
   rateOf,
   seriesScoreNote,
@@ -287,16 +288,11 @@ export function buildScene2(factsJson) {
   const omitted = [];
   const exhibitionStage = Boolean(exhibition?.exh_time);
   const values = todayValues(today, exhibition);
-  const finalDay = hidesSeriesScoreLine(today);
   const firstDay = seriesScoreNote(today) === "first";
 
-  // 軸: 画面と同じ（ボート2連率は入れない。優勝戦・準優勝戦・初日は今節の着順点を入れない）。6艇とも値が無い項目は外して記録
-  const axesItems = FACT_ITEMS.filter(
-    (it) =>
-      it.key !== "boat_2" &&
-      (exhibitionStage || it.key !== "exh_time") &&
-      !((finalDay || firstDay) && it.key === "series_score"),
-  ).filter((it) => {
+  // 軸: 画面と同じ関数（radarAxisItems）。展示タイムは材料が展示後のときだけ。6艇とも値が無い項目は外して記録
+  // （画面は外さないので、撮る時点を材料の時点にそろえる。f01-capture.mjs の pageStageOf）
+  const axesItems = radarAxisItems(today, exhibitionStage).filter((it) => {
     const v = values[it.key];
     const has = Array.isArray(v) && v.some((x) => typeof x === "number" && Number.isFinite(x));
     if (!has) omitted.push({ where: "radar.axis", item: it.key, reason: "6艇とも今日の値が無い" });
