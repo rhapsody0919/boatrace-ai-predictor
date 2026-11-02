@@ -5,7 +5,8 @@
  * 方式: 日次のスナップショット（レジストリ motor_pretest、kind: daily）。その日の開催会場（races）ごとに、公式の
  * race/rankingmotor?jcd&hd を1ページ取得し、節の全選手（約45人）の前検タイム・前検順位・モーター/ボートの番号と2連対率を、
  * (日付, 会場, 選手) の行として保存する。race_series の初日に取得し、途中日は同じ節の保存行が無い場合か、
- * 最新の保存日が対象日の6日前より古い場合だけ取得する（画面の参照窓を維持）。朝の前日取得は行わない。
+ * 最新の保存日が対象日の6日前より古い場合だけ取得する（画面の参照窓を維持）。race_series で今の節が引けない会場は、
+ * その会場だけ従来どおり取る（他の会場は止めない）。朝の前日取得は行わない。
  *
  * 実行時刻: JST 05:30・06:00・06:30（vercel.json の cron）。根拠（docs/design/scraping-vercel-consolidation/
  * verification-runbook.md T-1）:
@@ -241,15 +242,9 @@ export async function runMotorPretestJob(
       .maybeSingle();
     if (series.error)
       throw new Error(`前検タイム: 節の取得に失敗しました: ${series.error.message}`);
-    if (!series.data || series.data.end_date < date) {
-      return {
-        rowsWritten: 0,
-        incomplete: true,
-        report: carry({ waiting: "race_series" }),
-        body: { waiting: "race_series" },
-      };
-    }
-    if (series.data.start_date === date) {
+    // 節が引けない（race_series の取り込み前・取りこぼし）会場は、その会場だけ従来どおり取る。
+    // 1会場の欠けで全会場を止めない（BOA-1150 の審査 P2）
+    if (!series.data || series.data.end_date < date || series.data.start_date === date) {
       venues.push(venue);
       continue;
     }

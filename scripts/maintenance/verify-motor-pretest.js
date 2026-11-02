@@ -655,16 +655,51 @@ for (const table of ["race_series", "motor_pretest_stats"]) {
     res.status === 500 && f.count === 0 &&
     store.state.get(JOB).last_target_date === undefined, show(res));
 }
-{
+// 審査 P2: 節が引けない会場（race_series が無い・前の節で終わっている）は、その会場だけ取る。
+// A は初日（取る）、B は節が引けない（取る）、C は3日目で保存済み（取らない）。全会場は止めない
+for (const [label, seriesB] of [
+  ["race_series が無い", null],
+  ["前の節が終わっている", { start_date: "2026-09-10", end_date: "2026-09-15" }],
+]) {
   const tables = jobTables();
-  tables.race_series = [];
+  tables.races.push({
+    race_id: `${DATE}-05-01`,
+    race_date: DATE,
+    venue_code: 5,
+    cancellation_status: null,
+  });
+  tables.race_entries.push({ race_id: `${DATE}-05-01`, racer_id: 4000 });
+  tables.race_series = [
+    { venue_code: 2, start_date: DATE, end_date: "2026-09-28" },
+    ...(seriesB ? [{ venue_code: 18, ...seriesB }] : []),
+    { venue_code: 5, start_date: "2026-09-19", end_date: "2026-09-24" },
+  ];
+  tables.motor_pretest_stats = [
+    { venue_code: 5, race_date: "2026-09-19", racer_id: 4000 },
+  ];
+  const client = createFakeSupabaseClient({ tables });
   const store = createMemoryStore({ rows: { [JOB]: liveRow() } });
-  const f = throwingFetch();
-  const res = await runJob({ store, client: createFakeSupabaseClient({ tables }),
-    politeFetch: f, when: at("05:30:00") });
-  check("P5a: 節が未取得なら取得せず補足起動を待つ",
-    res.status === 200 && res.body.incomplete === true && f.count === 0 &&
-    store.state.get(JOB).last_target_date === undefined, show(res));
+  const fetched = [];
+  const res = await runJob({
+    store, client, when: at("05:30:00"),
+    politeFetch: throwingFetch(),
+    deps: {
+      fetchVenue: async (venueCode) => {
+        fetched.push(venueCode);
+        return {
+          rows: [{ venue_code: venueCode, race_date: DATE,
+            racer_id: 4529, pretest_time: 6.7 }],
+          reason: null,
+        };
+      },
+    },
+  });
+  const row = store.state.get(JOB);
+  check(`P5a: B（${label}）は B だけ取り、A は取り C は取らない（全会場を止めない）`,
+    res.status === 200 && res.body?.waiting === undefined &&
+    same(fetched.sort((a, b) => a - b), [2, 18]) &&
+    row.last_target_date === DATE && row.consecutive_failures === 0 &&
+    row.last_rows_written === 2, show(res));
 }
 
 {
