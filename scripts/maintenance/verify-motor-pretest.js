@@ -625,8 +625,9 @@ for (const [start, saved, shouldFetch] of [
 {
   const tables = jobTables();
   tables.race_series.forEach((s) => { s.start_date = "2026-09-19"; });
-  tables.motor_pretest_stats = [2, 18].map((venue_code) => ({
-    venue_code, race_date: "2026-09-19", racer_id: 4529,
+  // 保存行はその日の出走選手を全員含む（含まなければ取り直す。下の P2-2）
+  tables.motor_pretest_stats = [[2, 4608], [2, 3647], [18, 4529]].map(([venue_code, racer_id]) => ({
+    venue_code, race_date: "2026-09-19", racer_id,
   }));
   const client = createFakeSupabaseClient({ tables });
   const health = { 18: { consecutiveFailDays: 1, lastReason: "timeout" } };
@@ -641,6 +642,39 @@ for (const [start, saved, shouldFetch] of [
     store.state.get(JOB).last_target_date === DATE &&
     store.state.get(JOB).consecutive_failures === 0 &&
     same(store.state.get(JOB).last_report.health, health), show(res));
+}
+
+// 審査 P2-2: race_series の開始日（9/19）が古く、保存行が前の節の名簿のとき（順延で実際の初日が 9/21）。
+// その日の出走選手が保存行に無ければ、その会場だけ取り直す。名簿がそろっている会場（戸田）は取らない
+{
+  const tables = jobTables();
+  tables.race_series.forEach((s) => { s.start_date = "2026-09-19"; });
+  tables.motor_pretest_stats = [
+    { venue_code: 2, race_date: "2026-09-19", racer_id: 4608 },
+    { venue_code: 2, race_date: "2026-09-19", racer_id: 3647 },
+    { venue_code: 18, race_date: "2026-09-19", racer_id: 9999 },
+  ];
+  const client = createFakeSupabaseClient({ tables });
+  const store = createMemoryStore({ rows: { [JOB]: liveRow() } });
+  const fetched = [];
+  const res = await runJob({
+    store, client, when: at("05:30:00"),
+    politeFetch: throwingFetch(),
+    deps: {
+      fetchVenue: async (venueCode) => {
+        fetched.push(venueCode);
+        return {
+          rows: [{ venue_code: venueCode, race_date: DATE,
+            racer_id: 4529, pretest_time: 6.7 }],
+          reason: null,
+        };
+      },
+    },
+  });
+  check("P5a: 保存行に今日の出走選手がいない会場（前の節の名簿）だけ取り直す",
+    res.status === 200 && same(fetched, [18]) &&
+    store.state.get(JOB).last_target_date === DATE &&
+    store.state.get(JOB).last_rows_written === 1, show(res));
 }
 
 for (const table of ["race_series", "motor_pretest_stats"]) {

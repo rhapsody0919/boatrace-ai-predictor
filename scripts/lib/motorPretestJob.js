@@ -5,7 +5,7 @@
  * 方式: 日次のスナップショット（レジストリ motor_pretest、kind: daily）。その日の開催会場（races）ごとに、公式の
  * race/rankingmotor?jcd&hd を1ページ取得し、節の全選手（約45人）の前検タイム・前検順位・モーター/ボートの番号と2連対率を、
  * (日付, 会場, 選手) の行として保存する。race_series の初日に取得し、途中日は同じ節の保存行が無い場合か、
- * 最新の保存日が対象日の6日前より古い場合だけ取得する（画面の参照窓を維持）。race_series で今の節が引けない会場は、
+ * 最新の保存日が対象日の6日前より古い場合、その日の出走選手が最新の保存行に無い場合だけ取得する（画面の参照窓を維持）。race_series で今の節が引けない会場は、
  * その会場だけ従来どおり取る（他の会場は止めない）。朝の前日取得は行わない。
  *
  * 実行時刻: JST 05:30・06:00・06:30（vercel.json の cron）。根拠（docs/design/scraping-vercel-consolidation/
@@ -259,7 +259,22 @@ export async function runMotorPretestJob(
       .maybeSingle();
     if (saved.error)
       throw new Error(`前検タイム: 保存日の取得に失敗しました: ${saved.error.message}`);
-    if (!saved.data || saved.data.race_date < oldest) venues.push(venue);
+    if (!saved.data || saved.data.race_date < oldest) {
+      venues.push(venue);
+      continue;
+    }
+    // race_series の開始日が古い（順延で節の初日がずれた等）と、保存行が前の節の名簿のことがある。
+    // その日の出走選手が最新の保存行に1人でも無ければ、その会場をその日1回取り直す（BOA-1150 の審査 P2-2）
+    const savedRacers = await ctx.client
+      .from("motor_pretest_stats")
+      .select("racer_id")
+      .eq("venue_code", venue.venueCode)
+      .eq("race_date", saved.data.race_date);
+    if (savedRacers.error)
+      throw new Error(`前検タイム: 保存済みの選手の取得に失敗しました: ${savedRacers.error.message}`);
+    const savedIds = new Set((savedRacers.data ?? []).map((r) => Number(r.racer_id)));
+    const expectedIds = expected.expectedByVenue.get(venue.venueCode) ?? new Set();
+    if ([...expectedIds].some((id) => !savedIds.has(Number(id)))) venues.push(venue);
   }
 
   /** @type {Map<number, ReturnType<typeof summarizeVenueCoverage>>} */
