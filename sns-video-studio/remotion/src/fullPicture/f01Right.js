@@ -11,9 +11,10 @@ export const NB = " ";
 export const GRADES = ["A1", "A2", "B1", "B2"];
 /**
  * 字の小ささの線（縮めた後の最小の字の高さ px）。左の画面（f01-build.mjs）・右の列（f01.mjs の f01RacerCheck）で同じ線。
- * 目安（根拠なし、2026-10-31 の試作で決めた）。左の画面の根拠は f01-build.mjs の説明を見る
+ * 24px はオーナー 2026-11-02「22.4px の章は2カットに分けて」（22.4px の着順の流れ・形の札を2カットにし、24px 以上を線にした）。
+ * 左の画面の根拠は f01-build.mjs の説明を見る
  */
-export const MIN_FONT_PX = 20;
+export const MIN_FONT_PX = 24;
 
 /** 出走表の名前（「篠崎」と「仁志」の間に全角の空白）→ フルネーム（空白を詰める。JS の \s は全角の空白も含む） */
 export const fullName = (name) => String(name ?? "").replace(/\s+/g, "");
