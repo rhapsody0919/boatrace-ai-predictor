@@ -151,11 +151,24 @@ export function e2eTodayJST() {
     .split("T")[0];
 }
 
+/** 再生用の HAR のコピーの置き場所（api.har と同じディレクトリ。理由は replayHar の説明） */
+export function replayHarPath(pid) {
+  return path.join(RECORDINGS_DIR, `.replay-api-${pid}.har`);
+}
+
 let cachedReplayHar;
 /**
  * 録画はローカルのオリジンを LOCAL_ORIGIN_PLACEHOLDER で保存している
  * （devサーバーのポートはworktreeごとに変わるため）。今回の baseURL に置き換えた
- * コピーを test-results 配下に作り、routeFromHAR にはそれを渡す。
+ * コピーを api.har と同じ場所（RECORDINGS_DIR）に作り、routeFromHAR にはそれを渡す。
+ *
+ * 本文は content._file（api.har からの相対パス）のまま渡す。Playwright 1.64 の routeFromHAR は
+ * _file が HAR のある場所の外を指すと「HAR entry _file escapes base directory」で応答を返さない
+ * （絶対パスも外とみなす）。1.59 までは絶対パスで読めたので、コピーを test-results 配下に置いて
+ * _file を絶対パスに直していた。外に置くと全ての録画の応答が失敗し、画面が空になる（#2102 で
+ * 実測: トップの会場がすべて「本日開催なし」寄りに変わり、BOA-152 の導線のテストが落ちた）。
+ * e2e/recordings/ は .gitignore 済みで、録画の公開（e2e-recording.js publish）は
+ * api.har・meta.json・bodies だけを固めるので、コピーは混ざらない。
  */
 function replayHar(testInfo) {
   if (cachedReplayHar) return cachedReplayHar;
@@ -170,21 +183,10 @@ function replayHar(testInfo) {
       `${HAR_PATH} を読めません（録画がありません。npm run test:e2e:record で撮り直してください）: ${error.message}`,
     );
   }
-  const file = path.join(
-    testInfo.project.outputDir,
-    ".replay",
-    `api-${process.pid}.har`,
-  );
-  mkdirSync(path.dirname(file), { recursive: true });
+  const file = replayHarPath(process.pid);
   const har = JSON.parse(
     text.replaceAll(LOCAL_ORIGIN_PLACEHOLDER, new URL(baseURL).origin),
   );
-  // 本文は content._file（api.har からの相対パス）で参照している。
-  // コピー先から読めるよう絶対パスに直す
-  for (const entry of har.log.entries) {
-    const content = entry.response.content;
-    if (content._file) content._file = path.join(RECORDINGS_DIR, content._file);
-  }
   writeFileSync(file, JSON.stringify(har));
   const keys = new Map(
     har.log.entries.map((e) => [
@@ -240,7 +242,7 @@ async function fromApiResponse(response) {
 function entryToResponse(entry) {
   const content = entry.response.content;
   const body = content._file
-    ? readFileSync(content._file)
+    ? readFileSync(path.join(RECORDINGS_DIR, content._file))
     : Buffer.from(
         content.text ?? "",
         content.encoding === "base64" ? "base64" : "utf8",
