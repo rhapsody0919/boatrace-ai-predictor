@@ -2178,7 +2178,14 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     const lastSub = Math.max(...props.subs.map((x) => x.to));
     assert.ok(props.end.from >= lastSub, `終了画面（${props.end.from}）は最後の字幕の終わり（${lastSub}）より後`);
     assert.equal(close.tagUntil, props.end.from - close.from, "終了画面から章の札を出さない");
-    assert.ok(props.total - props.end.from >= 5 * 30, "終了画面は5秒以上");
+    assert.equal(props.total - props.end.from, 5 * 30, "終了画面は5秒（オーナー 11/2「短くして」、YouTube の終了画面の要素の最短）");
+    // 章: 最後の章も10秒以上のときだけ残す（短ければ前の章に含める）。尺の検査（chaptersOk）と同じ条件
+    const { f01Chapters } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const { chaptersOk } = await import("../../sns-video-studio/remotion/scripts/full-picture/bundle.mjs");
+    const marksA = [{ name: "冒頭", at: 0 }, { name: "6艇の差", at: 30 }, { name: "相手", at: 100 }, { name: "締め", at: 130 }];
+    assert.equal(f01Chapters(marksA, 138), "0:00 冒頭\n0:30 6艇の差\n1:40 相手\n", "8秒の締めは前の章に含める");
+    assert.equal(f01Chapters(marksA, 145), "0:00 冒頭\n0:30 6艇の差\n1:40 相手\n2:10 締め\n");
+    for (const tot of [138, 145]) assert.ok(chaptersOk(f01Chapters(marksA, tot), tot), `章が自動チャプターの条件を満たす（${tot}秒）`);
     const jsx = readFileSync(new URL("../../sns-video-studio/remotion/src/fullPicture/F01.jsx", import.meta.url), "utf8");
     assert.ok(!/dashed/.test(jsx), "終了画面の置き場の点線の枠を描かない");
   }

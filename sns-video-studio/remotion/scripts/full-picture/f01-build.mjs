@@ -44,6 +44,8 @@ export const PLAN = {
  */
 export { MIN_FONT_PX };
 const f = (sec) => Math.round(sec * FPS);
+/** 終了画面（締めの声の後の暗い地）の秒。YouTube の終了画面の要素を置ける最短（オーナー 11/2） */
+export const END_SECONDS = 5;
 const LEAD = 0.5;
 const GAP = 0.25;
 const TAIL = 0.9;
@@ -114,14 +116,15 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
     marks.push({ id: c.id, name: c.name, at: start });
     t += len;
   }
-  // 終了画面: 締めの声が終わってから（声と字幕の途中に重ねると、字幕が終了画面に重なった。オーナー 11/2）。声の後の静止は約8秒
+  // 終了画面: 締めの声が終わってから（声と字幕の途中に重ねると、字幕が終了画面に重なった。オーナー 11/2）。
+  // 長さは5秒（オーナー 11/2「終了画面は短くして」。YouTube の終了画面の要素は動画の最後の5〜20秒に置ける、ヘルプ 6388789）
   const close = chapters.find((c) => c.id === "close");
   // 置いた声だけから（字の小ささ等で省いた章の声は voice.lines に残る。Codex P1 #2075）
   const placed = new Map(voice.lines.map((l) => [l.file, l.sec]));
   const lastVoiceEnd = Math.max(0, ...audio.map((a) => a.from + f(placed.get(a.file))));
   const lastSubEnd = Math.max(0, ...subs.map((x) => x.to));
   const end = close ? { from: Math.max(lastVoiceEnd, lastSubEnd) } : null;
-  const total = Math.round(Math.max(t * FPS, lastVoiceEnd + f(8)));
+  const total = Math.round(Math.max(t * FPS, end ? end.from + f(END_SECONDS) : lastVoiceEnd + f(8)));
   if (close) {
     close.len = total - close.from;
     // 終了画面では章の札・範囲を出さない（④の札「思考アシスト > 相手」が最後まで残っていた。オーナー 11/2）。章の中の秒
@@ -173,9 +176,10 @@ export async function retryOnTimeout(fn, onRetry = () => {}) {
 }
 
 /** YouTube の章の行（「0:00 冒頭」）。10秒未満の章は前の章に含める */
-export const f01Chapters = (marks) => {
+export const f01Chapters = (marks, totalSec = Infinity) => {
   const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
-  const keep = marks.filter((x, i) => i === 0 || (marks[i + 1]?.at ?? Infinity) - x.at >= 10 || i === marks.length - 1);
+  // 最後の章も10秒以上のときだけ（終了画面を5秒にして締めが短くなる日がある。YouTube の自動チャプターは各章10秒以上）
+  const keep = marks.filter((x, i) => i === 0 || (marks[i + 1]?.at ?? totalSec) - x.at >= 10);
   return keep.map((x, i) => `${i === 0 ? "0:00" : mmss(x.at)} ${x.name}`).join("\n") + "\n";
 };
 
@@ -217,7 +221,7 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
   }
   const { props, marks } = f01Timeline(s, voice, shots, { bgm });
   if (bgm) copyFileSync(bgm, join(pub, "bgm.mp3"));
-  const chapters = f01Chapters(marks);
+  const chapters = f01Chapters(marks, props.total / FPS);
   const description = f01Description(s, chapters);
   // 選手名（姓・名の両方。声で読まないことの照合）
   const names = (m.api.races?.find((r) => r.raceId === m.raceId)?.entries ?? []).flatMap((e) => [...(e.name ?? "").split(/\s+/), fullName(e.name)]).filter((x) => x.length >= 2);
