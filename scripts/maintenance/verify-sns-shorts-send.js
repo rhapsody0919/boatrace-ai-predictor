@@ -550,11 +550,30 @@ test("案B: upload後の承認失効はpublic updateなしで非公開残置", a
     "private_retained",
   );
 });
+// PT の日付の境目の1秒前。PT の0時は夏時間で UTC 07:00、冬時間で UTC 08:00 と動くため、
+// UTC の時刻を決め打ちせず、基準の時刻（既定は今）から America/Los_Angeles で求める。
+const ptMidnightMinusOneSecond = async (base = null) =>
+  (
+    await first(
+      "SELECT (date_trunc('day',(coalesce($1::timestamptz,now())+interval '1 day') AT TIME ZONE 'America/Los_Angeles') AT TIME ZONE 'America/Los_Angeles')-interval '1 second' t",
+      [base],
+    )
+  ).t;
+test("PTの境目の1秒前は夏時間・冬時間のどちらでもPTの23:59:59", async () => {
+  for (const [base, expected] of [
+    ["2026-07-15T00:00:00Z", "2026-07-15T06:59:59.000Z"],
+    ["2026-11-02T00:00:00Z", "2026-11-02T07:59:59.000Z"],
+  ])
+    assert.equal(
+      new Date(await ptMidnightMinusOneSecond(base)).toISOString(),
+      expected,
+    );
+});
 test("案B: PTだけ跨ぐ試行は処理poll前に停止（JST・期限・leaseは有効）", async () => {
   await enable();
-  const tomorrow = new Date(Date.now() + 86400000);
-  tomorrow.setUTCHours(6, 59, 59, 0);
-  await db.query("UPDATE test_clock SET value=$1", [tomorrow.toISOString()]);
+  await db.query("UPDATE test_clock SET value=$1", [
+    await ptMidnightMinusOneSecond(),
+  ]);
   await db.exec(
     "UPDATE sns_x_send_control SET daily_baseline_date=(test_now() AT TIME ZONE 'Asia/Tokyo')::date; UPDATE sns_youtube_quota_control SET baseline_day=(test_now() AT TIME ZONE 'America/Los_Angeles')::date",
   );
