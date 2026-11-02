@@ -620,4 +620,47 @@ t(
   },
 );
 
+t(
+  "final_gap の日付（hq 846f0e8）: today は date＝final_date、eve は final_date が date の翌日。合わなければ止める",
+  () => {
+    const f = loadRaw("final_gap");
+    assert.deepEqual(
+      [f.date, f.final_date, f.when],
+      ["2026-11-01", "2026-11-01", "today"],
+    );
+    assert.deepEqual(check(f), []);
+    // 前夜の版（hq の見本と同じ組）は通る。月末をまたぐ翌日も数える
+    assert.deepEqual(
+      check({ ...clone(f), date: "2026-10-31", when: "eve" }),
+      [],
+    );
+    assert.deepEqual(
+      check({
+        ...clone(f),
+        date: "2026-11-30",
+        final_date: "2026-12-01",
+        when: "eve",
+      }),
+      [],
+    );
+    fails(
+      { ...clone(f), date: "2026-10-31" },
+      /when=today なのに date（2026-10-31）と final_date（2026-11-01）が違う/,
+      "today の日の食い違い",
+    );
+    fails(
+      { ...clone(f), when: "eve" },
+      /when=eve なのに final_date（2026-11-01）が date（2026-11-01）の翌日でない/,
+      "eve の日の食い違い",
+    );
+    const g = clone(f);
+    delete g.final_date;
+    fails(
+      g,
+      /final_date（優勝戦の日）が YYYY-MM-DD でない/,
+      "final_date が無い",
+    );
+  },
+);
+
 console.log(`verify-setsu-kiryoku: ${n} 件すべて通過`);

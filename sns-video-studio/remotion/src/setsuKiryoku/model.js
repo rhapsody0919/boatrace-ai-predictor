@@ -483,6 +483,7 @@ export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
     why.push("grade が無い");
   if (b.variant === "final_gap" && b.when !== "eve" && b.when !== "today")
     why.push(`when が eve|today でない: ${b.when}`);
+  else if (b.variant === "final_gap") why.push(...finalDateReasons(b));
   if (!Array.isArray(b.texts?.hook) || !b.texts.hook.length)
     why.push("texts.hook が無い");
   if (!Array.isArray(b.texts?.close) || !b.texts.close.length)
@@ -689,6 +690,33 @@ function twoRateReasons(m, where) {
 }
 
 const hasClass = (r) => CLASSES.includes(r?.class);
+
+/** YYYY-MM-DD の翌日（UTC で数えて日付だけ返す） */
+const nextDay = (d) => {
+  const t = new Date(`${d}T00:00:00Z`);
+  t.setUTCDate(t.getUTCDate() + 1);
+  return t.toISOString().slice(0, 10);
+};
+
+/**
+ * final_gap の日付（hq 846f0e8）: date は出す日、final_date は優勝戦の日。
+ * when=today なら date＝final_date、when=eve（準優の日）なら final_date＝date の翌日。合わなければ札（今日の優勝戦／前夜）が事実と違う
+ */
+function finalDateReasons(b) {
+  const ymd = /^\d{4}-\d{2}-\d{2}$/;
+  if (typeof b.final_date !== "string" || !ymd.test(b.final_date))
+    return [`final_date（優勝戦の日）が YYYY-MM-DD でない: ${b.final_date}`];
+  if (!ymd.test(b.date)) return [`date が YYYY-MM-DD でない: ${b.date}`];
+  if (b.when === "today" && b.final_date !== b.date)
+    return [
+      `when=today なのに date（${b.date}）と final_date（${b.final_date}）が違う`,
+    ];
+  if (b.when === "eve" && b.final_date !== nextDay(b.date))
+    return [
+      `when=eve なのに final_date（${b.final_date}）が date（${b.date}）の翌日でない`,
+    ];
+  return [];
+}
 
 /**
  * final_gap の値の検査: 名前と級（欠けたら止める）・主役の走・6人の表と全機の2連率の照合・主役が6人の中にいるか・主役の選び・締め
