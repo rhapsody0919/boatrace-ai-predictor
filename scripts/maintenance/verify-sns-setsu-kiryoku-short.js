@@ -623,12 +623,18 @@ test("許可が on・mode=auto: 動画1本の YouTube の job を送る時刻の
   assert.equal(resultLine(r, null, { waited: false }).code, 0);
 });
 
-test("send_time があれば、その時刻に送る（今＋2分より後なら）。22:00 を過ぎる時刻・今日でない日・期限の10分前の後は受け取らない", async () => {
-  const r = await push(bundle({ send_time: "21:45" }));
+test("send_time があれば、その時刻に送る（今＋2分より後なら）。送る時刻の15分前より早い・22:00 を過ぎる時刻・今日でない日・期限の10分前の後は受け取らない", async () => {
+  // 15分前より早い受け取りは拒否（ちょうど15分前は通す）
+  const early = await push(bundle({ send_time: "21:41" }));
+  assert.ok(
+    early.reasons?.some((x) => x.includes("15分前より早い")),
+    JSON.stringify(early.reasons),
+  );
+  const r = await push(bundle({ send_time: "21:40" }));
   assert.equal(r.reasons, undefined, JSON.stringify(r.reasons));
   assert.equal(
     new Date((await theJob()).scheduled_at).toISOString(),
-    at("21:45:00").toISOString(),
+    at("21:40:00").toISOString(),
   );
   assert.ok(
     checkShortBundle(bundle({ send_time: "22:30" }), riskRules).some((x) =>

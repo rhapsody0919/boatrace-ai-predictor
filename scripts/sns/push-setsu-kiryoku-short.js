@@ -19,7 +19,7 @@
  *      名前と級・final_gap の date と final_date と when・主役の選び など（作り手が通した後も、送る口で必ず通す）
  *   2. この口の検査: 会場名が24場のどれか、題は100字まで・改行と < > なし、説明欄は5000バイトまで・< > なし、説明欄のリンクはちょうど1つで
  *      その会場のページ（https://www.boat-ai.jp/venue/{会場コード}、クエリは utm_* だけ）、動画は MP4・縦・60秒まで・32 MiB まで
- *   3. 時刻: date は今日（JST）、送る時刻は 22:00 まで、期限の10分前より前、集計の時刻は今より前で期限まで鮮度の線（max_source_age_seconds）の内
+ *   3. 時刻: date は今日（JST）、送る時刻は 22:00 まで、受け取りは送る時刻の15分前から、期限の10分前より前、集計の時刻は今より前で期限まで鮮度の線（max_source_age_seconds）の内
  *   4. 優勝戦の型で when=today: その日のその会場の優勝戦が DB にあり、中止・欠場が無い
  *   5. 二重送信: 同じ日の setsu_kiryoku_short が生きているか送ってあれば作らない（exit 4、193 の一意の索引でも止まる）。
  *      final_gap は同じ優勝戦（日と会場）を前夜と当日で2回出さない。前の束が送らずに終わっていれば（held・failed・cancelled・承認の途中で落ちた）作り直す
@@ -69,6 +69,12 @@ export const SEND_DELAY_SEC = 120;
 export const EXPIRES_AFTER_SEND_MIN = 60;
 /** 期限の10分前を過ぎて届いたら受け取らない（push-research-image.js と同じ目安） */
 export const LATEST_BEFORE_EXPIRES_MIN = 10;
+/**
+ * 受け取りは送る時刻の15分前から（目安・根拠なし）。push で数えた YouTube の日の上限の空きを、後から入った全貌（push-full-picture.js は
+ * 日の上限を数えない）が先に claim して使うと、この job は claim の「日次全体上限です」で queued のまま Slack が鳴り続けるため、
+ * 数える時刻を送る時刻に近づける（2026-11-02 system-architect の P2）
+ */
+export const EARLIEST_BEFORE_SEND_MIN = 15;
 export const SEND_TIME_EARLIEST = "08:00";
 /** 送る時刻の上限（JST）。送り手の cron は 22:58 まで（vercel.json の sns-send、UTC 23,0-13 時）なので、期限 23:00 までに収める */
 export const SEND_TIME_LATEST = "22:00";
@@ -82,8 +88,9 @@ export const WAIT_POLL_SEC = 30;
 export const WAIT_AFTER_EXPIRES_SEC = 90;
 const DONE_STATES = ["posted", ...RETRYABLE_JOB_STATES];
 const SITE = "https://www.boat-ai.jp";
+// 旗は claim と送る直前の検査で効く。上げている最中（youtube_call の後）を DB で止めるのは mode=manual か item の停止（system-architect P3）
 const STOP_SQL =
-  "UPDATE public.sns_auto_send_control SET setsu_kiryoku_short_enabled = false WHERE channel = 'youtube';";
+  "UPDATE public.sns_auto_send_control SET setsu_kiryoku_short_enabled = false WHERE channel = 'youtube';（上げている最中なら mode='manual' も）";
 
 const addMin = (iso, min) =>
   new Date(Date.parse(iso) + min * 60000).toISOString();
@@ -294,6 +301,13 @@ export function checkTiming(bundle, when, now, { observedAt, maxAgeSec }) {
   )
     reasons.push(
       `送る時刻（${jstTime(when.send_at)}）が date の ${SEND_TIME_LATEST} を過ぎる`,
+    );
+  if (
+    Date.parse(when.send_at) - now.getTime() >
+    EARLIEST_BEFORE_SEND_MIN * 60000
+  )
+    reasons.push(
+      `送る時刻（${jstTime(when.send_at)}）の${EARLIEST_BEFORE_SEND_MIN}分前より早い（送る時刻の直前に入れる）`,
     );
   if (now.getTime() >= Date.parse(when.latest))
     reasons.push(

@@ -21,8 +21,8 @@
 --   setsu_kiryoku_short の枝・snsScreenMarkers.js の venue）を先にデプロイしてから当てる。どちらの順でも送らない側に倒れる:
 --   列が無い間は push が off として扱い何も書かない。kind の CHECK が item を拒む。送り手は setsu_kiryoku_short の下書きが無いので通らない。
 --   db-apply は master の HEAD の SQL を当てる
--- 当てる時刻: 22:00〜07:00 JST か 10:00〜13:00 JST（sns_auto_send_control・sns_auto_send_items に ACCESS EXCLUSIVE を取る。
---   /today の 8:00、優勝戦の 16:30〜20:45、数字で見たらの 19:00 と送り手の cron に重ねない）。10秒取れなければ失敗し何も変わらない
+-- 当てる時刻: 23:00〜07:59 JST（送り手の cron sns-send が止まっている間。sns_auto_send_control・sns_auto_send_items に ACCESS EXCLUSIVE を取る。
+--   191 と同じ窓）。10秒取れなければ失敗し何も変わらない
 -- ロックの順: sns_auto_send_control → sns_auto_send_items（189 と同じ。runner の transition_sns_x_send が control → items の順に読む）
 --
 -- 適用前の確認（読み取り）:
@@ -31,6 +31,8 @@
 --   期待: race・digest・full_picture・finals_image・research_image・today_thinking
 --   SELECT count(*) FROM pg_attribute WHERE attrelid = 'public.sns_auto_send_control'::regclass AND attname = 'setsu_kiryoku_short_enabled' AND NOT attisdropped;  期待: 0
 --   SELECT count(*) FROM public.sns_auto_send_items WHERE race_id LIKE 'setsu:%';  期待: 0
+--   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_x_send';  期待: 06bd2a81976f9d0fa9d5f337899f5e5d（186 適用後の本番、2026-11-02 読み取り。
+--     193 は 186 の youtube_call の照合（expiry_minutes・max_source_age_seconds を kind によらず見る）を前提にするので、違えば当てずに差を確かめる）
 --
 -- 適用後の確認（読み取り）:
 --   SELECT channel, setsu_kiryoku_short_enabled FROM public.sns_auto_send_control ORDER BY 1;  期待: x false・youtube false
