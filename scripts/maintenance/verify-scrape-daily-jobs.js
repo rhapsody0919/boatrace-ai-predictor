@@ -1694,6 +1694,49 @@ const summaryOf = ({
       rows: { racer_profiles: { ...liveRow("racer_profiles"), ...extra } },
     });
 
+  // BOA-1152: 新人だけの回・全員の回とも、完了したサイクルの母数で通知を判定する。
+  for (const month of [5, 10, 11]) {
+    for (const [targets, failed, expected] of [
+      [20, 2, false],
+      [20, 4, false],
+      [20, 5, true],
+      [99, 5, true],
+      [100, 5, false],
+      [100, 6, true],
+      [1600, 80, false],
+      [1600, 81, true],
+    ]) {
+      const store = newStore();
+      const when = jst(`2026-${String(month).padStart(2, "0")}-02T03:00:00`);
+      const sync = stubSync(
+        summaryOf({
+          processed: targets,
+          attempts: targets,
+          fail: failed,
+          remaining: 0,
+        }),
+      );
+      const result = await runIt(store, sync, when);
+      const row = store.state.get("racer_profiles");
+      const alerts = row.last_report?.alerts;
+      const alert = alerts?.[0];
+      check(
+        `選手プロフィール 通知母数: ${month}月 ${targets}人中${failed}人失敗は通知${expected ? "あり" : "なし"}`,
+        result.status === 200 &&
+          row.cursor.done === true &&
+          row.last_report.cycle.seasonTargets === targets &&
+          row.last_report.cycle.seasonFailed === failed &&
+          alerts.length === (expected ? 1 : 0) &&
+          (!expected ||
+            (alert.key === "season_fail_rate" &&
+              alert.text === `選手期別成績の失敗率が${((failed / targets) * 100).toFixed(1)}%（${failed}/${targets}人、上限5%）。対象日 ${row.cursor.targetDate}` &&
+              alert.until ===
+                new Date(when.getTime() + 2 * 24 * 3600 * 1000).toISOString())),
+        show({ result, report: row.last_report }),
+      );
+    }
+  }
+
   // 先頭 → 中間 → 最後。処理済みは最後のチャンクの完了時だけ
   {
     const store = newStore();
