@@ -3,6 +3,8 @@
  * JST（日本標準時）での日付処理を一元管理
  */
 
+import { WEEKDAYS } from "../constants/index.js";
+
 const JST_OFFSET = 9 * 60; // UTC+9 in minutes
 
 /**
@@ -39,8 +41,7 @@ export const getTodayJST = () => {
  */
 export const formatTodayHeadingJST = (now = new Date()) => {
   const jst = getJSTNow(now);
-  const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-  return `${jst.getUTCFullYear()}年${jst.getUTCMonth() + 1}月${jst.getUTCDate()}日（${weekdays[jst.getUTCDay()]}）`;
+  return `${jst.getUTCFullYear()}年${jst.getUTCMonth() + 1}月${jst.getUTCDate()}日（${WEEKDAYS[jst.getUTCDay()]}）`;
 };
 
 /**

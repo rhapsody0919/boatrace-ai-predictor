@@ -106,6 +106,10 @@ try {
         assert.equal(calcAge(birthDate), expected);
       });
     }
+    // 画面は引数なしで呼ぶ（既定の「今」= new Date()）。その経路も JST の暦日になること
+    test(`${tz} formatTodayHeadingJST()（引数なし）`, () => {
+      assert.equal(formatTodayHeadingJST(), "2026年10月25日（日）");
+    });
   }
 } finally {
   globalThis.Date = RealDate;
@@ -124,7 +128,7 @@ try {
       ["2024-02-29T00:00:00+09:00", "2024年2月29日（木）"],
     ]) {
       test(`${tz} formatTodayHeadingJST(${iso})`, () => {
-        assert.equal(formatTodayHeadingJST(new RealDate(iso)), expected);
+        assert.equal(formatTodayHeadingJST(new Date(iso)), expected);
       });
     }
   }
