@@ -18,6 +18,7 @@ import {
   getRacerAllPeriodStats,
 } from "../services/racerService";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
+import { useSocialMeta } from "../hooks/useSocialMeta";
 import DataFetchError from "../components/DataFetchError";
 import {
   isRacerIndexable,
@@ -188,6 +189,11 @@ export default function RacerProfile() {
     ? `${displayName}選手（${who}）の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別・枠番別成績、決まり手、直近のレース一覧とプロフィール。`
     : `登録番号${racerId}の選手のページ | 龍神レーダー`;
   const canonicalUrl = `${SITE_URL}/racer/${racerId}`;
+  useSocialMeta({
+    title: !loading && !error && data?.profile ? title : null,
+    description: !loading && !error && data?.profile ? description : null,
+    url: canonicalUrl,
+  });
   // AI クローラー向けスナップショット（scripts/generate-ai-snapshots.js、BOA-848）が保存してよいかの目印。
   // プロフィール・成績に加え、モーターと履歴の正常完了も待つ。
   const snapshotReady =
