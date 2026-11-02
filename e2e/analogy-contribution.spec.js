@@ -121,6 +121,27 @@ async function openSonarTab(page, n = 1) {
 const sectionOf = (page) => page.getByRole("region", { name: /龍神ソナー/ });
 
 test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () => {
+  test("boat= の艇を主役にし、未指定・不正値は1号艇で開く", async ({ page }) => {
+    await setup(page);
+    for (const [query, boat] of [
+      ["&boat=3", 3],
+      ["", 1],
+      ["&boat=9", 1],
+    ]) {
+      await page.goto(`/race/${DATE}-09-01?tab=sonar${query}`);
+      const section = sectionOf(page);
+      const buttons = section.locator(".af-boat-btn");
+      await expect(buttons.nth(boat - 1)).toHaveAttribute("aria-pressed", "true");
+      const main = section.locator(".af-hep-legend button:has(.af-hep-main)");
+      await expect(main).toContainText(`${boat}号艇`);
+      const url = page.url();
+      await buttons.nth(1).click();
+      await expect(buttons.nth(1)).toHaveAttribute("aria-pressed", "true");
+      await expect(main).toContainText("2号艇");
+      expect(page.url()).toBe(url);
+    }
+  });
+
   test("公開後（ANALOGY_FINDER_PUBLIC=true）は、内部確認の印が無くても節を出す", async ({
     page,
   }) => {
