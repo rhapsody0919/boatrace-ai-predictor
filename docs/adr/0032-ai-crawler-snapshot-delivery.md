@@ -16,7 +16,7 @@ boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコ�
 **Edge Runtime（デフォルト）のRouting Middleware（`middleware.js`）で、`@vercel/functions`の`rewrite()`ヘルパーを使い、対象ボットのリクエストのみをビルド時生成済みの静的スナップショットHTML（`dist/ai-snapshots/{page}.html`）へrewriteする。**
 
 - `middleware.js`の`matcher`に対象パス（`/blog/:path*`、`/winning-technique`）を追加し、既存のSNSハブBasic認証（`/admin/sns-hub*`）と1ファイル内で共存させる（パスごとに条件分岐）
-- ボット判定はUser-Agentヘッダの文字列マッチ（`GPTBot`/`ClaudeBot`/`PerplexityBot`/`Google-Extended`/`facebookexternalhit`/`Twitterbot`等）で行う
+- ボット判定はUser-Agentヘッダの文字列マッチ（`GPTBot`/`ClaudeBot`/`PerplexityBot`/`Google-Extended`/`facebookexternalhit`/`Twitterbot`等）で行う（Google-Extended は UA を持たず一致しなかった。追記「Google の取得器の扱い」）
 - `rewrite()`はURLを書き換えるだけで、実際のファイル配信はVercelの静的アセット配信層に任せる。**ファイルシステム（`fs`）アクセスは不要**なため、Edge Runtimeのデフォルト設定のまま実装できる
 - `rewrite()`は`redirect()`と異なりクライアント側のURLを変えない（ボットからは同一URLへのアクセスとして見える）ため、正規URLと配信コンテンツの対応が崩れない
 
@@ -51,3 +51,19 @@ boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコ�
 - **ビルド時間**: Preview（4コア 8GB、`RACER_SNAPSHOT_LIMIT=20`）で 20人 22.8秒（1人 約1.1秒）。全員（2026-10-12 時点の sitemap で325人）では約6分の見込みで、ビルド全体は今の約2分から約8分になる。Vercel のビルドの上限（45分）までは余裕がある
 - **中身の古さ**: 次のデプロイまで変わらない。sitemap の自動コミットで毎日1回は本番がデプロイされるので、最大でおよそ1日前の内容（「今節のモーター状況」も同じ）
 - **戻し方**: `resolveSnapshotPath` と `middleware.js` の matcher から `/racer` を外す（ファイルが残っても配られない）。または PR を revert
+
+## 追記: Google の取得器の扱い（BOA-899）
+
+一次情報（確認日 2026-11-02）: Google の [common crawlers](https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers) と [user-triggered fetchers](https://developers.google.com/crawling/docs/crawlers-fetchers/google-user-triggered-fetchers) の文書。
+
+| UA の名前 | 何か | 配るか |
+|---|---|---|
+| Googlebot | 検索のクローラー。JS を描画する | 配らない（ADR 0089 のオーナー決定。Google は動的レンダリングを推奨しない回避策としている） |
+| Google-InspectionTool | URL 検査・リッチリザルトテスト | 配らない（Googlebot と同じ画面を見せる） |
+| GoogleOther | 製品を決めない汎用のクローラー | 配らない |
+| Google-Agent | 利用者の代わりにページを操作する代理 | 配らない（操作できる SPA のままにする） |
+| Google-GeminiNotebook | Gemini Notebook の利用者が出典に渡した URL を取る。UA は Chrome の文字列に `(compatible; Google-GeminiNotebook; +https://developers.google.com/crawling/docs/crawlers-fetchers/google-gemininotebook)` が付く。旧名 Google-NotebookLM は文書で「2026年8月まで」とされ、足さない | **配る**（ChatGPT-User・Claude-User と同じ利用者起点の取得） |
+| Google-Extended | robots.txt の印。「doesn't have a separate HTTP request user agent string」 | 一覧から外した。この名前を名乗る取得は無く、UA の照合では何にも一致しなかった（当初の決定の誤り） |
+
+- Gemini API の url_context の取得 UA は公式文書（ai.google.dev/gemini-api/docs/url-context）に書かれていない。文書は「まず内部の索引キャッシュ、無ければその場で取得」とだけ書く。2026-11-02 の hq の試験で /blog/meet-score-rate-guide は本文が取れ、/blog/toda-losing-makuri-share と /racer/3256 は殻だったが、3つとも配信の経路は同じ（人・Google の各 UA に殻、上の配る UA に描画済み）。この追記は url_context の差を直すものではない
+- 一覧を変えるときは、`vercel.json` の no-store 規則の `missing` の UA 正規表現（6か所）も同じに直す（`scripts/maintenance/verify-middleware-routing.js` [7] が一致を確かめる）

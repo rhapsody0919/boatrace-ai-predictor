@@ -17,6 +17,7 @@ ADR 0032 は、AI クローラー向けの中身を「ビルド時に作る静�
 
 ## 決定
 1. **出す UA**: `src/config/aiCrawlerBots.js` の `AI_CRAWLER_USER_AGENTS`。AI の取得用 UA と、bingbot・Applebot・DuckDuckBot を含む。Googlebot には出さない。Googlebot は JS を描画して人と同じ画面を見るので、UA で出し分けない（0032 と同じ）
+   - Google の取得器のうち出すのは、利用者起点の Google-GeminiNotebook だけ（BOA-899、2026-11-02）。Google-InspectionTool・GoogleOther は Googlebot と同じ理由で出さない。Google-Agent は利用者の代わりにページを操作する代理なので出さない。表は ADR 0032 の追記「Google の取得器の扱い」
 2. **出すページ**: 第1段は、日本語の / と /venue/1〜24（0埋めなし、人の URL と同じ）。次のパスには出さない。
    - `/venue/01` のような0埋め・範囲外・数字以外（人と同じ SPA のまま）
    - 言語の接頭辞が付くパス（第2段で言語版の / と /venue/1〜24 を足す。下の「第2段」）
