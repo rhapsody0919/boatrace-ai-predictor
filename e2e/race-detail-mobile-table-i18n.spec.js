@@ -1,4 +1,13 @@
+import { readFileSync } from "node:fs";
 import { test, expect } from "./fixtures.js";
+
+const locale = (lang) =>
+  JSON.parse(
+    readFileSync(
+      new URL(`../src/locales/${lang}/common.json`, import.meta.url),
+      "utf8",
+    ),
+  );
 
 // BOA-680: 375px の展示情報を英語・日本語で固定する。320px の英語の
 // 部品名による溢れは見せ方の判断待ちなので、このテストには含めない。
@@ -47,7 +56,86 @@ for (const [lang, tab] of [
 // e2e/race-detail-mobile-table.spec.js（BOA-612）は日本語だけを見ていたので検知できなかった
 const RACE = "/race/2026-10-09-20-09";
 
+// 決まり手の欄は選手の「直近90日（今日から数える）の1着の決まり手」で、日がたつと本番の値が動く
+// （get_race_technique_profile の窓は now() 起点。BOA-1225: 10/30 以降、1号艇の最多が逃げ→まくりに
+// 変わり、E2E Live が毎日落ちた）。この試験が見たいのは訳語の形と表の幅なので、決まり手の応答は
+// 2026-10-27 の録画の値に固定し、本番の値の動きに依らないようにする。
+// 1号艇の最多は逃げ。6号艇は「まくり」「まくり差し」が同数（並びは決まり手の名前順で「まくり」）
+const tech = (technique, count, total) => ({
+  technique,
+  count,
+  percentage: (count / total) * 100,
+});
+const TECHNIQUE_PROFILE = [
+  [
+    1,
+    4496,
+    9,
+    [
+      ["逃げ", 4],
+      ["まくり", 3],
+      ["まくり差し", 1],
+      ["差し", 1],
+    ],
+  ],
+  [
+    2,
+    4648,
+    3,
+    [
+      ["逃げ", 2],
+      ["差し", 1],
+    ],
+  ],
+  [
+    3,
+    4919,
+    4,
+    [
+      ["逃げ", 3],
+      ["差し", 1],
+    ],
+  ],
+  [
+    4,
+    5131,
+    2,
+    [
+      ["まくり", 1],
+      ["抜き", 1],
+    ],
+  ],
+  [
+    5,
+    4695,
+    10,
+    [
+      ["逃げ", 8],
+      ["差し", 1],
+      ["恵まれ", 1],
+    ],
+  ],
+  [
+    6,
+    5395,
+    3,
+    [
+      ["まくり", 1],
+      ["まくり差し", 1],
+      ["逃げ", 1],
+    ],
+  ],
+].map(([boat_number, racer_id, win_count, techniques]) => ({
+  boat_number,
+  racer_id,
+  win_count,
+  techniques: techniques.map(([name, count]) => tech(name, count, win_count)),
+}));
+
 async function openTable(page, lang, width) {
+  await page.route("**/rest/v1/rpc/get_race_technique_profile*", (route) =>
+    route.fulfill({ json: TECHNIQUE_PROFILE }),
+  );
   await page.setViewportSize({ width, height: 900 });
   await page.goto(`${lang}${RACE}`);
   await page.locator(".race-tabs-btn").first().click();
@@ -61,7 +149,10 @@ async function openTable(page, lang, width) {
   return table;
 }
 
-const SHORT = { "/en": "Escape", "/zh-TW": "逃走", "/ko": "인빠지기 (Nige)" };
+// 期待の訳語は訳の辞書から引く（en は英語の部分、zh-TW は漢字だけ、ko は今の訳語と同じ）
+const SHORT = Object.fromEntries(
+  ["en", "zh-TW", "ko"].map((l) => [`/${l}`, locale(l).techniquesShort]),
+);
 
 for (const lang of ["/en", "/zh-TW", "/ko"]) {
   for (const width of [320, 375]) {
@@ -81,10 +172,16 @@ for (const lang of ["/en", "/zh-TW", "/ko"]) {
       });
       expect(m.sw).toBeLessThanOrEqual(m.cw);
       expect(m.pageOverflow).toBe(0);
-      // 1号艇の決まり手は逃げ
+      // 1号艇の決まり手は逃げ。ほかの艇も、出ている語はすべて短い訳語の辞書にある
       await expect(
         table.locator(".drt-technique").first().locator(".drt-tech-short"),
-      ).toHaveText(SHORT[lang]);
+      ).toHaveText(SHORT[lang].nige);
+      const shown = await table
+        .locator(".drt-technique .drt-tech-short")
+        .allTextContents();
+      expect(shown).toHaveLength(6);
+      const allowed = Object.values(SHORT[lang]);
+      for (const text of shown) expect(allowed).toContain(text);
       await expect(
         table.locator(".drt-technique").first().locator(".drt-tech-full"),
       ).toBeHidden();
@@ -98,7 +195,7 @@ test("/en 1440px: PC 幅の決まり手は今の訳語（括弧の補足つき�
   const table = await openTable(page, "/en", 1440);
   await expect(
     table.locator(".drt-technique").first().locator(".drt-tech-full"),
-  ).toHaveText("Nige (Escape)");
+  ).toHaveText(locale("en").techniques.nige);
   await expect(
     table.locator(".drt-technique").first().locator(".drt-tech-short"),
   ).toBeHidden();
