@@ -98,6 +98,14 @@ export function meetBannerSeriesOf(races) {
   return { grade: first.raceGrade, title };
 }
 
+/** 会場で絞った race_series の行から、その日の節を選ぶ（初日は日目から逆算しない）。 */
+export function seriesOfDate(rows, date) {
+  const series = [...rows]
+    .filter((row) => row.start_date <= date)
+    .sort((a, b) => b.start_date.localeCompare(a.start_date))[0];
+  return seriesCoveringDate(series, date);
+}
+
 const dateOf = (raceId) => String(raceId).slice(0, 10);
 
 /**
