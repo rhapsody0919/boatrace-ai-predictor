@@ -134,7 +134,7 @@ export function buildRacerScopedRaceRows({
         // ===1の行のみ表示）に委ね、ここでは生値をそのまま渡す
         winningTechnique: result.winning_technique ?? null,
         payoutWin: result.payout_win ?? null,
-        // フライングは異常値のため平均ST計算から除外する（RaceResult.jsx等と
+        // フライング・出遅れは平均ST計算から除外する（RaceResult.jsx等と
         // 同じ扱い）。未計測・未取得レースはnullのまま
         // 欠場（本番STの行の着順が「欠」）。履歴の表で「着外」と区別する（BOA-504）
         // 本番STの行そのものが無い欠場もある（他の艇の行はあるのに自艇だけ無い。
@@ -146,13 +146,21 @@ export function buildRacerScopedRaceRows({
         absent:
           isAbsentStartRow(st) || (!st && stRowsByRace.has(entry.race_id)),
         startTiming:
-          st && !st.is_flying && st.start_timing != null
+          st &&
+          !st.is_flying &&
+          st.is_late_start !== true &&
+          st.start_timing != null
             ? st.start_timing
             : null,
         // フライングの走の ST。startTiming（平均・ST考察の母数）には入れず、表に「F.01」と
         // 出すためだけに別に持つ（BOA-583。以前は直近10走・今節の表で「-」だった）
         flyingStartTiming:
           st?.is_flying && st.start_timing != null ? st.start_timing : null,
+        // 出遅れの ST は平均から外し、履歴の表に出すためだけに残す（BOA-1052）
+        lateStartTiming:
+          st?.is_late_start === true && st.start_timing != null
+            ? st.start_timing
+            : null,
         // 実進入コース（BOA-257）。2025-12-04より前のレースや欠場艇はnull
         actualCourse: result[`actual_course_${entry.boat_number}`] ?? null,
         // 表示用の進入コース（BOA-623）。本番STの進入（当日のうちに入る）を先に、

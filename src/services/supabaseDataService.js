@@ -4507,7 +4507,8 @@ export const supabaseDataService = {
     // v7: 同じ日の走を R の古い順に並べ直した（BOA-588）
     // v8: フライングの走の ST（flyingStartTiming）を足した（BOA-583。直近10走・今節の表で「F.01」と出すため）
     // v11: race_entries を1000行で切らずに取り切るようにした（BOA-1051）
-    return withCache(`racer-scoped-race-stats-v11-${racerId}`, async () => {
+    // v12: 出遅れの ST を平均から除き、表用の lateStartTiming に持つ（BOA-1052）
+    return withCache(`racer-scoped-race-stats-v12-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4566,7 +4567,7 @@ export const supabaseDataService = {
         fetchAllByIn(
           "race_start_timings",
           // finish_mark: 欠場の走を「着外」でなく「欠場」と出すため（BOA-504）
-          "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
+          "race_id, boat_number, start_timing, is_flying, is_late_start, finish_mark, entry_course",
           "race_id",
           raceIds,
         ),
