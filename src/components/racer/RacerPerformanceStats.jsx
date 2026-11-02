@@ -212,7 +212,9 @@ export default function RacerPerformanceStats({
     ? "error"
     : vcHistory === null
       ? "loading"
-      : vcHistory.length ? "done" : "empty";
+      : vcHistory.length
+        ? "done"
+        : "empty";
   useEffect(() => {
     onHistoryStateChange?.({ racerId, state: snapshotHistoryState });
   }, [racerId, snapshotHistoryState, onHistoryStateChange]);
@@ -422,26 +424,46 @@ export default function RacerPerformanceStats({
       )
     : [];
 
+  // 枠番別成績（全会場計）。出走履歴が届いたら、会場別・条件別・レース一覧と同じ履歴から数える（BOA-1190）。
+  // 日次の集計（course_race_counts）は race_results の course_1〜6 が空のレース（結果はあるのに
+  // 進入の列が無い、本番で約4%）を数えず、同じ画面の「全体」の走数と合わなかった（/racer/3941 で 218走と 232走）。
+  // 履歴の読み込み中・失敗のときは、これまでどおり日次の集計を出す
+  const historyCourseStats = vcHistory
+    ? aggregateRacerCrossStats(vcHistory, {}, "boat", null, null).map(
+        (row) => ({
+          course: row.key,
+          total: row.n,
+          wins: row.win,
+          winRate: row.winRate,
+          top2Rate: row.top2Rate,
+          top3Rate: row.top3Rate,
+        }),
+      )
+    : null;
   // course_race_counts: { "1": { total, wins, top2, top3 }, ... } → コース番号昇順の配列に変換
-  const courseStats = Object.entries(aggregatedStats?.course_race_counts ?? {})
-    .map(([course, counts]) => ({
-      course: Number(course),
-      total: counts.total ?? 0,
-      wins: counts.wins ?? 0,
-      winRate: counts.total > 0 ? counts.wins / counts.total : null,
-      // top2/top3は本チケット（BOA-268）で追加したフィールドのため、
-      // バッチ集計（aggregate-racer-stats.js）が再実行されるまでは
-      // 未集計の選手が存在する。undefinedを0扱いすると「2連率0%」と
-      // 誤表示するため、区別してnull（"-"表示）にする
-      top2Rate:
-        counts.total > 0 && counts.top2 !== undefined
-          ? counts.top2 / counts.total
-          : null,
-      top3Rate:
-        counts.total > 0 && counts.top3 !== undefined
-          ? counts.top3 / counts.total
-          : null,
-    }))
+  const courseStats = (
+    historyCourseStats ??
+    Object.entries(aggregatedStats?.course_race_counts ?? {}).map(
+      ([course, counts]) => ({
+        course: Number(course),
+        total: counts.total ?? 0,
+        wins: counts.wins ?? 0,
+        winRate: counts.total > 0 ? counts.wins / counts.total : null,
+        // top2/top3は本チケット（BOA-268）で追加したフィールドのため、
+        // バッチ集計（aggregate-racer-stats.js）が再実行されるまでは
+        // 未集計の選手が存在する。undefinedを0扱いすると「2連率0%」と
+        // 誤表示するため、区別してnull（"-"表示）にする
+        top2Rate:
+          counts.total > 0 && counts.top2 !== undefined
+            ? counts.top2 / counts.total
+            : null,
+        top3Rate:
+          counts.total > 0 && counts.top3 !== undefined
+            ? counts.top3 / counts.total
+            : null,
+      }),
+    )
+  )
     .filter((row) => row.total >= 5)
     .sort((a, b) => a.course - b.course);
   const hasCourseStats = courseStats.length > 0;
@@ -469,7 +491,10 @@ export default function RacerPerformanceStats({
 
   if (loading) {
     return (
-      <div className="racer-performance-stats" data-snapshot-history={snapshotHistoryState}>
+      <div
+        className="racer-performance-stats"
+        data-snapshot-history={snapshotHistoryState}
+      >
         <h2>{heading}</h2>
         <p className="racer-stat-loading">読み込み中...</p>
       </div>
@@ -481,7 +506,10 @@ export default function RacerPerformanceStats({
   }
 
   return (
-    <div className="racer-performance-stats" data-snapshot-history={snapshotHistoryState}>
+    <div
+      className="racer-performance-stats"
+      data-snapshot-history={snapshotHistoryState}
+    >
       <h2>{heading}</h2>
 
       {/* フィルタ: 見出し直下・最上部に常時表示（ADR-0063）。venueStatsが
