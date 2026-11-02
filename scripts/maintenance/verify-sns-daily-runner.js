@@ -56,6 +56,13 @@ const store = {
         [raceIds],
       )
     ).map((d) => ({ ...d, posted_at: d.posted_at?.toISOString() ?? null })),
+  setsuShortDrafts: async (since) =>
+    (
+      await all(
+        "SELECT id, posted_at, caption_text FROM sns_drafts WHERE format='setsu_kiryoku_short' AND platform='youtube' AND posted_at >= $1",
+        [since],
+      )
+    ).map((d) => ({ ...d, posted_at: d.posted_at.toISOString() })),
   existingDrafts: async (ids) =>
     (await all("SELECT id FROM sns_drafts WHERE id = ANY($1)", [ids])).map(
       (r) => r.id,
@@ -170,12 +177,18 @@ function mockYoutube(calls = [], { channelDays } = {}) {
 }
 
 // UTM の行: [日付, 流入元, campaign, content, term, 指標...]
-function mockGa4(calls = [], { utm = [], utmSonar = [], utmAssist = [] } = {}) {
+function mockGa4(
+  calls = [],
+  { utm = [], utmSonar = [], utmAssist = [], setsu = [] } = {},
+) {
   return async () => async (body) => {
     calls.push(body);
     const dims = body.dimensions.map((d) => d.name).join(",");
+    // 節の機力の Shorts: [日付, landingPage, source, medium, campaign, content, users, sessions]
+    if (dims.includes("landingPage")) return setsu;
     const sonar = JSON.stringify(body.dimensionFilter).includes("race_tab");
-    if (JSON.stringify(body.dimensionFilter).includes("pagePath")) return utmAssist;
+    if (JSON.stringify(body.dimensionFilter).includes("pagePath"))
+      return utmAssist;
     if (dims === "date,sessionSource")
       return sonar
         ? [["20261014", "t.co", 2]]
@@ -766,6 +779,183 @@ test("全貌の完全版の機能への導線（utm_content=レース ID/sonar�
   );
 });
 
+test("節の機力の Shorts（setsu_kiryoku_short）: 説明欄のリンクの utm_* と landingPage で下書きに結びつけ、投稿日と翌日だけ残す（BOA-1209）", async () => {
+  const link = (venue, content) =>
+    `節の機力\nhttps://www.boat-ai.jp/venue/${venue}?utm_source=youtube&utm_medium=shorts&utm_content=${content}\n#ボートレース`;
+  const ins = (format, platform, caption, postedAt) =>
+    first(
+      "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,status,posted_at) VALUES(gen_random_uuid(),$1,$2,'ja','節の機力',$3,'posted',$4) RETURNING id",
+      [format, platform, caption, postedAt],
+    );
+  // JST 10/13 21:30 と 10/14 21:30 に同じ会場・同じ utm で投稿（翌日の分より当日の投稿を先にする）
+  const a = (
+    await ins(
+      "setsu_kiryoku_short",
+      "youtube",
+      link(13, "final_gap"),
+      "2026-10-13T12:30:00Z",
+    )
+  ).id;
+  const b = (
+    await ins(
+      "setsu_kiryoku_short",
+      "youtube",
+      link(13, "final_gap"),
+      "2026-10-14T12:30:00Z",
+    )
+  ).id;
+  // utm_source の無いリンクは結びつけない。X の節の機力（リンクなし）は GA4 の行を持たない
+  await ins(
+    "setsu_kiryoku_short",
+    "youtube",
+    "https://www.boat-ai.jp/venue/1",
+    "2026-10-14T12:30:00Z",
+  );
+  await ins("setsu_kiryoku", "x", "本文", "2026-10-14T12:30:00Z");
+  const calls = [];
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: mockYoutube(),
+    ga4: mockGa4(calls, {
+      setsu: [
+        [
+          "20261013",
+          "/venue/13",
+          "youtube",
+          "shorts",
+          "(not set)",
+          "final_gap",
+          4,
+          5,
+        ], // a の投稿日
+        [
+          "20261014",
+          "/venue/13",
+          "YouTube",
+          "shorts",
+          "(not set)",
+          "final_gap",
+          2,
+          2,
+        ], // b の投稿日（a の翌日でもある）
+        ["20261014", "/venue/13", "youtube", "shorts", "x", "final_gap", 1, 1], // campaign はリンクに無いので照合しない（足す）
+        [
+          "20261015",
+          "/venue/13",
+          "youtube",
+          "shorts",
+          "(not set)",
+          "final_gap",
+          3,
+          3,
+        ], // b の翌日
+        [
+          "20261014",
+          "/venue/13",
+          "youtube",
+          "referral",
+          "(not set)",
+          "final_gap",
+          9,
+          9,
+        ], // medium が違う
+        [
+          "20261014",
+          "/venue/24",
+          "youtube",
+          "shorts",
+          "(not set)",
+          "final_gap",
+          9,
+          9,
+        ], // 会場が違う
+        [
+          "20261014",
+          "/venue/1",
+          "youtube",
+          "(none)",
+          "(not set)",
+          "(not set)",
+          9,
+          9,
+        ], // utm の無い下書きの会場
+      ],
+    }),
+  });
+  const q = calls.find((c) =>
+    c.dimensions.some((d) => d.name === "landingPage"),
+  );
+  assert.deepEqual(
+    q.dimensions.map((d) => d.name),
+    [
+      "date",
+      "landingPage",
+      "sessionSource",
+      "sessionMedium",
+      "sessionCampaignName",
+      "sessionManualAdContent",
+    ],
+  );
+  assert.match(
+    JSON.stringify(q.dimensionFilter),
+    /"landingPage","inListFilter":\{"values":\["\/venue\/13"\]\}/,
+  );
+  const got = (
+    await all(
+      "SELECT day::text, channel, draft_id, utm_content, metric_name, metric_value::float v, definition FROM sns_channel_daily WHERE definition LIKE '%setsu_kiryoku_short%' ORDER BY day, draft_id, metric_name",
+    )
+  ).map((r) => [
+    r.day,
+    r.channel,
+    r.draft_id === a ? "a" : r.draft_id === b ? "b" : r.draft_id,
+    r.utm_content,
+    r.metric_name,
+    r.v,
+  ]);
+  assert.deepEqual(
+    got.sort((p, q2) => JSON.stringify(p).localeCompare(JSON.stringify(q2))),
+    [
+      ["2026-10-13", "youtube", "a", "final_gap", "sessions", 5],
+      ["2026-10-13", "youtube", "a", "final_gap", "users", 4],
+      ["2026-10-14", "youtube", "b", "final_gap", "sessions", 3],
+      ["2026-10-14", "youtube", "b", "final_gap", "users", 3],
+      ["2026-10-15", "youtube", "b", "final_gap", "sessions", 3],
+      ["2026-10-15", "youtube", "b", "final_gap", "users", 3],
+    ],
+  );
+});
+
+test("節の機力の Shorts の下書きが無ければ GA4 を余分に呼ばない", async () => {
+  await db.query("DELETE FROM sns_drafts WHERE format LIKE 'setsu_kiryoku%'");
+  const calls = [];
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: mockYoutube(),
+    ga4: mockGa4(calls),
+  });
+  assert.equal(
+    calls.some((c) => c.dimensions.some((d) => d.name === "landingPage")),
+    false,
+  );
+});
+
+test("PostgREST の store: 節の機力の Shorts は format と platform で引き、説明欄を読む", async () => {
+  const urls = [];
+  const pg = createSnsDailyStore({
+    url: "https://db",
+    key: "k",
+    fetchImpl: async (url) => {
+      urls.push(decodeURIComponent(String(url)));
+      return Response.json([]);
+    },
+  });
+  await pg.setsuShortDrafts("2026-10-12T00:00:00+09:00");
+  assert.equal(
+    urls[0],
+    "https://db/rest/v1/sns_drafts?format=eq.setsu_kiryoku_short&platform=eq.youtube&posted_at=gte.2026-10-12T00:00:00+09:00&select=id,posted_at,caption_text",
+  );
+});
+
 test("PostgREST の store: 全貌の下書きは race_id で引き、投稿の時刻を読む", async () => {
   const urls = [];
   const pg = createSnsDailyStore({
@@ -1175,36 +1365,57 @@ test("pt3d の観測: 4指標のうち1つの保存に落ちたら、次の日�
   );
 });
 
-
 test("思考アシストの UTM: page_view の人数を投稿日と翌日だけ全貌へ保存する", async () => {
   const race = "2026-10-13-08-12";
-  const id = (await first(
-    "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,status,posted_at,source_data) VALUES(gen_random_uuid(),'full_picture','youtube','ja','全貌','本文','posted','2026-10-13T08:05:00Z',$1) RETURNING id",
-    [{ full_picture: { race_id: race } }],
-  )).id;
+  const id = (
+    await first(
+      "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,status,posted_at,source_data) VALUES(gen_random_uuid(),'full_picture','youtube','ja','全貌','本文','posted','2026-10-13T08:05:00Z',$1) RETURNING id",
+      [{ full_picture: { race_id: race } }],
+    )
+  ).id;
   const calls = [];
   await runSnsDaily(ctx(), {
-    store, youtube: mockYoutube(),
-    ga4: mockGa4(calls, { utmAssist: [
-      ["20261013", "YouTube", "race-full", `${race}/assist`, "FULL", 3],
-      ["20261014", "youtube", "race-full", race, "shorts", 2],
-      ["20261015", "youtube", "race-full", race, "full", 9],
-      ["20261014", "youtube", "race-full", "2026-10-14-07-01/assist", "full", 9],
-    ] }),
+    store,
+    youtube: mockYoutube(),
+    ga4: mockGa4(calls, {
+      utmAssist: [
+        ["20261013", "YouTube", "race-full", `${race}/assist`, "FULL", 3],
+        ["20261014", "youtube", "race-full", race, "shorts", 2],
+        ["20261015", "youtube", "race-full", race, "full", 9],
+        [
+          "20261014",
+          "youtube",
+          "race-full",
+          "2026-10-14-07-01/assist",
+          "full",
+          9,
+        ],
+      ],
+    }),
   });
-  const got = await all("SELECT day::text, channel, draft_id, utm_content, metric_value::float v, definition FROM sns_channel_daily WHERE metric_name='assist_users' ORDER BY day");
-  assert.deepEqual(got.map(r => [r.day, r.channel, r.draft_id, r.utm_content, r.v]), [
-    ["2026-10-13", "youtube", id, `${race}/assist`, 3],
-    ["2026-10-14", "youtube", id, race, 2],
-  ]);
+  const got = await all(
+    "SELECT day::text, channel, draft_id, utm_content, metric_value::float v, definition FROM sns_channel_daily WHERE metric_name='assist_users' ORDER BY day",
+  );
+  assert.deepEqual(
+    got.map((r) => [r.day, r.channel, r.draft_id, r.utm_content, r.v]),
+    [
+      ["2026-10-13", "youtube", id, `${race}/assist`, 3],
+      ["2026-10-14", "youtube", id, race, 2],
+    ],
+  );
   assert.match(got[0].definition, /assist_users.*utm_term=full/);
   assert.match(got[1].definition, /assist_users.*utm_term=shorts/);
-  const request = calls.find(c => JSON.stringify(c.dimensionFilter).includes("pagePath"));
+  const request = calls.find((c) =>
+    JSON.stringify(c.dimensionFilter).includes("pagePath"),
+  );
   assert.deepEqual(request.metrics, [{ name: "totalUsers" }]);
   assert.equal(request.dimensions.length, 5);
   const filter = request.dimensionFilter.andGroup.expressions.at(-1);
   assert.deepEqual(filter.andGroup.expressions[0], {
-    filter: { fieldName: "eventName", stringFilter: { matchType: "EXACT", value: "page_view" } },
+    filter: {
+      fieldName: "eventName",
+      stringFilter: { matchType: "EXACT", value: "page_view" },
+    },
   });
   const path = filter.andGroup.expressions[1].filter;
   assert.equal(path.fieldName, "pagePath");
@@ -1212,15 +1423,31 @@ test("思考アシストの UTM: page_view の人数を投稿日と翌日だけ�
   const re = new RegExp(path.stringFilter.value);
   for (const prefix of ["", "/en", "/zh-TW", "/ko"])
     assert.ok(re.test(`${prefix}/race/${race}/assist`));
-  for (const path of [`/race/${race}`, `/race/${race}/assist/extra`, "/assist", `/race/${race}/assistant`])
+  for (const path of [
+    `/race/${race}`,
+    `/race/${race}/assist/extra`,
+    "/assist",
+    `/race/${race}/assistant`,
+  ])
     assert.equal(re.test(path), false);
-  assert.equal(calls.filter(c => c.dimensions.length === 2).length, 2);
+  assert.equal(calls.filter((c) => c.dimensions.length === 2).length, 2);
 });
 
 test("snsGa4 はブログ記事のファイルを読む src モジュールに依存しない", async () => {
-  const source = await readFile(new URL("../lib/snsGa4.js", import.meta.url), "utf8");
+  const source = await readFile(
+    new URL("../lib/snsGa4.js", import.meta.url),
+    "utf8",
+  );
   const { parse } = await import("espree");
   const ast = parse(source, { ecmaVersion: "latest", sourceType: "module" });
-  const imports = ast.body.filter(n => n.type === "ImportDeclaration" || n.type === "ExportAllDeclaration" || n.type === "ExportNamedDeclaration" && n.source);
-  assert.deepEqual(imports.map(n => n.source.value), ["node:crypto"]);
+  const imports = ast.body.filter(
+    (n) =>
+      n.type === "ImportDeclaration" ||
+      n.type === "ExportAllDeclaration" ||
+      (n.type === "ExportNamedDeclaration" && n.source),
+  );
+  assert.deepEqual(
+    imports.map((n) => n.source.value),
+    ["node:crypto"],
+  );
 });
