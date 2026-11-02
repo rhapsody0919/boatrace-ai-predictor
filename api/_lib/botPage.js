@@ -1,7 +1,7 @@
 /**
  * ボット向け HTML（ADR 0089）の関数の中身。api/bot-page/top.js と api/bot-page/venue/[code].js が使う。
  *
- * - 材料は同じデプロイの /api/races/today だけ（origin はリクエストの host から組む。利用者の入力から外部の URL を組まない）。
+ * - 材料は同じデプロイの /api/races/today と、帯が出る会場の race_series（origin はリクエストの host から組む。利用者の入力から外部の URL を組まない）。
  *   モジュールスコープで60秒だけ使い回し、取得中の呼び出しは同じ Promise を待たせる（ADR 0089 決定4、ADR 0059 §2 の多重リクエストの抑制）
  * - 中身は botPageModel.js のモデル（人の画面の部分集合）だけ。トップは本日開催中のレースに加えて、
  *   説明の本文・よくある質問（FAQPage の JSON-LD を head に）・ブログ欄・言語版の案内の帯を出す。値はテキスト・属性とも HTML エスケープする
@@ -243,6 +243,74 @@ export function createTodayRacesSource({
   };
 }
 
+/** race_series の REST 応答。取得失敗や壊れた日付を「帯なし」にしない。 */
+function assertSeriesRows(rows) {
+  const date = (v) =>
+    typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) &&
+    Number.isFinite(Date.parse(`${v}T00:00:00Z`)) &&
+    new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v;
+  if (!Array.isArray(rows) || rows.length > 1 || rows.some((r) =>
+    !r || !date(r.start_date) || !date(r.end_date) || r.end_date < r.start_date ||
+    !(r.title === null || typeof r.title === "string") ||
+    !(r.grade === null || typeof r.grade === "string"))) {
+    throw new MaterialFetchError("race_series の応答の形が違う");
+  }
+}
+
+/** botToday.createDigestSource と同じ anon キー・timeout・60秒の使い回し。 */
+export function createSeriesSource({
+  fetchImpl = (...args) => fetch(...args),
+  now = Date.now,
+  ttlMs = MATERIAL_TTL_MS,
+  env = process.env,
+} = {}) {
+  const cache = new Map();
+  const inflight = new Map();
+  async function load(venueCode, date, cacheKey) {
+    const base = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
+    const key = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY;
+    if (!base || !key) throw new MaterialFetchError("Supabase の URL か anon キーが無い");
+    const url = `${String(base).replace(/\/$/, "")}/rest/v1/race_series?venue_code=eq.${venueCode}&start_date=lte.${date}&order=start_date.desc&limit=1&select=start_date,end_date,title,grade`;
+    let rows;
+    try {
+      const res = await fetchImpl(url, {
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          accept: "application/json",
+        },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      rows = await res.json();
+    } catch {
+      throw new MaterialFetchError("race_series を取得できない");
+    }
+    assertSeriesRows(rows);
+    // 日付をまたいだ分を残し続けない。
+    for (const [k, v] of cache) if (now() - v.at >= ttlMs) cache.delete(k);
+    cache.set(cacheKey, { at: now(), rows });
+    return rows;
+  }
+  return async function getSeriesRows(venueCode, date) {
+    if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24 ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new MaterialFetchError("会場か日付の形が違う");
+    }
+    const key = `${venueCode}-${date}`;
+    const hit = cache.get(key);
+    if (hit && now() - hit.at < ttlMs) return hit.rows;
+    if (inflight.has(key)) return inflight.get(key);
+    const promise = load(venueCode, date, key);
+    inflight.set(key, promise);
+    try {
+      return await promise;
+    } finally {
+      inflight.delete(key);
+    }
+  };
+}
+
 /** リクエストの host から自分の origin を組む。host の形が変なら null */
 export function originOf(headers) {
   const host = String(headers?.host ?? "");
@@ -403,6 +471,9 @@ export function renderVenueHtml(model, viewLabel, { siteJsonLd = [] } = {}) {
     `<h1>${escapeHtml(model.heading)}</h1>`,
     // 見出しの直下の常設の要約2行（BOA-1189）
     ...(model.summaryLines ?? []).map((line) => `<p>${escapeHtml(line)}</p>`),
+    model.meetBanner
+      ? `<p><span translate="no">${escapeHtml(model.meetBanner.name)}</span> ${escapeHtml(model.meetBanner.inProgress)} <a href="${escapeHtml(model.meetBanner.href)}">${escapeHtml(model.meetBanner.link)}</a></p>`
+      : "",
     model.emptyText ? `<p>${escapeHtml(model.emptyText)}</p>` : "",
     items.length > 0 ? `<ol>\n${items.join("\n")}\n</ol>` : "",
   ]
@@ -484,12 +555,15 @@ export function prefixedLangFromUrl(page, url) {
 /**
  * @param {{page: "top"|"venue", langMode?: "ja"|"prefixed", method?: string, url?: string, headers?: Record<string, string>}} req
  *   langMode: "ja"（既定）は接頭辞なしの日本語のページ、"prefixed" は言語版（言語はパスから読む）
- * @param {{getTodayJson: (origin: string) => Promise<unknown>, now: () => number, getT: (lang: string) => Promise<Function>, getSiteJsonLd?: () => Promise<object[]>}} deps
+ * @param {{getTodayJson: (origin: string) => Promise<unknown>, getSeriesRows: Function, now: () => number, getT: (lang: string) => Promise<Function>, getSiteJsonLd?: () => Promise<object[]>}} deps
  * @returns {Promise<{status: number, headers: Record<string, string>, body: string}>}
  */
 export async function respondBotPage(
   { page, langMode = "ja", method, url, headers },
-  { getTodayJson, now, getT, getSiteJsonLd: loadSiteJsonLd = getSiteJsonLd },
+  {
+    getTodayJson, getSeriesRows, now, getT,
+    getSiteJsonLd: loadSiteJsonLd = getSiteJsonLd,
+  },
 ) {
   if (method !== "GET" && method !== "HEAD") {
     return plain(
@@ -516,10 +590,20 @@ export async function respondBotPage(
       getT(lang),
       loadSiteJsonLd(),
     ]);
+    const today = getJSTNow(new Date(now())).toISOString().slice(0, 10);
+    let venueModel;
+    if (page === "venue") {
+      venueModel = buildVenueModel(json, venueCode, { t, lang, today });
+      if (venueModel.meetBannerEligible) {
+        const seriesRows = await getSeriesRows(venueCode, today);
+        assertSeriesRows(seriesRows);
+        venueModel = buildVenueModel(json, venueCode, { t, lang, today, seriesRows });
+      }
+    }
     const html =
       page === "venue"
         ? renderVenueHtml(
-            buildVenueModel(json, venueCode, { t, lang }),
+            venueModel,
             t("raceCard.view"),
             { siteJsonLd },
           )
@@ -545,18 +629,20 @@ export async function respondBotPage(
 }
 
 const defaultSource = createTodayRacesSource();
+const defaultSeriesSource = createSeriesSource();
 
 /**
  * Vercel の Node 関数のハンドラ（req, res）を作る
  *
  * @param {"top"|"venue"} page
- * @param {{langMode?: "ja"|"prefixed", getTodayJson?: Function, now?: () => number, getT?: (lang: string) => Promise<Function>, getSiteJsonLd?: () => Promise<object[]>}} [deps] - langMode 以外は verify で差し替える
+ * @param {{langMode?: "ja"|"prefixed", getTodayJson?: Function, getSeriesRows?: Function, now?: () => number, getT?: (lang: string) => Promise<Function>, getSiteJsonLd?: () => Promise<object[]>}} [deps] - langMode 以外は verify で差し替える
  */
 export function createBotPageHandler(
   page,
   {
     langMode = "ja",
     getTodayJson = defaultSource,
+    getSeriesRows = defaultSeriesSource,
     now = Date.now,
     getT = getLocaleT,
     getSiteJsonLd: loadSiteJsonLd = getSiteJsonLd,
@@ -571,7 +657,7 @@ export function createBotPageHandler(
         url: req.url,
         headers: req.headers,
       },
-      { getTodayJson, now, getT, getSiteJsonLd: loadSiteJsonLd },
+      { getTodayJson, getSeriesRows, now, getT, getSiteJsonLd: loadSiteJsonLd },
     );
     res.statusCode = status;
     for (const [k, v] of Object.entries(headers)) res.setHeader(k, v);

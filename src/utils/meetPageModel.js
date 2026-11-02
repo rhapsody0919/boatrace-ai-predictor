@@ -54,6 +54,21 @@ export function meetBannerSeriesOf(races) {
   return { grade: first.raceGrade, title };
 }
 
+/** getSeriesOfDate と同じ、予定最終日からの順延許容日数。 */
+export const SERIES_POSTPONE_TOLERANCE_DAYS = 3;
+
+/** 会場で絞った race_series の行から、その日の節を選ぶ（初日は日目から逆算しない）。 */
+export function seriesOfDate(rows, date) {
+  const series = [...rows]
+    .filter((row) => row.start_date <= date)
+    .sort((a, b) => b.start_date.localeCompare(a.start_date))[0];
+  if (!series) return null;
+  const daysAfterEnd =
+    (Date.parse(`${date}T00:00:00Z`) -
+      Date.parse(`${series.end_date}T00:00:00Z`)) / 86400000;
+  return daysAfterEnd <= SERIES_POSTPONE_TOLERANCE_DAYS ? series : null;
+}
+
 const dateOf = (raceId) => String(raceId).slice(0, 10);
 
 /**
