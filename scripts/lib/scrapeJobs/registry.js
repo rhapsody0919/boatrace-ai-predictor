@@ -285,10 +285,11 @@ export const SCRAPE_JOBS = Object.freeze({
     runDaysOfMonth: { default: [2], 5: [2, 9, 16], 11: [2, 9, 16] },
   },
   // N16 節（race_series）。04:00指定（cron: 04:00・05:30 JST）。前月・当月・翌月の月間スケジュール（3リクエスト、
-  // 1ページ約1〜10秒）から、開始日が当月・翌月の節を書く。翌月の節名は後から公式に載るため毎日取る。
+  // 1ページ約1〜10秒）から、開始日が当月・翌月の節を書く。月曜と月末3日・月初3日に取る。
   // 実装: scripts/lib/raceSeriesJob.js、api/cron/race-series.js
   race_series: {
     kind: "daily",
+    weeklyWithMonthBoundary: true,
     targetTimeJst: "04:00",
     leaseSec: 120,
     maxDurationSec: 120,
@@ -649,14 +650,23 @@ export function activeMinutesOf(def) {
 }
 
 /**
- * 日次ジョブが、その日（JST の YYYY-MM-DD）に起動する予定か。runDaysOfMonth の無いジョブは毎日。
+ * 日次ジョブが、その日（JST の YYYY-MM-DD）に起動する予定か。日付指定の無いジョブは毎日。
  * runDaysOfMonth: { default: [日...], [月]: [日...] }（月ごとの指定が default に優先する）。
  * 月次ジョブ（B6）の未処理を、起動しない日に誤報しないため。
  *
- * @param {{runDaysOfMonth?: Record<string, number[]>}} def
+ * weeklyWithMonthBoundary: 月曜または月末3日・月初3日に起動する。
+ * @param {{runDaysOfMonth?: Record<string, number[]>, weeklyWithMonthBoundary?: boolean}} def
  * @param {string} dateJst YYYY-MM-DD
  */
 export function isScheduledDate(def, dateJst) {
+  if (def.weeklyWithMonthBoundary) {
+    const date = new Date(`${dateJst}T00:00:00Z`);
+    const day = date.getUTCDate();
+    const last = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    return date.getUTCDay() === 1 || day <= 3 || day > last - 3;
+  }
   const days = def.runDaysOfMonth;
   if (!days) return true;
   const month = Number(dateJst.slice(5, 7));
