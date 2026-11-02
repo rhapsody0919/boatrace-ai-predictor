@@ -9,8 +9,9 @@
 import { supabase } from "./supabaseClient";
 import { supabaseDataService } from "./supabaseDataService";
 import { parseRaceId } from "../utils/raceId";
-import { groupIntoCurrentMeet } from "../utils/meetGrouping";
+import { groupCurrentMeetFromRows } from "../utils/meetGrouping";
 import { getTodayJST } from "../utils/dateUtils";
+import { addDaysToDateString } from "../../scripts/lib/dateUtils.js";
 
 async function getRacerProfile(racerId) {
   if (!supabase) return null;
@@ -74,10 +75,8 @@ export async function getRacerPageData(racerId) {
 }
 
 /**
- * 選手が直近出走で使用したモーターについて、今節（直近出走と同じ会場で、同一
- * モーターが連続して割り当てられている直近の連続開催日）の出走一覧を特定する。
- * race_idの日付部分を新しい順に辿り、間が2日以上空いたら節の境目とみなす
- * （モーターは節単位で入れ替わるため、日付の連続性で節の範囲を推定できる）
+ * 選手の直近出走と同じ会場・モーターの走を、種別から決めた節の初日で切る。
+ * 種別が取れない場合は、従来の日付の連続性による推定に戻す（BOA-861）。
  */
 async function getCurrentMeetRaceEntries(racerId, motorNumber) {
   const { data: entries } = await supabase
@@ -96,7 +95,21 @@ async function getCurrentMeetRaceEntries(racerId, motorNumber) {
   const sorted = entries
     .filter((e) => e.race_id.slice(11, 13) === venue)
     .sort((a, b) => a.race_id.localeCompare(b.race_id));
-  return groupIntoCurrentMeet(sorted);
+  const targetDate = sorted.at(-1).race_id.slice(0, 10);
+  try {
+    // 12日窓・1会場で最大13日×12R。Supabase の1000行上限には届かない。
+    const { data: conditions } = await supabase
+      .from("race_conditions")
+      .select("race_id, series_day, is_final_day")
+      .gte("race_id", addDaysToDateString(targetDate, -12))
+      .lte("race_id", `${targetDate}-zz`)
+      .like("race_id", `__________-${venue}-__`);
+    return groupCurrentMeetFromRows(sorted, conditions);
+  } catch (error) {
+    // 種別だけの取得失敗は、今節の走を空にせず従来の推定で補う。
+    console.warn("今節の種別を取得できないため、日付から推定します", error);
+    return groupCurrentMeetFromRows(sorted, null);
+  }
 }
 
 /**

@@ -21,8 +21,12 @@
  * 接続しないので tier=ci。実データ全件との突き合わせは `verify-meet-grouping.js`
  * （tier=manual）が担う。
  */
+import { readFileSync } from "node:fs";
+import { addDaysToDateString } from "../lib/dateUtils.js";
 import {
   findMeetStartDate,
+  groupIntoCurrentMeet,
+  groupCurrentMeetFromRows,
   meetDaysFromRows,
   meetStartFromRows,
   seriesDayByDate,
@@ -431,6 +435,61 @@ check(
   meetStartFromRows(datesOf([]), [], "2026-10-13"),
   null,
 );
+
+// BOA-861: 同じ選手・会場・モーターでも、隣接する別節を混ぜない。
+for (const firstDate of ["2026-10-12", "2026-10-13"]) {
+  const lastDate = firstDate === "2026-10-12" ? "2026-10-13" : "2026-10-14";
+  const entries = ["2026-10-10", "2026-10-11", firstDate, lastDate]
+    .map((date) => ({ race_id: `${date}-02-01`, boat_number: 1 }));
+  const conditions = [
+    cond("2026-10-10", 5), cond("2026-10-11", 6, true),
+    cond(firstDate, 1), cond(lastDate, 2),
+  ];
+  check(`BOA-861: ${firstDate} 開始の節だけを返す`,
+    groupCurrentMeetFromRows(entries, conditions), entries.slice(2));
+  check(`BOA-861: ${firstDate} 種別が空なら従来の区間`,
+    groupCurrentMeetFromRows(entries, []), groupIntoCurrentMeet(entries));
+  check(`BOA-861: ${firstDate} 種別が取得できない場合も従来の区間`,
+    groupCurrentMeetFromRows(entries, null), groupIntoCurrentMeet(entries));
+}
+check("BOA-861: 出走が空なら空", groupCurrentMeetFromRows([], []), []);
+
+// サービス本体を依存注入して実行する。本番クライアントは読み込まない。
+const serviceSource = readFileSync(new URL("../../src/services/racerService.js", import.meta.url), "utf8");
+const currentMeetSource = serviceSource.slice(
+  serviceSource.indexOf("async function getCurrentMeetRaceEntries("),
+  serviceSource.indexOf("export async function getRacerCurrentMotorStatus("),
+);
+const serviceEntries = ["2026-10-13-02-02", "2026-10-12-02-01", "2026-10-11-02-01"]
+  .map((race_id) => ({ race_id, boat_number: 1 }));
+for (const fails of [false, true]) {
+  const calls = [];
+  const warnings = [];
+  const client = { from(table) {
+    const query = {};
+    for (const method of ["select", "eq", "order", "limit", "gte", "lte", "like"])
+      query[method] = (...args) => { calls.push([table, method, ...args]); return query; };
+    query.then = (resolve, reject) => {
+      if (table === "race_conditions" && fails) return Promise.reject(new Error("fixture")).then(resolve, reject);
+      return Promise.resolve({ data: table === "race_entries" ? serviceEntries : [
+        cond("2026-10-11", 6, true), cond("2026-10-12", 1), cond("2026-10-13", 2),
+      ] }).then(resolve, reject);
+    };
+    return query;
+  } };
+  const getEntries = new Function("supabase", "groupCurrentMeetFromRows", "addDaysToDateString", "console",
+    `${currentMeetSource}; return getCurrentMeetRaceEntries;`)(
+    client, groupCurrentMeetFromRows, addDaysToDateString, { warn: (...args) => warnings.push(args) });
+  check(`BOA-861: サービス取得（失敗=${fails}）`, await getEntries(4320, 1),
+    fails ? [...serviceEntries].reverse() : [...serviceEntries].reverse().slice(1));
+  check(`BOA-861: 警告の件数（失敗=${fails}）`, warnings.length, fails ? 1 : 0);
+  check(`BOA-861: 種別の窓・会場（失敗=${fails}）`,
+    calls.filter(([table, method]) => table === "race_conditions" && ["gte", "lte", "like"].includes(method)), [
+      ["race_conditions", "gte", "race_id", "2026-10-01"],
+      ["race_conditions", "lte", "race_id", "2026-10-13-zz"],
+      ["race_conditions", "like", "race_id", "__________-02-__"],
+    ]);
+}
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
 process.exit(failures === 0 ? 0 : 1);
