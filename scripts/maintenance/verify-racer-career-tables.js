@@ -1,6 +1,6 @@
 // 選手ページ（GS00 案2）の集計の表（マイグレーション 190）と書き手（scripts/lib/racerCareerJob.js）の再現テスト。
 // - 190 を PGlite に当て（kb_archive は 074 をそのまま、本体は必要な列だけの表）、3つの RPC の数え方・境目・権限を確かめる
-// - 優勝戦の判定（isFinalStage の v2）・グレードの補正（QC・CC・唐津）・期の区切り・半月の範囲・足し合わせ・消えたセルの扱い
+// - 優勝戦の判定（isCareerFinalStage: isFinalStage の v2＋公式が数える2つの名前）・グレードの補正（QC・CC・唐津）・期の区切り・半月の範囲・足し合わせ・消えたセルの扱い
 // - kb 層の1回の計算と main 層の毎晩の計算を、偽の Supabase（RPC は PGlite に渡す）で通し、冪等・指紋の見張りを確かめる
 // - レジストリ・vercel.json・api/cron の maxDuration と cron 式、CLI の引数
 // 外部接続なし（本番 DB にも Slack にも繋がない）
@@ -299,7 +299,7 @@ before(async () => {
 // ---------------------------------------------------------------------------
 // 純関数
 // ---------------------------------------------------------------------------
-test("優勝戦の種別は isFinalStage（v2）で決める（stage_kind は使わない）", () => {
+test("優勝戦の種別は isCareerFinalStage（isFinalStage v2＋2つの名前）で決める（stage_kind は使わない）", () => {
   assert.deepEqual(
     finalStagesOf([
       "予選",
@@ -314,6 +314,11 @@ test("優勝戦の種別は isFinalStage（v2）で決める（stage_kind は使
       "優勝戦",
     ]),
     ["GP優勝戦", "シリーズ優勝", "優勝戦", "賞金女王決定"],
+  );
+  // isFinalStage（v2）が拾わないが公式が優勝戦として数える2つの名前（2026-11-02、kb の照合で12行のずれ）
+  assert.deepEqual(
+    finalStagesOf(["オオムラGP", "関ヶ原決戦", "B組優勝戦", "グランプリ特", "グランプリD"]),
+    ["B組優勝戦", "オオムラGP", "関ヶ原決戦"],
   );
   assert.throws(() => finalStagesOf(null), /配列ではない/);
 });
@@ -1118,9 +1123,12 @@ test("CLI の引数: --era は必須、kb に --all・--today は付けない", 
   );
 });
 
-test("照合の関門（verify-racer-career-gate.js）の比べ方: 2層を足し、期・コード・優勝・優出の数え方ごとに比べる", async () => {
+test("照合の関門（verify-racer-career-gate.js）の比べ方: 2層を足し、期・コード・優勝・優出（S0 を含む）を比べる", async () => {
   // BOA-1193（#2066）の実物の純関数で比べる。読み込みは関門と同じ loadCareerFunctions（名前が違えば止まる）
-  const { compareCareerToOfficial, loadCareerFunctions } = await import("./verify-racer-career-gate.js");
+  const { compareCareerToOfficial, loadCareerFunctions, staleRuleEras } = await import("./verify-racer-career-gate.js");
+  // 規則の版が古い層（優勝戦の判定を変える前の kb 等）は照合の前に止める
+  assert.deepEqual(staleRuleEras([{ era: "kb", rule_version: "career-v1(stage-v2,grade-v2,code-v1)" }, { era: "main", rule_version: RULE_VERSION }]), ["kb"]);
+  assert.deepEqual(staleRuleEras([{ era: "kb", rule_version: RULE_VERSION }]), []);
   const career = await loadCareerFunctions();
 
 
@@ -1169,7 +1177,7 @@ test("照合の関門（verify-racer-career-gate.js）の比べ方: 2層を足�
     first_count: 1,
     second_count: 1,
     win_rate: 6.0,
-    finals: 1,
+    finals: 2, // 優出は S0 も数える（公式の数え方、2026-11-02）
     wins: 1,
   };
   for (let c = 1; c <= 6; c++)
@@ -1202,22 +1210,23 @@ test("照合の関門（verify-racer-career-gate.js）の比べ方: 2層を足�
   });
   assert.equal(ok.compared, 1);
   assert.deepEqual(ok.mismatches, []);
-  // 優出: S0 を含めると2、含めないと1（公式は1）
-  assert.deepEqual(ok.finalsMatch, { all_codes: 0, without_absent: 1 });
   assert.deepEqual(ok.extra, ["2|2025-11-01"]);
   // 1つ食い違えば、その選手×期と項目を出す
   const ng = compareCareerToOfficial({
     termRows,
     courseRows,
     champRows,
-    official: [{ ...off, starts: 4, win_rate: 6.01, c3_p1: 1 }],
+    official: [{ ...off, starts: 4, win_rate: 6.01, finals: 1, c3_p1: 1 }],
     career,
   });
   assert.deepEqual(Object.keys(ng.mismatches[0].diff).sort(), [
     "course",
+    "finals",
     "starts",
     "win_rate",
   ]);
+  // S0 を数えない旧い数え方（1）は公式（2）と食い違う
+  assert.deepEqual(ng.mismatches[0].diff.finals, { ours: 2, official: 1 });
   assert.deepEqual(ng.mismatches[0].diff.course, {
     c3_p1: { ours: 0, official: 1 },
   });
