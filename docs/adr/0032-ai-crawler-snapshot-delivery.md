@@ -51,3 +51,19 @@ boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコ�
 - **ビルド時間**: Preview（4コア 8GB、`RACER_SNAPSHOT_LIMIT=20`）で 20人 22.8秒（1人 約1.1秒）。全員（2026-10-12 時点の sitemap で325人）では約6分の見込みで、ビルド全体は今の約2分から約8分になる。Vercel のビルドの上限（45分）までは余裕がある
 - **中身の古さ**: 次のデプロイまで変わらない。sitemap の自動コミットで毎日1回は本番がデプロイされるので、最大でおよそ1日前の内容（「今節のモーター状況」も同じ）
 - **戻し方**: `resolveSnapshotPath` と `middleware.js` の matcher から `/racer` を外す（ファイルが残っても配られない）。または PR を revert
+
+## 追記: Google の取得器の扱い（BOA-899）
+
+一次情報（確認日 2026-11-02）: Google の [common crawlers](https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers) と [user-triggered fetchers](https://developers.google.com/crawling/docs/crawlers-fetchers/google-user-triggered-fetchers) の文書。
+
+| UA の名前 | 何か | 配るか |
+|---|---|---|
+| Googlebot | 検索のクローラー。JS を描画する | 配らない（ADR 0089 のオーナー決定。Google は動的レンダリングを推奨しない回避策としている） |
+| Google-InspectionTool | URL 検査・リッチリザルトテスト | 配らない（Googlebot と同じ画面を見せる） |
+| GoogleOther | 製品を決めない汎用のクローラー | 配らない |
+| Google-Agent | 利用者の代わりにページを操作する代理 | 配らない（操作できる SPA のままにする） |
+| Google-GeminiNotebook | Gemini Notebook の利用者が出典に渡した URL を取る | **配る**（ChatGPT-User・Claude-User と同じ利用者起点の取得） |
+| Google-Extended | robots.txt の印。「doesn't have a separate HTTP request user agent string」 | 一覧から外した。この名前を名乗る取得は無く、UA の照合では何にも一致しなかった（当初の決定の誤り） |
+
+- Gemini API の url_context の取得 UA は公式文書（ai.google.dev/gemini-api/docs/url-context）に書かれていない。文書は「まず内部の索引キャッシュ、無ければその場で取得」とだけ書く。2026-11-02 の hq の試験で /blog/meet-score-rate-guide は本文が取れ、/blog/toda-losing-makuri-share と /racer/3256 は殻だったが、3つとも配信の経路は同じ（人・Google の各 UA に殻、上の配る UA に描画済み）。この追記は url_context の差を直すものではない
+- 一覧を変えるときは、`vercel.json` の no-store 規則の `missing` の UA 正規表現（6か所）も同じに直す（`scripts/maintenance/verify-middleware-routing.js` [7] が一致を確かめる）
