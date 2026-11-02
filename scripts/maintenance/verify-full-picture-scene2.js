@@ -2122,6 +2122,11 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     const shots1 = { c2: sh("c2", 26.4), c3: sh("c3", MIN_FONT_PX - 0.1), c4: sh("c4", 29.8), c4b: sh("c4b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };
     assert.deepEqual(f01SmallChapters(s1, shots1).map((x) => x.id), ["c3", "c5"], "線の下（c3）と撮れなかった章（c5）を省く");
     assert.deepEqual(PLAN.c4.map((p) => p.k), ["c4", "c4b", "c4", "c42", "c42b"]);
+    // オーナー 11/2「22.4px の章は2カットに分けて」: 線は 24px。着順の流れは押した後を上・下、形の札は図と名前の2カット
+    assert.equal(MIN_FONT_PX, 24);
+    assert.deepEqual(PLAN.c2.map((p) => p.k), ["c2", "c2-pre", "c22", "c22b"]);
+    assert.deepEqual(PLAN.c3.map((p) => p.k), ["c3i", "c3", "c3-pre", "c32", "c32b"]);
+    assert.deepEqual(f01SmallChapters({ chapters: [{ id: "c2" }] }, { c2: sh("c2", 26.4), "c2-pre": sh("c2-pre", 30.4), c22: sh("c22", 22.4), c22b: sh("c22b", 30.4) }).map((x) => x.id), ["c2"], "1カットで 22.4px の着順の流れは線の下");
     const lines = ["ここからは思考アシスト。", "軸を選ぶと、相手の割合が出る。", "大村で1号艇が1着の11,160件では、", "2着は2号艇が34.7%。", "軸を4号艇に変えると、1,375件で、", "2着は1号艇が37%に入れ替わる。"];
     const voice = { lines: lines.map((sub, i) => ({ chapter: "c4", i, sub, file: `v${i}.wav`, sec: 2 })) };
     const shots2 = { ...shots1, c42: { ...sh("c42", 29.8), cursorFrom: { x: 1, y: 1, w: 10, h: 10 } }, c42b: sh("c42b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };

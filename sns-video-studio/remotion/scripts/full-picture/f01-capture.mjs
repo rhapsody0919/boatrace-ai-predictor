@@ -4,6 +4,7 @@
  * （材料は公開 API の応答をそのまま持っている。fetch-materials.mjs）。ほかの読み取り（Supabase の匿名読み取り等）は本番のまま。
  * 章の部品の外枠で切り抜き、切り抜いた範囲の文字（照合用）・GOLD の枠を重ねる箱・カーソルを置く箱を返す。
  */
+import { execFileSync } from "node:child_process";
 import { chromium } from "playwright";
 import { join } from "node:path";
 import process from "node:process";
@@ -168,6 +169,34 @@ async function shootEl(page, loc, file, extra = {}) {
   return { file, clip, scale, text: t.text, minFontPx: t.minFont === null ? null : Math.round(t.minFont * scale * 10) / 10, small: t.small.map(([px, s]) => [Math.round(px * scale * 10) / 10, s]), ...extra };
 }
 
+/**
+ * 撮った部品を上下2つに切る（着順の流れは正方形の図で、1カットでは左の枠の高さで字が約22px 止まり。オーナー 11/2「22.4px の章は2カットに分けて」）。
+ * 上は 0〜53%、下は 47〜100%（境目の帯を両方に入れる）。照合の文字は元の部品の全体の物を上に持たせる（数字がどちらの半分にあっても照合できる）
+ */
+async function splitHalves(page, base, top, bottom) {
+  const out = {};
+  for (const [name, y0, y1] of [[top, 0, 0.53], [bottom, 0.47, 1]]) {
+    if (!name) continue;
+    const file = base.file.replace(/[^/]+\.png$/, `${name}.png`);
+    execFileSync("ffmpeg", ["-y", "-v", "error", "-i", base.file, "-vf", `crop=iw:ih*${y1 - y0}:0:ih*${y0}`, file]);
+    const clip = { x: base.clip.x, y: base.clip.y + base.clip.h * y0, w: base.clip.w, h: base.clip.h * (y1 - y0) };
+    const t = await textIn(page, clip);
+    const scale = Math.min(LEFT_BOX.h / clip.h, LEFT_BOX.w / clip.w, DPR);
+    const shift = (r) => (r ? { ...r, y: r.y - base.clip.h * y0 } : r);
+    out[name] = {
+      ...base,
+      file,
+      clip,
+      scale,
+      text: name === top ? base.text : t.text,
+      minFontPx: t.minFont === null ? null : Math.round(t.minFont * scale * 10) / 10,
+      small: t.small.map(([px, x]) => [Math.round(px * scale * 10) / 10, x]),
+      cursor: shift(base.cursor),
+    };
+  }
+  return out;
+}
+
 /** sankey の1着の帯を押す（押した後の切り抜き） */
 async function pickFirst(flow, boat) {
   const g = flow.locator(`svg g[role=button]`);
@@ -253,19 +282,31 @@ export async function captureAll(m, s, outDir) {
       await hideFixed(narrow);
       const btn = narrow.locator(".af-pats").first().locator("button", { hasText: c3.shot.form }).first();
       const b = await box(btn);
-      const clip = { x: b.x - 4, y: b.y - 4, w: b.w + 8, h: b.h + 8 };
-      shots.c3 = await shoot(narrow, clip, file("c3"), { goldBoxes: [rel(b, clip)], testid: "スタートの形" });
+      // 2カット（オーナー 11/2）: 札の図（艇と艇番とスリットの線の範囲だけ。左の水面は入れない）と、札の名前・件数の行
+      const fig = await btn.evaluate((e) => {
+        const svg = e.querySelector("svg").getBoundingClientRect();
+        const nums = [...e.querySelectorAll("svg text")].map((t) => t.getBoundingClientRect());
+        const x0 = nums.length ? Math.min(...nums.map((r) => r.x)) - 12 : svg.x;
+        return { x: x0 + scrollX, y: svg.y + scrollY, w: svg.right - x0, h: svg.height, bottom: svg.bottom + scrollY };
+      });
+      shots.c3i = await shoot(narrow, { x: fig.x - 4, y: fig.y - 4, w: fig.w + 8, h: fig.h + 8 }, file("c3i"), { testid: "スタートの形（図）" });
+      shots.c3 = await shoot(narrow, { x: b.x - 4, y: fig.bottom, w: b.w + 8, h: b.y + b.h + 4 - fig.bottom }, file("c3"), { testid: "スタートの形（名前と件数）" });
     }
     // PC 幅: 着順の流れ（図の暗い面だけを撮る。押す前・押した後）
     const page = await open(VIEWPORT);
     if (c2?.shot.cut2 || c3) await sonar(page);
+    // 押す前は、押す帯（カーソルの先）がある半分だけ。押した後は上・下の2カット
     const flowShots = async (flow, pre, post, firstBoat, testid) => {
       const dark = flow.locator(".af-dark").first();
-      shots[pre] = await shootEl(page, dark, file(pre));
+      const preAll = await shootEl(page, dark, file(`${pre}-all`));
       const hit = await pickFirst(flow, firstBoat);
       const at0 = await box(dark);
       await page.waitForTimeout(1200);
-      shots[post] = await shootEl(page, dark, file(post), { cursor: rel(hit, at0), testid });
+      const cursor = rel(hit, at0);
+      const postAll = await shootEl(page, dark, file(`${post}-all`), { cursor, testid });
+      const lower = cursor.y + cursor.h / 2 > preAll.clip.h * 0.5;
+      const preHalf = await splitHalves(page, { ...preAll, cursor }, lower ? null : pre, lower ? pre : null);
+      Object.assign(shots, preHalf, await splitHalves(page, postAll, post, `${post}b`));
     };
     if (c2?.shot.cut2) {
       await openTab(page, "類似レース");
