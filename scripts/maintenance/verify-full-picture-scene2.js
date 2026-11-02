@@ -2126,6 +2126,23 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     assert.equal(MIN_FONT_PX, 24);
     assert.deepEqual(PLAN.c2.map((p) => p.k), ["c2", "c2-pre", "c22", "c22b"]);
     assert.deepEqual(PLAN.c3.map((p) => p.k), ["c3i", "c3", "c3-pre", "c32", "c32b"]);
+    // 押す帯が下半分のとき、押す前のカット（下半分）のカーソルはそのカットの座標で、帯の中を指す（#2087 の審査）
+    {
+      const half = { x: 40, y: 0, w: 440, h: 233 };
+      const band = { x: 61, y: 300, w: 24, h: 90 }; // 元の図（高さ440）で下半分にある帯
+      const shift = 440 * 0.47;
+      const shots3 = {
+        c2: sh("c2", 26.4),
+        "c2-pre": { ...sh("c2-pre", 30.4, half), cursor: { ...band, y: band.y - shift } },
+        c22: { ...sh("c22", 30.4, half), cursor: band },
+        c22b: sh("c22b", 30.4, half),
+      };
+      const l3 = ["次に、類似レースのタブ。", "1号艇が勝った313件では、2着は2号艇が137件で最も多い。"];
+      const v3 = { lines: l3.map((sub, i) => ({ chapter: "c2", i, sub, file: `w${i}.wav`, sec: 4 })) };
+      const pre = f01Timeline({ chapters: [{ id: "c2", name: "類似レース", subs: l3 }] }, v3, shots3).props.chapters[0].cuts.find((c) => c.file === "c2-pre.png");
+      const cy = pre.cursor.y + pre.cursor.h / 2;
+      assert.ok(cy >= 0 && cy <= half.h && pre.cursor.y === band.y - shift, `カーソルが押す前のカットの中の帯を指す（y=${pre.cursor.y}）`);
+    }
     assert.deepEqual(f01SmallChapters({ chapters: [{ id: "c2" }] }, { c2: sh("c2", 26.4), "c2-pre": sh("c2-pre", 30.4), c22: sh("c22", 22.4), c22b: sh("c22b", 30.4) }).map((x) => x.id), ["c2"], "1カットで 22.4px の着順の流れは線の下");
     const lines = ["ここからは思考アシスト。", "軸を選ぶと、相手の割合が出る。", "大村で1号艇が1着の11,160件では、", "2着は2号艇が34.7%。", "軸を4号艇に変えると、1,375件で、", "2着は1号艇が37%に入れ替わる。"];
     const voice = { lines: lines.map((sub, i) => ({ chapter: "c4", i, sub, file: `v${i}.wav`, sec: 2 })) };

@@ -103,8 +103,10 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
         }
         const extra = { gold: (sh.goldBoxes ?? []).map((g) => ({ ...g, at: gAt })) };
         const next = p.cursor ? shots[p.cursor] : null;
-        // カーソルは押す所へ0.5秒で動く（押す前の画面の座標）
-        if (next) extra.cursor = { ...(next.cursor ?? next.cursorFrom), at: T + 15 };
+        // カーソルは押す所へ0.5秒で動く。座標はこのカット（押す前の画面）の物: 着順の流れの押す前は半分に切ってあり、
+        // splitHalves が切った分だけずらした cursor を持つ（下半分のとき、押した後の上のカットの座標を使うと約47% 上を指した。#2087 の審査）。
+        // 思考アシストの軸のボタンは押す前のカットに cursor が無いので、押した後のカットの cursorFrom（押す前の画面の座標）
+        if (next) extra.cursor = { ...(sh.cursor ?? next.cursorFrom ?? next.cursor), at: T + 15 };
         ch.cuts.push(cut(sh, T, extra));
       }
     }
