@@ -21,8 +21,11 @@
  * 接続しないので tier=ci。実データ全件との突き合わせは `verify-meet-grouping.js`
  * （tier=manual）が担う。
  */
+import { fetchCurrentMeetRaceEntries } from "../../src/services/currentMeetEntries.js";
 import {
   findMeetStartDate,
+  groupIntoCurrentMeet,
+  groupCurrentMeetFromRows,
   meetDaysFromRows,
   meetStartFromRows,
   seriesDayByDate,
@@ -431,6 +434,82 @@ check(
   meetStartFromRows(datesOf([]), [], "2026-10-13"),
   null,
 );
+
+// BOA-861: 同じ選手・会場・モーターでも、隣接する別節を混ぜない。
+for (const firstDate of ["2026-10-12", "2026-10-13"]) {
+  const lastDate = firstDate === "2026-10-12" ? "2026-10-13" : "2026-10-14";
+  const entries = ["2026-10-10", "2026-10-11", firstDate, lastDate]
+    .map((date) => ({ race_id: `${date}-02-01`, boat_number: 1 }));
+  const conditions = [
+    cond("2026-10-10", 5), cond("2026-10-11", 6, true),
+    cond(firstDate, 1), cond(lastDate, 2),
+  ];
+  check(`BOA-861: ${firstDate} 開始の節だけを返す`,
+    groupCurrentMeetFromRows(entries, conditions), entries.slice(2));
+  check(`BOA-861: ${firstDate} 種別が空なら従来の区間`,
+    groupCurrentMeetFromRows(entries, []), groupIntoCurrentMeet(entries));
+  check(`BOA-861: ${firstDate} 種別が null なら従来の区間`,
+    groupCurrentMeetFromRows(entries, null), groupIntoCurrentMeet(entries));
+}
+// 審査 P2: 新しい節の初日（10/12）の種別の行がまだ無くても、前の節（10/05〜10/10、10/10 が最終日）の走を混ぜない
+{
+  const entries = ["2026-10-07", "2026-10-12"].map((date) => ({ race_id: `${date}-02-01`, boat_number: 1 }));
+  const conditions = ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09"]
+    .map((date, i) => cond(date, i + 1)).concat([cond("2026-10-10", 6, true)]);
+  check("BOA-861: 対象日の種別の行が無くても前の節の走を混ぜない",
+    groupCurrentMeetFromRows(entries, conditions), entries.slice(1));
+}
+// Codex P1: 途中の日（10/11）の種別の行だけが欠けても、開催休みとみなして節を切らない
+{
+  const entries = ["2026-10-10", "2026-10-11", "2026-10-12"].map((date) => ({ race_id: `${date}-02-01`, boat_number: 1 }));
+  check("BOA-861: 途中日の種別の行が欠けても今節の前半を落とさない",
+    groupCurrentMeetFromRows(entries, [cond("2026-10-10", 1), cond("2026-10-12", 3)]), entries);
+}
+check("BOA-861: 出走が空なら空", groupCurrentMeetFromRows([], []), []);
+
+// サービス本体に偽のクライアントを渡して実行する。本番クライアントは読み込まない。
+// 画面のクライアントは throwOnError が既定なので、偽のクライアントも失敗を例外（reject）で返す。
+const serviceEntries = ["2026-10-13-02-02", "2026-10-12-02-01", "2026-10-11-02-01"]
+  .map((race_id) => ({ race_id, boat_number: 1 }));
+const fakeClient = ({ failTable = null } = {}) => {
+  const calls = [];
+  const client = { from(table) {
+    const query = {};
+    for (const method of ["select", "eq", "order", "limit", "gte", "lte", "like"])
+      query[method] = (...args) => { calls.push([table, method, ...args]); return query; };
+    query.then = (resolve, reject) => {
+      if (table === failTable)
+        return Promise.reject(Object.assign(new Error("fixture"), { code: "57014" })).then(resolve, reject);
+      return Promise.resolve({ data: table === "race_entries" ? serviceEntries : [
+        cond("2026-10-11", 6, true), cond("2026-10-12", 1), cond("2026-10-13", 2),
+      ] }).then(resolve, reject);
+    };
+    return query;
+  } };
+  return { client, calls };
+};
+{
+  const { client, calls } = fakeClient();
+  check("BOA-861: サービス取得は種別の初日（10/12）から今節を返す",
+    await fetchCurrentMeetRaceEntries(client, 4320, 1), [...serviceEntries].reverse().slice(1));
+  check("BOA-861: 種別の窓・会場",
+    calls.filter(([table, method]) => table === "race_conditions" && ["gte", "lte", "like"].includes(method)), [
+      ["race_conditions", "gte", "race_id", "2026-10-01"],
+      ["race_conditions", "lte", "race_id", "2026-10-13-zz"],
+      ["race_conditions", "like", "race_id", "__________-02-__"],
+    ]);
+}
+// 取得の失敗は「データなし」や日付の推定に化けさせず、例外のまま上に流す（frontend-data-fetch.md）
+for (const failTable of ["race_entries", "race_conditions"]) {
+  const { client } = fakeClient({ failTable });
+  let thrown = null;
+  try {
+    await fetchCurrentMeetRaceEntries(client, 4320, 1);
+  } catch (err) {
+    thrown = err;
+  }
+  check(`BOA-861: ${failTable} の取得失敗は例外のまま上に流す`, thrown?.message, "fixture");
+}
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
 process.exit(failures === 0 ? 0 : 1);
