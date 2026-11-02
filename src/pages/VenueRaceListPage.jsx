@@ -445,6 +445,7 @@ function VenueRaceListPage() {
                     race={race}
                     nowHHMM={nowHHMM}
                     raceHref={localize(`/race/${race.id}`)}
+                    linkRacerNames
                   />,
                 ])}
               </div>
