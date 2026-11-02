@@ -10,6 +10,9 @@
  *   - 失敗: 会場の取得失敗・「SG/G1の4日目以降なのに表が無い」・書き込みエラーは、実行の失敗（outcome:"error"）。
  *     表のある会場の行は書く（他会場の取得済みデータを捨てない）。失敗した対象日は処理済みにならず、補足の起動が再試行する
  *   - mode: shadow は取得・解析のみ（racer_series_points へ書かない）。off は何もしない
+ *   - 日ごとの写し: racer_series_points と同じ行を racer_series_points_daily（取得の対象日をキーに足す）にも、値が変わった行
+ *     だけ書く（BOA-1210）。対象は SG/G1。表が無い（マイグレーション192の未適用）間は書かずに report.daily.tableMissing を立てる。
+ *     表にその日の結果がまだ出ていない（注記が前の日・12R の前）ときは incomplete にして、補足の起動に取り直させる
  *   - 0件エラー: 期待会場数（SG/G1の4日目以降）が0でないのに、解析できた行が0件なら失敗（共通ラッパの判定）。
  *     表が無いのが仕様の日（一般戦・G3・SG/G1の序盤）は、期待0件で正常
  */
@@ -17,6 +20,16 @@ import { run as runPointRank } from "../daily/scrape-point-rank.js";
 
 /** 会場（1ページ、約8〜10秒）の同時取得数。開催中の約15会場を約50秒で終える */
 export const POINT_RANK_CONCURRENCY = 3;
+
+/**
+ * 写しの取り直し（pendingVenues）の最後の機会か。補足の起動は 23:30・01:30 JST で、01:00〜21:59 JST の起動は
+ * その対象日の最後（次の 22:00 は翌日を対象にする）。ここで pending が残れば、その日の値は失うので失敗にして知らせる
+ * @param {Date} now
+ */
+export function isLastChanceForPending(now) {
+  const jstHour = (now.getUTCHours() + 9) % 24;
+  return jstHour >= 1 && jstHour < 22;
+}
 
 /**
  * @param {Object} ctx 共通ラッパが渡す実行の文脈（cronWrapper.js の ctx。targetDate は日次ジョブで解決済み）
@@ -50,7 +63,24 @@ export async function runPointRankJob(
     venues: result.venues,
     venuesNotAttempted: result.venuesNotAttempted,
     failures: result.failures,
+    // 日ごとの写し（racer_series_points_daily、BOA-1210）。tableMissing はマイグレーション192の未適用
+    daily: result.daily ?? null,
   };
+
+  const pending = result.daily?.pendingVenues ?? [];
+  if (
+    result.failures.length === 0 &&
+    pending.length > 0 &&
+    isLastChanceForPending(ctx.now())
+  ) {
+    // 補足の最後の起動でも、表にその日の結果が出ていない: その日の写しを失う（後から取り直せない）。成功にせず知らせる
+    result.failures.push(
+      ...pending.map(
+        (v) =>
+          `会場${v.venueCode}(${v.seriesDay}日目): 補足の最後の起動でも表が${v.asOfSeriesDay}日目${v.asOfRace}Rの時点（最終${v.lastRace}R）。日ごとの写しはこの日の値を欠く（${v.reason}）`,
+      ),
+    );
+  }
 
   if (result.failures.length > 0) {
     return {
@@ -68,7 +98,9 @@ export async function runPointRankJob(
     rowsExpected: result.expectedVenues,
     rowsParsed: result.rowsParsed,
     // ソフトデッドラインで着手しなかった会場がある: 対象日を処理済みにせず、補足の起動がもう一度処理する
-    incomplete: result.venuesNotAttempted.length > 0,
+    // 写しの対象（SG/G1）で、表にその日の結果がまだ出ていない会場がある（BOA-1210）: 同じく補足の起動で取り直す。
+    // pointrank は過去の日付で取り直せないため、成功にして済ませるとその日の値を失う
+    incomplete: result.venuesNotAttempted.length > 0 || pending.length > 0,
     report,
     body: {
       expectedVenues: result.expectedVenues,

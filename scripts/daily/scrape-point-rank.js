@@ -40,10 +40,16 @@ import {
   isSupabaseEnabled,
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
-import { parsePointRankTable } from "../lib/pointRankParser.js";
+import {
+  parsePointRankTable,
+  parsePointRankAsOf,
+} from "../lib/pointRankParser.js";
 import { isGhaFetchStopped } from "../lib/ghaSkipGate.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
 import { upsertWithOptionalColumns } from "../lib/optionalColumns.js";
+import { upsertChangedRows } from "../lib/unchangedRows.js";
+import { isCancellationConfirmed } from "../lib/cancellationStatus.js";
+import { isScrapeSchemaMissingError } from "../lib/scrapeJobs/schemaErrors.js";
 
 /**
  * マイグレーション159（早見の列、BOA-784）。未適用の DB では、この列を除いて他の列を書き続ける
@@ -65,16 +71,163 @@ const FETCH_HEADERS = {
 };
 
 /**
- * SG/G1（記念競走）は節の4日目以降に必ず得点率表が出る（実測: 徳山G1・桐生SG・
- * 多摩川G1の4日目以降にテーブルあり、徳山G1の1〜3日目は表なし。2026-09-19確認）。
- * 1〜3日目は節によって異なる（2026-09-20実測: 多摩川G1は3日目にも49名の表あり）ため、保守的に
- * 4日目以降のみ「表が無ければ異常」とする（表があれば、日目を問わず書く）。
+ * SG/G1（記念競走）で「表が無ければ異常」とするのは4日目以降だけ（表があれば、日目を問わず書く）。
+ * 2026-09-19〜20 の「1〜3日目は表なし」の実測は、節の前の日の hd と、過去の hd で最新の表が返ることの取り違えで、
+ * 根拠になっていない（2026-11-02 official-data-spec: 徳山G1 の節は 9/12〜17、若松G1 は1日目・2日目の晩に52名の表あり）。
+ * 1〜3日目に表が出ることは推測で未照合のため、異常の判定は4日目以降のまま（安全側）にする。
  * G2/G3/一般戦は表の有無が節ごとに異なるため対象外（2026-09-19の実測: G3の1・2日目と一般戦の1・4・5・6日目は表なし）。
  */
 const TABLE_EXPECTED_GRADES = ["SG", "G1"];
 const TABLE_EXPECTED_FROM_SERIES_DAY = 4;
 
+/**
+ * 予選の最後の日目（普通の6日の SG/G1。2025-12〜2026-10 の SG 7節・G1 34節、official-data-spec 2026-11-02）。
+ * 写しで「表が前の日のまま」を取り直す（incomplete）のはこの日目まで。5日目以降は表が4日目で止まるのが正常
+ */
+const QUALIFYING_LAST_SERIES_DAY = 4;
+
 const FETCH_TIMEOUT_MS = 15000;
+
+/**
+ * 日ごとの写し（BOA-1210、マイグレーション192）。racer_series_points は節ごとに上書きされるので、
+ * 取得の対象日（snapshot_date）をキーに足して同じ値を残す。Shorts 型B は予選最終日の朝に前日の行を読む
+ */
+const DAILY_TABLE = "racer_series_points_daily";
+
+/**
+ * racer_series_points の行（会場ごとの結果）から、日ごとの写しの行を作る（純粋関数）。
+ * 呼び出し側が、表の注記の日目（asOf.seriesDay）が対象日の日目と同じ会場だけを渡す
+ * @param {string} snapshotDate 取得の対象日（YYYY-MM-DD）
+ * @param {Array<{seriesDay: number, asOf: {raceNumber: number}, rows: Array<Object>}>} venueResults 書く会場の結果
+ * @param {string} scrapedAt
+ */
+function buildDailyRows(snapshotDate, venueResults, scrapedAt) {
+  return venueResults.flatMap((v) =>
+    v.rows.map((row) => ({
+      snapshot_date: snapshotDate,
+      series_day: v.seriesDay,
+      venue_code: row.venue_code,
+      racer_id: row.racer_id,
+      meet_start_date: row.meet_start_date,
+      race_grade: row.race_grade,
+      player_name: row.player_name,
+      grade: row.grade,
+      rank: row.rank,
+      score_rate: row.score_rate,
+      placements: row.placements,
+      total_points: row.total_points,
+      penalty_points: row.penalty_points,
+      remarks: row.remarks,
+      next_race_1: row.next_race_1,
+      next_race_2: row.next_race_2,
+      next_series_day: row.next_series_day,
+      as_of_race: v.asOf.raceNumber,
+      scraped_at: scrapedAt,
+    })),
+  );
+}
+
+/**
+ * 日ごとの写しに書く会場を選ぶ（純粋関数）。対象は SG/G1 だけ（Shorts 型B の用途。G2 以下は写さない）。
+ * pointrank は過去の日付で開いても節の最新の表を返し（後から取り直せない）、予選の後は「４日目１２R終了時点」で止まる。
+ *   - 注記を読めない: その日の値か確かめられないので書かず、failure（公式ページの書式変更の疑い）
+ *   - 注記の日目 = 対象日の日目: 書く。注記のレース番号が、その日の中止でないレースの最後より前なら、書いたうえで
+ *     incomplete（12R の反映前。補足の起動が取り直し、値が変わった行だけ書き直す）
+ *   - 注記の日目 = 対象日の日目 − 1、かつ予選中（4日目まで）、かつその日に中止でないレースがある: 書かずに incomplete
+ *     （その日の結果がまだ表に出ていない。取り直さないと、その日の値は永久に失う）
+ *   - それ以外（5日目以降に予選の後の表、丸一日の中止 等）: 書かずに skipped（report に出す）
+ * @param {Array<{venueCode: number, raceGrade: string|null, seriesDay: number, asOf: {seriesDay: number, raceNumber: number}|null, rows: Array<Object>}>} venueResults
+ * @param {Map<number, number>} lastRaces venueCode -> その日の中止でないレースの最後の番号（全レース中止の会場は無い）
+ * @returns {{write: Array<Object>, skipped: Array<Object>, pending: Array<Object>, failures: string[]}}
+ *   pending が空でなければ、呼び出し元は incomplete にする
+ */
+function selectDailyVenues(venueResults, lastRaces) {
+  const write = [];
+  const skipped = [];
+  const pending = [];
+  const failures = [];
+  for (const v of venueResults) {
+    if (v.raceGrade == null) {
+      // グレードが未取得: SG/G1 か分からないので写さない。黙って落とさず report に出す
+      skipped.push({
+        venueCode: v.venueCode,
+        seriesDay: v.seriesDay,
+        reason: "grade_unknown",
+      });
+      continue;
+    }
+    if (!TABLE_EXPECTED_GRADES.includes(v.raceGrade)) continue;
+    const lastRace = lastRaces.get(v.venueCode) ?? null;
+    const base = {
+      venueCode: v.venueCode,
+      seriesDay: v.seriesDay,
+      asOfSeriesDay: v.asOf?.seriesDay ?? null,
+      asOfRace: v.asOf?.raceNumber ?? null,
+      lastRace,
+    };
+    if (!v.asOf) {
+      failures.push(
+        `${VENUE_NAMES[v.venueCode]}(${v.raceGrade}, ${v.seriesDay}日目): 得点率表の「N日目MR終了時点」を読めない（日ごとの写しを書かない。公式ページの書式変更の疑い）`,
+      );
+    } else if (v.asOf.seriesDay === v.seriesDay) {
+      write.push(v);
+      if (lastRace != null && v.asOf.raceNumber < lastRace)
+        pending.push({ ...base, reason: "race_not_final" });
+    } else if (
+      v.asOf.seriesDay === v.seriesDay - 1 &&
+      v.seriesDay <= QUALIFYING_LAST_SERIES_DAY &&
+      lastRace != null
+    ) {
+      pending.push({ ...base, reason: "day_not_reflected" });
+    } else {
+      skipped.push(base);
+    }
+  }
+  return { write, skipped, pending, failures };
+}
+
+/**
+ * 日ごとの写しを、値が変わった行と新しい行だけ書く。
+ * 表が無い（マイグレーション192の適用前）ときは、書かずに tableMissing を返す（racer_series_points は書き続ける）。
+ * それ以外の読み書きの失敗は error を返す（呼び出し元が実行の失敗にする）
+ * @returns {Promise<{written: number, unchanged: number, tableMissing: boolean, error: string|null}>}
+ */
+async function writeDailyRows(client, dailyRows) {
+  if (dailyRows.length === 0)
+    return { written: 0, unchanged: 0, tableMissing: false, error: null };
+  const { written, skipped, error } = await upsertChangedRows(
+    client,
+    DAILY_TABLE,
+    dailyRows,
+    {
+      onConflict: "snapshot_date,venue_code,racer_id",
+      keyColumns: ["snapshot_date", "venue_code", "racer_id"],
+      // scraped_at は毎回変わる。比較から外し、値が変わった行にだけ新しい時刻を載せる
+      ignoreColumns: ["scraped_at"],
+      chunkColumn: "snapshot_date",
+      // 1日の行は SG/G1 の会場数×約52行。上限の1000行ちょうどで返ったら、切れた疑いとして書かずに止める
+      fullPageRows: 1000,
+      failOnFetchError: true,
+      label: DAILY_TABLE,
+    },
+  );
+  // 包み直したメッセージには表の名前が必ず入るので、元のエラー（cause）で判定する（別の表の不在と取り違えない）
+  if (
+    error &&
+    isScrapeSchemaMissingError(error.cause ?? error, [DAILY_TABLE])
+  ) {
+    return { written: 0, unchanged: 0, tableMissing: true, error: null };
+  }
+  if (error)
+    return {
+      // バッチの途中で失敗したときも、書けた件数は残す
+      written,
+      unchanged: skipped,
+      tableMissing: false,
+      error: `${DAILY_TABLE} 書き込みエラー: ${error.message}`,
+    };
+  return { written, unchanged: skipped, tableMissing: false, error: null };
+}
 
 /** GitHub Actionsのschedule遅延の許容時間（実測約4時間+余裕） */
 const SCHEDULE_DELAY_TOLERANCE_HOURS = 6;
@@ -170,18 +323,39 @@ function buildVenueGrades(races) {
 }
 
 /**
- * 対象日に開催中の会場コードとレースグレードのMapを取得
- * @returns {Promise<Map<number, string|null>>} venueCode -> race_grade
+ * 会場ごとの、その日の中止でない（cancellation_status が 'confirmed' でない）レースの最後の番号（純粋関数）。
+ * 全レースが中止の会場は入らない
+ * @param {Array<{race_id: string, cancellation_status?: string|null}>} races
+ * @returns {Map<number, number>}
+ */
+function buildVenueLastRaces(races) {
+  const lastRaces = new Map();
+  for (const r of races) {
+    if (isCancellationConfirmed(r.cancellation_status)) continue;
+    const venueCode = extractVenueCodeFromRaceId(r.race_id);
+    const raceNumber = Number(r.race_id.slice(-2));
+    if (raceNumber > (lastRaces.get(venueCode) ?? 0))
+      lastRaces.set(venueCode, raceNumber);
+  }
+  return lastRaces;
+}
+
+/**
+ * 対象日に開催中の会場コードとレースグレード、中止でないレースの最後の番号を取得
+ * @returns {Promise<{venueGrades: Map<number, string|null>, lastRaces: Map<number, number>}>}
  */
 async function getActiveVenueGrades(date, client = supabase) {
   const { data, error } = await client
     .from("races")
-    .select("race_id, race_grade")
+    .select("race_id, race_grade, cancellation_status")
     .like("race_id", `${date}%`);
   if (error) {
     throw new Error(`開催会場一覧の取得エラー: ${error.message}`);
   }
-  return buildVenueGrades(data || []);
+  return {
+    venueGrades: buildVenueGrades(data || []),
+    lastRaces: buildVenueLastRaces(data || []),
+  };
 }
 
 /**
@@ -233,7 +407,9 @@ async function fetchPointRank(
       } else {
         const $ = cheerio.load(await res.text());
         const rows = parsePointRankTable($);
-        return rows === null ? { kind: "none" } : { kind: "table", rows };
+        return rows === null
+          ? { kind: "none" }
+          : { kind: "table", rows, asOf: parsePointRankAsOf($) };
       }
     } catch (err) {
       lastError = err.message;
@@ -274,7 +450,10 @@ export async function run(date, options = {}) {
   } = options;
   const targetDate = date || resolveTargetDate();
   const failures = [];
-  const venueGrades = await getActiveVenueGrades(targetDate, client);
+  const { venueGrades, lastRaces } = await getActiveVenueGrades(
+    targetDate,
+    client,
+  );
   if (venueGrades.size === 0) {
     failures.push(
       `${targetDate}: 開催会場が0件（racesテーブル未生成、または対象日の誤りの疑い）`,
@@ -363,6 +542,7 @@ export async function run(date, options = {}) {
       raceGrade,
       seriesDay,
       meetStartDate,
+      asOf: fetched.asOf ?? null,
       rows,
       nextRaceRows,
       nextRaceUnreadable,
@@ -450,13 +630,52 @@ export async function run(date, options = {}) {
       optionalColumnGroups: NEXT_RACE_COLUMN_GROUPS,
     },
   );
-  if (error) {
+  if (error)
     failures.push(`racer_series_points 書き込みエラー: ${error.message}`);
-    return { updated: false, count: 0, ...summary };
-  }
+  else console.log(`💾 racer_series_points: ${rows.length}件`);
 
-  console.log(`💾 racer_series_points: ${rows.length}件`);
-  return { updated: true, count: rows.length, ...summary };
+  // racer_series_points の書き込みに失敗しても、写しは書く（その日の値は後から取り直せない）
+  const dailyVenues = selectDailyVenues(
+    results.filter((r) => !r.notAttempted && r.rows.length > 0),
+    lastRaces,
+  );
+  failures.push(...dailyVenues.failures);
+  for (const v of dailyVenues.skipped)
+    console.log(
+      v.reason === "grade_unknown"
+        ? `  ➖ ${VENUE_NAMES[v.venueCode]}: グレードが未取得のため日ごとの写しに書かない`
+        : `  ➖ ${VENUE_NAMES[v.venueCode]}: 表は${v.asOfSeriesDay}日目${v.asOfRace}Rの時点（対象日は${v.seriesDay}日目）。日ごとの写しに書かない`,
+    );
+  for (const v of dailyVenues.pending)
+    console.warn(
+      `  ⏳ ${VENUE_NAMES[v.venueCode]}: 表は${v.asOfSeriesDay}日目${v.asOfRace}Rの時点（対象日は${v.seriesDay}日目・最終${v.lastRace}R）。補足の起動で取り直す`,
+    );
+  const daily = await writeDailyRows(
+    client,
+    buildDailyRows(targetDate, dailyVenues.write, scrapedAt),
+  );
+  if (daily.error) failures.push(daily.error);
+  else if (daily.tableMissing)
+    console.warn(
+      `⚠️ ${DAILY_TABLE} が無い（マイグレーション192の未適用）。日ごとの写しを書かずに続ける`,
+    );
+  else
+    console.log(
+      `💾 ${DAILY_TABLE}: 書き込み${daily.written}件・変更なし${daily.unchanged}件`,
+    );
+  return {
+    updated: !error,
+    count: error ? 0 : rows.length,
+    ...summary,
+    daily: {
+      written: daily.written,
+      unchanged: daily.unchanged,
+      tableMissing: daily.tableMissing,
+      venues: dailyVenues.write.map((v) => v.venueCode),
+      skippedVenues: dailyVenues.skipped,
+      pendingVenues: dailyVenues.pending,
+    },
+  };
 }
 
 async function main() {
@@ -472,7 +691,12 @@ async function main() {
   }
   const date = parseDateArg() || resolveTargetDate();
   console.log(`📅 対象日: ${date}`);
-  const { failures } = await run(date);
+  const { failures, daily } = await run(date);
+  // GitHub Actions の肩代わりには補足の起動が無い。表にその日の結果が出ていない会場は、取り直せないので失敗にして知らせる
+  for (const v of daily?.pendingVenues ?? [])
+    failures.push(
+      `会場${v.venueCode}(${v.seriesDay}日目): 表が${v.asOfSeriesDay}日目${v.asOfRace}Rの時点（最終${v.lastRace}R、${v.reason}）`,
+    );
   if (failures.length > 0) {
     console.error(`❌ 得点率取得に失敗（${failures.length}件）:`);
     for (const f of failures) console.error(`  - ${f}`);
@@ -482,6 +706,10 @@ async function main() {
 }
 
 export const _internal = {
+  buildDailyRows,
+  buildVenueLastRaces,
+  selectDailyVenues,
+  writeDailyRows,
   resolveTargetDate,
   isTableExpected,
   judgeVenue,
