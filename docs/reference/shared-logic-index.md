@@ -306,7 +306,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/inCautionLevel.js` | BOA-822 イン崩れ注意度の段・帯の判定（生成 scripts/lib/inCaution.js と画面で同じ関数を使う）。 | pctOf, levelOf, rateCents, bandOf, bandRange ほか4件 |
 | `src/utils/losingTechnique.js` | 会場の負けの決まり手（losing_technique_stats、90日・会場×枠）の行を枠ごとにまとめる（純関数）。 | groupLosingTechniqueRows |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate, seriesDayByDate, meetDaysFromRows ほか1件 |
-| `src/utils/meetPageModel.js` | 節ページ（/venue/:venueCode/meet/:startDate、BOA-682）の純関数。 | isOutOfScopeMeetTitle, meetBannerSeriesOf, meetDaysOf, meetPageState, officialAsOfDate ほか6件 |
+| `src/utils/meetPageModel.js` | 節ページ（/venue/:venueCode/meet/:startDate、BOA-682）の純関数。 | isOutOfScopeMeetTitle, seriesCoveringDate, needsMeetSeries, meetLinkStartDateOf, meetBannerSeriesOf ほか10件 |
 | `src/utils/motorFreshRate.js` | 新しいモーターの最初の開催で、公式の2連率が 0 のときに何を出すか（BOA-830、 | isWithinFreshMotorWindow, motorRateView, motorRate3View, FRESH_MOTOR_WINDOW_DAYS |
 | `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, motorGenerationStartAsOf, isInMotorGeneration, isVenueRankSnapshotBeforeGeneration, formatGenerationDate ほか2件 |
 | `src/utils/motorUsage.js` | モーターの使用回数と「未使用（新モーター・実績なし）」の判定（BOA-702）。 | motorUsageCount, isUnusedMotor |
@@ -325,6 +325,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/raceCancellation.js` | 開催中止・順延の判定を1箇所に集める。 | hasRaceResult, isRaceCancelled, isCancellationSuspected, CANCELLATION_CONFIRMED, CANCELLATION_TENTATIVE |
 | `src/utils/raceDeadlineStatus.js` | — | getDeadlineDate, getDeadlineStatus, DEADLINE_STATUS |
 | `src/utils/raceDetailHeading.js` | レース詳細（/race/:raceId）の見出し・title・description・canonical・パンくずの組み方。 | getSeriesDayLabel, getVenueSeriesDayLabel, getStageChip, getRaceDetailHeading, getRaceDetailMeta ほか2件 |
+| `src/utils/raceEntrants.js` | レース詳細のタブの上の出走6艇（BOA-1189 GS01-c）の行。艇番順、選手名は空白を詰める。 | entrantRowsOf |
 | `src/utils/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
 | `src/utils/raceListDisplay.js` | トップの会場カード（VenueGridCard）と会場ページのレースカード（RaceCard）が出す文字の組み方。 | venueNameOf, venueCardHeadline, gradeConfigOf, raceNumberLabel, deadlineValueText |
 | `src/utils/raceOutcome.js` | レースの成立状態（通常・一部返還・不成立）と、返還艇・的中判定の可否を1箇所で決める（BOA-543）。 | getRaceOutcomeState, getRefundBoats, isBoatRefunded, isJudgeable, isBetJudgeable ほか11件 |
@@ -400,4 +401,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 358 ファイル / export 2116 件。
+対象 359 ファイル / export 2121 件。
