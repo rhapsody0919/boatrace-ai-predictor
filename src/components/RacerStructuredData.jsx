@@ -1,7 +1,8 @@
 /**
- * RacerStructuredData - 選手個別ページの構造化データ（schema.org/Person JSON-LD）
+ * RacerStructuredData - 選手個別ページの構造化データ（Person・BreadcrumbList JSON-LD）
  * VenueStructuredData.jsxと同じ形式を踏襲。プロフィール未取得の選手では何も出力しない
  */
+import { isValidCrumbs, toBreadcrumbListLd } from "../utils/breadcrumbLd";
 import { formatRacerKana } from "../utils/racerName";
 
 const SITE_URL = "https://www.boat-ai.jp";
@@ -23,5 +24,20 @@ export default function RacerStructuredData({ profile, racerId }) {
     url: `${SITE_URL}/racer/${racerId}`,
   };
 
-  return <script type="application/ld+json">{JSON.stringify(person)}</script>;
+  const crumbs = [
+    { name: "ホーム", url: "/" },
+    { name: "選手一覧", url: "/racers" },
+    { name: person.name, url: `/racer/${racerId}` },
+  ];
+
+  return (
+    <>
+      <script type="application/ld+json">{JSON.stringify(person)}</script>
+      {isValidCrumbs(crumbs) && (
+        <script type="application/ld+json">
+          {JSON.stringify(toBreadcrumbListLd(crumbs))}
+        </script>
+      )}
+    </>
+  );
 }
