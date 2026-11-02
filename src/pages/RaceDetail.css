@@ -28,21 +28,9 @@
   color: var(--text-primary);
 }
 
-/* .back-linkはAccuracyHistory.css/BlogPost.cssにも同名クラスがあり、CSSが全ページ分
-   1つのバンドルに結合されるためビルド順で意図しない側（#0ea5e9固定・コントラスト
-   不足やfont-sizeの違い等）が勝ってしまう。var(--color-primary-700)も試したが
-   ダーク時のページ背景(#0d1b2e)で2.92:1と未達のため、両テーマのページ背景で
-   検証済みのvar(--brand-accent-secondary)（銀）を親スコープで指定（BOA-206/BOA-207） */
 .race-detail-page .back-link {
-  text-decoration: none;
   font-size: 1rem;
   transition: color 0.3s ease;
-  color: var(--brand-accent-secondary);
-}
-
-.race-detail-page .back-link:hover {
-  color: var(--text-primary);
-  text-decoration: underline;
 }
 
 /* 統計セクション */

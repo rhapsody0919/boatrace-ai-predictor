@@ -2485,3 +2485,71 @@ test.describe("レイアウト: トップの会場カードの日目の札（BOA
     });
   }
 });
+
+for (const theme of ["light", "dark"]) {
+  test(`BOA-1010: スコープ外に戻るリンクの基本指定が漏れない ${theme} @blog`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/blog/10000-races-analysis");
+    await expect(page.locator(".blog-post-header .back-link")).toBeVisible();
+    const styles = await page.evaluate((theme) => {
+      document.documentElement.setAttribute("data-theme", theme);
+      const link = document.createElement("a");
+      link.className = "back-link";
+      link.href = "#";
+      link.textContent = "x";
+      document.body.append(link);
+      const style = getComputedStyle(link);
+      const result = { display: style.display, weight: style.fontWeight };
+      link.remove();
+      return result;
+    }, theme);
+    expect(styles).toEqual({ display: "inline", weight: "400" });
+  });
+
+  test(`BOA-1010: ブログの戻るリンクの色・ホバー・余白を保つ ${theme} @blog`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/blog/10000-races-analysis");
+    const link = page.locator(".blog-post-header .back-link");
+    await expect(link).toBeVisible();
+    await page.evaluate((theme) => {
+      document.documentElement.setAttribute("data-theme", theme);
+    }, theme);
+    const tokenColor = (token) => page.evaluate((token) => {
+      const probe = document.createElement("span");
+      probe.style.color = `var(${token})`;
+      document.body.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    }, token);
+    const spacing = await link.evaluate((link) => {
+      const probe = document.createElement("span");
+      probe.style.marginRight = "var(--spacing-3)";
+      link.parentElement.append(probe);
+      const margin = getComputedStyle(probe).marginRight;
+      probe.remove();
+      return margin;
+    });
+    await expect(link).toHaveCSS("color", await tokenColor("--brand-accent-secondary"));
+    await expect(link).toHaveCSS("text-decoration-line", "none");
+    await expect(link).toHaveCSS("margin-right", spacing);
+    await expect(link).toHaveCSS("display", "inline-block");
+    await expect(link).toHaveCSS("font-weight", "500");
+    await link.hover();
+    await expect(link).toHaveCSS("color", await tokenColor("--text-primary"));
+    await expect(link).toHaveCSS("text-decoration-line", "underline");
+  });
+
+  test(`BOA-1010: レース詳細の空状態の戻るリンクの表示を保つ ${theme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/invalid");
+    const link = page.locator(".race-detail-page-v2__empty .back-link");
+    await expect(link).toBeVisible();
+    await page.evaluate((theme) => {
+      document.documentElement.setAttribute("data-theme", theme);
+    }, theme);
+    await expect(link).toHaveCSS("display", "inline-block");
+    await expect(link).toHaveCSS("font-weight", "500");
+    await expect(link).toHaveCSS("margin-bottom", "16px");
+  });
+}

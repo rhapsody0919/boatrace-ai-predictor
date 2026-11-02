@@ -1795,3 +1795,22 @@ input:focus-visible,
 }
 
 
+
+/* 戻るリンクの基本指定は既存の使用箇所に限定し、ページ固有の指定を優先する。 */
+:where(.race-detail-page, .race-detail-page-v2, .blog-post-header, .venue-race-list-page, .accuracy-history-page, .sns-hub-header, .admin-header) .back-link {
+  display: inline-block;
+  text-decoration: none;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+:is(.race-detail-page, .blog-post-header, .venue-race-list-page) .back-link {
+  color: var(--brand-accent-secondary);
+  text-decoration: none;
+}
+
+:is(.race-detail-page, .blog-post-header, .venue-race-list-page) .back-link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
