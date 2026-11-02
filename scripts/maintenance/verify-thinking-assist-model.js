@@ -29,6 +29,7 @@ import {
   wideLowTable,
   betTypeComposite,
   missingFirstBoats,
+  nextOddsRefreshDelay,
   boardModel,
   buildRacers,
   classLineup,
@@ -1221,6 +1222,48 @@ check(
       }) &&
       assistEventOf({ ...st, betType: "exacta", target: 1 }, { type: "target", target: 3 })
         .params.assist_bet_type === "exacta",
+  );
+}
+
+// ---- オッズの読み直しの時刻（BOA-1180）----
+{
+  // 締切 13:14 のレース。2026-10-29〜11-02 の本番の実測で、各窓の値は窓の始まりの約0.6分後に DB に入る
+  const dl = Date.parse("2026-10-06T13:14:00+09:00");
+  const at = (hm) => Date.parse(`2026-10-06T${hm}+09:00`);
+  const snap = (hm) => ({
+    byType: { trifecta: { odds: {}, capturedAt: new Date(at(hm)).toISOString(), final: false } },
+    capturedAt: new Date(at(hm)).toISOString(),
+  });
+  const min = (ms) => (ms == null ? null : ms / 60_000);
+  check(
+    "読み直し: 13:07 に -10（13:04:38）の値を読んだら、-5 の値が入る 13:10:30 に読み直す（直す前は読み直さなかった）",
+    min(nextOddsRefreshDelay(dl, at("13:07:00"), snap("13:04:38"))) === 3.5,
+    String(min(nextOddsRefreshDelay(dl, at("13:07:00"), snap("13:04:38")))),
+  );
+  check(
+    "読み直し: 最初の読み込みが入っているはずの窓より古い（キャッシュ）なら、すぐ1回読み直す。読み直しの結果なら次の窓まで待つ",
+    nextOddsRefreshDelay(dl, at("13:11:00"), snap("13:04:38")) === 0 &&
+      min(nextOddsRefreshDelay(dl, at("13:11:00"), snap("13:04:38"), true)) === 4.5,
+  );
+  check(
+    "読み直し: 締切の後は締切時オッズが入る 11分後・20分後・30分後、締切時オッズ（3連単）がそろったら終わり",
+    min(nextOddsRefreshDelay(dl, at("13:16:00"), snap("13:14:36"))) === 9 &&
+      min(nextOddsRefreshDelay(dl, at("13:26:00"), snap("13:14:36"), true)) === 8 &&
+      nextOddsRefreshDelay(dl, at("13:45:00"), snap("13:14:36"), true) === null &&
+      nextOddsRefreshDelay(dl, at("13:16:00"), {
+        byType: { trifecta: { odds: {}, capturedAt: "x", final: true } },
+        capturedAt: "x",
+      }) === null,
+  );
+  check(
+    "読み直し: 発売前（オッズが無い）で -60〜-30 の間は2分おき、-60 より前は -60 の値が入る時刻、-30 の後は次の窓",
+    min(nextOddsRefreshDelay(dl, at("12:20:00"), null, true)) === 2 &&
+      min(nextOddsRefreshDelay(dl, at("12:00:00"), null)) === 15.5 &&
+      min(nextOddsRefreshDelay(dl, at("12:50:00"), null, true)) === 10.5,
+  );
+  check(
+    "読み直し: 締切が分からなければ読み直さない",
+    nextOddsRefreshDelay(null, at("13:07:00"), snap("13:04:38")) === null,
   );
 }
 

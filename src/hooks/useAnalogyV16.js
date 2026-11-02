@@ -13,6 +13,8 @@ import { hasLayerDate } from "../utils/pastRate/layer.js";
  * 取得の状態の持ち方は思考アシスト（BOA-430）の取得でも使う（export）。
  * @returns {{status: "idle"|"loading"|"ready"|"error", data: object|null, retry: () => void}}
  *   refreshBeforeExhibition=true の呼び出しだけ展示前の間60秒ごとに取得する。
+ *   関数を渡すと (data, refresh) => 次に読み直すまでの ms（null なら読み直さない）として使い、その時刻に
+ *   fetcher(true)（読み直し）を呼ぶ（思考アシストのオッズ。BOA-1180）。関数が変わると取り直して予約し直す。
  *   定期の読み直しが失敗しても前の値を残し、次の60秒で読み直しを続ける（最初の読み込みの失敗は error）。
  *   enabled=false の間は取得しない（タブを開いたときに初めて取得する）。
  *   error は取得の失敗（「データなし」に倒さない。.claude/rules/frontend-data-fetch.md）。
@@ -40,7 +42,7 @@ export function useAnalogyResource(
       const request =
         refreshBeforeExhibition && pendingRefresh.current?.key === key
           ? pendingRefresh.current.request
-          : fetcher();
+          : fetcher(refresh);
       if (refreshBeforeExhibition) pendingRefresh.current = { key, request };
       const clearPending = () => {
         if (pendingRefresh.current?.request === request)
@@ -52,8 +54,13 @@ export function useAnalogyResource(
           if (!alive) return;
           setFailedKey((prev) => (prev === key ? null : prev));
           setFetched({ key, data });
-          // 応答の締切後は exhibition_missing。時計で独自に状態を判定しない。
           // 完了してから次を予約し、遅い応答でも要求を重ねない。
+          if (typeof refreshBeforeExhibition === "function") {
+            const delay = refreshBeforeExhibition(data, refresh);
+            if (delay != null) timer = setTimeout(() => load(true), delay);
+            return;
+          }
+          // 応答の締切後は exhibition_missing。時計で独自に状態を判定しない。
           if (
             refreshBeforeExhibition &&
             (data.status === "before_exhibition" ||
