@@ -89,8 +89,7 @@ jobs:
   e2e-shard:
     needs: e2e-scope
     if: needs.e2e-scope.outputs.scope == 'full'
-    # Playwright 1.59 は ubuntu-26.04（ubuntu-latest の移行先）で chromium を入れられないため固定する。Playwright を 1.61 以上に上げたら ubuntu-latest に戻す
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       # 1組が落ちても他の組は最後まで走らせ、失敗を一度に全部見せる
@@ -163,8 +162,7 @@ jobs:
   e2e-light:
     needs: e2e-scope
     if: needs.e2e-scope.outputs.scope == 'light'
-    # Playwright 1.59 は ubuntu-26.04（ubuntu-latest の移行先）で chromium を入れられないため固定する。Playwright を 1.61 以上に上げたら ubuntu-latest に戻す
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Checkout

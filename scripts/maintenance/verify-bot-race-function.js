@@ -9,7 +9,11 @@
  *    （src/utils/raceDetailHeading.js）。hreflang は4言語と x-default、JSON-LD は共通の3つとパンくず
  * 2. 本文: パンくず・グレードと節タイトル・h1（会場名と NR・種別・日目。日目は同じ会場の他レースで補う）・「← レース一覧に戻る」・
  *    「データ分析結果 - 会場 NR（締切 HH:MM）」。締切は結果が出たら消す（人と同じ）
- * 3. 決定7の除外: 出走表の選手（名前・登録番号・級・勝率・モーター）、オッズ、払戻、着順・タイム・決まり手が本文に入らない
+ * 3. 決定7の除外: 出走表の勝率・モーター、オッズ、払戻、着順・タイム・決まり手が本文に入らない。選手名は出走6艇の一覧の中だけ
+ * 7. タブの外の 1R〜12R の帯と出走6艇（BOA-1189 GS01、人の RaceNumberStrip・RaceEntrantsSummary と同じ関数）:
+ *    児島12R（2026-09-29、G1）で /racer/ のリンクが6件（ja 専用で言語の接頭辞なし）・同じ会場の /race/ のリンクが12件・
+ *    節のページ（/venue/16/meet/2026-09-28）へのリンクが1件。一般戦（戸田5R、2026-09-22）・G3 は節を引かずリンクも無い。
+ *    節が引けない・節の範囲外・グランプリ等の対象外の節はリンクを出さずに 200。中止のレースは出走6艇を出さない
  * 4. 本日（JST）の id だけ。過去・未来・形の違う id・範囲外の会場とレース番号は 404。言語は en・zh-TW・ko だけ、
  *    ja の関数は接頭辞なし・言語版の関数は接頭辞ありだけを受ける
  * 5. 材料が取れない・壊れた・0件 → 503・no-store。材料は取れたがその id が無い → 404。60秒の使い回し
@@ -94,6 +98,10 @@ function fakeRes() {
     },
   };
 }
+// 節（race_series）は既定で引かれたら失敗にする（一般戦の検査で節を引きに行かないことを見る）
+const noSeries = async (venueCode, date) => {
+  throw new Error(`節を引いた: ${venueCode} ${date}`);
+};
 async function call(
   url,
   {
@@ -102,6 +110,7 @@ async function call(
     fetchImpl,
     method = "GET",
     now = () => NOW,
+    getSeries = noSeries,
   } = {},
 ) {
   const f = fetchImpl ?? stubFetch(() => jsonResponse(json));
@@ -109,6 +118,7 @@ async function call(
     langMode,
     getRaces: createPredictionsSource({ fetchImpl: f, now }),
     now,
+    getSeries,
   });
   const res = fakeRes();
   await handler({ method, url, headers: { host: HOST } }, res);
@@ -128,6 +138,9 @@ const decode = (s) =>
 const bodyOf = (html) => html.split("<body>")[1] ?? "";
 const links = (html) =>
   [...bodyOf(html).matchAll(/<a href="([^"]*)"/g)].map((m) => m[1]);
+// 帯（/race/）と選手（/racer/）を除いたリンク（パンくず・レース一覧・節）
+const navLinks = (html) =>
+  links(html).filter((h) => !/\/race\/|^\/racer\//.test(h));
 const alternatesOf = (html) =>
   [
     ...html.matchAll(
@@ -205,7 +218,7 @@ const tJa = await getLocaleT("ja");
     b.includes("<h1>🚤 桐生 12R <span>🏆 優勝戦</span></h1>"),
     true,
   );
-  check("リンク先: パンくずとレース一覧（本日は /venue/1）", links(html), [
+  check("リンク先: パンくずとレース一覧（本日は /venue/1）", navLinks(html), [
     "/",
     "/venue/1",
     "/venue/1",
@@ -269,10 +282,17 @@ const tJa = await getLocaleT("ja");
       bodyOf((await call(`/api/bot-page/race/${r.raceId}`)).res.body),
     );
   }
+  // 選手名は出走6艇の一覧（aria-label="出走6艇" の ul）の中だけに出る
+  const outside = bodies
+    .map((b) => b.replace(/<ul aria-label="出走6艇">[\s\S]*?<\/ul>/, ""))
+    .join("\n");
   const all = bodies.join("\n");
   check(
-    "選手名が本文に無い",
-    names.filter((n) => all.includes(n)).slice(0, 3),
+    "選手名が出走6艇の一覧の外に無い",
+    names
+      .map((n) => n.replace(/\s+/g, ""))
+      .filter((n) => outside.includes(n))
+      .slice(0, 3),
     [],
   );
   const raceTimes = json.races
@@ -359,7 +379,7 @@ const tJa = await getLocaleT("ja");
       ],
       [lang, meta.title, `${SITE}/${lang}/race/${id}`],
     );
-    check(`${lang}: リンク先は言語の接頭辞付き`, links(d.res.body), [
+    check(`${lang}: リンク先は言語の接頭辞付き`, navLinks(d.res.body), [
       `/${lang}/`,
       `/${lang}/venue/6`,
       `/${lang}/venue/6`,
@@ -465,6 +485,317 @@ const tJa = await getLocaleT("ja");
       false,
     );
   }
+}
+
+// ---- 7. 1R〜12R の帯・出走6艇・節のリンク（BOA-1189 GS01） ----
+{
+  const { entrantRowsOf } = await import("../../src/utils/raceEntrants.js");
+  const fixture = (d) =>
+    JSON.parse(
+      read(
+        `scripts/lib/__fixtures__/predictions-light/predictions-light-${d}.json`,
+      ),
+    );
+  const at = (d) => () => Date.parse(`${d}T00:00:00+09:00`) + 8 * 3600_000;
+  // 本番の race_series（2026-11-02 に読み取り専用で確かめた行）。児島の G1 の節
+  const KOJIMA_G1 = {
+    start_date: "2026-09-28",
+    end_date: "2026-10-03",
+    title: "児島キングカップ開設７４周年記念競走",
+    grade: "G1",
+  };
+  const seriesStub = (row) => {
+    const calls = [];
+    const fn = async (venueCode, date) => {
+      calls.push([venueCode, date]);
+      return row;
+    };
+    fn.calls = calls;
+    return fn;
+  };
+  const racerLinks = (html) => links(html).filter((h) => /^\/racer\//.test(h));
+  const raceLinks = (html) => links(html).filter((h) => /\/race\//.test(h));
+  const meetLinks = (html) => links(html).filter((h) => /\/meet\//.test(h));
+
+  // G1（児島12R）
+  const json29 = fixture("2026-09-29");
+  const id = "2026-09-29-16-12";
+  const race = json29.races.find((r) => r.raceId === id);
+  check(
+    "フィクスチャ: 児島12R は G1 で6艇",
+    [race?.raceGrade, race?.entries?.length],
+    ["G1", 6],
+  );
+  const getSeries = seriesStub(KOJIMA_G1);
+  const { res } = await call(`/api/bot-page/race/${id}`, {
+    json: json29,
+    now: at("2026-09-29"),
+    getSeries,
+  });
+  const html = res.body;
+  check("児島12R: 200", res.statusCode, 200);
+  check("児島12R: 節は会場・日で1回引く", getSeries.calls, [
+    [16, "2026-09-29"],
+  ]);
+  const rows = entrantRowsOf(race.entries);
+  check(
+    "児島12R: /racer/ のリンクが6件（艇番順・ja 専用で接頭辞なし）",
+    racerLinks(html),
+    rows.map((r) => `/racer/${r.racerId}`),
+  );
+  const b = bodyOf(html);
+  check(
+    "児島12R: 選手名（空白を詰める）と級別が艇番と並ぶ",
+    rows.every((r) =>
+      b.includes(
+        `<li><span>${r.number}</span> <a href="/racer/${r.racerId}" translate="no">${r.name}</a> <span translate="no">${r.grade}</span></li>`,
+      ),
+    ),
+    true,
+  );
+  check(
+    "児島12R: 同じ会場の /race/ のリンクが 1R〜12R の12件（2件以上）",
+    raceLinks(html),
+    Array.from(
+      { length: 12 },
+      (_, i) => `/race/2026-09-29-16-${String(i + 1).padStart(2, "0")}`,
+    ),
+  );
+  check(
+    "児島12R: 今のレースに aria-current",
+    b.includes(`<a href="/race/${id}" aria-current="page">12R</a>`),
+    true,
+  );
+  check("児島12R: 節のページへのリンクが1件", meetLinks(html), [
+    "/venue/16/meet/2026-09-28",
+  ]);
+  check(
+    "児島12R: 節のリンクの文字は人の帯と同じ",
+    b.includes(`>${tJa("raceStrip.meetLink")}</a>`),
+    true,
+  );
+  check(
+    "児島12R: 帯と出走6艇はデータ分析結果の見出しの前（人の並び）",
+    b.indexOf("<nav aria-label=") < b.indexOf('<ul aria-label="出走6艇">') &&
+      b.indexOf('<ul aria-label="出走6艇">') < b.indexOf("<h2>"),
+    true,
+  );
+
+  // 言語版: 帯と節は接頭辞付き、選手ページは ja 専用なので接頭辞なし
+  const en = await call(`/api/bot-page/en/race/${id}`, {
+    langMode: "prefixed",
+    json: json29,
+    now: at("2026-09-29"),
+    getSeries: seriesStub(KOJIMA_G1),
+  });
+  check(
+    "en: 選手は /racer/N（接頭辞なし）・帯と節は /en/ 付き",
+    [
+      racerLinks(en.res.body).length,
+      raceLinks(en.res.body).every((h) => h.startsWith("/en/race/")),
+      meetLinks(en.res.body),
+    ],
+    [6, true, ["/en/venue/16/meet/2026-09-28"]],
+  );
+
+  // 節が引けない: リンクだけ外して 200
+  const origError = console.error;
+  console.error = () => {};
+  try {
+    const failed = await call(`/api/bot-page/race/${id}`, {
+      json: json29,
+      now: at("2026-09-29"),
+      getSeries: async () => {
+        throw new Error("boom");
+      },
+    });
+    check(
+      "節が引けない: 200 で節のリンクだけ無い（帯と選手は出る）・CDN に残さない",
+      [
+        failed.res.statusCode,
+        meetLinks(failed.res.body).length,
+        racerLinks(failed.res.body).length,
+        failed.res.headers["cache-control"],
+      ],
+      [200, 0, 6, "no-store"],
+    );
+  } finally {
+    console.error = origError;
+  }
+  // 範囲外の節（前の節）・対象外のタイトル
+  const none = await call(`/api/bot-page/race/${id}`, {
+    json: json29,
+    now: at("2026-09-29"),
+    getSeries: seriesStub(null),
+  });
+  check(
+    "節が無い: 節のリンクが無い（引けたので通常のキャッシュ）",
+    [meetLinks(none.res.body), none.res.headers["cache-control"]],
+    [[], SUCCESS_CC],
+  );
+  // 形の違う entries の1レースで、その日の全レースを 503 にしない
+  const broken = fixture("2026-09-29");
+  broken.races.find((r) => r.raceId !== id).entries = { bad: true };
+  broken.races
+    .find((r) => r.raceId === id)
+    .entries.push(null, {
+      name: "艇番なし",
+    });
+  const brokenRes = await call(`/api/bot-page/race/${id}`, {
+    json: broken,
+    now: at("2026-09-29"),
+    getSeries: seriesStub(KOJIMA_G1),
+  });
+  check(
+    "形の違う entries: 200 で、艇番の無い行は出さない",
+    [
+      brokenRes.res.statusCode,
+      racerLinks(brokenRes.res.body).length,
+      bodyOf(brokenRes.res.body).includes("艇番なし"),
+    ],
+    [200, 6, false],
+  );
+  const gp = await call(`/api/bot-page/race/${id}`, {
+    json: json29,
+    now: at("2026-09-29"),
+    getSeries: seriesStub({ ...KOJIMA_G1, title: "グランプリ" }),
+  });
+  check(
+    "グランプリ等の対象外の節: 節のリンクが無い",
+    meetLinks(gp.res.body),
+    [],
+  );
+
+  // G3（江戸川）は節を引かない
+  const g3 = json29.races.find((r) => r.venueCode === 4);
+  check("フィクスチャ: 江戸川は G3", g3?.raceGrade, "G3");
+  const g3Res = await call(`/api/bot-page/race/${g3.raceId}`, {
+    json: json29,
+    now: at("2026-09-29"),
+  });
+  check(
+    "G3: 200・節を引かない・節のリンクが無い",
+    [g3Res.res.statusCode, meetLinks(g3Res.res.body)],
+    [200, []],
+  );
+
+  // 一般戦（戸田5R、2026-09-22）
+  const json22 = fixture("2026-09-22");
+  const ippan = "2026-09-22-02-05";
+  check(
+    "フィクスチャ: 戸田5R は一般戦",
+    json22.races.find((r) => r.raceId === ippan)?.raceGrade,
+    "ippan",
+  );
+  const ip = await call(`/api/bot-page/race/${ippan}`, {
+    json: json22,
+    now: at("2026-09-22"),
+  });
+  check(
+    "一般戦: 200・/racer/ 6件・/race/ 2件以上・節のリンクが無い（節も引かない）",
+    [
+      ip.res.statusCode,
+      racerLinks(ip.res.body).length,
+      raceLinks(ip.res.body).length >= 2,
+      meetLinks(ip.res.body),
+    ],
+    [200, 6, true, []],
+  );
+
+  // グレードが分からないときだけ節を引く（人の needsSeries と同じ）
+  const unknown = fixture("2026-09-22");
+  for (const r of unknown.races) r.raceGrade = null;
+  const unknownSeries = seriesStub(null);
+  await call(`/api/bot-page/race/${ippan}`, {
+    json: unknown,
+    now: at("2026-09-22"),
+    getSeries: unknownSeries,
+  });
+  check("グレード不明: 節を1回引く", unknownSeries.calls.length, 1);
+
+  // 中止のレースは出走6艇を出さない（帯は出す）
+  const cancelled = fixture("2026-09-22");
+  const c = cancelled.races.find((r) => r.raceId === ippan);
+  c.cancellationStatus = "confirmed";
+  c.result = null;
+  const cRes = await call(`/api/bot-page/race/${ippan}`, {
+    json: cancelled,
+    now: at("2026-09-22"),
+  });
+  check(
+    "中止: 出走6艇を出さず帯は出す",
+    [racerLinks(cRes.res.body).length, raceLinks(cRes.res.body).length],
+    [0, 12],
+  );
+
+  // 人の画面が同じ関数を使う（二重実装しない）
+  const strip = read("src/components/race/RaceNumberStrip.jsx");
+  const summary = read("src/components/race/RaceEntrantsSummary.jsx");
+  const service = read("src/services/supabaseDataService.js");
+  check(
+    "人の帯・出走6艇・節の取得が同じ関数を使う",
+    [
+      /\bneedsMeetSeries\(/.test(strip),
+      /\bmeetLinkStartDateOf\(/.test(strip),
+      /\bentrantRowsOf\(/.test(summary),
+      /\bseriesCoveringDate\(/.test(service),
+      /SERIES_POSTPONE_TOLERANCE_DAYS\s*=/.test(service),
+    ],
+    [true, true, true, true, false],
+  );
+}
+
+// ---- 8. 節（race_series）の取得 ----
+{
+  const { createSeriesSource } = await import("../../api/_lib/botRace.js");
+  const env = {
+    SUPABASE_URL: "https://x.supabase.co/",
+    SUPABASE_ANON_KEY: "anon",
+  };
+  let clock = NOW;
+  const f = stubFetch(() =>
+    jsonResponse([
+      {
+        start_date: "2026-09-28",
+        end_date: "2026-10-03",
+        title: "t",
+        grade: "G1",
+      },
+    ]),
+  );
+  const getSeries = createSeriesSource({ fetchImpl: f, now: () => clock, env });
+  const got = await getSeries(16, "2026-09-29");
+  check("節: 人と同じ条件の1行", f.calls, [
+    "https://x.supabase.co/rest/v1/race_series?venue_code=eq.16&start_date=lte.2026-09-29&select=start_date,end_date,title,grade&order=start_date.desc&limit=1",
+  ]);
+  check("節: その日を含む節を返す", got?.start_date, "2026-09-28");
+  await getSeries(16, "2026-09-29");
+  check("節: 60秒以内は使い回す", f.calls.length, 1);
+  clock = NOW + 61_000;
+  await getSeries(16, "2026-09-29");
+  check("節: 61秒後に引き直す", f.calls.length, 2);
+  // 予定の最終日から4日以上後は同じ節としない（順延の許容は3日）
+  check("節: 最終日から4日後は null", await getSeries(16, "2026-10-07"), null);
+  for (const [label, impl] of [
+    ["HTTP 500", stubFetch(() => jsonResponse({}, 500))],
+    ["配列でない", stubFetch(() => jsonResponse({ a: 1 }))],
+    ["日付が無い", stubFetch(() => jsonResponse([{ title: "x" }]))],
+  ]) {
+    const src = createSeriesSource({ fetchImpl: impl, env });
+    const err = await src(16, "2026-09-29").then(
+      () => null,
+      (e) => e.name,
+    );
+    check(`節: ${label} は SeriesFetchError`, err, "SeriesFetchError");
+  }
+  const noEnv = await createSeriesSource({ fetchImpl: f, env: {} })(
+    16,
+    "2026-09-29",
+  ).then(
+    () => null,
+    (e) => e.name,
+  );
+  check("節: 環境変数が無いと SeriesFetchError", noEnv, "SeriesFetchError");
 }
 
 if (failures.length > 0) {
