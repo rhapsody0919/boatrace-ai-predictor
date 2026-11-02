@@ -87,6 +87,7 @@ export function useThinkingAssistData(
         : out;
     },
     enabled,
+    false,
     oddsRefresh,
   );
 
