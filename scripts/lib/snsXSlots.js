@@ -12,6 +12,7 @@ export const SLOT_KINDS = {
   finals: "finals_image",
   research: "research_image",
   todayThinking: "today_thinking",
+  setsuKiryoku: "setsu_kiryoku",
 };
 
 /**

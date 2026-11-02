@@ -201,6 +201,22 @@ export function schedule(bundle, now) {
   };
 }
 
+/**
+ * --dry-run の時計（純粋関数）。date が今日（JST）でなければ、その日の send_time の2分前（SEND_DELAY_SEC）。今日か形が違えば null（今の時計のまま）
+ */
+export function dryRunClock(bundle, now) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(bundle?.date ?? "") ||
+    !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(bundle?.send_time ?? "") ||
+    bundle.date === jstDate(now)
+  )
+    return null;
+  return new Date(
+    Date.parse(`${bundle.date}T${bundle.send_time}:00+09:00`) -
+      SEND_DELAY_SEC * 1000,
+  );
+}
+
 /** 集計の時刻（ISO）。as_of（「YYYY-MM-DD NR まで」）は時刻を持たないので受け取った時刻にする（純粋関数。PUSH_RULES の注記） */
 export const observedAtOf = (bundle, now) =>
   AS_OF.test(bundle?.source_observed_at ?? "")
@@ -371,7 +387,7 @@ export async function pushDailyImage(
     readBytes,
     notify = async () => {},
     riskRules = [],
-    now = new Date(),
+    now: realNow = new Date(),
     dryRun = false,
     type = RESEARCH_TYPE,
   },
@@ -380,6 +396,10 @@ export async function pushDailyImage(
   const bundle = JSON.parse(
     new TextDecoder().decode(await readBytes(path.join(folder, "bundle.json"))),
   );
+  // --dry-run で今日でない日の束（hq の見本・前日の試し）は、その日の送る時刻の2分前の時計で時刻の検査を通す（push-setsu-kiryoku-short.js と同じ）。
+  // その日の X の日の上限はまだ確かめられないので見ない（limit_checked=false を返す）。書く道（--dry-run でない）では使わない
+  const simulated = dryRun ? dryRunClock(bundle, realNow) : null;
+  const now = simulated ?? realNow;
   const researchId =
     bundle?.date && bundle?.slug
       ? dailyIdOf(type, bundle.date, bundle.slug)
@@ -422,7 +442,9 @@ export async function pushDailyImage(
     store.sendControl(),
     store.jobsAttemptedOn(jstDate(now)),
   ]);
-  const limitReason = dailyLimitReason({ sendControl, jobs: todayJobs, now });
+  const limitReason = simulated
+    ? null
+    : dailyLimitReason({ sendControl, jobs: todayJobs, now });
   if (limitReason) return reject([limitReason]);
   const hash = createHash("sha256").update(JSON.stringify(bundle));
   hash.update(bytes);
@@ -436,6 +458,9 @@ export async function pushDailyImage(
       disabled: !dryRun,
       revision,
       when,
+      ...(simulated
+        ? { simulated_now: simulated.toISOString(), limit_checked: false }
+        : {}),
     };
 
   // 前の item を止め、下書きを公開保留に戻す（148 のトリガーが承認を外し、queued・held の job を取り消す）

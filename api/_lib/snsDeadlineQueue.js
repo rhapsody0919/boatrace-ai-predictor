@@ -48,7 +48,7 @@ export function createDeadlinePreflight({ headless, markers, readCurrent, now = 
     // 作り手が作り直して push し直し、前の束を差し替える（push-full-picture.js）。X は holdReasonOf がこの文字列のまま error_code に入れる
     if (current.deadline_at !== q.deadline_at) throw new Error('deadline_changed');
     // リンクを置かない型（「数字で見たら」179・180、/today の対象レースの思考投稿 189）だけ、リンク先の表示の確認の代わりに、
-    // 送る文にリンクが無いことを確かめる。public_check='none' を返すのは readCurrent が DB の item の kind（research_image・today_thinking）を確かめた後だけ
+    // 送る文にリンクが無いことを確かめる。public_check='none' を返すのは readCurrent が DB の item の kind（research_image・setsu_kiryoku・today_thinking）を確かめた後だけ
     if (current.public_check === 'none') {
       if (hasLink(snapshot.text)) throw new Error('link_not_allowed');
     } else await checkPublicDisplay(q, headless, markers);
