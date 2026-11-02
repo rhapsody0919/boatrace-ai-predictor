@@ -35,6 +35,28 @@ function routeMaterials(page, m) {
   });
 }
 
+/**
+ * 撮る画面の時点（ソナーの「時点」）。材料の時点にそろえる。facts の応答は出走表の段でも status が exhibition_ready で、
+ * 画面は既定で展示後に切り替わり、値の無い展示タイムの軸を足して「6項目中」と出た（材料は5項目。2026-10-30 15場9R・
+ * 11-01 4場10R の c12）。毎日の材料は racecard（daily.mjs）
+ * @param {{stage?: string}} m 材料 JSON
+ * @returns {"racecard"|"exhibition"}
+ */
+export const pageStageOf = (m) => (m.stage === "exhibition" ? "exhibition" : "racecard");
+
+/** ソナーの「時点」を押してそろえる。切り替えが無い（展示前の段）ときは画面も出走表なので、展示後を求めたら止める */
+async function setStage(page, stage) {
+  const group = page.locator('[data-af-control="stage"]').first();
+  if (!(await group.count())) {
+    if (stage === "exhibition") throw new Error("ソナーに時点の切り替えが無い（材料は展示後、画面は展示前）");
+    return;
+  }
+  const btn = group.locator("button").nth(stage === "racecard" ? 0 : 1);
+  if ((await btn.getAttribute("aria-pressed")) !== "true") await btn.click();
+  await page.waitForTimeout(1200);
+  if ((await btn.getAttribute("aria-pressed")) !== "true") throw new Error(`ソナーの時点を ${stage} にできない`);
+}
+
 /** 固定の帯（Cookie の案内・下の3連単の帯・ヘッダー）を隠す（切り抜きに重ならないように） */
 async function hideFixed(page) {
   await page.evaluate(() => {
@@ -205,6 +227,7 @@ export async function captureAll(m, s, outDir) {
     await page.goto(`${SITE}/race/${m.raceId}?tab=sonar`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "拒否する" }).click({ timeout: 4000 }).catch(() => {});
     await page.waitForTimeout(1500);
+    await setStage(page, pageStageOf(m));
     await hideFixed(page);
   };
   try {
