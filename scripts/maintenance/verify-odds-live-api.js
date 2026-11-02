@@ -11,6 +11,7 @@
  *   (d) handleLiveOddsRequest: 成功（s-maxage=30）・締切時オッズ（s-maxage=300）・未発売・HTTP非200・通信失敗・
  *       ブレーカー（retryAfterSec）→ 200+ok:false（s-maxage=10）。取得するURLが公式の該当ページ
  *   (e) 設定: api/odds/live.js の maxDuration=30・再試行なし・ブレーカーを DB ストアで共有、vite の READ_ONLY_API に odds
+ *       DB に書かない（書き込みの呼び出しを探す。race_odds を読むのは許す、BOA-1149 の土台）
  */
 import fs from "node:fs";
 import * as cheerio from "cheerio";
@@ -54,6 +55,28 @@ function check(label, pass, detail = "") {
   }
 }
 const show = (v) => JSON.stringify(v);
+
+/**
+ * api/odds/live.js のソースから、DB への書き込みの手がかりを拾う（(e) で使う）。
+ * コメント（行頭の * と // 以降）は除く。読み（.from(...).select(...)）は拾わない。
+ * - 書き込みの呼び出し: .insert( .upsert( .update( .delete( と upsertChangedRows(
+ * - race_odds を書くモジュールの import（scrapeJobs の oddsHandlers・finalOddsHandlers・predictionOddsHandlers）
+ * 公式へ取りに行った数（fetchCounter）の書き込みは scripts/lib の中で行い、このソースには現れない
+ * @param {string} src
+ * @returns {string[]} 見つかった手がかり（無ければ空）
+ */
+function liveApiDbWrites(src) {
+  const code = src.replace(/^\s*\/?\*.*$/gm, "").replace(/\/\/.*$/gm, "");
+  const hits = [];
+  for (const m of code.matchAll(/\.(insert|upsert|update|delete)\s*\(/g))
+    hits.push(`.${m[1]}(`);
+  if (/\bupsertChangedRows\s*\(/.test(code)) hits.push("upsertChangedRows(");
+  for (const m of code.matchAll(
+    /scrapeJobs\/(oddsHandlers|finalOddsHandlers|predictionOddsHandlers)\.js/g,
+  ))
+    hits.push(`import ${m[1]}`);
+  return hits;
+}
 
 const FIX = (name) =>
   fs.readFileSync(
@@ -447,9 +470,51 @@ const fetcher = (fn) => {
       /timeoutMs:\s*12000/.test(api) &&
       /createSupabaseStore\(supabase\)\.breakerStore/.test(api),
   );
+  // 「race_odds に書かない」は、書き込みの呼び出しを探して確かめる。前は文字列 race_odds の出現そのものを
+  // 禁じていて、範囲の外で DB の最新の窓を読む変更（BOA-1149）まで落としていた。読むのは許す
   check(
-    "api/odds/live.js: race_odds に書かない",
-    !/race_odds/.test(api.replace(/^\s*\*.*$/gm, "")),
+    "api/odds/live.js: DB に書かない（書き込みの呼び出し・race_odds を書くモジュールの import が無い）",
+    liveApiDbWrites(api).length === 0,
+    show(liveApiDbWrites(api)),
+  );
+  // 再現: 読むだけのソースは通り、書くソースは落ちる（前の検査は読むだけでも落としていた）
+  const READ_ONLY_SRC = `const { data } = await supabase.from("race_odds").select("window_min, scraped_at").eq("race_id", raceId);`;
+  check(
+    "検査の再現: race_odds を読むだけのソースは通る",
+    liveApiDbWrites(READ_ONLY_SRC).length === 0,
+    show(liveApiDbWrites(READ_ONLY_SRC)),
+  );
+  check(
+    "検査の再現: 前の検査（文字列 race_odds の禁止）なら読むだけでも落ちていた",
+    /race_odds/.test(READ_ONLY_SRC),
+  );
+  for (const [label, src] of [
+    ["upsert", `await supabase.from("race_odds").upsert(rows);`],
+    ["insert", `await supabase.from("race_odds").insert(row);`],
+    [
+      "update",
+      `await supabase\n  .from("race_odds")\n  .update({ odds })\n  .eq("race_id", id);`,
+    ],
+    ["delete", `await supabase.from("race_odds").delete().eq("race_id", id);`],
+    [
+      "upsertChangedRows",
+      `await upsertChangedRows(supabase, "race_odds", rows);`,
+    ],
+    [
+      "oddsHandlers の import",
+      `import { createOddsCronHandler } from "../../scripts/lib/scrapeJobs/oddsHandlers.js";`,
+    ],
+  ]) {
+    check(
+      `検査の再現: 書くソースは落ちる（${label}）`,
+      liveApiDbWrites(src).length > 0,
+    );
+  }
+  check(
+    "検査の再現: コメントの中の書き込みの語は数えない",
+    liveApiDbWrites(
+      `// .upsert( は使わない\n/**\n * race_odds に .insert( しない\n */`,
+    ).length === 0,
   );
   const vite = fs.readFileSync(
     new URL("../../vite.config.js", import.meta.url),
@@ -460,7 +525,6 @@ const fetcher = (fn) => {
     /READ_ONLY_API = '[^']*\|odds\)/.test(vite),
   );
 }
-
 
 // ---- (f) 生のクエリの形（BOA-1110）: 並び替え・エンコード・余計な & でキャッシュを外させない ----
 {
@@ -473,11 +537,18 @@ const fetcher = (fn) => {
   );
   for (const [label, raw] of [
     ["並び替え", `?page=3t&raceId=${TODAY_RACE}`],
-    ["ハイフンのエンコード", `?raceId=${TODAY_RACE.replace(/-/g, "%2D")}&page=3t`],
+    [
+      "ハイフンのエンコード",
+      `?raceId=${TODAY_RACE.replace(/-/g, "%2D")}&page=3t`,
+    ],
     ["末尾の &", `${canonical}&`],
     ["空のパラメータ", `${canonical}&=`],
   ]) {
-    check(`形の違うクエリは通らない: ${label}`, !isCanonicalLiveOddsSearch(raw, target), raw);
+    check(
+      `形の違うクエリは通らない: ${label}`,
+      !isCanonicalLiveOddsSearch(raw, target),
+      raw,
+    );
   }
   const f = fetcher(() => htmlResponse(T3_PREDEADLINE));
   const reordered = await handleLiveOddsRequest({
@@ -491,7 +562,11 @@ const fetcher = (fn) => {
     reordered.status === 400 &&
       reordered.cacheControl === CACHE_NO_STORE &&
       f.calls.length === 0,
-    show({ status: reordered.status, cacheControl: reordered.cacheControl, calls: f.calls }),
+    show({
+      status: reordered.status,
+      cacheControl: reordered.cacheControl,
+      calls: f.calls,
+    }),
   );
   const ok = await handleLiveOddsRequest({
     query: target,
@@ -500,7 +575,10 @@ const fetcher = (fn) => {
     rawSearch: canonical,
   });
   check("正しい形のクエリ: 200", ok.status === 200, show(ok.status));
-  const apiSrc = fs.readFileSync(new URL("../../api/odds/live.js", import.meta.url), "utf8");
+  const apiSrc = fs.readFileSync(
+    new URL("../../api/odds/live.js", import.meta.url),
+    "utf8",
+  );
   check(
     "api/odds/live.js: req.url の生のクエリを rawSearch に渡す",
     /rawSearch:\s*new URL\(req\.url/.test(apiSrc),
