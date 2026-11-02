@@ -16,9 +16,9 @@ import {
   pickRaceStatus,
 } from "./snsTodayDigest.js";
 import {
-  parseResearchId,
-  RESEARCH_IMAGE_KIND,
+  DAILY_IMAGE_TYPES,
   researchTextReasons,
+  setsuRacerReasons,
 } from "./snsResearchImage.js";
 import {
   parseSetsuId,
@@ -271,30 +271,34 @@ export function createReadCurrent({
         source_revision: revision,
       };
     }
-    // 「数字で見たら」の集計の画像1枚（179・180、scripts/sns/push-research-image.js）: レースを持たないので、中止・欠場・締切は無く、
-    // リンク先の表示の確認も無い（本文にリンクを置かない型。preflight は public_check='none' のとき本文にリンクが無いことだけを見る）。
-    // 代わりに、item が research_image であること・自動送信の許可（research_image_enabled）・同じ日に送った research_image が無いこと・
-    // 禁止表現・加重280・リンクなし・画像1枚を、DB の下書きから読み直して確かめる。違えば投げる（runner の claim の前の検査で止まる）
-    if (draft?.source_data?.research_image?.research_id) {
-      const { research_id: researchId, revision } =
-        draft.source_data.research_image;
-      const parsed = parseResearchId(researchId);
-      if (!parsed) throw new Error("research_id_invalid");
+    // 1日1本の画像の型（「数字で見たら」research_image 179・180、「節の機力」setsu_kiryoku 194。scripts/sns/push-research-image.js）:
+    // レースを持たないので、中止・欠場・締切は無く、リンク先の表示の確認も無い（本文にリンクを置かない型。preflight は
+    // public_check='none' のとき本文にリンクが無いことだけを見る）。代わりに、item がその型であること・自動送信の許可（型ごとの列）・
+    // 同じ日に送った同じ型が無いこと・禁止表現・加重280・リンクなし・画像1枚（節の機力は選手の名前と級も）を、DB の下書きから
+    // 読み直して確かめる。違えば投げる（runner の claim の前の検査で止まる）
+    const daily = Object.values(DAILY_IMAGE_TYPES).find(
+      (t) => draft?.source_data?.[t.sourceKey]?.[t.idField],
+    );
+    if (daily) {
+      const source = draft.source_data[daily.sourceKey];
+      const { [daily.idField]: dailyId, revision } = source;
+      const parsed = daily.parseId(dailyId);
+      if (!parsed) throw new Error(daily.errors.idInvalid);
       const [[item], sent, [control], [row]] = await Promise.all([
         db(`sns_auto_send_items?draft_id=eq.${draftId}&select=kind,race_id`),
         db(
-          `sns_auto_send_items?kind=eq.${RESEARCH_IMAGE_KIND}&channel=eq.x&race_id=like.${encodeURIComponent(`research:${parsed.date}:*`)}&state=eq.sent&select=id`,
+          `sns_auto_send_items?kind=eq.${daily.kind}&channel=eq.x&race_id=like.${encodeURIComponent(`${daily.idPrefix}:${parsed.date}:*`)}&state=eq.sent&select=id`,
         ),
-        db("sns_auto_send_control?channel=eq.x&select=research_image_enabled"),
+        db(`sns_auto_send_control?channel=eq.x&select=${daily.enabledColumn}`),
         db(
           `sns_drafts?id=eq.${draftId}&select=platform,caption_text,hashtags,cover_image_path,video_storage_path`,
         ),
       ]);
-      if (item?.kind !== RESEARCH_IMAGE_KIND || item.race_id !== researchId)
-        throw new Error("research_item_mismatch");
-      if (control?.research_image_enabled !== true)
-        throw new Error("research_image_disabled");
-      if (sent.length) throw new Error("research_already_sent_today");
+      if (item?.kind !== daily.kind || item.race_id !== dailyId)
+        throw new Error(daily.errors.itemMismatch);
+      if (control?.[daily.enabledColumn] !== true)
+        throw new Error(daily.errors.disabled);
+      if (sent.length) throw new Error(daily.errors.alreadySent);
       const images = draft.source_data.image_paths;
       if (
         row?.platform !== "x" ||
@@ -303,14 +307,16 @@ export function createReadCurrent({
         images.length !== 1 ||
         images[0] !== row.cover_image_path
       )
-        throw new Error("research_image_count");
+        throw new Error(daily.errors.imageCount);
       if (
         researchTextReasons({
           caption: row.caption_text,
           hashtags: row.hashtags ?? [],
         }).length
       )
-        throw new Error("research_text_rejected");
+        throw new Error(daily.errors.textRejected);
+      if (daily.hasRacers && setsuRacerReasons(source.racers).length)
+        throw new Error(daily.errors.racers);
       return {
         withdrawn: false,
         cancelled: false,

@@ -1082,3 +1082,62 @@ export function roughState({ factsStatus, today, ncStatus, naStatus }) {
 /** 組んだ買い目にオッズの付いた組が1つでもあるか（無ければ配分を出さず「オッズは発売後に出る」） */
 export const hasPricedTicket = (tickets, trifecta) =>
   tickets.some((t) => trifecta?.[t] != null && trifecta[t] > 0);
+
+// ---- オッズの読み直しの時刻（BOA-1180）----
+
+// DB にオッズのスナップショットが入る窓（締切の何分前）。scripts/lib/scrapeJobs/registry.js の odds.offsets と同じ
+// （verify-thinking-assist-model.js が一致を検査する）
+export const ODDS_SNAPSHOT_WINDOWS_MIN = [60, 30, 15, 10, 5, 0];
+// 窓の始まりから DB に入るまでの余裕。2026-10-29〜11-02 の本番の実測で、各窓の取得は窓の始まりの約0.6分後（p95 も同じ）
+const ODDS_ARRIVAL_MS = 90_000;
+// 入っているはずの窓の値が無いとき、1分おきに読み直す期間（窓の始まりから。取得の許容幅3分＋リース）
+const ODDS_LATE_WINDOW_MS = 5 * 60_000;
+const ODDS_RETRY_MS = 60_000;
+// 締切時オッズ（race_odds_final）を読みにいく時刻（締切の何分後）。同じ実測で締切の5.7〜9.8分後に入る。
+// 取れなかった券種は締切60分後まで5分おきに取り直す（registry.js の odds_final）ので、61分後まで読む
+const ODDS_FINAL_CHECKS_MIN = [11, 20, 30, 45, 61];
+// 発売前（オッズがまだ1つも無い）で -60〜-30 の間は、-60 の窓が発売の開始まで1分ごとに取り直すので、2分おきに読む
+const ODDS_PRESALE_POLL_MS = 120_000;
+
+/**
+ * 思考アシストのオッズを DB から読み直すまでの時間（ms）。null なら読み直さない。
+ * 公式への取得は増やさない（DB に新しいスナップショットが入る時刻に合わせて読み直すだけ）。
+ * - 全部の券種の締切時オッズがそろったら終わり。締切の61分後を過ぎても終わり（過去のレースは読み直さない）
+ * - もう入っているはずの窓の値が無いとき: 最初の読み込み（キャッシュの古い値かもしれない）はすぐ1回。読み直しの結果なら、
+ *   窓の始まりから5分までは1分おきに読む（取得が遅れた窓を、次の窓まで待たない）
+ * - それ以外は、次の窓の値が DB に入る時刻・締切時オッズが入る時刻に読み直す
+ * @param {number|null} deadlineMs 締切の時刻（getDeadlineDate）
+ * @param {number} nowMs
+ * @param {{byType?: object, capturedAt?: string|null}|null} data 読んだオッズ（oddsByBetType。締切時オッズの失敗では byType が空のことがある）
+ * @param {boolean} [refresh] この data が読み直し（キャッシュを通さない）の結果か
+ */
+export function nextOddsRefreshDelay(deadlineMs, nowMs, data, refresh = false) {
+  if (deadlineMs == null || !Number.isFinite(deadlineMs)) return null;
+  const types = Object.values(data?.byType ?? {});
+  if (types.length === ASSIST_BET_TYPES.length && types.every((t) => t.final))
+    return null;
+  if (nowMs >= deadlineMs + ODDS_FINAL_CHECKS_MIN.at(-1) * 60_000) return null;
+  const arrivalOf = (w) => deadlineMs - w * 60_000 + ODDS_ARRIVAL_MS;
+  const candidates = [
+    ...ODDS_SNAPSHOT_WINDOWS_MIN.map(arrivalOf),
+    ...ODDS_FINAL_CHECKS_MIN.map((m) => deadlineMs + m * 60_000),
+  ];
+  const passed = ODDS_SNAPSHOT_WINDOWS_MIN.filter((w) => arrivalOf(w) <= nowMs);
+  if (passed.length) {
+    const windowStart = deadlineMs - passed.at(-1) * 60_000;
+    const capturedMs = data?.capturedAt ? Date.parse(data.capturedAt) : null;
+    if (capturedMs == null || capturedMs < windowStart) {
+      if (!refresh) return 0;
+      if (nowMs < windowStart + ODDS_LATE_WINDOW_MS)
+        candidates.push(nowMs + ODDS_RETRY_MS);
+    }
+  }
+  if (
+    types.length === 0 &&
+    nowMs >= deadlineMs - 60 * 60_000 &&
+    nowMs < deadlineMs - 30 * 60_000
+  )
+    candidates.push(nowMs + ODDS_PRESALE_POLL_MS);
+  const next = Math.min(...candidates.filter((t) => t > nowMs));
+  return Number.isFinite(next) ? next - nowMs : null;
+}
