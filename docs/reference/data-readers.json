@@ -5,10 +5,10 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1585,
-    "filesWithAccess": 259,
-    "tableReaders": 909,
-    "tableWriters": 186,
+    "sourceFiles": 1588,
+    "filesWithAccess": 260,
+    "tableReaders": 932,
+    "tableWriters": 187,
     "rpcCallers": 50,
     "nameMentions": 231,
     "tablesWithoutReaders": 21,
@@ -1388,7 +1388,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:218",
+          "ref": "api/_lib/snsClaimCheck.js:222",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1397,7 +1397,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:249",
+          "ref": "api/_lib/snsClaimCheck.js:253",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1406,7 +1406,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:336",
+          "ref": "api/_lib/snsClaimCheck.js:340",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1415,7 +1415,16 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:380",
+          "ref": "api/_lib/snsClaimCheck.js:414",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "is_absent",
+            "race_id"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:439",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1595,6 +1604,15 @@
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
+        },
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:969",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "is_absent",
+            "race_id"
+          ]
         },
         {
           "ref": "src/services/racerService.js:174",
@@ -1819,10 +1837,11 @@
           "readers": [
             "api/_lib/analogyV16.js:103",
             "api/_lib/racerEntryExhibition.js:192",
-            "api/_lib/snsClaimCheck.js:218",
-            "api/_lib/snsClaimCheck.js:249",
-            "api/_lib/snsClaimCheck.js:336",
-            "api/_lib/snsClaimCheck.js:380",
+            "api/_lib/snsClaimCheck.js:222",
+            "api/_lib/snsClaimCheck.js:253",
+            "api/_lib/snsClaimCheck.js:340",
+            "api/_lib/snsClaimCheck.js:414",
+            "api/_lib/snsClaimCheck.js:439",
             "api/_lib/snsTodayDigest.js:54",
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
@@ -1833,6 +1852,7 @@
             "scripts/maintenance/backfill-exhibition-by-race-id.js:48",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/maintenance/verify-pre-race-parsers.js:1868",
+            "scripts/sns/push-setsu-kiryoku-short.js:969",
             "src/services/racerService.js:174",
             "src/services/sherlockService.js:83",
             "src/services/supabaseDataService.js:468",
@@ -2042,14 +2062,16 @@
           "readers": [
             "api/_lib/analogyV16.js:103",
             "api/_lib/racerEntryExhibition.js:192",
-            "api/_lib/snsClaimCheck.js:218",
-            "api/_lib/snsClaimCheck.js:249",
-            "api/_lib/snsClaimCheck.js:336",
-            "api/_lib/snsClaimCheck.js:380",
+            "api/_lib/snsClaimCheck.js:222",
+            "api/_lib/snsClaimCheck.js:253",
+            "api/_lib/snsClaimCheck.js:340",
+            "api/_lib/snsClaimCheck.js:414",
+            "api/_lib/snsClaimCheck.js:439",
             "api/_lib/snsTodayDigest.js:54",
             "scripts/lib/analogyV16Exhibition.js:208",
             "scripts/lib/analogyV16Exhibition.js:296",
             "scripts/maintenance/verify-analogy-v16.js:286",
+            "scripts/sns/push-setsu-kiryoku-short.js:969",
             "src/services/supabaseDataService.js:5372",
             "src/services/supabaseDataService.js:5450"
           ],
@@ -6324,7 +6346,16 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:250",
+          "ref": "api/_lib/snsClaimCheck.js:254",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "race_id",
+            "race_stage"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:407",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6556,6 +6587,15 @@
           ]
         },
         {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:962",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "race_id",
+            "race_stage"
+          ]
+        },
+        {
           "ref": "scripts/verification/verify-series-points-border.mjs:79",
           "op": "select",
           "via": "client",
@@ -6705,7 +6745,8 @@
         "race_id": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:173",
-            "api/_lib/snsClaimCheck.js:250",
+            "api/_lib/snsClaimCheck.js:254",
+            "api/_lib/snsClaimCheck.js:407",
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/analysis/backtest-unified-model-place-trifecta.js:101",
             "scripts/analysis/backtest-unified-model.js:116",
@@ -6725,6 +6766,7 @@
             "scripts/maintenance/verify-full-picture-scene2.js:1213",
             "scripts/ml/analogy/build-wind-basis.js:95",
             "scripts/sns/push-finals-image.js:1242",
+            "scripts/sns/push-setsu-kiryoku-short.js:962",
             "scripts/verification/verify-series-points-border.mjs:79",
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:155",
@@ -6871,11 +6913,13 @@
         },
         "race_stage": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:250",
+            "api/_lib/snsClaimCheck.js:254",
+            "api/_lib/snsClaimCheck.js:407",
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/lib/snsAutoPlanRunner.js:744",
             "scripts/maintenance/verify-full-picture-scene2.js:1213",
             "scripts/sns/push-finals-image.js:1242",
+            "scripts/sns/push-setsu-kiryoku-short.js:962",
             "scripts/verification/verify-series-points-border.mjs:79",
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:155",
@@ -6970,7 +7014,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:217",
+          "ref": "api/_lib/snsClaimCheck.js:221",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6979,7 +7023,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:248",
+          "ref": "api/_lib/snsClaimCheck.js:252",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6988,7 +7032,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:335",
+          "ref": "api/_lib/snsClaimCheck.js:339",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6997,7 +7041,16 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:379",
+          "ref": "api/_lib/snsClaimCheck.js:413",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "is_absent",
+            "race_id"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:438",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7759,6 +7812,15 @@
           "columns": []
         },
         {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:968",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "is_absent",
+            "race_id"
+          ]
+        },
+        {
           "ref": "scripts/verification/verify-series-points-border.mjs:47",
           "op": "select",
           "via": "client",
@@ -8408,10 +8470,11 @@
           "readers": [
             "api/_lib/analogyV16.js:105",
             "api/_lib/racerEntryExhibition.js:171",
-            "api/_lib/snsClaimCheck.js:217",
-            "api/_lib/snsClaimCheck.js:248",
-            "api/_lib/snsClaimCheck.js:335",
-            "api/_lib/snsClaimCheck.js:379",
+            "api/_lib/snsClaimCheck.js:221",
+            "api/_lib/snsClaimCheck.js:252",
+            "api/_lib/snsClaimCheck.js:339",
+            "api/_lib/snsClaimCheck.js:413",
+            "api/_lib/snsClaimCheck.js:438",
             "api/_lib/snsTodayDigest.js:52",
             "scripts/analysis/analyze-indicator-predictive-power.js:148",
             "scripts/analysis/analyze-venue-03-trifecta.js:67",
@@ -8464,6 +8527,7 @@
             "scripts/maintenance/verify-e2e-har-merge.js:53",
             "scripts/maintenance/verify-e2e-har-merge.js:57",
             "scripts/maintenance/verify-e2e-har-merge.js:58",
+            "scripts/sns/push-setsu-kiryoku-short.js:968",
             "scripts/verification/verify-series-points-border.mjs:47",
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:146",
@@ -9091,14 +9155,16 @@
         "is_absent": {
           "readers": [
             "api/_lib/analogyV16.js:105",
-            "api/_lib/snsClaimCheck.js:217",
-            "api/_lib/snsClaimCheck.js:248",
-            "api/_lib/snsClaimCheck.js:335",
-            "api/_lib/snsClaimCheck.js:379",
+            "api/_lib/snsClaimCheck.js:221",
+            "api/_lib/snsClaimCheck.js:252",
+            "api/_lib/snsClaimCheck.js:339",
+            "api/_lib/snsClaimCheck.js:413",
+            "api/_lib/snsClaimCheck.js:438",
             "api/_lib/snsTodayDigest.js:52",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/lib/analogyV16Exhibition.js:299",
-            "scripts/maintenance/verify-analogy-v16.js:289"
+            "scripts/maintenance/verify-analogy-v16.js:289",
+            "scripts/sns/push-setsu-kiryoku-short.js:968"
           ],
           "writers": [],
           "sql": [
@@ -15912,7 +15978,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:215",
+          "ref": "api/_lib/snsClaimCheck.js:219",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -15923,7 +15989,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:246",
+          "ref": "api/_lib/snsClaimCheck.js:250",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -15934,7 +16000,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:333",
+          "ref": "api/_lib/snsClaimCheck.js:337",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -15945,7 +16011,16 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:377",
+          "ref": "api/_lib/snsClaimCheck.js:412",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "cancellation_status",
+            "race_id"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:436",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -16993,6 +17068,15 @@
           ]
         },
         {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:967",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "cancellation_status",
+            "race_id"
+          ]
+        },
+        {
           "ref": "scripts/sns/today-picks.js:83",
           "op": "rest",
           "via": "rest",
@@ -17377,10 +17461,11 @@
           "readers": [
             "api/_lib/analogyV16.js:101",
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:215",
-            "api/_lib/snsClaimCheck.js:246",
-            "api/_lib/snsClaimCheck.js:333",
-            "api/_lib/snsClaimCheck.js:377",
+            "api/_lib/snsClaimCheck.js:219",
+            "api/_lib/snsClaimCheck.js:250",
+            "api/_lib/snsClaimCheck.js:337",
+            "api/_lib/snsClaimCheck.js:412",
+            "api/_lib/snsClaimCheck.js:436",
             "api/_lib/snsTodayDigest.js:50",
             "scripts/analysis/analyze-upset-factors.js:108",
             "scripts/analysis/backtest-unified-model-place-trifecta.js:94",
@@ -17466,6 +17551,7 @@
             "scripts/sns/push-finals-image.js:1232",
             "scripts/sns/push-finals-image.js:1238",
             "scripts/sns/push-full-picture.js:839",
+            "scripts/sns/push-setsu-kiryoku-short.js:967",
             "scripts/sns/today-picks.js:83",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
@@ -17513,10 +17599,10 @@
           "readers": [
             "api/_lib/analogyV16.js:101",
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:215",
-            "api/_lib/snsClaimCheck.js:246",
-            "api/_lib/snsClaimCheck.js:333",
-            "api/_lib/snsClaimCheck.js:377",
+            "api/_lib/snsClaimCheck.js:219",
+            "api/_lib/snsClaimCheck.js:250",
+            "api/_lib/snsClaimCheck.js:337",
+            "api/_lib/snsClaimCheck.js:436",
             "scripts/analysis/analyze-upset-factors.js:108",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:130",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
@@ -17712,10 +17798,10 @@
           "readers": [
             "api/_lib/analogyV16.js:101",
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:215",
-            "api/_lib/snsClaimCheck.js:246",
-            "api/_lib/snsClaimCheck.js:333",
-            "api/_lib/snsClaimCheck.js:377",
+            "api/_lib/snsClaimCheck.js:219",
+            "api/_lib/snsClaimCheck.js:250",
+            "api/_lib/snsClaimCheck.js:337",
+            "api/_lib/snsClaimCheck.js:436",
             "api/_lib/snsTodayDigest.js:50",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:130",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
@@ -17892,10 +17978,11 @@
         "cancellation_status": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:215",
-            "api/_lib/snsClaimCheck.js:246",
-            "api/_lib/snsClaimCheck.js:333",
-            "api/_lib/snsClaimCheck.js:377",
+            "api/_lib/snsClaimCheck.js:219",
+            "api/_lib/snsClaimCheck.js:250",
+            "api/_lib/snsClaimCheck.js:337",
+            "api/_lib/snsClaimCheck.js:412",
+            "api/_lib/snsClaimCheck.js:436",
             "api/_lib/snsTodayDigest.js:50",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
@@ -17928,6 +18015,7 @@
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
             "scripts/sns/push-finals-image.js:1232",
             "scripts/sns/push-full-picture.js:839",
+            "scripts/sns/push-setsu-kiryoku-short.js:967",
             "scripts/sns/today-picks.js:83",
             "src/services/supabaseDataService.js:2540",
             "src/services/supabaseDataService.js:7302"
@@ -19366,7 +19454,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:254",
+          "ref": "api/_lib/snsClaimCheck.js:258",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19375,7 +19463,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:284",
+          "ref": "api/_lib/snsClaimCheck.js:288",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19384,12 +19472,21 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:344",
+          "ref": "api/_lib/snsClaimCheck.js:348",
           "op": "rest",
           "via": "rest",
           "columns": [
             "channel",
             "today_thinking_enabled"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:395",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "channel",
+            "setsu_kiryoku_short_enabled"
           ]
         },
         {
@@ -19484,6 +19581,29 @@
             "dry_run",
             "mode"
           ]
+        },
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:887",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "auto_approver_id",
+            "channel",
+            "dry_run",
+            "mode",
+            "setsu_kiryoku_short_enabled"
+          ]
+        },
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:900",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "auto_approver_id",
+            "channel",
+            "dry_run",
+            "mode"
+          ]
         }
       ],
       "writers": [],
@@ -19497,9 +19617,10 @@
       "columns": {
         "channel": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:254",
-            "api/_lib/snsClaimCheck.js:284",
-            "api/_lib/snsClaimCheck.js:344",
+            "api/_lib/snsClaimCheck.js:258",
+            "api/_lib/snsClaimCheck.js:288",
+            "api/_lib/snsClaimCheck.js:348",
+            "api/_lib/snsClaimCheck.js:395",
             "api/_lib/snsXSendStore.js:151",
             "scripts/lib/snsAutoPlanRunner.js:719",
             "scripts/lib/snsSendRunner.js:584",
@@ -19507,7 +19628,9 @@
             "scripts/sns/push-finals-image.js:1268",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:543",
-            "scripts/sns/push-research-image.js:551"
+            "scripts/sns/push-research-image.js:551",
+            "scripts/sns/push-setsu-kiryoku-short.js:887",
+            "scripts/sns/push-setsu-kiryoku-short.js:900"
           ],
           "writers": [],
           "sql": [
@@ -19525,7 +19648,9 @@
             "scripts/sns/push-finals-image.js:1268",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:543",
-            "scripts/sns/push-research-image.js:551"
+            "scripts/sns/push-research-image.js:551",
+            "scripts/sns/push-setsu-kiryoku-short.js:887",
+            "scripts/sns/push-setsu-kiryoku-short.js:900"
           ],
           "writers": [],
           "sql": [
@@ -19542,7 +19667,9 @@
             "scripts/sns/push-finals-image.js:1268",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:543",
-            "scripts/sns/push-research-image.js:551"
+            "scripts/sns/push-research-image.js:551",
+            "scripts/sns/push-setsu-kiryoku-short.js:887",
+            "scripts/sns/push-setsu-kiryoku-short.js:900"
           ],
           "writers": [],
           "sql": [
@@ -19576,7 +19703,9 @@
             "scripts/sns/push-finals-image.js:1268",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:543",
-            "scripts/sns/push-research-image.js:551"
+            "scripts/sns/push-research-image.js:551",
+            "scripts/sns/push-setsu-kiryoku-short.js:887",
+            "scripts/sns/push-setsu-kiryoku-short.js:900"
           ],
           "writers": [],
           "sql": [
@@ -19595,7 +19724,7 @@
         },
         "finals_image_enabled": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:254"
+            "api/_lib/snsClaimCheck.js:258"
           ],
           "writers": [],
           "sql": [
@@ -19604,7 +19733,7 @@
         },
         "research_image_enabled": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:284",
+            "api/_lib/snsClaimCheck.js:288",
             "scripts/sns/push-research-image.js:543"
           ],
           "writers": [],
@@ -19614,6 +19743,7 @@
         }
       },
       "columnsNotInSnapshot": [
+        "setsu_kiryoku_short_enabled",
         "today_thinking_enabled"
       ],
       "mentions": [],
@@ -19675,7 +19805,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:252",
+          "ref": "api/_lib/snsClaimCheck.js:256",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19687,7 +19817,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:280",
+          "ref": "api/_lib/snsClaimCheck.js:284",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19697,7 +19827,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:282",
+          "ref": "api/_lib/snsClaimCheck.js:286",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19709,7 +19839,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:338",
+          "ref": "api/_lib/snsClaimCheck.js:342",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19720,7 +19850,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:341",
+          "ref": "api/_lib/snsClaimCheck.js:345",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19729,6 +19859,28 @@
             "race_id",
             "state",
             "variant"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:390",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "draft_id",
+            "kind",
+            "race_id"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:392",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "channel",
+            "id",
+            "kind",
+            "race_id",
+            "state"
           ]
         },
         {
@@ -19815,6 +19967,32 @@
             "race_id",
             "state"
           ]
+        },
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:913",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "channel",
+            "created_at",
+            "draft_id",
+            "held_reason",
+            "id",
+            "kind",
+            "race_id",
+            "state"
+          ]
+        },
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:922",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "draft_id",
+            "id",
+            "race_id",
+            "state"
+          ]
         }
       ],
       "writers": [
@@ -19867,9 +20045,10 @@
       "columns": {
         "id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:252",
-            "api/_lib/snsClaimCheck.js:282",
-            "api/_lib/snsClaimCheck.js:341",
+            "api/_lib/snsClaimCheck.js:256",
+            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:345",
+            "api/_lib/snsClaimCheck.js:392",
             "scripts/lib/snsAutoPlanRunner.js:775",
             "scripts/lib/snsTodayPlanner.js:1105",
             "scripts/lib/snsTodayPlanner.js:1169",
@@ -19878,7 +20057,9 @@
             "scripts/sns/push-finals-image.js:1341",
             "scripts/sns/push-full-picture.js:878",
             "scripts/sns/push-full-picture.js:889",
-            "scripts/sns/push-research-image.js:536"
+            "scripts/sns/push-research-image.js:536",
+            "scripts/sns/push-setsu-kiryoku-short.js:913",
+            "scripts/sns/push-setsu-kiryoku-short.js:922"
           ],
           "writers": [],
           "sql": [
@@ -19904,9 +20085,11 @@
         },
         "channel": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:282",
+            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:392",
             "scripts/sns/push-full-picture.js:889",
-            "scripts/sns/push-research-image.js:536"
+            "scripts/sns/push-research-image.js:536",
+            "scripts/sns/push-setsu-kiryoku-short.js:913"
           ],
           "writers": [],
           "sql": [
@@ -19920,17 +20103,21 @@
         },
         "race_id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:252",
-            "api/_lib/snsClaimCheck.js:280",
-            "api/_lib/snsClaimCheck.js:282",
-            "api/_lib/snsClaimCheck.js:338",
-            "api/_lib/snsClaimCheck.js:341",
+            "api/_lib/snsClaimCheck.js:256",
+            "api/_lib/snsClaimCheck.js:284",
+            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:342",
+            "api/_lib/snsClaimCheck.js:345",
+            "api/_lib/snsClaimCheck.js:390",
+            "api/_lib/snsClaimCheck.js:392",
             "scripts/lib/snsAutoPlanRunner.js:750",
             "scripts/lib/snsTodayPlanner.js:1105",
             "scripts/maintenance/verify-sns-today-plan.js:730",
             "scripts/sns/push-finals-image.js:1247",
             "scripts/sns/push-full-picture.js:889",
-            "scripts/sns/push-research-image.js:536"
+            "scripts/sns/push-research-image.js:536",
+            "scripts/sns/push-setsu-kiryoku-short.js:913",
+            "scripts/sns/push-setsu-kiryoku-short.js:922"
           ],
           "writers": [],
           "sql": []
@@ -19958,9 +20145,10 @@
         },
         "state": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:252",
-            "api/_lib/snsClaimCheck.js:282",
-            "api/_lib/snsClaimCheck.js:341",
+            "api/_lib/snsClaimCheck.js:256",
+            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:345",
+            "api/_lib/snsClaimCheck.js:392",
             "scripts/lib/snsAutoPlanRunner.js:775",
             "scripts/lib/snsTodayPlanner.js:1105",
             "scripts/lib/snsTodayPlanner.js:1169",
@@ -19969,7 +20157,9 @@
             "scripts/sns/push-finals-image.js:1341",
             "scripts/sns/push-full-picture.js:878",
             "scripts/sns/push-full-picture.js:889",
-            "scripts/sns/push-research-image.js:536"
+            "scripts/sns/push-research-image.js:536",
+            "scripts/sns/push-setsu-kiryoku-short.js:913",
+            "scripts/sns/push-setsu-kiryoku-short.js:922"
           ],
           "writers": [],
           "sql": [
@@ -19988,7 +20178,8 @@
         },
         "held_reason": {
           "readers": [
-            "scripts/sns/push-research-image.js:536"
+            "scripts/sns/push-research-image.js:536",
+            "scripts/sns/push-setsu-kiryoku-short.js:913"
           ],
           "writers": [],
           "sql": []
@@ -20020,7 +20211,8 @@
         "created_at": {
           "readers": [
             "scripts/sns/push-finals-image.js:1247",
-            "scripts/sns/push-research-image.js:536"
+            "scripts/sns/push-research-image.js:536",
+            "scripts/sns/push-setsu-kiryoku-short.js:913"
           ],
           "writers": [],
           "sql": [
@@ -20039,16 +20231,19 @@
         },
         "kind": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:252",
-            "api/_lib/snsClaimCheck.js:280",
-            "api/_lib/snsClaimCheck.js:282",
-            "api/_lib/snsClaimCheck.js:338",
-            "api/_lib/snsClaimCheck.js:341",
+            "api/_lib/snsClaimCheck.js:256",
+            "api/_lib/snsClaimCheck.js:284",
+            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:342",
+            "api/_lib/snsClaimCheck.js:345",
+            "api/_lib/snsClaimCheck.js:390",
+            "api/_lib/snsClaimCheck.js:392",
             "scripts/lib/snsTodayPlanner.js:1105",
             "scripts/maintenance/verify-sns-today-plan.js:730",
             "scripts/sns/push-finals-image.js:1247",
             "scripts/sns/push-full-picture.js:889",
-            "scripts/sns/push-research-image.js:536"
+            "scripts/sns/push-research-image.js:536",
+            "scripts/sns/push-setsu-kiryoku-short.js:913"
           ],
           "writers": [],
           "sql": [
@@ -20059,12 +20254,15 @@
         },
         "draft_id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:280",
-            "api/_lib/snsClaimCheck.js:338",
+            "api/_lib/snsClaimCheck.js:284",
+            "api/_lib/snsClaimCheck.js:342",
+            "api/_lib/snsClaimCheck.js:390",
             "scripts/lib/snsTodayPlanner.js:1105",
             "scripts/sns/push-finals-image.js:1247",
             "scripts/sns/push-full-picture.js:889",
-            "scripts/sns/push-research-image.js:536"
+            "scripts/sns/push-research-image.js:536",
+            "scripts/sns/push-setsu-kiryoku-short.js:913",
+            "scripts/sns/push-setsu-kiryoku-short.js:922"
           ],
           "writers": [],
           "sql": [
@@ -20077,9 +20275,9 @@
         },
         "variant": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:252",
-            "api/_lib/snsClaimCheck.js:338",
-            "api/_lib/snsClaimCheck.js:341",
+            "api/_lib/snsClaimCheck.js:256",
+            "api/_lib/snsClaimCheck.js:342",
+            "api/_lib/snsClaimCheck.js:345",
             "scripts/sns/push-finals-image.js:1247",
             "scripts/sns/push-full-picture.js:889"
           ],
@@ -20106,7 +20304,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:191",
+          "ref": "api/_lib/snsClaimCheck.js:195",
           "op": "select",
           "via": "embed",
           "columns": [
@@ -20159,7 +20357,7 @@
         },
         "schema_version": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:191",
+            "api/_lib/snsClaimCheck.js:195",
             "scripts/lib/snsAutoPlanRunner.js:729"
           ],
           "writers": [],
@@ -20171,7 +20369,7 @@
         },
         "bundle": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:191",
+            "api/_lib/snsClaimCheck.js:195",
             "scripts/lib/snsAutoPlanRunner.js:729"
           ],
           "writers": [],
@@ -20659,7 +20857,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:191",
+          "ref": "api/_lib/snsClaimCheck.js:195",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20669,7 +20867,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:286",
+          "ref": "api/_lib/snsClaimCheck.js:290",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20993,6 +21191,15 @@
           ]
         },
         {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:918",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "format",
+            "id"
+          ]
+        },
+        {
           "ref": "scripts/sns/today-picks.js:75",
           "op": "rest",
           "via": "rest",
@@ -21046,6 +21253,14 @@
           "columns": [
             "?"
           ]
+        },
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:876",
+          "op": "update",
+          "via": "rest",
+          "columns": [
+            "?"
+          ]
         }
       ],
       "readByRpc": [
@@ -21079,8 +21294,8 @@
       "columns": {
         "id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:191",
-            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:195",
+            "api/_lib/snsClaimCheck.js:290",
             "api/_lib/snsHubHelpers.js:119",
             "api/_lib/snsHubHelpers.js:136",
             "api/_lib/snsXSendStore.js:72",
@@ -21104,6 +21319,8 @@
             "scripts/sns/push-finals-image.js:1332",
             "scripts/sns/push-full-picture.js:895",
             "scripts/sns/push-full-picture.js:918",
+            "scripts/sns/push-setsu-kiryoku-short.js:876",
+            "scripts/sns/push-setsu-kiryoku-short.js:918",
             "scripts/sns/today-picks.js:75"
           ],
           "writers": [],
@@ -21157,6 +21374,7 @@
             "scripts/lib/snsTodayPlanner.js:1102",
             "scripts/maintenance/verify-sns-daily-runner.js:965",
             "scripts/maintenance/verify-sns-today-plan.js:723",
+            "scripts/sns/push-setsu-kiryoku-short.js:918",
             "scripts/sns/today-picks.js:75"
           ],
           "writers": [],
@@ -21199,7 +21417,7 @@
         },
         "platform": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:290",
             "api/_lib/snsXSendStore.js:72",
             "api/admin/sns-hub/revisions/index.js:57",
             "api/admin/sns-hub/send-probe.js:55",
@@ -21253,7 +21471,7 @@
         },
         "video_storage_path": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:290",
             "api/admin/sns-hub/send-probe.js:55",
             "scripts/lib/snsAutoPlanRunner.js:747"
           ],
@@ -21270,7 +21488,7 @@
         },
         "cover_image_path": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:290",
             "api/admin/sns-hub/send-probe.js:52",
             "scripts/lib/snsAutoPlanRunner.js:747"
           ],
@@ -21282,7 +21500,7 @@
         },
         "caption_text": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:290",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/lib/snsDailyRunner.js:855",
             "scripts/maintenance/verify-sns-daily-runner.js:965",
@@ -21296,7 +21514,7 @@
         },
         "hashtags": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:286",
+            "api/_lib/snsClaimCheck.js:290",
             "scripts/lib/snsAutoPlanRunner.js:747"
           ],
           "writers": [],
@@ -21311,7 +21529,7 @@
         },
         "source_data": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:191",
+            "api/_lib/snsClaimCheck.js:195",
             "api/_lib/snsXSendStore.js:72",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/lib/snsDailyRunner.js:850",
@@ -21471,7 +21689,7 @@
         },
         "bundle_import_id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:191",
+            "api/_lib/snsClaimCheck.js:195",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/maintenance/verify-sns-auto-plan.js:617",
             "scripts/sns/push-finals-image.js:1292"
@@ -23034,6 +23252,20 @@
           ]
         },
         {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:908",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "daily_baseline_date",
+            "daily_external_count",
+            "daily_limit",
+            "daily_limit_youtube",
+            "expiry_minutes",
+            "id",
+            "max_source_age_seconds"
+          ]
+        },
+        {
           "ref": "scripts/sns/x-slots-check.js:158",
           "op": "rest",
           "via": "rest",
@@ -23075,7 +23307,8 @@
             "api/_lib/snsXSendStore.js:149",
             "api/_lib/snsXSendStore.js:156",
             "scripts/lib/snsMetricsRunner.js:526",
-            "scripts/sns/push-finals-image.js:1276"
+            "scripts/sns/push-finals-image.js:1276",
+            "scripts/sns/push-setsu-kiryoku-short.js:908"
           ],
           "writers": [],
           "sql": [
@@ -23168,7 +23401,9 @@
           ]
         },
         "expiry_minutes": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:908"
+          ],
           "writers": [],
           "sql": [
             "rpc:transition_sns_send_139",
@@ -23176,7 +23411,9 @@
           ]
         },
         "max_source_age_seconds": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:908"
+          ],
           "writers": [],
           "sql": [
             "rpc:transition_sns_send_139",
@@ -23185,7 +23422,8 @@
         },
         "daily_limit": {
           "readers": [
-            "scripts/sns/push-finals-image.js:1276"
+            "scripts/sns/push-finals-image.js:1276",
+            "scripts/sns/push-setsu-kiryoku-short.js:908"
           ],
           "writers": [],
           "sql": [
@@ -23196,7 +23434,8 @@
         },
         "daily_baseline_date": {
           "readers": [
-            "scripts/sns/push-finals-image.js:1276"
+            "scripts/sns/push-finals-image.js:1276",
+            "scripts/sns/push-setsu-kiryoku-short.js:908"
           ],
           "writers": [],
           "sql": [
@@ -23208,7 +23447,8 @@
         },
         "daily_external_count": {
           "readers": [
-            "scripts/sns/push-finals-image.js:1276"
+            "scripts/sns/push-finals-image.js:1276",
+            "scripts/sns/push-setsu-kiryoku-short.js:908"
           ],
           "writers": [],
           "sql": [
@@ -23244,7 +23484,9 @@
           ]
         },
         "daily_limit_youtube": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:908"
+          ],
           "writers": [],
           "sql": [
             "rpc:transition_sns_send_139",
@@ -23524,6 +23766,47 @@
             "scheduled_at",
             "state"
           ]
+        },
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:927",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "draft_id",
+            "error_code",
+            "expires_at",
+            "external_post_id",
+            "external_post_url",
+            "id",
+            "posted_at",
+            "scheduled_at",
+            "state"
+          ]
+        },
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:931",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "attempt_channels",
+            "attempt_dates",
+            "id",
+            "state"
+          ]
+        },
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:936",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "attempts",
+            "channel",
+            "draft_id",
+            "expires_at",
+            "id",
+            "scheduled_at",
+            "state"
+          ]
         }
       ],
       "writers": [],
@@ -23564,7 +23847,10 @@
             "scripts/sns/push-finals-image.js:1292",
             "scripts/sns/push-finals-image.js:1301",
             "scripts/sns/push-full-picture.js:898",
-            "scripts/sns/push-research-image.js:562"
+            "scripts/sns/push-research-image.js:562",
+            "scripts/sns/push-setsu-kiryoku-short.js:927",
+            "scripts/sns/push-setsu-kiryoku-short.js:931",
+            "scripts/sns/push-setsu-kiryoku-short.js:936"
           ],
           "writers": [],
           "sql": [
@@ -23587,7 +23873,9 @@
             "scripts/lib/snsMetricsRunner.js:495",
             "scripts/sns/push-finals-image.js:1301",
             "scripts/sns/push-full-picture.js:898",
-            "scripts/sns/push-research-image.js:562"
+            "scripts/sns/push-research-image.js:562",
+            "scripts/sns/push-setsu-kiryoku-short.js:927",
+            "scripts/sns/push-setsu-kiryoku-short.js:936"
           ],
           "writers": [],
           "sql": [
@@ -23621,7 +23909,10 @@
             "scripts/sns/push-finals-image.js:1292",
             "scripts/sns/push-finals-image.js:1301",
             "scripts/sns/push-full-picture.js:898",
-            "scripts/sns/push-research-image.js:562"
+            "scripts/sns/push-research-image.js:562",
+            "scripts/sns/push-setsu-kiryoku-short.js:927",
+            "scripts/sns/push-setsu-kiryoku-short.js:931",
+            "scripts/sns/push-setsu-kiryoku-short.js:936"
           ],
           "writers": [],
           "sql": [
@@ -23692,7 +23983,9 @@
             "api/_lib/snsXSendStore.js:136",
             "api/_lib/snsXSendStore.js:69",
             "scripts/lib/snsSendRunner.js:594",
-            "scripts/sns/push-research-image.js:562"
+            "scripts/sns/push-research-image.js:562",
+            "scripts/sns/push-setsu-kiryoku-short.js:927",
+            "scripts/sns/push-setsu-kiryoku-short.js:936"
           ],
           "writers": [],
           "sql": [
@@ -23706,7 +23999,8 @@
             "scripts/lib/snsSendRunner.js:626",
             "scripts/maintenance/verify-sns-send-runner.js:1554",
             "scripts/sns/push-finals-image.js:1292",
-            "scripts/sns/push-full-picture.js:898"
+            "scripts/sns/push-full-picture.js:898",
+            "scripts/sns/push-setsu-kiryoku-short.js:936"
           ],
           "writers": [],
           "sql": [
@@ -23739,7 +24033,8 @@
             "scripts/maintenance/verify-sns-send-runner.js:1554",
             "scripts/maintenance/verify-sns-send-runner.js:491",
             "scripts/sns/push-finals-image.js:1301",
-            "scripts/sns/push-research-image.js:562"
+            "scripts/sns/push-research-image.js:562",
+            "scripts/sns/push-setsu-kiryoku-short.js:927"
           ],
           "writers": [],
           "sql": [
@@ -23761,7 +24056,8 @@
             "scripts/lib/snsSendRunner.js:626",
             "scripts/maintenance/verify-sns-send-runner.js:1554",
             "scripts/sns/push-finals-image.js:1301",
-            "scripts/sns/push-research-image.js:562"
+            "scripts/sns/push-research-image.js:562",
+            "scripts/sns/push-setsu-kiryoku-short.js:927"
           ],
           "writers": [],
           "sql": [
@@ -23774,7 +24070,8 @@
           "readers": [
             "api/_lib/snsXSendStore.js:136",
             "scripts/sns/push-finals-image.js:1301",
-            "scripts/sns/push-research-image.js:562"
+            "scripts/sns/push-research-image.js:562",
+            "scripts/sns/push-setsu-kiryoku-short.js:927"
           ],
           "writers": [],
           "sql": [
@@ -23787,7 +24084,8 @@
             "api/_lib/snsXSendStore.js:69",
             "scripts/lib/snsDailyRunner.js:845",
             "scripts/sns/push-finals-image.js:1301",
-            "scripts/sns/push-research-image.js:562"
+            "scripts/sns/push-research-image.js:562",
+            "scripts/sns/push-setsu-kiryoku-short.js:927"
           ],
           "writers": [],
           "sql": [
@@ -23818,7 +24116,8 @@
             "scripts/lib/snsSendRunner.js:632",
             "scripts/maintenance/verify-sns-send-runner.js:1554",
             "scripts/maintenance/verify-sns-send-runner.js:491",
-            "scripts/sns/push-finals-image.js:1292"
+            "scripts/sns/push-finals-image.js:1292",
+            "scripts/sns/push-setsu-kiryoku-short.js:936"
           ],
           "writers": [],
           "sql": [
@@ -23837,7 +24136,9 @@
             "scripts/lib/snsSendRunner.js:626",
             "scripts/maintenance/verify-sns-send-runner.js:1554",
             "scripts/sns/push-finals-image.js:1292",
-            "scripts/sns/push-research-image.js:562"
+            "scripts/sns/push-research-image.js:562",
+            "scripts/sns/push-setsu-kiryoku-short.js:927",
+            "scripts/sns/push-setsu-kiryoku-short.js:936"
           ],
           "writers": [],
           "sql": [
@@ -23866,7 +24167,8 @@
         },
         "attempt_dates": {
           "readers": [
-            "scripts/sns/push-finals-image.js:1286"
+            "scripts/sns/push-finals-image.js:1286",
+            "scripts/sns/push-setsu-kiryoku-short.js:931"
           ],
           "writers": [],
           "sql": [
@@ -23877,7 +24179,8 @@
         },
         "attempt_channels": {
           "readers": [
-            "scripts/sns/push-finals-image.js:1286"
+            "scripts/sns/push-finals-image.js:1286",
+            "scripts/sns/push-setsu-kiryoku-short.js:931"
           ],
           "writers": [],
           "sql": [
@@ -23947,7 +24250,18 @@
         "authenticated": [],
         "summary": "service だけ"
       },
-      "readers": [],
+      "readers": [
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:948",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "general_reserved",
+            "quota_day",
+            "upload_reserved"
+          ]
+        }
+      ],
       "writers": [],
       "readByRpc": [
         "transition_sns_x_send"
@@ -23972,21 +24286,27 @@
           ]
         },
         "quota_day": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:948"
+          ],
           "writers": [],
           "sql": [
             "rpc:transition_sns_x_send"
           ]
         },
         "upload_reserved": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:948"
+          ],
           "writers": [],
           "sql": [
             "rpc:transition_sns_x_send"
           ]
         },
         "general_reserved": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:948"
+          ],
           "writers": [],
           "sql": [
             "rpc:transition_sns_x_send"
@@ -24041,7 +24361,22 @@
         "authenticated": [],
         "summary": "service だけ"
       },
-      "readers": [],
+      "readers": [
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:941",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "baseline_day",
+            "external_general",
+            "external_uploads",
+            "general_limit",
+            "id",
+            "upload_limit",
+            "verified"
+          ]
+        }
+      ],
       "writers": [],
       "readByRpc": [
         "transition_sns_x_send"
@@ -24052,7 +24387,9 @@
       "readByView": [],
       "columns": {
         "id": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:941"
+          ],
           "writers": [],
           "sql": [
             "rpc:roll_sns_send_baselines",
@@ -24060,7 +24397,9 @@
           ]
         },
         "verified": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:941"
+          ],
           "writers": [],
           "sql": [
             "rpc:roll_sns_send_baselines",
@@ -24068,7 +24407,9 @@
           ]
         },
         "baseline_day": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:941"
+          ],
           "writers": [],
           "sql": [
             "rpc:roll_sns_send_baselines",
@@ -24076,21 +24417,27 @@
           ]
         },
         "upload_limit": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:941"
+          ],
           "writers": [],
           "sql": [
             "rpc:transition_sns_x_send"
           ]
         },
         "general_limit": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:941"
+          ],
           "writers": [],
           "sql": [
             "rpc:transition_sns_x_send"
           ]
         },
         "external_uploads": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:941"
+          ],
           "writers": [],
           "sql": [
             "rpc:roll_sns_send_baselines",
@@ -24098,7 +24445,9 @@
           ]
         },
         "external_general": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:941"
+          ],
           "writers": [],
           "sql": [
             "rpc:roll_sns_send_baselines",
@@ -24119,7 +24468,17 @@
         "authenticated": [],
         "summary": "service だけ"
       },
-      "readers": [],
+      "readers": [
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:950",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "quota_day",
+            "units"
+          ]
+        }
+      ],
       "writers": [],
       "readByRpc": [
         "transition_sns_x_send"
@@ -24151,7 +24510,9 @@
           ]
         },
         "quota_day": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:950"
+          ],
           "writers": [],
           "sql": [
             "rpc:transition_sns_x_send"
@@ -24165,7 +24526,9 @@
           ]
         },
         "units": {
-          "readers": [],
+          "readers": [
+            "scripts/sns/push-setsu-kiryoku-short.js:950"
+          ],
           "writers": [],
           "sql": [
             "rpc:transition_sns_x_send"
@@ -29214,7 +29577,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 70,
+      "reachableFiles": 71,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29326,7 +29689,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 61,
+      "reachableFiles": 62,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
