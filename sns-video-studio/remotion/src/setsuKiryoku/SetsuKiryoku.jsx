@@ -34,6 +34,8 @@ import {
   HERO_RUNS,
   SIX_TABLE,
   barsLayout,
+  borderNameLayout,
+  normalizeBundle,
   chartPoints,
   checkBundle,
   closeLayout,
@@ -729,13 +731,12 @@ function ThreeCards({ b }) {
             <T x={90} y={y + 30} size={36} color={GR} weight={400}>
               {rankLabel(r)}
             </T>
-            {/* 名前は順位の札の後ろ（「同率20位」で札が長くなっても重ならない） */}
-            <T
-              x={Math.max(200, 90 + Math.ceil(estWidth(rankLabel(r), 36)) + 24)}
-              y={y + 20}
-              size={52}
-            >
-              {shortName(r.racer)}
+            {/* 名前と級（オーナー 11/1）。位置は model.js の borderNameLayout（検査と同じ値） */}
+            <T x={borderNameLayout(r).nameX} y={y + 20} size={52}>
+              {borderNameLayout(r).name}
+            </T>
+            <T x={borderNameLayout(r).classX} y={y + 32} size={36}>
+              {r.class}
             </T>
             <T
               x={560}
@@ -832,7 +833,9 @@ function useBoundsGuard(ref) {
 }
 
 export function SetsuKiryokuShort(props) {
-  const { bgm = null, ...b } = props;
+  const { bgm = null, ...raw } = props;
+  // final_gap の hq の束は texts を持たない（hook・close は値から作る。model.js normalizeBundle）
+  const b = normalizeBundle(raw);
   const why = checkBundle(b, { rules: rules.rules, matchRiskRules });
   if (why.length)
     cancelRender(

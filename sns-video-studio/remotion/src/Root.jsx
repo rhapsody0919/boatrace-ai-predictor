@@ -72,7 +72,6 @@ import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
 import { OnboardingFlowCM } from "./OnboardingFlowCM.jsx";
 import { AboutHeroDesktop, AboutHeroMobile } from "./AboutHeroCM.jsx";
 import { SetsuKiryokuShort, setsuKiryokuMetadata } from "./setsuKiryoku/SetsuKiryoku.jsx";
-import setsuKiryokuSample from "./setsuKiryoku/samples/motor_gap.json";
 
 export function RemotionRoot() {
   return (
@@ -646,7 +645,7 @@ export function RemotionRoot() {
         width={840}
         height={1434}
       />
-      {/* YouTube Shorts「節の機力」（props は hq の bundle.json。型は variant で3つ） */}
+      {/* YouTube Shorts「節の機力」（props は hq の bundle.json、型は variant）。defaultProps は置かない: Remotion は --props を defaultProps に浅く重ねるので、見本の束を置くと hq の束に無い欄（texts・class・grade 等）が見本の値で埋まり、欠けたら止める検査をすり抜ける（2026-11-02 実測） */}
       <Composition
         id="SetsuKiryokuShort"
         component={SetsuKiryokuShort}
@@ -654,7 +653,6 @@ export function RemotionRoot() {
         fps={30}
         width={1080}
         height={1920}
-        defaultProps={setsuKiryokuSample}
         calculateMetadata={setsuKiryokuMetadata}
       />
     </>

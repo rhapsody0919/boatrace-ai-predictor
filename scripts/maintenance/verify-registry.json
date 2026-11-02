@@ -1319,7 +1319,7 @@
     {
       "script": "verify-setsu-kiryoku.js",
       "tier": "ci",
-      "guards": "YouTube Shorts「節の機力」（sns-video-studio/remotion/src/setsuKiryoku/、型 motor_gap・motor_up・final_gap と「準優に残れるか」border）: 見本の bundle が検査を通る、尺が約15秒（border は3章、final_gap は17秒・5章）、final_gap の名前と級（欠けたら止める）・主役と6人と全機の2連率の照合・主役の選び・締め・final_six を選べない、border の3人・順位・得点率・要る着の形・同率（tied は bool か無し、true で「同率20位」）、検査が禁止語（risk-rules.json、説明欄末尾の #競艇 は例外）・言い切りの語（足が良い・上がった・化けた・節イチ）・リポジトリの禁止語（数える・似た・ふつう・いつも）・z・画面の文の bundle に無い数・2連率の下から何番目と all の食い違い・前半後半の平均とコースと runs の食い違い・6人でない・走の値の範囲・必須の欄を落とす、hook・close が36px以上で y1400 より上、2連率の札が x60〜900。外部接続なし"
+      "guards": "YouTube Shorts「節の機力」（sns-video-studio/remotion/src/setsuKiryoku/、型 motor_gap・motor_up・final_gap と「準優に残れるか」border）: 見本の bundle が検査を通る、尺が約15秒（border は3章、final_gap は17秒・5章）、全部の型の名前と級 class（欠けたら止める、border の名前と級が得点率に重ならない）・hq の final_gap の束（texts・grade 無し）をそのまま通す・final_gap の名前と級・主役と6人と全機の2連率の照合・主役の選び・締め・final_six を選べない、border の3人・順位・得点率・要る着の形・同率（tied は bool か無し、true で「同率20位」）、検査が禁止語（risk-rules.json、説明欄末尾の #競艇 は例外）・言い切りの語（足が良い・上がった・化けた・節イチ）・リポジトリの禁止語（数える・似た・ふつう・いつも）・z・画面の文の bundle に無い数・2連率の下から何番目と all の食い違い・前半後半の平均とコースと runs の食い違い・6人でない・走の値の範囲・必須の欄を落とす、hook・close が36px以上で y1400 より上、2連率の札が x60〜900。外部接続なし"
     },
     {
       "script": "verify-sexagenary-cycle.js",

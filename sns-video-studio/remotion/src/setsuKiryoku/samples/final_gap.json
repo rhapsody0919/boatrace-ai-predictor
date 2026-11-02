@@ -1,11 +1,10 @@
 {
  "format": "setsu_kiryoku_short",
- "date": "2026-11-01",
+ "date": "2026-10-31",
  "variant": "final_gap",
  "venue": "尼崎",
- "grade": "SG",
- "when": "today",
  "as_of": "2026-10-31 12R まで",
+ "when": "today",
  "hero": {
   "racer": "茅原 悠紀",
   "class": "A1",
@@ -65,43 +64,50 @@
     45.11,
     46.21,
     47.89,
-    50,
+    50.0,
     50.35
    ]
   },
   "runs": [
    {
-    "race": "27日12R",
+    "day": "27日",
+    "race": "12R",
     "course": 5,
     "rank": 2
    },
    {
-    "race": "28日2R",
+    "day": "28日",
+    "race": "2R",
     "course": 2,
     "rank": 2
    },
    {
-    "race": "28日8R",
+    "day": "28日",
+    "race": "8R",
     "course": 3,
     "rank": 1
    },
    {
-    "race": "29日8R",
+    "day": "29日",
+    "race": "8R",
     "course": 6,
     "rank": 3
    },
    {
-    "race": "30日3R",
+    "day": "30日",
+    "race": "3R",
     "course": 4,
     "rank": 1
    },
    {
-    "race": "30日12R",
+    "day": "30日",
+    "race": "12R",
     "course": 1,
     "rank": 3
    },
    {
-    "race": "31日11R",
+    "day": "31日",
+    "race": "11R",
     "course": 4,
     "rank": 1
    }
@@ -169,35 +175,8 @@
    "avg_rank": 1.86
   }
  ],
- "texts": {
-  "hook": [
-   "2連率",
-   {
-    "text": "尼崎52機で 一番下",
-    "em": true
-   },
-   "そのモーターが",
-   {
-    "text": "優勝戦に",
-    "em": true
-   }
-  ],
-  "close": [
-   "信じるのは",
-   {
-    "text": "2連率？",
-    "em": true
-   },
-   {
-    "text": "今節の足？",
-    "em": true
-   },
-   "コメントで教えて"
-  ]
- },
  "youtube": {
   "title": "2連率 尼崎52機で一番下のモーターが優勝戦に #ボートレース #Shorts",
-  "description": "尼崎の優勝戦に乗る 茅原 悠紀（A1、モーター20）。\n集計: 10/31 12Rまで\n・2連率は 10/27 時点のこのモーターの過去の2連率（尼崎の全52機の中の位置）\n・展示タイムの順位は同じレースの6艇の中の順位（今節の予選と準優、同タイムは上の順位にそろえる）。展示タイムは体重・風でも変わる\n節の機力・展示のデータは龍神レーダーで\nhttps://www.boat-ai.jp/venue/13?utm_source=youtube&utm_medium=shorts&utm_content=final_gap\n#ボートレース"
- },
- "source_observed_at": "2026-11-01T08:00:00+09:00"
+  "description": "集計: 10/31 12Rまで\n尼崎の優勝戦に乗る 茅原 悠紀（A1、モーター20）。\n・2連率は 10/27 時点のこのモーターの過去の2連率（尼崎の全52機の中の位置）\n・展示タイムの順位は同じレースの6艇の中の順位（今節の予選と準優、同タイムは上の順位にそろえる）。展示タイムは体重・風でも変わる\n節の機力・展示のデータは龍神レーダーで\nhttps://www.boat-ai.jp/venue/13?utm_source=youtube&utm_medium=shorts&utm_content=final_gap\n#ボートレース"
+ }
 }

@@ -23,7 +23,10 @@ import {
   CX,
   MIN_FONT,
   barsLayout,
+  borderNameLayout,
   checkBundle,
+  finalGapTexts,
+  normalizeBundle,
   closeLayout,
   daysLabel,
   fmtAvg,
@@ -40,8 +43,11 @@ const SK = join(ROOT, "sns-video-studio/remotion/src/setsuKiryoku");
 const rules = JSON.parse(
   readFileSync(join(ROOT, "sns-video-studio/remotion/risk-rules.json"), "utf8"),
 ).rules;
-const load = (v) =>
+/** 見本の束をそのまま読む（hq の束どおり。final_gap は texts を持たない） */
+const loadRaw = (v) =>
   JSON.parse(readFileSync(join(SK, "samples", `${v}.json`), "utf8"));
+/** 描く前と同じく、texts の無い final_gap は値から作った texts をそろえる */
+const load = (v) => normalizeBundle(loadRaw(v));
 const check = (b) => checkBundle(b, { rules, matchRiskRules });
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const fails = (b, re, label) => {
@@ -526,5 +532,92 @@ t("平均の順位の書き方", () => {
   assert.equal(fmtAvg(1.25), "1.25");
   assert.equal(fmtAvg(2 + 1 / 6), "2.17");
 });
+
+t(
+  "hq の束（final_gap.py の bundle.json、hq 9eb1a0e）をそのまま通す: texts・grade 無し、hero.runs に day",
+  () => {
+    const raw = loadRaw("final_gap");
+    assert.equal(
+      raw.texts,
+      undefined,
+      "見本は hq の束のまま（texts を足していない）",
+    );
+    assert.equal(raw.grade, undefined);
+    assert.equal(raw.hero.runs[0].day, "27日");
+    assert.ok(raw.youtube.description.startsWith("集計: 10/31 12Rまで\n"));
+    assert.deepEqual(check(raw), []);
+    // texts は値から作る（hook の位置の言い方は rank_from_bottom から）
+    assert.equal(finalGapTexts(raw).hook[1].text, "尼崎52機で 一番下");
+    const r3 = clone(raw);
+    r3.hero.motor_2rate.rank_from_bottom = 3;
+    assert.equal(finalGapTexts(r3).hook[1].text, "尼崎52機で 下から3番目");
+    const bad = clone(raw);
+    bad.hero.runs[0].day = "27";
+    fails(bad, /hero.runs\[0\].day が「27日」の形でない/, "日の形");
+    // 他の型は今までどおり grade が要る
+    const g = clone(load("motor_gap"));
+    delete g.grade;
+    fails(g, /grade が無い/, "motor_gap の grade");
+  },
+);
+
+t(
+  "motor_gap・motor_up・border: 名前の隣に級を出し、欠けたら止める（オーナー 11/1）",
+  () => {
+    for (const v of ["motor_gap", "motor_up"]) {
+      const b = load(v);
+      assert.equal(b.class, "A1");
+      assert.equal(
+        hookLayout(b).sub.text,
+        `${b.racer} A1 ・ モーター${b.motor}`,
+      );
+      const a = clone(b);
+      delete a.class;
+      fails(a, /^class（級）が A1・A2・B1・B2 でない: undefined/, `${v} の級`);
+      const c = clone(b);
+      c.class = "SG";
+      fails(c, /^class（級）が/, `${v} の級の値`);
+    }
+    const bd = load("border");
+    assert.deepEqual(
+      bd.racers.map((r) => r.class),
+      ["A1", "A1", "A1"],
+    );
+    for (const r of bd.racers) {
+      const L = borderNameLayout(r);
+      assert.ok(
+        L.classRight + 10 <= L.rateLeft,
+        `${r.racer} の級が得点率に重なる`,
+      );
+    }
+    const a = clone(bd);
+    delete a.racers[1].class;
+    fails(a, /racers\[1\].class（級）/, "border の級");
+    const c = clone(bd);
+    c.racers[1].racer = "ながいながい なまえ";
+    fails(
+      c,
+      /racers\[1\] の名前と級（ながいながい なまえ A1）が得点率の欄に重なる/,
+      "長い名前と級",
+    );
+  },
+);
+
+t(
+  "Root.jsx の SetsuKiryokuShort は defaultProps を置かない（--props に見本の欄が重なり、欠けた級・texts が埋まるのを防ぐ）",
+  () => {
+    const root = readFileSync(
+      join(ROOT, "sns-video-studio/remotion/src/Root.jsx"),
+      "utf8",
+    );
+    const i = root.indexOf('id="SetsuKiryokuShort"');
+    assert.ok(i > 0);
+    const block = root.slice(i, root.indexOf("/>", i));
+    assert.ok(
+      !/defaultProps/.test(block),
+      "SetsuKiryokuShort に defaultProps がある",
+    );
+  },
+);
 
 console.log(`verify-setsu-kiryoku: ${n} 件すべて通過`);

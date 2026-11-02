@@ -13,7 +13,8 @@
  *   "six": [{ "racer", "class", "motor", "motor_2rate", "rank_in_all", "wins", "runs_n", "avg_rank" }]（6人）
  *   rank_in_all は全機の中の上からの順位（1 + 自分より高い機の数）。avg_rank（今節の展示の平均順位）はこの型で足した欄（依頼文 4節に無い）で、
  *   主役の選び（2連率の順位（低い順）＋展示の平均順位（良い順）の和が最小）を照合する
- * 選手を出す画面は名前と級（A1・A2・B1・B2）を必ず出す（オーナー 11/1）。final_gap は欠けたら止める。
+ * final_gap の hq の束（final_gap.py、hq 9eb1a0e）は texts・grade を持たない。texts は normalizeBundle が値から作る（hook は位置の言い方まで rank_from_bottom から）。
+ * 選手を出す画面は名前と級（A1・A2・B1・B2、欄の名前は class）を必ず出す（オーナー 11/1）。全部の型で欠けたら止める: motor_gap・motor_up は束の頭の class、border は racers[].class、final_gap は hero と six[]。
  *
  * 4つ目の型 border（「準優に残れるか」、SG/G1 の予選最終日の朝だけ。hq drafts/shorts-border-person-20261031.md、10/31 オーナー決定）。
  * 節の機力とは別の型だが、同じ composition の variant にした。この型で足した形（hq の束の形が決まったら合わせる）:
@@ -193,7 +194,7 @@ export function hookLayout(b) {
   const sub =
     b.variant === "final_gap" || b.variant === "border"
       ? null
-      : `${b.racer} ・ モーター${b.motor}`;
+      : `${b.racer} ${b.class} ・ モーター${b.motor}`;
   return {
     lines,
     sub: sub
@@ -277,6 +278,24 @@ export const shortName = (s) =>
   String(s)
     .replace(/[\s　]+/g, " ")
     .trim();
+/**
+ * border の札の1行目: 順位の札（x90）→ 名前（52px）→ 級（36px）、右寄せの「得点率 N.NN」（x560〜870）。
+ * 名前は順位の札の後ろ（「同率20位」で札が長くなっても重ならない）。級の右端が得点率の左端より右なら検査で止める
+ */
+export function borderNameLayout(r) {
+  const nameX = Math.max(200, 90 + Math.ceil(estWidth(rankLabel(r), 36)) + 24);
+  const name = shortName(r.racer);
+  const classX = nameX + Math.ceil(estWidth(name, 52)) + 14;
+  const rate = `得点率 ${fmtRate(r.rate)}`;
+  return {
+    nameX,
+    name,
+    classX,
+    classRight: classX + estWidth(String(r.class), 36),
+    rate,
+    rateLeft: 870 - estWidth(rate, 36),
+  };
+}
 /** 級（race_entries.grade） */
 export const CLASSES = ["A1", "A2", "B1", "B2"];
 
@@ -348,10 +367,41 @@ export function screenTexts(b) {
       t.push(String(r.racer ?? ""), String(r.class ?? ""));
   else if (b.variant === "border")
     for (const r of b.racers ?? [])
-      t.push(String(r.racer ?? ""), String(r.need ?? ""));
-  else t.push(String(b.racer ?? ""));
+      t.push(
+        String(r.racer ?? ""),
+        String(r.class ?? ""),
+        String(r.need ?? ""),
+      );
+  else t.push(String(b.racer ?? ""), String(b.class ?? ""));
   return t;
 }
+
+/**
+ * final_gap の hook・close（hq の束 final_gap.py は texts を持たない。hq 9eb1a0e）。
+ * hook は依頼文 1節の 0〜3秒の文を主役の値から作り、close はオーナー 11/1 の締めの文。束に texts があればそれを使い、検査する
+ */
+export function finalGapTexts(b) {
+  const m = b.hero?.motor_2rate ?? {};
+  return {
+    hook: [
+      "2連率",
+      { text: `${b.venue}${m.n}機で ${posText(m)}`, em: true },
+      "そのモーターが",
+      { text: "優勝戦に", em: true },
+    ],
+    close: [
+      "信じるのは",
+      { text: "2連率？", em: true },
+      { text: "今節の足？", em: true },
+      "コメントで教えて",
+    ],
+  };
+}
+/** 描く前と検査の前にそろえる束（final_gap で texts が無ければ値から作る） */
+export const normalizeBundle = (b) =>
+  b && typeof b === "object" && b.variant === "final_gap" && b.texts == null
+    ? { ...b, texts: finalGapTexts(b) }
+    : b;
 
 /** hook・close の文に出してよい数（bundle の値から作る）。ここに無い数が出たら「数字の不一致」 */
 export function allowedNumbers(b) {
@@ -418,16 +468,19 @@ export function allowedNumbers(b) {
   return s;
 }
 
-export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
+export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
   const why = [];
-  if (!b || typeof b !== "object") return ["bundle が無い"];
+  if (!b0 || typeof b0 !== "object") return ["bundle が無い"];
+  const b = normalizeBundle(b0);
   if (b.format !== "setsu_kiryoku_short")
     why.push(`format が setsu_kiryoku_short でない: ${b.format}`);
   if (!VARIANTS.includes(b.variant))
     return [...why, `variant が ${VARIANTS.join("|")} でない: ${b.variant}`];
   for (const k of ["date", "venue", "as_of"])
     if (typeof b[k] !== "string" || !b[k]) why.push(`${k} が無い`);
-  if (typeof b.grade !== "string" || !b.grade) why.push("grade が無い");
+  // final_gap は grade を使わず、hq の束（依頼文 4節）にも無い
+  if (b.variant !== "final_gap" && (typeof b.grade !== "string" || !b.grade))
+    why.push("grade が無い");
   if (b.variant === "final_gap" && b.when !== "eve" && b.when !== "today")
     why.push(`when が eve|today でない: ${b.when}`);
   if (!Array.isArray(b.texts?.hook) || !b.texts.hook.length)
@@ -471,6 +524,17 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
     b.racers.forEach((r, i) => {
       if (typeof r.racer !== "string" || !r.racer)
         why.push(`racers[${i}].racer が無い`);
+      if (!CLASSES.includes(r.class))
+        why.push(
+          `racers[${i}].class（級）が A1・A2・B1・B2 でない: ${r.class}`,
+        );
+      else if (typeof r.racer === "string" && typeof r.rate === "number") {
+        const L = borderNameLayout(r);
+        if (L.classRight + 10 > L.rateLeft)
+          why.push(
+            `racers[${i}] の名前と級（${L.name} ${r.class}）が得点率の欄に重なる`,
+          );
+      }
       if (!isInt(r.rank, bd.cut + 1, 60))
         why.push(`racers[${i}].rank（${r.rank}）が ${bd.cut} 位より下でない`);
       if (typeof r.rate !== "number" || r.rate >= bd.line || r.rate < 0)
@@ -501,6 +565,8 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
     if (why.length) return why;
   } else {
     if (typeof b.racer !== "string" || !b.racer) why.push("racer が無い");
+    if (!CLASSES.includes(b.class))
+      why.push(`class（級）が A1・A2・B1・B2 でない: ${b.class}`);
     if (!Number.isInteger(b.motor)) why.push(`motor が整数でない: ${b.motor}`);
     if (!Array.isArray(b.runs) || !b.runs.length)
       return [...why, "runs が無い"];
@@ -645,6 +711,8 @@ function finalGapReasons(b) {
         return why.push(`hero.runs[${j}] が無い`);
       if (typeof r.race !== "string" || !r.race)
         why.push(`hero.runs[${j}].race が無い`);
+      if (r.day !== undefined && !/^\d{1,2}日$/.test(String(r.day)))
+        why.push(`hero.runs[${j}].day が「27日」の形でない: ${r.day}`);
       if (!isInt(r.course, 1, 6))
         why.push(`hero.runs[${j}].course が1〜6でない: ${r.course}`);
       if (!isInt(r.rank, 1, 6))
