@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "motor-condition-guide",
+ "kind": "revision",
+ "ticket": "OC-20261102T100127-seo-human-1",
+ "paths": [
+  "public/blog/motor-condition-guide.md",
+  "src/data/blog-posts/motor-condition-guide.json"
+ ],
+ "files": {
+  "public/blog/motor-condition-guide.md": "d46f7993970417cc8f755376cacdaca7f71e56e65c87491b3b8d4683c180a98d",
+  "src/data/blog-posts/motor-condition-guide.json": "69428f4f491e9f97688d5616ebec26b1551732444900ee1ec5b0412ec01cf360"
+ },
+ "content_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "model": "opus",
+   "at": "2026-11-02T10:09:05+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "model": "opus",
+   "at": "2026-11-02T10:09:05+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "model": "opus",
+   "at": "2026-11-02T10:09:05+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "model": "opus",
+   "at": "2026-11-02T10:09:05+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-02T10:10:14+09:00",
+ "run": "20261102T100127-seo-human",
+ "engine": "claude"
+}
