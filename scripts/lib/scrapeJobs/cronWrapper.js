@@ -170,9 +170,40 @@ export function createCronFetchContext({ client, store, now }) {
 /**
  * ジョブを1回実行する（HTTPに依存しない。テストではこれを直接呼ぶ）。
  *
+ * politeFetch を渡さないときは、取得の数え（fetch_counts。BOA-1145 P3）つきの politeFetch を作り、終わりに足す（取得0なら書かない。
+ * 投げない）。口ごとに数えを渡す作りだと、渡し忘れた口が数えから黙って抜ける（展示 beforeinfo・レース情報 racelist の
+ * runSlotsWithRefresh が 10/27〜11/2 に抜けていた）。politeFetch を渡す呼び出し側（Cron の共通の口・オッズの口・テスト）は、
+ * 数えも自分で持つ。
+ *
  * @returns {Promise<{status: number, body: Record<string, unknown>}>}
  */
-export async function runScrapeJob({
+export async function runScrapeJob(options) {
+  if (options.politeFetch) return runScrapeJobWith(options);
+  const now = options.now ?? (() => new Date());
+  const counter = createFetchCounter({
+    client: options.client ?? null,
+    source: "vercel",
+    now,
+  });
+  const breaker =
+    options.breaker ??
+    createCircuitBreaker({
+      store: options.store.breakerStore,
+      now: () => now().getTime(),
+    });
+  try {
+    return await runScrapeJobWith({
+      ...options,
+      now,
+      breaker,
+      politeFetch: createPoliteFetch({ breaker, counter }),
+    });
+  } finally {
+    await counter.flush();
+  }
+}
+
+async function runScrapeJobWith({
   job,
   definition = SCRAPE_JOBS[job],
   store,
@@ -188,7 +219,7 @@ export async function runScrapeJob({
     store: store.breakerStore,
     now: () => now().getTime(),
   }),
-  politeFetch = createPoliteFetch({ breaker }),
+  politeFetch,
 }) {
   if (!definition) return failed({ job, error: `未登録のジョブです: ${job}` });
   const startedMs = now().getTime();

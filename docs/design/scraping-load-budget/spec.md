@@ -290,6 +290,19 @@ BOA-500 で入れた先出しをやめる変更で、見せる時刻が遅くな
 
 M2 は P3（マイグレーション185）で入れた: 時の表 `fetch_counts` に加えて、1分の上限（目安60）を見る分の表 `fetch_counts_minute`（日・分・ホスト・経路）も同じ RPC で足す。数えるのは Vercel の経路（Cron の各ジョブ・オッズの口・BOATCAST の probe・`/api/odds/live`）だけで、GitHub Actions の素の fetch は P6 で politeFetch を通すまで入らない。P4b〜d の判断に使う2週間の数は「Vercel の経路だけ」の数として読む。呼び出し側の中断（ソフトデッドライン）は数えず、politeFetch の打ち切りは timeout に分ける。推奨は M1 を先に、M2 を次に。ライブの回数は M1 の段階で数える（`/api/odds/live` で、公式へ取りに行った件数を1日1行の加算で残す。M2 の前の仮の数え方）。
 
+2026-11-02 の本番の読み取りで、展示（beforeinfo）とレース情報（race_info の racelist）が `fetch_counts` に入っていないと分かった（10/27〜11/2 で beforeinfo の行が0。exhibition の試行は1日約370〜530回）。この2つは `runSlotsWithRefresh`（`scripts/lib/scrapeJobs/preRaceHandlers.js`）から politeFetch を渡さずに `runScrapeJob` を呼び、その既定の politeFetch が数えを持っていなかったため。`runScrapeJob` の既定で数えるように直した（口ごとに渡す作りだと、渡し忘れた口が黙って抜けるため）。展示の cron-job.org 起点の起動も同じ Vercel の関数の中で取るので、`source=vercel` に入る。直した PR のデプロイの日から数え直す。数え直しが効くのは P4b（403 を広げる）だけでなく、P4d の予算（ホスト×パスとホスト全体の実数）と1分の上限（`fetch_counts_minute` の boatrace.jp）も同じ。10/28〜11/2 のホスト全体・分の数は、展示（約370〜530/日）と race_info（約120〜170/日）の分だけ少ないので、予算を直す材料に使わない（低く置くと、止めるべきでない取得を止める側に倒れる）。beforeinfo は #1946 からすでに 403 のブレーカーの対象なので、P4b の広げる対象ではない。P4b〜d の2週間に使える日（最短）:
+
+| パス | 数えの始まり | 14日がそろう日（最短） | 判断できる日 |
+|---|---|---|---|
+| beforeinfo・racelist（race_info の分）・ホスト全体の日の合計・分の表 | 直した PR のデプロイの翌日（JST の0時からの丸1日） | デプロイの翌日＋13日 | その翌日 |
+| 毎日取る他の boatrace.jp のパス（odds・raceresult・pcexpect・race/index・pitreport 等） | そのパスの fetch_counts の最初の丸1日（多くは 10/28。185 の適用は 10/27 の12時台） | 11/10 | 11/11 |
+| 週次・月次のパス（racersearch は 11/2 から、kibetsu の fan は 11/1 から、monthlyschedule は1日3件） | そのパスの最初の日 | 日数でなく起動の回数で見る（14日でも数回しか動かない） | 起動の回数がそろってから |
+
+- racelist のパスの行は 10/28 からある（1日 120〜168件、他のジョブの分。races-init と推定、未確認）。race_info の発走60分前の取得はそこに入っていないので、「racelist は 10/28 から 403 が0」とは読まない
+
+- 10/28〜11/2 の boatrace.jp の 403 は、数えていたパスで1件だけ（10/29 JST 21時台、`/owpc/pc/race/index`、Vercel の経路。どのジョブかは fetch_counts からは分からない）。beforeinfo・racelist（race_info の分）はこの期間を数えていないので、この1件は boatrace.jp の全体ではない（展示の scrape_slots は 10/27 以降 outcome が error のものが無い。ただし ok で last_error が消えるので、途中の 403 が無かった証拠にはならない）。race/index はカナリアのページなので、P4b でこのパスを広げる対象に入れるかは、この1件を含めて判断する
+- 14日は目安（spec §12 の「2週間」。根拠なし）。開催の少ない日（10/29 は120R）も含むので、土日を2回含む14日を最短とする
+
 ### 7.2 知らせる条件
 
 | 条件 | 知らせ方 |
