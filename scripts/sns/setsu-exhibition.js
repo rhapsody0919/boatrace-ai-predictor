@@ -6,6 +6,7 @@
  * exit: 0 成功 / 2 日付・設定・読み取りの失敗。本番での実行は取り込み側が行う。
  */
 import { pathToFileURL } from "node:url";
+import { addDaysToDateString } from "../lib/dateUtils.js";
 import { isRaceCancelled } from "../../src/utils/raceCancellation.js";
 import {
   seriesCoveringDate,
@@ -16,10 +17,6 @@ import {
   isFinalStage,
 } from "../../src/pure/raceStageConfig.js";
 
-const daysFrom = (date, days) =>
-  new Date(Date.parse(`${date}T00:00:00Z`) + days * 86400000)
-    .toISOString()
-    .slice(0, 10);
 const validDate = (date) =>
   /^\d{4}-\d{2}-\d{2}$/.test(date ?? "") &&
   Number.isFinite(Date.parse(date)) &&
@@ -60,7 +57,7 @@ function finalEntriesOf(
   );
   const finalEntries = finals
     .flatMap(entriesOf)
-    .filter((e) => e.racer_id != null);
+    .filter((e) => e.racer_id != null && !e.is_absent);
   if (finalEntries.length) {
     return finalEntries
       .sort((a, b) => a.boat_number - b.boat_number)
@@ -117,7 +114,10 @@ export function setsuExhibitionOf(
   const exhibitionByBoat = new Map(
     exhibitions.map((e) => [`${e.race_id}-${e.boat_number}`, e]),
   );
-  const entriesOf = (race) => entries.filter((e) => e.race_id === race.race_id);
+  const entriesByRace = new Map();
+  for (const e of entries)
+    entriesByRace.set(e.race_id, [...(entriesByRace.get(e.race_id) ?? []), e]);
+  const entriesOf = (race) => entriesByRace.get(race.race_id) ?? [];
   const cancelled = (race) =>
     isRaceCancelled({
       cancellationStatus: race.cancellation_status,
@@ -133,7 +133,7 @@ export function setsuExhibitionOf(
           (r) =>
             sameVenue(r.venue_code, s.venue_code) &&
             r.race_date >= s.start_date &&
-            r.race_date <= daysFrom(date, 1),
+            r.race_date <= addDaysToDateString(date, 1),
         )
         .sort(byRace);
       const meetRaces = meetRacesWithNext.filter((r) => r.race_date <= date);
@@ -244,7 +244,10 @@ export async function readSetsuExhibition(date, fetchAll) {
       q
         .in("venue_code", [...new Set(today.map((r) => r.venue_code))])
         .lte("start_date", date)
-        .gte("end_date", daysFrom(date, -SERIES_POSTPONE_TOLERANCE_DAYS))
+        .gte(
+          "end_date",
+          addDaysToDateString(date, -SERIES_POSTPONE_TOLERANCE_DAYS),
+        )
         .order("venue_code")
         .order("start_date"),
   );
@@ -264,7 +267,7 @@ export async function readSetsuExhibition(date, fetchAll) {
       q
         .eq("venue_code", s.venue_code)
         .gte("race_date", s.start_date)
-        .lte("race_date", daysFrom(date, 1))
+        .lte("race_date", addDaysToDateString(date, 1))
         .order("race_id"),
     );
     rows.races.push(...races);

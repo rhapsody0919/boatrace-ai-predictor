@@ -346,7 +346,7 @@ assert.ok(
   const semis = [
     race("s10", "2026-11-01", 10, "準優勝戦"),
     race("s11", "2026-11-01", 11, "準優勝戦"),
-    race("s12", "2026-11-01", 12, "Ｗ準優戦後半"),
+    race("s12", "2026-11-01", 12, "準優勝戦"),
   ];
   const prelim = race("q1", "2026-11-01", 1, "予選");
   const finalRace = race("f12", date, 12, "優勝戦");
@@ -415,6 +415,17 @@ assert.ok(
     setsuExhibitionOf(day, withFinal).meets[0].final_entries,
     expectedEntries,
     "前夜でも出走表があれば entries",
+  );
+  // 優勝戦の欠場者は出場者に入れない。
+  const scratched = structuredClone(withFinal);
+  scratched.entries.find(
+    (e) => e.race_id === "f12" && e.boat_number === 4,
+  ).is_absent = true;
+  assert.deepEqual(
+    setsuExhibitionOf(day, scratched).meets[0].final_entries.map(
+      (e) => e.boat_number,
+    ),
+    [1, 2, 3, 5, 6],
   );
   assert.deepEqual(
     setsuExhibitionOf(date, {
