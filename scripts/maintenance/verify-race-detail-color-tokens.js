@@ -12,7 +12,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { techniqueColor } from "../../src/utils/techniqueColors.js";
+import {
+  techniqueColor,
+  OFFICIAL_TECHNIQUE_ORDER,
+  sortTechniquesOfficial,
+} from "../../src/utils/techniqueColors.js";
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -57,6 +61,40 @@ check(
     techniqueColor("不明", 7) === "var(--technique-color-1)" &&
     techniqueColor("不明") === "var(--technique-color-6)",
 );
+const officialOrder = ["逃げ", "まくり", "差し", "まくり差し", "抜き", "恵まれ"];
+check(
+  "公式の表示順は逃げ・まくり・差し・まくり差し・抜き・恵まれ",
+  JSON.stringify(OFFICIAL_TECHNIQUE_ORDER) === JSON.stringify(officialOrder),
+);
+const names = Object.freeze([
+  "恵まれ",
+  "差し",
+  "抜き",
+  "逃げ",
+  "逃げ抜き",
+  "まくり差し",
+  "まくり",
+]);
+check(
+  "決まり手を公式順に並べ、入力配列を変更しない",
+  JSON.stringify(sortTechniquesOfficial(names)) ===
+    JSON.stringify([...officialOrder, "逃げ抜き"]),
+);
+check(
+  "一覧に無い決まり手は末尾で入力順を保ち、無い公式項目を追加しない",
+  JSON.stringify(
+    sortTechniquesOfficial(["不明", "差し", "逃げ抜き", "まくり", "不明"]),
+  ) ===
+    JSON.stringify(["まくり", "差し", "不明", "逃げ抜き", "不明"]) &&
+    sortTechniquesOfficial([]).length === 0,
+);
+const profile = read("src/components/analysis/RacerTechniqueProfileChart.jsx");
+check(
+  "選手別決まり手傾向は公式順のヘルパーをimportしallTechniquesに使う",
+  /import\s*\{[^}]*\bsortTechniquesOfficial\b[^}]*\}\s*from "\.\.\/\.\.\/utils\/techniqueColors"/.test(profile) &&
+    /const allTechniques = sortTechniquesOfficial\(/.test(profile),
+);
+
 const tokens = read("src/styles/design-tokens.css");
 check(
   "決まり手の色のトークン7つが design-tokens.css にある",

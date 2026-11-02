@@ -21,7 +21,7 @@ import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
 import "./MotorConditionChart.css";
-import { techniqueColor } from "../../utils/techniqueColors";
+import { techniqueColor, sortTechniquesOfficial } from "../../utils/techniqueColors";
 
 const VENUE_NAMES = {
   1: "桐生",
@@ -94,11 +94,11 @@ function RacerTechniqueProfileChart({
   // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
   const techniqueLabel = (name) => translateTechnique(t, name);
 
-  const allTechniques = [
+  const allTechniques = sortTechniquesOfficial([
     ...new Set(
       breakdown.flatMap((row) => row.techniques.map((tech) => tech.technique)),
     ),
-  ];
+  ]);
 
   // dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
   const chartData = breakdown.map((row) => {

@@ -20,6 +20,7 @@ import "./BlogPost.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
 import { blogRehypePlugins } from "../utils/blogMarkdownSanitize.js";
 import BlogChart from "../components/blog/BlogChart";
+import { stripBlogLeadingH1 } from "../utils/blogLeadingH1.js";
 import { loadBlogCharts } from "../utils/blogChartLoader.js";
 
 /** 段落の中身が図のタグ1つだけ（前後の空白を除く）か */
@@ -282,7 +283,7 @@ export default function BlogPost() {
           ),
         }}
       >
-        {content}
+        {stripBlogLeadingH1(content)}
       </ReactMarkdown>
     ),
     // contentが変わらない限りReactMarkdown要素を再生成しない。読了進捗バーの

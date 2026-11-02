@@ -93,7 +93,7 @@
   color: var(--text-secondary);
 }
 
-/* 件数が少ない艇（SMALL_SAMPLE_THRESHOLD未満）は棒を薄くし、走数を警告色にする
+/* 件数が少ない艇（SMALL_SAMPLE_THRESHOLD未満）は棒を薄くし、走数を灰にする
    （表の n 表示と同じ drt-n-small-sample を走数に付ける） */
 .ecd-small-sample .ecd-bar {
   opacity: 0.55;

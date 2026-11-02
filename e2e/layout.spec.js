@@ -80,6 +80,35 @@ const blogTag = (path) =>
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
+test("BOA-1025: 直前情報の小標本は375pxで灰・通常の太さになる", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/race/2026-09-29-16-12?tab=beforeInfo");
+  const table = page.locator(".rbi-card .drt-table").first();
+  await expect(table).toBeVisible();
+  for (const theme of ["light", "dark"]) {
+    const styles = await table.evaluate((table, theme) => {
+      document.documentElement.setAttribute("data-theme", theme);
+      const sample = document.createElement("span");
+      sample.className = "drt-sub drt-n-small-sample";
+      sample.textContent = "⚠n=2";
+      table.querySelector("td").append(sample);
+      const probe = document.createElement("span");
+      probe.style.color = "var(--text-secondary)";
+      document.body.append(probe);
+      const result = {
+        color: getComputedStyle(sample).color,
+        expectedColor: getComputedStyle(probe).color,
+        weight: getComputedStyle(sample).fontWeight,
+      };
+      sample.remove();
+      probe.remove();
+      return result;
+    }, theme);
+    expect(styles.color, theme).toBe(styles.expectedColor);
+    expect(styles.weight, theme).toBe("400");
+  }
+});
+
 for (const theme of ["light", "dark"]) {
   test(`BOA-894: 会場一覧へ戻るリンクが375pxの${theme}で意味トークンを使う`, async ({
     page,

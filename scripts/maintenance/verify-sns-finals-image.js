@@ -1575,3 +1575,203 @@ test("/code-review の指摘の固定: 作り直すと前の投票のリプの j
     main.job_id,
   );
 });
+// ---- BOA-1208: 投票（poll・poll_text）と展示後のリプは任意（オーナー 2026-10-31 に投票のリプ・展示後のリプをやめた） ----
+
+/** hq が poll・poll_text を外した後の束（本投稿の画像4枚＋本文の1本だけ） */
+const noPollBundle = (patch = {}) => {
+  const { poll: _poll, poll_text: _pollText, ...rest } = bundle(patch);
+  return rest;
+};
+
+test("BOA-1208 検査: poll・poll_text が無い束は通る。片方だけは拒否。両方あれば今までどおり4択・poll_text を見る", () => {
+  assert.deepEqual(checkFinalsImage(noPollBundle(), riskRules), []);
+  assert.deepEqual(
+    checkFinalsImage(bundle({ poll: null, poll_text: null }), riskRules),
+    [],
+  );
+  assert.match(
+    checkFinalsImage(bundle({ poll: undefined }), riskRules).join(),
+    /投票の選択肢/,
+  );
+  assert.match(
+    checkFinalsImage(bundle({ poll_text: undefined }), riskRules).join(),
+    /poll_text が無い/,
+  );
+  assert.deepEqual(checkFinalsImage(bundle(), riskRules), []);
+  assert.match(
+    checkFinalsImage(bundle({ poll: POLL.slice(0, 3) }), riskRules).join(),
+    /4個でない/,
+  );
+});
+
+test("BOA-1208 push: 投票の無い束は本投稿の下書き・item・job を1つずつだけ作り、投票のリプを作らない。日の上限は1本分で数える", async () => {
+  const result = await push(noPollBundle());
+  assert.equal(result.reasons, undefined, JSON.stringify(result));
+  assert.ok(result.job_id);
+  assert.equal(result.poll_draft_id, undefined);
+  assert.equal(result.poll_item_id, undefined);
+  assert.equal(result.poll_job_id, undefined);
+  assert.deepEqual(await counts(), { drafts: 1, items: 1, jobs: 1, saved: 4 });
+  assert.deepEqual(
+    (await all("SELECT variant FROM sns_auto_send_items")).map(
+      (r) => r.variant,
+    ),
+    ["finals"],
+  );
+  assert.equal(await first(POLL_JOB), undefined);
+  assert.equal(await draftOf("poll"), undefined);
+  assert.doesNotMatch(result.notes[0], /投票/);
+  // 本投稿1本分: 上限2（今日の試行0＋他経路1＋1）に入る。投票ありの束は2本分で入らない
+  await clearRows();
+  await db.exec(
+    "UPDATE sns_x_send_control SET daily_limit_x=2, daily_external_count=1",
+  );
+  assert.match((await push()).reasons.join(), /日の上限 2 に2本が入らない/);
+  assert.ok((await push(noPollBundle())).job_id);
+});
+
+test("BOA-1208 取り置き: 投票の無い束は finals_image を1本で尋ねる（投票ありは2本のまま）", async () => {
+  const asked = [];
+  store.xSlotRoom = async (kind, need) => {
+    asked.push([kind, need]);
+    return { ok: true, kind, need };
+  };
+  try {
+    assert.ok((await push(noPollBundle())).job_id);
+    await clearRows();
+    assert.ok((await push()).job_id);
+    assert.deepEqual(asked, [
+      ["finals_image", 1],
+      ["finals_image", 2],
+    ]);
+  } finally {
+    delete store.xSlotRoom;
+  }
+});
+
+test("BOA-1208 mode=manual: 投票の無い束は本投稿の item だけを held_manual にする", async () => {
+  await db.exec("UPDATE sns_auto_send_control SET mode='manual'");
+  const result = await push(noPollBundle());
+  assert.equal(result.job_id, undefined);
+  assert.deepEqual(
+    await all("SELECT variant, state, held_reason FROM sns_auto_send_items"),
+    [
+      {
+        variant: "finals",
+        state: "held_manual",
+        held_reason: "自動モードでない",
+      },
+    ],
+  );
+  assert.match(result.notes[0], /自動モードでないので送らない$/m);
+});
+
+test("BOA-1208 完了: poll も reply も無い束は、本投稿が posted になれば待ちを抜け exit 0（posted）。--status も poll・reply が null で完了", async () => {
+  const result = await push(noPollBundle());
+  const main = await first(MAIN_JOB);
+  let clock = NOW.getTime();
+  let sleeps = 0;
+  const status = await waitForSend(RACE, {
+    store,
+    draftId: result.draft_id,
+    // main() と同じ渡し方（投票の無い束は poll_draft_id が無い）
+    pollDraftId: result.poll_draft_id ?? null,
+    expiresAt: "2037-10-26T07:25:00.000Z",
+    now: () => new Date(clock),
+    sleep: async (sec) => {
+      sleeps += 1;
+      clock += sec * 1000;
+      if (sleeps === 1)
+        await post(main.id, "1890000000000000040", "2037-10-26T07:15:30Z");
+    },
+  });
+  // 本投稿が posted になった次の確認で抜ける（投票のリプも展示後のリプも待たない）
+  assert.equal(sleeps, 1);
+  assert.equal(status.job_state, "posted");
+  assert.equal(status.poll, undefined);
+  const line = resultLine(RACE, result, status);
+  assert.equal(line.code, 0);
+  const parsed = JSON.parse(line.text.replace(/^FINALS_RESULT /, ""));
+  assert.equal(parsed.outcome, "posted");
+  assert.equal(parsed.reason, null);
+  assert.equal(parsed.poll_job_id, null);
+  // --status: 本投稿は送った。投票のリプ・展示後のリプは無い（null）で、待つものが無い
+  const all3 = await finalsStatus(RACE, { store });
+  assert.equal(all3.job_state, "posted");
+  assert.equal(all3.tweet_id, "1890000000000000040");
+  assert.equal(all3.poll, null);
+  assert.equal(all3.reply, null);
+  // --status の値を結果の行に通しても「投票のリプが出ていない」にならない
+  assert.equal(resultLine(RACE, { part: "main" }, all3).code, 0);
+});
+
+test("BOA-1208 投票ありは今までどおり: 本投稿だけ posted なら poll_not_posted（exit 5）", async () => {
+  const result = await push();
+  const main = await first(MAIN_JOB);
+  await post(main.id, "1890000000000000050", "2037-10-26T07:15:30Z");
+  const status = await finalsStatus(RACE, { store });
+  assert.equal(status.poll.job_state, "queued");
+  const line = resultLine(RACE, result, status);
+  assert.equal(line.code, 5);
+  assert.match(line.text, /"outcome":"poll_not_posted"/);
+});
+
+test("BOA-1208 作り直し: 前の束に投票があって今度の束に無いときも、前の投票のリプの job を取り消す", async () => {
+  const firstPush = await push();
+  await db.exec(
+    "UPDATE sns_x_send_jobs SET state='held', error_code='source_stale' WHERE parent_job_id IS NULL",
+  );
+  const retried = await push(noPollBundle());
+  assert.ok(retried.job_id, JSON.stringify(retried));
+  const old = await first(
+    "SELECT state, error_code FROM sns_x_send_jobs WHERE id=$1",
+    [firstPush.poll_job_id],
+  );
+  assert.deepEqual(
+    [old.state, old.error_code],
+    ["cancelled", "approval_invalidated"],
+  );
+  assert.equal(
+    (
+      await first(
+        "SELECT state FROM sns_auto_send_items WHERE variant='finals_poll'",
+      )
+    ).state,
+    "stopped",
+  );
+});
+test('/code-review の指摘の固定（BOA-1208）: 空の印（poll:[]・poll_text:""・空白だけ）も投票なしとして通り、投票のリプを作らない', async () => {
+  for (const patch of [
+    { poll: [], poll_text: "" },
+    { poll: [], poll_text: "  " },
+    { poll: null, poll_text: "" },
+  ])
+    assert.deepEqual(
+      checkFinalsImage(bundle(patch), riskRules),
+      [],
+      JSON.stringify(patch),
+    );
+  const result = await push(bundle({ poll: [], poll_text: "" }));
+  assert.ok(result.job_id, JSON.stringify(result));
+  assert.equal(result.poll_job_id, undefined);
+  assert.deepEqual(
+    (await all("SELECT variant FROM sns_auto_send_items")).map(
+      (r) => r.variant,
+    ),
+    ["finals"],
+  );
+});
+
+test("/code-review の指摘の固定（BOA-1208）: 投票ありの束を投票なしで作り直して送ったら、--status の poll は null（前の試行の止めた投票のリプを出さない）で exit 0", async () => {
+  await push();
+  await db.exec(
+    "UPDATE sns_x_send_jobs SET state='held', error_code='source_stale' WHERE parent_job_id IS NULL",
+  );
+  const retried = await push(noPollBundle());
+  await post(retried.job_id, "1890000000000000070", "2037-10-26T07:15:30Z");
+  const status = await finalsStatus(RACE, { store });
+  assert.equal(status.job_state, "posted");
+  assert.equal(status.tweet_id, "1890000000000000070");
+  assert.equal(status.poll, null);
+  assert.equal(resultLine(RACE, { part: "main" }, status).code, 0);
+});
