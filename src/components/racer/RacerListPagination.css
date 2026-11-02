@@ -21,12 +21,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-.racer-pagination-btn:hover:not(:disabled) {
+.racer-pagination-btn:hover:not(:disabled):not([aria-disabled="true"]) {
   border-color: var(--brand-accent-primary);
   color: var(--brand-accent-primary);
 }
 
-.racer-pagination-btn:disabled {
+.racer-pagination-btn:disabled,
+.racer-pagination-btn[aria-disabled="true"] {
   opacity: 0.4;
   cursor: default;
 }
@@ -40,4 +41,8 @@
 
 .racer-pagination-ellipsis {
   padding: 0 0.2rem;
+}
+
+a.racer-pagination-btn {
+  text-decoration: none;
 }
