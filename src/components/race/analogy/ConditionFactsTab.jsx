@@ -15,6 +15,7 @@ import {
   hidesSeriesScoreLine,
   openCardKeys,
   parseScopeKey,
+  radarAxisItems,
   radarBoats,
   rateOf,
   scopeKind,
@@ -62,11 +63,6 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
   // 節の初日は今節の平均着順点を今日に当てはめられないので、七角形の軸もカードも出さず1行で断る（BOA-802）
   const note = seriesScoreNote(today);
   const firstDay = note === "first";
-  const items = FACT_ITEMS.filter(
-    (it) =>
-      (exhibitionStage || it.key !== "exh_time") &&
-      !((finalDay || firstDay) && it.key === "series_score"),
-  );
   const vs = (key) => values[key] ?? null;
   const scope = scopeName(scopeKey, t, { short: true });
   const venue = today.venue_code;
@@ -78,8 +74,8 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
           ?.bucket ?? null)
       : null;
   };
-  // 七角形の軸（ボート2連率は着順との関係が小さい項目なので入れない。承認モック mock-compare-v3）
-  const radarItems = items.filter((it) => it.key !== "boat_2");
+  // 七角形の軸（ボート2連率・展示前の展示タイム・優勝戦と初日の今節の着順点は入れない）
+  const radarItems = radarAxisItems(today, exhibitionStage);
   const radar = radarBoats(
     today,
     facts,

@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import {
-  MEET_PAGE_GRADES,
-  isOutOfScopeMeetTitle,
+  meetLinkStartDateOf,
+  needsMeetSeries,
 } from "../../utils/meetPageModel";
 import InlineFetchError from "../InlineFetchError";
 import "./RaceNumberStrip.css";
@@ -15,7 +15,8 @@ import "./RaceNumberStrip.css";
  * a 要素（Link）で作り、検索のボットにも同じ会場の他のレースが辿れるようにする（既存の
  * RaceNavCard・RaceBottomNav は button のため、今回は残したまま別の部品にした）。
  * SG/G1/G2 の節（グランプリ・クイーンズクライマックス・トーナメントを除く。節ページと同じ判定）の
- * 日は、節ページ（/venue/N/meet/初日）へのリンクを1つ足す。初日は race_series から引く
+ * 日は、節ページ（/venue/N/meet/初日）へのリンクを1つ足す。初日は race_series から引く。
+ * ボット向け HTML（api/_lib/botRace.js）も同じ判定（needsMeetSeries・meetLinkStartDateOf）で同じリンクを出す
  */
 export default function RaceNumberStrip({
   races,
@@ -34,7 +35,7 @@ export default function RaceNumberStrip({
   const [reloadKey, setReloadKey] = useState(0);
   // レースのグレードが分かっていて SG/G1/G2 でなければ、節は引かない（一般戦・G3 でリンクは出ない）。
   // 分からないときだけ引く
-  const needsSeries = !raceGrade || MEET_PAGE_GRADES.includes(raceGrade);
+  const needsSeries = needsMeetSeries(raceGrade);
 
   useEffect(() => {
     if (!needsSeries) return undefined;
@@ -60,10 +61,7 @@ export default function RaceNumberStrip({
 
   const series = needsSeries && loaded?.key === key ? loaded.series : null;
   // 判定は節ページ（MeetPage の meetPageState）と同じく、節の値が無ければレースの値で補う
-  const showMeetLink =
-    series &&
-    MEET_PAGE_GRADES.includes(series.grade ?? raceGrade) &&
-    !isOutOfScopeMeetTitle(series.title ?? raceTitle);
+  const meetStartDate = meetLinkStartDateOf(series, raceGrade, raceTitle);
 
   return (
     <nav
@@ -87,9 +85,9 @@ export default function RaceNumberStrip({
           );
         })}
       </ul>
-      {showMeetLink && (
+      {meetStartDate && (
         <Link
-          to={localize(`/venue/${venueCode}/meet/${series.start_date}`)}
+          to={localize(`/venue/${venueCode}/meet/${meetStartDate}`)}
           className="race-number-strip__meet"
           data-testid="race-number-strip-meet"
         >

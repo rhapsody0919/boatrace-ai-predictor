@@ -173,30 +173,30 @@ export function f01Script(m) {
     const sec = flow ? secondOf(flow.page.links, fb) : null;
     const secOrder = sec ? desc(sec) : [];
     const secRank = sec && secOrder.length ? rankOf(sec[secOrder[0] - 1], sec[secOrder[1] - 1] ?? 0) : null;
-    const lines = [`次に、類似レースのタブ。条件がそろう類似レースを${n}件集めると、1着は${order.map((b, i) => (i === 0 ? `${b}号艇が${counts[b - 1]}件` : `${b}号艇${counts[b - 1]}件`)).join("、")}。`];
+    const lines = [`次に、類似レースのタブ。条件がそろう類似レースを${n}件集めると、1着は${order.map((b, i) => (i === 0 ? `${b}号艇が${cnt(counts[b - 1])}件` : `${b}号艇${cnt(counts[b - 1])}件`)).join("、")}。`];
     if (sec)
       lines.push(
         secRank.rankSig
-          ? `${fb}号艇が勝った${counts[fb - 1]}件では、2着は${secOrder[0]}号艇が${sec[secOrder[0] - 1]}件で最も多い。`
-          : `${fb}号艇が勝った${counts[fb - 1]}件の2着は、${listCounts(sec, secOrder.slice(0, 3))}と割れる。`,
+          ? `${fb}号艇が勝った${cnt(counts[fb - 1])}件では、2着は${secOrder[0]}号艇が${cnt(sec[secOrder[0] - 1])}件で最も多い。`
+          : `${fb}号艇が勝った${cnt(counts[fb - 1])}件の2着は、${listCounts(sec, secOrder.slice(0, 3))}と割れる。`,
       );
     chapters.push({
       id: "c2",
       name: "類似レース",
       tag: "龍神ソナー ＞ 類似レース",
       scope: `出走表の類似度の高い順 ${n}件`,
-      answer: `${past(fb)}\n類似レースで1着 ${counts[fb - 1]}件`,
+      answer: `${past(fb)}\n類似レースで1着 ${cnt(counts[fb - 1])}件`,
       // 2着の1位が線を通らない日は、上から3艇の件数を並べる（1艇だけ出すと「2着は◯号艇」と読める）
       answer2: !sec
         ? null
         : secRank.rankSig
-          ? `${fb}号艇が1着のとき\n2着${NB}${pastN(secOrder[0], `${sec[secOrder[0] - 1]}件`)}`
+          ? `${fb}号艇が1着のとき\n2着${NB}${pastN(secOrder[0], `${cnt(sec[secOrder[0] - 1])}件`)}`
           : `${fb}号艇が1着のとき\n2着${NB}${secOrder.slice(0, 3).map((b) => pastN(b, `${sec[b - 1]}件`)).join("・")}`,
       path: "ソナー → 類似レース",
       voice: lines.join(""),
       shot: { page: "sonar", tab: "類似レース", cut: "similarBars", cut2: sec ? "similarFlow" : null, firstBoat: fb },
-      expect: [`${counts[fb - 1]}件`],
-      expect2: sec ? [`${sec[secOrder[0] - 1]}件`] : [],
+      expect: [`${cnt(counts[fb - 1])}件`],
+      expect2: sec ? [`${cnt(sec[secOrder[0] - 1])}件`] : [],
       facts: { n, counts, fb, sec, secRank },
     });
   }
@@ -215,23 +215,23 @@ export function f01Script(m) {
     const secRank = rankOf(sec[secOrder[0] - 1], sec[secOrder[1] - 1] ?? 0);
     const lines = [
       `展開のタブでは、スタートの形を見る。今日の6艇は、コース別の平均スタートで${form}形。`,
-      `${cnt(n0)}件のうち、この形の${cnt(nForm)}件で、1着は${fb}号艇が${fc[fb - 1]}件。`,
+      `${cnt(n0)}件のうち、この形の${cnt(nForm)}件で、1着は${fb}号艇が${cnt(fc[fb - 1])}件。`,
       secRank.rankSig
-        ? `${fb}号艇が勝った${fc[fb - 1]}件の2着は、${secOrder[0]}号艇が${sec[secOrder[0] - 1]}件で最も多い。`
-        : `${fb}号艇が勝った${fc[fb - 1]}件の2着は、${listCounts(sec, secOrder.slice(0, 3))}と割れる。`,
+        ? `${fb}号艇が勝った${cnt(fc[fb - 1])}件の2着は、${secOrder[0]}号艇が${cnt(sec[secOrder[0] - 1])}件で最も多い。`
+        : `${fb}号艇が勝った${cnt(fc[fb - 1])}件の2着は、${listCounts(sec, secOrder.slice(0, 3))}と割れる。`,
     ];
     chapters.push({
       id: "c3",
       name: "スタートの形",
       tag: "龍神ソナー ＞ 展開シナリオ",
       scope: `${cnt(n0)}件のうち ${form} ${cnt(nForm)}件`,
-      answer: `${past(fb)}\nこの形で1着 ${fc[fb - 1]}件`,
+      answer: `${past(fb)}\nこの形で1着 ${cnt(fc[fb - 1])}件`,
       answer2: `2着${NB}${secOrder.slice(0, 3).map((b) => pastN(b, `${sec[b - 1]}件`)).join("・")}`,
       path: "ソナー → 展開シナリオ",
       voice: lines.join(""),
       shot: { page: "sonar", tab: "展開シナリオ", cut: "slitForms", cut2: "scenarioFlow", form, firstBoat: fb },
       expect: [form],
-      expect2: [`${fc[fb - 1]}件`],
+      expect2: [`${cnt(fc[fb - 1])}件`],
       facts: { form, nForm, fc, fb, sec, secRank },
     });
   }
@@ -384,8 +384,10 @@ export function f01Check(s, r) {
         why.push(`${c.id}${cut}: 左の画面が無い`);
         continue;
       }
-      const flat = shot.text.replace(/\s+/g, "");
-      for (const e of exp) if (!flat.includes(e.replace(/\s+/g, ""))) why.push(`${c.id}${cut}: 左の画面に「${e}」が無い`);
+      // 空白と桁区切りは比べない（画面は「1,553件」、台本の件数は「1553件」の日があった。11/01 14-10 で止まった）
+      const norm = (x) => x.replace(/\s+/g, "").replace(/(\d),(?=\d{3})/g, "$1");
+      const flat = norm(shot.text);
+      for (const e of exp) if (!flat.includes(norm(e))) why.push(`${c.id}${cut}: 左の画面に「${e}」が無い`);
     }
   }
   return why;
