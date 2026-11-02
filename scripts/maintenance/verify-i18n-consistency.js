@@ -29,6 +29,7 @@
  *    「상전」（韓国語の単語として通じない）・「이번 절」（今節。タブ名の「이번 시리즈」に揃える、BOA-720）。
  *    期間の単位「절」も「시리즈」に揃える（BOA-731）。
  *    用語集 docs/reference/i18n-glossary.md の「準優勝戦・賞典除外（ko）」「今節（ko）」行
+ * 7. 平均ST（公式）の説明が、出走表の全国勝率との集計期間の違いを明記すること（BOA-1192）。
  *
  * 2026-09-25時点で1〜3とも違反ゼロ（4 は BOA-442 で61件を置き換えてから追加）。この状態を保つための検査であって、
  * 既存の違反を洗い出すためのものではない。
@@ -281,6 +282,72 @@ for (const { term, pattern, use, row } of KO_RETIRED_TERMS) {
     failures.push(
       `ko: 使わないと決めた訳語「${term}」が ${keys.length} 件 → ${keys.slice(0, 5).join(", ")}${keys.length > 5 ? " ..." : ""}（${use} を使う。用語集の「${row}」行）`,
     );
+  }
+}
+
+// 7. 平均ST（公式）の集計期間は、出走表の全国勝率と別（BOA-1192）。
+// キー・変数の一致だけでは同じ誤訳を4言語に展開した回帰を検出できない。
+const OFFICIAL_ST_KEYS = [
+  "aiCopy.note.avgSt",
+  "termHints.avgSt",
+  "termHints.avgStOfficialPeriod",
+  "termHints.basicInfoOfficial",
+];
+const OFFICIAL_ST_WORDING = {
+  ja: {
+    retired: /勝率と同じ期/,
+    required: [
+      "公式の期別成績",
+      "全会場",
+      "出走表",
+      "全国勝率",
+      "集計の期間が違います",
+    ],
+  },
+  en: {
+    retired: /same term as the win rate/i,
+    required: [
+      "official term record",
+      "all venues",
+      "race card",
+      "national win rate",
+      "different calculation period",
+    ],
+  },
+  ko: {
+    retired: /승률과 같은 기/,
+    required: [
+      "공식 기별 성적",
+      "전체 경정장",
+      "출주표",
+      "전국 승률",
+      "집계 기간이 다릅니다",
+    ],
+  },
+  "zh-TW": {
+    retired: /與勝率同一期/,
+    required: [
+      "官方期別成績",
+      "所有場地",
+      "出賽表",
+      "全國勝率",
+      "統計期間不同",
+    ],
+  },
+};
+for (const [lang, { retired, required }] of Object.entries(OFFICIAL_ST_WORDING)) {
+  for (const key of OFFICIAL_ST_KEYS) {
+    checked += 1;
+    const value = locales[lang][key];
+    if (
+      typeof value !== "string" ||
+      retired.test(value) ||
+      required.some((part) => !value.includes(part))
+    ) {
+      failures.push(
+        `${lang}: ${key} は公式の期別成績・全会場と、出走表の全国勝率との集計期間の違いを説明してください（BOA-1192）`,
+      );
+    }
   }
 }
 
