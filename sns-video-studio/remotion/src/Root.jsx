@@ -71,6 +71,8 @@ import {
 import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
 import { OnboardingFlowCM } from "./OnboardingFlowCM.jsx";
 import { AboutHeroDesktop, AboutHeroMobile } from "./AboutHeroCM.jsx";
+import { SetsuKiryokuShort, setsuKiryokuMetadata } from "./setsuKiryoku/SetsuKiryoku.jsx";
+import setsuKiryokuSample from "./setsuKiryoku/samples/motor_gap.json";
 
 export function RemotionRoot() {
   return (
@@ -643,6 +645,17 @@ export function RemotionRoot() {
         fps={30}
         width={840}
         height={1434}
+      />
+      {/* YouTube Shorts「節の機力」（props は hq の bundle.json。型は variant で3つ） */}
+      <Composition
+        id="SetsuKiryokuShort"
+        component={SetsuKiryokuShort}
+        durationInFrames={450}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={setsuKiryokuSample}
+        calculateMetadata={setsuKiryokuMetadata}
       />
     </>
   );

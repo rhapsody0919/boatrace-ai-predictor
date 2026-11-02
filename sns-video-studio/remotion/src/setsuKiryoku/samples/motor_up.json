@@ -1,0 +1,104 @@
+{
+ "format": "setsu_kiryoku_short",
+ "date": "2026-10-31",
+ "variant": "motor_up",
+ "venue": "尼崎",
+ "grade": "SG",
+ "as_of": "2026-10-31 8R まで",
+ "racer": "田口 節子",
+ "motor": 56,
+ "runs": [
+  {
+   "day": "27日",
+   "race": "6R",
+   "course": 2,
+   "rank": 2,
+   "time": 6.76
+  },
+  {
+   "day": "28日",
+   "race": "4R",
+   "course": 3,
+   "rank": 2,
+   "time": 6.73
+  },
+  {
+   "day": "28日",
+   "race": "11R",
+   "course": 5,
+   "rank": 5,
+   "time": 6.79
+  },
+  {
+   "day": "29日",
+   "race": "1R",
+   "course": 6,
+   "rank": 1,
+   "time": 6.71
+  },
+  {
+   "day": "30日",
+   "race": "4R",
+   "course": 1,
+   "rank": 2,
+   "time": 6.79
+  },
+  {
+   "day": "31日",
+   "race": "1R",
+   "course": 2,
+   "rank": 1,
+   "time": 6.66
+  },
+  {
+   "day": "31日",
+   "race": "8R",
+   "course": 4,
+   "rank": 1,
+   "time": 6.7
+  }
+ ],
+ "halves": {
+  "early": {
+   "avg": 3.0,
+   "courses": [
+    2,
+    3,
+    5
+   ]
+  },
+  "late": {
+   "avg": 1.25,
+   "courses": [
+    6,
+    1,
+    2,
+    4
+   ]
+  }
+ },
+ "texts": {
+  "hook": [
+   "前半は展示 2・2・5位",
+   "後半は 4走中3走で",
+   {
+    "text": "1位",
+    "em": true
+   },
+   "6コースでも 1位"
+  ],
+  "close": [
+   "この足",
+   {
+    "text": "優勝戦まで続く？",
+    "em": true
+   },
+   "準優・優勝戦の展示も見る"
+  ]
+ },
+ "youtube": {
+  "title": "尼崎SG 前半は展示2・2・5位 後半は4走中3走で1位 この足 優勝戦まで続く？ #ボートレース #Shorts",
+  "description": "尼崎SG（10/27〜）。田口 節子 選手（モーター56）の、今節の展示タイム順位。前半は27・28日、後半は29日から。\n集計: 10/31 8Rまで\n・数字は同じレースの6艇の中での展示タイムの順位\n・同タイムは上の順位にそろえる。1号艇は展示タイムが速く出やすい\n・展示タイムは体重・風でも変わる\n・走数が少なく、足の差を言い切れるものではありません\n・前半と後半のコースの平均はどちらも3.3\n\n節の機力・展示のデータは龍神レーダーで\nhttps://www.boat-ai.jp/venue/13?utm_source=youtube&utm_medium=shorts&utm_content=motor_up\n\n#ボートレース"
+ },
+ "source_observed_at": "2026-10-31T15:30:00+09:00"
+}
