@@ -1740,3 +1740,38 @@ test("BOA-1208 作り直し: 前の束に投票があって今度の束に無い
     "stopped",
   );
 });
+test('/code-review の指摘の固定（BOA-1208）: 空の印（poll:[]・poll_text:""・空白だけ）も投票なしとして通り、投票のリプを作らない', async () => {
+  for (const patch of [
+    { poll: [], poll_text: "" },
+    { poll: [], poll_text: "  " },
+    { poll: null, poll_text: "" },
+  ])
+    assert.deepEqual(
+      checkFinalsImage(bundle(patch), riskRules),
+      [],
+      JSON.stringify(patch),
+    );
+  const result = await push(bundle({ poll: [], poll_text: "" }));
+  assert.ok(result.job_id, JSON.stringify(result));
+  assert.equal(result.poll_job_id, undefined);
+  assert.deepEqual(
+    (await all("SELECT variant FROM sns_auto_send_items")).map(
+      (r) => r.variant,
+    ),
+    ["finals"],
+  );
+});
+
+test("/code-review の指摘の固定（BOA-1208）: 投票ありの束を投票なしで作り直して送ったら、--status の poll は null（前の試行の止めた投票のリプを出さない）で exit 0", async () => {
+  await push();
+  await db.exec(
+    "UPDATE sns_x_send_jobs SET state='held', error_code='source_stale' WHERE parent_job_id IS NULL",
+  );
+  const retried = await push(noPollBundle());
+  await post(retried.job_id, "1890000000000000070", "2037-10-26T07:15:30Z");
+  const status = await finalsStatus(RACE, { store });
+  assert.equal(status.job_state, "posted");
+  assert.equal(status.tweet_id, "1890000000000000070");
+  assert.equal(status.poll, null);
+  assert.equal(resultLine(RACE, { part: "main" }, status).code, 0);
+});

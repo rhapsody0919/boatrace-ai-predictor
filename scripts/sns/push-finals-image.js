@@ -236,9 +236,20 @@ function commonReasons(bundle, format, riskRules, text = {}) {
   ];
 }
 
-/** bundle に投票（poll・poll_text のどちらか）があるか（純粋関数）。無ければ投票のリプを作らない（BOA-1208） */
+/** 値が空でないか（null・undefined・空の配列・空白だけの文字列は空） */
+const present = (v) =>
+  Array.isArray(v)
+    ? v.length > 0
+    : typeof v === "string"
+      ? v.trim() !== ""
+      : v != null;
+
+/**
+ * bundle に投票（poll・poll_text のどちらか）があるか（純粋関数）。無ければ投票のリプを作らない（BOA-1208）。
+ * キーが無い・null・空（[]・""）はどれも「投票なし」
+ */
 export function hasPoll(bundle) {
-  return bundle?.poll != null || bundle?.poll_text != null;
+  return present(bundle?.poll) || present(bundle?.poll_text);
 }
 
 /**
@@ -387,7 +398,7 @@ export function checkRace({
  * X の日の上限（sns_x_send_control.daily_limit_x、無ければ daily_limit）に need 本が入るか（純粋関数）。
  * 数え方は transition_sns_send_139 の claim と同じ（今日の JST の X の試行＋他経路の本数＋need）。入らなければ理由を返す。
  * 入らないまま job を作ると、claim が「日次全体上限です」で投げ続け、期限まで2分ごとに Slack が鳴る（2026-10-26 system-architect の P1）。
- * 本投稿は投票のリプと対で need=2（177 の claim も親の claim で子の分を数える）。
+ * 投票のある本投稿は投票のリプと対で need=2（177 の claim も親の claim で子の分を数える）。投票の無い本投稿は need=1（BOA-1208）。
  * 本投稿（子でない job）は、177 の claim と同じく、他の親の予約の子（children のうち、親が今日 claim 済みのもの）も数える。
  * 展示後のリプ（子）は他の子を数えない（177 と同じ）
  */
@@ -750,7 +761,7 @@ export async function pushFinalsImage(
   if (live.already) return { ...head, ...live.already };
   const retry = [...live.retry];
   if (!reply) {
-    // 投票のリプは本投稿と対で作り直す（今度の bundle に投票が無くても、前の投票のリプは止める）（本投稿を作り直すなら、前の投票のリプも止める）
+    // 本投稿を作り直すなら、前の投票のリプも止める（今度の bundle に投票が無くても止める。BOA-1208）
     const poll = (
       await store.finalsItems(bundle.race_id, cfg.variants.poll, kind)
     ).filter((i) => !["stopped", "held_manual", "sent"].includes(i.state));
@@ -807,7 +818,8 @@ export async function pushFinalsImage(
       : {}),
   });
   // 本投稿が上限で入らなければ投票のリプも作らない（投票があれば対で2本分）
-  const need = !reply && hasPoll(bundle) ? 2 : 1;
+  const withPoll = !reply && hasPoll(bundle);
+  const need = withPoll ? 2 : 1;
   const limitReason = dailyLimitReason({
     sendControl,
     jobs: todayJobs,
@@ -888,8 +900,8 @@ export async function pushFinalsImage(
         approverId: controls.x?.auto_approver_id,
         byPath,
         kind,
+        withPoll,
       });
-  const withPoll = !reply && hasPoll(bundle);
   const line = out.send_at
     ? `x: 今すぐ送る（送り手の次の実行、期限 ${jstTime(when.expires_at)}${withPoll ? "。投票のリプは本投稿の公開の後" : ""}）${controls.x?.dry_run !== false ? "（試運転中: claim の前で止まる）" : ""}`
     : out.error
@@ -906,9 +918,10 @@ export async function pushFinalsImage(
 }
 
 /**
- * 本投稿と投票のリプの行を作る（投票の無い bundle は本投稿だけ。BOA-1208）。自動なら本投稿を承認し、その job を投票のリプの deadline_queue.parent_job_id に入れて公開保留を外してから承認する
- * （/today の reply と同じ順、snsTodayPlanner.js）。どこかで落ちたら親子とも held_manual（投票のリプの無い本投稿だけを出さない）。
- * 自動でないときも親子とも held_manual（子を親につなぐのが自動の道だけのため）
+ * 本投稿と投票のリプの行を作る。withPoll が false（投票の無い bundle、BOA-1208）なら本投稿だけを作り、自動なら本投稿だけを承認する。
+ * 投票があれば、自動なら本投稿を承認し、その job を投票のリプの deadline_queue.parent_job_id に入れて公開保留を外してから承認する
+ * （/today の reply と同じ順、snsTodayPlanner.js）。どこかで落ちたら作った item をすべて held_manual（投票があるときは、投票のリプの無い本投稿だけを出さない）。
+ * 自動でないときも作った item をすべて held_manual（投票があるときは、子を親につなぐのが自動の道だけのため。投票が無いときも今までどおり手動では送らない）
  */
 async function pushMainRows(
   store,
@@ -922,11 +935,11 @@ async function pushMainRows(
     approverId,
     byPath,
     kind = FINALS_IMAGE_FORMAT,
+    withPoll = hasPoll(bundle),
   },
 ) {
   const { variants } = KINDS[kind];
   const state = auto ? "notified" : "held_manual";
-  const withPoll = hasPoll(bundle);
   const draft = await store.insertDraft(
     draftRow(bundle, { revision, paths, when, observedAt, kind }),
   );
@@ -1000,7 +1013,7 @@ async function pushMainRows(
       await store
         .updateItem(row.id, "notified", {
           state: "held_manual",
-          held_reason: `${pollItem ? "投票のリプの" : ""}自動の承認に失敗: ${error.message.split("\n")[0]}`,
+          held_reason: `${pollItem ? "本投稿・投票のリプの" : "本投稿の"}自動の承認に失敗: ${error.message.split("\n")[0]}`,
         })
         .catch((updateError) => {
           // item が notified のまま。次の呼び出しで superseded にして作り直す
@@ -1086,9 +1099,19 @@ export const statusOf = (raceId, item, job) => ({
   tweet_url: job?.external_post_url ?? null,
 });
 
-/** 1つの種類の状態。新しい順に、生きている item（無ければ最新の item）の job。item が無ければ null */
-async function variantStatus(raceId, variant, store, kind) {
-  const items = await store.finalsItems(raceId, variant, kind);
+/**
+ * 1つの種類の状態。新しい順に、生きている item（無ければ最新の item）の job。item が無ければ null。
+ * skipStopped（投票のリプ）は止めた item を数えない（投票ありの束を投票なしで作り直したとき、前の試行の止めた投票のリプを出さない。BOA-1208）
+ */
+async function variantStatus(
+  raceId,
+  variant,
+  store,
+  kind,
+  { skipStopped = false } = {},
+) {
+  const all = await store.finalsItems(raceId, variant, kind);
+  const items = skipStopped ? all.filter((i) => i.state !== "stopped") : all;
   const item =
     items.find((i) => !["stopped", "held_manual"].includes(i.state)) ??
     items[0];
@@ -1110,7 +1133,9 @@ export async function finalsStatus(
   if (!main) return null;
   return {
     ...main,
-    poll: await variantStatus(raceId, variants.poll, store, kind),
+    poll: await variantStatus(raceId, variants.poll, store, kind, {
+      skipStopped: true,
+    }),
     reply: await variantStatus(raceId, variants.reply, store, kind),
   };
 }
