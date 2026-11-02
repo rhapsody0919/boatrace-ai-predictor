@@ -16,10 +16,14 @@ flowchart TD
   F --> T{表がある?}
   T -->|無い| N[書かない<br/>SG/G1 の4日目以降なら失敗]
   T -->|ある| M[racer_series_points に upsert<br/>（今と同じ・上書き）]
-  M --> A{注記「N日目MR終了時点」の N<br/>= 対象日の日目?}
+  M --> G{SG/G1?}
+  G -->|いいえ| X[写さない]
+  G -->|はい| A{注記「N日目MR終了時点」の N<br/>= 対象日の日目?}
   A -->|読めない| E[失敗にする<br/>補足の起動が取り直す]
-  A -->|違う 例: 5日目に4日目の表| S[写しに書かない<br/>report.daily.skippedVenues]
+  A -->|N = 日目 − 1 で予選中<br/>中止でないレースあり| P[書かずに incomplete<br/>補足の起動が取り直す]
+  A -->|ほか 例: 5日目に4日目の表| S[写しに書かない<br/>report.daily.skippedVenues]
   A -->|同じ| D[racer_series_points_daily に<br/>値が変わった行だけ upsert]
+  D -->|M が最後のレースより前| P
   D -->|表が無い 192 未適用| W[書かずに report.daily.tableMissing<br/>実行は成功]
   D -->|ほかの失敗| E
   D --> H[hq が予選最終日の 05:10 に<br/>snapshot_date = 前日 を読む]
@@ -28,7 +32,7 @@ flowchart TD
 ## 2. 取得の回数と負荷（ADR-0067・0101）
 
 - **増える取得は0**。cron point_rank は今も毎晩、開催中の全会場（約15）を1ページずつ取っている（scripts/daily/scrape-point-rank.js の run は日目で絞らない）。予選3日目の晩もすでに取っており、値を上書きで捨てていただけ。docs/design/scraping-load-budget/spec.md §2.1 の「夜の日次 約45」は変わらないので、予算の表は直さない
-- 増えうるのは失敗の再試行だけ: 写しの書き込みの失敗・注記を読めないとき、実行を失敗にするので、補足の 23:30・01:30 に全会場（約15ページ）を取り直す。最大で1日 約30ページ。今の「会場の取得の失敗」と同じ扱い
+- 増えうるのは取り直しだけ: 写しの書き込みの失敗・注記を読めない（失敗）、表にその日の結果がまだ出ていない（incomplete。注記が前の日、または最後のレースより前）とき、補足の 23:30・01:30 に全会場（約15ページ）を取り直す。最大で1日 約30ページ。今の「会場の取得の失敗」と同じ扱いで、予算の表（夜の日次）の中に収まる（system-architect）
 - 05:10 にその場で取る案は採らない。新しい取得（SG/G1 の節ごとに1日1ページ）が増え、前の晩の値が取れない日（取得の失敗）を後から直せないのは同じだから
 - 書き込み: SG/G1 の節で、表のある日（今の判定で1〜4日目。5日目以降は表が4日目の時点で止まるので書かない）ごとに約52行×約200B。1か月に SG/G1 が約5節で約1,000行・約0.2MB。同じ日の再取得は変更の無い行を書かない。Disk IO への影響は無視できる
 
@@ -68,9 +72,10 @@ erDiagram
     }
 ```
 
-- 主キーの先頭は snapshot_date（書き手は対象日で既存行を読む。hq も対象日で読む）。節の通しの読みは (venue_code, meet_start_date, snapshot_date) の索引
+- 主キーの先頭は snapshot_date（書き手は対象日で既存行を読む）。hq の会場×日付の範囲の読みは (venue_code, snapshot_date) の索引
 - RLS 有効。anon・authenticated は SELECT のポリシーと GRANT SELECT だけ（racer_series_points と同じく公開の値）。claude_ro に SELECT を明示。書くのは service_role だけ
-- hq の読み（例）: `SELECT * FROM racer_series_points_daily WHERE venue_code = $1 AND meet_start_date = $2 AND series_day = 3 ORDER BY rank NULLS LAST`
+- hq の読み（例。予選最終日 $d・その日目 $n）: `SELECT * FROM racer_series_points_daily WHERE venue_code = $1 AND snapshot_date < $d AND snapshot_date >= $d - 9 AND series_day = $n - 1` の、snapshot_date が最大の日の行。meet_start_date は順延で1日ずれうるのでキーにしない（system-architect）。as_of_race が最後のレースより前なら途中の値（注記を付ける）。行が無い日は hq が自前で計算する
+- 写すのは SG/G1 だけ（G2 以下の表は写さない）
 
 ## 5. 適用とデプロイの順
 

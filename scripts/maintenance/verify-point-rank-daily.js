@@ -118,14 +118,27 @@ function createFakeClient(tables, { failOn = {} } = {}) {
   };
 }
 
-/** 多摩川（05）が G1・その日の日目、ほかの1会場は一般戦（表なし） */
-const tablesFor = (date, seriesDay) => ({
+/** 多摩川（05）が G1（1〜12R、cancelled のレースは cancellation_status='confirmed'）、ほかの1会場は一般戦（表なし） */
+const tablesFor = (date, seriesDay, { grade = "G1", cancelled = [] } = {}) => ({
   races: [
-    { race_id: `${date}-05-01`, race_grade: "G1" },
+    ...Array.from({ length: 12 }, (_, i) => {
+      const rno = String(i + 1).padStart(2, "0");
+      return {
+        race_id: `${date}-05-${rno}`,
+        race_grade: grade,
+        cancellation_status: cancelled.includes(i + 1) ? "confirmed" : null,
+      };
+    }),
     { race_id: `${date}-04-01`, race_grade: "ippan" },
   ],
   race_conditions: [{ race_id: `${date}-05-01`, series_day: seriesDay }],
 });
+/** 注記の日目・レース番号を差し替えた表 */
+const G1_NOTE = (day, rno) =>
+  G1_TABLE.replace(
+    "４日目１２R終了時点",
+    `${"０１２３４５６７８９"[day]}日目${String(rno).replace(/\d/g, (d) => "０１２３４５６７８９"[d])}R終了時点`,
+  );
 /** jcd=05 は、ページの注記がその日の日目（day）の表を返す */
 const fetchFor =
   (day, html = G1_AS_OF(day)) =>
@@ -332,6 +345,132 @@ check(
       (c.data[DAILY] ?? []).length === 0 &&
       (c.data.racer_series_points ?? []).length === 52,
     show(res.failures),
+  );
+}
+
+// --- 12R の反映前（3日目11R終了時点）: 書いたうえで incomplete（補足の起動が取り直す） --------------
+{
+  const c = createFakeClient(tablesFor("2026-09-18", 3));
+  const res = await runPointRankJob({
+    targetDate: "2026-09-18",
+    client: c,
+    politeFetch: fetchFor(3, G1_NOTE(3, 11)),
+    mode: "live",
+    shouldStop: () => false,
+  });
+  check(
+    "3日目11R終了時点（最後は12R）: 写しを as_of_race=11 で書き、incomplete（対象日を済みにしない）",
+    res.outcome !== "error" &&
+      res.incomplete === true &&
+      (c.data[DAILY] ?? []).length === 52 &&
+      c.data[DAILY].every((r) => r.as_of_race === 11) &&
+      res.report.daily?.pendingVenues?.[0]?.reason === "race_not_final",
+    show({ incomplete: res.incomplete, daily: res.report.daily }),
+  );
+}
+
+// --- 11R・12R が中止の日の11R終了時点: その日の最後なので incomplete にしない ------------------
+{
+  const c = createFakeClient(tablesFor("2026-09-18", 3, { cancelled: [12] }));
+  const res = await runPointRankJob({
+    targetDate: "2026-09-18",
+    client: c,
+    politeFetch: fetchFor(3, G1_NOTE(3, 11)),
+    mode: "live",
+    shouldStop: () => false,
+  });
+  check(
+    "12R が中止の日の11R終了時点: 書いて incomplete にしない",
+    res.incomplete === false && (c.data[DAILY] ?? []).length === 52,
+    show({ incomplete: res.incomplete, daily: res.report.daily }),
+  );
+}
+
+// --- 22:00 に表が前の日（2日目）のまま: 書かずに incomplete --------------------------------
+{
+  const c = createFakeClient(tablesFor("2026-09-18", 3));
+  const res = await runPointRankJob({
+    targetDate: "2026-09-18",
+    client: c,
+    politeFetch: fetchFor(2),
+    mode: "live",
+    shouldStop: () => false,
+  });
+  check(
+    "3日目の対象日に表が2日目の時点: 写しに書かず incomplete（その日の値は後から取り直せない）",
+    res.incomplete === true &&
+      (c.data[DAILY] ?? []).length === 0 &&
+      res.report.daily?.pendingVenues?.[0]?.reason === "day_not_reflected",
+    show({ incomplete: res.incomplete, daily: res.report.daily }),
+  );
+}
+
+// --- 丸一日の中止（全レース confirmed）で表が前の日のまま: incomplete にしない --------------------
+{
+  const all = Array.from({ length: 12 }, (_, i) => i + 1);
+  const c = createFakeClient(tablesFor("2026-09-18", 3, { cancelled: all }));
+  const res = await runPointRankJob({
+    targetDate: "2026-09-18",
+    client: c,
+    politeFetch: fetchFor(2),
+    mode: "live",
+    shouldStop: () => false,
+  });
+  check(
+    "丸一日の中止で表が前の日の時点: 書かず skipped、incomplete にしない",
+    res.incomplete === false &&
+      (c.data[DAILY] ?? []).length === 0 &&
+      res.report.daily?.skippedVenues?.length === 1,
+    show({ incomplete: res.incomplete, daily: res.report.daily }),
+  );
+}
+
+// --- G3 の表は写さない（注記が無くても失敗にしない） ------------------------------------------
+{
+  const c = createFakeClient(tablesFor("2026-09-18", 3, { grade: "G3" }));
+  const html = G1_TABLE.replace("４日目１２R終了時点", "");
+  const res = await run("2026-09-18", opts(c, fetchFor(3, html)));
+  check(
+    "G3 の表: racer_series_points は書き、写しには書かず、注記が無くても失敗にしない",
+    res.failures.length === 0 &&
+      res.count === 52 &&
+      (c.data[DAILY] ?? []).length === 0,
+    show({ failures: res.failures, daily: res.daily }),
+  );
+}
+
+// --- racer_series_points の書き込みに失敗しても、写しは書く ----------------------------------
+{
+  const c = createFakeClient(tablesFor("2026-09-18", 3), {
+    failOn: {
+      "racer_series_points:upsert": { code: "57014", message: "timeout" },
+    },
+  });
+  const res = await run("2026-09-18", opts(c));
+  check(
+    "racer_series_points の書き込みの失敗: 失敗にしたうえで、写しは52行書く",
+    res.failures.some((f) => /racer_series_points 書き込みエラー/.test(f)) &&
+      res.updated === false &&
+      (c.data[DAILY] ?? []).length === 52,
+    show({ failures: res.failures, daily: res.daily }),
+  );
+}
+
+// --- 注記の読み取り: 初日の表記・別の欄の文字に当たらない ------------------------------------
+{
+  const cheerio = await import("cheerio");
+  const { parsePointRankAsOf } = await import("../lib/pointRankParser.js");
+  check(
+    "parsePointRankAsOf: 「初日１２Ｒ終了時点」は1日目12R",
+    show(
+      parsePointRankAsOf(
+        cheerio.load("<ul><li>初日１２Ｒ終了時点 ※当日の結果が…</li></ul>"),
+      ),
+    ) === show({ seriesDay: 1, raceNumber: 12 }),
+  );
+  check(
+    "parsePointRankAsOf: li の外の文字（本文の説明）は拾わない",
+    parsePointRankAsOf(cheerio.load("<p>３日目１２R終了時点の例</p>")) === null,
   );
 }
 

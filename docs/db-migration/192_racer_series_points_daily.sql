@@ -15,7 +15,7 @@
 -- 読み手: hq（claude_ro。166 の既定の権限で SELECT が付くが、この表は明示する）・anon（今は画面で使わない。
 -- racer_series_points と同じく公開の値なので SELECT だけ付ける）。
 --
--- 量: SG/G1 の節で、表が対象日の日目の時点の日（今の実測で1〜4日目）ごとに約52行（1行 約200B）。1か月に SG/G1 が約5節×表のある日 約4日 → 約1,000行・約0.2MB。
+-- 量: SG/G1 の節で、表の注記の日目が対象日の日目と同じ日（1〜4日目）ごとに約52行（1行 約200B）。1か月に SG/G1 が約5節×表のある日 約4日 → 約1,000行・約0.2MB。
 --
 -- 適用前の確認（読み取り）:
 --   SELECT to_regclass('public.racer_series_points_daily');  -- NULL
@@ -27,6 +27,10 @@
 --          has_any_column_privilege('authenticated', 'public.racer_series_points_daily', 'UPDATE'),
 --          has_table_privilege('claude_ro', 'public.racer_series_points_daily', 'SELECT');  -- true / false / false / true
 --   get_advisors（security）の rls_disabled_in_public が0件
+--
+-- 適用の経路: GRANT・POLICY を含むので db-apply は heavy（オーナーの承認の1タップ）。新しい表を作るだけで、既存の表のロックは無い。
+--   時間帯の制約は無い。次の SG/G1 の予選3日目の 22:00 JST より前に当てる。PostgREST のスキーマは本番の DDL の
+--   イベントトリガーで読み直されるので NOTIFY は要らない
 --
 -- 戻し方: DROP TABLE IF EXISTS public.racer_series_points_daily;
 --   （書き手は表が無いと「未適用」として履歴を飛ばし、racer_series_points は書き続ける。戻した後に失う物はこの表の行だけ）
@@ -60,18 +64,21 @@ CREATE TABLE IF NOT EXISTS public.racer_series_points_daily (
 );
 
 COMMENT ON TABLE public.racer_series_points_daily IS
-    '公式の得点率一覧（pointrank）の、取得の対象日（snapshot_date）ごとの写し（BOA-1210）。racer_series_points は節ごとに上書きされるので、日ごとの値はこちらで読む。表のある日（SG/G1 の序盤を除く日）だけ行がある';
+    '公式の得点率一覧（pointrank）の、取得の対象日（snapshot_date）ごとの写し（BOA-1210）。racer_series_points は節ごとに上書きされるので、日ごとの値はこちらで読む。SG/G1 だけで、表の注記の日目が対象日の日目と同じ日だけ行がある（予選の後の5日目以降は無い）';
 COMMENT ON COLUMN public.racer_series_points_daily.snapshot_date IS
-    '取得の対象日（JST）。cron point_rank が 22:00 JST の指定時刻から解決した日で、その日の全レースの後の値。予選最終日の朝に読むのは snapshot_date = 予選最終日の前日の行';
+    '取得の対象日（JST）。cron point_rank が 22:00 JST の指定時刻から解決した日で、その日の全レースの後の値（as_of_race で確かめる）。予選最終日の前の日の行は、順延で日付がずれうるので series_day と snapshot_date の範囲で引く';
 COMMENT ON COLUMN public.racer_series_points_daily.series_day IS
-    'snapshot_date の節の日目（race_conditions.series_day）。meet_start_date = snapshot_date − (series_day − 1)';
+    'snapshot_date の節の日目（race_conditions.series_day）。表の注記の日目と同じ';
+COMMENT ON COLUMN public.racer_series_points_daily.meet_start_date IS
+    'snapshot_date − (series_day − 1)（racer_series_points と同じ式）。丸一日の中止で同じ日目が2日続くと、順延した日より後の行は1日遅くなるので、節の中の日ごとの読みのキーにしない';
 COMMENT ON COLUMN public.racer_series_points_daily.as_of_race IS
     '表の注記「N日目MR終了時点」の M。N は series_day と同じ日の表だけを書く（過去の日付で開くと節の最新が返るため）。12 未満ならその日の途中か、後半のレースが中止';
 COMMENT ON COLUMN public.racer_series_points_daily.scraped_at IS
     'この行の値を最後に書いた時刻。値が変わらない再取得では書かない（upsertChangedRows）ので、最初に取れた時刻が残る';
 
-CREATE INDEX IF NOT EXISTS idx_racer_series_points_daily_meet
-    ON public.racer_series_points_daily (venue_code, meet_start_date, snapshot_date);
+-- 節の中の日ごとの読み（venue_code と snapshot_date の範囲＋series_day）用
+CREATE INDEX IF NOT EXISTS idx_racer_series_points_daily_venue
+    ON public.racer_series_points_daily (venue_code, snapshot_date);
 
 -- 権限: 076 の後、postgres が作る表の anon・authenticated の既定の権限は外れている。SELECT だけを明示する。
 -- 書くのは service_role（RLS を迂回）だけ

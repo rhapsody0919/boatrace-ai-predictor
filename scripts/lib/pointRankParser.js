@@ -114,11 +114,17 @@ export function parseHayamiSeriesDay(text) {
  * @returns {{seriesDay: number, raceNumber: number}|null} 注記が無い・読めないときは null
  */
 export function parsePointRankAsOf($) {
-  const m = toHalfWidthDigits($("body").text()).match(
-    /(\d{1,2})\s*日目\s*(\d{1,2})\s*[RＲ]\s*終了時点/u,
+  // 表の上の注記（<ul class="notes2"><li>…終了時点 ※当日の結果が…</li>）。ページ全体から拾うと別の欄の文字に当たりうるので、
+  // 「終了時点」を含む li の最初の1つだけを見る
+  const note = $("li")
+    .filter((_, li) => $(li).text().includes("終了時点"))
+    .first()
+    .text();
+  const m = toHalfWidthDigits(note).match(
+    /(初日|\d{1,2}\s*日目)\s*(\d{1,2})\s*[RＲ]\s*終了時点/u,
   );
   if (!m) return null;
-  const seriesDay = Number(m[1]);
+  const seriesDay = m[1] === "初日" ? 1 : Number.parseInt(m[1], 10);
   const raceNumber = Number(m[2]);
   if (seriesDay < 1 || seriesDay > 9 || raceNumber < 1 || raceNumber > 12)
     return null;

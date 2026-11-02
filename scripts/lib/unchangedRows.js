@@ -406,7 +406,9 @@ export async function fetchExistingRows(
   const failed = results.find((result) => result.error);
   if (failed) {
     // code を残す（呼び出し側が「表が無い」等をコードで判定できるように）
-    const error = new Error(`${table}既存行取得エラー: ${failed.error.message}`);
+    const error = new Error(
+      `${table}既存行取得エラー: ${failed.error.message}`,
+    );
     error.code = failed.error.code;
     error.cause = failed.error;
     return { rows: [], error };

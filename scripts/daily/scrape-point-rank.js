@@ -121,33 +121,53 @@ function buildDailyRows(snapshotDate, venueResults, scrapedAt) {
 }
 
 /**
- * 日ごとの写しに書く会場を選ぶ（純粋関数）。
- * pointrank は過去の日付で開いても節の最新の表を返し、予選の後は「４日目１２R終了時点」で止まる。
- * 表の注記の日目が対象日の日目と違えば、その日の値ではないので書かない（5日目以降は予選の値のまま変わらない）。
- * 注記を読めない表はページの書式の変更の疑いとして failure にする（その日の値か確かめられないものを書かない）
- * @param {Array<{venueCode: number, seriesDay: number, asOf: {seriesDay: number}|null, rows: Array<Object>}>} venueResults
- * @returns {{write: Array<Object>, skipped: Array<{venueCode: number, seriesDay: number, asOfSeriesDay: number}>, failures: string[]}}
+ * 日ごとの写しに書く会場を選ぶ（純粋関数）。対象は SG/G1 だけ（Shorts 型B の用途。G2 以下は写さない）。
+ * pointrank は過去の日付で開いても節の最新の表を返し（後から取り直せない）、予選の後は「４日目１２R終了時点」で止まる。
+ *   - 注記を読めない: その日の値か確かめられないので書かず、failure（公式ページの書式変更の疑い）
+ *   - 注記の日目 = 対象日の日目: 書く。注記のレース番号が、その日の中止でないレースの最後より前なら、書いたうえで
+ *     incomplete（12R の反映前。補足の起動が取り直し、値が変わった行だけ書き直す）
+ *   - 注記の日目 = 対象日の日目 − 1、かつ予選中（4日目まで）、かつその日に中止でないレースがある: 書かずに incomplete
+ *     （その日の結果がまだ表に出ていない。取り直さないと、その日の値は永久に失う）
+ *   - それ以外（5日目以降に予選の後の表、丸一日の中止 等）: 書かずに skipped（report に出す）
+ * @param {Array<{venueCode: number, raceGrade: string|null, seriesDay: number, asOf: {seriesDay: number, raceNumber: number}|null, rows: Array<Object>}>} venueResults
+ * @param {Map<number, number>} lastRaces venueCode -> その日の中止でないレースの最後の番号（全レース中止の会場は無い）
+ * @returns {{write: Array<Object>, skipped: Array<Object>, pending: Array<Object>, failures: string[]}}
+ *   pending が空でなければ、呼び出し元は incomplete にする
  */
-function selectDailyVenues(venueResults) {
+function selectDailyVenues(venueResults, lastRaces) {
   const write = [];
   const skipped = [];
+  const pending = [];
   const failures = [];
   for (const v of venueResults) {
+    if (!TABLE_EXPECTED_GRADES.includes(v.raceGrade)) continue;
+    const lastRace = lastRaces.get(v.venueCode) ?? null;
+    const base = {
+      venueCode: v.venueCode,
+      seriesDay: v.seriesDay,
+      asOfSeriesDay: v.asOf?.seriesDay ?? null,
+      asOfRace: v.asOf?.raceNumber ?? null,
+      lastRace,
+    };
     if (!v.asOf) {
       failures.push(
-        `${VENUE_NAMES[v.venueCode]}(${v.seriesDay}日目): 得点率表の「N日目NR終了時点」を読めない（日ごとの写しを書かない。公式ページの書式変更の疑い）`,
+        `${VENUE_NAMES[v.venueCode]}(${v.raceGrade}, ${v.seriesDay}日目): 得点率表の「N日目MR終了時点」を読めない（日ごとの写しを書かない。公式ページの書式変更の疑い）`,
       );
-    } else if (v.asOf.seriesDay !== v.seriesDay) {
-      skipped.push({
-        venueCode: v.venueCode,
-        seriesDay: v.seriesDay,
-        asOfSeriesDay: v.asOf.seriesDay,
-      });
-    } else {
+    } else if (v.asOf.seriesDay === v.seriesDay) {
       write.push(v);
+      if (lastRace != null && v.asOf.raceNumber < lastRace)
+        pending.push({ ...base, reason: "race_not_final" });
+    } else if (
+      v.asOf.seriesDay === v.seriesDay - 1 &&
+      v.seriesDay <= TABLE_EXPECTED_FROM_SERIES_DAY &&
+      lastRace != null
+    ) {
+      pending.push({ ...base, reason: "day_not_reflected" });
+    } else {
+      skipped.push(base);
     }
   }
-  return { write, skipped, failures };
+  return { write, skipped, pending, failures };
 }
 
 /**
@@ -184,8 +204,9 @@ async function writeDailyRows(client, dailyRows) {
   }
   if (error)
     return {
-      written: 0,
-      unchanged: 0,
+      // バッチの途中で失敗したときも、書けた件数は残す
+      written,
+      unchanged: skipped,
       tableMissing: false,
       error: `${DAILY_TABLE} 書き込みエラー: ${error.message}`,
     };
@@ -286,18 +307,39 @@ function buildVenueGrades(races) {
 }
 
 /**
- * 対象日に開催中の会場コードとレースグレードのMapを取得
- * @returns {Promise<Map<number, string|null>>} venueCode -> race_grade
+ * 会場ごとの、その日の中止でない（cancellation_status が 'confirmed' でない）レースの最後の番号（純粋関数）。
+ * 全レースが中止の会場は入らない
+ * @param {Array<{race_id: string, cancellation_status?: string|null}>} races
+ * @returns {Map<number, number>}
+ */
+function buildVenueLastRaces(races) {
+  const lastRaces = new Map();
+  for (const r of races) {
+    if (r.cancellation_status === "confirmed") continue;
+    const venueCode = extractVenueCodeFromRaceId(r.race_id);
+    const raceNumber = Number(r.race_id.slice(-2));
+    if (raceNumber > (lastRaces.get(venueCode) ?? 0))
+      lastRaces.set(venueCode, raceNumber);
+  }
+  return lastRaces;
+}
+
+/**
+ * 対象日に開催中の会場コードとレースグレード、中止でないレースの最後の番号を取得
+ * @returns {Promise<{venueGrades: Map<number, string|null>, lastRaces: Map<number, number>}>}
  */
 async function getActiveVenueGrades(date, client = supabase) {
   const { data, error } = await client
     .from("races")
-    .select("race_id, race_grade")
+    .select("race_id, race_grade, cancellation_status")
     .like("race_id", `${date}%`);
   if (error) {
     throw new Error(`開催会場一覧の取得エラー: ${error.message}`);
   }
-  return buildVenueGrades(data || []);
+  return {
+    venueGrades: buildVenueGrades(data || []),
+    lastRaces: buildVenueLastRaces(data || []),
+  };
 }
 
 /**
@@ -392,7 +434,10 @@ export async function run(date, options = {}) {
   } = options;
   const targetDate = date || resolveTargetDate();
   const failures = [];
-  const venueGrades = await getActiveVenueGrades(targetDate, client);
+  const { venueGrades, lastRaces } = await getActiveVenueGrades(
+    targetDate,
+    client,
+  );
   if (venueGrades.size === 0) {
     failures.push(
       `${targetDate}: 開催会場が0件（racesテーブル未生成、または対象日の誤りの疑い）`,
@@ -569,20 +614,23 @@ export async function run(date, options = {}) {
       optionalColumnGroups: NEXT_RACE_COLUMN_GROUPS,
     },
   );
-  if (error) {
+  if (error)
     failures.push(`racer_series_points 書き込みエラー: ${error.message}`);
-    return { updated: false, count: 0, ...summary };
-  }
+  else console.log(`💾 racer_series_points: ${rows.length}件`);
 
-  console.log(`💾 racer_series_points: ${rows.length}件`);
-
+  // racer_series_points の書き込みに失敗しても、写しは書く（その日の値は後から取り直せない）
   const dailyVenues = selectDailyVenues(
     results.filter((r) => !r.notAttempted && r.rows.length > 0),
+    lastRaces,
   );
   failures.push(...dailyVenues.failures);
   for (const v of dailyVenues.skipped)
     console.log(
-      `  ➖ ${VENUE_NAMES[v.venueCode]}: 表は${v.asOfSeriesDay}日目の時点（対象日は${v.seriesDay}日目）。日ごとの写しに書かない`,
+      `  ➖ ${VENUE_NAMES[v.venueCode]}: 表は${v.asOfSeriesDay}日目${v.asOfRace}Rの時点（対象日は${v.seriesDay}日目）。日ごとの写しに書かない`,
+    );
+  for (const v of dailyVenues.pending)
+    console.warn(
+      `  ⏳ ${VENUE_NAMES[v.venueCode]}: 表は${v.asOfSeriesDay}日目${v.asOfRace}Rの時点（対象日は${v.seriesDay}日目・最終${v.lastRace}R）。補足の起動で取り直す`,
     );
   const daily = await writeDailyRows(
     client,
@@ -598,8 +646,8 @@ export async function run(date, options = {}) {
       `💾 ${DAILY_TABLE}: 書き込み${daily.written}件・変更なし${daily.unchanged}件`,
     );
   return {
-    updated: true,
-    count: rows.length,
+    updated: !error,
+    count: error ? 0 : rows.length,
     ...summary,
     daily: {
       written: daily.written,
@@ -607,6 +655,7 @@ export async function run(date, options = {}) {
       tableMissing: daily.tableMissing,
       venues: dailyVenues.write.map((v) => v.venueCode),
       skippedVenues: dailyVenues.skipped,
+      pendingVenues: dailyVenues.pending,
     },
   };
 }
@@ -635,6 +684,7 @@ async function main() {
 
 export const _internal = {
   buildDailyRows,
+  buildVenueLastRaces,
   selectDailyVenues,
   writeDailyRows,
   resolveTargetDate,
