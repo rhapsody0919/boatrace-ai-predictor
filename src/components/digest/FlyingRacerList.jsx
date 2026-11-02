@@ -5,6 +5,7 @@
  * （実測16種に無い）、is_late_start も全件falseの既知バグのため（spec §1.1）。
  */
 import { useTranslation } from "react-i18next";
+import RacerLink from "../race/assist/RacerLink";
 import "./RacerPlainList.css";
 
 function FlyingRacerList({ rows, dataComplete = true }) {
@@ -27,7 +28,7 @@ function FlyingRacerList({ rows, dataComplete = true }) {
               <span className="racer-plain-list__id" translate="no">
                 {row.racer_id}
               </span>
-              <span translate="no">{row.racer_name}</span>
+              <RacerLink racerId={row.racer_id}>{row.racer_name}</RacerLink>
             </span>
             <span className="racer-plain-list__meta">
               <span translate="no">
