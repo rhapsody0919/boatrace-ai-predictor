@@ -879,3 +879,70 @@ test("X の日の枠: hq の出し物の名前 setsu_kiryoku と取り込みの�
   assert.equal(SLOT_KINDS.setsuKiryoku, "setsu_kiryoku");
   assert.equal(SETSU_TYPE.kind, "setsu_kiryoku");
 });
+
+test("当てる順: 193 の前に 194 を当てると先頭の照合で止まり、全体が戻る（kind・列・索引は増えない）", async () => {
+  const pg = new PGlite();
+  try {
+    await pg.exec(
+      "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;",
+    );
+    await pg.exec(
+      "CREATE TABLE test_clock(value timestamptz); INSERT INTO test_clock VALUES(NULL); CREATE FUNCTION test_now() RETURNS timestamptz LANGUAGE sql AS 'SELECT coalesce(value,now()) FROM test_clock';",
+    );
+    await pg.exec(
+      "CREATE TABLE scrape_job_state(job TEXT PRIMARY KEY, mode TEXT NOT NULL DEFAULT 'off' CHECK (mode IN ('off','shadow','live')));",
+    );
+    await pg.exec(`
+      CREATE TABLE races(race_id VARCHAR PRIMARY KEY, race_date DATE, start_time TIME, cancellation_status TEXT, race_grade VARCHAR, race_number SMALLINT);
+      CREATE TABLE race_conditions(race_id VARCHAR PRIMARY KEY, race_stage VARCHAR);`);
+    const upTo189 = BASE_FILES.slice(0, -1);
+    for (const [i, file] of upTo189.entries()) {
+      const guard = GUARDS[file];
+      await pg.exec(
+        guard
+          ? await guardedForTest(file, upTo189.slice(0, i), guard[0], guard[1])
+          : forTest(await sqlOf(file)),
+      );
+    }
+    // 194 の照合は試験の 193 の本文の md5 に差し替える（本番と同じく、189 の本文では一致しない）
+    await assert.rejects(
+      pg.exec(
+        await guardedForTest(
+          MIGRATION,
+          BASE_FILES,
+          "transition_sns_send_139",
+          MD5_193,
+        ),
+      ),
+      /194: transition_sns_send_139 の本文が 193 でない/,
+    );
+    await pg.exec("ROLLBACK").catch(() => {});
+    const one = async (sql) => (await pg.query(sql)).rows[0];
+    assert.equal(
+      (
+        await one(
+          "SELECT count(*)::int n FROM pg_attribute WHERE attrelid='public.sns_auto_send_control'::regclass AND attname='setsu_kiryoku_enabled' AND NOT attisdropped",
+        )
+      ).n,
+      0,
+    );
+    assert.equal(
+      (
+        await one(
+          "SELECT count(*)::int n FROM pg_indexes WHERE indexname='sns_auto_send_items_setsu_x_day'",
+        )
+      ).n,
+      0,
+    );
+    assert.doesNotMatch(
+      (
+        await one(
+          "SELECT pg_get_constraintdef(oid) d FROM pg_constraint WHERE conname='sns_auto_send_items_kind_check'",
+        )
+      ).d,
+      /setsu_kiryoku/,
+    );
+  } finally {
+    await pg.close();
+  }
+});
