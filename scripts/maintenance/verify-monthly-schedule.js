@@ -33,7 +33,7 @@ import { parseKText } from "../lib/kbFileParser.js";
 import * as cli from "./monthly-schedule-backfill.js";
 import { fakeClient } from "../lib/fakeSupabaseClient.js";
 import { runRaceSeriesJob } from "../lib/raceSeriesJob.js";
-import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
+import { SCRAPE_JOBS, isScheduledDate } from "../lib/scrapeJobs/registry.js";
 import { resolveTargetDate } from "../lib/scrapeJobs/dailyJob.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -690,7 +690,7 @@ for (const [label, reps] of mutants) {
       urls,
       client,
       ctx: {
-        targetDate: "2026-09-15",
+        targetDate: "2026-09-14",
         mode,
         client,
         politeFetch: async (url) => {
@@ -709,6 +709,32 @@ for (const [label, reps] of mutants) {
     202609: html("202609"),
     202610: html("202610"),
   };
+
+  for (const [date, scheduled] of [
+    ["2026-09-14", true], ["2026-09-15", false],
+    ["2026-09-01", true], ["2026-09-03", true], ["2026-09-04", false],
+    ["2026-09-27", false], ["2026-09-28", true], ["2026-09-30", true],
+    ["2026-10-28", false], ["2026-10-29", true], ["2026-10-31", true],
+    ["2027-02-25", false], ["2027-02-26", true], ["2027-02-28", true],
+    ["2028-02-26", false], ["2028-02-27", true], ["2028-02-29", true],
+  ]) {
+    const j = jobCtx(base);
+    j.ctx.targetDate = date;
+    // 9月は成功・書き込みも検査。他の月は取得数の境界検査に限定する。
+    if (!date.startsWith("2026-09")) {
+      j.ctx.politeFetch = async (url) => {
+        j.urls.push(url);
+        return new Response("", { status: 503 });
+      };
+    }
+    const r = await runRaceSeriesJob(j.ctx, OPTS);
+    check(`P5a: ${date} の予定判定とハンドラーの取得数が一致`,
+      isScheduledDate(SCRAPE_JOBS.race_series, date) === scheduled &&
+      j.urls.length === (scheduled ? 3 : 0) &&
+      (!scheduled || !date.startsWith("2026-09") || r.rowsWritten > 0) &&
+      (scheduled || (r.rowsWritten === 0 && r.outcome === undefined &&
+        j.client.calls.upserts.length === 0)), JSON.stringify(r));
+  }
 
   const j1 = jobCtx(base);
   const r1 = await runRaceSeriesJob(j1.ctx, OPTS);
