@@ -1,5 +1,5 @@
 /**
- * YouTube Shorts「節の機力」（縦 1080x1920・15秒・声なし・BGM）。props は hq の bundle.json そのまま（＋任意の bgm）。
+ * YouTube Shorts「節の機力」（縦 1080x1920・15秒（final_gap は17秒）・声なし・BGM）。props は hq の bundle.json そのまま（＋任意の bgm）。
  * 型と章・検査は model.js。描く前に checkBundle を通し、通らなければ描かずに止める（作らない）。
  * 文字は y≤1400・x≤940（Shorts の下の帯と右のボタン列の外）。各コマで DOM の実際の箱を測り、越えたら止める。
  *
@@ -30,23 +30,31 @@ import {
   RIGHT,
   RUNS_TOP,
   SAFE,
-  SIX,
+  GAP_BARS,
+  HERO_RUNS,
+  SIX_TABLE,
   barsLayout,
+  borderNameLayout,
+  normalizeBundle,
   chartPoints,
   checkBundle,
   closeLayout,
   courseAvg,
   daysLabel,
+  fmt2rate1,
   fmtAvg,
   estWidth,
   fmtRate,
+  rateBars,
+  heroChipFont,
+  heroLine,
+  heroRunsPitch,
   rankLabel,
   hookLayout,
   runsRowH,
-  sixChipW,
-  sixPitch,
-  sixStats,
+  shortName,
   splitHalves,
+  winsOf,
   tagText,
   timeline,
 } from "./model.js";
@@ -76,9 +84,20 @@ function T({
   const maxW = centered ? CENTER_MAX_W : (w ?? SAFE.right - 10 - x);
   const text = typeof children === "string" ? children : null;
   const fit = text
-    ? fitHeadline(text, { maxWidth: maxW, maxLines: 1, fontFamily: FONT, fontWeight: weight, maxFontSize: size, minFontSize: Math.min(size, MIN_FONT), step: 1 })
+    ? fitHeadline(text, {
+        maxWidth: maxW,
+        maxLines: 1,
+        fontFamily: FONT,
+        fontWeight: weight,
+        maxFontSize: size,
+        minFontSize: Math.min(size, MIN_FONT),
+        step: 1,
+      })
     : null;
-  const fs = fit && fit.lines.length === 1 && fit.lines[0] === text ? fit.fontSize : size;
+  const fs =
+    fit && fit.lines.length === 1 && fit.lines[0] === text
+      ? fit.fontSize
+      : size;
   const base = {
     position: "absolute",
     top: y,
@@ -88,14 +107,13 @@ function T({
     whiteSpace: "nowrap",
     lineHeight: 1.2,
   };
-  const pos =
-    centered
-      ? {
-          left: CX - CENTER_MAX_W / 2,
-          width: CENTER_MAX_W,
-          textAlign: "center",
-        }
-      : { left: x, ...(w ? { width: w, textAlign: align } : {}) };
+  const pos = centered
+    ? {
+        left: CX - CENTER_MAX_W / 2,
+        width: CENTER_MAX_W,
+        textAlign: "center",
+      }
+    : { left: x, ...(w ? { width: w, textAlign: align } : {}) };
   return (
     <div style={{ ...base, ...pos, ...style }}>
       <span data-sk="">{children}</span>
@@ -491,119 +509,195 @@ function Halves({ b }) {
   );
 }
 
-const shortName = (s) => s.replace(/[\s　]+/g, " ").trim();
-
-/** final_six 3〜9.5秒: 優勝戦6艇の今節の展示順位（1位の回数・走数） */
-function SixTable({ b }) {
+/** final_gap 3〜6.5秒: 主役の名前・級・モーター・2連率と、全機の2連率の棒（主役だけ光らせる） */
+function HeroBars({ b }) {
   const f = useCurrentFrame();
-  const pitch = sixPitch(Math.max(...b.six.map((r) => r.runs.length)));
+  const h = b.hero;
+  const bars = rateBars(h.motor_2rate, GAP_BARS);
+  const grow = interpolate(f, [4, 28], [0, 1], {
+    ...clamp,
+    easing: (t) => 1 - (1 - t) ** 3,
+  });
   return (
     <>
-      <T align="center" y={250} size={44}>
-        予選の展示タイム順位（レースの中）
+      <T align="center" y={260} size={56}>
+        {heroLine(h)}
       </T>
-      {b.six.map((r, i) => {
-        const y = SIX.top + i * SIX.rowH;
-        const s = sixStats(r);
+      <T align="center" y={350} size={72} color={GOLD}>
+        {`2連率 ${h.motor_2rate.value.toFixed(2)}%`}
+      </T>
+      {bars.map((bar, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            left: bar.x,
+            top: GAP_BARS.base - bar.h * grow,
+            width: bar.w,
+            height: bar.h * grow,
+            background: bar.hit ? GOLD : DG,
+          }}
+        />
+      ))}
+      <T
+        x={GAP_BARS.x0}
+        y={GAP_BARS.base + 20}
+        size={36}
+        color={GR}
+        weight={400}
+      >
+        低い
+      </T>
+      <T
+        x={GAP_BARS.x1 - 200}
+        w={200}
+        align="right"
+        y={GAP_BARS.base + 20}
+        size={36}
+        color={GR}
+        weight={400}
+      >
+        高い
+      </T>
+      <T
+        align="center"
+        y={GAP_BARS.base + 90}
+        size={40}
+        color={GR}
+        weight={400}
+        style={{ opacity: fadeIn(f, 20) }}
+      >{`${b.venue}の全${h.motor_2rate.n}機の2連率`}</T>
+    </>
+  );
+}
+
+/** final_gap 6.5〜10.5秒: なのに 今節の展示タイムは（各走の順位とコース・N走中K回 1位） */
+function HeroRuns({ b }) {
+  const f = useCurrentFrame();
+  const runs = b.hero.runs;
+  const pitch = heroRunsPitch(runs.length);
+  const left = CX - (runs.length * pitch) / 2;
+  return (
+    <>
+      <T align="center" y={300} size={56}>
+        なのに 今節の展示タイムは
+      </T>
+      {runs.map((r, j) => {
+        const x = left + j * pitch;
+        const bg = r.rank === 1 ? GOLD : r.rank === 2 ? "#788ca0" : "#28415a";
         return (
-          <div key={i} style={{ opacity: fadeIn(f, 4 + i * 6) }}>
-            <T x={LEFT} y={y} size={44}>
-              {shortName(r.racer)}
-            </T>
+          <div key={j} style={{ opacity: fadeIn(f, 6 + j * 4, 4) }}>
+            <div
+              style={{
+                position: "absolute",
+                left: x + 6,
+                top: HERO_RUNS.y,
+                width: pitch - 12,
+                height: HERO_RUNS.chipH,
+                borderRadius: 14,
+                background: bg,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span
+                data-sk=""
+                style={{
+                  fontSize: heroChipFont(pitch),
+                  fontWeight: 900,
+                  color: r.rank <= 2 ? NAVY : WH,
+                }}
+              >
+                {r.rank}
+              </span>
+            </div>
             <T
-              x={LEFT}
-              y={y + 60}
+              x={x}
+              w={pitch}
+              align="center"
+              y={HERO_RUNS.y + HERO_RUNS.chipH + 20}
               size={36}
               color={GR}
               weight={400}
-            >{`${r.boat ? `${r.boat}号艇 ` : ""}1位 ${s.wins}回／${s.n}走`}</T>
-            {r.runs.map((x, j) => {
-              const cx = SIX.chipX + j * pitch;
-              const bg =
-                x.rank === 1 ? GOLD : x.rank === 2 ? "#788ca0" : "#28415a";
-              return (
-                <div
-                  key={j}
-                  data-sk=""
-                  style={{
-                    position: "absolute",
-                    left: cx,
-                    top: y + 8,
-                    width: sixChipW(pitch),
-                    height: 84,
-                    borderRadius: 12,
-                    background: bg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: fadeIn(f, 10 + i * 6 + j * 3, 4),
-                  }}
-                >
-                  <span
-                    data-sk=""
-                    style={{
-                      fontSize: Math.min(48, sixChipW(pitch) - 6),
-                      fontWeight: 900,
-                      color: x.rank <= 2 ? NAVY : WH,
-                    }}
-                  >
-                    {x.rank}
-                  </span>
-                </div>
-              );
-            })}
+            >{`${r.course}C`}</T>
           </div>
         );
       })}
       <T
         align="center"
-        y={SIX.top + 6 * SIX.rowH + 10}
-        size={36}
-        color={GR}
-        weight={400}
-      >
+        y={720}
+        size={96}
+        color={GOLD}
+        style={{ opacity: fadeIn(f, 6 + runs.length * 4) }}
+      >{`${runs.length}走中 ${winsOf(runs)}回 1位`}</T>
+      <T align="center" y={880} size={36} color={GR} weight={400}>
         数字＝6艇の中の展示タイムの順位
       </T>
     </>
   );
 }
 
-/** final_six 9.5〜12.5秒: 準優の展示順位 */
-function SemiTable({ b }) {
+/** final_gap 10.5〜15秒: 優勝戦の6人のモーター（名前・級・モーター・2連率と全機の中の順位・展示1位の回数／走数、主役を枠で囲む） */
+function SixMotors({ b }) {
   const f = useCurrentFrame();
+  const n = b.hero.motor_2rate.n;
+  const rows = [...b.six].sort((x, y) => x.motor_2rate - y.motor_2rate);
+  const S = SIX_TABLE;
   return (
     <>
-      <T align="center" y={300} size={60}>
-        準優の展示タイム順位
+      <T align="center" y={250} size={56}>
+        優勝戦の6人のモーター
       </T>
-      {b.six.map((r, i) => {
-        const y = 440 + i * 130;
+      {[
+        ["選手", S.name],
+        ["級", S.cls],
+        ["モーター", S.motor],
+        ["2連率", S.rate],
+        ["展示1位", S.wins],
+      ].map(([s, x]) => (
+        <T key={s} x={x} y={S.top - 70} size={36} color={GR} weight={400}>
+          {s}
+        </T>
+      ))}
+      {rows.map((r, i) => {
+        const y = S.top + i * S.rowH;
+        const hero = r.motor === b.hero.motor;
+        const col = hero ? GOLD : WH;
         return (
-          <div key={i} style={{ opacity: fadeIn(f, 4 + i * 4) }}>
-            <T x={120} y={y} size={56}>
+          <div key={r.motor} style={{ opacity: fadeIn(f, 4 + i * 5) }}>
+            {hero && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: 40,
+                  top: y - 14,
+                  width: SAFE.right - 10 - 40,
+                  height: S.rowH - 8,
+                  borderRadius: 16,
+                  border: `4px solid ${GOLD}`,
+                  boxSizing: "border-box",
+                }}
+              />
+            )}
+            <T x={S.name} w={S.nameW} y={y} size={44} color={col}>
               {shortName(r.racer)}
             </T>
-            {r.semi ? (
-              <>
-                <T
-                  x={620}
-                  y={y - 4}
-                  size={64}
-                  color={r.semi.rank === 1 ? GOLD : WH}
-                >{`${r.semi.rank}位`}</T>
-                <T
-                  x={790}
-                  y={y + 12}
-                  size={44}
-                  color={GR}
-                  weight={400}
-                >{`${r.semi.course}C`}</T>
-              </>
-            ) : (
-              <T x={620} y={y} size={56} color={GR} weight={400}>
-                ―
-              </T>
-            )}
+            <T x={S.cls} y={y + 6} size={36} color={col}>
+              {r.class}
+            </T>
+            <T x={S.motor} y={y - 2} size={48} color={col}>
+              {String(r.motor)}
+            </T>
+            <T x={S.rate} y={y - 2} size={48} color={col}>
+              {`${fmt2rate1(r.motor_2rate)}%`}
+            </T>
+            <T x={S.rate} y={y + 56} size={36} color={GR} weight={400}>
+              {`${n}機中 ${r.rank_in_all}位`}
+            </T>
+            <T x={S.wins} y={y - 2} size={48} color={col}>
+              {`${r.wins}/${r.runs_n}走`}
+            </T>
           </div>
         );
       })}
@@ -623,19 +717,80 @@ function ThreeCards({ b }) {
         const o = fadeIn(f, 6 + i * 14, 8);
         return (
           <div key={i} style={{ opacity: o }}>
-            <div style={{ position: "absolute", left: LEFT, top: y, width: RIGHT - LEFT, height: 220, borderRadius: 20, background: "#1a3a5c" }} />
-            <T x={90} y={y + 30} size={36} color={GR} weight={400}>{rankLabel(r)}</T>
-            {/* 名前は順位の札の後ろ（「同率20位」で札が長くなっても重ならない） */}
-            <T x={Math.max(200, 90 + Math.ceil(estWidth(rankLabel(r), 36)) + 24)} y={y + 20} size={52}>{shortName(r.racer)}</T>
-            <T x={560} w={310} align="right" y={y + 30} size={36} color={GR} weight={400}>{`得点率 ${fmtRate(r.rate)}`}</T>
-            <T x={90} y={y + 128} size={40} weight={400}>{`今日 ${r.race} ${r.boat}号艇`}</T>
-            <div style={{ position: "absolute", left: 560, top: y + 100, width: 310, height: 96, borderRadius: 18, background: GOLD, display: "flex", alignItems: "center", justifyContent: "center", opacity: fadeIn(f, 14 + i * 14, 6) }}>
-              <span data-sk="" style={{ fontSize: 64, fontWeight: 900, color: NAVY, whiteSpace: "nowrap" }}>{r.need}</span>
+            <div
+              style={{
+                position: "absolute",
+                left: LEFT,
+                top: y,
+                width: RIGHT - LEFT,
+                height: 220,
+                borderRadius: 20,
+                background: "#1a3a5c",
+              }}
+            />
+            <T x={90} y={y + 30} size={36} color={GR} weight={400}>
+              {rankLabel(r)}
+            </T>
+            {/* 名前と級（オーナー 11/1）。位置は model.js の borderNameLayout（検査と同じ値） */}
+            <T x={borderNameLayout(r).nameX} y={y + 20} size={52}>
+              {borderNameLayout(r).name}
+            </T>
+            <T x={borderNameLayout(r).classX} y={y + 32} size={36}>
+              {r.class}
+            </T>
+            <T
+              x={560}
+              w={310}
+              align="right"
+              y={y + 30}
+              size={36}
+              color={GR}
+              weight={400}
+            >{`得点率 ${fmtRate(r.rate)}`}</T>
+            <T
+              x={90}
+              y={y + 128}
+              size={40}
+              weight={400}
+            >{`今日 ${r.race} ${r.boat}号艇`}</T>
+            <div
+              style={{
+                position: "absolute",
+                left: 560,
+                top: y + 100,
+                width: 310,
+                height: 96,
+                borderRadius: 18,
+                background: GOLD,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: fadeIn(f, 14 + i * 14, 6),
+              }}
+            >
+              <span
+                data-sk=""
+                style={{
+                  fontSize: 64,
+                  fontWeight: 900,
+                  color: NAVY,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {r.need}
+              </span>
             </div>
           </div>
         );
       })}
-      <T x={90} y={350 + 3 * 250 + 10} size={36} color={GR} weight={400} style={{ opacity: fadeIn(f, 50) }}>{`※ 前夜の${b.border.cut}位が動かない場合`}</T>
+      <T
+        x={90}
+        y={350 + 3 * 250 + 10}
+        size={36}
+        color={GR}
+        weight={400}
+        style={{ opacity: fadeIn(f, 50) }}
+      >{`※ 前夜の${b.border.cut}位が動かない場合`}</T>
     </>
   );
 }
@@ -646,8 +801,9 @@ const CHAPTER_VIEWS = {
   rate: RateBars,
   chart: RankChart,
   halves: Halves,
-  six: SixTable,
-  semi: SemiTable,
+  hero: HeroBars,
+  heroRuns: HeroRuns,
+  six: SixMotors,
   three: ThreeCards,
   close: Close,
 };
@@ -667,19 +823,25 @@ function useBoundsGuard(ref) {
       const left = (r.left - rr.left) / scale;
       // throw だと Remotion が描画を続けることがあるので cancelRender で止める（2026-10-31 実測）
       if (right > SAFE.right + 0.5 || bottom > SAFE.bottom + 0.5 || left < -0.5)
-        cancelRender(new Error(
-          `文字が安全な範囲（x≤${SAFE.right}・y≤${SAFE.bottom}）を越えた（コマ ${frame}、x${Math.round(left)}〜${Math.round(right)}・下端 y${Math.round(bottom)}）: ${el.textContent}`,
-        ));
+        cancelRender(
+          new Error(
+            `文字が安全な範囲（x≤${SAFE.right}・y≤${SAFE.bottom}）を越えた（コマ ${frame}、x${Math.round(left)}〜${Math.round(right)}・下端 y${Math.round(bottom)}）: ${el.textContent}`,
+          ),
+        );
     }
   }, [frame, ref]);
 }
 
 export function SetsuKiryokuShort(props) {
-  const { bgm = null, ...b } = props;
+  const { bgm = null, ...raw } = props;
+  // final_gap の hq の束は texts を持たない（hook・close は値から作る。model.js normalizeBundle）
+  const b = normalizeBundle(raw);
   const why = checkBundle(b, { rules: rules.rules, matchRiskRules });
   if (why.length)
     cancelRender(
-      new Error(`節の機力の bundle が検査を通らない（作らない）:\n- ${why.join("\n- ")}`),
+      new Error(
+        `節の機力の bundle が検査を通らない（作らない）:\n- ${why.join("\n- ")}`,
+      ),
     );
   const ref = useRef(null);
   useBoundsGuard(ref);
@@ -687,21 +849,30 @@ export function SetsuKiryokuShort(props) {
   return (
     <AbsoluteFill style={{ background: BG, fontFamily: FONT, color: WH }}>
       {/* 箱の検査の基準（AbsoluteFill は ref を渡さない版がある） */}
-      <div ref={ref} style={{ position: "absolute", left: 0, top: 0, width: 1080, height: 1920 }}>
-      <Header b={b} />
-      {tl.chapters.map((c) => {
-        const View = CHAPTER_VIEWS[c.id];
-        return (
-          <Sequence
-            key={c.id}
-            from={c.from}
-            durationInFrames={c.len}
-            layout="none"
-          >
-            <View b={b} />
-          </Sequence>
-        );
-      })}
+      <div
+        ref={ref}
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          width: 1080,
+          height: 1920,
+        }}
+      >
+        <Header b={b} />
+        {tl.chapters.map((c) => {
+          const View = CHAPTER_VIEWS[c.id];
+          return (
+            <Sequence
+              key={c.id}
+              from={c.from}
+              durationInFrames={c.len}
+              layout="none"
+            >
+              <View b={b} />
+            </Sequence>
+          );
+        })}
       </div>
       {bgm && (
         <Audio
