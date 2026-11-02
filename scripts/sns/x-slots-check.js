@@ -20,6 +20,8 @@ export const HQ_KIND = {
   finals: "finals_image",
   research_rank: "research_image",
   today_thinking: "today_thinking",
+  // 節の機力（BOA-1209、194）。hq の config/x-slots.json の reserve に setsu_kiryoku（毎日1）を足す
+  setsu_kiryoku: "setsu_kiryoku",
 };
 const DOW = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7 };
 
