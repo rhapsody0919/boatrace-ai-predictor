@@ -388,11 +388,45 @@ t(
     );
     const h = clone(load("final_gap"));
     for (const r of h.six) delete r.avg_rank;
-    assert.deepEqual(
-      check(h),
-      [],
-      "avg_rank が無い束（依頼文 4節の形）も通る（選びは照合しない）",
+    // /code-review: 任意だと選びが照合されないまま通る。欠けたら止める
+    fails(
+      h,
+      /six\[0\].avg_rank（展示の平均順位）が1〜6の数でない/,
+      "avg_rank が無い",
     );
+  },
+);
+
+t(
+  "/code-review・P0 審査の再現（final_gap）: 位置の言い方・6人の数の取り違え・全部0の2連率・説明欄の集計の時刻",
+  () => {
+    const f = load("final_gap");
+    const a = clone(f);
+    // 3番目に下のモーターを主役にして「一番下」の hook のまま（数は 52 だけで数の検査は通る）
+    const all = [...a.hero.motor_2rate.all].sort((x, y) => x - y);
+    a.hero.motor_2rate.value = all[2];
+    a.hero.motor_2rate.rank_from_bottom = 3;
+    a.six[0].motor_2rate = all[2];
+    a.six[0].rank_in_all = 50;
+    fails(a, /hook に2連率の位置「下から3番目」が無い/, "位置の言い方");
+    fails(
+      a,
+      /hook の「一番下」が rank_from_bottom 3 と違う/,
+      "一番下の取り違え",
+    );
+    const b = clone(f);
+    b.texts.hook[1] = { text: "尼崎31機で 一番下", em: true };
+    fails(b, /画面の文の数「31」/, "6人の順位（31）を機の数に取り違え");
+    const c = clone(f);
+    c.hero.motor_2rate.all = c.hero.motor_2rate.all.map(() => 0);
+    c.hero.motor_2rate.value = 0;
+    fails(c, /hero.motor_2rate.all が全部0/, "全部0");
+    const d = clone(f);
+    d.youtube.description = d.youtube.description.replace(
+      "集計: 10/31 12Rまで\n",
+      "",
+    );
+    fails(d, /説明欄に集計の時刻「10\/31 12Rまで」が無い/, "集計の時刻");
   },
 );
 

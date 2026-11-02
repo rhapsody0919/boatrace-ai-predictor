@@ -10,9 +10,9 @@
  * final_gap（依頼文 4節）: 主役1人と優勝戦の6人。
  *   "when": "eve"|"today"（札「優勝戦の前夜」「今日の優勝戦」）
  *   "hero": { "racer", "class", "motor", "motor_2rate": { value, rank_from_bottom, n, all }, "runs": [{ race, course, rank }] }
- *   "six": [{ "racer", "class", "motor", "motor_2rate", "rank_in_all", "wins", "runs_n", "avg_rank"? }]（6人）
- *   rank_in_all は全機の中の上からの順位（1 + 自分より高い機の数）。avg_rank（今節の展示の平均順位）はこの型で足した任意の欄で、
- *   6人そろうと主役の選び（2連率の順位（低い順）＋展示の平均順位（良い順）の和が最小）を照合する
+ *   "six": [{ "racer", "class", "motor", "motor_2rate", "rank_in_all", "wins", "runs_n", "avg_rank" }]（6人）
+ *   rank_in_all は全機の中の上からの順位（1 + 自分より高い機の数）。avg_rank（今節の展示の平均順位）はこの型で足した欄（依頼文 4節に無い）で、
+ *   主役の選び（2連率の順位（低い順）＋展示の平均順位（良い順）の和が最小）を照合する
  * 選手を出す画面は名前と級（A1・A2・B1・B2）を必ず出す（オーナー 11/1）。final_gap は欠けたら止める。
  *
  * 4つ目の型 border（「準優に残れるか」、SG/G1 の予選最終日の朝だけ。hq drafts/shorts-border-person-20261031.md、10/31 オーナー決定）。
@@ -224,18 +224,22 @@ export const runsRowH = (n) => Math.min(140, Math.floor((1360 - RUNS_TOP) / n));
 
 /** 2連率の棒（x 90〜890、基準の線 y1250、最大の棒の高さ 620） */
 export const BARS = { x0: 90, x1: 890, base: 1250, maxH: 620 };
-export function barsLayout(b) {
-  const all = [...b.motor_2rate.all].sort((a, c) => a - c);
-  const n = all.length;
-  const pitch = (BARS.x1 - BARS.x0) / n;
-  const max = all[n - 1];
-  const idx = b.motor_2rate.rank_from_bottom - 1;
-  const bars = all.map((v, i) => ({
-    x: BARS.x0 + i * pitch,
+/** 全機の2連率の棒（低い順、rank_from_bottom の棒を hit）。geo は BARS か GAP_BARS。最大が0の束は検査（twoRateReasons）で止める */
+export function rateBars(m, geo) {
+  const all = [...m.all].sort((a, c) => a - c);
+  const pitch = (geo.x1 - geo.x0) / all.length;
+  const max = all[all.length - 1];
+  const idx = m.rank_from_bottom - 1;
+  return all.map((v, i) => ({
+    x: geo.x0 + i * pitch,
     w: Math.max(2, pitch * 0.72),
-    h: (v / max) * BARS.maxH,
+    h: (v / max) * geo.maxH,
     hit: i === idx,
   }));
+}
+export function barsLayout(b) {
+  const idx = b.motor_2rate.rank_from_bottom - 1;
+  const bars = rateBars(b.motor_2rate, BARS);
   const hit = bars[idx];
   const label = `${b.motor_2rate.value}%`;
   const sub = `下から${b.motor_2rate.rank_from_bottom}番目`;
@@ -278,20 +282,11 @@ export const CLASSES = ["A1", "A2", "B1", "B2"];
 
 /** final_gap 3〜6.5秒: 主役の1行と全機の2連率の棒（主役だけ光らせる） */
 export const heroLine = (h) =>
-  `${shortName(h.racer)} ${h.class}  モーター${h.motor}`;
+  `${shortName(h.racer)} ${h.class} モーター${h.motor}`;
 export const GAP_BARS = { x0: 90, x1: 890, base: 1180, maxH: 600 };
-export function gapBars(m) {
-  const all = [...m.all].sort((a, c) => a - c);
-  const pitch = (GAP_BARS.x1 - GAP_BARS.x0) / all.length;
-  const max = all[all.length - 1];
-  const idx = m.rank_from_bottom - 1;
-  return all.map((v, i) => ({
-    x: GAP_BARS.x0 + i * pitch,
-    w: Math.max(2, pitch * 0.72),
-    h: (v / max) * GAP_BARS.maxH,
-    hit: i === idx,
-  }));
-}
+/** 主役の2連率の位置の言い方（hook に出す。rank_from_bottom と食い違えば検査で止める） */
+export const posText = (m) =>
+  m.rank_from_bottom === 1 ? "一番下" : `下から${m.rank_from_bottom}番目`;
 
 /** final_gap 6.5〜10.5秒: 主役の各走の順位の札（中央 540、幅 720 の中に並べる） */
 export const HERO_RUNS = { y: 460, chipH: 120, maxPitch: 120 };
@@ -364,7 +359,7 @@ export function allowedNumbers(b) {
   const add = (v) => v != null && s.add(String(v));
   const runsOf = (runs) => {
     add(runs.length);
-    add(runs.filter((r) => r.rank === 1).length);
+    add(winsOf(runs));
     for (const r of runs) add(String(r.day).replace(/日$/, ""));
   };
   if (b.variant === "border") {
@@ -388,23 +383,15 @@ export function allowedNumbers(b) {
       add(h.runs.length);
       add(winsOf(h.runs));
     }
+    // hook・close は主役の話だけ（6人の値を足すと、取り違えた数が通る。/code-review）
     add(h.motor_2rate?.rank_from_bottom);
     add(h.motor_2rate?.n);
-    for (const r of b.six ?? []) {
-      add(r.motor);
-      add(r.rank_in_all);
-      add(r.wins);
-      add(r.runs_n);
-    }
     add((b.six ?? []).length);
-    for (const v of [
-      h.motor_2rate?.value,
-      ...(b.six ?? []).map((r) => r.motor_2rate),
-    ])
-      if (typeof v === "number")
-        [v, v.toFixed(2), fmt2rate1(v), Math.floor(v), Math.round(v)].forEach(
-          add,
-        );
+    const v = h.motor_2rate?.value;
+    if (typeof v === "number")
+      [v, v.toFixed(2), fmt2rate1(v), Math.floor(v), Math.round(v)].forEach(
+        add,
+      );
   } else {
     runsOf(b.runs ?? []);
     add(b.motor);
@@ -618,6 +605,10 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
 function twoRateReasons(m, where) {
   if (!m || !Array.isArray(m.all) || !m.all.length)
     return [`${where}.all が無い`];
+  if (!m.all.every((v) => typeof v === "number" && v >= 0 && v <= 100))
+    return [`${where}.all に 0〜100 の数でない値がある`];
+  if (Math.max(...m.all) <= 0)
+    return [`${where}.all が全部0（棒の高さが求まらない）`];
   const out = [];
   if (m.n !== m.all.length)
     out.push(`${where}.n（${m.n}）が all の数（${m.all.length}）と違う`);
@@ -682,11 +673,11 @@ function finalGapReasons(b) {
       why.push(`${w}.runs_n が走数でない: ${r.runs_n}`);
     else if (!isInt(r.wins, 0, r.runs_n))
       why.push(`${w}.wins（${r.wins}）が 0〜走数（${r.runs_n}）でない`);
-    if (
-      r.avg_rank !== undefined &&
-      !(typeof r.avg_rank === "number" && r.avg_rank >= 1 && r.avg_rank <= 6)
-    )
-      why.push(`${w}.avg_rank が1〜6の数でない: ${r.avg_rank}`);
+    // 主役の選びを照合するのに要る（依頼文 4節の形に足した欄。/code-review: 任意だと選びが照合されない）
+    if (!(typeof r.avg_rank === "number" && r.avg_rank >= 1 && r.avg_rank <= 6))
+      why.push(
+        `${w}.avg_rank（展示の平均順位）が1〜6の数でない: ${r.avg_rank}`,
+      );
   });
   const motors = b.six.map((r) => r.motor);
   if (new Set(motors).size !== 6)
@@ -708,16 +699,14 @@ function finalGapReasons(b) {
     why.push(
       `主役の展示1位（${winsOf(h.runs)}/${h.runs.length}走）と six の行（${row.wins}/${row.runs_n}走）が違う`,
     );
-  if (row.avg_rank !== undefined) {
-    const avg = mean(h.runs.map((r) => r.rank));
-    if (Math.abs(avg - row.avg_rank) > 0.005)
-      why.push(
-        `主役の展示の平均順位（${fmtAvg(avg)}）と six の avg_rank（${row.avg_rank}）が違う`,
-      );
-  }
+  const avg = mean(h.runs.map((r) => r.rank));
+  if (Math.abs(avg - row.avg_rank) > 0.005)
+    why.push(
+      `主役の展示の平均順位（${fmtAvg(avg)}）と six の avg_rank（${row.avg_rank}）が違う`,
+    );
 
-  // 主役の選び（6人の avg_rank がそろうときだけ照合できる）: 2連率の順位（低い順）＋展示の平均順位（良い順）の和が最小、同点は2連率の低い方
-  if (b.six.every((r) => typeof r.avg_rank === "number")) {
+  // 主役の選び: 2連率の順位（低い順）＋展示の平均順位（良い順、同点は1位の回数の多い方）の和が最小、同点は2連率の低い方（hq final_gap.py と同じ式）
+  {
     const lowerRate = (r) =>
       b.six.filter((x) => x.motor_2rate < r.motor_2rate).length;
     const better = (x, r) =>
@@ -741,5 +730,28 @@ function finalGapReasons(b) {
   const close = b.texts.close.map(lineText).join("").replace(/[ 　]/g, "");
   for (const w of ["信じるのは", "2連率？", "今節の足？", "コメントで教えて"])
     if (!close.includes(w)) why.push(`締めに「${w}」が無い`);
+
+  // hook の2連率の位置の言い方が rank_from_bottom と合うか（「一番下」と書いて3番目、を止める。/code-review）
+  const hook = b.texts.hook.map(lineText).join("").replace(/[ 　]/g, "");
+  const pos = posText(h.motor_2rate);
+  if (!hook.includes(pos))
+    why.push(
+      `hook に2連率の位置「${pos}」が無い（rank_from_bottom ${h.motor_2rate.rank_from_bottom}）`,
+    );
+  if (pos !== "一番下" && hook.includes("一番下"))
+    why.push(
+      `hook の「一番下」が rank_from_bottom ${h.motor_2rate.rank_from_bottom} と違う`,
+    );
+
+  // 説明欄の定型の先頭は集計の時刻（依頼文 4節「◯日◯Rまで」）。as_of「2026-10-31 12R まで」→「10/31 12Rまで」（P0 審査）
+  const m = /^\d{4}-(\d{2})-(\d{2}) (\d{1,2})R まで$/.exec(b.as_of);
+  if (!m) why.push(`as_of が「YYYY-MM-DD NR まで」の形でない: ${b.as_of}`);
+  else {
+    const at = `${Number(m[1])}/${Number(m[2])}${m[3]}Rまで`;
+    if (!b.youtube.description.replace(/[ 　]/g, "").includes(at))
+      why.push(
+        `説明欄に集計の時刻「${Number(m[1])}/${Number(m[2])} ${m[3]}Rまで」が無い`,
+      );
+  }
   return why;
 }

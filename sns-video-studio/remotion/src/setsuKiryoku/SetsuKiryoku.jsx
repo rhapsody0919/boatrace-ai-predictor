@@ -43,7 +43,7 @@ import {
   fmtAvg,
   estWidth,
   fmtRate,
-  gapBars,
+  rateBars,
   heroChipFont,
   heroLine,
   heroRunsPitch,
@@ -511,7 +511,7 @@ function Halves({ b }) {
 function HeroBars({ b }) {
   const f = useCurrentFrame();
   const h = b.hero;
-  const bars = gapBars(h.motor_2rate);
+  const bars = rateBars(h.motor_2rate, GAP_BARS);
   const grow = interpolate(f, [4, 28], [0, 1], {
     ...clamp,
     easing: (t) => 1 - (1 - t) ** 3,
