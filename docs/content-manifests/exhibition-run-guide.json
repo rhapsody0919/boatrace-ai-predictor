@@ -1,0 +1,66 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "exhibition-run-guide",
+ "kind": "revision",
+ "ticket": "OC-20261101T100219-seo-human-1",
+ "paths": [
+  "public/blog/exhibition-run-guide.md",
+  "src/data/blog-posts/exhibition-run-guide.json"
+ ],
+ "files": {
+  "public/blog/exhibition-run-guide.md": "aefd4191af8d808b7028547f7b88d16a4d759f3f7c6dce0cd27718cf9aad8201",
+  "src/data/blog-posts/exhibition-run-guide.json": "0a13495cbb96c8c2410b6d523cf2a4f02ab3f98e62c86f32b29dde1c876ccd58"
+ },
+ "content_sha256": "139c092c42d99aba6e65de44d9aa57f9bdf469416ed8c011616cc9d4770e1926",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "content-qa",
+   "p0": 0,
+   "p1": 0,
+   "result": "pass",
+   "reviewed_sha256": "139c092c42d99aba6e65de44d9aa57f9bdf469416ed8c011616cc9d4770e1926",
+   "model": "opus-5.5",
+   "at": "2026-11-02T22:32:10Z"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "wording-editor",
+   "p0": 0,
+   "p1": 0,
+   "result": "pass",
+   "reviewed_sha256": "139c092c42d99aba6e65de44d9aa57f9bdf469416ed8c011616cc9d4770e1926",
+   "model": "opus-5.5",
+   "at": "2026-11-02T22:32:10Z"
+  },
+  {
+   "role": "fan",
+   "agent": "boatrace-fan-reviewer",
+   "p0": 0,
+   "p1": 0,
+   "result": "pass",
+   "reviewed_sha256": "139c092c42d99aba6e65de44d9aa57f9bdf469416ed8c011616cc9d4770e1926",
+   "model": "opus-5.5",
+   "at": "2026-11-02T22:32:10Z"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "seo-marketer",
+   "p0": 0,
+   "p1": 0,
+   "result": "pass",
+   "reviewed_sha256": "139c092c42d99aba6e65de44d9aa57f9bdf469416ed8c011616cc9d4770e1926",
+   "model": "opus-5.5",
+   "at": "2026-11-02T22:32:10Z"
+  }
+ ],
+ "author": {
+  "model": "claude",
+  "lane": "hq-employee:seo-human"
+ },
+ "created_at": "2026-11-02T22:32:40Z",
+ "run": "20261101T100219-seo-human",
+ "engine": "claude",
+ "content_at": "2026-11-02T22:32:02Z"
+}
