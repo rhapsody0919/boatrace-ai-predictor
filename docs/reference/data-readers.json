@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1593,
-    "filesWithAccess": 260,
-    "tableReaders": 932,
+    "sourceFiles": 1596,
+    "filesWithAccess": 261,
+    "tableReaders": 933,
     "tableWriters": 187,
     "rpcCallers": 50,
     "nameMentions": 231,
@@ -12796,6 +12796,18 @@
       },
       "readers": [
         {
+          "ref": "api/_lib/botPage.js:273",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "end_date",
+            "grade",
+            "start_date",
+            "title",
+            "venue_code"
+          ]
+        },
+        {
           "ref": "api/_lib/botRace.js:247",
           "op": "rest",
           "via": "rest",
@@ -12907,6 +12919,7 @@
       "columns": {
         "venue_code": {
           "readers": [
+            "api/_lib/botPage.js:273",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:769",
             "src/services/racerService.js:112",
@@ -12922,6 +12935,7 @@
         },
         "start_date": {
           "readers": [
+            "api/_lib/botPage.js:273",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:769",
             "src/services/racerService.js:112",
@@ -12937,6 +12951,7 @@
         },
         "end_date": {
           "readers": [
+            "api/_lib/botPage.js:273",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:769",
             "src/services/racerService.js:112",
@@ -12957,6 +12972,7 @@
         },
         "title": {
           "readers": [
+            "api/_lib/botPage.js:273",
             "scripts/maintenance/verify-bot-race-function.js:769",
             "src/services/supabaseDataService.js:1429",
             "src/services/supabaseDataService.js:7290"
@@ -12971,6 +12987,7 @@
         },
         "grade": {
           "readers": [
+            "api/_lib/botPage.js:273",
             "scripts/maintenance/verify-bot-race-function.js:769",
             "src/services/supabaseDataService.js:1429",
             "src/services/supabaseDataService.js:7290"
@@ -16416,7 +16433,7 @@
           ]
         },
         {
-          "ref": "scripts/generate-sitemap.js:613",
+          "ref": "scripts/generate-sitemap.js:662",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17618,7 +17635,7 @@
             "scripts/daily/scrape-results.js:961",
             "scripts/daily/todays-volatility-digest.js:80",
             "scripts/generate-sitemap.js:379",
-            "scripts/generate-sitemap.js:613",
+            "scripts/generate-sitemap.js:662",
             "scripts/lib/analogyDispatch.js:75",
             "scripts/lib/analogyV16Exhibition.js:291",
             "scripts/lib/boatcast/oritenJob.js:401",
@@ -17712,7 +17729,7 @@
             "scripts/daily/update-moriarty-outcomes.js:58",
             "scripts/daily/update-outcome-frequencies.js:43",
             "scripts/generate-sitemap.js:379",
-            "scripts/generate-sitemap.js:613",
+            "scripts/generate-sitemap.js:662",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/raceSeriesLookup.js:174",
             "scripts/lib/raceStatusJob.js:109",
@@ -29563,7 +29580,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 71,
+      "reachableFiles": 80,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29675,7 +29692,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 62,
+      "reachableFiles": 71,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
