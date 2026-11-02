@@ -532,13 +532,37 @@ for (const [rel, re, label] of USES) {
 
 // BOA-1219: 今日のレースで対象を決め、初日は race_series を使う。
 {
-  const { seriesOfDate } = await import("../../src/utils/meetPageModel.js");
+  const { seriesOfDate, seriesCoveringDate, SERIES_POSTPONE_TOLERANCE_DAYS } =
+    await import("../../src/utils/meetPageModel.js");
   const row = { start_date: "2026-10-06", end_date: "2026-10-11", title: "節", grade: "G1" };
   check("順延3日", seriesOfDate([row], "2026-10-14"), row);
   check("順延4日", seriesOfDate([row], "2026-10-15"), null);
   check("未来の節・空", seriesOfDate([row], "2026-10-05"), null);
   const older = { ...row, start_date: "2026-09-01" };
   check("初日降順の先頭", seriesOfDate([older, row], "2026-10-11"), row);
+  check("画面とボットで順延許容日数を共有", SERIES_POSTPONE_TOLERANCE_DAYS, 3);
+  // getSeriesOfDate の lte・降順・limit(1) と、その後の共通判定に一致する。
+  const rows = [
+    row,
+    { ...row, start_date: "2026-10-20", end_date: "2026-10-25" },
+    older,
+  ];
+  const before = JSON.stringify(rows);
+  for (const date of [
+    "2026-08-31", "2026-10-06", "2026-10-11",
+    "2026-10-14", "2026-10-15", "2026-10-20",
+  ]) {
+    const latest = rows
+      .filter((r) => r.start_date <= date)
+      .sort((a, b) => b.start_date.localeCompare(a.start_date))[0];
+    check(
+      `${date}: getSeriesOfDate と同じ行を返す`,
+      seriesOfDate(rows, date) === seriesCoveringDate(latest, date),
+      true,
+    );
+  }
+  check("空の節一覧", seriesOfDate([], TODAY), null);
+  check("節一覧を並べ替えない", JSON.stringify(rows), before);
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const json = fresh();
     json.data.find((v) => v.place_cd === 1).races.forEach((r) => { r.raceGrade = "G1"; r.raceTitle = "公式の節"; });
