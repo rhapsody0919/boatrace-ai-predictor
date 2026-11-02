@@ -10,6 +10,8 @@
  *   - 失敗: 会場の取得失敗・「SG/G1の4日目以降なのに表が無い」・書き込みエラーは、実行の失敗（outcome:"error"）。
  *     表のある会場の行は書く（他会場の取得済みデータを捨てない）。失敗した対象日は処理済みにならず、補足の起動が再試行する
  *   - mode: shadow は取得・解析のみ（racer_series_points へ書かない）。off は何もしない
+ *   - 日ごとの写し: racer_series_points と同じ行を racer_series_points_daily（取得の対象日をキーに足す）にも、値が変わった行
+ *     だけ書く（BOA-1210）。表が無い（マイグレーション192の未適用）間は書かずに report.daily.tableMissing を立てる
  *   - 0件エラー: 期待会場数（SG/G1の4日目以降）が0でないのに、解析できた行が0件なら失敗（共通ラッパの判定）。
  *     表が無いのが仕様の日（一般戦・G3・SG/G1の序盤）は、期待0件で正常
  */
@@ -50,6 +52,8 @@ export async function runPointRankJob(
     venues: result.venues,
     venuesNotAttempted: result.venuesNotAttempted,
     failures: result.failures,
+    // 日ごとの写し（racer_series_points_daily、BOA-1210）。tableMissing はマイグレーション192の未適用
+    daily: result.daily ?? null,
   };
 
   if (result.failures.length > 0) {

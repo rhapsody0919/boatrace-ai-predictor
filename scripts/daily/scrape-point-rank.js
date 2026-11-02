@@ -40,10 +40,15 @@ import {
   isSupabaseEnabled,
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
-import { parsePointRankTable } from "../lib/pointRankParser.js";
+import {
+  parsePointRankTable,
+  parsePointRankAsOf,
+} from "../lib/pointRankParser.js";
 import { isGhaFetchStopped } from "../lib/ghaSkipGate.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
 import { upsertWithOptionalColumns } from "../lib/optionalColumns.js";
+import { upsertChangedRows } from "../lib/unchangedRows.js";
+import { isScrapeSchemaMissingError } from "../lib/scrapeJobs/schemaErrors.js";
 
 /**
  * マイグレーション159（早見の列、BOA-784）。未適用の DB では、この列を除いて他の列を書き続ける
@@ -65,16 +70,127 @@ const FETCH_HEADERS = {
 };
 
 /**
- * SG/G1（記念競走）は節の4日目以降に必ず得点率表が出る（実測: 徳山G1・桐生SG・
- * 多摩川G1の4日目以降にテーブルあり、徳山G1の1〜3日目は表なし。2026-09-19確認）。
- * 1〜3日目は節によって異なる（2026-09-20実測: 多摩川G1は3日目にも49名の表あり）ため、保守的に
- * 4日目以降のみ「表が無ければ異常」とする（表があれば、日目を問わず書く）。
+ * SG/G1（記念競走）で「表が無ければ異常」とするのは4日目以降だけ（表があれば、日目を問わず書く）。
+ * 2026-09-19〜20 の「1〜3日目は表なし」の実測は、節の前の日の hd と、過去の hd で最新の表が返ることの取り違えで、
+ * 根拠になっていない（2026-11-02 official-data-spec: 徳山G1 の節は 9/12〜17、若松G1 は1日目・2日目の晩に52名の表あり）。
+ * 1〜3日目に表が出ることは推測で未照合のため、異常の判定は4日目以降のまま（安全側）にする。
  * G2/G3/一般戦は表の有無が節ごとに異なるため対象外（2026-09-19の実測: G3の1・2日目と一般戦の1・4・5・6日目は表なし）。
  */
 const TABLE_EXPECTED_GRADES = ["SG", "G1"];
 const TABLE_EXPECTED_FROM_SERIES_DAY = 4;
 
 const FETCH_TIMEOUT_MS = 15000;
+
+/**
+ * 日ごとの写し（BOA-1210、マイグレーション192）。racer_series_points は節ごとに上書きされるので、
+ * 取得の対象日（snapshot_date）をキーに足して同じ値を残す。Shorts 型B は予選最終日の朝に前日の行を読む
+ */
+const DAILY_TABLE = "racer_series_points_daily";
+
+/**
+ * racer_series_points の行（会場ごとの結果）から、日ごとの写しの行を作る（純粋関数）。
+ * 呼び出し側が、表の注記の日目（asOf.seriesDay）が対象日の日目と同じ会場だけを渡す
+ * @param {string} snapshotDate 取得の対象日（YYYY-MM-DD）
+ * @param {Array<{seriesDay: number, asOf: {raceNumber: number}, rows: Array<Object>}>} venueResults 書く会場の結果
+ * @param {string} scrapedAt
+ */
+function buildDailyRows(snapshotDate, venueResults, scrapedAt) {
+  return venueResults.flatMap((v) =>
+    v.rows.map((row) => ({
+      snapshot_date: snapshotDate,
+      series_day: v.seriesDay,
+      venue_code: row.venue_code,
+      racer_id: row.racer_id,
+      meet_start_date: row.meet_start_date,
+      race_grade: row.race_grade,
+      player_name: row.player_name,
+      grade: row.grade,
+      rank: row.rank,
+      score_rate: row.score_rate,
+      placements: row.placements,
+      total_points: row.total_points,
+      penalty_points: row.penalty_points,
+      remarks: row.remarks,
+      next_race_1: row.next_race_1,
+      next_race_2: row.next_race_2,
+      next_series_day: row.next_series_day,
+      as_of_race: v.asOf.raceNumber,
+      scraped_at: scrapedAt,
+    })),
+  );
+}
+
+/**
+ * 日ごとの写しに書く会場を選ぶ（純粋関数）。
+ * pointrank は過去の日付で開いても節の最新の表を返し、予選の後は「４日目１２R終了時点」で止まる。
+ * 表の注記の日目が対象日の日目と違えば、その日の値ではないので書かない（5日目以降は予選の値のまま変わらない）。
+ * 注記を読めない表はページの書式の変更の疑いとして failure にする（その日の値か確かめられないものを書かない）
+ * @param {Array<{venueCode: number, seriesDay: number, asOf: {seriesDay: number}|null, rows: Array<Object>}>} venueResults
+ * @returns {{write: Array<Object>, skipped: Array<{venueCode: number, seriesDay: number, asOfSeriesDay: number}>, failures: string[]}}
+ */
+function selectDailyVenues(venueResults) {
+  const write = [];
+  const skipped = [];
+  const failures = [];
+  for (const v of venueResults) {
+    if (!v.asOf) {
+      failures.push(
+        `${VENUE_NAMES[v.venueCode]}(${v.seriesDay}日目): 得点率表の「N日目NR終了時点」を読めない（日ごとの写しを書かない。公式ページの書式変更の疑い）`,
+      );
+    } else if (v.asOf.seriesDay !== v.seriesDay) {
+      skipped.push({
+        venueCode: v.venueCode,
+        seriesDay: v.seriesDay,
+        asOfSeriesDay: v.asOf.seriesDay,
+      });
+    } else {
+      write.push(v);
+    }
+  }
+  return { write, skipped, failures };
+}
+
+/**
+ * 日ごとの写しを、値が変わった行と新しい行だけ書く。
+ * 表が無い（マイグレーション192の適用前）ときは、書かずに tableMissing を返す（racer_series_points は書き続ける）。
+ * それ以外の読み書きの失敗は error を返す（呼び出し元が実行の失敗にする）
+ * @returns {Promise<{written: number, unchanged: number, tableMissing: boolean, error: string|null}>}
+ */
+async function writeDailyRows(client, dailyRows) {
+  if (dailyRows.length === 0)
+    return { written: 0, unchanged: 0, tableMissing: false, error: null };
+  const { written, skipped, error } = await upsertChangedRows(
+    client,
+    DAILY_TABLE,
+    dailyRows,
+    {
+      onConflict: "snapshot_date,venue_code,racer_id",
+      keyColumns: ["snapshot_date", "venue_code", "racer_id"],
+      // scraped_at は毎回変わる。比較から外し、値が変わった行にだけ新しい時刻を載せる
+      ignoreColumns: ["scraped_at"],
+      chunkColumn: "snapshot_date",
+      // 1日の行は SG/G1 の会場数×約52行。上限の1000行ちょうどで返ったら、切れた疑いとして書かずに止める
+      fullPageRows: 1000,
+      failOnFetchError: true,
+      label: DAILY_TABLE,
+    },
+  );
+  // 包み直したメッセージには表の名前が必ず入るので、元のエラー（cause）で判定する（別の表の不在と取り違えない）
+  if (
+    error &&
+    isScrapeSchemaMissingError(error.cause ?? error, [DAILY_TABLE])
+  ) {
+    return { written: 0, unchanged: 0, tableMissing: true, error: null };
+  }
+  if (error)
+    return {
+      written: 0,
+      unchanged: 0,
+      tableMissing: false,
+      error: `${DAILY_TABLE} 書き込みエラー: ${error.message}`,
+    };
+  return { written, unchanged: skipped, tableMissing: false, error: null };
+}
 
 /** GitHub Actionsのschedule遅延の許容時間（実測約4時間+余裕） */
 const SCHEDULE_DELAY_TOLERANCE_HOURS = 6;
@@ -233,7 +349,9 @@ async function fetchPointRank(
       } else {
         const $ = cheerio.load(await res.text());
         const rows = parsePointRankTable($);
-        return rows === null ? { kind: "none" } : { kind: "table", rows };
+        return rows === null
+          ? { kind: "none" }
+          : { kind: "table", rows, asOf: parsePointRankAsOf($) };
       }
     } catch (err) {
       lastError = err.message;
@@ -363,6 +481,7 @@ export async function run(date, options = {}) {
       raceGrade,
       seriesDay,
       meetStartDate,
+      asOf: fetched.asOf ?? null,
       rows,
       nextRaceRows,
       nextRaceUnreadable,
@@ -456,7 +575,40 @@ export async function run(date, options = {}) {
   }
 
   console.log(`💾 racer_series_points: ${rows.length}件`);
-  return { updated: true, count: rows.length, ...summary };
+
+  const dailyVenues = selectDailyVenues(
+    results.filter((r) => !r.notAttempted && r.rows.length > 0),
+  );
+  failures.push(...dailyVenues.failures);
+  for (const v of dailyVenues.skipped)
+    console.log(
+      `  ➖ ${VENUE_NAMES[v.venueCode]}: 表は${v.asOfSeriesDay}日目の時点（対象日は${v.seriesDay}日目）。日ごとの写しに書かない`,
+    );
+  const daily = await writeDailyRows(
+    client,
+    buildDailyRows(targetDate, dailyVenues.write, scrapedAt),
+  );
+  if (daily.error) failures.push(daily.error);
+  else if (daily.tableMissing)
+    console.warn(
+      `⚠️ ${DAILY_TABLE} が無い（マイグレーション192の未適用）。日ごとの写しを書かずに続ける`,
+    );
+  else
+    console.log(
+      `💾 ${DAILY_TABLE}: 書き込み${daily.written}件・変更なし${daily.unchanged}件`,
+    );
+  return {
+    updated: true,
+    count: rows.length,
+    ...summary,
+    daily: {
+      written: daily.written,
+      unchanged: daily.unchanged,
+      tableMissing: daily.tableMissing,
+      venues: dailyVenues.write.map((v) => v.venueCode),
+      skippedVenues: dailyVenues.skipped,
+    },
+  };
 }
 
 async function main() {
@@ -482,6 +634,9 @@ async function main() {
 }
 
 export const _internal = {
+  buildDailyRows,
+  selectDailyVenues,
+  writeDailyRows,
   resolveTargetDate,
   isTableExpected,
   judgeVenue,

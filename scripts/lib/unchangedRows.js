@@ -158,6 +158,10 @@ export const NUMERIC_SCALES = {
     trifecta_odds_upset_focus: 1,
     trio_odds_upset_focus: 1,
   },
+  // 得点率の日ごとの写し（BOA-1210、docs/db-migration/192_racer_series_points_daily.sql）。NUMERIC(4,2)
+  racer_series_points_daily: {
+    score_rate: 2,
+  },
 };
 
 /**
@@ -401,10 +405,11 @@ export async function fetchExistingRows(
   );
   const failed = results.find((result) => result.error);
   if (failed) {
-    return {
-      rows: [],
-      error: new Error(`${table}既存行取得エラー: ${failed.error.message}`),
-    };
+    // code を残す（呼び出し側が「表が無い」等をコードで判定できるように）
+    const error = new Error(`${table}既存行取得エラー: ${failed.error.message}`);
+    error.code = failed.error.code;
+    error.cause = failed.error;
+    return { rows: [], error };
   }
   // fullPageRows（PostgREST の上限の 1000 等）ちょうどで返ったチャンクは、黙って切れた可能性がある
   if (

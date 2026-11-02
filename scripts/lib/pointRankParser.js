@@ -7,9 +7,9 @@
  * 表示される（ADR-0053追記参照）。対象グレードを事前に決め打ちせず、
  * テーブルの有無で判定する。
  *
- * SG・G1でも節の序盤（実測: 徳山G1 1〜3日目）はテーブルが無く、ヘッダーとフッターのみの
- * ページ（<title>が「得点率一覧」でない）が返る。4日目以降はテーブルが出て、5日目以降の
- * 日付でも「４日目１２R終了時点」の内容が表示され続ける（2026-09-19確認）。
+ * 節の前の日の hd ではテーブルが無く、ヘッダーとフッターのみのページ（<title>が「得点率一覧」でない）が返る。
+ * 過去の日付の hd で開いても、その日の時点ではなく節の最新の表が返り、予選の後は「４日目１２R終了時点」で
+ * 止まる（2026-11-02 尼崎SG で確認。2026-09-19 の「徳山G1 1〜3日目は表なし」は節の前の日の hd だった）。
  *
  * 減点の正確な発生条件・得点率が「-」になる条件は一次情報に明記が無く
  * 完全解明できていない。公式が計算済みの値をそのまま保存する方針のため、
@@ -73,7 +73,9 @@ export function parsePointRankTable($) {
       // 空欄でないのに番号を読めないセルがあるか。書式が想定と違うことを取得の報告で知らせる
       nextRaceUnreadable: [tds[8], tds[9]].some(
         (td) =>
-          $(td).text().replace(/[\s\u00A0]/gu, "") !== "" &&
+          $(td)
+            .text()
+            .replace(/[\s\u00A0]/gu, "") !== "" &&
           parseHayamiRaceNumber($, td) === null,
       ),
     });
@@ -104,6 +106,26 @@ export function parseHayamiSeriesDay(text) {
 }
 
 /**
+ * ページの注記「４日目１２R終了時点」から、表がどの時点の値か（節の日目・レース番号）を読む（BOA-1210）。
+ * 過去の日付（hd）で開いても、その日の時点ではなく節の最新の表が返るため（2026-11-02、尼崎SG hd=20261027・
+ * 20261029 がどちらも「４日目１２R終了時点」）、日ごとの写しはこの値で「その日の値か」を確かめてから書く。
+ *
+ * @param {import('cheerio').CheerioAPI} $
+ * @returns {{seriesDay: number, raceNumber: number}|null} 注記が無い・読めないときは null
+ */
+export function parsePointRankAsOf($) {
+  const m = toHalfWidthDigits($("body").text()).match(
+    /(\d{1,2})\s*日目\s*(\d{1,2})\s*[RＲ]\s*終了時点/u,
+  );
+  if (!m) return null;
+  const seriesDay = Number(m[1]);
+  const raceNumber = Number(m[2]);
+  if (seriesDay < 1 || seriesDay > 9 || raceNumber < 1 || raceNumber > 12)
+    return null;
+  return { seriesDay, raceNumber };
+}
+
+/**
  * 「早見」の1セルからレース番号を読む（BOA-784）。
  *
  * 値の入ったページは予選中の夜にしか出ず、過去日のページは確定後の表（早見は空欄）に置き換わるため、
@@ -121,7 +143,9 @@ export function parseHayamiRaceNumber($, td) {
     .replace(/\s/gu, "")
     .replace(/\uFF32/gu, "R");
   const fromText = text.match(/^(\d{1,2})R?$/iu);
-  const fromLink = (cell.find("a").attr("href") ?? "").match(/[?&]rno=(\d{1,2})/u);
+  const fromLink = (cell.find("a").attr("href") ?? "").match(
+    /[?&]rno=(\d{1,2})/u,
+  );
   const raw = fromText?.[1] ?? fromLink?.[1];
   if (!raw) return null;
   const n = Number(raw);
