@@ -32,6 +32,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
 
 const TARGETS = {
+  semifinalCount: "src/pure/semifinalCount.js",
   finishPosition: "src/pure/finishPosition.js",
   basicInfoStats: "src/components/race/basicInfoStats.js",
   raceStatus: "src/utils/raceStatus.js",
@@ -2289,7 +2290,66 @@ function suiteInCautionLevel(m, check) {
   );
 }
 
+// BOA-1155: 準優出は欠場を含む掲載回数。当社集計の開始日は呼び出し側が渡す。
+function suiteSemifinalCount(m, check) {
+  const row = (race_id, race_stage = "準優勝戦", rest = {}) => ({
+    race_id,
+    race_date: "2025-12-01",
+    race_stage,
+    racer_id: 4320,
+    is_absent: false,
+    ...rest,
+  });
+  const count = (rows, ids = []) =>
+    [...m.countSemifinalsByRacer(rows, "2025-12-01", ids)];
+  check(
+    "準優出: 開始日を含み、前日を除く",
+    count([
+      row("before", "準優勝戦", { race_date: "2025-11-30" }),
+      row("boundary"),
+      row("after", "準優勝戦", { race_date: "2025-12-02" }),
+    ]),
+    [[4320, 2]],
+  );
+  check(
+    "準優出: 種別は getRaceStageKey に従う（表記ゆれも含む）",
+    [
+      "準優勝戦", "準優進出戦", "準々優勝戦", "優勝戦", "予選", null,
+      "Ｗ準優戦前半", "準決勝戦", "セミファイナル",
+    ].map((stage) => count([row("stage", stage)], [4320])[0][1]),
+    [1, 0, 0, 0, 0, 0, 1, 1, 1],
+  );
+  check(
+    "準優出: 欠場だけの走も含め、選手×レースで重複排除",
+    count([
+      row("absent", "準優勝戦", { is_absent: true }),
+      row("mixed", "準優勝戦", { is_absent: true }),
+      row("mixed"),
+      row("mixed"),
+      row("mixed", "準優勝戦", { racer_id: 4444 }),
+    ]),
+    [[4320, 2], [4444, 1]],
+  );
+  check(
+    "準優出: 行の無い選手は引数の一覧で0を返す",
+    count([], [4320, 4444, 4444]),
+    [[4320, 0], [4444, 0]],
+  );
+  check("準優出: 空入力・一覧なし", count([]), []);
+  check(
+    "準優出: 開始日は固定値でなく引数を使う",
+    [...m.countSemifinalsByRacer([row("earlier")], "2025-12-02")],
+    [],
+  );
+  const rows = Object.freeze([Object.freeze(row("frozen"))]);
+  const ids = Object.freeze([4444]);
+  const before = show([rows, ids]);
+  count(rows, ids);
+  check("準優出: 配列・各行・選手一覧を変更しない", show([rows, ids]), before);
+}
+
 const SUITES = {
+  semifinalCount: suiteSemifinalCount,
   nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
   finishPosition: suiteFinishPosition,
@@ -2314,6 +2374,24 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "semifinalCount",
+    "開始日ちょうどを除外する",
+    "row.race_date < startDate",
+    "row.race_date <= startDate",
+  ],
+  [
+    "semifinalCount",
+    "欠場の準優出を除外する",
+    "!row.race_id ||",
+    "row.is_absent === true || !row.race_id ||",
+  ],
+  [
+    "semifinalCount",
+    "同じレースの重複を加算する",
+    "counts.set(row.racer_id, races.size);",
+    "counts.set(row.racer_id, (counts.get(row.racer_id) ?? 0) + 1);",
+  ],
   [
     "inCautionAccuracy",
     "件数の少ない段にも割合を出す（公開直後に 1件で 100% が出る）",
