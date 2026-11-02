@@ -2158,6 +2158,14 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     const r2 = f01Timeline({ chapters: [{ id: "c4", name: "相手", subs: lines }] }, voice2, shots2);
     assert.ok(r2.props.total > 0 && !r2.props.audio.some((x) => x.file === "c3-0.wav"), "省いた章の声は置かない");
   }
+  // 照合は桁区切りを比べない（画面「1,553件」・台本「1553件」で 11/01 14-10 が止まった）
+  {
+    const s4 = { chapters: [{ id: "c3", voice: "", subs: [], expect: ["横一線"], expect2: ["1553件"] }] };
+    assert.deepEqual(f01Check(s4, { desc: VOICE.credit, kana: {}, shots: { c3: { text: "横一線" }, c32: { text: "1 1,553件 2 512件" } } }), []);
+    const s5 = { chapters: [{ id: "c3", voice: "", subs: [], expect2: ["1,553件"] }] };
+    assert.deepEqual(f01Check(s5, { desc: VOICE.credit, kana: {}, shots: { c32: { text: "1553件" } } }), []);
+    assert.ok(f01Check(s5, { desc: VOICE.credit, kana: {}, shots: { c32: { text: "1,552件" } } }).length === 1, "違う数は落とす");
+  }
   // 選手名を声で読まない
   assert.ok(f01Check({ chapters: [{ id: "c1", voice: "西村は", subs: [] }] }, { desc: VOICE.credit, kana: {}, shots: {}, names: ["西村"] }).some((w) => w.includes("選手名")));
 
