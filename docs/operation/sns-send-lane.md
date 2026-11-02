@@ -8,12 +8,14 @@ SNS 配信の基盤レーン（範囲: sns-hub・`scripts/sns/push-*.js`・送�
 |---|---|---|---|
 | /today の X（毎朝 8:00） | `scripts/lib/snsTodayPlanner.js`（cron `sns_auto_plan`、7:30 に下書き） | `scripts/lib/snsSendRunner.js`（cron `sns_send`、2分ごと） | 自動の承認者（`approve_sns_x_send`） |
 | 全貌（X・YouTube 完全版・Shorts） | hq の作り手 → `scripts/sns/push-full-picture.js` | 同上 | 同上 |
+| YouTube Shorts「節の機力」（1日1本、単独の Shorts） | hq の作り手（bundle.json＋mp4、型は `sns-video-studio/remotion/src/setsuKiryoku/`）→ `scripts/sns/push-setsu-kiryoku-short.js` | 同上 | 同上。旗 `sns_auto_send_control.setsu_kiryoku_short_enabled`（youtube の行、既定 false、193）が true のときだけ |
 | 計測 | `sns_metrics`（投稿ごとの窓）・`sns_daily`（JST 10:00、`scripts/lib/snsDailyRunner.js`） | — | — |
 
 - /today の本文: 見出し（`config/today-variants.json` の案 a・b を日の偶奇で）→ 空行 → 「今日の一覧はこちら：{UTM 付き URL}」→ 注目レース・区分・一覧 → 末尾は注意書き（#1769）。重み付けの長さは 600 台で、長文（`thread_length=1`、25,000 まで）として送る。10/19 以降、この長さで毎日送れている
 - /today の画像: 龍神ソナーの図（`.af-hep .af-dark`）を最大4枚。`api/_lib/snsHeadless.js` の `captureElement` で、撮った後に位置を測り直し、上下の色が `--ryujin-navy-600` かを確かめる。合わなければ `screenshot_misframed`、CSS の変数が無ければ `screenshot_edge_color_missing`（#1802、BOA-1013）
 - 全貌: bundle の版2（`bundle_version: 2`）で YouTube の Shorts を足す。Shorts は `parent_job_id` で完全版の公開を待ち、説明文の `{full_url}` を送る時に完全版の URL に置き換える（#1714、ADR-0094 の追記、マイグレーション 172 の `sns_auto_send_items.variant`）。契約の表は `docs/design/full-picture-remotion/handoff.md`「送信の道への受け渡し」
 - 全貌の束の `channels`（例 `["youtube","shorts"]`）で X を外せる。外すと `x_text`・`full-x.mp4` を受けず、X の下書き・item・job と日の枠の確認（`sns_x_slot_room`）を作らない。完全版・Shorts の送る時刻は X があるときと同じ（BOA-1167）
+- 節の機力の Shorts（BOA-1209、マイグレーション 193）: 題・説明欄は bundle の値のまま。push で型の検査（`checkBundle`）をもう一度通し、説明欄のリンクはその会場のページ（`/venue/{会場コード}`）ちょうど1つ。送る直前の表示の確認は画面の印 `venue`（`scripts/lib/snsScreenMarkers.js`）。1日1本（`sns_auto_send_items_setsu_day`）、final_gap は前夜と当日で同じ優勝戦を出さない。YouTube の日の上限（`daily_limit_youtube`）とクォータ（1 upload・104 units）は push でも数え、claim で DB が予約する
 - 全貌の URL の UTM: `utm_campaign=race-full`・`utm_content=<race_id>`（YouTube は `utm_term=full|shorts`）。作り手が付ける（#1767）
 
 ## 本番の設定（2026-10-20〜21 にオーナーが適用）
@@ -21,7 +23,7 @@ SNS 配信の基盤レーン（範囲: sns-hub・`scripts/sns/push-*.js`・送�
 | 表 | 値 |
 |---|---|
 | `sns_auto_send_control` | x・youtube とも `mode=auto`・`dry_run=false` |
-| `sns_x_send_control` | `daily_limit_x=3`・`daily_limit_youtube=3`（全貌 1レース/日 × 2件＋予備1）・`paused=false` |
+| `sns_x_send_control` | `daily_limit_x=11`・`daily_limit_youtube=9`・`paused=false`・`expiry_minutes=30`・`max_source_age_seconds=14400`（2026-11-02 に読み取りで確認。10/20 の適用時は X・YouTube とも 3） |
 | `sns_youtube_quota_control` | `verified=true`・`upload_limit=100`（videos.insert の別枠の既定）・`general_limit=10000`（Queries per day）。基準日は `sns_auto_plan` が live のときだけ `roll_sns_send_baselines` で進む |
 | `scrape_job_state` | `sns_auto_plan`・`sns_send`・`sns_metrics`・`sns_daily` とも live |
 | Linear の起票の関所 | 230件以上で止める（`scripts/lib/linearIssueGate.js`、AGENTS.md、#1708） |

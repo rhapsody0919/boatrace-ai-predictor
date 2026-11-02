@@ -106,8 +106,12 @@ const URL_SONAR =
   "https://www.boat-ai.jp/race/2026-10-16-11-12?tab=sonar&utm_source=x&utm_medium=social&utm_campaign=race-full&utm_content=d1";
 
 test("印の表: race-sonar・today は2つずつの data-testid、許すタブは sonar だけ", () => {
-  assert.deepEqual(Object.keys(SCREEN_MARKERS), ["race-sonar", "today"]);
-  for (const key of ["race-sonar", "today"])
+  assert.deepEqual(Object.keys(SCREEN_MARKERS), [
+    "race-sonar",
+    "today",
+    "venue",
+  ]);
+  for (const key of ["race-sonar", "today", "venue"])
     assert.ok(
       SCREEN_MARKERS[key].length === 2 &&
         SCREEN_MARKERS[key].every((s) => /^\[data-testid="[a-z-]+"\]$/.test(s)),
