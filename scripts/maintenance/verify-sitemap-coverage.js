@@ -354,12 +354,82 @@ async function verifyMeetPages(source) {
   );
 }
 
+// BOA-1232: 読取失敗を「データなし」にせず、3種類とも生成を止める。
+async function verifyReadFailures(source) {
+  const failures = [];
+  for (const [name, label] of [
+    ["getRacePages", "レースページ"],
+    ["getRacerPages", "選手ページ"],
+    ["getLatestRaceDates", "開催日"],
+  ]) {
+    const match = source.match(
+      new RegExp(`async function ${name}\\(\\) \\{[\\s\\S]*?\\n\\}`),
+    );
+    assert.ok(match, `${name} が無い`);
+    const run = (enabled, error) => {
+      const query = {
+        select: () => query,
+        gte: () => query,
+        eq: () => query,
+        lte: () => query,
+        order: () => query,
+        limit: () => query,
+        then: (resolve, reject) =>
+          Promise.resolve({ data: error ? null : [], error }).then(resolve, reject),
+      };
+      const client = {
+        isSupabaseEnabled: () => enabled,
+        supabase: {
+          from: () => {
+            assert.ok(enabled, "未設定時に読み取らない");
+            return query;
+          },
+        },
+        fetchAll: async () => [],
+      };
+      const code = match[0].replace(
+        /await import\("\.\/lib\/supabaseClient\.js"\)/g,
+        "client",
+      );
+      return vm.runInNewContext(
+        `(async () => { ${code}; return ${name}(); })()`,
+        {
+          client,
+          console: { log() {}, warn() {}, error() {} },
+          getDaysAgoJST,
+          RACER_INDEX_ACTIVE_DAYS: 30,
+          laterDate: (a, b) => (!a || b > a ? b : a),
+        },
+      );
+    };
+    for (const enabled of [false, true]) {
+      const empty = await run(enabled, null);
+      if (name === "getLatestRaceDates") {
+        assert.equal(empty.overall, null);
+        assert.equal(empty.byVenue.size, enabled ? 24 : 0);
+      } else assert.equal(empty.length, 0);
+    }
+    try {
+      await assert.rejects(run(true, { message: "timeout" }), (error) => {
+        assert.ok(error.message.includes(label), error.message);
+        assert.ok(error.message.includes("timeout"), error.message);
+        return true;
+      });
+    } catch (error) {
+      failures.push(`${name}: ${error.message}`);
+    }
+  }
+  assert.equal(failures.length, 0, failures.join("\n"));
+  console.log("✅ レースページ・選手ページ・開催日の読取失敗と未設定時の空応答を確認");
+}
+
 async function main() {
   const [appRouterSource, sitemapSource] = await Promise.all([
     fs.readFile(APP_ROUTER_PATH, "utf-8"),
     fs.readFile(SITEMAP_SCRIPT_PATH, "utf-8"),
   ]);
 
+  await verifyReadFailures(sitemapSource);
   await verifyRaceDetails(sitemapSource);
   await verifyMeetPages(sitemapSource);
 
