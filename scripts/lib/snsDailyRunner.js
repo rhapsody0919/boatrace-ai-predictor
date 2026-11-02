@@ -16,6 +16,7 @@
  * - GA4 の鍵が未設定の間は GA4 を飛ばし、report.alerts で知らせる
  * - shadow は取得と比較までで、書かない
  */
+import twitterText from "twitter-text";
 import {
   X_SOURCES,
   YOUTUBE_SOURCES,
@@ -32,13 +33,14 @@ export const SNS_DAILY_LOOKBACK_DAYS = 3;
 export const UTM_CAMPAIGNS = ["race-full", "today_digest"];
 /** YouTube Shorts「節の機力」の下書きの format（scripts/sns/push-setsu-kiryoku-short.js、#2112。そちらを import しない） */
 export const SETSU_SHORT_FORMAT = "setsu_kiryoku_short";
-/** 説明欄のリンクの utm_* と、GA4 のセッションの次元の対応（リンクにある値だけを照合する） */
+/** 説明欄のリンクの utm_* と GA4 のセッションの次元。required は無ければ結びつけない（同じ会場のページへの別の投稿の流入を拾わないため） */
 const SETSU_UTM_DIMS = [
-  ["utm_source", "sessionSource"],
-  ["utm_medium", "sessionMedium"],
-  ["utm_campaign", "sessionCampaignName"],
-  ["utm_content", "sessionManualAdContent"],
+  { param: "utm_source", dim: "sessionSource", required: true },
+  { param: "utm_medium", dim: "sessionMedium", required: true },
+  { param: "utm_campaign", dim: "sessionCampaignName", required: false },
+  { param: "utm_content", dim: "sessionManualAdContent", required: true },
 ];
+const VENUE_PATH = /^\/venue\/(\d{1,2})\/?$/i;
 const CHANNEL_METRICS = ["views", "engagedViews", "subscribersGained"];
 // averageViewDuration（秒）は 2026-10-24 に追加（BOA-1006 (b)、hq の Shorts の改善の周の主な指標）。
 // Shorts の「スワイプされた割合」は公開の API の指標に無い（YouTube Analytics の metrics の一覧、2026-10-24 確認）。
@@ -106,7 +108,7 @@ const def = {
   ga4FullPicture: (m, source, term) =>
     `GA4 ${m}・utm_source=${source}・utm_medium=social・utm_campaign=race-full・utm_content=race_id・utm_term=${term || "(なし)"}・JST の暦日・投稿日と翌日だけ・Cookie 同意者のみ・v1`,
   ga4SetsuShort: (m) =>
-    `GA4 ${m}・節の機力の Shorts（format=${SETSU_SHORT_FORMAT}）・説明欄のリンクにある utm_* と landingPage（会場のページ）が一致・JST の暦日・投稿日と翌日だけ・Cookie 同意者のみ・v1`,
+    `GA4 ${m}・節の機力の Shorts（format=${SETSU_SHORT_FORMAT}）・説明欄のリンクの utm_source・utm_medium・utm_content（と、あれば utm_campaign）と landingPage の会場が一致・JST の暦日・投稿日と翌日だけ・Cookie 同意者のみ・v1`,
   ga4Utm: (m, campaign) =>
     `GA4 ${m}・utm_source=x・utm_medium=social・utm_campaign=${campaign}・JST の暦日・Cookie 同意者のみ・v1`,
 };
@@ -203,6 +205,12 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
       const runReport = await ga4();
       expected += jstDays.length * 2 * 3;
       await collectGa4({ runReport, store, jstDays, push });
+      // 節の機力の Shorts の失敗は、ほかの GA4 の行と分けて知らせる（ほかの行は書く。補足の起動がやり直す）
+      try {
+        await collectSetsuShort({ runReport, store, jstDays, push });
+      } catch (error) {
+        errors.push(`GA4（節の機力の Shorts）: ${error.message}`);
+      }
     } catch (error) {
       errors.push(`GA4: ${error.message}`);
     }
@@ -546,8 +554,8 @@ async function collectGa4({ runReport, store, jstDays, push }) {
       dimensionFilter: and(utmFilter, assistPageFilter),
     }),
   ]);
-  const contents = [...utmVisits, ...utmSonar, ...utmAssist].map(
-    ([, , , content]) => String(content),
+  const contents = [...utmVisits, ...utmSonar, ...utmAssist].map(([, , , content]) =>
+    String(content),
   );
   const candidates = [
     ...new Set(
@@ -644,59 +652,62 @@ async function collectGa4({ runReport, store, jstDays, push }) {
   for (const [date, source, campaign, content, term, users] of utmSonar)
     utmRow(date, source, campaign, String(content), term, "sonar_users", users);
   for (const [date, source, campaign, content, term, users] of utmAssist)
-    utmRow(
-      date,
-      source,
-      campaign,
-      String(content),
-      term,
-      "assist_users",
-      users,
-    );
-
-  await collectSetsuShort({ runReport, store, jstDays, push });
-}
-
-/** 説明欄の会場のページのリンクから、照合に使う path と utm_* を出す。リンクが無い・utm_source が無ければ null */
-export function setsuShortLink(caption) {
-  const hit = new RegExp(
-    `https://${SITE_HOST.replaceAll(".", "\\.")}/venue/\\d{1,2}(?:[?#][!-~]*)?(?![\\d!-~])`,
-  ).exec(caption ?? "");
-  if (!hit) return null;
-  let u;
-  try {
-    u = new URL(hit[0]);
-  } catch {
-    return null;
-  }
-  const utm = Object.fromEntries(
-    SETSU_UTM_DIMS.filter(([param]) => u.searchParams.get(param)).map(
-      ([param, dim]) => [dim, u.searchParams.get(param).toLowerCase()],
-    ),
-  );
-  return utm.sessionSource ? { path: u.pathname, utm } : null;
+    utmRow(date, source, campaign, String(content), term, "assist_users", users);
 }
 
 /**
- * 節の機力の Shorts の流入（users・sessions）。取り直しの範囲に投稿日か翌日が入る投稿済みの下書きだけ。
- * GA4 の行は、landingPage と説明欄のリンクにある utm_* が一致する下書きのうち、投稿日（JST）が同じ日のもの、無ければ前の日のものに付ける
- * （1日1本なので同じ日に2本は無い。同じ会場・同じ utm が続く日は、翌日の分より当日の投稿を先にする）
+ * 説明欄の会場のページのリンク（push-setsu-kiryoku-short.js の descriptionLink と同じ twitter-text の取り出し）から、
+ * 会場の番号と utm_*（小文字）を出す。会場のページのリンクが無い・必須の utm_* が欠けていれば null
+ */
+export function setsuShortLink(caption) {
+  for (const raw of twitterText.extractUrls(caption ?? "")) {
+    let u;
+    try {
+      u = new URL(raw);
+    } catch {
+      continue;
+    }
+    const m = VENUE_PATH.exec(u.pathname);
+    if (u.hostname !== SITE_HOST || !m) continue;
+    const utm = {};
+    for (const { param, dim, required } of SETSU_UTM_DIMS) {
+      const v = u.searchParams.get(param);
+      if (v) utm[dim] = v.toLowerCase();
+      else if (required) return null;
+    }
+    return { venue: Number(m[1]), utm };
+  }
+  return null;
+}
+
+/**
+ * 節の機力の Shorts の流入（users・sessions）。取り直しの範囲に投稿日か翌日が入る投稿済みの下書きだけ。下書きが無ければ GA4 を呼ばない。
+ * GA4 の行は、landingPage の会場とリンクにある utm_* が一致する下書きのうち、投稿日（JST）が同じ日のもの、無ければ前の日のものに付ける。
+ * 同じ会場・同じ utm の投稿が続く日は、その日の流入を当日の投稿に付ける（GA4 の行では前の日の投稿の翌日の分と見分けられない）
  */
 async function collectSetsuShort({ runReport, store, jstDays, push }) {
   const since = `${addDays(jstDays[0], -1)}T00:00:00+09:00`;
-  const drafts = (await store.setsuShortDrafts(since))
+  const linked = (await store.setsuShortDrafts(since))
     .filter((d) => d.posted_at)
-    .map((d) => ({ ...d, link: setsuShortLink(d.caption_text) }));
-  const linked = drafts.filter((d) => d.link);
+    .map((d) => ({ ...d, link: setsuShortLink(d.caption_text) }))
+    .filter((d) => d.link);
   if (!linked.length) return;
-  const dims = ["date", "landingPage", ...SETSU_UTM_DIMS.map(([, d]) => d)];
   const result = await runReport({
     dateRanges: [{ startDate: jstDays[0], endDate: jstDays.at(-1) }],
-    dimensions: dims.map((name) => ({ name })),
+    dimensions: [
+      { name: "date" },
+      { name: "landingPage" },
+      ...SETSU_UTM_DIMS.map(({ dim }) => ({ name: dim })),
+    ],
     metrics: [{ name: "totalUsers" }, { name: "sessions" }],
     dimensionFilter: and(
       hostFilter,
-      inList("landingPage", [...new Set(linked.map((d) => d.link.path))]),
+      {
+        filter: {
+          fieldName: "landingPage",
+          stringFilter: { matchType: "BEGINS_WITH", value: "/venue/" },
+        },
+      },
       inList("sessionSource", [
         ...new Set(linked.map((d) => d.link.utm.sessionSource)),
       ]),
@@ -704,13 +715,15 @@ async function collectSetsuShort({ runReport, store, jstDays, push }) {
   });
   for (const [date, landingPage, ...rest] of result) {
     const day = ga4Day(date);
+    const venue = VENUE_PATH.exec(String(landingPage));
+    if (!venue) continue;
     const values = Object.fromEntries(
-      SETSU_UTM_DIMS.map(([, d], i) => [d, String(rest[i]).toLowerCase()]),
+      SETSU_UTM_DIMS.map(({ dim }, i) => [dim, String(rest[i]).toLowerCase()]),
     );
     const [users, sessions] = rest.slice(SETSU_UTM_DIMS.length);
     const matches = linked.filter(
       (d) =>
-        d.link.path === landingPage &&
+        d.link.venue === Number(venue[1]) &&
         Object.entries(d.link.utm).every(([dim, v]) => values[dim] === v),
     );
     const draft =
@@ -725,7 +738,7 @@ async function collectSetsuShort({ runReport, store, jstDays, push }) {
         day,
         channel: "youtube",
         draft_id: draft.id,
-        utm_content: String(rest[SETSU_UTM_DIMS.length - 1]),
+        utm_content: values.sessionManualAdContent,
         source: "site-analytics",
         metric_name: metric,
         metric_value: value,
