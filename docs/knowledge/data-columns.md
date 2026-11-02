@@ -54,7 +54,6 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - getPlacementBaseline の未知の決まり手の補完は、全体平均から勝者コースを除いて再正規化する。保持される sampleSize=7642 は補完元の母数で、未知の決まり手の実測件数ではない（2026-10-25、BOA-1066、placementDistribution.js・verify-technique-placement-tables.js）。
 - top_3rd=null の3連複・3連単は、calculateHits では false・配当0、buildPredictionHitUpdate では判定対象外NULLになる。両者を同じ欠測契約と扱わず、未定義部分を期待値として固定しない（2026-10-25、BOA-1082、hitCalculator.js・verify-hit-calculator.js の KNOWN_GAPS）。
 - 展示タイムの当社取得は締切予定基準で中央値16.4分前、15分前まで77.7%、9分前まで99.95%。12Rは中央値20.4分前。取得間隔の遅れを含み、公式公開や展示航走の開始時刻を直接測った値ではない（2026-10-26、10/12〜25、docs/design/scraping-load-budget/analysis/freshness-need.md）。
-- 当日体重は朝の出走表には無く、調査期間の beforeinfo は締切60分前の最初の取得でそろった。race_entries.weight_kg と today_weight は98.9%一致するが同一保証は無く、調整重量は beforeinfo だけにある（2026-10-26、10/12〜25、docs/design/scraping-load-budget/analysis/freshness-need.md）。
 - 結果の取得は着順・払戻と決まり手を分けて見る。調査期間では締切予定10分後に着順・払戻99.7%、決まり手までそろうのは15分後75.1%・20分後95.7%・25分後99.1%。当社の取得時刻で、公式公開時刻の直接観測ではない（2026-10-26、docs/design/scraping-load-budget/analysis/freshness-need.md）。
 - 前検 rankingmotor の値は10/12〜25の同じ節の前日・翌日6,349組で全件一致した。毎日の再取得を減らす判断材料にできるが、公式仕様として不変を保証したものではない（2026-10-26、docs/design/scraping-load-budget/analysis/freshness-need.md）。
 - オリジナル展示の項目名は race_original_exhibition.item_labels を正とする。三国・津・鳴門は「一周・まわり足・直線」で、半周ラップがある前提を置かない（2026-10-26、PR #1910、10/20三国・10/21津・10/25鳴門の取得照合）。

@@ -76,7 +76,6 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - snsDraftDiff は source_data 欠落を空オブジェクトにし、長文分岐は共通前後を除いた長さの積が1000000を超えたときだけ使う。null・「100万以上」とする記述とは一致しない（2026-10-25、BOA-1083、verify-sns-draft-diff.js の KNOWN_GAPS）。
 - hqのpushとVercelの送り手は別々に配備される。snapshot に poll など新しいキーを足したら、送り手の本番対応を確認してから許可の旗を入れる。古い送り手は未知のキーを無視して送る（2026-10-26、system-architect、PR #1944）。
 - 親子の投稿を順に承認するときは、親の予定を受領の2分後にして、子の承認前に親が claim される窓を避ける（2026-10-26、PR #1944 の /code-review）。
-- transition_sns_send_139 の expires_at 照合に使う expiry_minutes は sns_x_send_control の共通値。型別に変える場合は item.kind で分岐し、snapshot 側へ独自の分数を持たせない（2026-10-26、system-architect、マイグレーション158・176）。
 - sns_send のリースは300秒で、前の実行が長いと次の2回の起動が lease_held で飛ぶ。scheduled_at=今でも即時送信は保証されず、約7分待つ場合を期限設計に入れる（2026-10-26、system-architect、registry.js・cronWrapper.js）。
 - sns_send のcron最終起動は22:58 JST。締切数分前に送る型は、締切が約23:03より後のレースを扱えない場合があるため、型の先行分数と最終起動を照合する（2026-10-26、vercel.json、PR #1941）。
 - stop_sns_auto_item の158の定義は race・digest の下書きだけを公開保留へ戻す。full_picture・finals_image は送信が auto_stopped で止まっても、下書きの状態は戻らない（2026-10-26、system-architect、158_sns_lanes_digest_period.sql）。
@@ -85,6 +84,5 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - snsHeadless の screenshot のlabelは要素の先頭へ文字を焼き込む。ソナー図の札用なので、完成画像そのものを撮るページには渡さない（2026-10-27、PR #1984のコードレビュー、scripts/lib/snsTodayPlanner.js）。
 - claim が held を返すと runXSendJob はそのまま返り、runnerはreconcileだけを知らせる。claimへ新しいheld理由を足すときは一度きりの通知経路も足す（2026-10-27、system-architect、snsXSend.js・snsSendRunner.js、PR #1979）。
 - 取り込み時に今日のqueued数で上限を見る場合は、同じ下書きの前の版を除外する。148のトリガーは中身が変わった場合だけ古いjobを取り消すため、作り直しで自分の旧jobを重複して扱いうる（2026-10-27、system-architect、マイグレーション179・PR #1979）。
-- readCurrent・preflightで落ちたjobはclaimされずqueuedのままで、期限後はdeadline_expiredになる。元の理由は sns_send の last_report.alerts の precheck:{job_id}:{理由} だけに短時間残るため、期限後の状態だけで原因を断定しない（2026-10-27、system-architect、snsSendRunner.js・PR #1978）。
 - hqから受け取る時刻はZまたは±HH:MM付きに限る。時差なしの文字列はNodeでは端末、DBでは接続のTimeZoneで解釈され、別の時刻になりうる（2026-10-27、コードレビュー、push-research-image.js・PR #1978）。
 - sns-x-posts.csv の caption_text に残る {full_url} は、承認版の保存値の場合がある。送信直前に公開済み完全版URLへ置換するため、未置換の不具合と断定する前に実際の概要欄か fillFullUrl を確認する（2026-10-27、measurement、ADR-0094・api/_lib/snsDeadlineQueue.js）。

@@ -60,5 +60,4 @@
 - 全貌動画の字幕の禁止表現の検査は risk-rules.json から読む（scene2-text.mjs の bannedIn。手書きの一覧は投稿本文の判定と食い違う）。型の規則（字幕で「この選手」と言わない）だけを別に置く。部分一致なので、承認済みの「鉄板寄り」と同じ語を禁止語に足すときは除外を考える（2026-10-20、wording-editor、sns-video-studio/remotion/scripts/full-picture/scene2-text.mjs）
 - 画面の賭け方の種類は既存UIと同じ「券種」と書く。「式別」を新しい表示語として持ち込まない（2026-10-27、wording-editor、src/locales/ja/common.json・PR #2017）。
 - 拡連複のトリガミは「その組だけ当たった場合」の条件を付ける。複数組が同時に当たれば払戻は和になるため、どれか1組だけの的中を前提とする合成オッズ1.0未満の定義をそのまま使わない（2026-10-27、wording-editor、docs/design/assist-bet-types/spec.md）。
-- cron sns-send の直前検査は risk-rules.json を同梱せず、型ごとの禁止語一覧を使う。生成側の正本へ語を足す場合は、この送信側一覧も同期して検査の隙間を作らない（2026-10-27、wording-editor、snsResearchImage.js・PR #1978）。
 - 節ページへの日本語導線は画面と同じ「準優の目安」を使う。「準優ボーダー」は節ページのメタ用で、導線へそのまま転記しない（2026-10-31、wording-editor、BOA-1189・PR #2077）。
