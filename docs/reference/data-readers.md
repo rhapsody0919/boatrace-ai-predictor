@@ -12,7 +12,7 @@
 | RPC（写しの関数） | 68 |
 | 読んだファイル | 1596 |
 | 読み書きのあるファイル | 261 |
-| 表の読み手（箇所） | 933 |
+| 表の読み手（箇所） | 936 |
 | 表の書き手（箇所） | 187 |
 | RPC の呼び手（箇所） | 50 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 231 |
@@ -54,7 +54,7 @@
 | [models](#t-models) | table | anon 可 | 2 | 1 | get_accuracy_summary, view:v_production_models |  |  |  |
 | [morning_digest_days](#t-morning_digest_days) | table | anon 可 | 2 | 2 |  |  | morning_digest |  |
 | [morning_digest_rows](#t-morning_digest_rows) | table | anon 可 | 2 | 3 |  |  | morning_digest |  |
-| [motor_pretest_stats](#t-motor_pretest_stats) | table | anon 可 | 5 | 0 |  |  |  |  |
+| [motor_pretest_stats](#t-motor_pretest_stats) | table | anon 可 | 7 | 0 |  |  |  |  |
 | [mycroft_predictions](#t-mycroft_predictions) | table | anon 可 | 1 | 1 |  |  |  |  |
 | [nige_outcome_distribution](#t-nige_outcome_distribution) | table | anon 可 | 1 | 2 | data_health_nightly_freshness |  |  |  |
 | [nige_second_by_course](#t-nige_second_by_course) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
@@ -75,7 +75,7 @@
 | [race_pit_comments](#t-race_pit_comments) | table | anon 可 | 2 | 2 |  |  | pit_reports |  |
 | [race_pit_reports](#t-race_pit_reports) | table | anon 可 | 4 | 1 | data_health_pit_reports, data_health_table_rows |  | pit_reports |  |
 | [race_results](#t-race_results) | table | anon 可 | 125 | 10 | compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline ほか17 |  | kfile_sync, race_status, result ほか1 |  |
-| [race_series](#t-race_series) | table | anon 可 | 12 | 0 | data_health_race_series, data_health_table_rows |  |  |  |
+| [race_series](#t-race_series) | table | anon 可 | 13 | 0 | data_health_race_series, data_health_table_rows |  |  |  |
 | [race_special_notes](#t-race_special_notes) | table | service だけ | 1 | 1 | data_health_table_rows |  | race_notices |  |
 | [race_start_timings](#t-race_start_timings) | table | anon 可 | 29 | 6 | compute_st_course_baseline, data_health_coverage, data_health_table_rows ほか2 |  | kfile_sync, race_status, result ほか1 |  |
 | [racer_aggregated_stats](#t-racer_aggregated_stats) | table | anon 可 | 13 | 1 | data_health_nightly_freshness |  |  |  |
@@ -592,7 +592,9 @@
 ### <a id="t-motor_pretest_stats"></a>motor_pretest_stats
 
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
-- 読み手（5）: 
+- 読み手（7）: 
+  - `scripts/lib/motorPretestJob.js:252` select [race_date, venue_code]
+  - `scripts/lib/motorPretestJob.js:269` select [race_date, racer_id, venue_code]
   - `scripts/maintenance/verify-pretest-row-pick.js:74` select [pretest_rank, pretest_time, race_date, racer_id, series_title, venue_code] （検査）
   - `src/services/supabaseDataService.js:3509` select [race_date, venue_code]
   - `src/services/supabaseDataService.js:3529` select [motor_2rate, motor_number, pretest_time, race_date, racer_id, venue_code]
@@ -1271,9 +1273,10 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_race_series, data_health_table_rows
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule.py:282`, `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:73`
-- 読み手（12）: 
+- 読み手（13）: 
   - `api/_lib/botPage.js:273` rest(rest) [end_date, grade, start_date, title, venue_code]
   - `api/_lib/botRace.js:247` rest(rest)
+  - `scripts/lib/motorPretestJob.js:236` select [end_date, start_date, venue_code]
   - `scripts/lib/raceSeriesLookup.js:161` select [end_date, start_date, venue_code]
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:358` select(helper:fetchAll)
@@ -1669,7 +1672,7 @@
 - 読み手（12）: 
   - `scripts/lib/dataHealth/job.js:94` select [job, last_report]
   - `scripts/lib/ghaSkipGate.js:450` rest(rest)
-  - `scripts/lib/motorPretestJob.js:196` select [job, last_target_date, mode]
+  - `scripts/lib/motorPretestJob.js:197` select [job, last_target_date, mode]
   - `scripts/lib/racesInit/job.js:148` select [job, mode]
   - `scripts/lib/racesInit/predictCodeCheck.js:104` select [job, last_report]
   - `scripts/lib/scrapeJobs/monitor.js:714` select [*]

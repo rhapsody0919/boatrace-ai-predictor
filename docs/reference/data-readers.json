@@ -7,7 +7,7 @@
     "rpcs": 68,
     "sourceFiles": 1596,
     "filesWithAccess": 261,
-    "tableReaders": 933,
+    "tableReaders": 936,
     "tableWriters": 187,
     "rpcCallers": 50,
     "nameMentions": 231,
@@ -4241,6 +4241,25 @@
       },
       "readers": [
         {
+          "ref": "scripts/lib/motorPretestJob.js:252",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_date",
+            "venue_code"
+          ]
+        },
+        {
+          "ref": "scripts/lib/motorPretestJob.js:269",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_date",
+            "racer_id",
+            "venue_code"
+          ]
+        },
+        {
           "ref": "scripts/maintenance/verify-pretest-row-pick.js:74",
           "op": "select",
           "via": "client",
@@ -4310,6 +4329,8 @@
       "columns": {
         "race_date": {
           "readers": [
+            "scripts/lib/motorPretestJob.js:252",
+            "scripts/lib/motorPretestJob.js:269",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/supabaseDataService.js:3509",
             "src/services/supabaseDataService.js:3529",
@@ -4321,6 +4342,8 @@
         },
         "venue_code": {
           "readers": [
+            "scripts/lib/motorPretestJob.js:252",
+            "scripts/lib/motorPretestJob.js:269",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/supabaseDataService.js:3509",
             "src/services/supabaseDataService.js:3529",
@@ -4332,6 +4355,7 @@
         },
         "racer_id": {
           "readers": [
+            "scripts/lib/motorPretestJob.js:269",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/supabaseDataService.js:3529",
             "src/services/supabaseDataService.js:6814",
@@ -12814,6 +12838,16 @@
           "columns": []
         },
         {
+          "ref": "scripts/lib/motorPretestJob.js:236",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "end_date",
+            "start_date",
+            "venue_code"
+          ]
+        },
+        {
           "ref": "scripts/lib/raceSeriesLookup.js:161",
           "op": "select",
           "via": "client",
@@ -12920,6 +12954,7 @@
         "venue_code": {
           "readers": [
             "api/_lib/botPage.js:273",
+            "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:769",
             "src/services/racerService.js:112",
@@ -12936,6 +12971,7 @@
         "start_date": {
           "readers": [
             "api/_lib/botPage.js:273",
+            "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:769",
             "src/services/racerService.js:112",
@@ -12952,6 +12988,7 @@
         "end_date": {
           "readers": [
             "api/_lib/botPage.js:273",
+            "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:769",
             "src/services/racerService.js:112",
@@ -18379,7 +18416,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/motorPretestJob.js:196",
+          "ref": "scripts/lib/motorPretestJob.js:197",
           "op": "select",
           "via": "client",
           "columns": [
@@ -18610,7 +18647,7 @@
           "readers": [
             "scripts/lib/boatcast/oritenJob.js:498",
             "scripts/lib/dataHealth/job.js:94",
-            "scripts/lib/motorPretestJob.js:196",
+            "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/racesInit/job.js:148",
             "scripts/lib/racesInit/job.js:517",
             "scripts/lib/racesInit/predictCodeCheck.js:104",
@@ -18642,7 +18679,7 @@
         },
         "mode": {
           "readers": [
-            "scripts/lib/motorPretestJob.js:196",
+            "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/racesInit/job.js:148",
             "scripts/maintenance/check-morning-init-shadow.js:107",
             "scripts/maintenance/check-scrape-monitor-liveness.js:139"
@@ -18709,7 +18746,7 @@
         },
         "last_target_date": {
           "readers": [
-            "scripts/lib/motorPretestJob.js:196",
+            "scripts/lib/motorPretestJob.js:197",
             "scripts/maintenance/check-scrape-monitor-liveness.js:139"
           ],
           "writers": [],
