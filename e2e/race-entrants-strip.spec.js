@@ -118,8 +118,10 @@ test.describe("レース詳細: 出走6艇と 1R〜12R の帯", () => {
       } catch (error) {
         // live では fetchRecorded が本番の応答を待つ。アサーションが先に通ってページが閉じた後の
         // 失敗（「Target page, context or browser has been closed」）はテストの結果ではない
-        // （BOA-1225。smoke.spec.js の routeUnfinished と同じ扱い。unrouteAll は使わない決まり）
-        if (route.request().frame().page().isClosed()) return;
+        // （BOA-1225。smoke.spec.js の routeUnfinished と同じ考え方。page のルートを途中で0件にしない
+        // 決まり（e2e/fixtures.js）があるので unrouteAll は足さず、閉じた後の失敗だけを捨てる）
+        if (page.isClosed() || /has been closed/.test(String(error?.message)))
+          return;
         throw error;
       }
     });
