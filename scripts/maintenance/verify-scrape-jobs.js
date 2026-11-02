@@ -214,6 +214,16 @@ for (const [date, time] of [
 // (b) レジストリ
 // ---------------------------------------------------------------------------
 check(
+  "result の最初の窓は発走 +10分",
+  same(SCRAPE_JOBS.result.offsets, [10]),
+  show(SCRAPE_JOBS.result.offsets),
+);
+check(
+  "pcexpect の claimLimit は6",
+  SCRAPE_JOBS.pcexpect.claimLimit === 6,
+  show(SCRAPE_JOBS.pcexpect.claimLimit),
+);
+check(
   "本番のレジストリは整合している",
   same(validateRegistry(), []),
   show(validateRegistry()),
@@ -291,13 +301,13 @@ check(
 {
   const defs = slotDefsFor(["odds", "result"]);
   check(
-    "ensure用の定義: oddsは6窓（-60だけ許容幅30、他は3）、resultは1窓（許容幅85）",
+    "ensure用の定義: oddsは6窓（-60だけ許容幅30、他は3）、resultは1窓（+10分、許容幅80）",
     defs.length === 7 &&
       defs
         .filter((d) => d.job === "odds")
         .every((d) => d.grace_min === (d.offset_min === -60 ? 30 : 3)) &&
-      defs.find((d) => d.job === "result").offset_min === 5 &&
-      defs.find((d) => d.job === "result").grace_min === 85,
+      defs.find((d) => d.job === "result").offset_min === 10 &&
+      defs.find((d) => d.job === "result").grace_min === 80,
     show(defs),
   );
   let threw = false;
@@ -536,8 +546,8 @@ check(
   await b.recordFailure(HOST, "HTTP 429");
   const e1 = await openError(b);
   check(
-    "連続3件の 429/503 で開く（60秒）",
-    e1 instanceof BreakerOpenError && e1.until === clock.t + 60_000,
+    "連続3件の 429/503 で開く（5分。段階1）",
+    e1 instanceof BreakerOpenError && e1.until === clock.t + 5 * 60_000,
     String(e1?.until),
   );
   check(
@@ -555,7 +565,7 @@ check(
   );
 
   // 半開: 期限後、1件だけ試行できる
-  clock.t += 60_001;
+  clock.t += 5 * 60_000 + 1;
   await b.check(HOST); // 試行を予約
   const e2 = await openError(b);
   check(
@@ -573,13 +583,13 @@ check(
   b = mk();
   store.until = 0;
   for (let i = 0; i < 3; i++) await b.recordFailure(HOST);
-  clock.t += 60_001;
+  clock.t += 5 * 60_000 + 1;
   await b.check(HOST);
   await b.recordFailure(HOST);
   const e3 = await openError(b);
   check(
-    "半開の試行が失敗すると開く期間が2倍（120秒）",
-    e3 instanceof BreakerOpenError && e3.until === clock.t + 120_000,
+    "半開の試行が失敗すると段階が上がり10分開く",
+    e3 instanceof BreakerOpenError && e3.until === clock.t + 10 * 60_000,
     String(e3?.until - clock.t),
   );
 
@@ -619,7 +629,7 @@ check(
   b = mk();
   store.until = 0;
   for (let i = 0; i < 3; i++) await b.recordFailure(HOST);
-  clock.t += 60_001;
+  clock.t += 5 * 60_000 + 1;
   await b.check(HOST);
   b.abortProbe(HOST);
   check(
@@ -764,11 +774,11 @@ check(
       sleep: async (ms) => void sleeps.push(ms),
       random: () => 0,
     });
-    await f("https://www.boatrace.jp/a");
+    const res = await f("https://www.boatrace.jp/a");
     check(
-      "Retry-After を尊重する（4秒）。長すぎる値は10秒で頭打ち",
-      same(sleeps, [4000, 10000]),
-      show(sleeps),
+      "Retry-After を尊重する（4秒）。10秒を超える値（120秒）は再試行せず、その応答を返す（BOA-1145 P4a ④b）",
+      same(sleeps, [4000]) && n === 2 && res.status === 429,
+      show({ sleeps, n }),
     );
     check(
       "Retry-After の解釈（秒・HTTP日付・不正値）",
@@ -929,7 +939,7 @@ check(
       String(err),
     );
     // 60秒後（半開）に、取得が成功すればブレーカーが閉じる
-    clock.t += 60_001;
+    clock.t += 5 * 60_000 + 1;
     fetchOk = true;
     const probe = await f("https://www.boatrace.jp/c");
     check(
@@ -957,6 +967,8 @@ check(
     const f = createPoliteFetch({
       breaker,
       sleep: noSleep,
+      // カナリア（race/index）は verify-scrape-breaker-canary.js で見る。ここではパス単位の動きだけ
+      canaryUrls: {},
       fetchImpl: async (url) => {
         fetched.push(url);
         return mkResponse(url.startsWith(BEFORE) ? beforeStatus : 200);
@@ -1019,13 +1031,17 @@ check(
         next.status === 200 &&
         breaker.snapshot(pathKeyOf(BEFORE)).openUntil === 0,
     );
-    // 上限は120分
-    const capped = createCircuitBreaker({ now: () => clock.t });
-    for (let i = 0; i < 5; i++) await capped.recordBlocked("k");
-    check(
-      "403 で開く期間の上限は120分",
-      capped.snapshot("k").openUntil === clock.t + 120 * 60_000,
-    );
+    // 上限は6時間（30分→1時間→2時間→4時間→6時間。段階は verify-scrape-breaker-level.js）
+    // 開いている間の 403 は段階を上げないので、毎回期限の後（半開）に受けたことにする
+    const cc = { t: clock.t };
+    const capped = createCircuitBreaker({ now: () => cc.t });
+    let lastDuration = 0;
+    for (let i = 0; i < 6; i++) {
+      await capped.recordBlocked("k");
+      lastDuration = capped.snapshot("k").openUntil - cc.t;
+      cc.t = capped.snapshot("k").openUntil + 1;
+    }
+    check("403 で開く期間の上限は6時間", lastDuration === 6 * 60 * 60_000);
     // 別プロセス（新しいブレーカー）も、DB の期限で開いている扱い（パスのキーで共有）
     const log = [];
     const shared = { byKey: {} };
@@ -1042,6 +1058,7 @@ check(
       },
     };
     const p1 = createPoliteFetch({
+      canaryUrls: {},
       breaker: createCircuitBreaker({ store: sharedStore, now: () => clock.t }),
       sleep: noSleep,
       fetchImpl: async () => mkResponse(403),
@@ -1049,6 +1066,7 @@ check(
     await p1(`${BEFORE}?rno=1`).catch(() => {});
     let otherFetched = 0;
     const p2 = createPoliteFetch({
+      canaryUrls: {},
       breaker: createCircuitBreaker({
         store: sharedStore,
         now: () => clock.t,
@@ -1067,7 +1085,7 @@ check(
       "403 で開いたパスのブレーカーは DB（scrape_job_state の host:…/beforeinfo の行）に書かれ、別の起動も叩かない",
       log.length === 1 &&
         log[0][0] === "host:boatrace.jp/owpc/pc/race/beforeinfo" &&
-        log[0][1] === "HTTP 403" &&
+        /^HTTP 403\b/.test(log[0][1]) &&
         err instanceof BreakerOpenError &&
         otherFetched === 0,
       show(log),
@@ -1084,6 +1102,7 @@ check(
     const f = createPoliteFetch({
       breaker,
       sleep: noSleep,
+      canaryUrls: {},
       fetchImpl: async () => (n++, mkResponse(status)),
     });
     await f(`${BEFORE}?rno=1`).catch(() => {});
@@ -1624,15 +1643,18 @@ check(
         (x) => x.outcome === "breaker_open",
       );
       check(
-        "起動の途中で 403: 公式へのリクエストは1件だけ。403 の1件も残りの5件も breaker_open（ブレーカーの期限＝30分後まで再試行しない。全件失敗＝連続失敗に数えない）",
-        fetched === 1 &&
+        "起動の途中で 403: 公式へのリクエストは beforeinfo の1件とカナリア（race/index）の1件だけ。403 の1件も残りの5件も breaker_open（ブレーカーの期限＝30分後まで再試行しない。全件失敗＝連続失敗に数えない）",
+        fetched === 2 &&
           breakerOpen.length === 6 &&
           r.status === 200 &&
+          // カナリアも 403（この偽物は全部 403）: ホスト全体が60分開き、残りはホストの期限まで待つ
           breakerOpen.every(
-            (x) => x.retryAt.getTime() === clock.c.t + 30 * 60_000,
+            (x) => x.retryAt.getTime() >= clock.c.t + 30 * 60_000,
           ) &&
           store.breakerStore.byKey[pathKeyOf(BEFORE)] ===
-            clock.c.t + 30 * 60_000,
+            clock.c.t + 30 * 60_000 &&
+          store.breakerStore.byKey["host:boatrace.jp"] ===
+            clock.c.t + 60 * 60_000,
         show({ fetched, r: r.body, retried: store.retried.length }),
       );
     }

@@ -11,11 +11,11 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 102 |
+| テーブル・ビューの定義 | 112 |
 | 読んでいる（テーブルを直接） | 48 |
 | 読んでいる（RPC経由のみ） | 2 |
 | 画面から読んでいない（例外登録あり） | 29 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **23** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **33** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 1 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,16 +24,24 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 画面が呼んでいるRPC: `append_sns_metric_observation` / `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_today_races` / `import_sns_preview_bundle`
 
-## 要判断: 画面から読んでいない（例外登録なし）（23件）
+## 要判断: 画面から読んでいない（例外登録なし）（33件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
 | `analogy_v16_snapshots` | 表 | 133_analogy_v16_snapshots.sql | なし | GRANT（133_analogy_v16_snapshots.sql） |  |
 | `external_predictions` | 表 | 021_external_predictions.sql | なし | GRANT（021_external_predictions.sql） |  |
+| `fetch_counts` | 表 | 185_fetch_counts.sql | なし | 記述なし |  |
+| `fetch_counts_minute` | 表 | 185_fetch_counts.sql | なし | 記述なし |  |
 | `in_caution_gap_band_daily` | 表 | 155_in_caution_gap_band_daily.sql | なし | 記述なし |  |
 | `prediction_odds` | 表 | 011_prediction_odds.sql | なし | ポリシー（011_prediction_odds.sql） |  |
 | `race_payouts` | 表 | 079_race_payouts.sql | なし | GRANT（109_predictions_rpc_race_status_payouts.sql） |  |
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
+| `racer_career_meta` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
+| `racer_championships` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
+| `racer_course_stats` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
+| `racer_series_points_daily` | 表 | 192_racer_series_points_daily.sql | なし | GRANT（192_racer_series_points_daily.sql） |  |
+| `racer_term_stats` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
+| `racer_venue_stats` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
 | `raw_snapshots` | 表 | 125_raw_snapshots.sql | なし | 記述なし |  |
 | `rule_applications` | 表 | 008_venue_rules.sql | なし | 記述なし |  |
 | `sns_auto_send_control` | 表 | 153_sns_auto_send.sql | なし | 記述なし |  |
@@ -44,7 +52,9 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `sns_metric_jobs` | 表 | 154_sns_tokens_metric_jobs.sql | なし | 記述なし |  |
 | `sns_oauth_tokens` | 表 | 154_sns_tokens_metric_jobs.sql | なし | 記述なし |  |
 | `sns_post_tracking` | 表 | 136_sns_metric_observations.sql | なし | 記述なし |  |
+| `sns_send_events` | 表 | 191_sns_send_events.sql | なし | 記述なし |  |
 | `sns_today_type_schedule` | 表 | 174_sns_today_type_schedule.sql | なし | 記述なし |  |
+| `sns_x_kind_reserves` | 表 | 182_sns_x_kind_reserves.sql | なし | 記述なし |  |
 | `sns_x_send_control` | 表 | 137_sns_x_send.sql | なし | 記述なし |  |
 | `sns_x_send_jobs` | 表 | 137_sns_x_send.sql | なし | 記述なし |  |
 | `sns_youtube_quota_attempts` | 表 | 146_sns_shorts_send.sql | なし | 記述なし |  |
@@ -119,7 +129,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `race_pit_comments` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_pit_reports` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_results` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_race_return_rate(画面), get_race_technique_profile(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
-| `race_series` | 表 | 084_race_series.sql | 画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |
+| `race_series` | 表 | 084_race_series.sql | API・画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `racer_grade_cache` | 表 | 054_racer_grade_cache_table.sql | 画面が直接 | GRANT（054_racer_grade_cache_table.sql） |  |
 | `racer_news` | 表 | 036_create_racer_news.sql | 画面が直接 | ポリシー（036_create_racer_news.sql） |  |
 | `racer_period_stats` | 表 | 083_racer_period_stats.sql | 画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |

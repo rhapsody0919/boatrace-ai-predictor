@@ -3,6 +3,8 @@
  * JST（日本標準時）での日付処理を一元管理
  */
 
+import { WEEKDAYS } from "../constants/index.js";
+
 const JST_OFFSET = 9 * 60; // UTC+9 in minutes
 
 /**
@@ -29,6 +31,17 @@ export const getNowHHMMJST = () => {
  */
 export const getTodayJST = () => {
   return getJSTNow().toISOString().split("T")[0];
+};
+
+/**
+ * 今日の日付をJSTで「2026年10月25日（日）」の形にする（成績の見出し、BOA-1094・BOA-1100）。
+ * 端末の getDate() 等で作ると、JST の朝は JST より西の端末で前日になるため、JST の暦日から作る。
+ * @param {Date} [now] - 基準時刻（既定は現在時刻）
+ * @returns {string}
+ */
+export const formatTodayHeadingJST = (now = new Date()) => {
+  const jst = getJSTNow(now);
+  return `${jst.getUTCFullYear()}年${jst.getUTCMonth() + 1}月${jst.getUTCDate()}日（${WEEKDAYS[jst.getUTCDay()]}）`;
 };
 
 /**

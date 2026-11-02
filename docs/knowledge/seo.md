@@ -31,6 +31,9 @@
 - 新記事が検索に出ないときは、まず Search Console の URL 検査で未インデックスかを分ける。2026-03-12 公開の13本は7本が未インデックスで、内部リンク数・文字数と関係が無かった。一括確認は urlInspection API で1件ごとに300〜400ms 空ける（scripts/analysis/check-venue-indexing.js）（2026-08-26、memory boa_pv_plateau_diagnosis_2026_07、PR #406）
 - 選手ページの index の判定は src/utils/racerIndexPolicy.js をページと sitemap で共用する（2026-10-02 時点は現役A1の322人）。/races/:date は sitemap に直近7日だけ、/race/:raceId は sitemap の対象外（2026-10-02、memory seo_keyword_strategy_2026_09_29、PR #1120）
 - Search Console の反映は数日〜2週間遅れ、新しい記事や title・description の修正の効果は2〜4週間後に出る。CTR の低いページを改善候補に出す前に git log -- <ファイル> で直近に直していないか確かめる（2026-08〜09、memory feedback_growth_pdca_design・growth_pdca_2026_09_05・growth_report_skills_2026_08）
+- 選手ページは取得に失敗すると noindex を付けていた。2026-10-03 の Googlebot の描画で、条件を満たす85人が noindex になり、canonical が2ページ（/racer/4760・5208）に集まった（失敗の画面が全員同じ中身）。noindex の判定は取得が成功したときだけにする（2026-10-28、Search Console の URL 検査 10/25・本番 DB、PR #2049）
+- URL 検査で同じ型のページの googleCanonical が1ページに集まっていたら、Googlebot が同じ中身（読み込み中・エラーの画面）を見た印。描画の失敗を疑う（2026-10-28、同上）
+- 選手ページの title・description は全選手が同型で、登録番号は画面に無く、name_kana は取得していたが未使用だった。description に登録番号・支部・級、画面に登録番号とよみ、取得中・失敗・該当なしの画面にも登録番号を入れた（2026-10-28、seo-marketer、PR #2050）
 - Search Console レポートの順位変動は「+ が下落、− が上昇」で、見た目と逆になる（2026-09-05、memory growth_pdca_2026_09_05）
 
 ## AI 検索での見え方
@@ -80,3 +83,9 @@
 - 審査後に本文の見出しを直したら、記事設計のh2も更新し、出稿前に順序と文面を照合する。設計に古い結論を残したまま、本文の問いと根拠が対応していると判断しない（2026-10-23、seo-human、桐生記事のoutlineと本文h2の不一致への審査助言）
 - seo-measures.jsonの構文・kind・id検査とverify-seo-keyword-kpiの成功だけでは、施策の欠落を検知できない。出典台帳のPR集合とmaster入り日を照合し、各施策が月曜始まりの該当週へ配置されることも別に検証する（2026-10-23、BOA-906、Codex報告2026-10-23-boa-906.md、scripts/maintenance/verify-seo-keyword-kpi.js・scripts/analysis/search-console-report.js）
 - llms.txtのブログ一覧は、タイトルのMarkdownエスケープだけでなく、記事IDを括弧も含めURLの1区画として符号化し、説明の改行やリンク構造の混入も抑止する。特殊文字を含む入力で行・リンク構造を検証する（2026-10-23、BOA-920、Codex報告2026-10-23-boa-920.md、scripts/maintenance/verify-output-escape.js）
+- /today のボットHTMLは区分固有の emptyMessage を優先する。逃がしは保存行があっても2号艇の抽出後に0件になりうるので、行なしと全行3号艇を両方検査する（2026-10-24、BOA-1004、api/_lib/botToday.js・verify-bot-today-function.js）。
+- breadcrumbLd.js の isValidCrumbs は名前とURLの非空文字列だけを確認し、文字列の /undefined は通す。有効判定を未定義値混入の防止保証と扱わない（2026-10-24、BOA-1040、verify-breadcrumb-ld.js の KNOWN_GAPS）。
+- /venue/:venueCode は数字の文字列を整数化するため /venue/3 と /venue/03 は同じ会場を開く。ブログの内部リンクは既存記事に合わせ、先頭0なしの /venue/3 にそろえる（2026-10-25、seo-human、src/pages/VenueRaceListPage.jsx）。
+- 古い記事の改稿は数値だけでなく、用語の説明・会場例・閾値・選手名を含む主張を1文ずつデータか定義へ照合する。根拠の無い定性説明は数字の追加では直らないため、書き直すか外す（2026-10-31、seo-human、course-prediction-tips.md と venue-course-win-rate.json の照合）。
+- /race の状態別メタを変えるときは、共通メタ関数だけでなく人・ボットの両呼び出し元が状態を渡すか確認する。識別情報だけの引数のままでは状態別に切り替えられない（2026-10-31、BOA-1200、RaceDetailPage.jsx・api/_lib/botRace.js）。
+- 節ページは初日でも出走表と当日の節の日があれば、結果0件だけで preOpen にはならない。サイトマップ除外条件で「初日の結果待ち」とpreOpenを同一視しない（2026-10-31、BOA-1204、BOA-1187取込SHA ca2c9e2 の meetPageState 固定入力確認）。

@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "winning-technique-analysis-guide",
+ "kind": "revision",
+ "ticket": "OC-20261030T100013-seo-human-1",
+ "paths": [
+  "public/blog/winning-technique-analysis-guide.md",
+  "src/data/blog-posts/winning-technique-analysis-guide.json"
+ ],
+ "files": {
+  "public/blog/winning-technique-analysis-guide.md": "b44408dc2a94e3a22da87a3f47bfacccefed2f2fb345d5e088f0380df61d52f3",
+  "src/data/blog-posts/winning-technique-analysis-guide.json": "2c9c4a38d5e3229e6a123dbccdcd3fdb5fa914338e23847f19a03cab54ab1562"
+ },
+ "content_sha256": "86e735dca011e6ed3480be2b42b17968aac3cc88306d7f447a0e788d866f57d0",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "86e735dca011e6ed3480be2b42b17968aac3cc88306d7f447a0e788d866f57d0",
+   "model": "codex-default/high",
+   "at": "2026-10-30T10:09:40+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "86e735dca011e6ed3480be2b42b17968aac3cc88306d7f447a0e788d866f57d0",
+   "model": "codex-default/high",
+   "at": "2026-10-30T10:09:40+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "86e735dca011e6ed3480be2b42b17968aac3cc88306d7f447a0e788d866f57d0",
+   "model": "codex-default/high",
+   "at": "2026-10-30T10:09:40+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "86e735dca011e6ed3480be2b42b17968aac3cc88306d7f447a0e788d866f57d0",
+   "model": "codex-default/high",
+   "at": "2026-10-30T10:09:40+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-30T10:11:31+09:00",
+ "run": "20261030T100013-seo-human",
+ "engine": "codex"
+}

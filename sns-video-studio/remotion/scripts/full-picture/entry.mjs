@@ -25,7 +25,7 @@ export const venueZ = (f) => {
 };
 
 /**
- * 冒頭の数字。同じ並びの過去の1着最多の艇（件数が HERO_MIN_N 以上）→ 当日の水面の1号艇の逃げ率 → 無し
+ * 冒頭の数字。同じ並びの過去の1着最多の艇（件数が HERO_MIN_N 以上）→ 当日の水面の1号艇の逃げの件数 → 無し
  * @returns {{source: string, boat: number|null, label: string, value: string, base: string, title: string}|null}
  */
 export function heroOf(scenes) {
@@ -47,9 +47,9 @@ export function heroOf(scenes) {
     return {
       source: "day",
       boat: 1,
-      label: `今日の${d.venue} 1号艇の逃げ率`,
-      // 水面の頁と同じ小数1桁（割り切れる日も「50.0%」）
-      value: `${Number(d.nigeRate).toFixed(1)}%`,
+      label: `今日の${d.venue} 1号艇の逃げ`,
+      // その日の数は30件に届かないので割合を出さず件数だけ（BOA-1157、number-wording.md）
+      value: `${d.nigeCount}/${d.races}R`,
       base: `確定${d.races}R中${d.nigeCount}R`,
       title: `今日の${d.venue}は1号艇が${d.races}R中${d.nigeCount}R逃げ`,
     };

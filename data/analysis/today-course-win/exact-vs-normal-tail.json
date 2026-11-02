@@ -1,0 +1,896 @@
+{
+  "purpose": "/today 型 b の言い切りを正規近似の z で判定すると、線上の正確な二項の上側確率が名目の何倍になるか。1 を超える級は甘い",
+  "computed_at": "2026-10-27",
+  "source": "data/analysis/today-course-win-prior.json の grade_baselines_all_runs.c1（各走の級で数えた全国の1コースの1着率、2025-12-02〜2026-10-25）",
+  "conclusion": "A1・A2 は 1 未満（安全側）、B1・B2 は最大で約2倍（甘い）。claim は正確な二項の上側確率 ≤ 0.025/K で判定する（src/utils/todayCourseWin.js）",
+  "rows": [
+    {
+      "grade": "A1",
+      "p0": 0.7103,
+      "k": 30,
+      "min": 0.042,
+      "max": 0.735,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 30,
+          "exact_over_nominal": 0.042
+        },
+        {
+          "n": 40,
+          "wins_needed": 38,
+          "exact_over_nominal": 0.201
+        },
+        {
+          "n": 50,
+          "wins_needed": 46,
+          "exact_over_nominal": 0.355
+        },
+        {
+          "n": 60,
+          "wins_needed": 54,
+          "exact_over_nominal": 0.451
+        },
+        {
+          "n": 70,
+          "wins_needed": 62,
+          "exact_over_nominal": 0.49
+        },
+        {
+          "n": 80,
+          "wins_needed": 70,
+          "exact_over_nominal": 0.487
+        },
+        {
+          "n": 90,
+          "wins_needed": 78,
+          "exact_over_nominal": 0.459
+        },
+        {
+          "n": 100,
+          "wins_needed": 86,
+          "exact_over_nominal": 0.417
+        },
+        {
+          "n": 110,
+          "wins_needed": 94,
+          "exact_over_nominal": 0.369
+        },
+        {
+          "n": 120,
+          "wins_needed": 101,
+          "exact_over_nominal": 0.735
+        },
+        {
+          "n": 130,
+          "wins_needed": 109,
+          "exact_over_nominal": 0.613
+        },
+        {
+          "n": 140,
+          "wins_needed": 117,
+          "exact_over_nominal": 0.508
+        },
+        {
+          "n": 150,
+          "wins_needed": 125,
+          "exact_over_nominal": 0.419
+        }
+      ]
+    },
+    {
+      "grade": "A1",
+      "p0": 0.7103,
+      "k": 60,
+      "min": 0.084,
+      "max": 0.641,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 30,
+          "exact_over_nominal": 0.084
+        },
+        {
+          "n": 40,
+          "wins_needed": 38,
+          "exact_over_nominal": 0.403
+        },
+        {
+          "n": 50,
+          "wins_needed": 47,
+          "exact_over_nominal": 0.139
+        },
+        {
+          "n": 60,
+          "wins_needed": 55,
+          "exact_over_nominal": 0.227
+        },
+        {
+          "n": 70,
+          "wins_needed": 63,
+          "exact_over_nominal": 0.289
+        },
+        {
+          "n": 80,
+          "wins_needed": 71,
+          "exact_over_nominal": 0.32
+        },
+        {
+          "n": 90,
+          "wins_needed": 79,
+          "exact_over_nominal": 0.325
+        },
+        {
+          "n": 100,
+          "wins_needed": 87,
+          "exact_over_nominal": 0.314
+        },
+        {
+          "n": 110,
+          "wins_needed": 95,
+          "exact_over_nominal": 0.291
+        },
+        {
+          "n": 120,
+          "wins_needed": 102,
+          "exact_over_nominal": 0.641
+        },
+        {
+          "n": 130,
+          "wins_needed": 110,
+          "exact_over_nominal": 0.55
+        },
+        {
+          "n": 140,
+          "wins_needed": 118,
+          "exact_over_nominal": 0.466
+        },
+        {
+          "n": 150,
+          "wins_needed": 126,
+          "exact_over_nominal": 0.392
+        }
+      ]
+    },
+    {
+      "grade": "A1",
+      "p0": 0.7103,
+      "k": 100,
+      "min": 0.079,
+      "max": 0.653,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 30,
+          "exact_over_nominal": 0.14
+        },
+        {
+          "n": 40,
+          "wins_needed": 39,
+          "exact_over_nominal": 0.079
+        },
+        {
+          "n": 50,
+          "wins_needed": 47,
+          "exact_over_nominal": 0.232
+        },
+        {
+          "n": 60,
+          "wins_needed": 55,
+          "exact_over_nominal": 0.379
+        },
+        {
+          "n": 70,
+          "wins_needed": 63,
+          "exact_over_nominal": 0.481
+        },
+        {
+          "n": 80,
+          "wins_needed": 71,
+          "exact_over_nominal": 0.533
+        },
+        {
+          "n": 90,
+          "wins_needed": 79,
+          "exact_over_nominal": 0.542
+        },
+        {
+          "n": 100,
+          "wins_needed": 87,
+          "exact_over_nominal": 0.523
+        },
+        {
+          "n": 110,
+          "wins_needed": 95,
+          "exact_over_nominal": 0.486
+        },
+        {
+          "n": 120,
+          "wins_needed": 103,
+          "exact_over_nominal": 0.439
+        },
+        {
+          "n": 130,
+          "wins_needed": 111,
+          "exact_over_nominal": 0.388
+        },
+        {
+          "n": 140,
+          "wins_needed": 119,
+          "exact_over_nominal": 0.339
+        },
+        {
+          "n": 150,
+          "wins_needed": 126,
+          "exact_over_nominal": 0.653
+        }
+      ]
+    },
+    {
+      "grade": "A2",
+      "p0": 0.6043,
+      "k": 30,
+      "min": 0.345,
+      "max": 1.027,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 27,
+          "exact_over_nominal": 0.443
+        },
+        {
+          "n": 40,
+          "wins_needed": 34,
+          "exact_over_nominal": 0.858
+        },
+        {
+          "n": 50,
+          "wins_needed": 42,
+          "exact_over_nominal": 0.345
+        },
+        {
+          "n": 60,
+          "wins_needed": 49,
+          "exact_over_nominal": 0.431
+        },
+        {
+          "n": 70,
+          "wins_needed": 56,
+          "exact_over_nominal": 0.47
+        },
+        {
+          "n": 80,
+          "wins_needed": 63,
+          "exact_over_nominal": 0.472
+        },
+        {
+          "n": 90,
+          "wins_needed": 69,
+          "exact_over_nominal": 1.027
+        },
+        {
+          "n": 100,
+          "wins_needed": 76,
+          "exact_over_nominal": 0.909
+        },
+        {
+          "n": 110,
+          "wins_needed": 83,
+          "exact_over_nominal": 0.79
+        },
+        {
+          "n": 120,
+          "wins_needed": 90,
+          "exact_over_nominal": 0.678
+        },
+        {
+          "n": 130,
+          "wins_needed": 97,
+          "exact_over_nominal": 0.576
+        },
+        {
+          "n": 140,
+          "wins_needed": 103,
+          "exact_over_nominal": 0.929
+        },
+        {
+          "n": 150,
+          "wins_needed": 110,
+          "exact_over_nominal": 0.769
+        }
+      ]
+    },
+    {
+      "grade": "A2",
+      "p0": 0.6043,
+      "k": 60,
+      "min": 0.136,
+      "max": 0.973,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 28,
+          "exact_over_nominal": 0.136
+        },
+        {
+          "n": 40,
+          "wins_needed": 35,
+          "exact_over_nominal": 0.424
+        },
+        {
+          "n": 50,
+          "wins_needed": 42,
+          "exact_over_nominal": 0.69
+        },
+        {
+          "n": 60,
+          "wins_needed": 49,
+          "exact_over_nominal": 0.862
+        },
+        {
+          "n": 70,
+          "wins_needed": 56,
+          "exact_over_nominal": 0.939
+        },
+        {
+          "n": 80,
+          "wins_needed": 63,
+          "exact_over_nominal": 0.944
+        },
+        {
+          "n": 90,
+          "wins_needed": 70,
+          "exact_over_nominal": 0.9
+        },
+        {
+          "n": 100,
+          "wins_needed": 77,
+          "exact_over_nominal": 0.829
+        },
+        {
+          "n": 110,
+          "wins_needed": 84,
+          "exact_over_nominal": 0.745
+        },
+        {
+          "n": 120,
+          "wins_needed": 91,
+          "exact_over_nominal": 0.657
+        },
+        {
+          "n": 130,
+          "wins_needed": 98,
+          "exact_over_nominal": 0.571
+        },
+        {
+          "n": 140,
+          "wins_needed": 104,
+          "exact_over_nominal": 0.973
+        },
+        {
+          "n": 150,
+          "wins_needed": 111,
+          "exact_over_nominal": 0.816
+        }
+      ]
+    },
+    {
+      "grade": "A2",
+      "p0": 0.6043,
+      "k": 100,
+      "min": 0.227,
+      "max": 0.952,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 28,
+          "exact_over_nominal": 0.227
+        },
+        {
+          "n": 40,
+          "wins_needed": 35,
+          "exact_over_nominal": 0.706
+        },
+        {
+          "n": 50,
+          "wins_needed": 43,
+          "exact_over_nominal": 0.311
+        },
+        {
+          "n": 60,
+          "wins_needed": 50,
+          "exact_over_nominal": 0.46
+        },
+        {
+          "n": 70,
+          "wins_needed": 57,
+          "exact_over_nominal": 0.561
+        },
+        {
+          "n": 80,
+          "wins_needed": 64,
+          "exact_over_nominal": 0.611
+        },
+        {
+          "n": 90,
+          "wins_needed": 71,
+          "exact_over_nominal": 0.619
+        },
+        {
+          "n": 100,
+          "wins_needed": 78,
+          "exact_over_nominal": 0.598
+        },
+        {
+          "n": 110,
+          "wins_needed": 85,
+          "exact_over_nominal": 0.558
+        },
+        {
+          "n": 120,
+          "wins_needed": 92,
+          "exact_over_nominal": 0.508
+        },
+        {
+          "n": 130,
+          "wins_needed": 98,
+          "exact_over_nominal": 0.952
+        },
+        {
+          "n": 140,
+          "wins_needed": 105,
+          "exact_over_nominal": 0.82
+        },
+        {
+          "n": 150,
+          "wins_needed": 112,
+          "exact_over_nominal": 0.699
+        }
+      ]
+    },
+    {
+      "grade": "B1",
+      "p0": 0.4009,
+      "k": 30,
+      "min": 0.848,
+      "max": 1.732,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 21,
+          "exact_over_nominal": 1.065
+        },
+        {
+          "n": 40,
+          "wins_needed": 26,
+          "exact_over_nominal": 1.525
+        },
+        {
+          "n": 50,
+          "wins_needed": 31,
+          "exact_over_nominal": 1.722
+        },
+        {
+          "n": 60,
+          "wins_needed": 36,
+          "exact_over_nominal": 1.732
+        },
+        {
+          "n": 70,
+          "wins_needed": 41,
+          "exact_over_nominal": 1.633
+        },
+        {
+          "n": 80,
+          "wins_needed": 46,
+          "exact_over_nominal": 1.478
+        },
+        {
+          "n": 90,
+          "wins_needed": 51,
+          "exact_over_nominal": 1.303
+        },
+        {
+          "n": 100,
+          "wins_needed": 56,
+          "exact_over_nominal": 1.128
+        },
+        {
+          "n": 110,
+          "wins_needed": 61,
+          "exact_over_nominal": 0.963
+        },
+        {
+          "n": 120,
+          "wins_needed": 65,
+          "exact_over_nominal": 1.514
+        },
+        {
+          "n": 130,
+          "wins_needed": 70,
+          "exact_over_nominal": 1.252
+        },
+        {
+          "n": 140,
+          "wins_needed": 75,
+          "exact_over_nominal": 1.032
+        },
+        {
+          "n": 150,
+          "wins_needed": 80,
+          "exact_over_nominal": 0.848
+        }
+      ]
+    },
+    {
+      "grade": "B1",
+      "p0": 0.4009,
+      "k": 60,
+      "min": 0.85,
+      "max": 2.129,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 21,
+          "exact_over_nominal": 2.129
+        },
+        {
+          "n": 40,
+          "wins_needed": 27,
+          "exact_over_nominal": 1.008
+        },
+        {
+          "n": 50,
+          "wins_needed": 32,
+          "exact_over_nominal": 1.307
+        },
+        {
+          "n": 60,
+          "wins_needed": 37,
+          "exact_over_nominal": 1.439
+        },
+        {
+          "n": 70,
+          "wins_needed": 42,
+          "exact_over_nominal": 1.447
+        },
+        {
+          "n": 80,
+          "wins_needed": 47,
+          "exact_over_nominal": 1.375
+        },
+        {
+          "n": 90,
+          "wins_needed": 52,
+          "exact_over_nominal": 1.259
+        },
+        {
+          "n": 100,
+          "wins_needed": 57,
+          "exact_over_nominal": 1.124
+        },
+        {
+          "n": 110,
+          "wins_needed": 62,
+          "exact_over_nominal": 0.984
+        },
+        {
+          "n": 120,
+          "wins_needed": 67,
+          "exact_over_nominal": 0.85
+        },
+        {
+          "n": 130,
+          "wins_needed": 71,
+          "exact_over_nominal": 1.369
+        },
+        {
+          "n": 140,
+          "wins_needed": 76,
+          "exact_over_nominal": 1.143
+        },
+        {
+          "n": 150,
+          "wins_needed": 81,
+          "exact_over_nominal": 0.95
+        }
+      ]
+    },
+    {
+      "grade": "B1",
+      "p0": 0.4009,
+      "k": 100,
+      "min": 0.762,
+      "max": 1.68,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 22,
+          "exact_over_nominal": 0.924
+        },
+        {
+          "n": 40,
+          "wins_needed": 27,
+          "exact_over_nominal": 1.68
+        },
+        {
+          "n": 50,
+          "wins_needed": 33,
+          "exact_over_nominal": 0.762
+        },
+        {
+          "n": 60,
+          "wins_needed": 38,
+          "exact_over_nominal": 0.933
+        },
+        {
+          "n": 70,
+          "wins_needed": 43,
+          "exact_over_nominal": 1.011
+        },
+        {
+          "n": 80,
+          "wins_needed": 48,
+          "exact_over_nominal": 1.016
+        },
+        {
+          "n": 90,
+          "wins_needed": 53,
+          "exact_over_nominal": 0.971
+        },
+        {
+          "n": 100,
+          "wins_needed": 58,
+          "exact_over_nominal": 0.898
+        },
+        {
+          "n": 110,
+          "wins_needed": 62,
+          "exact_over_nominal": 1.64
+        },
+        {
+          "n": 120,
+          "wins_needed": 67,
+          "exact_over_nominal": 1.417
+        },
+        {
+          "n": 130,
+          "wins_needed": 72,
+          "exact_over_nominal": 1.212
+        },
+        {
+          "n": 140,
+          "wins_needed": 77,
+          "exact_over_nominal": 1.027
+        },
+        {
+          "n": 150,
+          "wins_needed": 82,
+          "exact_over_nominal": 0.866
+        }
+      ]
+    },
+    {
+      "grade": "B2",
+      "p0": 0.3545,
+      "k": 30,
+      "min": 0.903,
+      "max": 2.065,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 19,
+          "exact_over_nominal": 2.065
+        },
+        {
+          "n": 40,
+          "wins_needed": 24,
+          "exact_over_nominal": 1.599
+        },
+        {
+          "n": 50,
+          "wins_needed": 29,
+          "exact_over_nominal": 1.131
+        },
+        {
+          "n": 60,
+          "wins_needed": 33,
+          "exact_over_nominal": 1.831
+        },
+        {
+          "n": 70,
+          "wins_needed": 38,
+          "exact_over_nominal": 1.167
+        },
+        {
+          "n": 80,
+          "wins_needed": 42,
+          "exact_over_nominal": 1.586
+        },
+        {
+          "n": 90,
+          "wins_needed": 47,
+          "exact_over_nominal": 0.986
+        },
+        {
+          "n": 100,
+          "wins_needed": 51,
+          "exact_over_nominal": 1.229
+        },
+        {
+          "n": 110,
+          "wins_needed": 55,
+          "exact_over_nominal": 1.461
+        },
+        {
+          "n": 120,
+          "wins_needed": 60,
+          "exact_over_nominal": 0.903
+        },
+        {
+          "n": 130,
+          "wins_needed": 64,
+          "exact_over_nominal": 1.037
+        },
+        {
+          "n": 140,
+          "wins_needed": 68,
+          "exact_over_nominal": 1.159
+        },
+        {
+          "n": 150,
+          "wins_needed": 72,
+          "exact_over_nominal": 1.27
+        }
+      ]
+    },
+    {
+      "grade": "B2",
+      "p0": 0.3545,
+      "k": 60,
+      "min": 0.833,
+      "max": 1.53,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 20,
+          "exact_over_nominal": 1.186
+        },
+        {
+          "n": 40,
+          "wins_needed": 25,
+          "exact_over_nominal": 1.073
+        },
+        {
+          "n": 50,
+          "wins_needed": 30,
+          "exact_over_nominal": 0.833
+        },
+        {
+          "n": 60,
+          "wins_needed": 34,
+          "exact_over_nominal": 1.53
+        },
+        {
+          "n": 70,
+          "wins_needed": 39,
+          "exact_over_nominal": 1.011
+        },
+        {
+          "n": 80,
+          "wins_needed": 43,
+          "exact_over_nominal": 1.48
+        },
+        {
+          "n": 90,
+          "wins_needed": 48,
+          "exact_over_nominal": 0.935
+        },
+        {
+          "n": 100,
+          "wins_needed": 52,
+          "exact_over_nominal": 1.227
+        },
+        {
+          "n": 110,
+          "wins_needed": 56,
+          "exact_over_nominal": 1.521
+        },
+        {
+          "n": 120,
+          "wins_needed": 61,
+          "exact_over_nominal": 0.944
+        },
+        {
+          "n": 130,
+          "wins_needed": 65,
+          "exact_over_nominal": 1.119
+        },
+        {
+          "n": 140,
+          "wins_needed": 69,
+          "exact_over_nominal": 1.287
+        },
+        {
+          "n": 150,
+          "wins_needed": 73,
+          "exact_over_nominal": 1.443
+        }
+      ]
+    },
+    {
+      "grade": "B2",
+      "p0": 0.3545,
+      "k": 100,
+      "min": 0.978,
+      "max": 1.976,
+      "by_n": [
+        {
+          "n": 30,
+          "wins_needed": 20,
+          "exact_over_nominal": 1.976
+        },
+        {
+          "n": 40,
+          "wins_needed": 25,
+          "exact_over_nominal": 1.788
+        },
+        {
+          "n": 50,
+          "wins_needed": 30,
+          "exact_over_nominal": 1.388
+        },
+        {
+          "n": 60,
+          "wins_needed": 35,
+          "exact_over_nominal": 1
+        },
+        {
+          "n": 70,
+          "wins_needed": 39,
+          "exact_over_nominal": 1.685
+        },
+        {
+          "n": 80,
+          "wins_needed": 44,
+          "exact_over_nominal": 1.098
+        },
+        {
+          "n": 90,
+          "wins_needed": 48,
+          "exact_over_nominal": 1.559
+        },
+        {
+          "n": 100,
+          "wins_needed": 53,
+          "exact_over_nominal": 0.984
+        },
+        {
+          "n": 110,
+          "wins_needed": 57,
+          "exact_over_nominal": 1.276
+        },
+        {
+          "n": 120,
+          "wins_needed": 61,
+          "exact_over_nominal": 1.573
+        },
+        {
+          "n": 130,
+          "wins_needed": 66,
+          "exact_over_nominal": 0.978
+        },
+        {
+          "n": 140,
+          "wins_needed": 70,
+          "exact_over_nominal": 1.158
+        },
+        {
+          "n": 150,
+          "wins_needed": 74,
+          "exact_over_nominal": 1.334
+        }
+      ]
+    }
+  ]
+}

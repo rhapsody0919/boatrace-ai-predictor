@@ -4,6 +4,8 @@ import { test, expect } from "./fixtures.js";
  * 会場特徴カードの「もっと詳しく」（BOA-269）。
  * 出目分布（/api/outcome-distribution）と決まり手（winning_technique_stats）を固定値に差し替え、
  * 枠番別の2連率・3連率の合算と、決まり手の全内訳が画面に出ることを確かめる。
+ * BOA-1189 で、カードの上は直近1年・進入コース別の1着率（静的な値）にし、この表から1着率の列を外した
+ * （同じ画面に期間の違う同じ指標を並べない）。
  *
  * 固定値（40レース。カードは20レース未満の会場を出さない）:
  *   1-2-3 が20回、3-1-2 が10回、3-4-5 が10回
@@ -92,19 +94,16 @@ test("会場特徴カードの「もっと詳しく」に枠番別の2連率・3
   await expect(details).not.toHaveAttribute("open", "");
   await details.locator("summary").click();
 
-  // 上のHUDと表で、同じ1着率が同じ値になる（probability の丸めの和を使わない）
-  await expect(
-    page.locator(".venue-hud-row").nth(2).locator(".venue-hud-own-label"),
-  ).toHaveText("50.0%");
-
+  // 1着率の列は出さない（枠・2連率・3連率）
+  await expect(details.locator("thead th")).toHaveCount(3);
   const rows = details.locator("tbody tr");
   await expect(rows).toHaveCount(6);
-  await expect(rows.nth(0)).toContainText("50.0%");
+  await expect(rows.nth(0).locator("td").nth(1)).toHaveText("75.0%");
   await expect(rows.nth(0).locator("td").nth(2)).toHaveText("75.0%");
-  await expect(rows.nth(0).locator("td").nth(3)).toHaveText("75.0%");
-  await expect(rows.nth(2).locator("td").nth(2)).toHaveText("50.0%");
-  await expect(rows.nth(2).locator("td").nth(3)).toHaveText("100.0%");
-  await expect(rows.nth(5).locator("td").nth(3)).toHaveText("0.0%");
+  // 3号艇の2連率は丸めた probability の和（49.92）ではなく件数から出す
+  await expect(rows.nth(2).locator("td").nth(1)).toHaveText("50.0%");
+  await expect(rows.nth(2).locator("td").nth(2)).toHaveText("100.0%");
+  await expect(rows.nth(5).locator("td").nth(2)).toHaveText("0.0%");
 
   // 3号艇の決まり手は全内訳（最多の1つだけではない）。1着2回は小標本の色
   const boat3 = page.getByTestId("venue-details-technique-3");

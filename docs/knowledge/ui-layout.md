@@ -12,6 +12,7 @@
 - 内部タブの中身を包む要素にも区切りの余白を付ける。外側の gap は中まで届かない（2026-10-09、龍神ソナーの3タブ、docs/design/analogy-finder/sonar-tab/uiux-review-spacing.md、#1337）
 - 横あふれは表示項目を削らずデザインで解く（ユーザー指摘、memory feedback_dont_remove_info_for_layout）
 - 横あふれはまず真因を切り分ける。CSS Grid は子の min-width:auto のせいで、折り返せない中身があると列の指定を無視してはみ出す。子に min-width:0 を付ける（.venue-grid > *）（2026-08-29、memory venue_list_redesign_2026_08_28・feedback_dont_remove_info_for_layout）
+- 横スクロールする成績表は1列目（期・コース）を固定する。固定しないと 375px で右の列を見たとき、どの行か分からなくなる（2026-10-28、ファン評価、PR #2051）
 
 ## 押せる部品・選択の見た目
 - 押せる部品はスマホで高さ44px以上。見た目を小さくしたい「?」等は見た目16px のまま押せる範囲を24×24に広げる（src/components/race/TermHintButton.css の ::before、e2e/race-tab-width.spec.js）
@@ -59,3 +60,4 @@
 - 記事に使う公開棒グラフの画像は、PC 幅だけでなく掲載時のスマホ幅で点検する。固定幅の部品は縮小で件数の文字が小さくなることがあり、モバイル幅で撮り直すと同じ数字のまま読める（2026-10-13、2026-10-13-venue-20261013-10-wakamatsu.md）
 - 導線 E2E で href の既定艇を検査しても、そのリンクをクリックした到達の検査とは別。属性の確認と到達の確認を分ける（2026-10-16、2026-10-16-review-20261016-08.md）
 - ブログ図の画像が枠に収まるかは、本番のフォント読み込み後にscrollHeight・scrollWidthと枠の寸法を比較して決める。文字を縮めて押し込まず、余白・行の高さを調整しても収まらない大きさは生成しない（2026-10-20、visual-designer、scripts/lib/blogChartPng.js）
+- 会場カードのバーの値・少件数の回数は上下へ浮かせず右の列へ置く。浮かせると隣の行やカード端で重なり、30回未満の回数を追加した場合に崩れやすい（2026-10-31、BOA-1189の自己確認、VenueCharacteristicsCard・PR #2077）。

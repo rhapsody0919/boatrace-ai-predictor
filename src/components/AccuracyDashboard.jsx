@@ -7,6 +7,7 @@ import { ReliabilityWarning, VolatilityAccuracySection } from "./accuracy";
 import LoadingScreen from "./LoadingScreen";
 import "./AccuracyDashboard.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
+import { formatTodayHeadingJST } from "../utils/dateUtils.js";
 import { isInCautionEnabled } from "../config/featureFlags";
 import InCautionAccuracyChart from "./analysis/InCautionAccuracyChart";
 
@@ -132,23 +133,13 @@ function LegacyAccuracyDashboard({ onRefresh, isRefreshing }) {
     );
   }
 
-  const getTodayDate = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth() + 1;
-    const day = today.getDate();
-    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-    const weekday = weekdays[today.getDay()];
-    return `${year}年${month}月${day}日（${weekday}）`;
-  };
-
   return (
     <>
       {pageMeta}
       <div className="accuracy-dashboard">
         <div className="dashboard-header">
           <h2>📊 成績</h2>
-          <p className="last-updated">{getTodayDate()}</p>
+          <p className="last-updated">{formatTodayHeadingJST()}</p>
         </div>
         <UpdateStatus
           lastUpdated={modelAccuracy.calculatedAt}

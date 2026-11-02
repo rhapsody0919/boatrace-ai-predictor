@@ -39,9 +39,10 @@
  *   機械では判定できない）
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { SUPPORTED_LANGUAGES } from "../../src/config/languages.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -49,7 +50,24 @@ const repoRoot = path.resolve(
 );
 
 const BASE_LANG = "ja";
-const LANGS = ["ja", "en", "zh-TW", "ko"];
+// 対応言語は src/config/languages.js の SUPPORTED_LANGUAGES（唯一の情報源）から読む。
+// 画面（src/i18n.js）は翻訳ファイルの無い言語を dev でだけ throw し、本番の束では
+// console.error で ja に落とすだけなので、E2E を本番の束（vite preview）で流すと
+// 誰も止めなくなる（CI の分数の削減 段2、PR #1997 の審査）。ここで止める
+const LANGS = SUPPORTED_LANGUAGES.map(({ code }) => code);
+
+/**
+ * 対応言語のうち、翻訳ファイル src/locales/{code}/common.json が無いものを返す
+ * @param {string[]} codes
+ * @param {(file: string) => boolean} exists
+ */
+function missingLocaleFiles(codes, exists) {
+  return codes.filter((code) => !exists(localeFile(code)));
+}
+
+function localeFile(code) {
+  return path.join(repoRoot, "src/locales", code, "common.json");
+}
 
 /**
  * i18next の複数形サフィックス。言語ごとに必要な形が違う
@@ -89,10 +107,35 @@ function sameSet(a, b) {
   return a.size === b.size && [...a].every((x) => b.has(x));
 }
 
+// 自己テスト: 翻訳ファイルの無い言語を見つけられること（固定の入力で）
+{
+  const fake = new Set([localeFile("ja"), localeFile("en")]);
+  const got = missingLocaleFiles(["ja", "en", "xx"], (f) => fake.has(f));
+  if (JSON.stringify(got) !== JSON.stringify(["xx"])) {
+    console.error(
+      `NG: missingLocaleFiles の自己テストが失敗（期待 ["xx"] / 実際 ${JSON.stringify(got)}）`,
+    );
+    process.exit(1);
+  }
+}
+
+if (!LANGS.includes(BASE_LANG)) {
+  console.error(
+    `NG: SUPPORTED_LANGUAGES（src/config/languages.js）に基準の言語 ${BASE_LANG} がありません`,
+  );
+  process.exit(1);
+}
+const missing = missingLocaleFiles(LANGS, existsSync);
+if (missing.length > 0) {
+  console.error(
+    `NG: 翻訳ファイルがありません: ${missing.map((c) => `src/locales/${c}/common.json`).join(", ")}（SUPPORTED_LANGUAGES にある言語。docs/operation/add-language.md）`,
+  );
+  process.exit(1);
+}
+
 const locales = {};
 for (const lang of LANGS) {
-  const file = path.join(repoRoot, "src/locales", lang, "common.json");
-  locales[lang] = flatten(JSON.parse(readFileSync(file, "utf8")));
+  locales[lang] = flatten(JSON.parse(readFileSync(localeFile(lang), "utf8")));
 }
 
 const failures = [];
@@ -241,8 +284,37 @@ for (const { term, pattern, use, row } of KO_RETIRED_TERMS) {
   }
 }
 
+// 7. レース確定後・中止のメタ情報（BOA-1185。接続は BOA-1200）
+const raceMetaKeys = [
+  "metaTitleResult",
+  "metaDescriptionResult",
+  "metaTitleCancelled",
+  "metaDescriptionCancelled",
+];
+const raceMetaPlaceholders = new Set(["venue", "race", "date"]);
+for (const lang of LANGS) {
+  for (const key of raceMetaKeys) {
+    checked += 1;
+    const fullKey = `raceDetailPage.${key}`;
+    const value = locales[lang][fullKey];
+    if (typeof value !== "string" || value.trim() === "") {
+      failures.push(`${lang}: ${fullKey} がありません、または空です`);
+      continue;
+    }
+    if (!sameSet(placeholdersOf(value), raceMetaPlaceholders)) {
+      failures.push(`${lang}: ${fullKey} の差し込みは venue・race・date が必要です`);
+    }
+    if (lang === BASE_LANG) {
+      const word = key.endsWith("Result") ? "結果" : "中止";
+      if (!value.includes(word)) {
+        failures.push(`${lang}: ${fullKey} に「${word}」がありません`);
+      }
+    }
+  }
+}
+
 if (failures.length > 0) {
-  console.error("NG: 4言語のロケールが揃っていません");
+  console.error(`NG: ${LANGS.length}言語のロケールが揃っていません`);
   for (const f of failures) console.error(`  - ${f}`);
   console.error("");
   console.error(
@@ -256,5 +328,5 @@ if (failures.length > 0) {
 
 const keyCount = baseKeys[BASE_LANG].size;
 console.log(
-  `OK: 4言語のロケールが揃っている（${keyCount}キー × ${LANGS.length}言語、検査${checked}項目）`,
+  `OK: ${LANGS.length}言語のロケールが揃っている（${keyCount}キー × ${LANGS.length}言語、検査${checked}項目）`,
 );

@@ -137,9 +137,6 @@ const staticPages = [
     priority: "0.7",
   },
   // 会場別レース一覧（本日、/venue/1〜24。venue-list-redesign）
-  // 個別レース詳細（/race/:raceId）は1日最大288件の細粒度動的ページで
-  // 検索需要が見込めず、クロールバジェット浪費（BOA-84の教訓）を避けるため
-  // sitemap非対象とする（docs/adr/0026参照）
   ...Array.from({ length: 24 }, (_, i) => ({
     loc: `/venue/${i + 1}`,
     lastmodFrom: "venueRaceData",
@@ -421,6 +418,31 @@ async function getRacePages() {
   return racePages;
 }
 
+// BOA-1186: 検索露出のある詳細を、日本語・JSTの本日を含む7日だけ追加。
+// 結果の存在は画面と同じ rank1 で判定する（confirmed が残っていても結果を優先）。
+// 最大24会場×12R×7日=2016 URL。失敗時は生成を止め、既存の sitemap を保つ。
+async function getRaceDetailPages() {
+  const { isSupabaseEnabled, fetchAll } =
+    await import("./lib/supabaseClient.js");
+  if (!isSupabaseEnabled()) return [];
+  const rows = await fetchAll(
+    "races",
+    "race_id, race_date, race_results!inner(rank1)",
+    (q) =>
+      q
+        .gte("race_date", getDaysAgoJST(6))
+        .lte("race_date", getDaysAgoJST(0))
+        .not("race_results.rank1", "is", null)
+        .order("race_id"),
+  );
+  return rows.map((row) => ({
+    loc: `/race/${row.race_id}`,
+    lastmod: row.race_date,
+    changefreq: "weekly",
+    priority: "0.6",
+  }));
+}
+
 // 選手個別ページ（/racer/:racerId）を取得
 // 対象はページ側の noindex 判定（RacerProfile.jsx）と同じ isRacerIndexable（src/utils/racerIndexPolicy.js）:
 // ニュースがある選手、または現役の A1 選手（最新の出走が A1 で直近30日以内。集客レーン、2026-10-02）。
@@ -532,7 +554,7 @@ async function getMeetPages(latest) {
     console.warn("⚠️ Supabase未設定のため、節ページはスキップします");
     return [];
   }
-  const { isOutOfScopeMeetTitle, MEET_PAGE_GRADES } =
+  const { isOutOfScopeMeetTitle, MEET_PAGE_GRADES, meetDaysOf, meetPageState } =
     await import("../src/utils/meetPageModel.js");
   const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const until = new Date(todayJst);
@@ -552,8 +574,57 @@ async function getMeetPages(latest) {
   const meets = rows.filter((r) => !isOutOfScopeMeetTitle(r.title));
   const pages = [];
   for (const m of meets) {
+    // ページと同じ初日〜+7日の窓・節の区切りを使う。結果の有無は index 判定に影響しない。
+    const end = new Date(`${m.start_date}T00:00:00Z`);
+    end.setUTCDate(end.getUTCDate() + 7);
+    const vv = String(m.venue_code).padStart(2, "0");
+    const inWindow = (q) =>
+      q
+        .gte("race_id", m.start_date)
+        .lte("race_id", `${end.toISOString().slice(0, 10)}-zz`)
+        .like("race_id", `__________-${vv}-__`)
+        .order("race_id");
+    const [windowConditions, windowEntries, windowRaces] = await Promise.all([
+      fetchAll(
+        "race_conditions",
+        "race_id, series_day, is_final_day, race_stage",
+        inWindow,
+        { client: supabase },
+      ),
+      fetchAll(
+        "race_entries",
+        "race_id, boat_number",
+        (q) => inWindow(q).order("boat_number"),
+        { client: supabase },
+      ),
+      fetchAll("races", "race_id, race_grade", inWindow, { client: supabase }),
+    ]);
+    const meetDays = meetDaysOf(m.start_date, windowConditions, windowEntries);
+    const inMeet = (r) => meetDays.includes(r.race_id.slice(0, 10));
+    const conditions = windowConditions.filter(inMeet);
+    const entries = windowEntries.filter(inMeet);
+    const state = meetPageState({
+      today: todayJst.toISOString().slice(0, 10),
+      startDate: m.start_date,
+      meetDays,
+      hasEntries: entries.length > 0,
+      startDateGrade:
+        windowRaces.find(
+          (r) => r.race_id.startsWith(`${m.start_date}-`) && r.race_grade,
+        )?.race_grade ?? null,
+      grade: m.grade,
+      title: m.title,
+      conditions,
+      // 終了後の各状態も掲載対象なので、結果を取得する必要は無い。
+      doneRaceIds: new Set(),
+      raceIds: [...new Set([...conditions, ...entries].map((r) => r.race_id))],
+      windowHasRaces: [...windowConditions, ...windowEntries].some((r) =>
+        r.race_id.startsWith(m.start_date),
+      ),
+    });
+    if (["preOpen", "notFound", "outOfScope"].includes(state)) continue;
     const venueLatest = latest.byVenue.get(m.venue_code) ?? null;
-    // 開幕前の節は lastmod を出さない。開催中・終了後は節の最終日と最新の開催日の早いほう
+    // 掲載する節の lastmod は、節の最終日と最新の開催日の早いほう
     const lastmod =
       venueLatest && venueLatest >= m.start_date
         ? venueLatest < m.end_date
@@ -621,6 +692,7 @@ function alternatesFor(loc) {
 async function generateSitemap() {
   const blogPosts = getBlogPosts();
   const racePages = await getRacePages();
+  const raceDetailPages = await getRaceDetailPages();
   const racerPages = await getRacerPages();
   const latest = await getLatestRaceDates();
   const meetPages = await getMeetPages(latest);
@@ -659,9 +731,15 @@ async function generateSitemap() {
     ...localizedPages,
     ...blogPosts,
     ...racePages,
+    ...raceDetailPages,
     ...racerPages,
     ...meetPages,
   ];
+
+  // 単一 sitemap の上限。超過した XML は書き出さない。
+  if (allPages.length > 50000) {
+    throw new Error(`sitemap URL 上限超過: ${allPages.length}`);
+  }
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml +=

@@ -293,6 +293,9 @@ export async function runXSendJob(
       }
       // 送信の側（snsSendRunner）の report にも同じ理由を残す
       error.holdReason = reason;
+    } else {
+      // begin_post の後（要照合、出たかもしれない）。runner は送らなかった理由と分けて stage=after_post に残す（BOA-1201）
+      error.postStarted = true;
     }
     // API本文や認証情報をDB・ログに保存しない。
     throw error;

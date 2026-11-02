@@ -352,11 +352,17 @@ export function buildPopulation({
   limit,
   offset,
   afterRacerId = null,
+  newProfilesOnly = false,
 }) {
   const all = racerIds
     ? [...new Set(racerIds)]
     : [...new Set([...registered.keys(), ...recentIds])];
-  const ids = all.filter((id) => afterRacerId === null || id > afterRacerId);
+  // 新人だけの回は、絞り込みを limit・再開位置・残件数の計算より先に行う。
+  const ids = all.filter(
+    (id) =>
+      (!newProfilesOnly || !registered.has(id)) &&
+      (afterRacerId === null || id > afterRacerId),
+  );
   ids.sort((a, b) => a - b);
   return ids.slice(offset, limit ? offset + limit : undefined);
 }
@@ -367,10 +373,10 @@ export function buildPopulation({
 
 // 失敗を緑にしない（.claude/rules/data-acquisition.md §1「書き込み0件を成功扱いにしない」）。
 // 「書き込み」と「変更なしの確認」はどちらも成功（2回目以降の実行は大半が変更なしになる）
-export function evaluateRun(summary) {
+export function evaluateRun(summary, { allowEmpty = false } = {}) {
   const reasons = [];
   const { season } = summary;
-  if (summary.targetCount === 0 && !summary.resumed)
+  if (!allowEmpty && summary.targetCount === 0 && !summary.resumed)
     reasons.push("対象選手が0件");
   if (summary.aborted) {
     reasons.push(
@@ -452,6 +458,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     limit: options.limit,
     offset: options.offset,
     afterRacerId: options.afterRacerId,
+    newProfilesOnly: options.newProfilesOnly,
   });
   // このチャンクの後に残る選手数（limit・offset を外した、対象全体）を、チャンク処理の完了判定に使う
   const eligibleCount = buildPopulation({
@@ -461,6 +468,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     limit: null,
     offset: options.offset,
     afterRacerId: options.afterRacerId,
+    newProfilesOnly: options.newProfilesOnly,
   }).length;
   const newProfileCount = population.filter((id) => !registered.has(id)).length;
   log(
@@ -680,6 +688,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
       recentDays: options.recentDays,
     },
     targetCount: population.length,
+    registeredCount: registered.size,
     resumed: options.afterRacerId !== null,
     stoppedEarly,
     deadlineStopped,
@@ -694,7 +703,9 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     profile,
     season,
   };
-  const verdict = evaluateRun(summary);
+  const verdict = evaluateRun(summary, {
+    allowEmpty: options.newProfilesOnly && registered.size > 0,
+  });
 
   log("");
   log("=== 完了 ===");

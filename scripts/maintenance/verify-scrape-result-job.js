@@ -1074,9 +1074,15 @@ async function runResultJob({
   );
 }
 
+check(
+  "result の最初の窓は発走 +10分",
+  same(SCRAPE_JOBS.result.offsets, [10]),
+  show(SCRAPE_JOBS.result.offsets),
+);
+
 // 中止・順延の確定
 check(
-  "確定の基準: 結果のスロットの期限+許容幅（発走+5分+85分）が、中止・順延の確定の基準（発走+90分）と一致する",
+  "確定の基準: 結果のスロットの期限+許容幅（発走+10分+80分）が、中止・順延の確定の基準（発走+90分）と一致する",
   SCRAPE_JOBS.result.offsets[0] + SCRAPE_JOBS.result.graceMin ===
     CANCELLATION_CONFIRM_AFTER_MIN,
 );

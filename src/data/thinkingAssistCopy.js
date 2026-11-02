@@ -41,8 +41,12 @@ export const ASSIST_COPY = Object.freeze({
   weatherAfterExhibition: "風・波・天候は展示の後に出る",
   observedAt: (time) => `${time}観測`,
   oddsAt: (time) => `オッズ ${time}時点`,
-  // オッズは締切の60分前から取り込む（発売は朝から）。「発売後」と書くと発売中のレースで事実と違う（2026-10-08 ユーザー決定）
-  oddsNone: "オッズは締切の約1時間前から出る",
+  // 画面のオッズは DB の取り込み（締切の60分前から）を読む。「発売後」と書くと発売中のレースで事実と違う（2026-10-08 ユーザー決定）。
+  // 朝の会場（三国・鳴門・徳山・芦屋・唐津）の1〜3Rは、締切60分前にまだ発売していない日があり、遅いと締切30分前ごろに出る
+  // （2026-10-03〜11-02 の scrape_slots。締切10時以降は 4,462/4,464 が60分前に取れた）。公式の発売開始の時刻・前日発売は
+  // 公式の一次情報で確かめられなかったので書かない（BOA-1180、official-data-spec・wording-editor）
+  oddsNone:
+    "オッズは締切の約1時間前から出る（朝の早いレースは遅れることがある）",
   sonarLink: "もっと詳しく見る（龍神ソナー）",
 
   // 堅い？荒れる？（FW-22、D-21・D-37）
@@ -153,8 +157,15 @@ export const ASSIST_COPY = Object.freeze({
   absentRemoved: (boats, k) =>
     `${boats.join("・")}号艇の欠場で${k}点を外しました`,
   cancelled: "このレースは中止です",
-  candidateAria: (boat, pos) => `${boat}号艇を${pos}着の候補に`,
-  candidateLabel: (pos) => `${pos}着`,
+  // 連複（着順を問わない券種。BOA-990 ②）の段は「1艇目・2艇目・3艇目」（承認モック 画面2）
+  candidateAria: (boat, pos, ordered = true) =>
+    ordered
+      ? `${boat}号艇を${pos}着の候補に`
+      : `${boat}号艇を${pos}艇目の候補に`,
+  candidateLabel: (pos, ordered = true) =>
+    ordered ? `${pos}着` : `${pos}艇目`,
+  // マークシートの使う段の見出しの2行目（連複だけ。承認モックの「（順不同）」。括弧を外して 375px のマスの 44px を保つ）
+  unorderedMark: "順不同",
   // 図の右端の「+」。押すとその行に1着・2着・3着の候補のボタンを出す（BOA-801 7、spec D-43）
   markAria: (boat, positions) =>
     positions.length
@@ -163,8 +174,51 @@ export const ASSIST_COPY = Object.freeze({
 
   // 買い目（FR-7・FR-8）
   betRegion: "買い目",
-  betLabel: (form, points) => `3連単 ${form}（${points}点）`,
   betEmpty: "1着・2着・3着の候補を入れると出る",
+  // 券種（BOA-990、承認モック docs/design/assist-bet-types/mock/）。用語は「券種」、連単の組は「-」
+  betTypeGroup: "券種",
+  betTypeLabels: Object.freeze({
+    trifecta: "3連単",
+    trio: "3連複",
+    exacta: "2連単",
+    quinella: "2連複",
+    wide: "拡連複",
+  }),
+  betEmptyFor: (legs, ordered = true) =>
+    ordered
+      ? legs === 2
+        ? "1着・2着の候補を入れると出る"
+        : "1着・2着・3着の候補を入れると出る"
+      : legs === 2
+        ? "1艇目・2艇目の候補を入れると出る"
+        : "1艇目・2艇目・3艇目の候補を入れると出る",
+  compareHeading: "券種で比べる（同じ候補）",
+  colBetType: "券種",
+  colBetPoints: "点数",
+  colComposite: "合成オッズ",
+  pointsCell: (n) => `${n}点`,
+  // 拡連複は合成オッズを出さない（承認モック 画面1の注記。BOA-990 ③）
+  compareNote:
+    "行を押すとその券種に切り替わる。拡連複は複数の組が同時に当たることがあるので、合成オッズを出さない（下の表で組ごとに見る）",
+  legUnused: (type, ordered = true) =>
+    ordered
+      ? `${type}は1着・2着の組。3着の段は使わない（入れた候補は残る）`
+      : `${type}は2艇の組。3段目は使わない（入れた候補は残る。3連の券種に戻すと使う）`,
+  boxButton: "選んだ艇でボックス",
+  boxUndo: "元に戻す",
+  boxNote:
+    "「選んだ艇でボックス」は、どこかの段に入れた艇を使う段すべてにそろえる。押した直後に「元に戻す」が出る",
+  popularityNote: (type, n) => `人気は${type}のオッズの順（${n}通りの中で）`,
+  // 拡連複（BOA-990 ③、承認モック 画面2）。オッズは幅、払戻・トリガミ・人気は下限
+  popularityNoteWide: (n) => `人気は拡連複のオッズの下限の順（${n}通りの中で）`,
+  oddsRange: (lo, hi) => `${lo}〜${hi}`,
+  colPayoutLow: "払戻（下限）",
+  wideCalcNote:
+    "拡連複のオッズは公式の下限〜上限。払戻とトリガミは下限で、その組だけ当たったときの値で計算",
+  wideMultiNote:
+    "拡連複は3着以内の2艇の組なので、同じレースで最大3組が当たることがある（そのときの払戻は組ごとの和）",
+  // 固定フッターの2行目（拡連複は合成オッズの代わりに）
+  wideFoot: "合成オッズは出さない（組ごとに見る）",
   composite: (v) => `合成 ${v}`,
   compositeNote: "合成オッズは丸める前の理論値",
   openSheet: "マークシートを開く",
@@ -185,24 +239,56 @@ export const ASSIST_COPY = Object.freeze({
   oddsTimes: (v) => `${v}倍`,
   // 類似レースでよく出た3連単の表の上の1行（BOA-808 P3）。オッズの時刻が無ければ「今日の値」とだけ書く。
   // 終わったレースは「今日」と書かない（配分の注記 oddsCautionFinished と同じく確定オッズではないと書く）
-  simTopNote: (n, time, finished = false) =>
+  // 締切時オッズ（公式）を使っているときは時刻を書かない（BOA-990）
+  simTopNote: (n, time, finished = false, final = false) =>
     `件数は類似レース${n.toLocaleString("ja-JP")}件のうち。${
-      finished
-        ? `オッズ・人気はこのレースの${time ? `${time}時点` : "取り込んだ最後の値"}で、確定オッズではない`
-        : `オッズ・人気は今日${time ? `の${time}時点` : "の値"}`
+      final
+        ? "オッズ・人気はこのレースの公式の締切時オッズ"
+        : finished
+          ? `オッズ・人気はこのレースの${time ? `${time}時点` : "取り込んだ最後の値"}で、確定オッズではない`
+          : `オッズ・人気は今日${time ? `の${time}時点` : "の値"}`
     }`,
   trigami: "トリガミ",
   trigamiLine: "合成オッズが1.0未満。どれが当たっても予算を下回る",
-  totalLine: (total, remainder, lo, hi) =>
-    `合計 ${total.toLocaleString("ja-JP")}円・残り${remainder.toLocaleString("ja-JP")}円・当たったときの倍率 ${lo}〜${hi}倍`,
-  missingOdds: (n) => `オッズの無い${n}点は配分に入れていない`,
+  // 拡連複は表のオッズの「〜」（下限〜上限）と読み違えないよう、組ごとの幅を「から」と「当たる組による」で書く
+  // （BOA-990 ③ ファン評価1周目 P2-1）。倍率は下限の払戻から
+  totalLine: (total, remainder, lo, hi, wide = false) =>
+    `合計 ${total.toLocaleString("ja-JP")}円・残り${remainder.toLocaleString("ja-JP")}円・${
+      wide
+        ? lo === hi
+          ? // 1点だけ・どの組も同じ倍率のときは1つの値（ファン評価2周目 P2-1）
+            `1組だけ当たったときの倍率 ${lo}倍`
+          : `1組だけ当たったときの倍率 ${lo}倍から${hi}倍（当たる組による）`
+        : `当たったときの倍率 ${lo}〜${hi}倍`
+    }`,
+  // オッズの無い組は組番も出す（BOA-990 ファン評価2周目 P2-1）
+  missingOdds: (n, tickets = [], wide = false) =>
+    `オッズの無い${n}点${tickets.length ? `（${tickets.join("・")}）` : ""}は${wide ? "配分" : "配分と合成"}に入れていない`,
+  // 点数のうちオッズのある点数（オッズの無い組があるときだけ）
+  pointsPriced: (points, priced) =>
+    priced < points ? `${points}点（オッズあり${priced}点）` : `${points}点`,
+  // 図の「1着人気」の見出し。締切前は3連単の合成（BOA-990、2026-10-28 オーナー決定 案 c）。
+  // 公式の単勝人気とは別の値だと分かるように書く
+  boardBetTitle: "1着になる組のオッズ（3連単の合成。公式の単勝人気とは別）",
+  // 締切後は公式の単勝の締切時オッズ（2026-10-28 オーナー決定）
+  boardBetTitleWin: "1着のオッズ（公式の単勝の締切時オッズ）",
+  // 図の1着人気で、オッズの無い組を除いて合成した艇
+  boardMissingFirst: (boats) =>
+    `${boats.join("・")}号艇の1着人気は、オッズの無い組を除いた合成`,
   // 均等払戻で切り捨てた余りを足したとき（spec FR-8・D-43）
   toppedNote: "余りは払戻の少ない組に足した",
-  oddsCaution: (time) =>
-    `オッズは${time}時点で締切まで動く。返還があると配当は変わる`,
+  // 承認モック（BOA-990 画面1・2）の「オッズは 15:42 の値。締切まで変わる」
+  oddsCaution: (time) => `オッズは${time}の値。締切まで変わる`,
   // 終わったレース（振り返り）。取り込んだ最後のオッズで、確定オッズではない（ファン評価 1周目 指摘13）
   oddsCautionFinished: (time) =>
     `このレースは終わっています。オッズは${time}時点で、確定オッズではない`,
+  // 締切の後に公式の締切時オッズ（race_odds_final）が取れた券種（BOA-990）
+  oddsFinal: "オッズは公式の締切時オッズ。返還があると配当は変わる",
+  oddsFinalFailed:
+    "締切時オッズを取れなかったので、取り込んだ最後の値で出している",
+  // ほかの券種のオッズはあるのに、選んだ券種だけ無いとき（取得の欠け・古いレース）
+  oddsTypeMissing: (type) => `${type}のオッズは取れていない`,
+  oddsAtFinal: "オッズ 公式の締切時オッズ",
 
   // ---- レンズの要約（FR-4、screens「レンズごとの図 C」D 要約）と図の印 ----
   // 「数える」「集計」「算出」「対象」は使わない（D-41・D-42）。艇数には単位「艇」
@@ -358,8 +444,11 @@ export const ASSIST_COPY = Object.freeze({
   pastLabel: (target = 1) => `過去の${TARGET_LABEL[target]}`,
   pastText: (k, n) =>
     `${Math.round((k / n) * 100)}%（${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}）`,
-  // 1着以外を選んだときの人気の札（人気は1着になる組のオッズのまま。D-44 (2)）
-  popLabel: (target = 1) => (target === 1 ? "1着人気" : "人気（1着）"),
+  // 図の行の人気の札。着順を替えても値は1着になる組のオッズのまま（D-44 (2)）。
+  // 締切前は3連単の合成で、公式の単勝人気と別物と分かる名前にする（BOA-990、2026-10-28 オーナー決定 案 c）。
+  // 締切後は公式の単勝の締切時オッズ（popLabelWin。同日のオーナー決定）
+  popLabel: "3連単から見た1着人気",
+  popLabelWin: "1着人気（公式の単勝）",
   // 優勝戦・準優勝戦の日でも、展開はラウンドを問わずに集める（形・進入の件数が要るため）。そうと分かる呼び名にする
   flowScopeLabel: (final) =>
     final ? "全国・級の並びが同じ（予選も含む）" : "全国・級の並びが同じ",
@@ -752,7 +841,8 @@ export const ASSIST_COPY = Object.freeze({
   guidePowerSubPost: "金枠が6艇で一番速い。1号艇は展示が速く出やすい",
   guidePowerSubPre: "展示は展示の後に出る。今はモーター2連率を見る",
   guidePlaceSub: "●が2着以内・○が3着以内。行の＋で相手を候補に",
-  guideBetSub: "1着・2着・3着を押して組む。合成オッズ1.0未満はトリガミ",
+  guideBetSub:
+    "券種を選び、段ごとに候補を押して組む。合成オッズ1.0未満はトリガミ",
 });
 
 /**
@@ -844,11 +934,12 @@ export const GLOSSARY = Object.freeze({
     items: [
       "100円単位に丸めると組ごとに少しずれる",
       "1.0未満だと、当たっても賭けた金額を下回る（トリガミ）",
+      "拡連複は同じレースで複数の組が当たることがあるので出さない（組ごとの払戻の下限で見る）",
     ],
   },
   トリガミ: { lead: "当たったのに、払戻が賭けた合計を下回ること" },
   人気: {
-    lead: "3連単120通りのオッズが低い順の順番。1番人気が一番売れている",
+    lead: "その券種の全通り（3連単120通り・3連複20通り・2連単30通り・2連複15通り・拡連複15通り）のオッズが低い順の順番（拡連複は下限の順）。1番人気が一番売れている",
   },
   過去の1着: {
     lead: "この艇番・この級で、差がつく材料と同じ集めたレースで1着になった割合",

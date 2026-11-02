@@ -8,6 +8,12 @@ name: E2E Live (本番データ)
 # JST 14:00 に置くのは、ほぼ全会場が開催中で、当日のデータに依存する表示（開催場一覧・
 # 締切前のレース等）を本番データで確かめられる時間帯だから。発走前のレースでしか出ない
 # UIのテストは、固定の過去レースを発走前の状態にして開くので時刻に依存しない（BOA-445）。
+#
+# 組に分ける（docs/design/ci-minutes-reduction/design.md 2.4・4 段1）: 1ジョブで全件を流していた間は
+# 2026-10-20〜26 の7回とも60分の上限で取り消され、本番データでの検知が働いていなかった。全件は
+# 再生でも合計 約8,600 worker 秒（2 workers で約72分）あり、1台では収まらない。PR ゲートと同じ
+# e2e/shards.json の5組に分け（e2e-shards.js --matrix）、report が組の結果をまとめて1回だけ通知する。
+# ワークフローの名前は変えない（job-watch.yml の workflows の一覧が名前で引く）。
 
 on:
   schedule:
@@ -20,10 +26,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 組の分け方（e2e/shards.json）を matrix に直す。誤りがあればここで落とす
+  shards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.shards.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Read e2e shards
+        id: shards
+        # shell を書かない run は pipefail が無く、node の失敗が tee の0に隠れる
+        run: |
+          set -euo pipefail
+          node scripts/maintenance/e2e-shards.js --matrix | tee -a "$GITHUB_OUTPUT"
+
   e2e-live:
+    needs: shards
     environment: prod-jobs
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 再生の組は中央 約18分・最大 約32分（PR ゲートの7日）。1ジョブで最後まで走った 10/13〜10/18 は全件で
+    # 45.7〜55.4分（2 workers）なので、1組は10分台の見込み。落ちる試験が多い日（1件 60秒×2回）の伸びを見込んで
+    # 45分。目安で、live の組の実測は最初の数回で見る
+    timeout-minutes: 45
+    strategy:
+      # 1組が落ちても他の組は最後まで走らせ、失敗を一度に全部見せる
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.shards.outputs.matrix) }}
+    name: e2e-live (${{ matrix.shard }}/${{ strategy.job-total }})
     steps:
       - uses: actions/checkout@v4
 
@@ -36,17 +71,72 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
+      # テストの失敗では止めず（合否は report が組の結果から決める）、ログは tee で流す
+      # （以前はファイルに溜めて最後に出していたため、時間切れの run では何も残らなかった）
       - name: Run E2E (本番データ・実時刻)
-        id: e2e
         env:
           CI: true
           E2E_LIVE: '1'
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-${{ matrix.shard }}.zip
+        run: npx playwright test --fully-parallel --reporter=list,blob ${{ matrix.args }}
+
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-live-blob-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+
+      - name: Upload Playwright trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-live-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
+  # 組の結果をまとめ、skip・組の網羅を見て、落ちていれば Slack に1回だけ流す。
+  # 組が落ちても取り消されても必ず走る（通知を落とさない）
+  report:
+    needs: [shards, e2e-live]
+    if: always()
+    environment: prod-jobs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: e2e-live-blob-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      # merge-reports はテストが落ちていても終了コード0を返す。合否は最後の手順で組の結果から決める。
+      # 通知の要約（落ちたテスト名と最終集計）は list の出力から取る（1ジョブのころと同じ形）
+      - name: Merge reports
+        id: merge
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-results.json
+          LIVE_RESULT: ${{ needs.e2e-live.result }}
         run: |
           set +e
-          npm run test:e2e > e2e-live.log 2>&1
-          CODE=$?
+          if ls all-blob-reports/*.zip >/dev/null 2>&1; then
+            npx playwright merge-reports --reporter=list,json all-blob-reports > e2e-live.log 2>&1
+          else
+            echo "組のレポートが1つも無い（組が途中で止まった・取り消された）" > e2e-live.log
+          fi
           cat e2e-live.log
           # 区切りが固定だと、ログに区切りと同じ行があった時点で値が切れ、残りが出力の行として読まれる。
           # 毎回ランダムな区切りにする（BOA-652）
@@ -55,22 +145,35 @@ jobs:
             echo "summary<<$delim"
             # 失敗したテスト名と最終集計だけを送る（全文はActionsのログで見る）
             grep -E '^\s+[0-9]+\) |^\s+[0-9]+ (passed|failed|flaky|skipped)' e2e-live.log | head -40
+            echo "組の結果: $LIVE_RESULT"
             echo "$delim"
           } >> "$GITHUB_OUTPUT"
-          echo "exit_code=$CODE" >> "$GITHUB_OUTPUT"
-          # 失敗はSlackに流してから明示的に落とす
           exit 0
 
       - name: Check skipped tests
-        if: always()
+        # 組が全部成功したのにレポートが無い（merge-reports の異常）ときも走らせて落とす（黙って skip にしない）
+        if: always() && (needs.e2e-live.result == 'success' || hashFiles('e2e-results.json') != '')
         run: node scripts/maintenance/check-e2e-skips.js
 
+      # 分け方（matrix、e2e/shards.json）が全テストを1回ずつ走らせたか（PR ゲートの集約と同じ検査）
+      - name: Check shard coverage
+        # 組が全部成功したのにレポートが無い（merge-reports の異常）ときも走らせて落とす（黙って skip にしない）
+        if: always() && (needs.e2e-live.result == 'success' || hashFiles('e2e-results.json') != '')
+        env:
+          # 一覧も実行と同じモードで集める（Codex の指摘。今の spec では replay でも一覧は同じだが、揃えておく）
+          E2E_LIVE: '1'
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-list.json
+        run: |
+          npx playwright test --list --reporter=json
+          node scripts/maintenance/check-e2e-shard-coverage.js e2e-list.json e2e-results.json
+
       - name: Notify Slack (失敗時のみ)
-        # skip の検査（直前、always()）が落ちても通知・trace・失敗扱いが飛ばないよう always() を付ける
-        if: always() && steps.e2e.outputs.exit_code != '0'
+        # skip・網羅の検査（直前、always()）が落ちても通知・失敗扱いが飛ばないよう always() を付ける
+        # 組の落ちに加え、skip・網羅の検査の落ち（failure()）でも鳴らす
+        if: always() && (needs.shards.result != 'success' || needs.e2e-live.result != 'success' || failure())
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SUMMARY: ${{ steps.e2e.outputs.summary }}
+          SUMMARY: ${{ steps.merge.outputs.summary }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         # 通知の形（attachments + section/mrkdwn）は nightly-verify-db.yml に揃える。
         # テスト名に引用符・改行が入るため、JSONは jq で組み立ててエスケープを任せる。
@@ -96,16 +199,11 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$PAYLOAD"
 
-      - name: Upload Playwright trace on failure
-        # skip の検査（直前、always()）が落ちても通知・trace・失敗扱いが飛ばないよう always() を付ける
-        if: always() && steps.e2e.outputs.exit_code != '0'
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-traces-live
-          path: test-results/
-          retention-days: 7
-
       - name: E2Eの失敗をジョブの失敗として扱う
-        # skip の検査（直前、always()）が落ちても通知・trace・失敗扱いが飛ばないよう always() を付ける
-        if: always() && steps.e2e.outputs.exit_code != '0'
-        run: exit 1
+        if: always() && (needs.shards.result != 'success' || needs.e2e-live.result != 'success')
+        env:
+          SHARDS_RESULT: ${{ needs.shards.result }}
+          LIVE_RESULT: ${{ needs.e2e-live.result }}
+        run: |
+          echo "shards の結果: $SHARDS_RESULT・e2e-live の組の結果: $LIVE_RESULT"
+          exit 1

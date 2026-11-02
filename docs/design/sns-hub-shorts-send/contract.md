@@ -14,7 +14,7 @@ runYoutubePublishJobは別段階。1回の呼出しでyoutube_pollを先に記�
 
 公開結果は{confirmed:true,privacyStatus:'public',id,posted_at}。本人チャンネル・承認版・同一IDを確認した実公開時刻のみで、privateのpublishedAtやupload終了時刻は使わない。completeとdraft.posted_atは139の同一transactionで保存する。videos.update開始記録後の応答喪失・DB失敗はupdate_started/reconcileで照合に残し、非公開とは断定しない。通信開始後の停止・期限超過を取り消す保証はなく、実adapterのtimeout/時刻境界の通常検証が必要。
 
-期限切れ・承認失効・preflight失敗等でupdate開始前に停止したID判明動画はyoutube_retainでprivate_retained/reconcileと理由を保存。一覧は候補IDと「非公開のまま残置」を表示する。削除・要照合解除・再公開の自動経路はない（削除はオーナーが手で行う）。ID不明・保存応答喪失は要照合のまま。DB保存失敗時には一覧の残置表示まで保証できないため、照合運用で確認する。処理読取が別ID・public/unlisted・未確認を返した場合も非公開と断定せず要照合のまま。
+期限切れ・承認失効・preflight失敗等でupdate開始前に停止したID判明動画はyoutube_retainでprivate_retained/reconcileと理由を保存（error_code、186: youtube_retained_budget・processing・check_failed・pt_day・error）。一覧は候補IDと「非公開のまま残置」を表示する。削除・再公開の自動経路はない（削除はオーナーが手で行う）。要照合の自動解除は1つだけ: private_retained で期限とリースを過ぎ、10分以内の読み取り（youtube_lookup）で自分の非公開の動画か削除済み（items が空）と確かめた job を、公開しないで閉じる（youtube_close_private、cancelled・youtube_closed_private／youtube_closed_deleted、186。BOA-1164）。ID不明・保存応答喪失は要照合のまま。DB保存失敗時には一覧の残置表示まで保証できないため、照合運用で確認する。処理読取が別ID・public/unlisted・未確認を返した場合も非公開と断定せず要照合のまま。
 
 ## クォータ
 
@@ -51,7 +51,7 @@ node scripts/maintenance/verify-sns-bundle-import.js
 - `api/_lib/youtubeQueueAdapter.js` が YouTube Data API v3 を直接呼ぶ。upload は1回の multipart（32 MiB まで。続きから送る仕組みは作らない）、`privacyStatus=private`・`selfDeclaredMadeForKids=false`。公開は `videos.update`（part=status）で同じ子供向けの設定のまま public にする
 - **本人の動画の確認**: `videos.list` の `processingDetails` は自分がアップロードした動画にだけ返る。これがあり、題名が承認の `youtube_title` と同じときだけ `confirmed=true`
 - `posted_at` は公開を確かめた後の `snippet.publishedAt`。非公開の間の時刻・upload の終了時刻は使わない
-- サムネイルの Content-Type は媒体（jpeg・png）に合わせる。サムネイルが失敗したら公開せず非公開のまま残す（`youtube_retain`）。チャンネルの電話番号の確認が済んでいないと 403 になるので、その間は承認の snapshot に表紙を入れない
+- サムネイルの Content-Type は媒体（jpeg・png）に合わせる。thumbnails.set の失敗（HTTP・通信）は、呼び出し側が `onThumbnailFailed` を渡していれば理由を渡して続け、動画は公開まで進む（runner は渡す。report.jobs の `thumbnail_error` と Slack に1回。BOA-1172）。渡していない呼び出しは今までどおり公開せず非公開のまま残す（`youtube_retain`）。thumbnails.set の前の検査・台帳への記録（停止・期限・リース・クォータ）が落ちたときも非公開のまま残す。チャンネルの電話番号の確認が済んでいないと 403 になることがある（確認の状態は未確認）
 - access token は runner が claim の前に `getYoutubeAccessToken`（`api/_lib/youtubeUpload.js`）で取り、`createYoutubeQueueAdapter({accessToken})` に渡す。公開の切り替えには `youtube` の scope が要る（sns-pdca-loop tasks 26）
 - **説明とタグ**（2026-10-13 修正）: 説明は承認の完成文（`snapshot.text` = 本文＋改行＋タグの行）、タグは承認の `source.hashtags` から先頭の # を外したもの（空・重複は除く）。どちらも承認の hash に入る値なので、承認した版と送る版がずれない。旧来の手動送信（publish-youtube.js）は説明に本文だけ・タグに hashtags を渡していた
 - **動画の大きさ**: 1回の multipart で上げるので 32 MiB まで。承認（`createXSnapshot` の `YOUTUBE_MEDIA_MAX_BYTES`）も 32 MiB で止め、送る前にも `youtube_video_too_large` で保留にする（2026-10-13 そろえた）

@@ -10,10 +10,12 @@
  *   (c) クエリの検証: raceId の形式・JSTの当日のみ・page の列挙値・未知のパラメータ・GET以外 → 400/405（no-store）
  *   (d) handleLiveOddsRequest: 成功（s-maxage=30）・締切時オッズ（s-maxage=300）・未発売・HTTP非200・通信失敗・
  *       ブレーカー（retryAfterSec）→ 200+ok:false（s-maxage=10）。取得するURLが公式の該当ページ
- *   (e) 設定: api/odds/live.js の maxDuration=30・再試行なし・ブレーカーを DB ストアで共有、vite の READ_ONLY_API に odds
+ *   (e) 設定: api/odds/live.js の maxDuration=30・再試行なし・ブレーカーを DB ストアで共有、vite の READ_ONLY_API に odds。
+ *       race_odds に書かない（api/odds/live.js・scripts/lib/liveOdds.js を字句で読み、書き込みを探す。読むのは許す）
  */
 import fs from "node:fs";
 import * as cheerio from "cheerio";
+import * as espree from "espree";
 import {
   parseOddsUpdatedAt,
   isFinalOdds,
@@ -54,6 +56,65 @@ function check(label, pass, detail = "") {
   }
 }
 const show = (v) => JSON.stringify(v);
+
+// race_odds を書く経路（Cron のオッズの保存・変わった行だけ書く共通の関数）
+const RACE_ODDS_WRITER_MODULE =
+  /scrapeJobs\/(oddsHandlers|finalOddsHandlers|predictionOddsHandlers)\.js|unchangedRows\.js/;
+const WRITE_METHODS = new Set(["insert", "upsert", "update", "delete"]);
+
+/**
+ * ソースの中の race_odds への書き込みの手がかりを拾う（(e) で使う）。字句（espree の tokenize）で読むので、
+ * コメント・文字列の中の語は数えない。拾うもの:
+ * - `.from("race_odds")` に続く呼び出しの連なり（文の終わりまで）の .insert/.upsert/.update/.delete
+ * - race_odds の文字列を `.from(...)` の引数以外で使う（変数に入れて渡す・upsertChangedRows に渡す等）
+ * - `.rpc(`（関数の中で何を書くかをソースから確かめられない）
+ * - race_odds を書くモジュールの import（名前を変えても出所で分かる）
+ * 読み（`.from("race_odds").select(...)`）と、Map 等の .delete は拾わない
+ * @param {string} src
+ * @returns {string[]} 見つかった手がかり（無ければ空）
+ */
+function raceOddsWrites(src) {
+  const toks = espree.tokenize(src, {
+    ecmaVersion: "latest",
+    sourceType: "module",
+  });
+  const val = (i) => toks[i]?.value;
+  const hits = [];
+  toks.forEach((t, i) => {
+    if (t.value === "." && val(i + 1) === "rpc" && val(i + 2) === "(")
+      hits.push(".rpc(");
+    if (t.type !== "String" && t.type !== "Template") return;
+    if (RACE_ODDS_WRITER_MODULE.test(t.value)) hits.push(`import ${t.value}`);
+    // 表の名前そのもの（引用符の中が race_odds だけ）を見る。文の中の語は数えない
+    if (t.value.slice(1, -1) !== "race_odds") return;
+    const asFromArg =
+      val(i - 3) === "." &&
+      val(i - 2) === "from" &&
+      val(i - 1) === "(" &&
+      val(i + 1) === ")";
+    if (!asFromArg) {
+      hits.push(`${t.value} を .from( の外で使う`);
+      return;
+    }
+    let depth = 0;
+    for (let j = i + 2; j < toks.length; j++) {
+      const v = toks[j].value;
+      if (v === "(" || v === "[" || v === "{") depth++;
+      else if (v === ")" || v === "]" || v === "}") {
+        if (depth === 0) break;
+        depth--;
+      } else if (depth === 0 && (v === ";" || v === ",")) break;
+      else if (
+        depth === 0 &&
+        v === "." &&
+        WRITE_METHODS.has(val(j + 1)) &&
+        val(j + 2) === "("
+      )
+        hits.push(`.from(${t.value}).${val(j + 1)}(`);
+    }
+  });
+  return hits;
+}
 
 const FIX = (name) =>
   fs.readFileSync(
@@ -447,10 +508,66 @@ const fetcher = (fn) => {
       /timeoutMs:\s*12000/.test(api) &&
       /createSupabaseStore\(supabase\)\.breakerStore/.test(api),
   );
-  check(
-    "api/odds/live.js: race_odds に書かない",
-    !/race_odds/.test(api.replace(/^\s*\*.*$/gm, "")),
+  // 前は文字列 race_odds の出現そのものを禁じていて、範囲の外で DB の最新の窓を読む変更（BOA-1149）まで
+  // 落としていた。書き込みだけを探す。要求の処理の本体（scripts/lib/liveOdds.js）も読む
+  const liveOddsLib = fs.readFileSync(
+    new URL("../lib/liveOdds.js", import.meta.url),
+    "utf8",
   );
+  const writes = [
+    ...raceOddsWrites(api).map((h) => `api/odds/live.js: ${h}`),
+    ...raceOddsWrites(liveOddsLib).map((h) => `scripts/lib/liveOdds.js: ${h}`),
+  ];
+  check(
+    "api/odds/live.js・scripts/lib/liveOdds.js: race_odds に書かない（読むのは許す）",
+    writes.length === 0,
+    show(writes),
+  );
+  // 再現: 読むだけのソースは通り（前の検査はここで落ちた）、書くソースは落ちる
+  for (const [label, src] of [
+    [
+      "select の連なり",
+      'const { data } = await supabase.from("race_odds").select("window_min, scraped_at").eq("race_id", id).order("window_min", { ascending: false }).limit(1);',
+    ],
+    [
+      "Promise.all の中の select",
+      'const [a, b] = await Promise.all([supabase.from("race_odds").select("*"), cache.delete(id)]);',
+    ],
+    ["Map の delete・hash の update", "cache.delete(id); hash.update(body);"],
+    [
+      "コメント・文字列の中の語",
+      '// supabase.from("race_odds").upsert(rows) はしない\n/*\n  .rpc( も使わない\n*/\nconst note = "race_odds に .insert( しない";',
+    ],
+  ]) {
+    const got = raceOddsWrites(src);
+    check(`検査の再現: 読むだけは通る（${label}）`, got.length === 0, show(got));
+  }
+  for (const [label, src] of [
+    ["upsert", 'await supabase.from("race_odds").upsert(rows);'],
+    ["insert", 'await supabase.from("race_odds").insert(row);'],
+    [
+      "改行をはさんだ update",
+      'await supabase\n  .from("race_odds")\n  .update({ odds })\n  .eq("race_id", id);',
+    ],
+    ["delete", 'await supabase.from("race_odds").delete().eq("race_id", id);'],
+    ["URL の後の upsert", 'await fetch("https://x").then(() => supabase.from("race_odds").upsert(rows));'],
+    ["変数に入れた表の名前", 'const T = "race_odds"; await supabase.from(T).upsert(rows);'],
+    ["upsertChangedRows に渡す", 'await save(supabase, "race_odds", rows);'],
+    ["rpc", 'await supabase.rpc("save_odds_window", { rows });'],
+    [
+      "名前を変えた import",
+      'import { createOddsCronHandler as h } from "../../scripts/lib/scrapeJobs/oddsHandlers.js";',
+    ],
+    [
+      "unchangedRows の import",
+      'import { upsertChangedRows as save } from "../../scripts/lib/unchangedRows.js";',
+    ],
+  ]) {
+    check(
+      `検査の再現: 書くソースは落ちる（${label}）`,
+      raceOddsWrites(src).length > 0,
+    );
+  }
   const vite = fs.readFileSync(
     new URL("../../vite.config.js", import.meta.url),
     "utf8",

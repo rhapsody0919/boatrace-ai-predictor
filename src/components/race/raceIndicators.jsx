@@ -91,7 +91,7 @@ const byBoat = (rows) => {
  * 速いほど良い数字なので best は最小値（`dir: "min"`）。1艇でも値が欠けている
  * 種別でも、値がある艇の中の最小に印を付ける（`bestOf` が null を除く）
  */
-const ORIGINAL_EXHIBITION_ROW_META = {
+export const ORIGINAL_EXHIBITION_ROW_META = {
   一周: { key: "oriLap", labelKey: "dataTable.rowOriLap" },
   半周ラップ: { key: "oriHalfLap", labelKey: "dataTable.rowOriHalfLap" },
   まわり足: { key: "oriTurn", labelKey: "dataTable.rowOriTurn" },
@@ -110,7 +110,7 @@ export function originalExhibitionKindLabels(t, kinds) {
     .map((meta) => t(meta.labelKey));
 }
 
-function buildOriginalExhibitionRows(t, originalExhibition) {
+export function buildOriginalExhibitionRows(t, originalExhibition) {
   if (!originalExhibition || originalExhibition.state !== "published")
     return [];
   const byBoat = originalExhibition.byBoat ?? {};
@@ -125,6 +125,11 @@ function buildOriginalExhibitionRows(t, originalExhibition) {
         value: toNumber(values?.[kind]),
       }));
       if (candidates.every((c) => c.value === null)) return null;
+      // JSX とコピーで同じ文字列を使う。描画の構造には依存しない。
+      const formatValue = (p) => {
+        const value = toNumber(byBoat[p.number]?.[kind]);
+        return value !== null ? value.toFixed(2) : "—";
+      };
       return {
         key: meta.key,
         label: t(meta.labelKey),
@@ -132,10 +137,11 @@ function buildOriginalExhibitionRows(t, originalExhibition) {
         // 発走の直前に出る値なので直前情報タブへ（展示タイムと同じ扱い）
         category: "beforeInfo",
         best: bestOf(candidates, "min", { digits: 2 }),
+        formatValue,
         render: (p) => {
           const value = toNumber(byBoat[p.number]?.[kind]);
           return value !== null ? (
-            <span className="drt-value">{value.toFixed(2)}</span>
+            <span className="drt-value">{formatValue(p)}</span>
           ) : (
             "—"
           );

@@ -3,7 +3,8 @@
  *
  * - 人の画面の部分集合にする。人のトップ（VenueGridPage・VenueGridCard）と会場ページ（VenueRaceListPage・
  *   RaceCard）が出している文字のうち、開催の予定（会場名・節の名前・レース番号・締切時刻・グレード・中止）
- *   と、ページの見出し・最終更新時刻・title・meta description・canonical・パンくず（BreadcrumbList 用）だけを入れる
+ *   と、ページの見出し・最終更新時刻・title・meta description・canonical・パンくず（BreadcrumbList 用）だけを入れる。
+ *   会場ページには、見出しの直下の常設の要約2行（VenueSummaryLines と同じ venueSummaryLines、BOA-1189）も入れる
  * - 整形は人の画面と同じ transformTodayRaces、文字は人の画面と同じ関数（raceListDisplay.js・pageMeta.js）と
  *   i18n のキーで作る。t は表示する言語の i18next の t を渡す（既定は ja。言語版は BOA-848 の第2段）
  * - リンク先・canonical・パンくずは、人の画面と同じく localizePath で言語の接頭辞を付ける（ja は接頭辞なし）
@@ -32,11 +33,13 @@ import {
   deadlineValueText,
 } from "./raceListDisplay.js";
 import { isRaceCancelled } from "./raceCancellation.js";
+import { venueSummaryLines } from "./venueSummary.js";
 import { getRaceId } from "./raceId.js";
 import { formatDateShortLocalized, formatCapturedAtJst } from "./formatters.js";
 import { localizePath } from "../config/languages.js";
 import { buildFaqItems, isAssistShown, toFaqPageLd } from "./homeAiIntroFaq.js";
 import { getHomeBlogPosts } from "../data/blogPosts.js";
+import { meetBannerSeriesOf, seriesOfDate } from "./meetPageModel.js";
 
 const DEFAULT_LANG = "ja";
 
@@ -247,12 +250,12 @@ export function buildTopModel(todayJson, { t, today, lang = DEFAULT_LANG }) {
  *
  * @param {unknown} todayJson - /api/races/today の応答
  * @param {number} venueCode - 1〜24
- * @param {{t: (key: string, params?: object) => string, lang?: string}} options - lang は表示する言語（既定 ja）
+ * @param {{t: Function, lang?: string, today?: string, seriesRows?: object[]}} options - today は JST の日付、seriesRows は会場で絞った race_series
  */
 export function buildVenueModel(
   todayJson,
   venueCode,
-  { t, lang = DEFAULT_LANG },
+  { t, lang = DEFAULT_LANG, today, seriesRows = [] },
 ) {
   if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
     throw new RangeError(`会場コードが 1〜24 の整数でない: ${venueCode}`);
@@ -261,6 +264,9 @@ export function buildVenueModel(
   const transformed = transformTodayRaces(todayJson);
   const races = racesByVenue(transformed).get(venueCode) || [];
   const venueName = venueNameOf(t, venueCode);
+  const summary = venueSummaryLines(t, venueCode);
+  const bannerSeries = meetBannerSeriesOf(races);
+  const meet = bannerSeries && today ? seriesOfDate(seriesRows, today) : null;
 
   return {
     path: `/venue/${venueCode}`,
@@ -269,6 +275,19 @@ export function buildVenueModel(
     // 人の画面のパンくず（BreadcrumbList の JSON-LD に使う）
     breadcrumbItems: getTodayVenueBreadcrumbItems(t, venueCode, lang),
     heading: `🏁 ${venueName} ${t("venueRaceList.todayTitle")}`,
+    // 見出しの直下の要約2行（直近1年の1コースの1着率・決まり手）。開催の有無に関係なく出す（人の画面と同じ）
+    summaryLines: summary ? [summary.course, summary.techniques] : [],
+    meetBannerEligible: Boolean(bannerSeries),
+    meetBanner: meet
+      ? {
+          href: localizePath(`/venue/${venueCode}/meet/${meet.start_date}`, lang),
+          name: bannerSeries.title
+            ? `${bannerSeries.grade} ${bannerSeries.title}`
+            : bannerSeries.grade,
+          inProgress: t("venueMeetBanner.inProgress"),
+          link: t("venueMeetBanner.link"),
+        }
+      : null,
     // 人の画面と同じく、0件なら「本日、このレース場での開催はありません」
     emptyText: races.length === 0 ? t("home.noRacesToday") : null,
     races: races.map((race) => {

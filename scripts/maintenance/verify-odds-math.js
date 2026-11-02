@@ -84,6 +84,43 @@ check(
   "expandTickets: 候補が空の着があれば0点",
   expandTickets({ 1: [1], 2: [2], 3: [] }).length === 0,
 );
+// 2連単（BOA-990 ①）: 1着・2着の候補だけを使い、3着の候補は見ない
+check(
+  "expandTickets: 2連単 1-234 は3点（3着の候補は使わない）",
+  JSON.stringify(
+    expandTickets({ 1: [1], 2: [2, 3, 4], 3: [2, 3, 4, 5] }, [], 2),
+  ) === JSON.stringify(["1-2", "1-3", "1-4"]),
+);
+check(
+  "expandTickets: 2連単は同じ艇の組（1-1）と欠場の艇（3）を含む組を除き、3着が空でも組を作る",
+  JSON.stringify(expandTickets({ 1: [1, 2], 2: [1, 2, 3], 3: [] }, [3], 2)) ===
+    JSON.stringify(["1-2", "2-1"]),
+);
+// 3連複・2連複（BOA-990 ②）: 各段から1艇ずつ選んだ組を昇順に並べ替え、同じ組を1つにまとめる（承認モック 画面1）
+check(
+  "expandTickets: 3連複 1=234=2345 は6点（昇順のキー、同じ組は1つ）",
+  JSON.stringify(
+    expandTickets({ 1: [1], 2: [2, 3, 4], 3: [2, 3, 4, 5] }, [], 3, false),
+  ) ===
+    JSON.stringify(["1-2-3", "1-2-4", "1-2-5", "1-3-4", "1-3-5", "1-4-5"]),
+);
+check(
+  "expandTickets: 2連複 1=234 は3点、ボックス 123=123 は3点（1-2・1-3・2-3）、欠場（3）を含む組は除く",
+  JSON.stringify(
+    expandTickets({ 1: [1], 2: [2, 3, 4], 3: [2, 3, 4, 5] }, [], 2, false),
+  ) === JSON.stringify(["1-2", "1-3", "1-4"]) &&
+    JSON.stringify(
+      expandTickets({ 1: [1, 2, 3], 2: [1, 2, 3], 3: [] }, [], 2, false),
+    ) === JSON.stringify(["1-2", "1-3", "2-3"]) &&
+    JSON.stringify(
+      expandTickets({ 1: [1, 2, 3], 2: [1, 2, 3], 3: [] }, [3], 2, false),
+    ) === JSON.stringify(["1-2"]),
+);
+check(
+  "expandTickets: 3連複の段の順を入れ替えても同じ組（2=1=3 と 1=2=3）",
+  JSON.stringify(expandTickets({ 1: [2], 2: [1], 3: [3] }, [], 3, false)) ===
+    JSON.stringify(expandTickets({ 1: [1], 2: [2], 3: [3] }, [], 3, false)),
+);
 const ranks = popularityRanks({ a: 2, b: 1, c: 2, d: null, e: 5, f: 0 });
 check(
   "popularityRanks: オッズの昇順、同じオッズは同じ順位で次を飛ばす、オッズの無い組は順位なし",
@@ -99,7 +136,7 @@ const odds3 = { "1-2-3": 6.4, "1-2-4": 15.2, "1-3-2": 7.2 };
 const tickets3 = ["1-2-3", "1-2-4", "1-3-2"];
 const ep = allocateStakes({
   tickets: tickets3,
-  trifecta: odds3,
+  odds: odds3,
   budget: 1000,
   mode: "equalPayout",
 });
@@ -127,7 +164,7 @@ const floatMiss = [];
 for (let p = 100; p <= 100000; p += 10) {
   const r = allocateStakes({
     tickets: ["1-2-3"],
-    trifecta: { "1-2-3": p / 100 },
+    odds: { "1-2-3": p / 100 },
     budget: 100,
     mode: "equal",
   });
@@ -140,7 +177,7 @@ check(
 );
 const eq = allocateStakes({
   tickets: tickets3,
-  trifecta: odds3,
+  odds: odds3,
   budget: 1000,
   mode: "equal",
 });
@@ -152,7 +189,7 @@ check(
 );
 const few = allocateStakes({
   tickets: tickets3,
-  trifecta: odds3,
+  odds: odds3,
   budget: 200,
   mode: "equal",
 });
@@ -162,7 +199,7 @@ check(
 );
 const lowOdds = allocateStakes({
   tickets: ["1-2-3", "1-3-2"],
-  trifecta: { "1-2-3": 1.5, "1-3-2": 1.8 },
+  odds: { "1-2-3": 1.5, "1-3-2": 1.8 },
   budget: 1000,
   mode: "equalPayout",
 });
@@ -173,7 +210,7 @@ check(
 );
 const skewed = allocateStakes({
   tickets: ["1-2-3", "6-5-4"],
-  trifecta: { "1-2-3": 2.0, "6-5-4": 9999 },
+  odds: { "1-2-3": 2.0, "6-5-4": 9999 },
   budget: 300,
   mode: "equalPayout",
 });
@@ -195,7 +232,7 @@ for (let n = 0; n < 300; n++) {
   const budget = 100 * (k + Math.floor(rnd() * 40));
   const r = allocateStakes({
     tickets: ts,
-    trifecta: od,
+    odds: od,
     budget,
     mode: "equalPayout",
   });
@@ -214,7 +251,7 @@ check(
 );
 const eqNoTop = allocateStakes({
   tickets: tickets3,
-  trifecta: odds3,
+  odds: odds3,
   budget: 1000,
   mode: "equal",
 });
@@ -224,7 +261,7 @@ check(
 );
 const missingOdds = allocateStakes({
   tickets: ["1-2-3", "1-2-4"],
-  trifecta: { "1-2-3": 6.4 },
+  odds: { "1-2-3": 6.4 },
   budget: 1000,
   mode: "equal",
 });
@@ -234,7 +271,7 @@ check(
     missingOdds.missing.join(",") === "1-2-4" &&
     allocateStakes({
       tickets: ["1-2-4"],
-      trifecta: {},
+      odds: {},
       budget: 1000,
       mode: "equal",
     }).insufficient === true,

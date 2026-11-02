@@ -77,6 +77,9 @@ export const OBSERVATION_METRICS = [
   "averageViewPercentage",
   "audienceWatchRatio",
   "url_link_clicks",
+  // X の返信・引用（2026-10-27 hq の /today の比べの副の数、scripts/lib/snsMetricsRunner.js）
+  "replies",
+  "quotes",
   "sessions",
   "new_users",
   "returning_users",

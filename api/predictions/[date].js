@@ -8,6 +8,7 @@ import {
   stripUnusedPredictionFields,
   validatePredictionsRequest,
 } from '../_lib/predictionsResponse.js';
+import { badRequest, queryError } from '../_lib/strictQuery.js';
 
 export const config = {
   runtime: 'edge',
@@ -49,6 +50,14 @@ export default async function handler(req) {
       },
     });
   }
+
+  // 上の検査はデコードした searchParams を見るので、生の表記の違い（?l%69ght=true・?light=true&・空の組の数）は
+  // 別のキャッシュの鍵として通ってしまう。生のクエリ文字列でも名指しの2つだけにする（api/_lib/strictQuery.js）
+  const rawInvalid = queryError(url, {
+    light: (v) => v === 'true',
+    date: (v) => v === date,
+  });
+  if (rawInvalid) return badRequest(rawInvalid);
 
   // light で turnPrediction/racerStats を除外（初期表示の高速化用）
   const rpcName = checked.light ? 'get_predictions_by_date_light' : 'get_predictions_by_date';

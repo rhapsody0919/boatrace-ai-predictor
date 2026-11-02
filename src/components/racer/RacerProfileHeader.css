@@ -9,6 +9,12 @@
   margin: 0 0 var(--spacing-2) 0;
 }
 
+.racer-profile-header-kana {
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
 .racer-profile-header-meta {
   display: flex;
   gap: var(--spacing-2);

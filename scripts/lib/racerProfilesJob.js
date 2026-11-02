@@ -2,7 +2,8 @@
  * 選手プロフィール・期別成績（B6、racer_profiles）の共通ラッパ向けハンドラー（tasks.md T4b-16-1）。
  * api/cron/racer-profiles.js が createScrapeCronHandler の run に渡す。
  *
- * 月次（JST 毎月2日03:00〜05:50。5月・11月は9日・16日も。UTC 基準の1日・8日・15日の夜）に、約1,630人を、複数の呼び出しに分けて処理する
+ * 月次（JST 毎月2日03:00〜05:50。5月・11月は9日・16日も）に、新人のみ、
+ * 5月・11月は登録済みも含む約1,630人を、複数の呼び出しに分けて処理する
  * （チャンク処理。位置は scrape_job_state.cursor に保存して、次の起動が再開する）:
  *   - 1回の呼び出しは、時間の許す限り（ソフトデッドラインまで。最大 RACER_PROFILES_CHUNK 人）、登録番号の昇順に、
  *     同時 RACER_PROFILES_CONCURRENCY で処理する。1ページ約8〜10秒（2026-09-20の実測）のため、同時4で1回（300秒）あたり約110人（全体で約15回）
@@ -14,7 +15,8 @@
  *     二重にしない）
  *   - 失敗: 連続20件の失敗（サイトの停止・書き込みの系統的な失敗）と、新規プロフィールの保存のDBエラーは、実行の失敗
  *     （cursor を進めず、次の起動が同じチャンクをやり直す）。散発的な失敗は、進捗を止めない。サイクルの完了時に、期別成績の
- *     失敗率が MAX_SEASON_FAIL_RATE（従来の CLI と同じ5%）を超えていれば、last_report.alerts → scrape-monitor がSlackへ通知する
+ *     対象100人以上は失敗率が MAX_SEASON_FAIL_RATE（従来の CLI と同じ5%）超、100人未満は失敗5人以上で、
+ *     last_report.alerts → scrape-monitor がSlackへ通知する
  *   - git push（profile-scrape-report.json）はしない。結果は scrape_job_state.last_report
  *   - 起動しない日の未処理を誤報しないため、レジストリの runDaysOfMonth を monitor が見る
  *   - 手動の動作確認: GET /api/cron/racer-profiles?chunk=N（Authorization: Bearer {CRON_SECRET}）で、1回の処理人数を N 人にする
@@ -32,6 +34,10 @@ export const RACER_PROFILES_CHUNK = 300;
 export const RACER_PROFILES_CONCURRENCY = 4;
 /** 0件エラーの判定に必要な、期別成績を取得した選手数の下限 */
 const MIN_SAMPLE_FOR_ZERO_GUARD = 10;
+/** 率で通知を判定する母数の下限。目安（根拠なし） */
+const MIN_SAMPLE_FOR_SEASON_FAIL_RATE = 100;
+/** 小母数で通知を出す失敗人数。目安（根拠なし） */
+const SMALL_SAMPLE_SEASON_FAIL_COUNT = 5;
 /** 手動の動作確認（?chunk=N）の上限 */
 const MAX_CHUNK_OVERRIDE = 2000;
 /** 期別成績の失敗率の通知を出す期間（日）。次の月次の実行まで last_report が残るため */
@@ -122,12 +128,15 @@ export async function runRacerProfilesJob(
   const afterRacerId = resume?.afterRacerId ?? null;
   const stats = resume?.stats ?? zeroStats();
 
+  // 起動時の月ではなく、再開中も固定された対象日の月で決める。
+  const newProfilesOnly = ![5, 11].includes(Number(date.slice(5, 7)));
   const options = {
     ...parseArgs([]),
     dryRun: ctx.mode === "shadow",
     limit: size,
     afterRacerId,
     concurrency,
+    newProfilesOnly,
   };
   const { summary } = await sync({
     client: ctx.client,
@@ -168,8 +177,12 @@ export async function runRacerProfilesJob(
     };
   }
 
-  // 最初のチャンクで対象が0人＝racer_profiles・race_entries が空（0件を成功にしない）
-  if (!resume && summary.targetCount === 0) {
+  // 新人だけの回で、登録済み選手がいるときの対象0人は正常。それ以外の空はエラー。
+  if (
+    !resume &&
+    summary.targetCount === 0 &&
+    !(newProfilesOnly && summary.registeredCount > 0)
+  ) {
     return {
       outcome: "error",
       error: "対象選手が0件でした（racer_profiles・直近の race_entries が空の疑い）",
@@ -191,7 +204,11 @@ export async function runRacerProfilesJob(
   const alerts = [];
   if (done && nextStats.seasonTargets > 0) {
     const failRate = nextStats.seasonFailed / nextStats.seasonTargets;
-    if (failRate > MAX_SEASON_FAIL_RATE) {
+    const shouldAlert =
+      nextStats.seasonTargets >= MIN_SAMPLE_FOR_SEASON_FAIL_RATE
+        ? failRate > MAX_SEASON_FAIL_RATE
+        : nextStats.seasonFailed >= SMALL_SAMPLE_SEASON_FAIL_COUNT;
+    if (shouldAlert) {
       alerts.push({
         key: "season_fail_rate",
         // 月次の1回きりの事象のため、last_report が残る間ずっと再通知しない（monitor は until を過ぎた通知を出さない）

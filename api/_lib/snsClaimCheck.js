@@ -15,6 +15,15 @@ import {
   isTodayDraft,
   pickRaceStatus,
 } from "./snsTodayDigest.js";
+import {
+  DAILY_IMAGE_TYPES,
+  researchTextReasons,
+  setsuRacerReasons,
+} from "./snsResearchImage.js";
+import {
+  parseSetsuId,
+  SETSU_KIRYOKU_SHORT_KIND,
+} from "./snsSetsuKiryokuShort.js";
 
 const TIMEOUT_MS = 15000;
 const RACE_ID = "\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}";
@@ -153,6 +162,15 @@ export const FINALS_PART_VARIANTS = Object.freeze({
   reply: "finals_reply",
 });
 
+/** /today の対象レースの思考投稿（BOA-1169、189）の部分（下書きの source_data.today_thinking.part）と item の variant。part の無い下書きは本投稿 */
+export const THINKING_PART_VARIANTS = Object.freeze({
+  main: "thinking",
+  poll: "thinking_poll",
+  reply: "thinking_reply",
+});
+/** /today の対象レースの思考投稿の item の kind（189） */
+export const TODAY_THINKING_KIND = "today_thinking";
+
 /** races の締切（発走の時刻、JST）を ISO にする。承認（auto-plan）と送る直前で同じ文字列になるよう、ここだけで作る */
 export function deadlineIso(race) {
   if (!race?.race_date || !race?.start_time) return null;
@@ -161,7 +179,7 @@ export function deadlineIso(race) {
 
 /**
  * 送る直前の preflight（createDeadlinePreflight）に渡す readCurrent。
- * 返り値 {withdrawn, cancelled, deadline_at, source_revision}。素材 v1 でない下書き・照合の不合格は投げる（fail-closed）
+ * 返り値 {withdrawn, cancelled, deadline_at, source_revision, public_check?}（public_check='none' は「数字で見たら」だけ）。素材 v1 でない下書き・照合の不合格は投げる（fail-closed）
  * /today の投稿（tasks 19b）は、その日の一覧を読み直して版を返す（レースではないので欠場・中止は無い。締切は下書きの値）
  * @param {{db: (path: string) => Promise<any[]>, fetchImpl?: typeof fetch, base?: string, getDigest?: (date: string) => Promise<object>}} deps db は PostgREST の読み取り
  */
@@ -218,8 +236,11 @@ export function createReadCurrent({
     // claim の後の検査で投げた場合は claim で使った日次の枠・予約額が残る。許可は transition_sns_send_139（176）も claim で見る）
     // 本投稿へのリプ（177）は同じ読み直しで、送ったかは自分の種類（variant）だけを見る（本投稿を送った後に子が止まらないように）
     if (draft?.source_data?.finals_image?.race_id) {
-      const { race_id: raceId, revision, part = "main" } =
-        draft.source_data.finals_image;
+      const {
+        race_id: raceId,
+        revision,
+        part = "main",
+      } = draft.source_data.finals_image;
       const variant = FINALS_PART_VARIANTS[part];
       if (!variant) throw new Error("finals_part_unknown");
       const id = encodeURIComponent(raceId);
@@ -247,6 +268,167 @@ export function createReadCurrent({
         ),
         cancelled: race.cancellation_status != null,
         deadline_at: deadlineIso(race),
+        source_revision: revision,
+      };
+    }
+    // 1日1本の画像の型（「数字で見たら」research_image 179・180、「節の機力」setsu_kiryoku 194。scripts/sns/push-research-image.js）:
+    // レースを持たないので、中止・欠場・締切は無く、リンク先の表示の確認も無い（本文にリンクを置かない型。preflight は
+    // public_check='none' のとき本文にリンクが無いことだけを見る）。代わりに、item がその型であること・自動送信の許可（型ごとの列）・
+    // 同じ日に送った同じ型が無いこと・禁止表現・加重280・リンクなし・画像1枚（節の機力は選手の名前と級も）を、DB の下書きから
+    // 読み直して確かめる。違えば投げる（runner の claim の前の検査で止まる）
+    const daily = Object.values(DAILY_IMAGE_TYPES).find(
+      (t) => draft?.source_data?.[t.sourceKey]?.[t.idField],
+    );
+    if (daily) {
+      const source = draft.source_data[daily.sourceKey];
+      const { [daily.idField]: dailyId, revision } = source;
+      const parsed = daily.parseId(dailyId);
+      if (!parsed) throw new Error(daily.errors.idInvalid);
+      const [[item], sent, [control], [row]] = await Promise.all([
+        db(`sns_auto_send_items?draft_id=eq.${draftId}&select=kind,race_id`),
+        db(
+          `sns_auto_send_items?kind=eq.${daily.kind}&channel=eq.x&race_id=like.${encodeURIComponent(`${daily.idPrefix}:${parsed.date}:*`)}&state=eq.sent&select=id`,
+        ),
+        db(`sns_auto_send_control?channel=eq.x&select=${daily.enabledColumn}`),
+        db(
+          `sns_drafts?id=eq.${draftId}&select=platform,caption_text,hashtags,cover_image_path,video_storage_path`,
+        ),
+      ]);
+      if (item?.kind !== daily.kind || item.race_id !== dailyId)
+        throw new Error(daily.errors.itemMismatch);
+      if (control?.[daily.enabledColumn] !== true)
+        throw new Error(daily.errors.disabled);
+      if (sent.length) throw new Error(daily.errors.alreadySent);
+      const images = draft.source_data.image_paths;
+      if (
+        row?.platform !== "x" ||
+        row.video_storage_path ||
+        !Array.isArray(images) ||
+        images.length !== 1 ||
+        images[0] !== row.cover_image_path
+      )
+        throw new Error(daily.errors.imageCount);
+      if (
+        researchTextReasons({
+          caption: row.caption_text,
+          hashtags: row.hashtags ?? [],
+        }).length
+      )
+        throw new Error(daily.errors.textRejected);
+      if (daily.hasRacers && setsuRacerReasons(source.racers).length)
+        throw new Error(daily.errors.racers);
+      return {
+        withdrawn: false,
+        cancelled: false,
+        deadline_at: draft.source_data.deadline_queue?.deadline_at ?? null,
+        source_revision: revision,
+        public_check: "none",
+      };
+    }
+    // /today の対象レースの思考投稿（BOA-1169、189、scripts/sns/push-finals-image.js の today_thinking）: 優勝戦の画像と同じ読み直しから
+    // 段（race_stage）を外し、item が today_thinking であること・同じレースの自分の種類（variant）をまだ送っていないこと・
+    // 自動送信の許可（today_thinking_enabled）を見る。違えば投げる（許可は transition_sns_send_139（189）も claim で見る）
+    if (draft?.source_data?.today_thinking?.race_id) {
+      const {
+        race_id: raceId,
+        revision,
+        part = "main",
+      } = draft.source_data.today_thinking;
+      const variant = THINKING_PART_VARIANTS[part];
+      if (!variant) throw new Error("thinking_part_unknown");
+      const id = encodeURIComponent(raceId);
+      const [[race], entries, exhibition, [item], sent, [control]] =
+        await Promise.all([
+          db(
+            `races?race_id=eq.${id}&select=race_date,start_time,cancellation_status`,
+          ),
+          db(`race_entries?race_id=eq.${id}&select=is_absent`),
+          db(`exhibition_data?race_id=eq.${id}&select=is_absent`),
+          db(
+            `sns_auto_send_items?draft_id=eq.${draftId}&select=kind,race_id,variant`,
+          ),
+          db(
+            `sns_auto_send_items?kind=eq.${TODAY_THINKING_KIND}&variant=eq.${variant}&race_id=eq.${id}&state=eq.sent&select=id`,
+          ),
+          db(
+            "sns_auto_send_control?channel=eq.x&select=today_thinking_enabled",
+          ),
+        ]);
+      // 下書きのキーと item の kind・レース・本数の種類（variant）が食い違うなら送らない
+      if (
+        item?.kind !== TODAY_THINKING_KIND ||
+        item.race_id !== raceId ||
+        item.variant !== variant
+      )
+        throw new Error("thinking_item_mismatch");
+      if (!race) throw new Error("race_not_found");
+      if (control?.today_thinking_enabled !== true)
+        throw new Error("today_thinking_disabled");
+      if (sent.length) throw new Error("thinking_already_sent");
+      return {
+        withdrawn: [...entries, ...exhibition].some(
+          (r) => r.is_absent === true,
+        ),
+        cancelled: race.cancellation_status != null,
+        deadline_at: deadlineIso(race),
+        source_revision: revision,
+        // 本文にリンクを置かない型（オーナー 2026-10-27）。リンク先の表示の確認の代わりに、送る文にリンクが無いことを preflight が見る
+        // （research_image と同じ契約。Chromium を使わない）
+        public_check: "none",
+      };
+    }
+    // YouTube Shorts「節の機力」（193、scripts/sns/push-setsu-kiryoku-short.js）: レースを持たない単独の Shorts。数の照合は作り手の型の検査
+    // （setsuKiryoku/model.js の checkBundle、push で通した）に任せ、送る直前は、item が setsu_kiryoku_short で日と会場が下書きと合うこと・
+    // 自動送信の許可（youtube の行の setsu_kiryoku_short_enabled）・同じ日に送った setsu_kiryoku_short が無いことを読み直す。
+    // 優勝戦の型（final_gap）で優勝戦が今日（when=today）なら、その優勝戦の中止・欠場も見る（前夜は出走表がまだ無い）。
+    // リンク先（説明欄の会場のページ）の表示の確認は public_check を返さず、preflight が queue の public_url・screen_key=venue で行う
+    if (draft?.source_data?.setsu_kiryoku_short?.setsu_id) {
+      const {
+        setsu_id: setsuId,
+        revision,
+        variant,
+        when,
+        final_date: finalDate,
+      } = draft.source_data.setsu_kiryoku_short;
+      const parsed = parseSetsuId(setsuId);
+      if (!parsed) throw new Error("setsu_id_invalid");
+      const [[item], sent, [control]] = await Promise.all([
+        db(`sns_auto_send_items?draft_id=eq.${draftId}&select=kind,race_id`),
+        db(
+          `sns_auto_send_items?kind=eq.${SETSU_KIRYOKU_SHORT_KIND}&channel=eq.youtube&race_id=like.${encodeURIComponent(`setsu:${parsed.date}:*`)}&state=eq.sent&select=id`,
+        ),
+        db(
+          "sns_auto_send_control?channel=eq.youtube&select=setsu_kiryoku_short_enabled",
+        ),
+      ]);
+      if (item?.kind !== SETSU_KIRYOKU_SHORT_KIND || item.race_id !== setsuId)
+        throw new Error("setsu_item_mismatch");
+      if (control?.setsu_kiryoku_short_enabled !== true)
+        throw new Error("setsu_kiryoku_short_disabled");
+      if (sent.length) throw new Error("setsu_already_sent_today");
+      let withdrawn = false;
+      let cancelled = false;
+      if (variant === "final_gap" && when === "today") {
+        const [final] = await db(
+          `race_conditions?race_id=like.${encodeURIComponent(`${finalDate}-${parsed.venue}-*`)}&race_stage=eq.${encodeURIComponent("優勝戦")}&select=race_id`,
+        );
+        if (!final) throw new Error("setsu_final_not_found");
+        const id = encodeURIComponent(final.race_id);
+        const [[race], entries, exhibition] = await Promise.all([
+          db(`races?race_id=eq.${id}&select=cancellation_status`),
+          db(`race_entries?race_id=eq.${id}&select=is_absent`),
+          db(`exhibition_data?race_id=eq.${id}&select=is_absent`),
+        ]);
+        if (!race) throw new Error("race_not_found");
+        cancelled = race.cancellation_status != null;
+        withdrawn = [...entries, ...exhibition].some(
+          (r) => r.is_absent === true,
+        );
+      }
+      return {
+        withdrawn,
+        cancelled,
+        deadline_at: draft.source_data.deadline_queue?.deadline_at ?? null,
         source_revision: revision,
       };
     }

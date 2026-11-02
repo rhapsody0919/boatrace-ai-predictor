@@ -190,9 +190,12 @@ SELECT period_start, period_end, budget_microusd, reserved_microusd FROM public.
 ```sql
 -- L2（1件ずつ承認、1日1レース）
 UPDATE public.sns_x_send_control SET daily_limit_x = 6, daily_limit_youtube = 1 WHERE id = true;
--- L3（優勝戦・準優勝戦をすべて。1日最多16レース × X 6件）。budget は $130（2026-10-13 オーナー決定）
+-- L3（優勝戦・準優勝戦をすべて。1日最多16レース × X 6件）。budget は $20（2026-10-27 オーナー決定。2026-10-13 の $130 から改めた）。
+-- 188 で予約は送る文の URL の有無で決まる（URL あり ceiling_x_url $0.200、無し ceiling_x_plain $0.015、X API の料金表）。
+-- 188 の後の月の見込み: 今の運用（/today と全貌の X、全部 URL つき）で約$16、全貌の X をやめた後（BOA-1167）約$6、
+-- today_thinking（BOA-1169）を URL 無しで足して約$10
 UPDATE public.sns_x_send_control
-  SET budget_microusd = 130000000, ceiling_x_url_microusd = 250000, ceiling_x_plain_microusd = 30000,
+  SET budget_microusd = 20000000, ceiling_x_url_microusd = 200000, ceiling_x_plain_microusd = 15000,
       daily_limit_x = 96, daily_limit_youtube = 16
   WHERE id = true;
 ```

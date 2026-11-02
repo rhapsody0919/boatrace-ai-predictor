@@ -137,9 +137,11 @@ const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
 
 export default function RacerPerformanceStats({
   racerId,
+  racerName,
   stats,
   loading,
   todayVenueCode,
+  onHistoryStateChange,
 }) {
   const { t } = useTranslation();
   // 推移グラフのツールチップの見出し。日付だけだと同じ日の2走を見分けられない（BOA-583）
@@ -204,6 +206,18 @@ export default function RacerPerformanceStats({
     vcHistoryState.fetching;
   const vcHistoryError =
     vcHistoryState.racerId === racerId && vcHistoryState.error;
+
+  // 履歴はレース一覧・ST推移・条件別の共通入力。別選手の履歴は未完了とする。
+  const snapshotHistoryState = vcHistoryError
+    ? "error"
+    : vcHistory === null
+      ? "loading"
+      : vcHistory.length
+        ? "done"
+        : "empty";
+  useEffect(() => {
+    onHistoryStateChange?.({ racerId, state: snapshotHistoryState });
+  }, [racerId, snapshotHistoryState, onHistoryStateChange]);
 
   useEffect(() => {
     // 決まり手・推移・レース一覧を常時表示するため（ADR-0063）、フィルタ操作を
@@ -410,26 +424,50 @@ export default function RacerPerformanceStats({
       )
     : [];
 
+  // 枠番別成績（全会場計）。出走履歴が届いたら、会場別・条件別・レース一覧と同じ履歴から数える（BOA-1190）。
+  // 日次の集計（course_race_counts）は race_results の course_1〜6 が空のレース（結果はあるのに
+  // 進入の列が無い、本番で約4%）を数えず、同じ画面の「全体」の走数と合わなかった（/racer/3941 で 218走と 232走）。
+  // 履歴の読み込み中・失敗・空のときは、これまでどおり日次の集計を出す
+  const historyCourseStats = useMemo(
+    () =>
+      vcHistory?.length
+        ? aggregateRacerCrossStats(vcHistory, {}, "boat", null, null).map(
+            (row) => ({
+              course: row.key,
+              total: row.n,
+              wins: row.win,
+              winRate: row.winRate,
+              top2Rate: row.top2Rate,
+              top3Rate: row.top3Rate,
+            }),
+          )
+        : null,
+    [vcHistory],
+  );
   // course_race_counts: { "1": { total, wins, top2, top3 }, ... } → コース番号昇順の配列に変換
-  const courseStats = Object.entries(aggregatedStats?.course_race_counts ?? {})
-    .map(([course, counts]) => ({
-      course: Number(course),
-      total: counts.total ?? 0,
-      wins: counts.wins ?? 0,
-      winRate: counts.total > 0 ? counts.wins / counts.total : null,
-      // top2/top3は本チケット（BOA-268）で追加したフィールドのため、
-      // バッチ集計（aggregate-racer-stats.js）が再実行されるまでは
-      // 未集計の選手が存在する。undefinedを0扱いすると「2連率0%」と
-      // 誤表示するため、区別してnull（"-"表示）にする
-      top2Rate:
-        counts.total > 0 && counts.top2 !== undefined
-          ? counts.top2 / counts.total
-          : null,
-      top3Rate:
-        counts.total > 0 && counts.top3 !== undefined
-          ? counts.top3 / counts.total
-          : null,
-    }))
+  const courseStats = (
+    historyCourseStats ??
+    Object.entries(aggregatedStats?.course_race_counts ?? {}).map(
+      ([course, counts]) => ({
+        course: Number(course),
+        total: counts.total ?? 0,
+        wins: counts.wins ?? 0,
+        winRate: counts.total > 0 ? counts.wins / counts.total : null,
+        // top2/top3は本チケット（BOA-268）で追加したフィールドのため、
+        // バッチ集計（aggregate-racer-stats.js）が再実行されるまでは
+        // 未集計の選手が存在する。undefinedを0扱いすると「2連率0%」と
+        // 誤表示するため、区別してnull（"-"表示）にする
+        top2Rate:
+          counts.total > 0 && counts.top2 !== undefined
+            ? counts.top2 / counts.total
+            : null,
+        top3Rate:
+          counts.total > 0 && counts.top3 !== undefined
+            ? counts.top3 / counts.total
+            : null,
+      }),
+    )
+  )
     .filter((row) => row.total >= 5)
     .sort((a, b) => a.course - b.course);
   const hasCourseStats = courseStats.length > 0;
@@ -446,20 +484,37 @@ export default function RacerPerformanceStats({
     hasCourseStats ||
     hasVenueStats;
 
+  // 見出しに選手名を入れる（「選手名 成績」の語を見出しにも出す。seo-marketer GS00）
+  const heading = racerName ? (
+    <>
+      <span translate="no">{racerName}</span>の成績・調子
+    </>
+  ) : (
+    "成績・調子"
+  );
+
   if (loading) {
     return (
-      <div className="racer-performance-stats">
-        <h2>成績・調子</h2>
+      <div
+        className="racer-performance-stats"
+        data-snapshot-history={snapshotHistoryState}
+      >
+        <h2>{heading}</h2>
         <p className="racer-stat-loading">読み込み中...</p>
       </div>
     );
   }
 
-  if (!hasAnyData) return null;
+  if (!hasAnyData) {
+    return <span hidden data-snapshot-history={snapshotHistoryState} />;
+  }
 
   return (
-    <div className="racer-performance-stats">
-      <h2>成績・調子</h2>
+    <div
+      className="racer-performance-stats"
+      data-snapshot-history={snapshotHistoryState}
+    >
+      <h2>{heading}</h2>
 
       {/* フィルタ: 見出し直下・最上部に常時表示（ADR-0063）。venueStatsが
           空（出走実績が薄い選手）でも全会場を選べるようにするため、この
@@ -615,13 +670,19 @@ export default function RacerPerformanceStats({
               </span>
               {aggregatedStats?.flying_rate > 0 && (
                 <span className="racer-stat-sub">
+                  {/* 期間と走数を添える。公式の期別成績（その期の F の回数）と別の集計だと分かるように（ファン評価 GS00 3周目） */}
                   F率 {(aggregatedStats.flying_rate * 100).toFixed(1)}%
+                  （当サイト集計・2025年12月以降
+                  {aggregatedStats.total_races > 0
+                    ? `・${aggregatedStats.total_races}走`
+                    : ""}
+                  ）
                 </span>
               )}
             </div>
             <p className="racer-stat-note">
               {officialAvgSt?.period
-                ? `${slashDate(officialAvgSt.period.calcFrom)}〜${slashDate(officialAvgSt.period.calcTo)} の成績（勝率と同じ期の公式の期別成績）・全会場`
+                ? `${slashDate(officialAvgSt.period.calcFrom)}〜${slashDate(officialAvgSt.period.calcTo)} の公式の期別成績・全会場（「選手調子（全国勝率）」は出走表の値で、集計の期間が違います）`
                 : "公式の期別成績・全会場"}
             </p>
             <p className="racer-stat-note">
@@ -678,7 +739,7 @@ export default function RacerPerformanceStats({
           </h3>
           <StatBreakdownTable
             translateNo
-            headers={["会場", "出走数", "勝率", "2連率", "3連率"]}
+            headers={["会場", "出走数", "1着率", "2連率", "3連率"]}
             rows={venueStats.map((row) => ({
               key: row.venue_code,
               onClick: () => setVcVenue(String(row.venue_code)),
@@ -697,14 +758,14 @@ export default function RacerPerformanceStats({
       {!vcVenueFixed && !vcBoatFixed && hasCourseStats && (
         <div className="racer-technique-profile">
           <h3>
-            枠番別成績（全会場計）
+            枠番別成績（当サイト集計・2025年12月以降・全会場計）
             <span className="h3-hint">枠番をクリックで絞り込み →</span>
           </h3>
           <p className="racer-vc-note">
-            ※実際の進入コース変化（前づけ）は現時点では区別できないため、発走前に決まる枠番（艇番）基準で表示しています
+            ※何号艇で出たかで分けた成績です。実際に入ったコースで分けた成績は、公式の期別成績がある選手なら上の「進入コース別成績（公式）」にあります
           </p>
           <StatBreakdownTable
-            headers={["枠番", "出走数", "勝数", "勝率", "2連率", "3連率"]}
+            headers={["枠番", "出走数", "勝数", "1着率", "2連率", "3連率"]}
             rows={courseStats.map((row) => ({
               key: row.course,
               onClick: () => setVcBoat(String(row.course)),
@@ -729,7 +790,7 @@ export default function RacerPerformanceStats({
           </h3>
           {vcCrossData && vcCrossData.length > 0 ? (
             <StatBreakdownTable
-              headers={["枠番", "出走数", "勝率", "2連率", "3連率"]}
+              headers={["枠番", "出走数", "1着率", "2連率", "3連率"]}
               rows={vcCrossData.map((row) => ({
                 key: row.key,
                 onClick: () => setVcBoat(String(row.key)),
@@ -760,7 +821,7 @@ export default function RacerPerformanceStats({
           {vcCrossData && vcCrossData.length > 0 ? (
             <StatBreakdownTable
               translateNo
-              headers={["会場", "出走数", "勝率", "2連率", "3連率"]}
+              headers={["会場", "出走数", "1着率", "2連率", "3連率"]}
               rows={vcCrossData.map((row) => ({
                 key: row.key,
                 onClick: () => setVcVenue(String(row.key)),
@@ -836,7 +897,7 @@ export default function RacerPerformanceStats({
       {vcVenueFixed && vcBoatFixed && vcData && vcData.n > 0 && (
         <div className="racer-stat-cards-grid racer-vc-cards-grid">
           <div className="racer-stat-card">
-            <h3>勝率</h3>
+            <h3>1着率</h3>
             <span className="racer-stat-value">
               {vcData.winRate !== null ? formatPercent(vcData.winRate) : "-"}
             </span>

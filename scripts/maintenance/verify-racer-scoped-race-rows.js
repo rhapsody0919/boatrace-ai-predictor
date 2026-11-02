@@ -10,13 +10,14 @@
  * 期待値は2つに分ける（plan.md 3+2）:
  * - A. 旧の実装から取った値: 移す前の動きの固定。誤りも含めて写す
  * - B. 仕様の値: 公式の定義から決まる値（不成立は着順なし・返還は着順が有効・F は ST の
- *   平均に入れない・「欠」は欠場・展示の同タイムは同順位）
+ *   平均に入れない・出遅れも平均に入れない・「欠」は欠場・展示の同タイムは同順位）
  * 食い違いは別の起票で直す（切り出しでは直さない）。
  *
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { computeRates, getRecentRaces } from "../../src/components/race/basicInfoStats.js";
 import { buildRacerScopedRaceRows } from "../../src/services/racerScopedRaceRows.js";
 
 const R1 = "2026-10-01-04-01";
@@ -344,7 +345,7 @@ check(
   },
 );
 
-check("A14 出力の行のキー（34個、順を含む）", () => {
+check("A14 出力の行のキー（BOA-1052 の表示用キーを追加、35個、順を含む）", () => {
   assert.deepEqual(Object.keys(only({})), [
     "raceId",
     "date",
@@ -368,6 +369,7 @@ check("A14 出力の行のキー（34個、順を含む）", () => {
     "absent",
     "startTiming",
     "flyingStartTiming",
+    "lateStartTiming",
     "actualCourse",
     "entryCourse",
     "grade",
@@ -431,6 +433,44 @@ check("B4 展示タイムの順位は同タイムを同順位にする（1, 1, 3
   assert.deepEqual([rank(1), rank(2), rank(3)], [1, 1, 3]);
 });
 
+check("B5 出遅れの ST は平均から除き、直近の走の表には残す（BOA-1052）", () => {
+  const late = only({
+    startTimingRows: sixSt(R1, {
+      1: { start_timing: 1.99, is_late_start: true, finish_mark: "L" },
+    }),
+  });
+  assert.equal(late.startTiming, null);
+  assert.equal(late.lateStartTiming, 1.99);
+  assert.equal(late.finishMark, "L");
+  assert.equal(getRecentRaces([late])[0].startTiming, 1.99);
+  const normal = only({});
+  const rates = computeRates([normal, late]);
+  assert.equal(rates.n, 2);
+  assert.equal(rates.avgStN, 1);
+  assert.equal(rates.avgSt, 0.11);
+  assert.equal(computeRates([late]).avgSt, null);
+});
+
+check("B6 出遅れの ST 欠落・false・フラグ未取得は従来の扱い", () => {
+  const missing = only({
+    startTimingRows: sixSt(R1, {
+      1: { start_timing: null, is_late_start: true, finish_mark: "L" },
+    }),
+  });
+  assert.equal(missing.startTiming, null);
+  assert.equal(missing.lateStartTiming, null);
+  assert.equal(getRecentRaces([missing])[0].startTiming, null);
+  for (const extra of [{}, { is_late_start: false }]) {
+    const normal = only({ startTimingRows: sixSt(R1, { 1: extra }) });
+    assert.equal(normal.startTiming, 0.11);
+    assert.equal(normal.lateStartTiming, null);
+  }
+  const fly = only({
+    startTimingRows: sixSt(R1, { 1: { is_flying: true, start_timing: 0.01 } }),
+  });
+  assert.equal(getRecentRaces([fly])[0].startTiming, 0.01);
+});
+
 console.log("C. 呼び出し");
 
 const service = readFileSync(
@@ -447,6 +487,13 @@ check("C1 getRacerScopedRaceStats は buildRacerScopedRaceRows を呼ぶ", () =>
   assert.match(body, /return\s+buildRacerScopedRaceRows\(/);
   // 旧の整形の本文（目印の変数）が戻っていない
   assert.doesNotMatch(body, /soleFastestBoatByRace|exhibitionRowsByRace/);
+});
+
+check("C2 出遅れフラグを取得し、旧キャッシュを使わない（BOA-1052）", () => {
+  const start = service.indexOf("getRacerScopedRaceStats(racerId) {");
+  const body = service.slice(start, service.indexOf("\n  /**", start));
+  assert.match(body, /racer-scoped-race-stats-v12-/);
+  assert.match(body, /"race_id, boat_number, start_timing, is_flying, is_late_start, finish_mark, entry_course"/);
 });
 
 console.log(`✅ racerScopedRaceRows: ${count} 件の例を確認`);

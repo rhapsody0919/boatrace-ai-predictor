@@ -1,6 +1,6 @@
 // SNS の 48h・7d の取り込み（sns-pdca-loop tasks 21、cron sns_metrics）の再現テスト。
 // SQL154 までを PGlite に入れ、送信はモックの adapter（runSnsSend）で posted にする。X・YouTube の読み取りは fetch のモック。外部接続なし。
-import { test, before, beforeEach, after } from "node:test";
+import { test, before, beforeEach, after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
@@ -20,6 +20,9 @@ import {
 } from "../lib/snsMetricsRunner.js";
 import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
 
+// PT の日付境界の外に固定する。Date だけを止め、PGlite の now()・承認・期限も同じ時計で動かす。
+const TEST_NOW = Date.parse("2026-10-27T03:00:00Z");
+mock.timers.enable({ apis: ["Date"], now: TEST_NOW });
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
 const all = async (sql, args = []) => (await db.query(sql, args)).rows;
@@ -131,6 +134,7 @@ const metricsStore = {
 };
 
 before(async () => {
+  assert.equal((await first("SELECT now() AS at")).at.getTime(), TEST_NOW);
   await db.exec(
     "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;",
   );
@@ -174,7 +178,13 @@ beforeEach(async () => {
     UPDATE sns_youtube_quota_control SET verified=true,baseline_day=(now() AT TIME ZONE 'America/Los_Angeles')::date,upload_limit=10,general_limit=10000,external_uploads=0,external_general=0;
     UPDATE sns_auto_send_control SET dry_run=false;`);
 });
-after(() => db.close());
+after(async () => {
+  try {
+    await db.close();
+  } finally {
+    mock.timers.reset();
+  }
+});
 
 // 承認して、モックの adapter で posted まで送る。posted になると 154 のトリガーが取り込みの job を2件作る
 async function postedDraft(platform, postId) {
@@ -281,6 +291,8 @@ test("X: 48h の窓の終わりから15分以内に読めた累積値を保存�
               likes: 3,
               shares: 1,
               saves: 0,
+              replies: 2,
+              quotes: 0,
             },
           },
           { at, calls },
@@ -301,6 +313,9 @@ test("X: 48h の窓の終わりから15分以内に読めた累積値を保存�
     [
       ["impressions", 120],
       ["likes", 3],
+      // 返信・引用（2026-10-27、/today の比べの副の数）
+      ["quotes", 0],
+      ["replies", 2],
       ["saves", 0],
       ["shares", 1],
       ["url_link_clicks", 4],
@@ -311,7 +326,7 @@ test("X: 48h の窓の終わりから15分以内に読めた累積値を保存�
     assert.equal(r.data_through.toISOString(), at.toISOString());
     assert.equal(r.source, "x-api");
   }
-  assert.equal(result.rowsWritten, 5);
+  assert.equal(result.rowsWritten, 7);
   assert.equal(await reserved(), 1000 + 1000); // 送信の1回分＋読み取り1回分
 });
 
@@ -327,7 +342,7 @@ test("窓の終わりから15分を過ぎてから処理する job は、外部�
   assert.equal(result.body.jobs[0].outcome, "missing");
   assert.equal((await metricJobs(draft.id))[0].state, "missing");
   const rows = await observations(draft.id);
-  assert.equal(rows.length, 5);
+  assert.equal(rows.length, 7);
   for (const r of rows) {
     assert.equal(r.v, null);
     assert.match(r.missing_reason, /取得が遅れた/);
@@ -537,6 +552,8 @@ test("X の読み取り: since_id・until_id で対象の1件に絞り、自分�
               like_count: 2,
               retweet_count: 1,
               bookmark_count: 0,
+              reply_count: 4,
+              quote_count: 1,
             },
             non_public_metrics: { impression_count: 50, url_link_clicks: 3 },
           },
@@ -558,6 +575,8 @@ test("X の読み取り: since_id・until_id で対象の1件に絞り、自分�
     url_link_clicks: 3,
     likes: 2,
     shares: 1,
+    replies: 4,
+    quotes: 1,
     saves: 0,
   });
   // 応答に無ければ空（呼び出し側がやり直す）、失敗は本文を出さずに状態コードだけ
@@ -677,6 +696,8 @@ test("値を保存した後に閉じるのが失敗しても、次の実行で�
               likes: 1,
               shares: 0,
               saves: 0,
+              replies: 0,
+              quotes: 0,
             },
           },
           { at: now },
@@ -690,7 +711,7 @@ test("値を保存した後に閉じるのが失敗しても、次の実行で�
   });
   assert.equal((await metricJobs(draft.id))[0].state, "done");
   const rows = await observations(draft.id);
-  assert.equal(rows.length, 5);
+  assert.equal(rows.length, 7);
   assert.ok(rows.every((r) => r.missing_reason === null));
 });
 

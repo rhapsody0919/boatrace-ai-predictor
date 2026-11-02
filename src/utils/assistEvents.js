@@ -9,7 +9,10 @@
  * - 買い目の着順の切り替え（BOA-831、spec D-46 で買い目だけ）は assist_target。選択中の着順の押し直しは送らない。押したレンズも送る
  * - 相手レンズで軸の艇を選び替えたときは assist_place_axis（BOA-845）
  * - 展開レンズで形を選び替えた（形が2つ以上当てはまるとき、spec D-47）ときは assist_flow_form
- * @param {{lens: string, deep: number|null, metric: string|null, target?: number, flowForm?: string|null}} state 押す前の状態
+ * - 買い目の券種を替えたときは assist_bet_type（BOA-990）。押した場所（tab＝券種のタブ・compare＝券種で比べるの行）も送る。選んでいる券種の押し直しは送らない
+ * - 「選んだ艇でボックス」を押したときは assist_bet_box（BOA-990）。そのときの券種を送る
+ * - シートを開いたとき・着順を替えたときも、そのときの券種 assist_bet_type を送る（保存から戻った人も券種別に読む。BOA-990 の計測の審査 P1）
+ * @param {{lens: string, deep: number|null, metric: string|null, target?: number, flowForm?: string|null, betType?: string}} state 押す前の状態
  * @param {{type: string, [key: string]: unknown}} action
  * @returns {{name: string, params: Record<string, string|number>} | null}
  */
@@ -42,7 +45,11 @@ export function assistEventOf(state, action) {
         ? null
         : {
             name: "assist_target",
-            params: { assist_target: action.target, assist_lens: state.lens },
+            params: {
+              assist_target: action.target,
+              assist_lens: state.lens,
+              assist_bet_type: state.betType ?? "trifecta",
+            },
           };
     case "flowForm":
       // 展開レンズの形の選択（承認モック v2 ④）。選んでいる形の押し直しは画面が送らない
@@ -60,6 +67,21 @@ export function assistEventOf(state, action) {
             name: "assist_place_axis",
             params: { assist_boat: action.boat, assist_lens: state.lens },
           };
+    case "betType":
+      return action.betType === (state.betType ?? "trifecta")
+        ? null
+        : {
+            name: "assist_bet_type",
+            params: {
+              assist_bet_type: action.betType,
+              assist_bet_from: action.from,
+            },
+          };
+    case "box":
+      return {
+        name: "assist_bet_box",
+        params: { assist_bet_type: state.betType ?? "trifecta" },
+      };
     case "guide":
       return action.step == null
         ? null
@@ -77,6 +99,7 @@ export function assistEventOf(state, action) {
                 typeof action.sheet === "string"
                   ? action.sheet
                   : action.sheet.type,
+              assist_bet_type: state.betType ?? "trifecta",
             },
           };
     default:

@@ -21,6 +21,7 @@ import {
 } from "../../src/utils/meetPageModel.js";
 
 import { readFileSync } from "node:fs";
+import { transformSync } from "esbuild";
 
 const failures = [];
 let checked = 0;
@@ -319,6 +320,86 @@ for (const [label, races, expected] of [
     16, middleStart, middleStart,
   );
   check(`getMeetPage・race_seriesなし・${label}`, page.state, expected);
+}
+
+// BOA-1187: 並列取得のどのクエリも失敗を notFound に変換しない。
+for (const table of ["race_series", "race_conditions", "races", "race_results", "race_entries", "racer_series_points"]) {
+  const error = new Error(`local failure: ${table}`);
+  const mock = {
+    from(name) {
+      const result = () => name === table
+        ? Promise.reject(error)
+        : Promise.resolve({ data: name === "race_series" ? null : [] });
+      const query = new Proxy({}, {
+        get(_, key) {
+          if (key === "then") return (resolve, reject) => result().then(resolve, reject);
+          if (key === "maybeSingle") return result;
+          return () => query;
+        },
+      });
+      return query;
+    },
+  };
+  let caught;
+  try {
+    await getMeetPage(mock, meetDaysOf, meetPageState, () => new Map(), () => false,
+      16, START, "2026-09-27");
+  } catch (err) {
+    caught = err;
+  }
+  check(`getMeetPage・${table} の失敗は同じ例外で伝播`, caught === error, true);
+}
+
+// 実ページの取得 effect・状態導出・本文分岐を実行する。依存はローカルの hook/JSX
+// スタブに置換する（DOM 描画は E2E の担当）。本番への取得はしない。
+const pageSource = readFileSync(new URL("../../src/pages/MeetPage.jsx", import.meta.url), "utf8");
+const componentStart = pageSource.indexOf("function MeetPage() {");
+const componentEnd = pageSource.indexOf("\n  return (", componentStart);
+const component = transformSync(
+  pageSource.slice(componentStart, componentEnd) + "\n return { body, page, failed };\n}",
+  { loader: "jsx", jsxFactory: "element" },
+).code;
+const pageKey = `16-${START}`;
+let stored = [{ key: null, page: null }, null];
+let effects = [];
+let robots;
+const renderPage = new Function(
+  "useState", "useEffect", "useParams", "useTranslation", "useLocalizedPath",
+  "supabaseDataService", "getTodayJST", "normalizeTitle", "md", "useRobotsMeta",
+  "element", "Link", "DataFetchError", "LoadingScreen", "MeetBody", "console",
+  component + "\nreturn MeetPage();",
+);
+const render = (service) => {
+  let slot = 0;
+  effects = [];
+  return renderPage(
+    () => { const i = slot++; return [stored[i], (value) => { stored[i] = value; }]; },
+    (effect) => effects.push(effect),
+    () => ({ venueCode: "16", startDate: START }),
+    () => ({ t: (key) => key }), () => (path) => path,
+    service, () => "2026-09-27", (title) => title ?? null, () => "9/28",
+    (value) => { robots = value; },
+    (type, props, ...children) => ({ type, props, children }),
+    "Link", "DataFetchError", "LoadingScreen", "MeetBody", { error() {} },
+  );
+};
+const rejected = { getMeetPage: () => Promise.reject(new Error("local fetch failure")) };
+check("取得待ちは LoadingScreen", render(rejected).body.type, "LoadingScreen");
+check("取得待ちは noindex にしない", robots, false);
+effects[0]();
+// effect の then→catch と state 更新を完了させる。
+await new Promise((resolve) => setImmediate(resolve));
+check("例外で failedKey が対象の節になる", stored[1], pageKey);
+check("取得失敗は DataFetchError", render(rejected).body.type, "DataFetchError");
+check("取得失敗は noindex にしない", robots, false);
+for (const [state, knownMeet, expected] of [
+  ["preOpen", true, true], ["preOpen", false, true],
+  ["notFound", false, true], ["outOfScope", true, true],
+  ["prelim", true, false], ["finished", true, false],
+]) {
+  stored = [{ key: pageKey, page: { state, knownMeet } }, null];
+  render(rejected);
+  check(`MeetPage・${state}・knownMeet=${knownMeet} の noindex`, robots, expected);
 }
 
 // --- pickMeetAnchor ---

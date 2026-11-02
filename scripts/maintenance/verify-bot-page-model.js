@@ -182,6 +182,48 @@ check(
   kiryu.meta.canonical,
   "https://www.boat-ai.jp/venue/1",
 );
+
+// ---- 2. 会場ページの title（予想・出走表）と常設の要約2行（BOA-1189 GS02-b）。24場すべて ----
+{
+  const { venueSummaryLines } = await import("../../src/utils/venueSummary.js");
+  // 数字は月1回作り直すので、期待の文は静的な値から組む（文の形と、高い・はっきりしないの出し分けを見る）
+  const { VENUE_SUMMARY_STATS: S } =
+    await import("../../src/data/venueSummaryStats.js");
+  const c1 = (b) => b.courses[0].rate.toFixed(1);
+  const n = (x) => x.toLocaleString("en-US");
+  const nat = `全国（${n(S.national.races)}レース）の${c1(S.national)}%`;
+  const to = S.to.replaceAll("-", "/");
+  for (let code = 1; code <= 24; code += 1) {
+    const model = buildVenueModel(fresh(), code, { t });
+    const name = ja.venues[code];
+    check(
+      `会場${code}: title は「{会場}競艇の予想・出走表」で始まる`,
+      model.meta.title.startsWith(`${name}競艇の予想・出走表`),
+      true,
+    );
+    const lines = venueSummaryLines(t, code);
+    check(
+      `会場${code}: 要約2行は人の画面と同じ関数の文（開催なしの日も出す）`,
+      model.summaryLines,
+      [lines.course, lines.techniques],
+    );
+    check(
+      `会場${code}: 要約の1行目は会場名と直近1年で始まる`,
+      model.summaryLines[0].startsWith(`${name}の直近1年（`),
+      true,
+    );
+  }
+  check(
+    "若松: 要約の1行目（全国より高い会場）",
+    buildVenueModel(fresh(), 20, { t }).summaryLines[0],
+    `若松の直近1年（${to}まで、${n(S.venues[20].races)}レース）、1コースの1着率は${c1(S.venues[20])}%で、${nat}より高い`,
+  );
+  check(
+    "多摩川: 要約の1行目（全国との差が確かめられない会場）",
+    buildVenueModel(fresh(), 5, { t }).summaryLines[0],
+    `多摩川の直近1年（${to}まで、${n(S.venues[5].races)}レース）、1コースの1着率は${c1(S.venues[5])}%。${nat}との差ははっきりしない`,
+  );
+}
 check("桐生: 1R", kiryu.races[0], {
   raceNumber: 1,
   venueName: "桐生",
@@ -486,6 +528,55 @@ for (const [rel, re, label] of USES) {
     failures.push(
       `${rel}: transformTodayRaces を自前で定義している（todayRaces.js と二重になる）`,
     );
+}
+
+// BOA-1219: 今日のレースで対象を決め、初日は race_series を使う。
+{
+  const { seriesOfDate, seriesCoveringDate, SERIES_POSTPONE_TOLERANCE_DAYS } =
+    await import("../../src/utils/meetPageModel.js");
+  const row = { start_date: "2026-10-06", end_date: "2026-10-11", title: "節", grade: "G1" };
+  check("順延3日", seriesOfDate([row], "2026-10-14"), row);
+  check("順延4日", seriesOfDate([row], "2026-10-15"), null);
+  check("未来の節・空", seriesOfDate([row], "2026-10-05"), null);
+  const older = { ...row, start_date: "2026-09-01" };
+  check("初日降順の先頭", seriesOfDate([older, row], "2026-10-11"), row);
+  check("画面とボットで順延許容日数を共有", SERIES_POSTPONE_TOLERANCE_DAYS, 3);
+  // getSeriesOfDate の lte・降順・limit(1) と、その後の共通判定に一致する。
+  const rows = [
+    row,
+    { ...row, start_date: "2026-10-20", end_date: "2026-10-25" },
+    older,
+  ];
+  const before = JSON.stringify(rows);
+  for (const date of [
+    "2026-08-31", "2026-10-06", "2026-10-11",
+    "2026-10-14", "2026-10-15", "2026-10-20",
+  ]) {
+    const latest = rows
+      .filter((r) => r.start_date <= date)
+      .sort((a, b) => b.start_date.localeCompare(a.start_date))[0];
+    check(
+      `${date}: getSeriesOfDate と同じ行を返す`,
+      seriesOfDate(rows, date) === seriesCoveringDate(latest, date),
+      true,
+    );
+  }
+  check("空の節一覧", seriesOfDate([], TODAY), null);
+  check("節一覧を並べ替えない", JSON.stringify(rows), before);
+  for (const lang of ["ja", "en", "zh-TW", "ko"]) {
+    const json = fresh();
+    json.data.find((v) => v.place_cd === 1).races.forEach((r) => { r.raceGrade = "G1"; r.raceTitle = "公式の節"; });
+    const options = { t, lang, today: "2026-10-11", seriesRows: [row] };
+    const model = buildVenueModel(json, 1, options);
+    check(`${lang}: 節リンク`, model.meetBanner, {
+      href: `${lang === "ja" ? "" : `/${lang}`}/venue/1/meet/2026-10-06`,
+      name: "G1 公式の節", inProgress: t("venueMeetBanner.inProgress"), link: t("venueMeetBanner.link"),
+    });
+    check("行なし", buildVenueModel(json, 1, { ...options, seriesRows: [] }).meetBanner, null);
+    check("期限切れ", buildVenueModel(json, 1, { ...options, today: "2026-10-15" }).meetBanner, null);
+    for (const race of json.data.find((v) => v.place_cd === 1).races) race.raceTitle = "グランプリ";
+    check("対象外", buildVenueModel(json, 1, options).meetBanner, null);
+  }
 }
 
 if (failures.length > 0) {

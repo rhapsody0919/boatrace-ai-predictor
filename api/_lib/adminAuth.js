@@ -31,8 +31,9 @@ function unauthorizedResponse() {
 /**
  * 長さに依存しない一定時間比較。両方を SHA-256 にかけて固定長32バイトにしてから
  * 全バイトを XOR で比べるので、入力の長さや一致した位置で処理時間が変わらない。
+ * /api の関門（api/_lib/apiGate.js）の合言葉の比較にも使う（BOA-1110）。
  */
-async function constantTimeEqual(a, b) {
+export async function constantTimeEqual(a, b) {
   const encoder = new TextEncoder();
   const [hashA, hashB] = await Promise.all([
     crypto.subtle.digest("SHA-256", encoder.encode(a)),

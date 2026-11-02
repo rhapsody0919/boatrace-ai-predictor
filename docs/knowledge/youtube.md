@@ -7,11 +7,14 @@ YouTube（Shorts 含む）の投稿・タイトル・構成に固有の知見。
 - 同じ BGM・同じ構図の画像・AI の台本で大量に投稿すると、YouTube のスパムポリシーの違反例に当たる。毎日の型の投稿では、レースごとのデータの発見を主役にし、冒頭・BGM を変える（2026-10-06、memory project_ai_multi_venture_ops_2026_10_05）
 - 長い題を上限で切るときは句の区切りで切って「…」を付け、本編と Shorts で切り方をそろえる。旧の全貌の作り手は youtube_full.title を100字で「…」なしに切り、Shorts は89字＋「…」でそろっていなかった（2026-10-18、youtube-channel。受け取り側 push-full-picture.js は100字以下かだけを見るので、ちょうど100字に切った題は通る。2026-10-20 整理）
 - 概要欄に章の名前だけを並べても YouTube の自動チャプターにならない。0:00 から始まる時刻を付ける（2026-10-18、youtube-channel。旧の全貌の作り手の指摘を一般化、2026-10-20 整理）
+- 送り手は題を `youtube_title` のまま `snippet.title` に入れる。API が拒否するのは題の100字超・< > と説明欄の5000バイト超・< > で、節の機力の送る口（push-setsu-kiryoku-short.js）の検査と同じ。題に `#Shorts` を入れても拒否されない。Shorts かは縦横と尺で決まる（2026-11-02、youtube-channel、api/_lib/youtubeQueueAdapter.js:39-41。実投稿での Shorts 扱いは未確認）
 - YouTube のギャンブル関係の調査は「予想は当たることを保証しない」旨の免責を題・説明文に入れることを推奨（確度中）（2026-10-18、youtube-channel、docs/reference/youtube-algorithm-and-growth-notes.md 157行目。旧の作り手に入っていない旨の記録は 2026-10-20 に整理）
 
 ## API の認可
 - YouTube Data API の OAuth クライアントは「ウェブ アプリケーション」型で作り、承認済みリダイレクト URI に https://developers.google.com/oauthplayground を足す。「デスクトップ アプリ」型は redirect_uri_mismatch になる。External/Testing の同意画面は認可するアカウントをテストユーザーに足す（2026-09-02、memory content_pipeline_youtube_oauth_setup_2026_09_02）
 - YouTube は Data API v3 の正規のアップロードで自動投稿できる（承認→公開、api/admin/sns-hub/drafts/[id]/publish-youtube.js）（2026-09-02、memory content_multi_channel_pipeline_2026_09_01）
+- thumbnails.set の上限は 50MB・jpeg/png（約50単位）。よく言われる 2MB はモバイルから上げるときの上限で、API の上限ではない。403 forbidden は「権限が無い（カスタムサムネイルを設定できない）」でも返り、チャンネルの確認が原因のことがある。全貌の受け取りは承認のカバーの上限 32 MiB で止め、送るときの失敗は公開を止めない（2026-10-27、developers.google.com/youtube/v3/docs/thumbnails/set・support.google.com/youtube/answer/72431、BOA-1172）
+- 龍神のチャンネルはアカウント（電話番号）の確認が済んでいて、カスタムサムネイル（thumbnails.set）を使える。確認は youtube.com/verify の表示で見る（2026-10-27、オーナーが確認、YouTube ヘルプ answer/72431「アカウントを確認済みであれば独自のサムネイルをアップロードできる」、BOA-1172）
 
 ## 点検での見落としを防ぐ知見
 - タグありの承認snapshotと送信payloadのdescription・snippet.tagsを対応させ、成功fixtureだけで承認タグが送られたとしない。（2026-10-13、2026-10-13-plan-review-youtube-20261013-01.md）
@@ -28,3 +31,7 @@ YouTube（Shorts 含む）の投稿・タイトル・構成に固有の知見。
 - Shorts の説明文の URL が押せるリンクになるかは未確認（記憶では2023年8月末に Shorts の説明文・コメントのリンクは押せなくなった。確度低）。本番の1本目で実機で確かめ、押せないなら関連動画の設定か動画内の案内に切り替える（2026-10-20、youtube-channel、要確認）
 - X 向けの入口版（約49秒）をそのまま Shorts に使うと、調査ノート7節の15〜30秒の目安を超え、冒頭がタイトルカバーで結論が先に来ない。Shorts の平均視聴率で後から判定する。動画内の文言が X 前提でないかも確かめる（2026-10-20、youtube-channel、調査ノート7節・sns-pipeline-youtube.md）
 - 同じレース・同じ素材の2本を数分差で出すと、スパムの判定（同じ構図・BGM・台本）に近づく。Shorts の冒頭の問いを完全版と別にし、初回の数本で警告・年齢制限の有無を点検する（2026-10-20、youtube-channel）
+- 冒頭の札は読める量で決める。毎秒8字なら1.0秒の札は約8字で、問い27字＋副行は読めない。札の先頭の語は数字でなく主題に（2026-10-27、youtube-channel、s02 の台本会議。札の最適な秒は根拠が無く実測で確かめる）
+- Shorts の腕あたり28本（2週）で判定できるのは engagedViews/views で約6pt（約1.5倍）以上。2〜4pt は腕66〜264本が要る。SD 0.069 は 10/12 の旧 Shorts の値で今の型で測り直す（2026-10-27、youtube-channel、baseline-and-power.md 51・65・69行から計算）
+- 題に選手名を入れるときは、数字が選手個人でなく条件の集計だと題で分かる形にする。選手名で来た人の期待とずれると視聴後すぐ離脱になる（2026-10-27、youtube-channel、調査ノート6節の当てはめ）
+- 完全版の題名の後半は、差の向きを言える日（|z|>=1.96）だけ「会場の1着率は全国より高い／低い」、それ以外は既定「6艇の比較と展開の傾向」（説明型で 10/13・10/20 の知見に反する）。題の型が日替わりなので、版の判定はインプレッション CTR を型別に集計し、前後の週の比較で言わない。割合と CTR は未取得（2026-10-27、youtube-channel、PR #1973、bundle.mjs 158行）

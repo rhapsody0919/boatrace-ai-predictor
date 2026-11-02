@@ -145,6 +145,16 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js"
     },
     {
+      "script": "verify-api-gate.js",
+      "tier": "ci",
+      "guards": "/api の関門の判定（api/_lib/apiGate.js、BOA-1110・ADR-0103、plan §2.2 の順）: デコード後に「.」「..」のセグメント・「//」・バックスラッシュを含むパス（%2F..%2F・..%2f・二重のエンコード）とエンコードした「/」（%2F）とデコードできないパスは段階に依らず 400（2回目以降のデコードの失敗では落とさない）、/API/ 等の大文字も関門に掛ける、/api/cron・/api/admin・/api/bot-page だけ除外（/api/cronx 等は除外しない、/%61pi/ は /api として判定）、合言葉は current・next で通り key_slot を返し偽の鍵は bad_key（鍵が未設定・空なら通さない）、Sec-Fetch-Site: same-origin（Origin が無いか自分の host）は browser、Sec-Fetch-Site が無く同じ host の Referer は browser_legacy、Googlebot・Google-InspectionTool の UA で範囲の表の固定の IPv4・IPv6 だけ search_bot（範囲外・bingbot・Googlebot-Image は通さない）、それ以外は観測で would_deny・強制で 403 no-store。結果に鍵・IP・UA の全文・クエリを入れない"
+    },
+    {
+      "script": "verify-api-query-lockdown.js",
+      "tier": "ci",
+      "guards": "公開 API の5本（accuracy・races/today・race-history/summary・outcome-distribution・predictions/{date}）が、画面・ボット向け HTML・全貌動画の材料の送るクエリ以外（?zz=乱数 等のキャッシュ外し・%の別表記・重複・空の組）を DB の読み出しの前に 400・no-store で拒み、正規の入力は 200 とキャッシュの設定のまま返すこと（api/_lib/strictQuery.js）"
+    },
+    {
       "script": "verify-assist-class-exh-ranks.js",
       "tier": "ci",
       "guards": "思考アシストの restClassCounts・exhRanks・courseFilled・compositeText の現行値（級の艇数・同タイムのmin順位・5走未満の補い・小数2桁表記）を固定する。仕様未定の入力はKNOWN_GAPSで観測のみ（BOA-1114）"
@@ -188,6 +198,11 @@
       "script": "verify-blog-image-dimensions.js",
       "tier": "ci",
       "guards": "ブログ画像の実寸の表（BOA-908）。JPEG のヘッダーから幅と高さを読む処理（SOF0・SOF2、DHT を取り違えない）、public/images/blog の全画像が読めること、以前の手書きの表と同じ値（抜き取り）、記事の本文と JSON の image が参照する画像がすべて表にあること、vite.config.js の仮想モジュールと BlogPost.jsx の読み込み"
+    },
+    {
+      "script": "verify-blog-leading-h1.js",
+      "tier": "ci",
+      "guards": "ブログ本文の先頭 h1 だけを除く。全記事で h2・h3 と FAQ を保持し、ReactMarkdown の入力だけに適用する（BOA-919）"
     },
     {
       "script": "verify-blog-markdown-sanitize.js",
@@ -239,7 +254,7 @@
     {
       "script": "verify-bot-race-function.js",
       "tier": "ci",
-      "guards": "ボット向け HTML のレース詳細の関数（ADR 0089 第2段・BOA-848。api/bot-page/race/[id].js・[lang]/race/[id].js、中身は api/_lib/botRace.js）。本番の /api/predictions のフィクスチャで、head が人のレース詳細と同じ関数（src/utils/raceDetailHeading.js）の値・hreflang 4言語・JSON-LD が共通の3つとパンくず、本文が人の初期表示の部分集合（パンくず・グレードと節タイトル・会場名と NR・種別・日目（他レースで補う、丸一日中止なら出さない）・レース一覧へのリンク・データ分析結果の見出しと締切（結果が出たら消す））、出走表の選手・オッズ・払戻・着順・タイムが入らないこと（ADR 0089 決定7）、本日（JST）の id だけで他は 404、取得の失敗・0件は 503、無い id は 404、60秒の使い回し、人の RaceDetailPage が同じ関数を使い続けていること"
+      "guards": "ボット向け HTML のレース詳細の関数（ADR 0089 第2段・BOA-848。api/bot-page/race/[id].js・[lang]/race/[id].js、中身は api/_lib/botRace.js）。本番の /api/predictions のフィクスチャで、head が人のレース詳細と同じ関数（src/utils/raceDetailHeading.js）の値・hreflang 4言語・JSON-LD が共通の3つとパンくず、本文が人の初期表示の部分集合（パンくず・グレードと節タイトル・会場名と NR・種別・日目（他レースで補う、丸一日中止なら出さない）・レース一覧へのリンク・データ分析結果の見出しと締切（結果が出たら消す）・タブの外の 1R〜12R の帯と出走6艇（/racer/N へのリンクと級別、ja 専用で接頭辞なし）・SG/G1/G2 の節のページへのリンク（人の RaceNumberStrip・RaceEntrantsSummary と同じ needsMeetSeries・meetLinkStartDateOf・seriesCoveringDate・entrantRowsOf。一般戦・G3 は節を引かない、節が引けなければリンクだけ外して 200、中止は出走6艇を出さない、BOA-1189 GS01））、出走表の勝率・モーター・オッズ・払戻・着順・タイムが入らないこと（ADR 0089 決定7）、本日（JST）の id だけで他は 404、取得の失敗・0件は 503、無い id は 404、60秒の使い回し、人の RaceDetailPage が同じ関数を使い続けていること"
     },
     {
       "script": "verify-bot-today-function.js",
@@ -314,6 +329,11 @@
       "guards": "Environment prod-jobs を使う workflow が、data_health の鮮度の項目か理由つきの除外に載ること（2026-10-20 の鍵の誤りで夜の集計が落ちて誰も気づかなかった件の再発防止）"
     },
     {
+      "script": "verify-data-readers.js",
+      "tier": "ci",
+      "guards": "データの読み手の台帳（docs/reference/data-readers.{json,md}、generate-data-readers.js）の抽出（構文木で .from()・.select()・絞り込み・insert/upsert/update/delete の列、.rpc()、/rest/v1/ と REST の包みの相対パス、fetch の method、1回だけ宣言した const の名前。Array.from・storage.from・コメントを拾わないこと、名前が式の箇所を unresolved にすること、検査の固定入力のファイルは写しの名前だけ）と組み立て（RPC の本体が読む・書く・呼ぶ表をコメントと文字列を外して写しから引くこと、権限の GRANT とポリシーの要約、トリガー、取得のジョブの入口からの import のたどり、外の読み手 data-readers.extra.json が写しの表・列を指すこと）。今のリポジトリで作れること・同じ入力で同じ出力・構文木にできないファイルが無いこと。最新性は master へのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078。台帳は PR に含めない）"
+    },
+    {
       "script": "verify-db-apply.js",
       "tier": "ci",
       "guards": "本番 DB 適用ワークフロー（.github/workflows/db-apply.yml、scripts/lib/dbApplySql.js）。パスの検証（ディレクトリの外・大文字・別拡張子を通さない）、文の分割（文字列・$$・コメントの中の ; を区切りにしない）、拒否する SQL（先頭 BEGIN・末尾 COMMIT 以外のトランザクション制御、CONCURRENTLY・VACUUM・ALTER SYSTEM・psql のメタコマンド 等）、触るテーブルの抽出、台帳の更新、実ファイルで拒否されるのが 050・055 だけであること、ワークフローの配線（secret は承認後の job だけ、run に ${{ }} を直接書かない、書き込み権限は台帳の job だけ、定期の起動は schedule か dispatch の mode=reconcile だけで手での起動と台帳のファイルを混ぜない）"
@@ -384,6 +404,11 @@
       "guards": "e2e/**/*.js（recordings/を除く）が録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと。コメント・文字列・正規表現リテラルの判定はverify-e2e-no-unroute.jsと共有するstripNonCode（scripts/lib/stripNonCode.js）で行い、文字列中の`//`をコメントの開始と誤らないことを自己テストで確かめる（BOA-663）。fixtures.js自身が正当に使う箇所はverify-e2e-recorded-network-allowlist.jsonに理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する"
     },
     {
+      "script": "verify-e2e-replay-har-path.js",
+      "tier": "ci",
+      "guards": "E2E の録画の再生（e2e/fixtures.js の replayHar）が HAR のコピーを api.har と同じ場所に置き、content._file を相対パスのまま渡すこと。Playwright 1.64 の routeFromHAR は _file が HAR の場所の外（絶対パスを含む）を指すと応答を返さず、全ての録画が空になる（#2102）。Playwright の Chromium がある所では、同じ場所の相対パスは読め・別の場所の絶対パスは読めないことを実測する（無ければ SKIP）"
+    },
+    {
       "script": "verify-e2e-rerun.js",
       "tier": "ci",
       "guards": "PR の E2E Smoke Test の再実行の判定（e2e-rerun.js）。落ちた・50分を超えて止まった実行は1回目だけ再実行（止まったものは cancel してから）、2回目以降は再実行せずオーケストレーターに上げる"
@@ -439,6 +464,11 @@
       "guards": "フロントの fetchAllByIn（supabaseDataService.js）が、テーブルごとの主キーで並べてからページングすること。新しいテーブルの並びの足し忘れを CI で止める（BOA-595）。in() の値を fetchAllInChunks で分けて読み（URL の長さの上限、BOA-1051）、in() の列がどの呼び出しでもテーブルの並びの先頭の列であること（分けた結果をつないでも並びが崩れない条件）"
     },
     {
+      "script": "verify-fetch-counter.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P3（spec §7.1 の M2）: 取得先への取得の数（fetch_counts・add_fetch_counts・fetch_counts_daily、マイグレーション185）。politeFetch が1回の fetch（再試行・カナリア・接続の失敗も）ごとに応答の種類で数え、Cron の起動の終わりに1回の RPC で足す（取得0の起動は書かない）、/api/odds/live は20件か60秒ごと、185 の前・書き込みの失敗でも取得を止めない（投げない・持ち越す）、パスは2桁以上の数字を {n} にまとめる、PGlite で加算・日の合計・RLS・権限"
+    },
+    {
       "script": "verify-fetchall-order.js",
       "tier": "ci",
       "guards": "共通の fetchAll（scripts/lib/supabaseClient.js）が並び順の無いページ送りをしないこと（BOA-753。1000行を超えるとページの間で行が重複・欠落する。BOA-595・BOA-745 に続く3回目で仕組みにした）。(a) 静的: scripts/・api/ の fetchAll の呼び出しすべてに、組み立て（第3引数、変数なら同じファイルの定義）の .order( か、理由付きの unordered があること。(b) 実行時: 並び順の無いクエリは最初のリクエストの前に例外（呼び出し元と直し方つき）、理由が空の unordered も例外。(c) 変異検証。確かめない範囲: await import() で取り出した fetchAll の呼び出し（実行時の検査が止める）"
@@ -491,6 +521,11 @@
       "guards": "マイグレーション117（関数・シーケンスの匿名権限の剥奪と既定権限の是正、BOA-575）をPGlite上で実際に適用して検証。画面が呼ぶ7本のRPCが残ること・トリガーが発火し続けること"
     },
     {
+      "script": "verify-function-search-path-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション187をPGlite上で適用して検証。本番の pg_proc で取った19関数（名前と引数の型）に search_path=public, pg_temp が付き本文（md5）は変わらないこと、analogy_feedback のガードが client_key を変えても全体で10分30行で止め（数える前に advisory lock、24時間の全体の上限は無い）、同じ client_key の24時間40行も残ること、races の削除で声が消えること（CASCADE）、2回当てても通り、戻し方で元に戻ること"
+    },
+    {
       "script": "verify-ga4-measurement-breaks.js",
       "tier": "ci",
       "guards": "GA4 の計測の切れ目（2026-09-29 の page_view 修正）をまたぐ期間の判定と注記（scripts/lib/ga4MeasurementBreaks.js）。崩れると計測修正による PV の増減を需要の変化と誤読する"
@@ -505,6 +540,11 @@
       "tier": "ci",
       "args": ["--base=origin/master"],
       "guards": "PRが機械生成の文書（generated-docs.js の一覧）を変更していないこと。含めると並行PRが同じファイルでコンフリクトする（ADR-0078）"
+    },
+    {
+      "script": "verify-gha-fetch-stop.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P4a ④a: GitHub Actions の取得（scrape-scheduled・morning-init・肩代わりの判定）が、host の行の取得の非常停止 fetch_stop（マイグレーション178）で止まる。Vercel が止まっていて肩代わりの条件を満たしても、SKIP 変数が true でなくても、公式へ取りに行かない。読めないときは止めない側（変数が true のジョブは従来どおり読めなければスキップ）"
     },
     {
       "script": "verify-gha-skip-gate.js",
@@ -539,7 +579,7 @@
     {
       "script": "verify-i18n-consistency.js",
       "tier": "ci",
-      "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
+      "guards": "対応言語（src/config/languages.js の SUPPORTED_LANGUAGES）のロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）と、翻訳ファイルの無い対応言語（src/i18n.js は dev でだけ throw するので、本番の束で流す E2E では止まらない）"
     },
     {
       "script": "verify-id-path-utils.js",
@@ -566,7 +606,7 @@
     {
       "script": "verify-job-watch.js",
       "tier": "ci",
-      "guards": "定期の job の見張り（.github/workflows/job-watch.yml・key-canary.yml・scripts/watch/job-watch.json・scripts/lib/jobWatch.js、ADR-0097 の追記）。失敗のログの分類（鍵・設定／外部の 403・429・503／一時的／その他）、rerun は許可の一覧・1回目・同じ日・後の run が無いときだけ、鍵が直った後の追い上げ、Issue の印、Environment prod-jobs・ryujin-bot を使う workflow が全部見張りの一覧と job-watch.yml に登録されていること、許可の一覧に送信・push・db-apply・審査・頻繁な job を入れないこと、actions: write は rerun の job だけ"
+      "guards": "定期の job の見張り（.github/workflows/job-watch.yml・key-canary.yml・scripts/watch/job-watch.json・scripts/lib/jobWatch.js、ADR-0097 の追記）。失敗のログの分類（鍵・設定／外部の 403・429・503／一時的／その他）、rerun は許可の一覧・1回目・同じ日・後の run が無いときだけ、鍵が直った後の追い上げ、Issue の印、結論が cancelled の run のうち GitHub の時間切れだけを拾うこと（job が上限の分まで動いたか。concurrency の置き換え・人の取り消しは拾わない、BOA-1162）、Environment prod-jobs・ryujin-bot を使う workflow が全部見張りの一覧と job-watch.yml に登録されていること、許可の一覧に送信・push・db-apply・審査・頻繁な job を入れないこと、actions: write は rerun の job だけ"
     },
     {
       "script": "verify-jst-date-utils.js",
@@ -577,6 +617,11 @@
       "script": "verify-jsx-japanese.js",
       "tier": "ci",
       "guards": "翻訳対象のページ（/・/race・/venue・/guide・/venues・/winning-technique と共通の枠）に、t() を通らない日本語が新しく直書きされること。既存分は jsx-japanese-baseline.json に所属チケット付きで固定（BOA-653〜656）"
+    },
+    {
+      "script": "verify-kb-archive-stage.js",
+      "tier": "ci",
+      "guards": "K/B取り込みの classifyStage の優勝戦判定が v2 と一致し、GP優勝戦・サントリー優・王座決定戦・ダービー優勝・バッチこい優を final として行変換に反映すること（BOA-1181、通信・DB接続なし）"
     },
     {
       "script": "verify-kb-file-parser.js",
@@ -612,6 +657,11 @@
       "script": "verify-latest-by-race-id.js",
       "tier": "ci",
       "guards": "latestByRaceId の最新行選択・同時刻の先行行保持・入力順に依存しない最新時刻・フィールド指定・空配列（BOA-1041）。固定入力のみで外部接続しない"
+    },
+    {
+      "script": "verify-legacy-prediction-readers.js",
+      "tier": "ci",
+      "guards": "止める予定の列（基盤の計画 R2、docs/design/legacy-prediction-cleanup/plan.md の R-0・R-0b。races の旧い荒れ度の5列と API の鍵 recommendedModel）の名前が出てくるファイルを legacy-prediction-readers.json の一覧より増やさないこと。名前が消えたファイルが一覧に残っていれば注意だけ出し（--prune で外す。足さない）、一覧は減る向きにだけ動かす。R1 の名前（safeBet・upsetFocus・prediction_odds・ai_score_* 等）は /holmes（tinaba の担当）が読むので見ず、一覧に戻らないことを自己検査で確かめる（オーナー 2026-10-28）。git ls-files のソースだけを読み、DB に触れない"
     },
     {
       "script": "verify-lib-index.js",
@@ -776,7 +826,7 @@
     {
       "script": "verify-odds-live-api.js",
       "tier": "ci",
-      "guards": "オッズのライブ取得API（api/odds/live.js、BOA-487）: オッズ更新時間・締切時オッズの検出、票0を0で返す解析、当日のみ受け付けるクエリ検証、Cache-Control"
+      "guards": "オッズのライブ取得API（api/odds/live.js、BOA-487）: オッズ更新時間・締切時オッズの検出、票0を0で返す解析、当日のみ受け付けるクエリ検証、Cache-Control。api/odds/live.js・scripts/lib/liveOdds.js が race_odds に書かないこと（字句で書き込み・rpc・書くモジュールの import を探す。読むのは許す、BOA-1149 の土台）"
     },
     {
       "script": "verify-odds-math.js",
@@ -847,6 +897,11 @@
       "script": "verify-plan-erd.js",
       "tier": "ci",
       "guards": "新規テーブル・外部キーを導入する設計書（plan.md）のER図欠落"
+    },
+    {
+      "script": "verify-point-rank-daily.js",
+      "tier": "ci",
+      "guards": "得点率の日ごとの写し racer_series_points_daily（BOA-1210、マイグレーション192）。取得の対象日をキーに足して残し翌日に上書きしない、同じ日の再取得は値が変わった行だけ書く（NUMERIC の文字列表記でも変更なし）、表が無い間は飛ばして racer_series_points を書き続ける、ほかの読み書きの失敗は実行の失敗、192 の主キー・RLS・権限"
     },
     {
       "script": "verify-point-rank-parser.js",
@@ -1005,6 +1060,23 @@
       "guards": "出走表（racelist）の過去分バックフィルCLI"
     },
     {
+      "script": "verify-racer-career-gate.js",
+      "tier": "manual",
+      "reason": "本番 DB の読み取り（claude_ro、SUPABASE_RO_DB_URL）が要る。CI は本番に繋がない",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-racer-career-gate.js [--from=2019-05-01] [--to=2025-11-01] [--out=data/analysis/racer-period-stats/career-gate.json]",
+      "guards": "照合の関門（本番の読み取り、claude_ro）。選手×期の出走・1着・2着・勝率（BOA-1193 の純関数）・優勝・優出と、進入コース別の着のコードを、公式の racer_period_stats と比べる。kb 層の CLI と main 層の全選手の計算の後に Claude が実行し、一致しない選手の一覧を完了報告に出す"
+    },
+    {
+      "script": "verify-racer-career-stats.js",
+      "tier": "ci",
+      "guards": "BOA-1193 の勝率用着順点・優勝戦加点・出走の分母・丸め・着回数と優出優勝を合成データで固定する。優出は S0・K0・L0 を含め NULL を除く、優勝戦は isFinalStage v2＋「オオムラGP」「関ヶ原決戦」（公式の数え方、kb 20,916行で照合済み）。実 fan 照合は別の集計表の関門で行う"
+    },
+    {
+      "script": "verify-racer-career-tables.js",
+      "tier": "ci",
+      "guards": "選手ページの集計の表（マイグレーション190、GS00 案2）と書き手（scripts/lib/racerCareerJob.js・api/cron/racer-career-main.js・racer-career-backfill.js）。PGlite で 3つの RPC の着のコード・期・優勝戦（isCareerFinalStage＝isFinalStage v2＋2つの名前、stage_kind を使わない）・グレードの補正（QC・CC・唐津）・境目（kb ≤ 2025-12-02、本体 ≥ 2025-12-03）・権限（5表は匿名の SELECT だけ、RPC は service_role だけ）、kb の1回の計算と main の毎晩の計算の冪等・消えたセルの削除と多すぎるときの停止・kb の指紋の見張り、レジストリと vercel.json の時刻、照合の関門の比べ方"
+    },
+    {
       "script": "verify-racer-condition-stats.js",
       "tier": "ci",
       "guards": "選手ページ「レース条件別の成績」（BOA-336、src/utils/racerConditionStats.js）。天候の3区分（雪・台風は雨にまとめる）、風速5m・波高5cmの境目、江戸川を波の行から外すこと、条件の無い走を全体に混ぜないこと、着順の付かない走の数え方、5走未満の条件を出さないこと"
@@ -1023,6 +1095,11 @@
       "script": "verify-racer-news-templates.js",
       "tier": "ci",
       "guards": "選手ニュースFR2の題・要約の定型文、返却キー2つ、入力表記の保持と禁止語の非追加。空・undefinedは仕様未定としてKNOWN_GAPSに出力"
+    },
+    {
+      "script": "verify-racer-official-period-stats.js",
+      "tier": "ci",
+      "guards": "選手ページの公式の期別成績・進入コース別成績（src/utils/racerOfficialPeriodStats.js）。崩れると前期・後期の取り違え、進入の少ないセルの率、率の平均での合算が画面に出る"
     },
     {
       "script": "verify-racer-profile-sync.js",
@@ -1130,6 +1207,37 @@
       "guards": "マイグレーション適用判定・確認不能時の再試行・client別TTLキャッシュとclear（BOA-1075）"
     },
     {
+      "script": "verify-schema-er-diagram.js",
+      "tier": "ci",
+      "guards": "DB 全体の ER 図（docs/reference/schema-er-diagram.md、generate-schema-er-diagram.js、基盤の計画 段6）の組み立て（scripts/lib/schemaErDiagram.js）。外部キーの多重度（主キー・一意なら1対1、NULL を許すなら親が0か1）、mermaid に書ける型、名前によるまとまりの振り分け、線も鍵も無い表を落とさないこと、DDL 版（generate-er-diagram.js {slug}）の書き方が変わらないこと。今の写しで全部の表がちょうど1つのまとまりに入り、全部の外部キーが子の表のまとまりの図に出て、写しの並びに依らず同じ md になり、mermaid の行の形が崩れていないこと。最新性は master へのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078。図は PR に含めない）"
+    },
+    {
+      "script": "verify-schema-snapshot.js",
+      "tier": "ci",
+      "args": ["--base=origin/master"],
+      "guards": "本番スキーマの写し docs/reference/schema-snapshot.json（ADR-0102）の取得の問い合わせ（scripts/db/schema-snapshot/*.sql）と組み立て（scripts/lib/schemaSnapshot.js）。PGlite で問い合わせを ro-query の READ ONLY の経路のまま実行し、表・ビュー・列・関数（ALTER した search_path を含む）・ポリシー・制約（外部キーの列の対応）・索引・トリガー・権限（列単位・PUBLIC・既定の権限の public と全体）を組み立てること、拡張の作った関数を入れないこと、行の並びに依らないこと。打ち切り（truncated）・問い合わせの欠け・知らない記号・一覧に無い表の子・鍵らしい文字列（JWT・sb_secret_・Slack の Webhook・URL の資格情報）・search_path 等以外の関数の設定で失敗すること。台帳のファイル単位の鮮度の判定（同じ番号の片方・013b・後で足された行）。コミット済みの写しが整形のままで件数・並びが中身と合い、base（origin/master）の写しより前の取得に戻っていないこと（古さでは落とさない）"
+    },
+    {
+      "script": "verify-scrape-breaker-canary.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P4a ③: パスが 403 で開いたら race/index を1件だけ取り、403 のときだけホスト全体を開く（60分から段階で倍）。ホストの半開は race/index で試す（止められたパスで開き直さない）。403 の応答の Server・server-timing・Akamai の参照番号・本文の先頭200字をブレーカーの記録に残す。BOATCAST はカナリアを取らない"
+    },
+    {
+      "script": "verify-scrape-breaker-greatest.js",
+      "tier": "ci",
+      "guards": "BOA-1159: ブレーカーの開放を DB で長い方に書く RPC scrape_breaker_open（マイグレーション184）を PGlite で実行し、短い期限で長い期限を縮めない・段階と理由は期限を決めた側・fetch_stop と mode を書かない・anon と authenticated は実行できないことを確かめる。store.js が RPC を使い、184 の前は upsert に戻ること、circuitBreaker が DB の返した長い期限を採ること"
+    },
+    {
+      "script": "verify-scrape-breaker-level.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P4a ②: 403 のブレーカーの段階（breaker_level・breaker_opened_at、マイグレーション178）。開く期間 30分→1時間→2時間→4時間→6時間、段階は DB に残り別の起動も同じ段階から上げる（起動ごとに30分へ戻って30分おきに叩き直さない）、24時間 403 が無ければ1段下げる（成功1回で0にしない）、閉じた後24時間は claimLimit を半分、178 の前でも動く"
+    },
+    {
+      "script": "verify-scrape-breaker-overload.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P4a ④b: 429/503 のホストのブレーカーの段階化（5分→10分→20分→60分、段階は DB の breaker_level に残し起動をまたいで上げる）と、Retry-After が10秒を超える 429/503 は再試行せずホストをその時間（上限60分）開くこと。403 で上がった段階を 429 で下げない"
+    },
+    {
       "script": "verify-scrape-daily-jobs.js",
       "tier": "ci",
       "guards": "日次・低頻度ジョブ（B2〜B6）のVercel Cron実装"
@@ -1138,6 +1246,11 @@
       "script": "verify-scrape-fetch-counts.js",
       "tier": "ci",
       "guards": "BOA-1148: scrape_slots の固定ページ数によるホスト×パス別日次近似。再試行・取得0 outcome・SQL集約・1000行超・読取失敗を検証する"
+    },
+    {
+      "script": "verify-scrape-fetch-stop.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P4a: 取得の非常停止 scrape_job_state.fetch_stop（マイグレーション178）。host の行で立てると Vercel の各ジョブ（共通ラッパ・politeFetch）と /api/odds/live が公式へ取りに行かない、178 の前（列なし）でも動く、列の不在以外の読み取りエラーを黙って無いことにしない、ブレーカーの upsert が fetch_stop・mode を書かない（mode の既定 'off' で一度開いたホストが永久に止まる事故を繰り返さない）"
     },
     {
       "script": "verify-scrape-jobs.js",
@@ -1158,6 +1271,11 @@
       "script": "verify-scrape-pre-race-job.js",
       "tier": "ci",
       "guards": "レース情報（A1）・展示（A2）のVercel Cron実装"
+    },
+    {
+      "script": "verify-scrape-probe-reserve.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P4a ④c: 半開の試行を、起動をまたいで全体で1件にする（scrape_job_state の breaker_open_until が読んだ文字列のままの行だけを今＋2分に進める条件つき UPDATE）。マイクロ秒つきの期限でも予約できる、試行の失敗・中断の後の再予約、予約の口の失敗はプロセスの中の1件、共通ラッパの起動の前の確認とパスが開いているときは予約しない、別の起動が閉じた・人が早めた期限を DB から採る"
     },
     {
       "script": "verify-scrape-result-job.js",
@@ -1187,6 +1305,13 @@
       "guards": "取得時刻の列（created_at・updated_at、マイグレーション071）を使う書き込みと計測"
     },
     {
+      "script": "verify-search-bot-ip-ranges.js",
+      "tier": "manual",
+      "guards": "/api の関門が検索ボットを通す IP の範囲の表（api/_lib/searchBotIpRanges.json）が、Google の公開の表（common-crawlers.json・special-crawlers.json）の範囲と一致すること（BOA-1110）。--write で表を書き直す（表は手で書かない）",
+      "reason": "Google の公開の表（developers.google.com）をネットワークで取るため。CI の中で外部に依らない",
+      "command": "node scripts/maintenance/verify-search-bot-ip-ranges.js"
+    },
+    {
       "script": "verify-seo-keyword-kpi.js",
       "tier": "ci",
       "guards": "SEOワード戦略のKPI集計（scripts/lib/seoKeywordKpi.js）のクラスタ分け・週の丸め・着地ページ分類。崩れると旧名系とAI予想一般が混ざり施策の効果を取り違える"
@@ -1205,6 +1330,16 @@
       "script": "verify-session-progress.js",
       "tier": "ci",
       "guards": "セッション長の検知（session-progress.js）。長くなっても黙るようになっていないこと"
+    },
+    {
+      "script": "verify-setsu-exhibition.js",
+      "tier": "ci",
+      "guards": "節の展示の読む口（BOA-1221）: 会場ごとに最新の節1つ（連続開催で前の節を混ぜない）・レース内の同タイム順位・欠場・欠損・中止（結果ありは除かない）・順延3日・級・初日のモーター2連率・1Rの締切・優勝戦の出場者（出走表/準優1・2着/空）・取得範囲・CLI（日付・stdout は JSON だけ）。外部接続なし（手元の偽の PostgREST のみ）"
+    },
+    {
+      "script": "verify-setsu-kiryoku.js",
+      "tier": "ci",
+      "guards": "YouTube Shorts「節の機力」（sns-video-studio/remotion/src/setsuKiryoku/、型 motor_gap・motor_up・final_gap と「準優に残れるか」border）: 見本の bundle が検査を通る、尺が約15秒（border は3章、final_gap は17秒・5章）、全部の型の名前と級 class（欠けたら止める、border の名前と級が得点率に重ならない）・hq の final_gap の束（texts・grade 無し）をそのまま通す・final_gap の date と final_date と when の照合・final_gap の名前と級・主役と6人と全機の2連率の照合・主役の選び・締め・final_six を選べない、border の3人・順位・得点率・要る着の形・同率（tied は bool か無し、true で「同率20位」）、検査が禁止語（risk-rules.json、説明欄末尾の #競艇 は例外）・言い切りの語（足が良い・上がった・化けた・節イチ）・リポジトリの禁止語（数える・似た・ふつう・いつも）・z・画面の文の bundle に無い数・2連率の下から何番目と all の食い違い・前半後半の平均とコースと runs の食い違い・6人でない・走の値の範囲・必須の欄を落とす、hook・close が36px以上で y1400 より上、2連率の札が x60〜900。外部接続なし"
     },
     {
       "script": "verify-sexagenary-cycle.js",
@@ -1299,7 +1434,7 @@
     {
       "script": "verify-sns-full-picture.js",
       "tier": "ci",
-      "guards": "全貌動画（format=full_picture、マイグレーション 161、scripts/sns/push-full-picture.js、2026-10-18 オーナー決定の承認なしの自動送信）: item の種類 full_picture（下書きに直接ひもづく）、hq のフォルダから X・YouTube の下書きと item を作り mode=auto なら自動送信の承認者で承認（送る時刻は締切の60分前と5分後の遅い方、失効30分前）、送る直前の読み直しは中止・欠場・締切と取り込んだ版、P0・機械の検査・別レースの URL・禁止表現・動画なし・40分前を過ぎた・中止は受け取らない、mode=manual・承認の失敗は manual、claim は60分前まで veto_window_open で待つ。SQL161 までを PGlite、外部接続なし"
+      "guards": "全貌動画（format=full_picture、マイグレーション 161、scripts/sns/push-full-picture.js、2026-10-18 オーナー決定の承認なしの自動送信）: item の種類 full_picture（下書きに直接ひもづく）、hq のフォルダから X・YouTube の下書きと item を作り mode=auto なら自動送信の承認者で承認（送る時刻は締切の60分前と5分後の遅い方、失効30分前）、送る直前の読み直しは中止・欠場・締切と取り込んだ版、P0・機械の検査・別レースの URL・禁止表現・動画なし・40分前を過ぎた・中止は受け取らない、mode=manual・承認の失敗は manual、claim は60分前まで veto_window_open で待つ。SQL161 までを PGlite、外部接続なし。BOA-1172: 型 f01 の完全版のサムネイル（youtube_full.thumbnail）を完全版の下書きの cover_image_path に入れ承認の media を2つにする（X・Shorts には付けない）、版の hash は動画の後にサムネイル（欄の無い束は今までの式）、画像が無い・PNG でも JPEG でもない・空・32 MiB 超・名前に区切りは束ごと拒否"
     },
     {
       "script": "verify-sns-headless.js",
@@ -1337,6 +1472,16 @@
       "guards": "sns-pdca-loop tasks 23: X の親の投稿の UTM（campaign=race-full は型の版なしで作れ utm_content は下書きの ID、sonar-preview は型の版が必須のまま、許可の無い campaign・クエリつきの URL は作らない、本文のレースの URL をちょうど1か所だけ差し替え句点・改行の直前も終わりとみなし番号が続く別のレースは差し替えない、差し替え済みならそのまま、子・YouTube は対象外、sns_post_tracking に型の版なしで保存できやり直しは同じ URL なら成功・違えば投げる）。SQL154 までを PGlite、外部接続なし"
     },
     {
+      "script": "verify-sns-research-image.js",
+      "tier": "ci",
+      "guards": "X の「数字で見たら」の集計の画像1枚（format=research_image、マイグレーション 179・180、scripts/sns/push-research-image.js、hq XR01）: item は X・variant=main・race_id は research:{日}:{slug} だけで1日1本（別の slug も・送った後も2本目は入らない、held_manual・stopped は外れる）、許可 research_image_enabled は既定 false で x の行だけ・off の間は push が何も書かない（Slack も）・承認の後に off にすると claim で held（research_image_disabled）、--dry-run は書かない、on なら画像1枚の job を送る時刻（19:00）に入れる（締切は送る時刻＋120分・期限は＋60分）、鮮度は research_image だけ集計から24時間（他の kind の max_source_age_seconds はそのまま）、通り道 B の claim は今日の research_image の分を先に枠から引く、検査（禁止表現と本文の競艇・#競艇 のタグだけ可・risk-rules・加重280・リンクなし・置き場所・本文のハッシュタグ・画像1枚 PNG 1080x1350・P0・send_time 08:00〜21:30・今日・期限の10分前・集計の時刻・X の日の上限）、送り手の readCurrent（許可・同じ日に送った research_image・item の kind・本文・画像の数）と preflight（リンク先の表示を開かず、送る文にリンクがあれば止める。他の型は表示を確かめる）、送った後の item sent と tweet id、結果の1行 RESEARCH_RESULT と exit、177 の transition_sns_send_139 の md5 が本番と一致。SQL180 までを PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-send-events.js",
+      "tier": "ci",
+      "guards": "SNS の送信で送らなかった理由の表 sns_send_events（マイグレーション 191、BOA-1201）: 冒頭の確認の SQL（適用前・適用後、db-apply の job summary の節）が期待値どおり、RLS・anon と authenticated は INSERT も SELECT も不可（Supabase の既定の権限を再現して REVOKE を確かめる）・service_role は書ける・claude_ro は読むだけ、UNIQUE (job_id, stage, reason) と ON CONFLICT DO NOTHING で同じ理由は1行（初出の detail のまま）、job の削除で CASCADE・無い job は外部キーで拒否、CHECK（stage は precheck・send・after_post、reason の形と長さ・detail 300字）、hq の読み方の SQL（再承認より前の行に before_reapproval）、戻し方の DROP。PGlite、外部接続なし"
+    },
+    {
       "script": "verify-sns-send-probe.js",
       "tier": "ci",
       "guards": "送信の試験（投稿しない、/api/admin/sns-hub/send-probe、2026-10-18 /today の初送信が原因不明で止まった件）: 媒体は initialize→append（4 MiB ずつ）→finalize→status まで行い createPost を呼ばない、落ちた段階を「段階_種類」で返す、表示の確認は印の有無と Chromium の落ちを区別する。外部接続なし"
@@ -1344,7 +1489,17 @@
     {
       "script": "verify-sns-send-runner.js",
       "tier": "ci",
-      "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は毎回 DB の状態から report.alerts に作る（保存の前に落ちた実行・sweep と runner の時刻のずれでも漏らさない）・送る前の検査とトークンの失敗は見直すまで期限つきで残す・その場の通知が届かなければ report.alerts に期限つきで持ち越す、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし"
+      "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は毎回 DB の状態から report.alerts に作る（保存の前に落ちた実行・sweep と runner の時刻のずれでも漏らさない）・送る前の検査とトークンの失敗は見直すまで期限つきで残す・その場の通知が届かなければ report.alerts に期限つきで持ち越す、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし。BOA-1172: サムネイルの失敗でも YouTube は posted まで進め、理由を report.jobs の thumbnail_error と Slack に1回（届かなければ report.alerts）。BOA-1201: live のときだけ送らなかった理由を sns_send_events（191）に (job, 段, 理由) ごとに初出の1行（送る前の検査は stage=precheck、送信の中は stage=send、begin_post の後は stage=after_post、claim の DB の拒否は文言ごとの code（日次全体上限と月額上限は別の行）・写せない文言は db_rejected で detail に元の文言、YouTube の begin_post の前の失敗は job が held・youtube_preflight_failed のまま reason に holdReasonOf の code）、shadow は書かない、書き込みが落ちても送信は続け表が無い（404・PGRST205）ときは Slack に出さない、PostgREST の POST は on_conflict と resolution=ignore-duplicates、detail は文字単位で300字"
+    },
+    {
+      "script": "verify-sns-setsu-kiryoku-short.js",
+      "tier": "ci",
+      "guards": "YouTube Shorts「節の機力」の送る口（format・kind=setsu_kiryoku_short、マイグレーション 193、scripts/sns/push-setsu-kiryoku-short.js、BOA-1209）: item は YouTube・variant=main・race_id は setsu:{日}:{会場コード 01〜24} だけで1日1本（別の会場も・送った後も2本目は入らない、held_manual・stopped は外れる）、許可 setsu_kiryoku_short_enabled は既定 false で youtube の行だけ・off の間は push が何も書かない（Slack も、exit 3）・承認の後に off にすると claim で held（setsu_kiryoku_short_disabled）・他の kind の claim は 189 と同じ、--dry-run は書かない・見本の束（date が今日でない）はその日の送る時刻の2分前の時計で見る、on なら動画1本の YouTube の job を送る時刻に入れる（題・説明欄は bundle の値のまま、期限は送る時刻＋60分・締切は期限＋expiry_minutes、リンク先の確認は会場のページ venue）、claim で YouTube のクォータ（1 upload・104 units）を予約、検査（型の checkBundle をもう一度: 禁止表現・言い切り・級・数の照合・final_date。題100字・改行と < > なし、説明欄5000バイト・リンクはちょうど1つでその会場のページ・utm_* だけ、会場名、video の名前、send_time は 22:00 まで、今日、期限の10分前、集計の時刻の鮮度、動画は MP4・縦・60秒まで・32 MiB まで）、優勝戦が今日の型は優勝戦の有無・中止・欠場、二重送信（同じ束・同じ日・前夜と当日の同じ優勝戦、送らずに終わった束は superseded で作り直す）、YouTube の日の上限とクォータの境（ちょうどは通し+1は拒否、まだ claim していない予定も数える）、送り手の readCurrent（許可・同じ日に送った・item の kind と日と会場・優勝戦の中止）と preflight（会場のページの印2つ）、モックの adapter で公開まで通して item sent と動画 ID、結果の1行 SETSU_RESULT と exit、189 の transition_sns_send_139 の md5 が本番と一致し 193 は1行だけ足す、印の data-testid が部品に実在。SQL189 までと 193 を PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-setsu-kiryoku-x.js",
+      "tier": "ci",
+      "guards": "X の「節の機力」（kind=setsu_kiryoku、画像1枚＋本文、毎日 21:30、BOA-1209、マイグレーション 194、scripts/sns/push-setsu-kiryoku.js → push-research-image.js の型ごとの受け取り、hq SK04）: 194 の transition_sns_send_139 は 193 の本文（md5）から期限・鮮度・許可・A の予定の4か所だけ変わり、本文の md5 が台帳の値、item は X・variant=main・race_id は setsu:{日}:{slug} だけで1日1本（送った後も2本目は入らない、Shorts の setsu_kiryoku_short の同じ日の item とは両立）、許可 setsu_kiryoku_enabled は既定 false で x の行だけ・off の間は push が何も書かない（Slack も）・承認の後に off にすると claim で held（setsu_kiryoku_disabled）、--dry-run は書かず今日でない束（hq の見本）は送る時刻の2分前の時計で通す、on なら画像1枚の job を 21:30 に入れ（締切 23:30・期限 22:30）21:30 前は claim できず 22:30 で deadline_expired、鮮度は集計から24時間（as_of の束はその日の 00:00 JST を集計の時刻にする）、通り道 B の claim は今日の setsu_kiryoku の分を先に枠から引く、数字で見たら（research_image）は 194 の後も 19:00 に送れる、検査（hq の見本の束が通る・選手は racers の名前と級 A1・A2・B1・B2 を読み本文からは拾わない・format・kind・send_time 21:30 だけ・集計の as_of の日・review は有れば P0 0件・禁止表現と本文の競艇・#競艇 のタグだけ可・本文＋改行2つ＋タグで加重280・リンクなし・本文のハッシュタグ・画像1枚）、送り手の readCurrent（許可・同じ日に送った setsu_kiryoku・本文・選手の名前と級）と preflight（リンク先の表示を開かず、送る文にリンクがあれば止める）、結果の1行 SETSU_RESULT と exit、hq の出し物の名前 setsu_kiryoku。SQL194 までを PGlite、外部接続なし"
     },
     {
       "script": "verify-sns-shorts-send.js",
@@ -1352,9 +1507,19 @@
       "guards": "依頼9・10: YouTube Shorts案B（private insert→処理確認→public update→実公開確認）・PT/JST日跨ぎの日次枠・upload lease失効時の非公開残置・処理pollの上限3回・update応答喪失時の要照合（142をPGlite、モックadapter、外部接続なし）"
     },
     {
+      "script": "verify-sns-today-picks.js",
+      "tier": "ci",
+      "guards": "/today の X 投稿が使ったレースを hq の思考投稿（today_thinking、BOA-1169）の材料に出す読む口（scripts/sns/today-picks.js）: 型 a は本文の「注目レース：」の行があるときだけ picks の先頭が注目レース、型 b は course_win.featured、一覧は残りの picks。締切は races の JST（deadlineIso）、中止は cancelled、races に無いレースは null で出す。返信の子を除いた親1件、2件は投げる。外部接続なし"
+    },
+    {
       "script": "verify-sns-today-plan.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 19b: /today の画像つき X 投稿の計画（cron sns_auto_plan の中、JST 5:30〜7:45）。一覧が公開されたら未ログインで撮った画像・決まった型の本文・UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り Slack に画像のリンク、本人の個別承認（140 の DB 側の条件）で 7:45 の job ができ、送る直前の検査は一覧の版の一致で通り版が変われば source_changed、同じ一覧では何も書かない、一覧がやり直されたら撮り直して承認を外し知らせる、時間外・未公開・shadow は書かない、撮れなければ何も書かない、禁止表現は held_manual で作り直さない、PostgREST の条件、vercel.json の locale の同梱。SQL158 までを PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-today-thinking.js",
+      "tier": "ci",
+      "guards": "/today の対象レースの思考投稿（today_thinking、BOA-1169、マイグレーション 189、scripts/sns/push-finals-image.js）: 188 の transition_sns_send_139 の本文の md5 が ce1cd6fa…（182 は c2b4835c…）で、189 は 188 から3か所だけ変える（v_ceiling・v_rest は変えない）・先頭で control→items の順に LOCK し md5 で照合（もう一度当てると全体が戻る）・取り置きと上限を入れない、CHECK（today_thinking は X・下書きにひもづく・variant は thinking 系だけ、YouTube・main・bundle 付きを拒む、同じレースの finals と両立）、許可 today_thinking_enabled は既定 false で x の行だけ・off なら push は何も書かず claim は held（today_thinking_disabled）、期限は締切の5分前、取り置き today_thinking（2本で数え kind_slot_full）、push の3本（本投稿・投票・展示後）が下書き・item・job になり source_data のキーは today_thinking だけ・Storage は today-thinking/、/today の X 投稿の対象でない・まだ送られていない投稿の対象のレースは拒否、優勝戦の段を見ない、本文に URL があれば拒否（優勝戦はこのレースのページ1つなら通る）、マイグレーション前（列が無い 400）でも優勝戦の許可は読める、readCurrent の today_thinking の枝（item の kind・レース・variant の食い違いで投げる、リンク先の表示の確認の代わりに public_check=none）、優勝戦・数字で見たら・/today の claim が 188 までと同じ結果。SQL182・188・189 を PGlite、外部接続なし"
     },
     {
       "script": "verify-sns-today-variants.js",
@@ -1367,6 +1532,11 @@
       "guards": "sns-pdca-loop tasks 17: X API v2 の実 adapter（分割アップロード initialize・append（multipart の segment_index・media）・finalize・STATUS、POST /2/tweets の media・reply、トークンは runner が claim の前に取って渡す、投稿の失敗は再試行しない・X の詳細な本文をエラーに入れない・成功の応答を解釈できなければ理由つきで投げる・媒体の処理の失敗や append の失敗では begin_post に進まない・STATUS の応答に状態が無い・finalize に data が無いときも投稿しない・finalize の processing_info はキーが無いときだけ省略とみなし null・false・0・空文字・state の無い値と、data がオブジェクトでない応答は投稿の前に止める・媒体の処理の待ちは1〜30秒に収め check_after_secs が数でなければ投稿の前に止める・動画は finalize で省略されても STATUS で完了を確かめる、分割は 4 MiB、posted_at は投稿 ID の snowflake から）と、runXSendJob に実 adapter をつないだ承認から posted まで（SQL137 を PGlite、fetch はモックで外部接続なし）"
     },
     {
+      "script": "verify-sns-x-cost-by-url.js",
+      "tier": "ci",
+      "guards": "X の送信の月の予約を送る文の URL の有無で決める（マイグレーション 188）: 先頭の照合は 182 の transition_sns_send_139 の本文の md5（c2b4835c…）で、当て直すと止まる。182 との差は予約額の行だけ。sns_x_post_has_url はスキーム・www・よく使う TLD のドメイン（日本語が続いても）を URL、小数・日本語だけ・NULL を URL でないとする。claim は URL のある文を ceiling_x_url、無い文を ceiling_x_plain で予約し、まだ claim していない自分の子も子の文で数える。ceiling_x_url・ceiling_x_plain は 250000・30000 のときだけ 200000・15000 にし、ほかの値は触らない。SQL182・188 を PGlite、外部接続なし"
+    },
+    {
       "script": "verify-sns-x-oauth.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 16（ADR 0093）: X の OAuth（PKCE）の連携の開始・コールバック（認証なしは401、state が Cookie と違う・拒否はトークンに替えない、コードの交換は Basic 認証と code_verifier、保存は暗号化した値とアカウント ID だけ）、トークンの AES-256-GCM（平文が残らない・鍵違い・改ざんを拒否）、access token の refresh（期限の5分前、同時に呼んでも refresh は1回、失敗時はロックを外して通知、保存に失敗したら連携のやり直しを通知、保存が成り立たず確かめる読み直しも失敗したときも通知）、PostgREST の条件付き UPDATE（外部接続なし）"
@@ -1377,9 +1547,14 @@
       "guards": "依頼3: X送信の承認版hash・編集時の承認失効・同時claim・$10予算予約・停止・要照合（外部成功後のDB失敗やPOST応答喪失で再送しない）・RLS/権限（135+137をPGlite、モックadapter、外部接続なし）"
     },
     {
+      "script": "verify-sns-x-slots.js",
+      "tier": "ci",
+      "guards": "X の日の枠の出し物ごとの取り置き（マイグレーション 182、docs/design/x-daily-slots/plan.md）: 全貌が取り置き4本を claim した後でも優勝戦の3本（本投稿・投票・展示後のリプ）と /today は claim でき、全貌の5本目は held（kind_slot_full）、取り置かれていない残りは先に来た出し物が使い出し物ごとの上限で止まる、合計は daily_limit_x を越えない、親は自分の子の分も数える、他の親の claim 済みの子は二重に数えない、取り込みの確かめは今日の queued も数える、曜日（JST・ISO）の取り置き、item の無い job（通り道 B）は全部の取り置きを空ける、他経路・基準の日、表と関数の権限（service_role は読むだけ）。取り込みの判定（scripts/lib/snsXSlots.js: kind_slot_full だけ止める・404 は止めない）と hq の config/x-slots.json との照合（scripts/sns/x-slots-check.js）。#1978 の数字で見たら（research_image、月水金）の取り置きと 180 の照合が重ねても残ること。SQL180・182 を PGlite、外部接続なし"
+    },
+    {
       "script": "verify-sns-youtube-adapter.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop tasks 18: YouTube Data API v3 の実 adapter（非公開の multipart upload・selfDeclaredMadeForKids=false、サムネイルの Content-Type は媒体どおり、processingDetails と承認の題名で本人の動画を確かめてから公開、videos.update の後に videos.list で公開を確認し posted_at は公開後の publishedAt、処理中は要照合のまま、サムネイルの 403 は非公開のまま残す、videos.update の失敗は update_started の要照合・公開の確認で private なら公開済みにしない、題名の不備・32 MiB を超える動画は begin_post の前に held、承認したタグと本文（承認の hash に入る値）を送る、JPEG の表紙、100文字の境界、upload の非 JSON・通信の例外・公開の確認の読み取りの喪失・publishedAt の欠落、動画 ID の無い照合は呼ばない、Google の詳細な本文をエラーに入れない、クォータの台帳に呼び出しの前に記録）と runYoutubeQueueJob・reconcileYoutubeJob（SQL146 までを PGlite、fetch はモックで外部接続なし）"
+      "guards": "sns-pdca-loop tasks 18: YouTube Data API v3 の実 adapter（非公開の multipart upload・selfDeclaredMadeForKids=false、サムネイルの Content-Type は媒体どおり、processingDetails と承認の題名で本人の動画を確かめてから公開、videos.update の後に videos.list で公開を確認し posted_at は公開後の publishedAt、処理中は要照合のまま、サムネイルの 403 は記録する先（onThumbnailFailed）が無い呼び出しなら非公開のまま残す、渡せば 403・通信の例外でも公開まで進み理由を渡し、thumbnails.set の前の検査・台帳の拒否は非公開のまま残す（BOA-1172）、videos.update の失敗は update_started の要照合・公開の確認で private なら公開済みにしない、題名の不備・32 MiB を超える動画は begin_post の前に held、承認したタグと本文（承認の hash に入る値）を送る、JPEG の表紙、100文字の境界、upload の非 JSON・通信の例外・公開の確認の読み取りの喪失・publishedAt の欠落、動画 ID の無い照合は呼ばない、Google の詳細な本文をエラーに入れない、クォータの台帳に呼び出しの前に記録）と runYoutubeQueueJob・reconcileYoutubeJob（SQL146 までを PGlite、fetch はモックで外部接続なし）"
     },
     {
       "script": "verify-sonar-hint-order.js",
@@ -1427,6 +1602,16 @@
       "guards": "思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル src/utils/assistSummary.js。2026-10-06 徳山10R の本番 v16 の値（e2e/thinking-assist-fixture.json.gz）で、差がつく材料の範囲（VC 300件未満は全国、準優勝戦は NCR に絞る。D-37）、札の今日の位置と準優勝戦の今節の点を使わないこと（FR-5）、図の良い方の札、平均ST の手がかり・スリットの形・進入の型（展開）、展示の表の最良（F を外す）・チルト・部品交換（機力）、今節の走（今日の走を点に入れない。D-29）・今節より前の5走（今節と後の走を除く。D-36 (10)）・進入コースで集めるコースの1着（D-36 (11)）、成績から付けた札（D-41。PR4）"
     },
     {
+      "script": "verify-today-course-win.js",
+      "tier": "ci",
+      "guards": "/today の X 投稿の型 b（コース別1着率、hq 2026-10-27）の材料: マイグレーション 183（compute_today_course_win_stats、jsonb の1つで返す）の級別の全国の値は各走の級で数え、1着は決まり手を問わない、中止・欠場・決まり手なし・p_until より後は数えない、窓は全行で同じ、選手の行は1・4コースだけで前付けの回数（枠番と違うコース）、anon・authenticated は呼べない。buildCourseWinNotes は率で絞らず載せる条件（30回・期待度数5・4コースは A1・A2・前付けのレースを外す）の全員を候補にし段ごとの数を残す、縮めた値・z・Bonferroni の線・分位点。fetchCourseWin は関数が無い・読めない・材料が壊れていても一覧を止めず unavailable、窓は前々日まで。SQL183 を PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-today-type-b.js",
+      "tier": "ci",
+      "guards": "/today の X 投稿の型 b（コース別1着率、hq 2026-10-27）の中身と本文: 並べは段ごとに縮めた値−級の平均の順・同率は件数の多い方・上限3と2・送る時刻より前の締切と除く行を外して補う、K は率で絞らない送る時刻での全員、Bonferroni の線を通った日だけ差を書く、指紋は中身と送る時刻で変わる、1コースが0行・材料なし・版違いは作らない。機械の検査（画像の指紋・未取得の印・順位の言い切り・線なしの差・本文の人が画像の1行目・名前の空白・リンク・免責・加重280・値）。撮影用のページの URL は数字を渡さない。比べは連続2日を1組で組の中でちょうど1日が b・日付と設定だけで決まる・比べの外は a・組の日は型の列を使わない。リポジトリの config の b の行と開始日なし。外部接続なし"
+    },
+    {
       "script": "verify-turn-time-venues.js",
       "tier": "ci",
       "guards": "まわり足が会場独自の計測で他場と値の水準が違う会場の判定（src/utils/turnTimeVenues.js、data-catalog E12）。住之江・尼崎・徳山だけを対象にし、scripts/lib/boatcast/publicMap.js の直線なし（TWO）の会場と一致すること"
@@ -1454,7 +1639,7 @@
     {
       "script": "verify-venue-entry-course-stats-parser.js",
       "tier": "ci",
-      "guards": "進入コース別選手成績パーサー（BOA-293）"
+      "guards": "進入コース別選手成績パーサー（BOA-293）と、若松（20）を取得の対象・drift の知らせから外していること（BOA-1165）"
     },
     {
       "script": "verify-venue-first-win-rate.js",
@@ -1500,6 +1685,11 @@
       "script": "verify-venue-series-title.js",
       "tier": "ci",
       "guards": "会場ページの title に節タイトルを入れる判定（SG・G1のみ、先頭レースの値、NFKC）。崩れると一般戦の title が長くなるか、SG開催週の検索需要を取り逃す"
+    },
+    {
+      "script": "verify-venue-summary.js",
+      "tier": "ci",
+      "guards": "会場ページ（/venue/N）の常設の要約2行と「この会場の特徴」カードの数字（BOA-1189）。src/data/venueSummaryStats.js が data/analysis/venue-summary-stats/venue-techniques.json から build-venue-summary.mjs で作った値と一致すること・12か月の窓・会場1,000レース以上・割合は件数から1回だけ丸めること・全国より高い/低いの文は Bonferroni を通った会場だけ（ほかは「差ははっきりしない」）・2行目に逃げの割合を入れないこと・4言語24会場の文に補間の残りと使わない言葉が無いこと"
     },
     {
       "script": "verify-venue-technique-period.js",

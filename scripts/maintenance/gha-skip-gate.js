@@ -7,7 +7,9 @@
  * 判定は scripts/lib/ghaSkipGate.js。結果は標準出力と、$GITHUB_OUTPUT（あれば）の `skip=true|false` に出す。
  * --wait: 日次ジョブの指定時刻の直後は、Vercel の処理の完了を最大10分まで待って再判定する（同じ時刻に起動して二重に取得しない）。
  *
- * 常に終了コード0。どんな失敗（例外・環境変数の欠落・DB の読み取り失敗）も skip=false（後続の取得ジョブが実行される）にする。
+ * 常に終了コード0。どんな失敗（例外・環境変数の欠落・DB の読み取り失敗・対象外の変数）も skip=true（後続の取得ジョブを
+ * 実行しない）にする。肩代わりの条件を確かめられないときに、GitHub の IP から守りを通らない素の fetch で公式を叩かない
+ * （docs/design/scraping-load-budget/spec.md §0 の P0）。このゲートは変数が true のときだけ起動する。
  * このスクリプトは、SUPABASE_URL・SUPABASE_SERVICE_KEY（GitHub Actions の既存のシークレット）だけを使い、npm ci は要らない。
  */
 import fs from "node:fs";
@@ -36,10 +38,10 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
   try {
     if (!varName || !(varName in GHA_SKIP_TARGETS)) {
       console.error(
-        `⚠️ 対象外の変数です（${varName ?? "未指定"}）。対象: ${Object.keys(GHA_SKIP_TARGETS).join(", ")}。実行します`,
+        `⚠️ 対象外の変数です（${varName ?? "未指定"}）。対象: ${Object.keys(GHA_SKIP_TARGETS).join(", ")}。肩代わりの条件を確かめられないため、スキップします`,
       );
-      writeOutput(false, env);
-      return false;
+      writeOutput(true, env);
+      return true;
     }
     const decide = wait ? shouldSkipOnGhaWaiting : shouldSkipOnGha;
     const decision = await decide({ varName, env, logger: console });
@@ -47,10 +49,10 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
     return decision.skip;
   } catch (error) {
     console.error(
-      `⚠️ 判定に失敗したため実行します: ${error?.message ?? error}`,
+      `⚠️ 判定に失敗したため、スキップします（肩代わりの条件を確かめられない）: ${error?.message ?? error}`,
     );
-    writeOutput(false, env);
-    return false;
+    writeOutput(true, env);
+    return true;
   }
 }
 

@@ -96,49 +96,51 @@
   },
   "venueRaceList": {
     "title": "レース一覧",
-    "metaTitle": "{{venue}}競艇のAI予想｜本日の全レース - 龍神レーダー",
-    "metaDescription": "{{venue}}競艇（ボートレース{{venue}}）の本日の全レースをAIが予想。1マークの展開予測・イン崩れ指数と締切時刻を無料・登録不要で確認できます。",
+    "metaTitle": "{{venue}}競艇の予想・出走表｜本日の全レースAI予想 - 龍神レーダー",
+    "metaDescription": "{{venue}}競艇（ボートレース{{venue}}）の本日の出走表と全レースのAI予想。締切時刻、1マークの展開予測、直近1年の1コースの1着率と決まり手を無料・登録不要で確認できます。",
     "backToVenues": "← 会場一覧に戻る",
     "jumpToNextRace": "{{race}}Rへ",
     "nextDeadlineMarker": "{{venue}}　次の締切 {{race}}R {{time}}",
     "allClosedMarker": "{{venue}}　本日のレースはすべて締切済み",
     "todayTitle": "本日のレース・AI予想",
-    "metaTitleSeries": "{{venue}}競艇のAI予想 {{series}}｜本日の全レース - 龍神レーダー",
-    "metaDescriptionSeries": "{{venue}}競艇（ボートレース{{venue}}）で{{series}}開催中。本日の全レースをAIが予想し、1マークの展開予測・イン崩れ指数を無料・登録不要で公開しています。"
+    "metaTitleSeries": "{{venue}}競艇の予想・出走表 {{series}}｜本日のAI予想 - 龍神レーダー",
+    "metaDescriptionSeries": "{{venue}}競艇（ボートレース{{venue}}）で{{series}}開催中。本日の出走表と全レースのAI予想、節の得点率ランキングを無料・登録不要で公開しています。"
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "{{summary}}／1号艇の1着率 {{rate}}%",
-    "title": "この会場の特徴（過去90日）",
-    "note": "AIデータ分析が参照しているのと同じ会場別データです。枠番ごとの1着率と、勝った際に多い決まり手を確認できます。",
-    "nationalAverageTooltip": "全国平均{{value}}%",
-    "techniqueHeader": "主な決まり手",
-    "footnote": "直近{{count}}走を集計（{{date}}時点）。過去のレース傾向であり、当日の結果を保証するものではありません。",
-    "unknownDate": "更新日不明",
+    "collapsedTeaser": "水質は{{summary}}。進入コース別の1着率と決まり手の表を開く",
+    "collapsedTeaserNoSummary": "進入コース別の1着率と決まり手の表を開く",
+    "title": "この会場の特徴（直近1年）",
+    "note": "1着の割合を、実際に入った進入コース別（枠番ではない）に出しています。決まり手は全レースのうちの割合です。",
+    "nationalAverageTooltip": "全国{{value}}%",
+    "footnote": "{{from}}〜{{to}}の{{count}}レース（中止・不成立を除く）を集計。全国の値は同じ期間の{{nationalCount}}レース。4〜6コースは1着の件数が少なく、会場の順位は年によって変わりえます。過去の集計で、今後の結果を示すものではありません。",
     "waterType": {
       "fresh": "淡水",
       "brackish": "汽水",
       "sea": "海水"
     },
-    "cluster": {
-      "in_strong": "イン強い",
-      "out_strong": "アウト強い",
-      "balanced": "バランス型"
-    },
-    "fetchError": "会場の水面特性を読み込めませんでした。",
+    "fetchError": "過去90日の枠番別のデータを読み込めませんでした。",
     "details": {
-      "summary": "もっと詳しく（2連率・3連率、決まり手の内訳）",
-      "placeRatesTitle": "枠番別の連対率",
+      "summary": "もっと詳しく（過去90日・枠番別の2連率・3連率、勝ったときの決まり手）",
+      "placeRatesTitle": "枠番別の2連率・3連率（過去90日）",
       "placeRatesNote": "2連率は2着以内、3連率は3着以内に入った割合（{{count}}レース）",
       "boat": "枠",
-      "winRate": "1着率",
       "top2Rate": "2連率",
       "top3Rate": "3連率",
-      "techniqueTitle": "勝ったときの決まり手",
+      "techniqueTitle": "枠番別・勝ったときの決まり手（過去90日）",
       "techniqueNote": "枠番ごとの、1着になったレースの決まり手の内訳。（）は回数",
       "winCount": "1着{{count}}回",
       "smallSampleNote": "1着の回数が少ない枠は、割合がぶれやすい点に注意してください。",
       "outcomeLink": "この会場の出目ランキングを見る（分析ツール）"
-    }
+    },
+    "courseHeader": "進入コース別の1着率",
+    "courseLabel": "{{course}}コース",
+    "techniqueTitle": "決まり手（全レースのうちの割合）",
+    "techniqueName": "決まり手",
+    "techniqueVenue": "この会場",
+    "techniqueNational": "全国",
+    "megumareNote": "恵まれは{{races}}レース中{{count}}回（全国は{{nationalRaces}}レース中{{nationalCount}}回）。回数が少ないので割合で会場を比べません。",
+    "winsOfRaces": "{{races}}レース中{{count}}回",
+    "nationalLegend": "縦の線は全国の値"
   },
   "raceDetailPage": {
     "assistSwitch": {
@@ -153,6 +155,10 @@
     },
     "metaTitle": "{{venue}}競艇 {{race}}R AI予想・展開予測（{{date}}）- 龍神レーダー",
     "metaDescription": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rの出走表データ・AI予想・1マークの展開予測・イン崩れ指数を無料で確認できます。",
+    "metaTitleResult": "{{venue}}競艇 {{race}}R 結果・払戻（{{date}}）- 龍神レーダー",
+    "metaDescriptionResult": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rのレース結果と払戻金、出走表データ・AI予想を無料で確認できます。",
+    "metaTitleCancelled": "{{venue}}競艇 {{race}}R 中止（{{date}}）- 龍神レーダー",
+    "metaDescriptionCancelled": "{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rは中止になりました。同じ日のほかのレースの出走表・AI予想は龍神レーダーで確認できます。",
     "backToList": "← レース一覧に戻る",
     "notFound": "レースが見つかりませんでした",
     "pastPredictionsBreadcrumb": "過去の予想",
@@ -1253,7 +1259,7 @@
         "runs": "{{n}}走",
         "hintVenueFoot": "{{venue}}での平均STは参考（直近30走まで）。",
         "hintFewVenue": "{{boats}}号艇はこの会場の走数が少なく、ぶれやすい。",
-        "hintExhPost": "展示STは参考で、本番のSTとの関係は弱い（艇ごとの相関 0.08。平均STは 0.28）。F.09＝展示でスタートラインを0.09秒早く越えた（展示なので罰則は無い）。",
+        "hintExhPost": "展示STは参考で、本番のSTとの関係は弱い（艇ごとの相関 0.08。平均STは 0.28）。F.09＝展示でスタートラインを0.09秒早く越えた（展示のFは本番のフライングとは別のもので、これで出走資格を失うことはない）。",
         "hintExhPre": "展示STは展示の後に出る。",
         "hintConds": "今日の並びが当てはまる条件（{{src}}の平均ST）",
         "hints": {
@@ -1735,6 +1741,7 @@
     "secondsUnit": "秒",
     "detailTableTitle": "展示情報",
     "bestLegend": "金の枠は6艇の中で最も良い値（同じ値は全部。「今節〜」の行は前走の値で比べます）。⚠は件数が少ない（6件未満）参考値で、最も良い値が⚠のときはどの艇にも付けません。",
+    "bestLegendNoMeet": "金の枠は6艇の中で最も良い値（同じ値は全部）。⚠は件数が少ない（6件未満）参考値で、最も良い値が⚠のときはどの艇にも付けません。",
     "turnTimeVenueNote": "この場のまわり足は会場独自の計測で、他場と値の水準が違います（11〜12秒台）。同じレースの中で比べてください。",
     "detailTableNote": "展示タイム1位勝率とこの枠からの進入コースは2025年12月以降（いずれも最大過去2年）の集計、今節展示情報はモーター使用開始後（今節）の推移です",
     "preExhibitionNote": "体重・調整重量は展示前の値です。チルトは展示航走の後に公開されます",
@@ -2457,6 +2464,14 @@
     "nextRaceLabel": "次のレース {{race}}R",
     "noPrevRace": "前のレースなし",
     "noNextRace": "次のレースなし"
+  },
+  "raceSummary": {
+    "title": "出走6艇"
+  },
+  "raceStrip": {
+    "label": "{{venue}}のレース",
+    "meetLink": "この節の得点率・勝ち上がり ›",
+    "meetFetchError": "節の情報を読み込めませんでした"
   },
   "raceStage": {
     "final": "優勝戦",
@@ -3859,5 +3874,25 @@
       "where": "注意度は、レース詳細の「AI予想」タブ、会場のレース一覧の札、ホームの「今日のイン崩れ注意度」に出ます。",
       "sparseNote": "勝率差の帯の過去レースが少なく、注意度を出さなかった{{n}}レースは、全レースに含め、どの段にも入れていません。"
     }
+  },
+  "venueSummary": {
+    "label": "この会場の要約（直近1年）",
+    "course1Higher": "{{venue}}の直近1年（{{to}}まで、{{races}}レース）、1コースの1着率は{{rate}}%で、全国（{{nationalRaces}}レース）の{{nationalRate}}%より高い",
+    "course1Lower": "{{venue}}の直近1年（{{to}}まで、{{races}}レース）、1コースの1着率は{{rate}}%で、全国（{{nationalRaces}}レース）の{{nationalRate}}%より低い",
+    "course1Unclear": "{{venue}}の直近1年（{{to}}まで、{{races}}レース）、1コースの1着率は{{rate}}%。全国（{{nationalRaces}}レース）の{{nationalRate}}%との差ははっきりしない",
+    "techniques": "全レースのうちの割合で見ると、逃げ以外の決まり手の上位3つは{{list}}",
+    "techniqueItem": "{{name}}{{rate}}%（全国{{nationalRate}}%）",
+    "techniquesHigher": "{{names}}は全国より多い",
+    "techniquesLower": "{{names}}は全国より少ない",
+    "techniquesWithCompare": "{{line}}。{{compare}}",
+    "compareSeparator": "。",
+    "techniquesRest": "ほかは全国との差がはっきりしない",
+    "techniquesNone": "全国との差がはっきりした決まり手は無い",
+    "namesSeparator": "・"
+  },
+  "venueMeetBanner": {
+    "inProgress": "開催中",
+    "link": "節の得点率ランキング・勝ち上がりを見る",
+    "fetchError": "開催中の節のページへの入口を読み込めませんでした。"
   }
 }

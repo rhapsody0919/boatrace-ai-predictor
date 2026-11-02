@@ -132,6 +132,26 @@ D はまず1〜2週間、当てずに「当てるはずだった」を通知す�
 - 最初の1週間は試運転（job-watch.json の dryRun: true）で、rerun せず「rerun するはずだった」を Issue に書くだけ
 - 残る弱み: 見張り自身が止まったことは内側からは分からない。外側（hq の鮮度の見張り・data_health）が頼り
 
+### 見張りの起動を絞る（2026-10-27、docs/design/ci-minutes-reduction/design.md 4.2 D）
+
+7日（10/20〜10/27）で Job Watch は2,950回起き、そのうち中身が要るのは見張る run が成功以外（88回）とカナリアの成功（329回）だけだった。残りの約2,500回は同じ24時間の見回りを繰り返していた。
+
+- `scan` を起こすのは、見張る run が成功以外で終わったとき・カナリア（path `.github/workflows/key-canary.yml`）が成功したとき・予備の schedule（`17 * * * *`。このリポジトリの schedule は数時間おきにしか来ない実測があり、主の受け皿は Vercel Cron が30分ごとに起こすカナリアの成功）・手の起動だけ。見張る run の成功では skip（0分）。見回りは毎回直近24時間を全部見るので、成功の起動を省いても拾い漏れない
+- concurrency（`job-watch`、`cancel-in-progress: false`）は workflow の単位から `scan` の job へ移した。workflow の単位のままだと、scan が skip になる run も枠を取り、待っている scan を置き換えて何もせずに終わる（7日で258回の取り消し）。rerun の job には付けない（同じ group に入れると、待っている rerun が後の scan に置き換えられて消える）。skip になる起動（見張る run の成功）は `job-watch-skip-<run_id>` の自分だけの group に入れる（if が偽の job が group の待ちを置き換えるかは未確認のため、構造で避ける）
+- 鮮度の見方が変わる: Job Watch の run は見張る run の成功の起動でも作られ（scan が skip の run。結論は success か skipped）、「最後の run」は見張りが動いている印にならない。hq の `config/platform.json` の `actions_fresh`（`"Job Watch": {"any": 8}`。dashboard-collect.py の stale_workflows は createdAt だけを見て結論を見ない）は、結論が success の run を event を問わず見る形に変える（線は2〜3時間が目安、根拠なし。schedule だけで見るなら8時間以上。scan が skip の run の結論はマージ後に1件確かめてから渡す）（別プロジェクト。この変更のマージ前に hq へ知らせる）
+- `verify-job-watch.js` が、起動の条件（成功以外とカナリアの path）・毎時の schedule と置き場所・concurrency の置き場所を検査する
+
+### 時間切れ（cancelled）も拾う（2026-10-27、BOA-1162）
+
+見回りは結論が failure・timed_out の run だけを拾っていた。GitHub は timeout-minutes の時間切れの job を cancelled にする（run の結論も cancelled）ので、E2E Live（10/20〜10/26 の7回とも60分の時間切れ。ADR-0077 決定3 の追記）・Nightly DB Verify（10/25・10/26 の15分の時間切れ。check run の annotation で確かめた）の時間切れを一度も知らせていなかった。
+
+- 結論が cancelled の run も候補に入れ、時間切れのものだけを拾う。ログは時間切れも concurrency の置き換えも「The operation was canceled.」で同じで、時間切れの文言（The job has exceeded the maximum execution time）は check run の annotation にしか出ない。scan の token は checks を読めない（permissions は contents・actions・issues）ので、取り消された job がその job の上限（その run の SHA の YAML の timeout-minutes。書いていなければ360分）の分まで動いたかで見分ける（`cancelledByTimeout`）
+  - job が0件: 待ちの間に後の run に置き換えられた（7日の取り消しの大半）→ 拾わない
+  - 上限より短く取り消された: 動いている間の置き換え（cancel-in-progress: true）か人の取り消し → 拾わない
+  - 上限の分まで動いた後の置き換え・人の取り消しは時間切れに数える（知らせる側に倒す）。matrix の job は name の式の前の字か「key (値)」で YAML の job に当て、当たらなければその workflow の最も短い上限で判定する
+- 拾った run は Issue の行に「時間切れ（GitHub の上限で cancelled）」と書き、ログ（cancelled の job も読む）の分類は今までどおり。rerun の許可の一覧にあるものは一時的な失敗として1回 rerun の対象になる（rerun-failed-jobs が cancelled の job も流し直すかは未確認。今は試運転で rerun しない）
+- 置き換えられた cancelled の run は印を書かないので、見回りのたびに job の一覧を1回読む（24時間で数件〜十数件。job があるものだけ YAML も読む）
+
 ## 追記: 自動の適用の仕上げ（2026-10-20）
 
 2026-10-20 の実測で、定期の起動（schedule）が #1674 の後に一度も来ず、審査も PR の作者が rhapsody0919 のため全部 skipped だった。起動を Vercel Cron からの dispatch に移す形・作成の App の名義への配線・D' の前に要る3点（DB の側の印・止め印・時間の窓）・順番と戻し方の設計は [docs/design/db-apply-automation-finish/plan.md](../design/db-apply-automation-finish/plan.md)。オーナーの判断の後に PR を分けて実装する。
