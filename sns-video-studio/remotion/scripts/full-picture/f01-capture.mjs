@@ -57,7 +57,21 @@ export async function startCaptureServer() {
     if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/?$/.test(given)) throw new Error(`F01_CAPTURE_URL はローカルの dev サーバーだけ（${given}）`);
     return { url: given.replace(/\/$/, ""), stop: () => {} };
   }
-  const port = await freePort();
+  // 空いた port を探してから vite が掴むまでの間に、別の f01（並べて作る日）が同じ port を取ることがある。そのときは port を変えて3回まで
+  let last = null;
+  for (let i = 0; i < 3; i++) {
+    try {
+      return await launchVite(await freePort());
+    } catch (e) {
+      last = e;
+      if (!/already in use|EADDRINUSE/.test(String(e?.message))) throw e;
+    }
+  }
+  throw last;
+}
+
+/** port で vite を立て、頁が返るまで待つ。立ち上がらなければ子と依存の前処理の置き場を片づけて止める */
+async function launchVite(port) {
   const vite = join(REPO_ROOT, "node_modules", "vite", "bin", "vite.js");
   const cacheDir = mkdtempSync(join(tmpdir(), "f01-vite-"));
   const config = join(dirname(fileURLToPath(import.meta.url)), "vite-capture.config.mjs");
@@ -85,7 +99,10 @@ export async function startCaptureServer() {
   };
   const until = Date.now() + 60000;
   for (;;) {
-    if (child.exitCode !== null) throw new Error(`撮影用の dev サーバーが止まった（${child.exitCode}）: ${log}`);
+    if (child.exitCode !== null) {
+      stop();
+      throw new Error(`撮影用の dev サーバーが止まった（${child.exitCode}）: ${log}`);
+    }
     try {
       const r = await fetch(`${url}/sns-capture/f01/radar`);
       if (r.ok) break;
@@ -212,6 +229,9 @@ export async function captureAll(m, s, outDir) {
       const meta = JSON.parse(await el.getAttribute("data-f01-meta"));
       const file = join(outDir, `${p.name}.png`);
       await el.screenshot({ path: file, animations: "disabled", caret: "hide" });
+      // 描き終えた後に出た例外・頁の読み直し（vite の依存の前処理）も、撮った物を信じず止める
+      if (errors.length) throw new Error(`撮影用の頁（${p.part}）で例外: ${errors[0]}`);
+      if ((await el.getAttribute("data-f01-meta")) !== JSON.stringify(meta)) throw new Error(`撮影用の頁（${p.part}）が撮る間に描き直された`);
       const clip = { x: 0, y: 0, w: meta.w, h: meta.h };
       const scale = scaleOf(meta.w, meta.h);
       const shot = {

@@ -129,9 +129,9 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
         }
         const extra = { gold: (sh.goldBoxes ?? []).map((g) => ({ ...g, at: gAt })) };
         const next = p.cursor ? shots[p.cursor] : null;
-        // カーソルは押す所へ0.5秒で動く。座標はこのカット（押す前の画面）の物: 着順の流れの押す前は半分に切ってあり、
-        // splitHalves が切った分だけずらした cursor を持つ（下半分のとき、押した後の上のカットの座標を使うと約47% 上を指した。#2087 の審査）。
-        // 思考アシストの軸のボタンは押す前のカットに cursor が無いので、押した後のカットの cursorFrom（押す前の画面の座標）
+        // カーソルは押す所へ0.5秒で動く。座標はこのカット（押す前の画面）の物: 着順の流れの押す前は、撮影用の頁が返した
+        // 押す1着の四角の箱を cursor に持つ。思考アシストの軸のボタンは押す前のカットに cursor が無いので、押した後のカットの
+        // cursorFrom（押す前の画面の軸のボタンの箱）
         if (next) extra.cursor = { ...(sh.cursor ?? next.cursorFrom ?? next.cursor), at: T + 15 };
         ch.cuts.push(cut(sh, T, extra));
       }
@@ -180,7 +180,8 @@ export function f01SmallChapters(s, shots) {
 
 /**
  * 左の画面の形が崩れた章（11/3 の③: 札の図が小さく右半分以上が空く・名前と件数の帯だけ・着順の流れの下が切れる）。
- * 空き: 縮めた後の大きさが FILL_LINE に届かない。切れ: 部品の一部だけを撮った物（splitHalves の crop）を、PLAN で half と決めていないカットに置いた
+ * 空き: 縮めた後の大きさが FILL_LINE に届かない。切れ: 部品の一部だけを撮った物（crop の印）を、PLAN で half と決めていないカットに置いた
+ * （撮影用の頁は部品の全体を撮るので今は crop の付いた物は無い。部品の一部を撮る形を足したときの守り）
  * @param {{chapters: {id: string}[]}} s @param {Record<string, {clip: {w: number, h: number}, scale: number, crop?: string}>} shots
  * @returns {{id: string, reason: string}[]}
  */
