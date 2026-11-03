@@ -1,8 +1,6 @@
 /**
  * 比べた差と、その向きを言い切ってよいか（BOA-1157）。依存の無い純関数だけを置く
  */
-/** 差の向きを言い切る線（|z|>=1.96、docs/knowledge/number-wording.md・stat-findings.md） */
-export const Z_LINE = 1.96;
 /** z を出す件数の下限（どちらかの群が30件未満なら差を言い切らない。number-wording.md「30件未満の範囲は割合を出さず件数だけ」、hq data-scientist 2026-10-27） */
 export const MIN_N = 30;
 /**
@@ -22,21 +20,22 @@ export function zOf(s) {
   return se > 0 ? Math.round(((pa - pb) / se) * 100) / 100 : null;
 }
 /**
- * 比べた差（ポイント、小数1桁）と向き。a・b は見せる率（%）、sample は z を出す材料（zOf）。|z|>=1.96 のときだけ向き（高い・低い）を持たせる（BOA-1157。
- * 10/26 大村10R で 599件 z≈1.67・6R・33件 z≈1.67 の差を「高い」と言い切っていた）。件数が無ければ向きは言わない
+ * 比べた差（ポイント、小数1桁）と向き。a・b は見せる率（%）、sample は z を出す材料（zOf）。SNS は |z|>=1.96 の線で向きを止めない（オーナー 2026-11-01、hq docs/playbook.md:41。線は SEO の記事だけ）。
+ * 件数が足りず z を出せない差（few）と差が0の差は向きを持たせない。z は参考値として残す（BOA-1157。 * 10/26 大村10R で 599件 z≈1.67・6R・33件 z≈1.67 の差を「高い」と言い切っていた）。件数が無ければ向きは言わない
  */
 export function diffOf(a, b, sample) {
   if (a === null || b === null || a === undefined || b === undefined) return { diffPt: null, direction: null, z: null, sig: false, few: false };
   const d = Math.round((a - b) * 10) / 10;
   const z = zOf(sample);
-  const sig = z !== null && Math.abs(z) >= Z_LINE && d !== 0;
+  // sig = 向きを言ってよい（件数が足りる・差がある）。|z| の線は使わない
+  const sig = z !== null && d !== 0;
   // few: 件数が足りず z を出さなかった（検定して通らなかったのとは別。言い方を「比べられない」にする。wording-editor 2026-10-27 P2）
   return { diffPt: Math.abs(d), direction: sig ? (d > 0 ? "高い" : "低い") : null, z, sig, few: z === null };
 }
 /**
  * 差の言い方（文型）。1ポイント未満は「ほぼ」と言わず「差は1ポイント未満」。差は小数1桁（19.0ポイント。BOA-913）。
- * 線（|z|>=1.96）を通らない差は向きを言わず「差は確認できない」（number-wording.md「差を確認できない」）。
- * 件数が足りず z を出さない差は「とは比べられない」（件数は前の行に出ている。22字の幅に収める）（検定した文に読ませない。wording-editor 2026-10-27 P2）
+ * 1ポイント未満は向きを言わず「差は1ポイント未満」。1ポイント以上は線に関わらず向きを言う（SNS。2026-11-01）。
+ *  * 件数が足りず z を出さない差は「とは比べられない」（件数は前の行に出ている。22字の幅に収める）（検定した文に読ませない。wording-editor 2026-10-27 P2）
  */
 export const diffWords = (f) =>
   f.diffPt === null || f.diffPt === undefined ? null : f.diffPt < 1 ? "との差は1ポイント未満" : f.direction ? `より${f.diffPt.toFixed(1)}ポイント${f.direction}` : f.few ? "とは比べられない" : "との差は確認できない";
@@ -47,12 +46,12 @@ export const diffText = (base, f) => {
 
 /**
  * 順位の言い切り（最多・最高）。同じ母数の中の1位と2位の件数 c1・c2 の z（多項の2つのセルの差、(c1−c2)/√(c1+c2)）。
- * |z|>=1.96 かつ c1+c2>=10 のときだけ「最多」と言う（hq 2026-10-27。7 対 6 は z≈0.28）。2位が無ければ言い切ってよい
+ * 1位が2位より多ければ「最多」と言う（SNS は線を外した。オーナー 2026-11-01。以前は |z|>=1.96 かつ c1+c2>=10、hq 2026-10-27）。2位が無ければ言い切ってよい
  * @param {number} c1 @param {number|null|undefined} c2
  */
 export function rankOf(c1, c2) {
   if (typeof c2 !== "number" || c2 <= 0) return { rankZ: null, rankSig: true };
-  if (c1 + c2 < 10) return { rankZ: null, rankSig: false };
-  const z = Math.round(((c1 - c2) / Math.sqrt(c1 + c2)) * 100) / 100;
-  return { rankZ: z, rankSig: z >= Z_LINE };
+  const z = c1 + c2 < 10 ? null : Math.round(((c1 - c2) / Math.sqrt(c1 + c2)) * 100) / 100;
+  // 1位が2位より多ければ「最多」と言える。同数は並びなので言わない（|z| の線は使わない。2026-11-01）
+  return { rankZ: z, rankSig: c1 > c2 };
 }

@@ -245,10 +245,10 @@ export function checkLines(lines, facts, prev) {
   for (const u of left) why.push(`facts に無い言い回し「${u}」`);
   // 向き（高い・低い）は facts の向きと合う
   if (facts.direction && /高い|低い/.test(text) && !text.includes(facts.direction)) why.push(`向きが facts（${facts.direction}）と逆`);
-  // 差の言い切りは |z|>=1.96 の根拠があるときだけ（BOA-1157。facts に z の判定が無い・通らない差で向きを言わない）
-  if ("sig" in facts && !facts.sig && /(高い|低い|高く|低く|上回|下回)/.test(text)) why.push(`差の向きを言ったが z の根拠が無い（z=${facts.z ?? "なし"}、線は |z|>=1.96）`);
-  // 「最多・最高」は1位と2位の差が線を通ったときだけ（BOA-1157。7 対 6 は z≈0.28）
-  const rankWhy = `順位を言い切ったが z の根拠が無い（線は z>=1.96）`;
+  // 差の向きは facts が向きを持つとき（件数が足りる・差がある）だけ言う。|z| の線は使わない（オーナー 2026-11-01）
+  if ("sig" in facts && !facts.sig && /(高い|低い|高く|低く|上回|下回)/.test(text)) why.push(`差の向きを言ったが facts に向きが無い（z=${facts.z ?? "なし"}、件数が足りないか差が0）`);
+  // 「最多・最高」は1位が2位より多いときだけ（同数は言わない。線は使わない）
+  const rankWhy = `順位を言い切ったが 1位が2位より多くない（同数）`;
   if (facts.kind === "flow2") {
     if (facts.second?.rankSig === false && /2着最多/.test(text)) why.push(`2着の${rankWhy}`);
     if (facts.third?.rankSig === false && /3着[^\n]*最多/.test(text)) why.push(`3着の${rankWhy}`);

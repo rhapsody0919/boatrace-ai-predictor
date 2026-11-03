@@ -56,9 +56,10 @@ function conclusionOf(flow, cell, form) {
     lines: f.rankSig
       ? [
           form ? `${formName(form)}の過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇` : `枠なりの過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇`,
-          `${f.count.toLocaleString("ja-JP")}件（${f.pct}%）`,
+          // 30件未満は割合を出さず件数だけ（number-wording.md）
+          f.n < 30 ? `${f.count.toLocaleString("ja-JP")}件` : `${f.count.toLocaleString("ja-JP")}件（${f.pct}%）`,
         ]
-      : // 1位と2位の差が線を通らなければ「最多」と言わない（BOA-1157）。件数が3桁・4桁でも22字に収まる短い形へ（Codex P1）
+      : // 1位と2位が同数なら「最多」と言わない（BOA-1157。|z| の線は 2026-11-01 に外した）。件数が3桁・4桁でも22字に収まる短い形へ（Codex P1）
         fitFirst(
           [`${form ? formName(form) : "枠なり"}の過去${f.n.toLocaleString("ja-JP")}件の1着は${f.boat}号艇と${f.next.boat}号艇`, `${f.count.toLocaleString("ja-JP")}件と${f.next.count.toLocaleString("ja-JP")}件、差は確認できない`],
           [`過去${f.n.toLocaleString("ja-JP")}件の1着は${f.boat}・${f.next.boat}号艇`, `${f.count.toLocaleString("ja-JP")}件と${f.next.count.toLocaleString("ja-JP")}件、差は確認できない`],
