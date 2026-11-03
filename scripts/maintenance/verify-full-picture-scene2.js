@@ -2028,6 +2028,10 @@ for (const f of fixtures) {
   const c = mk(null, { form: null, n: 20, boat: 1, count: 7, pct: 35, next: { boat: 2, count: 6 }, rankSig: false });
   assert.match(c.x_text, /1着最多は1号艇で7件（35%）/, "7 対 6 でも件数つきで言う");
   assert.ok(!c.x_text.includes("差は確認できない"));
+  // 同数は「最多」と言わない（事実の誤りになる）
+  const tie = mk(null, { form: null, n: 12, boat: 1, count: 6, pct: 50, next: { boat: 2, count: 6 }, rankSig: false });
+  assert.match(tie.x_text, /1号艇と2号艇が6件で並ぶ/);
+  assert.ok(!tie.x_text.includes("1着最多"));
 }
 // daily.mjs の video.full_s は送る MP4 の実際の尺（型 f01 で run-text.json の縦の型の尺 204〜228秒を書かない）
 {

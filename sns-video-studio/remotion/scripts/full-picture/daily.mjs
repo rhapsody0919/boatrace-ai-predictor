@@ -129,6 +129,16 @@ export function fileSeconds(file, run = (cmd, args) => execFileSync(cmd, args, {
   return Math.round(sec * 10) / 10;
 }
 
+/** 尺は記録用（hq は読まない）。測れなくても描画済みの実行を止めず、標準エラーに理由を出して null にする */
+function safeSeconds(file) {
+  try {
+    return fileSeconds(file);
+  } catch (e) {
+    log(`[尺] ${e instanceof Error ? e.message : String(e)}`);
+    return null;
+  }
+}
+
 async function make(raceId, opts) {
   // 予期しない例外でも、標準出力に JSON 1つを出して止める（止まった段を残す。代わりの審査 P2）
   const result = { status: "stopped", stage: "materials", reasons: [], files: {}, video: null, llm: null, text_mode: opts.text, missing: [], ref_commit: null, variant: opts.variant ?? null, content_type: null };
@@ -192,7 +202,7 @@ async function makeSteps(raceId, { out, bgm, concurrency, text, variant = null, 
   const runText = JSON.parse(readFileSync(join(out, `run-${text}.json`), "utf8"));
   const runEntry = JSON.parse(readFileSync(join(out, "run-entry.json"), "utf8"));
   result.video = {
-    full_s: fileSeconds(join(bundleDir, "full-youtube.mp4")),
+    full_s: safeSeconds(join(bundleDir, "full-youtube.mp4")),
     entry_s: runEntry.videoSeconds,
     full_mib: Math.round((statSync(join(bundleDir, "full-youtube.mp4")).size / 1048576) * 10) / 10,
   };

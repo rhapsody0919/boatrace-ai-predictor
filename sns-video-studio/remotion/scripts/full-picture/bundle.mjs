@@ -112,7 +112,10 @@ function lines({ venue90, overview, conclusion }) {
       : f.rate > f.national
         ? "高い"
         : "低い");
-  const diff = (f, base) => (diffWords({ ...f, direction: dirOf(f) }) === null ? "" : `、${base}${diffWords({ ...f, direction: dirOf(f) })}`);
+  const diff = (f, base) => {
+    const w = diffWords({ ...f, direction: dirOf(f) });
+    return w === null ? "" : `、${base}${w}`;
+  };
   return {
     venue: venue90
       ? `${venue90.venue}の1号艇の1着率は過去90日の${venue90.races.toLocaleString("ja-JP")}レースで${d1(venue90.rate)}%${diff(venue90, `全国の同じ期間の${d1(venue90.national)}%`)}`
@@ -123,7 +126,12 @@ function lines({ venue90, overview, conclusion }) {
       ? `6艇比較の${overview.axesCount}項目で2位以内に入った数は、${overview.leaders.join("・")}号艇の${overview.maxTop2}が最多${overview.runner ? `、次は${overview.runner.boats.join("・")}号艇の${overview.runner.count}` : ""}`
       : null,
     conclusion: conclusion
-      ? `${conclusion.form ? `スタートの形が${conclusion.form}だった` : "枠なりの"}過去${conclusion.n.toLocaleString("ja-JP")}件中、1着最多は${conclusion.boat}号艇で${conclusion.count.toLocaleString("ja-JP")}件（${conclusion.pct}%）`
+      ? `${conclusion.form ? `スタートの形が${conclusion.form}だった` : "枠なりの"}過去${conclusion.n.toLocaleString("ja-JP")}件中、${
+          // 1位と2位が同数なら「最多」と言わず並べる（線ではなく事実: 並びを最多と書くと誤り）
+          conclusion.next && conclusion.next.count === conclusion.count
+            ? `1着は${conclusion.boat}号艇と${conclusion.next.boat}号艇が${conclusion.count.toLocaleString("ja-JP")}件で並ぶ`
+            : `1着最多は${conclusion.boat}号艇で${conclusion.count.toLocaleString("ja-JP")}件（${conclusion.pct}%）`
+        }`
       : null,
   };
 }
