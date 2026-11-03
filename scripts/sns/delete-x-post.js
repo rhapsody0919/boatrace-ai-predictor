@@ -10,7 +10,7 @@
  *       X で消して、記録を「消した」に直す（本番の関数 /api/admin/sns-hub/delete-x-post を Basic 認証で呼ぶ。
  *       X の鍵は Vercel の側にあり、手元・hq には無い）。既に消えている（404）ときは記録だけ直す
  *
- * --tweet-id・--item-id（sns_auto_send_items の id）・--job-id（sns_x_send_jobs の id）は繰り返してよい（1回10件まで）。
+ * --tweet-id・--item-id（sns_auto_send_items の id）・--job-id（sns_x_send_jobs の id）は繰り返してよい（1回5件まで）。
  * --apply は ID の明示が要る。条件で一括に消す道は無い（候補の一覧は見るためだけ）。HQ_TEST が立っていれば --apply は断る。
  * stdout の最後の1行は `DELETE_RESULT {...}`（mode・targets または candidates・results）。
  * exit: 0 成功・2 引数や鍵の不備・1 消せなかった（results に理由）
@@ -49,8 +49,12 @@ export function parseDeleteArgs(argv) {
     const arg = argv[i];
     if (arg === "--apply") out.apply = true;
     else if (arg === "--dry-run") out.apply = false;
-    else if (arg === "--reason") out.reason = argv[++i] ?? "";
-    else if (FLAGS[arg]) {
+    else if (arg === "--reason") {
+      const value = argv[++i];
+      if (value === undefined || value.startsWith("--"))
+        return { error: "--reason の後に理由を書く" };
+      out.reason = value;
+    } else if (FLAGS[arg]) {
       const value = argv[++i] ?? "";
       const re = arg === "--tweet-id" ? TWEET_ID_RE : UUID_RE;
       if (!re.test(value)) return { error: `${arg} の値が不正: ${value}` };
@@ -105,11 +109,16 @@ export function createReadStore({ url, key, fetchImpl = fetch }) {
         : "&channel=eq.x&state=eq.posted";
       return all(`sns_x_send_jobs?select=*${where}&order=posted_at.asc`);
     },
+    // URL の長さと1回の行の上限に収めるため、100件ずつ読む
     async drafts(ids) {
-      if (!ids.length) return [];
-      return get(
-        `sns_drafts?id=${inList(ids)}&select=id,format,title,status,source_data`,
-      );
+      const rows = [];
+      for (let i = 0; i < ids.length; i += 100)
+        rows.push(
+          ...(await get(
+            `sns_drafts?id=${inList(ids.slice(i, i + 100))}&select=id,format,title,status,source_data`,
+          )),
+        );
+      return rows;
     },
     async roster() {
       const rows = await all("racer_profiles?select=name&order=racer_id");
@@ -139,26 +148,34 @@ export async function listTargets(args, store) {
     ]),
   );
   const roster = await store.roster();
-  const rows = jobs.map((job) => {
+  const all = jobs.map((job) => {
     const draft = drafts.get(job.draft_id);
     const reasons = fictionalReasons({ draft }, roster);
     if (explicit && args.reason) reasons.unshift(`指定: ${args.reason}`);
     const issue = targetIssue(job, undefined);
-    return { ...candidateRow({ job, draft }, reasons), issue };
+    // --item-id だけで当たった行（同じ item の未送信の job 等）は、消せなければ外す（明示の ID の行だけが止める）
+    const byItemOnly =
+      args.itemIds.includes(job.auto_item_id) &&
+      !args.jobIds.includes(job.id) &&
+      !args.tweetIds.includes(job.external_post_id);
+    return { ...candidateRow({ job, draft }, reasons), issue, byItemOnly };
   });
+  const skipped = all.filter((r) => r.issue && r.byItemOnly);
+  const rows = all.filter((r) => !(r.issue && r.byItemOnly));
   if (!explicit)
     return {
       rows: rows.filter((r) => r.reasons.length && !r.issue && !r.deleted_at),
       missing: [],
+      skipped: [],
     };
-  const found = new Set(rows.flatMap((r) => [r.job_id, r.tweet_id]));
+  const found = new Set(all.flatMap((r) => [r.job_id, r.tweet_id]));
   const itemsFound = new Set(jobs.map((j) => j.auto_item_id));
   const missing = [
     ...args.tweetIds.filter((id) => !found.has(id)),
     ...args.jobIds.filter((id) => !found.has(id)),
     ...args.itemIds.filter((id) => !itemsFound.has(id)),
   ];
-  return { rows, missing };
+  return { rows, missing, skipped };
 }
 
 function printRows(rows) {
@@ -209,12 +226,16 @@ export async function main(
       mode: "error",
       error: "SUPABASE_URL・SUPABASE_SERVICE_KEY が無い（.env.local）",
     });
-  const { rows, missing } = await listTargets(
+  const { rows, missing, skipped } = await listTargets(
     args,
     createReadStore({ url, key, fetchImpl }),
   );
   printRows(rows);
   if (missing.length) console.log(`送信の記録に無い: ${missing.join(", ")}`);
+  for (const r of skipped)
+    console.log(
+      `外した（--item-id で当たった消せない job）: ${r.job_id} ${r.issue}`,
+    );
   if (!args.apply) {
     const explicit =
       args.tweetIds.length + args.itemIds.length + args.jobIds.length > 0;
@@ -222,10 +243,16 @@ export async function main(
       mode: "dry-run",
       [explicit ? "targets" : "candidates"]: rows,
       missing,
+      skipped,
     });
   }
   const blocked = rows.filter((r) => r.issue);
-  if (missing.length || blocked.length)
+  if (rows.length > DELETE_MAX_TARGETS)
+    return finish(2, {
+      mode: "error",
+      error: `消す相手が${rows.length}件（1回${DELETE_MAX_TARGETS}件まで。何も消していない）`,
+    });
+  if (!rows.length || missing.length || blocked.length)
     return finish(2, {
       mode: "error",
       error: "記録に無い・消せない投稿がある（何も消していない）",
@@ -252,10 +279,11 @@ export async function main(
     }),
   });
   const body = await response.json().catch(() => null);
-  if (!response.ok && !body?.data)
+  // 本文が読めない（未デプロイで HTML が返る等）ときは、消えたか分からない。dry-run で記録を見直す
+  if (!body?.data)
     return finish(1, {
       mode: "apply",
-      error: body?.error ?? `HTTP ${response.status}`,
+      error: `${body?.error ?? "応答が読めない"}（HTTP ${response.status}。--apply を外して記録を見直す）`,
     });
   return finish(body.data.ok ? 0 : 1, { mode: "apply", ...body.data });
 }

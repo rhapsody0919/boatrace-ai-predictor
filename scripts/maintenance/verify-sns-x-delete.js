@@ -16,7 +16,11 @@ import {
   racerNamesOf,
   runDeleteXPosts,
 } from "../../api/_lib/snsXDelete.js";
-import { createDeleteHandler } from "../../api/admin/sns-hub/delete-x-post.js";
+import {
+  POST,
+  config as deleteConfig,
+  createDeleteHandler,
+} from "../../api/admin/sns-hub/delete-x-post.js";
 import {
   DELETE_API_URL,
   main,
@@ -163,7 +167,7 @@ test("一覧の1行: 本文は先頭30字（改行は空白）", () => {
   assert.ok(!/\n/.test(row.head));
 });
 
-test("理由と targets の形: 理由は必須・200字・改行なし、targets は明示の ID だけで10件まで・重なりなし", () => {
+test("理由と targets の形: 理由は必須・200字・改行なし、targets は明示の ID だけで5件まで・重なりなし", () => {
   assert.match(deleteReasonIssue(""), /--reason/);
   assert.match(deleteReasonIssue("a".repeat(201)), /200字/);
   assert.match(deleteReasonIssue("a\nb"), /改行/);
@@ -181,11 +185,11 @@ test("理由と targets の形: 理由は必須・200字・改行なし、target
     ]),
     /2回/,
   );
-  const eleven = Array.from({ length: 11 }, (_, i) => ({
+  const eleven = Array.from({ length: 6 }, (_, i) => ({
     job_id: `11111111-1111-4111-8111-1111111111${String(i).padStart(2, "0")}`,
     tweet_id: TWEET,
   }));
-  assert.match(deleteTargetsIssue(eleven), /10件/);
+  assert.match(deleteTargetsIssue(eleven), /5件/);
 });
 
 // --- 本体 ---
@@ -260,16 +264,15 @@ test("本体: 記録に無い・ID が記録と違う・posted でない・X で
   }
 });
 
-test("本体: 196 が未適用（deleted_at の列が無い）なら X を呼ばずに投げる。消した記録があれば X を呼ばず記録だけ", async () => {
+test("本体: 196 が未適用（deleted_at の列が無い）なら X を呼ばずに止める。消した記録があれば X を呼ばず記録だけ", async () => {
   const { deleted_at: _drop, ...noColumn } = postedJob();
   const x = fakeXFactory();
-  await assert.rejects(
-    runDeleteXPosts(
-      { targets: [{ job_id: JOB, tweet_id: TWEET }], reason: "r" },
-      { store: fakeStore({ [JOB]: noColumn }), getX: x.getX },
-    ),
-    /196 が未適用/,
+  const stopped = await runDeleteXPosts(
+    { targets: [{ job_id: JOB, tweet_id: TWEET }], reason: "r" },
+    { store: fakeStore({ [JOB]: noColumn }), getX: x.getX },
   );
+  assert.equal(stopped.ok, false);
+  assert.match(stopped.results[0].error, /196 が未適用/);
   assert.equal(x.tokens(), 0);
   const store = fakeStore({
     [JOB]: postedJob({ deleted_at: "2026-11-04T00:00:00Z" }),
@@ -320,6 +323,11 @@ const authEnv = () => {
 };
 const authHeader = `Basic ${Buffer.from("u:p").toString("base64")}`;
 
+test("管理 API の書き出し: nodejs・300秒・POST の名前（既定の書き出しは Node の (req, res) で呼ばれるので置かない）", () => {
+  assert.deepEqual(deleteConfig, { runtime: "nodejs", maxDuration: 300 });
+  assert.equal(typeof POST, "function");
+});
+
 test("管理 API: 認証なしは 401・GET は 405・targets が無ければ 400 で X を呼ばない・正しければ 200", async () => {
   authEnv();
   const store = fakeStore({ [JOB]: postedJob() });
@@ -365,7 +373,7 @@ test("管理 API: 認証なしは 401・GET は 405・targets が無ければ 40
 });
 
 // --- CLI ---
-test("CLI の引数: 既定は dry-run・--apply は ID と理由が要る・ID の形・10件まで・知らない引数は不可", () => {
+test("CLI の引数: 既定は dry-run・--apply は ID と理由が要る・ID の形・5件まで・知らない引数は不可・--reason の後が引数なら不可", () => {
   assert.equal(parseDeleteArgs([]).apply, false);
   assert.match(parseDeleteArgs(["--apply", "--reason", "r"]).error, /明示/);
   assert.match(
@@ -377,9 +385,13 @@ test("CLI の引数: 既定は dry-run・--apply は ID と理由が要る・ID 
   assert.match(parseDeleteArgs(["--all"]).error, /知らない/);
   assert.match(
     parseDeleteArgs(
-      Array.from({ length: 11 }, () => ["--tweet-id", TWEET]).flat(),
+      Array.from({ length: 6 }, () => ["--tweet-id", TWEET]).flat(),
     ).error,
-    /10件/,
+    /5件/,
+  );
+  assert.match(
+    parseDeleteArgs(["--tweet-id", TWEET, "--reason", "--apply"]).error,
+    /--reason の後/,
   );
   const ok = parseDeleteArgs(["--tweet-id", TWEET, "--reason", "r", "--apply"]);
   assert.deepEqual([ok.apply, ok.tweetIds, ok.reason], [true, [TWEET], "r"]);
@@ -520,6 +532,75 @@ test("CLI: 記録に無い ID は --apply でも何も消さない（exit 2）",
   assert.ok(f.calls.every((c) => c.url !== DELETE_API_URL));
 });
 
+test("本体: 2件目の DB の読み取りが落ちても、1件目の済んだ結果を返す", async () => {
+  const store = fakeStore({ [JOB]: postedJob() });
+  const read = store.readJob;
+  store.readJob = async (id) => {
+    if (id === JOB2) throw new Error("X送信のDB操作に失敗しました");
+    return read(id);
+  };
+  const x = fakeXFactory();
+  const out = await runDeleteXPosts(
+    {
+      targets: [
+        { job_id: JOB, tweet_id: TWEET },
+        { job_id: JOB2, tweet_id: TWEET2 },
+      ],
+      reason: "r",
+    },
+    { store, getX: x.getX },
+  );
+  assert.equal(out.ok, false);
+  assert.deepEqual(
+    out.results.map((r) => r.ok),
+    [true, false],
+  );
+  assert.deepEqual(x.deleted, [TWEET]);
+});
+
+test("CLI: --item-id だけで当たった消せない job（同じ item の未送信）は外し、止めない", async () => {
+  const ITEM = "33333333-3333-4333-8333-333333333333";
+  const f = fakeSupabase({
+    ...fixture(),
+    jobs: [
+      postedJob({ auto_item_id: ITEM }),
+      postedJob({
+        id: JOB2,
+        draft_id: "d2",
+        state: "cancelled",
+        external_post_id: null,
+        auto_item_id: ITEM,
+      }),
+    ],
+  });
+  const { code, result } = await runMain(
+    ["--item-id", ITEM, "--reason", "架空", "--apply"],
+    ENV,
+    f.fetchImpl,
+  );
+  assert.equal(code, 0);
+  const sent = f.calls.find((c) => c.url === DELETE_API_URL);
+  assert.deepEqual(JSON.parse(sent.body).targets, [
+    { job_id: JOB, tweet_id: TWEET },
+  ]);
+  assert.equal(result.mode, "apply");
+});
+
+test("CLI: 消す API の応答が JSON でない（未デプロイ等）ときも DELETE_RESULT を出して exit 1", async () => {
+  const f = fakeSupabase(fixture());
+  const fetchImpl = async (url, init) =>
+    String(url) === DELETE_API_URL
+      ? new Response("<html></html>", { status: 200 })
+      : f.fetchImpl(url, init);
+  const { code, result } = await runMain(
+    ["--tweet-id", TWEET, "--reason", "r", "--apply"],
+    ENV,
+    fetchImpl,
+  );
+  assert.equal(code, 1);
+  assert.match(result.error, /応答が読めない/);
+});
+
 // --- マイグレーション 196（PGlite） ---
 const sql = await readFile(
   new URL(
@@ -545,13 +626,13 @@ test("196: 適用前後の確認・posted の X だけに時刻と理由・計�
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(), draft_id uuid NOT NULL DEFAULT gen_random_uuid(),
       channel text NOT NULL DEFAULT 'x' CHECK (channel IN ('x','youtube')),
       state text NOT NULL DEFAULT 'posted', external_post_id text, posted_at timestamptz,
-      updated_at timestamptz NOT NULL DEFAULT now());
+      error_code text, parent_job_id uuid, updated_at timestamptz NOT NULL DEFAULT now());
     CREATE TABLE public.sns_metric_jobs (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(), draft_id uuid NOT NULL, "window" text NOT NULL,
       source text NOT NULL, state text NOT NULL DEFAULT 'pending', last_error text, done_at timestamptz);
     -- 154 のトリガー（state の UPDATE で計測の job を作る）が、消した記録の UPDATE で発火しないこと
-    CREATE TABLE public.trigger_log (n int);
-    CREATE FUNCTION public.log_state() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN INSERT INTO public.trigger_log VALUES (1); RETURN NEW; END $$;
+    CREATE TABLE public.trigger_log (job_id uuid);
+    CREATE FUNCTION public.log_state() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN INSERT INTO public.trigger_log VALUES (NEW.id); RETURN NEW; END $$;
     CREATE TRIGGER sns_metric_jobs_on_posted AFTER UPDATE OF state ON public.sns_x_send_jobs FOR EACH ROW EXECUTE FUNCTION public.log_state();
   `);
   assert.deepEqual(await one(sectionSql("適用前の確認")), {
@@ -573,6 +654,12 @@ test("196: 適用前後の確認・posted の X だけに時刻と理由・計�
     `INSERT INTO public.sns_metric_jobs (draft_id, "window", source, state) VALUES ($1,'48h','x-api','pending'),($1,'7d','x-api','pending'),($1,'48h','x-api','done')`,
     [job.draft_id],
   );
+  // その投稿への返信: queued・held は取り消す、sending は触らない（出たかもしれない）
+  for (const state of ["queued", "held", "sending"])
+    await db.query(
+      `INSERT INTO public.sns_x_send_jobs (state, parent_job_id) VALUES ($1,$2)`,
+      [state, job.id],
+    );
   const first = (
     await one(`SELECT public.mark_sns_x_post_deleted($1,$2,$3) r`, [
       job.id,
@@ -582,6 +669,20 @@ test("196: 適用前後の確認・posted の X だけに時刻と理由・計�
   ).r;
   assert.equal(first.deleted_reason, "架空の選手");
   assert.equal(first.metric_jobs_closed, 2);
+  assert.equal(first.replies_cancelled, 2);
+  assert.deepEqual(
+    (
+      await db.query(
+        `SELECT state, error_code FROM public.sns_x_send_jobs WHERE parent_job_id=$1 ORDER BY state`,
+        [job.id],
+      )
+    ).rows,
+    [
+      { state: "cancelled", error_code: "parent_deleted" },
+      { state: "cancelled", error_code: "parent_deleted" },
+      { state: "sending", error_code: null },
+    ],
+  );
   assert.deepEqual(
     (
       await db.query(
@@ -609,7 +710,13 @@ test("196: 適用前後の確認・posted の X だけに時刻と理由・計�
   );
   assert.equal(row.state, "posted");
   assert.equal(
-    Number((await one(`SELECT count(*) n FROM public.trigger_log`)).n),
+    Number(
+      (
+        await one(`SELECT count(*) n FROM public.trigger_log WHERE job_id=$1`, [
+          job.id,
+        ])
+      ).n,
+    ),
     0,
   );
 

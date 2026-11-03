@@ -7,7 +7,8 @@
  *   state は posted のまま（日の上限・同じレースの未送信の検査は posted を数える。X も消した投稿を作った回数に数える）
  */
 
-export const DELETE_MAX_TARGETS = 10;
+// 1回の上限。管理 API（maxDuration 300 秒）の中で、X の呼び出し1回30秒×5件＋鍵の refresh の待ち（最大120秒）に収める
+export const DELETE_MAX_TARGETS = 5;
 export const DELETE_REASON_MAX = 200;
 export const TWEET_ID_RE = /^[0-9]{1,19}$/;
 export const UUID_RE =
@@ -111,15 +112,12 @@ export async function runDeleteXPosts({ targets, reason }, { store, getX }) {
   const results = [];
   let x = null;
   for (const target of targets) {
-    const job = await store.readJob(target.job_id);
-    if (job && !("deleted_at" in job))
-      throw new Error("196 が未適用（sns_x_send_jobs に deleted_at が無い）");
-    const problem = targetIssue(job, target.tweet_id);
-    if (problem) {
-      results.push({ ...target, ok: false, error: problem });
-      break;
-    }
     try {
+      const job = await store.readJob(target.job_id);
+      if (job && !("deleted_at" in job))
+        throw new Error("196 が未適用（sns_x_send_jobs に deleted_at が無い）");
+      const problem = targetIssue(job, target.tweet_id);
+      if (problem) throw new Error(problem);
       let already = Boolean(job.deleted_at);
       if (!already) {
         x ??= await getX();
@@ -132,6 +130,7 @@ export async function runDeleteXPosts({ targets, reason }, { store, getX }) {
       );
       results.push({ ...target, ok: true, already, ...mark });
     } catch (error) {
+      // 済んだ分（results）を返し、残りは送らない
       results.push({ ...target, ok: false, error: error.message });
       break;
     }

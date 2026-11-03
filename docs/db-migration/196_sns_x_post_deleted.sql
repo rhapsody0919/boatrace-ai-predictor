@@ -1,7 +1,9 @@
 -- 196: X の投稿を消した記録（BOA-1279、オーナー 2026-11-04「架空の選手の投稿は削除」）
 -- 消す口（api/admin/sns-hub/delete-x-post.js・scripts/sns/delete-x-post.js）が X で消した後に mark_sns_x_post_deleted を呼び、
 -- sns_x_send_jobs に deleted_at・deleted_reason を入れ、その投稿の計測（sns_metric_jobs の x-api の pending）を
--- missing・last_error='post_deleted' で閉じる（以後、取り込みの cron が読まない）。
+-- missing・last_error='post_deleted' で閉じる（以後、取り込みの cron が読まない）。その投稿への返信で、まだ送っていない job
+-- （parent_job_id がこの job で queued・held）を cancelled・error_code='parent_deleted' にする（消えた投稿に返信しない。
+-- 139 の承認の取り消しと同じ直の UPDATE）。sending・reconcile の返信は触らない（出たかもしれない）。
 -- state は posted のまま変えない: 日の上限（attempt_dates と state IN (sending,reconcile,posted)）・同じレースの未送信の検査・
 -- 返信の親（state='posted'）は posted を数える。X も消した投稿を作った回数に数える（消しても上限は戻らない）。
 -- 列を2つと関数を1つ足すだけで、既存の関数・トリガーは変えない（列の UPDATE は state を変えないので
@@ -50,6 +52,7 @@ RETURNS jsonb LANGUAGE plpgsql SET search_path = public AS $$
 DECLARE
   j public.sns_x_send_jobs;
   v_closed integer;
+  v_children integer;
 BEGIN
   IF p_reason IS NULL OR char_length(btrim(p_reason)) NOT BETWEEN 1 AND 200 OR p_reason ~ '[\r\n]' THEN
     RAISE EXCEPTION 'delete_reason_invalid';
@@ -69,9 +72,14 @@ BEGIN
      SET state = 'missing', last_error = 'post_deleted', done_at = now()
    WHERE draft_id = j.draft_id AND source = 'x-api' AND state = 'pending';
   GET DIAGNOSTICS v_closed = ROW_COUNT;
+  UPDATE public.sns_x_send_jobs
+     SET state = 'cancelled', error_code = 'parent_deleted', updated_at = now()
+   WHERE parent_job_id = j.id AND state IN ('queued', 'held');
+  GET DIAGNOSTICS v_children = ROW_COUNT;
   RETURN jsonb_build_object(
     'job_id', j.id, 'tweet_id', j.external_post_id, 'deleted_at', j.deleted_at,
-    'deleted_reason', j.deleted_reason, 'metric_jobs_closed', v_closed);
+    'deleted_reason', j.deleted_reason, 'metric_jobs_closed', v_closed,
+    'replies_cancelled', v_children);
 END $$;
 
 REVOKE ALL ON FUNCTION public.mark_sns_x_post_deleted(uuid, text, text) FROM PUBLIC, anon, authenticated;
