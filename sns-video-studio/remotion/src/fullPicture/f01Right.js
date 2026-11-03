@@ -81,17 +81,20 @@ export function charsEm(text) {
  * 折り返せない塊（名前と級のひとまとまり等）が幅を越えたら null
  * @param {string} text @param {number} size px @param {number} width px
  */
-export function wrapText(text, size, width) {
+export function wrapText(text, size, width, soft = false) {
   const lines = [];
+  // soft: 割合（「38.5%」）の直前の折り返さない空白でも折る。「2着 1号艇（今日は名前 級） 38.5%」が名前の長い日に幅を越える（2026-11-03 の 19-10）
+  const split = soft ? new RegExp(`(?<=[ ・])|(?<=${NB})(?=\\d[\\d.,]*%)`) : /(?<=[ ・])/;
+  const trim = soft ? new RegExp(`[ ・${NB}]$`) : /[ ・]$/;
   for (const para of text.split("\n")) {
     let cur = "";
-    for (const tok of para.split(/(?<=[ ・])/)) {
-      if (cur && emWidth((cur + tok).replace(/[ ・]$/, "")) * size > width) {
-        lines.push(cur.replace(/[ ・]$/, ""));
+    for (const tok of para.split(split)) {
+      if (cur && emWidth((cur + tok).replace(trim, "")) * size > width) {
+        lines.push(cur.replace(trim, ""));
         cur = tok;
       } else cur += tok;
     }
-    lines.push(cur.replace(/ $/, ""));
+    lines.push(cur.replace(soft ? trim : / $/, ""));
   }
   return lines.every((l) => emWidth(l) * size <= width) ? lines : null;
 }
@@ -131,12 +134,13 @@ export function layoutRight(c) {
     scope.length ? scope.length * FIELD.scope.sizes[0] * FIELD.scope.lh : null,
     SPACER,
   ].filter((x) => x !== null);
+  const fit = (soft) => {
   let why = "幅を越える";
   for (const a of c.answer ? FIELD.answer.sizes : [0]) {
-    const al = c.answer ? wrapText(c.answer, a, RIGHT.w) : [];
+    const al = c.answer ? wrapText(c.answer, a, RIGHT.w, soft) : [];
     if (!al) continue;
     for (const a2 of c.answer2 ? FIELD.answer2.sizes : [0]) {
-      const a2l = c.answer2 ? wrapText(c.answer2, a2, RIGHT.w) : [];
+      const a2l = c.answer2 ? wrapText(c.answer2, a2, RIGHT.w, soft) : [];
       if (!a2l) continue;
       const parts = [
         ...heads,
@@ -154,6 +158,7 @@ export function layoutRight(c) {
         ].filter(Boolean);
         return {
           ok: true,
+          wrapped: soft,
           scope: { size: FIELD.scope.sizes[0], lines: scope },
           answer: { size: a, lines: al },
           answer2: { size: a2, lines: a2l },
@@ -175,6 +180,14 @@ export function layoutRight(c) {
       why = `下の線（y${bottom}）を越える（y${Math.round(RIGHT.top + height)}）`;
     }
   }
+  return { why };
+  };
+  // まず今までの折り方（割合の前では折らない）。どの字の大きさでも収まらないときだけ、割合の前でも折る（見た目が変わるのは、これまで止めた日だけ）
+  const strict = fit(false);
+  if (strict.ok) return strict;
+  const soft = fit(true);
+  if (soft.ok) return soft;
+  const why = strict.why;
   return { ok: false, reason: `答えが${why}` };
 }
 
