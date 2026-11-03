@@ -2183,6 +2183,9 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
       assert.equal(f01LayoutChapters({ chapters: [{ id: "c3" }] }, { ...ok, c3: at("c3", W * 0.38, H * 0.43) }).length, 1, "札の図だけが小さいと止める");
       // ②の上・下の2カットは half と決めてあるので通る。④・締め（100%×52%）も通る
       const c2 = { c2: at("c2", W, H * 0.73), "c2-pre": at("c2-pre", W, H * 0.72, { crop: "top" }), c22: at("c22", W, H * 0.72, { crop: "top" }), c22b: at("c22b", W, H * 0.72, { crop: "bottom" }) };
+      // 同じ部品のいちばん小さい倍率で描く（f01Timeline）ので、その倍率で測る（自分の倍率では届いても、描くと小さい）
+      const g2 = { c3: at("c3", 400, 120, { scale: 2.9 }), "c3-pre": at("c3-pre", 400, 130, { scale: 1.2 }), c32: at("c32", 400, 130, { scale: 2.9 }) };
+      assert.ok(/c3 が左の枠の/.test(f01LayoutChapters({ chapters: [{ id: "c3" }] }, g2)[0]?.reason ?? ""), "同じ部品の小さい倍率で測る");
       assert.deepEqual(f01LayoutChapters({ chapters: [{ id: "c2" }, { id: "c4" }] }, { ...c2, c4: at("c4", W, H * 0.52), c4b: at("c4b", W, H * 0.61), c42: at("c42", W, H * 0.52), c42b: at("c42b", W, H * 0.61) }), []);
     }
     // 押す帯が下半分のとき、押す前のカット（下半分）のカーソルはそのカットの座標で、帯の中を指す（#2087 の審査）

@@ -42,7 +42,7 @@ export const PLAN = {
 /**
  * 左の画面の字の小ささの線（縮めた後の最小の字の高さ px）。下回る撮った物を含む章は出さず警告にする（hq 6節「2カットでも届かなければその章を出さず警報」）。
  * 線は 24px（オーナー 2026-11-02）。部品だけを1カットで撮ると、着順の流れ（正方形の図、字は図の高さの約2.7%）と形の札の図の艇番が約22px 止まりだったので、
- * 着順の流れは上下2カット、形の札は図と名前の2カットに分けた（PLAN）。6節の目安 28px（根拠なし）は線にしない
+ * ②の着順の流れは上下2カットに分けた（PLAN）。③は 11/2 18-10 の形に戻し、下の MIN_FONT_BY_CHAPTER で 22px。6節の目安 28px（根拠なし）は線にしない
  */
 export { MIN_FONT_PX };
 /**
@@ -51,11 +51,15 @@ export { MIN_FONT_PX };
  */
 export const MIN_FONT_BY_CHAPTER = { c3: 22 };
 const fontLine = (id) => MIN_FONT_BY_CHAPTER[id] ?? MIN_FONT_PX;
+/** 同じ部品（押す前・押した後、④と締めの軸のボタン）は、いちばん小さい倍率でそろえて描く（f01Timeline）。その倍率 */
+const groupOf = (shots, sh) => Object.values(shots).filter((o) => Math.abs(o.clip.x - sh.clip.x) < 2 && Math.abs(o.clip.w - sh.clip.w) < 2 && Math.abs(o.clip.h - sh.clip.h) < 24);
+const drawnScale = (shots, sh) => Math.min(...groupOf(shots, sh).map((o) => o.scale));
 /**
- * 左の枠の空きの線（目安、根拠は 11/2・11/3 の実測だけ）。縮めた後の撮った物が、左の枠の幅か高さの 90% 以上に届き、面積が 35% 以上。
- * 届いていた物は幅か高さ 100%・面積 52% 以上（④の軸のボタン・締め）、崩れた 11/3 の③は札の図が 38%×43%（面積 16%）・名前と件数が 100%×18%
+ * 左の枠の空きの線（目安、根拠は 10/28〜11/3 の f01 の14本の実測だけ）。縮めた後の撮った物が、左の枠の幅か高さの 85% 以上に届き、面積が 35% 以上。
+ * 届いていた物は幅か高さ 88% 以上・面積 52% 以上（10/28〜10/30 の④ 66%×88%、11/1 からの④・締め 100%×52%）、
+ * 崩れた 11/3 の③は札の図が 38%×43%（面積 16%）・名前と件数が 100%×18%
  */
-export const FILL_LINE = { side: 0.9, area: 0.35 };
+export const FILL_LINE = { side: 0.85, area: 0.35 };
 const f = (sec) => Math.round(sec * FPS);
 /** 終了画面（締めの声の後の暗い地）の秒。YouTube の終了画面の要素を置ける最短（オーナー 11/2） */
 export const END_SECONDS = 5;
@@ -97,10 +101,9 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
       ch.footAt = at(cue.foot);
       // 同じ部品（押す前・押した後、④と締めの軸のボタン）は同じ倍率・同じ箱の高さにそろえる（切り替えで位置と大きさが動かない）
       const plan = PLAN[c.id] ?? [{ k: c.id }];
-      const group = (sh) => Object.values(shots).filter((o) => Math.abs(o.clip.x - sh.clip.x) < 2 && Math.abs(o.clip.w - sh.clip.w) < 2 && Math.abs(o.clip.h - sh.clip.h) < 24);
       const cut = (sh, from, extra = {}) => {
-        const g = group(sh);
-        const scale = Math.min(...g.map((o) => o.scale));
+        const g = groupOf(shots, sh);
+        const scale = drawnScale(shots, sh);
         return { file: basename(sh.file), clip: sh.clip, scale, boxH: Math.max(...g.map((o) => o.clip.h)) * scale, from, ...extra };
       };
       const gAt = at(cue.gold);
@@ -180,8 +183,10 @@ export function f01LayoutChapters(s, shots) {
     for (const p of PLAN[c.id] ?? []) {
       const sh = shots[p.k];
       if (!sh) continue;
-      const w = (sh.clip.w * sh.scale) / LEFT_BOX.w;
-      const h = (sh.clip.h * sh.scale) / LEFT_BOX.h;
+      // 描く倍率（同じ部品のいちばん小さい倍率。f01Timeline と同じ）で測る
+      const sc = drawnScale(shots, sh);
+      const w = (sh.clip.w * sc) / LEFT_BOX.w;
+      const h = (sh.clip.h * sc) / LEFT_BOX.h;
       if (Math.max(w, h) < FILL_LINE.side || w * h < FILL_LINE.area) why.push(`${p.k} が左の枠の ${Math.round(w * 100)}%×${Math.round(h * 100)}%`);
       if (sh.crop && !p.half) why.push(`${p.k} は部品の${sh.crop === "top" ? "上" : "下"}だけ（図が切れる）`);
     }
@@ -249,8 +254,11 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     writeFileSync(join(out, "f01.json"), JSON.stringify({ version: s.version, raceId: s.raceId, captureRetries: e?.retries ?? 0, captureError: String(e?.message ?? e).split("\n")[0] }, null, 2));
     throw e;
   }
-  // 字の小ささの線（MIN_FONT_PX）: 下回る撮った物を含む章・撮れなかった章は出さず、警告として残す
-  const small = [...f01SmallChapters(s, shots), ...f01LayoutChapters(s, shots)];
+  // 下回る撮った物を含む章・形が崩れた章・撮れなかった章は出さず、警告として残す
+  // 字の小ささの線（MIN_FONT_PX・MIN_FONT_BY_CHAPTER）と左の画面の形（f01LayoutChapters）。同じ章の理由は1つにまとめる
+  const small = Object.values(
+    [...f01SmallChapters(s, shots), ...f01LayoutChapters(s, shots)].reduce((a, x) => ({ ...a, [x.id]: a[x.id] ? { id: x.id, reason: `${a[x.id].reason}・${x.reason}` } : x }), {}),
+  );
   if (small.length) {
     s.chapters = s.chapters.filter((c) => !small.some((x) => x.id === c.id));
     s.omitted.push(...small.map((x) => ({ chapter: x.id, reason: x.reason })));
