@@ -17,6 +17,7 @@ import { useVisibleOnce } from "../hooks/useVisibleOnce";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { trackEvent } from "../utils/analytics";
 import { cautionVisibleEvent } from "../utils/cautionEvents";
+import FavoriteStarButton from "../components/common/FavoriteStarButton.jsx";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
 import LoadingScreen from "../components/LoadingScreen";
@@ -344,12 +345,21 @@ function VenueRaceListPage() {
 
         <div className="venue-race-list-container">
           <header className="page-header">
-            <h1>
-              🏁 {venueName}{" "}
-              {isToday
-                ? t("venueRaceList.todayTitle")
-                : `${t("venueRaceList.title")} (${formatDate(date)})`}
-            </h1>
+            <div className="favorite-star-header-row">
+              <h1>
+                🏁 {venueName}{" "}
+                {isToday
+                  ? t("venueRaceList.todayTitle")
+                  : `${t("venueRaceList.title")} (${formatDate(date)})`}
+              </h1>
+              <FavoriteStarButton
+                type="venue"
+                id={Number(venueCode)}
+                name={venueName}
+                entry="venue_header"
+                withLabel
+              />
+            </div>
             <Link to={backLink} className="back-link">
               {t("venueRaceList.backToVenues")}
             </Link>
