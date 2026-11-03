@@ -3894,5 +3894,53 @@
     "inProgress": "舉辦中",
     "link": "查看本節得分率排名與晉級名單",
     "fetchError": "無法載入舉辦中的節頁面入口。"
+  },
+  "favorites": {
+    "star": {
+      "add": "加入收藏",
+      "added": "已收藏",
+      "ariaAdd": "將{{name}}加入收藏",
+      "ariaRemove": "將{{name}}從收藏移除"
+    },
+    "toast": {
+      "addedRacer": "已加入收藏。今天的出賽會顯示在首頁的「收藏選手的出賽」。",
+      "addedVenue": "已加入收藏。今天的賽事會顯示在首頁的「收藏選手的出賽」。",
+      "removed": "已從收藏移除。",
+      "racerLimit": "最多可收藏{{max}}位選手。若要新增，請先移除其他選手。",
+      "saveFailed": "此瀏覽器無法儲存收藏。",
+      "close": "關閉"
+    },
+    "section": {
+      "title": "收藏選手的出賽",
+      "lead": "收藏的{{racers}}位選手中，{{running}}位今天出賽，共{{races}}場比賽（依截止時間排序）。成績為2025年12月起、所有賽場的各艇號資料",
+      "deadline": "截止",
+      "meet": "本節",
+      "meetFirstDay": "首日（無成績）",
+      "statLine": "所有賽場的{{boat}}號艇 出賽數{{n}}、2連率 {{rate}}%",
+      "statLineSmall": "所有賽場的{{boat}}號艇 出賽數{{n}}（未滿30場，不顯示比率）",
+      "statFailed": "無法載入成績",
+      "linkRacer": "選手頁面",
+      "linkSonar": "龍神聲納",
+      "linkAssist": "思考輔助",
+      "showMore": "再看{{count}}筆",
+      "pastRuns": "已過截止時間的{{count}}筆",
+      "note": "成績與選手頁面的「各艇號成績（本站統計、2025年12月起、所有賽場合計）」相同。本節名次依時間由舊到新排列，金色框表示第1、2名。收藏儲存在此裝置的瀏覽器中，清除瀏覽器資料後也會消失。"
+    },
+    "venues": {
+      "title": "收藏的賽場",
+      "open": "舉辦中、下一場 {{race}}R {{time}} 截止",
+      "finished": "今日比賽已結束",
+      "closed": "今日未舉辦",
+      "badge": "收藏"
+    },
+    "fallback": {
+      "noFavorites": "尚未收藏選手。以下為今天的SG、G1賽事。",
+      "noFavoritesPlain": "尚未收藏選手。",
+      "howTo": "點選出走表、選手頁面或賽場頁面的☆，收藏選手的出賽就會依截止時間排列在這裡（最多{{max}}位選手，儲存在此裝置）。",
+      "noRuns": "收藏的{{count}}位選手今天皆未出賽。",
+      "gradeLine": "第{{day}}天、12R {{time}} 截止",
+      "venueCount": "今天有{{count}}個賽場舉辦比賽。前往賽場一覽",
+      "venuePage": "賽場頁面"
+    }
   }
 }

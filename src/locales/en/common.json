@@ -3904,5 +3904,57 @@
     "inProgress": "in progress",
     "link": "See the meet score rate ranking and who advanced",
     "fetchError": "Couldn't load the link to the current meet page."
+  },
+  "favorites": {
+    "star": {
+      "add": "Add to favorites",
+      "added": "In favorites",
+      "ariaAdd": "Add {{name}} to favorites",
+      "ariaRemove": "Remove {{name}} from favorites"
+    },
+    "toast": {
+      "addedRacer": "Added to favorites. Today's races will appear in “Favorite racers' races” on the home page.",
+      "addedVenue": "Added to favorites. Today's meet will appear in “Favorite racers' races” on the home page.",
+      "removed": "Removed from favorites.",
+      "racerLimit": "You can save up to {{max}} favorite racers. Remove another racer to add one.",
+      "saveFailed": "Favorites cannot be saved in this browser.",
+      "close": "Close"
+    },
+    "section": {
+      "title": "Favorite racers' races",
+      "lead": "{{running}} of your {{racers}} favorite racers are racing today in {{races}} races (by deadline). Stats are by boat number across all venues since December 2025",
+      "deadline": "Deadline",
+      "meet": "This meet",
+      "meetFirstDay": "First day (no results)",
+      "statLine": "Boat {{boat}} across all venues: Starts {{n}}, Top-2 rate {{rate}}%",
+      "statLineSmall": "Boat {{boat}} across all venues: Starts {{n}} (rate hidden with fewer than 30 starts)",
+      "statFailed": "Couldn't load stats",
+      "linkRacer": "Racer page",
+      "linkSonar": "Ryujin Sonar",
+      "linkAssist": "Thinking Assist",
+      "note": "Stats match “Results by boat number (site totals since December 2025, all venues)” on the racer page. Results for this meet run from oldest to newest; gold borders mark 1st and 2nd place. Favorites are saved in this device's browser and are lost if you clear its data.",
+      "showMore_one": "Show {{count}} more",
+      "showMore_other": "Show {{count}} more",
+      "pastRuns_one": "{{count}} past deadline",
+      "pastRuns_other": "{{count}} past deadlines"
+    },
+    "venues": {
+      "title": "Favorite venues",
+      "open": "Racing today, next: {{race}}R, deadline {{time}}",
+      "finished": "Today's races have finished",
+      "closed": "No races today",
+      "badge": "Favorite"
+    },
+    "fallback": {
+      "noFavorites": "You have no favorite racers yet. Here are today's SG / G1 meets.",
+      "noFavoritesPlain": "You have no favorite racers yet.",
+      "howTo": "Tap ☆ on a race card, racer page or venue page to list your favorite racers' races here by deadline (up to {{max}} racers, saved on this device).",
+      "gradeLine": "Day {{day}}, 12R deadline {{time}}",
+      "venuePage": "Venue page",
+      "noRuns_one": "Your {{count}} favorite racer is not racing today.",
+      "noRuns_other": "None of your {{count}} favorite racers are racing today.",
+      "venueCount_one": "{{count}} venue racing today. View venue list",
+      "venueCount_other": "{{count}} venues racing today. View venue list"
+    }
   }
 }
