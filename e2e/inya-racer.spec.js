@@ -53,3 +53,23 @@ test("選手情報の無いページには前付けの説明を出さない", as
   await page.waitForTimeout(3000);
   await expect(page.getByTestId("racer-front-taking")).toHaveCount(0);
 });
+
+test("レースページはタブの上の6艇と直前情報の進入カードに札（このレースより前の走で判定）", async ({
+  page,
+}) => {
+  // 徳山 2026-11-03 12R 優勝戦。4号艇が西島義則
+  await page.goto("/race/2026-11-03-18-12");
+  await expect(page.getByTestId("race-entrants-inya-4")).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(page.locator("[data-testid^=race-entrants-inya-]")).toHaveCount(
+    1,
+  );
+  await page.click('[role="tab"]:has-text("直前情報")');
+  await expect(page.getByTestId("entry-course-dist-inya-4")).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(page.getByTestId("entry-course-dist-inya-legend")).toContainText(
+    "ファンの呼び名",
+  );
+});
