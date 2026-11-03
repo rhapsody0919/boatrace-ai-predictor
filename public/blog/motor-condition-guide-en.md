@@ -2,7 +2,7 @@
 
 A motor's top-2 rate is the share of past races in which that motor finished 2nd or better. In Toda Race 1 on January 8, 2026, the motor on Boat 1 had the highest rate of the six at 46.85%, and the motor on Boat 6 had the lowest at 30.23%.
 
-You can line up the six motors of any race today on [Motor Condition](/winning-technique?tab=motor). Select a race, and the six official top-2 rates (as of the meet) appear as bars, together with each motor's rank at its venue.
+You can line up the six motors of any race today on [Motor Condition](/winning-technique?tab=motor). Select a race, and the six official top-2 rates (as of the meet) appear as bars, together with each motor's venue rank.
 
 ## The rate is top-2 finishes ÷ starts, and the race-card value is fixed on the first day of the meet
 
@@ -16,7 +16,7 @@ A motor's top-2 rate is "the number of 1st- and 2nd-place finishes ÷ the number
 | New motors | 0% for every motor during their first meet. Values appear from the first day of the second meet |
 | Decimals | Two places (e.g. 46.85%) |
 
-A new motor shows 0% in its first meet not because it has never finished in the top two, but because the official cumulative figure has not been attached yet. During that period, Ryujin Radar shows a top-2 rate calculated from the motor's runs at that venue in the "Official top-2 (series start)" column.
+A new motor shows 0% in its first meet not because it has never finished in the top two, but because the official cumulative figure has not been attached yet. During that period, Ryujin Radar shows a top-2 rate calculated from the motor's runs at that venue in the "Top-2 (series start)" column.
 
 ## Example: the racer's rate and the motor's rate side by side for the six boats in Toda Race 1
 
@@ -56,18 +56,18 @@ The table on [Motor Condition](/winning-technique?tab=motor) shows values from d
 
 | Column | Source | Period / when it changes | What it is |
 |---|---|---|---|
-| Official top-2 (series start) | BOAT RACE official race card | Since the motor went into service. Fixed on the meet's first day | Disqualifications and absences not caused by the racer (S0, K0) are not counted in the starts (Ryujin Radar's own check) |
+| Official top-2 (series start) | BOAT RACE official race card | Since the motor went into service. Fixed on the meet's first day | Results from the current meet are not included |
 | Top-2 rate (past 90 days, etc.) | Ryujin Radar's calculation | The period you select (default: past 90 days). Only runs after the motor was replaced | A different value from the official series-start figure |
 | Power index | Ryujin Radar's calculation | The period you select | The average, over all races, of "did this motor finish top 2" minus "the national top-2 rate of the racer using it at the time" |
-| Rank at venue | Each venue's official motor records | Updated at the end of a meet | Not shown for Toda, Heiwajima, Hamanako, and Miyajima |
+| Venue rank | Each venue's official motor records | Updated at the end of a meet | Not shown for Toda, Heiwajima, Hamanako, and Miyajima |
 
 A motor's top-2 rate also reflects the skill of the racers who used it. A motor that strong racers used repeatedly tends to have a higher rate, and the power index subtracts that part using the racers' national top-2 rates. The larger the plus, the more the motor has run beyond the skill of the racers who used it.
 
-The rank at venue comes from the venue's official site, while the bars show the official race-card rate. Because the sources differ, there are races where the bar lengths and the ranks run in the opposite order.
+The venue rank comes from the venue's official site, while the bars show the official race-card rate. Because the sources differ, there are races where the bar lengths and the ranks run in the opposite order.
 
 ## How to check motor top-2 rates for today's race
 
-1. On [Motor Condition](/winning-technique?tab=motor), select today's race and look at the six official top-2 rates (series start) and the rank at venue (no rank at venue for Toda, Heiwajima, Hamanako, and Miyajima). If a value is 0%, check in the "Official top-2 (series start)" column whether it is a new motor's first meet.
+1. On [Motor Condition](/winning-technique?tab=motor), select today's race and look at the six official top-2 rates (series start) and the venue rank (no venue rank for Toda, Heiwajima, Hamanako, and Miyajima). In a new motor's first meet, the header changes from "Official top-2 (series start)" to "Top-2 (series start)", and Ryujin Radar's value is shown with a "※" mark.
 2. Put it next to the national top-2 rate on the race card, and mark the boats where the racer order and the motor order split. As with Boat 6 in the example, the motor's rate is set separately from the record of the racer using it today.
 3. Look at the power index to see whether the motor is still plus after subtracting the skill of the racers who used it.
 4. Once exhibition times are out, look at the exhibition-time rank before the motor-rate rank. As summarized above, the spread in win rate by rank was larger for exhibition time.
