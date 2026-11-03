@@ -154,3 +154,4 @@
 - E2E_LIVE=1 の fetchRecorded は本番応答を待つため、アサーション成功後にページが閉じると route.fetch が終了エラーになる。ページ終了による失敗だけを区別し、通信やassertの失敗を一括で無視しない（2026-10-27、BOA-1163、PR #2016）。
 - E2Eの **/rest/v1/race_odds* は race_odds_final にも一致する。発売中と締切時オッズで応答が違う試験は、routeの対象を区別する（2026-10-27、BOA-990①、PR #2027）。
 - E2E Smoke の経過が25分を超える回の主因は組の実行でなく待ち（ジョブの作成から開始まで、90% 17.9分・最大 67.6分）。Codex の PR がまとめて開く時刻に、同時に走れるジョブの上限で並ぶ。組の実行が中央 16.8分を占め、checkout〜npm ci は約0.3分なので、キャッシュより組の実行を縮める方が分も待ちも効く（2026-11-03、10/27〜11/03 の298 run の実測、docs/design/ci-minutes-reduction/design.md 11.1）。
+- e2e の範囲（0件）を import の閉包で守るときは、JS の相対 import だけでは足りない。CSS の @import と url()、vite が root から解く `/` 始まりの指定、Node 側で cwd や ROOT から組み立てるパス、ワークフローが node で呼ぶ scripts も根・辿る先に入れる（2026-11-03、system-architect の審査、#2171 の verify-e2e-scope.js）。
