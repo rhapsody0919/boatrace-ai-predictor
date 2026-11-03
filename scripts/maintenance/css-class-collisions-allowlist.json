@@ -21,13 +21,6 @@
       ]
     },
     {
-      "class": "back-link",
-      "files": [
-        "src/pages/AccuracyHistory.css",
-        "src/pages/BlogPost.css"
-      ]
-    },
-    {
       "class": "error",
       "files": [
         "src/components/race/OutcomePatternPreview.css",

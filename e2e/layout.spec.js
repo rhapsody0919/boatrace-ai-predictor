@@ -2548,7 +2548,7 @@ for (const theme of ["light", "dark"]) {
     await page.evaluate((theme) => {
       document.documentElement.setAttribute("data-theme", theme);
     }, theme);
-    await expect(link).toHaveCSS("display", "inline-block");
+    await expect(link).toHaveCSS("display", "block");
     await expect(link).toHaveCSS("font-weight", "500");
     await expect(link).toHaveCSS("margin-bottom", "16px");
   });
