@@ -449,6 +449,11 @@
       "guards": "展示タイム1位率の集計（update-exhibition-time-top-stats.js）が、展示タイムが NULL の行（展示ST先行・展示前の体重だけの行・展示なし）を分母に入れないこと、同着の最速を数えないこと（BOA-520。PR #917 で見つかった率の薄まり）"
     },
     {
+      "script": "verify-f01-capture-contract.js",
+      "tier": "ci",
+      "guards": "完全版 f01 の撮影用の頁（src/snsCapture/、docs/design/f01-stable-capture/）: 部品の表 F01_PARTS の props の名前が本番の部品（RadarFigure・RadarBoatLegend・SimilarWinBars・SankeyFigure・SlitShapeCard・FollowTop・FollowTable）の引数とちょうど同じ（本番の部品の props が変わったらここで落ち、f01 の撮影が黙って崩れない）、固定の材料4レースから全部品の props を作れる、材料が無い・艇番の誤りは黙らず止める、頁を読むのは main.jsx のビルドの旗 VITE_SNS_CAPTURE の分岐の中の動的 import だけ（本番のビルドに入らない）"
+    },
+    {
       "script": "verify-fan-period-job.js",
       "tier": "ci",
       "guards": "期別成績（fan）の定期取り込み（scripts/lib/fanPeriodJob.js、api/cron/fan-period.js）。対象日→fanの対応、取り込み済みなら0リクエスト、未公開404はその日で済み（06:30の補足は叩かない）、期の終わりから105日超は取得せず通知、live の書き込みと生ファイルの保管（raw-pages・raw_snapshots）、shadow は書かない、異常・HTTP 500 は error、保管失敗でも取り込みは成功。vercel.json の06:00・06:30、レジストリ、125のRLS"

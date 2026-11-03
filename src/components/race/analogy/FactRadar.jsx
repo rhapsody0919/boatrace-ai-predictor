@@ -229,6 +229,123 @@ function RadarSvg({
   );
 }
 
+/** 図の中の順位の文（「N位」・同じ値は幅）と項目の短い名前。図・艇の行・項目の表で共用 */
+function useRadarText() {
+  const { t } = useTranslation();
+  const rankText = (r) =>
+    !r
+      ? "—"
+      : r.from === r.to
+        ? t(`${k}.stripRank`, { rank: r.from })
+        : t(`${k}.stripRankTie`, { from: r.from, to: r.to });
+  const itemName = (key) => t(`${k}.items.${key}.short`);
+  return { rankText, itemName };
+}
+
+/**
+ * 七角形の暗い枠（図だけ）。太くする艇 picks の最後の艇の順位を項目名の下に出し、点線もその艇。
+ * FactRadar と撮影用の頁（src/snsCapture、完全版 f01 の撮影）が同じ部品を描く
+ * @param {{boats: ReturnType<import("../../../utils/analogyFacts").radarBoats>, items: {key: string}[],
+ *   picks: number[], axisSel?: string|null, onAxis?: (key: string) => void}} props
+ */
+export function RadarFigure({ boats, items, picks, axisSel = null, onAxis }) {
+  const { t } = useTranslation();
+  const { rankText, itemName } = useRadarText();
+  const lead = picks[picks.length - 1];
+  const label = (i) => ({
+    name: itemName(items[i].key),
+    sub: t(`${k}.radar.axisSub`, {
+      boat: lead,
+      rank: rankText(boats[lead - 1].cells[i].rank),
+    }),
+  });
+  // 読み上げは「6艇中N位」（図の中の短い「N位」ではなく。同じ値は幅）
+  const ariaRank = (r, it) =>
+    !r ? t(`${k}.hexNone`) : factRankText(t, r, it.bad);
+  const ariaLabel = t(`${k}.hexLabel`, {
+    boat: lead,
+    list: items
+      .map(
+        (it, i) =>
+          `${t(`${k}.items.${it.key}.label`)} ${ariaRank(
+            boats[lead - 1].cells[i].rank,
+            FACT_ITEMS.find((x) => x.key === it.key),
+          )}`,
+      )
+      .join(t("aiPredictionTab.analogy.listSeparator")),
+  });
+  return (
+    <div className="af-dark">
+      <RadarSvg
+        boats={boats}
+        items={items}
+        picks={picks}
+        dashBoat={lead}
+        axisSel={axisSel}
+        onAxis={onAxis ?? (() => {})}
+        label={label}
+        ariaLabel={ariaLabel}
+      />
+    </div>
+  );
+}
+
+/**
+ * 艇の行（6艇の凡例。押すと太くなる）。行は上から1〜6号艇。FactRadar と撮影用の頁が同じ部品を描く
+ * @param {{boats: ReturnType<import("../../../utils/analogyFacts").radarBoats>, items: {key: string}[],
+ *   picks: number[], main: number, onPress?: (boat: number) => void}} props
+ */
+export function RadarBoatLegend({ boats, items, picks, main, onPress }) {
+  const { t } = useTranslation();
+  const swatch = (b) => (
+    <svg className="af-hep-sw" viewBox="0 0 22 8" aria-hidden="true">
+      {b === 2 && (
+        <line x1="0" y1="4" x2="22" y2="4" stroke="#94a3b8" strokeWidth="5" />
+      )}
+      <line
+        x1="0"
+        y1="4"
+        x2="22"
+        y2="4"
+        stroke={b === 1 ? "#cbd5e1" : RADAR_LINE[b]}
+        strokeWidth="3"
+      />
+    </svg>
+  );
+  return (
+    <div className="af-hep-legend" data-af-control="facts_radar_boat">
+      {BOATS.map((b) => {
+        const x = boats[b - 1];
+        const on = picks.includes(b);
+        return (
+          <button
+            key={b}
+            type="button"
+            aria-pressed={on}
+            // 太い艇を押し直すと外れる（状態が変わる）ので数える。主役だけが太いときの主役の押し直しは変わらないので数えない
+            data-af-toggle={
+              on && picks.length === 1 && b === main ? undefined : ""
+            }
+            onClick={() => onPress?.(b)}
+          >
+            {swatch(b)}
+            <BoatBadge n={b} size="xs" />
+            <span>
+              {t(`${k}.radar.boat`, { boat: b, cls: x.cls ?? "—" })}
+              {b === main && (
+                <small className="af-hep-main">{t(`${k}.radar.main`)}</small>
+              )}
+            </span>
+            <span className="af-hep-cnt">
+              {t(`${k}.radar.top2`, { n: items.length, k: x.top2 })}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /**
  * 差がつく材料の七角形（項目の数で角の数が変わる。承認モック mock-compare-v3、2026-10-09）。
  * 6艇を重ね、太く塗る艇は最初は主役（一番上で選んだ艇）。凡例の艇を押すと太くなり、2艇まで太くして真正面から比べる
@@ -269,56 +386,13 @@ export default function FactRadar({
     });
   const finish = t(`aiPredictionTab.analogy.finishWord.${target}`);
   const rateName = t(`aiPredictionTab.analogy.rateName.${target}`);
-  const rankText = (r) =>
-    !r
-      ? "—"
-      : r.from === r.to
-        ? t(`${k}.stripRank`, { rank: r.from })
-        : t(`${k}.stripRankTie`, { from: r.from, to: r.to });
-  const itemName = (key) => t(`${k}.items.${key}.short`);
-  const label = (i) => ({
-    name: itemName(items[i].key),
-    sub: t(`${k}.radar.axisSub`, {
-      boat: lead,
-      rank: rankText(boats[lead - 1].cells[i].rank),
-    }),
-  });
-  // 読み上げは「6艇中N位」（図の中の短い「N位」ではなく。同じ値は幅）
-  const ariaRank = (r, it) =>
-    !r ? t(`${k}.hexNone`) : factRankText(t, r, it.bad);
-  const ariaLabel = t(`${k}.hexLabel`, {
-    boat: lead,
-    list: items
-      .map(
-        (it, i) =>
-          `${t(`${k}.items.${it.key}.label`)} ${ariaRank(
-            boats[lead - 1].cells[i].rank,
-            FACT_ITEMS.find((x) => x.key === it.key),
-          )}`,
-      )
-      .join(t("aiPredictionTab.analogy.listSeparator")),
-  });
+  const { rankText, itemName } = useRadarText();
   const ix = items.findIndex((it) => it.key === axisSel);
   const unit = (key) => t(`${k}.units.${key}`, "");
   const withUnit = (key, v) => {
     const s = fmtFactValue(key, v);
     return s === "—" || s.endsWith("%") ? s : `${s}${unit(key)}`;
   };
-  const swatch = (b) => (
-    <svg className="af-hep-sw" viewBox="0 0 22 8" aria-hidden="true">
-      {b === 2 && (
-        <line x1="0" y1="4" x2="22" y2="4" stroke="#94a3b8" strokeWidth="5" />
-      )}
-      <line
-        x1="0"
-        y1="4"
-        x2="22"
-        y2="4"
-        stroke={b === 1 ? "#cbd5e1" : RADAR_LINE[b]}
-        strokeWidth="3"
-      />
-    </svg>
-  );
 
   return (
     <div className="af-hep">
@@ -326,54 +400,24 @@ export default function FactRadar({
       <AnalogySplit
         fig={
           <>
-            <div className="af-dark">
-              <RadarSvg
-                boats={boats}
-                items={items}
-                picks={picks}
-                dashBoat={lead}
-                axisSel={axisSel}
-                onAxis={(key) => setAxisSel((s) => (s === key ? null : key))}
-                label={label}
-                ariaLabel={ariaLabel}
-              />
-            </div>
+            <RadarFigure
+              boats={boats}
+              items={items}
+              picks={picks}
+              axisSel={axisSel}
+              onAxis={(key) => setAxisSel((s) => (s === key ? null : key))}
+            />
             <p className="af-foot">{t(`${k}.radar.hint`)}</p>
           </>
         }
       >
-        <div className="af-hep-legend" data-af-control="facts_radar_boat">
-          {BOATS.map((b) => {
-            const x = boats[b - 1];
-            const on = picks.includes(b);
-            return (
-              <button
-                key={b}
-                type="button"
-                aria-pressed={on}
-                // 太い艇を押し直すと外れる（状態が変わる）ので数える。主役だけが太いときの主役の押し直しは変わらないので数えない
-                data-af-toggle={
-                  on && picks.length === 1 && b === main ? undefined : ""
-                }
-                onClick={() => press(b)}
-              >
-                {swatch(b)}
-                <BoatBadge n={b} size="xs" />
-                <span>
-                  {t(`${k}.radar.boat`, { boat: b, cls: x.cls ?? "—" })}
-                  {b === main && (
-                    <small className="af-hep-main">
-                      {t(`${k}.radar.main`)}
-                    </small>
-                  )}
-                </span>
-                <span className="af-hep-cnt">
-                  {t(`${k}.radar.top2`, { n: items.length, k: x.top2 })}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <RadarBoatLegend
+          boats={boats}
+          items={items}
+          picks={picks}
+          main={main}
+          onPress={press}
+        />
         <p className="af-foot">{collect}</p>
         <p className="af-foot af-hep-typ">
           <i className="is-dash" aria-hidden="true" />

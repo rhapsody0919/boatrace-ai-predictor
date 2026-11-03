@@ -64,6 +64,90 @@ function AxisPicker({ axis, onAxis }) {
 }
 
 /**
+ * 軸のボタンの帯・見出し・結論の1行（「相手」の上の段）。WinFollowers と撮影用の頁（src/snsCapture、完全版 f01 の撮影）が同じ部品を描く
+ * @param {{f: object|null, axis: number, onAxis: (boat: number) => void, auto: boolean}} props
+ */
+export function FollowTop({ f, axis, onAxis, auto }) {
+  const others = [1, 2, 3, 4, 5, 6].filter((b) => b !== axis);
+  const topBoat =
+    f && !f.few
+      ? others.reduce((a, b) => (f.second[b - 1] > f.second[a - 1] ? b : a))
+      : null;
+  const concl = topBoat
+    ? C.followConcl(axis, topBoat, pct(f.second[topBoat - 1], f.n))
+    : null;
+  return (
+    <>
+      <AxisPicker axis={axis} onAxis={onAxis} />
+      {/* 見出しの丸は艇番の数字なので、読み上げは「{X}号艇を軸にしたときの2着」の1つにまとめる */}
+      <h3 className="ta-follow-h" aria-label={C.followHeading(axis)}>
+        <BoatBadge n={axis} size="sm" />
+        {C.followHeading(axis).replace(/^\d+/, "")}
+      </h3>
+      {auto && <p className="ta-note">{C.followAuto(axis)}</p>}
+      {concl && (
+        <p className="ta-follow-concl ta-num">
+          {concl[0]}
+          <b>{concl[1]}</b>
+        </p>
+      )}
+    </>
+  );
+}
+
+/**
+ * 6艇の2着の棒の表（軸の艇は「軸（1着）」）。WinFollowers と撮影用の頁が同じ部品を描く
+ * @param {{f: object, axis: number, marks?: Array<"up"|"down"|null>|null}} props
+ */
+export function FollowTable({ f, axis, marks = null }) {
+  return (
+    <table className="ta-follow ta-num">
+      <tbody>
+        {[1, 2, 3, 4, 5, 6].map((b) => (
+          <tr key={b}>
+            <th scope="row">
+              {/* 読み上げは「{n}号艇」の1回だけ（丸の数字と重ねない） */}
+              <span aria-hidden="true">
+                <BoatBadge n={b} size="sm" />
+              </span>
+              <span className="ta-sr">{`${b}号艇`}</span>
+            </th>
+            {b === axis ? (
+              <td colSpan={3} className="ta-follow-axis">
+                {C.followAxisLabel}
+              </td>
+            ) : f.few ? (
+              <td colSpan={3}>{C.followCount(f.second[b - 1])}</td>
+            ) : (
+              <>
+                <td className="ta-follow-bar">
+                  <span className="ta-follow-track" aria-hidden="true">
+                    <span
+                      className="ta-follow-fill"
+                      style={{
+                        width: `${(f.second[b - 1] / f.n) * 100}%`,
+                      }}
+                    />
+                  </span>
+                </td>
+                <td className="ta-follow-p">
+                  <b>{pct(f.second[b - 1], f.n)}%</b>
+                </td>
+                <td
+                  className={`ta-follow-u${marks?.[b - 1] ? ` ta-follow-m-${marks[b - 1]}` : ""}`}
+                >
+                  {marks?.[b - 1] ? C.followMark[marks[b - 1]] : ""}
+                </td>
+              </>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/**
  * 「{X}号艇を軸にしたときの2着」（BOA-845、spec D-48、承認モック v3）。範囲は全艇とも会場の全レース（scenario の VA）。
  * 6行固定（軸の艇は「軸（1着）」）。棒と割合は軸のときの2着。比べる数字は出さず、差のある行に ↑多め／↓少なめ（axisMarks）。
  * 3着は軸の艇で変わらない（boa845-axis-place.md）ので出さない。30件未満は割合を出さず件数だけ
@@ -80,29 +164,9 @@ export default function WinFollowers({
   auto,
   raceId,
 }) {
-  const others = [1, 2, 3, 4, 5, 6].filter((b) => b !== axis);
-  const topBoat =
-    f && !f.few
-      ? others.reduce((a, b) => (f.second[b - 1] > f.second[a - 1] ? b : a))
-      : null;
-  const concl = topBoat
-    ? C.followConcl(axis, topBoat, pct(f.second[topBoat - 1], f.n))
-    : null;
   return (
     <section className="ta-box">
-      <AxisPicker axis={axis} onAxis={onAxis} />
-      {/* 見出しの丸は艇番の数字なので、読み上げは「{X}号艇を軸にしたときの2着」の1つにまとめる */}
-      <h3 className="ta-follow-h" aria-label={C.followHeading(axis)}>
-        <BoatBadge n={axis} size="sm" />
-        {C.followHeading(axis).replace(/^\d+/, "")}
-      </h3>
-      {auto && <p className="ta-note">{C.followAuto(axis)}</p>}
-      {concl && (
-        <p className="ta-follow-concl ta-num">
-          {concl[0]}
-          <b>{concl[1]}</b>
-        </p>
-      )}
+      <FollowTop f={f} axis={axis} onAxis={onAxis} auto={auto} />
       <p className="ta-note">{C.followNoThird}</p>
       {f ? (
         <>
@@ -119,49 +183,7 @@ export default function WinFollowers({
               </span>
             </div>
           )}
-          <table className="ta-follow ta-num">
-            <tbody>
-              {[1, 2, 3, 4, 5, 6].map((b) => (
-                <tr key={b}>
-                  <th scope="row">
-                    {/* 読み上げは「{n}号艇」の1回だけ（丸の数字と重ねない） */}
-                    <span aria-hidden="true">
-                      <BoatBadge n={b} size="sm" />
-                    </span>
-                    <span className="ta-sr">{`${b}号艇`}</span>
-                  </th>
-                  {b === axis ? (
-                    <td colSpan={3} className="ta-follow-axis">
-                      {C.followAxisLabel}
-                    </td>
-                  ) : f.few ? (
-                    <td colSpan={3}>{C.followCount(f.second[b - 1])}</td>
-                  ) : (
-                    <>
-                      <td className="ta-follow-bar">
-                        <span className="ta-follow-track" aria-hidden="true">
-                          <span
-                            className="ta-follow-fill"
-                            style={{
-                              width: `${(f.second[b - 1] / f.n) * 100}%`,
-                            }}
-                          />
-                        </span>
-                      </td>
-                      <td className="ta-follow-p">
-                        <b>{pct(f.second[b - 1], f.n)}%</b>
-                      </td>
-                      <td
-                        className={`ta-follow-u${marks?.[b - 1] ? ` ta-follow-m-${marks[b - 1]}` : ""}`}
-                      >
-                        {marks?.[b - 1] ? C.followMark[marks[b - 1]] : ""}
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <FollowTable f={f} axis={axis} marks={marks} />
           {marks?.some(Boolean) && (
             <p className="ta-note">{C.followMarkNote(axis)}</p>
           )}
