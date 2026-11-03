@@ -18,6 +18,7 @@ import {
   getRacerAllPeriodStats,
 } from "../services/racerService";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
+import { useSocialMeta } from "../hooks/useSocialMeta";
 import DataFetchError from "../components/DataFetchError";
 import {
   isRacerIndexable,
@@ -49,10 +50,10 @@ export default function RacerProfile() {
   // タイトル・メタ情報の表示（SEO・E2E双方に影響）をブロックしないようにする
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [motorStatus, setMotorStatus] = useState(null);
   const [motorLoad, setMotorLoad] = useState(null);
   const [historyLoad, setHistoryLoad] = useState(null);
   const motorState = motorLoad?.racerId === racerId ? motorLoad.state : "loading";
+  const motorStatus = motorLoad?.racerId === racerId ? motorLoad.status : null;
   const historyState = historyLoad?.racerId === racerId ? historyLoad.state : "loading";
   // 公式の期別成績（GS00）。取得結果と失敗を racerId つきで持ち、別の選手の値を混ぜない
   const [periodStats, setPeriodStats] = useState(null);
@@ -102,18 +103,12 @@ export default function RacerProfile() {
   }, [racerId, validId]);
 
   useEffect(() => {
-    // racerId変更時に前選手のmotorStatusを残さずリセットする。
-    // RacerProfileはルートパラメータ変更時に再マウントされないため、リセットを
-    // 怠ると新しい選手のページに前選手の会場（todayVenueCode由来のバッジ・
-    // マーク表示）が一瞬でも出てしまう（現状は選手→選手の直接遷移導線は無いが、
-    // 防御的に対応。RacerPerformanceStats.jsxのフィルタリセットと同じ考え方）
-    setMotorStatus(null);
+    // 取得結果を racerId と一緒に持ち、選手切替時は前選手の値を表示しない。
     let cancelled = false;
     (validId ? getRacerCurrentMotorStatus(racerId) : Promise.resolve(null))
       .then((result) => {
         if (cancelled) return;
-        setMotorStatus(result);
-        setMotorLoad({ racerId, state: result ? "done" : "empty" });
+        setMotorLoad({ racerId, state: result ? "done" : "empty", status: result });
       })
       .catch((err) => {
         if (cancelled) return;
@@ -188,6 +183,11 @@ export default function RacerProfile() {
     ? `${displayName}選手（${who}）の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別・枠番別成績、決まり手、直近のレース一覧とプロフィール。`
     : `登録番号${racerId}の選手のページ | 龍神レーダー`;
   const canonicalUrl = `${SITE_URL}/racer/${racerId}`;
+  useSocialMeta({
+    title: !loading && !error && data?.profile ? title : null,
+    description: !loading && !error && data?.profile ? description : null,
+    url: canonicalUrl,
+  });
   // AI クローラー向けスナップショット（scripts/generate-ai-snapshots.js、BOA-848）が保存してよいかの目印。
   // プロフィール・成績に加え、モーターと履歴の正常完了も待つ。
   const snapshotReady =
