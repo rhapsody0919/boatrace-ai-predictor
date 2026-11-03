@@ -14,6 +14,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { isInCautionEnabled } from "../config/featureFlags";
 import { useVisibleOnce } from "../hooks/useVisibleOnce";
+import { useSocialMeta } from "../hooks/useSocialMeta";
 import { trackEvent } from "../utils/analytics";
 import { cautionVisibleEvent } from "../utils/cautionEvents";
 import Header from "../components/Header";
@@ -224,10 +225,6 @@ function VenueRaceListPage() {
     return undefined;
   });
 
-  if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
-    return <Navigate to={isToday ? "/" : `/races/${date}`} replace />;
-  }
-
   const venueName = venueNameOf(t, venueCode);
   const venueRaces = allRaces
     .filter((r) => r.venueCode === venueCode)
@@ -298,6 +295,16 @@ function VenueRaceListPage() {
         description: `${venueName}ボートレース場の${formatDate(date)}の全レース一覧。各レースのAIデータ分析・結果を確認できます。`,
         canonical: `https://www.boat-ai.jp/races/${date}/${venueCode}`,
       };
+  useSocialMeta({
+    title: pageMeta.title,
+    description: pageMeta.description,
+    url: pageMeta.canonical,
+  });
+
+  if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
+    return <Navigate to={isToday ? "/" : `/races/${date}`} replace />;
+  }
+
   const noRacesMessage = isToday
     ? t("home.noRacesToday")
     : "このレース場のデータはありません";
