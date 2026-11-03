@@ -5,6 +5,7 @@ note.com の記事・コンプライアンス表現に固有の知見。複数�
 ## コンプライアンス
 - note の公開済み2記事の「確実に増やす」「稼ぐロードマップ」「再現性重視」は利益保証表現として記録し、様子見としていた（2026-09-05 ユーザー判断、memory note_compliance_flag_watch_2026_09_05。元は glossary.md「誇大・保証・射幸心・SNS の規則」より移動）。2026-10-27 にオーナーがこの2記事を非公開にして運営へ問い合わせると決めた（hq drafts/note-channel-20261027.md 75cb334）
 - note.com/boatai は全記事・プロフィールに noindex, nofollow が付き、Google と note 内の検索から外れている。同ジャンル45アカウントは索引あり、規約 10.1 の措置の見込み。解除までは note の記事を作らない（2026-10-27 オーナー決定、hq の調査 drafts/note-channel-20261027.md 75cb334）
+- noindex は 2026-11-01 に解除された。11/4 から毎日1本（前日の全貌のレースの振り返り）を OpenAI の dots が公開まで行う（2026-11-03 オーナー、hq の drafts/note-channel-20261027.md §8〜§9）。上の「解除までは作らない」は終わった
 
 ## SEO
 - note は canonical を書き手が指定できず、本文のリンクは nofollow。blog の全文転載は boat-ai.jp の SEO に効かないので、note に「blog の再配信による SEO」の役を置かない（2026-10-27、hq の調査 drafts/note-channel-20261027.md 75cb334）
