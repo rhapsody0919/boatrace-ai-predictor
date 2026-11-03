@@ -611,7 +611,7 @@
     {
       "script": "verify-internal-api-callers.js",
       "tier": "ci",
-      "guards": "/api の合言葉の付け忘れ（BOA-1110 段階1、ADR-0103）: internalApiHeaders が鍵のあるときだけ x-ryujin-internal-key を付け、x-ryujin-caller は常に付ける（名前は英数字とハイフン32字まで）、付けたヘッダが関門の判定で reason=internal・caller として通る、botPage・botRace・snsClaimCheck が実際に送るヘッダに合言葉と caller が入る、api・scripts・sns-video-studio のうち自分の /api（cron・admin・bot-page を除く）を取るファイルが internalApiHeaders を使う（例外は理由つきの EXEMPT だけ）。段階4（enforce）の後に自分の呼び出しが 403 になるのを防ぐ"
+      "guards": "/api の合言葉の付け忘れ（BOA-1110 段階1、ADR-0103）: internalApiHeaders が鍵のあるときだけ x-ryujin-internal-key を付け、x-ryujin-caller は常に付ける（名前は英数字とハイフン32字まで）、付けたヘッダが関門の判定で reason=internal・caller として通る、botPage・botRace・snsClaimCheck が実際に送るヘッダに合言葉と caller が入る、api・scripts・sns-video-studio のうち自分の /api（相対のパスか boat-ai.jp、cron・admin・bot-page を除く。外部の host の /api は拾わない）を取るファイルが internalApiHeaders を使う（ファイル単位。例外は理由つきの EXEMPT だけ）。段階4（enforce）の後に自分の呼び出しが 403 になるのを防ぐ"
     },
     {
       "script": "verify-job-watch.js",

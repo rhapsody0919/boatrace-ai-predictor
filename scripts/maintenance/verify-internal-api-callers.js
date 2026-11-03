@@ -6,13 +6,14 @@
  *    呼び出し元の名前は英数字とハイフン32字まで（関門の sanitizeCaller と同じ形）
  * 2. 付けたヘッダが関門（apiGate.js の decideApiGate）で reason=internal・caller として通る（名前の食い違いを防ぐ）
  * 3. Vercel の中の呼び出し元（botPage・botRace・snsClaimCheck）が実際に送るヘッダに合言葉と caller が入る
- * 4. 静的な走査: api・scripts・sns-video-studio の .js・.mjs・.cjs のうち、/api/…（cron・admin・bot-page を除く）を
- *    文字列に持ち fetch 等で取得するファイルは、internalApiHeaders を呼ぶこと。例外は EXEMPT に理由つきで書く
+ * 4. 静的な走査: api・scripts・sns-video-studio の .js・.mjs・.cjs のうち、自分の /api/…（相対のパスか boat-ai.jp。
+ *    cron・admin・bot-page を除く）を文字列に持ち fetch 等で取得するファイルは、internalApiHeaders を呼ぶこと。
+ *    例外は EXEMPT に理由つきで書く。見るのはファイル単位で、同じファイルの2つ目の fetch の付け忘れまでは見ない
+ *    （そこは 3 の実際のヘッダの試験と、段階3の関門のログの caller 別の件数で拾う）
  *
  * 鍵の値は試験用の固定の文字列だけを使う（本物の値は読まない）。
  */
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { decideApiGate } from "../../api/_lib/apiGate.js";
@@ -24,6 +25,7 @@ import {
   internalApiHeaders,
 } from "../../api/_lib/internalApiHeaders.js";
 import { checkClaims } from "../../api/_lib/snsClaimCheck.js";
+import { readSourceFile, walkSourceFiles } from "../lib/sourceFileWalk.js";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const TEST_KEY = "verify-internal-key-0123456789";
@@ -149,7 +151,7 @@ await check("snsClaimCheck（/api/analogy/*）", async () => {
 
 // ---- 4. 静的な走査 ----
 const SCAN_ROOTS = ["api", "scripts", "sns-video-studio"];
-const SKIP_DIRS = new Set(["node_modules", "dist", "out", "build", "public"]);
+const SKIP_DIRS = ["node_modules", "dist", "out", "build", "public", ".git", ".remotion"];
 // 自分の /api を取りに行くが合言葉が要らないもの（理由を必ず書く）
 const EXEMPT = new Map([
   [
@@ -161,31 +163,58 @@ const EXEMPT = new Map([
     "この検査そのもの（差し替えの fetch だけ）",
   ],
 ]);
-// 自分の /api（関門を通さない cron・admin・bot-page は除く）を指す文字列
+// 自分の /api（関門を通さない cron・admin・bot-page は除く）を指す文字列。外部の host の /api/ は拾わない
+// （拾うと「合言葉を付ける」へ誘導し、鍵を外へ送らせる）。拾うのは次の2つ:
+//   - 引用符の直後（${BASE} 等の差し込み1つと、正規表現の ^ は許す）が /api/ の文字列 … 自分の origin に繋ぐ相対のパス
+//   - boat-ai.jp/api/ を含む文字列
+// /api/ の後ろは何でもよい（/api/${kind} や "/api/" + name も拾う）
+const NOT_EXCLUDED = String.raw`\/api\/(?!cron\b|admin\b|bot-page\b)`;
 const OWN_API = new RegExp(
-  String.raw`["'\x60][^"'\x60\n]*\/api\/(?!cron\b|admin\b|bot-page\b)[a-z]`,
+  String.raw`["'\x60]\^?(?:\$\{[^}\n]*\})?` + NOT_EXCLUDED +
+    "|" +
+    String.raw`["'\x60][^"'\x60\n]*boat-ai\.jp` + NOT_EXCLUDED,
 );
 const FETCHES = /\bfetch(?:Impl)?\s*\(|\bhttps?\.get\s*\(|\brequest\s*\(/;
 const isComment = (line) => /^\s*(?:\*|\/\/|\/\*)/.test(line);
 
-function listFiles(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    if (SKIP_DIRS.has(name) || name.startsWith(".")) continue;
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) listFiles(p, out);
-    else if (/\.(?:m|c)?js$/.test(name)) out.push(p);
+await check("走査の型: 自分の /api は拾い、外部の /api と除外のパスは拾わない", () => {
+  for (const own of [
+    '"/api/predictions/x"',
+    "`${BASE}/api/analogy/facts/${id}`",
+    "`${origin}/api/races/today`",
+    '"/api/" + name',
+    "`/api/${kind}`",
+    "`^/api/analogy/(facts)`",
+    '"https://www.boat-ai.jp/api/analogy/layer/"',
+  ]) {
+    assert.ok(OWN_API.test(own), `拾うべき ${own}`);
   }
-  return out;
-}
+  for (const other of [
+    '"https://example.com/api/v1/x"',
+    "`${SUPABASE_URL}/rest/v1/x`",
+    '"/api/cron/sns-send"',
+    '"/api/admin/x"',
+    '"/api/bot-page/top"',
+    '"https://www.boat-ai.jp/api/cron/x"',
+  ]) {
+    assert.ok(!OWN_API.test(other), `拾わない ${other}`);
+  }
+});
 
 await check("自分の /api を取るファイルは internalApiHeaders を使う", () => {
   const callers = [];
   const missing = [];
   for (const root of SCAN_ROOTS) {
-    for (const file of listFiles(join(ROOT, root))) {
+    const files = walkSourceFiles(join(ROOT, root), {
+      extensions: [".js", ".mjs", ".cjs"],
+      excludedDirs: SKIP_DIRS,
+    });
+    for (const file of files) {
       const rel = relative(ROOT, file).split("\\").join("/");
       if (EXEMPT.has(rel)) continue;
-      const code = readFileSync(file, "utf8")
+      const source = readSourceFile(file);
+      if (source === null) continue; // 一覧の後に消えた（並列の変異テストの一時ファイル）
+      const code = source
         .split("\n")
         .filter((line) => !isComment(line))
         .join("\n");
@@ -211,7 +240,7 @@ await check("自分の /api を取るファイルは internalApiHeaders を使�
   assert.deepEqual(
     missing,
     [],
-    `合言葉を付けていない（api/_lib/internalApiHeaders.js の internalApiHeaders を fetch の headers に混ぜる。要らないなら EXEMPT に理由を書く）: ${missing.join(", ")}`,
+    `合言葉を付けていない（自分の origin（www.boat-ai.jp・その Preview）への fetch だけ、api/_lib/internalApiHeaders.js の internalApiHeaders を headers に混ぜる。外部の host には付けない。要らないなら EXEMPT に理由を書く）: ${missing.join(", ")}`,
   );
 });
 

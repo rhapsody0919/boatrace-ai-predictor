@@ -1056,7 +1056,8 @@ async function venueTechnique(date, venueCode, missing) {
 }
 
 async function getJson(path) {
-  // 合言葉（BOA-1110 段階1）。鍵は INTERNAL_API_KEY（daily.mjs は .env.local から読む）。無ければ付けない
+  // 合言葉（BOA-1110 段階1）。鍵は INTERNAL_API_KEY（daily.mjs は .env.local から読む。このファイルを単体で動かすときは
+  // node --env-file=.env.local で渡す）。無ければ付けない（関門が enforce になると 403）
   const res = await fetch(`${BASE}${path}`, { headers: internalApiHeaders("full-picture-materials"), signal: AbortSignal.timeout(30000) });
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
   return res.json();
