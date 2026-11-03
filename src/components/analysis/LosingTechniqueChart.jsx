@@ -19,7 +19,7 @@ import BandWrapAxisTick from "../BandWrapAxisTick";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
 import "./WinningTechniqueChart.css";
-import { techniqueColor } from "../../utils/techniqueColors";
+import { techniqueColor, sortTechniquesOfficial } from "../../utils/techniqueColors";
 
 const VENUES = [
   { code: "01", name: "桐生" },
@@ -115,13 +115,13 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
   // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
   const techniqueLabel = (name) => translateTechnique(t, name);
 
-  const allTechniques = [
+  const allTechniques = sortTechniquesOfficial([
     ...new Set(
       Object.values(data).flatMap((boat) =>
         boat.techniques.map((tech) => tech.technique),
       ),
     ),
-  ];
+  ]);
 
   // dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
   const chartData = [1, 2, 3, 4, 5, 6]
@@ -195,6 +195,8 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
           />
           <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
           <Legend
+            // Recharts の文字順ソートを止め、棒と同じ公式順を保つ。
+            itemSorter={null}
             // 凡例の文字は本文色にし、色は横の四角で示す。系列の色（橙・灰）の文字は
             // ライトで約2〜2.5:1 と読みにくかった（BOA-711）
             formatter={(value) => (

@@ -18,7 +18,7 @@ import BandWrapAxisTick from "../BandWrapAxisTick";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
 import "./WinningTechniqueChart.css";
-import { techniqueColor } from "../../utils/techniqueColors";
+import { techniqueColor, sortTechniquesOfficial } from "../../utils/techniqueColors";
 
 const VENUES = [
   { code: "01", name: "桐生" },
@@ -115,13 +115,13 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
   const techniqueLabel = (name) => translateTechnique(t, name);
 
   // 全枠番に登場する決まり手の種類を集める（凡例・積み上げバーの構成要素として使う）
-  const allTechniques = [
+  const allTechniques = sortTechniquesOfficial([
     ...new Set(
       Object.values(data).flatMap((boat) =>
         boat.techniques.map((tech) => tech.technique),
       ),
     ),
-  ];
+  ]);
 
   // recharts用データ: 枠番ごとに { boat_number, 逃げ: 62.3, 差し: 20.1, ... }
   // dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
@@ -194,6 +194,8 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
           />
           <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
           <Legend
+            // Recharts の文字順ソートを止め、棒と同じ公式順を保つ。
+            itemSorter={null}
             // 凡例の文字は本文色にし、色は横の四角で示す。系列の色（橙・灰）の文字は
             // ライトで約2〜2.5:1 と読みにくかった（BOA-711）
             formatter={(value) => (
