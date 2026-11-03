@@ -4,6 +4,8 @@ A motor's top-2 rate is the share of past races in which that motor finished 2nd
 
 You can line up the six motors of any race today on [Motor Condition](/winning-technique?tab=motor). Select a race, and the six official top-2 rates (as of the meet) appear as bars, together with each motor's venue rank.
 
+![The Motor Condition screen. For Kiryu Race 1 on November 3, 2026, the six official top-2 rates (series start) are shown as bars, with venue rank, top-2 rate (past 90 days), and power index](/images/blog/motor-condition-guide-2026-11-03.jpg)
+
 ## The rate is top-2 finishes ÷ starts, and the race-card value is fixed on the first day of the meet
 
 A motor's top-2 rate is "the number of 1st- and 2nd-place finishes ÷ the number of starts with that motor." The top-3 rate counts finishes up to 3rd. The official value printed on the race card covers everything since the motor went into service (up to one year), and it does not include results from the current meet ([BOAT RACE official explanation of race-card figures](https://www.boatrace.jp/owpc/pc/extra/about.html), in Japanese).
@@ -48,7 +50,7 @@ Motors and boats are assigned to racers by lottery at each meet. The motor is th
 
 ## What counts as a high motor top-2 rate?
 
-Two of six boats finish in the top two, so the average top-2 rate across all motors is about 33.3% in theory. In the official race cards stored by Ryujin Radar (December 2, 2025 to October 31, 2026, 297,188 entries excluding 0%), the average was 33.98%, and 40% or higher was roughly the top 20%. In short, in races where every boat entered its own lane's course nationwide, the spread in an attacking boat's win rate was larger by exhibition-time rank (10–18 points) than by motor top-2-rate rank (4–8 points).
+Two of six boats finish in the top two, so the average top-2 rate across all motors is about 33.3% in theory. In the official race cards stored by Ryujin Radar (December 2, 2025 to October 31, 2026, 297,188 entries excluding 0%), the average was 33.98%, and 40% or higher was roughly the top 20%. In short, across 313,938 races nationwide in which every boat entered its own lane's course, we compared the win rate of an attacking boat (such as Boat 4 starting from the dash position) when it ranked 1st–2nd among the six versus 5th–6th. The gap was 4–8 points by motor top-2-rate rank and 10–18 points by exhibition-time rank.
 
 ## The official rate vs. Ryujin Radar's rate and power index
 
@@ -72,6 +74,20 @@ The venue rank comes from the venue's official site, while the bars show the off
 3. Look at the power index to see whether the motor is still plus after subtracting the skill of the racers who used it.
 4. Once exhibition times are out, look at the exhibition-time rank before the motor-rate rank. As summarized above, the spread in win rate by rank was larger for exhibition time.
 5. You can see all of a venue's motors in order on [Motor Ranking](/winning-technique?tab=motorranking).
+
+## FAQ
+
+### Does a motor's top-2 rate change during a meet?
+
+The official race-card value is fixed on the first day of a meet and stays the same through the meet. Results from the current meet are added from the first day of the next meet.
+
+### Why is a new motor's top-2 rate 0%?
+
+The official cumulative figure is attached from the first day of the second meet, so every motor shows 0% during its first meet. It does not mean the motor has never finished in the top two.
+
+### How is a racer's national top-2 rate different from a motor's top-2 rate?
+
+The national top-2 rate is that racer's record over the past six months. A motor's top-2 rate is the record of all the racers who have used that motor since it went into service. It does not include the record of the racer using it today.
 
 ## Scope of the numbers and caveats
 
