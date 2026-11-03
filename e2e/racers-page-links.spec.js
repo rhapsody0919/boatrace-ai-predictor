@@ -37,7 +37,7 @@ test("ページ番号・前後はURLを持ち、押すと表とURLが替わる",
 test("2ページ目の直リンクに固有のcanonicalとtitleがある", async ({ page }) => {
   await page.goto("/racers?page=2");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", "https://www.boat-ai.jp/racers?page=2");
-  await expect(page.locator("title").filter({ hasText: "選手一覧" })).toHaveText("選手一覧（2ページ目）| 龍神レーダー");
+  await expect(page).toHaveTitle("選手一覧（2ページ目）| 龍神レーダー");
 });
 
 test("ページ送りは絞り込み・並び順を保ち、canonicalには含めない", async ({ page }) => {
