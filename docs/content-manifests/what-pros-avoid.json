@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "what-pros-avoid",
+ "kind": "revision",
+ "ticket": "BOA-1097",
+ "paths": [
+  "public/blog/what-pros-avoid.md",
+  "src/data/blog-posts/what-pros-avoid.json"
+ ],
+ "files": {
+  "public/blog/what-pros-avoid.md": "fa8af6139ef7d35d4377370648cacd54b17692ecc208f4b8646207fc0c9ed837",
+  "src/data/blog-posts/what-pros-avoid.json": "3ac540c4de907e156825a3e193ba99e3f1276d69ef8077a6aa1da030e3b667ea"
+ },
+ "content_sha256": "56d6e78a95229f9c0ce2ab2534525e9c62b987fe6b1f14bc3d6d1840c5e4c475",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "56d6e78a95229f9c0ce2ab2534525e9c62b987fe6b1f14bc3d6d1840c5e4c475",
+   "model": "opus",
+   "at": "2026-11-02T23:19:59+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "56d6e78a95229f9c0ce2ab2534525e9c62b987fe6b1f14bc3d6d1840c5e4c475",
+   "model": "opus",
+   "at": "2026-11-02T23:19:59+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "56d6e78a95229f9c0ce2ab2534525e9c62b987fe6b1f14bc3d6d1840c5e4c475",
+   "model": "opus",
+   "at": "2026-11-02T23:19:59+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "56d6e78a95229f9c0ce2ab2534525e9c62b987fe6b1f14bc3d6d1840c5e4c475",
+   "model": "opus",
+   "at": "2026-11-02T23:19:59+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-02T23:21:17+09:00",
+ "run": "20261102T231532-seo-human",
+ "engine": "claude"
+}
