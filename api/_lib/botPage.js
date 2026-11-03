@@ -42,6 +42,8 @@ import { internalApiHeaders } from "./internalApiHeaders.js";
 
 // 人のページの HreflangTags と同じ（hreflang の URL は本番のドメインで出す）
 const SITE_ORIGIN = "https://www.boat-ai.jp";
+// 人の index.html と同じ共通のカード画像。
+const OGP_IMAGE_URL = "https://www.boat-ai.jp/ogp-image.png";
 
 // 成功時のヘッダー。scripts/verification/verify-cache-config.js がこのファイルの最初の "Cache-Control" を読むので、
 // 失敗時のヘッダーより前に置く（docs/reference/cache-strategy.md パターン B）
@@ -348,6 +350,16 @@ export function documentHtml(meta, bodyHtml, { path, lang, jsonLd }) {
 <meta name="description" content="${escapeHtml(meta.description)}">
 <meta name="robots" content="${escapeHtml(ROBOTS)}">
 <link rel="canonical" href="${escapeHtml(meta.canonical)}">
+<meta property="og:type" content="${escapeHtml("website")}">
+<meta property="og:site_name" content="${escapeHtml("龍神レーダー")}">
+<meta property="og:title" content="${escapeHtml(meta.title)}">
+<meta property="og:description" content="${escapeHtml(meta.description)}">
+<meta property="og:url" content="${escapeHtml(meta.canonical)}">
+<meta property="og:image" content="${escapeHtml(OGP_IMAGE_URL)}">
+<meta name="twitter:card" content="${escapeHtml("summary_large_image")}">
+<meta name="twitter:title" content="${escapeHtml(meta.title)}">
+<meta name="twitter:description" content="${escapeHtml(meta.description)}">
+<meta name="twitter:image" content="${escapeHtml(OGP_IMAGE_URL)}">
 ${headExtras.join("\n")}
 </head>
 <body>
