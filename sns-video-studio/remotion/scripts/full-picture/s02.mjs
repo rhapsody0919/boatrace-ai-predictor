@@ -43,7 +43,7 @@ export function s02Facts(sc) {
     m,
     p: Math.round((k / n) * 1000) / 10,
     by: [2, 3, 4, 5, 6].map((b) => ({ boat: b, count: first[b - 1] })),
-    // 負けた件で1着の多い艇を強調するのは、2位との差が線を通った日だけ（BOA-1157 の rankOf）
+    // 負けた件で1着の多い艇を強調するのは、1位が2位より多い日だけ（rankOf。|z| の線は 2026-11-01 に外した）
     top: (() => {
       const [a, b] = [2, 3, 4, 5, 6].map((x) => ({ boat: x, count: first[x - 1] })).sort((p, q) => q.count - p.count);
       return rankOf(a.count, b.count).rankSig ? a.boat : null;

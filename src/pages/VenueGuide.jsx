@@ -4,6 +4,7 @@
  */
 import { Link, useParams, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useSocialMeta } from "../hooks/useSocialMeta";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { getSiteFooterLinks } from "../components/siteFooterLinks";
@@ -48,6 +49,11 @@ function SiteFooter() {
 
 export function VenueGuideList({ lang, guides, copy }) {
   const base = `/${lang}`;
+  useSocialMeta({
+    title: copy.listTitle,
+    description: copy.listDescription,
+    url: `${SITE_URL}${base}/venues`,
+  });
 
   return (
     <div className="app">
@@ -92,6 +98,11 @@ export function VenueGuideDetail({ lang, guides, copy }) {
   const { slug } = useParams();
   const base = `/${lang}`;
   const venue = guides.find((v) => v.slug === slug) ?? null;
+  useSocialMeta({
+    title: venue ? copy.detailTitle(venue) : undefined,
+    description: venue ? copy.detailDescription(venue) : undefined,
+    url: venue ? `${SITE_URL}${base}/venues/${venue.slug}` : undefined,
+  });
 
   if (!venue) {
     return <Navigate to={`${base}/venues`} replace />;

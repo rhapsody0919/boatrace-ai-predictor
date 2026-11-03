@@ -30,7 +30,7 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 ## 公式ファイル・公式ページと取得の時点
 - 公式の K/B ファイルは kb_archive_* に 2019-04-01〜2025-12-02 を取り込み済み（kb_archive_boats 約221万行）。2025-12-03 以降は race_entries・race_results 等にあり、kb は作りの上で止めている（kb-backfill.js の MAIN_TABLES_START、書き手の cron なし）。kb_archive は匿名で読めず、racer_id の索引も無い（2026-10-28、system-architect・本番の読み取り。元は 2026-09-25、BOA-403・BOA-422）
 - 公式の fan ファイルに現役の選手が載らないことがある。fan2604 には 4650 が無いが、公式の選手ページには 2026年後期（41走）がある。直近2週に出走した 1,407人のうち欠けはこの1人。画面で「それより後は未公開」と言い切らない（2026-10-28、data-accuracy-verifier、PR #2051）
-- B ファイルの体重は登録体重（整数）、race_entries.weight_kg は当日の体重（小数）で別の値。player_name は表記、local_win_rate は取得の時点が違う。B ファイルで上書きする前に同じ値かを確かめる（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、PR #840）
+- B ファイルの体重は登録体重（整数）、race_entries.weight_kg は出走表の体重（小数）で別の値。exhibition_data.today_weight（直前情報の当日の体重）とは 98.98% が同じで、常に同じではない（2026-11-04 本番、2026-10-01 以降の 31,159 艇中 30,840。059 のコメントも参照）。player_name は表記、local_win_rate は取得の時点が違う。B ファイルで上書きする前に同じ値かを確かめる（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、PR #840）
 - K ファイルは開催日の夜〜翌日に公開され、kfile-sync は JST 07:00・12:00 に動く。前日の進入コース（race_results.actual_course_*）を使う集計は当日の昼より後にそろう（2026-09-25、memory morning_data_digest_2026_09_25、ADR-0066）
 - 公式の直前情報（beforeinfo）と結果（raceresult）のページは HTML の作りが別。beforeinfo は .table1 の2番目→tbody 6つ→各4行で .table1_boatImage1 が無い。raceresult は .table1_boatImage1 で艇の情報を取れる（memory technical_supabase_scraping_turnpred_notes）
 - 公式の過去ページは今のテンプレートで返るので、過去に HTML が一時的に変わったことによる取りこぼしは後から再現できない（2026-09-15、memory race_entries_racer_id_null_bug_2026_09_15、scripts/daily/update-race-info.js）
@@ -69,3 +69,11 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - K/B取込の stage_kind のfinal判定は isFinalStage v2 を共用する。コード更新だけでは保存済み stage_kind は変わらず、既存行の再分類には退避・差分審査・承認を別に行う（2026-10-28、BOA-1181、kbArchiveRows.js・verify-kb-archive-stage.js）。
 - race_odds・race_odds_final の wide_all は各組が {low, high} の形で最大15通り。早い窓の-60・-30・-15分には14通りのレースもあり、列があることを全組充足とみなさない（2026-10-31、本番の直近3日照合、BOA-990③・PR #2061）。
 - race_results.course_1〜6 は実際の進入コースとして使わない。進入コースには actual_course_N を使う。照合49,036件中2,762件で値が違った（2026-10-31、data-accuracy-verifier、BOA-1189、docs/reference/venue-course-win-rate.md）。
+- 節終了後3日の許容期間で複数節を取得すると、同じレースが複数の取得窓へ入ることがある。結合した行は主キーで重複を除いてから順位・走数を出す（2026-11-02、BOA-1221、scripts/sns/setsu-exhibition.js・scripts/maintenance/verify-setsu-exhibition.jsの窓重複の固定例）。
+- /venue/Nの1コース1着率はsrc/data/venueSummaryStats.jsから表示し、元データはdata/analysis/venue-summary-stats/venue-techniques.jsonの12m。会場ページへ案内する記事はこのfrom・toと定義を確認し、別集計の数字を同じ値として紹介しない（2026-11-03、seo-human、BOA-1275、docs/reference/venue-summary-stats.md）。
+- 1号艇と1コースの1着率を件数付きで並べる場合は、venue-course-win-rate.jsonの同じ窓のby_waku・by_courseを使う。venue-techniques.jsonのcluster_check.waku1_win_rateは率だけで件数が無く、そこから「Nレース中X回」は作れない。集計を替えたら期間も明記する（2026-11-03、seo-human、BOA-1275、両JSONの照合）。
+- 2026-10-03〜11-02の調査では、締切10時以降のオッズは60分前の初回取得で4,462/4,464Rがそろった（中止除外）。60分前の未発売は朝の三国・鳴門・徳山・芦屋・唐津の1〜3Rで確認され、全レース一律の取得不具合とは扱わない（2026-11-02、official-data-spec、BOA-1180、scrape_slotsのodds -60）。
+- 朝の会場の1〜3Rで発売を確認できた時刻は調査中07:37〜08:38 JSTと日・レースで異なった。これは当社の観測時刻で、公式の発売開始時刻や「締切N分前」という固定の仕様として使わない（2026-11-02、official-data-spec、BOA-1180、2026-10-03〜11-02のscrape_slots調査）。
+- オッズの取得窓の開始とDBに値が入る時刻は同じではない。2026-10-29〜11-02の744Rではrace_oddsは窓開始の約0.6分後、race_odds_finalは締切の5.7〜9.8分後だった。読み直し時刻には取得遅延を含め、観測値を恒久的な保証にしない（2026-11-02、BOA-1180、race_odds・race_odds_finalの時刻照合）。
+- exhibition_dataの展示Fはstart_flag='F'と正のstart_timingで保持する（0.04はF.04）。展示Lはstart_flag='L'でstart_timingはnull。数値の符号やnullだけでF・Lを判定しない（2026-11-02、BOA-1203、本番DBの列照合、scripts/lib/beforeinfoParser.js）。
+- race_resultsはrank1があってもcourse_1〜6が空の行がある。course列から艇を探す集計ではその走を落とすため、着順確定をcourse列の充足と同一視しない（2026-11-02、BOA-1190・PR #2119、本番読み取りで2,276/51,757件、aggregate-racer-stats.jsのcourse_race_counts）。

@@ -71,3 +71,4 @@
 - sns_daily のYouTube日次は、取得成功でPTのD−3の日自体に行が無ければ件数3指標を0、平均2指標をNULLにする。規則による0の理由はrunnerのreportへ残し、DBではAPI明示0と区別しない（2026-10-26、BOA-998の回答1・2、snsDailyRunner.js・verify-sns-daily-runner.js）。
 - Xの返信・引用は取得済みの public_metrics.reply_count・quote_count を使えるため追加呼び出しは不要。reply_count は自分の返信も含むので、外部の反応数と同一視しない（2026-10-27、PR #1986、scripts/lib/snsMetricsRunner.js）。
 - 全貌のUTM別機能利用を保存するときは、訪問・ソナーの応答に無く機能の応答だけにある utm_content も下書き検索へ含める。投稿日・翌日の照合に必要な下書きが見つからず、利用行を落とすため（2026-10-26、BOA-1154、snsDailyRunner.js・verify-sns-daily-runner.js）。
+- 全貌YouTubeの完全版とShortsの24時間後viewsは、同題材ペアの形式間の差と、施策による変化を分けて読む。同じ大小関係が2回続いたことだけを施策効果や起票の根拠にせず、型の存続は方針の判断として扱う（2026-11-01、measurement、company-out/measurement/metrics/posts.csv の10/21〜31の同題材ペア）。

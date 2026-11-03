@@ -97,3 +97,5 @@
 - 着順の流れ（正方形の図）の字は図の高さの約2.7%なので、1カットでは左の枠の高さ 838 で約22px が上限。11/2 に上下2カット・形の札の図と名前の2カットに分けた（線 24px、#2087）が、11/3 の4本で③が崩れ（札の図が左の枠の38%×43%・名前と件数が帯だけ・図の下が切れて見えた）、オーナー 11/4「11/2 18-10 の形が正しい」で②・③とも1カットに戻し、②・③の線は 22px（18-10 の実測 22.4px、MIN_FONT_BY_CHAPTER）。ほかの章は 24px のまま（f01Right.js の MIN_FONT_PX）
 - 字の大きさは svg の中の字も画面の上の大きさで測る（getScreenCTM の縮尺を掛ける）。計算した font-size だけだと svg の単位のままで、形の札が 14.5px と小さく出ていた（実際は約22px）（2026-10-31、f01-capture.mjs）
 - 左の実画面は本番のサイトを撮らず、龍神のサイトの撮影用の頁（/sns-capture/f01/{part}、ビルドの旗 VITE_SNS_CAPTURE=1 のローカルの dev サーバー）に本番と同じ部品を材料の props で描かせて撮る。本番を撮るとクラス名・文言・固定の待ち・座標の決め打ちに依り、11/3 の4本の③が崩れた。撮影用の頁で 11/2 18-10・11/3 の4本を2回ずつ撮ると全14カットが画素まで同じだった（2026-11-04 オーナー「推奨通りで良い」、docs/design/f01-stable-capture/）
+- Remotionの文字の箱の検査は通常のdivにrefを付け、失敗時はcancelRenderで止める。useLayoutEffect内のthrowでは描画が続き、AbsoluteFillへ渡したrefもnullになる場合があった（2026-10-31、PR #2076、setsuKiryoku試作で文字がはみ出すbundleもexit 0で書き出された実測、src/setsuKiryoku/SetsuKiryoku.jsx）。
+- 見出しの幅を全角1字=1emで決めない。Noto Sans JPの太字では17字・44pxの見出しが実測789pxとなり推定を超えた。描画時はfitHeadlineの実測で収め、文字数による推定だけを合格根拠にしない（2026-10-31、PR #2076のsetsuKiryoku試作、sns-video-studio/remotion/src/textFit.js）。

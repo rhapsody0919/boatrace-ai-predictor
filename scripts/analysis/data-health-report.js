@@ -58,6 +58,8 @@ import {
 import {
   DETECTION_LAG,
   EXPECTED_UNPUBLISHED,
+  classifyExpectedUnpublished,
+  summarizeDetectionLags,
   firstRaceSql,
   laterOffsetsOf,
   laterWindowHitSql,
@@ -290,56 +292,17 @@ cross join lateral (
 ) c
 group by b.race_date, w.m order by b.race_date, w.m desc`,
 
-    // 指標2補足: 発売開始の検知の遅れ（想定内の未公開＝structuralなレースだけ対象）。
-    // レース単位で、最初に公開が確認できた時刻（後続の窓のうち最も早い captured_at）と、-60の窓が閉じた時刻
-    // （発走60分前+許容幅3分）の差（分）を求める。予定表（scrape_slots）の実際の試行時刻は、レポート（SQLのみ・
-    // Management API経由）からは読まない設計のため、「窓が閉じた時点で最後の未公開の試行があった」とみなす近似値
-    // （実際の-60の延長は1分間隔で再試行するため、この近似値は実際の検知の遅れの上限に相当する。監視（monitor.js）側は
-    // scrape_slots の実際の試行時刻で正確に計測する。二重実装ではなく、レポート側は近似・監視側は正確という役割分担）
+    // 指標2補足: 監視と同じ予定表の行から、confirmed の検知の遅れを共通関数で計測する。
+    // races は classifyExpectedUnpublished が期限・確定中止を判定するために必要。
     detectionLag: `
-with base as (
-  select r.race_id, r.race_date,
-      (r.race_date::timestamp + r.start_time) at time zone 'Asia/Tokyo' as dl
-  from races r
-  where r.race_date between '${windowStart}' and '${endDate}'
-    and r.start_time is not null
-    and r.cancellation_status is distinct from 'confirmed'
-    and exists (select 1 from race_results rr where rr.race_id = r.race_id and rr.rank1 is not null)
-), structural as (
-  select b.race_id, b.dl,
-      b.dl - make_interval(mins => ${EXPECTED_UNPUBLISHED_MINUTES} - ${WINDOW_TOLERANCE_MIN}) as window_closed_at,
-      (
-        select min(o2.captured_at) from race_odds o2
-        where o2.race_id = b.race_id
-          and (${LATER_WINDOW_MINUTES.map(
-            (m) =>
-              `o2.captured_at between b.dl - make_interval(mins => ${m + WINDOW_TOLERANCE_MIN}) and b.dl - make_interval(mins => ${m - WINDOW_TOLERANCE_MIN})`,
-          ).join(" or ")})
-      ) as confirmed_at
-  from base b
-  where not exists (
-      select 1 from race_odds o
-      where o.race_id = b.race_id
-        and o.captured_at between b.dl - make_interval(mins => ${EXPECTED_UNPUBLISHED_MINUTES + WINDOW_TOLERANCE_MIN})
-                              and b.dl - make_interval(mins => ${EXPECTED_UNPUBLISHED_MINUTES - WINDOW_TOLERANCE_MIN})
-    )
-)
-select
-    count(*) as total,
-    count(confirmed_at) as measured,
-    count(*) filter (where confirmed_at is null) as unmeasured,
-    count(*) filter (
-      where confirmed_at is not null
-        and extract(epoch from (confirmed_at - window_closed_at)) / 60 <= ${DETECTION_LAG.thresholdMin}
-    ) as within_threshold,
-    percentile_cont(0.5) within group (
-      order by extract(epoch from (confirmed_at - window_closed_at)) / 60
-    ) filter (where confirmed_at is not null) as p50_min,
-    percentile_cont(0.95) within group (
-      order by extract(epoch from (confirmed_at - window_closed_at)) / 60
-    ) filter (where confirmed_at is not null) as p95_min,
-    max(extract(epoch from (confirmed_at - window_closed_at)) / 60) as max_min
-from structural`,
+select s.job, s.race_id, s.offset_min, s.race_date, s.status, s.attempts,
+    s.first_attempt_at, s.last_attempt_at, s.done_at, s.outcome, s.run_mode,
+    json_build_object('start_time', r.start_time, 'cancellation_status', r.cancellation_status) as races
+from scrape_slots s
+join races r on r.race_id = s.race_id
+where s.job = 'odds'
+  and s.race_date between '${windowStart}' and '${endDate}'
+  and s.offset_min in (${[EXPECTED_UNPUBLISHED.offsetMin, ...laterOffsetsOf(SCRAPE_JOBS.odds)].join(",")})`,
 
     // 指標3: 取得時刻列の有無
     timingColumns: `
@@ -662,12 +625,28 @@ export function summarizeWindows(
   });
 }
 
+/** 監視と同じ confirmed のスロットを計測し、既存の集計行の形式へ変換する。 */
+function summarizeDetectionLagSlots(slots) {
+  const classified = classifyExpectedUnpublished(slots, { siblingSlots: slots });
+  const lag = summarizeDetectionLags(slots, classified, slots);
+  if (lag.total === 0) return null;
+  return summarizeDetectionLagRow({
+    total: lag.total,
+    measured: lag.measured,
+    unmeasured: lag.unmeasured,
+    within_threshold: lag.within,
+    p50_min: lag.p50Min,
+    p95_min: lag.p95Min,
+    max_min: lag.maxMin,
+  });
+}
+
 /**
  * 発売開始の検知の遅れ（想定内の未公開のレースだけを対象）の集計行を、レポート用の値にする。
- * SQLの近似（窓が閉じた時刻を起点とする。ファイル内 detectionLag クエリのコメント参照）。row が無い・
+ * 監視と共通の計測結果を集計行の形で受け取る。row が無い・
  * 対象が0件なら null を返す（無理に0で埋めない）
  */
-function summarizeDetectionLagRow(row) {
+export function summarizeDetectionLagRow(row) {
   if (!row) return null;
   const total = Number(row.total);
   const measured = Number(row.measured);
@@ -1412,7 +1391,7 @@ function renderMarkdown(report) {
   );
   lines.push("");
   lines.push(
-    "SQLからの近似値（窓が閉じた時刻を起点とする。実際の試行時刻は予定表(scrape_slots)にのみ残り、監視(monitor.js)が正確に計測する。二重実装ではなく役割分担）",
+    "監視と同じ定義で予定表(scrape_slots)から計測（延長で取得した場合は平均の試行間隔、後続の窓で取得した場合は直前の未公開の試行から成功までの差）",
   );
   lines.push("");
   if (lag && lag.total > 0) {
@@ -1840,8 +1819,8 @@ export async function main(argv = process.argv.slice(2)) {
             }
           : null,
     },
-    // 発売開始の検知の遅れ（想定内の未公開のレースだけ。近似値。expectedUnpublished.js・detectionLagクエリのコメント参照）
-    detectionLag: summarizeDetectionLagRow(raw.detectionLag?.[0]),
+    // 共通の summarizeDetectionLags は内部で detectionLagOf を使う（計測式を二重に書かない）。
+    detectionLag: summarizeDetectionLagSlots(raw.detectionLag ?? []),
     timingColumns: classifyTimingColumns(raw.timingColumns, raw.tableExistence),
     scrapedTimestamps,
     monthlyResults: summarizeMonthly(raw.monthly),

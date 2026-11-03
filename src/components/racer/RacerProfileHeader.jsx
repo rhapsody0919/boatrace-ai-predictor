@@ -1,3 +1,4 @@
+import FavoriteStarButton from "../common/FavoriteStarButton.jsx";
 import "./RacerProfileHeader.css";
 import { formatRacerKana } from "../../utils/racerName";
 
@@ -13,7 +14,18 @@ export default function RacerProfileHeader({ profile, grade, racerId }) {
 
   return (
     <div className="racer-profile-header">
-      <h1 translate="no">{name}</h1>
+      <div className="favorite-star-header-row">
+        <h1 translate="no">{name}</h1>
+        {racerId && (
+          <FavoriteStarButton
+            type="racer"
+            id={Number(racerId)}
+            name={name}
+            entry="racer_header"
+            withLabel
+          />
+        )}
+      </div>
       {kana && (
         <p className="racer-profile-header-kana" translate="no">
           {kana}

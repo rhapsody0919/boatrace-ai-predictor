@@ -8,7 +8,7 @@
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { f01Check, f01Description, f01RacerCheck, f01Script, splitSubs } from "./f01.mjs";
+import { f01Check, f01Description, f01RacerCheck, f01Script, f01TitleThumbCheck, splitSubs } from "./f01.mjs";
 import { MIN_FONT_PX, fullName, racersOf } from "../../src/fullPicture/f01Right.js";
 import { synthAll } from "./f01-voice.mjs";
 import { DPR, LEFT_BOX, captureAll } from "./f01-capture.mjs";
@@ -245,8 +245,8 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
   mkdirSync(pub, { recursive: true });
   const s = f01Script(m);
   if (!s.ok) return { reasons: [`type_unsupported:${s.kind}`], detail: s.reason };
-  // 右の列の名前と級・収まりは声と撮影の前に確かめる（純関数。落ちる日に声と撮影の数分を使わない）
-  const racerWhy = f01RacerCheck(s, racersOf(m).racers);
+  // 右の列の名前と級・収まり、題とサムネは声と撮影の前に確かめる（純関数。落ちる日に声と撮影の数分を使わない）
+  const racerWhy = [...f01RacerCheck(s, racersOf(m).racers), ...f01TitleThumbCheck(s)];
   if (racerWhy.length) return { reasons: ["type_unsupported:f01_check"], detail: racerWhy.join(" / ") };
   let voice;
   try {
@@ -311,9 +311,9 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     ["remotion", "render", "src/index.jsx", "F01Landscape", mp4, "--codec=h264", "--crf=23", "--audio-bitrate=160k", `--props=${join(out, "props.json")}`, `--public-dir=${pub}`, `--concurrency=${concurrency}`, "--log=error"],
     { stdio: ["ignore", "inherit", "inherit"] },
   );
-  // サムネ（横 1280x720）: 冒頭の問い＋数字1つ（hq の型の thumb「問い10字前後＋数字1つ」）
+  // サムネ（横 1280x720）: f01Script の thumb（オーナー 11/4 承認の形。締切の札・1号艇の名前と級・「逃げ切れる？」・同じ並びの1着の割合）
   const thumb = join(out, "thumb.png");
-  const thumbProps = { head: `${s.raceName}  ${s.date}`, question: "1号艇を崩すのは？", number: `${Math.round((s.open.k0 / s.open.n0) * 10)}割`, numberLabel: "過去の1号艇の1着" };
+  const thumbProps = s.thumb;
   writeFileSync(join(out, "props-thumb.json"), JSON.stringify(thumbProps));
   execFileSync("npx", ["remotion", "still", "src/index.jsx", "F01Thumb", thumb, `--props=${join(out, "props-thumb.json")}`, "--image-format=png", "--log=error"], { stdio: ["ignore", "inherit", "inherit"] });
   if (sheet) {
