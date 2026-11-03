@@ -76,6 +76,7 @@ for (const f of fixtures) {
     (m.api.scenario?.data ?? m.api.scenario)?.scenario?.cells?.waku?.forms ??
     {};
   const form = Object.keys(forms).find((k) => k !== "any" && forms[k]?.n > 0);
+  assert.ok(form, `${f} に件数のある形（any 以外）が無い。固定の材料を見直す`);
   const cases = [
     ["radar", {}],
     ["rows", {}],
@@ -113,9 +114,13 @@ assert.throws(() => f01PartProps("nope", {}, {}), /撮影用の部品 nope は�
 
 // 3. 本番のビルドに入らない: 頁を読むのは main.jsx の旗の分岐の中の動的 import だけ
 const main = readFileSync(join(ROOT, "src/main.jsx"), "utf8");
-const gate = main.match(
-  /import\.meta\.env\.VITE_SNS_CAPTURE === ['"]1['"][^\n]*\n?[^\n]*\n\s*if \(snsCapture\) \{([\s\S]*?)\n\} else \{/,
+// 旗の変数（import.meta.env.VITE_SNS_CAPTURE === "1" を含む式）と、その変数で分けた if の中身（改行・空白の違いは問わない）
+const flag = main.match(
+  /const (\w+)\s*=\s*import\.meta\.env\.VITE_SNS_CAPTURE\s*===\s*['"]1['"]/,
 );
+const gate =
+  flag &&
+  main.match(new RegExp(`if \\(${flag[1]}\\)\\s*\\{([\\s\\S]*?)\\}\\s*else\\s*\\{`));
 assert.ok(
   gate,
   "main.jsx の撮影用の頁の分岐が、import.meta.env.VITE_SNS_CAPTURE === '1' で閉じていない",
@@ -134,7 +139,12 @@ const importers = walk(join(ROOT, "src"))
     (p) =>
       /\.(jsx?|mjs)$/.test(p) && !p.includes(`${join("src", "snsCapture")}`),
   )
-  .filter((p) => /snsCapture\//.test(readFileSync(p, "utf8")))
+  // import の指定（静的・動的・再 export）に snsCapture を含むファイル。コメントの言及は数えない
+  .filter((p) =>
+    /(?:\bfrom\s*|\bimport\s*\(?\s*)['"][^'"]*snsCapture[^'"]*['"]/.test(
+      readFileSync(p, "utf8"),
+    ),
+  )
   .map((p) => relative(ROOT, p));
 assert.deepEqual(
   importers,

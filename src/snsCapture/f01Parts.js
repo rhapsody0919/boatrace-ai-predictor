@@ -30,8 +30,6 @@ export const VIEWPORTS = {
   narrow: { width: 430, height: 1400 },
   wide: { width: 1280, height: 1400 },
 };
-/** 撮るときの拡大（左の枠 1136x838 に拡大しても撮った画素を引き伸ばさない上限。f01-capture.mjs の DPR と同じ） */
-export const CAPTURE_DPR = 3;
 
 /**
  * 部品の表。component は描く部品（file の名前付き export）、props は渡す引数の名前（verify が部品の引数と照合する）、
@@ -251,12 +249,13 @@ export function f01PartProps(part, m, query) {
 }
 
 /**
- * 着順の流れの1着の四角（b 号艇）の箱。viewBox の単位（SANKEY_VIEW 四方）。押す前の流れのカーソルの先
- * @param {Record<string, number>} tri @param {number} b
+ * 着順の流れの1着の四角（b 号艇）の箱。viewBox の単位（SANKEY_VIEW 四方）。カーソルの先。
+ * 図と同じ絞り（first）で配置を出す（押した後の図なら、押した艇の四角だけがある）
+ * @param {Record<string, number>} tri @param {number} b @param {number|null} [first]
  * @returns {{x: number, y: number, w: number, h: number}}
  */
-export function sankeyFirstBox(tri, b) {
-  const { pos } = sankeyLayout(tri);
+export function sankeyFirstBox(tri, b, first = null) {
+  const { pos } = sankeyLayout(tri, { first });
   const r = pos[0][b];
   if (!r?.h) throw new Error(`着順の流れに ${b}号艇の1着の四角が無い`);
   return { x: SANKEY_X[0], y: r.y, w: SANKEY_W, h: r.h };
