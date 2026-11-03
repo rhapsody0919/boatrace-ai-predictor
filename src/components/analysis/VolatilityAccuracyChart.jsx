@@ -25,7 +25,6 @@ function VolatilityAccuracyChart() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     supabaseDataService
       .getUnifiedVolatilityAccuracy()
       .then((data) => {
