@@ -1,0 +1,66 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "boat-number-technique-consistency",
+ "kind": "revision",
+ "ticket": "BOA-1198",
+ "paths": [
+  "public/blog/boat-number-technique-consistency.md",
+  "public/images/blog/boat-number-technique-consistency-2026-11-03.jpg",
+  "src/data/blog-posts/boat-number-technique-consistency.json"
+ ],
+ "files": {
+  "public/blog/boat-number-technique-consistency.md": "4d938b9b7c74e084944d15e01ee996a72a4a9fbbe30e63f0cef5f15a262878f7",
+  "public/images/blog/boat-number-technique-consistency-2026-11-03.jpg": "3bc4f49ffa87f615b0240243c0d5bf976362bc2312326ae773e48709a20dde63",
+  "src/data/blog-posts/boat-number-technique-consistency.json": "db4186644f4bd9692dc22e1174df8258c0eead91804c4dc33ee7329a6900565b"
+ },
+ "content_sha256": "47962f2ab6c73def94b2029b20a6b9c24ad3ba994970fa3232cbafde8147abd7",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "content-qa",
+   "p0": 0,
+   "p1": 0,
+   "result": "pass",
+   "reviewed_sha256": "47962f2ab6c73def94b2029b20a6b9c24ad3ba994970fa3232cbafde8147abd7",
+   "model": "opus-5.5",
+   "at": "2026-11-03T06:25:00Z"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "wording-editor",
+   "p0": 0,
+   "p1": 0,
+   "result": "pass",
+   "reviewed_sha256": "47962f2ab6c73def94b2029b20a6b9c24ad3ba994970fa3232cbafde8147abd7",
+   "model": "opus-5.5",
+   "at": "2026-11-03T06:25:00Z"
+  },
+  {
+   "role": "fan",
+   "agent": "boatrace-fan-reviewer",
+   "p0": 0,
+   "p1": 0,
+   "result": "pass",
+   "reviewed_sha256": "47962f2ab6c73def94b2029b20a6b9c24ad3ba994970fa3232cbafde8147abd7",
+   "model": "opus-5.5",
+   "at": "2026-11-03T06:25:00Z"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "seo-marketer",
+   "p0": 0,
+   "p1": 0,
+   "result": "pass",
+   "reviewed_sha256": "47962f2ab6c73def94b2029b20a6b9c24ad3ba994970fa3232cbafde8147abd7",
+   "model": "opus-5.5",
+   "at": "2026-11-03T06:25:00Z"
+  }
+ ],
+ "author": {
+  "model": "claude",
+  "lane": "orchestrate-content"
+ },
+ "created_at": "2026-11-03T06:31:00Z",
+ "content_at": "2026-11-03T06:20:00Z"
+}
