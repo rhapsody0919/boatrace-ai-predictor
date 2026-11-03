@@ -3,8 +3,9 @@
  * e2e-scope.js（PR ゲートの e2e をどこまで流すか）の判定を固定の入力で検査する（BOA-929）。
  * 外部ネットワーク・実DBには触らない。
  *
- * 守るもの: 記事だけの PR は軽い組、docs だけは0件、src・scripts・e2e・.github・package*.json・設定を
- * 触る PR は必ず全部。PR の側で一覧を書き換えても、master の一覧で判定すれば全部に戻る。
+ * 守るもの: 記事だけの PR は軽い組、docs と e2e が読まないパス（.claude 等、ADR-0100 追記）だけは0件、
+ * src・scripts（verify・sns・analysis を除く）・e2e・.github・package*.json・設定を触る PR は必ず全部。
+ * 0件の一覧のパスが e2e・src・設定から import・相対のパスで読まれていないこと（閉包）。PR の側で一覧を書き換えても、master の一覧で判定すれば全部に戻る。
  */
 
 import { execFileSync } from "node:child_process";
@@ -14,6 +15,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -311,6 +313,131 @@ check("master の一覧で判定すれば全部", scopeOf(tamperedDiff, config),
       true,
     );
   }
+}
+
+// --- docs 以外の0件（CI の分数の削減 段2b、ADR-0100 追記） ---
+for (const files of [
+  [".claude/rules/a.md", ".claude/hooks/x.sh"],
+  ["sns-video-studio/remotion/src/A.jsx"],
+  [
+    "scripts/maintenance/verify-foo.js",
+    "scripts/maintenance/verify-registry.json",
+  ],
+  ["scripts/sns/push-x.js", "scripts/analysis/a.mjs", "docs/a.md"],
+]) {
+  check(`${files.join("・")} だけは0件`, scopeOf(files), "none");
+}
+for (const file of [
+  "scripts/maintenance/e2e-recording.js",
+  "scripts/maintenance/e2e-shards.js",
+  "scripts/maintenance/guard-pr-merge.js",
+  "scripts/maintenance/verify/x.js",
+  "scripts/lib/hitCalculator.js",
+  "scripts/daily/scrape-odds.js",
+  "api/a.js",
+]) {
+  check(
+    `${file} を触る PR は全部（0件の一覧と混ぜても）`,
+    scopeOf([".claude/a.md", file]),
+    "full",
+  );
+}
+
+// --- 0件にするパスは、e2e が読むファイルに入らない（段2b の守り） ---
+// e2e の run が読むのは、e2e/・src/（画面の束）・playwright と vite の設定・index.html と、そこから相対の
+// import（静的・動的・require・new URL）で辿れるファイル。src は scripts/lib を直に import する
+// （hitCalculator 等）ので、一覧に scripts/lib を入れると画面の不具合を通す道になる。辿れたファイルが
+// 1つでも0件の一覧に当たれば落とす。fs で読む相対のパス（"../scripts/..." 等の文字列）も見る
+{
+  const exts = [
+    "",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".cjs",
+    ".json",
+    "/index.js",
+    "/index.jsx",
+  ];
+  const isFile = (p) => {
+    try {
+      return statSync(p).isFile();
+    } catch {
+      return false;
+    }
+  };
+  const resolveFrom = (from, spec) => {
+    const base = path.resolve(path.dirname(from), spec.split("?")[0]);
+    for (const e of exts) if (isFile(base + e)) return base + e;
+    return null;
+  };
+  const listFiles = (dir) => {
+    const out = [];
+    for (const ent of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) out.push(...listFiles(full));
+      else out.push(full);
+    }
+    return out;
+  };
+  const roots = [
+    ...listFiles(path.join(repoRoot, "e2e")),
+    ...listFiles(path.join(repoRoot, "src")),
+    ...["playwright.config.js", "vite.config.js", "index.html"].map((f) =>
+      path.join(repoRoot, f),
+    ),
+  ].filter(isFile);
+  const reachable = new Set(roots);
+  const queue = [...roots];
+  const pathReads = new Set();
+  const IMPORT_RE =
+    /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*|new URL\s*\(\s*|\bsrc=)["'`](\.{1,2}\/[^"'`$]+)["'`]/g;
+  // 相対で repo の上の階層を指すパスの文字列（fs で読む等）。`${` の前までを取る
+  const PATH_RE = /["'`]((?:\.\.\/)+)([^"'`\s]*?)(?:\$\{|["'`])/g;
+  while (queue.length > 0) {
+    const file = queue.pop();
+    if (!/\.(js|jsx|mjs|cjs|html)$/.test(file)) continue;
+    const text = readFileSync(file, "utf8");
+    for (const m of text.matchAll(IMPORT_RE)) {
+      const target = resolveFrom(file, m[1]);
+      if (target && target.startsWith(repoRoot) && !reachable.has(target)) {
+        reachable.add(target);
+        queue.push(target);
+      }
+    }
+    for (const m of text.matchAll(PATH_RE)) {
+      const abs = path.resolve(path.dirname(file), m[1] + m[2]);
+      if (abs.startsWith(repoRoot + path.sep))
+        pathReads.add(
+          path.relative(repoRoot, abs) +
+            (m[2].endsWith("/") || m[2] === "" ? "/" : ""),
+        );
+    }
+  }
+  const rel = [...reachable].map((f) => path.relative(repoRoot, f));
+  check(
+    "閉包が src から scripts/lib を辿る（検査の前提）",
+    rel.includes("scripts/lib/hitCalculator.js"),
+    true,
+  );
+  check(
+    "閉包が e2e から scripts/maintenance を辿る（検査の前提）",
+    rel.includes("scripts/maintenance/e2e-recording.js"),
+    true,
+  );
+  const leaked = rel
+    .filter((f) => !f.startsWith("docs/"))
+    .filter((f) => scopeOf([f]) === "none");
+  check("e2e が import で読むファイルは0件の一覧に当たらない", leaked, []);
+  // ディレクトリを指す読み（"../scripts/lib/__fixtures__/odds/${n}" 等）は、その下のファイルで判定する
+  const leakedReads = [...pathReads]
+    .filter((p) => !p.startsWith("docs/"))
+    .filter((p) => scopeOf([p.endsWith("/") ? `${p}x.js` : p]) === "none");
+  check(
+    "e2e・src が相対のパスで読むファイルは0件の一覧に当たらない",
+    leakedReads,
+    [],
+  );
 }
 
 // --- 設定が無い・壊れているときは例外（CLI は full に倒す） ---

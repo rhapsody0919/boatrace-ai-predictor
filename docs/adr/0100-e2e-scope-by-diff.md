@@ -72,4 +72,14 @@ ADR-0077（録画の再生と時計の固定）は変えない。軽い組も同
 
 - 直近1か月の実績では、約13%の PR が e2e の全部を流さずに済む（0件 10.1%、軽い組 2.7%）
 - 3つ目の組が重い問題は、下の「4. 組の分け方」で直す（BOA-929 の 2、別の PR）
-- `.claude/` だけの PR（46件、4.9%）は今回は `full` のまま。hooks のスクリプトを含むため、一覧に足すかは別に決める
+- `.claude/` だけの PR（46件、4.9%）は今回は `full` のまま。hooks のスクリプトを含むため、一覧に足すかは別に決める（→ 下の追記で0件に入れた）
+
+## 追記（2026-11-03、CI の分数の削減 段2b）: e2e が読まないパスも0件に入れる
+
+`e2eSkipPathPatterns` に `.claude/`・`sns-video-studio/`・`scripts/maintenance/verify-*.js`・`scripts/maintenance/verify-registry.json`・`scripts/sns/`・`scripts/analysis/` を足す。差分の全ファイルがこれと docs に当たる PR は e2e を流さずに成功にする。記事の PR に混ざったときは軽い組のまま。
+
+- **理由**: 10/27〜11/03 の7日で、e2e を全部流した259 run・18,365分のうち、この一覧と docs だけの PR が60 run・3,762分（20%）あった（docs/design/ci-minutes-reduction/design.md 11章、PR 2170）。どれも e2e の run が読まないので、流しても結果は master と同じ。検査の側（verify:ci・ml-tests）は今までどおり全 PR で走る
+- **守り（パスの一覧だけで決めない）**: src は `scripts/lib` を直に import し（hitCalculator 等）、e2e は `scripts/maintenance/e2e-recording.js` 等を読む。そこで `verify-e2e-scope.js` が、e2e/・src/・playwright と vite の設定・index.html から相対の import（静的・動的・require・new URL）で辿れるファイルと、`"../..."` の相対のパスで読むファイル（`${` の前まで、ディレクトリはその下のファイル）を集め、1つでも0件の一覧に当たれば落とす。`scripts/lib/` を一覧に足すと落ちることを確かめた
+- **入れないもの**: `scripts/lib/`（画面の束に入る）、`scripts/maintenance/` の verify 以外（e2e・guard・撮り直しが使う）、`scripts/content/content-pr-gate.json`（この一覧そのもの）、`scripts/daily/` 等の取得（7日の PR が少なく効き目が小さい）、`api/`、`README.md`
+- **抜け道**: 判定と一覧は今までどおり base 側（決定3）。マージ時は guard-pr-merge.js が master の一覧で判定し直す
+- **限界**: 辿り方は正規表現で、パスを分けて組み立てる書き方（`path.join(root, "scripts", name)` 等）は拾えない。今の e2e・src にその形で一覧のディレクトリを読む所は無い。読む所を足すときは verify に固定の入力を足す
