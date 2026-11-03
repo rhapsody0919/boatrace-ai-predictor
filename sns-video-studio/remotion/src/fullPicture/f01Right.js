@@ -76,22 +76,29 @@ export function charsEm(text) {
   return w;
 }
 
+// 割合の前でも折る（wrapText の soft）ときの切れ目と、行末に落とす字
+const SOFT_SPLIT = new RegExp(`(?<=[ ・])|(?<=${NB})(?=\\d[\\d.,]*%)`);
+const SOFT_TRIM = new RegExp(`[ ・${NB}]$`);
+
 /**
  * 1つの欄を幅に折り返す。改行は「\n」で必ず、ほかは半角の空白か「・」の後ろでだけ（「・」で切ったら行末の「・」は消す）。
  * 折り返せない塊（名前と級のひとまとまり等）が幅を越えたら null
  * @param {string} text @param {number} size px @param {number} width px
  */
-export function wrapText(text, size, width) {
+export function wrapText(text, size, width, soft = false) {
   const lines = [];
+  // soft: 割合（「38.5%」）の直前の折り返さない空白でも折る。「2着 1号艇（今日は名前 級） 38.5%」が名前の長い日に幅を越える（2026-11-03 の 19-10）
+  const split = soft ? SOFT_SPLIT : /(?<=[ ・])/;
+  const trim = soft ? SOFT_TRIM : /[ ・]$/;
   for (const para of text.split("\n")) {
     let cur = "";
-    for (const tok of para.split(/(?<=[ ・])/)) {
-      if (cur && emWidth((cur + tok).replace(/[ ・]$/, "")) * size > width) {
-        lines.push(cur.replace(/[ ・]$/, ""));
+    for (const tok of para.split(split)) {
+      if (cur && emWidth((cur + tok).replace(trim, "")) * size > width) {
+        lines.push(cur.replace(trim, ""));
         cur = tok;
       } else cur += tok;
     }
-    lines.push(cur.replace(/ $/, ""));
+    lines.push(cur.replace(soft ? trim : / $/, ""));
   }
   return lines.every((l) => emWidth(l) * size <= width) ? lines : null;
 }
@@ -131,50 +138,60 @@ export function layoutRight(c) {
     scope.length ? scope.length * FIELD.scope.sizes[0] * FIELD.scope.lh : null,
     SPACER,
   ].filter((x) => x !== null);
-  let why = "幅を越える";
-  for (const a of c.answer ? FIELD.answer.sizes : [0]) {
-    const al = c.answer ? wrapText(c.answer, a, RIGHT.w) : [];
-    if (!al) continue;
-    for (const a2 of c.answer2 ? FIELD.answer2.sizes : [0]) {
-      const a2l = c.answer2 ? wrapText(c.answer2, a2, RIGHT.w) : [];
-      if (!a2l) continue;
-      const parts = [
-        ...heads,
-        al.length ? al.length * a * FIELD.answer.lh : null,
-        a2l.length ? a2l.length * a2 * FIELD.answer2.lh : null,
-      ].filter((x) => x !== null);
-      const height =
-        parts.reduce((s, x) => s + x, 0) + GAP * (parts.length - 1);
-      if (RIGHT.top + height <= bottom) {
-        const sizes = [
-          c.tag ? TAG.size : null,
-          scope.length ? FIELD.scope.sizes[0] : null,
-          al.length ? a : null,
-          a2l.length ? a2 : null,
-        ].filter(Boolean);
-        return {
-          ok: true,
-          scope: { size: FIELD.scope.sizes[0], lines: scope },
-          answer: { size: a, lines: al },
-          answer2: { size: a2, lines: a2l },
-          bottom: Math.round(RIGHT.top + height),
-          limit: bottom,
-          // 括弧の小さい字があれば、その欄の SMALL 倍が最小
-          minFontPx: Math.min(
-            ...sizes,
-            ...[
-              [scope, FIELD.scope.sizes[0]],
-              [al, a],
-              [a2l, a2],
-            ]
-              .filter(([ls]) => ls.some((l) => l.includes(TODAY)))
-              .map(([, z]) => z * SMALL),
-          ),
-        };
+  const fit = (soft) => {
+    let why = "幅を越える";
+    for (const a of c.answer ? FIELD.answer.sizes : [0]) {
+      const al = c.answer ? wrapText(c.answer, a, RIGHT.w, soft) : [];
+      if (!al) continue;
+      for (const a2 of c.answer2 ? FIELD.answer2.sizes : [0]) {
+        const a2l = c.answer2 ? wrapText(c.answer2, a2, RIGHT.w, soft) : [];
+        if (!a2l) continue;
+        const parts = [
+          ...heads,
+          al.length ? al.length * a * FIELD.answer.lh : null,
+          a2l.length ? a2l.length * a2 * FIELD.answer2.lh : null,
+        ].filter((x) => x !== null);
+        const height =
+          parts.reduce((s, x) => s + x, 0) + GAP * (parts.length - 1);
+        if (RIGHT.top + height <= bottom) {
+          const sizes = [
+            c.tag ? TAG.size : null,
+            scope.length ? FIELD.scope.sizes[0] : null,
+            al.length ? a : null,
+            a2l.length ? a2 : null,
+          ].filter(Boolean);
+          return {
+            ok: true,
+            wrapped: soft,
+            scope: { size: FIELD.scope.sizes[0], lines: scope },
+            answer: { size: a, lines: al },
+            answer2: { size: a2, lines: a2l },
+            bottom: Math.round(RIGHT.top + height),
+            limit: bottom,
+            // 括弧の小さい字があれば、その欄の SMALL 倍が最小
+            minFontPx: Math.min(
+              ...sizes,
+              ...[
+                [scope, FIELD.scope.sizes[0]],
+                [al, a],
+                [a2l, a2],
+              ]
+                .filter(([ls]) => ls.some((l) => l.includes(TODAY)))
+                .map(([, z]) => z * SMALL),
+            ),
+          };
+        }
+        why = `下の線（y${bottom}）を越える（y${Math.round(RIGHT.top + height)}）`;
       }
-      why = `下の線（y${bottom}）を越える（y${Math.round(RIGHT.top + height)}）`;
     }
-  }
+    return { ok: false, why };
+  };
+  // まず今までの折り方（割合の前では折らない）。どの字の大きさでも収まらないときだけ、割合の前でも折る（見た目が変わるのは、これまで止めた日だけ）
+  const strict = fit(false);
+  if (strict.ok) return strict;
+  const soft = fit(true);
+  if (soft.ok) return soft;
+  const why = strict.why;
   return { ok: false, reason: `答えが${why}` };
 }
 

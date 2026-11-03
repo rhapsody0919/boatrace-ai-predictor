@@ -14,7 +14,7 @@
 import assert from "node:assert/strict";
 import { s02Check, s02Facts, s02Text } from "../../sns-video-studio/remotion/scripts/full-picture/s02.mjs";
 import { RANK_WORDS, SUB_MAX, VOICE, f01Check, f01Description, f01RacerCheck, f01Script, splitSubs, voiceText } from "../../sns-video-studio/remotion/scripts/full-picture/f01.mjs";
-import { NB, RIGHT, emWidth, layoutRight, racersOf } from "../../sns-video-studio/remotion/src/fullPicture/f01Right.js";
+import { NB, RIGHT, boatToday, emWidth, layoutRight, racersOf } from "../../sns-video-studio/remotion/src/fullPicture/f01Right.js";
 import { diffOf, diffText, rankOf } from "../../sns-video-studio/remotion/scripts/full-picture/scenes/diff.mjs";
 import { templateLines } from "../../sns-video-studio/remotion/scripts/full-picture/scene2-data.mjs";
 import {
@@ -2361,6 +2361,18 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     // 名前と級の塊は折り返さない（「品川二千翔」と「A1」が別の行に分かれない）
     const one = layoutRight({ answer: `2着 1号艇${NB}${F01_LONG_NAMES[0]}${NB}A1 41.9%`, path: "p" });
     assert.ok(one.ok && one.answer.lines.some((l) => l.includes(`1号艇${NB}${F01_LONG_NAMES[0]}${NB}A1`)));
+    // 本番の c4 の形（艇と割合の間も折り返さない空白）。名前5字＋割合が小数1桁の「2着 1号艇（今日は吉田凌太朗 A1） 38.5%」は
+    // 最小の字（40px）でも1行が幅を越えた（2026-11-03 の 19-10、type_unsupported:f01_check）。割合の前で折れば収まる
+    const racers19 = { 1: { name: "吉田凌太朗", grade: "A1" }, 4: { name: "伊藤喜智", grade: "A2" } };
+    const c4 = { tag: "思考アシスト ＞ 相手", scope: "下関の全期間・全選手 4号艇が1着 1,234件", path: "アシスト → 相手 → 軸",
+      answer: `軸 ${boatToday(racers19, 4)}\n2着${NB}${boatToday(racers19, 1)}${NB}38.5%`, answer2: `軸 ${boatToday(racers19, 1)}なら\n2着${NB}${boatToday(racers19, 4)}${NB}38.5%` };
+    const lc4 = layoutRight(c4);
+    assert.ok(lc4.ok, `${lc4.reason}`);
+    assert.ok(lc4.wrapped && lc4.answer.lines.includes("38.5%"), "割合の前で折る");
+    assert.ok(lc4.answer.lines.every((l) => emWidth(l) * lc4.answer.size <= RIGHT.w));
+    // 収まる日の見た目は変えない（折らない）
+    const short4 = layoutRight({ ...c4, answer: `軸 ${boatToday(racers19, 4)}\n2着${NB}${boatToday(racers19, 4)}${NB}38.5%` });
+    assert.ok(short4.ok && !short4.wrapped);
   }
 }
 
