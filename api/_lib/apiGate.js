@@ -21,9 +21,10 @@
  */
 import { AI_CRAWLER_USER_AGENTS } from "../../src/config/aiCrawlerBots.js";
 import { constantTimeEqual } from "./adminAuth.js";
+import { CALLER_HEADER, INTERNAL_KEY_HEADER } from "./internalApiHeaders.js";
 
-export const INTERNAL_KEY_HEADER = "x-ryujin-internal-key";
-export const CALLER_HEADER = "x-ryujin-caller";
+// ヘッダの名前の正本は付ける側（internalApiHeaders.js）。判定側はそれを読む
+export { CALLER_HEADER, INTERNAL_KEY_HEADER };
 
 // 関門を通さないパス（それぞれ既存の守りがある。plan §1.1）
 export const API_GATE_EXCLUDED_PREFIXES = [

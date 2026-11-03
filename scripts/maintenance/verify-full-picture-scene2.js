@@ -1817,14 +1817,18 @@ for (const f of fixtures) {
   assert.equal(SELECT_RULE.deadlineBefore, "21:58");
   // 鍵の分け方: 子のプロセス（run-full と claude）に service key・Webhook を渡さない。claude の認証は残す
   // 通す名前を並べる方式（DATABASE_URL のような名前も渡らない）
-  const env = childEnv({ PATH: "/bin", HOME: "/h", SUPABASE_SERVICE_KEY: "s", VITE_SUPABASE_ANON_KEY: "a", SLACK_WEBHOOK_URL: "w", LINEAR_API_KEY: "l", DATABASE_URL: "d", CLAUDE_CODE_OAUTH_TOKEN: "c", ANTHROPIC_API_KEY: "k", NODE_OPTIONS: "n" });
-  assert.deepEqual(Object.keys(env).sort(), ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "HOME", "NODE_OPTIONS", "PATH"]);
+  const env = childEnv({ PATH: "/bin", HOME: "/h", SUPABASE_SERVICE_KEY: "s", VITE_SUPABASE_ANON_KEY: "a", SLACK_WEBHOOK_URL: "w", LINEAR_API_KEY: "l", DATABASE_URL: "d", CLAUDE_CODE_OAUTH_TOKEN: "c", ANTHROPIC_API_KEY: "k", NODE_OPTIONS: "n", INTERNAL_API_KEY: "i" });
+  assert.deepEqual(Object.keys(env).sort(), ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "HOME", "NODE_OPTIONS", "PATH"], "子のプロセスに /api の合言葉も渡さない（BOA-1110）");
   // .env.local からは材料の取得の匿名の2つだけを読む
   const { mkdtempSync, writeFileSync: wf2 } = await import("node:fs");
   const { tmpdir: td } = await import("node:os");
   const envFile = `${mkdtempSync(`${td()}/fp-env-`)}/.env.local`;
   wf2(envFile, 'SUPABASE_SERVICE_KEY=secret\nVITE_SUPABASE_URL="https://x.supabase.co"\nVITE_SUPABASE_ANON_KEY=anon\nSLACK_WEBHOOK_URL=w\n');
   assert.deepEqual(readAnonEnv(envFile), { VITE_SUPABASE_URL: "https://x.supabase.co", VITE_SUPABASE_ANON_KEY: "anon" });
+  // /api の合言葉（BOA-1110 段階1）があれば、それも読む（送信の鍵は読まないまま）
+  const envFileKey = `${mkdtempSync(`${td()}/fp-env-`)}/.env.local`;
+  wf2(envFileKey, 'SUPABASE_SERVICE_KEY=secret\nVITE_SUPABASE_URL=u\nVITE_SUPABASE_ANON_KEY=anon\nINTERNAL_API_KEY=k1\n');
+  assert.deepEqual(readAnonEnv(envFileKey), { VITE_SUPABASE_URL: "u", VITE_SUPABASE_ANON_KEY: "anon", INTERNAL_API_KEY: "k1" });
   // 使い方の誤りは exit 2、標準出力は JSON 1つ
   const { spawnSync } = await import("node:child_process");
   const daily = new URL(`${R}/scripts/full-picture/daily.mjs`, import.meta.url).pathname;

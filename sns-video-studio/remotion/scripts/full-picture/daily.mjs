@@ -17,7 +17,8 @@
  *
  * 鍵の分け方（docs/design/full-picture-remotion/plan.md「毎日の実行」）: このコマンドは送信をしないので service key を読まない。
  * 材料の取得に要るのは Supabase の匿名の読み取り（VITE_SUPABASE_URL・VITE_SUPABASE_ANON_KEY、画面の配信物と同じ公開キー）だけで、
- * --env-file を使わず、.env.local からこの2つだけを読む。子のプロセス（run-full と、その中の claude）には、鍵らしい名前の環境変数を渡さない。
+ * --env-file を使わず、.env.local からこの2つと、/api の合言葉 INTERNAL_API_KEY（BOA-1110。読み取りの合言葉で送信の鍵ではない）だけを読む。
+ * 子のプロセス（run-full と、その中の claude）には、鍵らしい名前の環境変数を渡さない（INTERNAL_API_KEY も渡さない）。
  * 送信は今までどおり push-full-picture.js（node --env-file=.env.local）が受け持つ。
  */
 import { execFileSync, spawnSync } from "node:child_process";
@@ -25,6 +26,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileS
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { internalApiHeaders } from "../../../../api/_lib/internalApiHeaders.js";
 import { fetchMaterials } from "./fetch-materials.mjs";
 import { validate } from "./materials-contract.mjs";
 import { listTypes, resolveType } from "./type-spec.mjs";
@@ -78,12 +80,14 @@ export const SERVICE_ENV = /SERVICE_KEY|SERVICE_ROLE|SLACK_WEBHOOK|X_API|YOUTUBE
 
 /** .env.local から読む名前（材料の取得の匿名の読み取りだけ） */
 export const ANON_ENV = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"];
+/** 上に足して .env.local から読む名前（/api の合言葉。BOA-1110 段階1、ADR-0103。無ければ合言葉を付けないだけ） */
+export const READ_ENV = [...ANON_ENV, "INTERNAL_API_KEY"];
 export function readAnonEnv(file) {
   if (!existsSync(file)) return {};
   const out = {};
   for (const line of readFileSync(file, "utf8").split("\n")) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
-    if (m && ANON_ENV.includes(m[1])) out[m[1]] = m[2].replace(/^["']|["']$/g, "");
+    if (m && READ_ENV.includes(m[1])) out[m[1]] = m[2].replace(/^["']|["']$/g, "");
   }
   return out;
 }
@@ -223,8 +227,8 @@ async function main(argv) {
   // 送信の鍵と一緒に起動されたら止める（このコマンドは送信をしない。node --env-file=.env.local で起動しない）
   const leaked = Object.keys(process.env).filter((k) => SERVICE_ENV.test(k));
   if (leaked.length) return usage(`送信の鍵が環境にある（${leaked.join(", ")}）。--env-file を付けずに起動する`);
-  // 材料の取得の匿名キー（.env.local からこの2つだけ。--env-file は使わない）
-  Object.assign(process.env, { ...readAnonEnv(opt("--anon-env") ?? join(ROOT, ".env.local")), ...Object.fromEntries(ANON_ENV.filter((k) => process.env[k]).map((k) => [k, process.env[k]])) });
+  // 材料の取得の匿名キーと /api の合言葉（.env.local から READ_ENV だけ。--env-file は使わない。環境に既にあればそちらが勝つ）
+  Object.assign(process.env, { ...readAnonEnv(opt("--anon-env") ?? join(ROOT, ".env.local")), ...Object.fromEntries(READ_ENV.filter((k) => process.env[k]).map((k) => [k, process.env[k]])) });
 
   // 型の表（hq の pdca_daily.py は、ここに載る型だけを割り当てる。対の a＝今の型は --type-spec を渡さない。system-architect P1-2）
   if (flag("--list-types")) return finish({ status: "ok", stage: "list-types", reasons: [], types: listTypes() }, 0);
@@ -235,7 +239,7 @@ async function main(argv) {
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isInteger(count) || count < 1 || !planOnly)
       return usage("使い方: daily.mjs --select --date YYYY-MM-DD [--count N] --plan-only");
     try {
-      const res = await fetch(`${BASE}/api/predictions/${date}`, { signal: AbortSignal.timeout(30000) });
+      const res = await fetch(`${BASE}/api/predictions/${date}`, { headers: internalApiHeaders("full-picture-select"), signal: AbortSignal.timeout(30000) });
       if (!res.ok) throw new Error(`/api/predictions/${date}: HTTP ${res.status}`);
       const plan = selectRaces((await res.json()).races, date, count);
       return finish({ status: plan.length ? "ok" : "stopped", stage: "select", reasons: plan.length ? [] : ["規則に合うレースが無い"], plan, rule: SELECT_RULE }, plan.length ? 0 : 1);
