@@ -155,3 +155,10 @@
 - E2Eの **/rest/v1/race_odds* は race_odds_final にも一致する。発売中と締切時オッズで応答が違う試験は、routeの対象を区別する（2026-10-27、BOA-990①、PR #2027）。
 - E2E Smoke の経過が25分を超える回の主因は組の実行でなく待ち（ジョブの作成から開始まで、90% 17.9分・最大 67.6分）。Codex の PR がまとめて開く時刻に、同時に走れるジョブの上限で並ぶ。組の実行が中央 16.8分を占め、checkout〜npm ci は約0.3分なので、キャッシュより組の実行を縮める方が分も待ちも効く（2026-11-03、10/27〜11/03 の298 run の実測、docs/design/ci-minutes-reduction/design.md 11.1）。
 - e2e の範囲（0件）を import の閉包で守るときは、JS の相対 import だけでは足りない。CSS の @import と url()、vite が root から解く `/` 始まりの指定、Node 側で cwd や ROOT から組み立てるパス、ワークフローが node で呼ぶ scripts も根・辿る先に入れる（2026-11-03、system-architect の審査、#2171 の verify-e2e-scope.js）。
+- 取得予算・通知閾値を見積もるときは、平常日のレース数を固定前提にせず、開催数に応じた必要量と最大開催日も確認する。固定の絶対上限と、レース数に応じた必要量を分けて設計する（2026-10-26、system-architect、docs/design/scraping-load-budget/spec.md §2.1・§4.2）。
+- 後から取り直せない日別データで、表の注記が前日や当日の最終レースより前なら、取得成功でも対象日の完了にしない。incomplete:trueで補足起動の再取得を残し、skippedによる成功で閉じない（2026-11-02、system-architect、BOA-1210、scripts/lib/scrapeJobs/cronWrapper.js・docs/design/pointrank-history/plan.md）。
+- 同じ仕事の再依頼では、書き直す前にtask-runs.jsonlのresult・ticket_errors・reviewを確認する。審査の異常終了など本文外の失敗なら、本文を無条件に作り直さず、根拠と版を再確認して再提出する（2026-11-03、seo-human、BOA-1257、審査exit 1・max_turnsによる再依頼）。
+- CSS衝突検査は :where()・:is() 等の括弧内を除くため、`:where(...) .back-link` も先頭クラスを back-link と判定する。CSSを移したら、残る無スコープ規則との衝突と許可リストの files を再照合する（2026-11-03、BOA-1010、scripts/maintenance/verify-css-class-collisions.js の比較関数による補助検証）。
+- `git grep` の pathspec `'src/**/*.css'` は src 直下の App.css を含まない。CSS全体の禁止色を確認するときは src 全体も走査し、直下のファイルを検査から落とさない（2026-11-03、BOA-1014、修正前の App.css が未検出・ContentHub.css のみ検出した実測）。
+- サイトマップの読取検査は実関数をvmに隔離し、Supabase未設定・正常な空応答・error応答を別々に試す。error応答は空結果にせず、読み取り名付きの例外でrejectされることを確認する（2026-11-03、BOA-1232、scripts/maintenance/verify-sitemap-coverage.js）。
+- run-heavy.shはローカルで先頭コマンドがnpxなら、Playwright以外にも未指定の `--workers=1` を追加する。`npx vite build` を直接渡すとViteが拒否するため、Vite部分だけの確認は `bash -c 'npx vite build'` を渡す（2026-11-03、BOA-1238のtask-308代替ビルド実測・BOA-1268、scripts/maintenance/run-heavy.sh）。

@@ -94,3 +94,10 @@
 - placedRanks を使う1着集計で rank1 が返還艇なら、1着が無いレースとして母数からも除く。説明は「1着の艇が返還艇のレースは母数からも1着からも除く」とし、分子だけの除外に読ませない（2026-10-25、BOA-1108、raceOutcomeFilters.js・count-venue-course-wins.mjs）。
 - venue_course_technique_baseline は会場コード1〜24だけで全国行が無い。全国値は各会場の率×runs/100を回数へ戻して合計する。DBの ROUND(numeric,2) を浮動小数の Math.round で再現せず、整数で丸める（2026-10-26、PR #1927、verify-full-picture-scene2.js）。
 - 条件別成績は画面で別定義。基本情報の buildConditionRows は当地・波5cm以上・F有無、選手ページの aggregateRacerConditionStats は風5m以上・波5cm以上で5走未満を出さず、着欄の記号も母数に入る。風の条件を基本情報へ転用しない（2026-10-26、PR #1910、basicInfoStats.js・racerConditionStats.js）。
+- /today型bの級別全国1着率の基準は、各走の級で分けた全走の1着数÷走数。現在の級で過去走をまとめ直さず、選手×コース30走以上に限る縮約重み推定の母集団とも区別する。保存値の窓は2025-12-02〜2026-10-25（2026-10-27、本番の読み取り、data/analysis/today-course-win-prior.json の grade_baselines_all_runs）。
+- 公式の得点率一覧（race/pointrank）は過去のhdを指定してもその日の写しではなく節の最新表を返す。予選中の日別値は後から復元できないため、その日に保存した写しを使う（2026-11-02、official-data-spec、BOA-1210、docs/design/pointrank-history/plan.md §3、尼崎SGのhd=20261027・20261029の照合）。
+- 「SG/G1のpointrankは4日目以降しか出ない」を前提にしない。若松G1では1・2日目の晩に52名の表があり、徳山G1の旧調査は開催前の日付を1〜3日目と誤認していた（2026-11-02、official-data-spec、BOA-1210、GHA run 35760851117・35896849242、docs/design/pointrank-history/plan.md §3）。
+- pointrankの値の時点は「N日目MR終了時点」の注記で確認する。「当日の結果がリアルタイムで反映されます」という注記だけから反映遅延を秒・分で断定しない。確定から表に出るまでの時間は未照合（2026-11-02、official-data-spec、BOA-1210、docs/design/pointrank-history/plan.md §3）。
+- 当社集計の準優出は「準優勝戦に名前が載った回数」で、欠場も含め、選手×レースIDで1回とする。公式の準優出統計ではなく、当社で採用した定義として表示する（2026-11-02、BOA-1155のOrchestrate決定、src/pure/semifinalCount.js。今回のverifyは公式データとの再照合ではない）。
+- モーター履歴の部品・プロペラ交換の目安は、交換日を除く前後各3日分の展示タイム平均差が0.02秒以上かで付ける。着順の比較や交換の因果効果ではなく、記事では効き目が未分析であることと分けて説明する（2026-11-02、seo-human、src/services/supabaseDataService.jsのINTERPRETATION_WINDOW_DAYS・NEUTRAL_EXHIBITION_DIFF_SEC、stat-findings.md）。
+- 選手級別決定基準の欠場30点・20点の規定は、展示での違反（競技規程第7条第1項など）を除くと明記する。これだけから展示F・Lの「罰則は無い」とは結論しない。待機行動実施細則の違反は2点だが、細則の内容は未確認（2026-11-02、BOA-1203、選手級別決定基準第4条(4)、w596RG00000212）。

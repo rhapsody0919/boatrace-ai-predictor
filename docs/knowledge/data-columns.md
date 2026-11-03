@@ -69,3 +69,11 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - K/B取込の stage_kind のfinal判定は isFinalStage v2 を共用する。コード更新だけでは保存済み stage_kind は変わらず、既存行の再分類には退避・差分審査・承認を別に行う（2026-10-28、BOA-1181、kbArchiveRows.js・verify-kb-archive-stage.js）。
 - race_odds・race_odds_final の wide_all は各組が {low, high} の形で最大15通り。早い窓の-60・-30・-15分には14通りのレースもあり、列があることを全組充足とみなさない（2026-10-31、本番の直近3日照合、BOA-990③・PR #2061）。
 - race_results.course_1〜6 は実際の進入コースとして使わない。進入コースには actual_course_N を使う。照合49,036件中2,762件で値が違った（2026-10-31、data-accuracy-verifier、BOA-1189、docs/reference/venue-course-win-rate.md）。
+- 節終了後3日の許容期間で複数節を取得すると、同じレースが複数の取得窓へ入ることがある。結合した行は主キーで重複を除いてから順位・走数を出す（2026-11-02、BOA-1221、scripts/sns/setsu-exhibition.js・scripts/maintenance/verify-setsu-exhibition.jsの窓重複の固定例）。
+- /venue/Nの1コース1着率はsrc/data/venueSummaryStats.jsから表示し、元データはdata/analysis/venue-summary-stats/venue-techniques.jsonの12m。会場ページへ案内する記事はこのfrom・toと定義を確認し、別集計の数字を同じ値として紹介しない（2026-11-03、seo-human、BOA-1275、docs/reference/venue-summary-stats.md）。
+- 1号艇と1コースの1着率を件数付きで並べる場合は、venue-course-win-rate.jsonの同じ窓のby_waku・by_courseを使う。venue-techniques.jsonのcluster_check.waku1_win_rateは率だけで件数が無く、そこから「Nレース中X回」は作れない。集計を替えたら期間も明記する（2026-11-03、seo-human、BOA-1275、両JSONの照合）。
+- 2026-10-03〜11-02の調査では、締切10時以降のオッズは60分前の初回取得で4,462/4,464Rがそろった（中止除外）。60分前の未発売は朝の三国・鳴門・徳山・芦屋・唐津の1〜3Rで確認され、全レース一律の取得不具合とは扱わない（2026-11-02、official-data-spec、BOA-1180、scrape_slotsのodds -60）。
+- 朝の会場の1〜3Rで発売を確認できた時刻は調査中07:37〜08:38 JSTと日・レースで異なった。これは当社の観測時刻で、公式の発売開始時刻や「締切N分前」という固定の仕様として使わない（2026-11-02、official-data-spec、BOA-1180、2026-10-03〜11-02のscrape_slots調査）。
+- オッズの取得窓の開始とDBに値が入る時刻は同じではない。2026-10-29〜11-02の744Rではrace_oddsは窓開始の約0.6分後、race_odds_finalは締切の5.7〜9.8分後だった。読み直し時刻には取得遅延を含め、観測値を恒久的な保証にしない（2026-11-02、BOA-1180、race_odds・race_odds_finalの時刻照合）。
+- exhibition_dataの展示Fはstart_flag='F'と正のstart_timingで保持する（0.04はF.04）。展示Lはstart_flag='L'でstart_timingはnull。数値の符号やnullだけでF・Lを判定しない（2026-11-02、BOA-1203、本番DBの列照合、scripts/lib/beforeinfoParser.js）。
+- race_resultsはrank1があってもcourse_1〜6が空の行がある。course列から艇を探す集計ではその走を落とすため、着順確定をcourse列の充足と同一視しない（2026-11-02、BOA-1190・PR #2119、本番読み取りで2,276/51,757件、aggregate-racer-stats.jsのcourse_race_counts）。

@@ -54,3 +54,9 @@
 - 節が終わったかは race_series.end_date がJSTの今日より前かで判定する。出走日の連続性や最終レースの時刻だけで推定すると、中止・順延でずれる（2026-10-29、BOA-1182、PR #2054）。
 - トップの会場カードの日目は get_today_races が返す seriesDay・isFinalDay を getVenueSeriesDayLabel へ渡して出す。日目表示のための追加取得は不要（2026-10-31、BOA-1199、157_rpc_in_caution.sql・PR #2074）。
 - ボット保存の完了判定は、同じ非表示DOMになる取得中・正常なデータなし・失敗を状態で区別する。表示対象なしにも完了目印を残し、networkidleやプロフィール完了だけで独立取得のモーター・履歴まで完了としない（2026-10-31、BOA-1183、RacerProfile.jsx・RacerPerformanceStats.jsx）。
+- 決まり手の色番号の順（差し→まくり）と公式表示順（まくり→差し）は別。RacerTechniqueProfileChart の表示順は色定数を並べ替えず、表示専用の sortTechniquesOfficial で指定する（2026-10-26、BOA-1028、src/utils/techniqueColors.js・verify-race-detail-color-tokens.js）。
+- ブログ本文の先頭h1を描画から除く場合は、FAQ抽出・進捗用の元contentを保持し、描画入力だけを加工する。目次のh2/h3の順序と先頭h1以外の描画一致も確認する（2026-11-02、BOA-919、src/utils/blogLeadingH1.js・scripts/maintenance/verify-blog-leading-h1.js）。
+- 思考アシストのオッズは開いたときだけでなく、次の取得窓の値がDBへ入る時刻にも読み直す。開いたまま締切を迎える場合を確認し、初回取得の成功だけで鮮度を保証しない（2026-11-02、BOA-1180・PR #2128、src/utils/assistModel.jsのnextOddsRefreshDelay）。
+- Recharts 3.6.0のLegendは既定でvalueの文字順に並べるため、Barの配列順を凡例にも使うときは `itemSorter={null}` を指定する（2026-11-03、BOA-1070、Legend.js・legendSelectors.jsの指定版確認、src/components/analysis/WinningTechniqueChart.jsx・LosingTechniqueChart.jsx）。
+- 会場の日目は seriesDay=1 と isFinalDay=true が重なる場合も「初日」を優先する。「最終日の印が1件でもあれば最終日」という説明だけで再実装せず、getSeriesDayLabelを共用する。ボット向けトップも人のカードと同じ次レースの有無に合わせる（2026-11-03、BOA-1220質問1の回答、src/utils/raceDetailHeading.js・scripts/maintenance/verify-bot-page-model.js）。
+- GS04の成績の一言は1〜29走では件数だけを出すが、既存の選手ページの枠番別表はtop2Rateの有無で率を表示し、30走の分岐はない。率の丸めをそろえることと、小標本の表示条件を共通化することを区別する（2026-11-03、BOA-1271、src/components/racer/RacerPerformanceStats.jsx・src/pure/favoriteRuns.js）。
