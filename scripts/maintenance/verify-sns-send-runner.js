@@ -2234,3 +2234,78 @@ test("BOA-1283 PostgREST の読み取り: 見直す候補は要照合・YouTube�
     "sns_x_send_jobs?state=eq.reconcile&channel=eq.youtube&youtube_stage=eq.private_retained&error_code=in.(youtube_retained_processing,youtube_retained_budget)&expires_at=gt.2026-10-27T03:00:00.000Z&or=(lease_until.is.null,lease_until.lte.2026-10-27T03:00:00.000Z)&order=expires_at.asc,id.asc&limit=2&select=id,channel,state,youtube_stage,error_code,external_post_id,attempts,expires_at,snapshot",
   );
 });
+test("BOA-1283 見直し（審査 P2-1）: カバーのある job は thumbnails.set を台帳に記録した後だけ ready に戻す", async () => {
+  const y = await processingRetainedJob();
+  await db.query(
+    `UPDATE sns_x_send_jobs SET snapshot=jsonb_set(snapshot,'{media}',snapshot->'media' || '[{"type":"image/png","path":"c.png"}]'::jsonb) WHERE id=$1`,
+    [y.id],
+  );
+  await store.transition(y.id, "youtube_lookup");
+  const resume = () =>
+    store.transition(y.id, "youtube_resume", {
+      owned: true,
+      privacyStatus: "private",
+      id: "abcdefghijk",
+      processingStatus: "succeeded",
+    });
+  await assert.rejects(resume(), /youtube_resume_not_allowed/);
+  await db.query(
+    "UPDATE sns_youtube_quota_attempts SET calls=array_append(calls,'thumbnails.set') WHERE job_id=$1",
+    [y.id],
+  );
+  assert.equal((await resume()).youtube_stage, "ready");
+});
+
+test("BOA-1283 見直し（審査 P2-3）: 読み取りに失敗した job は10分は読み直さず、Slack も1回だけ", async () => {
+  const y = await processingRetainedJob();
+  const youtube = createMockYoutubeAdapter({ failAt: "processing" });
+  const notices = [];
+  const run = (state) =>
+    runSnsSend(
+      { ...ctx(), state },
+      deps({
+        adapters: { youtube: async () => youtube },
+        notify: async (t) => notices.push(t),
+      }),
+    );
+  const firstRun = await run(undefined);
+  assert.equal(firstRun.body.jobs[0].outcome, "error");
+  assert.deepEqual(
+    firstRun.report.resume_retry.map((r) => r.id),
+    [y.id],
+  );
+  // 読み取りの失敗では残した理由を変えない（期限の後は閉じる道に任せる）
+  assert.equal((await job(y.id)).error_code, "youtube_retained_processing");
+  const again = await run({ last_report: firstRun.report });
+  assert.deepEqual(again.body.jobs, []);
+  assert.equal(
+    youtube.calls.filter((c) => c.method === "videos.list:processing").length,
+    1,
+  );
+  assert.equal(
+    notices.filter((t) => t.includes("公開に進められなかった")).length,
+    1,
+  );
+});
+
+test("BOA-1283 見直し（審査 P2-2）: 実行の始まりから120秒を過ぎた実行では始めない", async () => {
+  const y = await processingRetainedJob();
+  const youtube = createMockYoutubeAdapter({ processingStatus: "succeeded" });
+  const start = Date.now();
+  let calls = 0;
+  const late = {
+    ...ctx(),
+    // 1回目（実行の始まり）だけ今、以降は121秒後
+    now: () => new Date(calls++ === 0 ? start : start + 121000),
+  };
+  const result = await runSnsSend(
+    late,
+    deps({ adapters: { youtube: async () => youtube } }),
+  );
+  assert.equal(
+    result.body.jobs.some((r) => r.id === y.id),
+    false,
+  );
+  assert.equal(youtube.calls.length, 0);
+  assert.equal((await job(y.id)).youtube_stage, "private_retained");
+});

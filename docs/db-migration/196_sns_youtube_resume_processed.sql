@@ -7,6 +7,7 @@
 --   新しい操作 youtube_resume を足すだけ。ほかの分岐は 186 のまま。
 --   youtube_resume: 要照合・private_retained・残した理由が処理待ち（youtube_retained_processing）か検査の枠（youtube_retained_budget）・
 --   外部 ID がある・now() < expires_at・リースが切れている・試行のクォータの日が今の太平洋時間の日・videos.update をまだ呼んでいない・
+--   カバーのある job は thumbnails.set を台帳に記録済み（thumbnails.set の前の検査で budget になった job をカバー無しで公開しない）・
 --   同じ試行の youtube_lookup（videos.list の読み取り、クォータは sns_youtube_quota_reads に1）が10分以内にあり、
 --   結果が自分の動画で非公開・ID 一致・processingStatus=succeeded のときだけ、youtube_stage を ready にし error_code を空にする。
 --   公開は今までどおり youtube_publish_begin（承認・期限・日の上限・クォータの検査）→ videos.update → videos.list → complete
@@ -121,7 +122,9 @@ BEGIN
      RAISE EXCEPTION 'youtube_resume_not_allowed';
    END IF;
    SELECT * INTO a FROM public.sns_youtube_quota_attempts WHERE job_id=j.id AND attempt=j.attempts;
-   IF a.job_id IS NULL OR a.quota_day IS DISTINCT FROM v_day OR 'videos.update'=ANY(a.calls) THEN RAISE EXCEPTION 'youtube_resume_not_allowed'; END IF;
+   -- カバーのある job は thumbnails.set を呼んだ（台帳に記録した）後だけ。thumbnails.set の前の検査で budget になった job をカバー無しで公開しない
+   IF a.job_id IS NULL OR a.quota_day IS DISTINCT FROM v_day OR 'videos.update'=ANY(a.calls)
+     OR (jsonb_array_length(j.snapshot->'media')=2 AND NOT 'thumbnails.set'=ANY(a.calls)) THEN RAISE EXCEPTION 'youtube_resume_not_allowed'; END IF;
    IF NOT EXISTS (SELECT 1 FROM public.sns_youtube_quota_reads WHERE job_id=j.id AND attempt=j.attempts AND created_at>=now()-interval '10 minutes') THEN
      RAISE EXCEPTION 'youtube_resume_lookup_missing';
    END IF;

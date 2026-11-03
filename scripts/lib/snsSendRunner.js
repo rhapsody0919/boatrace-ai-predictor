@@ -61,6 +61,13 @@ export const YOUTUBE_MAX_POLLS = 3;
 /** 非公開で残した YouTube を期限の前に見直すのは1回の実行でこの件数まで（BOA-1283）。公開に要る検査の回数は YOUTUBE_RESUME_CHECKS */
 export const YOUTUBE_RESUME_MAX = 1;
 export const YOUTUBE_RESUME_CHECKS = 2;
+/**
+ * 見直しを始めるのは、実行の始まりからこの秒数まで（目安、根拠なし）。公開の途中（ready・publishing）で関数の上限（300秒）に当たると、
+ * 閉じる道（private_retained だけを拾う）にも見直しにも乗らず要照合に残るため、時間の残りが少ない実行では始めない（BOA-1283 の審査 P2-2）
+ */
+export const YOUTUBE_RESUME_START_LIMIT_SEC = 120;
+/** 見直しに失敗した job（読み取りの失敗・本人の動画と確かめられない）は、この分数は読み直さない（Slack とクォータを2分ごとに使わない） */
+export const RESUME_RETRY_MINUTES = 10;
 export const YOUTUBE_POLL_WAIT_SEC = 30;
 
 // PT の日付境界の前10分・後5分は、新しい YouTube 試行を始めない。
@@ -457,13 +464,21 @@ export async function runSnsSend(
   // 処理待ち・検査の枠で非公開のまま残した YouTube を、期限の前に見直す（BOA-1283）。読み取り1回（クォータ1）で処理が済んでいれば公開する。
   // 公開には検査が2回（youtube_publish_begin の前・videos.update の前）要るので、この実行の枠に残りが無ければ次の実行に回す。
   // この実行で上げて残したばかりの job は見ない（処理の確認をしたばかり）
+  const resumeRetry = (ctx.state?.last_report?.resume_retry ?? []).filter(
+    (r) => r?.id && Date.parse(r.until) > now.getTime(),
+  );
   if (
     live &&
     store.resumableYoutubeJobs &&
+    ctx.now().getTime() - now.getTime() <=
+      YOUTUBE_RESUME_START_LIMIT_SEC * 1000 &&
     controls.youtube?.dry_run === false &&
     !youtubeQuotaDayWait(ctx.now())
   ) {
-    const touched = new Set(results.map((r) => r.id));
+    const touched = new Set([
+      ...results.map((r) => r.id),
+      ...resumeRetry.map((r) => r.id),
+    ]);
     const resumable = (
       await store.resumableYoutubeJobs(now, YOUTUBE_RESUME_MAX + touched.size)
     )
@@ -496,6 +511,12 @@ export async function runSnsSend(
         const failure = sendFailureOf(error);
         result.reason = failure.reason;
         await recordEvent(job, failure.stage, failure.reason, failure.detail);
+        resumeRetry.push({
+          id: job.id,
+          until: new Date(
+            now.getTime() + RESUME_RETRY_MINUTES * 60000,
+          ).toISOString(),
+        });
         await tell(
           `resume:${job.id}`,
           `SNS の送信: 非公開で残した YouTube job ${job.id} を公開に進められなかった: ${error.message}`,
@@ -516,7 +537,12 @@ export async function runSnsSend(
   }
   return {
     rowsWritten: posted,
-    report: { jobs: results, alerts, close_retry: closeRetry },
+    report: {
+      jobs: results,
+      alerts,
+      close_retry: closeRetry,
+      resume_retry: resumeRetry,
+    },
     body: { jobs: results },
     cursor,
   };
