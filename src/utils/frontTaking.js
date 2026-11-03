@@ -44,7 +44,7 @@ export function computeFrontTaking(rows, { today, beforeRaceId } = {}) {
   const counted = (rows ?? []).filter((r) => {
     const date = String(r.raceId ?? "").slice(0, 10);
     return (
-      date >= windowStart &&
+      date >= from &&
       date <= today &&
       (!beforeRaceId || r.raceId < beforeRaceId) &&
       r.boatNumber >= 4 &&

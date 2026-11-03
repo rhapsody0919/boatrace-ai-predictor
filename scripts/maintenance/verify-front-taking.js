@@ -140,6 +140,15 @@ const TODAY = "2026-11-03";
     computeFrontTaking([], { today: "2027-06-30" }).from === "2026-07-01" &&
       computeFrontTaking([], { today: "2027-06-30" }).fullYear === true,
   );
+  const edge = computeFrontTaking(
+    [...runs("2025-12-02", 4, 1, 5), ...runs("2026-10-01", 4, 1, 30)],
+    { today: TODAY },
+  );
+  check(
+    "(f) 表示の from より前の走（2025-12-02 の12レース）は数えない（data-accuracy-verifier P3）",
+    edge.n === 30,
+    show(edge),
+  );
   let threw = false;
   try {
     computeFrontTaking([], { today: "2026/11/03" });
