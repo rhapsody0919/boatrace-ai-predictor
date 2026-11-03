@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "motor-performance-deep-dive",
+ "kind": "revision",
+ "ticket": "BOA-1256",
+ "paths": [
+  "public/blog/motor-performance-deep-dive.md",
+  "src/data/blog-posts/motor-performance-deep-dive.json"
+ ],
+ "files": {
+  "public/blog/motor-performance-deep-dive.md": "f1b61ecbba2b49f45a3ada8c287d8a3857ac6c3db947fdfc1d39ec1a27f3ff83",
+  "src/data/blog-posts/motor-performance-deep-dive.json": "8c0e405d0e8e3ec863691f9644a6650f6160d48b7f4ec6a959612ccc50ca00eb"
+ },
+ "content_sha256": "4cfd5c409af63c0e91ac8e00b7be03ad45f0de8a6116b65ce0ebbff9eba5b35c",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "4cfd5c409af63c0e91ac8e00b7be03ad45f0de8a6116b65ce0ebbff9eba5b35c",
+   "model": "opus",
+   "at": "2026-11-03T15:41:05+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "4cfd5c409af63c0e91ac8e00b7be03ad45f0de8a6116b65ce0ebbff9eba5b35c",
+   "model": "opus",
+   "at": "2026-11-03T15:41:05+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "4cfd5c409af63c0e91ac8e00b7be03ad45f0de8a6116b65ce0ebbff9eba5b35c",
+   "model": "opus",
+   "at": "2026-11-03T15:41:05+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "4cfd5c409af63c0e91ac8e00b7be03ad45f0de8a6116b65ce0ebbff9eba5b35c",
+   "model": "opus",
+   "at": "2026-11-03T15:41:05+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-03T15:42:51+09:00",
+ "run": "20261103T153425-seo-human",
+ "engine": "claude"
+}
