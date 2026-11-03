@@ -872,6 +872,28 @@ console.log("[10] 段階3のログ（鍵の trim・群・抜き取り）");
       "bad_key",
       "hq",
     ],
+    // /code-review: bot-html-parity はボットの UA と名前を一緒に送る。鍵が古いと bad_key が ai_crawler に紛れていた
+    [
+      {
+        headers: {
+          "user-agent": "Mozilla/5.0 (compatible; GPTBot/1.2)",
+          "x-ryujin-internal-key": "stale-key",
+          "x-ryujin-caller": "bot-html-parity",
+        },
+      },
+      "bad_key",
+      "ryujin",
+    ],
+    [
+      {
+        headers: {
+          "user-agent": BINGBOT_UA,
+          "x-ryujin-caller": "bot-html-parity",
+        },
+      },
+      "would_deny",
+      "ryujin",
+    ],
     [{ headers: { "user-agent": "curl/8.4.0" } }, "would_deny", "other"],
     [{ headers: {} }, "would_deny", "other"],
     [{ headers: { "user-agent": CHROME_UA } }, "would_deny", "browser"],
@@ -1066,6 +1088,29 @@ console.log("[12] ログの数え方（count-api-gate-log.js）");
       r.groups.find((g) => g.id === "c2c3").internal === 1 &&
       r.conditions.missingGroups.join(",") === "b2,c1,c3b",
     JSON.stringify(r.groups),
+  );
+  check(
+    "内訳の path は先頭2段（/api/analogy/facts/x → /api/analogy）",
+    r.denyDetail.length > 0 &&
+      r.denyDetail.every((row) => row.path.split("/").length === 3) &&
+      r.denyDetail.some((row) => row.path === "/api/analogy"),
+    JSON.stringify(r.denyDetail.map((row) => row.path)),
+  );
+  const parity = countApiGateLines([
+    JSON.stringify(
+      await recordOf("/api/races/today", {
+        headers: {
+          "user-agent": "Mozilla/5.0 (compatible; GPTBot/1.2)",
+          "x-ryujin-internal-key": "stale-key",
+          "x-ryujin-caller": "bot-html-parity",
+        },
+      }),
+    ),
+  ]);
+  check(
+    "ボットの UA で鍵が古い bot-html-parity は自分の群の拒む候補（条件は NG）",
+    parity.conditions.ownDeniedZero === false,
+    JSON.stringify(parity.byReasonGroup),
   );
   check(
     "bot_verified=true を数え、拒む候補が0なら OK",

@@ -381,8 +381,10 @@ export function gateRejectResponse(status) {
 /**
  * 数える群（plan §6 の2・段階3の進む条件）。would_deny を bingbot・AI のクローラー・hq・龍神のスクリプトに分けて数える。
  * - internal: caller が "hq-" で始まれば hq、それ以外は ryujin（bot-page・sns-claim-check・full-picture-* 等）
- * - それ以外: UA の丸め（Google・bingbot・ほかの検索ボット・AI のクローラー）が先、次に名乗った呼び出し元
- *   （hq- なら hq、ほかの名前は ryujin。偽れるので手がかり）、次にブラウザ、残りは other
+ * - それ以外: 名乗った呼び出し元（x-ryujin-caller。hq- なら hq、ほかの名前は ryujin）が先、次に UA の丸め
+ *   （Google・bingbot・ほかの検索ボット・AI のクローラー）、次にブラウザ、残りは other。
+ *   名乗りを先にするのは、bot-html-parity がボットの UA と名前を一緒に送るため（鍵が古いと bad_key が ai_crawler に
+ *   紛れて、自分の群の拒む候補が0に見える）。外部が名乗りを偽ると自分の群に数えられ、段階4へ進めない側に倒れる
  */
 export function gateGroup(decision) {
   const callerName =
@@ -390,6 +392,7 @@ export function gateGroup(decision) {
   if (decision.reason === "internal") {
     return callerName?.startsWith("hq-") ? "hq" : "ryujin";
   }
+  if (callerName) return callerName.startsWith("hq-") ? "hq" : "ryujin";
   const ua = decision.ua_class ?? "";
   if (
     ua === "search_bot:Googlebot" ||
@@ -399,7 +402,6 @@ export function gateGroup(decision) {
   if (ua === "search_bot:bingbot") return "bingbot";
   if (ua.startsWith("search_bot:")) return "search_other";
   if (ua.startsWith("ai_bot:")) return "ai_crawler";
-  if (callerName) return callerName.startsWith("hq-") ? "hq" : "ryujin";
   if (ua === "browser") return "browser";
   return "other";
 }

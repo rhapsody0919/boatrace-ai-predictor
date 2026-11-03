@@ -86,8 +86,9 @@ export function extractGateRecord(line) {
   return null;
 }
 
+// path の先頭2段（/api/predictions/2026-11-04 → /api/predictions。日付・レースの id で割れないように）
 const pathHead = (path) =>
-  typeof path === "string" ? path.split("/").slice(0, 4).join("/") : "(なし)";
+  typeof path === "string" ? path.split("/").slice(0, 3).join("/") : "(なし)";
 
 const bump = (map, key, by) => map.set(key, (map.get(key) ?? 0) + by);
 

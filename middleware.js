@@ -22,7 +22,7 @@
  *    「//」・「\」を含むパスだけは段階に依らず 400。enforce（段階4）は環境変数と Redeploy だけで入る。
  *    除外（/api/cron・/api/admin・/api/bot-page）はログも出さず、既存の守り（下の Basic 認証等）へ進む
  */
-import { rewrite } from "@vercel/functions";
+import { ipAddress, rewrite } from "@vercel/functions";
 import { resolveSnapshotPath } from "./src/config/aiCrawlerBots.js";
 import { requireAdminAuth } from "./api/_lib/adminAuth.js";
 import {
@@ -123,7 +123,7 @@ export async function handleApiGate(request, env = process.env) {
   const decision = await decideApiGate({
     url: request.url,
     headers: request.headers,
-    ip: request.headers.get("x-real-ip"),
+    ip: ipAddress(request) ?? null, // Vercel が付ける接続元 IP（x-real-ip）
     mode,
     keys: gateKeysFromEnv(env),
     ipRanges: ipRanges(),

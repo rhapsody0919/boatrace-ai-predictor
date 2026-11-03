@@ -194,7 +194,7 @@ flowchart LR
 
 - **ログの1行**（`middleware.js` が `console.log` で出す。中身は `api/_lib/apiGate.js` の `gateLogRecord`）:
   `{"api_gate":reason,"group":…,"tag":"apigate_<reason>_<group>","mode":"observe","method":"GET","status":null|400|403,"path":…,"sfs":…,"origin_host":…,"ua_class":…,"caller":…,"caller_claimed":…,"key_slot":…,"bot_verified":…,"sample":1|10}`
-  - `group` は数える群: `google`・`bingbot`・`search_other`・`ai_crawler`・`hq`・`ryujin`・`browser`・`other`。internal は caller が `hq-` で始まれば `hq`、ほかは `ryujin`。internal 以外は UA の丸めが先で、次に名乗った呼び出し元（`caller_claimed`。偽れるので手がかり）、次に `browser`（Mozilla の UA）、残りが `other`
+  - `group` は数える群: `google`・`bingbot`・`search_other`・`ai_crawler`・`hq`・`ryujin`・`browser`・`other`。internal は caller が `hq-` で始まれば `hq`、ほかは `ryujin`。internal 以外は名乗った呼び出し元（`caller_claimed`。偽れるので手がかり）が先、次に UA の丸め、次に `browser`（Mozilla の UA）、残りが `other`。名乗りを先にするのは、`bot-html-parity` がボットの UA と名前を一緒に送り、鍵が古いと `bad_key` が `ai_crawler` に紛れるため（偽の名乗りは自分の群に数えられ、段階4へ進めない側に倒れる）
   - `caller` は §2.2 のとおり `reason=internal` のときだけ。合言葉の無い要求が付けた `x-ryujin-caller` は `caller_claimed` に別に書く（配り漏れの hq・龍神のスクリプトを外部と見分けるため。§2.2 に無かった欄）
   - `tag` は Runtime Logs の全文検索で群ごとに数えるための1語
   - `reason=browser` は10件に1件だけ書き、`sample=10` を付ける（10 は目安、根拠なし）。検索ボットを名乗る要求（`bot_verified` が true/false）は browser でも抜き取らない。除外（cron・admin・bot-page）と `/api` でないものは書かない
