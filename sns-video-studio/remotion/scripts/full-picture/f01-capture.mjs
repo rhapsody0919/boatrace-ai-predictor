@@ -192,7 +192,8 @@ export async function captureAll(m, s, outDir) {
     const blocked = [];
     await ctx.route("**/*", (route) => {
       const u = new URL(route.request().url());
-      if (u.origin === origin && !u.pathname.startsWith("/api/")) return route.continue();
+      // /api は止める側の判定だけ（fetch しない。verify-internal-api-callers の「自分の /api を取るファイル」に当たらないよう正規表現で）
+      if (u.origin === origin && !/^\/api\//.test(u.pathname)) return route.continue();
       blocked.push(u.href);
       return route.abort();
     });
