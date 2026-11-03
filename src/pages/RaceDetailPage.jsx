@@ -38,6 +38,7 @@ import {
 } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
+import { useSocialMeta } from "../hooks/useSocialMeta";
 import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
 import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
@@ -153,6 +154,22 @@ function RaceDetailPage({ showViewSwitch = false }) {
     }));
   }, [allRaces]);
 
+  const lang = i18n.resolvedLanguage;
+  const raceKey = parsed
+    ? { raceId, venueCode: parsed.venueCode, raceNo: parsed.raceNo, date }
+    : null;
+  const pageMeta = raceKey
+    ? getRaceDetailMeta(t, raceKey, lang, {
+        cancelled: isRaceCancelled(racePrediction),
+        finished: !!racePrediction?.result,
+      })
+    : {};
+  useSocialMeta({
+    title: pageMeta.title,
+    description: pageMeta.description,
+    url: pageMeta.canonical,
+  });
+
   if (!parsed) {
     return (
       <>
@@ -173,13 +190,6 @@ function RaceDetailPage({ showViewSwitch = false }) {
   }
 
   const venueName = t(`venues.${parsed.venueCode}`);
-  const lang = i18n.resolvedLanguage;
-  const raceKey = {
-    raceId,
-    venueCode: parsed.venueCode,
-    raceNo: parsed.raceNo,
-    date,
-  };
   const raceListLink = getRaceListLink(raceKey, isToday, lang);
 
   const prediction = racePrediction
@@ -228,10 +238,6 @@ function RaceDetailPage({ showViewSwitch = false }) {
     isToday,
     lang,
   );
-  const pageMeta = getRaceDetailMeta(t, raceKey, lang, {
-    cancelled: isRaceCancelled(racePrediction),
-    finished: !!racePrediction?.result,
-  });
 
   return (
     <>
