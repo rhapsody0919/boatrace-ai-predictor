@@ -119,11 +119,20 @@ jobs:
           path: node_modules/.cache/boatai-e2e-recording
           key: e2e-recording-${{ hashFiles('e2e/recording.json') }}
 
+      # build した束を vite preview で配る（ADR-0077 決定8。dev より組の分が約 −58%、#1997）。
+      # Supabase の宛先は録画のオリジン（e2e/recording.json）で束に焼き込む（scripts/maintenance/e2e-build.js）。
+      # 束のモード・宛先・コミットは playwright.config.js が起動の前に照合する
+      - name: Build (e2e の束、録画の再生用)
+        env:
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build:e2e
+
       # 録画に無い通信は本番へ素通しするので、本番の読み取り用キー（anon）を渡す。
       # レポートは blob で出し、集約ジョブ（e2e）が merge-reports で1つの JSON にまとめる
       - name: Run E2E smoke tests (録画の再生)
         env:
           CI: true
+          E2E_SERVE: preview
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-${{ matrix.shard }}.zip
@@ -177,11 +186,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build (vite build)
+      # 記事の JSON が束に入るかの確かめ（vite build）を兼ねる。e2e-shard と同じく録画のオリジンで build し、
+      # vite preview で配る（ADR-0077 決定8。以前は secret の宛先で build して dev で流し、宛先が録画とずれていた）
+      - name: Build (e2e の束、録画の再生用)
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: npx vite build
+        run: npm run build:e2e
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -195,6 +205,7 @@ jobs:
       - name: Run E2E (@blog の試験だけ、録画の再生)
         env:
           CI: true
+          E2E_SERVE: preview
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-light.zip

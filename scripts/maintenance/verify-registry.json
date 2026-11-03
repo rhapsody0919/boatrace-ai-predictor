@@ -389,6 +389,11 @@
       "guards": "記事に関わるE2Eの @blog の印の付け漏れの検査（check-e2e-blog-tags.js）。付け漏れると記事だけの PR の軽い組でその試験が走らない（BOA-929）"
     },
     {
+      "script": "verify-e2e-build.js",
+      "tier": "ci",
+      "guards": "e2e の束（e2e-build.js、ADR-0077 決定8）。再生の束は録画のオリジンで build する（違うと全件が本番へ素通し、#1319）、GA の ID を空に固定、3つのワークフローで E2E_SERVE: preview の段の前に同じモードの npm run build:e2e がある（PR ゲート・撮り・strict 再生・Live を同時に preview にし、dev に戻った段・モードの取り違えを CI の前に落とす）"
+    },
+    {
       "script": "verify-e2e-har-merge.js",
       "tier": "ci",
       "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化・Vercel Cron の dispatch（inputs.gate=true）を schedule と同じ扱いにすること（BOA-929）、素通し一覧の集計（ADR-0077）"
