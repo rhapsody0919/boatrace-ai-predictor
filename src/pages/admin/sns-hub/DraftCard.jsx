@@ -233,7 +233,7 @@ export default function DraftCard({
 }
 
 function PostingActionLinks({ draft, onMarkPosted }) {
-  const [shareState, setShareState] = useState({
+  const [videoShareState, setShareState] = useState({
     checked: false,
     canShare: false,
     file: null,
@@ -244,19 +244,29 @@ function PostingActionLinks({ draft, onMarkPosted }) {
     error: null,
   });
 
+  const shouldCheckShare = Boolean(isIOSSafari() && draft.video_url);
+  // 対象外になったら、再び動画が渡されたときに以前のファイルを使わない。
+  if (
+    !shouldCheckShare &&
+    (!videoShareState.checked || videoShareState.canShare || videoShareState.file)
+  ) {
+    setShareState({ checked: true, canShare: false, file: null });
+  }
+  const shareState = shouldCheckShare
+    ? videoShareState
+    : { checked: true, canShare: false, file: null };
+
   useEffect(() => {
     let cancelled = false;
-    if (isIOSSafari() && draft.video_url) {
+    if (shouldCheckShare) {
       canShareVideo(draft.video_url).then((result) => {
         if (!cancelled) setShareState({ checked: true, ...result });
       });
-    } else {
-      setShareState({ checked: true, canShare: false, file: null });
     }
     return () => {
       cancelled = true;
     };
-  }, [draft.video_url]);
+  }, [draft.video_url, shouldCheckShare]);
 
   async function handleCopyCaption() {
     const text = buildPostText(draft);
