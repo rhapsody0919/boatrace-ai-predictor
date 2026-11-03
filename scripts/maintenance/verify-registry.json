@@ -1552,6 +1552,11 @@
       "guards": "X の送信の月の予約を送る文の URL の有無で決める（マイグレーション 188）: 先頭の照合は 182 の transition_sns_send_139 の本文の md5（c2b4835c…）で、当て直すと止まる。182 との差は予約額の行だけ。sns_x_post_has_url はスキーム・www・よく使う TLD のドメイン（日本語が続いても）を URL、小数・日本語だけ・NULL を URL でないとする。claim は URL のある文を ceiling_x_url、無い文を ceiling_x_plain で予約し、まだ claim していない自分の子も子の文で数える。ceiling_x_url・ceiling_x_plain は 250000・30000 のときだけ 200000・15000 にし、ほかの値は触らない。SQL182・188 を PGlite、外部接続なし"
     },
     {
+      "script": "verify-sns-x-delete.js",
+      "tier": "ci",
+      "guards": "BOA-1279: X の投稿を消す口。adapter の DELETE /2/tweets/:id（404 は既に無いとして成功・本文を出さない）、消す本体（記録に無い・ID 違い・posted でない・196 未適用なら X を呼ばない、1件落ちたら残りを送らない）、管理 API（401・405・400）、CLI（既定 dry-run で DB に書かない・--apply は ID の明示と理由が要る・指定外の行を送らない・HQ_TEST で断る・候補は名簿に無い選手の名前）、マイグレーション 196 を PGlite に当てた mark_sns_x_post_deleted（時刻と理由・計測の pending を post_deleted で閉じる・何度呼んでも同じ・state のトリガーが発火しない・anon は不可）。外部接続なし"
+    },
+    {
       "script": "verify-sns-x-oauth.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 16（ADR 0093）: X の OAuth（PKCE）の連携の開始・コールバック（認証なしは401、state が Cookie と違う・拒否はトークンに替えない、コードの交換は Basic 認証と code_verifier、保存は暗号化した値とアカウント ID だけ）、トークンの AES-256-GCM（平文が残らない・鍵違い・改ざんを拒否）、access token の refresh（期限の5分前、同時に呼んでも refresh は1回、失敗時はロックを外して通知、保存に失敗したら連携のやり直しを通知、保存が成り立たず確かめる読み直しも失敗したときも通知）、PostgREST の条件付き UPDATE（外部接続なし）"
