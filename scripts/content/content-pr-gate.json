@@ -20,7 +20,7 @@
     "^docs/(?!content-manifests/|design/blog-charts/)",
     "^\\.claude/",
     "^sns-video-studio/",
-    "^scripts/maintenance/verify-[^/]+\\.js$",
+    "^scripts/maintenance/verify-(?!e2e-scope\\.js$)[^/]+\\.js$",
     "^scripts/maintenance/verify-registry\\.json$",
     "^scripts/sns/",
     "^scripts/analysis/"

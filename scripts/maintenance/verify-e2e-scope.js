@@ -334,6 +334,7 @@ for (const file of [
   "scripts/maintenance/verify/x.js",
   "scripts/lib/hitCalculator.js",
   "scripts/daily/scrape-odds.js",
+  "scripts/maintenance/verify-e2e-scope.js",
   "api/a.js",
 ]) {
   check(
@@ -343,12 +344,138 @@ for (const file of [
   );
 }
 
-// --- 0件にするパスは、e2e が読むファイルに入らない（段2b の守り） ---
-// e2e の run が読むのは、e2e/・src/（画面の束）・playwright と vite の設定・index.html と、そこから相対の
-// import（静的・動的・require・new URL）で辿れるファイル。src は scripts/lib を直に import する
-// （hitCalculator 等）ので、一覧に scripts/lib を入れると画面の不具合を通す道になる。辿れたファイルが
-// 1つでも0件の一覧に当たれば落とす。fs で読む相対のパス（"../scripts/..." 等の文字列）も見る
+// --- 0件にするパスは、e2e が読むファイルに入らない（段2b の守り、ADR-0100 追記） ---
+// e2e の run が読むのは、e2e/・src/（画面の束）・playwright と vite の設定・index.html・e2e のワークフローが
+// node で呼ぶ scripts と、そこから辿れるファイル。src は scripts/lib を直に import する（hitCalculator 等）ので、
+// 一覧に scripts/lib を入れると画面の不具合を通す道になる。名前でなく辿れる先で確かめる。
+// 辿り方: 相対・`/` 始まり（vite は root から解く）の import（静的・動的・require・new URL・括弧の中のコメント可）、
+// CSS の @import・url()、"../..." の相対のパスの文字列（`${` の前まで。ディレクトリはその下の全部）、
+// Node 側のファイル（src の外）では一覧の頭で始まるパスの文字列（cwd・ROOT から組み立てる読み）。
+
+/** 一覧の正規表現の頭の文字列（`^` の後ろ、最初の正規表現の記号の前まで）。docs は別に扱う（純関数） */
+export function skipPrefixes(cfg) {
+  return cfg.e2eSkipPathPatterns
+    .map((p) => {
+      let out = "";
+      for (let i = p.startsWith("^") ? 1 : 0; i < p.length; i += 1) {
+        if (p[i] === "\\" && i + 1 < p.length) {
+          out += p[i + 1];
+          i += 1;
+        } else if ("[](){}?*+|$.".includes(p[i])) break;
+        else out += p[i];
+      }
+      return out;
+    })
+    .filter((x) => x && !x.startsWith("docs/"));
+}
+
+/** 読む先 p（ファイルか、`/` で終わるディレクトリか、`${` で切れた頭）が一覧に当たるか（純関数） */
+export function readHitsSkip(p, prefixes, cfg) {
+  if (!p) return false;
+  if (p.startsWith("docs/"))
+    return (
+      classifyE2eScope([p.endsWith("/") ? `${p}x.json` : p], cfg).scope ===
+      "none"
+    );
+  // 頭が一覧の中（p が一覧の下）か、一覧が p の下（ディレクトリ・切れた頭の読みが一覧のファイルを含みうる）
+  return prefixes.some((x) => p.startsWith(x) || x.startsWith(p));
+}
+
+const SPEC = String.raw`(\.{1,2}\/[^"'\x60$]*|\/(?!\/)[^"'\x60$]*)`;
+const IMPORT_RE = new RegExp(
+  String.raw`(?:\bfrom\s*|\bimport\s*\(\s*(?:\/\*[\s\S]*?\*\/\s*)*|\bimport\s+|\brequire\s*\(\s*|new URL\s*\(\s*(?:\/\*[\s\S]*?\*\/\s*)*|\bsrc=|\bhref=)["'\x60]` +
+    SPEC +
+    String.raw`(?:\$\{|["'\x60])`,
+  "g",
+);
+const CSS_RE = /(?:@import\s+(?:url\(\s*)?|url\(\s*)["']?([^"')\s;]+)/g;
+const UP_RE = /["'`]((?:\.\.\/)+[^"'`\s]*?)(?:\$\{|["'`])/g;
+const LITERAL_RE = /["'`](?:\.\/)?([^"'`\s$]+?)(?:\$\{|["'`])/g;
+const stripComments = (text) =>
+  text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+/**
+ * 1つのファイルの中身から、辿る先（specs: 指定の文字列）と、一覧の頭で始まる文字列（literals）を集める（純関数）。
+ * nodeSide: src の外（Node で動くので cwd・ROOT から組み立てて読みうる）
+ */
+export function scanText(
+  text,
+  { css = false, nodeSide = false, prefixes = [] } = {},
+) {
+  const specs = [];
+  for (const m of text.matchAll(css ? CSS_RE : IMPORT_RE)) specs.push(m[1]);
+  if (!css) for (const m of text.matchAll(UP_RE)) specs.push(m[1]);
+  const literals = [];
+  if (nodeSide && !css)
+    for (const m of stripComments(text).matchAll(LITERAL_RE))
+      if (prefixes.some((x) => m[1].startsWith(x))) literals.push(m[1]);
+  return { specs, literals };
+}
+
+// 固定の入力（scanText・readHitsSkip が穴を拾うこと）
 {
+  const prefixes = skipPrefixes(config);
+  check(
+    "一覧の頭",
+    prefixes.includes("scripts/sns/") &&
+      prefixes.includes(".claude/") &&
+      prefixes.includes("scripts/maintenance/verify-"),
+    true,
+  );
+  const s = scanText(
+    [
+      'import a from "../scripts/sns/a.js";',
+      'const b = await import(/* @vite-ignore */ "/scripts/analysis/b.js");',
+      "const c = readFileSync(`../scripts/maintenance/${name}`);",
+      'const d = new URL("../scripts/sns", import.meta.url);',
+      'const e = path.join(ROOT, "scripts/sns/e.json");',
+      '// "scripts/sns/comment.json" はコメントなので数えない',
+    ].join("\n"),
+    { nodeSide: true, prefixes },
+  );
+  check(
+    "相対・`/` 始まり・コメントつきの動的 import を拾う",
+    s.specs.includes("../scripts/sns/a.js") &&
+      s.specs.includes("/scripts/analysis/b.js"),
+    true,
+  );
+  check("Node 側の ROOT からの文字列を拾い、コメントは数えない", s.literals, [
+    "scripts/sns/e.json",
+  ]);
+  const hit = (p) => readHitsSkip(p, prefixes, config);
+  check(
+    "`${` で切れた頭の読み（scripts/maintenance/）は verify を含みうるので当たり",
+    hit("scripts/maintenance/"),
+    true,
+  );
+  check(
+    "末尾の / が無いディレクトリの読み（scripts/sns）も当たり",
+    hit("scripts/sns"),
+    true,
+  );
+  check(
+    "scripts/lib の読みは当たらない",
+    hit("scripts/lib/__fixtures__/odds/"),
+    false,
+  );
+  check(
+    "e2e が読む docs の例の JSON は当たらない",
+    hit("docs/design/blog-charts/a.json"),
+    false,
+  );
+  check("docs の他は当たり", hit("docs/a.md"), true);
+  check(
+    "CSS の @import・url() を拾う",
+    scanText(
+      '@import "../../sns-video-studio/a.css"; .x{background:url(../img/a.png)}',
+      { css: true },
+    ).specs,
+    ["../../sns-video-studio/a.css", "../img/a.png"],
+  );
+}
+
+{
+  const prefixes = skipPrefixes(config);
   const exts = [
     "",
     ".js",
@@ -359,85 +486,108 @@ for (const file of [
     "/index.js",
     "/index.jsx",
   ];
-  const isFile = (p) => {
+  const statOf = (p) => {
     try {
-      return statSync(p).isFile();
+      return statSync(p);
     } catch {
-      return false;
+      return null;
     }
   };
-  const resolveFrom = (from, spec) => {
-    const base = path.resolve(path.dirname(from), spec.split("?")[0]);
-    for (const e of exts) if (isFile(base + e)) return base + e;
-    return null;
-  };
-  const listFiles = (dir) => {
-    const out = [];
-    for (const ent of readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, ent.name);
-      if (ent.isDirectory()) out.push(...listFiles(full));
-      else out.push(full);
-    }
-    return out;
-  };
+  const inRepo = (abs) =>
+    abs === repoRoot || abs.startsWith(repoRoot + path.sep);
+  const listFiles = (dir) =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((ent) =>
+      ent.isDirectory()
+        ? listFiles(path.join(dir, ent.name))
+        : [path.join(dir, ent.name)],
+    );
+  // e2e のワークフローが node で呼ぶ scripts（集約の検査・素通しの一覧・組の分け方）も根にする
+  const workflowScripts = [
+    "e2e-smoke-test.yml",
+    "e2e-rerecord.yml",
+    "e2e-live.yml",
+  ].flatMap((f) =>
+    [
+      ...readFileSync(
+        path.join(repoRoot, ".github/workflows", f),
+        "utf8",
+      ).matchAll(/\bnode (scripts\/[\w./-]+\.m?js)\b/g),
+    ].map((m) => path.join(repoRoot, m[1])),
+  );
   const roots = [
     ...listFiles(path.join(repoRoot, "e2e")),
     ...listFiles(path.join(repoRoot, "src")),
     ...["playwright.config.js", "vite.config.js", "index.html"].map((f) =>
       path.join(repoRoot, f),
     ),
-  ].filter(isFile);
+    ...workflowScripts,
+  ].filter((p) => statOf(p)?.isFile());
+  check(
+    "ワークフローが呼ぶ scripts を根に入れた（検査の前提）",
+    workflowScripts.length > 0,
+    true,
+  );
   const reachable = new Set(roots);
   const queue = [...roots];
-  const pathReads = new Set();
-  const IMPORT_RE =
-    /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*|new URL\s*\(\s*|\bsrc=)["'`](\.{1,2}\/[^"'`$]+)["'`]/g;
-  // 相対で repo の上の階層を指すパスの文字列（fs で読む等）。`${` の前までを取る
-  const PATH_RE = /["'`]((?:\.\.\/)+)([^"'`\s]*?)(?:\$\{|["'`])/g;
+  const reads = new Set();
+  const leakedLiterals = [];
   while (queue.length > 0) {
     const file = queue.pop();
-    if (!/\.(js|jsx|mjs|cjs|html)$/.test(file)) continue;
-    const text = readFileSync(file, "utf8");
-    for (const m of text.matchAll(IMPORT_RE)) {
-      const target = resolveFrom(file, m[1]);
-      if (target && target.startsWith(repoRoot) && !reachable.has(target)) {
-        reachable.add(target);
-        queue.push(target);
+    const css = /\.css$/.test(file);
+    if (!css && !/\.(js|jsx|mjs|cjs|html)$/.test(file)) continue;
+    const rel = path.relative(repoRoot, file);
+    const { specs, literals } = scanText(readFileSync(file, "utf8"), {
+      css,
+      nodeSide: !rel.startsWith("src/"),
+      prefixes,
+    });
+    for (const l of literals) leakedLiterals.push(`${rel}: ${l}`);
+    for (const spec of specs) {
+      const clean = spec.split("?")[0].split("#")[0];
+      if (!clean || /^\/\//.test(clean)) continue;
+      const base = clean.startsWith("/")
+        ? path.join(repoRoot, clean)
+        : path.resolve(path.dirname(file), clean);
+      if (!inRepo(base)) continue;
+      const cut = /\/$/.test(clean) || spec !== clean ? "/" : "";
+      const target = exts.map((e) => base + e).find((p) => statOf(p)?.isFile());
+      if (target) {
+        reads.add(path.relative(repoRoot, target));
+        if (!reachable.has(target)) {
+          reachable.add(target);
+          queue.push(target);
+        }
+      } else if (statOf(base)?.isDirectory() || cut) {
+        // ディレクトリ・`${` で切れた頭の読み。その下の全部を読みうるものとして判定する
+        reads.add(`${path.relative(repoRoot, base)}/`.replace(/\/+$/, "/"));
+      } else {
+        // 解けない指定（public/ の URL・書き出し先・拡張子の無い頭）も黙って捨てず、頭として一覧と照らす
+        reads.add(path.relative(repoRoot, base));
       }
     }
-    for (const m of text.matchAll(PATH_RE)) {
-      const abs = path.resolve(path.dirname(file), m[1] + m[2]);
-      if (abs.startsWith(repoRoot + path.sep))
-        pathReads.add(
-          path.relative(repoRoot, abs) +
-            (m[2].endsWith("/") || m[2] === "" ? "/" : ""),
-        );
-    }
   }
-  const rel = [...reachable].map((f) => path.relative(repoRoot, f));
+  const rels = [...reachable].map((f) => path.relative(repoRoot, f));
   check(
     "閉包が src から scripts/lib を辿る（検査の前提）",
-    rel.includes("scripts/lib/hitCalculator.js"),
+    rels.includes("scripts/lib/hitCalculator.js"),
     true,
   );
   check(
     "閉包が e2e から scripts/maintenance を辿る（検査の前提）",
-    rel.includes("scripts/maintenance/e2e-recording.js"),
+    rels.includes("scripts/maintenance/e2e-recording.js"),
     true,
   );
-  const leaked = rel
-    .filter((f) => !f.startsWith("docs/"))
-    .filter((f) => scopeOf([f]) === "none");
-  check("e2e が import で読むファイルは0件の一覧に当たらない", leaked, []);
-  // ディレクトリを指す読み（"../scripts/lib/__fixtures__/odds/${n}" 等）は、その下のファイルで判定する
-  const leakedReads = [...pathReads]
-    .filter((p) => !p.startsWith("docs/"))
-    .filter((p) => scopeOf([p.endsWith("/") ? `${p}x.js` : p]) === "none");
   check(
-    "e2e・src が相対のパスで読むファイルは0件の一覧に当たらない",
-    leakedReads,
+    "閉包が CSS を辿る（検査の前提）",
+    rels.some((f) => f.endsWith(".css")),
+    true,
+  );
+  check(
+    "e2e が読むファイル・ディレクトリは0件の一覧に当たらない",
+    [...reads, ...rels].filter((p) => readHitsSkip(p, prefixes, config)),
     [],
   );
+  check("Node 側に一覧の頭で始まるパスの文字列が無い", leakedLiterals, []);
 }
 
 // --- 設定が無い・壊れているときは例外（CLI は full に倒す） ---

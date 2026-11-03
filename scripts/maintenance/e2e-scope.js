@@ -6,7 +6,8 @@
  *         verify の検査と台帳・scripts/sns・scripts/analysis。ADR-0100 追記）に当たる。e2e を流さずに成功
  *   light 全ファイルが allowedPathPatterns（記事の中身だけの PR の許可の一覧）か e2eSkipPathPatterns に当たる。
  *         vite build と @blog の印の試験だけを流す
- *   full  それ以外。1つでも一覧から外れたら全部流す（.github・scripts・src・e2e・package*.json・設定は一覧に無いので必ず full）
+ *   full  それ以外。1つでも一覧から外れたら全部流す（.github・scripts（verify の検査・scripts/sns・scripts/analysis を除く）・src・e2e・
+ *         package*.json・設定は一覧に無いので必ず full）
  *
  * 一覧は scripts/content/content-pr-gate.json を読む（写さない）。PR の側でこのファイルやこのスクリプトを
  * 書き換えて軽い組に逃げられないよう、ワークフローは base（master）側の2つを取り出して実行し、

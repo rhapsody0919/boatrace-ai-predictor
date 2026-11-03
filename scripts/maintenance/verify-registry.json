@@ -416,7 +416,7 @@
     {
       "script": "verify-e2e-scope.js",
       "tier": "ci",
-      "guards": "PRゲートの e2e の範囲の判定（e2e-scope.js）。記事だけは軽い組・docs だけは0件・src/scripts/e2e/.github/package*.json/設定を触る PR は必ず全部、一覧を PR の側で書き換えても master の一覧で全部に戻る（BOA-929）"
+      "guards": "PRゲートの e2e の範囲の判定（e2e-scope.js）。記事だけは軽い組・docs と e2e が読まないパス（.claude・sns-video-studio・verify・scripts/sns・analysis）だけは0件・src/scripts（それ以外）/e2e/.github/package*.json/設定を触る PR は必ず全部、一覧を PR の側で書き換えても master の一覧で全部に戻る（BOA-929）。0件の一覧のパスが e2e の run（e2e・src・設定・ワークフローが呼ぶ scripts）から import・CSS・相対や root からのパス・Node 側の文字列で読まれていないこと（閉包、ADR-0100 追記）"
     },
     {
       "script": "verify-e2e-shards.js",
