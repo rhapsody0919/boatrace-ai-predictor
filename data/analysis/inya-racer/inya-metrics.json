@@ -1,0 +1,1236 @@
+{
+ "generatedAt": "2026-11-03T06:32:31.172Z",
+ "fetchedAt": "2026-11-03T06:28:39.452Z",
+ "source": {
+  "kb_archive_boats": "2019-04-01〜2025-12-02（course）",
+  "race_results": "2025-12-03〜2026-11-02（actual_course_N、N=艇番）×race_entries.racer_id",
+  "racer_period_stats": "c1〜c6_entries（2018〜、B の照合）",
+  "starts": 2510299,
+  "races_main": 51836
+ },
+ "windows": {
+  "last12": {
+   "from": 20251103,
+   "to": 20261102
+  },
+  "prev12": {
+   "from": 20241103,
+   "to": 20251102
+  },
+  "activeFrom": 20260503,
+  "minN": 30
+ },
+ "definitions": {
+  "A": "4〜6号艇の走のうち進入1〜3コース",
+  "B": "全走のうち進入1・2コース",
+  "C": "全走のうち進入コース < 艇番",
+  "C25": "2〜6号艇の走のうち進入コース < 艇番",
+  "O": "アウト屋の鏡: 1〜3号艇の走のうち進入4〜6コース",
+  "c6": "全走のうち6コース",
+  "venueExp": "その選手が走った会場の、同じ艇番群の全選手の率の平均（出走で重み）"
+ },
+ "population": {
+  "racersInWindow": 1645,
+  "active": 1630,
+  "eligA": 1620,
+  "eligO": 1518
+ },
+ "distribution": {
+  "A_maeduke": {
+   "n": 1620,
+   "mean": 0.025,
+   "min": 0,
+   "p50": 0.009,
+   "p75": 0.019,
+   "p90": 0.037,
+   "p95": 0.068,
+   "p98": 0.194,
+   "p99": 0.539,
+   "p99.5": 0.933,
+   "max": 1
+  },
+  "B_c12": {
+   "n": 1620,
+   "mean": 0.322,
+   "min": 0,
+   "p50": 0.333,
+   "p75": 0.363,
+   "p90": 0.389,
+   "p95": 0.403,
+   "p98": 0.438,
+   "p99": 0.526,
+   "p99.5": 0.732,
+   "max": 1
+  },
+  "B_minus_ownBoat12": {
+   "n": 1620,
+   "mean": 0,
+   "min": -0.097,
+   "p50": -0.004,
+   "p75": 0,
+   "p90": 0.007,
+   "p95": 0.018,
+   "p98": 0.054,
+   "p99": 0.164,
+   "p99.5": 0.387,
+   "max": 0.611
+  },
+  "C_inner_all": {
+   "n": 1620,
+   "mean": 0.041,
+   "min": 0,
+   "p50": 0.029,
+   "p75": 0.044,
+   "p90": 0.071,
+   "p95": 0.101,
+   "p98": 0.193,
+   "p99": 0.308,
+   "p99.5": 0.473,
+   "max": 0.673
+  },
+  "C_inner_boat2to6": {
+   "n": 1620,
+   "mean": 0.05,
+   "min": 0,
+   "p50": 0.034,
+   "p75": 0.054,
+   "p90": 0.088,
+   "p95": 0.127,
+   "p98": 0.236,
+   "p99": 0.384,
+   "p99.5": 0.6,
+   "max": 0.851
+  },
+  "A_minus_venueExp": {
+   "n": 1620,
+   "mean": 0.001,
+   "min": -0.031,
+   "p50": -0.016,
+   "p75": -0.006,
+   "p90": 0.013,
+   "p95": 0.044,
+   "p98": 0.169,
+   "p99": 0.513,
+   "p99.5": 0.907,
+   "max": 0.976
+  },
+  "O_out_from_boat1to3": {
+   "n": 1518,
+   "mean": 0.024,
+   "min": 0,
+   "p50": 0.019,
+   "p75": 0.033,
+   "p90": 0.047,
+   "p95": 0.059,
+   "p98": 0.08,
+   "p99": 0.109,
+   "p99.5": 0.14,
+   "max": 0.429
+  },
+  "c6_share": {
+   "n": 1518,
+   "mean": 0.145,
+   "min": 0,
+   "p50": 0.143,
+   "p75": 0.161,
+   "p90": 0.181,
+   "p95": 0.203,
+   "p98": 0.253,
+   "p99": 0.297,
+   "p99.5": 0.34,
+   "max": 0.414
+  }
+ },
+ "metricCorr": {
+  "A_B": 0.384,
+  "A_C": 0.668,
+  "A_C25": 0.67,
+  "B_C": 0.502,
+  "B_ownBoat12": 0.947,
+  "A_Avenue": 0.953
+ },
+ "stability": {
+  "year_prev_vs_last": {
+   "A": {
+    "pairs": 1556,
+    "pearson": 0.959,
+    "spearman": 0.445
+   },
+   "B": {
+    "pairs": 1573,
+    "pearson": 0.856,
+    "spearman": 0.754
+   },
+   "C": {
+    "pairs": 1573,
+    "pearson": 0.922,
+    "spearman": 0.552
+   },
+   "O": {
+    "pairs": 1457,
+    "pearson": 0.4,
+    "spearman": 0.334
+   }
+  },
+  "half_pairs": [
+   {
+    "from": "2018-11",
+    "to": "2019-05",
+    "A_min15": {
+     "pairs": 74,
+     "pearson": 0.388,
+     "spearman": 0.383
+    },
+    "B_min30": {
+     "pairs": 60,
+     "pearson": 0.495,
+     "spearman": 0.62
+    },
+    "C_min30": {
+     "pairs": 60,
+     "pearson": 0.824,
+     "spearman": 0.69
+    },
+    "O_min15": {
+     "pairs": 168,
+     "pearson": 0.221,
+     "spearman": 0.222
+    }
+   },
+   {
+    "from": "2019-05",
+    "to": "2019-11",
+    "A_min15": {
+     "pairs": 1514,
+     "pearson": 0.911,
+     "spearman": 0.472
+    },
+    "B_min30": {
+     "pairs": 1508,
+     "pearson": 0.86,
+     "spearman": 0.7
+    },
+    "C_min30": {
+     "pairs": 1508,
+     "pearson": 0.868,
+     "spearman": 0.552
+    },
+    "O_min15": {
+     "pairs": 1419,
+     "pearson": 0.34,
+     "spearman": 0.297
+    }
+   },
+   {
+    "from": "2019-11",
+    "to": "2020-05",
+    "A_min15": {
+     "pairs": 1499,
+     "pearson": 0.927,
+     "spearman": 0.485
+    },
+    "B_min30": {
+     "pairs": 1499,
+     "pearson": 0.876,
+     "spearman": 0.731
+    },
+    "C_min30": {
+     "pairs": 1499,
+     "pearson": 0.878,
+     "spearman": 0.553
+    },
+    "O_min15": {
+     "pairs": 1404,
+     "pearson": 0.325,
+     "spearman": 0.298
+    }
+   },
+   {
+    "from": "2020-05",
+    "to": "2020-11",
+    "A_min15": {
+     "pairs": 1496,
+     "pearson": 0.941,
+     "spearman": 0.44
+    },
+    "B_min30": {
+     "pairs": 1497,
+     "pearson": 0.867,
+     "spearman": 0.709
+    },
+    "C_min30": {
+     "pairs": 1497,
+     "pearson": 0.885,
+     "spearman": 0.503
+    },
+    "O_min15": {
+     "pairs": 1409,
+     "pearson": 0.297,
+     "spearman": 0.28
+    }
+   },
+   {
+    "from": "2020-11",
+    "to": "2021-05",
+    "A_min15": {
+     "pairs": 1493,
+     "pearson": 0.935,
+     "spearman": 0.463
+    },
+    "B_min30": {
+     "pairs": 1494,
+     "pearson": 0.887,
+     "spearman": 0.701
+    },
+    "C_min30": {
+     "pairs": 1494,
+     "pearson": 0.889,
+     "spearman": 0.501
+    },
+    "O_min15": {
+     "pairs": 1407,
+     "pearson": 0.276,
+     "spearman": 0.25
+    }
+   },
+   {
+    "from": "2021-05",
+    "to": "2021-11",
+    "A_min15": {
+     "pairs": 1496,
+     "pearson": 0.937,
+     "spearman": 0.42
+    },
+    "B_min30": {
+     "pairs": 1497,
+     "pearson": 0.877,
+     "spearman": 0.674
+    },
+    "C_min30": {
+     "pairs": 1497,
+     "pearson": 0.877,
+     "spearman": 0.486
+    },
+    "O_min15": {
+     "pairs": 1408,
+     "pearson": 0.284,
+     "spearman": 0.276
+    }
+   },
+   {
+    "from": "2021-11",
+    "to": "2022-05",
+    "A_min15": {
+     "pairs": 1515,
+     "pearson": 0.951,
+     "spearman": 0.444
+    },
+    "B_min30": {
+     "pairs": 1513,
+     "pearson": 0.877,
+     "spearman": 0.676
+    },
+    "C_min30": {
+     "pairs": 1513,
+     "pearson": 0.888,
+     "spearman": 0.457
+    },
+    "O_min15": {
+     "pairs": 1428,
+     "pearson": 0.181,
+     "spearman": 0.192
+    }
+   },
+   {
+    "from": "2022-05",
+    "to": "2022-11",
+    "A_min15": {
+     "pairs": 1506,
+     "pearson": 0.933,
+     "spearman": 0.389
+    },
+    "B_min30": {
+     "pairs": 1505,
+     "pearson": 0.848,
+     "spearman": 0.655
+    },
+    "C_min30": {
+     "pairs": 1505,
+     "pearson": 0.868,
+     "spearman": 0.491
+    },
+    "O_min15": {
+     "pairs": 1417,
+     "pearson": 0.254,
+     "spearman": 0.262
+    }
+   },
+   {
+    "from": "2022-11",
+    "to": "2023-05",
+    "A_min15": {
+     "pairs": 1508,
+     "pearson": 0.932,
+     "spearman": 0.41
+    },
+    "B_min30": {
+     "pairs": 1508,
+     "pearson": 0.877,
+     "spearman": 0.639
+    },
+    "C_min30": {
+     "pairs": 1508,
+     "pearson": 0.874,
+     "spearman": 0.473
+    },
+    "O_min15": {
+     "pairs": 1435,
+     "pearson": 0.351,
+     "spearman": 0.241
+    }
+   },
+   {
+    "from": "2023-05",
+    "to": "2023-11",
+    "A_min15": {
+     "pairs": 1517,
+     "pearson": 0.947,
+     "spearman": 0.356
+    },
+    "B_min30": {
+     "pairs": 1516,
+     "pearson": 0.866,
+     "spearman": 0.619
+    },
+    "C_min30": {
+     "pairs": 1516,
+     "pearson": 0.886,
+     "spearman": 0.413
+    },
+    "O_min15": {
+     "pairs": 1433,
+     "pearson": 0.233,
+     "spearman": 0.181
+    }
+   },
+   {
+    "from": "2023-11",
+    "to": "2024-05",
+    "A_min15": {
+     "pairs": 1515,
+     "pearson": 0.936,
+     "spearman": 0.347
+    },
+    "B_min30": {
+     "pairs": 1520,
+     "pearson": 0.856,
+     "spearman": 0.638
+    },
+    "C_min30": {
+     "pairs": 1520,
+     "pearson": 0.88,
+     "spearman": 0.434
+    },
+    "O_min15": {
+     "pairs": 1428,
+     "pearson": 0.191,
+     "spearman": 0.165
+    }
+   },
+   {
+    "from": "2024-05",
+    "to": "2024-11",
+    "A_min15": {
+     "pairs": 1507,
+     "pearson": 0.952,
+     "spearman": 0.389
+    },
+    "B_min30": {
+     "pairs": 1510,
+     "pearson": 0.859,
+     "spearman": 0.648
+    },
+    "C_min30": {
+     "pairs": 1510,
+     "pearson": 0.888,
+     "spearman": 0.451
+    },
+    "O_min15": {
+     "pairs": 1429,
+     "pearson": 0.234,
+     "spearman": 0.163
+    }
+   },
+   {
+    "from": "2024-11",
+    "to": "2025-05",
+    "A_min15": {
+     "pairs": 1535,
+     "pearson": 0.952,
+     "spearman": 0.325
+    },
+    "B_min30": {
+     "pairs": 1533,
+     "pearson": 0.888,
+     "spearman": 0.666
+    },
+    "C_min30": {
+     "pairs": 1533,
+     "pearson": 0.889,
+     "spearman": 0.44
+    },
+    "O_min15": {
+     "pairs": 1448,
+     "pearson": 0.298,
+     "spearman": 0.168
+    }
+   },
+   {
+    "from": "2025-05",
+    "to": "2025-11",
+    "A_min15": {
+     "pairs": 1559,
+     "pearson": 0.936,
+     "spearman": 0.333
+    },
+    "B_min30": {
+     "pairs": 1559,
+     "pearson": 0.861,
+     "spearman": 0.656
+    },
+    "C_min30": {
+     "pairs": 1559,
+     "pearson": 0.874,
+     "spearman": 0.416
+    },
+    "O_min15": {
+     "pairs": 1464,
+     "pearson": 0.342,
+     "spearman": 0.229
+    }
+   },
+   {
+    "from": "2025-11",
+    "to": "2026-05",
+    "A_min15": {
+     "pairs": 1564,
+     "pearson": 0.938,
+     "spearman": 0.318
+    },
+    "B_min30": {
+     "pairs": 1563,
+     "pearson": 0.879,
+     "spearman": 0.686
+    },
+    "C_min30": {
+     "pairs": 1563,
+     "pearson": 0.869,
+     "spearman": 0.444
+    },
+    "O_min15": {
+     "pairs": 1473,
+     "pearson": 0.407,
+     "spearman": 0.185
+    }
+   }
+  ]
+ },
+ "persistence": {
+  "top1pct": {
+   "prev": 16,
+   "last": 16,
+   "both": 15
+  },
+  "top2pct": {
+   "prev": 32,
+   "last": 33,
+   "both": 26
+  },
+  "top5pct": {
+   "prev": 79,
+   "last": 81,
+   "both": 56
+  }
+ },
+ "rulePersistence": {
+  "lower_ge_0.1": {
+   "year": {
+    "prev": 43,
+    "last": 44,
+    "both": 34
+   },
+   "half_min15": {
+    "2025-11": 35,
+    "2026-05": 35,
+    "both": 25
+   }
+  },
+  "lower_ge_0.2": {
+   "year": {
+    "prev": 26,
+    "last": 25,
+    "both": 21
+   },
+   "half_min15": {
+    "2025-11": 27,
+    "2026-05": 19,
+    "both": 18
+   }
+  },
+  "lower_ge_0.3": {
+   "year": {
+    "prev": 19,
+    "last": 20,
+    "both": 19
+   },
+   "half_min15": {
+    "2025-11": 21,
+    "2026-05": 17,
+    "both": 16
+   }
+  }
+ },
+ "shrink": {
+  "last10": {
+   "of": 20,
+   "stillLowerGe0_3": 16,
+   "othersFalselyIn": 0,
+   "others": 1606
+  },
+  "last15": {
+   "of": 20,
+   "stillLowerGe0_3": 18,
+   "othersFalselyIn": 0,
+   "others": 1606
+  },
+  "last20": {
+   "of": 20,
+   "stillLowerGe0_3": 18,
+   "othersFalselyIn": 0,
+   "others": 1606
+  },
+  "last30": {
+   "of": 20,
+   "stillLowerGe0_3": 20,
+   "othersFalselyIn": 0,
+   "others": 1606
+  }
+ },
+ "outPushed": {
+  "allRacers": {
+   "out": 3468,
+   "withInya": 1361
+  },
+  "top2pct": [
+   {
+    "racer_id": 5295,
+    "name": "田上　　　凜",
+    "O": 0.429,
+    "mainPeriodOutStarts": 25,
+    "ofWhichInyaWentIn": 3
+   },
+   {
+    "racer_id": 5048,
+    "name": "眞鳥　　康太",
+    "O": 0.326,
+    "mainPeriodOutStarts": 26,
+    "ofWhichInyaWentIn": 4
+   },
+   {
+    "racer_id": 4619,
+    "name": "伏田　　裕隆",
+    "O": 0.287,
+    "mainPeriodOutStarts": 27,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 4538,
+    "name": "笠置　　博之",
+    "O": 0.277,
+    "mainPeriodOutStarts": 26,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 3857,
+    "name": "阿波　　勝哉",
+    "O": 0.228,
+    "mainPeriodOutStarts": 23,
+    "ofWhichInyaWentIn": 2
+   },
+   {
+    "racer_id": 4683,
+    "name": "向井田　直弥",
+    "O": 0.194,
+    "mainPeriodOutStarts": 6,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 4571,
+    "name": "菅　　　章哉",
+    "O": 0.16,
+    "mainPeriodOutStarts": 14,
+    "ofWhichInyaWentIn": 0
+   },
+   {
+    "racer_id": 5341,
+    "name": "山道　　諄也",
+    "O": 0.146,
+    "mainPeriodOutStarts": 6,
+    "ofWhichInyaWentIn": 0
+   },
+   {
+    "racer_id": 4213,
+    "name": "重富　　伸也",
+    "O": 0.135,
+    "mainPeriodOutStarts": 8,
+    "ofWhichInyaWentIn": 2
+   },
+   {
+    "racer_id": 5304,
+    "name": "井田　　涼介",
+    "O": 0.119,
+    "mainPeriodOutStarts": 5,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 4723,
+    "name": "寺島　　吉彦",
+    "O": 0.118,
+    "mainPeriodOutStarts": 9,
+    "ofWhichInyaWentIn": 2
+   },
+   {
+    "racer_id": 4277,
+    "name": "金田　　大輔",
+    "O": 0.116,
+    "mainPeriodOutStarts": 9,
+    "ofWhichInyaWentIn": 2
+   },
+   {
+    "racer_id": 5357,
+    "name": "田中　瀬里奈",
+    "O": 0.113,
+    "mainPeriodOutStarts": 7,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 5128,
+    "name": "坪井　　爽佑",
+    "O": 0.113,
+    "mainPeriodOutStarts": 8,
+    "ofWhichInyaWentIn": 3
+   },
+   {
+    "racer_id": 3353,
+    "name": "前田　　光昭",
+    "O": 0.111,
+    "mainPeriodOutStarts": 5,
+    "ofWhichInyaWentIn": 3
+   },
+   {
+    "racer_id": 4692,
+    "name": "酒井　　俊弘",
+    "O": 0.111,
+    "mainPeriodOutStarts": 11,
+    "ofWhichInyaWentIn": 0
+   },
+   {
+    "racer_id": 4552,
+    "name": "杉山　　勝匡",
+    "O": 0.1,
+    "mainPeriodOutStarts": 9,
+    "ofWhichInyaWentIn": 2
+   },
+   {
+    "racer_id": 5348,
+    "name": "小林　　甘寧",
+    "O": 0.098,
+    "mainPeriodOutStarts": 4,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 3867,
+    "name": "松浦　　　勝",
+    "O": 0.094,
+    "mainPeriodOutStarts": 8,
+    "ofWhichInyaWentIn": 4
+   },
+   {
+    "racer_id": 4636,
+    "name": "赤池　　修平",
+    "O": 0.091,
+    "mainPeriodOutStarts": 8,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 5268,
+    "name": "山本　　幸也",
+    "O": 0.091,
+    "mainPeriodOutStarts": 7,
+    "ofWhichInyaWentIn": 4
+   },
+   {
+    "racer_id": 4177,
+    "name": "萬　　　正嗣",
+    "O": 0.091,
+    "mainPeriodOutStarts": 8,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 3943,
+    "name": "三松　　直美",
+    "O": 0.091,
+    "mainPeriodOutStarts": 3,
+    "ofWhichInyaWentIn": 0
+   },
+   {
+    "racer_id": 5296,
+    "name": "永田　　　楽",
+    "O": 0.09,
+    "mainPeriodOutStarts": 6,
+    "ofWhichInyaWentIn": 0
+   },
+   {
+    "racer_id": 4340,
+    "name": "土性　　雅也",
+    "O": 0.088,
+    "mainPeriodOutStarts": 3,
+    "ofWhichInyaWentIn": 0
+   },
+   {
+    "racer_id": 3848,
+    "name": "川上　　聡介",
+    "O": 0.085,
+    "mainPeriodOutStarts": 9,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 5355,
+    "name": "萩原　丈太朗",
+    "O": 0.085,
+    "mainPeriodOutStarts": 6,
+    "ofWhichInyaWentIn": 0
+   },
+   {
+    "racer_id": 5077,
+    "name": "滝沢　　　崚",
+    "O": 0.085,
+    "mainPeriodOutStarts": 4,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 5354,
+    "name": "渡邊　　雄斗",
+    "O": 0.085,
+    "mainPeriodOutStarts": 5,
+    "ofWhichInyaWentIn": 1
+   },
+   {
+    "racer_id": 4457,
+    "name": "神田　　達也",
+    "O": 0.083,
+    "mainPeriodOutStarts": 7,
+    "ofWhichInyaWentIn": 1
+   }
+  ]
+ },
+ "officialB": {
+  "pairs": 21694,
+  "pearson_raceLevel_vs_official": 0.999,
+  "meanAbsDiff": 0.001
+ },
+ "officialB_stability": [
+  {
+   "from": "2019-2",
+   "to": "2020-1",
+   "pairs": 1499,
+   "pearson": 0.87
+  },
+  {
+   "from": "2020-1",
+   "to": "2020-2",
+   "pairs": 1490,
+   "pearson": 0.86
+  },
+  {
+   "from": "2020-2",
+   "to": "2021-1",
+   "pairs": 1486,
+   "pearson": 0.879
+  },
+  {
+   "from": "2021-1",
+   "to": "2021-2",
+   "pairs": 1491,
+   "pearson": 0.867
+  },
+  {
+   "from": "2021-2",
+   "to": "2022-1",
+   "pairs": 1484,
+   "pearson": 0.888
+  },
+  {
+   "from": "2022-1",
+   "to": "2022-2",
+   "pairs": 1486,
+   "pearson": 0.88
+  },
+  {
+   "from": "2022-2",
+   "to": "2023-1",
+   "pairs": 1506,
+   "pearson": 0.874
+  },
+  {
+   "from": "2023-1",
+   "to": "2023-2",
+   "pairs": 1495,
+   "pearson": 0.844
+  },
+  {
+   "from": "2023-2",
+   "to": "2024-1",
+   "pairs": 1501,
+   "pearson": 0.877
+  },
+  {
+   "from": "2024-1",
+   "to": "2024-2",
+   "pairs": 1502,
+   "pearson": 0.868
+  },
+  {
+   "from": "2024-2",
+   "to": "2025-1",
+   "pairs": 1507,
+   "pearson": 0.853
+  },
+  {
+   "from": "2025-1",
+   "to": "2025-2",
+   "pairs": 1499,
+   "pearson": 0.86
+  },
+  {
+   "from": "2025-2",
+   "to": "2026-1",
+   "pairs": 1527,
+   "pearson": 0.888
+  },
+  {
+   "from": "2026-1",
+   "to": "2026-2",
+   "pairs": 1553,
+   "pearson": 0.86
+  }
+ ],
+ "venues": [
+  {
+   "venue": 1,
+   "starts": 14284,
+   "A_rate": 0.037,
+   "O_rate": 0.034,
+   "waku_nari_start_rate": 0.876
+  },
+  {
+   "venue": 2,
+   "starts": 13443,
+   "A_rate": 0.02,
+   "O_rate": 0.019,
+   "waku_nari_start_rate": 0.913
+  },
+  {
+   "venue": 3,
+   "starts": 12541,
+   "A_rate": 0.003,
+   "O_rate": 0,
+   "waku_nari_start_rate": 0.992
+  },
+  {
+   "venue": 4,
+   "starts": 12379,
+   "A_rate": 0.016,
+   "O_rate": 0.014,
+   "waku_nari_start_rate": 0.932
+  },
+  {
+   "venue": 5,
+   "starts": 13626,
+   "A_rate": 0.019,
+   "O_rate": 0.017,
+   "waku_nari_start_rate": 0.922
+  },
+  {
+   "venue": 6,
+   "starts": 14778,
+   "A_rate": 0.033,
+   "O_rate": 0.031,
+   "waku_nari_start_rate": 0.874
+  },
+  {
+   "venue": 7,
+   "starts": 14838,
+   "A_rate": 0.042,
+   "O_rate": 0.041,
+   "waku_nari_start_rate": 0.863
+  },
+  {
+   "venue": 8,
+   "starts": 15109,
+   "A_rate": 0.028,
+   "O_rate": 0.027,
+   "waku_nari_start_rate": 0.875
+  },
+  {
+   "venue": 9,
+   "starts": 13798,
+   "A_rate": 0.017,
+   "O_rate": 0.015,
+   "waku_nari_start_rate": 0.927
+  },
+  {
+   "venue": 10,
+   "starts": 13470,
+   "A_rate": 0.024,
+   "O_rate": 0.023,
+   "waku_nari_start_rate": 0.897
+  },
+  {
+   "venue": 11,
+   "starts": 12914,
+   "A_rate": 0.014,
+   "O_rate": 0.012,
+   "waku_nari_start_rate": 0.956
+  },
+  {
+   "venue": 12,
+   "starts": 13442,
+   "A_rate": 0.023,
+   "O_rate": 0.022,
+   "waku_nari_start_rate": 0.916
+  },
+  {
+   "venue": 13,
+   "starts": 15174,
+   "A_rate": 0.019,
+   "O_rate": 0.017,
+   "waku_nari_start_rate": 0.92
+  },
+  {
+   "venue": 14,
+   "starts": 12932,
+   "A_rate": 0.021,
+   "O_rate": 0.018,
+   "waku_nari_start_rate": 0.928
+  },
+  {
+   "venue": 15,
+   "starts": 13753,
+   "A_rate": 0.028,
+   "O_rate": 0.027,
+   "waku_nari_start_rate": 0.901
+  },
+  {
+   "venue": 16,
+   "starts": 14452,
+   "A_rate": 0.026,
+   "O_rate": 0.025,
+   "waku_nari_start_rate": 0.909
+  },
+  {
+   "venue": 17,
+   "starts": 13968,
+   "A_rate": 0.028,
+   "O_rate": 0.026,
+   "waku_nari_start_rate": 0.903
+  },
+  {
+   "venue": 18,
+   "starts": 15742,
+   "A_rate": 0.022,
+   "O_rate": 0.02,
+   "waku_nari_start_rate": 0.915
+  },
+  {
+   "venue": 19,
+   "starts": 13563,
+   "A_rate": 0.028,
+   "O_rate": 0.027,
+   "waku_nari_start_rate": 0.895
+  },
+  {
+   "venue": 20,
+   "starts": 14021,
+   "A_rate": 0.029,
+   "O_rate": 0.028,
+   "waku_nari_start_rate": 0.888
+  },
+  {
+   "venue": 21,
+   "starts": 13730,
+   "A_rate": 0.031,
+   "O_rate": 0.029,
+   "waku_nari_start_rate": 0.895
+  },
+  {
+   "venue": 22,
+   "starts": 13942,
+   "A_rate": 0.017,
+   "O_rate": 0.016,
+   "waku_nari_start_rate": 0.927
+  },
+  {
+   "venue": 23,
+   "starts": 13044,
+   "A_rate": 0.032,
+   "O_rate": 0.031,
+   "waku_nari_start_rate": 0.88
+  },
+  {
+   "venue": 24,
+   "starts": 14174,
+   "A_rate": 0.02,
+   "O_rate": 0.019,
+   "waku_nari_start_rate": 0.932
+  }
+ ],
+ "venueCheck": {
+  "top2pct_n": 32,
+  "overlap_raw_vs_venueAdjusted": 32,
+  "onlyInAdjusted": []
+ },
+ "raceEffect": {
+  "def": "前の12か月（2024-11-03〜2025-11-02）で A の上位2%（n46>=30）を前付け選手と決め、2025-11-03より後の本体期間のレース（6艇の進入がそろうもの）で比べる。期待値は前付け選手のいないレースの同じ会場×1号艇の勝率帯の率",
+  "trainTopN": 32,
+  "none": {
+   "races": 46589,
+   "b1win": {
+    "rate": 0.556,
+    "wilson95": [
+     0.551,
+     0.56
+    ],
+    "expected_same_venue_boat1band": 0.556,
+    "diff_pt": 0,
+    "diff_95pt": 0.429,
+    "matched": 46589
+   },
+   "b1c1": {
+    "rate": 0.992,
+    "wilson95": [
+     0.991,
+     0.993
+    ],
+    "expected_same_venue_boat1band": 0.992,
+    "diff_pt": 0,
+    "diff_95pt": 0.079,
+    "matched": 46589
+   },
+   "nari": {
+    "rate": 0.849,
+    "wilson95": [
+     0.846,
+     0.852
+    ],
+    "expected_same_venue_boat1band": 0.849,
+    "diff_pt": 0,
+    "diff_95pt": 0.32,
+    "matched": 46589
+   }
+  },
+  "boat4to6": {
+   "races": 2695,
+   "b1win": {
+    "rate": 0.44,
+    "wilson95": [
+     0.422,
+     0.459
+    ],
+    "expected_same_venue_boat1band": 0.543,
+    "diff_pt": -10.214,
+    "diff_95pt": 1.789,
+    "matched": 2695
+   },
+   "b1c1": {
+    "rate": 0.962,
+    "wilson95": [
+     0.954,
+     0.968
+    ],
+    "expected_same_venue_boat1band": 0.991,
+    "diff_pt": -2.909,
+    "diff_95pt": 0.356,
+    "matched": 2695
+   },
+   "nari": {
+    "rate": 0.303,
+    "wilson95": [
+     0.286,
+     0.321
+    ],
+    "expected_same_venue_boat1band": 0.836,
+    "diff_pt": -53.318,
+    "diff_95pt": 1.382,
+    "matched": 2695
+   }
+  },
+  "boat2to3": {
+   "races": 1930,
+   "b1win": {
+    "rate": 0.56,
+    "wilson95": [
+     0.537,
+     0.582
+    ],
+    "expected_same_venue_boat1band": 0.574,
+    "diff_pt": -1.45,
+    "diff_95pt": 2.102,
+    "matched": 1930
+   },
+   "b1c1": {
+    "rate": 0.962,
+    "wilson95": [
+     0.952,
+     0.969
+    ],
+    "expected_same_venue_boat1band": 0.992,
+    "diff_pt": -3.018,
+    "diff_95pt": 0.399,
+    "matched": 1930
+   },
+   "nari": {
+    "rate": 0.76,
+    "wilson95": [
+     0.741,
+     0.779
+    ],
+    "expected_same_venue_boat1band": 0.841,
+    "diff_pt": -8.099,
+    "diff_95pt": 1.613,
+    "matched": 1930
+   }
+  }
+ },
+ "nishijima3024": {
+  "racer_id": 3024,
+  "name": "西島　　義則",
+  "grade": "B2",
+  "branch": "広島",
+  "metric": "A",
+  "value": 1,
+  "wilson95": [
+   0.949,
+   1
+  ],
+  "k": 72,
+  "n": 72,
+  "venueExp": 0.024,
+  "starts": 149,
+  "B_c12": 0.98,
+  "C_inner": 0.651,
+  "O": 0,
+  "rankA": 3,
+  "of": 1620
+ }
+}
