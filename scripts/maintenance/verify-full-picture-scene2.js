@@ -2000,6 +2000,50 @@ for (const f of fixtures) {
   for (const id of ["s4-slit-course"]) assert.deepEqual(checkLines(ans[id], dn.steps.find((st) => st.id === id).facts, null), [], "当てはまらない言い方も文の検査を通る");
 }
 
+// SNS の送信文（題・X 本文・説明欄）は |z|>=1.96 の線で向き・最多を止めない（オーナー 2026-11-01、hq docs/playbook.md:41。線は SEO の記事だけ）。
+// 動画の中の字幕・棒（diff.mjs・entry.mjs・scene2-text.mjs）は別。ここは bundle.mjs の文だけを見る
+{
+  const { buildBundle } = await import(`${R}/scripts/full-picture/bundle.mjs`);
+  const S = (ka, na, kb, nb) => ({ a: (ka / na) * 100, na, b: (kb / nb) * 100, nb });
+  const mk = (venue90, conclusion = null) =>
+    buildBundle({ raceId: "2026-10-26-21-10", venue: "大村", raceNo: 10, month: 10, day: 26, facts: { venue90, overview: null, conclusion }, chapters: "0:00 条件\n0:22 6艇比較\n1:07 類似レース\n1:43 展開", fullSeconds: 211, qa: { a: true } });
+  // 10/26 大村10R: 58.1% 対 全国 54.6%（z=1.67、線の外）。以前は「差は確認できない」で題は既定の後半だった
+  const smp = S(348, 599, 7640, 13985);
+  const f = { kind: "venue90", venue: "大村", rate: 58.1, national: 54.6, races: 599, ...diffOf(58.1, 54.6, smp) };
+  assert.equal(f.direction, null, "前提: 場面の facts は線の外で向きを持たない");
+  const b = mk(f);
+  assert.match(b.youtube_full.title, /大村の1着率は全国より高い/, `線の外でも題に向きを言う: ${b.youtube_full.title}`);
+  assert.match(b.x_text, /全国の同じ期間の54\.6%より3\.5ポイント高い/, "本文も向きを言う");
+  assert.ok(!b.x_text.includes("偶然の範囲") && !b.x_text.includes("差は確認できない"), "線の注記を付けない");
+  // 低い側
+  const lo = mk({ ...f, rate: 50.0, ...diffOf(50.0, 54.6, S(300, 600, 7640, 13985)) });
+  assert.match(lo.youtube_full.title, /全国より低い/);
+  assert.match(lo.x_text, /4\.6ポイント低い/);
+  // 1ポイント未満・件数が足りない日は向きを言わない（線とは別の決まり）
+  const near = mk({ ...f, rate: 54.9, ...diffOf(54.9, 54.6, S(329, 599, 7640, 13985)) });
+  assert.ok(!/より(高い|低い)/.test(near.youtube_full.title) && near.x_text.includes("との差は1ポイント未満"), "1ポイント未満");
+  const few = mk({ ...f, races: 6, ...diffOf(100, 54.6, S(6, 6, 7640, 13985)) });
+  assert.ok(!/全国より(高い|低い)/.test(few.youtube_full.title) && few.x_text.includes("とは比べられない"), "件数が足りない日は向きを言わない");
+  // 結論: 1位と2位の差が小さくても「1着最多」と書く（以前は「差は確認できない」）
+  const c = mk(null, { form: null, n: 20, boat: 1, count: 7, pct: 35, next: { boat: 2, count: 6 }, rankSig: false });
+  assert.match(c.x_text, /1着最多は1号艇で7件（35%）/, "7 対 6 でも件数つきで言う");
+  assert.ok(!c.x_text.includes("差は確認できない"));
+}
+// daily.mjs の video.full_s は送る MP4 の実際の尺（型 f01 で run-text.json の縦の型の尺 204〜228秒を書かない）
+{
+  const { fileSeconds } = await import(`${R}/scripts/full-picture/daily.mjs`);
+  assert.equal(fileSeconds("x.mp4", () => "612.3456\n"), 612.3, "ffprobe の尺を小数1桁で");
+  assert.throws(() => fileSeconds("x.mp4", () => "N/A\n"), /尺を測れない/);
+  const { execFileSync: ex, spawnSync: sp } = await import("node:child_process");
+  if (sp("ffmpeg", ["-version"]).status === 0) {
+    const { mkdtempSync: mt } = await import("node:fs");
+    const { tmpdir: td2 } = await import("node:os");
+    const f = `${mt(`${td2()}/fp-sec-`)}/t.mp4`;
+    ex("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", "color=c=black:s=64x64:d=2.5:r=10", "-pix_fmt", "yuv420p", "-y", f]);
+    assert.ok(Math.abs(fileSeconds(f) - 2.5) <= 0.1, "実ファイルの尺");
+  }
+}
+
 // BOA-1157: 差の向き（高い・低い）は |z|>=1.96 のときだけ言い切る。z は hq の照合（fp_facts.py の pair_z）と同じ2標本の形。
 // 10/26 大村10R の3例は言い切らない（hq の値: s1-venue90 z=1.67、s3-rough 1.67、s1-day は 6/6 で件数が足りず z を出さない）
 {

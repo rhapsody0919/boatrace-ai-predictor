@@ -122,6 +122,13 @@ async function materials(raceId) {
   return { m: null, reasons: last };
 }
 
+/** 動画ファイルの実際の尺（秒、小数1桁）。型 f01 の run-text.json の videoSeconds は縦の型の尺（204〜228秒）で送る f01.mp4 の尺ではないので、送る MP4 を測る */
+export function fileSeconds(file, run = (cmd, args) => execFileSync(cmd, args, { encoding: "utf8" })) {
+  const sec = Number(run("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", file]).trim());
+  if (!Number.isFinite(sec) || sec <= 0) throw new Error(`${file} の尺を測れない`);
+  return Math.round(sec * 10) / 10;
+}
+
 async function make(raceId, opts) {
   // 予期しない例外でも、標準出力に JSON 1つを出して止める（止まった段を残す。代わりの審査 P2）
   const result = { status: "stopped", stage: "materials", reasons: [], files: {}, video: null, llm: null, text_mode: opts.text, missing: [], ref_commit: null, variant: opts.variant ?? null, content_type: null };
@@ -185,7 +192,7 @@ async function makeSteps(raceId, { out, bgm, concurrency, text, variant = null, 
   const runText = JSON.parse(readFileSync(join(out, `run-${text}.json`), "utf8"));
   const runEntry = JSON.parse(readFileSync(join(out, "run-entry.json"), "utf8"));
   result.video = {
-    full_s: runText.videoSeconds,
+    full_s: fileSeconds(join(bundleDir, "full-youtube.mp4")),
     entry_s: runEntry.videoSeconds,
     full_mib: Math.round((statSync(join(bundleDir, "full-youtube.mp4")).size / 1048576) * 10) / 10,
   };
