@@ -262,7 +262,7 @@ test.describe("シェアボタンの共有 URL（BOA-691）", () => {
     );
   });
 
-  test("レース詳細は og:url を持たない（Facebook 等がトップとして扱わないように）", async ({
+  test("レース詳細は canonical と同じ og:url を1つ持つ（共有先をそのレースにする）", async ({
     page,
   }) => {
     await setup(page, "ja");
@@ -270,7 +270,18 @@ test.describe("シェアボタンの共有 URL（BOA-691）", () => {
     await expect(
       page.locator(".social-share-wrapper .social-share-button").first(),
     ).toBeVisible({ timeout: 20000 });
-    await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
+    const canonical = page.locator('link[rel="canonical"]');
+    await expect(canonical).toHaveCount(1);
+    await expect(canonical).toHaveAttribute(
+      "href",
+      `https://www.boat-ai.jp/race/${DATE}-09-02`,
+    );
+    const ogUrl = page.locator('meta[property="og:url"]');
+    await expect(ogUrl).toHaveCount(1);
+    await expect(ogUrl).toHaveAttribute(
+      "content",
+      await canonical.getAttribute("href"),
+    );
   });
 
   test("記事ページは記事の og:url を持ち、離れると消える（useSocialMeta） @blog", async ({
