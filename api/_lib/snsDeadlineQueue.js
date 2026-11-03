@@ -177,18 +177,57 @@ async function checked(preflight, job) {
 const retainResult = error => ({ reason: error?.retainReason ?? 'error' });
 
 /** 処理pollは1回/呼出し、試行全体で最大3回。自動タイマー・再uploadなし。 */
-export async function runYoutubePublishJob(job, { store, youtube, preflight }) {
-  let publishStarted = false, retainPrivate = true;
+export async function runYoutubePublishJob(job, deps) {
+  return publishWhenProcessed(job, deps, {
+    check: async () => {
+      await deps.store.transition(job.id, 'youtube_poll');
+      return deps.youtube.processing(job);
+    },
+    markReady: () => deps.store.transition(job.id, 'youtube_ready'),
+    retainBeforeReady: true,
+  });
+}
+
+/** 残した理由のうち、期限の前に見直して公開へ進めてよいもの（BOA-1283、196 の youtube_resume と同じ集合） */
+export const RESUMABLE_RETAIN_CODES = ['youtube_retained_processing', 'youtube_retained_budget'];
+
+/**
+ * 処理待ち・検査の枠で非公開のまま残した job を、期限の前に見直す（BOA-1283）。読み取り（videos.list）を台帳（youtube_lookup）に
+ * 記録してから処理の状態を読み、済んでいれば youtube_resume で ready に戻して今までどおり公開する。まだ処理中なら何も変えずに返す
+ * （次の実行でまた見る）。読み取りの失敗・本人の動画と確かめられないときは残した理由を変えない（期限の後は閉じる道に任せる）。
+ * 処理の失敗（failed・terminated）は youtube_retain（理由 error）で見直しの対象から外す
+ */
+export async function resumeRetainedYoutubeJob(job, deps) {
+  if (job.channel !== 'youtube' || job.state !== 'reconcile' || job.youtube_stage !== 'private_retained' ||
+    !RESUMABLE_RETAIN_CODES.includes(job.error_code)) throw new Error('見直す対象ではありません');
+  return publishWhenProcessed(job, deps, {
+    check: async () => {
+      await deps.store.transition(job.id, 'youtube_lookup');
+      return deps.youtube.processing(job);
+    },
+    markReady: processing => deps.store.transition(job.id, 'youtube_resume', {
+      owned: true, privacyStatus: processing.privacyStatus, id: processing.id, processingStatus: processing.processingStatus,
+    }),
+    retainBeforeReady: false,
+  });
+}
+
+/**
+ * 処理の状態を1回読み、済んでいれば公開する（runYoutubePublishJob と resumeRetainedYoutubeJob の共通）。
+ * retainBeforeReady: ready の前（読み取りの失敗）でも非公開のまま残す（youtube_retain）か。処理の失敗と ready の後は常に残す
+ */
+async function publishWhenProcessed(job, { store, youtube, preflight }, { check, markReady, retainBeforeReady }) {
+  let publishStarted = false, retainPrivate = retainBeforeReady;
   try {
-    await store.transition(job.id, 'youtube_poll');
-    const processing = await youtube.processing(job);
+    const processing = await check();
     if (processing?.confirmed !== true || processing.id !== job.external_post_id || processing.privacyStatus !== 'private') {
       retainPrivate = false;
       throw new Error('youtube_processing_unconfirmed');
     }
     if (processing.processingStatus === 'processing') return job;
+    retainPrivate = true;
     if (processing.processingStatus !== 'succeeded') throw new Error('youtube_processing_failed');
-    job = await store.transition(job.id, 'youtube_ready');
+    job = await markReady(processing);
     await checked(preflight, job);
     job = await store.transition(job.id, 'youtube_publish_begin');
     // videos.list（公開の確認の読み取り）の前は検査しない。videos.update の後なので止められるものが無く、落ちると確認だけを失って

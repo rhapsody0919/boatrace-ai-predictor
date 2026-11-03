@@ -148,6 +148,15 @@ flowchart TD
 - **契約の変更**: `docs/design/sns-hub-shorts-send/contract.md` の「要照合解除の自動経路はない」を、この条件でだけ自動で閉じると直す
 - **適用の順**: コードと 186 はどちらが先でもよい。186 の前のコードは理由を渡さず、186 の前の DB は `p_result` を読まない。186 の前の DB に `youtube_close_private` を呼ぶと「不正な操作です」で失敗し、runner は30分おきに1回だけ試す
 
+## 4c. 処理待ちで残した YouTube を期限の前に公開する（BOA-1283、マイグレーション 196）
+
+事実（2026-11-03・04 本番の読み取り）: Shorts「節の機力」の job 926ef626（動画 sRLtGyhpw6M、16秒・縦）は、claim 21:30:41 JST の後の処理の確認3回（30秒おき、約1分）がどれも `processing` で `youtube_retained_processing` になり、4b の後は期限（22:30）まで誰も読み直さず、期限の後に `youtube_closed_private` で閉じた。11/4 の読み取りでは `uploadStatus=processed`・`processingStatus=succeeded`・`private`（処理は済んでいた）。同じ日の完全版3本は2回目の確認（約30秒）で succeeded。YouTube の文書は処理の時間を決めていない（`processingProgress.timeLeftMs` は見込み）。
+
+- **見直し**（runner、`resumeRetainedYoutubeJob`）: live・YouTube の dry_run が false・太平洋時間の日付境界の外のとき、送る時刻の job を回した後に、要照合・`private_retained`・理由が `youtube_retained_processing` か `youtube_retained_budget`・期限の前・リース（claim から5分）の後の job を1回の実行で1件、`youtube_lookup`（クォータ1、`sns_youtube_quota_reads`）→ adapter の `processing` で読む。まだ processing なら何も変えない（次の実行でまた読む。期限60分なら最大で約27回）。succeeded なら `youtube_resume` で段を `ready` に戻し、今までの公開の段（検査→`youtube_publish_begin`→検査→`videos.update`→`videos.list`→`complete`）に進む。failed・terminated は `youtube_retain`（理由 error）で見直しから外す。読み取りの失敗・本人の動画と確かめられないときは理由を変えない（期限の後は 4b が閉じる）
+- 公開に検査が2回要るので、この実行の検査の枠に残りが無ければ次の実行に回す。この実行で上げたばかりの job は見ない
+- **`youtube_resume`**（196）: 上の条件に加え、試行のクォータの日が今の太平洋時間の日・`videos.update` をまだ呼んでいない・10分以内の `youtube_lookup` があり、p_result が `owned=true`・`privacyStatus=private`・ID 一致・`processingStatus=succeeded` のときだけ。`youtube_poll` の3回の上限と `general_reserved=104` は変えない
+- **適用の順**: コードと 196 はどちらが先でもよい。196 の前の DB では、処理が済んだ job の `youtube_resume` が「不正な操作です」で落ち、`youtube_retain`（理由 error）で見直しから外れて Slack に1回知らせ、今までどおり期限の後に閉じる。まだ処理中の間は読み取りだけを繰り返す
+
 ## 5. 取り込み（spec C1〜C4、cron `sns-metrics`・`sns-daily`）
 
 - **ジョブの作り方**: job が `posted` になったら、154 のトリガーで `sns_metric_jobs` に `(draft_id, window, source)` を作る（`due_at = posted_at + 48h / 168h`）。X はスレッドの子にも作る（子ごとの表示・クリックを見るため。読み取りは1件 $0.001 なので月 $0.4 程度）
