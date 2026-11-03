@@ -515,7 +515,7 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
   );
   assert.ok(
     draft.caption_text.includes(
-      `）\n\n今日の一覧はこちら：https://www.boat-ai.jp/today?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=2037-10-17-a\n\n${FEATURED_LINE}\n\n${EXPECTED_LINES}\n\n過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。`,
+      `）\n\n今日の一覧はこちら：https://www.boat-ai.jp/x/today?d=2037-10-17-a\n\n${FEATURED_LINE}\n\n${EXPECTED_LINES}\n\n過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。`,
     ),
     draft.caption_text,
   );
@@ -544,7 +544,7 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
   );
   // リンクは見出しの直後（3行目）に1回だけ。末尾は注意書き（2026-10-22 オーナー「前倒しで押される形」）
   // utm_content は「日付-札」（実際に送った型、hq §10-5）
-  const todayUrl = `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${DATE}-a`;
+  const todayUrl = `https://www.boat-ai.jp/x/today?d=${DATE}-a`;
   const captionLines = draft.caption_text.split("\n");
   assert.equal(captionLines[1], "");
   assert.equal(captionLines[2], `今日の一覧はこちら：${todayUrl}`);
@@ -574,6 +574,13 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
     [tracking.utm_campaign, tracking.utm_content],
     ["today_digest", `${DATE}-a`],
   );
+  assert.equal(
+    tracking.tracking_url,
+    `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${DATE}-a`,
+  );
+  assert.equal(tracking.utm_source, "x");
+  assert.equal(tracking.utm_medium, "social");
+  assert.ok(!draft.caption_text.includes("utm_"));
   assert.equal(notes.length, 1);
   // 個別承認の画面は 2026-10-18 に撤去した。manual のときは送らないと知らせる
   assert.match(notes[0], /個別承認（mode=manual）なので送らない/);
@@ -1479,7 +1486,9 @@ const putType = (day, typeId, post) =>
     [day, typeId, post],
   );
 const linkAt = (caption) =>
-  caption.split("\n").findIndex((l) => l.includes(TODAY_URL));
+  caption
+    .split("\n")
+    .findIndex((l) => l.includes("https://www.boat-ai.jp/x/today?d="));
 const clearAll = () =>
   db.exec(`
     DELETE FROM sns_metric_jobs; DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; DELETE FROM sns_today_type_schedule;
@@ -1608,7 +1617,7 @@ test("返信（link_position=reply、mode=auto）: 本文にリンクを置か�
     assert.ok(!parent.caption_text.includes("今日の一覧はこちら"));
     assert.equal(
       child.caption_text,
-      `今日の一覧はこちら：${parent.source_data.deadline_queue.public_url}`,
+      `今日の一覧はこちら：https://www.boat-ai.jp/x/today?d=${DATE}-a`,
     );
     assert.equal(child.source_data.today_reply.parent_draft_id, parent.id);
     assert.equal(child.source_data.image_paths, undefined);
@@ -2187,7 +2196,7 @@ test("型 b: b の日は本文が「N回中M回。」の型、画像は撮影用
       "今日走る選手のコース別1着率を1枚に。",
       "締切前に見返すなら保存を。",
       "",
-      `全レースの一覧 → ${url}`,
+      `全レースの一覧 → https://www.boat-ai.jp/x/today?d=${DATE}-b`,
       "※過去の数字です #ボートレース",
     ].join("\n"),
   );
@@ -2278,7 +2287,10 @@ test("型 b: 材料が無い日（RPC 未適用など）は型 a で送り、理
   assert.equal(ct.id, "today-a");
   assert.equal(ct.fallback_reason, "course_win:rpc_missing");
   assert.equal(draft.source_data.course_win, undefined);
-  assert.match(draft.caption_text, /utm_content=2037-10-17-a/);
+  assert.match(
+    draft.caption_text,
+    /https:\/\/www\.boat-ai\.jp\/x\/today\?d=2037-10-17-a/,
+  );
   assert.match(notes[0], /型 b の日だったが型 a で送る: rpc_missing/);
   assert.equal(
     headless.calls.filter((c) => c.url.includes("today-sheet")).length,

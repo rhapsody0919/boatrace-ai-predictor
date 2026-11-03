@@ -915,6 +915,46 @@ console.log(
   );
 }
 
+console.log("[13] X の短いリンクは札を保って /today へ302");
+check("/x/today は matcher に一致する", matchesMatcher("/x/today"));
+for (const ua of [HUMAN_UA, "Twitterbot/1.0", BOT_UA]) {
+  for (const [query, content] of [
+    ["?d=2026-10-25-a", "2026-10-25-a"],
+    ["?d=2026-10-25-b", "2026-10-25-b"],
+    ["", null],
+    ["?d=", null],
+    ["?d=2026-10-25", null],
+    ["?d=2026-10-25-c", null],
+    ["?d=2026-1-25-a", null],
+    ["?d=2026-10-25-a%0A", null],
+    ["?d=https://example.com", null],
+    ["?d=2026-10-25-b&date=2000-01-01&utm_source=other", "2026-10-25-b"],
+  ]) {
+    const res = await call(`/x/today${query}`, { ua });
+    const expected = `https://www.boat-ai.jp/today?utm_source=x&utm_medium=social&utm_campaign=today_digest${content ? `&utm_content=${content}` : ""}`;
+    check(
+      `${ua} ${query} → 302・UTM保持`,
+      res?.status === 302 && res.headers.get("location") === expected,
+      describe(res),
+    );
+    if (ua === "Twitterbot/1.0" && res?.status === 302) {
+      const target = new URL(res.headers.get("location"));
+      const bot = await call(`${target.pathname}${target.search}`, { ua });
+      check(
+        "転送後の Twitterbot は既存の /today 関数へ",
+        bot?.headers.get("x-middleware-rewrite") ===
+          "https://www.boat-ai.jp/api/bot-page/today",
+      );
+    }
+  }
+}
+for (const path of ["/x/today/extra", "/x/other", "/en/x/today"]) {
+  check(
+    `${path} は短いリンクの対象外`,
+    !matchesMatcher(path) && (await call(path)) === undefined,
+  );
+}
+
 if (failures.length > 0) {
   console.error(`\nNG: ${failures.length}件失敗`);
   process.exit(1);
