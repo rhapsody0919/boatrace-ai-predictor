@@ -459,6 +459,11 @@
       "guards": "期別成績ファイル（fan）のパーサー・行変換・取得〜投入CLI"
     },
     {
+      "script": "verify-favorites-store.js",
+      "tier": "ci",
+      "guards": "お気に入り保存の形・不正値の除外・選手30人の上限・追加順・削除・引数の不変性を守る（BOA-1268）"
+    },
+    {
       "script": "verify-feature-contributions-dedup.js",
       "tier": "ci",
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
