@@ -12,11 +12,8 @@ import { BoatBars, TechniqueBars } from "./OutcomeBars";
 import { boatTip } from "../../../utils/analogyTips";
 import {
   FEW_SIMILAR,
-  aggregateNeighbors,
-  defaultStepIndex,
   neighborCounts,
-  normalizeNeighbor,
-  sliderSteps,
+  similarSlice,
   visibleItems,
 } from "../../../utils/analogyAggregate";
 import { describeAnalogyLayer, layerKind } from "../../../utils/analogyLayer";
@@ -93,6 +90,70 @@ function SonarLegend() {
         {t(`${k}.legendHold`)}
       </span>
     </div>
+  );
+}
+
+/** 比べる相手（点線）の名前（同じ条件・級をそろえない・準優勝戦以外も含めた） */
+function compareName(sim, t) {
+  const cmp = sim.compare;
+  const cmpKind = layerKind(cmp?.conditions, t);
+  return cmp?.name === "grade"
+    ? t(`${k}.cmpGrade`, { kind: cmpKind ?? "" })
+    : cmp?.name === "round"
+      ? t(`${k}.cmpRound`, {
+          round: sim.conditions?.round
+            ? t(`aiPredictionTab.analogy.rounds.${sim.conditions.round}`)
+            : "",
+        })
+      : t(`${k}.cmpSame`);
+}
+
+/**
+ * どの艇が勝った？（着順 target の棒。見出し・凡例・6艇の棒）。タブと撮影用の頁（src/snsCapture、完全版 f01 の撮影）が同じ部品を描く
+ * @param {{sim: object, ag: ReturnType<import("../../../utils/analogyAggregate").aggregateNeighbors>, target: 1|2|3,
+ *   boat?: number|null, onSelect?: (boat: number) => void}} props sim は similar の応答の similar
+ */
+export function SimilarWinBars({ sim, ag, target, boat = null, onSelect }) {
+  const { t } = useTranslation();
+  const cmp = sim.compare;
+  const cmpName = compareName(sim, t);
+  const cmpRate = (arr, b) => (cmp?.n ? arr[b - 1] / cmp.n : null);
+  const tk = TARGET[target];
+  return (
+    <>
+      <h4 className="af-h4">
+        {target === 1
+          ? t(`${k}.winHeading`)
+          : t(`${k}.hitHeading`, {
+              finish: t(`aiPredictionTab.analogy.targets.${target}`),
+            })}
+      </h4>
+      <div className="af-key">
+        <span>
+          <i className="is-bar" />
+          {t(`${k}.keySimilar`)}
+        </span>
+        {cmp?.n > 0 && (
+          <span>
+            <i className="is-dot" />
+            {t(`${k}.keyCompare`, { name: cmpName, n: fmtCount(cmp.n) })}
+          </span>
+        )}
+        <span>
+          <i className="is-err" />
+          {t(`${k}.keyErr`)}
+        </span>
+      </div>
+      <BoatBars
+        counts={ag.hit[target]}
+        n={ag.n}
+        reference={[1, 2, 3, 4, 5, 6].map((b) =>
+          cmp?.[tk] ? cmpRate(cmp[tk], b) : null,
+        )}
+        selected={boat}
+        onSelect={onSelect}
+      />
+    </>
   );
 }
 
@@ -224,13 +285,8 @@ export default function SimilarRacesTab({
       </p>
     );
 
-  const all = sim.neighbors.map(normalizeNeighbor);
-  const steps = sliderSteps(all.length);
-  const idx = Math.min(stepIdx ?? defaultStepIndex(steps), steps.length - 1);
-  const N = steps[idx];
-  const nb = all.slice(0, N);
+  const { all, steps, idx, N, nb, ag } = similarSlice(sim.neighbors, stepIdx);
   const items = visibleItems(exhibitionStage);
-  const ag = aggregateNeighbors(nb);
   const today = todayDisplay(
     sim.today_display ?? null,
     exhibitionStage ? exhibition : null,
@@ -239,17 +295,7 @@ export default function SimilarRacesTab({
   const farC = far ? neighborCounts(far, exhibitionStage) : null;
   const allShown = N >= sim.n_layer;
   const cmp = sim.compare;
-  const cmpKind = layerKind(cmp?.conditions, t);
-  const cmpName =
-    cmp?.name === "grade"
-      ? t(`${k}.cmpGrade`, { kind: cmpKind ?? "" })
-      : cmp?.name === "round"
-        ? t(`${k}.cmpRound`, {
-            round: sim.conditions?.round
-              ? t(`aiPredictionTab.analogy.rounds.${sim.conditions.round}`)
-              : "",
-          })
-        : t(`${k}.cmpSame`);
+  const cmpName = compareName(sim, t);
   const cmpRate = (arr, b) => (cmp?.n ? arr[b - 1] / cmp.n : null);
   const tk = TARGET[target];
   const natRate = (b) =>
@@ -399,36 +445,11 @@ export default function SimilarRacesTab({
               t(`${k}.resExcluded`, { k: fmtCount(nb.length - ag.n) })}
           </span>
         </div>
-        <h4 className="af-h4">
-          {target === 1
-            ? t(`${k}.winHeading`)
-            : t(`${k}.hitHeading`, {
-                finish: t(`aiPredictionTab.analogy.targets.${target}`),
-              })}
-        </h4>
-        <div className="af-key">
-          <span>
-            <i className="is-bar" />
-            {t(`${k}.keySimilar`)}
-          </span>
-          {cmp?.n > 0 && (
-            <span>
-              <i className="is-dot" />
-              {t(`${k}.keyCompare`, { name: cmpName, n: fmtCount(cmp.n) })}
-            </span>
-          )}
-          <span>
-            <i className="is-err" />
-            {t(`${k}.keyErr`)}
-          </span>
-        </div>
-        <BoatBars
-          counts={ag.hit[target]}
-          n={ag.n}
-          reference={[1, 2, 3, 4, 5, 6].map((b) =>
-            cmp?.[tk] ? cmpRate(cmp[tk], b) : null,
-          )}
-          selected={boat}
+        <SimilarWinBars
+          sim={sim}
+          ag={ag}
+          target={target}
+          boat={boat}
           onSelect={selectBoat}
         />
         <p className="af-tip" role="status">

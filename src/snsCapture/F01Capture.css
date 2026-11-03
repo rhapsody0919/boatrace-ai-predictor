@@ -1,0 +1,35 @@
+/* 完全版 f01 の撮影用の頁（F01Capture.jsx）だけのクラス。本番のビルドには入らない */
+body:has(.f01-cap-v16, .f01-cap-ta) {
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface-page);
+}
+
+/* 龍神ソナーの箱（.af-v16）の中央寄せと最大幅は外し、撮る箱の幅で決める */
+.f01-cap-v16 {
+  max-width: none;
+  margin: 0;
+}
+
+.f01-cap-shot {
+  box-sizing: border-box;
+}
+
+/* 思考アシスト＞相手の箱（.ta-box）の枠線は撮らない（以前の撮影も枠の内側を撮っていた） */
+.f01-cap-ta {
+  max-width: none;
+  margin: 0;
+  min-height: 0;
+  padding: 0;
+}
+
+.f01-cap-bare {
+  box-sizing: border-box;
+  border-color: transparent;
+}
+
+.f01-cap-error {
+  margin: 16px;
+  color: var(--text-primary);
+}

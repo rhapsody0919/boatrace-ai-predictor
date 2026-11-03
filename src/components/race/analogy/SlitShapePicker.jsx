@@ -28,6 +28,40 @@ function useStat(forms) {
 }
 
 /**
+ * 形の札1枚（絵・形の名前・割合と件数・手がかりと今日の展示の札）。SlitShapePicker と撮影用の頁
+ * （src/snsCapture、完全版 f01 の撮影）が同じ部品を描く
+ * @param {{f: string, forms: object, pressed: boolean, onSlit: (f: string) => void, hint: boolean, today: boolean}} props
+ *   f は形（"any" か SLIT_FORMS）、forms は選んだ進入の cells[entry].forms
+ */
+export function SlitShapeCard({ f, forms, pressed, onSlit, hint, today }) {
+  const { t } = useTranslation();
+  const stat = useStat(forms);
+  return (
+    <button
+      id={`af-pat-${f}`}
+      type="button"
+      className={`af-pat${f === "any" ? " is-any" : ""}`}
+      aria-pressed={pressed}
+      onClick={() => onSlit(f)}
+    >
+      {f !== "any" && (
+        <SlitShapeIcon st={SLIT_EXAMPLE[f]} height={72} compact />
+      )}
+      <span className="af-pat-k">{t(`${k}.forms.${f}.name`)}</span>
+      <span className="af-pat-fq af-num">{stat(f)}</span>
+      {(hint || today) && (
+        <span className="af-pat-tags">
+          {hint && <span className="af-hintb">{t(`${k}.hintBadge`)}</span>}
+          {today && (
+            <span className="af-today-badge">{t(`${k}.todayExh`)}</span>
+          )}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/**
  * ②スタートはどう並ぶ？（spec C-3、承認モック mock-scenario-v1）。凡例は格子の上に1回、「どの形でも」は横幅いっぱい、
  * 7つの形は2列の格子（絵は小さく）。手がかりの札と今日の展示の札
  * @param {{forms: object, slit: string, onSlit: (f: string) => void, badges: Record<string, object>,
@@ -41,7 +75,6 @@ export default function SlitShapePicker({
   todayForms = [],
 }) {
   const { t } = useTranslation();
-  const stat = useStat(forms);
   return (
     <>
       <p className="af-pat-legend">
@@ -50,30 +83,15 @@ export default function SlitShapePicker({
       </p>
       <div className="af-pats" data-af-control="slit_shape">
         {["any", ...SLIT_FORMS].map((f) => (
-          <button
+          <SlitShapeCard
             key={f}
-            id={`af-pat-${f}`}
-            type="button"
-            className={`af-pat${f === "any" ? " is-any" : ""}`}
-            aria-pressed={slit === f}
-            onClick={() => onSlit(f)}
-          >
-            {f !== "any" && (
-              <SlitShapeIcon st={SLIT_EXAMPLE[f]} height={72} compact />
-            )}
-            <span className="af-pat-k">{t(`${k}.forms.${f}.name`)}</span>
-            <span className="af-pat-fq af-num">{stat(f)}</span>
-            {(badges[f] || todayForms.includes(f)) && (
-              <span className="af-pat-tags">
-                {badges[f] && (
-                  <span className="af-hintb">{t(`${k}.hintBadge`)}</span>
-                )}
-                {todayForms.includes(f) && (
-                  <span className="af-today-badge">{t(`${k}.todayExh`)}</span>
-                )}
-              </span>
-            )}
-          </button>
+            f={f}
+            forms={forms}
+            pressed={slit === f}
+            onSlit={onSlit}
+            hint={Boolean(badges[f])}
+            today={todayForms.includes(f)}
+          />
         ))}
       </div>
     </>

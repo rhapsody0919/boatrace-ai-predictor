@@ -58,6 +58,20 @@ const validFinish = (f) =>
   f.slice(0, 3).every((b) => b >= 1 && b <= 6);
 
 /**
+ * 類似レースのタブで見せる範囲（スライダーの既定の件数まで）と、その集計。タブと撮影用の頁（src/snsCapture）が同じ関数で決める
+ * @param {object[]} neighbors similar の応答の neighbors（並びは類似度の高い順）
+ * @param {number|null} [stepIdx] スライダーの位置（null は既定）
+ */
+export function similarSlice(neighbors, stepIdx = null) {
+  const all = neighbors.map(normalizeNeighbor);
+  const steps = sliderSteps(all.length);
+  const idx = Math.min(stepIdx ?? defaultStepIndex(steps), steps.length - 1);
+  const N = steps[idx];
+  const nb = all.slice(0, N);
+  return { all, steps, idx, N, nb, ag: aggregateNeighbors(nb) };
+}
+
+/**
  * 類似レースの決まり方（spec B-8）
  * @param {object[]} neighbors 似ている順の上位 n 件
  * @returns {{n:number, win:number[], hit:{1:number[],2:number[],3:number[]}, tech:Record<string,number>, tri:Record<string,number>}}
