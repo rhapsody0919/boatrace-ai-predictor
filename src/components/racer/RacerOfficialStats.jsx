@@ -112,7 +112,7 @@ function CourseRateCell({ value, reliability }) {
   );
 }
 
-function CourseSection({ summary }) {
+function CourseSection({ summary, isInya }) {
   const first = summary.periods.at(-1);
   const last = summary.periods[0];
   const rangeText = `${first.range.split("〜")[0]}〜${last.range.split("〜")[1]}`;
@@ -151,6 +151,11 @@ function CourseSection({ summary }) {
           </li>
         ))}
       </ul>
+      {isInya && (
+        <p className="racer-official-note" data-testid="racer-course-inya-note">
+          この表は公式の期別成績です。4〜6号艇で出ても1〜3コースに入る走が多いため、4〜6コースの走は少なくなっています。
+        </p>
+      )}
       <div className="racer-official-table-wrap">
         <table className="racer-official-table">
           <thead>
@@ -194,7 +199,16 @@ function CourseSection({ summary }) {
   );
 }
 
-export default function RacerOfficialStats({ rows, racerName }) {
+/**
+ * frontTaking は前付けの説明（RacerFrontTaking の要素）。進入コース別成績の直上に置く。
+ * isInya のときはコース別の表に、4〜6コースの走が少ない理由を1行添える（BOA-1250）
+ */
+export default function RacerOfficialStats({
+  rows,
+  racerName,
+  frontTaking = null,
+  isInya = false,
+}) {
   const periodRows = useMemo(() => buildPeriodRows(rows), [rows]);
   const courseSummary = useMemo(
     () => buildCourseRows(rows, COURSE_SUM_PERIODS),
@@ -309,7 +323,10 @@ export default function RacerOfficialStats({ rows, racerName }) {
         </p>
       </div>
 
-      {courseSummary && <CourseSection summary={courseSummary} />}
+      {frontTaking}
+      {courseSummary && (
+        <CourseSection summary={courseSummary} isInya={isInya} />
+      )}
     </section>
   );
 }

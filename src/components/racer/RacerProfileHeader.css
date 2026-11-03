@@ -19,6 +19,8 @@
   display: flex;
   gap: var(--spacing-2);
   flex-wrap: wrap;
+  /* イン屋の札は押せる大きさ（44px）を取る。支部・級の丸を同じ高さに伸ばさない */
+  align-items: center;
 }
 
 .racer-profile-header-branch,
@@ -39,6 +41,25 @@
 .racer-profile-header-grade {
   background: var(--color-primary-700);
   color: var(--color-white);
+}
+
+.racer-profile-header-inya {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: 44px;
+  padding: 0 var(--spacing-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.racer-profile-header-inya span {
+  font-weight: var(--font-weight-normal);
+  font-size: var(--font-size-xs);
 }
 
 @media (max-width: 480px) {

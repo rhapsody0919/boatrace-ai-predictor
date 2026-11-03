@@ -1,0 +1,58 @@
+.racer-front-taking {
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+  display: grid;
+  gap: var(--spacing-2);
+  /* 固定のヘッダー（約70px）の下に見出しが出るように */
+  scroll-margin-top: 88px;
+}
+
+/* 取得中は札のある選手の箱とほぼ同じ高さを取り、後から出て下の表を押し下げない（CLS） */
+.racer-front-taking--loading {
+  min-height: 9rem;
+}
+
+.racer-front-taking--inya {
+  border-color: var(--brand-accent-primary);
+}
+
+.racer-front-taking h3 {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+}
+
+.racer-front-taking p {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.racer-front-taking-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.racer-front-taking-value b {
+  font-size: var(--font-size-lg);
+}
+
+.racer-front-taking-meter {
+  display: block;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--border-hairline);
+  overflow: hidden;
+}
+
+.racer-front-taking-meter > span {
+  display: block;
+  height: 100%;
+  background: var(--brand-accent-primary);
+}
+
+.racer-front-taking .racer-front-taking-note {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}

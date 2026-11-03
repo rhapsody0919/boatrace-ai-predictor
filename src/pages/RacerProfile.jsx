@@ -24,7 +24,10 @@ import {
   isRacerIndexable,
   RACER_INDEX_ACTIVE_DAYS,
 } from "../utils/racerIndexPolicy";
-import { getDaysAgoJST, isToday } from "../utils/dateUtils";
+import { getDaysAgoJST, getTodayJST, isToday } from "../utils/dateUtils";
+import { supabaseDataService } from "../services/supabaseDataService";
+import { computeFrontTaking } from "../utils/frontTaking";
+import RacerFrontTaking from "../components/racer/RacerFrontTaking";
 import "./RacerProfile.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
 
@@ -59,6 +62,11 @@ export default function RacerProfile() {
   const [periodStats, setPeriodStats] = useState(null);
   const [periodStatsFailedId, setPeriodStatsFailedId] = useState(null);
   const [periodStatsRetry, setPeriodStatsRetry] = useState(0);
+  // 前付けの割合（イン屋の札、docs/design/inya-racer/）。出走履歴は成績・調子のレース一覧と同じ取得で、
+  // 同時の呼び出しはキャッシュの側で1回にまとまる。undefined＝取得中、null＝失敗
+  const [frontTakingLoad, setFrontTakingLoad] = useState(null);
+  const frontTaking =
+    frontTakingLoad?.racerId === racerId ? frontTakingLoad.result : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +122,26 @@ export default function RacerProfile() {
         if (cancelled) return;
         console.error("今節のモーター状況取得エラー:", err.message);
         setMotorLoad({ racerId, state: "error" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [racerId, validId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (validId ? supabaseDataService.getRacerRaceHistory(racerId) : Promise.resolve([]))
+      .then((rows) => {
+        if (cancelled) return;
+        setFrontTakingLoad({
+          racerId,
+          result: computeFrontTaking(rows, { today: getTodayJST() }),
+        });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("前付けの割合の取得エラー:", errorMessageOf(err));
+        setFrontTakingLoad({ racerId, result: null });
       });
     return () => {
       cancelled = true;
@@ -240,6 +268,7 @@ export default function RacerProfile() {
               profile={data.profile}
               grade={data.grade}
               racerId={racerId}
+              isInya={frontTaking?.status === "inya"}
             />
             <RacerProfileCard profile={data.profile} racerId={racerId} />
             {periodFailed ? (
@@ -254,8 +283,14 @@ export default function RacerProfile() {
                 <RacerOfficialStats
                   rows={periodRows}
                   racerName={data.profile ? displayName : null}
+                  frontTaking={<RacerFrontTaking result={frontTaking} />}
+                  isInya={frontTaking?.status === "inya"}
                 />
               )
+            )}
+            {/* 公式の期別成績が無い・取れない選手は、前付けの説明だけを単独で出す */}
+            {(periodFailed || periodRows?.length === 0) && (
+              <RacerFrontTaking result={frontTaking} />
             )}
             <RacerMotorStatusCard status={motorStatus} />
             <RacerPerformanceStats
