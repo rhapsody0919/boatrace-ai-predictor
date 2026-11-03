@@ -28,6 +28,8 @@
  *     最下位と読め、1つのときの「も」は並ぶ相手が無い（youtube-channel・wording-editor 2026-11-04）
  */
 
+import { isCancellationConfirmed } from "../../../../scripts/lib/cancellationStatus.js";
+
 export const FORMAT = "upset_win_short";
 export const SERIES = "【人気薄の1着】";
 export const W = 1080;
@@ -235,8 +237,11 @@ export function shapeRace({
     venue_code: Number(race.venue_code),
     race_number: Number(race.race_number),
     grade: race.race_grade ?? null,
+    // 中止は「confirmed かつ1着が無い」（docs/knowledge/data-definitions.md。confirmed のまま結果のあるレースがある・tentative は中止でない）
     cancelled:
-      race.cancellation_status != null || result?.is_cancelled === true,
+      (isCancellationConfirmed(race.cancellation_status) &&
+        result?.rank1 == null) ||
+      result?.is_cancelled === true,
     no_race: result?.is_no_race === true || result?.race_status === "no_race",
     absent: [...entries, ...exhibition].some((r) => r.is_absent === true),
     rank1: num(result?.rank1),
@@ -567,7 +572,13 @@ export function descriptionOf(b) {
  * 材料（選んだレース・直近1年の日ごとの数）から bundle を作る（純粋関数）。声の秒（pages[].sec）は作り手が声を作った後に入れる
  * @param {{ race: object, days: Record<string, [number, number]>, date: string, asOf: string, sendTime?: string }} m
  */
-export function buildBundle({ race, days, date, asOf, sendTime = "07:15" }) {
+export function buildBundle({
+  race,
+  days,
+  date,
+  asOf,
+  sendTime = "07:15",
+}) {
   const weaknesses = weaknessesOf(race);
   const primary = primaryOf(weaknesses);
   const range = yearRange(race.race_date);

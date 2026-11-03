@@ -53,6 +53,7 @@ import {
 import { fetchRaceRows } from "../../sns-video-studio/remotion/scripts/upset-win/materials.mjs";
 import { matchRiskRules } from "../lib/riskRuleMatcher.js";
 import {
+  RETRYABLE_JOB_STATES,
   checkTiming,
   checkVideo,
   createRestStore as createSetsuStore,
@@ -69,7 +70,10 @@ export const VIDEO_NAME = "upset_win.mp4";
 export const SEND_TIME_EARLIEST = "07:00";
 export const SEND_TIME_LATEST = "07:50";
 export const DEFAULT_SEND_TIME = "07:15";
-export const RETRYABLE_JOB_STATES = ["held", "failed", "cancelled"];
+/** 作り直してよい job の状態（節の機力の口と同じ） */
+export { RETRYABLE_JOB_STATES };
+/** job の無い自動の item は、作ってからこの分を過ぎたら承認の途中で落ちたとみなして作り直す（並行の push が作りかけの item を止めないため） */
+export const ORPHAN_ITEM_MIN = 5;
 const SITE = "https://www.boat-ai.jp";
 const STOP_SQL =
   "UPDATE public.sns_auto_send_control SET upset_win_short_enabled = false WHERE channel = 'youtube';（上げている最中なら mode='manual' も）";
@@ -279,9 +283,11 @@ export const upsetStatusOf = (item, job) => ({
   video_url: job?.external_post_url ?? null,
 });
 
-const retryable = (item, job) =>
+const retryable = (item, job, now) =>
   item.state === "notified" &&
-  (!job || RETRYABLE_JOB_STATES.includes(job.state));
+  (job
+    ? RETRYABLE_JOB_STATES.includes(job.state)
+    : Date.parse(item.created_at) < now.getTime() - ORPHAN_ITEM_MIN * 60000);
 
 /**
  * 受け取って送る予定に入れる。deps は DB・Storage・Slack（テストで差し替える）。
@@ -356,7 +362,7 @@ export async function pushUpsetWinShort(
     (i) => !["stopped", "held_manual"].includes(i.state),
   )) {
     const job = await store.jobForDraft(item.draft_id);
-    if (retryable(item, job)) retry.push(item);
+    if (retryable(item, job, realNow)) retry.push(item);
     else
       return {
         upset_id: upsetId,
@@ -595,7 +601,7 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
     },
     upsetItems: (date) =>
       call(
-        `sns_auto_send_items?kind=eq.${UPSET_WIN_SHORT_KIND}&channel=eq.youtube&race_id=like.${encodeURIComponent(`upset:${date}:*`)}&select=id,state,draft_id,race_id,held_reason&order=created_at.desc`,
+        `sns_auto_send_items?kind=eq.${UPSET_WIN_SHORT_KIND}&channel=eq.youtube&race_id=like.${encodeURIComponent(`upset:${date}:*`)}&select=id,state,draft_id,race_id,held_reason,created_at&order=created_at.desc`,
       ),
     async raceOf(raceId) {
       const rows = await fetchRaceRows(raceId, {

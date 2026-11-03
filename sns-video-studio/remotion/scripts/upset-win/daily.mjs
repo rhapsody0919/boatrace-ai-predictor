@@ -23,7 +23,7 @@ import { dirname, join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { matchRiskRules } from "../../../../scripts/lib/riskRuleMatcher.js";
-import { addDays, buildBundle, candidates, checkBundle, jstDateOf, pageSeconds, primaryOf, shapeDay, stillsOf, timeline, weaknessesOf } from "../../src/upsetWin/model.js";
+import { addDays, buildBundle, candidates, checkBundle, jstDateOf, pageSeconds, primaryOf, shapeDay, stillsOf, timeline } from "../../src/upsetWin/model.js";
 import { fetchDayRows, loadDayCounts, metricDays } from "./materials.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -108,7 +108,7 @@ export async function run(opts, { now = new Date() } = {}) {
   }
   if (!picked) return { status: "none", race_id: null, reasons: [], candidates: top };
   const race = picked.race;
-  const primary = primaryOf(weaknessesOf(race));
+  const primary = primaryOf(picked.weaknesses);
   const cache = resolve(opts.cache ?? join(REMOTION, "out/upset-win/day-counts.json"));
   const { days, fetched } = await loadDayCounts({ from: addDays(race.race_date, -364), to: race.race_date, cacheFile: cache, today: jstDateOf(now), log });
   log(`直近1年の日ごとの数: 読んだ日 ${fetched}（キャッシュ ${cache}）`);

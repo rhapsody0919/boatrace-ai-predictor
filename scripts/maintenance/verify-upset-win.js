@@ -777,7 +777,7 @@ const store = {
     ),
   upsetItems: (date) =>
     all(
-      "SELECT id, state, draft_id, race_id, held_reason FROM sns_auto_send_items WHERE kind='upset_win_short' AND race_id LIKE $1 ORDER BY created_at DESC",
+      "SELECT id, state, draft_id, race_id, held_reason, created_at::text FROM sns_auto_send_items WHERE kind='upset_win_short' AND race_id LIKE $1 ORDER BY created_at DESC",
       [`upset:${date}:%`],
     ),
   raceOf: async () => dbRace,
@@ -947,7 +947,7 @@ const readCurrent = createReadCurrent({
         ? [{ cancellation_status: dbRace.cancelled ? "confirmed" : null }]
         : [];
     if (table === "race_results")
-      return dbRace ? [{ rank1: dbRace.rank1, is_cancelled: false }] : [];
+      return dbRace ? [{ rank1: dbRace.rank1, is_cancelled: dbRace.cancelled }] : [];
     throw new Error(`読み直しの path が想定の外: ${p}`);
   },
 });
@@ -1344,4 +1344,128 @@ test("龍神ソナーの頁の印（snsScreenMarkers の race-sonar）は画面�
     );
     assert.ok(hit.trim().length > 0, id);
   }
+});
+test("中止の判定: confirmed かつ1着が無いときだけ中止。confirmed のまま結果がある・tentative は行われたレースとして数える（/code-review の指摘）", () => {
+  const base = {
+    race_id: "2026-11-03-17-10",
+    race_date: "2026-11-03",
+    venue_code: 17,
+    race_number: 10,
+  };
+  const done = { rank1: 4, winning_technique: "まくり", race_status: "normal" };
+  assert.equal(
+    shapeRace({
+      race: { ...base, cancellation_status: "confirmed" },
+      result: done,
+    }).cancelled,
+    false,
+  );
+  assert.equal(
+    shapeRace({
+      race: { ...base, cancellation_status: "tentative" },
+      result: done,
+    }).cancelled,
+    false,
+  );
+  assert.equal(
+    shapeRace({
+      race: { ...base, cancellation_status: "confirmed" },
+      result: null,
+    }).cancelled,
+    true,
+  );
+  assert.equal(
+    shapeRace({
+      race: { ...base, cancellation_status: null },
+      result: { ...done, is_cancelled: true },
+    }).cancelled,
+    true,
+  );
+});
+
+test("作りかけの item（job の無い notified）は、作ってから5分の間は止めない（並行の push が作りかけを止めない）。5分を過ぎたら作り直す（/code-review の指摘）", async () => {
+  await db.query(
+    `WITH draft AS (INSERT INTO sns_drafts(content_group_id,platform,language,format,caption_text)
+       VALUES(gen_random_uuid(), 'youtube', 'ja', 'upset_win_short', 'x') RETURNING id)
+     INSERT INTO sns_auto_send_items(kind,variant,draft_id,channel,race_id,deadline_at,notify_by,veto_until,state,checks,notified_at,stop_token_hash,created_at)
+     SELECT 'upset_win_short','main',id,'youtube',$1,$2::timestamptz+interval '2h',$2::timestamptz-interval '1 minute',$2::timestamptz+interval '10 minutes','notified','{"passed":true}',$2::timestamptz,md5('x'),$2::timestamptz FROM draft`,
+    [UPSET_ID, at("07:02:00").toISOString()],
+  );
+  const fresh = await push();
+  assert.equal(fresh.already, true, JSON.stringify(fresh.reasons));
+  const later = await push(bundle(), { now: at("07:08:00") });
+  assert.ok(later.job_id, JSON.stringify(later));
+  const items = await all(
+    "SELECT state FROM sns_auto_send_items ORDER BY created_at",
+  );
+  assert.deepEqual(
+    items.map((i) => i.state),
+    ["stopped", "notified"],
+  );
+});
+
+test("日ごとの数の読み取り: 結果のそろわない日はそのレースを外して数え、キャッシュに入れない（毎朝止まらない）。レースの無い日もキャッシュに入れない", async () => {
+  const { loadDayCounts, readCache } =
+    await import("../../sns-video-studio/remotion/scripts/upset-win/materials.mjs");
+  const { mkdtemp } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const dir = await mkdtemp(`${tmpdir()}/upset-cache-`);
+  const file = `${dir}/c.json`;
+  const r = (id, rank1) => ({
+    race_id: id,
+    race_date: id.slice(0, 10),
+    venue_code: 17,
+    race_number: Number(id.slice(-2)),
+    race_grade: "ippan",
+    cancellation_status: null,
+    _rank1: rank1,
+  });
+  const rows = {
+    "2026-11-01": [r("2026-11-01-17-01", 1)],
+    "2026-11-02": [r("2026-11-02-17-01", 1), r("2026-11-02-17-02", null)],
+    "2026-11-03": [],
+  };
+  const get = async (table, query) => {
+    const day = (decodeURIComponent(query).match(/(\d{4}-\d{2}-\d{2})/) ??
+      [])[1];
+    const races = rows[day] ?? [];
+    if (table === "races") return races;
+    if (table === "race_results")
+      return races
+        .filter((x) => x._rank1)
+        .map((x) => ({
+          race_id: x.race_id,
+          rank1: x._rank1,
+          winning_technique: "逃げ",
+          race_status: "normal",
+        }));
+    if (table === "race_entries")
+      return races.flatMap((x) =>
+        [1, 2, 3, 4, 5, 6].map((b) => ({
+          race_id: x.race_id,
+          boat_number: b,
+          player_name: "a",
+          grade: "B1",
+          win_rate: 3 + b,
+          motor_2rate: 30 + b,
+          is_absent: false,
+        })),
+      );
+    return [];
+  };
+  const out = await loadDayCounts({
+    from: "2026-11-01",
+    to: "2026-11-03",
+    cacheFile: file,
+    today: "2026-11-04",
+    get,
+  });
+  assert.deepEqual(out.days["2026-11-01"].win_rate, [1, 1]);
+  assert.deepEqual(
+    out.days["2026-11-02"].win_rate,
+    [1, 1],
+    "1着の無いレースは外す",
+  );
+  assert.deepEqual(out.days["2026-11-03"].win_rate, [0, 0]);
+  assert.deepEqual(Object.keys(readCache(file).days), ["2026-11-01"]);
 });

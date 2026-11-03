@@ -473,8 +473,8 @@ export function createReadCurrent({
       if (result.rank1 !== rank1) throw new Error("upset_result_changed");
       return {
         withdrawn: false,
-        cancelled:
-          race.cancellation_status != null || result.is_cancelled === true,
+        // 1着があるので行われたレース（confirmed のまま結果がある行もある。docs/knowledge/data-definitions.md）。結果の行の中止だけを見る
+        cancelled: result.is_cancelled === true,
         deadline_at: draft.source_data.deadline_queue?.deadline_at ?? null,
         source_revision: revision,
       };

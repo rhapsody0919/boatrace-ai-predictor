@@ -13,7 +13,7 @@ import process from "node:process";
 import { READ_COLUMNS, addDays, dayCounts, shapeDay } from "../../src/upsetWin/model.js";
 
 /** キャッシュの決まりの版（数え方を変えたら上げる。版が違うキャッシュは捨てて読み直す） */
-export const COUNT_RULE_VERSION = "upset-win-counts/3";
+export const COUNT_RULE_VERSION = "upset-win-counts/4";
 
 async function sbGet(table, query, fetchImpl = fetch) {
   const url = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -102,9 +102,13 @@ export async function loadDayCounts({ from, to, cacheFile, today, concurrency = 
     for (let d = queue.shift(); d; d = queue.shift()) {
       if (d >= today) throw new Error(`${d} は今日（${today}）より前でない（結果がそろわない）`);
       const races = shapeDay(await fetchDayRows(d, get ? { get } : {}));
-      if (races.length && !dayComplete(races)) throw new Error(`${d} の結果がそろっていない（1着の無いレースがある）`);
-      if (races.length) cache.days[d] = dayCounts(races);
-      else zero[d] = dayCounts(races);
+      // 結果のそろわない日（中止の判定が付かないまま1着の無いレースがある・取り込みの欠け）は、そのレースを外して数え、
+      // キャッシュに入れない（次の朝に読み直す）。毎朝止まり続けないよう投げない。レースの無い日も入れない
+      if (races.length && dayComplete(races)) cache.days[d] = dayCounts(races);
+      else {
+        if (races.length) log(`${d} の結果がそろっていない（1着の無いレースがある）。そのレースを外して数え、キャッシュに入れない`);
+        zero[d] = dayCounts(races);
+      }
       done += 1;
       if (done % 20 === 0) {
         log(`日ごとの数: ${done}/${missing.length} 日`);
@@ -112,7 +116,13 @@ export async function loadDayCounts({ from, to, cacheFile, today, concurrency = 
       }
     }
   };
-  await Promise.all(Array.from({ length: Math.min(concurrency, missing.length) }, work));
+  // 1つの読み取りが落ちたら、残りの読み取りを止める（失敗した実行のために読み続けない）
+  const guarded = () =>
+    work().catch((error) => {
+      queue.length = 0;
+      throw error;
+    });
+  await Promise.all(Array.from({ length: Math.min(concurrency, missing.length) }, guarded));
   if (cacheFile && missing.length) writeCache(cacheFile, cache);
   return { days: Object.fromEntries(want.map((d) => [d, cache.days[d] ?? zero[d]])), fetched: missing.length };
 }
