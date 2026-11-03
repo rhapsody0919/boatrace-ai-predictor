@@ -1,94 +1,77 @@
-# What Is a Motor Top-2 Rate in Boat Racing? What It Measures and When It Changes
+# What Is Motor Condition? A New Way to See Today's 2nd-Place Rate by Lane
 
-A motor's top-2 rate is the share of past races in which that motor finished 2nd or better. In Toda Race 1 on January 8, 2026, the motor on Boat 1 had the highest rate of the six at 46.85%, and the motor on Boat 6 had the lowest at 30.23%.
+We've added a new "Motor Condition" feature to Ryujin Radar. Rather than a generic list of "motors that are running well," we designed this to be **directly usable for the race you're actually about to bet on today**. Here's what this feature shows and how to use it.
 
-You can line up the six motors of any race today on [Motor Condition](/winning-technique?tab=motor). Select a race, and the six official top-2 rates (as of the meet) appear as bars, together with each motor's venue rank.
+---
 
-![The Motor Condition screen. For Kiryu Race 1 on November 3, 2026, the six official top-2 rates (series start) are shown as bars, with venue rank, top-2 rate (past 90 days), and power index](/images/blog/motor-condition-guide-2026-11-03.jpg)
+## Knowing the motor number alone isn't useful
 
-## The rate is top-2 finishes ÷ starts, and the race-card value is fixed on the first day of the meet
+When we first set out to build a way to check motor condition, our initial design was a simple ranking of every motor at a venue by its 2nd-place-or-better finish rate. But that design fell short: knowing that "motor #31 is performing well" tells you nothing useful **if that motor isn't even racing today**.
 
-A motor's top-2 rate is "the number of 1st- and 2nd-place finishes ÷ the number of starts with that motor." The top-3 rate counts finishes up to 3rd. The official value printed on the race card covers everything since the motor went into service (up to one year), and it does not include results from the current meet ([BOAT RACE official explanation of race-card figures](https://www.boatrace.jp/owpc/pc/extra/about.html), in Japanese).
+Thinking about how people actually bet on boat races, what they need to know isn't "how is this motor performing in general" — it's "in the race I'm looking at right now, which boat's motor is performing well." We redesigned the feature around that.
 
-| Item | Official motor top-2 rate (race-card value) |
-|---|---|
-| What it measures | Top-2 finishes with that motor ÷ starts |
-| Period covered | Since the motor went into service (up to one year). The current meet is not included |
-| When it changes | On the first day of a meet. The same value holds through the meet |
-| New motors | 0% for every motor during their first meet. Values appear from the first day of the second meet |
-| Decimals | Two places (e.g. 46.85%) |
+---
 
-A new motor shows 0% in its first meet not because it has never finished in the top two, but because the official cumulative figure has not been attached yet. During that period, Ryujin Radar shows a top-2 rate calculated from the motor's runs at that venue in the "Top-2 (series start)" column.
+## What you can learn from Motor Condition
 
-## Example: the racer's rate and the motor's rate side by side for the six boats in Toda Race 1
+You can check it on the "🔧 Motor Condition" tab of the [`/winning-technique`](/winning-technique?tab=motor) page.
 
-These are the published race-card values for Toda Race 1 on January 8, 2026. The national top-2 rate is the racer's record; the motor and boat top-2 rates are the equipment's record.
+**Select a race happening today, and you'll see the 2nd-place-or-better rate and 3rd-place-or-better rate for the motors on all 6 boats actually racing.** The boat with the highest 2nd-place rate is highlighted, so you can tell at a glance which boat's motor is running best in that specific race.
 
-| Boat | Class | National top-2 rate (racer) | Motor top-2 rate | Rank among the 6 motors | Boat top-2 rate |
-|---|---|---:|---:|---:|---:|
-| Boat 1 | A1 | 48.53% | 46.85% | 1st | 30.34% |
-| Boat 2 | A1 | 52.87% | 32.32% | 4th | 36.56% |
-| Boat 3 | A2 | 44.33% | 31.18% | 5th | 52.63% |
-| Boat 4 | B1 | 37.66% | 38.89% | 2nd | 36.67% |
-| Boat 5 | A2 | 33.64% | 35.51% | 3rd | 34.02% |
-| Boat 6 | B2 | 2.04% | 30.23% | 6th | 28.89% |
+![Motor condition screen. Selecting today's race shows lane, racer name, motor number, 2nd-place rate, and 3rd-place rate for all 6 boats, with the top boat highlighted](/images/blog/motor-condition-table.jpg)
 
-Boat 6's racer has a national top-2 rate of 2.04%, yet the motor's rate is 30.23%. A motor's rate comes from the finishes of all the racers who have used that motor so far, not from the racer using it today. Boat 2's racer has the highest national rate of the six at 52.87%, while the motor ranked 4th at 32.32%. When the racer column and the equipment column put the boats in a different order, read them as two separate things.
+In the example image above, lane 5's motor (#19) stands out clearly above the rest with a 48.00% 2nd-place rate and 64.00% 3rd-place rate, highlighted in yellow.
 
-The official race card shows only the percentages and does not say how many starts each value is based on.
+---
 
-## National, local, motor, and boat top-2 rates
+## How to use it
 
-| Column | Whose record | Period |
-|---|---|---|
-| National top-2 rate | The racer's top-2 rate nationwide | The six months including the month of the meet's first day |
-| Local top-2 rate | The racer's top-2 rate at that venue | From January 1 of the year 24 months before the month containing the meet's first day, up to the day before the pre-inspection day |
-| Motor top-2 rate | The motor's (engine's) top-2 rate | Since the motor went into service (up to one year) |
-| Boat top-2 rate | The boat's (hull's) top-2 rate | Since the boat went into service (up to one year) |
+1. Open the [`/winning-technique`](/winning-technique?tab=motor) page and select the "Motor Condition" tab
+2. Choose a venue holding races today (venues with no races today won't appear as options)
+3. Choose a race number
+4. Lane, racer name, motor number, 2nd-place rate, and 3rd-place rate appear for all 6 boats, with the top boat highlighted
+5. Click a row for a motor you're curious about to switch to a trend chart showing that motor's performance across race meets
 
-Motors and boats are assigned to racers by lottery at each meet. The motor is the engine; the boat is the hull it is mounted on, and each has its own lottery. The periods follow the official explanation above. None of them include results from the current meet.
+---
 
-## What counts as a high motor top-2 rate?
+## How to use it strategically
 
-Two of six boats finish in the top two, so the average top-2 rate across all motors is about 33.3% in theory. In the official race cards stored by Ryujin Radar (December 2, 2025 to October 31, 2026, 297,188 entries excluding 0%), the average was 33.98%, and 40% or higher was roughly the top 20%. In short, across 313,938 races nationwide in which every boat entered its own lane's course, we compared the 1st-place rate of an attacking boat (such as Boat 4 starting from the kado (the outermost of the inner lanes)) when it ranked 1st–2nd among the six versus 5th–6th. The gap was 4–8 points by motor top-2-rate rank and 10–18 points by exhibition-time rank.
+### Spot a boat that clearly stands out
 
-## The official rate vs. Ryujin Radar's rate and power index
+A boat whose 2nd- and 3rd-place rates are clearly higher than the rest may have a real motor advantage. Checking the second-highest boat in addition to the highlighted one gives you more to work with.
 
-The table on [Motor Condition](/winning-technique?tab=motor) shows values from different sources.
+### Read the momentum from the trend chart
 
-| Column | Source | Period / when it changes | What it is |
-|---|---|---|---|
-| Official top-2 (series start) | BOAT RACE official race card | Since the motor went into service. Fixed on the meet's first day | Results from the current meet are not included |
-| Top-2 rate (past 90 days, etc.) | Ryujin Radar's calculation | The period you select (default: past 90 days). Only runs after the motor was replaced | A different value from the official series-start figure |
-| Power index | Ryujin Radar's calculation | The period you select | The average, over all races, of "did this motor finish top 2" minus "the national top-2 rate of the racer using it at the time" |
-| Venue rank | Each venue's official motor records | Updated at the end of a meet | Not shown for Toda, Heiwajima, Hamanako, and Miyajima |
+Clicking a row opens a trend chart showing how that motor has changed across race meets. A motor on an upward trend may be a sign that maintenance or a parts swap has improved its performance. A motor on a downward trend is a reason to discount it somewhat, even if the racer's skill is strong.
 
-A motor's top-2 rate also reflects the skill of the racers who used it. A motor that strong racers used repeatedly tends to have a higher rate, and the power index subtracts that part using the racers' national top-2 rates. The larger the plus, the more the motor has run beyond the skill of the racers who used it.
+### Combine it with winning-technique data
 
-The venue rank comes from the venue's official site, while the bars show the official race-card rate. Because the sources differ, there are races where the bar lengths and the ranks run in the opposite order.
+Combining this with the "Winning-Technique Analysis" feature gives you even more to go on. For example, if lane 4 tends to win by overtaking at a given venue, and lane 4's motor today has the best 2nd-place rate in the race, that's two independent signals pointing toward the same pick.
 
-## How to check motor top-2 rates for today's race
-
-1. On [Motor Condition](/winning-technique?tab=motor), select today's race and look at the six official top-2 rates (series start) and the venue rank (no venue rank for Toda, Heiwajima, Hamanako, and Miyajima). In a new motor's first meet, the header changes from "Official top-2 (series start)" to "Top-2 (series start)", and Ryujin Radar's value is shown with a "※" mark.
-2. Put it next to the national top-2 rate on the race card, and mark the boats where the racer order and the motor order split. As with Boat 6 in the example, the motor's rate is set separately from the record of the racer using it today.
-3. Look at the power index to see whether the motor is still plus after subtracting the skill of the racers who used it.
-4. Once exhibition times are out, look at the exhibition-time rank before the motor-rate rank. As summarized above, the spread in 1st-place rate by rank was larger for exhibition time.
-5. You can see all of a venue's motors in order on [Motor Ranking](/winning-technique?tab=motorranking).
+---
 
 ## FAQ
 
-### Does a motor's top-2 rate change during a meet?
+### Should I focus on the 2nd-place rate or the 3rd-place rate?
 
-The official race-card value is fixed on the first day of a meet and stays the same through the meet. Results from the current meet are added from the first day of the next meet.
+The 2nd-place rate is "the share of races finishing 2nd or better," and the 3rd-place rate is "the share finishing 3rd or better." For bets targeting the top 1–2 finishers, like Win or Quinella, lean on the 2nd-place rate. For bets involving 3rd place, like Trifecta or Trio, the 3rd-place rate is more useful.
 
-### Why is a new motor's top-2 rate 0%?
+### When do the motor numbers get updated?
 
-The official cumulative figure is attached from the first day of the second meet, so every motor shows 0% during its first meet. It does not mean the motor has never finished in the top two.
+Motor 2nd- and 3rd-place rates update per **race meet**, not per individual race. The same numbers hold throughout a meet and only change when the next meet begins — which is why the trend chart looks stair-stepped.
 
-### How is a racer's national top-2 rate different from a motor's top-2 rate?
+### Does this work for every venue?
 
-The national top-2 rate is that racer's record over the past six months. A motor's top-2 rate is the record of all the racers who have used that motor since it went into service. It does not include the record of the racer using it today.
+The `races` table only contains data for races held that day, so the venue options on the Motor Condition tab are limited to **venues actually holding races today**. Venues with no races scheduled won't appear as options.
 
-## Scope of the numbers and caveats
+---
 
-The example table uses the published race-card values for Toda Race 1 on January 8, 2026, and the ranks among the six were counted from those values. The 33.98% average counts each race-card row (one boat in one race) as one entry. The 1st-place-rate spread is from races in which every boat entered its own lane's course (April 1, 2019 to September 26, 2026), using the motor top-2 rate at the time of the race card. Past rates do not promise today's finishing order.
+## Summary
+
+- **Motor Condition** is a new feature that shows motor 2nd- and 3rd-place rates by lane for today's races, with just a race selection
+- Instead of an abstract ranking, it's designed to be directly usable for your actual betting decisions
+- Click through for a trend chart showing performance across race meets
+
+This data is for reference only — please don't base your bet selection on it alone. It reflects statistical tendencies and does not guarantee future outcomes. Always make your own analysis and judgment before placing a bet.
+
+Ryujin Radar will keep expanding its data tools so you can "think and decide for yourself," not just rely on predictions.

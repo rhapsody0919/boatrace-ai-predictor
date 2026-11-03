@@ -4,75 +4,59 @@
  "kind": "revision",
  "ticket": "OC-20261102T100127-seo-human-1",
  "paths": [
-  "public/blog/motor-condition-guide-en.md",
-  "public/blog/motor-condition-guide-ko.md",
-  "public/blog/motor-condition-guide-zh-tw.md",
   "public/blog/motor-condition-guide.md",
-  "public/images/blog/motor-condition-guide-2026-11-03.jpg",
-  "src/data/blog-posts/en/motor-condition-guide.json",
-  "src/data/blog-posts/ko/motor-condition-guide.json",
-  "src/data/blog-posts/motor-condition-guide.json",
-  "src/data/blog-posts/zh-TW/motor-condition-guide.json"
+  "src/data/blog-posts/motor-condition-guide.json"
  ],
  "files": {
-  "public/blog/motor-condition-guide-en.md": "8d4a1bfc7c6accf6e61aff3847362605a54d654e775008c68d50636684f76e94",
-  "public/blog/motor-condition-guide-ko.md": "3ab64bcd739837f8597c5ca82e87eb9c0925911bc90a9945ab962f30b13d908a",
-  "public/blog/motor-condition-guide-zh-tw.md": "be01d165035a719d8210176a4c14a5328c609f47da9470096213c269f6b0a77c",
-  "public/blog/motor-condition-guide.md": "c92588748afe95f5ce9cb6eb11e229547fbfc4f444c8667dbb0d9f9a5659df3f",
-  "public/images/blog/motor-condition-guide-2026-11-03.jpg": "093d9f41f69093d54ff82d923d81f48f8938e02f1e4c1b6b90208776eb8d4318",
-  "src/data/blog-posts/en/motor-condition-guide.json": "4f9f05a25f2f56010459b33612b6cdaa019f5e993ff0f130b711f8457d76850e",
-  "src/data/blog-posts/ko/motor-condition-guide.json": "f934a7abdd73fb803f6cadb5f532c4f882f69722911e38a4338e1d76882e4f07",
-  "src/data/blog-posts/motor-condition-guide.json": "f57a33093e2286e03306a47205c771d7ba7303fd28caa63acf025c9dac231242",
-  "src/data/blog-posts/zh-TW/motor-condition-guide.json": "a5a3f652b8d99e3f9d84eba0fec6023d8d4865ea7f59d62cb66ba864fcc43ba0"
+  "public/blog/motor-condition-guide.md": "d46f7993970417cc8f755376cacdaca7f71e56e65c87491b3b8d4683c180a98d",
+  "src/data/blog-posts/motor-condition-guide.json": "69428f4f491e9f97688d5616ebec26b1551732444900ee1ec5b0412ec01cf360"
  },
- "content_sha256": "fb629015eac8db158c512bd2314a835bab2b3883d5b51141163ae49b3cda6f74",
+ "content_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
  "judgement_words": [],
  "reviews": [
   {
    "role": "content-qa",
-   "agent": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
    "p0": 0,
    "p1": 0,
-   "result": "pass",
-   "reviewed_sha256": "fb629015eac8db158c512bd2314a835bab2b3883d5b51141163ae49b3cda6f74",
-   "model": "opus-5.5",
-   "at": "2026-11-03T06:25:00Z"
+   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "model": "opus",
+   "at": "2026-11-02T10:09:05+09:00"
   },
   {
    "role": "wording-editor",
-   "agent": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
    "p0": 0,
    "p1": 0,
-   "result": "pass",
-   "reviewed_sha256": "fb629015eac8db158c512bd2314a835bab2b3883d5b51141163ae49b3cda6f74",
-   "model": "opus-5.5",
-   "at": "2026-11-03T06:25:00Z"
+   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "model": "opus",
+   "at": "2026-11-02T10:09:05+09:00"
   },
   {
    "role": "fan",
-   "agent": "boatrace-fan-reviewer",
+   "agent": "hq-review:fan",
+   "result": "pass",
    "p0": 0,
    "p1": 0,
-   "result": "pass",
-   "reviewed_sha256": "fb629015eac8db158c512bd2314a835bab2b3883d5b51141163ae49b3cda6f74",
-   "model": "opus-5.5",
-   "at": "2026-11-03T06:25:00Z"
+   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "model": "opus",
+   "at": "2026-11-02T10:09:05+09:00"
   },
   {
    "role": "seo-marketer",
-   "agent": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
    "p0": 0,
    "p1": 0,
-   "result": "pass",
-   "reviewed_sha256": "fb629015eac8db158c512bd2314a835bab2b3883d5b51141163ae49b3cda6f74",
-   "model": "opus-5.5",
-   "at": "2026-11-03T06:25:00Z"
+   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "model": "opus",
+   "at": "2026-11-02T10:09:05+09:00"
   }
  ],
- "author": {
-  "model": "claude",
-  "lane": "hq-employee:seo-human"
- },
- "created_at": "2026-11-03T06:30:00Z",
- "content_at": "2026-11-03T06:20:00Z"
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-02T10:10:14+09:00",
+ "run": "20261102T100127-seo-human",
+ "engine": "claude"
 }
