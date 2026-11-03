@@ -155,3 +155,5 @@
 - E2Eの **/rest/v1/race_odds* は race_odds_final にも一致する。発売中と締切時オッズで応答が違う試験は、routeの対象を区別する（2026-10-27、BOA-990①、PR #2027）。
 - E2E Smoke の経過が25分を超える回の主因は組の実行でなく待ち（ジョブの作成から開始まで、90% 17.9分・最大 67.6分）。Codex の PR がまとめて開く時刻に、同時に走れるジョブの上限で並ぶ。組の実行が中央 16.8分を占め、checkout〜npm ci は約0.3分なので、キャッシュより組の実行を縮める方が分も待ちも効く（2026-11-03、10/27〜11/03 の298 run の実測、docs/design/ci-minutes-reduction/design.md 11.1）。
 - e2e の範囲（0件）を import の閉包で守るときは、JS の相対 import だけでは足りない。CSS の @import と url()、vite が root から解く `/` 始まりの指定、Node 側で cwd や ROOT から組み立てるパス、ワークフローが node で呼ぶ scripts も根・辿る先に入れる（2026-11-03、system-architect の審査、#2171 の verify-e2e-scope.js）。
+- 撮影用など本番に出さない頁は、main.jsx の `import.meta.env.VITE_SNS_CAPTURE === "1"` の分岐の中で動的 import する。旗の無い本番の vite build では分岐と chunk が消える（Vite 7、dist の grep で0件を確認）。AppRouter に Route を足さないので、本番で開くと `path="*"` で `/` に戻り、sitemap・TRANSLATED_PATHS・content-index の対象外（2026-11-04、system-architect の審査、f01-stable-capture）
+- 子のプロセス（vite dev 等）を立てる撮影のスクリプトは、ブラウザの起動も try/finally の中に置き、process.on("exit") でも子を止める。並べて作る日は node_modules/.vite を取り合うので cacheDir を回ごとに分け、lazy で読む頁は optimizeDeps.entries に足す（最初の頁の後に依存が見つかると頁が読み直される）（2026-11-04、f01-capture.mjs）
