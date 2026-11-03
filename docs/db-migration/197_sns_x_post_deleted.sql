@@ -1,4 +1,4 @@
--- 196: X の投稿を消した記録（BOA-1279、オーナー 2026-11-04「架空の選手の投稿は削除」）
+-- 197: X の投稿を消した記録（BOA-1279、オーナー 2026-11-04「架空の選手の投稿は削除」）
 -- 消す口（api/admin/sns-hub/delete-x-post.js・scripts/sns/delete-x-post.js）が X で消した後に mark_sns_x_post_deleted を呼び、
 -- sns_x_send_jobs に deleted_at・deleted_reason を入れ、その投稿の計測（sns_metric_jobs の x-api の pending）を
 -- missing・last_error='post_deleted' で閉じる（以後、取り込みの cron が読まない）。その投稿への返信で、まだ送っていない job
@@ -8,7 +8,7 @@
 -- 返信の親（state='posted'）は posted を数える。X も消した投稿を作った回数に数える（消しても上限は戻らない）。
 -- 列を2つと関数を1つ足すだけで、既存の関数・トリガーは変えない（列の UPDATE は state を変えないので
 -- sns_metric_jobs_on_posted（AFTER UPDATE OF state）は発火しない）。
--- コードは 196 が無いと消す前に止まる（読んだ job に deleted_at が無ければ「196 が未適用」で X を呼ばない）。
+-- コードは 197 が無いと消す前に止まる（読んだ job に deleted_at が無ければ「197 が未適用」で X を呼ばない）。
 -- 適用はオーナーの db-apply（時間帯の制約なし。ALTER TABLE の間 sns_x_send_jobs に ACCESS EXCLUSIVE のロックが一瞬。
 -- 既定値の無い NULL の列なので書き直しは無い）。lock_timeout は10秒。
 --

@@ -547,7 +547,7 @@ export function createSnsMetricsStore({ url, key, fetchImpl = fetch }) {
         ["done", "missing", "failed"].map(async (state) => [
           state,
           await call(
-            // 消した投稿（196 の mark_sns_x_post_deleted が post_deleted で閉じる）は欠測の率に数えない（BOA-1279）
+            // 消した投稿（197 の mark_sns_x_post_deleted が post_deleted で閉じる）は欠測の率に数えない（BOA-1279）
             `sns_metric_jobs?state=eq.${state}&done_at=gte.${since}&select=id&limit=1&or=(last_error.is.null,last_error.neq.post_deleted)`,
             { count: true },
           ),

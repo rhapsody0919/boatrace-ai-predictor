@@ -3,7 +3,7 @@
  * - 消す相手は送信の記録（sns_x_send_jobs の channel=x・state=posted・external_post_id）にあるものだけ。記録に無い ID は消さない
  * - 消すのは ID を明示で並べたときだけ（1回 DELETE_MAX_TARGETS 件まで）。条件で一括に消す道は作らない。
  *   架空の候補（fictionalReasons）は一覧に出すだけで、消す相手には使わない
- * - 消した記録は 196 の mark_sns_x_post_deleted（deleted_at・deleted_reason、計測の pending の job を missing で閉じる）。
+ * - 消した記録は 197 の mark_sns_x_post_deleted（deleted_at・deleted_reason、計測の pending の job を missing で閉じる）。
  *   state は posted のまま（日の上限・同じレースの未送信の検査は posted を数える。X も消した投稿を作った回数に数える）
  */
 
@@ -103,7 +103,7 @@ export function targetIssue(job, tweetId) {
 /**
  * 消す口の本体。targets は [{job_id, tweet_id}]（明示の ID だけ）。順に、記録を確かめ → X で消す（404 は既に無い）→ 記録を直す。
  * 1件でも落ちたら残りは送らない（何が済んだかを results で返す）。
- * store: readJob(id)（列 deleted_at が無ければ投げる＝196 未適用）・markDeleted(jobId, tweetId, reason)
+ * store: readJob(id)（列 deleted_at が無ければ投げる＝197 未適用）・markDeleted(jobId, tweetId, reason)
  * getX: () => Promise<{deletePost(id)}>（X の鍵は消す相手が1件でも要るときだけ取る）
  */
 export async function runDeleteXPosts({ targets, reason }, { store, getX }) {
@@ -115,7 +115,7 @@ export async function runDeleteXPosts({ targets, reason }, { store, getX }) {
     try {
       const job = await store.readJob(target.job_id);
       if (job && !("deleted_at" in job))
-        throw new Error("196 が未適用（sns_x_send_jobs に deleted_at が無い）");
+        throw new Error("197 が未適用（sns_x_send_jobs に deleted_at が無い）");
       const problem = targetIssue(job, target.tweet_id);
       if (problem) throw new Error(problem);
       let already = Boolean(job.deleted_at);

@@ -93,3 +93,12 @@
 - 古い記事の改稿は数値だけでなく、用語の説明・会場例・閾値・選手名を含む主張を1文ずつデータか定義へ照合する。根拠の無い定性説明は数字の追加では直らないため、書き直すか外す（2026-10-31、seo-human、course-prediction-tips.md と venue-course-win-rate.json の照合）。
 - /race の状態別メタを変えるときは、共通メタ関数だけでなく人・ボットの両呼び出し元が状態を渡すか確認する。識別情報だけの引数のままでは状態別に切り替えられない（2026-10-31、BOA-1200、RaceDetailPage.jsx・api/_lib/botRace.js）。
 - 節ページは初日でも出走表と当日の節の日があれば、結果0件だけで preOpen にはならない。サイトマップ除外条件で「初日の結果待ち」とpreOpenを同一視しない（2026-10-31、BOA-1204、BOA-1187取込SHA ca2c9e2 の meetPageState 固定入力確認）。
+- 記事の「Nレース中X回」は、提出時の事実照合が参照するJSONの葉でN・Xを確認できる形にする。docsのMarkdown表にしか無い集計は先に根拠JSONの取り込みを扱い、それまでは照合可能な定義・差の幅・実例で答える（2026-11-02、seo-human、hq/platform/facts.py の bind_probs、motor-condition-guide改稿）。
+- 改稿候補は語ごとの表示回数だけでなく、search-console-reportのページ別CTRギャップも確認する。検索語が分散すると各語は少数でもページ全体の表示は多いことがあり、順位相応の目安の半分未満のCTRは候補を探す手掛かりになる（2026-11-02、seo-human、search-console-reportのmotor-condition-guide、20261102T100127）。
+- Perplexityの許可判定はUA例文全体や版番号に固定せず、PerplexityBot・Perplexity-Userそれぞれの名前と対応する公式IP一覧を組み合わせる。例文の変更だけで障害とせず、既存の部分一致方式とWAFの評価順を確認する（2026-11-03、ai-visibility、Perplexity公式文書の10/30差分・src/config/aiCrawlerBots.js）。
+- 同じ主題の記事は検索意図で役割を分け、「とは」は定義、深掘りは落とし穴・使い方に答える。同じ問いや更新時点・平均の定義表を記事内外で重複させず、詳しく答える1か所へリンクする。二重管理は改稿時の食い違いを生む（2026-11-02〜03、seo-human、BOA-1223・BOA-1256、motor-condition-guideとmotor-performance-deep-dive）。
+- 掲載済み記事の部分改稿でも、提出用メタのtitleは30〜60字、descriptionは120〜160字の検査を受ける。本文の変更が1節だけでもメタの字数を確認し、範囲外なら併せて直す（2026-11-02、seo-human、hq/platform/blog_post.pyのmeta_probs・title_len・description_len、what-pros-avoid改稿）。
+- 記事の題・率・期間・母数を改稿したら、リンク元の表示文と添え書きも確認する。改稿前にpublic/blogをリンク先の/blog/<id>で検索し、数字入りの関連記事リンクを洗い出す。本文だけ直すとリンク元とリンク先で同じ主張の数字が食い違う（2026-11-03、seo-human、BOA-1007・BOA-958）。
+- 掲載済み記事は執筆直前のマージ済み版を土台にする。refの写しの時刻と成果台帳outcomes.jsonlのmerged_atを比べ、写しより後のマージがあればその差分を反映してから改稿する。古い版による丸ごとの置換で直近の数字・表を消さない（2026-11-03、seo-human、BOA-1256・BOA-1257、PR #2131・#2125・#2088）。
+- 大きなJSONを記事の根拠にするときは、sourcesにファイル名だけでなく該当キーと行番号の範囲を添える。記事の問いに不要な期間・会場・数値は省き、照合対象を明確にする。行番号だけには依存しない（2026-11-03、seo-human、BOA-1275、heiwajima-course1-winrateの審査がmax_turns 12で終了した例）。
+- /winning-techniqueのボット用HTMLは、generateWinningTechniqueSnapshotの専用テンプレートから生成する。ブログのようにReactの描画後HTMLを保存する方式ではないため、ページへのuseSocialMeta追加だけではボット用HTMLのOGP・Xカードを変更できない（2026-11-03、BOA-1239、scripts/generate-ai-snapshots.js の generateWinningTechniqueSnapshot）。

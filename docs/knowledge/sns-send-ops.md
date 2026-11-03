@@ -86,3 +86,5 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - 取り込み時に今日のqueued数で上限を見る場合は、同じ下書きの前の版を除外する。148のトリガーは中身が変わった場合だけ古いjobを取り消すため、作り直しで自分の旧jobを重複して扱いうる（2026-10-27、system-architect、マイグレーション179・PR #1979）。
 - hqから受け取る時刻はZまたは±HH:MM付きに限る。時差なしの文字列はNodeでは端末、DBでは接続のTimeZoneで解釈され、別の時刻になりうる（2026-10-27、コードレビュー、push-research-image.js・PR #1978）。
 - sns-x-posts.csv の caption_text に残る {full_url} は、承認版の保存値の場合がある。送信直前に公開済み完全版URLへ置換するため、未置換の不具合と断定する前に実際の概要欄か fillFullUrl を確認する（2026-10-27、measurement、ADR-0094・api/_lib/snsDeadlineQueue.js）。
+- Xの通り道B以外のclaimでは、自分の未claimの子と、当日claim済みの他の親に属する未claimの子の枠を v_need に足す。子自身は他の親の子を含めず、子の予約分は begin_post で再計算しない。再計算するとclaim後に増えた子のため予約済みの送信が止まる（2026-10-26、177_sns_finals_replies.sql、188_sns_x_cost_by_url.sqlでも継続）。
+- 「数字で見たら」の取り込み・送信には画像ALTを付ける経路が無い。画像内の期間・母数・定義は送り手の検査だけでは保証されないため、hq側の画像検査で確認し、送信成功を内容確認の証拠にしない（2026-10-27、x-channel、PR #1978・scripts/sns/push-research-image.js・api/_lib/snsXSend.js）。

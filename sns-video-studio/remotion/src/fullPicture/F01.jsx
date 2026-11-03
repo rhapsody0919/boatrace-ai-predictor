@@ -473,10 +473,11 @@ export function F01Landscape({
 }
 
 /**
- * サムネ（横 1280x720）。hq の型の thumb「問い10字前後＋数字1つ」（m02-thumb-word: 表・数字の羅列は載せない）。
- * 数字は冒頭と同じ範囲の過去の1号艇の1着（約X割）
+ * サムネ（横 1280x720、オーナー 11/4 承認の形）。上の帯「{会場}{R}R {レース名} {M/D}({曜})」、右上の札「締切{HH:MM}」、
+ * 大きな2行「{1号艇の名前} {級}」「逃げ切れる？」、下「同じ並び 過去{n0}回 1号艇の1着 {X}割」。
+ * 文と大きな2行の字の大きさは作る側が決める（f01.mjs の thumb・thumbSize。長い名前は字を詰め、収まらなければ作らない）
  */
-export function F01Thumb({ head, question, number, numberLabel }) {
+export function F01Thumb({ head = "", deadline = "", lines = [], foot = "", number = "" }) {
   return (
     <AbsoluteFill
       style={{
@@ -489,29 +490,42 @@ export function F01Thumb({ head, question, number, numberLabel }) {
       <div style={{ color: MUTED, fontSize: 40, fontWeight: 700 }}>{head}</div>
       <div
         style={{
-          marginTop: 70,
-          fontSize: 116,
+          position: "absolute",
+          top: 48,
+          right: 72,
+          padding: "6px 22px",
+          borderRadius: 12,
+          background: GOLD,
+          color: "#0b1626",
+          fontSize: 44,
           fontWeight: 900,
-          lineHeight: 1.15,
         }}
       >
-        {question}
+        {deadline}
+      </div>
+      <div style={{ marginTop: 56, fontWeight: 900, lineHeight: 1.15 }}>
+        {lines.map((l, i) => (
+          <div key={i} style={{ fontSize: l.size, whiteSpace: "nowrap" }}>
+            {i === 0 ? <span translate="no">{l.text}</span> : l.text}
+          </div>
+        ))}
       </div>
       <div
         style={{
           position: "absolute",
           left: 72,
-          bottom: 64,
+          bottom: 56,
           display: "flex",
           alignItems: "baseline",
-          gap: 28,
+          gap: 24,
+          whiteSpace: "nowrap",
         }}
       >
-        <span style={{ fontSize: 44, fontWeight: 700, color: MUTED }}>
-          {numberLabel}
+        <span style={{ fontSize: 40, fontWeight: 700, color: MUTED }}>
+          {foot}
         </span>
         <span
-          style={{ fontSize: 180, fontWeight: 900, color: GOLD, lineHeight: 1 }}
+          style={{ fontSize: 120, fontWeight: 900, color: GOLD, lineHeight: 1 }}
         >
           {number}
         </span>

@@ -1,7 +1,7 @@
 // X の投稿を消す口（BOA-1279）の再現テスト。X・DB・本番の関数はすべて差し替え（外部接続なし、本物の X を呼ばない）。
-// adapter の DELETE /2/tweets/:id（404 は既に無い）、消す本体（記録に無い・ID 違い・196 未適用で X を呼ばない、1件落ちたら残りを送らない）、
+// adapter の DELETE /2/tweets/:id（404 は既に無い）、消す本体（記録に無い・ID 違い・197 未適用で X を呼ばない、1件落ちたら残りを送らない）、
 // 管理 API、CLI（既定 dry-run・--apply は ID の明示と理由が要る・HQ_TEST で断る・候補は名簿に無い選手の名前）、
-// マイグレーション 196 を PGlite に当てた mark_sns_x_post_deleted（時刻と理由・計測の pending を閉じる・何度呼んでも同じ・権限）
+// マイグレーション 197 を PGlite に当てた mark_sns_x_post_deleted（時刻と理由・計測の pending を閉じる・何度呼んでも同じ・権限）
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -264,7 +264,7 @@ test("本体: 記録に無い・ID が記録と違う・posted でない・X で
   }
 });
 
-test("本体: 196 が未適用（deleted_at の列が無い）なら X を呼ばずに止める。消した記録があれば X を呼ばず記録だけ", async () => {
+test("本体: 197 が未適用（deleted_at の列が無い）なら X を呼ばずに止める。消した記録があれば X を呼ばず記録だけ", async () => {
   const { deleted_at: _drop, ...noColumn } = postedJob();
   const x = fakeXFactory();
   const stopped = await runDeleteXPosts(
@@ -272,7 +272,7 @@ test("本体: 196 が未適用（deleted_at の列が無い）なら X を呼ば
     { store: fakeStore({ [JOB]: noColumn }), getX: x.getX },
   );
   assert.equal(stopped.ok, false);
-  assert.match(stopped.results[0].error, /196 が未適用/);
+  assert.match(stopped.results[0].error, /197 が未適用/);
   assert.equal(x.tokens(), 0);
   const store = fakeStore({
     [JOB]: postedJob({ deleted_at: "2026-11-04T00:00:00Z" }),
@@ -601,10 +601,10 @@ test("CLI: 消す API の応答が JSON でない（未デプロイ等）とき�
   assert.match(result.error, /応答が読めない/);
 });
 
-// --- マイグレーション 196（PGlite） ---
+// --- マイグレーション 197（PGlite） ---
 const sql = await readFile(
   new URL(
-    "../../docs/db-migration/196_sns_x_post_deleted.sql",
+    "../../docs/db-migration/197_sns_x_post_deleted.sql",
     import.meta.url,
   ),
   "utf8",
@@ -617,7 +617,7 @@ const sectionSql = (prefix) =>
     .find((s) => s.heading.startsWith(prefix))
     .lines.join("\n");
 
-test("196: 適用前後の確認・posted の X だけに時刻と理由・計測の pending を閉じる・何度呼んでも同じ・不一致は拒否・権限", async () => {
+test("197: 適用前後の確認・posted の X だけに時刻と理由・計測の pending を閉じる・何度呼んでも同じ・不一致は拒否・権限", async () => {
   await db.exec(`
     CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
     ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;

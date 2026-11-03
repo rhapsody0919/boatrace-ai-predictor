@@ -13,25 +13,8 @@
   border-bottom: 2px solid var(--border-hairline);
 }
 
-.back-link {
-  display: inline-block;
-  text-decoration: none;
-  margin-bottom: 1rem;
-  font-weight: 500;
-  transition: color 0.3s ease;
-}
-
-/* .back-linkはAccuracyHistory.cssにも同名クラスがあり、CSSが全ページ分1つのバンドルに
-   結合されるためビルド順で#0ea5e9（固定・コントラスト不足）が勝ってしまう。
-   RaceDetail.cssの.back-linkと同じ理由・同じトークンで親スコープを指定 */
 .blog-post-header .back-link {
-  color: var(--brand-accent-secondary);
   margin-right: var(--spacing-3);
-}
-
-.blog-post-header .back-link:hover {
-  color: var(--text-primary);
-  text-decoration: underline;
 }
 
 .blog-post-header h1 {
