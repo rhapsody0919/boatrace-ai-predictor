@@ -11,11 +11,11 @@
  */
 import { buildAll } from "./build-all.mjs";
 import { answerOf } from "./answer.mjs";
-import { DISCLAIMER, FEATURES, FULL_TAGS, ROUND_NAME, SITE, featureUrl, fullLine1, raceHeader, utmUrl } from "./bundle.mjs";
+import { DISCLAIMER, FEATURES, FULL_TAGS, LIMITS, ROUND_NAME, SITE, WEEKDAY, featureUrl, fullLine1, raceHeader, utmUrl } from "./bundle.mjs";
 import { rankOf } from "./scenes/diff.mjs";
 import { bannedIn } from "./scene2-text.mjs";
 import { venueName } from "./scenes/common.mjs";
-import { MIN_FONT_PX, NB, TODAY, boatToday, boatWho, layoutOpen, layoutRight, racersOf } from "../../src/fullPicture/f01Right.js";
+import { MIN_FONT_PX, NB, TODAY, boatToday, boatWho, charsEm, layoutOpen, layoutRight, racersOf } from "../../src/fullPicture/f01Right.js";
 
 export const F01_VERSION = "f01-proto-1";
 export const VOICE = { speaker: "青山龍星", speedScale: 1.1, credit: "VOICEVOX:青山龍星" };
@@ -37,6 +37,17 @@ const BOATS = [1, 2, 3, 4, 5, 6];
 /** 件数（字幕は 11,160、声は「1万1160」） */
 const cnt = (n) => n.toLocaleString("ja-JP");
 const wari = (k, n) => Math.round((k / n) * 10);
+/**
+ * サムネ（F01Thumb、1280x720）の大きさ。大きな文言は2行で1行9字まで（オーナー 11/4）。9字の全角の幅までは big px、
+ * それより長い行（長い名前）は幅に収まるよう字を詰め、min px を下回るなら作らない（f01Check）。
+ * 幅は f01Right.js の charsEm（右の列と同じ見積り、Noto Sans JP の実測より広め）。116px の全角9字が 1,044px で、左右の余白72の内の 1,136px に入る。
+ * 11月の出走表の名前は最長6字（大久保信一郎・安河内鈴之介・堀之内紀代子）で、「大久保信一郎 A1」は 7.6字分（116px のまま）
+ */
+export const THUMB = { width: 1136, big: 116, min: 80, maxChars: 9, foot: 40, number: 120 };
+/** サムネの大きな文言の1行の字の大きさ px */
+export const thumbSize = (t) => Math.min(THUMB.big, Math.floor((THUMB.big * THUMB.maxChars) / Math.max(charsEm(t), 1)));
+/** サムネの下の行（「同じ並び 過去N回 1号艇の1着」＋大きな「X割」、間 24px）の幅の目安 px */
+export const thumbFootWidth = (foot, number) => charsEm(foot) * THUMB.foot + 24 + charsEm(number) * THUMB.number;
 const stepOf = (scenes, sid, id) => scenes.find((s) => s.id === sid)?.data?.steps?.find((x) => x.id === id) ?? null;
 /** sankey の links（[段, a, b, 件]）→ 1着が a のときの2着の件数（艇番の順） */
 const secondOf = (links, a) => BOATS.map((b) => links.filter((l) => l[0] === 0 && l[1] === a && l[2] === b).reduce((s, l) => s + l[3], 0));
@@ -119,13 +130,31 @@ export function f01Script(m) {
   const span = sc.period?.[0] ? `${ym(sc.period[0])}〜` : "";
   const scopeTag = `${where}・6艇の級の並びが同じ・枠なり ${span} ${cnt(n0)}件`;
   const question = "1号艇を崩す材料はどの艇に？";
+  // 締切（説明欄の raceHeader と同じ値 m.race.startTime）。題・サムネ・冒頭の見出しに出す（オーナー 11/4「全ての動画に締め切り時刻も記載すること」）。
+  // 無い日は作らない（締切の無い題で出さない）
+  const deadline = /^\d{1,2}:\d{2}/.exec(m.race?.startTime ?? "")?.[0] ?? null;
+  if (!deadline) return { ok: false, kind: "deadline", reason: "材料に締切（race.startTime）が無い（題・サムネ・冒頭の見出しに締切を出す、オーナー 11/4）" };
+  const dateW = `${date}(${WEEKDAY[new Date(Date.UTC(y, mo - 1, d)).getUTCDay()]})`;
+  const r1 = racers[1];
+  // 1号艇の1着の割合。冒頭の声「1号艇がX割勝つ」と同じ丸め（k0/n0 の10倍を四捨五入）。n0・k0 は answer.mjs の forms.any
+  // （同じ級の並び・枠なりの過去。冒頭の範囲の札「6艇の級の並びが同じ・枠なり N件」と同じ数）
+  const win1 = `${wari(k0, n0)}割`;
+  // サムネ（オーナー 11/4 承認）: 上の帯「{会場}{R}R {レース名} {M/D}({曜})」・右上の札「締切{HH:MM}」・大きな2行「{名前} {級}」「逃げ切れる？」・
+  // 下「同じ並び 過去{n0}回 1号艇の1着 {X}割」
+  const thumb = {
+    head: `${raceName} ${dateW}`,
+    deadline: `締切${deadline}`,
+    lines: [`${r1.name}${NB}${r1.grade}`, "逃げ切れる？"].map((text) => ({ text, size: thumbSize(text) })),
+    foot: `同じ並び 過去${cnt(n0)}回\u30001号艇の1着`,
+    number: win1,
+  };
   const chapters = [];
   chapters.push({
     id: "open",
     name: "冒頭",
     voice: `${sayRace}。1号艇が${wari(k0, n0)}割勝つ組み合わせで、崩すならどの艇か。${where}で、6艇の級の並びが同じ、枠なりの過去${cnt(n0)}件。1号艇が負けた${cnt(lossN)}件の内訳は、${listCounts(first, lossOrder)}。`,
     open: {
-      head: `${raceName}  ${date}`,
+      head: `${raceName}  ${dateW}  締切${deadline}`,
       title: `1号艇が負けた${lossN}回、勝ったのは？`,
       bars: lossOrder.map((b) => ({ boat: b, count: first[b - 1], name: racers[b].name, grade: racers[b].grade })),
       note: `${scopeTag}（1号艇の1着 ${cnt(k0)}件 ${ans.p0.toFixed(1)}%）`,
@@ -320,7 +349,10 @@ export function f01Script(m) {
     question,
     chapters,
     omitted,
-    title: `ボートレース${raceName} ${date}｜${question}`,
+    // 題（オーナー 11/4 承認）: 「ボートレース{会場} {R}R {レース名} {M/D}({曜}) 締切{HH:MM}｜1号艇 {名前}{級}は逃げ切れる？ 同じ並びの1着{X}割」
+    title: `ボートレース${venue} ${rn}R${round ? ` ${round}` : ""} ${dateW} 締切${deadline}｜1号艇 ${r1.name}${r1.grade}は逃げ切れる？ 同じ並びの1着${win1}`,
+    thumb,
+    deadline,
     url,
     header: raceHeader({ year: y, month: mo, day: d, venue, raceNo: rn, round: m.api.facts?.today?.round ?? null, deadline: m.race?.startTime ?? null }),
     place: `${venue}${rn}R`,
@@ -380,7 +412,8 @@ export function f01Check(s, r) {
   if (!r.desc.includes(VOICE.credit)) why.push(`説明欄に「${VOICE.credit}」が無い`);
   // 禁止表現（risk-rules.json、YouTube）と回収率を、題・説明欄・各章の声・字幕・右の列・冒頭の全部に当てる
   // （run-full の checkPost は今の型の題・説明欄にしか当たらず、f01 の文は検査の外だった。Orchestrate 11/2）
-  for (const [where, text] of [["題", s.title], ["説明欄", r.desc], ...s.chapters.flatMap((c) => f01Texts(c).map((t) => [c.id, t]))]) {
+  const thumbTexts = s.thumb ? [s.thumb.head, s.thumb.deadline, ...s.thumb.lines.map((l) => l.text), s.thumb.foot, s.thumb.number] : [];
+  for (const [where, text] of [["題", s.title], ["説明欄", r.desc], ...thumbTexts.map((t) => ["サムネ", t]), ...s.chapters.flatMap((c) => f01Texts(c).map((t) => [c.id, t]))]) {
     if (typeof text !== "string") continue;
     for (const w of bannedIn(text, "youtube")) why.push(`${where}: ${w}`);
     if (NO_RETURN_RATE.test(text)) why.push(`${where}: 回収率を出さない（${text.match(NO_RETURN_RATE)[0]}）`);
@@ -394,6 +427,7 @@ export function f01Check(s, r) {
     // 字幕は1行 SUB_MAX 字以内
     for (const l of c.subs) if (l.length > SUB_MAX + 2) why.push(`${c.id}: 字幕が${l.length}字`);
   }
+  why.push(...f01TitleThumbCheck(s));
   // 名前と級（race_entries）: 右の列の艇番の隣に「フルネーム 級」があり、出走表と一致するか。右の列が幅・下の線に収まるか
   if (r.racers) why.push(...f01RacerCheck(s, r.racers));
   // 読みの辞書（audio_query の kana）
@@ -413,6 +447,24 @@ export function f01Check(s, r) {
       for (const e of exp) if (!flat.includes(norm(e))) why.push(`${c.id}${cut}: 左の画面に「${e}」が無い`);
     }
   }
+  return why;
+}
+
+/**
+ * 題とサムネの検査（純関数。声と撮影の前に buildF01 でも呼ぶ）。題は YouTube の上限 100 字（bundle.mjs の LIMITS.title、
+ * push の checkBundle と同じ数え方 length）。サムネは、字を詰めても THUMB.min px を下回る行・下の行と上の帯（右上の締切の札の分を除く）が幅を越えるときは作らない
+ * @param {{title?: string, thumb?: {head: string, deadline: string, lines: {text: string, size: number}[], foot: string, number: string}}} s
+ * @returns {string[]}
+ */
+export function f01TitleThumbCheck(s) {
+  const why = [];
+  if (typeof s.title === "string" && s.title.length > LIMITS.title) why.push(`題が${s.title.length}字（上限 ${LIMITS.title} 字）`);
+  const t = s.thumb;
+  if (!t) return why;
+  for (const l of t.lines) if (l.size < THUMB.min) why.push(`サムネ: 「${l.text}」が ${l.size}px（線 ${THUMB.min}px）`);
+  if (thumbFootWidth(t.foot, t.number) > THUMB.width) why.push(`サムネ: 下の行が幅 ${THUMB.width}px を越える`);
+  // 上の帯（40px）と右上の札（44px＋左右の余白 22×2、間 32）が重ならない
+  if (charsEm(t.head) * 40 + 32 + charsEm(t.deadline) * 44 + 44 > THUMB.width) why.push(`サムネ: 上の帯「${t.head}」が締切の札に重なる`);
   return why;
 }
 

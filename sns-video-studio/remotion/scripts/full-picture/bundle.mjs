@@ -60,7 +60,7 @@ export const FULL_TAGS = ["ボートレース", "龍神ソナー", "思考アシ
 export const ROUND_NAME = { yusho: "優勝戦", junyu: "準優勝戦", jun_yusho: "準優勝戦", tokusen: "特選", senbatsu: "選抜", yosen: "予選" };
 /** 題名の頭に付けるグレード（races.race_grade。一般 ippan は付けない） */
 const GRADE_HEAD = ["SG", "G1", "G2", "G3"];
-const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
+export const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
 /**
  * レースの見出し「10/22（木）児島12R 準優勝戦 締切16:44」。冒頭の場面・説明文・X の本文に同じ文を出す。
  * レース名・締切が無いときはその部分を書かない
