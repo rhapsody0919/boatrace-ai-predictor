@@ -2272,7 +2272,9 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     assert.deepEqual(PLAN.c4.map((p) => p.k), ["c4", "c4b", "c4", "c42", "c42b"]);
     // オーナー 11/2「22.4px の章は2カットに分けて」: 線は 24px。着順の流れは押した後を上・下、形の札は図と名前の2カット
     assert.equal(MIN_FONT_PX, 24);
-    assert.deepEqual(PLAN.c2.map((p) => p.k), ["c2", "c2-pre", "c22", "c22b"]);
+    // ②も 11/2 18-10 の形（1着の棒 → 着順の流れの全体の押す前・押した後）。上・下の2カットは座標の決め打ちだったので外した（docs/design/f01-stable-capture/）
+    assert.deepEqual(PLAN.c2.map((p) => p.k), ["c2", "c2-pre", "c22"]);
+    assert.equal(MIN_FONT_BY_CHAPTER.c2, 22);
     // ③は 11/2 18-10 の形（形の札1枚 → 着順の流れの全体）に戻した（オーナー 11/4。#2087 の2カットは 11/3 の4本で崩れた）。線は 22px
     assert.deepEqual(PLAN.c3.map((p) => p.k), ["c3", "c3-pre", "c32"]);
     assert.equal(MIN_FONT_BY_CHAPTER.c3, 22);
@@ -2291,31 +2293,33 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
       assert.deepEqual(f01LayoutChapters({ chapters: [{ id: "c3" }] }, ok), [], "18-10 の③は通る");
       // 小さな図（右半分以上が空く）
       assert.equal(f01LayoutChapters({ chapters: [{ id: "c3" }] }, { ...ok, c3: at("c3", W * 0.38, H * 0.43) }).length, 1, "札の図だけが小さいと止める");
-      // ②の上・下の2カットは half と決めてあるので通る。④・締め（100%×52%）も通る
-      const c2 = { c2: at("c2", W, H * 0.73), "c2-pre": at("c2-pre", W, H * 0.72, { crop: "top" }), c22: at("c22", W, H * 0.72, { crop: "top" }), c22b: at("c22b", W, H * 0.72, { crop: "bottom" }) };
+      // ②の着順の流れの全体（18-10 の形）・④・締め（100%×52%）は通る。部品の一部だけ（crop）は ② でも止める
+      const c2 = { c2: at("c2", W, H * 0.73), "c2-pre": at("c2-pre", W * 0.74, H), c22: at("c22", W * 0.74, H) };
+      assert.ok(/c22 は部品の上だけ/.test(f01LayoutChapters({ chapters: [{ id: "c2" }] }, { ...c2, c22: at("c22", W, H * 0.72, { crop: "top" }) })[0]?.reason ?? ""), "②も部品の一部だけは止める");
       // 同じ部品のいちばん小さい倍率で描く（f01Timeline）ので、その倍率で測る（自分の倍率では届いても、描くと小さい）
       const g2 = { c3: at("c3", 400, 120, { scale: 2.9 }), "c3-pre": at("c3-pre", 400, 130, { scale: 1.2 }), c32: at("c32", 400, 130, { scale: 2.9 }) };
       assert.ok(/c3 が左の枠の/.test(f01LayoutChapters({ chapters: [{ id: "c3" }] }, g2)[0]?.reason ?? ""), "同じ部品の小さい倍率で測る");
       assert.deepEqual(f01LayoutChapters({ chapters: [{ id: "c2" }, { id: "c4" }] }, { ...c2, c4: at("c4", W, H * 0.52), c4b: at("c4b", W, H * 0.61), c42: at("c42", W, H * 0.52), c42b: at("c42b", W, H * 0.61) }), []);
     }
-    // 押す帯が下半分のとき、押す前のカット（下半分）のカーソルはそのカットの座標で、帯の中を指す（#2087 の審査）
+    // 押す前のカットのカーソルは、撮影用の頁が返したそのカットの座標（押す1着の四角）を指す。
+    // 撮る側の組（group）でそろえる倍率は、切り抜きの位置・大きさが違っても同じ組の中のいちばん小さい倍率
     {
-      const half = { x: 40, y: 0, w: 440, h: 233 };
-      const band = { x: 61, y: 300, w: 24, h: 90 }; // 元の図（高さ440）で下半分にある帯
-      const shift = 440 * 0.47;
+      const full = { x: 0, y: 0, w: 440, h: 440 };
+      const band = { x: 61, y: 300, w: 24, h: 90 };
       const shots3 = {
         c2: sh("c2", 26.4),
-        "c2-pre": { ...sh("c2-pre", 30.4, half), cursor: { ...band, y: band.y - shift } },
-        c22: { ...sh("c22", 30.4, half), cursor: band },
-        c22b: sh("c22b", 30.4, half),
+        "c2-pre": { ...sh("c2-pre", 22.5, full), cursor: band, group: "flow-similar", scale: 1.9 },
+        c22: { ...sh("c22", 22.5, { ...full, h: 470 }), cursor: band, group: "flow-similar", scale: 1.78 },
       };
       const l3 = ["次に、類似レースのタブ。", "1号艇が勝った313件では、2着は2号艇が137件で最も多い。"];
       const v3 = { lines: l3.map((sub, i) => ({ chapter: "c2", i, sub, file: `w${i}.wav`, sec: 4 })) };
-      const pre = f01Timeline({ chapters: [{ id: "c2", name: "類似レース", subs: l3 }] }, v3, shots3).props.chapters[0].cuts.find((c) => c.file === "c2-pre.png");
-      const cy = pre.cursor.y + pre.cursor.h / 2;
-      assert.ok(cy >= 0 && cy <= half.h && pre.cursor.y === band.y - shift, `カーソルが押す前のカットの中の帯を指す（y=${pre.cursor.y}）`);
+      const cuts3 = f01Timeline({ chapters: [{ id: "c2", name: "類似レース", subs: l3 }] }, v3, shots3).props.chapters[0].cuts;
+      const pre = cuts3.find((c) => c.file === "c2-pre.png");
+      assert.ok(pre.cursor.y === band.y && pre.cursor.x === band.x, `カーソルが押す前のカットの中の1着の四角を指す（y=${pre.cursor.y}）`);
+      assert.deepEqual(cuts3.filter((c) => c.file !== "c2.png").map((c) => c.scale), [1.78, 1.78], "同じ組は同じ倍率");
     }
-    assert.deepEqual(f01SmallChapters({ chapters: [{ id: "c2" }] }, { c2: sh("c2", 26.4), "c2-pre": sh("c2-pre", 30.4), c22: sh("c22", 22.4), c22b: sh("c22b", 30.4) }).map((x) => x.id), ["c2"], "1カットで 22.4px の着順の流れは線の下");
+    assert.deepEqual(f01SmallChapters({ chapters: [{ id: "c2" }] }, { c2: sh("c2", 26.4), "c2-pre": sh("c2-pre", 22.5), c22: sh("c22", 22.4) }), [], "18-10 の②（着順の流れ 22.4px）は線の上");
+    assert.deepEqual(f01SmallChapters({ chapters: [{ id: "c2" }] }, { c2: sh("c2", 26.4), "c2-pre": sh("c2-pre", 22.5), c22: sh("c22", 21.9) }).map((x) => x.id), ["c2"], "22px を下回る着順の流れは省く");
     const lines = ["ここからは思考アシスト。", "軸を選ぶと、相手の割合が出る。", "大村で1号艇が1着の11,160件では、", "2着は2号艇が34.7%。", "軸を4号艇に変えると、1,375件で、", "2着は1号艇が37%に入れ替わる。"];
     const voice = { lines: lines.map((sub, i) => ({ chapter: "c4", i, sub, file: `v${i}.wav`, sec: 2 })) };
     const shots2 = { ...shots1, c42: { ...sh("c42", 29.8), cursorFrom: { x: 1, y: 1, w: 10, h: 10 } }, c42b: sh("c42b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };

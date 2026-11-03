@@ -454,6 +454,13 @@
       "guards": "完全版 f01 の撮影用の頁（src/snsCapture/、docs/design/f01-stable-capture/）: 部品の表 F01_PARTS の props の名前が本番の部品（RadarFigure・RadarBoatLegend・SimilarWinBars・SankeyFigure・SlitShapeCard・FollowTop・FollowTable）の引数とちょうど同じ（本番の部品の props が変わったらここで落ち、f01 の撮影が黙って崩れない）、固定の材料4レースから全部品の props を作れる、材料が無い・艇番の誤りは黙らず止める、頁を読むのは main.jsx のビルドの旗 VITE_SNS_CAPTURE の分岐の中の動的 import だけ（本番のビルドに入らない）"
     },
     {
+      "script": "verify-f01-capture-stable.js",
+      "tier": "manual",
+      "reason": "ローカルの Playwright（chromium）・ffmpeg・vite の dev サーバーと、hq-work の materials.json が要り、1レースの撮影に30〜50秒×2回かかる",
+      "command": "node scripts/maintenance/verify-f01-capture-stable.js <materials.json> [...]",
+      "guards": "完全版 f01 の撮影（f01-capture.mjs と撮影用の頁）が決定的: 同じ材料で2回撮ると全カットの画素（RGBA）が一致する（docs/design/f01-stable-capture/ の終わりの条件）"
+    },
+    {
       "script": "verify-fan-period-job.js",
       "tier": "ci",
       "guards": "期別成績（fan）の定期取り込み（scripts/lib/fanPeriodJob.js、api/cron/fan-period.js）。対象日→fanの対応、取り込み済みなら0リクエスト、未公開404はその日で済み（06:30の補足は叩かない）、期の終わりから105日超は取得せず通知、live の書き込みと生ファイルの保管（raw-pages・raw_snapshots）、shadow は書かない、異常・HTTP 500 は error、保管失敗でも取り込みは成功。vercel.json の06:00・06:30、レジストリ、125のRLS"

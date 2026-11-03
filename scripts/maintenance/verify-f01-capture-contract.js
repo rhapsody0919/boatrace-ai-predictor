@@ -112,6 +112,15 @@ assert.throws(
 );
 assert.throws(() => f01PartProps("nope", {}, {}), /撮影用の部品 nope は無い/);
 
+// 2b. 形は台本の名前（「横一線」等）で渡す。頁は ja の文言で名前 → 形に戻すので、名前が全部あり、重ならない
+{
+  const ja = JSON.parse(readFileSync(join(ROOT, "src/locales/ja/common.json"), "utf8"));
+  const { SLIT_FORMS } = await import("../../src/utils/analogyScenario.js");
+  const names = SLIT_FORMS.map((f) => ja.aiPredictionTab?.analogy?.scenario?.forms?.[f]?.name);
+  assert.ok(names.every((x) => typeof x === "string" && x), `形の名前（aiPredictionTab.analogy.scenario.forms.*.name）が ja に無い: ${names}`);
+  assert.equal(new Set(names).size, names.length, `形の名前が重なる: ${names}`);
+}
+
 // 3. 本番のビルドに入らない: 頁を読むのは main.jsx の旗の分岐の中の動的 import だけ
 const main = readFileSync(join(ROOT, "src/main.jsx"), "utf8");
 // 旗の変数（import.meta.env.VITE_SNS_CAPTURE === "1" を含む式）と、その変数で分けた if の中身（改行・空白の違いは問わない）
