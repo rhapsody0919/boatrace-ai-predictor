@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1599,
+    "sourceFiles": 1601,
     "filesWithAccess": 263,
     "tableReaders": 939,
     "tableWriters": 187,
@@ -652,7 +652,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:85",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
           "op": "select",
           "via": "client",
           "columns": [
@@ -662,7 +662,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:134",
           "op": "select",
           "via": "client",
           "columns": [
@@ -673,7 +673,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:192",
           "op": "select",
           "via": "client",
           "columns": [
@@ -684,7 +684,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:374",
           "op": "select",
           "via": "client",
           "columns": [
@@ -771,10 +771,10 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:85",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:134",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:192",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:374",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
             "scripts/lib/analogyDispatch.js:80",
             "scripts/lib/analogyV16Exhibition.js:289",
             "scripts/lib/analogyV16Exhibition.js:367",
@@ -791,10 +791,10 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:85",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:134",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:192",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:374",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
             "scripts/lib/analogyDispatch.js:80",
             "scripts/lib/analogyV16Exhibition.js:289",
             "scripts/lib/analogyV16Exhibition.js:367",
@@ -812,8 +812,8 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:134",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:192",
             "scripts/lib/analogyV16Exhibition.js:289"
           ],
           "writers": [],
@@ -824,8 +824,8 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:134",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:192",
             "scripts/maintenance/verify-analogy-v16.js:279"
           ],
           "writers": [],
@@ -854,7 +854,7 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:374",
             "scripts/lib/analogyV16Exhibition.js:289"
           ],
           "writers": [],
@@ -865,8 +865,8 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:85",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:374",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
             "scripts/lib/analogyV16Exhibition.js:289",
             "scripts/maintenance/verify-analogy-v16.js:279"
           ],
@@ -1388,7 +1388,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:222",
+          "ref": "api/_lib/snsClaimCheck.js:227",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1397,7 +1397,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:253",
+          "ref": "api/_lib/snsClaimCheck.js:258",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1406,7 +1406,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:346",
+          "ref": "api/_lib/snsClaimCheck.js:351",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1415,7 +1415,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:420",
+          "ref": "api/_lib/snsClaimCheck.js:425",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1424,7 +1424,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:445",
+          "ref": "api/_lib/snsClaimCheck.js:450",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1837,11 +1837,11 @@
           "readers": [
             "api/_lib/analogyV16.js:103",
             "api/_lib/racerEntryExhibition.js:192",
-            "api/_lib/snsClaimCheck.js:222",
-            "api/_lib/snsClaimCheck.js:253",
-            "api/_lib/snsClaimCheck.js:346",
-            "api/_lib/snsClaimCheck.js:420",
-            "api/_lib/snsClaimCheck.js:445",
+            "api/_lib/snsClaimCheck.js:227",
+            "api/_lib/snsClaimCheck.js:258",
+            "api/_lib/snsClaimCheck.js:351",
+            "api/_lib/snsClaimCheck.js:425",
+            "api/_lib/snsClaimCheck.js:450",
             "api/_lib/snsTodayDigest.js:54",
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
@@ -2062,11 +2062,11 @@
           "readers": [
             "api/_lib/analogyV16.js:103",
             "api/_lib/racerEntryExhibition.js:192",
-            "api/_lib/snsClaimCheck.js:222",
-            "api/_lib/snsClaimCheck.js:253",
-            "api/_lib/snsClaimCheck.js:346",
-            "api/_lib/snsClaimCheck.js:420",
-            "api/_lib/snsClaimCheck.js:445",
+            "api/_lib/snsClaimCheck.js:227",
+            "api/_lib/snsClaimCheck.js:258",
+            "api/_lib/snsClaimCheck.js:351",
+            "api/_lib/snsClaimCheck.js:425",
+            "api/_lib/snsClaimCheck.js:450",
             "api/_lib/snsTodayDigest.js:54",
             "scripts/lib/analogyV16Exhibition.js:208",
             "scripts/lib/analogyV16Exhibition.js:296",
@@ -2564,7 +2564,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:241",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:243",
           "op": "select",
           "via": "client",
           "columns": [
@@ -2591,14 +2591,14 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
           ],
           "writers": [],
           "sql": []
         },
         "boat_number": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
           ],
           "writers": [],
           "sql": []
@@ -2675,35 +2675,35 @@
         },
         "course": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
           ],
           "writers": [],
           "sql": []
         },
         "start_timing": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
           ],
           "writers": [],
           "sql": []
         },
         "is_flying": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
           ],
           "writers": [],
           "sql": []
         },
         "is_late_start": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
           ],
           "writers": [],
           "sql": []
         },
         "finish_raw": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
           ],
           "writers": [],
           "sql": []
@@ -2741,7 +2741,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:237",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:239",
           "op": "select",
           "via": "client",
           "columns": [
@@ -2784,7 +2784,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:239"
           ],
           "writers": [],
           "sql": []
@@ -2856,7 +2856,7 @@
         },
         "has_result": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:239"
           ],
           "writers": [],
           "sql": []
@@ -2883,14 +2883,14 @@
         },
         "payout_3tan": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:239"
           ],
           "writers": [],
           "sql": []
         },
         "payout_3fuku": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:239"
           ],
           "writers": [],
           "sql": []
@@ -6370,7 +6370,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:254",
+          "ref": "api/_lib/snsClaimCheck.js:259",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6379,7 +6379,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:413",
+          "ref": "api/_lib/snsClaimCheck.js:418",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6779,8 +6779,8 @@
         "race_id": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:173",
-            "api/_lib/snsClaimCheck.js:254",
-            "api/_lib/snsClaimCheck.js:413",
+            "api/_lib/snsClaimCheck.js:259",
+            "api/_lib/snsClaimCheck.js:418",
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/analysis/backtest-unified-model-place-trifecta.js:101",
             "scripts/analysis/backtest-unified-model.js:116",
@@ -6950,8 +6950,8 @@
         },
         "race_stage": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:254",
-            "api/_lib/snsClaimCheck.js:413",
+            "api/_lib/snsClaimCheck.js:259",
+            "api/_lib/snsClaimCheck.js:418",
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/lib/snsAutoPlanRunner.js:744",
             "scripts/maintenance/verify-full-picture-scene2.js:1247",
@@ -7051,7 +7051,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:221",
+          "ref": "api/_lib/snsClaimCheck.js:226",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7060,7 +7060,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:252",
+          "ref": "api/_lib/snsClaimCheck.js:257",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7069,7 +7069,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:345",
+          "ref": "api/_lib/snsClaimCheck.js:350",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7078,7 +7078,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:419",
+          "ref": "api/_lib/snsClaimCheck.js:424",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7087,7 +7087,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:444",
+          "ref": "api/_lib/snsClaimCheck.js:449",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7279,7 +7279,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/past-rate-check/label-threshold-checks.mjs:86",
+          "ref": "scripts/analysis/past-rate-check/label-threshold-checks.mjs:87",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7287,7 +7287,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/label-threshold-checks.mjs:87",
+          "ref": "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8507,11 +8507,11 @@
           "readers": [
             "api/_lib/analogyV16.js:105",
             "api/_lib/racerEntryExhibition.js:171",
-            "api/_lib/snsClaimCheck.js:221",
-            "api/_lib/snsClaimCheck.js:252",
-            "api/_lib/snsClaimCheck.js:345",
-            "api/_lib/snsClaimCheck.js:419",
-            "api/_lib/snsClaimCheck.js:444",
+            "api/_lib/snsClaimCheck.js:226",
+            "api/_lib/snsClaimCheck.js:257",
+            "api/_lib/snsClaimCheck.js:350",
+            "api/_lib/snsClaimCheck.js:424",
+            "api/_lib/snsClaimCheck.js:449",
             "api/_lib/snsTodayDigest.js:52",
             "scripts/analysis/analyze-indicator-predictive-power.js:148",
             "scripts/analysis/analyze-venue-03-trifecta.js:67",
@@ -8524,8 +8524,8 @@
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "scripts/analysis/collect-venue-stats.js:245",
             "scripts/analysis/find-missing-dates.js:31",
-            "scripts/analysis/past-rate-check/label-threshold-checks.mjs:86",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:87",
+            "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
             "scripts/analysis/verify-race-analysis-rpc.js:120",
             "scripts/analysis/verify-race-analysis-rpc.js:141",
@@ -8651,7 +8651,7 @@
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "scripts/analysis/collect-venue-stats.js:245",
-            "scripts/analysis/past-rate-check/label-threshold-checks.mjs:87",
+            "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
             "scripts/analysis/verify-race-analysis-rpc.js:120",
             "scripts/analysis/verify-race-analysis-rpc.js:141",
@@ -9135,14 +9135,14 @@
         },
         "created_at": {
           "readers": [
-            "scripts/analysis/past-rate-check/label-threshold-checks.mjs:87"
+            "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88"
           ],
           "writers": [],
           "sql": []
         },
         "updated_at": {
           "readers": [
-            "scripts/analysis/past-rate-check/label-threshold-checks.mjs:87"
+            "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88"
           ],
           "writers": [],
           "sql": [
@@ -9192,11 +9192,11 @@
         "is_absent": {
           "readers": [
             "api/_lib/analogyV16.js:105",
-            "api/_lib/snsClaimCheck.js:221",
-            "api/_lib/snsClaimCheck.js:252",
-            "api/_lib/snsClaimCheck.js:345",
-            "api/_lib/snsClaimCheck.js:419",
-            "api/_lib/snsClaimCheck.js:444",
+            "api/_lib/snsClaimCheck.js:226",
+            "api/_lib/snsClaimCheck.js:257",
+            "api/_lib/snsClaimCheck.js:350",
+            "api/_lib/snsClaimCheck.js:424",
+            "api/_lib/snsClaimCheck.js:449",
             "api/_lib/snsTodayDigest.js:52",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/lib/analogyV16Exhibition.js:299",
@@ -10983,7 +10983,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12009,7 +12009,7 @@
             "scripts/analysis/discover-exacta-rules.js:70",
             "scripts/analysis/find-missing-dates.js:33",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/analysis/recalculate-all-rules.js:227",
             "scripts/analysis/recalculate-trio-rules.js:142",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
@@ -12098,7 +12098,7 @@
             "scripts/analysis/compare-pcexpect.js:108",
             "scripts/analysis/discover-exacta-rules.js:70",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-all-venues-label-accuracy.js:106",
@@ -12160,7 +12160,7 @@
             "scripts/analysis/compare-pcexpect.js:108",
             "scripts/analysis/discover-exacta-rules.js:70",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-poirot.js:81",
@@ -12202,7 +12202,7 @@
             "scripts/analysis/compare-pcexpect.js:108",
             "scripts/analysis/discover-exacta-rules.js:70",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-poirot.js:81",
@@ -12292,7 +12292,7 @@
           "readers": [
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "src/services/adminRuleService.js:87",
@@ -12310,7 +12310,7 @@
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/compare-pcexpect.js:108",
             "scripts/analysis/discover-exacta-rules.js:70",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/daily/calculate-venue-grade-stats.js:73",
@@ -12330,7 +12330,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:120",
             "scripts/analysis/compare-pcexpect.js:108",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
@@ -12356,7 +12356,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:120",
             "scripts/analysis/compare-pcexpect.js:108",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/analysis/verify-race-analysis-rpc.js:285"
@@ -12665,7 +12665,7 @@
         },
         "actual_course_1": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2530",
             "src/services/supabaseDataService.js:7781"
@@ -12685,7 +12685,7 @@
         },
         "actual_course_2": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2530",
             "src/services/supabaseDataService.js:7781"
@@ -12704,7 +12704,7 @@
         },
         "actual_course_3": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2530",
             "src/services/supabaseDataService.js:7781"
@@ -12723,7 +12723,7 @@
         },
         "actual_course_4": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2530",
             "src/services/supabaseDataService.js:7781"
@@ -12742,7 +12742,7 @@
         },
         "actual_course_5": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2530",
             "src/services/supabaseDataService.js:7781"
@@ -12761,7 +12761,7 @@
         },
         "actual_course_6": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2530",
             "src/services/supabaseDataService.js:7781"
@@ -12780,7 +12780,7 @@
         },
         "race_status": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/daily/update-outcome-frequencies.js:19",
@@ -12796,7 +12796,7 @@
         },
         "refund_boats": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/daily/calculate-venue-grade-stats.js:73"
           ],
           "writers": [],
@@ -12845,7 +12845,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/botPage.js:273",
+          "ref": "api/_lib/botPage.js:275",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -12857,7 +12857,7 @@
           ]
         },
         {
-          "ref": "api/_lib/botRace.js:247",
+          "ref": "api/_lib/botRace.js:249",
           "op": "rest",
           "via": "rest",
           "columns": []
@@ -12978,7 +12978,7 @@
       "columns": {
         "venue_code": {
           "readers": [
-            "api/_lib/botPage.js:273",
+            "api/_lib/botPage.js:275",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:801",
@@ -12995,7 +12995,7 @@
         },
         "start_date": {
           "readers": [
-            "api/_lib/botPage.js:273",
+            "api/_lib/botPage.js:275",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:801",
@@ -13012,7 +13012,7 @@
         },
         "end_date": {
           "readers": [
-            "api/_lib/botPage.js:273",
+            "api/_lib/botPage.js:275",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:801",
@@ -13034,7 +13034,7 @@
         },
         "title": {
           "readers": [
-            "api/_lib/botPage.js:273",
+            "api/_lib/botPage.js:275",
             "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/supabaseDataService.js:1429",
             "src/services/supabaseDataService.js:7290"
@@ -13049,7 +13049,7 @@
         },
         "grade": {
           "readers": [
-            "api/_lib/botPage.js:273",
+            "api/_lib/botPage.js:275",
             "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/supabaseDataService.js:1429",
             "src/services/supabaseDataService.js:7290"
@@ -13234,7 +13234,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13510,7 +13510,7 @@
         "race_id": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
             "scripts/daily/generate-morning-digest.js:702",
             "scripts/daily/scrape-results.js:639",
             "scripts/daily/scrape-results.js:709",
@@ -13537,7 +13537,7 @@
         "boat_number": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
             "scripts/daily/generate-morning-digest.js:702",
             "scripts/daily/scrape-results.js:639",
             "scripts/daily/scrape-results.js:709",
@@ -13562,7 +13562,7 @@
         "start_timing": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
             "scripts/daily/generate-morning-digest.js:702",
             "src/services/supabaseDataService.js:6847",
             "src/services/supabaseDataService.js:7774"
@@ -13577,7 +13577,7 @@
         "is_flying": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
             "src/services/supabaseDataService.js:2436",
             "src/services/supabaseDataService.js:6847",
             "src/services/supabaseDataService.js:7774"
@@ -13591,7 +13591,7 @@
         "is_late_start": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
             "src/services/supabaseDataService.js:7774"
           ],
           "writers": [],
@@ -13609,7 +13609,7 @@
         },
         "finish_mark": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
             "scripts/daily/generate-morning-digest.js:702",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
@@ -16057,7 +16057,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:219",
+          "ref": "api/_lib/snsClaimCheck.js:224",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -16068,7 +16068,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:250",
+          "ref": "api/_lib/snsClaimCheck.js:255",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -16079,7 +16079,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:343",
+          "ref": "api/_lib/snsClaimCheck.js:348",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -16090,7 +16090,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:418",
+          "ref": "api/_lib/snsClaimCheck.js:423",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -16099,7 +16099,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:442",
+          "ref": "api/_lib/snsClaimCheck.js:447",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -16185,7 +16185,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16196,7 +16196,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:130",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16206,7 +16206,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:234",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17550,20 +17550,20 @@
           "readers": [
             "api/_lib/analogyV16.js:101",
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:219",
-            "api/_lib/snsClaimCheck.js:250",
-            "api/_lib/snsClaimCheck.js:343",
-            "api/_lib/snsClaimCheck.js:418",
-            "api/_lib/snsClaimCheck.js:442",
+            "api/_lib/snsClaimCheck.js:224",
+            "api/_lib/snsClaimCheck.js:255",
+            "api/_lib/snsClaimCheck.js:348",
+            "api/_lib/snsClaimCheck.js:423",
+            "api/_lib/snsClaimCheck.js:447",
             "api/_lib/snsTodayDigest.js:50",
             "api/odds/live.js:72",
             "scripts/analysis/analyze-upset-factors.js:108",
             "scripts/analysis/backtest-unified-model-place-trifecta.js:94",
             "scripts/analysis/backtest-unified-model.js:109",
             "scripts/analysis/calibrate-unified-model.js:160",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:130",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:234",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:76",
@@ -17689,14 +17689,14 @@
           "readers": [
             "api/_lib/analogyV16.js:101",
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:219",
-            "api/_lib/snsClaimCheck.js:250",
-            "api/_lib/snsClaimCheck.js:343",
-            "api/_lib/snsClaimCheck.js:442",
+            "api/_lib/snsClaimCheck.js:224",
+            "api/_lib/snsClaimCheck.js:255",
+            "api/_lib/snsClaimCheck.js:348",
+            "api/_lib/snsClaimCheck.js:447",
             "api/odds/live.js:72",
             "scripts/analysis/analyze-upset-factors.js:108",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:130",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:76",
@@ -17889,14 +17889,14 @@
           "readers": [
             "api/_lib/analogyV16.js:101",
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:219",
-            "api/_lib/snsClaimCheck.js:250",
-            "api/_lib/snsClaimCheck.js:343",
-            "api/_lib/snsClaimCheck.js:442",
+            "api/_lib/snsClaimCheck.js:224",
+            "api/_lib/snsClaimCheck.js:255",
+            "api/_lib/snsClaimCheck.js:348",
+            "api/_lib/snsClaimCheck.js:447",
             "api/_lib/snsTodayDigest.js:50",
             "api/odds/live.js:72",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:130",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/daily/generate-morning-digest.js:133",
             "scripts/daily/scrape-results.js:1501",
             "scripts/lib/analogyDispatch.js:75",
@@ -18070,14 +18070,14 @@
         "cancellation_status": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:219",
-            "api/_lib/snsClaimCheck.js:250",
-            "api/_lib/snsClaimCheck.js:343",
-            "api/_lib/snsClaimCheck.js:418",
-            "api/_lib/snsClaimCheck.js:442",
+            "api/_lib/snsClaimCheck.js:224",
+            "api/_lib/snsClaimCheck.js:255",
+            "api/_lib/snsClaimCheck.js:348",
+            "api/_lib/snsClaimCheck.js:423",
+            "api/_lib/snsClaimCheck.js:447",
             "api/_lib/snsTodayDigest.js:50",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:234",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/daily/scrape-point-rank.js:349",
             "scripts/daily/scrape-results.js:839",
             "scripts/daily/scrape-results.js:903",
@@ -19546,7 +19546,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:258",
+          "ref": "api/_lib/snsClaimCheck.js:263",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19555,7 +19555,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:292",
+          "ref": "api/_lib/snsClaimCheck.js:297",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19563,7 +19563,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:354",
+          "ref": "api/_lib/snsClaimCheck.js:359",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19572,7 +19572,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:401",
+          "ref": "api/_lib/snsClaimCheck.js:406",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19702,10 +19702,10 @@
       "columns": {
         "channel": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:258",
-            "api/_lib/snsClaimCheck.js:292",
-            "api/_lib/snsClaimCheck.js:354",
-            "api/_lib/snsClaimCheck.js:401",
+            "api/_lib/snsClaimCheck.js:263",
+            "api/_lib/snsClaimCheck.js:297",
+            "api/_lib/snsClaimCheck.js:359",
+            "api/_lib/snsClaimCheck.js:406",
             "api/_lib/snsXSendStore.js:151",
             "scripts/lib/snsAutoPlanRunner.js:719",
             "scripts/lib/snsSendRunner.js:584",
@@ -19805,7 +19805,7 @@
         },
         "finals_image_enabled": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:258"
+            "api/_lib/snsClaimCheck.js:263"
           ],
           "writers": [],
           "sql": [
@@ -19883,7 +19883,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:256",
+          "ref": "api/_lib/snsClaimCheck.js:261",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19895,7 +19895,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:288",
+          "ref": "api/_lib/snsClaimCheck.js:293",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19905,7 +19905,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:290",
+          "ref": "api/_lib/snsClaimCheck.js:295",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19917,7 +19917,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:348",
+          "ref": "api/_lib/snsClaimCheck.js:353",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19928,7 +19928,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:351",
+          "ref": "api/_lib/snsClaimCheck.js:356",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19940,7 +19940,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:396",
+          "ref": "api/_lib/snsClaimCheck.js:401",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19950,7 +19950,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:398",
+          "ref": "api/_lib/snsClaimCheck.js:403",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20123,10 +20123,10 @@
       "columns": {
         "id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:256",
-            "api/_lib/snsClaimCheck.js:290",
-            "api/_lib/snsClaimCheck.js:351",
-            "api/_lib/snsClaimCheck.js:398",
+            "api/_lib/snsClaimCheck.js:261",
+            "api/_lib/snsClaimCheck.js:295",
+            "api/_lib/snsClaimCheck.js:356",
+            "api/_lib/snsClaimCheck.js:403",
             "scripts/lib/snsAutoPlanRunner.js:775",
             "scripts/lib/snsTodayPlanner.js:1110",
             "scripts/lib/snsTodayPlanner.js:1174",
@@ -20163,8 +20163,8 @@
         },
         "channel": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:290",
-            "api/_lib/snsClaimCheck.js:398",
+            "api/_lib/snsClaimCheck.js:295",
+            "api/_lib/snsClaimCheck.js:403",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
             "scripts/sns/push-setsu-kiryoku-short.js:913"
@@ -20181,13 +20181,13 @@
         },
         "race_id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:256",
-            "api/_lib/snsClaimCheck.js:288",
-            "api/_lib/snsClaimCheck.js:290",
-            "api/_lib/snsClaimCheck.js:348",
-            "api/_lib/snsClaimCheck.js:351",
-            "api/_lib/snsClaimCheck.js:396",
-            "api/_lib/snsClaimCheck.js:398",
+            "api/_lib/snsClaimCheck.js:261",
+            "api/_lib/snsClaimCheck.js:293",
+            "api/_lib/snsClaimCheck.js:295",
+            "api/_lib/snsClaimCheck.js:353",
+            "api/_lib/snsClaimCheck.js:356",
+            "api/_lib/snsClaimCheck.js:401",
+            "api/_lib/snsClaimCheck.js:403",
             "scripts/lib/snsAutoPlanRunner.js:750",
             "scripts/lib/snsTodayPlanner.js:1110",
             "scripts/maintenance/verify-sns-today-plan.js:737",
@@ -20223,10 +20223,10 @@
         },
         "state": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:256",
-            "api/_lib/snsClaimCheck.js:290",
-            "api/_lib/snsClaimCheck.js:351",
-            "api/_lib/snsClaimCheck.js:398",
+            "api/_lib/snsClaimCheck.js:261",
+            "api/_lib/snsClaimCheck.js:295",
+            "api/_lib/snsClaimCheck.js:356",
+            "api/_lib/snsClaimCheck.js:403",
             "scripts/lib/snsAutoPlanRunner.js:775",
             "scripts/lib/snsTodayPlanner.js:1110",
             "scripts/lib/snsTodayPlanner.js:1174",
@@ -20309,13 +20309,13 @@
         },
         "kind": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:256",
-            "api/_lib/snsClaimCheck.js:288",
-            "api/_lib/snsClaimCheck.js:290",
-            "api/_lib/snsClaimCheck.js:348",
-            "api/_lib/snsClaimCheck.js:351",
-            "api/_lib/snsClaimCheck.js:396",
-            "api/_lib/snsClaimCheck.js:398",
+            "api/_lib/snsClaimCheck.js:261",
+            "api/_lib/snsClaimCheck.js:293",
+            "api/_lib/snsClaimCheck.js:295",
+            "api/_lib/snsClaimCheck.js:353",
+            "api/_lib/snsClaimCheck.js:356",
+            "api/_lib/snsClaimCheck.js:401",
+            "api/_lib/snsClaimCheck.js:403",
             "scripts/lib/snsTodayPlanner.js:1110",
             "scripts/maintenance/verify-sns-today-plan.js:737",
             "scripts/sns/push-finals-image.js:1299",
@@ -20332,9 +20332,9 @@
         },
         "draft_id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:288",
-            "api/_lib/snsClaimCheck.js:348",
-            "api/_lib/snsClaimCheck.js:396",
+            "api/_lib/snsClaimCheck.js:293",
+            "api/_lib/snsClaimCheck.js:353",
+            "api/_lib/snsClaimCheck.js:401",
             "scripts/lib/snsTodayPlanner.js:1110",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
@@ -20353,9 +20353,9 @@
         },
         "variant": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:256",
-            "api/_lib/snsClaimCheck.js:348",
-            "api/_lib/snsClaimCheck.js:351",
+            "api/_lib/snsClaimCheck.js:261",
+            "api/_lib/snsClaimCheck.js:353",
+            "api/_lib/snsClaimCheck.js:356",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889"
           ],
@@ -20382,7 +20382,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:195",
+          "ref": "api/_lib/snsClaimCheck.js:200",
           "op": "select",
           "via": "embed",
           "columns": [
@@ -20435,7 +20435,7 @@
         },
         "schema_version": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:195",
+            "api/_lib/snsClaimCheck.js:200",
             "scripts/lib/snsAutoPlanRunner.js:729"
           ],
           "writers": [],
@@ -20447,7 +20447,7 @@
         },
         "bundle": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:195",
+            "api/_lib/snsClaimCheck.js:200",
             "scripts/lib/snsAutoPlanRunner.js:729"
           ],
           "writers": [],
@@ -20935,7 +20935,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:195",
+          "ref": "api/_lib/snsClaimCheck.js:200",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20945,7 +20945,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:294",
+          "ref": "api/_lib/snsClaimCheck.js:299",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -21372,8 +21372,8 @@
       "columns": {
         "id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:195",
-            "api/_lib/snsClaimCheck.js:294",
+            "api/_lib/snsClaimCheck.js:200",
+            "api/_lib/snsClaimCheck.js:299",
             "api/_lib/snsHubHelpers.js:119",
             "api/_lib/snsHubHelpers.js:136",
             "api/_lib/snsXSendStore.js:72",
@@ -21495,7 +21495,7 @@
         },
         "platform": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:294",
+            "api/_lib/snsClaimCheck.js:299",
             "api/_lib/snsXSendStore.js:72",
             "api/admin/sns-hub/revisions/index.js:57",
             "api/admin/sns-hub/send-probe.js:55",
@@ -21549,7 +21549,7 @@
         },
         "video_storage_path": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:294",
+            "api/_lib/snsClaimCheck.js:299",
             "api/admin/sns-hub/send-probe.js:55",
             "scripts/lib/snsAutoPlanRunner.js:747"
           ],
@@ -21566,7 +21566,7 @@
         },
         "cover_image_path": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:294",
+            "api/_lib/snsClaimCheck.js:299",
             "api/admin/sns-hub/send-probe.js:52",
             "scripts/lib/snsAutoPlanRunner.js:747"
           ],
@@ -21578,7 +21578,7 @@
         },
         "caption_text": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:294",
+            "api/_lib/snsClaimCheck.js:299",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/lib/snsDailyRunner.js:855",
             "scripts/maintenance/verify-sns-daily-runner.js:965",
@@ -21592,7 +21592,7 @@
         },
         "hashtags": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:294",
+            "api/_lib/snsClaimCheck.js:299",
             "scripts/lib/snsAutoPlanRunner.js:747"
           ],
           "writers": [],
@@ -21607,7 +21607,7 @@
         },
         "source_data": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:195",
+            "api/_lib/snsClaimCheck.js:200",
             "api/_lib/snsXSendStore.js:72",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/lib/snsDailyRunner.js:850",
@@ -21767,7 +21767,7 @@
         },
         "bundle_import_id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:195",
+            "api/_lib/snsClaimCheck.js:200",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/maintenance/verify-sns-auto-plan.js:617",
             "scripts/sns/push-finals-image.js:1344"
@@ -27810,7 +27810,7 @@
         }
       ],
       "mentions": [
-        "sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:648"
+        "sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:649"
       ],
       "triggerOn": [],
       "calledByRpc": [],
@@ -29655,7 +29655,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 82,
+      "reachableFiles": 83,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29767,7 +29767,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 73,
+      "reachableFiles": 74,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",

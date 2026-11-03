@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1599 |
+| 読んだファイル | 1601 |
 | 読み書きのあるファイル | 263 |
 | 表の読み手（箇所） | 939 |
 | 表の書き手（箇所） | 187 |
@@ -180,7 +180,7 @@
 | get_race_return_rate | anon 可 |  | scripts/lib/raceIndicatorData.js:37, src/services/supabaseDataService.js:5909 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:358, scripts/maintenance/check-anon-access.js:106 |  | race_entries, race_results |  |  |
 | get_race_st_predictability | anon 可 |  | scripts/lib/raceIndicatorData.js:32, src/services/supabaseDataService.js:5016 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:324, scripts/maintenance/check-anon-access.js:107 |  | exhibition_data, race_entries, race_start_timings |  |  |
 | get_race_technique_profile | anon 可 |  | scripts/lib/raceIndicatorData.js:42, src/services/supabaseDataService.js:6436 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:342, scripts/maintenance/check-anon-access.js:108 |  | race_entries, race_results |  |  |
-| get_racer_accident_records | anon 可 |  | src/services/supabaseDataService.js:7562 / 名前の文字列: sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:648 |  | race_conditions, race_entries, race_start_timings |  |  |
+| get_racer_accident_records | anon 可 |  | src/services/supabaseDataService.js:7562 / 名前の文字列: sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:649 |  | race_conditions, race_entries, race_start_timings |  |  |
 | get_today_races | anon 可 |  | api/races/today.js:35, scripts/maintenance/verify-display-coverage.js:175, src/services/supabaseDataService.js:1387 / 名前の文字列: scripts/maintenance/check-anon-access.js:109, scripts/maintenance/check-anon-access.js:172 |  | predictions, race_conditions, race_entries, race_results, races |  |  |
 | guard_sns_diff_approval | service だけ |  | トリガー: sns_drafts | sns_diff_content | sns_x_send_jobs |  |  |
 | guard_sns_preview_bundle_draft | service だけ |  | トリガー: sns_drafts | sns_bundle_send_allowed | sns_bundle_imports, sns_drafts, sns_x_send_jobs |  |  |
@@ -256,10 +256,10 @@
 | result_catchup | api/cron/result-catchup.js | 32 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 17 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 18 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 82 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 83 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | sns_daily | api/cron/sns-daily.js | 19 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
 | sns_metrics | api/cron/sns-metrics.js | 24 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
-| sns_send | api/cron/sns-send.js | 73 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_send | api/cron/sns-send.js | 74 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | venue_motor_stats | api/cron/venue-motor-stats.js | 25 | scrape_job_state, scrape_slots, venue_motor_stats |
 
 ## 表ごとの読み手・書き手
@@ -324,10 +324,10 @@
   - `api/_lib/analogyV16.js:99` rest(rest) [computed_at, exact, model_version, n_layer, pool_cutoff, race_id, run_id, stage, status]
   - `scripts/analysis/analogy-v16-rebuild/inspect.mjs:4` select [computed_at, model_version, n_layer, pool_cutoff, race_id, run_id, stage, status]
   - `scripts/analysis/analogy-v16-rebuild/snaps.mjs:4` select [computed_at, n_layer, race_id, racecard_hash, run_id, stage, status]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:85` select [race_id, stage, status]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:132` select [computed_at, race_id, run_id, stage]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:190` select [computed_at, race_id, run_id, stage]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:372` select [n_layer, race_id, stage, status]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:87` select [race_id, stage, status]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:134` select [computed_at, race_id, run_id, stage]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:192` select [computed_at, race_id, run_id, stage]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:374` select [n_layer, race_id, stage, status]
   - `scripts/lib/analogyDispatch.js:80` select [race_id, stage]
   - `scripts/lib/analogyV16Exhibition.js:289` rest(rest) [model_version, n_layer, pool_cutoff, race_id, run_id, stage, status]
   - `scripts/maintenance/verify-analogy-v16.js:269` rest(rest) [stage] （検査）
@@ -379,11 +379,11 @@
 - 読み手（49）: 
   - `api/_lib/analogyV16.js:103` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
   - `api/_lib/racerEntryExhibition.js:192` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:222` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:253` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:346` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:420` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:445` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:227` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:258` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:351` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:425` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:450` rest(rest) [is_absent, race_id]
   - `api/_lib/snsTodayDigest.js:54` rest(rest) [boat_number, is_absent, race_id]
   - `scripts/analysis/original-exhibition/fetch.mjs:59` select(helper:all)
   - `scripts/analysis/train-conditional-logit.js:90` select(helper:fetchAll)
@@ -484,7 +484,7 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:72`
 - 読み手（2）: 
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:241` select [boat_number, course, finish_raw, is_flying, is_late_start, race_id, start_timing]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:243` select [boat_number, course, finish_raw, is_flying, is_late_start, race_id, start_timing]
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:66` select(helper:fetchAll)
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -494,7 +494,7 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:70`
 - 読み手（5）: 
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:237` select [has_result, payout_3fuku, payout_3tan, race_id]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:239` select [has_result, payout_3fuku, payout_3tan, race_id]
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:64` select(helper:fetchAll)
   - `scripts/daily/update-winning-technique-stats.js:212` select(helper:fetchAll)
   - `scripts/lib/racerCareerJob.js:651` select(helper:count)
@@ -766,8 +766,8 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:75`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:9`, `scripts/maintenance/delete-phantom-races.js:87`, `scripts/maintenance/fix-opening-day-race-id-date.js:70`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:43`
 - 読み手（42）: 
   - `api/_lib/racerEntryExhibition.js:173` rest(rest) [is_final_day, race_id, series_day]
-  - `api/_lib/snsClaimCheck.js:254` rest(rest) [race_id, race_stage]
-  - `api/_lib/snsClaimCheck.js:413` rest(rest) [race_id, race_stage]
+  - `api/_lib/snsClaimCheck.js:259` rest(rest) [race_id, race_stage]
+  - `api/_lib/snsClaimCheck.js:418` rest(rest) [race_id, race_stage]
   - `api/admin/sns-hub/send-probe.js:66` rest(rest) [race_id, race_stage]
   - `scripts/analysis/backtest-unified-model-place-trifecta.js:101` select [race_id, wave_height, wind_speed]
   - `scripts/analysis/backtest-unified-model.js:116` select [race_id, wave_height, wind_speed]
@@ -827,11 +827,11 @@
 - 読み手（142）: 
   - `api/_lib/analogyV16.js:105` rest(rest) [boat_number, is_absent, race_id]
   - `api/_lib/racerEntryExhibition.js:171` rest(rest) [boat_number, race_id, racer_id]
-  - `api/_lib/snsClaimCheck.js:221` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:252` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:345` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:419` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:444` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:226` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:257` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:350` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:424` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:449` rest(rest) [is_absent, race_id]
   - `api/_lib/snsTodayDigest.js:52` rest(rest) [boat_number, is_absent, race_id]
   - `scripts/analysis/aggregate-racer-stats.js:569` select [racer_id]
   - `scripts/analysis/analyze-indicator-predictive-power.js:148` select [boat_number, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
@@ -849,8 +849,8 @@
   - `scripts/analysis/find-missing-dates.js:31` select [*, race_id]
   - `scripts/analysis/full-picture-boat1-return/analyze-boat1-return-rate-noise.mjs:37` select(helper:fetchAll)
   - `scripts/analysis/original-exhibition/fetch.mjs:74` select(helper:all)
-  - `scripts/analysis/past-rate-check/label-threshold-checks.mjs:86` select [race_id]
-  - `scripts/analysis/past-rate-check/label-threshold-checks.mjs:87` select [boat_number, created_at, race_id, updated_at]
+  - `scripts/analysis/past-rate-check/label-threshold-checks.mjs:87` select [race_id]
+  - `scripts/analysis/past-rate-check/label-threshold-checks.mjs:88` select [boat_number, created_at, race_id, updated_at]
   - `scripts/analysis/racer-fortune-telling/validate-fortune-correlation.js:82` select(helper:fetchAllPages)
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:185` select(helper:fetchAllByRaceId)
   - `scripts/analysis/train-conditional-logit.js:85` select(helper:fetchAll)
@@ -1159,7 +1159,7 @@
   - `scripts/analysis/find-video-worthy-race.js:101` select [payout_trifecta, payout_win, race_id, rank1, rank2, rank3, winning_technique]
   - `scripts/analysis/full-picture-boat1-return/analyze-boat1-return-rate-noise.mjs:38` select(helper:fetchAll)
   - `scripts/analysis/original-exhibition/fetch.mjs:69` select(helper:all)
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:224` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, is_cancelled, is_no_race, payout_trifecta, payout_trio, race_id, race_status, rank1, rank2, rank3, refund_boats]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:226` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, is_cancelled, is_no_race, payout_trifecta, payout_trio, race_id, race_status, rank1, rank2, rank3, refund_boats]
   - `scripts/analysis/racer-fortune-telling/validate-fortune-correlation.js:64` select(helper:fetchAllPages)
   - `scripts/analysis/recalculate-all-rules.js:227` select [*, race_id]
   - `scripts/analysis/recalculate-trio-rules.js:142` select [*, race_id]
@@ -1276,8 +1276,8 @@
 - 本体で読む RPC: data_health_race_series, data_health_table_rows
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule.py:282`, `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:73`
 - 読み手（13）: 
-  - `api/_lib/botPage.js:273` rest(rest) [end_date, grade, start_date, title, venue_code]
-  - `api/_lib/botRace.js:247` rest(rest)
+  - `api/_lib/botPage.js:275` rest(rest) [end_date, grade, start_date, title, venue_code]
+  - `api/_lib/botRace.js:249` rest(rest)
   - `scripts/lib/motorPretestJob.js:236` select [end_date, start_date, venue_code]
   - `scripts/lib/raceSeriesLookup.js:161` select [end_date, start_date, venue_code]
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
@@ -1312,7 +1312,7 @@
 - 読み手（29）: 
   - `scripts/analysis/full-picture-answer-stage/actual.cjs:10` select [boat_number, entry_course, finish_rank, is_flying, is_late_start, race_id, start_timing]
   - `scripts/analysis/original-exhibition/fetch.mjs:64` select(helper:all)
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:229` select [boat_number, finish_mark, is_flying, is_late_start, race_id, start_timing]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:231` select [boat_number, finish_mark, is_flying, is_late_start, race_id, start_timing]
   - `scripts/analysis/racer-fortune-telling/validate-fortune-correlation.js:72` select(helper:fetchAllPages)
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:197` select(helper:fetchAllByRaceId)
   - `scripts/analysis/verify-race-analysis-rpc.js:74` select(helper:fetchAll)
@@ -1482,11 +1482,11 @@
 - 読み手（145）: 
   - `api/_lib/analogyV16.js:101` rest(rest) [race_date, race_id, start_time, venue_code]
   - `api/_lib/racerEntryExhibition.js:196` rest(rest) [cancellation_status, race_date, race_id, start_time]
-  - `api/_lib/snsClaimCheck.js:219` rest(rest) [cancellation_status, race_date, race_id, start_time]
-  - `api/_lib/snsClaimCheck.js:250` rest(rest) [cancellation_status, race_date, race_id, start_time]
-  - `api/_lib/snsClaimCheck.js:343` rest(rest) [cancellation_status, race_date, race_id, start_time]
-  - `api/_lib/snsClaimCheck.js:418` rest(rest) [cancellation_status, race_id]
-  - `api/_lib/snsClaimCheck.js:442` rest(rest) [cancellation_status, race_date, race_id, start_time]
+  - `api/_lib/snsClaimCheck.js:224` rest(rest) [cancellation_status, race_date, race_id, start_time]
+  - `api/_lib/snsClaimCheck.js:255` rest(rest) [cancellation_status, race_date, race_id, start_time]
+  - `api/_lib/snsClaimCheck.js:348` rest(rest) [cancellation_status, race_date, race_id, start_time]
+  - `api/_lib/snsClaimCheck.js:423` rest(rest) [cancellation_status, race_id]
+  - `api/_lib/snsClaimCheck.js:447` rest(rest) [cancellation_status, race_date, race_id, start_time]
   - `api/_lib/snsTodayDigest.js:50` rest(rest) [cancellation_status, race_id, start_time]
   - `api/odds/live.js:72` select [race_date, race_id, start_time]
   - `scripts/analysis/analyze-upset-factors.js:108` select [first_boat_motor_2rate, first_boat_win_rate, motor_2rate_stddev, race_date, race_id, venue_code, volatility_level, volatility_score, win_rate_stddev]
@@ -1495,9 +1495,9 @@
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:32` select(helper:all)
   - `scripts/analysis/calibrate-unified-model.js:160` select [race_id, venue_code]
   - `scripts/analysis/original-exhibition/fetch.mjs:54` select(helper:all)
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:76` select [cancellation_status, race_date, race_id, start_time]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:130` select [race_date, race_id, start_time]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:232` select [cancellation_status, race_id]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:78` select [cancellation_status, race_date, race_id, start_time]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:132` select [race_date, race_id, start_time]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:234` select [cancellation_status, race_id]
   - `scripts/analysis/race-stage-inventory.mjs:36` select(helper:fetchAllByRaceId)
   - `scripts/analysis/redesign-volatility-by-venue.js:133` select [first_boat_avg_st, first_boat_motor_2rate, first_boat_win_rate, race_date, race_id, venue_code, volatility_score, win_rate_stddev]
   - `scripts/analysis/turn-prediction-venue-deep-analysis.js:109` select [first_boat_grade, first_boat_win_rate, race_date, race_grade, race_id, race_number, venue_code, volatility_level, volatility_score]
@@ -1747,10 +1747,10 @@
 - 本体で読む RPC: approve_sns_x_send, transition_sns_send_139, transition_sns_x_send
 - 写しに無い列の名前（埋め込みの別名・JSON のキー・誤りのどれか）: setsu_kiryoku_short_enabled, today_thinking_enabled
 - 読み手（15）: 
-  - `api/_lib/snsClaimCheck.js:258` rest(rest) [channel, finals_image_enabled]
-  - `api/_lib/snsClaimCheck.js:292` rest(rest) [channel]
-  - `api/_lib/snsClaimCheck.js:354` rest(rest) [channel, today_thinking_enabled]
-  - `api/_lib/snsClaimCheck.js:401` rest(rest) [channel, setsu_kiryoku_short_enabled]
+  - `api/_lib/snsClaimCheck.js:263` rest(rest) [channel, finals_image_enabled]
+  - `api/_lib/snsClaimCheck.js:297` rest(rest) [channel]
+  - `api/_lib/snsClaimCheck.js:359` rest(rest) [channel, today_thinking_enabled]
+  - `api/_lib/snsClaimCheck.js:406` rest(rest) [channel, setsu_kiryoku_short_enabled]
   - `api/_lib/snsXSendStore.js:151` rest(rest) [channel, dry_run, mode]
   - `scripts/lib/snsAutoPlanRunner.js:719` rest(rest) [auto_approver_id, channel, dry_run, mode]
   - `scripts/lib/snsSendRunner.js:584` rest(rest) [channel, dry_run, mode]
@@ -1780,13 +1780,13 @@
 - 取得のジョブ: sns_auto_plan
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/lib/snsAutoPlanRunner.js:770`
 - 読み手（16）: 
-  - `api/_lib/snsClaimCheck.js:256` rest(rest) [id, kind, race_id, state, variant]
-  - `api/_lib/snsClaimCheck.js:288` rest(rest) [draft_id, kind, race_id]
-  - `api/_lib/snsClaimCheck.js:290` rest(rest) [channel, id, kind, race_id, state]
-  - `api/_lib/snsClaimCheck.js:348` rest(rest) [draft_id, kind, race_id, variant]
-  - `api/_lib/snsClaimCheck.js:351` rest(rest) [id, kind, race_id, state, variant]
-  - `api/_lib/snsClaimCheck.js:396` rest(rest) [draft_id, kind, race_id]
-  - `api/_lib/snsClaimCheck.js:398` rest(rest) [channel, id, kind, race_id, state]
+  - `api/_lib/snsClaimCheck.js:261` rest(rest) [id, kind, race_id, state, variant]
+  - `api/_lib/snsClaimCheck.js:293` rest(rest) [draft_id, kind, race_id]
+  - `api/_lib/snsClaimCheck.js:295` rest(rest) [channel, id, kind, race_id, state]
+  - `api/_lib/snsClaimCheck.js:353` rest(rest) [draft_id, kind, race_id, variant]
+  - `api/_lib/snsClaimCheck.js:356` rest(rest) [id, kind, race_id, state, variant]
+  - `api/_lib/snsClaimCheck.js:401` rest(rest) [draft_id, kind, race_id]
+  - `api/_lib/snsClaimCheck.js:403` rest(rest) [channel, id, kind, race_id, state]
   - `scripts/lib/snsAutoPlanRunner.js:750` rest(rest) [*, race_id]
   - `scripts/lib/snsTodayPlanner.js:1110` rest(rest) [draft_id, id, kind, race_id, state]
   - `scripts/maintenance/verify-sns-auto-plan.js:621` rest(rest) [id, state] （検査）
@@ -1809,7 +1809,7 @@
 - 本体で読む RPC: guard_sns_preview_bundle_draft, import_sns_preview_bundle, sns_bundle_send_allowed
 - 本体で書く RPC: import_sns_preview_bundle
 - 読み手（2）: 
-  - `api/_lib/snsClaimCheck.js:195` select(embed) [bundle, schema_version]
+  - `api/_lib/snsClaimCheck.js:200` select(embed) [bundle, schema_version]
   - `scripts/lib/snsAutoPlanRunner.js:729` rest(rest) [bundle, created_at, id, qa, schema_version]
 - 書き手（0）: なし
 
@@ -1859,8 +1859,8 @@
 - 本体で書く RPC: approve_sns_x_send, import_sns_preview_bundle, save_sns_draft_diff, sns_claim_external, sns_finish_external, sns_record_external, sns_update_external_warning, stop_sns_auto_item, transition_sns_send_139, transition_sns_x_send
 - 取得のジョブ: sns_auto_plan, sns_daily, sns_metrics, sns_send
 - 読み手（33）: 
-  - `api/_lib/snsClaimCheck.js:195` rest(rest) [bundle_import_id, id, source_data]
-  - `api/_lib/snsClaimCheck.js:294` rest(rest) [caption_text, cover_image_path, hashtags, id, platform, video_storage_path]
+  - `api/_lib/snsClaimCheck.js:200` rest(rest) [bundle_import_id, id, source_data]
+  - `api/_lib/snsClaimCheck.js:299` rest(rest) [caption_text, cover_image_path, hashtags, id, platform, video_storage_path]
   - `api/_lib/snsHubHelpers.js:119` select(rest) [*, id]
   - `api/_lib/snsXSendStore.js:72` rest(rest) [format, id, platform, posted_at, scheduled_at, source_data, status, title]
   - `api/admin/sns-hub/drafts/index.js:43` select(rest) [*]
