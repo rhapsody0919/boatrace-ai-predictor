@@ -464,6 +464,11 @@
       "guards": "GS04-5 お気に入り選手の出走の締切順・中止除外・人数とレース数、枠番別成績の30走境界と丸め、代替会場の状態・SG/G1の先頭判定（BOA-1271）"
     },
     {
+      "script": "verify-favorites-store.js",
+      "tier": "ci",
+      "guards": "お気に入り保存の形・不正値の除外・選手30人の上限・追加順・削除・引数の不変性を守る（BOA-1268）"
+    },
+    {
       "script": "verify-feature-contributions-dedup.js",
       "tier": "ci",
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
@@ -612,6 +617,11 @@
       "script": "verify-index-jsonld.js",
       "tier": "ci",
       "guards": "index.html の JSON-LD に、実在しない評価（aggregateRating・review）と受け口の無い SearchAction を書かないこと、各ブロックが JSON として読めること。2025-12-20 に架空の評価（4.5・100件）が入り、AIクローラー向けスナップショットにも出ていた（Google の構造化データ方針違反。docs/proposal/ai-agent-era-strategy.md Phase 0）"
+    },
+    {
+      "script": "verify-internal-api-callers.js",
+      "tier": "ci",
+      "guards": "/api の合言葉の付け忘れ（BOA-1110 段階1、ADR-0103）: internalApiHeaders が鍵のあるときだけ x-ryujin-internal-key を付け、x-ryujin-caller は常に付ける（名前は英数字とハイフン32字まで）、付けたヘッダが関門の判定で reason=internal・caller として通る、botPage・botRace・snsClaimCheck が実際に送るヘッダに合言葉と caller が入る、api・scripts・sns-video-studio のうち自分の /api（相対のパスか boat-ai.jp、cron・admin・bot-page を除く。外部の host の /api は拾わない）を取るファイルが internalApiHeaders を使う（ファイル単位。例外は理由つきの EXEMPT だけ）。段階4（enforce）の後に自分の呼び出しが 403 になるのを防ぐ"
     },
     {
       "script": "verify-job-watch.js",

@@ -34,15 +34,14 @@
   `BET_TYPE_TO_HIT_KEY` で正しい対応付けに補正済み
 - `scripts/daily/update-moriarty-outcomes.js` — `judgeBet` 内で
   payout カラムの対応を補正済み
-- `scripts/analysis/compare-pcexpect.js` — `is_hit_trifecta` を3連単として
-  扱っている可能性あり（**未対応・要確認**）
-- `scripts/analysis/analyze-prediction-ensemble.js`（BOA-104, 未コミット）—
-  `is_hit_trifecta` / `payout_trifecta` を3連単として扱っている（**未対応・要確認**）
-- `calculate-accuracy.js` 起点の的中率統計・フロントエンド表示 —
-  「3連単的中率」として表示している値が実際は3連複（またはその逆）の
-  可能性あり（**未対応・要確認**）
+- 2026-11-03 の点検（本番の 11/02 の156レースと、書き手・読み手の全数の grep）で、上の「未対応・要確認」だった3つ（`compare-pcexpect.js`・`analyze-prediction-ensemble.js`・AccuracyHistory の表示）を含め、読み手はすべて逆の名前で読んで打ち消しており、利用者に誤った値は出ていない（例: `2026-11-02-06-08` は payout_trifecta=15,360（3連複）・payout_trio=820,900（3連単）で、結果タブは3連複 15,360円・3連単 820,900円）
+- 逆の列は9本: race_results の payout_trifecta・payout_trio・popularity_trifecta・popularity_trio、predictions の is_hit_trifecta・is_hit_trio・payout_trifecta・payout_trio、model_performance_daily.payout_trifecta。書き手（scripts/lib/raceResultRows.js:15-23、scripts/daily/scrape-results.js、kbResultsBackfillRows.js、scripts/ml/backfill.py）は意図して逆に入れている
+- hq の読み手は config/ds-extracts/slit-forms-boa980.sql:207 の1か所（`payout_trio AS payout_3tan`、正しく読む）
+- 新しい読み手は `race_payouts`（bet_type 3tan・3fuku、正しい命名）から読む
 
 ## 恒久対応の選択肢
+
+2026-11-03 の判断: 列名は直さない。書き手と約60の読み手を同時に切り替えないと、切り替えの間に画面と分析が逆になる。得るのは命名の整合だけで、利用者に誤りは出ていない。新しい読み手を race_payouts に寄せて、逆の列の読み手を減らしていく。
 
 1. **DBカラム名を実体に合わせて入れ替える**（マイグレーション + 全参照箇所の一括修正）
 2. 書き込み側（`calculate-accuracy.js` 等の非正規化処理）を修正して

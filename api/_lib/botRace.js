@@ -54,6 +54,7 @@ import {
   needsMeetSeries,
   seriesCoveringDate,
 } from "../../src/utils/meetPageModel.js";
+import { internalApiHeaders } from "./internalApiHeaders.js";
 
 const FETCH_TIMEOUT_MS = 8_000;
 // 節（race_series の1行）は材料の後に引くので、2つ合わせて関数の maxDuration（15秒）に収まる短さにする
@@ -180,7 +181,8 @@ export function createPredictionsSource({
     let res;
     try {
       res = await fetchImpl(url, {
-        headers: { accept: "application/json" },
+        // 合言葉（BOA-1110 段階1）。関門が enforce になると、無い要求は 403
+        headers: { accept: "application/json", ...internalApiHeaders("bot-race") },
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
     } catch (e) {

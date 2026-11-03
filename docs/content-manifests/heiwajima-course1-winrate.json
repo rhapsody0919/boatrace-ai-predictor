@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "heiwajima-course1-winrate",
+ "kind": "revision",
+ "ticket": "BOA-1275",
+ "paths": [
+  "public/blog/heiwajima-course1-winrate.md",
+  "src/data/blog-posts/heiwajima-course1-winrate.json"
+ ],
+ "files": {
+  "public/blog/heiwajima-course1-winrate.md": "2b666c79f6dc173280ae31eeb6d0e69f658fede900c43fd5f5c16859b4bc3a9c",
+  "src/data/blog-posts/heiwajima-course1-winrate.json": "9f90306bc43f48acb0f547273376ddd70d4a46d120f77a0679437a1f9392450b"
+ },
+ "content_sha256": "3d4315064997fdaac75391d98f6c9f36e86f5d3cee7590c82999d3ebef1db316",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "3d4315064997fdaac75391d98f6c9f36e86f5d3cee7590c82999d3ebef1db316",
+   "model": "opus",
+   "at": "2026-11-03T20:40:33+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "3d4315064997fdaac75391d98f6c9f36e86f5d3cee7590c82999d3ebef1db316",
+   "model": "opus",
+   "at": "2026-11-03T20:40:33+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "3d4315064997fdaac75391d98f6c9f36e86f5d3cee7590c82999d3ebef1db316",
+   "model": "opus",
+   "at": "2026-11-03T20:40:33+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "3d4315064997fdaac75391d98f6c9f36e86f5d3cee7590c82999d3ebef1db316",
+   "model": "opus",
+   "at": "2026-11-03T20:40:33+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-03T20:42:05+09:00",
+ "run": "20261103T203739-seo-human",
+ "engine": "claude"
+}

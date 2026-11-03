@@ -171,7 +171,7 @@ export default function RacerPerformanceStats({
   const [vcGrade, setVcGrade] = useState("all");
   const [vcStage, setVcStage] = useState("all");
   // レース一覧のページ番号（1始まり、常時表示。ADR-0063）。フィルタが変わったら1ページ目に
-  // 戻す必要があるため、フィルタ変更を検知してリセットする（下のuseEffect）
+  // 戻す必要があるため、フィルタ変更を検知してリセットする
   const [vcRacePage, setVcRacePage] = useState(1);
   // 出走履歴取得が失敗した際、手動で再試行するためのトークン。フィルタ
   // （vcVenue/vcBoat/vcGrade/vcStage）はネットワークI/Oを発生させない設計に
@@ -255,25 +255,26 @@ export default function RacerPerformanceStats({
     };
   }, [racerId, vcHistory, vcRetryToken]);
 
-  // フィルタが変わったらレース一覧のページを1に戻す（前のフィルタの
-  // 3ページ目を見ていた状態のまま新しい絞り込み結果が3ページ目扱いになるのを防ぐ）。
-  // racerIdも依存に含める: RacerProfile.jsxはkey無しでこのコンポーネントを
-  // レンダーするため、選手Aで3ページ目を見た状態のままフィルタ値を変えずに
-  // 選手Bへ遷移すると、このeffectが発火せずページ番号が残留してしまう
-  useEffect(() => {
-    setVcRacePage(1);
-  }, [racerId, vcVenue, vcBoat, vcGrade, vcStage]);
-
-  // racerIdが変わったらフィルタ自体も初期状態に戻す。RacerProfile.jsxはkey無しで
-  // このコンポーネントをレンダーするため、選手Aで会場・枠番等を絞り込んだ状態の
-  // まま選手Bへ遷移すると、フィルタ値が残留し選手Bの履歴に無関係な絞り込みが
-  // かかったまま表示されてしまう（レビューで発見、到達性は低いが防御的に対応）
-  useEffect(() => {
+  // 同じマウントで選手が変わったら、コミット前にフィルタを初期値へ戻す。
+  const [previousRacerId, setPreviousRacerId] = useState(racerId);
+  if (previousRacerId !== racerId) {
+    setPreviousRacerId(racerId);
     setVcVenue("all");
     setVcBoat("all");
     setVcGrade("all");
     setVcStage("all");
-  }, [racerId]);
+  }
+
+  // フィルタまたは選手が変わったら、レース一覧を1ページ目へ戻す。
+  const racePageInputs = [racerId, vcVenue, vcBoat, vcGrade, vcStage];
+  const [previousRacePageInputs, setPreviousRacePageInputs] =
+    useState(racePageInputs);
+  if (
+    racePageInputs.some((value, index) => value !== previousRacePageInputs[index])
+  ) {
+    setPreviousRacePageInputs(racePageInputs);
+    setVcRacePage(1);
+  }
 
   const vcGradeValue = vcGrade === "all" ? null : vcGrade;
   const vcStageValue = vcStage === "all" ? null : vcStage;

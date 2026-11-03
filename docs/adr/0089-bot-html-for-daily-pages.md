@@ -111,6 +111,7 @@ ADR 0032 は、AI クローラー向けの中身を「ビルド時に作る静�
   - あわせて見るもの: bingbot の直後に人の UA で同じ URL を取り SPA の外枠が返ること（上の「未確認」の2を毎日確かめる）、Googlebot の UA の / が SPA の外枠であること。人の UA の TTFB の中央値（/・/venue・middleware を通らない /race）はログに残すだけで、失敗にしない
   - 最終更新の時刻だけは、同じ文言で10分以内の差を許す。材料の `/api/races/today` は CDN に地域ごとに5分残り、関数（syd1）とブラウザが別の時点の材料を読む（2026-10-12 の本番でボット 08:42、人 08:40）
   - 照合の失敗（終了コード 1）、照合の途中で止まった（2）、照合より前の手順で落ちた、のどれも Slack に流す（`SLACK_WEBHOOK_URL`、`nightly-verify-db.yml` と同じ形）
+  - **合言葉が前提（2026-11-03 追記、BOA-1110 段階1・ADR-0103）**: 材料の取得（`api/_lib/botPage.js`・`botRace.js` が自分の `/api/races/today`・`/api/predictions` を取る）と、この照合の `/api/races/today` の取得は、ヘッダ `x-ryujin-internal-key`（`INTERNAL_API_KEY`）と `x-ryujin-caller` を付ける（`api/_lib/internalApiHeaders.js`）。`bot-html-parity.yml` は environment `prod-jobs` の secret を渡す。関門が enforce（ADR-0103 の段階4）になった後に鍵が無い・違うと、材料の取得と照合の取得は 403 になる
 - **verify-middleware-routing.js（CI）を拡げる**
   - / と /venue/1〜24: 上記 UA なら関数へ振り分ける
   - Googlebot と人のブラウザ: 振り分けない

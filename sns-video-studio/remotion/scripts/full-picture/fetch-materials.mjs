@@ -28,6 +28,7 @@ import { aggregateRacerConditionStats, RACER_CONDITION_MIN_RUNS } from "../../..
 import { computeAccidentStats, currentPeriodRange } from "../../../../src/utils/accidentRate.js";
 import { groupLosingTechniqueRows } from "../../../../src/utils/losingTechnique.js";
 import { shapeOriginalExhibition, ORIGINAL_EXHIBITION_KINDS } from "../../../../src/utils/originalExhibition.js";
+import { internalApiHeaders } from "../../../../api/_lib/internalApiHeaders.js";
 import { computeStConsideration } from "../../../../src/utils/stConsideration.js";
 import { indexBaseline, getBaselineCell, expectedBreakoutCount } from "../../../../src/utils/courseBaseline.js";
 import { toWakuRacerStats } from "../../../../src/utils/racerStats.js";
@@ -1055,7 +1056,9 @@ async function venueTechnique(date, venueCode, missing) {
 }
 
 async function getJson(path) {
-  const res = await fetch(`${BASE}${path}`, { signal: AbortSignal.timeout(30000) });
+  // 合言葉（BOA-1110 段階1）。鍵は INTERNAL_API_KEY（daily.mjs は .env.local から読む。このファイルを単体で動かすときは
+  // node --env-file=.env.local で渡す）。無ければ付けない（関門が enforce になると 403）
+  const res = await fetch(`${BASE}${path}`, { headers: internalApiHeaders("full-picture-materials"), signal: AbortSignal.timeout(30000) });
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
   return res.json();
 }

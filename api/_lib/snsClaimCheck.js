@@ -8,6 +8,7 @@
  * - source_revision は「照合した値」から決まる。承認の時（auto-plan）と送る直前（preflight の readCurrent）で同じ関数を使い、
  *   値が変わっていれば版が変わる（送る直前に source_changed で止まる）
  */
+import { internalApiHeaders } from "./internalApiHeaders.js";
 import { SITE_BASE_URL } from "./snsHubHelpers.js";
 import {
   createTodayDigestSource,
@@ -98,7 +99,11 @@ export async function checkClaims({
       bodies.set(
         endpoint,
         fetchImpl(`${base}${endpoint}`, {
-          headers: { Accept: "application/json" },
+          // 合言葉（BOA-1110 段階1）。関門が enforce になると、無い要求は 403
+          headers: {
+            Accept: "application/json",
+            ...internalApiHeaders("sns-claim-check"),
+          },
           cache: "no-store",
           signal: AbortSignal.timeout(TIMEOUT_MS),
         }).then(async (response) => {
