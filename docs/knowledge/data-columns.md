@@ -3,7 +3,7 @@
 DB の列名・テーブルの読み違いと、公式ファイル・公式ページの取得の時点。公式データの仕様そのもの（得点率・中止・会場）は [data-definitions.md](data-definitions.md)、本番 DB の運用は [db-operations.md](db-operations.md)。主に official-data-spec・data-scientist・system-architect が読む。書き方は [README.md](README.md)。
 
 ## 列・テーブルの読み違い
-- 払戻の列名は英語名と中身が逆。race_results.payout_trifecta が3連複、payout_trio が3連単。配当を扱う前に scripts/lib/payoutCalculator.js 冒頭のコメントを見る（2026-08-09、memory vup_feature_analysis_skill、payoutCalculator.js:5-7）
+- 払戻の列名は英語名と中身が逆。race_results.payout_trifecta が3連複、payout_trio が3連単。popularity_trifecta・popularity_trio、predictions の is_hit_*・payout_*、model_performance_daily.payout_trifecta も同じく逆。読み手は全部これを前提に打ち消していて、列名は直さない。新しい読み手は race_payouts（bet_type 3tan・3fuku）から読む。配当を扱う前に scripts/lib/payoutCalculator.js 冒頭のコメントを見る（2026-08-09、memory vup_feature_analysis_skill、payoutCalculator.js:5-7。2026-11-03 本番 11/02 の156レースで4列とも逆を確認、docs/issues/trifecta-trio-naming-swap.md）
 - winning_technique_stats.percentage は「その枠が1着だったときの決まり手の内訳」で、枠の1着率ではない。outcome_distribution.probability の分母は会場の全レース。「N号艇が1着の場合」の率にするなら winning_technique_stats.total_races を分母にする（約1.8倍ずれていた）（2026-08-31、memory race_detail_analysis_tool_integration_2026_08、PR #442）
 - 選手マスタは racers ではなく racer_profiles（生年月日・支部・出身地・血液型・身長体重・登録期。scripts/maintenance/scrape-racer-profiles.js が boatrace.jp の選手検索から取る）。race_entries・race_conditions だけ見て「未取得」と判断しない（2026-09-14、memory feedback_verify_db_schema_before_ticketing_data_gaps・racer_fortune_and_news_features_2026_08_24、docs/db-migration/035_create_racer_profiles.sql）
 - 級の表記は race_entries.grade が "A1"、racer_profiles.grade_at_scrape が "A1級"（取得時点の値）。級は 1/1・7/1 に替わり、審査期間（5/1〜10/31・11/1〜4/30）とは別。画面の級は race_entries の最新の出走の値を使う（2026-10-01、memory seo_keyword_strategy_2026_09_29）
