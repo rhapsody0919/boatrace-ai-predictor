@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import DataFetchError from "../components/DataFetchError";
 import Header from "../components/Header";
 import {
   RacerTable,
@@ -48,6 +49,7 @@ function parseNumberParam(searchParams, key) {
 export default function RacersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [racers, setRacers] = useState(null);
+  const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expandedRacerId, setExpandedRacerId] = useState(null);
 
@@ -63,7 +65,7 @@ export default function RacersPage() {
       .catch((err) => {
         if (cancelled) return;
         console.error("選手一覧取得エラー:", err.message);
-        setRacers([]);
+        setFailed(true);
         setLoading(false);
       });
     return () => {
@@ -142,8 +144,7 @@ export default function RacersPage() {
     }
   };
 
-  const handlePageChange = (page) => {
-    updateSearchParams({ page });
+  const handlePageChange = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -204,12 +205,27 @@ export default function RacersPage() {
 
   return (
     <>
-      <title>選手一覧 | 龍神レーダー</title>
+      <title>
+        {currentPage >= 2
+          ? `選手一覧（${currentPage}ページ目）| 龍神レーダー`
+          : "選手一覧 | 龍神レーダー"}
+      </title>
       <meta
         name="description"
         content="支部・身長・体重・級別・登録期・出身地で絞り込み、勝率などでソートできる選手一覧。"
       />
-      <link rel="canonical" href="https://www.boat-ai.jp/racers" />
+      <link
+        rel="canonical"
+        href={
+          currentPage >= 2 &&
+          ![
+            "branch", "heightMin", "heightMax", "weightMin", "weightMax",
+            "grade", "period", "hometown", "sort", "dir",
+          ].some((key) => searchParams.has(key))
+            ? `https://www.boat-ai.jp/racers?page=${currentPage}`
+            : "https://www.boat-ai.jp/racers"
+        }
+      />
 
       <Header />
 
@@ -227,13 +243,15 @@ export default function RacersPage() {
 
         {loading && <p className="racers-page-status">読み込み中...</p>}
 
-        {!loading && sorted.length === 0 && (
+        {failed && <DataFetchError />}
+
+        {!loading && !failed && sorted.length === 0 && (
           <p className="racers-page-status">
             条件に一致する選手が見つかりません
           </p>
         )}
 
-        {!loading && sorted.length > 0 && (
+        {!loading && !failed && sorted.length > 0 && (
           <>
             <div className="racers-page-table-view">
               <RacerTable
