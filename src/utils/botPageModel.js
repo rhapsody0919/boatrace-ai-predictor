@@ -13,7 +13,8 @@
  *   文言は人の画面と同じ i18n のキー、FAQ と記事の選び方は人の画面と同じ関数（homeAiIntroFaq.js・blogPosts.js）
  * - 選手一覧・オッズ・払戻・着順・展開予測・荒れ度は入れない（ADR 0089 決定7）。
  *   トップの「本日のイン崩れ注意度ハイライト」（TodaysVolatilityHighlights）も入れない
- * - 時刻で変わる状態（次のレース・締切間近・発売中・全レース終了）は入れない（同 決定3）
+ * - 時刻で変わる状態（次のレース・締切間近・発売中・全レース終了）は入れない（同 決定3）。
+ *   節の日目だけは人のカードに合わせ、次レースが残る会場に限って出す（BOA-1220）
  * - 形が壊れた入力は例外にする。正しく取れて0件のときだけ「開催なし」のモデルを返す（ADR 0069）
  *
  * Node から import するため、ブラウザ専用の依存を持ち込まない。検証: scripts/maintenance/verify-bot-page-model.js
@@ -26,12 +27,14 @@ import {
   getTodayVenueBreadcrumbItems,
 } from "./pageMeta.js";
 import {
+  findNextRace,
   venueNameOf,
   venueCardHeadline,
   gradeConfigOf,
   raceNumberLabel,
   deadlineValueText,
 } from "./raceListDisplay.js";
+import { getVenueSeriesDayLabel } from "./raceDetailHeading.js";
 import { isRaceCancelled } from "./raceCancellation.js";
 import { venueSummaryLines } from "./venueSummary.js";
 import { getRaceId } from "./raceId.js";
@@ -204,10 +207,11 @@ function buildIntroBanner(t, lang) {
  * トップ（/）のモデル
  *
  * @param {unknown} todayJson - /api/races/today の応答
- * @param {{t: (key: string, params?: object) => string, today: string, lang?: string}} options - today は JST の日付（YYYY-MM-DD）。
+ * @param {{t: (key: string, params?: object) => string, today: string, nowHHMM?: string, lang?: string}} options - today は JST の日付（YYYY-MM-DD）。
+ *   nowHHMM は JST の現在時刻（HH:MM）。無ければ日目を出さない。
  *   人の画面の見出しと同じく、実行時の JST の日付を渡す（0件の日は JSON に日付が無いため）。lang は表示する言語（既定 ja）
  */
-export function buildTopModel(todayJson, { t, today, lang = DEFAULT_LANG }) {
+export function buildTopModel(todayJson, { t, today, nowHHMM, lang = DEFAULT_LANG }) {
   assertTodayRacesJson(todayJson);
   const transformed = transformTodayRaces(todayJson);
   const byVenue = racesByVenue(transformed);
@@ -227,6 +231,10 @@ export function buildTopModel(todayJson, { t, today, lang = DEFAULT_LANG }) {
       href: localizePath(`/venue/${venueCode}`, lang),
       gradeLabel: gradeConfig?.label ?? null,
       raceTitle,
+      seriesDayLabel:
+        nowHHMM && findNextRace(races, nowHHMM)
+          ? getVenueSeriesDayLabel(races, t)
+          : null,
     };
   });
 

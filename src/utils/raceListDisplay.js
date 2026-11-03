@@ -39,3 +39,8 @@ export function raceNumberLabel(raceNumber) {
 export function deadlineValueText(t, startTime) {
   return `${startTime}${t("home.jstNote")}`;
 }
+
+/** JST の HH:MM より後の最初のレース。時刻欠損は候補に含める（VenueGridCard と同じ判定）。 */
+export function findNextRace(races, nowHHMM) {
+  return races.find((r) => !r.startTime || r.startTime > nowHHMM) || null;
+}
