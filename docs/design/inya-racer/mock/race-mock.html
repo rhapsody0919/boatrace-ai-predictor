@@ -1,0 +1,87 @@
+<title>イン屋の札 レースページ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 龍神レーダーのレースページの2か所だけを再現（タブの上の6艇・直前情報の進入カード）。色はサイトの design-tokens.css の値 */
+:root {
+  --page: #f7f3ea; --card: #fbf9f3; --line: #ddd4bf; --fg: #0f172a; --fg2: #475569;
+  --gold: #6b500f; --gold-fill: #f3e7c2; --link: #0369a1; --empty: #ddd4bf; --add: #0369a1;
+  --sans: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0d1b2e; --card: #142842; --line: #24344d; --fg: #f8fafc; --fg2: #cbd5e1;
+  --gold: #e8d089; --gold-fill: #2a2a1e; --link: #7cc4fa; --empty: #24344d; --add: #7cc4fa; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --page: #0d1b2e; --card: #142842; --line: #24344d; --fg: #f8fafc; --fg2: #cbd5e1;
+  --gold: #e8d089; --gold-fill: #2a2a1e; --link: #7cc4fa; --empty: #24344d; --add: #7cc4fa; color-scheme: dark }
+body { background: var(--page); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 48px; }
+.wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 22px; }
+.intro { margin: 0; font-size: 13px; color: var(--fg2); padding: 12px; border: 1px dashed var(--line); border-radius: 10px; }
+.where { font-size: 12px; font-weight: 700; color: var(--add); letter-spacing: .04em; margin: 0 0 6px; }
+h1 { font-size: 22px; margin: 0; }
+.boats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 8px; list-style: none; margin: 0; padding: 0; }
+.boats li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; font-size: 14px; }
+.num { flex: none; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; font-weight: 700; border: 1px solid #999; }
+.b1 { background: #fff; color: #000; } .b2 { background: #000; color: #fff; } .b3 { background: #e53935; color: #fff; border-color: #e53935; }
+.b4 { background: #1e88e5; color: #fff; border-color: #1e88e5; } .b5 { background: #fdd835; color: #000; border-color: #fdd835; } .b6 { background: #43a047; color: #fff; border-color: #43a047; }
+.boats a { color: var(--link); }
+.grade { font-size: 12px; color: var(--fg2); }
+.inya { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 999px; border: 1px solid var(--gold); color: var(--gold); background: var(--gold-fill); line-height: 18px; white-space: nowrap; outline: 2px dashed var(--add); outline-offset: 2px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 10px; }
+.card h3 { margin: 0; font-size: 16px; }
+.note { margin: 0; font-size: 12px; color: var(--fg2); }
+.legend { margin: 0; font-size: 12px; display: flex; gap: 6px; align-items: baseline; outline: 2px dashed var(--add); outline-offset: 3px; border-radius: 4px; }
+.legend .inya { outline: none; }
+.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.row { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 4px 8px; align-items: center; }
+.bar { display: flex; height: 20px; border-radius: 4px; overflow: hidden; background: var(--empty); }
+.seg { display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+.sum { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--fg2); align-items: center; font-variant-numeric: tabular-nums; }
+.sum .mv { color: var(--fg); font-weight: 700; }
+.foot { margin: 0; font-size: 12px; color: var(--fg2); }
+</style>
+
+<div class="wrap">
+  <p class="intro">モック（見本）。徳山 2026/11/03 12R 優勝戦の実データ。青い点線が足すところ。それ以外は今の画面のまま（「前づけ」の表記は他の画面に合わせて「前付け」にそろえる）。</p>
+
+  <section>
+    <p class="where">① タブの上の6艇（名前の横）</p>
+    <h1>徳山 12R 優勝戦</h1>
+    <ul class="boats" style="margin-top:10px">
+      <li><span class="num b1">1</span><a href="#">原田篤志</a><span class="grade">A1</span></li>
+      <li><span class="num b2">2</span><a href="#">須藤博倫</a><span class="grade">A1</span></li>
+      <li><span class="num b3">3</span><a href="#">平尾崇典</a><span class="grade">A1</span></li>
+      <li><span class="num b4">4</span><a href="#">西島義則</a><span class="grade">B2</span><span class="inya" title="ファンの呼び名です。公式の用語ではありません">イン屋</span></li>
+      <li><span class="num b5">5</span><a href="#">江本真治</a><span class="grade">A2</span></li>
+      <li><span class="num b6">6</span><a href="#">君島秀三</a><span class="grade">A1</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="where">② 直前情報タブ「この枠からの進入コース」</p>
+    <div class="card">
+      <h3>この枠からの進入コース</h3>
+      <p class="note">今回と同じ枠番で出走したとき、本番で何コースに入ったか（2025年12月以降の集計）</p>
+      <p class="legend"><span class="inya">イン屋</span><span>4〜6号艇で出ても、前付けで1〜3コースを取りに行く選手（ファンの呼び名）。直近1年の4〜6号艇の走で判定。詳しくは選手ページ</span></p>
+      <ul class="rows" id="rows"></ul>
+      <p class="foot">（下の詳しい表は今のまま）</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const BOAT = { 1: ["#fff", "#000"], 2: ["#000", "#fff"], 3: ["#e53935", "#fff"], 4: ["#1e88e5", "#fff"], 5: ["#fdd835", "#000"], 6: ["#43a047", "#fff"] };
+// [艇番, 同じ枠での進入の回数(1〜6コース), イン屋か]
+const DATA = [
+  [1, [62, 0, 0, 0, 0, 0], false], [2, [0, 44, 2, 0, 0, 0], false], [3, [0, 1, 22, 0, 0, 0], false],
+  [4, [1, 19, 1, 0, 0, 0], true], [5, [0, 0, 0, 2, 34, 4], false], [6, [0, 0, 0, 0, 3, 34], false],
+];
+document.getElementById("rows").innerHTML = DATA.map(([b, cnt, inya]) => {
+  const n = cnt.reduce((a, x) => a + x, 0);
+  const waku = Math.round((cnt[b - 1] / n) * 100);
+  const mv = Math.round((cnt.slice(0, b - 1).reduce((a, x) => a + x, 0) / n) * 100);
+  const segs = cnt.map((x, i) => x ? `<span class="seg" style="width:${(x / n) * 100}%;background:${BOAT[i + 1][0]};color:${BOAT[i + 1][1]}">${x / n >= 0.12 ? i + 1 : ""}</span>` : "").join("");
+  return `<li class="row"><span class="num b${b}">${b}</span><span class="bar" role="img" aria-label="${b}号艇の進入">${segs}</span>
+    <span class="sum">${inya ? '<span class="inya" title="ファンの呼び名です。公式の用語ではありません">イン屋</span>' : ""}<span>枠なり ${waku}%</span>${mv > 0 ? `<span class="${mv >= 10 ? "mv" : ""}">前付け ${mv}%</span>` : ""}<span>${b}枠で${n}走</span></span></li>`;
+}).join("");
+</script>
