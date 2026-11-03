@@ -2,16 +2,16 @@
  "schema": "content-pr-manifest/v1",
  "id": "motor-condition-guide",
  "kind": "revision",
- "ticket": "OC-20261102T100127-seo-human-1",
+ "ticket": "BOA-1261",
  "paths": [
   "public/blog/motor-condition-guide.md",
   "src/data/blog-posts/motor-condition-guide.json"
  ],
  "files": {
-  "public/blog/motor-condition-guide.md": "d46f7993970417cc8f755376cacdaca7f71e56e65c87491b3b8d4683c180a98d",
-  "src/data/blog-posts/motor-condition-guide.json": "69428f4f491e9f97688d5616ebec26b1551732444900ee1ec5b0412ec01cf360"
+  "public/blog/motor-condition-guide.md": "95bc327eb17e1d388fd25090addb03aa27ec4a1cc7c72aec40123d5f9a42a4c5",
+  "src/data/blog-posts/motor-condition-guide.json": "fc2d238f7ba8b2cab9564faec2a0c053e27f6198d30afc30805a2a7af5a14110"
  },
- "content_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+ "content_sha256": "a64debbe36138ef192987c2319c392eb5da64363e36316cbb1273ab7b5d42467",
  "judgement_words": [],
  "reviews": [
   {
@@ -20,9 +20,9 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "reviewed_sha256": "a64debbe36138ef192987c2319c392eb5da64363e36316cbb1273ab7b5d42467",
    "model": "opus",
-   "at": "2026-11-02T10:09:05+09:00"
+   "at": "2026-11-03T15:58:57+09:00"
   },
   {
    "role": "wording-editor",
@@ -30,19 +30,19 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "reviewed_sha256": "a64debbe36138ef192987c2319c392eb5da64363e36316cbb1273ab7b5d42467",
    "model": "opus",
-   "at": "2026-11-02T10:09:05+09:00"
+   "at": "2026-11-03T15:58:57+09:00"
   },
   {
    "role": "fan",
    "agent": "hq-review:fan",
    "result": "pass",
    "p0": 0,
-   "p1": 0,
-   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "p1": 2,
+   "reviewed_sha256": "a64debbe36138ef192987c2319c392eb5da64363e36316cbb1273ab7b5d42467",
    "model": "opus",
-   "at": "2026-11-02T10:09:05+09:00"
+   "at": "2026-11-03T15:58:57+09:00"
   },
   {
    "role": "seo-marketer",
@@ -50,13 +50,13 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "e9741cfc1757dc1d97999f0ca3c88432d23a7365d4cd47dff7ea9980190b6ae6",
+   "reviewed_sha256": "a64debbe36138ef192987c2319c392eb5da64363e36316cbb1273ab7b5d42467",
    "model": "opus",
-   "at": "2026-11-02T10:09:05+09:00"
+   "at": "2026-11-03T15:58:57+09:00"
   }
  ],
  "author": "hq-employee:seo-human",
- "created_at": "2026-11-02T10:10:14+09:00",
- "run": "20261102T100127-seo-human",
+ "created_at": "2026-11-03T16:00:21+09:00",
+ "run": "20261103T155740-seo-human",
  "engine": "claude"
 }
