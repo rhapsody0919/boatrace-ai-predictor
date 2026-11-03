@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { useSocialMeta } from "../hooks/useSocialMeta";
 import { localizePath, getLanguage } from "../config/languages";
 import { isInCautionEnabled } from "../config/featureFlags";
 import {
@@ -101,6 +102,11 @@ function WinningTechniqueAnalysis() {
   };
 
   const canonicalUrl = `${SITE_URL}${localizePath(PAGE_PATH, i18n.resolvedLanguage)}`;
+  useSocialMeta({
+    title: t("analysisPage.meta.title"),
+    description: t("analysisPage.meta.description"),
+    url: canonicalUrl,
+  });
   const homeUrl = `${SITE_URL}${localizePath("/", i18n.resolvedLanguage)}`;
 
   return (
