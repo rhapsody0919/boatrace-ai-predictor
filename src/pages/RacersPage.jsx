@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useSocialMeta } from "../hooks/useSocialMeta";
 import DataFetchError from "../components/DataFetchError";
 import Header from "../components/Header";
 import {
@@ -203,29 +204,26 @@ export default function RacersPage() {
     setExpandedRacerId((current) => (current === racerId ? null : racerId));
   };
 
+  const title = currentPage >= 2
+    ? `選手一覧（${currentPage}ページ目）| 龍神レーダー`
+    : "選手一覧 | 龍神レーダー";
+  const description = "支部・身長・体重・級別・登録期・出身地で絞り込み、勝率などでソートできる選手一覧。";
+  const canonicalUrl =
+    currentPage >= 2 &&
+    ![
+      "branch", "heightMin", "heightMax", "weightMin", "weightMax",
+      "grade", "period", "hometown", "sort", "dir",
+    ].some((key) => searchParams.has(key))
+      ? `https://www.boat-ai.jp/racers?page=${currentPage}`
+      : "https://www.boat-ai.jp/racers";
+
+  useSocialMeta({ title, description, url: canonicalUrl });
+
   return (
     <>
-      <title>
-        {currentPage >= 2
-          ? `選手一覧（${currentPage}ページ目）| 龍神レーダー`
-          : "選手一覧 | 龍神レーダー"}
-      </title>
-      <meta
-        name="description"
-        content="支部・身長・体重・級別・登録期・出身地で絞り込み、勝率などでソートできる選手一覧。"
-      />
-      <link
-        rel="canonical"
-        href={
-          currentPage >= 2 &&
-          ![
-            "branch", "heightMin", "heightMax", "weightMin", "weightMax",
-            "grade", "period", "hometown", "sort", "dir",
-          ].some((key) => searchParams.has(key))
-            ? `https://www.boat-ai.jp/racers?page=${currentPage}`
-            : "https://www.boat-ai.jp/racers"
-        }
-      />
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <link rel="canonical" href={canonicalUrl} />
 
       <Header />
 
