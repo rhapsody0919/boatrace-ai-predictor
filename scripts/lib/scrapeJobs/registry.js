@@ -599,7 +599,8 @@ export const SCRAPE_JOBS = Object.freeze({
     kind: "continuous",
     leaseSec: 300,
     maxDurationSec: 300,
-    activeHoursJst: { start: "08:00", end: "23:00" },
+    // 7:00 から（YouTube Shorts【人気薄の1着】を 7:15 に送る。BOA-1284、2026-11-04）。vercel.json の sns-send の cron と同じ時間にそろえる
+    activeHoursJst: { start: "07:00", end: "23:00" },
   },
   // sns-pdca-loop tasks 21 SNS の 48h・7d の取り込み。5分ごと（終日）に、due_at を過ぎた sns_metric_jobs を最大50件処理する。
   // 累積値は窓の終わりから15分以内だけ保存する（SQL154）ので、終日動かす。X は自分の投稿の読み取り（Owned Reads）だけ。

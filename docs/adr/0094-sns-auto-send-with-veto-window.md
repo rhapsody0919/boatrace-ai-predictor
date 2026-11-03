@@ -117,3 +117,13 @@
 - item の race_id は setsu:{YYYY-MM-DD}:{slug}。193 の Shorts と同じ接頭辞だが、kind・channel（x）・CHECK（sns_auto_send_items_setsu_x_id）・一意の索引（sns_auto_send_items_setsu_x_day）で分ける
 - 自動送信の許可は `sns_auto_send_control.setsu_kiryoku_enabled`（x の行、既定 false）。`.claude/CLAUDE.md` の例外に無いので、true にするのはオーナーの yes と例外 (6) の追記の後。止めるのはこのフラグ（全体は sns_x_send_control.paused）
 - 194 は 193 の transition の本文（md5）の上に4か所だけ足す。193 の後に当てる（先頭の DO が md5 を確かめる）
+
+## 追記: YouTube Shorts【人気薄の1着】（upset_win_short）は、前日の結果から毎朝 7:15 に1本送る。送り手は JST 7:00 から動かす（2026-11-04、オーナー 11/4 承認・BOA-1284・マイグレーション 198）
+- 前日の全レースから、1着の単勝が10倍以上で、勝率・展示タイム・モーター2連率のどれかが6艇で最下位だった艇のレースを機械で1つ選ぶ（LLM なし）。該当なしの日は0本。選び・材料・文の型・検査は sns-video-studio/remotion/src/upsetWin/model.js、作り手は同じ所の scripts/upset-win/daily.mjs（匿名キーの読み取りだけ）、受け取りは scripts/sns/push-upset-win-short.js
+- 形は節の機力の Shorts（193）と同じ: 題・説明欄は bundle の値のまま、push で型の検査をもう一度通す。違いは、push がそのレースの6艇の値・1着・単勝を DB で読み直して bundle と照らすこと（画面の数字と DB の照合）、説明欄のリンクが龍神ソナーのレースの頁（/race/{id}?tab=sonar、画面の印 race-sonar）であること
+- item の race_id は upset:{出す日}:{前日のレースの race_id}。1日1本は 198 の一意の索引 (channel, left(race_id, 16))。許可は `sns_auto_send_control.upset_win_short_enabled`（youtube の行、既定 false）
+- readCurrent は item の kind・日・許可・同じ日に送ったかに加え、そのレースの中止と1着（取り込んだ時の rank1）を読み直す。欠場は push の時点で外してある
+- 送り手（cron sns-send）は JST 7:00 から動かす（vercel.json の `*/2 22-23,0-13`、registry.js の activeHoursJst も 07:00）。7時台に前倒しになる既存の送信は無い（直近21日で 8:30 より前の送る予定は /today の 8:00 だけ。system-architect 2026-11-04）。送り手が止まっている間に当てるマイグレーションの窓は 23:00〜06:59 になる
+- 日の上限: 出し物ごとの取り置き（sns_x_kind_reserves）は X の claim だけに効く。YouTube は daily_limit_youtube だけで守り、朝の1本が夜の全貌の枠を先に取る。旗を on にするときに daily_limit_youtube を 10 から 11 にする（オーナーが旗 on と同じトランザクションで当てる）
+- 旗 on の前提: 196（BOA-1283、処理待ちの Shorts を期限の前に読み直して公開する）が当たっていること。当たっていないと、処理待ちの1本が非公開のまま期限で閉じ、枠を1つ使う
+- 残る壊れ方: (1) 直近1年の回数は、作り手のキャッシュ（日ごとの数）を足す。DB のデータは 2025-12-02 からなので、2026-12-01 までは「{Y/M/D}以降」と書く。窓の中ほどに比べたレースが0の日があれば止める (2) 展示 ST は F の記録が 2026-09 からしかそろっていないので、今は弱さの項目に入れない

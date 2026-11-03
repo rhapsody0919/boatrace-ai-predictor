@@ -72,6 +72,7 @@ import { RaceInsightYoutubeTemplate } from "./RaceInsightYoutubeCM.jsx";
 import { OnboardingFlowCM } from "./OnboardingFlowCM.jsx";
 import { AboutHeroDesktop, AboutHeroMobile } from "./AboutHeroCM.jsx";
 import { SetsuKiryokuShort, setsuKiryokuMetadata } from "./setsuKiryoku/SetsuKiryoku.jsx";
+import { UpsetWinShort, upsetWinMetadata } from "./upsetWin/UpsetWin.jsx";
 
 export function RemotionRoot() {
   return (
@@ -654,6 +655,16 @@ export function RemotionRoot() {
         width={1080}
         height={1920}
         calculateMetadata={setsuKiryokuMetadata}
+      />
+      {/* YouTube Shorts【人気薄の1着】（BOA-1284、props は scripts/upset-win/daily.mjs の bundle.json）。defaultProps は置かない（節の機力と同じ理由） */}
+      <Composition
+        id="UpsetWinShort"
+        component={UpsetWinShort}
+        durationInFrames={900}
+        fps={30}
+        width={1080}
+        height={1920}
+        calculateMetadata={upsetWinMetadata}
       />
     </>
   );
