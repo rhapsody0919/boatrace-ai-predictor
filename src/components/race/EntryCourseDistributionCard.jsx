@@ -8,6 +8,9 @@
  *
  * データは直前情報タブが既に取得している getRacerScopedRaceStats の生データを
  * 集計し直すだけで、追加のクエリは無い（BOA-357）。
+ *
+ * イン屋の札（2026-11-03、docs/design/inya-racer/）: このレースより前の1年の4〜6号艇の走で判定
+ * （src/utils/frontTaking.js）。「イン屋」はファンの呼び名で対訳が無いので ja だけに出す。
  */
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
@@ -17,6 +20,7 @@ import {
 } from "./basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
 import TermHintButton from "./TermHintButton";
+import { computeFrontTaking } from "../../utils/frontTaking";
 import "./EntryCourseDistributionCard.css";
 
 // 前づけ%を目立たせる下限。これ未満は「たまに動く」程度として通常表示にする
@@ -31,7 +35,24 @@ function EntryCourseDistributionCard({
   failed,
   onRetry,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  // ja だけ。レースの日を「今日」として、このレースより前の走で判定する（過去のレースでも当時の判定）
+  const inyaBoats = new Set(
+    i18n.language === "ja" && /^\d{4}-\d{2}-\d{2}-/.test(raceId ?? "")
+      ? players
+          .filter((p) => {
+            const records = p.racerId ? statsByRacer[p.racerId] : null;
+            return (
+              Array.isArray(records) &&
+              computeFrontTaking(records, {
+                today: raceId.slice(0, 10),
+                beforeRaceId: raceId,
+              }).status === "inya"
+            );
+          })
+          .map((p) => p.number)
+      : [],
+  );
 
   return (
     <section className="rbi-card ecd-card" data-testid="entry-course-dist">
@@ -40,6 +61,14 @@ function EntryCourseDistributionCard({
         <TermHintButton termKey="entryCourseDistribution" />
       </h3>
       <p className="ecd-note">{t("beforeInfo.entryDistNote")}</p>
+      {inyaBoats.size > 0 && (
+        <p className="ecd-inya-legend" data-testid="entry-course-dist-inya-legend">
+          <span className="ecd-inya">イン屋</span>
+          <span>
+            4〜6号艇で出ても、前付けで1〜3コースを取りに行く選手（ファンの呼び名）。直近1年の4〜6号艇の走で判定。詳しくは選手ページ
+          </span>
+        </p>
+      )}
       {failed && <InlineFetchError onRetry={onRetry} />}
       <ul className="ecd-list">
         {players.map((p) => {
@@ -116,6 +145,15 @@ function EntryCourseDistributionCard({
                 </span>
               )}
               <span className="ecd-summary">
+                {inyaBoats.has(p.number) && (
+                  <span
+                    className="ecd-inya"
+                    title="ファンの呼び名です。公式の用語ではありません"
+                    data-testid={`entry-course-dist-inya-${p.number}`}
+                  >
+                    イン屋
+                  </span>
+                )}
                 {dist && dist.n > 0 && (
                   <>
                     <span>

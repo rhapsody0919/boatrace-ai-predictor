@@ -5044,7 +5044,7 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
     await expect(boat1.locator(".ecd-seg")).toHaveCount(1);
     // 4号艇は4枠から内（2・3コース）に入ったことがある＝前づけ%が出る
     const boat4 = page.getByTestId("entry-course-dist-4");
-    await expect(boat4).toContainText(/前づけ \d+%/);
+    await expect(boat4).toContainText(/前付け \d+%/);
     expect(await boat4.locator(".ecd-seg").count()).toBeGreaterThan(1);
 
     // 旧行は表から消えている
