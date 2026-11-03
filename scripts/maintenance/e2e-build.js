@@ -31,9 +31,19 @@ export function e2eMode(env) {
   return "replay";
 }
 
-/** build に渡す VITE_SUPABASE_URL（純粋関数）。再生は録画のオリジン、それ以外は今の値 */
+/**
+ * build に渡す VITE_SUPABASE_URL（純粋関数）。再生は録画のオリジン、それ以外は今の環境変数の値。
+ * 撮り・本番データで環境変数に無いときは止める（空の文字列を渡すと .env.local の値より先に効き、
+ * 宛先の無い束で全件が落ちる・中身の無い録画を撮る）
+ */
 export function buildSupabaseUrl(mode, env, readPointer) {
-  if (mode !== "replay") return env.VITE_SUPABASE_URL ?? "";
+  if (mode !== "replay") {
+    if (!env.VITE_SUPABASE_URL)
+      throw new Error(
+        `${mode} の束は VITE_SUPABASE_URL を環境変数で渡す（.env.local だけでは束に入らない値と照合がずれる）`,
+      );
+    return env.VITE_SUPABASE_URL;
+  }
   const file =
     env.E2E_RECORDING_SOURCE === "local"
       ? "e2e/recordings/meta.json"
@@ -42,6 +52,14 @@ export function buildSupabaseUrl(mode, env, readPointer) {
   if (!origin)
     throw new Error(`${file} に supabaseOrigin が無い（録画が無い）`);
   return origin;
+}
+
+/**
+ * vite build に渡す環境変数（純粋関数）。宛先と GA の ID は env の値より後に置いて必ず上書きする。
+ * GA の ID は空に固定する（本番の束の initGA は DEV で止まらない。live は外部ホストを止めないので本物の GA に送る）
+ */
+export function buildEnv(env, supabaseUrl) {
+  return { ...env, VITE_SUPABASE_URL: supabaseUrl, VITE_GA_MEASUREMENT_ID: "" };
 }
 
 function main() {
@@ -53,15 +71,12 @@ function main() {
   const r = spawnSync("npx", ["vite", "build"], {
     cwd: ROOT,
     stdio: "inherit",
-    // GA の ID は空に固定する（本番の束の initGA は DEV で止まらない。live は外部ホストを止めないので本物の GA に送る）
-    env: {
-      ...process.env,
-      VITE_SUPABASE_URL: supabaseUrl,
-      VITE_GA_MEASUREMENT_ID: "",
-    },
+    env: buildEnv(process.env, supabaseUrl),
   });
-  if (r.status !== 0) {
-    console.error(`::error::e2e の build が失敗した（終了コード ${r.status}）`);
+  if (r.error || r.status !== 0) {
+    console.error(
+      `::error::e2e の build が失敗した（終了コード ${r.status}${r.error ? `、${r.error.message}` : ""}）`,
+    );
     process.exit(1);
   }
   writeFileSync(

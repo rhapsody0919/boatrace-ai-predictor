@@ -2,7 +2,7 @@ import { defineConfig } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { buildSupabaseUrl } from "./scripts/maintenance/e2e-build.js";
+import { buildSupabaseUrl, e2eMode } from "./scripts/maintenance/e2e-build.js";
 
 // このマシンでは複数のgit worktreeが並行してdevサーバーを起動する運用のため、
 // 既定ポート5173を全worktreeで共有すると、reuseExistingServer:true経由で
@@ -47,11 +47,7 @@ function replayServerEnv() {
 // ので、replayServerEnv の差し替えはここでは効かない（e2e-build.js が同じ値で build する）。既定（未指定）は dev（手元）
 const servePreview = process.env.E2E_SERVE === "preview";
 if (servePreview) {
-  const mode = isReplay
-    ? "replay"
-    : process.env.E2E_LIVE === "1"
-      ? "live"
-      : "record";
+  const mode = e2eMode(process.env);
   let built;
   try {
     built = JSON.parse(readFileSync("dist/.e2e-build.json", "utf8"));
@@ -73,6 +69,7 @@ if (servePreview) {
       `dist の束の Supabase の宛先（${built.supabaseUrl}）が今の期待（${expected}）と違う。npm run build:e2e し直す`,
     );
   // 古い束で緑にしない（src を直して build し直していない）。作業ツリーの未コミットの変更までは見ない
+  // （preview は CI の4つだけで使う。手元の既定は dev。PW_PORT で既存のサーバーを使うときはその中身までは見ない）
   const head = execFileSync("git", ["rev-parse", "HEAD"], {
     encoding: "utf8",
   }).trim();

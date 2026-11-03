@@ -14,7 +14,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildSupabaseUrl, e2eMode } from "./e2e-build.js";
+import { buildEnv, buildSupabaseUrl, e2eMode } from "./e2e-build.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -75,15 +75,29 @@ try {
 }
 check("録画にオリジンが無ければ build しない（例外）", threw, true);
 
-const buildSrc = readFileSync(
-  path.join(repoRoot, "scripts/maintenance/e2e-build.js"),
-  "utf8",
-);
+let threwLive = false;
+try {
+  buildSupabaseUrl("live", {}, read);
+} catch {
+  threwLive = true;
+}
 check(
-  "GA の ID は空に固定する（本番の束の initGA は DEV で止まらない）",
-  /VITE_GA_MEASUREMENT_ID: ""/.test(buildSrc),
+  "本番データ・撮りで VITE_SUPABASE_URL が環境変数に無ければ止める（空の宛先の束を作らない）",
+  threwLive,
   true,
 );
+
+const be = buildEnv(
+  { VITE_GA_MEASUREMENT_ID: "G-REAL", VITE_SUPABASE_URL: "https://prod.example", X: "1" },
+  "https://rec.example",
+);
+check(
+  "GA の ID は env に値があっても空に上書きする（本番の束の initGA は DEV で止まらない）",
+  be.VITE_GA_MEASUREMENT_ID,
+  "",
+);
+check("宛先は env の値より焼き込む値が勝つ", be.VITE_SUPABASE_URL, "https://rec.example");
+check("ほかの環境変数は渡す", be.X, "1");
 
 // --- ワークフロー: preview で流す段の前に、同じモードの build がある ---
 const MODE_VARS = ["E2E_LIVE", "E2E_RECORD", "E2E_RECORDING_SOURCE"];
@@ -117,7 +131,11 @@ export function previewProblems(yaml) {
   let previewRuns = 0;
   for (const { name, steps } of jobSteps(yaml)) {
     steps.forEach((step, i) => {
-      const runsTests = /npx playwright test(?![^\n]*--list)/.test(step);
+      // 行の頭のコマンドで見る（npx・run-heavy.sh 経由・npm run test:e2e*。--list は一覧だけ。通知の文の中の名前は数えない）
+      const runsTests =
+        /^ *(?:run: *)?(?:taskset [^\n]*?)?(?:(?:npx|bash scripts\/maintenance\/run-heavy\.sh) +playwright test(?![^\n]*--list)|npm run test:e2e)/m.test(
+          step,
+        );
       if (!runsTests) return;
       const preview = /^ +E2E_SERVE: preview$/m.test(step);
       if (!preview) {
@@ -180,6 +198,13 @@ check(
       "          X: '1'\n        run: npm",
     ),
   ).problems.length,
+  1,
+);
+check(
+  "npm run test:e2e で dev のまま流す段も落とす",
+  previewProblems(`${good}      - name: Dev
+        run: npm run test:e2e:live
+`).problems.length,
   1,
 );
 check(

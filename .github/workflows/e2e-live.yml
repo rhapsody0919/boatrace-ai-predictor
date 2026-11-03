@@ -79,7 +79,7 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build:e2e
 
-      # テストの失敗では止めず（合否は report が組の結果から決める）、ログは tee で流す
+      # テストの失敗では止めず（合否は report が組の結果から決める）、ログはそのまま標準出力に流す
       # （以前はファイルに溜めて最後に出していたため、時間切れの run では何も残らなかった）
       - name: Run E2E (本番データ・実時刻)
         env:

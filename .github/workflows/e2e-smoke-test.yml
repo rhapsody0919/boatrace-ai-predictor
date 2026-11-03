@@ -186,8 +186,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 記事の JSON が束に入るかの確かめ（vite build）を兼ねる。e2e-shard と同じく録画のオリジンで build し、
-      # vite preview で配る（ADR-0077 決定8。以前は secret の宛先で build して dev で流し、宛先が録画とずれていた）
+      # 記事の JSON が束に入るか（import.meta.glob の eager で1つ壊れると全体が壊れる）の確かめ（vite build）を兼ねる。
+      # e2e-shard と同じく録画のオリジンで build し、vite preview で配る（ADR-0077 決定8。以前は secret の宛先で
+      # build して dev で流し、宛先が録画とずれていた）。本番の宛先での build は Vercel の Preview とマージ後の
+      # Post-merge Checks が行う（宛先は束の中の文字列で、記事の JSON の取り込みには効かない）
       - name: Build (e2e の束、録画の再生用)
         env:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
