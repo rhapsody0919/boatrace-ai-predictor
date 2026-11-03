@@ -113,10 +113,11 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
 
 固定の race_id を開くテストを書くときは、撮影日が進んでも前提が変わらないか（結果の確定・今日との前後・後日の走の追加）を確かめる。
 
-### 8. 配り方: build した束を `vite preview` で配る（案。CI の分数の削減の段2の PR のマージで採用、それまでは dev のまま）
+### 8. 配り方: build した束を `vite preview` で配る（2026-11-03、CI の分数の削減の段2。この PR のマージで採用。マージ後の最初の撮り直しが採用されなければ下の手順で戻す）
 
 #1319（BOA-769 B）は「/src を直に import する4ファイルが preview で通らない」で閉じた。#1997 の実験で4ファイルを Node 側の読み込みに替え、課金の分は中央 94分→39分（約 −58%、4 vCPU、dev 3回・preview 2回）、件数・合否・skip（28件、全部が画面幅だけで決まるもの）は dev と同じだった（docs/design/ci-minutes-reduction/design.md 4.2 A・6章、#1997 の結果のコメント）。
 
+- **入れた所**: `scripts/maintenance/e2e-build.js`（`npm run build:e2e`）、`playwright.config.js`（`E2E_SERVE=preview` と束の照合）、e2e-smoke-test.yml（e2e-shard・e2e-light）・e2e-rerecord.yml（record・replay）・e2e-live.yml。`scripts/maintenance/verify-e2e-build.js` が、`E2E_SERVE: preview` の段の前に同じモードの build があることと、4つが preview であることを固定する
 - **束は3つ**。`npm run build:e2e`（`scripts/maintenance/e2e-build.js`）がモードごとに build する。build は webServer の command に入れない（`timeout: 30000` で切れる）。前の step で流し、webServer は `vite preview` だけ
   - 再生: `e2e/recording.json` の `supabaseOrigin`（撮った録画の strict 再生は `e2e/recordings/meta.json`、`E2E_RECORDING_SOURCE=local`）
   - 撮り（`E2E_RECORD=1`）・本番データ（`E2E_LIVE=1`）: 今の `VITE_SUPABASE_URL`
