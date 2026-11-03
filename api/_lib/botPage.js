@@ -419,7 +419,7 @@ function blogHtml(b) {
 export function renderTopHtml(model, { siteJsonLd = [] } = {}) {
   const items = model.venues.map((v) =>
     v.isOpen
-      ? `<li><a href="${escapeHtml(v.href)}">${escapeHtml(v.name)}</a>${span(v.gradeLabel)}${span(v.raceTitle)}</li>`
+      ? `<li><a href="${escapeHtml(v.href)}">${escapeHtml(v.name)}</a>${span(v.seriesDayLabel)}${span(v.gradeLabel)}${span(v.raceTitle)}</li>`
       : `<li>${escapeHtml(v.name)}</li>`,
   );
   // id は人の画面と同じ（HomeAiIntro の「開催中の会場から選ぶ」のページ内リンクの先）
@@ -590,7 +590,8 @@ export async function respondBotPage(
       getT(lang),
       loadSiteJsonLd(),
     ]);
-    const today = getJSTNow(new Date(now())).toISOString().slice(0, 10);
+    const jstNow = getJSTNow(new Date(now())).toISOString();
+    const today = jstNow.slice(0, 10);
     let venueModel;
     if (page === "venue") {
       venueModel = buildVenueModel(json, venueCode, { t, lang, today });
@@ -611,7 +612,8 @@ export async function respondBotPage(
             buildTopModel(json, {
               t,
               lang,
-              today: getJSTNow(new Date(now())).toISOString().slice(0, 10),
+              today,
+              nowHHMM: jstNow.slice(11, 16),
             }),
             { siteJsonLd },
           );

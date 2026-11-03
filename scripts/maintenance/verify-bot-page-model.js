@@ -131,7 +131,7 @@ const fresh = () => JSON.parse(fixtureText);
 const TODAY = "2026-10-11";
 
 // ---- 2. フィクスチャからトップ ----
-const top = buildTopModel(fresh(), { t, today: TODAY });
+const top = buildTopModel(fresh(), { t, today: TODAY, nowHHMM: "12:00" });
 check("トップ: 開催中の会場数", top.openVenueCount, 13);
 check("トップ: 会場は24件（人のグリッドと同じ）", top.venues.length, 24);
 check(
@@ -159,6 +159,7 @@ check("トップ: 桐生のカード", top.venues[0], {
   href: "/venue/1",
   gradeLabel: null,
   raceTitle: "第８回日本一しょうゆ杯",
+  seriesDayLabel: "5日目",
 });
 check("トップ: 江戸川は G3", top.venues[2].gradeLabel, "G3");
 check("トップ: 非開催の会場は名前だけ", top.venues[3], {
@@ -166,6 +167,33 @@ check("トップ: 非開催の会場は名前だけ", top.venues[3], {
   name: "平和島",
   isOpen: false,
 });
+
+// BOA-1220: 人の会場カードと同じ日目・表示条件。時計は JST の HH:MM。
+{
+  const labelOf = (json, nowHHMM, code = 1) =>
+    buildTopModel(json, { t, today: TODAY, nowHHMM }).venues
+      .find((v) => v.venueCode === code).seriesDayLabel;
+  check("日目: 下関は初日", labelOf(fresh(), "12:00", 19), "初日");
+  check("日目: 唐津は全レース終了で非表示", labelOf(fresh(), "23:00", 23), null);
+  check("日目: 時計なしは人のカード同様非表示", labelOf(fresh(), undefined), null);
+  const json = fresh();
+  const races = json.data.find((v) => v.place_cd === 1).races;
+  races.forEach((r) => { r.isFinalDay = false; });
+  races.at(-1).isFinalDay = true;
+  check("日目: 後続レースだけ最終日の印", labelOf(json, "12:00"), "最終日");
+  races.forEach((r) => { r.seriesDay = 1; });
+  check("日目: 初日と最終日の印が重なれば初日", labelOf(json, "12:00"), "初日");
+  races.forEach((r) => { r.seriesDay = null; r.isFinalDay = null; });
+  check("日目: 値なし", labelOf(json, "12:00"), null);
+  races.at(-1).seriesDay = 5;
+  check("日目: 後続レースの値で補完", labelOf(json, "12:00"), "5日目");
+  races.forEach((r) => { r.startTime = "12:00"; });
+  check("日目: 締切と同時刻は次レースに含めない", labelOf(json, "12:00"), null);
+  races.at(-1).startTime = null;
+  check("日目: 時刻欠損は次レースに含める", labelOf(json, "12:00"), "5日目");
+  races.forEach((r) => { r.cancellationStatus = "confirmed"; r.result = null; });
+  check("日目: 丸一日中止は時刻欠損でも非表示", labelOf(json, "12:00"), null);
+}
 
 // ---- 2. フィクスチャから会場ページ ----
 const kiryu = buildVenueModel(fresh(), 1, { t });

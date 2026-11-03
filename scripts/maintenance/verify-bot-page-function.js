@@ -195,6 +195,59 @@ const alternatesOf = (html) =>
 const hasRawScript = (html) =>
   /<script(?! type="application\/ld\+json">)/i.test(html);
 
+// BOA-1220: handler から会場名の隣まで、4言語・JSTの時計・境界条件を確かめる。
+{
+  for (const lang of ["ja", ...BOT_PAGE_PREFIXED_LANGS]) {
+    const tl = await getLocaleT(lang);
+    const prefix = lang === "ja" ? "" : `/${lang}`;
+    const url = `/api/bot-page${prefix}/top`;
+    const options = lang === "ja" ? {} : { langMode: "prefixed" };
+    const rowOf = (html, code) => todaySection(html).split("\n")
+      .find((row) => row.includes(`href="${prefix}/venue/${code}"`));
+    const cases = [
+      ["12:00", "2026-10-11T03:00:00Z", false],
+      ["23:00", "2026-10-11T14:00:00Z", true],
+    ];
+    for (const [time, iso, finished] of cases) {
+      const { res } = await call("top", url, { ...options, now: () => Date.parse(iso) });
+      check(`${lang}/${time}: 日目HTML 200`, res.statusCode, 200);
+      for (const [code, key, params] of [
+        [1, "raceDetailPage.seriesDayNth", { day: 5 }],
+        [19, "raceDetailPage.seriesDayFirst", {}],
+        [23, "raceDetailPage.seriesDayNth", { day: 4 }],
+      ]) {
+        const adjacent = `>${escapeHtml(tl(`venues.${code}`))}</a> <span>${escapeHtml(tl(key, params))}</span>`;
+        check(`${lang}/${time}: 会場${code}の日目が会場名の隣`,
+          rowOf(res.body, code)?.includes(adjacent), !finished);
+      }
+      check(`${lang}/${time}: 非開催は名前だけ`,
+        todaySection(res.body).includes(`<li>${escapeHtml(tl("venues.4"))}</li>`), true);
+    }
+    for (const [kind, expectedKey] of [
+      ["final", "raceDetailPage.seriesDayFinal"],
+      ["first", "raceDetailPage.seriesDayFirst"],
+      ["cancelled", null],
+    ]) {
+      const json = fresh();
+      const races = json.data.find((v) => v.place_cd === 1).races;
+      races.forEach((r) => {
+        r.seriesDay = kind === "first" ? 1 : 5;
+        r.isFinalDay = false;
+        if (kind === "cancelled") { r.cancellationStatus = "confirmed"; r.result = null; }
+      });
+      races.at(-1).isFinalDay = true;
+      const { res } = await call("top", url, {
+        ...options, json, now: () => Date.parse("2026-10-11T03:00:00Z"),
+      });
+      const nameEnd = `>${escapeHtml(tl("venues.1"))}</a>`;
+      const expected = expectedKey ? `${nameEnd} <span>${escapeHtml(tl(expectedKey))}</span>` : nameEnd;
+      check(`${lang}/${kind}: 日目の行`, rowOf(res.body, 1)?.includes(expected), true);
+      if (!expectedKey) check(`${lang}: 中止会場に日目なし`,
+        rowOf(res.body, 1)?.includes(escapeHtml(tl("raceDetailPage.seriesDayFinal"))), false);
+    }
+  }
+}
+
 // ---- 1・2. トップ ----
 {
   const { res, fetchCalls } = await call("top", "/api/bot-page/top");
