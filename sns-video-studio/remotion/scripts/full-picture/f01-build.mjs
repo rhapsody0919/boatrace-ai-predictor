@@ -11,7 +11,7 @@ import { basename, join } from "node:path";
 import { f01Check, f01Description, f01RacerCheck, f01Script, splitSubs } from "./f01.mjs";
 import { MIN_FONT_PX, fullName, racersOf } from "../../src/fullPicture/f01Right.js";
 import { synthAll } from "./f01-voice.mjs";
-import { DPR, captureAll } from "./f01-capture.mjs";
+import { DPR, LEFT_BOX, captureAll } from "./f01-capture.mjs";
 
 const FPS = 30;
 /** 章の中で、どの行で何を出すか（行の文の語で決める） */
@@ -30,9 +30,11 @@ const CUE = {
  */
 export const PLAN = {
   c1: [{ k: "c1" }, { k: "c12", re: /2位以内/ }],
-  // 着順の流れは押した後を上・下の2カット（下は押してから3秒後）。③の札は図 → 名前と件数の2カット（オーナー 11/2「22.4px の章は2カットに分けて」）
-  c2: [{ k: "c2" }, { k: "c2-pre", re: /号艇が勝った/, cursor: "c22" }, { k: "c22", re: /号艇が勝った/, delay: 15 }, { k: "c22b", re: /号艇が勝った/, delay: 105 }],
-  c3: [{ k: "c3i" }, { k: "c3", re: /形。/ }, { k: "c3-pre", re: /この形の/, cursor: "c32" }, { k: "c32", re: /この形の/, delay: 15 }, { k: "c32b", re: /号艇が勝った/ }],
+  // ②の着順の流れは押した後を上・下の2カット（下は押してから3秒後。オーナー 11/2「22.4px の章は2カットに分けて」）。half は部品の一部だけを撮るカット
+  c2: [{ k: "c2" }, { k: "c2-pre", re: /号艇が勝った/, cursor: "c22", half: true }, { k: "c22", re: /号艇が勝った/, delay: 15, half: true }, { k: "c22b", re: /号艇が勝った/, delay: 105, half: true }],
+  // ③は形の札1枚 → 着順の流れの全体（押す前・押した後）。11/2 18-10 の形（オーナー 11/4「正しい」）。#2087 の2カット
+  // （札の図 → 名前と件数、着順の流れの上・下）は、図が左の枠の約4割・名前と件数は帯だけ・図の下が切れて見えた（11/3 の4本）
+  c3: [{ k: "c3" }, { k: "c3-pre", re: /この形の/, cursor: "c32" }, { k: "c32", re: /この形の/, delay: 15 }],
   c4: [{ k: "c4" }, { k: "c4b", re: /2着は/ }, { k: "c4", re: /軸を\d号艇に/, cursor: "c42" }, { k: "c42", re: /軸を\d号艇に/, delay: 15 }, { k: "c42b", re: /2着は/ }],
   c5: [{ k: "c5" }],
   close: [{ k: "close" }],
@@ -40,9 +42,24 @@ export const PLAN = {
 /**
  * 左の画面の字の小ささの線（縮めた後の最小の字の高さ px）。下回る撮った物を含む章は出さず警告にする（hq 6節「2カットでも届かなければその章を出さず警報」）。
  * 線は 24px（オーナー 2026-11-02）。部品だけを1カットで撮ると、着順の流れ（正方形の図、字は図の高さの約2.7%）と形の札の図の艇番が約22px 止まりだったので、
- * 着順の流れは上下2カット、形の札は図と名前の2カットに分けた（PLAN）。6節の目安 28px（根拠なし）は線にしない
+ * ②の着順の流れは上下2カットに分けた（PLAN）。③は 11/2 18-10 の形に戻し、下の MIN_FONT_BY_CHAPTER で 22px。6節の目安 28px（根拠なし）は線にしない
  */
 export { MIN_FONT_PX };
+/**
+ * 章ごとの線の例外。③は 11/2 18-10 の形（形の札・着順の流れを1カットずつ、22.4px）に戻したので 22px
+ * （オーナー 11/4「11/2 18-10 の形が正しい」が 11/2 の 24px の線より新しい。22px は 18-10 の実測 22.4px の下の目安、根拠はその実測だけ）
+ */
+export const MIN_FONT_BY_CHAPTER = { c3: 22 };
+const fontLine = (id) => MIN_FONT_BY_CHAPTER[id] ?? MIN_FONT_PX;
+/** 同じ部品（押す前・押した後、④と締めの軸のボタン）は、いちばん小さい倍率でそろえて描く（f01Timeline）。その倍率 */
+const groupOf = (shots, sh) => Object.values(shots).filter((o) => Math.abs(o.clip.x - sh.clip.x) < 2 && Math.abs(o.clip.w - sh.clip.w) < 2 && Math.abs(o.clip.h - sh.clip.h) < 24);
+const drawnScale = (shots, sh) => Math.min(...groupOf(shots, sh).map((o) => o.scale));
+/**
+ * 左の枠の空きの線（目安、根拠は 10/28〜11/3 の f01 の14本の実測だけ）。縮めた後の撮った物が、左の枠の幅か高さの 85% 以上に届き、面積が 35% 以上。
+ * 届いていた物は幅か高さ 88% 以上・面積 52% 以上（10/28〜10/30 の④ 66%×88%、11/1 からの④・締め 100%×52%）、
+ * 崩れた 11/3 の③は札の図が 38%×43%（面積 16%）・名前と件数が 100%×18%
+ */
+export const FILL_LINE = { side: 0.85, area: 0.35 };
 const f = (sec) => Math.round(sec * FPS);
 /** 終了画面（締めの声の後の暗い地）の秒。YouTube の終了画面の要素を置ける最短（オーナー 11/2） */
 export const END_SECONDS = 5;
@@ -84,10 +101,9 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
       ch.footAt = at(cue.foot);
       // 同じ部品（押す前・押した後、④と締めの軸のボタン）は同じ倍率・同じ箱の高さにそろえる（切り替えで位置と大きさが動かない）
       const plan = PLAN[c.id] ?? [{ k: c.id }];
-      const group = (sh) => Object.values(shots).filter((o) => Math.abs(o.clip.x - sh.clip.x) < 2 && Math.abs(o.clip.w - sh.clip.w) < 2 && Math.abs(o.clip.h - sh.clip.h) < 24);
       const cut = (sh, from, extra = {}) => {
-        const g = group(sh);
-        const scale = Math.min(...g.map((o) => o.scale));
+        const g = groupOf(shots, sh);
+        const scale = drawnScale(shots, sh);
         return { file: basename(sh.file), clip: sh.clip, scale, boxH: Math.max(...g.map((o) => o.clip.h)) * scale, from, ...extra };
       };
       const gAt = at(cue.gold);
@@ -147,8 +163,34 @@ export function f01SmallChapters(s, shots) {
       out.push({ id: c.id, reason: `左の画面（${plan[0].k}）を撮れなかった` });
       continue;
     }
-    const low = plan.map((p) => p.k).filter((k, i, a) => shots[k] && a.indexOf(k) === i && (shots[k].minFontPx ?? 0) < MIN_FONT_PX);
-    if (low.length) out.push({ id: c.id, reason: `字が小さい（${low.map((k) => `${k} ${shots[k].minFontPx}px`).join("・")}、線 ${MIN_FONT_PX}px）` });
+    const line = fontLine(c.id);
+    const low = plan.map((p) => p.k).filter((k, i, a) => shots[k] && a.indexOf(k) === i && (shots[k].minFontPx ?? 0) < line);
+    if (low.length) out.push({ id: c.id, reason: `字が小さい（${low.map((k) => `${k} ${shots[k].minFontPx}px`).join("・")}、線 ${line}px）` });
+  }
+  return out;
+}
+
+/**
+ * 左の画面の形が崩れた章（11/3 の③: 札の図が小さく右半分以上が空く・名前と件数の帯だけ・着順の流れの下が切れる）。
+ * 空き: 縮めた後の大きさが FILL_LINE に届かない。切れ: 部品の一部だけを撮った物（splitHalves の crop）を、PLAN で half と決めていないカットに置いた
+ * @param {{chapters: {id: string}[]}} s @param {Record<string, {clip: {w: number, h: number}, scale: number, crop?: string}>} shots
+ * @returns {{id: string, reason: string}[]}
+ */
+export function f01LayoutChapters(s, shots) {
+  const out = [];
+  for (const c of s.chapters) {
+    const why = [];
+    for (const p of PLAN[c.id] ?? []) {
+      const sh = shots[p.k];
+      if (!sh) continue;
+      // 描く倍率（同じ部品のいちばん小さい倍率。f01Timeline と同じ）で測る
+      const sc = drawnScale(shots, sh);
+      const w = (sh.clip.w * sc) / LEFT_BOX.w;
+      const h = (sh.clip.h * sc) / LEFT_BOX.h;
+      if (Math.max(w, h) < FILL_LINE.side || w * h < FILL_LINE.area) why.push(`${p.k} が左の枠の ${Math.round(w * 100)}%×${Math.round(h * 100)}%`);
+      if (sh.crop && !p.half) why.push(`${p.k} は部品の${sh.crop === "top" ? "上" : "下"}だけ（図が切れる）`);
+    }
+    if (why.length) out.push({ id: c.id, reason: `左の画面の形が崩れた（${[...new Set(why)].join("・")}）` });
   }
   return out;
 }
@@ -212,8 +254,11 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     writeFileSync(join(out, "f01.json"), JSON.stringify({ version: s.version, raceId: s.raceId, captureRetries: e?.retries ?? 0, captureError: String(e?.message ?? e).split("\n")[0] }, null, 2));
     throw e;
   }
-  // 字の小ささの線（MIN_FONT_PX）: 下回る撮った物を含む章・撮れなかった章は出さず、警告として残す
-  const small = f01SmallChapters(s, shots);
+  // 下回る撮った物を含む章・形が崩れた章・撮れなかった章は出さず、警告として残す
+  // 字の小ささの線（MIN_FONT_PX・MIN_FONT_BY_CHAPTER）と左の画面の形（f01LayoutChapters）。同じ章の理由は1つにまとめる
+  const small = Object.values(
+    [...f01SmallChapters(s, shots), ...f01LayoutChapters(s, shots)].reduce((a, x) => ({ ...a, [x.id]: a[x.id] ? { id: x.id, reason: `${a[x.id].reason}・${x.reason}` } : x }), {}),
+  );
   if (small.length) {
     s.chapters = s.chapters.filter((c) => !small.some((x) => x.id === c.id));
     s.omitted.push(...small.map((x) => ({ chapter: x.id, reason: x.reason })));
@@ -237,6 +282,7 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     checks: why,
     minFontPx: Object.fromEntries(Object.entries(shots).map(([k, v]) => [k, v.minFontPx])),
     minFontLine: MIN_FONT_PX,
+    minFontByChapter: MIN_FONT_BY_CHAPTER,
     captureRetries,
     smallText: Object.fromEntries(Object.entries(shots).map(([k, v]) => [k, v.small ?? []])),
     dpr: DPR,

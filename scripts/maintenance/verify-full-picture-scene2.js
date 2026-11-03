@@ -2154,16 +2154,40 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
   // 字の小ささ（hq 11d 節、10/30 に7章が 13.5〜21px）: 線を下回る撮った物の章・最初のカットを撮れなかった章は出さない。
   // ④は「軸のボタン → 2着の棒 → 軸のボタン（カーソル）→ 押した後 → 2着の棒」の順に、声の行に合わせて切り替える
   {
-    const { f01SmallChapters, f01Timeline, MIN_FONT_PX, PLAN } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const { f01SmallChapters, f01LayoutChapters, f01Timeline, MIN_FONT_PX, MIN_FONT_BY_CHAPTER, PLAN } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
     const sh = (k, px, clip = { x: 0, y: 0, w: 400, h: 150 }) => ({ file: `/x/${k}.png`, clip, scale: 2.8, minFontPx: px });
     const s1 = { chapters: [{ id: "c2" }, { id: "c3" }, { id: "c4" }, { id: "c5" }] };
-    const shots1 = { c2: sh("c2", 26.4), c3: sh("c3", MIN_FONT_PX - 0.1), c4: sh("c4", 29.8), c4b: sh("c4b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };
+    const shots1 = { c2: sh("c2", 26.4), c3: sh("c3", MIN_FONT_BY_CHAPTER.c3 - 0.1), c4: sh("c4", 29.8), c4b: sh("c4b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };
     assert.deepEqual(f01SmallChapters(s1, shots1).map((x) => x.id), ["c3", "c5"], "線の下（c3）と撮れなかった章（c5）を省く");
     assert.deepEqual(PLAN.c4.map((p) => p.k), ["c4", "c4b", "c4", "c42", "c42b"]);
     // オーナー 11/2「22.4px の章は2カットに分けて」: 線は 24px。着順の流れは押した後を上・下、形の札は図と名前の2カット
     assert.equal(MIN_FONT_PX, 24);
     assert.deepEqual(PLAN.c2.map((p) => p.k), ["c2", "c2-pre", "c22", "c22b"]);
-    assert.deepEqual(PLAN.c3.map((p) => p.k), ["c3i", "c3", "c3-pre", "c32", "c32b"]);
+    // ③は 11/2 18-10 の形（形の札1枚 → 着順の流れの全体）に戻した（オーナー 11/4。#2087 の2カットは 11/3 の4本で崩れた）。線は 22px
+    assert.deepEqual(PLAN.c3.map((p) => p.k), ["c3", "c3-pre", "c32"]);
+    assert.equal(MIN_FONT_BY_CHAPTER.c3, 22);
+    assert.deepEqual(f01SmallChapters({ chapters: [{ id: "c3" }] }, { c3: sh("c3", 22.4), "c3-pre": sh("c3-pre", 22.4), c32: sh("c32", 22.5) }), [], "18-10 の③（22.4px）は線の上");
+    assert.deepEqual(f01SmallChapters({ chapters: [{ id: "c4" }] }, { c4: sh("c4", 22.4), c4b: sh("c4b", 31.1) }).map((x) => x.id), ["c4"], "③の例外はほかの章に効かない");
+    // 左の画面の形の崩れ（11/3 の③の実測）: 札の図 38%×43%・名前と件数の帯 100%×18%・着順の流れの上だけ。18-10 の形は通る
+    {
+      const at = (k, w, h, extra = {}) => ({ file: `/x/${k}.png`, clip: { x: 0, y: 0, w, h }, scale: 1, minFontPx: 30, ...extra });
+      const W = 1136;
+      const H = 838;
+      const broken = { c3i: at("c3i", W * 0.38, H * 0.43), c3: at("c3", W, H * 0.18), "c3-pre": at("c3-pre", W, H * 0.72, { crop: "top" }), c32: at("c32", W, H * 0.72, { crop: "top" }) };
+      const r = f01LayoutChapters({ chapters: [{ id: "c3" }] }, broken);
+      assert.equal(r.length, 1);
+      assert.ok(/c3 が左の枠の 100%×18%/.test(r[0].reason) && /c3-pre は部品の上だけ/.test(r[0].reason), r[0].reason);
+      const ok = { c3: at("c3", W, H * 0.58), "c3-pre": at("c3-pre", W * 0.74, H), c32: at("c32", W * 0.74, H) };
+      assert.deepEqual(f01LayoutChapters({ chapters: [{ id: "c3" }] }, ok), [], "18-10 の③は通る");
+      // 小さな図（右半分以上が空く）
+      assert.equal(f01LayoutChapters({ chapters: [{ id: "c3" }] }, { ...ok, c3: at("c3", W * 0.38, H * 0.43) }).length, 1, "札の図だけが小さいと止める");
+      // ②の上・下の2カットは half と決めてあるので通る。④・締め（100%×52%）も通る
+      const c2 = { c2: at("c2", W, H * 0.73), "c2-pre": at("c2-pre", W, H * 0.72, { crop: "top" }), c22: at("c22", W, H * 0.72, { crop: "top" }), c22b: at("c22b", W, H * 0.72, { crop: "bottom" }) };
+      // 同じ部品のいちばん小さい倍率で描く（f01Timeline）ので、その倍率で測る（自分の倍率では届いても、描くと小さい）
+      const g2 = { c3: at("c3", 400, 120, { scale: 2.9 }), "c3-pre": at("c3-pre", 400, 130, { scale: 1.2 }), c32: at("c32", 400, 130, { scale: 2.9 }) };
+      assert.ok(/c3 が左の枠の/.test(f01LayoutChapters({ chapters: [{ id: "c3" }] }, g2)[0]?.reason ?? ""), "同じ部品の小さい倍率で測る");
+      assert.deepEqual(f01LayoutChapters({ chapters: [{ id: "c2" }, { id: "c4" }] }, { ...c2, c4: at("c4", W, H * 0.52), c4b: at("c4b", W, H * 0.61), c42: at("c42", W, H * 0.52), c42b: at("c42b", W, H * 0.61) }), []);
+    }
     // 押す帯が下半分のとき、押す前のカット（下半分）のカーソルはそのカットの座標で、帯の中を指す（#2087 の審査）
     {
       const half = { x: 40, y: 0, w: 440, h: 233 };
