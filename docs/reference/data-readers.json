@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1601,
+    "sourceFiles": 1604,
     "filesWithAccess": 263,
     "tableReaders": 939,
     "tableWriters": 187,
@@ -12845,7 +12845,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/botPage.js:275",
+          "ref": "api/_lib/botPage.js:277",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -12978,7 +12978,7 @@
       "columns": {
         "venue_code": {
           "readers": [
-            "api/_lib/botPage.js:275",
+            "api/_lib/botPage.js:277",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:801",
@@ -12995,7 +12995,7 @@
         },
         "start_date": {
           "readers": [
-            "api/_lib/botPage.js:275",
+            "api/_lib/botPage.js:277",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:801",
@@ -13012,7 +13012,7 @@
         },
         "end_date": {
           "readers": [
-            "api/_lib/botPage.js:275",
+            "api/_lib/botPage.js:277",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/maintenance/verify-bot-race-function.js:801",
@@ -13034,7 +13034,7 @@
         },
         "title": {
           "readers": [
-            "api/_lib/botPage.js:275",
+            "api/_lib/botPage.js:277",
             "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/supabaseDataService.js:1429",
             "src/services/supabaseDataService.js:7290"
@@ -13049,7 +13049,7 @@
         },
         "grade": {
           "readers": [
-            "api/_lib/botPage.js:275",
+            "api/_lib/botPage.js:277",
             "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/supabaseDataService.js:1429",
             "src/services/supabaseDataService.js:7290"
