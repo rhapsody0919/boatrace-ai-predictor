@@ -120,3 +120,30 @@
   border-radius: 2px;
   border: var(--border-width-1) solid var(--border-hairline);
 }
+
+/* イン屋の札（2026-11-03、docs/design/inya-racer/mock/race-mock.html） */
+.ecd-inya {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--brand-accent-primary);
+  color: var(--brand-accent-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.ecd-inya-legend {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: baseline;
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ecd-inya-legend .ecd-inya {
+  flex: none;
+}

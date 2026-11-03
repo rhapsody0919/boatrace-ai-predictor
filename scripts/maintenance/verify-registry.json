@@ -1765,6 +1765,11 @@
       "script": "verify-worktree-in-use.js",
       "tier": "ci",
       "guards": "稼働中セッションの worktree（作業開始直後・ロックなしのデスクトップアプリ）を「片付けてよい」に分類しないこと（check-worktrees.js）"
+    },
+    {
+      "script": "verify-front-taking.js",
+      "tier": "ci",
+      "guards": "前付けの割合と「イン屋」の札の判定（src/utils/frontTaking.js）。4〜6号艇の走だけ・today を含む365日・当のレース以後を数えない・30走未満は出さない・Wilson 下限0.30の境目（30走中13走は札なし、14走は札あり）・進入の無い走を数えない（2026-11-03、選手ページとレースページのイン屋）"
     }
   ]
 }

@@ -1,0 +1,6411 @@
+{
+ "generatedAt": "2026-11-03T06:32:31.172Z",
+ "fetchedAt": "2026-11-03T06:28:39.452Z",
+ "window": {
+  "from": 20251103,
+  "to": 20261102
+ },
+ "activeFrom": 20260503,
+ "minN": 30,
+ "population": {
+  "racersInWindow": 1645,
+  "active": 1630,
+  "eligA": 1620,
+  "eligO": 1518
+ },
+ "note": "どの選手にも同じ基準。in は A（4〜6号艇→1〜3コース）、out は O（1〜3号艇→4〜6コース）。value は率、wilson95 は95%区間、n は分母の走数",
+ "in": {
+  "top1pct": {
+   "rule": "上位1%（16人目の値 0.59 以上）",
+   "threshold": 0.59,
+   "racers": [
+    {
+     "racer_id": 3159,
+     "name": "江口　　晃生",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.927,
+      1
+     ],
+     "k": 49,
+     "n": 49,
+     "venueExp": 0.027,
+     "starts": 120,
+     "B_c12": 1,
+     "C_inner": 0.617
+    },
+    {
+     "racer_id": 3623,
+     "name": "深川　　真二",
+     "grade": "A1",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.967,
+      1
+     ],
+     "k": 112,
+     "n": 112,
+     "venueExp": 0.03,
+     "starts": 243,
+     "B_c12": 0.893,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3024,
+     "name": "西島　　義則",
+     "grade": "B2",
+     "branch": "広島",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.949,
+      1
+     ],
+     "k": 72,
+     "n": 72,
+     "venueExp": 0.024,
+     "starts": 149,
+     "B_c12": 0.98,
+     "C_inner": 0.651
+    },
+    {
+     "racer_id": 3265,
+     "name": "今村　　暢孝",
+     "grade": "A2",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.951,
+      1
+     ],
+     "k": 75,
+     "n": 75,
+     "venueExp": 0.027,
+     "starts": 173,
+     "B_c12": 1,
+     "C_inner": 0.601
+    },
+    {
+     "racer_id": 3473,
+     "name": "石川　　真二",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.991,
+     "wilson95": [
+      0.952,
+      0.998
+     ],
+     "k": 114,
+     "n": 115,
+     "venueExp": 0.024,
+     "starts": 267,
+     "B_c12": 0.963,
+     "C_inner": 0.652
+    },
+    {
+     "racer_id": 3072,
+     "name": "西田　　　靖",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.978,
+     "wilson95": [
+      0.923,
+      0.994
+     ],
+     "k": 88,
+     "n": 90,
+     "venueExp": 0.024,
+     "starts": 199,
+     "B_c12": 0.94,
+     "C_inner": 0.673
+    },
+    {
+     "racer_id": 3257,
+     "name": "田頭　　　実",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.953,
+     "wilson95": [
+      0.885,
+      0.982
+     ],
+     "k": 81,
+     "n": 85,
+     "venueExp": 0.027,
+     "starts": 191,
+     "B_c12": 0.927,
+     "C_inner": 0.586
+    },
+    {
+     "racer_id": 4874,
+     "name": "池田　奈津美",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.939,
+     "wilson95": [
+      0.865,
+      0.974
+     ],
+     "k": 77,
+     "n": 82,
+     "venueExp": 0.025,
+     "starts": 179,
+     "B_c12": 0.704,
+     "C_inner": 0.469
+    },
+    {
+     "racer_id": 3574,
+     "name": "大神　　康司",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.937,
+     "wilson95": [
+      0.876,
+      0.969
+     ],
+     "k": 104,
+     "n": 111,
+     "venueExp": 0.027,
+     "starts": 245,
+     "B_c12": 0.735,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3542,
+     "name": "清水　　紀克",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.9,
+     "wilson95": [
+      0.821,
+      0.946
+     ],
+     "k": 81,
+     "n": 90,
+     "venueExp": 0.025,
+     "starts": 189,
+     "B_c12": 0.82,
+     "C_inner": 0.614
+    },
+    {
+     "racer_id": 3933,
+     "name": "山地　　正樹",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.845,
+     "wilson95": [
+      0.76,
+      0.904
+     ],
+     "k": 82,
+     "n": 97,
+     "venueExp": 0.024,
+     "starts": 223,
+     "B_c12": 0.57,
+     "C_inner": 0.39
+    },
+    {
+     "racer_id": 3582,
+     "name": "吉川　　昭男",
+     "grade": "A2",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.738,
+     "wilson95": [
+      0.648,
+      0.812
+     ],
+     "k": 79,
+     "n": 107,
+     "venueExp": 0.024,
+     "starts": 247,
+     "B_c12": 0.538,
+     "C_inner": 0.385
+    },
+    {
+     "racer_id": 3946,
+     "name": "赤岩　　善生",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.694,
+     "wilson95": [
+      0.607,
+      0.769
+     ],
+     "k": 84,
+     "n": 121,
+     "venueExp": 0.027,
+     "starts": 262,
+     "B_c12": 0.683,
+     "C_inner": 0.431
+    },
+    {
+     "racer_id": 3362,
+     "name": "間嶋　　仁志",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "A",
+     "value": 0.653,
+     "wilson95": [
+      0.553,
+      0.741
+     ],
+     "k": 62,
+     "n": 95,
+     "venueExp": 0.027,
+     "starts": 203,
+     "B_c12": 0.611,
+     "C_inner": 0.36
+    },
+    {
+     "racer_id": 3532,
+     "name": "柴田　　　光",
+     "grade": "B2",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.636,
+     "wilson95": [
+      0.516,
+      0.742
+     ],
+     "k": 42,
+     "n": 66,
+     "venueExp": 0.031,
+     "starts": 143,
+     "B_c12": 0.573,
+     "C_inner": 0.315
+    },
+    {
+     "racer_id": 3920,
+     "name": "正木　　聖賢",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.59,
+     "wilson95": [
+      0.483,
+      0.69
+     ],
+     "k": 49,
+     "n": 83,
+     "venueExp": 0.027,
+     "starts": 178,
+     "B_c12": 0.528,
+     "C_inner": 0.309
+    }
+   ]
+  },
+  "top2pct": {
+   "rule": "上位2%（32人目の値 0.209 以上）",
+   "threshold": 0.209,
+   "racers": [
+    {
+     "racer_id": 3159,
+     "name": "江口　　晃生",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.927,
+      1
+     ],
+     "k": 49,
+     "n": 49,
+     "venueExp": 0.027,
+     "starts": 120,
+     "B_c12": 1,
+     "C_inner": 0.617
+    },
+    {
+     "racer_id": 3623,
+     "name": "深川　　真二",
+     "grade": "A1",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.967,
+      1
+     ],
+     "k": 112,
+     "n": 112,
+     "venueExp": 0.03,
+     "starts": 243,
+     "B_c12": 0.893,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3024,
+     "name": "西島　　義則",
+     "grade": "B2",
+     "branch": "広島",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.949,
+      1
+     ],
+     "k": 72,
+     "n": 72,
+     "venueExp": 0.024,
+     "starts": 149,
+     "B_c12": 0.98,
+     "C_inner": 0.651
+    },
+    {
+     "racer_id": 3265,
+     "name": "今村　　暢孝",
+     "grade": "A2",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.951,
+      1
+     ],
+     "k": 75,
+     "n": 75,
+     "venueExp": 0.027,
+     "starts": 173,
+     "B_c12": 1,
+     "C_inner": 0.601
+    },
+    {
+     "racer_id": 3473,
+     "name": "石川　　真二",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.991,
+     "wilson95": [
+      0.952,
+      0.998
+     ],
+     "k": 114,
+     "n": 115,
+     "venueExp": 0.024,
+     "starts": 267,
+     "B_c12": 0.963,
+     "C_inner": 0.652
+    },
+    {
+     "racer_id": 3072,
+     "name": "西田　　　靖",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.978,
+     "wilson95": [
+      0.923,
+      0.994
+     ],
+     "k": 88,
+     "n": 90,
+     "venueExp": 0.024,
+     "starts": 199,
+     "B_c12": 0.94,
+     "C_inner": 0.673
+    },
+    {
+     "racer_id": 3257,
+     "name": "田頭　　　実",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.953,
+     "wilson95": [
+      0.885,
+      0.982
+     ],
+     "k": 81,
+     "n": 85,
+     "venueExp": 0.027,
+     "starts": 191,
+     "B_c12": 0.927,
+     "C_inner": 0.586
+    },
+    {
+     "racer_id": 4874,
+     "name": "池田　奈津美",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.939,
+     "wilson95": [
+      0.865,
+      0.974
+     ],
+     "k": 77,
+     "n": 82,
+     "venueExp": 0.025,
+     "starts": 179,
+     "B_c12": 0.704,
+     "C_inner": 0.469
+    },
+    {
+     "racer_id": 3574,
+     "name": "大神　　康司",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.937,
+     "wilson95": [
+      0.876,
+      0.969
+     ],
+     "k": 104,
+     "n": 111,
+     "venueExp": 0.027,
+     "starts": 245,
+     "B_c12": 0.735,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3542,
+     "name": "清水　　紀克",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.9,
+     "wilson95": [
+      0.821,
+      0.946
+     ],
+     "k": 81,
+     "n": 90,
+     "venueExp": 0.025,
+     "starts": 189,
+     "B_c12": 0.82,
+     "C_inner": 0.614
+    },
+    {
+     "racer_id": 3933,
+     "name": "山地　　正樹",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.845,
+     "wilson95": [
+      0.76,
+      0.904
+     ],
+     "k": 82,
+     "n": 97,
+     "venueExp": 0.024,
+     "starts": 223,
+     "B_c12": 0.57,
+     "C_inner": 0.39
+    },
+    {
+     "racer_id": 3582,
+     "name": "吉川　　昭男",
+     "grade": "A2",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.738,
+     "wilson95": [
+      0.648,
+      0.812
+     ],
+     "k": 79,
+     "n": 107,
+     "venueExp": 0.024,
+     "starts": 247,
+     "B_c12": 0.538,
+     "C_inner": 0.385
+    },
+    {
+     "racer_id": 3946,
+     "name": "赤岩　　善生",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.694,
+     "wilson95": [
+      0.607,
+      0.769
+     ],
+     "k": 84,
+     "n": 121,
+     "venueExp": 0.027,
+     "starts": 262,
+     "B_c12": 0.683,
+     "C_inner": 0.431
+    },
+    {
+     "racer_id": 3362,
+     "name": "間嶋　　仁志",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "A",
+     "value": 0.653,
+     "wilson95": [
+      0.553,
+      0.741
+     ],
+     "k": 62,
+     "n": 95,
+     "venueExp": 0.027,
+     "starts": 203,
+     "B_c12": 0.611,
+     "C_inner": 0.36
+    },
+    {
+     "racer_id": 3532,
+     "name": "柴田　　　光",
+     "grade": "B2",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.636,
+     "wilson95": [
+      0.516,
+      0.742
+     ],
+     "k": 42,
+     "n": 66,
+     "venueExp": 0.031,
+     "starts": 143,
+     "B_c12": 0.573,
+     "C_inner": 0.315
+    },
+    {
+     "racer_id": 3920,
+     "name": "正木　　聖賢",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.59,
+     "wilson95": [
+      0.483,
+      0.69
+     ],
+     "k": 49,
+     "n": 83,
+     "venueExp": 0.027,
+     "starts": 178,
+     "B_c12": 0.528,
+     "C_inner": 0.309
+    },
+    {
+     "racer_id": 3849,
+     "name": "中岡　　正彦",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.547,
+     "wilson95": [
+      0.426,
+      0.663
+     ],
+     "k": 35,
+     "n": 64,
+     "venueExp": 0.026,
+     "starts": 140,
+     "B_c12": 0.579,
+     "C_inner": 0.329
+    },
+    {
+     "racer_id": 3297,
+     "name": "藤丸　　光一",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.506,
+     "wilson95": [
+      0.404,
+      0.607
+     ],
+     "k": 45,
+     "n": 89,
+     "venueExp": 0.025,
+     "starts": 194,
+     "B_c12": 0.505,
+     "C_inner": 0.304
+    },
+    {
+     "racer_id": 3070,
+     "name": "山室　　展弘",
+     "grade": "B1",
+     "branch": "岡山",
+     "metric": "A",
+     "value": 0.5,
+     "wilson95": [
+      0.361,
+      0.639
+     ],
+     "k": 23,
+     "n": 46,
+     "venueExp": 0.028,
+     "starts": 103,
+     "B_c12": 0.515,
+     "C_inner": 0.291
+    },
+    {
+     "racer_id": 4199,
+     "name": "北川　　潤二",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.482,
+     "wilson95": [
+      0.4,
+      0.565
+     ],
+     "k": 66,
+     "n": 137,
+     "venueExp": 0.027,
+     "starts": 313,
+     "B_c12": 0.508,
+     "C_inner": 0.304
+    },
+    {
+     "racer_id": 3687,
+     "name": "花田　　和明",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.345,
+     "wilson95": [
+      0.252,
+      0.452
+     ],
+     "k": 29,
+     "n": 84,
+     "venueExp": 0.025,
+     "starts": 186,
+     "B_c12": 0.457,
+     "C_inner": 0.269
+    },
+    {
+     "racer_id": 3743,
+     "name": "林　　　美憲",
+     "grade": "A1",
+     "branch": "徳島",
+     "metric": "A",
+     "value": 0.333,
+     "wilson95": [
+      0.253,
+      0.424
+     ],
+     "k": 38,
+     "n": 114,
+     "venueExp": 0.025,
+     "starts": 252,
+     "B_c12": 0.472,
+     "C_inner": 0.242
+    },
+    {
+     "racer_id": 4324,
+     "name": "海野　康志郎",
+     "grade": "A1",
+     "branch": "山口",
+     "metric": "A",
+     "value": 0.304,
+     "wilson95": [
+      0.234,
+      0.386
+     ],
+     "k": 42,
+     "n": 138,
+     "venueExp": 0.024,
+     "starts": 293,
+     "B_c12": 0.498,
+     "C_inner": 0.225
+    },
+    {
+     "racer_id": 4302,
+     "name": "西野　　翔太",
+     "grade": "A1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.296,
+     "wilson95": [
+      0.22,
+      0.385
+     ],
+     "k": 34,
+     "n": 115,
+     "venueExp": 0.026,
+     "starts": 273,
+     "B_c12": 0.465,
+     "C_inner": 0.209
+    },
+    {
+     "racer_id": 3554,
+     "name": "仲口　　博崇",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.293,
+     "wilson95": [
+      0.223,
+      0.376
+     ],
+     "k": 39,
+     "n": 133,
+     "venueExp": 0.027,
+     "starts": 299,
+     "B_c12": 0.438,
+     "C_inner": 0.284
+    },
+    {
+     "racer_id": 3156,
+     "name": "金子　　良昭",
+     "grade": "B1",
+     "branch": "静岡",
+     "metric": "A",
+     "value": 0.269,
+     "wilson95": [
+      0.183,
+      0.377
+     ],
+     "k": 21,
+     "n": 78,
+     "venueExp": 0.025,
+     "starts": 165,
+     "B_c12": 0.412,
+     "C_inner": 0.2
+    },
+    {
+     "racer_id": 3327,
+     "name": "野長瀬　正孝",
+     "grade": "A2",
+     "branch": "静岡",
+     "metric": "A",
+     "value": 0.266,
+     "wilson95": [
+      0.192,
+      0.356
+     ],
+     "k": 29,
+     "n": 109,
+     "venueExp": 0.026,
+     "starts": 238,
+     "B_c12": 0.408,
+     "C_inner": 0.223
+    },
+    {
+     "racer_id": 3161,
+     "name": "古場　　輝義",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.258,
+     "wilson95": [
+      0.179,
+      0.358
+     ],
+     "k": 23,
+     "n": 89,
+     "venueExp": 0.026,
+     "starts": 187,
+     "B_c12": 0.38,
+     "C_inner": 0.23
+    },
+    {
+     "racer_id": 4561,
+     "name": "藤山　　翔大",
+     "grade": "A2",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.238,
+     "wilson95": [
+      0.167,
+      0.328
+     ],
+     "k": 25,
+     "n": 105,
+     "venueExp": 0.025,
+     "starts": 197,
+     "B_c12": 0.386,
+     "C_inner": 0.198
+    },
+    {
+     "racer_id": 3268,
+     "name": "森　　　竜也",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.229,
+     "wilson95": [
+      0.159,
+      0.318
+     ],
+     "k": 24,
+     "n": 105,
+     "venueExp": 0.024,
+     "starts": 215,
+     "B_c12": 0.372,
+     "C_inner": 0.186
+    },
+    {
+     "racer_id": 3731,
+     "name": "高濱　　芳久",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.215,
+     "wilson95": [
+      0.144,
+      0.309
+     ],
+     "k": 20,
+     "n": 93,
+     "venueExp": 0.025,
+     "starts": 201,
+     "B_c12": 0.413,
+     "C_inner": 0.194
+    },
+    {
+     "racer_id": 4218,
+     "name": "吉川　　喜継",
+     "grade": "A1",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.209,
+     "wilson95": [
+      0.144,
+      0.292
+     ],
+     "k": 24,
+     "n": 115,
+     "venueExp": 0.025,
+     "starts": 256,
+     "B_c12": 0.43,
+     "C_inner": 0.203
+    }
+   ]
+  },
+  "top5pct": {
+   "rule": "上位5%（81人目の値 0.069 以上）",
+   "threshold": 0.069,
+   "racers": [
+    {
+     "racer_id": 3159,
+     "name": "江口　　晃生",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.927,
+      1
+     ],
+     "k": 49,
+     "n": 49,
+     "venueExp": 0.027,
+     "starts": 120,
+     "B_c12": 1,
+     "C_inner": 0.617
+    },
+    {
+     "racer_id": 3623,
+     "name": "深川　　真二",
+     "grade": "A1",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.967,
+      1
+     ],
+     "k": 112,
+     "n": 112,
+     "venueExp": 0.03,
+     "starts": 243,
+     "B_c12": 0.893,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3024,
+     "name": "西島　　義則",
+     "grade": "B2",
+     "branch": "広島",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.949,
+      1
+     ],
+     "k": 72,
+     "n": 72,
+     "venueExp": 0.024,
+     "starts": 149,
+     "B_c12": 0.98,
+     "C_inner": 0.651
+    },
+    {
+     "racer_id": 3265,
+     "name": "今村　　暢孝",
+     "grade": "A2",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.951,
+      1
+     ],
+     "k": 75,
+     "n": 75,
+     "venueExp": 0.027,
+     "starts": 173,
+     "B_c12": 1,
+     "C_inner": 0.601
+    },
+    {
+     "racer_id": 3473,
+     "name": "石川　　真二",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.991,
+     "wilson95": [
+      0.952,
+      0.998
+     ],
+     "k": 114,
+     "n": 115,
+     "venueExp": 0.024,
+     "starts": 267,
+     "B_c12": 0.963,
+     "C_inner": 0.652
+    },
+    {
+     "racer_id": 3072,
+     "name": "西田　　　靖",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.978,
+     "wilson95": [
+      0.923,
+      0.994
+     ],
+     "k": 88,
+     "n": 90,
+     "venueExp": 0.024,
+     "starts": 199,
+     "B_c12": 0.94,
+     "C_inner": 0.673
+    },
+    {
+     "racer_id": 3257,
+     "name": "田頭　　　実",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.953,
+     "wilson95": [
+      0.885,
+      0.982
+     ],
+     "k": 81,
+     "n": 85,
+     "venueExp": 0.027,
+     "starts": 191,
+     "B_c12": 0.927,
+     "C_inner": 0.586
+    },
+    {
+     "racer_id": 4874,
+     "name": "池田　奈津美",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.939,
+     "wilson95": [
+      0.865,
+      0.974
+     ],
+     "k": 77,
+     "n": 82,
+     "venueExp": 0.025,
+     "starts": 179,
+     "B_c12": 0.704,
+     "C_inner": 0.469
+    },
+    {
+     "racer_id": 3574,
+     "name": "大神　　康司",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.937,
+     "wilson95": [
+      0.876,
+      0.969
+     ],
+     "k": 104,
+     "n": 111,
+     "venueExp": 0.027,
+     "starts": 245,
+     "B_c12": 0.735,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3542,
+     "name": "清水　　紀克",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.9,
+     "wilson95": [
+      0.821,
+      0.946
+     ],
+     "k": 81,
+     "n": 90,
+     "venueExp": 0.025,
+     "starts": 189,
+     "B_c12": 0.82,
+     "C_inner": 0.614
+    },
+    {
+     "racer_id": 3933,
+     "name": "山地　　正樹",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.845,
+     "wilson95": [
+      0.76,
+      0.904
+     ],
+     "k": 82,
+     "n": 97,
+     "venueExp": 0.024,
+     "starts": 223,
+     "B_c12": 0.57,
+     "C_inner": 0.39
+    },
+    {
+     "racer_id": 3582,
+     "name": "吉川　　昭男",
+     "grade": "A2",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.738,
+     "wilson95": [
+      0.648,
+      0.812
+     ],
+     "k": 79,
+     "n": 107,
+     "venueExp": 0.024,
+     "starts": 247,
+     "B_c12": 0.538,
+     "C_inner": 0.385
+    },
+    {
+     "racer_id": 3946,
+     "name": "赤岩　　善生",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.694,
+     "wilson95": [
+      0.607,
+      0.769
+     ],
+     "k": 84,
+     "n": 121,
+     "venueExp": 0.027,
+     "starts": 262,
+     "B_c12": 0.683,
+     "C_inner": 0.431
+    },
+    {
+     "racer_id": 3362,
+     "name": "間嶋　　仁志",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "A",
+     "value": 0.653,
+     "wilson95": [
+      0.553,
+      0.741
+     ],
+     "k": 62,
+     "n": 95,
+     "venueExp": 0.027,
+     "starts": 203,
+     "B_c12": 0.611,
+     "C_inner": 0.36
+    },
+    {
+     "racer_id": 3532,
+     "name": "柴田　　　光",
+     "grade": "B2",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.636,
+     "wilson95": [
+      0.516,
+      0.742
+     ],
+     "k": 42,
+     "n": 66,
+     "venueExp": 0.031,
+     "starts": 143,
+     "B_c12": 0.573,
+     "C_inner": 0.315
+    },
+    {
+     "racer_id": 3920,
+     "name": "正木　　聖賢",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.59,
+     "wilson95": [
+      0.483,
+      0.69
+     ],
+     "k": 49,
+     "n": 83,
+     "venueExp": 0.027,
+     "starts": 178,
+     "B_c12": 0.528,
+     "C_inner": 0.309
+    },
+    {
+     "racer_id": 3849,
+     "name": "中岡　　正彦",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.547,
+     "wilson95": [
+      0.426,
+      0.663
+     ],
+     "k": 35,
+     "n": 64,
+     "venueExp": 0.026,
+     "starts": 140,
+     "B_c12": 0.579,
+     "C_inner": 0.329
+    },
+    {
+     "racer_id": 3297,
+     "name": "藤丸　　光一",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.506,
+     "wilson95": [
+      0.404,
+      0.607
+     ],
+     "k": 45,
+     "n": 89,
+     "venueExp": 0.025,
+     "starts": 194,
+     "B_c12": 0.505,
+     "C_inner": 0.304
+    },
+    {
+     "racer_id": 3070,
+     "name": "山室　　展弘",
+     "grade": "B1",
+     "branch": "岡山",
+     "metric": "A",
+     "value": 0.5,
+     "wilson95": [
+      0.361,
+      0.639
+     ],
+     "k": 23,
+     "n": 46,
+     "venueExp": 0.028,
+     "starts": 103,
+     "B_c12": 0.515,
+     "C_inner": 0.291
+    },
+    {
+     "racer_id": 4199,
+     "name": "北川　　潤二",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.482,
+     "wilson95": [
+      0.4,
+      0.565
+     ],
+     "k": 66,
+     "n": 137,
+     "venueExp": 0.027,
+     "starts": 313,
+     "B_c12": 0.508,
+     "C_inner": 0.304
+    },
+    {
+     "racer_id": 3687,
+     "name": "花田　　和明",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.345,
+     "wilson95": [
+      0.252,
+      0.452
+     ],
+     "k": 29,
+     "n": 84,
+     "venueExp": 0.025,
+     "starts": 186,
+     "B_c12": 0.457,
+     "C_inner": 0.269
+    },
+    {
+     "racer_id": 3743,
+     "name": "林　　　美憲",
+     "grade": "A1",
+     "branch": "徳島",
+     "metric": "A",
+     "value": 0.333,
+     "wilson95": [
+      0.253,
+      0.424
+     ],
+     "k": 38,
+     "n": 114,
+     "venueExp": 0.025,
+     "starts": 252,
+     "B_c12": 0.472,
+     "C_inner": 0.242
+    },
+    {
+     "racer_id": 4324,
+     "name": "海野　康志郎",
+     "grade": "A1",
+     "branch": "山口",
+     "metric": "A",
+     "value": 0.304,
+     "wilson95": [
+      0.234,
+      0.386
+     ],
+     "k": 42,
+     "n": 138,
+     "venueExp": 0.024,
+     "starts": 293,
+     "B_c12": 0.498,
+     "C_inner": 0.225
+    },
+    {
+     "racer_id": 4302,
+     "name": "西野　　翔太",
+     "grade": "A1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.296,
+     "wilson95": [
+      0.22,
+      0.385
+     ],
+     "k": 34,
+     "n": 115,
+     "venueExp": 0.026,
+     "starts": 273,
+     "B_c12": 0.465,
+     "C_inner": 0.209
+    },
+    {
+     "racer_id": 3554,
+     "name": "仲口　　博崇",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.293,
+     "wilson95": [
+      0.223,
+      0.376
+     ],
+     "k": 39,
+     "n": 133,
+     "venueExp": 0.027,
+     "starts": 299,
+     "B_c12": 0.438,
+     "C_inner": 0.284
+    },
+    {
+     "racer_id": 3156,
+     "name": "金子　　良昭",
+     "grade": "B1",
+     "branch": "静岡",
+     "metric": "A",
+     "value": 0.269,
+     "wilson95": [
+      0.183,
+      0.377
+     ],
+     "k": 21,
+     "n": 78,
+     "venueExp": 0.025,
+     "starts": 165,
+     "B_c12": 0.412,
+     "C_inner": 0.2
+    },
+    {
+     "racer_id": 3327,
+     "name": "野長瀬　正孝",
+     "grade": "A2",
+     "branch": "静岡",
+     "metric": "A",
+     "value": 0.266,
+     "wilson95": [
+      0.192,
+      0.356
+     ],
+     "k": 29,
+     "n": 109,
+     "venueExp": 0.026,
+     "starts": 238,
+     "B_c12": 0.408,
+     "C_inner": 0.223
+    },
+    {
+     "racer_id": 3161,
+     "name": "古場　　輝義",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.258,
+     "wilson95": [
+      0.179,
+      0.358
+     ],
+     "k": 23,
+     "n": 89,
+     "venueExp": 0.026,
+     "starts": 187,
+     "B_c12": 0.38,
+     "C_inner": 0.23
+    },
+    {
+     "racer_id": 4561,
+     "name": "藤山　　翔大",
+     "grade": "A2",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.238,
+     "wilson95": [
+      0.167,
+      0.328
+     ],
+     "k": 25,
+     "n": 105,
+     "venueExp": 0.025,
+     "starts": 197,
+     "B_c12": 0.386,
+     "C_inner": 0.198
+    },
+    {
+     "racer_id": 3268,
+     "name": "森　　　竜也",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.229,
+     "wilson95": [
+      0.159,
+      0.318
+     ],
+     "k": 24,
+     "n": 105,
+     "venueExp": 0.024,
+     "starts": 215,
+     "B_c12": 0.372,
+     "C_inner": 0.186
+    },
+    {
+     "racer_id": 3731,
+     "name": "高濱　　芳久",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.215,
+     "wilson95": [
+      0.144,
+      0.309
+     ],
+     "k": 20,
+     "n": 93,
+     "venueExp": 0.025,
+     "starts": 201,
+     "B_c12": 0.413,
+     "C_inner": 0.194
+    },
+    {
+     "racer_id": 4218,
+     "name": "吉川　　喜継",
+     "grade": "A1",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.209,
+     "wilson95": [
+      0.144,
+      0.292
+     ],
+     "k": 24,
+     "n": 115,
+     "venueExp": 0.025,
+     "starts": 256,
+     "B_c12": 0.43,
+     "C_inner": 0.203
+    },
+    {
+     "racer_id": 3212,
+     "name": "亀本　　勇樹",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.195,
+     "wilson95": [
+      0.126,
+      0.291
+     ],
+     "k": 17,
+     "n": 87,
+     "venueExp": 0.025,
+     "starts": 176,
+     "B_c12": 0.386,
+     "C_inner": 0.182
+    },
+    {
+     "racer_id": 4778,
+     "name": "堤　　　啓輔",
+     "grade": "B1",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 0.193,
+     "wilson95": [
+      0.122,
+      0.29
+     ],
+     "k": 16,
+     "n": 83,
+     "venueExp": 0.027,
+     "starts": 164,
+     "B_c12": 0.36,
+     "C_inner": 0.238
+    },
+    {
+     "racer_id": 4370,
+     "name": "山口　　達也",
+     "grade": "A1",
+     "branch": "岡山",
+     "metric": "A",
+     "value": 0.189,
+     "wilson95": [
+      0.126,
+      0.274
+     ],
+     "k": 20,
+     "n": 106,
+     "venueExp": 0.025,
+     "starts": 232,
+     "B_c12": 0.427,
+     "C_inner": 0.159
+    },
+    {
+     "racer_id": 4168,
+     "name": "石野　　貴之",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.175,
+     "wilson95": [
+      0.117,
+      0.256
+     ],
+     "k": 20,
+     "n": 114,
+     "venueExp": 0.027,
+     "starts": 242,
+     "B_c12": 0.405,
+     "C_inner": 0.165
+    },
+    {
+     "racer_id": 4496,
+     "name": "内堀　　　学",
+     "grade": "A1",
+     "branch": "東京",
+     "metric": "A",
+     "value": 0.174,
+     "wilson95": [
+      0.115,
+      0.253
+     ],
+     "k": 20,
+     "n": 115,
+     "venueExp": 0.025,
+     "starts": 260,
+     "B_c12": 0.492,
+     "C_inner": 0.177
+    },
+    {
+     "racer_id": 4238,
+     "name": "毒島　　　誠",
+     "grade": "A1",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.173,
+     "wilson95": [
+      0.111,
+      0.26
+     ],
+     "k": 17,
+     "n": 98,
+     "venueExp": 0.026,
+     "starts": 231,
+     "B_c12": 0.463,
+     "C_inner": 0.19
+    },
+    {
+     "racer_id": 3563,
+     "name": "堤　　　　昇",
+     "grade": "B1",
+     "branch": "静岡",
+     "metric": "A",
+     "value": 0.172,
+     "wilson95": [
+      0.114,
+      0.251
+     ],
+     "k": 20,
+     "n": 116,
+     "venueExp": 0.026,
+     "starts": 231,
+     "B_c12": 0.403,
+     "C_inner": 0.234
+    },
+    {
+     "racer_id": 3415,
+     "name": "松井　　　繁",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.171,
+     "wilson95": [
+      0.113,
+      0.249
+     ],
+     "k": 20,
+     "n": 117,
+     "venueExp": 0.026,
+     "starts": 250,
+     "B_c12": 0.424,
+     "C_inner": 0.164
+    },
+    {
+     "racer_id": 3627,
+     "name": "井上　　恵一",
+     "grade": "A2",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.17,
+     "wilson95": [
+      0.11,
+      0.253
+     ],
+     "k": 18,
+     "n": 106,
+     "venueExp": 0.024,
+     "starts": 218,
+     "B_c12": 0.385,
+     "C_inner": 0.161
+    },
+    {
+     "racer_id": 3703,
+     "name": "鳥飼　　　眞",
+     "grade": "A2",
+     "branch": null,
+     "metric": "A",
+     "value": 0.165,
+     "wilson95": [
+      0.103,
+      0.254
+     ],
+     "k": 15,
+     "n": 91,
+     "venueExp": 0.025,
+     "starts": 211,
+     "B_c12": 0.436,
+     "C_inner": 0.166
+    },
+    {
+     "racer_id": 3612,
+     "name": "馬袋　　義則",
+     "grade": "A1",
+     "branch": "兵庫",
+     "metric": "A",
+     "value": 0.16,
+     "wilson95": [
+      0.107,
+      0.233
+     ],
+     "k": 21,
+     "n": 131,
+     "venueExp": 0.024,
+     "starts": 297,
+     "B_c12": 0.461,
+     "C_inner": 0.158
+    },
+    {
+     "racer_id": 3872,
+     "name": "岡田　　憲行",
+     "grade": "A2",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.159,
+     "wilson95": [
+      0.103,
+      0.238
+     ],
+     "k": 18,
+     "n": 113,
+     "venueExp": 0.027,
+     "starts": 235,
+     "B_c12": 0.417,
+     "C_inner": 0.162
+    },
+    {
+     "racer_id": 3820,
+     "name": "樫葉　　次郎",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.149,
+     "wilson95": [
+      0.074,
+      0.277
+     ],
+     "k": 7,
+     "n": 47,
+     "venueExp": 0.026,
+     "starts": 88,
+     "B_c12": 0.33,
+     "C_inner": 0.114
+    },
+    {
+     "racer_id": 3539,
+     "name": "金子　　順一",
+     "grade": "B1",
+     "branch": "山口",
+     "metric": "A",
+     "value": 0.126,
+     "wilson95": [
+      0.077,
+      0.201
+     ],
+     "k": 14,
+     "n": 111,
+     "venueExp": 0.026,
+     "starts": 227,
+     "B_c12": 0.352,
+     "C_inner": 0.141
+    },
+    {
+     "racer_id": 4532,
+     "name": "秋元　　　哲",
+     "grade": "A1",
+     "branch": "埼玉",
+     "metric": "A",
+     "value": 0.126,
+     "wilson95": [
+      0.078,
+      0.198
+     ],
+     "k": 15,
+     "n": 119,
+     "venueExp": 0.023,
+     "starts": 244,
+     "B_c12": 0.414,
+     "C_inner": 0.119
+    },
+    {
+     "racer_id": 3349,
+     "name": "吉田　　一郎",
+     "grade": "A1",
+     "branch": "長崎",
+     "metric": "A",
+     "value": 0.119,
+     "wilson95": [
+      0.069,
+      0.196
+     ],
+     "k": 12,
+     "n": 101,
+     "venueExp": 0.027,
+     "starts": 236,
+     "B_c12": 0.415,
+     "C_inner": 0.127
+    },
+    {
+     "racer_id": 3721,
+     "name": "守田　　俊介",
+     "grade": "A1",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.116,
+     "wilson95": [
+      0.069,
+      0.189
+     ],
+     "k": 13,
+     "n": 112,
+     "venueExp": 0.024,
+     "starts": 247,
+     "B_c12": 0.401,
+     "C_inner": 0.138
+    },
+    {
+     "racer_id": 4520,
+     "name": "高倉　　孝太",
+     "grade": "A2",
+     "branch": "福井",
+     "metric": "A",
+     "value": 0.116,
+     "wilson95": [
+      0.069,
+      0.189
+     ],
+     "k": 13,
+     "n": 112,
+     "venueExp": 0.024,
+     "starts": 226,
+     "B_c12": 0.327,
+     "C_inner": 0.119
+    },
+    {
+     "racer_id": 4362,
+     "name": "土屋　　智則",
+     "grade": "A1",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.111,
+     "wilson95": [
+      0.061,
+      0.193
+     ],
+     "k": 10,
+     "n": 90,
+     "venueExp": 0.026,
+     "starts": 205,
+     "B_c12": 0.449,
+     "C_inner": 0.137
+    },
+    {
+     "racer_id": 3517,
+     "name": "高橋　　　勲",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "A",
+     "value": 0.109,
+     "wilson95": [
+      0.062,
+      0.185
+     ],
+     "k": 11,
+     "n": 101,
+     "venueExp": 0.022,
+     "starts": 209,
+     "B_c12": 0.325,
+     "C_inner": 0.144
+    },
+    {
+     "racer_id": 3568,
+     "name": "木村　　光宏",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.108,
+     "wilson95": [
+      0.059,
+      0.187
+     ],
+     "k": 10,
+     "n": 93,
+     "venueExp": 0.027,
+     "starts": 200,
+     "B_c12": 0.38,
+     "C_inner": 0.155
+    },
+    {
+     "racer_id": 4189,
+     "name": "川上　　　剛",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.107,
+     "wilson95": [
+      0.064,
+      0.175
+     ],
+     "k": 13,
+     "n": 121,
+     "venueExp": 0.024,
+     "starts": 282,
+     "B_c12": 0.433,
+     "C_inner": 0.11
+    },
+    {
+     "racer_id": 4822,
+     "name": "百武　　　翔",
+     "grade": "A2",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 0.104,
+     "wilson95": [
+      0.061,
+      0.174
+     ],
+     "k": 12,
+     "n": 115,
+     "venueExp": 0.025,
+     "starts": 247,
+     "B_c12": 0.381,
+     "C_inner": 0.093
+    },
+    {
+     "racer_id": 4594,
+     "name": "谷川　　祐一",
+     "grade": "B1",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.103,
+     "wilson95": [
+      0.058,
+      0.175
+     ],
+     "k": 11,
+     "n": 107,
+     "venueExp": 0.024,
+     "starts": 210,
+     "B_c12": 0.333,
+     "C_inner": 0.129
+    },
+    {
+     "racer_id": 4873,
+     "name": "蒲原　　健太",
+     "grade": "B1",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 0.101,
+     "wilson95": [
+      0.06,
+      0.165
+     ],
+     "k": 13,
+     "n": 129,
+     "venueExp": 0.025,
+     "starts": 264,
+     "B_c12": 0.36,
+     "C_inner": 0.106
+    },
+    {
+     "racer_id": 4320,
+     "name": "峰　　　竜太",
+     "grade": "A1",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 0.1,
+     "wilson95": [
+      0.054,
+      0.179
+     ],
+     "k": 9,
+     "n": 90,
+     "venueExp": 0.027,
+     "starts": 216,
+     "B_c12": 0.454,
+     "C_inner": 0.116
+    },
+    {
+     "racer_id": 4174,
+     "name": "赤坂　　俊輔",
+     "grade": "A1",
+     "branch": "長崎",
+     "metric": "A",
+     "value": 0.098,
+     "wilson95": [
+      0.057,
+      0.163
+     ],
+     "k": 12,
+     "n": 123,
+     "venueExp": 0.024,
+     "starts": 283,
+     "B_c12": 0.42,
+     "C_inner": 0.113
+    },
+    {
+     "racer_id": 5139,
+     "name": "大場　　恒季",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.097,
+     "wilson95": [
+      0.054,
+      0.17
+     ],
+     "k": 10,
+     "n": 103,
+     "venueExp": 0.025,
+     "starts": 236,
+     "B_c12": 0.411,
+     "C_inner": 0.093
+    },
+    {
+     "racer_id": 3499,
+     "name": "市川　　哲也",
+     "grade": "A1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.097,
+     "wilson95": [
+      0.054,
+      0.17
+     ],
+     "k": 10,
+     "n": 103,
+     "venueExp": 0.025,
+     "starts": 231,
+     "B_c12": 0.381,
+     "C_inner": 0.104
+    },
+    {
+     "racer_id": 4514,
+     "name": "上條　　嘉嗣",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.096,
+     "wilson95": [
+      0.055,
+      0.165
+     ],
+     "k": 11,
+     "n": 114,
+     "venueExp": 0.024,
+     "starts": 272,
+     "B_c12": 0.43,
+     "C_inner": 0.14
+    },
+    {
+     "racer_id": 4357,
+     "name": "田中　　和也",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.094,
+     "wilson95": [
+      0.055,
+      0.158
+     ],
+     "k": 12,
+     "n": 127,
+     "venueExp": 0.025,
+     "starts": 279,
+     "B_c12": 0.452,
+     "C_inner": 0.147
+    },
+    {
+     "racer_id": 5120,
+     "name": "山本　稔太朗",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.088,
+     "wilson95": [
+      0.043,
+      0.17
+     ],
+     "k": 7,
+     "n": 80,
+     "venueExp": 0.021,
+     "starts": 158,
+     "B_c12": 0.367,
+     "C_inner": 0.089
+    },
+    {
+     "racer_id": 3507,
+     "name": "藤井　　　徹",
+     "grade": "B1",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.086,
+     "wilson95": [
+      0.042,
+      0.168
+     ],
+     "k": 7,
+     "n": 81,
+     "venueExp": 0.023,
+     "starts": 170,
+     "B_c12": 0.353,
+     "C_inner": 0.135
+    },
+    {
+     "racer_id": 4397,
+     "name": "西村　　拓也",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.084,
+     "wilson95": [
+      0.048,
+      0.144
+     ],
+     "k": 11,
+     "n": 131,
+     "venueExp": 0.022,
+     "starts": 274,
+     "B_c12": 0.398,
+     "C_inner": 0.124
+    },
+    {
+     "racer_id": 4049,
+     "name": "荒川　　健太",
+     "grade": "A2",
+     "branch": null,
+     "metric": "A",
+     "value": 0.082,
+     "wilson95": [
+      0.045,
+      0.144
+     ],
+     "k": 10,
+     "n": 122,
+     "venueExp": 0.023,
+     "starts": 275,
+     "B_c12": 0.393,
+     "C_inner": 0.087
+    },
+    {
+     "racer_id": 4151,
+     "name": "下河　　誉史",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.082,
+     "wilson95": [
+      0.044,
+      0.148
+     ],
+     "k": 9,
+     "n": 110,
+     "venueExp": 0.027,
+     "starts": 221,
+     "B_c12": 0.376,
+     "C_inner": 0.14
+    },
+    {
+     "racer_id": 3845,
+     "name": "中谷　　朋子",
+     "grade": "A2",
+     "branch": "兵庫",
+     "metric": "A",
+     "value": 0.081,
+     "wilson95": [
+      0.038,
+      0.166
+     ],
+     "k": 6,
+     "n": 74,
+     "venueExp": 0.027,
+     "starts": 159,
+     "B_c12": 0.377,
+     "C_inner": 0.094
+    },
+    {
+     "racer_id": 5034,
+     "name": "若林　　義人",
+     "grade": "A1",
+     "branch": "静岡",
+     "metric": "A",
+     "value": 0.08,
+     "wilson95": [
+      0.045,
+      0.138
+     ],
+     "k": 11,
+     "n": 137,
+     "venueExp": 0.025,
+     "starts": 301,
+     "B_c12": 0.379,
+     "C_inner": 0.096
+    },
+    {
+     "racer_id": 4888,
+     "name": "金児　　隆太",
+     "grade": "B1",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.08,
+     "wilson95": [
+      0.041,
+      0.15
+     ],
+     "k": 8,
+     "n": 100,
+     "venueExp": 0.027,
+     "starts": 203,
+     "B_c12": 0.345,
+     "C_inner": 0.123
+    },
+    {
+     "racer_id": 3558,
+     "name": "山本　　浩次",
+     "grade": "B1",
+     "branch": "岡山",
+     "metric": "A",
+     "value": 0.08,
+     "wilson95": [
+      0.041,
+      0.15
+     ],
+     "k": 8,
+     "n": 100,
+     "venueExp": 0.024,
+     "starts": 195,
+     "B_c12": 0.344,
+     "C_inner": 0.123
+    },
+    {
+     "racer_id": 4012,
+     "name": "中村　　有裕",
+     "grade": "A2",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.08,
+     "wilson95": [
+      0.041,
+      0.15
+     ],
+     "k": 8,
+     "n": 100,
+     "venueExp": 0.024,
+     "starts": 223,
+     "B_c12": 0.386,
+     "C_inner": 0.112
+    },
+    {
+     "racer_id": 4365,
+     "name": "盛本　　真輔",
+     "grade": "A2",
+     "branch": "兵庫",
+     "metric": "A",
+     "value": 0.08,
+     "wilson95": [
+      0.042,
+      0.144
+     ],
+     "k": 9,
+     "n": 113,
+     "venueExp": 0.026,
+     "starts": 233,
+     "B_c12": 0.373,
+     "C_inner": 0.094
+    },
+    {
+     "racer_id": 4063,
+     "name": "市橋　　卓士",
+     "grade": "A1",
+     "branch": "徳島",
+     "metric": "A",
+     "value": 0.079,
+     "wilson95": [
+      0.043,
+      0.139
+     ],
+     "k": 10,
+     "n": 127,
+     "venueExp": 0.023,
+     "starts": 280,
+     "B_c12": 0.421,
+     "C_inner": 0.132
+    },
+    {
+     "racer_id": 5039,
+     "name": "倉田　　茂将",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.078,
+     "wilson95": [
+      0.04,
+      0.146
+     ],
+     "k": 8,
+     "n": 103,
+     "venueExp": 0.028,
+     "starts": 188,
+     "B_c12": 0.293,
+     "C_inner": 0.112
+    },
+    {
+     "racer_id": 4028,
+     "name": "田村　　隆信",
+     "grade": "A1",
+     "branch": "徳島",
+     "metric": "A",
+     "value": 0.074,
+     "wilson95": [
+      0.038,
+      0.139
+     ],
+     "k": 8,
+     "n": 108,
+     "venueExp": 0.022,
+     "starts": 244,
+     "B_c12": 0.393,
+     "C_inner": 0.07
+    },
+    {
+     "racer_id": 4301,
+     "name": "関　　　裕也",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.071,
+     "wilson95": [
+      0.033,
+      0.147
+     ],
+     "k": 6,
+     "n": 84,
+     "venueExp": 0.023,
+     "starts": 170,
+     "B_c12": 0.341,
+     "C_inner": 0.171
+    },
+    {
+     "racer_id": 5141,
+     "name": "大澤　　風葵",
+     "grade": "A1",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.071,
+     "wilson95": [
+      0.035,
+      0.14
+     ],
+     "k": 7,
+     "n": 98,
+     "venueExp": 0.026,
+     "starts": 212,
+     "B_c12": 0.387,
+     "C_inner": 0.094
+    },
+    {
+     "racer_id": 3576,
+     "name": "白水　　勝也",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.07,
+     "wilson95": [
+      0.036,
+      0.132
+     ],
+     "k": 8,
+     "n": 114,
+     "venueExp": 0.025,
+     "starts": 248,
+     "B_c12": 0.419,
+     "C_inner": 0.137
+    },
+    {
+     "racer_id": 4792,
+     "name": "杉村　　賢也",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "A",
+     "value": 0.069,
+     "wilson95": [
+      0.032,
+      0.142
+     ],
+     "k": 6,
+     "n": 87,
+     "venueExp": 0.024,
+     "starts": 169,
+     "B_c12": 0.331,
+     "C_inner": 0.101
+    }
+   ]
+  },
+  "lower_ge_0.1": {
+   "rule": "Wilson 95% の下限が 0.1 以上",
+   "threshold": 0.1,
+   "racers": [
+    {
+     "racer_id": 3159,
+     "name": "江口　　晃生",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.927,
+      1
+     ],
+     "k": 49,
+     "n": 49,
+     "venueExp": 0.027,
+     "starts": 120,
+     "B_c12": 1,
+     "C_inner": 0.617
+    },
+    {
+     "racer_id": 3623,
+     "name": "深川　　真二",
+     "grade": "A1",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.967,
+      1
+     ],
+     "k": 112,
+     "n": 112,
+     "venueExp": 0.03,
+     "starts": 243,
+     "B_c12": 0.893,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3024,
+     "name": "西島　　義則",
+     "grade": "B2",
+     "branch": "広島",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.949,
+      1
+     ],
+     "k": 72,
+     "n": 72,
+     "venueExp": 0.024,
+     "starts": 149,
+     "B_c12": 0.98,
+     "C_inner": 0.651
+    },
+    {
+     "racer_id": 3265,
+     "name": "今村　　暢孝",
+     "grade": "A2",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.951,
+      1
+     ],
+     "k": 75,
+     "n": 75,
+     "venueExp": 0.027,
+     "starts": 173,
+     "B_c12": 1,
+     "C_inner": 0.601
+    },
+    {
+     "racer_id": 3473,
+     "name": "石川　　真二",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.991,
+     "wilson95": [
+      0.952,
+      0.998
+     ],
+     "k": 114,
+     "n": 115,
+     "venueExp": 0.024,
+     "starts": 267,
+     "B_c12": 0.963,
+     "C_inner": 0.652
+    },
+    {
+     "racer_id": 3072,
+     "name": "西田　　　靖",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.978,
+     "wilson95": [
+      0.923,
+      0.994
+     ],
+     "k": 88,
+     "n": 90,
+     "venueExp": 0.024,
+     "starts": 199,
+     "B_c12": 0.94,
+     "C_inner": 0.673
+    },
+    {
+     "racer_id": 3257,
+     "name": "田頭　　　実",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.953,
+     "wilson95": [
+      0.885,
+      0.982
+     ],
+     "k": 81,
+     "n": 85,
+     "venueExp": 0.027,
+     "starts": 191,
+     "B_c12": 0.927,
+     "C_inner": 0.586
+    },
+    {
+     "racer_id": 4874,
+     "name": "池田　奈津美",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.939,
+     "wilson95": [
+      0.865,
+      0.974
+     ],
+     "k": 77,
+     "n": 82,
+     "venueExp": 0.025,
+     "starts": 179,
+     "B_c12": 0.704,
+     "C_inner": 0.469
+    },
+    {
+     "racer_id": 3574,
+     "name": "大神　　康司",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.937,
+     "wilson95": [
+      0.876,
+      0.969
+     ],
+     "k": 104,
+     "n": 111,
+     "venueExp": 0.027,
+     "starts": 245,
+     "B_c12": 0.735,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3542,
+     "name": "清水　　紀克",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.9,
+     "wilson95": [
+      0.821,
+      0.946
+     ],
+     "k": 81,
+     "n": 90,
+     "venueExp": 0.025,
+     "starts": 189,
+     "B_c12": 0.82,
+     "C_inner": 0.614
+    },
+    {
+     "racer_id": 3933,
+     "name": "山地　　正樹",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.845,
+     "wilson95": [
+      0.76,
+      0.904
+     ],
+     "k": 82,
+     "n": 97,
+     "venueExp": 0.024,
+     "starts": 223,
+     "B_c12": 0.57,
+     "C_inner": 0.39
+    },
+    {
+     "racer_id": 3582,
+     "name": "吉川　　昭男",
+     "grade": "A2",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.738,
+     "wilson95": [
+      0.648,
+      0.812
+     ],
+     "k": 79,
+     "n": 107,
+     "venueExp": 0.024,
+     "starts": 247,
+     "B_c12": 0.538,
+     "C_inner": 0.385
+    },
+    {
+     "racer_id": 3946,
+     "name": "赤岩　　善生",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.694,
+     "wilson95": [
+      0.607,
+      0.769
+     ],
+     "k": 84,
+     "n": 121,
+     "venueExp": 0.027,
+     "starts": 262,
+     "B_c12": 0.683,
+     "C_inner": 0.431
+    },
+    {
+     "racer_id": 3362,
+     "name": "間嶋　　仁志",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "A",
+     "value": 0.653,
+     "wilson95": [
+      0.553,
+      0.741
+     ],
+     "k": 62,
+     "n": 95,
+     "venueExp": 0.027,
+     "starts": 203,
+     "B_c12": 0.611,
+     "C_inner": 0.36
+    },
+    {
+     "racer_id": 3532,
+     "name": "柴田　　　光",
+     "grade": "B2",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.636,
+     "wilson95": [
+      0.516,
+      0.742
+     ],
+     "k": 42,
+     "n": 66,
+     "venueExp": 0.031,
+     "starts": 143,
+     "B_c12": 0.573,
+     "C_inner": 0.315
+    },
+    {
+     "racer_id": 3920,
+     "name": "正木　　聖賢",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.59,
+     "wilson95": [
+      0.483,
+      0.69
+     ],
+     "k": 49,
+     "n": 83,
+     "venueExp": 0.027,
+     "starts": 178,
+     "B_c12": 0.528,
+     "C_inner": 0.309
+    },
+    {
+     "racer_id": 3849,
+     "name": "中岡　　正彦",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.547,
+     "wilson95": [
+      0.426,
+      0.663
+     ],
+     "k": 35,
+     "n": 64,
+     "venueExp": 0.026,
+     "starts": 140,
+     "B_c12": 0.579,
+     "C_inner": 0.329
+    },
+    {
+     "racer_id": 3297,
+     "name": "藤丸　　光一",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.506,
+     "wilson95": [
+      0.404,
+      0.607
+     ],
+     "k": 45,
+     "n": 89,
+     "venueExp": 0.025,
+     "starts": 194,
+     "B_c12": 0.505,
+     "C_inner": 0.304
+    },
+    {
+     "racer_id": 3070,
+     "name": "山室　　展弘",
+     "grade": "B1",
+     "branch": "岡山",
+     "metric": "A",
+     "value": 0.5,
+     "wilson95": [
+      0.361,
+      0.639
+     ],
+     "k": 23,
+     "n": 46,
+     "venueExp": 0.028,
+     "starts": 103,
+     "B_c12": 0.515,
+     "C_inner": 0.291
+    },
+    {
+     "racer_id": 4199,
+     "name": "北川　　潤二",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.482,
+     "wilson95": [
+      0.4,
+      0.565
+     ],
+     "k": 66,
+     "n": 137,
+     "venueExp": 0.027,
+     "starts": 313,
+     "B_c12": 0.508,
+     "C_inner": 0.304
+    },
+    {
+     "racer_id": 3687,
+     "name": "花田　　和明",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.345,
+     "wilson95": [
+      0.252,
+      0.452
+     ],
+     "k": 29,
+     "n": 84,
+     "venueExp": 0.025,
+     "starts": 186,
+     "B_c12": 0.457,
+     "C_inner": 0.269
+    },
+    {
+     "racer_id": 3743,
+     "name": "林　　　美憲",
+     "grade": "A1",
+     "branch": "徳島",
+     "metric": "A",
+     "value": 0.333,
+     "wilson95": [
+      0.253,
+      0.424
+     ],
+     "k": 38,
+     "n": 114,
+     "venueExp": 0.025,
+     "starts": 252,
+     "B_c12": 0.472,
+     "C_inner": 0.242
+    },
+    {
+     "racer_id": 4324,
+     "name": "海野　康志郎",
+     "grade": "A1",
+     "branch": "山口",
+     "metric": "A",
+     "value": 0.304,
+     "wilson95": [
+      0.234,
+      0.386
+     ],
+     "k": 42,
+     "n": 138,
+     "venueExp": 0.024,
+     "starts": 293,
+     "B_c12": 0.498,
+     "C_inner": 0.225
+    },
+    {
+     "racer_id": 4302,
+     "name": "西野　　翔太",
+     "grade": "A1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.296,
+     "wilson95": [
+      0.22,
+      0.385
+     ],
+     "k": 34,
+     "n": 115,
+     "venueExp": 0.026,
+     "starts": 273,
+     "B_c12": 0.465,
+     "C_inner": 0.209
+    },
+    {
+     "racer_id": 3554,
+     "name": "仲口　　博崇",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.293,
+     "wilson95": [
+      0.223,
+      0.376
+     ],
+     "k": 39,
+     "n": 133,
+     "venueExp": 0.027,
+     "starts": 299,
+     "B_c12": 0.438,
+     "C_inner": 0.284
+    },
+    {
+     "racer_id": 3156,
+     "name": "金子　　良昭",
+     "grade": "B1",
+     "branch": "静岡",
+     "metric": "A",
+     "value": 0.269,
+     "wilson95": [
+      0.183,
+      0.377
+     ],
+     "k": 21,
+     "n": 78,
+     "venueExp": 0.025,
+     "starts": 165,
+     "B_c12": 0.412,
+     "C_inner": 0.2
+    },
+    {
+     "racer_id": 3327,
+     "name": "野長瀬　正孝",
+     "grade": "A2",
+     "branch": "静岡",
+     "metric": "A",
+     "value": 0.266,
+     "wilson95": [
+      0.192,
+      0.356
+     ],
+     "k": 29,
+     "n": 109,
+     "venueExp": 0.026,
+     "starts": 238,
+     "B_c12": 0.408,
+     "C_inner": 0.223
+    },
+    {
+     "racer_id": 3161,
+     "name": "古場　　輝義",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.258,
+     "wilson95": [
+      0.179,
+      0.358
+     ],
+     "k": 23,
+     "n": 89,
+     "venueExp": 0.026,
+     "starts": 187,
+     "B_c12": 0.38,
+     "C_inner": 0.23
+    },
+    {
+     "racer_id": 4561,
+     "name": "藤山　　翔大",
+     "grade": "A2",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.238,
+     "wilson95": [
+      0.167,
+      0.328
+     ],
+     "k": 25,
+     "n": 105,
+     "venueExp": 0.025,
+     "starts": 197,
+     "B_c12": 0.386,
+     "C_inner": 0.198
+    },
+    {
+     "racer_id": 3268,
+     "name": "森　　　竜也",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.229,
+     "wilson95": [
+      0.159,
+      0.318
+     ],
+     "k": 24,
+     "n": 105,
+     "venueExp": 0.024,
+     "starts": 215,
+     "B_c12": 0.372,
+     "C_inner": 0.186
+    },
+    {
+     "racer_id": 3731,
+     "name": "高濱　　芳久",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.215,
+     "wilson95": [
+      0.144,
+      0.309
+     ],
+     "k": 20,
+     "n": 93,
+     "venueExp": 0.025,
+     "starts": 201,
+     "B_c12": 0.413,
+     "C_inner": 0.194
+    },
+    {
+     "racer_id": 4218,
+     "name": "吉川　　喜継",
+     "grade": "A1",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.209,
+     "wilson95": [
+      0.144,
+      0.292
+     ],
+     "k": 24,
+     "n": 115,
+     "venueExp": 0.025,
+     "starts": 256,
+     "B_c12": 0.43,
+     "C_inner": 0.203
+    },
+    {
+     "racer_id": 3212,
+     "name": "亀本　　勇樹",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.195,
+     "wilson95": [
+      0.126,
+      0.291
+     ],
+     "k": 17,
+     "n": 87,
+     "venueExp": 0.025,
+     "starts": 176,
+     "B_c12": 0.386,
+     "C_inner": 0.182
+    },
+    {
+     "racer_id": 4778,
+     "name": "堤　　　啓輔",
+     "grade": "B1",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 0.193,
+     "wilson95": [
+      0.122,
+      0.29
+     ],
+     "k": 16,
+     "n": 83,
+     "venueExp": 0.027,
+     "starts": 164,
+     "B_c12": 0.36,
+     "C_inner": 0.238
+    },
+    {
+     "racer_id": 4370,
+     "name": "山口　　達也",
+     "grade": "A1",
+     "branch": "岡山",
+     "metric": "A",
+     "value": 0.189,
+     "wilson95": [
+      0.126,
+      0.274
+     ],
+     "k": 20,
+     "n": 106,
+     "venueExp": 0.025,
+     "starts": 232,
+     "B_c12": 0.427,
+     "C_inner": 0.159
+    },
+    {
+     "racer_id": 4168,
+     "name": "石野　　貴之",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.175,
+     "wilson95": [
+      0.117,
+      0.256
+     ],
+     "k": 20,
+     "n": 114,
+     "venueExp": 0.027,
+     "starts": 242,
+     "B_c12": 0.405,
+     "C_inner": 0.165
+    },
+    {
+     "racer_id": 4496,
+     "name": "内堀　　　学",
+     "grade": "A1",
+     "branch": "東京",
+     "metric": "A",
+     "value": 0.174,
+     "wilson95": [
+      0.115,
+      0.253
+     ],
+     "k": 20,
+     "n": 115,
+     "venueExp": 0.025,
+     "starts": 260,
+     "B_c12": 0.492,
+     "C_inner": 0.177
+    },
+    {
+     "racer_id": 4238,
+     "name": "毒島　　　誠",
+     "grade": "A1",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.173,
+     "wilson95": [
+      0.111,
+      0.26
+     ],
+     "k": 17,
+     "n": 98,
+     "venueExp": 0.026,
+     "starts": 231,
+     "B_c12": 0.463,
+     "C_inner": 0.19
+    },
+    {
+     "racer_id": 3563,
+     "name": "堤　　　　昇",
+     "grade": "B1",
+     "branch": "静岡",
+     "metric": "A",
+     "value": 0.172,
+     "wilson95": [
+      0.114,
+      0.251
+     ],
+     "k": 20,
+     "n": 116,
+     "venueExp": 0.026,
+     "starts": 231,
+     "B_c12": 0.403,
+     "C_inner": 0.234
+    },
+    {
+     "racer_id": 3415,
+     "name": "松井　　　繁",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.171,
+     "wilson95": [
+      0.113,
+      0.249
+     ],
+     "k": 20,
+     "n": 117,
+     "venueExp": 0.026,
+     "starts": 250,
+     "B_c12": 0.424,
+     "C_inner": 0.164
+    },
+    {
+     "racer_id": 3627,
+     "name": "井上　　恵一",
+     "grade": "A2",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.17,
+     "wilson95": [
+      0.11,
+      0.253
+     ],
+     "k": 18,
+     "n": 106,
+     "venueExp": 0.024,
+     "starts": 218,
+     "B_c12": 0.385,
+     "C_inner": 0.161
+    },
+    {
+     "racer_id": 3703,
+     "name": "鳥飼　　　眞",
+     "grade": "A2",
+     "branch": null,
+     "metric": "A",
+     "value": 0.165,
+     "wilson95": [
+      0.103,
+      0.254
+     ],
+     "k": 15,
+     "n": 91,
+     "venueExp": 0.025,
+     "starts": 211,
+     "B_c12": 0.436,
+     "C_inner": 0.166
+    },
+    {
+     "racer_id": 3612,
+     "name": "馬袋　　義則",
+     "grade": "A1",
+     "branch": "兵庫",
+     "metric": "A",
+     "value": 0.16,
+     "wilson95": [
+      0.107,
+      0.233
+     ],
+     "k": 21,
+     "n": 131,
+     "venueExp": 0.024,
+     "starts": 297,
+     "B_c12": 0.461,
+     "C_inner": 0.158
+    },
+    {
+     "racer_id": 3872,
+     "name": "岡田　　憲行",
+     "grade": "A2",
+     "branch": "大阪",
+     "metric": "A",
+     "value": 0.159,
+     "wilson95": [
+      0.103,
+      0.238
+     ],
+     "k": 18,
+     "n": 113,
+     "venueExp": 0.027,
+     "starts": 235,
+     "B_c12": 0.417,
+     "C_inner": 0.162
+    }
+   ]
+  },
+  "lower_ge_0.2": {
+   "rule": "Wilson 95% の下限が 0.2 以上",
+   "threshold": 0.2,
+   "racers": [
+    {
+     "racer_id": 3159,
+     "name": "江口　　晃生",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.927,
+      1
+     ],
+     "k": 49,
+     "n": 49,
+     "venueExp": 0.027,
+     "starts": 120,
+     "B_c12": 1,
+     "C_inner": 0.617
+    },
+    {
+     "racer_id": 3623,
+     "name": "深川　　真二",
+     "grade": "A1",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.967,
+      1
+     ],
+     "k": 112,
+     "n": 112,
+     "venueExp": 0.03,
+     "starts": 243,
+     "B_c12": 0.893,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3024,
+     "name": "西島　　義則",
+     "grade": "B2",
+     "branch": "広島",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.949,
+      1
+     ],
+     "k": 72,
+     "n": 72,
+     "venueExp": 0.024,
+     "starts": 149,
+     "B_c12": 0.98,
+     "C_inner": 0.651
+    },
+    {
+     "racer_id": 3265,
+     "name": "今村　　暢孝",
+     "grade": "A2",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.951,
+      1
+     ],
+     "k": 75,
+     "n": 75,
+     "venueExp": 0.027,
+     "starts": 173,
+     "B_c12": 1,
+     "C_inner": 0.601
+    },
+    {
+     "racer_id": 3473,
+     "name": "石川　　真二",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.991,
+     "wilson95": [
+      0.952,
+      0.998
+     ],
+     "k": 114,
+     "n": 115,
+     "venueExp": 0.024,
+     "starts": 267,
+     "B_c12": 0.963,
+     "C_inner": 0.652
+    },
+    {
+     "racer_id": 3072,
+     "name": "西田　　　靖",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.978,
+     "wilson95": [
+      0.923,
+      0.994
+     ],
+     "k": 88,
+     "n": 90,
+     "venueExp": 0.024,
+     "starts": 199,
+     "B_c12": 0.94,
+     "C_inner": 0.673
+    },
+    {
+     "racer_id": 3257,
+     "name": "田頭　　　実",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.953,
+     "wilson95": [
+      0.885,
+      0.982
+     ],
+     "k": 81,
+     "n": 85,
+     "venueExp": 0.027,
+     "starts": 191,
+     "B_c12": 0.927,
+     "C_inner": 0.586
+    },
+    {
+     "racer_id": 4874,
+     "name": "池田　奈津美",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.939,
+     "wilson95": [
+      0.865,
+      0.974
+     ],
+     "k": 77,
+     "n": 82,
+     "venueExp": 0.025,
+     "starts": 179,
+     "B_c12": 0.704,
+     "C_inner": 0.469
+    },
+    {
+     "racer_id": 3574,
+     "name": "大神　　康司",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.937,
+     "wilson95": [
+      0.876,
+      0.969
+     ],
+     "k": 104,
+     "n": 111,
+     "venueExp": 0.027,
+     "starts": 245,
+     "B_c12": 0.735,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3542,
+     "name": "清水　　紀克",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.9,
+     "wilson95": [
+      0.821,
+      0.946
+     ],
+     "k": 81,
+     "n": 90,
+     "venueExp": 0.025,
+     "starts": 189,
+     "B_c12": 0.82,
+     "C_inner": 0.614
+    },
+    {
+     "racer_id": 3933,
+     "name": "山地　　正樹",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.845,
+     "wilson95": [
+      0.76,
+      0.904
+     ],
+     "k": 82,
+     "n": 97,
+     "venueExp": 0.024,
+     "starts": 223,
+     "B_c12": 0.57,
+     "C_inner": 0.39
+    },
+    {
+     "racer_id": 3582,
+     "name": "吉川　　昭男",
+     "grade": "A2",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.738,
+     "wilson95": [
+      0.648,
+      0.812
+     ],
+     "k": 79,
+     "n": 107,
+     "venueExp": 0.024,
+     "starts": 247,
+     "B_c12": 0.538,
+     "C_inner": 0.385
+    },
+    {
+     "racer_id": 3946,
+     "name": "赤岩　　善生",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.694,
+     "wilson95": [
+      0.607,
+      0.769
+     ],
+     "k": 84,
+     "n": 121,
+     "venueExp": 0.027,
+     "starts": 262,
+     "B_c12": 0.683,
+     "C_inner": 0.431
+    },
+    {
+     "racer_id": 3362,
+     "name": "間嶋　　仁志",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "A",
+     "value": 0.653,
+     "wilson95": [
+      0.553,
+      0.741
+     ],
+     "k": 62,
+     "n": 95,
+     "venueExp": 0.027,
+     "starts": 203,
+     "B_c12": 0.611,
+     "C_inner": 0.36
+    },
+    {
+     "racer_id": 3532,
+     "name": "柴田　　　光",
+     "grade": "B2",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.636,
+     "wilson95": [
+      0.516,
+      0.742
+     ],
+     "k": 42,
+     "n": 66,
+     "venueExp": 0.031,
+     "starts": 143,
+     "B_c12": 0.573,
+     "C_inner": 0.315
+    },
+    {
+     "racer_id": 3920,
+     "name": "正木　　聖賢",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.59,
+     "wilson95": [
+      0.483,
+      0.69
+     ],
+     "k": 49,
+     "n": 83,
+     "venueExp": 0.027,
+     "starts": 178,
+     "B_c12": 0.528,
+     "C_inner": 0.309
+    },
+    {
+     "racer_id": 3849,
+     "name": "中岡　　正彦",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.547,
+     "wilson95": [
+      0.426,
+      0.663
+     ],
+     "k": 35,
+     "n": 64,
+     "venueExp": 0.026,
+     "starts": 140,
+     "B_c12": 0.579,
+     "C_inner": 0.329
+    },
+    {
+     "racer_id": 3297,
+     "name": "藤丸　　光一",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.506,
+     "wilson95": [
+      0.404,
+      0.607
+     ],
+     "k": 45,
+     "n": 89,
+     "venueExp": 0.025,
+     "starts": 194,
+     "B_c12": 0.505,
+     "C_inner": 0.304
+    },
+    {
+     "racer_id": 3070,
+     "name": "山室　　展弘",
+     "grade": "B1",
+     "branch": "岡山",
+     "metric": "A",
+     "value": 0.5,
+     "wilson95": [
+      0.361,
+      0.639
+     ],
+     "k": 23,
+     "n": 46,
+     "venueExp": 0.028,
+     "starts": 103,
+     "B_c12": 0.515,
+     "C_inner": 0.291
+    },
+    {
+     "racer_id": 4199,
+     "name": "北川　　潤二",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.482,
+     "wilson95": [
+      0.4,
+      0.565
+     ],
+     "k": 66,
+     "n": 137,
+     "venueExp": 0.027,
+     "starts": 313,
+     "B_c12": 0.508,
+     "C_inner": 0.304
+    },
+    {
+     "racer_id": 3687,
+     "name": "花田　　和明",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.345,
+     "wilson95": [
+      0.252,
+      0.452
+     ],
+     "k": 29,
+     "n": 84,
+     "venueExp": 0.025,
+     "starts": 186,
+     "B_c12": 0.457,
+     "C_inner": 0.269
+    },
+    {
+     "racer_id": 3743,
+     "name": "林　　　美憲",
+     "grade": "A1",
+     "branch": "徳島",
+     "metric": "A",
+     "value": 0.333,
+     "wilson95": [
+      0.253,
+      0.424
+     ],
+     "k": 38,
+     "n": 114,
+     "venueExp": 0.025,
+     "starts": 252,
+     "B_c12": 0.472,
+     "C_inner": 0.242
+    },
+    {
+     "racer_id": 4324,
+     "name": "海野　康志郎",
+     "grade": "A1",
+     "branch": "山口",
+     "metric": "A",
+     "value": 0.304,
+     "wilson95": [
+      0.234,
+      0.386
+     ],
+     "k": 42,
+     "n": 138,
+     "venueExp": 0.024,
+     "starts": 293,
+     "B_c12": 0.498,
+     "C_inner": 0.225
+    },
+    {
+     "racer_id": 4302,
+     "name": "西野　　翔太",
+     "grade": "A1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.296,
+     "wilson95": [
+      0.22,
+      0.385
+     ],
+     "k": 34,
+     "n": 115,
+     "venueExp": 0.026,
+     "starts": 273,
+     "B_c12": 0.465,
+     "C_inner": 0.209
+    },
+    {
+     "racer_id": 3554,
+     "name": "仲口　　博崇",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.293,
+     "wilson95": [
+      0.223,
+      0.376
+     ],
+     "k": 39,
+     "n": 133,
+     "venueExp": 0.027,
+     "starts": 299,
+     "B_c12": 0.438,
+     "C_inner": 0.284
+    }
+   ]
+  },
+  "lower_ge_0.3": {
+   "rule": "Wilson 95% の下限が 0.3 以上",
+   "threshold": 0.3,
+   "racers": [
+    {
+     "racer_id": 3159,
+     "name": "江口　　晃生",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.927,
+      1
+     ],
+     "k": 49,
+     "n": 49,
+     "venueExp": 0.027,
+     "starts": 120,
+     "B_c12": 1,
+     "C_inner": 0.617
+    },
+    {
+     "racer_id": 3623,
+     "name": "深川　　真二",
+     "grade": "A1",
+     "branch": "佐賀",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.967,
+      1
+     ],
+     "k": 112,
+     "n": 112,
+     "venueExp": 0.03,
+     "starts": 243,
+     "B_c12": 0.893,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3024,
+     "name": "西島　　義則",
+     "grade": "B2",
+     "branch": "広島",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.949,
+      1
+     ],
+     "k": 72,
+     "n": 72,
+     "venueExp": 0.024,
+     "starts": 149,
+     "B_c12": 0.98,
+     "C_inner": 0.651
+    },
+    {
+     "racer_id": 3265,
+     "name": "今村　　暢孝",
+     "grade": "A2",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 1,
+     "wilson95": [
+      0.951,
+      1
+     ],
+     "k": 75,
+     "n": 75,
+     "venueExp": 0.027,
+     "starts": 173,
+     "B_c12": 1,
+     "C_inner": 0.601
+    },
+    {
+     "racer_id": 3473,
+     "name": "石川　　真二",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.991,
+     "wilson95": [
+      0.952,
+      0.998
+     ],
+     "k": 114,
+     "n": 115,
+     "venueExp": 0.024,
+     "starts": 267,
+     "B_c12": 0.963,
+     "C_inner": 0.652
+    },
+    {
+     "racer_id": 3072,
+     "name": "西田　　　靖",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.978,
+     "wilson95": [
+      0.923,
+      0.994
+     ],
+     "k": 88,
+     "n": 90,
+     "venueExp": 0.024,
+     "starts": 199,
+     "B_c12": 0.94,
+     "C_inner": 0.673
+    },
+    {
+     "racer_id": 3257,
+     "name": "田頭　　　実",
+     "grade": "A1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.953,
+     "wilson95": [
+      0.885,
+      0.982
+     ],
+     "k": 81,
+     "n": 85,
+     "venueExp": 0.027,
+     "starts": 191,
+     "B_c12": 0.927,
+     "C_inner": 0.586
+    },
+    {
+     "racer_id": 4874,
+     "name": "池田　奈津美",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.939,
+     "wilson95": [
+      0.865,
+      0.974
+     ],
+     "k": 77,
+     "n": 82,
+     "venueExp": 0.025,
+     "starts": 179,
+     "B_c12": 0.704,
+     "C_inner": 0.469
+    },
+    {
+     "racer_id": 3574,
+     "name": "大神　　康司",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.937,
+     "wilson95": [
+      0.876,
+      0.969
+     ],
+     "k": 104,
+     "n": 111,
+     "venueExp": 0.027,
+     "starts": 245,
+     "B_c12": 0.735,
+     "C_inner": 0.473
+    },
+    {
+     "racer_id": 3542,
+     "name": "清水　　紀克",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.9,
+     "wilson95": [
+      0.821,
+      0.946
+     ],
+     "k": 81,
+     "n": 90,
+     "venueExp": 0.025,
+     "starts": 189,
+     "B_c12": 0.82,
+     "C_inner": 0.614
+    },
+    {
+     "racer_id": 3933,
+     "name": "山地　　正樹",
+     "grade": "B1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.845,
+     "wilson95": [
+      0.76,
+      0.904
+     ],
+     "k": 82,
+     "n": 97,
+     "venueExp": 0.024,
+     "starts": 223,
+     "B_c12": 0.57,
+     "C_inner": 0.39
+    },
+    {
+     "racer_id": 3582,
+     "name": "吉川　　昭男",
+     "grade": "A2",
+     "branch": "滋賀",
+     "metric": "A",
+     "value": 0.738,
+     "wilson95": [
+      0.648,
+      0.812
+     ],
+     "k": 79,
+     "n": 107,
+     "venueExp": 0.024,
+     "starts": 247,
+     "B_c12": 0.538,
+     "C_inner": 0.385
+    },
+    {
+     "racer_id": 3946,
+     "name": "赤岩　　善生",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.694,
+     "wilson95": [
+      0.607,
+      0.769
+     ],
+     "k": 84,
+     "n": 121,
+     "venueExp": 0.027,
+     "starts": 262,
+     "B_c12": 0.683,
+     "C_inner": 0.431
+    },
+    {
+     "racer_id": 3362,
+     "name": "間嶋　　仁志",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "A",
+     "value": 0.653,
+     "wilson95": [
+      0.553,
+      0.741
+     ],
+     "k": 62,
+     "n": 95,
+     "venueExp": 0.027,
+     "starts": 203,
+     "B_c12": 0.611,
+     "C_inner": 0.36
+    },
+    {
+     "racer_id": 3532,
+     "name": "柴田　　　光",
+     "grade": "B2",
+     "branch": "群馬",
+     "metric": "A",
+     "value": 0.636,
+     "wilson95": [
+      0.516,
+      0.742
+     ],
+     "k": 42,
+     "n": 66,
+     "venueExp": 0.031,
+     "starts": 143,
+     "B_c12": 0.573,
+     "C_inner": 0.315
+    },
+    {
+     "racer_id": 3920,
+     "name": "正木　　聖賢",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "A",
+     "value": 0.59,
+     "wilson95": [
+      0.483,
+      0.69
+     ],
+     "k": 49,
+     "n": 83,
+     "venueExp": 0.027,
+     "starts": 178,
+     "B_c12": 0.528,
+     "C_inner": 0.309
+    },
+    {
+     "racer_id": 3849,
+     "name": "中岡　　正彦",
+     "grade": "A1",
+     "branch": null,
+     "metric": "A",
+     "value": 0.547,
+     "wilson95": [
+      0.426,
+      0.663
+     ],
+     "k": 35,
+     "n": 64,
+     "venueExp": 0.026,
+     "starts": 140,
+     "B_c12": 0.579,
+     "C_inner": 0.329
+    },
+    {
+     "racer_id": 3297,
+     "name": "藤丸　　光一",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "A",
+     "value": 0.506,
+     "wilson95": [
+      0.404,
+      0.607
+     ],
+     "k": 45,
+     "n": 89,
+     "venueExp": 0.025,
+     "starts": 194,
+     "B_c12": 0.505,
+     "C_inner": 0.304
+    },
+    {
+     "racer_id": 3070,
+     "name": "山室　　展弘",
+     "grade": "B1",
+     "branch": "岡山",
+     "metric": "A",
+     "value": 0.5,
+     "wilson95": [
+      0.361,
+      0.639
+     ],
+     "k": 23,
+     "n": 46,
+     "venueExp": 0.028,
+     "starts": 103,
+     "B_c12": 0.515,
+     "C_inner": 0.291
+    },
+    {
+     "racer_id": 4199,
+     "name": "北川　　潤二",
+     "grade": "A1",
+     "branch": "愛知",
+     "metric": "A",
+     "value": 0.482,
+     "wilson95": [
+      0.4,
+      0.565
+     ],
+     "k": 66,
+     "n": 137,
+     "venueExp": 0.027,
+     "starts": 313,
+     "B_c12": 0.508,
+     "C_inner": 0.304
+    }
+   ]
+  }
+ },
+ "out": {
+  "top1pct": {
+   "rule": "上位1%（15人目の値 0.111 以上）",
+   "threshold": 0.111,
+   "racers": [
+    {
+     "racer_id": 5295,
+     "name": "田上　　　凜",
+     "grade": "B1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.429,
+     "wilson95": [
+      0.314,
+      0.551
+     ],
+     "k": 27,
+     "n": 63,
+     "venueExp": 0.021,
+     "starts": 144,
+     "c6_share": 0.382,
+     "outer": 0.365
+    },
+    {
+     "racer_id": 5048,
+     "name": "眞鳥　　康太",
+     "grade": "B1",
+     "branch": "長崎",
+     "metric": "O",
+     "value": 0.326,
+     "wilson95": [
+      0.236,
+      0.43
+     ],
+     "k": 28,
+     "n": 86,
+     "venueExp": 0.021,
+     "starts": 186,
+     "c6_share": 0.414,
+     "outer": 0.43
+    },
+    {
+     "racer_id": 4619,
+     "name": "伏田　　裕隆",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.287,
+     "wilson95": [
+      0.206,
+      0.386
+     ],
+     "k": 27,
+     "n": 94,
+     "venueExp": 0.02,
+     "starts": 207,
+     "c6_share": 0.343,
+     "outer": 0.308
+    },
+    {
+     "racer_id": 4538,
+     "name": "笠置　　博之",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.277,
+     "wilson95": [
+      0.202,
+      0.366
+     ],
+     "k": 31,
+     "n": 112,
+     "venueExp": 0.025,
+     "starts": 209,
+     "c6_share": 0.215,
+     "outer": 0.333
+    },
+    {
+     "racer_id": 3857,
+     "name": "阿波　　勝哉",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.228,
+     "wilson95": [
+      0.161,
+      0.313
+     ],
+     "k": 26,
+     "n": 114,
+     "venueExp": 0.019,
+     "starts": 233,
+     "c6_share": 0.326,
+     "outer": 0.318
+    },
+    {
+     "racer_id": 4683,
+     "name": "向井田　直弥",
+     "grade": "B2",
+     "branch": "広島",
+     "metric": "O",
+     "value": 0.194,
+     "wilson95": [
+      0.098,
+      0.35
+     ],
+     "k": 7,
+     "n": 36,
+     "venueExp": 0.021,
+     "starts": 117,
+     "c6_share": 0.342,
+     "outer": 0.242
+    },
+    {
+     "racer_id": 4571,
+     "name": "菅　　　章哉",
+     "grade": "A1",
+     "branch": "徳島",
+     "metric": "O",
+     "value": 0.16,
+     "wilson95": [
+      0.103,
+      0.242
+     ],
+     "k": 17,
+     "n": 106,
+     "venueExp": 0.022,
+     "starts": 212,
+     "c6_share": 0.321,
+     "outer": 0.279
+    },
+    {
+     "racer_id": 5341,
+     "name": "山道　　諄也",
+     "grade": "B1",
+     "branch": "群馬",
+     "metric": "O",
+     "value": 0.146,
+     "wilson95": [
+      0.069,
+      0.284
+     ],
+     "k": 6,
+     "n": 41,
+     "venueExp": 0.024,
+     "starts": 147,
+     "c6_share": 0.299,
+     "outer": 0.144
+    },
+    {
+     "racer_id": 4213,
+     "name": "重富　　伸也",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.135,
+     "wilson95": [
+      0.075,
+      0.231
+     ],
+     "k": 10,
+     "n": 74,
+     "venueExp": 0.021,
+     "starts": 180,
+     "c6_share": 0.339,
+     "outer": 0.254
+    },
+    {
+     "racer_id": 5304,
+     "name": "井田　　涼介",
+     "grade": "B2",
+     "branch": null,
+     "metric": "O",
+     "value": 0.119,
+     "wilson95": [
+      0.052,
+      0.25
+     ],
+     "k": 5,
+     "n": 42,
+     "venueExp": 0.022,
+     "starts": 102,
+     "c6_share": 0.255,
+     "outer": 0.229
+    },
+    {
+     "racer_id": 4723,
+     "name": "寺島　　吉彦",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.118,
+     "wilson95": [
+      0.064,
+      0.21
+     ],
+     "k": 9,
+     "n": 76,
+     "venueExp": 0.015,
+     "starts": 168,
+     "c6_share": 0.321,
+     "outer": 0.241
+    },
+    {
+     "racer_id": 4277,
+     "name": "金田　　大輔",
+     "grade": "B1",
+     "branch": "岡山",
+     "metric": "O",
+     "value": 0.116,
+     "wilson95": [
+      0.066,
+      0.196
+     ],
+     "k": 11,
+     "n": 95,
+     "venueExp": 0.021,
+     "starts": 182,
+     "c6_share": 0.17,
+     "outer": 0.117
+    },
+    {
+     "racer_id": 5357,
+     "name": "田中　瀬里奈",
+     "grade": "B2",
+     "branch": "埼玉",
+     "metric": "O",
+     "value": 0.113,
+     "wilson95": [
+      0.056,
+      0.215
+     ],
+     "k": 7,
+     "n": 62,
+     "venueExp": 0.022,
+     "starts": 158,
+     "c6_share": 0.342,
+     "outer": 0.218
+    },
+    {
+     "racer_id": 5128,
+     "name": "坪井　　爽佑",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "O",
+     "value": 0.113,
+     "wilson95": [
+      0.058,
+      0.207
+     ],
+     "k": 8,
+     "n": 71,
+     "venueExp": 0.023,
+     "starts": 150,
+     "c6_share": 0.227,
+     "outer": 0.146
+    },
+    {
+     "racer_id": 3353,
+     "name": "前田　　光昭",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.111,
+     "wilson95": [
+      0.052,
+      0.222
+     ],
+     "k": 6,
+     "n": 54,
+     "venueExp": 0.025,
+     "starts": 117,
+     "c6_share": 0.179,
+     "outer": 0.143
+    },
+    {
+     "racer_id": 4692,
+     "name": "酒井　　俊弘",
+     "grade": "B1",
+     "branch": "福井",
+     "metric": "O",
+     "value": 0.111,
+     "wilson95": [
+      0.063,
+      0.188
+     ],
+     "k": 11,
+     "n": 99,
+     "venueExp": 0.02,
+     "starts": 196,
+     "c6_share": 0.219,
+     "outer": 0.22
+    }
+   ]
+  },
+  "top2pct": {
+   "rule": "上位2%（30人目の値 0.083 以上）",
+   "threshold": 0.083,
+   "racers": [
+    {
+     "racer_id": 5295,
+     "name": "田上　　　凜",
+     "grade": "B1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.429,
+     "wilson95": [
+      0.314,
+      0.551
+     ],
+     "k": 27,
+     "n": 63,
+     "venueExp": 0.021,
+     "starts": 144,
+     "c6_share": 0.382,
+     "outer": 0.365
+    },
+    {
+     "racer_id": 5048,
+     "name": "眞鳥　　康太",
+     "grade": "B1",
+     "branch": "長崎",
+     "metric": "O",
+     "value": 0.326,
+     "wilson95": [
+      0.236,
+      0.43
+     ],
+     "k": 28,
+     "n": 86,
+     "venueExp": 0.021,
+     "starts": 186,
+     "c6_share": 0.414,
+     "outer": 0.43
+    },
+    {
+     "racer_id": 4619,
+     "name": "伏田　　裕隆",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.287,
+     "wilson95": [
+      0.206,
+      0.386
+     ],
+     "k": 27,
+     "n": 94,
+     "venueExp": 0.02,
+     "starts": 207,
+     "c6_share": 0.343,
+     "outer": 0.308
+    },
+    {
+     "racer_id": 4538,
+     "name": "笠置　　博之",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.277,
+     "wilson95": [
+      0.202,
+      0.366
+     ],
+     "k": 31,
+     "n": 112,
+     "venueExp": 0.025,
+     "starts": 209,
+     "c6_share": 0.215,
+     "outer": 0.333
+    },
+    {
+     "racer_id": 3857,
+     "name": "阿波　　勝哉",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.228,
+     "wilson95": [
+      0.161,
+      0.313
+     ],
+     "k": 26,
+     "n": 114,
+     "venueExp": 0.019,
+     "starts": 233,
+     "c6_share": 0.326,
+     "outer": 0.318
+    },
+    {
+     "racer_id": 4683,
+     "name": "向井田　直弥",
+     "grade": "B2",
+     "branch": "広島",
+     "metric": "O",
+     "value": 0.194,
+     "wilson95": [
+      0.098,
+      0.35
+     ],
+     "k": 7,
+     "n": 36,
+     "venueExp": 0.021,
+     "starts": 117,
+     "c6_share": 0.342,
+     "outer": 0.242
+    },
+    {
+     "racer_id": 4571,
+     "name": "菅　　　章哉",
+     "grade": "A1",
+     "branch": "徳島",
+     "metric": "O",
+     "value": 0.16,
+     "wilson95": [
+      0.103,
+      0.242
+     ],
+     "k": 17,
+     "n": 106,
+     "venueExp": 0.022,
+     "starts": 212,
+     "c6_share": 0.321,
+     "outer": 0.279
+    },
+    {
+     "racer_id": 5341,
+     "name": "山道　　諄也",
+     "grade": "B1",
+     "branch": "群馬",
+     "metric": "O",
+     "value": 0.146,
+     "wilson95": [
+      0.069,
+      0.284
+     ],
+     "k": 6,
+     "n": 41,
+     "venueExp": 0.024,
+     "starts": 147,
+     "c6_share": 0.299,
+     "outer": 0.144
+    },
+    {
+     "racer_id": 4213,
+     "name": "重富　　伸也",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.135,
+     "wilson95": [
+      0.075,
+      0.231
+     ],
+     "k": 10,
+     "n": 74,
+     "venueExp": 0.021,
+     "starts": 180,
+     "c6_share": 0.339,
+     "outer": 0.254
+    },
+    {
+     "racer_id": 5304,
+     "name": "井田　　涼介",
+     "grade": "B2",
+     "branch": null,
+     "metric": "O",
+     "value": 0.119,
+     "wilson95": [
+      0.052,
+      0.25
+     ],
+     "k": 5,
+     "n": 42,
+     "venueExp": 0.022,
+     "starts": 102,
+     "c6_share": 0.255,
+     "outer": 0.229
+    },
+    {
+     "racer_id": 4723,
+     "name": "寺島　　吉彦",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.118,
+     "wilson95": [
+      0.064,
+      0.21
+     ],
+     "k": 9,
+     "n": 76,
+     "venueExp": 0.015,
+     "starts": 168,
+     "c6_share": 0.321,
+     "outer": 0.241
+    },
+    {
+     "racer_id": 4277,
+     "name": "金田　　大輔",
+     "grade": "B1",
+     "branch": "岡山",
+     "metric": "O",
+     "value": 0.116,
+     "wilson95": [
+      0.066,
+      0.196
+     ],
+     "k": 11,
+     "n": 95,
+     "venueExp": 0.021,
+     "starts": 182,
+     "c6_share": 0.17,
+     "outer": 0.117
+    },
+    {
+     "racer_id": 5357,
+     "name": "田中　瀬里奈",
+     "grade": "B2",
+     "branch": "埼玉",
+     "metric": "O",
+     "value": 0.113,
+     "wilson95": [
+      0.056,
+      0.215
+     ],
+     "k": 7,
+     "n": 62,
+     "venueExp": 0.022,
+     "starts": 158,
+     "c6_share": 0.342,
+     "outer": 0.218
+    },
+    {
+     "racer_id": 5128,
+     "name": "坪井　　爽佑",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "O",
+     "value": 0.113,
+     "wilson95": [
+      0.058,
+      0.207
+     ],
+     "k": 8,
+     "n": 71,
+     "venueExp": 0.023,
+     "starts": 150,
+     "c6_share": 0.227,
+     "outer": 0.146
+    },
+    {
+     "racer_id": 3353,
+     "name": "前田　　光昭",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.111,
+     "wilson95": [
+      0.052,
+      0.222
+     ],
+     "k": 6,
+     "n": 54,
+     "venueExp": 0.025,
+     "starts": 117,
+     "c6_share": 0.179,
+     "outer": 0.143
+    },
+    {
+     "racer_id": 4692,
+     "name": "酒井　　俊弘",
+     "grade": "B1",
+     "branch": "福井",
+     "metric": "O",
+     "value": 0.111,
+     "wilson95": [
+      0.063,
+      0.188
+     ],
+     "k": 11,
+     "n": 99,
+     "venueExp": 0.02,
+     "starts": 196,
+     "c6_share": 0.219,
+     "outer": 0.22
+    },
+    {
+     "racer_id": 4552,
+     "name": "杉山　　勝匡",
+     "grade": "B1",
+     "branch": "佐賀",
+     "metric": "O",
+     "value": 0.1,
+     "wilson95": [
+      0.055,
+      0.174
+     ],
+     "k": 10,
+     "n": 100,
+     "venueExp": 0.022,
+     "starts": 206,
+     "c6_share": 0.204,
+     "outer": 0.117
+    },
+    {
+     "racer_id": 5348,
+     "name": "小林　　甘寧",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "O",
+     "value": 0.098,
+     "wilson95": [
+      0.039,
+      0.225
+     ],
+     "k": 4,
+     "n": 41,
+     "venueExp": 0.022,
+     "starts": 187,
+     "c6_share": 0.278,
+     "outer": 0.125
+    },
+    {
+     "racer_id": 3867,
+     "name": "松浦　　　勝",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.094,
+     "wilson95": [
+      0.05,
+      0.169
+     ],
+     "k": 9,
+     "n": 96,
+     "venueExp": 0.027,
+     "starts": 184,
+     "c6_share": 0.147,
+     "outer": 0.119
+    },
+    {
+     "racer_id": 4636,
+     "name": "赤池　　修平",
+     "grade": "B1",
+     "branch": "徳島",
+     "metric": "O",
+     "value": 0.091,
+     "wilson95": [
+      0.047,
+      0.169
+     ],
+     "k": 8,
+     "n": 88,
+     "venueExp": 0.022,
+     "starts": 167,
+     "c6_share": 0.15,
+     "outer": 0.125
+    },
+    {
+     "racer_id": 5268,
+     "name": "山本　　幸也",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "O",
+     "value": 0.091,
+     "wilson95": [
+      0.047,
+      0.169
+     ],
+     "k": 8,
+     "n": 88,
+     "venueExp": 0.024,
+     "starts": 177,
+     "c6_share": 0.215,
+     "outer": 0.144
+    },
+    {
+     "racer_id": 4177,
+     "name": "萬　　　正嗣",
+     "grade": "B1",
+     "branch": "群馬",
+     "metric": "O",
+     "value": 0.091,
+     "wilson95": [
+      0.047,
+      0.169
+     ],
+     "k": 8,
+     "n": 88,
+     "venueExp": 0.025,
+     "starts": 169,
+     "c6_share": 0.201,
+     "outer": 0.152
+    },
+    {
+     "racer_id": 3943,
+     "name": "三松　　直美",
+     "grade": "B2",
+     "branch": "岡山",
+     "metric": "O",
+     "value": 0.091,
+     "wilson95": [
+      0.031,
+      0.236
+     ],
+     "k": 3,
+     "n": 33,
+     "venueExp": 0.023,
+     "starts": 66,
+     "c6_share": 0.242,
+     "outer": 0.356
+    },
+    {
+     "racer_id": 5296,
+     "name": "永田　　　楽",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "O",
+     "value": 0.09,
+     "wilson95": [
+      0.044,
+      0.174
+     ],
+     "k": 7,
+     "n": 78,
+     "venueExp": 0.027,
+     "starts": 163,
+     "c6_share": 0.196,
+     "outer": 0.15
+    },
+    {
+     "racer_id": 4340,
+     "name": "土性　　雅也",
+     "grade": "B2",
+     "branch": "三重",
+     "metric": "O",
+     "value": 0.088,
+     "wilson95": [
+      0.03,
+      0.23
+     ],
+     "k": 3,
+     "n": 34,
+     "venueExp": 0.019,
+     "starts": 81,
+     "c6_share": 0.21,
+     "outer": 0.091
+    },
+    {
+     "racer_id": 3848,
+     "name": "川上　　聡介",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "O",
+     "value": 0.085,
+     "wilson95": [
+      0.047,
+      0.15
+     ],
+     "k": 10,
+     "n": 117,
+     "venueExp": 0.025,
+     "starts": 226,
+     "c6_share": 0.221,
+     "outer": 0.183
+    },
+    {
+     "racer_id": 5355,
+     "name": "萩原　丈太朗",
+     "grade": "B1",
+     "branch": "福井",
+     "metric": "O",
+     "value": 0.085,
+     "wilson95": [
+      0.042,
+      0.166
+     ],
+     "k": 7,
+     "n": 82,
+     "venueExp": 0.022,
+     "starts": 175,
+     "c6_share": 0.24,
+     "outer": 0.175
+    },
+    {
+     "racer_id": 5077,
+     "name": "滝沢　　　崚",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.085,
+     "wilson95": [
+      0.037,
+      0.184
+     ],
+     "k": 5,
+     "n": 59,
+     "venueExp": 0.022,
+     "starts": 121,
+     "c6_share": 0.107,
+     "outer": 0.126
+    },
+    {
+     "racer_id": 5354,
+     "name": "渡邊　　雄斗",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "O",
+     "value": 0.085,
+     "wilson95": [
+      0.037,
+      0.184
+     ],
+     "k": 5,
+     "n": 59,
+     "venueExp": 0.018,
+     "starts": 200,
+     "c6_share": 0.28,
+     "outer": 0.143
+    },
+    {
+     "racer_id": 4457,
+     "name": "神田　　達也",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "O",
+     "value": 0.083,
+     "wilson95": [
+      0.041,
+      0.162
+     ],
+     "k": 7,
+     "n": 84,
+     "venueExp": 0.025,
+     "starts": 170,
+     "c6_share": 0.182,
+     "outer": 0.118
+    }
+   ]
+  },
+  "top5pct": {
+   "rule": "上位5%（76人目の値 0.059 以上）",
+   "threshold": 0.059,
+   "racers": [
+    {
+     "racer_id": 5295,
+     "name": "田上　　　凜",
+     "grade": "B1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.429,
+     "wilson95": [
+      0.314,
+      0.551
+     ],
+     "k": 27,
+     "n": 63,
+     "venueExp": 0.021,
+     "starts": 144,
+     "c6_share": 0.382,
+     "outer": 0.365
+    },
+    {
+     "racer_id": 5048,
+     "name": "眞鳥　　康太",
+     "grade": "B1",
+     "branch": "長崎",
+     "metric": "O",
+     "value": 0.326,
+     "wilson95": [
+      0.236,
+      0.43
+     ],
+     "k": 28,
+     "n": 86,
+     "venueExp": 0.021,
+     "starts": 186,
+     "c6_share": 0.414,
+     "outer": 0.43
+    },
+    {
+     "racer_id": 4619,
+     "name": "伏田　　裕隆",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.287,
+     "wilson95": [
+      0.206,
+      0.386
+     ],
+     "k": 27,
+     "n": 94,
+     "venueExp": 0.02,
+     "starts": 207,
+     "c6_share": 0.343,
+     "outer": 0.308
+    },
+    {
+     "racer_id": 4538,
+     "name": "笠置　　博之",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.277,
+     "wilson95": [
+      0.202,
+      0.366
+     ],
+     "k": 31,
+     "n": 112,
+     "venueExp": 0.025,
+     "starts": 209,
+     "c6_share": 0.215,
+     "outer": 0.333
+    },
+    {
+     "racer_id": 3857,
+     "name": "阿波　　勝哉",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.228,
+     "wilson95": [
+      0.161,
+      0.313
+     ],
+     "k": 26,
+     "n": 114,
+     "venueExp": 0.019,
+     "starts": 233,
+     "c6_share": 0.326,
+     "outer": 0.318
+    },
+    {
+     "racer_id": 4683,
+     "name": "向井田　直弥",
+     "grade": "B2",
+     "branch": "広島",
+     "metric": "O",
+     "value": 0.194,
+     "wilson95": [
+      0.098,
+      0.35
+     ],
+     "k": 7,
+     "n": 36,
+     "venueExp": 0.021,
+     "starts": 117,
+     "c6_share": 0.342,
+     "outer": 0.242
+    },
+    {
+     "racer_id": 4571,
+     "name": "菅　　　章哉",
+     "grade": "A1",
+     "branch": "徳島",
+     "metric": "O",
+     "value": 0.16,
+     "wilson95": [
+      0.103,
+      0.242
+     ],
+     "k": 17,
+     "n": 106,
+     "venueExp": 0.022,
+     "starts": 212,
+     "c6_share": 0.321,
+     "outer": 0.279
+    },
+    {
+     "racer_id": 5341,
+     "name": "山道　　諄也",
+     "grade": "B1",
+     "branch": "群馬",
+     "metric": "O",
+     "value": 0.146,
+     "wilson95": [
+      0.069,
+      0.284
+     ],
+     "k": 6,
+     "n": 41,
+     "venueExp": 0.024,
+     "starts": 147,
+     "c6_share": 0.299,
+     "outer": 0.144
+    },
+    {
+     "racer_id": 4213,
+     "name": "重富　　伸也",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.135,
+     "wilson95": [
+      0.075,
+      0.231
+     ],
+     "k": 10,
+     "n": 74,
+     "venueExp": 0.021,
+     "starts": 180,
+     "c6_share": 0.339,
+     "outer": 0.254
+    },
+    {
+     "racer_id": 5304,
+     "name": "井田　　涼介",
+     "grade": "B2",
+     "branch": null,
+     "metric": "O",
+     "value": 0.119,
+     "wilson95": [
+      0.052,
+      0.25
+     ],
+     "k": 5,
+     "n": 42,
+     "venueExp": 0.022,
+     "starts": 102,
+     "c6_share": 0.255,
+     "outer": 0.229
+    },
+    {
+     "racer_id": 4723,
+     "name": "寺島　　吉彦",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.118,
+     "wilson95": [
+      0.064,
+      0.21
+     ],
+     "k": 9,
+     "n": 76,
+     "venueExp": 0.015,
+     "starts": 168,
+     "c6_share": 0.321,
+     "outer": 0.241
+    },
+    {
+     "racer_id": 4277,
+     "name": "金田　　大輔",
+     "grade": "B1",
+     "branch": "岡山",
+     "metric": "O",
+     "value": 0.116,
+     "wilson95": [
+      0.066,
+      0.196
+     ],
+     "k": 11,
+     "n": 95,
+     "venueExp": 0.021,
+     "starts": 182,
+     "c6_share": 0.17,
+     "outer": 0.117
+    },
+    {
+     "racer_id": 5357,
+     "name": "田中　瀬里奈",
+     "grade": "B2",
+     "branch": "埼玉",
+     "metric": "O",
+     "value": 0.113,
+     "wilson95": [
+      0.056,
+      0.215
+     ],
+     "k": 7,
+     "n": 62,
+     "venueExp": 0.022,
+     "starts": 158,
+     "c6_share": 0.342,
+     "outer": 0.218
+    },
+    {
+     "racer_id": 5128,
+     "name": "坪井　　爽佑",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "O",
+     "value": 0.113,
+     "wilson95": [
+      0.058,
+      0.207
+     ],
+     "k": 8,
+     "n": 71,
+     "venueExp": 0.023,
+     "starts": 150,
+     "c6_share": 0.227,
+     "outer": 0.146
+    },
+    {
+     "racer_id": 3353,
+     "name": "前田　　光昭",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.111,
+     "wilson95": [
+      0.052,
+      0.222
+     ],
+     "k": 6,
+     "n": 54,
+     "venueExp": 0.025,
+     "starts": 117,
+     "c6_share": 0.179,
+     "outer": 0.143
+    },
+    {
+     "racer_id": 4692,
+     "name": "酒井　　俊弘",
+     "grade": "B1",
+     "branch": "福井",
+     "metric": "O",
+     "value": 0.111,
+     "wilson95": [
+      0.063,
+      0.188
+     ],
+     "k": 11,
+     "n": 99,
+     "venueExp": 0.02,
+     "starts": 196,
+     "c6_share": 0.219,
+     "outer": 0.22
+    },
+    {
+     "racer_id": 4552,
+     "name": "杉山　　勝匡",
+     "grade": "B1",
+     "branch": "佐賀",
+     "metric": "O",
+     "value": 0.1,
+     "wilson95": [
+      0.055,
+      0.174
+     ],
+     "k": 10,
+     "n": 100,
+     "venueExp": 0.022,
+     "starts": 206,
+     "c6_share": 0.204,
+     "outer": 0.117
+    },
+    {
+     "racer_id": 5348,
+     "name": "小林　　甘寧",
+     "grade": "B1",
+     "branch": "広島",
+     "metric": "O",
+     "value": 0.098,
+     "wilson95": [
+      0.039,
+      0.225
+     ],
+     "k": 4,
+     "n": 41,
+     "venueExp": 0.022,
+     "starts": 187,
+     "c6_share": 0.278,
+     "outer": 0.125
+    },
+    {
+     "racer_id": 3867,
+     "name": "松浦　　　勝",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.094,
+     "wilson95": [
+      0.05,
+      0.169
+     ],
+     "k": 9,
+     "n": 96,
+     "venueExp": 0.027,
+     "starts": 184,
+     "c6_share": 0.147,
+     "outer": 0.119
+    },
+    {
+     "racer_id": 4636,
+     "name": "赤池　　修平",
+     "grade": "B1",
+     "branch": "徳島",
+     "metric": "O",
+     "value": 0.091,
+     "wilson95": [
+      0.047,
+      0.169
+     ],
+     "k": 8,
+     "n": 88,
+     "venueExp": 0.022,
+     "starts": 167,
+     "c6_share": 0.15,
+     "outer": 0.125
+    },
+    {
+     "racer_id": 5268,
+     "name": "山本　　幸也",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "O",
+     "value": 0.091,
+     "wilson95": [
+      0.047,
+      0.169
+     ],
+     "k": 8,
+     "n": 88,
+     "venueExp": 0.024,
+     "starts": 177,
+     "c6_share": 0.215,
+     "outer": 0.144
+    },
+    {
+     "racer_id": 4177,
+     "name": "萬　　　正嗣",
+     "grade": "B1",
+     "branch": "群馬",
+     "metric": "O",
+     "value": 0.091,
+     "wilson95": [
+      0.047,
+      0.169
+     ],
+     "k": 8,
+     "n": 88,
+     "venueExp": 0.025,
+     "starts": 169,
+     "c6_share": 0.201,
+     "outer": 0.152
+    },
+    {
+     "racer_id": 3943,
+     "name": "三松　　直美",
+     "grade": "B2",
+     "branch": "岡山",
+     "metric": "O",
+     "value": 0.091,
+     "wilson95": [
+      0.031,
+      0.236
+     ],
+     "k": 3,
+     "n": 33,
+     "venueExp": 0.023,
+     "starts": 66,
+     "c6_share": 0.242,
+     "outer": 0.356
+    },
+    {
+     "racer_id": 5296,
+     "name": "永田　　　楽",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "O",
+     "value": 0.09,
+     "wilson95": [
+      0.044,
+      0.174
+     ],
+     "k": 7,
+     "n": 78,
+     "venueExp": 0.027,
+     "starts": 163,
+     "c6_share": 0.196,
+     "outer": 0.15
+    },
+    {
+     "racer_id": 4340,
+     "name": "土性　　雅也",
+     "grade": "B2",
+     "branch": "三重",
+     "metric": "O",
+     "value": 0.088,
+     "wilson95": [
+      0.03,
+      0.23
+     ],
+     "k": 3,
+     "n": 34,
+     "venueExp": 0.019,
+     "starts": 81,
+     "c6_share": 0.21,
+     "outer": 0.091
+    },
+    {
+     "racer_id": 3848,
+     "name": "川上　　聡介",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "O",
+     "value": 0.085,
+     "wilson95": [
+      0.047,
+      0.15
+     ],
+     "k": 10,
+     "n": 117,
+     "venueExp": 0.025,
+     "starts": 226,
+     "c6_share": 0.221,
+     "outer": 0.183
+    },
+    {
+     "racer_id": 5355,
+     "name": "萩原　丈太朗",
+     "grade": "B1",
+     "branch": "福井",
+     "metric": "O",
+     "value": 0.085,
+     "wilson95": [
+      0.042,
+      0.166
+     ],
+     "k": 7,
+     "n": 82,
+     "venueExp": 0.022,
+     "starts": 175,
+     "c6_share": 0.24,
+     "outer": 0.175
+    },
+    {
+     "racer_id": 5077,
+     "name": "滝沢　　　崚",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.085,
+     "wilson95": [
+      0.037,
+      0.184
+     ],
+     "k": 5,
+     "n": 59,
+     "venueExp": 0.022,
+     "starts": 121,
+     "c6_share": 0.107,
+     "outer": 0.126
+    },
+    {
+     "racer_id": 5354,
+     "name": "渡邊　　雄斗",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "O",
+     "value": 0.085,
+     "wilson95": [
+      0.037,
+      0.184
+     ],
+     "k": 5,
+     "n": 59,
+     "venueExp": 0.018,
+     "starts": 200,
+     "c6_share": 0.28,
+     "outer": 0.143
+    },
+    {
+     "racer_id": 4457,
+     "name": "神田　　達也",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "O",
+     "value": 0.083,
+     "wilson95": [
+      0.041,
+      0.162
+     ],
+     "k": 7,
+     "n": 84,
+     "venueExp": 0.025,
+     "starts": 170,
+     "c6_share": 0.182,
+     "outer": 0.118
+    },
+    {
+     "racer_id": 5382,
+     "name": "山下　　心一",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "O",
+     "value": 0.081,
+     "wilson95": [
+      0.028,
+      0.213
+     ],
+     "k": 3,
+     "n": 37,
+     "venueExp": 0.025,
+     "starts": 189,
+     "c6_share": 0.365,
+     "outer": 0.117
+    },
+    {
+     "racer_id": 3981,
+     "name": "今坂　　晃広",
+     "grade": "B1",
+     "branch": "静岡",
+     "metric": "O",
+     "value": 0.079,
+     "wilson95": [
+      0.042,
+      0.143
+     ],
+     "k": 9,
+     "n": 114,
+     "venueExp": 0.024,
+     "starts": 225,
+     "c6_share": 0.147,
+     "outer": 0.138
+    },
+    {
+     "racer_id": 5323,
+     "name": "香川　　陽太",
+     "grade": "B2",
+     "branch": "滋賀",
+     "metric": "O",
+     "value": 0.079,
+     "wilson95": [
+      0.037,
+      0.162
+     ],
+     "k": 6,
+     "n": 76,
+     "venueExp": 0.02,
+     "starts": 154,
+     "c6_share": 0.227,
+     "outer": 0.156
+    },
+    {
+     "racer_id": 3878,
+     "name": "胡本　　悟志",
+     "grade": "B1",
+     "branch": "山口",
+     "metric": "O",
+     "value": 0.078,
+     "wilson95": [
+      0.04,
+      0.147
+     ],
+     "k": 8,
+     "n": 102,
+     "venueExp": 0.023,
+     "starts": 191,
+     "c6_share": 0.157,
+     "outer": 0.091
+    },
+    {
+     "racer_id": 5086,
+     "name": "本村　　　大",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.078,
+     "wilson95": [
+      0.036,
+      0.16
+     ],
+     "k": 6,
+     "n": 77,
+     "venueExp": 0.022,
+     "starts": 161,
+     "c6_share": 0.143,
+     "outer": 0.11
+    },
+    {
+     "racer_id": 3967,
+     "name": "鈴木　　茂高",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "O",
+     "value": 0.078,
+     "wilson95": [
+      0.038,
+      0.152
+     ],
+     "k": 7,
+     "n": 90,
+     "venueExp": 0.025,
+     "starts": 183,
+     "c6_share": 0.158,
+     "outer": 0.083
+    },
+    {
+     "racer_id": 4020,
+     "name": "川上　　清人",
+     "grade": "B1",
+     "branch": "香川",
+     "metric": "O",
+     "value": 0.078,
+     "wilson95": [
+      0.04,
+      0.146
+     ],
+     "k": 8,
+     "n": 103,
+     "venueExp": 0.024,
+     "starts": 203,
+     "c6_share": 0.182,
+     "outer": 0.185
+    },
+    {
+     "racer_id": 5067,
+     "name": "山田　　真聖",
+     "grade": "B1",
+     "branch": "山口",
+     "metric": "O",
+     "value": 0.078,
+     "wilson95": [
+      0.04,
+      0.146
+     ],
+     "k": 8,
+     "n": 103,
+     "venueExp": 0.022,
+     "starts": 202,
+     "c6_share": 0.134,
+     "outer": 0.152
+    },
+    {
+     "racer_id": 4100,
+     "name": "松田　　隆司",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.077,
+     "wilson95": [
+      0.041,
+      0.14
+     ],
+     "k": 9,
+     "n": 117,
+     "venueExp": 0.023,
+     "starts": 214,
+     "c6_share": 0.131,
+     "outer": 0.092
+    },
+    {
+     "racer_id": 3977,
+     "name": "山本　　兼士",
+     "grade": "B1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.076,
+     "wilson95": [
+      0.041,
+      0.139
+     ],
+     "k": 9,
+     "n": 118,
+     "venueExp": 0.022,
+     "starts": 230,
+     "c6_share": 0.139,
+     "outer": 0.08
+    },
+    {
+     "racer_id": 5379,
+     "name": "廣部　　大明",
+     "grade": "B1",
+     "branch": "滋賀",
+     "metric": "O",
+     "value": 0.076,
+     "wilson95": [
+      0.035,
+      0.156
+     ],
+     "k": 6,
+     "n": 79,
+     "venueExp": 0.022,
+     "starts": 171,
+     "c6_share": 0.263,
+     "outer": 0.174
+    },
+    {
+     "racer_id": 4610,
+     "name": "佐藤　　大佑",
+     "grade": "A1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.076,
+     "wilson95": [
+      0.042,
+      0.134
+     ],
+     "k": 10,
+     "n": 132,
+     "venueExp": 0.019,
+     "starts": 248,
+     "c6_share": 0.153,
+     "outer": 0.085
+    },
+    {
+     "racer_id": 4626,
+     "name": "伊藤　　紘章",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "O",
+     "value": 0.074,
+     "wilson95": [
+      0.037,
+      0.146
+     ],
+     "k": 7,
+     "n": 94,
+     "venueExp": 0.024,
+     "starts": 179,
+     "c6_share": 0.156,
+     "outer": 0.095
+    },
+    {
+     "racer_id": 5209,
+     "name": "小野　　京平",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "O",
+     "value": 0.074,
+     "wilson95": [
+      0.034,
+      0.152
+     ],
+     "k": 6,
+     "n": 81,
+     "venueExp": 0.021,
+     "starts": 168,
+     "c6_share": 0.179,
+     "outer": 0.107
+    },
+    {
+     "racer_id": 4158,
+     "name": "木場　雄二郎",
+     "grade": "B1",
+     "branch": "山口",
+     "metric": "O",
+     "value": 0.072,
+     "wilson95": [
+      0.037,
+      0.136
+     ],
+     "k": 8,
+     "n": 111,
+     "venueExp": 0.024,
+     "starts": 214,
+     "c6_share": 0.168,
+     "outer": 0.1
+    },
+    {
+     "racer_id": 4116,
+     "name": "川田　　正人",
+     "grade": "B1",
+     "branch": "徳島",
+     "metric": "O",
+     "value": 0.071,
+     "wilson95": [
+      0.035,
+      0.14
+     ],
+     "k": 7,
+     "n": 98,
+     "venueExp": 0.025,
+     "starts": 195,
+     "c6_share": 0.164,
+     "outer": 0.093
+    },
+    {
+     "racer_id": 4406,
+     "name": "幸野　　史明",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "O",
+     "value": 0.071,
+     "wilson95": [
+      0.037,
+      0.135
+     ],
+     "k": 8,
+     "n": 112,
+     "venueExp": 0.023,
+     "starts": 227,
+     "c6_share": 0.203,
+     "outer": 0.114
+    },
+    {
+     "racer_id": 5350,
+     "name": "網代　　良芽",
+     "grade": "B1",
+     "branch": "兵庫",
+     "metric": "O",
+     "value": 0.071,
+     "wilson95": [
+      0.035,
+      0.139
+     ],
+     "k": 7,
+     "n": 99,
+     "venueExp": 0.018,
+     "starts": 197,
+     "c6_share": 0.168,
+     "outer": 0.101
+    },
+    {
+     "racer_id": 4992,
+     "name": "廣瀬　　篤哉",
+     "grade": "B1",
+     "branch": "滋賀",
+     "metric": "O",
+     "value": 0.07,
+     "wilson95": [
+      0.034,
+      0.137
+     ],
+     "k": 7,
+     "n": 100,
+     "venueExp": 0.021,
+     "starts": 200,
+     "c6_share": 0.185,
+     "outer": 0.14
+    },
+    {
+     "racer_id": 5020,
+     "name": "宮村　　勇哉",
+     "grade": "B1",
+     "branch": "三重",
+     "metric": "O",
+     "value": 0.069,
+     "wilson95": [
+      0.032,
+      0.142
+     ],
+     "k": 6,
+     "n": 87,
+     "venueExp": 0.022,
+     "starts": 175,
+     "c6_share": 0.2,
+     "outer": 0.131
+    },
+    {
+     "racer_id": 4863,
+     "name": "三浦　　裕貴",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.068,
+     "wilson95": [
+      0.03,
+      0.151
+     ],
+     "k": 5,
+     "n": 73,
+     "venueExp": 0.022,
+     "starts": 154,
+     "c6_share": 0.227,
+     "outer": 0.159
+    },
+    {
+     "racer_id": 4449,
+     "name": "中嶋　　達也",
+     "grade": "B1",
+     "branch": "兵庫",
+     "metric": "O",
+     "value": 0.068,
+     "wilson95": [
+      0.032,
+      0.141
+     ],
+     "k": 6,
+     "n": 88,
+     "venueExp": 0.022,
+     "starts": 178,
+     "c6_share": 0.157,
+     "outer": 0.142
+    },
+    {
+     "racer_id": 5179,
+     "name": "藤本　　元輝",
+     "grade": "B1",
+     "branch": "兵庫",
+     "metric": "O",
+     "value": 0.068,
+     "wilson95": [
+      0.029,
+      0.149
+     ],
+     "k": 5,
+     "n": 74,
+     "venueExp": 0.019,
+     "starts": 156,
+     "c6_share": 0.141,
+     "outer": 0.075
+    },
+    {
+     "racer_id": 4892,
+     "name": "柴田　　直哉",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "O",
+     "value": 0.067,
+     "wilson95": [
+      0.033,
+      0.132
+     ],
+     "k": 7,
+     "n": 104,
+     "venueExp": 0.022,
+     "starts": 204,
+     "c6_share": 0.152,
+     "outer": 0.108
+    },
+    {
+     "racer_id": 3893,
+     "name": "汐崎　　正則",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.067,
+     "wilson95": [
+      0.033,
+      0.131
+     ],
+     "k": 7,
+     "n": 105,
+     "venueExp": 0.023,
+     "starts": 197,
+     "c6_share": 0.152,
+     "outer": 0.082
+    },
+    {
+     "racer_id": 4423,
+     "name": "坂口　　貴彦",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.067,
+     "wilson95": [
+      0.033,
+      0.131
+     ],
+     "k": 7,
+     "n": 105,
+     "venueExp": 0.025,
+     "starts": 214,
+     "c6_share": 0.173,
+     "outer": 0.077
+    },
+    {
+     "racer_id": 3839,
+     "name": "川合　　理司",
+     "grade": "B1",
+     "branch": "静岡",
+     "metric": "O",
+     "value": 0.065,
+     "wilson95": [
+      0.03,
+      0.135
+     ],
+     "k": 6,
+     "n": 92,
+     "venueExp": 0.021,
+     "starts": 191,
+     "c6_share": 0.209,
+     "outer": 0.17
+    },
+    {
+     "racer_id": 5184,
+     "name": "飯塚　　　響",
+     "grade": "B2",
+     "branch": "群馬",
+     "metric": "O",
+     "value": 0.065,
+     "wilson95": [
+      0.022,
+      0.175
+     ],
+     "k": 3,
+     "n": 46,
+     "venueExp": 0.028,
+     "starts": 91,
+     "c6_share": 0.121,
+     "outer": 0.136
+    },
+    {
+     "racer_id": 5147,
+     "name": "田中　　勇輔",
+     "grade": "B1",
+     "branch": "埼玉",
+     "metric": "O",
+     "value": 0.065,
+     "wilson95": [
+      0.028,
+      0.143
+     ],
+     "k": 5,
+     "n": 77,
+     "venueExp": 0.019,
+     "starts": 151,
+     "c6_share": 0.185,
+     "outer": 0.093
+    },
+    {
+     "racer_id": 4059,
+     "name": "入澤　　友治",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.065,
+     "wilson95": [
+      0.028,
+      0.143
+     ],
+     "k": 5,
+     "n": 77,
+     "venueExp": 0.022,
+     "starts": 184,
+     "c6_share": 0.228,
+     "outer": 0.072
+    },
+    {
+     "racer_id": 3718,
+     "name": "伊達　　正利",
+     "grade": "B1",
+     "branch": "静岡",
+     "metric": "O",
+     "value": 0.064,
+     "wilson95": [
+      0.031,
+      0.127
+     ],
+     "k": 7,
+     "n": 109,
+     "venueExp": 0.024,
+     "starts": 212,
+     "c6_share": 0.165,
+     "outer": 0.11
+    },
+    {
+     "racer_id": 4128,
+     "name": "川口　　貴久",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.064,
+     "wilson95": [
+      0.03,
+      0.132
+     ],
+     "k": 6,
+     "n": 94,
+     "venueExp": 0.025,
+     "starts": 188,
+     "c6_share": 0.176,
+     "outer": 0.095
+    },
+    {
+     "racer_id": 3577,
+     "name": "向所　　浩二",
+     "grade": "B1",
+     "branch": "兵庫",
+     "metric": "O",
+     "value": 0.064,
+     "wilson95": [
+      0.03,
+      0.132
+     ],
+     "k": 6,
+     "n": 94,
+     "venueExp": 0.022,
+     "starts": 181,
+     "c6_share": 0.193,
+     "outer": 0.132
+    },
+    {
+     "racer_id": 4630,
+     "name": "岩永　　雅人",
+     "grade": "A2",
+     "branch": "愛知",
+     "metric": "O",
+     "value": 0.064,
+     "wilson95": [
+      0.031,
+      0.126
+     ],
+     "k": 7,
+     "n": 110,
+     "venueExp": 0.026,
+     "starts": 208,
+     "c6_share": 0.159,
+     "outer": 0.064
+    },
+    {
+     "racer_id": 4562,
+     "name": "阪本　　勇介",
+     "grade": "B1",
+     "branch": "岡山",
+     "metric": "O",
+     "value": 0.063,
+     "wilson95": [
+      0.033,
+      0.12
+     ],
+     "k": 8,
+     "n": 126,
+     "venueExp": 0.024,
+     "starts": 245,
+     "c6_share": 0.135,
+     "outer": 0.089
+    },
+    {
+     "racer_id": 5101,
+     "name": "表　　　健太",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "O",
+     "value": 0.063,
+     "wilson95": [
+      0.025,
+      0.152
+     ],
+     "k": 4,
+     "n": 63,
+     "venueExp": 0.022,
+     "starts": 133,
+     "c6_share": 0.135,
+     "outer": 0.122
+    },
+    {
+     "racer_id": 3741,
+     "name": "松尾　　基成",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "O",
+     "value": 0.063,
+     "wilson95": [
+      0.029,
+      0.131
+     ],
+     "k": 6,
+     "n": 95,
+     "venueExp": 0.025,
+     "starts": 189,
+     "c6_share": 0.106,
+     "outer": 0.067
+    },
+    {
+     "racer_id": 5161,
+     "name": "登玉　　隼百",
+     "grade": "A2",
+     "branch": "兵庫",
+     "metric": "O",
+     "value": 0.063,
+     "wilson95": [
+      0.031,
+      0.124
+     ],
+     "k": 7,
+     "n": 111,
+     "venueExp": 0.021,
+     "starts": 210,
+     "c6_share": 0.176,
+     "outer": 0.084
+    },
+    {
+     "racer_id": 5176,
+     "name": "石倉　　拓美",
+     "grade": "B2",
+     "branch": null,
+     "metric": "O",
+     "value": 0.063,
+     "wilson95": [
+      0.021,
+      0.168
+     ],
+     "k": 3,
+     "n": 48,
+     "venueExp": 0.025,
+     "starts": 92,
+     "c6_share": 0.185,
+     "outer": 0.171
+    },
+    {
+     "racer_id": 4094,
+     "name": "中島　　真二",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "O",
+     "value": 0.062,
+     "wilson95": [
+      0.029,
+      0.128
+     ],
+     "k": 6,
+     "n": 97,
+     "venueExp": 0.025,
+     "starts": 194,
+     "c6_share": 0.129,
+     "outer": 0.072
+    },
+    {
+     "racer_id": 4750,
+     "name": "井上　　尚悟",
+     "grade": "B1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.062,
+     "wilson95": [
+      0.029,
+      0.128
+     ],
+     "k": 6,
+     "n": 97,
+     "venueExp": 0.021,
+     "starts": 194,
+     "c6_share": 0.113,
+     "outer": 0.064
+    },
+    {
+     "racer_id": 4134,
+     "name": "杉山　　貴博",
+     "grade": "A2",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.062,
+     "wilson95": [
+      0.032,
+      0.117
+     ],
+     "k": 8,
+     "n": 130,
+     "venueExp": 0.023,
+     "starts": 244,
+     "c6_share": 0.148,
+     "outer": 0.077
+    },
+    {
+     "racer_id": 4076,
+     "name": "杉田　　篤光",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.061,
+     "wilson95": [
+      0.033,
+      0.112
+     ],
+     "k": 9,
+     "n": 147,
+     "venueExp": 0.023,
+     "starts": 283,
+     "c6_share": 0.141,
+     "outer": 0.078
+    },
+    {
+     "racer_id": 5098,
+     "name": "大江　　　純",
+     "grade": "B1",
+     "branch": "愛知",
+     "metric": "O",
+     "value": 0.061,
+     "wilson95": [
+      0.028,
+      0.127
+     ],
+     "k": 6,
+     "n": 98,
+     "venueExp": 0.023,
+     "starts": 193,
+     "c6_share": 0.14,
+     "outer": 0.101
+    },
+    {
+     "racer_id": 4329,
+     "name": "小松　　卓司",
+     "grade": "B1",
+     "branch": "福岡",
+     "metric": "O",
+     "value": 0.061,
+     "wilson95": [
+      0.028,
+      0.127
+     ],
+     "k": 6,
+     "n": 98,
+     "venueExp": 0.022,
+     "starts": 196,
+     "c6_share": 0.138,
+     "outer": 0.076
+    },
+    {
+     "racer_id": 5255,
+     "name": "藤原　　仙二",
+     "grade": "A1",
+     "branch": "滋賀",
+     "metric": "O",
+     "value": 0.059,
+     "wilson95": [
+      0.03,
+      0.113
+     ],
+     "k": 8,
+     "n": 135,
+     "venueExp": 0.02,
+     "starts": 256,
+     "c6_share": 0.164,
+     "outer": 0.097
+    }
+   ]
+  },
+  "lower_ge_0.1": {
+   "rule": "Wilson 95% の下限が 0.1 以上",
+   "threshold": 0.1,
+   "racers": [
+    {
+     "racer_id": 5295,
+     "name": "田上　　　凜",
+     "grade": "B1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.429,
+     "wilson95": [
+      0.314,
+      0.551
+     ],
+     "k": 27,
+     "n": 63,
+     "venueExp": 0.021,
+     "starts": 144,
+     "c6_share": 0.382,
+     "outer": 0.365
+    },
+    {
+     "racer_id": 5048,
+     "name": "眞鳥　　康太",
+     "grade": "B1",
+     "branch": "長崎",
+     "metric": "O",
+     "value": 0.326,
+     "wilson95": [
+      0.236,
+      0.43
+     ],
+     "k": 28,
+     "n": 86,
+     "venueExp": 0.021,
+     "starts": 186,
+     "c6_share": 0.414,
+     "outer": 0.43
+    },
+    {
+     "racer_id": 4619,
+     "name": "伏田　　裕隆",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.287,
+     "wilson95": [
+      0.206,
+      0.386
+     ],
+     "k": 27,
+     "n": 94,
+     "venueExp": 0.02,
+     "starts": 207,
+     "c6_share": 0.343,
+     "outer": 0.308
+    },
+    {
+     "racer_id": 4538,
+     "name": "笠置　　博之",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.277,
+     "wilson95": [
+      0.202,
+      0.366
+     ],
+     "k": 31,
+     "n": 112,
+     "venueExp": 0.025,
+     "starts": 209,
+     "c6_share": 0.215,
+     "outer": 0.333
+    },
+    {
+     "racer_id": 3857,
+     "name": "阿波　　勝哉",
+     "grade": "B1",
+     "branch": null,
+     "metric": "O",
+     "value": 0.228,
+     "wilson95": [
+      0.161,
+      0.313
+     ],
+     "k": 26,
+     "n": 114,
+     "venueExp": 0.019,
+     "starts": 233,
+     "c6_share": 0.326,
+     "outer": 0.318
+    },
+    {
+     "racer_id": 4571,
+     "name": "菅　　　章哉",
+     "grade": "A1",
+     "branch": "徳島",
+     "metric": "O",
+     "value": 0.16,
+     "wilson95": [
+      0.103,
+      0.242
+     ],
+     "k": 17,
+     "n": 106,
+     "venueExp": 0.022,
+     "starts": 212,
+     "c6_share": 0.321,
+     "outer": 0.279
+    }
+   ]
+  },
+  "lower_ge_0.2": {
+   "rule": "Wilson 95% の下限が 0.2 以上",
+   "threshold": 0.2,
+   "racers": [
+    {
+     "racer_id": 5295,
+     "name": "田上　　　凜",
+     "grade": "B1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.429,
+     "wilson95": [
+      0.314,
+      0.551
+     ],
+     "k": 27,
+     "n": 63,
+     "venueExp": 0.021,
+     "starts": 144,
+     "c6_share": 0.382,
+     "outer": 0.365
+    },
+    {
+     "racer_id": 5048,
+     "name": "眞鳥　　康太",
+     "grade": "B1",
+     "branch": "長崎",
+     "metric": "O",
+     "value": 0.326,
+     "wilson95": [
+      0.236,
+      0.43
+     ],
+     "k": 28,
+     "n": 86,
+     "venueExp": 0.021,
+     "starts": 186,
+     "c6_share": 0.414,
+     "outer": 0.43
+    },
+    {
+     "racer_id": 4619,
+     "name": "伏田　　裕隆",
+     "grade": "B1",
+     "branch": "東京",
+     "metric": "O",
+     "value": 0.287,
+     "wilson95": [
+      0.206,
+      0.386
+     ],
+     "k": 27,
+     "n": 94,
+     "venueExp": 0.02,
+     "starts": 207,
+     "c6_share": 0.343,
+     "outer": 0.308
+    },
+    {
+     "racer_id": 4538,
+     "name": "笠置　　博之",
+     "grade": "A1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.277,
+     "wilson95": [
+      0.202,
+      0.366
+     ],
+     "k": 31,
+     "n": 112,
+     "venueExp": 0.025,
+     "starts": 209,
+     "c6_share": 0.215,
+     "outer": 0.333
+    }
+   ]
+  },
+  "lower_ge_0.3": {
+   "rule": "Wilson 95% の下限が 0.3 以上",
+   "threshold": 0.3,
+   "racers": [
+    {
+     "racer_id": 5295,
+     "name": "田上　　　凜",
+     "grade": "B1",
+     "branch": "大阪",
+     "metric": "O",
+     "value": 0.429,
+     "wilson95": [
+      0.314,
+      0.551
+     ],
+     "k": 27,
+     "n": 63,
+     "venueExp": 0.021,
+     "starts": 144,
+     "c6_share": 0.382,
+     "outer": 0.365
+    }
+   ]
+  }
+ }
+}

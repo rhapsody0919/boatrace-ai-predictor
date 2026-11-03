@@ -1,0 +1,140 @@
+<title>イン屋の札 モック</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 龍神レーダーの選手ページを1列で再現。色はサイトの design-tokens.css の値 */
+:root {
+  --page: #f7f3ea; --card: #fbf9f3; --line: #ddd4bf;
+  --fg: #0f172a; --fg2: #475569;
+  --gold: #6b500f; --gold-fill: #f3e7c2; --grade: #0369a1; --bar: #6b500f; --bar-bg: #ddd4bf;
+  --note-bg: #eef3f8;
+  --sans: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0d1b2e; --card: #142842; --line: #24344d; --fg: #f8fafc; --fg2: #cbd5e1;
+  --gold: #e8d089; --gold-fill: #2a2a1e; --grade: #0369a1; --bar: #c9a227; --bar-bg: #24344d; --note-bg: #10223a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --page: #0d1b2e; --card: #142842; --line: #24344d; --fg: #f8fafc; --fg2: #cbd5e1;
+  --gold: #e8d089; --gold-fill: #2a2a1e; --grade: #0369a1; --bar: #c9a227; --bar-bg: #24344d; --note-bg: #10223a; color-scheme: dark }
+body { background: var(--page); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.7;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 48px; }
+.wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 20px; }
+.switch { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; border: 1px dashed var(--line); border-radius: 10px; }
+.switch p { margin: 0; width: 100%; font-size: 13px; color: var(--fg2); }
+.switch button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+.switch button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); font-weight: 700; }
+.switch button:focus-visible, .chip-inya:focus-visible { outline: 2px solid var(--grade); outline-offset: 2px; }
+h1 { font-size: 26px; margin: 0; line-height: 1.3; }
+.kana { margin: 2px 0 8px; font-size: 13px; color: var(--fg2); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 500; }
+.chip-branch { background: var(--card); border: 1px solid var(--line); color: var(--fg2); }
+.chip-grade { background: var(--grade); color: #fff; }
+.chip-inya { background: var(--gold-fill); border: 1px solid var(--gold); color: var(--gold); font-weight: 700; text-decoration: none; min-height: 44px; }
+.chip-inya span { font-weight: 400; margin-left: 6px; font-size: 12px; }
+.placeholder { padding: 14px; border: 1px dashed var(--line); border-radius: 10px; color: var(--fg2); font-size: 13px; }
+h2 { font-size: 18px; margin: 0; text-wrap: balance; }
+h3 { font-size: 15px; margin: 0; }
+.sec { display: grid; gap: 12px; }
+.lead { margin: 0; font-size: 13px; color: var(--fg2); }
+.front { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; scroll-margin-top: 16px; }
+.front.is-inya { border-color: var(--gold); }
+.front h3 { display: flex; align-items: center; gap: 8px; }
+.front .tag { font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--gold); color: var(--gold); background: var(--gold-fill); }
+.front p { margin: 0; }
+.front .big { font-variant-numeric: tabular-nums; }
+.front .big b { font-size: 20px; }
+.meter { height: 10px; background: var(--bar-bg); border-radius: 5px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--bar); }
+.front .small { font-size: 12px; color: var(--fg2); }
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 4.5em 1fr; gap: 4px 10px; align-items: center; }
+.bar-row .lab { font-weight: 700; font-size: 14px; }
+.bar-row .val { grid-column: 2; font-size: 13px; color: var(--fg2); font-variant-numeric: tabular-nums; }
+.bar-row .track { height: 12px; background: var(--bar-bg); border-radius: 6px; overflow: hidden; }
+.bar-row .track i { display: block; height: 100%; background: var(--bar); }
+.course-note { margin: 0; font-size: 13px; padding: 8px 12px; background: var(--note-bg); border-radius: 8px; }
+.mocknote { font-size: 12px; color: var(--fg2); margin: 0; }
+</style>
+
+<div class="wrap">
+  <div class="switch" role="group" aria-label="見本の選手">
+    <p>モック（見本）。選手を切り替えて、札のある選手・無い選手・データ不足の表示を見比べる</p>
+    <button type="button" id="sw-3024" data-k="3024" aria-pressed="true">西島義則（イン屋）</button>
+    <button type="button" id="sw-4561" data-k="4561" aria-pressed="false">藤山翔大（ときどき）</button>
+    <button type="button" id="sw-4765" data-k="4765" aria-pressed="false">野田部宏子（無し）</button>
+    <button type="button" id="sw-few" data-k="few" aria-pressed="false">データ不足の例</button>
+  </div>
+
+  <header>
+    <h1 id="name">西島義則</h1>
+    <p class="kana" id="kana">ニシジマ ヨシノリ</p>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div class="placeholder">（ここに今のプロフィールのカード: 登録番号・生年月日・支部 など。変更なし）</div>
+
+  <section class="sec">
+    <h2 id="sec-title">西島義則の公式成績（期別・進入コース別）</h2>
+    <div class="placeholder">（期別成績の折れ線と表。変更なし）</div>
+
+    <div class="front" id="front" tabindex="-1"></div>
+
+    <h3>進入コース別成績（公式・2024/11/01〜2026/04/30の3期）</h3>
+    <div class="bars" id="bars"></div>
+    <p class="course-note" id="course-note"></p>
+    <div class="placeholder">（コース別の全列の表。変更なし）</div>
+  </section>
+
+  <p class="mocknote">前付けの数字は当サイト集計（4〜6号艇で出た走のうち、実際に1〜3コースに入った走）。西島・藤山・野田部の値は 2026-11-03 時点の実データ（野田部の87走は 2025/12/03 以降の集計。実装では期間を揃える）。コース別の棒は本番ページの値。データ不足の例は架空。</p>
+</div>
+
+<script>
+const PERIOD = "2025/11/03〜2026/11/02";
+const R = {
+  "3024": { name: "西島義則", kana: "ニシジマ ヨシノリ", branch: "広島支部", grade: "B2", k: 72, n: 72, inya: true,
+    courses: [[1, "70.4%", 142, 70], [2, "51.4%", 204, 51], [3, "45.4%（参考）", 11, 45], [4, null, 1], [5, null, 1], [6, null, 1]] },
+  "4561": { name: "藤山翔大", kana: "フジヤマ ショウダイ", branch: "大阪支部", grade: "A1", k: 25, n: 105, inya: false,
+    courses: [[1, "68.3%", 79, 68], [2, "34.8%", 86, 35], [3, "57.5%", 73, 57], [4, "54.7%", 84, 55], [5, "27.4%", 51, 27], [6, "21.2%", 33, 21]] },
+  "4765": { name: "野田部宏子", kana: "ノタベ ヒロコ", branch: "福岡支部", grade: "B1", k: 0, n: 87, inya: false,
+    courses: [[1, "57.5%", 40, 57], [2, "43.4%", 46, 43], [3, "38.0%", 50, 38], [4, "24.0%", 50, 24], [5, "24.0%", 54, 24], [6, "8.5%", 35, 8]] },
+  "few": { name: "（見本の選手）", kana: "ミホン", branch: "○○支部", grade: "B1", k: 3, n: 12, inya: false,
+    courses: [[1, "30.0%（参考）", 12, 30], [2, "20.0%（参考）", 10, 20], [3, null, 8], [4, null, 6], [5, null, 5], [6, null, 4]] },
+};
+const $ = (id) => document.getElementById(id);
+function render(key) {
+  const r = R[key];
+  $("name").textContent = r.name; $("kana").textContent = r.kana;
+  $("sec-title").textContent = `${r.name}の公式成績（期別・進入コース別）`;
+  $("chips").innerHTML = `<span class="chip chip-branch">${r.branch}</span><span class="chip chip-grade">${r.grade}</span>` +
+    (r.inya ? `<a class="chip chip-inya" href="#front" id="chip-inya" title="ファンの呼び名です。公式の用語ではありません">イン屋<span>前付けで内へ ↓</span></a>` : "");
+  const pct = Math.round((r.k / r.n) * 100);
+  const f = $("front");
+  f.classList.toggle("is-inya", r.inya);
+  const range = `直近1年（${PERIOD}）`;
+  if (r.inya) {
+    f.innerHTML = `<h3>イン屋（前付け）</h3>
+      <p>4〜6号艇で出ても、前付け（枠より内のコースに入ること）で1〜3コースを取りに行く選手です。「イン屋」はファンの呼び名で、公式の用語ではありません。</p>
+      <p class="big">${range}、4〜6号艇で出た${r.n}走中 <b>${r.k}走（${pct}%）</b> で1〜3コースに入りました</p>
+      <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
+      <p class="small">当日も前付けするとは限りません。当サイト集計。4〜6号艇の走が30以上で、1〜3コースに入った割合が高い選手に付けています。</p>`;
+  } else if (r.n >= 30) {
+    f.innerHTML = `<h3>4〜6号艇での進入（前付け）</h3>` + (r.k === 0
+      ? `<p class="big">${range}、4〜6号艇で出た${r.n}走中、1〜3コースに入った走はありませんでした</p>`
+      : `<p class="big">${range}、4〜6号艇で出た${r.n}走中 <b>${r.k}走（${pct}%）</b> で1〜3コースに入りました</p>
+         <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>`) +
+      `<p class="small">当サイト集計。</p>`;
+  } else {
+    f.innerHTML = `<h3>4〜6号艇での進入（前付け）</h3><p>${range}の4〜6号艇の走は${r.n}走のため、前付けの割合は出していません（30走以上で表示します）。</p>`;
+  }
+  $("bars").innerHTML = r.courses.map(([c, rate, n, w]) => `<div class="bar-row"><span class="lab">${c}コース</span>` +
+    (w != null ? `<div class="track"><i style="width:${w}%"></i></div><span class="val">2連対率 ${rate}・進入${n}走</span>`
+               : `<div class="track"></div><span class="val">進入${n}走</span>`) + `</div>`).join("");
+  const note = $("course-note");
+  note.hidden = !r.inya;
+  note.textContent = "この表は公式の期別成績です。4〜6号艇で出ても1〜3コースに入る走が多いため、4〜6コースの走は少なくなっています。";
+  document.querySelectorAll(".switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === key)));
+}
+document.querySelectorAll(".switch button").forEach((b) => b.addEventListener("click", () => render(b.dataset.k)));
+document.addEventListener("click", (e) => { if (e.target.closest("#chip-inya")) { e.preventDefault(); const f = $("front"); f.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); f.focus({ preventScroll: true }); } });
+render("3024");
+</script>
