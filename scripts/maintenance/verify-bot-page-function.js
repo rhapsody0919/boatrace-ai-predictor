@@ -1389,6 +1389,48 @@ for (const code of [1, 24]) {
   }
 }
 
+// BOA-1237: head の SNS メタは各1件、既存のページメタと同じ値。
+function checkSocialMeta(label, html) {
+  const head = html.split("<head>")[1].split("</head>")[0];
+  const title = head.match(/<title>([\s\S]*?)<\/title>/)?.[1];
+  const description = head.match(/<meta name="description" content="([^"]*)">/)?.[1];
+  const canonical = head.match(/<link rel="canonical" href="([^"]*)">/)?.[1];
+  const image = "https://www.boat-ai.jp/ogp-image.png";
+  const expected = {
+    "og:type": "website", "og:site_name": "龍神レーダー",
+    "og:title": title, "og:description": description, "og:url": canonical,
+    "og:image": image, "twitter:card": "summary_large_image",
+    "twitter:title": title, "twitter:description": description, "twitter:image": image,
+  };
+  for (const [key, value] of Object.entries(expected)) {
+    const attr = key.startsWith("og:") ? "property" : "name";
+    const tags = [...head.matchAll(new RegExp(`<meta ${attr}="${key}" content="([^"]*)">`, "g"))];
+    check(`${label}: ${key} は1件で値が一致`, tags.map((m) => m[1]), [value]);
+  }
+}
+for (const lang of ["ja", ...BOT_PAGE_PREFIXED_LANGS]) {
+  const prefix = lang === "ja" ? "" : `/${lang}`;
+  for (const page of ["top", "venue"]) {
+    const url = `/api/bot-page${prefix}/${page === "top" ? "top" : "venue/1"}`;
+    const { res } = await call(page, url, lang === "ja" ? {} : { langMode: "prefixed" });
+    checkSocialMeta(`${lang}/${page}`, res.body);
+  }
+}
+{
+  const { documentHtml } = await import("../../api/_lib/botPage.js");
+  const evil = `<節&"'>`;
+  const html = documentHtml({ title: evil, description: evil, canonical: evil }, "", {
+    path: "/", lang: "ja", jsonLd: [],
+  });
+  checkSocialMeta("特殊文字", html);
+  check("SNS メタ: 属性の特殊文字をエスケープ", html.includes(`content="${escapeHtml(evil)}"`), true);
+  check("SNS メタ: 生の値が無い", html.includes(evil), false);
+  const index = read("index.html");
+  for (const attr of ['property="og:image"', 'name="twitter:image"']) {
+    check(`index.html と画像URLが一致: ${attr}`, index.includes(`<meta ${attr} content="https://www.boat-ai.jp/ogp-image.png"`), true);
+  }
+}
+
 if (failures.length > 0) {
   console.error(
     `❌ verify-bot-page-function:${failures.length}件の失敗（${checked}件中）`,
