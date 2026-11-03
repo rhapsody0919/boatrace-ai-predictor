@@ -106,12 +106,9 @@ function lines({ venue90, overview, conclusion }) {
   // SNS は |z|>=1.96 の線で向きを止めない（オーナー 2026-11-01、hq docs/playbook.md:41。線は SEO の記事だけ）。
   // 向きは見せる率の大小から決める。1ポイント未満は向きを言わない・件数が足りず比べられない日（few）は従来どおり言わない
   const dirOf = (f) =>
-    f.direction ??
-    (f.few || f.diffPt === null || f.diffPt === undefined || f.diffPt < 1 || typeof f.rate !== "number" || typeof f.national !== "number" || f.rate === f.national
+    f.few || f.diffPt === null || f.diffPt === undefined || f.diffPt < 1
       ? null
-      : f.rate > f.national
-        ? "高い"
-        : "低い");
+      : (f.direction ?? (typeof f.rate !== "number" || typeof f.national !== "number" || f.rate === f.national ? null : f.rate > f.national ? "高い" : "低い"));
   const diff = (f, base) => {
     const w = diffWords({ ...f, direction: dirOf(f) });
     return w === null ? "" : `、${base}${w}`;
@@ -120,7 +117,7 @@ function lines({ venue90, overview, conclusion }) {
     venue: venue90
       ? `${venue90.venue}の1号艇の1着率は過去90日の${venue90.races.toLocaleString("ja-JP")}レースで${d1(venue90.rate)}%${diff(venue90, `全国の同じ期間の${d1(venue90.national)}%`)}`
       : null,
-    // 題名の後半（その日の向き）。向きを言える日（1ポイント以上の差、または |z| の線を通った日）。言えない日は既定の後半
+    // 題名の後半（その日の向き）。向きを言える日（1ポイント以上の差で件数が足りる日）。言えない日は既定の後半
     venueHead: venue90 && dirOf(venue90) ? `${venue90.venue}の1着率は全国より${dirOf(venue90)}` : null,
     overview: overview
       ? `6艇比較の${overview.axesCount}項目で2位以内に入った数は、${overview.leaders.join("・")}号艇の${overview.maxTop2}が最多${overview.runner ? `、次は${overview.runner.boats.join("・")}号艇の${overview.runner.count}` : ""}`

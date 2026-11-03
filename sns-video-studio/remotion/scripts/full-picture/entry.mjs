@@ -1,6 +1,6 @@
 /**
  * 入口版（X・Shorts）の場面の並び。hq 契約 10/24 v2（ファン役4人・デザイナー役の審査、オーナー 10/24「再生回数が伸びてなかったらすぐ改善」）。
- * 結論の数字3秒 →（会場の90日の棒: 全国との差が |z|>=1.96 の日だけ）→ 当日の水面5秒 → 重ね図の全体5秒 → 1号艇と、流れ図で2着が多い2艇を各4.5秒
+ * 結論の数字3秒 →（会場の90日の棒: 全国との差を比べられる日（件数が足りる日））→ 当日の水面5秒 → 重ね図の全体5秒 → 1号艇と、流れ図で2着が多い2艇を各4.5秒
  * → 結論の再掲5秒 → 「チャンネルの完全版へ」2秒。約34〜45秒。上帯の問いは残す（オーナーの決定）。
  * 冒頭の数字は、同じ並びの過去で1着最多の艇の割合（frame0 から確定値）。件数が HERO_MIN_N を下回る日は当日の水面の数字に替える。
  * 59秒を越えたら会場の棒、次に当日の水面を外す。それでも越えたら止める（投稿しない）
@@ -16,13 +16,6 @@ export const HERO_MIN_N = 30;
 /** 冒頭の数字（3秒）・結論の再掲（5秒）・会場の棒と当日の水面（各5秒）・案内（2秒） */
 const LEN = { hero: 90, cond: 150, conclusion: 150, cta: 60, answerHero: 150 };
 const CTA_TEXT = "チャンネルの完全版へ";
-
-/** 会場の1号艇の1着率と全国の差の z（1つの割合の検定。races が母数） */
-export const venueZ = (f) => {
-  if (!f || !Number.isFinite(f.rate) || !Number.isFinite(f.national) || !(f.races > 0)) return null;
-  const p0 = f.national / 100;
-  return (f.rate / 100 - p0) / Math.sqrt((p0 * (1 - p0)) / f.races);
-};
 
 /**
  * 冒頭の数字。同じ並びの過去の1着最多の艇（件数が HERO_MIN_N 以上）→ 当日の水面の1号艇の逃げの件数 → 無し
@@ -80,10 +73,11 @@ export function entryScenes(scenes, answers = {}, { race = null, answer = null }
   const q = race ? entryQuestion(race) : null;
   const s1 = by.scene1?.data?.steps ?? [];
   const venue0 = s1.find((s) => s.id === "s1-venue90");
-  const z = venueZ(venue0?.facts);
   // 冒頭の答え（v2r1）は同じ範囲のどの形でもと比べるので、期間・級の違う会場の過去90日の棒は出さない
-  const venue = !answer && venue0 && z !== null && Math.abs(z) >= 1.96 ? { ...venue0, len: LEN.cond } : null;
-  if (venue0 && !venue && !answer) omitted.push({ where: "entry.venue90", reason: `会場と全国の差を確認できない（|z|=${z === null ? "—" : Math.abs(z).toFixed(2)}<1.96）` });
+  // |z| の線は使わない（オーナー 2026-11-01）。全国と比べられない日（差が出せない・件数が足りない）だけ外す
+  const venueOk = Boolean(venue0?.facts) && venue0.facts.diffPt !== null && venue0.facts.diffPt !== undefined && !venue0.facts.few;
+  const venue = !answer && venue0 && venueOk ? { ...venue0, len: LEN.cond } : null;
+  if (venue0 && !venue && !answer) omitted.push({ where: "entry.venue90", reason: "会場と全国の差を比べられない（差が出せない・件数が足りない）" });
   const day0 = s1.find((s) => s.id === "s1-wind") ?? s1.find((s) => s.id === "s1-day");
   const day = day0 ? { ...day0, len: LEN.cond } : null;
   // 会場の棒を外した日は、当日の水面の答えの「90日の1着率…より」を出さない（画面に出ない数字を指す。Orchestrate 10/24）
