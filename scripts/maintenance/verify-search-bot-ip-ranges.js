@@ -1,9 +1,9 @@
 /**
- * /api の関門が検索ボットを通すときの IP の範囲の表（api/_lib/searchBotIpRanges.json）が、
+ * /api の関門が検索ボットを通すときの IP の範囲の表（api/_lib/searchBotIpRanges.js。JSON の中身を export default する JS のモジュール）が、
  * Google の公開の表と一致するかを確かめる（BOA-1110、plan §2.2「範囲の表の置き場」）。
  *
  *   node scripts/maintenance/verify-search-bot-ip-ranges.js          # 照合だけ。違えば非ゼロで終わる
- *   node scripts/maintenance/verify-search-bot-ip-ranges.js --write  # 公開の表を取って JSON を書き直す
+ *   node scripts/maintenance/verify-search-bot-ip-ranges.js --write  # 公開の表を取って表を書き直す
  *
  * 表は手で書かない。このスクリプトの --write だけが書く（Vercel のビルドの中では取りに行かない）。
  * 範囲（prefixes）が変わらず creationTime だけが新しいときは書き直さない（毎日の差分を作らない）。
@@ -13,13 +13,18 @@
  *                         （旧 /static/search/apis/ipranges/googlebot.json は 301 でここへ転送される。2026-10-27 に確認）
  *   special-crawlers.json 特別なクローラー（plan §2.2 が挙げる2つ目の表）
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { compileIpRanges } from "../../api/_lib/apiGate.js";
 
 const TABLE_PATH = new URL(
-  "../../api/_lib/searchBotIpRanges.json",
+  "../../api/_lib/searchBotIpRanges.js",
   import.meta.url,
 );
+// 表の頭（middleware が Edge の束ねで読めるよう JS のモジュールにする。JSON の import 属性は束ねが読めない）
+const TABLE_HEADER = `// scripts/maintenance/verify-search-bot-ip-ranges.js --write が書く。手で書き換えない（BOA-1110）。
+// JSON ではなく JS のモジュールにしているのは、middleware（Vercel の Edge の束ね）が JSON の import 属性
+// （with { type: "json" }）を読めず、Node は属性の無い JSON の import を拒むため（段階3の Preview のビルドで確認）
+export default `;
 export const SOURCES = [
   "https://developers.google.com/static/crawling/ipranges/common-crawlers.json",
   "https://developers.google.com/static/crawling/ipranges/special-crawlers.json",
@@ -55,7 +60,7 @@ compileIpRanges({ sources: fetched });
 
 let stored = null;
 try {
-  stored = JSON.parse(readFileSync(TABLE_PATH, "utf8"));
+  stored = (await import(TABLE_PATH.href)).default;
 } catch (error) {
   if (!write) throw new Error(`表を読めない: ${error.message}`);
 }
@@ -89,5 +94,5 @@ const table = {
   note: "scripts/maintenance/verify-search-bot-ip-ranges.js --write が書く。手で書き換えない（BOA-1110）",
   sources: fetched,
 };
-writeFileSync(TABLE_PATH, `${JSON.stringify(table, null, 2)}\n`);
+writeFileSync(TABLE_PATH, `${TABLE_HEADER}${JSON.stringify(table, null, 2)};\n`);
 console.log(`書き直した:\n  ${diffs.join("\n  ")}`);

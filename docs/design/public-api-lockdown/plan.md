@@ -131,7 +131,7 @@ flowchart TD
 - `Sec-Fetch-Site` を送らない古いブラウザ（Safari 16.4 より前など）は `Referer` で救う（`reason=browser_legacy` で別に数え、少なければ段階4の後に外してよい）。偽れる強さは `Sec-Fetch-Site` と同じ
 - 自分の host は `new URL(request.url).host` から取る（固定の一覧にしない。Preview の `*.vercel.app` でも同じ判定で通る）
 - **matcher はデコード前のパスで照合される**（`api/_lib/adminAuth.js:4-8`。2026-09-29 に `/api/admin/sns-h%75b/` が middleware を素通りした実例）。matcher には `/api/:path*` を足し、除外の判定は `new URL(request.url).pathname` をデコードしたパスで行う。WHATWG URL は `%2F` を区切りにしないので、`/api/bot-page%2F..%2Fpredictions/2026-10-26` はデコードすると `/api/bot-page/../predictions/2026-10-26` になり、前方一致だけでは除外に入る（2026-10-27 に node で実測。`/api/cron/..%2fanalogy/…` も同じ）。そこで**デコード後に `..`・`.` のセグメント、`//`、`\` のどれかを含むパスは 400 no-store** にする（正規の画面・呼び出し元はこの形のパスを作らない。正規化してから判定する案より、正規化の差で前方一致が揺れない分単純）。`/%61pi/predictions/…` のように `api` 自体をエンコードした要求が関数に届くかは事前に Preview で実測する（§4 の段階0）。届くなら middleware だけでは穴になるので、Vercel Firewall のルールで塞ぐ（関数の入口に置いてもキャッシュに当たった要求には効かない）
-- 今の `middleware.js` に runtime の指定は無く、既定は Node.js（ADR-0089:98）。定数時間比較は `api/_lib/adminAuth.js:34-48` の `constantTimeEqual`（Web Crypto、どちらのランタイムでも動く）を export して使う（DRY）
+- 今の `middleware.js` に runtime の指定は無く、実際は Edge で動く（2026-11-04 の段階3の Preview のビルドの記録「middleware.js uses the deprecated "edge" runtime」。当初は ADR-0089:98 に従い Node.js と書いていた）。定数時間比較は `api/_lib/adminAuth.js:34-48` の `constantTimeEqual`（Web Crypto、どちらのランタイムでも動く）を export して使う（DRY）
 - 既存の分岐（`isAdminPath` が先、次に `resolveSnapshotPath`）の前に `/api` の分岐を置く。rewrite 先の `/api/bot-page/*` を直接叩かれても除外なので干渉しない
 - 判定は純関数にし、`verify-*.js` で固定する（エンコードしたパス・`/%61pi/`・`/api/bot-page%2F..%2Fpredictions/…`・`/api/cron/..%2f…`・`//`・`\` を含むパス・鍵が空・鍵の不一致・`Sec-Fetch-Site` 無しで `Referer` あり・`Origin` が別）。`verify-middleware-routing.js`（CI）に `/api` の振り分けを足す
 - `OPTIONS`（プリフライト）は同じ origin では発生しない。別 origin の `OPTIONS` は CORS を絞った後は許可のヘッダを返さないだけでよい（拒んでも同じ）
@@ -201,6 +201,7 @@ flowchart LR
   - IP・UA の全文・鍵の値・クエリ文字列は入れない（`verify-api-gate.js` [8]・[10]）
 - **鍵と段階の値の前後の空白**: 付ける側の fetch（`Headers`）は値の前後の空白・改行を落として送るので、Vercel に置いた値の末尾に改行があると、そのまま比べると `bad_key` になる（段階1の /code-review の指摘1）。関門の側で `INTERNAL_API_KEY`・`INTERNAL_API_KEY_NEXT`・受け取ったヘッダの前後の空白・改行を落としてから比べる（`gateKeysFromEnv`）。付ける側（`internalApiHeaders`）も落とす。`API_GATE_MODE` も前後を落として `enforce` だけ強制
 - **強制の扱い**: 段階4は環境変数と Redeploy だけで入る（§4 の表）ので、`middleware.js` は `API_GATE_MODE=enforce` のとき 403 を返す処理まで持つ。段階3の PR では値を置かない（未設定＝観測）
+- **範囲の表の形**: §2.2 は「JSON でコミット」だったが、`api/_lib/searchBotIpRanges.js`（JSON の中身を `export default` する JS のモジュール）にした。middleware の Edge の束ねが JSON の import 属性を読めずビルドが落ち、Node は属性の無い JSON の import を拒むため。書くのは今までどおり `verify-search-bot-ip-ranges.js --write` だけ
 - **範囲の表が読めないとき**: 検索ボットの経路が無いだけにし、middleware 全体は落とさない（`{"api_gate":"error",…}` を1行）
 - **呼び出し元の基点の末尾の `/`**: `FULL_PICTURE_API_BASE`・`ANALOGY_BASE` の末尾に `/` があると `//api/…` になり、関門が禁じた形（`//`）に当たる。3つのスクリプト（`fetch-materials.mjs`・`daily.mjs`・`analogy-judge-open-cards.js`）で末尾の `/` を落とす。`verify-bot-html-parity.js` の `BOT_PARITY_ORIGIN` は前から落としている
 - **CORS**: `vercel.json` の `/api/(.*)` の `Access-Control-Allow-*` と、関数の中の `Access-Control-Allow-*`（§2.1 ①の一覧と `api/_lib/strictQuery.js` の 400）を外した。`OPTIONS` は許可のヘッダ無しの 200 のまま。残らないことを `verify-api-gate.js` [11] で固定

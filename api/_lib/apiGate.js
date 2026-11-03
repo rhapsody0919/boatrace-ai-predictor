@@ -239,7 +239,7 @@ function parseCidr(cidr) {
 }
 
 /**
- * api/_lib/searchBotIpRanges.json（scripts/maintenance/verify-search-bot-ip-ranges.js --write が書く）を
+ * api/_lib/searchBotIpRanges.js（scripts/maintenance/verify-search-bot-ip-ranges.js --write が書く）を
  * 照合しやすい形にする。読めない範囲があれば例外（黙って範囲を減らさない）
  */
 export function compileIpRanges(table) {

@@ -39,12 +39,7 @@ import {
   parseIp,
 } from "../../api/_lib/apiGate.js";
 
-const table = JSON.parse(
-  readFileSync(
-    new URL("../../api/_lib/searchBotIpRanges.json", import.meta.url),
-    "utf8",
-  ),
-);
+const { default: table } = await import("../../api/_lib/searchBotIpRanges.js");
 const ipRanges = compileIpRanges(table);
 
 const CURRENT = "verify-current-key-0123456789";

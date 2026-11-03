@@ -1317,7 +1317,7 @@
     {
       "script": "verify-search-bot-ip-ranges.js",
       "tier": "manual",
-      "guards": "/api の関門が検索ボットを通す IP の範囲の表（api/_lib/searchBotIpRanges.json）が、Google の公開の表（common-crawlers.json・special-crawlers.json）の範囲と一致すること（BOA-1110）。--write で表を書き直す（表は手で書かない）",
+      "guards": "/api の関門が検索ボットを通す IP の範囲の表（api/_lib/searchBotIpRanges.js）が、Google の公開の表（common-crawlers.json・special-crawlers.json）の範囲と一致すること（BOA-1110）。--write で表を書き直す（表は手で書かない）",
       "reason": "Google の公開の表（developers.google.com）をネットワークで取るため。CI の中で外部に依らない",
       "command": "node scripts/maintenance/verify-search-bot-ip-ranges.js"
     },

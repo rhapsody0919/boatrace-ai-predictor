@@ -33,7 +33,7 @@ import {
   gateRejectResponse,
   normalizeGateMode,
 } from "./api/_lib/apiGate.js";
-import searchBotIpRanges from "./api/_lib/searchBotIpRanges.json" with { type: "json" };
+import searchBotIpRanges from "./api/_lib/searchBotIpRanges.js";
 
 export const config = {
   matcher: [
