@@ -48,6 +48,7 @@ const { ROBOTS, parseJsonLdScripts, getLocaleT, escapeHtml } =
   await import("../../api/_lib/botPage.js");
 const { getRaceDetailMeta } =
   await import("../../src/utils/raceDetailHeading.js");
+const { formatDateLocalized } = await import("../../src/utils/formatters.js");
 const jaModule = await import("../../api/bot-page/race/[id].js");
 const langModule = await import("../../api/bot-page/[lang]/race/[id].js");
 check(
@@ -149,6 +150,37 @@ const alternatesOf = (html) =>
   ].map((m) => [m[1], decode(m[2])]);
 
 const tJa = await getLocaleT("ja");
+
+// BOA-1200: 同じレースの状態だけを変えて4言語のメタを確認する。
+for (const lang of ["ja", "en", "zh-TW", "ko"]) {
+  const t = await getLocaleT(lang);
+  const key = { raceId: "2026-10-12-01-12", venueCode: 1, raceNo: 12, date: "2026-10-12" };
+  const titles = [];
+  for (const [state, suffix] of [
+    [{}, ""],
+    [{ finished: true }, "Result"],
+    [{ cancelled: true }, "Cancelled"],
+    [{ finished: true, cancelled: true }, "Result"],
+  ]) {
+    const meta = getRaceDetailMeta(t, key, lang, state);
+    const baseline = getRaceDetailMeta(t, key, lang);
+    const params = { venue: t("venues.1"), race: 12, date: formatDateLocalized(key.date, lang) };
+    check(`${lang} title ${suffix}`, meta.title, t(`raceDetailPage.metaTitle${suffix}`, params));
+    check(`${lang} description ${suffix}`, meta.description, t(`raceDetailPage.metaDescription${suffix}`, params));
+    check(`${lang} canonical ${suffix}`, meta.canonical, baseline.canonical);
+    const json = fresh();
+    const race = json.races.find((r) => r.raceId === key.raceId);
+    race.result = state.finished ? { finished: true, rank1: 1 } : null;
+    race.cancellationStatus = state.cancelled ? "confirmed" : null;
+    const { res } = await call(`/api/bot-page/${lang === "ja" ? "" : lang + "/"}race/${key.raceId}`, {
+      json, langMode: lang === "ja" ? "ja" : "prefixed",
+    });
+    check(`${lang} bot title ${suffix}`, decode(attr(res.body, /<title>([^<]*)<\/title>/)), meta.title);
+    check(`${lang} bot description ${suffix}`, decode(attr(res.body, /<meta name="description" content="([^"]*)"/)), meta.description);
+    titles.push(meta.title);
+  }
+  check(`${lang} 3状態のtitle`, new Set(titles).size, 3);
+}
 
 // ---- 1・2. 優勝戦（桐生12R、節タイトルあり・日目なし） ----
 {

@@ -15,14 +15,14 @@ test("レース詳細: title・description に開催日、ja は競艇を含み�
   await page.goto("/race/2026-09-21-02-05", { waitUntil: "domcontentloaded" });
 
   await expect(page).toHaveTitle(
-    /^戸田競艇 5R AI予想・展開予測（2026年9月21日.*）- 龍神レーダー$/,
+    /^戸田競艇 5R 中止（2026年9月21日.*）- 龍神レーダー$/,
   );
   const description = await page
     .locator('meta[name="description"]')
     .last()
     .getAttribute("content");
   expect(description).toMatch(
-    /^2026年9月21日.*の戸田競艇（ボートレース戸田）5R/,
+    /^2026年9月21日.*の戸田競艇（ボートレース戸田）5Rは中止/,
   );
 
   await expect(page.locator("h1").last()).not.toContainText("競艇");
@@ -40,4 +40,9 @@ test("レース詳細: 同じ会場・同じR番号でも日付が違えば titl
   expect(first).toContain("2026年9月21日");
   expect(second).toContain("2026年9月29日");
   expect(first).not.toBe(second);
+});
+
+test("レース詳細: 確定後は結果・払戻のtitle", async ({ page }) => {
+  await page.goto("/race/2026-09-29-02-05", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveTitle(/結果・払戻/);
 });
