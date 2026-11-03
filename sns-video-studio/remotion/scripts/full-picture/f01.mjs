@@ -11,7 +11,7 @@
  */
 import { buildAll } from "./build-all.mjs";
 import { answerOf } from "./answer.mjs";
-import { DISCLAIMER, FEATURES, FULL_TAGS, LIMITS, ROUND_NAME, SITE, featureUrl, fullLine1, raceHeader, utmUrl } from "./bundle.mjs";
+import { DISCLAIMER, FEATURES, FULL_TAGS, LIMITS, ROUND_NAME, SITE, WEEKDAY, featureUrl, fullLine1, raceHeader, utmUrl } from "./bundle.mjs";
 import { rankOf } from "./scenes/diff.mjs";
 import { bannedIn } from "./scene2-text.mjs";
 import { venueName } from "./scenes/common.mjs";
@@ -37,7 +37,6 @@ const BOATS = [1, 2, 3, 4, 5, 6];
 /** 件数（字幕は 11,160、声は「1万1160」） */
 const cnt = (n) => n.toLocaleString("ja-JP");
 const wari = (k, n) => Math.round((k / n) * 10);
-const WEEKDAY = "日月火水木金土";
 /**
  * サムネ（F01Thumb、1280x720）の大きさ。大きな文言は2行で1行9字まで（オーナー 11/4）。9字の全角の幅までは big px、
  * それより長い行（長い名前）は幅に収まるよう字を詰め、min px を下回るなら作らない（f01Check）。
@@ -428,11 +427,7 @@ export function f01Check(s, r) {
     // 字幕は1行 SUB_MAX 字以内
     for (const l of c.subs) if (l.length > SUB_MAX + 2) why.push(`${c.id}: 字幕が${l.length}字`);
   }
-  // 題の長さ（YouTube の上限 100 字。bundle.mjs の LIMITS.title と同じ、push の checkBundle も見る）
-  if (typeof s.title === "string" && [...s.title].length > LIMITS.title) why.push(`題が${[...s.title].length}字（上限 ${LIMITS.title} 字）`);
-  // サムネ: 字を詰めても THUMB.min px を下回る行、下の行が幅を越えるときは作らない
-  for (const l of s.thumb?.lines ?? []) if (l.size < THUMB.min) why.push(`サムネ: 「${l.text}」が ${l.size}px（線 ${THUMB.min}px）`);
-  if (s.thumb && thumbFootWidth(s.thumb.foot, s.thumb.number) > THUMB.width) why.push(`サムネ: 下の行が幅 ${THUMB.width}px を越える`);
+  why.push(...f01TitleThumbCheck(s));
   // 名前と級（race_entries）: 右の列の艇番の隣に「フルネーム 級」があり、出走表と一致するか。右の列が幅・下の線に収まるか
   if (r.racers) why.push(...f01RacerCheck(s, r.racers));
   // 読みの辞書（audio_query の kana）
@@ -452,6 +447,24 @@ export function f01Check(s, r) {
       for (const e of exp) if (!flat.includes(norm(e))) why.push(`${c.id}${cut}: 左の画面に「${e}」が無い`);
     }
   }
+  return why;
+}
+
+/**
+ * 題とサムネの検査（純関数。声と撮影の前に buildF01 でも呼ぶ）。題は YouTube の上限 100 字（bundle.mjs の LIMITS.title、
+ * push の checkBundle と同じ数え方 length）。サムネは、字を詰めても THUMB.min px を下回る行・下の行と上の帯（右上の締切の札の分を除く）が幅を越えるときは作らない
+ * @param {{title?: string, thumb?: {head: string, deadline: string, lines: {text: string, size: number}[], foot: string, number: string}}} s
+ * @returns {string[]}
+ */
+export function f01TitleThumbCheck(s) {
+  const why = [];
+  if (typeof s.title === "string" && s.title.length > LIMITS.title) why.push(`題が${s.title.length}字（上限 ${LIMITS.title} 字）`);
+  const t = s.thumb;
+  if (!t) return why;
+  for (const l of t.lines) if (l.size < THUMB.min) why.push(`サムネ: 「${l.text}」が ${l.size}px（線 ${THUMB.min}px）`);
+  if (thumbFootWidth(t.foot, t.number) > THUMB.width) why.push(`サムネ: 下の行が幅 ${THUMB.width}px を越える`);
+  // 上の帯（40px）と右上の札（44px＋左右の余白 22×2、間 32）が重ならない
+  if (charsEm(t.head) * 40 + 32 + charsEm(t.deadline) * 44 + 44 > THUMB.width) why.push(`サムネ: 上の帯「${t.head}」が締切の札に重なる`);
   return why;
 }
 

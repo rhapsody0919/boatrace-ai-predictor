@@ -2127,6 +2127,10 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
   const why = f01Check({ ...s, thumb: { ...s.thumb, lines: [{ text: "壱".repeat(14), size: thumbSize("壱".repeat(14)) }] } }, { desc: VOICE.credit, kana: {}, shots: {} });
   assert.ok(why.some((w) => /サムネ: 「壱+」が \d+px（線 80px）/.test(w)), "収まらない名前は止める");
   assert.ok(f01Check({ ...s, title: "あ".repeat(101) }, { desc: VOICE.credit, kana: {}, shots: {} }).some((w) => /題が101字/.test(w)), "題の上限 100 字");
+  // 上の帯が右上の締切の札に重なるときは止める（声と撮影の前に buildF01 でも当てる純関数）
+  const { f01TitleThumbCheck } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01.mjs");
+  assert.deepEqual(f01TitleThumbCheck(s), []);
+  assert.ok(f01TitleThumbCheck({ thumb: { ...s.thumb, head: "あ".repeat(24) } }).some((w) => /締切の札に重なる/.test(w)));
   // 締切の無い材料は作らない
   const m2 = f01Fixture("2026-10-19-19-10");
   m2.race = { ...m2.race, startTime: null };
