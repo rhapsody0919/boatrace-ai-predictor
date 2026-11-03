@@ -190,6 +190,21 @@ flowchart LR
 
 戻し方: 段階4は `API_GATE_MODE=observe` に戻して Redeploy（数分）。段階3は matcher を戻す PR。段階5は Firewall のルールを無効にする。
 
+### 4.1 段階3の実装で決めたこと（BOA-1110 段階3の PR）
+
+- **ログの1行**（`middleware.js` が `console.log` で出す。中身は `api/_lib/apiGate.js` の `gateLogRecord`）:
+  `{"api_gate":reason,"group":…,"tag":"apigate_<reason>_<group>","mode":"observe","method":"GET","status":null|400|403,"path":…,"sfs":…,"origin_host":…,"ua_class":…,"caller":…,"caller_claimed":…,"key_slot":…,"bot_verified":…,"sample":1|10}`
+  - `group` は数える群: `google`・`bingbot`・`search_other`・`ai_crawler`・`hq`・`ryujin`・`browser`・`other`。internal は caller が `hq-` で始まれば `hq`、ほかは `ryujin`。internal 以外は UA の丸めが先で、次に名乗った呼び出し元（`caller_claimed`。偽れるので手がかり）、次に `browser`（Mozilla の UA）、残りが `other`
+  - `caller` は §2.2 のとおり `reason=internal` のときだけ。合言葉の無い要求が付けた `x-ryujin-caller` は `caller_claimed` に別に書く（配り漏れの hq・龍神のスクリプトを外部と見分けるため。§2.2 に無かった欄）
+  - `tag` は Runtime Logs の全文検索で群ごとに数えるための1語
+  - `reason=browser` は10件に1件だけ書き、`sample=10` を付ける（10 は目安、根拠なし）。検索ボットを名乗る要求（`bot_verified` が true/false）は browser でも抜き取らない。除外（cron・admin・bot-page）と `/api` でないものは書かない
+  - IP・UA の全文・鍵の値・クエリ文字列は入れない（`verify-api-gate.js` [8]・[10]）
+- **鍵と段階の値の前後の空白**: 付ける側の fetch（`Headers`）は値の前後の空白・改行を落として送るので、Vercel に置いた値の末尾に改行があると、そのまま比べると `bad_key` になる（段階1の /code-review の指摘1）。関門の側で `INTERNAL_API_KEY`・`INTERNAL_API_KEY_NEXT`・受け取ったヘッダの前後の空白・改行を落としてから比べる（`gateKeysFromEnv`）。付ける側（`internalApiHeaders`）も落とす。`API_GATE_MODE` も前後を落として `enforce` だけ強制
+- **強制の扱い**: 段階4は環境変数と Redeploy だけで入る（§4 の表）ので、`middleware.js` は `API_GATE_MODE=enforce` のとき 403 を返す処理まで持つ。段階3の PR では値を置かない（未設定＝観測）
+- **範囲の表が読めないとき**: 検索ボットの経路が無いだけにし、middleware 全体は落とさない（`{"api_gate":"error",…}` を1行）
+- **呼び出し元の基点の末尾の `/`**: `FULL_PICTURE_API_BASE`・`ANALOGY_BASE` の末尾に `/` があると `//api/…` になり、関門が禁じた形（`//`）に当たる。3つのスクリプト（`fetch-materials.mjs`・`daily.mjs`・`analogy-judge-open-cards.js`）で末尾の `/` を落とす。`verify-bot-html-parity.js` の `BOT_PARITY_ORIGIN` は前から落としている
+- **CORS**: `vercel.json` の `/api/(.*)` の `Access-Control-Allow-*` と、関数の中の `Access-Control-Allow-*`（§2.1 ①の一覧と `api/_lib/strictQuery.js` の 400）を外した。`OPTIONS` は許可のヘッダ無しの 200 のまま。残らないことを `verify-api-gate.js` [11] で固定
+
 ## 5. 受け渡し（hq）
 
 hq（c2・c3）は hq のファイルなので、こちらからは書き換えない。段階1で次を渡す。
@@ -202,6 +217,8 @@ hq（c2・c3）は hq のファイルなので、こちらからは書き換え�
 ## 6. 誤って止めていないかを見る手順
 
 1. **数える**: middleware の1行ログ（`api_gate`）を Vercel の Runtime Logs（または Observability）で、`reason` × `path` の先頭2段 × `ua_class` × 時間帯で数える。Runtime Logs の保持は短い（Pro の保持期間は未確認）ので、1日1回では取りこぼす。数える処理をスクリプトにして数時間ごとに回し（`scripts/maintenance/` に置く。作るのは段階3の PR）、結果を hq の朝の報告に載せる。保持が足りなければ Log Drain（新しい設定。オーナー承認）
+   - **手順（段階3の PR で用意）**: 件数だけなら Vercel MCP の `get_runtime_logs`（`projectId`・`teamId` は `.vercel/project.json`、`environment: "production"`）に `query` で `tag` の1語（例 `apigate_would_deny_bingbot`・`apigate_would_deny_ai_crawler`・`apigate_would_deny_hq`・`apigate_would_deny_ryujin`・`apigate_bad_key_hq`・`apigate_internal_ryujin`）を渡し、`group_by: "requestPath"` と `since`・`until` で窓を切って数える（行を取らずに数えられる）。caller 別は `query` に名前（`bot-page`・`hq-finals` 等）。行そのものは1回100行までなので、内訳を見るときは窓を細かく切って行を保存し、`node scripts/maintenance/count-api-gate-log.js <保存した行のファイル>` に渡す（reason × group、would_deny・bad_key の ua_class・path・caller_claimed の内訳、b・c 群ごとの internal、bot_verified、§4 の段階3の進む条件のうちログで見るものを出す。browser の抜き取りは掛け戻す）。CLI の `vercel logs` は「今から5分」しか取れないので使わない
+   - **限界**: 合言葉も `x-ryujin-caller` も付けない hq の取得（c2・c3 が未対応のまま）は `group=other`（`ua_class` が `tool:python`・`tool:node`・`none`）に入り、外部と分けられない。時刻（hq の launchd・cron）と照らす（下の2）
 2. **自分の呼び出し元を見分ける**: `reason=internal` を `caller` 別に数え、§1.2 の b・c 群ごとに1件以上あることを見る（0件の群は配り漏れか、観測の期間に動いていない。どちらか確かめるまで段階4へ進まない）。`bad_key` は配り間違い（外部と見分けるため別に数える）。`would_deny` のうち、`ua_class` が `node`・`python`・`curl`・無し で、時刻が hq の launchd の時刻（全貌動画・優勝戦）や cron の時刻と重なるものは配り漏れを疑う。§1.2 の表と照らして1件ずつ潰す
 3. **キャッシュの前で効いているか・抜け道が無いか**（段階0の Preview と段階3の直後に1回）: キャッシュ済みの `/api/accuracy` をヘッダ無しの curl で2回叩き、2回目（`x-vercel-cache: HIT`）も `would_deny` のログが出る（強制の後は 403）こと。`/api/accur%61cy`・`/%61pi/accuracy` も関門に掛かるか、関数に届かないこと。`/api/bot-page%2F..%2Faccuracy`・`/api/cron/..%2faccuracy`・`/api//accuracy` が 400 になること。どちらかが外れたら関門の置き場所を見直す（§2.1 補足）
 4. **画面が通っているか**: 段階3の間、`reason=browser` が今までの API の要求数と同じ桁で出ていること。E2E（`e2e-live.yml`・c4 の素通し）と `bot-html-parity.yml` が緑。`ua_class=search_bot` の `would_deny` を別に見る（d2）

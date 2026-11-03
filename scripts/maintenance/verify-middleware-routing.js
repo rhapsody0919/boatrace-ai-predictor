@@ -28,8 +28,9 @@
  *    「本日」は JST の日付。vercel.json の no-store は、本日かどうかによらず id の形のパスだけ配る UA を除外する
  * 9. 選手ページ（/racer/{4桁}、BOA-848）は配る UA のときだけ /ai-snapshots/racer/{番号}.html へ振り分ける。
  *    Googlebot・人のブラウザ・番号の形が違うもの・言語の接頭辞付き・/racers は振り分けない
- * 12. /api の関門（BOA-1110、api/_lib/apiGate.js）: rewrite 先の /api/bot-page/* と /api/admin/* は関門の除外。
- *    段階0 は matcher に /api を足さない（公開の読み取り API・cron・bot-page は middleware で素通り）
+ * 12. /api の関門（BOA-1110 段階3、api/_lib/apiGate.js）: matcher に /api/:path* がある。rewrite 先の /api/bot-page/* と
+ *    /api/admin/* は関門の除外（ログ無し・既存の分岐へ）。観測（API_GATE_MODE 未設定）は外の要求も通して would_deny の1行を出し、
+ *    禁じた形のパスだけ 400。強制は環境変数だけで 403。env の鍵の末尾の改行を落として比べる（再現テスト）
  *
  * Vercel の matcher は path-to-regexp 構文。このリポジトリが使う
  * 「固定パス」と「/prefix/:path*」の2形だけを解釈し、それ以外の形が足されたら
@@ -37,7 +38,8 @@
  */
 
 import { readFileSync } from "node:fs";
-import middleware, { config } from "../../middleware.js";
+import middleware, { config, handleApiGate } from "../../middleware.js";
+import { internalApiHeaders } from "../../api/_lib/internalApiHeaders.js";
 import {
   AI_CRAWLER_USER_AGENTS,
   BOT_PAGE_PREFIXED_LANGS,
@@ -865,7 +867,7 @@ console.log(
 }
 
 console.log(
-  "[12] /api の振り分け（BOA-1110 段階0: 関門の判定は api/_lib/apiGate.js、matcher にはまだ足さない）",
+  "[12] /api の関門（BOA-1110 段階3: matcher に /api/:path*、観測で判定とログ、禁じた形だけ 400）",
 );
 {
   const gateOf = (path) =>
@@ -891,28 +893,135 @@ console.log(
     const d = await gateOf(path);
     check(`${path} は関門の除外`, d.reason === "excluded", d.reason);
   }
-  // 段階0 は本番の動きを変えない: 公開の読み取り API・cron・bot-page は matcher に入っておらず、
-  // middleware を呼んでも素通り。段階3で matcher に "/api/:path*" を足したら、この項目を書き換える
-  const STAGE0_API_PATHS = [
-    ["/api/predictions/2026-10-26", "would_deny"],
-    ["/api/races/today", "would_deny"],
-    ["/api/accuracy", "would_deny"],
-    ["/api/analogy/facts/2026-10-26-01-01", "would_deny"],
-    ["/api/odds/live", "would_deny"],
-    ["/api/cron/odds", "excluded"],
-    ["/api/bot-page/top", "excluded"],
-  ];
-  for (const [path, want] of STAGE0_API_PATHS) {
-    check(`${path} は matcher に入っていない（段階0）`, !matchesMatcher(path));
-    const res = await call(path);
-    check(`${path} は middleware で素通り`, res === undefined, describe(res));
-    const d = await gateOf(path);
-    check(`${path} の関門の判定は ${want}`, d.reason === want, d.reason);
-  }
   check(
-    'matcher に "/api/:path*" はまだ無い（段階0）',
-    !config.matcher.includes("/api/:path*"),
+    'matcher に "/api/:path*" がある（段階3）',
+    config.matcher.includes("/api/:path*"),
   );
+
+  // console.log を一時的に受けて、1行の JSON ログを見る
+  const captureLogs = async (fn) => {
+    const lines = [];
+    const original = console.log;
+    console.log = (...args) => lines.push(args.join(" "));
+    try {
+      return { value: await fn(), lines };
+    } finally {
+      console.log = original;
+    }
+  };
+  const gateLines = (lines) =>
+    lines.filter((l) => l.startsWith("{")).map((l) => JSON.parse(l));
+
+  // 観測（API_GATE_MODE 未設定）: 外からの要求も通し、would_deny のログを1行出す
+  const OBSERVE_PATHS = [
+    "/api/predictions/2026-10-26",
+    "/api/races/today",
+    "/api/accuracy",
+    "/api/analogy/facts/2026-10-26-01-01",
+    "/api/odds/live",
+    "/api",
+  ];
+  for (const path of OBSERVE_PATHS) {
+    check(`${path} は matcher に一致する`, matchesMatcher(path));
+    const { value: res, lines } = await captureLogs(() =>
+      handleApiGate(
+        new Request(`${ORIGIN}${path}`, { headers: { "user-agent": "curl/8.4.0" } }),
+        {},
+      ),
+    );
+    check(`${path} は観測で通す`, res === undefined, describe(res));
+    const logs = gateLines(lines);
+    check(
+      `${path} は would_deny の1行を出す`,
+      logs.length === 1 &&
+        logs[0].api_gate === "would_deny" &&
+        logs[0].mode === "observe" &&
+        logs[0].group === "other" &&
+        logs[0].tag === "apigate_would_deny_other",
+      lines.join(" | "),
+    );
+  }
+  // middleware 本体から呼んでも素通り（既定の process.env に API_GATE_MODE が無い前提）
+  {
+    const saved = process.env.API_GATE_MODE;
+    delete process.env.API_GATE_MODE;
+    const { value: res, lines } = await captureLogs(() =>
+      call("/api/accuracy", { ua: "python-requests/2.31" }),
+    );
+    check("middleware 本体: /api/accuracy は観測で素通り", res === undefined, describe(res));
+    check(
+      "middleware 本体: would_deny のログが1行",
+      gateLines(lines).length === 1 && gateLines(lines)[0].ua_class === "tool:python",
+      lines.join(" | "),
+    );
+    if (saved !== undefined) process.env.API_GATE_MODE = saved;
+  }
+
+  // 禁じた形のパスは観測でも 400 no-store
+  for (const path of [
+    "/api/bot-page%2F..%2Fpredictions/2026-10-26",
+    "/api/cron/..%2fanalogy/facts/x",
+    "/api//accuracy",
+  ]) {
+    const { value: res } = await captureLogs(() => call(path));
+    check(
+      `${path} は観測でも 400 no-store`,
+      res?.status === 400 && res.headers.get("cache-control") === "no-store",
+      describe(res),
+    );
+  }
+
+  // 除外はログを出さず、既存の分岐へ進む（/api/admin は Basic 認証の 401 のまま、cron・bot-page は素通り）
+  for (const [path, want] of [
+    ["/api/admin/sns-hub/drafts", 401],
+    ["/api/cron/odds", undefined],
+    ["/api/bot-page/top", undefined],
+  ]) {
+    const { value: res, lines } = await captureLogs(() => call(path));
+    check(
+      `${path} は除外（ログ無し・既存の分岐）`,
+      gateLines(lines).length === 0 && (res?.status ?? undefined) === want,
+      `${describe(res)} ${lines.join(" | ")}`,
+    );
+  }
+
+  // 強制（段階4。環境変数だけで入る）: 外は 403、同じ origin のブラウザと合言葉は通す
+  const ENFORCE_ENV = { API_GATE_MODE: "enforce\n", INTERNAL_API_KEY: "verify-key-abc\n" };
+  {
+    const { value: denied } = await captureLogs(() =>
+      handleApiGate(new Request(`${ORIGIN}/api/accuracy`), ENFORCE_ENV),
+    );
+    check(
+      "強制（値の末尾に改行）: 外の要求は 403 no-store",
+      denied?.status === 403 && denied.headers.get("cache-control") === "no-store",
+      describe(denied),
+    );
+    const { value: browser } = await captureLogs(() =>
+      handleApiGate(
+        new Request(`${ORIGIN}/api/accuracy`, {
+          headers: { "sec-fetch-site": "same-origin", "user-agent": HUMAN_UA },
+        }),
+        ENFORCE_ENV,
+      ),
+    );
+    check("強制: 同じ origin のブラウザは通す", browser === undefined, describe(browser));
+  }
+
+  // 再現テスト（段階1の /code-review の指摘1）: Vercel の値の末尾に改行があっても、
+  // fetch が前後の空白を落として送った合言葉と一致する（trim しないと bad_key になる）
+  {
+    const sent = new Headers(internalApiHeaders("bot-page", { INTERNAL_API_KEY: "verify-key-abc" }));
+    const { value: res, lines } = await captureLogs(() =>
+      handleApiGate(new Request(`${ORIGIN}/api/races/today`, { headers: sent }), ENFORCE_ENV),
+    );
+    const log = gateLines(lines)[0];
+    check(
+      "env の鍵の末尾の改行を落として比べる（internal・key_slot=current）",
+      res === undefined && log?.api_gate === "internal" && log.key_slot === "current" && log.caller === "bot-page" && log.group === "ryujin",
+      `${describe(res)} ${lines.join(" | ")}`,
+    );
+    check("ログに鍵の値が出ない", !lines.join("").includes("verify-key-abc"));
+  }
 }
 
 console.log("[13] X の短いリンクは札を保って /today へ302");

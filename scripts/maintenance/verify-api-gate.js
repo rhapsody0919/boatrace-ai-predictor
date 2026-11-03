@@ -14,12 +14,24 @@
  *    IP が範囲の外・UA だけ・bingbot・Googlebot-Image は通さない。bot_verified は Google の UA のときだけ true/false
  * 7. それ以外は観測で would_deny（通す）、強制で deny（403 no-store）。API_GATE_MODE は "enforce" のときだけ強制
  * 8. 結果（ログの1行）に鍵・IP・UA の全文・クエリ文字列を入れない
+ * 10. 段階3のログ: env の鍵・API_GATE_MODE の前後の空白・改行を落とす（Vercel の値の末尾の改行で bad_key・観測に戻らない）。
+ *    群（bingbot・AI のクローラー・hq・龍神のスクリプト・Google・ブラウザ）を分けて数えられる。browser は抜き取り、除外は書かない
+ * 11. CORS（段階3、plan §2.1 ①）: api/ の関数と vercel.json に Access-Control-Allow-Origin を置かない
+ *    （画面は同じ origin なので要らない。別サイトの JS から応答を読ませない）
+ * 12. ログの数え方（count-api-gate-log.js）: Vercel の行の形（テキスト・message に入った JSON）から拾い、
+ *    browser の抜き取りを掛け戻し、群ごと・自分の呼び出し元の群ごと・bot_verified を数えて、段階4の条件を出す
  */
 import { readFileSync } from "node:fs";
+import { readSourceFile, walkSourceFiles } from "../lib/sourceFileWalk.js";
+import { countApiGateLines, extractGateRecord } from "./count-api-gate-log.js";
 import {
   classifyUserAgent,
   compileIpRanges,
   decideApiGate,
+  BROWSER_LOG_SAMPLE,
+  gateGroup,
+  gateKeysFromEnv,
+  gateLogRecord,
   gateRejectResponse,
   inspectApiPath,
   ipInRanges,
@@ -563,9 +575,9 @@ console.log("[6] 検索ボット（UA と IP の範囲の両方）");
 console.log("[7] 段階（観測・強制）");
 {
   check(
-    "API_GATE_MODE: enforce だけ強制",
+    "API_GATE_MODE: enforce だけ強制（前後の空白・改行は [10]）",
     normalizeGateMode("enforce") === "enforce" &&
-      ["observe", undefined, "", "ENFORCE", "enforce ", "true"].every(
+      ["observe", undefined, "", "ENFORCE", "true"].every(
         (v) => normalizeGateMode(v) === "observe",
       ),
   );
@@ -638,6 +650,7 @@ console.log("[8] 結果（ログの1行）に秘密・全文を入れない");
       "reason",
       "key_slot",
       "caller",
+      "caller_claimed",
       "bot_verified",
       "ua_class",
       "path",
@@ -752,6 +765,312 @@ console.log("[9] UA の丸め・IP の読み方・範囲の表");
             "https://developers.google.com/static/crawling/ipranges/",
           ) && s.prefixes.length > 0,
       ),
+  );
+}
+
+console.log("[10] 段階3のログ（鍵の trim・群・抜き取り）");
+{
+  const keys = gateKeysFromEnv({
+    INTERNAL_API_KEY: `  ${CURRENT}\n`,
+    INTERNAL_API_KEY_NEXT: "\n",
+  });
+  check(
+    "env の鍵の前後の空白・改行を落とし、空白だけの NEXT は無いにする",
+    keys.current === CURRENT && keys.next === undefined,
+    JSON.stringify(keys),
+  );
+  const viaEnv = await gate("/api/accuracy", {
+    keys: gateKeysFromEnv({ INTERNAL_API_KEY: `${CURRENT}\r\n` }),
+    headers: { "x-ryujin-internal-key": CURRENT, "x-ryujin-caller": "hq-finals" },
+  });
+  check(
+    "末尾に CRLF のある env の鍵でも、送った合言葉と一致する",
+    viaEnv.reason === "internal" && viaEnv.key_slot === "current",
+    show(viaEnv),
+  );
+  const rawKeys = await gate("/api/accuracy", {
+    keys: { current: `${CURRENT}\n` },
+    headers: { "x-ryujin-internal-key": CURRENT },
+  });
+  check(
+    "decideApiGate に渡した鍵の末尾の改行も落として比べる",
+    rawKeys.reason === "internal",
+    show(rawKeys),
+  );
+  const spaceOnly = await gate("/api/accuracy", {
+    keys: { current: "   " },
+    headers: { "x-ryujin-internal-key": "   " },
+  });
+  check(
+    "空白だけの鍵と空白だけのヘッダでは通さない（fail-closed）",
+    spaceOnly.reason !== "internal",
+    show(spaceOnly),
+  );
+  check(
+    'API_GATE_MODE="enforce\\n" は強制、"Enforce" 等の別の値は観測',
+    normalizeGateMode("enforce\n") === "enforce" &&
+      normalizeGateMode(" enforce ") === "enforce" &&
+      normalizeGateMode("Enforce") === "observe" &&
+      normalizeGateMode(undefined) === "observe",
+  );
+
+  // 群: bingbot・AI のクローラー・hq・龍神のスクリプトを分けて数える
+  const groupCases = [
+    [{ headers: { "user-agent": BINGBOT_UA } }, "would_deny", "bingbot"],
+    [
+      { headers: { "user-agent": "Mozilla/5.0 (compatible; GPTBot/1.2)" } },
+      "would_deny",
+      "ai_crawler",
+    ],
+    [
+      { headers: { "user-agent": GOOGLEBOT_UA }, ip: OTHER_IP },
+      "would_deny",
+      "google",
+    ],
+    [
+      { headers: { "user-agent": "node", "x-ryujin-caller": "hq-full-picture" } },
+      "would_deny",
+      "hq",
+    ],
+    [
+      {
+        headers: {
+          "user-agent": "node",
+          "x-ryujin-caller": "full-picture-materials",
+        },
+      },
+      "would_deny",
+      "ryujin",
+    ],
+    [
+      {
+        headers: {
+          "x-ryujin-internal-key": CURRENT,
+          "x-ryujin-caller": "hq-finals",
+        },
+      },
+      "internal",
+      "hq",
+    ],
+    [
+      {
+        headers: {
+          "x-ryujin-internal-key": CURRENT,
+          "x-ryujin-caller": "sns-claim-check",
+        },
+      },
+      "internal",
+      "ryujin",
+    ],
+    [
+      {
+        headers: {
+          "x-ryujin-internal-key": "wrong",
+          "x-ryujin-caller": "hq-finals",
+        },
+      },
+      "bad_key",
+      "hq",
+    ],
+    [{ headers: { "user-agent": "curl/8.4.0" } }, "would_deny", "other"],
+    [{ headers: {} }, "would_deny", "other"],
+    [{ headers: { "user-agent": CHROME_UA } }, "would_deny", "browser"],
+  ];
+  for (const [opts, reason, group] of groupCases) {
+    const d = await gate("/api/analogy/facts/2026-10-26-01-01", opts);
+    const record = gateLogRecord(d, { mode: "observe", method: "GET" });
+    check(
+      `${JSON.stringify(opts.headers)} → ${reason}・${group}`,
+      d.reason === reason &&
+        gateGroup(d) === group &&
+        record?.tag === `apigate_${reason}_${group}` &&
+        record.sample === 1,
+      `${show(d)} group=${gateGroup(d)}`,
+    );
+  }
+  const internalLog = await gate("/api/accuracy", {
+    headers: { "x-ryujin-internal-key": CURRENT, "x-ryujin-caller": "bot-page" },
+  });
+  check(
+    "internal は caller に名前、caller_claimed は null",
+    internalLog.caller === "bot-page" && internalLog.caller_claimed === null,
+    show(internalLog),
+  );
+  const claimed = await gate("/api/accuracy", {
+    headers: { "x-ryujin-caller": "hq-finals" },
+  });
+  check(
+    "合言葉の無い要求は caller が null、名乗った名前は caller_claimed",
+    claimed.caller === null && claimed.caller_claimed === "hq-finals",
+    show(claimed),
+  );
+
+  // 抜き取り: browser は 1/BROWSER_LOG_SAMPLE、ほかは全件。除外・/api でないものは書かない
+  const browser = await gate("/api/odds/live", {
+    headers: { "sec-fetch-site": "same-origin", "user-agent": CHROME_UA },
+  });
+  const kept = gateLogRecord(browser, {
+    mode: "observe",
+    method: "GET",
+    random: () => 0,
+  });
+  const dropped = gateLogRecord(browser, {
+    mode: "observe",
+    method: "GET",
+    random: () => 1 / BROWSER_LOG_SAMPLE,
+  });
+  check(
+    `browser は抜き取り（sample=${BROWSER_LOG_SAMPLE}）`,
+    kept?.api_gate === "browser" &&
+      kept.sample === BROWSER_LOG_SAMPLE &&
+      dropped === null,
+    JSON.stringify(kept),
+  );
+  const excluded = await gate("/api/cron/odds");
+  check(
+    "除外はログを書かない",
+    gateLogRecord(excluded, { mode: "observe", method: "GET" }) === null,
+  );
+  const badPath = await gate("/api//accuracy");
+  const badRecord = gateLogRecord(badPath, { mode: "observe", method: "GET" });
+  check(
+    "400 の禁じた形はログを書く（status=400）",
+    badRecord?.api_gate === "bad_path" && badRecord.status === 400,
+    JSON.stringify(badRecord),
+  );
+  const secretLine = JSON.stringify(
+    gateLogRecord(
+      await gate("/api/predictions/2026-10-26?token=abc", {
+        ip: GOOGLE_IPV4,
+        headers: {
+          "x-ryujin-internal-key": "wrong-secret-value",
+          "user-agent": GOOGLEBOT_UA,
+        },
+      }),
+      { mode: "observe", method: "GET" },
+    ),
+  );
+  check(
+    "ログの行に鍵・IP・UA の全文・クエリを入れない",
+    !secretLine.includes("wrong-secret-value") &&
+      !secretLine.includes(GOOGLE_IPV4) &&
+      !secretLine.includes("Nexus 5X") &&
+      !secretLine.includes("token=abc"),
+    secretLine,
+  );
+}
+
+console.log("[11] CORS を置かない（api/・vercel.json）");
+{
+  const CORS_PATTERN = /Access-Control-Allow-/i;
+  const files = walkSourceFiles(new URL("../../api/", import.meta.url).pathname, {
+    extensions: [".js", ".mjs"],
+  });
+  check("api/ の関数を1件以上読んだ", files.length > 0, String(files.length));
+  const offenders = files.filter((file) => CORS_PATTERN.test(readSourceFile(file) ?? ""));
+  check(
+    "api/ に Access-Control-Allow-* が無い",
+    offenders.length === 0,
+    offenders.join(", "),
+  );
+  const vercelJson = readFileSync(new URL("../../vercel.json", import.meta.url), "utf8");
+  check("vercel.json に Access-Control-Allow-* が無い", !CORS_PATTERN.test(vercelJson));
+}
+
+console.log("[12] ログの数え方（count-api-gate-log.js）");
+{
+  const recordOf = async (path, opts) =>
+    gateLogRecord(await gate(path, opts), {
+      mode: "observe",
+      method: "GET",
+      random: () => 0,
+    });
+  const records = [
+    await recordOf("/api/odds/live", {
+      headers: { "sec-fetch-site": "same-origin", "user-agent": CHROME_UA },
+    }),
+    await recordOf("/api/analogy/facts/x", {
+      headers: { "user-agent": BINGBOT_UA },
+    }),
+    await recordOf("/api/analogy/facts/x", {
+      headers: { "user-agent": "Mozilla/5.0 (compatible; ClaudeBot/1.0)" },
+    }),
+    await recordOf("/api/predictions/2026-11-04", {
+      headers: {
+        "x-ryujin-internal-key": CURRENT,
+        "x-ryujin-caller": "hq-finals",
+      },
+    }),
+    await recordOf("/api/races/today", {
+      headers: {
+        "x-ryujin-internal-key": CURRENT,
+        "x-ryujin-caller": "bot-page",
+      },
+    }),
+    await recordOf("/api/predictions/2026-11-04", {
+      headers: { "user-agent": "node", "x-ryujin-caller": "hq-full-picture" },
+    }),
+    await recordOf("/api/analogy/facts/x", {
+      ip: GOOGLE_IPV4,
+      headers: { "user-agent": GOOGLEBOT_UA, "sec-fetch-site": "same-origin" },
+    }),
+  ];
+  const lines = [
+    // そのままの行・時刻の付いた行・Vercel の JSON（message に元の行）・関係の無い行
+    JSON.stringify(records[0]),
+    `2026-11-05T01:00:00Z info ${JSON.stringify(records[1])}`,
+    JSON.stringify({ level: "info", message: JSON.stringify(records[2]) }),
+    JSON.stringify(records[3]),
+    JSON.stringify(records[4]),
+    JSON.stringify(records[5]),
+    JSON.stringify(records[6]),
+    "GET /api/accuracy 200",
+    '{"level":"info","message":"other"}',
+  ];
+  check(
+    "テキストの行と message の JSON から拾う",
+    extractGateRecord(lines[1])?.group === "bingbot" &&
+      extractGateRecord(lines[2])?.group === "ai_crawler" &&
+      extractGateRecord(lines[7]) === null,
+  );
+  const r = countApiGateLines(lines);
+  const count = (reason, group) =>
+    r.byReasonGroup.find((x) => x.reason === reason && x.group === group)
+      ?.count ?? 0;
+  check(
+    "拾えた行7・ほかの行2",
+    r.parsed === 7 && r.skipped === 2,
+    `${r.parsed}/${r.skipped}`,
+  );
+  check(
+    `browser は抜き取りを掛け戻す（1行で ${BROWSER_LOG_SAMPLE}件）`,
+    count("browser", "browser") === BROWSER_LOG_SAMPLE,
+    JSON.stringify(r.byReasonGroup),
+  );
+  check(
+    "bingbot・AI のクローラー・hq・龍神を分けて数える",
+    count("would_deny", "bingbot") === 1 &&
+      count("would_deny", "ai_crawler") === 1 &&
+      count("internal", "hq") === 1 &&
+      count("would_deny", "hq") === 1 &&
+      count("internal", "ryujin") === 1,
+    JSON.stringify(r.byReasonGroup),
+  );
+  check(
+    "自分の群の would_deny があれば条件は NG",
+    r.conditions.ownDeniedZero === false && r.conditions.ownDenied === 1,
+  );
+  check(
+    "群ごとの internal: b1・c2c3 は1件、ほかは0件として挙がる",
+    r.groups.find((g) => g.id === "b1").internal === 1 &&
+      r.groups.find((g) => g.id === "c2c3").internal === 1 &&
+      r.conditions.missingGroups.join(",") === "b2,c1,c3b",
+    JSON.stringify(r.groups),
+  );
+  check(
+    "bot_verified=true を数え、拒む候補が0なら OK",
+    r.botVerified === 1 && r.conditions.botVerifiedNeverDenied === true,
+    `${r.botVerified}/${r.botVerifiedDenied}`,
   );
 }
 

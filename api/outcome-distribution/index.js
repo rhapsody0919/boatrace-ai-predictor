@@ -45,11 +45,6 @@ export default async function handler(req) {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
     });
   }
 
@@ -130,7 +125,6 @@ export default async function handler(req) {
       status: 200,
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
         // 出目分布データは update-outcome-distribution.js が日1回更新するため24時間キャッシュで十分
         "Cache-Control": "s-maxage=86400, stale-while-revalidate=3600",
       },
@@ -147,7 +141,6 @@ export default async function handler(req) {
         status: 500,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
         },
       },
     );

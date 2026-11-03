@@ -158,7 +158,6 @@ export function json(body, status, cache) {
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": cache,
-      "Access-Control-Allow-Origin": "*",
     },
   });
 }

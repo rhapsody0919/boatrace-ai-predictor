@@ -59,6 +59,21 @@ await check("鍵が無い・空なら caller だけ（合言葉を付けない�
     [CALLER_HEADER]: "bot-page",
   });
 });
+await check(
+  "鍵の前後の空白・改行は落とし、空白だけなら合言葉を付けない",
+  () => {
+    assert.deepEqual(
+      internalApiHeaders("bot-page", { INTERNAL_API_KEY: ` ${TEST_KEY}\r\n` }),
+      { [CALLER_HEADER]: "bot-page", [INTERNAL_KEY_HEADER]: TEST_KEY },
+    );
+    assert.deepEqual(
+      internalApiHeaders("bot-page", { INTERNAL_API_KEY: " \n" }),
+      {
+        [CALLER_HEADER]: "bot-page",
+      },
+    );
+  },
+);
 await check("caller の形が違えば投げる", () => {
   for (const bad of ["", "a b", "x".repeat(33), "名前", undefined]) {
     assert.throws(() => internalApiHeaders(bad, {}), /32字/);
@@ -151,7 +166,15 @@ await check("snsClaimCheck（/api/analogy/*）", async () => {
 
 // ---- 4. 静的な走査 ----
 const SCAN_ROOTS = ["api", "scripts", "sns-video-studio"];
-const SKIP_DIRS = ["node_modules", "dist", "out", "build", "public", ".git", ".remotion"];
+const SKIP_DIRS = [
+  "node_modules",
+  "dist",
+  "out",
+  "build",
+  "public",
+  ".git",
+  ".remotion",
+];
 // 自分の /api を取りに行くが合言葉が要らないもの（理由を必ず書く）
 const EXEMPT = new Map([
   [
@@ -170,36 +193,41 @@ const EXEMPT = new Map([
 // /api/ の後ろは何でもよい（/api/${kind} や "/api/" + name も拾う）
 const NOT_EXCLUDED = String.raw`\/api\/(?!cron\b|admin\b|bot-page\b)`;
 const OWN_API = new RegExp(
-  String.raw`["'\x60]\^?(?:\$\{[^}\n]*\})?` + NOT_EXCLUDED +
+  String.raw`["'\x60]\^?(?:\$\{[^}\n]*\})?` +
+    NOT_EXCLUDED +
     "|" +
-    String.raw`["'\x60][^"'\x60\n]*boat-ai\.jp` + NOT_EXCLUDED,
+    String.raw`["'\x60][^"'\x60\n]*boat-ai\.jp` +
+    NOT_EXCLUDED,
 );
 const FETCHES = /\bfetch(?:Impl)?\s*\(|\bhttps?\.get\s*\(|\brequest\s*\(/;
 const isComment = (line) => /^\s*(?:\*|\/\/|\/\*)/.test(line);
 
-await check("走査の型: 自分の /api は拾い、外部の /api と除外のパスは拾わない", () => {
-  for (const own of [
-    '"/api/predictions/x"',
-    "`${BASE}/api/analogy/facts/${id}`",
-    "`${origin}/api/races/today`",
-    '"/api/" + name',
-    "`/api/${kind}`",
-    "`^/api/analogy/(facts)`",
-    '"https://www.boat-ai.jp/api/analogy/layer/"',
-  ]) {
-    assert.ok(OWN_API.test(own), `拾うべき ${own}`);
-  }
-  for (const other of [
-    '"https://example.com/api/v1/x"',
-    "`${SUPABASE_URL}/rest/v1/x`",
-    '"/api/cron/sns-send"',
-    '"/api/admin/x"',
-    '"/api/bot-page/top"',
-    '"https://www.boat-ai.jp/api/cron/x"',
-  ]) {
-    assert.ok(!OWN_API.test(other), `拾わない ${other}`);
-  }
-});
+await check(
+  "走査の型: 自分の /api は拾い、外部の /api と除外のパスは拾わない",
+  () => {
+    for (const own of [
+      '"/api/predictions/x"',
+      "`${BASE}/api/analogy/facts/${id}`",
+      "`${origin}/api/races/today`",
+      '"/api/" + name',
+      "`/api/${kind}`",
+      "`^/api/analogy/(facts)`",
+      '"https://www.boat-ai.jp/api/analogy/layer/"',
+    ]) {
+      assert.ok(OWN_API.test(own), `拾うべき ${own}`);
+    }
+    for (const other of [
+      '"https://example.com/api/v1/x"',
+      "`${SUPABASE_URL}/rest/v1/x`",
+      '"/api/cron/sns-send"',
+      '"/api/admin/x"',
+      '"/api/bot-page/top"',
+      '"https://www.boat-ai.jp/api/cron/x"',
+    ]) {
+      assert.ok(!OWN_API.test(other), `拾わない ${other}`);
+    }
+  },
+);
 
 await check("自分の /api を取るファイルは internalApiHeaders を使う", () => {
   const callers = [];
