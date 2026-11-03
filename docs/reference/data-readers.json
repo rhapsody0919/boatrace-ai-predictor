@@ -19587,7 +19587,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1161",
+          "ref": "scripts/lib/snsTodayPlanner.js:1165",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19684,7 +19684,7 @@
             "api/_lib/snsXSendStore.js:151",
             "scripts/lib/snsAutoPlanRunner.js:719",
             "scripts/lib/snsSendRunner.js:584",
-            "scripts/lib/snsTodayPlanner.js:1161",
+            "scripts/lib/snsTodayPlanner.js:1165",
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
@@ -19703,7 +19703,7 @@
             "api/_lib/snsXSendStore.js:151",
             "scripts/lib/snsAutoPlanRunner.js:719",
             "scripts/lib/snsSendRunner.js:584",
-            "scripts/lib/snsTodayPlanner.js:1161",
+            "scripts/lib/snsTodayPlanner.js:1165",
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
@@ -19721,7 +19721,7 @@
             "api/_lib/snsXSendStore.js:151",
             "scripts/lib/snsAutoPlanRunner.js:719",
             "scripts/lib/snsSendRunner.js:584",
-            "scripts/lib/snsTodayPlanner.js:1161",
+            "scripts/lib/snsTodayPlanner.js:1165",
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
@@ -19756,7 +19756,7 @@
         "auto_approver_id": {
           "readers": [
             "scripts/lib/snsAutoPlanRunner.js:719",
-            "scripts/lib/snsTodayPlanner.js:1161",
+            "scripts/lib/snsTodayPlanner.js:1165",
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
@@ -19946,7 +19946,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1106",
+          "ref": "scripts/lib/snsTodayPlanner.js:1110",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19968,7 +19968,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:730",
+          "ref": "scripts/maintenance/verify-sns-today-plan.js:737",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20058,7 +20058,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1170",
+          "ref": "scripts/lib/snsTodayPlanner.js:1174",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -20103,8 +20103,8 @@
             "api/_lib/snsClaimCheck.js:351",
             "api/_lib/snsClaimCheck.js:398",
             "scripts/lib/snsAutoPlanRunner.js:775",
-            "scripts/lib/snsTodayPlanner.js:1106",
-            "scripts/lib/snsTodayPlanner.js:1170",
+            "scripts/lib/snsTodayPlanner.js:1110",
+            "scripts/lib/snsTodayPlanner.js:1174",
             "scripts/maintenance/verify-sns-auto-plan.js:621",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-finals-image.js:1393",
@@ -20164,8 +20164,8 @@
             "api/_lib/snsClaimCheck.js:396",
             "api/_lib/snsClaimCheck.js:398",
             "scripts/lib/snsAutoPlanRunner.js:750",
-            "scripts/lib/snsTodayPlanner.js:1106",
-            "scripts/maintenance/verify-sns-today-plan.js:730",
+            "scripts/lib/snsTodayPlanner.js:1110",
+            "scripts/maintenance/verify-sns-today-plan.js:737",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
@@ -20203,8 +20203,8 @@
             "api/_lib/snsClaimCheck.js:351",
             "api/_lib/snsClaimCheck.js:398",
             "scripts/lib/snsAutoPlanRunner.js:775",
-            "scripts/lib/snsTodayPlanner.js:1106",
-            "scripts/lib/snsTodayPlanner.js:1170",
+            "scripts/lib/snsTodayPlanner.js:1110",
+            "scripts/lib/snsTodayPlanner.js:1174",
             "scripts/maintenance/verify-sns-auto-plan.js:621",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-finals-image.js:1393",
@@ -20291,8 +20291,8 @@
             "api/_lib/snsClaimCheck.js:351",
             "api/_lib/snsClaimCheck.js:396",
             "api/_lib/snsClaimCheck.js:398",
-            "scripts/lib/snsTodayPlanner.js:1106",
-            "scripts/maintenance/verify-sns-today-plan.js:730",
+            "scripts/lib/snsTodayPlanner.js:1110",
+            "scripts/maintenance/verify-sns-today-plan.js:737",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
@@ -20310,7 +20310,7 @@
             "api/_lib/snsClaimCheck.js:288",
             "api/_lib/snsClaimCheck.js:348",
             "api/_lib/snsClaimCheck.js:396",
-            "scripts/lib/snsTodayPlanner.js:1106",
+            "scripts/lib/snsTodayPlanner.js:1110",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
@@ -21113,7 +21113,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1103",
+          "ref": "scripts/lib/snsTodayPlanner.js:1107",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -21207,7 +21207,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:723",
+          "ref": "scripts/maintenance/verify-sns-today-plan.js:730",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -21217,7 +21217,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:747",
+          "ref": "scripts/maintenance/verify-sns-today-plan.js:754",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -21284,7 +21284,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1147",
+          "ref": "scripts/lib/snsTodayPlanner.js:1151",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -21362,13 +21362,13 @@
             "scripts/lib/snsDailyRunner.js:855",
             "scripts/lib/snsDailyRunner.js:858",
             "scripts/lib/snsMetricsRunner.js:493",
-            "scripts/lib/snsTodayPlanner.js:1103",
-            "scripts/lib/snsTodayPlanner.js:1147",
+            "scripts/lib/snsTodayPlanner.js:1107",
+            "scripts/lib/snsTodayPlanner.js:1151",
             "scripts/maintenance/verify-data-readers.js:183",
             "scripts/maintenance/verify-data-readers.js:205",
             "scripts/maintenance/verify-sns-auto-plan.js:625",
             "scripts/maintenance/verify-sns-daily-runner.js:965",
-            "scripts/maintenance/verify-sns-today-plan.js:747",
+            "scripts/maintenance/verify-sns-today-plan.js:754",
             "scripts/sns/push-finals-image.js:1384",
             "scripts/sns/push-full-picture.js:895",
             "scripts/sns/push-full-picture.js:918",
@@ -21424,9 +21424,9 @@
             "scripts/lib/snsDailyRunner.js:850",
             "scripts/lib/snsDailyRunner.js:855",
             "scripts/lib/snsMetricsRunner.js:493",
-            "scripts/lib/snsTodayPlanner.js:1103",
+            "scripts/lib/snsTodayPlanner.js:1107",
             "scripts/maintenance/verify-sns-daily-runner.js:965",
-            "scripts/maintenance/verify-sns-today-plan.js:723",
+            "scripts/maintenance/verify-sns-today-plan.js:730",
             "scripts/sns/push-setsu-kiryoku-short.js:918",
             "scripts/sns/today-picks.js:75"
           ],
@@ -21501,11 +21501,11 @@
             "scripts/lib/snsAutoPlanRunner.js:758",
             "scripts/lib/snsAutoPlanRunner.js:785",
             "scripts/lib/snsMetricsRunner.js:493",
-            "scripts/lib/snsTodayPlanner.js:1103",
-            "scripts/lib/snsTodayPlanner.js:1147",
+            "scripts/lib/snsTodayPlanner.js:1107",
+            "scripts/lib/snsTodayPlanner.js:1151",
             "scripts/maintenance/verify-data-readers.js:183",
             "scripts/maintenance/verify-sns-auto-plan.js:625",
-            "scripts/maintenance/verify-sns-today-plan.js:747",
+            "scripts/maintenance/verify-sns-today-plan.js:754",
             "scripts/sns/push-full-picture.js:918",
             "scripts/sns/today-picks.js:75"
           ],
@@ -21586,7 +21586,7 @@
             "api/_lib/snsXSendStore.js:72",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/lib/snsDailyRunner.js:850",
-            "scripts/lib/snsTodayPlanner.js:1103",
+            "scripts/lib/snsTodayPlanner.js:1107",
             "scripts/sns/push-full-picture.js:895",
             "scripts/sns/today-picks.js:75"
           ],
@@ -21869,8 +21869,8 @@
         },
         "send_lane": {
           "readers": [
-            "scripts/lib/snsTodayPlanner.js:1103",
-            "scripts/maintenance/verify-sns-today-plan.js:723",
+            "scripts/lib/snsTodayPlanner.js:1107",
+            "scripts/maintenance/verify-sns-today-plan.js:730",
             "scripts/sns/today-picks.js:75"
           ],
           "writers": [],
@@ -22853,7 +22853,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1134",
+          "ref": "scripts/lib/snsTodayPlanner.js:1138",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22863,7 +22863,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:740",
+          "ref": "scripts/maintenance/verify-sns-today-plan.js:747",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22899,8 +22899,8 @@
       "columns": {
         "day": {
           "readers": [
-            "scripts/lib/snsTodayPlanner.js:1134",
-            "scripts/maintenance/verify-sns-today-plan.js:740",
+            "scripts/lib/snsTodayPlanner.js:1138",
+            "scripts/maintenance/verify-sns-today-plan.js:747",
             "scripts/maintenance/verify-sns-today-variants.js:358",
             "scripts/sns/push-today-types.js:106"
           ],
@@ -22909,16 +22909,16 @@
         },
         "type_id": {
           "readers": [
-            "scripts/lib/snsTodayPlanner.js:1134",
-            "scripts/maintenance/verify-sns-today-plan.js:740"
+            "scripts/lib/snsTodayPlanner.js:1138",
+            "scripts/maintenance/verify-sns-today-plan.js:747"
           ],
           "writers": [],
           "sql": []
         },
         "post": {
           "readers": [
-            "scripts/lib/snsTodayPlanner.js:1134",
-            "scripts/maintenance/verify-sns-today-plan.js:740"
+            "scripts/lib/snsTodayPlanner.js:1138",
+            "scripts/maintenance/verify-sns-today-plan.js:747"
           ],
           "writers": [],
           "sql": []
@@ -26822,7 +26822,7 @@
           "via": "rest"
         },
         {
-          "ref": "scripts/lib/snsTodayPlanner.js:1165",
+          "ref": "scripts/lib/snsTodayPlanner.js:1169",
           "via": "rest"
         },
         {
@@ -29649,12 +29649,12 @@
         ],
         "sns_auto_send_items": [
           "scripts/lib/snsAutoPlanRunner.js:775",
-          "scripts/lib/snsTodayPlanner.js:1170"
+          "scripts/lib/snsTodayPlanner.js:1174"
         ],
         "sns_drafts": [
           "api/_lib/snsHubHelpers.js:136",
           "scripts/lib/snsAutoPlanRunner.js:785",
-          "scripts/lib/snsTodayPlanner.js:1147"
+          "scripts/lib/snsTodayPlanner.js:1151"
         ],
         "sns_post_tracking": [
           "scripts/lib/snsPostTracking.js:76"

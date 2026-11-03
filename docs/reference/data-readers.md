@@ -146,7 +146,7 @@
 | add_fetch_counts | service だけ |  | scripts/lib/scrapeJobs/fetchCounter.js:140 / 名前の文字列: scripts/lib/scrapeJobs/fetchCounter.js:15 |  |  | fetch_counts, fetch_counts_minute |  |
 | analogy_feedback_guard | service だけ | yes | トリガー: analogy_feedback |  | analogy_feedback |  |  |
 | append_sns_metric_observation | service だけ |  | api/admin/sns-hub/observations.js:187, scripts/lib/snsDailyRunner.js:818, scripts/lib/snsMetricsRunner.js:501, scripts/maintenance/verify-sns-daily-runner.js:1278 |  | sns_drafts, sns_metric_observations | sns_metric_observations |  |
-| approve_sns_x_send | service だけ |  | api/_lib/snsXSendStore.js:114, scripts/lib/snsTodayPlanner.js:1165, scripts/sns/push-finals-image.js:1402, scripts/sns/push-full-picture.js:885 | sns_bundle_send_allowed | sns_approvers, sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs | sns_drafts, sns_x_send_jobs |  |
+| approve_sns_x_send | service だけ |  | api/_lib/snsXSendStore.js:114, scripts/lib/snsTodayPlanner.js:1169, scripts/sns/push-finals-image.js:1402, scripts/sns/push-full-picture.js:885 | sns_bundle_send_allowed | sns_approvers, sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs | sns_drafts, sns_x_send_jobs |  |
 | claim_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/store.js:216, scripts/maintenance/verify-scrape-slots-on-db.js:47 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:17 |  | races, scrape_slots | scrape_slots |  |
 | claim_scrape_slots_by_offset | service だけ |  | scripts/lib/scrapeJobs/store.js:197 |  | races, scrape_slots | scrape_slots |  |
 | compute_nige_second_by_course | service だけ |  | scripts/daily/update-course-baseline-stats.js:93 |  | race_results, races |  |  |
@@ -1752,7 +1752,7 @@
   - `api/_lib/snsXSendStore.js:151` rest(rest) [channel, dry_run, mode]
   - `scripts/lib/snsAutoPlanRunner.js:719` rest(rest) [auto_approver_id, channel, dry_run, mode]
   - `scripts/lib/snsSendRunner.js:584` rest(rest) [channel, dry_run, mode]
-  - `scripts/lib/snsTodayPlanner.js:1161` rest(rest) [auto_approver_id, channel, dry_run, mode]
+  - `scripts/lib/snsTodayPlanner.js:1165` rest(rest) [auto_approver_id, channel, dry_run, mode]
   - `scripts/sns/push-finals-image.js:1309` rest(rest)
   - `scripts/sns/push-finals-image.js:1320` rest(rest) [auto_approver_id, channel, dry_run, mode]
   - `scripts/sns/push-full-picture.js:846` rest(rest) [auto_approver_id, channel, dry_run, mode]
@@ -1786,9 +1786,9 @@
   - `api/_lib/snsClaimCheck.js:396` rest(rest) [draft_id, kind, race_id]
   - `api/_lib/snsClaimCheck.js:398` rest(rest) [channel, id, kind, race_id, state]
   - `scripts/lib/snsAutoPlanRunner.js:750` rest(rest) [*, race_id]
-  - `scripts/lib/snsTodayPlanner.js:1106` rest(rest) [draft_id, id, kind, race_id, state]
+  - `scripts/lib/snsTodayPlanner.js:1110` rest(rest) [draft_id, id, kind, race_id, state]
   - `scripts/maintenance/verify-sns-auto-plan.js:621` rest(rest) [id, state] （検査）
-  - `scripts/maintenance/verify-sns-today-plan.js:730` rest(rest) [kind, race_id] （検査）
+  - `scripts/maintenance/verify-sns-today-plan.js:737` rest(rest) [kind, race_id] （検査）
   - `scripts/sns/push-finals-image.js:1299` rest(rest) [created_at, draft_id, id, kind, race_id, state, variant]
   - `scripts/sns/push-full-picture.js:889` rest(rest) [channel, deadline_at, draft_id, id, kind, race_id, state, variant]
   - `scripts/sns/push-research-image.js:695` rest(rest) [channel, created_at, draft_id, held_reason, id, kind, race_id, state]
@@ -1796,7 +1796,7 @@
   - `scripts/sns/push-setsu-kiryoku-short.js:922` rest(rest) [draft_id, id, race_id, state]
 - 書き手（4）: 
   - `scripts/lib/snsAutoPlanRunner.js:775` update(rest) [?]
-  - `scripts/lib/snsTodayPlanner.js:1170` update(rest) [?]
+  - `scripts/lib/snsTodayPlanner.js:1174` update(rest) [?]
   - `scripts/sns/push-finals-image.js:1393` update(rest) [?]
   - `scripts/sns/push-full-picture.js:878` update(rest) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -1874,7 +1874,7 @@
   - `scripts/lib/snsDailyRunner.js:855` rest(rest) [caption_text, format, id, platform, posted_at]
   - `scripts/lib/snsDailyRunner.js:858` rest(rest) [id]
   - `scripts/lib/snsMetricsRunner.js:493` rest(rest) [format, id, platform, posted_at, status]
-  - `scripts/lib/snsTodayPlanner.js:1103` rest(rest) [format, id, send_lane, source_data, status]
+  - `scripts/lib/snsTodayPlanner.js:1107` rest(rest) [format, id, send_lane, source_data, status]
   - `scripts/maintenance/verify-data-readers.js:183` rest(rest) [created_at, id, status] （検査）
   - `scripts/maintenance/verify-data-readers.js:205` rest(rest) [id] （検査）
   - `scripts/maintenance/verify-display-coverage.js:170` rest(rest) [*] （検査）
@@ -1884,8 +1884,8 @@
   - `scripts/maintenance/verify-sns-existing-fixes.js:142` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-metrics-runner.js:642` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-month-calendar.js:47` rest(rest) （検査）
-  - `scripts/maintenance/verify-sns-today-plan.js:723` rest(rest) [format, send_lane] （検査）
-  - `scripts/maintenance/verify-sns-today-plan.js:747` rest(rest) [id, status] （検査）
+  - `scripts/maintenance/verify-sns-today-plan.js:730` rest(rest) [format, send_lane] （検査）
+  - `scripts/maintenance/verify-sns-today-plan.js:754` rest(rest) [id, status] （検査）
   - `scripts/sns/push-finals-image.js:1344` select(embed) [bundle_import_id]
   - `scripts/sns/push-full-picture.js:895` rest(rest) [id, source_data]
   - `scripts/sns/push-setsu-kiryoku-short.js:918` rest(rest) [format, id]
@@ -1893,7 +1893,7 @@
 - 書き手（6）: 
   - `api/_lib/snsHubHelpers.js:136` update(rest) [?]
   - `scripts/lib/snsAutoPlanRunner.js:785` update(rest) [?]
-  - `scripts/lib/snsTodayPlanner.js:1147` update(rest) [?]
+  - `scripts/lib/snsTodayPlanner.js:1151` update(rest) [?]
   - `scripts/sns/push-finals-image.js:1384` update(rest) [?]
   - `scripts/sns/push-full-picture.js:918` update(rest) [?]
   - `scripts/sns/push-setsu-kiryoku-short.js:876` update(rest) [?]
@@ -1982,8 +1982,8 @@
 
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 読み手（3）: 
-  - `scripts/lib/snsTodayPlanner.js:1134` rest(rest) [day, post, type_id]
-  - `scripts/maintenance/verify-sns-today-plan.js:740` rest(rest) [day, post, type_id] （検査）
+  - `scripts/lib/snsTodayPlanner.js:1138` rest(rest) [day, post, type_id]
+  - `scripts/maintenance/verify-sns-today-plan.js:747` rest(rest) [day, post, type_id] （検査）
   - `scripts/maintenance/verify-sns-today-variants.js:358` rest(rest) [day] （検査）
 - 書き手（1）: 
   - `scripts/sns/push-today-types.js:106` upsert(rest) [?]
