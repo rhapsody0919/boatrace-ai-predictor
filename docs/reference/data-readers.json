@@ -6,8 +6,8 @@
     "tables": 107,
     "rpcs": 68,
     "sourceFiles": 1597,
-    "filesWithAccess": 262,
-    "tableReaders": 937,
+    "filesWithAccess": 263,
+    "tableReaders": 939,
     "tableWriters": 187,
     "rpcCallers": 50,
     "nameMentions": 231,
@@ -9425,6 +9425,16 @@
       },
       "readers": [
         {
+          "ref": "api/odds/live.js:79",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "*",
+            "captured_at",
+            "race_id"
+          ]
+        },
+        {
           "ref": "scripts/analysis/analyze-odds-momentum.js:54",
           "op": "select",
           "via": "helper:fetchAll",
@@ -9589,6 +9599,7 @@
       "columns": {
         "race_id": {
           "readers": [
+            "api/odds/live.js:79",
             "scripts/daily/generate-moriarty-recommendations.js:97",
             "scripts/daily/scrape-odds.js:746",
             "scripts/daily/scrape-odds.js:769",
@@ -9606,6 +9617,7 @@
         },
         "captured_at": {
           "readers": [
+            "api/odds/live.js:79",
             "scripts/daily/generate-moriarty-recommendations.js:97",
             "scripts/daily/scrape-odds.js:746",
             "scripts/daily/scrape-odds.js:769",
@@ -12889,7 +12901,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-bot-race-function.js:769",
+          "ref": "scripts/maintenance/verify-bot-race-function.js:801",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -12969,7 +12981,7 @@
             "api/_lib/botPage.js:273",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
-            "scripts/maintenance/verify-bot-race-function.js:769",
+            "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/racerService.js:86",
             "src/services/supabaseDataService.js:1403",
             "src/services/supabaseDataService.js:1429",
@@ -12986,7 +12998,7 @@
             "api/_lib/botPage.js:273",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
-            "scripts/maintenance/verify-bot-race-function.js:769",
+            "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/racerService.js:86",
             "src/services/supabaseDataService.js:1403",
             "src/services/supabaseDataService.js:1429",
@@ -13003,7 +13015,7 @@
             "api/_lib/botPage.js:273",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
-            "scripts/maintenance/verify-bot-race-function.js:769",
+            "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/racerService.js:86",
             "src/services/supabaseDataService.js:1403",
             "src/services/supabaseDataService.js:1429",
@@ -13023,7 +13035,7 @@
         "title": {
           "readers": [
             "api/_lib/botPage.js:273",
-            "scripts/maintenance/verify-bot-race-function.js:769",
+            "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/supabaseDataService.js:1429",
             "src/services/supabaseDataService.js:7290"
           ],
@@ -13038,7 +13050,7 @@
         "grade": {
           "readers": [
             "api/_lib/botPage.js:273",
-            "scripts/maintenance/verify-bot-race-function.js:769",
+            "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/supabaseDataService.js:1429",
             "src/services/supabaseDataService.js:7290"
           ],
@@ -16108,6 +16120,16 @@
           ]
         },
         {
+          "ref": "api/odds/live.js:72",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_date",
+            "race_id",
+            "start_time"
+          ]
+        },
+        {
           "ref": "scripts/analysis/analyze-upset-factors.js:108",
           "op": "select",
           "via": "client",
@@ -17534,6 +17556,7 @@
             "api/_lib/snsClaimCheck.js:418",
             "api/_lib/snsClaimCheck.js:442",
             "api/_lib/snsTodayDigest.js:50",
+            "api/odds/live.js:72",
             "scripts/analysis/analyze-upset-factors.js:108",
             "scripts/analysis/backtest-unified-model-place-trifecta.js:94",
             "scripts/analysis/backtest-unified-model.js:109",
@@ -17670,6 +17693,7 @@
             "api/_lib/snsClaimCheck.js:250",
             "api/_lib/snsClaimCheck.js:343",
             "api/_lib/snsClaimCheck.js:442",
+            "api/odds/live.js:72",
             "scripts/analysis/analyze-upset-factors.js:108",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:130",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
@@ -17870,6 +17894,7 @@
             "api/_lib/snsClaimCheck.js:343",
             "api/_lib/snsClaimCheck.js:442",
             "api/_lib/snsTodayDigest.js:50",
+            "api/odds/live.js:72",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:130",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
             "scripts/daily/generate-morning-digest.js:133",

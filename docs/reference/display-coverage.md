@@ -122,7 +122,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `race_conditions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_racer_accident_records(画面), get_today_races(API・画面) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
 | `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_racer_accident_records(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `race_history_cache` | 表 | 020_race_history_cache.sql | API・画面が直接 | GRANT（020_race_history_cache.sql） |  |
-| `race_odds` | 表 | 001_schema.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
+| `race_odds` | 表 | 001_schema.sql | API・画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
 | `race_odds_final` | 表 | 108_race_odds_final.sql | 画面が直接 | GRANT（108_race_odds_final.sql） |  |
 | `race_original_exhibition` | 表 | 091_boatcast_original_exhibition.sql | 画面が直接 | GRANT（096_original_exhibition_public_read.sql） |  |
 | `race_original_exhibition_values` | 表 | 091_boatcast_original_exhibition.sql | 画面が直接 | GRANT（096_original_exhibition_public_read.sql） |  |
@@ -135,7 +135,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `racer_period_stats` | 表 | 083_racer_period_stats.sql | 画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `racer_profiles` | 表 | 035_create_racer_profiles.sql | 画面が直接 | ポリシー（035_create_racer_profiles.sql） |  |
 | `racer_series_points` | 表 | 064_racer_series_points.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
-| `races` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
+| `races` | 表 | 001_schema.sql | API・画面が直接 / RPC経由: get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `sns_approvers` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 | 記述なし |  |
 | `sns_bundle_imports` | 表 | 135_sns_preview_bundle_import.sql | RPC経由: import_sns_preview_bundle(API) | 記述なし |  |
 | `sns_drafts` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 / RPC経由: append_sns_metric_observation(API), import_sns_preview_bundle(API) | 記述なし |  |
