@@ -2095,8 +2095,45 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
   const mf = JSON.parse(gunzipSync(readFileSync(new URL(`${name}.json.gz`, FX))).toString("utf8"));
   const race = mf.api.races.find((r) => r.raceId === mf.raceId);
   race.entries = [1, 2, 3, 4, 5, 6].map((b) => ({ ...race.entries.find((e) => e.number === b), number: b, name: names[b - 1], grade: mf.api.facts.today.classes[b - 1] }));
+  // 試験の材料（10/12〜10/19）は race.startTime（締切）を持つ前の物。毎日の材料は 10/23 から持つ（hq-work の runs の45本で欠けは 10/20〜10/22 の3本）
+  mf.race = { ...mf.race, startTime: mf.race?.startTime ?? "16:44:00" };
   return mf;
 };
+
+// 締切を題・サムネ・冒頭の見出しに（オーナー 11/4「全ての動画に締め切り時刻も記載すること」、題とサムネの文言は 11/4 承認）
+{
+  const { bakedDeadlineReasons } = await import("../sns/push-full-picture.js");
+  const { THUMB, thumbSize } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01.mjs");
+  const mf = f01Fixture("2026-10-19-19-10", ["大久保信一郎", "齋藤勇", "西村", "山田", "佐藤", "鈴木"]);
+  const s = f01Script(mf);
+  assert.ok(s.ok, s.reason);
+  const k = Math.round((s.open.k0 / s.open.n0) * 10);
+  const g1 = mf.api.facts.today.classes[0];
+  assert.match(s.title, new RegExp(`^ボートレース\\S+ \\d+R( \\S+)? 10/19\\(月\\) 締切16:44｜1号艇 大久保信一郎${g1}は逃げ切れる？ 同じ並びの1着${k}割$`), s.title);
+  assert.ok([...s.title].length <= 100, `題は100字以内（${[...s.title].length}字）`);
+  // push の照合（BOA-1201）: 題に焼いた締切が今の締切と合えば通り、変われば止まる
+  assert.deepEqual(bakedDeadlineReasons({ youtube_full: { title: s.title } }, "2026-10-19T07:44:00.000Z"), []);
+  assert.equal(bakedDeadlineReasons({ youtube_full: { title: s.title } }, "2026-10-19T07:50:00.000Z").length, 1, "締切が変われば止める");
+  const open = s.chapters.find((c) => c.id === "open").open;
+  assert.ok(open.head.endsWith("10/19(月)  締切16:44"), open.head);
+  assert.equal(s.thumb.deadline, "締切16:44");
+  assert.ok(s.thumb.head.endsWith(" 10/19(月)") && !s.thumb.head.includes("締切"), s.thumb.head);
+  assert.deepEqual(s.thumb.lines.map((l) => l.text), [`大久保信一郎${NB}${g1}`, "逃げ切れる？"]);
+  assert.equal(s.thumb.foot, `同じ並び 過去${s.open.n0.toLocaleString("ja-JP")}回\u30001号艇の1着`);
+  assert.equal(s.thumb.number, `${k}割`);
+  // 11月の出走表で最長の6字の名前は字を詰めない。9字を越える行は詰め、線（THUMB.min）を下回る行は検査で止める
+  assert.equal(s.thumb.lines[0].size, THUMB.big, "6字の名前＋級は 116px のまま");
+  assert.ok(thumbSize("壱壱壱壱壱壱壱壱壱壱 A1") < THUMB.big && thumbSize("壱壱壱壱壱壱壱壱壱壱 A1") >= THUMB.min, "10字の名前は詰めて収める");
+  const why = f01Check({ ...s, thumb: { ...s.thumb, lines: [{ text: "壱".repeat(14), size: thumbSize("壱".repeat(14)) }] } }, { desc: VOICE.credit, kana: {}, shots: {} });
+  assert.ok(why.some((w) => /サムネ: 「壱+」が \d+px（線 80px）/.test(w)), "収まらない名前は止める");
+  assert.ok(f01Check({ ...s, title: "あ".repeat(101) }, { desc: VOICE.credit, kana: {}, shots: {} }).some((w) => /題が101字/.test(w)), "題の上限 100 字");
+  // 締切の無い材料は作らない
+  const m2 = f01Fixture("2026-10-19-19-10");
+  m2.race = { ...m2.race, startTime: null };
+  assert.equal(f01Script(m2).kind, "deadline");
+  // 禁止表現: 題・サムネの文に当たらない
+  assert.deepEqual(f01Check(s, { desc: VOICE.credit, kana: {}, shots: {} }).filter((w) => /^(題|サムネ):/.test(w)), []);
+}
 
 // 型 f01-landscape-voice-full（関門の段4の試作）: 順位の語は線を通ったときだけ・字幕の幅・声の読みの辞書・説明欄のクレジット・左の画面の照合
 {
