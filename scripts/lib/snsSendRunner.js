@@ -13,6 +13,8 @@
  *   3回で終わらなければ非公開のまま残す（youtube_retain）。残した理由は error_code に残る（budget・processing・check_failed・pt_day、186）
  * - 1回の実行の Chromium の上限（SNS_SEND_HEADLESS_BUDGET）を job ごとの必要数（headlessNeed）で見積もり、足りない job から先は
  *   次の実行に回す（BOA-1164）
+ * - 処理待ち・検査の枠で非公開のまま残した YouTube は、期限の前は実行ごとに1件ずつ読み直し、処理が済んでいれば公開する
+ *   （youtube_resume、196、BOA-1283。Shorts は処理に1分より長くかかり、3回の確認の後に残したまま期限で閉じていた）
  * - 非公開のまま期限を過ぎた YouTube は、自分の非公開の動画と確かめて公開しないで閉じる（youtube_close_private、186）
  * - YouTube のサムネイル（thumbnails.set）が失敗しても動画は公開まで進め、理由を report.jobs の thumbnail_error に入れて Slack に1回知らせる
  *   （BOA-1172。届かなければ report.alerts に残す）
@@ -29,6 +31,8 @@
 import { runXSendJob } from "../../api/_lib/snsXSend.js";
 import {
   closeRetainedYoutubeJob,
+  RESUMABLE_RETAIN_CODES,
+  resumeRetainedYoutubeJob,
   runYoutubePublishJob,
   runYoutubeQueueJob,
 } from "../../api/_lib/snsDeadlineQueue.js";
@@ -54,6 +58,16 @@ export function headlessNeed(job, sending) {
   return 5 + (job.snapshot?.media?.length === 2 ? 1 : 0);
 }
 export const YOUTUBE_MAX_POLLS = 3;
+/** 非公開で残した YouTube を期限の前に見直すのは1回の実行でこの件数まで（BOA-1283）。公開に要る検査の回数は YOUTUBE_RESUME_CHECKS */
+export const YOUTUBE_RESUME_MAX = 1;
+export const YOUTUBE_RESUME_CHECKS = 2;
+/**
+ * 見直しを始めるのは、実行の始まりからこの秒数まで（目安、根拠なし）。公開の途中（ready・publishing）で関数の上限（300秒）に当たると、
+ * 閉じる道（private_retained だけを拾う）にも見直しにも乗らず要照合に残るため、時間の残りが少ない実行では始めない（BOA-1283 の審査 P2-2）
+ */
+export const YOUTUBE_RESUME_START_LIMIT_SEC = 120;
+/** 見直しに失敗した job（読み取りの失敗・本人の動画と確かめられない）は、この分数は読み直さない（Slack とクォータを2分ごとに使わない） */
+export const RESUME_RETRY_MINUTES = 10;
 export const YOUTUBE_POLL_WAIT_SEC = 30;
 
 // PT の日付境界の前10分・後5分は、新しい YouTube 試行を始めない。
@@ -447,6 +461,83 @@ export async function runSnsSend(
         `SNS の送信: YouTube job ${job.id} のサムネイルを設定できなかった（動画の送信は続けた）: ${result.thumbnail_error}。403 はチャンネルの確認（カスタムサムネイルの権限）が無いときにも返る。付けるなら Studio で設定する`,
       );
   }
+  // 処理待ち・検査の枠で非公開のまま残した YouTube を、期限の前に見直す（BOA-1283）。読み取り1回（クォータ1）で処理が済んでいれば公開する。
+  // 公開には検査が2回（youtube_publish_begin の前・videos.update の前）要るので、この実行の枠に残りが無ければ次の実行に回す。
+  // この実行で上げて残したばかりの job は見ない（処理の確認をしたばかり）
+  const resumeRetry = (ctx.state?.last_report?.resume_retry ?? []).filter(
+    (r) => r?.id && Date.parse(r.until) > now.getTime(),
+  );
+  if (
+    live &&
+    store.resumableYoutubeJobs &&
+    ctx.now().getTime() - now.getTime() <=
+      YOUTUBE_RESUME_START_LIMIT_SEC * 1000 &&
+    controls.youtube?.dry_run === false &&
+    !youtubeQuotaDayWait(ctx.now())
+  ) {
+    const touched = new Set([
+      ...results.map((r) => r.id),
+      ...resumeRetry.map((r) => r.id),
+    ]);
+    const resumable = (
+      await store.resumableYoutubeJobs(
+        ctx.now(),
+        YOUTUBE_RESUME_MAX + touched.size,
+      )
+    )
+      .filter((j) => !touched.has(j.id))
+      .slice(0, YOUTUBE_RESUME_MAX);
+    for (const job of resumable) {
+      if (ctx.shouldStop()) break;
+      if (checks > 0 && checks + YOUTUBE_RESUME_CHECKS > headlessBudget) break;
+      const result = { id: job.id, channel: "youtube", resumed: true };
+      results.push(result);
+      const { adapter, error: tokenError } = await adapterFor("youtube");
+      if (tokenError) {
+        result.outcome = "token_failed";
+        alerts.push({
+          key: `token:youtube`,
+          text: `youtube のトークンを取れないので、非公開で残した job ${job.id} を見直していない: ${tokenError.message}`,
+          until: continuingUntil,
+        });
+        tokenChecked.add("youtube");
+        break;
+      }
+      try {
+        const done = await resumeRetainedYoutubeJob(job, {
+          store,
+          youtube: adapter,
+          preflight: countedPreflight,
+        });
+        result.outcome =
+          done.state === "reconcile" &&
+          done.youtube_stage === "private_retained"
+            ? "youtube_still_processing"
+            : done.state;
+        result.error_code = done.error_code ?? null;
+        if (done.state === "posted") posted += 1;
+      } catch (error) {
+        result.outcome = "error";
+        const failure = sendFailureOf(error);
+        result.reason = failure.reason;
+        await recordEvent(job, failure.stage, failure.reason, failure.detail);
+        // 本人の非公開の動画と確かめられない（公開・限定公開・削除済み）なら、期限まで読み直さない（期限の後は閉じる道が確かめる）
+        resumeRetry.push({
+          id: job.id,
+          until:
+            error.message === "youtube_processing_unconfirmed"
+              ? job.expires_at
+              : new Date(
+                  now.getTime() + RESUME_RETRY_MINUTES * 60000,
+                ).toISOString(),
+        });
+        await tell(
+          `resume:${job.id}`,
+          `SNS の送信: 非公開で残した YouTube job ${job.id} を公開に進められなかった: ${error.message}`,
+        );
+      }
+    }
+  }
   // この実行で見直さなかった job の検査の理由・確かめなかったチャネルのトークンの失敗は、期限まで残す
   const examined = new Set(results.map((r) => r.id));
   for (const a of previous) {
@@ -460,7 +551,12 @@ export async function runSnsSend(
   }
   return {
     rowsWritten: posted,
-    report: { jobs: results, alerts, close_retry: closeRetry },
+    report: {
+      jobs: results,
+      alerts,
+      close_retry: closeRetry,
+      resume_retry: resumeRetry,
+    },
     body: { jobs: results },
     cursor,
   };
@@ -624,6 +720,13 @@ export function createSnsSendStore({ db, xSendStore, writeEvent }) {
       const at = encodeURIComponent(now.toISOString());
       return db(
         `sns_x_send_jobs?state=eq.reconcile&channel=eq.youtube&youtube_stage=eq.private_retained&expires_at=lte.${at}&or=${encodeURIComponent(`(lease_until.is.null,lease_until.lte.${now.toISOString()})`)}&order=id.asc&limit=${limit}&select=id,channel,state,youtube_stage,error_code,external_post_id,attempts,expires_at,snapshot`,
+      );
+    },
+    // 処理待ち・検査の枠で非公開のまま残した job と、公開の段の途中で切れた ready の job のうち、期限の前でリースの切れたもの（見直す候補、BOA-1283）。見直してよいかの最終の判定は DB の youtube_resume
+    async resumableYoutubeJobs(now, limit) {
+      const at = encodeURIComponent(now.toISOString());
+      return db(
+        `sns_x_send_jobs?state=eq.reconcile&channel=eq.youtube&expires_at=gt.${at}&and=${encodeURIComponent(`(or(and(youtube_stage.eq.private_retained,error_code.in.(${RESUMABLE_RETAIN_CODES.join(",")})),and(youtube_stage.eq.ready,error_code.is.null)),or(lease_until.is.null,lease_until.lte.${now.toISOString()}))`)}&order=expires_at.asc,id.asc&limit=${limit}&select=id,channel,state,youtube_stage,error_code,external_post_id,attempts,expires_at,snapshot`,
       );
     },
     // 要照合の job（オーナーが照合するまで残る。件数は少ない）
