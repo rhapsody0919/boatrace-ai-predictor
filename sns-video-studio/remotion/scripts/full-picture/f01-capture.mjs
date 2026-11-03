@@ -224,6 +224,8 @@ async function splitHalves(page, base, top, bottom) {
       minFontPx: t.minFont === null ? null : Math.round(t.minFont * scale * 10) / 10,
       small: t.small.map(([px, x]) => [Math.round(px * scale * 10) / 10, x]),
       cursor: shift(base.cursor),
+      // 部品の一部だけを撮った印（f01-build.mjs の f01LayoutChapters が、PLAN で half と決めたカットでなければ止める）
+      crop: y0 === 0 ? "top" : "bottom",
     };
   }
   return out;
@@ -310,33 +312,33 @@ export async function captureAll(m, s, outDir) {
     }
     const c3 = at("c3");
     if (c3) {
-      // 形の札は選んだ1枚だけ（狭い幅 360 で撮っても札の中の図の艇番は同じ割合で小さくなり、かえって 20.6px に下がった）
+      // 形の札は選んだ1枚だけ（狭い幅 360 で撮っても札の中の図の艇番は同じ割合で小さくなり、かえって 20.6px に下がった）。
+      // 札は1枚のまま撮る（図と名前・件数を1カット）。#2087 で図 → 名前と件数の2カットに分けたら、図は拡大の上限（DPR）で
+      // 左の枠の約4割にしか届かず、名前と件数は帯だけになった（11/3 の4本、オーナー 11/4「11/2 18-10 の形が正しい」）
       await openTab(narrow, "展開シナリオ");
       await hideFixed(narrow);
       const btn = narrow.locator(".af-pats").first().locator("button", { hasText: c3.shot.form }).first();
       const b = await box(btn);
-      // 2カット（オーナー 11/2）: 札の図（艇と艇番とスリットの線の範囲だけ。左の水面は入れない）と、札の名前・件数の行
-      const fig = await btn.evaluate((e) => {
-        const svg = e.querySelector("svg").getBoundingClientRect();
-        const nums = [...e.querySelectorAll("svg text")].map((t) => t.getBoundingClientRect());
-        const x0 = nums.length ? Math.min(...nums.map((r) => r.x)) - 12 : svg.x;
-        return { x: x0 + scrollX, y: svg.y + scrollY, w: svg.right - x0, h: svg.height, bottom: svg.bottom + scrollY };
-      });
-      shots.c3i = await shoot(narrow, { x: fig.x - 4, y: fig.y - 4, w: fig.w + 8, h: fig.h + 8 }, file("c3i"), { testid: "スタートの形（図）" });
-      shots.c3 = await shoot(narrow, { x: b.x - 4, y: fig.bottom, w: b.w + 8, h: b.y + b.h + 4 - fig.bottom }, file("c3"), { testid: "スタートの形（名前と件数）" });
+      const clip = { x: b.x - 4, y: b.y - 4, w: b.w + 8, h: b.h + 8 };
+      shots.c3 = await shoot(narrow, clip, file("c3"), { goldBoxes: [rel(b, clip)], testid: "スタートの形" });
     }
     // PC 幅: 着順の流れ（図の暗い面だけを撮る。押す前・押した後）
     const page = await open(VIEWPORT);
     if (c2?.shot.cut2 || c3) await sonar(page);
-    // 押す前は、押す帯（カーソルの先）がある半分だけ。押した後は上・下の2カット
-    const flowShots = async (flow, pre, post, firstBoat, testid) => {
+    // split: 押す前は、押す帯（カーソルの先）がある半分だけ。押した後は上・下の2カット（②）。
+    // split でないときは図の全体を1カットずつ（③。上・下に切ると図の下が切れて見えた。オーナー 11/4「11/2 18-10 の形が正しい」）
+    const flowShots = async (flow, pre, post, firstBoat, testid, split) => {
       const dark = flow.locator(".af-dark").first();
-      const preAll = await shootEl(page, dark, file(`${pre}-all`));
+      const preAll = await shootEl(page, dark, file(split ? `${pre}-all` : pre));
       const hit = await pickFirst(flow, firstBoat);
       const at0 = await box(dark);
       await page.waitForTimeout(1200);
       const cursor = rel(hit, at0);
-      const postAll = await shootEl(page, dark, file(`${post}-all`), { cursor, testid });
+      const postAll = await shootEl(page, dark, file(split ? `${post}-all` : post), { cursor, testid });
+      if (!split) {
+        Object.assign(shots, { [pre]: preAll, [post]: postAll });
+        return;
+      }
       const lower = cursor.y + cursor.h / 2 > preAll.clip.h * 0.5;
       const preHalf = await splitHalves(page, { ...preAll, cursor }, lower ? null : pre, lower ? pre : null);
       Object.assign(shots, preHalf, await splitHalves(page, postAll, post, `${post}b`));
@@ -344,7 +346,7 @@ export async function captureAll(m, s, outDir) {
     if (c2?.shot.cut2) {
       await openTab(page, "類似レース");
       await hideFixed(page);
-      await flowShots(page.locator(".af-flow").first(), "c2-pre", "c22", c2.shot.firstBoat, "着順の流れ");
+      await flowShots(page.locator(".af-flow").first(), "c2-pre", "c22", c2.shot.firstBoat, "着順の流れ", true);
     }
     if (c3) {
       await openTab(page, "展開シナリオ");
@@ -352,7 +354,7 @@ export async function captureAll(m, s, outDir) {
       await page.locator(".af-pats").first().locator("button", { hasText: c3.shot.form }).first().click();
       await page.waitForTimeout(2500);
       await hideFixed(page);
-      await flowShots(page.locator(".af-flow").last(), "c3-pre", "c32", c3.shot.firstBoat, "着順の流れ（展開）");
+      await flowShots(page.locator(".af-flow").last(), "c3-pre", "c32", c3.shot.firstBoat, "着順の流れ（展開）", false);
     }
     // 思考アシスト＞相手（スマホ幅）。上＝軸のボタン・見出し・結論の1行、下＝2着の棒、の2カット
     const c4 = at("c4");
