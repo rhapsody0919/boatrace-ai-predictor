@@ -459,6 +459,11 @@
       "guards": "期別成績ファイル（fan）のパーサー・行変換・取得〜投入CLI"
     },
     {
+      "script": "verify-favorite-runs.js",
+      "tier": "ci",
+      "guards": "GS04-5 お気に入り選手の出走の締切順・中止除外・人数とレース数、枠番別成績の30走境界と丸め、代替会場の状態・SG/G1の先頭判定（BOA-1271）"
+    },
+    {
       "script": "verify-feature-contributions-dedup.js",
       "tier": "ci",
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
