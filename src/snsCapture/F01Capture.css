@@ -24,9 +24,10 @@ body:has(.f01-cap-v16, .f01-cap-ta) {
   padding: 0;
 }
 
+/* 枠線は幅ごと外す（border-box で 1px ずつ中身が狭くなり、本番の 380px とずれるため） */
 .f01-cap-bare {
   box-sizing: border-box;
-  border-color: transparent;
+  border: 0;
 }
 
 .f01-cap-error {

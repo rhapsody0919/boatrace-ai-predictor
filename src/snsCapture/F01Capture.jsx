@@ -151,7 +151,7 @@ function boxesOf(part, shot, props, q) {
   if (part === "flow" && q.get("point")) {
     const svg = shot.querySelector("svg").getBoundingClientRect();
     const s = svg.width / SANKEY_VIEW;
-    const b = sankeyFirstBox(props.tri, Number(q.get("point")));
+    const b = sankeyFirstBox(props.tri, Number(q.get("point")), props.first);
     return {
       cursor: {
         x: svg.x - o.x + b.x * s,
