@@ -138,3 +138,5 @@
 - PostgRESTのSELECTで未知の列を指定すると、PGの42703・HTTP 400になる。列追加前の互換処理は isColumnMissingError で対象列を確認して分岐する（2026-10-27、system-architect、マイグレーション178・PR #1963）。
 - update_venue_stats() は048で削除した venues.avg_volatility_score に書く定義のまま残る。呼び手が0でも再利用可能とみなさず、現行スキーマと本文を照合する（2026-10-28、docs/design/legacy-prediction-cleanup/plan.md §1 F7）。
 - DB全体のER図は docs/reference/schema-er-diagram.md を見る。本番スキーマの写しから機械生成し、マージ後にCIが作り直すため、生成物をPRへ含めない（2026-10-28、PR #2042、基盤の計画段6）。
+- 対象日−(series_day−1)で作るmeet_start_dateは、丸一日の中止で同じ日目が続くと実際の節開始日からずれる。racer_series_points_dailyの日別値はvenue_code・snapshot_dateの範囲・series_dayで読み、推定したmeet_start_dateだけに依存しない（2026-11-02、system-architect、BOA-1210、docs/design/pointrank-history/plan.md §4）。
+- 本番ではpgrst_ddl_watchイベントトリガーがDDL後にPostgRESTのスキーマ再読込を通知するため、同じ目的のNOTIFY pgrstを別途足す必要は無い。他環境でも同じ機構があるとは仮定しない（2026-11-02、system-architect、BOA-1210・PR #2085、pg_event_triggerの確認）。

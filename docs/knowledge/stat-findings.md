@@ -100,3 +100,4 @@
 - 単勝は0分窓から締切時オッズまで全艇の中央値28%動いた。スナップショットを確定値として表示しない（2026-10-26、10/12〜25、docs/design/scraping-load-budget/analysis/freshness-need.md・odds-windows.json）。
 - 1コース1着率を級別全国平均と比べる正規近似zは、B1・B2でBonferroni境界の正確な確率が名目の最大約2倍になった。言い切りの判定は正確な二項で行う（2026-10-27、data-scientist、scripts/analysis/today-course-win/check-exact-tail.mjs・data/analysis/today-course-win/exact-vs-normal-tail.json）。
 - 選手×コースの1着率を縮める重みα+βは、30走以上の本番データのモーメント法で22〜84。/today型bの40は全区分共通の採用値で、各区分の推定値そのものではない（2026-10-27、data/analysis/today-course-win-prior.json、PR #1977）。
+- 「向かい風はイン有利」と一律に書かない。公式Kファイル2020-02〜2026-09の会場平均との差の集約値は、向かい風4m以上45,541Rで1コース1着率−3.5pt、追い風4m以上45,000Rで−3.9pt。全会場で同じ方向という意味ではない（2026-11-02、seo-human、docs/design/weather-in-escape/results.md §1・3、data/analysis/weather-in-escape.json#wind.pooled）。

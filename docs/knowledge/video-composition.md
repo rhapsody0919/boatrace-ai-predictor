@@ -96,3 +96,5 @@
 - 左の実画面は章ごとに見せる部品だけを撮る（説明の行・凡例・ボタンの列を入れない）。ページの列ごと撮ると拡大が1.3〜2倍で止まり、7章が 13.5〜21px だった。部品だけにすると思考アシストは 13.5→約30px、類似レースの1着は 21→26px（2026-10-31、hq 11d 節、10/30 丸亀9R の実測）
 - 着順の流れ（正方形の図）の字は図の高さの約2.7%なので、1カットでは左の枠の高さ 838 で約22px が上限。押した後を上下2カット（境目を6%重ねる）に分けると約30px。形の札も図（艇と艇番の範囲だけ）と名前の行の2カットで 24.9px・32px。字の小ささの線は 24px（2026-11-02、オーナー「22.4px の章は2カットに分けて」、f01Right.js の MIN_FONT_PX）
 - 字の大きさは svg の中の字も画面の上の大きさで測る（getScreenCTM の縮尺を掛ける）。計算した font-size だけだと svg の単位のままで、形の札が 14.5px と小さく出ていた（実際は約22px）（2026-10-31、f01-capture.mjs）
+- Remotionの文字の箱の検査は通常のdivにrefを付け、失敗時はcancelRenderで止める。useLayoutEffect内のthrowでは描画が続き、AbsoluteFillへ渡したrefもnullになる場合があった（2026-10-31、PR #2076、setsuKiryoku試作で文字がはみ出すbundleもexit 0で書き出された実測、src/setsuKiryoku/SetsuKiryoku.jsx）。
+- 見出しの幅を全角1字=1emで決めない。Noto Sans JPの太字では17字・44pxの見出しが実測789pxとなり推定を超えた。描画時はfitHeadlineの実測で収め、文字数による推定だけを合格根拠にしない（2026-10-31、PR #2076のsetsuKiryoku試作、sns-video-studio/remotion/src/textFit.js）。
