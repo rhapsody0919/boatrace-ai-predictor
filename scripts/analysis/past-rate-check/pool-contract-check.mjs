@@ -19,6 +19,7 @@ import path from "path";
 import zlib from "zlib";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
+import { internalApiHeaders } from "../../../api/_lib/internalApiHeaders.js";
 
 const ROOT = process.env.REPO_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const { supabase } = await import(path.join(ROOT, "scripts/lib/supabaseClient.js"));
@@ -60,7 +61,8 @@ async function all(fn, label) {
 async function fetchLayer(rid) {
   for (let t = 0; ; t++) {
     try {
-      const res = await fetch(API + rid);
+      // 合言葉（BOA-1110 段階1）。node --env-file=.env.local で INTERNAL_API_KEY を読む。無ければ付けない
+      const res = await fetch(API + rid, { headers: internalApiHeaders("analysis") });
       const text = await res.text();
       if (!res.ok) return { race_id: rid, http: res.status };
       const j = JSON.parse(text);

@@ -38,6 +38,7 @@ import {
   isValidCrumbs,
   toBreadcrumbListLd,
 } from "../../src/utils/breadcrumbLd.js";
+import { internalApiHeaders } from "./internalApiHeaders.js";
 
 // 人のページの HreflangTags と同じ（hreflang の URL は本番のドメインで出す）
 const SITE_ORIGIN = "https://www.boat-ai.jp";
@@ -208,7 +209,8 @@ export function createTodayRacesSource({
     let res;
     try {
       res = await fetchImpl(url, {
-        headers: { accept: "application/json" },
+        // 合言葉（BOA-1110 段階1）。関門が enforce になると、無い要求は 403
+        headers: { accept: "application/json", ...internalApiHeaders("bot-page") },
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (e) {

@@ -39,6 +39,7 @@ import {
   parityPaths,
   pickOpenVenues,
 } from "../lib/botHtmlParity.js";
+import { internalApiHeaders } from "../../api/_lib/internalApiHeaders.js";
 import { resolveSnapshotPath } from "../../src/config/aiCrawlerBots.js";
 import {
   DEFAULT_LANGUAGE,
@@ -86,7 +87,11 @@ function save(file, content) {
 
 async function get(pathname, ua) {
   const res = await fetch(`${ORIGIN}${pathname}`, {
-    headers: { "user-agent": ua },
+    // /api には合言葉（BOA-1110 段階1。GHA の bot-html-parity.yml が prod-jobs の INTERNAL_API_KEY を渡す）。
+    // ページの HTML には付けない（ボット・人の UA で取る照合の条件を変えない）
+    headers: pathname.startsWith("/api/")
+      ? { "user-agent": ua, ...internalApiHeaders("bot-html-parity") }
+      : { "user-agent": ua },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   return { status: res.status, body: await res.text() };

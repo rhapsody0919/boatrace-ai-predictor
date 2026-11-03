@@ -11,6 +11,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { internalApiHeaders } from "../../../api/_lib/internalApiHeaders.js";
 
 const ROOT = process.env.REPO_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const { supabase } = await import(path.join(ROOT, "scripts/lib/supabaseClient.js"));
@@ -118,7 +119,8 @@ async function prodLayers() {
       for (const r of [1, 6, 12]) {
         if (k >= 5) break;
         const rid = `${day}-${String(v).padStart(2, "0")}-${String(r).padStart(2, "0")}`;
-        const res = await fetch(API + rid);
+        // 合言葉（BOA-1110 段階1）。node --env-file=.env.local で INTERNAL_API_KEY を読む。無ければ付けない
+        const res = await fetch(API + rid, { headers: internalApiHeaders("analysis") });
         if (!res.ok) continue;
         const j = await res.json();
         if (j.status !== "ok") continue;

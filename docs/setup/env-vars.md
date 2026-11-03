@@ -18,5 +18,8 @@
 | `X_OAUTH_CLIENT_ID` | X の OAuth 2.0（PKCE）の Client ID。Production のみ（sns-pdca-loop、ADR 0093） |
 | `X_OAUTH_CLIENT_SECRET` | X の OAuth 2.0 の Client Secret（confidential client）。Production のみ・Sensitive（ADR 0093） |
 | `SNS_TOKEN_ENC_KEY` | X のトークンを DB（`sns_oauth_tokens`）に AES-256-GCM で暗号化する鍵（32バイトの base64）。Production のみ・Sensitive（ADR 0093） |
+| `INTERNAL_API_KEY` | 自分の処理が `/api` を呼ぶときの合言葉（ヘッダ `x-ryujin-internal-key`、BOA-1110・ADR-0103）。値は1つで、Vercel の Production・Preview と GitHub の environment `prod-jobs` の secret に同じ値を置く（2026-11-03 オーナー決定）。Mac の龍神のスクリプト（全貌動画の `daily.mjs`・`fetch-materials.mjs`、`scripts/analysis/*`）は `.env.local` から読む。hq は hq の置き場。付ける側は `api/_lib/internalApiHeaders.js`、付け忘れは `verify-internal-api-callers.js`（CI）が止める。無いときは合言葉を付けないだけ（関門が enforce になると 403） |
+| `INTERNAL_API_KEY_NEXT` | 合言葉の回し替えのときだけ置く次の値（関門は `INTERNAL_API_KEY` と両方を受け付ける。手順は `docs/design/public-api-lockdown/plan.md` §2.2）。ふだんは置かない |
+| `API_GATE_MODE` | `/api` の関門の段階。`observe`（既定。拒む候補をログに出すだけ）／`enforce`（403）。Vercel の環境変数で、変えたら Redeploy が要る（ADR-0103、plan §2.2・§4 の段階3・4）。関門を middleware に繋ぐ段階3までは読まれない |
 
 ローカルは `.env.local`、本番は Vercel環境変数で管理。

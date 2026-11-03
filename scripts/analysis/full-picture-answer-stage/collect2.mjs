@@ -1,5 +1,6 @@
 // BOA-1096: 全貌の冒頭の答えの段の分布（読み取りのみ、公開 API）
 import { writeFileSync, existsSync, readFileSync } from "node:fs";
+import { internalApiHeaders } from "../../../api/_lib/internalApiHeaders.js";
 import { selectRaces } from "../../../sns-video-studio/remotion/scripts/full-picture/daily.mjs";
 const BASE = "https://www.boat-ai.jp";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -9,7 +10,8 @@ const db = existsSync(out) ? JSON.parse(readFileSync(out, "utf8")) : {};
 const win1 = (c) => Object.entries(c?.tri ?? {}).filter(([k]) => k.startsWith("1-")).reduce((s, [, v]) => s + v, 0);
 async function get(path) {
   for (let i = 0; i < 3; i++) {
-    const r = await fetch(BASE + path);
+    // 合言葉（BOA-1110 段階1）。node --env-file=.env.local で INTERNAL_API_KEY を読む。無ければ付けない
+    const r = await fetch(BASE + path, { headers: internalApiHeaders("analysis") });
     if (r.ok || r.status === 404) return r.json().catch(() => ({ status: `http_${r.status}` }));
     await sleep(2000);
   }

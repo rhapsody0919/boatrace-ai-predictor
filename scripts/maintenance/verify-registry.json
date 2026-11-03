@@ -609,6 +609,11 @@
       "guards": "index.html の JSON-LD に、実在しない評価（aggregateRating・review）と受け口の無い SearchAction を書かないこと、各ブロックが JSON として読めること。2025-12-20 に架空の評価（4.5・100件）が入り、AIクローラー向けスナップショットにも出ていた（Google の構造化データ方針違反。docs/proposal/ai-agent-era-strategy.md Phase 0）"
     },
     {
+      "script": "verify-internal-api-callers.js",
+      "tier": "ci",
+      "guards": "/api の合言葉の付け忘れ（BOA-1110 段階1、ADR-0103）: internalApiHeaders が鍵のあるときだけ x-ryujin-internal-key を付け、x-ryujin-caller は常に付ける（名前は英数字とハイフン32字まで）、付けたヘッダが関門の判定で reason=internal・caller として通る、botPage・botRace・snsClaimCheck が実際に送るヘッダに合言葉と caller が入る、api・scripts・sns-video-studio のうち自分の /api（相対のパスか boat-ai.jp、cron・admin・bot-page を除く。外部の host の /api は拾わない）を取るファイルが internalApiHeaders を使う（ファイル単位。例外は理由つきの EXEMPT だけ）。段階4（enforce）の後に自分の呼び出しが 403 になるのを防ぐ"
+    },
+    {
       "script": "verify-job-watch.js",
       "tier": "ci",
       "guards": "定期の job の見張り（.github/workflows/job-watch.yml・key-canary.yml・scripts/watch/job-watch.json・scripts/lib/jobWatch.js、ADR-0097 の追記）。失敗のログの分類（鍵・設定／外部の 403・429・503／一時的／その他）、rerun は許可の一覧・1回目・同じ日・後の run が無いときだけ、鍵が直った後の追い上げ、Issue の印、結論が cancelled の run のうち GitHub の時間切れだけを拾うこと（job が上限の分まで動いたか。concurrency の置き換え・人の取り消しは拾わない、BOA-1162）、Environment prod-jobs・ryujin-bot を使う workflow が全部見張りの一覧と job-watch.yml に登録されていること、許可の一覧に送信・push・db-apply・審査・頻繁な job を入れないこと、actions: write は rerun の job だけ"

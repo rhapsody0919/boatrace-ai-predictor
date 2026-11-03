@@ -39,6 +39,9 @@ jobs:
 
       - name: 本番のボット向け HTML を照合
         id: parity
+        env:
+          # /api の合言葉（BOA-1110 段階1、ADR-0103）。prod-jobs の environment secret。値はログに出さない
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
         run: |
           set +e
           RESULT=$(node scripts/maintenance/verify-bot-html-parity.js 2>&1)

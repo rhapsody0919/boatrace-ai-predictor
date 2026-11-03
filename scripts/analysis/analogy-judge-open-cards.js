@@ -15,6 +15,7 @@ import {
   factRows,
   openCardKeys,
 } from "../../src/utils/analogyFacts.js";
+import { internalApiHeaders } from "../../api/_lib/internalApiHeaders.js";
 
 const BASE = process.env.ANALOGY_BASE ?? "https://www.boat-ai.jp";
 const dates = process.argv.slice(2);
@@ -24,7 +25,10 @@ if (dates.length === 0) {
 }
 
 async function fetchFacts(id) {
-  const res = await fetch(`${BASE}/api/analogy/facts/${id}?stage=exhibition`);
+  // 合言葉（BOA-1110 段階1）。node --env-file=.env.local で INTERNAL_API_KEY を読む。無ければ付けない
+  const res = await fetch(`${BASE}/api/analogy/facts/${id}?stage=exhibition`, {
+    headers: internalApiHeaders("analysis"),
+  });
   if (res.status !== 200) return null;
   const j = await res.json();
   return j.today ? j : null;
