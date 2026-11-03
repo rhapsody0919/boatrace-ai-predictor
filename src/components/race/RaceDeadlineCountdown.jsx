@@ -11,16 +11,20 @@ import { useTranslation } from "react-i18next";
 import { getDeadlineDate } from "../../utils/raceDeadlineStatus";
 
 function RaceDeadlineCountdown({ raceId, startTime }) {
-  const { t } = useTranslation();
   const deadline = getDeadlineDate(raceId, startTime);
   const deadlineTime = deadline ? deadline.getTime() : null;
+  // 締切が変わったらタイマーと残り時間を一緒に初期化する。
+  return <DeadlineCountdown key={deadlineTime} deadlineTime={deadlineTime} />;
+}
+
+function DeadlineCountdown({ deadlineTime }) {
+  const { t } = useTranslation();
   const [remainingMs, setRemainingMs] = useState(() =>
     deadlineTime != null ? deadlineTime - Date.now() : null,
   );
 
   useEffect(() => {
     if (deadlineTime == null) return undefined;
-    setRemainingMs(deadlineTime - Date.now());
     const id = setInterval(() => {
       setRemainingMs(deadlineTime - Date.now());
     }, 1000);

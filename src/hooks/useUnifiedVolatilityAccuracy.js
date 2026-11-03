@@ -12,7 +12,6 @@ export function useUnifiedVolatilityAccuracy() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     supabaseDataService
       .getUnifiedVolatilityAccuracy()
       .then((data) => {

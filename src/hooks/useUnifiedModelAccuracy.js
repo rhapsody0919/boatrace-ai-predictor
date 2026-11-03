@@ -12,7 +12,6 @@ export function useUnifiedModelAccuracy() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     supabaseDataService
       .getUnifiedModelAccuracy()
       .then((data) => {
