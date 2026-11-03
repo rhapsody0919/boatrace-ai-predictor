@@ -1,0 +1,450 @@
+<title>GS04 お気に入りのモック</title>
+<style>
+/* 色はサイトの design-tokens.css のダーク（[data-theme="dark"]）の値をそのまま写す */
+:root {
+  color-scheme: dark;
+  --surface-page: #0d1b2e;      /* --ryujin-navy-600 */
+  --surface-card: #142842;      /* --ryujin-navy-100 */
+  --border-hairline: #24344d;   /* --ryujin-navy-300 */
+  --text-primary: #f8fafc;      /* --color-gray-50 */
+  --text-secondary: #cbd5e1;    /* --color-gray-300 */
+  --text-muted: #94a3b8;        /* --color-gray-400 */
+  --brand-accent-primary: #c9a227;  /* --ryujin-gold-500 */
+  --brand-accent-soft: #e8d089;     /* --ryujin-gold-300 */
+  --brand-accent-secondary: #9aa3ad;/* --ryujin-silver-500 */
+  --color-info-text: #2196f3;   /* ダークの --color-info-text */
+  --link-text: #60a5fa;         /* --color-info-light */
+  --grade-sg: #7c3aed;
+  --grade-g1: #dc2626;
+  --grade-g2: #2563eb;
+  --boat1-bg: #ffffff; --boat1-fg: #000000;
+  --boat2-bg: #000000; --boat2-fg: #ffffff;
+  --boat3-bg: #c62828; --boat3-fg: #ffffff;
+  --boat4-bg: #1565c0; --boat4-fg: #ffffff;
+  --boat5-bg: #fdd835; --boat5-fg: #000000;
+  --boat6-bg: #2e7d32; --boat6-fg: #ffffff;
+  --toast-bg: #1e3a5f;
+  --sheet-bg: #0a1424;          /* モックの台紙 */
+  --sheet-text: #e2e8f0;
+  --note-bg: #13233a;
+  --mark-recommend: #06ab77;    /* ダークの --color-success-dark-text */
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
+  --fs-2xs: 0.7rem; --fs-xs: 0.75rem; --fs-sm: 0.85rem; --fs-base: 0.9rem; --fs-lg: 1rem; --fs-xl: 1.1rem;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--sheet-bg); color: var(--sheet-text);
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  line-height: 1.55;
+}
+.sheet { max-width: 1680px; margin: 0 auto; padding: 24px 16px 80px; }
+.sheet h1 { font-size: 1.5rem; margin: 0 0 4px; }
+.sheet .lead { color: var(--text-secondary); margin: 0 0 8px; font-size: var(--fs-base); }
+.rules { background: var(--note-bg); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg); padding: 12px 16px; font-size: var(--fs-sm); color: var(--text-secondary); margin: 12px 0 28px; }
+.rules ul { margin: 4px 0 0; padding-left: 1.2em; }
+.screen { margin: 0 0 48px; }
+.screen > h2 { font-size: 1.2rem; margin: 0 0 4px; border-left: 4px solid var(--brand-accent-primary); padding-left: 10px; }
+.screen > .sub { color: var(--text-secondary); font-size: var(--fs-sm); margin: 0 0 12px; }
+.pair { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+.fig { margin: 0; }
+.fig figcaption { font-size: var(--fs-sm); color: var(--text-secondary); margin-top: 8px; max-width: 760px; }
+.fig .w { font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 4px; }
+/* 端末の枠。375 はそのまま、1440 は 0.5 倍に縮めて並べる */
+.frame { container-type: inline-size; background: var(--surface-page); color: var(--text-primary); border: 1px solid var(--border-hairline); border-radius: 10px; overflow: hidden; }
+.frame.f375 { width: 375px; }
+.frame.f1440 { width: 1440px; zoom: 0.5; }
+@media (max-width: 1200px) { .frame.f1440 { zoom: 0.24; } }
+.tag-rec { display: inline-block; font-size: var(--fs-xs); font-weight: 700; color: var(--mark-recommend); border: 1px solid var(--mark-recommend); border-radius: 999px; padding: 0 8px; margin-left: 6px; vertical-align: middle; }
+.tag-alt { display: inline-block; font-size: var(--fs-xs); color: var(--text-muted); border: 1px solid var(--border-hairline); border-radius: 999px; padding: 0 8px; margin-left: 6px; vertical-align: middle; }
+
+/* ===== サイトの画面（枠の中） ===== */
+.site-header { display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 12px; border-bottom: 1px solid var(--border-hairline); background: var(--surface-card); }
+.site-header .logo { font-weight: 800; color: var(--brand-accent-primary); letter-spacing: .04em; }
+.site-header .menu { color: var(--text-secondary); font-size: var(--fs-sm); }
+.page { padding: 12px; }
+@container (min-width: 1000px) {
+  .page { padding: 24px; max-width: 1248px; margin: 0 auto; }
+  .site-header { padding: 0 calc((100cqw - 1200px) / 2); }
+}
+.ghost { background: var(--surface-card); border: 1px dashed var(--border-hairline); border-radius: var(--radius-lg); color: var(--text-muted); font-size: var(--fs-xs); padding: 10px 12px; margin-top: 12px; }
+.ghost-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+.ghost-grid span { display: block; height: 54px; border-radius: var(--radius-md); background: #10223a; border: 1px solid var(--border-hairline); }
+
+/* お気に入り選手の出走 */
+.fav { background: var(--surface-card); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg); padding: 12px; }
+.fav-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.fav-head h2 { margin: 0; font-size: var(--fs-xl); color: var(--text-primary); }
+.fav-head h2 .star { color: var(--brand-accent-primary); }
+.fav-count { font-size: var(--fs-xs); color: var(--text-secondary); }
+.fav-manage { font-size: var(--fs-sm); color: var(--link-text); text-decoration: underline; min-height: 44px; display: inline-flex; align-items: center; }
+.fav-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.fav-row { border-top: 1px solid var(--border-hairline); padding: 10px 0; display: grid; gap: 4px 10px;
+  grid-template-columns: auto 1fr; grid-template-areas: "time race" "who who" "meet meet" "stat stat" "rank rank" "go go"; }
+.fav-row.done { opacity: .55; }
+.c-time { grid-area: time; font-weight: 800; font-size: var(--fs-xl); font-variant-numeric: tabular-nums; }
+.c-time small { display: block; font-size: var(--fs-2xs); font-weight: 400; color: var(--text-secondary); }
+.c-race { grid-area: race; align-self: center; font-weight: 700; }
+.c-race .grade { font-size: var(--fs-2xs); font-weight: 700; color: #fff; border-radius: 4px; padding: 0 5px; margin-right: 4px; vertical-align: 1px; }
+.g-sg { background: var(--grade-sg); } .g-g1 { background: var(--grade-g1); } .g-g2 { background: var(--grade-g2); }
+.c-who { grid-area: who; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.boat { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; font-size: var(--fs-xs); font-weight: 700; border: 1px solid var(--border-hairline); flex: none; }
+.b1 { background: var(--boat1-bg); color: var(--boat1-fg); } .b2 { background: var(--boat2-bg); color: var(--boat2-fg); }
+.b3 { background: var(--boat3-bg); color: var(--boat3-fg); } .b4 { background: var(--boat4-bg); color: var(--boat4-fg); }
+.b5 { background: var(--boat5-bg); color: var(--boat5-fg); } .b6 { background: var(--boat6-bg); color: var(--boat6-fg); }
+.c-who .waku { font-size: var(--fs-sm); color: var(--text-secondary); }
+.c-who .name { font-weight: 700; color: var(--text-primary); }
+.c-who .grd { font-size: var(--fs-xs); color: var(--text-secondary); }
+.c-meet { grid-area: meet; font-size: var(--fs-sm); color: var(--text-secondary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.c-meet .seq { display: inline-flex; gap: 3px; }
+.c-meet .seq b { display: inline-block; min-width: 1.35em; text-align: center; border: 1px solid var(--border-hairline); border-radius: 4px; color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+.c-meet .seq b.top { border-color: var(--brand-accent-primary); color: var(--brand-accent-soft); }
+.c-stat { grid-area: stat; font-size: var(--fs-sm); color: var(--text-primary); }
+.c-stat .n { color: var(--text-secondary); }
+.c-rank { grid-area: rank; font-size: var(--fs-xs); color: var(--text-secondary); }
+.c-rank[hidden] { display: none; }
+.c-go { grid-area: go; display: flex; gap: 6px; flex-wrap: wrap; }
+.go { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 10px; border: 1px solid var(--border-hairline); border-radius: var(--radius-md); font-size: var(--fs-sm); color: var(--link-text); background: #10223a; white-space: nowrap; flex: 1 1 0; }
+.fav-more { display: flex; justify-content: center; align-items: center; min-height: 44px; border-top: 1px solid var(--border-hairline); font-size: var(--fs-sm); color: var(--link-text); }
+.fav-venues { margin-top: 10px; border-top: 1px solid var(--border-hairline); padding-top: 8px; font-size: var(--fs-sm); color: var(--text-secondary); }
+.fav-venues h3 { font-size: var(--fs-sm); margin: 0 0 4px; color: var(--text-primary); }
+.fav-venues .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 10px; border: 1px solid var(--border-hairline); border-radius: 999px; color: var(--text-primary); background: #10223a; }
+.chip small { color: var(--text-secondary); }
+.fav-foot { margin: 8px 0 0; font-size: var(--fs-2xs); color: var(--text-muted); }
+@container (min-width: 1000px) {
+  .fav { padding: 16px 20px; }
+  .fav-row { grid-template-columns: 104px 120px 140px 150px 1fr 300px; grid-template-areas: "time race who meet stat go"; align-items: center; padding: 6px 0; }
+  .fav-row.with-rank { grid-template-areas: "time race who meet stat go" "time race who meet rank go"; }
+  .c-go { flex-wrap: nowrap; }
+  .go { flex: 0 0 auto; padding: 0 8px; }
+  .c-time small { display: inline; margin-left: 4px; }
+}
+
+/* 代わりの表示 */
+.empty-msg { font-size: var(--fs-sm); color: var(--text-secondary); margin: 6px 0 8px; }
+.alt-list { list-style: none; margin: 0; padding: 0; }
+.alt-list li { border-top: 1px solid var(--border-hairline); display: grid; grid-template-columns: 3.8em 1fr auto; align-items: center; gap: 8px; min-height: 52px; padding: 4px 0; }
+.alt-list .lbl { font-size: var(--fs-2xs); font-weight: 700; color: #fff; border-radius: 4px; padding: 0 5px; justify-self: start; }
+.alt-list .lbl.fv { color: var(--brand-accent-soft); border: 1px solid var(--brand-accent-primary); }
+.alt-list .v { font-weight: 700; margin-right: 6px; }
+.alt-list .t { color: var(--text-secondary); font-size: var(--fs-sm); }
+.alt-list .go { flex: 0 0 auto; }
+.altB li { grid-template-columns: 8.5em 1fr; }
+.howto { margin-top: 10px; border: 1px dashed var(--border-hairline); border-radius: var(--radius-md); padding: 8px 10px; font-size: var(--fs-sm); color: var(--text-secondary); }
+.howto .s { color: var(--brand-accent-primary); font-weight: 700; }
+.altB { margin-top: 10px; font-size: var(--fs-sm); color: var(--text-secondary); }
+.altB li { min-height: 44px; }
+
+/* ☆のボタン */
+.favbtn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 44px; min-height: 44px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--border-hairline); background: transparent; color: var(--text-secondary); font-size: var(--fs-sm); font-family: inherit; cursor: pointer; }
+.favbtn .s { font-size: 1.15rem; line-height: 1; color: var(--text-secondary); }
+.favbtn.on { border-color: var(--brand-accent-primary); color: var(--brand-accent-soft); }
+.favbtn.on .s { color: var(--brand-accent-primary); }
+.favbtn.icon { padding: 0; width: 44px; border-color: transparent; }
+.favbtn.icon.on { border-color: transparent; }
+.race-entrants { display: flex; flex-wrap: wrap; gap: 0 .5rem; list-style: none; margin: 0; padding: 0; }
+.race-entrants li { display: inline-flex; align-items: center; gap: .25rem; font-size: var(--fs-sm); }
+.race-entrants .nm { color: var(--color-info-text); text-decoration: underline; text-underline-offset: 3px; min-height: 44px; display: inline-flex; align-items: center; font-weight: 600; white-space: nowrap; }
+.race-entrants .gr { font-size: var(--fs-xs); color: var(--text-secondary); }
+.race-strip { display: flex; gap: 4px; overflow: hidden; margin-bottom: 8px; }
+.race-strip span { flex: 0 0 auto; min-width: 34px; text-align: center; padding: 4px 0; border: 1px solid var(--border-hairline); border-radius: 6px; font-size: var(--fs-xs); color: var(--text-secondary); }
+.race-strip span.cur { border-color: var(--brand-accent-primary); color: var(--brand-accent-soft); font-weight: 700; }
+.race-title { font-size: var(--fs-xl); font-weight: 700; margin: 4px 0 8px; }
+.tabs { display: flex; gap: 4px; overflow: hidden; white-space: nowrap; margin-top: 8px; border-bottom: 1px solid var(--border-hairline); }
+.tabs span { padding: 8px 10px; font-size: var(--fs-sm); color: var(--text-secondary); }
+.tabs span.cur { color: var(--text-primary); border-bottom: 2px solid var(--brand-accent-primary); }
+.ph { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ph h1 { margin: 0; font-size: 1.5rem; }
+.ph .kana { font-size: var(--fs-xs); color: var(--text-secondary); width: 100%; margin: 0; }
+.ph .meta { font-size: var(--fs-sm); color: var(--text-secondary); }
+.crumb { font-size: var(--fs-sm); color: var(--link-text); margin-bottom: 8px; }
+.toast { position: relative; margin-top: 12px; background: var(--toast-bg); border: 1px solid var(--brand-accent-primary); border-radius: var(--radius-md); padding: 10px 44px 10px 12px; font-size: var(--fs-sm); color: var(--text-primary); }
+.toast a { color: var(--link-text); text-decoration: underline; display: inline-flex; min-height: 44px; align-items: center; }
+.toast .x { position: absolute; right: 0; top: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+.state-label { display: inline-block; font-size: var(--fs-2xs); color: var(--text-muted); border: 1px solid var(--border-hairline); border-radius: 4px; padding: 0 6px; margin-bottom: 4px; }
+.state-row { display: grid; gap: 10px; }
+@container (min-width: 1000px) { .state-row { grid-template-columns: 1fr 1fr 1fr; } }
+.box { background: var(--surface-card); border: 1px solid var(--border-hairline); border-radius: var(--radius-lg); padding: 10px 12px; }
+table.cmp { border-collapse: collapse; font-size: var(--fs-sm); margin-top: 8px; max-width: 980px; }
+table.cmp th, table.cmp td { border: 1px solid var(--border-hairline); padding: 6px 10px; text-align: left; vertical-align: top; }
+table.cmp th { background: var(--note-bg); }
+</style>
+
+<div class="sheet">
+  <h1>GS04 お気に入り（選手・会場の☆）と「お気に入り選手の出走」モック</h1>
+  <p class="lead">BOA-1265。375px（左）と 1440px（右、半分に縮小）をダークの色で並べた。例の値はすべて架空で、選手名は「選手A」等にしている。</p>
+  <div class="rules">
+    <strong>この画面で出さないもの</strong>: 印・買い目・当たり外れの集計・収支・☆の人数の順位・知らせ（プッシュ）・ログイン。保存はこの端末のブラウザだけ（キーは <code>boatai-user:</code> 接頭辞）。
+    <ul>
+      <li>成績の一言: 選手ページの「枠番別成績（当サイト集計・2025年12月以降・全会場計）」の<strong>その号艇の2連率と出走数</strong>をそのまま使う。出走30未満は率を出さず走数だけ。</li>
+      <li>枠は艇番。サイトに予想進入の値は無いので、進入コースの成績（公式・直近3期）は一言には使わない（選手ページで見られる）。</li>
+    </ul>
+  </div>
+
+  <!-- 1 -->
+  <section class="screen">
+    <h2>1. トップの「お気に入り選手の出走」</h2>
+    <p class="sub">トップの会場の一覧の上に置く。☆の選手の今日の出走を締切の順に並べ、締切を過ぎたものは下へ畳む。☆の会場は区画の下に1行。</p>
+    <div class="pair">
+      <figure class="fig"><div class="w">375px</div><div class="frame f375" data-tpl="t-top"></div>
+        <figcaption>☆の選手が今日6レースに出る状態。375px は4件まで出し、残りは「あと2件」で開く。1件は4〜5行。</figcaption></figure>
+      <figure class="fig"><div class="w">1440px（0.5倍）</div><div class="frame f1440" data-tpl="t-top"></div>
+        <figcaption>同じ状態の 1440px。1件1行で、列は最大1200の中央。締切・場とR・枠と選手・今節・成績の一言・入口の順。</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="screen">
+    <h2>2. ☆0件のとき・☆はあるが今日の出走が無いとき</h2>
+    <p class="sub">空の区画は出さない。推す案（A: 今日のSG・G1の場と、☆の会場の今日の開催）を大きく描き、もう1案（B: ☆の選手の次の出走日）は下に小さく描いた。</p>
+    <div class="pair">
+      <figure class="fig"><div class="w">375px・☆0件</div><div class="frame f375" data-tpl="t-empty0"></div>
+        <figcaption>☆0件。今日のSG・G1の場を出し、☆の付け方を1行で添える。<span class="tag-rec">推す案A</span></figcaption></figure>
+      <figure class="fig"><div class="w">375px・出走なし</div><div class="frame f375" data-tpl="t-none"></div>
+        <figcaption>☆はあるが今日の出走が無い日。お気に入りの会場の今日の開催と、今日のSG・G1の場を出す。SG・G1が無い日は、お気に入りの会場と今日の開催場の数（会場の一覧への案内）だけ。<span class="tag-rec">推す案A</span></figcaption></figure>
+      <figure class="fig"><div class="w">1440px（0.5倍）・出走なし</div><div class="frame f1440" data-tpl="t-none"></div>
+        <figcaption>☆はあるが今日の出走が無い日の 1440px。<span class="tag-rec">推す案A</span></figcaption></figure>
+    </div>
+    <div class="pair" style="margin-top:16px">
+      <figure class="fig"><div class="w">375px・別案B（小）</div><div class="frame f375" data-tpl="t-altB"></div>
+        <figcaption>別案B: ☆の選手の次の出走日。出走表が出た分しか分からないため、多くの日は「未定」が並ぶ。<span class="tag-alt">別案B</span></figcaption></figure>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="screen">
+    <h2>3. ☆のボタンの置き場所</h2>
+    <p class="sub">3か所とも同じ部品。押す前は灰の☆、押した後は金の★。押せる範囲は44px。上限30に達したら追加せず、知らせを6秒出す（閉じるボタン付き）。</p>
+    <div class="pair">
+      <figure class="fig"><div class="w">375px・出走表（レース詳細のタブの上の6艇）</div><div class="frame f375" data-tpl="t-race"></div>
+        <figcaption>レース詳細のタブの上の出走6艇の各選手に☆。押す前（選手A以外）と押した後（3号艇の選手A）を同じ画面に描いた。375px は☆の分だけ幅が要り、今の2行（3艇ずつ）が3行（2艇ずつ）になってタブが約44px下がる。</figcaption></figure>
+      <figure class="fig"><div class="w">1440px（0.5倍）・出走表</div><div class="frame f1440" data-tpl="t-race"></div>
+        <figcaption>同じ 1440px。6艇が1行に並び、各選手の名前の右に☆。</figcaption></figure>
+    </div>
+    <div class="pair" style="margin-top:16px">
+      <figure class="fig"><div class="w">375px・選手ページの見出し</div><div class="frame f375" data-tpl="t-racer"></div>
+        <figcaption>選手ページの見出し（名前の右）に文字つきの☆。押す前・押した後・上限30の知らせの3つの状態。</figcaption></figure>
+      <figure class="fig"><div class="w">1440px（0.5倍）・会場ページの見出し</div><div class="frame f1440" data-tpl="t-venue"></div>
+        <figcaption>会場ページの見出しの右に文字つきの☆。押す前・押した後の2つの状態（会場は24場なので上限の知らせは出ない）。</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="screen">
+    <h2>4. 6艇の中の並び（順位）を出すか（ファン役で割れた点）</h2>
+    <p class="sub">1件の行に「思考アシストの並び（展示前） 6艇中2番目」を小さく出す案と、出さない案。行の中では印・記号にしない。出す場合は、並びが着順とどれだけ関係するかの統計検証を先に通す（未検証）。</p>
+    <div class="pair">
+      <figure class="fig"><div class="w">375px・出す案</div><div class="frame f375" data-tpl="t-rank-on"></div>
+        <figcaption>出す案。成績の一言の下に1行足す。初級の人の「どれが上か」の手がかりになるが、1件が1行長くなる。</figcaption></figure>
+      <figure class="fig"><div class="w">375px・出さない案</div><div class="frame f375" data-tpl="t-rank-off"></div>
+        <figcaption>出さない案（1. と同じ）。順位は「思考アシスト」を押すと見られる。</figcaption></figure>
+      <figure class="fig"><div class="w">1440px（0.5倍）・出す案</div><div class="frame f1440" data-tpl="t-rank-on"></div>
+        <figcaption>出す案の 1440px。成績の一言の下に小さく1行足す（行の高さは少し増える）。</figcaption></figure>
+    </div>
+    <table class="cmp">
+      <tr><th></th><th>出す案</th><th>出さない案（推す）</th></tr>
+      <tr><th>良い点</th><td>初級の人が開いた直後に6艇の中の位置をつかめる</td><td>行が短い。「印・買い目を出さない」の線を越えない。上級の人の「要らない」に合う。お気に入りの選手に下位の札が付かない</td></tr>
+      <tr><th>悪い点</th><td>順位が印の代わりに読まれやすい。お気に入りの選手に「6艇中5番目」等の札が付く。375px で1件が1行増える</td><td>順位を見るのに1タップ要る</td></tr>
+    </table>
+  </section>
+</div>
+
+<!-- ===== 部品のひな形（両方の幅に差し込む） ===== -->
+<template id="part-header"><div class="site-header"><span class="logo">龍神レーダー</span><span class="menu">メニュー ≡</span></div></template>
+
+<template id="t-top">
+  <div class="page">
+    <section class="fav" aria-labelledby="fav-h">
+      <div class="fav-head">
+        <h2 id="fav-h">お気に入り選手の出走</h2>
+        <a class="fav-manage" href="#">お気に入りの管理</a>
+      </div>
+      <div class="fav-count">お気に入りの選手7人のうち4人が今日出走・6レース（締切の順）。成績は2025年12月以降・全会場の号艇別</div>
+      <ul class="fav-list">
+        <li class="fav-row">
+          <div class="c-time">17:46<small>締切</small></div>
+          <div class="c-race"><span class="grade g-g1">G1</span>桐生 7R</div>
+          <div class="c-who"><span class="boat b3">3</span><span class="name">選手A</span><span class="grd">A1</span></div>
+          <div class="c-meet">今節 <span class="seq"><b class="top">2</b><b class="top">1</b><b>4</b><b>3</b></span></div>
+          <div class="c-stat">全会場の3号艇 出走数55・2連率 38.2%</div>
+          <div class="c-go"><a class="go">選手ページ</a><a class="go">龍神ソナー</a><a class="go">思考アシスト</a></div>
+        </li>
+        <li class="fav-row">
+          <div class="c-time">18:12<small>締切</small></div>
+          <div class="c-race">住之江 8R</div>
+          <div class="c-who"><span class="boat b1">1</span><span class="name">選手B</span><span class="grd">A2</span></div>
+          <div class="c-meet">今節 <span class="seq"><b>3</b><b class="top">1</b><b>5</b></span></div>
+          <div class="c-stat">全会場の1号艇 出走数41・2連率 61.0%</div>
+          <div class="c-go"><a class="go">選手ページ</a><a class="go">龍神ソナー</a><a class="go">思考アシスト</a></div>
+        </li>
+        <li class="fav-row">
+          <div class="c-time">18:40<small>締切</small></div>
+          <div class="c-race">若松 9R</div>
+          <div class="c-who"><span class="boat b5">5</span><span class="name">選手C</span><span class="grd">B1</span></div>
+          <div class="c-meet">今節 <span class="seq"><b style="padding:0 4px">初日（成績なし）</b></span></div>
+          <div class="c-stat">全会場の5号艇 出走数12 <span class="n">（30未満のため率は出さない）</span></div>
+          <div class="c-go"><a class="go">選手ページ</a><a class="go">龍神ソナー</a><a class="go">思考アシスト</a></div>
+        </li>
+        <li class="fav-row">
+          <div class="c-time">19:42<small>締切</small></div>
+          <div class="c-race"><span class="grade g-g1">G1</span>桐生 11R</div>
+          <div class="c-who"><span class="boat b6">6</span><span class="name">選手A</span><span class="grd">A1</span></div>
+          <div class="c-meet">今節 <span class="seq"><b class="top">2</b><b class="top">1</b><b>4</b><b>3</b></span></div>
+          <div class="c-stat">全会場の6号艇 出走数48・2連率 14.6%</div>
+          <div class="c-go"><a class="go">選手ページ</a><a class="go">龍神ソナー</a><a class="go">思考アシスト</a></div>
+        </li>
+        <li class="fav-row only-wide">
+          <div class="c-time">20:05<small>締切</small></div>
+          <div class="c-race">丸亀 10R</div>
+          <div class="c-who"><span class="boat b2">2</span><span class="name">選手D</span><span class="grd">A1</span></div>
+          <div class="c-meet">今節 <span class="seq"><b class="top">1</b><b class="top">2</b><b class="top">1</b><b>4</b><b class="top">2</b></span></div>
+          <div class="c-stat">全会場の2号艇 出走数37・2連率 47.3%</div>
+          <div class="c-go"><a class="go">選手ページ</a><a class="go">龍神ソナー</a><a class="go">思考アシスト</a></div>
+        </li>
+        <li class="fav-row only-wide">
+          <div class="c-time">20:31<small>締切</small></div>
+          <div class="c-race">住之江 12R</div>
+          <div class="c-who"><span class="boat b4">4</span><span class="name">選手B</span><span class="grd">A2</span></div>
+          <div class="c-meet">今節 <span class="seq"><b>3</b><b class="top">1</b><b>5</b></span></div>
+          <div class="c-stat">全会場の4号艇 出走数54・2連率 29.6%</div>
+          <div class="c-go"><a class="go">選手ページ</a><a class="go">龍神ソナー</a><a class="go">思考アシスト</a></div>
+        </li>
+      </ul>
+      <div class="fav-more only-narrow">あと2件を見る ▾</div>
+      <div class="fav-more">締切を過ぎた1件 ▾</div>
+      <div class="fav-venues">
+        <h3>お気に入りの会場</h3>
+        <div class="chips"><a class="chip">住之江 <small>開催中・次は 9R 18:39</small></a><a class="chip">徳山 <small>今日は開催なし</small></a></div>
+      </div>
+      <p class="fav-foot">成績は選手ページの「枠番別成績（当サイト集計・2025年12月以降・全会場計）」と同じ値。今節の着順は古い順で、金の枠は1・2着。お気に入りはこの端末のブラウザに保存していて、ブラウザのデータを消すと消える。</p>
+    </section>
+    <div class="ghost">ここから下は今の画面のまま（SG開催中の帯・今日の注目・本日のデータ一覧・24会場の一覧）
+      <div class="ghost-grid"><span></span><span></span><span></span><span></span></div></div>
+  </div>
+</template>
+
+<template id="t-empty0">
+  <div class="page">
+    <section class="fav">
+      <div class="fav-head"><h2>お気に入り選手の出走</h2></div>
+      <p class="empty-msg">お気に入りの選手がまだいない。今日のSG・G1の開催はこちら。</p>
+      <ul class="alt-list">
+        <li><span class="lbl g-sg">SG</span><span><span class="v">児島</span><span class="t">5日目・12R 16:35 締切</span></span><a class="go">会場ページ</a></li>
+        <li><span class="lbl g-g1">G1</span><span><span class="v">桐生</span><span class="t">3日目・12R 20:45 締切</span></span><a class="go">会場ページ</a></li>
+      </ul>
+      <div class="howto">出走表・選手ページ・会場ページの <span class="s">☆</span> を押すと、お気に入り選手の出走が、ここに締切の順で並ぶ（選手は30人まで、この端末に保存）。</div>
+    </section>
+    <div class="ghost">ここから下は今の画面のまま
+      <div class="ghost-grid"><span></span><span></span></div></div>
+  </div>
+</template>
+
+<template id="t-none">
+  <div class="page">
+    <section class="fav">
+      <div class="fav-head"><h2>お気に入り選手の出走</h2><a class="fav-manage" href="#">お気に入りの管理</a></div>
+      <p class="empty-msg">お気に入りの選手7人は、今日は出走なし。</p>
+      <ul class="alt-list">
+        <li><span class="lbl fv">お気に入り</span><span><span class="v">住之江</span><span class="t">開催中・次は 9R 18:39 締切</span></span><a class="go">会場ページ</a></li>
+        <li><span class="lbl g-sg">SG</span><span><span class="v">児島</span><span class="t">5日目・12R 16:35 締切</span></span><a class="go">会場ページ</a></li>
+        <li><span class="lbl g-g1">G1</span><span><span class="v">桐生</span><span class="t">3日目・12R 20:45 締切</span></span><a class="go">会場ページ</a></li>
+      </ul>
+      
+    </section>
+    <div class="ghost">ここから下は今の画面のまま
+      <div class="ghost-grid"><span></span><span></span><span></span><span></span></div></div>
+  </div>
+</template>
+
+<template id="t-altB">
+  <div class="page">
+    <section class="fav">
+      <div class="fav-head"><h2>お気に入り選手の出走</h2></div>
+      <p class="empty-msg">お気に入りの選手7人は、今日は出走なし。次の出走（出走表が出ている分）:</p>
+      <ul class="alt-list altB">
+        <li><span class="v">選手A</span><span class="t">明日 桐生（出走表あり）</span></li>
+        <li><span class="v">選手B</span><span class="t">未定</span></li>
+        <li><span class="v">選手C ほか4人</span><span class="t">未定</span></li>
+      </ul>
+    </section>
+  </div>
+</template>
+
+<template id="t-race">
+  <div class="page">
+    <div class="race-strip"><span>1R</span><span>2R</span><span>3R</span><span>4R</span><span>5R</span><span>6R</span><span class="cur">7R</span><span>8R</span><span>9R</span><span>10R</span><span>11R</span><span>12R</span></div>
+    <div class="race-title"><span class="grade g-g1" style="font-size:var(--fs-2xs);font-weight:700;color:#fff;border-radius:4px;padding:0 5px">G1</span> 桐生 7R　17:46 締切</div>
+    <ul class="race-entrants">
+      <li><span class="boat b1">1</span><a class="nm">選手E</a><span class="gr">A1</span><button class="favbtn icon" aria-pressed="false" aria-label="選手Eをお気に入りに追加"><span class="s">☆</span></button></li>
+      <li><span class="boat b2">2</span><a class="nm">選手F</a><span class="gr">A2</span><button class="favbtn icon" aria-pressed="false" aria-label="選手Fをお気に入りに追加"><span class="s">☆</span></button></li>
+      <li><span class="boat b3">3</span><a class="nm">選手A</a><span class="gr">A1</span><button class="favbtn icon on" aria-pressed="true" aria-label="選手Aをお気に入りから外す"><span class="s">★</span></button></li>
+      <li><span class="boat b4">4</span><a class="nm">選手G</a><span class="gr">B1</span><button class="favbtn icon" aria-pressed="false" aria-label="選手Gをお気に入りに追加"><span class="s">☆</span></button></li>
+      <li><span class="boat b5">5</span><a class="nm">選手H</a><span class="gr">A2</span><button class="favbtn icon" aria-pressed="false" aria-label="選手Hをお気に入りに追加"><span class="s">☆</span></button></li>
+      <li><span class="boat b6">6</span><a class="nm">選手J</a><span class="gr">B1</span><button class="favbtn icon" aria-pressed="false" aria-label="選手Jをお気に入りに追加"><span class="s">☆</span></button></li>
+    </ul>
+    <div class="tabs"><span class="cur">基本情報</span><span>出走表</span><span>直前情報</span><span>龍神ソナー</span><span>結果</span></div>
+    <div class="ghost">タブの中身は今のまま</div>
+  </div>
+</template>
+
+<template id="t-racer">
+  <div class="page">
+    <div class="crumb">← ホームに戻る　選手一覧へ →</div>
+    <div class="state-row">
+      <div class="box"><span class="state-label">押す前</span>
+        <div class="ph"><h1>選手A</h1><button class="favbtn" aria-pressed="false"><span class="s">☆</span>お気に入りに追加</button><p class="kana">せんしゅ えー</p><span class="meta">登録番号 0000・東京支部・A1</span></div></div>
+      <div class="box"><span class="state-label">押した後</span>
+        <div class="ph"><h1>選手A</h1><button class="favbtn on" aria-pressed="true"><span class="s">★</span>お気に入りに登録中</button><p class="kana">せんしゅ えー</p><span class="meta">登録番号 0000・東京支部・A1</span></div>
+        <div class="toast" style="border-color:var(--border-hairline)">お気に入りに追加した。今日の出走はトップの「お気に入り選手の出走」に出る。<span class="x">×</span></div></div>
+      <div class="box"><span class="state-label">上限30に達したとき</span>
+        <div class="ph"><h1>選手K</h1><button class="favbtn" aria-pressed="false"><span class="s">☆</span>お気に入りに追加</button><p class="kana">せんしゅ けー</p><span class="meta">登録番号 0000・福岡支部・A2</span></div>
+        <div class="toast" role="status">お気に入りの選手は30人まで。追加するには、ほかの選手を外す。<br><a href="#">お気に入りの管理を開く</a><span class="x">×</span></div></div>
+    </div>
+  </div>
+</template>
+
+<template id="t-venue">
+  <div class="page">
+    <div class="crumb">ホーム ＞ 住之江</div>
+    <div class="state-row" style="grid-template-columns:1fr 1fr">
+      <div class="box"><span class="state-label">押す前</span>
+        <div class="ph"><h1>🏁 住之江 本日のレース</h1><button class="favbtn" aria-pressed="false"><span class="s">☆</span>お気に入りに追加</button></div></div>
+      <div class="box"><span class="state-label">押した後</span>
+        <div class="ph"><h1>🏁 住之江 本日のレース</h1><button class="favbtn on" aria-pressed="true"><span class="s">★</span>お気に入りに登録中</button></div></div>
+    </div>
+    <div class="ghost">ここから下は今の画面のまま（会場の要約2行・節の帯・レースの一覧）</div>
+  </div>
+</template>
+
+<template id="t-rank-on"><div data-rank="on"></div></template>
+<template id="t-rank-off"><div data-rank="off"></div></template>
+
+<script>
+  // 同じひな形を 375 と 1440 の両方の枠に差し込む（幅ごとの並びは @container で変える）
+  const header = document.getElementById("part-header").content;
+  document.querySelectorAll(".frame[data-tpl]").forEach((frame) => {
+    const id = frame.dataset.tpl;
+    frame.appendChild(header.cloneNode(true));
+    const isRank = id === "t-rank-on" || id === "t-rank-off";
+    const src = document.getElementById(isRank ? "t-top" : id).content.cloneNode(true);
+    const narrow = frame.classList.contains("f375");
+    // 375 は4件まで（残りは「あと2件」）、1440 は全件
+    src.querySelectorAll(narrow ? ".only-wide" : ".only-narrow").forEach((el) => el.remove());
+    if (isRank) {
+      src.querySelectorAll(".ghost, .fav-venues").forEach((el) => el.remove());
+      if (narrow) src.querySelectorAll(".fav-row").forEach((el, i) => { if (i >= 2) el.remove(); });
+      src.querySelectorAll(".fav-more").forEach((el) => el.remove());
+    }
+    if (id === "t-rank-on") {
+      const ranks = ["思考アシストの並び（展示前） 6艇中2番目", "思考アシストの並び（展示前） 6艇中1番目", "思考アシストの並び（展示前） 6艇中5番目", "思考アシストの並び（展示前） 6艇中4番目", "思考アシストの並び（展示前） 6艇中2番目", "思考アシストの並び（展示前） 6艇中4番目"];
+      src.querySelectorAll(".fav-row").forEach((row, i) => {
+        row.classList.add("with-rank");
+        const d = document.createElement("div");
+        d.className = "c-rank";
+        d.textContent = ranks[i];
+        row.insertBefore(d, row.querySelector(".c-go"));
+      });
+    }
+    frame.appendChild(src);
+  });
+</script>
