@@ -192,14 +192,15 @@ export async function runYoutubePublishJob(job, deps) {
 export const RESUMABLE_RETAIN_CODES = ['youtube_retained_processing', 'youtube_retained_budget'];
 
 /**
- * 処理待ち・検査の枠で非公開のまま残した job を、期限の前に見直す（BOA-1283）。読み取り（videos.list）を台帳（youtube_lookup）に
+ * 処理待ち・検査の枠で非公開のまま残した job（と、公開の段の途中で実行が切れた ready の job）を、期限の前に見直す（BOA-1283）。読み取り（videos.list）を台帳（youtube_lookup）に
  * 記録してから処理の状態を読み、済んでいれば youtube_resume で ready に戻して今までどおり公開する。まだ処理中なら何も変えずに返す
  * （次の実行でまた見る）。読み取りの失敗・本人の動画と確かめられないときは残した理由を変えない（期限の後は閉じる道に任せる）。
  * 処理の失敗（failed・terminated）は youtube_retain（理由 error）で見直しの対象から外す
  */
 export async function resumeRetainedYoutubeJob(job, deps) {
-  if (job.channel !== 'youtube' || job.state !== 'reconcile' || job.youtube_stage !== 'private_retained' ||
-    !RESUMABLE_RETAIN_CODES.includes(job.error_code)) throw new Error('見直す対象ではありません');
+  if (job.channel !== 'youtube' || job.state !== 'reconcile' ||
+    !((job.youtube_stage === 'private_retained' && RESUMABLE_RETAIN_CODES.includes(job.error_code)) ||
+      (job.youtube_stage === 'ready' && job.error_code == null))) throw new Error('見直す対象ではありません');
   return publishWhenProcessed(job, deps, {
     check: async () => {
       await deps.store.transition(job.id, 'youtube_lookup');

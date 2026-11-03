@@ -5,11 +5,12 @@
 --   同じ日の全貌の完全版3本は、どれも2回目の確認（約30秒）で succeeded になって公開された
 -- 変えるもの: transition_sns_x_send（土台は 186 の本文。本番の md5(prosrc) 06bd2a81976f9d0fa9d5f337899f5e5d と一致、2026-11-04 読み取り）に
 --   新しい操作 youtube_resume を足すだけ。ほかの分岐は 186 のまま。
---   youtube_resume: 要照合・private_retained・残した理由が処理待ち（youtube_retained_processing）か検査の枠（youtube_retained_budget）・
+--   youtube_resume: 要照合・private_retained で残した理由が処理待ち（youtube_retained_processing）か検査の枠（youtube_retained_budget）、
+--   または ready（error_code なし。公開の段の途中で実行が切れた job）・
 --   外部 ID がある・now() < expires_at・リースが切れている・試行のクォータの日が今の太平洋時間の日・videos.update をまだ呼んでいない・
 --   カバーのある job は thumbnails.set を台帳に記録済み（thumbnails.set の前の検査で budget になった job をカバー無しで公開しない）・
 --   同じ試行の youtube_lookup（videos.list の読み取り、クォータは sns_youtube_quota_reads に1）が10分以内にあり、
---   結果が自分の動画で非公開・ID 一致・processingStatus=succeeded のときだけ、youtube_stage を ready にし error_code を空にする。
+--   結果が自分の動画で非公開・ID 一致・processingStatus=succeeded のときだけ、youtube_stage を ready にし error_code を空にし、リースを5分付ける。
 --   公開は今までどおり youtube_publish_begin（承認・期限・日の上限・クォータの検査）→ videos.update → videos.list → complete
 --   （youtube_poll の3回の上限・general_reserved=104 の CHECK は変えない。見直しの読み取りは quota_reads に数える）
 -- 検証: scripts/maintenance/verify-sns-send-runner.js（PGlite、外部接続なし）
@@ -116,8 +117,10 @@ BEGIN
  -- 期限の前・リース切れ・10分以内の youtube_lookup で、自分の非公開の動画で処理が済んだ（processingStatus=succeeded）と確かめたものだけ。
  -- 段を ready に戻すだけで、公開は今までどおり youtube_publish_begin（承認・期限・枠の検査）→ videos.update の順に進む
  IF j.channel='youtube' AND p_action='youtube_resume' THEN
-   IF j.state<>'reconcile' OR j.youtube_stage IS DISTINCT FROM 'private_retained' OR j.external_post_id IS NULL
-     OR j.error_code IS NULL OR j.error_code NOT IN ('youtube_retained_processing','youtube_retained_budget')
+   -- ready（error_code なし）は、公開の段の途中で実行が切れてリースも切れた job（閉じる道は private_retained しか拾わない）
+   IF j.state<>'reconcile' OR j.external_post_id IS NULL
+     OR NOT ((j.youtube_stage='private_retained' AND j.error_code IN ('youtube_retained_processing','youtube_retained_budget'))
+       OR (j.youtube_stage='ready' AND j.error_code IS NULL))
      OR j.expires_at IS NULL OR now()>=j.expires_at OR (j.lease_until IS NOT NULL AND now()<j.lease_until) THEN
      RAISE EXCEPTION 'youtube_resume_not_allowed';
    END IF;
@@ -132,7 +135,8 @@ BEGIN
      OR p_result->>'id' IS DISTINCT FROM j.external_post_id OR p_result->>'processingStatus' IS DISTINCT FROM 'succeeded' THEN
      RAISE EXCEPTION 'youtube_resume_not_processed';
    END IF;
-   UPDATE public.sns_x_send_jobs SET youtube_stage='ready',error_code=NULL,updated_at=now() WHERE id=j.id RETURNING * INTO j;
+   -- リースを付ける（公開の段の検査の間に別の見直しと重ねない。切れたら ready のまま次の見直しが拾う）
+   UPDATE public.sns_x_send_jobs SET youtube_stage='ready',error_code=NULL,lease_until=now()+interval '5 minutes',updated_at=now() WHERE id=j.id RETURNING * INTO j;
    RETURN to_jsonb(j);
  END IF;
  IF j.channel='youtube' AND p_action IN ('youtube_poll','youtube_ready') THEN

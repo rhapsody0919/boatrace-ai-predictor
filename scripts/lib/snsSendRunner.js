@@ -480,7 +480,10 @@ export async function runSnsSend(
       ...resumeRetry.map((r) => r.id),
     ]);
     const resumable = (
-      await store.resumableYoutubeJobs(now, YOUTUBE_RESUME_MAX + touched.size)
+      await store.resumableYoutubeJobs(
+        ctx.now(),
+        YOUTUBE_RESUME_MAX + touched.size,
+      )
     )
       .filter((j) => !touched.has(j.id))
       .slice(0, YOUTUBE_RESUME_MAX);
@@ -492,13 +495,20 @@ export async function runSnsSend(
       const { adapter, error: tokenError } = await adapterFor("youtube");
       if (tokenError) {
         result.outcome = "token_failed";
+        alerts.push({
+          key: `token:youtube`,
+          text: `youtube のトークンを取れないので、非公開で残した job ${job.id} を見直していない: ${tokenError.message}`,
+          until: continuingUntil,
+        });
+        tokenChecked.add("youtube");
         break;
       }
       try {
-        const done = await resumeRetainedYoutubeJob(
-          { ...job, state: "reconcile" },
-          { store, youtube: adapter, preflight: countedPreflight },
-        );
+        const done = await resumeRetainedYoutubeJob(job, {
+          store,
+          youtube: adapter,
+          preflight: countedPreflight,
+        });
         result.outcome =
           done.state === "reconcile" &&
           done.youtube_stage === "private_retained"
@@ -511,11 +521,15 @@ export async function runSnsSend(
         const failure = sendFailureOf(error);
         result.reason = failure.reason;
         await recordEvent(job, failure.stage, failure.reason, failure.detail);
+        // 本人の非公開の動画と確かめられない（公開・限定公開・削除済み）なら、期限まで読み直さない（期限の後は閉じる道が確かめる）
         resumeRetry.push({
           id: job.id,
-          until: new Date(
-            now.getTime() + RESUME_RETRY_MINUTES * 60000,
-          ).toISOString(),
+          until:
+            error.message === "youtube_processing_unconfirmed"
+              ? job.expires_at
+              : new Date(
+                  now.getTime() + RESUME_RETRY_MINUTES * 60000,
+                ).toISOString(),
         });
         await tell(
           `resume:${job.id}`,
@@ -708,11 +722,11 @@ export function createSnsSendStore({ db, xSendStore, writeEvent }) {
         `sns_x_send_jobs?state=eq.reconcile&channel=eq.youtube&youtube_stage=eq.private_retained&expires_at=lte.${at}&or=${encodeURIComponent(`(lease_until.is.null,lease_until.lte.${now.toISOString()})`)}&order=id.asc&limit=${limit}&select=id,channel,state,youtube_stage,error_code,external_post_id,attempts,expires_at,snapshot`,
       );
     },
-    // 処理待ち・検査の枠で非公開のまま残し、期限の前でリースの切れた YouTube の job（見直す候補、BOA-1283）。見直してよいかの最終の判定は DB の youtube_resume
+    // 処理待ち・検査の枠で非公開のまま残した job と、公開の段の途中で切れた ready の job のうち、期限の前でリースの切れたもの（見直す候補、BOA-1283）。見直してよいかの最終の判定は DB の youtube_resume
     async resumableYoutubeJobs(now, limit) {
       const at = encodeURIComponent(now.toISOString());
       return db(
-        `sns_x_send_jobs?state=eq.reconcile&channel=eq.youtube&youtube_stage=eq.private_retained&error_code=in.(${RESUMABLE_RETAIN_CODES.join(",")})&expires_at=gt.${at}&or=${encodeURIComponent(`(lease_until.is.null,lease_until.lte.${now.toISOString()})`)}&order=expires_at.asc,id.asc&limit=${limit}&select=id,channel,state,youtube_stage,error_code,external_post_id,attempts,expires_at,snapshot`,
+        `sns_x_send_jobs?state=eq.reconcile&channel=eq.youtube&expires_at=gt.${at}&and=${encodeURIComponent(`(or(and(youtube_stage.eq.private_retained,error_code.in.(${RESUMABLE_RETAIN_CODES.join(",")})),and(youtube_stage.eq.ready,error_code.is.null)),or(lease_until.is.null,lease_until.lte.${now.toISOString()}))`)}&order=expires_at.asc,id.asc&limit=${limit}&select=id,channel,state,youtube_stage,error_code,external_post_id,attempts,expires_at,snapshot`,
       );
     },
     // 要照合の job（オーナーが照合するまで残る。件数は少ない）

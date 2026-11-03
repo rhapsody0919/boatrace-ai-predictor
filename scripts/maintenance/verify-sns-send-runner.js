@@ -118,8 +118,9 @@ const store = {
     (
       await db.query(
         `SELECT id, channel, state, youtube_stage, error_code, external_post_id, attempts, expires_at, snapshot FROM sns_x_send_jobs
-         WHERE state='reconcile' AND channel='youtube' AND youtube_stage='private_retained'
-           AND error_code IN ('youtube_retained_processing','youtube_retained_budget') AND expires_at>$1
+         WHERE state='reconcile' AND channel='youtube'
+           AND ((youtube_stage='private_retained' AND error_code IN ('youtube_retained_processing','youtube_retained_budget'))
+             OR (youtube_stage='ready' AND error_code IS NULL)) AND expires_at>$1
            AND (lease_until IS NULL OR lease_until<=$1) ORDER BY expires_at, id LIMIT $2`,
         [now.toISOString(), limit],
       )
@@ -2219,7 +2220,7 @@ test("BOA-1283 見直しの DB の条件: 読み取りなし・処理中・他�
   assert.equal(ready.state, "reconcile");
 });
 
-test("BOA-1283 PostgREST の読み取り: 見直す候補は要照合・YouTube・private_retained・理由が処理待ちか検査の枠・期限の前・リースの後だけを引く", async () => {
+test("BOA-1283 PostgREST の読み取り: 見直す候補は要照合・YouTube・（private_retained で理由が処理待ちか検査の枠、または error_code なしの ready）・期限の前・リースの後だけを引く", async () => {
   const calls = [];
   const pg = createSnsSendStore({
     db: async (path) => {
@@ -2231,7 +2232,7 @@ test("BOA-1283 PostgREST の読み取り: 見直す候補は要照合・YouTube�
   await pg.resumableYoutubeJobs(new Date("2026-10-27T03:00:00Z"), 2);
   assert.equal(
     calls[0],
-    "sns_x_send_jobs?state=eq.reconcile&channel=eq.youtube&youtube_stage=eq.private_retained&error_code=in.(youtube_retained_processing,youtube_retained_budget)&expires_at=gt.2026-10-27T03:00:00.000Z&or=(lease_until.is.null,lease_until.lte.2026-10-27T03:00:00.000Z)&order=expires_at.asc,id.asc&limit=2&select=id,channel,state,youtube_stage,error_code,external_post_id,attempts,expires_at,snapshot",
+    "sns_x_send_jobs?state=eq.reconcile&channel=eq.youtube&expires_at=gt.2026-10-27T03:00:00.000Z&and=(or(and(youtube_stage.eq.private_retained,error_code.in.(youtube_retained_processing,youtube_retained_budget)),and(youtube_stage.eq.ready,error_code.is.null)),or(lease_until.is.null,lease_until.lte.2026-10-27T03:00:00.000Z))&order=expires_at.asc,id.asc&limit=2&select=id,channel,state,youtube_stage,error_code,external_post_id,attempts,expires_at,snapshot",
   );
 });
 test("BOA-1283 見直し（審査 P2-1）: カバーのある job は thumbnails.set を台帳に記録した後だけ ready に戻す", async () => {
@@ -2308,4 +2309,59 @@ test("BOA-1283 見直し（審査 P2-2）: 実行の始まりから120秒を過�
   );
   assert.equal(youtube.calls.length, 0);
   assert.equal((await job(y.id)).youtube_stage, "private_retained");
+});
+test("BOA-1283 見直し（/code-review）: 公開の段の途中で実行が切れて ready のままリースも切れた job は、次の実行で読み直して公開する。youtube_resume はリースを付ける", async () => {
+  const y = await processingRetainedJob();
+  await store.transition(y.id, "youtube_lookup");
+  const ready = await store.transition(y.id, "youtube_resume", {
+    owned: true,
+    privacyStatus: "private",
+    id: "abcdefghijk",
+    processingStatus: "succeeded",
+  });
+  assert.ok(Date.parse(ready.lease_until) > Date.now());
+  // リース中は候補に出ない。切れたら（実行が落ちた）拾う
+  assert.deepEqual(await store.resumableYoutubeJobs(new Date(), 5), []);
+  await db.query(
+    "UPDATE sns_x_send_jobs SET lease_until=now()-interval '1 minute' WHERE id=$1",
+    [y.id],
+  );
+  const youtube = createMockYoutubeAdapter({ processingStatus: "succeeded" });
+  const result = await runSnsSend(
+    ctx(),
+    deps({ adapters: { youtube: async () => youtube } }),
+  );
+  assert.equal(result.body.jobs[0].outcome, "posted");
+  assert.equal((await job(y.id)).state, "posted");
+});
+
+test("BOA-1283 見直し（/code-review）: 本人の非公開の動画と確かめられない job は期限まで読み直さない。トークンを取れなければ通知に残す", async () => {
+  const y = await processingRetainedJob();
+  const youtube = createMockYoutubeAdapter({ videoId: "zzzzzzzzzzz" });
+  const firstRun = await runSnsSend(
+    ctx(),
+    deps({ adapters: { youtube: async () => youtube } }),
+  );
+  assert.equal(firstRun.body.jobs[0].reason, "youtube_processing_unconfirmed");
+  const retry = firstRun.report.resume_retry.find((r) => r.id === y.id);
+  assert.equal(
+    Date.parse(retry.until),
+    Date.parse((await job(y.id)).expires_at),
+  );
+  assert.equal((await job(y.id)).error_code, "youtube_retained_processing");
+  const noToken = await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () => {
+          throw new Error("token_revoked");
+        },
+      },
+    }),
+  );
+  assert.equal(noToken.body.jobs[0].outcome, "token_failed");
+  assert.match(
+    noToken.report.alerts.find((a) => a.key === "token:youtube").text,
+    /見直していない: token_revoked/,
+  );
 });
