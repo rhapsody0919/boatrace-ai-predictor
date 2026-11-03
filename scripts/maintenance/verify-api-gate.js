@@ -943,6 +943,36 @@ console.log("[10] 段階3のログ（鍵の trim・群・抜き取り）");
       dropped === null,
     JSON.stringify(kept),
   );
+  // keys_set: 鍵の有る無しだけを書く（値は書かない）。bad_key が「関門に鍵が無い」か「値が違う」かを見分ける
+  const badKey = await gate("/api/accuracy", {
+    headers: { "x-ryujin-internal-key": "wrong-secret-value" },
+  });
+  const labels = [
+    [{ current: CURRENT, next: NEXT }, "current+next"],
+    [{ current: CURRENT }, "current"],
+    [{ next: `${NEXT}\n` }, "next"],
+    [{ current: " \n" }, "none"],
+    [{}, "none"],
+  ].map(([keys, want]) => {
+    const rec = gateLogRecord(badKey, { mode: "observe", method: "GET", keys });
+    return [rec?.keys_set === want, JSON.stringify(rec)];
+  });
+  check(
+    "keys_set は鍵の枠の有る無しだけ（空白だけは none）",
+    labels.every(([ok]) => ok),
+    labels.map(([, j]) => j).join(" | "),
+  );
+  const withKeys = JSON.stringify(
+    gateLogRecord(badKey, {
+      mode: "observe",
+      method: "GET",
+      keys: { current: CURRENT, next: NEXT },
+    }),
+  );
+  check(
+    "keys_set を書いても鍵の値は行に入らない",
+    !withKeys.includes(CURRENT) && !withKeys.includes(NEXT),
+  );
   const excluded = await gate("/api/cron/odds");
   check(
     "除外はログを書かない",

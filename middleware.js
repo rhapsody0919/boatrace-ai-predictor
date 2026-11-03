@@ -120,15 +120,20 @@ function ipRanges() {
  */
 export async function handleApiGate(request, env = process.env) {
   const mode = normalizeGateMode(env.API_GATE_MODE);
+  const keys = gateKeysFromEnv(env);
   const decision = await decideApiGate({
     url: request.url,
     headers: request.headers,
     ip: ipAddress(request) ?? null, // Vercel が付ける接続元 IP（x-real-ip）
     mode,
-    keys: gateKeysFromEnv(env),
+    keys,
     ipRanges: ipRanges(),
   });
-  const record = gateLogRecord(decision, { mode, method: request.method });
+  const record = gateLogRecord(decision, {
+    mode,
+    method: request.method,
+    keys,
+  });
   if (record) console.log(JSON.stringify(record));
   return decision.outcome === "reject"
     ? gateRejectResponse(decision.status)

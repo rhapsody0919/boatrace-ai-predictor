@@ -409,6 +409,13 @@ export function gateGroup(decision) {
 // reason=browser は件数が多い（odds/live のポーリング）ので抜き取る（plan §2.2）。
 // 10件に1件は目安（根拠なし）。数えるときは sample を掛けて戻す
 export const BROWSER_LOG_SAMPLE = 10;
+const keysSetLabel = (keys) => {
+  const slots = [
+    trimmedOrUndefined(keys?.current) ? "current" : null,
+    trimmedOrUndefined(keys?.next) ? "next" : null,
+  ].filter(Boolean);
+  return slots.length === 0 ? "none" : slots.join("+");
+};
 // 書かない reason（既存の守りがある除外・/api でないもの）
 const UNLOGGED_REASONS = new Set(["excluded", "not_api"]);
 
@@ -417,9 +424,14 @@ const UNLOGGED_REASONS = new Set(["excluded", "not_api"]);
  * 鍵の値・IP・UA の全文・クエリ文字列は decision に入っていない（verify-api-gate.js [8]）。
  * tag は全文検索で群ごとに数えるための1語（例 "apigate_would_deny_bingbot"。Vercel の Runtime Logs の検索に使う）
  * @param {Awaited<ReturnType<typeof decideApiGate>>} decision
- * @param {{ mode: string, method: string, random?: () => number }} context
+ * keys_set は関門が持つ鍵の枠（"current"・"current+next"・"next"・"none"）。値は書かず、有る無しだけ
+ * （bad_key のとき、関門の側に鍵が無いのか、値が違うのかを見分ける。回し替えの間の確かめにも使う）
+ * @param {{ mode: string, method: string, keys?: { current?: string, next?: string }, random?: () => number }} context
  */
-export function gateLogRecord(decision, { mode, method, random = Math.random }) {
+export function gateLogRecord(
+  decision,
+  { mode, method, keys = {}, random = Math.random },
+) {
   if (UNLOGGED_REASONS.has(decision.reason)) return null;
   // 検索ボットを名乗る要求（bot_verified が true/false）は、browser で通っても抜き取らない（段階4の条件の母数）
   const sampled =
@@ -441,6 +453,7 @@ export function gateLogRecord(decision, { mode, method, random = Math.random }) 
     caller_claimed: decision.caller_claimed,
     key_slot: decision.key_slot,
     bot_verified: decision.bot_verified,
+    keys_set: keysSetLabel(keys),
     sample: sampled ? BROWSER_LOG_SAMPLE : 1,
   };
 }

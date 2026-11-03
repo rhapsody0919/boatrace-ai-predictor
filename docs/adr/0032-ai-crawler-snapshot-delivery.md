@@ -71,4 +71,4 @@ boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコ�
 ## 追記: middleware の範囲が /api に広がった（BOA-1110 段階3、ADR-0103）
 
 - `middleware.js` の `matcher` に `/api/:path*` を足し、`/api/*` の要求すべてで middleware が動く（関門の判定は `api/_lib/apiGate.js`、観測の1行ログ）。スナップショットの振り分けとは別の分岐で、`/api/cron`・`/api/admin`・`/api/bot-page` は関門の除外のまま既存の分岐へ進む
-- 実行の環境は Edge のまま（runtime の指定は無い）。2026-11-04 の Preview のビルドの記録に「middleware.js uses the deprecated "edge" runtime」と出た。ADR-0089 の「0032 の Edge Runtime（デフォルト）は誤りで既定は Node.js」は、今のビルドの記録と食い違う。Edge の束ねは JSON の import 属性（`with { type: "json" }`）を読めず、ビルドが落ちた（段階3の初回）。関門の範囲の表は JS のモジュール（`api/_lib/searchBotIpRanges.js`）にした
+- 実行の環境は**未確認**（runtime の指定は無い）。2026-11-04 の Preview のビルドの記録には「middleware.js uses the deprecated "edge" runtime」と出たが、同じデプロイの Runtime Logs の middleware の行は `runtime=nodejs24.x` だった。ADR-0089 の「既定は Node.js」もこの上の「Edge Runtime（デフォルト）」も、どちらとも決められない。Edge の束ねは JSON の import 属性（`with { type: "json" }`）を読めず、ビルドが落ちた（段階3の初回）。関門の範囲の表は JS のモジュール（`api/_lib/searchBotIpRanges.js`）にした

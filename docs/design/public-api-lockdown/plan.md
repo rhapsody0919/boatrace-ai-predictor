@@ -131,7 +131,7 @@ flowchart TD
 - `Sec-Fetch-Site` を送らない古いブラウザ（Safari 16.4 より前など）は `Referer` で救う（`reason=browser_legacy` で別に数え、少なければ段階4の後に外してよい）。偽れる強さは `Sec-Fetch-Site` と同じ
 - 自分の host は `new URL(request.url).host` から取る（固定の一覧にしない。Preview の `*.vercel.app` でも同じ判定で通る）
 - **matcher はデコード前のパスで照合される**（`api/_lib/adminAuth.js:4-8`。2026-09-29 に `/api/admin/sns-h%75b/` が middleware を素通りした実例）。matcher には `/api/:path*` を足し、除外の判定は `new URL(request.url).pathname` をデコードしたパスで行う。WHATWG URL は `%2F` を区切りにしないので、`/api/bot-page%2F..%2Fpredictions/2026-10-26` はデコードすると `/api/bot-page/../predictions/2026-10-26` になり、前方一致だけでは除外に入る（2026-10-27 に node で実測。`/api/cron/..%2fanalogy/…` も同じ）。そこで**デコード後に `..`・`.` のセグメント、`//`、`\` のどれかを含むパスは 400 no-store** にする（正規の画面・呼び出し元はこの形のパスを作らない。正規化してから判定する案より、正規化の差で前方一致が揺れない分単純）。`/%61pi/predictions/…` のように `api` 自体をエンコードした要求が関数に届くかは事前に Preview で実測する（§4 の段階0）。届くなら middleware だけでは穴になるので、Vercel Firewall のルールで塞ぐ（関数の入口に置いてもキャッシュに当たった要求には効かない）
-- 今の `middleware.js` に runtime の指定は無く、実際は Edge で動く（2026-11-04 の段階3の Preview のビルドの記録「middleware.js uses the deprecated "edge" runtime」。当初は ADR-0089:98 に従い Node.js と書いていた）。定数時間比較は `api/_lib/adminAuth.js:34-48` の `constantTimeEqual`（Web Crypto、どちらのランタイムでも動く）を export して使う（DRY）
+- 今の `middleware.js` に runtime の指定は無い。どちらで動くかは**未確認**（2026-11-04 の段階3の Preview のビルドの記録は「middleware.js uses the deprecated "edge" runtime」と警告し、同じデプロイの Runtime Logs の middleware の行は `runtime=nodejs24.x`。当初は ADR-0089:98 に従い Node.js と書いていた）。どちらでも動くよう、Web の API（Web Crypto・`fetch` の `Headers`）だけを使う。束ねは JSON の import 属性を読めない（§4.1）。定数時間比較は `api/_lib/adminAuth.js:34-48` の `constantTimeEqual`（Web Crypto、どちらのランタイムでも動く）を export して使う（DRY）
 - 既存の分岐（`isAdminPath` が先、次に `resolveSnapshotPath`）の前に `/api` の分岐を置く。rewrite 先の `/api/bot-page/*` を直接叩かれても除外なので干渉しない
 - 判定は純関数にし、`verify-*.js` で固定する（エンコードしたパス・`/%61pi/`・`/api/bot-page%2F..%2Fpredictions/…`・`/api/cron/..%2f…`・`//`・`\` を含むパス・鍵が空・鍵の不一致・`Sec-Fetch-Site` 無しで `Referer` あり・`Origin` が別）。`verify-middleware-routing.js`（CI）に `/api` の振り分けを足す
 - `OPTIONS`（プリフライト）は同じ origin では発生しない。別 origin の `OPTIONS` は CORS を絞った後は許可のヘッダを返さないだけでよい（拒んでも同じ）
@@ -193,10 +193,11 @@ flowchart LR
 ### 4.1 段階3の実装で決めたこと（BOA-1110 段階3の PR）
 
 - **ログの1行**（`middleware.js` が `console.log` で出す。中身は `api/_lib/apiGate.js` の `gateLogRecord`）:
-  `{"api_gate":reason,"group":…,"tag":"apigate_<reason>_<group>","mode":"observe","method":"GET","status":null|400|403,"path":…,"sfs":…,"origin_host":…,"ua_class":…,"caller":…,"caller_claimed":…,"key_slot":…,"bot_verified":…,"sample":1|10}`
+  `{"api_gate":reason,"group":…,"tag":"apigate_<reason>_<group>","mode":"observe","method":"GET","status":null|400|403,"path":…,"sfs":…,"origin_host":…,"ua_class":…,"caller":…,"caller_claimed":…,"key_slot":…,"bot_verified":…,"keys_set":"current"|"current+next"|"next"|"none","sample":1|10}`
   - `group` は数える群: `google`・`bingbot`・`search_other`・`ai_crawler`・`hq`・`ryujin`・`browser`・`other`。internal は caller が `hq-` で始まれば `hq`、ほかは `ryujin`。internal 以外は名乗った呼び出し元（`caller_claimed`。偽れるので手がかり）が先、次に UA の丸め、次に `browser`（Mozilla の UA）、残りが `other`。名乗りを先にするのは、`bot-html-parity` がボットの UA と名前を一緒に送り、鍵が古いと `bad_key` が `ai_crawler` に紛れるため（偽の名乗りは自分の群に数えられ、段階4へ進めない側に倒れる）
   - `caller` は §2.2 のとおり `reason=internal` のときだけ。合言葉の無い要求が付けた `x-ryujin-caller` は `caller_claimed` に別に書く（配り漏れの hq・龍神のスクリプトを外部と見分けるため。§2.2 に無かった欄）
   - `tag` は Runtime Logs の全文検索で群ごとに数えるための1語
+  - `keys_set` は関門が持つ鍵の枠の有る無しだけ（値は書かない）。`bad_key` が「関門に鍵が無い」のか「値が違う」のかを見分ける（Preview の確認で、本体の `.env.local` の鍵が Preview で `bad_key` になり、どちらか分からなかったため足した）
   - `reason=browser` は10件に1件だけ書き、`sample=10` を付ける（10 は目安、根拠なし）。検索ボットを名乗る要求（`bot_verified` が true/false）は browser でも抜き取らない。除外（cron・admin・bot-page）と `/api` でないものは書かない
   - IP・UA の全文・鍵の値・クエリ文字列は入れない（`verify-api-gate.js` [8]・[10]）
 - **鍵と段階の値の前後の空白**: 付ける側の fetch（`Headers`）は値の前後の空白・改行を落として送るので、Vercel に置いた値の末尾に改行があると、そのまま比べると `bad_key` になる（段階1の /code-review の指摘1）。関門の側で `INTERNAL_API_KEY`・`INTERNAL_API_KEY_NEXT`・受け取ったヘッダの前後の空白・改行を落としてから比べる（`gateKeysFromEnv`）。付ける側（`internalApiHeaders`）も落とす。`API_GATE_MODE` も前後を落として `enforce` だけ強制

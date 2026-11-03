@@ -1017,7 +1017,12 @@ console.log(
     const log = gateLines(lines)[0];
     check(
       "env の鍵の末尾の改行を落として比べる（internal・key_slot=current）",
-      res === undefined && log?.api_gate === "internal" && log.key_slot === "current" && log.caller === "bot-page" && log.group === "ryujin",
+      res === undefined &&
+        log?.api_gate === "internal" &&
+        log.key_slot === "current" &&
+        log.caller === "bot-page" &&
+        log.group === "ryujin" &&
+        log.keys_set === "current",
       `${describe(res)} ${lines.join(" | ")}`,
     );
     check("ログに鍵の値が出ない", !lines.join("").includes("verify-key-abc"));
