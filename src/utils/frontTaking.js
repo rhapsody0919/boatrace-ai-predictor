@@ -26,9 +26,10 @@ const shiftDays = (ymd, days) => {
  * @param {Array<{raceId: string, boatNumber: number, entryCourse?: number|null}>|null|undefined} rows
  * @param {{ today: string, beforeRaceId?: string }} opts today は JST の YYYY-MM-DD。
  *   beforeRaceId を渡すと、そのレースと後のレースを数えない（レースページで当のレースを混ぜない）
- * @returns {{ from: string, to: string, n: number, k: number, rate: number|null,
+ * @returns {{ from: string, to: string, fullYear: boolean, n: number, k: number, rate: number|null,
  *   status: "inya" | "rate" | "insufficient" }}
- *   from〜to は数えた期間（from はデータのある最初の日より前にしない）。
+ *   from〜to は数えた期間（from はデータのある最初の日より前にしない）。fullYear は丸1年あるか
+ *   （2026-12-02 までは偽。画面で「直近1年」と言わない）。
  *   rate は 30走以上のときだけ（0〜1）。insufficient は30走未満
  */
 export function computeFrontTaking(rows, { today, beforeRaceId } = {}) {
@@ -38,7 +39,8 @@ export function computeFrontTaking(rows, { today, beforeRaceId } = {}) {
     );
   }
   const windowStart = shiftDays(today, -WINDOW_DAYS + 1);
-  const from = windowStart < RACE_PAGE_FROM ? RACE_PAGE_FROM : windowStart;
+  const fullYear = windowStart >= RACE_PAGE_FROM;
+  const from = fullYear ? windowStart : RACE_PAGE_FROM;
   const counted = (rows ?? []).filter((r) => {
     const date = String(r.raceId ?? "").slice(0, 10);
     return (
@@ -54,8 +56,16 @@ export function computeFrontTaking(rows, { today, beforeRaceId } = {}) {
   const n = counted.length;
   const k = counted.filter((r) => r.entryCourse <= 3).length;
   if (n < FRONT_TAKING_MIN_RUNS) {
-    return { from, to: today, n, k, rate: null, status: "insufficient" };
+    return {
+      from,
+      to: today,
+      fullYear,
+      n,
+      k,
+      rate: null,
+      status: "insufficient",
+    };
   }
   const status = wilsonLowerBound(k, n) >= INYA_LOWER_BOUND ? "inya" : "rate";
-  return { from, to: today, n, k, rate: k / n, status };
+  return { from, to: today, fullYear, n, k, rate: k / n, status };
 }

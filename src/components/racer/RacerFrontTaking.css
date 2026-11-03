@@ -10,9 +10,9 @@
   scroll-margin-top: 88px;
 }
 
-/* 取得中は札のある選手の箱とほぼ同じ高さを取り、後から出て下の表を押し下げない（CLS） */
+/* 取得中は札の無い選手（ほとんどの選手）の箱とほぼ同じ高さを取り、後から出て下の表を動かさない（CLS） */
 .racer-front-taking--loading {
-  min-height: 9rem;
+  min-height: 6rem;
 }
 
 .racer-front-taking--inya {

@@ -43,7 +43,13 @@ export default function RacerProfileHeader({
               const target = document.getElementById(FRONT_TAKING_ANCHOR);
               if (!target) return;
               e.preventDefault();
-              target.scrollIntoView({ behavior: "smooth", block: "start" });
+              const reduce = window.matchMedia?.(
+                "(prefers-reduced-motion: reduce)",
+              ).matches;
+              target.scrollIntoView({
+                behavior: reduce ? "auto" : "smooth",
+                block: "start",
+              });
               target.focus({ preventScroll: true });
             }}
           >

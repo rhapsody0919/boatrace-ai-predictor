@@ -22,8 +22,10 @@ export default function RacerFrontTaking({ result }) {
       />
     );
   }
-  const { from, to, n, k, rate, status } = result;
-  const range = `直近1年（${slash(from)}〜${slash(to)}）`;
+  const { from, to, fullYear, n, k, rate, status } = result;
+  const range = fullYear
+    ? `直近1年（${slash(from)}〜${slash(to)}）`
+    : `${slash(from)}〜${slash(to)}`;
   const pct = rate === null ? null : Math.round(rate * 100);
   const isInya = status === "inya";
 

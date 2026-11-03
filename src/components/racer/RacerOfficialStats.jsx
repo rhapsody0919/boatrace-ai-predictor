@@ -214,7 +214,8 @@ export default function RacerOfficialStats({
     () => buildCourseRows(rows, COURSE_SUM_PERIODS),
     [rows],
   );
-  if (periodRows.length === 0) return null;
+  // 期別成績が無い選手でも、前付けの説明だけは出す（ヘッダーの札の飛び先が消えないように）
+  if (periodRows.length === 0) return frontTaking;
 
   const latest = periodRows[0];
   const oldest = periodRows.at(-1);

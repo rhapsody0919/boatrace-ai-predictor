@@ -131,12 +131,14 @@ const TODAY = "2026-11-03";
 
 {
   check(
-    "(f) from はデータの最初の日より前にしない",
-    computeFrontTaking([], { today: TODAY }).from === "2025-12-03",
+    "(f) from はデータの最初の日より前にしない。そのときは fullYear が偽（画面で「直近1年」と言わない）",
+    computeFrontTaking([], { today: TODAY }).from === "2025-12-03" &&
+      computeFrontTaking([], { today: TODAY }).fullYear === false,
   );
   check(
     "(f) 1年後は today を含む365日の初日",
-    computeFrontTaking([], { today: "2027-06-30" }).from === "2026-07-01",
+    computeFrontTaking([], { today: "2027-06-30" }).from === "2026-07-01" &&
+      computeFrontTaking([], { today: "2027-06-30" }).fullYear === true,
   );
   let threw = false;
   try {
