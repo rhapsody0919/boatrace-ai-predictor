@@ -140,3 +140,6 @@
 - DB全体のER図は docs/reference/schema-er-diagram.md を見る。本番スキーマの写しから機械生成し、マージ後にCIが作り直すため、生成物をPRへ含めない（2026-10-28、PR #2042、基盤の計画段6）。
 - 対象日−(series_day−1)で作るmeet_start_dateは、丸一日の中止で同じ日目が続くと実際の節開始日からずれる。racer_series_points_dailyの日別値はvenue_code・snapshot_dateの範囲・series_dayで読み、推定したmeet_start_dateだけに依存しない（2026-11-02、system-architect、BOA-1210、docs/design/pointrank-history/plan.md §4）。
 - 本番ではpgrst_ddl_watchイベントトリガーがDDL後にPostgRESTのスキーマ再読込を通知するため、同じ目的のNOTIFY pgrstを別途足す必要は無い。他環境でも同じ機構があるとは仮定しない（2026-11-02、system-architect、BOA-1210・PR #2085、pg_event_triggerの確認）。
+- DO・ALTER TABLE を含むマイグレーションは db-apply の判定で apply-gated になり、当たるのはオーナーが承認を押した時刻。SQL のコメントの「当てる時刻」を守る仕組みは無いので、承認を押す窓を PR 本文にも書く（2026-11-04、system-architect、BOA-1249・201、scripts/lib/dbApplySql.js）。
+- stop_sns_auto_item は bundle_import_id で下書きを探すので、draft_id でひもづく item（setsu・upset・research 等）には効かない。手で止めるときは item の stopped と下書きの publish_blocked=true を1つのトランザクションで行い、job が sending・reconcile・posted の item は除く（2026-11-04、system-architect、BOA-1249・201）。
+- sns_auto_send_items に ACCESS EXCLUSIVE を取るマイグレーションの窓は 23:00〜04:59 JST（sns-send は JST 7:00〜22:58、sns-auto-plan は JST 5:00〜22:55 の通し。vercel.json、2026-11-04、BOA-1249）。

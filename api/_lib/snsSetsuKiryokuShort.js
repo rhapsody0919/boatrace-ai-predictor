@@ -2,7 +2,8 @@
  * YouTube Shorts「節の機力」（format・kind = setsu_kiryoku_short、マイグレーション 193、BOA-1209）の、
  * 取り込み（scripts/sns/push-setsu-kiryoku-short.js）と送る直前の読み直し（snsClaimCheck.js の readCurrent）に共通の決まり。
  * レースを持たない投稿なので、race_id の代わりに setsu:{YYYY-MM-DD}:{会場コード2桁} を item の race_id に入れる（193 の CHECK と同じ形）。
- * 1日1本（同じ JST の日の setsu_kiryoku_short は、生きている item か送った item が1つだけ。193 の一意の索引）
+ * 1日1本は item の版（variant）ごと（同じ JST の日の setsu_kiryoku_short は、版ごとに生きている item か送った item が1つだけ。
+ * 201 の一意の索引）。版は束の型が border（準優に残れるか）なら 'border'、それ以外は 'main'（BOA-1249）
  */
 import { VENUE_NAMES } from "../../scripts/lib/venueNames.js";
 
@@ -15,6 +16,9 @@ export const venueCodeOf = (name) => {
   const hit = Object.entries(VENUE_NAMES).find(([, v]) => v === name);
   return hit ? hit[0].padStart(2, "0") : null;
 };
+/** item の版（純粋関数）。border の束だけ 'border'、ほかの型は 'main'（201 の setsu_id の CHECK と同じ2つ） */
+export const setsuItemVariantOf = (bundleVariant) =>
+  bundleVariant === "border" ? "border" : "main";
 export const setsuIdOf = (date, venueCode) => `setsu:${date}:${venueCode}`;
 /** setsu_id の日（JST）と会場コード（2桁）。形が違えば null */
 export function parseSetsuId(id) {

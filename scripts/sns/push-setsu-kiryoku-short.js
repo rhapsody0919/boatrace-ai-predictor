@@ -6,7 +6,8 @@
  *
  * 使い方:
  *   node --env-file=.env.local scripts/sns/push-setsu-kiryoku-short.js <フォルダ> [--dry-run] [--no-wait]
- *   node --env-file=.env.local scripts/sns/push-setsu-kiryoku-short.js --status <YYYY-MM-DD>   その日の状態・動画の URL を出す
+ *   node --env-file=.env.local scripts/sns/push-setsu-kiryoku-short.js --status <YYYY-MM-DD> [border|main]   その日の状態・動画の URL を出す
+ *     （版を付けなければ、生きている item のうち新しい方。border の日は版を付けて読む）
  *
  * フォルダ（hq の作り手の出力）: bundle.json と mp4 1本（縦・60秒まで・32 MiB まで）。ほかのファイルは読まない
  *   bundle.json の形は sns-video-studio/remotion/src/setsuKiryoku/model.js（型の正本）。この口が足す欄（どれも任意）:
@@ -21,7 +22,8 @@
  *      その会場のページ（https://www.boat-ai.jp/venue/{会場コード}、クエリは utm_* だけ）、動画は MP4・縦・60秒まで・32 MiB まで
  *   3. 時刻: date は今日（JST）、送る時刻は 22:00 まで、受け取りは送る時刻の15分前から、期限の10分前より前、集計の時刻は今より前で期限まで鮮度の線（max_source_age_seconds）の内
  *   4. 優勝戦の型で when=today: その日のその会場の優勝戦が DB にあり、中止・欠場が無い
- *   5. 二重送信: 同じ日の setsu_kiryoku_short が生きているか送ってあれば作らない（exit 4、193 の一意の索引でも止まる）。
+ *   5. 二重送信: 同じ日・同じ版（item の variant。border の束は 'border'、ほかの型は 'main'）の setsu_kiryoku_short が生きているか
+ *      送ってあれば作らない（exit 4、201 の一意の索引でも止まる）。朝の border と夜の節の機力は同じ日に両方受ける（BOA-1249）。
  *      final_gap は同じ優勝戦（日と会場）を前夜と当日で2回出さない。前の束が送らずに終わっていれば（held・failed・cancelled・承認の途中で落ちた）作り直す
  *   6. YouTube の日の上限（daily_limit_youtube）とクォータ（sns_youtube_quota_control）: 今日の試行・まだ claim していない YouTube の予定に
  *      この1本（1 upload・104 units、146 の claim の予約と同じ値）が入るか。claim でも DB がもう一度数えて予約する
@@ -33,9 +35,9 @@
  * --dry-run は DB を読むだけ。date が今日でない束（見本の束）は、その日の送る時刻（send_time、無ければ 21:30）の2分前に受け取ったとして時刻の検査をする
  *   （結果の simulated_now。DB の数（日の上限・クォータ・二重送信）は今の値で見る）
  *
- * stdout の最後の1行は `SETSU_RESULT {...}`（setsu_id・outcome・job_id・job_state・video_id・video_url・posted_at・error_code・reason）
+ * stdout の最後の1行は `SETSU_RESULT {...}`（setsu_id・variant（border・main）・outcome・job_id・job_state・video_id・video_url・posted_at・error_code・reason）
  * exit: 0 送った（--dry-run は検査が通った・--no-wait は予定に入れた）・1 検査で拒否・2 使い方・鍵の不足・3 許可が off なので書かなかった
- *   ・4 同じ日の setsu_kiryoku_short が既にある（何もしない）・5 予定に入れたが送れなかった（保留・期限切れ・自動モードでない）・6 想定外の失敗
+ *   ・4 同じ日・同じ版の setsu_kiryoku_short が既にある（何もしない）・5 予定に入れたが送れなかった（保留・期限切れ・自動モードでない）・6 想定外の失敗
  */
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
@@ -52,6 +54,7 @@ import {
   SETSU_KIRYOKU_SHORT_KIND,
   SETSU_SCREEN_KEY,
   setsuIdOf,
+  setsuItemVariantOf,
   venueCodeOf,
 } from "../../api/_lib/snsSetsuKiryokuShort.js";
 import { checkBundle } from "../../sns-video-studio/remotion/src/setsuKiryoku/model.js";
@@ -430,10 +433,18 @@ export function draftRow(
 }
 
 /** item の行（純粋関数）。自動（notified）は止めるリンクを作らない（全貌・優勝戦・数字で見たらと同じ。153 の CHECK が要るので使わない乱数のハッシュ） */
-function itemRow({ setsuId, draftId, when, state, checkedAt, heldReason }) {
+function itemRow({
+  setsuId,
+  variant,
+  draftId,
+  when,
+  state,
+  checkedAt,
+  heldReason,
+}) {
   return {
     kind: SETSU_KIRYOKU_SHORT_KIND,
-    variant: "main",
+    variant,
     draft_id: draftId,
     channel: "youtube",
     race_id: setsuId,
@@ -455,6 +466,7 @@ function itemRow({ setsuId, draftId, when, state, checkedAt, heldReason }) {
 /** item と job から、hq に返す状態（純粋関数） */
 export const setsuStatusOf = (item, job) => ({
   setsu_id: item?.race_id ?? null,
+  variant: item?.variant ?? null,
   item_state: item?.state ?? null,
   held_reason: item?.held_reason ?? null,
   job_id: job?.id ?? null,
@@ -471,12 +483,13 @@ const retryable = (item, job) =>
   (!job || RETRYABLE_JOB_STATES.includes(job.state));
 
 /**
- * 同じ日の生きている item と、同じ優勝戦（final_gap）の item を見る。送った・送っている・待っている item があれば { already } か { reasons }。
- * 送らずに終わった item は作り直す対象（retry）として返す
+ * 同じ日・同じ版（variant）の生きている item と、同じ優勝戦（final_gap）の item を見る。送った・送っている・待っている item があれば
+ * { already } か { reasons }。送らずに終わった item は作り直す対象（retry）として返す。版の違う item（朝の border と夜の節の機力）は見ない
  */
-async function liveOf(store, { date, finalKey }) {
+async function liveOf(store, { date, variant, finalKey }) {
   const live = (await store.setsuItems(date)).filter(
-    (i) => !["stopped", "held_manual"].includes(i.state),
+    (i) =>
+      i.variant === variant && !["stopped", "held_manual"].includes(i.state),
   );
   const retry = [];
   for (const item of live) {
@@ -486,7 +499,7 @@ async function liveOf(store, { date, finalKey }) {
       return {
         already: {
           already: true,
-          reason: `同じ日の setsu_kiryoku_short が既にある（${item.race_id}・item ${item.state}・job ${job?.state ?? "なし"}）。作らなかった`,
+          reason: `同じ日の setsu_kiryoku_short（版 ${variant}）が既にある（${item.race_id}・item ${item.state}・job ${job?.state ?? "なし"}）。作らなかった`,
           status: setsuStatusOf(item, job),
         },
       };
@@ -549,7 +562,12 @@ export async function pushSetsuKiryokuShort(
   // 列が無い（193 が未適用）・行が無いときも off（fail-closed）
   const enabled = controls.youtube?.setsu_kiryoku_short_enabled === true;
   const writes = enabled && !dryRun;
-  const extra = simulated ? { simulated_now: simulated.toISOString() } : {};
+  // item の版（border・main）。同じ日・同じ会場の border と節の機力は setsu_id が同じなので、結果には版も出す（201）
+  const itemVariant = setsuItemVariantOf(bundle?.variant);
+  const extra = {
+    variant: itemVariant,
+    ...(simulated ? { simulated_now: simulated.toISOString() } : {}),
+  };
   const reject = async (reasons) => {
     if (writes)
       await notify(
@@ -585,9 +603,10 @@ export async function pushSetsuKiryokuShort(
     maxAgeSec: sendControl?.max_source_age_seconds,
   });
   if (timing.length) return reject(timing);
-  // 同じ日に生きている・送った item があれば何も作らず、今の状態を返す（DB の一意の索引でも止まる、193）
+  // 同じ日・同じ版に生きている・送った item があれば何も作らず、今の状態を返す（DB の一意の索引でも止まる、201）
   const live = await liveOf(store, {
     date: bundle.date,
+    variant: itemVariant,
     finalKey: finalKeyOf(bundle, venueCode),
   });
   if (live.already) return { setsu_id: setsuId, ...live.already, ...extra };
@@ -691,6 +710,7 @@ export async function pushSetsuKiryokuShort(
     item = await store.insertItem(
       itemRow({
         setsuId,
+        variant: itemVariant,
         draftId: draft.id,
         when,
         state: "notified",
@@ -698,12 +718,13 @@ export async function pushSetsuKiryokuShort(
       }),
     );
   } catch (error) {
-    // 同じ日に並行して入れた束が先に一意の索引（193 の setsu_day）に入った等。下書きを残すと個別承認で送れてしまう
+    // 同じ日・同じ版に並行して入れた束が先に一意の索引（201 の setsu_day）に入った等。下書きを残すと個別承認で送れてしまう
     await blockDraft("item を作れない");
     throw error;
   }
   const out = {
     setsu_id: setsuId,
+    variant: itemVariant,
     draft_id: draft.id,
     item_id: item.id,
     auto,
@@ -752,9 +773,11 @@ export async function pushSetsuKiryokuShort(
   return { ...out, revision, when };
 }
 
-/** その日の状態（hq の記録用）。生きている item（無ければ最新）と job。item が無ければ null */
-export async function setsuStatus(date, { store }) {
-  const items = await store.setsuItems(date);
+/** その日の状態（hq の記録用）。生きている item（無ければ最新）と job。item が無ければ null。variant（border・main）を渡せばその版だけ */
+export async function setsuStatus(date, { store, variant = null }) {
+  const items = (await store.setsuItems(date)).filter(
+    (i) => variant == null || i.variant === variant,
+  );
   const item =
     items.find((i) => !["stopped", "held_manual"].includes(i.state)) ??
     items[0];
@@ -810,6 +833,7 @@ export function resultLine(
   const s = status ?? result.status ?? null;
   const line = {
     setsu_id: result.setsu_id ?? null,
+    variant: result.variant ?? s?.variant ?? null,
     outcome,
     job_id: s?.job_id ?? result.job_id ?? null,
     job_state: s?.job_state ?? null,
@@ -910,7 +934,7 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
       )[0] ?? null,
     setsuItems: (date) =>
       call(
-        `sns_auto_send_items?kind=eq.${SETSU_KIRYOKU_SHORT_KIND}&channel=eq.youtube&race_id=like.${encodeURIComponent(`setsu:${date}:*`)}&select=id,state,draft_id,race_id,held_reason&order=created_at.desc`,
+        `sns_auto_send_items?kind=eq.${SETSU_KIRYOKU_SHORT_KIND}&channel=eq.youtube&race_id=like.${encodeURIComponent(`setsu:${date}:*`)}&select=id,state,draft_id,race_id,variant,held_reason&order=created_at.desc`,
       ),
     // 同じ優勝戦（final_key）の下書きの item
     async finalItems(finalKey) {
@@ -983,7 +1007,7 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
 async function main() {
   const args = process.argv.slice(2);
   const usage =
-    "使い方: node --env-file=.env.local scripts/sns/push-setsu-kiryoku-short.js <フォルダ> [--dry-run] [--no-wait] | --status <YYYY-MM-DD>";
+    "使い方: node --env-file=.env.local scripts/sns/push-setsu-kiryoku-short.js <フォルダ> [--dry-run] [--no-wait] | --status <YYYY-MM-DD> [border|main]";
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) {
@@ -992,11 +1016,20 @@ async function main() {
   }
   const store = createRestStore({ url, key });
   if (args[0] === "--status") {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(args[1] ?? "")) {
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(args[1] ?? "") ||
+      ![undefined, "border", "main"].includes(args[2])
+    ) {
       console.error(usage);
       process.exit(2);
     }
-    console.log(JSON.stringify(await setsuStatus(args[1], { store }), null, 2));
+    console.log(
+      JSON.stringify(
+        await setsuStatus(args[1], { store, variant: args[2] ?? null }),
+        null,
+        2,
+      ),
+    );
     return;
   }
   const dryRun = args.includes("--dry-run");

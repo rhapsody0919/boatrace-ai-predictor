@@ -24,6 +24,7 @@ import {
 import {
   parseSetsuId,
   SETSU_KIRYOKU_SHORT_KIND,
+  setsuItemVariantOf,
 } from "./snsSetsuKiryokuShort.js";
 import { parseUpsetId, UPSET_WIN_SHORT_KIND } from "./snsUpsetWinShort.js";
 
@@ -385,7 +386,8 @@ export function createReadCurrent({
     }
     // YouTube Shorts「節の機力」（193、scripts/sns/push-setsu-kiryoku-short.js）: レースを持たない単独の Shorts。数の照合は作り手の型の検査
     // （setsuKiryoku/model.js の checkBundle、push で通した）に任せ、送る直前は、item が setsu_kiryoku_short で日と会場が下書きと合うこと・
-    // 自動送信の許可（youtube の行の setsu_kiryoku_short_enabled）・同じ日に送った setsu_kiryoku_short が無いことを読み直す。
+    // 自動送信の許可（youtube の行の setsu_kiryoku_short_enabled）・同じ日に同じ版（item の variant。border の束は 'border'、ほかは 'main'、201）で
+    // 送った setsu_kiryoku_short が無いことを読み直す（朝の border と夜の節の機力は同じ日に両方送る、BOA-1249）。
     // 優勝戦の型（final_gap）で優勝戦が今日（when=today）なら、その優勝戦の中止・欠場も見る（前夜は出走表がまだ無い）。
     // リンク先（説明欄の会場のページ）の表示の確認は public_check を返さず、preflight が queue の public_url・screen_key=venue で行う
     if (draft?.source_data?.setsu_kiryoku_short?.setsu_id) {
@@ -398,16 +400,23 @@ export function createReadCurrent({
       } = draft.source_data.setsu_kiryoku_short;
       const parsed = parseSetsuId(setsuId);
       if (!parsed) throw new Error("setsu_id_invalid");
+      const itemVariant = setsuItemVariantOf(variant);
       const [[item], sent, [control]] = await Promise.all([
-        db(`sns_auto_send_items?draft_id=eq.${draftId}&select=kind,race_id`),
         db(
-          `sns_auto_send_items?kind=eq.${SETSU_KIRYOKU_SHORT_KIND}&channel=eq.youtube&race_id=like.${encodeURIComponent(`setsu:${parsed.date}:*`)}&state=eq.sent&select=id`,
+          `sns_auto_send_items?draft_id=eq.${draftId}&select=kind,race_id,variant`,
+        ),
+        db(
+          `sns_auto_send_items?kind=eq.${SETSU_KIRYOKU_SHORT_KIND}&channel=eq.youtube&race_id=like.${encodeURIComponent(`setsu:${parsed.date}:*`)}&variant=eq.${itemVariant}&state=eq.sent&select=id`,
         ),
         db(
           "sns_auto_send_control?channel=eq.youtube&select=setsu_kiryoku_short_enabled",
         ),
       ]);
-      if (item?.kind !== SETSU_KIRYOKU_SHORT_KIND || item.race_id !== setsuId)
+      if (
+        item?.kind !== SETSU_KIRYOKU_SHORT_KIND ||
+        item.race_id !== setsuId ||
+        item.variant !== itemVariant
+      )
         throw new Error("setsu_item_mismatch");
       if (control?.setsu_kiryoku_short_enabled !== true)
         throw new Error("setsu_kiryoku_short_disabled");
