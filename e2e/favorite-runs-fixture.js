@@ -43,7 +43,7 @@ export function predictionsBody({
     entries: [1, 2, 3, 4, 5, 6].map((number) => ({
       number,
       racerId: withRacer && number === 1 && n >= 2 ? RACER : 9000 + number,
-      name: withRacer && number === 1 && n >= 2 ? "峰竜太" : `選手${number}`,
+      name: withRacer && number === 1 && n >= 2 ? "峰\u3000\u3000竜太" : `選手${number}`,
       grade: "A1",
     })),
     predictions: {},

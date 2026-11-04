@@ -67,9 +67,10 @@ test("375px: 締切の順に4件出し、あと1件を開く。入口・事象�
   await expect(rows).toHaveCount(4);
   await expect(rows.first()).toContainText("23:02");
   await expect(rows.first()).toContainText("住之江 2R");
-  await expect(rows.first()).toContainText("峰竜太");
+  await expect(rows.first()).toContainText("峰 竜太");
   await expect(rows.first().locator(".favorite-runs__grade")).toHaveText("SG");
-  await expect(rows.first().locator('[translate="no"]')).toHaveText("峰竜太");
+  await expect(rows.first().locator(".favorite-runs__name")).toHaveText("峰 竜太");
+  await expect(rows.first().locator(".favorite-runs__name")).toHaveAttribute("translate", "no");
 
   const more = section.getByRole("button", { name: "あと1件を見る" });
   await expect(more).toHaveAttribute("aria-expanded", "false");
@@ -200,6 +201,11 @@ test("/en/: 区画に日本語が無く（選手名を除く）、JST を添え�
   await expect(section.locator(".favorite-runs__row").first()).toContainText(
     "23:02 JST",
   );
+  // 成績の一言の主語は選手の姓（translate="no" の要素）
+  await section.scrollIntoViewIfNeeded();
+  const enStat = section.locator(".favorite-runs__row").first().locator(".favorite-runs__stat");
+  await expect(enStat).toContainText(/^峰 in Boat 1: Starts \d+/, { timeout: 30000 });
+  await expect(enStat.locator('[translate="no"]')).toHaveText("峰");
   expect(
     await section.evaluate((el) => {
       const copy = el.cloneNode(true);
@@ -227,7 +233,7 @@ test("各行に、選手ページの枠番別成績と同じ号艇の出走数�
   await section.scrollIntoViewIfNeeded();
   // 締切前の1件目は 2R の1号艇
   const first = section.locator(".favorite-runs__row").first();
-  await expect(first.locator(".favorite-runs__stat")).toContainText("全会場の1号艇 出走数", {
+  await expect(first.locator(".favorite-runs__stat")).toContainText("峰の1号艇 出走数", {
     timeout: 30000,
   });
   const text = await first.locator(".favorite-runs__stat").innerText();

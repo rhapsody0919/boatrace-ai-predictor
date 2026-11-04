@@ -52,6 +52,15 @@ export const finishedRuns = (runs) =>
 export const displayRacerName = (name) =>
   typeof name === "string" ? name.replace(/[\s\u3000]+/g, " ").trim() : name;
 
+/**
+ * 成績の一言の主語に使う姓（オーナー 2026-11-04: 「今井の1号艇 出走数…」）。表示名の最初の語。
+ * 姓と名の間に空白が無い名前は全体を返す
+ */
+export const racerSurname = (name) => {
+  const shown = displayRacerName(name);
+  return typeof shown === "string" ? shown.split(" ")[0] : shown;
+};
+
 /** ☆の選手1人×1レースの行を、締切順に分ける。入力は今日の出走表。 */
 export function buildFavoriteRuns(venuesData, racerIds, nowHHMM) {
   const favorites = new Set(racerIds);

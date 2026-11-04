@@ -21,6 +21,7 @@ import {
   buildFavoriteRuns,
   buildFavoritesFallback,
   displayRacerName,
+  racerSurname,
   venuesFromPredictions,
   venuesFromTodayRaces,
 } from "../../pure/favoriteRuns";
@@ -105,6 +106,20 @@ function useFinishLabel() {
   };
 }
 
+/** 文言の中の {{name}} の所だけを translate="no" の要素にする（成績の一言の主語は選手名、オーナー 2026-11-04） */
+const NAME_SLOT = "\u0000name\u0000";
+function WithRacerName({ name, render }) {
+  const [before, after] = render(NAME_SLOT).split(NAME_SLOT);
+  if (after === undefined) return before;
+  return (
+    <>
+      {before}
+      <span translate="no">{name}</span>
+      {after}
+    </>
+  );
+}
+
 function RunInfo({ row, info, seriesDay }) {
   const { t } = useTranslation();
   const finishLabel = useFinishLabel();
@@ -159,14 +174,25 @@ function RunInfo({ row, info, seriesDay }) {
         )}
       </div>
       <div className="favorite-runs__stat">
-        {stat.kind === "rate" &&
-          t("favorites.section.statLine", {
-            boat: row.boat,
-            n: stat.n,
-            rate: stat.ratePct,
-          })}
-        {stat.kind === "count" &&
-          t("favorites.section.statLineSmall", { boat: row.boat, n: stat.n })}
+        {stat.kind !== "none" && (
+          <WithRacerName
+            name={racerSurname(row.name)}
+            render={(name) =>
+              stat.kind === "rate"
+                ? t("favorites.section.statLine", {
+                    name,
+                    boat: row.boat,
+                    n: stat.n,
+                    rate: stat.ratePct,
+                  })
+                : t("favorites.section.statLineSmall", {
+                    name,
+                    boat: row.boat,
+                    n: stat.n,
+                  })
+            }
+          />
+        )}
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import { buildFavoriteRuns, statLineOf, buildFavoritesFallback, venuesFromPredictions, venuesFromTodayRaces, meetAnchorOf, finishedRuns, displayRacerName } from "../../src/pure/favoriteRuns.js";
+import { buildFavoriteRuns, statLineOf, buildFavoritesFallback, venuesFromPredictions, venuesFromTodayRaces, meetAnchorOf, finishedRuns, displayRacerName, racerSurname } from "../../src/pure/favoriteRuns.js";
 
 const entry = (racerId, number) => ({ racerId, number, name: `選手${racerId}`, grade: "A1" });
 const race = (venueCode, raceNumber, startTime, entries = [], extra = {}) => ({
@@ -126,6 +126,10 @@ assert.deepEqual(finishedRuns([
 assert.equal(displayRacerName("内堀\u3000\u3000\u3000学"), "内堀 学");
 assert.equal(displayRacerName("峰竜太"), "峰竜太");
 assert.equal(displayRacerName(null), null);
+// 成績の一言の主語は姓（オーナー 2026-11-04）
+assert.equal(racerSurname("今井\u3000\u3000貴士"), "今井");
+assert.equal(racerSurname("峰竜太"), "峰竜太");
+assert.equal(racerSurname(undefined), undefined);
 const gradesBefore = structuredClone(grades);
 buildFavoritesFallback(grades, [12, 1], "11:00");
 assert.deepEqual(grades, gradesBefore);
