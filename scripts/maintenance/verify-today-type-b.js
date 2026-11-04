@@ -435,8 +435,9 @@ test("その日の型: 組の b の日は body=course_win と組の札。組の�
   assert.equal(pickTodayPost(broken, bDay).variant.id, "default");
 });
 
-// 2026-10-28 オーナー決定（hq）: 10/29 から毎日 b、比べは過去の a の日との前後比べ。判定ができるまで、最短 b 30日（11/27 まで。基準の a が6日分で SD 0.70 のため、hq の DS の審査）
-test("リポジトリの config: all_b で 10/29〜11/27 は毎日 b、11/28 と 10/28 は a。b の日は mode・day を記録し、型の列を使わない", () => {
+// 2026-10-28 オーナー決定（hq）: 10/29 から毎日 b。2026-11-04 オーナー決定（BOA-1314）で比べ（TT03）を取り下げ、11/4 で終える
+// （experiment は消さずに days を7にする。消すと日の偶奇に戻る）。11/5 からは今の型 v3（current）で、型 a・b は送らない
+test("リポジトリの config: all_b は 10/29〜11/4 の7日で終わり、b の日は mode・day を記録し、型の列を使わない。前後の日は今の型 v3", () => {
   const config = JSON.parse(
     readFileSync(
       new URL("../../config/today-variants.json", import.meta.url),
@@ -448,9 +449,9 @@ test("リポジトリの config: all_b で 10/29〜11/27 は毎日 b、11/28 と
     id: "today-v2-course-win",
     mode: "all_b",
     start: "2026-10-29",
-    days: 30,
+    days: 7,
   });
-  for (let i = 0; i < 30; i += 1) {
+  for (let i = 0; i < 7; i += 1) {
     const date = dayOf("2026-10-29", i);
     assert.deepEqual(pickExperimentSide(exp, date), {
       side: "b",
@@ -465,17 +466,28 @@ test("リポジトリの config: all_b で 10/29〜11/27 は毎日 b、11/28 と
     assert.equal(p.content_type.day, i);
     assert.equal(p.content_type.experiment, "today-v2-course-win");
   }
-  assert.equal(dayOf("2026-10-29", 29), "2026-11-27");
-  for (const date of ["2026-10-28", "2026-11-28"]) {
+  assert.equal(dayOf("2026-10-29", 6), "2026-11-04");
+  for (const date of ["2026-10-28", "2026-11-05", "2026-11-27", "2027-01-01"]) {
     assert.deepEqual(pickExperimentSide(exp, date), {
       side: "a",
       pair: null,
       slot: null,
     });
     const p = pickTodayPost(config, date);
-    assert.equal(p.body, null, date);
-    assert.equal(p.content_type.side, "a");
+    assert.equal(p.body, "digest_v3", date);
+    assert.equal(p.content_type.id, "today-c-digest");
+    assert.equal(p.content_type.side, "c");
+    assert.equal(p.variant.id, "c");
     assert.equal(p.content_type.mode, undefined);
+    // 型の列の行があっても v3（列は見出しの型 a の口）
+    const row = {
+      day: date,
+      type_id: "t03-x",
+      post: { heading: "別の型（{date}）" },
+    };
+    const withRow = pickTodayPost(config, date, { row });
+    assert.equal(withRow.body, "digest_v3", date);
+    assert.equal(withRow.content_type.fallback_reason, "current_type");
   }
   const row = {
     day: "2026-10-30",

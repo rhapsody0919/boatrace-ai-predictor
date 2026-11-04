@@ -1,11 +1,17 @@
 {
   "default": "本日のデータ一覧（{date}）",
   "reply_enabled": false,
+  "current": {
+    "id": "c",
+    "type_id": "today-c-digest",
+    "body": "digest_v3"
+  },
   "experiment": {
     "id": "today-v2-course-win",
     "mode": "all_b",
     "start": "2026-10-29",
-    "days": 30
+    "days": 7,
+    "ended": "2026-11-04"
   },
   "variants": [
     {

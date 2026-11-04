@@ -127,3 +127,11 @@
 - 日の上限: 出し物ごとの取り置き（sns_x_kind_reserves）は X の claim だけに効く。YouTube は daily_limit_youtube だけで守り、朝の1本が夜の全貌の枠を先に取る。旗を on にするときに daily_limit_youtube を 10 から 11 にする（オーナーが旗 on と同じトランザクションで当てる）
 - 旗 on の前提: 196（BOA-1283、処理待ちの Shorts を期限の前に読み直して公開する）が当たっていること。当たっていないと、処理待ちの1本が非公開のまま期限で閉じ、枠を1つ使う
 - 残る壊れ方: (1) 直近1年の回数は、作り手のキャッシュ（日ごとの数）を足す。DB のデータは 2025-12-02 からなので、2026-12-01 までは「{Y/M/D}以降」と書く。窓の中ほどに比べたレースが0の日があれば止める (2) 展示 ST は F の記録が 2026-09 からしかそろっていないので、今は弱さの項目に入れない
+
+## 追記: /today の X は今の型 v3「今日はこれだけ」（文だけ）にし、7:00 に送る（2026-11-04、オーナー 11/4 承認・BOA-1314）
+- 本文は scripts/lib/snsTodayDigestV3.js（材料は DB の races・race_conditions・race_entries・exhibition_data・race_series・racer_course_technique_stats）。画像は付けない。config/today-variants.json の current（札 c、型 today-c-digest）がある間は、比べの b の日を除いて毎日この型で、型の列（sns_today_type_schedule）・型 a・型 b は使わない。作れない・検査を通らない日は送らない（a・b へ倒さない）
+- 比べ（experiment today-v2-course-win、all_b）は消さずに days=7 で終えた（10/29〜11/4）。消すと日の偶奇に戻る
+- 時刻はすべて1時間前へ: 計画 6:30・送る 7:00（下書きが遅れた日は作った時刻）・下書きの最後 8:00・item の締切 9:00（失効 8:30）。cron は変えない（sns-auto-plan は JST 5:00 から、sns-send は 7:00 から）。図の待ち（型 a・b だけ）は 7:30
+- 長文の1投稿（queue.thread_length=1、加重25,000まで）として検査する。今の型 a と同じ扱い
+- 計画が DB に書き始めるのが 6:30 になったので、/today の承認（approve_sns_x_send）に触るマイグレーションの窓は 23:00〜06:29 になる
+- UTM の utm_content は {日付}-c。/x/today の短いリンク（middleware.js）も c を通す。hq の読む口 scripts/sns/today-picks.js は form c（featured は 🏆 の優勝戦）

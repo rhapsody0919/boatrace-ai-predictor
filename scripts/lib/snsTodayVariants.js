@@ -34,7 +34,23 @@ export const TODAY_BASE_TYPE_ID = "today-a";
  * 本文の作り方。null は今の型（見出し＋一覧）。course_win は型 b（v2「今日走る選手のコース別1着率」、hq 2026-10-27 オーナー決定。
  * 本文は scripts/lib/snsTodayCourseWinPost.js、画像は撮影用のページ1枚。見出しは画像の上の行に使う）
  */
-export const TODAY_BODIES = ["course_win"];
+export const TODAY_BODIES = ["course_win", "digest_v3"];
+
+/**
+ * 今の型（config.current、BOA-1314 v3「今日はこれだけ」、オーナー 2026-11-04 承認）。入っていれば、比べの b の日を除く毎日この型で送り、
+ * 型の列（sns_today_type_schedule）・config の a は使わない（v3 が入ったら型 a・型 b は送らない）。本文は scripts/lib/snsTodayDigestV3.js。
+ * 形: { id（札。utm_content の末尾）, type_id, body: "digest_v3" }。壊れていれば null（今までの a・b に戻る）
+ */
+export function normalizeTodayCurrent(current) {
+  if (current == null) return null;
+  return current &&
+    typeof current === "object" &&
+    VARIANT_ID.test(current.id ?? "") &&
+    TYPE_ID.test(current.type_id ?? "") &&
+    current.body === "digest_v3"
+    ? { id: current.id, type_id: current.type_id, body: current.body }
+    : null;
+}
 
 /**
  * 投稿の型の中身（見出し・リンクの前の文・リンクの置き場）を検査する（純粋関数）。
@@ -95,6 +111,7 @@ export function normalizeTodayVariants(config) {
         }))
       : [],
     experiment: normalizeTodayExperiment(config?.experiment),
+    current: normalizeTodayCurrent(config?.current),
   };
 }
 
@@ -215,10 +232,26 @@ export function pickTodayPost(
   date,
   { row = null, scheduleError = null, allowReply = true } = {},
 ) {
-  const { fallback, variants, experiment } = normalizeTodayVariants(config);
+  const { fallback, variants, experiment, current } =
+    normalizeTodayVariants(config);
   const day = dayNumber(date);
   // 比べの設定があれば組と乱数で選ぶ（比べの外は a）。無ければ前からの日の偶奇
   const ab = experiment ? pickExperimentSide(experiment, date) : null;
+  // 今の型（v3）: 比べの b の日（組・all_b の期間）を除き、毎日この型。型の列の行があっても使わない（列は見出しの型 a の口）
+  if (current && !(variants.length && ab?.side === "b"))
+    return {
+      heading: null,
+      link_lead: null,
+      link_position: "after_heading",
+      body: current.body,
+      variant: { id: current.id, uuid: null },
+      content_type: {
+        id: current.type_id,
+        side: current.id,
+        source: "config",
+        fallback_reason: row ? "current_type" : "no_schedule_row",
+      },
+    };
   const index = ab ? (ab.side === "a" ? 0 : 1) : day % 2;
   const side = variants.length ? (index === 0 ? "a" : "b") : "default";
   const base = variants.length

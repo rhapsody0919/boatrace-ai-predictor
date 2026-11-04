@@ -1556,12 +1556,17 @@
     {
       "script": "verify-sns-today-plan.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop tasks 19b: /today の画像つき X 投稿の計画（cron sns_auto_plan の中、JST 5:30〜7:45）。一覧が公開されたら未ログインで撮った画像・決まった型の本文・UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り Slack に画像のリンク、本人の個別承認（140 の DB 側の条件）で 7:45 の job ができ、送る直前の検査は一覧の版の一致で通り版が変われば source_changed、同じ一覧では何も書かない、一覧がやり直されたら撮り直して承認を外し知らせる、時間外・未公開・shadow は書かない、撮れなければ何も書かない、禁止表現は held_manual で作り直さない、PostgREST の条件、vercel.json の locale の同梱。SQL158 までを PGlite、外部接続なし"
+      "guards": "sns-pdca-loop tasks 19b: /today の X 投稿の計画（cron sns_auto_plan の中、JST 6:30〜8:00、送るのは 7:00。BOA-1314）。今の型 v3（config の current）は文だけの下書き（画像・image_paths なし、札 c・UTM 日付-c）を作り、本人の承認・自動の承認で 7:00 の job ができ、送る直前の検査（一覧の版と載せたレースの欠場・中止）が通り、同じ材料では何も書かず欠場で選ぶ人が変われば作り直し、作れない日は送らず型 a・b へ倒さない。型 a・b（画像つき）の組み手は config から current を外した物で: 一覧が公開されたら未ログインで撮った画像・決まった型の本文・UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り Slack に画像のリンク、本人の個別承認（140 の DB 側の条件）で 7:45 の job ができ、送る直前の検査は一覧の版の一致で通り版が変われば source_changed、同じ一覧では何も書かない、一覧がやり直されたら撮り直して承認を外し知らせる、時間外・未公開・shadow は書かない、撮れなければ何も書かない、禁止表現は held_manual で作り直さない、PostgREST の条件、vercel.json の locale の同梱。SQL158 までを PGlite、外部接続なし"
     },
     {
       "script": "verify-sns-today-thinking.js",
       "tier": "ci",
       "guards": "/today の対象レースの思考投稿（today_thinking、BOA-1169、マイグレーション 189、scripts/sns/push-finals-image.js）: 188 の transition_sns_send_139 の本文の md5 が ce1cd6fa…（182 は c2b4835c…）で、189 は 188 から3か所だけ変える（v_ceiling・v_rest は変えない）・先頭で control→items の順に LOCK し md5 で照合（もう一度当てると全体が戻る）・取り置きと上限を入れない、CHECK（today_thinking は X・下書きにひもづく・variant は thinking 系だけ、YouTube・main・bundle 付きを拒む、同じレースの finals と両立）、許可 today_thinking_enabled は既定 false で x の行だけ・off なら push は何も書かず claim は held（today_thinking_disabled）、期限は締切の5分前、取り置き today_thinking（2本で数え kind_slot_full）、push の3本（本投稿・投票・展示後）が下書き・item・job になり source_data のキーは today_thinking だけ・Storage は today-thinking/、/today の X 投稿の対象でない・まだ送られていない投稿の対象のレースは拒否、優勝戦の段を見ない、本文に URL があれば拒否（優勝戦はこのレースのページ1つなら通る）、マイグレーション前（列が無い 400）でも優勝戦の許可は読める、readCurrent の today_thinking の枝（item の kind・レース・variant の食い違いで投げる、リンク先の表示の確認の代わりに public_check=none）、優勝戦・数字で見たら・/today の claim が 188 までと同じ結果。SQL182・188・189 を PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-today-v3.js",
+      "tier": "ci",
+      "guards": "/today の X 投稿の型 v3「今日はこれだけ」（BOA-1314、scripts/lib/snsTodayDigestV3.js）: 本文の4つの日（一般・SG/G1 の優勝戦の日は1行目が大会名と最終日（会場）・優勝戦も準優も無い日は2行目が最初と最後の締切・グレードの開催が無い日は【開催中】なし）、1〜3行目が日付と場の数・🏆 優勝戦・リンク、優勝戦は3つ・準優は3場まででほか◯場、並びは SG→G1→G2→G3→一般と締切順、何日目は画面の getVenueSeriesDayLabel と同じ（初日・N日目・最終日、欠けた日目は節の開始日から補い節の中に中止があれば補わない、丸一日中止の場は出さない）、率の塊の選び方（率の高い順・同じ率は締切の早い方・走数30未満を外し無ければ10まで・同じ選手とレースは2回出さない・欠場（出走表・展示）と中止と送る時刻より前は選ばない・逃し率は1号艇の名前を出し2号艇は数字だけ）、送る直前に読み直す picks、検査（日付・2行目・リンク1つ・置き換え漏れ・競艇・タグ・長文の加重）、材料は1000行ずつ・率は使う組み合わせだけ。外部接続なし"
     },
     {
       "script": "verify-sns-today-variants.js",

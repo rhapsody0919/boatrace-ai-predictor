@@ -1038,7 +1038,9 @@ for (const ua of [HUMAN_UA, "Twitterbot/1.0", BOT_UA]) {
     ["", null],
     ["?d=", null],
     ["?d=2026-10-25", null],
-    ["?d=2026-10-25-c", null],
+    // 今の型 v3 の札（BOA-1314）
+    ["?d=2026-10-25-c", "2026-10-25-c"],
+    ["?d=2026-10-25-d", null],
     ["?d=2026-1-25-a", null],
     ["?d=2026-10-25-a%0A", null],
     ["?d=https://example.com", null],

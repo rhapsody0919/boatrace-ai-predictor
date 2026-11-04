@@ -4,12 +4,14 @@
  *
  * 使い方:
  *   node --env-file=.env.local scripts/sns/today-picks.js <YYYY-MM-DD>
- * 出力: {date, draft_id, status, form, content_type_id, featured, list}。form は a（見出し＋一覧）か b（course_win）。featured・list の行は {race_id, boat_number, deadline_at, cancelled}
+ * 出力: {date, draft_id, status, form, content_type_id, featured, list}。form は a（見出し＋一覧）か b（course_win）か c（v3「今日はこれだけ」、BOA-1314）。featured・list の行は {race_id, boat_number, deadline_at, cancelled}
  *   - 型 a（見出し＋一覧）: featured は本文に「注目レース：」の行があるときの picks の先頭、list は残りの picks（一覧、締切順）
  *   - 型 b（course_win）: featured は source_data.course_win.featured、list は picks の全部（画像の行）
+ *   - 型 c（v3）: featured は 🏆 の優勝戦（source_data.digest_v3.featured、艇番 null。無い日は null）、list は残りの picks（本文に書いた
+ *     優勝戦・準優勝戦・最初と最後の締切のレースは艇番 null、率の塊は艇番つき）
  *   - その日の下書きが無ければ draft_id=null・featured=null・list=[]
  * exit: 0 出せた・2 使い方・鍵の不足・読めない
- * 8:00 の投稿の後に読む（status が posted か、hq が確かめる）
+ * 7:00 の投稿の後に読む（status が posted か、hq が確かめる。型 c の送る時刻は 7:00、BOA-1314）
  */
 import { pathToFileURL } from "node:url";
 import { deadlineIso } from "../../api/_lib/snsClaimCheck.js";
@@ -41,18 +43,33 @@ export function todayPicksOf(date, draft, races = []) {
   const sd = draft.source_data ?? {};
   const picks = sd.digest?.picks ?? [];
   const courseWin = sd.course_win?.featured;
-  const featuredA = !courseWin && FEATURED_LINE.test(draft.caption_text ?? "");
+  const v3 = sd.digest_v3 ?? null;
+  const featuredA =
+    !courseWin && !v3 && FEATURED_LINE.test(draft.caption_text ?? "");
   const featured = courseWin
     ? row(courseWin)
-    : featuredA && picks.length
-      ? row(picks[0])
-      : null;
-  const list = (featuredA ? picks.slice(1) : picks).map(row);
+    : v3
+      ? v3.featured
+        ? row(v3.featured)
+        : null
+      : featuredA && picks.length
+        ? row(picks[0])
+        : null;
+  const same = (p, q) =>
+    p.race_id === q?.race_id &&
+    (p.boat_number ?? null) === (q?.boat_number ?? null);
+  const list = (
+    v3
+      ? picks.filter((p) => !same(p, v3.featured))
+      : featuredA
+        ? picks.slice(1)
+        : picks
+  ).map(row);
   return {
     date,
     draft_id: draft.id,
     status: draft.status,
-    form: courseWin ? "b" : "a",
+    form: courseWin ? "b" : v3 ? "c" : "a",
     content_type_id: sd.content_type?.id ?? null,
     featured,
     list,
@@ -64,6 +81,7 @@ export const raceIdsOf = (draft) => [
   ...new Set(
     [
       draft?.source_data?.course_win?.featured?.race_id,
+      draft?.source_data?.digest_v3?.featured?.race_id,
       ...(draft?.source_data?.digest?.picks ?? []).map((p) => p.race_id),
     ].filter(Boolean),
   ),

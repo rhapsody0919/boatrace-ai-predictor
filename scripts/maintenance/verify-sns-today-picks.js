@@ -85,6 +85,43 @@ test("型 b（course_win）: featured は course_win.featured、一覧は picks 
   assert.equal(out.list.length, 3);
 });
 
+test("型 c（v3、BOA-1314）: featured は 🏆 の優勝戦（艇番 null）、一覧は残りの picks。🏆 の無い日は featured null で picks の全部", () => {
+  const d = draftA("11月4日（水）今日のボートレース 12場\n🏆 優勝戦 …");
+  d.source_data.digest.picks = [
+    { race_id: "2037-10-27-08-11", boat_number: null },
+    { race_id: "2037-10-27-13-02", boat_number: null },
+    { race_id: "2037-10-27-13-09", boat_number: 1 },
+  ];
+  d.source_data.digest_v3 = {
+    featured: { race_id: "2037-10-27-08-11", boat_number: null },
+  };
+  const out = todayPicksOf(DATE, d, races);
+  assert.equal(out.form, "c");
+  assert.deepEqual(out.featured, {
+    race_id: "2037-10-27-08-11",
+    boat_number: null,
+    deadline_at: "2037-10-27T06:20:00.000Z",
+    cancelled: true,
+  });
+  assert.deepEqual(
+    out.list.map((r) => [r.race_id, r.boat_number]),
+    [
+      ["2037-10-27-13-02", null],
+      ["2037-10-27-13-09", 1],
+    ],
+  );
+  assert.deepEqual(raceIdsOf(d).sort(), [
+    "2037-10-27-08-11",
+    "2037-10-27-13-02",
+    "2037-10-27-13-09",
+  ]);
+  d.source_data.digest_v3 = { featured: null };
+  const none = todayPicksOf(DATE, d, races);
+  assert.equal(none.form, "c");
+  assert.equal(none.featured, null);
+  assert.equal(none.list.length, 3);
+});
+
 test("races に無いレースは deadline_at・cancelled を null で出す（黙って落とさない）。下書きが無い日は空", () => {
   const out = todayPicksOf(DATE, draftA(), []);
   assert.equal(out.featured.deadline_at, null);
