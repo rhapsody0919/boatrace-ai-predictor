@@ -1179,6 +1179,13 @@
       "guards": "朝の初期化（races-init・scrape-to-json）が直前情報（beforeinfo）を取らず、出走表と発走時刻だけで races を作ること（BOA-1145、beforeinfo の 403 で朝の races が作られない障害の予防）"
     },
     {
+      "script": "verify-rank-data-screen-parity.js",
+      "tier": "manual",
+      "reason": "本番 DB を匿名キーで読む（CI に鍵を置かない）。今日の値は確定のたびに動くので、既定は昨日",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-rank-data-screen-parity.js [--date=YYYY-MM-DD]",
+      "guards": "番付の DB を読む dataset（rank-data.js）と画面の値の照合（本番の匿名の読み取り）。venue_payout: 昨日（--date で変更）の会場ランキングの固い場・荒れている場・万舟率の上位5場の値と消化レース数が一致（BOA-1242）"
+    },
+    {
       "script": "verify-registry-order.js",
       "tier": "ci",
       "guards": "verify-registry.json の entries を script の名前の順に保つ（scripts/lib/verifyRegistryOrder.js、BOA-938）。順と重複の判定、文字列のままの並べ替え（--sort）、名前の順に挿した2つの PR が git merge-file で衝突しないこと"
@@ -1737,6 +1744,11 @@
       "script": "verify-venue-parameters.js",
       "tier": "ci",
       "guards": "会場別イン崩れ閾値の式・既定値65、24会場の表の形と展開の型の分類（BOA-1060、scripts/lib/venueParameters.js）。仕様未定の入力と旧表の差はKNOWN_GAPSとして報告する"
+    },
+    {
+      "script": "verify-venue-payout-shared.js",
+      "tier": "ci",
+      "guards": "BOA-1242: 分析の会場ランキング（getTodaysVenueRanking）と番付の venue_payout・venue_favorite が同じ純関数 src/utils/venuePayoutStats.js で数える（サービス層に集計の写しが無い、移す前の画面の計算と乱数3,000通りで一致、1番人気は3連単の配当と人気のある行が分母、不成立・rank1 なしを除く）、rank-data.js が新しい dataset の引数の誤りを DB の前に拒否する（DB・通信なし）"
     },
     {
       "script": "verify-venue-place-rates.js",

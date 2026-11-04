@@ -89,6 +89,10 @@ import {
 } from "../utils/pretestRows";
 // get_today_races の整形は、ボット向け HTML の関数（ADR 0089）と共有するため純粋なモジュールに置く
 import { transformTodayRaces } from "../utils/todayRaces.js";
+import {
+  tallyVenuePayouts,
+  rankVenuesByPayout,
+} from "../utils/venuePayoutStats.js";
 
 // 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
 // getRacerBoatReturnRate/getRaceRacerBoatReturnRate/aggregateRacerVenueBoatStats
@@ -6252,70 +6256,11 @@ export const supabaseDataService = {
           raceIds,
         );
 
-        const byVenue = new Map();
-        results.forEach((r) => {
-          if (!isUsableRaceResult(r)) return;
-          const venueCode = venueByRaceId.get(r.race_id);
-          if (venueCode === null || venueCode === undefined) return;
-          if (!byVenue.has(venueCode)) {
-            byVenue.set(venueCode, {
-              venue_code: venueCode,
-              raceCount: 0,
-              payoutCount: 0,
-              payoutSum: 0,
-              nigeCount: 0,
-              manshuCount: 0,
-            });
-          }
-          const v = byVenue.get(venueCode);
-          v.raceCount += 1;
-          if (r.payout_trio !== null) {
-            v.payoutCount += 1;
-            v.payoutSum += r.payout_trio;
-            if (r.payout_trio >= 10000) v.manshuCount += 1;
-          }
-          if (r.rank1 === 1 && r.winning_technique === "逃げ") v.nigeCount += 1;
-        });
-
-        // イン逃げ率は配当データに依存しないため、配当が1件も取れていない会場
-        // （payoutCount=0）も対象に含める。固い場/荒れている場/万舟率は
-        // payout_trioの平均・件数を使うためpayoutCount>0の会場のみ対象とする
-        const qualifyingVenues = [...byVenue.values()].filter(
-          (v) => v.raceCount >= minRaceCount,
+        // 集計は src/utils/venuePayoutStats.js（BOA-1242。龍神ボート番付と共有するため手を加えずに移した）
+        const byVenue = tallyVenuePayouts(results, (raceId) =>
+          venueByRaceId.get(raceId),
         );
-
-        const nigeRateVenues = qualifyingVenues.map((v) => ({
-          venue_code: v.venue_code,
-          race_count: v.raceCount,
-          nige_rate: (v.nigeCount / v.raceCount) * 100,
-        }));
-
-        const payoutVenues = qualifyingVenues
-          .filter((v) => v.payoutCount > 0)
-          .map((v) => ({
-            venue_code: v.venue_code,
-            race_count: v.raceCount,
-            avg_payout: v.payoutSum / v.payoutCount,
-            manshu_rate: (v.manshuCount / v.payoutCount) * 100,
-          }));
-
-        const byAvgPayoutAsc = [...payoutVenues].sort(
-          (a, b) => a.avg_payout - b.avg_payout,
-        );
-        const byAvgPayoutDesc = [...payoutVenues].sort(
-          (a, b) => b.avg_payout - a.avg_payout,
-        );
-
-        return {
-          stable: byAvgPayoutAsc.slice(0, limit),
-          rough: byAvgPayoutDesc.slice(0, limit),
-          nigeRate: [...nigeRateVenues]
-            .sort((a, b) => b.nige_rate - a.nige_rate)
-            .slice(0, limit),
-          manshu: [...payoutVenues]
-            .sort((a, b) => b.manshu_rate - a.manshu_rate)
-            .slice(0, limit),
-        };
+        return rankVenuesByPayout(byVenue, limit, minRaceCount);
       },
       VENUE_RANKING_CACHE_TTL,
     );
