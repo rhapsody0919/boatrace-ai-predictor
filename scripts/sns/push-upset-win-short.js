@@ -1,5 +1,5 @@
 /**
- * YouTube Shorts【人気薄の1着】（format・kind = upset_win_short、BOA-1284、マイグレーション 198）のフォルダを受け取り、
+ * YouTube Shorts【人気薄の1着】（format・kind = upset_win_short、BOA-1284、マイグレーション 200）のフォルダを受け取り、
  * YouTube の下書き（動画1本）と自動送信の item を作って、送る時刻の予定に入れる。形は節の機力の Shorts（push-setsu-kiryoku-short.js、193）と同じで、
  * 動画・時刻・日の上限とクォータの検査と、送り終わるまで待つ所はその口の関数を使う。違うのは、型の検査（upsetWin/model.js）・
  * そのレースの値の DB での読み直し・説明欄のリンク（龍神ソナーのレースの頁）・race_id・許可の列。
@@ -21,12 +21,12 @@
  *   3. この口の検査: 題は100字まで・改行と < > なし、説明欄は5000バイトまで・< > なし、説明欄のリンクはちょうど1つでそのレースの
  *      龍神ソナーの頁（https://www.boat-ai.jp/race/{race_id}?tab=sonar、ほかのクエリは utm_* だけ）、送る時刻は 07:00〜07:50、動画は MP4・縦・60秒まで
  *   4. 時刻: date は今日（JST）、受け取りは送る時刻の15分前から、期限の10分前より前、集計の時刻は今より前で期限まで鮮度の線の内
- *   5. 二重送信: 同じ日の upset_win_short が生きているか送ってあれば作らない（exit 4、198 の一意の索引でも止まる）。
+ *   5. 二重送信: 同じ日の upset_win_short が生きているか送ってあれば作らない（exit 4、200 の一意の索引でも止まる）。
  *      前の束が送らずに終わっていれば（held・failed・cancelled・承認の途中で落ちた）作り直す
  *   6. YouTube の日の上限（daily_limit_youtube）とクォータ（1 upload・104 units）: 節の機力と同じ数え方（youtubeRoomReason）
  *
  * 時刻（送る時刻 S＝date の send_time と「今＋2分」の遅い方）: 期限＝S＋60分、締切＝期限＋sns_x_send_control.expiry_minutes（節の機力と同じ）
- * 自動送信の許可（sns_auto_send_control の youtube の行の upset_win_short_enabled、198）は既定 off。
+ * 自動送信の許可（sns_auto_send_control の youtube の行の upset_win_short_enabled、200）は既定 off。
  * off の間は --dry-run と同じ（検査だけして DB・Storage・Slack に書かない、exit 3）。送り手も off の job を送らない
  * --dry-run は DB を読むだけ。date が今日でない束（見本の束）は、その日の送る時刻の2分前に受け取ったとして時刻の検査をする
  *
@@ -314,7 +314,7 @@ export async function pushUpsetWinShort(
       ? upsetIdOf(bundle.date, bundle.race_id)
       : null;
   const controls = await store.controls();
-  // 列が無い（198 が未適用）・行が無いときも off（fail-closed）
+  // 列が無い（200 が未適用）・行が無いときも off（fail-closed）
   const enabled = controls.youtube?.upset_win_short_enabled === true;
   const writes = enabled && !dryRun;
   const extra = simulated ? { simulated_now: simulated.toISOString() } : {};
@@ -356,7 +356,7 @@ export async function pushUpsetWinShort(
   if (jstTime(when.send_at) > "07:59")
     timing.push(`送る時刻（${jstTime(when.send_at)}）が 7時台でない`);
   if (timing.length) return reject(timing);
-  // 同じ日に生きている・送った item があれば何も作らず、今の状態を返す（DB の一意の索引でも止まる、198）
+  // 同じ日に生きている・送った item があれば何も作らず、今の状態を返す（DB の一意の索引でも止まる、200）
   const retry = [];
   for (const item of (await store.upsetItems(bundle.date)).filter(
     (i) => !["stopped", "held_manual"].includes(i.state),
@@ -577,7 +577,7 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
   }
   return {
     ...base,
-    // upset_win_short_enabled が無い（198 が未適用）と PostgREST が 400 を返すので、その時は列なしで読み直して off とする
+    // upset_win_short_enabled が無い（200 が未適用）と PostgREST が 400 を返すので、その時は列なしで読み直して off とする
     async controls() {
       let rows;
       try {
@@ -591,7 +591,7 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
         )
           throw error;
         console.error(
-          "upset_win_short_enabled の列が無い（マイグレーション 198 が未適用）。許可は off として扱う",
+          "upset_win_short_enabled の列が無い（マイグレーション 200 が未適用）。許可は off として扱う",
         );
         rows = await call(
           "sns_auto_send_control?select=channel,mode,dry_run,auto_approver_id",

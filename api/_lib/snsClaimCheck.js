@@ -438,7 +438,7 @@ export function createReadCurrent({
         source_revision: revision,
       };
     }
-    // YouTube Shorts【人気薄の1着】（198、scripts/sns/push-upset-win-short.js）: 前日の終わったレースの振り返りの単独の Shorts。
+    // YouTube Shorts【人気薄の1着】（200、scripts/sns/push-upset-win-short.js）: 前日の終わったレースの振り返りの単独の Shorts。
     // 数の照合は作り手の型の検査（upsetWin/model.js の checkBundle）と、push での DB の読み直し（そのレースの6艇の値・1着・単勝）に任せ、
     // 送る直前は、item が upset_win_short で日とレースが下書きと合うこと・自動送信の許可（youtube の行の upset_win_short_enabled）・
     // 同じ日に送った upset_win_short が無いこと・そのレースの中止と1着（取り込んだ時の rank1 と同じか）を読み直す。欠場は push の時点で外してある（false を返す）。

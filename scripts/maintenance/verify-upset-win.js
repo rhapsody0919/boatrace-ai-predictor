@@ -1,6 +1,6 @@
-// YouTube Shorts【人気薄の1着】（upset_win_short、BOA-1284、マイグレーション 198）の再現テスト。
+// YouTube Shorts【人気薄の1着】（upset_win_short、BOA-1284、マイグレーション 200）の再現テスト。
 // 型（sns-video-studio/remotion/src/upsetWin/model.js: 選び・直近1年の和・「およそ{1/p}回に1回」・文・検査）と、
-// 送る口（scripts/sns/push-upset-win-short.js）を、PGlite に 189 まで・193・194・198 を当てて、本番と同じ承認（approve_sns_x_send）・
+// 送る口（scripts/sns/push-upset-win-short.js）を、PGlite に 189 まで・193・194・200 を当てて、本番と同じ承認（approve_sns_x_send）・
 // claim（transition_sns_x_send → transition_sns_send_139）・YouTube の送信（runYoutubeQueueJob、モックの adapter）で通す。
 // 外部接続なし。YouTube へは何も送らない。見本の bundle は 2026-11-03 宮島10R の本番の値（作り手で作った）
 import { test, before, beforeEach, after } from "node:test";
@@ -79,7 +79,7 @@ const BASE_FILES = [
   "193_sns_setsu_kiryoku_short.sql",
   "194_sns_setsu_kiryoku_x.sql",
 ];
-const MIGRATION = "198_sns_upset_win_short.sql";
+const MIGRATION = "200_sns_upset_win_short.sql";
 /** 本文の md5（本番の md5(prosrc)）。182・188・189・193 は verify-sns-setsu-kiryoku-x.js と同じ値、194 は 2026-11-04 に本番を読み取りで確かめた */
 const MD5_182 = "c2b4835c416ff6e824a43fe9025c6518";
 const MD5_188 = "ce1cd6fa756be8887f4033ab635a706b";
@@ -959,15 +959,15 @@ const preflightAt = (now, headless = sonarHeadless()) =>
     now: () => now.getTime(),
   });
 
-test("198 の土台: 194 の transition_sns_send_139 の本文の md5 が本番（2026-11-04 の読み取り）と一致し、198 は1つの ELSIF（と注記）だけを足す", async () => {
+test("200 の土台: 194 の transition_sns_send_139 の本文の md5 が本番（2026-11-04 の読み取り）と一致し、200 は1つの ELSIF（と注記）だけを足す", async () => {
   const s194 = bodyOf(
     await sqlOf("194_sns_setsu_kiryoku_x.sql"),
     "transition_sns_send_139",
   );
-  const s198 = bodyOf(await sqlOf(MIGRATION), "transition_sns_send_139");
+  const s200 = bodyOf(await sqlOf(MIGRATION), "transition_sns_send_139");
   assert.equal(md5(s194), MD5_194);
   const a = s194.split("\n");
-  const b = s198.split("\n");
+  const b = s200.split("\n");
   assert.deepEqual(
     a.filter((l) => !b.includes(l)),
     [],
@@ -975,19 +975,19 @@ test("198 の土台: 194 の transition_sns_send_139 の本文の md5 が本番�
   );
   const added = b.filter((l) => !a.includes(l));
   assert.equal(added.length, 2, added.join("\n"));
-  assert.match(added[0], /^\s+-- 198:/);
+  assert.match(added[0], /^\s+-- 200:/);
   assert.match(
     added[1],
     /ELSIF v_kind='upset_win_short' AND \(SELECT upset_win_short_enabled FROM public\.sns_auto_send_control WHERE channel='youtube'\) IS NOT TRUE THEN reason:='upset_win_short_disabled';/,
   );
-  console.log(`MD5_198（適用後の本番の md5(prosrc) の期待）: ${md5(s198)}`);
+  console.log(`MD5_200（適用後の本番の md5(prosrc) の期待）: ${md5(s200)}`);
 });
 
-test("198: upset_win_short の item は YouTube・variant=main・race_id は upset:{日}:{race_id} だけ。1日1本（別のレースも、送った後も入らない）。許可は既定 false・youtube の行だけ", async () => {
+test("200: upset_win_short の item は YouTube・variant=main・race_id は upset:{日}:{race_id} だけ。1日1本（別のレースも、送った後も入らない）。許可は既定 false・youtube の行だけ", async () => {
   const insert = (channel, raceId, variant = "main") =>
     db.query(
       `WITH draft AS (INSERT INTO sns_drafts(content_group_id,platform,language,format,caption_text)
-         VALUES(gen_random_uuid(), $1, 'ja', 'upset_win_short', '198') RETURNING id)
+         VALUES(gen_random_uuid(), $1, 'ja', 'upset_win_short', '200') RETURNING id)
        INSERT INTO sns_auto_send_items(kind,variant,draft_id,channel,race_id,deadline_at,notify_by,veto_until,state)
        SELECT 'upset_win_short', $3, id, $1, $2, test_now()+interval '3h', test_now(), test_now()+interval '1h', 'checking' FROM draft`,
       [channel, raceId, variant],

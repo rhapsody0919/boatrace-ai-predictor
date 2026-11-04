@@ -1,4 +1,4 @@
--- 198: YouTube Shorts【人気薄の1着】（format・kind = upset_win_short、BOA-1284、オーナー 2026-11-04 承認）を自動送信の item にする。
+-- 200: YouTube Shorts【人気薄の1着】（format・kind = upset_win_short、BOA-1284、オーナー 2026-11-04 承認）を自動送信の item にする。
 -- 作り手（sns-video-studio/remotion/scripts/upset-win/daily.mjs、毎朝 7:00 ごろ hq の機械が呼ぶ）が出すフォルダ（bundle.json＋mp4、型は
 -- sns-video-studio/remotion/src/upsetWin/model.js）を scripts/sns/push-upset-win-short.js が受け取り、YouTube の下書き（動画1本、題・説明欄は bundle の値のまま）と
 -- item（kind='upset_win_short'・variant='main'、下書きに直接ひもづく）を作り、自動送信の承認者で承認する（approve_sns_x_send は 177 のまま）。
@@ -31,7 +31,7 @@
 -- 適用後の確認（読み取り）:
 --   SELECT channel, upset_win_short_enabled FROM public.sns_auto_send_control ORDER BY 1;  期待: x false・youtube false
 --   SELECT indexdef FROM pg_indexes WHERE indexname = 'sns_auto_send_items_upset_day';  期待: 1行
---   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: 053342aadb3675c2cd1a237a5952caa0（この 198 の本文。verify-upset-win.js が出す MD5_198）
+--   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: a9cec5284463f5d6b450578f0a12772e（この 200 の本文。verify-upset-win.js が出す MD5_200）
 --   node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js
 --
 -- 自動送信を許す（オーナーの yes と .claude/CLAUDE.md の例外の追記の後だけ。196 を当てた後）:
@@ -53,10 +53,10 @@ BEGIN
   -- 土台は 194 の transition。本文が違えば（194 の後の別の置き換え）全体を戻す。LIKE では版を区別できない
   IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'transition_sns_send_139'
       AND md5(prosrc) = '8d4f3caa34e30dda934e9b8698d970f4') THEN
-    RAISE EXCEPTION '198: transition_sns_send_139 の本文が 194 でない（md5 が 8d4f3caa… でない）';
+    RAISE EXCEPTION '200: transition_sns_send_139 の本文が 194 でない（md5 が 8d4f3caa… でない）';
   END IF;
   IF EXISTS (SELECT 1 FROM public.sns_auto_send_items WHERE kind = 'upset_win_short' OR race_id LIKE 'upset:%') THEN
-    RAISE EXCEPTION '198: 既存の item に upset_win_short・upset: の行がある';
+    RAISE EXCEPTION '200: 既存の item に upset_win_short・upset: の行がある';
   END IF;
 END $$;
 
@@ -172,7 +172,7 @@ BEGIN
     ELSIF v_kind='today_thinking' AND (SELECT today_thinking_enabled FROM public.sns_auto_send_control WHERE channel='x') IS NOT TRUE THEN reason:='today_thinking_disabled';
     -- 193: YouTube Shorts「節の機力」は、自動送信の許可（youtube の行の setsu_kiryoku_short_enabled、既定 false）が true のときだけ進める
     ELSIF v_kind='setsu_kiryoku_short' AND (SELECT setsu_kiryoku_short_enabled FROM public.sns_auto_send_control WHERE channel='youtube') IS NOT TRUE THEN reason:='setsu_kiryoku_short_disabled';
-    -- 198: YouTube Shorts【人気薄の1着】は、自動送信の許可（youtube の行の upset_win_short_enabled、既定 false）が true のときだけ進める
+    -- 200: YouTube Shorts【人気薄の1着】は、自動送信の許可（youtube の行の upset_win_short_enabled、既定 false）が true のときだけ進める
     ELSIF v_kind='upset_win_short' AND (SELECT upset_win_short_enabled FROM public.sns_auto_send_control WHERE channel='youtube') IS NOT TRUE THEN reason:='upset_win_short_disabled';
     -- 180: 「数字で見たら」は、自動送信の許可（x の行の research_image_enabled、179、既定 false）が true のときだけ進める
     ELSIF v_kind='research_image' AND (SELECT research_image_enabled FROM public.sns_auto_send_control WHERE channel='x') IS NOT TRUE THEN reason:='research_image_disabled';

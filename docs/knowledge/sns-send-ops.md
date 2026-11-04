@@ -88,6 +88,6 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - sns-x-posts.csv の caption_text に残る {full_url} は、承認版の保存値の場合がある。送信直前に公開済み完全版URLへ置換するため、未置換の不具合と断定する前に実際の概要欄か fillFullUrl を確認する（2026-10-27、measurement、ADR-0094・api/_lib/snsDeadlineQueue.js）。
 - Xの通り道B以外のclaimでは、自分の未claimの子と、当日claim済みの他の親に属する未claimの子の枠を v_need に足す。子自身は他の親の子を含めず、子の予約分は begin_post で再計算しない。再計算するとclaim後に増えた子のため予約済みの送信が止まる（2026-10-26、177_sns_finals_replies.sql、188_sns_x_cost_by_url.sqlでも継続）。
 - 「数字で見たら」の取り込み・送信には画像ALTを付ける経路が無い。画像内の期間・母数・定義は送り手の検査だけでは保証されないため、hq側の画像検査で確認し、送信成功を内容確認の証拠にしない（2026-10-27、x-channel、PR #1978・scripts/sns/push-research-image.js・api/_lib/snsXSend.js）。
-- 出し物ごとの取り置き（sns_x_kind_reserves・sns_x_slot_room）は X の claim だけに効く。YouTube の新しい型は daily_limit_youtube でしか守れず、朝に送る型は夜の全貌の枠を先に取る（2026-11-04、system-architect、198・182。本番の YouTube の試行の日最大は 10/30 の8）
+- 出し物ごとの取り置き（sns_x_kind_reserves・sns_x_slot_room）は X の claim だけに効く。YouTube の新しい型は daily_limit_youtube でしか守れず、朝に送る型は夜の全貌の枠を先に取る（2026-11-04、system-architect、200・182。本番の YouTube の試行の日最大は 10/30 の8）
 - sns-send の稼働時間は vercel.json の cron と registry.js の activeHoursJst の2か所にある。cron だけ広げると、広げた時間は死活監視が見ない。2026-11-04 に両方を JST 7:00 からにした（BOA-1284、verify-sns-send-runner.js）
-- 旗 on が別のマイグレーションの適用を前提にするときは、コメントだけにせず、旗 on の SQL の先頭の DO でその関数の md5 を照合する（2026-11-04、system-architect、198 と 196）
+- 旗 on が別のマイグレーションの適用を前提にするときは、コメントだけにせず、旗 on の SQL の先頭の DO でその関数の md5 を照合する（2026-11-04、system-architect、200 と 196）

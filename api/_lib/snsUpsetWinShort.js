@@ -1,8 +1,8 @@
 /**
- * YouTube Shorts【人気薄の1着】（format・kind = upset_win_short、マイグレーション 198、BOA-1284）の、
+ * YouTube Shorts【人気薄の1着】（format・kind = upset_win_short、マイグレーション 200、BOA-1284）の、
  * 取り込み（scripts/sns/push-upset-win-short.js）と送る直前の読み直し（snsClaimCheck.js の readCurrent）に共通の決まり。
- * item の race_id は upset:{出す日 YYYY-MM-DD}:{前日のレースの race_id}（198 の CHECK と同じ形）。
- * 1日1本（同じ JST の出す日の upset_win_short は、生きている item か送った item が1つだけ。198 の一意の索引）
+ * item の race_id は upset:{出す日 YYYY-MM-DD}:{前日のレースの race_id}（200 の CHECK と同じ形）。
+ * 1日1本（同じ JST の出す日の upset_win_short は、生きている item か送った item が1つだけ。200 の一意の索引）
  */
 export const UPSET_WIN_SHORT_KIND = "upset_win_short";
 /** 送る直前のリンク先の表示の確認で見る画面（scripts/lib/snsScreenMarkers.js の race-sonar。説明欄は龍神ソナーのレースの頁） */
