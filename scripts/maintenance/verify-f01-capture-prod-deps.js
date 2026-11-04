@@ -24,17 +24,33 @@ for (const name of NEEDED) {
   assert.notEqual(entry.dev, true, `package-lock.json で ${name} が dev 扱い（--omit=dev で入らない）`);
 }
 
-// vite と plugin-react が実行時に辿る依存も dev 扱いでないこと（dev のままだと --omit=dev で欠ける）
+// vite と plugin-react が辿る依存（dependencies・optionalDependencies）も dev 扱いでないこと（dev のままだと --omit=dev で欠ける）。
+// 親の node_modules から上へ向けて探す（npm の解決と同じ。入れ子の node_modules/a/node_modules/b も見る）
 const seen = new Set();
-const walk = (name) => {
-  if (seen.has(name)) return;
-  seen.add(name);
-  const entry = lock.packages[`node_modules/${name}`];
-  if (!entry) return; // optional で別の platform 用のものは lock に無いことがある
-  assert.notEqual(entry.dev, true, `${name}（vite か plugin-react の依存）が dev 扱い`);
-  for (const dep of Object.keys({ ...entry.dependencies })) walk(dep);
+const resolve = (from, name) => {
+  for (let base = from; ; base = base.slice(0, base.lastIndexOf("/node_modules/"))) {
+    const key = `${base ? `${base}/` : ""}node_modules/${name}`;
+    if (lock.packages[key]) return key;
+    if (!base) return null;
+  }
 };
-NEEDED.forEach(walk);
+const walk = (key) => {
+  if (seen.has(key)) return;
+  seen.add(key);
+  const entry = lock.packages[key];
+  assert.notEqual(entry.dev, true, `${key}（vite か plugin-react の依存）が dev 扱い`);
+  for (const dep of Object.keys(entry.dependencies ?? {})) {
+    const k = resolve(key, dep);
+    assert.ok(k, `${key} の依存 ${dep} が package-lock.json に無い`);
+    walk(k);
+  }
+  // 別の OS 用の実行ファイル等は lock に無いことがある（無ければ飛ばす）。あれば dev 扱いでないこと
+  for (const dep of Object.keys(entry.optionalDependencies ?? {})) {
+    const k = resolve(key, dep);
+    if (k) walk(k);
+  }
+};
+NEEDED.forEach((n) => walk(`node_modules/${n}`));
 
 console.log(`OK: ${NEEDED.join(" ・ ")} は本番の入れ方（--omit=dev）で入る（依存 ${seen.size} 件を確認）`);
 process.exit(0);
