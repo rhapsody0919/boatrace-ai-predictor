@@ -15,9 +15,9 @@ import { formatPercent } from "../../utils/formatters";
 import RacerConditionStats from "./RacerConditionStats";
 import {
   supabaseDataService,
-  aggregateRacerVenueBoatStats,
   aggregateRacerCrossStats,
 } from "../../services/supabaseDataService";
+import { aggregateRacerVenueBoatStats } from "../../utils/racerVenueBoatStats.js";
 import { ALL_VENUE_CODES } from "../../constants";
 import RecentRunsTable from "../race/RecentRunsTable";
 import { GRADE_LABELS } from "../race/raceGradeLabels";
@@ -270,7 +270,9 @@ export default function RacerPerformanceStats({
   const [previousRacePageInputs, setPreviousRacePageInputs] =
     useState(racePageInputs);
   if (
-    racePageInputs.some((value, index) => value !== previousRacePageInputs[index])
+    racePageInputs.some(
+      (value, index) => value !== previousRacePageInputs[index],
+    )
   ) {
     setPreviousRacePageInputs(racePageInputs);
     setVcRacePage(1);

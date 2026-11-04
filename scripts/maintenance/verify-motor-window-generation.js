@@ -43,6 +43,7 @@ import {
   isClippedByGeneration,
   motorGenerationStartAsOf,
 } from "../../src/utils/motorGeneration.js";
+import { motorWindowFrom } from "../../src/utils/motorPowerIndex.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -96,16 +97,25 @@ check(
   "motorWindowStart: 使用開始日を getMotorGenerationStart で取る",
   windowFn.includes("await getMotorGenerationStart(venueCode)"),
 );
+// 期間の計算は純関数 motorWindowFrom（BOA-1245。龍神ボート番付と共有）。サービスはそれを呼ぶだけ
 check(
-  "motorWindowStart: 使用開始日が今日−days より後なら使用開始日で切り詰める（max）",
-  windowFn.includes("generationStart > windowStart") &&
-    windowFn.includes(
-      "since: clippedByGeneration ? generationStart : windowStart",
-    ),
+  "motorWindowStart: 期間の計算を motorWindowFrom に任せる（基準日は今日か beforeRaceId の日）",
+  /return motorWindowFrom\(\s*generationStart,\s*days,\s*beforeRaceId === null \? jstToday\(\) : beforeRaceId\.slice\(0, 10\),?\s*\)/.test(
+    windowFn,
+  ),
 );
 check(
-  "motorWindowStart: 使用開始日が不明なら since: null（集計しない）",
-  /if \(generationStart === null\) \{\s*return \{ since: null/.test(windowFn),
+  "motorWindowFrom: 使用開始日が基準日−days より後なら使用開始日で切り詰める（max）",
+  JSON.stringify(motorWindowFrom("2026-10-01", 90, "2026-11-04")) ===
+    JSON.stringify({ since: "2026-10-01", generationStart: "2026-10-01", clippedByGeneration: true }) &&
+    JSON.stringify(motorWindowFrom("2026-01-01", 90, "2026-11-04")) ===
+      JSON.stringify({ since: "2026-08-06", generationStart: "2026-01-01", clippedByGeneration: false }) &&
+    motorWindowFrom("2026-08-06", 90, "2026-11-04").clippedByGeneration === false,
+);
+check(
+  "motorWindowFrom: 使用開始日が不明なら since: null（集計しない）",
+  JSON.stringify(motorWindowFrom(null, 90, "2026-11-04")) ===
+    JSON.stringify({ since: null, generationStart: null, clippedByGeneration: false }),
 );
 
 // 2. 各集計が世代で切り詰めた窓を通る

@@ -26,7 +26,6 @@ import {
 } from "../utils/motorGeneration";
 import { isFinalStage } from "../constants/raceStageConfig";
 import {
-  finishPositionOf,
   periodsEndedBefore,
   officialPeriodOf,
   RECENT_PERIOD_COUNT,
@@ -89,13 +88,21 @@ import {
 } from "../utils/pretestRows";
 // get_today_races の整形は、ボット向け HTML の関数（ADR 0089）と共有するため純粋なモジュールに置く
 import { transformTodayRaces } from "../utils/todayRaces.js";
+import {
+  tallyVenuePayouts,
+  rankVenuesByPayout,
+} from "../utils/venuePayoutStats.js";
+import {
+  computeMotorPowerIndex,
+  motorWindowFrom,
+} from "../utils/motorPowerIndex.js";
+import {
+  racerHistoryCutoff,
+  toReturnRate,
+} from "../utils/racerVenueBoatStats.js";
 
-// 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
-// getRacerBoatReturnRate/getRaceRacerBoatReturnRate/aggregateRacerVenueBoatStats
-// の3箇所で同じ式が使われているための共通化（BOA-159レビューで発見）
-function toReturnRate(payoutSum, sampleCount) {
-  return sampleCount > 0 ? (payoutSum / (sampleCount * 100)) * 100 : null;
-}
+// toReturnRate・aggregateRacerVenueBoatStats・racerHistoryCutoff は src/utils/racerVenueBoatStats.js
+// （BOA-1244。選手ページと龍神ボート番付で共有するため手を加えずに移した）
 
 // resultのrank1〜rank6（着順でインデックス、値が艇番）を走査し、boatNumberと
 // 一致する着順（1〜6）を返す。actual_course_N（艇番でインデックス、値が
@@ -695,22 +702,12 @@ function isPastRace(raceId) {
  */
 async function motorWindowStart(venueCode, days, beforeRaceId = null) {
   const generationStart = await getMotorGenerationStart(venueCode);
-  if (generationStart === null) {
-    return { since: null, generationStart, clippedByGeneration: false };
-  }
-  const daysAgo = new Date(
-    beforeRaceId === null
-      ? Date.now() + 9 * 60 * 60 * 1000
-      : `${beforeRaceId.slice(0, 10)}T00:00:00Z`,
-  );
-  daysAgo.setUTCDate(daysAgo.getUTCDate() - days);
-  const windowStart = daysAgo.toISOString().split("T")[0];
-  const clippedByGeneration = generationStart > windowStart;
-  return {
-    since: clippedByGeneration ? generationStart : windowStart,
+  // 期間の計算は src/utils/motorPowerIndex.js（BOA-1245。龍神ボート番付と共有するため手を加えずに移した）
+  return motorWindowFrom(
     generationStart,
-    clippedByGeneration,
-  };
+    days,
+    beforeRaceId === null ? jstToday() : beforeRaceId.slice(0, 10),
+  );
 }
 
 const NEUTRAL_EXHIBITION_DIFF_SEC = 0.02; // これ未満は展示タイムの日次ブレの範囲内とみなす
@@ -2968,35 +2965,9 @@ export const supabaseDataService = {
           (data ?? []).forEach((r) => resultByRaceId.set(r.race_id, r));
         });
 
-        const residuals = [];
-        let actualHits2 = 0;
-        let actualHits3 = 0;
-        let baselineSum = 0;
-        entries.forEach((e) => {
-          const result = resultByRaceId.get(e.race_id);
-          if (!result || e.global_2rate === null) return;
-          const isTop2 =
-            result.rank1 === e.boat_number || result.rank2 === e.boat_number;
-          const isTop3 = isTop2 || result.rank3 === e.boat_number;
-          if (isTop2) actualHits2 += 1;
-          if (isTop3) actualHits3 += 1;
-          residuals.push((isTop2 ? 100 : 0) - e.global_2rate);
-          baselineSum += e.global_2rate;
-        });
-        if (residuals.length === 0) return windowed;
-
-        const powerIndex =
-          residuals.reduce((sum, v) => sum + v, 0) / residuals.length;
-        const avgBaseline = baselineSum / residuals.length;
-
-        return {
-          ...windowed,
-          sample_count: residuals.length,
-          actual_rate2: (actualHits2 / residuals.length) * 100,
-          actual_rate3: (actualHits3 / residuals.length) * 100,
-          avg_baseline_rate2: avgBaseline,
-          power_index: powerIndex,
-        };
+        // 指数の計算は src/utils/motorPowerIndex.js（BOA-1245。龍神ボート番付と共有するため手を加えずに移した）
+        const index = computeMotorPowerIndex(entries, resultByRaceId);
+        return index ? { ...windowed, ...index } : windowed;
       },
     );
   },
@@ -4452,9 +4423,7 @@ export const supabaseDataService = {
       // 2027-12-03以降は窓の始点がデータの開始日を越えて直書きが誤りになるため、
       // その時点で注記（locales の basicInfo/wakuInfo.periodCaveat、
       // beforeInfo.detailTableNote、locales の termHints.*、RacerPerformanceStats.jsx）を見直す
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - 730);
-      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+      const cutoffStr = racerHistoryCutoff();
 
       const entries = await fetchRacerEntriesSince(
         racerId,
@@ -4568,9 +4537,7 @@ export const supabaseDataService = {
         return [];
       }
 
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - 730);
-      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+      const cutoffStr = racerHistoryCutoff();
 
       // gradeはST考察のベースライン（st_course_baselineの(course, grade)セル）を
       // 引くのに使う（phase a FR-1）。race_entries.gradeは実測でnull 0件・4値（A1/A2/B1/B2）
@@ -4800,7 +4767,7 @@ export const supabaseDataService = {
    * venueCode/boatNumberによる絞り込みは行わない（=racerIdだけでキャッシュ
    * できる）。フィルタ変更のたびに毎回re-fetchするのではなく、この関数を
    * racerId単位で1回だけ呼び、絞り込み・集計はaggregateRacerVenueBoatStats
-   * （同ファイル内のプレーン関数）でクライアント側メモリ上に行う設計にして
+   * （src/utils/racerVenueBoatStats.js の純関数）でクライアント側メモリ上に行う設計にして
    * いる（フィルタ操作をネットワークI/O無しの即時計算にするため）。
    * 不成立レース（race_status=no_race。BOA-477）とrank1未確定行は
    * ここで除外し、以降の集計側では意識しなくて済むようにする
@@ -4815,14 +4782,10 @@ export const supabaseDataService = {
         return [];
       }
 
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - 730);
-      const cutoffStr = cutoffDate.toISOString().split("T")[0];
-
       const entries = await fetchRacerEntriesSince(
         racerId,
         "race_id, boat_number",
-        cutoffStr,
+        racerHistoryCutoff(),
       );
 
       if (entries.length === 0) {
@@ -6252,70 +6215,11 @@ export const supabaseDataService = {
           raceIds,
         );
 
-        const byVenue = new Map();
-        results.forEach((r) => {
-          if (!isUsableRaceResult(r)) return;
-          const venueCode = venueByRaceId.get(r.race_id);
-          if (venueCode === null || venueCode === undefined) return;
-          if (!byVenue.has(venueCode)) {
-            byVenue.set(venueCode, {
-              venue_code: venueCode,
-              raceCount: 0,
-              payoutCount: 0,
-              payoutSum: 0,
-              nigeCount: 0,
-              manshuCount: 0,
-            });
-          }
-          const v = byVenue.get(venueCode);
-          v.raceCount += 1;
-          if (r.payout_trio !== null) {
-            v.payoutCount += 1;
-            v.payoutSum += r.payout_trio;
-            if (r.payout_trio >= 10000) v.manshuCount += 1;
-          }
-          if (r.rank1 === 1 && r.winning_technique === "逃げ") v.nigeCount += 1;
-        });
-
-        // イン逃げ率は配当データに依存しないため、配当が1件も取れていない会場
-        // （payoutCount=0）も対象に含める。固い場/荒れている場/万舟率は
-        // payout_trioの平均・件数を使うためpayoutCount>0の会場のみ対象とする
-        const qualifyingVenues = [...byVenue.values()].filter(
-          (v) => v.raceCount >= minRaceCount,
+        // 集計は src/utils/venuePayoutStats.js（BOA-1242。龍神ボート番付と共有するため手を加えずに移した）
+        const byVenue = tallyVenuePayouts(results, (raceId) =>
+          venueByRaceId.get(raceId),
         );
-
-        const nigeRateVenues = qualifyingVenues.map((v) => ({
-          venue_code: v.venue_code,
-          race_count: v.raceCount,
-          nige_rate: (v.nigeCount / v.raceCount) * 100,
-        }));
-
-        const payoutVenues = qualifyingVenues
-          .filter((v) => v.payoutCount > 0)
-          .map((v) => ({
-            venue_code: v.venue_code,
-            race_count: v.raceCount,
-            avg_payout: v.payoutSum / v.payoutCount,
-            manshu_rate: (v.manshuCount / v.payoutCount) * 100,
-          }));
-
-        const byAvgPayoutAsc = [...payoutVenues].sort(
-          (a, b) => a.avg_payout - b.avg_payout,
-        );
-        const byAvgPayoutDesc = [...payoutVenues].sort(
-          (a, b) => b.avg_payout - a.avg_payout,
-        );
-
-        return {
-          stable: byAvgPayoutAsc.slice(0, limit),
-          rough: byAvgPayoutDesc.slice(0, limit),
-          nigeRate: [...nigeRateVenues]
-            .sort((a, b) => b.nige_rate - a.nige_rate)
-            .slice(0, limit),
-          manshu: [...payoutVenues]
-            .sort((a, b) => b.manshu_rate - a.manshu_rate)
-            .slice(0, limit),
-        };
+        return rankVenuesByPayout(byVenue, limit, minRaceCount);
       },
       VENUE_RANKING_CACHE_TTL,
     );
@@ -8170,137 +8074,6 @@ function isPermissionDeniedError(error) {
   if (!error) return false;
   if (error.code === "42501") return true;
   return /permission denied/i.test(error.message ?? "");
-}
-
-/**
- * getRacerRaceHistory()が返すフラット履歴を「会場×枠番×グレード×レース種別」
- * で絞り込み集計する純粋関数（I/O無し）。各引数はnullで絞り込みなしを表す。
- * raceGrade/raceStageはBOA-159で追加（完全一致判定のみ、サンプル数閾値は
- * 適用しない方針、docs/design/racer-stats-drilldown/spec.md参照）。
- * 選手個人ページのフィルタが変更されるたびにこれを呼ぶことで、
- * ネットワークI/O無しで即座に再集計できる。
- * 注: 実際の進入コースはBOA-257の制約により取得できないため、発走前に
- * 決まる枠番（艇番）基準で集計する
- * @param {Array} history - getRacerRaceHistory()の戻り値
- * @param {number|null} venueCode
- * @param {number|null} boatNumber
- * @param {string|null} raceGrade - races.race_gradeと完全一致（ippan/G1/G2/G3/SG）
- * @param {string|null} raceStage - race_conditions.race_stageと完全一致（優勝戦/準優勝戦）
- */
-export function aggregateRacerVenueBoatStats(
-  history,
-  venueCode,
-  boatNumber,
-  raceGrade,
-  raceStage,
-) {
-  let n = 0,
-    returnSum = 0,
-    placeReturnSum = 0,
-    stSum = 0,
-    stN = 0,
-    exSum = 0,
-    exN = 0;
-  const totals = { win: 0, top2: 0, top3: 0 };
-  const tech = {};
-  const series = [];
-  const matchedRaces = [];
-
-  for (const row of history ?? []) {
-    if (venueCode && row.venueCode !== venueCode) continue;
-    if (boatNumber && row.boatNumber !== boatNumber) continue;
-    if (raceGrade && row.raceGrade !== raceGrade) continue;
-    if (raceStage && row.raceStage !== raceStage) continue;
-
-    n += 1;
-    const isWin = tallyWinPlaceShow(totals, row);
-    if (isWin) {
-      if (row.winningTechnique) {
-        tech[row.winningTechnique] = (tech[row.winningTechnique] ?? 0) + 1;
-      }
-      returnSum += row.payoutWin ?? 0;
-      placeReturnSum += row.payoutPlace1 ?? 0;
-    } else if (!row.unranked && row.rank2 === row.boatNumber) {
-      placeReturnSum += row.payoutPlace2 ?? 0;
-    }
-
-    const hasEx = row.exhibitionTime !== null;
-    // フライングは異常値のため平均ST・STの推移から除く（今節タブ・ST考察と同じ扱い。BOA-576）
-    const hasSt = row.startTiming != null && !row.isFlying;
-    if (hasSt) {
-      stSum += Number(row.startTiming);
-      stN += 1;
-    }
-    if (hasEx) {
-      exSum += Number(row.exhibitionTime);
-      exN += 1;
-    }
-    if (hasEx || hasSt || row.isFlying) {
-      // historyは既にrace_id（YYYY-MM-DD-会場-レース番号）昇順でソート済みの
-      // ため点の並び順は正しいが、対象期間が最大2年に及ぶため月日だけを表示
-      // すると異なる年の同じ月日が同一ラベルに見えてしまう。年下2桁を含めて
-      // 曖昧さを避ける（例: "25-05-12"）
-      series.push({
-        date: row.raceId.slice(2, 10),
-        // グラフの横軸は走ごとに一意な値にする。日付だけだと同じ日の2走が1つの目盛りにまとまり、
-        // 2走目に乗せても1走目のツールチップが出た（BOA-583 ファン評価2周目）
-        raceKey: row.raceId,
-        // ツールチップで同じ日の2走を見分けるため（BOA-583）
-        venueCode: row.venueCode,
-        raceNo: Number(row.raceId.slice(-2)),
-        avg_exhibition_time: hasEx ? Number(row.exhibitionTime) : null,
-        start_timing: hasSt ? Number(row.startTiming) : null,
-        // フライングの走は平均・線からは外すが、どこで切ったかは印で残す（BOA-583）。
-        // 0（スタートライン）の位置に置く
-        flying: row.isFlying ? 0 : null,
-        // ツールチップで F の深さ（F.01 か F.04 か）を出す
-        flyingSt: row.isFlying ? (row.startTiming ?? null) : null,
-      });
-    }
-
-    matchedRaces.push({
-      raceId: row.raceId,
-      date: row.raceId.slice(0, 10),
-      venueCode: row.venueCode,
-      raceNo: Number(row.raceId.slice(-2)),
-      raceTitle: row.raceTitle,
-      raceGrade: row.raceGrade,
-      raceStage: row.raceStage,
-      boatNumber: row.boatNumber,
-      startTiming: row.startTiming ?? null,
-      isFlying: row.isFlying === true,
-      entryCourse: row.entryCourse ?? null,
-      startTimingRank: row.stRank ?? null,
-      finishRank: row.unranked ? null : finishPositionOf(row),
-      finishMark: row.finishMark ?? null,
-      absent: row.finishMark === "欠",
-      winningTechnique: row.winningTechnique,
-      payoutWin: row.payoutWin,
-    });
-  }
-
-  // レース一覧（BOA-159）は日付降順（新しい順）で見せる。集計用のhistory自体は
-  // 昇順ソート済みのため、この配列だけ表示直前に反転する
-  matchedRaces.reverse();
-
-  return {
-    n,
-    win: totals.win,
-    top2: totals.top2,
-    top3: totals.top3,
-    winRate: n > 0 ? totals.win / n : null,
-    top2Rate: n > 0 ? totals.top2 / n : null,
-    top3Rate: n > 0 ? totals.top3 / n : null,
-    tech,
-    avgSt: stN > 0 ? stSum / stN : null,
-    stN,
-    avgExhibitionTime: exN > 0 ? exSum / exN : null,
-    exN,
-    returnRate: toReturnRate(returnSum, n),
-    placeReturnRate: toReturnRate(placeReturnSum, n),
-    series,
-    matchedRaces,
-  };
 }
 
 /**
