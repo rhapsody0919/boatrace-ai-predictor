@@ -227,6 +227,13 @@ export function descriptionLink(description, venueCode) {
   return { url: `${SITE}${u.pathname}`, reasons: [] };
 }
 
+/** final_deadline の R の番号（"11R" → 11）。無ければ null */
+export const raceNumberOf = (deadline) =>
+  deadline?.race ? Number(String(deadline.race).replace(/R$/, "")) : null;
+/** レース名が優勝戦か（「男子優勝戦」等も含む。「準優勝戦」でない） */
+export const isFinalStage = (stage) =>
+  typeof stage === "string" && /優勝戦/.test(stage) && !/準優勝戦|進出/.test(stage);
+
 /**
  * 当日の final_gap の締切（任意、BOA-1282）が DB の優勝戦と同じか（純粋関数）。違えば理由、同じか締切が無ければ null。
  * R は race_id の末尾、時刻は races.start_time（分の単位）。前夜の型は出走表がまだ無いので照らさない（hq が eve_race_deadlines から入れる）
@@ -643,7 +650,12 @@ export async function pushSetsuKiryokuShort(
   if (live.reasons) return reject(live.reasons);
   // 優勝戦が今日の型は、その優勝戦が DB にあり、中止・欠場が無いこと（前夜は出走表がまだ無い）
   if (bundle.variant === "final_gap" && bundle.when === "today") {
-    const final = await store.finalRace(bundle.final_date, venueCode);
+    // 締切があれば、束が指した R の優勝戦を照らす（男女W優勝戦で2つあるとき、先頭の1件で比べない。Codex P1）
+    const final = await store.finalRace(
+      bundle.final_date,
+      venueCode,
+      raceNumberOf(bundle.final_deadline),
+    );
     if (!final)
       return reject([
         `${bundle.final_date} の ${bundle.venue} の優勝戦が DB に無い`,
@@ -1035,10 +1047,19 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
         `eve_race_deadlines?race_date=eq.${encodeURIComponent(date)}&venue_code=eq.${Number(venueCode)}&is_final=is.true&select=race_id,deadline`,
       );
     },
-    async finalRace(date, venueCode) {
-      const [final] = await call(
-        `race_conditions?race_id=like.${encodeURIComponent(`${date}-${venueCode}-*`)}&race_stage=eq.${encodeURIComponent("優勝戦")}&select=race_id`,
-      );
+    /** raceNumber を渡せば、そのレースが優勝戦（「優勝戦」を含み「準優勝戦」でない）のときだけ返す。無ければ今どおり「優勝戦」の1件 */
+    async finalRace(date, venueCode, raceNumber = null) {
+      let final;
+      if (raceNumber != null) {
+        const [row] = await call(
+          `race_conditions?race_id=eq.${encodeURIComponent(`${date}-${venueCode}-${String(raceNumber).padStart(2, "0")}`)}&select=race_id,race_stage`,
+        );
+        final = row && isFinalStage(row.race_stage) ? row : null;
+      } else {
+        [final] = await call(
+          `race_conditions?race_id=like.${encodeURIComponent(`${date}-${venueCode}-*`)}&race_stage=eq.${encodeURIComponent("優勝戦")}&select=race_id`,
+        );
+      }
       if (!final) return null;
       const id = encodeURIComponent(final.race_id);
       const [[race], entries, exhibition] = await Promise.all([
