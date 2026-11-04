@@ -414,6 +414,7 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
     blocks.push({
       key: "nigashi",
       race: nigashi.race,
+      // 載せるのは2号艇だけだが、1号艇の欠場も送る直前に読み直す（1号艇が欠場なら逃し率の前提が崩れる）
       boats: [1, 2],
       racer_id: nigashi.entry.racer_id,
       rate: nigashi.rate,
@@ -503,7 +504,8 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
 }
 
 /**
- * 機械の検査（純粋関数）。返り値は通らなかった理由の配列（空なら通った）。禁止表現は計画の riskRules（今の /today と同じ）が別に見る
+ * 機械の検査（純粋関数）。返り値は通らなかった理由の配列（空なら通った）。禁止表現は計画の riskRules（今の /today と同じ）が別に見る。
+ * ただし逃し率の向きの言い方（V3_BANNED_PHRASES、BOA-1324）だけはこの型の文の約束なので、ここで本文の全体を見る
  * 長文の1投稿（親1件だけのスレッド）として X の加重で確かめる（今の /today と同じ。送る直前の preflight も同じ線）
  */
 export function checkTodayDigestV3(text, { date, url }) {

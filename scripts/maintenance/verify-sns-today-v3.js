@@ -684,26 +684,23 @@ test("逃し率の塊（BOA-1324）: 見出しは【逃し率が高い選手】�
     out.text,
     /【逃し率が高い選手】\n選手 2-4-2 B1\u300072%（41走）\n▶ 戸田4R 2号艇 12:02締切\n/,
   );
-  assert.doesNotMatch(
-    out.text,
-    /逃げやすい|鉄板|決まりやすい|1号艇 選手 2-4-1/,
-  );
+  assert.doesNotMatch(out.text, /逃げやすい|鉄板|決まりやすい|選手 2-4-1/);
   assert.match(
     out.text,
     /※逃し率＝2コースに入ったとき、1コースの艇の逃げで決まった割合/,
   );
   const check = (text) => checkTodayDigestV3(text, { date: DATE, url: URL_C });
   assert.deepEqual(check(out.text), []);
-  // 検査は旧い見出しや言い回しが本文のどこかに混ざったら止める
+  // 検査は旧い見出しや言い回しが本文のどこかに混ざったら止める。1号艇（戸田4R、選手 2-4-1）の名前は本文に出ない
   for (const bad of [
     "【1号艇が逃げやすいレース】",
     "鉄板の1号艇",
     "逃げが決まりやすい",
   ])
-    assert.ok(
-      check(
-        out.text.replace("【逃し率が高い選手】", `【逃し率が高い選手】${bad}`),
-      ).includes("banned_phrase"),
+    // 他の検査に当たらない別の行に入れて、banned_phrase だけで止まることを確かめる（/code-review の指摘）
+    assert.deepEqual(
+      check(out.text.replace("【優勝戦】", `${bad}\n【優勝戦】`)),
+      ["banned_phrase"],
       bad,
     );
 });
