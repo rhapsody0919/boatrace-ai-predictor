@@ -1,0 +1,310 @@
+<title>足りない材料の置き場所</title>
+<style>
+:root{
+  color-scheme: dark;
+  --surface-page:#0d1b2e; --surface-card:#142842; --surface-sunk:#0f2136;
+  --border-hairline:#24344d; --text-primary:#f8fafc; --text-secondary:#cbd5e1; --text-muted:#94a3b8;
+  --brand-accent-primary:#c9a227; --gold-300:#e8d089;
+  --ind-best-bg:color-mix(in srgb,#c9a227 20%,#160f03);
+  --color-success-text:#10b981; --color-error-text:#f26b6b; --color-warning:#f59e0b; --color-info:#2196f3;
+  --b1-bg:#ffffff;--b1-tx:#000;--b2-bg:#000;--b2-tx:#fff;--b3-bg:#e53935;--b3-tx:#fff;--b4-bg:#1e88e5;--b4-tx:#fff;--b5-bg:#fdd835;--b5-tx:#000;--b6-bg:#43a047;--b6-tx:#fff;
+  --font: "Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface-page);color:var(--text-primary);font-family:var(--font);line-height:1.5}
+.page{max-width:1240px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:22px;margin:0 0 6px}
+.lead{color:var(--text-secondary);font-size:14px;margin:0 0 4px}
+.legend{font-size:12px;color:var(--text-muted);margin:0 0 24px}
+section.screen{margin:0 0 48px;border-top:1px solid var(--border-hairline);padding-top:20px}
+section.screen>h2{font-size:17px;margin:0 0 4px}
+section.screen>.where{font-size:13px;color:var(--gold-300);margin:0 0 14px}
+.pair{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.frame{flex:none}
+.frame-label{font-size:12px;color:var(--text-muted);margin:0 0 6px}
+.phone{width:375px;max-width:100%;border:1px solid var(--border-hairline);border-radius:14px;background:var(--surface-page);padding:12px 12px 16px;overflow:hidden}
+.desk-wrap{flex:1 1 560px;min-width:0}
+.desk-viewport{width:100%;overflow:hidden;border:1px solid var(--border-hairline);border-radius:10px;background:var(--surface-page)}
+.desk{width:1440px;transform-origin:0 0;padding:20px 120px 28px}
+.caption{font-size:13px;color:var(--text-secondary);margin:8px 0 0;max-width:100%}
+.pending-note{display:inline-block;font-size:12px;border:1px dashed var(--color-warning);color:var(--color-warning);border-radius:6px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+
+/* 画面の中の部品 */
+.tabs{display:flex;gap:14px;font-size:13px;color:var(--text-secondary);border-bottom:1px solid var(--border-hairline);margin:0 0 10px;white-space:nowrap;overflow:hidden}
+.tabs span{padding:6px 0}
+.tabs .on{color:var(--brand-accent-primary);border-bottom:2px solid var(--brand-accent-primary);font-weight:600}
+.card{background:var(--surface-card);border:1px solid var(--border-hairline);border-radius:10px;padding:12px;margin:0 0 10px}
+.card.new{box-shadow:0 0 0 2px var(--brand-accent-primary)}
+.card.pending{border:1.5px dashed var(--color-warning)}
+.card-title{font-size:15px;font-weight:700;margin:0 0 2px}
+.card-sub{font-size:12px;color:var(--text-secondary);margin:0 0 8px}
+.note{font-size:11.5px;color:var(--text-muted);margin:8px 0 0}
+.newtag{font-size:10.5px;font-weight:700;color:#160f03;background:var(--brand-accent-primary);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:2px}
+.ghost{opacity:.45}
+.bb{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;font-size:13px;font-weight:700;flex:none}
+.bb1{background:var(--b1-bg);color:var(--b1-tx)}.bb2{background:var(--b2-bg);color:var(--b2-tx);box-shadow:inset 0 0 0 1px #475569}.bb3{background:var(--b3-bg);color:var(--b3-tx)}.bb4{background:var(--b4-bg);color:var(--b4-tx)}.bb5{background:var(--b5-bg);color:var(--b5-tx)}.bb6{background:var(--b6-bg);color:var(--b6-tx)}
+.grade{font-size:10.5px;color:var(--text-secondary);border:1px solid var(--border-hairline);border-radius:4px;padding:0 4px}
+.seg{display:inline-flex;border:1px solid var(--border-hairline);border-radius:999px;overflow:hidden;font-size:12px;margin:0 0 8px}
+.seg span{padding:3px 10px;color:var(--text-secondary)}
+.seg .on{background:var(--brand-accent-primary);color:#160f03;font-weight:700}
+
+/* 6艇×想定コース */
+table.c6{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.c6 th{font-size:11px;font-weight:500;color:var(--text-secondary);text-align:right;padding:4px 3px;border-bottom:1px solid var(--border-hairline)}
+table.c6 th:first-child{text-align:left}
+table.c6 td{padding:7px 3px;border-bottom:1px solid var(--border-hairline);text-align:right;vertical-align:middle;font-size:14px}
+table.c6 td.who{text-align:left}
+.who-in{display:flex;gap:6px;align-items:center}
+.who-name{font-size:13px;line-height:1.2}
+.who-meta{font-size:10.5px;color:var(--text-muted)}
+.v{font-weight:700}
+.avg{display:block;font-size:10.5px;color:var(--text-muted);font-weight:400}
+.up{color:var(--color-success-text)}.down{color:var(--color-error-text)}
+.small .v{color:var(--text-muted);font-weight:500}
+.n{font-size:12px;color:var(--text-secondary)}
+.flag{font-size:10px;color:var(--color-warning);border:1px solid var(--color-warning);border-radius:3px;padding:0 3px;margin-left:2px}
+.bar{position:relative;height:6px;background:var(--surface-sunk);border-radius:3px;margin-top:4px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--brand-accent-primary)}
+.small .bar i{background:#5b6b82}
+.bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text-primary);border-radius:1px}
+.desk table.c6 td{font-size:15px;padding:10px 10px}
+.desk table.c6 th{font-size:12px;padding:6px 10px}
+.desk .c1col{width:300px}
+
+/* データ出走表（抜粋） */
+table.dt{width:100%;border-collapse:collapse;font-size:12px;text-align:center;font-variant-numeric:tabular-nums}
+table.dt th,table.dt td{border:1px solid var(--border-hairline);padding:5px 2px}
+table.dt th.rowh{text-align:left;color:var(--text-secondary);font-weight:500;width:62px;font-size:11px}
+table.dt tr.changed td,table.dt tr.changed th{background:color-mix(in srgb,#c9a227 12%,transparent)}
+table.dt .sub{display:block;font-size:10px;color:var(--text-muted)}
+.desk table.dt{font-size:14px}.desk table.dt th.rowh{width:150px;font-size:13px}
+
+/* モーター */
+table.mt{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+table.mt th{font-size:10.5px;color:var(--text-secondary);font-weight:500;padding:4px 3px;border-bottom:1px solid var(--border-hairline);text-align:right}
+table.mt td{padding:7px 3px;border-bottom:1px solid var(--border-hairline);text-align:right}
+table.mt th:first-child,table.mt td:first-child{text-align:left}
+td.newcol,th.newcol{background:color-mix(in srgb,#c9a227 12%,transparent)}
+.chg{font-size:11px;border:1px solid var(--border-hairline);border-radius:4px;padding:0 4px;color:var(--text-primary)}
+.desk table.mt{font-size:14px}.desk table.mt th{font-size:12px}
+ul.hist{list-style:none;margin:0;padding:0}
+ul.hist li{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-hairline);font-size:12.5px}
+.hdate{color:var(--text-secondary);font-variant-numeric:tabular-nums;min-width:92px}
+.sg{font-size:10.5px;font-weight:700;border-radius:4px;padding:0 5px}
+.sg{border:1px solid #64748b;color:var(--text-primary)}
+.ranks{color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.fin{font-size:10.5px;font-weight:700;border-radius:4px;padding:0 5px;border:1px solid var(--brand-accent-primary);color:var(--brand-accent-primary)}
+.win{background:var(--brand-accent-primary);color:#160f03}
+.desk ul.hist li{font-size:14px}
+
+/* 今節ST */
+.strow{display:grid;grid-template-columns:96px 1fr 76px;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border-hairline);font-size:12.5px}
+.spark{height:22px}
+.stcol{text-align:right;font-variant-numeric:tabular-nums;line-height:1.25}
+.stcol .avgst{font-weight:700;font-size:13px}
+.stcol .rk{font-size:10.5px;color:var(--text-secondary)}
+.stcol .prev{font-size:10.5px;color:var(--text-muted)}
+.desk .strow{grid-template-columns:180px 1fr 150px;font-size:14px}
+
+/* 逃がし・被まくり */
+.ph-row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-hairline);font-size:13px}
+.ph-val{color:var(--text-muted)}
+
+.split{display:block}
+.desk .split{display:grid;grid-template-columns:720px 1fr;gap:20px;align-items:start}
+.desk .split .main{margin:0}
+.side .note{margin:0 0 6px}
+.phone .side{margin:-2px 0 10px}
+.dif{display:block;font-size:11.5px;color:var(--text-secondary)}
+td.sub2{font-size:13px;color:var(--text-secondary)}
+.warn{color:var(--text-muted);font-size:11px;margin-left:2px}
+.chev{color:var(--text-muted);margin-left:4px}
+td.who.sel{box-shadow:inset 3px 0 0 #fff}
+tr:has(td.sel){background:color-mix(in srgb,#fff 5%,transparent)}
+.desk table.c6 td{font-size:15px;padding:9px 10px}
+.desk .strow-wrap{max-width:720px}
+.motortag{font-size:10px;border:1px solid var(--border-hairline);border-radius:3px;padding:0 3px;margin-left:3px;color:var(--text-secondary)}
+.seg span{position:relative}.seg span::before{content:"";position:absolute;left:0;right:0;top:-10px;bottom:-10px}
+
+.prevmain{font-size:13px}
+.avgsub{font-size:10.5px;color:var(--text-muted)}
+.stcol{min-width:0}
+.phone .strow{grid-template-columns:100px 1fr 112px}.avgsub{white-space:nowrap}
+.desk .strow{grid-template-columns:170px 1fr 190px}
+.newhl{box-shadow:0 0 0 1px var(--brand-accent-primary)}
+.split2{display:block}.desk-only{display:none}
+.desk .split2{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}.desk .desk-only{display:block}
+@media (max-width:700px){.desk-wrap{flex-basis:100%}.frame{max-width:100%}.phone{overflow-x:auto}}
+</style>
+
+<div class="page">
+  <h1>予想動画にあって龍神で見にくい材料の置き場所（モック）</h1>
+  <p class="lead">レース詳細のどのタブのどこに置くかの案。選手名・数値はすべて架空です。</p>
+  <p class="legend">金の枠＝新しく足す部分。破線＝置き場所の案だけで、統計の検証（BOA-1280）の後に確定する部分。</p>
+
+  <!-- 1. 6艇×想定コース -->
+  <section class="screen" id="s1">
+    <h2>1. 6艇の想定コース別成績</h2>
+    <p class="where">枠別情報タブの先頭に新しく置く。今の「1艇ずつ選ぶ表」はその下に残す。</p>
+    <div class="pair">
+      <div class="frame"><p class="frame-label">375px</p><div class="phone" data-tpl="t-course6"></div></div>
+      <div class="frame desk-wrap"><p class="frame-label">1440px（縮小表示）</p><div class="desk-viewport"><div class="desk" data-tpl="t-course6" data-desk></div></div></div>
+    </div>
+    <p class="caption">6艇を艇番の順に1表で並べ、1着率に「全選手の同じコース平均との差」と進入数を添える。進入数が少ない艇は灰色にし、⚠を付けて差を出さない。</p>
+  </section>
+
+  <!-- 1b. データ出走表 -->
+  <section class="screen" id="s1b">
+    <h2>1'. データ出走表の「枠番」行をそろえる</h2>
+    <p class="where">基本情報タブのデータ出走表。艇番で数える「枠番」行を、上の表と同じ数え方の1着率に差し替える（BOA-302）。</p>
+    <div class="pair">
+      <div class="frame"><p class="frame-label">375px</p><div class="phone" data-tpl="t-datatable"></div></div>
+      <div class="frame desk-wrap"><p class="frame-label">1440px（縮小表示）</p><div class="desk-viewport"><div class="desk" data-tpl="t-datatable" data-desk></div></div></div>
+    </div>
+    <p class="caption">同じ問い（このコースで1着になるか）の数字を2か所で同じ値にする。2連率・3連率は枠別情報タブに任せ、出走表は1行のまま。</p>
+  </section>
+
+  <!-- 2. モーター -->
+  <section class="screen" id="s2">
+    <h2>2. モーターの素性</h2>
+    <p class="where">モータ情報タブ。6基の表の機番の横に今節の部品交換の回数を札で足し、行を押した後の使用履歴に節のグレードと優出・優勝の印を足す。</p>
+    <div class="pair">
+      <div class="frame"><p class="frame-label">375px</p><div class="phone" data-tpl="t-motor"></div></div>
+      <div class="frame desk-wrap"><p class="frame-label">1440px（縮小表示）</p><div class="desk-viewport"><div class="desk" data-tpl="t-motor" data-desk></div></div></div>
+    </div>
+    <p class="caption">6基の表で今節の部品交換の回数を見比べ、使用履歴で「どの格の節で誰が乗り、優勝戦に乗ったか」を1行で読む。</p>
+  </section>
+
+  <!-- 3. 今節ST -->
+  <section class="screen" id="s3">
+    <h2>3. 今節の平均ST・6艇の中の順位</h2>
+    <p class="where">今節タブ「6艇の今節の推移」の ST 表示の右端。今は前走の ST だけの欄に、今節の平均と6艇の中の順位を足す。</p>
+    <div class="pair">
+      <div class="frame"><p class="frame-label">375px</p><div class="phone" data-tpl="t-st"></div></div>
+      <div class="frame desk-wrap"><p class="frame-label">1440px（縮小表示）</p><div class="desk-viewport"><div class="desk" data-tpl="t-st" data-desk></div></div></div>
+    </div>
+    <p class="caption">新しい区画は作らず、前走の下に灰の小さな字で今節平均STと順位を1行足すだけ。効き目は未検証の参考の値と1行で断る。</p>
+  </section>
+
+  <!-- 4. 逃がし・被まくり -->
+  <section class="screen" id="s4">
+    <h2>4. 2号艇の逃がし率・1号艇の被まくられ率 <span class="pending-note">検証の後に確定</span></h2>
+    <p class="where">置き場所の案: 枠別情報タブの「1コースが逃げたとき」（会場の値）の直前に、このレースの1号艇・2号艇の選手の値を置く。</p>
+    <div class="pair">
+      <div class="frame"><p class="frame-label">375px</p><div class="phone" data-tpl="t-nige"></div></div>
+      <div class="frame desk-wrap"><p class="frame-label">1440px（縮小表示）</p><div class="desk-viewport"><div class="desk" data-tpl="t-nige" data-desk></div></div></div>
+    </div>
+    <p class="caption">出すか・何走から出すか・どの区切りで色を付けるかは BOA-1280 の答えで決める。動画の区切り（10・20・50%）は使わない。</p>
+  </section>
+</div>
+
+<!-- ===== テンプレート ===== -->
+<template id="t-course6">
+  <div class="tabs"><span>今節</span><span>直前情報</span><span class="on">枠別情報</span><span>モータ情報</span></div>
+  <div class="split">
+  <div class="card new main">
+    <p class="card-title">6艇の選手本人のコース別成績<span class="newtag">新</span></p>
+    <p class="card-sub">想定コース（※枠なり進入時）での各選手本人の成績。進入コースで数えています</p>
+    <div class="seg"><span class="on">直近3期</span><span>当地</span></div>
+    <table class="c6">
+      <thead><tr><th>艇・選手</th><th>1着率<span class="avg">全選手の同じコース平均との差</span></th><th>2連対</th><th>3連対</th><th>進入</th></tr></thead>
+      <tbody>
+        <tr><td class="who sel"><div class="who-in"><span class="bb bb1">1</span><div class="who-name">選手A太郎 <span class="grade">A1</span></div></div></td><td><span class="v">58.3</span><span class="dif">−2.9pt</span><span class="avg">平均61.2</span></td><td class="sub2">74.1</td><td class="sub2">82.4</td><td class="n">108<span class="chev">›</span></td></tr><tr><td class="who"><div class="who-in"><span class="bb bb2">2</span><div class="who-name">選手B次郎 <span class="grade">A2</span></div></div></td><td><span class="v">16.9</span><span class="dif">+3.3pt</span><span class="avg">平均13.6</span></td><td class="sub2">41.5</td><td class="sub2">60.0</td><td class="n">65<span class="chev">›</span></td></tr><tr><td class="who"><div class="who-in"><span class="bb bb3">3</span><div class="who-name">選手C三郎 <span class="grade">A1</span></div></div></td><td><span class="v">18.9</span><span class="dif">+5.8pt</span><span class="avg">平均13.1</span></td><td class="sub2">40.5</td><td class="sub2">58.1</td><td class="n">74<span class="chev">›</span></td></tr><tr class="small"><td class="who"><div class="who-in"><span class="bb bb4">4</span><div class="who-name">選手D四郎 <span class="grade">B1</span></div></div></td><td><span class="v">7.7</span><span class="dif">—</span><span class="avg">平均11.4</span></td><td class="sub2">23.1</td><td class="sub2">38.5</td><td class="n">26<span class=warn title=進入数が少ない>⚠</span><span class="chev">›</span></td></tr><tr><td class="who"><div class="who-in"><span class="bb bb5">5</span><div class="who-name">選手E五郎 <span class="grade">A2</span></div></div></td><td><span class="v">9.5</span><span class="dif">+3.2pt</span><span class="avg">平均6.3</span></td><td class="sub2">28.6</td><td class="sub2">47.6</td><td class="n">42<span class="chev">›</span></td></tr><tr class="small"><td class="who"><div class="who-in"><span class="bb bb6">6</span><div class="who-name">選手F六郎 <span class="grade">B1</span></div></div></td><td><span class="v">—</span><span class="dif">—</span><span class="avg">平均2.4</span></td><td class="sub2">—</td><td class="sub2">—</td><td class="n">8<span class=warn title=進入数が少ない>⚠</span><span class="chev">›</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="side">
+    <p class="note">差＝全選手の同じコースの1着率との差（色は付けません）。同じタブの ST 考察は「同じ級別の平均」と比べています。</p>
+    <p class="note">進入数が少ない艇（1コース10・2〜4コース30・5コース42・6コース67走未満）は、率が偶然でぶれやすいので灰色にして差を出しません。10走未満は率も出しません。</p>
+    <p class="note">直近3期＝公式の期（5〜10月・11〜4月）の直近3つ。画面では開始・終了の日付を出します。行を押すと、下の表がその選手に切り替わります。</p>
+  </div>
+  </div>
+  <div class="card ghost">
+    <p class="card-title">コース別成績（1艇ずつ・今の表）</p>
+    <p class="card-sub">このレースの想定コース：1コース ※枠なり進入時</p>
+    <p class="note">期間・条件ごとの行に「直近3期」を足し、上の表と同じ値を出す。</p>
+  </div>
+</template>
+
+<template id="t-datatable">
+  <div class="tabs"><span class="on">基本情報</span><span>龍神ソナー</span><span>AI予想</span><span>今節</span></div>
+  <div class="card">
+    <p class="card-title">データ出走表（抜粋）</p><p class="card-sub">想定コース1着率は直近3期・進入コースで数えています</p>
+    <table class="dt">
+      <thead><tr><th class="rowh"></th><th><span class="bb bb1">1</span></th><th><span class="bb bb2">2</span></th><th><span class="bb bb3">3</span></th><th><span class="bb bb4">4</span></th><th><span class="bb bb5">5</span></th><th><span class="bb bb6">6</span></th></tr></thead>
+      <tbody>
+        <tr><th class="rowh">勝率</th><td>A1<span class="sub">6.92</span></td><td>A2<span class="sub">5.88</span></td><td>A1<span class="sub">6.41</span></td><td>B1<span class="sub">4.95</span></td><td>A2<span class="sub">5.73</span></td><td>B1<span class="sub">4.60</span></td></tr>
+        <tr><th class="rowh">モーター2連率</th><td>42.0%</td><td>35.4%</td><td>46.0%</td><td>31.2%</td><td>40.0%</td><td>28.7%</td></tr>
+        <tr class="changed"><th class="rowh">想定コース1着率</th><td>58%<span class="sub">63/108</span></td><td>17%<span class="sub">11/65</span></td><td>19%<span class="sub">14/74</span></td><td style="color:#94a3b8">8%<span class="sub">2/26 ⚠</span></td><td>10%<span class="sub">4/42</span></td><td style="color:#94a3b8">—<span class="sub">8走</span></td></tr>
+        <tr><th class="rowh">決まり手</th><td>逃げ<span class="sub">40勝</span></td><td>差し<span class="sub">9勝</span></td><td>まくり<span class="sub">10勝</span></td><td>まくり<span class="sub">3勝</span></td><td>まくり差し<span class="sub">5勝</span></td><td>差し<span class="sub">2勝</span></td></tr>
+      </tbody>
+    </table>
+    <p class="note">「想定コース1着率」は進入コースで数え、枠別情報タブの6艇の表と同じ値です（今の「枠番」行＝艇番で数えた直近1年の値を置き換える）。</p>
+  </div>
+</template>
+
+<template id="t-motor">
+  <div class="tabs"><span>今節</span><span>直前情報</span><span>枠別情報</span><span class="on">モータ情報</span></div>
+  <div class="card strow-wrap">
+    <p class="card-title">6基のモーター</p>
+    <table class="mt">
+      <thead><tr><th>枠・選手</th><th>機番<span class="avg">今節の部品交換</span></th><th>公式2連率</th><th>優出数</th><th>優勝数</th></tr></thead>
+      <tbody><tr><td><span class="bb bb1">1</span> 選手A太郎</td><td>62<span class="motortag newhl">交換0</span></td><td>39.1%</td><td>2</td><td>0</td></tr><tr><td><span class="bb bb2">2</span> 選手B次郎</td><td>70<span class="motortag newhl">交換2</span></td><td>16.7%</td><td>0</td><td>0</td></tr><tr><td><span class="bb bb3">3</span> 選手C三郎</td><td>21<span class="motortag newhl">交換0</span></td><td>43.2%</td><td>3</td><td>1</td></tr><tr><td><span class="bb bb4">4</span> 選手D四郎</td><td>16<span class="motortag newhl">交換1</span></td><td>46.3%</td><td>4</td><td>2</td></tr><tr><td><span class="bb bb5">5</span> 選手E五郎</td><td>26<span class="motortag newhl">交換0</span></td><td>38.4%</td><td>1</td><td>0</td></tr><tr><td><span class="bb bb6">6</span> 選手F六郎</td><td>55<span class="motortag newhl">交換3</span></td><td>26.4%</td><td>0</td><td>0</td></tr></tbody>
+    </table>
+    <p class="note">交換N＝この節の初日からこのレースの展示までに記録された部品交換（プロペラを除く）の回数。押すと部品の名前が開きます。回数の多少の良し悪しは示しません（効き目は未検証）。</p>
+  </div>
+  <div class="card new strow-wrap">
+    <p class="card-title">使用履歴（21号機）</p>
+    <ul class="hist">
+      <li><span class="hdate">10/24〜10/29</span><span>選手G</span><span class="grade">A1</span><span class="sg">G1</span><span class="ranks">2連率 58.3%　1 3 2 1 4 1 2</span><span class="fin win">優勝</span></li>
+      <li><span class="hdate">10/15〜10/20</span><span>選手H</span><span class="grade">B1</span><span class="sg">一般</span><span class="ranks">2連率 40.0%　3 2 5 1 2 4</span><span class="fin">優出</span></li>
+      <li><span class="hdate">10/06〜10/11</span><span>選手I</span><span class="grade">A2</span><span class="sg">G3</span><span class="ranks">2連率 33.3%　4 2 3 6 1 5</span></li>
+      <li><span class="hdate">09/26〜10/01</span><span>選手J</span><span class="grade">B1</span><span class="sg">一般</span><span class="ranks">2連率 25.0%　5 3 4 2 6 3</span></li>
+    </ul>
+    <p class="note">節のグレード（レース見出しの格のバッジと同じ形）と、その節で優勝戦に乗った（優出）・勝った（優勝）印を足す。並びは新しい順のまま。</p>
+  </div>
+</template>
+
+<template id="t-st">
+  <div class="tabs"><span>AI予想</span><span class="on">今節</span><span>直前情報</span><span>枠別情報</span></div>
+  <div class="card strow-wrap">
+    <p class="card-title">6艇の今節の推移 <span class="seg" style="margin:0 0 0 8px;vertical-align:middle"><span class="on">ST</span><span>展示</span></span></p>
+    <div class="strow"><div><span class="bb bb1">1</span> 選手A太郎</div><svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none"><polyline fill="none" stroke="#f8fafc" stroke-width="1.5" points="0,18 20,8 40,6 60,7 80,6 100,12"/></svg><div class="stcol"><div class="prevmain">前走 0.19</div><div class="avgsub">平均0.15・3位（7走）</div></div></div>
+<div class="strow"><div><span class="bb bb2">2</span> 選手B次郎</div><svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none"><polyline fill="none" stroke="#94a3b8" stroke-dasharray="3 2" stroke-width="1.5" points="0,10 20,10 40,9 60,6 80,5 100,4"/></svg><div class="stcol"><div class="prevmain">前走 0.02</div><div class="avgsub">平均0.12・1位（7走）</div></div></div>
+<div class="strow"><div><span class="bb bb3">3</span> 選手C三郎</div><svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none"><polyline fill="none" stroke="#e53935" stroke-width="1.5" points="0,12 20,10 40,10 60,9 80,9 100,9"/></svg><div class="stcol"><div class="prevmain">前走 0.10</div><div class="avgsub">平均0.14・2位（6走）</div></div></div>
+<div class="strow"><div><span class="bb bb4">4</span> 選手D四郎</div><svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none"><polyline fill="none" stroke="#1e88e5" stroke-width="1.5" points="0,10 20,9 40,7 60,8 80,8 100,8"/></svg><div class="stcol"><div class="prevmain">前走 0.13</div><div class="avgsub">平均0.16・4位（7走）</div></div></div>
+<div class="strow"><div><span class="bb bb5">5</span> 選手E五郎</div><svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none"><polyline fill="none" stroke="#fdd835" stroke-width="1.5" points="0,6 20,16 40,10 60,9 80,10 100,14"/></svg><div class="stcol"><div class="prevmain">前走 0.24</div><div class="avgsub">2走のため出さない</div></div></div>
+<div class="strow"><div><span class="bb bb6">6</span> 選手F六郎</div><svg class="spark" viewBox="0 0 100 22" preserveAspectRatio="none"><polyline fill="none" stroke="#43a047" stroke-width="1.5" points="0,12 20,11 40,11 60,10 80,10 100,11"/></svg><div class="stcol"><div class="prevmain">前走 0.15</div><div class="avgsub">平均0.17・5位（6走）</div></div></div>
+
+    <p class="note">今節平均ST（フライングの走は除く）と6艇の中の速い順。3走未満は出しません。今節の平均STの効き目は未検証の参考の値です。</p>
+  </div>
+</template>
+
+<template id="t-nige">
+  <div class="tabs"><span>今節</span><span>直前情報</span><span class="on">枠別情報</span><span>モータ情報</span></div>
+  <div class="split2"><div><div class="card pending">
+    <p class="card-title">1号艇・2号艇の選手の過去 <span class="pending-note">検証の後に確定</span></p>
+    <p class="card-sub">このレースの1号艇・2号艇に入る選手が、同じコースに入ったときの過去</p>
+    <div class="ph-row"><span><span class="bb bb1">1</span> 選手A：1コースで、まくられて1着を逃した割合</span><span class="ph-val">—（検証中）</span></div>
+    <div class="ph-row"><span><span class="bb bb2">2</span> 選手B：2コースのとき、1コースの艇が逃げた割合</span><span class="ph-val">—（検証中）</span></div>
+    <p class="note">件数・期間・色の付け方は統計の検証（BOA-1280）の後に決めます。</p>
+  </div>
+  <div class="card ghost">
+    <p class="card-title">1コースが逃げたとき（会場の値・今の表示）</p>
+    <p class="card-sub">この会場の1コース逃げ 875レース／2着に来たコース</p>
+  </div></div><div class="card ghost desk-only"><p class="card-title">決まり手傾向（今の表示）</p></div></div>
+</template>
+
+<script>
+document.querySelectorAll('[data-tpl]').forEach(function(el){
+  var tpl=document.getElementById(el.getAttribute('data-tpl'));
+  el.appendChild(tpl.content.cloneNode(true));
+});
+function fit(){
+  document.querySelectorAll('.desk-viewport').forEach(function(vp){
+    var d=vp.querySelector('.desk'); var s=vp.clientWidth/1440;
+    d.style.transform='scale('+s+')'; vp.style.height=(d.scrollHeight*s)+'px';
+  });
+}
+window.addEventListener('resize',fit); window.addEventListener('load',fit); fit();
+</script>
