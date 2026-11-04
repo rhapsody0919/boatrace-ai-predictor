@@ -11,6 +11,7 @@ import Footer from "../components/Footer";
 import Breadcrumb from "../components/Breadcrumb";
 import UpdateStatus from "../components/UpdateStatus";
 import IntroBanner from "../components/IntroBanner";
+import FavoriteRunsSection from "../components/favorites/FavoriteRunsSection";
 import HomeAiIntro from "../components/HomeAiIntro";
 import FirstVisitGuideCard from "../components/FirstVisitGuideCard";
 import { useFirstVisit } from "../hooks/useFirstVisit";
@@ -214,6 +215,9 @@ function TodayVenueGridPage() {
                   />
                 ) : (
                   <>
+                    {/* ☆の選手の今日の出走（GS04-6）。予測の応答を自分で読む（venuesData は
+                        racerId を持たない）。☆0人・読み込み中・失敗のときは何も出さない */}
+                    <FavoriteRunsSection nowHHMM={nowHHMM} />
                     {/* SG開催中の会場への導線（集客レーン。SG の日だけ出る） */}
                     <SgNowBanner venuesData={venuesData} />
                     <TodaysVolatilityHighlights

@@ -1,7 +1,25 @@
 /** お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 */
 const compareRaces = (a, b) =>
   (a.startTime < b.startTime ? -1 : a.startTime > b.startTime ? 1 : 0) ||
-  a.venueCode - b.venueCode || a.raceNumber - b.raceNumber;
+  a.venueCode - b.venueCode ||
+  a.raceNumber - b.raceNumber;
+
+/**
+ * getPredictions の races（平らな配列、選手は players）を buildFavoriteRuns の入力
+ * （会場別・選手は entries）にまとめる。トップの venuesData（get_today_races の形）は
+ * racerId・raceId を持たないので使えない（BOA-1272、#2225 でトップが落ちた原因）。
+ */
+export function venuesFromPredictions(races) {
+  const venues = new Map();
+  for (const race of races ?? []) {
+    if (!venues.has(race.venueCode))
+      venues.set(race.venueCode, { placeCd: race.venueCode, races: [] });
+    venues
+      .get(race.venueCode)
+      .races.push({ ...race, entries: race.players ?? [] });
+  }
+  return [...venues.values()];
+}
 
 /** ☆の選手1人×1レースの行を、締切順に分ける。入力は今日の出走表。 */
 export function buildFavoriteRuns(venuesData, racerIds, nowHHMM) {
@@ -57,8 +75,13 @@ export function buildFavoritesFallback(venuesData, venueCodes, nowHHMM) {
   const favVenues = venueCodes.map((venueCode) => {
     const races = venues.get(venueCode)?.races ?? [];
     // null は時刻で分けない（useNowHHMM が無効のときと同じ）。
-    const next = races.filter((race) => !race.cancellationStatus &&
-      (nowHHMM === null || race.startTime > nowHHMM)).sort(compareRaces)[0];
+    const next = races
+      .filter(
+        (race) =>
+          !race.cancellationStatus &&
+          (nowHHMM === null || race.startTime > nowHHMM),
+      )
+      .sort(compareRaces)[0];
     return {
       venueCode,
       state: next ? "open" : races.length ? "finished" : "closed",
@@ -72,11 +95,16 @@ export function buildFavoritesFallback(venuesData, venueCodes, nowHHMM) {
       venueCode: venue.placeCd,
       grade: venue.races[0].raceGrade,
       seriesDay: venue.races[0].seriesDay,
-      finalStartTime: (venue.races.find((race) => race.raceNumber === 12) ??
-        venue.races[venue.races.length - 1]).startTime,
+      finalStartTime: (
+        venue.races.find((race) => race.raceNumber === 12) ??
+        venue.races[venue.races.length - 1]
+      ).startTime,
     }))
-    .sort((a, b) => (a.grade === "SG" ? 0 : 1) - (b.grade === "SG" ? 0 : 1) ||
-      a.venueCode - b.venueCode);
+    .sort(
+      (a, b) =>
+        (a.grade === "SG" ? 0 : 1) - (b.grade === "SG" ? 0 : 1) ||
+        a.venueCode - b.venueCode,
+    );
   return {
     favVenues,
     gradeVenues,
