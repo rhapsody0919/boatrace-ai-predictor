@@ -1,0 +1,144 @@
+{
+ "ticket": "BOA-1280",
+ "question": "/today の nigashi（2号艇）に当たったレースの1号艇の1着・2連対",
+ "generated_at": "2026-11-04T09:47:21.300068+00:00",
+ "rule": {
+  "min_runs": 10,
+  "delta_pt": 22,
+  "source": "src/utils/digestMetrics.js・scripts/daily/generate-morning-digest.js・docs/db-migration/098"
+ },
+ "M": {
+  "label": "本番の再現（2025-12-02 からの累積、会場×グレード×コースの期待値）",
+  "period": "2025-12-03..2026-11-03",
+  "races_boat2_with_runs_ge10": 34259,
+  "hits": 966,
+  "hit_share": 0.0282,
+  "hits_per_day": 3.11,
+  "y_win": {
+   "hit": 0.56,
+   "miss": 0.5603,
+   "raw_diff": -0.0003,
+   "adj_b1_cls_wr": {
+    "diff": 0.0061,
+    "ci95": [
+     -0.0246,
+     0.0368
+    ],
+    "z": 0.39,
+    "hits_in_used_strata": 944
+   },
+   "adj_b1_cls_wr_and_b2_wr": {
+    "diff": -0.0065,
+    "ci95": [
+     -0.0389,
+     0.0259
+    ],
+    "z": -0.39,
+    "hits_in_used_strata": 792
+   }
+  },
+  "y_top2": {
+   "hit": 0.7112,
+   "miss": 0.7344,
+   "raw_diff": -0.0232,
+   "adj_b1_cls_wr": {
+    "diff": -0.0185,
+    "ci95": [
+     -0.0467,
+     0.0097
+    ],
+    "z": -1.28,
+    "hits_in_used_strata": 944
+   },
+   "adj_b1_cls_wr_and_b2_wr": {
+    "diff": -0.0328,
+    "ci95": [
+     -0.0629,
+     -0.0027
+    ],
+    "z": -2.13,
+    "hits_in_used_strata": 792
+   }
+  },
+  "mean_b1_wr": {
+   "hit": 5.583,
+   "miss": 5.617
+  },
+  "mean_b2_wr": {
+   "hit": 5.187,
+   "miss": 5.426
+  },
+  "mean_nigashi_hit": {
+   "rate": 0.8026,
+   "expected": 0.5261,
+   "runs": 15.0
+  }
+ },
+ "L": {
+  "label": "長期（直近365日、会場×コースの期待値で代用）",
+  "period": "2024-01-01..2026-11-03",
+  "races_boat2_with_runs_ge10": 146489,
+  "hits": 983,
+  "hit_share": 0.0067,
+  "hits_per_day": 0.95,
+  "y_win": {
+   "hit": 0.587,
+   "miss": 0.5583,
+   "raw_diff": 0.0287,
+   "adj_b1_cls_wr": {
+    "diff": 0.0335,
+    "ci95": [
+     0.0032,
+     0.0638
+    ],
+    "z": 2.17,
+    "hits_in_used_strata": 950
+   },
+   "adj_b1_cls_wr_and_b2_wr": {
+    "diff": 0.0209,
+    "ci95": [
+     -0.0114,
+     0.0532
+    ],
+    "z": 1.27,
+    "hits_in_used_strata": 766
+   }
+  },
+  "y_top2": {
+   "hit": 0.7365,
+   "miss": 0.7331,
+   "raw_diff": 0.0034,
+   "adj_b1_cls_wr": {
+    "diff": 0.0118,
+    "ci95": [
+     -0.0149,
+     0.0386
+    ],
+    "z": 0.87,
+    "hits_in_used_strata": 950
+   },
+   "adj_b1_cls_wr_and_b2_wr": {
+    "diff": -0.0005,
+    "ci95": [
+     -0.0289,
+     0.028
+    ],
+    "z": -0.03,
+    "hits_in_used_strata": 766
+   }
+  },
+  "mean_b1_wr": {
+   "hit": 5.559,
+   "miss": 5.602
+  },
+  "mean_b2_wr": {
+   "hit": 4.937,
+   "miss": 5.372
+  },
+  "mean_nigashi_hit": {
+   "rate": 0.774,
+   "expected": 0.5217,
+   "runs": 30.0
+  }
+ }
+}
