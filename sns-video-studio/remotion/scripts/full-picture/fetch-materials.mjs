@@ -29,16 +29,47 @@ import { computeAccidentStats, currentPeriodRange } from "../../../../src/utils/
 import { groupLosingTechniqueRows } from "../../../../src/utils/losingTechnique.js";
 import { shapeOriginalExhibition, ORIGINAL_EXHIBITION_KINDS } from "../../../../src/utils/originalExhibition.js";
 import { internalApiHeaders } from "../../../../api/_lib/internalApiHeaders.js";
+import { fetchRaceLabels } from "../../../../scripts/lib/raceSeriesLabels.js";
 import { computeStConsideration } from "../../../../src/utils/stConsideration.js";
 import { indexBaseline, getBaselineCell, expectedBreakoutCount } from "../../../../src/utils/courseBaseline.js";
 import { toWakuRacerStats } from "../../../../src/utils/racerStats.js";
 import { attackDefenseColumn, isDefaultAttackDistribution } from "../../../../src/utils/attackDefenseCells.js";
 import { placeRatesByBoat, techniqueBreakdown, nationalWinRateByBoat, groupWinningTechniqueRows, poolTechniqueCounts } from "../../../../src/utils/venuePlaceRates.js";
 
-export const MATERIALS_VERSION = "full-picture-materials/1";
+export const MATERIALS_VERSION = "full-picture-materials/2";
 // 末尾の "/" は落とす（"https://x/" + "/api/…" は "//api/…" になり、関門（BOA-1110 段階3）が禁じた形の "//" に当たる）
 const BASE = (process.env.FULL_PICTURE_API_BASE || "https://www.boat-ai.jp").replace(/\/+$/, "");
 const VENUES = Array.from({ length: 24 }, (_, i) => i + 1);
+/**
+ * 材料の race（BOA-989・BOA-1310）: 締切（races.start_time、出走表の締切予定時刻 JST）・グレード（races.race_grade）と、
+ * 何日目の文 seriesDayText・大会名 raceTitle（SG・G1 だけ）。後の2つは共通の部品 fetchRaceLabels（画面と同じ規則）。
+ * 読めない・欠けたものは null にして missing に理由を残す（全体は止めない。使う側が欠けたら作らない）
+ * @param {string} raceId @param {(table: string, query: string) => Promise<object[]>} get @param {{source: string, reason: string}[]} missing
+ * @returns {Promise<{startTime: string|null, grade: string|null, seriesDayText: string|null, raceTitle: string|null}|null>}
+ */
+export async function raceRowOf(raceId, get, missing) {
+  let raceRow = null;
+  try {
+    const [r] = await get("races", `select=start_time,race_grade&race_id=eq.${raceId}`);
+    raceRow = { startTime: r?.start_time ?? null, grade: r?.race_grade ?? null };
+    if (!r?.start_time) missing.push({ source: "race.startTime", reason: "races に締切の時刻が無い" });
+  } catch (e) {
+    missing.push({ source: "race", reason: e instanceof Error ? e.message : String(e) });
+    return null;
+  }
+  try {
+    const l = await fetchRaceLabels(get, raceId);
+    raceRow.seriesDayText = l.seriesDayText;
+    raceRow.raceTitle = l.seriesTitle;
+    if (!l.seriesDayText) missing.push({ source: "race.seriesDayText", reason: "何日目が無い（series_day・is_final_day が会場のどのレースにも無いか、丸一日中止）" });
+  } catch (e) {
+    raceRow.seriesDayText = null;
+    raceRow.raceTitle = null;
+    missing.push({ source: "race.labels", reason: e instanceof Error ? e.message : String(e) });
+  }
+  return raceRow;
+}
+
 /** 材料の無い応答の status（api/_lib/analogyV16.js の resolveStatus・similar の empty_layer） */
 export const NO_DATA = ["not_saved", "absent", "empty_layer"];
 
@@ -1156,15 +1187,7 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
     db.motor = null;
     missing.push({ source: "db.motor", reason: e instanceof Error ? e.message : String(e) });
   }
-  // レースの締切（races.start_time、出走表の締切予定時刻 JST）とグレード。冒頭の場面・題名・本文の見出しに使う（BOA-989）
-  let raceRow = null;
-  try {
-    const [r] = await sbGet("races", `select=start_time,race_grade&race_id=eq.${raceId}`);
-    raceRow = { startTime: r?.start_time ?? null, grade: r?.race_grade ?? null };
-    if (!r?.start_time) missing.push({ source: "race.startTime", reason: "races に締切の時刻が無い" });
-  } catch (e) {
-    missing.push({ source: "race", reason: e instanceof Error ? e.message : String(e) });
-  }
+  const raceRow = await raceRowOf(raceId, sbGet, missing);
   // 展示の後の材料（進入・展示 ST・チルト・部品交換・展示タイム・風と波・決まり手の過去の分布）。展示の前の出力は変えない
   if (stage === "exhibition") db.exhibition = await fetchExhibitionMaterials(raceId, date, Number(venue), raceRow?.startTime ?? null, missing, api.facts?.racers ?? null, raceRow?.grade ?? null, api.outcome ?? null);
   return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, race: raceRow, api, db, missing };
