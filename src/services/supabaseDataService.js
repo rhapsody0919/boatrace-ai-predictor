@@ -4232,15 +4232,21 @@ export const supabaseDataService = {
       .join(", ");
     return withCache(`racer-period-stats-v1-${racerId}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
-      const { data } = await supabase
-        .from("racer_period_stats")
-        .select(
-          `period_year, period_no, calc_from, calc_to, grade, win_rate, top2_rate, starts, first_count, second_count, finals, wins, avg_st, ${courseCols}`,
-        )
-        .eq("racer_id", racerId)
-        .order("period_year", { ascending: false })
-        .order("period_no", { ascending: false });
-      return data ?? [];
+      try {
+        const { data } = await supabase
+          .from("racer_period_stats")
+          .select(
+            `period_year, period_no, calc_from, calc_to, grade, win_rate, top2_rate, starts, first_count, second_count, finals, wins, avg_st, ${courseCols}`,
+          )
+          .eq("racer_id", racerId)
+          .order("period_year", { ascending: false })
+          .order("period_no", { ascending: false });
+        return data ?? [];
+      } catch (error) {
+        throw new Error("racer_period_stats の読み込みに失敗: " + error.message, {
+          cause: error,
+        });
+      }
     });
   },
 
