@@ -1595,6 +1595,64 @@ const venueZ1 = (f) => {
     };
     return buildBundle({ raceId: m.raceId, venue: VENUE[vc], raceNo: Number(rn), month: Number(mo), day: Number(da), round: m.api.facts.today.round, grade: race?.grade ?? null, deadline: race?.startTime ?? null, facts, chapters: CH, fullSeconds: 211, qa });
   };
+  // BOA-1313: 追加語の優先順と、追加前から超過する本文の互換性。
+  {
+    const { default: twitterText } = await import("twitter-text");
+    const weighted = (s) => twitterText.parseTweet(s).weightedLength;
+    const input = { raceId: "202611040212", venue: "福岡", raceNo: 12, month: 11, day: 4, round: "yusho", grade: "G1", deadline: "16:44:00", facts: {}, chapters: CH, fullSeconds: 211, qa: qaAll };
+    const extra = { seriesDayText: "最終日", raceTitle: "第68回 ボートレースダービー" };
+    const old = buildBundle(input);
+    const b = buildBundle({ ...input, ...extra });
+    assert.equal(b.youtube_shorts.title, "G1 福岡12R 優勝戦 11/4（水）締切16:44 1号艇は堅い？ 同じ並びの過去の着順");
+    assert.equal(b.x_text.split("\n")[1], "11/4（水）最終日 締切16:44");
+    assert.equal(b.x_text.split("\n")[2], extra.raceTitle);
+    assert.ok(weighted(b.x_text) <= 280);
+    for (const k of ["youtube_full", "youtube_shorts"]) {
+      assert.ok(b[k].description.includes("ボートレース 11/4（水）最終日 福岡12R 優勝戦 締切16:44"));
+      const rows = b[k].description.split("\n");
+      assert.equal(rows[rows.findIndex((r) => r.startsWith("ボートレース 11/4")) + 1], extra.raceTitle);
+    }
+    assert.equal(b.youtube_full.title, old.youtube_full.title, "完全版の題は変えない");
+    assert.equal(old.youtube_shorts.title, "福岡12R 優勝戦（11/4）1号艇は堅い？ 同じ並びの過去の着順", "省略した呼び出しは旧題");
+    assert.equal(raceHeader({ year: 2026, month: 11, day: 4, venue: "福岡", raceNo: 12, round: "yusho", deadline: "16:44:00" }), "11/4（水）福岡12R 優勝戦 締切16:44", "f01 の見出しは従来どおり");
+    for (const grade of ["SG", "G1", "G2", "G3", "ippan"]) {
+      const v = buildBundle({ ...input, ...extra, grade });
+      assert.equal(v.youtube_shorts.title.startsWith(`${grade} `), grade !== "ippan");
+      assert.equal(v.x_text.includes(extra.raceTitle), ["SG", "G1"].includes(grade));
+      for (const k of ["youtube_full", "youtube_shorts"]) assert.equal(v[k].description.includes(extra.raceTitle), ["SG", "G1"].includes(grade));
+    }
+    const none = buildBundle({ ...input, seriesDayText: null, raceTitle: null });
+    assert.equal(none.x_text, old.x_text, "日目・大会名が null なら X は旧本文");
+    const longName = buildBundle({ ...input, ...extra, raceTitle: "あ".repeat(80) });
+    assert.ok(!longName.x_text.includes("あ".repeat(80)), "大会名を先に落とす");
+    assert.ok(longName.x_text.includes("最終日"), "大会名を落としても日目は残す");
+    assert.ok(weighted(longName.x_text) <= 280);
+    // 日目だけで超過する境界を作る（既存の本文は上限以内）。
+    let near = null;
+    for (let n = 1; n < 100; n++) {
+      const v = { ...input, facts: { conclusion: { form: "あ".repeat(n), n: 1000, boat: 1, count: 700, pct: 70 } } };
+      const w = weighted(buildBundle(v).x_text);
+      if (w <= 280 && w + 7 > 280) { near = v; break; }
+    }
+    assert.ok(near, "日目の有無で上限をまたぐ仮入力");
+    assert.equal(buildBundle({ ...near, ...extra }).x_text, buildBundle(near).x_text, "大会名の次に日目を落とす");
+    const over = { ...input, facts: { venue90: { venue: "福岡", races: 600, rate: 60, national: 54, diffPt: 6, direction: "高い" }, conclusion: { form: "123456", n: 1000, boat: 1, count: 700, pct: 70 } } };
+    assert.ok(weighted(buildBundle(over).x_text) > 280);
+    assert.equal(buildBundle({ ...over, ...extra }).x_text, buildBundle(over).x_text, "元から超過する本文は一字一句同じ（新しい停止を足さない）");
+    // 100字の直前・直後: グレード→レース名→後半の順。
+    const titleOf = (n) => buildBundle({ ...input, ...extra, facts: { hero: { title: "あ".repeat(n) } } }).youtube_shorts.title;
+    const prefix = "G1 福岡12R 優勝戦 11/4（水）締切16:44 1号艇は堅い？ ";
+    const n = 100 - prefix.length;
+    assert.equal(titleOf(n).length, 100);
+    assert.equal(titleOf(n + 1), prefix.replace("G1 ", "") + "あ".repeat(n + 1), "グレードを先に落とす");
+    assert.equal(titleOf(n + 4), prefix.replace("G1 ", "").replace(" 優勝戦", "") + "あ".repeat(n + 4), "次にレース名を落とす");
+    assert.ok(titleOf(200).length <= 100);
+    assert.match(titleOf(200), /11\/4（水）締切16:44 1号艇は堅い？ /);
+    assert.ok(titleOf(200).endsWith("…"));
+    const runner = readFileSync(new URL(`${R}/scripts/full-picture/run-full.mjs`, import.meta.url), "utf8");
+    assert.match(runner, /seriesDayText: m\.race\?\.seriesDayText/);
+    assert.match(runner, /raceTitle: m\.race\?\.raceTitle/);
+  }
   for (const f of fixtures) {
     const b = bundleOf(f);
     assert.deepEqual(checkBundle(b), [], `${f}: bundle の形`);

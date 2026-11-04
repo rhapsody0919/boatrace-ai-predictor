@@ -10,6 +10,7 @@
  * 題名・説明文は wording-editor・youtube-channel（2026-10-20）を通した。Shorts の題名の「同じ並び」は、入口版の結論の問い
  * 「同じ並びの過去は、どう決まった？」（2026-10-20 オーナー決定）にそろえている。
  */
+import twitterText from "twitter-text";
 import { diffWords } from "./scenes/diff.mjs";
 export const BUNDLE_VERSION = 2;
 export const SITE = "https://www.boat-ai.jp";
@@ -65,14 +66,14 @@ export const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
  * レースの見出し「10/22（木）児島12R 準優勝戦 締切16:44」。冒頭の場面・説明文・X の本文に同じ文を出す。
  * レース名・締切が無いときはその部分を書かない
  * short: 会場・R・レース名を省く（X の2行目。1行目の頭と重ねない、hq 2026-10-23）
- * @param {{year: number, month: number, day: number, venue: string, raceNo: number, round?: string|null, deadline?: string|null, short?: boolean}} p deadline は "HH:MM[:SS]"
+ * @param {{year: number, month: number, day: number, venue: string, raceNo: number, round?: string|null, deadline?: string|null, short?: boolean, seriesDayText?: string|null}} p deadline は "HH:MM[:SS]"
  */
-export function raceHeader({ year, month, day, venue, raceNo, round = null, deadline = null, short = false }) {
+export function raceHeader({ year, month, day, venue, raceNo, round = null, deadline = null, short = false, seriesDayText = null }) {
   const wd = WEEKDAY[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
   const name = ROUND_NAME[round] ?? null;
   const hm = /^\d{1,2}:\d{2}/.exec(deadline ?? "")?.[0] ?? null;
   const race = short ? "" : `${venue}${raceNo}R${name ? ` ${name}` : ""}`;
-  return `${month}/${day}（${wd}）${race}${hm ? `${race ? " " : ""}締切${hm}` : ""}`;
+  return `${month}/${day}（${wd}）${seriesDayText ? `${seriesDayText} ` : ""}${race}${hm ? `${race ? " " : ""}締切${hm}` : ""}`;
 }
 const join = (lines) => lines.filter((l) => l !== null && l !== undefined).join("\n");
 const d1 = (v) => Number(v).toFixed(1);
@@ -135,12 +136,12 @@ function lines({ venue90, overview, conclusion }) {
 
 /**
  * @param {{raceId: string, venue: string, raceNo: number, month: number, day: number,
- *   round?: string|null, grade?: string|null, deadline?: string|null,
+ *   round?: string|null, grade?: string|null, deadline?: string|null, seriesDayText?: string|null, raceTitle?: string|null,
  *   facts: {venue90?: object|null, overview?: object|null, conclusion?: object|null},
  *   chapters: string, fullSeconds: number, qa: Record<string, boolean>,
  *   contentType?: string|null, answer?: object|null}} p  contentType は投稿の型の id（type-spec.mjs、hq PD02）。answer は冒頭の答え（v2r1、answer.mjs）
  */
-export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa, contentType = null, answer = null }) {
+export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, seriesDayText, raceTitle, facts, chapters, fullSeconds, qa, contentType = null, answer = null }) {
   // 冒頭の答え（v2r1）の一文。件数・範囲・免責を同じ文に（wording-editor 2026-10-25 P1）。会場の過去90日の行の代わり（動画に出ない数字を本文に載せない）
   // 答えの1文と、条件・件数・注記の行に分ける（3行目が約100字で読みにくかった。x-channel 2026-10-25 P2、オーナー可）
   const answerLine = answer
@@ -150,14 +151,18 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
   const label = `${venue}${raceNo}R${name ? ` ${name}` : ""}`;
   const date = `${month}/${day}`;
   const headerArgs = { year: Number(raceId.slice(0, 4)), month, day, venue, raceNo, round, deadline };
-  const header = raceHeader(headerArgs);
+  const header = raceHeader({ ...headerArgs, seriesDayText });
+  const tournament = ["SG", "G1"].includes(grade) ? raceTitle ?? null : null;
+  // 追加情報を渡さない旧呼び出し（固定材料など）の題は維持する。
+  const enriched = seriesDayText !== undefined || raceTitle !== undefined;
   // 完全版の題名と X の1行目の頭（hq 2026-10-21、BOA-989）。SG・G1・G2・G3 は頭にグレード
   const head = `【${GRADE_HEAD.includes(grade) ? `${grade} ` : ""}${label}｜${date}】`;
   const L = lines(facts ?? {});
   const order = chapterNames(chapters);
-  const x_text = join([
+  const xText = (dayText, tournamentName) => join([
     `${head}1号艇は堅い？`,
-    raceHeader({ ...headerArgs, short: true }),
+    raceHeader({ ...headerArgs, short: true, seriesDayText: dayText }),
+    tournamentName,
     answerLine ?? L.venue,
     // 冒頭の答え（v2r1）は形を問わない割合で、入口版の結論も同じ母数にそろえた。形の行は出さない（オーナー 10/25 (a)）
     answerLine ? null : L.conclusion,
@@ -165,6 +170,23 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
     "結果を保証するものではありません。",
     HASHTAG,
   ]);
+  // 既存本文は削らない。追加語を大会名→日目の順で落とし、元からの超過は送る口に任せる。
+  let x_text = xText(seriesDayText, tournament);
+  if (twitterText.parseTweet(x_text).weightedLength > 280) x_text = xText(seriesDayText, null);
+  if (twitterText.parseTweet(x_text).weightedLength > 280) x_text = xText(null, null);
+  const heroTitle = facts?.hero?.title ?? "同じ並びの過去の着順";
+  const shortsTitle = (withGrade, withRound, hero = heroTitle) =>
+    `${withGrade && GRADE_HEAD.includes(grade) ? `${grade} ` : ""}${venue}${raceNo}R${withRound && name ? ` ${name}` : ""} ${raceHeader({ ...headerArgs, short: true })} 1号艇は堅い？ ${hero}`;
+  let shortTitle = `${label}（${date}）1号艇は堅い？ ${heroTitle}`;
+  if (enriched) {
+    shortTitle = shortsTitle(true, true);
+    if (shortTitle.length > LIMITS.title) shortTitle = shortsTitle(false, true);
+    if (shortTitle.length > LIMITS.title) shortTitle = shortsTitle(false, false);
+    if (shortTitle.length > LIMITS.title) {
+      const room = LIMITS.title - shortsTitle(false, false, "").length - 1;
+      shortTitle = shortsTitle(false, false, `${heroTitle.slice(0, room)}…`);
+    }
+  }
   const youtube_full = {
     // レース名・日付を頭に、問いとその日の向き（youtube-channel P2-1）。Shorts の題名とは別の文
     title: `${head}1号艇は堅い？ ${L.venueHead ?? "6艇の比較と展開の傾向"}`,
@@ -176,6 +198,7 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
       `${FEATURES.sonar.line}: ${featureUrl(raceId, "sonar")}`,
       `${FEATURES.assist.line}: ${featureUrl(raceId, "assist")}`,
       `ボートレース ${header}`,
+      tournament,
       "",
       L.venue,
       L.overview,
@@ -194,9 +217,10 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
   };
   const youtube_shorts = {
     // レース名＋問い＋その日の数字（冒頭の数字と同じ値。hq 契約 10/24 v2。「〜で読み解く展開」型はやめる）
-    title: `${label}（${date}）1号艇は堅い？ ${facts?.hero?.title ?? "同じ並びの過去の着順"}`,
+    title: shortTitle,
     description: join([
       `ボートレース ${header} 1号艇は堅い？`,
+      tournament,
       answerLine ?? L.venue,
       answerLine ? null : L.conclusion,
       "",
