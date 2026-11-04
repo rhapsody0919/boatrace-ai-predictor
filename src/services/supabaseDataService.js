@@ -3004,6 +3004,9 @@ export const supabaseDataService = {
    * 期間は過去90日を現行モーターの世代（使用開始日以降）で切り詰める（BOA-329。
    * 入れ替え前の同じ番号の別モーターに乗った選手を出さない）。使用開始日が
    * 不明な会場は空
+   * includeTarget: true（BOA-1297）は beforeRaceId のレース自身の出走も含める。
+   * 未確定のレースなら結果が無く、その走は rank: null で入る（n には数えない）。
+   * 初日の初走でも今節の firstDate が取れるようにするための口
    */
   getMotorUsageHistory(
     venueCode,
