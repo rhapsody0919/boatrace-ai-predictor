@@ -139,7 +139,7 @@ const build = (lang, overrides = {}) => {
 const bundled = await bundle({
   stdin: {
     contents: fs.readFileSync(path.join(ROOT, "src/hooks/useAiCopyText.js"), "utf8") +
-      "\nexport { buildRows, buildOriginalExhibitionRows };",
+      '\nexport { buildRows, buildOriginalExhibitionRows }; export { buildBasicIndicatorRows, buildIndicatorRows } from "../components/race/raceIndicators";',
     resolveDir: path.join(ROOT, "src/hooks"),
     loader: "js",
   },
@@ -171,7 +171,7 @@ const bundled = await bundle({
       b.onLoad({ filter: /.*/, namespace: "copy-text" }, () => ({
         contents: "export const aiCopyPageUrl = () => {}; export const buildAiCopyText = ({ rows }) => rows;",
       }));
-      b.onResolve({ filter: /(?:useRaceAnalysisData|useRaceEntryFlyingRows|useCurrentMeetFlyingBoats|supabaseDataService)$/ },
+      b.onResolve({ filter: /(?:useRaceAnalysisData|useRaceEntryFlyingRows|useCurrentMeetFlyingBoats|useSixBoatCourseStats|supabaseDataService)$/ },
         (args) => ({ path: args.path, namespace: "offline" }));
       b.onLoad({ filter: /.*/, namespace: "offline" }, (args) => ({
         contents: args.path === "translation"
@@ -180,6 +180,8 @@ const bundled = await bundle({
             ? 'export const useRaceAnalysisData = () => ({ loading: false });'
             : args.path.endsWith("useRaceEntryFlyingRows")
               ? 'export const useRaceEntryFlyingRows = () => new Map();'
+              : args.path.endsWith("useSixBoatCourseStats")
+                ? 'export const useSixBoatCourseStats = () => ({ status: "ready", rows: [] });'
               : args.path.endsWith("useCurrentMeetFlyingBoats")
                 ? 'export const useCurrentMeetFlyingBoats = () => new Set();'
                 : 'export const supabaseDataService = { getRaceOriginalExhibition: () => { throw new Error("DB access forbidden"); } };',
@@ -191,7 +193,7 @@ const bundledModule = { exports: {} };
 new Function("require", "module", "exports", bundled.outputFiles[0].text)(
   createRequire(import.meta.url), bundledModule, bundledModule.exports,
 );
-const { buildRows, buildOriginalExhibitionRows, useAiCopyText } = bundledModule.exports;
+const { buildRows, buildOriginalExhibitionRows, useAiCopyText, buildBasicIndicatorRows, buildIndicatorRows } = bundledModule.exports;
 
 const failures = [];
 const check = (name, ok, detail = "") => {
@@ -397,6 +399,42 @@ for (const lang of LANGS) {
       bad.length === 0,
       bad.join(" / "),
     );
+  }
+}
+
+// BOA-1296: 実際のコピー行は共有フックの直近3期の値を使う。
+for (const lang of LANGS) {
+  const t = makeT(loadLocale(lang));
+  const courseRows = [
+    { boat: 1, winRate: 63 / 102 * 100, wins: 63, entries: 102, reliability: "ok" },
+    { boat: 2, winRate: 80, wins: 12, entries: 15, reliability: "warn" },
+    { boat: 3, winRate: null, wins: 3, entries: 3, reliability: "none" },
+  ];
+  const candidates = [...courseRows,
+    { boat: 4, winRate: 20, wins: 18, entries: 90, reliability: "ok" }];
+  const args = { t, players, analysis: {}, courseRows: candidates };
+  const basic = buildBasicIndicatorRows(args).find((r) => r.key === "expectedCourseWinRate");
+  check(`[${lang}] 金枠はokの艇だけで比較`, basic?.best.size === 1 && basic.best.has(1));
+  check(`[${lang}] 一覧カードは旧行を維持`, buildIndicatorRows(args).some((r) => r.key === "courseRate"));
+  check(`[${lang}] 読み込み失敗では金枠なし`,
+    buildBasicIndicatorRows({ ...args, courseRows: [] }).find((r) => r.key === "expectedCourseWinRate")?.best.size === 0);
+  for (const input of [courseRows, []]) {
+    const rows = buildRows(t, players, {}, { rows: new Map(), currentMeet: new Set() }, RACE_ID, null, input);
+    const r = rows.find((r) => r.key === "expectedCourseWinRate");
+    check(`[${lang}] 想定コースの行名と値`, r?.label === t("dataTable.rowExpectedCourseWinRate") &&
+      JSON.stringify(r.values) === JSON.stringify(input.length
+        ? ["62% (63/102)", "80% (12/15) ⚠", "— (3走)", "—", "—", "—"].map((v) =>
+            v === "— (3走)" ? `— (${t("beforeInfo.meetFormRunN", { n: 3 })})` : v)
+        : players.map(() => "—")));
+    if (input.length && basic) {
+      const html = (boat) => renderToStaticMarkup(createElement("div", null, basic.render({ number: boat })));
+      check(`[${lang}] 表の整数率と件数`, html(1).includes("62%") && html(1).includes("63/102"));
+      check(`[${lang}] 表の警告と灰色`, html(2).includes("⚠") && html(2).includes("var(--text-secondary)"));
+      check(`[${lang}] 表の10走未満は率なし`, !html(3).includes("%") && html(3).includes(t("beforeInfo.meetFormRunN", { n: 3 })));
+    }
+    check(`[${lang}] 旧行は残らない`, !rows.some((r) => r.key === "courseRate"));
+    const { text } = build(lang, { rows });
+    check(`[${lang}] 実際の新行の注記`, text.includes(loadLocale(lang).aiCopy.note.expectedCourseWinRate));
   }
 }
 

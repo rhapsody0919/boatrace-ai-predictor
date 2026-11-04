@@ -906,7 +906,31 @@ export function buildIndicatorRows(args) {
 // データ出走表（基本情報、DataRaceTable）向け: 直前情報系
 // （category: "beforeInfo"）を除いた行（BOA-304）
 export function buildBasicIndicatorRows(args) {
-  return buildRowDefs(args).filter((row) => row.category !== "beforeInfo");
+  const { t, courseRows = [] } = args;
+  const byBoat = new Map(courseRows.map((r) => [r.boat, r]));
+  return buildRowDefs(args).filter((row) => row.category !== "beforeInfo").map((row) =>
+    row.key !== "courseRate" ? row : {
+      key: "expectedCourseWinRate",
+      label: t("dataTable.rowExpectedCourseWinRate"),
+      shortLabel: t("review.cols.expectedCourseWinRate"),
+      note: t("dataTable.expectedCourseWinRateNote"),
+      tab: "attackdefense",
+      best: bestOf(courseRows.filter((r) => r.reliability === "ok")
+        .map((r) => ({ boat: r.boat, value: r.winRate })), "max", { digits: 0 }),
+      render: (p) => {
+        const r = byBoat.get(p.number);
+        if (!r) return "—";
+        return (
+          <span className="drt-value" style={r.reliability !== "ok" ? { color: "var(--text-secondary)" } : undefined}>
+            {r.reliability === "none" || r.winRate == null ? "—" : `${r.winRate.toFixed(0)}%`}
+            {r.reliability === "warn" && " ⚠"}
+            <span className="drt-sub">
+              {r.reliability === "none" ? t("beforeInfo.meetFormRunN", { n: r.entries }) : `${r.wins}/${r.entries}`}
+            </span>
+          </span>
+        );
+      },
+    });
 }
 
 // 直前情報タブ（RaceBeforeInfoTab）向け: 展示ST・展示タイム・オリジナル展示
