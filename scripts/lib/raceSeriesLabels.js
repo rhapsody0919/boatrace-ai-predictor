@@ -42,7 +42,8 @@ export function raceLabelsFromRows(
       cancellationStatus: r.cancellation_status ?? null,
       seriesDay: cond.get(r.race_id)?.series_day ?? null,
       isFinalDay: cond.get(r.race_id)?.is_final_day ?? null,
-      raceTitle: cond.get(r.race_id)?.race_title ?? null,
+      // 空の文字列は無いものとして扱う（他のレース・節の名前で補う）
+      raceTitle: cond.get(r.race_id)?.race_title?.trim() || null,
     }))
     .sort((a, b) => a.raceNumber - b.raceNumber);
   const race = races.find((r) => r.race_id === raceId) ?? null;

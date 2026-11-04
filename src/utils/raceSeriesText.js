@@ -1,15 +1,14 @@
 /**
  * SNS の本文・題に入れる「何日目」と「大会名（SG・G1 だけ）」（BOA-1309、オーナー 2026-11-04「全ての SNS に日付・何日目・レース名・締切の時刻を記載」）。
  *
- * 画面と文言・規則を食い違わせないため、日目の文は getSeriesDayLabel（raceDetailHeading.js）で作る。規則は画面と同じ:
+ * 画面と文言・規則を食い違わせないため、日目の文は会場カードの getVenueSeriesDayLabel（raceDetailHeading.js、中で getSeriesDayLabel）で作る。規則は画面と同じ:
  * (1) series_day・is_final_day は自レースに無ければ同じ会場の他のレースの最初の値で補う（BOA-509。当日はレースごとに入る時点がずれる）
  * (2) 同じ会場の全レースが中止確定なら日目を出さない（BOA-658。公式は翌日に同じ日目を振り直す）
  * (3) 最終日の印は、どれか1レースでも立てば最終日（会場カード getVenueSeriesDayLabel と同じ。1R は false・12R は true の日があった）
  * 日目は公式の出走表の値で、日付から数えない。Node と画面の両方から import するので、ブラウザ専用の依存を持ち込まない。
  * 検証: scripts/maintenance/verify-sns-race-labels.js
  */
-import { getSeriesDayLabel } from "./raceDetailHeading.js";
-import { isRaceCancelled } from "./raceCancellation.js";
+import { getVenueSeriesDayLabel } from "./raceDetailHeading.js";
 
 /**
  * 日目の ja の文言（src/locales/ja/common.json の raceDetailPage.seriesDay*。JSON の import は Node と Vite で書き方が違うので写しを持ち、
@@ -43,15 +42,9 @@ export const SERIES_TITLE_GRADES = ["SG", "G1"];
  * @returns {string|null}
  */
 export function seriesDayTextOf(venueRaces, raceId, t = jaSeriesT) {
-  const race = venueRaces.find((r) => r.raceId === raceId) ?? null;
-  if (!race) return null;
-  if (venueRaces.every((r) => isRaceCancelled(r))) return null;
-  const venueValue = (key) =>
-    race[key] ?? venueRaces.find((r) => r[key] != null)?.[key] ?? null;
-  const isFinalDay = venueRaces.some((r) => r.isFinalDay === true)
-    ? true
-    : venueValue("isFinalDay");
-  return getSeriesDayLabel(venueValue("seriesDay"), isFinalDay, t);
+  if (!venueRaces.some((r) => r.raceId === raceId)) return null;
+  // 会場カードと同じ関数（同じ会場で補う・全レース中止確定は出さない・どれか1レースでも最終日）。日目は会場・日で同じ値
+  return getVenueSeriesDayLabel(venueRaces, t);
 }
 
 /**
@@ -65,7 +58,8 @@ export function seriesTitleOf({
   seriesTitle = null,
 }) {
   if (!SERIES_TITLE_GRADES.includes(grade)) return null;
-  const raw = raceTitle ?? seriesTitle;
+  // 空の文字列は無いものとして扱う（節の名前へ落とす）
+  const raw = raceTitle?.trim() ? raceTitle : seriesTitle;
   if (typeof raw !== "string") return null;
   return raw.normalize("NFKC").replace(/\s+/g, " ").trim() || null;
 }
