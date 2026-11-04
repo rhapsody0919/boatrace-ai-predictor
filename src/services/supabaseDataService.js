@@ -545,18 +545,29 @@ function beforeKey(beforeRaceId) {
  * beforeRaceId を渡すと、そのレースより前（race_id < beforeRaceId）に限る（BOA-521。
  * 会場を固定すれば race_id の文字列順は時系列順と一致するので、同じ日のそれより
  * 後のレースと、そのレース自身は入らない）
+ * includeTarget: true を渡すと、beforeRaceId のレース自身も含める（race_id <=。
+ * BOA-1297 の「交換N」は対象レースの展示も数える）。既定（false）は上の動き。
+ * beforeRaceId が null のときは意味を持たない
  */
-function getRacesForVenueSince(venueCode, sinceDate, beforeRaceId = null) {
+function getRacesForVenueSince(
+  venueCode,
+  sinceDate,
+  beforeRaceId = null,
+  { includeTarget = false } = {},
+) {
   return withCache(
-    `races-for-venue-since-${venueCode}-${sinceDate}${beforeKey(beforeRaceId)}`,
+    `races-for-venue-since-${venueCode}-${sinceDate}${beforeKey(beforeRaceId)}${
+      beforeRaceId !== null && includeTarget ? "-incl" : ""
+    }`,
     async () => {
       const races = await fetchRacesForVenueSince(
         venueCode,
         sinceDate,
         beforeRaceId?.slice(0, 10) ?? null,
       );
-      return beforeRaceId === null
-        ? races
+      if (beforeRaceId === null) return races;
+      return includeTarget
+        ? races.filter((r) => r.race_id <= beforeRaceId)
         : races.filter((r) => r.race_id < beforeRaceId);
     },
   );

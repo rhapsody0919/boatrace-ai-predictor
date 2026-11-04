@@ -313,6 +313,23 @@ check(
       races.includes("${beforeKey(beforeRaceId)}"),
   );
   check(
+    "getRacesForVenueSince: includeTarget（既定 false）でだけ対象レース自身を含め（race_id <=）、キーを分ける",
+    races.includes("{ includeTarget = false } = {}") &&
+      races.includes("races.filter((r) => r.race_id <= beforeRaceId)") &&
+      races.includes('"-incl"'),
+  );
+  {
+    // 動きの確認: 同じ filter 式を実データの形に当てる（既定は対象を除き、includeTarget は含む）
+    const rows = ["2026-11-04-01-01", "2026-11-04-01-02", "2026-11-04-01-03"].map((race_id) => ({ race_id }));
+    const target = "2026-11-04-01-02";
+    const excl = rows.filter((r) => r.race_id < target).map((r) => r.race_id);
+    const incl = rows.filter((r) => r.race_id <= target).map((r) => r.race_id);
+    check(
+      "getRacesForVenueSince: 既定は対象を除き、includeTarget は対象まで含む（後のレースは入らない）",
+      excl.join() === "2026-11-04-01-01" && incl.join() === "2026-11-04-01-01,2026-11-04-01-02",
+    );
+  }
+  check(
     "motorWindowStart: beforeRaceId があれば、その日付を基準日にする",
     windowFn.includes("beforeRaceId === null") &&
       windowFn.includes("beforeRaceId.slice(0, 10)"),
