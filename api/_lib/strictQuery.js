@@ -48,7 +48,6 @@ export function badRequest(message) {
     status: 400,
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
       "Cache-Control": "no-store",
     },
   });

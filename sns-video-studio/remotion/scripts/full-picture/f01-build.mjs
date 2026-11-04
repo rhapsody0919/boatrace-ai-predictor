@@ -30,8 +30,9 @@ const CUE = {
  */
 export const PLAN = {
   c1: [{ k: "c1" }, { k: "c12", re: /2位以内/ }],
-  // ②の着順の流れは押した後を上・下の2カット（下は押してから3秒後。オーナー 11/2「22.4px の章は2カットに分けて」）。half は部品の一部だけを撮るカット
-  c2: [{ k: "c2" }, { k: "c2-pre", re: /号艇が勝った/, cursor: "c22", half: true }, { k: "c22", re: /号艇が勝った/, delay: 15, half: true }, { k: "c22b", re: /号艇が勝った/, delay: 105, half: true }],
+  // ②は1着の棒 → 着順の流れの全体（押す前・押した後）。11/2 18-10 の形（オーナー 11/4「11/2 18-10 の形が正しい」、全章を 18-10 の見た目に。
+  // docs/design/f01-stable-capture/）。上・下の2カット（#2087）は座標の決め打ち（53%/47%）で切っていたので外した
+  c2: [{ k: "c2" }, { k: "c2-pre", re: /号艇が勝った/, cursor: "c22" }, { k: "c22", re: /号艇が勝った/, delay: 15 }],
   // ③は形の札1枚 → 着順の流れの全体（押す前・押した後）。11/2 18-10 の形（オーナー 11/4「正しい」）。#2087 の2カット
   // （札の図 → 名前と件数、着順の流れの上・下）は、図が左の枠の約4割・名前と件数は帯だけ・図の下が切れて見えた（11/3 の4本）
   c3: [{ k: "c3" }, { k: "c3-pre", re: /この形の/, cursor: "c32" }, { k: "c32", re: /この形の/, delay: 15 }],
@@ -46,13 +47,20 @@ export const PLAN = {
  */
 export { MIN_FONT_PX };
 /**
- * 章ごとの線の例外。③は 11/2 18-10 の形（形の札・着順の流れを1カットずつ、22.4px）に戻したので 22px
- * （オーナー 11/4「11/2 18-10 の形が正しい」が 11/2 の 24px の線より新しい。22px は 18-10 の実測 22.4px の下の目安、根拠はその実測だけ）
+ * 章ごとの線の例外。②・③は 11/2 18-10 の形（着順の流れ・形の札を1カットずつ、22.4px）に戻したので 22px
+ * （オーナー 11/4「11/2 18-10 の形が正しい」が 11/2 の 24px の線より新しい。22px は 18-10 の実測 22.4px の下の目安、根拠はその実測だけ。
+ * 撮影用の頁で撮った 11/2 18-10・11/3 の4本も、着順の流れは 22.5px）
  */
-export const MIN_FONT_BY_CHAPTER = { c3: 22 };
+export const MIN_FONT_BY_CHAPTER = { c2: 22, c3: 22 };
 const fontLine = (id) => MIN_FONT_BY_CHAPTER[id] ?? MIN_FONT_PX;
-/** 同じ部品（押す前・押した後、④と締めの軸のボタン）は、いちばん小さい倍率でそろえて描く（f01Timeline）。その倍率 */
-const groupOf = (shots, sh) => Object.values(shots).filter((o) => Math.abs(o.clip.x - sh.clip.x) < 2 && Math.abs(o.clip.w - sh.clip.w) < 2 && Math.abs(o.clip.h - sh.clip.h) < 24);
+/**
+ * 同じ部品（押す前・押した後、④と締めの軸のボタン）は、いちばん小さい倍率でそろえて描く（f01Timeline）。その倍率。
+ * 組は撮る側（f01-capture.mjs の capturePlan）が付ける group で決める。group の無い撮った物（試験の材料）は、切り抜きの位置と大きさの近さで
+ */
+const groupOf = (shots, sh) =>
+  Object.values(shots).filter((o) =>
+    sh.group !== undefined ? o.group === sh.group : Math.abs(o.clip.x - sh.clip.x) < 2 && Math.abs(o.clip.w - sh.clip.w) < 2 && Math.abs(o.clip.h - sh.clip.h) < 24,
+  );
 const drawnScale = (shots, sh) => Math.min(...groupOf(shots, sh).map((o) => o.scale));
 /**
  * 左の枠の空きの線（目安、根拠は 10/28〜11/3 の f01 の14本の実測だけ）。縮めた後の撮った物が、左の枠の幅か高さの 85% 以上に届き、面積が 35% 以上。
@@ -121,9 +129,9 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
         }
         const extra = { gold: (sh.goldBoxes ?? []).map((g) => ({ ...g, at: gAt })) };
         const next = p.cursor ? shots[p.cursor] : null;
-        // カーソルは押す所へ0.5秒で動く。座標はこのカット（押す前の画面）の物: 着順の流れの押す前は半分に切ってあり、
-        // splitHalves が切った分だけずらした cursor を持つ（下半分のとき、押した後の上のカットの座標を使うと約47% 上を指した。#2087 の審査）。
-        // 思考アシストの軸のボタンは押す前のカットに cursor が無いので、押した後のカットの cursorFrom（押す前の画面の座標）
+        // カーソルは押す所へ0.5秒で動く。座標はこのカット（押す前の画面）の物: 着順の流れの押す前は、撮影用の頁が返した
+        // 押す1着の四角の箱を cursor に持つ。思考アシストの軸のボタンは押す前のカットに cursor が無いので、押した後のカットの
+        // cursorFrom（押す前の画面の軸のボタンの箱）
         if (next) extra.cursor = { ...(sh.cursor ?? next.cursorFrom ?? next.cursor), at: T + 15 };
         ch.cuts.push(cut(sh, T, extra));
       }
@@ -172,7 +180,8 @@ export function f01SmallChapters(s, shots) {
 
 /**
  * 左の画面の形が崩れた章（11/3 の③: 札の図が小さく右半分以上が空く・名前と件数の帯だけ・着順の流れの下が切れる）。
- * 空き: 縮めた後の大きさが FILL_LINE に届かない。切れ: 部品の一部だけを撮った物（splitHalves の crop）を、PLAN で half と決めていないカットに置いた
+ * 空き: 縮めた後の大きさが FILL_LINE に届かない。切れ: 部品の一部だけを撮った物（crop の印）を、PLAN で half と決めていないカットに置いた
+ * （撮影用の頁は部品の全体を撮るので今は crop の付いた物は無い。部品の一部を撮る形を足したときの守り）
  * @param {{chapters: {id: string}[]}} s @param {Record<string, {clip: {w: number, h: number}, scale: number, crop?: string}>} shots
  * @returns {{id: string, reason: string}[]}
  */

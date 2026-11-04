@@ -1,4 +1,7 @@
-{
+// scripts/maintenance/verify-search-bot-ip-ranges.js --write が書く。手で書き換えない（BOA-1110）。
+// JSON ではなく JS のモジュールにしているのは、middleware（Vercel の Edge の束ね）が JSON の import 属性
+// （with { type: "json" }）を読めず、Node は属性の無い JSON の import を拒むため（段階3の Preview のビルドで確認）
+export default {
   "note": "scripts/maintenance/verify-search-bot-ip-ranges.js --write が書く。手で書き換えない（BOA-1110）",
   "sources": [
     {
@@ -603,4 +606,4 @@
       ]
     }
   ]
-}
+};

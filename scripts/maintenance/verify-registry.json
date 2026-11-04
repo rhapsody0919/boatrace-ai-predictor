@@ -147,7 +147,7 @@
     {
       "script": "verify-api-gate.js",
       "tier": "ci",
-      "guards": "/api の関門の判定（api/_lib/apiGate.js、BOA-1110・ADR-0103、plan §2.2 の順）: デコード後に「.」「..」のセグメント・「//」・バックスラッシュを含むパス（%2F..%2F・..%2f・二重のエンコード）とエンコードした「/」（%2F）とデコードできないパスは段階に依らず 400（2回目以降のデコードの失敗では落とさない）、/API/ 等の大文字も関門に掛ける、/api/cron・/api/admin・/api/bot-page だけ除外（/api/cronx 等は除外しない、/%61pi/ は /api として判定）、合言葉は current・next で通り key_slot を返し偽の鍵は bad_key（鍵が未設定・空なら通さない）、Sec-Fetch-Site: same-origin（Origin が無いか自分の host）は browser、Sec-Fetch-Site が無く同じ host の Referer は browser_legacy、Googlebot・Google-InspectionTool の UA で範囲の表の固定の IPv4・IPv6 だけ search_bot（範囲外・bingbot・Googlebot-Image は通さない）、それ以外は観測で would_deny・強制で 403 no-store。結果に鍵・IP・UA の全文・クエリを入れない"
+      "guards": "/api の関門の判定（api/_lib/apiGate.js、BOA-1110・ADR-0103、plan §2.2 の順）: デコード後に「.」「..」のセグメント・「//」・バックスラッシュを含むパス（%2F..%2F・..%2f・二重のエンコード）とエンコードした「/」（%2F）とデコードできないパスは段階に依らず 400（2回目以降のデコードの失敗では落とさない）、/API/ 等の大文字も関門に掛ける、/api/cron・/api/admin・/api/bot-page だけ除外（/api/cronx 等は除外しない、/%61pi/ は /api として判定）、合言葉は current・next で通り key_slot を返し偽の鍵は bad_key（鍵が未設定・空なら通さない）、Sec-Fetch-Site: same-origin（Origin が無いか自分の host）は browser、Sec-Fetch-Site が無く同じ host の Referer は browser_legacy、Googlebot・Google-InspectionTool の UA で範囲の表の固定の IPv4・IPv6 だけ search_bot（範囲外・bingbot・Googlebot-Image は通さない）、それ以外は観測で would_deny・強制で 403 no-store。結果に鍵・IP・UA の全文・クエリを入れない。段階3のログ: env の鍵・API_GATE_MODE の前後の空白・改行を落として比べる（Vercel の値の末尾の改行で bad_key にしない）、群（google・bingbot・ai_crawler・hq・ryujin・browser・other）と tag、browser の抜き取り、除外は書かない。api/ と vercel.json に Access-Control-Allow-* を置かない（CORS、plan §2.1 ①）"
     },
     {
       "script": "verify-api-query-lockdown.js",
@@ -449,6 +449,18 @@
       "guards": "展示タイム1位率の集計（update-exhibition-time-top-stats.js）が、展示タイムが NULL の行（展示ST先行・展示前の体重だけの行・展示なし）を分母に入れないこと、同着の最速を数えないこと（BOA-520。PR #917 で見つかった率の薄まり）"
     },
     {
+      "script": "verify-f01-capture-contract.js",
+      "tier": "ci",
+      "guards": "完全版 f01 の撮影用の頁（src/snsCapture/、docs/design/f01-stable-capture/）: 部品の表 F01_PARTS の props の名前が本番の部品（RadarFigure・RadarBoatLegend・SimilarWinBars・SankeyFigure・SlitShapeCard・FollowTop・FollowTable）の引数とちょうど同じ（本番の部品の props が変わったらここで落ち、f01 の撮影が黙って崩れない）、固定の材料4レースから全部品の props を作れる、材料が無い・艇番の誤りは黙らず止める、頁を読むのは main.jsx のビルドの旗 VITE_SNS_CAPTURE の分岐の中の動的 import だけ（本番のビルドに入らない）"
+    },
+    {
+      "script": "verify-f01-capture-stable.js",
+      "tier": "manual",
+      "reason": "ローカルの Playwright（chromium）・ffmpeg・vite の dev サーバーと、hq-work の materials.json が要り、1レースの撮影に30〜50秒×2回かかる",
+      "command": "node scripts/maintenance/verify-f01-capture-stable.js <materials.json> [...]",
+      "guards": "完全版 f01 の撮影（f01-capture.mjs と撮影用の頁）が決定的: 同じ材料で2回撮ると全カットの画素（RGBA）が一致する（docs/design/f01-stable-capture/ の終わりの条件）"
+    },
+    {
       "script": "verify-fan-period-job.js",
       "tier": "ci",
       "guards": "期別成績（fan）の定期取り込み（scripts/lib/fanPeriodJob.js、api/cron/fan-period.js）。対象日→fanの対応、取り込み済みなら0リクエスト、未公開404はその日で済み（06:30の補足は叩かない）、期の終わりから105日超は取得せず通知、live の書き込みと生ファイルの保管（raw-pages・raw_snapshots）、shadow は書かない、異常・HTTP 500 は error、保管失敗でも取り込みは成功。vercel.json の06:00・06:30、レジストリ、125のRLS"
@@ -743,7 +755,7 @@
     {
       "script": "verify-middleware-routing.js",
       "tier": "ci",
-      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと。検索・ユーザー起点の取得に使う UA（OAI-SearchBot・ChatGPT-User・Claude-SearchBot・Claude-User・Perplexity-User・bingbot・Applebot・DuckDuckBot）もスナップショットに振り分け、Googlebot と人間のブラウザは振り分けないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
+      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと。検索・ユーザー起点の取得に使う UA（OAI-SearchBot・ChatGPT-User・Claude-SearchBot・Claude-User・Perplexity-User・bingbot・Applebot・DuckDuckBot）もスナップショットに振り分け、Googlebot と人間のブラウザは振り分けないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた。/api の関門（BOA-1110 段階3）: matcher に /api/:path*、観測は外の要求も通して would_deny の1行を出し、禁じた形のパスは 400、除外（cron・admin・bot-page）はログ無しで既存の分岐へ、強制は環境変数だけで 403、env の鍵の末尾の改行を落として合言葉と一致（再現テスト）"
     },
     {
       "script": "verify-migration-numbers.js",
@@ -1327,7 +1339,7 @@
     {
       "script": "verify-search-bot-ip-ranges.js",
       "tier": "manual",
-      "guards": "/api の関門が検索ボットを通す IP の範囲の表（api/_lib/searchBotIpRanges.json）が、Google の公開の表（common-crawlers.json・special-crawlers.json）の範囲と一致すること（BOA-1110）。--write で表を書き直す（表は手で書かない）",
+      "guards": "/api の関門が検索ボットを通す IP の範囲の表（api/_lib/searchBotIpRanges.js）が、Google の公開の表（common-crawlers.json・special-crawlers.json）の範囲と一致すること（BOA-1110）。--write で表を書き直す（表は手で書かない）",
       "reason": "Google の公開の表（developers.google.com）をネットワークで取るため。CI の中で外部に依らない",
       "command": "node scripts/maintenance/verify-search-bot-ip-ranges.js"
     },
@@ -1555,6 +1567,11 @@
       "script": "verify-sns-x-cost-by-url.js",
       "tier": "ci",
       "guards": "X の送信の月の予約を送る文の URL の有無で決める（マイグレーション 188）: 先頭の照合は 182 の transition_sns_send_139 の本文の md5（c2b4835c…）で、当て直すと止まる。182 との差は予約額の行だけ。sns_x_post_has_url はスキーム・www・よく使う TLD のドメイン（日本語が続いても）を URL、小数・日本語だけ・NULL を URL でないとする。claim は URL のある文を ceiling_x_url、無い文を ceiling_x_plain で予約し、まだ claim していない自分の子も子の文で数える。ceiling_x_url・ceiling_x_plain は 250000・30000 のときだけ 200000・15000 にし、ほかの値は触らない。SQL182・188 を PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-x-delete.js",
+      "tier": "ci",
+      "guards": "BOA-1279: X の投稿を消す口。adapter の DELETE /2/tweets/:id（404 は既に無いとして成功・本文を出さない）、消す本体（記録に無い・ID 違い・posted でない・197 未適用なら X を呼ばない、1件落ちたら残りを送らない）、管理 API（401・405・400）、CLI（既定 dry-run で DB に書かない・--apply は ID の明示と理由が要る・指定外の行を送らない・HQ_TEST で断る・候補は名簿に無い選手の名前）、マイグレーション 197 を PGlite に当てた mark_sns_x_post_deleted（時刻と理由・計測の pending を post_deleted で閉じる・何度呼んでも同じ・state のトリガーが発火しない・anon は不可）。外部接続なし"
     },
     {
       "script": "verify-sns-x-oauth.js",

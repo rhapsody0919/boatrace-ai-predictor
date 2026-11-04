@@ -34,7 +34,8 @@ import { listTypes, resolveType } from "./type-spec.mjs";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REMOTION = resolve(HERE, "../..");
 const ROOT = resolve(REMOTION, "../..");
-const BASE = process.env.FULL_PICTURE_API_BASE ?? "https://www.boat-ai.jp";
+// 末尾の "/" は落とす（"https://x/" + "/api/…" は "//api/…" になり、関門（BOA-1110 段階3）が禁じた形の "//" に当たる）
+const BASE = (process.env.FULL_PICTURE_API_BASE || "https://www.boat-ai.jp").replace(/\/+$/, "");
 
 /** 選び方の規則（龍神が持つ。2026-10-20 hq の規則）: 締切 21:58 前・中止でない優勝戦か準優勝戦のうち締切の一番遅いもの。無ければ 12R の一番遅いもの */
 export const SELECT_RULE = { deadlineBefore: "21:58", stages: ["優勝戦", "準優勝戦"], fallbackRace: 12 };

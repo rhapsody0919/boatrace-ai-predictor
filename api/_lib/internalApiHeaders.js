@@ -26,8 +26,10 @@ export function internalApiHeaders(caller, env = process.env) {
       `呼び出し元の名前 "${caller}" は英数字とハイフンの32字までにする`,
     );
   }
-  const key = env?.INTERNAL_API_KEY;
-  return typeof key === "string" && key !== ""
+  // 前後の空白・改行は落とす（fetch の Headers も落とす。関門の gateKeysFromEnv と同じ形にそろえる）
+  const key =
+    typeof env?.INTERNAL_API_KEY === "string" ? env.INTERNAL_API_KEY.trim() : "";
+  return key !== ""
     ? { [CALLER_HEADER]: caller, [INTERNAL_KEY_HEADER]: key }
     : { [CALLER_HEADER]: caller };
 }

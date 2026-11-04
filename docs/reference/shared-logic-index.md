@@ -263,7 +263,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/accidentRate.js` | — | currentPeriodRange, computeAccidentStats, ACCIDENT_RATE_LINE, ACCIDENT_NEAR_POINTS, ACCIDENT_BADGE_MIN_STARTS |
 | `src/utils/aiCopyPrompts.js` | race-ai-copy機能の分析依頼プロンプト種別定義 | getAiCopyPromptOptions, getAiCopyPromptText, getAiCopyPromptLabel, aiCopyFollowUpKeys, AI_COPY_PROMPT_TYPES |
 | `src/utils/aiCopyText.js` | 「AI用にコピー」（BOA-194）の文面を組み立てる純関数（BOA-770）。 | formatJstDateTime, toMarkdownTable, buildTurnPredictionSection, buildPremiseLines, buildNotes ほか3件 |
-| `src/utils/analogyAggregate.js` | アナロジー・ファインダー v16 の類似レース・展開シナリオの集計（BOA-271 spec FR-B・FR-C）。純粋関数。 | sliderSteps, defaultStepIndex, normalizeNeighbor, aggregateNeighbors, layerItemKeys ほか21件 |
+| `src/utils/analogyAggregate.js` | アナロジー・ファインダー v16 の類似レース・展開シナリオの集計（BOA-271 spec FR-B・FR-C）。純粋関数。 | sliderSteps, defaultStepIndex, normalizeNeighbor, similarSlice, aggregateNeighbors ほか22件 |
 | `src/utils/analogyContribution.js` | アナロジー・ファインダーの寄与度（BOA-271 FR-1）の純粋関数。 | sliceCandidates, resolveContributionSlice, themeEntries, roundToTotal, MIN_RACES ほか6件 |
 | `src/utils/analogyFacts.js` | アナロジー・ファインダー v16「差がつく材料」（タブ1、BOA-271 spec FR-A）の純粋関数。 | rankPositions, todayPosition, todayValueRank, judgeGap, agreementVerdict ほか30件 |
 | `src/utils/analogyFormat.js` | アナロジー・ファインダー v16 の表記（BOA-271 screens「純粋関数」）。 | fmtEntry, comboLabel, scopeName, fmtFactValue, splitSentences ほか8件 |
@@ -406,4 +406,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 364 ファイル / export 2150 件。
+対象 364 ファイル / export 2151 件。

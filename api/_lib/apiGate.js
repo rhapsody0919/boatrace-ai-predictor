@@ -1,7 +1,8 @@
 /**
  * /api の関門の判定（BOA-1110、ADR-0103、docs/design/public-api-lockdown/plan.md §2.2）。
  *
- * 段階0: 判定の純関数だけを置く。middleware.js からはまだ呼ばない（matcher に /api を足すのは段階3）。
+ * 段階3（観測）: middleware.js が /api/:path* でこの判定を呼び、1行の JSON ログ（gateLogRecord）を出す。
+ * 段階4（強制）は環境変数 API_GATE_MODE=enforce と Redeploy だけで入る（コードは変えない）。
  * 判定の順（plan §2.2 の図）:
  *   1. パスをデコードできない、またはデコード後に「.」「..」のセグメント・「//」・「\」を含む → 400
  *      （%2F..%2F で除外の前方一致に入れて関門を外すのを防ぐ。段階に依らず観測中も 400）
@@ -51,9 +52,34 @@ const MAX_DECODE_ROUNDS = 4;
 const UNSET_KEY_PLACEHOLDER = "\u0000unset";
 const MAX_LOG_PATH = 200;
 
-/** API_GATE_MODE は "enforce" のときだけ強制。未設定・その他の値は観測（plan §2.2、既定 observe） */
+/**
+ * API_GATE_MODE は "enforce" のときだけ強制。未設定・その他の値は観測（plan §2.2、既定 observe）。
+ * Vercel の値の前後の空白・改行は落とす（"enforce\n" で黙って観測に戻らない）
+ */
 export function normalizeGateMode(value) {
-  return value === "enforce" ? "enforce" : "observe";
+  return typeof value === "string" && value.trim() === "enforce"
+    ? "enforce"
+    : "observe";
+}
+
+const trimmedOrUndefined = (value) => {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+};
+
+/**
+ * 環境変数から関門の鍵を読む。前後の空白・改行を落とし、空は「無い」にする。
+ * 付ける側の fetch（Headers）は値の前後の空白を落とすので、Vercel に置いた値の末尾に改行が入っていても
+ * そのまま比べると bad_key になる（段階1の /code-review の指摘1）。比べる前に同じ形にそろえる
+ * @param {Record<string, string|undefined>} env 既定は process.env
+ * @returns {{ current?: string, next?: string }}
+ */
+export function gateKeysFromEnv(env = process.env) {
+  return {
+    current: trimmedOrUndefined(env?.INTERNAL_API_KEY),
+    next: trimmedOrUndefined(env?.INTERNAL_API_KEY_NEXT),
+  };
 }
 
 const hasForbiddenForm = (path) =>
@@ -213,7 +239,7 @@ function parseCidr(cidr) {
 }
 
 /**
- * api/_lib/searchBotIpRanges.json（scripts/maintenance/verify-search-bot-ip-ranges.js --write が書く）を
+ * api/_lib/searchBotIpRanges.js（scripts/maintenance/verify-search-bot-ip-ranges.js --write が書く）を
  * 照合しやすい形にする。読めない範囲があれば例外（黙って範囲を減らさない）
  */
 export function compileIpRanges(table) {
@@ -249,7 +275,7 @@ const sanitizeCaller = (value) => {
  * @returns {Promise<{
  *   outcome: "pass"|"reject", status: 400|403|null,
  *   reason: "bad_path"|"not_api"|"excluded"|"internal"|"bad_key"|"browser"|"browser_legacy"|"search_bot"|"would_deny"|"deny",
- *   key_slot: "current"|"next"|null, caller: string|null, bot_verified: boolean|null,
+ *   key_slot: "current"|"next"|null, caller: string|null, caller_claimed: string|null, bot_verified: boolean|null,
  *   ua_class: string, path: string, sfs: string|null, origin_host: string|null,
  * }>}
  */
@@ -269,12 +295,15 @@ export async function decideApiGate({
   const originHost = hostOf(originHeader);
   const botVerified = claimedVerifiedBot(ua) ? ipInRanges(ip, ipRanges) : null;
   const inspected = inspectApiPath(parsed.pathname);
+  const claimedCaller = sanitizeCaller(headers.get(CALLER_HEADER));
 
   const result = (fields) => ({
     outcome: "pass",
     status: null,
     key_slot: null,
     caller: null,
+    // 合言葉で通らなかった要求が名乗った呼び出し元（偽れるので数える手がかりだけ。internal のときは null）
+    caller_claimed: claimedCaller,
     bot_verified: botVerified,
     ua_class: classifyUserAgent(ua),
     path: (inspected.ok ? inspected.decoded : parsed.pathname).slice(
@@ -301,15 +330,13 @@ export async function decideApiGate({
     return result({ reason: "excluded" });
   }
 
-  const provided = headers.get(INTERNAL_KEY_HEADER);
+  // 受け取った値も、比べる鍵も、前後の空白を落としてから比べる（gateKeysFromEnv と同じ形）
+  const provided = trimmedOrUndefined(headers.get(INTERNAL_KEY_HEADER));
   if (provided) {
     const slots = [
       ["current", keys?.current],
       ["next", keys?.next],
-    ].map(([slot, key]) => [
-      slot,
-      typeof key === "string" && key !== "" ? key : null,
-    ]);
+    ].map(([slot, key]) => [slot, trimmedOrUndefined(key) ?? null]);
     // 両方の枠を必ず比べ（空の枠も捨てる値と比べる）、どちらで一致したか・NEXT があるかを時間差で漏らさない
     const matches = await Promise.all(
       slots.map(([, key]) =>
@@ -321,7 +348,8 @@ export async function decideApiGate({
       return result({
         reason: "internal",
         key_slot: hit[0],
-        caller: sanitizeCaller(headers.get(CALLER_HEADER)),
+        caller: claimedCaller,
+        caller_claimed: null,
       });
     }
     return byMode("bad_key", "bad_key");
@@ -346,4 +374,86 @@ export function gateRejectResponse(status) {
     status,
     headers: { "Cache-Control": "no-store", "Content-Type": "text/plain" },
   });
+}
+
+// ---- ログ（段階3の観測。plan §2.2・§6） ----
+
+/**
+ * 数える群（plan §6 の2・段階3の進む条件）。would_deny を bingbot・AI のクローラー・hq・龍神のスクリプトに分けて数える。
+ * - internal: caller が "hq-" で始まれば hq、それ以外は ryujin（bot-page・sns-claim-check・full-picture-* 等）
+ * - それ以外: 名乗った呼び出し元（x-ryujin-caller。hq- なら hq、ほかの名前は ryujin）が先、次に UA の丸め
+ *   （Google・bingbot・ほかの検索ボット・AI のクローラー）、次にブラウザ、残りは other。
+ *   名乗りを先にするのは、bot-html-parity がボットの UA と名前を一緒に送るため（鍵が古いと bad_key が ai_crawler に
+ *   紛れて、自分の群の拒む候補が0に見える）。外部が名乗りを偽ると自分の群に数えられ、段階4へ進めない側に倒れる
+ */
+export function gateGroup(decision) {
+  const callerName =
+    decision.reason === "internal" ? decision.caller : decision.caller_claimed;
+  if (decision.reason === "internal") {
+    return callerName?.startsWith("hq-") ? "hq" : "ryujin";
+  }
+  if (callerName) return callerName.startsWith("hq-") ? "hq" : "ryujin";
+  const ua = decision.ua_class ?? "";
+  if (
+    ua === "search_bot:Googlebot" ||
+    ua === "search_bot:Google-InspectionTool"
+  )
+    return "google";
+  if (ua === "search_bot:bingbot") return "bingbot";
+  if (ua.startsWith("search_bot:")) return "search_other";
+  if (ua.startsWith("ai_bot:")) return "ai_crawler";
+  if (ua === "browser") return "browser";
+  return "other";
+}
+
+// reason=browser は件数が多い（odds/live のポーリング）ので抜き取る（plan §2.2）。
+// 10件に1件は目安（根拠なし）。数えるときは sample を掛けて戻す
+export const BROWSER_LOG_SAMPLE = 10;
+const keysSetLabel = (keys) => {
+  const slots = [
+    trimmedOrUndefined(keys?.current) ? "current" : null,
+    trimmedOrUndefined(keys?.next) ? "next" : null,
+  ].filter(Boolean);
+  return slots.length === 0 ? "none" : slots.join("+");
+};
+// 書かない reason（既存の守りがある除外・/api でないもの）
+const UNLOGGED_REASONS = new Set(["excluded", "not_api"]);
+
+/**
+ * 1要求1行の JSON ログにする中身。null を返したら書かない。
+ * 鍵の値・IP・UA の全文・クエリ文字列は decision に入っていない（verify-api-gate.js [8]）。
+ * tag は全文検索で群ごとに数えるための1語（例 "apigate_would_deny_bingbot"。Vercel の Runtime Logs の検索に使う）
+ * @param {Awaited<ReturnType<typeof decideApiGate>>} decision
+ * keys_set は関門が持つ鍵の枠（"current"・"current+next"・"next"・"none"）。値は書かず、有る無しだけ
+ * （bad_key のとき、関門の側に鍵が無いのか、値が違うのかを見分ける。回し替えの間の確かめにも使う）
+ * @param {{ mode: string, method: string, keys?: { current?: string, next?: string }, random?: () => number }} context
+ */
+export function gateLogRecord(
+  decision,
+  { mode, method, keys = {}, random = Math.random },
+) {
+  if (UNLOGGED_REASONS.has(decision.reason)) return null;
+  // 検索ボットを名乗る要求（bot_verified が true/false）は、browser で通っても抜き取らない（段階4の条件の母数）
+  const sampled =
+    decision.reason === "browser" && decision.bot_verified === null;
+  if (sampled && random() >= 1 / BROWSER_LOG_SAMPLE) return null;
+  const group = gateGroup(decision);
+  return {
+    api_gate: decision.reason,
+    group,
+    tag: `apigate_${decision.reason}_${group}`,
+    mode: normalizeGateMode(mode),
+    method: typeof method === "string" ? method.slice(0, 10) : null,
+    status: decision.status,
+    path: decision.path,
+    sfs: decision.sfs,
+    origin_host: decision.origin_host,
+    ua_class: decision.ua_class,
+    caller: decision.caller,
+    caller_claimed: decision.caller_claimed,
+    key_slot: decision.key_slot,
+    bot_verified: decision.bot_verified,
+    keys_set: keysSetLabel(keys),
+    sample: sampled ? BROWSER_LOG_SAMPLE : 1,
+  };
 }

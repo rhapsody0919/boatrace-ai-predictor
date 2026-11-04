@@ -30,15 +30,12 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const SUPABASE_KEY =
   process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
-const CORS = { "Access-Control-Allow-Origin": "*" };
-
 const json = (body, status, cache) =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
       "Content-Type": "application/json",
       "Cache-Control": cache,
-      ...CORS,
     },
   });
 
@@ -78,10 +75,7 @@ async function rest(path) {
 
 export default async function handler(req) {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 200,
-      headers: { ...CORS, "Access-Control-Allow-Methods": "GET, OPTIONS" },
-    });
+    return new Response(null, { status: 200 });
   }
   let params;
   try {
