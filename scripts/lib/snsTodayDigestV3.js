@@ -11,7 +11,6 @@
  * - 載せるのは締切が送る時刻より後のレースだけ。欠場の艇・中止のレースは選ばない
  */
 import { getVenueSeriesDayLabel } from "../../src/utils/raceDetailHeading.js";
-import { isRaceCancelled } from "../../src/utils/raceCancellation.js";
 import { buildSeriesDayByVenue } from "./raceSeriesLookup.js";
 import { xPostValid } from "../../api/_lib/snsXLength.js";
 
@@ -90,8 +89,7 @@ export async function loadTodayV3Material(db, date) {
     ),
   ]);
   // 選手×コースの率は、使う組み合わせ（1号艇の1コース・2号艇の2コース・3・4号艇のそのコース）だけ読む（PK は racer_id, course）
-  const stats = [];
-  for (const course of [1, 2, 3, 4]) {
+  const paths = [1, 2, 3, 4].flatMap((course) => {
     const ids = [
       ...new Set(
         entries
@@ -101,13 +99,13 @@ export async function loadTodayV3Material(db, date) {
           .map((e) => e.racer_id),
       ),
     ];
-    for (let i = 0; i < ids.length; i += 300)
-      stats.push(
-        ...(await db(
-          `racer_course_technique_stats?course=eq.${course}&racer_id=in.(${ids.slice(i, i + 300).join(",")})&select=racer_id,course,runs,nige_rate,makuri_rate,nigashi_rate`,
-        )),
-      );
-  }
+    return Array.from(
+      { length: Math.ceil(ids.length / 300) },
+      (_, i) =>
+        `racer_course_technique_stats?course=eq.${course}&racer_id=in.(${ids.slice(i * 300, i * 300 + 300).join(",")})&select=racer_id,course,runs,nige_rate,makuri_rate,nigashi_rate`,
+    );
+  });
+  const stats = (await Promise.all(paths.map((p) => db(p)))).flat();
   // 節の中の中止（何日目の補いに使う。中止のある節は補わない）
   const minStart = series.reduce(
     (m, s) => (String(s.start_date) < m ? String(s.start_date) : m),
@@ -175,9 +173,9 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
   const venue = (code) => t(`venues.${code}`);
   const cond = new Map(conditions.map((c) => [c.race_id, c]));
   const seriesOf = new Map(series.map((s) => [Number(s.venue_code), s]));
-  const held = races.filter(
-    (r) => !isRaceCancelled({ cancellationStatus: r.cancellation_status }),
-  );
+  // 中止は確定（confirmed）だけでなく疑い（tentative）も載せない。送る直前の検査（pickRaceStatus）は中止の値が入っていれば止めるので、
+  // 載せると朝の投稿ごと送れなくなる（/code-review の指摘）
+  const held = races.filter((r) => r.cancellation_status == null);
   const venues = new Set(held.map((r) => r.venue_code));
   if (!venues.size) return { ok: false, reason: "no_races" };
   // 載せてよいレース: 中止でなく、締切が送る時刻より後
@@ -471,6 +469,8 @@ export function checkTodayDigestV3(text, { date, url }) {
   if (text.split(url).length !== 2) problems.push("link_count");
   if (/undefined|NaN|null|[{}]|\$\{|[◯○]/.test(text))
     problems.push("placeholder_left");
+  // 会場名の訳が無いと i18n のキーがそのまま出る（venues.25）
+  if (/venues\./.test(text)) problems.push("i18n_key_left");
   if (/https?:\/\//.test(text.replace(url, ""))) problems.push("extra_link");
   if (lines.at(-1) !== V3_TAG) problems.push("tag_missing");
   if (/競艇/.test(text)) problems.push("kyotei");

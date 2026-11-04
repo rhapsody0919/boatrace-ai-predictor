@@ -486,9 +486,12 @@ export async function runTodayPlan(
           !["approved", "posted"].includes(existing.reply.draft?.status))));
   // 型 v3 は材料を DB から読むので、一覧の版が同じでも本文が変われば（欠場・中止で選ぶ人やレースが変わる）作り直す。
   // 比べるのは下書きを作ったときの送る時刻での本文（時刻が進んで締切の線が動いただけでは作り直さない）
+  // 送った・止めた item（manual・notified でない）は作り直さないので読まない。読んだ結果は下の本文に使い回す（/code-review の指摘）
   const storedV3 = existing.draft?.source_data?.digest_v3;
+  let v3Again = null;
   const v3Same = async () => {
-    if (!storedV3) return true;
+    if (!storedV3 || !["manual", "notified"].includes(existing.item?.state))
+      return true;
     const again = await prepareTodayV3({
       date,
       sendAt: storedV3.send_at,
@@ -496,6 +499,7 @@ export async function runTodayPlan(
       t,
       sent: existing.draft.source_data.content_type?.sent,
     });
+    v3Again = { sendAt: storedV3.send_at, made: again };
     // 作れなくなった（載せたレースが全部中止など）ときは作り直さず、送る直前の検査（欠場・中止）に任せる
     return !again.ok || sha256(again.text) === storedV3.text_sha256;
   };
@@ -528,8 +532,10 @@ export async function runTodayPlan(
   const replyAllowed =
     control?.mode === "auto" && Boolean(control?.auto_approver_id);
   // その日の型（PD02）。下書きができた後は、その日の型を変えない（作り直しでも同じ型。途中で列が変わっても返信の下書きを取り残さない）
+  // 型 v3 は見出しを持たない（heading null）ので、本文の型（body）で見分ける（/code-review の指摘）
   const picked =
-    existing.draft?.source_data?.content_type?.heading &&
+    (existing.draft?.source_data?.content_type?.heading ||
+      existing.draft?.source_data?.content_type?.body === V3_BODY) &&
     existing.draft?.source_data?.today_variant
       ? {
           ...existing.draft.source_data.content_type,
@@ -545,13 +551,16 @@ export async function runTodayPlan(
   // 型 v3（今の型）。作れない・検査を通らない日は送らない（型 a・b へ倒さない。オーナー 11/4「v3 が入ったら a・b は送らない」）
   let v3 = null;
   if (picked.body === V3_BODY) {
-    v3 = await prepareTodayV3({
-      date,
-      sendAt,
-      raceDb,
-      t,
-      sent: picked.variant.id,
-    });
+    v3 =
+      v3Again?.sendAt === sendAt
+        ? v3Again.made
+        : await prepareTodayV3({
+            date,
+            sendAt,
+            raceDb,
+            t,
+            sent: picked.variant.id,
+          });
     if (!v3.ok)
       return done({ outcome: "skipped", reason: `v3:${v3.reason}`, revision });
   }
@@ -1136,6 +1145,10 @@ export async function runTodayPlan(
  * 返信（reply）は自動（mode=auto・自動送信の承認者あり）で、確認用の作り直しでないときだけ選べる（親から順につなぐのが自動の道だけのため）
  */
 async function pickTodayType(date, { store, loadVariants, replyAllowed }) {
+  const config = loadVariants();
+  // 今の型（v3）の日は型の列を使わないので読まない（読めないときの誤った「config の案で送る」も出さない）
+  const fixed = pickTodayPost(config, date, { allowReply: replyAllowed });
+  if (fixed.body === V3_BODY) return fixed;
   let row = null;
   let scheduleError = null;
   if (store.typeSchedule) {
@@ -1151,7 +1164,7 @@ async function pickTodayType(date, { store, loadVariants, replyAllowed }) {
       );
     }
   }
-  return pickTodayPost(loadVariants(), date, {
+  return pickTodayPost(config, date, {
     row,
     scheduleError,
     allowReply: replyAllowed,

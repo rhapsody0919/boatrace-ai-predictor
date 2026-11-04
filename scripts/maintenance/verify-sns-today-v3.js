@@ -449,3 +449,37 @@ test("材料の読み方: 1000行を超える表は並びを固定して1000行�
     ),
   );
 });
+
+test("中止の疑い（tentative）のレースも載せない（送る直前の検査は中止の値が入っていれば朝の投稿ごと止める。/code-review の指摘）", () => {
+  const m = material({
+    venues: { 15: { stage: { 12: "優勝戦" } }, 2: {} },
+    stats: [
+      stat(2, 4, 1, { nige_rate: 90, runs: 40 }),
+      stat(2, 5, 1, { nige_rate: 80, runs: 40 }),
+    ],
+  });
+  for (const r of m.races)
+    if (r.race_id === id(15, 12) || r.race_id === id(2, 4))
+      r.cancellation_status = "tentative";
+  const out = build(m);
+  assert.doesNotMatch(out.text, /🏆|丸亀12R/);
+  assert.deepEqual(
+    out.blocks.map((b) => b.race_id),
+    [id(2, 5)],
+  );
+  assert.ok(!out.picks.some((p) => [id(15, 12), id(2, 4)].includes(p.race_id)));
+});
+
+test("検査: 会場名の訳が無く i18n のキーが残った本文は通さない（/code-review の指摘）", () => {
+  const out = buildTodayDigestV3(material({ venues: { 2: {} } }), {
+    sendAt: "07:00",
+    t: (key, params) => (key === "venues.2" ? key : t(key, params)),
+    url: URL_C,
+  });
+  assert.match(out.text, /venues\.2/);
+  assert.ok(
+    checkTodayDigestV3(out.text, { date: DATE, url: URL_C }).includes(
+      "i18n_key_left",
+    ),
+  );
+});
