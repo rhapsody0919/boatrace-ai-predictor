@@ -15,6 +15,8 @@
 --   着順の付いたレース（rank1 あり・race_status が no_race でない）、中止（races.cancellation_status = 'confirmed'）を除く、
 --   実進入コースのある艇だけ（欠場の艇は実進入コースが null。本番 2026-11-04 で欠場181走のうち実進入コースあり0）。
 --   1着は rank1 = 艇番（決まり手を問わない）。
+--   ※ 選手の当地の行は raceId < 表示中のレース（同じ日の前のレースを含む）、この平均は race_date < レースの日（含まない）。
+--     差は1日最大11レース（母数は会場あたり約2,000レース、0.6%未満）。(日, 会場) で会場の12レースが同じ値を共有できるよう、日で切る
 --   ※ フロントの窓の始まりは「今日 − 730日」、ここは「レースの日 − 730日」。当社データは 2025-12-02 からなので、
 --     2027-12 まではどちらも同じ範囲になる（その時点で注記の見直しと一緒に合わせる。supabaseDataService.js の getRacerVenueStats のコメント）
 --
@@ -50,8 +52,11 @@
 --       WHERE starts > 0 AND calc_from IN ('2024-11-01', '2025-05-01', '2025-11-01');
 --   SELECT has_function_privilege('anon', 'public.get_course_win_rate_baseline(date, smallint)', 'EXECUTE');  期待: true
 --   SELECT p.provolatile, p.prosecdef, p.proconfig FROM pg_proc p WHERE p.proname = 'get_course_win_rate_baseline';
---     期待: s・false・{search_path=public,pg_temp}
---   node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js  期待: get_course_win_rate_baseline が [OK]
+--     期待: s・false・{"search_path=public, pg_temp"}
+--   master を pull してから（台帳の 199 は db-apply の記録の job が master に「適用済み」で書く。手元が古いと WARN のまま0で終わる）
+--   node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js  期待: get_course_win_rate_baseline の各群が [OK]
+--   node --env-file=.env.local scripts/maintenance/check-anon-access.js  期待: 想定外の anon の関数なし
+--   適用後も呼び出しが PGRST202 のままなら PostgREST のスキーマのキャッシュが古い: NOTIFY pgrst, 'reload schema';（オーナーが SQL Editor で）
 --
 -- 戻し方: DROP FUNCTION IF EXISTS public.get_course_win_rate_baseline(date, smallint);
 --   （画面は取得の失敗を出す。表・データは変えていない）

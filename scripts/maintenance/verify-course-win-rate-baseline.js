@@ -121,6 +121,14 @@ before(async () => {
   );
   // starts = 0 の行は数えない（列に値が入っていても）
   await period(3, "2025-11-01", "2026-04-30", { 1: [50, 50] }, { starts: 0 });
+  // starts が NULL の行も数えない（本番の列は nullable。選手側の buildCourseRows も (starts ?? 0) > 0）
+  await period(
+    4,
+    "2025-11-01",
+    "2026-04-30",
+    { 1: [40, 40] },
+    { starts: null },
+  );
   await period(1, "2025-05-01", "2025-10-31", { 1: [3, 10], 2: [1, 4] });
   await period(1, "2024-11-01", "2025-04-30", { 1: [2, 10] });
   // 4つ目に古い期（2026-11-04 のレースでは入らない）
@@ -170,9 +178,9 @@ test("199: レースの日と同じ日に終わる期は入れない（境界）
   );
 });
 
-test("199: national は走の重み（Σp1÷Σ進入）、starts=0 を除き B2 を含む", async () => {
+test("199: national は走の重み（Σp1÷Σ進入）、starts=0・NULL を除き B2 を含む", async () => {
   const r = await call("2026-11-04", 1);
-  // 1コース: 0/2 + 9/18（B2）+ 3/10 + 2/10 = 14/40。starts=0 の 50/50 と4つ目に古い期の 100/100 は入らない
+  // 1コース: 0/2 + 9/18（B2）+ 3/10 + 2/10 = 14/40。starts=0 の 50/50・NULL の 40/40 と4つ目に古い期の 100/100 は入らない
   assert.deepEqual(r.national["1"], { wins: 14, entries: 40, winRate: 35 });
   assert.deepEqual(r.national["2"], { wins: 1, entries: 4, winRate: 25 });
   // 進入0のコースは null（0% にしない）
@@ -243,7 +251,9 @@ test("199: STABLE・SECURITY INVOKER・search_path 固定、anon・authenticated
   const { rows } = await db.query(
     `SELECT p.provolatile, p.prosecdef, p.proconfig,
             has_function_privilege('anon', p.oid, 'EXECUTE') AS anon_exec,
-            has_function_privilege('authenticated', p.oid, 'EXECUTE') AS auth_exec
+            has_function_privilege('authenticated', p.oid, 'EXECUTE') AS auth_exec,
+            -- PGlite は関数の EXECUTE を既定で PUBLIC に付けるので、REVOKE … FROM PUBLIC が効いていることは ACL で見る
+            EXISTS (SELECT 1 FROM aclexplode(p.proacl) a WHERE a.grantee = 0 AND a.privilege_type = 'EXECUTE') AS public_exec
      FROM pg_proc p WHERE p.proname = 'get_course_win_rate_baseline'`,
   );
   assert.equal(rows.length, 1);
@@ -252,6 +262,7 @@ test("199: STABLE・SECURITY INVOKER・search_path 固定、anon・authenticated
   assert.deepEqual(rows[0].proconfig, ["search_path=public, pg_temp"]);
   assert.equal(rows[0].anon_exec, true);
   assert.equal(rows[0].auth_exec, true);
+  assert.equal(rows[0].public_exec, false);
   const asAnon = await call("2026-11-04", 1, "anon");
   assert.deepEqual(asAnon.national["1"], {
     wins: 14,
