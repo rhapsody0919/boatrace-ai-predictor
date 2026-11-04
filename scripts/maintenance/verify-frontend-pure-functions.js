@@ -37,6 +37,7 @@ const TARGETS = {
   basicInfoStats: "src/components/race/basicInfoStats.js",
   raceStatus: "src/utils/raceStatus.js",
   courseGridStats: "src/components/race/courseGridStats.js",
+  sixBoatCourseStats: "src/components/race/sixBoatCourseStats.js",
   venueDayTrend: "src/components/race/venueDayTrend.js",
   weatherInfo: "src/components/race/weatherInfo.js",
   dateUtils: "src/utils/dateUtils.js",
@@ -2348,6 +2349,81 @@ function suiteSemifinalCount(m, check) {
   check("準優出: 配列・各行・選手一覧を変更しない", show([rows, ids]), before);
 }
 
+// BOA-1291: 選手ページと同じ公式の3期を、レース日と想定コースで使う。
+function suiteSixBoatCourseStats(m, check) {
+  const row = (y, n, entries, wins, p2 = 0, p3 = 0, course = 1) => ({
+    period_year: y, period_no: n, starts: 100,
+    calc_from: n === 1 ? `${y - 1}-05-01` : `${y - 1}-11-01`,
+    calc_to: n === 1 ? `${y - 1}-10-31` : `${y}-04-30`,
+    [`c${course}_entries`]: entries, [`c${course}_p1`]: wins,
+    [`c${course}_p2`]: p2, [`c${course}_p3`]: p3,
+  });
+  const rows = [row(2025, 1, 40, 30), row(2026, 2, 37, 23, 6, 4),
+    row(2025, 2, 35, 20, 6, 4), row(2026, 1, 30, 20, 5, 3)];
+  const baseline = { national: { "1": { winRate: 55.2 } } };
+  const input = { players: [{ number: 1, racerId: 4444 }],
+    periodRowsByRacer: { 4444: rows }, raceDate: "2026-11-04", baseline };
+  const before = JSON.stringify(input);
+  const result = m.buildSixBoatCourseRows(input);
+  check("6行を艇番の順に返す", result.map((r) => [r.boat, r.course]),
+    [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]]);
+  check("公式の新しい3期を合算し、率と差を丸めない", result[0], {
+    boat: 1, racerId: 4444, course: 1, wins: 63, entries: 102,
+    winRate: 63 / 102 * 100, top2Rate: 80 / 102 * 100,
+    top3Rate: 91 / 102 * 100, avg: 55.2, diff: 63 / 102 * 100 - 55.2,
+    reliability: "ok", periods: [
+      { label: "2026年後期", range: "2025/11/01〜2026/04/30" },
+      { label: "2026年前期", range: "2025/05/01〜2025/10/31" },
+      { label: "2025年後期", range: "2024/11/01〜2025/04/30" },
+    ], contiguous: true,
+  });
+  check("入力を変更しない", JSON.stringify(input), before);
+  const past = m.buildSixBoatCourseRows({ ...input, raceDate: "2026-04-30" })[0];
+  check("期の終了日ちょうどは除き、古い期を使う", [past.entries, past.wins], [105, 70]);
+  check("絞り込みは入力順を保つ", m.periodsBefore(rows, "2026-04-30"),
+    [rows[0], rows[2], rows[3]]);
+  const withoutBaseline = m.buildSixBoatCourseRows({ ...input, baseline: null })[0];
+  check("平均が無ければ差も出さない", [withoutBaseline.avg, withoutBaseline.diff], [null, null]);
+  const missing = m.buildSixBoatCourseRows({ ...input,
+    players: [{ number: 6, racerId: 9999 }, { number: 2 }] });
+  check("行なし・IDなしは進入0で率なし", [missing[5], missing[1]].map((r) =>
+    [r.entries, r.wins, r.winRate, r.top2Rate, r.top3Rate, r.diff, r.reliability]),
+    Array(2).fill([0, 0, null, null, null, null, "none"]));
+  check("件数の線", m.SIX_BOAT_WARN_ENTRIES, { 1: 10, 2: 30, 3: 30, 4: 30, 5: 42, 6: 67 });
+  for (const [course, limit] of [[1, 10], [2, 30], [3, 30], [4, 30], [5, 42], [6, 67]]) {
+    for (const entries of [0, 8, 9, 10, limit - 1, limit, limit + 1, 50]) {
+      const r = m.buildSixBoatCourseRows({ raceDate: input.raceDate,
+        players: [{ number: course, racerId: 4444 }],
+        periodRowsByRacer: { 4444: [row(2026, 2, entries, entries ? 1 : 0, 0, 0, course)] },
+        baseline: { national: { [String(course)]: { winRate: 0 } } },
+      })[course - 1];
+      const reliability = entries < 10 ? "none" : entries < limit ? "warn" : "ok";
+      check(`${course}コース・${entries}進入の境界`,
+        [r.entries, r.reliability, r.winRate, r.diff, r.avg],
+        [entries, reliability, entries < 10 ? null : 1 / entries * 100,
+          reliability === "ok" ? 1 / entries * 100 : null, 0]);
+    }
+  }
+  const gap = m.buildSixBoatCourseRows({ ...input, periodRowsByRacer: {
+    4444: [rows[1], { ...rows[3], starts: 0 }, rows[2], rows[0]],
+  } })[0];
+  check("出走0の期を飛ばした印と使用期", [gap.contiguous, gap.periods.map((p) => p.label)],
+    [false, ["2026年後期", "2025年後期", "2025年前期"]]);
+  const shuffled = m.buildSixBoatCourseRows({ ...input,
+    players: [{ number: 6, racerId: 6666 }, { number: 1, racerId: 4444 }] });
+  check("選手の入力順によらずIDを艇番に対応させる", [shuffled[0].racerId, shuffled[5].racerId], [4444, 6666]);
+  for (const date of [null, undefined, "", "bad", "2026-02-29", "2026-13-01", "2026-04-31", "2026-1-01"]) {
+    for (const run of [() => m.periodsBefore([], date),
+      () => m.periodsBefore([{ calc_to: date }], input.raceDate)]) {
+      let threw = false;
+      try { run(); } catch (error) { threw = error instanceof Error; }
+      check(`不正な日付 ${date} は Error`, threw, true);
+    }
+  }
+  check("閏日の有効な日付を受け入れる", m.periodsBefore([{ calc_to: "2024-02-29" }], "2024-03-01"),
+    [{ calc_to: "2024-02-29" }]);
+}
+
 const SUITES = {
   semifinalCount: suiteSemifinalCount,
   nextOpenDate: suiteNextOpenDate,
@@ -2356,6 +2432,7 @@ const SUITES = {
   basicInfoStats: suiteBasicInfoStats,
   raceStatus: suiteRaceStatus,
   courseGridStats: suiteCourseGridStats,
+  sixBoatCourseStats: suiteSixBoatCourseStats,
   venueDayTrend: suiteVenueDayTrend,
   weatherInfo: suiteWeatherInfo,
   dateUtils: suiteDateUtils,
@@ -2374,6 +2451,10 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  ["sixBoatCourseStats", "件数の線ちょうどを警告にする",
+    "entries < SIX_BOAT_WARN_ENTRIES[course]", "entries <= SIX_BOAT_WARN_ENTRIES[course]"],
+  ["sixBoatCourseStats", "レース当日に終わる期を含める",
+    "row.calc_to < raceDate", "row.calc_to <= raceDate"],
   [
     "semifinalCount",
     "開始日ちょうどを除外する",
