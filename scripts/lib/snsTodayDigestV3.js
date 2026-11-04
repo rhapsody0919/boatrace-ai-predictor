@@ -28,7 +28,7 @@ export const V3_RULE = "━━━━━━━━━━";
 /**
  * 脚注（BOA-1315、オーナー 2026-11-04 承認。文は hq の起票のとおり）。期間は率の窓（racer_course_technique_stats の window_start〜window_end、
  * 2025/12/2 から）。終わりは窓の実際の終わりを書く: 率の集計（api/cron/racer-course-technique-stats.js）は 13:00 JST に前日まで進むので、
- * 7:00 の投稿では前々日になる（起票の「前日」は 13:00 より後の値。前日と偽らない）。率の塊が無い日は1・2行目を出さず、逃し率の行は【1号艇が逃げやすいレース】の塊がある日だけ
+ * 7:00 の投稿では前々日になる（起票の「前日」は 13:00 より後の値。前日と偽らない）。率の塊が無い日は1・2行目を出さず、逃し率の行は【逃し率が高い選手】の塊がある日だけ
  */
 export const v3PeriodNote = (from, to) =>
   `※率は ${slashDate(from)}〜${slashDate(to)} の全国の成績（そのコースに入ったとき）`;
@@ -48,7 +48,13 @@ const isIsoDate = (v) =>
   typeof v === "string" &&
   /^\d{4}-\d{2}-\d{2}$/.test(v) &&
   addDaysToDateString(v, 0) === v;
-export const V3_NIGASHI_HEADING = "【1号艇が逃げやすいレース】";
+/**
+ * 逃し率の塊の見出し（BOA-1324、オーナー 2026-11-04 選択）。旧【1号艇が逃げやすいレース】は、逃し率の高低で1号艇の1着が
+ * 56.0% 対 56.0% で差が無く（PR #2243、BOA-1280）事実に反する向きになるため差し替えた
+ */
+export const V3_NIGASHI_HEADING = "【逃し率が高い選手】";
+/** 逃し率の高低は1号艇の1着と関係しない（PR #2243）ので、1号艇が勝つ向きの言い方を本文のどこにも書かない */
+export const V3_BANNED_PHRASES = /逃げやすい|鉄板|決まりやすい/;
 
 const GRADE_ORDER = ["SG", "G1", "G2", "G3"];
 const gradeRank = (g) =>
@@ -396,19 +402,15 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
         `▶ ${venue(nige.race.venue_code)}${nige.race.race_number}R 1号艇 ${hmShort(nige.race.start_time)}締切`,
       ],
     });
-  // 1号艇が逃げやすいレース: 2号艇の2コースの逃し率。名前は1号艇（欠場でない・名前がある）を出し、2号艇は数字だけ（実名を負の側で出さない）
+  // 逃し率が高い選手: 2号艇の2コースの逃し率が最も高い選手（BOA-1324）。1号艇の名前は出さない。
+  // 逃し率は「1コースの艇の逃げで決まった割合」なので、1号艇が出走する（欠場でない）レースに限る。名前を書くので2号艇の名前が無い行は選ばない
   const nigashi = pick(candidates([2], "nigashi_rate"), (c) => {
     const one = entryOf.get(`${c.race.race_id}:1`);
     return Boolean(
-      one &&
-      !absent.has(`${c.race.race_id}:1`) &&
-      nameOf(one.player_name) &&
-      !usedRacers.has(one.racer_id),
+      one && !absent.has(`${c.race.race_id}:1`) && nameOf(c.entry.player_name),
     );
   });
-  if (nigashi) {
-    const one = entryOf.get(`${nigashi.race.race_id}:1`);
-    usedRacers.add(one.racer_id);
+  if (nigashi)
     blocks.push({
       key: "nigashi",
       race: nigashi.race,
@@ -418,11 +420,10 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
       runs: nigashi.runs,
       lines: [
         V3_NIGASHI_HEADING,
-        at(nigashi.race),
-        `1号艇 ${who(one)}／2号艇の逃し率 ${pct(nigashi.rate)}（${nigashi.runs}走）`,
+        `${who(nigashi.entry)}\u3000${pct(nigashi.rate)}（${nigashi.runs}走）`,
+        `▶ ${venue(nigashi.race.venue_code)}${nigashi.race.race_number}R 2号艇 ${hmShort(nigashi.race.start_time)}締切`,
       ],
     });
-  }
   const makuri = pick(candidates([3, 4], "makuri_rate"));
   if (makuri)
     blocks.push({
@@ -551,6 +552,7 @@ export function checkTodayDigestV3(text, { date, url }) {
     problems.push("rate_note_without_rates");
   if (lines.includes(V3_NIGASHI_NOTE) !== lines.includes(V3_NIGASHI_HEADING))
     problems.push("nigashi_note_mismatch");
+  if (V3_BANNED_PHRASES.test(text)) problems.push("banned_phrase");
   if (!xPostValid(text, { long: true })) problems.push("weighted_text_invalid");
   return problems;
 }

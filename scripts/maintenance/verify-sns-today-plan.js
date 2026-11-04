@@ -2713,7 +2713,7 @@ test("型 v3: リポジトリの config で 6:40 に文だけの下書きを作�
   );
   assert.match(
     draft.caption_text,
-    /【1号艇が逃げやすいレース】\n戸田6R 14:02締切\n1号艇 選手 261 A1／2号艇の逃し率 70%（40走）/,
+    /【逃し率が高い選手】\n選手 262 A1\u300070%（40走）\n▶ 戸田6R 2号艇 14:02締切/,
   );
   assert.match(draft.caption_text, /▶ 戸田7R 4号艇 15:02締切/);
   assert.ok(draft.caption_text.endsWith("#ボートレース"));

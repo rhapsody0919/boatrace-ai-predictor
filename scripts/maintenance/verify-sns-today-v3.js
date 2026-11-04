@@ -154,9 +154,9 @@ test("一般の日: 1〜3行目が日付と場の数・🏆 優勝戦・リン�
       "選手 24-10-1 A1\u300086%（56走）",
       "▶ 大村10R 1号艇 18:24締切",
       "",
-      "【1号艇が逃げやすいレース】",
-      "戸田4R 12:02締切",
-      "1号艇 選手 2-4-1 A1／2号艇の逃し率 72%（41走）",
+      "【逃し率が高い選手】",
+      "選手 2-4-2 B1\u300072%（41走）",
+      "▶ 戸田4R 2号艇 12:02締切",
       "",
       "【まくり率が高い選手】",
       "選手 1-7-4 B1\u300031%（38走）",
@@ -321,7 +321,7 @@ test("選び方: 率の高い順、同じ率は締切の早い方。走数30未�
     [["nige", 12]],
   );
   assert.doesNotMatch(low.text, /【まくり率が高い選手】|※逃し率/);
-  // 逃げの選手が逃し率の1号艇と同じ人にならない（別のレースでも同じ選手は2回出さない）
+  // 逃し率の塊は1号艇の名前を出さない（BOA-1324）ので、逃げの選手が逃し率のレースの1号艇でも選べる
   const same = material({
     venues: { 2: {} },
     stats: [
@@ -337,9 +337,10 @@ test("選び方: 率の高い順、同じ率は締切の早い方。走数30未�
     build(same).blocks.map((b) => [b.key, b.race_id]),
     [
       ["nige", id(2, 4)],
-      ["nigashi", id(2, 6)],
+      ["nigashi", id(2, 5)],
     ],
   );
+  assert.doesNotMatch(build(same).text, /1号艇 選手/);
 });
 
 test("選び方: 欠場の艇（出走表・展示）・中止のレース・締切が送る時刻より前のレースは選ばない。逃し率は1号艇が欠場のレースを選ばない", () => {
@@ -563,7 +564,7 @@ test("脚注: 期間は率の窓（初日は載せた人の最も早い日、終
   });
   assert.match(build(stale).text, /〜2037\/11\/3 の全国の成績/);
 });
-test("脚注: 逃し率の行は【1号艇が逃げやすいレース】の塊がある日だけ。率の塊が無い日は脚注を出さない", () => {
+test("脚注: 逃し率の行は【逃し率が高い選手】の塊がある日だけ。率の塊が無い日は脚注を出さない", () => {
   const noNigashi = build(
     material({
       venues: { 2: {} },
@@ -675,4 +676,34 @@ test("脚注: 禁止表現（risk-rules.json、計画と同じ照合）に当た
   assert.equal(xPostValid(text), false);
   assert.equal(xPostValid(text, { long: true }), true);
   assert.deepEqual(checkTodayDigestV3(text, { date: DATE, url: URL_C }), []);
+});
+
+test("逃し率の塊（BOA-1324）: 見出しは【逃し率が高い選手】で、2号艇の名前・級・逃し率・走数と会場R・2号艇・締切。1号艇の名前は出さず、「逃げやすい」「鉄板」「決まりやすい」を書かない", () => {
+  const out = build(material(GENERAL));
+  assert.match(
+    out.text,
+    /【逃し率が高い選手】\n選手 2-4-2 B1\u300072%（41走）\n▶ 戸田4R 2号艇 12:02締切\n/,
+  );
+  assert.doesNotMatch(
+    out.text,
+    /逃げやすい|鉄板|決まりやすい|1号艇 選手 2-4-1/,
+  );
+  assert.match(
+    out.text,
+    /※逃し率＝2コースに入ったとき、1コースの艇の逃げで決まった割合/,
+  );
+  const check = (text) => checkTodayDigestV3(text, { date: DATE, url: URL_C });
+  assert.deepEqual(check(out.text), []);
+  // 検査は旧い見出しや言い回しが本文のどこかに混ざったら止める
+  for (const bad of [
+    "【1号艇が逃げやすいレース】",
+    "鉄板の1号艇",
+    "逃げが決まりやすい",
+  ])
+    assert.ok(
+      check(
+        out.text.replace("【逃し率が高い選手】", `【逃し率が高い選手】${bad}`),
+      ).includes("banned_phrase"),
+      bad,
+    );
 });
