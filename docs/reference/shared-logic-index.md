@@ -80,6 +80,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/deployHookPolicy.js` | Vercel Deploy Hook を叩くかどうかの判定（BOA-361）。 | decideDeployHook, DEPLOY_HOOK_WINDOW_MINUTES |
 | `scripts/lib/disqualifiedFinishMark.js` | BOA-582(2): 失格（Kファイルの成績コード S0〜S2）の艇の着欄（finish_mark）を、結果ページから決める（純関数）。 | buildDisqualifiedMarkRows, buildOfficialRowRows, DISQUALIFIED_MARKS, isDisqualifiedCode |
 | `scripts/lib/erDiagramFromDdl.js` | docs/db-migration/ のSQL DDLからmermaid erDiagramを機械的に導出する。 | parseTablesFromSql, findLinkedMigrations, buildMermaidErDiagram, DB_MIGRATION_DIR, DESIGN_DIR |
+| `scripts/lib/eveDeadlinesJob.js` | 前夜の締切予定（eve_race_deadlines、マイグレーション202、BOA-1282）の共通ラッパ向けハンドラー2つ。 | isFinalRound, readExpectedVenues, readEveRows, buildEveRows, nameTargets ほか9件 |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
 | `scripts/lib/fanPeriodJob.js` | 期別成績（fan、racer_period_stats）の定期取り込み。共通ラッパ向けハンドラー（api/cron/fan-period.js）。 | fanIdEndedBefore, periodOfFanId, daysSincePeriodEnd, fanRawPath, runFanPeriodJob ほか2件 |
 | `scripts/lib/fanPeriodParser.js` | 公式「レーサー期別成績」ファイル（fan）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | parseFanId, fanIdOf, buildFanUrl, fanArchiveRelPath, listFanIds ほか14件 |
@@ -139,6 +140,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/predictionRefresh.js` | 予測の再計算（predictions のリフレッシュ）を、どこが・いつ起動するかの方針（案1、BOA-353 T4b-03、 | isRefreshOnVercelEnabled, isOddsRefreshSkippedOnGha, isOddsSkippedOnGha, collectGhaRefreshRaceIds, refreshAfterExhibition ほか1件 |
 | `scripts/lib/raceConditionsWriter.js` | race_conditions への書き込み（気象列を含む）の共通処理（BOA-358） | isObservedAtColumnMissing, upsertRaceConditions, OBSERVED_AT_COLUMN |
 | `scripts/lib/raceEntriesKbRestore.js` | 出走表（race_entries）の複製汚染を、公式Bファイル（番組表）から復元するための純粋関数（BOA-422） | indexBEntriesByRace, compareRace, buildRestoredRow, buildRestorePlan, COLUMNS_FROM_B ほか4件 |
+| `scripts/lib/raceIndexParser.js` | 公式の raceindex（/owpc/pc/race/raceindex?jcd=VV&hd=YYYYMMDD、会場の1日のレース一覧）の解析（BOA-128… | parseRaceIndex, raceIndexProblems, isLastDayLabel, isFinalRaceName |
 | `scripts/lib/raceIndicatorData.js` | データ出走表11指標のデータ取得（AI予想モデル大規模改修 Task6a） | fetchStPredictability, fetchReturnRate, fetchTechniqueProfile, fetchExhibitionTrend, fetchRacerForm ほか1件 |
 | `scripts/lib/raceListParser.js` | 公式の出走表ページ（boatrace.jp racelist）の全項目パーサー（純関数。DB・取得先に接続しない） | scrapeSeriesDay, scrapeRaceMeta, parseRaceListDocument, parseRaceListPage, RACELIST_PARSER_VERSION |
 | `scripts/lib/raceNoticesJob.js` | レース特記事項（A5、race_special_notes）の共通ラッパ向けハンドラー（BOA-353 T4b-11-1、plan.md §2.2）。 | runRaceNoticesJob, RACE_NOTICES_CONCURRENCY |
@@ -413,4 +415,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 371 ファイル / export 2193 件。
+対象 373 ファイル / export 2211 件。

@@ -5,16 +5,16 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1657,
-    "filesWithAccess": 269,
-    "tableReaders": 984,
-    "tableWriters": 187,
+    "sourceFiles": 1662,
+    "filesWithAccess": 270,
+    "tableReaders": 988,
+    "tableWriters": 189,
     "rpcCallers": 51,
     "nameMentions": 232,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 3,
+    "notInSnapshot": 4,
     "unresolved": 32,
     "parseErrors": 0,
     "uncoveredFiles": 54
@@ -13002,6 +13002,16 @@
           "columns": []
         },
         {
+          "ref": "scripts/lib/eveDeadlinesJob.js:63",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "end_date",
+            "start_date",
+            "venue_code"
+          ]
+        },
+        {
           "ref": "scripts/lib/motorPretestJob.js:236",
           "op": "select",
           "via": "client",
@@ -13131,6 +13141,7 @@
         "venue_code": {
           "readers": [
             "api/_lib/botPage.js:277",
+            "scripts/lib/eveDeadlinesJob.js:63",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
@@ -13149,6 +13160,7 @@
         "start_date": {
           "readers": [
             "api/_lib/botPage.js:277",
+            "scripts/lib/eveDeadlinesJob.js:63",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
@@ -13167,6 +13179,7 @@
         "end_date": {
           "readers": [
             "api/_lib/botPage.js:277",
+            "scripts/lib/eveDeadlinesJob.js:63",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
@@ -16787,6 +16800,16 @@
           "columns": []
         },
         {
+          "ref": "scripts/lib/eveDeadlinesJob.js:410",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_date",
+            "race_id",
+            "start_time"
+          ]
+        },
+        {
           "ref": "scripts/lib/inCautionHealth.js:137",
           "op": "select",
           "via": "client",
@@ -17904,6 +17927,7 @@
             "scripts/lib/analogyV16Exhibition.js:291",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
+            "scripts/lib/eveDeadlinesJob.js:410",
             "scripts/lib/inCautionHealth.js:137",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/pitReportJob.js:290",
@@ -18023,6 +18047,7 @@
             "scripts/lib/analogyV16Exhibition.js:291",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
+            "scripts/lib/eveDeadlinesJob.js:410",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/pitReportJob.js:290",
             "scripts/lib/pitReportJob.js:365",
@@ -18220,6 +18245,7 @@
             "scripts/lib/analogyV16Exhibition.js:291",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
+            "scripts/lib/eveDeadlinesJob.js:410",
             "scripts/lib/pitReportJob.js:290",
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSchedule.js:44",
@@ -18772,6 +18798,15 @@
           ]
         },
         {
+          "ref": "scripts/lib/eveDeadlinesJob.js:385",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "job",
+            "last_target_date"
+          ]
+        },
+        {
           "ref": "scripts/lib/ghaSkipGate.js:450",
           "op": "rest",
           "via": "rest",
@@ -19009,6 +19044,7 @@
           "readers": [
             "scripts/lib/boatcast/oritenJob.js:498",
             "scripts/lib/dataHealth/job.js:94",
+            "scripts/lib/eveDeadlinesJob.js:385",
             "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/racesInit/job.js:148",
             "scripts/lib/racesInit/job.js:517",
@@ -19108,6 +19144,7 @@
         },
         "last_target_date": {
           "readers": [
+            "scripts/lib/eveDeadlinesJob.js:385",
             "scripts/lib/motorPretestJob.js:197",
             "scripts/maintenance/check-scrape-monitor-liveness.js:139"
           ],
@@ -19208,6 +19245,8 @@
         "db_apply_dispatch",
         "e2e_rerecord_dispatch",
         "entry_course_stats",
+        "eve_deadlines",
+        "eve_deadlines_reconcile",
         "exhibition",
         "fan_period",
         "in_caution_dispatch",
@@ -19756,6 +19795,8 @@
         "db_apply_dispatch",
         "e2e_rerecord_dispatch",
         "entry_course_stats",
+        "eve_deadlines",
+        "eve_deadlines_reconcile",
         "exhibition",
         "fan_period",
         "in_caution_dispatch",
@@ -29345,6 +29386,58 @@
       }
     },
     {
+      "job": "eve_deadlines",
+      "entry": "api/cron/eve-deadlines.js",
+      "reachableFiles": 22,
+      "writes": {
+        "eve_race_deadlines": [
+          "scripts/lib/eveDeadlinesJob.js:274",
+          "scripts/lib/eveDeadlinesJob.js:422"
+        ],
+        "scrape_job_state": [
+          "scripts/lib/scrapeJobs/store.js:102",
+          "scripts/lib/scrapeJobs/store.js:110",
+          "scripts/lib/scrapeJobs/store.js:129",
+          "scripts/lib/scrapeJobs/store.js:135",
+          "scripts/lib/scrapeJobs/store.js:147",
+          "scripts/lib/scrapeJobs/store.js:161",
+          "scripts/lib/scrapeJobs/store.js:318",
+          "scripts/lib/scrapeJobs/store.js:368",
+          "scripts/lib/scrapeJobs/store.js:398"
+        ],
+        "scrape_slots": [
+          "scripts/lib/scrapeJobs/store.js:233",
+          "scripts/lib/scrapeJobs/store.js:269"
+        ]
+      }
+    },
+    {
+      "job": "eve_deadlines_reconcile",
+      "entry": "api/cron/eve-deadlines-reconcile.js",
+      "reachableFiles": 22,
+      "writes": {
+        "eve_race_deadlines": [
+          "scripts/lib/eveDeadlinesJob.js:274",
+          "scripts/lib/eveDeadlinesJob.js:422"
+        ],
+        "scrape_job_state": [
+          "scripts/lib/scrapeJobs/store.js:102",
+          "scripts/lib/scrapeJobs/store.js:110",
+          "scripts/lib/scrapeJobs/store.js:129",
+          "scripts/lib/scrapeJobs/store.js:135",
+          "scripts/lib/scrapeJobs/store.js:147",
+          "scripts/lib/scrapeJobs/store.js:161",
+          "scripts/lib/scrapeJobs/store.js:318",
+          "scripts/lib/scrapeJobs/store.js:368",
+          "scripts/lib/scrapeJobs/store.js:398"
+        ],
+        "scrape_slots": [
+          "scripts/lib/scrapeJobs/store.js:233",
+          "scripts/lib/scrapeJobs/store.js:269"
+        ]
+      }
+    },
+    {
       "job": "exhibition",
       "entry": "api/cron/exhibition.js",
       "reachableFiles": 41,
@@ -30369,6 +30462,15 @@
       "name": "get_course_win_rate_baseline",
       "refs": [
         "src/services/supabaseDataService.js:4327"
+      ]
+    },
+    {
+      "kind": "table",
+      "name": "eve_race_deadlines",
+      "refs": [
+        "scripts/lib/eveDeadlinesJob.js:77",
+        "scripts/lib/eveDeadlinesJob.js:274",
+        "scripts/lib/eveDeadlinesJob.js:422"
       ]
     },
     {
