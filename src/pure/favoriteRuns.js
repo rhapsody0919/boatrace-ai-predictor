@@ -48,7 +48,7 @@ export const meetAnchorOf = (raceId) => `${raceId.slice(0, 13)}-99`;
 export const finishedRuns = (runs) =>
   runs.filter((run) => run.finishRank != null || run.absent || run.finishMark);
 
-/** 選手名の公式の全角空白（「内堀　　　学」）を1つの半角空白にする（結果タブと同じ見え方） */
+/** 選手名の公式の全角空白（姓と名の間に U+3000 が続く）を1つの半角空白にする（結果タブと同じ見え方） */
 export const displayRacerName = (name) =>
   typeof name === "string" ? name.replace(/[\s\u3000]+/g, " ").trim() : name;
 
