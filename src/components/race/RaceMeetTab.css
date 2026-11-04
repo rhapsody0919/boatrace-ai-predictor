@@ -768,32 +768,26 @@
   overflow-wrap: anywhere;
 }
 
-/* 平均・順位は前走の下に控えめに置く。日付の目盛りも線と同じ列幅。 */
-.rmt-trend-with-avg {
-  --rmt-trend-summary-width: calc(var(--font-size-2xs) * 12);
-}
-
-.rmt-trend-with-avg:lang(en),
-.rmt-trend-with-avg:lang(ko) {
-  --rmt-trend-summary-width: calc(var(--font-size-2xs) * 16);
-}
-.rmt-trend-with-avg .rmt-trend-row,
-.rmt-trend-with-avg .rmt-trend-head {
-  grid-template-columns: 7.5em minmax(0, 1fr) var(--rmt-trend-summary-width);
+/* 平均は別段で右に揃え、線・着順・日付の列幅は展示と共通に保つ。 */
+.rmt-trend-with-avg .rmt-trend-row {
+  row-gap: 0;
 }
 
 .rmt-trend-st-avg {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  justify-self: end;
   display: block;
   white-space: nowrap;
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-normal);
+  font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
 }
 
-@media (max-width: 480px) {
-  .rmt-trend-with-avg .rmt-trend-row,
-  .rmt-trend-with-avg .rmt-trend-head {
-    grid-template-columns: 5em minmax(0, 1fr) var(--rmt-trend-summary-width);
-    gap: var(--spacing-1);
-  }
+.rmt-trend-st-avg-note {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
 }

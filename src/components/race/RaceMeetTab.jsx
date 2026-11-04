@@ -1350,18 +1350,18 @@ function RaceMeetTab({
                       {lastRun === null
                         ? "—"
                         : (lastRun.mark ?? lastRun.value.toFixed(2))}
-                      {trendKey === "st" && (
-                        <span className="rmt-trend-st-avg">
-                          {stAvg.avg === null
-                            ? t("meetTab.trendStAvgTooFew", { n: stAvg.n })
-                            : t("meetTab.trendStAvg", {
-                                avg: stAvg.avg.toFixed(2),
-                                rank: stAvg.rank,
-                                n: stAvg.n,
-                              })}
-                        </span>
-                      )}
                     </span>
+                    {trendKey === "st" && (
+                      <span className="rmt-trend-st-avg">
+                        {stAvg.avg === null
+                          ? t("meetTab.trendStAvgTooFew", { n: stAvg.n })
+                          : t("meetTab.trendStAvg", {
+                              avg: stAvg.avg.toFixed(2),
+                              rank: stAvg.rank,
+                              n: stAvg.n,
+                            })}
+                      </span>
+                    )}
                   </button>
                 </li>
               );
@@ -1392,7 +1392,7 @@ function RaceMeetTab({
             </p>
           )}
           {trendKey === "st" && (
-            <p className="rmt-spark-note rmt-trend-st-avg-note">
+            <p className="rmt-trend-st-avg-note">
               {t("meetTab.trendStAvgNote")}
             </p>
           )}
