@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import { buildFavoriteRuns, statLineOf, buildFavoritesFallback, venuesFromPredictions } from "../../src/pure/favoriteRuns.js";
+import { buildFavoriteRuns, statLineOf, buildFavoritesFallback, venuesFromPredictions, venuesFromTodayRaces } from "../../src/pure/favoriteRuns.js";
 
 const entry = (racerId, number) => ({ racerId, number, name: `選手${racerId}`, grade: "A1" });
 const race = (venueCode, raceNumber, startTime, entries = [], extra = {}) => ({
@@ -92,6 +92,25 @@ assert.deepEqual(grouped.map((v) => [v.placeCd, v.races.map((r) => r.raceId)]), 
 assert.deepEqual(grouped[1].races[0].entries, [], "players が無いレースは entries を空にする（落ちない）");
 assert.deepEqual(buildFavoriteRuns(grouped, [4320], null).upcoming.map((r) => [r.raceId, r.boat]), [["a", 1], ["c", 4]]);
 assert.deepEqual(venuesFromPredictions(undefined), []);
+// トップの venuesData（get_today_races の形: raceNo・会場の placeCd）から代わりの表示を作る（BOA-1274）
+const today = [
+  { placeCd: 4, races: [
+    { raceNo: 1, startTime: "10:30", raceGrade: "SG", seriesDay: 5, cancellationStatus: null },
+    { raceNo: 12, startTime: "16:35", raceGrade: "SG", seriesDay: 5, cancellationStatus: null },
+  ] },
+  { placeCd: 1, races: [{ raceNo: 9, startTime: "18:39", raceGrade: "ippan", seriesDay: 2, cancellationStatus: null }] },
+];
+const todayBefore = structuredClone(today);
+assert.deepEqual(buildFavoritesFallback(venuesFromTodayRaces(today), [1, 18], "12:00"), {
+  favVenues: [
+    { venueCode: 1, state: "open", nextRaceNumber: 9, nextStartTime: "18:39" },
+    { venueCode: 18, state: "closed", nextRaceNumber: null, nextStartTime: null },
+  ],
+  gradeVenues: [{ venueCode: 4, grade: "SG", seriesDay: 5, finalStartTime: "16:35" }],
+  openVenueCount: 2,
+});
+assert.deepEqual(today, todayBefore, "venuesFromTodayRaces は入力を変更しない");
+assert.deepEqual(venuesFromTodayRaces(undefined), []);
 const gradesBefore = structuredClone(grades);
 buildFavoritesFallback(grades, [12, 1], "11:00");
 assert.deepEqual(grades, gradesBefore);

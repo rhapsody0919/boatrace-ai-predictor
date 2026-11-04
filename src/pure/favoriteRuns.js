@@ -21,6 +21,22 @@ export function venuesFromPredictions(races) {
   return [...venues.values()];
 }
 
+/**
+ * トップの venuesData（get_today_races の形。レース番号は raceNo、会場コードは会場の placeCd）を
+ * buildFavoritesFallback の入力（race.raceNumber・race.venueCode）にそろえる（BOA-1274）。
+ * 代わりの表示は☆0人でも出すので、予測の応答は読まずにこの形から作る。
+ */
+export function venuesFromTodayRaces(venuesData) {
+  return (venuesData ?? []).map((venue) => ({
+    placeCd: venue.placeCd,
+    races: (venue.races ?? []).map((race) => ({
+      ...race,
+      venueCode: venue.placeCd,
+      raceNumber: race.raceNumber ?? race.raceNo,
+    })),
+  }));
+}
+
 /** ☆の選手1人×1レースの行を、締切順に分ける。入力は今日の出走表。 */
 export function buildFavoriteRuns(venuesData, racerIds, nowHHMM) {
   const favorites = new Set(racerIds);
