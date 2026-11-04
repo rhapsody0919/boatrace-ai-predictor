@@ -738,7 +738,8 @@
       "last1m": "近1個月",
       "local": "本場地",
       "ippan": "一般賽",
-      "sgg1": "SG/G1"
+      "sgg1": "SG/G1",
+      "recent3": "最近3期"
     },
     "smallSampleTitle": "樣本數少，僅供參考",
     "gridTitleWithMetric": "各航道成績：{{metric}}",
@@ -758,6 +759,28 @@
       "local": "本場地",
       "ippan": "一般戰",
       "sgg1": "SG、G1"
+    },
+    "sixBoat": {
+      "title": "6艇選手本人的各道次成績",
+      "sub": "各選手本人在預想道次（※按艇號順序進場時）的成績。依實際進場道次統計",
+      "periodRecent3": "最近3期",
+      "periodLocal": "本場地",
+      "periodRange": "{{from}}〜{{to}}",
+      "colBoat": "艇號、選手",
+      "colWin": "第1名率",
+      "colDiff": "與全體選手相同道次平均的差距",
+      "colDiffLocal": "與本賽場相同道次平均的差距",
+      "colTop2": "2連對",
+      "colTop3": "3連對",
+      "colEntries": "進場",
+      "diff": "{{value}}pt",
+      "avg": "平均{{value}}",
+      "smallSampleTitle": "進場次數少，比率容易受偶然因素影響而波動",
+      "noteDiff": "差距＝與全體選手相同道次第1名率的差距（不加顏色）。同一分頁的ST分析則與「相同級別的平均」比較。",
+      "noteSample": "進場次數少的艇（1道少於10場、2〜4道少於30場、5道少於42場、6道少於67場），比率容易受偶然因素影響而波動，因此顯示為灰色且不顯示差距。少於10場也不顯示比率。",
+      "notePeriod": "最近3期＝已公開的最新3份官方期別成績（5〜10月、11〜4月統計）。與選手頁面的最近3期數值相同。點選一列，下方表格會切換至該選手。",
+      "fetchError": "無法載入最近3期的各道次成績。",
+      "skippedPeriod": "不含未出賽的期別"
     }
   },
   "aiPredictionTab": {
@@ -2387,7 +2410,10 @@
     "finishAbsentNote": "名次中的「缺」為缺賽的比賽，不計入得分率的出賽數。",
     "postPrelimFlying": "預賽後F",
     "postPrelimFlyingTitle": "預賽結束後的比賽中偷跑（F）。官方也保留預賽名次不變",
-    "postPrelimFlyingNote": "名次下方的「預賽後F」為預賽結束後的比賽中偷跑的選手。官方也保留預賽名次不變，因此計入上方的「列入名次」人數。"
+    "postPrelimFlyingNote": "名次下方的「預賽後F」為預賽結束後的比賽中偷跑的選手。官方也保留預賽名次不變，因此計入上方的「列入名次」人數。",
+    "trendStAvg": "平均{{avg}}、第{{rank}}名（{{n}}場）",
+    "trendStAvgTooFew": "僅{{n}}場，不顯示",
+    "trendStAvgNote": "本節平均ST（不含偷跑場次）與6艇中由快至慢的排名。少於3場不顯示。本節平均ST的效果未驗證，僅供參考。"
   },
   "basicInfo": {
     "note": "可切換條件比較各選手的成績。點選長條即可展開詳細資訊（最近10場、擅長賽場、依條件）",
@@ -2575,7 +2601,10 @@
     "motorResetNote": "剛更換",
     "motorUnusedNote": "新馬達、尚無實績",
     "motorBadgeUp": "機力↑",
-    "motorBadgeDown": "機力↓"
+    "motorBadgeDown": "機力↓",
+    "rowExpectedCourseWinRate": "預想道次第1名率",
+    "expectedCourseWinRateNote": "預想道次第1名率依最近3期的實際進場道次統計",
+    "noteExpectedCourse": "勝率、當地勝率、2連率為官方出走表的數值。平均ST、馬達2連率採用列名所示期間，預想道次第1名率採用最近3期的進場道次，其餘分析資料為過去90天（回收率為180天）的實績統計。標示為同場比賽中最佳數值。僅供參考，不保證結果"
   },
   "venueTendency": {
     "title": "本場館各航道傾向",
@@ -2653,7 +2682,8 @@
       "courseRate": "以與本次相同艇號出賽的近1年比賽的第1名率（第1名次數/出賽次數）",
       "technique": "該選手獲得第1名時最常見的決勝招式（括號為過去90天的第1名次數），不分艇號計算",
       "returnRate": "該選手以此艇號出賽、過去180天單勝的實際數值。僅供參考，不保證結果",
-      "dash": "「—」：無數據，或尚未取得"
+      "dash": "「—」：無數據，或尚未取得",
+      "expectedCourseWinRate": "最近3期進入預想道次（按艇號順序）時的第1名率（第1名次數/進場次數）"
     },
     "sourceLine": "出處：龍神雷達 {{url}}",
     "followUpHeading": "貼上後的提問範例",
@@ -2684,7 +2714,8 @@
       "prevResult": "本梯次前場",
       "courseRate": "艇號",
       "returnRate": "回收率",
-      "technique": "方式"
+      "technique": "方式",
+      "expectedCourseWinRate": "預想第1名"
     }
   },
   "raceList": {
@@ -2897,7 +2928,13 @@
       "freshPriorRuns": "依上一節為止的出賽（{{n}}場）得出的數字",
       "freshFirstMeetBanner": "{{venue}}於{{month}}月{{day}}日更換了新馬達。官方2連率從下一節開始提供。在那之前，龍神雷達會顯示依此場地出賽得出的數字",
       "officialModeSourceNoteFresh": "※ 過去的比賽中，「2連率」「3連率」「前檢」為出走表當時 BOAT RACE 官方網站的數值。但官方數值為0的馬達的「2連率」「3連率」，以及「機力指數」，是龍神雷達依本場比賽之前、在此場地的出賽得出的數值。",
-      "freshRate2Header": "2連率（節次開始時）"
+      "freshRate2Header": "2連率（節次開始時）",
+      "partsCountHeader": "本節零件更換",
+      "partsCountBadge": "更換{{n}}",
+      "partsCountNote": "更換N＝從本節首日至本場比賽展示為止所記錄的零件更換次數（不含螺旋槳）。點選可展開零件名稱。次數多寡不代表好壞（效果未驗證）。",
+      "usageFinal": "晉級優勝戰",
+      "usageChampion": "優勝",
+      "usageGradeNote": "顯示該節的比賽等級，以及在該節晉級優勝戰或獲得優勝的標記。"
     },
     "motorRanking": {
       "title": "🏁 馬達排行榜",
@@ -3664,7 +3701,8 @@
     "stLate": "比該場最早起跑的艇慢0.1秒以上的比例。越外側的航道越容易偏高，因此一併標示與相同航道、相同級別平均值的差距。偷跑的場次不計入。本服務的獨自統計，與其他網站同名指標不一致",
     "flyingCount": "級別為本場比賽出賽表上的數值。F為本期偷跑次數（金色1次、紅色2次），於5月1日、11月1日歸零。附「本節」表示該選手在本節首日至前一天之間偷跑，仍會出賽本節剩餘比賽，但無法參加本節的準優勝戰、優勝戰（賞典除外，不含當天的F）。L為出發延遲次數，與下方的慢出率不同。穩定率、慢出率不計偷跑的場次",
     "nigeSimulation": "僅彙整1航道的艇以逃走（Nige）拿下第1名的比賽，計算第2名來自各航道的比例。這是本賽場實績的統計，並非預測",
-    "basicInfoOfficial": "「官方」為與官方出賽表相同的勝率、2連率、3連率、平均ST。平均ST為 {{from}}〜{{to}} 的官方期別成績、所有場地（「選手狀態（全國勝率）」為出賽表數值，統計期間不同）。無法依等級篩選，選擇等級時會切換為「本期」"
+    "basicInfoOfficial": "「官方」為與官方出賽表相同的勝率、2連率、3連率、平均ST。平均ST為 {{from}}〜{{to}} 的官方期別成績、所有場地（「選手狀態（全國勝率）」為出賽表數值，統計期間不同）。無法依等級篩選，選擇等級時會切換為「本期」",
+    "expectedCourseWinRate": "該選手最近3期進入預想道次（按艇號順序）時的第1名率。與艇號別資訊分頁的6艇表格數值相同"
   },
   "weatherInEscape": {
     "loading": "正在載入統計…",
