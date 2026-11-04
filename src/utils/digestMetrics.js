@@ -124,7 +124,15 @@ export function computeZScore({ rate, expected, n }) {
 }
 
 /** 「イン有利」方向の指標（イン崩れ指数が低いほど当日条件と一致する） */
-export const IN_FAVORABLE_METRICS = new Set(["nige", "nigashi"]);
+export const IN_FAVORABLE_METRICS = new Set(["nige"]);
+
+/**
+ * 注目レースの点に使わない指標。逃がし（nigashi）は抽出に当たったレースの1号艇の1着が
+ * 外れたレースと同じだったため（56.0% 対 56.0%、級×勝率でそろえて +0.6pt［-2.5, +3.7］。
+ * data/analysis/nigashi-makurare/today-nigashi-hit.json、PR #2243）、方向一致度を持たせない
+ * （2026-11-04 オーナー決定）。「逃がしやすい選手」の一覧そのものは残す。
+ */
+export const NOT_FEATURED_METRICS = new Set(["nigashi"]);
 
 /**
  * 「今日の注目レース」の方向一致度。
@@ -132,17 +140,17 @@ export const IN_FAVORABLE_METRICS = new Set(["nige", "nigashi"]);
  * 逃げ・逃がしは「イン有利」方向なのでイン崩れ指数が低いほど一致、まくりは
  * 「イン不利」方向なので高いほど一致する。
  *
- * 逃がし（nigashi）は「その選手がいたレースで1号艇が逃げ切った割合」が期待より高いという材料で、
- * 1号艇の逃げが決まりやすい側（堅い側）。以前はまくりと同じ「イン不利」側に入れていた（2026-10-15 修正、
- * ~/ryujin-marketing/out/reports/2026-10-15-morning-info-discussion.md 第6節）
+ * 逃がし（nigashi）は方向一致度を持たない（null）。以前は逃げと同じ「イン有利」側に入れていたが、
+ * 抽出の当たりと1号艇の1着に差が無かったため外した（2026-11-04、NOT_FEATURED_METRICS 参照）。
  *
  * @param {"nige"|"makuri"|"nigashi"} metric
  * @param {number} volatilityPercentile イン崩れ指数（**0〜100**。情報源の
  *   predictions.feature_contributions.volatilityPercentile は0〜1なので、
  *   呼び出し側が×100してから渡す）
- * @returns {number|null} 0〜1。volatilityPercentile が無ければ null（候補から外す）
+ * @returns {number|null} 0〜1。volatilityPercentile が無い、または逃がしのときは null（候補から外す）
  */
 export function computeConsistency(metric, volatilityPercentile) {
+  if (NOT_FEATURED_METRICS.has(metric)) return null;
   if (!Number.isFinite(volatilityPercentile)) return null;
   assertPercent(volatilityPercentile, "volatilityPercentile");
   const v = volatilityPercentile / 100;

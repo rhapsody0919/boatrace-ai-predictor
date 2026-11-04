@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /**
- * 「逃がしやすい選手」（nigashi）の向き（2026-10-15 修正）。
- * 逃がしは「その選手がいたレースで1号艇が逃げ切った割合」が期待より高い材料で、逃げと同じ「イン有利」側。
- * 以前は方向一致度・注目レースの理由文・ページの説明の3か所で「イン不利・荒れる要因」と逆に扱っていた。
+ * 「逃がしやすい選手」（nigashi）は注目レースの点（方向一致度）に入れない（2026-11-04 オーナー決定）。
+ * 根拠: 抽出に当たったレースの1号艇の1着は外れと同じ 56.0% 対 56.0%（PR #2243、
+ * data/analysis/nigashi-makurare/today-nigashi-hit.json）。一覧の区画そのものは残す。
+ * （2026-10-15 に向きを「イン有利」へ直した経緯は、ページの説明の固定として下に残す。）
  * あわせて、補正しているのは選手の級別ではなくレースグレードであること（文言）を固定する。DBには接続しない。
  *   node scripts/maintenance/verify-digest-nigashi-direction.js
  */
 import assert from "node:assert/strict";
 import { pickFeatured } from "../daily/generate-morning-digest.js";
-import { computeConsistency } from "../../src/utils/digestMetrics.js";
+import { computeConsistency, computeFeaturedScore } from "../../src/utils/digestMetrics.js";
 import {
   MORNING_DIGEST_META,
   MORNING_DIGEST_SECTIONS,
@@ -28,22 +29,27 @@ const nigashiRow = (volatility) => ({
 });
 
 const cases = [
-  ["方向一致度: 逃がしは逃げと同じ向き（イン崩れ指数が低いほど一致）、まくりは逆", () => {
-    assert.equal(computeConsistency("nigashi", 10), computeConsistency("nige", 10));
-    assert.equal(computeConsistency("nigashi", 10), 0.9);
+  ["方向一致度: 逃げはイン崩れ指数が低いほど一致、まくりは逆、逃がしは持たない（null）", () => {
+    assert.equal(computeConsistency("nige", 10), 0.9);
     assert.equal(computeConsistency("makuri", 10), 0.1);
+    assert.equal(computeConsistency("nigashi", 10), null);
+    assert.equal(computeConsistency("nigashi", 90), null);
   }],
-  ["注目レース: イン崩れ指数が低いレースの逃がしが、高いレースの逃がしより先に選ばれる", () => {
-    const low = nigashiRow(10);
-    const high = { ...nigashiRow(90), race_id: "2026-10-15-04-02" };
-    const featured = pickFeatured({ nige: [], makuri: [], nigashi: [high, low] });
-    assert.equal(featured.race_id, low.race_id);
+  ["注目レースの点: 逃がしだけが当たるレースは点が付かず、候補に入らない", () => {
+    assert.equal(
+      computeFeaturedScore({ metric: "nigashi", rate: 80, expected: 55, n: 40, volatilityPercentile: 10 }),
+      null,
+    );
+    assert.equal(pickFeatured({ nige: [], makuri: [], nigashi: [nigashiRow(10)] }), null);
   }],
-  ["注目レースの理由文: 逃がしは「イン有利」で、「イン不利」と書かない", () => {
-    const featured = pickFeatured({ nige: [], makuri: [], nigashi: [nigashiRow(10)] });
-    assert.equal(featured.detail.from, "nigashi");
-    assert.match(featured.detail.reason, /「イン有利」方向/);
-    assert.doesNotMatch(featured.detail.reason, /イン不利/);
+  ["注目レース: 逃がしがどれだけ強くても、点の低い逃げ・まくりが選ばれる", () => {
+    const nige = {
+      ...nigashiRow(50), section: "nige", race_id: "2026-10-15-05-01", course: 1,
+      metric_value: 55, metric_expected: 53,
+    };
+    const featured = pickFeatured({ nige: [nige], makuri: [], nigashi: [nigashiRow(0)] });
+    assert.equal(featured.race_id, nige.race_id);
+    assert.equal(featured.detail.from, "nige");
   }],
   ["注目レースの理由文: まくりは今まで通り「イン不利」", () => {
     const makuri = { ...nigashiRow(90), section: "makuri", course: 4, metric_value: 30, metric_expected: 5 };
