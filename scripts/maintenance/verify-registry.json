@@ -817,6 +817,11 @@
       "guards": "新しいモーターの最初の開催で、モータ情報の一覧が全艇0.0%にならない決まり（公式が0の艇だけ自前の値、まだ走っていません／0%（N走）／※、最初の節の帯、前の節までの走数）（BOA-830）"
     },
     {
+      "script": "verify-motor-power-shared.js",
+      "tier": "ci",
+      "guards": "BOA-1245: 画面の機力指数（getMotorPowerIndex・motorWindowStart）と番付の motor_power が同じ純関数 src/utils/motorPowerIndex.js で数える（サービス層に計算の写しが無い、移す前の画面の計算と乱数3,000通りで一致（指数・期間）、会場の全機は1機ずつの計算と同じ、載せる最少の走数は画面の SMALL_SAMPLE_THRESHOLD）、rank-data.js が motor_power の引数の誤りを DB の前に拒否する（DB・通信なし）"
+    },
+    {
       "script": "verify-motor-pretest.js",
       "tier": "ci",
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
@@ -1182,8 +1187,8 @@
       "script": "verify-rank-data-screen-parity.js",
       "tier": "manual",
       "reason": "本番 DB を匿名キーで読む（CI に鍵を置かない）。今日の値は確定のたびに動くので、既定は昨日",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-rank-data-screen-parity.js [--date=YYYY-MM-DD]",
-      "guards": "番付の DB を読む dataset（rank-data.js）と画面の値の照合（本番の匿名の読み取り）。venue_payout: 昨日（--date で変更）の会場ランキングの固い場・荒れている場・万舟率の上位5場の値と消化レース数が一致（BOA-1242）"
+      "command": "node --env-file=.env.local scripts/maintenance/verify-rank-data-screen-parity.js [--date=YYYY-MM-DD] [--venue=1-24]",
+      "guards": "番付の DB を読む dataset（rank-data.js）と画面の値の照合（本番の匿名の読み取り）。venue_payout: 昨日（--date で変更）の会場ランキングの固い場・荒れている場・万舟率の上位5場の値と消化レース数が一致（BOA-1242）。motor_power: 会場（既定 10）の上位3機・下位3機の機力指数・走数が画面の1機ずつの計算と一致（BOA-1245）"
     },
     {
       "script": "verify-registry-order.js",

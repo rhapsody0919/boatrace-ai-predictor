@@ -93,6 +93,10 @@ import {
   tallyVenuePayouts,
   rankVenuesByPayout,
 } from "../utils/venuePayoutStats.js";
+import {
+  computeMotorPowerIndex,
+  motorWindowFrom,
+} from "../utils/motorPowerIndex.js";
 
 // 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
 // getRacerBoatReturnRate/getRaceRacerBoatReturnRate/aggregateRacerVenueBoatStats
@@ -699,22 +703,12 @@ function isPastRace(raceId) {
  */
 async function motorWindowStart(venueCode, days, beforeRaceId = null) {
   const generationStart = await getMotorGenerationStart(venueCode);
-  if (generationStart === null) {
-    return { since: null, generationStart, clippedByGeneration: false };
-  }
-  const daysAgo = new Date(
-    beforeRaceId === null
-      ? Date.now() + 9 * 60 * 60 * 1000
-      : `${beforeRaceId.slice(0, 10)}T00:00:00Z`,
-  );
-  daysAgo.setUTCDate(daysAgo.getUTCDate() - days);
-  const windowStart = daysAgo.toISOString().split("T")[0];
-  const clippedByGeneration = generationStart > windowStart;
-  return {
-    since: clippedByGeneration ? generationStart : windowStart,
+  // 期間の計算は src/utils/motorPowerIndex.js（BOA-1245。龍神ボート番付と共有するため手を加えずに移した）
+  return motorWindowFrom(
     generationStart,
-    clippedByGeneration,
-  };
+    days,
+    beforeRaceId === null ? jstToday() : beforeRaceId.slice(0, 10),
+  );
 }
 
 const NEUTRAL_EXHIBITION_DIFF_SEC = 0.02; // これ未満は展示タイムの日次ブレの範囲内とみなす
@@ -2972,35 +2966,9 @@ export const supabaseDataService = {
           (data ?? []).forEach((r) => resultByRaceId.set(r.race_id, r));
         });
 
-        const residuals = [];
-        let actualHits2 = 0;
-        let actualHits3 = 0;
-        let baselineSum = 0;
-        entries.forEach((e) => {
-          const result = resultByRaceId.get(e.race_id);
-          if (!result || e.global_2rate === null) return;
-          const isTop2 =
-            result.rank1 === e.boat_number || result.rank2 === e.boat_number;
-          const isTop3 = isTop2 || result.rank3 === e.boat_number;
-          if (isTop2) actualHits2 += 1;
-          if (isTop3) actualHits3 += 1;
-          residuals.push((isTop2 ? 100 : 0) - e.global_2rate);
-          baselineSum += e.global_2rate;
-        });
-        if (residuals.length === 0) return windowed;
-
-        const powerIndex =
-          residuals.reduce((sum, v) => sum + v, 0) / residuals.length;
-        const avgBaseline = baselineSum / residuals.length;
-
-        return {
-          ...windowed,
-          sample_count: residuals.length,
-          actual_rate2: (actualHits2 / residuals.length) * 100,
-          actual_rate3: (actualHits3 / residuals.length) * 100,
-          avg_baseline_rate2: avgBaseline,
-          power_index: powerIndex,
-        };
+        // 指数の計算は src/utils/motorPowerIndex.js（BOA-1245。龍神ボート番付と共有するため手を加えずに移した）
+        const index = computeMotorPowerIndex(entries, resultByRaceId);
+        return index ? { ...windowed, ...index } : windowed;
       },
     );
   },

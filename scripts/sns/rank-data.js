@@ -8,6 +8,7 @@
  * DB を読む dataset（読むだけ。画面と同じ匿名キーを .env.local から渡す）:
  *   node --env-file=.env.local scripts/sns/rank-data.js --dataset=venue_payout [--from=YYYY-MM-DD] [--to=YYYY-MM-DD]
  *   node --env-file=.env.local scripts/sns/rank-data.js --dataset=venue_favorite [--to=YYYY-MM-DD]
+ *   node --env-file=.env.local scripts/sns/rank-data.js --dataset=motor_power --venue=<1-24> [--to=YYYY-MM-DD]
  * 集計は画面と同じ純関数を使う（新しい集計の式を作らない）。
  */
 import { readFileSync } from "node:fs";
@@ -21,7 +22,14 @@ import {
   venuePayoutRates,
 } from "../../src/utils/venuePayoutStats.js";
 import { addDaysToDateString } from "../lib/dateUtils.js";
-import { readAll, monthSlices } from "./rank-data-db.js";
+import { readAll, readAllIn, monthSlices } from "./rank-data-db.js";
+import {
+  computeVenueMotorPowerIndexes,
+  motorWindowFrom,
+} from "../../src/utils/motorPowerIndex.js";
+import { currentMotorGenerationStart } from "../../src/utils/motorGeneration.js";
+import { formatPowerIndex } from "../../src/utils/smallSampleRate.js";
+import { SMALL_SAMPLE_THRESHOLD } from "../../src/components/race/basicInfoStats.js";
 
 function venueKimarite() {
   const stats = VENUE_SUMMARY_STATS;
@@ -60,8 +68,15 @@ function venueKimarite() {
 // 画面のランキングと同じ下限。verify で SHOW_MIN_N との一致を監視する。
 const WEATHER_SHOW_MIN_N = 1000;
 function venueInByWeather() {
-  const data = JSON.parse(readFileSync(new URL("../../public/data/weather-in-escape.json", import.meta.url), "utf8"));
-  const bins = WIND_BINS.filter(({ key }) => ["head_strong", "tail_strong"].includes(key));
+  const data = JSON.parse(
+    readFileSync(
+      new URL("../../public/data/weather-in-escape.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  const bins = WIND_BINS.filter(({ key }) =>
+    ["head_strong", "tail_strong"].includes(key),
+  );
   const entries = Object.entries(data.venues);
   return {
     dataset: "venue_in_by_weather",
@@ -72,22 +87,28 @@ function venueInByWeather() {
     scope: "archive",
     unit: "venue",
     value_type: "rate",
-    rows: bins.flatMap(({ key: bin, label }) => entries
-      .filter(([, v]) => (v.bins[bin]?.n ?? 0) >= WEATHER_SHOW_MIN_N)
-      .sort((a, b) => a[1].bins[bin].diff - b[1].bins[bin].diff)
-      .map(([code, v]) => ({
-        name: STADIUM_NAMES[code],
-        k: null, // 丸め済みの率から勝ち数を逆算しない。
-        n: v.bins[bin].n,
-        value: v.bins[bin].rate,
-        extra: {
-          venue_code: Number(code), bin, label,
-          diff: v.bins[bin].diff, venue_rate: v.rate,
-        },
-      }))),
+    rows: bins.flatMap(({ key: bin, label }) =>
+      entries
+        .filter(([, v]) => (v.bins[bin]?.n ?? 0) >= WEATHER_SHOW_MIN_N)
+        .sort((a, b) => a[1].bins[bin].diff - b[1].bins[bin].diff)
+        .map(([code, v]) => ({
+          name: STADIUM_NAMES[code],
+          k: null, // 丸め済みの率から勝ち数を逆算しない。
+          n: v.bins[bin].n,
+          value: v.bins[bin].rate,
+          extra: {
+            venue_code: Number(code),
+            bin,
+            label,
+            diff: v.bins[bin].diff,
+            venue_rate: v.rate,
+          },
+        })),
+    ),
     excluded: bins.map(({ key: bin }) => ({
       bin,
-      names: entries.filter(([, v]) => (v.bins[bin]?.n ?? 0) < WEATHER_SHOW_MIN_N)
+      names: entries
+        .filter(([, v]) => (v.bins[bin]?.n ?? 0) < WEATHER_SHOW_MIN_N)
         .map(([code]) => STADIUM_NAMES[code]),
     })),
     baseline: { label: "全国の1コース1着率", value: data.overallInWinRate },
@@ -100,9 +121,11 @@ function venueInByWeather() {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 /** JST の今日 */
-const jstToday = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+const jstToday = () =>
+  new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 const slash = (d) => d.replaceAll("-", "/");
-const round = (v, digits) => (v === null || v === undefined ? null : Number(v.toFixed(digits)));
+const round = (v, digits) =>
+  v === null || v === undefined ? null : Number(v.toFixed(digits));
 
 /**
  * 3連単の人気（race_results.popularity_trio）が全会場でそろう最初の日。
@@ -120,22 +143,39 @@ const VENUE_RANKING_MIN_RACES = 3;
 async function readVenueResults(from, to) {
   const slices = monthSlices(from, to);
   const [raceParts, resultParts] = await Promise.all([
-    Promise.all(slices.map((s) => readAll("races", "race_id, venue_code", ["race_id"],
-      (q) => q.gte("race_date", s.from).lte("race_date", s.to)))),
-    Promise.all(slices.map((s) => readAll(
-      "race_results",
-      "race_id, rank1, payout_trio, popularity_trio, winning_technique, race_status",
-      ["race_id"],
-      (q) => q.gte("race_id", s.from).lt("race_id", addDaysToDateString(s.to, 1)),
-    ))),
+    Promise.all(
+      slices.map((s) =>
+        readAll("races", "race_id, venue_code", ["race_id"], (q) =>
+          q.gte("race_date", s.from).lte("race_date", s.to),
+        ),
+      ),
+    ),
+    Promise.all(
+      slices.map((s) =>
+        readAll(
+          "race_results",
+          "race_id, rank1, payout_trio, popularity_trio, winning_technique, race_status",
+          ["race_id"],
+          (q) =>
+            q
+              .gte("race_id", s.from)
+              .lt("race_id", addDaysToDateString(s.to, 1)),
+        ),
+      ),
+    ),
   ]);
-  const venueByRaceId = new Map(raceParts.flat().map((r) => [r.race_id, r.venue_code]));
+  const venueByRaceId = new Map(
+    raceParts.flat().map((r) => [r.race_id, r.venue_code]),
+  );
   return { results: resultParts.flat(), venueByRaceId };
 }
 
 /** 期間の中で結果のあった最初と最後の日（ラベルを実際に数えた日に合わせる） */
 function observedSpan(results, venueByRaceId) {
-  const days = results.filter((r) => venueByRaceId.has(r.race_id)).map((r) => r.race_id.slice(0, 10)).sort();
+  const days = results
+    .filter((r) => venueByRaceId.has(r.race_id))
+    .map((r) => r.race_id.slice(0, 10))
+    .sort();
   if (!days.length) throw new Error("期間に結果のあるレースが無い");
   return { from: days[0], to: days[days.length - 1] };
 }
@@ -150,14 +190,20 @@ async function venuePayout({ from, to }) {
   const { results, venueByRaceId } = await readVenueResults(since, until);
   const span = observedSpan(results, venueByRaceId);
   const byVenue = tallyVenuePayouts(results, (id) => venueByRaceId.get(id));
-  const national = tallyVenuePayouts(results, (id) => (venueByRaceId.has(id) ? 0 : null)).get(0);
+  const national = tallyVenuePayouts(results, (id) =>
+    venueByRaceId.has(id) ? 0 : null,
+  ).get(0);
   const { payoutVenues } = venuePayoutRates(byVenue, VENUE_RANKING_MIN_RACES);
   const nationalAvg = national.payoutSum / national.payoutCount;
   const nationalHigh = (national.manshuCount / national.payoutCount) * 100;
   const sorted = [...payoutVenues].sort((a, b) => a.venue_code - b.venue_code);
   return {
     dataset: "venue_payout",
-    period: { from: span.from, to: span.to, label: `${slash(span.from)}〜${slash(span.to)}` },
+    period: {
+      from: span.from,
+      to: span.to,
+      label: `${slash(span.from)}〜${slash(span.to)}`,
+    },
     scope: from || to ? "custom" : "12m",
     unit: "venue",
     value_type: "mean",
@@ -167,14 +213,27 @@ async function venuePayout({ from, to }) {
         k: null,
         n: v.payout_count,
         value: Math.round(v.avg_payout),
-        extra: { venue_code: v.venue_code, metric: "avg_payout", unit: "円", race_count: v.race_count, national_value: Math.round(nationalAvg) },
+        extra: {
+          venue_code: v.venue_code,
+          metric: "avg_payout",
+          unit: "円",
+          race_count: v.race_count,
+          national_value: Math.round(nationalAvg),
+        },
       })),
       ...sorted.map((v) => ({
         name: STADIUM_NAMES[v.venue_code],
         k: v.manshu_count,
         n: v.payout_count,
         value: round(v.manshu_rate, 1),
-        extra: { venue_code: v.venue_code, metric: "high_payout_rate", unit: "%", threshold_yen: HIGH_PAYOUT_YEN, race_count: v.race_count, national_value: round(nationalHigh, 1) },
+        extra: {
+          venue_code: v.venue_code,
+          metric: "high_payout_rate",
+          unit: "%",
+          threshold_yen: HIGH_PAYOUT_YEN,
+          race_count: v.race_count,
+          national_value: round(nationalHigh, 1),
+        },
       })),
     ],
     // 2つの metric を1つの dataset に入れるので、全国の値は行ごと（extra.national_value）に持つ（venue_kimarite と同じ）
@@ -190,29 +249,169 @@ async function venuePayout({ from, to }) {
  */
 async function venueFavorite({ to }) {
   const until = to ?? addDaysToDateString(jstToday(), -1);
-  if (until < POPULARITY_COMPLETE_FROM) throw new Error(`--to は ${POPULARITY_COMPLETE_FROM} 以降（3連単の人気がそろう日から）`);
-  const { results, venueByRaceId } = await readVenueResults(POPULARITY_COMPLETE_FROM, until);
+  if (until < POPULARITY_COMPLETE_FROM)
+    throw new Error(
+      `--to は ${POPULARITY_COMPLETE_FROM} 以降（3連単の人気がそろう日から）`,
+    );
+  const { results, venueByRaceId } = await readVenueResults(
+    POPULARITY_COMPLETE_FROM,
+    until,
+  );
   const span = observedSpan(results, venueByRaceId);
   const byVenue = tallyVenuePayouts(results, (id) => venueByRaceId.get(id));
-  const national = tallyVenuePayouts(results, (id) => (venueByRaceId.has(id) ? 0 : null)).get(0);
+  const national = tallyVenuePayouts(results, (id) =>
+    venueByRaceId.has(id) ? 0 : null,
+  ).get(0);
   const rows = [...byVenue.values()]
-    .filter((v) => v.raceCount >= VENUE_RANKING_MIN_RACES && v.popularityCount > 0)
+    .filter(
+      (v) => v.raceCount >= VENUE_RANKING_MIN_RACES && v.popularityCount > 0,
+    )
     .sort((a, b) => a.venue_code - b.venue_code)
     .map((v) => ({
       name: STADIUM_NAMES[v.venue_code],
       k: v.favoriteCount,
       n: v.popularityCount,
       value: round((v.favoriteCount / v.popularityCount) * 100, 1),
-      extra: { venue_code: v.venue_code, metric: "favorite_rate", race_count: v.raceCount },
+      extra: {
+        venue_code: v.venue_code,
+        metric: "favorite_rate",
+        race_count: v.raceCount,
+      },
     }));
   return {
     dataset: "venue_favorite",
-    period: { from: span.from, to: span.to, label: `${slash(span.from)}〜${slash(span.to)}` },
+    period: {
+      from: span.from,
+      to: span.to,
+      label: `${slash(span.from)}〜${slash(span.to)}`,
+    },
     scope: to ? "custom" : "since_2026_10",
     unit: "venue",
     value_type: "rate",
     rows,
-    baseline: { label: "全国", value: round((national.favoriteCount / national.popularityCount) * 100, 1) },
+    baseline: {
+      label: "全国",
+      value: round(
+        (national.favoriteCount / national.popularityCount) * 100,
+        1,
+      ),
+    },
+    observed_at: new Date().toISOString(),
+    source_sha: null,
+  };
+}
+
+/** 機力指数の期間（画面の既定、MotorConditionChart の「過去90日」） */
+const MOTOR_POWER_DAYS = 90;
+
+/**
+ * 会場の全機の機力指数（画面のモーター調子・モータ情報と同じ式・同じ期間）。
+ * 期間は max(現行モーターの使用開始日, 基準日−90日)。基準日は今日（JST、画面と同じ。当日の確定レースも入る）。
+ * --to=D を渡すと D の終わりまで（画面で D の翌日の最初のレースを開いたときと同じ: 基準日 D+1、race_id < D+1）。
+ * 番付に載せるのは、画面が評価の言葉を出す走数（SMALL_SAMPLE_THRESHOLD=6、powerIndexTone の small の線）以上の機。
+ * それ未満の機は excluded に出す
+ */
+async function motorPower({ venue, to }) {
+  const venueCode = Number(venue);
+  if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
+    throw new Error("--venue=<1〜24> を指定してください");
+  }
+  const baseDate = to ? addDaysToDateString(to, 1) : jstToday();
+  const before = to ? baseDate : null; // race_id はこの文字列より前（画面の beforeRaceId と同じ比べ方）
+  const starts = await readAll(
+    "venue_motor_start_dates",
+    "start_date",
+    ["start_date"],
+    (q) => q.eq("venue_code", venueCode),
+  );
+  const window = motorWindowFrom(
+    currentMotorGenerationStart(starts),
+    MOTOR_POWER_DAYS,
+    baseDate,
+  );
+  if (window.since === null) {
+    throw new Error(
+      `${STADIUM_NAMES[venueCode]} はモーターの使用開始日が分からない（画面も機力指数を出さない）`,
+    );
+  }
+  // 画面の getRacesForVenueSince と同じ: 会場・race_date が since 以降（上限があれば race_id < 上限）
+  const races = (
+    await readAll(
+      "races",
+      "race_id, race_date",
+      ["race_date", "race_id"],
+      (q) =>
+        q
+          .eq("venue_code", venueCode)
+          .gte("race_date", window.since)
+          .lte("race_date", before ?? "9999-12-31"),
+    )
+  ).filter((r) => before === null || r.race_id < before);
+  const raceIds = races.map((r) => r.race_id);
+  const [entries, results] = await Promise.all([
+    readAllIn(
+      "race_entries",
+      "race_id, boat_number, motor_number, global_2rate",
+      "race_id",
+      raceIds,
+      ["race_id", "boat_number"],
+    ),
+    readAllIn(
+      "race_results",
+      "race_id, rank1, rank2, rank3",
+      "race_id",
+      raceIds,
+      ["race_id"],
+    ),
+  ]);
+  const resultByRaceId = new Map(results.map((r) => [r.race_id, r]));
+  const indexes = computeVenueMotorPowerIndexes(entries, resultByRaceId);
+  const shown = indexes.filter((m) => m.sample_count >= SMALL_SAMPLE_THRESHOLD);
+  const lastDay =
+    races
+      .filter((r) => resultByRaceId.has(r.race_id))
+      .map((r) => r.race_date)
+      .sort()
+      .at(-1) ?? null;
+  const name = STADIUM_NAMES[venueCode];
+  const toLabel = lastDay ? slash(lastDay) : "";
+  return {
+    dataset: "motor_power",
+    period: {
+      from: window.since,
+      to: lastDay,
+      label: window.clippedByGeneration
+        ? `${slash(window.since)}（モーターの使用開始）〜${toLabel}`
+        : `${slash(window.since)}〜${toLabel}（過去${MOTOR_POWER_DAYS}日）`,
+    },
+    scope: "90d",
+    unit: "motor",
+    value_type: "mean",
+    rows: [...shown]
+      .sort(
+        (a, b) =>
+          b.power_index - a.power_index || a.motor_number - b.motor_number,
+      )
+      .map((m) => ({
+        name: `${name}${m.motor_number}号機`,
+        k: null,
+        n: m.sample_count,
+        value: round(m.power_index, 1),
+        extra: {
+          venue_code: venueCode,
+          motor_number: m.motor_number,
+          label: formatPowerIndex(m.power_index),
+          actual_rate2: round(m.actual_rate2, 1),
+          avg_baseline_rate2: round(m.avg_baseline_rate2, 1),
+          clipped_by_generation: window.clippedByGeneration,
+          generation_start: window.generationStart,
+        },
+      })),
+    excluded: indexes
+      .filter((m) => m.sample_count < SMALL_SAMPLE_THRESHOLD)
+      .map((m) => ({ motor_number: m.motor_number, n: m.sample_count })),
+    min_n: SMALL_SAMPLE_THRESHOLD,
+    baseline: { label: "選手の実力どおり", value: 0 },
     observed_at: new Date().toISOString(),
     source_sha: null,
   };
@@ -224,6 +423,7 @@ const datasets = new Map([
   ["venue_in_by_weather", { build: venueInByWeather, options: [] }],
   ["venue_payout", { build: venuePayout, options: ["from", "to"] }],
   ["venue_favorite", { build: venueFavorite, options: ["to"] }],
+  ["motor_power", { build: motorPower, options: ["venue", "to"] }],
 ]);
 
 /** @returns {{ dataset: string, options: Record<string, string> }} */
@@ -235,7 +435,8 @@ export function parseArgs(argv) {
     if (!m) throw new Error(`未対応の引数: ${arg}`);
     const [, key, value] = m;
     if (key === "dataset") {
-      if (dataset !== undefined) throw new Error("--dataset は1つだけ指定してください");
+      if (dataset !== undefined)
+        throw new Error("--dataset は1つだけ指定してください");
       dataset = value;
       continue;
     }
@@ -247,11 +448,15 @@ export function parseArgs(argv) {
   if (!spec) throw new Error(`未対応の dataset: ${dataset}`);
   for (const [key, value] of Object.entries(options)) {
     if (!spec.options.includes(key)) {
-      throw new Error(`未対応の引数: --${key}（${dataset} が受け付けるのは ${spec.options.length ? spec.options.map((o) => `--${o}`).join("・") : "--dataset だけ"}）`);
+      throw new Error(
+        `未対応の引数: --${key}（${dataset} が受け付けるのは ${spec.options.length ? spec.options.map((o) => `--${o}`).join("・") : "--dataset だけ"}）`,
+      );
     }
-    if ((key === "from" || key === "to") && !DATE_RE.test(value)) throw new Error(`--${key} は YYYY-MM-DD`);
+    if ((key === "from" || key === "to") && !DATE_RE.test(value))
+      throw new Error(`--${key} は YYYY-MM-DD`);
   }
-  if (options.from && options.to && options.from > options.to) throw new Error("--from は --to 以前");
+  if (options.from && options.to && options.from > options.to)
+    throw new Error("--from は --to 以前");
   return { dataset, options };
 }
 
