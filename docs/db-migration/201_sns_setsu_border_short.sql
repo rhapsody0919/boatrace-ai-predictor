@@ -16,7 +16,8 @@
 --   1日1本の読み直しはコードの側: push-setsu-kiryoku-short.js の liveOf と snsClaimCheck.js の setsu_already_sent_today を同じ variant だけで数える。
 -- 日の上限（daily_limit_youtube、今の本番 11）: このマイグレーションは変えない。border の日は YouTube が1本増える。
 --   予定の最大は 全貌 4（完全版）＋4（Shorts）＋節の機力 1＋人気薄の1着 1＝10 で、border で 11（上限ちょうど。やり直し（held の後の再 claim）の余りが無い）。
---   border は朝 08:00 に先に枠を取るので、足りない日に落ちるのは後の束（21:30 の節の機力が push の日の上限の検査で拒否、exit 1）。
+--   push の日の上限の検査はその時点の試行と未 claim の予定を数えるので、足りない日に落ちるのは後に push された束
+--   （border は朝 08:00 に先に枠を取る。21:30 の節の機力か、その後の YouTube（ナイターの全貌等）が拒否される。節の機力なら exit 1）。
 --   余りを持たせるなら、オーナーが border の旗（hq の config/shorts-border.json の send）を on にする日の前に 11→12 を当てる（PR の本文の SQL）。
 --   クォータ（104 units×12＝1,248 ＜ general_limit 10,000、upload 12 ＜ 100）は足りる。X の取り置き（sns_x_kind_reserves）は X だけなので影響なし
 -- 検証: scripts/maintenance/verify-sns-setsu-kiryoku-short.js（PGlite、外部接続なし。193 の後にこの 201 を当てて通す）
@@ -24,8 +25,10 @@
 --   コード（push-setsu-kiryoku-short.js・snsClaimCheck.js・snsSetsuKiryokuShort.js）とはどちらが先でも送らない側に倒れる:
 --   コードが先なら border の item（variant='border'）を CHECK が拒み、push は下書きを公開保留にして落ちる（exit 6）。
 --   マイグレーションが先なら、今のコードは border も variant='main' で入れるので今と同じ（1日1本）。db-apply は master の HEAD の SQL を当てる
--- 当てる時刻: 23:00〜04:59 JST（送り手の cron sns-send（JST 7:00〜22:58）と、item を書く sns-auto-plan（JST 5:00〜8:58・22:00〜22:55）の
---   どちらも止まっている間。sns_auto_send_items に ACCESS EXCLUSIVE を取る）。10秒取れなければ失敗し何も変わらない
+-- 当てる時刻: 23:00〜04:59 JST（送り手の cron sns-send（JST 7:00〜22:58）と、item を書く sns-auto-plan（vercel.json の */5 20-23,0-13、
+--   JST 5:00〜22:55）のどちらも止まっている間。sns_auto_send_items に ACCESS EXCLUSIVE を取る）。10秒取れなければ失敗し何も変わらない。
+--   DO・ALTER を含むので db-apply は承認待ち（apply-gated）になり、当たるのはオーナーが承認を押した時刻。承認はこの窓で押す
+--   （窓の外でも壊れはしない。送り手・作り手が最大10秒待つだけ）
 -- ロック: sns_auto_send_items だけ（sns_auto_send_control は触らない。1つの表だけなので、control → items の順に読む runner と輪にならない）
 --
 -- 適用前の確認（読み取り）:
@@ -34,6 +37,7 @@
 --   SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conname IN ('sns_auto_send_items_variant_check','sns_auto_send_items_variant_scope','sns_auto_send_items_setsu_id');
 --   期待: 下の DO の3つの文字列（2026-11-04 に本番を読み取りで確認）
 --   SELECT count(*) FROM public.sns_auto_send_items WHERE variant = 'border';  期待: 0
+--   SELECT count(*) FROM public.sns_x_send_jobs WHERE channel = 'youtube' AND state IN ('sending', 'reconcile');  期待: 0（上げている最中が無い）
 --
 -- 適用後の確認（読み取り）:
 --   SELECT indexdef FROM pg_indexes WHERE indexname = 'sns_auto_send_items_setsu_day';  期待: (channel, "left"(race_id, 16), variant)
@@ -43,8 +47,13 @@
 --
 -- 戻し方（DDL は戻さない。border の item を新しく作らなければ、この索引と CHECK は 193 と同じ意味になる）:
 --   1. hq の config/shorts-border.json を send=false にする（border の束を出さない）
---   2. 生きている border の item を止める:
---      UPDATE public.sns_auto_send_items SET state = 'stopped', stopped_at = now(), stopped_via = 'superseded' WHERE variant = 'border' AND state NOT IN ('stopped','held_manual','sent');
+--   2. 生きている border の item を止め、下書きを公開保留にする（push の作り直しと同じ形。stop_sns_auto_item は bundle_import_id で
+--      下書きを探すので draft_id でひもづくこの item には効かない。上げている最中・送った job の item は除く）。1つの BEGIN〜COMMIT で:
+--      WITH s AS (UPDATE public.sns_auto_send_items i SET state = 'stopped', stopped_at = now(), stopped_via = 'superseded'
+--          WHERE i.variant = 'border' AND i.state NOT IN ('stopped', 'held_manual', 'sent')
+--            AND NOT EXISTS (SELECT 1 FROM public.sns_x_send_jobs j WHERE j.draft_id = i.draft_id AND j.state IN ('sending', 'reconcile', 'posted'))
+--          RETURNING i.draft_id)
+--      UPDATE public.sns_drafts SET publish_blocked = true WHERE id IN (SELECT draft_id FROM s);
 --   3. 1日1本に戻したいだけならコードを戻す（push が border も variant='main' で入れ、193 と同じく1日1本になる）
 --   193 の定義に DDL で戻すのは、border の行（stopped・sent も）が1行も無いときだけできる（variant_check・setsu_id が既存の行を拒むため）
 BEGIN;
