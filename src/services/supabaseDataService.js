@@ -4423,9 +4423,7 @@ export const supabaseDataService = {
       // 2027-12-03以降は窓の始点がデータの開始日を越えて直書きが誤りになるため、
       // その時点で注記（locales の basicInfo/wakuInfo.periodCaveat、
       // beforeInfo.detailTableNote、locales の termHints.*、RacerPerformanceStats.jsx）を見直す
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - 730);
-      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+      const cutoffStr = racerHistoryCutoff();
 
       const entries = await fetchRacerEntriesSince(
         racerId,
@@ -4539,9 +4537,7 @@ export const supabaseDataService = {
         return [];
       }
 
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - 730);
-      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+      const cutoffStr = racerHistoryCutoff();
 
       // gradeはST考察のベースライン（st_course_baselineの(course, grade)セル）を
       // 引くのに使う（phase a FR-1）。race_entries.gradeは実測でnull 0件・4値（A1/A2/B1/B2）
@@ -4771,7 +4767,7 @@ export const supabaseDataService = {
    * venueCode/boatNumberによる絞り込みは行わない（=racerIdだけでキャッシュ
    * できる）。フィルタ変更のたびに毎回re-fetchするのではなく、この関数を
    * racerId単位で1回だけ呼び、絞り込み・集計はaggregateRacerVenueBoatStats
-   * （同ファイル内のプレーン関数）でクライアント側メモリ上に行う設計にして
+   * （src/utils/racerVenueBoatStats.js の純関数）でクライアント側メモリ上に行う設計にして
    * いる（フィルタ操作をネットワークI/O無しの即時計算にするため）。
    * 不成立レース（race_status=no_race。BOA-477）とrank1未確定行は
    * ここで除外し、以降の集計側では意識しなくて済むようにする

@@ -22,13 +22,16 @@ import {
   tallyVenuePayouts,
   venuePayoutRates,
 } from "../../src/utils/venuePayoutStats.js";
-import { addDaysToDateString } from "../lib/dateUtils.js";
+import { addDaysToDateString, getTodayDateJST } from "../lib/dateUtils.js";
 import { readAll, readAllIn, monthSlices } from "./rank-data-db.js";
 import {
   computeVenueMotorPowerIndexes,
   motorWindowFrom,
 } from "../../src/utils/motorPowerIndex.js";
-import { currentMotorGenerationStart } from "../../src/utils/motorGeneration.js";
+import {
+  currentMotorGenerationStart,
+  motorGenerationStartAsOf,
+} from "../../src/utils/motorGeneration.js";
 import { formatPowerIndex } from "../../src/utils/smallSampleRate.js";
 import { SMALL_SAMPLE_THRESHOLD } from "../../src/components/race/basicInfoStats.js";
 import { buildRacerRaceHistoryRows } from "../../src/services/racerRaceHistoryRows.js";
@@ -127,9 +130,7 @@ function venueInByWeather() {
 // ── DB を読む dataset ─────────────────────────────────────────
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-/** JST の今日 */
-const jstToday = () =>
-  new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+const jstToday = getTodayDateJST;
 const slash = (d) => d.replaceAll("-", "/");
 const round = (v, digits) =>
   v === null || v === undefined ? null : Number(v.toFixed(digits));
@@ -139,7 +140,7 @@ const round = (v, digits) =>
  * 本番の月ごとの充足（2026-11-04 読み取りで実測）: 2026-08 は 139/4,918、09 は 3,820/4,594、
  * 10 は 4,729/4,729。それより前は一部のレースにしか無いので、1番人気の率は 2026-10-01 から数える
  */
-export const POPULARITY_COMPLETE_FROM = "2026-10-01";
+const POPULARITY_COMPLETE_FROM = "2026-10-01";
 /** 画面の会場ランキング（getTodaysVenueRanking の既定）と同じ、会場を載せる最少のレース数 */
 const VENUE_RANKING_MIN_RACES = 3;
 
@@ -200,6 +201,8 @@ async function venuePayout({ from, to }) {
   const national = tallyVenuePayouts(results, (id) =>
     venueByRaceId.has(id) ? 0 : null,
   ).get(0);
+  if (!national?.payoutCount)
+    throw new Error("期間に3連単の配当のあるレースが無い");
   const { payoutVenues } = venuePayoutRates(byVenue, VENUE_RANKING_MIN_RACES);
   const nationalAvg = national.payoutSum / national.payoutCount;
   const nationalHigh = (national.manshuCount / national.payoutCount) * 100;
@@ -269,6 +272,8 @@ async function venueFavorite({ to }) {
   const national = tallyVenuePayouts(results, (id) =>
     venueByRaceId.has(id) ? 0 : null,
   ).get(0);
+  if (!national?.popularityCount)
+    throw new Error("期間に3連単の人気のあるレースが無い");
   const rows = [...byVenue.values()]
     .filter(
       (v) => v.raceCount >= VENUE_RANKING_MIN_RACES && v.popularityCount > 0,
@@ -320,9 +325,6 @@ const MOTOR_POWER_DAYS = 90;
  */
 async function motorPower({ venue, to }) {
   const venueCode = Number(venue);
-  if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
-    throw new Error("--venue=<1〜24> を指定してください");
-  }
   const baseDate = to ? addDaysToDateString(to, 1) : jstToday();
   const before = to ? baseDate : null; // race_id はこの文字列より前（画面の beforeRaceId と同じ比べ方）
   const starts = await readAll(
@@ -331,8 +333,12 @@ async function motorPower({ venue, to }) {
     ["start_date"],
     (q) => q.eq("venue_code", venueCode),
   );
+  // 世代: 既定は画面と同じ最新の使用開始日。--to=D は D の時点の世代（D の翌日に入れ替えた会場で、
+  // 新しい世代の開始日から数えて0件にならないように）
   const window = motorWindowFrom(
-    currentMotorGenerationStart(starts),
+    to
+      ? motorGenerationStartAsOf(starts, to)
+      : currentMotorGenerationStart(starts),
     MOTOR_POWER_DAYS,
     baseDate,
   );
@@ -380,6 +386,11 @@ async function motorPower({ venue, to }) {
       .map((r) => r.race_date)
       .sort()
       .at(-1) ?? null;
+  if (lastDay === null) {
+    throw new Error(
+      `${STADIUM_NAMES[venueCode]} は ${window.since} 以降に結果のあるレースが無い`,
+    );
+  }
   const name = STADIUM_NAMES[venueCode];
   const toLabel = lastDay ? slash(lastDay) : "";
   return {
@@ -440,10 +451,12 @@ const RACER_PAGE_MIN_RUNS = SMALL_SAMPLE_THRESHOLD;
  */
 async function racerPage({ venue, date }) {
   const venueCode = Number(venue);
-  if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
-    throw new Error("--venue=<1〜24> を指定してください");
-  }
   const day = date ?? jstToday();
+  // 期間: 既定（今日）はページと同じ「見た時刻から730日」。--date に過去の日を渡したときは、その日の終わりに
+  // ページを見たのと同じにする（始まりはその日から730日、終わりはその日まで。後の走を混ぜない）。級は今の値
+  const asOf =
+    date && date < jstToday() ? new Date(`${date}T23:59:59+09:00`) : new Date();
+  const until = addDaysToDateString(day, 1); // race_id はこれより前
   const vv = String(venueCode).padStart(2, "0");
   const card = await readAll(
     "race_entries",
@@ -459,7 +472,7 @@ async function racerPage({ venue, date }) {
   if (racers.size === 0)
     throw new Error(`${day} の${STADIUM_NAMES[venueCode]}の出走表が無い`);
   const racerIds = [...racers.keys()];
-  const since = racerHistoryCutoff();
+  const since = racerHistoryCutoff(asOf);
   const [grades, entries] = await Promise.all([
     readAll("racer_grade_cache", "data", ["key"], (q) =>
       q.eq("key", "latest_grades"),
@@ -470,7 +483,11 @@ async function racerPage({ venue, date }) {
       "racer_id",
       racerIds,
       ["race_id", "boat_number"],
-      (q) => q.gte("race_id", since).like("race_id", `__________-${vv}-__`),
+      (q) =>
+        q
+          .gte("race_id", since)
+          .lt("race_id", until)
+          .like("race_id", `__________-${vv}-__`),
     ),
   ]);
   const gradeOf = new Map(
@@ -625,7 +642,7 @@ const datasets = new Map([
 ]);
 
 /** @returns {{ dataset: string, options: Record<string, string> }} */
-export function parseArgs(argv) {
+function parseArgs(argv) {
   let dataset;
   const options = {};
   for (const arg of argv) {
@@ -652,6 +669,11 @@ export function parseArgs(argv) {
     }
     if (["from", "to", "date"].includes(key) && !DATE_RE.test(value))
       throw new Error(`--${key} は YYYY-MM-DD`);
+    if (key === "venue" && !/^(?:[1-9]|1\d|2[0-4])$/.test(value))
+      throw new Error("--venue=<1〜24> を指定してください");
+  }
+  if (spec.options.includes("venue") && options.venue === undefined) {
+    throw new Error("--venue=<1〜24> を指定してください");
   }
   if (options.from && options.to && options.from > options.to)
     throw new Error("--from は --to 以前");

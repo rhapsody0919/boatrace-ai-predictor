@@ -62,7 +62,13 @@ assert.match(
   /aggregateRacerVenueBoatStats\(\s*history,\s*venueCode,\s*1,\s*null,\s*null,?\s*\)/,
   "番付はページの会場×1号艇と同じ引数",
 );
-assert.match(rankData, /const since = racerHistoryCutoff\(\);/);
+// 既定（今日）はページと同じ見た時刻、--date の過去の日はその日の終わり。後の走は race_id < 翌日で外す（/code-review #1）
+assert.match(
+  rankData,
+  /const asOf =\s*date && date < jstToday\(\)\s*\?\s*new Date\(`\$\{date\}T23:59:59\+09:00`\)\s*:\s*new Date\(\);/,
+);
+assert.match(rankData, /const since = racerHistoryCutoff\(asOf\);/);
+assert.match(rankData, /\.gte\("race_id", since\)\s*\.lt\("race_id", until\)/);
 assert.equal(toReturnRate(1500, 10), 150);
 assert.equal(toReturnRate(0, 0), null);
 
