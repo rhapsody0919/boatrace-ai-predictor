@@ -148,10 +148,10 @@ export const tagText = (b) =>
     : b.variant === "border"
       ? `${b.venue} ${b.grade} 予選最終日`
       : `${b.venue} ${b.grade} 開催中`;
-/** final_gap の締切の行（冒頭と締めの頁の札の下）。final_deadline が無ければ null */
+/** final_gap の締切の行（冒頭と締めの頁の札の下）。前夜は「明日」を頭に付ける（今日の締切と取り違えない）。final_deadline が無ければ null */
 export const deadlineText = (b) =>
   b?.variant === "final_gap" && b.final_deadline
-    ? `${b.final_deadline.race} 締切予定 ${b.final_deadline.time}`
+    ? `${b.when === "eve" ? "明日 " : ""}${b.final_deadline.race} 締切予定 ${b.final_deadline.time}`
     : null;
 /** 締切の行の位置と大きさ（札 y120〜190 の下、hook の 320・close の 480 より上） */
 export const DEADLINE_LINE = { x: 60, y: 218, size: 48 };
@@ -739,7 +739,8 @@ function finalDateReasons(b) {
 
 /**
  * final_gap の締切（任意）の検査: 形（R は 1〜12、時刻は HH:MM）と、題に時刻・説明欄に R と時刻があること。
- * 値が正しいか（DB の締切と同じか）は、当日の型は送る口（push-setsu-kiryoku-short.js）が races.start_time と照らす
+ * 値が正しいか（DB の締切と同じか）は送る口（push-setsu-kiryoku-short.js）が照らす: 当日は races.start_time（朝の races_init が
+ * raceindex の締切予定時刻から入れる）、前夜は eve_race_deadlines の is_final の行
  */
 export function finalDeadlineReasons(b) {
   const d = b.final_deadline;
@@ -752,11 +753,15 @@ export function finalDeadlineReasons(b) {
   if (typeof d.time !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(d.time))
     out.push(`final_deadline.time が HH:MM でない: ${d.time}`);
   if (out.length) return out;
-  const title = norm(b.youtube?.title ?? "");
-  const desc = norm(b.youtube?.description ?? "");
-  if (!title.includes(d.time))
+  // 全角の英数・コロンは半角にそろえて探す。R・時刻は前後が数字でない所だけ（"1R" が "11R" に、"5:45" が "15:45" に当たらない）
+  const flat = (t) => norm(t ?? "").replace(/：/g, ":");
+  const has = (text, token) =>
+    new RegExp(`(^|[^0-9])${token.replace(":", "\\:")}(?![0-9])`).test(text);
+  const title = flat(b.youtube?.title);
+  const desc = flat(b.youtube?.description);
+  if (!has(title, d.time))
     out.push(`youtube.title に締切の時刻 ${d.time} が無い`);
-  if (!desc.includes(d.time) || !desc.includes(d.race))
+  if (!has(desc, d.time) || !has(desc, d.race))
     out.push(`youtube.description に締切（${d.race} ${d.time}）が無い`);
   return out;
 }

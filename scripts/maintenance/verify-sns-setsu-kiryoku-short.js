@@ -12,6 +12,7 @@ import {
   checkVideo,
   descriptionLink,
   dryRunClock,
+  eveDeadlineMismatch,
   finalDeadlineMismatch,
   mp4Info,
   pushSetsuKiryokuShort,
@@ -1418,4 +1419,15 @@ test("当日の final_gap の締切は DB の優勝戦と同じ R・時刻でな
     finalDeadlineMismatch({ race: "11R", time: "22:20" }, { ...final, start_time: null }),
     /締切なし/,
   );
+});
+
+test("前夜の final_gap の締切は前夜の表の優勝戦の行と同じでないと止める（BOA-1282）", () => {
+  const finals = [{ race_id: "2026-11-04-19-11", deadline: "22:20:00" }];
+  assert.equal(eveDeadlineMismatch(undefined, finals), null, "締切が無ければ今どおり");
+  assert.equal(eveDeadlineMismatch({ race: "11R", time: "22:20" }, finals), null);
+  assert.match(eveDeadlineMismatch({ race: "12R", time: "22:45" }, finals), /前夜の表の優勝戦（11R 22:20）と違う/);
+  assert.match(eveDeadlineMismatch({ race: "11R", time: "22:20" }, []), /優勝戦の行（is_final）が無い/);
+  // 男女W優勝戦はどちらでも通る
+  const w = [...finals, { race_id: "2026-11-04-19-12", deadline: "22:45:00" }];
+  assert.equal(eveDeadlineMismatch({ race: "12R", time: "22:45" }, w), null);
 });

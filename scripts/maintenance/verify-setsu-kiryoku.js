@@ -694,8 +694,17 @@ t("final_gap の締切: 無ければ出さない（今どおり）", () => {
 t("final_gap の締切: あれば画面に出し、題・説明欄に入っていれば通る（12Rとは限らない）", () => {
   const f = withDeadline("11R", "15:45");
   assert.deepEqual(check(f), []);
-  assert.equal(deadlineText(f), "11R 締切予定 15:45");
-  assert.ok(screenTexts(normalizeBundle(f)).includes("11R 締切予定 15:45"));
+  assert.equal(deadlineText(f), "明日 11R 締切予定 15:45", "前夜は「明日」を付ける");
+  assert.ok(screenTexts(normalizeBundle(f)).includes("明日 11R 締切予定 15:45"));
+  assert.equal(
+    deadlineText({ ...clone(f), when: "today", date: f.final_date }),
+    "11R 締切予定 15:45",
+  );
+  // 全角のコロン・英数で書いた題・説明欄も通る
+  const z = clone(f);
+  z.youtube.title = z.youtube.title.replace("15:45", "１５：４５");
+  z.youtube.description = z.youtube.description.replace("11R", "１１Ｒ");
+  assert.deepEqual(check(z), []);
   assert.deepEqual(check(withDeadline("12R", "16:30")), []);
 });
 
@@ -715,6 +724,9 @@ t("final_gap の締切: 題・説明欄に無い・形の誤り・他の型は�
     "説明欄に R が無い",
   );
   fails({ ...clone(f), final_deadline: { race: "13R", time: "15:45" } }, /final_deadline.race/, "13R");
+  // "1R" は "11R" に、"5:45" は "15:45" に当たらない
+  fails({ ...clone(f), final_deadline: { race: "1R", time: "15:45" } }, /youtube.description に締切（1R 15:45）が無い/, "1R の部分一致");
+  fails({ ...clone(f), final_deadline: { race: "11R", time: "05:45" } }, /youtube.title に締切の時刻 05:45 が無い/, "時刻の部分一致");
   fails({ ...clone(f), final_deadline: { race: "11R", time: "3:45" } }, /final_deadline.time/, "H:MM");
   fails({ ...clone(f), final_deadline: "15:45" }, /final_deadline が \{ race, time \} でない/, "文字列");
   const m = clone(load("motor_gap"));

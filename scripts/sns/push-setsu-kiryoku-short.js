@@ -240,6 +240,23 @@ export function finalDeadlineMismatch(deadline, final) {
   return null;
 }
 
+/**
+ * 前夜の final_gap の締切が、前夜に取った表の優勝戦の行（is_final=true、男女W優勝戦なら2行）のどれかと同じか（純粋関数）。
+ * 違えば理由、同じなら null
+ */
+export function eveDeadlineMismatch(deadline, finals) {
+  if (deadline == null) return null;
+  const rows = (finals ?? []).map((f) => ({
+    race: `${Number(String(f.race_id).slice(-2))}R`,
+    time: typeof f.deadline === "string" ? f.deadline.slice(0, 5) : null,
+  }));
+  if (rows.length === 0)
+    return "前夜の締切の表に、その日の優勝戦の行（is_final）が無い";
+  if (rows.some((r) => r.race === deadline.race && r.time === deadline.time))
+    return null;
+  return `final_deadline（${deadline.race} ${deadline.time}）が前夜の表の優勝戦（${rows.map((r) => `${r.race} ${r.time}`).join("・")}）と違う`;
+}
+
 /** bundle.json の検査（純粋関数）。型の検査（checkBundle）とこの口の検査。時刻の窓は checkTiming が見る */
 export function checkShortBundle(bundle, riskRules = []) {
   const reasons = checkBundle(bundle, { rules: riskRules, matchRiskRules });
@@ -636,6 +653,22 @@ export async function pushSetsuKiryokuShort(
     const deadlineWhy = finalDeadlineMismatch(bundle.final_deadline, final);
     if (deadlineWhy) return reject([deadlineWhy]);
   }
+  // 前夜の型の締切は、前夜に取った表（eve_race_deadlines、#2249 のマイグレーション202）の優勝戦の行と照らす。
+  // hq は表から入れるので、表が読めない・優勝戦の行が無い・違うなら送らない（誤った締切を焼き込んだ動画を出さない）
+  if (
+    bundle.variant === "final_gap" &&
+    bundle.when === "eve" &&
+    bundle.final_deadline != null
+  ) {
+    let finals;
+    try {
+      finals = await store.eveFinals(bundle.final_date, venueCode);
+    } catch (error) {
+      return reject([`前夜の締切の表が読めない: ${error.message}`]);
+    }
+    const why = eveDeadlineMismatch(bundle.final_deadline, finals);
+    if (why) return reject([why]);
+  }
   // 日の上限・クォータは DB の今の値で見る（dry-run の見本の束でも、時計を進めた日ではなく今日の数。基準の日が今日なので）
   const roomNow = realNow;
   const roomSendAt = simulated
@@ -996,6 +1029,12 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
       };
     },
     // その日のその会場の優勝戦（race_conditions.race_stage）と、中止・欠場
+    /** 前夜に取った表の、その日・その会場の優勝戦の行（is_final=true） */
+    async eveFinals(date, venueCode) {
+      return call(
+        `eve_race_deadlines?race_date=eq.${encodeURIComponent(date)}&venue_code=eq.${Number(venueCode)}&is_final=is.true&select=race_id,deadline`,
+      );
+    },
     async finalRace(date, venueCode) {
       const [final] = await call(
         `race_conditions?race_id=like.${encodeURIComponent(`${date}-${venueCode}-*`)}&race_stage=eq.${encodeURIComponent("優勝戦")}&select=race_id`,
