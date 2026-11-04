@@ -62,6 +62,8 @@ export async function raceRowOf(raceId, get, missing) {
     raceRow.seriesDayText = l.seriesDayText;
     raceRow.raceTitle = l.seriesTitle;
     if (!l.seriesDayText) missing.push({ source: "race.seriesDayText", reason: "何日目が無い（series_day・is_final_day が会場のどのレースにも無いか、丸一日中止）" });
+    // SG・G1（グレードは races.race_grade、無ければ節の grade）なのに大会名が無い。race.grade は races だけの値なので、使う側はこの記録で止める
+    if (!l.seriesTitle && ["SG", "G1"].includes(l.grade)) missing.push({ source: "race.raceTitle", reason: `${l.grade} なのに大会名が無い（race_conditions.race_title も race_series.title も無い）` });
   } catch (e) {
     raceRow.seriesDayText = null;
     raceRow.raceTitle = null;

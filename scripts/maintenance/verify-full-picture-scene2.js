@@ -698,6 +698,11 @@ const venueZ1 = (f) => {
   const failed = await raceRowOf(RID, get({ race_conditions: () => Promise.reject(new Error("HTTP 500")) }), m3);
   assert.deepEqual([failed.seriesDayText, failed.raceTitle], [null, null]);
   assert.ok(m3.some((x) => x.source === "race.labels" && /race_conditions を読めない（HTTP 500）/.test(x.reason)), JSON.stringify(m3));
+  // SG・G1（races の race_grade が無く、節の grade で SG）なのに大会名が無いときは missing に残す（使う側が止める）
+  const m5 = [];
+  const noTitle = await raceRowOf(RID, get({ races: (q) => (q.includes("race_id=eq.") ? [{ start_time: "16:44:00", race_grade: null }] : tables.races.map((r) => ({ ...r, race_grade: null }))), race_conditions: () => tables.race_conditions.map((c) => ({ ...c, race_title: null })), race_series: () => [{ venue_code: 24, start_date: "2026-10-30", end_date: "2026-11-04", title: null, grade: "SG" }] }), m5);
+  assert.deepEqual([noTitle.grade, noTitle.raceTitle], [null, null]);
+  assert.ok(m5.some((x) => x.source === "race.raceTitle" && /SG なのに大会名が無い/.test(x.reason)), JSON.stringify(m5));
   const m4 = [];
   assert.equal(await raceRowOf(RID, get({ races: () => Promise.reject(new Error("HTTP 503")) }), m4), null);
   assert.ok(m4.some((x) => x.source === "race" && /HTTP 503/.test(x.reason)));
