@@ -119,6 +119,23 @@ test("公式の期別成績の取得に失敗したらエラー表示を出す�
   await expect(page.locator(".racer-official-stats")).toHaveCount(0);
 });
 
+test("公式の期別成績のHTTP 500をデータなしにせず、失敗として表示する", async ({ page }) => {
+  let failedRequests = 0;
+  await page.route("**/rest/v1/racer_period_stats*", (route) => {
+    if (!route.request().url().includes("c1_entries")) return route.fallback();
+    failedRequests += 1;
+    return route.fulfill({
+      status: 500,
+      json: { message: "BOA-1292 period stats unavailable" },
+    });
+  });
+  await page.goto("/racer/3941");
+  await expect(page.locator(".racer-profile-header h1")).toHaveText("池田浩二");
+  await expect(page.locator(".inline-fetch-error").first()).toBeVisible();
+  expect(failedRequests).toBeGreaterThan(0);
+  await expect(page.locator(".racer-official-stats")).toHaveCount(0);
+});
+
 test("全期出走なしの選手は、空の折れ線を出さず「この N 期に出走はありません」と書く", async ({
   page,
 }) => {
