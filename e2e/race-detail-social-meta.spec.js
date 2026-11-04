@@ -1,5 +1,6 @@
 import { test, expect, e2eTodayJST } from "./fixtures.js";
 import { localizePath } from "../src/config/languages.js";
+import { homeSocialProblems, leftPageSocialValues } from "./home-social-meta.js";
 
 const socialSelectors = [
   'meta[property="og:title"]',
@@ -53,11 +54,14 @@ for (const lang of ["ja", "en"]) {
     await expect(ogUrl).toHaveAttribute("content", await canonical.getAttribute("href"));
 
     // ページ再読込ではcleanupを検証できないため、React Routerのリンクで離れる。
+    const leftValues = await leftPageSocialValues(page);
     await page.locator(`.breadcrumb a[href="${homePath}"]`).click();
     await expect(page).toHaveURL(homePath);
-    for (const [index, selector] of socialSelectors.entries()) {
-      await expect(page.locator(selector)).toHaveAttribute("content", defaults[index]);
-    }
-    await expect(ogUrl).toHaveCount(0);
+    const defaultsBySelector = Object.fromEntries(
+      socialSelectors.map((selector, index) => [selector, defaults[index]]),
+    );
+    await expect
+      .poll(() => homeSocialProblems(page, defaultsBySelector, racePath, leftValues))
+      .toEqual([]);
   });
 }

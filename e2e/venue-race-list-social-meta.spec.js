@@ -1,4 +1,5 @@
 import { test, expect, e2eTodayJST } from "./fixtures.js";
+import { homeSocialProblems, leftPageSocialValues } from "./home-social-meta.js";
 
 const socialSelectors = [
   'meta[property="og:title"]',
@@ -27,7 +28,11 @@ test("日別会場一覧のカードはページメタに一致し、離れる�
   const code = href.match(/\/venue\/(\d+)$/)?.[1];
   expect(code, `会場カードのリンクが /venue/:code ではない: ${href}`).toBeTruthy();
   const defaults = await socialContents(page);
-  await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
+  const defaultsBySelector = Object.fromEntries(
+    socialSelectors.map((selector, index) => [selector, defaults[index]]),
+  );
+  await expect.poll(() => homeSocialProblems(page, defaultsBySelector, null)).toEqual([]);
+  const racesPath = `/races/${e2eTodayJST()}/${code}`;
 
   await page.goto(`/races/${e2eTodayJST()}/${code}`);
   await expect(page.locator(".venue-race-list-page h1")).toBeVisible();
@@ -58,9 +63,11 @@ test("日別会場一覧のカードはページメタに一致し、離れる�
   }
 
   // フルリロードせず離れ、フックのアンマウントによる復元を検査する。
+  const leftValues = await leftPageSocialValues(page);
   await page.locator(".app-header .logo").click();
   await expect(page).toHaveURL("/");
   await expect(page.locator(".venue-race-list-page")).toHaveCount(0);
-  await expect.poll(() => socialContents(page)).toEqual(defaults);
-  await expect(ogUrl).toHaveCount(0);
+  await expect
+    .poll(() => homeSocialProblems(page, defaultsBySelector, racesPath, leftValues))
+    .toEqual([]);
 });
