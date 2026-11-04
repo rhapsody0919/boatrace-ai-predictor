@@ -2290,6 +2290,11 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     assert.equal(f01Script(v1).kind, "series_day", "/1 の材料（日目なし）は作らない");
   }
   assert.equal(f01Script(make({ grade: "G1", raceTitle: null })).kind, "series_title");
+  {
+    const mt = make({ grade: null, raceTitle: null });
+    mt.missing = [...(mt.missing ?? []), { source: "race.raceTitle", reason: "SG なのに大会名が無い（race_conditions.race_title も race_series.title も無い）" }];
+    assert.equal(f01Script(mt).kind, "series_title", "取得が SG・G1 と判定して大会名が無いと残したら止める");
+  }
   assert.ok(f01Script(make({ grade: null, raceTitle: null })).ok, "グレード不明で大会名が無い日は大会名なしで作る（部品は節のグレードでも大会名を足す）");
   // SG・長い大会名: 題・サムネ・冒頭・説明欄に入る。25字はサムネ・冒頭とも 32px のまま
   const sg = f01Script(make({ grade: "SG", seriesDayText: "3日目", raceTitle: LONG_N }));

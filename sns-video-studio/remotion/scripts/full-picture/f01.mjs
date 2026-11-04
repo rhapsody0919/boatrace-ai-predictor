@@ -38,7 +38,10 @@ export function seriesOf(m) {
   const day = m.race?.seriesDayText ?? null;
   if (!day) return { ok: false, kind: "series_day", reason: "材料に何日目（race.seriesDayText）が無い（題・サムネ・冒頭の見出し・説明欄に日目を出す、オーナー 11/4）" };
   const series = m.race?.raceTitle ?? null;
-  // グレードが SG・G1 なのに大会名が無い日は作らない（黙って大会名なしで出さない）
+  // グレードが SG・G1 なのに大会名が無い日は作らない（黙って大会名なしで出さない）。グレードは race.grade（races だけ）か、
+  // 材料の取得が節の grade でも判定して残した missing の race.raceTitle
+  const noTitle = m.missing?.find((x) => x.source === "race.raceTitle");
+  if (!series && noTitle) return { ok: false, kind: "series_title", reason: noTitle.reason };
   if (!series && SERIES_TITLE_GRADES.includes(m.race?.grade)) return { ok: false, kind: "series_title", reason: `${m.race.grade} なのに材料に大会名（race.raceTitle）が無い` };
   return { ok: true, day, series };
 }
