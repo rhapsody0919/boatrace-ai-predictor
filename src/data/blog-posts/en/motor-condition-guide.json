@@ -1,14 +1,15 @@
 {
   "id": "motor-condition-guide",
-  "title": "What Is Motor Condition? A New Way to See Today's 2nd-Place Rate by Lane",
-  "description": "A new feature showing each boat's motor 2nd- and 3rd-place rate for today's races, just by selecting the race. Designed to be directly usable for real betting decisions, not just an abstract motor ranking.",
+  "title": "What Is the Motor Top-2 Rate in Boat Race? Definition, Updates, and How It Differs from a Racer's Rate",
+  "description": "The motor top-2 rate is a motor's share of top-2 finishes, cumulative from first use and set on the first day of each meet on the race card. A Toda 1R example compares racer and motor rates, explains Motor Condition columns, and shows Boat 1's 1st-place rates by motor and exhibition time rank, with FAQs.",
   "category": "Data Analysis",
   "tags": [
     "Motor",
-    "NewFeature",
-    "DataAnalysis",
-    "Evidence",
-    "SecondPlaceRate"
+    "Top-2 Rate",
+    "Motor Top-2 Rate",
+    "Power Index",
+    "Race Card",
+    "Exhibition Time"
   ],
-  "readTime": "7 min"
+  "readTime": "9 min"
 }
