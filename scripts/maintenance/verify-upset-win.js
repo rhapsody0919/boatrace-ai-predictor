@@ -15,12 +15,15 @@ import {
   candidates,
   checkBundle,
   dayCounts,
+  headerText,
+  descriptionOf,
   hookMetrics,
   lowestBoats,
   oneIn,
   pageSeconds,
   pickUpset,
   primaryOf,
+  READ_COLUMNS,
   screensOf,
   shapeDay,
   shapeRace,
@@ -47,6 +50,7 @@ import {
   createMockYoutubeAdapter,
   runYoutubeQueueJob,
 } from "../../api/_lib/snsDeadlineQueue.js";
+import { fetchDayRows, fetchRaceRows } from "../../sns-video-studio/remotion/scripts/upset-win/materials.mjs";
 import { SCREEN_MARKERS } from "../lib/snsScreenMarkers.js";
 
 const BASE_FILES = [
@@ -161,6 +165,10 @@ const raceOfSample = (b = SAMPLE) => ({
   venue_code: b.venue_code,
   race_number: b.race_number,
   grade: b.grade,
+  start_time: b.start_time,
+  series_day: b.series_day,
+  is_final_day: b.is_final_day,
+  race_title: b.race_title,
   cancelled: false,
   no_race: false,
   absent: false,
@@ -213,6 +221,7 @@ const race = (over = {}, boats = {}) => ({
   venue_code: 17,
   race_number: 10,
   grade: "ippan",
+  start_time: "14:32",
   cancelled: false,
   no_race: false,
   absent: false,
@@ -524,6 +533,79 @@ test("DB の行 → 形: 名前の空白を詰め、展示の F・L を持ち、
   assert.equal(ab.absent, true);
 });
 
+test("締切・日目・大会名を材料から文へ渡す。締切の無い候補は次へ進む", async () => {
+  assert.ok(READ_COLUMNS.races.split(",").includes("start_time"));
+  const condition = {
+    race_id: SAMPLE.race_id,
+    series_day: 3,
+    is_final_day: false,
+    race_title: "ルーキーシリーズ第２１戦スカパー！・ＪＬＣ杯",
+  };
+  const rows = {
+    races: [{
+      race_id: SAMPLE.race_id,
+      race_date: SAMPLE.race_date,
+      venue_code: 17,
+      race_number: 10,
+      race_grade: "ippan",
+      start_time: "14:32:00",
+    }],
+    race_conditions: [condition],
+  };
+  const shaped = shapeDay(rows)[0];
+  const b = { ...clone(SAMPLE), ...shaped, boats: SAMPLE.boats, rank1: SAMPLE.rank1 };
+  assert.equal(headerText(b), "11/3（火）宮島10R 3日目 締切14:32");
+  assert.equal(headerText({ ...b, series_day: null }), "11/3（火）宮島10R 締切14:32");
+  assert.equal(headerText({ ...b, series_day: 1 }), "11/3（火）宮島10R 初日 締切14:32");
+  assert.match(headerText({ ...b, is_final_day: true }), /最終日 締切14:32$/);
+  assert.equal(descriptionOf(b).split("\n")[1], "");
+  for (const grade of ["SG", "G1"]) {
+    assert.equal(descriptionOf({ ...b, grade }).split("\n")[1], condition.race_title.normalize("NFKC"));
+  }
+  for (const grade of ["G2", "G3", "ippan"]) assert.equal(descriptionOf({ ...b, grade }).split("\n")[1], "");
+  assert.ok(titleOf(b).length <= 100);
+  const changed = { ...clone(SAMPLE), start_time: "23:59", series_day: 12 };
+  changed.texts = screensOf(changed);
+  changed.youtube = { title: titleOf(changed), description: descriptionOf(changed) };
+  assert.deepEqual(check(changed), []);
+  assert.ok(check({ ...clone(SAMPLE), start_time: null }).length > 0);
+  const good = race({}, { 4: { win_rate: 1, odds: 34.7 } });
+  for (const start_time of [null, "", "invalid", "25:00"]) {
+    const missing = { ...good, start_time };
+    assert.equal(pickUpset([missing]), null);
+    assert.equal(pickUpset([missing, good]).race, good);
+  }
+  for (const fetchRows of [fetchDayRows, fetchRaceRows]) {
+    const calls = [];
+    const arg = fetchRows === fetchDayRows ? SAMPLE.race_date : SAMPLE.race_id;
+    const fetched = await fetchRows(arg, {
+      get: async (table, query) => {
+        calls.push([table, query]);
+        return table === "race_conditions" ? [condition] : [];
+      },
+    });
+    assert.deepEqual(fetched.race_conditions, [condition]);
+    const query = calls.find(([table]) => table === "race_conditions")[1];
+    assert.ok(query.includes("select=race_id,series_day,is_final_day,race_title"));
+    assert.ok(query.includes(fetchRows === fetchDayRows ? `race_id=like.${SAMPLE.race_date}-*` : `race_id=eq.${SAMPLE.race_id}`));
+    await assert.rejects(fetchRows(arg, {
+      get: async (table) => {
+        if (table === "race_conditions") throw new Error("conditions failed");
+        return [];
+      },
+    }), /conditions failed/);
+  }
+});
+
+test("締切を外したヘッダ・題・説明欄は bundle の照合で止まる", () => {
+  for (const part of ["header", "title", "description"]) {
+    const b = clone(SAMPLE);
+    if (part === "header") b.texts.header = b.texts.header.replace(" 締切14:32", "");
+    else b.youtube[part] = b.youtube[part].replace(" 締切14:32", "");
+    assert.match(check(b).join(), /値から作った文と違う/, part);
+  }
+});
+
 test("見本（2026-11-03 宮島10R、本番の値）: 検査を通り、見本の3コマ（hq b1〜b3）と同じ文・数になる。題と1コマ目に配当の円が無い", () => {
   assert.deepEqual(check(SAMPLE), []);
   const t = SAMPLE.texts;
@@ -531,7 +613,7 @@ test("見本（2026-11-03 宮島10R、本番の値）: 検査を通り、見本�
   assert.equal(t.hook_em, "それでも1着");
   assert.equal(t.hook_who, "4号艇 鈴木柊介 B1");
   assert.equal(t.hook_odds, "単勝34.7倍");
-  assert.equal(t.header, "宮島10R 11/3（火）");
+  assert.equal(t.header, "11/3（火）宮島10R 3日目 締切14:32");
   assert.deepEqual(t.table_head, ["艇", "選手", "級", "勝率", "展示", "単勝"]);
   assert.deepEqual(t.table_rows[3], [
     "4",
@@ -558,11 +640,11 @@ test("見本（2026-11-03 宮島10R、本番の値）: 検査を通り、見本�
   assert.match(SAMPLE.voice.result, /2025年12月2日以降/);
   assert.equal(
     SAMPLE.youtube.title,
-    "宮島10R 単勝34.7倍の鈴木柊介B1が1着 勝率も展示タイムも6艇で最下位だった｜ボートレース",
+    "11/3（火）宮島10R 締切14:32 単勝34.7倍の鈴木柊介B1が1着 勝率も展示タイムも6艇で最下位だった｜ボートレース",
   );
   assert.match(
     SAMPLE.youtube.description,
-    /^ボートレース 宮島10R 11\/3（火）の結果の振り返り\n/,
+    /^ボートレース 11\/3（火）宮島10R 3日目 締切14:32の結果の振り返り\n/,
   );
   const sec = timeline(SAMPLE).total / 30;
   assert.ok(sec >= 25 && sec <= 35, `${sec}`);
@@ -672,6 +754,10 @@ test("1日の数から作り直す: buildBundle は日ごとの数が欠けて�
     "texts",
     "voice",
     "youtube",
+    "start_time",
+    "series_day",
+    "is_final_day",
+    "race_title",
     "year",
     "weaknesses",
     "primary",

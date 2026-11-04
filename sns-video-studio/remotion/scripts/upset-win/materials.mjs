@@ -44,27 +44,29 @@ async function sbGet(table, query, fetchImpl = fetch) {
 /** その日の全レースの行（読み取りだけ） */
 export async function fetchDayRows(date, { get = sbGet } = {}) {
   const like = `race_id=like.${encodeURIComponent(`${date}-*`)}`;
-  const [races, results, entries, exhibition, odds] = await Promise.all([
+  const [races, results, entries, exhibition, odds, race_conditions] = await Promise.all([
     get("races", `race_date=eq.${date}&select=${READ_COLUMNS.races}&order=race_id`),
     get("race_results", `${like}&select=${READ_COLUMNS.race_results}&order=race_id`),
     get("race_entries", `${like}&select=${READ_COLUMNS.race_entries}&order=race_id,boat_number`),
     get("exhibition_data", `${like}&select=${READ_COLUMNS.exhibition_data}&order=race_id,boat_number`),
     get("race_odds_final", `${like}&select=${READ_COLUMNS.race_odds_final}&order=race_id`),
+    get("race_conditions", `${like}&select=${READ_COLUMNS.race_conditions}&order=race_id`),
   ]);
-  return { races, results, entries, exhibition, odds };
+  return { races, results, entries, exhibition, odds, race_conditions };
 }
 
 /** 1レースの行（送る口の読み直し・試験の見本の材料） */
 export async function fetchRaceRows(raceId, { get = sbGet } = {}) {
   const id = `race_id=eq.${encodeURIComponent(raceId)}`;
-  const [races, results, entries, exhibition, odds] = await Promise.all([
+  const [races, results, entries, exhibition, odds, race_conditions] = await Promise.all([
     get("races", `${id}&select=${READ_COLUMNS.races}`),
     get("race_results", `${id}&select=${READ_COLUMNS.race_results}`),
     get("race_entries", `${id}&select=${READ_COLUMNS.race_entries}&order=boat_number`),
     get("exhibition_data", `${id}&select=${READ_COLUMNS.exhibition_data}&order=boat_number`),
     get("race_odds_final", `${id}&select=${READ_COLUMNS.race_odds_final}`),
+    get("race_conditions", `${id}&select=${READ_COLUMNS.race_conditions}`),
   ]);
-  return { races, results, entries, exhibition, odds };
+  return { races, results, entries, exhibition, odds, race_conditions };
 }
 
 /** その日の結果がそろったか（中止・不成立でないレースに全部 1着がある）。そろわない日はキャッシュに入れない */
