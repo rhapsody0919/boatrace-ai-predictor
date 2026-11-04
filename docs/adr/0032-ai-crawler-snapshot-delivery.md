@@ -67,3 +67,8 @@ boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコ�
 
 - Gemini API の url_context の取得 UA は公式文書（ai.google.dev/gemini-api/docs/url-context）に書かれていない。文書は「まず内部の索引キャッシュ、無ければその場で取得」とだけ書く。2026-11-02 の hq の試験で /blog/meet-score-rate-guide は本文が取れ、/blog/toda-losing-makuri-share と /racer/3256 は殻だったが、3つとも配信の経路は同じ（人・Google の各 UA に殻、上の配る UA に描画済み）。この追記は url_context の差を直すものではない
 - 一覧を変えるときは、`vercel.json` の no-store 規則の `missing` の UA 正規表現（6か所）も同じに直す（`scripts/maintenance/verify-middleware-routing.js` [7] が一致を確かめる）
+
+## 追記: middleware の範囲が /api に広がった（BOA-1110 段階3、ADR-0103）
+
+- `middleware.js` の `matcher` に `/api/:path*` を足し、`/api/*` の要求すべてで middleware が動く（関門の判定は `api/_lib/apiGate.js`、観測の1行ログ）。スナップショットの振り分けとは別の分岐で、`/api/cron`・`/api/admin`・`/api/bot-page` は関門の除外のまま既存の分岐へ進む
+- 実行の環境は**未確認**（runtime の指定は無い）。2026-11-04 の Preview のビルドの記録には「middleware.js uses the deprecated "edge" runtime」と出たが、同じデプロイの Runtime Logs の middleware の行は `runtime=nodejs24.x` だった。ADR-0089 の「既定は Node.js」もこの上の「Edge Runtime（デフォルト）」も、どちらとも決められない。Edge の束ねは JSON の import 属性（`with { type: "json" }`）を読めず、ビルドが落ちた（段階3の初回）。関門の範囲の表は JS のモジュール（`api/_lib/searchBotIpRanges.js`）にした

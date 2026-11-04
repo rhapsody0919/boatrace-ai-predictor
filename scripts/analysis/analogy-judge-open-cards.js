@@ -17,7 +17,8 @@ import {
 } from "../../src/utils/analogyFacts.js";
 import { internalApiHeaders } from "../../api/_lib/internalApiHeaders.js";
 
-const BASE = process.env.ANALOGY_BASE ?? "https://www.boat-ai.jp";
+// 末尾の "/" は落とす（"https://x/" + "/api/…" は "//api/…" になり、関門（BOA-1110 段階3）が禁じた形の "//" に当たる）
+const BASE = (process.env.ANALOGY_BASE || "https://www.boat-ai.jp").replace(/\/+$/, "");
 const dates = process.argv.slice(2);
 if (dates.length === 0) {
   console.error("日付を1つ以上渡す（例: 2026-10-08）");

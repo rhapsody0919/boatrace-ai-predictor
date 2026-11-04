@@ -36,7 +36,8 @@ import { attackDefenseColumn, isDefaultAttackDistribution } from "../../../../sr
 import { placeRatesByBoat, techniqueBreakdown, nationalWinRateByBoat, groupWinningTechniqueRows, poolTechniqueCounts } from "../../../../src/utils/venuePlaceRates.js";
 
 export const MATERIALS_VERSION = "full-picture-materials/1";
-const BASE = process.env.FULL_PICTURE_API_BASE ?? "https://www.boat-ai.jp";
+// 末尾の "/" は落とす（"https://x/" + "/api/…" は "//api/…" になり、関門（BOA-1110 段階3）が禁じた形の "//" に当たる）
+const BASE = (process.env.FULL_PICTURE_API_BASE || "https://www.boat-ai.jp").replace(/\/+$/, "");
 const VENUES = Array.from({ length: 24 }, (_, i) => i + 1);
 /** 材料の無い応答の status（api/_lib/analogyV16.js の resolveStatus・similar の empty_layer） */
 export const NO_DATA = ["not_saved", "absent", "empty_layer"];
