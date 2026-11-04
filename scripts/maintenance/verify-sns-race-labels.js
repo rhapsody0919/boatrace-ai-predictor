@@ -159,6 +159,11 @@ assert.equal(
   seriesTitleOf({ grade: "G1", raceTitle: null, seriesTitle: null }),
   null,
 );
+assert.equal(
+  seriesTitleOf({ grade: "G1", raceTitle: " ", seriesTitle: "節の名前" }),
+  "節の名前",
+  "空の race_title は節の名前へ落とす",
+);
 
 // 締切
 assert.equal(deadlineOf("14:37:00"), "14:37");
