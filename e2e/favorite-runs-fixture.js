@@ -29,6 +29,7 @@ export const raceIdOf = (venue, race) =>
 export function predictionsBody({
   startTime = (n) => `23:0${n}`,
   withRacer = true,
+  seriesDay = 1,
 } = {}) {
   const races = [1, 2, 3, 4, 5, 6].map((n) => ({
     raceId: raceIdOf(VENUE, n),
@@ -37,6 +38,7 @@ export function predictionsBody({
     raceNumber: n,
     startTime: startTime(n),
     raceGrade: "SG",
+    seriesDay,
     cancellationStatus: null,
     entries: [1, 2, 3, 4, 5, 6].map((number) => ({
       number,

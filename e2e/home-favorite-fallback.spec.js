@@ -115,6 +115,15 @@ test("☆0件・SG と G1 が無い日: 「今日の開催は N場」で会場�
     name: `今日の開催は${info.openCount}場。会場の一覧へ`,
   });
   await expect(count).toHaveAttribute("href", "#today-venues");
+  // 押すと会場の一覧（区画の下）へ送る。#today-venues の見出し（区画の上）に戻らない
+  await count.click();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Math.abs(document.querySelector(".venue-grid").getBoundingClientRect().top),
+      ),
+    )
+    .toBeLessThan(150);
   await expect(section.locator(".favorite-runs__alt")).toHaveCount(0);
   await expect(section.locator(".favorite-runs__howto")).toBeVisible();
 });

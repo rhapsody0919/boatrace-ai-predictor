@@ -144,7 +144,15 @@ export default function FavoritesFallback({ fallback, favState, racerCount }) {
         <a
           href="#today-venues"
           className="favorite-runs__toggle favorite-runs__venue-count"
-          onClick={() => track("grade_venue", "venue_list", favState)}
+          onClick={(event) => {
+            track("grade_venue", "venue_list", favState);
+            // #today-venues はこの区画を含む外側の枠なので、飛ぶと上の見出しに戻る。会場の一覧へ送る
+            const grid = document.querySelector(".venue-grid");
+            if (grid) {
+              event.preventDefault();
+              grid.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }}
         >
           {t("favorites.fallback.venueCount", { count: openVenueCount })}
         </a>

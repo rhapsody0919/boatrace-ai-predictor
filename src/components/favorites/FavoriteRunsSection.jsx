@@ -104,7 +104,7 @@ function useFinishLabel() {
   };
 }
 
-function RunInfo({ row, info }) {
+function RunInfo({ row, info, seriesDay }) {
   const { t } = useTranslation();
   const finishLabel = useFinishLabel();
   // 読み込み中も2つの欄の高さを取っておく（CLS を出さない）
@@ -130,7 +130,11 @@ function RunInfo({ row, info }) {
       <div className="favorite-runs__meet">
         <span>{t("favorites.section.meet")}</span>
         {meet.length === 0 ? (
-          <span>{t("favorites.section.meetFirstDay")}</span>
+          // 「初日」と言い切るのは、節の日目が1（または不明）のときだけ。2日目以降で走が無いのは
+          // 途中からの出場・記録の遅れで、初日ではない
+          seriesDay == null || seriesDay === 1 ? (
+            <span>{t("favorites.section.meetFirstDay")}</span>
+          ) : null
         ) : (
           <span className="favorite-runs__seq">
             {meet.map((run) => (
@@ -162,7 +166,7 @@ function RunInfo({ row, info }) {
   );
 }
 
-function RunRow({ row, state, extra, info }) {
+function RunRow({ row, state, extra, info, seriesDay }) {
   const { t, i18n } = useTranslation();
   const localize = useLocalizedPath();
   const isJa = i18n.resolvedLanguage === "ja";
@@ -223,7 +227,7 @@ function RunRow({ row, state, extra, info }) {
         </span>
         {row.grade && <span className="favorite-runs__class">{row.grade}</span>}
       </div>
-      <RunInfo row={row} info={info} />
+      <RunInfo row={row} info={info} seriesDay={seriesDay} />
       <div className="favorite-runs__links">
         {links.map((link) => (
           <Link
@@ -253,7 +257,10 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM }) {
   const { status, venues } = useTodayEntries(racers.length > 0);
   const [showMore, setShowMore] = useState(false);
   const [showPast, setShowPast] = useState(false);
-  const [visible, setVisible] = useState(false);
+  // IntersectionObserver が無い環境では useVisibleOnce が呼ばれないので、最初から見えている扱い
+  const [visible, setVisible] = useState(
+    () => typeof IntersectionObserver === "undefined",
+  );
   const [visibleKey] = useState(() => `favorite_runs|${(mountSeq += 1)}`);
   const sectionRef = useVisibleOnce(visibleKey, () => setVisible(true));
 
@@ -265,6 +272,12 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM }) {
     [status, venues, racers, nowHHMM],
   );
   const rows = useMemo(() => [...runs.upcoming, ...runs.past], [runs]);
+  const seriesDayOf = useMemo(() => {
+    const map = new Map();
+    for (const venue of venues ?? [])
+      for (const race of venue.races) map.set(race.raceId, race.seriesDay ?? null);
+    return map;
+  }, [venues]);
   const infoOf = useFavoriteRunStats(rows, visible);
   const fallback = useMemo(
     () =>
@@ -322,6 +335,7 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM }) {
                   state="upcoming"
                   extra={!showMore && index >= NARROW_VISIBLE}
                   info={infoOf(row)}
+                  seriesDay={seriesDayOf.get(row.raceId)}
                 />
               ))}
             </ul>
@@ -354,6 +368,7 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM }) {
                       row={row}
                       state="past"
                       info={infoOf(row)}
+                      seriesDay={seriesDayOf.get(row.raceId)}
                     />
                   ))}
                 </ul>

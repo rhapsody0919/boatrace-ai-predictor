@@ -294,3 +294,16 @@ test("出走履歴は区画が画面に入ってから、行にいる選手の�
   await page.waitForTimeout(1000);
   expect(history.length).toBeLessThanOrEqual(1);
 });
+
+test("今節の走が無くても、節の2日目以降なら「初日」と言い切らない", async ({ page }) => {
+  await setFavorites(page, [RACER]);
+  await routePredictions(page, { seriesDay: 3 });
+  await page.goto("/");
+  const section = page.getByTestId("favorite-runs");
+  await section.scrollIntoViewIfNeeded();
+  const first = section.locator(".favorite-runs__row").first();
+  await expect(first.locator(".favorite-runs__stat")).toContainText("出走数", {
+    timeout: 30000,
+  });
+  await expect(first.locator(".favorite-runs__meet")).not.toContainText("初日");
+});

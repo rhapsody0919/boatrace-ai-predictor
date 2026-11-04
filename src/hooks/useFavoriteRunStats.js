@@ -9,6 +9,9 @@ import {
 } from "../components/race/basicInfoStats";
 import { statLineOf } from "../pure/favoriteRuns";
 
+/** 同時に成績・今節を取る選手の数 */
+const CONCURRENCY = 3;
+
 /**
  * トップの区画「お気に入り選手の出走」の各行の、成績の一言と今節の着順（GS04-7、BOA-1273）。
  *
@@ -48,25 +51,31 @@ export function useFavoriteRunStats(rows, visible) {
       for (const id of targets) next[id] = { status: "loading" };
       return next;
     });
-    for (const id of targets) {
-      Promise.all([
-        supabaseDataService.getRacerRaceHistory(id),
-        supabaseDataService.getRacerScopedRaceStats(id),
-      ])
-        .then(([history, records]) =>
+    // 同時に取るのは CONCURRENCY 人まで（1人で2本の2年分の読み。☆は30人まで入るので、
+    // トップを開いた瞬間に数十本を並べて DB に負荷をかけない）
+    const queue = [...targets];
+    const worker = async () => {
+      while (queue.length > 0) {
+        const id = queue.shift();
+        try {
+          const [history, records] = await Promise.all([
+            supabaseDataService.getRacerRaceHistory(id),
+            supabaseDataService.getRacerScopedRaceStats(id),
+          ]);
           setByRacer((prev) => ({
             ...prev,
             [id]: { status: "ready", history, records },
-          })),
-        )
-        .catch((error) => {
+          }));
+        } catch (error) {
           console.error(
             `お気に入り選手の出走: 選手 ${id} の成績・今節の取得に失敗した`,
             error,
           );
           setByRacer((prev) => ({ ...prev, [id]: { status: "failed" } }));
-        });
-    }
+        }
+      }
+    };
+    for (let i = 0; i < Math.min(CONCURRENCY, targets.length); i += 1) worker();
   }, [visible, racerKey]);
 
   // 号艇別の行（選手ごとに1回だけ数える）
@@ -87,21 +96,38 @@ export function useFavoriteRunStats(rows, visible) {
     return result;
   }, [byRacer]);
 
-  return (row) => {
-    const state = byRacer[row.racerId];
-    if (!state || state.status === "loading")
-      return { loading: true, error: false, stat: null, meet: null };
-    if (state.status === "failed")
-      return { loading: false, error: true, stat: null, meet: null };
-    const meet = buildMeetResults(state.records ?? [], {
-      raceId: row.raceId,
-      venueCode: row.venueCode,
-    });
-    return {
-      loading: false,
+  // 行ごとの欄（分の時計で描き直すたびに今節を切り直さない）
+  const infoByRow = useMemo(() => {
+    const result = new Map();
+    for (const row of rows) {
+      const state = byRacer[row.racerId];
+      let info;
+      if (!state || state.status === "loading")
+        info = { loading: true, error: false, stat: null, meet: null };
+      else if (state.status === "failed")
+        info = { loading: false, error: true, stat: null, meet: null };
+      else {
+        const meet = buildMeetResults(state.records ?? [], {
+          raceId: row.raceId,
+          venueCode: row.venueCode,
+        });
+        info = {
+          loading: false,
+          error: false,
+          stat: statLineOf(statsByRacer[row.racerId]?.get(row.boat)),
+          meet: getRecentRaces(meet, meet.length),
+        };
+      }
+      result.set(`${row.raceId}|${row.racerId}`, info);
+    }
+    return result;
+  }, [rows, byRacer, statsByRacer]);
+
+  return (row) =>
+    infoByRow.get(`${row.raceId}|${row.racerId}`) ?? {
+      loading: true,
       error: false,
-      stat: statLineOf(statsByRacer[row.racerId]?.get(row.boat)),
-      meet: getRecentRaces(meet, meet.length),
+      stat: null,
+      meet: null,
     };
-  };
 }
