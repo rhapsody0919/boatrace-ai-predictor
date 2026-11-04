@@ -1735,8 +1735,11 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".data-race-table")).toBeVisible({
       timeout: 15000,
     });
+    // ☆ボタン（BOA-1270）の文字を拾わないよう、名前の要素（リンクまたは名前の span）だけを読む
     const expectedNames = (
-      await page.locator(".drt-name-th").allTextContents()
+      await page
+        .locator('.drt-name-th > a, .drt-name-th > span[translate="no"]')
+        .allTextContents()
     ).map((n) => n.trim());
     expect(expectedNames.length).toBe(6);
 
