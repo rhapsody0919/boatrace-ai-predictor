@@ -126,6 +126,7 @@ export function buildCourseRows(rows, periods = COURSE_SUM_PERIODS) {
     const [p1, p2, p3] = placeCounts;
     return {
       course: c,
+      wins: p1,
       entries,
       // reliability: none（出さない）/ reference（参考）/ firm
       reliability: !show
