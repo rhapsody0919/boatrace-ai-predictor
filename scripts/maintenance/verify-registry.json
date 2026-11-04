@@ -449,6 +449,11 @@
       "guards": "例外文言の非空フォールバック（BOA-668）と、レース日付・JST固定の締切日時・5分前と締切ちょうどの状態境界（ADR 0042、BOA-1065）"
     },
     {
+      "script": "verify-eve-deadlines.js",
+      "tier": "ci",
+      "guards": "前夜の締切予定 eve_race_deadlines（BOA-1282、マイグレーション202）。raceindex は行の R と締切を対にし並びの異常を落とす、優勝戦は名前で見分け12Rとは限らない（準優勝戦は false）、値の変わる行だけ・全列で書き取れなかった名前は残す、1件ずつ間5秒・最初の起動だけ24場・最終日だけ racelist、race_series の会場の 403・0行は失敗で incomplete、21:20 より前は incomplete、shadow は書かない、読み取りの失敗は例外。朝の照合は races_init の後・食い違いと races に無い行を通知・2回目は書かない。202 の race_id の CHECK・RLS・権限（anon 不可・service_role は DELETE 不可）・ジョブの行を live にする条件（PGlite、外部接続なし）、registry の finalRunAfterJst、vercel.json の cron"
+    },
+    {
       "script": "verify-exhibition-time-top-stats.js",
       "tier": "ci",
       "guards": "展示タイム1位率の集計（update-exhibition-time-top-stats.js）が、展示タイムが NULL の行（展示ST先行・展示前の体重だけの行・展示なし）を分母に入れないこと、同着の最速を数えないこと（BOA-520。PR #917 で見つかった率の薄まり）"

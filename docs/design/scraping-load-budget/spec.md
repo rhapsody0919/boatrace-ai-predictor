@@ -114,9 +114,9 @@ R＝その日の races の件数（中止の確定を除く。朝の races_init 
 | オッズの5ページの合計 | 46×R | 7,176（実測5,510） | 11,040 | 実測35.3/R×1.3 |
 | beforeinfo | 4.5×R | 702（実測約530） | 1,080 | #1946 の後3.4/R×1.3 |
 | raceresult | 4×R＋50 | 674（3c の後 約370） | 1,010 | 実測3.2/R×1.3、中止の確認の分50 |
-| racelist | 2.6×R | 406（実測約310） | 624 | 2/R×1.3 |
+| racelist | 2.6×R | 406（実測約310） | 624 | 2/R×1.3。前夜の eve_deadlines の最終日の会場×3（1晩 約9〜24）を含む枠の余りで足りる |
 | pcexpect | 1.3×R | 203（実測158） | 312 | 1/R×1.3 |
-| race/index・raceindex | 200 | 200（実測約125） | 200 | race_status 108＋races_init |
+| race/index・raceindex | 280 | 280（実測約125＋前夜 約70） | 280 | race_status 108＋races_init＋eve_deadlines（前夜の翌日分。最初の起動24場＋3回×節のある約15場＝約70、BOA-1282・docs/design/eve-race-deadlines/plan.md）×1.3 の余りを含む |
 | pitreport | 1,000 | 1,000（平均46） | 1,000 | SG の節は未計測。目安（根拠なし） |
 | 夜の日次 | 150 | 150（約30） | 150 | registry から数えた見積り |
 | racersearch（選手） | 取得日 2,000、それ以外 50 | — | — | 選手数1,628 |
