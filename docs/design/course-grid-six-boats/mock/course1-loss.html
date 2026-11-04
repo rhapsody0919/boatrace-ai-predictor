@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1コースのまくられ・差され</title>
+<style>
+:root{
+  color-scheme: dark;
+  --surface-page:#0d1b2e; --surface-card:#142842; --surface-sunk:#0f2136;
+  --border-hairline:#24344d; --text-primary:#f8fafc; --text-secondary:#cbd5e1; --text-muted:#94a3b8;
+  --brand-accent-primary:#c9a227; --gold-300:#e8d089; --color-warning:#f59e0b;
+  --b1-bg:#ffffff;--b1-tx:#000;--b2-bg:#000;--b2-tx:#fff;--b3-bg:#e53935;--b3-tx:#fff;--b4-bg:#1e88e5;--b4-tx:#fff;--b5-bg:#fdd835;--b5-tx:#000;--b6-bg:#43a047;--b6-tx:#fff;
+  --font:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface-page);color:var(--text-primary);font-family:var(--font);line-height:1.5}
+.page{max-width:1240px;margin:0 auto;padding:16px 16px 48px}
+h1{font-size:18px;margin:0 0 4px}
+.lead{color:var(--text-secondary);font-size:12.5px;margin:0 0 14px}
+.state{font-size:12px;color:var(--gold-300);margin:18px 0 6px}
+.tabs{display:flex;gap:14px;font-size:13px;color:var(--text-secondary);border-bottom:1px solid var(--border-hairline);margin:0 0 10px;white-space:nowrap;overflow:hidden}
+.tabs span{padding:6px 0}
+.tabs .on{color:var(--brand-accent-primary);border-bottom:2px solid var(--brand-accent-primary);font-weight:600}
+.card{background:var(--surface-card);border:1px solid var(--border-hairline);border-radius:10px;padding:12px;margin:0 0 12px}
+.card.new{box-shadow:0 0 0 2px var(--brand-accent-primary)}
+.ghost{opacity:.45}
+.card-title{font-size:16px;font-weight:700;margin:0 0 2px}
+.card-sub{font-size:12px;color:var(--text-secondary);margin:0 0 8px}
+.newtag{font-size:10.5px;font-weight:700;color:#160f03;background:var(--brand-accent-primary);border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:2px}
+.bb{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:4px;font-size:13px;font-weight:700;flex:none;vertical-align:-5px;margin-right:4px}
+.bb1{background:var(--b1-bg);color:var(--b1-tx)}
+.grade{font-size:10.5px;color:var(--text-secondary);border:1px solid var(--border-hairline);border-radius:4px;padding:0 4px;margin-left:4px}
+.who{font-size:14px;margin:0 0 4px}
+.who .name{font-weight:700}
+.loss-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--border-hairline);font-size:14px;font-variant-numeric:tabular-nums}
+.loss-row:last-of-type{border-bottom:0}
+.loss-val{font-weight:700}
+.loss-val small{font-weight:400;color:var(--text-secondary);margin-left:2px}
+.loss-n{font-size:13px;color:var(--text-secondary);margin:4px 0 0}
+.caveat{font-size:11px;color:var(--text-secondary);margin:8px 0 0}
+.caveat p{margin:0 0 3px}
+.split{display:block}
+@media (min-width:1200px){
+  .page{padding:24px 120px 48px;max-width:none}
+  .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;align-items:start}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>1号艇の1コースでの まくられ・差され（spec §1.8 の案）</h1>
+  <p class="lead">レース詳細・枠別情報タブ。「1コースが逃げたとき」の直前に置く。選手名・数値は架空の値。金の枠が新しいカード、薄いカードは今の表示。</p>
+
+  <div class="tabs"><span>基本情報</span><span>今節</span><span>直前情報</span><span class="on">枠別情報</span><span>モータ情報</span></div>
+
+  <p class="state">状態A: 1コース30走以上（割合と走数を出す）</p>
+  <div class="split">
+    <div>
+      <div class="card new">
+        <p class="card-title">1号艇の1コースでの まくられ・差され<span class="newtag">新</span></p>
+        <p class="who"><span class="bb bb1">1</span><span class="name" translate="no">選手A</span><span class="grade">A1</span></p>
+        <p class="card-sub">今日の1号艇の選手本人が、これまで進入1コースで走った34走のうち、まくられた走・差された走（当社データ 2025/12/03〜2026/11/03）</p>
+        <div class="loss-row"><span>まくられ</span><span class="loss-val">34走中5走<small>（15%）</small></span></div>
+        <div class="loss-row"><span>差され</span><span class="loss-val">34走中4走<small>（12%）</small></span></div>
+        <div class="caveat">
+          <p>※割合の分母は1コースで走った全ての走です（負けた走の中の割合ではありません）。まくり差し・抜き・恵まれで1着を取られた走は、まくられ・差されに入っていません（分母の34走には入っています）。</p>
+          <p>※1着の多さは、上の「6艇の選手本人のコース別成績」の1着率にあります。上の表は直近3期（公式）、このカードは当社データ 2025/12/03〜2026/11/03 で、期間が違います。この走数では、同じ級の選手どうしの率は比べられません。</p>
+        </div>
+      </div>
+      <div class="card ghost">
+        <p class="card-title">1コースが逃げたとき（会場の値・今の表示）</p>
+        <p class="card-sub">この会場の1コース逃げ 875レース／2着に来たコース</p>
+      </div>
+    </div>
+    <div class="card ghost"><p class="card-title">決まり手傾向（全艇・直近90日、今の表示）</p></div>
+  </div>
+
+  <p class="state">状態B: 1コース30走未満（走数だけ。割合は出さない）</p>
+  <div class="split">
+    <div>
+      <div class="card new">
+        <p class="card-title">1号艇の1コースでの まくられ・差され<span class="newtag">新</span></p>
+        <p class="who"><span class="bb bb1">1</span><span class="name" translate="no">選手B</span><span class="grade">B1</span></p>
+        <p class="card-sub">今日の1号艇の選手本人が、これまで進入1コースで走ったのは18走です（当社データ 2025/12/03〜2026/11/03）。30走未満のため割合は出しません。</p>
+        <div class="loss-row"><span>まくられ</span><span class="loss-val">18走中2走</span></div>
+        <div class="loss-row"><span>差され</span><span class="loss-val">18走中1走</span></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="state">状態C: 1コースの走が無い</p>
+  <div class="split">
+    <div>
+      <div class="card new">
+        <p class="card-title">1号艇の1コースでの まくられ・差され<span class="newtag">新</span></p>
+        <p class="who"><span class="bb bb1">1</span><span class="name" translate="no">選手C</span><span class="grade">B2</span></p>
+        <p class="card-sub">この期間（当社データ 2025/12/03〜2026/11/03）に、今日の1号艇の選手本人が進入1コースで走った走はありません。</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
