@@ -317,7 +317,8 @@ check(
     races.includes("{ includeTarget = false } = {}") &&
       races.includes("races.filter((r) => r.race_id <= beforeRaceId)") &&
       // "-incl" は beforeKey より前（キーの末尾が race_id のままで、過去レースの長い TTL が効く）
-      /"-incl"\s*:\s*""\s*\}\$\{beforeKey\(beforeRaceId\)\}/.test(races),
+      races.includes("${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}") &&
+      src.includes('beforeRaceId && includeTarget ? "-incl" : ""'),
   );
   {
     // 動きの確認: 同じ filter 式を実データの形に当てる（既定は対象を除き、includeTarget は含む）
@@ -344,10 +345,31 @@ check(
   ]) {
     check(
       `${label}: 上限（beforeRaceId）をレースの取得に通し、キャッシュのキーに入れる`,
-      /getRacesForVenueSince\([^)]*beforeRaceId,?\s*\)/.test(body) &&
+      /getRacesForVenueSince\([^)]*beforeRaceId,?\s*(\{ includeTarget \},?\s*)?\)/.test(body) &&
         body.includes("${beforeKey(beforeRaceId)}"),
     );
   }
+  // BOA-1297: 部品交換・使用履歴は includeTarget を取得まで通し、キャッシュのキーを分ける
+  for (const [label, body] of [
+    ["日次系列", dailySeries],
+    ["使用履歴", methodBody("getMotorUsageHistory")],
+    ["部品交換", methodBody("getMotorPartsHistory")],
+  ]) {
+    check(
+      `${label}: includeTarget（既定 false）を受け、取得に通し、キーを分ける`,
+      body.includes("{ includeTarget = false } = {}") &&
+        body.includes("${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}"),
+    );
+  }
+  check(
+    "日次系列・使用履歴: レースの取得に { includeTarget } を渡す",
+    /getRacesForVenueSince\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(dailySeries) &&
+      /getRacesForVenueSince\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(methodBody("getMotorUsageHistory")),
+  );
+  check(
+    "部品交換: 日次系列の取得に { includeTarget } を渡す",
+    /fetchMotorDailySeries\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(methodBody("getMotorPartsHistory")),
+  );
   const champ = methodBody("getVenueMotorChampionshipHistory");
   check(
     "優勝履歴: 過去レースではそのレースより前の優勝に限る",
