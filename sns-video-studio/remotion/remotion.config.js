@@ -12,7 +12,7 @@ const sandboxHeadlessShell =
 if (fs.existsSync(sandboxHeadlessShell)) {
   Config.setBrowserExecutable(sandboxHeadlessShell);
   // 同環境のプロキシCA（/root/.ccr/ca-bundle.crt）をヘッドレスシェルは信頼しないため、
-  // fonts.gstatic.com等へのフォント取得がERR_CERT_AUTHORITY_INVALIDで失敗する
-  // （2026-09-04判明）。同じサンドボックス判定の範囲でのみ証明書検証を無効化する。
+  // 外への取得がERR_CERT_AUTHORITY_INVALIDで失敗する（2026-09-04判明、当時は fonts.gstatic.com の
+  // フォント。2026-11-04 からフォントは同梱で外を読まない）。同じサンドボックス判定の範囲でのみ証明書検証を無効化する。
   Config.setChromiumIgnoreCertificateErrors(true);
 }

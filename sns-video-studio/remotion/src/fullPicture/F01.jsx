@@ -19,6 +19,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "../fonts.js";
+import { useGlyphGuard } from "../fonts/useGlyphGuard.js";
 import { BG_BOTTOM, BG_TOP, MUTED, clamp, ease } from "./parts.js";
 import { BOAT_COLORS } from "../../../../src/utils/colors.js";
 import { NB, OPEN, RIGHT, SMALL, TODAY } from "./f01Right.js";
@@ -434,6 +435,7 @@ export function F01Landscape({
   bgm = null,
   end = null,
 }) {
+  useGlyphGuard();
   const frame = useCurrentFrame();
   const sub = subs.find((s) => frame >= s.from && frame < s.to);
   return (
@@ -495,6 +497,7 @@ export function F01Landscape({
  * 文と大きな2行の字の大きさは作る側が決める（f01.mjs の thumb・thumbSize。長い名前は字を詰め、収まらなければ作らない）
  */
 export function F01Thumb({ head = "", series = null, deadline = "", lines = [], foot = "", number = "" }) {
+  useGlyphGuard();
   return (
     <AbsoluteFill
       style={{

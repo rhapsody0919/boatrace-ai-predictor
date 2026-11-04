@@ -1189,6 +1189,11 @@
       "guards": "scripts/・api/ の相対 import の参照先が実在すること（移動したスクリプトの ./lib/ の取り残し。CIで走らない手動スクリプトの壊れに気づけない。BOA-536）"
     },
     {
+      "script": "verify-remotion-local-fonts.js",
+      "tier": "ci",
+      "guards": "動画（sns-video-studio/remotion）の字をネットから読まない: remotion に @remotion/google-fonts と fonts.googleapis.com・fonts.gstatic.com が無い（1頁 484 回の読み取りに戻さない）、fonts.js は同梱の Noto Sans JP の woff2 を import して @remotion/fonts で読む（staticFile は --public-dir を替える f01・人気薄の1着で見つからない）、coverage.js が同梱の woff2 から作ったもの（sha256）、豆腐の検査が同梱に無い字だけを拾う、全貌・f01・節の機力・人気薄の1着が useGlyphGuard を呼ぶ、f01 の撮影用の頁も Google Fonts を読まない"
+    },
+    {
       "script": "verify-render-with-fresh-page.js",
       "tier": "ci",
       "guards": "ブログのスナップショット生成で、ページが1つ落ちても後続の記事を取りこぼさないこと（scripts/lib/renderWithFreshPage.js）。2026-10-11 の本番ビルドで、落ちたページを使い続けた後続の3記事が失敗し、AI クローラーに中身の無い画面が返っていた"

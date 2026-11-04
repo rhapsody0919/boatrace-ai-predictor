@@ -17,6 +17,7 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "../fonts.js";
+import { useGlyphGuard } from "../fonts/useGlyphGuard.js";
 import { fitHeadline } from "../textFit.js";
 import rules from "../../risk-rules.json";
 import { matchRiskRules } from "../../../../scripts/lib/riskRuleMatcher.js";
@@ -845,6 +846,7 @@ export function SetsuKiryokuShort(props) {
     );
   const ref = useRef(null);
   useBoundsGuard(ref);
+  useGlyphGuard();
   const tl = timeline(b.variant);
   return (
     <AbsoluteFill style={{ background: BG, fontFamily: FONT, color: WH }}>
