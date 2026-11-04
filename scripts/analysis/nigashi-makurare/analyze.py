@@ -115,6 +115,7 @@ def reliability(D, nc, kc, nmin, by=None):
             if len(s) > 30: res[k] = one(s)
     return res
 
+ONLY_Q4 = os.environ.get("NM_ONLY_Q4") == "1"  # Q4 だけを作り直し、既存の OUT の q4_thresholds を差し替える
 out = {"ticket": "BOA-1280", "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
        "data": {"races_boat1_course1": int(len(R)), "date_min": str(R.d.min().date()), "date_max": str(R.d.max().date()),
                 "sha256_races_pkl": hashlib.sha256(open(os.path.join(W, "races.pkl"), "rb").read()).hexdigest()[:16],
@@ -124,7 +125,7 @@ out = {"ticket": "BOA-1280", "generated_at": datetime.datetime.now(datetime.time
 # ---------------- Q1 逃がし率 ----------------
 Q1 = R[R.b2_in_course2 & R.b2_win_rate.notna() & R.max_wr_3to6.notna()].copy()
 q1 = {"population": "1号艇1コース・2号艇2コース", "n_races": int(len(Q1)), "by_window": {}}
-for win in os.environ.get("NM_WINDOWS", "all,365d,90d").split(","):
+for win in ([] if ONLY_Q4 else os.environ.get("NM_WINDOWS", "all,365d,90d").split(",")):
     n, k, e = Q1[f"b2_{win}_n"], Q1[f"b2_{win}_nige"], Q1[f"b2_{win}_bl_nige"]
     Q1[f"nig_{win}"] = np.where(n > 0, k / n.clip(lower=1), np.nan)
     Q1[f"nigexp_{win}"] = np.where(n > 0, e / n.clip(lower=1), np.nan)
@@ -156,7 +157,7 @@ Q2 = R[R.max_wr_2to6.notna()].copy()
 Q2["y_lose"] = 1 - Q2.y_win
 Q2["y_out2"] = 1 - Q2.y_top2
 q2 = {"population": "1号艇1コース", "n_races": int(len(Q2)), "by_window": {}}
-for win in os.environ.get("NM_WINDOWS", "all,365d,90d").split(","):
+for win in ([] if ONLY_Q4 else os.environ.get("NM_WINDOWS", "all,365d,90d").split(",")):
     n = Q2[f"b1_{win}_n"]
     res = {}
     for nmin in [10, 30]:
@@ -198,7 +199,7 @@ last = R.d.max()
 L1 = R.sort_values("d").groupby("b1_racer").tail(1)
 L2 = R[R.b2_in_course2].sort_values("d").groupby("b2_racer").tail(1)
 q3 = {"as_of": str(last.date()), "note": "各選手の最後の出走日の前日までの値。真の差の SD はモーメント法"}
-for win in ["365d", "all"]:
+for win in ([] if ONLY_Q4 else ["365d", "all"]):
     q3[f"nigashi_course2_{win}"] = reliability(L2, f"b2_{win}_n", f"b2_{win}_nige", 10, by="b2_cls")
     for kind in ["makuri", "sashi", "self_win"]:
         q3[f"{kind}_course1_{win}"] = reliability(L1, f"b1_{win}_n", f"b1_{win}_{kind}", 10, by="b1_cls")
@@ -208,9 +209,11 @@ out["q3_reliability"] = q3
 T2 = Q2[(Q2.d >= TEST_FROM)].copy()
 n365 = T2.b1_365d_n
 T2["mk"] = np.where(n365 >= 30, T2.b1_365d_makuri / n365.clip(lower=1), np.nan)
-T2["bin"] = pd.cut(T2.mk, [-0.001, 0.10, 0.20, 1.0], labels=["<10%", "10-20%", ">=20%"])
+# 区分は整数で決める（k/n の浮動小数と右閉じの pd.cut を使わない。ちょうど10%は「10-20%」、ちょうど20%は「>=20%」。#2243 Codex P1）
+mk_k, ok30 = T2.b1_365d_makuri, n365 >= 30
+T2["bin"] = np.where(~ok30, None, np.where(10 * mk_k < n365, "<10%", np.where(5 * mk_k < n365, "10-20%", ">=20%")))
 q4 = {"makurare_365d_nmin30_test": {}}
-for b, s in T2.groupby("bin", observed=True):
+for b, s in T2[T2["bin"].notna()].groupby("bin"):
     q4["makurare_365d_nmin30_test"][str(b)] = {"n": int(len(s)), "boat1_win": round(float(s.y_win.mean()), 4), "share": round(float(len(s) / T2.mk.notna().sum()), 4),
                                               "mean_b1_win_rate": round(float(s.b1_win_rate.mean()), 3)}
 # 勝率の帯をそろえた差（<10% を基準に）
@@ -224,16 +227,20 @@ def band_adj(T, col, ref, tgt):
         var += w ** 2 * (h.mean() * (1 - h.mean()) / len(h) + l.mean() * (1 - l.mean()) / len(l))
     d = num / wsum; se = np.sqrt(var) / wsum
     return {"adjusted_diff": round(float(d), 4), "ci95": [round(float(d - 1.96 * se), 4), round(float(d + 1.96 * se), 4)], "z": round(float(d / se), 2)}
-T2["bin"] = T2["bin"].astype(str)
 q4["makurare_adjusted_vs_lt10"] = {t: band_adj(T2, "bin", "<10%", t) for t in ["10-20%", ">=20%"]}
 T1 = Q1[Q1.d >= TEST_FROM].copy(); n2 = T1.b2_365d_n
 T1["ng"] = np.where(n2 >= 30, T1.b2_365d_nige / n2.clip(lower=1), np.nan)
-T1["bin"] = np.where(T1.ng.isna(), "nan", np.where(T1.ng >= 0.5, ">=50%", "<50%"))
+T1["bin"] = np.where(T1.ng.isna(), "nan", np.where(2 * T1.b2_365d_nige >= n2, ">=50%", "<50%"))  # 整数で判定（ちょうど50%は >=50%）
 q4["nigashi_365d_nmin30_test"] = {b: {"n": int(len(s)), "boat1_win": round(float(s.y_win.mean()), 4), "mean_b2_win_rate": round(float(s.b2_win_rate.mean()), 3)} for b, s in T1.groupby("bin")}
 q4["nigashi_adjusted_ge50_vs_lt50"] = band_adj(T1, "bin", "<50%", ">=50%")
 q4["nigashi_365d_median"] = round(float(T1.ng.median()), 4)
 out["q4_thresholds"] = q4
 
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
+if ONLY_Q4:
+    prev = json.load(open(OUT)); prev["q4_thresholds"] = q4
+    prev["q4_regenerated_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    prev["q4_note"] = "区分を整数の条件に直して作り直した（ちょうど10%・20% の扱い、#2243 Codex P1）。Q1〜Q3 は元のまま"
+    out = prev
 json.dump(out, open(OUT, "w"), ensure_ascii=False, indent=1)
 print(json.dumps(q3, ensure_ascii=False)); print(json.dumps(q4, ensure_ascii=False))

@@ -5560,41 +5560,41 @@
  },
  "q4_thresholds": {
   "makurare_365d_nmin30_test": {
-   "<10%": {
-    "n": 47903,
-    "boat1_win": 0.6778,
-    "share": 0.4124,
-    "mean_b1_win_rate": 6.417
-   },
    "10-20%": {
-    "n": 51332,
-    "boat1_win": 0.5952,
-    "share": 0.4419,
-    "mean_b1_win_rate": 5.878
+    "n": 51477,
+    "boat1_win": 0.5993,
+    "share": 0.4432,
+    "mean_b1_win_rate": 5.904
+   },
+   "<10%": {
+    "n": 46032,
+    "boat1_win": 0.6799,
+    "share": 0.3963,
+    "mean_b1_win_rate": 6.433
    },
    ">=20%": {
-    "n": 16917,
-    "boat1_win": 0.4679,
-    "share": 0.1456,
-    "mean_b1_win_rate": 5.209
+    "n": 18643,
+    "boat1_win": 0.4714,
+    "share": 0.1605,
+    "mean_b1_win_rate": 5.215
    }
   },
   "makurare_adjusted_vs_lt10": {
    "10-20%": {
-    "adjusted_diff": -0.0218,
+    "adjusted_diff": -0.0215,
     "ci95": [
-     -0.0281,
-     -0.0156
+     -0.0279,
+     -0.0152
     ],
-    "z": -6.81
+    "z": -6.66
    },
    ">=20%": {
-    "adjusted_diff": -0.0601,
+    "adjusted_diff": -0.058,
     "ci95": [
-     -0.0712,
-     -0.049
+     -0.0689,
+     -0.047
     ],
-    "z": -10.6
+    "z": -10.36
    }
   },
   "nigashi_365d_nmin30_test": {
@@ -5623,5 +5623,7 @@
    "z": 4.6
   },
   "nigashi_365d_median": 0.5278
- }
+ },
+ "q4_regenerated_at": "2026-11-04T11:20:15.954281+00:00",
+ "q4_note": "区分を整数の条件に直して作り直した（ちょうど10%・20% の扱い、#2243 Codex P1）。Q1〜Q3 は元のまま"
 }
