@@ -519,25 +519,34 @@ test("脚注: 文は起票のとおり。率の塊の後・タグの前に期間
   });
 });
 
-test("脚注: 期間の終わりは率の窓の終わり（毎朝の更新で前日に替わる）。初日は窓の最も早い日、終わりは最も遅い日", () => {
+test("脚注: 期間は率の窓（初日は載せた人の最も早い日、終わりは窓の最新。7:00 では前々日、13:00 の集計の後は前日）。更新が止まった行・窓の壊れた行・終わりが今日以降の行は使わない（/code-review の指摘）", () => {
   const m = material({
     venues: { 2: {} },
     stats: [
-      stat(2, 4, 1, {
-        nige_rate: 80,
-        window_start: "2025-12-03",
-        window_end: "2037-11-04",
-      }),
-      stat(2, 5, 4, {
-        makuri_rate: 30,
-        window_start: "2025-12-02",
-        window_end: "2037-11-03",
-      }),
+      stat(2, 4, 1, { nige_rate: 80, window_start: "2025-12-03" }),
+      stat(2, 5, 4, { makuri_rate: 30 }),
+      // 率は高いが窓の終わりが前々日（更新が止まった）→ 使わない
+      stat(2, 6, 1, { nige_rate: 99, window_end: "2037-11-03" }),
+      // 窓の日付が暦に無い・終わりが今日 → 使わない（その日の投稿は止めない）
+      stat(2, 7, 4, { makuri_rate: 90, window_end: "2037-02-30" }),
+      stat(2, 8, 4, { makuri_rate: 80, window_end: "2037-11-05" }),
     ],
   });
+  const out = build(m);
+  assert.deepEqual(
+    out.blocks.map((b) => [b.key, b.race_id]),
+    [
+      ["nige", id(2, 4)],
+      ["makuri", id(2, 5)],
+    ],
+  );
   assert.match(
-    build(m).text,
+    out.text,
     /^※率は 2025\/12\/2〜2037\/11\/4 の全国の成績（そのコースに入ったとき）$/m,
+  );
+  assert.deepEqual(
+    checkTodayDigestV3(out.text, { date: DATE, url: URL_C }),
+    [],
   );
   // 翌日の材料（窓の終わりが1日進む）なら、脚注の終わりも1日進む
   const next = material({
@@ -545,20 +554,15 @@ test("脚注: 期間の終わりは率の窓の終わり（毎朝の更新で前
     stats: [stat(2, 4, 1, { nige_rate: 80, window_end: "2037-11-05" })],
   });
   next.date = "2037-11-06";
-  for (const r of next.races) r.race_date = "2037-11-06";
-  const out = buildTodayDigestV3(next, { sendAt: "07:00", t, url: URL_C });
-  assert.match(out.text, /〜2037\/11\/5 の全国の成績/);
-  // 窓の日付が壊れていれば作らない（期間を出せない率は載せない）
-  const broken = material({
+  const after = buildTodayDigestV3(next, { sendAt: "07:00", t, url: URL_C });
+  assert.match(after.text, /〜2037\/11\/5 の全国の成績/);
+  // 夜の集計が止まり全員の窓が前々日まで: 載せる率の実際の期間を書く（前日と偽らない）
+  const stale = material({
     venues: { 2: {} },
-    stats: [stat(2, 4, 1, { nige_rate: 80, window_start: null })],
+    stats: [stat(2, 4, 1, { nige_rate: 80, window_end: "2037-11-03" })],
   });
-  assert.deepEqual(build(broken), {
-    ok: false,
-    reason: "stats_window_invalid",
-  });
+  assert.match(build(stale).text, /〜2037\/11\/3 の全国の成績/);
 });
-
 test("脚注: 逃し率の行は【1号艇が逃げやすいレース】の塊がある日だけ。率の塊が無い日は脚注を出さない", () => {
   const noNigashi = build(
     material({
@@ -610,6 +614,12 @@ test("脚注の検査: 期間の形・前日より後の終わり・初日が終
   // 初日が終わりより後
   assert.ok(
     check(ok.replace("2025/12/2〜", "2037/12/2〜")).includes(
+      "period_note_invalid",
+    ),
+  );
+  // 暦に無い日付（/code-review の指摘）
+  assert.ok(
+    check(ok.replace("〜2037/11/4 ", "〜2037/0/99 ")).includes(
       "period_note_invalid",
     ),
   );
