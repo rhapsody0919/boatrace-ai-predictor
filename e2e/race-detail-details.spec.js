@@ -141,6 +141,56 @@ test.describe("レース詳細の表示の細部", () => {
     ).toHaveCount(0);
   });
 
+  test("375px: まわり足・今節まわり足の末尾と※・?が同じ行に並ぶ（BOA-1029）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/race/2026-10-02-12-12?tab=beforeInfo");
+    await expect(page.getByTestId("rbi-turn-time-venue-note")).toBeVisible({
+      timeout: 30000,
+    });
+    for (const text of ["まわり足 ※", "今節まわり足 ※"]) {
+      // 375pxでは短縮ラベルが表示される。今節の行が無い場合も成功にしない。
+      const label = page
+        .locator(".race-before-info-tab .drt-label-cell .drt-label-short")
+        .filter({ hasText: new RegExp(`^${text}$`) });
+      await expect(label).toHaveCount(1, { timeout: 30000 });
+      await expect(label).toBeVisible();
+      const cell = page.locator(".drt-label-cell").filter({ has: label });
+      await expect(cell.locator(".term-hint__button")).toBeVisible();
+      await cell.scrollIntoViewIfNeeded();
+      await page.evaluate(() => document.fonts.ready);
+      await expect
+        .poll(async () =>
+          cell.evaluate((el) => {
+            const label = el.querySelector(".drt-label-short");
+            const walker = document.createTreeWalker(
+              label,
+              NodeFilter.SHOW_TEXT,
+            );
+            const tops = [];
+            for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+              for (let i = 0; i < node.textContent.length; i++) {
+                if (!["足", "※"].includes(node.textContent[i])) continue;
+                const range = document.createRange();
+                range.setStart(node, i);
+                range.setEnd(node, i + 1);
+                const rect = range.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) tops.push(rect.top);
+              }
+            }
+            // 両文字を測れなければ、空配列の比較で通さず失敗させる。
+            if (tops.length !== 2) return Infinity;
+            tops.push(
+              el.querySelector(".term-hint__button").getBoundingClientRect().top,
+            );
+            return Math.max(...tops) - Math.min(...tops);
+          }),
+        )
+        .toBeLessThanOrEqual(4);
+    }
+  });
+
   test("基本情報の勝率バー: 最下位の艇も棒が空にならない（BOA-618）", async ({
     page,
   }) => {
