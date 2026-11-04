@@ -59,6 +59,7 @@ import {
   computeWakuNariRate,
   getCourseRecentRuns,
 } from "./courseGridStats";
+import SixBoatCourseTable from "./SixBoatCourseTable";
 import RaceStConsiderationCard from "./RaceStConsiderationCard";
 import NigeSimulationCard from "./NigeSimulationCard";
 import RecentRunsBar from "./RecentRunsBar";
@@ -418,6 +419,8 @@ function RaceWakuInfoTab({
 
   return (
     <div className="race-waku-info-tab">
+      <SixBoatCourseTable raceDate={raceId?.slice(0, 10)} venueCode={venueCode}
+        players={sortedPlayers} focusedBoat={selectedBoat} onFocusBoat={onFocusBoat} />
       <p className="rwit-note">{t("wakuInfo.note")}</p>
 
       <div
