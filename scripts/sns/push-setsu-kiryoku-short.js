@@ -35,7 +35,7 @@
  * --dry-run は DB を読むだけ。date が今日でない束（見本の束）は、その日の送る時刻（send_time、無ければ 21:30）の2分前に受け取ったとして時刻の検査をする
  *   （結果の simulated_now。DB の数（日の上限・クォータ・二重送信）は今の値で見る）
  *
- * stdout の最後の1行は `SETSU_RESULT {...}`（setsu_id・outcome・job_id・job_state・video_id・video_url・posted_at・error_code・reason）
+ * stdout の最後の1行は `SETSU_RESULT {...}`（setsu_id・variant（border・main）・outcome・job_id・job_state・video_id・video_url・posted_at・error_code・reason）
  * exit: 0 送った（--dry-run は検査が通った・--no-wait は予定に入れた）・1 検査で拒否・2 使い方・鍵の不足・3 許可が off なので書かなかった
  *   ・4 同じ日・同じ版の setsu_kiryoku_short が既にある（何もしない）・5 予定に入れたが送れなかった（保留・期限切れ・自動モードでない）・6 想定外の失敗
  */
@@ -466,6 +466,7 @@ function itemRow({
 /** item と job から、hq に返す状態（純粋関数） */
 export const setsuStatusOf = (item, job) => ({
   setsu_id: item?.race_id ?? null,
+  variant: item?.variant ?? null,
   item_state: item?.state ?? null,
   held_reason: item?.held_reason ?? null,
   job_id: job?.id ?? null,
@@ -561,7 +562,12 @@ export async function pushSetsuKiryokuShort(
   // 列が無い（193 が未適用）・行が無いときも off（fail-closed）
   const enabled = controls.youtube?.setsu_kiryoku_short_enabled === true;
   const writes = enabled && !dryRun;
-  const extra = simulated ? { simulated_now: simulated.toISOString() } : {};
+  // item の版（border・main）。同じ日・同じ会場の border と節の機力は setsu_id が同じなので、結果には版も出す（201）
+  const itemVariant = setsuItemVariantOf(bundle?.variant);
+  const extra = {
+    variant: itemVariant,
+    ...(simulated ? { simulated_now: simulated.toISOString() } : {}),
+  };
   const reject = async (reasons) => {
     if (writes)
       await notify(
@@ -598,7 +604,6 @@ export async function pushSetsuKiryokuShort(
   });
   if (timing.length) return reject(timing);
   // 同じ日・同じ版に生きている・送った item があれば何も作らず、今の状態を返す（DB の一意の索引でも止まる、201）
-  const itemVariant = setsuItemVariantOf(bundle.variant);
   const live = await liveOf(store, {
     date: bundle.date,
     variant: itemVariant,
@@ -719,6 +724,7 @@ export async function pushSetsuKiryokuShort(
   }
   const out = {
     setsu_id: setsuId,
+    variant: itemVariant,
     draft_id: draft.id,
     item_id: item.id,
     auto,
@@ -827,6 +833,7 @@ export function resultLine(
   const s = status ?? result.status ?? null;
   const line = {
     setsu_id: result.setsu_id ?? null,
+    variant: result.variant ?? s?.variant ?? null,
     outcome,
     job_id: s?.job_id ?? result.job_id ?? null,
     job_state: s?.job_state ?? null,

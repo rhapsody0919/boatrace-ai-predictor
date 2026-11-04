@@ -922,6 +922,10 @@ test("BOA-1249: 朝 08:00 の border（準優に残れるか）と 21:30 の節�
   );
   assert.equal(borderAgain.already, true, JSON.stringify(borderAgain.reasons));
   assert.equal(resultLine(borderAgain).code, 4);
+  // setsu_id は同じなので、結果の行に版を出す（どちらの動画の話か hq が分かる）
+  assert.match(resultLine(borderAgain).text, /"variant":"border"/);
+  assert.match(resultLine(again).text, /"variant":"main"/);
+  assert.equal(borderAgain.status.video_id, "borderVid01");
   assert.equal((await counts()).jobs, 2);
   // 版ごとの状態（--status <日> border|main）
   const st = await setsuStatus(DAY, { store, variant: "border" });
