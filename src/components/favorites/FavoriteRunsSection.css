@@ -1,0 +1,49 @@
+.favorite-runs {
+  max-width: 1200px;
+  margin: 0 auto 1rem;
+  padding: 1rem;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: 12px;
+}
+.favorite-runs h2 { margin: 0 0 0.5rem; font-size: 1.25rem; }
+.favorite-runs p { margin: 0 0 0.75rem; }
+.favorite-runs__list { list-style: none; padding: 0; margin: 0; }
+.favorite-runs__row {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-hairline);
+  min-width: 0;
+}
+.favorite-runs__race, .favorite-runs__racer, .favorite-runs__links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.favorite-runs__grade { color: var(--color-white); border-radius: 4px; padding: 0.1rem 0.4rem; font-weight: bold; }
+.favorite-runs__links a, .favorite-runs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.25rem 0.5rem;
+  color: var(--brand-accent-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.favorite-runs button { margin: 0.75rem 0; }
+.favorite-runs .favorite-runs__note { margin: 0.75rem 0 0; font-size: 0.8rem; color: var(--text-secondary); }
+@media (max-width: 767px) {
+  .favorite-runs__extra { display: none; }
+}
+@media (min-width: 768px) {
+  .favorite-runs__row { grid-template-columns: 7rem 1fr 1.25fr 2fr; align-items: center; }
+  .favorite-runs .favorite-runs__more { display: none; }
+}
