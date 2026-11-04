@@ -1,7 +1,8 @@
 import { SUPABASE_URL, SUPABASE_SERVICE_KEY } from "./snsHubHelpers.js";
 import { X_MEDIA_MAX_BYTES } from "./snsXSend.js";
 
-async function db(path, options = {}) {
+/** PostgREST（service key）。失敗は cause に PostgREST の code・message（BOA-1201）。消す口（BOA-1279）も使う */
+export async function db(path, options = {}) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
     headers: {

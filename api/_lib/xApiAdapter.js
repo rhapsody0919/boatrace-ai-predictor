@@ -154,5 +154,24 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
         throw new Error("X の投稿 ID が返りません");
       return { id, posted_at: postedAtFromId(id) };
     },
+    /**
+     * 自分の投稿を消す（DELETE /2/tweets/:id、BOA-1279）。既に無い（HTTP 404）ときは already=true で成功にする。
+     * 自動で再試行しない。deleted が true でない応答は投げる（消えたか分からないまま記録を直さない）
+     */
+    async deletePost(id) {
+      if (!/^[0-9]{1,19}$/.test(id ?? ""))
+        throw new Error("X の投稿 ID が不正です");
+      try {
+        const body = await call(`/2/tweets/${id}`, { method: "DELETE" });
+        if (body?.data?.deleted !== true)
+          throw new Error(
+            "X の投稿の削除を確認できません（deleted が true でない）",
+          );
+        return { already: false };
+      } catch (error) {
+        if (/ HTTP 404\b/.test(error.message)) return { already: true };
+        throw error;
+      }
+    },
   };
 }
