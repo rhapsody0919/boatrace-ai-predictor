@@ -1,3 +1,8 @@
+// 先に読み込む（下の loadFont より前に評価させる）。描画の頁では remotion/no-react が delayRender の印の表
+// （window.remotion_delayRenderHandles）を空で作り直す。loadFont の後に評価されると、loadFont の印が表から消え、
+// continueRender が待ちの時計を止められず 28 秒で描画が止まる（2026-11-04 実測: 入口版 1309 コマの render が 700〜925 コマ目で止まった。
+// 以前の @remotion/google-fonts は自分で remotion/no-react を先に読んでいたので起きなかった。still は 28 秒より早く終わるので起きない）
+import "remotion/no-react";
 import { loadFont } from "@remotion/fonts";
 import notoSansJpUrl from "./fonts/noto-sans-jp/NotoSansJP-wght.woff2";
 

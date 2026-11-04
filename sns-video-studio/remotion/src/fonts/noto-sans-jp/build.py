@@ -4,7 +4,7 @@
 版 2.004、可変 wght 100〜900、SIL OFL 1.1）。@remotion/google-fonts 4.0.512 が読んでいた fonts.gstatic.com の分割（v56）と同じ版。
 字は絞らず、woff2 に詰め直すだけ（分割の japanese・latin が含む 16,591 字に、ギリシャ・キリル・ローマ数字など 141 字を足した全 16,732 字）。
 
-使い方（fontTools と brotli が要る）: python3 build.py <NotoSansJP[wght].ttf>
+使い方（fontTools と brotli が要る。今の woff2 は fontTools 4.42.1・brotli 1.2.0 で作った。版が違うと woff2 のバイトと sha256 が変わることがある）: python3 build.py <NotoSansJP[wght].ttf>
 """
 import hashlib
 import json

@@ -80,6 +80,12 @@ check(
   () => {
     const s = read(join(REMOTION, "src/fonts.js"));
     assert.match(s, /import \{ loadFont \} from "@remotion\/fonts";/);
+    // remotion/no-react を loadFont より先に評価させる（後だと delayRender の印の表が作り直され、動画の描画が 28 秒で止まる。fonts.js の注記）
+    const noReact = s.indexOf('import "remotion/no-react";');
+    assert.ok(
+      noReact >= 0 && noReact < s.indexOf('from "@remotion/fonts"'),
+      'fonts.js は @remotion/fonts より前に import "remotion/no-react"; を置く',
+    );
     assert.match(
       s,
       /import \w+ from "\.\/fonts\/noto-sans-jp\/NotoSansJP-wght\.woff2";/,
@@ -152,7 +158,7 @@ check("5. 全貌・f01・節の機力・人気薄の1着の型が useGlyphGuard 
     "src/upsetWin/UpsetWin.jsx": ["UpsetWinShort"],
   };
   for (const [file, names] of Object.entries(want)) {
-    const s = read(join(REMOTION, file));
+    const s = stripComments(read(join(REMOTION, file)));
     assert.match(
       s,
       /import \{ useGlyphGuard \} from "\.\.\/fonts\/useGlyphGuard\.js";/,
