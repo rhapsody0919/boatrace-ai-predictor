@@ -14,6 +14,7 @@
 import assert from "node:assert/strict";
 import { s02Check, s02Facts, s02Text } from "../../sns-video-studio/remotion/scripts/full-picture/s02.mjs";
 import { RANK_WORDS, SUB_MAX, VOICE, f01Check, f01Description, f01RacerCheck, f01Script, splitSubs, voiceText } from "../../sns-video-studio/remotion/scripts/full-picture/f01.mjs";
+import { seriesTitleOf } from "../../src/utils/raceSeriesText.js";
 import { NB, RIGHT, boatToday, emWidth, layoutRight, racersOf } from "../../sns-video-studio/remotion/src/fullPicture/f01Right.js";
 import { diffOf, diffText, rankOf } from "../../sns-video-studio/remotion/scripts/full-picture/scenes/diff.mjs";
 import { templateLines } from "../../sns-video-studio/remotion/scripts/full-picture/scene2-data.mjs";
@@ -513,7 +514,9 @@ assert.deepEqual(restLines([{ axis: 2, second: 1 }, { axis: 4, second: 2 }, { ax
 
 // ---- 固定の材料（4レースの最小の写し）----
 const { MATERIALS_VERSION } = await import(`${R}/scripts/full-picture/fetch-materials.mjs`);
-assert.equal(MATERIALS_SCHEMA.properties.schemaVersion.const, MATERIALS_VERSION, "Schema の版と取得の版が同じ（形を変えたら両方上げる）");
+assert.ok(MATERIALS_SCHEMA.properties.schemaVersion.enum.includes(MATERIALS_VERSION), "Schema の版に取得の版がある（形を変えたら両方上げる）");
+assert.equal(MATERIALS_VERSION, "full-picture-materials/2", "BOA-1310: race に seriesDayText・raceTitle を足した版");
+assert.ok(MATERIALS_SCHEMA.properties.schemaVersion.enum.includes("full-picture-materials/1"), "/1 の固定材料も通す");
 assert.equal(MATERIALS_SCHEMA.$id, MATERIALS_VERSION);
 const FX = new URL(`${R}/scripts/full-picture/fixtures/`, import.meta.url);
 const fixtures = readdirSync(FX).filter((f) => f.endsWith(".json.gz")).sort();
@@ -652,10 +655,58 @@ const venueZ1 = (f) => {
 // 契約: 形が変わったら落ちる
 {
   const m = JSON.parse(gunzipSync(readFileSync(new URL(fixtures[0], FX))).toString("utf8"));
-  has(validate({ ...m, schemaVersion: "full-picture-materials/0" }), "full-picture-materials/1");
+  has(validate({ ...m, schemaVersion: "full-picture-materials/0" }), "full-picture-materials/1|full-picture-materials/2");
+  // BOA-1310: /1 の固定材料はそのまま通り、/2 は race の何日目・大会名を型で検査する
+  assert.equal(m.schemaVersion, "full-picture-materials/1", "固定の材料は /1 のまま");
+  const v2 = (race) => ({ ...m, schemaVersion: "full-picture-materials/2", race });
+  assert.deepEqual(validate(v2({ startTime: "16:44:00", grade: "G1", seriesDayText: "3日目", raceTitle: "第68回 ボートレースダービー" })), []);
+  assert.deepEqual(validate(v2({ startTime: "16:44:00", grade: "ippan", seriesDayText: "3日目", raceTitle: null })), []);
+  has(validate(v2({ startTime: "16:44:00", grade: "G1", seriesDayText: 3, raceTitle: null })), "$.race.seriesDayText: 型が string|null でない");
+  has(validate(v2({ startTime: "16:44:00", grade: "G1", seriesDayText: "3日目", raceTitle: 1 })), "$.race.raceTitle: 型が string|null でない");
   has(validate({ ...m, api: { ...m.api, facts: { ...m.api.facts, today: undefined } } }), "today");
   has(validate({ ...m, api: { ...m.api, races: [{ raceId: "x", raceNumber: "10", entries: [] }] } }), "型が integer でない");
   has(validate({ ...m, db: { motor: null } }), "racer1 が無い");
+}
+// BOA-1310: 材料の race（締切・グレード・何日目・大会名）。読めない・欠けたものは null と missing に理由（握りつぶさない）
+{
+  const { raceRowOf } = await import(`${R}/scripts/full-picture/fetch-materials.mjs`);
+  const RID = "2026-11-04-24-12";
+  const tables = {
+    races: [
+      { race_id: "2026-11-04-24-01", race_number: 1, start_time: "10:40:00", race_grade: "SG", cancellation_status: null },
+      { race_id: RID, race_number: 12, start_time: "16:44:00", race_grade: "SG", cancellation_status: null },
+    ],
+    race_conditions: [
+      { race_id: "2026-11-04-24-01", series_day: 6, is_final_day: true, race_title: "第６８回　ボートレースダービー" },
+      { race_id: RID, series_day: null, is_final_day: null, race_title: null },
+    ],
+    race_series: [],
+  };
+  const get = (over = {}) => async (table, query) => {
+    if (over[table]) return over[table](query);
+    // 締切の読み（race_id=eq.）は対象のレースの行だけ
+    if (table === "races" && query.includes("race_id=eq.")) return tables.races.filter((r) => r.race_id === RID);
+    return tables[table];
+  };
+  const miss = [];
+  assert.deepEqual(await raceRowOf(RID, get(), miss), { startTime: "16:44:00", grade: "SG", seriesDayText: "最終日", raceTitle: "第68回 ボートレースダービー" });
+  assert.deepEqual(miss, []);
+  const m2 = [];
+  const noStart = await raceRowOf(RID, get({ races: (q) => (q.includes("race_id=eq.") ? [{ start_time: null, race_grade: "SG" }] : tables.races) }), m2);
+  assert.equal(noStart.startTime, null);
+  assert.ok(m2.some((x) => x.source === "race.startTime"), "締切が無ければ race.startTime を残す");
+  const m3 = [];
+  const failed = await raceRowOf(RID, get({ race_conditions: () => Promise.reject(new Error("HTTP 500")) }), m3);
+  assert.deepEqual([failed.seriesDayText, failed.raceTitle], [null, null]);
+  assert.ok(m3.some((x) => x.source === "race.labels" && /race_conditions を読めない（HTTP 500）/.test(x.reason)), JSON.stringify(m3));
+  // SG・G1（races の race_grade が無く、節の grade で SG）なのに大会名が無いときは missing に残す（使う側が止める）
+  const m5 = [];
+  const noTitle = await raceRowOf(RID, get({ races: (q) => (q.includes("race_id=eq.") ? [{ start_time: "16:44:00", race_grade: null }] : tables.races.map((r) => ({ ...r, race_grade: null }))), race_conditions: () => tables.race_conditions.map((c) => ({ ...c, race_title: null })), race_series: () => [{ venue_code: 24, start_date: "2026-10-30", end_date: "2026-11-04", title: null, grade: "SG" }] }), m5);
+  assert.deepEqual([noTitle.grade, noTitle.raceTitle], [null, null]);
+  assert.ok(m5.some((x) => x.source === "race.raceTitle" && /SG なのに大会名が無い/.test(x.reason)), JSON.stringify(m5));
+  const m4 = [];
+  assert.equal(await raceRowOf(RID, get({ races: () => Promise.reject(new Error("HTTP 503")) }), m4), null);
+  assert.ok(m4.some((x) => x.source === "race" && /HTTP 503/.test(x.reason)));
 }
 // 取得（fetch-materials.mjs）の出力も契約に合う（API・Supabase は偽物。固定の材料を返す）
 {
@@ -2165,7 +2216,8 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
   const race = mf.api.races.find((r) => r.raceId === mf.raceId);
   race.entries = [1, 2, 3, 4, 5, 6].map((b) => ({ ...race.entries.find((e) => e.number === b), number: b, name: names[b - 1], grade: mf.api.facts.today.classes[b - 1] }));
   // 試験の材料（10/12〜10/19）は race.startTime（締切）を持つ前の物。毎日の材料は 10/23 から持つ（hq-work の runs の45本で欠けは 10/20〜10/22 の3本）
-  mf.race = { ...mf.race, startTime: mf.race?.startTime ?? "16:44:00" };
+  // 固定の材料は /1（日目・大会名を持つ前）。毎日の材料は /2 から race.seriesDayText・race.raceTitle を持つ（BOA-1310）。一般戦の3日目で埋める
+  mf.race = { grade: "ippan", seriesDayText: "3日目", raceTitle: null, ...mf.race, startTime: mf.race?.startTime ?? "16:44:00" };
   return mf;
 };
 
@@ -2178,15 +2230,15 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
   assert.ok(s.ok, s.reason);
   const k = Math.round((s.open.k0 / s.open.n0) * 10);
   const g1 = mf.api.facts.today.classes[0];
-  assert.match(s.title, new RegExp(`^ボートレース\\S+ \\d+R( \\S+)? 10/19\\(月\\) 締切16:44｜1号艇 大久保信一郎${g1}は逃げ切れる？ 同じ並びの1着${k}割$`), s.title);
+  assert.match(s.title, new RegExp(`^ボートレース\\S+ \\d+R( \\S+)? 10/19\\(月\\) 3日目 締切16:44｜1号艇 大久保信一郎${g1}は逃げ切れる？ 同じ並びの1着${k}割$`), s.title);
   assert.ok([...s.title].length <= 100, `題は100字以内（${[...s.title].length}字）`);
   // push の照合（BOA-1201）: 題に焼いた締切が今の締切と合えば通り、変われば止まる
   assert.deepEqual(bakedDeadlineReasons({ youtube_full: { title: s.title } }, "2026-10-19T07:44:00.000Z"), []);
   assert.equal(bakedDeadlineReasons({ youtube_full: { title: s.title } }, "2026-10-19T07:50:00.000Z").length, 1, "締切が変われば止める");
   const open = s.chapters.find((c) => c.id === "open").open;
-  assert.ok(open.head.endsWith("10/19(月)  締切16:44"), open.head);
+  assert.ok(open.head.endsWith("10/19(月)  3日目  締切16:44"), open.head);
   assert.equal(s.thumb.deadline, "締切16:44");
-  assert.ok(s.thumb.head.endsWith(" 10/19(月)") && !s.thumb.head.includes("締切"), s.thumb.head);
+  assert.ok(s.thumb.head.endsWith(" 10/19(月) 3日目") && !s.thumb.head.includes("締切"), s.thumb.head);
   assert.deepEqual(s.thumb.lines.map((l) => l.text), [`大久保信一郎${NB}${g1}`, "逃げ切れる？"]);
   assert.equal(s.thumb.foot, `同じ並び 過去${s.open.n0.toLocaleString("ja-JP")}回\u30001号艇の1着`);
   assert.equal(s.thumb.number, `${k}割`);
@@ -2206,6 +2258,68 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
   assert.equal(f01Script(m2).kind, "deadline");
   // 禁止表現: 題・サムネの文に当たらない
   assert.deepEqual(f01Check(s, { desc: VOICE.credit, kana: {}, shots: {} }).filter((w) => /^(題|サムネ):/.test(w)), []);
+}
+
+// 何日目と SG・G1 の大会名を題・サムネ・冒頭の見出し・説明欄の4行目に（オーナー 11/4「全ての SNS に日付・何日目・レース名・締切の時刻を記載」）。
+// 文と規則は共通の部品（BOA-1309、verify-sns-race-labels.js が固定）で、f01 は材料の race.seriesDayText・race.raceTitle（/2、BOA-1310）を使う
+{
+  const { SERIES_LINE, seriesOf, f01TitleThumbCheck } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01.mjs");
+  const NAMES = ["大久保信一郎", "齋藤勇", "西村", "山田", "佐藤", "鈴木"];
+  const make = (race) => {
+    const mf = f01Fixture("2026-10-19-19-10", NAMES);
+    mf.race = { ...mf.race, ...race };
+    return mf;
+  };
+  // 部品で作った文（実の大会名の形）
+  const LONG_N = seriesTitleOf({ grade: "SG", raceTitle: "第１４回クイーンズクライマックス／Ｇ３ＱＣシリーズ" }); // 2025-11〜2026-11 の SG・G1 で最長（25字）
+  assert.equal(LONG_N, "第14回クイーンズクライマックス/G3QCシリーズ");
+  // 一般戦: 日目だけ（大会名は足さない）
+  const gen = f01Script(make({ grade: "ippan", seriesDayText: "4日目", raceTitle: null }));
+  assert.ok(gen.ok, gen.reason);
+  assert.ok(gen.title.startsWith("ボートレース下関 10R 準優勝戦 10/19(月) 4日目 締切16:44｜"), gen.title);
+  assert.equal(gen.thumb.series, null);
+  assert.equal(gen.thumb.head, "下関10R 準優勝戦 10/19(月) 4日目");
+  assert.equal(gen.chapters.find((c) => c.id === "open").open.head, "下関10R 準優勝戦  10/19(月)  4日目  締切16:44");
+  assert.equal(f01Description(gen, "0:00 冒頭\n").split("\n")[3], "ボートレース下関 10R 準優勝戦 10/19(月) 4日目 締切16:44", "説明欄の4行目は題の頭と同じ");
+  assert.ok(f01Script(make({ seriesDayText: "最終日" })).title.includes(" 10/19(月) 最終日 締切16:44｜"));
+  // 欠けたら作らない（締切と同じ）: 日目が無い（/1 の材料も）・SG/G1 なのに大会名が無い
+  assert.equal(f01Script(make({ seriesDayText: null })).kind, "series_day");
+  {
+    const v1 = f01Fixture("2026-10-19-19-10", NAMES);
+    delete v1.race.seriesDayText;
+    assert.equal(f01Script(v1).kind, "series_day", "/1 の材料（日目なし）は作らない");
+  }
+  assert.equal(f01Script(make({ grade: "G1", raceTitle: null })).kind, "series_title");
+  {
+    const mt = make({ grade: null, raceTitle: null });
+    mt.missing = [...(mt.missing ?? []), { source: "race.raceTitle", reason: "SG なのに大会名が無い（race_conditions.race_title も race_series.title も無い）" }];
+    assert.equal(f01Script(mt).kind, "series_title", "取得が SG・G1 と判定して大会名が無いと残したら止める");
+  }
+  assert.ok(f01Script(make({ grade: null, raceTitle: null })).ok, "グレード不明で大会名が無い日は大会名なしで作る（部品は節のグレードでも大会名を足す）");
+  // SG・長い大会名: 題・サムネ・冒頭・説明欄に入る。25字はサムネ・冒頭とも 32px のまま
+  const sg = f01Script(make({ grade: "SG", seriesDayText: "3日目", raceTitle: LONG_N }));
+  assert.ok(sg.ok, sg.reason);
+  assert.ok(sg.title.startsWith(`ボートレース下関 ${LONG_N} 10R 準優勝戦 10/19(月) 3日目 締切16:44｜`), sg.title);
+  assert.ok(sg.title.length <= 100, `${sg.title.length}字`);
+  assert.deepEqual(sg.thumb.series, { text: LONG_N, size: SERIES_LINE.thumb });
+  assert.deepEqual(sg.chapters.find((c) => c.id === "open").open.series, { text: LONG_N, size: SERIES_LINE.open });
+  assert.ok(f01Description(sg, "0:00 冒頭\n").split("\n")[3].includes(LONG_N));
+  assert.deepEqual(f01TitleThumbCheck(sg), []);
+  assert.deepEqual(f01Check(sg, { desc: f01Description(sg, "0:00 冒頭\n"), kana: {}, shots: {} }).filter((w) => /^(題|サムネ|説明欄|open):/.test(w)), [], "禁止表現・大きさの検査を通る");
+  // 題が100字を越える日は題からだけ大会名を外す（サムネ・冒頭・説明欄には残す）
+  const huge = "大".repeat(40);
+  const hg = f01Script(make({ grade: "G1", raceTitle: huge }));
+  assert.ok(hg.ok && !hg.title.includes(huge) && hg.title.length <= 100 && hg.lead.includes(huge), hg.title);
+  // 大会名の行は締切の札と高さが重なるので、札の分を除いた幅で詰める
+  const nearBadge = f01Script(make({ grade: "G1", raceTitle: "大".repeat(30) }));
+  assert.ok(nearBadge.thumb.series.size < SERIES_LINE.thumb && nearBadge.thumb.series.size >= SERIES_LINE.min, `${nearBadge.thumb.series.size}px`);
+  assert.deepEqual(f01TitleThumbCheck(nearBadge), [], "詰めれば札に重ならない");
+  assert.ok(f01TitleThumbCheck({ ...nearBadge, thumb: { ...nearBadge.thumb, series: { ...nearBadge.thumb.series, size: 32 } } }).some((w) => /大会名「大+」が締切の札に重なる/.test(w)), "詰めずに札に重なるなら止める");
+  // 収まらない（詰めても 24px を下回る）なら止める（切って出さない）
+  assert.ok(f01TitleThumbCheck(f01Script(make({ grade: "G1", raceTitle: "大".repeat(50) }))).some((w) => /^サムネ: 大会名「大+」が \d+px（線 24px）/.test(w)), "サムネで止める");
+  assert.ok(f01TitleThumbCheck(f01Script(make({ grade: "G1", raceTitle: "大".repeat(80) }))).some((w) => /^open: 大会名/.test(w)), "冒頭で止める");
+  // 禁止表現: データ由来の大会名も検査に当たる
+  assert.ok(f01Check(f01Script(make({ grade: "G1", raceTitle: "競艇王決定戦" })), { desc: VOICE.credit, kana: {}, shots: {} }).some((w) => /^(題|サムネ|open):/.test(w)), "大会名の禁止表現も止める");
 }
 
 // 型 f01-landscape-voice-full（関門の段4の試作）: 順位の語は線を通ったときだけ・字幕の幅・声の読みの辞書・説明欄のクレジット・左の画面の照合

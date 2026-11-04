@@ -150,6 +150,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceResultSchema.js` | 結果系の新しい列・テーブル（マイグレーション077〜079・119）が、接続先のDBに適用済みかの判定。 | detectResultSchema, clearResultSchemaCache, RESULT_SCHEMA_TARGETS, SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/raceSchedule.js` | レーススケジュール管理モジュール | getRaceSchedule, getRacesInWindow, getRacesAfterStart, getRacesPastResultWindow, getRacesBeforeStart |
 | `scripts/lib/raceSeriesJob.js` | 節（race_series、マイグレーション084）の定期取得。共通ラッパ向けハンドラー（api/cron/race-series.js）。 | runRaceSeriesJob, RACE_SERIES_EXPECTED_VENUES |
+| `scripts/lib/raceSeriesLabels.js` | 1レース分の「締切・グレード・何日目・大会名」を DB の行から取る（BOA-1309）。全貌・人気薄の1着・/today の SNS が同じ部品を使う。 | raceLabelsFromRows, fetchRaceLabels, RACE_LABEL_COLUMNS, deadlineOf |
 | `scripts/lib/raceSeriesLookup.js` | 節（race_series、マイグレーション084）から「その日が節の何日目か」を導く（BOA-501）。 | deriveSeriesDay, indexSeriesByVenue, findSeriesFor, hasCancellationBefore, buildSeriesDayByVenue ほか2件 |
 | `scripts/lib/raceSeriesRows.js` | 節（開催）の確定結果（mergeMonthlySchedules の series）→ race_series の行への変換（純関数） | buildSeriesRows, SERIES_TABLE, SERIES_COLUMNS |
 | `scripts/lib/raceSeriesSync.js` | 節（race_series、マイグレーション084）を、月間スケジュールの解析済みページから作って書く共通の部品。 | shiftYm, planRaceSeriesRows, writeRaceSeriesRows, ymOf, firstDayOf ほか2件 |
@@ -334,6 +335,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/raceListDisplay.js` | トップの会場カード（VenueGridCard）と会場ページのレースカード（RaceCard）が出す文字の組み方。 | venueNameOf, venueCardHeadline, gradeConfigOf, raceNumberLabel, deadlineValueText ほか1件 |
 | `src/utils/raceOutcome.js` | レースの成立状態（通常・一部返還・不成立）と、返還艇・的中判定の可否を1箇所で決める（BOA-543）。 | getRaceOutcomeState, getRefundBoats, isBoatRefunded, isJudgeable, isBetJudgeable ほか11件 |
 | `src/utils/raceResultUsable.js` | — | isUsableRaceResult, isNoRaceResult |
+| `src/utils/raceSeriesText.js` | SNS の本文・題に入れる「何日目」と「大会名（SG・G1 だけ）」（BOA-1309、オーナー 2026-11-04「全ての SNS に日付・何日目・レース名… | jaSeriesT, seriesDayTextOf, seriesTitleOf, JA_SERIES_DAY, SERIES_TITLE_GRADES |
 | `src/utils/raceStatus.js` | レース単位の状態（締切前/締切後・結果反映待ち/結果確定）を判定する。 | getRaceStatus, RACE_STATUS |
 | `src/utils/raceTimeOfDay.js` | 1Rの発走時刻から開催時間帯（モーニング/デイ/サマータイム/ナイター/ミッドナイト）を | getTimeOfDay, getVenueTimeOfDay, TIME_OF_DAY |
 | `src/utils/raceUrlState.js` | レース詳細の「どのタブ・どの艇を見ているか」を URL のクエリに載せる（BOA-493）。 | parseSonarParam, resolveInitialRaceTab, parseBoatParam, parseFirstParam, pageViewPath ほか6件 |
@@ -406,4 +408,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 364 ファイル / export 2151 件。
+対象 366 ファイル / export 2160 件。

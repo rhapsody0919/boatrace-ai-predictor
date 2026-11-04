@@ -1514,6 +1514,11 @@
       "guards": "sns-pdca-loop tasks 23: X の親の投稿の UTM（campaign=race-full は型の版なしで作れ utm_content は下書きの ID、sonar-preview は型の版が必須のまま、許可の無い campaign・クエリつきの URL は作らない、本文のレースの URL をちょうど1か所だけ差し替え句点・改行の直前も終わりとみなし番号が続く別のレースは差し替えない、差し替え済みならそのまま、子・YouTube は対象外、sns_post_tracking に型の版なしで保存できやり直しは同じ URL なら成功・違えば投げる）。SQL154 までを PGlite、外部接続なし"
     },
     {
+      "script": "verify-sns-race-labels.js",
+      "tier": "ci",
+      "guards": "BOA-1309: SNS の何日目・大会名・締切の部品（src/utils/raceSeriesText.js・scripts/lib/raceSeriesLabels.js）が画面と同じ規則（同じ会場で補う・全レース中止確定は出さない・どれか1レースでも最終日・文言は getSeriesDayLabel と locales）、大会名は SG・G1 だけ NFKC、読み取りの失敗は投げる。自前の文言・補いなし・最終日を自レースだけ・中止を見ない変異を検知。外部接続なし"
+    },
+    {
       "script": "verify-sns-rank-data.js",
       "tier": "ci",
       "guards": "BOA-1240: 会場番付の144行が会場ページの静的な決まり手・母数・全国値・期間と一致し、未対応の引数を拒否する（DB・通信なし）"
