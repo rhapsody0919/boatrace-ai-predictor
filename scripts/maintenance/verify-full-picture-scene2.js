@@ -2283,6 +2283,10 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
   // 自レースの日目が欠けても、同じ会場の他レースの値で補う（当日はレースごとに入る時点がずれる。BOA-509）
   const other = { raceId: "2026-10-19-19-01", raceNumber: 1, seriesDay: 5, isFinalDay: false, raceTitle: null, raceGrade: "ippan", cancellationStatus: null };
   assert.equal(seriesOf(make({ seriesDay: null, isFinalDay: null }, [other])).day, "5日目");
+  // 最終日の印はどれか1レースでも立てば最終日（自レースが false でも。画面の会場カード getVenueSeriesDayLabel と同じ、BOA-509）
+  assert.equal(seriesOf(make({ seriesDay: 6, isFinalDay: false }, [{ ...other, raceId: "2026-10-19-19-12", raceNumber: 12, seriesDay: 6, isFinalDay: true }])).day, "最終日");
+  // グレードが自レースに無ければ同じ会場の他のレースで補う
+  assert.equal(seriesOf(make({ raceGrade: null, raceTitle: "大会" }, [{ ...other, raceGrade: "G1" }])).series, "大会");
   // 欠けたら作らない（締切と同じ）: 日目が会場のどのレースにも無い・グレードが無い・SG/G1 で大会名が無い
   const lone = (patch) => {
     const mf = make(patch);
@@ -2317,6 +2321,11 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
   assert.ok(f01TitleThumbCheck(toolong).some((w) => /^サムネ: 大会名「大+」が \d+px（線 24px）/.test(w)), "サムネで止める");
   const toolongOpen = f01Script(make({ raceGrade: "G1", raceTitle: "大".repeat(80) }));
   assert.ok(f01TitleThumbCheck(toolongOpen).some((w) => /^open: 大会名/.test(w)), "冒頭で止める");
+  // 大会名の行は締切の札と高さが重なるので、札の分を除いた幅で詰める（32px のままだと札に重なる長さ）
+  const nearBadge = f01Script(make({ raceGrade: "G1", raceTitle: "大".repeat(30) }));
+  assert.ok(nearBadge.thumb.series.size < SERIES_LINE.thumb && nearBadge.thumb.series.size >= SERIES_LINE.min, `${nearBadge.thumb.series.size}px`);
+  assert.deepEqual(f01TitleThumbCheck(nearBadge), [], "詰めれば札に重ならない");
+  assert.ok(f01TitleThumbCheck({ ...nearBadge, thumb: { ...nearBadge.thumb, series: { ...nearBadge.thumb.series, size: 32 } } }).some((w) => /大会名「大+」が締切の札に重なる/.test(w)), "詰めずに札に重なるなら止める");
   // 最終日・優勝戦の上の帯は締切の札に重ならない
   assert.deepEqual(f01TitleThumbCheck(f01Script(make({ seriesDay: 6, isFinalDay: true }))), []);
 }
