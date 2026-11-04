@@ -459,6 +459,11 @@
       "guards": "完全版 f01 の撮影用の頁（src/snsCapture/、docs/design/f01-stable-capture/）: 部品の表 F01_PARTS の props の名前が本番の部品（RadarFigure・RadarBoatLegend・SimilarWinBars・SankeyFigure・SlitShapeCard・FollowTop・FollowTable）の引数とちょうど同じ（本番の部品の props が変わったらここで落ち、f01 の撮影が黙って崩れない）、固定の材料4レースから全部品の props を作れる、材料が無い・艇番の誤りは黙らず止める、頁を読むのは main.jsx のビルドの旗 VITE_SNS_CAPTURE の分岐の中の動的 import だけ（本番のビルドに入らない）"
     },
     {
+      "script": "verify-f01-capture-prod-deps.js",
+      "tier": "ci",
+      "guards": "完全版 f01 の撮影が起こす vite と @vitejs/plugin-react（とその依存）が、package.json の dependencies と package-lock.json で dev 扱いでない＝本番の周の npm ci --omit=dev で入る（BOA-1317）"
+    },
+    {
       "script": "verify-f01-capture-stable.js",
       "tier": "manual",
       "reason": "ローカルの Playwright（chromium）・ffmpeg・vite の dev サーバーと、hq-work の materials.json が要り、1レースの撮影に30〜50秒×2回かかる",

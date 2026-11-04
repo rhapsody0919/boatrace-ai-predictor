@@ -7,7 +7,7 @@
  * ネットへの読み取りはしない（dev サーバーの外と /api/ への読み取りは止める）。
  */
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { createServer } from "node:net";
 import { dirname, join, resolve } from "node:path";
@@ -73,6 +73,10 @@ export async function startCaptureServer() {
 /** port で vite を立て、頁が返るまで待つ。立ち上がらなければ子と依存の前処理の置き場を片づけて止める */
 async function launchVite(port) {
   const vite = join(REPO_ROOT, "node_modules", "vite", "bin", "vite.js");
+  // 本番の周は root を npm ci で入れる。vite と @vitejs/plugin-react は root の dependencies にある（BOA-1317）。無いときは何が足りないかを明示して止める
+  for (const [name, file] of [["vite", vite], ["@vitejs/plugin-react", join(REPO_ROOT, "node_modules", "@vitejs", "plugin-react", "package.json")]]) {
+    if (!existsSync(file)) throw new Error(`撮影用の頁を立てる ${name} が ${REPO_ROOT}/node_modules に無い（root で npm ci が済んでいるか確かめる。root の dependencies に入れてある）`);
+  }
   const cacheDir = mkdtempSync(join(tmpdir(), "f01-vite-"));
   const config = join(dirname(fileURLToPath(import.meta.url)), "vite-capture.config.mjs");
   const child = spawn(process.execPath, [vite, "--config", config, "--host", "127.0.0.1", "--port", String(port), "--strictPort"], {
