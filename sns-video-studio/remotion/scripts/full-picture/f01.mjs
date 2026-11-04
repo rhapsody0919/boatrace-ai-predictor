@@ -16,18 +16,8 @@ import { rankOf } from "./scenes/diff.mjs";
 import { bannedIn } from "./scene2-text.mjs";
 import { venueName } from "./scenes/common.mjs";
 import { MIN_FONT_PX, NB, TODAY, boatToday, boatWho, charsEm, layoutOpen, layoutRight, racersOf } from "../../src/fullPicture/f01Right.js";
-import { readFileSync } from "node:fs";
-import { getRaceDetailHeading, getVenueSeriesDayLabel } from "../../../../src/utils/raceDetailHeading.js";
+import { SERIES_TITLE_GRADES } from "../../../../src/utils/raceSeriesText.js";
 
-/** サイトの日本語の文言（日目の「初日」「N日目」「最終日」をレース詳細の見出しと同じ文にする） */
-const JA = JSON.parse(readFileSync(new URL("../../../../src/locales/ja/common.json", import.meta.url), "utf8"));
-const tJa = (key, p = {}) => {
-  const v = key.split(".").reduce((o, k) => o?.[k], JA);
-  if (typeof v !== "string") throw new Error(`ja の文言 ${key} が無い`);
-  return v.replace(/\{\{(\w+)\}\}/g, (_, k) => String(p[k]));
-};
-/** 大会名を足すグレード（races.race_grade）。一般戦・G2・G3 は足さない（オーナー 11/4 の決定を Orchestrate 経由） */
-export const SERIES_TITLE_GRADES = ["SG", "G1"];
 /** 大会名の行の字の大きさ px（サムネ・冒頭）。長い名前は幅に収まるまで詰め、min を下回るなら作らない（f01TitleThumbCheck）。
  * 2025-11〜2026-11 の SG・G1 の大会名は最長25字（「第14回クイーンズクライマックス／G3QCシリーズ」）で、サムネ 32px のまま収まる */
 export const SERIES_LINE = { thumb: 32, open: 32, min: 24, openWidth: 1800 };
@@ -37,28 +27,19 @@ export const seriesSize = (text, big, width) => Math.min(big, Math.floor(width /
 export const thumbSeriesWidth = (deadline) => THUMB.width - 32 - charsEm(`締切${deadline}`) * 44 - 44;
 
 /**
- * 日目と大会名（画面と同じ規則、src/utils/raceDetailHeading.js）。
- * 日目は会場カードの getVenueSeriesDayLabel: 同じ会場のレースで項目ごとに補い（BOA-509）、丸一日中止の日は出さない（BOA-658、翌日に同じ日目が振り直される）、
- * 最終日の印はどれか1レースでも立てば最終日（レースごとに入る時点がずれる。1R は false・12R は true の日があった）。文言は「初日」「N日目」「最終日」。
- * 日付からは数えない。大会名はレース詳細の見出し getRaceDetailHeading の seriesTitle（race_conditions.race_title を同じ会場で補い、NFKC）。
- * 材料は api.races（/api/predictions/{date} のその会場のレース。seriesDay・isFinalDay・raceTitle・raceGrade・cancellationStatus を持つ）
+ * 日目と大会名。材料の race（/2、BOA-1310）の seriesDayText・raceTitle をそのまま使う。作るのは共通の部品
+ * （scripts/lib/raceSeriesLabels.js・src/utils/raceSeriesText.js、BOA-1309）で、規則は画面と同じ: 同じ会場で補う（BOA-509）・
+ * 丸一日中止の日は出さない（BOA-658）・どれか1レースでも最終日なら最終日・文言は初日・N日目・最終日。大会名は SG・G1 だけ（NFKC）。
+ * 欠けたら作らない（締切と同じ）。/1 の材料には無いので作らない
  * @param {object} m 材料 JSON
  * @returns {{ok: true, day: string, series: string|null} | {ok: false, kind: string, reason: string}}
  */
 export function seriesOf(m) {
-  const races = m.api?.races ?? [];
-  const race = races.find((r) => r.raceId === m.raceId) ?? null;
-  if (!race) return { ok: false, kind: "series_day", reason: "出走表（api.races）にこのレースが無い" };
-  const venueRaws = [...races].sort((a, b) => (a.raceNumber ?? 0) - (b.raceNumber ?? 0));
-  const day = getVenueSeriesDayLabel(venueRaws, tJa);
-  if (!day) return { ok: false, kind: "series_day", reason: "材料に何日目（api.races の seriesDay・isFinalDay）が無いか、丸一日中止の日（題・サムネ・冒頭の見出し・説明欄に日目を出す、オーナー 11/4）" };
-  // グレードは会場・日で同じ。自レースに無ければ同じ会場の他のレースで補う
-  const grade = race.raceGrade ?? venueRaws.find((r) => r.raceGrade != null)?.raceGrade ?? null;
-  if (!grade) return { ok: false, kind: "race_grade", reason: "材料にグレード（api.races の raceGrade）が無く、大会名を足すか決められない" };
-  if (!SERIES_TITLE_GRADES.includes(grade)) return { ok: true, day, series: null };
-  // 全角の英数字・空白は NFKC で半角に（画面の見出しと同じ）。続く空白は1つに
-  const series = getRaceDetailHeading(race, venueRaws, tJa).seriesTitle?.replace(/\s+/g, " ").trim() || null;
-  if (!series) return { ok: false, kind: "series_title", reason: `${grade} なのに材料に大会名（api.races の raceTitle）が無い` };
+  const day = m.race?.seriesDayText ?? null;
+  if (!day) return { ok: false, kind: "series_day", reason: "材料に何日目（race.seriesDayText）が無い（題・サムネ・冒頭の見出し・説明欄に日目を出す、オーナー 11/4）" };
+  const series = m.race?.raceTitle ?? null;
+  // グレードが SG・G1 なのに大会名が無い日は作らない（黙って大会名なしで出さない）
+  if (!series && SERIES_TITLE_GRADES.includes(m.race?.grade)) return { ok: false, kind: "series_title", reason: `${m.race.grade} なのに材料に大会名（race.raceTitle）が無い` };
   return { ok: true, day, series };
 }
 
