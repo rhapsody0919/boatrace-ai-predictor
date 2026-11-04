@@ -5,6 +5,7 @@
  */
 import { AbsoluteFill, Audio, Series, interpolate, staticFile } from "remotion";
 import { FONT } from "../fonts.js";
+import { useGlyphGuard } from "../fonts/useGlyphGuard.js";
 import { BG_BOTTOM, BG_TOP, clamp } from "./parts.js";
 import { FullPictureScene2 } from "./Scene2Compare.jsx";
 import { StepScene } from "./StepScene.jsx";
@@ -12,6 +13,7 @@ import { sceneDuration } from "./fullPictureTimeline.js";
 
 /** badgePlace: 出どころの札の置き場（sourceBadge.js の BADGE_PLACES のキー）。完全版は "band"、入口版は渡さない（札を出さない） */
 export function FullPicture({ scenes = [], answers = {}, bgm = null, badgePlace = null }) {
+  useGlyphGuard();
   const total = scenes.reduce((s, x) => s + sceneDuration(x, answers), 0);
   const fade = (f) =>
     interpolate(f, [0, 10, total - 30, total], [0, 1, 1, 0], clamp);
