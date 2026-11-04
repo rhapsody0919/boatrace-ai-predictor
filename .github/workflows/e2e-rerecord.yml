@@ -98,7 +98,7 @@ permissions:
 
 jobs:
   record:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     outputs:
       run: ${{ steps.gate.outputs.run }}
@@ -211,7 +211,7 @@ jobs:
   replay:
     needs: record
     if: needs.record.result == 'success' && needs.record.outputs.run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -285,7 +285,7 @@ jobs:
   judge:
     needs: [record, replay]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # ryujin-bot のトークン（Create ryujin-bot token ステップ）を使うため、このジョブだけ
     # environment ryujin-bot を付ける（Deployment branches: master だけ。別ブランチの
     # workflow_dispatch等からbypass用のトークンを作らせないため）
