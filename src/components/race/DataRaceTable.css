@@ -395,3 +395,22 @@ thead tr:last-child:not(:first-child) .drt-label-th {
     display: block;
   }
 }
+
+/* 名前のリンクの下に☆を置く（BOA-1270）。リンクの外の別要素。
+   セルの padding・枠線は変えない。☆の枠・背景は消して見た目を詰め、
+   押せる範囲 44px は共通部品の min-width/min-height のまま。
+   横は負マージンでセルの内側幅（約41px）に収め、列幅を広げない。 */
+.drt-name-favorite {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-1);
+}
+
+.drt-name-favorite .favorite-star-button {
+  flex: 0 0 44px;
+  margin-left: -4px;
+  margin-right: -4px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
