@@ -1,6 +1,42 @@
 import { test, expect } from "./fixtures.js";
 import { readFileSync } from "node:fs";
 
+// 他ページからトップへ戻った後の OGP の問題点を返す（空なら合格）。
+// トップが自分の OGP を出す前（index.html の既定のまま・og:url なし）と後（title・description・canonical に合わせる）のどちらでも通す。
+// 直前のページの値（title・description・URL）が残っていれば、どちらの状態でも問題として返す。
+async function homeSocialProblems(page, defaults, leftPath) {
+  return page.evaluate(
+    ({ defaults, leftPath }) => {
+      const contents = (selector) =>
+        Array.from(document.querySelectorAll(selector)).map((el) => el.getAttribute("content"));
+      const metaDescription = document.querySelector('meta[name="description"]')?.getAttribute("content");
+      const problems = [];
+      for (const [selector, fallback] of Object.entries(defaults)) {
+        const values = contents(selector);
+        if (values.length !== 1) {
+          problems.push(`${selector}: ${values.length}件`);
+          continue;
+        }
+        const allowed = selector.includes("title")
+          ? [fallback, document.title]
+          : selector.includes("description")
+            ? [fallback, metaDescription]
+            : [fallback];
+        if (!allowed.includes(values[0])) problems.push(`${selector}: 既定値でも現ページの値でもない (${values[0]})`);
+      }
+      const ogUrls = contents('meta[property="og:url"]');
+      if (ogUrls.length > 1) problems.push(`og:url: ${ogUrls.length}件`);
+      if (ogUrls.length === 1) {
+        const canonical = document.querySelector('link[rel="canonical"]')?.getAttribute("href");
+        if (ogUrls[0] !== canonical) problems.push(`og:url が canonical と違う (${ogUrls[0]} / ${canonical})`);
+        if (leftPath && ogUrls[0]?.includes(leftPath)) problems.push(`og:url に直前のページの URL が残っている (${ogUrls[0]})`);
+      }
+      return problems;
+    },
+    { defaults, leftPath },
+  );
+}
+
 const DESCRIPTION = "支部・身長・体重・級別・登録期・出身地で絞り込み、勝率などでソートできる選手一覧。";
 const defaultHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const socialSelectors = [
@@ -72,10 +108,8 @@ for (const pageNumber of [1, 2]) {
     // 再読込せず Router で移動して、アンマウント時の後片付けを確認する。
     await page.locator("header .logo").click();
     await expect(page).toHaveURL("/");
-    for (const [selector, content] of defaults) {
-      await expect(page.locator(selector)).toHaveCount(1);
-      await expect(page.locator(selector)).toHaveAttribute("content", content);
-    }
-    await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
+    await expect
+      .poll(() => homeSocialProblems(page, Object.fromEntries(defaults), path))
+      .toEqual([]);
   });
 }

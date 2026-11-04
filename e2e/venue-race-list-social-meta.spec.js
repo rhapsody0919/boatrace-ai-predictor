@@ -1,5 +1,41 @@
 import { test, expect, e2eTodayJST } from "./fixtures.js";
 
+// 他ページからトップへ戻った後の OGP の問題点を返す（空なら合格）。
+// トップが自分の OGP を出す前（index.html の既定のまま・og:url なし）と後（title・description・canonical に合わせる）のどちらでも通す。
+// 直前のページの値（title・description・URL）が残っていれば、どちらの状態でも問題として返す。
+async function homeSocialProblems(page, defaults, leftPath) {
+  return page.evaluate(
+    ({ defaults, leftPath }) => {
+      const contents = (selector) =>
+        Array.from(document.querySelectorAll(selector)).map((el) => el.getAttribute("content"));
+      const metaDescription = document.querySelector('meta[name="description"]')?.getAttribute("content");
+      const problems = [];
+      for (const [selector, fallback] of Object.entries(defaults)) {
+        const values = contents(selector);
+        if (values.length !== 1) {
+          problems.push(`${selector}: ${values.length}件`);
+          continue;
+        }
+        const allowed = selector.includes("title")
+          ? [fallback, document.title]
+          : selector.includes("description")
+            ? [fallback, metaDescription]
+            : [fallback];
+        if (!allowed.includes(values[0])) problems.push(`${selector}: 既定値でも現ページの値でもない (${values[0]})`);
+      }
+      const ogUrls = contents('meta[property="og:url"]');
+      if (ogUrls.length > 1) problems.push(`og:url: ${ogUrls.length}件`);
+      if (ogUrls.length === 1) {
+        const canonical = document.querySelector('link[rel="canonical"]')?.getAttribute("href");
+        if (ogUrls[0] !== canonical) problems.push(`og:url が canonical と違う (${ogUrls[0]} / ${canonical})`);
+        if (leftPath && ogUrls[0]?.includes(leftPath)) problems.push(`og:url に直前のページの URL が残っている (${ogUrls[0]})`);
+      }
+      return problems;
+    },
+    { defaults, leftPath },
+  );
+}
+
 const socialSelectors = [
   'meta[property="og:title"]',
   'meta[name="twitter:title"]',
@@ -27,7 +63,10 @@ test("日別会場一覧のカードはページメタに一致し、離れる�
   const code = href.match(/\/venue\/(\d+)$/)?.[1];
   expect(code, `会場カードのリンクが /venue/:code ではない: ${href}`).toBeTruthy();
   const defaults = await socialContents(page);
-  await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
+  const defaultsBySelector = Object.fromEntries(
+    socialSelectors.map((selector, index) => [selector, defaults[index]]),
+  );
+  const racesPath = `/races/${e2eTodayJST()}/${code}`;
 
   await page.goto(`/races/${e2eTodayJST()}/${code}`);
   await expect(page.locator(".venue-race-list-page h1")).toBeVisible();
@@ -61,6 +100,7 @@ test("日別会場一覧のカードはページメタに一致し、離れる�
   await page.locator(".app-header .logo").click();
   await expect(page).toHaveURL("/");
   await expect(page.locator(".venue-race-list-page")).toHaveCount(0);
-  await expect.poll(() => socialContents(page)).toEqual(defaults);
-  await expect(ogUrl).toHaveCount(0);
+  await expect
+    .poll(() => homeSocialProblems(page, defaultsBySelector, racesPath))
+    .toEqual([]);
 });
