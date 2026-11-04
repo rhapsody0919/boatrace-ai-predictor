@@ -2770,7 +2770,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1259",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1309",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -3031,7 +3031,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1233",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1283",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -4849,7 +4849,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1075",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1125",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -5757,7 +5757,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1096",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1146",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -6570,7 +6570,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1257",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1307",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6797,7 +6797,7 @@
             "scripts/maintenance/backfill-race-series-meta.js:337",
             "scripts/maintenance/backfill-series-day.js:175",
             "scripts/maintenance/backfill-series-day.js:196",
-            "scripts/maintenance/verify-full-picture-scene2.js:1257",
+            "scripts/maintenance/verify-full-picture-scene2.js:1307",
             "scripts/ml/analogy/build-wind-basis.js:95",
             "scripts/sns/push-finals-image.js:1294",
             "scripts/sns/push-setsu-kiryoku-short.js:962",
@@ -6954,7 +6954,7 @@
             "api/_lib/snsClaimCheck.js:419",
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/lib/snsAutoPlanRunner.js:744",
-            "scripts/maintenance/verify-full-picture-scene2.js:1257",
+            "scripts/maintenance/verify-full-picture-scene2.js:1307",
             "scripts/sns/push-finals-image.js:1294",
             "scripts/sns/push-setsu-kiryoku-short.js:962",
             "scripts/verification/verify-series-points-border.mjs:79",
@@ -7821,7 +7821,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1137",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1187",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -14624,14 +14624,14 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1022",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1072",
           "op": "rest",
           "via": "rest",
           "columns": [],
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1271",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1321",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -25677,14 +25677,14 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1048",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1098",
           "op": "rest",
           "via": "rest",
           "columns": [],
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1380",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1430",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -26867,7 +26867,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1078",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1128",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -28059,7 +28059,7 @@
       ],
       "mentions": [
         "scripts/maintenance/check-anon-access.js:112",
-        "sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:650"
+        "sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:683"
       ],
       "triggerOn": [],
       "calledByRpc": [],

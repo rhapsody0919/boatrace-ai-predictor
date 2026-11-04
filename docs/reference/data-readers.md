@@ -180,7 +180,7 @@
 | get_race_return_rate | anon 可 |  | scripts/lib/raceIndicatorData.js:37, src/services/supabaseDataService.js:5974 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:358, scripts/maintenance/check-anon-access.js:106 |  | race_entries, race_results |  |  |
 | get_race_st_predictability | anon 可 |  | scripts/lib/raceIndicatorData.js:32, src/services/supabaseDataService.js:5081 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:324, scripts/maintenance/check-anon-access.js:107 |  | exhibition_data, race_entries, race_start_timings |  |  |
 | get_race_technique_profile | anon 可 |  | scripts/lib/raceIndicatorData.js:42, src/services/supabaseDataService.js:6501 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:342, scripts/maintenance/check-anon-access.js:108 |  | race_entries, race_results |  |  |
-| get_racer_accident_records | anon 可 |  | src/services/supabaseDataService.js:7627 / 名前の文字列: scripts/maintenance/check-anon-access.js:112, sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:650 |  | race_conditions, race_entries, race_start_timings |  |  |
+| get_racer_accident_records | anon 可 |  | src/services/supabaseDataService.js:7627 / 名前の文字列: scripts/maintenance/check-anon-access.js:112, sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:683 |  | race_conditions, race_entries, race_start_timings |  |  |
 | get_today_races | anon 可 |  | api/races/today.js:30, scripts/maintenance/verify-display-coverage.js:175, src/services/supabaseDataService.js:1387 / 名前の文字列: scripts/maintenance/check-anon-access.js:113, scripts/maintenance/check-anon-access.js:176 |  | predictions, race_conditions, race_entries, race_results, races |  |  |
 | guard_sns_diff_approval | service だけ |  | トリガー: sns_drafts | sns_diff_content | sns_x_send_jobs |  |  |
 | guard_sns_preview_bundle_draft | service だけ |  | トリガー: sns_drafts | sns_bundle_send_allowed | sns_bundle_imports, sns_drafts, sns_x_send_jobs |  |  |
@@ -498,7 +498,7 @@
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:64` select(helper:fetchAll)
   - `scripts/daily/update-winning-technique-stats.js:212` select(helper:fetchAll)
   - `scripts/lib/racerCareerJob.js:651` select(helper:count)
-  - `scripts/maintenance/verify-full-picture-scene2.js:1259` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1309` rest(rest) （検査）
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -517,7 +517,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
-  - `scripts/maintenance/verify-full-picture-scene2.js:1233` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1283` rest(rest) （検査）
   - `src/services/supabaseDataService.js:6642` select [*, boat_number, percentage, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-losing-technique-stats.js:152` delete
@@ -644,7 +644,7 @@
   - `scripts/analysis/turnprediction-guided-outcome-distribution.js:127` select(helper:fetchAll)
   - `scripts/analysis/validate-outcome-distribution.js:143` select(helper:fetchAll)
   - `scripts/analysis/verify-outcome-distribution-coverage.js:26` select(helper:fetchAll)
-  - `scripts/maintenance/verify-full-picture-scene2.js:1075` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1125` rest(rest) （検査）
   - `src/services/supabaseDataService.js:2082` select [count_90days, first_boat]
   - `src/services/supabaseDataService.js:2135` select [*, count_90days, first_boat, venue_code]
 - 書き手（2）: 
@@ -740,7 +740,7 @@
   - `scripts/maintenance/delete-cancelled-race-predictions.js:72` select [prediction_id, race_id]
   - `scripts/maintenance/delete-phantom-races.js:138` select [is_hit_place, is_hit_trifecta, is_hit_trio, is_hit_win, race_id]
   - `scripts/maintenance/verify-admin-rule-performance.js:268` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick] （検査）
-  - `scripts/maintenance/verify-full-picture-scene2.js:1096` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1146` rest(rest) （検査）
   - `src/services/adminRuleService.js:69` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
   - `src/services/ruleMatchService.js:104` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
   - `src/services/supabaseDataService.js:1612` select [is_hit_place, is_hit_trifecta, is_hit_trio, is_hit_win, model_id, payout_place, payout_trifecta, payout_trio, payout_win, race_id]
@@ -791,7 +791,7 @@
   - `scripts/maintenance/backfill-race-series-meta.js:355` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:58` select(helper:fetchAll)
   - `scripts/maintenance/check-pre-race-shadow.js:305` select(helper:fetchByRaceIds)
-  - `scripts/maintenance/verify-full-picture-scene2.js:1257` rest(rest) [race_id, race_stage] （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1307` rest(rest) [race_id, race_stage] （検査）
   - `scripts/ml/analogy/build-wind-basis.js:95` select [race_id, wind_direction, wind_speed]
   - `scripts/ml/export-inference-data.js:119` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:83` select(helper:fetchAll)
@@ -913,7 +913,7 @@
   - `scripts/maintenance/verify-e2e-har-merge.js:53` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:57` rest(rest) [name, race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:58` rest(rest) [name, race_id] （検査）
-  - `scripts/maintenance/verify-full-picture-scene2.js:1137` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1187` rest(rest) （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select(embed) [racer_id] （検査）
   - `scripts/ml/export-inference-data.js:111` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:75` select(helper:fetchAll)
@@ -1422,8 +1422,8 @@
 - 本体で読む RPC: data_health_racer_period_stats, data_health_table_rows
 - 読み手（8）: 
   - `scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9` select [*, period_no, period_year, racer_id]
-  - `scripts/maintenance/verify-full-picture-scene2.js:1022` rest(rest) （検査）
-  - `scripts/maintenance/verify-full-picture-scene2.js:1271` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1072` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1321` rest(rest) （検査）
   - `src/services/supabaseDataService.js:4227` select [avg_st, period_no, period_year, racer_id]
   - `src/services/supabaseDataService.js:4265` select [?, period_no, period_year, racer_id]
   - `src/services/supabaseDataService.js:5663` select [avg_st, period_no, period_year, racer_id]
@@ -2190,8 +2190,8 @@
   - `scripts/daily/generate-morning-digest.js:265` select [*]
   - `scripts/daily/update-racer-course-technique-stats.js:255` select(helper:upsertChangedRows)
   - `scripts/daily/update-racer-course-technique-stats.js:283` select [*]
-  - `scripts/maintenance/verify-full-picture-scene2.js:1048` rest(rest) （検査）
-  - `scripts/maintenance/verify-full-picture-scene2.js:1380` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1098` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1430` rest(rest) （検査）
 - 書き手（1）: 
   - `scripts/daily/update-racer-course-technique-stats.js:255` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -2293,7 +2293,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
-  - `scripts/maintenance/verify-full-picture-scene2.js:1078` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:1128` rest(rest) （検査）
   - `src/services/supabaseDataService.js:2231` select [*, boat_number, percentage, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-winning-technique-stats.js:161` delete
