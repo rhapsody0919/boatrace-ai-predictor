@@ -556,9 +556,10 @@ function getRacesForVenueSince(
   { includeTarget = false } = {},
 ) {
   return withCache(
-    `races-for-venue-since-${venueCode}-${sinceDate}${beforeKey(beforeRaceId)}${
+    // "-incl" は beforeKey より前に置く（末尾を race_id に保ち、inferTtlFromKey の過去レース判定を効かせる）
+    `races-for-venue-since-${venueCode}-${sinceDate}${
       beforeRaceId !== null && includeTarget ? "-incl" : ""
-    }`,
+    }${beforeKey(beforeRaceId)}`,
     async () => {
       const races = await fetchRacesForVenueSince(
         venueCode,

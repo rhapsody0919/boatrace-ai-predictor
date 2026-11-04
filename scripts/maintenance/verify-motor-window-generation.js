@@ -316,7 +316,8 @@ check(
     "getRacesForVenueSince: includeTarget（既定 false）でだけ対象レース自身を含め（race_id <=）、キーを分ける",
     races.includes("{ includeTarget = false } = {}") &&
       races.includes("races.filter((r) => r.race_id <= beforeRaceId)") &&
-      races.includes('"-incl"'),
+      // "-incl" は beforeKey より前（キーの末尾が race_id のままで、過去レースの長い TTL が効く）
+      /"-incl"\s*:\s*""\s*\}\$\{beforeKey\(beforeRaceId\)\}/.test(races),
   );
   {
     // 動きの確認: 同じ filter 式を実データの形に当てる（既定は対象を除き、includeTarget は含む）
