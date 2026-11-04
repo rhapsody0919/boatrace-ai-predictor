@@ -280,6 +280,22 @@ for (const lang of LANGS) {
       text.includes(`\n- ${key}: ${a.note[key]}`),
     );
   }
+  // BOA-1318: 旧行の入力は保ち、差し替え後の行だけを別の入力で検証する。
+  const expectedCourseLabel = dict.dataTable.rowExpectedCourseWinRate;
+  const { text: expectedCourseText } = build(lang, {
+    rows: ROWS.map((r) => r.key === "courseRate"
+      ? row("expectedCourseWinRate", expectedCourseLabel)
+      : r),
+  });
+  check(
+    `[${lang}] 想定コース1着率の注記（表の行名つき）`,
+    typeof a.note.expectedCourseWinRate === "string" &&
+      expectedCourseText.includes(`\n- ${expectedCourseLabel}: ${a.note.expectedCourseWinRate}`),
+  );
+  check(`[${lang}] 新しい行だけなら旧courseRateの注記は出さない`,
+    !expectedCourseText.includes(a.note.courseRate));
+  check(`[${lang}] 旧行だけなら想定コース1着率の注記は出さない`,
+    !text.includes(a.note.expectedCourseWinRate));
   check(`[${lang}] 「—」の注記`, text.includes(`- ${a.note.dash}`));
   // 総合力順位は画面に無く、1着候補と食い違って読めるので入れない
   check(`[${lang}] 総合力順位を入れない`, !text.includes(" > "));

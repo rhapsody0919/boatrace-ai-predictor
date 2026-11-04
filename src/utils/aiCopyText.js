@@ -33,6 +33,7 @@ export const AI_COPY_NOTE_KEYS = [
   "exhibitionCourse",
   "partsChanged",
   "courseRate",
+  "expectedCourseWinRate",
   "technique",
   "returnRate",
 ];
