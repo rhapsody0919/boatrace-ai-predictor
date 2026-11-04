@@ -2,8 +2,6 @@ import { test, expect, fetchRecorded } from "./fixtures.js";
 
 test.describe.configure({ timeout: 180_000 });
 
-});
-
 const PERIOD_STATS = /\/rest\/v1\/racer_period_stats/;
 
 async function hidePreviousTerm(page) {
