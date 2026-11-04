@@ -116,18 +116,18 @@ test.describe("データ出走表の平均ST（BOA-815）", () => {
 
 // BOA-1293 と同じ公式3期を差し替える。艇番集計と異なる値で検出する。
 const COURSE_TERMS = [
-  [2025, 2, "2024-11-01", "2025-04-30", 35, 20],
-  [2026, 1, "2025-05-01", "2025-10-31", 30, 20],
-  [2026, 2, "2025-11-01", "2026-04-30", 37, 23],
+  [2025, 2, "2024-11-01", "2025-04-30", 35, 20, 6, 4],
+  [2026, 1, "2025-05-01", "2025-10-31", 30, 20, 5, 3],
+  [2026, 2, "2025-11-01", "2026-04-30", 37, 23, 6, 4],
 ];
 for (const width of [320, 375, 1280, 1440]) {
   for (const failed of [false, true]) {
     test(`想定コース1着率 ${width}px 取得失敗=${failed}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.route("**/rest/v1/racer_period_stats?*", (route) => route.fulfill({
-        json: COURSE_TERMS.map(([period_year, period_no, calc_from, calc_to, n, wins]) => ({
+        json: COURSE_TERMS.map(([period_year, period_no, calc_from, calc_to, n, p1, p2, p3]) => ({
           period_year, period_no, calc_from, calc_to, starts: 100,
-          c1_entries: n, c1_p1: wins,
+          c1_entries: n, c1_p1: p1, c1_p2: p2, c1_p3: p3,
           c2_entries: 5, c2_p1: 4, c3_entries: 1, c3_p1: 1,
           c4_entries: 30, c4_p1: 6, c5_entries: 30, c5_p1: 0,
           c6_entries: 30, c6_p1: 0,
@@ -135,7 +135,10 @@ for (const width of [320, 375, 1280, 1440]) {
       }));
       await page.route("**/rest/v1/rpc/get_course_win_rate_baseline", (route) =>
         route.fulfill(failed ? { status: 500, json: { message: "test failure" } }
-          : { json: { national: { 1: { winRate: 55.2 } } } }));
+          : { json: {
+            terms: COURSE_TERMS.map(([, , calc_from, calc_to]) => ({ calc_from, calc_to })),
+            national: { 1: { winRate: 55.2 } },
+          } }));
       await page.goto(RACE);
       await page.locator(".race-tabs-btn", { hasText: "基本情報" }).first().click();
       const table = page.locator(".drt-table").first();
@@ -163,6 +166,7 @@ for (const width of [320, 375, 1280, 1440]) {
         await expect(cells).toHaveText(["—", "—", "—", "—", "—", "—"]);
         await expect(row.locator(".drt-best")).toHaveCount(0);
       } else {
+        // 1コース: (20+20+23)/(35+30+37) = 63/102 = 61.8…% → 62%。
         await expect(cells.nth(0)).toContainText("62%");
         await expect(cells.nth(0)).toContainText("63/102");
         await expect(cells.nth(1)).toContainText("80% ⚠");
