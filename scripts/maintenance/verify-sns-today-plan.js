@@ -2614,10 +2614,38 @@ function v3RaceDb({ absent = [], cancelled = [] } = {}) {
         });
     }
   const stats = [
-    { racer_id: 2041, course: 1, runs: 50, nige_rate: 82.5 },
-    { racer_id: 2051, course: 1, runs: 50, nige_rate: 80.0 },
-    { racer_id: 2062, course: 2, runs: 40, nigashi_rate: 70.0 },
-    { racer_id: 2074, course: 4, runs: 35, makuri_rate: 28.6 },
+    {
+      racer_id: 2041,
+      course: 1,
+      window_start: "2025-12-02",
+      window_end: "2037-10-16",
+      runs: 50,
+      nige_rate: 82.5,
+    },
+    {
+      racer_id: 2051,
+      course: 1,
+      window_start: "2025-12-02",
+      window_end: "2037-10-16",
+      runs: 50,
+      nige_rate: 80.0,
+    },
+    {
+      racer_id: 2062,
+      course: 2,
+      window_start: "2025-12-02",
+      window_end: "2037-10-16",
+      runs: 40,
+      nigashi_rate: 70.0,
+    },
+    {
+      racer_id: 2074,
+      course: 4,
+      window_start: "2025-12-02",
+      window_end: "2037-10-16",
+      runs: 35,
+      makuri_rate: 28.6,
+    },
   ];
   const inList = (path) =>
     decodeURIComponent(path)

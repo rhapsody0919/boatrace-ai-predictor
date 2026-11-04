@@ -24,10 +24,24 @@ export const V3_MIN_RUNS_FALLBACK = 10;
 export const V3_MAX_FINALS = 3;
 export const V3_MAX_SEMI_VENUES = 3;
 export const V3_RULE = "━━━━━━━━━━";
+/**
+ * 脚注（BOA-1315、オーナー 2026-11-04 承認。文は hq の起票のとおり）。期間は率の窓（racer_course_technique_stats の window_start〜window_end、
+ * ふだんは 2025/12/2〜前日）。率の塊が無い日は1・2行目を出さず、逃し率の行は【1号艇が逃げやすいレース】の塊がある日だけ
+ */
+export const v3PeriodNote = (from, to) =>
+  `※率は ${slashDate(from)}〜${slashDate(to)} の全国の成績（そのコースに入ったとき）`;
+export const V3_RATE_NOTE = "※逃げ率・まくり率＝逃げ・まくりで1着になった割合";
 export const V3_NIGASHI_NOTE =
   "※逃し率＝2コースに入ったとき、1コースの艇の逃げで決まった割合";
 export const V3_TAG = "#ボートレース";
 export const V3_LINK_LEAD = "全レースの一覧 → ";
+
+/** "2025-12-02" → "2025/12/2" */
+function slashDate(date) {
+  const [y, m, d] = String(date).split("-").map(Number);
+  return `${y}/${m}/${d}`;
+}
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const GRADE_ORDER = ["SG", "G1", "G2", "G3"];
 const gradeRank = (g) =>
@@ -102,7 +116,7 @@ export async function loadTodayV3Material(db, date) {
     return Array.from(
       { length: Math.ceil(ids.length / 300) },
       (_, i) =>
-        `racer_course_technique_stats?course=eq.${course}&racer_id=in.(${ids.slice(i * 300, i * 300 + 300).join(",")})&select=racer_id,course,runs,nige_rate,makuri_rate,nigashi_rate`,
+        `racer_course_technique_stats?course=eq.${course}&racer_id=in.(${ids.slice(i * 300, i * 300 + 300).join(",")})&select=racer_id,course,window_start,window_end,runs,nige_rate,makuri_rate,nigashi_rate`,
     );
   });
   const stats = (await Promise.all(paths.map((p) => db(p)))).flat();
@@ -310,7 +324,7 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
           !Number.isInteger(s.runs)
         )
           return [];
-        return [{ race, boat, entry: e, rate, runs: s.runs }];
+        return [{ race, boat, entry: e, rate, runs: s.runs, stat: s }];
       }),
     );
   // 率の高い順、同じ率は締切の早い順。走数30以上が無ければ10以上まで下げる。同じ選手・同じレースは2回出さない
@@ -407,6 +421,20 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
       lines.push(...(i ? [""] : []), ...b.lines);
     lines.push(V3_RULE);
   }
+  // 脚注の期間は、載せた率の窓の初日の最も早い日〜終わりの最も遅い日（ふだんは全員 2025-12-02〜前日）
+  const windows = [nige, nigashi, makuri].filter(Boolean).map((c) => c.stat);
+  const period = windows.length
+    ? {
+        from: windows.map((w) => String(w.window_start)).sort()[0],
+        to: windows
+          .map((w) => String(w.window_end))
+          .sort()
+          .at(-1),
+      }
+    : null;
+  if (period && !(DATE_RE.test(period.from) && DATE_RE.test(period.to)))
+    return { ok: false, reason: "stats_window_invalid" };
+  if (period) lines.push(v3PeriodNote(period.from, period.to), V3_RATE_NOTE);
   if (nigashi) lines.push(V3_NIGASHI_NOTE);
   // 罫線の塊が無い日は、タグの前を1行空ける（塊のある日は罫線・注の直後）
   if (!blocks.length) lines.push("");
@@ -446,6 +474,7 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
       semis: semis.map((r) => r.race_id),
       holding: holding.map((v) => v.code),
       big_final: Boolean(bigFinal),
+      period,
     },
   };
 }
@@ -474,6 +503,34 @@ export function checkTodayDigestV3(text, { date, url }) {
   if (/https?:\/\//.test(text.replace(url, ""))) problems.push("extra_link");
   if (lines.at(-1) !== V3_TAG) problems.push("tag_missing");
   if (/競艇/.test(text)) problems.push("kyotei");
+  // 脚注（BOA-1315）: 率の塊がある日は期間と定義の2行。期間は年つきの両端で、終わりは前日まで。逃し率の行は逃し率の塊がある日だけ
+  const hasRates = lines.includes(V3_RULE);
+  const periodLines = lines.filter((l) => l.startsWith("※率は "));
+  if (hasRates) {
+    const m =
+      periodLines.length === 1 &&
+      periodLines[0].match(
+        /^※率は (\d{4})\/(\d{1,2})\/(\d{1,2})〜(\d{4})\/(\d{1,2})\/(\d{1,2}) の全国の成績（そのコースに入ったとき）$/,
+      );
+    const iso = (y, mo, d) =>
+      `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const yesterday = new Date(Date.parse(`${date}T00:00:00Z`) - 86400000)
+      .toISOString()
+      .slice(0, 10);
+    if (
+      !m ||
+      !(iso(m[1], m[2], m[3]) <= iso(m[4], m[5], m[6])) ||
+      !(iso(m[4], m[5], m[6]) <= yesterday)
+    )
+      problems.push("period_note_invalid");
+    if (!lines.includes(V3_RATE_NOTE)) problems.push("rate_note_missing");
+  } else if (periodLines.length || lines.includes(V3_RATE_NOTE))
+    problems.push("rate_note_without_rates");
+  if (
+    lines.includes(V3_NIGASHI_NOTE) !==
+    lines.includes("【1号艇が逃げやすいレース】")
+  )
+    problems.push("nigashi_note_mismatch");
   if (!xPostValid(text, { long: true })) problems.push("weighted_text_invalid");
   return problems;
 }

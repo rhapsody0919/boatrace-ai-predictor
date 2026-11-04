@@ -1,12 +1,17 @@
 // /today の X 投稿の型 v3「今日はこれだけ」（BOA-1314、scripts/lib/snsTodayDigestV3.js）の再現テスト。外部接続なし。
 // 本文の4つの日（一般・SG/G1 の優勝戦・優勝戦も準優も無い・グレードの開催が無い）、何日目（画面の関数と同じ・欠けた日目の補い・
 // 丸一日中止）、選び方（率の順・同じ率は締切の早い方・走数の足切りと下げ・同じ選手とレースの重複なし・欠場・送る時刻より前）、
-// 材料の読み方（1000行ずつ・使う組み合わせだけ）、検査
+// 材料の読み方（1000行ずつ・使う組み合わせだけ）、検査、脚注3行（BOA-1315: 期間・定義・逃し率）
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { getJaT } from "../../api/_lib/botPage.js";
+import { matchRiskRules, draftRiskFields } from "../lib/riskRuleMatcher.js";
+import { xPostValid } from "../../api/_lib/snsXLength.js";
 import {
   V3_MIN_RUNS,
+  V3_NIGASHI_NOTE,
+  V3_RATE_NOTE,
   buildTodayDigestV3,
   checkTodayDigestV3,
   loadTodayV3Material,
@@ -89,6 +94,9 @@ function material({
 const stat = (venue, r, boat, values) => ({
   racer_id: venue * 1000 + r * 10 + boat,
   course: boat,
+  // 率の窓（本番は 2025-12-02〜前日）
+  window_start: "2025-12-02",
+  window_end: "2037-11-04",
   runs: 40,
   nige_rate: null,
   makuri_rate: null,
@@ -154,6 +162,8 @@ test("一般の日: 1〜3行目が日付と場の数・🏆 優勝戦・リン�
       "選手 1-7-4 B1\u300031%（38走）",
       "▶ 桐生7R 4号艇 15:01締切",
       "━━━━━━━━━━",
+      "※率は 2025/12/2〜2037/11/4 の全国の成績（そのコースに入ったとき）",
+      "※逃げ率・まくり率＝逃げ・まくりで1着になった割合",
       "※逃し率＝2コースに入ったとき、1コースの艇の逃げで決まった割合",
       "#ボートレース",
     ].join("\n"),
@@ -310,7 +320,7 @@ test("選び方: 率の高い順、同じ率は締切の早い方。走数30未�
     low.blocks.map((b) => [b.key, b.runs]),
     [["nige", 12]],
   );
-  assert.doesNotMatch(low.text, /まくり率/);
+  assert.doesNotMatch(low.text, /【まくり率が高い選手】|※逃し率/);
   // 逃げの選手が逃し率の1号艇と同じ人にならない（別のレースでも同じ選手は2回出さない）
   const same = material({
     venues: { 2: {} },
@@ -482,4 +492,177 @@ test("検査: 会場名の訳が無く i18n のキーが残った本文は通さ
       "i18n_key_left",
     ),
   );
+});
+
+// ---------- 脚注3行（BOA-1315、オーナー 2026-11-04 承認。文は hq の起票のとおり一字一句） ----------
+const FOOT_PERIOD =
+  "※率は 2025/12/2〜2037/11/4 の全国の成績（そのコースに入ったとき）";
+const FOOT_RATE = "※逃げ率・まくり率＝逃げ・まくりで1着になった割合";
+const FOOT_NIGASHI =
+  "※逃し率＝2コースに入ったとき、1コースの艇の逃げで決まった割合";
+
+test("脚注: 文は起票のとおり。率の塊の後・タグの前に期間・定義・逃し率の3行。期間は率の窓（2025-12-02〜前日）を年つきの YYYY/M/D で", () => {
+  assert.equal(V3_RATE_NOTE, FOOT_RATE);
+  assert.equal(V3_NIGASHI_NOTE, FOOT_NIGASHI);
+  const out = build(material(GENERAL));
+  const lines = out.text.split("\n");
+  assert.deepEqual(lines.slice(-5), [
+    "━━━━━━━━━━",
+    FOOT_PERIOD,
+    FOOT_RATE,
+    FOOT_NIGASHI,
+    "#ボートレース",
+  ]);
+  assert.deepEqual(out.summary.period, {
+    from: "2025-12-02",
+    to: "2037-11-04",
+  });
+});
+
+test("脚注: 期間の終わりは率の窓の終わり（毎朝の更新で前日に替わる）。初日は窓の最も早い日、終わりは最も遅い日", () => {
+  const m = material({
+    venues: { 2: {} },
+    stats: [
+      stat(2, 4, 1, {
+        nige_rate: 80,
+        window_start: "2025-12-03",
+        window_end: "2037-11-04",
+      }),
+      stat(2, 5, 4, {
+        makuri_rate: 30,
+        window_start: "2025-12-02",
+        window_end: "2037-11-03",
+      }),
+    ],
+  });
+  assert.match(
+    build(m).text,
+    /^※率は 2025\/12\/2〜2037\/11\/4 の全国の成績（そのコースに入ったとき）$/m,
+  );
+  // 翌日の材料（窓の終わりが1日進む）なら、脚注の終わりも1日進む
+  const next = material({
+    venues: { 2: {} },
+    stats: [stat(2, 4, 1, { nige_rate: 80, window_end: "2037-11-05" })],
+  });
+  next.date = "2037-11-06";
+  for (const r of next.races) r.race_date = "2037-11-06";
+  const out = buildTodayDigestV3(next, { sendAt: "07:00", t, url: URL_C });
+  assert.match(out.text, /〜2037\/11\/5 の全国の成績/);
+  // 窓の日付が壊れていれば作らない（期間を出せない率は載せない）
+  const broken = material({
+    venues: { 2: {} },
+    stats: [stat(2, 4, 1, { nige_rate: 80, window_start: null })],
+  });
+  assert.deepEqual(build(broken), {
+    ok: false,
+    reason: "stats_window_invalid",
+  });
+});
+
+test("脚注: 逃し率の行は【1号艇が逃げやすいレース】の塊がある日だけ。率の塊が無い日は脚注を出さない", () => {
+  const noNigashi = build(
+    material({
+      venues: { 2: {} },
+      stats: [
+        stat(2, 4, 1, { nige_rate: 80 }),
+        stat(2, 5, 4, { makuri_rate: 30 }),
+      ],
+    }),
+  );
+  assert.deepEqual(noNigashi.text.split("\n").slice(-4), [
+    "━━━━━━━━━━",
+    FOOT_PERIOD,
+    FOOT_RATE,
+    "#ボートレース",
+  ]);
+  assert.deepEqual(
+    checkTodayDigestV3(noNigashi.text, { date: DATE, url: URL_C }),
+    [],
+  );
+  const onlyNigashi = build(
+    material({
+      venues: { 2: {} },
+      stats: [stat(2, 4, 2, { nigashi_rate: 70 })],
+    }),
+  );
+  assert.deepEqual(onlyNigashi.text.split("\n").slice(-5), [
+    "━━━━━━━━━━",
+    FOOT_PERIOD,
+    FOOT_RATE,
+    FOOT_NIGASHI,
+    "#ボートレース",
+  ]);
+  const none = build(material({ venues: { 2: {} } }));
+  assert.doesNotMatch(none.text, /※/);
+  assert.equal(none.summary.period, null);
+});
+
+test("脚注の検査: 期間の形・前日より後の終わり・初日が終わりより後・定義の行の欠け・塊の無い日の脚注・逃し率の行の食い違いを止める", () => {
+  const ok = build(material(GENERAL)).text;
+  const check = (text) => checkTodayDigestV3(text, { date: DATE, url: URL_C });
+  assert.deepEqual(check(ok), []);
+  // 終わりが今日（前日より後）
+  assert.ok(
+    check(ok.replace("〜2037/11/4 ", "〜2037/11/5 ")).includes(
+      "period_note_invalid",
+    ),
+  );
+  // 初日が終わりより後
+  assert.ok(
+    check(ok.replace("2025/12/2〜", "2037/12/2〜")).includes(
+      "period_note_invalid",
+    ),
+  );
+  // 年の無い期間（sns-copy-rules: 期間は年つきの両端）
+  assert.ok(
+    check(ok.replace("2025/12/2〜2037/11/4", "12/2〜11/4")).includes(
+      "period_note_invalid",
+    ),
+  );
+  assert.ok(
+    check(ok.replace(`${FOOT_RATE}\n`, "")).includes("rate_note_missing"),
+  );
+  assert.ok(
+    check(ok.replace(`${FOOT_NIGASHI}\n`, "")).includes(
+      "nigashi_note_mismatch",
+    ),
+  );
+  const none = build(material({ venues: { 2: {} } })).text;
+  assert.ok(
+    check(
+      none.replace("#ボートレース", `${FOOT_RATE}\n#ボートレース`),
+    ).includes("rate_note_without_rates"),
+  );
+  assert.ok(
+    check(
+      none.replace("#ボートレース", `${FOOT_NIGASHI}\n#ボートレース`),
+    ).includes("nigashi_note_mismatch"),
+  );
+});
+
+test("脚注: 禁止表現（risk-rules.json、計画と同じ照合）に当たらない。長文の1投稿の上限で通る", () => {
+  const rules = JSON.parse(
+    readFileSync(
+      new URL(
+        "../../sns-video-studio/remotion/risk-rules.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ).rules;
+  const text = build(material(GENERAL)).text;
+  for (const line of [FOOT_PERIOD, FOOT_RATE, FOOT_NIGASHI, text])
+    assert.deepEqual(
+      matchRiskRules(
+        draftRiskFields({ platform: "x", caption_text: line, hashtags: [] }),
+        "x",
+        rules,
+      ),
+      [],
+      line,
+    );
+  // 加重は280を超える（今の /today と同じ長文の1投稿）。上限25,000では通る
+  assert.equal(xPostValid(text), false);
+  assert.equal(xPostValid(text, { long: true }), true);
+  assert.deepEqual(checkTodayDigestV3(text, { date: DATE, url: URL_C }), []);
 });
