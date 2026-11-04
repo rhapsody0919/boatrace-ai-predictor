@@ -23,6 +23,7 @@ import FlyingBadge from "./FlyingBadge";
 import { useRaceEntryFlyingRows } from "../../hooks/useRaceEntryFlyingRows";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import InlineFetchError from "../InlineFetchError";
+import FavoriteStarButton from "../common/FavoriteStarButton.jsx";
 import "./DataRaceTable.css";
 import { splitRacerName } from "../../utils/racerName";
 
@@ -120,6 +121,16 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
                     </Link>
                   ) : (
                     <span translate="no">{nameParts(p.name)}</span>
+                  )}
+                  {p.racerId && (
+                    <div className="drt-name-favorite">
+                      <FavoriteStarButton
+                        type="racer"
+                        id={p.racerId}
+                        name={p.name}
+                        entry="race_table"
+                      />
+                    </div>
                   )}
                 </th>
               ))}

@@ -395,3 +395,30 @@ thead tr:last-child:not(:first-child) .drt-label-th {
     display: block;
   }
 }
+
+/* リンクとは別の行に、既存の44pxの操作範囲を置く（BOA-1270）。 */
+.drt-name-favorite {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-1);
+}
+
+@media (max-width: 480px) {
+  /* 44pxの☆にセルの余白・左右の枠を足して列幅を広げない。
+     ページ側のセル指定より具体的にし、直前情報の表には適用しない。 */
+  .data-race-table .drt-table th.drt-name-th {
+    padding-left: 0;
+    padding-right: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  /* ラベル列50px＋6艇×44pxを確保するため、表だけ左右の4pxを使う。
+     見出し・注記と直前情報の表は既存の余白を保つ。 */
+  .data-race-table > .drt-table-wrapper {
+    margin-left: -4px;
+    margin-right: -4px;
+  }
+}
