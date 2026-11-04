@@ -11,13 +11,13 @@
  */
 import { buildAll } from "./build-all.mjs";
 import { answerOf } from "./answer.mjs";
-import { DISCLAIMER, FEATURES, FULL_TAGS, LIMITS, ROUND_NAME, SITE, WEEKDAY, featureUrl, fullLine1, raceHeader, utmUrl } from "./bundle.mjs";
+import { DISCLAIMER, FEATURES, FULL_TAGS, LIMITS, ROUND_NAME, SITE, WEEKDAY, featureUrl, fullLine1, utmUrl } from "./bundle.mjs";
 import { rankOf } from "./scenes/diff.mjs";
 import { bannedIn } from "./scene2-text.mjs";
 import { venueName } from "./scenes/common.mjs";
 import { MIN_FONT_PX, NB, TODAY, boatToday, boatWho, charsEm, layoutOpen, layoutRight, racersOf } from "../../src/fullPicture/f01Right.js";
 import { readFileSync } from "node:fs";
-import { getRaceDetailHeading } from "../../../../src/utils/raceDetailHeading.js";
+import { getRaceDetailHeading, getVenueSeriesDayLabel } from "../../../../src/utils/raceDetailHeading.js";
 
 /** サイトの日本語の文言（日目の「初日」「N日目」「最終日」をレース詳細の見出しと同じ文にする） */
 const JA = JSON.parse(readFileSync(new URL("../../../../src/locales/ja/common.json", import.meta.url), "utf8"));
@@ -31,13 +31,18 @@ export const SERIES_TITLE_GRADES = ["SG", "G1"];
 /** 大会名の行の字の大きさ px（サムネ・冒頭）。長い名前は幅に収まるまで詰め、min を下回るなら作らない（f01TitleThumbCheck）。
  * 2025-11〜2026-11 の SG・G1 の大会名は最長25字（「第14回クイーンズクライマックス／G3QCシリーズ」）で、サムネ 32px のまま収まる */
 export const SERIES_LINE = { thumb: 32, open: 32, min: 24, openWidth: 1800 };
-/** 大会名の行の字の大きさ（幅 width px に収まる大きさ。big を越えない） */
+/** 大会名の行の字の大きさ（幅 width px に収まる大きさ。big を越えない）。サムネは右上の締切の札と高さが重なるので、札の分を除いた幅で測る */
 export const seriesSize = (text, big, width) => Math.min(big, Math.floor(width / Math.max(charsEm(text), 1)));
+/** サムネの大会名の行に使える幅 px（上の帯と同じく、右上の締切の札＝44px＋左右の余白 22×2 と間 32 を除く） */
+export const thumbSeriesWidth = (deadline) => THUMB.width - 32 - charsEm(`締切${deadline}`) * 44 - 44;
 
 /**
- * 日目と大会名（レース詳細の見出し getRaceDetailHeading と同じ値: 同じ会場のレースで項目ごとに補い、丸一日中止の日は出さない）。
- * 日目は公式の出走表の値（中止の翌日は同じ日目を振り直す）で、日付からは数えない。
- * @param {object} m 材料 JSON（api.races はその日・その会場のレース）
+ * 日目と大会名（画面と同じ規則、src/utils/raceDetailHeading.js）。
+ * 日目は会場カードの getVenueSeriesDayLabel: 同じ会場のレースで項目ごとに補い（BOA-509）、丸一日中止の日は出さない（BOA-658、翌日に同じ日目が振り直される）、
+ * 最終日の印はどれか1レースでも立てば最終日（レースごとに入る時点がずれる。1R は false・12R は true の日があった）。文言は「初日」「N日目」「最終日」。
+ * 日付からは数えない。大会名はレース詳細の見出し getRaceDetailHeading の seriesTitle（race_conditions.race_title を同じ会場で補い、NFKC）。
+ * 材料は api.races（/api/predictions/{date} のその会場のレース。seriesDay・isFinalDay・raceTitle・raceGrade・cancellationStatus を持つ）
+ * @param {object} m 材料 JSON
  * @returns {{ok: true, day: string, series: string|null} | {ok: false, kind: string, reason: string}}
  */
 export function seriesOf(m) {
@@ -45,15 +50,16 @@ export function seriesOf(m) {
   const race = races.find((r) => r.raceId === m.raceId) ?? null;
   if (!race) return { ok: false, kind: "series_day", reason: "出走表（api.races）にこのレースが無い" };
   const venueRaws = [...races].sort((a, b) => (a.raceNumber ?? 0) - (b.raceNumber ?? 0));
-  const h = getRaceDetailHeading(race, venueRaws, tJa);
-  if (!h.seriesDayLabel) return { ok: false, kind: "series_day", reason: "材料に何日目（api.races の seriesDay・isFinalDay）が無い（題・サムネ・冒頭の見出し・説明欄に日目を出す、オーナー 11/4）" };
-  const grade = race.raceGrade ?? null;
+  const day = getVenueSeriesDayLabel(venueRaws, tJa);
+  if (!day) return { ok: false, kind: "series_day", reason: "材料に何日目（api.races の seriesDay・isFinalDay）が無いか、丸一日中止の日（題・サムネ・冒頭の見出し・説明欄に日目を出す、オーナー 11/4）" };
+  // グレードは会場・日で同じ。自レースに無ければ同じ会場の他のレースで補う
+  const grade = race.raceGrade ?? venueRaws.find((r) => r.raceGrade != null)?.raceGrade ?? null;
   if (!grade) return { ok: false, kind: "race_grade", reason: "材料にグレード（api.races の raceGrade）が無く、大会名を足すか決められない" };
-  if (!SERIES_TITLE_GRADES.includes(grade)) return { ok: true, day: h.seriesDayLabel, series: null };
-  // 全角の英数字・空白は NFKC で半角に（サイトの見出しと同じ）。続く空白は1つに
-  const series = h.seriesTitle?.replace(/\s+/g, " ").trim() || null;
+  if (!SERIES_TITLE_GRADES.includes(grade)) return { ok: true, day, series: null };
+  // 全角の英数字・空白は NFKC で半角に（画面の見出しと同じ）。続く空白は1つに
+  const series = getRaceDetailHeading(race, venueRaws, tJa).seriesTitle?.replace(/\s+/g, " ").trim() || null;
   if (!series) return { ok: false, kind: "series_title", reason: `${grade} なのに材料に大会名（api.races の raceTitle）が無い` };
-  return { ok: true, day: h.seriesDayLabel, series };
+  return { ok: true, day, series };
 }
 
 export const F01_VERSION = "f01-proto-1";
@@ -189,7 +195,7 @@ export function f01Script(m) {
   const thumb = {
     head: `${raceName} ${dateW} ${day}`,
     // SG・G1 は上の帯の下に大会名を小さく1行（長い名前は詰める。線を下回るなら作らない）
-    series: series ? { text: series, size: seriesSize(series, SERIES_LINE.thumb, THUMB.width) } : null,
+    series: series ? { text: series, size: seriesSize(series, SERIES_LINE.thumb, thumbSeriesWidth(deadline)) } : null,
     deadline: `締切${deadline}`,
     lines: [`${r1.name}${NB}${r1.grade}`, "逃げ切れる？"].map((text) => ({ text, size: thumbSize(text) })),
     foot: `同じ並び 過去${cnt(n0)}回\u30001号艇の1着`,
@@ -388,6 +394,7 @@ export function f01Script(m) {
     else c.right = layoutRight(c);
   }
   const url = `${SITE}/race/${m.raceId}`;
+  const titles = [true, false].map((w) => `${lead(w)}｜1号艇 ${r1.name}${r1.grade}は逃げ切れる？ 同じ並びの1着${win1}`);
   return {
     ok: true,
     version: F01_VERSION,
@@ -399,14 +406,13 @@ export function f01Script(m) {
     omitted,
     // 題（オーナー 11/4 承認）: 「ボートレース{会場} {大会名} {R}R {レース名} {M/D}({曜}) {日目} 締切{HH:MM}｜1号艇 {名前}{級}は逃げ切れる？ 同じ並びの1着{X}割」。
     // 大会名は SG・G1 だけ。100字を越える日は題からだけ大会名を外す（サムネ・冒頭・説明欄には残す）。外しても越えれば f01TitleThumbCheck で止める
-    title: [true, false].map((w) => `${lead(w)}｜1号艇 ${r1.name}${r1.grade}は逃げ切れる？ 同じ並びの1着${win1}`).find((t) => t.length <= LIMITS.title) ?? `${lead(false)}｜1号艇 ${r1.name}${r1.grade}は逃げ切れる？ 同じ並びの1着${win1}`,
+    title: titles.find((t) => t.length <= LIMITS.title) ?? titles[1],
     thumb,
     deadline,
     day,
     series,
     lead: lead(true),
     url,
-    header: raceHeader({ year: y, month: mo, day: d, venue, raceNo: rn, round: m.api.facts?.today?.round ?? null, deadline: m.race?.startTime ?? null }),
     place: `${venue}${rn}R`,
     open: { n0, k0, lossN, p0: ans.p0, where },
     racers,
@@ -519,6 +525,7 @@ export function f01TitleThumbCheck(s) {
   // 上の帯（40px）と右上の札（44px＋左右の余白 22×2、間 32）が重ならない
   if (charsEm(t.head) * 40 + 32 + charsEm(t.deadline) * 44 + 44 > THUMB.width) why.push(`サムネ: 上の帯「${t.head}」が締切の札に重なる`);
   // 大会名の行（SG・G1）: 幅に収まるよう詰めた字が線を下回るなら作らない（名前を切って出さない）
+  if (t.series && charsEm(t.series.text) * t.series.size + 32 + charsEm(t.deadline) * 44 + 44 > THUMB.width) why.push(`サムネ: 大会名「${t.series.text}」が締切の札に重なる`);
   if (t.series && t.series.size < SERIES_LINE.min) why.push(`サムネ: 大会名「${t.series.text}」が ${t.series.size}px（線 ${SERIES_LINE.min}px）`);
   const op = s.chapters?.find((c) => c.open)?.open;
   if (op?.series && op.series.size < SERIES_LINE.min) why.push(`open: 大会名「${op.series.text}」が ${op.series.size}px（線 ${SERIES_LINE.min}px）`);
