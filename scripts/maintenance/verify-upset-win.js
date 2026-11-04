@@ -468,8 +468,6 @@ test("DB の行 → 形: 名前の空白を詰め、展示の F・L を持ち、
         race_id: "2026-11-03-17-10",
         rank1: 4,
         winning_technique: "まくり",
-        is_cancelled: false,
-        is_no_race: false,
         race_status: "normal",
       },
     ],
@@ -947,7 +945,7 @@ const readCurrent = createReadCurrent({
         ? [{ cancellation_status: dbRace.cancelled ? "confirmed" : null }]
         : [];
     if (table === "race_results")
-      return dbRace ? [{ rank1: dbRace.rank1, is_cancelled: dbRace.cancelled }] : [];
+      return dbRace && !dbRace.cancelled ? [{ rank1: dbRace.rank1 }] : [];
     throw new Error(`読み直しの path が想定の外: ${p}`);
   },
 });
@@ -1294,7 +1292,7 @@ test("送り手の読み直し（readCurrent）: 許可が off・item の kind �
   await assert.rejects(readCurrent(draft.id), /upset_result_changed/);
   dbRace.rank1 = SAMPLE.rank1;
   dbRace.cancelled = true;
-  assert.equal((await readCurrent(draft.id)).cancelled, true);
+  await assert.rejects(readCurrent(draft.id), /race_not_found/);
   dbRace.cancelled = false;
   await db.exec(
     "UPDATE sns_auto_send_control SET upset_win_short_enabled=false",
@@ -1375,10 +1373,7 @@ test("中止の判定: confirmed かつ1着が無いときだけ中止。confirm
     true,
   );
   assert.equal(
-    shapeRace({
-      race: { ...base, cancellation_status: null },
-      result: { ...done, is_cancelled: true },
-    }).cancelled,
+    shapeRace({ race: { ...base, cancellation_status: null }, result: { ...done, race_status: "no_race" } }).no_race,
     true,
   );
 });

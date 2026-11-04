@@ -461,7 +461,7 @@ export function createReadCurrent({
           "sns_auto_send_control?channel=eq.youtube&select=upset_win_short_enabled",
         ),
         db(`races?race_id=eq.${id}&select=cancellation_status`),
-        db(`race_results?race_id=eq.${id}&select=rank1,is_cancelled`),
+        db(`race_results?race_id=eq.${id}&select=rank1`),
       ]);
       if (item?.kind !== UPSET_WIN_SHORT_KIND || item.race_id !== upsetId)
         throw new Error("upset_item_mismatch");
@@ -473,8 +473,8 @@ export function createReadCurrent({
       if (result.rank1 !== rank1) throw new Error("upset_result_changed");
       return {
         withdrawn: false,
-        // 1着があるので行われたレース（confirmed のまま結果がある行もある。docs/knowledge/data-definitions.md）。結果の行の中止だけを見る
-        cancelled: result.is_cancelled === true,
+        // 1着があるので行われたレース（confirmed のまま結果がある行もある。docs/knowledge/data-definitions.md）。中止は1着が無いこと（上で race_not_found）
+        cancelled: false,
         deadline_at: draft.source_data.deadline_queue?.deadline_at ?? null,
         source_revision: revision,
       };

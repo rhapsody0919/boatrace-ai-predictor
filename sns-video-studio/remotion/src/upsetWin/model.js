@@ -205,7 +205,7 @@ export const READ_COLUMNS = {
   races:
     "race_id,race_date,venue_code,race_number,race_grade,cancellation_status",
   race_results:
-    "race_id,rank1,winning_technique,is_cancelled,is_no_race,race_status",
+    "race_id,rank1,winning_technique,race_status",
   race_entries:
     "race_id,boat_number,player_name,grade,win_rate,motor_2rate,is_absent",
   exhibition_data:
@@ -215,7 +215,7 @@ export const READ_COLUMNS = {
 
 /**
  * DB の行（1レース分）→ 選び・集計・bundle が使う形（純粋関数）。
- * 中止は races.cancellation_status か race_results.is_cancelled、不成立は is_no_race か race_status='no_race'、
+ * 中止は races.cancellation_status が confirmed で1着が無いこと、不成立は race_status='no_race'（旧フラグ is_cancelled・is_no_race は書かれていないので読まない。verify-race-status-exclusion.js）、
  * 欠場は出走表か展示のどれかの is_absent。単勝は win_all の値（0 は「無い」）
  */
 export function shapeRace({
@@ -239,10 +239,9 @@ export function shapeRace({
     grade: race.race_grade ?? null,
     // 中止は「confirmed かつ1着が無い」（docs/knowledge/data-definitions.md。confirmed のまま結果のあるレースがある・tentative は中止でない）
     cancelled:
-      (isCancellationConfirmed(race.cancellation_status) &&
-        result?.rank1 == null) ||
-      result?.is_cancelled === true,
-    no_race: result?.is_no_race === true || result?.race_status === "no_race",
+      isCancellationConfirmed(race.cancellation_status) &&
+      result?.rank1 == null,
+    no_race: result?.race_status === "no_race",
     absent: [...entries, ...exhibition].some((r) => r.is_absent === true),
     rank1: num(result?.rank1),
     technique: result?.winning_technique ?? null,
