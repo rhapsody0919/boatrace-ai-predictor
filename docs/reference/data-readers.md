@@ -574,8 +574,8 @@
   - `scripts/maintenance/verify-morning-digest.js:40` select [digest_date, generated_at, notes, race_count, venue_count] （検査）
   - `src/services/supabaseDataService.js:8029` select [*, digest_date]
 - 書き手（2）: 
-  - `scripts/daily/generate-morning-digest.js:893` upsert [?]
-  - `scripts/daily/generate-morning-digest.js:922` update [generated_at]
+  - `scripts/daily/generate-morning-digest.js:890` upsert [?]
+  - `scripts/daily/generate-morning-digest.js:919` update [generated_at]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-morning_digest_rows"></a>morning_digest_rows
@@ -586,9 +586,9 @@
   - `scripts/maintenance/verify-morning-digest.js:58` select [*, digest_date] （検査）
   - `src/services/supabaseDataService.js:8034` select [*, digest_date, rank, section]
 - 書き手（3）: 
-  - `scripts/daily/generate-morning-digest.js:898` delete
-  - `scripts/daily/generate-morning-digest.js:907` insert [?]
-  - `scripts/daily/generate-morning-digest.js:915` insert [?]
+  - `scripts/daily/generate-morning-digest.js:895` delete
+  - `scripts/daily/generate-morning-digest.js:904` insert [?]
+  - `scripts/daily/generate-morning-digest.js:912` insert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-motor_pretest_stats"></a>motor_pretest_stats
@@ -1313,7 +1313,7 @@
 - 本体で読む RPC: data_health_table_rows
 - 取得のジョブ: race_notices
 - 読み手（1）: 
-  - `scripts/daily/generate-morning-digest.js:856` select [category, detail_text, race_date, racer_id, venue_code]
+  - `scripts/daily/generate-morning-digest.js:853` select [category, detail_text, race_date, racer_id, venue_code]
 - 書き手（1）: 
   - `scripts/daily/scrape-race-information.js:586` upsert [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: boat_number, structured_data, scraped_at
@@ -1332,7 +1332,7 @@
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:197` select(helper:fetchAllByRaceId)
   - `scripts/analysis/verify-race-analysis-rpc.js:74` select(helper:fetchAll)
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:169` select(helper:fetchInChunks)
-  - `scripts/daily/generate-morning-digest.js:702` select [boat_number, finish_mark, race_id, start_timing]
+  - `scripts/daily/generate-morning-digest.js:699` select [boat_number, finish_mark, race_id, start_timing]
   - `scripts/daily/scrape-results.js:639` select [?, boat_number, race_id]
   - `scripts/daily/scrape-results.js:1105` select(helper:upsertChangedRows)
   - `scripts/daily/update-top-start-stats.js:173` select(helper:fetchAll)

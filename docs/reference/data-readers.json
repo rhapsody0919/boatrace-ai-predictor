@@ -3934,7 +3934,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/generate-morning-digest.js:893",
+          "ref": "scripts/daily/generate-morning-digest.js:890",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -3942,7 +3942,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-morning-digest.js:922",
+          "ref": "scripts/daily/generate-morning-digest.js:919",
           "op": "update",
           "via": "client",
           "columns": [
@@ -3956,8 +3956,8 @@
       "columns": {
         "digest_date": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:893",
-            "scripts/daily/generate-morning-digest.js:922",
+            "scripts/daily/generate-morning-digest.js:890",
+            "scripts/daily/generate-morning-digest.js:919",
             "scripts/maintenance/verify-morning-digest.js:40",
             "src/services/supabaseDataService.js:8029"
           ],
@@ -3969,7 +3969,7 @@
             "scripts/maintenance/verify-morning-digest.js:40"
           ],
           "writers": [
-            "scripts/daily/generate-morning-digest.js:922"
+            "scripts/daily/generate-morning-digest.js:919"
           ],
           "sql": []
         },
@@ -4069,13 +4069,13 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/generate-morning-digest.js:898",
+          "ref": "scripts/daily/generate-morning-digest.js:895",
           "op": "delete",
           "via": "client",
           "columns": []
         },
         {
-          "ref": "scripts/daily/generate-morning-digest.js:907",
+          "ref": "scripts/daily/generate-morning-digest.js:904",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -4083,7 +4083,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-morning-digest.js:915",
+          "ref": "scripts/daily/generate-morning-digest.js:912",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -4097,7 +4097,7 @@
       "columns": {
         "digest_date": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:898",
+            "scripts/daily/generate-morning-digest.js:895",
             "scripts/maintenance/verify-morning-digest.js:58",
             "src/services/supabaseDataService.js:8034"
           ],
@@ -13244,7 +13244,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/daily/generate-morning-digest.js:856",
+          "ref": "scripts/daily/generate-morning-digest.js:853",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13281,7 +13281,7 @@
         },
         "venue_code": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:856",
+            "scripts/daily/generate-morning-digest.js:853",
             "scripts/daily/scrape-race-information.js:586"
           ],
           "writers": [],
@@ -13289,7 +13289,7 @@
         },
         "race_date": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:856",
+            "scripts/daily/generate-morning-digest.js:853",
             "scripts/daily/scrape-race-information.js:586"
           ],
           "writers": [],
@@ -13297,7 +13297,7 @@
         },
         "category": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:856",
+            "scripts/daily/generate-morning-digest.js:853",
             "scripts/daily/scrape-race-information.js:586"
           ],
           "writers": [],
@@ -13305,7 +13305,7 @@
         },
         "racer_id": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:856"
+            "scripts/daily/generate-morning-digest.js:853"
           ],
           "writers": [],
           "sql": []
@@ -13317,7 +13317,7 @@
         },
         "detail_text": {
           "readers": [
-            "scripts/daily/generate-morning-digest.js:856",
+            "scripts/daily/generate-morning-digest.js:853",
             "scripts/daily/scrape-race-information.js:586"
           ],
           "writers": [],
@@ -13419,7 +13419,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/generate-morning-digest.js:702",
+          "ref": "scripts/daily/generate-morning-digest.js:699",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13665,7 +13665,7 @@
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
-            "scripts/daily/generate-morning-digest.js:702",
+            "scripts/daily/generate-morning-digest.js:699",
             "scripts/daily/scrape-results.js:639",
             "scripts/daily/scrape-results.js:709",
             "scripts/lib/raceResultFix.js:125",
@@ -13692,7 +13692,7 @@
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
-            "scripts/daily/generate-morning-digest.js:702",
+            "scripts/daily/generate-morning-digest.js:699",
             "scripts/daily/scrape-results.js:639",
             "scripts/daily/scrape-results.js:709",
             "scripts/lib/raceResultFix.js:125",
@@ -13717,7 +13717,7 @@
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
-            "scripts/daily/generate-morning-digest.js:702",
+            "scripts/daily/generate-morning-digest.js:699",
             "src/services/supabaseDataService.js:6858",
             "src/services/supabaseDataService.js:7785"
           ],
@@ -13764,7 +13764,7 @@
         "finish_mark": {
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
-            "scripts/daily/generate-morning-digest.js:702",
+            "scripts/daily/generate-morning-digest.js:699",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
             "src/services/supabaseDataService.js:2553",
@@ -29538,13 +29538,13 @@
       "reachableFiles": 20,
       "writes": {
         "morning_digest_days": [
-          "scripts/daily/generate-morning-digest.js:893",
-          "scripts/daily/generate-morning-digest.js:922"
+          "scripts/daily/generate-morning-digest.js:890",
+          "scripts/daily/generate-morning-digest.js:919"
         ],
         "morning_digest_rows": [
-          "scripts/daily/generate-morning-digest.js:898",
-          "scripts/daily/generate-morning-digest.js:907",
-          "scripts/daily/generate-morning-digest.js:915"
+          "scripts/daily/generate-morning-digest.js:895",
+          "scripts/daily/generate-morning-digest.js:904",
+          "scripts/daily/generate-morning-digest.js:912"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
