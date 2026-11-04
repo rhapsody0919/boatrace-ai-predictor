@@ -13,6 +13,7 @@
 import { getVenueSeriesDayLabel } from "../../src/utils/raceDetailHeading.js";
 import { buildSeriesDayByVenue } from "./raceSeriesLookup.js";
 import { xPostValid } from "../../api/_lib/snsXLength.js";
+import { addDaysToDateString, parseDateInfo } from "./dateUtils.js";
 
 export const V3_BODY = "digest_v3";
 export const V3_FINAL = "優勝戦";
@@ -24,10 +25,30 @@ export const V3_MIN_RUNS_FALLBACK = 10;
 export const V3_MAX_FINALS = 3;
 export const V3_MAX_SEMI_VENUES = 3;
 export const V3_RULE = "━━━━━━━━━━";
+/**
+ * 脚注（BOA-1315、オーナー 2026-11-04 承認。文は hq の起票のとおり）。期間は率の窓（racer_course_technique_stats の window_start〜window_end、
+ * 2025/12/2 から）。終わりは窓の実際の終わりを書く: 率の集計（api/cron/racer-course-technique-stats.js）は 13:00 JST に前日まで進むので、
+ * 7:00 の投稿では前々日になる（起票の「前日」は 13:00 より後の値。前日と偽らない）。率の塊が無い日は1・2行目を出さず、逃し率の行は【1号艇が逃げやすいレース】の塊がある日だけ
+ */
+export const v3PeriodNote = (from, to) =>
+  `※率は ${slashDate(from)}〜${slashDate(to)} の全国の成績（そのコースに入ったとき）`;
+export const V3_RATE_NOTE = "※逃げ率・まくり率＝逃げ・まくりで1着になった割合";
 export const V3_NIGASHI_NOTE =
   "※逃し率＝2コースに入ったとき、1コースの艇の逃げで決まった割合";
 export const V3_TAG = "#ボートレース";
 export const V3_LINK_LEAD = "全レースの一覧 → ";
+
+/** "2025-12-02" → "2025/12/2" */
+function slashDate(date) {
+  const { year, month, day } = parseDateInfo(date);
+  return `${year}/${month}/${day}`;
+}
+/** 暦にある YYYY-MM-DD か（"2026-00-99" や Date の文字列を受けない） */
+const isIsoDate = (v) =>
+  typeof v === "string" &&
+  /^\d{4}-\d{2}-\d{2}$/.test(v) &&
+  addDaysToDateString(v, 0) === v;
+export const V3_NIGASHI_HEADING = "【1号艇が逃げやすいレース】";
 
 const GRADE_ORDER = ["SG", "G1", "G2", "G3"];
 const gradeRank = (g) =>
@@ -102,7 +123,7 @@ export async function loadTodayV3Material(db, date) {
     return Array.from(
       { length: Math.ceil(ids.length / 300) },
       (_, i) =>
-        `racer_course_technique_stats?course=eq.${course}&racer_id=in.(${ids.slice(i * 300, i * 300 + 300).join(",")})&select=racer_id,course,runs,nige_rate,makuri_rate,nigashi_rate`,
+        `racer_course_technique_stats?course=eq.${course}&racer_id=in.(${ids.slice(i * 300, i * 300 + 300).join(",")})&select=racer_id,course,window_start,window_end,runs,nige_rate,makuri_rate,nigashi_rate`,
     );
   });
   const stats = (await Promise.all(paths.map((p) => db(p)))).flat();
@@ -288,7 +309,25 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
   const entryOf = new Map(
     entries.map((e) => [`${e.race_id}:${e.boat_number}`, e]),
   );
-  const statOf = new Map(stats.map((s) => [`${s.racer_id}|${s.course}`, s]));
+  // 率の窓: 窓の日付が壊れた行・終わりが前日より後の行は使わない。窓の終わりが今の最新（7:00 の時点では前々日）でない行（更新が止まった選手）も
+  // 使わない。脚注の期間「〜{終わり}」を、載せた全員の率に当てはまる文にするため（/code-review の指摘）
+  const yesterday = addDaysToDateString(date, -1);
+  const usable = stats.filter(
+    (s) =>
+      isIsoDate(s.window_start) &&
+      isIsoDate(s.window_end) &&
+      s.window_start <= s.window_end &&
+      s.window_end <= yesterday,
+  );
+  const latestEnd = usable.reduce(
+    (m, s) => (s.window_end > m ? s.window_end : m),
+    "",
+  );
+  const statOf = new Map(
+    usable
+      .filter((s) => s.window_end === latestEnd)
+      .map((s) => [`${s.racer_id}|${s.course}`, s]),
+  );
   const usedRaces = new Set();
   const usedRacers = new Set();
   const candidates = (boats, rateKey) =>
@@ -310,7 +349,7 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
           !Number.isInteger(s.runs)
         )
           return [];
-        return [{ race, boat, entry: e, rate, runs: s.runs }];
+        return [{ race, boat, entry: e, rate, runs: s.runs, stat: s }];
       }),
     );
   // 率の高い順、同じ率は締切の早い順。走数30以上が無ければ10以上まで下げる。同じ選手・同じレースは2回出さない
@@ -378,7 +417,7 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
       rate: nigashi.rate,
       runs: nigashi.runs,
       lines: [
-        "【1号艇が逃げやすいレース】",
+        V3_NIGASHI_HEADING,
         at(nigashi.race),
         `1号艇 ${who(one)}／2号艇の逃し率 ${pct(nigashi.rate)}（${nigashi.runs}走）`,
       ],
@@ -407,6 +446,17 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
       lines.push(...(i ? [""] : []), ...b.lines);
     lines.push(V3_RULE);
   }
+  // 脚注の期間は、載せた率の窓の初日の最も早い日〜窓の終わり（載せた全員で同じ。7:00 の時点では 2025-12-02〜前々日）
+  const starts = [nige, nigashi, makuri]
+    .filter(Boolean)
+    .map((c) => c.stat.window_start);
+  const period = starts.length
+    ? {
+        from: starts.reduce((m, d) => (d < m ? d : m)),
+        to: latestEnd,
+      }
+    : null;
+  if (period) lines.push(v3PeriodNote(period.from, period.to), V3_RATE_NOTE);
   if (nigashi) lines.push(V3_NIGASHI_NOTE);
   // 罫線の塊が無い日は、タグの前を1行空ける（塊のある日は罫線・注の直後）
   if (!blocks.length) lines.push("");
@@ -446,6 +496,7 @@ export function buildTodayDigestV3(material, { sendAt, t, url }) {
       semis: semis.map((r) => r.race_id),
       holding: holding.map((v) => v.code),
       big_final: Boolean(bigFinal),
+      period,
     },
   };
 }
@@ -474,6 +525,32 @@ export function checkTodayDigestV3(text, { date, url }) {
   if (/https?:\/\//.test(text.replace(url, ""))) problems.push("extra_link");
   if (lines.at(-1) !== V3_TAG) problems.push("tag_missing");
   if (/競艇/.test(text)) problems.push("kyotei");
+  // 脚注（BOA-1315）: 率の塊がある日は期間と定義の2行。期間は年つきの両端で、終わりは前日まで。逃し率の行は逃し率の塊がある日だけ
+  const hasRates = lines.includes(V3_RULE);
+  const periodLines = lines.filter((l) => l.startsWith("※率は "));
+  if (hasRates) {
+    const m =
+      periodLines.length === 1 &&
+      periodLines[0].match(
+        /^※率は (\d{4})\/(\d{1,2})\/(\d{1,2})〜(\d{4})\/(\d{1,2})\/(\d{1,2}) の全国の成績（そのコースに入ったとき）$/,
+      );
+    const iso = (y, mo, d) =>
+      `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const from = m && iso(m[1], m[2], m[3]);
+    const to = m && iso(m[4], m[5], m[6]);
+    if (
+      !m ||
+      !isIsoDate(from) ||
+      !isIsoDate(to) ||
+      !(from <= to) ||
+      !(to <= addDaysToDateString(date, -1))
+    )
+      problems.push("period_note_invalid");
+    if (!lines.includes(V3_RATE_NOTE)) problems.push("rate_note_missing");
+  } else if (periodLines.length || lines.includes(V3_RATE_NOTE))
+    problems.push("rate_note_without_rates");
+  if (lines.includes(V3_NIGASHI_NOTE) !== lines.includes(V3_NIGASHI_HEADING))
+    problems.push("nigashi_note_mismatch");
   if (!xPostValid(text, { long: true })) problems.push("weighted_text_invalid");
   return problems;
 }
