@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import { buildFavoriteRuns, statLineOf, buildFavoritesFallback } from "../../src/pure/favoriteRuns.js";
+import { buildFavoriteRuns, statLineOf, buildFavoritesFallback, venuesFromPredictions } from "../../src/pure/favoriteRuns.js";
 
 const entry = (racerId, number) => ({ racerId, number, name: `選手${racerId}`, grade: "A1" });
 const race = (venueCode, raceNumber, startTime, entries = [], extra = {}) => ({
@@ -79,6 +79,19 @@ assert.deepEqual(buildFavoritesFallback(cancelled, [22], "18:00"), {
   favVenues: [{ venueCode: 22, state: "finished", nextRaceNumber: null, nextStartTime: null }],
   gradeVenues: [], openVenueCount: 1,
 });
+// getPredictions の平らな races（選手は players）を会場別にまとめ、buildFavoriteRuns に通る形にする（BOA-1272）
+const flat = [
+  { raceId: "a", venueCode: 12, raceNumber: 8, startTime: "18:12", raceGrade: "G2", cancellationStatus: null,
+    players: [{ number: 1, racerId: 4320, name: "峰", grade: "A1" }] },
+  { raceId: "b", venueCode: 1, raceNumber: 7, startTime: "17:46", raceGrade: "SG", cancellationStatus: null },
+  { raceId: "c", venueCode: 12, raceNumber: 9, startTime: "18:40", raceGrade: "G2", cancellationStatus: null,
+    players: [{ number: 4, racerId: 4320, name: "峰", grade: "A1" }] },
+];
+const grouped = venuesFromPredictions(flat);
+assert.deepEqual(grouped.map((v) => [v.placeCd, v.races.map((r) => r.raceId)]), [[12, ["a", "c"]], [1, ["b"]]]);
+assert.deepEqual(grouped[1].races[0].entries, [], "players が無いレースは entries を空にする（落ちない）");
+assert.deepEqual(buildFavoriteRuns(grouped, [4320], null).upcoming.map((r) => [r.raceId, r.boat]), [["a", 1], ["c", 4]]);
+assert.deepEqual(venuesFromPredictions(undefined), []);
 const gradesBefore = structuredClone(grades);
 buildFavoritesFallback(grades, [12, 1], "11:00");
 assert.deepEqual(grades, gradesBefore);

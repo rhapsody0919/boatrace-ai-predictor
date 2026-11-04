@@ -1,0 +1,184 @@
+/* トップの区画「お気に入り選手の出走」（GS04-6）。見た目は docs/design/gs04-favorites/mock/ */
+.favorite-runs {
+  max-width: 1200px;
+  margin: 0 auto 1rem;
+  padding: 0.75rem;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+}
+
+.favorite-runs__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  color: var(--text-primary);
+}
+
+.favorite-runs__lead {
+  margin: 0.25rem 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.favorite-runs__list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.favorite-runs__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "time race"
+    "who who"
+    "meet meet"
+    "stat stat"
+    "go go";
+  gap: 0.25rem 0.625rem;
+  padding: 0.625rem 0;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  min-width: 0;
+}
+
+.favorite-runs__row--past {
+  opacity: 0.7;
+}
+
+.favorite-runs__time {
+  grid-area: time;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xl);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.favorite-runs__time small {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: normal;
+  color: var(--text-secondary);
+}
+
+.favorite-runs__race {
+  grid-area: race;
+  align-self: center;
+  font-weight: var(--font-weight-bold);
+  min-width: 0;
+}
+
+.favorite-runs__grade {
+  display: inline-block;
+  margin-right: 0.25rem;
+  padding: 0 0.3rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-2xs);
+  color: #fff;
+  vertical-align: 1px;
+}
+
+.favorite-runs__who {
+  grid-area: who;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.favorite-runs__name {
+  font-weight: var(--font-weight-bold);
+}
+
+.favorite-runs__class {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.favorite-runs__links {
+  grid-area: go;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.favorite-runs__link {
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 0.625rem;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-info-text);
+  background: var(--surface-page);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.favorite-runs__toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-info-text);
+  cursor: pointer;
+}
+
+.favorite-runs__note {
+  margin: 0.5rem 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
+/* 375px（〜767px）は締切前を4件まで出し、残りは「あと N件を見る」で開く */
+@media (max-width: 767px) {
+  .favorite-runs__row--extra {
+    display: none;
+  }
+}
+
+/* 768px 以上は全部出すので、「あと N件を見る」は要らない */
+@media (min-width: 768px) {
+  .favorite-runs__toggle--more {
+    display: none;
+  }
+}
+
+/* 1024px 以上は1件1行（モックの 1440px） */
+@media (min-width: 1024px) {
+  .favorite-runs {
+    padding: 1rem 1.25rem;
+  }
+
+  .favorite-runs__row {
+    grid-template-columns: 7rem 8rem 11rem 9.5rem minmax(0, 1fr) auto;
+    grid-template-areas: "time race who meet stat go";
+    align-items: center;
+    padding: 0.375rem 0;
+  }
+
+  .favorite-runs__time small {
+    display: inline;
+    margin-left: 0.25rem;
+  }
+
+  .favorite-runs__links {
+    flex-wrap: nowrap;
+  }
+
+  .favorite-runs__link {
+    flex: 0 0 auto;
+    padding: 0 0.5rem;
+  }
+}
