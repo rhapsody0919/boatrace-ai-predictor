@@ -1,6 +1,6 @@
 /**
- * verify-rpc-output-keys.js - 本番RPC（get_predictions_by_date / _light / get_today_races）の
- * 出力に、フロントが参照するキーが含まれているかを検証する（BOA-363の再発防止）。
+ * verify-rpc-output-keys.js - 本番RPC（get_predictions_by_date / _light / get_today_races、
+ * 199 の get_course_win_rate_baseline）の出力に、フロントが参照するキーが含まれているかを検証する（BOA-363の再発防止）。
  *
  * 背景: RPCは `CREATE OR REPLACE FUNCTION` で関数全体を再定義するため、古い定義を土台に
  * 新しいマイグレーションを書くと、それ以前に足したフィールドが無言で消える
@@ -302,6 +302,76 @@ function reportGroup(label, items, expectedKeys) {
   return true;
 }
 
+// 199（BOA-1290）: get_course_win_rate_baseline(p_race_date, p_venue_code) の jsonb の形。
+// フロントの getCourseWinRateBaseline と、それを前提にする BOA-1292 の口が読むキー
+const BASELINE_TOP_KEYS = ["terms", "national", "venue"];
+const BASELINE_TERM_KEYS = ["calc_from", "calc_to"];
+const BASELINE_VENUE_KEYS = ["venueCode", "from", "to", "byCourse"];
+const BASELINE_CELL_KEYS = ["wins", "entries", "winRate"];
+const BASELINE_COURSES = ["1", "2", "3", "4", "5", "6"];
+
+/**
+ * 199 の get_course_win_rate_baseline を検証日・その日の最初の会場で呼び、キーを確かめる。失敗したかを返す。
+ * 台帳で 199 が「適用済み」になるまでは、関数が無い・キーの欠落を WARN にとどめる
+ * @param {string} date
+ */
+async function checkCourseWinRateBaseline(date) {
+  const applied = isMigrationApplied(199);
+  const { data: raceRows, error: raceError } = await supabase
+    .from("races")
+    .select("venue_code")
+    .eq("race_date", date)
+    .order("venue_code")
+    .limit(1);
+  if (raceError)
+    throw new Error(`races の会場の取得に失敗: ${raceError.message}`);
+  const venueCode = raceRows?.[0]?.venue_code ?? null;
+  const { data, error } = await supabase.rpc("get_course_win_rate_baseline", {
+    p_race_date: date,
+    p_venue_code: venueCode,
+  });
+  console.log(
+    `get_course_win_rate_baseline（${date}・会場 ${venueCode ?? "なし"}）`,
+  );
+  if (error) {
+    if (!applied) {
+      console.log(
+        `  [WARN] 199 は台帳で未適用のため、呼び出しの失敗は失敗にしない: ${error.message}`,
+      );
+      return false;
+    }
+    console.log(`  [FAIL] 呼び出しに失敗: ${error.message}`);
+    return true;
+  }
+  const report = (label, items, keys) =>
+    applied
+      ? reportGroup(label, items, keys)
+      : reportMigrationKeys(label, items, keys, 199);
+  let failed = report("最上位", [data], BASELINE_TOP_KEYS);
+  const terms = Array.isArray(data?.terms) ? data.terms : [];
+  if (terms.length !== 3) {
+    console.log(
+      `  [${applied ? "FAIL" : "WARN"}] terms が3つでない（${terms.length}）。racer_period_stats の期を確かめる`,
+    );
+    if (applied) failed = true;
+  } else {
+    failed = report("terms", terms, BASELINE_TERM_KEYS) || failed;
+  }
+  const national = BASELINE_COURSES.map((c) => data?.national?.[c]);
+  failed =
+    report("national（6コース）", national, BASELINE_CELL_KEYS) || failed;
+  if (venueCode === null) {
+    console.log("  [SKIP] venue: 検証日にレースが無く会場が無い");
+  } else {
+    failed = report("venue", [data?.venue], BASELINE_VENUE_KEYS) || failed;
+    const byCourse = BASELINE_COURSES.map((c) => data?.venue?.byCourse?.[c]);
+    failed =
+      report("venue.byCourse（6コース）", byCourse, BASELINE_CELL_KEYS) ||
+      failed;
+  }
+  return failed;
+}
+
 async function main() {
   if (!supabase) {
     throw new Error(
@@ -407,6 +477,8 @@ async function main() {
       );
     }
   }
+
+  failed = (await checkCourseWinRateBaseline(date)) || failed;
 
   if (failed) {
     console.error(

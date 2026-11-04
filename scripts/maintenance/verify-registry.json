@@ -297,6 +297,11 @@
       "guards": "進入コース傾向の集計ロジック（scripts/lib/courseEntryTendency.js、BOA-284）"
     },
     {
+      "script": "verify-course-win-rate-baseline.js",
+      "tier": "ci",
+      "guards": "全選手・会場の同じコースの1着率の RPC（マイグレーション 199、get_course_win_rate_baseline、BOA-1290）: national の期は calc_to < レースの日の新しい3つ（レースの日に終わる期を入れない・古い順）、Σp1÷Σ進入の走の重み（率の平均でない）・starts=0 を除き B2 を含む、進入0は null・期が無ければ terms []。当地は実進入コース・窓 [日−730, 日)・中止・不成立・着順なし・実進入コースなし・別の会場を除く、venue_code null なら venue null。STABLE・SECURITY INVOKER・search_path 固定・anon が RLS の下で呼べる・2回当てても失敗しない。SQL199 を PGlite、外部接続なし"
+    },
+    {
       "script": "verify-cover-image-strategy.js",
       "tier": "ci",
       "guards": "カバー画像の調達戦略: new-feature のルート・data-insight のタブのスクリーンショット、venue-characteristic・daily-result・trivia のデータカード、未知の sourceId を含む例外。humor は仕様未定として KNOWN_GAPS に表示（BOA-1064）"
