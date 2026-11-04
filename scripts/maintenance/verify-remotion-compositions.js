@@ -27,9 +27,12 @@ if (!existsSync(join(REMOTION, "node_modules/@remotion/cli"))) {
 
 // Root.jsx に書かれた composition の id（id="..."）。一覧に全部出ることを見る
 const rootSrc = readFileSync(join(REMOTION, "src/Root.jsx"), "utf8");
-const expectedIds = [...rootSrc.matchAll(/\bid=["']([A-Za-z0-9_-]+)["']/g)].map(
-  (m) => m[1],
-);
+// JSX のコメント（{/* … */}）の中の id は数えない（コメントで外した composition を期待しない）
+const expectedIds = [
+  ...rootSrc
+    .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, "")
+    .matchAll(/\bid=["']([A-Za-z0-9_-]+)["']/g),
+].map((m) => m[1]);
 if (expectedIds.length === 0) {
   console.error(
     "verify-remotion-compositions: Root.jsx から composition の id を読めない（検査を見直す）",
@@ -58,12 +61,14 @@ const run = spawnSync(
     cwd: REMOTION,
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
+    // Chromium の取得が止まる等で戻らないとき、黙って待ち続けない
+    timeout: 10 * 60 * 1000,
   },
 );
 const out = `${run.stdout ?? ""}\n${run.stderr ?? ""}`;
-if (run.error) {
+if (run.error || run.signal) {
   console.error(
-    `verify-remotion-compositions: 実行できない: ${run.error.message}`,
+    `verify-remotion-compositions: 実行できない・止められた: ${run.error?.message ?? ""} signal=${run.signal ?? "なし"}\n${out.slice(-4000)}`,
   );
   process.exit(1);
 }
@@ -73,7 +78,9 @@ if (run.status !== 0) {
   );
   process.exit(1);
 }
-const missing = expectedIds.filter((id) => !out.includes(id));
+// --quiet の一覧は id の空白区切り。部分一致（VenueRankingCM が VenueRankingCM-EN に含まれる）で見逃さないよう語で照らす
+const listed = new Set((run.stdout ?? "").split(/\s+/).filter(Boolean));
+const missing = expectedIds.filter((id) => !listed.has(id));
 if (missing.length > 0) {
   console.error(
     `verify-remotion-compositions: 一覧に無い composition: ${missing.join(", ")}\n${out.slice(-4000)}`,

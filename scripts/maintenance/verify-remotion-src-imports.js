@@ -12,6 +12,8 @@
  * 2. 届くファイルのどれも import.meta.glob を呼ばない（コメントは除く）
  * 3. 検査自体の確かめ: raceDetailHeading.js から辿ると languages.js に届く（辿り方が壊れて素通りしていない）
  *
+ * 辿るのは静的な相対 import（import・export from・文字列1つの import()）だけ。require・式の import()・別名の指定は辿らない
+ * （remotion/src は ESM で、今は使っていない）。そこは束を作る検査で拾う。
  * 束を実際に作る検査（npx remotion compositions）は verify-remotion-compositions.js（manual。CI に remotion の依存が無い）。
  * 外部接続なし・同じコミットなら同じ結果（tier=ci）。
  */
@@ -26,8 +28,19 @@ const FORBIDDEN = [
   /^src\/config\/languages\.js$/,
   /^src\/data\/blogPosts[^/]*\.js$/,
 ];
-const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, "");
+// 行頭から始まるコメントだけを除く。文字列の中の "/*"（glob の "./x/*.json" 等）から次の "*/" までを消して
+// import を見落とさないため、行の途中の /* や // は残す（残しても見落としにはならず、誤って拾う側に倒れる）
+const stripComments = (s) =>
+  s.replace(/^\s*\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, "");
 const rel = (p) => relative(ROOT, p).split("\\").join("/");
+const sourceCache = new Map();
+/** コメントを除いた本文（1ファイル1回だけ読む） */
+const source = (p) => {
+  if (!sourceCache.has(p))
+    sourceCache.set(p, stripComments(readFileSync(p, "utf8")));
+  return sourceCache.get(p);
+};
+const failures = [];
 
 function files(dir) {
   return readdirSync(dir).flatMap((name) => {
@@ -37,17 +50,20 @@ function files(dir) {
   });
 }
 
-/** 相対の指定を実在のファイルに直す（拡張子の省略・index を補う）。見つからなければ投げる */
+/** 相対の指定を実在のファイルに直す（拡張子の省略・index を補う）。見つからなければ failures に足して null */
 function resolveSpec(from, spec) {
   const base = resolve(dirname(from), spec);
   const tries = [
     base,
-    ...[".js", ".jsx", ".mjs"].map((e) => base + e),
-    ...["index.js", "index.jsx"].map((n) => join(base, n)),
+    ...[".js", ".jsx", ".mjs", ".cjs"].map((e) => base + e),
+    ...["index.js", "index.jsx", "index.mjs"].map((n) => join(base, n)),
   ];
   const hit = tries.find((p) => existsSync(p) && statSync(p).isFile());
-  if (!hit) throw new Error(`${rel(from)}: import "${spec}" の参照先が無い`);
-  return hit;
+  if (!hit)
+    failures.push(
+      `${rel(from)}: import "${spec}" の参照先が見つからない（辿れないので検査できない）`,
+    );
+  return hit ?? null;
 }
 
 /** そのファイルの相対 import の指定（JSON・CSS 等のコードでないものは辿らない） */
@@ -65,10 +81,9 @@ function reach(starts) {
   const queue = [...starts];
   while (queue.length > 0) {
     const file = queue.shift();
-    const code = stripComments(readFileSync(file, "utf8"));
-    for (const spec of relativeSpecs(code)) {
+    for (const spec of relativeSpecs(source(file))) {
       const next = resolveSpec(file, spec);
-      if (!CODE.test(next) || via.has(next)) continue;
+      if (!next || !CODE.test(next) || via.has(next)) continue;
       via.set(next, [...via.get(file), next]);
       queue.push(next);
     }
@@ -76,7 +91,6 @@ function reach(starts) {
   return via;
 }
 
-const failures = [];
 const chain = (path) => path.map(rel).join(" → ");
 
 const reached = reach(files(REMOTION_SRC));
@@ -84,7 +98,7 @@ for (const [file, path] of reached) {
   const r = rel(file);
   if (FORBIDDEN.some((re) => re.test(r)))
     failures.push(`禁止のファイルに届く: ${chain(path)}`);
-  if (/import\.meta\.glob/.test(stripComments(readFileSync(file, "utf8"))))
+  if (/import\.meta\.glob/.test(source(file)))
     failures.push(`import.meta.glob を呼ぶファイルに届く: ${chain(path)}`);
 }
 
@@ -97,9 +111,9 @@ if (![...probe.keys()].some((f) => rel(f) === "src/config/languages.js"))
 const outside = [...reached.keys()].filter(
   (f) => !rel(f).startsWith("sns-video-studio/"),
 );
-if (!outside.some((f) => rel(f) === "src/utils/raceSeriesText.js"))
+if (outside.length === 0)
   failures.push(
-    "検査の確かめ: remotion/src から src/utils/raceSeriesText.js に届かない（辿り方が壊れているか、import が変わった。検査を見直す）",
+    "検査の確かめ: remotion/src から remotion の外（src/・scripts/）に1つも届かない（辿り方が壊れている）",
   );
 
 if (failures.length > 0) {
