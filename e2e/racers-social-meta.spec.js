@@ -1,5 +1,6 @@
 import { test, expect } from "./fixtures.js";
 import { readFileSync } from "node:fs";
+import { homeSocialProblems, leftPageSocialValues } from "./home-social-meta.js";
 
 const DESCRIPTION = "支部・身長・体重・級別・登録期・出身地で絞り込み、勝率などでソートできる選手一覧。";
 const defaultHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -70,12 +71,11 @@ for (const pageNumber of [1, 2]) {
       await expect(page.locator(selector)).toHaveAttribute("content", content);
     }
     // 再読込せず Router で移動して、アンマウント時の後片付けを確認する。
+    const leftValues = await leftPageSocialValues(page);
     await page.locator("header .logo").click();
     await expect(page).toHaveURL("/");
-    for (const [selector, content] of defaults) {
-      await expect(page.locator(selector)).toHaveCount(1);
-      await expect(page.locator(selector)).toHaveAttribute("content", content);
-    }
-    await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
+    await expect
+      .poll(() => homeSocialProblems(page, Object.fromEntries(defaults), path, leftValues))
+      .toEqual([]);
   });
 }

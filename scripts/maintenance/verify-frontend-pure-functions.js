@@ -32,6 +32,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
 
 const TARGETS = {
+  meetStRank: "src/components/race/meetStRank.js",
   semifinalCount: "src/pure/semifinalCount.js",
   finishPosition: "src/pure/finishPosition.js",
   basicInfoStats: "src/components/race/basicInfoStats.js",
@@ -1253,6 +1254,67 @@ function suiteRaceStatus(m, check) {
 // 3. courseGridStats.js
 // ---------------------------------------------------------------------------
 function suiteCourseGridStats(m, check) {
+  // BOA-1328: 全期間の1コースの走を分母にする（負けた走だけではない）。
+  const now = new Date("2026-11-05T00:00:00+09:00");
+  const lossRecord = (winningTechnique, rank1 = 2, extra = {}) => ({
+    date: "2026-10-01", venueCode: 4, raceGrade: "ippan",
+    actualCourse: 1, boatNumber: 1, rank1, winningTechnique, ...extra,
+  });
+  const losses = [
+    ...Array.from({ length: 5 }, () => lossRecord("まくり")),
+    ...Array.from({ length: 4 }, () => lossRecord("差し")),
+    lossRecord("まくり差し"), lossRecord("まくり差し"), lossRecord(null),
+    ...Array.from({ length: 22 }, () => lossRecord("まくり", 1)),
+  ];
+  losses[0] = lossRecord("まくり", 2, { date: "2025-12-03", raceGrade: "G2" });
+  losses[1] = lossRecord("まくり", 2, { date: "2026-11-04", venueCode: 24 });
+  const mixed = [...losses, lossRecord("差し", 2, { actualCourse: 2 }),
+    lossRecord("まくり", 2, { actualCourse: null })];
+  check("buildCourse1LossBreakdown: 過去走の艇番で本人の1着を判定",
+    m.buildCourse1LossBreakdown([
+      lossRecord("まくり", 3, { boatNumber: 3 }),
+      lossRecord("差し", 1, { boatNumber: 3 }),
+    ], { now }), {
+      n: 2, makurare: 0, sashi: 1, makurarePct: 0, sashiPct: 50,
+      reliable: false, from: "2026-10-01", to: "2026-10-01",
+    });
+  const roundingRows = [lossRecord("まくり"),
+    ...Array.from({ length: 200 }, () => lossRecord("逃げ", 1))];
+  check("buildCourse1LossBreakdown: 1/201 は二重丸めせず0%",
+    m.buildCourse1LossBreakdown(roundingRows, { now }).makurarePct, 0);
+  const original = JSON.stringify(mixed);
+  const breakdown = m.buildCourse1LossBreakdown(mixed, { now });
+  check("buildCourse1LossBreakdown: 34走、非1着のまくり5・差し4だけを加算", breakdown, {
+    n: 34, makurare: 5, sashi: 4, makurarePct: 15, sashiPct: 12,
+    reliable: true, from: "2025-12-03", to: "2026-11-04",
+  });
+  check("buildCourse1LossBreakdown: 全期間行と母数が一致", breakdown.n,
+    m.buildTodayCourseRows(mixed, { venueCode: null, course: 1, now })
+      .find((row) => row.key === "current").n);
+  check("buildCourse1LossBreakdown: 入力を変更しない", JSON.stringify(mixed), original);
+  const small = [lossRecord("まくり"), lossRecord("まくり"), lossRecord("差し"),
+    ...Array.from({ length: 15 }, () => lossRecord("逃げ", 1))];
+  check("buildCourse1LossBreakdown: 18走でも割合を返す", m.buildCourse1LossBreakdown(small, { now }), {
+    n: 18, makurare: 2, sashi: 1, makurarePct: 11, sashiPct: 6,
+    reliable: false, from: "2026-10-01", to: "2026-10-01",
+  });
+  for (const n of [29, 30]) {
+    const rows = Array.from({ length: n }, () => lossRecord("逃げ", 1));
+    check(`buildCourse1LossBreakdown: 信頼性の境界 ${n}走`,
+      m.buildCourse1LossBreakdown(rows, { now }).reliable, n >= 30);
+  }
+  const other = ["まくり差し", "抜き", "恵まれ", null, ""].map((t) => lossRecord(t));
+  check("buildCourse1LossBreakdown: その他と欠損も分母に含む", m.buildCourse1LossBreakdown(other, { now }), {
+    n: 5, makurare: 0, sashi: 0, makurarePct: 0, sashiPct: 0,
+    reliable: false, from: "2026-10-01", to: "2026-10-01",
+  });
+  for (const rows of [[], null, undefined, {}, "invalid", [lossRecord("差し", 2, { actualCourse: 2 })]]) {
+    check("buildCourse1LossBreakdown: 1コースなし・非配列", m.buildCourse1LossBreakdown(rows, { now }), {
+      n: 0, makurare: 0, sashi: 0, makurarePct: null, sashiPct: null,
+      reliable: false, from: null, to: null,
+    });
+  }
+
   const records = [
     // 1号艇で2コースに入った走（艇番ではなく実進入コースで数える）
     rec({
@@ -2424,7 +2486,46 @@ function suiteSixBoatCourseStats(m, check) {
     [{ calc_to: "2024-02-29" }]);
 }
 
+function suiteMeetStRank(m, check) {
+  const beforeRaceId = "2026-11-04-22-12";
+  const runs = (values) => values.map((st, i) => ({
+    raceId: `2026-11-03-22-0${i + 1}`, st,
+    finish: st === null ? "F" : 1,
+  }));
+  const input = [
+    [0.15, 0.16, 0.14], [0.12, 0.11, 0.13],
+    [0.14, null, 0.14, 0.14], [0.20, 0.18],
+    [0.16, 0.15, 0.14], [],
+  ].map((values, i) => ({ boat: i + 1, runs: runs(values) }));
+  check("今節平均・有効走数・同順位と欠番", m.rankMeetAvgSt(input, { beforeRaceId }), [
+    { boat: 1, avg: 0.15, n: 3, rank: 3 },
+    { boat: 2, avg: 0.12, n: 3, rank: 1 },
+    { boat: 3, avg: 0.14, n: 3, rank: 2 },
+    { boat: 4, avg: null, n: 2, rank: null },
+    { boat: 5, avg: 0.15, n: 3, rank: 3 },
+    { boat: 6, avg: null, n: 0, rank: null },
+  ]);
+  const excluded = [
+    { raceId: beforeRaceId, st: 0.01 },
+    { raceId: "2026-11-05-22-01", st: 0.02 },
+    ...["F", "L"].map((finish) => ({ raceId: "2026-11-03-22-09", st: 0.01, finish })),
+    ...[null, undefined, NaN, Infinity, "0.15"].map((st) => ({ raceId: "2026-11-03-22-08", st })),
+  ];
+  check("当該・未来・F・L・数値以外を除外", m.rankMeetAvgSt([
+    { boat: 1, runs: [...runs([0.15, 0.15]), ...excluded] },
+  ], { beforeRaceId }), [{ boat: 1, avg: null, n: 2, rank: null }]);
+  check("minRunsを指定できる", m.rankMeetAvgSt([
+    { boat: 4, runs: runs([0.20, 0.18]) },
+  ], { beforeRaceId, minRuns: 2 }), [{ boat: 4, avg: 0.19, n: 2, rank: 1 }]);
+  check("小数3桁で同じ平均は同順位", m.rankMeetAvgSt([
+    { boat: 1, runs: runs([0.1501, 0.1501, 0.1501]) },
+    { boat: 2, runs: runs([0.1504, 0.1504, 0.1504]) },
+    { boat: 3, runs: runs([0.151, 0.151, 0.151]) },
+  ], { beforeRaceId }).map(({ rank }) => rank), [1, 1, 3]);
+}
+
 const SUITES = {
+  meetStRank: suiteMeetStRank,
   semifinalCount: suiteSemifinalCount,
   nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
@@ -2451,6 +2552,9 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  ["meetStRank", "当該レースを含める", "run.raceId < beforeRaceId", "run.raceId <= beforeRaceId"],
+  ["meetStRank", "3走ちょうどを出さない", "n >= minRuns", "n > minRuns"],
+  ["meetStRank", "同順位をなくす", "value < Math.round(row.avg * 1000)", "value <= Math.round(row.avg * 1000)"],
   ["sixBoatCourseStats", "件数の線ちょうどを警告にする",
     "entries < SIX_BOAT_WARN_ENTRIES[course]", "entries <= SIX_BOAT_WARN_ENTRIES[course]"],
   ["sixBoatCourseStats", "レース当日に終わる期を含める",

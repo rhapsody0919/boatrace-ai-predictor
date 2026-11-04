@@ -308,6 +308,30 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
 
+  // 前夜の締切予定（eve_race_deadlines、マイグレーション202、BOA-1282。オーナー 2026-11-04「前夜の投稿に翌日の締切を書く」）。
+  // 20:40指定（cron: 20:40・21:00・21:10・21:20 JST の4回）。対象日（20:40 から解決）の翌日の raceindex を、race_series で節のある
+  // 会場（約15）ごとに1ページ、1件ずつ5秒空けて取る（その晩の最初の起動だけ24場とも）。最終日の会場は racelist の 12・11・10R も取る。
+  // 1ページ約8〜10秒＋5秒で、約15会場＋最終日の会場×3で最大約12分（ソフトデッドラインで打ち切り、残りは次の起動）。
+  // finalRunAfterJst より前に始まった起動は incomplete（同じ対象日をもう一度取る）。その時刻以後の起動で取り切れたら済み。
+  // 実装: scripts/lib/eveDeadlinesJob.js、api/cron/eve-deadlines.js。設計: docs/design/eve-race-deadlines/plan.md
+  eve_deadlines: {
+    kind: "daily",
+    targetTimeJst: "20:40",
+    finalRunAfterJst: "21:20",
+    leaseSec: 800,
+    maxDurationSec: 800,
+    hosts: ["boatrace.jp"],
+  },
+  // 前夜の締切予定と当日の races.start_time の照合（取得なし）。06:30指定（cron: 06:30・08:00 JST）。races_init がその日の分を
+  // 終えるまで incomplete。食い違いは last_report.alerts（その日の 12:00 まで）。実装: scripts/lib/eveDeadlinesJob.js
+  eve_deadlines_reconcile: {
+    kind: "daily",
+    targetTimeJst: "06:30",
+    leaseSec: 120,
+    maxDurationSec: 60,
+    hosts: [],
+  },
+
   // A5 レース特記事項（race_special_notes）。夜1回、その日の開催会場のページを全部取る（22:30指定。cron: 22:30・
   // 23:00・23:30 JST。後の2回は、取得に失敗した会場があった場合の補足）。2026-10-03 にユーザー承認で、10分ごと
   // （1日約1,300回）から夜1回に減らした（ページに事故がほとんど載らず、取得の量に見合わない。データ信頼性レーンの調査）。
@@ -811,6 +835,18 @@ export function validateRegistry(registry = SCRAPE_JOBS) {
     }
     if (!Number.isInteger(def.leaseSec) || def.leaseSec < 1) {
       problems.push(`${name}: leaseSec が不正です: ${def.leaseSec}`);
+    }
+    if (def.finalRunAfterJst !== undefined) {
+      const ok = /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(def.finalRunAfterJst);
+      if (
+        def.kind !== "daily" ||
+        !ok ||
+        !(hhmmToMinutes(def.finalRunAfterJst) > hhmmToMinutes(def.targetTimeJst))
+      ) {
+        problems.push(
+          `${name}: finalRunAfterJst は日次ジョブの、targetTimeJst より後の同じ日の HH:MM にしてください: ${def.finalRunAfterJst}`,
+        );
+      }
     }
     if (def.activeHoursJst !== undefined) {
       const ok = (t) => /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(t ?? "");

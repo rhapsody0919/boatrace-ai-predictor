@@ -18,6 +18,7 @@ import "./FeaturedRaceCard.css";
 const SECTION_LABEL = {
   nige: (course) => `${course}コースに入ったときに逃げ切った割合`,
   makuri: (course) => `${course}コースに入ったときにまくりで1着になった割合`,
+  // 新規の注目レースには入らない（2026-11-04）。過去日の保存済み行（detail.from=nigashi）の表示用に残す
   nigashi: (course) => `${course}コースに入ったときに1号艇に逃げ切られた割合`,
 };
 

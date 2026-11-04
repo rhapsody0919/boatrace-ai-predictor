@@ -371,12 +371,12 @@
     {
       "script": "verify-digest-nigashi-boat2.js",
       "tier": "ci",
-      "guards": "「逃がしやすい選手」は当日の2・3号艇だけ保存し2号艇を先に並べること（4〜6号艇は保存しない）、22pt の基準、注目レースの候補は2号艇の逃がしだけであること（2026-10-15）"
+      "guards": "「逃がしやすい選手」は当日の2・3号艇だけ保存し2号艇を先に並べること（4〜6号艇は保存しない）、22pt の基準、注目レースの候補に逃がしを入れないこと（2026-11-04）"
     },
     {
       "script": "verify-digest-nigashi-direction.js",
       "tier": "ci",
-      "guards": "「逃がしやすい選手」を逃げと同じイン有利側に扱う（注目レースの方向一致度・理由文・ページの説明）こと、補正しているのはレースグレードで級別ではないと書くこと（2026-10-15）"
+      "guards": "「逃がしやすい選手」は注目レースの点（方向一致度）に入れない（null）こと、まくりの向き、補正しているのはレースグレードで級別ではないと書くこと（2026-11-04）"
     },
     {
       "script": "verify-display-coverage.js",
@@ -447,6 +447,11 @@
       "script": "verify-error-message-deadline-status.js",
       "tier": "ci",
       "guards": "例外文言の非空フォールバック（BOA-668）と、レース日付・JST固定の締切日時・5分前と締切ちょうどの状態境界（ADR 0042、BOA-1065）"
+    },
+    {
+      "script": "verify-eve-deadlines.js",
+      "tier": "ci",
+      "guards": "前夜の締切予定 eve_race_deadlines（BOA-1282、マイグレーション202）。raceindex は行の R と締切を対にし並びの異常を落とす、優勝戦は名前で見分け12Rとは限らない（準優勝戦は false）、値の変わる行だけ・全列で書き取れなかった名前は残す、1件ずつ間5秒・最初の起動だけ24場・最終日だけ racelist、race_series の会場の 403・0行は失敗で incomplete、21:20 より前は incomplete、shadow は書かない、読み取りの失敗は例外。朝の照合は races_init の後・食い違いと races に無い行を通知・2回目は書かない。202 の race_id の CHECK・RLS・権限（anon 不可・service_role は DELETE 不可）・ジョブの行を live にする条件（PGlite、外部接続なし）、registry の finalRunAfterJst、vercel.json の cron"
     },
     {
       "script": "verify-exhibition-time-top-stats.js",
@@ -1211,9 +1216,21 @@
       "guards": "scripts/・api/ の相対 import の参照先が実在すること（移動したスクリプトの ./lib/ の取り残し。CIで走らない手動スクリプトの壊れに気づけない。BOA-536）"
     },
     {
+      "script": "verify-remotion-compositions.js",
+      "tier": "manual",
+      "guards": "動画（sns-video-studio/remotion）の束を実際に作り、npx remotion compositions が終了コード 0 で Root.jsx の composition を全部一覧に出すこと。2026-11-04 21:28〜、人気薄の1着の import が src/config/languages.js → blogPosts*.js の import.meta.glob に届き、Getting composition で全部の動画が落ちた",
+      "reason": "sns-video-studio/remotion の依存（npm ci）と Chromium が要る。CI は remotion の依存を入れていない（静的な検査 verify-remotion-src-imports.js が ci で同じ壊れ方を止める）",
+      "command": "(cd sns-video-studio/remotion && npm ci) && node scripts/maintenance/verify-remotion-compositions.js"
+    },
+    {
       "script": "verify-remotion-local-fonts.js",
       "tier": "ci",
       "guards": "動画（sns-video-studio/remotion）の字をネットから読まない: remotion に @remotion/google-fonts と fonts.googleapis.com・fonts.gstatic.com が無い（1頁 484 回の読み取りに戻さない）、fonts.js は同梱の Noto Sans JP の woff2 を import して @remotion/fonts で読む（staticFile は --public-dir を替える f01・人気薄の1着で見つからない）、coverage.js が同梱の woff2 から作ったもの（sha256）、豆腐の検査が同梱に無い字だけを拾う、全貌・f01・節の機力・人気薄の1着が useGlyphGuard を呼ぶ、f01 の撮影用の頁も Google Fonts を読まない"
+    },
+    {
+      "script": "verify-remotion-src-imports.js",
+      "tier": "ci",
+      "guards": "動画（sns-video-studio/remotion/src）から相対 import で辿れるファイルが、src/config/languages.js・src/data/blogPosts*.js と import.meta.glob（Vite 専用、Remotion の webpack は変換しない）に届かないこと。2026-11-04 #2236 で upsetWin/model.js → raceSeriesText.js → raceDetailHeading.js → languages.js → blogPostsEn.js が繋がり、Getting composition で全部の動画が落ちた。日目のラベルは src/utils/seriesDayLabel.js に分けた"
     },
     {
       "script": "verify-render-with-fresh-page.js",

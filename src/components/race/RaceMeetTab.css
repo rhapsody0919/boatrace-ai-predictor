@@ -767,3 +767,27 @@
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
+
+/* 平均は別段で右に揃え、線・着順・日付の列幅は展示と共通に保つ。 */
+.rmt-trend-with-avg .rmt-trend-row {
+  row-gap: 0;
+}
+
+.rmt-trend-st-avg {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  justify-self: end;
+  display: block;
+  white-space: nowrap;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.rmt-trend-st-avg-note {
+  margin: var(--spacing-2) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}

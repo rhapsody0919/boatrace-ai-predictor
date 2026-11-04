@@ -172,3 +172,41 @@ export function computeWakuNariRate(records) {
   const same = withCourse.filter((r) => r.actualCourse === r.boatNumber).length;
   return { rate: (same / withCourse.length) * 100, n: withCourse.length };
 }
+
+/**
+ * 本人の1コース全走に対する、まくられ・差されの内訳（spec §1.8）。
+ * @param {Array<Object>} records レースより前に絞った本人の履歴（recordsBeforeRace）
+ * @param {{now?: Date}} options 全期間行と同じ期間判定の基準日
+ * @returns {{n: number, makurare: number, sashi: number, makurarePct: number|null,
+ *   sashiPct: number|null, reliable: boolean, from: string|null, to: string|null}}
+ */
+export function buildCourse1LossBreakdown(records, { now } = {}) {
+  const row = GRID_ROWS.find((r) => r.key === "current");
+  const inCourse = filterRecords(Array.isArray(records) ? records : [], {
+    venueCode: null,
+    scope: row.scope,
+    grade: row.grade,
+    period: row.period,
+    now,
+  }).filter((r) => r.actualCourse === 1);
+  let makurare = 0;
+  let sashi = 0;
+  let from = null;
+  let to = null;
+  for (const r of inCourse) {
+    if (r.rank1 !== r.boatNumber) {
+      if (r.winningTechnique === "まくり") makurare += 1;
+      if (r.winningTechnique === "差し") sashi += 1;
+    }
+    if (from === null || r.date < from) from = r.date;
+    if (to === null || r.date > to) to = r.date;
+  }
+  const n = inCourse.length;
+  return {
+    n, makurare, sashi,
+    makurarePct: n > 0 ? Math.round((makurare / n) * 100) : null,
+    sashiPct: n > 0 ? Math.round((sashi / n) * 100) : null,
+    reliable: n >= 30,
+    from, to,
+  };
+}

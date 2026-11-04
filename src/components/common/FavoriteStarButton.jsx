@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useFavorites } from "../../hooks/useFavorites.js";
 import { RACER_LIMIT } from "../../pure/favorites.js";
@@ -38,7 +39,12 @@ export default function FavoriteStarButton({ type, id, name, entry, withLabel = 
         <span className="favorite-star-button__icon" aria-hidden="true">{active ? "★" : "☆"}</span>
         {withLabel && <span>{t(active ? "favorites.star.added" : "favorites.star.add")}</span>}
       </button>
-      <Toast {...toast} message={<span className="favorite-star-button__notice">{toast.message}</span>} />
+      {/* 固定位置のトーストが sticky な親（出走表の見出し等）の重なり順に閉じ込められ、
+          下部ナビ（z-index 1500）に隠れないよう body に出す */}
+      {createPortal(
+        <Toast {...toast} message={<span className="favorite-star-button__notice">{toast.message}</span>} />,
+        document.body,
+      )}
     </>
   );
 }

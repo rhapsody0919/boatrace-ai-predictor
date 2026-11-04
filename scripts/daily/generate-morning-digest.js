@@ -634,8 +634,7 @@ export function pickFeatured(sections) {
   const candidates = [
     ...(sections.nigeAll ?? sections.nige),
     ...sections.makuri,
-    // 逃がしは一覧に出す2号艇だけ。折りたたみの中の3号艇から注目レースを選ばない
-    ...sections.nigashi.filter((r) => r.course === NIGASHI_LIST_COURSE),
+    // 逃がしは注目レースの候補にしない（抽出の当たりと1号艇の1着に差が無い。2026-11-04、digestMetrics.js NOT_FEATURED_METRICS）
   ]
     .filter((r) => r.volatility_percentile !== null)
     .map((r) => ({
@@ -660,9 +659,7 @@ export function pickFeatured(sections) {
   const metricLabel = {
     nige: "逃げ切った割合",
     makuri: "まくりで1着になった割合",
-    nigashi: "1号艇に逃げ切られた割合",
   }[best.row.section];
-  // 逃がしは「1号艇が逃げ切った割合」が高い材料なので、逃げと同じ「イン有利」側（2026-10-15 修正）
   const direction = IN_FAVORABLE_METRICS.has(best.row.section)
     ? "イン有利"
     : "イン不利（1号艇が崩れる）";

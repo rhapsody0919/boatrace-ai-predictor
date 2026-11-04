@@ -766,6 +766,19 @@
       "ippan": "in General races",
       "sgg1": "in SG/G1 races"
     },
+    "course1Loss": {
+      "title": "Boat 1 in starting course 1: Makuri (taken) / Sashi (taken)",
+      "sub": "Of the {{n}} races that today's boat 1 racer has run in starting course 1, races lost to Makuri or Sashi (our data {{from}} – {{to}})",
+      "subSmall": "Today's boat 1 racer has run {{n}} races in starting course 1 (our data {{from}} – {{to}}). Percentages are not shown for fewer than 30 races.",
+      "empty": "Today's boat 1 racer has no races in starting course 1 during this period (our data {{from}} – {{to}})",
+      "rowMakurare": "Makuri (taken)",
+      "rowSashi": "Sashi (taken)",
+      "value": "{{count}} of {{n}} races",
+      "valuePct": "({{pct}}%)",
+      "note1": "* The denominator is all races run in course 1 (not just races lost). Races where another racer took 1st place with Makuri-zashi, Nuki or Megumare are excluded from Makuri (taken) and Sashi (taken), but included in the denominator of N races.",
+      "note2": "* For how often the racer finishes 1st, see the 1st-place rate in \"Course records of the 6 racers themselves\" above. The table above covers the last 3 terms (official records), while this card uses our data {{from}} – {{to}}, so the periods differ. With this number of races, rates cannot be compared between racers of the same class.",
+      "fetchError": "Could not load Makuri (taken) / Sashi (taken) in starting course 1."
+    },
     "sixBoat": {
       "title": "Course records of the 6 racers themselves",
       "sub": "Each racer's own record in the expected starting course (assuming entry in boat-number order). Results are aggregated by actual starting course.",

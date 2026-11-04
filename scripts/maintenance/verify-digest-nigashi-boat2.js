@@ -2,7 +2,7 @@
 /**
  * 「逃がしやすい選手」を当日の2号艇に絞る（2026-10-15 オーナー承認）。
  * 一覧は2号艇（過去の2コースの実績）、3号艇は画面の折りたたみの中だけ、4〜6号艇は保存しない。22pt の基準は変えない。
- * 注目レースの候補も2号艇の逃がしだけ。buildSections・pickFeatured の純関数テスト。DBには接続しない。
+ * 注目レースの候補には逃がしを入れない（2026-11-04）。buildSections・pickFeatured の純関数テスト。DBには接続しない。
  *   node scripts/maintenance/verify-digest-nigashi-boat2.js
  */
 import assert from "node:assert/strict";
@@ -66,13 +66,13 @@ const cases = [
     const s = buildSections({ races, entries, statMap: m, baselineMap, volatilityMap });
     assert.deepEqual(s.nigashi.map((r) => r.course), [3]);
   }],
-  ["注目レースの候補は2号艇の逃がしだけ（3号艇は選ばない）", () => {
+  ["注目レースの候補に逃がしは入らない（2号艇でも3号艇でも。2026-11-04 オーナー決定）", () => {
     const s = buildSections({ races, entries, statMap, baselineMap, volatilityMap });
-    const featured = pickFeatured(s);
-    assert.equal(featured.detail.from, "nigashi");
-    assert.equal(featured.course, 2);
-    const only3 = { ...s, nigashi: s.nigashi.filter((r) => r.course === 3) };
-    assert.equal(pickFeatured(only3), null);
+    assert.ok(s.nigashi.some((r) => r.course === 2), "前提: 2号艇の逃がしが一覧にある");
+    // このフィクスチャの候補は逃がしだけ。逃がしが入らなければ注目レースは null
+    assert.equal(pickFeatured(s), null);
+    const only = { ...s, nige: [], nigeAll: [], makuri: [] };
+    assert.equal(pickFeatured(only), null);
   }],
 ];
 let failed = 0;

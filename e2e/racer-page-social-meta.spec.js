@@ -1,6 +1,16 @@
 import { test, expect } from "./fixtures.js";
+import { readFileSync } from "node:fs";
+import { homeSocialProblems, leftPageSocialValues } from "./home-social-meta.js";
 
-const DEFAULT_TITLE = "龍神レーダー - 無料のボートレースAI予想＆データ分析";
+const defaultHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const socialSelectors = [
+  'meta[property="og:title"]',
+  'meta[name="twitter:title"]',
+  'meta[property="og:description"]',
+  'meta[name="twitter:description"]',
+  'meta[property="og:image"]',
+  'meta[name="twitter:image"]',
+];
 
 async function openRacer(page) {
   await page.goto("/racer/3941");
@@ -25,11 +35,18 @@ test("選手の OGP・X カードを title・description・canonical にそろ�
 });
 
 test("トップへ移ると OGP の既定値に戻り、選手の URL を残さない", async ({ page }) => {
+  // index.html の静的値（トップが自分の OGP を出す前の姿）を既定値として読む。
+  const defaults = await page.evaluate(({ html, selectors }) => {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return Object.fromEntries(selectors.map((selector) => [selector, doc.querySelector(selector).content]));
+  }, { html: defaultHtml, selectors: socialSelectors });
   await openRacer(page);
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", await page.title());
   // ページを再読込せず React Router で遷移して、フックの後片付けを確かめる。
+  const leftValues = await leftPageSocialValues(page);
   await page.locator('.racer-profile-breadcrumb a[href="/"]').click();
   await expect(page).toHaveURL("/");
-  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", DEFAULT_TITLE);
-  await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
+  await expect
+    .poll(() => homeSocialProblems(page, defaults, "/racer/3941", leftValues))
+    .toEqual([]);
 });

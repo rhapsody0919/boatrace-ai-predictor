@@ -84,3 +84,5 @@ e2e/recordings/
 data/analysis/past-rate-check/work/
 # GS00 data-scientist の中間データ（fetch-period-stats.mjs の出力。再実行で作り直せる）
 data/analysis/racer-period-stats/work/
+# BOA-1280 逃がし率・被まくられ率の中間データ（fetch-runs.mjs・build-features.py の出力。再実行で作り直せる）
+data/analysis/nigashi-makurare/work/

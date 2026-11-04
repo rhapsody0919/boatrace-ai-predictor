@@ -6,7 +6,15 @@ const PERIOD_STATS = /\/rest\/v1\/racer_period_stats/;
 
 async function hidePreviousTerm(page) {
   await page.route(PERIOD_STATS, async (route) => {
-    const response = await fetchRecorded(route);
+    // 画面はテストの終わりの後にも racer_period_stats を読む（データ出走表の想定コース1着率等）。
+    // 終わった後の要求は route.fetch が「Test ended」で投げるので、その時だけ捨てる（ほかの失敗は投げ直す）
+    let response;
+    try {
+      response = await fetchRecorded(route);
+    } catch (error) {
+      if (/Test ended|has been closed/.test(String(error?.message ?? error))) return;
+      throw error;
+    }
     const body = await response.json().catch(() => null);
     if (!Array.isArray(body)) return route.fulfill(response.fulfillOptions());
     // 前期（2026年2期）の行を抜く。「前期を取り込んだか」の確認（period_year=eq.2026&period_no=eq.2、

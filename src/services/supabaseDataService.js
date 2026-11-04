@@ -539,24 +539,42 @@ function beforeKey(beforeRaceId) {
 }
 
 /**
+ * includeTarget（beforeRaceId のレース自身も含める。BOA-1297）のときだけ付けるキーの
+ * 接尾辞。beforeKey より前に置いて、キーの末尾を race_id のままにする
+ */
+function includeKey(beforeRaceId, includeTarget) {
+  return beforeRaceId && includeTarget ? "-incl" : "";
+}
+
+/**
  * 会場の、指定日（YYYY-MM-DD、当日を含む）以降のレース（BOA-151、複数メソッドで
  * 共有するためキャッシュする）。モーターの集計は、期間の開始を現行モーターの世代で
  * 切り詰めた日（motorWindowStart）から呼ぶ。
  * beforeRaceId を渡すと、そのレースより前（race_id < beforeRaceId）に限る（BOA-521。
  * 会場を固定すれば race_id の文字列順は時系列順と一致するので、同じ日のそれより
  * 後のレースと、そのレース自身は入らない）
+ * includeTarget: true を渡すと、beforeRaceId のレース自身も含める（race_id <=。
+ * BOA-1297 の「交換N」は対象レースの展示も数える）。既定（false）は上の動き。
+ * beforeRaceId が null のときは意味を持たない
  */
-function getRacesForVenueSince(venueCode, sinceDate, beforeRaceId = null) {
+function getRacesForVenueSince(
+  venueCode,
+  sinceDate,
+  beforeRaceId = null,
+  { includeTarget = false } = {},
+) {
   return withCache(
-    `races-for-venue-since-${venueCode}-${sinceDate}${beforeKey(beforeRaceId)}`,
+    // "-incl" は beforeKey より前に置く（末尾を race_id に保ち、inferTtlFromKey の過去レース判定を効かせる）
+    `races-for-venue-since-${venueCode}-${sinceDate}${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}`,
     async () => {
       const races = await fetchRacesForVenueSince(
         venueCode,
         sinceDate,
         beforeRaceId?.slice(0, 10) ?? null,
       );
-      return beforeRaceId === null
-        ? races
+      if (beforeRaceId === null) return races;
+      return includeTarget
+        ? races.filter((r) => r.race_id <= beforeRaceId)
         : races.filter((r) => r.race_id < beforeRaceId);
     },
   );
@@ -725,11 +743,12 @@ function fetchMotorDailySeries(
   motorNumber,
   days,
   beforeRaceId = null,
+  { includeTarget = false } = {},
 ) {
   return withCache(
     // v2: 期間を現行モーターの世代で切り詰め、{window, series}を返す（BOA-329）
     // v3: 部品交換・プロペラ交換が記録されたレース番号（eventRaceNos）を追加（BOA-513）
-    `motor-daily-series-v3-${venueCode}-${motorNumber}-${days}${beforeKey(beforeRaceId)}`,
+    `motor-daily-series-v3-${venueCode}-${motorNumber}-${days}${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}`,
     async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
@@ -742,6 +761,7 @@ function fetchMotorDailySeries(
         venueCode,
         window.since,
         beforeRaceId,
+        { includeTarget },
       );
       if (races.length === 0) return { window, series: [] };
 
@@ -2984,12 +3004,20 @@ export const supabaseDataService = {
    * 期間は過去90日を現行モーターの世代（使用開始日以降）で切り詰める（BOA-329。
    * 入れ替え前の同じ番号の別モーターに乗った選手を出さない）。使用開始日が
    * 不明な会場は空
+   * includeTarget: true（BOA-1297）は beforeRaceId のレース自身の出走も含める。
+   * 未確定のレースなら結果が無く、その走は rank: null で入る（n には数えない）。
+   * 初日の初走でも今節の firstDate が取れるようにするための口
    */
-  getMotorUsageHistory(venueCode, motorNumber, beforeRaceId = null) {
+  getMotorUsageHistory(
+    venueCode,
+    motorNumber,
+    beforeRaceId = null,
+    { includeTarget = false } = {},
+  ) {
     return withCache(
       // v2: 期間を現行モーターの世代で切り詰める（BOA-329）
       // v3: 着順の付かなかった走（失格等）も分母に数える（BOA-549）
-      `motor-usage-history-v4-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
+      `motor-usage-history-v4-${venueCode}-${motorNumber}${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}`,
       async () => {
         if (!supabase) {
           console.error("Supabase client not initialized");
@@ -3002,6 +3030,7 @@ export const supabaseDataService = {
           venueCode,
           window.since,
           beforeRaceId,
+          { includeTarget },
         );
         if (races.length === 0) return [];
 
@@ -4970,17 +4999,24 @@ export const supabaseDataService = {
    * 実測値で、motor_2rate（公式サイトの「モーター交換時からの累積」値）と違い
    * イベント前後で単純比較できるため、この目的にはこちらを使う
    */
-  getMotorPartsHistory(venueCode, motorNumber, days = 90, beforeRaceId = null) {
+  getMotorPartsHistory(
+    venueCode,
+    motorNumber,
+    days = 90,
+    beforeRaceId = null,
+    { includeTarget = false } = {},
+  ) {
     return withCache(
       // v2: 期間を現行モーターの世代で切り詰める（BOA-329）
       // v3: 交換が記録されたレース番号（raceNos）を追加（BOA-513）
-      `motor-parts-history-v3-${venueCode}-${motorNumber}-${days}${beforeKey(beforeRaceId)}`,
+      `motor-parts-history-v3-${venueCode}-${motorNumber}-${days}${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}`,
       async () => {
         const { series: dateSeries } = await fetchMotorDailySeries(
           venueCode,
           motorNumber,
           days,
           beforeRaceId,
+          { includeTarget },
         );
 
         const avgOf = (list) => {
