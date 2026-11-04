@@ -226,8 +226,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | headlessNeed, sendFailureOf, runSnsSend, createPostgrestReader, createPostgrestEventWriter ほか17件 |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTodayCourseWinPost.js` | /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」）の本文と、その機械の検査（純関数）。 | buildCourseWinPost, checkCourseWinPost, COURSE_WIN_FOOT, COURSE_WIN_LINK_LEAD, xWeightedLength |
-| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, courseWinSheetUrl, prepareCourseWin, courseWinFeasible, typeAOf ほか28件 |
-| `scripts/lib/snsTodayVariants.js` | /today の X 投稿の見出し（本文の1行目）を2案で日替わりに出す（2026-10-20 オーナー承認、hq 経由）。 | normalizeTodayPost, normalizeTodayVariants, normalizeTodayExperiment, pickExperimentSide, loadTodayVariants ほか9件 |
+| `scripts/lib/snsTodayDigestV3.js` | /today の X 投稿の型 v3「今日はこれだけ」（BOA-1314、オーナー 2026-11-04 承認、hq の台帳 TD02）。文だけで画像は無い。7… | v3DateLine, loadTodayV3Material, buildTodayDigestV3, checkTodayDigestV3, V3_BODY ほか10件 |
+| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, prepareTodayV3, courseWinSheetUrl, prepareCourseWin, courseWinFeasible ほか31件 |
+| `scripts/lib/snsTodayVariants.js` | /today の X 投稿の見出し（本文の1行目）を2案で日替わりに出す（2026-10-20 オーナー承認、hq 経由）。 | normalizeTodayCurrent, normalizeTodayPost, normalizeTodayVariants, normalizeTodayExperiment, pickExperimentSide ほか10件 |
 | `scripts/lib/snsXSlots.js` | X の日の枠の出し物ごとの取り置き（マイグレーション 182、docs/design/x-daily-slots/plan.md）を、取り込み（push-ful… | slotDecision, checkXSlot, SLOT_KINDS, isMissingFunction, slotRoomBody ほか1件 |
 | `scripts/lib/sourceFileWalk.js` | — | walkSourceFiles, readSourceFile |
 | `scripts/lib/statisticalTests.js` | 統計検証ユーティリティ（正規近似ベース、外部ライブラリ非依存） | normalCDF, pearsonCorrelation, pearsonPValue, proportionZTest |
@@ -408,4 +409,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 366 ファイル / export 2160 件。
+対象 367 ファイル / export 2179 件。
