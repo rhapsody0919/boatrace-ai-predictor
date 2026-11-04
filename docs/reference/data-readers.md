@@ -399,7 +399,7 @@
   - `scripts/daily/update-exhibition-time-top-stats.js:173` select(helper:fetchAll)
   - `scripts/lib/analogyV16Exhibition.js:208` rest(rest) [boat_number, exhibition_course, exhibition_time, is_absent, race_id, start_flag, start_timing]
   - `scripts/lib/analogyV16Exhibition.js:296` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
-  - `scripts/lib/snsTodayDigestV3.js:106` rest(rest) [boat_number, is_absent, race_id]
+  - `scripts/lib/snsTodayDigestV3.js:112` rest(rest) [boat_number, is_absent, race_id]
   - `scripts/maintenance/backfill-exhibition-by-race-id.js:48` select [race_id]
   - `scripts/maintenance/backfill-opening-day-races.js:97` select(helper:count)
   - `scripts/maintenance/check-exhibition-gap-rate.js:46` select(helper:fetchAll)
@@ -786,7 +786,7 @@
   - `scripts/lib/analogyV16Exhibition.js:184` rest(rest) [race_id, wave_height, weather, weather_observed_at, wind_direction, wind_speed]
   - `scripts/lib/raceConditionsWriter.js:44` select(helper:upsertChangedRows)
   - `scripts/lib/snsAutoPlanRunner.js:744` rest(rest) [race_id, race_stage]
-  - `scripts/lib/snsTodayDigestV3.js:98` rest(rest) [is_final_day, race_id, race_stage, race_title, series_day]
+  - `scripts/lib/snsTodayDigestV3.js:104` rest(rest) [is_final_day, race_id, race_stage, race_title, series_day]
   - `scripts/maintenance/backfill-opening-day-races.js:96` select(helper:count)
   - `scripts/maintenance/backfill-race-conditions.js:77` select [race_id]
   - `scripts/maintenance/backfill-race-series-meta.js:162` select(helper:fetchAll)
@@ -889,7 +889,7 @@
   - `scripts/lib/racelistBackfillRows.js:127` select [race_id]
   - `scripts/lib/racerProfileSync.js:335` select [boat_number, race_id, racer_id]
   - `scripts/lib/racerStStats.js:127` select(helper:fetchAll)
-  - `scripts/lib/snsTodayDigestV3.js:102` rest(rest) [boat_number, grade, is_absent, player_name, race_id, racer_id]
+  - `scripts/lib/snsTodayDigestV3.js:108` rest(rest) [boat_number, grade, is_absent, player_name, race_id, racer_id]
   - `scripts/maintenance/audit-race-entries-vs-kb.js:68` select(helper:fetchAll)
   - `scripts/maintenance/backfill-kb-recent-results.js:154` select(helper:fetchAll)
   - `scripts/maintenance/backfill-opening-day-races.js:95` select(helper:count)
@@ -1294,7 +1294,7 @@
   - `api/_lib/botRace.js:249` rest(rest)
   - `scripts/lib/motorPretestJob.js:236` select [end_date, start_date, venue_code]
   - `scripts/lib/raceSeriesLookup.js:161` select [end_date, start_date, venue_code]
-  - `scripts/lib/snsTodayDigestV3.js:109` rest(rest) [end_date, grade, kind, start_date, title, venue_code]
+  - `scripts/lib/snsTodayDigestV3.js:115` rest(rest) [end_date, grade, kind, start_date, title, venue_code]
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:358` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:64` select(helper:fetchAll)
@@ -1394,7 +1394,7 @@
   - `scripts/daily/generate-morning-digest.js:250` select [*, course, racer_id]
   - `scripts/daily/generate-morning-digest.js:383` select [window_end]
   - `scripts/daily/update-racer-course-technique-stats.js:330` select(helper:upsertChangedRows)
-  - `scripts/lib/snsTodayDigestV3.js:126` rest(rest) [course, makuri_rate, nigashi_rate, nige_rate, racer_id, runs, window_end, window_start]
+  - `scripts/lib/snsTodayDigestV3.js:132` rest(rest) [course, makuri_rate, nigashi_rate, nige_rate, racer_id, runs, window_end, window_start]
 - 書き手（1）: 
   - `scripts/daily/update-racer-course-technique-stats.js:330` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -1571,8 +1571,8 @@
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select(embed) [cancellation_status]
   - `scripts/lib/scrapeJobs/resultHandlers.js:275` select [race_date, race_id, start_time]
   - `scripts/lib/snsAutoPlanRunner.js:741` rest(rest) [cancellation_status, race_date, race_id, start_time]
-  - `scripts/lib/snsTodayDigestV3.js:94` rest(rest) [cancellation_status, race_date, race_grade, race_id, race_number, start_time, venue_code]
-  - `scripts/lib/snsTodayDigestV3.js:139` rest(rest) [cancellation_status, race_date, venue_code]
+  - `scripts/lib/snsTodayDigestV3.js:100` rest(rest) [cancellation_status, race_date, race_grade, race_id, race_number, start_time, venue_code]
+  - `scripts/lib/snsTodayDigestV3.js:145` rest(rest) [cancellation_status, race_date, venue_code]
   - `scripts/maintenance/audit-missing-results.js:67` select(helper:fetchAll)
   - `scripts/maintenance/backfill-exhibition-by-race-id.js:35` select [race_id, race_number, venue_code]
   - `scripts/maintenance/backfill-kb-gaps.js:103` select(helper:read)
