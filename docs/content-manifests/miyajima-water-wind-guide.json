@@ -1,0 +1,106 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "miyajima-water-wind-guide",
+ "kind": "new",
+ "ticket": "OC-20261104T100158-seo-human-1",
+ "paths": [
+  "public/blog/miyajima-water-wind-guide.md",
+  "src/data/blog-posts/miyajima-water-wind-guide.json"
+ ],
+ "files": {
+  "public/blog/miyajima-water-wind-guide.md": "f755cfd5e5e6ba1bde8d150d56d638e376d61149f86ff7c306a561699c1422f9",
+  "src/data/blog-posts/miyajima-water-wind-guide.json": "98b7ff93f6ef07a96a0190a6b04b155e05e2956f5aafa3c70961312572ca0f91"
+ },
+ "content_sha256": "a34c02738b3dee24784333a6d63ce95d83a2aef2b138a46a16082a7c510803bf",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "a34c02738b3dee24784333a6d63ce95d83a2aef2b138a46a16082a7c510803bf",
+   "model": "codex-default/high",
+   "at": "2026-11-04T10:10:25+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "a34c02738b3dee24784333a6d63ce95d83a2aef2b138a46a16082a7c510803bf",
+   "model": "codex-default/high",
+   "at": "2026-11-04T10:10:25+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "a34c02738b3dee24784333a6d63ce95d83a2aef2b138a46a16082a7c510803bf",
+   "model": "codex-default/high",
+   "at": "2026-11-04T10:10:25+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "a34c02738b3dee24784333a6d63ce95d83a2aef2b138a46a16082a7c510803bf",
+   "model": "codex-default/high",
+   "at": "2026-11-04T10:10:25+09:00"
+  }
+ ],
+ "evidence": [
+  {
+   "h2": "風別の逃げ：追い風4m以上は1,021レース中499回",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "scripts/analysis/analyze-weather-in-escape.js",
+    "src/utils/windDirection.js"
+   ]
+  },
+  {
+   "h2": "逃げ以外の勝ち方：差し・まくり・まくり差し",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "画面の「イン逃げ率」は、進入1コースの1着率",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "public/data/weather-in-escape.json",
+    "src/locales/ja/common.json",
+    "scripts/analysis/analyze-weather-in-escape.js"
+   ]
+  },
+  {
+   "h2": "今日の宮島では、風の行から展示の進入へ進む",
+   "evidence": [
+    "src/data/venueWaterProfiles.js",
+    "src/utils/windDirection.js",
+    "src/pages/VenueRaceListPage.jsx",
+    "data/analysis/weather-in-escape.json",
+    "public/blog/winning-technique-analysis-guide.md"
+   ]
+  },
+  {
+   "h2": "数字の範囲と注意",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "docs/design/weather-in-escape/results.md",
+    "scripts/analysis/analyze-weather-in-escape.js"
+   ]
+  }
+ ],
+ "sources": "scripts/analysis/analyze-weather-in-escape.js:120〜130（風区分）・165〜183（1コース艇と1着艇）・360〜385（出力）の data/analysis/weather-in-escape.json#wind.venues.17.bins（1398〜1461行）。2020-02-01〜2026-09-30、公式K/Bファイルの解析済み記録。1コース艇・1着艇があり風を区分できた宮島のレースを各行のn、決まり手別件数を分子とし、件数÷n×100を小数1桁に1回だけ丸めた。1コース1着率はinWinRateの転記。\n画面の照合はpublic/data/weather-in-escape.json#venues.17.bins、地理方位はsrc/utils/windDirection.jsの宮島offset45度と集計スクリプトの同じ区分。逃げ比較は24場×風5区分の全10組＝240組を含めるBonferroni、差し比較は24場で補正。",
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-04T10:12:36+09:00",
+ "run": "20261104T100158-seo-human",
+ "engine": "codex"
+}
