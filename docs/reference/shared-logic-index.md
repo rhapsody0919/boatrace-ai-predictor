@@ -315,6 +315,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/meetPageModel.js` | 節ページ（/venue/:venueCode/meet/:startDate、BOA-682）の純関数。 | isOutOfScopeMeetTitle, seriesCoveringDate, needsMeetSeries, meetLinkStartDateOf, meetBannerSeriesOf ほか11件 |
 | `src/utils/motorFreshRate.js` | 新しいモーターの最初の開催で、公式の2連率が 0 のときに何を出すか（BOA-830、 | isWithinFreshMotorWindow, motorRateView, motorRate3View, FRESH_MOTOR_WINDOW_DAYS |
 | `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, motorGenerationStartAsOf, isInMotorGeneration, isVenueRankSnapshotBeforeGeneration, formatGenerationDate ほか2件 |
+| `src/utils/motorPowerIndex.js` | モーターの機力指数（BOA-265）と、その集計の期間（BOA-329）の純関数（BOA-1245）。 | motorWindowFrom, computeMotorPowerIndex, computeVenueMotorPowerIndexes |
 | `src/utils/motorUsage.js` | モーターの使用回数と「未使用（新モーター・実績なし）」の判定（BOA-702）。 | motorUsageCount, isUnusedMotor |
 | `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
 | `src/utils/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
@@ -347,6 +348,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/racerOfficialPeriodStats.js` | 選手ページの「公式の期別成績」と「進入コース別成績（公式）」の表示用の値を作る（純関数、GS00）。 | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか3件 |
 | `src/utils/racerPagePath.js` | 選手ページの「STの推移」のアンカー（BOA-879） | ST_TREND_ID, racerPagePath |
 | `src/utils/racerStats.js` | 予想バッチが保存する racerStats（predictions.feature_contributions.racerStats）を、 | toWakuRacerStats |
+| `src/utils/racerVenueBoatStats.js` | 選手ページの会場×枠番×グレード×レース種別の絞り込み集計（純関数、BOA-1244）。 | toReturnRate, racerHistoryCutoff, aggregateRacerVenueBoatStats |
 | `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
 | `src/utils/share.js` | SNSシェア関数 | shareUrlFor, generateInCautionShareText, generatePredictionShareText, generateTurnHitShareText, generateResultShareText |
 | `src/utils/shareEvents.js` | AI用にコピー・SNS シェアの GA4 のイベント（BOA-822 の計測、docs/design/in-collapse-caution/measureme… | aiCopyEventOf, raceShareEventOf, SHARE_CHANNELS, SHARE_KINDS |
@@ -366,6 +368,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/turnPrediction.js` | 決まり手ユーティリティ（フロントエンド用） | pickHitPattern, techniqueDiffers, isAsPredicted |
 | `src/utils/turnTimeVenues.js` | オリジナル展示の「まわり足」が会場独自の計測で、他場と値の水準が違う会場（会場コード）。 | hasDistinctTurnTime, DISTINCT_TURN_TIME_VENUE_CODES |
 | `src/utils/venueMotorRanking.js` | 会場のモーターの順位と並べ替え（純関数、BOA-428）。 | rankBy, sortMotorRows, formatMotorRate, formatSlashDate, currentSeriesRiders ほか3件 |
+| `src/utils/venuePayoutStats.js` | 会場ごとの配当・逃げの集計（純関数、BOA-1242）。 | tallyVenuePayouts, venuePayoutRates, rankVenuesByPayout, HIGH_PAYOUT_YEN |
 | `src/utils/venuePlaceRates.js` | 会場特徴カードの「もっと詳しく」（BOA-269）の集計。 | placeRatesByBoat, techniqueBreakdown, nationalWinRateByBoat, groupWinningTechniqueRows, poolTechniqueCounts ほか1件 |
 | `src/utils/venueSeriesTitle.js` | 会場ページの title・description に入れる節タイトルを決める（集客レーン Phase3、2026-09-30）。 | getVenueSeriesTitle |
 | `src/utils/venueSummary.js` | 会場ページ（/venue/N）の見出しの直下に置く常設の要約2行（BOA-1189 GS02-b、2026-10-31 オーナー決定）。 | venueSummaryLines, venueSummaryPeriod, formatCount, formatRate |
@@ -404,9 +407,9 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
 | `src/services/snsHubService.js` | — | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか16件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
-| `src/services/supabaseDataService.js` | Supabase データサービス | clearCache, aggregateRacerVenueBoatStats, aggregateRacerCrossStats, FETCH_ALL_BY_IN_ORDER, supabaseDataService |
+| `src/services/supabaseDataService.js` | Supabase データサービス | clearCache, aggregateRacerCrossStats, FETCH_ALL_BY_IN_ORDER, supabaseDataService |
 | `src/services/watsonService.js` | ワトソン予想 データ取得サービス | getWatsonModelInfo, getWatsonPredictions |
 
 ---
 
-対象 367 ファイル / export 2182 件。
+対象 370 ファイル / export 2191 件。

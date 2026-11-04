@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1640,
-    "filesWithAccess": 268,
-    "tableReaders": 969,
+    "sourceFiles": 1648,
+    "filesWithAccess": 269,
+    "tableReaders": 983,
     "tableWriters": 187,
     "rpcCallers": 51,
     "nameMentions": 232,
@@ -43,7 +43,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1892",
+          "ref": "src/services/supabaseDataService.js:1889",
           "op": "select",
           "via": "client",
           "columns": [
@@ -52,7 +52,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5837",
+          "ref": "src/services/supabaseDataService.js:5800",
           "op": "select",
           "via": "client",
           "columns": [
@@ -61,7 +61,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5863",
+          "ref": "src/services/supabaseDataService.js:5826",
           "op": "select",
           "via": "client",
           "columns": [
@@ -70,7 +70,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5885",
+          "ref": "src/services/supabaseDataService.js:5848",
           "op": "select",
           "via": "client",
           "columns": [
@@ -120,10 +120,10 @@
         "key": {
           "readers": [
             "api/accuracy/index.js:31",
-            "src/services/supabaseDataService.js:1892",
-            "src/services/supabaseDataService.js:5837",
-            "src/services/supabaseDataService.js:5863",
-            "src/services/supabaseDataService.js:5885"
+            "src/services/supabaseDataService.js:1889",
+            "src/services/supabaseDataService.js:5800",
+            "src/services/supabaseDataService.js:5826",
+            "src/services/supabaseDataService.js:5848"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:482",
@@ -137,10 +137,10 @@
         "data": {
           "readers": [
             "api/accuracy/index.js:31",
-            "src/services/supabaseDataService.js:1892",
-            "src/services/supabaseDataService.js:5837",
-            "src/services/supabaseDataService.js:5863",
-            "src/services/supabaseDataService.js:5885"
+            "src/services/supabaseDataService.js:1889",
+            "src/services/supabaseDataService.js:5800",
+            "src/services/supabaseDataService.js:5826",
+            "src/services/supabaseDataService.js:5848"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:482",
@@ -1049,7 +1049,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:7806",
+          "ref": "src/services/supabaseDataService.js:7710",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1113,7 +1113,7 @@
             "scripts/daily/update-moriarty-outcomes.js:30",
             "src/services/moriartyService.js:141",
             "src/services/moriartyService.js:68",
-            "src/services/supabaseDataService.js:7806"
+            "src/services/supabaseDataService.js:7710"
           ],
           "writers": [],
           "sql": [
@@ -1131,7 +1131,7 @@
             "src/services/moriartyService.js:141",
             "src/services/moriartyService.js:268",
             "src/services/moriartyService.js:68",
-            "src/services/supabaseDataService.js:7806"
+            "src/services/supabaseDataService.js:7710"
           ],
           "writers": [],
           "sql": [
@@ -1146,7 +1146,7 @@
             "src/services/moriartyService.js:141",
             "src/services/moriartyService.js:268",
             "src/services/moriartyService.js:68",
-            "src/services/supabaseDataService.js:7806"
+            "src/services/supabaseDataService.js:7710"
           ],
           "writers": [],
           "sql": [
@@ -1157,7 +1157,7 @@
           "readers": [
             "scripts/daily/update-moriarty-outcomes.js:30",
             "src/services/moriartyService.js:141",
-            "src/services/supabaseDataService.js:7806"
+            "src/services/supabaseDataService.js:7710"
           ],
           "writers": [],
           "sql": []
@@ -1172,21 +1172,21 @@
             "scripts/daily/update-moriarty-outcomes.js:30",
             "src/services/moriartyService.js:141",
             "src/services/moriartyService.js:268",
-            "src/services/supabaseDataService.js:7806"
+            "src/services/supabaseDataService.js:7710"
           ],
           "writers": [],
           "sql": []
         },
         "expected_hit_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:7806"
+            "src/services/supabaseDataService.js:7710"
           ],
           "writers": [],
           "sql": []
         },
         "expected_payout": {
           "readers": [
-            "src/services/supabaseDataService.js:7806"
+            "src/services/supabaseDataService.js:7710"
           ],
           "writers": [],
           "sql": []
@@ -1625,6 +1625,12 @@
           ]
         },
         {
+          "ref": "scripts/sns/rank-data.js:514",
+          "op": "select",
+          "via": "helper:readAllIn",
+          "columns": []
+        },
+        {
           "ref": "src/services/racerService.js:148",
           "op": "select",
           "via": "client",
@@ -1648,7 +1654,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:468",
+          "ref": "src/services/supabaseDataService.js:475",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1658,37 +1664,37 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:771",
+          "ref": "src/services/supabaseDataService.js:768",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:3747",
+          "ref": "src/services/supabaseDataService.js:3718",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4629",
+          "ref": "src/services/supabaseDataService.js:4596",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4704",
+          "ref": "src/services/supabaseDataService.js:4671",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4848",
+          "ref": "src/services/supabaseDataService.js:4811",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:5100",
+          "ref": "src/services/supabaseDataService.js:5063",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1698,19 +1704,19 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5156",
+          "ref": "src/services/supabaseDataService.js:5119",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:5247",
+          "ref": "src/services/supabaseDataService.js:5210",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:5325",
+          "ref": "src/services/supabaseDataService.js:5288",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1720,13 +1726,13 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5368",
+          "ref": "src/services/supabaseDataService.js:5331",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:5438",
+          "ref": "src/services/supabaseDataService.js:5401",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1749,7 +1755,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5454",
+          "ref": "src/services/supabaseDataService.js:5417",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1763,7 +1769,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5516",
+          "ref": "src/services/supabaseDataService.js:5479",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1777,13 +1783,13 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5565",
+          "ref": "src/services/supabaseDataService.js:5528",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:5915",
+          "ref": "src/services/supabaseDataService.js:5878",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1795,7 +1801,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6903",
+          "ref": "src/services/supabaseDataService.js:6807",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1866,14 +1872,14 @@
             "scripts/sns/push-setsu-kiryoku-short.js:969",
             "src/services/racerService.js:148",
             "src/services/sherlockService.js:83",
-            "src/services/supabaseDataService.js:468",
-            "src/services/supabaseDataService.js:5100",
-            "src/services/supabaseDataService.js:5325",
-            "src/services/supabaseDataService.js:5438",
-            "src/services/supabaseDataService.js:5454",
-            "src/services/supabaseDataService.js:5516",
-            "src/services/supabaseDataService.js:5915",
-            "src/services/supabaseDataService.js:6903"
+            "src/services/supabaseDataService.js:475",
+            "src/services/supabaseDataService.js:5063",
+            "src/services/supabaseDataService.js:5288",
+            "src/services/supabaseDataService.js:5401",
+            "src/services/supabaseDataService.js:5417",
+            "src/services/supabaseDataService.js:5479",
+            "src/services/supabaseDataService.js:5878",
+            "src/services/supabaseDataService.js:6807"
           ],
           "writers": [],
           "sql": [
@@ -1899,14 +1905,14 @@
             "scripts/maintenance/verify-pre-race-parsers.js:1868",
             "src/services/racerService.js:148",
             "src/services/sherlockService.js:83",
-            "src/services/supabaseDataService.js:468",
-            "src/services/supabaseDataService.js:5100",
-            "src/services/supabaseDataService.js:5325",
-            "src/services/supabaseDataService.js:5438",
-            "src/services/supabaseDataService.js:5454",
-            "src/services/supabaseDataService.js:5516",
-            "src/services/supabaseDataService.js:5915",
-            "src/services/supabaseDataService.js:6903"
+            "src/services/supabaseDataService.js:475",
+            "src/services/supabaseDataService.js:5063",
+            "src/services/supabaseDataService.js:5288",
+            "src/services/supabaseDataService.js:5401",
+            "src/services/supabaseDataService.js:5417",
+            "src/services/supabaseDataService.js:5479",
+            "src/services/supabaseDataService.js:5878",
+            "src/services/supabaseDataService.js:6807"
           ],
           "writers": [],
           "sql": [
@@ -1928,12 +1934,12 @@
             "scripts/maintenance/verify-analogy-v16.js:286",
             "src/services/racerService.js:148",
             "src/services/sherlockService.js:83",
-            "src/services/supabaseDataService.js:5325",
-            "src/services/supabaseDataService.js:5438",
-            "src/services/supabaseDataService.js:5454",
-            "src/services/supabaseDataService.js:5516",
-            "src/services/supabaseDataService.js:5915",
-            "src/services/supabaseDataService.js:6903"
+            "src/services/supabaseDataService.js:5288",
+            "src/services/supabaseDataService.js:5401",
+            "src/services/supabaseDataService.js:5417",
+            "src/services/supabaseDataService.js:5479",
+            "src/services/supabaseDataService.js:5878",
+            "src/services/supabaseDataService.js:6807"
           ],
           "writers": [],
           "sql": [
@@ -1949,9 +1955,9 @@
             "scripts/daily/scrape-exhibition-data.js:536",
             "scripts/lib/analogyV16Exhibition.js:208",
             "src/services/sherlockService.js:83",
-            "src/services/supabaseDataService.js:5100",
-            "src/services/supabaseDataService.js:5516",
-            "src/services/supabaseDataService.js:5915"
+            "src/services/supabaseDataService.js:5063",
+            "src/services/supabaseDataService.js:5479",
+            "src/services/supabaseDataService.js:5878"
           ],
           "writers": [],
           "sql": [
@@ -1963,9 +1969,9 @@
         },
         "tilt": {
           "readers": [
-            "src/services/supabaseDataService.js:5438",
-            "src/services/supabaseDataService.js:5454",
-            "src/services/supabaseDataService.js:5516"
+            "src/services/supabaseDataService.js:5401",
+            "src/services/supabaseDataService.js:5417",
+            "src/services/supabaseDataService.js:5479"
           ],
           "writers": [],
           "sql": []
@@ -1973,8 +1979,8 @@
         "propeller_change": {
           "readers": [
             "src/services/racerService.js:148",
-            "src/services/supabaseDataService.js:5438",
-            "src/services/supabaseDataService.js:5454"
+            "src/services/supabaseDataService.js:5401",
+            "src/services/supabaseDataService.js:5417"
           ],
           "writers": [],
           "sql": []
@@ -1982,51 +1988,51 @@
         "parts_changed": {
           "readers": [
             "src/services/racerService.js:148",
-            "src/services/supabaseDataService.js:5438",
-            "src/services/supabaseDataService.js:5454"
+            "src/services/supabaseDataService.js:5401",
+            "src/services/supabaseDataService.js:5417"
           ],
           "writers": [],
           "sql": []
         },
         "adjustment_weight": {
           "readers": [
-            "src/services/supabaseDataService.js:5438",
-            "src/services/supabaseDataService.js:5454"
+            "src/services/supabaseDataService.js:5401",
+            "src/services/supabaseDataService.js:5417"
           ],
           "writers": [],
           "sql": []
         },
         "today_weight": {
           "readers": [
-            "src/services/supabaseDataService.js:5438"
+            "src/services/supabaseDataService.js:5401"
           ],
           "writers": [],
           "sql": []
         },
         "prev_race_no": {
           "readers": [
-            "src/services/supabaseDataService.js:5438"
+            "src/services/supabaseDataService.js:5401"
           ],
           "writers": [],
           "sql": []
         },
         "prev_entry_course": {
           "readers": [
-            "src/services/supabaseDataService.js:5438"
+            "src/services/supabaseDataService.js:5401"
           ],
           "writers": [],
           "sql": []
         },
         "prev_start_timing": {
           "readers": [
-            "src/services/supabaseDataService.js:5438"
+            "src/services/supabaseDataService.js:5401"
           ],
           "writers": [],
           "sql": []
         },
         "prev_finish_rank": {
           "readers": [
-            "src/services/supabaseDataService.js:5438"
+            "src/services/supabaseDataService.js:5401"
           ],
           "writers": [],
           "sql": []
@@ -2038,7 +2044,7 @@
         },
         "updated_at": {
           "readers": [
-            "src/services/supabaseDataService.js:5438"
+            "src/services/supabaseDataService.js:5401"
           ],
           "writers": [],
           "sql": [
@@ -2048,7 +2054,7 @@
         "exhibition_course": {
           "readers": [
             "scripts/lib/analogyV16Exhibition.js:208",
-            "src/services/supabaseDataService.js:5438"
+            "src/services/supabaseDataService.js:5401"
           ],
           "writers": [],
           "sql": []
@@ -2056,16 +2062,16 @@
         "start_flag": {
           "readers": [
             "scripts/lib/analogyV16Exhibition.js:208",
-            "src/services/supabaseDataService.js:468",
-            "src/services/supabaseDataService.js:5516",
-            "src/services/supabaseDataService.js:5915"
+            "src/services/supabaseDataService.js:475",
+            "src/services/supabaseDataService.js:5479",
+            "src/services/supabaseDataService.js:5878"
           ],
           "writers": [],
           "sql": []
         },
         "prev_finish_mark": {
           "readers": [
-            "src/services/supabaseDataService.js:5438"
+            "src/services/supabaseDataService.js:5401"
           ],
           "writers": [],
           "sql": []
@@ -2085,8 +2091,8 @@
             "scripts/lib/snsTodayDigestV3.js:106",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/sns/push-setsu-kiryoku-short.js:969",
-            "src/services/supabaseDataService.js:5438",
-            "src/services/supabaseDataService.js:5516"
+            "src/services/supabaseDataService.js:5401",
+            "src/services/supabaseDataService.js:5479"
           ],
           "writers": [],
           "sql": []
@@ -2122,7 +2128,7 @@
       },
       "readers": [
         {
-          "ref": "src/services/supabaseDataService.js:7785",
+          "ref": "src/services/supabaseDataService.js:7689",
           "op": "select",
           "via": "client",
           "columns": [
@@ -2162,14 +2168,14 @@
         "venue_code": {
           "readers": [
             "scripts/daily/update-exhibition-time-top-stats.js:137",
-            "src/services/supabaseDataService.js:7785"
+            "src/services/supabaseDataService.js:7689"
           ],
           "writers": [],
           "sql": []
         },
         "boat_number": {
           "readers": [
-            "src/services/supabaseDataService.js:7785"
+            "src/services/supabaseDataService.js:7689"
           ],
           "writers": [],
           "sql": []
@@ -3051,7 +3057,7 @@
           "test": true
         },
         {
-          "ref": "src/services/supabaseDataService.js:6642",
+          "ref": "src/services/supabaseDataService.js:6546",
           "op": "select",
           "via": "client",
           "columns": [
@@ -3092,14 +3098,14 @@
         "venue_code": {
           "readers": [
             "scripts/daily/update-losing-technique-stats.js:152",
-            "src/services/supabaseDataService.js:6642"
+            "src/services/supabaseDataService.js:6546"
           ],
           "writers": [],
           "sql": []
         },
         "boat_number": {
           "readers": [
-            "src/services/supabaseDataService.js:6642"
+            "src/services/supabaseDataService.js:6546"
           ],
           "writers": [],
           "sql": []
@@ -3121,7 +3127,7 @@
         },
         "percentage": {
           "readers": [
-            "src/services/supabaseDataService.js:6642"
+            "src/services/supabaseDataService.js:6546"
           ],
           "writers": [],
           "sql": []
@@ -3554,7 +3560,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1595",
+          "ref": "src/services/supabaseDataService.js:1592",
           "op": "select",
           "via": "client",
           "columns": [
@@ -3604,7 +3610,7 @@
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
             "scripts/daily/calculate-accuracy.js:536",
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [],
           "sql": [
@@ -3614,7 +3620,7 @@
         },
         "display_name": {
           "readers": [
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [],
           "sql": [
@@ -3729,7 +3735,7 @@
         "total_predictions": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3742,7 +3748,7 @@
         "hit_rate_win": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3755,7 +3761,7 @@
         "recovery_rate_win": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3793,7 +3799,7 @@
         "hit_rate_place": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3805,7 +3811,7 @@
         "hit_rate_trifecta": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3817,7 +3823,7 @@
         "hit_rate_trio": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3829,7 +3835,7 @@
         "recovery_rate_place": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3841,7 +3847,7 @@
         "recovery_rate_trifecta": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3853,7 +3859,7 @@
         "recovery_rate_trio": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/supabaseDataService.js:1595"
+            "src/services/supabaseDataService.js:1592"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3917,7 +3923,7 @@
           "test": true
         },
         {
-          "ref": "src/services/supabaseDataService.js:8083",
+          "ref": "src/services/supabaseDataService.js:7987",
           "op": "select",
           "via": "client",
           "columns": [
@@ -3953,7 +3959,7 @@
             "scripts/daily/generate-morning-digest.js:893",
             "scripts/daily/generate-morning-digest.js:922",
             "scripts/maintenance/verify-morning-digest.js:40",
-            "src/services/supabaseDataService.js:8083"
+            "src/services/supabaseDataService.js:7987"
           ],
           "writers": [],
           "sql": []
@@ -4050,7 +4056,7 @@
           "test": true
         },
         {
-          "ref": "src/services/supabaseDataService.js:8088",
+          "ref": "src/services/supabaseDataService.js:7992",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4093,21 +4099,21 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:898",
             "scripts/maintenance/verify-morning-digest.js:58",
-            "src/services/supabaseDataService.js:8088"
+            "src/services/supabaseDataService.js:7992"
           ],
           "writers": [],
           "sql": []
         },
         "section": {
           "readers": [
-            "src/services/supabaseDataService.js:8088"
+            "src/services/supabaseDataService.js:7992"
           ],
           "writers": [],
           "sql": []
         },
         "rank": {
           "readers": [
-            "src/services/supabaseDataService.js:8088"
+            "src/services/supabaseDataService.js:7992"
           ],
           "writers": [],
           "sql": []
@@ -4287,7 +4293,7 @@
           "test": true
         },
         {
-          "ref": "src/services/supabaseDataService.js:3509",
+          "ref": "src/services/supabaseDataService.js:3480",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4296,7 +4302,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3529",
+          "ref": "src/services/supabaseDataService.js:3500",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4309,7 +4315,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6879",
+          "ref": "src/services/supabaseDataService.js:6783",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4323,7 +4329,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:8156",
+          "ref": "src/services/supabaseDataService.js:8060",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4345,10 +4351,10 @@
             "scripts/lib/motorPretestJob.js:252",
             "scripts/lib/motorPretestJob.js:269",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
-            "src/services/supabaseDataService.js:3509",
-            "src/services/supabaseDataService.js:3529",
-            "src/services/supabaseDataService.js:6879",
-            "src/services/supabaseDataService.js:8156"
+            "src/services/supabaseDataService.js:3480",
+            "src/services/supabaseDataService.js:3500",
+            "src/services/supabaseDataService.js:6783",
+            "src/services/supabaseDataService.js:8060"
           ],
           "writers": [],
           "sql": []
@@ -4358,10 +4364,10 @@
             "scripts/lib/motorPretestJob.js:252",
             "scripts/lib/motorPretestJob.js:269",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
-            "src/services/supabaseDataService.js:3509",
-            "src/services/supabaseDataService.js:3529",
-            "src/services/supabaseDataService.js:6879",
-            "src/services/supabaseDataService.js:8156"
+            "src/services/supabaseDataService.js:3480",
+            "src/services/supabaseDataService.js:3500",
+            "src/services/supabaseDataService.js:6783",
+            "src/services/supabaseDataService.js:8060"
           ],
           "writers": [],
           "sql": []
@@ -4370,31 +4376,31 @@
           "readers": [
             "scripts/lib/motorPretestJob.js:269",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
-            "src/services/supabaseDataService.js:3529",
-            "src/services/supabaseDataService.js:6879",
-            "src/services/supabaseDataService.js:8156"
+            "src/services/supabaseDataService.js:3500",
+            "src/services/supabaseDataService.js:6783",
+            "src/services/supabaseDataService.js:8060"
           ],
           "writers": [],
           "sql": []
         },
         "racer_class": {
           "readers": [
-            "src/services/supabaseDataService.js:6879"
+            "src/services/supabaseDataService.js:6783"
           ],
           "writers": [],
           "sql": []
         },
         "motor_number": {
           "readers": [
-            "src/services/supabaseDataService.js:3529",
-            "src/services/supabaseDataService.js:6879"
+            "src/services/supabaseDataService.js:3500",
+            "src/services/supabaseDataService.js:6783"
           ],
           "writers": [],
           "sql": []
         },
         "motor_2rate": {
           "readers": [
-            "src/services/supabaseDataService.js:3529"
+            "src/services/supabaseDataService.js:3500"
           ],
           "writers": [],
           "sql": []
@@ -4412,9 +4418,9 @@
         "pretest_time": {
           "readers": [
             "scripts/maintenance/verify-pretest-row-pick.js:74",
-            "src/services/supabaseDataService.js:3529",
-            "src/services/supabaseDataService.js:6879",
-            "src/services/supabaseDataService.js:8156"
+            "src/services/supabaseDataService.js:3500",
+            "src/services/supabaseDataService.js:6783",
+            "src/services/supabaseDataService.js:8060"
           ],
           "writers": [],
           "sql": []
@@ -4422,8 +4428,8 @@
         "pretest_rank": {
           "readers": [
             "scripts/maintenance/verify-pretest-row-pick.js:74",
-            "src/services/supabaseDataService.js:6879",
-            "src/services/supabaseDataService.js:8156"
+            "src/services/supabaseDataService.js:6783",
+            "src/services/supabaseDataService.js:8060"
           ],
           "writers": [],
           "sql": []
@@ -4563,7 +4569,7 @@
       },
       "readers": [
         {
-          "ref": "src/services/supabaseDataService.js:7696",
+          "ref": "src/services/supabaseDataService.js:7600",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4604,14 +4610,14 @@
         "venue_code": {
           "readers": [
             "scripts/daily/update-nige-outcome-distribution.js:119",
-            "src/services/supabaseDataService.js:7696"
+            "src/services/supabaseDataService.js:7600"
           ],
           "writers": [],
           "sql": []
         },
         "first_boat": {
           "readers": [
-            "src/services/supabaseDataService.js:7696"
+            "src/services/supabaseDataService.js:7600"
           ],
           "writers": [],
           "sql": []
@@ -4628,7 +4634,7 @@
         },
         "count_90days": {
           "readers": [
-            "src/services/supabaseDataService.js:7696"
+            "src/services/supabaseDataService.js:7600"
           ],
           "writers": [],
           "sql": []
@@ -4688,7 +4694,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:7662",
+          "ref": "src/services/supabaseDataService.js:7566",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4723,28 +4729,28 @@
       "columns": {
         "venue_code": {
           "readers": [
-            "src/services/supabaseDataService.js:7662"
+            "src/services/supabaseDataService.js:7566"
           ],
           "writers": [],
           "sql": []
         },
         "second_course": {
           "readers": [
-            "src/services/supabaseDataService.js:7662"
+            "src/services/supabaseDataService.js:7566"
           ],
           "writers": [],
           "sql": []
         },
         "window_start": {
           "readers": [
-            "src/services/supabaseDataService.js:7662"
+            "src/services/supabaseDataService.js:7566"
           ],
           "writers": [],
           "sql": []
         },
         "window_end": {
           "readers": [
-            "src/services/supabaseDataService.js:7662"
+            "src/services/supabaseDataService.js:7566"
           ],
           "writers": [],
           "sql": [
@@ -4753,42 +4759,42 @@
         },
         "window_days": {
           "readers": [
-            "src/services/supabaseDataService.js:7662"
+            "src/services/supabaseDataService.js:7566"
           ],
           "writers": [],
           "sql": []
         },
         "total_races": {
           "readers": [
-            "src/services/supabaseDataService.js:7662"
+            "src/services/supabaseDataService.js:7566"
           ],
           "writers": [],
           "sql": []
         },
         "nige_races": {
           "readers": [
-            "src/services/supabaseDataService.js:7662"
+            "src/services/supabaseDataService.js:7566"
           ],
           "writers": [],
           "sql": []
         },
         "second_count": {
           "readers": [
-            "src/services/supabaseDataService.js:7662"
+            "src/services/supabaseDataService.js:7566"
           ],
           "writers": [],
           "sql": []
         },
         "second_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:7662"
+            "src/services/supabaseDataService.js:7566"
           ],
           "writers": [],
           "sql": []
         },
         "exacta_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:7662"
+            "src/services/supabaseDataService.js:7566"
           ],
           "writers": [],
           "sql": []
@@ -4869,7 +4875,7 @@
           "test": true
         },
         {
-          "ref": "src/services/supabaseDataService.js:2082",
+          "ref": "src/services/supabaseDataService.js:2079",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4878,7 +4884,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2135",
+          "ref": "src/services/supabaseDataService.js:2132",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4920,7 +4926,7 @@
           "readers": [
             "api/outcome-distribution/index.js:66",
             "scripts/daily/update-outcome-distribution.js:114",
-            "src/services/supabaseDataService.js:2135"
+            "src/services/supabaseDataService.js:2132"
           ],
           "writers": [],
           "sql": []
@@ -4928,8 +4934,8 @@
         "first_boat": {
           "readers": [
             "api/outcome-distribution/index.js:66",
-            "src/services/supabaseDataService.js:2082",
-            "src/services/supabaseDataService.js:2135"
+            "src/services/supabaseDataService.js:2079",
+            "src/services/supabaseDataService.js:2132"
           ],
           "writers": [],
           "sql": []
@@ -4947,8 +4953,8 @@
         "count_90days": {
           "readers": [
             "api/outcome-distribution/index.js:66",
-            "src/services/supabaseDataService.js:2082",
-            "src/services/supabaseDataService.js:2135"
+            "src/services/supabaseDataService.js:2079",
+            "src/services/supabaseDataService.js:2132"
           ],
           "writers": [],
           "sql": []
@@ -5805,7 +5811,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1612",
+          "ref": "src/services/supabaseDataService.js:1609",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5822,7 +5828,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5619",
+          "ref": "src/services/supabaseDataService.js:5582",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5985,8 +5991,8 @@
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:69",
             "src/services/ruleMatchService.js:104",
-            "src/services/supabaseDataService.js:1612",
-            "src/services/supabaseDataService.js:5619"
+            "src/services/supabaseDataService.js:1609",
+            "src/services/supabaseDataService.js:5582"
           ],
           "writers": [],
           "sql": [
@@ -6029,8 +6035,8 @@
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:69",
             "src/services/ruleMatchService.js:104",
-            "src/services/supabaseDataService.js:1612",
-            "src/services/supabaseDataService.js:5619"
+            "src/services/supabaseDataService.js:1609",
+            "src/services/supabaseDataService.js:5582"
           ],
           "writers": [],
           "sql": [
@@ -6162,7 +6168,7 @@
             "scripts/daily/scrape-results.js:1004",
             "scripts/daily/todays-volatility-digest.js:56",
             "scripts/lib/inCautionHealth.js:127",
-            "src/services/supabaseDataService.js:5619"
+            "src/services/supabaseDataService.js:5582"
           ],
           "writers": [],
           "sql": [
@@ -6174,7 +6180,7 @@
         "is_hit_win": {
           "readers": [
             "scripts/maintenance/delete-phantom-races.js:138",
-            "src/services/supabaseDataService.js:1612"
+            "src/services/supabaseDataService.js:1609"
           ],
           "writers": [],
           "sql": [
@@ -6189,7 +6195,7 @@
           "readers": [
             "scripts/maintenance/backfill-place-hits.js:14",
             "scripts/maintenance/delete-phantom-races.js:138",
-            "src/services/supabaseDataService.js:1612"
+            "src/services/supabaseDataService.js:1609"
           ],
           "writers": [
             "scripts/maintenance/backfill-place-hits.js:60"
@@ -6205,7 +6211,7 @@
         "is_hit_trifecta": {
           "readers": [
             "scripts/maintenance/delete-phantom-races.js:138",
-            "src/services/supabaseDataService.js:1612"
+            "src/services/supabaseDataService.js:1609"
           ],
           "writers": [],
           "sql": [
@@ -6219,7 +6225,7 @@
         "is_hit_trio": {
           "readers": [
             "scripts/maintenance/delete-phantom-races.js:138",
-            "src/services/supabaseDataService.js:1612"
+            "src/services/supabaseDataService.js:1609"
           ],
           "writers": [],
           "sql": [
@@ -6232,7 +6238,7 @@
         },
         "payout_win": {
           "readers": [
-            "src/services/supabaseDataService.js:1612"
+            "src/services/supabaseDataService.js:1609"
           ],
           "writers": [],
           "sql": [
@@ -6246,7 +6252,7 @@
         },
         "payout_place": {
           "readers": [
-            "src/services/supabaseDataService.js:1612"
+            "src/services/supabaseDataService.js:1609"
           ],
           "writers": [
             "scripts/maintenance/backfill-place-hits.js:60"
@@ -6261,7 +6267,7 @@
         },
         "payout_trifecta": {
           "readers": [
-            "src/services/supabaseDataService.js:1612"
+            "src/services/supabaseDataService.js:1609"
           ],
           "writers": [],
           "sql": [
@@ -6276,7 +6282,7 @@
         "payout_trio": {
           "readers": [
             "scripts/analysis/compare-pcexpect.js:120",
-            "src/services/supabaseDataService.js:1612"
+            "src/services/supabaseDataService.js:1609"
           ],
           "writers": [],
           "sql": [
@@ -6311,7 +6317,7 @@
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:69",
             "src/services/ruleMatchService.js:104",
-            "src/services/supabaseDataService.js:5619"
+            "src/services/supabaseDataService.js:5582"
           ],
           "writers": [],
           "sql": [
@@ -6645,6 +6651,12 @@
           ]
         },
         {
+          "ref": "scripts/sns/rank-data.js:521",
+          "op": "select",
+          "via": "helper:readAllIn",
+          "columns": []
+        },
+        {
           "ref": "scripts/verification/verify-series-points-border.mjs:79",
           "op": "select",
           "via": "client",
@@ -6683,7 +6695,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:630",
+          "ref": "src/services/supabaseDataService.js:637",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6693,7 +6705,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3252",
+          "ref": "src/services/supabaseDataService.js:3223",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6702,19 +6714,19 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4639",
+          "ref": "src/services/supabaseDataService.js:4606",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4854",
+          "ref": "src/services/supabaseDataService.js:4817",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:6815",
+          "ref": "src/services/supabaseDataService.js:6719",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6726,7 +6738,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:7362",
+          "ref": "src/services/supabaseDataService.js:7266",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6831,10 +6843,10 @@
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/currentMeetEntries.js:44",
-            "src/services/supabaseDataService.js:3252",
-            "src/services/supabaseDataService.js:630",
-            "src/services/supabaseDataService.js:6815",
-            "src/services/supabaseDataService.js:7362"
+            "src/services/supabaseDataService.js:3223",
+            "src/services/supabaseDataService.js:637",
+            "src/services/supabaseDataService.js:6719",
+            "src/services/supabaseDataService.js:7266"
           ],
           "writers": [],
           "sql": [
@@ -6922,8 +6934,8 @@
         "race_title": {
           "readers": [
             "scripts/lib/snsTodayDigestV3.js:98",
-            "src/services/supabaseDataService.js:6815",
-            "src/services/supabaseDataService.js:7362"
+            "src/services/supabaseDataService.js:6719",
+            "src/services/supabaseDataService.js:7266"
           ],
           "writers": [],
           "sql": [
@@ -6939,9 +6951,9 @@
             "scripts/lib/snsTodayDigestV3.js:98",
             "scripts/maintenance/backfill-series-day.js:175",
             "src/services/currentMeetEntries.js:44",
-            "src/services/supabaseDataService.js:630",
-            "src/services/supabaseDataService.js:6815",
-            "src/services/supabaseDataService.js:7362"
+            "src/services/supabaseDataService.js:637",
+            "src/services/supabaseDataService.js:6719",
+            "src/services/supabaseDataService.js:7266"
           ],
           "writers": [
             "scripts/maintenance/backfill-series-day.js:175"
@@ -6959,9 +6971,9 @@
             "scripts/lib/snsTodayDigestV3.js:98",
             "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/currentMeetEntries.js:44",
-            "src/services/supabaseDataService.js:630",
-            "src/services/supabaseDataService.js:6815",
-            "src/services/supabaseDataService.js:7362"
+            "src/services/supabaseDataService.js:637",
+            "src/services/supabaseDataService.js:6719",
+            "src/services/supabaseDataService.js:7266"
           ],
           "writers": [],
           "sql": [
@@ -6990,9 +7002,9 @@
             "scripts/verification/verify-series-points-border.mjs:79",
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:158",
-            "src/services/supabaseDataService.js:3252",
-            "src/services/supabaseDataService.js:6815",
-            "src/services/supabaseDataService.js:7362"
+            "src/services/supabaseDataService.js:3223",
+            "src/services/supabaseDataService.js:6719",
+            "src/services/supabaseDataService.js:7266"
           ],
           "writers": [],
           "sql": [
@@ -7919,6 +7931,24 @@
           ]
         },
         {
+          "ref": "scripts/sns/rank-data.js:365",
+          "op": "select",
+          "via": "helper:readAllIn",
+          "columns": []
+        },
+        {
+          "ref": "scripts/sns/rank-data.js:461",
+          "op": "select",
+          "via": "helper:readAll",
+          "columns": []
+        },
+        {
+          "ref": "scripts/sns/rank-data.js:480",
+          "op": "select",
+          "via": "helper:readAllIn",
+          "columns": []
+        },
+        {
           "ref": "scripts/verification/verify-series-points-border.mjs:47",
           "op": "select",
           "via": "client",
@@ -8008,7 +8038,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:514",
+          "ref": "src/services/supabaseDataService.js:521",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8018,7 +8048,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:659",
+          "ref": "src/services/supabaseDataService.js:666",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8027,7 +8057,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:758",
+          "ref": "src/services/supabaseDataService.js:755",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8039,7 +8069,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2358",
+          "ref": "src/services/supabaseDataService.js:2355",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8056,7 +8086,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2394",
+          "ref": "src/services/supabaseDataService.js:2391",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8067,7 +8097,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2406",
+          "ref": "src/services/supabaseDataService.js:2403",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8077,7 +8107,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2482",
+          "ref": "src/services/supabaseDataService.js:2479",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8087,7 +8117,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2493",
+          "ref": "src/services/supabaseDataService.js:2490",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8097,7 +8127,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2661",
+          "ref": "src/services/supabaseDataService.js:2658",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8111,7 +8141,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2942",
+          "ref": "src/services/supabaseDataService.js:2939",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8122,7 +8152,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3042",
+          "ref": "src/services/supabaseDataService.js:3013",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8135,7 +8165,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3270",
+          "ref": "src/services/supabaseDataService.js:3241",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8147,7 +8177,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3534",
+          "ref": "src/services/supabaseDataService.js:3505",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8159,7 +8189,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3728",
+          "ref": "src/services/supabaseDataService.js:3699",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8169,7 +8199,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3884",
+          "ref": "src/services/supabaseDataService.js:3855",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8181,7 +8211,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3981",
+          "ref": "src/services/supabaseDataService.js:3952",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8194,7 +8224,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4004",
+          "ref": "src/services/supabaseDataService.js:3975",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8204,18 +8234,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4047",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "local_win_rate",
-            "race_id",
-            "racer_id",
-            "win_rate"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:4083",
+          "ref": "src/services/supabaseDataService.js:4018",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8226,7 +8245,18 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4103",
+          "ref": "src/services/supabaseDataService.js:4054",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "local_win_rate",
+            "race_id",
+            "racer_id",
+            "win_rate"
+          ]
+        },
+        {
+          "ref": "src/services/supabaseDataService.js:4074",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8236,7 +8266,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4140",
+          "ref": "src/services/supabaseDataService.js:4111",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8246,7 +8276,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4687",
+          "ref": "src/services/supabaseDataService.js:4654",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8257,7 +8287,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4899",
+          "ref": "src/services/supabaseDataService.js:4862",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8267,38 +8297,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5090",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "player_name",
-            "race_id",
-            "racer_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:5128",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "race_id",
-            "racer_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:5227",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "race_id",
-            "racer_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:5315",
+          "ref": "src/services/supabaseDataService.js:5053",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8309,7 +8308,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5349",
+          "ref": "src/services/supabaseDataService.js:5091",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8319,7 +8318,38 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5486",
+          "ref": "src/services/supabaseDataService.js:5190",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
+          "ref": "src/services/supabaseDataService.js:5278",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "player_name",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
+          "ref": "src/services/supabaseDataService.js:5312",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
+          "ref": "src/services/supabaseDataService.js:5449",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8329,7 +8359,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5553",
+          "ref": "src/services/supabaseDataService.js:5516",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8339,7 +8369,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5657",
+          "ref": "src/services/supabaseDataService.js:5620",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8349,7 +8379,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5908",
+          "ref": "src/services/supabaseDataService.js:5871",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8366,7 +8396,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5982",
+          "ref": "src/services/supabaseDataService.js:5945",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8377,7 +8407,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6012",
+          "ref": "src/services/supabaseDataService.js:5975",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8387,13 +8417,13 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6126",
+          "ref": "src/services/supabaseDataService.js:6089",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:6158",
+          "ref": "src/services/supabaseDataService.js:6121",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8403,7 +8433,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6510",
+          "ref": "src/services/supabaseDataService.js:6414",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8414,7 +8444,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6535",
+          "ref": "src/services/supabaseDataService.js:6439",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8424,7 +8454,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6805",
+          "ref": "src/services/supabaseDataService.js:6709",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8436,7 +8466,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:7379",
+          "ref": "src/services/supabaseDataService.js:7283",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8637,45 +8667,45 @@
             "src/services/racerService.js:112",
             "src/services/racerService.js:31",
             "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:2358",
-            "src/services/supabaseDataService.js:2394",
-            "src/services/supabaseDataService.js:2406",
-            "src/services/supabaseDataService.js:2482",
-            "src/services/supabaseDataService.js:2493",
-            "src/services/supabaseDataService.js:2661",
-            "src/services/supabaseDataService.js:2942",
-            "src/services/supabaseDataService.js:3042",
-            "src/services/supabaseDataService.js:3270",
-            "src/services/supabaseDataService.js:3534",
-            "src/services/supabaseDataService.js:3728",
-            "src/services/supabaseDataService.js:3884",
-            "src/services/supabaseDataService.js:3981",
-            "src/services/supabaseDataService.js:4004",
-            "src/services/supabaseDataService.js:4047",
-            "src/services/supabaseDataService.js:4083",
-            "src/services/supabaseDataService.js:4103",
-            "src/services/supabaseDataService.js:4140",
-            "src/services/supabaseDataService.js:4687",
-            "src/services/supabaseDataService.js:4899",
-            "src/services/supabaseDataService.js:5090",
-            "src/services/supabaseDataService.js:5128",
-            "src/services/supabaseDataService.js:514",
-            "src/services/supabaseDataService.js:5227",
-            "src/services/supabaseDataService.js:5315",
-            "src/services/supabaseDataService.js:5349",
-            "src/services/supabaseDataService.js:5486",
-            "src/services/supabaseDataService.js:5553",
-            "src/services/supabaseDataService.js:5657",
-            "src/services/supabaseDataService.js:5908",
-            "src/services/supabaseDataService.js:5982",
-            "src/services/supabaseDataService.js:6012",
-            "src/services/supabaseDataService.js:6158",
-            "src/services/supabaseDataService.js:6510",
-            "src/services/supabaseDataService.js:6535",
-            "src/services/supabaseDataService.js:659",
-            "src/services/supabaseDataService.js:6805",
-            "src/services/supabaseDataService.js:7379",
-            "src/services/supabaseDataService.js:758",
+            "src/services/supabaseDataService.js:2355",
+            "src/services/supabaseDataService.js:2391",
+            "src/services/supabaseDataService.js:2403",
+            "src/services/supabaseDataService.js:2479",
+            "src/services/supabaseDataService.js:2490",
+            "src/services/supabaseDataService.js:2658",
+            "src/services/supabaseDataService.js:2939",
+            "src/services/supabaseDataService.js:3013",
+            "src/services/supabaseDataService.js:3241",
+            "src/services/supabaseDataService.js:3505",
+            "src/services/supabaseDataService.js:3699",
+            "src/services/supabaseDataService.js:3855",
+            "src/services/supabaseDataService.js:3952",
+            "src/services/supabaseDataService.js:3975",
+            "src/services/supabaseDataService.js:4018",
+            "src/services/supabaseDataService.js:4054",
+            "src/services/supabaseDataService.js:4074",
+            "src/services/supabaseDataService.js:4111",
+            "src/services/supabaseDataService.js:4654",
+            "src/services/supabaseDataService.js:4862",
+            "src/services/supabaseDataService.js:5053",
+            "src/services/supabaseDataService.js:5091",
+            "src/services/supabaseDataService.js:5190",
+            "src/services/supabaseDataService.js:521",
+            "src/services/supabaseDataService.js:5278",
+            "src/services/supabaseDataService.js:5312",
+            "src/services/supabaseDataService.js:5449",
+            "src/services/supabaseDataService.js:5516",
+            "src/services/supabaseDataService.js:5620",
+            "src/services/supabaseDataService.js:5871",
+            "src/services/supabaseDataService.js:5945",
+            "src/services/supabaseDataService.js:5975",
+            "src/services/supabaseDataService.js:6121",
+            "src/services/supabaseDataService.js:6414",
+            "src/services/supabaseDataService.js:6439",
+            "src/services/supabaseDataService.js:666",
+            "src/services/supabaseDataService.js:6709",
+            "src/services/supabaseDataService.js:7283",
+            "src/services/supabaseDataService.js:755",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8749,37 +8779,37 @@
             "src/services/currentMeetEntries.js:26",
             "src/services/mycroftService.js:82",
             "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:2358",
-            "src/services/supabaseDataService.js:2394",
-            "src/services/supabaseDataService.js:2406",
-            "src/services/supabaseDataService.js:2482",
-            "src/services/supabaseDataService.js:2493",
-            "src/services/supabaseDataService.js:2661",
-            "src/services/supabaseDataService.js:2942",
-            "src/services/supabaseDataService.js:3042",
-            "src/services/supabaseDataService.js:3270",
-            "src/services/supabaseDataService.js:3728",
-            "src/services/supabaseDataService.js:3884",
-            "src/services/supabaseDataService.js:3981",
-            "src/services/supabaseDataService.js:4140",
-            "src/services/supabaseDataService.js:4687",
-            "src/services/supabaseDataService.js:4899",
-            "src/services/supabaseDataService.js:5090",
-            "src/services/supabaseDataService.js:5128",
-            "src/services/supabaseDataService.js:5227",
-            "src/services/supabaseDataService.js:5315",
-            "src/services/supabaseDataService.js:5349",
-            "src/services/supabaseDataService.js:5486",
-            "src/services/supabaseDataService.js:5553",
-            "src/services/supabaseDataService.js:5657",
-            "src/services/supabaseDataService.js:5908",
-            "src/services/supabaseDataService.js:5982",
-            "src/services/supabaseDataService.js:6012",
-            "src/services/supabaseDataService.js:6510",
-            "src/services/supabaseDataService.js:6535",
-            "src/services/supabaseDataService.js:6805",
-            "src/services/supabaseDataService.js:7379",
-            "src/services/supabaseDataService.js:758",
+            "src/services/supabaseDataService.js:2355",
+            "src/services/supabaseDataService.js:2391",
+            "src/services/supabaseDataService.js:2403",
+            "src/services/supabaseDataService.js:2479",
+            "src/services/supabaseDataService.js:2490",
+            "src/services/supabaseDataService.js:2658",
+            "src/services/supabaseDataService.js:2939",
+            "src/services/supabaseDataService.js:3013",
+            "src/services/supabaseDataService.js:3241",
+            "src/services/supabaseDataService.js:3699",
+            "src/services/supabaseDataService.js:3855",
+            "src/services/supabaseDataService.js:3952",
+            "src/services/supabaseDataService.js:4111",
+            "src/services/supabaseDataService.js:4654",
+            "src/services/supabaseDataService.js:4862",
+            "src/services/supabaseDataService.js:5053",
+            "src/services/supabaseDataService.js:5091",
+            "src/services/supabaseDataService.js:5190",
+            "src/services/supabaseDataService.js:5278",
+            "src/services/supabaseDataService.js:5312",
+            "src/services/supabaseDataService.js:5449",
+            "src/services/supabaseDataService.js:5516",
+            "src/services/supabaseDataService.js:5620",
+            "src/services/supabaseDataService.js:5871",
+            "src/services/supabaseDataService.js:5945",
+            "src/services/supabaseDataService.js:5975",
+            "src/services/supabaseDataService.js:6414",
+            "src/services/supabaseDataService.js:6439",
+            "src/services/supabaseDataService.js:6709",
+            "src/services/supabaseDataService.js:7283",
+            "src/services/supabaseDataService.js:755",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8817,19 +8847,19 @@
             "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/mycroftService.js:82",
             "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:2661",
-            "src/services/supabaseDataService.js:3042",
-            "src/services/supabaseDataService.js:3270",
-            "src/services/supabaseDataService.js:3534",
-            "src/services/supabaseDataService.js:3884",
-            "src/services/supabaseDataService.js:3981",
-            "src/services/supabaseDataService.js:5090",
-            "src/services/supabaseDataService.js:5315",
-            "src/services/supabaseDataService.js:5908",
-            "src/services/supabaseDataService.js:5982",
-            "src/services/supabaseDataService.js:6510",
-            "src/services/supabaseDataService.js:6805",
-            "src/services/supabaseDataService.js:7379",
+            "src/services/supabaseDataService.js:2658",
+            "src/services/supabaseDataService.js:3013",
+            "src/services/supabaseDataService.js:3241",
+            "src/services/supabaseDataService.js:3505",
+            "src/services/supabaseDataService.js:3855",
+            "src/services/supabaseDataService.js:3952",
+            "src/services/supabaseDataService.js:5053",
+            "src/services/supabaseDataService.js:5278",
+            "src/services/supabaseDataService.js:5871",
+            "src/services/supabaseDataService.js:5945",
+            "src/services/supabaseDataService.js:6414",
+            "src/services/supabaseDataService.js:6709",
+            "src/services/supabaseDataService.js:7283",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8862,8 +8892,8 @@
             "scripts/maintenance/check-morning-init-shadow.js:152",
             "src/services/racerService.js:31",
             "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:3042",
-            "src/services/supabaseDataService.js:5908"
+            "src/services/supabaseDataService.js:3013",
+            "src/services/supabaseDataService.js:5871"
           ],
           "writers": [],
           "sql": [
@@ -8880,7 +8910,7 @@
         "age": {
           "readers": [
             "scripts/maintenance/check-morning-init-shadow.js:152",
-            "src/services/supabaseDataService.js:5908"
+            "src/services/supabaseDataService.js:5871"
           ],
           "writers": [],
           "sql": [
@@ -8907,14 +8937,14 @@
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/raceIndicatorData.js:87",
             "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:2358",
-            "src/services/supabaseDataService.js:3981",
-            "src/services/supabaseDataService.js:4004",
-            "src/services/supabaseDataService.js:4047",
-            "src/services/supabaseDataService.js:4083",
-            "src/services/supabaseDataService.js:4103",
-            "src/services/supabaseDataService.js:5908",
-            "src/services/supabaseDataService.js:6158"
+            "src/services/supabaseDataService.js:2355",
+            "src/services/supabaseDataService.js:3952",
+            "src/services/supabaseDataService.js:3975",
+            "src/services/supabaseDataService.js:4018",
+            "src/services/supabaseDataService.js:4054",
+            "src/services/supabaseDataService.js:4074",
+            "src/services/supabaseDataService.js:5871",
+            "src/services/supabaseDataService.js:6121"
           ],
           "writers": [],
           "sql": [
@@ -8936,11 +8966,11 @@
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:2358",
-            "src/services/supabaseDataService.js:3981",
-            "src/services/supabaseDataService.js:4047",
-            "src/services/supabaseDataService.js:4083",
-            "src/services/supabaseDataService.js:5908"
+            "src/services/supabaseDataService.js:2355",
+            "src/services/supabaseDataService.js:3952",
+            "src/services/supabaseDataService.js:4018",
+            "src/services/supabaseDataService.js:4054",
+            "src/services/supabaseDataService.js:5871"
           ],
           "writers": [],
           "sql": [
@@ -8955,17 +8985,17 @@
             "scripts/maintenance/check-morning-init-shadow.js:152",
             "src/services/currentMeetEntries.js:26",
             "src/services/racerService.js:112",
-            "src/services/supabaseDataService.js:2661",
-            "src/services/supabaseDataService.js:2942",
-            "src/services/supabaseDataService.js:3042",
-            "src/services/supabaseDataService.js:3270",
-            "src/services/supabaseDataService.js:3534",
-            "src/services/supabaseDataService.js:3728",
-            "src/services/supabaseDataService.js:3884",
-            "src/services/supabaseDataService.js:4687",
-            "src/services/supabaseDataService.js:5908",
-            "src/services/supabaseDataService.js:6805",
-            "src/services/supabaseDataService.js:758"
+            "src/services/supabaseDataService.js:2658",
+            "src/services/supabaseDataService.js:2939",
+            "src/services/supabaseDataService.js:3013",
+            "src/services/supabaseDataService.js:3241",
+            "src/services/supabaseDataService.js:3505",
+            "src/services/supabaseDataService.js:3699",
+            "src/services/supabaseDataService.js:3855",
+            "src/services/supabaseDataService.js:4654",
+            "src/services/supabaseDataService.js:5871",
+            "src/services/supabaseDataService.js:6709",
+            "src/services/supabaseDataService.js:755"
           ],
           "writers": [],
           "sql": [
@@ -8989,11 +9019,11 @@
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:2661",
-            "src/services/supabaseDataService.js:3534",
-            "src/services/supabaseDataService.js:5908",
-            "src/services/supabaseDataService.js:659",
-            "src/services/supabaseDataService.js:758"
+            "src/services/supabaseDataService.js:2658",
+            "src/services/supabaseDataService.js:3505",
+            "src/services/supabaseDataService.js:5871",
+            "src/services/supabaseDataService.js:666",
+            "src/services/supabaseDataService.js:755"
           ],
           "writers": [],
           "sql": [
@@ -9059,9 +9089,9 @@
         },
         "global_2rate": {
           "readers": [
-            "src/services/supabaseDataService.js:2358",
-            "src/services/supabaseDataService.js:2942",
-            "src/services/supabaseDataService.js:5908"
+            "src/services/supabaseDataService.js:2355",
+            "src/services/supabaseDataService.js:2939",
+            "src/services/supabaseDataService.js:5871"
           ],
           "writers": [],
           "sql": [
@@ -9071,21 +9101,21 @@
         },
         "local_2rate": {
           "readers": [
-            "src/services/supabaseDataService.js:2358"
+            "src/services/supabaseDataService.js:2355"
           ],
           "writers": [],
           "sql": []
         },
         "global_3rate": {
           "readers": [
-            "src/services/supabaseDataService.js:2358"
+            "src/services/supabaseDataService.js:2355"
           ],
           "writers": [],
           "sql": []
         },
         "local_3rate": {
           "readers": [
-            "src/services/supabaseDataService.js:2358"
+            "src/services/supabaseDataService.js:2355"
           ],
           "writers": [],
           "sql": []
@@ -9093,8 +9123,8 @@
         "motor_3rate": {
           "readers": [
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "src/services/supabaseDataService.js:2661",
-            "src/services/supabaseDataService.js:758"
+            "src/services/supabaseDataService.js:2658",
+            "src/services/supabaseDataService.js:755"
           ],
           "writers": [],
           "sql": []
@@ -9147,38 +9177,38 @@
             "src/services/currentMeetEntries.js:26",
             "src/services/racerService.js:112",
             "src/services/racerService.js:31",
-            "src/services/supabaseDataService.js:2394",
-            "src/services/supabaseDataService.js:2406",
-            "src/services/supabaseDataService.js:2482",
-            "src/services/supabaseDataService.js:2493",
-            "src/services/supabaseDataService.js:2661",
-            "src/services/supabaseDataService.js:3042",
-            "src/services/supabaseDataService.js:3270",
-            "src/services/supabaseDataService.js:3534",
-            "src/services/supabaseDataService.js:3884",
-            "src/services/supabaseDataService.js:3981",
-            "src/services/supabaseDataService.js:4004",
-            "src/services/supabaseDataService.js:4047",
-            "src/services/supabaseDataService.js:4083",
-            "src/services/supabaseDataService.js:4103",
-            "src/services/supabaseDataService.js:4140",
-            "src/services/supabaseDataService.js:4687",
-            "src/services/supabaseDataService.js:4899",
-            "src/services/supabaseDataService.js:5090",
-            "src/services/supabaseDataService.js:5128",
-            "src/services/supabaseDataService.js:514",
-            "src/services/supabaseDataService.js:5227",
-            "src/services/supabaseDataService.js:5315",
-            "src/services/supabaseDataService.js:5349",
-            "src/services/supabaseDataService.js:5553",
-            "src/services/supabaseDataService.js:5657",
-            "src/services/supabaseDataService.js:5982",
-            "src/services/supabaseDataService.js:6012",
-            "src/services/supabaseDataService.js:6158",
-            "src/services/supabaseDataService.js:6510",
-            "src/services/supabaseDataService.js:6535",
-            "src/services/supabaseDataService.js:6805",
-            "src/services/supabaseDataService.js:7379"
+            "src/services/supabaseDataService.js:2391",
+            "src/services/supabaseDataService.js:2403",
+            "src/services/supabaseDataService.js:2479",
+            "src/services/supabaseDataService.js:2490",
+            "src/services/supabaseDataService.js:2658",
+            "src/services/supabaseDataService.js:3013",
+            "src/services/supabaseDataService.js:3241",
+            "src/services/supabaseDataService.js:3505",
+            "src/services/supabaseDataService.js:3855",
+            "src/services/supabaseDataService.js:3952",
+            "src/services/supabaseDataService.js:3975",
+            "src/services/supabaseDataService.js:4018",
+            "src/services/supabaseDataService.js:4054",
+            "src/services/supabaseDataService.js:4074",
+            "src/services/supabaseDataService.js:4111",
+            "src/services/supabaseDataService.js:4654",
+            "src/services/supabaseDataService.js:4862",
+            "src/services/supabaseDataService.js:5053",
+            "src/services/supabaseDataService.js:5091",
+            "src/services/supabaseDataService.js:5190",
+            "src/services/supabaseDataService.js:521",
+            "src/services/supabaseDataService.js:5278",
+            "src/services/supabaseDataService.js:5312",
+            "src/services/supabaseDataService.js:5516",
+            "src/services/supabaseDataService.js:5620",
+            "src/services/supabaseDataService.js:5945",
+            "src/services/supabaseDataService.js:5975",
+            "src/services/supabaseDataService.js:6121",
+            "src/services/supabaseDataService.js:6414",
+            "src/services/supabaseDataService.js:6439",
+            "src/services/supabaseDataService.js:6709",
+            "src/services/supabaseDataService.js:7283"
           ],
           "writers": [
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
@@ -9219,7 +9249,7 @@
         },
         "weight_kg": {
           "readers": [
-            "src/services/supabaseDataService.js:5486"
+            "src/services/supabaseDataService.js:5449"
           ],
           "writers": [],
           "sql": [
@@ -9240,8 +9270,8 @@
         },
         "f_count": {
           "readers": [
-            "src/services/supabaseDataService.js:2358",
-            "src/services/supabaseDataService.js:2394"
+            "src/services/supabaseDataService.js:2355",
+            "src/services/supabaseDataService.js:2391"
           ],
           "writers": [],
           "sql": [
@@ -9250,7 +9280,7 @@
         },
         "l_count": {
           "readers": [
-            "src/services/supabaseDataService.js:2358"
+            "src/services/supabaseDataService.js:2355"
           ],
           "writers": [],
           "sql": [
@@ -9323,7 +9353,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1991",
+          "ref": "src/services/supabaseDataService.js:1988",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9353,7 +9383,7 @@
         "key": {
           "readers": [
             "api/race-history/summary.js:37",
-            "src/services/supabaseDataService.js:1991"
+            "src/services/supabaseDataService.js:1988"
           ],
           "writers": [
             "scripts/daily/update-race-history-cache.js:121"
@@ -9365,7 +9395,7 @@
         "data": {
           "readers": [
             "api/race-history/summary.js:37",
-            "src/services/supabaseDataService.js:1991"
+            "src/services/supabaseDataService.js:1988"
           ],
           "writers": [
             "scripts/daily/update-race-history-cache.js:121"
@@ -9623,7 +9653,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5713",
+          "ref": "src/services/supabaseDataService.js:5676",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9677,7 +9707,7 @@
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:81",
             "scripts/maintenance/check-odds-shadow.js:200",
             "src/services/sherlockService.js:87",
-            "src/services/supabaseDataService.js:5713"
+            "src/services/supabaseDataService.js:5676"
           ],
           "writers": [],
           "sql": [
@@ -9693,7 +9723,7 @@
             "scripts/daily/scrape-odds.js:975",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:81",
             "src/services/sherlockService.js:87",
-            "src/services/supabaseDataService.js:5713"
+            "src/services/supabaseDataService.js:5676"
           ],
           "writers": [],
           "sql": []
@@ -9931,7 +9961,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5783",
+          "ref": "src/services/supabaseDataService.js:5746",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9965,63 +9995,63 @@
           "readers": [
             "scripts/lib/scrapeJobs/finalOddsHandlers.js:129",
             "scripts/lib/scrapeJobs/finalOddsHandlers.js:144",
-            "src/services/supabaseDataService.js:5783"
+            "src/services/supabaseDataService.js:5746"
           ],
           "writers": [],
           "sql": []
         },
         "win_all": {
           "readers": [
-            "src/services/supabaseDataService.js:5783"
+            "src/services/supabaseDataService.js:5746"
           ],
           "writers": [],
           "sql": []
         },
         "place_all": {
           "readers": [
-            "src/services/supabaseDataService.js:5783"
+            "src/services/supabaseDataService.js:5746"
           ],
           "writers": [],
           "sql": []
         },
         "trifecta_all": {
           "readers": [
-            "src/services/supabaseDataService.js:5783"
+            "src/services/supabaseDataService.js:5746"
           ],
           "writers": [],
           "sql": []
         },
         "trio_all": {
           "readers": [
-            "src/services/supabaseDataService.js:5783"
+            "src/services/supabaseDataService.js:5746"
           ],
           "writers": [],
           "sql": []
         },
         "exacta_all": {
           "readers": [
-            "src/services/supabaseDataService.js:5783"
+            "src/services/supabaseDataService.js:5746"
           ],
           "writers": [],
           "sql": []
         },
         "quinella_all": {
           "readers": [
-            "src/services/supabaseDataService.js:5783"
+            "src/services/supabaseDataService.js:5746"
           ],
           "writers": [],
           "sql": []
         },
         "wide_all": {
           "readers": [
-            "src/services/supabaseDataService.js:5783"
+            "src/services/supabaseDataService.js:5746"
           ],
           "writers": [],
           "sql": []
         },
         "captured_at": {
           "readers": [
-            "src/services/supabaseDataService.js:5783"
+            "src/services/supabaseDataService.js:5746"
           ],
           "writers": [],
           "sql": []
@@ -10077,7 +10107,7 @@
           "test": true
         },
         {
-          "ref": "src/services/supabaseDataService.js:8022",
+          "ref": "src/services/supabaseDataService.js:7926",
           "op": "select",
           "via": "client",
           "columns": [
@@ -10104,7 +10134,7 @@
         "race_id": {
           "readers": [
             "scripts/lib/boatcast/oritenJob.js:181",
-            "src/services/supabaseDataService.js:8022"
+            "src/services/supabaseDataService.js:7926"
           ],
           "writers": [],
           "sql": []
@@ -10121,7 +10151,7 @@
         },
         "item_labels": {
           "readers": [
-            "src/services/supabaseDataService.js:8022"
+            "src/services/supabaseDataService.js:7926"
           ],
           "writers": [],
           "sql": []
@@ -10152,7 +10182,7 @@
         },
         "updated_at": {
           "readers": [
-            "src/services/supabaseDataService.js:8022"
+            "src/services/supabaseDataService.js:7926"
           ],
           "writers": [],
           "sql": []
@@ -10204,13 +10234,13 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4768",
+          "ref": "src/services/supabaseDataService.js:4735",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:8027",
+          "ref": "src/services/supabaseDataService.js:7931",
           "op": "select",
           "via": "client",
           "columns": [
@@ -10245,7 +10275,7 @@
           "readers": [
             "scripts/lib/boatcast/oritenJob.js:240",
             "scripts/lib/boatcast/oritenJob.js:248",
-            "src/services/supabaseDataService.js:8027"
+            "src/services/supabaseDataService.js:7931"
           ],
           "writers": [],
           "sql": []
@@ -10254,7 +10284,7 @@
           "readers": [
             "scripts/lib/boatcast/oritenJob.js:240",
             "scripts/lib/boatcast/oritenJob.js:248",
-            "src/services/supabaseDataService.js:8027"
+            "src/services/supabaseDataService.js:7931"
           ],
           "writers": [],
           "sql": []
@@ -10263,14 +10293,14 @@
           "readers": [
             "scripts/lib/boatcast/oritenJob.js:240",
             "scripts/lib/boatcast/oritenJob.js:248",
-            "src/services/supabaseDataService.js:8027"
+            "src/services/supabaseDataService.js:7931"
           ],
           "writers": [],
           "sql": []
         },
         "value": {
           "readers": [
-            "src/services/supabaseDataService.js:8027"
+            "src/services/supabaseDataService.js:7931"
           ],
           "writers": [],
           "sql": []
@@ -10560,7 +10590,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:7951",
+          "ref": "src/services/supabaseDataService.js:7855",
           "op": "select",
           "via": "client",
           "columns": [
@@ -10596,42 +10626,42 @@
         "race_id": {
           "readers": [
             "scripts/lib/pitReportJob.js:259",
-            "src/services/supabaseDataService.js:7951"
+            "src/services/supabaseDataService.js:7855"
           ],
           "writers": [],
           "sql": []
         },
         "boat_number": {
           "readers": [
-            "src/services/supabaseDataService.js:7951"
+            "src/services/supabaseDataService.js:7855"
           ],
           "writers": [],
           "sql": []
         },
         "racer_id": {
           "readers": [
-            "src/services/supabaseDataService.js:7951"
+            "src/services/supabaseDataService.js:7855"
           ],
           "writers": [],
           "sql": []
         },
         "comment_text": {
           "readers": [
-            "src/services/supabaseDataService.js:7951"
+            "src/services/supabaseDataService.js:7855"
           ],
           "writers": [],
           "sql": []
         },
         "confidence_stars": {
           "readers": [
-            "src/services/supabaseDataService.js:7951"
+            "src/services/supabaseDataService.js:7855"
           ],
           "writers": [],
           "sql": []
         },
         "previous_race_number": {
           "readers": [
-            "src/services/supabaseDataService.js:7951"
+            "src/services/supabaseDataService.js:7855"
           ],
           "writers": [],
           "sql": []
@@ -10693,7 +10723,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:7944",
+          "ref": "src/services/supabaseDataService.js:7848",
           "op": "select",
           "via": "client",
           "columns": [
@@ -10728,7 +10758,7 @@
         "race_id": {
           "readers": [
             "scripts/lib/pitReportJob.js:207",
-            "src/services/supabaseDataService.js:7944"
+            "src/services/supabaseDataService.js:7848"
           ],
           "writers": [],
           "sql": [
@@ -10737,7 +10767,7 @@
         },
         "status": {
           "readers": [
-            "src/services/supabaseDataService.js:7944"
+            "src/services/supabaseDataService.js:7848"
           ],
           "writers": [],
           "sql": [
@@ -10746,28 +10776,28 @@
         },
         "target_from": {
           "readers": [
-            "src/services/supabaseDataService.js:7944"
+            "src/services/supabaseDataService.js:7848"
           ],
           "writers": [],
           "sql": []
         },
         "target_to": {
           "readers": [
-            "src/services/supabaseDataService.js:7944"
+            "src/services/supabaseDataService.js:7848"
           ],
           "writers": [],
           "sql": []
         },
         "reporter_name": {
           "readers": [
-            "src/services/supabaseDataService.js:7944"
+            "src/services/supabaseDataService.js:7848"
           ],
           "writers": [],
           "sql": []
         },
         "comment_count": {
           "readers": [
-            "src/services/supabaseDataService.js:7944"
+            "src/services/supabaseDataService.js:7848"
           ],
           "writers": [],
           "sql": []
@@ -10795,14 +10825,14 @@
         },
         "created_at": {
           "readers": [
-            "src/services/supabaseDataService.js:7944"
+            "src/services/supabaseDataService.js:7848"
           ],
           "writers": [],
           "sql": []
         },
         "updated_at": {
           "readers": [
-            "src/services/supabaseDataService.js:7944"
+            "src/services/supabaseDataService.js:7848"
           ],
           "writers": [],
           "sql": []
@@ -11708,6 +11738,24 @@
           "columns": []
         },
         {
+          "ref": "scripts/sns/rank-data.js:163",
+          "op": "select",
+          "via": "helper:readAll",
+          "columns": []
+        },
+        {
+          "ref": "scripts/sns/rank-data.js:372",
+          "op": "select",
+          "via": "helper:readAllIn",
+          "columns": []
+        },
+        {
+          "ref": "scripts/sns/rank-data.js:507",
+          "op": "select",
+          "via": "helper:readAllIn",
+          "columns": []
+        },
+        {
           "ref": "scripts/verification/verify-series-points-border.mjs:56",
           "op": "select",
           "via": "client",
@@ -11782,13 +11830,13 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1456",
+          "ref": "src/services/supabaseDataService.js:1453",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:2530",
+          "ref": "src/services/supabaseDataService.js:2527",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11808,7 +11856,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2961",
+          "ref": "src/services/supabaseDataService.js:2958",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11819,7 +11867,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3061",
+          "ref": "src/services/supabaseDataService.js:3032",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11834,7 +11882,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3279",
+          "ref": "src/services/supabaseDataService.js:3250",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11843,49 +11891,49 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3741",
+          "ref": "src/services/supabaseDataService.js:3712",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:3896",
+          "ref": "src/services/supabaseDataService.js:3867",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4150",
+          "ref": "src/services/supabaseDataService.js:4121",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4472",
+          "ref": "src/services/supabaseDataService.js:4441",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4615",
+          "ref": "src/services/supabaseDataService.js:4582",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4841",
+          "ref": "src/services/supabaseDataService.js:4804",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4909",
+          "ref": "src/services/supabaseDataService.js:4872",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:5950",
+          "ref": "src/services/supabaseDataService.js:5913",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11898,37 +11946,37 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6036",
+          "ref": "src/services/supabaseDataService.js:5999",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:6248",
+          "ref": "src/services/supabaseDataService.js:6211",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:6395",
+          "ref": "src/services/supabaseDataService.js:6299",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:6553",
+          "ref": "src/services/supabaseDataService.js:6457",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:6860",
+          "ref": "src/services/supabaseDataService.js:6764",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:7374",
+          "ref": "src/services/supabaseDataService.js:7278",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11942,7 +11990,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:7846",
+          "ref": "src/services/supabaseDataService.js:7750",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12138,13 +12186,13 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
             "src/services/ruleMatchService.js:118",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:2961",
-            "src/services/supabaseDataService.js:3061",
-            "src/services/supabaseDataService.js:3279",
-            "src/services/supabaseDataService.js:5950",
-            "src/services/supabaseDataService.js:7374",
-            "src/services/supabaseDataService.js:7846"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:2958",
+            "src/services/supabaseDataService.js:3032",
+            "src/services/supabaseDataService.js:3250",
+            "src/services/supabaseDataService.js:5913",
+            "src/services/supabaseDataService.js:7278",
+            "src/services/supabaseDataService.js:7750"
           ],
           "writers": [],
           "sql": [
@@ -12206,12 +12254,12 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
             "src/services/ruleMatchService.js:118",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:2961",
-            "src/services/supabaseDataService.js:3061",
-            "src/services/supabaseDataService.js:3279",
-            "src/services/supabaseDataService.js:5950",
-            "src/services/supabaseDataService.js:7374"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:2958",
+            "src/services/supabaseDataService.js:3032",
+            "src/services/supabaseDataService.js:3250",
+            "src/services/supabaseDataService.js:5913",
+            "src/services/supabaseDataService.js:7278"
           ],
           "writers": [],
           "sql": [
@@ -12258,11 +12306,11 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
             "src/services/ruleMatchService.js:118",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:2961",
-            "src/services/supabaseDataService.js:3061",
-            "src/services/supabaseDataService.js:5950",
-            "src/services/supabaseDataService.js:7374"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:2958",
+            "src/services/supabaseDataService.js:3032",
+            "src/services/supabaseDataService.js:5913",
+            "src/services/supabaseDataService.js:7278"
           ],
           "writers": [],
           "sql": [
@@ -12299,11 +12347,11 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
             "src/services/ruleMatchService.js:118",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:2961",
-            "src/services/supabaseDataService.js:3061",
-            "src/services/supabaseDataService.js:5950",
-            "src/services/supabaseDataService.js:7374"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:2958",
+            "src/services/supabaseDataService.js:3032",
+            "src/services/supabaseDataService.js:5913",
+            "src/services/supabaseDataService.js:7278"
           ],
           "writers": [],
           "sql": [
@@ -12509,7 +12557,7 @@
             "scripts/maintenance/backfill-race-data.js:293",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
             "scripts/maintenance/backfill-start-timings.js:276",
-            "src/services/supabaseDataService.js:5950"
+            "src/services/supabaseDataService.js:5913"
           ],
           "writers": [
             "scripts/maintenance/backfill-race-data.js:209",
@@ -12547,9 +12595,9 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:3061",
-            "src/services/supabaseDataService.js:7374"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:3032",
+            "src/services/supabaseDataService.js:7278"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:588",
@@ -12566,9 +12614,9 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:3061",
-            "src/services/supabaseDataService.js:7374"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:3032",
+            "src/services/supabaseDataService.js:7278"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:588",
@@ -12585,9 +12633,9 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:3061",
-            "src/services/supabaseDataService.js:7374"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:3032",
+            "src/services/supabaseDataService.js:7278"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:588",
@@ -12747,8 +12795,8 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:7846"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:7750"
           ],
           "writers": [
             "scripts/maintenance/backfill-actual-course.js:111"
@@ -12767,8 +12815,8 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:7846"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:7750"
           ],
           "writers": [
             "scripts/maintenance/backfill-actual-course.js:111"
@@ -12786,8 +12834,8 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:7846"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:7750"
           ],
           "writers": [
             "scripts/maintenance/backfill-actual-course.js:111"
@@ -12805,8 +12853,8 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:7846"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:7750"
           ],
           "writers": [
             "scripts/maintenance/backfill-actual-course.js:111"
@@ -12824,8 +12872,8 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:7846"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:7750"
           ],
           "writers": [
             "scripts/maintenance/backfill-actual-course.js:111"
@@ -12843,8 +12891,8 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/supabaseDataService.js:2530",
-            "src/services/supabaseDataService.js:7846"
+            "src/services/supabaseDataService.js:2527",
+            "src/services/supabaseDataService.js:7750"
           ],
           "writers": [
             "scripts/maintenance/backfill-actual-course.js:111"
@@ -12865,8 +12913,8 @@
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/maintenance/update-venue-stats.js:32",
-            "src/services/supabaseDataService.js:3061",
-            "src/services/supabaseDataService.js:5950"
+            "src/services/supabaseDataService.js:3032",
+            "src/services/supabaseDataService.js:5913"
           ],
           "writers": [],
           "sql": [
@@ -13017,7 +13065,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1403",
+          "ref": "src/services/supabaseDataService.js:1400",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13027,7 +13075,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1429",
+          "ref": "src/services/supabaseDataService.js:1426",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13039,7 +13087,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5647",
+          "ref": "src/services/supabaseDataService.js:5610",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13049,7 +13097,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:7355",
+          "ref": "src/services/supabaseDataService.js:7259",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13077,10 +13125,10 @@
             "scripts/lib/snsTodayDigestV3.js:109",
             "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/racerService.js:86",
-            "src/services/supabaseDataService.js:1403",
-            "src/services/supabaseDataService.js:1429",
-            "src/services/supabaseDataService.js:5647",
-            "src/services/supabaseDataService.js:7355"
+            "src/services/supabaseDataService.js:1400",
+            "src/services/supabaseDataService.js:1426",
+            "src/services/supabaseDataService.js:5610",
+            "src/services/supabaseDataService.js:7259"
           ],
           "writers": [],
           "sql": [
@@ -13095,10 +13143,10 @@
             "scripts/lib/snsTodayDigestV3.js:109",
             "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/racerService.js:86",
-            "src/services/supabaseDataService.js:1403",
-            "src/services/supabaseDataService.js:1429",
-            "src/services/supabaseDataService.js:5647",
-            "src/services/supabaseDataService.js:7355"
+            "src/services/supabaseDataService.js:1400",
+            "src/services/supabaseDataService.js:1426",
+            "src/services/supabaseDataService.js:5610",
+            "src/services/supabaseDataService.js:7259"
           ],
           "writers": [],
           "sql": [
@@ -13113,10 +13161,10 @@
             "scripts/lib/snsTodayDigestV3.js:109",
             "scripts/maintenance/verify-bot-race-function.js:801",
             "src/services/racerService.js:86",
-            "src/services/supabaseDataService.js:1403",
-            "src/services/supabaseDataService.js:1429",
-            "src/services/supabaseDataService.js:5647",
-            "src/services/supabaseDataService.js:7355"
+            "src/services/supabaseDataService.js:1400",
+            "src/services/supabaseDataService.js:1426",
+            "src/services/supabaseDataService.js:5610",
+            "src/services/supabaseDataService.js:7259"
           ],
           "writers": [],
           "sql": [
@@ -13133,8 +13181,8 @@
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:109",
             "scripts/maintenance/verify-bot-race-function.js:801",
-            "src/services/supabaseDataService.js:1429",
-            "src/services/supabaseDataService.js:7355"
+            "src/services/supabaseDataService.js:1426",
+            "src/services/supabaseDataService.js:7259"
           ],
           "writers": [],
           "sql": []
@@ -13149,8 +13197,8 @@
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:109",
             "scripts/maintenance/verify-bot-race-function.js:801",
-            "src/services/supabaseDataService.js:1429",
-            "src/services/supabaseDataService.js:7355"
+            "src/services/supabaseDataService.js:1426",
+            "src/services/supabaseDataService.js:7259"
           ],
           "writers": [],
           "sql": []
@@ -13448,6 +13496,12 @@
           "columns": []
         },
         {
+          "ref": "scripts/sns/rank-data.js:528",
+          "op": "select",
+          "via": "helper:readAllIn",
+          "columns": []
+        },
+        {
           "ref": "scripts/verification/verify-series-points-border.mjs:64",
           "op": "select",
           "via": "client",
@@ -13468,13 +13522,13 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1469",
+          "ref": "src/services/supabaseDataService.js:1466",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:2436",
+          "ref": "src/services/supabaseDataService.js:2433",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13484,7 +13538,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2536",
+          "ref": "src/services/supabaseDataService.js:2533",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13495,31 +13549,31 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4621",
+          "ref": "src/services/supabaseDataService.js:4588",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4862",
+          "ref": "src/services/supabaseDataService.js:4825",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:5150",
+          "ref": "src/services/supabaseDataService.js:5113",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:5241",
+          "ref": "src/services/supabaseDataService.js:5204",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:6912",
+          "ref": "src/services/supabaseDataService.js:6816",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13531,7 +13585,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:7839",
+          "ref": "src/services/supabaseDataService.js:7743",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13621,10 +13675,10 @@
             "scripts/maintenance/verify-race-result-parser.js:2047",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
-            "src/services/supabaseDataService.js:2436",
-            "src/services/supabaseDataService.js:2536",
-            "src/services/supabaseDataService.js:6912",
-            "src/services/supabaseDataService.js:7839"
+            "src/services/supabaseDataService.js:2433",
+            "src/services/supabaseDataService.js:2533",
+            "src/services/supabaseDataService.js:6816",
+            "src/services/supabaseDataService.js:7743"
           ],
           "writers": [],
           "sql": [
@@ -13647,10 +13701,10 @@
             "scripts/maintenance/verify-race-result-parser.js:2047",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
-            "src/services/supabaseDataService.js:2436",
-            "src/services/supabaseDataService.js:2536",
-            "src/services/supabaseDataService.js:6912",
-            "src/services/supabaseDataService.js:7839"
+            "src/services/supabaseDataService.js:2433",
+            "src/services/supabaseDataService.js:2533",
+            "src/services/supabaseDataService.js:6816",
+            "src/services/supabaseDataService.js:7743"
           ],
           "writers": [],
           "sql": [
@@ -13664,8 +13718,8 @@
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
             "scripts/daily/generate-morning-digest.js:702",
-            "src/services/supabaseDataService.js:6912",
-            "src/services/supabaseDataService.js:7839"
+            "src/services/supabaseDataService.js:6816",
+            "src/services/supabaseDataService.js:7743"
           ],
           "writers": [],
           "sql": [
@@ -13678,9 +13732,9 @@
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
-            "src/services/supabaseDataService.js:2436",
-            "src/services/supabaseDataService.js:6912",
-            "src/services/supabaseDataService.js:7839"
+            "src/services/supabaseDataService.js:2433",
+            "src/services/supabaseDataService.js:6816",
+            "src/services/supabaseDataService.js:7743"
           ],
           "writers": [],
           "sql": [
@@ -13692,7 +13746,7 @@
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
-            "src/services/supabaseDataService.js:7839"
+            "src/services/supabaseDataService.js:7743"
           ],
           "writers": [],
           "sql": []
@@ -13713,9 +13767,9 @@
             "scripts/daily/generate-morning-digest.js:702",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
-            "src/services/supabaseDataService.js:2536",
-            "src/services/supabaseDataService.js:6912",
-            "src/services/supabaseDataService.js:7839"
+            "src/services/supabaseDataService.js:2533",
+            "src/services/supabaseDataService.js:6816",
+            "src/services/supabaseDataService.js:7743"
           ],
           "writers": [],
           "sql": [
@@ -13725,7 +13779,7 @@
         "finish_rank": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "src/services/supabaseDataService.js:7839"
+            "src/services/supabaseDataService.js:7743"
           ],
           "writers": [],
           "sql": [
@@ -13735,8 +13789,8 @@
         "entry_course": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "src/services/supabaseDataService.js:2536",
-            "src/services/supabaseDataService.js:7839"
+            "src/services/supabaseDataService.js:2533",
+            "src/services/supabaseDataService.js:7743"
           ],
           "writers": [],
           "sql": []
@@ -13938,7 +13992,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4199",
+          "ref": "src/services/supabaseDataService.js:4170",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13982,7 +14036,7 @@
             "scripts/daily/generate-predictions.js:594",
             "scripts/daily/generate-unified-predictions.js:118",
             "scripts/daily/generate-unified-trifecta-reference.js:117",
-            "src/services/supabaseDataService.js:4199"
+            "src/services/supabaseDataService.js:4170"
           ],
           "writers": [],
           "sql": []
@@ -14000,7 +14054,7 @@
             "scripts/daily/generate-predictions.js:594",
             "scripts/daily/generate-unified-predictions.js:118",
             "scripts/daily/generate-unified-trifecta-reference.js:117",
-            "src/services/supabaseDataService.js:4199"
+            "src/services/supabaseDataService.js:4170"
           ],
           "writers": [],
           "sql": []
@@ -14016,14 +14070,14 @@
             "scripts/daily/generate-predictions.js:594",
             "scripts/daily/generate-unified-predictions.js:118",
             "scripts/daily/generate-unified-trifecta-reference.js:117",
-            "src/services/supabaseDataService.js:4199"
+            "src/services/supabaseDataService.js:4170"
           ],
           "writers": [],
           "sql": []
         },
         "avg_st_last_30": {
           "readers": [
-            "src/services/supabaseDataService.js:4199"
+            "src/services/supabaseDataService.js:4170"
           ],
           "writers": [],
           "sql": []
@@ -14037,14 +14091,14 @@
             "scripts/analysis/verify-volatility-predictive-power.js:93",
             "scripts/daily/generate-predictions.js:594",
             "scripts/daily/generate-unified-predictions.js:118",
-            "src/services/supabaseDataService.js:4199"
+            "src/services/supabaseDataService.js:4170"
           ],
           "writers": [],
           "sql": []
         },
         "flying_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:4199"
+            "src/services/supabaseDataService.js:4170"
           ],
           "writers": [],
           "sql": []
@@ -14076,7 +14130,7 @@
         },
         "total_races": {
           "readers": [
-            "src/services/supabaseDataService.js:4199"
+            "src/services/supabaseDataService.js:4170"
           ],
           "writers": [],
           "sql": []
@@ -14115,7 +14169,7 @@
             "scripts/daily/generate-predictions.js:594",
             "scripts/daily/generate-unified-predictions.js:118",
             "scripts/daily/generate-unified-trifecta-reference.js:117",
-            "src/services/supabaseDataService.js:4199"
+            "src/services/supabaseDataService.js:4170"
           ],
           "writers": [],
           "sql": []
@@ -14344,7 +14398,13 @@
       },
       "readers": [
         {
-          "ref": "src/services/supabaseDataService.js:4399",
+          "ref": "scripts/sns/rank-data.js:477",
+          "op": "select",
+          "via": "helper:readAll",
+          "columns": []
+        },
+        {
+          "ref": "src/services/supabaseDataService.js:4370",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14373,7 +14433,7 @@
       "columns": {
         "key": {
           "readers": [
-            "src/services/supabaseDataService.js:4399"
+            "src/services/supabaseDataService.js:4370"
           ],
           "writers": [
             "scripts/daily/update-racer-grade-cache.js:46"
@@ -14384,7 +14444,7 @@
         },
         "data": {
           "readers": [
-            "src/services/supabaseDataService.js:4399"
+            "src/services/supabaseDataService.js:4370"
           ],
           "writers": [
             "scripts/daily/update-racer-grade-cache.js:46"
@@ -14755,7 +14815,7 @@
           "test": true
         },
         {
-          "ref": "src/services/supabaseDataService.js:4227",
+          "ref": "src/services/supabaseDataService.js:4198",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14766,7 +14826,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4265",
+          "ref": "src/services/supabaseDataService.js:4236",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14777,7 +14837,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:5663",
+          "ref": "src/services/supabaseDataService.js:5626",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14788,7 +14848,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:7568",
+          "ref": "src/services/supabaseDataService.js:7472",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14806,7 +14866,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:7577",
+          "ref": "src/services/supabaseDataService.js:7481",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14827,11 +14887,11 @@
         "racer_id": {
           "readers": [
             "scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9",
-            "src/services/supabaseDataService.js:4227",
-            "src/services/supabaseDataService.js:4265",
-            "src/services/supabaseDataService.js:5663",
-            "src/services/supabaseDataService.js:7568",
-            "src/services/supabaseDataService.js:7577"
+            "src/services/supabaseDataService.js:4198",
+            "src/services/supabaseDataService.js:4236",
+            "src/services/supabaseDataService.js:5626",
+            "src/services/supabaseDataService.js:7472",
+            "src/services/supabaseDataService.js:7481"
           ],
           "writers": [],
           "sql": [
@@ -14841,11 +14901,11 @@
         "period_year": {
           "readers": [
             "scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9",
-            "src/services/supabaseDataService.js:4227",
-            "src/services/supabaseDataService.js:4265",
-            "src/services/supabaseDataService.js:5663",
-            "src/services/supabaseDataService.js:7568",
-            "src/services/supabaseDataService.js:7577"
+            "src/services/supabaseDataService.js:4198",
+            "src/services/supabaseDataService.js:4236",
+            "src/services/supabaseDataService.js:5626",
+            "src/services/supabaseDataService.js:7472",
+            "src/services/supabaseDataService.js:7481"
           ],
           "writers": [],
           "sql": []
@@ -14853,25 +14913,25 @@
         "period_no": {
           "readers": [
             "scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9",
-            "src/services/supabaseDataService.js:4227",
-            "src/services/supabaseDataService.js:4265",
-            "src/services/supabaseDataService.js:5663",
-            "src/services/supabaseDataService.js:7568",
-            "src/services/supabaseDataService.js:7577"
+            "src/services/supabaseDataService.js:4198",
+            "src/services/supabaseDataService.js:4236",
+            "src/services/supabaseDataService.js:5626",
+            "src/services/supabaseDataService.js:7472",
+            "src/services/supabaseDataService.js:7481"
           ],
           "writers": [],
           "sql": []
         },
         "calc_from": {
           "readers": [
-            "src/services/supabaseDataService.js:7568"
+            "src/services/supabaseDataService.js:7472"
           ],
           "writers": [],
           "sql": []
         },
         "calc_to": {
           "readers": [
-            "src/services/supabaseDataService.js:7568"
+            "src/services/supabaseDataService.js:7472"
           ],
           "writers": [],
           "sql": []
@@ -14913,14 +14973,14 @@
         },
         "win_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:7568"
+            "src/services/supabaseDataService.js:7472"
           ],
           "writers": [],
           "sql": []
         },
         "top2_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:7568"
+            "src/services/supabaseDataService.js:7472"
           ],
           "writers": [],
           "sql": []
@@ -14937,30 +14997,30 @@
         },
         "starts": {
           "readers": [
-            "src/services/supabaseDataService.js:7568"
+            "src/services/supabaseDataService.js:7472"
           ],
           "writers": [],
           "sql": []
         },
         "finals": {
           "readers": [
-            "src/services/supabaseDataService.js:7568"
+            "src/services/supabaseDataService.js:7472"
           ],
           "writers": [],
           "sql": []
         },
         "wins": {
           "readers": [
-            "src/services/supabaseDataService.js:7568"
+            "src/services/supabaseDataService.js:7472"
           ],
           "writers": [],
           "sql": []
         },
         "avg_st": {
           "readers": [
-            "src/services/supabaseDataService.js:4227",
-            "src/services/supabaseDataService.js:5663",
-            "src/services/supabaseDataService.js:7568"
+            "src/services/supabaseDataService.js:4198",
+            "src/services/supabaseDataService.js:5626",
+            "src/services/supabaseDataService.js:7472"
           ],
           "writers": [],
           "sql": []
@@ -15685,7 +15745,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3553",
+          "ref": "src/services/supabaseDataService.js:3524",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15694,7 +15754,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4367",
+          "ref": "src/services/supabaseDataService.js:4338",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15762,8 +15822,8 @@
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "scripts/sns/delete-x-post.js:124",
             "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:3553",
-            "src/services/supabaseDataService.js:4367"
+            "src/services/supabaseDataService.js:3524",
+            "src/services/supabaseDataService.js:4338"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15776,8 +15836,8 @@
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "scripts/sns/delete-x-post.js:124",
             "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:3553",
-            "src/services/supabaseDataService.js:4367"
+            "src/services/supabaseDataService.js:3524",
+            "src/services/supabaseDataService.js:4338"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15787,7 +15847,7 @@
         "name_kana": {
           "readers": [
             "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:4367"
+            "src/services/supabaseDataService.js:4338"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15797,7 +15857,7 @@
         "birth_date": {
           "readers": [
             "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:4367"
+            "src/services/supabaseDataService.js:4338"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15807,7 +15867,7 @@
         "height_cm": {
           "readers": [
             "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:4367"
+            "src/services/supabaseDataService.js:4338"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15817,7 +15877,7 @@
         "weight_kg": {
           "readers": [
             "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:4367"
+            "src/services/supabaseDataService.js:4338"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15837,7 +15897,7 @@
           "readers": [
             "scripts/lib/racerNews/officialGradeAnnouncements.js:174",
             "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:4367"
+            "src/services/supabaseDataService.js:4338"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15848,7 +15908,7 @@
           "readers": [
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:4367"
+            "src/services/supabaseDataService.js:4338"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15858,7 +15918,7 @@
         "registration_period": {
           "readers": [
             "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:4367"
+            "src/services/supabaseDataService.js:4338"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15985,7 +16045,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6924",
+          "ref": "src/services/supabaseDataService.js:6828",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16000,7 +16060,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:7384",
+          "ref": "src/services/supabaseDataService.js:7288",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16037,8 +16097,8 @@
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
             "scripts/verification/verify-series-points-official.mjs:135",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/supabaseDataService.js:6924",
-            "src/services/supabaseDataService.js:7384"
+            "src/services/supabaseDataService.js:6828",
+            "src/services/supabaseDataService.js:7288"
           ],
           "writers": [],
           "sql": []
@@ -16048,8 +16108,8 @@
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
             "scripts/verification/verify-series-points-official.mjs:135",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/supabaseDataService.js:6924",
-            "src/services/supabaseDataService.js:7384"
+            "src/services/supabaseDataService.js:6828",
+            "src/services/supabaseDataService.js:7288"
           ],
           "writers": [],
           "sql": []
@@ -16059,7 +16119,7 @@
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
             "scripts/verification/verify-series-points-official.mjs:135",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/supabaseDataService.js:6924"
+            "src/services/supabaseDataService.js:6828"
           ],
           "writers": [],
           "sql": []
@@ -16102,7 +16162,7 @@
         "placements": {
           "readers": [
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/supabaseDataService.js:6924"
+            "src/services/supabaseDataService.js:6828"
           ],
           "writers": [],
           "sql": []
@@ -16111,7 +16171,7 @@
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/supabaseDataService.js:6924"
+            "src/services/supabaseDataService.js:6828"
           ],
           "writers": [],
           "sql": []
@@ -16120,7 +16180,7 @@
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/supabaseDataService.js:6924"
+            "src/services/supabaseDataService.js:6828"
           ],
           "writers": [],
           "sql": []
@@ -16129,15 +16189,15 @@
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:203",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/supabaseDataService.js:6924"
+            "src/services/supabaseDataService.js:6828"
           ],
           "writers": [],
           "sql": []
         },
         "scraped_at": {
           "readers": [
-            "src/services/supabaseDataService.js:6924",
-            "src/services/supabaseDataService.js:7384"
+            "src/services/supabaseDataService.js:6828",
+            "src/services/supabaseDataService.js:7288"
           ],
           "writers": [],
           "sql": [
@@ -17382,6 +17442,24 @@
           ]
         },
         {
+          "ref": "scripts/sns/rank-data.js:156",
+          "op": "select",
+          "via": "helper:readAll",
+          "columns": []
+        },
+        {
+          "ref": "scripts/sns/rank-data.js:352",
+          "op": "select",
+          "via": "helper:readAll",
+          "columns": []
+        },
+        {
+          "ref": "scripts/sns/rank-data.js:500",
+          "op": "select",
+          "via": "helper:readAllIn",
+          "columns": []
+        },
+        {
           "ref": "scripts/sns/today-picks.js:101",
           "op": "rest",
           "via": "rest",
@@ -17438,7 +17516,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:571",
+          "ref": "src/services/supabaseDataService.js:578",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17448,7 +17526,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1938",
+          "ref": "src/services/supabaseDataService.js:1935",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17456,7 +17534,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2304",
+          "ref": "src/services/supabaseDataService.js:2301",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17465,7 +17543,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2328",
+          "ref": "src/services/supabaseDataService.js:2325",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17477,7 +17555,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2540",
+          "ref": "src/services/supabaseDataService.js:2537",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17486,7 +17564,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3252",
+          "ref": "src/services/supabaseDataService.js:3223",
           "op": "select",
           "via": "embed",
           "columns": [
@@ -17494,25 +17572,25 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:4471",
+          "ref": "src/services/supabaseDataService.js:4440",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4609",
+          "ref": "src/services/supabaseDataService.js:4576",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:4835",
+          "ref": "src/services/supabaseDataService.js:4798",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:6115",
+          "ref": "src/services/supabaseDataService.js:6078",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17523,7 +17601,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6235",
+          "ref": "src/services/supabaseDataService.js:6198",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17533,7 +17611,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6385",
+          "ref": "src/services/supabaseDataService.js:6289",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17543,13 +17621,13 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6869",
+          "ref": "src/services/supabaseDataService.js:6773",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:7369",
+          "ref": "src/services/supabaseDataService.js:7273",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17866,13 +17944,13 @@
             "src/services/poirotService.js:48",
             "src/services/ruleMatchService.js:133",
             "src/services/sherlockService.js:73",
-            "src/services/supabaseDataService.js:2328",
-            "src/services/supabaseDataService.js:2540",
-            "src/services/supabaseDataService.js:571",
-            "src/services/supabaseDataService.js:6115",
-            "src/services/supabaseDataService.js:6235",
-            "src/services/supabaseDataService.js:6385",
-            "src/services/supabaseDataService.js:7369",
+            "src/services/supabaseDataService.js:2325",
+            "src/services/supabaseDataService.js:2537",
+            "src/services/supabaseDataService.js:578",
+            "src/services/supabaseDataService.js:6078",
+            "src/services/supabaseDataService.js:6198",
+            "src/services/supabaseDataService.js:6289",
+            "src/services/supabaseDataService.js:7273",
             "src/services/watsonService.js:71"
           ],
           "writers": [],
@@ -17967,13 +18045,13 @@
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
             "src/services/sherlockService.js:73",
-            "src/services/supabaseDataService.js:1938",
-            "src/services/supabaseDataService.js:2304",
-            "src/services/supabaseDataService.js:2328",
-            "src/services/supabaseDataService.js:571",
-            "src/services/supabaseDataService.js:6115",
-            "src/services/supabaseDataService.js:6235",
-            "src/services/supabaseDataService.js:6385",
+            "src/services/supabaseDataService.js:1935",
+            "src/services/supabaseDataService.js:2301",
+            "src/services/supabaseDataService.js:2325",
+            "src/services/supabaseDataService.js:578",
+            "src/services/supabaseDataService.js:6078",
+            "src/services/supabaseDataService.js:6198",
+            "src/services/supabaseDataService.js:6289",
             "src/services/watsonService.js:71"
           ],
           "writers": [],
@@ -18049,13 +18127,13 @@
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
             "src/services/sherlockService.js:73",
-            "src/services/supabaseDataService.js:2304",
-            "src/services/supabaseDataService.js:2328",
-            "src/services/supabaseDataService.js:3252",
-            "src/services/supabaseDataService.js:571",
-            "src/services/supabaseDataService.js:6115",
-            "src/services/supabaseDataService.js:6235",
-            "src/services/supabaseDataService.js:6385",
+            "src/services/supabaseDataService.js:2301",
+            "src/services/supabaseDataService.js:2325",
+            "src/services/supabaseDataService.js:3223",
+            "src/services/supabaseDataService.js:578",
+            "src/services/supabaseDataService.js:6078",
+            "src/services/supabaseDataService.js:6198",
+            "src/services/supabaseDataService.js:6289",
             "src/services/watsonService.js:71"
           ],
           "writers": [],
@@ -18095,8 +18173,8 @@
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
             "src/services/sherlockService.js:73",
-            "src/services/supabaseDataService.js:2328",
-            "src/services/supabaseDataService.js:6115",
+            "src/services/supabaseDataService.js:2325",
+            "src/services/supabaseDataService.js:6078",
             "src/services/watsonService.js:71"
           ],
           "writers": [
@@ -18153,7 +18231,7 @@
             "src/services/poirotService.js:48",
             "src/services/ruleMatchService.js:133",
             "src/services/sherlockService.js:73",
-            "src/services/supabaseDataService.js:2328",
+            "src/services/supabaseDataService.js:2325",
             "src/services/watsonService.js:71"
           ],
           "writers": [
@@ -18281,7 +18359,7 @@
             "scripts/lib/snsTodayDigestV3.js:94",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
-            "src/services/supabaseDataService.js:7369"
+            "src/services/supabaseDataService.js:7273"
           ],
           "writers": [
             "scripts/daily/update-race-info.js:513"
@@ -18342,8 +18420,8 @@
             "scripts/sns/push-full-picture.js:839",
             "scripts/sns/push-setsu-kiryoku-short.js:967",
             "scripts/sns/today-picks.js:101",
-            "src/services/supabaseDataService.js:2540",
-            "src/services/supabaseDataService.js:7369"
+            "src/services/supabaseDataService.js:2537",
+            "src/services/supabaseDataService.js:7273"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:869",
@@ -25074,7 +25152,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:6719",
+          "ref": "src/services/supabaseDataService.js:6623",
           "op": "select",
           "via": "client",
           "columns": [
@@ -25111,28 +25189,28 @@
       "columns": {
         "course": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
         },
         "grade": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
         },
         "window_start": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
         },
         "window_end": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": [
@@ -25141,56 +25219,56 @@
         },
         "window_days": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
         },
         "runs": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
         },
         "avg_st": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
         },
         "stable_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
         },
         "late_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
         },
         "breakout_count": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
         },
         "breakout_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
         },
         "st_histogram": {
           "readers": [
-            "src/services/supabaseDataService.js:6719"
+            "src/services/supabaseDataService.js:6623"
           ],
           "writers": [],
           "sql": []
@@ -25236,7 +25314,7 @@
       },
       "readers": [
         {
-          "ref": "src/services/supabaseDataService.js:6612",
+          "ref": "src/services/supabaseDataService.js:6516",
           "op": "select",
           "via": "client",
           "columns": [
@@ -25276,14 +25354,14 @@
         "venue_code": {
           "readers": [
             "scripts/daily/update-top-start-stats.js:143",
-            "src/services/supabaseDataService.js:6612"
+            "src/services/supabaseDataService.js:6516"
           ],
           "writers": [],
           "sql": []
         },
         "boat_number": {
           "readers": [
-            "src/services/supabaseDataService.js:6612"
+            "src/services/supabaseDataService.js:6516"
           ],
           "writers": [],
           "sql": []
@@ -26125,7 +26203,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:7889",
+          "ref": "src/services/supabaseDataService.js:7793",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26143,7 +26221,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:7906",
+          "ref": "src/services/supabaseDataService.js:7810",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26169,15 +26247,15 @@
       "columns": {
         "venue_code": {
           "readers": [
-            "src/services/supabaseDataService.js:7889",
-            "src/services/supabaseDataService.js:7906"
+            "src/services/supabaseDataService.js:7793",
+            "src/services/supabaseDataService.js:7810"
           ],
           "writers": [],
           "sql": []
         },
         "race_grade": {
           "readers": [
-            "src/services/supabaseDataService.js:7889"
+            "src/services/supabaseDataService.js:7793"
           ],
           "writers": [],
           "sql": [
@@ -26186,63 +26264,63 @@
         },
         "boat_number": {
           "readers": [
-            "src/services/supabaseDataService.js:7889"
+            "src/services/supabaseDataService.js:7793"
           ],
           "writers": [],
           "sql": []
         },
         "race_count": {
           "readers": [
-            "src/services/supabaseDataService.js:7889"
+            "src/services/supabaseDataService.js:7793"
           ],
           "writers": [],
           "sql": []
         },
         "wins": {
           "readers": [
-            "src/services/supabaseDataService.js:7889"
+            "src/services/supabaseDataService.js:7793"
           ],
           "writers": [],
           "sql": []
         },
         "top2": {
           "readers": [
-            "src/services/supabaseDataService.js:7889"
+            "src/services/supabaseDataService.js:7793"
           ],
           "writers": [],
           "sql": []
         },
         "top3": {
           "readers": [
-            "src/services/supabaseDataService.js:7889"
+            "src/services/supabaseDataService.js:7793"
           ],
           "writers": [],
           "sql": []
         },
         "technique_breakdown": {
           "readers": [
-            "src/services/supabaseDataService.js:7889"
+            "src/services/supabaseDataService.js:7793"
           ],
           "writers": [],
           "sql": []
         },
         "payout_count": {
           "readers": [
-            "src/services/supabaseDataService.js:7889"
+            "src/services/supabaseDataService.js:7793"
           ],
           "writers": [],
           "sql": []
         },
         "manshu_count": {
           "readers": [
-            "src/services/supabaseDataService.js:7889"
+            "src/services/supabaseDataService.js:7793"
           ],
           "writers": [],
           "sql": []
         },
         "payout_trio_sum": {
           "readers": [
-            "src/services/supabaseDataService.js:7889"
+            "src/services/supabaseDataService.js:7793"
           ],
           "writers": [],
           "sql": []
@@ -26280,7 +26358,13 @@
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:604",
+          "ref": "scripts/sns/rank-data.js:330",
+          "op": "select",
+          "via": "helper:readAll",
+          "columns": []
+        },
+        {
+          "ref": "src/services/supabaseDataService.js:611",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26305,14 +26389,14 @@
       "columns": {
         "venue_code": {
           "readers": [
-            "src/services/supabaseDataService.js:604"
+            "src/services/supabaseDataService.js:611"
           ],
           "writers": [],
           "sql": []
         },
         "start_date": {
           "readers": [
-            "src/services/supabaseDataService.js:604"
+            "src/services/supabaseDataService.js:611"
           ],
           "writers": [],
           "sql": []
@@ -26357,7 +26441,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3179",
+          "ref": "src/services/supabaseDataService.js:3150",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26368,7 +26452,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3408",
+          "ref": "src/services/supabaseDataService.js:3379",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26377,7 +26461,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:3418",
+          "ref": "src/services/supabaseDataService.js:3389",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26415,9 +26499,9 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/supabaseDataService.js:3179",
-            "src/services/supabaseDataService.js:3408",
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3150",
+            "src/services/supabaseDataService.js:3379",
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
@@ -26426,8 +26510,8 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/supabaseDataService.js:3179",
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3150",
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
@@ -26436,9 +26520,9 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/supabaseDataService.js:3179",
-            "src/services/supabaseDataService.js:3408",
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3150",
+            "src/services/supabaseDataService.js:3379",
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
@@ -26451,21 +26535,21 @@
         "race_count": {
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
         },
         "final_count": {
           "readers": [
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
         },
         "championship_count": {
           "readers": [
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
@@ -26487,28 +26571,28 @@
         },
         "win_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
         },
         "top2_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
         },
         "top3_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
         },
         "accident_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
@@ -26530,7 +26614,7 @@
         },
         "stats_period_end": {
           "readers": [
-            "src/services/supabaseDataService.js:3418"
+            "src/services/supabaseDataService.js:3389"
           ],
           "writers": [],
           "sql": []
@@ -26642,7 +26726,7 @@
       },
       "readers": [
         {
-          "ref": "src/services/supabaseDataService.js:2012",
+          "ref": "src/services/supabaseDataService.js:2009",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26682,56 +26766,56 @@
         "venue_code": {
           "readers": [
             "scripts/daily/update-winning-technique-stats.js:236",
-            "src/services/supabaseDataService.js:2012"
+            "src/services/supabaseDataService.js:2009"
           ],
           "writers": [],
           "sql": []
         },
         "period_days": {
           "readers": [
-            "src/services/supabaseDataService.js:2012"
+            "src/services/supabaseDataService.js:2009"
           ],
           "writers": [],
           "sql": []
         },
         "winning_technique": {
           "readers": [
-            "src/services/supabaseDataService.js:2012"
+            "src/services/supabaseDataService.js:2009"
           ],
           "writers": [],
           "sql": []
         },
         "race_count": {
           "readers": [
-            "src/services/supabaseDataService.js:2012"
+            "src/services/supabaseDataService.js:2009"
           ],
           "writers": [],
           "sql": []
         },
         "total_races": {
           "readers": [
-            "src/services/supabaseDataService.js:2012"
+            "src/services/supabaseDataService.js:2009"
           ],
           "writers": [],
           "sql": []
         },
         "period_from": {
           "readers": [
-            "src/services/supabaseDataService.js:2012"
+            "src/services/supabaseDataService.js:2009"
           ],
           "writers": [],
           "sql": []
         },
         "period_to": {
           "readers": [
-            "src/services/supabaseDataService.js:2012"
+            "src/services/supabaseDataService.js:2009"
           ],
           "writers": [],
           "sql": []
         },
         "last_updated": {
           "readers": [
-            "src/services/supabaseDataService.js:2012"
+            "src/services/supabaseDataService.js:2009"
           ],
           "writers": [],
           "sql": [
@@ -26787,7 +26871,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:881",
+          "ref": "src/services/supabaseDataService.js:878",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26796,7 +26880,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2044",
+          "ref": "src/services/supabaseDataService.js:2041",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26805,7 +26889,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:6473",
+          "ref": "src/services/supabaseDataService.js:6377",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26852,9 +26936,9 @@
             "scripts/maintenance/update-venue-stats.js:46",
             "scripts/maintenance/update-venue-stats.js:58",
             "scripts/maintenance/update-venue-stats.js:74",
-            "src/services/supabaseDataService.js:2044",
-            "src/services/supabaseDataService.js:6473",
-            "src/services/supabaseDataService.js:881"
+            "src/services/supabaseDataService.js:2041",
+            "src/services/supabaseDataService.js:6377",
+            "src/services/supabaseDataService.js:878"
           ],
           "writers": [],
           "sql": [
@@ -26876,7 +26960,7 @@
         "cluster": {
           "readers": [
             "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:89",
-            "src/services/supabaseDataService.js:2044"
+            "src/services/supabaseDataService.js:2041"
           ],
           "writers": [],
           "sql": [
@@ -26887,8 +26971,8 @@
           "readers": [
             "scripts/daily/generate-predictions.js:42",
             "scripts/maintenance/update-venue-stats.js:74",
-            "src/services/supabaseDataService.js:6473",
-            "src/services/supabaseDataService.js:881"
+            "src/services/supabaseDataService.js:6377",
+            "src/services/supabaseDataService.js:878"
           ],
           "writers": [
             "scripts/maintenance/update-venue-stats.js:46",
@@ -26922,7 +27006,7 @@
         "avg_first_win_rate_race_count": {
           "readers": [
             "scripts/maintenance/update-venue-stats.js:74",
-            "src/services/supabaseDataService.js:6473"
+            "src/services/supabaseDataService.js:6377"
           ],
           "writers": [
             "scripts/maintenance/update-venue-stats.js:46",
@@ -27055,7 +27139,7 @@
           "test": true
         },
         {
-          "ref": "src/services/supabaseDataService.js:2231",
+          "ref": "src/services/supabaseDataService.js:2228",
           "op": "select",
           "via": "client",
           "columns": [
@@ -27096,14 +27180,14 @@
         "venue_code": {
           "readers": [
             "scripts/daily/update-winning-technique-stats.js:161",
-            "src/services/supabaseDataService.js:2231"
+            "src/services/supabaseDataService.js:2228"
           ],
           "writers": [],
           "sql": []
         },
         "boat_number": {
           "readers": [
-            "src/services/supabaseDataService.js:2231"
+            "src/services/supabaseDataService.js:2228"
           ],
           "writers": [],
           "sql": []
@@ -27125,7 +27209,7 @@
         },
         "percentage": {
           "readers": [
-            "src/services/supabaseDataService.js:2231"
+            "src/services/supabaseDataService.js:2228"
           ],
           "writers": [],
           "sql": []
@@ -28008,7 +28092,7 @@
           "via": "rest"
         },
         {
-          "ref": "src/services/supabaseDataService.js:1540",
+          "ref": "src/services/supabaseDataService.js:1537",
           "via": "client"
         }
       ],
@@ -28050,7 +28134,7 @@
           "via": "rest"
         },
         {
-          "ref": "src/services/supabaseDataService.js:1540",
+          "ref": "src/services/supabaseDataService.js:1537",
           "via": "client"
         }
       ],
@@ -28089,7 +28173,7 @@
           "via": "helper:callRpc"
         },
         {
-          "ref": "src/services/supabaseDataService.js:5306",
+          "ref": "src/services/supabaseDataService.js:5269",
           "via": "client"
         }
       ],
@@ -28141,7 +28225,7 @@
           "via": "helper:callRpc"
         },
         {
-          "ref": "src/services/supabaseDataService.js:5974",
+          "ref": "src/services/supabaseDataService.js:5937",
           "via": "client"
         }
       ],
@@ -28173,7 +28257,7 @@
           "via": "helper:callRpc"
         },
         {
-          "ref": "src/services/supabaseDataService.js:5081",
+          "ref": "src/services/supabaseDataService.js:5044",
           "via": "client"
         }
       ],
@@ -28206,7 +28290,7 @@
           "via": "helper:callRpc"
         },
         {
-          "ref": "src/services/supabaseDataService.js:6501",
+          "ref": "src/services/supabaseDataService.js:6405",
           "via": "client"
         }
       ],
@@ -28234,7 +28318,7 @@
       },
       "callers": [
         {
-          "ref": "src/services/supabaseDataService.js:7627",
+          "ref": "src/services/supabaseDataService.js:7531",
           "via": "client"
         }
       ],
@@ -28271,7 +28355,7 @@
           "via": "rest"
         },
         {
-          "ref": "src/services/supabaseDataService.js:1387",
+          "ref": "src/services/supabaseDataService.js:1384",
           "via": "client"
         }
       ],
@@ -30265,7 +30349,7 @@
       "kind": "rpc",
       "name": "get_course_win_rate_baseline",
       "refs": [
-        "src/services/supabaseDataService.js:4321"
+        "src/services/supabaseDataService.js:4292"
       ]
     },
     {
