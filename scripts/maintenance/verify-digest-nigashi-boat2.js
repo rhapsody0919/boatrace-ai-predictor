@@ -69,8 +69,8 @@ const cases = [
   ["注目レースの候補に逃がしは入らない（2号艇でも3号艇でも。2026-11-04 オーナー決定）", () => {
     const s = buildSections({ races, entries, statMap, baselineMap, volatilityMap });
     assert.ok(s.nigashi.some((r) => r.course === 2), "前提: 2号艇の逃がしが一覧にある");
-    const featured = pickFeatured(s);
-    assert.notEqual(featured?.detail?.from, "nigashi");
+    // このフィクスチャの候補は逃がしだけ。逃がしが入らなければ注目レースは null
+    assert.equal(pickFeatured(s), null);
     const only = { ...s, nige: [], nigeAll: [], makuri: [] };
     assert.equal(pickFeatured(only), null);
   }],
