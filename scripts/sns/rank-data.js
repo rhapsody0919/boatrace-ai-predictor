@@ -9,6 +9,7 @@
  *   node --env-file=.env.local scripts/sns/rank-data.js --dataset=venue_payout [--from=YYYY-MM-DD] [--to=YYYY-MM-DD]
  *   node --env-file=.env.local scripts/sns/rank-data.js --dataset=venue_favorite [--to=YYYY-MM-DD]
  *   node --env-file=.env.local scripts/sns/rank-data.js --dataset=motor_power --venue=<1-24> [--to=YYYY-MM-DD]
+ *   node --env-file=.env.local scripts/sns/rank-data.js --dataset=racer_page --venue=<1-24> [--date=YYYY-MM-DD（出走表の日、既定は今日）]
  * 集計は画面と同じ純関数を使う（新しい集計の式を作らない）。
  */
 import { readFileSync } from "node:fs";
@@ -30,6 +31,12 @@ import {
 import { currentMotorGenerationStart } from "../../src/utils/motorGeneration.js";
 import { formatPowerIndex } from "../../src/utils/smallSampleRate.js";
 import { SMALL_SAMPLE_THRESHOLD } from "../../src/components/race/basicInfoStats.js";
+import { buildRacerRaceHistoryRows } from "../../src/services/racerRaceHistoryRows.js";
+import { splitRacerName } from "../../src/utils/racerName.js";
+import {
+  aggregateRacerVenueBoatStats,
+  racerHistoryCutoff,
+} from "../../src/utils/racerVenueBoatStats.js";
 
 function venueKimarite() {
   const stats = VENUE_SUMMARY_STATS;
@@ -417,6 +424,196 @@ async function motorPower({ venue, to }) {
   };
 }
 
+/**
+ * 番付の行に載せる最少の走数。目安（根拠なし）: プロジェクトの小標本の線 SMALL_SAMPLE_THRESHOLD（=6、BOA-306）を
+ * 借りた。選手ページの会場×枠番のカードには線が無い（1走でも率を出す）。関門にはしない
+ */
+const RACER_PAGE_MIN_RUNS = SMALL_SAMPLE_THRESHOLD;
+
+/**
+ * 選手ページ（GS00）の会場×1号艇の絞り込み（「会場」と「1号艇」を選んだ表示）と同じ値を、その日の出走表の選手ごとに出す。
+ * - 1号艇の逃げ率: 決まり手の「逃げ」の回数 ÷ 1着率のカードの出走数（tech["逃げ"] / n）。枠番の基準（ページと同じ。BOA-257）
+ * - 1号艇の平均ST: 同じ絞り込みの平均STのカード（本番ST、F を除く）
+ * - 当地勝率: 出走表の公式の当地勝率（race_entries.local_win_rate。ページの「全国勝率・当地勝率の推移」の当地の線と同じ列）
+ * 期間はページと同じ（見た時刻から730日、racerHistoryCutoff）。集計は aggregateRacerVenueBoatStats（ページと同じ関数）。
+ * 選手の履歴はその会場の走だけをまとめて読む（集計は会場で絞るので結果は同じ。1人ずつ読むと1場で数百の要求になる）
+ */
+async function racerPage({ venue, date }) {
+  const venueCode = Number(venue);
+  if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
+    throw new Error("--venue=<1〜24> を指定してください");
+  }
+  const day = date ?? jstToday();
+  const vv = String(venueCode).padStart(2, "0");
+  const card = await readAll(
+    "race_entries",
+    "race_id, boat_number, racer_id, player_name, local_win_rate",
+    ["race_id", "boat_number"],
+    (q) => q.like("race_id", `${day}-${vv}-__`),
+  );
+  const racers = new Map();
+  for (const e of card) {
+    if (e.racer_id != null && !racers.has(e.racer_id))
+      racers.set(e.racer_id, e);
+  }
+  if (racers.size === 0)
+    throw new Error(`${day} の${STADIUM_NAMES[venueCode]}の出走表が無い`);
+  const racerIds = [...racers.keys()];
+  const since = racerHistoryCutoff();
+  const [grades, entries] = await Promise.all([
+    readAll("racer_grade_cache", "data", ["key"], (q) =>
+      q.eq("key", "latest_grades"),
+    ),
+    readAllIn(
+      "race_entries",
+      "race_id, boat_number, racer_id",
+      "racer_id",
+      racerIds,
+      ["race_id", "boat_number"],
+      (q) => q.gte("race_id", since).like("race_id", `__________-${vv}-__`),
+    ),
+  ]);
+  const gradeOf = new Map(
+    (grades[0]?.data ?? []).map((g) => [g.racer_id, g.grade ?? null]),
+  );
+  const raceIds = [...new Set(entries.map((e) => e.race_id))];
+  // 選手ページの getRacerRaceHistory と同じ表・列
+  const [raceRows, resultRows, exhibitionRows, conditionRows, stRows] =
+    await Promise.all([
+      readAllIn(
+        "races",
+        "race_id, venue_code, race_grade",
+        "race_id",
+        raceIds,
+        ["race_id"],
+      ),
+      readAllIn(
+        "race_results",
+        "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+        "race_id",
+        raceIds,
+        ["race_id"],
+      ),
+      readAllIn(
+        "exhibition_data",
+        "race_id, boat_number, exhibition_time",
+        "race_id",
+        raceIds,
+        ["race_id", "boat_number"],
+      ),
+      readAllIn(
+        "race_conditions",
+        "race_id, race_stage, race_title, weather, wind_speed, wave_height",
+        "race_id",
+        raceIds,
+        ["race_id"],
+      ),
+      readAllIn(
+        "race_start_timings",
+        "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
+        "race_id",
+        raceIds,
+        ["race_id", "boat_number"],
+      ),
+    ]);
+  const entriesOf = new Map();
+  for (const e of entries) {
+    if (!entriesOf.has(e.racer_id)) entriesOf.set(e.racer_id, []);
+    entriesOf.get(e.racer_id).push(e);
+  }
+  const stats = racerIds.map((racerId) => {
+    const history = buildRacerRaceHistoryRows({
+      entries: entriesOf.get(racerId) ?? [],
+      raceRows,
+      resultRows,
+      exhibitionRows,
+      conditionRows,
+      stRows,
+    });
+    const boat1 = aggregateRacerVenueBoatStats(
+      history,
+      venueCode,
+      1,
+      null,
+      null,
+    );
+    const card1 = racers.get(racerId);
+    return {
+      racerId,
+      // 選手ページの見出しと同じく空白を詰める（出走表の名前は全角スペースで固定幅に詰めてある）
+      name: splitRacerName(card1.player_name).join(""),
+      grade: gradeOf.get(racerId) ?? null,
+      localWinRate: card1.local_win_rate ?? null,
+      boat1,
+    };
+  });
+  const base = (s) => ({
+    racer_id: s.racerId,
+    class: s.grade,
+    venue_code: venueCode,
+  });
+  const rows = [
+    ...stats
+      .filter((s) => s.boat1.n >= RACER_PAGE_MIN_RUNS)
+      .map((s) => ({
+        name: s.name,
+        k: s.boat1.tech["逃げ"] ?? 0,
+        n: s.boat1.n,
+        value: round(((s.boat1.tech["逃げ"] ?? 0) / s.boat1.n) * 100, 1),
+        extra: {
+          ...base(s),
+          metric: "nige_rate_boat1",
+          unit: "%",
+          wins: s.boat1.win,
+        },
+      })),
+    ...stats
+      .filter(
+        (s) => s.boat1.avgSt !== null && s.boat1.stN >= RACER_PAGE_MIN_RUNS,
+      )
+      .map((s) => ({
+        name: s.name,
+        k: null,
+        n: s.boat1.stN,
+        value: round(s.boat1.avgSt, 3),
+        extra: { ...base(s), metric: "avg_st_boat1", unit: "秒" },
+      })),
+    ...stats
+      .filter((s) => s.localWinRate !== null)
+      .map((s) => ({
+        name: s.name,
+        k: null,
+        n: null,
+        value: Number(s.localWinRate),
+        extra: {
+          ...base(s),
+          metric: "local_win_rate",
+          unit: "点",
+          source: "出走表の公式の当地勝率",
+        },
+      })),
+  ];
+  return {
+    dataset: "racer_page",
+    period: {
+      from: since,
+      to: day,
+      label: `${slash(since)}〜${slash(day)}（選手ページと同じ最大過去2年）`,
+    },
+    scope: "today",
+    unit: "racer",
+    value_type: "rate",
+    rows,
+    excluded: stats
+      .filter((s) => s.boat1.n < RACER_PAGE_MIN_RUNS)
+      .map((s) => ({ racer_id: s.racerId, name: s.name, n: s.boat1.n })),
+    min_n: RACER_PAGE_MIN_RUNS,
+    baseline: null,
+    observed_at: new Date().toISOString(),
+    source_sha: null,
+  };
+}
+
 // options: その dataset が受け付ける引数。静的データの dataset は引数を受け付けない（期間は画面のデータと同じ）
 const datasets = new Map([
   ["venue_kimarite", { build: venueKimarite, options: [] }],
@@ -424,6 +621,7 @@ const datasets = new Map([
   ["venue_payout", { build: venuePayout, options: ["from", "to"] }],
   ["venue_favorite", { build: venueFavorite, options: ["to"] }],
   ["motor_power", { build: motorPower, options: ["venue", "to"] }],
+  ["racer_page", { build: racerPage, options: ["venue", "date"] }],
 ]);
 
 /** @returns {{ dataset: string, options: Record<string, string> }} */
@@ -452,7 +650,7 @@ export function parseArgs(argv) {
         `未対応の引数: --${key}（${dataset} が受け付けるのは ${spec.options.length ? spec.options.map((o) => `--${o}`).join("・") : "--dataset だけ"}）`,
       );
     }
-    if ((key === "from" || key === "to") && !DATE_RE.test(value))
+    if (["from", "to", "date"].includes(key) && !DATE_RE.test(value))
       throw new Error(`--${key} は YYYY-MM-DD`);
   }
   if (options.from && options.to && options.from > options.to)

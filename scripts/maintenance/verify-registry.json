@@ -1144,6 +1144,11 @@
       "guards": "選手ページの公式の期別成績・進入コース別成績（src/utils/racerOfficialPeriodStats.js）。崩れると前期・後期の取り違え、進入の少ないセルの率、率の平均での合算が画面に出る"
     },
     {
+      "script": "verify-racer-page-shared.js",
+      "tier": "ci",
+      "guards": "BOA-1244: 選手ページの会場×枠番の絞り込みと番付の racer_page が同じ純関数 src/utils/racerVenueBoatStats.js（aggregateRacerVenueBoatStats・toReturnRate・racerHistoryCutoff）を使う（サービス層に写しが無い、730日の切りが移す前の式と同じ、会場で絞る集計は会場の走だけを読んでも同じ値（乱数2,000通り））、rank-data.js が racer_page の引数の誤りを DB の前に拒否する（DB・通信なし）"
+    },
+    {
       "script": "verify-racer-profile-sync.js",
       "tier": "ci",
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
@@ -1188,7 +1193,7 @@
       "tier": "manual",
       "reason": "本番 DB を匿名キーで読む（CI に鍵を置かない）。今日の値は確定のたびに動くので、既定は昨日",
       "command": "node --env-file=.env.local scripts/maintenance/verify-rank-data-screen-parity.js [--date=YYYY-MM-DD] [--venue=1-24]",
-      "guards": "番付の DB を読む dataset（rank-data.js）と画面の値の照合（本番の匿名の読み取り）。venue_payout: 昨日（--date で変更）の会場ランキングの固い場・荒れている場・万舟率の上位5場の値と消化レース数が一致（BOA-1242）。motor_power: 会場（既定 10）の上位3機・下位3機の機力指数・走数が画面の1機ずつの計算と一致（BOA-1245）"
+      "guards": "番付の DB を読む dataset（rank-data.js）と画面の値の照合（本番の匿名の読み取り）。venue_payout: 昨日（--date で変更）の会場ランキングの固い場・荒れている場・万舟率の上位5場の値と消化レース数が一致（BOA-1242）。motor_power: 会場（既定 10）の上位3機・下位3機の機力指数・走数が画面の1機ずつの計算と一致（BOA-1245）。racer_page: 会場の今日の出走表で番付に載る最大3人の会場×1号艇の逃げ・出走数・平均ST が選手ページの取得（選手1人の全会場730日）と一致（BOA-1244）"
     },
     {
       "script": "verify-registry-order.js",
