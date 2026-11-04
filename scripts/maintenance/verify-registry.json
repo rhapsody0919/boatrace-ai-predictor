@@ -1211,9 +1211,21 @@
       "guards": "scripts/・api/ の相対 import の参照先が実在すること（移動したスクリプトの ./lib/ の取り残し。CIで走らない手動スクリプトの壊れに気づけない。BOA-536）"
     },
     {
+      "script": "verify-remotion-compositions.js",
+      "tier": "manual",
+      "guards": "動画（sns-video-studio/remotion）の束を実際に作り、npx remotion compositions が終了コード 0 で Root.jsx の composition を全部一覧に出すこと。2026-11-04 21:28〜、人気薄の1着の import が src/config/languages.js → blogPosts*.js の import.meta.glob に届き、Getting composition で全部の動画が落ちた",
+      "reason": "sns-video-studio/remotion の依存（npm ci）と Chromium が要る。CI は remotion の依存を入れていない（静的な検査 verify-remotion-src-imports.js が ci で同じ壊れ方を止める）",
+      "command": "(cd sns-video-studio/remotion && npm ci) && node scripts/maintenance/verify-remotion-compositions.js"
+    },
+    {
       "script": "verify-remotion-local-fonts.js",
       "tier": "ci",
       "guards": "動画（sns-video-studio/remotion）の字をネットから読まない: remotion に @remotion/google-fonts と fonts.googleapis.com・fonts.gstatic.com が無い（1頁 484 回の読み取りに戻さない）、fonts.js は同梱の Noto Sans JP の woff2 を import して @remotion/fonts で読む（staticFile は --public-dir を替える f01・人気薄の1着で見つからない）、coverage.js が同梱の woff2 から作ったもの（sha256）、豆腐の検査が同梱に無い字だけを拾う、全貌・f01・節の機力・人気薄の1着が useGlyphGuard を呼ぶ、f01 の撮影用の頁も Google Fonts を読まない"
+    },
+    {
+      "script": "verify-remotion-src-imports.js",
+      "tier": "ci",
+      "guards": "動画（sns-video-studio/remotion/src）から相対 import で辿れるファイルが、src/config/languages.js・src/data/blogPosts*.js と import.meta.glob（Vite 専用、Remotion の webpack は変換しない）に届かないこと。2026-11-04 #2236 で upsetWin/model.js → raceSeriesText.js → raceDetailHeading.js → languages.js → blogPostsEn.js が繋がり、Getting composition で全部の動画が落ちた。日目のラベルは src/utils/seriesDayLabel.js に分けた"
     },
     {
       "script": "verify-render-with-fresh-page.js",
