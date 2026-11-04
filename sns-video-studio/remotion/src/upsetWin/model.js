@@ -28,6 +28,10 @@
  *     最下位と読め、1つのときの「も」は並ぶ相手が無い（youtube-channel・wording-editor 2026-11-04）
  */
 
+import {
+  seriesDayTextOf,
+  seriesTitleOf,
+} from "../../../../src/utils/raceSeriesText.js";
 import { isCancellationConfirmed } from "../../../../scripts/lib/cancellationStatus.js";
 
 export const FORMAT = "upset_win_short";
@@ -203,7 +207,8 @@ const num = (v) =>
 /** 読み取り（PostgREST）で取る列。作り手と送る口の読み直しで同じ列を読む */
 export const READ_COLUMNS = {
   races:
-    "race_id,race_date,venue_code,race_number,race_grade,cancellation_status",
+    "race_id,race_date,venue_code,race_number,race_grade,cancellation_status,start_time",
+  race_conditions: "race_id,series_day,is_final_day,race_title",
   race_results:
     "race_id,rank1,winning_technique,race_status",
   race_entries:
@@ -237,6 +242,7 @@ export function shapeRace({
     venue_code: Number(race.venue_code),
     race_number: Number(race.race_number),
     grade: race.race_grade ?? null,
+    start_time: deadlineOf(race.start_time),
     // 中止は「confirmed かつ1着が無い」（docs/knowledge/data-definitions.md。confirmed のまま結果のあるレースがある・tentative は中止でない）
     cancelled:
       isCancellationConfirmed(race.cancellation_status) &&
@@ -271,6 +277,7 @@ export function shapeDay({
   entries = [],
   exhibition = [],
   odds = [],
+  race_conditions = [],
 }) {
   const group = (rows) => {
     const m = new Map();
@@ -279,19 +286,21 @@ export function shapeDay({
   };
   const res = new Map(results.map((r) => [r.race_id, r]));
   const od = new Map(odds.map((r) => [r.race_id, r]));
+  const conditions = new Map(race_conditions.map((r) => [r.race_id, r]));
   const en = group(entries);
   const ex = group(exhibition);
   return [...races]
     .sort((a, b) => a.race_id.localeCompare(b.race_id))
-    .map((race) =>
-      shapeRace({
+    .map((race) => ({
+      ...conditions.get(race.race_id),
+      ...shapeRace({
         race,
         result: res.get(race.race_id) ?? null,
         entries: en.get(race.race_id) ?? [],
         exhibition: ex.get(race.race_id) ?? [],
         odds: od.get(race.race_id) ?? null,
       }),
-    );
+    }));
 }
 
 /**
@@ -359,7 +368,8 @@ export function candidates(races) {
 }
 
 /** その日の1本（無ければ null） */
-export const pickUpset = (races) => candidates(races)[0] ?? null;
+export const pickUpset = (races) =>
+  candidates(races).find(({ race }) => deadlineOf(race.start_time)) ?? null;
 
 export const primaryOf = (weaknesses) =>
   PRIMARY_ORDER.find((k) => weaknesses.includes(k)) ?? null;
@@ -440,8 +450,20 @@ export function oneIn(n, k) {
 export const comma = (n) => n.toLocaleString("en-US");
 export const fmtOdds = (v) =>
   typeof v === "number" && v > 0 ? v.toFixed(1) : "—";
-export const headerText = (b) =>
-  `${b.venue}${b.race_number}R ${md(b.race_date)}（${weekdayOf(b.race_date)}）`;
+const deadlineOf = (value) =>
+  typeof value === "string" &&
+  /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?$/.test(value)
+    ? value.slice(0, 5)
+    : null;
+const raceText = (b) =>
+  `${md(b.race_date)}（${weekdayOf(b.race_date)}）${b.venue}${b.race_number}R`;
+export const headerText = (b) => {
+  const day = seriesDayTextOf(
+    [{ raceId: b.race_id, seriesDay: b.series_day, isFinalDay: b.is_final_day }],
+    b.race_id,
+  );
+  return `${raceText(b)}${day ? ` ${day}` : ""} 締切${deadlineOf(b.start_time)}`;
+};
 const winnerOf = (b) => b.boats[b.rank1 - 1];
 const whoText = (b) => {
   const w = winnerOf(b);
@@ -535,7 +557,7 @@ export function titleOf(b) {
   const labels = b.hook_metrics.map((k) => METRICS[k].label);
   const weak =
     labels.length === 2 ? `${labels[0]}も${labels[1]}も` : `${labels[0]}が`;
-  return `${b.venue}${b.race_number}R 単勝${fmtOdds(w.odds)}倍の${w.racer}${w.class}が1着 ${weak}6艇で最下位だった｜ボートレース`;
+  return `${raceText(b)} 締切${deadlineOf(b.start_time)} 単勝${fmtOdds(w.odds)}倍の${w.racer}${w.class}が1着 ${weak}6艇で最下位だった｜ボートレース`;
 }
 
 /** 説明欄のリンク（龍神ソナーのレースの頁。snsScreenMarkers の race-sonar） */
@@ -551,6 +573,7 @@ export function descriptionOf(b) {
   const ymd = (d) => d.replaceAll("-", "/");
   return [
     `ボートレース ${s.header}の結果の振り返り`,
+    ...[seriesTitleOf({ grade: b.grade, raceTitle: b.race_title })].filter(Boolean),
     "",
     `${b.rank1}号艇 ${w.racer} ${w.class} が単勝${fmtOdds(w.odds)}倍で1着（${b.technique}）。レース前のデータでは ${all} が6艇で最下位だった。`,
     `${p.cond}: ${yearLabel(b)}（${ymd(b.year.from)}〜${ymd(b.year.to)}）${comma(b.year.n)}レース中 ${comma(b.year.k)}回${p.tie}`,
@@ -605,6 +628,10 @@ export function buildBundle({
     venue_code: race.venue_code,
     race_number: race.race_number,
     grade: race.grade,
+    start_time: deadlineOf(race.start_time),
+    series_day: race.series_day ?? null,
+    is_final_day: race.is_final_day ?? null,
+    race_title: race.race_title ?? null,
     technique: race.technique,
     rank1: race.rank1,
     boats: race.boats.map((x) => ({ ...x })),
@@ -740,6 +767,8 @@ function allowedNumbers(b) {
     for (const n of norm(s).match(/\d+(?:\.\d+)?/g) ?? []) ok.add(n);
   };
   add(md(b.race_date));
+  add(deadlineOf(b.start_time) ?? "");
+  if (b.series_day != null) add(String(b.series_day));
   for (const bt of b.boats) {
     add(bt.class);
     for (const k of METRIC_KEYS) add(METRICS[k].fmt(bt));
@@ -821,6 +850,7 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
     !/^\d{4}-\d{2}-\d{2}$/.test(b.race_date)
   )
     return ["date・race_date が YYYY-MM-DD でない"];
+  if (!deadlineOf(b.start_time)) why.push("start_time が締切 HH:MM でない");
   if (b.race_date !== addDays(b.date, -1))
     why.push(`race_date（${b.race_date}）が date（${b.date}）の前日でない`);
   if (!VENUES.includes(b.venue))
