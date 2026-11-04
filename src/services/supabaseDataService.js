@@ -4274,6 +4274,71 @@ export const supabaseDataService = {
   },
 
   /**
+   * 全選手の同じコースの1着率（national、直近3期）と、会場の同じコースの1着率（venue、当地）
+   * （BOA-1290、マイグレーション 199 の RPC get_course_win_rate_baseline）。
+   * 6艇の想定コース別成績（docs/design/course-grid-six-boats/spec.md §1.1）の「差」と「平均の値」に使う。
+   *
+   * - national: racer_period_stats の calc_to < raceDate の新しい3期、出走のある全選手の Σc{n}_p1 ÷ Σc{n}_entries
+   * - venue: 実進入コースで、その会場の [raceDate − 730日, raceDate) の1着率。venueCode が null なら venue も null
+   * - winRate は百分率。entries が0のコースは null（0% にしない）
+   *
+   * 取得の失敗（関数が未適用の PGRST202 を含む）は例外で返す。0 や null の平均に化けさせない
+   * （.claude/rules/frontend-data-fetch.md §2）。
+   *
+   * @param {string} raceDate YYYY-MM-DD（レースの日。この日に終わる期・この日のレースは入らない）
+   * @param {number|null} venueCode 1〜24、または null（当地の値が要らないとき）
+   * @returns {Promise<{
+   *   terms: Array<{calc_from: string, calc_to: string}>,
+   *   national: Record<string, {wins: number, entries: number, winRate: number|null}>,
+   *   venue: {venueCode: number, from: string|null, to: string|null,
+   *     byCourse: Record<string, {wins: number, entries: number, winRate: number|null}>} | null
+   * }>}
+   */
+  getCourseWinRateBaseline(raceDate, venueCode) {
+    if (typeof raceDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(raceDate)) {
+      return Promise.reject(
+        new Error(
+          `getCourseWinRateBaseline: raceDate が YYYY-MM-DD ではない: ${raceDate}`,
+        ),
+      );
+    }
+    const venue =
+      venueCode === null || venueCode === undefined ? null : Number(venueCode);
+    if (
+      venue !== null &&
+      !(Number.isInteger(venue) && venue >= 1 && venue <= 24)
+    ) {
+      return Promise.reject(
+        new Error(
+          `getCourseWinRateBaseline: venueCode が 1〜24 ではない: ${venueCode}`,
+        ),
+      );
+    }
+    return withCache(
+      `course-win-rate-baseline-v1-${raceDate}-${venue ?? "none"}`,
+      async () => {
+        if (!supabase) throw new Error("Supabase client not initialized");
+        const { data } = await supabase.rpc("get_course_win_rate_baseline", {
+          p_race_date: raceDate,
+          p_venue_code: venue,
+        });
+        if (
+          data === null ||
+          typeof data !== "object" ||
+          !Array.isArray(data.terms) ||
+          data.national === null ||
+          typeof data.national !== "object"
+        ) {
+          throw new Error(
+            "get_course_win_rate_baseline の返り値の形が違う（terms・national が無い）",
+          );
+        }
+        return data;
+      },
+    );
+  },
+
+  /**
    * 選手検索UI向けに全選手の軽量一覧を取得する。
    * 対象約1,627件・数十KB程度のため都度クエリではなく一括取得し長期キャッシュする
    * （選手数の変動は月数件程度、egress削減のため24時間キャッシュ）。
