@@ -1,0 +1,19 @@
+.six-boat-course { min-width: 0; color: var(--text-primary); margin-bottom: var(--space-4, 1rem); }
+.six-boat-course h3 { font-size: var(--font-size-base, 1rem); margin: 0 0 0.5rem; }
+.six-boat-course p { margin: 0.5rem 0; font-size: var(--font-size-sm, 0.875rem); }
+.six-boat-course table { width: 100%; max-width: 720px; border-collapse: collapse; table-layout: fixed; font-variant-numeric: tabular-nums; }
+.six-boat-course th, .six-boat-course td { padding: 0.5rem 0.2rem; text-align: right; border-bottom: 1px solid var(--border-hairline); overflow-wrap: anywhere; }
+.six-boat-course th:first-child { width: 32%; text-align: left; }
+.six-boat-course tbody tr { cursor: pointer; height: 64px; color: var(--text-primary); }
+.six-boat-course tbody th { font-weight: normal; }
+.six-boat-course small { display: block; font-size: var(--font-size-xs, 0.75rem); font-weight: normal; }
+.six-boat-course .is-muted .six-boat-course-rate,
+.six-boat-course .is-muted td > span[title] { color: var(--text-secondary); }
+.six-boat-course .six-boat-course-diff { color: inherit; }
+.six-boat-course .is-focused { box-shadow: inset 3px 0 var(--color-white, #fff); }
+.six-boat-course tbody tr:focus-visible { outline: 2px solid var(--text-primary); outline-offset: -2px; }
+.six-boat-course-notes { max-width: 720px; color: var(--text-secondary); }
+@media (max-width: 480px) {
+  .six-boat-course table { font-size: var(--font-size-sm, 0.875rem); }
+  .six-boat-course thead th { font-size: var(--font-size-xs, 0.75rem); }
+}
