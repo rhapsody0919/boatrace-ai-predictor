@@ -331,7 +331,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/prevResult.js` | 前走（今節）の1マスの読み方（BOA-569 → BOA-610）。データ出走表（raceIndicators.jsx）と | finishMarkKeyOf, meetPrevRunState, meetPrevRunWhenParams |
 | `src/utils/raceCancellation.js` | 開催中止・順延の判定を1箇所に集める。 | hasRaceResult, isRaceCancelled, isCancellationSuspected, CANCELLATION_CONFIRMED, CANCELLATION_TENTATIVE |
 | `src/utils/raceDeadlineStatus.js` | — | getDeadlineDate, getDeadlineStatus, DEADLINE_STATUS |
-| `src/utils/raceDetailHeading.js` | レース詳細（/race/:raceId）の見出し・title・description・canonical・パンくずの組み方。 | getSeriesDayLabel, getVenueSeriesDayLabel, getStageChip, getRaceDetailHeading, getRaceDetailMeta ほか2件 |
+| `src/utils/raceDetailHeading.js` | レース詳細（/race/:raceId）の見出し・title・description・canonical・パンくずの組み方。 | getStageChip, getRaceDetailHeading, getRaceDetailMeta, getRaceListLink, getRaceDetailBreadcrumbItems |
 | `src/utils/raceEntrants.js` | レース詳細のタブの上の出走6艇（BOA-1189 GS01-c）の行。艇番順、選手名は空白を詰める。 | entrantRowsOf |
 | `src/utils/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
 | `src/utils/raceListDisplay.js` | トップの会場カード（VenueGridCard）と会場ページのレースカード（RaceCard）が出す文字の組み方。 | venueNameOf, venueCardHeadline, gradeConfigOf, raceNumberLabel, deadlineValueText ほか1件 |
@@ -349,6 +349,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/racerPagePath.js` | 選手ページの「STの推移」のアンカー（BOA-879） | ST_TREND_ID, racerPagePath |
 | `src/utils/racerStats.js` | 予想バッチが保存する racerStats（predictions.feature_contributions.racerStats）を、 | toWakuRacerStats |
 | `src/utils/racerVenueBoatStats.js` | 選手ページの会場×枠番×グレード×レース種別の絞り込み集計（純関数、BOA-1244）。 | toReturnRate, racerHistoryCutoff, aggregateRacerVenueBoatStats |
+| `src/utils/seriesDayLabel.js` | 開催の何日目かの表示ラベル（BOA-488・1199）。 | getSeriesDayLabel, getVenueSeriesDayLabel |
 | `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
 | `src/utils/share.js` | SNSシェア関数 | shareUrlFor, generateInCautionShareText, generatePredictionShareText, generateTurnHitShareText, generateResultShareText |
 | `src/utils/shareEvents.js` | AI用にコピー・SNS シェアの GA4 のイベント（BOA-822 の計測、docs/design/in-collapse-caution/measureme… | aiCopyEventOf, raceShareEventOf, SHARE_CHANNELS, SHARE_KINDS |
@@ -412,4 +413,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 370 ファイル / export 2193 件。
+対象 371 ファイル / export 2193 件。
