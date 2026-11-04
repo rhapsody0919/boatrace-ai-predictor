@@ -1,18 +1,23 @@
 {
   "$comment": "全貌動画の材料 JSON の契約（龍神の取得 fetch-materials.mjs → 毎日の実行 run-full.mjs）。形を変えたら schemaVersion を上げ、この Schema・fetch-materials.mjs の MATERIALS_VERSION・場面の build を同じ PR で直す（verify-full-picture-scene2.js が落とす）。build が読む所だけを required にする。",
-  "$id": "full-picture-materials/1",
+  "$id": "full-picture-materials/2",
   "type": "object",
   "required": ["schemaVersion", "raceId", "date", "venueCode", "stage", "api", "db", "missing"],
   "properties": {
-    "schemaVersion": { "const": "full-picture-materials/1" },
+    "schemaVersion": { "$comment": "/2 は race に seriesDayText・raceTitle を足した版（BOA-1310）。/1 の材料（fixtures）もそのまま通す", "enum": ["full-picture-materials/1", "full-picture-materials/2"] },
     "raceId": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}$" },
     "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
     "venueCode": { "type": "integer", "minimum": 1, "maximum": 24 },
     "stage": { "enum": ["racecard", "exhibition"] },
     "race": {
-      "$comment": "締切（races.start_time）とグレード（races.race_grade）。見出しに使うだけで、無ければ締切・グレードを書かない（BOA-989）",
+      "$comment": "締切（races.start_time）とグレード（races.race_grade）。見出しに使うだけで、無ければ締切・グレードを書かない（BOA-989）。/2 から何日目の文 seriesDayText（初日・N日目・最終日、画面と同じ規則）と大会名 raceTitle（SG・G1 だけ、NFKC）。どちらも scripts/lib/raceSeriesLabels.js（BOA-1309）",
       "type": ["object", "null"],
-      "properties": { "startTime": { "type": ["string", "null"] }, "grade": { "type": ["string", "null"] } }
+      "properties": {
+        "startTime": { "type": ["string", "null"] },
+        "grade": { "type": ["string", "null"] },
+        "seriesDayText": { "type": ["string", "null"] },
+        "raceTitle": { "type": ["string", "null"] }
+      }
     },
     "api": {
       "type": "object",
