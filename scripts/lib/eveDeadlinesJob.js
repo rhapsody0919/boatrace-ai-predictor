@@ -102,26 +102,35 @@ async function fetchHtml(politeFetch, url) {
  */
 export function buildEveRows({ date, existing, venues, names, nowIso }) {
   const prev = new Map(existing.map((r) => [r.race_id, r]));
-  const out = [];
+  const rows = [];
+  const changedIds = [];
   for (const v of venues) {
-    const lastDay = isLastDayLabel(v.dayLabel);
     for (const r of v.races) {
       const id = raceIdOf(date, v.venueCode, r.raceNumber);
       const old = prev.get(id);
+      // 日の札が取れなかった回は前の値を使う（前の回の優勝戦の判定を false で上書きしない）
+      const dayLabel = v.dayLabel ?? old?.day_label ?? null;
       const raceName = names.has(id) ? names.get(id) : (old?.race_name ?? null);
-      const isFinal = !lastDay
-        ? false
-        : raceName == null
+      // 最終日でなければ false。最終日の候補（12・11・10R）でない R も false（優勝戦は10R より前に無い前提）。
+      // 候補で名前が取れていなければ NULL（未確認）。日の札が分からなければ NULL
+      const isFinal =
+        dayLabel == null
           ? null
-          : isFinalRaceName(raceName);
-      const changed = old && hhmm(old.deadline) !== r.deadline;
+          : !isLastDayLabel(dayLabel) ||
+              !FINAL_CANDIDATE_RACES.includes(r.raceNumber)
+            ? false
+            : raceName == null
+              ? null
+              : isFinalRaceName(raceName);
+      const changed = Boolean(old) && hhmm(old.deadline) !== r.deadline;
+      if (changed) changedIds.push(id);
       const row = {
         race_id: id,
         race_date: date,
         venue_code: v.venueCode,
         race_number: r.raceNumber,
         deadline: `${r.deadline}:00`,
-        day_label: v.dayLabel,
+        day_label: dayLabel,
         race_name: raceName,
         is_final: isFinal,
         first_fetched_at: old?.first_fetched_at ?? nowIso,
@@ -134,10 +143,10 @@ export function buildEveRows({ date, existing, venues, names, nowIso }) {
         old.day_label === row.day_label &&
         old.race_name === row.race_name &&
         old.is_final === row.is_final;
-      if (!same) out.push(row);
+      if (!same) rows.push(row);
     }
   }
-  return out;
+  return { rows, changedIds };
 }
 
 /** 最終日の会場のうち、まだレース名が無い候補の R（その R が raceindex にあるものだけ） */
@@ -173,11 +182,18 @@ export async function runEveDeadlinesJob(
   const finalRound = isFinalRound(startedAt, ctx.targetDate, finalRunAfterJst);
   const expected = await readExpectedVenues(ctx.client, date);
   const existing = await readEveRows(ctx.client, date);
-  // その晩の最初の起動（行がまだ無い）だけ、race_series に無い会場も取る（race_series の欠けを見つけるため）
+  // その晩の最初の起動（行がまだ無い）だけ、race_series に無い会場も取る（race_series の欠けを見つけるため）。
+  // 2回目以降は、race_series の会場に、その晩に既に行のある会場（race_series に無かったが開催のあった会場）を足して取り直す
   const sweepAll = existing.length === 0;
+  const known = [
+    ...new Set([
+      ...expected,
+      ...existing.map((r) => Number(r.venue_code)).filter(Number.isInteger),
+    ]),
+  ].sort((a, b) => a - b);
   const order = sweepAll
-    ? [...expected, ...VENUE_CODES.filter((c) => !expected.includes(c))]
-    : expected;
+    ? [...known, ...VENUE_CODES.filter((c) => !known.includes(c))]
+    : known;
 
   let fetched = 0;
   const pace = async () => {
@@ -188,38 +204,42 @@ export async function runEveDeadlinesJob(
   const failed = [];
   const notAttempted = [];
   const unexpected = [];
+  const unexpectedAnomalies = [];
   let stopped = false;
   for (const venueCode of order) {
     if (stopped || ctx.shouldStop()) {
-      if (expected.includes(venueCode)) notAttempted.push(venueCode);
+      if (known.includes(venueCode)) notAttempted.push(venueCode);
       continue;
     }
     await pace();
-    const isExpected = expected.includes(venueCode);
+    const isKnown = known.includes(venueCode);
     const { html, reason, error } = await fetchHtml(
       ctx.politeFetch,
       raceIndexUrl(date, venueCode),
     );
     if (error instanceof BreakerOpenError) stopped = true;
     if (!html) {
-      if (isExpected) failed.push({ venueCode, reason });
+      if (isKnown) failed.push({ venueCode, reason });
       continue;
     }
     let parsed;
     try {
       parsed = parseRaceIndex(html);
     } catch (e) {
-      if (isExpected) failed.push({ venueCode, reason: `parse: ${e.message}` });
+      if (isKnown) failed.push({ venueCode, reason: `parse: ${e.message}` });
       continue;
     }
-    if (!isExpected && parsed.races.length === 0) continue; // 開催なし
+    if (!isKnown && parsed.races.length === 0) continue; // 開催なし
     const problems = raceIndexProblems(parsed.races);
     if (problems.length) {
-      // 開催のある会場で並びがおかしい結果は書かない（解析の誤りを前夜の投稿に出さない）
-      failed.push({ venueCode, reason: `parse_anomaly: ${problems[0]}` });
+      // 並びがおかしい結果は書かない（解析の誤りを前夜の投稿に出さない）。開催の分かっている会場は失敗（incomplete）、
+      // race_series に無い会場は次の起動で取らないので、失敗に数えず通知だけにする
+      const reason = `parse_anomaly: ${problems[0]}`;
+      if (isKnown) failed.push({ venueCode, reason });
+      else unexpectedAnomalies.push({ venueCode, reason });
       continue;
     }
-    if (!isExpected) unexpected.push(venueCode);
+    if (!expected.includes(venueCode)) unexpected.push(venueCode);
     venues.push({ venueCode, ...parsed });
   }
 
@@ -242,7 +262,7 @@ export async function runEveDeadlinesJob(
     else namesMissing.push(`${t.raceId}（${reason ?? "名前が無い"}）`);
   }
 
-  const rows = buildEveRows({
+  const { rows, changedIds } = buildEveRows({
     date,
     existing,
     venues,
@@ -258,23 +278,18 @@ export async function runEveDeadlinesJob(
 
   const alerts = [];
   const until = new Date(`${date}T12:00:00+09:00`).toISOString();
-  if (unexpected.length)
+  if (unexpected.length || unexpectedAnomalies.length)
     alerts.push({
       key: `unexpected:${date}`,
-      text: `race_series に節が無い会場で翌日（${date}）のレースがあった: 会場 ${unexpected.join("・")}。race_series の欠けの疑い`,
+      text: `race_series に節が無い会場で翌日（${date}）のレースがあった: 会場 ${[...unexpected.map(String), ...unexpectedAnomalies.map((u) => `${u.venueCode}（${u.reason}、書いていない）`)].join("・")}。race_series の欠けの疑い`,
       until,
     });
-  const changes = rows.filter(
-    (r) =>
-      r.deadline_changes > 0 &&
-      existing.some(
-        (e) => e.race_id === r.race_id && hhmm(e.deadline) !== hhmm(r.deadline),
-      ),
-  );
-  if (changes.length)
+  const byId = new Map(rows.map((r) => [r.race_id, r]));
+  // 変わったレースごとに key を分ける（同じ key は monitor が renotifyHours の間抑えるので、2件目以降が出なくなる）
+  for (const id of changedIds)
     alerts.push({
-      key: `changed:${date}`,
-      text: `前夜の取得の間で締切が変わった: ${changes.map((r) => `${r.race_id} → ${hhmm(r.deadline)}`).join("、")}`,
+      key: `changed:${id}`,
+      text: `前夜の取得の間で締切が変わった: ${id} → ${hhmm(byId.get(id).deadline)}`,
       until,
     });
   if (finalRound && (failed.length || notAttempted.length))
@@ -294,6 +309,7 @@ export async function runEveDeadlinesJob(
     venuesFailed: failed,
     venuesNotAttempted: notAttempted,
     unexpectedVenues: unexpected,
+    unexpectedAnomalies,
     lastDayVenues: venues
       .filter((v) => isLastDayLabel(v.dayLabel))
       .map((v) => v.venueCode),
@@ -306,7 +322,7 @@ export async function runEveDeadlinesJob(
     ...(alerts.length ? { alerts } : {}),
   };
   const rowsParsed = venues.reduce((a, v) => a + v.races.length, 0);
-  if (expected.length === 0 && rowsParsed === 0) {
+  if (known.length === 0 && rowsParsed === 0) {
     return {
       outcome: "error",
       error: `翌日（${date}）の節が race_series に無く、24場の raceindex にもレースが無かった`,
@@ -316,7 +332,7 @@ export async function runEveDeadlinesJob(
   return {
     rowsWritten: report.rowsWritten,
     rowsParsed,
-    rowsExpected: expected.length,
+    rowsExpected: known.length,
     report,
     body: report,
     // 最後の起動（finalRunAfterJst 以後）より前は済みにしない（4回とも取る）。最後でも取れなかった会場・名前があれば済みにしない
@@ -337,12 +353,14 @@ export function buildReconcileRows({ eveRows, races, nowIso }) {
   const rows = [];
   const mismatches = [];
   const missing = [];
+  const noStartTime = [];
   for (const e of eveRows) {
     const race = byId.get(e.race_id);
     const start = hhmm(race?.start_time ?? null);
     const dayStart = start ? `${start}:00` : null;
     const mismatch = start ? start !== hhmm(e.deadline) : null;
-    if (!start) missing.push(e);
+    if (!race) missing.push(e);
+    else if (!start) noStartTime.push(e);
     else if (mismatch) mismatches.push({ ...e, day_start_time: dayStart });
     if (
       e.reconciled_at != null &&
@@ -357,7 +375,7 @@ export function buildReconcileRows({ eveRows, races, nowIso }) {
       reconciled_at: nowIso,
     });
   }
-  return { rows, mismatches, missing };
+  return { rows, mismatches, missing, noStartTime };
 }
 
 export async function runEveDeadlinesReconcileJob(ctx) {
@@ -394,7 +412,7 @@ export async function runEveDeadlinesReconcileJob(ctx) {
         .eq("race_date", date),
       "races の読み取り",
     ) ?? [];
-  const { rows, mismatches, missing } = buildReconcileRows({
+  const { rows, mismatches, missing, noStartTime } = buildReconcileRows({
     eveRows,
     races,
     nowIso: ctx.now().toISOString(),
@@ -420,14 +438,25 @@ export async function runEveDeadlinesReconcileJob(ctx) {
           },
         ]
       : []),
+    ...(noStartTime.length
+      ? [
+          {
+            key: `no_start_time:${date}`,
+            text: `当日の races に締切（start_time）が無く照合できない: ${noStartTime.map((m) => m.race_id).join("、")}`,
+            until,
+          },
+        ]
+      : []),
   ];
   const report = {
     date,
     mode: ctx.mode,
     eveRows: eveRows.length,
-    matched: eveRows.length - mismatches.length - missing.length,
+    matched:
+      eveRows.length - mismatches.length - missing.length - noStartTime.length,
     mismatches: mismatches.map((m) => m.race_id),
     missing: missing.map((m) => m.race_id),
+    noStartTime: noStartTime.map((m) => m.race_id),
     rowsWritten: ctx.mode === "live" ? rows.length : 0,
     ...(alerts.length ? { alerts } : {}),
   };

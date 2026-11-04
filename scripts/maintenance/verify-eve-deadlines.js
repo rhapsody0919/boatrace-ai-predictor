@@ -119,13 +119,14 @@ t(
       [`${D}-19-11`, "優勝戦"],
       [`${D}-19-10`, "一般戦"],
     ]);
-    const rows = buildEveRows({
+    const { rows, changedIds } = buildEveRows({
       date: D,
       existing: [],
       venues: [v19, v4],
       names,
       nowIso: NOW1,
     });
+    assert.deepEqual(changedIds, [], "新しい行は「変わった」に数えない");
     assert.equal(rows.length, 24);
     const keys = JSON.stringify(Object.keys(rows[0]).sort());
     assert.ok(
@@ -141,9 +142,17 @@ t(
     assert.equal(by[`${D}-19-12`].is_final, false);
     assert.equal(
       by[`${D}-19-01`].is_final,
-      null,
-      "最終日の名前を取っていないレースは未確認",
+      false,
+      "最終日でも候補（12・11・10R）でない R は false",
     );
+    const noName = buildEveRows({
+      date: D,
+      existing: [],
+      venues: [v19],
+      names: new Map(),
+      nowIso: NOW1,
+    }).rows.find((r) => r.race_id === `${D}-19-12`);
+    assert.equal(noName.is_final, null, "候補の名前が取れていなければ未確認");
     assert.equal(by[`${D}-04-12`].is_final, false);
     assert.equal(by[`${D}-19-11`].deadline, "22:20:00");
     assert.equal(by[`${D}-19-11`].first_fetched_at, NOW1);
@@ -154,7 +163,7 @@ t(
   "buildEveRows: 変わらない行は書かない・締切の変更は数える・名前は前の値を残す",
   () => {
     const names = new Map([[`${D}-19-11`, "優勝戦"]]);
-    const first = buildEveRows({
+    const { rows: first } = buildEveRows({
       date: D,
       existing: [],
       venues: [v19],
@@ -176,17 +185,29 @@ t(
         names: new Map(),
         nowIso: NOW2,
       }),
+      { rows: [], changedIds: [] },
+    );
+    // 日の札が取れなかった回は前の値（優勝戦の判定を false で上書きしない）
+    assert.deepEqual(
+      buildEveRows({
+        date: D,
+        existing,
+        venues: [{ ...v19, dayLabel: null }],
+        names: new Map(),
+        nowIso: NOW2,
+      }).rows,
       [],
     );
     const moved = clone(v19);
     moved.races[10].deadline = "22:25";
-    const rows = buildEveRows({
+    const { rows, changedIds } = buildEveRows({
       date: D,
       existing,
       venues: [moved],
       names: new Map(),
       nowIso: NOW2,
     });
+    assert.deepEqual(changedIds, [`${D}-19-11`]);
     assert.equal(rows.length, 1);
     assert.equal(rows[0].deadline, "22:25:00");
     assert.equal(rows[0].deadline_changes, 1);
@@ -373,7 +394,7 @@ t(
   async () => {
     const client = fakeClient({
       race_series: SERIES,
-      eve_race_deadlines: [{ race_id: "x", race_date: D }],
+      eve_race_deadlines: [{ race_id: `${D}-04-01`, race_date: D, venue_code: 4 }],
     });
     const f = fakeFetch(
       { ...PAGES, [raceIndexUrl(D, 4)]: EMPTY },
@@ -427,7 +448,7 @@ t(
   async () => {
     const client = fakeClient({
       race_series: SERIES,
-      eve_race_deadlines: [{ race_id: "x", race_date: D }],
+      eve_race_deadlines: [{ race_id: `${D}-04-01`, race_date: D, venue_code: 4 }],
     });
     const f = fakeFetch(PAGES);
     const out = await runEveDeadlinesJob(
@@ -486,6 +507,40 @@ t("翌日の節が race_series に無く24場も空なら失敗", async () => {
   assert.equal(f.calls.length, 24);
 });
 
+t("race_series が空の晩: 2回目以降も行のある会場を取り直し、error にしない", async () => {
+  const client = fakeClient({ race_series: [], eve_race_deadlines: [] });
+  const f1 = fakeFetch(PAGES);
+  const first = await runEveDeadlinesJob(
+    ctxOf({ client, politeFetch: f1.politeFetch, now: NOW1 }),
+    deps,
+  );
+  assert.deepEqual(first.report.unexpectedVenues, [4, 19]);
+  const f2 = fakeFetch({ ...PAGES, [raceIndexUrl(D, 4)]: DAY2.replace(">20:45<", ">20:50<") });
+  const second = await runEveDeadlinesJob(
+    ctxOf({ client, politeFetch: f2.politeFetch, now: "2026-11-04T12:20:03Z" }),
+    deps,
+  );
+  assert.deepEqual(f2.calls, [raceIndexUrl(D, 4), raceIndexUrl(D, 19)]);
+  assert.notEqual(second.outcome, "error");
+  assert.equal(second.incomplete, false);
+  assert.equal(second.rowsWritten, 1);
+  assert.ok(second.report.alerts.some((a) => a.key === `changed:${D}-04-12`));
+});
+
+t("race_series に無い会場の並びの異常は失敗に数えず通知だけ", async () => {
+  const bad = DAY2.replace(">16:22<", ">15:00<");
+  const client = fakeClient({ race_series: [SERIES[0]], eve_race_deadlines: [] });
+  const f = fakeFetch({ ...PAGES, [raceIndexUrl(D, 4)]: bad });
+  const out = await runEveDeadlinesJob(
+    ctxOf({ client, politeFetch: f.politeFetch, now: "2026-11-04T12:20:03Z" }),
+    deps,
+  );
+  assert.deepEqual(out.report.venuesFailed, []);
+  assert.equal(out.report.unexpectedAnomalies[0].venueCode, 4);
+  assert.equal(out.incomplete, false);
+  assert.ok(!client.data.eve_race_deadlines.some((r) => r.venue_code === 4), "書かない");
+});
+
 // ---------- 照合 ----------
 
 const reconcileCtx = (client, now = "2026-11-04T21:30:05Z") => ({
@@ -542,6 +597,13 @@ t(
       ),
     );
     assert.ok(out.report.alerts.some((a) => a.key === `missing:${D}`));
+    const noStart = buildReconcileRows({
+      eveRows: [eve[0]],
+      races: [{ race_id: eve[0].race_id, start_time: null }],
+      nowIso: "x",
+    });
+    assert.deepEqual(noStart.missing, [], "races の行があれば中止の疑いにしない");
+    assert.equal(noStart.noStartTime.length, 1);
     const again = buildReconcileRows({
       eveRows: client.data.eve_race_deadlines,
       races,

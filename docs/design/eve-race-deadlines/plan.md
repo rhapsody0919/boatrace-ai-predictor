@@ -28,7 +28,7 @@ Shorts の節の機力（motor_gap・motor_up・border）は翌日のレース�
 | deadline | time | 前夜に取った締切予定（秒は 0）。前夜の取得で変わったら新しい値 |
 | day_label | text | raceindex の日の札（「初日」「２日目」「最終日」等、公式の表記のまま） |
 | race_name | text | racelist のレース名（「優勝戦」「選抜戦Ａ」等。距離表記は除く）。取ったレースだけ、他は NULL |
-| is_final | boolean | 優勝戦か。最終日でない日の会場は false。最終日の会場は racelist を 12・11・10R で取り、名前に「優勝戦」を含み「準優勝戦」でなければ true、他は false。取れなかったレースは NULL（未確認） |
+| is_final | boolean | 優勝戦か。最終日でない日の会場は false。最終日の会場は racelist を 12・11・10R で取り、名前に「優勝戦」を含み「準優勝戦」「進出」でなければ true、違えば false。1〜9R は false（優勝戦は10R より前に無い前提）。10〜12R で名前が取れなければ NULL（未確認）。日の札が取れなかった回は前の回の値を使う |
 | first_fetched_at | timestamptz | 最初に取れた時刻 |
 | updated_at | timestamptz | 前夜の取得で値（締切・日の札・レース名・優勝戦の判定）を最後に書いた時刻 |
 | deadline_changes | smallint | 前夜の取得の間で締切が変わった回数（0 が普通） |
@@ -74,7 +74,8 @@ erDiagram
 - 対象: 対象日（20:40 から解決した JST の日）の翌日。期待する会場は race_series（start_date ≦ 翌日 ≦ end_date、約15）。その晩の最初の起動（表にその日の行がまだ無い）だけ、残りの会場も取る（race_series の欠けを見つける）
 - 取得: raceindex（`/owpc/pc/race/raceindex?jcd=VV&hd=YYYYMMDD`）を1場ずつ、取得の間に5秒空ける（同時1）。UA・IP は politeFetch の既定のまま。解析は scripts/lib/raceIndexParser.js（行の「NR」と締切を対にする。朝の scrape-to-json.js の getRaceStartTimes は時刻の td を順に割り当てるので使わない）
 - raceindex を全部取った後に、最終日の会場（日の札「最終日」）だけ、まだレース名の無い racelist の 12・11・10R を同じく5秒おきに取る（レース名は raceStageParser.js）。打ち切られても失うのは名前だけで、次の起動が名前の無いものを取り直す
-- 失敗: 期待する会場で 2xx でない応答（politeFetch は登録していないパスの 403 を普通の応答で返す）・取得の例外・0行・並びの異常（1R から続かない・12R を越える・締切が昇順でない・06:00 より前）は、その会場の失敗。書かずに incomplete。期待しない会場は0行なら開催なし、行があれば書いて通知
+- 2回目以降の起動は、race_series の会場に、その晩に既に行のある会場（race_series に無かったが開催のあった会場）を足して取る
+- 失敗: 期待する会場（上の2つ）で 2xx でない応答（politeFetch は登録していないパスの 403 を普通の応答で返す）・取得の例外・0行・並びの異常（1R から続かない・12R を越える・締切が昇順でない・06:00 より前）は、その会場の失敗。書かずに incomplete。期待しない会場は0行なら開催なし、行があれば書いて通知、並びの異常は書かずに通知（失敗に数えない）
 - 書き込み: その晩の既存の行を読み（失敗は例外）、値の変わる行だけを upsert（純粋関数 buildEveRows）。毎回すべての列（照合の3列を除く）を送る（PostgREST のバルク upsert は列の集合が違う行を NULL で埋める）。締切が変われば deadline_changes＋1、取れなかった回のレース名・優勝戦の判定は前の値を残す
 - 完了: finalRunAfterJst（21:20）より前に始まった起動は `incomplete: true`（同じ対象日をもう一度取る）。21:20 以後の起動で、失敗・未着手の会場と取れなかった名前が無ければ済み。残れば incomplete のまま、同じ晩の 23:40（指定＋3時間）から monitor の daily_overdue が出る。最後の起動の失敗は last_report.alerts（翌日の 12:00 まで）にも出す
 - 0件: rowsExpected＝期待する会場の数を返すので、期待する会場があるのに1行も取れない起動は共通ラッパの0件の検査で失敗になる。期待する会場が無く24場も空なら失敗
@@ -87,7 +88,7 @@ erDiagram
 - registry: kind daily、targetTimeJst "06:30"、leaseSec 120、maxDurationSec 60、hosts []（取得なし）
 - cron: `30 21 * * *`・`0 23 * * *`（JST 06:30・08:00）。api/cron/eve-deadlines-reconcile.js
 - races_init の last_target_date が今日になるまで比べない（incomplete、08:00 が取り直す）。済んだら、その日の表の行と races（race_id・start_time）を読み、day_start_time・day_mismatch・reconciled_at を値の変わる行だけ書く。行は既存の全列に3列を足して送る（3列だけの upsert は INSERT の行の NOT NULL で落ちる）
-- 食い違い（day_mismatch true）は last_report.alerts に race_id ごとの key で出す（その日の 12:00 まで）。races に無い行（中止の疑い）は day_mismatch NULL のまま、まとめて1つ通知し、照合は済みにする
+- 食い違い（day_mismatch true）は last_report.alerts に race_id ごとの key で出す（その日の 12:00 まで）。races に行が無い（中止の疑い）・行はあるが start_time が無い、はそれぞれ day_mismatch NULL のまま、まとめて1つずつ通知し、照合は済みにする
 - 前夜の投稿は送ったものなので直さない。表の deadline も前夜の値のまま残し、当日の正は races.start_time（hq の読み口が races を先に見る）
 
 ## 5. final_gap の束（Shorts、sns-video-studio）

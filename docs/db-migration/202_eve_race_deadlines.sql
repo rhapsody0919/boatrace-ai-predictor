@@ -68,7 +68,7 @@ COMMENT ON COLUMN public.eve_race_deadlines.race_id IS 'races と同じ形 YYYY-
 COMMENT ON COLUMN public.eve_race_deadlines.deadline IS '前夜の最後の取得の締切予定（raceindex の HH:MM、秒は 0）';
 COMMENT ON COLUMN public.eve_race_deadlines.day_label IS 'raceindex の日の札（初日・２日目・最終日 等、公式の表記のまま）';
 COMMENT ON COLUMN public.eve_race_deadlines.race_name IS 'racelist のレース名（優勝戦・選抜戦Ａ 等、距離表記を除く）。最終日の会場の 10〜12R だけ取る。他は NULL';
-COMMENT ON COLUMN public.eve_race_deadlines.is_final IS '優勝戦か。最終日でない日の会場は false。最終日の会場は race_name に「優勝戦」を含み「準優勝戦」でなければ true、取ったが違えば false、取れなかったレースは NULL（未確認）。優勝戦は12Rとは限らない（下関 2026-11-04 は11R）、男女W優勝戦は2つ';
+COMMENT ON COLUMN public.eve_race_deadlines.is_final IS '優勝戦か。最終日でない日の会場は false。最終日の会場は race_name に「優勝戦」を含み「準優勝戦」でなければ true、取ったが違えば false、10〜12R でない R は false（優勝戦は10R より前に無い前提）、10〜12R で名前が取れなければ NULL（未確認）。日の札が一度も取れなければ NULL。優勝戦は12Rとは限らない（下関 2026-11-04 は11R）、男女W優勝戦は2つ';
 COMMENT ON COLUMN public.eve_race_deadlines.first_fetched_at IS '前夜に最初に取れた時刻';
 COMMENT ON COLUMN public.eve_race_deadlines.updated_at IS '前夜の取得で値（締切・日の札・レース名・優勝戦の判定）を最後に書いた時刻。値が変わらない取得では書かない（各起動の取得の結果は scrape_job_state.last_report）';
 COMMENT ON COLUMN public.eve_race_deadlines.deadline_changes IS '前夜の取得の間で締切が変わった回数（0 が普通）';
