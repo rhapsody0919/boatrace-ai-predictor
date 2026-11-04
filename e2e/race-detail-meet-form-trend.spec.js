@@ -14,6 +14,42 @@ const RACE_PATH = "/race/2026-10-14-22-12?tab=beforeInfo&boat=3";
 
 test.use({ viewport: { width: 390, height: 844 } });
 
+test("初日は今節展示の全艇が初戦なら凡例に前走の説明を出さない", async ({ page }) => {
+  test.slow();
+  await page.goto("/race/2026-09-28-16-01?tab=beforeInfo", {
+    waitUntil: "domcontentloaded",
+  });
+  const tab = page.locator(".race-before-info-tab");
+  const meetRow = tab.locator("tr").filter({
+    has: page.locator(".drt-label-short").filter({ hasText: /^今節展示$/ }),
+  });
+  await expect(meetRow.getByText("今節初戦", { exact: true })).toHaveCount(6, {
+    timeout: 60000,
+  });
+  const notes = tab.locator(".rbi-note");
+  await expect(notes.filter({ hasText: "前走の値で比べます" })).toHaveCount(0);
+  await expect(
+    notes.filter({ hasText: "金の枠は6艇の中で最も良い値" }),
+  ).toHaveCount(1);
+});
+
+test("節の途中は今節展示の前走を比べる凡例を残す", async ({ page }) => {
+  test.slow();
+  await page.goto("/race/2026-10-14-22-12?tab=beforeInfo", {
+    waitUntil: "domcontentloaded",
+  });
+  const tab = page.locator(".race-before-info-tab");
+  const meetRow = tab.locator("tr").filter({
+    has: page.locator(".drt-label-short").filter({ hasText: /^今節展示$/ }),
+  });
+  await expect(meetRow.locator("td .drt-value")).toHaveCount(6, {
+    timeout: 60000,
+  });
+  await expect(
+    tab.locator(".rbi-note").filter({ hasText: "前走の値で比べます" }),
+  ).toHaveCount(1);
+});
+
 test("今節の足のグラフが ?boat= の艇を強調し、選び直すと URL も変わる", async ({
   page,
 }) => {
