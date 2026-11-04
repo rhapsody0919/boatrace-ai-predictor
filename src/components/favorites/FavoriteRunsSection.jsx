@@ -141,11 +141,16 @@ function RunInfo({ row, info, seriesDay }) {
             {meet.map((run) => (
               <b
                 key={run.raceId}
-                className={
-                  run.finishRank === 1 || run.finishRank === 2
-                    ? "favorite-runs__finish favorite-runs__finish--top"
-                    : "favorite-runs__finish"
-                }
+                // 行のレースの札には下線を引く（同じ選手の行はどれも同じ今節なので、締切後の行で
+                // どの札がこのレースの着か分かるように。ファン評価 2周目）
+                className={[
+                  "favorite-runs__finish",
+                  (run.finishRank === 1 || run.finishRank === 2) &&
+                    "favorite-runs__finish--top",
+                  run.raceId === row.raceId && "favorite-runs__finish--this",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               >
                 {finishLabel(run)}
               </b>
@@ -276,7 +281,8 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM }) {
   const seriesDayOf = useMemo(() => {
     const map = new Map();
     for (const venue of venues ?? [])
-      for (const race of venue.races) map.set(race.raceId, race.seriesDay ?? null);
+      for (const race of venue.races)
+        map.set(race.raceId, race.seriesDay ?? null);
     return map;
   }, [venues]);
   const infoOf = useFavoriteRunStats(rows, visible);

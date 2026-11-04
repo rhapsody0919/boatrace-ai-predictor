@@ -307,3 +307,31 @@ test("今節の走が無くても、節の2日目以降なら「初日」と言�
   });
   await expect(first.locator(".favorite-runs__meet")).not.toContainText("初日");
 });
+
+test("768px: 全件を出し、1件を2〜3段にまとめる（375px の縦積みのままにしない）", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await setFavorites(page, [RACER]);
+  await routePredictions(page);
+  await page.goto("/");
+  const section = page.getByTestId("favorite-runs");
+  const rows = section.locator(".favorite-runs__row:visible");
+  await expect(rows).toHaveCount(5);
+  const first = rows.first();
+  // 締切・場とR・選手が同じ段に並ぶ（縦の範囲が重なる）
+  const overlap = await first.evaluate((el) => {
+    const boxes = [".favorite-runs__time", ".favorite-runs__race", ".favorite-runs__who"].map(
+      (s) => el.querySelector(s).getBoundingClientRect(),
+    );
+    return Math.max(...boxes.map((b) => b.top)) < Math.min(...boxes.map((b) => b.bottom));
+  });
+  expect(overlap).toBe(true);
+  const height = await first.evaluate((el) => el.getBoundingClientRect().height);
+  expect(height).toBeLessThan(170);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});

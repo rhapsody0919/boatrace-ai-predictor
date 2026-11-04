@@ -130,6 +130,13 @@
   border-color: var(--brand-accent-primary);
 }
 
+/* 行のレースの着（締切後の行で、どの札がこのレースか分かるように） */
+.favorite-runs__finish--this {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
 .favorite-runs__stat {
   grid-area: stat;
   min-height: 1.5rem;
@@ -299,6 +306,22 @@
 @media (min-width: 768px) {
   .favorite-runs__toggle--more {
     display: none;
+  }
+}
+
+/* 768〜1023px は1件2行（全件を出すので、375px の縦積みのままだと区画が長くなりすぎる。ファン評価 2周目） */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .favorite-runs__row {
+    grid-template-columns: 6.5rem 8rem minmax(0, 1fr);
+    grid-template-areas:
+      "time race who"
+      "meet stat stat"
+      "go go go";
+    align-items: center;
+  }
+
+  .favorite-runs__link {
+    flex: 0 0 auto;
   }
 }
 
