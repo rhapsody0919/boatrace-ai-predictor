@@ -28,7 +28,7 @@ concurrency:
 jobs:
   # 組の分け方（e2e/shards.json）を matrix に直す。誤りがあればここで落とす
   shards:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       matrix: ${{ steps.shards.outputs.matrix }}
@@ -49,7 +49,7 @@ jobs:
   e2e-live:
     needs: shards
     environment: prod-jobs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # 再生の組は中央 約18分・最大 約32分（PR ゲートの7日）。1ジョブで最後まで走った 10/13〜10/18 は全件で
     # 45.7〜55.4分（2 workers）なので、1組は10分台の見込み。落ちる試験が多い日（1件 60秒×2回）の伸びを見込んで
     # 45分。目安で、live の組の実測は最初の数回で見る
@@ -113,7 +113,7 @@ jobs:
     needs: [shards, e2e-live]
     if: always()
     environment: prod-jobs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4

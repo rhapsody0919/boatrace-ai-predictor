@@ -164,3 +164,4 @@
 - `git grep` の pathspec `'src/**/*.css'` は src 直下の App.css を含まない。CSS全体の禁止色を確認するときは src 全体も走査し、直下のファイルを検査から落とさない（2026-11-03、BOA-1014、修正前の App.css が未検出・ContentHub.css のみ検出した実測）。
 - サイトマップの読取検査は実関数をvmに隔離し、Supabase未設定・正常な空応答・error応答を別々に試す。error応答は空結果にせず、読み取り名付きの例外でrejectされることを確認する（2026-11-03、BOA-1232、scripts/maintenance/verify-sitemap-coverage.js）。
 - run-heavy.shはローカルで先頭コマンドがnpxなら、Playwright以外にも未指定の `--workers=1` を追加する。`npx vite build` を直接渡すとViteが拒否するため、Vite部分だけの確認は `bash -c 'npx vite build'` を渡す（2026-11-03、BOA-1238のtask-308代替ビルド実測・BOA-1268、scripts/maintenance/run-heavy.sh）。
+- 2026-11-04 E2E の失敗40件（10/31〜11/4、直近300 run）の72.5%は 11/2 の ubuntu-latest→26.04 切替（Playwright が Chromium を入れられない）の1事象。コード起因11件のうち9件は期待値の追随漏れ、本物の不具合は1件。#2170 の後は組が約7分・全体が約10分。対策として Chromium を入れるジョブを ubuntu-24.04 に固定（版上げは意図して行う）。根拠: gh run view --log-failed の全件確認（Orchestrate のサブエージェント）
