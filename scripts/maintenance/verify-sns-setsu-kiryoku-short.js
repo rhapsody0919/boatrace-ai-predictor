@@ -12,6 +12,10 @@ import {
   checkVideo,
   descriptionLink,
   dryRunClock,
+  eveDeadlineMismatch,
+  finalDeadlineMismatch,
+  isFinalStage,
+  raceNumberOf,
   mp4Info,
   pushSetsuKiryokuShort,
   resultLine,
@@ -313,14 +317,21 @@ const store = {
     );
     return { uploads: a.u, general: a.g + r.n };
   },
-  finalRace: async (date, venue) => {
-    const final = await first(
-      "SELECT race_id FROM race_conditions WHERE race_id LIKE $1 AND race_stage='優勝戦'",
-      [`${date}-${venue}-%`],
-    );
+  // 本番の createRestStore.finalRace と同じ形: R があればそのレースが優勝戦のときだけ、無ければ「優勝戦」の1件
+  finalRace: async (date, venue, raceNumber = null) => {
+    const final =
+      raceNumber != null
+        ? await first(
+            "SELECT race_id FROM race_conditions WHERE race_id=$1 AND race_stage LIKE '%優勝戦%' AND race_stage NOT LIKE '%準優勝戦%'",
+            [`${date}-${venue}-${String(raceNumber).padStart(2, "0")}`],
+          )
+        : await first(
+            "SELECT race_id FROM race_conditions WHERE race_id LIKE $1 AND race_stage='優勝戦'",
+            [`${date}-${venue}-%`],
+          );
     if (!final) return null;
     const race = await first(
-      "SELECT cancellation_status FROM races WHERE race_id=$1",
+      "SELECT cancellation_status, start_time::text AS start_time FROM races WHERE race_id=$1",
       [final.race_id],
     );
     const absent = await first(
@@ -330,6 +341,7 @@ const store = {
     return race
       ? {
           race_id: final.race_id,
+          start_time: race.start_time,
           cancelled: race.cancellation_status != null,
           withdrawn: Number(absent.n) > 0,
         }
@@ -1399,4 +1411,60 @@ test("会場のページの印（snsScreenMarkers の venue）は画面の部品
     '[data-testid="venue-summary-lines"]',
     '[data-testid="venue-characteristics-teaser"]',
   ]);
+});
+
+test("当日の final_gap の締切は DB の優勝戦と同じ R・時刻でないと止める（BOA-1282）", () => {
+  const final = { race_id: "2026-11-04-19-11", start_time: "22:20:00" };
+  assert.equal(finalDeadlineMismatch(undefined, final), null, "締切が無ければ今どおり");
+  assert.equal(finalDeadlineMismatch(null, final), null);
+  assert.equal(finalDeadlineMismatch({ race: "11R", time: "22:20" }, final), null);
+  assert.match(
+    finalDeadlineMismatch({ race: "12R", time: "22:20" }, final),
+    /DB の優勝戦（11R 22:20）と違う/,
+    "優勝戦は12Rとは限らない（下関 2026-11-04 は11R）",
+  );
+  assert.match(finalDeadlineMismatch({ race: "11R", time: "22:25" }, final), /と違う/);
+  assert.match(
+    finalDeadlineMismatch({ race: "11R", time: "22:20" }, { ...final, start_time: null }),
+    /締切なし/,
+  );
+});
+
+test("前夜の final_gap の締切は前夜の表の優勝戦の行と同じでないと止める（BOA-1282）", () => {
+  const finals = [{ race_id: "2026-11-04-19-11", deadline: "22:20:00" }];
+  assert.equal(eveDeadlineMismatch(undefined, finals), null, "締切が無ければ今どおり");
+  assert.equal(eveDeadlineMismatch({ race: "11R", time: "22:20" }, finals), null);
+  assert.match(eveDeadlineMismatch({ race: "12R", time: "22:45" }, finals), /前夜の表の優勝戦（11R 22:20）と違う/);
+  assert.match(eveDeadlineMismatch({ race: "11R", time: "22:20" }, []), /優勝戦の行（is_final）が無い/);
+  // 男女W優勝戦はどちらでも通る
+  const w = [...finals, { race_id: "2026-11-04-19-12", deadline: "22:45:00" }];
+  assert.equal(eveDeadlineMismatch({ race: "12R", time: "22:45" }, w), null);
+});
+
+test("締切の R で優勝戦を選ぶ（男女W優勝戦で先頭の1件と比べない、Codex P1）", () => {
+  assert.equal(raceNumberOf({ race: "11R", time: "15:45" }), 11);
+  assert.equal(raceNumberOf(undefined), null);
+  for (const s of ["優勝戦", "男子優勝戦", "女子優勝戦"]) assert.equal(isFinalStage(s), true, s);
+  for (const s of ["準優勝戦", "選抜戦Ａ", null]) assert.equal(isFinalStage(s), false, String(s));
+});
+
+test("当日の締切: 束の R の優勝戦と時刻が合えば通り、違う R・時刻なら止める（push の通し）", async () => {
+  const withDl = (race, time) => {
+    const b = bundle();
+    return {
+      ...b,
+      final_deadline: { race, time },
+      youtube: {
+        ...b.youtube,
+        title: `${b.youtube.title.replace(" #", ` ${race} ${time}締切予定 #`)}`,
+        description: b.youtube.description.replace("\n", `\n${race} 締切予定 ${time}\n`),
+      },
+    };
+  };
+  const ok = await push(withDl("12R", "16:40"), { dryRun: true });
+  assert.ok(!(ok.reasons ?? []).some((x) => /final_deadline|優勝戦が DB に無い/.test(x)), JSON.stringify(ok.reasons));
+  const wrongTime = await push(withDl("12R", "16:45"), { dryRun: true });
+  assert.ok((wrongTime.reasons ?? []).some((x) => /DB の優勝戦（12R 16:40）と違う/.test(x)), JSON.stringify(wrongTime.reasons));
+  const wrongRace = await push(withDl("11R", "16:40"), { dryRun: true });
+  assert.ok((wrongRace.reasons ?? []).some((x) => /優勝戦が DB に無い/.test(x)), JSON.stringify(wrongRace.reasons));
 });

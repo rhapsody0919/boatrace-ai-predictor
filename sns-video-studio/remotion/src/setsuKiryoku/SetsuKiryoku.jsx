@@ -58,6 +58,8 @@ import {
   winsOf,
   tagText,
   timeline,
+  deadlineText,
+  DEADLINE_LINE,
 } from "./model.js";
 
 const GOLD = "#d4af37";
@@ -169,6 +171,17 @@ function Header({ b }) {
   );
 }
 
+/** final_gap の締切の行（冒頭と締めの頁の札の下。final_deadline が無ければ出さない） */
+function Deadline({ b }) {
+  const text = deadlineText(b);
+  if (!text) return null;
+  return (
+    <T x={DEADLINE_LINE.x} y={DEADLINE_LINE.y} size={DEADLINE_LINE.size} color={GOLD}>
+      {text}
+    </T>
+  );
+}
+
 function Stack({ lines, frame, step = 6 }) {
   return lines.map((l, i) => (
     <T
@@ -189,6 +202,7 @@ function Hook({ b }) {
   const { lines, sub } = hookLayout(b);
   return (
     <>
+      <Deadline b={b} />
       <Stack lines={lines} frame={f} />
       {sub && (
         <T
@@ -209,6 +223,7 @@ function Close({ b }) {
   const { lines, tail } = closeLayout(b);
   return (
     <>
+      <Deadline b={b} />
       <Stack lines={lines} frame={f} step={8} />
       <T
         align="center"

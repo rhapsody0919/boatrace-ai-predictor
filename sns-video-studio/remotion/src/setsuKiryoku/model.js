@@ -14,6 +14,10 @@
  *   rank_in_all は全機の中の上からの順位（1 + 自分より高い機の数）。avg_rank（今節の展示の平均順位）はこの型で足した欄（依頼文 4節に無い）で、
  *   主役の選び（2連率の順位（低い順）＋展示の平均順位（良い順）の和が最小）を照合する
  * final_gap の hq の束（final_gap.py、hq 9eb1a0e）は texts・grade を持たない。texts は normalizeBundle が値から作る（hook は位置の言い方まで rank_from_bottom から）。
+ * final_gap の締切（任意、オーナー 2026-11-04「全ての動画に締切」、BOA-1282）: "final_deadline": { "race": "11R", "time": "15:45" }。
+ *   hq が前夜は eve_race_deadlines（マイグレーション202）、当日は races.start_time から入れる。無い・null なら今どおり締切を出さない。
+ *   あれば冒頭（hook）と締め（close）の頁の札の下に「11R 締切予定 15:45」を出し、題（youtube.title）に時刻、説明欄（youtube.description）に
+ *   R と時刻が入っていることを検査する（題・説明欄は hq が書く）。優勝戦は12Rとは限らない（下関 2026-11-04 は11R）
  * 選手を出す画面は名前と級（A1・A2・B1・B2、欄の名前は class）を必ず出す（オーナー 11/1）。全部の型で欠けたら止める: motor_gap・motor_up は束の頭の class、border は racers[].class、final_gap は hero と six[]。
  *
  * 4つ目の型 border（「準優に残れるか」、SG/G1 の予選最終日の朝だけ。hq drafts/shorts-border-person-20261031.md、10/31 オーナー決定）。
@@ -144,6 +148,13 @@ export const tagText = (b) =>
     : b.variant === "border"
       ? `${b.venue} ${b.grade} 予選最終日`
       : `${b.venue} ${b.grade} 開催中`;
+/** final_gap の締切の行（冒頭と締めの頁の札の下）。前夜は「明日」を頭に付ける（今日の締切と取り違えない）。final_deadline が無ければ null */
+export const deadlineText = (b) =>
+  b?.variant === "final_gap" && b.final_deadline
+    ? `${b.when === "eve" ? "明日 " : ""}${b.final_deadline.race} 締切予定 ${b.final_deadline.time}`
+    : null;
+/** 締切の行の位置と大きさ（札 y120〜190 の下、hook の 320・close の 480 より上） */
+export const DEADLINE_LINE = { x: 60, y: 218, size: 48 };
 export const closeTail = (b) =>
   b.variant === "border"
     ? "得点率の表は 龍神レーダーで"
@@ -373,6 +384,8 @@ export function screenTexts(b) {
         String(r.need ?? ""),
       );
   else t.push(String(b.racer ?? ""), String(b.class ?? ""));
+  const dl = deadlineText(b);
+  if (dl) t.push(dl);
   return t;
 }
 
@@ -481,6 +494,8 @@ export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
   // final_gap は grade を使わず、hq の束（依頼文 4節）にも無い
   if (b.variant !== "final_gap" && (typeof b.grade !== "string" || !b.grade))
     why.push("grade が無い");
+  if (b.variant !== "final_gap" && b.final_deadline != null)
+    why.push("final_deadline は final_gap の型だけ");
   if (b.variant === "final_gap" && b.when !== "eve" && b.when !== "today")
     why.push(`when が eve|today でない: ${b.when}`);
   else if (b.variant === "final_gap") why.push(...finalDateReasons(b));
@@ -563,6 +578,7 @@ export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
         why.push("racers が順位の順でない");
   } else if (b.variant === "final_gap") {
     why.push(...finalGapReasons(b));
+    why.push(...finalDeadlineReasons(b));
     if (why.length) return why;
   } else {
     if (typeof b.racer !== "string" || !b.racer) why.push("racer が無い");
@@ -649,6 +665,9 @@ export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
   for (const l of fits)
     if (l.size != null && l.y + l.size * 1.3 > SAFE.bottom)
       why.push(`文が y${SAFE.bottom} を越える: ${l.text}`);
+  const dl = deadlineText(b);
+  if (dl && fitSize(dl, RIGHT - DEADLINE_LINE.x, DEADLINE_LINE.size) == null)
+    why.push(`締切の行が ${RIGHT - DEADLINE_LINE.x}px に収まらない: ${dl}`);
   if (b.variant === "final_gap") {
     const line = heroLine(b.hero);
     if (fitSize(line, CENTER_MAX_W, 56) == null)
@@ -716,6 +735,35 @@ function finalDateReasons(b) {
       `when=eve なのに final_date（${b.final_date}）が date（${b.date}）の翌日でない`,
     ];
   return [];
+}
+
+/**
+ * final_gap の締切（任意）の検査: 形（R は 1〜12、時刻は HH:MM）と、題に時刻・説明欄に R と時刻があること。
+ * 値が正しいか（DB の締切と同じか）は送る口（push-setsu-kiryoku-short.js）が照らす: 当日は races.start_time（朝の races_init が
+ * raceindex の締切予定時刻から入れる）、前夜は eve_race_deadlines の is_final の行
+ */
+export function finalDeadlineReasons(b) {
+  const d = b.final_deadline;
+  if (d == null) return [];
+  if (typeof d !== "object")
+    return [`final_deadline が { race, time } でない: ${JSON.stringify(d)}`];
+  const out = [];
+  if (typeof d.race !== "string" || !/^([1-9]|1[0-2])R$/.test(d.race))
+    out.push(`final_deadline.race が「11R」の形でない: ${d.race}`);
+  if (typeof d.time !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(d.time))
+    out.push(`final_deadline.time が HH:MM でない: ${d.time}`);
+  if (out.length) return out;
+  // 全角の英数・コロンは半角にそろえて探す。R・時刻は前後が数字でない所だけ（"1R" が "11R" に、"5:45" が "15:45" に当たらない）
+  const flat = (t) => norm(t ?? "").replace(/：/g, ":");
+  const has = (text, token) =>
+    new RegExp(`(^|[^0-9])${token.replace(":", "\\:")}(?![0-9])`).test(text);
+  const title = flat(b.youtube?.title);
+  const desc = flat(b.youtube?.description);
+  if (!has(title, d.time))
+    out.push(`youtube.title に締切の時刻 ${d.time} が無い`);
+  if (!has(desc, d.time) || !has(desc, d.race))
+    out.push(`youtube.description に締切（${d.race} ${d.time}）が無い`);
+  return out;
 }
 
 /**
