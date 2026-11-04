@@ -150,7 +150,16 @@ export default function FavoritesFallback({ fallback, favState, racerCount }) {
             const grid = document.querySelector(".venue-grid");
             if (grid) {
               event.preventDefault();
-              grid.scrollIntoView({ behavior: "smooth", block: "start" });
+              // 固定のヘッダーの下に隠れないよう、その高さだけ上に余白を取る
+              const header = document.querySelector(".app-header");
+              window.scrollTo({
+                top:
+                  grid.getBoundingClientRect().top +
+                  window.scrollY -
+                  (header?.offsetHeight ?? 0) -
+                  8,
+                behavior: "smooth",
+              });
             }
           }}
         >

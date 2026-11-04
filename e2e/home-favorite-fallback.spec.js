@@ -37,8 +37,10 @@ async function prepareToday(page, { grades = true } = {}) {
         r.cancellationStatus = null;
       }
     if (grades) {
-      for (const r of open[0].races) Object.assign(r, { raceGrade: "SG", seriesDay: 5 });
-      for (const r of open[1].races) Object.assign(r, { raceGrade: "G1", seriesDay: 3 });
+      for (const r of open[0].races)
+        Object.assign(r, { raceGrade: "SG", seriesDay: 5 });
+      for (const r of open[1].races)
+        Object.assign(r, { raceGrade: "G1", seriesDay: 3 });
     }
     info.first = venueCodeOf(open[0]);
     info.second = venueCodeOf(open[1]);
@@ -117,13 +119,20 @@ test("☆0件・SG と G1 が無い日: 「今日の開催は N場」で会場�
   await expect(count).toHaveAttribute("href", "#today-venues");
   // 押すと会場の一覧（区画の下）へ送る。#today-venues の見出し（区画の上）に戻らない
   await count.click();
+  // 一覧の上端が固定のヘッダーの下（隠れない）で、画面の上の方にある
   await expect
     .poll(() =>
-      page.evaluate(() =>
-        Math.abs(document.querySelector(".venue-grid").getBoundingClientRect().top),
-      ),
+      page.evaluate(() => {
+        const top = document
+          .querySelector(".venue-grid")
+          .getBoundingClientRect().top;
+        const header = document
+          .querySelector(".app-header")
+          .getBoundingClientRect().bottom;
+        return top >= header - 1 && top < header + 100;
+      }),
     )
-    .toBeLessThan(150);
+    .toBe(true);
   await expect(section.locator(".favorite-runs__alt")).toHaveCount(0);
   await expect(section.locator(".favorite-runs__howto")).toBeVisible();
 });

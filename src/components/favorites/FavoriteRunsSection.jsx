@@ -20,6 +20,7 @@ import { useVisibleOnce } from "../../hooks/useVisibleOnce";
 import {
   buildFavoriteRuns,
   buildFavoritesFallback,
+  displayRacerName,
   venuesFromPredictions,
   venuesFromTodayRaces,
 } from "../../pure/favoriteRuns";
@@ -223,7 +224,7 @@ function RunRow({ row, state, extra, info, seriesDay }) {
       <div className="favorite-runs__who">
         <BoatBadge n={row.boat} />
         <span className="favorite-runs__name" translate="no">
-          {row.name}
+          {displayRacerName(row.name)}
         </span>
         {row.grade && <span className="favorite-runs__class">{row.grade}</span>}
       </div>

@@ -37,6 +37,21 @@ export function venuesFromTodayRaces(venuesData) {
   }));
 }
 
+/**
+ * 区画の行の今節を切る目印（GS04-7）。その日のその会場の最後より後ろの race_id にして、
+ * 行のレースが締切後でもそのレースの着を含める。同じ選手の行は、どの行でも同じ今節になる
+ * （ファン評価 1周目: 締切後の行に、そのレースの着が出ていなかった）
+ */
+export const meetAnchorOf = (raceId) => `${raceId.slice(0, 13)}-99`;
+
+/** 今節の走のうち結果が出たもの（着順・欠場・公式の記号のどれかがある）。まだ走っていない今日の走を「着外」と出さない */
+export const finishedRuns = (runs) =>
+  runs.filter((run) => run.finishRank != null || run.absent || run.finishMark);
+
+/** 選手名の公式の全角空白（「内堀　　　学」）を1つの半角空白にする（結果タブと同じ見え方） */
+export const displayRacerName = (name) =>
+  typeof name === "string" ? name.replace(/[\s\u3000]+/g, " ").trim() : name;
+
 /** ☆の選手1人×1レースの行を、締切順に分ける。入力は今日の出走表。 */
 export function buildFavoriteRuns(venuesData, racerIds, nowHHMM) {
   const favorites = new Set(racerIds);

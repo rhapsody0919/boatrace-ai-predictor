@@ -7,7 +7,7 @@ import {
   buildMeetResults,
   getRecentRaces,
 } from "../components/race/basicInfoStats";
-import { statLineOf } from "../pure/favoriteRuns";
+import { finishedRuns, meetAnchorOf, statLineOf } from "../pure/favoriteRuns";
 
 /** 同時に成績・今節を取る選手の数 */
 const CONCURRENCY = 3;
@@ -107,15 +107,16 @@ export function useFavoriteRunStats(rows, visible) {
       else if (state.status === "failed")
         info = { loading: false, error: true, stat: null, meet: null };
       else {
+        // 目印はその日のその会場の最後より後ろ。締切後の行もそのレースの着を含める
         const meet = buildMeetResults(state.records ?? [], {
-          raceId: row.raceId,
+          raceId: meetAnchorOf(row.raceId),
           venueCode: row.venueCode,
         });
         info = {
           loading: false,
           error: false,
           stat: statLineOf(statsByRacer[row.racerId]?.get(row.boat)),
-          meet: getRecentRaces(meet, meet.length),
+          meet: finishedRuns(getRecentRaces(meet, meet.length)),
         };
       }
       result.set(`${row.raceId}|${row.racerId}`, info);

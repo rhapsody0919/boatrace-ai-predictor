@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
-import { buildFavoriteRuns, statLineOf, buildFavoritesFallback, venuesFromPredictions, venuesFromTodayRaces } from "../../src/pure/favoriteRuns.js";
+import { buildFavoriteRuns, statLineOf, buildFavoritesFallback, venuesFromPredictions, venuesFromTodayRaces, meetAnchorOf, finishedRuns, displayRacerName } from "../../src/pure/favoriteRuns.js";
 
 const entry = (racerId, number) => ({ racerId, number, name: `選手${racerId}`, grade: "A1" });
 const race = (venueCode, raceNumber, startTime, entries = [], extra = {}) => ({
@@ -111,6 +111,21 @@ assert.deepEqual(buildFavoritesFallback(venuesFromTodayRaces(today), [1, 18], "1
 });
 assert.deepEqual(today, todayBefore, "venuesFromTodayRaces は入力を変更しない");
 assert.deepEqual(venuesFromTodayRaces(undefined), []);
+// 今節の目印: その日のその会場の最後より後ろ（締切後の行もそのレースの着を含める。ファン評価 1周目）
+const anchor = meetAnchorOf("2026-11-04-04-03");
+assert.equal(anchor, "2026-11-04-04-99");
+assert.ok("2026-11-04-04-03" < anchor && "2026-11-04-04-12" < anchor && anchor < "2026-11-04-05-01");
+assert.ok(anchor < "2026-11-05-04-01", "翌日の走は入らない");
+// 結果の無い走（まだ走っていない今日の走）は落とす。欠場・記号の走は残す
+assert.deepEqual(finishedRuns([
+  { raceId: "a", finishRank: 2, absent: false, finishMark: null },
+  { raceId: "b", finishRank: null, absent: true, finishMark: null },
+  { raceId: "c", finishRank: null, absent: false, finishMark: "F" },
+  { raceId: "d", finishRank: null, absent: false, finishMark: null },
+]).map((r) => r.raceId), ["a", "b", "c"]);
+assert.equal(displayRacerName("内堀\u3000\u3000\u3000学"), "内堀 学");
+assert.equal(displayRacerName("峰竜太"), "峰竜太");
+assert.equal(displayRacerName(null), null);
 const gradesBefore = structuredClone(grades);
 buildFavoritesFallback(grades, [12, 1], "11:00");
 assert.deepEqual(grades, gradesBefore);
