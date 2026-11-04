@@ -32,6 +32,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
 
 const TARGETS = {
+  meetStRank: "src/components/race/meetStRank.js",
   semifinalCount: "src/pure/semifinalCount.js",
   finishPosition: "src/pure/finishPosition.js",
   basicInfoStats: "src/components/race/basicInfoStats.js",
@@ -2424,7 +2425,46 @@ function suiteSixBoatCourseStats(m, check) {
     [{ calc_to: "2024-02-29" }]);
 }
 
+function suiteMeetStRank(m, check) {
+  const beforeRaceId = "2026-11-04-22-12";
+  const runs = (values) => values.map((st, i) => ({
+    raceId: `2026-11-03-22-0${i + 1}`, st,
+    finish: st === null ? "F" : 1,
+  }));
+  const input = [
+    [0.15, 0.16, 0.14], [0.12, 0.11, 0.13],
+    [0.14, null, 0.14, 0.14], [0.20, 0.18],
+    [0.16, 0.15, 0.14], [],
+  ].map((values, i) => ({ boat: i + 1, runs: runs(values) }));
+  check("今節平均・有効走数・同順位と欠番", m.rankMeetAvgSt(input, { beforeRaceId }), [
+    { boat: 1, avg: 0.15, n: 3, rank: 3 },
+    { boat: 2, avg: 0.12, n: 3, rank: 1 },
+    { boat: 3, avg: 0.14, n: 3, rank: 2 },
+    { boat: 4, avg: null, n: 2, rank: null },
+    { boat: 5, avg: 0.15, n: 3, rank: 3 },
+    { boat: 6, avg: null, n: 0, rank: null },
+  ]);
+  const excluded = [
+    { raceId: beforeRaceId, st: 0.01 },
+    { raceId: "2026-11-05-22-01", st: 0.02 },
+    ...["F", "L"].map((finish) => ({ raceId: "2026-11-03-22-09", st: 0.01, finish })),
+    ...[null, undefined, NaN, Infinity, "0.15"].map((st) => ({ raceId: "2026-11-03-22-08", st })),
+  ];
+  check("当該・未来・F・L・数値以外を除外", m.rankMeetAvgSt([
+    { boat: 1, runs: [...runs([0.15, 0.15]), ...excluded] },
+  ], { beforeRaceId }), [{ boat: 1, avg: null, n: 2, rank: null }]);
+  check("minRunsを指定できる", m.rankMeetAvgSt([
+    { boat: 4, runs: runs([0.20, 0.18]) },
+  ], { beforeRaceId, minRuns: 2 }), [{ boat: 4, avg: 0.19, n: 2, rank: 1 }]);
+  check("小数3桁で同じ平均は同順位", m.rankMeetAvgSt([
+    { boat: 1, runs: runs([0.1501, 0.1501, 0.1501]) },
+    { boat: 2, runs: runs([0.1504, 0.1504, 0.1504]) },
+    { boat: 3, runs: runs([0.151, 0.151, 0.151]) },
+  ], { beforeRaceId }).map(({ rank }) => rank), [1, 1, 3]);
+}
+
 const SUITES = {
+  meetStRank: suiteMeetStRank,
   semifinalCount: suiteSemifinalCount,
   nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
@@ -2451,6 +2491,9 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  ["meetStRank", "当該レースを含める", "run.raceId < beforeRaceId", "run.raceId <= beforeRaceId"],
+  ["meetStRank", "3走ちょうどを出さない", "n >= minRuns", "n > minRuns"],
+  ["meetStRank", "同順位をなくす", "value < Math.round(row.avg * 1000)", "value <= Math.round(row.avg * 1000)"],
   ["sixBoatCourseStats", "件数の線ちょうどを警告にする",
     "entries < SIX_BOAT_WARN_ENTRIES[course]", "entries <= SIX_BOAT_WARN_ENTRIES[course]"],
   ["sixBoatCourseStats", "レース当日に終わる期を含める",

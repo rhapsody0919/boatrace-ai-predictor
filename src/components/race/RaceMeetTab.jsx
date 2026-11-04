@@ -22,6 +22,7 @@
  * `getRacerScopedRaceStats`（選んだ選手の走、既存キャッシュ）だけで、
  * 節の全選手分の個別履歴は引かない。
  */
+import { rankMeetAvgSt } from "./meetStRank";
 import RacerPageLink from "./RacerPageLink";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -323,6 +324,10 @@ function RaceMeetTab({
         (x.finish !== null && x.finish !== undefined),
     ),
   }));
+  const meetStRanks = rankMeetAvgSt(
+    trendRowsRaw.map(({ player, runs }) => ({ boat: player.number, runs })),
+    { beforeRaceId: raceId },
+  );
   // **横軸は日付**（BOA-538）。以前は各行が自分の走数で左右いっぱいに伸びる
   // 「走った順」で、走数が違うと同じ横位置が別の日になり、行をまたいで同じ日と
   // 比べられなかった。節の日（6艇のうち誰かが走った日）を等間隔に並べて、
@@ -1222,7 +1227,9 @@ function RaceMeetTab({
           が読めない。同じ節・同じ水面を走った6艇なので、縦の物差しを
           共通にして並べる（1艇ずつ切り替えて見比べる手間を無くす） */}
       {trendDomain && (
-        <div className="rmt-card">
+        <div
+          className={`rmt-card${trendKey === "st" ? " rmt-trend-with-avg" : ""}`}
+        >
           <div className="rmt-card-head">
             <h3 className="rmt-card-title">{t("meetTab.compareTrendTitle")}</h3>
             <div className="rmt-metric-chips" role="group">
@@ -1271,6 +1278,7 @@ function RaceMeetTab({
           </div>
           <ul className="rmt-trend-rows">
             {trendRows.map(({ player: p, runs, layout }) => {
+              const stAvg = meetStRanks.find((row) => row.boat === p.number);
               const color = BOAT_COLORS[p.number] || {};
               const vals = runs.map((r) => r[trendKey]);
               // 右端の「前走」。STは直前がFならFと出す（BOA-597）。展示はFでも
@@ -1342,6 +1350,17 @@ function RaceMeetTab({
                       {lastRun === null
                         ? "—"
                         : (lastRun.mark ?? lastRun.value.toFixed(2))}
+                      {trendKey === "st" && (
+                        <span className="rmt-trend-st-avg">
+                          {stAvg.avg === null
+                            ? t("meetTab.trendStAvgTooFew", { n: stAvg.n })
+                            : t("meetTab.trendStAvg", {
+                                avg: stAvg.avg.toFixed(2),
+                                rank: stAvg.rank,
+                                n: stAvg.n,
+                              })}
+                        </span>
+                      )}
                     </span>
                   </button>
                 </li>
@@ -1370,6 +1389,11 @@ function RaceMeetTab({
                   </span>
                 </>
               )}
+            </p>
+          )}
+          {trendKey === "st" && (
+            <p className="rmt-spark-note rmt-trend-st-avg-note">
+              {t("meetTab.trendStAvgNote")}
             </p>
           )}
           <p className="rmt-hint">{t("meetTab.compareTrendHint")}</p>
