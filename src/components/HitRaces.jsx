@@ -63,7 +63,7 @@ function extractHitRaces(predictions) {
     );
 }
 
-function HitRaces({ fetchWithRetry, lastUpdated, onRefresh, isRefreshing }) {
+function HitRaces({ lastUpdated, onRefresh, isRefreshing }) {
   const navigate = useNavigate();
   const [rawToday, setRawToday] = useState([]);
   const [rawYesterday, setRawYesterday] = useState([]);
