@@ -271,6 +271,8 @@ const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = ful
     round,
     grade: m.race?.grade ?? null,
     deadline: m.race?.startTime ?? null,
+    seriesDayText: m.race?.seriesDayText ?? null,
+    raceTitle: m.race?.raceTitle ?? null,
     facts: {
       venue90: factsOf("scene1", "s1-venue90"),
       overview: scenes.find((x) => x.id === "scene2")?.data?.radar?.overview?.facts ?? null,
