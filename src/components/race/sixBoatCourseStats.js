@@ -4,6 +4,8 @@ import {
   COURSE_RATE_MIN_ENTRIES,
 } from "../../utils/racerOfficialPeriodStats.js";
 
+import { buildTodayCourseRows } from "./courseGridStats.js";
+
 export const SIX_BOAT_WARN_ENTRIES = { 1: 10, 2: 30, 3: 30, 4: 30, 5: 42, 6: 67 };
 
 function assertDate(value) {
@@ -55,6 +57,39 @@ export function buildSixBoatCourseRows({ players, periodRowsByRacer, raceDate, b
       reliability,
       periods: stats?.periods ?? [],
       contiguous: stats?.contiguous ?? true,
+    };
+  });
+}
+
+/**
+ * 当地の6艇分。scopedByRacer は呼び出し側で表示レースより前に絞った履歴。
+ * 1艇ずつの当地行と同じ値を使い、取得中・失敗を正常な0走と区別する。
+ */
+export function buildSixBoatLocalRows({ players, scopedByRacer, venueCode, now, baseline }) {
+  return [1, 2, 3, 4, 5, 6].map((course) => {
+    const player = (players ?? []).find((p) => Number(p.number) === course);
+    const racerId = player?.racerId ?? null;
+    const records = racerId == null ? [] : scopedByRacer?.[racerId];
+    const row = {
+      boat: course, racerId, course, wins: null, entries: 0,
+      winRate: null, top2Rate: null, top3Rate: null, avg: null, diff: null,
+      reliability: records === undefined ? "loading" : "error",
+      periods: [], contiguous: true,
+    };
+    if (records === undefined || records === null) return row;
+    const local = buildTodayCourseRows(records, { venueCode, course, now })
+      .find((r) => r.key === "local");
+    const entries = local.n;
+    const { winRate, top2Rate, top3Rate } = local.metrics;
+    const reliability = entries < COURSE_RATE_MIN_ENTRIES
+      ? "none"
+      : entries < SIX_BOAT_WARN_ENTRIES[course] ? "warn" : "ok";
+    const avg = baseline?.venue?.byCourse?.[String(course)]?.winRate ?? null;
+    return {
+      ...row,
+      wins: entries === 0 ? 0 : Math.round(winRate * entries / 100),
+      entries, winRate, top2Rate, top3Rate, avg, reliability,
+      diff: reliability === "ok" && avg !== null ? winRate - avg : null,
     };
   });
 }
