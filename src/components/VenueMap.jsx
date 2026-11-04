@@ -39,14 +39,16 @@ export default function VenueMap({ venue, venueLabel, attractions = [] }) {
     () => attractions.filter((a) => a.lat != null && a.lng != null),
     [attractions],
   );
+  const venueLat = venue?.lat;
+  const venueLng = venue?.lng;
   const allLatLngs = useMemo(
     () => [
-      ...(venue?.lat != null && venue?.lng != null
-        ? [[venue.lat, venue.lng]]
+      ...(venueLat != null && venueLng != null
+        ? [[venueLat, venueLng]]
         : []),
       ...points.map((a) => [a.lat, a.lng]),
     ],
-    [venue?.lat, venue?.lng, points],
+    [venueLat, venueLng, points],
   );
 
   if (!venue?.lat || !venue?.lng) return null;
