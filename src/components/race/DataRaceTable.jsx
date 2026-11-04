@@ -160,7 +160,22 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
                     values={row.hintValues}
                   />
                   {row.note && (
-                    <span className="drt-label-note">{row.note}</span>
+                    <span
+                      className="drt-label-note"
+                      style={
+                        row.key === "expectedCourseWinRate"
+                          ? {
+                              // 注記の長さで列幅を広げず、ラベル列の幅で折り返す。
+                              width: 0,
+                              minWidth: "100%",
+                              whiteSpace: "normal",
+                              overflowWrap: "anywhere",
+                            }
+                          : undefined
+                      }
+                    >
+                      {row.note}
+                    </span>
                   )}
                 </td>
                 {players.map((p) => (

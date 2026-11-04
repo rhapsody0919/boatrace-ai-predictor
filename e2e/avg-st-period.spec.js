@@ -120,7 +120,7 @@ const COURSE_TERMS = [
   [2026, 1, "2025-05-01", "2025-10-31", 30, 20],
   [2026, 2, "2025-11-01", "2026-04-30", 37, 23],
 ];
-for (const width of [375, 1440]) {
+for (const width of [320, 375, 1280, 1440]) {
   for (const failed of [false, true]) {
     test(`想定コース1着率 ${width}px 取得失敗=${failed}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
@@ -142,6 +142,23 @@ for (const width of [375, 1440]) {
       const row = await rowCells(table, "想定コース1着率");
       const cells = row.locator("td.drt-cell");
       await expect(row.locator(".drt-label-note")).toContainText("直近3期・進入コース");
+      // 長い行注記がラベル列の nowrap を継承すると、6艇の列を押し出す。
+      await expect(row.locator(".drt-label-note")).toHaveCSS("white-space", "normal");
+      const noteOverflow = await row.locator(".drt-label-note").evaluate((el) =>
+        el.getBoundingClientRect().right - el.parentElement.getBoundingClientRect().right,
+      );
+      expect(noteOverflow).toBeLessThanOrEqual(0.5);
+      const layout = await table.evaluate((el) => {
+        const wrap = el.parentElement;
+        return {
+          overflow: wrap.scrollWidth - wrap.clientWidth,
+          widths: [...el.querySelectorAll(".drt-boat-th")].map((th) => th.getBoundingClientRect().width),
+        };
+      });
+      expect(layout.overflow).toBeLessThanOrEqual(1);
+      if (width >= 1280) {
+        for (const boatWidth of layout.widths) expect(boatWidth).toBeGreaterThanOrEqual(150);
+      }
       if (failed) {
         await expect(cells).toHaveText(["—", "—", "—", "—", "—", "—"]);
         await expect(row.locator(".drt-best")).toHaveCount(0);
