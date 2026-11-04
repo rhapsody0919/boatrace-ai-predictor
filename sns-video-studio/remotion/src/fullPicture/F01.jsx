@@ -64,6 +64,23 @@ function Open({ open }) {
   const label = (b) => `${b.count.toLocaleString("ja-JP")}件`;
   return (
     <AbsoluteFill>
+      {/* SG・G1 の大会名（見出しの上に小さく1行。字の大きさは作る側が決める、f01.mjs の seriesSize） */}
+      {open.series && (
+        <div
+          style={{
+            position: "absolute",
+            top: 44,
+            width: "100%",
+            textAlign: "center",
+            color: MUTED,
+            fontSize: open.series.size,
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {open.series.text}
+        </div>
+      )}
       <div
         style={{
           position: "absolute",
@@ -473,11 +490,11 @@ export function F01Landscape({
 }
 
 /**
- * サムネ（横 1280x720、オーナー 11/4 承認の形）。上の帯「{会場}{R}R {レース名} {M/D}({曜})」、右上の札「締切{HH:MM}」、
+ * サムネ（横 1280x720、オーナー 11/4 承認の形）。上の帯「{会場}{R}R {レース名} {M/D}({曜}) {日目}」（SG・G1 はその下に大会名を小さく1行）、右上の札「締切{HH:MM}」、
  * 大きな2行「{1号艇の名前} {級}」「逃げ切れる？」、下「同じ並び 過去{n0}回 1号艇の1着 {X}割」。
  * 文と大きな2行の字の大きさは作る側が決める（f01.mjs の thumb・thumbSize。長い名前は字を詰め、収まらなければ作らない）
  */
-export function F01Thumb({ head = "", deadline = "", lines = [], foot = "", number = "" }) {
+export function F01Thumb({ head = "", series = null, deadline = "", lines = [], foot = "", number = "" }) {
   return (
     <AbsoluteFill
       style={{
@@ -488,6 +505,12 @@ export function F01Thumb({ head = "", deadline = "", lines = [], foot = "", numb
       }}
     >
       <div style={{ color: MUTED, fontSize: 40, fontWeight: 700 }}>{head}</div>
+      {/* SG・G1 の大会名（上の帯の下に小さく1行。字の大きさは作る側が決める、f01.mjs の seriesSize） */}
+      {series && (
+        <div style={{ color: MUTED, fontSize: series.size, fontWeight: 700, whiteSpace: "nowrap", marginTop: 4 }}>
+          {series.text}
+        </div>
+      )}
       <div
         style={{
           position: "absolute",
@@ -503,7 +526,7 @@ export function F01Thumb({ head = "", deadline = "", lines = [], foot = "", numb
       >
         {deadline}
       </div>
-      <div style={{ marginTop: 56, fontWeight: 900, lineHeight: 1.15 }}>
+      <div style={{ marginTop: series ? 32 : 56, fontWeight: 900, lineHeight: 1.15 }}>
         {lines.map((l, i) => (
           <div key={i} style={{ fontSize: l.size, whiteSpace: "nowrap" }}>
             {i === 0 ? <span translate="no">{l.text}</span> : l.text}
