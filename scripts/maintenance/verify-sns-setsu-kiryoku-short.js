@@ -12,6 +12,7 @@ import {
   checkVideo,
   descriptionLink,
   dryRunClock,
+  finalDeadlineMismatch,
   mp4Info,
   pushSetsuKiryokuShort,
   resultLine,
@@ -320,7 +321,7 @@ const store = {
     );
     if (!final) return null;
     const race = await first(
-      "SELECT cancellation_status FROM races WHERE race_id=$1",
+      "SELECT cancellation_status, start_time::text AS start_time FROM races WHERE race_id=$1",
       [final.race_id],
     );
     const absent = await first(
@@ -330,6 +331,7 @@ const store = {
     return race
       ? {
           race_id: final.race_id,
+          start_time: race.start_time,
           cancelled: race.cancellation_status != null,
           withdrawn: Number(absent.n) > 0,
         }
@@ -1399,4 +1401,21 @@ test("会場のページの印（snsScreenMarkers の venue）は画面の部品
     '[data-testid="venue-summary-lines"]',
     '[data-testid="venue-characteristics-teaser"]',
   ]);
+});
+
+test("当日の final_gap の締切は DB の優勝戦と同じ R・時刻でないと止める（BOA-1282）", () => {
+  const final = { race_id: "2026-11-04-19-11", start_time: "22:20:00" };
+  assert.equal(finalDeadlineMismatch(undefined, final), null, "締切が無ければ今どおり");
+  assert.equal(finalDeadlineMismatch(null, final), null);
+  assert.equal(finalDeadlineMismatch({ race: "11R", time: "22:20" }, final), null);
+  assert.match(
+    finalDeadlineMismatch({ race: "12R", time: "22:20" }, final),
+    /DB の優勝戦（11R 22:20）と違う/,
+    "優勝戦は12Rとは限らない（下関 2026-11-04 は11R）",
+  );
+  assert.match(finalDeadlineMismatch({ race: "11R", time: "22:25" }, final), /と違う/);
+  assert.match(
+    finalDeadlineMismatch({ race: "11R", time: "22:20" }, { ...final, start_time: null }),
+    /締切なし/,
+  );
 });

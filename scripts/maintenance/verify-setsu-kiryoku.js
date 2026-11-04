@@ -2,6 +2,7 @@
  * YouTube Shorts「節の機力」（sns-video-studio/remotion/src/setsuKiryoku/）の型の決まりを確かめる（外部接続なし）。
  * - 見本の bundle（samples/motor_gap・motor_up・final_gap・border）が検査（checkBundle）を通る
  * - 章の尺: motor_gap・motor_up は約15秒（14〜16秒）・4章、final_gap は17秒・5章、border（準優に残れるか）は約15秒・3章
+ * - final_gap の締切（final_deadline、BOA-1282）: 無ければ今どおり出さない、あれば「11R 締切予定 15:45」を画面に出し、題に時刻・説明欄に R と時刻が要る。形の誤りと他の型の締切を落とす
  * - final_gap: 名前と級（欠けたら止める）・主役と6人と全機の2連率の照合・主役の選び・締め。final_six は選べない
  * - border: 3人・順位が cut より下・得点率が線より下・要る着の形・R と号艇を確かめる
  * - 検査が P0 を落とす: 禁止語（risk-rules.json）・言い切りの語・z・画面の文に bundle に無い数・
@@ -36,6 +37,8 @@ import {
   rankLabel,
   tagText,
   timeline,
+  deadlineText,
+  screenTexts,
 } from "../../sns-video-studio/remotion/src/setsuKiryoku/model.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -662,5 +665,61 @@ t(
     );
   },
 );
+
+
+/** 前夜の final_gap に締切を入れた束（hq が eve_race_deadlines から入れる形。題・説明欄も hq が書く） */
+const withDeadline = (race = "11R", time = "15:45") => {
+  const f = clone(loadRaw("final_gap"));
+  f.when = "eve";
+  f.date = "2026-10-31";
+  f.final_deadline = { race, time };
+  f.youtube.title = f.youtube.title.replace(
+    "優勝戦に",
+    `優勝戦に 明日${race} ${time}締切予定`,
+  );
+  f.youtube.description = f.youtube.description.replace(
+    "尼崎の優勝戦に乗る",
+    `尼崎の優勝戦（明日 ${race}、締切予定 ${time}）に乗る`,
+  );
+  return f;
+};
+
+t("final_gap の締切: 無ければ出さない（今どおり）", () => {
+  const f = load("final_gap");
+  assert.equal(f.final_deadline, undefined);
+  assert.equal(deadlineText(f), null);
+  assert.deepEqual(check({ ...clone(f), final_deadline: null }), []);
+});
+
+t("final_gap の締切: あれば画面に出し、題・説明欄に入っていれば通る（12Rとは限らない）", () => {
+  const f = withDeadline("11R", "15:45");
+  assert.deepEqual(check(f), []);
+  assert.equal(deadlineText(f), "11R 締切予定 15:45");
+  assert.ok(screenTexts(normalizeBundle(f)).includes("11R 締切予定 15:45"));
+  assert.deepEqual(check(withDeadline("12R", "16:30")), []);
+});
+
+t("final_gap の締切: 題・説明欄に無い・形の誤り・他の型は落とす", () => {
+  const f = withDeadline();
+  fails(
+    { ...clone(f), youtube: { ...f.youtube, title: loadRaw("final_gap").youtube.title } },
+    /youtube.title に締切の時刻 15:45 が無い/,
+    "題に時刻が無い",
+  );
+  fails(
+    {
+      ...clone(f),
+      youtube: { ...f.youtube, description: f.youtube.description.replace("明日 11R、", "") },
+    },
+    /youtube.description に締切（11R 15:45）が無い/,
+    "説明欄に R が無い",
+  );
+  fails({ ...clone(f), final_deadline: { race: "13R", time: "15:45" } }, /final_deadline.race/, "13R");
+  fails({ ...clone(f), final_deadline: { race: "11R", time: "3:45" } }, /final_deadline.time/, "H:MM");
+  fails({ ...clone(f), final_deadline: "15:45" }, /final_deadline が \{ race, time \} でない/, "文字列");
+  const m = clone(load("motor_gap"));
+  m.final_deadline = { race: "12R", time: "16:30" };
+  fails(m, /final_deadline は final_gap の型だけ/, "motor_gap の締切");
+});
 
 console.log(`verify-setsu-kiryoku: ${n} 件すべて通過`);

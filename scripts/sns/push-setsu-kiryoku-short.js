@@ -227,6 +227,19 @@ export function descriptionLink(description, venueCode) {
   return { url: `${SITE}${u.pathname}`, reasons: [] };
 }
 
+/**
+ * 当日の final_gap の締切（任意、BOA-1282）が DB の優勝戦と同じか（純粋関数）。違えば理由、同じか締切が無ければ null。
+ * R は race_id の末尾、時刻は races.start_time（分の単位）。前夜の型は出走表がまだ無いので照らさない（hq が eve_race_deadlines から入れる）
+ */
+export function finalDeadlineMismatch(deadline, final) {
+  if (deadline == null) return null;
+  const race = `${Number(String(final.race_id).slice(-2))}R`;
+  const time = typeof final.start_time === "string" ? final.start_time.slice(0, 5) : null;
+  if (deadline.race !== race || deadline.time !== time)
+    return `final_deadline（${deadline.race} ${deadline.time}）が DB の優勝戦（${race} ${time ?? "締切なし"}）と違う`;
+  return null;
+}
+
 /** bundle.json の検査（純粋関数）。型の検査（checkBundle）とこの口の検査。時刻の窓は checkTiming が見る */
 export function checkShortBundle(bundle, riskRules = []) {
   const reasons = checkBundle(bundle, { rules: riskRules, matchRiskRules });
@@ -620,6 +633,8 @@ export async function pushSetsuKiryokuShort(
       ]);
     if (final.cancelled) return reject(["優勝戦が中止"]);
     if (final.withdrawn) return reject(["優勝戦に欠場がある"]);
+    const deadlineWhy = finalDeadlineMismatch(bundle.final_deadline, final);
+    if (deadlineWhy) return reject([deadlineWhy]);
   }
   // 日の上限・クォータは DB の今の値で見る（dry-run の見本の束でも、時計を進めた日ではなく今日の数。基準の日が今日なので）
   const roomNow = realNow;
@@ -988,13 +1003,14 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
       if (!final) return null;
       const id = encodeURIComponent(final.race_id);
       const [[race], entries, exhibition] = await Promise.all([
-        call(`races?race_id=eq.${id}&select=cancellation_status`),
+        call(`races?race_id=eq.${id}&select=cancellation_status,start_time`),
         call(`race_entries?race_id=eq.${id}&select=is_absent`),
         call(`exhibition_data?race_id=eq.${id}&select=is_absent`),
       ]);
       if (!race) return null;
       return {
         race_id: final.race_id,
+        start_time: race.start_time ?? null,
         cancelled: race.cancellation_status != null,
         withdrawn: [...entries, ...exhibition].some(
           (r) => r.is_absent === true,
