@@ -1254,6 +1254,67 @@ function suiteRaceStatus(m, check) {
 // 3. courseGridStats.js
 // ---------------------------------------------------------------------------
 function suiteCourseGridStats(m, check) {
+  // BOA-1328: 全期間の1コースの走を分母にする（負けた走だけではない）。
+  const now = new Date("2026-11-05T00:00:00+09:00");
+  const lossRecord = (winningTechnique, rank1 = 2, extra = {}) => ({
+    date: "2026-10-01", venueCode: 4, raceGrade: "ippan",
+    actualCourse: 1, boatNumber: 1, rank1, winningTechnique, ...extra,
+  });
+  const losses = [
+    ...Array.from({ length: 5 }, () => lossRecord("まくり")),
+    ...Array.from({ length: 4 }, () => lossRecord("差し")),
+    lossRecord("まくり差し"), lossRecord("まくり差し"), lossRecord(null),
+    ...Array.from({ length: 22 }, () => lossRecord("まくり", 1)),
+  ];
+  losses[0] = lossRecord("まくり", 2, { date: "2025-12-03", raceGrade: "G2" });
+  losses[1] = lossRecord("まくり", 2, { date: "2026-11-04", venueCode: 24 });
+  const mixed = [...losses, lossRecord("差し", 2, { actualCourse: 2 }),
+    lossRecord("まくり", 2, { actualCourse: null })];
+  check("buildCourse1LossBreakdown: 過去走の艇番で本人の1着を判定",
+    m.buildCourse1LossBreakdown([
+      lossRecord("まくり", 3, { boatNumber: 3 }),
+      lossRecord("差し", 1, { boatNumber: 3 }),
+    ], { now }), {
+      n: 2, makurare: 0, sashi: 1, makurarePct: 0, sashiPct: 50,
+      reliable: false, from: "2026-10-01", to: "2026-10-01",
+    });
+  const roundingRows = [lossRecord("まくり"),
+    ...Array.from({ length: 200 }, () => lossRecord("逃げ", 1))];
+  check("buildCourse1LossBreakdown: 1/201 は二重丸めせず0%",
+    m.buildCourse1LossBreakdown(roundingRows, { now }).makurarePct, 0);
+  const original = JSON.stringify(mixed);
+  const breakdown = m.buildCourse1LossBreakdown(mixed, { now });
+  check("buildCourse1LossBreakdown: 34走、非1着のまくり5・差し4だけを加算", breakdown, {
+    n: 34, makurare: 5, sashi: 4, makurarePct: 15, sashiPct: 12,
+    reliable: true, from: "2025-12-03", to: "2026-11-04",
+  });
+  check("buildCourse1LossBreakdown: 全期間行と母数が一致", breakdown.n,
+    m.buildTodayCourseRows(mixed, { venueCode: null, course: 1, now })
+      .find((row) => row.key === "current").n);
+  check("buildCourse1LossBreakdown: 入力を変更しない", JSON.stringify(mixed), original);
+  const small = [lossRecord("まくり"), lossRecord("まくり"), lossRecord("差し"),
+    ...Array.from({ length: 15 }, () => lossRecord("逃げ", 1))];
+  check("buildCourse1LossBreakdown: 18走でも割合を返す", m.buildCourse1LossBreakdown(small, { now }), {
+    n: 18, makurare: 2, sashi: 1, makurarePct: 11, sashiPct: 6,
+    reliable: false, from: "2026-10-01", to: "2026-10-01",
+  });
+  for (const n of [29, 30]) {
+    const rows = Array.from({ length: n }, () => lossRecord("逃げ", 1));
+    check(`buildCourse1LossBreakdown: 信頼性の境界 ${n}走`,
+      m.buildCourse1LossBreakdown(rows, { now }).reliable, n >= 30);
+  }
+  const other = ["まくり差し", "抜き", "恵まれ", null, ""].map((t) => lossRecord(t));
+  check("buildCourse1LossBreakdown: その他と欠損も分母に含む", m.buildCourse1LossBreakdown(other, { now }), {
+    n: 5, makurare: 0, sashi: 0, makurarePct: 0, sashiPct: 0,
+    reliable: false, from: "2026-10-01", to: "2026-10-01",
+  });
+  for (const rows of [[], null, undefined, {}, "invalid", [lossRecord("差し", 2, { actualCourse: 2 })]]) {
+    check("buildCourse1LossBreakdown: 1コースなし・非配列", m.buildCourse1LossBreakdown(rows, { now }), {
+      n: 0, makurare: 0, sashi: 0, makurarePct: null, sashiPct: null,
+      reliable: false, from: null, to: null,
+    });
+  }
+
   const records = [
     // 1号艇で2コースに入った走（艇番ではなく実進入コースで数える）
     rec({
