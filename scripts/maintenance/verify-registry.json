@@ -1674,6 +1674,11 @@
       "guards": "AI スコアの softmax 確率化・既定温度・確率降順を検証"
     },
     {
+      "script": "verify-upset-win.js",
+      "tier": "ci",
+      "guards": "YouTube Shorts【人気薄の1着】（format・kind=upset_win_short、BOA-1284、マイグレーション 200）: 型（sns-video-studio/remotion/src/upsetWin/model.js）の「およそ{1/p}回に1回」の計算と丸め（N/k の四捨五入、100以上は10の位、k=0・N<k は言えない）、最下位（同値を含む・値の無い艇・0・6艇とも同じ値は比べない、展示 ST の F は負・L は一番遅い）、選び（単勝10倍以上・弱さ1つ以上・決まり手あり、単勝→弱さの数→グレード→race_id の順、中止・不成立・欠場・単勝の欠けを外す、該当なしは0本、展示 ST は弱さに入れない）、3コマ目・1コマ目・表の項目、直近1年の日ごとの和（欠け・k>n を止める、データの前の日を外して「{Y/M/D}以降」、中ほどの0の日を止める）、DB の行の形（名前の空白・F と L・単勝の 0）、見本（2026-11-03 宮島10R の本番の値）が検査を通り見本の3コマと同じ文、文・数・題・説明欄を値から作り直して照らす（値・文・円・禁止語・日ごとの和・尺 25〜35秒・1コマ目 4秒まで）。送る口（scripts/sns/push-upset-win-short.js）: item は YouTube・variant=main・race_id は upset:{日}:{race_id} だけで1日1本、許可は既定 false で youtube の行だけ・off の間は何も書かない（exit 3）、on なら 07:15 の job（期限は＋60分、リンク先の確認は龍神ソナーの頁）、画面の数字と DB の照合（6艇の値・1着・決まり手・単勝・中止・欠場）、送る時刻は 07:00〜07:50 で7時台、説明欄のリンクはそのレースの /race/{id}?tab=sonar ちょうど1つ、claim でクォータを予約・許可 off で held（upset_win_short_disabled）、モックの adapter で公開まで通して item sent、二重送信と作り直し、readCurrent（許可・同じ日に送った・item・1着の訂正・中止）、日の上限、動画の検査、194 の transition の md5 が本番と一致し 200 は1行だけ足す、印の data-testid が部品に実在。SQL194 までと 200 を PGlite、外部接続なし"
+    },
+    {
       "script": "verify-venue-card-display.js",
       "tier": "ci",
       "guards": "会場カードの時間帯境界・最小レース番号と人・ボット共通の表示値（BOA-1036）"

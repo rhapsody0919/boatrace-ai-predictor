@@ -632,11 +632,12 @@ test("鍵の健全性: x_read で refresh の後に保存できなかったら�
   assert.ok(!slack[0].includes("new-refresh"));
 });
 
-test("死活の監視: sns_send は JST 8:00〜23:00 の中だけを見る（ミッドナイトの優勝戦の送る時刻まで）", () => {
+test("死活の監視: sns_send は JST 7:00〜23:00 の中だけを見る（朝 7:15 の人気薄の1着から、ミッドナイトの優勝戦の送る時刻まで）", () => {
   const active = activeMinutesOf(SCRAPE_JOBS.sns_send);
-  assert.deepEqual(active, { start: 480, end: 1380 });
+  assert.deepEqual(active, { start: 420, end: 1380 });
   const at = (hhmm) => new Date(`2026-10-13T${hhmm}:00+09:00`);
-  assert.equal(livenessCheckable(at("07:50"), 25, active), false);
+  assert.equal(livenessCheckable(at("06:50"), 25, active), false);
+  assert.equal(livenessCheckable(at("07:30"), 25, active), true);
   assert.equal(livenessCheckable(at("08:30"), 25, active), true);
   // 22:20 発走のミッドナイトの優勝戦は 21:20 に送る。その時間も見る
   assert.equal(livenessCheckable(at("21:30"), 25, active), true);

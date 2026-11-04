@@ -77,3 +77,5 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - オッズの取得窓の開始とDBに値が入る時刻は同じではない。2026-10-29〜11-02の744Rではrace_oddsは窓開始の約0.6分後、race_odds_finalは締切の5.7〜9.8分後だった。読み直し時刻には取得遅延を含め、観測値を恒久的な保証にしない（2026-11-02、BOA-1180、race_odds・race_odds_finalの時刻照合）。
 - exhibition_dataの展示Fはstart_flag='F'と正のstart_timingで保持する（0.04はF.04）。展示Lはstart_flag='L'でstart_timingはnull。数値の符号やnullだけでF・Lを判定しない（2026-11-02、BOA-1203、本番DBの列照合、scripts/lib/beforeinfoParser.js）。
 - race_resultsはrank1があってもcourse_1〜6が空の行がある。course列から艇を探す集計ではその走を落とすため、着順確定をcourse列の充足と同一視しない（2026-11-02、BOA-1190・PR #2119、本番読み取りで2,276/51,757件、aggregate-racer-stats.jsのcourse_race_counts）。
+- 本番の races は 2025-12-02（JST）から、race_odds_final は 2026-09-29 から。「直近365日」を日ごとの数で足す集計は、データの前の日を開催ゼロと区別しないと黙って期間が短くなる（2026-11-04、読み取り、upset-win materials.mjs）
+- exhibition_data の展示 F（start_flag='F'）は 2026-09 からしかそろっていない（F の行は 2026-04〜08 が月に 59〜416 件、2026-10 は 5,759 件、展示 ST の値は 2026-03 から）。それ以前の展示 ST を F 込みで比べる集計は使えない（2026-11-04、本番の読み取り、BOA-1284）

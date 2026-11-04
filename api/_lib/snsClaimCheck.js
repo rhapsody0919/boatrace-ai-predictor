@@ -25,6 +25,7 @@ import {
   parseSetsuId,
   SETSU_KIRYOKU_SHORT_KIND,
 } from "./snsSetsuKiryokuShort.js";
+import { parseUpsetId, UPSET_WIN_SHORT_KIND } from "./snsUpsetWinShort.js";
 
 const TIMEOUT_MS = 15000;
 const RACE_ID = "\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}";
@@ -433,6 +434,47 @@ export function createReadCurrent({
       return {
         withdrawn,
         cancelled,
+        deadline_at: draft.source_data.deadline_queue?.deadline_at ?? null,
+        source_revision: revision,
+      };
+    }
+    // YouTube Shorts【人気薄の1着】（200、scripts/sns/push-upset-win-short.js）: 前日の終わったレースの振り返りの単独の Shorts。
+    // 数の照合は作り手の型の検査（upsetWin/model.js の checkBundle）と、push での DB の読み直し（そのレースの6艇の値・1着・単勝）に任せ、
+    // 送る直前は、item が upset_win_short で日とレースが下書きと合うこと・自動送信の許可（youtube の行の upset_win_short_enabled）・
+    // 同じ日に送った upset_win_short が無いこと・そのレースの中止と1着（取り込んだ時の rank1 と同じか）を読み直す。欠場は push の時点で外してある（false を返す）。
+    // リンク先（説明欄の龍神ソナーのレースの頁）の表示の確認は、preflight が queue の public_url・screen_key=race-sonar で行う
+    if (draft?.source_data?.upset_win_short?.upset_id) {
+      const {
+        upset_id: upsetId,
+        revision,
+        rank1,
+      } = draft.source_data.upset_win_short;
+      const parsed = parseUpsetId(upsetId);
+      if (!parsed) throw new Error("upset_id_invalid");
+      const id = encodeURIComponent(parsed.raceId);
+      const [[item], sent, [control], [race], [result]] = await Promise.all([
+        db(`sns_auto_send_items?draft_id=eq.${draftId}&select=kind,race_id`),
+        db(
+          `sns_auto_send_items?kind=eq.${UPSET_WIN_SHORT_KIND}&channel=eq.youtube&race_id=like.${encodeURIComponent(`upset:${parsed.date}:*`)}&state=eq.sent&select=id`,
+        ),
+        db(
+          "sns_auto_send_control?channel=eq.youtube&select=upset_win_short_enabled",
+        ),
+        db(`races?race_id=eq.${id}&select=cancellation_status`),
+        db(`race_results?race_id=eq.${id}&select=rank1`),
+      ]);
+      if (item?.kind !== UPSET_WIN_SHORT_KIND || item.race_id !== upsetId)
+        throw new Error("upset_item_mismatch");
+      if (control?.upset_win_short_enabled !== true)
+        throw new Error("upset_win_short_disabled");
+      if (sent.length) throw new Error("upset_already_sent_today");
+      if (!race || !result) throw new Error("race_not_found");
+      // 終わったレースの1着が、取り込んだ後に訂正されていれば送らない
+      if (result.rank1 !== rank1) throw new Error("upset_result_changed");
+      return {
+        withdrawn: false,
+        // 1着があるので行われたレース（confirmed のまま結果がある行もある。docs/knowledge/data-definitions.md）。中止は1着が無いこと（上で race_not_found）
+        cancelled: false,
         deadline_at: draft.source_data.deadline_queue?.deadline_at ?? null,
         source_revision: revision,
       };

@@ -591,7 +591,7 @@ export const SCRAPE_JOBS = Object.freeze({
     leaseSec: 120,
     maxDurationSec: 120,
   },
-  // sns-pdca-loop tasks 19 SNS の送信（X・YouTube）。2分ごと（JST 8:00〜23:00。ミッドナイトの優勝戦の送る時刻まで、2026-10-14 オーナー決定）に、送る時刻を過ぎた job を最大3件送る。
+  // sns-pdca-loop tasks 19 SNS の送信（X・YouTube）。2分ごと（JST 7:00〜23:00。ミッドナイトの優勝戦の送る時刻まで、2026-10-14 オーナー決定。朝は 2026-11-04 に 8:00 から 7:00 へ、BOA-1284）に、送る時刻を過ぎた job を最大3件送る。
   // YouTube は1回の実行の中でアップロード→処理の確認→公開まで進める（ADR 0094・plan §3）ので、maxDuration は 300秒。
   // 外部サイトの取得はしない（ADR-0066 改訂1 の先例）。稼働時間の外は、死活の監視が鳴らない（activeHoursJst）。
   // 実装: scripts/lib/snsSendRunner.js、api/cron/sns-send.js
@@ -599,7 +599,8 @@ export const SCRAPE_JOBS = Object.freeze({
     kind: "continuous",
     leaseSec: 300,
     maxDurationSec: 300,
-    activeHoursJst: { start: "08:00", end: "23:00" },
+    // 7:00 から（YouTube Shorts【人気薄の1着】を 7:15 に送る。BOA-1284、2026-11-04）。vercel.json の sns-send の cron と同じ時間にそろえる
+    activeHoursJst: { start: "07:00", end: "23:00" },
   },
   // sns-pdca-loop tasks 21 SNS の 48h・7d の取り込み。5分ごと（終日）に、due_at を過ぎた sns_metric_jobs を最大50件処理する。
   // 累積値は窓の終わりから15分以内だけ保存する（SQL154）ので、終日動かす。X は自分の投稿の読み取り（Owned Reads）だけ。
