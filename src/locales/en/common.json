@@ -744,7 +744,8 @@
       "last1m": "Last month",
       "local": "This venue",
       "ippan": "General",
-      "sgg1": "SG/G1"
+      "sgg1": "SG/G1",
+      "recent3": "Last 3 terms"
     },
     "smallSampleTitle": "Small sample; treat as a rough guide",
     "gridTitleWithMetric": "Record by course: {{metric}}",
@@ -764,6 +765,28 @@
       "local": "at this venue",
       "ippan": "in General races",
       "sgg1": "in SG/G1 races"
+    },
+    "sixBoat": {
+      "title": "Course records of the 6 racers themselves",
+      "sub": "Each racer's own record in the expected starting course (assuming entry in boat-number order). Results are aggregated by actual starting course.",
+      "periodRecent3": "Last 3 terms",
+      "periodLocal": "This venue",
+      "periodRange": "{{from}} – {{to}}",
+      "colBoat": "Boat / Racer",
+      "colWin": "1st-place rate",
+      "colDiff": "Difference from the all-racer average for the same course",
+      "colDiffLocal": "Difference from this venue's average for the same course",
+      "colTop2": "Top-2",
+      "colTop3": "Top-3",
+      "colEntries": "Entries",
+      "diff": "{{value}}pt",
+      "avg": "Avg. {{value}}",
+      "smallSampleTitle": "Few entries mean rates are more prone to random variation",
+      "noteDiff": "Difference = gap from the all-racer 1st-place rate for the same course (no colors). The ST analysis in this tab compares against the average for the same class.",
+      "noteSample": "Boats with few entries (under 10 for course 1, 30 for courses 2–4, 42 for course 5, or 67 for course 6) are shown in gray with no difference, as rates are more prone to random variation. Rates are also hidden for fewer than 10 entries.",
+      "notePeriod": "Last 3 terms = the 3 latest published official term records (aggregated for May–October and November–April). These are the same values as the last 3 terms on the racer page. Tap a row to switch the table below to that racer.",
+      "fetchError": "Could not load course records for the last 3 terms.",
+      "skippedPeriod": "Terms with no starts excluded"
     }
   },
   "aiPredictionTab": {
@@ -2393,7 +2416,10 @@
     "finishAbsentNote": "\"Abs\" in the finishes is a race the racer missed; it is not counted in the score rate.",
     "postPrelimFlying": "F after qual.",
     "postPrelimFlyingTitle": "Flying start (F) in a race after qualifying ended. The official ranking also keeps the qualifying rank as it is",
-    "postPrelimFlyingNote": "\"F after qual.\" under a rank marks a racer who had a flying start after qualifying ended. The official ranking also keeps the qualifying rank as it is, so they are counted among the ranked racers above."
+    "postPrelimFlyingNote": "\"F after qual.\" under a rank marks a racer who had a flying start after qualifying ended. The official ranking also keeps the qualifying rank as it is, so they are counted among the ranked racers above.",
+    "trendStAvg": "Avg. {{avg}}, rank {{rank}} ({{n}} starts)",
+    "trendStAvgTooFew": "Hidden: {{n}} starts",
+    "trendStAvgNote": "Avg. ST this meet (excluding false starts) and ranking from fastest among the 6 boats. Hidden for fewer than 3 starts. The effect of this meet's Avg. ST is unverified; for reference only."
   },
   "basicInfo": {
     "note": "Compare each racer's record under different conditions. Tap a bar to open the details (last 10 races, best venues and a by-condition breakdown)",
@@ -2581,7 +2607,10 @@
     "motorResetNote": "New motors",
     "motorUnusedNote": "New motor, no record",
     "motorBadgeUp": "Motor ↑",
-    "motorBadgeDown": "Motor ↓"
+    "motorBadgeDown": "Motor ↓",
+    "rowExpectedCourseWinRate": "Expected-course 1st-place rate",
+    "expectedCourseWinRateNote": "The expected-course 1st-place rate is aggregated by actual starting course over the last 3 terms",
+    "noteExpectedCourse": "Win rate, local win rate, and top-2 rate are from the official race card. Avg. ST and motor top-2 rate cover the periods in their row labels. The expected-course 1st-place rate covers actual starting courses over the last 3 terms. Other analysis data is aggregated over the past 90 days (180 days for return rate). Highlights mark the best value in this race. For reference only; results are not guaranteed"
   },
   "venueTendency": {
     "title": "Venue tendency by lane",
@@ -2659,7 +2688,8 @@
       "courseRate": "1st-place rate in races from the same boat number over the last year (wins/starts)",
       "technique": "The racer's most common winning move (wins over the past 90 days in parentheses), counted regardless of boat number",
       "returnRate": "The racer's actual win-bet figure from this boat number over the past 180 days. Reference only, not a guarantee of any result",
-      "dash": "\"—\": no data, or not available yet"
+      "dash": "\"—\": no data, or not available yet",
+      "expectedCourseWinRate": "1st-place rate when entering the expected course (boat-number order) over the last 3 terms (1st-place finishes / entries)"
     },
     "sourceLine": "Source: Ryujin Radar {{url}}",
     "followUpHeading": "Example questions after pasting",
@@ -2690,7 +2720,8 @@
       "prevResult": "Last (series)",
       "courseRate": "Lane",
       "returnRate": "Return",
-      "technique": "Style"
+      "technique": "Style",
+      "expectedCourseWinRate": "Expected 1st"
     }
   },
   "raceList": {
@@ -2906,7 +2937,13 @@
       "freshPriorRuns": "From starts up to the previous series ({{n}} starts)",
       "freshFirstMeetBanner": "{{venue}} switched to new motors on {{month}}/{{day}}. Official top-2 rates start from the next series. Until then, Ryujin Radar shows numbers worked out from the motors' starts at this venue",
       "officialModeSourceNoteFresh": "※ For past races, \"Top-2 rate\", \"Top-3 rate\" and \"Trial\" are the BOAT RACE official website values as of the race card. For motors whose official value is 0, the \"Top-2 rate\" and \"Top-3 rate\", and the \"Power index\", are worked out by Ryujin Radar from the motor's starts at this venue before this race.",
-      "freshRate2Header": "Top-2 (series start)"
+      "freshRate2Header": "Top-2 (series start)",
+      "partsCountHeader": "Parts changes this meet",
+      "partsCountBadge": "Changes {{n}}",
+      "partsCountNote": "Changes N = the number of recorded parts changes (excluding the propeller) from the first day of this meet through this race's exhibition. Tap to see the part names. More or fewer changes do not indicate better or worse performance (effects unverified).",
+      "usageFinal": "Finals appearance",
+      "usageChampion": "Championship",
+      "usageGradeNote": "The meet's race grade and marks showing whether the motor appeared in the final (finals appearance) or won it (championship)."
     },
     "motorRanking": {
       "title": "🏁 Motor Ranking",
@@ -3673,7 +3710,8 @@
     "stLate": "The share of starts 0.1 seconds or more behind the fastest starter in that race. Because this tends to rise on outer courses, the gap from the average for the same course and class is shown too. Flying starts are excluded. This is our own aggregation and will not match similarly named stats on other sites",
     "flyingCount": "Class is the value on this race's program. F is the number of flying starts this term (gold = 1, red = 2) and resets to 0 on May 1 and November 1. A \"this meet\" tag means the racer had a flying start between the first day of this meet and yesterday: they still run the rest of the meet but cannot enter this meet's semifinal or final (excluded from prizes; today's F is not counted). L is the number of late starts, which is different from \"Slow\" below. Consistent and Slow exclude races with a flying start",
     "nigeSimulation": "Using only races where the course 1 boat won by Nige (Escape), the share of each course that finished 2nd. This is aggregated from this venue's actual results, not a prediction",
-    "basicInfoOfficial": "\"Official\" shows the win rate, top-2 rate, top-3 rate and Avg ST from the official race card. Avg ST is the official term record, all venues from {{from}} to {{to}}. \"Racer form (national win rate)\" is the race card value and uses a different calculation period. It cannot be filtered by grade, so choosing a grade switches to \"Current term\""
+    "basicInfoOfficial": "\"Official\" shows the win rate, top-2 rate, top-3 rate and Avg ST from the official race card. Avg ST is the official term record, all venues from {{from}} to {{to}}. \"Racer form (national win rate)\" is the race card value and uses a different calculation period. It cannot be filtered by grade, so choosing a grade switches to \"Current term\"",
+    "expectedCourseWinRate": "This racer's 1st-place rate when entering the expected course (boat-number order) over the last 3 terms. It is the same value as in the 6-boat table in the Lane Stats tab"
   },
   "weatherInEscape": {
     "loading": "Loading…",
