@@ -48,6 +48,9 @@ for (const width of [320, 375, 1440]) {
     const star = third.locator("button[aria-pressed]");
     await star.click();
     await expect(star).toHaveAttribute("aria-pressed", "true");
+    // トーストは見出しの重なり順に閉じ込められず body 直下に出る（下部ナビに隠れない）
+    await expect(page.locator("body > div [role=status]")).toBeVisible();
+    await expect(cells.locator("[role=status]")).toHaveCount(0);
     expect(new URL(page.url()).pathname).toBe(path);
     expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).racers, key)).toEqual([racerId]);
     await expect.poll(() => page.evaluate(() => window.favoriteEvents.filter((e) => e[1] === "favorite_add")))
