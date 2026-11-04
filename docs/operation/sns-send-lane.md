@@ -6,7 +6,7 @@ SNS 配信の基盤レーン（範囲: sns-hub・`scripts/sns/push-*.js`・送�
 
 | 投稿 | 作る所 | 送る所 | 承認 |
 |---|---|---|---|
-| /today の X（毎朝 8:00） | `scripts/lib/snsTodayPlanner.js`（cron `sns_auto_plan`、7:30 に下書き） | `scripts/lib/snsSendRunner.js`（cron `sns_send`、2分ごと） | 自動の承認者（`approve_sns_x_send`） |
+| /today の X（毎朝 7:00、文だけの型 v3。BOA-1314） | `scripts/lib/snsTodayPlanner.js`（cron `sns_auto_plan`、6:30 に下書き） | `scripts/lib/snsSendRunner.js`（cron `sns_send`、2分ごと） | 自動の承認者（`approve_sns_x_send`） |
 | 全貌（X・YouTube 完全版・Shorts） | hq の作り手 → `scripts/sns/push-full-picture.js` | 同上 | 同上 |
 | YouTube Shorts「節の機力」（1日1本、単独の Shorts） | hq の作り手（bundle.json＋mp4、型は `sns-video-studio/remotion/src/setsuKiryoku/`）→ `scripts/sns/push-setsu-kiryoku-short.js` | 同上 | 同上。旗 `sns_auto_send_control.setsu_kiryoku_short_enabled`（youtube の行、既定 false、193）が true のときだけ |
 | YouTube Shorts【人気薄の1着】（毎朝 7:15 に1本、前日の結果） | hq の機械が `sns-video-studio/remotion/scripts/upset-win/daily.mjs`（選び・材料・声・mp4、型は `src/upsetWin/`）→ `scripts/sns/push-upset-win-short.js` | 同上（cron `sns_send` は 2026-11-04 から JST 7:00 から） | 同上。旗 `sns_auto_send_control.upset_win_short_enabled`（youtube の行、既定 false、200）が true のときだけ |

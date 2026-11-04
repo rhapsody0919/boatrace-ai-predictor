@@ -697,7 +697,7 @@ export const isThinkingGradeDayRace = (race, twelves) =>
 export function todayTargetReason(picks, raceId, race = null, twelves = []) {
   if (!picks?.draft_id)
     return "その日の /today の X 投稿が無い（today_thinking の対象を確かめられない）";
-  // 送られた /today の投稿の対象だけ（held・pending_review のまま出ていない投稿の候補には出さない。hq は呼び直すので、8:00 の後に通る）
+  // 送られた /today の投稿の対象だけ（held・pending_review のまま出ていない投稿の候補には出さない。hq は呼び直すので、7:00 の後に通る）
   if (picks.status !== "posted")
     return `その日の /today の X 投稿がまだ送られていない（status=${picks.status ?? "不明"}）`;
   const ids = [picks.featured, ...(picks.list ?? [])]

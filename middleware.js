@@ -161,7 +161,8 @@ export default async function middleware(request) {
     target.searchParams.set("utm_medium", "social");
     target.searchParams.set("utm_campaign", "today_digest");
     const content = url.searchParams.get("d");
-    if (/^\d{4}-\d{2}-\d{2}-[ab]$/.test(content ?? "")) {
+    // 札は型 a・b と、今の型 v3 の c（BOA-1314）
+    if (/^\d{4}-\d{2}-\d{2}-[abc]$/.test(content ?? "")) {
       target.searchParams.set("utm_content", content);
     }
     return Response.redirect(target, 302);

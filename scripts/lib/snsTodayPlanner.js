@@ -1,6 +1,6 @@
 /**
  * /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。
- * cron `sns_auto_plan` が毎回呼ぶ（api/cron/sns-auto-plan.js）。JST 7:30〜9:00 だけ動く（2026-10-19 時刻の組み直し）。
+ * cron `sns_auto_plan` が毎回呼ぶ（api/cron/sns-auto-plan.js）。JST 6:30〜8:00 だけ動く（2026-11-04 オーナー決定で 7:00 送りへ、BOA-1314）。
  *
  * 1回の流れ:
  *   その日の一覧（morning_digest_*、5:30 に公開）を読む → 版（snsTodayDigest.js）
@@ -9,10 +9,11 @@
  *   → 下書きがあり、一覧がやり直されて版が変わっていれば（6:30・8:00）: 撮り直して下書きを書き換える。148 のトリガーが承認を外すので、
  *     Slack で承認のし直しを頼む（承認した画像と違うものを送らない）
  *
- * - 時刻（2026-10-19 オーナー決定「毎朝 8:00 ごろに送る」で組み直し）: 龍神ソナーの図のデータは朝のバッチ（7:10 起動）で
- *   7:24〜7:26 に書かれるので、撮るのは 7:30 から。送る時刻は 8:00 と「下書きができた時刻」の遅い方（図を 8:30 まで待つ日もある）。
- *   下書きを作れるのは 9:00 まで（過ぎたら「作れなかった」を Slack に1回）。item の締切は 10:00（失効 9:30、expiry_minutes=30 と一致）、
- *   notify_by は撮影の開始（7:30）、veto_until は送る時刻。載せるのは締切が 8:00 より後のレース
+ * - 時刻（2026-11-04 オーナー決定「投稿時間を7時に変更」、BOA-1314。前は 2026-10-19 の 8:00）: 今の型 v3（文だけ、画像なし）は
+ *   龍神ソナーの図を待たないので、計画は 6:30 から（材料の朝の一覧は 5:30・6:30 に公開）。送る時刻は 7:00 と「下書きができた時刻」の遅い方。
+ *   下書きを作れるのは 8:00 まで（過ぎたら「作れなかった」を Slack に1回）。item の締切は 9:00（失効 8:30、expiry_minutes=30 と一致）、
+ *   notify_by は計画の開始（6:30）、veto_until は送る時刻。載せるのは締切が送る時刻より後のレース。
+ *   型 a・型 b（画像つき）の組み手は残すが、v3 が config の current にある間は送らない（比べの b の日を除く）。図の待ち（7:30）は a・b だけ
  * - この版は個別承認（L2）まで。自動（L3）の事前通知・止めるリンクは tasks 12b・13
  * - shadow では読むだけで、撮影・Storage・DB・Slack には書かない
  */
@@ -37,20 +38,29 @@ import {
   buildCourseWinPost,
   checkCourseWinPost,
 } from "./snsTodayCourseWinPost.js";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
+import {
+  V3_BODY,
+  buildTodayDigestV3,
+  checkTodayDigestV3,
+  loadTodayV3Material,
+} from "./snsTodayDigestV3.js";
 import { checkXSlot, SLOT_KINDS, xSlotRoomVia } from "./snsXSlots.js";
 
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
 
-// 撮影の開始（龍神ソナーの図のデータが書かれた後）と、送る時刻（早くてこの時刻）。載せるレースは締切がこれより後のものだけ
-export const TODAY_PLAN_FROM = "07:30";
-export const TODAY_SEND_AT = "08:00";
-// 下書きを作れる最後の時刻。過ぎて下書きが無ければ「作れなかった」を知らせる（図を 8:30 まで待つので、その後の撮影に余裕を残す）
-export const TODAY_LATEST = "09:00";
+// 計画の開始と、送る時刻（早くてこの時刻、2026-11-04 オーナー決定 7:00、BOA-1314）。載せるレースは締切がこれより後のものだけ
+export const TODAY_PLAN_FROM = "06:30";
+export const TODAY_SEND_AT = "07:00";
+// 下書きを作れる最後の時刻。過ぎて下書きが無ければ「作れなかった」を知らせる
+export const TODAY_LATEST = "08:00";
+// item の締切に見立てる時刻と失効（失効は締切の30分前、expiry_minutes=30 と一致）。153 の CHECK: notify_by < veto_until < deadline_at
+export const TODAY_DEADLINE = "09:00";
+export const TODAY_EXPIRES = "08:30";
 
 /**
- * その日の時刻（ISO）。送る時刻は 8:00 と now（下書きを作る時刻）の遅い方。now を渡さなければ 8:00
- * 締切に見立てる 10:00（失効 9:30）。notify_by は撮影の開始、veto_until は送る時刻（153 の CHECK: notify_by < veto_until < deadline_at）
+ * その日の時刻（ISO）。送る時刻は 7:00 と now（下書きを作る時刻）の遅い方。now を渡さなければ 7:00
+ * 締切に見立てる 9:00（失効 8:30）。notify_by は計画の開始、veto_until は送る時刻（153 の CHECK: notify_by < veto_until < deadline_at）
  */
 export function todaySchedule(date, now = null) {
   const at = (hhmm) => new Date(`${date}T${hhmm}:00+09:00`).toISOString();
@@ -61,14 +71,14 @@ export function todaySchedule(date, now = null) {
     plan_from: at(TODAY_PLAN_FROM),
     latest: at(TODAY_LATEST),
     scheduled_at: sendAt,
-    deadline_at: at("10:00"),
+    deadline_at: at(TODAY_DEADLINE),
     notify_by: at(TODAY_PLAN_FROM),
     veto_until: sendAt,
-    expires_at: at("09:30"),
+    expires_at: at(TODAY_EXPIRES),
   };
 }
 
-/** utm_content は「日付-札」（札は実際に送った型 a・b。hq の比べが GA4 の流入を型で分ける、§10-5） */
+/** utm_content は「日付-札」（札は実際に送った型 a・b・c（v3）。hq の比べが GA4 の流入を型で分ける、§10-5） */
 export const todayUtmContent = (date, sent) => `${date}-${sent}`;
 export const todayTrackingUrl = (date, sent = "a") =>
   `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${todayUtmContent(date, sent)}`;
@@ -76,6 +86,26 @@ export const todayTrackingUrl = (date, sent = "a") =>
 // 本文だけ短い道にする。追跡行には従来の UTM URL を保存する。
 const todayPostUrl = (date, sent) =>
   `${new URL("/x/today", TODAY_URL)}?d=${todayUtmContent(date, sent)}`;
+
+const sha256 = (text) => createHash("sha256").update(text).digest("hex");
+
+/**
+ * 型 v3（今の型、BOA-1314）の本文と検査（純粋でない: DB を読む）。返り値 { ok: true, text, picks, featured, blocks, summary, url } か { ok: false, reason }。
+ * sent は札（config の current.id、utm_content の末尾）
+ */
+export async function prepareTodayV3({ date, sendAt, raceDb, t, sent }) {
+  const url = todayPostUrl(date, sent);
+  const made = buildTodayDigestV3(await loadTodayV3Material(raceDb, date), {
+    sendAt,
+    t,
+    url,
+  });
+  if (!made.ok) return made;
+  const problems = checkTodayDigestV3(made.text, { date, url });
+  return problems.length
+    ? { ok: false, reason: `check_failed:${problems.join(",")}` }
+    : { ...made, url };
+}
 
 // 型 b の画像の撮影用のページ（src/pages/TodaySheet.jsx）。1080×1350 をそのままの画素で撮る
 export const COURSE_WIN_SHEET_PATH = "/share/today-sheet";
@@ -247,8 +277,8 @@ const pct = (value) => `${Number(value)}%`;
 
 /** /today の注目レース（featured）。逃げ・まくりから選ばれ、送る時刻より後の締切で、数字がそろっているときだけ */
 // 画像は対象レースの龍神ソナーの図を最大4枚（2026-10-16 ユーザー決定。X の1投稿の上限が4枚）。
-// 図の元データ（analogy-v16-morning）は 7:24〜7:26 に書かれる（10/14〜10/17 の実測）。遅れる日のために 8:30 まではそろうまでやり直し、
-// 8:30 を過ぎたら撮れた分で作る
+// 図の元データ（analogy-v16-morning）は 7:24〜7:26 に書かれる（10/14〜10/17 の実測）。遅れる日のために 7:30 まではそろうまでやり直し、
+// 7:30 を過ぎたら撮れた分で作る（型 a・b だけ。今の型 v3 は画像なし）
 export const TODAY_MAX_IMAGES = 4;
 export const SONAR_ELEMENT = ".af-hep .af-dark";
 // 図の外周の色（.af-dark の放射状のグラデーションの外側、AnalogyV16.css）。撮った画像の上端・下端がこの色でなければ、
@@ -257,7 +287,8 @@ export const SONAR_EDGE_COLOR_VAR = "--ryujin-navy-600";
 // 図を撮る前に待つ印は条件のカードだけ。段の表示（analogy-stage-chip）は展示のデータが入ると切り替えのボタンに変わり、
 // 展示の後に撮ると見えない（2026-10-17 夜の作り直しで4枚とも screenshot_component_missing）
 export const SONAR_READY = ['[data-testid="analogy-fact-card"]'];
-const SONAR_WAIT_UNTIL = "08:30";
+// 図を待つのは型 a・b だけ（v3 は文だけ）。下書きを作れる最後（8:00）より前に置く（BOA-1314 で 7:00 送りにしたため、ほかの時刻と同じく 8:30 から1時間繰り上げ。図のデータは 7:24〜7:26 に書かれる）
+const SONAR_WAIT_UNTIL = "07:30";
 const SHOT_BUDGET_MS = 120_000;
 
 export function todayFeatured(rows, sendAt = TODAY_SEND_AT) {
@@ -453,10 +484,30 @@ export async function runTodayPlan(
         (!existing.reply.draft?.source_data?.deadline_queue?.parent_job_id ||
           // 子を親につないだ後、子の承認（job の作成）の前に落ちた（Codex の審査 P1）
           !["approved", "posted"].includes(existing.reply.draft?.status))));
+  // 型 v3 は材料を DB から読むので、一覧の版が同じでも本文が変われば（欠場・中止で選ぶ人やレースが変わる）作り直す。
+  // 比べるのは下書きを作ったときの送る時刻での本文（時刻が進んで締切の線が動いただけでは作り直さない）
+  // 送った・止めた item（manual・notified でない）は作り直さないので読まない。読んだ結果は下の本文に使い回す（/code-review の指摘）
+  const storedV3 = existing.draft?.source_data?.digest_v3;
+  let v3Again = null;
+  const v3Same = async () => {
+    if (!storedV3 || !["manual", "notified"].includes(existing.item?.state))
+      return true;
+    const again = await prepareTodayV3({
+      date,
+      sendAt: storedV3.send_at,
+      raceDb,
+      t,
+      sent: existing.draft.source_data.content_type?.sent,
+    });
+    v3Again = { sendAt: storedV3.send_at, made: again };
+    // 作れなくなった（載せたレースが全部中止など）ときは作り直さず、送る直前の検査（欠場・中止）に任せる
+    return !again.ok || sha256(again.text) === storedV3.text_sha256;
+  };
   if (
     existing.item &&
     !replyPending &&
-    existing.draft?.source_data?.digest?.revision === revision
+    existing.draft?.source_data?.digest?.revision === revision &&
+    (await v3Same())
   )
     return done({ outcome: "unchanged", item_id: existing.item?.id ?? null });
   // held_manual（禁止表現）・止めた item は、版が変わっても作り直さない（オーナーの判断に回す）。
@@ -473,7 +524,7 @@ export async function runTodayPlan(
       reason: `reply_item_${existing.reply.item.state}`,
     });
 
-  // 載せるのは、締切が送る時刻（8:00、遅れた日はその時刻）より後のレースだけ
+  // 載せるのは、締切が送る時刻（7:00、遅れた日はその時刻）より後のレースだけ
   const sendAt = jstHm(when.scheduled_at);
   // 送信の設定は1回だけ読み、型の選び方（返信を選べるか）と自動の承認の両方に使う（2回読むと間で変わりうる）。
   // 確認用の作り直し（review）は自動にしない
@@ -481,8 +532,10 @@ export async function runTodayPlan(
   const replyAllowed =
     control?.mode === "auto" && Boolean(control?.auto_approver_id);
   // その日の型（PD02）。下書きができた後は、その日の型を変えない（作り直しでも同じ型。途中で列が変わっても返信の下書きを取り残さない）
+  // 型 v3 は見出しを持たない（heading null）ので、本文の型（body）で見分ける（/code-review の指摘）
   const picked =
-    existing.draft?.source_data?.content_type?.heading &&
+    (existing.draft?.source_data?.content_type?.heading ||
+      existing.draft?.source_data?.content_type?.body === V3_BODY) &&
     existing.draft?.source_data?.today_variant
       ? {
           ...existing.draft.source_data.content_type,
@@ -495,6 +548,22 @@ export async function runTodayPlan(
   // （/today は機械の検査が通れば自動で送るので、検査を通らない b は送らない）
   let courseWin = null;
   let bFallback = null;
+  // 型 v3（今の型）。作れない・検査を通らない日は送らない（型 a・b へ倒さない。オーナー 11/4「v3 が入ったら a・b は送らない」）
+  let v3 = null;
+  if (picked.body === V3_BODY) {
+    v3 =
+      v3Again?.sendAt === sendAt
+        ? v3Again.made
+        : await prepareTodayV3({
+            date,
+            sendAt,
+            raceDb,
+            t,
+            sent: picked.variant.id,
+          });
+    if (!v3.ok)
+      return done({ outcome: "skipped", reason: `v3:${v3.reason}`, revision });
+  }
   if (picked.body === "course_win") {
     const made = await prepareCourseWin(digest, {
       date,
@@ -564,21 +633,35 @@ export async function runTodayPlan(
       variant: fallbackReason ? base.variant : picked.variant,
     };
   };
-  let chosen = courseWin
+  let chosen = v3
     ? {
-        post: courseWin.post,
-        trackingUrl: courseWin.url,
+        post: { text: v3.text, reply: null, races: [], picks: v3.picks },
+        trackingUrl: todayTrackingUrl(date, picked.variant.id),
         variant: picked.variant,
         contentType: {
           ...picked.content_type,
-          heading: picked.heading,
+          heading: null,
           link_lead: null,
-          link_position: "end",
-          body: "course_win",
-          sent: "b",
+          link_position: "after_heading",
+          body: V3_BODY,
+          sent: picked.variant.id,
         },
       }
-    : await buildTypeA(bFallback);
+    : courseWin
+      ? {
+          post: courseWin.post,
+          trackingUrl: courseWin.url,
+          variant: picked.variant,
+          contentType: {
+            ...picked.content_type,
+            heading: picked.heading,
+            link_lead: null,
+            link_position: "end",
+            body: "course_win",
+            sent: "b",
+          },
+        }
+      : await buildTypeA(bFallback);
   if (!chosen.post)
     return done({ outcome: "skipped", reason: "no_candidates", revision });
   const riskOf = (text) =>
@@ -628,7 +711,7 @@ export async function runTodayPlan(
       if (shot.png.byteLength > 5_000_000) throw new Error("image_too_large");
       shots = [shot.png];
     } catch (error) {
-      // 図を待つのと同じ 8:30 までは次の回にやり直す。過ぎたら型 a で送る（その日を落とさない）
+      // 図を待つのと同じ 7:30 までは次の回にやり直す。過ぎたら型 a で送る（その日を落とさない）
       if (!waitOver)
         throw new Error(
           `course_win_sheet_not_ready（${firstLine(error.message)}${info()}）`,
@@ -640,7 +723,8 @@ export async function runTodayPlan(
         return done({ outcome: "skipped", reason: "no_candidates", revision });
     }
   }
-  if (!courseWin) shots = await shootSonar(chosen.post);
+  // 型 v3 は文だけ（画像なし）
+  if (!courseWin && !v3) shots = await shootSonar(chosen.post);
   const { post, contentType, trackingUrl, variant } = chosen;
   const caption = post.text;
   const replyRisk = post.reply ? riskOf(post.reply) : [];
@@ -651,7 +735,7 @@ export async function runTodayPlan(
     ? [`today/${date}/${revision}-sheet.png`]
     : shots.map((_, i) => `today/${date}/${revision}-${i + 1}.png`);
   for (const [i, png] of shots.entries()) await saveImage(imagePaths[i], png);
-  const imagePath = imagePaths[0];
+  const imagePath = imagePaths[0] ?? null;
 
   /** 型 a の画像: 対象レースの龍神ソナーの図。撮れないうちは何も書かない（例外で止め、次の実行でやり直す） */
   async function shootSonar(aPost) {
@@ -696,14 +780,27 @@ export async function runTodayPlan(
   const sourceData = {
     // 個別承認の画面の一覧は source_data.race_id の「日付-」で今日の下書きを拾う
     race_id: `${date}-today`,
-    // 画像の順（先頭は cover_image_path）。承認の関数（160）がこの順で媒体を照合する
-    image_paths: imagePaths,
+    // 画像の順（先頭は cover_image_path）。承認の関数（160）がこの順で媒体を照合する。
+    // 文だけの型 v3 は持たない（160 は image_paths があれば1〜4枚を求める。無ければ本文だけの投稿として承認できる）
+    ...(imagePaths.length ? { image_paths: imagePaths } : {}),
     // picks は送る直前の検査（readCurrent）が欠場・中止を読み直す対象
     digest: { date, revision, picks: post.picks },
     // 見出しの案の札（uuid は sns_template_variants の行。入るまでは null）
     today_variant: variant,
     // 型の札（PD02）。hq の毎日の PDCA は id を読む。source は schedule（型の列）か config、fallback_reason は列を使わなかった理由
     content_type: contentType,
+    // 型 v3 の記録（hq の today-picks.js の form c・思考投稿の対象、作り直しの判定）。featured は 🏆 の優勝戦（無い日は null）
+    ...(v3
+      ? {
+          digest_v3: {
+            send_at: sendAt,
+            text_sha256: sha256(v3.text),
+            featured: v3.featured,
+            blocks: v3.blocks,
+            summary: v3.summary,
+          },
+        }
+      : {}),
     // 型 b の記録（hq の比べと、言い切りの線の確かめ）。K は送る時刻での段ごとの候補数、line はその日の Bonferroni の線
     ...(courseWin
       ? {
@@ -919,7 +1016,7 @@ export async function runTodayPlan(
           held_reason: heldReason,
         });
   // 自動（mode=auto、2026-10-18 オーナー決定: /today も承認なし）: item を notified にして自動送信の承認者で承認する。
-  // 送る時刻は 8:00 と下書きを作った時刻の遅い方（veto_until と同じ）。確認用の作り直し（review）は自動にしない
+  // 送る時刻は 7:00 と下書きを作った時刻の遅い方（veto_until と同じ）。確認用の作り直し（review）は自動にしない
   let autoError = null;
   let slotNote = null;
   const auto = state === "manual" && replyAllowed;
@@ -1048,6 +1145,10 @@ export async function runTodayPlan(
  * 返信（reply）は自動（mode=auto・自動送信の承認者あり）で、確認用の作り直しでないときだけ選べる（親から順につなぐのが自動の道だけのため）
  */
 async function pickTodayType(date, { store, loadVariants, replyAllowed }) {
+  const config = loadVariants();
+  // 今の型（v3）の日は型の列を使わないので読まない（読めないときの誤った「config の案で送る」も出さない）
+  const fixed = pickTodayPost(config, date, { allowReply: replyAllowed });
+  if (fixed.body === V3_BODY) return fixed;
   let row = null;
   let scheduleError = null;
   if (store.typeSchedule) {
@@ -1063,7 +1164,7 @@ async function pickTodayType(date, { store, loadVariants, replyAllowed }) {
       );
     }
   }
-  return pickTodayPost(loadVariants(), date, {
+  return pickTodayPost(config, date, {
     row,
     scheduleError,
     allowReply: replyAllowed,
