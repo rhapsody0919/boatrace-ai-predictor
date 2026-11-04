@@ -449,6 +449,19 @@ function RaceBeforeInfoTab({
         }).filter(Boolean)
       : [];
 
+  // 取得中は従来の凡例を保ち、全艇の今節に比較値が無いときだけ説明を省く。
+  const meetTargets = sortedPlayers.filter((p) => p.racerId && p.motorNumber);
+  const noMeetComparison =
+    meetTargets.length > 0 &&
+    meetTargets.every((p) => {
+      const trend = meetTrendByRacer[p.racerId];
+      return (
+        trend !== undefined &&
+        !(trend ?? []).some((e) => e.exhibitionTime !== null)
+      );
+    }) &&
+    meetOriginalRows.length === 0;
+
   // 「展示タイム1位勝率」「今節の展示」の6艇の最良（race-detail-ui-unify FR-5、R1）。
   // 展示1位勝率はセルの先頭に出す1着率（高いほど良い、0桁）で比べ、件数が少ない艇（⚠）は
   // 比べるが最良でも光らせない（繰り下げない）。今節の展示はセルの先頭に出す前走の
@@ -1008,7 +1021,13 @@ function RaceBeforeInfoTab({
         )}
         <p className="rbi-note">💡 {t("beforeInfo.detailTableNote")}</p>
         {/* 金枠と⚠の意味（PR #1193 ファン評価1周目: 件数が少なくて金枠を外したことが読めなかった） */}
-        <p className="rbi-note">{t("beforeInfo.bestLegend")}</p>
+        <p className="rbi-note">
+          {t(
+            noMeetComparison
+              ? "beforeInfo.bestLegendNoMeet"
+              : "beforeInfo.bestLegend",
+          )}
+        </p>
         {exhibitionCourseOutOfRange && (
           <p className="rbi-note" data-testid="exhibition-course-out-of-range">
             {t("beforeInfo.exhibitionCourseOutOfRange")}
