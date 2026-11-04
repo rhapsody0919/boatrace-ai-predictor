@@ -2,6 +2,12 @@ import { test, expect, fetchRecorded } from "./fixtures.js";
 
 test.describe.configure({ timeout: 180_000 });
 
+// 画面がテストの終わりの後にも racer_period_stats を読む（データ出走表の想定コース1着率等）。
+// 終わった後の route.fetch が「Test ended」で落ちないよう、終わりに経路を外して待ちの要求を捨てる
+test.afterEach(async ({ page }) => {
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+});
+
 const PERIOD_STATS = /\/rest\/v1\/racer_period_stats/;
 
 async function hidePreviousTerm(page) {
