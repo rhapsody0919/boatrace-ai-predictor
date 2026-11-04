@@ -624,7 +624,7 @@ export function RemotionRoot() {
         defaultProps={{ total: 30, chapters: [], subs: [], audio: [] }}
         calculateMetadata={({ props }) => ({ durationInFrames: props.total })}
       />
-      <Composition id="F01Thumb" component={F01Thumb} durationInFrames={1} fps={30} width={1280} height={720} defaultProps={{ head: "", deadline: "", lines: [], foot: "", number: "" }} />
+      <Composition id="F01Thumb" component={F01Thumb} durationInFrames={1} fps={30} width={1280} height={720} defaultProps={{ head: "", series: null, deadline: "", lines: [], foot: "", number: "" }} />
       {/* 全貌動画の段の場面を1つ（場面ごとの確認用）。props: { scene, answers } */}
       <Composition
         id="FullPictureStep"
