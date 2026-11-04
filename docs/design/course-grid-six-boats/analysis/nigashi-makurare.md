@@ -92,3 +92,22 @@ python3 -I scripts/analysis/nigashi-makurare/build-features.py                  
 python3 -I scripts/analysis/nigashi-makurare/analyze.py                                         # nigashi-makurare-effect.json（負荷が高いと30分超。NM_BOOT・NM_WINDOWS で縮められる）
 python3 -I scripts/analysis/nigashi-makurare/who-wins-when-boat1-loses.py                       # who-wins-when-boat1-loses.json
 ```
+
+## 追加: /today の「逃がしやすい選手」に当たったレース
+
+問い: /today の nigashi（`scripts/daily/generate-morning-digest.js`。枠番2の選手で、実進入2コースの走数 10 以上、逃がし率 − 期待値 >= 22pt。`src/utils/digestMetrics.js` の MIN_RUNS・EXTRACTION_THRESHOLDS.nigashi）に当たったレースで、1号艇（枠番1、実進入は問わない）の1着・2連対は上がるか。スクリプト `scripts/analysis/nigashi-makurare/today-nigashi-hit.py`、結果 `data/analysis/nigashi-makurare/today-nigashi-hit.json`。
+
+- M（本番の再現）: 2025-12-03〜2026-11-03。率は DB と同じ 2025-12-02 から前日までの累積。期待値は 098 と同じ会場×グレード×コース（セル100走未満は会場×ALL）。グレードは `fetch-race-grades.mjs` で本体の races から取った
+- L（長期）: 2024-01-01〜2026-11-03。率は直近365日。kb_archive にグレードが無いので期待値は会場×コース（2019-04〜2023-12）で代用
+- そろえ方: 1号艇の級×勝率0.5刻みの層（主）、さらに2号艇の勝率0.5刻み（副）。層の中の当たり−外れを件数で重み付け平均。2版×2結果で Bonferroni（|z|>=2.50）
+
+| 版 | 対象（2号艇の2コース10走以上） | 当たり（1日あたり） | 1号艇1着 当たり／外れ | そろえた差（級×勝率） | ＋2号艇の勝率もそろえる | 2連対 当たり／外れ | 2連対のそろえた差 |
+|---|---|---|---|---|---|---|---|
+| M | 34,259R | 966R（3.1） | 56.0%／56.0% | +0.6pt［−2.5, +3.7］ | −0.7pt［−3.9, +2.6］ | 71.1%／73.4% | −1.9pt［−4.7, +1.0］ |
+| L | 146,489R | 983R（0.95） | 58.7%／55.8% | +3.4pt［+0.3, +6.4］（z 2.17） | +2.1pt［−1.1, +5.3］ | 73.7%／73.3% | +1.2pt［−1.5, +3.9］ |
+
+- 当たった2号艇は勝率が低い（M 5.19 対 5.43、L 4.94 対 5.37）。L の +3.4pt は2号艇の勝率をそろえると +2.1pt に縮み、区間が0をまたぐ。どの組も Bonferroni の線を越えない
+- M の当たりは2コース走数の中央値15走で、平均の逃がし率 80% 対 期待値 53%。15走の二項のぶれは SD 約13pt なので、22pt は偶然でもよく越える
+- 言えないこと: 説明文「1号艇の逃げが決まりやすい側の材料」。本番と同じ抽出（M）では1号艇の1着は外れと同じ（56.0% 対 56.0%）
+- 言えること: 「この選手が2コースのとき、1号艇が逃げた割合が多かった（過去N走）」という過去の事実まで。先の1着が増えるとは言えない
+- 再実行: `node --env-file=.env.local scripts/analysis/nigashi-makurare/fetch-race-grades.mjs` の後に `python3 -I scripts/analysis/nigashi-makurare/today-nigashi-hit.py`（runs.tsv は上の fetch-runs.mjs のもの）
