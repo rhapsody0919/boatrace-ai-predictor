@@ -58,7 +58,7 @@ Vercel の従量が上限 $150/月を超えた（調査 `.git/orchestrator/verce
 
 - **決定**: 本番のビルドは、まず今の本番の `/ai-snapshots/status.json` を読む。`racer` が「見た目の版（`templateVersion`）が同じ・途中で止まっていない・描いた時刻（`renderedAt`）が20時間以内」なら、sitemap の選手ごとに今の本番の `/ai-snapshots/racer/{id}.html` を写す。満たさなければ今までどおり全員を描く（`scripts/lib/racerSnapshotPlan.js` の `decideRacerSnapshotSource`）
 - **写すときの検査**（`adaptCopiedRacerHtml`）: main の js・css の参照（ビルドごとに hash が変わる）をこのビルドの `dist/index.html` のものに書き換える。`/` で始まる拡張子つきの src・href がすべてこのビルドの dist に在ること、保存の目印（`canSaveRacerSnapshot`）があり noindex でないこと。満たさない選手（新しく sitemap に入った・前回失敗・取得の失敗）だけを描く。本番に無い番号を取ると catch-all で 200 の SPA の外枠（約5KB）が返るので、「200 なら在る」と見ない
-- **描いた時刻**: 写したときは元の `renderedAt` を引き継ぐ（写し続けても新しくならない）。写し終えた後に status.json を読み直し、古い方を残す（写している間に alias が別の版へ切り替わることがある）
+- **描いた時刻**: 写したときは元の `renderedAt` を引き継ぐ（写し続けても新しくならない）。写し終えた後に status.json を読み直し、古い方を残す（写している間に alias が別の版へ切り替わることがある）。読み直した版の見た目の版が違う・途中で止まっていたら、写した HTML を消して全員を描く（`sourceChangedDuringCopy`）
 - **20時間の理由**: オーナーの線24時間から、越えた後の次の本番ビルドまでの余裕を4時間とった。本番ビルドが少ない日（10/31 は11本）は24時間を少し越えることがある
 - **人の画面を変えたとき**: RacerProfile とその部品（スナップショットに入る画面）を変える PR では `RACER_SNAPSHOT_TEMPLATE_VERSION` を1つ上げる。本番の版と違えば、その PR の本番ビルドで全員を描き直す（ADR 0089 決定3: 人の画面に無い節をボットに残さない）。`<head>` の計測のタグ等は最大1日古いまま残ることを受け入れる。手で描き直すときは環境変数 `RACER_SNAPSHOT_FORCE_RENDER=1`（入れたままにすると毎回全員を描く）
 - **監視**: status.json の `racer` に `mode`（copy・render）・`renderedAt`・`templateVersion`・`copied`・`rendered`・`copyFailures`（理由ごとの件数）を書く。毎日の照合（`verify-bot-html-parity.js`）が、`renderedAt` が24時間を越えた・途中で止まったときに落とす（`racerSnapshotProblems`）
