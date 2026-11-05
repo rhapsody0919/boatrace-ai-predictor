@@ -121,7 +121,11 @@ export function classify({
         !added && (rule.changed ?? []).find((re) => new RegExp(re).test(path));
       if (c) hit(rule, path, `既存のファイルの変更・削除 ${c}`);
       if (anyMatch(rule.rowsOnlyAdded, path)) {
-        const removed = patches.get(path)?.removed;
+        const patch = patches.get(path);
+        // 配列の末尾に足すと前の行の "}" が "}," に変わる。この形の消した行は書き換えに数えない
+        const removed = patch?.removed.filter(
+          (line) => !patch.added.includes(`${line},`),
+        );
         if (status === "D" || removed === undefined || removed.length > 0)
           hit(rule, path, "既存の行を変えた・消した（行の追加だけではない）");
       }
@@ -131,7 +135,10 @@ export function classify({
         !anyMatch(rule.terms.except, path)
       ) {
         const patch = patches.get(path);
-        if (patch) {
+        if (!patch) {
+          // 行を読めないときは語を確かめられないので当てる（安全側。rowsOnlyAdded と同じ）
+          hit(rule, path, "差分の行を読めない（安全側）");
+        } else {
           const fresh = rule.terms.words.filter(
             (w) => count(patch.added, w) > count(patch.removed, w),
           );
@@ -229,12 +236,49 @@ export function gitChanges(repo, from, to) {
   return changes;
 }
 
+/**
+ * ---・+++ の行のパス（"a/"・"b/" を外す）。空白を含むパスは末尾にタブが付き、
+ * 引用符・バックスラッシュ・制御文字を含むパスは C の形で引用される（core.quotepath=false でも）
+ */
+export function headerPath(rest) {
+  const raw = rest.replace(/\t$/, "");
+  if (raw === "/dev/null") return null;
+  const unquoted = raw.startsWith('"') ? unquoteC(raw.slice(1, -1)) : raw;
+  return unquoted.replace(/^[ab]\//, "");
+}
+
+const C_ESCAPES = { n: 10, t: 9, r: 13, a: 7, b: 8, f: 12, v: 11 };
+
+/** git の C の形の引用を外す（\ooo はバイト、\n 等は制御文字、\" \\ はその文字） */
+function unquoteC(text) {
+  const body = Array.from(text); // コードポイントごと（サロゲートを割らない）
+  const bytes = [];
+  for (let i = 0; i < body.length; i += 1) {
+    const ch = body[i];
+    if (ch !== "\\") {
+      bytes.push(...Buffer.from(ch, "utf8"));
+      continue;
+    }
+    const octal = body.slice(i + 1, i + 4).join("");
+    if (/^[0-7]{3}$/.test(octal)) {
+      bytes.push(Number.parseInt(octal, 8));
+      i += 3;
+    } else {
+      const e = body[i + 1];
+      bytes.push(C_ESCAPES[e] ?? e.charCodeAt(0));
+      i += 1;
+    }
+  }
+  return Buffer.from(bytes).toString("utf8");
+}
+
 /** unified diff（-U0）を、ファイルごとの足した行・消した行に分ける */
 export function parsePatch(text) {
   const patches = new Map();
   let cur = null;
   let inHunk = false;
   const take = (p) => {
+    if (p === null) return;
     if (!patches.has(p)) patches.set(p, { added: [], removed: [] });
     cur = patches.get(p);
   };
@@ -243,9 +287,9 @@ export function parsePatch(text) {
       cur = null;
       inHunk = false;
     } else if (!inHunk && line.startsWith("--- ")) {
-      if (line !== "--- /dev/null") take(line.slice(6));
+      take(headerPath(line.slice(4)));
     } else if (!inHunk && line.startsWith("+++ ")) {
-      if (line !== "+++ /dev/null") take(line.slice(6));
+      take(headerPath(line.slice(4)));
     } else if (line.startsWith("@@")) {
       inHunk = true;
     } else if (inHunk && cur && line.startsWith("+")) {
@@ -254,6 +298,43 @@ export function parsePatch(text) {
       cur.removed.push(line.slice(1));
     }
   }
+  return patches;
+}
+
+/**
+ * paths の足した行・消した行。バイナリと行の変わらない変更（空のファイルの追加・mode だけ）は
+ * patch に ---・+++ が出ないので、numstat（-z）で見て空の行として入れる。それ以外で読めなかったファイルは
+ * Map に入らず、classify が安全側で当てる
+ */
+function readPatches(repo, from, to, paths) {
+  const diff = (extra, opts = {}) =>
+    git(
+      repo,
+      [
+        "--literal-pathspecs",
+        "diff",
+        "--no-renames",
+        "--no-color",
+        ...extra,
+        from,
+        to,
+        "--",
+        ...paths,
+      ],
+      { encoding: "utf8", ...opts },
+    );
+  const patches = new Map();
+  for (const entry of diff(["--numstat", "-z"]).split("\0").filter(Boolean)) {
+    const [added, removed, ...rest] = entry.split("\t");
+    const path = rest.join("\t");
+    if (
+      (added === "-" && removed === "-") ||
+      (added === "0" && removed === "0")
+    )
+      patches.set(path, { added: [], removed: [] });
+  }
+  for (const [path, patch] of parsePatch(diff(["-U0"])))
+    patches.set(path, patch);
   return patches;
 }
 
@@ -284,24 +365,7 @@ export function classifyCommits(repo, base, head, rules = loadRules()) {
     );
   const patches =
     needLines.length > 0
-      ? parsePatch(
-          git(
-            repo,
-            [
-              "diff",
-              "--no-renames",
-              "--no-color",
-              "-U0",
-              mb,
-              headSha,
-              "--",
-              ...needLines,
-            ],
-            {
-              encoding: "utf8",
-            },
-          ),
-        )
+      ? readPatches(repo, mb, headSha, needLines)
       : new Map();
   const needTrees = rules.some((r) => r.reachFrom);
   const trees = needTrees ? [gitTree(repo, mb), gitTree(repo, headSha)] : [];
@@ -312,7 +376,8 @@ function main() {
   const args = process.argv.slice(2);
   const opt = (name) => {
     const i = args.indexOf(name);
-    return i >= 0 ? args[i + 1] : undefined;
+    const value = i >= 0 ? args[i + 1] : undefined;
+    return value?.startsWith("--") ? undefined : value;
   };
   try {
     const base = opt("--base");
@@ -321,7 +386,10 @@ function main() {
     const result = classifyCommits(opt("--repo") ?? process.cwd(), base, head);
     console.log(JSON.stringify(result, null, 2));
   } catch (error) {
-    const message = String(error?.stderr || error?.message || error).trim();
+    // execFileSync の stderr は Buffer のこともあり、空の Buffer でも真になるので文字にしてから選ぶ
+    const message =
+      String(error?.stderr ?? "").trim() ||
+      String(error?.message ?? error).trim();
     console.error(`pr-lane: 判定できない（重い道として扱う）: ${message}`);
     console.log(
       JSON.stringify({ lane: "heavy", hits: [], error: message }, null, 2),

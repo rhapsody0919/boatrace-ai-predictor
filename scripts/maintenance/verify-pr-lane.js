@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { fsIo } from "../lib/relativeImportGraph.js";
-import { TREE_ROOT, classify, parsePatch } from "./pr-lane.js";
+import { TREE_ROOT, classify, headerPath, parsePatch } from "./pr-lane.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -34,18 +34,31 @@ const tree = {
   },
 };
 
-const run = (changes, patches = new Map()) =>
-  classify({
-    changes: changes.map((c) => {
-      const [status, path] = c.split(" ");
-      return { status, path };
-    }),
-    patches,
-    trees: [tree],
+// patches に無いファイルは行の変化なし（空）として渡す。読めない場合の安全側は fill: false で別に試す。
+// 軽い道の例は import の閉包を手元の木で辿らない（関係ない import の追加でこの試験が落ちないように。
+// 木で辿って軽い道になることは、下の CLI の一時の git の木で試す）
+const run = (
+  changes,
+  patches = new Map(),
+  { trees = [tree], fill = true } = {},
+) => {
+  const list = changes.map((c) => {
+    const [status, path] = c.split(" ");
+    return { status, path };
   });
+  const all = new Map(
+    fill ? list.map((c) => [c.path, { added: [], removed: [] }]) : [],
+  );
+  for (const [k, v] of patches ?? new Map()) all.set(k, v);
+  return classify({ changes: list, patches: all, trees });
+};
 const rulesOf = (r) => [...new Set(r.hits.map((h) => h.rule))].sort();
-const expect = (name, changes, lane, rules = [], patches) => {
-  const r = run(changes, patches);
+const expect = (name, changes, lane, rules = [], patches, opts) => {
+  const r = run(
+    changes,
+    patches,
+    opts ?? (lane === "light" ? { trees: [] } : undefined),
+  );
   assert.equal(
     r.lane,
     lane,
@@ -127,8 +140,30 @@ expect(
     "    },",
   ]),
 );
+expect(
+  "台帳の末尾に足す（前の行の } が }, になるだけ）",
+  [
+    "A scripts/maintenance/verify-zz-new.js",
+    "M scripts/maintenance/verify-registry.json",
+  ],
+  "light",
+  [],
+  patch(
+    "scripts/maintenance/verify-registry.json",
+    ["    },", "    {", '      "script": "verify-zz-new.js"', "    }"],
+    ["    }"],
+  ),
+);
 
 // ---- 重い道 ----
+expect(
+  "行を読めないファイルは H9 を安全側で当てる",
+  ["M src/components/HitRaces.jsx"],
+  "heavy",
+  ["H9"],
+  new Map(),
+  { trees: [], fill: false },
+);
 // src/utils の変更が SNS の自動送信と api に届く（#2236 の元、#2251 で直した）
 {
   const r = expect(
@@ -311,6 +346,11 @@ expect(
     removed: ["old"],
   });
   assert.deepEqual(p.get("gone.txt"), { added: [], removed: ["bye"] });
+  // 空白を含むパスは末尾にタブ、引用符等は C の形で引用される
+  assert.equal(headerPath("b/src/a b.jsx\t"), "src/a b.jsx");
+  assert.equal(headerPath('"b/src/q\\"x.jsx"'), 'src/q"x.jsx');
+  assert.equal(headerPath('"b/src/\\346\\227\\245.jsx"'), "src/日.jsx");
+  assert.equal(headerPath("/dev/null"), null);
 }
 
 // ---- CLI（一時の git の木） ----
@@ -337,6 +377,7 @@ expect(
   g("init", "-q", "-b", "main");
   put("README.md", "x\n");
   put("src/utils/shared.js", "export const a = 1;\n");
+  put("src/pages/Other.jsx", "export default 1;\n");
   put(
     "sns-video-studio/remotion/src/Root.jsx",
     'import { a } from "../../../src/utils/shared.js";\nexport default a;\n',
@@ -359,6 +400,23 @@ expect(
   g("add", "-A");
   g("commit", "-q", "-m", "utils");
   const utils = g("rev-parse", "HEAD");
+  // SNS・api から届かない画面の直し・バイナリ・空のファイル・空白を含むパス（語なし）
+  g("checkout", "-q", "-b", "page", start);
+  put("src/pages/Other.jsx", "export default 2;\n");
+  put("src/a b.jsx", "export default 1;\n");
+  put("src/empty.js", "");
+  mkdirSync(join(repo, "public"), { recursive: true });
+  writeFileSync(join(repo, "public/img.bin"), Buffer.from([0, 1, 2, 0, 255]));
+  g("add", "-A");
+  g("commit", "-q", "-m", "page");
+  const page = g("rev-parse", "HEAD");
+  // 空白・引用符を含むパスに語が入る（H9）
+  g("checkout", "-q", "-b", "words", start);
+  put("src/a b.jsx", "<p>回収率</p>\n");
+  put('src/q"x.jsx', "<p>競艇</p>\n");
+  g("add", "-A");
+  g("commit", "-q", "-m", "words");
+  const words = g("rev-parse", "HEAD");
 
   const cli = (base, head) =>
     spawnSync(
@@ -392,6 +450,24 @@ expect(
     "SNS の入口から届く src/utils はコミットの木で辿る",
   );
 
+  const pageRun = cli(master, page);
+  assert.equal(pageRun.status, 0, pageRun.stderr);
+  assert.deepEqual(
+    JSON.parse(pageRun.stdout),
+    { lane: "light", hits: [] },
+    "届かない画面・バイナリ・空のファイル・空白を含むパスは軽い道",
+  );
+  const wordsRun = cli(master, words);
+  assert.equal(wordsRun.status, 0, wordsRun.stderr);
+  assert.deepEqual(
+    JSON.parse(wordsRun.stdout).hits.map((h) => [h.rule, h.file]),
+    [
+      ["H9", "src/a b.jsx"],
+      ["H9", 'src/q"x.jsx'],
+    ],
+    "空白・引用符を含むパスでも足した行の語を読む",
+  );
+
   const bad = cli(master, "0000000000000000000000000000000000000000");
   assert.notEqual(bad.status, 0, "判定できないときは 0 以外");
   assert.equal(JSON.parse(bad.stdout).lane, "heavy");
@@ -403,6 +479,24 @@ expect(
     },
   );
   assert.notEqual(missing.status, 0, "--base・--head が無いときは 0 以外");
+  const flagAsValue = spawnSync(
+    process.execPath,
+    [
+      join(ROOT, "scripts/maintenance/pr-lane.js"),
+      "--base",
+      "--head",
+      docs,
+      "--repo",
+      repo,
+    ],
+    { encoding: "utf8" },
+  );
+  assert.notEqual(flagAsValue.status, 0);
+  assert.match(
+    JSON.parse(flagAsValue.stdout).error,
+    /--base と --head が要る/,
+    "次の旗を値にしない",
+  );
   const empty = cli(docs, docs);
   assert.notEqual(empty.status, 0, "差分が空のときは判定しない（0 以外）");
 }
