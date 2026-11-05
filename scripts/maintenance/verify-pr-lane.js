@@ -25,6 +25,7 @@ import {
   TREE_ROOT,
   classify,
   classifyCommits,
+  globalSelectors,
   headerPath,
   parsePatch,
 } from "./pr-lane.js";
@@ -395,18 +396,52 @@ expect(
       ".x h3 {",
       "}",
       ":root { --a: 1; }",
-      "* { margin: 0; }",
-      "/* body { */",
-      "ul li > a {",
-      "a:not(.x) {",
-      ".y:not(a) {",
     ]),
     { trees: [] },
   );
   assert.match(
     r.hits.find((h) => h.rule === "H7").reason,
-    /全体に効くセレクタ: h2・:root・\*・ul li > a・a:not\(\.x\)$/,
-    "全体のセレクタを並べる（クラスを含む .x h3 とコメントは数えない）",
+    /全体に効くセレクタ: h2・:root$/,
+    "全体のセレクタを理由に並べる（クラスで絞った .x h3 は数えない）",
+  );
+}
+// 全体のセレクタの拾い方（#2285 の /code-review の指摘を固定）
+{
+  const g = (css) => globalSelectors(css.split("\n"));
+  assert.deepEqual(g("* { margin: 0; }\nul li > a { x: 1 }"), [
+    "*",
+    "ul li > a",
+  ]);
+  assert.deepEqual(g("/* body { */ .c { x: 1 }"), [], "コメントの中は見ない");
+  assert.deepEqual(
+    g("a:not(.x, .y) { color: red }\n.y:not(a) { x: 1 }"),
+    ["a:not(.x, .y)"],
+    "括弧の中のカンマで割らない・括弧の中のクラスは絞りに数えない",
+  );
+  assert.deepEqual(
+    g(
+      '[data-theme="dark"] h1 { x: 1 }\n#root a { x: 1 }\n.x[aria-disabled] { x: 1 }',
+    ),
+    ['[data-theme=""] h1', "#root a"],
+    "属性・ID から始まっても、クラスで絞らなければ全体",
+  );
+  assert.deepEqual(g("BODY.modal-open { x: 1 }"), ["BODY.modal-open"]);
+  assert.deepEqual(
+    g(".c::before { content: \"{\"; }\n.d::after { content: '}'; }"),
+    [],
+    "文字列の中の括弧・セミコロンで割らない",
+  );
+  assert.deepEqual(
+    g(".card { & a { color: red } a { x: 1 } }"),
+    [],
+    "入れ子の規則は親で絞られる",
+  );
+  assert.deepEqual(
+    g(
+      "@media (max-width: 480px) { a { x: 1 } .c { x: 1 } }\n@keyframes k { from { x: 0 } 50%, to { x: 1 } }\n@font-face { font-family: f; }",
+    ),
+    ["a"],
+    "@media の中は見る。@keyframes・@font-face の中は見ない",
   );
 }
 expect(
