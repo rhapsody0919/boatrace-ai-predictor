@@ -5,7 +5,7 @@
  * 1日1本（同じ JST の日の research_image は、生きている item か送った item が1つだけ。179 の一意の索引）
  */
 import twitterText from "twitter-text";
-import { buildPostText } from "../../src/pages/admin/sns-hub/utils.js";
+import { buildPostText } from "../../src/pure/snsPostText.js";
 import { xPostValid } from "./snsXLength.js";
 
 export const RESEARCH_IMAGE_KIND = "research_image";
