@@ -87,18 +87,22 @@ master への push でも同じ判定で走らせる（並行する2つの PR �
 
 ### 6. CI の時間
 
-1回あたり。手元（M 系の mac、依存と Chromium は入れた後）の実測は、compositions 約3秒・`verify-sns-makers.js` 約16秒（材料と検査1秒・束3秒・19コマ12秒）。CI（ubuntu-24.04、4 vCPU）は依存の入れ方が足される:
+1回あたり。PR #2268 の2回の run の実測（ubuntu-24.04、4 vCPU）:
 
-| 段 | 分（見込み、PR の初回の run で書き直す） |
+| 段 | 秒 |
 |---|---|
-| root の npm ci（cache あり） | 約1 |
-| remotion の npm ci（cache あり） | 約0.5 |
-| Remotion の Chromium（cache あり。無ければ約93MB の取得） | 約0.2〜0.5 |
-| OS の部品（apt） | 約1〜2 |
-| compositions・makers | 約0.5〜1 |
-| 計 | 約3.5〜5（`timeout-minutes: 20`） |
+| 判定（sns-makers-scope、checkout と node を含む） | 16〜40 |
+| root の npm ci（cache あり） | 8〜10 |
+| remotion の npm ci（cache あり） | 4〜6 |
+| Remotion の Chromium（初回も cache なしで 3） | 2〜3 |
+| OS の部品（playwright install-deps） | 12〜15 |
+| compositions（CLI） | 7〜10 |
+| verify-sns-makers（束・19コマ） | 14〜15 |
+| workflow 全体 | 101〜135（`timeout-minutes: 20`） |
 
-走るのは `run=true` の PR だけで、他の job と並行に走るので、PR の待ち時間（e2e の約30分）を延ばさない。
+手元（M 系の mac、依存と Chromium は入れた後）は compositions 約3秒・verify-sns-makers 約16秒。
+
+走るのは `run=true` の PR だけで（run=false は判定の約0.3分だけ）、他の job と並行に走るので、PR の待ち時間（e2e）を延ばさない。
 
 ## 結果
 
