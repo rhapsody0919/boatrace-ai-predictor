@@ -365,7 +365,10 @@ export async function fetchRecorded(route, options = {}) {
  * 「route.fetch: Test ended.」「Target page, context or browser has been closed」で投げ、
  * 「while running route callback」として実行全体を失敗にする（テスト自体は通っていても）。
  */
-const ROUTE_AFTER_END = /Test ended|Target closed|has been closed/;
+// 「Test ended.」「Test timeout of Nms exceeded.」は Playwright がテストの終わりで context を閉じる理由
+// （playwright/lib/index.js の closeReason）で、閉じた後の操作の失敗の文言になる
+const ROUTE_AFTER_END =
+  /Test ended|Test timeout of \d+ms exceeded|Target closed|has been closed/;
 
 export function isRouteAfterEndError(error) {
   return ROUTE_AFTER_END.test(String(error?.message ?? error));
