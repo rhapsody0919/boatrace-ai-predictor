@@ -62,11 +62,15 @@ const grades = [
 assert.deepEqual(buildFavoritesFallback(grades, [], null), {
   favVenues: [], openVenueCount: 4,
   gradeVenues: [
-    { venueCode: 1, grade: "SG", seriesDay: 3, finalStartTime: "19:42" },
-    { venueCode: 22, grade: "SG", seriesDay: 3, finalStartTime: "11:00" },
+    { venueCode: 1, grade: "SG", seriesDay: 3, finalStartTime: null },
+    { venueCode: 22, grade: "SG", seriesDay: 3, finalStartTime: null },
     { venueCode: 12, grade: "G1", seriesDay: 3, finalStartTime: "20:00" },
   ],
 });
+// 12R が配列の最後でなく、時刻順でも最後でない場合も12Rの時刻を使う。
+assert.equal(buildFavoritesFallback([
+  { placeCd: 12, races: [race(12, 12, "19:00", [], { raceGrade: "G1" }), race(12, 11, "20:00")] },
+], [], null).gradeVenues[0].finalStartTime, "19:00");
 assert.deepEqual(buildFavoritesFallback([], [], null), { favVenues: [], gradeVenues: [], openVenueCount: 0 });
 assert.deepEqual(buildFavoritesFallback(data, [12, 1], "23:59").favVenues, [
   { venueCode: 12, state: "finished", nextRaceNumber: null, nextStartTime: null },
