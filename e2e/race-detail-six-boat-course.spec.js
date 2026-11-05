@@ -73,9 +73,13 @@ test("出走のない期を除いた行に印を出す", async ({ page }) => {
 });
 
 // 当地: 1号艇の選手（スタブでは6人とも同じ走）が会場02・実進入1コースで12走・1着7（BOA-1294）
-const localRuns = runDates(12).map((date, i) => ({
-  date, venue: 2, course: 1, rank1: i < 7 ? 1 : 2, technique: i < 7 ? "逃げ" : "差し",
-}));
+const localRuns = [
+  ...runDates(12).map((date, i) => ({
+    date, venue: 2, course: 1, rank1: i < 7 ? 1 : 2, technique: i < 7 ? "逃げ" : "差し",
+  })),
+  // 4コースは3走だけ（10走未満は当地でも率を出さない。/code-review の指摘の再現）
+  ...runDates(15).slice(12).map((date) => ({ date, venue: 2, course: 4, rank1: 1, technique: "まくり" })),
+];
 
 test("当地に切り替えると当社データの当地の値と会場平均との差になり、タブを移っても保つ", async ({ page }) => {
   await stubRacerScopedRuns(page, localRuns);
@@ -95,6 +99,11 @@ test("当地に切り替えると当社データの当地の値と会場平均�
   await expect(table.locator("thead")).toContainText("この会場の同じコース平均との差");
   // 2号艇は当地の2コースの走が無い → 率を出さない
   await expect(table.locator("tbody tr").nth(1).locator("td").first()).toContainText("—");
+  // 4号艇は当地の4コース3走（1着3）。10走未満なので 100.0 を出さず「—」と3走
+  const fourth = table.locator("tbody tr").nth(3);
+  await expect(fourth.locator("td").nth(0)).toContainText("—");
+  await expect(fourth).not.toContainText("100.0");
+  await expect(fourth.locator("td").nth(3)).toContainText("3");
   await page.locator(".race-tabs-btn", { hasText: /^基本情報$/ }).click();
   await page.locator(".race-tabs-btn", { hasText: /^枠別情報$/ }).click();
   await expect(table.getByRole("button", { name: "当地", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -143,3 +152,36 @@ for (const width of [375, 1440]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }
+
+test("直近3期の取得に失敗しても当地は当社データで出す（/code-review の指摘の再現）", async ({ page }) => {
+  await stubRacerScopedRuns(page, localRuns);
+  await open(page, { error: true });
+  const table = page.locator(".six-boat-course");
+  await expect(table).toContainText("直近3期のコース別成績を読み込めませんでした。");
+  await table.getByRole("button", { name: "当地", exact: true }).click();
+  const first = table.locator("tbody tr").nth(0);
+  await expect(first).toContainText("58.3");
+  await expect(first).toContainText("平均—");
+  await expect(table.getByRole("alert")).toHaveCount(0);
+});
+
+test("当社データの取得に失敗しても1艇ずつの表に直近3期の行を出す（/code-review の指摘の再現）", async ({ page }) => {
+  await stubRacerScopedRuns(page, [], { fail: true });
+  await open(page);
+  const head = page.locator(".rwit-today-table tbody tr").first();
+  await expect(head.locator("th")).toHaveText("直近3期");
+  await expect(head).toContainText("61.8");
+  await expect(page.locator(".rwit-card .rwit-empty").first()).toBeVisible();
+});
+
+test("別のレースへ移ると期間は既定の直近3期に戻る（/code-review の指摘の再現）", async ({ page }) => {
+  await open(page);
+  const table = page.locator(".six-boat-course");
+  await table.getByRole("button", { name: "当地", exact: true }).click();
+  await expect(table.getByRole("button", { name: "当地", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.locator(".race-nav-card__button").first().click();
+  await expect(page).not.toHaveURL(/2026-09-27-02-11/);
+  await page.locator(".race-tabs-btn", { hasText: /^枠別情報$/ }).click();
+  await expect(page.locator(".six-boat-course").getByRole("button", { name: "直近3期", exact: true }))
+    .toHaveAttribute("aria-pressed", "true");
+});

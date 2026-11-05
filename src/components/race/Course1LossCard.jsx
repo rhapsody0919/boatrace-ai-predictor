@@ -13,7 +13,7 @@ import "./Course1LossCard.css";
 
 const slash = (date) => date.replaceAll("-", "/");
 
-export default function Course1LossCard({ player, records, now }) {
+export default function Course1LossCard({ player, records, now, sixBoatPeriod }) {
   const { t } = useTranslation();
   if (!player) return null;
   const text = (key, options) => t(`wakuInfo.course1Loss.${key}`, options);
@@ -56,7 +56,7 @@ export default function Course1LossCard({ player, records, now }) {
         </dl>
         <div className="course1-loss-notes">
           <p>{text("note1")}</p>
-          <p>{text("note2", range)}</p>
+          <p>{text(sixBoatPeriod === "local" ? "note2Local" : "note2", range)}</p>
         </div>
       </>
     );

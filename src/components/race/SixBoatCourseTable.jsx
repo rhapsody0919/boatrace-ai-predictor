@@ -5,6 +5,9 @@ import "./SixBoatCourseTable.css";
 
 const rate = (value) => (value == null ? "—" : value.toFixed(1));
 const slash = (date) => date.replaceAll("-", "/");
+// 10走未満（reliability "none"）は率を出さない（spec §1.2）。直近3期は純関数が null にしているが、
+// 当地の行は1艇ずつの表と同じ率を持つので、ここで外す
+const shown = (row, key) => (row.reliability === "none" ? null : row[key]);
 const SIX_BOAT_PERIODS = ["recent3", "local"];
 
 /**
@@ -24,12 +27,14 @@ export default function SixBoatCourseTable({
   onFocusBoat,
 }) {
   const { t } = useTranslation();
-  const { status, rows: recentRows, baseline } = stats;
+  const { status: recentStatus, rows: recentRows, baseline } = stats;
   const isLocal = period === "local";
   const text = (key, options) => t(`wakuInfo.sixBoat.${key}`, options);
-  const rows =
-    isLocal && status === "ready"
-      ? buildSixBoatLocalRows({
+  // 当地の行は選手ごとの当社データ（scopedBefore）から作り、直近3期の取得を待たない（取得中・失敗は行ごとに出す）。
+  // 直近3期の取得（会場の平均を含む）が済んでいなければ、平均と差は「—」のまま
+  const status = isLocal ? "ready" : recentStatus;
+  const rows = isLocal
+    ? buildSixBoatLocalRows({
           players,
           scopedByRacer: scopedBefore,
           venueCode,
@@ -142,7 +147,7 @@ export default function SixBoatCourseTable({
                       <>
                         <td>
                           <span className="six-boat-course-rate">
-                            {rate(row.winRate)}
+                            {rate(shown(row, "winRate"))}
                           </span>
                           <small
                             className="six-boat-course-diff"
@@ -157,10 +162,10 @@ export default function SixBoatCourseTable({
                           <small>{text("avg", { value: rate(row.avg) })}</small>
                         </td>
                         <td className="six-boat-course-rate">
-                          {rate(row.top2Rate)}
+                          {rate(shown(row, "top2Rate"))}
                         </td>
                         <td className="six-boat-course-rate">
-                          {rate(row.top3Rate)}
+                          {rate(shown(row, "top3Rate"))}
                         </td>
                         <td>
                           {row.entries}

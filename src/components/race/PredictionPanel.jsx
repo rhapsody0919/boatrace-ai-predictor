@@ -200,7 +200,14 @@ function PredictionPanel({
   const [sonarInitialTab, setSonarInitialTab] = useState(null);
   // 枠別情報タブの6艇の表の期間（直近3期／当地、BOA-1294）。RaceTabs は非アクティブなタブを
   // アンマウントするので、タブを移っても選んだ期間が残るようここで持つ。URL・保存には置かない
-  const [sixBoatPeriod, setSixBoatPeriod] = useState("recent3");
+  // レースが変われば既定（直近3期）に戻す（選んだレースとセットで持つ）
+  const [sixBoatPeriodState, setSixBoatPeriodState] = useState(null);
+  const sixBoatPeriod =
+    sixBoatPeriodState?.raceId === analysisRaceId
+      ? sixBoatPeriodState.period
+      : "recent3";
+  const setSixBoatPeriod = (period) =>
+    setSixBoatPeriodState({ raceId: analysisRaceId, period });
   const {
     toast: aiCopyToast,
     showToast: showAiCopyToast,

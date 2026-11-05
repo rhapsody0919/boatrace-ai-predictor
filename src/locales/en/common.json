@@ -777,7 +777,8 @@
       "valuePct": "({{pct}}%)",
       "note1": "* The denominator is all races run in course 1 (not just races lost). Races where another racer took 1st place with Makuri-zashi, Nuki or Megumare are excluded from Makuri (taken) and Sashi (taken), but included in the denominator of N races.",
       "note2": "* For how often the racer finishes 1st, see the 1st-place rate in \"Course records of the 6 racers themselves\" above. The table above covers the last 3 terms (official records), while this card uses our data {{from}} – {{to}}, so the periods differ. With this number of races, rates cannot be compared between racers of the same class.",
-      "fetchError": "Could not load Makuri (taken) / Sashi (taken) in starting course 1."
+      "fetchError": "Could not load Makuri (taken) / Sashi (taken) in starting course 1.",
+      "note2Local": "* For how often the racer finishes 1st, see the 1st-place rate in \"Course records of the 6 racers themselves\" above. \"This venue\" in the table above covers only this venue, while this card uses our data {{from}} – {{to}} at all venues, so the scopes differ. With this number of races, rates cannot be compared between racers of the same class."
     },
     "sixBoat": {
       "title": "Course records of the 6 racers themselves",

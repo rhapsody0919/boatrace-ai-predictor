@@ -49,6 +49,9 @@ test("1コース34走: まくられ・差されを件数と割合で出し、逃
   await page.locator(".six-boat-course button", { hasText: /^当地$/ }).click();
   await expect(card).toContainText("34走中5走");
   await expect(card).toContainText("2026/01/05〜2026/02/07");
+  // 注記の「上の表」は選んだ期間に合わせる（/code-review の指摘の再現）
+  await expect(card).toContainText("この会場だけの成績");
+  await expect(card).not.toContainText("上の表は直近3期（公式）");
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(375);

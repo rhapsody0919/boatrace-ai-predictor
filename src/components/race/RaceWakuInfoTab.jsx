@@ -452,6 +452,24 @@ function RaceWakuInfoTab({
     sortedPlayers.find((p) => Number(p.number) === 1 && p.racerId != null) ??
     null;
 
+  const todayHead = (
+    <thead>
+      <tr>
+        <th className="rwit-today-label-th" scope="col">
+          {t("wakuInfo.periodHeader")}
+        </th>
+        {TODAY_METRICS.map((m) => (
+          <th key={m} className="rwit-today-metric-th" scope="col">
+            {t(`wakuInfo.metrics.${m}`)}
+          </th>
+        ))}
+        <th className="rwit-today-n-th" scope="col">
+          {t("wakuInfo.nHeader")}
+        </th>
+      </tr>
+    </thead>
+  );
+
   const selectBoat = (boatNumber) => {
     onFocusBoat(boatNumber);
   };
@@ -581,30 +599,31 @@ function RaceWakuInfoTab({
               </p>
             )}
 
-            {scopedRecords === undefined ? (
-              <p className="rwit-loading">{t("wakuInfo.loading")}</p>
-            ) : scopedRecords === null ? (
-              <p className="rwit-empty">{t("wakuInfo.fetchError")}</p>
-            ) : scopedRecords.length === 0 ? (
-              <p className="rwit-empty">{t("wakuInfo.noData")}</p>
+            {!Array.isArray(scopedRecords) || scopedRecords.length === 0 ? (
+              <>
+                {/* 当社データが取得中・失敗・0走でも、公式の直近3期の行は出す（BOA-1295 /code-review） */}
+                <table className="rwit-today-table">
+                  {todayHead}
+                  <tbody>
+                    <Recent3Row
+                      stats={sixBoatStats}
+                      boat={selectedPlayer?.number}
+                      t={t}
+                    />
+                  </tbody>
+                </table>
+                {scopedRecords === undefined ? (
+                  <p className="rwit-loading">{t("wakuInfo.loading")}</p>
+                ) : scopedRecords === null ? (
+                  <p className="rwit-empty">{t("wakuInfo.fetchError")}</p>
+                ) : (
+                  <p className="rwit-empty">{t("wakuInfo.noData")}</p>
+                )}
+              </>
             ) : (
               <>
                 <table className="rwit-today-table">
-                  <thead>
-                    <tr>
-                      <th className="rwit-today-label-th" scope="col">
-                        {t("wakuInfo.periodHeader")}
-                      </th>
-                      {TODAY_METRICS.map((m) => (
-                        <th key={m} className="rwit-today-metric-th" scope="col">
-                          {t(`wakuInfo.metrics.${m}`)}
-                        </th>
-                      ))}
-                      <th className="rwit-today-n-th" scope="col">
-                        {t("wakuInfo.nHeader")}
-                      </th>
-                    </tr>
-                  </thead>
+                  {todayHead}
                   <tbody>
                     <Recent3Row
                       stats={sixBoatStats}
@@ -901,12 +920,14 @@ function RaceWakuInfoTab({
       {/* PC（1200px 以上）は逃げの棒と決まり手の棒を横に並べる（BOA-881） */}
       <div className="race-split">
         <div className="race-split__main">
-          {/* 逃げシミュレーション（FR-6）。会場のコース単位の指標で、選手の選択とは独立 */}
+          {/* 1号艇の選手本人の1コースでの まくられ・差され（BOA-1331、spec §1.8）。選んだ艇・6艇の表の期間とは独立 */}
           <Course1LossCard
             player={course1Player}
             records={course1Player ? scopedBefore[course1Player.racerId] : null}
             now={periodAnchor}
+            sixBoatPeriod={sixBoatPeriod}
           />
+          {/* 逃げシミュレーション（FR-6）。会場のコース単位の指標で、選手の選択とは独立 */}
           <NigeSimulationCard rows={nigeRows} asOfToday={raceIsPast} />
 
         </div>
