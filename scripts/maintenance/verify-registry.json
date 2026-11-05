@@ -1047,6 +1047,11 @@
       "guards": "レース詳細の緑・赤を付けるかの判定（docs/design/race-detail-ui-unify plan §6）。今節のST判定文 meetStVerdictTone: 差 0.01 や今節2走以下では色なし、差 0.02 以上・3走以上で早い＝緑・遅い＝赤、浮動小数の誤差を2桁で丸める。ST考察の平均との差 diffTone: 走数の少ない艇・0.0 と出る差・向きなしは色なし"
     },
     {
+      "script": "verify-race-motor-breakdown.js",
+      "tier": "ci",
+      "guards": "モータ情報タブの一覧表の行の組み立て（src/pure/raceMotorBreakdown.js、getRaceMotorBreakdown から切り出し）。過去レースは公式値（rate_source official・power_index null）、当日以降は期間の値に差し替え、取得失敗は fetchFailed を付けて保存させない。期待値は移す前の実装の出力（開発効率の計画 段3 の3件目）"
+    },
+    {
       "script": "verify-race-notices-job.js",
       "tier": "ci",
       "guards": "レース特記事項（A5）の共通ラッパ対応"

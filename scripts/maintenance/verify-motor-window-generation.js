@@ -56,6 +56,11 @@ const check = (label, ok) => {
 };
 
 const src = read("src/services/supabaseDataService.js");
+const slice0 = (text, beginMarker, endMarker) => {
+  const begin = text.indexOf(beginMarker);
+  const end = text.indexOf(endMarker, begin);
+  return begin === -1 || end === -1 ? "" : text.slice(begin, end);
+};
 const slice = (beginMarker, endMarker) => {
   const begin = src.indexOf(beginMarker);
   const end = src.indexOf(endMarker, begin + beginMarker.length);
@@ -107,15 +112,28 @@ check(
 check(
   "motorWindowFrom: 使用開始日が基準日−days より後なら使用開始日で切り詰める（max）",
   JSON.stringify(motorWindowFrom("2026-10-01", 90, "2026-11-04")) ===
-    JSON.stringify({ since: "2026-10-01", generationStart: "2026-10-01", clippedByGeneration: true }) &&
+    JSON.stringify({
+      since: "2026-10-01",
+      generationStart: "2026-10-01",
+      clippedByGeneration: true,
+    }) &&
     JSON.stringify(motorWindowFrom("2026-01-01", 90, "2026-11-04")) ===
-      JSON.stringify({ since: "2026-08-06", generationStart: "2026-01-01", clippedByGeneration: false }) &&
-    motorWindowFrom("2026-08-06", 90, "2026-11-04").clippedByGeneration === false,
+      JSON.stringify({
+        since: "2026-08-06",
+        generationStart: "2026-01-01",
+        clippedByGeneration: false,
+      }) &&
+    motorWindowFrom("2026-08-06", 90, "2026-11-04").clippedByGeneration ===
+      false,
 );
 check(
   "motorWindowFrom: 使用開始日が不明なら since: null（集計しない）",
   JSON.stringify(motorWindowFrom(null, 90, "2026-11-04")) ===
-    JSON.stringify({ since: null, generationStart: null, clippedByGeneration: false }),
+    JSON.stringify({
+      since: null,
+      generationStart: null,
+      clippedByGeneration: false,
+    }),
 );
 
 // 2. 各集計が世代で切り詰めた窓を通る
@@ -197,10 +215,26 @@ check(
   "一覧表（過去）: 機力指数を再計算しない（getMotorPowerIndex を呼ばない）",
   !pastBranch.includes("getMotorPowerIndex"),
 );
+// 行の組み立ては src/pure/raceMotorBreakdown.js の pastMotorRows に移した（開発効率の計画 段3）
+const pastRowsFn = slice0(
+  read("src/pure/raceMotorBreakdown.js"),
+  "export function pastMotorRows(",
+  "\n}\n",
+);
+check(
+  "一覧表（過去）: pastMotorRows を呼ぶ",
+  pastBranch.includes("pastMotorRows(rows, statsAsOf, pretestAsOf)"),
+);
 check(
   '一覧表（過去）: rate_source: "official"・power_index: null',
-  pastBranch.includes('rate_source: "official"') &&
-    pastBranch.includes("power_index: null"),
+  pastRowsFn.includes('rate_source: "official"') &&
+    pastRowsFn.includes("power_index: null"),
+);
+check(
+  "一覧表（過去）: motor_2rate / motor_3rate を差し替えない（行の組み立て側）",
+  !/motor_2rate:/.test(pastRowsFn) &&
+    !/motor_3rate:/.test(pastRowsFn) &&
+    !pastRowsFn.includes("actual_rate"),
 );
 check(
   "一覧表（過去）: 優出・優勝・1着率はレース日以前の公式スナップショット",
@@ -317,18 +351,25 @@ check(
     races.includes("{ includeTarget = false } = {}") &&
       races.includes("races.filter((r) => r.race_id <= beforeRaceId)") &&
       // "-incl" は beforeKey より前（キーの末尾が race_id のままで、過去レースの長い TTL が効く）
-      races.includes("${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}") &&
+      races.includes(
+        "${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}",
+      ) &&
       src.includes('beforeRaceId && includeTarget ? "-incl" : ""'),
   );
   {
     // 動きの確認: 同じ filter 式を実データの形に当てる（既定は対象を除き、includeTarget は含む）
-    const rows = ["2026-11-04-01-01", "2026-11-04-01-02", "2026-11-04-01-03"].map((race_id) => ({ race_id }));
+    const rows = [
+      "2026-11-04-01-01",
+      "2026-11-04-01-02",
+      "2026-11-04-01-03",
+    ].map((race_id) => ({ race_id }));
     const target = "2026-11-04-01-02";
     const excl = rows.filter((r) => r.race_id < target).map((r) => r.race_id);
     const incl = rows.filter((r) => r.race_id <= target).map((r) => r.race_id);
     check(
       "getRacesForVenueSince: 既定は対象を除き、includeTarget は対象まで含む（後のレースは入らない）",
-      excl.join() === "2026-11-04-01-01" && incl.join() === "2026-11-04-01-01,2026-11-04-01-02",
+      excl.join() === "2026-11-04-01-01" &&
+        incl.join() === "2026-11-04-01-01,2026-11-04-01-02",
     );
   }
   check(
@@ -345,8 +386,9 @@ check(
   ]) {
     check(
       `${label}: 上限（beforeRaceId）をレースの取得に通し、キャッシュのキーに入れる`,
-      /getRacesForVenueSince\([^)]*beforeRaceId,?\s*(\{ includeTarget \},?\s*)?\)/.test(body) &&
-        body.includes("${beforeKey(beforeRaceId)}"),
+      /getRacesForVenueSince\([^)]*beforeRaceId,?\s*(\{ includeTarget \},?\s*)?\)/.test(
+        body,
+      ) && body.includes("${beforeKey(beforeRaceId)}"),
     );
   }
   // BOA-1297: 部品交換・使用履歴は includeTarget を取得まで通し、キャッシュのキーを分ける
@@ -358,17 +400,25 @@ check(
     check(
       `${label}: includeTarget（既定 false）を受け、取得に通し、キーを分ける`,
       body.includes("{ includeTarget = false } = {}") &&
-        body.includes("${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}"),
+        body.includes(
+          "${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}",
+        ),
     );
   }
   check(
     "日次系列・使用履歴: レースの取得に { includeTarget } を渡す",
-    /getRacesForVenueSince\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(dailySeries) &&
-      /getRacesForVenueSince\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(methodBody("getMotorUsageHistory")),
+    /getRacesForVenueSince\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(
+      dailySeries,
+    ) &&
+      /getRacesForVenueSince\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(
+        methodBody("getMotorUsageHistory"),
+      ),
   );
   check(
     "部品交換: 日次系列の取得に { includeTarget } を渡す",
-    /fetchMotorDailySeries\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(methodBody("getMotorPartsHistory")),
+    /fetchMotorDailySeries\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(
+      methodBody("getMotorPartsHistory"),
+    ),
   );
   const champ = methodBody("getVenueMotorChampionshipHistory");
   check(
