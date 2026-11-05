@@ -75,16 +75,17 @@ test.describe("データ出走表の平均ST（BOA-815）", () => {
         );
       expect(plain).toEqual([]);
 
-      // 枠番勝率は直近1年（BOA-824）。PC 幅の見出しに期間を書く
-      if (width === 1440) {
-        await expect(
-          table.locator(".drt-label-full", { hasText: "枠番勝率（直近1年）" }),
-        ).toBeVisible();
-      }
+      // 艇番で数えた「枠番勝率（直近1年）」（BOA-824）は、直近3期の想定コース1着率に差し替えた（BOA-1296）
+      await expect(
+        table.locator(".drt-label-full", { hasText: "想定コース1着率" }),
+      ).toHaveCount(1);
+      await expect(
+        table.locator(".drt-label-full", { hasText: "枠番勝率" }),
+      ).toHaveCount(0);
 
       // 表の下の注記は、平均ST が行の名前の期間だと書く（「過去90日間」に含めない）
       await expect(page.locator(".drt-note").first()).toContainText(
-        "平均ST・モーター2連率・枠番勝率は行の名前の期間",
+        "平均ST・モーター2連率は行の名前の期間、想定コース1着率は直近3期の進入コース",
       );
     });
   }
@@ -111,5 +112,109 @@ test.describe("データ出走表の平均ST（BOA-815）", () => {
       ["0.16", "0.17", "0.19", "0.15", "0.15", "—"],
       { timeout: 30000 },
     );
+  });
+});
+
+// BOA-1296: データ出走表の「想定コース1着率」は、枠別情報タブの6艇の表と同じ公式の直近3期・進入コースの値。
+// 期別成績と平均は six-boat の spec（race-detail-six-boat-course.spec.js）と同じすり替え。
+// 6人とも同じ期別成績を返し、艇番＝想定コースの欄だけが各艇の値になる
+const COURSE_TERMS = [
+  [2025, 2, "2024-11-01", "2025-04-30", 35, 20, 6, 4],
+  [2026, 1, "2025-05-01", "2025-10-31", 30, 20, 5, 3],
+  [2026, 2, "2025-11-01", "2026-04-30", 37, 23, 6, 4],
+];
+async function stubCourseStats(page, opts) {
+  await page.route("**/rest/v1/racer_period_stats?*", (route) =>
+    route.fulfill({
+      json: COURSE_TERMS.map(
+        ([period_year, period_no, calc_from, calc_to, n, p1, p2, p3]) => ({
+          period_year, period_no, calc_from, calc_to, starts: 100,
+          c1_entries: n, c1_p1: p1, c1_p2: p2, c1_p3: p3,
+          // 2コース15走・1着12（80%、30走未満で ⚠）、3コース3走（10走未満で率なし）
+          c2_entries: 5, c2_p1: 4, c2_p2: 0, c2_p3: 0,
+          c3_entries: 1, c3_p1: 1, c3_p2: 0, c3_p3: 0,
+          c4_entries: 30, c4_p1: 6, c4_p2: 0, c4_p3: 0,
+          c5_entries: 30, c5_p1: 0, c5_p2: 0, c5_p3: 0,
+          c6_entries: 30, c6_p1: 0, c6_p2: 0, c6_p3: 0,
+        }),
+      ),
+    }),
+  );
+  await page.route("**/rest/v1/rpc/get_course_win_rate_baseline", (route) =>
+    route.fulfill(
+      opts.failed
+        ? { status: 500, json: { message: "test failure" } }
+        : {
+            json: {
+              terms: COURSE_TERMS.map(([, , calc_from, calc_to]) => ({ calc_from, calc_to })),
+              national: { 1: { winRate: 55.2 } },
+            },
+          },
+    ),
+  );
+}
+
+test.describe("データ出走表の想定コース1着率（BOA-1296）", () => {
+  for (const width of [320, 375, 1440]) {
+    test(`${width}px: 直近3期の想定コース1着率を 62% 63/102 の形で出し、灰色の艇を金枠にしない`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await stubCourseStats(page, { failed: false });
+      await page.goto(RACE);
+      await page.locator(".race-tabs-btn", { hasText: "基本情報" }).first().click();
+      const table = page.locator(".drt-table").first();
+      const row = await rowCells(table, "想定コース1着率");
+      const cells = row.locator("td.drt-cell");
+      await expect(row.locator(".drt-label-note")).toContainText("直近3期・進入コース");
+      // 旧い行の「超展開データ」（枠番の会場集計）へのリンクにしない
+      await expect(row.locator("a.drt-label-link")).toHaveCount(0);
+      // 1コース: (20+20+23)/(35+30+37) = 63/102 = 61.8% → 62%（6艇の表の 61.8 と同じ元の値）
+      await expect(cells.nth(0)).toContainText("62%", { timeout: 30000 });
+      await expect(cells.nth(0)).toContainText("63/102");
+      await expect(cells.nth(1)).toContainText("80% ⚠");
+      await expect(cells.nth(1)).toContainText("12/15");
+      await expect(cells.nth(2)).toHaveText("—3走");
+      await expect(cells.nth(3)).toContainText("20%");
+      // 金枠は ok の艇だけ（2号艇の 80% は 30走未満で候補にしない）
+      await expect(row.locator("td.drt-best")).toHaveCount(1);
+      await expect(cells.nth(0)).toHaveClass(/drt-best/);
+      // ⚠ の艇は率も件数も灰の字
+      const colors = await cells.nth(1).evaluate((el) => {
+        const v = el.querySelector(".drt-value");
+        return [getComputedStyle(v).color, getComputedStyle(el.querySelector(".drt-sub")).color,
+          getComputedStyle(el).color];
+      });
+      expect(colors[0]).toBe(colors[1]);
+      expect(colors[0]).not.toBe(colors[2]);
+      // 長い行注記がラベル列の nowrap を受け継いで、6艇の列を押し出さない
+      await expect(row.locator(".drt-label-note")).toHaveCSS("white-space", "normal");
+      const overflow = await table.evaluate((el) => el.parentElement.scrollWidth - el.parentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    });
+  }
+
+  test("平均の取得に失敗したら6艇とも「—」で、0% と金枠を出さない。再試行で取り直す", async ({ page }) => {
+    const state = { failed: true };
+    await stubCourseStats(page, state);
+    await page.goto(RACE);
+    await page.locator(".race-tabs-btn", { hasText: "基本情報" }).first().click();
+    const table = page.locator(".drt-table").first();
+    const row = await rowCells(table, "想定コース1着率");
+    await expect(row.locator("td.drt-cell")).toHaveText(["—", "—", "—", "—", "—", "—"], { timeout: 30000 });
+    await expect(row.locator("td.drt-best")).toHaveCount(0);
+    // 「—」だけにせず、取得に失敗したことを出す（/code-review の指摘の再現）
+    await expect(
+      page.locator(".data-race-table .inline-fetch-error", { hasText: "直近3期のコース別成績を読み込めませんでした" }),
+    ).toBeVisible();
+    // 再試行で取り直し、値が出てエラーが消える（Codex 審査の P1 の再現）
+    state.failed = false;
+    await page
+      .locator(".data-race-table .inline-fetch-error", { hasText: "直近3期のコース別成績を読み込めませんでした" })
+      .getByRole("button")
+      .click();
+    await expect(row.locator("td.drt-cell").nth(0)).toContainText("63/102");
+    await expect(
+      page.locator(".data-race-table .inline-fetch-error", { hasText: "直近3期のコース別成績を読み込めませんでした" }),
+    ).toHaveCount(0);
   });
 });

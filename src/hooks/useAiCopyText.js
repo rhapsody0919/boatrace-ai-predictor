@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { supabaseDataService } from "../services/supabaseDataService";
 import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "./useRaceAnalysisData";
+import { useSixBoatCourseStats } from "./useSixBoatCourseStats";
 import { useRaceEntryFlyingRows } from "./useRaceEntryFlyingRows";
 import { useCurrentMeetFlyingBoats } from "./useCurrentMeetFlyingBoats";
 import {
@@ -18,10 +19,10 @@ import {
   buildOriginalExhibitionRows,
   originalExhibitionKindLabels,
   toNumber,
-  wakuRateOf,
   translateTechnique,
   translatePartName,
   isExhibitionCourseOutOfRange,
+  expectedCourseWinRateText,
 } from "../components/race/raceIndicators";
 import { formatExhibitionSt } from "../utils/formatters";
 import { getAiCopyPromptText } from "../utils/aiCopyPrompts";
@@ -57,7 +58,22 @@ function buildMotorRow(t, players, motorByBoat) {
   };
 }
 
-function buildRows(t, players, analysis, flying, raceId, originalExhibition) {
+// courseStats: useSixBoatCourseStats の戻り値。想定コース1着率の行に使う（データ出走表と同じ値、BOA-1296）
+function buildRows(
+  t,
+  players,
+  analysis,
+  flying,
+  raceId,
+  originalExhibition,
+  courseStats = { status: "error", rows: [] },
+) {
+  const courseByBoat = new Map(
+    (courseStats.status === "ready" ? courseStats.rows : []).map((r) => [
+      r.boat,
+      r,
+    ]),
+  );
   const originalRows = buildOriginalExhibitionRows(t, originalExhibition);
   const originalKeys = new Set(originalRows.map((r) => r.key));
   const originalLabels = originalExhibitionKindLabels(t,
@@ -72,9 +88,6 @@ function buildRows(t, players, analysis, flying, raceId, originalExhibition) {
   const maintenanceByBoat = byBoat(analysis.motorMaintenance);
   const techByBoat = byBoat(analysis.techniqueProfile);
   const rateByBoat = byBoat(analysis.returnRate);
-  const statsByBoat = new Map(
-    (analysis.racerStats ?? []).map((s) => [s.boatNumber, s]),
-  );
   const meetPrevByBoat = byBoat(analysis.meetPrevRun);
   const officialStByBoat = new Map(
     (analysis.officialAvgSt?.rows ?? []).map((r) => [r.boatNumber, r.avgSt]),
@@ -300,11 +313,12 @@ function buildRows(t, players, analysis, flying, raceId, originalExhibition) {
       }),
     },
     {
-      key: "courseRate",
-      label: t("dataTable.rowCourseRate"),
+      key: "expectedCourseWinRate",
+      label: t("dataTable.rowExpectedCourseWinRate"),
       values: players.map((p) => {
-        const cr = wakuRateOf(statsByBoat, p.number);
-        return cr ? `${cr.rate.toFixed(0)}% (${cr.wins}/${cr.total})` : DASH;
+        const cell = expectedCourseWinRateText(t, courseByBoat.get(p.number));
+        if (!cell) return DASH;
+        return `${cell.rate} (${cell.sub})${cell.warn ? " ⚠" : ""}`;
       }),
     },
     {
@@ -381,6 +395,12 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
       p.name ? { ...p, name: splitRacerName(p.name).join(" ") } : p,
     );
 
+  const courseStats = useSixBoatCourseStats({
+    raceDate: raceId?.slice(0, 10),
+    venueCode,
+    players,
+  });
+
   const buildText = (promptType) => {
     if (players.length === 0) return "";
     const lang = i18n.resolvedLanguage;
@@ -416,6 +436,7 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
         { rows: flyingRows, currentMeet: currentMeetFlying },
         raceId,
         originalExhibition,
+        courseStats,
       ),
       // BOA-822: 機能フラグの側では展開予測を画面から外すので、コピーにも入れない
       turnPrediction: inCautionEnabled ? null : prediction?.turnPrediction,
@@ -434,6 +455,9 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
   return {
     buildText,
     isReady:
-      players.length > 0 && !analysis.loading && !isRaceCancelled(prediction),
+      players.length > 0 &&
+      !analysis.loading &&
+      courseStats.status !== "loading" &&
+      !isRaceCancelled(prediction),
   };
 }

@@ -139,7 +139,8 @@ const build = (lang, overrides = {}) => {
 const bundled = await bundle({
   stdin: {
     contents: fs.readFileSync(path.join(ROOT, "src/hooks/useAiCopyText.js"), "utf8") +
-      "\nexport { buildRows, buildOriginalExhibitionRows };",
+      "\nexport { buildRows, buildOriginalExhibitionRows };" +
+      '\nexport { buildBasicIndicatorRows, buildIndicatorRows } from "../components/race/raceIndicators";',
     resolveDir: path.join(ROOT, "src/hooks"),
     loader: "js",
   },
@@ -171,7 +172,7 @@ const bundled = await bundle({
       b.onLoad({ filter: /.*/, namespace: "copy-text" }, () => ({
         contents: "export const aiCopyPageUrl = () => {}; export const buildAiCopyText = ({ rows }) => rows;",
       }));
-      b.onResolve({ filter: /(?:useRaceAnalysisData|useRaceEntryFlyingRows|useCurrentMeetFlyingBoats|supabaseDataService)$/ },
+      b.onResolve({ filter: /(?:useRaceAnalysisData|useRaceEntryFlyingRows|useCurrentMeetFlyingBoats|useSixBoatCourseStats|supabaseDataService)$/ },
         (args) => ({ path: args.path, namespace: "offline" }));
       b.onLoad({ filter: /.*/, namespace: "offline" }, (args) => ({
         contents: args.path === "translation"
@@ -180,6 +181,8 @@ const bundled = await bundle({
             ? 'export const useRaceAnalysisData = () => ({ loading: false });'
             : args.path.endsWith("useRaceEntryFlyingRows")
               ? 'export const useRaceEntryFlyingRows = () => new Map();'
+              : args.path.endsWith("useSixBoatCourseStats")
+                ? 'export const useSixBoatCourseStats = () => ({ status: "ready", rows: [] });'
               : args.path.endsWith("useCurrentMeetFlyingBoats")
                 ? 'export const useCurrentMeetFlyingBoats = () => new Set();'
                 : 'export const supabaseDataService = { getRaceOriginalExhibition: () => { throw new Error("DB access forbidden"); } };',
@@ -191,7 +194,9 @@ const bundledModule = { exports: {} };
 new Function("require", "module", "exports", bundled.outputFiles[0].text)(
   createRequire(import.meta.url), bundledModule, bundledModule.exports,
 );
-const { buildRows, buildOriginalExhibitionRows, useAiCopyText } = bundledModule.exports;
+const {
+  buildRows, buildOriginalExhibitionRows, useAiCopyText, buildBasicIndicatorRows, buildIndicatorRows,
+} = bundledModule.exports;
 
 const failures = [];
 const check = (name, ok, detail = "") => {
@@ -397,6 +402,61 @@ for (const lang of LANGS) {
       bad.length === 0,
       bad.join(" / "),
     );
+  }
+}
+
+// BOA-1296: データ出走表とAI用のコピーの「想定コース1着率」は、枠別情報の6艇の表と同じ行
+// （useSixBoatCourseStats の rows）から作る。1号艇 63/102（6艇の表の 61.8）→ 62%
+for (const lang of LANGS) {
+  const t = makeT(loadLocale(lang));
+  const runN = (n) => t("beforeInfo.meetFormRunN", { n });
+  const courseRows = [
+    { boat: 1, racerId: 4001, winRate: (63 / 102) * 100, wins: 63, entries: 102, reliability: "ok" },
+    { boat: 2, racerId: 4002, winRate: 80, wins: 12, entries: 15, reliability: "warn" },
+    { boat: 3, racerId: 4003, winRate: null, wins: 3, entries: 3, reliability: "none" },
+    { boat: 4, racerId: 4004, winRate: 20, wins: 18, entries: 90, reliability: "ok" },
+    { boat: 5, racerId: 4005, winRate: 90, wins: 18, entries: 20, reliability: "warn" },
+    // 選手が取れない艇（欠場・出走表なし）は「0走」でなく「—」（/code-review の指摘の再現）
+    { boat: 6, racerId: null, winRate: null, wins: 0, entries: 0, reliability: "none" },
+  ];
+  const ready = { status: "ready", rows: courseRows };
+  const args = { t, players, analysis: {}, courseStats: ready };
+  const basic = buildBasicIndicatorRows(args).find((r) => r.key === "expectedCourseWinRate");
+  check(`[${lang}] データ出走表の行名と注記`, basic?.label === t("dataTable.rowExpectedCourseWinRate") &&
+    basic?.note === t("dataTable.expectedCourseWinRateNote"));
+  check(`[${lang}] データ出走表から旧い枠番勝率の行が消える`,
+    !buildBasicIndicatorRows(args).some((r) => r.key === "courseRate"));
+  // 5号艇の 90% は warn なので金枠の候補にしない
+  check(`[${lang}] 金枠は ok の艇だけで比べる`, basic?.best?.size === 1 && basic.best.has(1),
+    JSON.stringify([...(basic?.best ?? [])]));
+  check(`[${lang}] 一覧カード（buildIndicatorRows）は旧い行のまま`,
+    buildIndicatorRows({ t, players, analysis: {} }).some((r) => r.key === "courseRate"));
+  const html = (boat) => renderToStaticMarkup(createElement("div", null, basic.render({ number: boat })));
+  check(`[${lang}] 表: 整数%と 1着数/進入`, html(1).includes("62%") && html(1).includes("63/102"), html(1));
+  check(`[${lang}] 表: warn は灰の字と ⚠`, html(2).includes("80%") && html(2).includes("⚠") &&
+    html(2).includes("drt-value--muted"), html(2));
+  check(`[${lang}] 表: 10走未満は率を出さず走数`, !html(3).includes("%") && html(3).includes(runN(3)), html(3));
+  check(`[${lang}] 表: 選手が取れない艇は —`, html(6).replace(/<[^>]*>/g, "") === "—", html(6));
+  check(`[${lang}] 表: 行の名前は旧い超展開データへ送らない`, basic?.tab === null);
+  for (const [status, expectDash] of [["error", true], ["loading", false]]) {
+    const row = buildBasicIndicatorRows({ ...args, courseStats: { status, rows: [] } })
+      .find((r) => r.key === "expectedCourseWinRate");
+    const cell = renderToStaticMarkup(createElement("div", null, row.render({ number: 1 })));
+    check(`[${lang}] 表: ${status} は0%を出さない`, !cell.includes("%") && row.best.size === 0, cell);
+    check(`[${lang}] 表: ${status} の表示`, expectDash ? cell.replace(/<[^>]*>/g, "") === "—"
+      : cell.includes("drt-skeleton"), cell);
+  }
+  for (const [stats, expected] of [
+    [ready, ["62% (63/102)", "80% (12/15) ⚠", `— (${runN(3)})`, "20% (18/90)", "90% (18/20) ⚠", "—"]],
+    [{ status: "error", rows: [] }, players.map(() => "—")],
+  ]) {
+    const rows = buildRows(t, players, {}, { rows: new Map(), currentMeet: new Set() }, RACE_ID, null, stats);
+    const r = rows.find((x) => x.key === "expectedCourseWinRate");
+    check(`[${lang}] コピー: 行名と値（${stats.status}）`, r?.label === t("dataTable.rowExpectedCourseWinRate") &&
+      JSON.stringify(r.values) === JSON.stringify(expected), JSON.stringify(r?.values));
+    check(`[${lang}] コピー: 旧い枠番勝率の行は残らない`, !rows.some((x) => x.key === "courseRate"));
+    const { text } = build(lang, { rows });
+    check(`[${lang}] コピー: 新しい行の注記`, text.includes(loadLocale(lang).aiCopy.note.expectedCourseWinRate));
   }
 }
 

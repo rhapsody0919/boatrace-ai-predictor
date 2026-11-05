@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabaseDataService } from "../services/supabaseDataService.js";
 import { buildSixBoatCourseRows } from "../components/race/sixBoatCourseStats.js";
 
@@ -8,7 +8,10 @@ export function useSixBoatCourseStats({ raceDate, venueCode, players }) {
   const racerIdsKey = JSON.stringify(
     (players ?? []).map((p) => p.racerId ?? null),
   );
-  const key = JSON.stringify([raceDate, venueCode ?? null, racerIdsKey]);
+  // reloadKey: 失敗のあと取り直す（withCache は失敗を保存しないので、もう一度呼べば取りに行く。BOA-1296）
+  const [reloadKey, setReloadKey] = useState(0);
+  const reload = useCallback(() => setReloadKey((k) => k + 1), []);
+  const key = JSON.stringify([raceDate, venueCode ?? null, racerIdsKey, reloadKey]);
   const [result, setResult] = useState(null);
 
   useEffect(() => {
@@ -45,15 +48,15 @@ export function useSixBoatCourseStats({ raceDate, venueCode, players }) {
     return () => {
       cancelled = true;
     };
-  }, [key, racerIdsKey, raceDate, venueCode]);
+  }, [key, racerIdsKey, raceDate, venueCode, reloadKey]);
 
   // 切り替え直後も前レースの行やエラーを返さない。艇番の変更は取得せず行だけ作り直す。
   return useMemo(() => {
     if (result?.key !== key) {
-      return { status: "loading", rows: [], baseline: null, error: null };
+      return { status: "loading", rows: [], baseline: null, error: null, reload };
     }
     if (result.status === "error") {
-      return { status: "error", rows: [], baseline: null, error: result.error };
+      return { status: "error", rows: [], baseline: null, error: result.error, reload };
     }
     try {
       const rows = buildSixBoatCourseRows({
@@ -62,9 +65,9 @@ export function useSixBoatCourseStats({ raceDate, venueCode, players }) {
         raceDate,
         baseline: result.baseline,
       });
-      return { status: "ready", rows, baseline: result.baseline, error: null };
+      return { status: "ready", rows, baseline: result.baseline, error: null, reload };
     } catch (error) {
-      return { status: "error", rows: [], baseline: null, error };
+      return { status: "error", rows: [], baseline: null, error, reload };
     }
-  }, [key, result, players, raceDate]);
+  }, [key, result, players, raceDate, reload]);
 }

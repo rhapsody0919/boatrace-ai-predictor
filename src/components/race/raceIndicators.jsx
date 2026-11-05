@@ -905,8 +905,80 @@ export function buildIndicatorRows(args) {
 
 // データ出走表（基本情報、DataRaceTable）向け: 直前情報系
 // （category: "beforeInfo"）を除いた行（BOA-304）
+//
+// courseStats（useSixBoatCourseStats の戻り値）を渡すと、艇番で数えた「枠番勝率（直近1年）」の行を
+// 枠別情報タブの6艇の表と同じ「想定コース1着率」（公式の直近3期・進入コース）に差し替える（BOA-1296）。
+// 一覧カード（RaceCardDataTable、buildIndicatorRows）は渡さないので旧い行のまま
 export function buildBasicIndicatorRows(args) {
-  return buildRowDefs(args).filter((row) => row.category !== "beforeInfo");
+  const rows = buildRowDefs(args).filter(
+    (row) => row.category !== "beforeInfo",
+  );
+  if (!args.courseStats) return rows;
+  return rows.map((row) =>
+    row.key === "courseRate"
+      ? buildExpectedCourseWinRateRow(args.t, args.courseStats)
+      : row,
+  );
+}
+
+/**
+ * 想定コース1着率の行（BOA-1296、spec §1.5）。率は整数%、下に 1着数/進入数。
+ * reliability: "warn" は灰の字と ⚠、"none"（10走未満）は「—」と N走。金枠は "ok" の艇だけを候補にする。
+ * 取得中はほかの行と同じ読み込みの印、失敗は「—」（0% を出さない）
+ */
+/**
+ * 想定コース1着率の1艇の字（表とAI用のコピーで共有、BOA-1296）。
+ * 選手が取れない艇（racerId なし）は null（呼び出し側で「—」）。
+ * @returns {{rate: string, sub: string, warn: boolean, muted: boolean} | null}
+ */
+export function expectedCourseWinRateText(t, row) {
+  if (!row || row.racerId == null) return null;
+  const none = row.reliability === "none" || row.winRate == null;
+  return {
+    rate: none ? "—" : `${row.winRate.toFixed(0)}%`,
+    sub: none
+      ? t("beforeInfo.meetFormRunN", { n: row.entries })
+      : `${row.wins}/${row.entries}`,
+    warn: row.reliability === "warn",
+    muted: row.reliability !== "ok",
+  };
+}
+
+function buildExpectedCourseWinRateRow(t, { status, rows }) {
+  const byBoat = new Map(
+    (status === "ready" ? rows : []).map((r) => [r.boat, r]),
+  );
+  return {
+    key: "expectedCourseWinRate",
+    label: t("dataTable.rowExpectedCourseWinRate"),
+    shortLabel: t("review.cols.expectedCourseWinRate"),
+    note: t("dataTable.expectedCourseWinRateNote"),
+    wrapNote: true,
+    // 旧い行の「超展開データ」（枠番で数える会場の集計）へは送らない。値の元は枠別情報タブの6艇の表
+    tab: null,
+    best: bestOf(
+      [...byBoat.values()]
+        .filter((r) => r.reliability === "ok")
+        .map((r) => ({ boat: r.boat, value: r.winRate })),
+      "max",
+      { digits: 0 },
+    ),
+    render: (p) => {
+      if (status === "loading")
+        return <span className="drt-skeleton" aria-hidden="true" />;
+      const cell = expectedCourseWinRateText(t, byBoat.get(p.number));
+      if (!cell) return "—";
+      return (
+        <span className={`drt-value${cell.muted ? " drt-value--muted" : ""}`}>
+          {cell.rate}
+          {cell.warn && (
+            <span title={t("wakuInfo.sixBoat.smallSampleTitle")}> ⚠</span>
+          )}
+          <span className="drt-sub">{cell.sub}</span>
+        </span>
+      );
+    },
+  };
 }
 
 // 直前情報タブ（RaceBeforeInfoTab）向け: 展示ST・展示タイム・オリジナル展示
