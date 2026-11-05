@@ -6,6 +6,7 @@
  *
  * 使い方（sns-video-studio/remotion で）:
  *   node scripts/full-picture/run-full.mjs <材料.json> <出力ディレクトリ> [--text template|connected|both] [--bgm <mp3>] [--regen-text] [--no-video] [--entry-only] [--concurrency N] [--type-spec <型の json>]
+ *   --no-video: MP4 を描かずに、描画に渡す props（{版}/props-full-picture.json・entry/props-entry.json）だけを書く（CI の sns-makers が1コマずつ描く材料、ADR-0105）
  * 出力:
  *   scenes.json                全場面の描く値と拍ごとの facts（コードが計算した比較）、omitted（省いた要素）
  *   text-{版}.json             答えの文（拍ごと。つないだ版はつなぐ語と、付けなかった理由も）
@@ -187,10 +188,16 @@ const probe = (file) => {
   const j = JSON.parse(execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration,size", "-of", "json", file], { encoding: "utf8" }));
   return { width: j.streams?.[0]?.width, height: j.streams?.[0]?.height, seconds: Number(j.format?.duration), bytes: Number(j.format?.size) };
 };
-function render(list, answers, dir, name, { badgePlace = null } = {}) {
+/** 描画に渡す props を書く（--no-video でも書く。CI の sns-makers が still を描く材料、ADR-0105）。書いたパス */
+function writeProps(list, answers, dir, name, { badgePlace = null } = {}) {
+  mkdirSync(dir, { recursive: true });
   const props = { scenes: list, answers, ...(bgm ? { bgm: bgmName } : {}), ...(badgePlace ? { badgePlace } : {}) };
   const propsPath = join(dir, `props-${name}.json`);
   writeJson(propsPath, props);
+  return propsPath;
+}
+function render(list, answers, dir, name, { badgePlace = null } = {}) {
+  const propsPath = writeProps(list, answers, dir, name, { badgePlace });
   // 前の書き出しの静止画を残さない（拍の長さが変わるとフレーム番号が変わり、古い静止画が混ざっていた）
   rmSync(join(dir, "stills"), { recursive: true, force: true });
   mkdirSync(join(dir, "stills"), { recursive: true });
@@ -323,7 +330,7 @@ for (const mode of modes) {
     mkdirSync(dir, { recursive: true });
     Object.assign(seconds, render(scenes, text.answers, dir, "full-picture", { badgePlace: "band" }));
     console.log(`${dir}: 完全版 ${(total / 30).toFixed(1)}秒の MP4・静止画（描画 ${seconds.render.toFixed(0)}秒）`);
-  }
+  } else if (noVideo && !f01) writeProps(scenes, text.answers, join(out, mode), "full-picture", { badgePlace: "band" });
   // LLM のトークン（呼んだときだけ。使い回した文の JSON なら0回）
   const llm = llmCalls ? (text.llm ?? { calls: 1, tokens_in: null, tokens_out: null }) : { calls: 0, tokens_in: 0, tokens_out: 0 };
   writeJson(join(out, `run-${mode}.json`), { seconds, llmCalls, llm, beats: text.beats.length, videoSeconds: total / 30 });
@@ -338,7 +345,7 @@ if (!noVideo && !bundleOnly) {
   const seconds = render(entry.scenes, entry.answers, dir, "entry");
   writeJson(join(out, "run-entry.json"), { seconds, llmCalls: 0, videoSeconds: entry.total / 30 });
   console.log(`${dir}: 入口版 ${(entry.total / 30).toFixed(1)}秒の MP4・静止画（描画 ${seconds.render.toFixed(0)}秒）`);
-}
+} else if (noVideo && !bundleOnly) writeProps(entry.scenes, entry.answers, join(out, "entry"), "entry");
 
 // 型 f01: 完全版を横 16:9＋声で作る（声・実画面の撮影・描画）。作れなければ type_unsupported で止める（黙って今の型で作らない）
 // 読み込みは f01 のときだけ（声・撮影の依存（Playwright・VOICEVOX）を今の型の実行に持ち込まない）

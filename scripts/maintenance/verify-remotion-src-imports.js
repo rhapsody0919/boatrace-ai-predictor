@@ -14,96 +14,46 @@
  *
  * 辿るのは静的な相対 import（import・export from・文字列1つの import()）だけ。require・式の import()・別名の指定は辿らない
  * （remotion/src は ESM で、今は使っていない）。そこは束を作る検査で拾う。
- * 束を実際に作る検査（npx remotion compositions）は verify-remotion-compositions.js（manual。CI に remotion の依存が無い）。
+ * 束を実際に作る検査（npx remotion compositions）は verify-remotion-compositions.js、描く検査は verify-sns-makers.js（どちらも sns-makers.yml、ADR-0105）。
  * 外部接続なし・同じコミットなら同じ結果（tier=ci）。
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CODE, codeFiles, reach as reachGraph } from "../lib/relativeImportGraph.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const REMOTION_SRC = join(ROOT, "sns-video-studio/remotion/src");
-const CODE = /\.(m?js|jsx)$/;
 const FORBIDDEN = [
   /^src\/config\/languages\.js$/,
   /^src\/data\/blogPosts[^/]*\.js$/,
 ];
-// 行頭から始まるコメントだけを除く。文字列の中の "/*"（glob の "./x/*.json" 等）から次の "*/" までを消して
-// import を見落とさないため、行の途中の /* や // は残す（残しても見落としにはならず、誤って拾う側に倒れる）
-const stripComments = (s) =>
-  s.replace(/^\s*\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, "");
 const rel = (p) => relative(ROOT, p).split("\\").join("/");
-const sourceCache = new Map();
-/** コメントを除いた本文（1ファイル1回だけ読む） */
-const source = (p) => {
-  if (!sourceCache.has(p))
-    sourceCache.set(p, stripComments(readFileSync(p, "utf8")));
-  return sourceCache.get(p);
-};
 const failures = [];
 
-function files(dir) {
-  return readdirSync(dir).flatMap((name) => {
-    if (name === "node_modules" || name === "out") return [];
-    const p = join(dir, name);
-    return statSync(p).isDirectory() ? files(p) : CODE.test(p) ? [p] : [];
-  });
-}
-
-/** 相対の指定を実在のファイルに直す（拡張子の省略・index を補う）。見つからなければ failures に足して null */
-function resolveSpec(from, spec) {
-  const base = resolve(dirname(from), spec);
-  const tries = [
-    base,
-    ...[".js", ".jsx", ".mjs", ".cjs"].map((e) => base + e),
-    ...["index.js", "index.jsx", "index.mjs"].map((n) => join(base, n)),
-  ];
-  const hit = tries.find((p) => existsSync(p) && statSync(p).isFile());
-  if (!hit)
-    failures.push(
-      `${rel(from)}: import "${spec}" の参照先が見つからない（辿れないので検査できない）`,
-    );
-  return hit ?? null;
-}
-
-/** そのファイルの相対 import の指定（JSON・CSS 等のコードでないものは辿らない） */
-function relativeSpecs(code) {
-  const re =
-    /(?:import|export)\s[^"';]*?from\s*["'](\.{1,2}\/[^"']+)["']|import\s*["'](\.{1,2}\/[^"']+)["']|import\(\s*["'](\.{1,2}\/[^"']+)["']\s*\)/g;
-  return [...code.matchAll(re)]
-    .map((m) => m[1] ?? m[2] ?? m[3])
-    .filter((s) => !/\.(json|css|woff2?|png|jpe?g|svg|mp3|wav|mp4)$/.test(s));
-}
-
-/** start から辿れるファイル → 最初に辿り着いた経路 */
+/** start から辿れるファイル → 最初に辿り着いた経路（辿り方は scripts/lib/relativeImportGraph.js。参照先が無ければ failures） */
 function reach(starts) {
-  const via = new Map(starts.map((s) => [s, [s]]));
-  const queue = [...starts];
-  while (queue.length > 0) {
-    const file = queue.shift();
-    for (const spec of relativeSpecs(source(file))) {
-      const next = resolveSpec(file, spec);
-      if (!next || !CODE.test(next) || via.has(next)) continue;
-      via.set(next, [...via.get(file), next]);
-      queue.push(next);
-    }
-  }
-  return via;
+  const r = reachGraph(starts);
+  for (const m of r.missing)
+    failures.push(
+      `${rel(m.from)}: import "${m.spec}" の参照先が見つからない（辿れないので検査できない）`,
+    );
+  return r;
 }
 
 const chain = (path) => path.map(rel).join(" → ");
 
-const reached = reach(files(REMOTION_SRC));
+const { via: reached, source: readSource } = reach(codeFiles(REMOTION_SRC));
 for (const [file, path] of reached) {
+  if (!CODE.test(file)) continue;
   const r = rel(file);
   if (FORBIDDEN.some((re) => re.test(r)))
     failures.push(`禁止のファイルに届く: ${chain(path)}`);
-  if (/import\.meta\.glob/.test(source(file)))
+  if (/import\.meta\.glob/.test(readSource(file)))
     failures.push(`import.meta.glob を呼ぶファイルに届く: ${chain(path)}`);
 }
 
 // 検査自体の確かめ（辿り方が壊れて何も拾わない状態を緑にしない）
-const probe = reach([join(ROOT, "src/utils/raceDetailHeading.js")]);
+const probe = reach([join(ROOT, "src/utils/raceDetailHeading.js")]).via;
 if (![...probe.keys()].some((f) => rel(f) === "src/config/languages.js"))
   failures.push(
     "検査の確かめ: raceDetailHeading.js から languages.js に届かない（辿り方が壊れている）",
