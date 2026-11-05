@@ -1,17 +1,17 @@
 {
  "schema": "content-pr-manifest/v1",
  "id": "kiryu-water-wind-guide",
- "kind": "new",
- "ticket": "OC-20261103T100210-seo-human-1",
+ "kind": "revision",
+ "ticket": "OC-20261105T100055-seo-human-1",
  "paths": [
   "public/blog/kiryu-water-wind-guide.md",
   "src/data/blog-posts/kiryu-water-wind-guide.json"
  ],
  "files": {
-  "public/blog/kiryu-water-wind-guide.md": "5c8b1ba01bd085762e57427176a94e1583895beb3cc735773a109e32b20f1c23",
-  "src/data/blog-posts/kiryu-water-wind-guide.json": "5a826a3f93040b52212494c4b0d6005b3e12a02afa78766d400bc29c5eca127d"
+  "public/blog/kiryu-water-wind-guide.md": "ce64d0dffef8992be82c26fd373730a1e4a6ed02b782ccd257d7a1d8744dc21e",
+  "src/data/blog-posts/kiryu-water-wind-guide.json": "494c6d4315dbe11a5e4b1712ba8afa1abbbca9f65dd20385b42c82bd42d5c4a9"
  },
- "content_sha256": "b349b95e58d5038c57c847e7e7511ede044d60d2b88cecfb40fe196c4aeb7efb",
+ "content_sha256": "0f5a24c24d311f7ad8453ce1d7458cb8c2df29bb282d4c6be8ffde359904ce14",
  "judgement_words": [],
  "reviews": [
   {
@@ -20,9 +20,9 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "b349b95e58d5038c57c847e7e7511ede044d60d2b88cecfb40fe196c4aeb7efb",
-   "model": "opus",
-   "at": "2026-11-03T10:15:25+09:00"
+   "reviewed_sha256": "0f5a24c24d311f7ad8453ce1d7458cb8c2df29bb282d4c6be8ffde359904ce14",
+   "model": "codex-default/high",
+   "at": "2026-11-05T10:08:35+09:00"
   },
   {
    "role": "wording-editor",
@@ -30,19 +30,19 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "b349b95e58d5038c57c847e7e7511ede044d60d2b88cecfb40fe196c4aeb7efb",
-   "model": "opus",
-   "at": "2026-11-03T10:15:25+09:00"
+   "reviewed_sha256": "0f5a24c24d311f7ad8453ce1d7458cb8c2df29bb282d4c6be8ffde359904ce14",
+   "model": "codex-default/high",
+   "at": "2026-11-05T10:08:35+09:00"
   },
   {
    "role": "fan",
    "agent": "hq-review:fan",
    "result": "pass",
    "p0": 0,
-   "p1": 1,
-   "reviewed_sha256": "b349b95e58d5038c57c847e7e7511ede044d60d2b88cecfb40fe196c4aeb7efb",
-   "model": "opus",
-   "at": "2026-11-03T10:15:25+09:00"
+   "p1": 0,
+   "reviewed_sha256": "0f5a24c24d311f7ad8453ce1d7458cb8c2df29bb282d4c6be8ffde359904ce14",
+   "model": "codex-default/high",
+   "at": "2026-11-05T10:08:35+09:00"
   },
   {
    "role": "seo-marketer",
@@ -50,13 +50,65 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "b349b95e58d5038c57c847e7e7511ede044d60d2b88cecfb40fe196c4aeb7efb",
-   "model": "opus",
-   "at": "2026-11-03T10:15:25+09:00"
+   "reviewed_sha256": "0f5a24c24d311f7ad8453ce1d7458cb8c2df29bb282d4c6be8ffde359904ce14",
+   "model": "codex-default/high",
+   "at": "2026-11-05T10:08:35+09:00"
   }
  ],
+ "evidence": [
+  {
+   "h2": "風別の逃げと1コース1着率（2020年2月1日〜2026年9月30日）",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "scripts/analysis/analyze-weather-in-escape.js",
+    "src/locales/ja/common.json"
+   ]
+  },
+  {
+   "h2": "水面は淡水、干満差なし",
+   "evidence": [
+    "src/data/venueWaterProfiles.js"
+   ]
+  },
+  {
+   "h2": "強風の日の決まり手（2020年2月1日〜2026年9月30日）",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "進入コース別の1着（2025年10月20日〜2026年10月19日）",
+   "evidence": [
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json"
+   ]
+  },
+  {
+   "h2": "今日の桐生は風速・風向・展示進入を重ねて読む",
+   "evidence": [
+    "scripts/analysis/analyze-weather-in-escape.js",
+    "data/analysis/weather-in-escape.json",
+    "src/locales/ja/common.json"
+   ]
+  },
+  {
+   "h2": "桐生の関連記事",
+   "evidence": []
+  },
+  {
+   "h2": "数字の範囲と注意",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json",
+    "docs/design/weather-in-escape/preregistration.md",
+    "docs/design/weather-in-escape/results.md",
+    "src/locales/ja/common.json",
+    "src/components/analysis/WeatherInEscapeChart.jsx"
+   ]
+  }
+ ],
+ "sources": "風: scripts/analysis/analyze-weather-in-escape.js の出力 data/analysis/weather-in-escape.json#wind.venues.1（venues は223行〜）、period=2020-02-01〜2026-09-30。桐生15,245レース、各binsのnとtechniquesを転記。結果・進入1コース・1着艇があり、風速と区分が分かる記録。逃げ全体7,595回は5区分の和（derived_numbers）。\nコース・艇番: data/analysis/venue-course-win-rate/venue-course-win-rate.json#periods.12m.venues.01 と periods.12m.all（12m は5573行〜、桐生01は7351行〜）、2025-10-20〜2026-10-19。桐生2,409・全国55,414レース。不成立を除き、返還艇の1着を除外、同着は艇番の小さい艇。率は元の件数÷母数を一度だけ小数1桁へ丸める。\n風向の対応と弱風優先は scripts/analysis/analyze-weather-in-escape.js#windBin（118行〜）と docs/design/weather-in-escape/preregistration.md。水面は src/data/venueWaterProfiles.js:15。比較は風5区分の全10組、会場対全国は全24組でBonferroni補正。 画面の件数区分は src/components/analysis/WeatherInEscapeChart.jsx:40〜41。",
  "author": "hq-employee:seo-human",
- "created_at": "2026-11-03T10:17:03+09:00",
- "run": "20261103T100210-seo-human",
- "engine": "claude"
+ "created_at": "2026-11-05T10:10:32+09:00",
+ "run": "20261105T100055-seo-human",
+ "engine": "codex"
 }
