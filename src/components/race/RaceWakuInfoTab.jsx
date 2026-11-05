@@ -60,6 +60,8 @@ import {
   getCourseRecentRuns,
 } from "./courseGridStats";
 import SixBoatCourseTable from "./SixBoatCourseTable";
+import Course1LossCard from "./Course1LossCard";
+import { useSixBoatCourseStats } from "../../hooks/useSixBoatCourseStats";
 import RaceStConsiderationCard from "./RaceStConsiderationCard";
 import NigeSimulationCard from "./NigeSimulationCard";
 import RecentRunsBar from "./RecentRunsBar";
@@ -90,6 +92,69 @@ function aggregateTechniqueDistribution(techniqueByBoat) {
     .sort((a, b) => b.count - a.count);
 }
 
+// 1艇ずつの表の先頭の「直近3期」の行（BOA-1295）。値は6艇の表の同じ艇の行（公式の期別成績）。
+// 当社データの行と違い直近の走が無いので押せない。件数の線は6艇の表と同じ（warn・none は ⚠、none は率を出さない）
+function Recent3Row({ stats, boat, t }) {
+  const label = (
+    <th className="rwit-today-label-th" scope="row">
+      <span className="rwit-today-label-static">
+        {t("wakuInfo.gridRows.recent3")}
+      </span>
+    </th>
+  );
+  if (stats.status !== "ready") {
+    return (
+      <tr className="rwit-today-row rwit-today-row-recent3">
+        {label}
+        <td colSpan={TODAY_METRICS.length + 1} className="rwit-today-metric-td">
+          {stats.status === "loading" ? (
+            <span className="rwit-loading">{t("wakuInfo.loading")}</span>
+          ) : (
+            <span className="rwit-today-empty">
+              — {t("wakuInfo.sixBoat.fetchError")}
+            </span>
+          )}
+        </td>
+      </tr>
+    );
+  }
+  const row = stats.rows.find((r) => r.boat === boat);
+  if (!row) return null;
+  const small = row.reliability !== "ok";
+  return (
+    <tr className="rwit-today-row rwit-today-row-recent3">
+      {label}
+      {TODAY_METRICS.map((m) => {
+        const value = row.reliability === "none" ? null : row[m];
+        return (
+          <td key={m} className="rwit-today-metric-td">
+            {value == null ? (
+              <span className="rwit-today-empty">—</span>
+            ) : (
+              <span
+                className={`rwit-today-value${small ? " is-small-sample" : ""}`}
+              >
+                {value.toFixed(1)}
+              </span>
+            )}
+          </td>
+        );
+      })}
+      <td className={`rwit-today-n-td${small ? " is-small-sample" : ""}`}>
+        {small && (
+          <span
+            className="rwit-grid-warn"
+            title={t("wakuInfo.smallSampleTitle")}
+          >
+            ⚠
+          </span>
+        )}
+        {row.entries}
+      </td>
+    </tr>
+  );
+}
+
 // raceId は受け取らない: コース別成績を racer_aggregated_stats（レース単位の
 // getRaceRacerStats）から getRacerScopedRaceStats（選手単位）に切り替えたため不要になった
 function RaceWakuInfoTab({
@@ -98,6 +163,8 @@ function RaceWakuInfoTab({
   raceId,
   focusedBoat,
   onFocusBoat,
+  sixBoatPeriod,
+  onSixBoatPeriodChange,
 }) {
   const { t } = useTranslation();
   // このタブで使うのはracerStatsと決まり手統計の2種類だけのため、8+4クエリを
@@ -312,6 +379,13 @@ function RaceWakuInfoTab({
     };
   }, [racerIdsKey]);
 
+  // 6艇の表（直近3期）と1艇ずつの表の「直近3期」の行は同じ取得・同じ行を使う（BOA-1295）
+  const sixBoatStats = useSixBoatCourseStats({
+    raceDate: raceId?.slice(0, 10),
+    venueCode,
+    players: sortedPlayers,
+  });
+
   if (sortedPlayers.length === 0) return null;
 
   // 表示中のレースより前の走だけを使う（BOA-603）。過去のレースを開いたとき、
@@ -373,6 +447,29 @@ function RaceWakuInfoTab({
       })
     : null;
 
+  // 1号艇の選手（欠場・出走表が無く登番が取れないときはカードを出さない、BOA-1331）
+  const course1Player =
+    sortedPlayers.find((p) => Number(p.number) === 1 && p.racerId != null) ??
+    null;
+
+  const todayHead = (
+    <thead>
+      <tr>
+        <th className="rwit-today-label-th" scope="col">
+          {t("wakuInfo.periodHeader")}
+        </th>
+        {TODAY_METRICS.map((m) => (
+          <th key={m} className="rwit-today-metric-th" scope="col">
+            {t(`wakuInfo.metrics.${m}`)}
+          </th>
+        ))}
+        <th className="rwit-today-n-th" scope="col">
+          {t("wakuInfo.nHeader")}
+        </th>
+      </tr>
+    </thead>
+  );
+
   const selectBoat = (boatNumber) => {
     onFocusBoat(boatNumber);
   };
@@ -419,8 +516,17 @@ function RaceWakuInfoTab({
 
   return (
     <div className="race-waku-info-tab">
-      <SixBoatCourseTable raceDate={raceId?.slice(0, 10)} venueCode={venueCode}
-        players={sortedPlayers} focusedBoat={selectedBoat} onFocusBoat={onFocusBoat} />
+      <SixBoatCourseTable
+        stats={sixBoatStats}
+        players={sortedPlayers}
+        venueCode={venueCode}
+        scopedBefore={scopedBefore}
+        periodAnchor={periodAnchor}
+        period={sixBoatPeriod}
+        onPeriodChange={onSixBoatPeriodChange}
+        focusedBoat={selectedBoat}
+        onFocusBoat={onFocusBoat}
+      />
       <p className="rwit-note">{t("wakuInfo.note")}</p>
 
       <div
@@ -493,31 +599,37 @@ function RaceWakuInfoTab({
               </p>
             )}
 
-            {scopedRecords === undefined ? (
-              <p className="rwit-loading">{t("wakuInfo.loading")}</p>
-            ) : scopedRecords === null ? (
-              <p className="rwit-empty">{t("wakuInfo.fetchError")}</p>
-            ) : scopedRecords.length === 0 ? (
-              <p className="rwit-empty">{t("wakuInfo.noData")}</p>
+            {!Array.isArray(scopedRecords) || scopedRecords.length === 0 ? (
+              <>
+                {/* 当社データが取得中・失敗・0走でも、公式の直近3期の行は出す（BOA-1295 /code-review） */}
+                <table className="rwit-today-table">
+                  {todayHead}
+                  <tbody>
+                    <Recent3Row
+                      stats={sixBoatStats}
+                      boat={selectedPlayer?.number}
+                      t={t}
+                    />
+                  </tbody>
+                </table>
+                {scopedRecords === undefined ? (
+                  <p className="rwit-loading">{t("wakuInfo.loading")}</p>
+                ) : scopedRecords === null ? (
+                  <p className="rwit-empty">{t("wakuInfo.fetchError")}</p>
+                ) : (
+                  <p className="rwit-empty">{t("wakuInfo.noData")}</p>
+                )}
+              </>
             ) : (
               <>
                 <table className="rwit-today-table">
-                  <thead>
-                    <tr>
-                      <th className="rwit-today-label-th" scope="col">
-                        {t("wakuInfo.periodHeader")}
-                      </th>
-                      {TODAY_METRICS.map((m) => (
-                        <th key={m} className="rwit-today-metric-th" scope="col">
-                          {t(`wakuInfo.metrics.${m}`)}
-                        </th>
-                      ))}
-                      <th className="rwit-today-n-th" scope="col">
-                        {t("wakuInfo.nHeader")}
-                      </th>
-                    </tr>
-                  </thead>
+                  {todayHead}
                   <tbody>
+                    <Recent3Row
+                      stats={sixBoatStats}
+                      boat={selectedPlayer?.number}
+                      t={t}
+                    />
                     {todayRows.map((row) => {
                       const isSmallSample =
                         row.n > 0 && row.n < SMALL_SAMPLE_THRESHOLD;
@@ -808,6 +920,13 @@ function RaceWakuInfoTab({
       {/* PC（1200px 以上）は逃げの棒と決まり手の棒を横に並べる（BOA-881） */}
       <div className="race-split">
         <div className="race-split__main">
+          {/* 1号艇の選手本人の1コースでの まくられ・差され（BOA-1331、spec §1.8）。選んだ艇・6艇の表の期間とは独立 */}
+          <Course1LossCard
+            player={course1Player}
+            records={course1Player ? scopedBefore[course1Player.racerId] : null}
+            now={periodAnchor}
+            sixBoatPeriod={sixBoatPeriod}
+          />
           {/* 逃げシミュレーション（FR-6）。会場のコース単位の指標で、選手の選択とは独立 */}
           <NigeSimulationCard rows={nigeRows} asOfToday={raceIsPast} />
 
