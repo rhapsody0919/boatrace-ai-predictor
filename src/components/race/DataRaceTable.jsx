@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
+import { useSixBoatCourseStats } from "../../hooks/useSixBoatCourseStats";
 import { buildBasicIndicatorRows } from "./raceIndicators";
 import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
@@ -46,6 +47,12 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
   const players = [...(prediction?.allPlayers ?? [])].sort(
     (a, b) => a.number - b.number,
   );
+  // 想定コース1着率の行は枠別情報タブの6艇の表と同じフック・同じ行から取る（BOA-1296）
+  const courseStats = useSixBoatCourseStats({
+    raceDate: raceId?.slice(0, 10),
+    venueCode,
+    players,
+  });
   if (players.length === 0) return null;
 
   const deepLink = (tab) =>
@@ -64,6 +71,7 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
     t,
     players,
     analysis,
+    courseStats,
     pending: analysis.pending,
     motorDeepLink,
     gradeBadge: (p) => (
@@ -166,7 +174,11 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
                     values={row.hintValues}
                   />
                   {row.note && (
-                    <span className="drt-label-note">{row.note}</span>
+                    <span
+                      className={`drt-label-note${row.wrapNote ? " drt-label-note--wrap" : ""}`}
+                    >
+                      {row.note}
+                    </span>
                   )}
                 </td>
                 {players.map((p) => (
@@ -180,7 +192,7 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
         </table>
       </div>
 
-      <p className="drt-note">💡 {t("dataTable.note")}</p>
+      <p className="drt-note">💡 {t("dataTable.noteExpectedCourse")}</p>
       {i18n.language === "ja" && (
         <Link to="/blog/data-race-table-guide" className="drt-guide-link">
           📖 {t("dataTable.guideLink")} →

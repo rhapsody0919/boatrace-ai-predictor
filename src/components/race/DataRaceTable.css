@@ -192,6 +192,19 @@ thead tr:last-child:not(:first-child) .drt-label-th {
   margin-top: 2px;
 }
 
+/* 長い行注記（想定コース1着率、BOA-1296）は、ラベル列の nowrap を受け継いで6艇の列を押し出さないよう、
+   列の幅の中で折り返す（width: 0 で注記の長さを列幅の計算に入れない） */
+.drt-label-note--wrap {
+  width: 0;
+  min-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.drt-value--muted {
+  color: var(--text-secondary);
+}
+
 .drt-cell {
   color: var(--text-primary);
 }
