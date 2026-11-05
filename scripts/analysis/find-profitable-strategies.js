@@ -44,7 +44,7 @@ async function loadData() {
           });
         }
       }
-    } catch (e) {
+    } catch {
       // スキップ
     }
   }

@@ -374,7 +374,7 @@ async function analyzeEdogawa() {
   console.log("📈 3連単分析");
   console.log("─".repeat(70));
 
-  const profitableTrifecta = printStats(
+  printStats(
     "予測1-2-3着組み合わせ",
     trifectaByPick123,
     5,
