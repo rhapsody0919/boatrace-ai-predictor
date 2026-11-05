@@ -968,7 +968,7 @@
     {
       "script": "verify-pr-lane.js",
       "tier": "ci",
-      "guards": "軽い道／重い道の判定（pr-lane.js・config/pr-path-rules.json、#2277 段1。影で、どこからも呼ばない）: 設計 1.5 の振り分けの代表が期待どおりの lane と規則になる。src/utils の変更が SNS の入口（H2）と api（H6）に import でたどれる（#2236→#2251、消したファイルも元の木で辿る）、scripts/** は H1（新しい verify-*.js と台帳の行の追加だけは除く）、src/locales/ja は H8、既存の e2e・verify・台帳の行の変更と判定の script・規則は H5、足した行に新しく入った語は H9。CLI は一時の git の木で merge-base からの差分を判定し、判定できなければ 0 以外で heavy。外部接続なし"
+      "guards": "軽い道／重い道の判定（pr-lane.js・config/pr-path-rules.json、#2277 段1。影で、どこからも呼ばない）: 設計 1.5 の振り分けの代表が期待どおりの lane と規則になる。src/utils の変更が SNS の入口（H2）と api（H6）に import でたどれる（#2236→#2251、消したファイルも元の木で辿る）、scripts/** は H1（新しい verify-*.js と台帳の行の追加だけは除く）、src/locales/ja は H8、既存の src の .css の変更・削除と新しい .css の全体のセレクタは H7（#2144・#2157 の形。新しい部品の CSS は軽い）、既存の e2e・verify・台帳の行の変更と判定の script・規則は H5、足した行に新しく入った語は H9。CLI は一時の git の木で merge-base からの差分を判定し、判定できなければ 0 以外で heavy。外部接続なし"
     },
     {
       "script": "verify-pre-race-parsers.js",

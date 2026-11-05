@@ -5,6 +5,7 @@
  * - 1.5 の振り分けの表の代表（PR の差分のパスと状態をそのまま入力にする）が、期待どおりの lane と規則になる
  * - src/utils の変更が SNS の自動送信（H2）と api（H6）に import でたどれる（#2236 → #2251 の壊れ）
  * - scripts/** は H1（新しい verify-*.js だけ除く）、src/locales/ja は H8、判定の script と規則の変更は H5
+ * - 既存の src の .css の変更・削除は H7（#2144・#2157 の形）。新しい .css は全体のセレクタを足したときだけ H7
  * - CLI: 一時の git の木で base...head の差分（merge-base から）を判定し、JSON を出して終了 0。判定できなければ 0 以外で heavy
  */
 import assert from "node:assert/strict";
@@ -24,6 +25,7 @@ import {
   TREE_ROOT,
   classify,
   classifyCommits,
+  globalSelectors,
   headerPath,
   parsePatch,
 } from "./pr-lane.js";
@@ -114,13 +116,50 @@ expect(
   "light",
 );
 expect(
-  "#2157 既存の画面の小さな直しと新しい e2e",
+  "#2157 から CSS を除いた形（既存の部品の jsx の直しと新しい e2e）",
   [
     "A e2e/today-featured-racer-link.spec.js",
-    "M src/components/digest/FeaturedRaceCard.css",
     "M src/components/digest/FeaturedRaceCard.jsx",
   ],
   "light",
+);
+expect(
+  "新しい部品の CSS（クラスの中だけ）",
+  ["A src/components/digest/NewCard.css"],
+  "light",
+  [],
+  patch("src/components/digest/NewCard.css", [
+    ".new-card {",
+    "  color: inherit;",
+    "}",
+    ".new-card a:hover,",
+    "a.new-card__link {",
+    "  text-decoration: underline;",
+    "}",
+    "@media (max-width: 480px) {",
+    "  .new-card { padding: 0; }",
+    "}",
+    "@keyframes new-card-in {",
+    "  from { opacity: 0; }",
+    "  50%, to { opacity: 1; }",
+    "}",
+  ]),
+);
+// #1877（新しい verify と台帳の行の追加だけ）は軽い道のまま。後の #1879 は #1877 の verify が
+// KNOWN_GAPS に記録していた前からの不具合（formatters.js の TZ）を直したもので、#1877 が壊したものではない（master の CI は緑）
+expect(
+  "#1877 新しい verify と台帳の行の追加",
+  [
+    "A scripts/maintenance/verify-formatters.js",
+    "M scripts/maintenance/verify-registry.json",
+  ],
+  "light",
+  [],
+  patch("scripts/maintenance/verify-registry.json", [
+    "    {",
+    '      "script": "verify-formatters.js",',
+    "    },",
+  ]),
 );
 expect(
   "訳のキーの追加（ja 以外）",
@@ -296,6 +335,115 @@ expect("#2156 api/_lib", ["M api/_lib/botRace.js"], "heavy", ["H6"]);
 expect("#2250 送る口", ["M api/cron/sns-send.js"], "heavy", ["H2", "H6"]);
 expect("middleware", ["M middleware.js"], "heavy", ["H5"]);
 expect("#2153 全体の CSS", ["M src/App.css"], "heavy", ["H7"]);
+// 既存の src の .css の変更は H7（Vite の SPA では CSS は全部全体に効き、既存の画面への効き方を差分から決められない）
+expect(
+  "#2144 既存の部品の CSS の変更（手の分類で H7）",
+  [
+    "A e2e/racers-page-links.spec.js",
+    "M src/components/racer/RacerListPagination.css",
+    "M src/components/racer/RacerListPagination.jsx",
+    "M src/pages/RacersPage.jsx",
+  ],
+  "heavy",
+  ["H7"],
+);
+expect(
+  "#2157 既存の部品の CSS に規則を足す",
+  [
+    "A e2e/today-featured-racer-link.spec.js",
+    "M src/components/digest/FeaturedRaceCard.css",
+    "M src/components/digest/FeaturedRaceCard.jsx",
+  ],
+  "heavy",
+  ["H7"],
+  patch("src/components/digest/FeaturedRaceCard.css", [
+    ".featured-race__racer-name a {",
+    "  color: inherit;",
+    "}",
+  ]),
+);
+expect(
+  "既存のページの CSS の削除も H7",
+  ["D src/pages/BlogPost.css"],
+  "heavy",
+  ["H7"],
+);
+expect(
+  "新しい CSS でも全体のセレクタを足せば H7",
+  ["A src/components/race/NewTable.css"],
+  "heavy",
+  ["H7"],
+  patch("src/components/race/NewTable.css", [
+    ".new-table { color: red; }",
+    "body:has(.new-table) {",
+    "  overflow: hidden;",
+    "}",
+  ]),
+);
+expect(
+  "新しい CSS の行を読めないときは H7 を安全側で当てる",
+  ["A src/components/race/NewTable.css"],
+  "heavy",
+  ["H7"],
+  new Map(),
+  { trees: [], fill: false },
+);
+{
+  const r = run(
+    ["A src/components/race/NewTable.css"],
+    patch("src/components/race/NewTable.css", [
+      "h2,",
+      ".x h3 {",
+      "}",
+      ":root { --a: 1; }",
+    ]),
+    { trees: [] },
+  );
+  assert.match(
+    r.hits.find((h) => h.rule === "H7").reason,
+    /全体に効くセレクタ: h2・:root$/,
+    "全体のセレクタを理由に並べる（クラスで絞った .x h3 は数えない）",
+  );
+}
+// 全体のセレクタの拾い方（#2285 の /code-review の指摘を固定）
+{
+  const g = (css) => globalSelectors(css.split("\n"));
+  assert.deepEqual(g("* { margin: 0; }\nul li > a { x: 1 }"), [
+    "*",
+    "ul li > a",
+  ]);
+  assert.deepEqual(g("/* body { */ .c { x: 1 }"), [], "コメントの中は見ない");
+  assert.deepEqual(
+    g("a:not(.x, .y) { color: red }\n.y:not(a) { x: 1 }"),
+    ["a:not(.x, .y)"],
+    "括弧の中のカンマで割らない・括弧の中のクラスは絞りに数えない",
+  );
+  assert.deepEqual(
+    g(
+      '[data-theme="dark"] h1 { x: 1 }\n#root a { x: 1 }\n.x[aria-disabled] { x: 1 }',
+    ),
+    ['[data-theme=""] h1', "#root a"],
+    "属性・ID から始まっても、クラスで絞らなければ全体",
+  );
+  assert.deepEqual(g("BODY.modal-open { x: 1 }"), ["BODY.modal-open"]);
+  assert.deepEqual(
+    g(".c::before { content: \"{\"; }\n.d::after { content: '}'; }"),
+    [],
+    "文字列の中の括弧・セミコロンで割らない",
+  );
+  assert.deepEqual(
+    g(".card { & a { color: red } a { x: 1 } }"),
+    [],
+    "入れ子の規則は親で絞られる",
+  );
+  assert.deepEqual(
+    g(
+      "@media (max-width: 480px) { a { x: 1 } .c { x: 1 } }\n@keyframes k { from { x: 0 } 50%, to { x: 1 } }\n@font-face { font-family: f; }",
+    ),
+    ["a"],
+    "@media の中は見る。@keyframes・@font-face の中は見ない",
+  );
+}
 expect(
   "#2258 src/locales/ja は H8",
   ["M src/locales/ja/common.json"],

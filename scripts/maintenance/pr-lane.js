@@ -63,6 +63,71 @@ const anyMatch = (patterns = [], path) =>
 const count = (lines, word) =>
   lines.reduce((n, line) => n + line.split(word).length - 1, 0);
 
+/** 括弧（:not()・:is() の中・[...]）の外のカンマで割る */
+const splitTop = (prelude) => {
+  const out = [""];
+  let depth = 0;
+  for (const ch of prelude) {
+    if (ch === "(" || ch === "[") depth += 1;
+    if (ch === ")" || ch === "]") depth -= 1;
+    if (ch === "," && depth === 0) out.push("");
+    else out[out.length - 1] += ch;
+  }
+  return out.map((s) => s.trim()).filter(Boolean);
+};
+
+/**
+ * 対象を絞るクラスが無いか。括弧の中（:not(.x)・:has(.x)）・属性・ID は絞りに数えない
+ * （#root a・[data-theme="dark"] h1 も全体に効く）。:root・html・body・* で始まるものも全体
+ */
+const isGlobalSelector = (sel) =>
+  /^(:root|html|body|\*)(?![\w-])/i.test(sel) ||
+  !sel
+    .replace(/\([^()]*\)/g, "")
+    .replace(/\[[^\]]*\]/g, "")
+    .replace(/#[\w-]+/g, "")
+    .includes(".");
+
+/**
+ * 新しい CSS のファイルの中身（足した行）から、全体に効くセレクタを返す。
+ * 規則の中に入れ子にした規則（.card { & a {} }・.card { a {} }）は親で絞られるので数えない。
+ * @media・@supports 等の中は見る。@keyframes・@font-face 等の中と、文字列・コメントの中は見ない
+ * @param {string[]} lines
+ * @returns {string[]}
+ */
+export function globalSelectors(lines) {
+  const text = lines
+    .join("\n")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, '""');
+  const found = [];
+  // "rule"（規則の中）・"group"（@media 等、中にセレクタを持つ）・"other"（@keyframes 等）
+  const stack = [];
+  let prelude = "";
+  for (const ch of text) {
+    if (ch === "{") {
+      const head = prelude.trim();
+      prelude = "";
+      if (head.startsWith("@")) {
+        const group = /^@(media|supports|layer|container|document)\b/i;
+        stack.push(group.test(head) ? "group" : "other");
+      } else {
+        if (stack.every((k) => k === "group"))
+          found.push(...splitTop(head).filter(isGlobalSelector));
+        stack.push("rule");
+      }
+    } else if (ch === "}") {
+      stack.pop();
+      prelude = "";
+    } else if (ch === ";") {
+      prelude = "";
+    } else {
+      prelude += ch;
+    }
+  }
+  return found;
+}
+
 /**
  * import の閉包: reachFrom の入口から届く差分のファイル → 経路
  * @param {{ files: string[], io: import("../lib/relativeImportGraph.js").GraphIo }[]} trees
@@ -139,6 +204,14 @@ export function classify({
         );
         if (status === "D" || removed === undefined || removed.length > 0)
           hit(rule, path, "既存の行を変えた・消した（行の追加だけではない）");
+      }
+      // 既存の .css は changed で当てるので、全体のセレクタは新しいファイル（中身が全部足した行）だけで見る
+      if (added && anyMatch(rule.globalSelectors, path)) {
+        const patch = patches.get(path);
+        const found = patch && globalSelectors(patch.added);
+        if (!patch) hit(rule, path, "差分の行を読めない（安全側）");
+        else if (found.length > 0)
+          hit(rule, path, `全体に効くセレクタ: ${found.join("・")}`);
       }
       if (
         rule.terms &&
@@ -384,18 +457,19 @@ function classifyCommitsInner(repo, base, head) {
   const rules = loadRules(SELF_ROOT, (p) =>
     git(repo, ["show", `${mb}:${p}`], { encoding: "utf8" }),
   );
-  // 行を見る必要があるファイルだけ patch を取る（H5 の行の追加だけ・H9 の語）
+  // 行を見る必要があるファイルだけ patch を取る（H5 の行の追加だけ・H7 の全体のセレクタ・H9 の語）
   const needLines = changes
-    .map((c) => c.path)
-    .filter((p) =>
+    .filter(({ status, path: p }) =>
       rules.some(
         (r) =>
           anyMatch(r.rowsOnlyAdded, p) ||
+          (status === "A" && anyMatch(r.globalSelectors, p)) ||
           (r.terms &&
             anyMatch(r.terms.scan, p) &&
             !anyMatch(r.terms.except, p)),
       ),
-    );
+    )
+    .map((c) => c.path);
   const patches =
     needLines.length > 0
       ? readPatches(repo, mb, headSha, needLines)
