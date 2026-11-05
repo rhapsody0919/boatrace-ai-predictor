@@ -39,6 +39,7 @@ import {
   parityPaths,
   pickOpenVenues,
 } from "../lib/botHtmlParity.js";
+import { racerSnapshotProblems } from "../lib/snapshotStatus.js";
 import { internalApiHeaders } from "../../api/_lib/internalApiHeaders.js";
 import { resolveSnapshotPath } from "../../src/config/aiCrawlerBots.js";
 import {
@@ -242,6 +243,18 @@ async function main() {
   if (stResult.level === "fail")
     failures.push(`[スナップショット] ${stResult.message}`);
   if (stResult.level === "note") notes.push(stResult.message);
+  // 選手ページ（ADR 0032 追記）: 写す道が古いまま続く・途中で止まるのを落とす（線は1日）
+  if (st.status === 200) {
+    let parsed = null;
+    try {
+      parsed = JSON.parse(st.body);
+    } catch {
+      // 形の違いは上の evaluateSnapshotStatus が落とす
+    }
+    const racer = racerSnapshotProblems(parsed, Date.now());
+    if (racer.summary) console.log(`[スナップショット] ${racer.summary}`);
+    for (const p of racer.problems) failures.push(`[選手ページ] ${p}`);
+  }
 
   // ---- 部分集合の照合 ----
   const browser = await chromium.launch();

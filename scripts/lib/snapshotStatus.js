@@ -6,7 +6,8 @@
  * そこで、ログの最後に目立つまとめを出し、配信物に status.json を置いて、毎日の照合から読めるようにする。
  *
  * @param {{ total: number, failed: { id: string, error: string }[], fatalError?: string|null,
- *   relaunches?: number, generatedAt: string }} run
+ *   relaunches?: number, generatedAt: string, skipped?: string|null }} run
+ *   skipped: ブログ等を作らなかった理由（Preview の既定、planBlogSnapshots）。あれば ok のまま blog.skipped に残す
  * @returns {{ status: object, lines: string[] }}
  */
 export function summarizeSnapshotRun({
@@ -15,7 +16,31 @@ export function summarizeSnapshotRun({
   fatalError = null,
   relaunches = 0,
   generatedAt,
+  skipped = null,
 }) {
+  // 作らなかったときでも、静的サーバー・Chromium の起動が止まった（fatalError）なら下の失敗の形にする
+  if (skipped && !fatalError) {
+    const bar = "=".repeat(60);
+    return {
+      status: {
+        generatedAt,
+        ok: true,
+        blog: {
+          total,
+          succeeded: null,
+          failedIds: [],
+          fatalError: null,
+          skipped,
+        },
+        browserRelaunches: relaunches,
+      },
+      lines: [
+        bar,
+        `AI スナップショット: ブログ・翻訳・一覧は作らない（${skipped}）`,
+        bar,
+      ],
+    };
+  }
   // 生成の途中で止まった（fatalError）ときは、何件書けたか分からないので成功件数を出さない
   const succeeded = fatalError ? null : total - failed.length;
   const ok = !fatalError && failed.length === 0;
@@ -114,4 +139,45 @@ export function failedSnapshotGroups(status) {
   visit("blogList", status?.blogList);
   visit("blogChartPng", status?.blogChartPng);
   return out;
+}
+
+/** 選手ページのスナップショットの古さの線（オーナー、2026-11-05: ボット向けの選手ページは最大1日まで） */
+export const RACER_SNAPSHOT_STALE_HOURS = 24;
+
+/**
+ * status.json の選手ページ（BOA-848、ADR 0032 追記）を見て、毎日の照合で落とすものを返す。
+ * 写す道（今の本番から写す）が黙って古いまま続く・途中で止まるのを見つける。
+ * racer の無い版・total が 0 の版は見ない。mode の無い版（写す道の前の版）は古さを見ない
+ *
+ * @param {object} status - /ai-snapshots/status.json を JSON.parse したもの
+ * @param {number} nowMs
+ * @returns {{ summary: string|null, problems: string[] }}
+ */
+export function racerSnapshotProblems(status, nowMs) {
+  const racer = status?.racer;
+  // 途中で止まった版（total: null・fatalError）は落とす。total が 0（Preview）・racer の無い版は見ない
+  if (!racer || typeof racer !== "object" || (!racer.total && !racer.fatalError)) {
+    return { summary: null, problems: [] };
+  }
+  const problems = [];
+  if (racer.fatalError) problems.push(`途中で止まった（${racer.fatalError}）`);
+  if (racer.mode) {
+    const renderedMs = Date.parse(racer.renderedAt ?? "");
+    if (!Number.isFinite(renderedMs)) {
+      problems.push("描いた時刻（renderedAt）が無い");
+    } else {
+      const hours = (nowMs - renderedMs) / 3600000;
+      if (hours > RACER_SNAPSHOT_STALE_HOURS)
+        problems.push(
+          `描いてから ${hours.toFixed(1)} 時間（線 ${RACER_SNAPSHOT_STALE_HOURS} 時間）`,
+        );
+    }
+  }
+  const how = racer.mode
+    ? `（${racer.mode === "copy" ? "写す道" : "描く道"}: 写し ${racer.copied}・描き ${racer.rendered}、描いた時刻 ${racer.renderedAt}）`
+    : "";
+  return {
+    summary: `選手 ${racer.succeeded}/${racer.total} 件${how}`,
+    problems,
+  };
 }

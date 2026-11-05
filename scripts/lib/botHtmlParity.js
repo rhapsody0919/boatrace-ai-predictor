@@ -313,6 +313,14 @@ export function evaluateSnapshotStatus(httpStatus, body) {
   if (typeof status?.ok !== "boolean" || !blog) {
     return { level: "fail", message: "status.json の形が違う" };
   }
+  // Preview の既定ではブログ等を作らない（planBlogSnapshots）。本番では起きない。ほかの組（図の PNG 等）の失敗は落とす
+  if (blog.skipped) {
+    const groups = failedSnapshotGroups(status);
+    return {
+      level: groups.length > 0 ? "fail" : "note",
+      message: `ブログ・翻訳・一覧は作っていない（${blog.skipped}）${groups.length > 0 ? `。${groups.join("。")}` : ""}`,
+    };
+  }
   // 翻訳記事・一覧（BOA-848 第2段）の件数。無ければ（足す前の版）出さない
   const i18n =
     status.blogI18n && !("fatalError" in status.blogI18n)
