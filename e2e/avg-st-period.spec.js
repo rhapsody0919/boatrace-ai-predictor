@@ -165,6 +165,8 @@ test.describe("データ出走表の想定コース1着率（BOA-1296）", () =>
       const row = await rowCells(table, "想定コース1着率");
       const cells = row.locator("td.drt-cell");
       await expect(row.locator(".drt-label-note")).toContainText("直近3期・進入コース");
+      // 旧い行の「超展開データ」（枠番の会場集計）へのリンクにしない
+      await expect(row.locator("a.drt-label-link")).toHaveCount(0);
       // 1コース: (20+20+23)/(35+30+37) = 63/102 = 61.8% → 62%（6艇の表の 61.8 と同じ元の値）
       await expect(cells.nth(0)).toContainText("62%", { timeout: 30000 });
       await expect(cells.nth(0)).toContainText("63/102");
@@ -199,5 +201,9 @@ test.describe("データ出走表の想定コース1着率（BOA-1296）", () =>
     const row = await rowCells(table, "想定コース1着率");
     await expect(row.locator("td.drt-cell")).toHaveText(["—", "—", "—", "—", "—", "—"], { timeout: 30000 });
     await expect(row.locator("td.drt-best")).toHaveCount(0);
+    // 「—」だけにせず、取得に失敗したことを出す（/code-review の指摘の再現）
+    await expect(
+      page.locator(".data-race-table .inline-fetch-error", { hasText: "直近3期のコース別成績を読み込めませんでした" }),
+    ).toBeVisible();
   });
 });

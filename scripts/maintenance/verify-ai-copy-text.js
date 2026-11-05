@@ -411,11 +411,13 @@ for (const lang of LANGS) {
   const t = makeT(loadLocale(lang));
   const runN = (n) => t("beforeInfo.meetFormRunN", { n });
   const courseRows = [
-    { boat: 1, winRate: (63 / 102) * 100, wins: 63, entries: 102, reliability: "ok" },
-    { boat: 2, winRate: 80, wins: 12, entries: 15, reliability: "warn" },
-    { boat: 3, winRate: null, wins: 3, entries: 3, reliability: "none" },
-    { boat: 4, winRate: 20, wins: 18, entries: 90, reliability: "ok" },
-    { boat: 5, winRate: 90, wins: 18, entries: 20, reliability: "warn" },
+    { boat: 1, racerId: 4001, winRate: (63 / 102) * 100, wins: 63, entries: 102, reliability: "ok" },
+    { boat: 2, racerId: 4002, winRate: 80, wins: 12, entries: 15, reliability: "warn" },
+    { boat: 3, racerId: 4003, winRate: null, wins: 3, entries: 3, reliability: "none" },
+    { boat: 4, racerId: 4004, winRate: 20, wins: 18, entries: 90, reliability: "ok" },
+    { boat: 5, racerId: 4005, winRate: 90, wins: 18, entries: 20, reliability: "warn" },
+    // 選手が取れない艇（欠場・出走表なし）は「0走」でなく「—」（/code-review の指摘の再現）
+    { boat: 6, racerId: null, winRate: null, wins: 0, entries: 0, reliability: "none" },
   ];
   const ready = { status: "ready", rows: courseRows };
   const args = { t, players, analysis: {}, courseStats: ready };
@@ -434,7 +436,8 @@ for (const lang of LANGS) {
   check(`[${lang}] 表: warn は灰の字と ⚠`, html(2).includes("80%") && html(2).includes("⚠") &&
     html(2).includes("drt-value--muted"), html(2));
   check(`[${lang}] 表: 10走未満は率を出さず走数`, !html(3).includes("%") && html(3).includes(runN(3)), html(3));
-  check(`[${lang}] 表: 行が無い艇は —`, html(6).replace(/<[^>]*>/g, "") === "—", html(6));
+  check(`[${lang}] 表: 選手が取れない艇は —`, html(6).replace(/<[^>]*>/g, "") === "—", html(6));
+  check(`[${lang}] 表: 行の名前は旧い超展開データへ送らない`, basic?.tab === null);
   for (const [status, expectDash] of [["error", true], ["loading", false]]) {
     const row = buildBasicIndicatorRows({ ...args, courseStats: { status, rows: [] } })
       .find((r) => r.key === "expectedCourseWinRate");

@@ -22,6 +22,7 @@ import {
   translateTechnique,
   translatePartName,
   isExhibitionCourseOutOfRange,
+  expectedCourseWinRateText,
 } from "../components/race/raceIndicators";
 import { formatExhibitionSt } from "../utils/formatters";
 import { getAiCopyPromptText } from "../utils/aiCopyPrompts";
@@ -315,12 +316,9 @@ function buildRows(
       key: "expectedCourseWinRate",
       label: t("dataTable.rowExpectedCourseWinRate"),
       values: players.map((p) => {
-        const r = courseByBoat.get(p.number);
-        if (!r) return DASH;
-        if (r.reliability === "none" || r.winRate == null)
-          return `${DASH} (${t("beforeInfo.meetFormRunN", { n: r.entries })})`;
-        const warn = r.reliability === "warn" ? " ⚠" : "";
-        return `${r.winRate.toFixed(0)}% (${r.wins}/${r.entries})${warn}`;
+        const cell = expectedCourseWinRateText(t, courseByBoat.get(p.number));
+        if (!cell) return DASH;
+        return `${cell.rate} (${cell.sub})${cell.warn ? " ⚠" : ""}`;
       }),
     },
     {

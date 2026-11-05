@@ -926,6 +926,24 @@ export function buildBasicIndicatorRows(args) {
  * reliability: "warn" は灰の字と ⚠、"none"（10走未満）は「—」と N走。金枠は "ok" の艇だけを候補にする。
  * 取得中はほかの行と同じ読み込みの印、失敗は「—」（0% を出さない）
  */
+/**
+ * 想定コース1着率の1艇の字（表とAI用のコピーで共有、BOA-1296）。
+ * 選手が取れない艇（racerId なし）は null（呼び出し側で「—」）。
+ * @returns {{rate: string, sub: string, warn: boolean, muted: boolean} | null}
+ */
+export function expectedCourseWinRateText(t, row) {
+  if (!row || row.racerId == null) return null;
+  const none = row.reliability === "none" || row.winRate == null;
+  return {
+    rate: none ? "—" : `${row.winRate.toFixed(0)}%`,
+    sub: none
+      ? t("beforeInfo.meetFormRunN", { n: row.entries })
+      : `${row.wins}/${row.entries}`,
+    warn: row.reliability === "warn",
+    muted: row.reliability !== "ok",
+  };
+}
+
 function buildExpectedCourseWinRateRow(t, { status, rows }) {
   const byBoat = new Map(
     (status === "ready" ? rows : []).map((r) => [r.boat, r]),
@@ -936,7 +954,8 @@ function buildExpectedCourseWinRateRow(t, { status, rows }) {
     shortLabel: t("review.cols.expectedCourseWinRate"),
     note: t("dataTable.expectedCourseWinRateNote"),
     wrapNote: true,
-    tab: "attackdefense",
+    // 旧い行の「超展開データ」（枠番で数える会場の集計）へは送らない。値の元は枠別情報タブの6艇の表
+    tab: null,
     best: bestOf(
       [...byBoat.values()]
         .filter((r) => r.reliability === "ok")
@@ -947,22 +966,15 @@ function buildExpectedCourseWinRateRow(t, { status, rows }) {
     render: (p) => {
       if (status === "loading")
         return <span className="drt-skeleton" aria-hidden="true" />;
-      const r = byBoat.get(p.number);
-      if (!r) return "—";
-      const muted = r.reliability !== "ok";
+      const cell = expectedCourseWinRateText(t, byBoat.get(p.number));
+      if (!cell) return "—";
       return (
-        <span className={`drt-value${muted ? " drt-value--muted" : ""}`}>
-          {r.reliability === "none" || r.winRate == null
-            ? "—"
-            : `${r.winRate.toFixed(0)}%`}
-          {r.reliability === "warn" && (
+        <span className={`drt-value${cell.muted ? " drt-value--muted" : ""}`}>
+          {cell.rate}
+          {cell.warn && (
             <span title={t("wakuInfo.sixBoat.smallSampleTitle")}> ⚠</span>
           )}
-          <span className="drt-sub">
-            {r.reliability === "none"
-              ? t("beforeInfo.meetFormRunN", { n: r.entries })
-              : `${r.wins}/${r.entries}`}
-          </span>
+          <span className="drt-sub">{cell.sub}</span>
         </span>
       );
     },
