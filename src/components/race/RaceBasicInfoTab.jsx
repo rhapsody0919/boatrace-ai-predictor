@@ -23,6 +23,7 @@
  * 指摘#3で固定指標(勝率)から選択中指標に連動するよう変更。以前使っていた
  * getRacerVenueStatsは廃止）
  */
+import { slashDate } from "../../utils/formatters";
 import RacerPageLink from "./RacerPageLink";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -77,8 +78,6 @@ const GRADES = ["all", "ippan", "sgg1"];
 // （全国・全レース）についてで、当地やSG・G1を選ぶと条件別タブ側は絞らない
 // 集計のままなので数字は一致しない
 const PERIODS = ["official", "term", "last3m", "last1m"];
-// 「2026-05-01」→「2026/5/1」（期間の表記、BOA-775）
-const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
 // 「2026-05-01」→「2026/05/01」（0埋めを保つ。前期欄の日付、公式の期別成績と同じ形。BOA-723）
 const slashDatePadded = (ymd) => ymd.replaceAll("-", "/");
 const PRESETS = [

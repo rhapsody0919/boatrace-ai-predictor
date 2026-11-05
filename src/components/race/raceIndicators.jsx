@@ -8,7 +8,7 @@
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import { bestOf } from "../../utils/bestOf";
-import { formatExhibitionSt } from "../../utils/formatters";
+import { formatExhibitionSt, slashDate } from "../../utils/formatters";
 import { isUnusedMotor, motorUsageCount } from "../../utils/motorUsage";
 import { TECHNIQUE_NAMES } from "../../constants/techniqueNames";
 import {
@@ -161,8 +161,6 @@ export function buildOriginalExhibitionRows(t, originalExhibition) {
  * @param {Object} analysis - useRaceAnalysisDataの戻り値
  * @param {Object} pending - ソース別ロード中フラグ（useRaceAnalysisDataのpending）
  */
-// 「2025-11-01」→「2025/11/1」（平均ST（公式）の期間の表記、BOA-815）
-const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
 
 function buildRowDefs({
   t,
