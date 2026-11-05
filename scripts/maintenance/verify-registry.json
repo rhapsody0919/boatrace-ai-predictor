@@ -1800,6 +1800,11 @@
       "guards": "会場別モーター成績パーサー（BOA-264）"
     },
     {
+      "script": "verify-venue-names.js",
+      "tier": "ci",
+      "guards": "会場名の表を scripts/lib/venueNames.js の正準24会場と照合する（BOA-1350）。import と追跡ファイル内の表の抽出、名前変更・欠落・重複の自己確認"
+    },
+    {
       "script": "verify-venue-parameters.js",
       "tier": "ci",
       "guards": "会場別イン崩れ閾値の式・既定値65、24会場の表の形と展開の型の分類（BOA-1060、scripts/lib/venueParameters.js）。仕様未定の入力と旧表の差はKNOWN_GAPSとして報告する"
