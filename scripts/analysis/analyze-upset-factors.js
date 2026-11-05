@@ -187,7 +187,7 @@ async function main() {
   console.log(`ベースライン（1コース飛び率）: ${pct(baseline)}\n`);
 
   // ---- 個別因子分析（四分位） ----
-  function analyzeQuartile(label, getter, rows, inverse = false) {
+  function analyzeQuartile(label, getter, rows) {
     const valid = rows.filter((r) => getter(r) != null);
     if (valid.length < 50) {
       console.log(`  ${label}: データ不足`);

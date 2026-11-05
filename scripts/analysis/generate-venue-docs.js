@@ -52,9 +52,9 @@ function generateReadme(venueCode, data) {
   ).slice(0, 10);
 
   // 全体統計を計算
-  const totalWinSamples = (data.win_rules || []).reduce((sum, r) => sum + r.stats.sample_size, 0);
-  const totalPlaceSamples = (data.place_rules || []).reduce((sum, r) => sum + r.stats.sample_size, 0);
-  const totalTrioSamples = (data.trio_rules || []).reduce((sum, r) => sum + r.stats.sample_size, 0);
+  (data.win_rules || []).reduce((sum, r) => sum + r.stats.sample_size, 0);
+  (data.place_rules || []).reduce((sum, r) => sum + r.stats.sample_size, 0);
+  (data.trio_rules || []).reduce((sum, r) => sum + r.stats.sample_size, 0);
 
   let content = `# ${info.name}（会場コード: ${venueCode}）分析
 
