@@ -613,7 +613,6 @@ export function formatDailySummary({
   stats7d,
   statsDay,
   jobStates,
-  now,
   detectionLagDay,
   detectionLag7d,
 }) {

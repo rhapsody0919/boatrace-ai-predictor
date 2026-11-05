@@ -90,7 +90,7 @@ async function scrapeRacerIds(date, placeCd, raceNo) {
     });
 
     return racers.length === 6 ? racers : null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -144,7 +144,6 @@ async function main() {
     if (data.length < pageSize) break;
     offset += pageSize;
   }
-  const error = null;
 
   if (!entries || entries.length === 0) {
     console.log("racer_idが欠損しているエントリはありません。");

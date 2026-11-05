@@ -50,20 +50,6 @@ function parseArgs() {
   return options;
 }
 
-// 日付範囲を生成
-function getDateRange(from, to) {
-  const dates = [];
-  const current = new Date(from);
-  const end = new Date(to);
-
-  while (current <= end) {
-    dates.push(current.toISOString().split('T')[0]);
-    current.setDate(current.getDate() + 1);
-  }
-
-  return dates;
-}
-
 // URLを生成
 function getUrl(date, placeCd, raceNo, content) {
   const urlBase = 'https://www.boatrace.jp/owpc/pc/race/';
@@ -137,7 +123,7 @@ async function scrapeRacelist(date, placeCd, raceNo) {
 
     return racers.length === 6 ? racers : null;
 
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -169,7 +155,7 @@ async function scrapeWinningTechnique(date, placeCd, raceNo) {
 
     return winningTechnique || null;
 
-  } catch (error) {
+  } catch {
     return null;
   }
 }
