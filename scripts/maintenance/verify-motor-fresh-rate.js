@@ -217,7 +217,7 @@ check(
 check(
   "サービス: 材料が取れなかったら保存しない（fetchFailed）",
   /fresh\.failed\s*\n?\s*\?\s*\{ rows: merged, freshness: fresh\.freshness, fetchFailed: true \}/.test(
-    service,
+    read("src/pure/raceMotorBreakdown.js"),
   ),
 );
 

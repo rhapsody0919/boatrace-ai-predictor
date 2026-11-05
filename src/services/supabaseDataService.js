@@ -87,6 +87,11 @@ import {
   shiftDate,
 } from "../utils/pretestRows";
 // get_today_races の整形は、ボット向け HTML の関数（ADR 0089）と共有するため純粋なモジュールに置く
+import {
+  pastMotorRows,
+  recalcMotorRows,
+  settleMotorBreakdown,
+} from "../pure/raceMotorBreakdown.js";
 import { transformTodayRaces } from "../utils/todayRaces.js";
 import {
   tallyVenuePayouts,
@@ -2693,13 +2698,8 @@ export const supabaseDataService = {
         );
         // 会場公式のモーター成績が1艇でも取れなかったら、結果を保存させない（BOA-740）。
         // 自前の値の材料（使用開始日・節の初日）が取れなかったときも同じ（BOA-830）
-        const settle = async (out) => {
-          const fresh = await freshPromise;
-          const merged = out.map((row, i) => ({ ...row, ...fresh.columns[i] }));
-          return out.some((r) => r.venue_stats_failed) || fresh.failed
-            ? { rows: merged, freshness: fresh.freshness, fetchFailed: true }
-            : { rows: merged, freshness: fresh.freshness };
-        };
+        const settle = async (out) =>
+          settleMotorBreakdown(out, await freshPromise);
 
         if (past) {
           const raceDate = raceId.slice(0, 10);
@@ -2711,25 +2711,7 @@ export const supabaseDataService = {
             ),
             fetchPretestByRacer(venueCode, raceDate),
           ]);
-          const out = rows.map((row, i) => {
-            const pretest = pretestAsOf.get(row.racer_id) ?? null;
-            return {
-              ...row,
-              rate_source: "official",
-              official_2rate: row.motor_2rate ?? null,
-              // 公式の2連率・3連率がどちらも 0 か（「集計前」の判定、BOA-557）
-              official_3rate: row.motor_3rate ?? null,
-              pretest_time: pretest?.pretest_time ?? null,
-              pretest_rank: pretest?.pretest_rank ?? null,
-              power_index: null,
-              clipped_by_generation: false,
-              final_count: statsAsOf[i]?.finalCount ?? null,
-              championship_count: statsAsOf[i]?.championshipCount ?? null,
-              first_place_count: statsAsOf[i]?.firstPlaceCount ?? null,
-              race_count: statsAsOf[i]?.raceCount ?? null,
-              venue_stats_failed: statsAsOf[i]?.fetchFailed === true,
-            };
-          });
+          const out = pastMotorRows(rows, statsAsOf, pretestAsOf);
           return await settle(out);
         }
 
@@ -2754,37 +2736,14 @@ export const supabaseDataService = {
             ),
             fetchPretestByRacer(venueCode, raceId.slice(0, 10)),
           ]);
-        // 2連率/3連率も選択中の期間（過去90日/直近1ヶ月）に応じた値に差し替える。
-        // race_entries.motor_2rate/3rateは公式サイトの「モーター抽選日からの通算」
-        // 値でperiod非依存のため、そのまま使うと機力指数だけ期間が変わり
-        // 2連率/3連率が変わらないという不整合が生じる（ユーザー指摘、2026-09-13）
-        const out = rows.map((row, i) => {
-          const pretest = pretestByRacer.get(row.racer_id) ?? null;
-          return {
-            ...row,
-            rate_source: "recalc",
-            // このレースより前に結果の出た走数（機力指数の母数）。0 なら初下ろし（BOA-513）
-            sample_count: powerIndexes[i]?.sample_count ?? null,
-            // 差し替える前の公式3連率（節の開始時点）。公式2連率とあわせて、新モーターで
-            // 公式の累計がまだ付いていない（どちらも 0）かの判定に使う
-            official_3rate: row.motor_3rate ?? null,
-            clipped_by_generation:
-              powerIndexes[i]?.clipped_by_generation ?? false,
-            motor_2rate: powerIndexes[i]?.actual_rate2 ?? row.motor_2rate,
-            motor_3rate: powerIndexes[i]?.actual_rate3 ?? row.motor_3rate,
-            // 期間で差し替える前の公式値（節の開始時点）。追加クエリ0本
-            official_2rate: row.motor_2rate ?? null,
-            pretest_time: pretest?.pretest_time ?? null,
-            pretest_rank: pretest?.pretest_rank ?? null,
-            power_index: powerIndexes[i]?.power_index ?? null,
-            final_count: venueMotorStatsList[i]?.finalCount ?? null,
-            championship_count:
-              venueMotorStatsList[i]?.championshipCount ?? null,
-            first_place_count: venueMotorStatsList[i]?.firstPlaceCount ?? null,
-            race_count: venueMotorStatsList[i]?.raceCount ?? null,
-            venue_stats_failed: venueMotorStatsList[i]?.fetchFailed === true,
-          };
-        });
+        // 2連率/3連率も選択中の期間（過去90日/直近1ヶ月）に応じた値に差し替える
+        // （組み立ては src/pure/raceMotorBreakdown.js の recalcMotorRows）
+        const out = recalcMotorRows(
+          rows,
+          powerIndexes,
+          venueMotorStatsList,
+          pretestByRacer,
+        );
         return await settle(out);
       },
     );
@@ -4272,9 +4231,12 @@ export const supabaseDataService = {
           .order("period_no", { ascending: false });
         return data ?? [];
       } catch (error) {
-        throw new Error("racer_period_stats の読み込みに失敗: " + error.message, {
-          cause: error,
-        });
+        throw new Error(
+          "racer_period_stats の読み込みに失敗: " + error.message,
+          {
+            cause: error,
+          },
+        );
       }
     });
   },
