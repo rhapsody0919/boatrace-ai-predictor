@@ -21,8 +21,10 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
 | `src/pure/favorites.js` | キャッシュの全削除で消さない端末内のユーザー保存。 | parseFavorites, serializeFavorites, toggleRacer, toggleVenue, FAVORITES_KEY ほか1件 |
 | `src/pure/finishPosition.js` | レース内順位の判定（純関数）。 | finishPositionOf |
+| `src/pure/hitJudge.js` | 複勝的中判定（2着以内） | isPlaceHit, isShowHit |
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
 | `src/pure/meetExclusion.js` | 今節の順位の対象から外す選手と、その理由（途中帰郷・賞典除外）の判定（純関数）。 | meetExclusionsOf |
+| `src/pure/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
 | `src/pure/raceMotorBreakdown.js` | モータ情報タブの一覧表（getRaceMotorBreakdown の返り値）の行の組み立て。 | pastMotorRows, recalcMotorRows, settleMotorBreakdown |
 | `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
 | `src/pure/racerCareerStats.js` | — | isCareerFinalStage, isCareerStart, careerFinishPoints, careerWinRate, isCareerFinalAppearance ほか2件 |
@@ -98,7 +100,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, jobKeysFor, createRestJobStateClient, shouldSkipOnGha ほか9件 |
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
 | `scripts/lib/harville.js` | — | normalizeProbs, impliedProbsFromOdds, condSecond, condThird, exactaProb ほか6件 |
-| `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | buildPredictionHitUpdate, calculateHits, isWinHit, isPlaceHit, isShowHit ほか5件 |
+| `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | buildPredictionHitUpdate, calculateHits, isWinHit, isTrifectaHit, isTrioHit ほか3件 |
 | `scripts/lib/inCaution.js` | BOA-822 イン崩れ注意度: 朝の生成（generate-unified-predictions.js）がレースごとの値を決める純関数。 | toInCautionRates, computeInCaution |
 | `scripts/lib/inCautionHealth.js` | BOA-822 イン崩れ注意度の監視（tasks 12、plan §9。完了の定義C）。DB は読み取りだけ。 | evaluateInCautionTable, evaluateInCautionToday, readInCautionTable, readInCautionToday, runInCautionHealth ほか1件 |
 | `scripts/lib/isDirectRun.js` | そのモジュールが `node <path>` で直接実行されたかを判定する。 | isDirectRun |
@@ -179,7 +181,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | inCautionAlertUntil, backoffMinutes, resolveVenuesLimit, isBreakerOpenError, defaultCheckNoProgram ほか5件 |
 | `scripts/lib/racesInit/predictCodeCheck.js` | 予測ロジックの変更検知による再生成（WS4b T4b-07-5、plan.md §4.2(d)・設計判断(g)）。 | hashFiles, computePredictCodeHash, checkPredictCodeChange, PREDICT_CODE_HASH_JOB, PREDICT_LOGIC_FILES |
 | `scripts/lib/rawHtmlArchive.js` | 取得した生HTMLの保管（optimal-scraping-design.md §2.2・承認済みQ1）の最小実装。 | rawHtmlPath, archiveRawHtml, RAW_HTML_BUCKET |
-| `scripts/lib/relativeImportGraph.js` | 相対 import を辿って、入口から届くファイルを集める（node 標準だけを使う）。 | codeFiles, relativeSpecs, resolveSpec, reach, CODE ほか1件 |
+| `scripts/lib/relativeImportGraph.js` | 相対 import を辿って、入口から届くファイルを集める（node 標準だけを使う）。 | codeFiles, relativeSpecs, resolveSpec, reach, CODE ほか2件 |
 | `scripts/lib/renderWithFreshPage.js` | 新しいページを開く関数を作る。ブラウザが落ちていたら起動し直してから開く。 | createPageOpener, renderWithFreshPage |
 | `scripts/lib/reportComparison.js` | 定点観測レポート（search-console-report.js / i18n-demand-report.js）の | findPreviousReport, findRecentReports, detectTrend, perDay, formatDelta |
 | `scripts/lib/reviewPr.js` | AI の PR の審査（.github/workflows/review.yml、ADR-0097）の純粋関数。 | vendorForBranch, mechanicalRejections, sqlTablesFromFiles, buildReviewPrompt, parseVerdict ほか6件 |
@@ -339,7 +341,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/raceDeadlineStatus.js` | — | getDeadlineDate, getDeadlineStatus, DEADLINE_STATUS |
 | `src/utils/raceDetailHeading.js` | レース詳細（/race/:raceId）の見出し・title・description・canonical・パンくずの組み方。 | getStageChip, getRaceDetailHeading, getRaceDetailMeta, getRaceListLink, getRaceDetailBreadcrumbItems |
 | `src/utils/raceEntrants.js` | レース詳細のタブの上の出走6艇（BOA-1189 GS01-c）の行。艇番順、選手名は空白を詰める。 | entrantRowsOf |
-| `src/utils/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
+| `src/utils/raceId.js` | 再 export だけのファイル。本体は `src/pure/raceId.js`。 | — |
 | `src/utils/raceListDisplay.js` | トップの会場カード（VenueGridCard）と会場ページのレースカード（RaceCard）が出す文字の組み方。 | venueNameOf, venueCardHeadline, gradeConfigOf, raceNumberLabel, deadlineValueText ほか1件 |
 | `src/utils/raceOutcome.js` | レースの成立状態（通常・一部返還・不成立）と、返還艇・的中判定の可否を1箇所で決める（BOA-543）。 | getRaceOutcomeState, getRefundBoats, isBoatRefunded, isJudgeable, isBetJudgeable ほか11件 |
 | `src/utils/raceResultUsable.js` | — | isUsableRaceResult, isNoRaceResult |
@@ -419,4 +421,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 377 ファイル / export 2231 件。
+対象 379 ファイル / export 2232 件。

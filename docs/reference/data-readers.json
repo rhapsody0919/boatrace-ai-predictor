@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1676,
+    "sourceFiles": 1681,
     "filesWithAccess": 270,
     "tableReaders": 988,
     "tableWriters": 189,
@@ -29596,7 +29596,7 @@
     {
       "job": "kfile_sync",
       "entry": "api/cron/kfile-sync.js",
-      "reachableFiles": 32,
+      "reachableFiles": 33,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1026",
@@ -29949,7 +29949,7 @@
     {
       "job": "race_status",
       "entry": "api/cron/race-status.js",
-      "reachableFiles": 33,
+      "reachableFiles": 34,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1026",
@@ -30145,7 +30145,7 @@
     {
       "job": "result",
       "entry": "api/cron/result.js",
-      "reachableFiles": 32,
+      "reachableFiles": 33,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1026",
@@ -30190,7 +30190,7 @@
     {
       "job": "result_catchup",
       "entry": "api/cron/result-catchup.js",
-      "reachableFiles": 32,
+      "reachableFiles": 33,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1026",
@@ -30281,7 +30281,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 89,
+      "reachableFiles": 91,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -30393,7 +30393,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 77,
+      "reachableFiles": 79,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
