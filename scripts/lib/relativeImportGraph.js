@@ -1,6 +1,7 @@
 /**
  * 相対 import を辿って、入口から届くファイルを集める（node 標準だけを使う）。
- * 使う所: verify-remotion-src-imports.js（束が import.meta.glob に届かない）・sns-makers-scope.js（SNS の作り手の CI を走らせる差分か）。
+ * 使う所: verify-remotion-src-imports.js（束が import.meta.glob に届かない）・sns-makers-scope.js（SNS の作り手の CI を走らせる差分か）・
+ * pr-lane.js（軽い道／重い道の判定。git のコミットの木を読むので、読み方 io を差し替える）。
  *
  * 辿るのは静的な相対の指定（import・export from・文字列1つの import()）だけ。require・式の import()・別名は辿らない。
  * JSON 等のコードでない import と `new URL("<相対>", import.meta.url)` の行き先は、辿らない葉として「届く」に数える
@@ -44,27 +45,38 @@ export function relativeSpecs(code) {
   });
 }
 
+/**
+ * ファイルの読み方。既定は手元のファイル。pr-lane.js は git のコミットの木（仮の絶対パス）を読む io を渡す
+ * @typedef {{ isFile: (p: string) => boolean, read: (p: string) => string }} GraphIo
+ * @type {GraphIo}
+ */
+export const fsIo = {
+  isFile: (p) => existsSync(p) && statSync(p).isFile(),
+  read: (p) => readFileSync(p, "utf8"),
+};
+
 /** 相対の指定を実在のファイルに直す（拡張子の省略・index を補う）。無ければ null */
-export function resolveSpec(from, spec) {
+export function resolveSpec(from, spec, io = fsIo) {
   const base = resolve(dirname(from), spec);
   const tries = [
     base,
     ...[".js", ".jsx", ".mjs", ".cjs"].map((e) => base + e),
     ...["index.js", "index.jsx", "index.mjs"].map((n) => join(base, n)),
   ];
-  return tries.find((p) => existsSync(p) && statSync(p).isFile()) ?? null;
+  return tries.find((p) => io.isFile(p)) ?? null;
 }
 
 /**
  * starts から辿れるファイル → 最初に辿り着いた経路。
  * 参照先が見つからない指定は missing に { from, spec } で返す（呼ぶ側が失敗か安全側の判定かを決める）
  * @param {string[]} starts 絶対パス
+ * @param {GraphIo} [io]
  * @returns {{ via: Map<string, string[]>, missing: {from: string, spec: string}[] }}
  */
-export function reach(starts) {
+export function reach(starts, io = fsIo) {
   const cache = new Map();
   const source = (p) => {
-    if (!cache.has(p)) cache.set(p, stripComments(readFileSync(p, "utf8")));
+    if (!cache.has(p)) cache.set(p, stripComments(io.read(p)));
     return cache.get(p);
   };
   const via = new Map(starts.map((s) => [s, [s]]));
@@ -73,7 +85,7 @@ export function reach(starts) {
   while (queue.length > 0) {
     const file = queue.shift();
     for (const { spec, optional } of relativeSpecs(source(file))) {
-      const next = resolveSpec(file, spec);
+      const next = resolveSpec(file, spec, io);
       if (!next) {
         if (!optional) missing.push({ from: file, spec });
         continue;

@@ -1,0 +1,114 @@
+{
+  "$comment": [
+    "軽い道／重い道の判定（scripts/maintenance/pr-lane.js）の H の一覧。設計 docs/proposal/dev-process-redesign-2026-11-05.md 1.2（#2277）。",
+    "H1〜H9 のどれにも当たらなければ軽い道。1つでも当たれば重い道。このファイルと pr-lane.js 自身の変更は H5（重い道）。",
+    "パスはリポジトリのルートからの相対で、正規表現（JavaScript）。",
+    "paths: 追加・変更・削除のどれでも当たる。added: 追加のときだけ。changed: 変更・削除（既存のファイル）のときだけ。",
+    "exceptAdded: 追加のときは当てない。except: どの状態でも当てない。",
+    "reachFrom: このパスのコードから相対 import・new URL で辿れるファイルが差分にあれば当たる（scripts/lib/relativeImportGraph.js。base と head の両方の木で辿る）。",
+    "rowsOnlyAdded: このファイルは行の追加だけなら当てない（既存の行を消す・書き換えると当たる）。",
+    "terms: 差分で足した行に新しく入った語（足した行の数が消した行の数より多い語）で当たる。scan に当たり except に当たらないファイルだけを見る。riskRules の platforms が all の patterns も足す。"
+  ],
+  "rules": [
+    {
+      "id": "H1",
+      "title": "本番 DB の変更と、本番で動く scripts/**",
+      "paths": ["^docs/db-migration/", "^supabase/", "^scripts/"],
+      "exceptAdded": ["^scripts/maintenance/verify-[^/]+\\.(js|mjs|cjs|sh)$"],
+      "except": ["^scripts/maintenance/verify-registry\\.json$"]
+    },
+    {
+      "id": "H2",
+      "title": "SNS の自動送信に届く変更",
+      "paths": [
+        "^sns-video-studio/remotion/(?!node_modules/|out/)",
+        "^scripts/sns/",
+        "^api/cron/sns-"
+      ],
+      "reachFrom": [
+        "^sns-video-studio/remotion/src/",
+        "^sns-video-studio/remotion/scripts/",
+        "^scripts/sns/",
+        "^api/cron/sns-"
+      ]
+    },
+    {
+      "id": "H3",
+      "title": "表示する数字の定義（集計・算出・母数・期間・並び順の基準）",
+      "paths": ["^src/pure/", "^src/services/", "^scripts/analysis/"]
+    },
+    {
+      "id": "H4",
+      "title": "新しいページ・ルート・承認したモックの実装",
+      "added": ["^src/pages/", "^src/components/.*\\.jsx$"],
+      "paths": ["^src/main\\.jsx$", "^src/AppRouter\\.jsx$"]
+    },
+    {
+      "id": "H5",
+      "title": "守りの仕組みと鍵、試験の期待値の変更",
+      "paths": [
+        "^\\.claude/",
+        "^\\.github/",
+        "^AGENTS\\.md$",
+        "^vercel\\.json$",
+        "^middleware\\.js$",
+        "^vite\\.config\\.js$",
+        "^index\\.html$",
+        "^package(-lock)?\\.json$",
+        "^sns-video-studio/(?!.*node_modules/)(.+/)?package(-lock)?\\.json$",
+        "^eslint\\.config\\.js$",
+        "^playwright[^/]*\\.config\\.js$",
+        "^e2e/fixtures\\.js$",
+        "-allowlist\\.json$",
+        "^sns-video-studio/remotion/risk-rules\\.json$",
+        "^scripts/maintenance/pr-lane\\.js$",
+        "^scripts/maintenance/verify-pr-lane\\.js$",
+        "^config/pr-path-rules\\.json$",
+        "^scripts/lib/relativeImportGraph\\.js$"
+      ],
+      "changed": [
+        "^e2e/.*\\.spec\\.js$",
+        "^scripts/maintenance/verify-[^/]+\\.(js|mjs|cjs|sh)$"
+      ],
+      "rowsOnlyAdded": ["^scripts/maintenance/verify-registry\\.json$"]
+    },
+    {
+      "id": "H6",
+      "title": "api/** と、api/**・middleware.js から import でたどれるファイル",
+      "paths": ["^api/"],
+      "reachFrom": ["^api/", "^middleware\\.js$"]
+    },
+    {
+      "id": "H7",
+      "title": "共通部品・ルーティング・i18n の区分・全体の CSS・サイト全体の頭",
+      "paths": [
+        "^src/components/Header\\.(jsx|css)$",
+        "^src/components/LanguageSwitcher\\.(jsx|css)$",
+        "^src/config/languages\\.js$",
+        "^src/App\\.css$",
+        "^src/styles/design-tokens\\.css$",
+        "^src/main\\.jsx$",
+        "^src/AppRouter\\.jsx$",
+        "^public/robots\\.txt$",
+        "^public/sitemap",
+        "^public/llms"
+      ]
+    },
+    {
+      "id": "H8",
+      "title": "fs・URL で読まれるデータ",
+      "paths": ["^data/", "^config/[^/]+\\.json$", "^src/locales/ja/"],
+      "exceptAdded": ["^data/analysis/"]
+    },
+    {
+      "id": "H9",
+      "title": "事業・法務・ブランドの語が新しく入る",
+      "terms": {
+        "words": ["競艇", "的中率", "回収率"],
+        "riskRules": "sns-video-studio/remotion/risk-rules.json",
+        "scan": ["^src/", "^public/"],
+        "except": ["^public/blog/"]
+      }
+    }
+  ]
+}
