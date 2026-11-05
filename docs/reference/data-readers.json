@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1683,
+    "sourceFiles": 1685,
     "filesWithAccess": 270,
     "tableReaders": 988,
     "tableWriters": 189,
@@ -29530,7 +29530,7 @@
     {
       "job": "in_caution_health",
       "entry": "api/cron/in-caution-health.js",
-      "reachableFiles": 22,
+      "reachableFiles": 24,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29552,7 +29552,7 @@
     {
       "job": "in_caution_today_health",
       "entry": "api/cron/in-caution-today-health.js",
-      "reachableFiles": 22,
+      "reachableFiles": 24,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -30102,7 +30102,7 @@
     {
       "job": "races_init",
       "entry": "api/cron/races-init.js",
-      "reachableFiles": 41,
+      "reachableFiles": 43,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070"
