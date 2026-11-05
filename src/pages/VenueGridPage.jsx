@@ -215,9 +215,13 @@ function TodayVenueGridPage() {
                   />
                 ) : (
                   <>
-                    {/* ☆の選手の今日の出走（GS04-6）。予測の応答を自分で読む（venuesData は
-                        racerId を持たない）。☆0人・読み込み中・失敗のときは何も出さない */}
-                    <FavoriteRunsSection nowHHMM={nowHHMM} />
+                    {/* ☆の選手の今日の出走（GS04-6〜8）。出走の行は予測の応答を自分で読む
+                        （venuesData は racerId を持たない）。venuesData は代わりの表示
+                        （☆の会場・今日の SG・G1）だけに使う */}
+                    <FavoriteRunsSection
+                      venuesData={venuesData}
+                      nowHHMM={nowHHMM}
+                    />
                     {/* SG開催中の会場への導線（集客レーン。SG の日だけ出る） */}
                     <SgNowBanner venuesData={venuesData} />
                     <TodaysVolatilityHighlights

@@ -1,4 +1,13 @@
-import { test, expect, e2eTodayJST } from "./fixtures.js";
+import { test, expect } from "./fixtures.js";
+import {
+  RACER,
+  VENUE,
+  expectVenueCards,
+  isHistoryRequest,
+  raceIdOf,
+  routePredictions,
+  setFavorites,
+} from "./favorite-runs-fixture.js";
 
 /**
  * トップの区画「お気に入り選手の出走」（GS04-6、BOA-1272）の固定。
@@ -15,80 +24,15 @@ import { test, expect, e2eTodayJST } from "./fixtures.js";
 // 開発機の負荷が高いと、最初に開くトップの変換・読み込みが既定の60秒を超えることがある
 test.describe.configure({ timeout: 180_000 });
 
-const PREDICTIONS =
-  /\/api\/predictions\/|\/rest\/v1\/rpc\/get_predictions_by_date/;
-const FAVORITES_KEY = "boatai-user:favorites:v1";
-const VENUE = 12; // 住之江
-const RACER = 4320;
-
-const raceIdOf = (venue, race) =>
-  `${e2eTodayJST()}-${String(venue).padStart(2, "0")}-${String(race).padStart(2, "0")}`;
-
-/** 住之江 1R〜6R。2R〜6R の1号艇が☆の選手。startTime は既定で録画時刻（JST 10時台）より後 */
-function predictionsBody({ startTime = (n) => `23:0${n}` } = {}) {
-  const races = [1, 2, 3, 4, 5, 6].map((n) => ({
-    raceId: raceIdOf(VENUE, n),
-    venueCode: VENUE,
-    venue: "住之江",
-    raceNumber: n,
-    startTime: startTime(n),
-    raceGrade: "SG",
-    cancellationStatus: null,
-    entries: [1, 2, 3, 4, 5, 6].map((number) => ({
-      number,
-      racerId: number === 1 && n >= 2 ? RACER : 9000 + number,
-      name: number === 1 && n >= 2 ? "峰竜太" : `選手${number}`,
-      grade: "A1",
-    })),
-    predictions: {},
-  }));
-  // 別の会場の、☆の選手がいないレース（拾わないこと）
-  races.push({
-    raceId: raceIdOf(1, 1),
-    venueCode: 1,
-    venue: "桐生",
-    raceNumber: 1,
-    startTime: "22:00",
-    raceGrade: "ippan",
-    cancellationStatus: null,
-    entries: [{ number: 1, racerId: 9100, name: "別の選手", grade: "B1" }],
-    predictions: {},
-  });
-  return { date: e2eTodayJST(), races };
-}
-
-/** 予測の応答を差し替える。要求の数を返す（☆0件で読まないことを確かめる） */
-async function routePredictions(page, { abort = false, ...options } = {}) {
-  const calls = [];
-  await page.route(PREDICTIONS, async (route) => {
-    calls.push(route.request().url());
-    if (abort) return route.abort();
-    return route.fulfill({ json: predictionsBody(options) });
-  });
-  return calls;
-}
-
-async function setFavorites(page, racers) {
-  await page.addInitScript(
-    ([key, value]) => localStorage.setItem(key, value),
-    [FAVORITES_KEY, JSON.stringify({ racers, venues: [] })],
-  );
-}
-
-async function expectVenueCards(page) {
-  await expect(
-    page.locator(".venue-grid-card--open, .venue-grid-card--closed"),
-  ).toHaveCount(24, { timeout: 30000 });
-  await expect(page.locator(".data-fetch-error")).toHaveCount(0);
-}
-
-test("☆0件なら区画を出さず、予測も読まず、会場カード24件が出る（#2225 の再発防止）", async ({
+test("☆0件なら予測を読まず、区画は代わりの表示になり、会場カード24件が出る（#2225 の再発防止）", async ({
   page,
 }) => {
   const calls = await routePredictions(page);
   await page.goto("/");
   await expectVenueCards(page);
-  await expect(page.getByTestId("favorite-runs")).toHaveCount(0);
+  const section = page.getByTestId("favorite-runs");
+  await expect(section).toHaveAttribute("data-fav-state", "no_favorites");
+  await expect(section.locator(".favorite-runs__row")).toHaveCount(0);
   expect(calls).toEqual([]);
 });
 
@@ -123,9 +67,10 @@ test("375px: 締切の順に4件出し、あと1件を開く。入口・事象�
   await expect(rows).toHaveCount(4);
   await expect(rows.first()).toContainText("23:02");
   await expect(rows.first()).toContainText("住之江 2R");
-  await expect(rows.first()).toContainText("峰竜太");
+  await expect(rows.first()).toContainText("峰 竜太");
   await expect(rows.first().locator(".favorite-runs__grade")).toHaveText("SG");
-  await expect(rows.first().locator('[translate="no"]')).toHaveText("峰竜太");
+  await expect(rows.first().locator(".favorite-runs__name")).toHaveText("峰 竜太");
+  await expect(rows.first().locator(".favorite-runs__name")).toHaveAttribute("translate", "no");
 
   const more = section.getByRole("button", { name: "あと1件を見る" });
   await expect(more).toHaveAttribute("aria-expanded", "false");
@@ -256,6 +201,11 @@ test("/en/: 区画に日本語が無く（選手名を除く）、JST を添え�
   await expect(section.locator(".favorite-runs__row").first()).toContainText(
     "23:02 JST",
   );
+  // 成績の一言の主語は選手の姓（translate="no" の要素）
+  await section.scrollIntoViewIfNeeded();
+  const enStat = section.locator(".favorite-runs__row").first().locator(".favorite-runs__stat");
+  await expect(enStat).toContainText(/^峰 in Boat 1: Starts \d+/, { timeout: 30000 });
+  await expect(enStat.locator('[translate="no"]')).toHaveText("峰");
   expect(
     await section.evaluate((el) => {
       const copy = el.cloneNode(true);
@@ -270,4 +220,124 @@ test("/en/: 区画に日本語が無く（選手名を除く）、JST を添え�
     "href",
     `/en/race/${raceIdOf(VENUE, 2)}?tab=sonar`,
   );
+});
+
+test("各行に、選手ページの枠番別成績と同じ号艇の出走数・2連率と、今節の着順を出す（GS04-7）", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await setFavorites(page, [RACER]);
+  await routePredictions(page);
+  await page.goto("/");
+  const section = page.getByTestId("favorite-runs");
+  await section.scrollIntoViewIfNeeded();
+  // 締切前の1件目は 2R の1号艇
+  const first = section.locator(".favorite-runs__row").first();
+  await expect(first.locator(".favorite-runs__stat")).toContainText("峰の1号艇 出走数", {
+    timeout: 30000,
+  });
+  const text = await first.locator(".favorite-runs__stat").innerText();
+  const [, n, rate] = text.match(/出走数(\d+)(?:・2連率 ([\d.]+)%)?/);
+  // 今節: 見出しと、着順の札か「初日（成績なし）」
+  const meet = first.locator(".favorite-runs__meet");
+  await expect(meet).toContainText("今節");
+  expect(
+    (await meet.locator(".favorite-runs__finish").count()) > 0 ||
+      (await meet.innerText()).includes("初日（成績なし）"),
+  ).toBe(true);
+
+  // 選手ページの「枠番別成績（当サイト集計・2025年12月以降・全会場計）」の1号艇と同じ値
+  await page.goto(`/racer/${RACER}`);
+  const table = page
+    .locator(".racer-technique-profile")
+    .filter({ hasText: "枠番別成績（当サイト集計" })
+    .locator("tbody tr")
+    .first();
+  await expect(table.locator("td").nth(0)).toHaveText("1", { timeout: 30000 });
+  await expect(table.locator("td").nth(1)).toHaveText(n, { timeout: 30000 });
+  if (rate) await expect(table.locator("td").nth(4)).toHaveText(`${rate}%`);
+});
+
+test("出走履歴の取得に失敗したら、その行に「成績を読めなかった」を出し、区画とほかの欄は出たまま", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await setFavorites(page, [RACER]);
+  await routePredictions(page);
+  await page.route(/\/rest\/v1\/race_entries/, (route) =>
+    isHistoryRequest(route.request().url()) ? route.abort() : route.fallback(),
+  );
+  await page.goto("/");
+  const section = page.getByTestId("favorite-runs");
+  await section.scrollIntoViewIfNeeded();
+  const first = section.locator(".favorite-runs__row").first();
+  await expect(first.locator(".favorite-runs__stat")).toHaveText("成績を読めなかった", {
+    timeout: 30000,
+  });
+  await expect(section.locator(".favorite-runs__row:visible")).toHaveCount(4);
+  await expect(first.getByRole("link", { name: "選手ページ" })).toBeVisible();
+  await expectVenueCards(page);
+});
+
+test("出走履歴は区画が画面に入ってから、行にいる選手の数だけ読む", async ({ page }) => {
+  // 縦を短くして、区画が最初は画面の外にあるようにする
+  await page.setViewportSize({ width: 375, height: 200 });
+  await setFavorites(page, [RACER]);
+  await routePredictions(page);
+  const history = [];
+  page.on("request", (request) => {
+    if (isHistoryRequest(request.url())) history.push(request.url());
+  });
+  await page.goto("/");
+  const section = page.getByTestId("favorite-runs");
+  await expect(section).toBeAttached({ timeout: 30000 });
+  const inView = await section.evaluate((el) => el.getBoundingClientRect().top < window.innerHeight);
+  test.skip(inView, "区画が最初から画面に入っている（ヘッダーが短い）");
+  await page.waitForTimeout(1500);
+  expect(history).toEqual([]);
+  await section.scrollIntoViewIfNeeded();
+  await expect.poll(() => history.length, { timeout: 30000 }).toBe(1);
+  await page.waitForTimeout(1000);
+  expect(history.length).toBeLessThanOrEqual(1);
+});
+
+test("今節の走が無くても、節の2日目以降なら「初日」と言い切らない", async ({ page }) => {
+  await setFavorites(page, [RACER]);
+  await routePredictions(page, { seriesDay: 3 });
+  await page.goto("/");
+  const section = page.getByTestId("favorite-runs");
+  await section.scrollIntoViewIfNeeded();
+  const first = section.locator(".favorite-runs__row").first();
+  await expect(first.locator(".favorite-runs__stat")).toContainText("出走数", {
+    timeout: 30000,
+  });
+  await expect(first.locator(".favorite-runs__meet")).not.toContainText("初日");
+});
+
+test("768px: 全件を出し、1件を2〜3段にまとめる（375px の縦積みのままにしない）", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await setFavorites(page, [RACER]);
+  await routePredictions(page);
+  await page.goto("/");
+  const section = page.getByTestId("favorite-runs");
+  const rows = section.locator(".favorite-runs__row:visible");
+  await expect(rows).toHaveCount(5);
+  const first = rows.first();
+  // 締切・場とR・選手が同じ段に並ぶ（縦の範囲が重なる）
+  const overlap = await first.evaluate((el) => {
+    const boxes = [".favorite-runs__time", ".favorite-runs__race", ".favorite-runs__who"].map(
+      (s) => el.querySelector(s).getBoundingClientRect(),
+    );
+    return Math.max(...boxes.map((b) => b.top)) < Math.min(...boxes.map((b) => b.bottom));
+  });
+  expect(overlap).toBe(true);
+  const height = await first.evaluate((el) => el.getBoundingClientRect().height);
+  expect(height).toBeLessThan(170);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
 });

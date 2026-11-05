@@ -74,7 +74,7 @@
   padding: 0 0.3rem;
   border-radius: var(--radius-sm);
   font-size: var(--font-size-2xs);
-  color: #fff;
+  color: var(--color-white);
   vertical-align: 1px;
 }
 
@@ -93,6 +93,160 @@
 
 .favorite-runs__class {
   font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* 今節の着順と成績の一言。読み込み中も1行分の高さを取る（CLS を出さない） */
+.favorite-runs__meet {
+  grid-area: meet;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  min-height: 1.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.favorite-runs__seq {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.favorite-runs__finish {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 0.15em;
+  text-align: center;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.favorite-runs__finish--top {
+  border-color: var(--brand-accent-primary);
+}
+
+/* 行のレースの着（締切後の行で、どの札がこのレースか分かるように） */
+.favorite-runs__finish--this {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+.favorite-runs__stat {
+  grid-area: stat;
+  min-height: 1.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.favorite-runs__stat--failed {
+  color: var(--text-secondary);
+}
+
+/* ☆の会場（出走ありのとき、区画の下） */
+.favorite-runs__venues {
+  margin-top: 0.625rem;
+  padding-top: 0.5rem;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.favorite-runs__venues-title {
+  margin: 0 0 0.25rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.favorite-runs__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.favorite-runs__chip {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  min-height: 44px;
+  padding: 0 0.625rem;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+}
+
+.favorite-runs__chip small {
+  color: var(--text-secondary);
+}
+
+/* 代わりの表示（☆0件・今日の出走なし） */
+.favorite-runs__message {
+  margin: 0.375rem 0 0.5rem;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.favorite-runs__alt-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.favorite-runs__alt {
+  display: grid;
+  grid-template-columns: 4.5em minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 52px;
+  padding: 0.25rem 0;
+  border-top: var(--border-width-1) solid var(--border-hairline);
+}
+
+.favorite-runs__alt-label {
+  justify-self: start;
+  padding: 0 0.3rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-white);
+}
+
+.favorite-runs__alt-label--fav {
+  color: var(--text-primary);
+  border: var(--border-width-1) solid var(--brand-accent-primary);
+}
+
+.favorite-runs__alt-venue {
+  margin-right: 0.375rem;
+  font-weight: var(--font-weight-bold);
+}
+
+.favorite-runs__alt-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.favorite-runs__alt-link {
+  flex: 0 0 auto;
+}
+
+.favorite-runs__venue-count {
+  text-decoration: none;
+}
+
+.favorite-runs__howto {
+  margin: 0.625rem 0 0;
+  padding: 0.5rem 0.625rem;
+  border: var(--border-width-1) dashed var(--border-hairline);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
 
@@ -152,6 +306,22 @@
 @media (min-width: 768px) {
   .favorite-runs__toggle--more {
     display: none;
+  }
+}
+
+/* 768〜1023px は1件2行（全件を出すので、375px の縦積みのままだと区画が長くなりすぎる。ファン評価 2周目） */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .favorite-runs__row {
+    grid-template-columns: 6.5rem 8rem minmax(0, 1fr);
+    grid-template-areas:
+      "time race who"
+      "meet stat stat"
+      "go go go";
+    align-items: center;
+  }
+
+  .favorite-runs__link {
+    flex: 0 0 auto;
   }
 }
 
