@@ -45,6 +45,11 @@
       "file": "e2e/acceptance/sns-existing-fixes.spec.js",
       "code": "if (url.hostname === '127.0.0.1') return route.continue();",
       "reason": "直前でblog-pr-previewをfulfillでモックし、127.0.0.1以外をabortしている。continueに残るのはテスト用Viteのモジュール配信だけで、外部・本番には出ない"
+    },
+    {
+      "file": "e2e/route-after-test-end.spec.js",
+      "code": "await route.fetch();",
+      "reason": "テストの終わりで途中の route.fetch が投げる失敗（Test ended）を fixtures.js の guardRoutes が捨てることの再現。宛先はテスト内で立てた応答を返さない 127.0.0.1 のサーバーで、録画・本番を通らない。fetchRecorded は strict 再生で録画に無い要求を route.fetch の前に投げるので、CI で落ちた最後の一歩の route.fetch を直接呼ぶ"
     }
   ]
 }
