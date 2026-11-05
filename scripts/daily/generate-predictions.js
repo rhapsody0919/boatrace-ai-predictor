@@ -258,17 +258,6 @@ function getRecommendedModel(level) {
   return "standard"; // スタンダード
 }
 
-// スタンダード版AIスコア（従来のロジック）
-function calculateStandardScore(racer, index) {
-  return Math.floor(
-    racer.globalWinRate * 100 +
-      racer.local2Rate * 50 +
-      racer.motor2Rate * 30 +
-      racer.boat2Rate * 20 -
-      index * 5,
-  );
-}
-
 // スタンダードv2版AIスコア（統計的に最適化）
 // 統計分析（2,172レース）に基づく係数:
 // - 枠番の影響: 22倍差（最重要）
@@ -454,11 +443,6 @@ export function processRacersWithScoreFn(
   return players.sort((a, b) => b.aiScore - a.aiScore);
 }
 
-// 後方互換性のため（従来のprocessRacers）
-function processRacers(racers) {
-  return processRacersWithScoreFn(racers, calculateStandardScoreV2);
-}
-
 // 本命選手の選定理由を生成
 function generateTopPickReasoning(topPickPlayer, players, modelType) {
   const reasons = [];
@@ -536,31 +520,6 @@ function generateTopPickReasoning(topPickPlayer, players, modelType) {
   }
 
   return reasons;
-}
-
-// 統計的な注目ポイントを生成（参考情報）
-function generateStatisticalInsights(players) {
-  const insights = [];
-
-  // モーター2率が40%以上の選手
-  const goodMotors = players.filter((p) => parseFloat(p.motor2Rate) > 40);
-  if (goodMotors.length > 0) {
-    const motorList = goodMotors
-      .map((p) => `${p.number}号艇（${parseFloat(p.motor2Rate).toFixed(1)}%）`)
-      .join("、");
-    insights.push(`好モーター: ${motorList}`);
-  }
-
-  // 全国勝率が7.0以上の選手
-  const topRacers = players.filter((p) => parseFloat(p.winRate) >= 7.0);
-  if (topRacers.length > 0) {
-    const racerList = topRacers
-      .map((p) => `${p.number}号艇（勝率${p.winRate}）`)
-      .join("、");
-    insights.push(`実力者: ${racerList}`);
-  }
-
-  return insights;
 }
 
 // レースIDを生成
