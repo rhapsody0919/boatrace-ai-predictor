@@ -143,3 +143,7 @@
 - DO・ALTER TABLE を含むマイグレーションは db-apply の判定で apply-gated になり、当たるのはオーナーが承認を押した時刻。SQL のコメントの「当てる時刻」を守る仕組みは無いので、承認を押す窓を PR 本文にも書く（2026-11-04、system-architect、BOA-1249・201、scripts/lib/dbApplySql.js）。
 - stop_sns_auto_item は bundle_import_id で下書きを探すので、draft_id でひもづく item（setsu・upset・research 等）には効かない。手で止めるときは item の stopped と下書きの publish_blocked=true を1つのトランザクションで行い、job が sending・reconcile・posted の item は除く（2026-11-04、system-architect、BOA-1249・201）。
 - sns_auto_send_items に ACCESS EXCLUSIVE を取るマイグレーションの窓は 23:00〜04:59 JST（sns-send は JST 7:00〜22:58、sns-auto-plan は JST 5:00〜22:55 の通し。vercel.json、2026-11-04、BOA-1249）。
+- 本番の `/ai-snapshots/` に無いファイルを取ると、vercel.json の catch-all の rewrite で 200 の SPA の外枠（約5KB）が返る。「200 なら在る」と判定しない（2026-11-05、system-architect、`/ai-snapshots/racer/0001.html` の実測）。
+- 選手ページのスナップショットは gzip で約27KB/人（元は約250KB）。参照する `/assets/` は main の js・css の2つだけ（RacerProfile は AppRouter.jsx で静的に import され別の chunk が無い）（2026-11-05、system-architect、3256.html の実測）。
+- 本番のビルドが「今の本番の alias」を読んで判定すると、同時に走るビルドはどれも同じ古い版を読む。On-Demand Concurrent Builds のままでは閾値を越えた瞬間に全部が重い道へ倒れる（2026-11-05、system-architect、ADR 0032 追記）。
+- update-sitemap.yml は sitemap・llms.txt に差分があるときだけコミットする。「毎日1回は本番のビルドが走る」の根拠にしない（2026-11-05、.github/workflows/update-sitemap.yml）。

@@ -8,6 +8,8 @@ import {
   summarizeSnapshotRun,
   addSnapshotGroup,
   failedSnapshotGroups,
+  racerSnapshotProblems,
+  RACER_SNAPSHOT_STALE_HOURS,
 } from "../lib/snapshotStatus.js";
 import { evaluateSnapshotStatus } from "../lib/botHtmlParity.js";
 
@@ -189,6 +191,40 @@ const at = "2026-10-12T00:00:00.000Z";
     ev.level === "ok" && ev.message.startsWith("ブログ 121/121 件（"),
     ev.message,
   );
+}
+
+{
+  // Preview の既定ではブログ等を作らない（planBlogSnapshots、Vercel の費用 2026-11-05）。失敗とは書かない
+  const { status, lines } = summarizeSnapshotRun({
+    total: 155,
+    failed: [],
+    generatedAt: at,
+    skipped: "Preview の既定では作らない",
+  });
+  check(
+    "作らなかった: ok のまま blog.skipped に理由を残し、成功件数は出さない",
+    status.ok === true && status.blog.skipped === "Preview の既定では作らない" && status.blog.succeeded === null,
+    JSON.stringify(status),
+  );
+  check("作らなかった: まとめの行に理由", lines.some((l) => l.includes("作らない")));
+  const ev = evaluateSnapshotStatus(200, JSON.stringify(status));
+  check("作らなかった: 照合の判定は note（fail にしない）", ev.level === "note", ev.message);
+}
+{
+  // 選手ページの古さ（ADR 0032 追記、線は1日）
+  const now = Date.parse("2026-11-05T12:00:00Z");
+  const ago = (h) => new Date(now - h * 3600000).toISOString();
+  const racer = (over) => ({ racer: { total: 317, succeeded: 317, failedIds: [], skippedIds: [], fatalError: null, mode: "copy", renderedAt: ago(5), copied: 317, rendered: 0, ...over } });
+  const fresh = racerSnapshotProblems(racer({}), now);
+  check("選手: 5時間前なら問題なし・まとめに写し/描きの数", fresh.problems.length === 0 && fresh.summary.includes("写し 317"), JSON.stringify(fresh));
+  check("選手: 線は24時間", RACER_SNAPSHOT_STALE_HOURS === 24);
+  const stale = racerSnapshotProblems(racer({ renderedAt: ago(24.5) }), now);
+  check("選手: 24時間を越えたら落とす", stale.problems.length === 1 && stale.problems[0].includes("24.5"), JSON.stringify(stale));
+  check("選手: renderedAt が無ければ落とす", racerSnapshotProblems(racer({ renderedAt: undefined }), now).problems.length === 1);
+  check("選手: 途中で止まったら落とす", racerSnapshotProblems(racer({ fatalError: "boom" }), now).problems.some((p) => p.includes("boom")));
+  check("選手: 写す道の前の版（mode なし）は古さを見ない", racerSnapshotProblems(racer({ mode: undefined, renderedAt: undefined }), now).problems.length === 0);
+  check("選手: racer の無い版・total 0（Preview）は見ない", racerSnapshotProblems({}, now).summary === null && racerSnapshotProblems({ racer: { total: 0 } }, now).summary === null);
+  check("選手: null でも落ちない", racerSnapshotProblems(null, now).problems.length === 0);
 }
 
 if (failures > 0) {

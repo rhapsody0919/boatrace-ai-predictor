@@ -313,6 +313,13 @@ export function evaluateSnapshotStatus(httpStatus, body) {
   if (typeof status?.ok !== "boolean" || !blog) {
     return { level: "fail", message: "status.json の形が違う" };
   }
+  // Preview の既定ではブログ等を作らない（planBlogSnapshots）。本番では起きない
+  if (blog.skipped) {
+    return {
+      level: "note",
+      message: `ブログ・翻訳・一覧は作っていない（${blog.skipped}）`,
+    };
+  }
   // 翻訳記事・一覧（BOA-848 第2段）の件数。無ければ（足す前の版）出さない
   const i18n =
     status.blogI18n && !("fatalError" in status.blogI18n)

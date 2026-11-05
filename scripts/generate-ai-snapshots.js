@@ -15,7 +15,7 @@
  *   一覧の NEW の印は描いた時点の日付で決まるので外して保存する（ビルドから日が経つと人の画面と食い違うため）
  */
 import { createServer } from "node:http";
-import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, statSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -27,7 +27,16 @@ import {
   createPageOpener,
   renderWithFreshPage,
 } from "./lib/renderWithFreshPage.js";
-import { canSaveRacerSnapshot, planRacerSnapshots } from "./lib/racerSnapshotPlan.js";
+import {
+  adaptCopiedRacerHtml,
+  canSaveRacerSnapshot,
+  decideRacerSnapshotSource,
+  mainAssetsOf,
+  olderIso,
+  planRacerSnapshots,
+  RACER_SNAPSHOT_TEMPLATE_VERSION,
+} from "./lib/racerSnapshotPlan.js";
+import { planBlogSnapshots } from "./lib/previewSnapshotPlan.js";
 import { launchChromium } from "./lib/launchChromium.js";
 import { exportBlogChartPngs, planBlogChartPngs } from "./lib/blogChartPng.js";
 import {
@@ -50,6 +59,11 @@ const SNAPSHOT_DIR = path.join(DIST_DIR, "ai-snapshots");
 const CONCURRENCY = 4;
 // 選手ページの並列数。理由は PR の説明と ADR 0032 の追記（BOA-848）
 const RACER_CONCURRENCY = 4;
+// 選手ページを写す元（今の本番、ADR 0032 追記）と、写すときの並列数（静的ファイルの取得だけで DB は読まない）。
+// RACER_SNAPSHOT_SOURCE_ORIGIN は手元で写す道を確かめる用
+const RACER_SOURCE_ORIGIN =
+  process.env.RACER_SNAPSHOT_SOURCE_ORIGIN || "https://www.boat-ai.jp";
+const RACER_COPY_CONCURRENCY = 16;
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -282,28 +296,112 @@ async function generateBlogListSnapshots(openPage, baseUrl) {
   });
 }
 
+/** 決まった本数で並列に回す（順は問わない） */
+async function forEachPooled(items, concurrency, fn) {
+  let index = 0;
+  const worker = async () => {
+    while (index < items.length) {
+      const item = items[index];
+      index += 1;
+      await fn(item);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, worker),
+  );
+}
+
+/** 写す元（今の本番）から文字列を取る。HTTP の状態と本文を返す（失敗は例外） */
+async function fetchFromSource(urlPath) {
+  const res = await fetch(`${RACER_SOURCE_ORIGIN}${urlPath}`, {
+    signal: AbortSignal.timeout(15000),
+  });
+  return { status: res.status, body: await res.text() };
+}
+
+/** 今の本番の status.json。取れない・JSON でないときは null（理由はログに出す） */
+async function fetchSourceStatus() {
+  try {
+    const { status, body } = await fetchFromSource("/ai-snapshots/status.json");
+    if (status !== 200) {
+      console.log(`  今の本番の status.json が HTTP ${status}`);
+      return null;
+    }
+    return JSON.parse(body);
+  } catch (err) {
+    console.log(`  今の本番の status.json を読めない: ${err.message}`);
+    return null;
+  }
+}
+
+/** このビルドの dist に、そのパスのファイルが在るか */
+function distHas(urlPath) {
+  try {
+    return statSync(path.join(DIST_DIR, decodeURIComponent(urlPath))).isFile();
+  } catch {
+    return false;
+  }
+}
+
 /**
- * 選手ページ（/racer/{番号}）のスナップショット（BOA-848）。
+ * 今の本番の /ai-snapshots/racer/{id}.html を写す（Vercel の費用、2026-11-05、ADR 0032 追記）。
+ * 写せなかった選手は返り値の failures に入れ、呼び出し側が描く。
+ */
+async function copyRacerSnapshots(ids, outDir) {
+  const mainAssets = mainAssetsOf(
+    readFileSync(path.join(DIST_DIR, "index.html"), "utf-8"),
+  );
+  if (!mainAssets) {
+    return {
+      copied: [],
+      failures: ids.map((id) => ({
+        id,
+        reason: "dist/index.html に main の js・css が無い",
+      })),
+    };
+  }
+  const copied = [];
+  const failures = [];
+  await forEachPooled(ids, RACER_COPY_CONCURRENCY, async (id) => {
+    let res;
+    try {
+      res = await fetchFromSource(`/ai-snapshots/racer/${id}.html`);
+    } catch (err) {
+      failures.push({ id, reason: `取得の失敗: ${err.name}` });
+      return;
+    }
+    if (res.status !== 200) {
+      failures.push({ id, reason: `HTTP ${res.status}` });
+      return;
+    }
+    const adapted = adaptCopiedRacerHtml(res.body, { mainAssets, distHas });
+    if (!adapted.ok) {
+      failures.push({ id, reason: adapted.reason });
+      return;
+    }
+    writeFileSync(path.join(outDir, `${id}.html`), adapted.html, "utf-8");
+    copied.push(id);
+  });
+  return { copied, failures };
+}
+
+/** 理由ごとの件数（status.json に残す。理由の文の後ろの番号などは束ねない） */
+function countReasons(failures) {
+  const counts = {};
+  for (const { reason } of failures) counts[reason] = (counts[reason] ?? 0) + 1;
+  return counts;
+}
+
+/**
+ * 選手ページを Playwright で描いて保存する（BOA-848）。
  *
  * 人の画面を描いた HTML をそのまま保存するので、人の画面に無い文言は入らない（ADR 0089 決定3）。
  * 保存するのは、プロフィール・成績・モーター・履歴が揃った目印（RacerProfile.jsx の data-snapshot-ready）が付いてから。
  * 失敗したページは保存しない（vercel.json の catch-all で SPA の外枠に戻る。ブログと同じ）。
  * 描いたページが noindex なら保存しない（sitemap が書かれた後に条件から外れた選手）。
  */
-async function generateRacerSnapshots(openPage, baseUrl) {
-  const { ids, reason } = planRacerSnapshots({
-    vercelEnv: process.env.VERCEL_ENV,
-    limit: process.env.RACER_SNAPSHOT_LIMIT,
-    sitemapXml: readFileSync(path.join(DIST_DIR, "sitemap.xml"), "utf-8"),
-  });
-  console.log(`選手ページのスナップショット: ${reason}`);
-  if (ids.length === 0) return { total: 0, failed: [], skipped: [] };
-
-  const outDir = path.join(SNAPSHOT_DIR, "racer");
-  mkdirSync(outDir, { recursive: true });
-
+async function renderRacerSnapshots(openPage, baseUrl, ids, outDir) {
   const skipped = [];
-  const startedAt = Date.now();
   const { succeeded, failed: failedItems } = await renderWithFreshPage(ids, {
     concurrency: RACER_CONCURRENCY,
     openPage,
@@ -339,20 +437,99 @@ async function generateRacerSnapshots(openPage, baseUrl) {
     id: item,
     error: error.split("\n")[0],
   }));
+  return { saved: succeeded.length - skipped.length, failed, skipped };
+}
+
+/**
+ * 選手ページ（/racer/{番号}）のスナップショット（BOA-848）。
+ *
+ * 本番のビルドだけで作る（planRacerSnapshots）。全員を描くのは1日1回で、ほかの本番ビルドでは今の本番から写し、
+ * 写せなかった選手だけを描く（decideRacerSnapshotSource、Vercel の費用 2026-11-05）。
+ */
+async function generateRacerSnapshots(openPage, baseUrl) {
+  const { ids, reason } = planRacerSnapshots({
+    vercelEnv: process.env.VERCEL_ENV,
+    limit: process.env.RACER_SNAPSHOT_LIMIT,
+    sitemapXml: readFileSync(path.join(DIST_DIR, "sitemap.xml"), "utf-8"),
+  });
+  console.log(`選手ページのスナップショット: ${reason}`);
+  if (ids.length === 0) return { total: 0, failed: [], skipped: [] };
+
+  const outDir = path.join(SNAPSHOT_DIR, "racer");
+  mkdirSync(outDir, { recursive: true });
+  const startedAt = Date.now();
+
+  // 写すのは本番のビルドだけ（Preview の RACER_SNAPSHOT_LIMIT は描いて確かめる用）
+  const decision =
+    process.env.VERCEL_ENV === "production"
+      ? decideRacerSnapshotSource({
+          sourceStatus: await fetchSourceStatus(),
+          nowMs: startedAt,
+          forceRender: process.env.RACER_SNAPSHOT_FORCE_RENDER === "1",
+        })
+      : { mode: "render", reason: "本番以外のビルドは写さない" };
+  console.log(
+    `  ${decision.mode === "copy" ? "写す" : "全員を描く"}: ${decision.reason}`,
+  );
+
+  let copied = [];
+  let copyFailures = [];
+  let renderedAt = new Date(startedAt).toISOString();
+  if (decision.mode === "copy") {
+    ({ copied, failures: copyFailures } = await copyRacerSnapshots(
+      ids,
+      outDir,
+    ));
+    // 写している間に本番の alias が別の版へ切り替わることがある。描いた時刻は古い方を残す
+    const after = await fetchSourceStatus();
+    renderedAt =
+      copied.length > 0
+        ? olderIso(decision.renderedAt, after?.racer?.renderedAt)
+        : renderedAt;
+    console.log(
+      `  写した: ${copied.length}/${ids.length}人（${((Date.now() - startedAt) / 1000).toFixed(1)}秒）`,
+    );
+    if (copyFailures.length > 0) {
+      console.log(
+        `  写せなかったので描く: ${copyFailures.map((f) => `${f.id}（${f.reason}）`).join(", ")}`,
+      );
+    }
+  }
+
+  const toRender =
+    decision.mode === "copy" ? copyFailures.map((f) => f.id) : ids;
+  const rendered =
+    toRender.length > 0
+      ? await renderRacerSnapshots(openPage, baseUrl, toRender, outDir)
+      : { saved: 0, failed: [], skipped: [] };
+  const { failed, skipped } = rendered;
   const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
 
   console.log(
-    `✓ 選手ページスナップショット: ${succeeded.length - skipped.length}/${ids.length}件（${seconds}秒、並列${RACER_CONCURRENCY}）`,
+    `✓ 選手ページスナップショット: ${copied.length + rendered.saved}/${ids.length}件（写した ${copied.length}・描いた ${rendered.saved}、${seconds}秒、描く並列${RACER_CONCURRENCY}）`,
   );
   if (skipped.length > 0) {
-    console.log(`  noindex・未完了・取得失敗のため保存しなかった選手: ${skipped.join(", ")}`);
+    console.log(
+      `  noindex・未完了・取得失敗のため保存しなかった選手: ${skipped.join(", ")}`,
+    );
   }
   if (failed.length > 0) {
     console.error(
       `⚠️ 生成に失敗した選手（SPA の外枠に戻る）: ${failed.map((f) => `${f.id} (${f.error})`).join(", ")}`,
     );
   }
-  return { total: ids.length, failed, skipped };
+  return {
+    total: ids.length,
+    failed,
+    skipped,
+    mode: decision.mode,
+    decisionReason: decision.reason,
+    renderedAt,
+    copied: copied.length,
+    rendered: rendered.saved,
+    copyFailures: countReasons(copyFailures),
+    seconds: Number(seconds),
+  };
 }
 
 function generateWinningTechniqueSnapshot() {
@@ -473,11 +650,45 @@ ${sections}
   console.log("✓ /today スナップショット生成完了");
 }
 
+/** ブログ記事（ja）・翻訳記事・ブログ一覧。翻訳・一覧が止まっても ja の記事の結果には影響させない */
+async function generateBlogFamily(openPage, baseUrl) {
+  const failed = await generateBlogSnapshots(openPage, baseUrl);
+  // 翻訳記事・一覧（BOA-848 第2段）
+  let translatedResult;
+  try {
+    translatedResult = await generateTranslatedBlogSnapshots(openPage, baseUrl);
+  } catch (err) {
+    translatedResult = { fatalError: err.message };
+    console.error(
+      "⚠️ 翻訳記事のスナップショット生成が途中で止まった:",
+      err.message,
+    );
+  }
+  let listResult;
+  try {
+    listResult = await generateBlogListSnapshots(openPage, baseUrl);
+  } catch (err) {
+    listResult = { total: null, failed: [], fatalError: err.message };
+    console.error(
+      "⚠️ ブログ一覧のスナップショット生成が途中で止まった:",
+      err.message,
+    );
+  }
+  return { failed, translatedResult, listResult };
+}
+
 async function main() {
   console.log("AIクローラー向けスナップショット生成を開始します...");
 
   generateWinningTechniqueSnapshot();
   generateTodaySnapshot();
+
+  const blogPlan = planBlogSnapshots({
+    vercelEnv: process.env.VERCEL_ENV,
+    commitMessage: process.env.VERCEL_GIT_COMMIT_MESSAGE,
+    optIn: process.env.BOT_SNAPSHOTS_ON_PREVIEW,
+  });
+  console.log(`ブログ・翻訳・一覧のスナップショット: ${blogPlan.reason}`);
 
   // ブログ記事スナップショット生成が万一失敗しても、ビルド全体は成功させ
   // /winning-technique・/today分だけは配信を継続する（2026-09-11〜09-12インシデントの
@@ -497,28 +708,12 @@ async function main() {
     // ブラウザが落ちたら起動し直す（Vercel の Chromium は単一プロセスで、ページが落ちるとブラウザごと落ちる）
     const opener = createPageOpener(launchChromium);
     try {
-      failed = await generateBlogSnapshots(opener.openPage, baseUrl);
-      // 翻訳記事・一覧（BOA-848 第2段）。止まっても ja の記事・選手ページの結果には影響させない
-      try {
-        translatedResult = await generateTranslatedBlogSnapshots(
+      // ブログ・翻訳記事・ブログ一覧。Preview では印のあるコミットだけで作る（planBlogSnapshots、Vercel の費用 2026-11-05）
+      if (blogPlan.build) {
+        ({ failed, translatedResult, listResult } = await generateBlogFamily(
           opener.openPage,
           baseUrl,
-        );
-      } catch (err) {
-        translatedResult = { fatalError: err.message };
-        console.error(
-          "⚠️ 翻訳記事のスナップショット生成が途中で止まった:",
-          err.message,
-        );
-      }
-      try {
-        listResult = await generateBlogListSnapshots(opener.openPage, baseUrl);
-      } catch (err) {
-        listResult = { total: null, failed: [], fatalError: err.message };
-        console.error(
-          "⚠️ ブログ一覧のスナップショット生成が途中で止まった:",
-          err.message,
-        );
+        ));
       }
       // ブログの図の PNG（ADR 0099）。止まっても記事・選手ページの結果には影響させない
       try {
@@ -583,6 +778,7 @@ async function main() {
     fatalError,
     relaunches,
     generatedAt: new Date().toISOString(),
+    skipped: blogPlan.build ? null : blogPlan.reason,
   });
   // 選手ページ（BOA-848）の結果も残す。ok はブログの結果のまま（選手の失敗は記録だけ。判断は毎日の照合の側で見て決める）
   if (racerResult) {
@@ -598,6 +794,19 @@ async function main() {
       skippedIds: racerResult.skipped,
       fatalError: racerResult.fatalError ?? null,
     };
+    // 写したか描いたか（ADR 0032 追記、Vercel の費用 2026-11-05）。次の本番ビルドが写せるかの判定と、毎日の照合の古さの判定が読む
+    if (racerResult.mode) {
+      Object.assign(status.racer, {
+        mode: racerResult.mode,
+        decisionReason: racerResult.decisionReason,
+        renderedAt: racerResult.renderedAt,
+        templateVersion: RACER_SNAPSHOT_TEMPLATE_VERSION,
+        copied: racerResult.copied,
+        rendered: racerResult.rendered,
+        copyFailures: racerResult.copyFailures,
+        seconds: racerResult.seconds,
+      });
+    }
   }
   // 翻訳記事・一覧（BOA-848 第2段）。失敗があれば ok を false にする（毎日の照合が Slack に流す）
   if (translatedResult) {

@@ -44,13 +44,35 @@ boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコ�
 
 - **出すページ**: `/racer/{4桁の登録番号}`。言語の接頭辞は付けない（選手ページは ja 専用）。出すのは sitemap に載る選手だけ（`src/utils/racerIndexPolicy.js` の `isRacerIndexable`。ビルドは `public/sitemap.xml` の選手 URL を読む。sitemap は毎日 `update-sitemap.yml` が書き直す）。描いたページが noindex なら保存しない
 - **作り方**: ブログと同じ。Playwright で dist の `/racer/{番号}` を描き、プロフィールと成績が揃った目印（`RacerProfile.jsx` の `data-snapshot-ready`）が付いてから HTML をそのまま保存する。人の画面を描いたものなので、人の画面に無い文言は入らない（ADR 0089 決定3）
-- **ビルドが本番 DB を読む**: 描くページが、公開の anon キーで本番の Supabase を読む（1人あたり十数リクエスト）。書き込みは無い
-- **本番のビルドだけで作る**（`VERCEL_ENV=production`）。Preview・手元のビルドでは作らない（Preview のたびに本番 DB へ数千のリクエストを送らないため）。確かめるときだけ `RACER_SNAPSHOT_LIMIT`（正の整数）でその人数を作る。本番では `RACER_SNAPSHOT_LIMIT` を無視する（`scripts/lib/racerSnapshotPlan.js`）
+- **ビルドが本番 DB を読む**: 描くページが、公開の anon キーで本番の Supabase を読む（1人あたり十数リクエスト）。書き込みは無い。全員を描くのは1日に1回で、ほかの本番ビルドは写せなかった選手だけを描く（下の「追記: 描くのは1日1回、ほかは今の本番から写す」）
+- **本番のビルドだけで作る**（`VERCEL_ENV=production`。全員を描くのは1日1回、ほかは今の本番から写す。下の追記）。Preview・手元のビルドでは作らない（Preview のたびに本番 DB へ数千のリクエストを送らないため）。確かめるときだけ `RACER_SNAPSHOT_LIMIT`（正の整数）でその人数を作る。本番では `RACER_SNAPSHOT_LIMIT` を無視する（`scripts/lib/racerSnapshotPlan.js`）
 - **失敗したら SPA**: 描けなかった・成績が取れなかったページは保存しない。ファイルが無いので vercel.json の catch-all で SPA の外枠が返る（ブログと同じ）。ビルドは止めない
 - **並列数**: 4（ブログと同じ）。Vercel のビルドの Chromium は単一プロセスなので、並列を増やしても使うコアは増えず、1ページが落ちたときに巻き添えになるページが増える。待ち時間の大半は Supabase の応答なので、4 で足りる
-- **ビルド時間**: Preview（4コア 8GB、`RACER_SNAPSHOT_LIMIT=20`）で 20人 22.8秒（1人 約1.1秒）。全員（2026-10-12 時点の sitemap で325人）では約6分の見込みで、ビルド全体は今の約2分から約8分になる。Vercel のビルドの上限（45分）までは余裕がある
-- **中身の古さ**: 次のデプロイまで変わらない。sitemap の自動コミットで毎日1回は本番がデプロイされるので、最大でおよそ1日前の内容（「今節のモーター状況」も同じ）
+- **ビルド時間**: Preview（4コア 8GB、`RACER_SNAPSHOT_LIMIT=20`）で 20人 22.8秒（1人 約1.1秒）。全員（2026-10-12 時点の sitemap で325人）では約6分の見込みだった。本番の実測は 317人 755.5秒（2026-11-05 の調査、本番ビルドの CPU の約74%）で、見込みの2倍だった
+- **中身の古さ**: 描いた時刻から最大で「20時間＋次の本番ビルドまでの間隔」（下の追記）。「今節のモーター状況」も同じ。sitemap の自動コミット（`update-sitemap.yml`）は sitemap・llms.txt に差分があるときだけなので、毎日1回の本番ビルドの保証にはならない。本番ビルドは普段は日に数十本ある
 - **戻し方**: `resolveSnapshotPath` と `middleware.js` の matcher から `/racer` を外す（ファイルが残っても配られない）。または PR を revert
+
+## 追記: 描くのは1日1回、ほかは今の本番から写す（Vercel の費用、2026-11-05）
+
+Vercel の従量が上限 $150/月を超えた（調査 `.git/orchestrator/vercel-cost-2026-11-05.md`）。本番ビルド1本の CPU の約74%が選手ページを描く時間（317人 755.5秒）で、本番ビルドは日に70〜90本ある。オーナーの線は「ボット向けの選手ページの古さは最大1日」。system-architect の審査を通した（P0・P1 なし。P2 の4件は同じ PR で直した）。
+
+- **決定**: 本番のビルドは、まず今の本番の `/ai-snapshots/status.json` を読む。`racer` が「見た目の版（`templateVersion`）が同じ・途中で止まっていない・描いた時刻（`renderedAt`）が20時間以内」なら、sitemap の選手ごとに今の本番の `/ai-snapshots/racer/{id}.html` を写す。満たさなければ今までどおり全員を描く（`scripts/lib/racerSnapshotPlan.js` の `decideRacerSnapshotSource`）
+- **写すときの検査**（`adaptCopiedRacerHtml`）: main の js・css の参照（ビルドごとに hash が変わる）をこのビルドの `dist/index.html` のものに書き換える。`/` で始まる拡張子つきの src・href がすべてこのビルドの dist に在ること、保存の目印（`canSaveRacerSnapshot`）があり noindex でないこと。満たさない選手（新しく sitemap に入った・前回失敗・取得の失敗）だけを描く。本番に無い番号を取ると catch-all で 200 の SPA の外枠（約5KB）が返るので、「200 なら在る」と見ない
+- **描いた時刻**: 写したときは元の `renderedAt` を引き継ぐ（写し続けても新しくならない）。写し終えた後に status.json を読み直し、古い方を残す（写している間に alias が別の版へ切り替わることがある）
+- **20時間の理由**: オーナーの線24時間から、越えた後の次の本番ビルドまでの余裕を4時間とった。本番ビルドが少ない日（10/31 は11本）は24時間を少し越えることがある
+- **人の画面を変えたとき**: RacerProfile とその部品（スナップショットに入る画面）を変える PR では `RACER_SNAPSHOT_TEMPLATE_VERSION` を1つ上げる。本番の版と違えば、その PR の本番ビルドで全員を描き直す（ADR 0089 決定3: 人の画面に無い節をボットに残さない）。`<head>` の計測のタグ等は最大1日古いまま残ることを受け入れる。手で描き直すときは環境変数 `RACER_SNAPSHOT_FORCE_RENDER=1`（入れたままにすると毎回全員を描く）
+- **監視**: status.json の `racer` に `mode`（copy・render）・`renderedAt`・`templateVersion`・`copied`・`rendered`・`copyFailures`（理由ごとの件数）を書く。毎日の照合（`verify-bot-html-parity.js`）が、`renderedAt` が24時間を越えた・途中で止まったときに落とす（`racerSnapshotProblems`）
+- **今の本番に依存する**: 写す元は `https://www.boat-ai.jp`（手元で確かめるときだけ `RACER_SNAPSHOT_SOURCE_ORIGIN`）。取れない・403・Deployment Protection 等で写せなければ描く側に倒れる（費用が今までに戻るだけ）。Instant Rollback の後は戻した版から写すが、古さは `renderedAt` で測るので20時間で描き直しに倒れる。`/ai-snapshots/` は middleware の matcher の外で、関門も通らない
+- **同時に走るビルド**: On-Demand Concurrent Builds のままだと、20時間を越えた直後に同時に走る本番ビルドはどれも古い status を読み、全員を描く（その時間帯だけ今までの動き）。「Run up to one build per branch」（オーナーが 2026-11-05 に入れる）なら本番ビルドは1本ずつなので起きない
+- **却下**: 並列を4→8〜12に上げる（Chromium は単一プロセスで縮む保証が無く、DB の同時の要求が増え anon の3秒で落ちる恐れが増す。毎回の費用は残る）。bot-page の関数で都度作る（RacerProfile の中身を関数で組み直す規模が大きく、決定3の照合も要る）。Vercel の build cache に置く（同時のビルドの間で共有されず、消えた日の動きも読めない。今の本番から写す方が元が見えて確かめやすい）
+- **費用**: 写す道の取得は gzip で約27KB/人（実測 3256）。317人×日90本で約0.8GB/日・Edge Requests 約2.9万/日。関数の呼び出しは起きない
+
+## 追記: Preview ではブログ・翻訳・一覧を作らない（Vercel の費用、2026-11-05）
+
+Preview 1本の CPU の約4割がブログ（155件）・翻訳記事・ブログ一覧のスナップショット。Preview でボット向け HTML を確かめる決まった審査は無い（2026-11-05 に `.claude`・`e2e`・`.github` を grep して確認）。
+
+- **決定**: `VERCEL_ENV=preview` では既定で作らない（`scripts/lib/previewSnapshotPlan.js`）。確かめたい PR だけ、最新のコミットのメッセージに `[bot-html]` を入れる（空のコミットでよい）か、その枝の Preview の環境変数 `BOT_SNAPSHOTS_ON_PREVIEW=1` で作る。本番・手元のビルドは今までどおり作る
+- 作らなかったときの status.json は `ok: true`・`blog.skipped` に理由を残す（毎日の照合は本番だけを見るので影響しない）。/winning-technique・/today・図の PNG（ADR 0099）は Preview でも作る
 
 ## 追記: Google の取得器の扱い（BOA-899）
 

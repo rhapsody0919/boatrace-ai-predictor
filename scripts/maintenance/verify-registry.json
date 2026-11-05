@@ -1009,6 +1009,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-pretest-row-pick.js"
     },
     {
+      "script": "verify-preview-snapshot-plan.js",
+      "tier": "ci",
+      "guards": "ブログ・翻訳記事・ブログ一覧のボット向けスナップショットを Preview で作るか（scripts/lib/previewSnapshotPlan.js、Vercel の費用 2026-11-05）。本番・手元は必ず作り、Preview は最新のコミットのメッセージの [bot-html] か BOT_SNAPSHOTS_ON_PREVIEW=1 のときだけ作ること。生成スクリプトが判定に環境変数を渡し、作らないときはブログ等を呼ばず status.json に理由を残すこと"
+    },
+    {
       "script": "verify-pure-imports.js",
       "tier": "ci",
       "guards": "pure の根（src/pure・scripts/lib/pure）の中のファイルが、根の外の部品・ES の組み込みの外のグローバルを使わないこと（docs/design/codex-direct-pr/design.md §4.2 と追記「共有の根」、開発効率の計画 段1b、2026-10-24）。ESLint のパーサの AST で import 宣言・export … from・import()・require()・コメントの型の import（JSDoc の import(\"…\")・@import・/// <reference>）の行き先をパスに解決し、src/pure からは src/pure の .js だけ、scripts/lib/pure からは scripts/lib/pure と src/pure の .js だけを許す（片方向）。../ での脱出・再 export・JSON・npm・node: の部品・文字列でない import()/require() は不合格。グローバルは eslint.config.js を使わず自分の設定で ES の組み込みだけにして no-undef を当て、globalThis・window・self・process・eval・Function・import.meta・fetch・XMLHttpRequest・WebSocket は名指しで禁止。組み込みの書き換え（JSON.stringify=・Date.prototype.toJSON=・Object.defineProperty(Object.prototype, …) 等）も禁止。設定コメントは効かせない。根の中に .js の通常のファイル以外（JSON・リンク等）があっても失敗。段2 の Codex の自動マージは pure の根の中だけで、その前提を機械で守る。根が無いときは対象0件で OK。禁止の形を1つずつ lintText と仮のパスで流して落ちることを毎回自己テストで確かめる（ディスクに書かない）"
@@ -1191,7 +1196,7 @@
     {
       "script": "verify-racer-snapshot-plan.js",
       "tier": "ci",
-      "guards": "選手ページの AI スナップショット（BOA-848）を作る範囲（scripts/lib/racerSnapshotPlan.js）。本番のビルドだけで sitemap の選手（isRacerIndexable の集合）を全員作り、Preview・手元では RACER_SNAPSHOT_LIMIT が無ければ作らないこと（Preview のビルドから本番 DB に数千のリクエストを送らない）。本番では RACER_SNAPSHOT_LIMIT を無視すること"
+      "guards": "選手ページの AI スナップショット（BOA-848）を作る範囲（scripts/lib/racerSnapshotPlan.js）。本番のビルドだけで sitemap の選手（isRacerIndexable の集合）を全員作り、Preview・手元では RACER_SNAPSHOT_LIMIT が無ければ作らないこと（Preview のビルドから本番 DB に数千のリクエストを送らない）。本番では RACER_SNAPSHOT_LIMIT を無視すること。本番では今の本番の status.json の racer が同じ見た目の版・途中で止まっていない・描いて20時間以内なら写し、ほかは全員を描くこと（decideRacerSnapshotSource、Vercel の費用 2026-11-05）。写した HTML は main の js・css をこのビルドのものに書き換え、/ で始まる拡張子つきの参照が全部 dist に在り、保存の目印があり noindex でないときだけ保存し、200 の SPA の外枠は写さないこと。写せなかった選手だけ描き、描いた時刻は写し終えた後の読み直しと比べて古い方を残すこと"
     },
     {
       "script": "verify-racer-st-stats.js",
@@ -1465,7 +1470,7 @@
     {
       "script": "verify-snapshot-status.js",
       "tier": "ci",
-      "guards": "AI スナップショット生成の結果のまとめ（scripts/lib/snapshotStatus.js）。失敗・途中停止を OK と書かず、ログの最後と /ai-snapshots/status.json に件数と失敗した記事の ID を残すこと（SEO 再点検 F5。#1393 の前は失敗がログに埋もれ、本番で3記事が欠けたままだった）"
+      "guards": "AI スナップショット生成の結果のまとめ（scripts/lib/snapshotStatus.js）。失敗・途中停止を OK と書かず、ログの最後と /ai-snapshots/status.json に件数と失敗した記事の ID を残すこと（SEO 再点検 F5。#1393 の前は失敗がログに埋もれ、本番で3記事が欠けたままだった）。Preview でブログ等を作らなかったときは ok のまま理由を残し照合を note にすること、選手ページの描いた時刻が24時間を越えた・途中で止まったら毎日の照合で落とすこと（Vercel の費用 2026-11-05）"
     },
     {
       "script": "verify-sns-approval-posted.js",
