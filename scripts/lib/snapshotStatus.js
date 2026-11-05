@@ -18,7 +18,8 @@ export function summarizeSnapshotRun({
   generatedAt,
   skipped = null,
 }) {
-  if (skipped) {
+  // 作らなかったときでも、静的サーバー・Chromium の起動が止まった（fatalError）なら下の失敗の形にする
+  if (skipped && !fatalError) {
     const bar = "=".repeat(60);
     return {
       status: {
@@ -154,7 +155,8 @@ export const RACER_SNAPSHOT_STALE_HOURS = 24;
  */
 export function racerSnapshotProblems(status, nowMs) {
   const racer = status?.racer;
-  if (!racer || typeof racer !== "object" || !racer.total) {
+  // 途中で止まった版（total: null・fatalError）は落とす。total が 0（Preview）・racer の無い版は見ない
+  if (!racer || typeof racer !== "object" || (!racer.total && !racer.fatalError)) {
     return { summary: null, problems: [] };
   }
   const problems = [];

@@ -14,11 +14,13 @@ import {
   mainAssetsOf,
   olderIso,
   planRacerSnapshots,
+  sourceChangedDuringCopy,
   RACER_SNAPSHOT_TEMPLATE_VERSION,
 } from "../lib/racerSnapshotPlan.js";
 
 import { readFileSync } from "node:fs";
 import { renderWithFreshPage } from "../lib/renderWithFreshPage.js";
+import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -122,7 +124,7 @@ const generatorSource = readFileSync(
   "utf8",
 );
 const generatorBody = generatorSource.slice(
-  generatorSource.indexOf("async function forEachPooled("),
+  generatorSource.indexOf("async function fetchFromSource("),
   generatorSource.indexOf("function generateWinningTechniqueSnapshot("),
 );
 const INDEX_HTML =
@@ -133,6 +135,8 @@ function loadGenerator({
   fetchImpl,
   distFiles = [],
   writes,
+  removed = [],
+  writeFile,
 }) {
   return new Function(
     "planRacerSnapshots",
@@ -156,6 +160,9 @@ function loadGenerator({
     "adaptCopiedRacerHtml",
     "decideRacerSnapshotSource",
     "olderIso",
+    "sourceChangedDuringCopy",
+    "mapWithConcurrency",
+    "rmSync",
     generatorBody + "; return generateRacerSnapshots;",
   )(
     () => ({ ids, reason: "test" }),
@@ -172,7 +179,7 @@ function loadGenerator({
     renderWithFreshPage,
     1,
     (html) => html,
-    (...args) => writes.push(args),
+    writeFile ?? ((...args) => writes.push(args)),
     canSaveRacerSnapshot,
     { log() {}, error() {} },
     { env },
@@ -186,6 +193,9 @@ function loadGenerator({
     adaptCopiedRacerHtml,
     decideRacerSnapshotSource,
     olderIso,
+    sourceChangedDuringCopy,
+    mapWithConcurrency,
+    (p) => removed.push(String(p)),
   );
 }
 
@@ -481,6 +491,135 @@ const ctx = {
   check(
     "status.json が 503: 全員を描く",
     r.mode === "render" && r.rendered === 2 && r.copied === 0,
+  );
+}
+// ---- /code-review の指摘の再現（PR #2286） ----
+check(
+  "sourceChangedDuringCopy: 読み直せない（null）なら写したまま",
+  sourceChangedDuringCopy(null) === null,
+);
+check(
+  "sourceChangedDuringCopy: 同じ版なら写したまま",
+  sourceChangedDuringCopy(okStatus()) === null,
+);
+check(
+  "sourceChangedDuringCopy: 版が変わった・止まった・racer が消えたら描き直す",
+  sourceChangedDuringCopy(
+    okStatus({ templateVersion: RACER_SNAPSHOT_TEMPLATE_VERSION + 1 }),
+  ) !== null &&
+    sourceChangedDuringCopy(okStatus({ fatalError: "boom" })) !== null &&
+    sourceChangedDuringCopy({ generatedAt: hoursAgo(1) }) !== null,
+);
+const okPage = {
+  goto: async () => {},
+  waitForSelector: async () => {},
+  getAttribute: async () => "index",
+  content: async () => completedHtml(),
+};
+const runAt = async (generate) => {
+  const realNow = Date.now;
+  Date.now = () => NOW;
+  try {
+    return await generate(async () => okPage, "http://localhost");
+  } finally {
+    Date.now = realNow;
+  }
+};
+{
+  // 写している間に alias が版2（全員を描き直した版）へ切り替わった → 写した HTML を捨て、全員を描く
+  const writes = [];
+  const removed = [];
+  let statusReads = 0;
+  const generate = loadGenerator({
+    ids: ["1111", "2222"],
+    env: { VERCEL_ENV: "production" },
+    distFiles: [
+      "/assets/main-NEW1.js",
+      "/assets/main-NEW2.css",
+      "/favicon.ico",
+    ],
+    writes,
+    removed,
+    fetchImpl: async (url) => {
+      if (String(url).endsWith("/status.json")) {
+        statusReads += 1;
+        const s =
+          statusReads === 1
+            ? okStatus()
+            : okStatus({
+                templateVersion: RACER_SNAPSHOT_TEMPLATE_VERSION + 1,
+              });
+        return { status: 200, text: async () => JSON.stringify(s) };
+      }
+      return { status: 200, text: async () => copiedPage() };
+    },
+  });
+  const r = await runAt(generate);
+  check(
+    "指摘2: 写している間に版が変わったら写したものを消して全員を描く",
+    r.mode === "render" &&
+      r.copied === 0 &&
+      r.rendered === 2 &&
+      removed.length === 2 &&
+      r.decisionReason.includes("版が変わった") &&
+      r.renderedAt === new Date(NOW).toISOString(),
+    JSON.stringify({ ...r, removed }),
+  );
+}
+{
+  // 1人の書き込みが失敗しても段全体を止めず、その選手は描く側へ
+  const writes = [];
+  let firstCopyWrite = true;
+  const generate = loadGenerator({
+    ids: ["1111", "2222"],
+    env: { VERCEL_ENV: "production" },
+    distFiles: [
+      "/assets/main-NEW1.js",
+      "/assets/main-NEW2.css",
+      "/favicon.ico",
+    ],
+    writes,
+    writeFile: (file, html) => {
+      if (String(file).endsWith("1111.html") && firstCopyWrite) {
+        firstCopyWrite = false;
+        throw Object.assign(new Error("no space left"), { code: "ENOSPC" });
+      }
+      writes.push([file, html]);
+    },
+    fetchImpl: async (url) =>
+      String(url).endsWith("/status.json")
+        ? { status: 200, text: async () => JSON.stringify(okStatus()) }
+        : { status: 200, text: async () => copiedPage() },
+  });
+  const r = await runAt(generate);
+  check(
+    "指摘3: 写した HTML の書き込みの失敗で段を止めず、その選手だけ描く",
+    r.mode === "copy" &&
+      r.copied === 1 &&
+      r.rendered === 1 &&
+      r.copyFailures["書き込みの失敗: ENOSPC"] === 1,
+    JSON.stringify(r),
+  );
+}
+{
+  // 取得の失敗の理由に undici の err.cause.code を残す
+  const generate = loadGenerator({
+    ids: ["1111"],
+    env: { VERCEL_ENV: "production" },
+    writes: [],
+    fetchImpl: async (url) => {
+      if (String(url).endsWith("/status.json"))
+        return { status: 200, text: async () => JSON.stringify(okStatus()) };
+      throw Object.assign(new TypeError("fetch failed"), {
+        cause: { code: "ECONNREFUSED" },
+      });
+    },
+  });
+  const r = await runAt(generate);
+  check(
+    "指摘4: 取得の失敗の理由に原因の code を残す",
+    r.copyFailures["取得の失敗: TypeError ECONNREFUSED"] === 1,
+    JSON.stringify(r.copyFailures),
   );
 }
 

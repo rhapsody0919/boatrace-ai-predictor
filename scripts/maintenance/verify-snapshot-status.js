@@ -227,6 +227,22 @@ const at = "2026-10-12T00:00:00.000Z";
   check("選手: null でも落ちない", racerSnapshotProblems(null, now).problems.length === 0);
 }
 
+{
+  // /code-review の指摘の再現（PR #2286）
+  const now = Date.parse("2026-11-05T12:00:00Z");
+  const stopped = racerSnapshotProblems({ racer: { total: null, succeeded: null, failedIds: [], skippedIds: [], fatalError: "ENOSPC" } }, now);
+  check("指摘1: 選手の段が途中で止まった版（total: null）も落とす", stopped.problems.some((p) => p.includes("ENOSPC")), JSON.stringify(stopped));
+  const { status } = summarizeSnapshotRun({ total: 155, failed: [], fatalError: "Chromium を起動できない", generatedAt: at, skipped: "Preview の既定では作らない" });
+  check("指摘5: 作らなかったときでも起動の失敗（fatalError）は ok にしない", status.ok === false && status.blog.fatalError === "Chromium を起動できない", JSON.stringify(status));
+  const skippedButPngFailed = {
+    generatedAt: at, ok: false,
+    blog: { total: 155, succeeded: null, failedIds: [], fatalError: null, skipped: "Preview の既定では作らない" },
+    blogChartPng: { total: 2, succeeded: 1, failedIds: ["a"], fatalError: null },
+  };
+  const ev = evaluateSnapshotStatus(200, JSON.stringify(skippedButPngFailed));
+  check("指摘6: 作らなかったときでも図の PNG 等の失敗は fail", ev.level === "fail" && ev.message.includes("blogChartPng"), ev.message);
+}
+
 if (failures > 0) {
   console.error(`\n❌ ${failures}件の検証に失敗`);
   process.exit(1);

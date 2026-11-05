@@ -123,6 +123,30 @@ export function decideRacerSnapshotSource({
   };
 }
 
+/**
+ * 写し終えた後に読み直した今の本番の status.json を見て、写した HTML を捨てて描き直すべきかを返す。
+ * 写している間に alias が「見た目の版が違う・途中で止まった」版へ切り替わると、その版の HTML を
+ * このビルドの版の番号のまま配ってしまう（ADR 0089 決定3）。読み直せなかった（null）ときは、写す前の判定を信じる
+ *
+ * @param {unknown} afterStatus
+ * @param {number} [templateVersion]
+ * @returns {string|null} 描き直す理由。写したままでよければ null
+ */
+export function sourceChangedDuringCopy(
+  afterStatus,
+  templateVersion = RACER_SNAPSHOT_TEMPLATE_VERSION,
+) {
+  if (afterStatus == null) return null;
+  const racer = typeof afterStatus === "object" ? afterStatus.racer : null;
+  if (!racer || typeof racer !== "object")
+    return "写している間に今の本番の status.json から racer が消えた";
+  if (racer.fatalError)
+    return `写している間に今の本番が途中で止まった版に変わった: ${racer.fatalError}`;
+  if (racer.templateVersion !== templateVersion)
+    return `写している間に今の本番の見た目の版が変わった（${racer.templateVersion ?? "なし"}）`;
+  return null;
+}
+
 /** 2つの ISO 時刻の古い方（読めない方は捨てる。両方読めなければ null） */
 export function olderIso(a, b) {
   const valid = [a, b]

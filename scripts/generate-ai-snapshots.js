@@ -15,7 +15,13 @@
  *   一覧の NEW の印は描いた時点の日付で決まるので外して保存する（ビルドから日が経つと人の画面と食い違うため）
  */
 import { createServer } from "node:http";
-import { mkdirSync, writeFileSync, readFileSync, statSync } from "node:fs";
+import {
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -35,8 +41,10 @@ import {
   olderIso,
   planRacerSnapshots,
   RACER_SNAPSHOT_TEMPLATE_VERSION,
+  sourceChangedDuringCopy,
 } from "./lib/racerSnapshotPlan.js";
 import { planBlogSnapshots } from "./lib/previewSnapshotPlan.js";
+import { mapWithConcurrency } from "./lib/scrapeJobs/concurrency.js";
 import { launchChromium } from "./lib/launchChromium.js";
 import { exportBlogChartPngs, planBlogChartPngs } from "./lib/blogChartPng.js";
 import {
@@ -296,21 +304,6 @@ async function generateBlogListSnapshots(openPage, baseUrl) {
   });
 }
 
-/** 決まった本数で並列に回す（順は問わない） */
-async function forEachPooled(items, concurrency, fn) {
-  let index = 0;
-  const worker = async () => {
-    while (index < items.length) {
-      const item = items[index];
-      index += 1;
-      await fn(item);
-    }
-  };
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, items.length) }, worker),
-  );
-}
-
 /** 写す元（今の本番）から文字列を取る。HTTP の状態と本文を返す（失敗は例外） */
 async function fetchFromSource(urlPath) {
   const res = await fetch(`${RACER_SOURCE_ORIGIN}${urlPath}`, {
@@ -343,6 +336,40 @@ function distHas(urlPath) {
   }
 }
 
+/** fetch の失敗の理由（undici は err.cause に ECONNREFUSED・ENOTFOUND 等の code を持つ） */
+const fetchErrorReason = (err) =>
+  `取得の失敗: ${err.name}${err.cause?.code ? ` ${err.cause.code}` : ""}`;
+
+/** 1人を写す。写せなければ理由を返す（例外は投げない。1人の失敗で他の選手を止めない） */
+async function copyOneRacer(id, outDir, mainAssets) {
+  let res;
+  try {
+    res = await fetchFromSource(`/ai-snapshots/racer/${id}.html`);
+  } catch (err) {
+    return {
+      id,
+      ok: false,
+      reason: fetchErrorReason(err),
+      detail: err.message,
+    };
+  }
+  if (res.status !== 200)
+    return { id, ok: false, reason: `HTTP ${res.status}` };
+  const adapted = adaptCopiedRacerHtml(res.body, { mainAssets, distHas });
+  if (!adapted.ok) return { id, ok: false, reason: adapted.reason };
+  try {
+    writeFileSync(path.join(outDir, `${id}.html`), adapted.html, "utf-8");
+  } catch (err) {
+    return {
+      id,
+      ok: false,
+      reason: `書き込みの失敗: ${err.code ?? err.name}`,
+      detail: err.message,
+    };
+  }
+  return { id, ok: true };
+}
+
 /**
  * 今の本番の /ai-snapshots/racer/{id}.html を写す（Vercel の費用、2026-11-05、ADR 0032 追記）。
  * 写せなかった選手は返り値の failures に入れ、呼び出し側が描く。
@@ -360,29 +387,13 @@ async function copyRacerSnapshots(ids, outDir) {
       })),
     };
   }
-  const copied = [];
-  const failures = [];
-  await forEachPooled(ids, RACER_COPY_CONCURRENCY, async (id) => {
-    let res;
-    try {
-      res = await fetchFromSource(`/ai-snapshots/racer/${id}.html`);
-    } catch (err) {
-      failures.push({ id, reason: `取得の失敗: ${err.name}` });
-      return;
-    }
-    if (res.status !== 200) {
-      failures.push({ id, reason: `HTTP ${res.status}` });
-      return;
-    }
-    const adapted = adaptCopiedRacerHtml(res.body, { mainAssets, distHas });
-    if (!adapted.ok) {
-      failures.push({ id, reason: adapted.reason });
-      return;
-    }
-    writeFileSync(path.join(outDir, `${id}.html`), adapted.html, "utf-8");
-    copied.push(id);
-  });
-  return { copied, failures };
+  const results = await mapWithConcurrency(ids, RACER_COPY_CONCURRENCY, (id) =>
+    copyOneRacer(id, outDir, mainAssets),
+  );
+  return {
+    copied: results.filter((r) => r.ok).map((r) => r.id),
+    failures: results.filter((r) => !r.ok),
+  };
 }
 
 /** 理由ごとの件数（status.json に残す。理由の文の後ろの番号などは束ねない） */
@@ -472,38 +483,46 @@ async function generateRacerSnapshots(openPage, baseUrl) {
     `  ${decision.mode === "copy" ? "写す" : "全員を描く"}: ${decision.reason}`,
   );
 
-  let copied = [];
-  let copyFailures = [];
-  let renderedAt = new Date(startedAt).toISOString();
-  if (decision.mode === "copy") {
-    ({ copied, failures: copyFailures } = await copyRacerSnapshots(
-      ids,
-      outDir,
-    ));
-    // 写している間に本番の alias が別の版へ切り替わることがある。描いた時刻は古い方を残す
-    const after = await fetchSourceStatus();
-    renderedAt =
-      copied.length > 0
-        ? olderIso(decision.renderedAt, after?.racer?.renderedAt)
-        : renderedAt;
-    console.log(
-      `  写した: ${copied.length}/${ids.length}人（${((Date.now() - startedAt) / 1000).toFixed(1)}秒）`,
-    );
+let mode = decision.mode;
+let decisionReason = decision.reason;
+let copied = [];
+let copyFailures = [];
+let renderedAt = new Date(startedAt).toISOString();
+if (decision.mode === "copy") {
+  ({ copied, failures: copyFailures } = await copyRacerSnapshots(ids, outDir));
+  console.log(
+    `  写した: ${copied.length}/${ids.length}人（${((Date.now() - startedAt) / 1000).toFixed(1)}秒）`,
+  );
+  const after = await fetchSourceStatus();
+  const changed = sourceChangedDuringCopy(after);
+  if (changed) {
+    // 写した HTML は別の版のものかもしれないので捨てて、全員を描く
+    for (const id of copied)
+      rmSync(path.join(outDir, `${id}.html`), { force: true });
+    console.log(`  写したものを捨てて全員を描く: ${changed}`);
+    mode = "render";
+    decisionReason = changed;
+    copied = [];
+    copyFailures = [];
+  } else {
+    // 写している間に alias が同じ版の別のビルドへ切り替わることがある。描いた時刻は古い方を残す
+    if (copied.length > 0)
+      renderedAt = olderIso(decision.renderedAt, after?.racer?.renderedAt);
     if (copyFailures.length > 0) {
       console.log(
-        `  写せなかったので描く: ${copyFailures.map((f) => `${f.id}（${f.reason}）`).join(", ")}`,
+        `  写せなかったので描く: ${copyFailures.map((f) => `${f.id}（${f.reason}${f.detail ? `: ${f.detail}` : ""}）`).join(", ")}`,
       );
     }
   }
+}
 
-  const toRender =
-    decision.mode === "copy" ? copyFailures.map((f) => f.id) : ids;
-  const rendered =
-    toRender.length > 0
-      ? await renderRacerSnapshots(openPage, baseUrl, toRender, outDir)
-      : { saved: 0, failed: [], skipped: [] };
-  const { failed, skipped } = rendered;
-  const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+const toRender = mode === "copy" ? copyFailures.map((f) => f.id) : ids;
+const rendered =
+  toRender.length > 0
+    ? await renderRacerSnapshots(openPage, baseUrl, toRender, outDir)
+    : { saved: 0, failed: [], skipped: [] };
+const { failed, skipped } = rendered;
+const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
 
   console.log(
     `✓ 選手ページスナップショット: ${copied.length + rendered.saved}/${ids.length}件（写した ${copied.length}・描いた ${rendered.saved}、${seconds}秒、描く並列${RACER_CONCURRENCY}）`,
@@ -522,8 +541,8 @@ async function generateRacerSnapshots(openPage, baseUrl) {
     total: ids.length,
     failed,
     skipped,
-    mode: decision.mode,
-    decisionReason: decision.reason,
+    mode,
+    decisionReason,
     renderedAt,
     copied: copied.length,
     rendered: rendered.saved,
