@@ -131,8 +131,9 @@ check(
   "結果の出た走が無い新モーター（sample_count === 0）に「初下ろし」を添える",
   chart.includes("row.sample_count === 0 && (") &&
     chart.includes('t("analysis.motor.firstUseBadge")') &&
+    // 行の組み立ては src/pure/raceMotorBreakdown.js の recalcMotorRows に移した
     /sample_count: powerIndexes\[i\]\?\.sample_count/.test(
-      read("src/services/supabaseDataService.js"),
+      read("src/pure/raceMotorBreakdown.js"),
     ),
 );
 check(
