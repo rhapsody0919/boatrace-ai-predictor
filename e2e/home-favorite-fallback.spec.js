@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures.js";
+import { test, expect, e2eTodayJST } from "./fixtures.js";
 import { rewriteTodayRaces, venueCodeOf } from "./today-races-rewrite.js";
 import {
   RACER,
@@ -27,7 +27,7 @@ const closedCodeOf = (venues) => {
  * 開催場のうち1つ目を SG、2つ目を G1、残りを一般にする（grades: false なら全部一般）。
  * 決まった会場コード等を返す
  */
-async function prepareToday(page, { grades = true } = {}) {
+async function prepareToday(page, { grades = true, fixedStates = false } = {}) {
   const info = {};
   await rewriteTodayRaces(page, (venues) => {
     const open = venues.filter((v) => (v.races ?? []).length > 0);
@@ -42,12 +42,58 @@ async function prepareToday(page, { grades = true } = {}) {
       for (const r of open[1].races)
         Object.assign(r, { raceGrade: "G1", seriesDay: 3 });
     }
+    if (fixedStates) {
+      for (const r of open[0].races) r.startTime = "23:59";
+      for (const r of open[1].races) r.startTime = "00:00";
+    }
     info.first = venueCodeOf(open[0]);
     info.second = venueCodeOf(open[1]);
     info.openCount = open.length;
     info.closed = closedCodeOf(venues);
   });
   return info;
+}
+
+// 次の節は録画の「今日」から2日後。race_series は本番へ転送せず応答を固定する。
+async function routeNextSeries(page, info, { empty = false, pending = false } = {}) {
+  const date = new Date(`${e2eTodayJST()}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 2);
+  const start = date.toISOString().slice(0, 10);
+  await page.addInitScript((key) => localStorage.removeItem(key), `boatai:upcoming-series-${e2eTodayJST()}`);
+  await page.route("**/rest/v1/race_series*", (route) => {
+    if (pending) return route.abort();
+    return route.fulfill({ json: empty ? [] : [info.closed, info.first, info.second].map((code) => ({
+      venue_code: code, start_date: start, end_date: start,
+    })) });
+  });
+  return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
+}
+
+for (const withRacer of [false, true]) {
+  for (const mode of ["date", "empty", "pending"]) {
+    test(`開催なしの☆の会場: 出走${withRacer ? "あり" : "なし"}・次開催 ${mode}`, async ({ page }) => {
+      const info = await prepareToday(page, { fixedStates: true });
+      await routePredictions(page, { withRacer });
+      await page.goto("/");
+      await expectVenueCards(page);
+      const date = await routeNextSeries(page, info, {
+        empty: mode === "empty", pending: mode === "pending",
+      });
+      await setFavorites(page, [RACER], [info.closed, info.first, info.second]);
+      const response = mode === "pending" ? null : page.waitForResponse(
+        (res) => new URL(res.url()).pathname.endsWith("/rest/v1/race_series"),
+      );
+      await page.reload();
+      if (response) await response;
+      const section = page.getByTestId("favorite-runs");
+      await expect(section).toHaveAttribute("data-fav-state", withRacer ? "runs" : "no_runs");
+      const texts = section.locator(withRacer ? ".favorite-runs__chip small" : ".favorite-runs__alt-text");
+      await expect(texts.nth(0)).toHaveText(mode === "date"
+        ? `今日は開催なし・次開催 ${date}` : "今日は開催なし");
+      await expect(texts.nth(1)).toHaveText(/開催中・次は \d+R 23:59 締切/);
+      await expect(texts.nth(2)).toHaveText("本日のレースは終了");
+    });
+  }
 }
 
 test("☆0件・SG と G1 がある日: SG の行が G1 より上、会場ページへのリンク、☆の付け方", async ({
@@ -208,11 +254,16 @@ test("☆の選手が出走する日: 出走の行の下に「お気に入りの
 });
 
 test("/en/: 代わりの表示に日本語が無い", async ({ page }) => {
-  await prepareToday(page);
+  const info = await prepareToday(page);
   await page.goto("/en/");
+  await expectVenueCards(page);
+  const date = await routeNextSeries(page, info);
+  await setFavorites(page, [], [info.closed]);
+  await page.reload();
   await expectVenueCards(page);
   const section = page.getByTestId("favorite-runs");
   await expect(section).toContainText("You have no favorite racers yet.");
+  await expect(section.locator(".favorite-runs__alt-text").first()).toHaveText(`No races today · Next: ${date}`);
   expect(
     await section.evaluate((el) => el.textContent.match(/[぀-ヿ㐀-鿿]/gu)),
   ).toBeNull();

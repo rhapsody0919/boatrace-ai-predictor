@@ -283,7 +283,7 @@ function RunRow({ row, state, extra, info, seriesDay }) {
   );
 }
 
-export default function FavoriteRunsSection({ venuesData, nowHHMM }) {
+export default function FavoriteRunsSection({ venuesData, nowHHMM, nextOpenDates }) {
   const { t } = useTranslation();
   const { racers, venues: favVenueCodes } = useFavorites();
   const { status, venues } = useTodayEntries(racers.length > 0);
@@ -346,6 +346,7 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM }) {
       </h3>
       {favState !== "runs" ? (
         <FavoritesFallback
+          nextOpenDates={nextOpenDates}
           fallback={fallback}
           favState={favState}
           racerCount={racers.length}
@@ -408,7 +409,10 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM }) {
               )}
             </>
           )}
-          <FavoriteVenueChips favVenues={fallback.favVenues} />
+          <FavoriteVenueChips
+            favVenues={fallback.favVenues}
+            nextOpenDates={nextOpenDates}
+          />
           <p className="favorite-runs__note">{t("favorites.section.note")}</p>
         </>
       )}
