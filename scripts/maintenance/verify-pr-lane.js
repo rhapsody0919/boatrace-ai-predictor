@@ -9,12 +9,24 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { fsIo } from "../lib/relativeImportGraph.js";
-import { TREE_ROOT, classify, headerPath, parsePatch } from "./pr-lane.js";
+import {
+  TREE_ROOT,
+  classify,
+  classifyCommits,
+  headerPath,
+  parsePatch,
+} from "./pr-lane.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -378,6 +390,14 @@ expect(
   put("README.md", "x\n");
   put("src/utils/shared.js", "export const a = 1;\n");
   put("src/pages/Other.jsx", "export default 1;\n");
+  // 語（H9）は判定する repo の merge-base の木の risk-rules から読む
+  put(
+    "sns-video-studio/remotion/risk-rules.json",
+    readFileSync(
+      join(ROOT, "sns-video-studio/remotion/risk-rules.json"),
+      "utf8",
+    ),
+  );
   put(
     "sns-video-studio/remotion/src/Root.jsx",
     'import { a } from "../../../src/utils/shared.js";\nexport default a;\n',
@@ -499,6 +519,97 @@ expect(
   );
   const empty = cli(docs, docs);
   assert.notEqual(empty.status, 0, "差分が空のときは判定しない（0 以外）");
+
+  // 時間の上限を超えたら判定しない
+  assert.throws(
+    () => classifyCommits(repo, master, utils, 0),
+    /時間の上限/,
+    "上限を超えたら投げる（CLI は 0 以外）",
+  );
+
+  // hq の写し: pr-lane.js・規則・relativeImportGraph.js だけを同じ配置で（node_modules なし）置いても動く
+  {
+    const copy = mkdtempSync(join(tmpdir(), "pr-lane-hq-"));
+    for (const p of [
+      "scripts/maintenance/pr-lane.js",
+      "config/pr-path-rules.json",
+      "scripts/lib/relativeImportGraph.js",
+    ]) {
+      mkdirSync(dirname(join(copy, p)), { recursive: true });
+      copyFileSync(join(ROOT, p), join(copy, p));
+    }
+    const r = spawnSync(
+      process.execPath,
+      [
+        join(copy, "scripts/maintenance/pr-lane.js"),
+        "--base",
+        master,
+        "--head",
+        words,
+        "--repo",
+        repo,
+      ],
+      { encoding: "utf8" },
+    );
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(JSON.parse(r.stdout).lane, "heavy", "写しでも判定できる");
+  }
+
+  // risk-rules が merge-base の木に無ければ判定しない（語を確かめられない）
+  {
+    const bare = mkdtempSync(join(tmpdir(), "pr-lane-bare-"));
+    const gb = (...args) =>
+      execFileSync(
+        "git",
+        [
+          "-c",
+          "user.name=pr-lane",
+          "-c",
+          "user.email=pr-lane@example.invalid",
+          "-c",
+          "commit.gpgsign=false",
+          ...args,
+        ],
+        { cwd: bare, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+      ).trim();
+    gb("init", "-q", "-b", "main");
+    writeFileSync(join(bare, "README.md"), "x\n");
+    gb("add", "-A");
+    gb("commit", "-q", "-m", "base");
+    const b0 = gb("rev-parse", "HEAD");
+    writeFileSync(join(bare, "README.md"), "y\n");
+    gb("commit", "-q", "-am", "next");
+    const b1 = gb("rev-parse", "HEAD");
+    const r = spawnSync(
+      process.execPath,
+      [
+        join(ROOT, "scripts/maintenance/pr-lane.js"),
+        "--base",
+        b0,
+        "--head",
+        b1,
+        "--repo",
+        bare,
+      ],
+      { encoding: "utf8" },
+    );
+    assert.notEqual(r.status, 0, "risk-rules が無いときは 0 以外");
+    assert.equal(JSON.parse(r.stdout).lane, "heavy");
+  }
+}
+
+// hq との約束: Node の組み込みと相対の import だけ（npm の部品を使わない）
+for (const p of [
+  "scripts/maintenance/pr-lane.js",
+  "scripts/lib/relativeImportGraph.js",
+]) {
+  const src = readFileSync(join(ROOT, p), "utf8");
+  const specs = [...src.matchAll(/^import[^"']*["']([^"']+)["']/gm)].map(
+    (m) => m[1],
+  );
+  assert.ok(specs.length > 0, p);
+  for (const s of specs)
+    assert.match(s, /^(node:|\.\.?\/)/, `${p} が組み込み以外を import: ${s}`);
 }
 
 console.log("verify-pr-lane: OK");

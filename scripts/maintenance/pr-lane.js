@@ -9,7 +9,11 @@
  *
  * 差分は base と head の merge-base から head まで（three-dot と同じ）、--no-renames（名前を変えたファイルは元のパスでも判定する）。
  * import の閉包（H2・H6）は merge-base と head の両方のコミットの木を git から読んで辿る（手元のファイルは見ない。消したファイルも元の木で辿る）。
- * DB・ネットワークには触れない。
+ * 語（H9）の risk-rules.json は、判定する repo の merge-base の木から読む（PR 自身が語を消して軽くできないように）。
+ *
+ * hq との約束（段L の影、2026-11-05）: Node の組み込みと git だけを使う（npm の部品・DB・ネットワークなし。hq の写しは
+ * この script・config/pr-path-rules.json・scripts/lib/relativeImportGraph.js だけを同じ配置で持つ）。100秒（BUDGET_MS）で
+ * 打ち切り、0 以外で終える（hq の上限は 120秒）。lane が light なら hits は必ず空。
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
@@ -23,15 +27,22 @@ const SELF_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 export const TREE_ROOT = "/__pr_lane_tree__";
 const MAX_BUFFER = 1024 * 1024 * 1024;
 
-/** 規則を読む（risk-rules の platforms: all の語を H9 に足す） */
-export function loadRules(root = SELF_ROOT) {
+/**
+ * 規則を読む（risk-rules の platforms: all の語を H9 に足す）。
+ * config/pr-path-rules.json はこのスクリプトの隣から読む（hq の写しは pr-lane.js・規則・relativeImportGraph.js だけを持つ）。
+ * risk-rules.json は readRisk で読む。CLI は判定する repo の merge-base の木から読む（PR 自身が語を消して軽くできないように）
+ */
+export function loadRules(
+  root = SELF_ROOT,
+  readRisk = (p) => readFileSync(join(root, p), "utf8"),
+) {
   const config = JSON.parse(
     readFileSync(join(root, "config/pr-path-rules.json"), "utf8"),
   );
   return config.rules.map((rule) => {
     if (!rule.terms) return rule;
     const risk = rule.terms.riskRules
-      ? JSON.parse(readFileSync(join(root, rule.terms.riskRules), "utf8"))
+      ? JSON.parse(readRisk(rule.terms.riskRules))
       : { rules: [] };
     const fromRisk = risk.rules
       .filter((r) => r.platforms === "all")
@@ -163,11 +174,21 @@ export function classify({
 
 // ---- git から読む部分 ----
 
+/** 1回の判定の時間の上限（hq は 120秒で打ち切る。超えたら判定できないとして 0 以外で終える） */
+export const BUDGET_MS = 100_000;
+let deadline = Number.POSITIVE_INFINITY;
+const remaining = () => {
+  const ms = deadline - Date.now();
+  if (ms <= 0) throw new Error(`時間の上限（${BUDGET_MS / 1000}秒）を超えた`);
+  return ms;
+};
+
 const git = (repo, args, opts = {}) =>
   execFileSync("git", ["-c", "core.quotepath=false", ...args], {
     cwd: repo,
     maxBuffer: MAX_BUFFER,
     stdio: ["pipe", "pipe", "pipe"],
+    ...(Number.isFinite(deadline) ? { timeout: remaining() } : {}),
     ...opts,
   });
 
@@ -339,7 +360,16 @@ function readPatches(repo, from, to, paths) {
 }
 
 /** git から差分と木を読んで判定する */
-export function classifyCommits(repo, base, head, rules = loadRules()) {
+export function classifyCommits(repo, base, head, budgetMs = BUDGET_MS) {
+  deadline = Date.now() + budgetMs;
+  try {
+    return classifyCommitsInner(repo, base, head);
+  } finally {
+    deadline = Number.POSITIVE_INFINITY;
+  }
+}
+
+function classifyCommitsInner(repo, base, head) {
   const resolveSha = (ref) =>
     git(repo, ["rev-parse", "--verify", `${ref}^{commit}`], {
       encoding: "utf8",
@@ -351,6 +381,9 @@ export function classifyCommits(repo, base, head, rules = loadRules()) {
   const changes = gitChanges(repo, mb, headSha);
   if (changes.length === 0)
     throw new Error("差分が空（base と head を確かめる）");
+  const rules = loadRules(SELF_ROOT, (p) =>
+    git(repo, ["show", `${mb}:${p}`], { encoding: "utf8" }),
+  );
   // 行を見る必要があるファイルだけ patch を取る（H5 の行の追加だけ・H9 の語）
   const needLines = changes
     .map((c) => c.path)
@@ -369,7 +402,12 @@ export function classifyCommits(repo, base, head, rules = loadRules()) {
       : new Map();
   const needTrees = rules.some((r) => r.reachFrom);
   const trees = needTrees ? [gitTree(repo, mb), gitTree(repo, headSha)] : [];
-  return classify({ changes, patches, trees, rules });
+  const result = classify({ changes, patches, trees, rules });
+  remaining(); // 辿り終えた時点で上限を超えていたら判定に使わない
+  // light なのに hits がある出力は出さない（hq は矛盾として heavy に扱う。classify は hits の有無で lane を決めるので起きない）
+  if ((result.lane === "light") !== (result.hits.length === 0))
+    throw new Error("lane と hits が食い違う");
+  return result;
 }
 
 function main() {
