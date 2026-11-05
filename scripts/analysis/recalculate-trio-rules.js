@@ -45,9 +45,9 @@ const GAMAGORI_RULES = [
 
 // 江戸川（03）
 const EDOGAWA_RULES = [
-  { id: 'E03-T001', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => predSorted === '1-2-4' },
-  { id: 'E03-T002', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => predSorted === '1-2-3' },
-  { id: 'E03-T003', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => raceNo >= 9 && predSorted === '1-2-4' },
+  { id: 'E03-T001', betType: 'trio', check: (pred, raceNo, conf, predSorted) => predSorted === '1-2-4' },
+  { id: 'E03-T002', betType: 'trio', check: (pred, raceNo, conf, predSorted) => predSorted === '1-2-3' },
+  { id: 'E03-T003', betType: 'trio', check: (pred, raceNo, conf, predSorted) => raceNo >= 9 && predSorted === '1-2-4' },
   { id: 'E03-T004', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 },
   { id: 'E03-T005', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && conf >= 75 },
   { id: 'E03-T006', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && pred.top3.includes(2) && pred.top3.includes(4) },
@@ -229,7 +229,7 @@ async function recalculateAllRules() {
           stats.totalPayout_correct += result.payout_trifecta || 0;
           stats.totalPayout_wrong += result.payout_trio || 0;
         }
-      } catch (e) {
+      } catch {
         // ルールチェック中のエラーは無視
       }
     }
@@ -244,7 +244,7 @@ async function recalculateAllRules() {
 
   for (const [venueCode, data] of Object.entries(venueStats)) {
     const { venueName, rules } = data;
-    const rulesWithData = Object.entries(rules).filter(([_, s]) => s.samples > 0);
+    const rulesWithData = Object.entries(rules).filter(([, s]) => s.samples > 0);
 
     if (rulesWithData.length === 0) continue;
 
