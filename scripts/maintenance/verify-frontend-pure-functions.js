@@ -2413,6 +2413,59 @@ function suiteSemifinalCount(m, check) {
 
 // BOA-1291: 選手ページと同じ公式の3期を、レース日と想定コースで使う。
 function suiteSixBoatCourseStats(m, check) {
+  // BOA-1338: 当地は既存の1艇ずつの表と同じ実進入コースの集計。
+  const localRuns = (course, n) => Array.from({ length: n }, (_, i) => rec({
+    raceId: `2026-01-01-04-${String(i + 1).padStart(2, "0")}`,
+    boatNumber: 2, actualCourse: course,
+    ranks: i < 7 ? [2, 1, 3, 4, 5, 6] : [1, 3, 2, 4, 5, 6],
+  }));
+  const localInput = {
+    players: [{ number: 6, racerId: 6666 }, { number: "1", racerId: 1111 }],
+    scopedByRacer: { 1111: [...localRuns(1, 12),
+      ...localRuns(1, 1).map((r) => ({ ...r, venueCode: 5 })),
+      ...localRuns(2, 1)], 6666: localRuns(6, 9) },
+    venueCode: 4, now: new Date("2026-11-05T00:00:00Z"),
+    baseline: { venue: { byCourse: { "1": { winRate: 52 } } } },
+  };
+  const localBefore = JSON.stringify(localInput);
+  const local = m.buildSixBoatLocalRows(localInput);
+  check("当地: 6行を艇番順に返す", local.map((r) => [r.boat, r.course]),
+    [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]]);
+  check("当地: 別会場・別コースを除き、12走7勝の率と平均との差を丸めない", local[0], {
+    boat: 1, racerId: 1111, course: 1, wins: 7, entries: 12,
+    winRate: 7 / 12 * 100, top2Rate: 7 / 12 * 100, top3Rate: 100,
+    avg: 52, diff: 7 / 12 * 100 - 52, reliability: "ok",
+    periods: [], contiguous: true,
+  });
+  check("当地: 6コース9走はnoneで差なし",
+    [local[5].entries, local[5].wins, local[5].reliability, local[5].diff],
+    [9, 7, "none", null]);
+  const noVenue = m.buildSixBoatLocalRows({ ...localInput, baseline: { venue: null } })[0];
+  check("当地: 会場平均なしはavg・diffともnull", [noVenue.avg, noVenue.diff], [null, null]);
+  for (const [records, reliability] of [[undefined, "loading"], [null, "error"]]) {
+    const r = m.buildSixBoatLocalRows({ ...localInput, scopedByRacer: { 1111: records } })[0];
+    check(`当地: ${reliability}は0走と区別し数値をnullにする`, r, {
+      boat: 1, racerId: 1111, course: 1, wins: null, entries: 0,
+      winRate: null, top2Rate: null, top3Rate: null, avg: null, diff: null,
+      reliability, periods: [], contiguous: true,
+    });
+  }
+  for (const [course, limit] of [[1, 10], [2, 30], [3, 30], [4, 30], [5, 42], [6, 67]]) {
+    for (const n of [0, 9, 10, limit - 1, limit, limit + 1]) {
+      const r = m.buildSixBoatLocalRows({ ...localInput,
+        players: [{ number: course, racerId: 1111 }],
+        scopedByRacer: { 1111: localRuns(course, n) },
+        baseline: { venue: { byCourse: { [course]: { winRate: 0 } } } },
+      })[course - 1];
+      const reliability = n < 10 ? "none" : n < limit ? "warn" : "ok";
+      check(`当地: ${course}コース${n}走の境界・0%の平均`,
+        [r.entries, r.wins, r.reliability, r.avg, r.diff],
+        [n, Math.min(n, 7), reliability, 0, reliability === "ok" ? 7 / n * 100 : null]);
+      if (n === 0) check("当地: 正常な0走はnoneで率null",
+        [r.winRate, r.top2Rate, r.top3Rate], [null, null, null]);
+    }
+  }
+  check("当地: 入力を変更しない", JSON.stringify(localInput), localBefore);
   const row = (y, n, entries, wins, p2 = 0, p3 = 0, course = 1) => ({
     period_year: y, period_no: n, starts: 100,
     calc_from: n === 1 ? `${y - 1}-05-01` : `${y - 1}-11-01`,
