@@ -6,7 +6,7 @@
  * インスタンス）。Node からも import するため、ブラウザ専用の依存を持ち込まない。
  * 検証: scripts/maintenance/verify-bot-page-model.js
  */
-import { localizePath } from "../config/languages.js";
+import { localizePath } from "../pure/localizePath.js";
 import { getVenueSeriesTitle } from "./venueSeriesTitle.js";
 
 const SITE_ORIGIN = "https://www.boat-ai.jp";

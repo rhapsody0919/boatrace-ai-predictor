@@ -13,7 +13,7 @@ import {
   translateWindDirection,
 } from "../components/race/weatherInfo.js";
 import { getRaceStageCategory } from "../constants/raceStageConfig.js";
-import { localizePath } from "../config/languages.js";
+import { localizePath } from "../pure/localizePath.js";
 
 const DASH = "—";
 

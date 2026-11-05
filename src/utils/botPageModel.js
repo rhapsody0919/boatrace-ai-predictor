@@ -39,7 +39,7 @@ import { isRaceCancelled } from "./raceCancellation.js";
 import { venueSummaryLines } from "./venueSummary.js";
 import { getRaceId } from "./raceId.js";
 import { formatDateShortLocalized, formatCapturedAtJst } from "./formatters.js";
-import { localizePath } from "../config/languages.js";
+import { localizePath } from "../pure/localizePath.js";
 import { buildFaqItems, isAssistShown, toFaqPageLd } from "./homeAiIntroFaq.js";
 import { getHomeBlogPosts } from "../data/blogPosts.js";
 import { meetBannerSeriesOf, seriesOfDate } from "./meetPageModel.js";
