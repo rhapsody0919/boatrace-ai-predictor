@@ -1,4 +1,4 @@
-import { buildPostText } from "../../src/pages/admin/sns-hub/utils.js";
+import { buildPostText } from "../../src/pure/snsPostText.js";
 /** X呼び出しは注入のみ。実adapter・鍵・cronは今回提供しない。 */
 export const X_MEDIA_MAX_BYTES = 32 * 1024 * 1024;
 /** YouTube の動画も 32 MiB まで（youtubeQueueAdapter.js は1回の multipart で上げるため。承認と送信の上限をそろえる、2026-10-13）。 */
