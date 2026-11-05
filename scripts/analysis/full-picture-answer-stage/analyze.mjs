@@ -55,7 +55,7 @@ function summarize(rows, label) {
     const byDay = {}; for (const r of rows) { byDay[r.date] ??= { picked: 0, skip: 0, notsaved: 0 }; byDay[r.date].picked++; }
     for (const r of res) if (!r.a.stage) byDay[r.date].skip++;
     for (const r of notSaved) byDay[r.date].notsaved++;
-    const dist = {}; for (const [d, v] of Object.entries(byDay)) { const k = v.skip + v.notsaved; dist[k] = (dist[k] || 0) + 1; }
+    const dist = {}; for (const [, v] of Object.entries(byDay)) { const k = v.skip + v.notsaved; dist[k] = (dist[k] || 0) + 1; }
     console.log("  日ごとの作らない本数（not_saved 含む）:", JSON.stringify(dist));
     console.log("  日ごと:", Object.entries(byDay).map(([d, v]) => `${d.slice(5)}:${v.picked}/${v.skip}/${v.notsaved}`).join(" "));
     // 重なり

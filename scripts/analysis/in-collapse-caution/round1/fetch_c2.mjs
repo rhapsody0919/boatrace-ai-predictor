@@ -8,7 +8,7 @@ const snaps = await fetchAll('analogy_v16_snapshots','race_id,stage,run_id,statu
 const rc = new Map(snaps.filter(s=>s.stage==='racecard'&&s.status==='ok').map(s=>[s.race_id,s]));
 const ex = new Map(snaps.filter(s=>s.stage==='exhibition'&&s.status==='ok').map(s=>[s.race_id,s]));
 const out=['race_id,stage,n_layer,n,b1win,computed_at'];
-let first=true; const ids=[...rc.keys()];
+const ids=[...rc.keys()];
 const one = async (id) => {
   const r = rc.get(id);
   const card = await readObject(objectPath(id, r.run_id, 'similar-racecard', id));

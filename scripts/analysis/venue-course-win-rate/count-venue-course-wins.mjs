@@ -17,7 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 const LIB = process.env.REPO_LIB ?? new URL("../../lib/", import.meta.url).href;
-const { supabase, fetchAll } = await import(new URL("supabaseClient.js", LIB.endsWith("/") ? LIB : LIB + "/").href);
+const { fetchAll } = await import(new URL("supabaseClient.js", LIB.endsWith("/") ? LIB : LIB + "/").href);
 const { placedRanks, isNoRaceResult } = await import(new URL("raceOutcomeFilters.js", LIB.endsWith("/") ? LIB : LIB + "/").href);
 
 const arg = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.split("=")[1];

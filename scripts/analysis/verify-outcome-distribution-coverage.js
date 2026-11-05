@@ -9,7 +9,7 @@
  *
  *   引数なし → 直近 5 日間
  */
-import { supabase, fetchAll, VENUE_NAMES } from "../lib/supabaseClient.js";
+import { fetchAll, VENUE_NAMES } from "../lib/supabaseClient.js";
 
 const DAYS = parseInt(process.argv[2] || "5", 10);
 const TOPN_LIST = [3, 5, 10, 20];
