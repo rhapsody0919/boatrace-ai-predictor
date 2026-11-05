@@ -53,11 +53,16 @@ for (const [file, path] of reached) {
 }
 
 // 検査自体の確かめ（辿り方が壊れて何も拾わない状態を緑にしない）
-const probe = reach([join(ROOT, "src/utils/raceDetailHeading.js")]).via;
+const probe = reach([join(ROOT, "src/pages/Blog.jsx")]).via;
 if (![...probe.keys()].some((f) => rel(f) === "src/config/languages.js"))
   failures.push(
-    "検査の確かめ: raceDetailHeading.js から languages.js に届かない（辿り方が壊れている）",
+    "検査の確かめ: Blog.jsx から languages.js に届かない（辿り方が壊れている）",
   );
+const heading = reach([join(ROOT, "src/utils/raceDetailHeading.js")]).via;
+for (const [file, path] of heading) {
+  if (FORBIDDEN.some((re) => re.test(rel(file))))
+    failures.push(`raceDetailHeading.js から禁止のファイルに届く: ${chain(path)}`);
+}
 const outside = [...reached.keys()].filter(
   (f) => !rel(f).startsWith("sns-video-studio/"),
 );

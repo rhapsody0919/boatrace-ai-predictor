@@ -5,7 +5,7 @@
  * 同じ値を出すよう、1箇所で組む。t は i18next の t。Node からも import するため、ブラウザ専用の依存を持ち込まない。
  * 検証: scripts/maintenance/verify-bot-race-function.js
  */
-import { localizePath } from "../config/languages.js";
+import { localizePath } from "../pure/localizePath.js";
 import { GRADE_CONFIG } from "../constants/gradeConfig.js";
 import {
   getRaceStageBadge,
