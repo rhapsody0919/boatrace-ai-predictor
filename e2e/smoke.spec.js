@@ -1916,9 +1916,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rwit-boat-chip")).toHaveCount(6);
 
     // 既定ビュー: 今日の想定コース1本 × 1着率/2連対率/3連対率 + 走数
-    await expect(page.locator(".rwit-today-row")).toHaveCount(6, {
+    // 当社データの6行（全期間〜SG・G1）の前に、公式の「直近3期」の1行（BOA-1295）
+    await expect(page.locator(".rwit-today-row")).toHaveCount(7, {
       timeout: 20000,
     });
+    await expect(
+      page.locator(".rwit-today-row").first().locator("th"),
+    ).toHaveText("直近3期");
     await expect(page.locator(".rwit-today-metric-th")).toHaveCount(3);
     await expect(page.locator(".rwit-today-course")).toContainText("1コース");
     // 枠なり進入の仮定であることを明記する（進入は本番まで確定しない）
@@ -2464,20 +2468,21 @@ test.describe("レースページ再設計（BOA-168）", () => {
   }) => {
     await page.goto("/race/2026-09-29-02-12");
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
-    await page.getByRole("button", { name: /当地/ }).click({ timeout: 30000 });
+    // 6艇の表の期間の切り替え（BOA-1294）にも「当地」のボタンがあるので、1艇ずつの表に絞る
+    await page.locator(".rwit-today-table").getByRole("button", { name: /当地/ }).click({ timeout: 30000 });
     const note = page.locator(".rwit-expanded-note").first();
     await expect(note).toContainText("当地で1コース");
     // 2号艇に切り替えると、同じ「当地」の行のまま2コースの帯になる（以前は閉じた）
     await page.locator(".rwit-boat-chip").nth(1).click();
     await expect(note).toContainText("当地で2コース");
     // 引き継いだ行をもう一度押すと閉じる
-    await page.getByRole("button", { name: /当地/ }).click();
+    await page.locator(".rwit-today-table").getByRole("button", { name: /当地/ }).click();
     await expect(page.locator(".rwit-expanded-note")).toHaveCount(0);
 
     // 引き継いだ先の艇で走数0の行（4号艇の「当地」）は閉じる。ボタンにならず閉じられない
     // 「直近0走」の帯だけが残っていた（ファン評価3周目）
     await page.locator(".rwit-boat-chip").nth(0).click();
-    await page.getByRole("button", { name: /当地/ }).click();
+    await page.locator(".rwit-today-table").getByRole("button", { name: /当地/ }).click();
     await expect(note).toContainText("当地で1コース");
     await page.locator(".rwit-boat-chip").nth(3).click();
     await expect(page.locator(".rwit-expanded-note")).toHaveCount(0);

@@ -799,7 +799,10 @@
       "noteSample": "Boats with few entries (under 10 for course 1, 30 for courses 2–4, 42 for course 5, or 67 for course 6) are shown in gray with no difference, as rates are more prone to random variation. Rates are also hidden for fewer than 10 entries.",
       "notePeriod": "Last 3 terms = the 3 latest published official term records (aggregated for May–October and November–April). These are the same values as the last 3 terms on the racer page. Tap a row to switch the table below to that racer.",
       "fetchError": "Could not load course records for the last 3 terms.",
-      "skippedPeriod": "Terms with no starts excluded"
+      "skippedPeriod": "Terms with no starts excluded",
+      "periodLabel": "Period",
+      "noteLocal": "This venue = our data (since December 2025) at this venue, counted by the actual entry course. Difference = gap from this venue's 1st-place rate for the same course (no colors). Tap a row to switch the table below to that racer.",
+      "localFetchError": "Could not load this venue's results"
     }
   },
   "aiPredictionTab": {

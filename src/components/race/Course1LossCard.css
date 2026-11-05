@@ -1,0 +1,11 @@
+.course1-loss { min-width: 0; }
+.course1-loss-who { display: flex; align-items: center; gap: var(--spacing-1, 0.25rem); margin: 0 0 var(--spacing-1, 0.25rem); color: var(--text-primary); font-size: var(--font-size-sm, 0.875rem); }
+.course1-loss-grade { font-size: var(--font-size-xs, 0.75rem); color: var(--text-secondary); }
+.course1-loss-sub { margin: 0 0 var(--spacing-2, 0.5rem); font-size: var(--font-size-sm, 0.875rem); color: var(--text-secondary); overflow-wrap: anywhere; }
+.course1-loss-rows { margin: 0; }
+.course1-loss-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--spacing-2, 0.5rem); padding: var(--spacing-2, 0.5rem) 0; border-bottom: 1px solid var(--border-hairline); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.course1-loss-row:last-child { border-bottom: 0; }
+.course1-loss-row dt, .course1-loss-row dd { margin: 0; }
+.course1-loss-row dd small { margin-left: 2px; font-size: var(--font-size-xs, 0.75rem); color: var(--text-secondary); }
+.course1-loss-notes { margin-top: var(--spacing-2, 0.5rem); font-size: var(--font-size-xs, 0.75rem); color: var(--text-secondary); }
+.course1-loss-notes p { margin: 0 0 var(--spacing-1, 0.25rem); overflow-wrap: anywhere; }

@@ -198,6 +198,9 @@ function PredictionPanel({
   // イン崩れ注意度のカードから龍神ソナーの類似レースへ（BOA-822）。ソナーの節は ?sonar= を最初の描画で読むが、
   // URL の更新はタブの切り替えより遅れて届くので、最初に開く副タブは prop で渡す（ファン評価1周目）
   const [sonarInitialTab, setSonarInitialTab] = useState(null);
+  // 枠別情報タブの6艇の表の期間（直近3期／当地、BOA-1294）。RaceTabs は非アクティブなタブを
+  // アンマウントするので、タブを移っても選んだ期間が残るようここで持つ。URL・保存には置かない
+  const [sixBoatPeriod, setSixBoatPeriod] = useState("recent3");
   const {
     toast: aiCopyToast,
     showToast: showAiCopyToast,
@@ -648,6 +651,8 @@ function PredictionPanel({
                   venueCode={venueCode}
                   players={prediction.allPlayers}
                   raceId={analysisRaceId}
+                  sixBoatPeriod={sixBoatPeriod}
+                  onSixBoatPeriodChange={setSixBoatPeriod}
                 />
               ),
             },
