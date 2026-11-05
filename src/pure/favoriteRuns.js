@@ -135,10 +135,8 @@ export function buildFavoritesFallback(venuesData, venueCodes, nowHHMM) {
       venueCode: venue.placeCd,
       grade: venue.races[0].raceGrade,
       seriesDay: venue.races[0].seriesDay,
-      finalStartTime: (
-        venue.races.find((race) => race.raceNumber === 12) ??
-        venue.races[venue.races.length - 1]
-      ).startTime,
+      finalStartTime:
+        venue.races.find((race) => race.raceNumber === 12)?.startTime ?? null,
     }))
     .sort(
       (a, b) =>
