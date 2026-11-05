@@ -1,0 +1,63 @@
+/**
+ * 対応言語の唯一の情報源
+ * React 非依存の純粋な JS モジュール（sitemap 生成等の Node スクリプトからも import する）
+ * 言語追加の手順は docs/operation/add-language.md を参照
+ */
+export const SUPPORTED_LANGUAGES = [
+  {
+    code: "ja",
+    label: "日本語",
+    shortLabel: "JA",
+    ogLocale: "ja_JP",
+    hreflang: "ja",
+  },
+  {
+    code: "en",
+    label: "English",
+    shortLabel: "EN",
+    ogLocale: "en_US",
+    hreflang: "en",
+  },
+  // 繁体字の hreflang は地域（TW）でなく文字体系（Hant）で指定する
+  {
+    code: "zh-TW",
+    label: "繁體中文",
+    shortLabel: "中文",
+    ogLocale: "zh_TW",
+    hreflang: "zh-Hant",
+  },
+  {
+    code: "ko",
+    label: "한국어",
+    shortLabel: "한국어",
+    ogLocale: "ko_KR",
+    hreflang: "ko",
+  },
+];
+
+// URL プレフィックスなしで配信するデフォルト言語
+export const DEFAULT_LANGUAGE = "ja";
+
+/**
+ * パスから言語コードとプレフィックス除去後の基準パスを得る
+ * 例: '/en/guide' → { lng: 'en', basePath: '/guide' }、'/guide' → { lng: 'ja', basePath: '/guide' }
+ */
+export function parseLangFromPath(pathname) {
+  for (const { code } of SUPPORTED_LANGUAGES) {
+    if (code === DEFAULT_LANGUAGE) continue;
+    if (pathname === `/${code}` || pathname.startsWith(`/${code}/`)) {
+      return { lng: code, basePath: pathname.slice(code.length + 1) || "/" };
+    }
+  }
+  return { lng: DEFAULT_LANGUAGE, basePath: pathname || "/" };
+}
+
+/**
+ * パスを指定言語のプレフィックス付きに変換する（既存プレフィックスは付け替え）
+ * 例: localizePath('/guide', 'en') → '/en/guide'、localizePath('/en/guide', 'ja') → '/guide'
+ */
+export function localizePath(path, lng) {
+  const { basePath } = parseLangFromPath(path);
+  if (!lng || lng === DEFAULT_LANGUAGE) return basePath;
+  return basePath === "/" ? `/${lng}/` : `/${lng}${basePath}`;
+}
