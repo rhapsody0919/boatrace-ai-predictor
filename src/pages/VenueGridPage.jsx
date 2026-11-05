@@ -225,6 +225,7 @@ function TodayVenueGridPage() {
                         （venuesData は racerId を持たない）。venuesData は代わりの表示
                         （☆の会場・今日の SG・G1）だけに使う */}
                     <FavoriteRunsSection
+                      nextOpenDates={nextOpenDates}
                       venuesData={venuesData}
                       nowHHMM={nowHHMM}
                     />

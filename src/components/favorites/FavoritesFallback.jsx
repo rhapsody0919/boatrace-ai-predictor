@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { trackEvent } from "../../utils/analytics";
 import { GRADE_CONFIG } from "../../constants/gradeConfig";
+import { formatMonthDay } from "../../utils/nextOpenDate";
 import { RACER_LIMIT } from "../../pure/favorites";
 
 const track = (rowKind, rowLink, favState) =>
@@ -21,14 +22,20 @@ const track = (rowKind, rowLink, favState) =>
     fav_state: favState,
   });
 
-function useVenueStateText() {
-  const { t } = useTranslation();
+function useVenueStateText(nextOpenDates) {
+  const { t, i18n } = useTranslation();
+  const separator = i18n.resolvedLanguage === "ja" ? "・" : " · ";
   return (venue) => {
     if (venue.state === "open")
       return t("favorites.venues.open", {
         race: venue.nextRaceNumber,
         time: `${venue.nextStartTime}${t("home.jstNote")}`,
       });
+    const nextDate = nextOpenDates?.get(venue.venueCode);
+    if (venue.state === "closed" && nextDate)
+      return `${t("favorites.venues.closed")}${separator}${t("venueGrid.nextOpen", {
+        date: formatMonthDay(nextDate),
+      })}`;
     return t(
       venue.state === "finished"
         ? "favorites.venues.finished"
@@ -38,10 +45,10 @@ function useVenueStateText() {
 }
 
 /** 出走ありのときの、区画の下の「お気に入りの会場」 */
-export function FavoriteVenueChips({ favVenues }) {
+export function FavoriteVenueChips({ favVenues, nextOpenDates }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
-  const stateText = useVenueStateText();
+  const stateText = useVenueStateText(nextOpenDates);
   if (favVenues.length === 0) return null;
   return (
     <div className="favorite-runs__venues" data-testid="favorite-venues">
@@ -66,10 +73,15 @@ export function FavoriteVenueChips({ favVenues }) {
 }
 
 /** 出走が無いとき（☆0件・今日の出走なし）の中身 */
-export default function FavoritesFallback({ fallback, favState, racerCount }) {
+export default function FavoritesFallback({
+  fallback,
+  favState,
+  racerCount,
+  nextOpenDates,
+}) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
-  const stateText = useVenueStateText();
+  const stateText = useVenueStateText(nextOpenDates);
   const { favVenues, gradeVenues, openVenueCount } = fallback;
   const hasGrades = gradeVenues.length > 0;
   const message =
