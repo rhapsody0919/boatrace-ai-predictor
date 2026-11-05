@@ -100,7 +100,10 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
       {analysis.hasFailure && <InlineFetchError onRetry={analysis.reload} />}
       {/* 想定コース1着率（直近3期）の取得失敗も「—」だけにしない（BOA-1296 /code-review） */}
       {courseStats.status === "error" && (
-        <InlineFetchError message={t("wakuInfo.sixBoat.fetchError")} />
+        <InlineFetchError
+          message={t("wakuInfo.sixBoat.fetchError")}
+          onRetry={courseStats.reload}
+        />
       )}
 
       <div className="drt-table-wrapper">

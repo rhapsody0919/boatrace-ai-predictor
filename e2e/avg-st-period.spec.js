@@ -123,7 +123,7 @@ const COURSE_TERMS = [
   [2026, 1, "2025-05-01", "2025-10-31", 30, 20, 5, 3],
   [2026, 2, "2025-11-01", "2026-04-30", 37, 23, 6, 4],
 ];
-async function stubCourseStats(page, { failed }) {
+async function stubCourseStats(page, opts) {
   await page.route("**/rest/v1/racer_period_stats?*", (route) =>
     route.fulfill({
       json: COURSE_TERMS.map(
@@ -142,7 +142,7 @@ async function stubCourseStats(page, { failed }) {
   );
   await page.route("**/rest/v1/rpc/get_course_win_rate_baseline", (route) =>
     route.fulfill(
-      failed
+      opts.failed
         ? { status: 500, json: { message: "test failure" } }
         : {
             json: {
@@ -193,8 +193,9 @@ test.describe("データ出走表の想定コース1着率（BOA-1296）", () =>
     });
   }
 
-  test("平均の取得に失敗したら6艇とも「—」で、0% と金枠を出さない", async ({ page }) => {
-    await stubCourseStats(page, { failed: true });
+  test("平均の取得に失敗したら6艇とも「—」で、0% と金枠を出さない。再試行で取り直す", async ({ page }) => {
+    const state = { failed: true };
+    await stubCourseStats(page, state);
     await page.goto(RACE);
     await page.locator(".race-tabs-btn", { hasText: "基本情報" }).first().click();
     const table = page.locator(".drt-table").first();
@@ -205,5 +206,15 @@ test.describe("データ出走表の想定コース1着率（BOA-1296）", () =>
     await expect(
       page.locator(".data-race-table .inline-fetch-error", { hasText: "直近3期のコース別成績を読み込めませんでした" }),
     ).toBeVisible();
+    // 再試行で取り直し、値が出てエラーが消える（Codex 審査の P1 の再現）
+    state.failed = false;
+    await page
+      .locator(".data-race-table .inline-fetch-error", { hasText: "直近3期のコース別成績を読み込めませんでした" })
+      .getByRole("button")
+      .click();
+    await expect(row.locator("td.drt-cell").nth(0)).toContainText("63/102");
+    await expect(
+      page.locator(".data-race-table .inline-fetch-error", { hasText: "直近3期のコース別成績を読み込めませんでした" }),
+    ).toHaveCount(0);
   });
 });
