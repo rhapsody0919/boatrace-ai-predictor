@@ -144,7 +144,7 @@ async function scrapeRaceResult(date, placeCd, raceNo, maxRetries = 3) {
       const winningTechnique = scrapeWinningTechnique($);
 
       return { startTimings, winningTechnique };
-    } catch (error) {
+    } catch {
       if (attempt < maxRetries - 1) {
         await sleep((attempt + 1) * 2000);
         continue;

@@ -11,7 +11,6 @@
  */
 
 import {
-  supabase,
   isSupabaseEnabled,
   fetchAll,
 } from "../lib/supabaseClient.js";
