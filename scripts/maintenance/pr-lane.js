@@ -64,6 +64,31 @@ const count = (lines, word) =>
   lines.reduce((n, line) => n + line.split(word).length - 1, 0);
 
 /**
+ * CSS の行から、全体に効くセレクタを返す（行だけを見るので、宣言の途中の行は前後の行と合わせて読まない）。
+ * 全体に効く: クラス・ID・属性を含まない（タグ・* ・疑似クラスだけ）、または :root・html・body・* で始まる。
+ * @ の規則（@media 等）と @keyframes の from・to・N% は数えない
+ * @param {string[]} lines
+ * @returns {string[]}
+ */
+export function globalSelectors(lines) {
+  const text = lines.join("\n").replace(/\/\*[\s\S]*?\*\//g, "");
+  const pieces = text.split("{");
+  pieces.pop(); // 最後の "{" の後ろはセレクタではない
+  return pieces
+    .map((piece) => piece.split(/[};]/).pop().trim())
+    .filter((prelude) => prelude !== "" && !prelude.startsWith("@"))
+    .flatMap((prelude) => prelude.split(",").map((s) => s.trim()))
+    .filter(
+      (sel) =>
+        sel !== "" &&
+        !/^(from|to|\d+(\.\d+)?%)$/.test(sel) &&
+        // :not(.x)・:has(.x) の中のクラスは対象を絞らないので外してから見る
+        (!/[.#[]/.test(sel.replace(/\([^()]*\)/g, "")) ||
+          /^(:root|html|body|\*)(?![\w-])/.test(sel)),
+    );
+}
+
+/**
  * import の閉包: reachFrom の入口から届く差分のファイル → 経路
  * @param {{ files: string[], io: import("../lib/relativeImportGraph.js").GraphIo }[]} trees
  * @returns {Map<string, string>} 差分のファイル → 理由
@@ -139,6 +164,14 @@ export function classify({
         );
         if (status === "D" || removed === undefined || removed.length > 0)
           hit(rule, path, "既存の行を変えた・消した（行の追加だけではない）");
+      }
+      if (status !== "D" && anyMatch(rule.globalSelectors, path)) {
+        const patch = patches.get(path);
+        const found =
+          patch && globalSelectors([...patch.added, ...patch.removed]);
+        if (!patch) hit(rule, path, "差分の行を読めない（安全側）");
+        else if (found.length > 0)
+          hit(rule, path, `全体に効くセレクタ: ${found.join("・")}`);
       }
       if (
         rule.terms &&
@@ -384,13 +417,14 @@ function classifyCommitsInner(repo, base, head) {
   const rules = loadRules(SELF_ROOT, (p) =>
     git(repo, ["show", `${mb}:${p}`], { encoding: "utf8" }),
   );
-  // 行を見る必要があるファイルだけ patch を取る（H5 の行の追加だけ・H9 の語）
+  // 行を見る必要があるファイルだけ patch を取る（H5 の行の追加だけ・H7 の全体のセレクタ・H9 の語）
   const needLines = changes
     .map((c) => c.path)
     .filter((p) =>
       rules.some(
         (r) =>
           anyMatch(r.rowsOnlyAdded, p) ||
+          anyMatch(r.globalSelectors, p) ||
           (r.terms &&
             anyMatch(r.terms.scan, p) &&
             !anyMatch(r.terms.except, p)),

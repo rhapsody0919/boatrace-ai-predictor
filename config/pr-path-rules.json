@@ -7,6 +7,7 @@
     "exceptAdded: 追加のときは当てない。except: どの状態でも当てない。",
     "reachFrom: このパスのコードから相対 import・new URL で辿れるファイルが差分にあれば当たる（scripts/lib/relativeImportGraph.js。base と head の両方の木で辿る）。",
     "rowsOnlyAdded: このファイルは行の追加だけなら当てない（既存の行を消す・書き換えると当たる）。",
+    "globalSelectors: このファイルの足した行・消した行に、全体に効くセレクタ（クラス・ID・属性を含まない、または :root・html・body・* で始まる）があれば当たる。H7 の CSS は、既存の src の .css の変更・削除を changed で当て（Vite の SPA では CSS は全部全体に効き、既存の画面に効く範囲を差分から決められない。#2144）、新しい .css は全体のセレクタを足したときだけ当てる。@ の規則と @keyframes の from・to・N% は数えない。",
     "terms: 差分で足した行に新しく入った語（足した行の数が消した行の数より多い語）で当たる。scan に当たり except に当たらないファイルだけを見る。riskRules の platforms が all の patterns も足す。"
   ],
   "rules": [
@@ -80,7 +81,7 @@
     },
     {
       "id": "H7",
-      "title": "共通部品・ルーティング・i18n の区分・全体の CSS・サイト全体の頭",
+      "title": "共通部品・ルーティング・i18n の区分・全体の CSS（既存の src の .css の変更、新しい .css の全体のセレクタ）・サイト全体の頭",
       "paths": [
         "^src/components/Header\\.(jsx|css)$",
         "^src/components/LanguageSwitcher\\.(jsx|css)$",
@@ -92,7 +93,9 @@
         "^public/robots\\.txt$",
         "^public/sitemap",
         "^public/llms"
-      ]
+      ],
+      "changed": ["^src/.*\\.css$"],
+      "globalSelectors": ["^src/.*\\.css$"]
     },
     {
       "id": "H8",
