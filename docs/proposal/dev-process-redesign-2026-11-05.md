@@ -15,7 +15,7 @@
 | Claude の PR への `@codex review` | ほぼ全部の PR で回っており、返りは約2〜3分（#2266: 04:56:28 → 04:59:07）。軽い種類の約20本はどれも指摘0件。P1 は #2250・#2249・#2243・#2223 の4件で、全部 SNS の送る口・本番のバッチ・統計の数字の PR | issue のコメントと行のコメント（`chatgpt-codex-connector`）。初版で「55本中5本」と書いたのは行のコメントだけを数えた誤り |
 | Codex の取り込みの上限 | 取り込み待ち（PR にしたが未マージ）が6件以上の間は新しい起票を積まない。11/5 15:13 にこれで止まった。10/24〜11/5 の13日中8日で上限に当たった | `~/hq/scripts/codex-feed.py:59`（`INTAKE_CAP = 6`）、`~/hq/logs/codex-feed.log` |
 | Codex の止まり19件の内訳（11/5 14:42） | 取り込み待ち11・順の hold 5・パッチ無し1・関門 NG 1・必須項目が空1 | `~/hq/state/codex-feed.json` の `scan.blocked`（second-opinion の集計） |
-| Codex の見回りの間隔 | `codex-feed`・`codex-pr` とも 1800秒 | `~/hq/launchd/com.terukina.hq.codex-{feed,pr}.plist` |
+| Codex の見回りの間隔 | `codex-feed`・`codex-pr` とも 300秒（11/5 hq 4c48ba5。それまで 1800秒） | `~/hq/launchd/com.terukina.hq.codex-{feed,pr}.plist` |
 | Codex の差し戻し | 10/29 以降、積み130回のうち54回（42%）が差し戻しの積み直し。台帳の理由は ci 18・gate 7 | `~/hq/ledger/codex-prs.jsonl`（second-opinion の集計。ci 18件の内訳は未確認） |
 | Codex の積み → PR | 中央値 約28分（n=86） | 同上 |
 | Codex の週の使用率 | 12.0%、開発の線 59.6%（11/5 15:13） | `scan.dev_yield_why` |

@@ -359,10 +359,58 @@ export async function fetchRecorded(route, options = {}) {
 }
 
 /**
+ * テストが終わった後（context・page が閉じた後）に route の操作が投げる失敗。
+ * 画面はテストの終わりの後にも要求を出す（例: レース詳細の racer_period_stats）。その要求の
+ * ハンドラが route.fetch / route.fulfill / route.fallback を呼ぶと、Playwright は
+ * 「route.fetch: Test ended.」「Target page, context or browser has been closed」で投げ、
+ * 「while running route callback」として実行全体を失敗にする（テスト自体は通っていても）。
+ */
+// 「Test ended.」「Test timeout of Nms exceeded.」は Playwright がテストの終わりで context を閉じる理由
+// （playwright/lib/index.js の closeReason）で、閉じた後の操作の失敗の文言になる
+const ROUTE_AFTER_END =
+  /Test ended|Test timeout of \d+ms exceeded|Target closed|has been closed/;
+
+export function isRouteAfterEndError(error) {
+  return ROUTE_AFTER_END.test(String(error?.message ?? error));
+}
+
+function guardRouteHandler(handler) {
+  return async (route, request) => {
+    try {
+      return await handler(route, request);
+    } catch (error) {
+      // テストの終わりの後の失敗だけ捨てる。ほかの失敗（spec の誤り・録画に無い strict 等）は投げ直す
+      if (isRouteAfterEndError(error)) return;
+      throw error;
+    }
+  };
+}
+
+const guardedRouteTargets = new WeakSet();
+
+/**
+ * page・context の route に登録するハンドラを、すべて guardRouteHandler で包む。
+ * spec ごとに try/catch を書かずに済むよう、ここ1か所で捨てる（#2281・#2283 の e2e-shard 5/5）。
+ * 包んだハンドラは元の関数と別物になるので unroute(url, handler) では外れないが、
+ * unroute はそもそも使わない（scripts/maintenance/verify-e2e-no-unroute.js）。
+ */
+function guardRoutes(target) {
+  if (guardedRouteTargets.has(target)) return;
+  guardedRouteTargets.add(target);
+  const route = target.route.bind(target);
+  target.route = (url, handler, options) =>
+    route(url, guardRouteHandler(handler), options);
+}
+
+/**
  * context に録画の再生（または録画）と時計の固定を適用する。
  * fixture を通らずに browser.newContext() で作った context にも呼ぶこと。
  */
 export async function applyRecording(context, testInfo) {
+  // live でも、テストの終わりの後の route の失敗は捨てる
+  guardRoutes(context);
+  context.on("page", guardRoutes);
+  for (const page of context.pages()) guardRoutes(page);
   if (E2E_MODE === "live") return;
 
   // setFixedTime は Date だけを固定し、setTimeout 等のタイマーは実時間で進める。
@@ -543,6 +591,11 @@ export const test = base.extend({
     await applyRecording(context, testInfo);
     await use(context);
     await waitForInflight(context);
+  },
+  // context の "page" でも包むが、fixture の page は念のためここでも包む（二重には包まない）
+  page: async ({ page }, use) => {
+    guardRoutes(page);
+    await use(page);
   },
 });
 

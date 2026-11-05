@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1676 |
+| 読んだファイル | 1681 |
 | 読み書きのあるファイル | 270 |
 | 表の読み手（箇所） | 988 |
 | 表の書き手（箇所） | 189 |
@@ -236,7 +236,7 @@
 | in_caution_health | api/cron/in-caution-health.js | 22 | scrape_job_state, scrape_slots |
 | in_caution_today_health | api/cron/in-caution-today-health.js | 22 | scrape_job_state, scrape_slots |
 | key_canary_dispatch | api/cron/key-canary-dispatch.js | 16 | scrape_job_state, scrape_slots |
-| kfile_sync | api/cron/kfile-sync.js | 32 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| kfile_sync | api/cron/kfile-sync.js | 33 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | morning_digest | api/cron/morning-digest.js | 20 | morning_digest_days, morning_digest_rows, scrape_job_state, scrape_slots |
 | motor_pretest | api/cron/motor-pretest.js | 24 | scrape_job_state, scrape_slots |
 | odds | api/cron/odds.js | 25 | prediction_odds, race_odds, scrape_job_state, scrape_slots |
@@ -248,20 +248,20 @@
 | race_info | api/cron/race-info.js | 41 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | race_notices | api/cron/race-notices.js | 21 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
 | race_series | api/cron/race-series.js | 20 | scrape_job_state, scrape_slots |
-| race_status | api/cron/race-status.js | 33 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| race_status | api/cron/race-status.js | 34 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | racer_career_main | api/cron/racer-career-main.js | 20 | racer_career_meta, scrape_job_state, scrape_slots |
 | racer_course_technique_stats | api/cron/racer-course-technique-stats.js | 18 | racer_course_technique_stats, scrape_job_state, scrape_slots, venue_course_technique_baseline |
 | racer_news | api/cron/racer-news.js | 21 | racer_news, racer_news_pending, scrape_job_state, scrape_slots |
 | racer_profiles | api/cron/racer-profiles.js | 19 | racer_profiles, scrape_job_state, scrape_slots |
 | races_init | api/cron/races-init.js | 41 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
-| result | api/cron/result.js | 32 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| result_catchup | api/cron/result-catchup.js | 32 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| result | api/cron/result.js | 33 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| result_catchup | api/cron/result-catchup.js | 33 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 17 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 18 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 89 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 91 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | sns_daily | api/cron/sns-daily.js | 19 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
 | sns_metrics | api/cron/sns-metrics.js | 24 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
-| sns_send | api/cron/sns-send.js | 77 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_send | api/cron/sns-send.js | 79 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | venue_motor_stats | api/cron/venue-motor-stats.js | 25 | scrape_job_state, scrape_slots, venue_motor_stats |
 
 ## 表ごとの読み手・書き手
