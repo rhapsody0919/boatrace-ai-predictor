@@ -29,6 +29,7 @@ import {
   NO_DATA_ERROR,
 } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
+import { useSocialMeta } from "../hooks/useSocialMeta";
 import { useNowHHMM } from "../hooks/useNowHHMM";
 import { getLanguage } from "../config/languages";
 import { getTopPageMeta } from "../utils/pageMeta";
@@ -167,6 +168,11 @@ function TodayVenueGridPage() {
   const nextOpenDates = useNextOpenDates();
   // title・description・canonical はボット向け HTML（ADR 0089）と同じ関数で組む
   const meta = getTopPageMeta(t, i18n.resolvedLanguage);
+  useSocialMeta({
+    title: meta.title,
+    description: meta.description,
+    url: meta.canonical,
+  });
 
   return (
     <div className="app">
@@ -357,6 +363,10 @@ function PastVenueGridPage({ date }) {
   // 時刻比較を有効にする（無効のままだと本日の未終了レースが「全レース終了」と
   // 誤表示される）。真に過去の日付ではnullのまま（時刻比較不要）
   const nowHHMM = useNowHHMM(date === getTodayJST());
+  const title = `${formatDate(date)}のAI予想データ - 龍神レーダー`;
+  const description = `${formatDate(date)}のボートレースAI予想データと的中実績。各レース場の予想結果を確認できます。`;
+  const canonical = `https://www.boat-ai.jp/races/${date}`;
+  useSocialMeta({ title, description, url: canonical });
 
   const breadcrumbItems = [
     { name: "ホーム", url: "/" },
@@ -366,12 +376,9 @@ function PastVenueGridPage({ date }) {
 
   return (
     <>
-      <title>{`${formatDate(date)}のAI予想データ - 龍神レーダー`}</title>
-      <meta
-        name="description"
-        content={`${formatDate(date)}のボートレースAI予想データと的中実績。各レース場の予想結果を確認できます。`}
-      />
-      <link rel="canonical" href={`https://www.boat-ai.jp/races/${date}`} />
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <link rel="canonical" href={canonical} />
       <Header />
 
       <div className="race-detail-page">
