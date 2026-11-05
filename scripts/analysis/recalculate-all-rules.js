@@ -40,12 +40,12 @@ const VENUE_NAMES = {
 const GAMAGORI_RULES = [
   // 単勝
   { id: 'G07-W001', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 3 && conf >= 75 },
-  { id: 'G07-W002', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 3 && pred.top3.includes(4) },
+  { id: 'G07-W002', betType: 'win', check: (pred) => pred.topPick === 3 && pred.top3.includes(4) },
   { id: 'G07-W003', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 85 },
   // 複勝
   { id: 'G07-P001', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 3 && conf >= 75 },
-  { id: 'G07-P002', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 4 && raceNo >= 7 },
-  { id: 'G07-P003', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 2 && pred.top3.includes(1) },
+  { id: 'G07-P002', betType: 'place', check: (pred, raceNo) => pred.topPick === 4 && raceNo >= 7 },
+  { id: 'G07-P003', betType: 'place', check: (pred) => pred.topPick === 2 && pred.top3.includes(1) },
   // 3連複
   { id: 'G07-T001', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && conf >= 75 },
   { id: 'G07-T002', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && raceNo >= 7 },
@@ -56,18 +56,18 @@ const GAMAGORI_RULES = [
 const EDOGAWA_RULES = [
   // 単勝
   { id: 'E03-W001', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 2 && conf >= 70 && conf < 80 },
-  { id: 'E03-W002', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 2 && raceNo >= 1 && raceNo <= 4 },
+  { id: 'E03-W002', betType: 'win', check: (pred, raceNo) => pred.topPick === 2 && raceNo >= 1 && raceNo <= 4 },
   { id: 'E03-W003', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 3 && pred.top3[1] === 1 && conf >= 70 },
   { id: 'E03-W004', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 85 },
   // 複勝
-  { id: 'E03-P001', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 2 && raceNo >= 1 && raceNo <= 4 },
-  { id: 'E03-P002', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 3 && pred.top3.includes(1) },
+  { id: 'E03-P001', betType: 'place', check: (pred, raceNo) => pred.topPick === 2 && raceNo >= 1 && raceNo <= 4 },
+  { id: 'E03-P002', betType: 'place', check: (pred) => pred.topPick === 3 && pred.top3.includes(1) },
   { id: 'E03-P003', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 4 && conf >= 75 },
   { id: 'E03-P004', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 80 },
   // 3連複
-  { id: 'E03-T001', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => predSorted === '1-2-4' },
-  { id: 'E03-T002', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => predSorted === '1-2-3' },
-  { id: 'E03-T003', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => raceNo >= 9 && predSorted === '1-2-4' },
+  { id: 'E03-T001', betType: 'trio', check: (pred, raceNo, conf, predSorted) => predSorted === '1-2-4' },
+  { id: 'E03-T002', betType: 'trio', check: (pred, raceNo, conf, predSorted) => predSorted === '1-2-3' },
+  { id: 'E03-T003', betType: 'trio', check: (pred, raceNo, conf, predSorted) => raceNo >= 9 && predSorted === '1-2-4' },
   { id: 'E03-T004', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 },
   { id: 'E03-T005', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && conf >= 75 },
   { id: 'E03-T006', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && pred.top3.includes(2) && pred.top3.includes(4) },
@@ -77,12 +77,12 @@ const EDOGAWA_RULES = [
 const HAMANAKO_RULES = [
   // 単勝
   { id: 'H06-W001', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 2 && conf >= 80 },
-  { id: 'H06-W002', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 3 && pred.top3.includes(1) },
+  { id: 'H06-W002', betType: 'win', check: (pred) => pred.topPick === 3 && pred.top3.includes(1) },
   { id: 'H06-W003', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 85 },
   // 複勝
   { id: 'H06-P001', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 2 && conf >= 75 },
-  { id: 'H06-P002', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 3 && raceNo >= 7 },
-  { id: 'H06-P003', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 4 && pred.top3.includes(1) },
+  { id: 'H06-P002', betType: 'place', check: (pred, raceNo) => pred.topPick === 3 && raceNo >= 7 },
+  { id: 'H06-P003', betType: 'place', check: (pred) => pred.topPick === 4 && pred.top3.includes(1) },
   // 3連複
   { id: 'H06-T001', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && conf >= 80 },
   { id: 'H06-T002', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && pred.top3.includes(2) },
@@ -93,12 +93,12 @@ const HAMANAKO_RULES = [
 const MIKUNI_RULES = [
   // 単勝
   { id: 'M10-W001', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 2 && conf >= 80 },
-  { id: 'M10-W002', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 3 && pred.top3.includes(1) },
+  { id: 'M10-W002', betType: 'win', check: (pred) => pred.topPick === 3 && pred.top3.includes(1) },
   { id: 'M10-W003', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 85 },
   // 複勝
-  { id: 'M10-P001', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 2 && raceNo >= 7 },
+  { id: 'M10-P001', betType: 'place', check: (pred, raceNo) => pred.topPick === 2 && raceNo >= 7 },
   { id: 'M10-P002', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 3 && conf >= 75 },
-  { id: 'M10-P003', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 4 && pred.top3.includes(1) },
+  { id: 'M10-P003', betType: 'place', check: (pred) => pred.topPick === 4 && pred.top3.includes(1) },
   // 3連複
   { id: 'M10-T001', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => !has1 && conf >= 80 },
   { id: 'M10-T003', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && pred.top3.includes(2) && conf >= 75 },
@@ -109,12 +109,12 @@ const MIKUNI_RULES = [
 const BIWAKO_RULES = [
   // 単勝
   { id: 'B11-W001', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 2 && conf >= 80 },
-  { id: 'B11-W002', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 3 && pred.top3.includes(1) },
+  { id: 'B11-W002', betType: 'win', check: (pred) => pred.topPick === 3 && pred.top3.includes(1) },
   { id: 'B11-W003', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 85 },
   // 複勝
-  { id: 'B11-P001', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 2 && raceNo >= 7 },
+  { id: 'B11-P001', betType: 'place', check: (pred, raceNo) => pred.topPick === 2 && raceNo >= 7 },
   { id: 'B11-P002', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 3 && conf >= 75 },
-  { id: 'B11-P003', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 4 && pred.top3.includes(1) },
+  { id: 'B11-P003', betType: 'place', check: (pred) => pred.topPick === 4 && pred.top3.includes(1) },
   { id: 'B11-P004', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 80 },
   // 3連複
   { id: 'B11-T001', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && conf >= 80 },
@@ -126,8 +126,8 @@ const BIWAKO_RULES = [
 const MARUGAME_RULES = [
   // 複勝
   { id: 'R15-P001', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 2 && conf >= 80 },
-  { id: 'R15-P002', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 3 && raceNo >= 7 },
-  { id: 'R15-P003', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 4 && pred.top3.includes(1) },
+  { id: 'R15-P002', betType: 'place', check: (pred, raceNo) => pred.topPick === 3 && raceNo >= 7 },
+  { id: 'R15-P003', betType: 'place', check: (pred) => pred.topPick === 4 && pred.top3.includes(1) },
   // 単勝
   { id: 'R15-W001', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 2 && conf >= 85 },
   { id: 'R15-W002', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 85 },
@@ -141,13 +141,13 @@ const MARUGAME_RULES = [
 const FUKUOKA_RULES = [
   // 単勝
   { id: 'F22-W001', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 2 && conf >= 80 },
-  { id: 'F22-W002', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 3 && pred.top3.includes(1) },
+  { id: 'F22-W002', betType: 'win', check: (pred) => pred.topPick === 3 && pred.top3.includes(1) },
   { id: 'F22-W003', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 85 },
-  { id: 'F22-W004', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 4 && raceNo >= 10 },
-  { id: 'F22-W005', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 2 && raceNo >= 1 && raceNo <= 4 },
+  { id: 'F22-W004', betType: 'win', check: (pred, raceNo) => pred.topPick === 4 && raceNo >= 10 },
+  { id: 'F22-W005', betType: 'win', check: (pred, raceNo) => pred.topPick === 2 && raceNo >= 1 && raceNo <= 4 },
   { id: 'F22-W006', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 3 && conf >= 75 },
   // 複勝
-  { id: 'F22-P001', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 2 && raceNo >= 7 },
+  { id: 'F22-P001', betType: 'place', check: (pred, raceNo) => pred.topPick === 2 && raceNo >= 7 },
   { id: 'F22-P002', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 3 && conf >= 75 },
   // 3連複
   { id: 'F22-T001', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && conf >= 80 },
@@ -159,13 +159,13 @@ const FUKUOKA_RULES = [
 const NARUTO_RULES = [
   // 単勝
   { id: 'N14-W001', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 2 && conf >= 80 },
-  { id: 'N14-W002', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 3 && pred.top3.includes(1) },
-  { id: 'N14-W003', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 4 && raceNo >= 10 },
+  { id: 'N14-W002', betType: 'win', check: (pred) => pred.topPick === 3 && pred.top3.includes(1) },
+  { id: 'N14-W003', betType: 'win', check: (pred, raceNo) => pred.topPick === 4 && raceNo >= 10 },
   { id: 'N14-W004', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 85 },
   // 複勝
-  { id: 'N14-P001', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 2 && raceNo >= 7 },
+  { id: 'N14-P001', betType: 'place', check: (pred, raceNo) => pred.topPick === 2 && raceNo >= 7 },
   { id: 'N14-P002', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 3 && conf >= 75 },
-  { id: 'N14-P003', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 4 && pred.top3.includes(1) },
+  { id: 'N14-P003', betType: 'place', check: (pred) => pred.topPick === 4 && pred.top3.includes(1) },
   { id: 'N14-P004', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 80 },
   // 3連複
   { id: 'N14-T005', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && raceNo >= 10 && raceNo <= 12 },
@@ -177,12 +177,12 @@ const NARUTO_RULES = [
 const KOJIMA_RULES = [
   // 単勝
   { id: 'K16-W001', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 2 && conf >= 80 },
-  { id: 'K16-W002', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 3 && pred.top3.includes(1) },
+  { id: 'K16-W002', betType: 'win', check: (pred) => pred.topPick === 3 && pred.top3.includes(1) },
   { id: 'K16-W003', betType: 'win', check: (pred, raceNo, conf) => pred.topPick === 1 && conf >= 85 },
   // 複勝
-  { id: 'K16-P001', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 2 && raceNo >= 7 },
+  { id: 'K16-P001', betType: 'place', check: (pred, raceNo) => pred.topPick === 2 && raceNo >= 7 },
   { id: 'K16-P002', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 3 && conf >= 75 },
-  { id: 'K16-P003', betType: 'place', check: (pred, raceNo, conf) => pred.topPick === 4 && pred.top3.includes(1) },
+  { id: 'K16-P003', betType: 'place', check: (pred) => pred.topPick === 4 && pred.top3.includes(1) },
   // 3連複
   { id: 'K16-T001', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && conf >= 80 },
   { id: 'K16-T003', betType: 'trio', check: (pred, raceNo, conf, predSorted, has1) => has1 && pred.top3.includes(2) },
@@ -310,7 +310,7 @@ async function recalculateAllRules() {
             stats.hits++;
             stats.totalPayout += payout;
           }
-        } catch (e) {
+        } catch {
           // エラー無視
         }
       }

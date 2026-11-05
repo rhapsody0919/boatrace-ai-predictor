@@ -18,13 +18,13 @@ const VENUE_RULES = {
     {
       id: 'E03-T001-S',
       betType: 'trio',
-      check: (pred, raceNo, conf, predSorted, has1) =>
+      check: (pred, raceNo, conf, predSorted) =>
         predSorted === '1-2-4' && raceNo >= 9 && conf >= 80
     },
     {
       id: 'E03-T001-M',
       betType: 'trio',
-      check: (pred, raceNo, conf, predSorted, has1) =>
+      check: (pred, raceNo, conf, predSorted) =>
         ['1-2-4', '1-2-3'].includes(predSorted) && raceNo >= 9 && conf >= 80
     },
     {
@@ -42,19 +42,19 @@ const VENUE_RULES = {
     {
       id: 'E03-P002',
       betType: 'place',
-      check: (pred, raceNo, conf, predSorted, has1) =>
+      check: (pred, raceNo) =>
         pred.top_pick === 1 && raceNo >= 9
     },
     {
       id: 'E03-W002',
       betType: 'win',
-      check: (pred, raceNo, conf, predSorted, has1) =>
+      check: (pred, raceNo) =>
         pred.top_pick === 2 && raceNo <= 4
     },
     {
       id: 'E03-W003',
       betType: 'win',
-      check: (pred, raceNo, conf, predSorted, has1) =>
+      check: (pred, raceNo, conf) =>
         pred.top_pick === 3 && pred.top_2nd === 1 && conf >= 70
     }
   ]
@@ -75,7 +75,7 @@ function getMatchingRulesForPrediction(prediction, venueCode, raceNo) {
       if (rule.check(prediction, raceNo, conf, predSorted, has1)) {
         matched.push({ ruleId: rule.id, betType: rule.betType });
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
   }

@@ -65,7 +65,7 @@ function linearRegression(x, y) {
   const sumY = y.reduce((a, b) => a + b, 0);
   const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
   const sumX2 = x.reduce((a, b) => a + b * b, 0);
-  const sumY2 = y.reduce((a, b) => a + b * b, 0);
+  y.reduce((a, b) => a + b * b, 0);
   const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
   const intercept = (sumY - slope * sumX) / n;
   const ssRes = y.reduce(
@@ -292,7 +292,7 @@ async function main() {
     }
 
     const significant = Object.entries(techBins)
-      .filter(([_, d]) => d.count >= 30)
+      .filter(([, d]) => d.count >= 30)
       .sort((a, b) => a[1].order - b[1].order);
     if (significant.length === 0) continue;
 
@@ -380,8 +380,8 @@ async function main() {
 
   // 信頼できる確率帯
   const reliableBins = Object.entries(bins)
-    .filter(([_, d]) => d.count >= 50)
-    .filter(([_, d]) => {
+    .filter(([, d]) => d.count >= 50)
+    .filter(([, d]) => {
       const avgPred = (d.predSum / d.count) * 100;
       const actualRate = (d.sum / d.count) * 100;
       return Math.abs(avgPred - actualRate) < 5;
@@ -389,8 +389,8 @@ async function main() {
     .map(([label]) => label);
 
   const unreliableBins = Object.entries(bins)
-    .filter(([_, d]) => d.count >= 50)
-    .filter(([_, d]) => {
+    .filter(([, d]) => d.count >= 50)
+    .filter(([, d]) => {
       const avgPred = (d.predSum / d.count) * 100;
       const actualRate = (d.sum / d.count) * 100;
       return Math.abs(avgPred - actualRate) >= 10;
