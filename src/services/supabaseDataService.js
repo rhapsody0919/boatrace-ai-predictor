@@ -86,12 +86,12 @@ import {
   pickLatestPretestByRacer,
   shiftDate,
 } from "../utils/pretestRows";
-// get_today_races の整形は、ボット向け HTML の関数（ADR 0089）と共有するため純粋なモジュールに置く
 import {
   pastMotorRows,
   recalcMotorRows,
   settleMotorBreakdown,
 } from "../pure/raceMotorBreakdown.js";
+// get_today_races の整形は、ボット向け HTML の関数（ADR 0089）と共有するため純粋なモジュールに置く
 import { transformTodayRaces } from "../utils/todayRaces.js";
 import {
   tallyVenuePayouts,
