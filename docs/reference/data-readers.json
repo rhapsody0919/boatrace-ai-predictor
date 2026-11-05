@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1675,
+    "sourceFiles": 1676,
     "filesWithAccess": 270,
     "tableReaders": 988,
     "tableWriters": 189,
@@ -8516,7 +8516,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-race-data.js:196",
+          "ref": "scripts/maintenance/backfill-race-data.js:182",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -8540,7 +8540,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-racer-ids.js:229",
+          "ref": "scripts/maintenance/backfill-racer-ids.js:228",
           "op": "update",
           "via": "client",
           "columns": [
@@ -8651,11 +8651,11 @@
             "scripts/lib/racelistBackfillRows.js:127",
             "scripts/lib/racerProfileSync.js:335",
             "scripts/lib/snsTodayDigestV3.js:108",
-            "scripts/maintenance/backfill-race-data.js:196",
+            "scripts/maintenance/backfill-race-data.js:182",
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
             "scripts/maintenance/backfill-race-entries-racer-id.js:155",
             "scripts/maintenance/backfill-racer-ids.js:128",
-            "scripts/maintenance/backfill-racer-ids.js:229",
+            "scripts/maintenance/backfill-racer-ids.js:228",
             "scripts/maintenance/check-morning-init-shadow.js:152",
             "scripts/maintenance/delete-phantom-race-days.js:112",
             "scripts/maintenance/migrate-to-supabase.js:259",
@@ -8776,11 +8776,11 @@
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/racerProfileSync.js:335",
             "scripts/lib/snsTodayDigestV3.js:108",
-            "scripts/maintenance/backfill-race-data.js:196",
+            "scripts/maintenance/backfill-race-data.js:182",
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
             "scripts/maintenance/backfill-race-entries-racer-id.js:155",
             "scripts/maintenance/backfill-racer-ids.js:128",
-            "scripts/maintenance/backfill-racer-ids.js:229",
+            "scripts/maintenance/backfill-racer-ids.js:228",
             "scripts/maintenance/check-morning-init-shadow.js:152",
             "scripts/maintenance/delete-phantom-race-days.js:112",
             "scripts/maintenance/migrate-to-supabase.js:259",
@@ -9224,7 +9224,7 @@
           "writers": [
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
             "scripts/maintenance/backfill-race-entries-racer-id.js:155",
-            "scripts/maintenance/backfill-racer-ids.js:229"
+            "scripts/maintenance/backfill-racer-ids.js:228"
           ],
           "sql": [
             "rpc:compute_racer_course_technique_stats",
@@ -11641,7 +11641,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-race-data.js:293",
+          "ref": "scripts/maintenance/backfill-race-data.js:279",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12072,7 +12072,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-race-data.js:209",
+          "ref": "scripts/maintenance/backfill-race-data.js:195",
           "op": "update",
           "via": "client",
           "columns": [
@@ -12182,8 +12182,8 @@
             "scripts/maintenance/backfill-actual-course.js:111",
             "scripts/maintenance/backfill-actual-course.js:65",
             "scripts/maintenance/backfill-place-hits.js:31",
-            "scripts/maintenance/backfill-race-data.js:209",
-            "scripts/maintenance/backfill-race-data.js:293",
+            "scripts/maintenance/backfill-race-data.js:195",
+            "scripts/maintenance/backfill-race-data.js:279",
             "scripts/maintenance/backfill-rank456-from-kfile.js:157",
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
@@ -12565,13 +12565,13 @@
             "scripts/daily/update-losing-technique-stats.js:55",
             "scripts/daily/update-nige-outcome-distribution.js:62",
             "scripts/daily/update-winning-technique-stats.js:62",
-            "scripts/maintenance/backfill-race-data.js:293",
+            "scripts/maintenance/backfill-race-data.js:279",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
             "scripts/maintenance/backfill-start-timings.js:276",
             "src/services/supabaseDataService.js:5917"
           ],
           "writers": [
-            "scripts/maintenance/backfill-race-data.js:209",
+            "scripts/maintenance/backfill-race-data.js:195",
             "scripts/maintenance/backfill-start-timings.js:186"
           ],
           "sql": [
@@ -16891,7 +16891,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:746",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:745",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17075,7 +17075,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-race-data.js:240",
+          "ref": "scripts/maintenance/backfill-race-data.js:226",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17934,7 +17934,7 @@
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSchedule.js:44",
             "scripts/lib/raceStatusJob.js:109",
-            "scripts/lib/scrapeJobs/monitor.js:746",
+            "scripts/lib/scrapeJobs/monitor.js:745",
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
             "scripts/lib/scrapeJobs/resultHandlers.js:153",
             "scripts/lib/scrapeJobs/resultHandlers.js:275",
@@ -17947,7 +17947,7 @@
             "scripts/maintenance/backfill-missing-venue-day.js:156",
             "scripts/maintenance/backfill-missing-venue-day.js:73",
             "scripts/maintenance/backfill-race-conditions.js:70",
-            "scripts/maintenance/backfill-race-data.js:240",
+            "scripts/maintenance/backfill-race-data.js:226",
             "scripts/maintenance/backfill-race-series-meta.js:147",
             "scripts/maintenance/backfill-results-by-race-id.js:37",
             "scripts/maintenance/backfill-start-timings.js:223",
@@ -18053,7 +18053,7 @@
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSeriesLookup.js:174",
             "scripts/lib/raceStatusJob.js:109",
-            "scripts/lib/scrapeJobs/monitor.js:746",
+            "scripts/lib/scrapeJobs/monitor.js:745",
             "scripts/lib/scrapeJobs/resultHandlers.js:153",
             "scripts/lib/scrapeJobs/resultHandlers.js:275",
             "scripts/lib/snsAutoPlanRunner.js:741",
@@ -18061,7 +18061,7 @@
             "scripts/lib/snsTodayDigestV3.js:145",
             "scripts/maintenance/backfill-missing-venue-day.js:156",
             "scripts/maintenance/backfill-missing-venue-day.js:73",
-            "scripts/maintenance/backfill-race-data.js:240",
+            "scripts/maintenance/backfill-race-data.js:226",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/backfill-start-timings.js:223",
             "scripts/maintenance/delete-phantom-race-days.js:103",
@@ -18150,7 +18150,7 @@
             "scripts/maintenance/backfill-exhibition-by-race-id.js:35",
             "scripts/maintenance/backfill-missing-venue-day.js:156",
             "scripts/maintenance/backfill-missing-venue-day.js:73",
-            "scripts/maintenance/backfill-race-data.js:240",
+            "scripts/maintenance/backfill-race-data.js:226",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/backfill-results-by-race-id.js:37",
             "scripts/maintenance/backfill-start-timings.js:223",
@@ -18199,7 +18199,7 @@
             "scripts/lib/snsTodayDigestV3.js:100",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:35",
             "scripts/maintenance/backfill-missing-venue-day.js:73",
-            "scripts/maintenance/backfill-race-data.js:240",
+            "scripts/maintenance/backfill-race-data.js:226",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/backfill-results-by-race-id.js:37",
             "scripts/maintenance/backfill-start-timings.js:223",
@@ -18841,7 +18841,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:714",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:713",
           "op": "select",
           "via": "client",
           "columns": [
@@ -19314,7 +19314,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:724",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:723",
           "op": "select",
           "via": "client",
           "columns": [

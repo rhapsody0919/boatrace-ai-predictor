@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1675 |
+| 読んだファイル | 1676 |
 | 読み書きのあるファイル | 270 |
 | 表の読み手（箇所） | 988 |
 | 表の書き手（箇所） | 189 |
@@ -983,10 +983,10 @@
 - 書き手（10）: 
   - `scripts/daily/generate-predictions.js:1035` upsert(helper:upsertChangedRows) [?]
   - `scripts/daily/update-race-info.js:443` upsert(helper:upsertChangedRows) [?]
-  - `scripts/maintenance/backfill-race-data.js:196` upsert [?]
+  - `scripts/maintenance/backfill-race-data.js:182` upsert [?]
   - `scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155` update [racer_id]
   - `scripts/maintenance/backfill-race-entries-racer-id.js:155` update [racer_id]
-  - `scripts/maintenance/backfill-racer-ids.js:229` update [racer_id]
+  - `scripts/maintenance/backfill-racer-ids.js:228` update [racer_id]
   - `scripts/maintenance/migrate-to-supabase.js:259` upsert [?]
   - `scripts/maintenance/racelist-backfill.js:411` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/restore-contaminated-race-entries.js:206` upsert(helper:upsertChangedRows) [?]
@@ -1232,7 +1232,7 @@
   - `scripts/maintenance/backfill-kb-recent-results.js:351` select(helper:upsertChangedRows)
   - `scripts/maintenance/backfill-opening-day-races.js:98` select(helper:count)
   - `scripts/maintenance/backfill-place-hits.js:31` select [payout_place_1, payout_place_2, race_id, rank1, rank2, rank3]
-  - `scripts/maintenance/backfill-race-data.js:293` select [race_id, winning_technique]
+  - `scripts/maintenance/backfill-race-data.js:279` select [race_id, winning_technique]
   - `scripts/maintenance/backfill-rank456-from-kfile.js:75` select [race_id, rank1, rank2, rank3, rank4]
   - `scripts/maintenance/backfill-refund-hit-flags.js:77` select(helper:fetchAll)
   - `scripts/maintenance/backfill-results-by-race-id.js:52` select [payout_win, race_id, winning_technique]
@@ -1281,7 +1281,7 @@
   - `scripts/lib/raceResultFix.js:117` update [?]
   - `scripts/maintenance/backfill-actual-course.js:111` update [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6]
   - `scripts/maintenance/backfill-kb-recent-results.js:351` upsert(helper:upsertChangedRows) [?]
-  - `scripts/maintenance/backfill-race-data.js:209` update [winning_technique]
+  - `scripts/maintenance/backfill-race-data.js:195` update [winning_technique]
   - `scripts/maintenance/backfill-rank456-from-kfile.js:157` update [rank4, rank5, rank6]
   - `scripts/maintenance/backfill-start-timings.js:186` update [winning_technique]
   - `scripts/maintenance/migrate-to-supabase.js:284` upsert [?]
@@ -1570,7 +1570,7 @@
   - `scripts/lib/raceSeriesLookup.js:174` select [cancellation_status, race_date, venue_code]
   - `scripts/lib/raceStatusJob.js:109` select [cancellation_status, race_date, race_id, race_number, venue_code]
   - `scripts/lib/racesInit/job.js:122` select(helper:fetchAll)
-  - `scripts/lib/scrapeJobs/monitor.js:746` select [race_date, race_id]
+  - `scripts/lib/scrapeJobs/monitor.js:745` select [race_date, race_id]
   - `scripts/lib/scrapeJobs/pcexpectHandlers.js:33` select [race_id, start_time]
   - `scripts/lib/scrapeJobs/resultHandlers.js:153` select [race_date, race_id, start_time]
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select(embed) [cancellation_status]
@@ -1592,7 +1592,7 @@
   - `scripts/maintenance/backfill-opening-day-races.js:147` select(helper:upsertChangedRows)
   - `scripts/maintenance/backfill-pit-reports.js:123` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-conditions.js:70` select [cancellation_status, race_id]
-  - `scripts/maintenance/backfill-race-data.js:240` select [race_date, race_id, race_number, venue_code]
+  - `scripts/maintenance/backfill-race-data.js:226` select [race_date, race_id, race_number, venue_code]
   - `scripts/maintenance/backfill-race-series-meta.js:91` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:173` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:313` select(helper:fetchAll)
@@ -1715,7 +1715,7 @@
   - `scripts/lib/motorPretestJob.js:197` select [job, last_target_date, mode]
   - `scripts/lib/racesInit/job.js:148` select [job, mode]
   - `scripts/lib/racesInit/predictCodeCheck.js:104` select [job, last_report]
-  - `scripts/lib/scrapeJobs/monitor.js:714` select [*]
+  - `scripts/lib/scrapeJobs/monitor.js:713` select [*]
   - `scripts/lib/scrapeJobs/store.js:86` select [*, job]
   - `scripts/lib/scrapeJobs/store.js:286` select [?, job]
   - `scripts/maintenance/check-morning-init-shadow.js:107` select [consecutive_failures, cursor, job, last_error, last_success_at, mode]
@@ -1748,7 +1748,7 @@
 - 読み手（10）: 
   - `scripts/lib/boatcast/oritenJob.js:374` select [job, outcome, race_date, race_id, status]
   - `scripts/lib/boatcast/oritenJob.js:534` select [job, race_date, race_id]
-  - `scripts/lib/scrapeJobs/monitor.js:724` select [?]
+  - `scripts/lib/scrapeJobs/monitor.js:723` select [?]
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select [job, race_date, race_id]
   - `scripts/lib/scrapeJobs/resultHandlers.js:316` select [job, race_date, race_id, status]
   - `scripts/maintenance/check-morning-init-shadow.js:211` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
