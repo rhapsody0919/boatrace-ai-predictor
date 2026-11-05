@@ -1491,13 +1491,13 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-predictions.js:1111",
+          "ref": "scripts/daily/generate-predictions.js:1070",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
         },
         {
-          "ref": "scripts/daily/generate-predictions.js:1342",
+          "ref": "scripts/daily/generate-predictions.js:1301",
           "op": "select",
           "via": "helper:selectByRaceIds",
           "columns": []
@@ -1813,7 +1813,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/generate-predictions.js:1111",
+          "ref": "scripts/daily/generate-predictions.js:1070",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -5841,7 +5841,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/generate-predictions.js:1761",
+          "ref": "scripts/daily/generate-predictions.js:1720",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -5973,7 +5973,7 @@
             "scripts/daily-rule-tracking.js:129",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/generate-morning-digest.js:326",
-            "scripts/daily/generate-predictions.js:1761",
+            "scripts/daily/generate-predictions.js:1720",
             "scripts/daily/generate-unified-predictions.js:508",
             "scripts/daily/generate-unified-trifecta-reference.js:44",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -6022,7 +6022,7 @@
             "scripts/daily-rule-tracking.js:129",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/generate-morning-digest.js:326",
-            "scripts/daily/generate-predictions.js:1761",
+            "scripts/daily/generate-predictions.js:1720",
             "scripts/daily/generate-unified-predictions.js:508",
             "scripts/daily/generate-unified-trifecta-reference.js:44",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -6496,7 +6496,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-predictions.js:1341",
+          "ref": "scripts/daily/generate-predictions.js:1300",
           "op": "select",
           "via": "helper:selectByRaceIds",
           "columns": []
@@ -7532,13 +7532,13 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-predictions.js:1076",
+          "ref": "scripts/daily/generate-predictions.js:1035",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
         },
         {
-          "ref": "scripts/daily/generate-predictions.js:1340",
+          "ref": "scripts/daily/generate-predictions.js:1299",
           "op": "select",
           "via": "helper:selectByRaceIds",
           "columns": []
@@ -8500,7 +8500,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/generate-predictions.js:1076",
+          "ref": "scripts/daily/generate-predictions.js:1035",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -13977,7 +13977,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-predictions.js:594",
+          "ref": "scripts/daily/generate-predictions.js:553",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14057,7 +14057,7 @@
             "scripts/analysis/calibrate-unified-model.js:177",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
             "scripts/analysis/verify-volatility-predictive-power.js:93",
-            "scripts/daily/generate-predictions.js:594",
+            "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
             "scripts/daily/generate-unified-trifecta-reference.js:117",
             "src/services/supabaseDataService.js:4158"
@@ -14075,7 +14075,7 @@
             "scripts/analysis/calibrate-unified-model.js:177",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
             "scripts/analysis/verify-volatility-predictive-power.js:93",
-            "scripts/daily/generate-predictions.js:594",
+            "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
             "scripts/daily/generate-unified-trifecta-reference.js:117",
             "src/services/supabaseDataService.js:4158"
@@ -14091,7 +14091,7 @@
             "scripts/analysis/calibrate-unified-model.js:177",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
             "scripts/analysis/verify-volatility-predictive-power.js:93",
-            "scripts/daily/generate-predictions.js:594",
+            "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
             "scripts/daily/generate-unified-trifecta-reference.js:117",
             "src/services/supabaseDataService.js:4158"
@@ -14113,7 +14113,7 @@
             "scripts/analysis/calibrate-unified-model.js:177",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
             "scripts/analysis/verify-volatility-predictive-power.js:93",
-            "scripts/daily/generate-predictions.js:594",
+            "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
             "src/services/supabaseDataService.js:4158"
           ],
@@ -14139,7 +14139,7 @@
             "scripts/analysis/calibrate-unified-model.js:177",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
             "scripts/analysis/verify-volatility-predictive-power.js:93",
-            "scripts/daily/generate-predictions.js:594",
+            "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118"
           ],
           "writers": [],
@@ -14175,7 +14175,7 @@
             "scripts/analysis/calibrate-unified-model.js:177",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
             "scripts/analysis/verify-volatility-predictive-power.js:93",
-            "scripts/daily/generate-predictions.js:594",
+            "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118"
           ],
           "writers": [],
@@ -14190,7 +14190,7 @@
             "scripts/analysis/calibrate-unified-model.js:177",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
             "scripts/analysis/verify-volatility-predictive-power.js:93",
-            "scripts/daily/generate-predictions.js:594",
+            "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
             "scripts/daily/generate-unified-trifecta-reference.js:117",
             "src/services/supabaseDataService.js:4158"
@@ -16578,19 +16578,19 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-predictions.js:1012",
+          "ref": "scripts/daily/generate-predictions.js:971",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
         },
         {
-          "ref": "scripts/daily/generate-predictions.js:1343",
+          "ref": "scripts/daily/generate-predictions.js:1302",
           "op": "select",
           "via": "helper:selectByRaceIds",
           "columns": []
         },
         {
-          "ref": "scripts/daily/generate-predictions.js:1461",
+          "ref": "scripts/daily/generate-predictions.js:1420",
           "op": "select",
           "via": "helper:filterUnchangedRows",
           "columns": []
@@ -17686,7 +17686,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/generate-predictions.js:1012",
+          "ref": "scripts/daily/generate-predictions.js:971",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -17694,7 +17694,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-predictions.js:1693",
+          "ref": "scripts/daily/generate-predictions.js:1652",
           "op": "update",
           "via": "client",
           "columns": [
@@ -17903,7 +17903,7 @@
             "scripts/analysis/verify-volatility-predictive-power.js:76",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/generate-morning-digest.js:133",
-            "scripts/daily/generate-predictions.js:1693",
+            "scripts/daily/generate-predictions.js:1652",
             "scripts/daily/morning-init.js:184",
             "scripts/daily/morning-init.js:229",
             "scripts/daily/morning-init.js:263",
@@ -29443,22 +29443,22 @@
       "reachableFiles": 41,
       "writes": {
         "exhibition_data": [
-          "scripts/daily/generate-predictions.js:1111",
+          "scripts/daily/generate-predictions.js:1070",
           "scripts/daily/scrape-exhibition-data.js:265"
         ],
         "predictions": [
-          "scripts/daily/generate-predictions.js:1761"
+          "scripts/daily/generate-predictions.js:1720"
         ],
         "race_conditions": [
           "scripts/lib/raceConditionsWriter.js:44"
         ],
         "race_entries": [
-          "scripts/daily/generate-predictions.js:1076",
+          "scripts/daily/generate-predictions.js:1035",
           "scripts/daily/update-race-info.js:443"
         ],
         "races": [
-          "scripts/daily/generate-predictions.js:1012",
-          "scripts/daily/generate-predictions.js:1693",
+          "scripts/daily/generate-predictions.js:1652",
+          "scripts/daily/generate-predictions.js:971",
           "scripts/daily/update-race-info.js:376",
           "scripts/daily/update-race-info.js:400",
           "scripts/daily/update-race-info.js:513"
@@ -29859,22 +29859,22 @@
       "reachableFiles": 41,
       "writes": {
         "exhibition_data": [
-          "scripts/daily/generate-predictions.js:1111",
+          "scripts/daily/generate-predictions.js:1070",
           "scripts/daily/scrape-exhibition-data.js:265"
         ],
         "predictions": [
-          "scripts/daily/generate-predictions.js:1761"
+          "scripts/daily/generate-predictions.js:1720"
         ],
         "race_conditions": [
           "scripts/lib/raceConditionsWriter.js:44"
         ],
         "race_entries": [
-          "scripts/daily/generate-predictions.js:1076",
+          "scripts/daily/generate-predictions.js:1035",
           "scripts/daily/update-race-info.js:443"
         ],
         "races": [
-          "scripts/daily/generate-predictions.js:1012",
-          "scripts/daily/generate-predictions.js:1693",
+          "scripts/daily/generate-predictions.js:1652",
+          "scripts/daily/generate-predictions.js:971",
           "scripts/daily/update-race-info.js:376",
           "scripts/daily/update-race-info.js:400",
           "scripts/daily/update-race-info.js:513"
@@ -30105,21 +30105,21 @@
       "reachableFiles": 41,
       "writes": {
         "exhibition_data": [
-          "scripts/daily/generate-predictions.js:1111"
+          "scripts/daily/generate-predictions.js:1070"
         ],
         "predictions": [
-          "scripts/daily/generate-predictions.js:1761",
+          "scripts/daily/generate-predictions.js:1720",
           "scripts/daily/generate-unified-predictions.js:508"
         ],
         "race_conditions": [
           "scripts/lib/raceConditionsWriter.js:44"
         ],
         "race_entries": [
-          "scripts/daily/generate-predictions.js:1076"
+          "scripts/daily/generate-predictions.js:1035"
         ],
         "races": [
-          "scripts/daily/generate-predictions.js:1012",
-          "scripts/daily/generate-predictions.js:1693"
+          "scripts/daily/generate-predictions.js:1652",
+          "scripts/daily/generate-predictions.js:971"
         ],
         "scrape_job_state": [
           "scripts/lib/racesInit/job.js:517",
