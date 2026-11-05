@@ -1219,8 +1219,8 @@
       "script": "verify-remotion-compositions.js",
       "tier": "manual",
       "guards": "動画（sns-video-studio/remotion）の束を実際に作り、npx remotion compositions が終了コード 0 で Root.jsx の composition を全部一覧に出すこと。2026-11-04 21:28〜、人気薄の1着の import が src/config/languages.js → blogPosts*.js の import.meta.glob に届き、Getting composition で全部の動画が落ちた",
-      "reason": "sns-video-studio/remotion の依存（npm ci）と Chromium が要る。CI は remotion の依存を入れていない（静的な検査 verify-remotion-src-imports.js が ci で同じ壊れ方を止める）",
-      "command": "(cd sns-video-studio/remotion && npm ci) && node scripts/maintenance/verify-remotion-compositions.js"
+      "reason": "sns-video-studio/remotion の依存（npm ci）と Remotion の Chromium が要るので verify:ci には載せず、.github/workflows/sns-makers.yml（ADR-0105）が作り手から届くファイルを変えた PR と master への push で回す",
+      "command": "(cd sns-video-studio/remotion && npm ci && npx remotion browser ensure) && node scripts/maintenance/verify-remotion-compositions.js"
     },
     {
       "script": "verify-remotion-local-fonts.js",
@@ -1526,6 +1526,18 @@
       "script": "verify-sns-japanese-font.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 19b（2026-10-16 画像の不具合）: 本番と同じ @sparticuz/chromium を launchChromium で開き、日本語の文字に画素が描かれる（空白でも同じ箱でもない）。同梱の Noto Sans JP を /tmp/fonts に置く（2回目は置き直さない）。起動のテストは Linux（CI）だけ、撮った見本は tmp/sns-font-check.png（CI の artifact）。外部接続なし"
+    },
+    {
+      "script": "verify-sns-makers-scope.js",
+      "tier": "ci",
+      "guards": "SNS の作り手の CI（sns-makers.yml、ADR-0105）を走らせる差分の判定（sns-makers-scope.js・scripts/lib/relativeImportGraph.js）: #2236 の元 src/utils/raceSeriesText.js と、全貌の文が new URL で読む src/locales/ja/common.json は run、remotion の下・root の lock・workflow・検査のスクリプトは run、docs だけ・作り手から届かない画面だけ・remotion の node_modules は skip、空の差分・一覧が読めないときは run、base から同じ配置で取り出して --root で動く、辿り方が remotion の外に届く。外部接続なし"
+    },
+    {
+      "script": "verify-sns-makers.js",
+      "tier": "manual",
+      "guards": "SNS の作り手を通しで試す（ADR-0105）: 束を1回作り（一時の public に仮の声と画面）、人気薄の1着の本番の見本（型の検査と送る口の checkUpsetBundle）・節の機力 Shorts の4型の見本（checkShortBundle）・全貌の写し（run-full.mjs --text template --no-video の props、完全版と入口版）・全貌 f01（f01Script・名前と級と題とサムネの検査・f01Timeline）を、UpsetWinShort・SetsuKiryokuShort・FullPicture・F01Landscape・F01Thumb で1コマずつ描く。2026-11-04 #2236（束が import.meta.glob に届き Getting composition で全部の動画が落ちた）を戻すと全件落ちる。声の生成・撮影・mp4 の書き出し・外部接続はしない",
+      "reason": "sns-video-studio/remotion の依存（npm ci）と Remotion の Chromium が要るので verify:ci には載せず、.github/workflows/sns-makers.yml（ADR-0105）が作り手から届くファイルを変えた PR と master への push で回す",
+      "command": "(cd sns-video-studio/remotion && npm ci && npx remotion browser ensure) && node scripts/maintenance/verify-sns-makers.js"
     },
     {
       "script": "verify-sns-metrics-runner.js",

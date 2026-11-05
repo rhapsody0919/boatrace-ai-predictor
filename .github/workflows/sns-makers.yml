@@ -1,0 +1,157 @@
+name: SNS Makers
+
+# SNS の作り手（sns-video-studio/remotion の束と描画）を PR ごとに通しで試す（ADR-0105）。
+#
+# 背景: 2026-11-04 の #2236 で、人気薄の1着の import が src/config/languages.js → blogPosts*.js の import.meta.glob に届き、
+# Remotion の束が Getting composition で落ちて、節の機力・人気薄の1着・全貌 f01 の全部の動画が止まった。CI は remotion の依存を
+# 入れておらず、束を作る検査（verify-remotion-compositions.js）は manual だった。
+#
+# - 外部（本番 DB・YouTube・X・VOICEVOX・LLM）には一切つながない。取りに行くのは npm と Remotion の Chromium（chrome-for-testing）だけ
+# - 差分で走らせるかを決める（sns-makers-scope.js）。判定は base 側のスクリプトを取り出して使う（PR の側で判定を書き換えて逃れられないよう。ADR-0100 と同じ）
+# - 走らせない差分でも集約の job `sns-makers` は成功で終わる（skip にしない。必須のチェックにしても PR を止めないため）
+
+on:
+  pull_request:
+    branches:
+      - master
+  # master へのマージ後にも同じ判定で走らせる（並行する2つの PR が別々に緑になった後の組み合わせの壊れを検知する。quality-gates.yml と同じ理由）
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  sns-makers-scope:
+    # master への自動コミット（アプリ ryujin-bot の push）では動かさない（quality-gates.yml と同じ。自動コミットは作り手を変えない）
+    if: >-
+      github.event_name != 'push' || (github.actor != 'ryujin-bot[bot]' &&
+      !endsWith(github.event.head_commit.message, '[automated]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.scope.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # PR の checkout は base と head のマージコミット（1つ目の親が base）。push は github.event.before が前の master。
+      # 判定のスクリプトは base 側のものを同じ配置で取り出して動かし、辿る木は checkout（--root）。base に無ければ走らせる
+      - name: Decide scope
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "pull_request" ]; then BASE="HEAD^1"; else BASE="$BEFORE"; fi
+          if ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            echo "base（${BASE}）が読めないため走らせます"
+            echo "run=true" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --name-only --no-renames "$BASE" HEAD > "$RUNNER_TEMP/sns-makers-files.txt"
+          mkdir -p "$RUNNER_TEMP/base"
+          if git archive "$BASE" scripts/maintenance/sns-makers-scope.js scripts/lib/relativeImportGraph.js 2>/dev/null | tar -x -C "$RUNNER_TEMP/base"; then
+            node "$RUNNER_TEMP/base/scripts/maintenance/sns-makers-scope.js" --files "$RUNNER_TEMP/sns-makers-files.txt" --root "$GITHUB_WORKSPACE" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "base に sns-makers-scope.js が無いため走らせます"
+            echo "run=true" | tee -a "$GITHUB_OUTPUT"
+          fi
+
+  sns-makers-run:
+    needs: sns-makers-scope
+    if: >-
+      needs.sns-makers-scope.outputs.run == 'true' && (github.event_name != 'push' ||
+      (github.actor != 'ryujin-bot[bot]' && !endsWith(github.event.head_commit.message, '[automated]')))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            sns-video-studio/remotion/package-lock.json
+
+      # hq の studio と同じく root と remotion の両方に npm ci（作り手は root の src/・scripts/ と twitter-text 等も読む）
+      - name: Install dependencies (root)
+        run: npm ci
+
+      - name: Install dependencies (remotion)
+        working-directory: sns-video-studio/remotion
+        run: npm ci
+
+      # Remotion が試した版の Chromium（chrome-headless-shell）を hq と同じ取り方で取る。置き場所は remotion の node_modules/.remotion
+      - name: Cache Remotion browser
+        uses: actions/cache@v4
+        with:
+          path: sns-video-studio/remotion/node_modules/.remotion
+          key: remotion-browser-${{ runner.os }}-${{ hashFiles('sns-video-studio/remotion/package-lock.json') }}
+
+      - name: Ensure Remotion browser
+        working-directory: sns-video-studio/remotion
+        run: npx remotion browser ensure
+
+      # Chromium が要る OS の部品（libnss3 等）だけを入れる。ブラウザ本体は上の Remotion のもの
+      - name: Install Chromium OS dependencies
+        run: npx playwright install-deps chromium
+
+      # hq の毎日の作り手と同じ入口（CLI と remotion.config.js）で、束と全部の composition の一覧
+      - name: Remotion compositions
+        run: node scripts/maintenance/verify-remotion-compositions.js
+
+      # 見本の材料から作り手の props を作り、型ごとに1コマずつ描く
+      - name: SNS makers (stills)
+        run: node scripts/maintenance/verify-sns-makers.js --keep "$RUNNER_TEMP/sns-makers"
+
+      - name: Upload stills
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sns-makers-stills
+          path: ${{ runner.temp }}/sns-makers/stills
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # 集約。走らせない差分でも成功で終わる（skip にしない）。走らせる差分で run が成功していなければ失敗
+  sns-makers:
+    needs: [sns-makers-scope, sns-makers-run]
+    if: >-
+      always() && (github.event_name != 'push' || (github.actor != 'ryujin-bot[bot]' &&
+      !endsWith(github.event.head_commit.message, '[automated]')))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Report
+        env:
+          SCOPE_RESULT: ${{ needs.sns-makers-scope.result }}
+          RUN: ${{ needs.sns-makers-scope.outputs.run }}
+          RUN_RESULT: ${{ needs.sns-makers-run.result }}
+        run: |
+          set -euo pipefail
+          if [ "$SCOPE_RESULT" != "success" ]; then
+            echo "範囲を判定できなかった（sns-makers-scope の結果: $SCOPE_RESULT）" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if [ "$RUN" != "true" ]; then
+            echo "作り手から届くファイルが差分に無いので走らせなかった" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "作り手の試験: $RUN_RESULT" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$RUN_RESULT" = "success" ]

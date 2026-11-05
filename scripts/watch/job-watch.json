@@ -10,6 +10,10 @@
     {
       "path": ".github/workflows/quality-gates.yml",
       "reason": "鍵は使わないが、master への push の失敗を知らせる。Codex の PR の自動マージの後の検査（docs/design/codex-direct-pr/design.md §5.4）。rerun はしない"
+    },
+    {
+      "path": ".github/workflows/sns-makers.yml",
+      "reason": "鍵は使わないが、master への push で SNS の作り手（Remotion の束と描画）が壊れたことを知らせる（ADR-0105）。rerun はしない"
     }
   ],
   "watched": [
@@ -41,6 +45,7 @@
     ".github/workflows/scrape-scheduled.yml",
     ".github/workflows/scrape-venue-entry-course-stats.yml",
     ".github/workflows/scrape-venue-motor-stats.yml",
+    ".github/workflows/sns-makers.yml",
     ".github/workflows/train-analogy.yml",
     ".github/workflows/train-moriarty.yml",
     ".github/workflows/train-poirot.yml",

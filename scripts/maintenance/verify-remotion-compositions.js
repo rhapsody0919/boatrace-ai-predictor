@@ -6,8 +6,9 @@
  * これは `npx remotion compositions src/index.jsx --quiet --props=<{"variant":"border"}>` を実行し、終了コード 0 と、
  * Root.jsx に書いた composition の id が全部一覧にあることを見る。
  *
- * remotion の依存（sns-video-studio/remotion/node_modules）と Chromium が要るので manual。
- * 実行: node scripts/maintenance/verify-remotion-compositions.js（先に sns-video-studio/remotion で npm ci）
+ * remotion の依存（sns-video-studio/remotion/node_modules）と Remotion の Chromium が要るので verify:ci には載せず（台帳は manual）、
+ * .github/workflows/sns-makers.yml（ADR-0105）が作り手から届くファイルを変えた PR と master への push で回す。
+ * 実行: node scripts/maintenance/verify-remotion-compositions.js（先に sns-video-studio/remotion で npm ci と npx remotion browser ensure）
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
