@@ -11,7 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { formatPercent } from "../../utils/formatters";
+import { formatPercent, slashDate } from "../../utils/formatters";
 import RacerConditionStats from "./RacerConditionStats";
 import {
   supabaseDataService,
@@ -132,8 +132,6 @@ const VC_RACE_PAGE_SIZE = 10;
  * 表示する（BOA-159フィードバック対応、venueStats由来の実績会場のみに絞ると
  * 実績の薄い会場を選べなくなるバグがあったため）
  */
-// 「2025-11-01」→「2025/11/1」（平均ST（公式）の期間の表記、BOA-815）
-const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
 
 export default function RacerPerformanceStats({
   racerId,

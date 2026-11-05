@@ -6,6 +6,13 @@
 // Node（ボット向け HTML の関数、ADR 0089）からも import するため拡張子付きで書く
 import { WEEKDAYS } from "../constants/index.js";
 
+/** "2019-04-01" → "2019/4/1"（空なら空） */
+export function slashDate(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${y}/${m}/${d}`;
+}
+
 /**
  * パーセント表示
  * @param {number} rate - 0-1の割合

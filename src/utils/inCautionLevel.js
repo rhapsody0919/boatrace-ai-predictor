@@ -95,12 +95,7 @@ export function signedText(v, digits) {
   return `${v < 0 ? "−" : "+"}${Math.abs(v).toFixed(digits)}`;
 }
 
-/** "2019-04-01" → "2019/4/1"（空なら空） */
-export function slashDate(iso) {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-").map(Number);
-  return `${y}/${m}/${d}`;
-}
+export { slashDate } from "./formatters.js";
 
 /**
  * 1号艇の着順（result の rank1〜rank6 は「その着の艇番」）。1〜6着に1号艇がいなければ null（欠場・失格など）
