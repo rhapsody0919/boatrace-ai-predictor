@@ -33,7 +33,7 @@ import {
 } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { gunzipSync } from "node:zlib";
@@ -66,9 +66,10 @@ const { openBrowser, renderStill, selectComposition } =
 const mod = (p) => import(pathToFileURL(join(ROOT, p)).href);
 const json = (p) => JSON.parse(readFileSync(p, "utf8"));
 const keepArg = process.argv.indexOf("--keep");
+// 後で cwd を remotion に替えるので、--keep の相対のパスは起動した場所で絶対に直す
 const work =
   keepArg >= 0
-    ? process.argv[keepArg + 1]
+    ? process.argv[keepArg + 1] && resolve(process.argv[keepArg + 1])
     : mkdtempSync(join(tmpdir(), "verify-sns-makers-"));
 if (!work) fail("--keep の後にディレクトリが無い");
 mkdirSync(work, { recursive: true });
@@ -183,22 +184,18 @@ const materials = JSON.parse(
   const { racersOf } = await mod(
     "sns-video-studio/remotion/src/fullPicture/f01Right.js",
   );
-  const m = structuredClone(materials);
-  const race = m.api.races.find((r) => r.raceId === m.raceId);
-  const names = ["大久保信一郎", "齋藤勇", "西村", "山田", "佐藤", "鈴木"];
-  race.entries = [1, 2, 3, 4, 5, 6].map((n) => ({
-    ...race.entries.find((e) => e.number === n),
-    number: n,
-    name: names[n - 1],
-    grade: m.api.facts.today.classes[n - 1],
-  }));
-  m.race = {
-    grade: "ippan",
-    seriesDayText: "3日目",
-    raceTitle: null,
-    ...m.race,
-    startTime: m.race?.startTime ?? "16:44:00",
-  };
+  const { withF01Fields } = await mod(
+    "sns-video-studio/remotion/scripts/full-picture/f01-fixture.mjs",
+  );
+  // 長い名前（6字）を入れて、右の列とサムネの収まりも描く
+  const m = withF01Fields(materials, [
+    "大久保信一郎",
+    "齋藤勇",
+    "西村",
+    "山田",
+    "佐藤",
+    "鈴木",
+  ]);
   const s = f01.f01Script(m);
   if (!s.ok) failures.push(`f01Script が作らない: ${s.kind} ${s.reason}`);
   else {
@@ -278,6 +275,9 @@ const png = readFileSync(join(REMOTION, "public/about-hero-desktop-home.png"));
 for (const [name, kind] of stubs)
   writeFileSync(join(pub, name), kind === "wav" ? silentWav() : png);
 
+// 束と Chromium は CLI（hq の daily・verify-remotion-compositions.js）と同じく remotion を cwd にする。
+// rootDir（.env・webpack の cache）と Chromium の置き場所（node_modules/.remotion）が cwd で決まるため
+process.chdir(REMOTION);
 const serveUrl = await bundle({
   entryPoint: join(REMOTION, "src/index.jsx"),
   publicDir: pub,
@@ -286,8 +286,6 @@ const serveUrl = await bundle({
 lap("束を作った");
 
 // ---------- 描く ----------
-// Remotion は Chromium を cwd の node_modules/.remotion に置く。CLI（npx remotion browser ensure・compositions）と同じ所を使うため
-process.chdir(REMOTION);
 const browser = await openBrowser("chrome");
 const stillsDir = join(work, "stills");
 mkdirSync(stillsDir, { recursive: true });

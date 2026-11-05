@@ -37,9 +37,10 @@ jobs:
     outputs:
       run: ${{ steps.scope.outputs.run }}
     steps:
+      # PR はマージコミットとその親だけ（2）。push は github.event.before が要るので全部（0）
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: ${{ github.event_name == 'push' && '0' || '2' }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

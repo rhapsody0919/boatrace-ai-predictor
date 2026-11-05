@@ -62,6 +62,8 @@ master への push でも同じ判定で走らせる（並行する2つの PR �
 
 辿り方は `scripts/lib/relativeImportGraph.js` に置き、`verify-remotion-src-imports.js` と共用する。判定は base 側の `sns-makers-scope.js` と `relativeImportGraph.js` を `git archive` で同じ配置に取り出して動かし、辿る木は checkout（`--root`）を渡す。base に無ければ（この PR）走らせる。base は PR ではマージコミットの1つ目の親、push では `github.event.before`。
 
+辿らないもの（限界、/code-review 2026-11-05）: `join(REPO_ROOT, …)` 等のパスの組み立てで読むファイル、式の `import()`、`require`、パッケージの別名。今の作り手でこれに当たるのは f01 の撮影（`f01-capture.mjs`）で、CI の試験はそこを通らない。`new URL` の行き先と CSS・画像等のコードでない import は、見つからなくても missing にしない（後で書く出力やディレクトリがある）。
+
 入口に `scripts/**` を含めるので、f01 の撮影（`f01-capture.mjs` → `vite.config.js`・`src/snsCapture/f01Parts.js`）を経て `src/` の多くに届く（2026-11-05 の実測で 202 ファイル、うち remotion と送る口の外が 94）。走る PR は多めに出るが、リポジトリは public で分数は無料、他の job と並行に走るので許す。
 
 ### 4. 必須のチェックへの切り替え（段階2）
@@ -73,6 +75,8 @@ master への push でも同じ判定で走らせる（並行する2つの PR �
    - GitHub の ruleset「master-checks」の必須に `sns-makers` を足す
    - `scripts/maintenance/guard-pr-merge.js` の REQUIRED_CHECKS に `sns-makers` を足し、`verify-guard-pr-merge.js` を合わせる。あわせて、master の判定（base の `sns-makers-scope.js`）が `run` なのに `sns-makers-run` が成功していなければ止める（PR の側で workflow を書き換えて判定を逃れる穴。ADR-0100 §3 と同じ）
    - hq の `config/codex-pr.json` の期待の check に `sns-makers` を足す（hq の持ち場）
+
+`sns-makers-run` が動かす検査のスクリプトは PR の側のもの（判定だけ base 側）。PR で検査を弱めれば緑になりうるので、`verify-sns-makers.js`・`verify-remotion-compositions.js` を変える PR は判定で必ず run になり、差分は審査（Codex の審査）で見る。base 側の検査を PR のコードに当てる形は、材料の見本と検査が同じ PR で変わる時に食い違うので採らない。
 
 `run=false` でも集約の `sns-makers` は SUCCESS で終わるので、必須にしても docs だけの PR を止めない（guard の `judgeOneCheck` は SUCCESS 以外を止め、Codex の merge-check M2 は skipped を不合格にする）。
 

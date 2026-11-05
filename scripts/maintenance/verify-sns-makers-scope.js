@@ -56,6 +56,40 @@ assert.equal(
 assert.equal(run([]), true, "空の差分は走らせる");
 assert.equal(run(["", "  "]), true, "空行だけも走らせる");
 
+// 見つからない参照の扱い（/code-review 2026-11-05）: コードの import は missing（安全側で run）、
+// new URL の行き先（後で書く出力・ディレクトリ）とコードでない import（CSS・画像）は missing にしない
+{
+  const dir = mkdtempSync(join(tmpdir(), "sns-makers-graph-"));
+  const entry = join(dir, "entry.mjs");
+  writeFileSync(
+    entry,
+    [
+      'import "./style.css";',
+      'import logo from "./logo.png";',
+      'const out = new URL("../out/", import.meta.url);',
+      'const result = new URL("./result.json", import.meta.url);',
+      'import data from "./data.json" with { type: "json" };',
+    ].join("\n"),
+  );
+  writeFileSync(join(dir, "data.json"), "{}");
+  const quiet = reach([entry]);
+  assert.deepEqual(
+    quiet.missing,
+    [],
+    "new URL の行き先・コードでない import の欠けは missing にしない",
+  );
+  assert.ok(
+    quiet.via.has(join(dir, "data.json")),
+    "あれば JSON は葉として届く",
+  );
+  writeFileSync(entry, 'import { x } from "./gone.js";\n');
+  assert.deepEqual(
+    reach([entry]).missing.map((m) => m.spec),
+    ["./gone.js"],
+    "コードの import の欠けは missing",
+  );
+}
+
 // 辿り方の確かめ
 const { via } = reach(entryFiles(ROOT));
 const outside = [...via.keys()].filter(

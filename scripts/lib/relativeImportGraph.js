@@ -25,11 +25,23 @@ export function codeFiles(dir) {
   });
 }
 
-/** そのファイルの相対の指定（import・export from・import()・new URL(…, import.meta.url)） */
+/**
+ * そのファイルの相対の指定（import・export from・import()・new URL(…, import.meta.url)）。
+ * optional: 見つからなくても辿れない import とはしないもの（new URL の行き先＝後で書く出力やディレクトリもある、
+ * コードでない import＝CSS・画像等。以前の検査もこれらは解決せずに捨てていた）
+ * @returns {{ spec: string, optional: boolean }[]}
+ */
 export function relativeSpecs(code) {
   const re =
     /(?:import|export)\s[^"';]*?from\s*["'](\.{1,2}\/[^"']+)["']|import\s*["'](\.{1,2}\/[^"']+)["']|import\(\s*["'](\.{1,2}\/[^"']+)["']\s*\)|new\s+URL\(\s*["'](\.{1,2}\/[^"']+)["']\s*,\s*import\.meta\.url\s*\)/g;
-  return [...code.matchAll(re)].map((m) => m[1] ?? m[2] ?? m[3] ?? m[4]);
+  return [...code.matchAll(re)].map((m) => {
+    const spec = m[1] ?? m[2] ?? m[3] ?? m[4];
+    return {
+      spec,
+      optional:
+        m[4] !== undefined || (/\.[a-z0-9]+$/i.test(spec) && !CODE.test(spec)),
+    };
+  });
 }
 
 /** 相対の指定を実在のファイルに直す（拡張子の省略・index を補う）。無ければ null */
@@ -60,10 +72,10 @@ export function reach(starts) {
   const queue = starts.filter((s) => CODE.test(s));
   while (queue.length > 0) {
     const file = queue.shift();
-    for (const spec of relativeSpecs(source(file))) {
+    for (const { spec, optional } of relativeSpecs(source(file))) {
       const next = resolveSpec(file, spec);
       if (!next) {
-        missing.push({ from: file, spec });
+        if (!optional) missing.push({ from: file, spec });
         continue;
       }
       if (via.has(next)) continue;
