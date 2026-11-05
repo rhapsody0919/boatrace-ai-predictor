@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1667,
+    "sourceFiles": 1672,
     "filesWithAccess": 270,
     "tableReaders": 988,
     "tableWriters": 189,
@@ -2789,7 +2789,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1310",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:3641",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -3050,7 +3050,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1284",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:3533",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -4868,7 +4868,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1126",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:2849",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -5776,7 +5776,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1147",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:3001",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -6601,7 +6601,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1308",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:3633",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6844,7 +6844,7 @@
             "scripts/maintenance/backfill-race-series-meta.js:337",
             "scripts/maintenance/backfill-series-day.js:175",
             "scripts/maintenance/backfill-series-day.js:196",
-            "scripts/maintenance/verify-full-picture-scene2.js:1308",
+            "scripts/maintenance/verify-full-picture-scene2.js:3633",
             "scripts/ml/analogy/build-wind-basis.js:95",
             "scripts/sns/push-finals-image.js:1294",
             "scripts/sns/push-setsu-kiryoku-short.js:1055",
@@ -7006,7 +7006,7 @@
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/lib/snsAutoPlanRunner.js:744",
             "scripts/lib/snsTodayDigestV3.js:104",
-            "scripts/maintenance/verify-full-picture-scene2.js:1308",
+            "scripts/maintenance/verify-full-picture-scene2.js:3633",
             "scripts/sns/push-finals-image.js:1294",
             "scripts/sns/push-setsu-kiryoku-short.js:1055",
             "scripts/sns/push-setsu-kiryoku-short.js:1060",
@@ -7887,7 +7887,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1188",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:3168",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -14825,14 +14825,14 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1073",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:2601",
           "op": "rest",
           "via": "rest",
           "columns": [],
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1322",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:3683",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -25996,14 +25996,14 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1099",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:2716",
           "op": "rest",
           "via": "rest",
           "columns": [],
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1431",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:4136",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -27192,7 +27192,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1129",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:2871",
           "op": "rest",
           "via": "rest",
           "columns": [],

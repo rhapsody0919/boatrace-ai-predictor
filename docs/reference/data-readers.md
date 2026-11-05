@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1667 |
+| 読んだファイル | 1672 |
 | 読み書きのあるファイル | 270 |
 | 表の読み手（箇所） | 988 |
 | 表の書き手（箇所） | 189 |
@@ -502,7 +502,7 @@
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:64` select(helper:fetchAll)
   - `scripts/daily/update-winning-technique-stats.js:212` select(helper:fetchAll)
   - `scripts/lib/racerCareerJob.js:651` select(helper:count)
-  - `scripts/maintenance/verify-full-picture-scene2.js:1310` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:3641` rest(rest) （検査）
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -521,7 +521,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
-  - `scripts/maintenance/verify-full-picture-scene2.js:1284` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:3533` rest(rest) （検査）
   - `src/services/supabaseDataService.js:6550` select [*, boat_number, percentage, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-losing-technique-stats.js:152` delete
@@ -648,7 +648,7 @@
   - `scripts/analysis/turnprediction-guided-outcome-distribution.js:127` select(helper:fetchAll)
   - `scripts/analysis/validate-outcome-distribution.js:143` select(helper:fetchAll)
   - `scripts/analysis/verify-outcome-distribution-coverage.js:26` select(helper:fetchAll)
-  - `scripts/maintenance/verify-full-picture-scene2.js:1126` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:2849` rest(rest) （検査）
   - `src/services/supabaseDataService.js:2104` select [count_90days, first_boat]
   - `src/services/supabaseDataService.js:2157` select [*, count_90days, first_boat, venue_code]
 - 書き手（2）: 
@@ -744,7 +744,7 @@
   - `scripts/maintenance/delete-cancelled-race-predictions.js:72` select [prediction_id, race_id]
   - `scripts/maintenance/delete-phantom-races.js:138` select [is_hit_place, is_hit_trifecta, is_hit_trio, is_hit_win, race_id]
   - `scripts/maintenance/verify-admin-rule-performance.js:268` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick] （検査）
-  - `scripts/maintenance/verify-full-picture-scene2.js:1147` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:3001` rest(rest) （検査）
   - `src/services/adminRuleService.js:69` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
   - `src/services/ruleMatchService.js:104` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
   - `src/services/supabaseDataService.js:1634` select [is_hit_place, is_hit_trifecta, is_hit_trio, is_hit_win, model_id, payout_place, payout_trifecta, payout_trio, payout_win, race_id]
@@ -796,7 +796,7 @@
   - `scripts/maintenance/backfill-race-series-meta.js:355` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:58` select(helper:fetchAll)
   - `scripts/maintenance/check-pre-race-shadow.js:305` select(helper:fetchByRaceIds)
-  - `scripts/maintenance/verify-full-picture-scene2.js:1308` rest(rest) [race_id, race_stage] （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:3633` rest(rest) [race_id, race_stage] （検査）
   - `scripts/ml/analogy/build-wind-basis.js:95` select [race_id, wind_direction, wind_speed]
   - `scripts/ml/export-inference-data.js:119` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:83` select(helper:fetchAll)
@@ -921,7 +921,7 @@
   - `scripts/maintenance/verify-e2e-har-merge.js:53` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:57` rest(rest) [name, race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:58` rest(rest) [name, race_id] （検査）
-  - `scripts/maintenance/verify-full-picture-scene2.js:1188` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:3168` rest(rest) （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select(embed) [racer_id] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:2665` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:2667` rest(rest) [race_id] （検査）
@@ -1444,8 +1444,8 @@
 - 本体で読む RPC: data_health_racer_period_stats, data_health_table_rows
 - 読み手（8）: 
   - `scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9` select [*, period_no, period_year, racer_id]
-  - `scripts/maintenance/verify-full-picture-scene2.js:1073` rest(rest) （検査）
-  - `scripts/maintenance/verify-full-picture-scene2.js:1322` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:2601` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:3683` rest(rest) （検査）
   - `src/services/supabaseDataService.js:4186` select [avg_st, period_no, period_year, racer_id]
   - `src/services/supabaseDataService.js:4225` select [?, period_no, period_year, racer_id]
   - `src/services/supabaseDataService.js:5630` select [avg_st, period_no, period_year, racer_id]
@@ -2222,8 +2222,8 @@
   - `scripts/daily/generate-morning-digest.js:265` select [*]
   - `scripts/daily/update-racer-course-technique-stats.js:255` select(helper:upsertChangedRows)
   - `scripts/daily/update-racer-course-technique-stats.js:283` select [*]
-  - `scripts/maintenance/verify-full-picture-scene2.js:1099` rest(rest) （検査）
-  - `scripts/maintenance/verify-full-picture-scene2.js:1431` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:2716` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:4136` rest(rest) （検査）
 - 書き手（1）: 
   - `scripts/daily/update-racer-course-technique-stats.js:255` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -2326,7 +2326,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
-  - `scripts/maintenance/verify-full-picture-scene2.js:1129` rest(rest) （検査）
+  - `scripts/maintenance/verify-full-picture-scene2.js:2871` rest(rest) （検査）
   - `src/services/supabaseDataService.js:2253` select [*, boat_number, percentage, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-winning-technique-stats.js:161` delete
