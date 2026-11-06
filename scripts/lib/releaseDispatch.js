@@ -12,7 +12,7 @@
  * 4. それ以外なら Deploy Hook（Vercel の環境変数 RELEASE_DEPLOY_HOOK_URL、master に結び付けたもの）を叩く
  *
  * 見張り（scrape_job_state.last_report に持つ。成功の記録のときだけ置き換わり、失敗の間は前の値が残る）:
- * - 前回の起動で叩いたのに本番の版がそのときのまま（ビルドの失敗 等）→ 叩き直した上で失敗
+ * - 前回の起動で叩いたのに本番の版がそのときのまま（ビルドの失敗か、出た後の Instant Rollback。区別できない）→ 叩かずに失敗。本番の版が動けば戻る
  * - 本番の版が、前に出した版（lastReleasedSha）より古い（Instant Rollback）→ 出さずに失敗。master を直して手で出すか、
  *   mode を off にするまで続ける（巻き戻した本番に、壊れた master を黙って出し直さない）
  *
@@ -123,8 +123,16 @@ export function decideRelease({
       `本番の版 ${deployedSha.slice(0, 9)} が master の祖先ではない（compare の status: ${compare.status}）`,
     );
   }
+  if (stuck) {
+    // ビルドの失敗と、出た後の Instant Rollback（A→B を出した後に A へ戻した）は、本番の版だけでは区別できない。
+    // 戻した本番に壊れた版を出し直さないよう、自動では叩かない。本番の版が動けば（手で出す等）自動に戻る
+    return result(
+      "error",
+      `前回叩いた版（${previous.masterSha?.slice(0, 9) ?? "?"}）が本番に出ていない（本番の版は ${deployedSha.slice(0, 9)} のまま）。` +
+        "ビルドの失敗か、出た後の Instant Rollback。自動では出し直さない。Vercel で確かめ、直したら手で出す（ADR-0106「手で出す」）",
+    );
+  }
   if (
-    !stuck &&
     previous?.lastReleasedSha &&
     compare.commitShas.includes(previous.lastReleasedSha)
   ) {
@@ -310,15 +318,7 @@ export function createReleaseDispatchRun({
         now: ctx.now(),
       }),
     };
-    const stuckMessage = `前回のリリース（${previous?.masterSha?.slice(0, 9) ?? "?"}）が本番に出ていない（本番の版は ${deployedSha.slice(0, 9)} のまま）。Vercel のビルドの失敗を疑う`;
-
     if (decision.action !== "release") {
-      if (decision.stuck) {
-        return {
-          outcome: "error",
-          error: `${stuckMessage}。今回: ${decision.reason}`,
-        };
-      }
       if (decision.action === "error" || decision.action === "blocked") {
         return { outcome: "error", error: decision.reason };
       }
@@ -349,13 +349,6 @@ export function createReleaseDispatchRun({
       return {
         outcome: "error",
         error: `Deploy Hook を叩けない: ${error.message}`,
-      };
-    }
-    if (decision.stuck) {
-      // 叩き直した上で、前回が出なかったことを知らせる（成功の記録にしないので last_report は前回のまま残る）
-      return {
-        outcome: "error",
-        error: `${stuckMessage}。もう一度 Deploy Hook を叩いた`,
       };
     }
     const body = { ...report, released: true, lastReleasedSha: head.sha };

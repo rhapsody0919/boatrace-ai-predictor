@@ -14,7 +14,7 @@
    - 今の本番の版（関数の `VERCEL_GIT_COMMIT_SHA`）と、読んだ master の先の sha を GitHub の compare API で比べる。差分が無い・サイトに関係ないものだけ（`isSiteIrrelevant`、BOA-908 と同じ判定）・files が空なら何もしない
    - master の検査（Post-merge Checks・Quality Gates）は、出す範囲（本番の版の次〜master の先）のコミットの run のうち、一番新しいコミットのもの（[automated] の push で skipped になったものを除く）で見る。検査は木の全体を見るので、それが通っていれば範囲の前の方の失敗は直っている。失敗（cancelled・timed_out を含む）なら出さず Slack に出す。走っている・master の先が10分以内のコミットなら「待つ」
    - それ以外なら Deploy Hook（master に結び付けたもの。Vercel の環境変数 `RELEASE_DEPLOY_HOOK_URL`）を叩く。Hook は受け付けた時点の master の先をビルドするので、判定の後の数秒に入ったコミットは検査を待たずに出る（許容）
-   - 前回叩いたのに本番の版が動いていなければ（ビルドの失敗 等）、叩き直した上で Slack に出す
+   - 前回叩いたのに本番の版が動いていなければ、叩かずに Slack に出し続ける。ビルドの失敗と、出た後の Instant Rollback（A→B を出した後に A へ戻した）は本番の版だけでは区別できないため（Codex の審査 P1）。Vercel で確かめ、直したら手で出す。本番の版が動けば自動に戻る
    - 本番の版が前に出した版より古い（Instant Rollback）なら出さずに Slack に出し続ける。巻き戻した本番に壊れた master を黙って出し直さない。master を直して手で出すか、mode を off にする
    - 出すべき差分が13時間を過ぎて残る（shadow のまま・待つが続く）なら `last_report.alerts` で知らせる。cron 自身の死活は scrape-monitor がレジストリの `livenessStaleMin`（13時間、shadow・live の間）で見る
    - モードのゲート（`scrape_job_state.mode` の job=`release_dispatch`）。行が無い間は off。shadow は叩かず、叩くはずだったかだけを残す。off にすると何も知らせないので、止めるのは切り替えを戻すとき（下の「切り替えの順」の戻し方）と Instant Rollback の後だけ

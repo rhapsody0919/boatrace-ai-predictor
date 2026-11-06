@@ -8,7 +8,7 @@
  *   (b) 検査の読み方（summarizeGates）: 出す範囲の中で一番新しいコミットの run（skipped を除く）を見る。
  *       [automated] の skipped の run が後に来ても、その前の PR の失敗を素通しにしない。範囲の外の run は見ない
  *   (c) 起動（createReleaseDispatchRun）: shadow は叩かない、live は Deploy Hook を POST、鍵・版・Hook が無い・HTTP 失敗は失敗、
- *       stuck は叩き直した上で失敗、出した記録（released・fromSha・lastReleasedSha）を返す、比べる先は読んだ master の sha、
+ *       stuck は叩かずに失敗（巻き戻しと区別できない）、出した記録（released・fromSha・lastReleasedSha）を返す、比べる先は読んだ master の sha、
  *       拾い直し（UTC の分が30より前の起動）は前が「待つ」のときだけ動き、それ以外は前の記録を残す、出すべき差分が13時間残れば alerts
  *   (d) 死活（monitor.js）: livenessStaleMin のある monitor のジョブは shadow・live の間だけ last_tick_at を見る
  *   (e) 配線: レジストリ、api/cron の maxDuration とモードのゲート、vercel.json の cron（定時と20分後の拾い直し）
@@ -431,9 +431,25 @@ for (const [label, env, expect] of [
   check(
     r.outcome === "error" &&
       r.error.includes("本番に出ていない") &&
-      hookCalls(f).length === 1,
-    "(c) 前回叩いたのに本番の版が動いていなければ、叩き直した上で失敗",
+      hookCalls(f).length === 0,
+    "(c) 前回叩いたのに本番の版が動いていなければ、叩かずに失敗（ビルドの失敗と出た後の Instant Rollback を区別できない。Codex の P1）",
     JSON.stringify(r),
+  );
+  // A→B を出した後に A へ Instant Rollback した状態（released・fromSha=A・lastReleasedSha=B）でも、B を出し直さない
+  const f2 = fakeGitHub();
+  const r2 = await runWith(
+    f2,
+    ctx("live", {
+      released: true,
+      fromSha: DEPLOYED,
+      masterSha: HEAD,
+      lastReleasedSha: HEAD,
+    }),
+  );
+  check(
+    r2.outcome === "error" && hookCalls(f2).length === 0,
+    "(c) 出した直後の版から前の版へ巻き戻した状態でも、自動では出し直さない",
+    JSON.stringify(r2),
   );
 }
 {
