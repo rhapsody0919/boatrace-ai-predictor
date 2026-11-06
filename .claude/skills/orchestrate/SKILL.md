@@ -202,7 +202,7 @@ Codex のパッチを hq の `codex-pr.py`（AI なし）が `ryujin-maker` の�
 - マージ順の台帳は `node scripts/maintenance/merge-order.js list`。順序を決めたら `add <PR> --after <PR>...` で登録し、解消したら `remove <PR>`
 - squash が必要な PR は、依頼文と報告に明記させる（レーンの報告に書かれていなければ、マージ前に確かめる）
 - マージの可否の確認・`node scripts/maintenance/ryujin-maker-token.js -- gh pr merge <PR> --squash --match-head-commit <確かめた head の SHA>`（作成の App ryujin-maker の名義。`--admin` は鍵が置かれる前だけ）・次の定時の案内・報告は `/merge-pr`（`.claude/commands/merge-pr.md`）の手順に従う
-- ryujin-maker は ruleset の bypass に無いので、今の head に審査の App（ryujin-reviewer）の APPROVED と必須の3つの check の緑がそろわないと GitHub が拒む。審査は作者が ryujin-maker の `claude/`・`codex/` の PR だけに動くので、rhapsody0919 の名義の PR は `claude/` の枝で ryujin-maker の名義に出し直してからマージする。PR 番号は文字で書く（guard-pr-merge.js が読む）
+- 審査の App（ryujin-reviewer）の APPROVED はマージの条件にしない（v3.3、2026-11-06 に LLM の審査をやめた）。マージの線は `pr-lane.js` の判定: light は必須の check の緑で可、heavy の H5 は CODEOWNERS のオーナーの承認、H5 以外の heavy は窓口が差分を見る。PR 番号は文字で書く（guard-pr-merge.js が読む）
 
 ## 7. ピアのメッセージの扱い
 
