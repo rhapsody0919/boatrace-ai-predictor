@@ -6,7 +6,7 @@
  *    compare API で比べる（比べる先は読んだ master の sha に固定する。比べている間に master が進んでもずれない）
  * 2. 差分が無い・サイトに関係ないものだけ（scripts/lib/vercelIgnoreBuild.js の isSiteIrrelevant）なら何もしない
  * 3. master の検査（Post-merge Checks・Quality Gates）を、出す範囲（本番の版の次〜master の先）のコミットの run で見る。
- *    範囲の中で一番新しいコミットの run（skipped を除く）が走っている・master の先が10分以内のコミットなら「待つ」
+ *    範囲の中で走っている run（skipped を除く）が1本でもある・master の先が10分以内のコミットなら「待つ」
  *    （20分後の拾い直しでもう一度見る）。範囲の中で落ちた run は、落ちた step が後の run で走って通っていれば直ったとみる
  *    （summarizeGates）。直っていない step が残れば出さずに失敗（Slack）
  * 4. それ以外なら Deploy Hook（Vercel の環境変数 RELEASE_DEPLOY_HOOK_URL、master に結び付けたもの）を叩く
