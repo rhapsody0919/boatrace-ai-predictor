@@ -383,12 +383,14 @@ export default function RacerPerformanceStats({
   // 決まり手表示用に、データソースに関わらず同じ形（{technique, count, percentage}[]）
   // へ正規化する。JSXブロックを1つに統一するため（両ブランチの見た目の重複を回避）
   const displayTechniques = hasVcData
-    ? Object.entries(vcData.tech).map(([technique, count]) => ({
-        technique,
-        count,
-        percentage: vcTechTotal > 0 ? (count / vcTechTotal) * 100 : 0,
-        countLabel: `${count}回/${vcTechTotal}回`,
-      }))
+    ? Object.entries(vcData.tech)
+        .map(([technique, count]) => ({
+          technique,
+          count,
+          percentage: vcTechTotal > 0 ? (count / vcTechTotal) * 100 : 0,
+          countLabel: `${count}回/${vcTechTotal}回`,
+        }))
+        .sort((a, b) => b.count - a.count)
     : (techniqueProfile?.techniques ?? []).map((tech) => ({
         technique: tech.technique,
         count: tech.count,
