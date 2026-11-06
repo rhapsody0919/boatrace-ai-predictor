@@ -318,6 +318,17 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
       runs: [run(HEAD, "in_progress", null), run(MID, "completed", "success")],
     },
   ]);
+  const [olderRunning] = summarizeGates(range, [
+    {
+      workflow: "quality-gates.yml",
+      runs: [run(HEAD, "completed", "success"), run(MID, "in_progress", null)],
+    },
+  ]);
+  check(
+    olderRunning.state === "pending" && olderRunning.headSha === MID,
+    "(b) 範囲の前の方の run が走っていれば、後の run が成功でも pending（push の差分で走る pytest は代わらない。Codex の P1）",
+    JSON.stringify(olderRunning),
+  );
   check(
     running.state === "pending",
     "(b) 一番新しいコミットの run が走っていれば pending",
