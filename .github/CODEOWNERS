@@ -10,17 +10,20 @@
 /.github/**                           @rhapsody0919
 /scripts/review/**                    @rhapsody0919
 /vercel.json                          @rhapsody0919
+/scripts/vercel-ignore-build.js       @rhapsody0919
 
 # 依存
 /package.json                         @rhapsody0919
 /package-lock.json                    @rhapsody0919
+/.npmrc                               @rhapsody0919
 
-# 本番 DB の移行（このリポジトリには無い。本当の置き場は docs/db-migration/、PR 本文を参照）
-/supabase/migrations/**               @rhapsody0919
+# 本番 DB の移行（db-apply.yml が当てる置き場）
+/docs/db-migration/**                 @rhapsody0919
 
-# 試験・lint の設定
+# 試験・lint の設定と、全 e2e の土台
 /playwright*.config.js                @rhapsody0919
 /eslint.config.js                     @rhapsody0919
+/e2e/fixtures.js                      @rhapsody0919
 
 # AI への規約・設定
 /AGENTS.md                            @rhapsody0919
@@ -31,8 +34,14 @@
 /scripts/watch/**                     @rhapsody0919
 /scripts/lib/**                       @rhapsody0919
 
-# 品質の関門と道の判定
-/scripts/maintenance/verify-*.js      @rhapsody0919
+# 品質の関門の仕組みと道の判定。個々の verify-*.js は守らず、CI と別ベンダーの審査に任せる
+# （既存の verify を弱める変更は codex-pr の M7 が自動マージから外す。v3 の線: 守るのは本番・お金・関門そのもの）
+/scripts/maintenance/verify-registry.json            @rhapsody0919
+/scripts/maintenance/run-verify-registry.js          @rhapsody0919
+/scripts/maintenance/verify-no-undef.js              @rhapsody0919
+/scripts/maintenance/verify-pure-imports.js          @rhapsody0919
+/scripts/maintenance/verify-codex-no-preview.js      @rhapsody0919
+/scripts/maintenance/verify-private-metrics-words.js @rhapsody0919
 /scripts/maintenance/*-allowlist.json @rhapsody0919
 /scripts/maintenance/pr-lane.js       @rhapsody0919
 /config/pr-path-rules.json            @rhapsody0919
