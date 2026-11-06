@@ -464,13 +464,17 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
       });
     }
 
-    // 死活: 毎分起動する窓型と、10分ごとの常駐型（自分自身の鮮度は、メタ監視が見る）
+    // 死活: 毎分起動する窓型と、10分ごとの常駐型（自分自身の鮮度は、メタ監視が見る）。
+    // 監視・保守のジョブは、レジストリに livenessStaleMin を書いたものだけ、mode が shadow・live の間に見る
+    // （1日数回の起動の未配信・古い版への巻き戻しで cron が消えたことを拾う。ADR-0106 の release_dispatch）
     const staleMin =
       def.kind === "window"
         ? THRESHOLDS.livenessStaleMin
         : def.kind === "continuous"
           ? THRESHOLDS.continuousLivenessStaleMin
-          : null;
+          : def.livenessStaleMin && isActiveMode(row.mode)
+            ? def.livenessStaleMin
+            : null;
     const graceMin =
       def.kind === "continuous"
         ? THRESHOLDS.continuousLivenessStaleMin

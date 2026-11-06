@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1685 |
+| 読んだファイル | 1688 |
 | 読み書きのあるファイル | 271 |
 | 表の読み手（箇所） | 990 |
 | 表の書き手（箇所） | 189 |
@@ -89,8 +89,8 @@
 | [races](#t-races) | table | anon 可 | 158 | 20 | claim_scrape_slots, claim_scrape_slots_by_offset, compute_nige_second_by_course ほか24 |  | exhibition, kfile_sync, race_info ほか4 |  |
 | [raw_snapshots](#t-raw_snapshots) | table | service だけ | 0 | 1 |  |  | fan_period |  |
 | [rule_applications](#t-rule_applications) | table | service だけ | 1 | 2 |  |  |  |  |
-| [scrape_job_state](#t-scrape_job_state) | table | service だけ | 13 | 14 |  | scrape_breaker_open | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか43 |  |
-| [scrape_slots](#t-scrape_slots) | table | service だけ | 10 | 9 | claim_scrape_slots, claim_scrape_slots_by_offset | claim_scrape_slots, claim_scrape_slots_by_offset, ensure_scrape_slots | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか43 |  |
+| [scrape_job_state](#t-scrape_job_state) | table | service だけ | 13 | 14 |  | scrape_breaker_open | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか44 |  |
+| [scrape_slots](#t-scrape_slots) | table | service だけ | 10 | 9 | claim_scrape_slots, claim_scrape_slots_by_offset | claim_scrape_slots, claim_scrape_slots_by_offset, ensure_scrape_slots | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか44 |  |
 | [sns_approvers](#t-sns_approvers) | table | service だけ | 2 | 0 | approve_sns_x_send |  |  |  |
 | [sns_auto_send_control](#t-sns_auto_send_control) | table | service だけ | 18 | 0 | approve_sns_x_send, transition_sns_send_139, transition_sns_x_send |  |  |  |
 | [sns_auto_send_incidents](#t-sns_auto_send_incidents) | table | service だけ | 0 | 0 |  |  |  |  |
@@ -254,6 +254,7 @@
 | racer_news | api/cron/racer-news.js | 21 | racer_news, racer_news_pending, scrape_job_state, scrape_slots |
 | racer_profiles | api/cron/racer-profiles.js | 19 | racer_profiles, scrape_job_state, scrape_slots |
 | races_init | api/cron/races-init.js | 43 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
+| release_dispatch | api/cron/release-dispatch.js | 18 | scrape_job_state, scrape_slots |
 | result | api/cron/result.js | 33 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | result_catchup | api/cron/result-catchup.js | 33 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 17 | scrape_job_state, scrape_slots |
@@ -1570,7 +1571,7 @@
   - `scripts/lib/raceSeriesLookup.js:174` select [cancellation_status, race_date, venue_code]
   - `scripts/lib/raceStatusJob.js:109` select [cancellation_status, race_date, race_id, race_number, venue_code]
   - `scripts/lib/racesInit/job.js:122` select(helper:fetchAll)
-  - `scripts/lib/scrapeJobs/monitor.js:745` select [race_date, race_id]
+  - `scripts/lib/scrapeJobs/monitor.js:749` select [race_date, race_id]
   - `scripts/lib/scrapeJobs/pcexpectHandlers.js:33` select [race_id, start_time]
   - `scripts/lib/scrapeJobs/resultHandlers.js:153` select [race_date, race_id, start_time]
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select(embed) [cancellation_status]
@@ -1709,7 +1710,7 @@
 
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 本体で書く RPC: scrape_breaker_open
-- 取得のジョブ: analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition, boatcast_motor_start, boatcast_oriten, daily_reconcile, data_health, data_health_morning, db_apply_dispatch, e2e_rerecord_dispatch, entry_course_stats, eve_deadlines, eve_deadlines_reconcile, exhibition, fan_period, in_caution_dispatch, in_caution_health, in_caution_today_health, key_canary_dispatch, kfile_sync, morning_digest, motor_pretest, odds, odds_final, pcexpect, pit_reports, point_rank, pseudo, race_info, race_notices, race_series, race_status, racer_career_main, racer_course_technique_stats, racer_news, racer_profiles, races_init, result, result_catchup, scrape-cleanup, scrape-monitor, sns_auto_plan, sns_daily, sns_metrics, sns_send, venue_motor_stats
+- 取得のジョブ: analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition, boatcast_motor_start, boatcast_oriten, daily_reconcile, data_health, data_health_morning, db_apply_dispatch, e2e_rerecord_dispatch, entry_course_stats, eve_deadlines, eve_deadlines_reconcile, exhibition, fan_period, in_caution_dispatch, in_caution_health, in_caution_today_health, key_canary_dispatch, kfile_sync, morning_digest, motor_pretest, odds, odds_final, pcexpect, pit_reports, point_rank, pseudo, race_info, race_notices, race_series, race_status, racer_career_main, racer_course_technique_stats, racer_news, racer_profiles, races_init, release_dispatch, result, result_catchup, scrape-cleanup, scrape-monitor, sns_auto_plan, sns_daily, sns_metrics, sns_send, venue_motor_stats
 - 読み手（13）: 
   - `scripts/lib/dataHealth/job.js:94` select [job, last_report]
   - `scripts/lib/eveDeadlinesJob.js:385` select [job, last_target_date]
@@ -1717,7 +1718,7 @@
   - `scripts/lib/motorPretestJob.js:197` select [job, last_target_date, mode]
   - `scripts/lib/racesInit/job.js:148` select [job, mode]
   - `scripts/lib/racesInit/predictCodeCheck.js:104` select [job, last_report]
-  - `scripts/lib/scrapeJobs/monitor.js:713` select [*]
+  - `scripts/lib/scrapeJobs/monitor.js:717` select [*]
   - `scripts/lib/scrapeJobs/store.js:86` select [*, job]
   - `scripts/lib/scrapeJobs/store.js:286` select [?, job]
   - `scripts/maintenance/check-morning-init-shadow.js:107` select [consecutive_failures, cursor, job, last_error, last_success_at, mode]
@@ -1746,11 +1747,11 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 本体で読む RPC: claim_scrape_slots, claim_scrape_slots_by_offset
 - 本体で書く RPC: claim_scrape_slots, claim_scrape_slots_by_offset, ensure_scrape_slots
-- 取得のジョブ: analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition, boatcast_motor_start, boatcast_oriten, daily_reconcile, data_health, data_health_morning, db_apply_dispatch, e2e_rerecord_dispatch, entry_course_stats, eve_deadlines, eve_deadlines_reconcile, exhibition, fan_period, in_caution_dispatch, in_caution_health, in_caution_today_health, key_canary_dispatch, kfile_sync, morning_digest, motor_pretest, odds, odds_final, pcexpect, pit_reports, point_rank, pseudo, race_info, race_notices, race_series, race_status, racer_career_main, racer_course_technique_stats, racer_news, racer_profiles, races_init, result, result_catchup, scrape-cleanup, scrape-monitor, sns_auto_plan, sns_daily, sns_metrics, sns_send, venue_motor_stats
+- 取得のジョブ: analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition, boatcast_motor_start, boatcast_oriten, daily_reconcile, data_health, data_health_morning, db_apply_dispatch, e2e_rerecord_dispatch, entry_course_stats, eve_deadlines, eve_deadlines_reconcile, exhibition, fan_period, in_caution_dispatch, in_caution_health, in_caution_today_health, key_canary_dispatch, kfile_sync, morning_digest, motor_pretest, odds, odds_final, pcexpect, pit_reports, point_rank, pseudo, race_info, race_notices, race_series, race_status, racer_career_main, racer_course_technique_stats, racer_news, racer_profiles, races_init, release_dispatch, result, result_catchup, scrape-cleanup, scrape-monitor, sns_auto_plan, sns_daily, sns_metrics, sns_send, venue_motor_stats
 - 読み手（10）: 
   - `scripts/lib/boatcast/oritenJob.js:374` select [job, outcome, race_date, race_id, status]
   - `scripts/lib/boatcast/oritenJob.js:534` select [job, race_date, race_id]
-  - `scripts/lib/scrapeJobs/monitor.js:723` select [?]
+  - `scripts/lib/scrapeJobs/monitor.js:727` select [?]
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select [job, race_date, race_id]
   - `scripts/lib/scrapeJobs/resultHandlers.js:316` select [job, race_date, race_id, status]
   - `scripts/maintenance/check-morning-init-shadow.js:211` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]

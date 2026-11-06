@@ -185,6 +185,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racesInit/predictCodeCheck.js` | 予測ロジックの変更検知による再生成（WS4b T4b-07-5、plan.md §4.2(d)・設計判断(g)）。 | hashFiles, computePredictCodeHash, checkPredictCodeChange, PREDICT_CODE_HASH_JOB, PREDICT_LOGIC_FILES |
 | `scripts/lib/rawHtmlArchive.js` | 取得した生HTMLの保管（optimal-scraping-design.md §2.2・承認済みQ1）の最小実装。 | rawHtmlPath, archiveRawHtml, RAW_HTML_BUCKET |
 | `scripts/lib/relativeImportGraph.js` | 相対 import を辿って、入口から届くファイルを集める（node 標準だけを使う）。 | codeFiles, relativeSpecs, resolveSpec, reach, CODE ほか2件 |
+| `scripts/lib/releaseDispatch.js` | 本番のデプロイをまとめて出す（ADR-0106、オーナー 2026-11-06 決定）。Vercel Cron（api/cron/release-dispatc… | staleReleaseAlerts, summarizeGates, decideRelease, fetchMasterHead, fetchCompare ほか11件 |
 | `scripts/lib/renderWithFreshPage.js` | 新しいページを開く関数を作る。ブラウザが落ちていたら起動し直してから開く。 | createPageOpener, renderWithFreshPage |
 | `scripts/lib/reportComparison.js` | 定点観測レポート（search-console-report.js / i18n-demand-report.js）の | findPreviousReport, findRecentReports, detectTrend, perDay, formatDelta |
 | `scripts/lib/reviewPr.js` | AI の PR の審査（.github/workflows/review.yml、ADR-0097）の純粋関数。 | vendorForBranch, mechanicalRejections, sqlTablesFromFiles, buildReviewPrompt, parseVerdict ほか6件 |
@@ -424,4 +425,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 382 ファイル / export 2243 件。
+対象 383 ファイル / export 2259 件。

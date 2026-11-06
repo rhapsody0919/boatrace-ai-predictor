@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1685,
+    "sourceFiles": 1688,
     "filesWithAccess": 271,
     "tableReaders": 990,
     "tableWriters": 189,
@@ -16891,7 +16891,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:745",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:749",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17953,7 +17953,7 @@
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSchedule.js:44",
             "scripts/lib/raceStatusJob.js:109",
-            "scripts/lib/scrapeJobs/monitor.js:745",
+            "scripts/lib/scrapeJobs/monitor.js:749",
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
             "scripts/lib/scrapeJobs/resultHandlers.js:153",
             "scripts/lib/scrapeJobs/resultHandlers.js:275",
@@ -18074,7 +18074,7 @@
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSeriesLookup.js:174",
             "scripts/lib/raceStatusJob.js:109",
-            "scripts/lib/scrapeJobs/monitor.js:745",
+            "scripts/lib/scrapeJobs/monitor.js:749",
             "scripts/lib/scrapeJobs/resultHandlers.js:153",
             "scripts/lib/scrapeJobs/resultHandlers.js:275",
             "scripts/lib/snsAutoPlanRunner.js:741",
@@ -18864,7 +18864,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:713",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:717",
           "op": "select",
           "via": "client",
           "columns": [
@@ -19294,6 +19294,7 @@
         "racer_news",
         "racer_profiles",
         "races_init",
+        "release_dispatch",
         "result",
         "result_catchup",
         "scrape-cleanup",
@@ -19337,7 +19338,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:723",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:727",
           "op": "select",
           "via": "client",
           "columns": [
@@ -19844,6 +19845,7 @@
         "racer_news",
         "racer_profiles",
         "races_init",
+        "release_dispatch",
         "result",
         "result_catchup",
         "scrape-cleanup",
@@ -30149,6 +30151,28 @@
           "scripts/lib/racesInit/predictCodeCheck.js:115",
           "scripts/lib/racesInit/predictCodeCheck.js:136",
           "scripts/lib/racesInit/predictCodeCheck.js:157",
+          "scripts/lib/scrapeJobs/store.js:102",
+          "scripts/lib/scrapeJobs/store.js:110",
+          "scripts/lib/scrapeJobs/store.js:129",
+          "scripts/lib/scrapeJobs/store.js:135",
+          "scripts/lib/scrapeJobs/store.js:147",
+          "scripts/lib/scrapeJobs/store.js:161",
+          "scripts/lib/scrapeJobs/store.js:318",
+          "scripts/lib/scrapeJobs/store.js:368",
+          "scripts/lib/scrapeJobs/store.js:398"
+        ],
+        "scrape_slots": [
+          "scripts/lib/scrapeJobs/store.js:233",
+          "scripts/lib/scrapeJobs/store.js:269"
+        ]
+      }
+    },
+    {
+      "job": "release_dispatch",
+      "entry": "api/cron/release-dispatch.js",
+      "reachableFiles": 18,
+      "writes": {
+        "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
           "scripts/lib/scrapeJobs/store.js:110",
           "scripts/lib/scrapeJobs/store.js:129",
