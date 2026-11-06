@@ -13,7 +13,7 @@ model: opus
 - `docs/knowledge/data-definitions.md`（数値の出典と母集団・生データの所在）
 - `docs/knowledge/number-wording.md`（数字の言い方。見せるときの注記）
 
-足りなければ分析資料・コード・公開 API で確かめる（`docs/design`・`docs/reference`・`scripts/analysis`・`analysis/`、公開 API https://www.boat-ai.jp/api/...）。本番 DB は読み取りだけ（`node --env-file=.env.local` の supabase-js、または Supabase MCP の読み取り）
+足りなければ分析資料・origin/master のコード・本番 DB の読み取りで確かめる（`docs/design`・`docs/reference`・`scripts/analysis`・`analysis/`）。公開 API（https://www.boat-ai.jp/api/...）は外からの取得を拒むので使わない（BOA-1110）。本番 DB は読み取りだけ（`node --env-file=.env.local` の supabase-js、または Supabase MCP の読み取り）
 
 ## 答えること / 答えないこと
 - 答える: どの指標がどれだけ効くか（相関・1着率の差・信頼区間）、どの期間・母集団で言えるか、見せるときに何を注記するか
