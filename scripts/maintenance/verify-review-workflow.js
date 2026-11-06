@@ -30,7 +30,11 @@ import {
   monthlyRunsPath,
   parseVerdict,
   sqlTablesFromFiles,
+  authorKind,
+  monthlyLimitReason,
+  softFailFor,
   vendorForBranch,
+  vendorForPr,
 } from "../lib/reviewPr.js";
 import { anthropicUsage, openaiUsage, usageLine } from "../review/usage.js";
 
@@ -62,6 +66,69 @@ check(
 );
 check("ブランチ名が無ければ審査しない", vendorForBranch(undefined) === null);
 
+// 1a. 作者の種類（ゼロベース再設計 A2 ⑥: 持ち主の名義の PR＝Claude のセッションの PR も別ベンダーで審査する）
+{
+  const ids = { ownerId: "60602344", makerId: "999" };
+  check("持ち主の id は owner", authorKind({ ...ids, authorId: 60602344 }) === "owner");
+  check("作成の App の id は maker", authorKind({ ...ids, authorId: "999" }) === "maker");
+  check("他の id は審査しない", authorKind({ ...ids, authorId: "123" }) === null);
+  check(
+    "id の形が違う・変数が空なら一致させない",
+    authorKind({ ...ids, authorId: "" }) === null &&
+      authorKind({ ownerId: "", makerId: "", authorId: "" }) === null &&
+      authorKind({ ownerId: "1", makerId: "", authorId: "2" }) === null &&
+      authorKind({ ...ids, authorId: "60602344 " }) === null,
+  );
+  check(
+    "持ち主の PR は接頭辞を問わず OpenAI（Claude が作った PR を Claude に見せない）",
+    ["feat/x", "fix/x", "feature/x", "claude/x", "codex-less/x"].every(
+      (b) => vendorForPr(b, "owner") === "openai",
+    ),
+  );
+  check(
+    "持ち主の名義の codex/ は Codex のパッチの取り込みとして Anthropic",
+    vendorForPr("codex/x", "owner") === "anthropic",
+  );
+  check("持ち主の PR でもブランチ名が無ければ審査しない", vendorForPr("", "owner") === null && vendorForPr(undefined, "owner") === null);
+  check(
+    "作成の App の PR は今までどおり接頭辞で決める",
+    vendorForPr("claude/x", "maker") === "openai" &&
+      vendorForPr("codex/x", "maker") === "anthropic" &&
+      vendorForPr("feat/x", "maker") === null,
+  );
+  check("作者が分からなければ審査しない", vendorForPr("claude/x", null) === null);
+}
+
+// 1c. 月の上限は作者の種類ごと、skipped を除いて数える
+{
+  check(
+    "skipped を引いて上限以下なら止めない",
+    monthlyLimitReason({ total: 573, skipped: 300, kind: "owner", ownerLimit: "300" }) === null,
+  );
+  check(
+    "上限を超えたら止める（持ち主は REVIEW_OWNER_MONTHLY_LIMIT）",
+    /REVIEW_OWNER_MONTHLY_LIMIT/.test(
+      monthlyLimitReason({ total: 302, skipped: 1, kind: "owner", makerLimit: "1000", ownerLimit: "300" }) ?? "",
+    ),
+  );
+  check(
+    "作成の App は REVIEW_MONTHLY_LIMIT、持ち主の上限に引きずられない",
+    monthlyLimitReason({ total: 50, skipped: 0, kind: "maker", makerLimit: "300", ownerLimit: "10" }) === null &&
+      /REVIEW_MONTHLY_LIMIT/.test(
+        monthlyLimitReason({ total: 301, skipped: 0, kind: "maker", makerLimit: "", ownerLimit: "1000" }) ?? "",
+      ),
+  );
+  check(
+    "上限・件数が数でなければ止める",
+    monthlyLimitReason({ total: 1, skipped: 0, kind: "maker", makerLimit: "abc" }) !== null &&
+      monthlyLimitReason({ total: undefined, skipped: 0, kind: "owner" }) !== null,
+  );
+  check(
+    "作者が分からないときは上限の理由を足さない",
+    monthlyLimitReason({ total: 9999, skipped: 0, kind: null, makerLimit: "1" }) === null,
+  );
+}
+
 // 1b. 月の上限は、作成の App が起動した run だけを数える
 {
   const p = monthlyRunsPath("o/r", "ryujin-maker[bot]", new Date("2026-10-19T00:00:00Z"));
@@ -73,6 +140,16 @@ check("ブランチ名が無ければ審査しない", vendorForBranch(undefined
     threw = true;
   }
   check("actor の形が違えば止める", threw);
+  const ps = monthlyRunsPath("o/r", "rhapsody0919", new Date("2026-11-06T00:00:00Z"), "skipped");
+  check("skipped だけを数える道（全体から引く）", ps.includes("&status=skipped&") && ps.includes("actor=rhapsody0919"), ps);
+  check("status を渡さなければ絞らない", !p.includes("status="));
+  let threw2 = false;
+  try {
+    monthlyRunsPath("o/r", "rhapsody0919", new Date(), "success&x=1");
+  } catch {
+    threw2 = true;
+  }
+  check("status は skipped だけ", threw2);
 }
 
 // 2. 機械で落とす形
@@ -311,6 +388,32 @@ check("ブランチ名が無ければ審査しない", vendorForBranch(undefined
     "P0 があれば承認しない",
     decideAction({ ...base, verdict: p0 }).event === "REQUEST_CHANGES",
   );
+  check(
+    "softFail は持ち主の PR で、関門を通ったか止めた理由が上限だけのとき",
+    softFailFor({ authorKind: "owner", gateOk: true, gateLimitOnly: false }) &&
+      softFailFor({ authorKind: "owner", gateOk: false, gateLimitOnly: true }) &&
+      !softFailFor({ authorKind: "owner", gateOk: false, gateLimitOnly: false }) &&
+      !softFailFor({ authorKind: "maker", gateOk: false, gateLimitOnly: true }) &&
+      !softFailFor({ authorKind: "", gateOk: true, gateLimitOnly: false }),
+  );
+  // 持ち主の名義の PR（softFail）: 審査の中身でない理由では COMMENT、P0 は差し戻し、P0 なしは承認
+  const soft = { ...base, softFail: true };
+  check(
+    "持ち主の PR: 関門・上限で止めたら COMMENT",
+    decideAction({ ...soft, gateOk: false, gateReason: "上限" }).event === "COMMENT",
+  );
+  check(
+    "持ち主の PR: 審査の失敗・答えを読めないは COMMENT",
+    decideAction({ ...soft, llmResult: "failure" }).event === "COMMENT" &&
+      decideAction({ ...soft, verdict: null }).event === "COMMENT" &&
+      decideAction({ ...soft, verdict: parseVerdict("x") }).event === "COMMENT",
+  );
+  check(
+    "持ち主の PR: P0 は REQUEST_CHANGES、P0 なしは APPROVE、head が進んだら NONE",
+    decideAction({ ...soft, verdict: p0 }).event === "REQUEST_CHANGES" &&
+      decideAction(soft).event === "APPROVE" &&
+      decideAction({ ...soft, currentHeadSha: "b".repeat(40) }).event === "NONE",
+  );
 }
 
 // 5b. API の失敗の要約（429 の種類を見分ける）
@@ -367,8 +470,42 @@ const jobBlocks = Object.fromEntries(
     ),
   );
   check(
-    "変数が空なら動かさない",
+    "持ち主の名義の PR も数値の id で入れる（github.repository_owner_id）",
+    /format\('\{0\}', github\.event\.pull_request\.user\.id\) == format\('\{0\}', github\.repository_owner_id\)/.test(
+      gateIf,
+    ),
+  );
+  check(
+    "関門に作者・持ち主・作成の App の数値の id を渡す",
+    /PR_AUTHOR_ID: \$\{\{ github\.event\.pull_request\.user\.id \}\}/.test(jobBlocks.gate) &&
+      /OWNER_ID: \$\{\{ github\.repository_owner_id \}\}/.test(jobBlocks.gate) &&
+      /MAKER_BOT_ID: \$\{\{ vars\.REVIEW_MAKER_BOT_ID \}\}/.test(jobBlocks.gate),
+  );
+  check(
+    "作成の App の側は、変数が空なら一致させない",
     /vars\.REVIEW_MAKER_BOT_ID != ''/.test(gateIf),
+  );
+  // 括弧の位置まで固定する（|| が外に出ると、持ち主の分だけ同じリポジトリ・master の条件が外れる）
+  const idEither = (field) =>
+    `((vars.REVIEW_MAKER_BOT_ID != '' && format('{0}', ${field}) == vars.REVIEW_MAKER_BOT_ID) || format('{0}', ${field}) == format('{0}', github.repository_owner_id))`;
+  check(
+    "gate の if は、リポジトリ・作者（2択）・push した人（2択）・同じリポジトリ・master の AND",
+    gateIf.replace(/\s+/g, " ").trim() ===
+      [
+        "github.repository == 'rhapsody0919/boatrace-ai-predictor'",
+        idEither("github.event.pull_request.user.id"),
+        idEither("github.event.sender.id"),
+        "github.event.pull_request.head.repo.full_name == github.repository",
+        "github.event.pull_request.base.ref == 'master'",
+      ].join(" && "),
+    gateIf.replace(/\s+/g, " ").trim(),
+  );
+  check(
+    "approve に作者の種類を渡す（持ち主の PR の COMMENT）",
+    /author_kind: \$\{\{ steps\.gate\.outputs\.author_kind \}\}/.test(jobBlocks.gate) &&
+      /AUTHOR_KIND: \$\{\{ needs\.gate\.outputs\.author_kind \}\}/.test(jobBlocks.approve) &&
+      /limit_only: \$\{\{ steps\.gate\.outputs\.limit_only \}\}/.test(jobBlocks.gate) &&
+      /GATE_LIMIT_ONLY: \$\{\{ needs\.gate\.outputs\.limit_only \}\}/.test(jobBlocks.approve),
   );
   check(
     "head は同じリポジトリだけ",

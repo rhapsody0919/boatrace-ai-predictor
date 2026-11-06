@@ -5,16 +5,21 @@ name: AI Review
 #
 #   gate       鍵なし。差分を API で取り、symlink・submodule・LFS・バイナリ・.gitattributes・上限超え・月の上限を機械で落とす
 #   materials  Environment db-readonly。SQL の PR のときだけ、claude_ro で触る表の定義と行数の目安を取る（行の中身は取らない）
-#   llm        Environment pr-review の API キーだけ。claude/ の PR は OpenAI、codex/ の PR は Anthropic で審査し、判定を出す
+#   llm        Environment pr-review の API キーだけ。claude/ の PR と持ち主の名義の PR（Claude のセッションが作る）は OpenAI、
+#              codex/ の PR は Anthropic で審査し、判定を出す（作った側と別のベンダー）
 #   approve    Environment pr-review の審査の App の鍵だけ。head が審査した SHA のままで P0 が0件なら、その SHA に APPROVE。
-#              承認しないときは REQUEST_CHANGES（審査の App の最新の状態でマージを止める）
+#              承認しないときは REQUEST_CHANGES（審査の App の最新の状態でマージを止める）。持ち主の名義の PR は、
+#              月の上限・審査の失敗では COMMENT にする（機械の検査で止めたとき・P0 は REQUEST_CHANGES）
 #
 # pull_request_target は master にある定義で動く（PR がこのファイルを書き換えても、その PR の審査には効かない）。
 # そのかわり鍵に届くので、次を守る。配線は scripts/maintenance/verify-review-workflow.js が検査する。
 #   - PR の head を checkout しない・実行しない。checkout は master（github.sha）だけ、persist-credentials: false
 #   - npm ci・npm install・cache を使わない（scripts/review/*.js は Node の組み込みだけを使う）
 #   - PR のタイトル・本文・ブランチ名を run に直接書かない（env 経由）。PR の本文・コメントは審査の材料に入れない
-#   - 作者は数値の user.id（repo の変数 REVIEW_MAKER_BOT_ID）で決める。同じリポジトリの head、base は master だけ
+#   - 作者は数値の user.id で決める（作成の App は repo の変数 REVIEW_MAKER_BOT_ID、持ち主は github.repository_owner_id）。
+#     起動した身元（sender、push した人）も同じ2つに限る。write の collaborator が push した head に承認を付けると、
+#     require_last_push_approval を満たしてその人がマージできるため（その run は skipped、前の承認は dismiss_stale で消える）。
+#     同じリポジトリの head、base は master だけ
 #   - 外部の action は SHA で固定する
 
 on:
@@ -32,8 +37,12 @@ jobs:
   gate:
     if: >-
       github.repository == 'rhapsody0919/boatrace-ai-predictor' &&
-      vars.REVIEW_MAKER_BOT_ID != '' &&
-      format('{0}', github.event.pull_request.user.id) == vars.REVIEW_MAKER_BOT_ID &&
+      ((vars.REVIEW_MAKER_BOT_ID != '' &&
+        format('{0}', github.event.pull_request.user.id) == vars.REVIEW_MAKER_BOT_ID) ||
+       format('{0}', github.event.pull_request.user.id) == format('{0}', github.repository_owner_id)) &&
+      ((vars.REVIEW_MAKER_BOT_ID != '' &&
+        format('{0}', github.event.sender.id) == vars.REVIEW_MAKER_BOT_ID) ||
+       format('{0}', github.event.sender.id) == format('{0}', github.repository_owner_id)) &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.base.ref == 'master'
     runs-on: ubuntu-latest
@@ -46,6 +55,8 @@ jobs:
       ok: ${{ steps.gate.outputs.ok }}
       reason: ${{ steps.gate.outputs.reason }}
       vendor: ${{ steps.gate.outputs.vendor }}
+      author_kind: ${{ steps.gate.outputs.author_kind }}
+      limit_only: ${{ steps.gate.outputs.limit_only }}
       sql_tables: ${{ steps.gate.outputs.sql_tables }}
       head_sha: ${{ steps.gate.outputs.head_sha }}
     steps:
@@ -65,7 +76,11 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR_ID: ${{ github.event.pull_request.user.id }}
+          OWNER_ID: ${{ github.repository_owner_id }}
+          MAKER_BOT_ID: ${{ vars.REVIEW_MAKER_BOT_ID }}
           MONTHLY_LIMIT: ${{ vars.REVIEW_MONTHLY_LIMIT }}
+          OWNER_MONTHLY_LIMIT: ${{ vars.REVIEW_OWNER_MONTHLY_LIMIT }}
         run: node scripts/review/gate.js
 
   materials:
@@ -163,6 +178,8 @@ jobs:
           REVIEWED_SHA: ${{ needs.gate.outputs.head_sha }}
           GATE_OK: ${{ needs.gate.outputs.ok }}
           GATE_REASON: ${{ needs.gate.outputs.reason }}
+          AUTHOR_KIND: ${{ needs.gate.outputs.author_kind }}
+          GATE_LIMIT_ONLY: ${{ needs.gate.outputs.limit_only }}
           LLM_RESULT: ${{ needs.llm.result }}
           VERDICT: ${{ needs.llm.outputs.verdict }}
         run: node scripts/review/approve.js

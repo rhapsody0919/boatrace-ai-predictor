@@ -22,6 +22,43 @@ export function vendorForBranch(headRef) {
 }
 
 /**
+ * 作者の種類とブランチで審査の相手を決める。
+ * - maker（作成の App `ryujin-maker`）: 接頭辞で決める（vendorForBranch）
+ * - owner（リポジトリの持ち主の名義）: Claude のセッションがこの名義で PR を作る（接頭辞は feat/・fix/ 等ばらばら）ので、
+ *   Claude の PR として OpenAI で見る。codex/ だけは Codex のパッチを取り込んだ印として Anthropic で見る
+ * - それ以外: 審査しない
+ */
+export function vendorForPr(headRef, authorKind) {
+  if (authorKind === "maker") return vendorForBranch(headRef);
+  if (authorKind !== "owner") return null;
+  if (typeof headRef !== "string" || headRef === "") return null;
+  return headRef.startsWith("codex/") ? "anthropic" : "openai";
+}
+
+/** 数値の id から身元の種類（owner・maker・null）を決める。id はどれも10進の文字列で比べる */
+export function authorKind({ authorId, ownerId, makerId }) {
+  const id = String(authorId ?? "");
+  if (!/^\d+$/.test(id)) return null;
+  if (/^\d+$/.test(String(ownerId ?? "")) && id === String(ownerId)) return "owner";
+  if (/^\d+$/.test(String(makerId ?? "")) && id === String(makerId)) return "maker";
+  return null;
+}
+
+/**
+ * 今月の審査の件数（取り消しを含み、skipped を除く）と、作者の種類ごとの上限で、超えたかを決める。
+ * 持ち主の名義の PR は REVIEW_OWNER_MONTHLY_LIMIT（未設定なら300）、作成の App の PR は REVIEW_MONTHLY_LIMIT（未設定なら300）
+ */
+export function monthlyLimitReason({ total, skipped, kind, makerLimit, ownerLimit }) {
+  if (kind !== "owner" && kind !== "maker") return null; // 作者が分からないときは、相手が決まらない理由で既に止めている
+  const raw = kind === "owner" ? ownerLimit : makerLimit;
+  const limit = Number(raw || 300);
+  const name = kind === "owner" ? "REVIEW_OWNER_MONTHLY_LIMIT" : "REVIEW_MONTHLY_LIMIT";
+  const count = Number(total) - Number(skipped);
+  if (Number.isFinite(limit) && Number.isFinite(count) && count <= limit) return null;
+  return `今月の審査が上限を超えた（${count}件、上限 ${limit}）。上限は repo の変数 ${name}`;
+}
+
+/**
  * 機械で落とす形。1つでもあれば審査も承認もしない（fail closed）
  *
  * @param {{ filename: string, status: string, patch?: string, changes: number, previous_filename?: string }[]} files compare の files
@@ -215,13 +252,24 @@ export function parseVerdict(text) {
 }
 
 /**
+ * 持ち主の PR で、審査の中身でない理由を COMMENT にするか。関門を通ったか、止めた理由が月の上限だけのときだけ。
+ * 機械の検査（symlink・LFS・差分の上限超え等）で止めたときは差し戻す（fail closed のまま）
+ */
+export function softFailFor({ authorKind, gateOk, gateLimitOnly }) {
+  return authorKind === "owner" && (gateOk === true || gateLimitOnly === true);
+}
+
+/**
  * 承認するかを決める。承認は、関門を通り・審査が成功し・P0 が0件で・head が審査した SHA のままのときだけ
  *
  * @param {{ gateOk: boolean, gateReason: string, llmResult: string, verdict: ReturnType<typeof parseVerdict> | null,
- *           reviewedSha: string, currentHeadSha: string }} args
+ *           reviewedSha: string, currentHeadSha: string, softFail?: boolean }} args
  * 承認しないときは REQUEST_CHANGES を付ける。審査の App の最新の状態がマージを止める側になり、承認と新しい push が
- * 競って古い SHA への承認が残った場合も、次の審査が承認しなければ止まる
- * @returns {{ event: "APPROVE" | "REQUEST_CHANGES" | "NONE", body: string }}
+ * 競って古い SHA への承認が残った場合も、次の審査が承認しなければ止まる。
+ * softFail（持ち主の名義の PR で、関門を通ったか止めた理由が月の上限だけ）のときは、審査の中身でない理由（月の上限・
+ * 審査の失敗・答えを読めない）では COMMENT にする。機械の検査で止めた持ち主の PR は softFail にせず差し戻す（fail closed）。
+ * 上限や API の不調で持ち主の PR 全部に差し戻しが付き、/merge-pr が止まるのを防ぐ。P0 は softFail でも REQUEST_CHANGES
+ * @returns {{ event: "APPROVE" | "REQUEST_CHANGES" | "COMMENT" | "NONE", body: string }}
  */
 export function decideAction({
   gateOk,
@@ -230,26 +278,28 @@ export function decideAction({
   verdict,
   reviewedSha,
   currentHeadSha,
+  softFail = false,
 }) {
+  const notReviewed = softFail ? "COMMENT" : "REQUEST_CHANGES";
   if (currentHeadSha !== reviewedSha) {
     // 新しい push があった。その push の審査が別に走るので、ここでは何もしない
     return { event: "NONE", body: "" };
   }
   if (!gateOk) {
     return {
-      event: "REQUEST_CHANGES",
+      event: notReviewed,
       body: `AI 審査: 審査しない（機械の検査で止めた）\n\n${gateReason}`,
     };
   }
   if (llmResult !== "success" || !verdict) {
     return {
-      event: "REQUEST_CHANGES",
+      event: notReviewed,
       body: `AI 審査: 審査が完了しなかった（${llmResult}）。承認しない`,
     };
   }
   if (!verdict.ok) {
     return {
-      event: "REQUEST_CHANGES",
+      event: notReviewed,
       body: `AI 審査: 答えを読めなかった（${verdict.reason}）。承認しない`,
     };
   }
@@ -275,12 +325,16 @@ export const monthStart = (date) => `${date.toISOString().slice(0, 7)}-01`;
 
 /**
  * 今月の審査の件数を数える API のパス。pull_request_target は作者を問わず全部の PR で run を作る（gate が skipped でも
- * 数に入る）ので、起動した身元（actor＝作成の App）で絞る。絞らないと審査していない PR の run で上限に達する
+ * 数に入る）ので、起動した身元（actor＝作成の App・持ち主）で絞る。絞らないと審査していない PR の run で上限に達する。
+ * status に "skipped" を渡すと skipped の run だけを数える。gate.js は全体から引いて、審査が動いた run だけを数える
+ * （持ち主の名義の run は、審査の対象に入る前の skipped が月に数百件あるため）
  */
-export function monthlyRunsPath(repo, actorLogin, date) {
+export function monthlyRunsPath(repo, actorLogin, date, status) {
   if (!/^[\w.-]+(\[bot\])?$/.test(actorLogin ?? "")) throw new Error(`actor の形が違う: ${actorLogin}`);
+  if (status !== undefined && status !== "skipped") throw new Error(`status の形が違う: ${status}`);
   const created = encodeURIComponent(`>=${monthStart(date)}`);
-  return `/repos/${repo}/actions/workflows/review.yml/runs?actor=${encodeURIComponent(actorLogin)}&created=${created}&per_page=1`;
+  const statusQuery = status ? `&status=${status}` : "";
+  return `/repos/${repo}/actions/workflows/review.yml/runs?actor=${encodeURIComponent(actorLogin)}&created=${created}${statusQuery}&per_page=1`;
 }
 
 /**

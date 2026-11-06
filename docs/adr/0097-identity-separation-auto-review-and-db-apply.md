@@ -160,3 +160,15 @@ D はまず1〜2週間、当てずに「当てるはずだった」を通知す�
 ## 追記: ADR-0034 の置き換え（2026-10-20）
 
 記事の PR を管理画面の承認で PAT（Vercel の `GITHUB_MERGE_TOKEN`）を使ってマージする道（ADR-0034）は、書き込みの身元を増やすのでこの ADR の方針と合わない。BOA-908（オーナー yes 10/20 夕）で止め、記事の PR も他の PR と同じ道（CI・4つのレビュー・マージの承認、段階0 F）でマージする。経緯と止めたものは ADR-0034 の追記。
+
+## 追記: 持ち主の名義の PR も審査する（2026-11-06、ゼロベース再設計 A2 ⑥）
+
+Claude の PR は今も持ち主（rhapsody0919）の名義で `feat/`・`fix/` 等の接頭辞で作られる（上の「AI の PR を全部これで作る」は運用と食い違ったまま）。そのため審査の「動かす条件」（作者が作成の App）に当たらず、別ベンダーの審査が全部 skipped だった。次のとおり広げる。
+
+- 動かす条件: 作者の `user.id` が作成の App **か持ち主**（`github.repository_owner_id`）で、**起動した身元（`sender.id`）も同じ2つのどちらか**。sender を見るのは、write の collaborator が持ち主の PR に push した head に承認が付くと、`require_last_push_approval` を満たしてその人がマージできるため（その run は skipped、前の承認は dismiss_stale で消える）
+- 審査の相手: 持ち主の名義の PR は `codex/` なら Anthropic（Codex のパッチの取り込み）、それ以外は接頭辞を問わず OpenAI
+- 持ち主の名義の PR は、月の上限・審査の失敗では REQUEST_CHANGES でなく COMMENT にする（上限で持ち主の PR 全部が差し戻され、/merge-pr が止まるのを防ぐ）。機械の検査（symlink・LFS・差分の上限超え等）で止めたとき・P0 は REQUEST_CHANGES。COMMENT は審査の App の前の状態を変えないので、前の REQUEST_CHANGES は残る（止まる側）
+- 持ち主の PR に審査の App の承認が付くと、write の collaborator（2026-11-06 時点で tinaba96）も、その PR を自分で push せずにマージできる。今までは持ち主の PR に承認が付かず、この道は無かった。collaborator の権限はオーナーの判断
+- 月の上限は skipped を除いて数え、持ち主の名義の PR は別の変数 `REVIEW_OWNER_MONTHLY_LIMIT`（未設定なら300）
+- 持ち主の PR に審査の App の承認が付くと、作成の App のトークンでもマージが通る。codex-pr.py は自分の台帳の PR しかマージしないので今は害が無い。持ち主のマージは今までどおり admin の bypass
+
