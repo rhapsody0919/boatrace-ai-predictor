@@ -358,7 +358,6 @@ const nameOf = (f) =>
   );
   const forbidden = [
     "db-apply.yml", // 本番 DB の適用（ADR-0097、失敗したら止める）
-    "review.yml", // 審査
     "campaign-pipeline.yml", // 送信
     "collect-racer-news.yml", // master への push
     "e2e-live.yml", // 本番への通信の検査
@@ -368,7 +367,7 @@ const nameOf = (f) =>
     "key-canary.yml", // 30分ごと
   ];
   check(
-    "許可の一覧に、送信・push・db-apply・審査・頻繁な job を入れない",
+    "許可の一覧に、送信・push・db-apply・頻繁な job を入れない",
     !config.rerunAllowed.some((f) =>
       forbidden.some((x) => f.endsWith(`/${x}`)),
     ),

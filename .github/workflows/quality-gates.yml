@@ -66,6 +66,19 @@ jobs:
       - name: Run CI-tier verifications
         run: npm run verify:ci
 
+      # 本番向けの build（vite build ＋ AI クローラー向けのスナップショット）。claude/**・codex/** は Vercel の Preview を
+      # 作らない（#2304）ので、マージの前に本番の build が通るかを確かめる場所がここだけになる。e2e の束（build:e2e）は
+      # 録画の宛先で焼くうえ docs だけの PR では走らないので、全 PR で走る verify の job に置く（必須の check に入る）。
+      # VERCEL_ENV=preview で、記事・選手のスナップショットは Preview と同じく作らない（全記事の描画で数分延びるため）。
+      # master への push は Vercel の本番の build が同じことをするので、PR だけで走らせる
+      - name: Production build (npm run build)
+        if: github.event_name == 'pull_request'
+        env:
+          VERCEL_ENV: preview
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+
       # verify-sns-japanese-font.js が本番と同じ Chromium で撮った日本語の見本（/today の X 投稿の画像の確認用、2026-10-16）
       - name: Upload Japanese font check image
         if: always()
