@@ -185,10 +185,10 @@
 | docs/reference/seo-architecture-constraints.md | SPA・JS 実行後の meta の制約 |
 | docs/adr/0032-ai-crawler-snapshot-delivery.md・0089-bot-html-for-daily-pages.md | ボット向け HTML の決定 |
 | docs/adr/0026-venue-list-redesign-url-structure.md | 8/29 の URL 構造 |
-| data/analysis/search-console/report-*.json（7/27〜） | Search Console の定点 |
+| （hq へ移した）search-console の定点（7/27〜） | Search Console の定点 |
 | data/analysis/serp-snapshots/snapshot-2026-08-20〜09-05.json | 検索結果の定点 |
-| data/analysis/i18n-demand/report-2026-07-14〜09-05.json | 言語別 PV |
-| data/analysis/growth-monthly-summary/summary-2026-08.json | 8月の月次まとめ（7/27 と 8/26 のレポート形式が違い月次比較不可と記載） |
+| （hq へ移した）i18n-demand の定点 | 言語別 PV |
+| （hq へ移した）growth-monthly-summary 2026-08 | 8月の月次まとめ（7/27 と 8/26 のレポート形式が違い月次比較不可と記載） |
 | data/analysis/growth-pdca-major-initiatives.json | 被リンク施策の提示履歴 |
 
 ### 3-2. 食い違い・漏れ

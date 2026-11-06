@@ -7,7 +7,7 @@
 
 boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコンテンツはJS実行後にしか現れない。GooglebotはJSレンダリングに対応するが、GPTBot・ClaudeBot・PerplexityBot等のAIクローラーやFacebook等のSNSシェア用ボットの多くはJSを実行しないため、これらのボットにはページの実コンテンツが見えていない（`docs/reference/seo-architecture-constraints.md`、`docs/design/ai-crawler-snapshot/spec.md`）。
 
-フルSSR/フレームワーク移行は数週間規模の投資で、現状AI経由の流入が計測上ゼロ（`data/analysis/i18n-demand/report-2026-08-26.json`）のため見送り、代わりに対象ページ（ブログ記事＋`/winning-technique`の説明部分）に限定した静的スナップショットを対象ボットにのみ返す設計とした。
+フルSSR/フレームワーク移行は数週間規模の投資で、現状AI経由の流入が計測上ゼロ（当時の i18n-demand の定点。生データは 2026-11-06 に hq へ移した）のため見送り、代わりに対象ページ（ブログ記事＋`/winning-technique`の説明部分）に限定した静的スナップショットを対象ボットにのみ返す設計とした。
 
 配信方式を決めるにあたり、Vercelの現行ドキュメント（[Routing Middleware](https://vercel.com/docs/routing-middleware)、[Routing Middleware API](https://vercel.com/docs/routing-middleware/api)、2026-08時点）を調査した。
 
@@ -54,7 +54,7 @@ boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコ�
 
 ## 追記: 描くのは1日1回、ほかは今の本番から写す（Vercel の費用、2026-11-05）
 
-Vercel の従量が上限 $150/月を超えた（調査 `.git/orchestrator/vercel-cost-2026-11-05.md`）。本番ビルド1本の CPU の約74%が選手ページを描く時間（317人 755.5秒）で、本番ビルドは日に70〜90本ある。オーナーの線は「ボット向けの選手ページの古さは最大1日」。system-architect の審査を通した（P0・P1 なし。P2 の4件は同じ PR で直した）。
+Vercel の従量がオーナーの決めた月の上限を超えた（額と調査は hq。2026-11-06 オーナー決定で費用の額を公開のリポジトリに置かない）。本番ビルド1本の CPU の約74%が選手ページを描く時間（317人 755.5秒）で、本番ビルドは日に70〜90本ある。オーナーの線は「ボット向けの選手ページの古さは最大1日」。system-architect の審査を通した（P0・P1 なし。P2 の4件は同じ PR で直した）。
 
 - **決定**: 本番のビルドは、まず今の本番の `/ai-snapshots/status.json` を読む。`racer` が「見た目の版（`templateVersion`）が同じ・途中で止まっていない・描いた時刻（`renderedAt`）が20時間以内」なら、sitemap の選手ごとに今の本番の `/ai-snapshots/racer/{id}.html` を写す。満たさなければ今までどおり全員を描く（`scripts/lib/racerSnapshotPlan.js` の `decideRacerSnapshotSource`）
 - **写すときの検査**（`adaptCopiedRacerHtml`）: main の js・css の参照（ビルドごとに hash が変わる）をこのビルドの `dist/index.html` のものに書き換える。`/` で始まる拡張子つきの src・href がすべてこのビルドの dist に在ること、保存の目印（`canSaveRacerSnapshot`）があり noindex でないこと。満たさない選手（新しく sitemap に入った・前回失敗・取得の失敗）だけを描く。本番に無い番号を取ると catch-all で 200 の SPA の外枠（約5KB）が返るので、「200 なら在る」と見ない

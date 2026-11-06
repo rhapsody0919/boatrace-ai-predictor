@@ -79,7 +79,7 @@ Chrome in Claudeで`https://x.com/kyouteiboatai`を開き、直近の投稿（�
 - ボートレース・競艇関連のbio/投稿を持つアカウントがどの程度の割合か（無関係な業種アカウントばかりが増えている場合、量の増加が質を伴っていない兆候）
 - 判断基準: 母数が少ない段階（フォロワー100人未満目安）でこの比率を厳密な数値として出すのは時期尚早。「明らかにbotと分かるものが◯件見つかった」程度の定性的な記述に留める
 
-結果を`data/analysis/x-growth/report-{日付}.json`に保存する（構造: `{generatedAt, followerCount, followingCount, totalPosts, followerQualityNote, previousActionsReview: {...}, postsSampled: [...], summary: {...}, nextActions: {...}}`）。専用スクリプトは無い（X APIが無いため）。Writeツールで直接書き込む。
+結果を`data/analysis/x-growth/report-{日付}.json`に保存する（構造: `{generatedAt, followerCount, followingCount, totalPosts, followerQualityNote, previousActionsReview: {...}, postsSampled: [...], summary: {...}, nextActions: {...}}`）。専用スクリプトは無い（X APIが無いため）。Writeツールで直接書き込む。このファイルは公開のリポジトリに入るので、GA4 の数（X 経由のセッション等）は書かない。GA4 の数は `data/analysis/x-referral/`（手元だけに残る。`.gitignore` 済みで公開のリポジトリにコミットしない。2026-11-06 オーナー決定。正本の置き場は hq で、移す作業は hq の担当）にだけ残す
 
 **フィールド名の注意**: 過去レポートで`totalPosts`が`totalPostsCounter`という別名で保存されていた時期があり、後述のトレンド判定スクリプトでN/A表示になる不具合の原因になった。**必ず`totalPosts`のキー名で統一する**。
 

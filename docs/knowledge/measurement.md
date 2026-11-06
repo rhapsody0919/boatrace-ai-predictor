@@ -6,7 +6,7 @@
 - 新しい画面・機能は spec の段階で「何を測るか（問い・イベント・パラメータ・GA4 に登録するディメンション）」を書く。思考アシストは spec に計測が無く公開後に足したので、足す前の期間は測れていない（2026-10-11、PR #1381）
 - イベントの定義は機能ごとの events.md に置く（docs/design/analogy-reaction-measurement/events.md、docs/design/thinking-assist/events.md）
 - 同じイベントで入口を分けたいときはパラメータで分ける。例 assist_view_switch の assist_entry = top / tab_row / copy_toast（BOA-832、docs/design/thinking-assist/events.md）
-- GA4 のカスタムイベントのパラメータに source・medium・campaign・term・content・id を使わない。source だけ送ると流入元が上書きされ Unassigned になる（2026-09 に 71→259 件、PR #656 で link_source に改名、memory ga4_unassigned_source_param_collision_2026_09_15）
+- GA4 のカスタムイベントのパラメータに source・medium・campaign・term・content・id を使わない。source だけ送ると流入元が上書きされ Unassigned になる（2026-09 に Unassigned が増えた、PR #656 で link_source に改名、memory ga4_unassigned_source_param_collision_2026_09_15）
 - 上の予約名と utm_* は src/utils/analytics.js の trackEvent が落として送らない。verify-ga4-traffic-source-params.js が入口・src の引数・内部リンクの utm_ を CI で見る（2026-10-22、BOA-996）
 
 ## GA4 への登録
@@ -28,18 +28,18 @@
 - レース詳細の中の動きを前後で比べる基準は 10/11 以降しか使えない（tab_id 登録 10/8、ソナー別タブ化 10/9 09:17、思考アシスト公開 10/11）（2026-10-12、同 measurement.md）
 - 9/28 以前の / の PV にはレース詳細が混ざっている。ページ別の比較は 9/29 以降（2026-10-12、BOA-531、同 measurement.md）
 - 置き場所を比べる機能は、イベントを共通にしてパラメータで置き場所を区別すると、後で動かしても前後がつながる（2026-10-12、同 measurement.md）
-- sessionSource の data_race_table・outcome_pattern_preview・volatility_display・venue_tendency_panel（medium は (not set)、チャネルは Unassigned）は、PR #656（2026-09-15）より前に汚れた人の、後の直接の訪問。GA4 は直接の訪問に前回の直接でない流入元を引き継ぐ。9/17〜10/22 の該当は15人で全員の初回訪問が 9/14 以前、改名後に初めて来た人には出ない。検索・SNS の流入は上書きされない（そちらが来れば流入元はそれになる）。読み替えは「Direct に足す」。引き継ぎの期間の目安は GA4 既定の90日（このプロパティの設定は未確認）で、12月中旬に消える見込み（2026-10-22、GA4 Data API の sessionSource×newVsReturning・firstSessionDate、BOA-996）
+- sessionSource の data_race_table・outcome_pattern_preview・volatility_display・venue_tendency_panel（medium は (not set)、チャネルは Unassigned）は、PR #656（2026-09-15）より前に汚れた人の、後の直接の訪問。GA4 は直接の訪問に前回の直接でない流入元を引き継ぐ。9/17〜10/22 の該当者は全員の初回訪問が 9/14 以前、改名後に初めて来た人には出ない。検索・SNS の流入は上書きされない（そちらが来れば流入元はそれになる）。読み替えは「Direct に足す」。引き継ぎの期間の目安は GA4 既定の90日（このプロパティの設定は未確認）で、12月中旬に消える見込み（2026-10-22、GA4 Data API の sessionSource×newVsReturning・firstSessionDate、BOA-996）
 - GA4 の PV は 9/29（page_view の修正）と 10/1（内部トラフィックの除外）で切れる。注記は scripts/lib/ga4MeasurementBreaks.js が出す（2026-10-01、memory seo_keyword_strategy_2026_09_29）
-- PV の絶対値は AdSense の PV とも突き合わせる（2026-09-29 の GA4 日本語 PV 29,270 に対し、同時期の AdSense の PV は 10,573）（2026-10-05、memory ai_agent_era_strategy_2026_10_05）
+- PV の絶対値は AdSense の PV とも突き合わせる（2026-09-29 は AdSense の PV が GA4 日本語 PV の約36%。実数は hq）（2026-10-05、memory ai_agent_era_strategy_2026_10_05）
 - i18n-demand-report.js 等の月別 PV を JST 9時より前に実行すると、期間の始まりが前月の末日になる（2026-10-06、memory project_ai_multi_venture_ops_2026_10_05）
-- AI アシスタント経由の流入は GA4 で30日あたり26→7と小さい。AI 施策の成否は流入でなく、ボットの取得数と引用の定点チェックで見る（2026-10-05、memory ai_agent_era_strategy_2026_10_05）
+- AI アシスタント経由の流入は GA4 で小さく、減っている（実数は hq）。AI 施策の成否は流入でなく、ボットの取得数と引用の定点チェックで見る（2026-10-05、memory ai_agent_era_strategy_2026_10_05）
 - 2026-08 時点で直近30日のアクティブユーザーの約48%がリピーター、新規の翌週の定着率は約13%。リピーターは /hit-races・/accuracy をよく見る（2026-08-19、memory boatai_rebrand_investigation_2026_08_19）
 - 定点観測は戦略文書に書いた本来の KPI と照合する。X の KPI はサイト送客（docs/operation/x-operations-playbook.md）なのに、/x-growth-report が X の中の指標だけを見ていた（2026-09-05、memory x_growth_report_evolution_2026_09、PR #530）
 - sns_strategy_insights に登録するのは型・題材・投稿時間帯のように次の生成に効く知見だけ。操作の手順の改善は入れない（2026-09-06、memory x_growth_report_evolution_2026_09）
 
-## 目標と収益
-- 集客の目標は月間100万PV。基準は 2026-10-01〜12 の13,313PV（月に直して約3.3万、約30倍の差）。集客・SEO・SNS の施策は PV の伸びへの効き方で順位を付ける（2026-10-13 オーナー確認、memory project_pv_goal_1m_2026_10_13）
-- AdSense は月約¥550、ページ RPM ¥52、広告が出るのは広告コードが動いたページの約3割（2026-10-05、memory ai_agent_era_strategy_2026_10_05、docs/proposal/ai-agent-era-strategy.md）
+## 目標と収益（実数は hq）
+- 集客・SEO・SNS の施策は PV の伸びへの効き方で順位を付ける（2026-10-13 オーナー確認）。PV の目標の数字と基準の実数はhq の非公開の記録にある（2026-11-06 オーナー決定。公開のリポジトリに置かない）
+- AdSense で広告が出るのは広告コードが動いたページの約3割（2026-10-05、docs/proposal/ai-agent-era-strategy.md）。収益・RPM の実数はhq の非公開の記録（2026-11-06 オーナー決定）
 
 ## 点検での見落としを防ぐ知見
 - 制作完了・投稿承認・実投稿・指標取得は別の状態として記録し、実投稿を承認だけで補わない。（2026-10-13、2026-10-13-plan-1413.md）

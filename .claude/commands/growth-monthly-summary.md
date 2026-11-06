@@ -53,7 +53,7 @@ Search Console APIでは取得できず、Web UI限定でしか確認できな�
 
 ## 保存先
 
-`data/analysis/growth-monthly-summary/summary-{年月}.json`（構造: `{generatedAt, period: {from, to}, kpis: {...}, midTermGoals: [...], majorInitiativesStatus: {...}, nextMonthFocus: [...]}`）。専用集計スクリプトは無い（各ソースのJSONを読み合わせるだけのため）。Writeツールで直接書き込む。
+`data/analysis/growth-monthly-summary/summary-{年月}.json`（構造: `{generatedAt, period: {from, to}, kpis: {...}, midTermGoals: [...], majorInitiativesStatus: {...}, nextMonthFocus: [...]}`）。専用集計スクリプトは無い（各ソースのJSONを読み合わせるだけのため）。Writeツールで直接書き込む（手元だけに残る。`.gitignore` 済みで公開のリポジトリにコミットしない。2026-11-06 オーナー決定。正本の置き場は hq で、移す作業は hq の担当）。
 
 ## 実行頻度・起動タイミング
 

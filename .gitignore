@@ -86,3 +86,15 @@ data/analysis/past-rate-check/work/
 data/analysis/racer-period-stats/work/
 # BOA-1280 逃がし率・被まくられ率の中間データ（fetch-runs.mjs・build-features.py の出力。再実行で作り直せる）
 data/analysis/nigashi-makurare/work/
+# GA4・Search Console の生データ（収益・費用・PV の目標と同じく公開のリポジトリに置かない。2026-11-06 オーナー決定）。
+# スクリプトは手元に書き続け、前回との比較も手元で動く。正本の置き場は hq（移す作業は hq の担当）。
+data/analysis/search-console/report-*.json
+data/analysis/i18n-demand/
+data/analysis/x-referral/
+data/analysis/assist-ga4/
+data/analysis/growth-monthly-summary/
+data/analysis/sns-pdca-baseline/ga4-*.json
+data/analysis/sns-pdca-baseline/power-*.json
+data/analysis/organic-decline-*/gsc-*
+data/analysis/organic-decline-*/ga4-organic-*.json
+docs/design/scraping-load-budget/analysis/ga4-*.json
