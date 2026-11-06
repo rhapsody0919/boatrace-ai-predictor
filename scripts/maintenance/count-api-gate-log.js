@@ -9,10 +9,10 @@
  * 出すもの:
  *   - reason × group（google・bingbot・search_other・ai_crawler・hq・ryujin・browser・other）の件数。
  *     browser の抜き取り（sample=10）は掛け戻す
- *   - would_deny・bad_key の内訳（group・ua_class・path の先頭2段・caller_claimed）
+ *   - would_deny・deny・bad_key・browser_no_sfs の内訳（group・ua_class・path の先頭2段・caller_claimed）
  *   - 自分の呼び出し元（plan §1.2 の b・c 群）ごとの reason=internal の件数と、0件の群
  *   - 検索ボット（bot_verified=true）の件数と、そのうち would_deny・deny の件数
- *   - 段階4へ進む条件のうちログで判定できるもの（自分の群の would_deny・bad_key が0、各群の internal が1件以上、
+ *   - 段階4へ進む条件のうちログで判定できるもの（自分の群の would_deny・deny・bad_key・browser_no_sfs が0、各群の internal が1件以上、
  *     bot_verified=true が1件以上でその would_deny が0）。期間（平日・土日を含む連続2日）は呼ぶ側が窓で決める
  *
  * 使い方:
@@ -122,10 +122,12 @@ export function countApiGateLines(lines) {
     parsed++;
     const weight = Number.isInteger(r.sample) && r.sample > 0 ? r.sample : 1;
     bump(byReasonGroup, `${r.api_gate}\t${r.group ?? "?"}`, weight);
+    // browser_no_sfs は通すが内訳に出す（後で絞る材料。自分の群が名乗っていれば配り漏れとして ownDenied に数える）
     if (
       r.api_gate === "would_deny" ||
       r.api_gate === "deny" ||
-      r.api_gate === "bad_key"
+      r.api_gate === "bad_key" ||
+      r.api_gate === "browser_no_sfs"
     ) {
       bump(
         denyDetail,
@@ -204,7 +206,7 @@ function printReport(result) {
     out.push(`  ${row.reason}\t${row.group}\t${row.count}`);
   out.push(
     "",
-    "## would_deny・deny・bad_key の内訳（reason・group・ua_class・path・名乗った caller）",
+    "## would_deny・deny・bad_key・browser_no_sfs の内訳（reason・group・ua_class・path・名乗った caller）",
   );
   if (result.denyDetail.length === 0) out.push("  なし");
   for (const row of result.denyDetail)
@@ -224,7 +226,7 @@ function printReport(result) {
   out.push(
     "",
     "## 段階4へ進む条件のうちログで見るもの（期間は窓で決める: 平日・土日を含む連続2日）",
-    `  ${c.ownDeniedZero ? "OK" : "NG"}  自分の群（hq・ryujin）の would_deny・bad_key が0（${c.ownDenied}件）`,
+    `  ${c.ownDeniedZero ? "OK" : "NG"}  自分の群（hq・ryujin）の would_deny・deny・bad_key・browser_no_sfs が0（${c.ownDenied}件）`,
     `  ${c.everyGroupHasInternal ? "OK" : "NG"}  b・c 群ごとに internal が1件以上${c.missingGroups.length ? `（0件: ${c.missingGroups.join(", ")}）` : ""}`,
     `  ${c.botVerifiedSeen ? "OK" : "NG"}  bot_verified=true が1件以上`,
     `  ${c.botVerifiedNeverDenied ? "OK" : "NG"}  bot_verified=true の would_deny・deny が0`,

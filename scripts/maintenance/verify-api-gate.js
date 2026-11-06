@@ -20,9 +20,10 @@
  *    （画面は同じ origin なので要らない。別サイトの JS から応答を読ませない）
  * 12. ログの数え方（count-api-gate-log.js）: Vercel の行の形（テキスト・message に入った JSON）から拾い、
  *    browser の抜き取りを掛け戻し、群ごと・自分の呼び出し元の群ごと・bot_verified を数えて、段階4の条件を出す
- * 13. ブラウザの UA で Sec-Fetch-Site が無い要求（オーナー 2026-11-06 決定）: Origin が無いか自分の host なら
+ * 13. ブラウザの UA で Sec-Fetch-Site が無い要求（オーナー 2026-11-06 決定）: Origin・Referer が無いか自分の host なら
  *    観測でも強制でも browser_no_sfs で通し、抜き取らずに全件ログに書く。curl・python・node・UA 無し・
- *    bingbot・AI のクローラー・Origin が別の host・Sec-Fetch-Site が same-origin 以外は、強制で 403 のまま
+ *    bingbot・AI のクローラー・Origin か Referer が別の host・Sec-Fetch-Site が same-origin 以外は、強制で 403 のまま。
+ *    count-api-gate-log は browser_no_sfs を内訳に出し、自分の群を名乗るものは配り漏れに数える
  */
 import { readFileSync } from "node:fs";
 import { readSourceFile, walkSourceFiles } from "../lib/sourceFileWalk.js";
@@ -1175,7 +1176,7 @@ console.log(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0";
   for (const mode of ["observe", "enforce"]) {
     for (const [label, headers] of [
-      ["iPhone Safari・Origin 無し", { "user-agent": CHROME_UA }],
+      ["モバイルのブラウザの UA・Origin 無し", { "user-agent": CHROME_UA }],
       ["Firefox・Origin が自分", { "user-agent": FIREFOX_UA, origin: HOST }],
     ]) {
       const d = await gate("/api/odds/live?raceId=2026-10-26-01-01", {
@@ -1211,6 +1212,10 @@ console.log(
       [
         "ブラウザの UA・Origin が別の host",
         { "user-agent": CHROME_UA, origin: "https://evil.example" },
+      ],
+      [
+        "ブラウザの UA・Referer が別の host（Origin 無し）",
+        { "user-agent": CHROME_UA, referer: "https://evil.example/page" },
       ],
       [
         "ブラウザの UA・Origin が null",
@@ -1278,10 +1283,23 @@ console.log(
   );
   const counted = countApiGateLines([JSON.stringify(record)]);
   check(
-    "count-api-gate-log: browser_no_sfs は拒む候補に数えない",
-    counted.denyDetail.length === 0 &&
+    "count-api-gate-log: browser_no_sfs は内訳に出し、群が browser なら自分の群の拒む候補にしない",
+    counted.denyDetail.some((row) => row.reason === "browser_no_sfs") &&
       counted.conditions.ownDeniedZero === true,
-    JSON.stringify(counted.byReasonGroup),
+    JSON.stringify(counted.denyDetail),
+  );
+  // 自分の呼び出し元がブラウザの UA で鍵を付け忘れると browser_no_sfs で通ってしまうので、配り漏れとして数える
+  const ownNoKey = await gate("/api/analogy/facts/2026-10-26-01-01", {
+    headers: { "user-agent": CHROME_UA, "x-ryujin-caller": "hq-finals" },
+  });
+  const ownCounted = countApiGateLines([
+    JSON.stringify(gateLogRecord(ownNoKey, { mode: "observe", method: "GET" })),
+  ]);
+  check(
+    "count-api-gate-log: hq を名乗る browser_no_sfs は自分の群の拒む候補（条件は NG）",
+    ownNoKey.reason === "browser_no_sfs" &&
+      ownCounted.conditions.ownDeniedZero === false,
+    JSON.stringify(ownCounted.denyDetail),
   );
 }
 

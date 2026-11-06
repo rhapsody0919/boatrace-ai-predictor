@@ -15,7 +15,7 @@
  *   4. Sec-Fetch-Site: same-origin で、Origin が無いか自分の host → browser
  *   5. Sec-Fetch-Site が無く、Referer の host が自分の host → browser_legacy（古いブラウザ）
  *   6. UA が Googlebot・Google-InspectionTool を名乗り、接続元 IP が Google の公開の範囲 → search_bot
- *   6b. Sec-Fetch-Site が無く、UA がブラウザ（ua_class=browser）で、Origin が無いか自分の host → browser_no_sfs
+ *   6b. Sec-Fetch-Site が無く、UA がブラウザ（ua_class=browser）で、Origin・Referer が無いか自分の host → browser_no_sfs
  *      （オーナー 2026-11-06 決定。段階3の2日で browser の sfs=null が約1,821件あり、拒むと画面を壊しうるので
  *       最初は通す。抜き取らずに全部ログに書き、件数を見て後で絞る。curl・python 等はブラウザの UA でないので拒むまま）
  *   7. それ以外 → 観測は would_deny（通す）、強制は deny（403）
@@ -293,6 +293,7 @@ export async function decideApiGate({
   const parsed = new URL(url);
   const selfHost = parsed.host;
   const ua = headers.get("user-agent");
+  const uaClass = classifyUserAgent(ua);
   const sfs = headers.get("sec-fetch-site")?.toLowerCase() ?? null;
   const originHeader = headers.get("origin");
   const originHost = hostOf(originHeader);
@@ -308,7 +309,7 @@ export async function decideApiGate({
     // 合言葉で通らなかった要求が名乗った呼び出し元（偽れるので数える手がかりだけ。internal のときは null）
     caller_claimed: claimedCaller,
     bot_verified: botVerified,
-    ua_class: classifyUserAgent(ua),
+    ua_class: uaClass,
     path: (inspected.ok ? inspected.decoded : parsed.pathname).slice(
       0,
       MAX_LOG_PATH,
@@ -369,11 +370,14 @@ export async function decideApiGate({
   }
   if (botVerified === true) return result({ reason: "search_bot" });
   // ブラウザの UA で Sec-Fetch-Site が無い要求は、段階に依らず通す（オーナー 2026-11-06 決定、上の 6b）。
-  // UA は偽れるので守りとしては弱い。別の理由で数え、件数を見て後で絞る
+  // UA は偽れるので守りとしては弱い。別の理由で数え、件数を見て後で絞る。
+  // 別の host の Origin・Referer は別サイトからの要求の印なので通さない（自分の host の Referer は上の browser_legacy）
+  const refererHeader = headers.get("referer");
   if (
     sfs === null &&
-    classifyUserAgent(ua) === "browser" &&
-    (originHeader === null || originHost === selfHost)
+    uaClass === "browser" &&
+    (originHeader === null || originHost === selfHost) &&
+    (refererHeader === null || hostOf(refererHeader) === selfHost)
   ) {
     return result({ reason: "browser_no_sfs" });
   }
