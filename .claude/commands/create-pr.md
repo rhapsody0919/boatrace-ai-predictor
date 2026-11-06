@@ -64,11 +64,7 @@ gh pr create --base master --fill
 
 `claude/*` の枝には Vercel Preview が作られない（`vercel.json` の `git.deploymentEnabled`。Preview に本番 DB の管理者キーが載るため、2026-11-06 オーナー決定）。画面の変更は、Claude が手元の dev サーバーを（`run_in_background` で）起動し、Playwright で確かめる（`.claude/CLAUDE.md`「フロントエンド変更の確認は自己完結させる」）。ユーザーに見せるときは、起動したサーバーの URL と確認項目を箇条書きで添える。
 
-```bash
-gh pr view --json url --jq '.url'
-```
-
-PR URLをユーザーに報告してください。
+PR の URL（`gh pr view --json url --jq '.url'`）をユーザーに報告する。
 
 ### 7. 完了後
 

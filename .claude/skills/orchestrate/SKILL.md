@@ -89,7 +89,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 
 - A. 画面が変わらない PR: CI が全部緑で CLEAN（承認待ちだけが理由の BLOCKED を含む。6. を参照）、レビュー結果が PR コメントにある、別ベンダーの審査（Claude の PR は Codex。止まっているときは代わりの審査）で実在する P0・P1 が0件、マージ順の制約を守っている。別ベンダーの審査には、review.yml の審査（作成の App の PR を別ベンダーの LLM が審査し、審査の App が承認する）も含める。review.yml は P0 が0件なら P1 が残っていても APPROVE するので、APPROVE があり、承認の本文の指摘に P1 が無いこと（P1 があれば実在を確かめて直す）を条件にする
 - B. 画面が変わる PR のうち、ユーザーが承認したモック・仕様の実装であるもの。A の条件に加えて次をすべて満たす
-  - 承認したモックの画像が `docs/design/{slug}/mock/`（承認日つき）にあり、mock-diff-checker（`.claude/agents/mock-diff-checker.md`）が Preview（`claude/*` は Preview が無いので、PR の head で起動した手元の dev サーバー）と並べて「承認範囲内」と判定した
+  - 承認したモックの画像が `docs/design/{slug}/mock/`（承認日つき）にあり、mock-diff-checker（`.claude/agents/mock-diff-checker.md`）が Preview（`claude/*` は Preview が無いので、PR の head で起動した手元の dev サーバー。作業ツリーの HEAD が PR の headRefOid と同じで未コミットの変更が無いことを確かめて SHA を渡す）と並べて「承認範囲内」と判定した
   - ファン評価ループ（review-fix-cycle.md）が終了条件を満たした
   - 受け入れ E2E が「存在して」緑（無い PR は B に当たらない）
   - 差分が承認範囲（spec に書かれた画面・コンポーネント）の外を触っていない

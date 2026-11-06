@@ -17,7 +17,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
   | ブランチ | 用途 | デプロイ先 |
   |---------|------|-----------|
   | `master` | 本番リリース | www.boat-ai.jp（ADR-0106 の切り替えの後（`vercel.json` の `git.deploymentEnabled.master` が false。それまではマージごとに出る）は、push ごとではなく1日3回の定時にまとめて出す） |
-  | `codex/*`・`claude/*` 以外のブランチ | 人の機能開発 | Vercel Preview（PR単位で自動生成） |
+  | `codex/*`・`claude/*` 以外のブランチ | 人の機能開発（Claude・Codex は使わない） | Vercel Preview（PR単位で自動生成） |
   | `codex/*` | Codex の機能開発 | **Preview を作らない**（`vercel.json` の `git.deploymentEnabled`） |
   | `claude/*` | Claude の機能開発 | **Preview を作らない**（同じ。2026-11-06 オーナー決定。画面の確認は手元の dev サーバーと Playwright） |
 
