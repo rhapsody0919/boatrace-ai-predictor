@@ -20,6 +20,7 @@
    - モードのゲート（`scrape_job_state.mode` の job=`release_dispatch`）。行が無い間は off。shadow は叩かず、叩くはずだったかだけを残す。off にすると何も知らせないので、止めるのは切り替えを戻すとき（下の「切り替えの順」の戻し方）と Instant Rollback の後だけ
 3. 時刻の理由: 05:45 は朝の SNS（7:00〜）の前に前日の夜までのマージを出す。11:45 は朝のマージ（JST 6〜10時に多い、hq の記事は10時）を出す。17:45 は午後のマージ（15〜17時に多い）を夜の SNS（21:30）の前に出す。ビルドに約7分かかる。GitHub の schedule は数時間遅れる（update-sitemap の 14:30 UTC が 18:39〜22:49 UTC に来た、bot-html-parity の 03:00 UTC が 08:28〜10:15 UTC）ので使わない
 4. 手で出す（障害の修正で次の定時まで待てないとき）: オーナーが Vercel の Settings > Git > Deploy Hooks の `release` の URL を叩くか、Deployments で master の最新から Create Deployment する。全体が壊れたときの第一手は Instant Rollback。手で出した回は「1日3回の線の外」として報告に書く。手で出した後に新しいマージが無ければ、次の定時は差分が無く何もしない
+   - 追記（2026-11-06、オーナー決定、ゼロベース再設計のセッション）: オーナーの「最優先」の願いの変更に限り、AI もマージの後に `release` の Deploy Hook を叩いてすぐ出してよい。手で出した回と同じく「1日3回の線の外」として報告に書く。Hook の URL は鍵と同じ扱い（Vercel の Production の Sensitive の環境変数 `RELEASE_DEPLOY_HOOK_URL`）で、AI が手元から叩くには URL の置き場をオーナーが決める
 
 ## 選ばなかった案
 
