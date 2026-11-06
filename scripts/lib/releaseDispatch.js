@@ -114,14 +114,10 @@ export function summarizeGates(rangeShas, gateRuns, jobsByRun = new Map()) {
     if (inRange.length === 0) return { workflow, state: "none" };
     const newest = inRange[inRange.length - 1];
     const newestSha = newest.head_sha;
-    if (
-      inRange.some(
-        (r) =>
-          pos.get(r.head_sha) === pos.get(newestSha) &&
-          r.status !== "completed",
-      )
-    ) {
-      return { workflow, state: "pending", headSha: newestSha };
+    // 範囲の中で走っている run が1本でもあれば待つ（push の差分で走る step は、後の run の成功では代わらない。Codex の P1）
+    const running = inRange.find((r) => r.status !== "completed");
+    if (running) {
+      return { workflow, state: "pending", headSha: running.head_sha };
     }
     for (const [i, run] of inRange.entries()) {
       if (run.status !== "completed" || GREEN.has(run.conclusion)) continue;
