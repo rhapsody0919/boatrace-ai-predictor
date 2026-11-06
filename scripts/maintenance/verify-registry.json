@@ -599,6 +599,11 @@
       "guards": "セッション開始時のorigin乖離・worktree衛生の判定（check-git-hygiene.js / check-worktrees.js）"
     },
     {
+      "script": "verify-guard-deploy-approval.js",
+      "tier": "ci",
+      "guards": ".claude/hooks/guard-deploy-approval.sh。本番 DB の適用の起動・承認・Environments の変更（2026-10-02）に加え、Claude の素の gh（オーナー、admin）での PR の承認・--admin のマージ・ruleset とブランチ保護の書き換えを止め、読み取りと ryujin-maker の名義のマージを通すこと。--admin は作成の App の鍵が置かれた後だけ止める。このリポジトリへの claude/ でない枝の push を止める（2026-11-06、ADR-0097 の追記）"
+    },
+    {
       "script": "verify-guard-pr-merge.js",
       "tier": "ci",
       "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
@@ -1312,6 +1317,11 @@
       "guards": "scripts/maintenance/run-heavy.sh（BOA-769）。手元で同時に走らせる重い処理（playwright test・vite build）を最大枠数（既定2）に制限するロック。3本同時起動して、同時に走る（枠を確保した）本数が上限を超えないこと、全本が完走すること",
       "reason": "実プロセスを3本起動しsleepで待つ実タイマー依存の統合テストのため。CIランナーのCPU競合でタイミングが変わり不安定になる可能性がある",
       "command": "node scripts/maintenance/verify-run-heavy-lock.js"
+    },
+    {
+      "script": "verify-ryujin-maker-token.js",
+      "tier": "ci",
+      "guards": "scripts/maintenance/ryujin-maker-token.js（Claude の push・PR・マージを作成の App ryujin-maker の名義にするトークンの道具、2026-11-06）。使い捨ての鍵と偽の fetch で、JWT の形と署名・権限の広い鍵を読まないこと・失敗の文に鍵の中身と JWT が出ないこと・トークンをこのリポジトリだけに絞ること・引数なしでトークンを出さないことを固定する。本物の鍵は読まない"
     },
     {
       "script": "verify-schema-detect.js",

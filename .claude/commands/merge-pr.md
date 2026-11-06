@@ -17,14 +17,21 @@ gh pr view {pr} --json number,state,mergeable,mergeStateStatus
 ```
 `mergeable`が`MERGEABLE`でない、または`mergeStateStatus`が`CLEAN`/`UNSTABLE`以外（`DIRTY`＝コンフリクト等）の場合は、その場でユーザーに状況を報告して停止する（推測でマージを強行しない）。`UNSTABLE`は多くの場合CI項目の一部が本PRと無関係な理由でpending/failureなだけなので、該当チェックの内容を確認した上で進めてよいか一言添える。
 
-master の ruleset（承認1件必須）を入れた後は、承認の無いPRは`BLOCKED`になる。`gh pr view {pr} --json reviewDecision` が`REVIEW_REQUIRED`で、`mergeable`が`MERGEABLE`、`gh pr checks {pr}` が全部緑なら、承認待ちだけが理由なので進めてよい（それ以外の理由の`BLOCKED`は停止する）。
+master の ruleset（master-guard: 承認1件・最後の push の後の承認・必須の check `verify`・`e2e`・`ml-tests`）を、マージは ryujin-maker の名義で通す。ryujin-maker は bypass に無いので、次が全部そろうまで GitHub が拒む（`BLOCKED`）。そろっていなければマージしない。
+- `gh pr view {pr} --json reviewDecision,headRefOid` の `reviewDecision` が `APPROVED`。`CHANGES_REQUESTED`・`REVIEW_REQUIRED` なら止める。承認が今の head に付いているかは `gh api --paginate repos/{owner}/{repo}/pulls/{pr}/reviews --jq '.[] | select(.user.login=="ryujin-reviewer[bot]") | [.state, .commit_id] | @tsv'` の最後の行が `APPROVED` で `commit_id` が `headRefOid` と同じかで見る。審査（review.yml）は作者が ryujin-maker で、枝が `claude/`（OpenAI）か `codex/`（Anthropic）の PR だけに動く
+- `gh pr checks {pr}` の必須の3つが緑
+- 守る場所（`.github/CODEOWNERS`）に触る PR は、ruleset の require_code_owner_review が ON の間はオーナーの承認も要る。無ければオーナーに頼み、待たずに次へ進む
+
+作者が rhapsody0919 など ryujin-maker 以外の PR は、審査が動かない（#2298 がマージされるまで）ので、admin の bypass を外した後は承認が付かずマージできない。`claude/` の新しい枝で ryujin-maker の名義で出し直す（`/create-pr`）。
 
 ### 2. マージ実行
 ```bash
-gh pr merge {pr} --squash --admin
+node scripts/maintenance/ryujin-maker-token.js -- gh pr merge {pr} --squash --match-head-commit <手順1の headRefOid>
 ```
 
-`--admin` は管理者の bypass で、ruleset の承認必須を越えてマージする（オーナーの権限で動く Claude だけが使える）。失敗しているチェックも素通りするので、手順1でCIが全部緑であることを確かめてから実行する。
+`--match-head-commit` は、確かめた head の後に push が入っていたらマージしない（hq の codex-pr.py と同じ）。SHA は手順1で読んだ40桁を文字で書く。`.github/workflows/` を変える PR は `--workflows -- gh pr merge …` にする（トークンに workflows の権限を足す）。
+
+`scripts/maintenance/ryujin-maker-token.js` が作成の App（ryujin-maker）の1時間のトークンを作り、`GH_TOKEN` に入れて gh を動かす（鍵の置き場・使い方は script の冒頭）。`--admin` は付けない（ryujin-maker は admin でなく、付けても通らない。オーナーの gh で bypass を使う道を残さないため）。PR 番号は文字で書く（guard-pr-merge.js が `gh pr merge {pr}` を読んで、必須の check・マージ順を先に見る）。鍵がまだ置かれていない間（`秘密鍵が無い` で止まる。`docs/operation/identity-separation-owner-steps.md` の 9-2 の前）は、今までどおり素の gh で `--squash --admin` を付けてマージする（必須の3つの check が全部緑であることを先に確かめる。`--admin` は失敗している check も素通りする）。鍵が置かれた後は、`.claude/hooks/guard-deploy-approval.sh` が `--admin` を止める。名義を変えるのは書き込み（push・PR の作成・マージ）だけで、このコマンドの読み取り（手順1の `gh pr view`・`gh pr checks`、手順3の本番の状態の確認）は今までの `gh` のまま。
 
 続けて、メインの作業ツリーの master を取り込む（SessionStartフックと同じ判定。master・追跡ファイル無変更・独自コミット無しのときだけ fast-forward し、それ以外は警告だけ出す）。
 ```bash

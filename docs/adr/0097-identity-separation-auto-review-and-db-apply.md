@@ -44,6 +44,7 @@
 - 必須の check は品質のためのもの。作成の App は PR の中で workflow を書き換えられるので、守りにはならない。守りは審査の App の承認だけ
 - auto-merge は切替のときに ON。admin の bypass は切替のときに外す
 - 追記（2026-10-24、オーナー決定、Orchestrate のセッション）: 上の1行は取りやめる。auto-merge は ON にせず、admin の bypass も外さない（身元の分離 v5 の手順8 の A・B をやらない）。理由: Codex の自動マージ（hq の `codex-pr.py --merge`）は GitHub の auto-merge を使わず、ryujin-maker の名義で `gh pr merge --squash --match-head-commit` の直接マージをする（`~/hq/scripts/codex-pr.py:1035-1036`、`docs/design/codex-direct-pr/design.md:208`）。ON にすると `--auto` を付けた PR が承認1件と必須の3つの check だけで入り、M2〜M7 を飛ばす道が増える（system-architect の審査）。Codex の自動マージを開ける条件は、design §10.1 の Q6・Q8（どちらも済み）と、ryujin-maker の名義の直接マージの実測（hq がテスト PR で行う）だけ
+- 追記（2026-11-06、オーナー決定、Orchestrate のセッション）: admin の bypass は外す（auto-merge は今も ON にしない）。AI のセッションがオーナーの gh（admin）で `--admin` のマージをしており、審査・CODEOWNERS を素通りできるため。先に Claude の push・PR の作成・マージを作成の App の名義にする。道具は龍神の `scripts/maintenance/ryujin-maker-token.js`（鍵は `~/.config/ryujin/ryujin-maker.pem`、hq の Keychain の鍵とは別の鍵）。Claude の枝は `claude/`（review.yml が OpenAI で審査する）。ryujin-bot の bypass は always のまま。Claude の素の gh はオーナー（admin）のままなので、オーナーの名義の承認・`--admin`・ruleset の書き込みは `.claude/hooks/guard-deploy-approval.sh` の文字の照合で止める（言い換えは塞ぎきれない。暫定で、v3 の「関門はサーバー側」と食い違う。B で、Claude のセッションの GH_TOKEN をオーナーの読み取りだけの fine-grained のトークンにし、書き込みを ryujin-maker だけにして塞ぐ）。前提は審査の月の上限と費用の上限を上げること（切替の後は1日約68件の見込みで、既定の300は数日で尽きる。新しい費用で、値はオーナーが決める）、CODEOWNERS（#2297）と require_code_owner_review の ON。手順は docs/operation/identity-separation-owner-steps.md の 9
 
 ### 鍵の移し替え（段取り S）
 

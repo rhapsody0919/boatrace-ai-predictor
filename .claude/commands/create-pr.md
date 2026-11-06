@@ -46,14 +46,20 @@ npm run build
 
 ### 4. リモートにpush
 
+push と PR の作成は作成の App（ryujin-maker）の名義で行う（オーナー決定 2026-11-06、ADR-0097）。review.yml の審査（Claude の PR は OpenAI）は、作者が ryujin-maker で枝が `claude/` の PR だけに動き、その承認が無いとマージできない。枝が `claude/` でなければ、ここで `git branch -m claude/<名前>` に直してから push する。
+
 ```bash
-git push -u origin HEAD
+node scripts/maintenance/ryujin-maker-token.js -- git push -u origin HEAD
 ```
+
+- `.github/workflows/` を変える枝は `--workflows` を付ける（`node scripts/maintenance/ryujin-maker-token.js --workflows -- git push -u origin HEAD`。マージのときも同じ）。付けないトークンには workflows の権限が無く、GitHub が push を拒む
+- 審査は push のたびに走り、月の上限（repo の変数 `REVIEW_MONTHLY_LIMIT`、既定300）に数えられる。手元でコミットをまとめてから push する
+- 鍵がまだ置かれていない（`秘密鍵が無い` で止まる）間は、今までどおり素の `git push`・`gh pr create` で出してよい。その PR は admin の bypass を外した後はマージできないので、鍵が置かれたら ryujin-maker の名義で出し直す
 
 ### 5. PR作成
 
 ```bash
-gh pr create --base master --fill
+node scripts/maintenance/ryujin-maker-token.js -- gh pr create --base master --fill
 ```
 
 - タイトル: 70文字以内

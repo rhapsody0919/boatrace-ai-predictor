@@ -147,3 +147,6 @@
 - 選手ページのスナップショットは gzip で約27KB/人（元は約250KB）。参照する `/assets/` は main の js・css の2つだけ（RacerProfile は AppRouter.jsx で静的に import され別の chunk が無い）（2026-11-05、system-architect、3256.html の実測）。
 - 本番のビルドが「今の本番の alias」を読んで判定すると、同時に走るビルドはどれも同じ古い版を読む。On-Demand Concurrent Builds のままでは閾値を越えた瞬間に全部が重い道へ倒れる（2026-11-05、system-architect、ADR 0032 追記）。
 - update-sitemap.yml は sitemap・llms.txt に差分があるときだけコミットする。「毎日1回は本番のビルドが走る」の根拠にしない（2026-11-05、.github/workflows/update-sitemap.yml）。
+- admin の bypass を外しても、Claude のセッションの素の gh がオーナー（admin）なら、オーナーの名義の PR の承認と ruleset の API で審査・CODEOWNERS を越えられる。文字の照合のフック（guard-deploy-approval.sh）で止め、塞ぎきるには素の gh を App にする（2026-11-06、system-architect の審査、db-operations.md の「承認1件は書き込みの身元なら誰でも数える」）
+- Claude の Bash の道具では標準出力が端末でない（process.stdout.isTTY は undefined）。isTTY で「トークンを会話に出さない」を守る判定は効かないので、トークンを出す形を作らず環境変数で子に渡す（2026-11-06、node -e の実測、scripts/maintenance/ryujin-maker-token.js）
+- review.yml の月の上限は、作者の actor の run を取り消し・skipped も含めて数え、Codex と Claude で分け合う。Claude を ryujin-maker の名義にすると1日約68件の見込み（推測）で、既定の300は数日で尽き、尽きると全部の PR に REQUEST_CHANGES が付く（2026-11-06、scripts/review/gate.js・scripts/lib/reviewPr.js の monthlyRunsPath、11/1〜6 の実測は ryujin-maker 118件・rhapsody0919 290件）
