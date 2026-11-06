@@ -32,7 +32,13 @@ node scripts/maintenance/check-git-hygiene.js
 ```
 
 ### 3. 本番に出る時刻を確かめる
-本番のデプロイはマージごとではなく、1日3回の定時にまとめて出る（ADR-0106。JST 05:45・11:45・17:45 の Vercel Cron が、サイトに関わる差分があり master の検査が通っていれば Deploy Hook を叩く。ビルドに約7分）。マージの直後に本番のビルドを待たない。ADR-0106 の切り替え（vercel.json の `git.deploymentEnabled.master` が false）の前は、今までどおりマージごとに出る。
+本番のデプロイはマージごとではなく、1日3回の定時にまとめて出る（ADR-0106。JST 05:45・11:45・17:45 の Vercel Cron が、サイトに関わる差分があり master の検査が通っていれば Deploy Hook を叩く。ビルドに約7分）。マージの直後に本番のビルドを待たない。
+
+ADR-0106 の切り替え（`vercel.json` の `git.deploymentEnabled.master` が false）の前は、今までどおりマージごとに出るので、本番ビルドの完了を待つ:
+```bash
+gh api repos/{owner}/{repo}/commits/master/status --jq '.state'
+```
+`pending`の間は15秒程度の間隔でポーリングを続ける（20回、5分程度を上限の目安にする。それ以上かかる場合はVercelのビルドレート制限等の可能性があるためユーザーに報告して判断を仰ぐ）。切り替えの後は、以下に従う。
 
 - 報告には「次の定時（例: 11:45 の約7分後）に本番に出る」と書く
 - 出た後に確かめる項目（手順4）がある PR は、次の定時の後にもう一度確かめる。今の本番の版は Vercel の本番のデプロイの sha で見る（`origin/master` の先ではない）

@@ -73,14 +73,14 @@
 - 消した表は元のマイグレーションをもう一度流せば作り直せるが、行は戻らない。後で読む経路が無く件数が小さければ APPLIED.md に要点を書き、そうでなければ適用前にオーナーが CSV で退避してリポジトリの外に置く。本番に退避用の表は作らない（2026-10-19、system-architect、168）
 - 手元の既定の node は v16 で `node:test` 等が無く verify-*.js が落ちる。`~/.nvm/versions/node/v22.20.0/bin` を PATH に足して実行する。worktree の node_modules が古いと `twitter-text` 等が見つからないので `npm ci` する（2026-10-19）
 - middleware から DB で数を足す設計は、anon で実行できる口・UA の偽装による水増し・パスの種類の増加・upsert で足し算できない（RPC が要る）が重なるので避ける（2026-10-20、system-architect、ADR-0089 決定6）
-- 本番のデプロイを1日3回の定時にまとめた後（ADR-0106）は、master に入ったマイグレーションがコードより先に当たりうる（古いコードが最大約12時間動く）。「コードが先でも壊れない」だけでは足りず、出ている版のコードのままでも壊れないこと（足すだけ・expand → 定時で出す → contract）を確かめる。出ている版に入ったかは Vercel の本番のデプロイの sha で見る（2026-11-06、system-architect、ADR-0106。2026-10-20 の「コードのデプロイが必ず先」を改めた）
+- 本番のデプロイを1日3回の定時にまとめた後（ADR-0106 の切り替えの後（`vercel.json` の `git.deploymentEnabled.master` が false。それまではマージごとに出る））は、master に入ったマイグレーションがコードより先に当たりうる（古いコードが最大約12時間動く）。「コードが先でも壊れない」だけでは足りず、出ている版のコードのままでも壊れないこと（足すだけ・expand → 定時で出す → contract）を確かめる。出ている版に入ったかは Vercel の本番のデプロイの sha で見る（2026-11-06、system-architect、ADR-0106。2026-10-20 の「コードのデプロイが必ず先」を改めた）
 - 共通ラッパは、行の無いジョブの初回の起動で scrape_job_state に mode='off' の行を作る（cronWrapper.js の ensureRow）。後から入れる `INSERT … ON CONFLICT DO NOTHING` は空振りして off のまま残るので、条件つきの DO UPDATE（mode='off' かつ last_success_at・last_tick_at が NULL）にする（2026-10-20、system-architect、170）
 - data_health の reconcileAlerts は「同じキーで欠損数が増えない未達」を7日間通知しない。日ごとの事故である鮮度の未達には everyDay を付けて毎日通知する（2026-10-20、system-architect・/code-review、170）
 - db-apply の classifyMigration は関数の `$$`・REVOKE・GRANT・`INSERT … ON CONFLICT` のどれでも heavy と判定する。scrape_job_state の行をマイグレーションで入れると自動の経路には乗らない（2026-10-20、system-architect、170）
 
 - 読取専用ロール・権限検査・読取CLIの知見は [db-readonly.md](db-readonly.md) を参照（2026-10-19、依頼77の分割案）。
 - 列控えは削除列の包含だけでなく主キーとの対応と、削除時点まで控えが残ることを確認する。過去のCREATEの存在だけでは復元可能性を示せない。（2026-10-19、2026-10-19-review-20261019-13.md）
-- db-apply は毎時17分の自動適用になる予定（ADR-0097、今は DB_APPLY_DRY_RUN）。本番の反映は 2026-11-06 にまとめた（ADR-0106）ので SQL がコードより先に当たりうる。DRY_RUN を外す前に、本番のデプロイの SHA にそのマイグレーションが要るコードが入っているかを確かめる関門（マイグレーションごとの before-code / after-code の印）を入れる。それまで手で当てるときは、after-code のものは定時で出た後に当てる（2026-11-06、system-architect、db-apply.yml:50・ADR-0106）
+- db-apply は毎時17分の自動適用になる予定（ADR-0097、今は DB_APPLY_DRY_RUN）。本番の反映は ADR-0106 でまとめる（切り替えの後（`vercel.json` の `git.deploymentEnabled.master` が false。それまではマージごとに出る））ので SQL がコードより先に当たりうる。DRY_RUN を外す前に、本番のデプロイの SHA にそのマイグレーションが要るコードが入っているかを確かめる関門（マイグレーションごとの before-code / after-code の印）を入れる。それまで手で当てるときは、after-code のものは定時で出た後に当てる（2026-11-06、system-architect、db-apply.yml:50・ADR-0106）
 - `INSERT ... ON CONFLICT DO NOTHING`（対象を書かない形）は PK にも UNIQUE にも効くので、中身の違う既存行があっても黙って成功する。固定 uuid でマスタの行を入れるときは、COMMIT の前に DO ブロックで「入ったはずの行がそろっているか」を検査して落とす（2026-10-20、system-architect、171・PR #1695）
 - sns_template_variants を外部キーで参照するのは sns_drafts.template_variant_id（035）と sns_post_tracking.template_variant_id（136、154 で NULL 可）の2つだけ。行を消す前の参照の数は、この2表を足して数える（2026-10-20、system-architect、PR #1695）
 - db-apply の確認の節の見出しを拾う処理（scripts/lib/dbApplySql.js の extractConfirmationSections）は、最初の「:」/「：」で見出しを切る。見出しの括弧の中に「:」を書くと、job summary で SQL の1行目にはみ出す（2026-10-20、system-architect、171）

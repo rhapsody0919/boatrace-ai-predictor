@@ -3,7 +3,7 @@
 SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron）の設計と点検で踏みやすい落とし穴。本番 DB の書き込み手順は [db-operations.md](db-operations.md)、cron・CI の一般的な落とし穴は [batch-and-ci.md](batch-and-ci.md)。書き方は [README.md](README.md)。
 
 ## SNS の送信（承認・claim・runner）
-- 本番のデプロイは1日3回の定時にまとめて出る（ADR-0106）。hq の作り手（scripts/sns/push-*.js・remotion の daily.mjs）は master のコードで動くが、送り手（sns-send 等の cron）は出ている版で動く。新しい型・format を足す PR では、型の `sns_auto_send_control.<型>_enabled` を入れるのは定時で本番に出た後にする。古い送り手は知らない型で `*_part_unknown` を投げる（2026-11-06、system-architect、snsClaimCheck.js:252・345）
+- 本番のデプロイは ADR-0106 の切り替えの後（`vercel.json` の `git.deploymentEnabled.master` が false。それまではマージごとに出る）、1日3回の定時にまとめて出る。hq の作り手（scripts/sns/push-*.js・remotion の daily.mjs）は master のコードで動くが、送り手（sns-send 等の cron）は出ている版で動く。新しい型・format を足す PR では、型の `sns_auto_send_control.<型>_enabled` を入れるのは定時で本番に出た後にする。古い送り手は知らない型で `*_part_unknown` を投げる（2026-11-06、system-architect、snsClaimCheck.js:252・345）
 - SNS の送信を止めるのは許可のリスト（自動送信の job は item が notified かつ mode が自動のときだけ進める）にし、claim・check・begin_post・youtube_publish_begin の全部で見る。拒否のリストや下書きの状態の変更だけでは、送信中・要照合で 148 のガードが RAISE し止まらない（2026-10-12、system-architect、docs/design/sns-pdca-loop/plan.md §3）
 - v0 素材の公開保留は5か所にある: sns_bundle_imports の CHECK、取り込みの関数、版×媒体×言語の一意索引、approve の bundle_import_id、transition_sns_send_139・youtube_call_guard の bundle_import_id。外すなら全部を変える（2026-10-12、135:8,26,89・139:137・146:174）
 - 送信の契約は、毎日 daily_baseline_date（JST）と YouTube の baseline_day（PT）を当日にしないと claim できない（2026-10-12、139:144・146:143）
