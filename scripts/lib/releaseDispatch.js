@@ -32,8 +32,9 @@ export const RELEASE_GATE_WORKFLOWS = Object.freeze([
 export const COMPARE_FILES_CAP = 300;
 // master の先がこれより新しいと、検査の run がまだ作られていないことがある
 export const FRESH_HEAD_MS = 10 * 60 * 1000;
-// 検査の run を読む本数。1日約59本の push で、2つの定時の間（最大12時間）を覆う
-export const GATE_RUNS_PER_PAGE = 50;
+// 検査の run を読む本数（1ページ）とページの上限。1日約59本の push で、止まっていても約5日分を覆う
+export const GATE_RUNS_PER_PAGE = 100;
+export const GATE_RUNS_MAX_PAGES = 3;
 export const REQUEST_TIMEOUT_MS = 15 * 1000;
 // 出す範囲の一番古いコミットがこれより前なら、出すべき差分が出ないまま残っている（定時の間は最大約12時間）。
 // shadow のまま live にし忘れた・待つが続く等を、mode に関わらず last_report.alerts で知らせる（monitor.js）
@@ -106,7 +107,19 @@ const passedLater = (jobs, { job, step }) =>
  */
 export function summarizeGates(rangeShas, gateRuns, jobsByRun = new Map()) {
   const pos = new Map(rangeShas.map((sha, i) => [sha, i]));
-  return gateRuns.map(({ workflow, runs }) => {
+  return gateRuns.map(({ workflow, runs, covered = true }) => {
+    // 読んだ run が範囲の一番古いコミットまで届いていない（止まっている間に push が溜まった）と、古い失敗を見落とす
+    if (!covered) {
+      return {
+        workflow,
+        state: "red",
+        conclusion: null,
+        headSha: rangeShas[0] ?? "",
+        unresolved: [
+          "出す範囲の run を全部読めていない（範囲が大きい。直したら手で出す）",
+        ],
+      };
+    }
     const inRange = runs
       .filter((r) => pos.has(r.head_sha))
       .filter((r) => !(r.status === "completed" && r.conclusion === "skipped"))
@@ -295,32 +308,55 @@ export async function fetchCompare({ fetchImpl, token, deployedSha, headSha }) {
     token,
     url: `${API}/compare/${deployedSha}...${headSha}`,
   });
+  const commits = body.commits ?? [];
   return {
     status: body.status,
     files: body.files ?? [],
-    commitShas: (body.commits ?? []).map((c) => c.sha),
-    oldestCommittedAt: body.commits?.[0]?.commit?.committer?.date ?? null,
+    commitShas: commits.map((c) => c.sha),
+    // compare は commits を250件までしか返さない。足りなければ範囲の全部を見ていない（検査を red に倒す）
+    complete: !(body.ahead_by > commits.length),
+    oldestCommittedAt: commits[0]?.commit?.committer?.date ?? null,
   };
 }
 
-/** 検査の workflow ごとの、master の push の直近の run（走っているものを含む） */
-export async function fetchGateRuns({ fetchImpl, token }) {
+/**
+ * 検査の workflow ごとの、master の push の直近の run（走っているものを含む）。範囲の外（本番の版以前）の run に
+ * 届くまでページをめくる（GATE_RUNS_MAX_PAGES まで）。届かなければ covered=false（summarizeGates で red）
+ */
+export async function fetchGateRuns({
+  fetchImpl,
+  token,
+  rangeShas,
+  complete = true,
+}) {
+  const inRange = new Set(rangeShas);
   return Promise.all(
     RELEASE_GATE_WORKFLOWS.map(async (workflow) => {
-      const { workflow_runs: runs = [] } = await ghGet({
-        fetchImpl,
-        token,
-        url: `${API}/actions/workflows/${workflow}/runs?branch=master&event=push&per_page=${GATE_RUNS_PER_PAGE}`,
-      });
-      return {
-        workflow,
-        runs: runs.map((r) => ({
-          id: r.id,
-          head_sha: r.head_sha,
-          status: r.status,
-          conclusion: r.conclusion,
-        })),
-      };
+      const runs = [];
+      let covered = false;
+      for (let page = 1; page <= GATE_RUNS_MAX_PAGES; page++) {
+        const { workflow_runs: got = [] } = await ghGet({
+          fetchImpl,
+          token,
+          url: `${API}/actions/workflows/${workflow}/runs?branch=master&event=push&per_page=${GATE_RUNS_PER_PAGE}&page=${page}`,
+        });
+        runs.push(
+          ...got.map((r) => ({
+            id: r.id,
+            head_sha: r.head_sha,
+            status: r.status,
+            conclusion: r.conclusion,
+          })),
+        );
+        if (
+          got.length < GATE_RUNS_PER_PAGE ||
+          got.some((r) => !inRange.has(r.head_sha))
+        ) {
+          covered = true;
+          break;
+        }
+      }
+      return { workflow, runs, covered: covered && complete };
     }),
   );
 }
@@ -395,10 +431,18 @@ export function createReleaseDispatchRun({
     let jobsByRun;
     try {
       head = await fetchMasterHead({ fetchImpl, token });
-      [compare, gateRuns] = await Promise.all([
-        fetchCompare({ fetchImpl, token, deployedSha, headSha: head.sha }),
-        fetchGateRuns({ fetchImpl, token }),
-      ]);
+      compare = await fetchCompare({
+        fetchImpl,
+        token,
+        deployedSha,
+        headSha: head.sha,
+      });
+      gateRuns = await fetchGateRuns({
+        fetchImpl,
+        token,
+        rangeShas: compare.commitShas,
+        complete: compare.complete,
+      });
       jobsByRun = await fetchGateJobs({
         fetchImpl,
         token,
