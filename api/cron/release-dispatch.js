@@ -1,6 +1,7 @@
 /**
  * 本番のデプロイをまとめて出す（ADR-0106、scripts/lib/releaseDispatch.js）。cron（vercel.json）は UTC `45 2,8,20 * * *`
- * = JST 11:45・17:45・05:45。今の本番の版と master の先を比べ、サイトに関わる差分があり master の検査が通っていれば
+ * = JST 11:45・17:45・05:45 と、その20分後の拾い直し（UTC の分が30より前の起動。定時が「待つ」で終わったときだけ判定し直す）。
+ * 今の本番の版と master の先を比べ、サイトに関わる差分があり master の検査が通っていれば
  * Deploy Hook（Vercel の環境変数 RELEASE_DEPLOY_HOOK_URL）を叩く。
  * モード（scrape_job_state.mode の job='release_dispatch'）が off（または行なし）なら何もしない。shadow は叩かず、
  * 叩くはずだったかだけを返す。live で叩く。
