@@ -1303,6 +1303,11 @@
       "command": "node scripts/maintenance/verify-run-heavy-lock.js"
     },
     {
+      "script": "verify-ryujin-maker-token.js",
+      "tier": "ci",
+      "guards": "scripts/maintenance/ryujin-maker-token.js（Claude の push・PR・マージを作成の App ryujin-maker の名義にするトークンの道具、2026-11-06）。使い捨ての鍵と偽の fetch で、JWT の形と署名・権限の広い鍵を読まないこと・失敗の文に鍵の中身と JWT が出ないこと・トークンをこのリポジトリだけに絞ること・引数なしでトークンを出さないことを固定する。本物の鍵は読まない"
+    },
+    {
       "script": "verify-schema-detect.js",
       "tier": "ci",
       "guards": "マイグレーション適用判定・確認不能時の再試行・client別TTLキャッシュとclear（BOA-1075）"
