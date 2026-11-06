@@ -156,7 +156,7 @@ test.describe("レース詳細の表示の細部", () => {
         .filter({ hasText: new RegExp(`^${text}$`) });
       await expect(label).toHaveCount(1, { timeout: 30000 });
       await expect(label).toBeVisible();
-      const cell = page.locator(".drt-label-cell").filter({ has: label });
+      const cell = label.locator("xpath=ancestor::td[contains(concat(' ', normalize-space(@class), ' '), ' drt-label-cell ')][1]");
       await expect(cell.locator(".term-hint__button")).toBeVisible();
       await cell.scrollIntoViewIfNeeded();
       await page.evaluate(() => document.fonts.ready);
