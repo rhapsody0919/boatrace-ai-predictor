@@ -5,6 +5,7 @@
  * Phase 2: Edge API経由でCDNキャッシュを活用
  */
 
+import { getTodayJST, getDaysAgoJST } from "../utils/dateUtils.js";
 import { supabase } from "./supabaseClient";
 import { venueWaterProfile } from "../data/venueWaterProfiles.js";
 import { stDeviation } from "../utils/stDeviation.js";
@@ -697,11 +698,6 @@ async function isAllOfficialMotorRateZero(venueCode, date) {
   return cached.allZero;
 }
 
-/** JSTの今日（YYYY-MM-DD） */
-function jstToday() {
-  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
-}
-
 /**
  * race_id（YYYY-MM-DD-VV-RR）のレースが、今日（JST）より前に行われたか。
  * 過去レースのモーター成績は、再計算せず出走表時点の公式値を出す（BOA-329、
@@ -709,7 +705,7 @@ function jstToday() {
  * 混ざり、入れ替え前のレースでは別モーターのデータになるため
  */
 function isPastRace(raceId) {
-  return raceId.slice(0, 10) < jstToday();
+  return raceId.slice(0, 10) < getTodayJST();
 }
 
 /**
@@ -729,7 +725,7 @@ async function motorWindowStart(venueCode, days, beforeRaceId = null) {
   return motorWindowFrom(
     generationStart,
     days,
-    beforeRaceId === null ? jstToday() : beforeRaceId.slice(0, 10),
+    beforeRaceId === null ? getTodayJST() : beforeRaceId.slice(0, 10),
   );
 }
 
@@ -1942,13 +1938,7 @@ export const supabaseDataService = {
       }
 
       // 日付範囲を計算
-      const today = new Date();
-      const jstOffset = 9 * 60;
-      const jstToday = new Date(today.getTime() + jstOffset * 60 * 1000);
-      const startDate = new Date(
-        jstToday.getTime() - days * 24 * 60 * 60 * 1000,
-      );
-      const startDateStr = startDate.toISOString().split("T")[0];
+      const startDateStr = getDaysAgoJST(days);
 
       // 日付ごとのレースを取得（ページネーションで1000行制限を回避）
       const allData = [];
@@ -3496,7 +3486,7 @@ export const supabaseDataService = {
               )
               .like("race_id", `____-__-__-${venuePart}-%`)
               .gte("race_id", addDaysToDateString(pretestDate, -8))
-              .lte("race_id", `${jstToday()}-99`),
+              .lte("race_id", `${getTodayJST()}-99`),
           ]);
           pretestRows = pretest.data ?? [];
           riders = currentSeriesRiders(entries.data ?? [], pretestDate);
@@ -7977,9 +7967,7 @@ export const supabaseDataService = {
    * @param {string} date YYYY-MM-DD（JST）
    */
   getMorningDigest(date) {
-    const jstToday = new Date(Date.now() + 9 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
+    const jstToday = getTodayJST();
     const ttl =
       date < jstToday ? PAST_RACE_CACHE_TTL : /* 当日は30分 */ CACHE_TTL;
 

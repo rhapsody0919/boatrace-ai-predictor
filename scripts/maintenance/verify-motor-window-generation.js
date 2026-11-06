@@ -105,7 +105,7 @@ check(
 // 期間の計算は純関数 motorWindowFrom（BOA-1245。龍神ボート番付と共有）。サービスはそれを呼ぶだけ
 check(
   "motorWindowStart: 期間の計算を motorWindowFrom に任せる（基準日は今日か beforeRaceId の日）",
-  /return motorWindowFrom\(\s*generationStart,\s*days,\s*beforeRaceId === null \? jstToday\(\) : beforeRaceId\.slice\(0, 10\),?\s*\)/.test(
+  /return motorWindowFrom\(\s*generationStart,\s*days,\s*beforeRaceId === null \? getTodayJST\(\) : beforeRaceId\.slice\(0, 10\),?\s*\)/.test(
     windowFn,
   ),
 );
@@ -255,7 +255,7 @@ check(
 const pastFn = slice("function isPastRace(", "\n}\n");
 check(
   "isPastRace: レースの日付が今日（JST）より前",
-  pastFn.includes("raceId.slice(0, 10) < jstToday()"),
+  pastFn.includes("raceId.slice(0, 10) < getTodayJST()"),
 );
 
 // 5. 画面
