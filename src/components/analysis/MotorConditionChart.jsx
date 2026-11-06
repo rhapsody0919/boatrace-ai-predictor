@@ -34,6 +34,7 @@ import { motorRateView, motorRate3View } from "../../utils/motorFreshRate";
 import { translatePartName } from "../race/raceIndicators";
 import RateBar from "../common/RateBar";
 import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
+import { countMeetPartsChanges } from "../../utils/motorMeetParts";
 import { bestOf } from "../../utils/bestOf";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
@@ -70,6 +71,9 @@ function MotorConditionChart({
   } = useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
 
   const [breakdown, setBreakdown] = useState([]);
+  const [meetParts, setMeetParts] = useState(null);
+  const [partsBoat, setPartsBoat] = useState(null);
+
   // 新しいモーターの最初の開催か等（BOA-830）。{ generationStart, firstMeet }
   const [freshness, setFreshness] = useState(null);
   // 「※」を押した艇（自前の2連率の出どころを表の下に出す。BOA-830）
@@ -131,6 +135,8 @@ function MotorConditionChart({
       try {
         setLoading(true);
         setError(null);
+        setMeetParts(null);
+        setPartsBoat(null);
         if (isNewRaceOrVenue) setDrillDownMotor(null);
         // { rows, fetchFailed? }。会場公式のモーター成績が取れなかった行は venue_stats_failed（BOA-740）
         const { rows: data, freshness: dataFreshness } =
@@ -163,6 +169,29 @@ function MotorConditionChart({
         setBreakdown(data);
         setFreshness(dataFreshness ?? null);
         setExplainBoat(null);
+        if (embedded) {
+          // 表は待たせず、失敗した基だけ札を隠す。履歴は直近90日と同じ窓。
+          Promise.all(data.map(async (row) => {
+            try {
+              const history = await supabaseDataService.getMotorUsageHistory(
+                selectedVenue, row.motor_number, selectedRace, { includeTarget: true },
+              );
+              const meet = history.find((item) => String(item.racerId) === String(row.racer_id));
+              if (!meet) return { boat: row.boat_number, unavailable: true };
+              const parts = await supabaseDataService.getMotorPartsHistory(
+                selectedVenue, row.motor_number, 90, selectedRace, { includeTarget: true },
+              );
+              return { boat: row.boat_number, ...countMeetPartsChanges(parts.events, {
+                from: meet.firstDate, to: raceDate,
+              }) };
+            } catch (err) {
+              console.error("Failed to load meet motor parts:", err);
+              return { boat: row.boat_number, failed: true };
+            }
+          })).then((rows) => {
+            if (!cancelled) setMeetParts({ raceId: selectedRace, rows });
+          });
+        }
         // 会場内順位は一覧表のあとから足す（表の表示を待たせない）。当日のレースは最新の
         // スナップショット、過去のレースはレース日以前で最新（BOA-521 と同じ）
         setVenueRanks(null);
@@ -202,6 +231,9 @@ function MotorConditionChart({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRace, selectedVenue, periodDays]);
+
+  const currentParts = meetParts?.raceId === selectedRace ? meetParts.rows : [];
+  const expandedParts = currentParts.find((row) => row.boat === partsBoat);
 
   // モーター選択時: 節ごとの推移と機力指数を取得
   useEffect(() => {
@@ -873,7 +905,23 @@ function MotorConditionChart({
                         </td>
                         {/* 見出しが「機番」なので数字だけ（BOA-428、承認済みのモック。375px で棒と
                             会場内順位を最初の画面に入れるため「◯号機」を詰めた） */}
-                        <td className="motor-num">{row.motor_number}</td>
+                        <td className="motor-num">
+                          {row.motor_number}
+                          {(() => {
+                            const parts = currentParts.find((item) => item.boat === row.boat_number);
+                            return parts && !parts.failed && !parts.unavailable ? (
+                              <button type="button" className="mcc-parts-badge"
+                                aria-expanded={partsBoat === row.boat_number}
+                                aria-controls="mcc-parts-names"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setPartsBoat(partsBoat === row.boat_number ? null : row.boat_number);
+                                }}>
+                                {t("analysis.motor.partsCountBadge", { n: parts.count })}
+                              </button>
+                            ) : null;
+                          })()}
+                        </td>
                         {/* 連対率は**小数1桁**で出す（BOA-474、2026-09-28）。
                           `official_2rate`（`race_entries.motor_2rate`）は、同じ節・同じ
                           モーターでもレースによって桁数が違う。出走表の行は二段階で埋まり、
@@ -1041,6 +1089,19 @@ function MotorConditionChart({
                 </table>
               </div>
             </div>
+            {embedded && (
+              <>
+                {expandedParts && (
+                  <p id="mcc-parts-names" className="table-note mcc-parts-names">
+                    {expandedParts.parts.map((part) => translatePartName(t, part)).join("、")}
+                  </p>
+                )}
+                <p className="table-note mcc-parts-note">{t("analysis.motor.partsCountNote")}</p>
+                {currentParts.some((row) => row.failed) && (
+                  <div className="mcc-parts-error"><InlineFetchError /></div>
+                )}
+              </>
+            )}
             {/* 「※」の数字の出どころ（BOA-830）。押した艇の説明を出す。押す前は押せることだけ書く */}
             {rateViews.some((v) => v.kind === "own") && (
               <p className="table-note motor-fresh-own-note">
