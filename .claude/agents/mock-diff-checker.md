@@ -9,8 +9,8 @@ model: sonnet
 
 ## 入力（依頼元が渡す）
 - `docs/design/{slug}/mock/` のモック画像と `APPROVED.md`（承認日・承認範囲）
-- Preview の URL と、開くページ・操作の手順
-- Preview を開く Vercel の共有リンク（23時間で失効）
+- 確認用の URL と、開くページ・操作の手順。`claude/*` の PR は Preview が無いので、依頼元が PR の head で起動した手元の dev サーバーの URL
+- Vercel Preview のときは、それを開く Vercel の共有リンク（23時間で失効）
 - 比べる幅（既定は 375px と 1440px）
 
 ## 最初に読む話題ファイル
@@ -18,9 +18,9 @@ model: sonnet
 
 ## やること
 1. `APPROVED.md` の承認範囲（画面・コンポーネント）を読む
-2. Playwright（プロジェクトの依存関係）で Preview を同じ幅・同じ状態にして撮る。スクリプトは一時ファイルにし、終わったら消す。ブラウザは1つ、使い終わったら閉じる
+2. Playwright（プロジェクトの依存関係）で確認用の URL を同じ幅・同じ状態にして撮る。スクリプトは一時ファイルにし、終わったら消す。ブラウザは1つ、使い終わったら閉じる
    - スクリプトと画像は、スクラッチパッドの中に自分専用の新しいフォルダを作ってそこだけに置く。symlink は作らない
-   - Preview は Vercel 認証がかかっている。依頼元が Vercel の共有リンク（MCP の `get_access_to_vercel_url` で作る。23時間で失効）を渡すので、それで開く（`docs/operation/vercel-preview-access.md`「評価役に開かせるとき」）。鍵（`.env.local`）は読まない
+   - 手元の dev サーバーの URL はそのまま開く。Preview は Vercel 認証がかかっている。依頼元が Vercel の共有リンク（MCP の `get_access_to_vercel_url` で作る。23時間で失効）を渡すので、それで開く（`docs/operation/vercel-preview-access.md`「評価役に開かせるとき」）。鍵（`.env.local`）は読まない
    - 共有リンクが無い・401・302 で Vercel ログイン画面・失効で開けないときは、回避の工夫をせず判定せずに止まり、「確認できなかったこと」に「開けない」と理由を書く
    - 共有リンクは報告・PR・PR コメントに書かない（共有リンクを除いた Preview の URL だけを書く）
 3. モックと並べて、次の差を列挙する

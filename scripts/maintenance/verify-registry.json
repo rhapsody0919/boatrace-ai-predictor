@@ -274,7 +274,7 @@
     {
       "script": "verify-codex-no-preview.js",
       "tier": "ci",
-      "guards": "codex/ のブランチで Vercel が Preview を作らない設定（vercel.json の git.deploymentEnabled[\"codex/**\"]=false）。Preview 環境に載る本番 DB の管理者キーを Codex のコードに渡さないため。全体の false（本番デプロイまで止まる）と、codex/ に当たりうる true の規則も検知する"
+      "guards": "codex/・claude/ のブランチで Vercel が Preview を作らない設定（vercel.json の git.deploymentEnabled[\"codex/**\"]・[\"claude/**\"]=false。claude/ は 2026-11-06 オーナー決定）。Preview 環境に載る本番 DB の管理者キーを、レビュー・マージの前の AI のコードに渡さないため。全体の false（本番デプロイまで止まる）と、AI の枝に当たりうる true の規則も検知する"
     },
     {
       "script": "verify-content-index-coverage.js",
