@@ -125,7 +125,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 段階0に当たらない PR のうち、画面の見せ方と数値の判断を伴うもの（BOA-271 を含む）だけをユーザー確認に残す。確認は5の「朝と夜の2回にまとめる」に従い、1件ずつ出さない。.claude（G を除く）・CI・permission・本番 DB への書き込みを伴うものは従来どおり段階2。
 
 段階0でマージしたら:
-- マージ後に本番の該当ページを開き、表示とコンソールエラーを確かめる（レーンに依頼してよい）。崩れていたら git revert の PR を自己マージする（Vercel の Instant Rollback は全体が壊れたときの非常手段に限る）
+- 本番に出るのはマージの直後ではなく次の定時（JST 05:45・11:45・17:45 の約7分後、ADR-0106）。出た後に本番の該当ページを開き、表示とコンソールエラーを確かめる（レーンに依頼してよい）。崩れていたら git revert の PR を自己マージし、次の定時で出す（急ぐならオーナーに ADR-0106「手で出す」を頼む。Vercel の Instant Rollback は全体が壊れたときの非常手段に限る）
 - 1日2回のダイジェスト（下の5）に、変更前後のスクリーンショットつきで載せる
 - F でマージした記事は、ダイジェストにタイトル・URL・4つのレビュー（content-qa・wording-editor・ファン・seo-marketer）の結果の要約を載せる
 - ダイジェストで異議が出た種類は段階2に戻す（マージ前の抜き打ちの確認は、5の「聞くのは重要なものだけ」に合わせてやめた）
@@ -201,7 +201,7 @@ Codex のパッチを hq の `codex-pr.py`（AI なし）が `ryujin-maker` の�
 - 1件ずつ、PR 番号を文字で書いて実行する（`gh pr merge 946 --squash` のように）。for ループ・変数・`$(...)`・xargs で PR 番号を渡すと、台帳に制約がある場合に guard-pr-merge.js が止める（#929）
 - マージ順の台帳は `node scripts/maintenance/merge-order.js list`。順序を決めたら `add <PR> --after <PR>...` で登録し、解消したら `remove <PR>`
 - squash が必要な PR は、依頼文と報告に明記させる（レーンの報告に書かれていなければ、マージ前に確かめる）
-- マージの可否の確認・`gh pr merge <PR> --squash --admin`・本番ビルドの完了待ち・報告は `/merge-pr`（`.claude/commands/merge-pr.md`）の手順に従う。承認待ちだけが理由の BLOCKED の扱いも同じ所にある
+- マージの可否の確認・`gh pr merge <PR> --squash --admin`・次の定時の案内・報告は `/merge-pr`（`.claude/commands/merge-pr.md`）の手順に従う。承認待ちだけが理由の BLOCKED の扱いも同じ所にある
 - `--admin` は失敗しているチェックも素通りするので、実行の前に `gh pr checks <PR>` が全部緑であることを確かめる。PR 番号は文字で書く（guard-pr-merge.js は `--admin` を値の無いフラグとして読み飛ばすので、そのまま動く）
 
 ## 7. ピアのメッセージの扱い

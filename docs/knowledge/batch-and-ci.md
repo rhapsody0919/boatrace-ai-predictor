@@ -3,6 +3,8 @@
 バッチ・Cron・API のキャッシュ・Vercel の運用と、CI・E2E で踏みやすい落とし穴。本番 DB の書き込みは [db-operations.md](db-operations.md)。検証の置き場所の決まりは AGENTS.md「検証・テスト」。主に system-architect と実装者が読む。書き方は [README.md](README.md)。
 
 ## 定時実行・バッチ
+- 本番のデプロイは1日3回の定時にまとめて出す（ADR-0106、scripts/lib/releaseDispatch.js）。「本番に出たか」は枝の先ではなく出ている版の sha（Vercel の関数の中なら VERCEL_GIT_COMMIT_SHA、外からは GitHub の deployment の environment `Production`）で見る。ビルドの失敗・Instant Rollback で両者がずれる。vercel.json の crons の変更も次の定時から効く（2026-11-06、system-architect）
+- 実測 PT 2026-11-03〜05: master への push は約59本/日（人・Claude の PR 22・Codex の PR 14・機械生成の文書 16・台帳・録画・sitemap 4・hq の記事と data 3）で、本番のビルドは READY が約55本/日。費用 $13.8/日のうち Build CPU $8.5・Function Storage $1.9・Deployment Storage $1.7（2026-11-06、Vercel MCP list_deployments・list_billing_charges）
 - 定時のジョブは、定時の実行の成功を見てから完了とする。手動で作った分の時刻が偶然条件を満たし、定時では一度も成功しないまま完了扱いになった例がある（2026-09-25、memory morning_data_digest_2026_09_25、BOA-402）
 - GitHub Actions の定時実行は実測で2.5〜4.5時間遅れることが多い。時刻が大事な取得・集計は Vercel Cron に置く（2026-09-25、memory morning_data_digest_2026_09_25、ADR-0066）
 - scrape_job_state の mode が off でも、kind が monitor のジョブ（scrape-monitor・scrape-cleanup）は5分ごとに動く。last_report は10分ごとに上書きされるので過去の判断の証拠に使えない（2026-09-28、memory project_data_foundation_orchestration_2026_09_19、PR #874）

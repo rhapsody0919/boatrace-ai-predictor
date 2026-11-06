@@ -118,7 +118,13 @@ export const SCRAPE_JOBS = Object.freeze({
   // 延長は効かない。ログと last_report のアラートに残す。store.js）。切り戻し: graceMinByOffset を消す
   odds: {
     kind: "window",
-    fetchPaths: ["/owpc/pc/race/oddstf", "/owpc/pc/race/odds2tf", "/owpc/pc/race/oddsk", "/owpc/pc/race/odds3t", "/owpc/pc/race/odds3f"],
+    fetchPaths: [
+      "/owpc/pc/race/oddstf",
+      "/owpc/pc/race/odds2tf",
+      "/owpc/pc/race/oddsk",
+      "/owpc/pc/race/odds3t",
+      "/owpc/pc/race/odds3f",
+    ],
     offsets: [-60, -30, -15, -10, -5, 0],
     graceMin: 3,
     graceMinByOffset: { [-60]: 30 },
@@ -139,7 +145,13 @@ export const SCRAPE_JOBS = Object.freeze({
   // 実装: scripts/lib/scrapeJobs/finalOddsHandlers.js、api/cron/odds-final.js
   odds_final: {
     kind: "window",
-    fetchPaths: ["/owpc/pc/race/oddstf", "/owpc/pc/race/odds2tf", "/owpc/pc/race/oddsk", "/owpc/pc/race/odds3t", "/owpc/pc/race/odds3f"],
+    fetchPaths: [
+      "/owpc/pc/race/oddstf",
+      "/owpc/pc/race/odds2tf",
+      "/owpc/pc/race/oddsk",
+      "/owpc/pc/race/odds3t",
+      "/owpc/pc/race/odds3f",
+    ],
     offsets: [5],
     graceMin: 55,
     retrySec: 300,
@@ -528,6 +540,15 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
     failureAlertAfter: 3,
   },
+  // 本番のデプロイをまとめて出す（ADR-0106、scripts/lib/releaseDispatch.js）。1日3回。出せない・前回が出ていない・
+  // master の検査が赤いは1回目から通知する（次の定時まで6〜12時間空くため）
+  release_dispatch: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
   // BOA-822 イン崩れ注意度の監視（scripts/lib/inCautionHealth.js）。DB は読み取りだけ。問題は実行の失敗にして1回目から通知する。
   // 夜の表（JST 04:30、api/cron/in-caution-health.js）と今日の unified（05:45、api/cron/in-caution-today-health.js）を
   // 別のジョブにする。成功の記録が失敗の記録を消すので、同じジョブだと 04:30 の失敗が 07:00 の通知の前に消える
@@ -841,7 +862,9 @@ export function validateRegistry(registry = SCRAPE_JOBS) {
       if (
         def.kind !== "daily" ||
         !ok ||
-        !(hhmmToMinutes(def.finalRunAfterJst) > hhmmToMinutes(def.targetTimeJst))
+        !(
+          hhmmToMinutes(def.finalRunAfterJst) > hhmmToMinutes(def.targetTimeJst)
+        )
       ) {
         problems.push(
           `${name}: finalRunAfterJst は日次ジョブの、targetTimeJst より後の同じ日の HH:MM にしてください: ${def.finalRunAfterJst}`,
