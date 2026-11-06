@@ -4,6 +4,7 @@
   "ignoreCommand": "node scripts/vercel-ignore-build.js",
   "git": {
     "deploymentEnabled": {
+      "claude/**": false,
       "codex/**": false
     }
   },

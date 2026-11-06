@@ -60,16 +60,11 @@ gh pr create --base master --fill
 - 本文: Summary（変更概要）+ Test plan（確認事項）
 - `--fill` で自動入力後、必要に応じて編集
 
-### 6. Preview URL の確認
+### 6. 画面の確認
 
-PRが作成されると Vercel が自動でPreview URLを生成します。
+`claude/*` の枝には Vercel Preview が作られない（`vercel.json` の `git.deploymentEnabled`。Preview に本番 DB の管理者キーが載るため、2026-11-06 オーナー決定）。画面の変更は、Claude が手元の dev サーバーを（`run_in_background` で）起動し、Playwright で確かめる（`.claude/CLAUDE.md`「フロントエンド変更の確認は自己完結させる」）。ユーザーに見せるときは、起動したサーバーの URL と確認項目を箇条書きで添える。
 
-```bash
-# PR情報からPreview URLを確認（Vercel botのコメント）
-gh pr view --json url --jq '.url'
-```
-
-PR URLをユーザーに報告してください。
+PR の URL（`gh pr view --json url --jq '.url'`）をユーザーに報告する。
 
 ### 7. 完了後
 

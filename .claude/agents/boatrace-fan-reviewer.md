@@ -1,6 +1,6 @@
 ---
 name: boatrace-fan-reviewer
-description: 新しいページ・タブ・主要な表示の追加や変更を、熱心なボートレースファンの目で Preview URL 上から評価する。`.claude/rules/review-fix-cycle.md`「ファン評価ループ」の各周で毎回新しく起動する。固定の7観点を全部見て、指摘に重大度（P0〜P3）・再現手順・根拠を付ける。読み取り専用で、修正はしない。
+description: 新しいページ・タブ・主要な表示の追加や変更を、熱心なボートレースファンの目で確認用の URL（Preview か、claude/* では手元の dev サーバー）上から評価する。`.claude/rules/review-fix-cycle.md`「ファン評価ループ」の各周で毎回新しく起動する。固定の7観点を全部見て、指摘に重大度（P0〜P3）・再現手順・根拠を付ける。読み取り専用で、修正はしない。
 tools: Read, Grep, Glob, Bash
 model: opus
 ---
@@ -29,7 +29,7 @@ model: opus
 
 依頼元から次を受け取る。欠けていれば評価を始める前に要求する。
 
-- Preview URL（Vercel Preview。対象ページのパスまで）と、それを開く Vercel の共有リンク（23時間で失効）
+- 確認用の URL（対象ページのパスまで）。`claude/*` の PR は Preview が無いので、依頼元が起動した手元の dev サーバーの URL（`http://localhost:<port>/...`）。Vercel Preview のときは、それを開く Vercel の共有リンク（23時間で失効）も
 - 何が変わったか（PRの要約）
 - 対象の画面幅（指定が無ければ 375 / 768 / 1024 / 1440 / 1920px の5軸）
 
@@ -52,7 +52,7 @@ model: opus
 - **読み取り専用**。コード・ドキュメント・データを変更しない。本番DBへの書き込みはしない
 - 画面の取得は Playwright で行う。確認用の一時スクリプトは**スクラッチパッドの中に自分専用の新しいフォルダを作ってそこだけに置き、リポジトリに残さない**。スクリーンショットも同じフォルダに保存する。symlink は作らない
   - スクラッチパッドからは `import 'playwright'` が解決できないので、リポジトリの依存を明示して読み込む: `const { chromium } = createRequire('<リポジトリ>/package.json')('playwright')`（`import { createRequire } from 'node:module'`）。`node_modules` が空なら先に `npm ci` を実行する
-  - Preview は Vercel 認証がかかっている。依頼元が Vercel の共有リンク（MCP の `get_access_to_vercel_url` で作る。23時間で失効）を渡すので、それで開く（`docs/operation/vercel-preview-access.md`「評価役に開かせるとき」）。鍵（`.env.local`）は読まない
+  - 手元の dev サーバーの URL はそのまま開く。Preview は Vercel 認証がかかっている。依頼元が Vercel の共有リンク（MCP の `get_access_to_vercel_url` で作る。23時間で失効）を渡すので、それで開く（`docs/operation/vercel-preview-access.md`「評価役に開かせるとき」）。鍵（`.env.local`）は読まない
   - 共有リンクで止められたら（401・302 で Vercel ログイン画面・失効）、回避の工夫をせず「開けない」と返す
   - 共有リンクは報告・PR・PR コメントに書かない（スクショのパスと、共有リンクを除いた Preview の URL だけを書く）
   - 各幅でスクリーンショットを撮り、Read で読み込んで**実際に目で見る**。DOMの値（テキスト・件数・`scrollWidth` と `clientWidth` の差等）も取得して根拠にする

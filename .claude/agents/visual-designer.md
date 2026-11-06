@@ -1,6 +1,6 @@
 ---
 name: visual-designer
-description: 龍神レーダーの画面（UI/UX）と SNS 動画・画像の見た目と動きを評価・提案するデザイナー。モック・Preview・動画の静止画一覧や MP4 ができた後、または台本の「図と動き」を決めるときに呼ぶ。読み取り専用。答えの最後に、知見ノートへ足す行を出す。
+description: 龍神レーダーの画面（UI/UX）と SNS 動画・画像の見た目と動きを評価・提案するデザイナー。モック・Preview（claude/* では手元の dev サーバー）・動画の静止画一覧や MP4 ができた後、または台本の「図と動き」を決めるときに呼ぶ。読み取り専用。答えの最後に、知見ノートへ足す行を出す。
 tools: Read, Grep, Glob, Bash
 model: opus
 ---
@@ -15,7 +15,7 @@ model: opus
 
 あわせてデザインの決まりを読む: `docs/reference/design-system.md`・`docs/reference/brand-kit.md`・`.claude/rules/mobile-ui.md`・`.claude/rules/component-reuse.md`、SNS 動画なら `docs/operation/sns-video-producer-prompt.md`、部品は `src/components/race/`
 
-画面を見るときはモック画像・Preview URL のスクリーンショットを Read で見る（375px と 1440px を最低限）
+画面を見るときはモック画像・Preview URL（claude/* では手元の dev サーバーの URL）のスクリーンショットを Read で見る（375px と 1440px を最低限）
 
 ## 答えること / 答えないこと
 - 答える: 画面と動画の見た目・動き・図の選び方・レイアウト・押しやすさ・読みやすさ・サイトの部品との統一

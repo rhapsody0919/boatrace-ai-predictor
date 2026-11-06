@@ -17,12 +17,13 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
   | ブランチ | 用途 | デプロイ先 |
   |---------|------|-----------|
   | `master` | 本番リリース | www.boat-ai.jp（ADR-0106 の切り替えの後（`vercel.json` の `git.deploymentEnabled.master` が false。それまではマージごとに出る）は、push ごとではなく1日3回の定時にまとめて出す） |
-  | `codex/*` 以外の全ブランチ | 機能開発 | Vercel Preview（PR単位で自動生成） |
+  | `codex/*`・`claude/*` 以外のブランチ | 人の機能開発（Claude・Codex は使わない） | Vercel Preview（PR単位で自動生成） |
   | `codex/*` | Codex の機能開発 | **Preview を作らない**（`vercel.json` の `git.deploymentEnabled`） |
+  | `claude/*` | Claude の機能開発 | **Preview を作らない**（同じ。2026-11-06 オーナー決定。画面の確認は手元の dev サーバーと Playwright） |
 
-  デプロイフロー: 作業ブランチ → PR作成（Vercel Previewで確認。`codex/*` は CI の e2e・layout で確認） → レビュー → `master` にマージ → 本番デプロイ（ADR-0106 の切り替えの後（`vercel.json` の `git.deploymentEnabled.master` が false。それまではマージごとに出る）は次の定時 JST 05:45・11:45・17:45。古い版が最大約12時間動くので、マイグレーション・SNS の新しい型・cron の変更は出ている版と両立させる）
+  デプロイフロー: 作業ブランチ → PR作成（Vercel Previewで確認。`codex/*` は CI の e2e・layout、`claude/*` は手元の dev サーバーと Playwright と CI で確認） → レビュー → `master` にマージ → 本番デプロイ（ADR-0106 の切り替えの後（`vercel.json` の `git.deploymentEnabled.master` が false。それまではマージごとに出る）は次の定時 JST 05:45・11:45・17:45。古い版が最大約12時間動くので、マイグレーション・SNS の新しい型・cron の変更は出ている版と両立させる）
 
-  `codex/*` の Preview を止めているのは、Preview 環境の環境変数に本番 DB の管理者キーが載るため。Codex が書いたコードが、レビュー・マージの前にそのキーを持って動かないようにしている（`scripts/maintenance/verify-codex-no-preview.js` が設定を固定）。マージ後は本番で同じキーを持って動くので、これはマージ前の歯止めにすぎない
+  `codex/*`・`claude/*` の Preview を止めているのは、Preview 環境の環境変数に本番 DB の管理者キーが載るため。AI が書いたコードが、レビュー・マージの前にそのキーを持って動かないようにしている（`scripts/maintenance/verify-codex-no-preview.js` が設定を固定）。マージ後は本番で同じキーを持って動くので、これはマージ前の歯止めにすぎない
 
 - Linear の起票は、コードからはすべて `scripts/lib/linearIssueGate.js` の `assertCanCreateIssue` を通す（`scripts/linear-cli.js create` もこれを通る）。未アーカイブが230件以上（無料枠250件の手前。hq は200で警告・240で社員の起票を止める）か、件数を数えられないときは起票せず、Slack に件数と閾値を知らせる。新しい起票の経路を足すときもここを通す（`verify-linear-issue-gate.js` が CI で抜け道を検知する）。Linear MCP の起票（`save_issue`）はこの関所を通らない
 
