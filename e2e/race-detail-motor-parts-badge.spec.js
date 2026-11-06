@@ -31,7 +31,7 @@ async function mockParts(page, fail = false, firstRun = false) {
     }
     if (!q.has("motor_number") || !q.get("race_id")?.startsWith("in.")) return route.fallback();
     const entry = entries.find((e) => String(e.motor_number) === q.get("motor_number").slice(3));
-    if (fail && entry?.boat_number === 1) return route.abort();
+    if (fail && entry?.boat_number === 1 && q.get("select") === "race_id,boat_number,racer_id,player_name,grade") return route.abort();
     if (!entry) return route.fulfill({ json: [] });
     const ids = q.get("race_id").slice(4, -1).split(",");
     await route.fulfill({ json: ids.map((id) => ({ ...entry, race_id: id })) });
