@@ -7,8 +7,8 @@
  * 2. 差分が無い・サイトに関係ないものだけ（scripts/lib/vercelIgnoreBuild.js の isSiteIrrelevant）なら何もしない
  * 3. master の検査（Post-merge Checks・Quality Gates）を、出す範囲（本番の版の次〜master の先）のコミットの run で見る。
  *    範囲の中で走っている run（skipped を除く）が1本でもある・master の先が10分以内のコミットなら「待つ」
- *    （20分後の拾い直しでもう一度見る）。範囲の中で落ちた run は、落ちた step が後の run で走って通っていれば直ったとみる
- *    （summarizeGates）。直っていない step が残れば出さずに失敗（Slack）
+ *    （20分後の拾い直しでもう一度見る）。範囲の中に落ちた run が1本でもあれば出さずに失敗（Slack）。
+ *    後の run の成功では解かない（summarizeGates の説明）
  * 4. それ以外なら Deploy Hook（Vercel の環境変数 RELEASE_DEPLOY_HOOK_URL、master に結び付けたもの）を叩く
  *
  * 見張り（scrape_job_state.last_report に持つ。成功の記録のときだけ置き換わり、失敗の間は前の値が残る）:
@@ -62,62 +62,28 @@ export function staleReleaseAlerts({ action, mode, oldestCommittedAt, now }) {
 const API = `https://api.github.com/repos/${GITHUB_REPO}`;
 const GREEN = new Set(["success", "neutral"]);
 
-const BAD_STEP = new Set(["failure", "cancelled", "timed_out"]);
-
 /**
- * 失敗した run の、失敗した（job・step）の組。step が分からない失敗は step を null にする
- * @param {{name: string, conclusion: string|null, steps?: {name: string, conclusion: string|null}[]}[]} jobs
- */
-export function failedSteps(jobs) {
-  return jobs
-    .filter(
-      (j) =>
-        j.conclusion && !GREEN.has(j.conclusion) && j.conclusion !== "skipped",
-    )
-    .flatMap((j) => {
-      const steps = (j.steps ?? []).filter((s) => BAD_STEP.has(s.conclusion));
-      return steps.length > 0
-        ? steps.map((s) => ({ job: j.name, step: s.name }))
-        : [{ job: j.name, step: null }];
-    });
-}
-
-/** 後の run の jobs で、その（job・step）が成功しているか（その step が実際に走って通った） */
-const passedLater = (jobs, { job, step }) =>
-  jobs.some(
-    (j) =>
-      j.name === job &&
-      (step === null
-        ? j.conclusion === "success"
-        : (j.steps ?? []).some(
-            (s) => s.name === step && s.conclusion === "success",
-          )),
-  );
-
-/**
- * 検査の workflow ごとの、出す範囲の状態。
- * - 範囲の中で一番新しいコミットの run（skipped を除く）が走っている → pending
- * - 範囲の中の失敗した run の、失敗した step ごとに、後の run で同じ step が走って通っていれば直ったとみる。
- *   通っていない step が1つでも残れば red。後の run で step が飛ばされた（quality-gates の ml-tests は push の差分で
- *   走るかを決める）だけでは直ったとみない。失敗した run の jobs が読めていなければ red（安全側）
+ * 検査の workflow ごとの、出す範囲の状態（純関数）。
+ * - 読んだ run が範囲の一番古いコミットまで届いていない → red（古い失敗を見落とさない）
+ * - 範囲の中で走っている run（skipped を除く）が1本でもある → pending
+ * - 範囲の中に失敗した run が1本でもある → red。後の run の成功では解かない。quality-gates の ml-tests は push の差分で
+ *   pytest を走らせるかを決めるので、後の run の成功は前のコミットで要った検査の合格を意味しない（Codex の審査で
+ *   step 単位の判定まで5回指摘され、推定では閉じないと判断した）。解けるのは、失敗した run を再実行して通したとき
+ *   （run の結論は最後の試行になる）か、手で出して本番の版が失敗のコミットより後になったとき
  * @param {string[]} rangeShas 本番の版の次〜master の先（古い順）
- * @param {{workflow: string, runs: {id: number, head_sha: string, status: string, conclusion: string|null}[]}[]} gateRuns
- * @param {Map<number, {name: string, conclusion: string|null, steps?: {name: string, conclusion: string|null}[]}[]>} jobsByRun
+ * @param {{workflow: string, covered?: boolean, runs: {head_sha: string, status: string, conclusion: string|null}[]}[]} gateRuns
  * @returns {{workflow: string, state: "none"|"pending"|"green"|"red", conclusion?: string|null, headSha?: string, unresolved?: string[]}[]}
  */
-export function summarizeGates(rangeShas, gateRuns, jobsByRun = new Map()) {
+export function summarizeGates(rangeShas, gateRuns) {
   const pos = new Map(rangeShas.map((sha, i) => [sha, i]));
   return gateRuns.map(({ workflow, runs, covered = true }) => {
-    // 読んだ run が範囲の一番古いコミットまで届いていない（止まっている間に push が溜まった）と、古い失敗を見落とす
     if (!covered) {
       return {
         workflow,
         state: "red",
         conclusion: null,
         headSha: rangeShas[0] ?? "",
-        unresolved: [
-          "出す範囲の run を全部読めていない（範囲が大きい。直したら手で出す）",
-        ],
+        unresolved: ["出す範囲の run を全部読めていない（範囲が大きい。直したら手で出す）"],
       };
     }
     const inRange = runs
@@ -125,62 +91,21 @@ export function summarizeGates(rangeShas, gateRuns, jobsByRun = new Map()) {
       .filter((r) => !(r.status === "completed" && r.conclusion === "skipped"))
       .sort((a, b) => pos.get(a.head_sha) - pos.get(b.head_sha));
     if (inRange.length === 0) return { workflow, state: "none" };
-    const newest = inRange[inRange.length - 1];
-    const newestSha = newest.head_sha;
-    // 範囲の中で走っている run が1本でもあれば待つ（push の差分で走る step は、後の run の成功では代わらない。Codex の P1）
     const running = inRange.find((r) => r.status !== "completed");
     if (running) {
       return { workflow, state: "pending", headSha: running.head_sha };
     }
-    for (const [i, run] of inRange.entries()) {
-      if (run.status !== "completed" || GREEN.has(run.conclusion)) continue;
-      const jobs = jobsByRun.get(run.id);
-      if (!jobs) {
-        return {
-          workflow,
-          state: "red",
-          conclusion: run.conclusion,
-          headSha: run.head_sha,
-          unresolved: ["jobs を読めていない"],
-        };
-      }
-      const later = inRange
-        .slice(i + 1)
-        .filter((r) => r.status === "completed");
-      const unresolved = failedSteps(jobs).filter(
-        (f) => !later.some((r) => passedLater(jobsByRun.get(r.id) ?? [], f)),
-      );
-      if (unresolved.length > 0) {
-        return {
-          workflow,
-          state: "red",
-          conclusion: run.conclusion,
-          headSha: run.head_sha,
-          unresolved: unresolved.map((f) =>
-            f.step ? `${f.job} / ${f.step}` : f.job,
-          ),
-        };
-      }
+    const bad = inRange.find((r) => !GREEN.has(r.conclusion));
+    if (bad) {
+      return {
+        workflow,
+        state: "red",
+        conclusion: bad.conclusion,
+        headSha: bad.head_sha,
+        unresolved: ["失敗した run を再実行して通すか、直して手で出す"],
+      };
     }
-    return { workflow, state: "green", headSha: newestSha };
-  });
-}
-
-/** jobs を読む run（範囲の中で最初の失敗の run とその後の completed の run）。多すぎるときは読まない（red に倒れる） */
-export const GATE_JOBS_READ_CAP = 20;
-export function runsNeedingJobs(rangeShas, gateRuns) {
-  const pos = new Map(rangeShas.map((sha, i) => [sha, i]));
-  return gateRuns.flatMap(({ runs }) => {
-    const inRange = runs
-      .filter(
-        (r) =>
-          pos.has(r.head_sha) &&
-          r.status === "completed" &&
-          r.conclusion !== "skipped",
-      )
-      .sort((a, b) => pos.get(a.head_sha) - pos.get(b.head_sha));
-    const firstBad = inRange.findIndex((r) => !GREEN.has(r.conclusion));
-    return firstBad < 0 ? [] : inRange.slice(firstBad).map((r) => r.id);
+    return { workflow, state: "green", headSha: inRange[inRange.length - 1].head_sha };
   });
 }
 
@@ -361,32 +286,6 @@ export async function fetchGateRuns({
   );
 }
 
-/** 失敗を含む範囲の run の jobs（step の結論つき）。GATE_JOBS_READ_CAP を超える分は読まない（summarizeGates で red に倒れる） */
-export async function fetchGateJobs({ fetchImpl, token, runIds }) {
-  const ids = [...new Set(runIds)].slice(0, GATE_JOBS_READ_CAP);
-  const entries = await Promise.all(
-    ids.map(async (id) => {
-      const { jobs = [] } = await ghGet({
-        fetchImpl,
-        token,
-        url: `${API}/actions/runs/${id}/jobs?per_page=100`,
-      });
-      return [
-        id,
-        jobs.map((j) => ({
-          name: j.name,
-          conclusion: j.conclusion,
-          steps: (j.steps ?? []).map((s) => ({
-            name: s.name,
-            conclusion: s.conclusion,
-          })),
-        })),
-      ];
-    }),
-  );
-  return new Map(entries);
-}
-
 /**
  * @param {{fetchImpl?: typeof fetch, env?: Record<string, string|undefined>}} [deps]
  */
@@ -428,7 +327,6 @@ export function createReleaseDispatchRun({
     let head;
     let compare;
     let gateRuns;
-    let jobsByRun;
     try {
       head = await fetchMasterHead({ fetchImpl, token });
       compare = await fetchCompare({
@@ -443,16 +341,11 @@ export function createReleaseDispatchRun({
         rangeShas: compare.commitShas,
         complete: compare.complete,
       });
-      jobsByRun = await fetchGateJobs({
-        fetchImpl,
-        token,
-        runIds: runsNeedingJobs(compare.commitShas, gateRuns),
-      });
     } catch (error) {
       return { outcome: "error", error: `GitHub を読めない: ${error.message}` };
     }
 
-    const gates = summarizeGates(compare.commitShas, gateRuns, jobsByRun);
+    const gates = summarizeGates(compare.commitShas, gateRuns);
     const decision = decideRelease({
       deployedSha,
       head,
