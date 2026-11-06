@@ -20,6 +20,9 @@
  *    （画面は同じ origin なので要らない。別サイトの JS から応答を読ませない）
  * 12. ログの数え方（count-api-gate-log.js）: Vercel の行の形（テキスト・message に入った JSON）から拾い、
  *    browser の抜き取りを掛け戻し、群ごと・自分の呼び出し元の群ごと・bot_verified を数えて、段階4の条件を出す
+ * 13. ブラウザの UA で Sec-Fetch-Site が無い要求（オーナー 2026-11-06 決定）: Origin が無いか自分の host なら
+ *    観測でも強制でも browser_no_sfs で通し、抜き取らずに全件ログに書く。curl・python・node・UA 無し・
+ *    bingbot・AI のクローラー・Origin が別の host・Sec-Fetch-Site が same-origin 以外は、強制で 403 のまま
  */
 import { readFileSync } from "node:fs";
 import { readSourceFile, walkSourceFiles } from "../lib/sourceFileWalk.js";
@@ -371,7 +374,8 @@ console.log("[4] ブラウザ（Sec-Fetch-Site・Origin）");
       "would_deny",
     ],
     ["none（アドレスバー）", { "sec-fetch-site": "none" }, "would_deny"],
-    ["ヘッダ無し（curl 等）", {}, "would_deny"],
+    // ブラウザの UA で Sec-Fetch-Site が無い要求は browser_no_sfs（[13]、オーナー 2026-11-06）
+    ["Sec-Fetch-Site 無し・ブラウザの UA", {}, "browser_no_sfs"],
     [
       "同じ host 名の別ポート",
       {
@@ -517,10 +521,10 @@ console.log("[6] 検索ボット（UA と IP の範囲の両方）");
       null,
     ],
     [
-      "人のブラウザ・Google の IP（UA が名乗らない）",
+      "人のブラウザ・Google の IP（UA が名乗らない。search_bot にしない）",
       CHROME_UA,
       GOOGLE_IPV4,
-      "would_deny",
+      "browser_no_sfs",
       null,
     ],
   ];
@@ -776,7 +780,10 @@ console.log("[10] 段階3のログ（鍵の trim・群・抜き取り）");
   );
   const viaEnv = await gate("/api/accuracy", {
     keys: gateKeysFromEnv({ INTERNAL_API_KEY: `${CURRENT}\r\n` }),
-    headers: { "x-ryujin-internal-key": CURRENT, "x-ryujin-caller": "hq-finals" },
+    headers: {
+      "x-ryujin-internal-key": CURRENT,
+      "x-ryujin-caller": "hq-finals",
+    },
   });
   check(
     "末尾に CRLF のある env の鍵でも、送った合言葉と一致する",
@@ -823,7 +830,9 @@ console.log("[10] 段階3のログ（鍵の trim・群・抜き取り）");
       "google",
     ],
     [
-      { headers: { "user-agent": "node", "x-ryujin-caller": "hq-full-picture" } },
+      {
+        headers: { "user-agent": "node", "x-ryujin-caller": "hq-full-picture" },
+      },
       "would_deny",
       "hq",
     ],
@@ -891,7 +900,7 @@ console.log("[10] 段階3のログ（鍵の trim・群・抜き取り）");
     ],
     [{ headers: { "user-agent": "curl/8.4.0" } }, "would_deny", "other"],
     [{ headers: {} }, "would_deny", "other"],
-    [{ headers: { "user-agent": CHROME_UA } }, "would_deny", "browser"],
+    [{ headers: { "user-agent": CHROME_UA } }, "browser_no_sfs", "browser"],
   ];
   for (const [opts, reason, group] of groupCases) {
     const d = await gate("/api/analogy/facts/2026-10-26-01-01", opts);
@@ -906,7 +915,10 @@ console.log("[10] 段階3のログ（鍵の trim・群・抜き取り）");
     );
   }
   const internalLog = await gate("/api/accuracy", {
-    headers: { "x-ryujin-internal-key": CURRENT, "x-ryujin-caller": "bot-page" },
+    headers: {
+      "x-ryujin-internal-key": CURRENT,
+      "x-ryujin-caller": "bot-page",
+    },
   });
   check(
     "internal は caller に名前、caller_claimed は null",
@@ -1010,18 +1022,29 @@ console.log("[10] 段階3のログ（鍵の trim・群・抜き取り）");
 console.log("[11] CORS を置かない（api/・vercel.json）");
 {
   const CORS_PATTERN = /Access-Control-Allow-/i;
-  const files = walkSourceFiles(new URL("../../api/", import.meta.url).pathname, {
-    extensions: [".js", ".mjs"],
-  });
+  const files = walkSourceFiles(
+    new URL("../../api/", import.meta.url).pathname,
+    {
+      extensions: [".js", ".mjs"],
+    },
+  );
   check("api/ の関数を1件以上読んだ", files.length > 0, String(files.length));
-  const offenders = files.filter((file) => CORS_PATTERN.test(readSourceFile(file) ?? ""));
+  const offenders = files.filter((file) =>
+    CORS_PATTERN.test(readSourceFile(file) ?? ""),
+  );
   check(
     "api/ に Access-Control-Allow-* が無い",
     offenders.length === 0,
     offenders.join(", "),
   );
-  const vercelJson = readFileSync(new URL("../../vercel.json", import.meta.url), "utf8");
-  check("vercel.json に Access-Control-Allow-* が無い", !CORS_PATTERN.test(vercelJson));
+  const vercelJson = readFileSync(
+    new URL("../../vercel.json", import.meta.url),
+    "utf8",
+  );
+  check(
+    "vercel.json に Access-Control-Allow-* が無い",
+    !CORS_PATTERN.test(vercelJson),
+  );
 }
 
 console.log("[12] ログの数え方（count-api-gate-log.js）");
@@ -1141,6 +1164,124 @@ console.log("[12] ログの数え方（count-api-gate-log.js）");
     "bot_verified=true を数え、拒む候補が0なら OK",
     r.botVerified === 1 && r.conditions.botVerifiedNeverDenied === true,
     `${r.botVerified}/${r.botVerifiedDenied}`,
+  );
+}
+
+console.log(
+  "[13] ブラウザの UA で Sec-Fetch-Site が無い要求（browser_no_sfs、オーナー 2026-11-06）",
+);
+{
+  const FIREFOX_UA =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0";
+  for (const mode of ["observe", "enforce"]) {
+    for (const [label, headers] of [
+      ["iPhone Safari・Origin 無し", { "user-agent": CHROME_UA }],
+      ["Firefox・Origin が自分", { "user-agent": FIREFOX_UA, origin: HOST }],
+    ]) {
+      const d = await gate("/api/odds/live?raceId=2026-10-26-01-01", {
+        mode,
+        headers,
+      });
+      check(
+        `${mode}: ${label} → browser_no_sfs で通す`,
+        d.reason === "browser_no_sfs" &&
+          d.outcome === "pass" &&
+          d.status === null &&
+          d.sfs === null,
+        show(d),
+      );
+    }
+    // 拒むまま（強制で 403）。ブラウザの UA でない・Origin が別・Sec-Fetch-Site が same-origin 以外
+    const denied = [
+      ["UA 無し", {}],
+      ["curl", { "user-agent": "curl/8.4.0" }],
+      ["python-requests", { "user-agent": "python-requests/2.32.3" }],
+      ["node（undici）", { "user-agent": "undici" }],
+      [
+        "bingbot（Mozilla/ で始まるが検索ボット）",
+        { "user-agent": BINGBOT_UA },
+      ],
+      [
+        "GPTBot（Mozilla/ で始まるが AI のクローラー）",
+        {
+          "user-agent":
+            "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)",
+        },
+      ],
+      [
+        "ブラウザの UA・Origin が別の host",
+        { "user-agent": CHROME_UA, origin: "https://evil.example" },
+      ],
+      [
+        "ブラウザの UA・Origin が null",
+        { "user-agent": CHROME_UA, origin: "null" },
+      ],
+      [
+        "ブラウザの UA・cross-site",
+        { "user-agent": CHROME_UA, "sec-fetch-site": "cross-site" },
+      ],
+      [
+        "ブラウザの UA・none（アドレスバー）",
+        { "user-agent": CHROME_UA, "sec-fetch-site": "none" },
+      ],
+    ];
+    const want = mode === "enforce" ? "deny" : "would_deny";
+    for (const [label, headers] of denied) {
+      const d = await gate("/api/analogy/facts/2026-10-26-01-01", {
+        mode,
+        headers,
+      });
+      check(
+        `${mode}: ${label} → ${want}`,
+        d.reason === want &&
+          (mode === "enforce" ? d.status === 403 : d.outcome === "pass"),
+        show(d),
+      );
+    }
+  }
+  // Google の UA で IP が範囲の外（偽の Googlebot）は Mozilla/ で始まっても browser_no_sfs にしない
+  const fakeGoogle = await gate("/api/analogy/facts/2026-10-26-01-01", {
+    mode: "enforce",
+    ip: OTHER_IP,
+    headers: { "user-agent": GOOGLEBOT_UA },
+  });
+  check(
+    "enforce: 偽の Googlebot（IP が範囲の外）→ deny",
+    fakeGoogle.reason === "deny" && fakeGoogle.bot_verified === false,
+    show(fakeGoogle),
+  );
+  // 鍵が付いていて違えば bad_key（ブラウザの UA でも browser_no_sfs に落とさない）
+  const badKey = await gate("/api/accuracy", {
+    mode: "enforce",
+    headers: { "user-agent": CHROME_UA, "x-ryujin-internal-key": "wrong" },
+  });
+  check(
+    "enforce: ブラウザの UA でも鍵が違えば bad_key 403",
+    badKey.reason === "bad_key" && badKey.status === 403,
+    show(badKey),
+  );
+  // ログは抜き取らない（後で絞るための件数）。群は browser
+  const d = await gate("/api/odds/live?raceId=2026-10-26-01-01", {
+    headers: { "user-agent": CHROME_UA },
+  });
+  const record = gateLogRecord(d, {
+    mode: "observe",
+    method: "GET",
+    random: () => 0.99,
+  });
+  check(
+    "browser_no_sfs は抜き取らず全件書く（tag apigate_browser_no_sfs_browser）",
+    record?.sample === 1 &&
+      record.tag === "apigate_browser_no_sfs_browser" &&
+      record.group === "browser",
+    JSON.stringify(record),
+  );
+  const counted = countApiGateLines([JSON.stringify(record)]);
+  check(
+    "count-api-gate-log: browser_no_sfs は拒む候補に数えない",
+    counted.denyDetail.length === 0 &&
+      counted.conditions.ownDeniedZero === true,
+    JSON.stringify(counted.byReasonGroup),
   );
 }
 
