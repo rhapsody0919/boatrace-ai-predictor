@@ -57,6 +57,7 @@ import {
   splitHalves,
   winsOf,
   tagText,
+  tagSize,
   timeline,
   deadlineText,
   borderCardRaceText,
@@ -138,6 +139,7 @@ function Header({ b }) {
           position: "absolute",
           left: 60,
           top: 120,
+          maxWidth: RIGHT - LEFT,
           height: 70,
           padding: "0 24px",
           borderRadius: 16,
@@ -149,7 +151,7 @@ function Header({ b }) {
         <span
           data-sk=""
           style={{
-            fontSize: 40,
+            fontSize: tagSize(b),
             fontWeight: 900,
             color: NAVY,
             whiteSpace: "nowrap",
@@ -158,17 +160,6 @@ function Header({ b }) {
           {tag}
         </span>
       </div>
-      <T
-        x={RIGHT - 300}
-        w={300}
-        align="right"
-        y={130}
-        size={40}
-        color={GR}
-        weight={700}
-      >
-        龍神レーダー
-      </T>
     </>
   );
 }
