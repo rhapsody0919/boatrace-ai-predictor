@@ -247,6 +247,21 @@ export function finalDeadlineMismatch(deadline, final) {
   return null;
 }
 
+/** border の3人の焼き込んだ締切を当日の races と照合する。全員一致なら null、違えば理由 */
+export function borderDeadlineMismatch(racers, rows) {
+  const times = new Map(rows.map((r) => [
+    `${Number(String(r.race_id).slice(-2))}R`,
+    typeof r.start_time === "string" ? r.start_time.slice(0, 5) : null,
+  ]));
+  const reasons = racers.flatMap((r) => {
+    const time = times.get(r.race);
+    return r.deadline === time ? [] : [
+      `${r.race} の焼き込んだ締切（${r.deadline}）が DB（${time ?? (times.has(r.race) ? "締切なし" : "行なし")}）と違う`,
+    ];
+  });
+  return reasons.length ? reasons.join("・") : null;
+}
+
 /**
  * 前夜の final_gap の締切が、前夜に取った表の優勝戦の行（is_final=true、男女W優勝戦なら2行）のどれかと同じか（純粋関数）。
  * 違えば理由、同じなら null
@@ -648,6 +663,18 @@ export async function pushSetsuKiryokuShort(
   });
   if (live.already) return { setsu_id: setsuId, ...live.already, ...extra };
   if (live.reasons) return reject(live.reasons);
+  if (bundle.variant === "border") {
+    let rows;
+    try {
+      rows = await store.raceStartTimes(
+        bundle.date, venueCode, bundle.racers.map((r) => raceNumberOf(r)),
+      );
+    } catch (error) {
+      return reject([`border の締切（races.start_time）が読めない: ${error.message}`]);
+    }
+    const why = borderDeadlineMismatch(bundle.racers, rows);
+    if (why) return reject([why]);
+  }
   // 優勝戦が今日の型は、その優勝戦が DB にあり、中止・欠場が無いこと（前夜は出走表がまだ無い）
   if (bundle.variant === "final_gap" && bundle.when === "today") {
     // 締切があれば、束が指した R の優勝戦を照らす（男女W優勝戦で2つあるとき、先頭の1件で比べない。Codex P1）
@@ -1046,6 +1073,12 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
       return call(
         `eve_race_deadlines?race_date=eq.${encodeURIComponent(date)}&venue_code=eq.${Number(venueCode)}&is_final=is.true&select=race_id,deadline`,
       );
+    },
+    async raceStartTimes(date, venueCode, raceNumbers) {
+      const ids = raceNumbers.map((n) =>
+        `${date}-${venueCode}-${String(n).padStart(2, "0")}`,
+      );
+      return call(`races?race_id=in.(${ids.join(",")})&select=race_id,start_time`);
     },
     /** raceNumber を渡せば、そのレースが優勝戦（「優勝戦」を含み「準優勝戦」でない）のときだけ返す。無ければ今どおり「優勝戦」の1件 */
     async finalRace(date, venueCode, raceNumber = null) {
