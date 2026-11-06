@@ -2,16 +2,16 @@
  "schema": "content-pr-manifest/v1",
  "id": "course-prediction-tips",
  "kind": "revision",
- "ticket": "OC-20261031T100144-seo-human-1",
+ "ticket": "OC-20261106T100048-seo-human-1",
  "paths": [
   "public/blog/course-prediction-tips.md",
   "src/data/blog-posts/course-prediction-tips.json"
  ],
  "files": {
-  "public/blog/course-prediction-tips.md": "f38c566691ed0ad021103ee74fe1db3cb82916c47ce4bfe1a64c64ad739ec336",
-  "src/data/blog-posts/course-prediction-tips.json": "7ee1ea1c97cdc45bfc3d002e49967d8e6f87afdec35a3a3a940aac23fa3e291d"
+  "public/blog/course-prediction-tips.md": "9050df92a8c52986f8c4176ab1edaced706b42cac6ed9e567adf63a896ec8227",
+  "src/data/blog-posts/course-prediction-tips.json": "edfbf8c03a4785370eedb90ae7f271fdbd0be10e8d88d3dda8b809a968276496"
  },
- "content_sha256": "4f37215edc9616cd3eb83538175c1a14d9e7ff7dfd063ea70789ad1129728b16",
+ "content_sha256": "5e78ca4c6a86cc9d0e34dec8159d413b6661f3e4adaf773857416625a1ca4f7b",
  "judgement_words": [],
  "reviews": [
   {
@@ -20,9 +20,9 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "4f37215edc9616cd3eb83538175c1a14d9e7ff7dfd063ea70789ad1129728b16",
-   "model": "opus",
-   "at": "2026-10-31T10:08:26+09:00"
+   "reviewed_sha256": "5e78ca4c6a86cc9d0e34dec8159d413b6661f3e4adaf773857416625a1ca4f7b",
+   "model": "codex-default/high",
+   "at": "2026-11-06T10:08:24+09:00"
   },
   {
    "role": "wording-editor",
@@ -30,33 +30,71 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "4f37215edc9616cd3eb83538175c1a14d9e7ff7dfd063ea70789ad1129728b16",
-   "model": "opus",
-   "at": "2026-10-31T10:08:26+09:00"
+   "reviewed_sha256": "5e78ca4c6a86cc9d0e34dec8159d413b6661f3e4adaf773857416625a1ca4f7b",
+   "model": "codex-default/high",
+   "at": "2026-11-06T10:08:24+09:00"
   },
   {
    "role": "fan",
    "agent": "hq-review:fan",
    "result": "pass",
    "p0": 0,
-   "p1": 1,
-   "reviewed_sha256": "4f37215edc9616cd3eb83538175c1a14d9e7ff7dfd063ea70789ad1129728b16",
-   "model": "opus",
-   "at": "2026-10-31T10:08:26+09:00"
+   "p1": 0,
+   "reviewed_sha256": "5e78ca4c6a86cc9d0e34dec8159d413b6661f3e4adaf773857416625a1ca4f7b",
+   "model": "codex-default/high",
+   "at": "2026-11-06T10:08:24+09:00"
   },
   {
    "role": "seo-marketer",
    "agent": "hq-review:seo+marketing",
    "result": "pass",
    "p0": 0,
-   "p1": 1,
-   "reviewed_sha256": "4f37215edc9616cd3eb83538175c1a14d9e7ff7dfd063ea70789ad1129728b16",
-   "model": "opus",
-   "at": "2026-10-31T10:08:26+09:00"
+   "p1": 0,
+   "reviewed_sha256": "5e78ca4c6a86cc9d0e34dec8159d413b6661f3e4adaf773857416625a1ca4f7b",
+   "model": "codex-default/high",
+   "at": "2026-11-06T10:08:24+09:00"
   }
  ],
+ "evidence": [
+  {
+   "h2": "枠なりの意味と、全国直近1年の件数",
+   "evidence": [
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json",
+    "scripts/analysis/venue-course-win-rate/count-venue-course-wins.mjs"
+   ]
+  },
+  {
+   "h2": "前付けは進入位置、カドは助走の取り方で読む",
+   "evidence": [
+    "src/locales/ja/common.json"
+   ]
+  },
+  {
+   "h2": "艇番別と進入コース別の1着は分けて読む",
+   "evidence": [
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json",
+    "scripts/analysis/venue-course-win-rate/count-venue-course-wins.mjs"
+   ]
+  },
+  {
+   "h2": "今日の展示進入をコース別データにつなぐ",
+   "evidence": [
+    "src/locales/ja/common.json",
+    "public/blog/venue-course1-win-rate-ranking.md"
+   ]
+  },
+  {
+   "h2": "数字の範囲と注意",
+   "evidence": [
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json",
+    "scripts/analysis/venue-course-win-rate/count-venue-course-wins.mjs",
+    "src/locales/ja/common.json"
+   ]
+  }
+ ],
+ "sources": "data/analysis/venue-course-win-rate/venue-course-win-rate.json#periods.12m（5573〜5685行、from/to/all.races/all.not_waku_nari_races/all.by_waku/all.by_course）。全国24場、2025-10-20〜2026-10-19の結果がある55,414レース。本番の艇番と進入コースを分け、1着は返還艇を除き、1着同着は艇番の小さい艇を採用。不成立・中止・順延を除く。\nscripts/analysis/venue-course-win-rate/count-venue-course-wins.mjs:38〜104の集計出力。枠なり44,867回は55,414−10,547（derived_numbers）。欠場時は記録のある進入コースで判定、6コース存在時の分母は54,846。UIの期間・表示名はsrc/locales/ja/common.json:1746〜1767、前付け・カドは1450〜1457。",
  "author": "hq-employee:seo-human",
- "created_at": "2026-10-31T10:09:25+09:00",
- "run": "20261031T100144-seo-human",
- "engine": "claude"
+ "created_at": "2026-11-06T10:09:41+09:00",
+ "run": "20261106T100048-seo-human",
+ "engine": "codex"
 }
