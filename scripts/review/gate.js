@@ -4,14 +4,18 @@
  * PR のコードは checkout も実行もしない（この script は master の定義から動く）。
  *
  * env: GITHUB_TOKEN（読み取り）・GITHUB_REPOSITORY・BASE_SHA・HEAD_SHA・HEAD_REF・PR_AUTHOR（作者の login）・
- *      MONTHLY_LIMIT（任意、既定300）
+ *      PR_AUTHOR_ID（作者の数値の id）・OWNER_ID（リポジトリの持ち主の数値の id）・MAKER_BOT_ID（作成の App の数値の id、任意）・
+ *      MONTHLY_LIMIT（任意、既定300。作成の App の PR）・OWNER_MONTHLY_LIMIT（任意、既定300。持ち主の名義の PR）
+ * 出力に author_kind（owner・maker・空）を足す
  * 出力: ok（true/false）・reason・vendor・sql_tables（JSON の配列）・head_sha
  */
 import {
+  authorKind,
   mechanicalRejections,
+  monthlyLimitReason,
   monthlyRunsPath,
   sqlTablesFromFiles,
-  vendorForBranch,
+  vendorForPr,
 } from "../lib/reviewPr.js";
 import { fetchDiff, gh, requireEnv, setOutput } from "./common.js";
 
@@ -23,18 +27,36 @@ async function main() {
   const baseSha = requireEnv("BASE_SHA", SHA);
   const headSha = requireEnv("HEAD_SHA", SHA);
   const headRef = process.env.HEAD_REF ?? "";
-  const limit = Number(process.env.MONTHLY_LIMIT || 300);
 
   const reasons = [];
-  const vendor = vendorForBranch(headRef);
-  if (!vendor) reasons.push("ブランチの接頭辞が claude/ でも codex/ でもない");
-
-  const runs = await gh(token, "GET", monthlyRunsPath(repo, requireEnv("PR_AUTHOR"), new Date()));
-  if (!Number.isFinite(limit) || runs.total_count > limit) {
+  const kind = authorKind({
+    authorId: process.env.PR_AUTHOR_ID,
+    ownerId: process.env.OWNER_ID,
+    makerId: process.env.MAKER_BOT_ID,
+  });
+  const vendor = vendorForPr(headRef, kind);
+  if (!vendor) {
     reasons.push(
-      `今月の審査が上限を超えた（${runs.total_count}件、上限 ${limit}）。上限は repo の変数 REVIEW_MONTHLY_LIMIT`,
+      kind === "maker"
+        ? "ブランチの接頭辞が claude/ でも codex/ でもない"
+        : kind === "owner"
+          ? "ブランチ名が無い"
+          : "作者が作成の App でも持ち主でもない",
     );
   }
+
+  const actor = requireEnv("PR_AUTHOR");
+  const now = new Date();
+  const all = await gh(token, "GET", monthlyRunsPath(repo, actor, now));
+  const skipped = await gh(token, "GET", monthlyRunsPath(repo, actor, now, "skipped"));
+  const overLimit = monthlyLimitReason({
+    total: all.total_count,
+    skipped: skipped.total_count,
+    kind,
+    makerLimit: process.env.MONTHLY_LIMIT,
+    ownerLimit: process.env.OWNER_MONTHLY_LIMIT,
+  });
+  if (overLimit) reasons.push(overLimit);
 
   const { files, headModes, treeTruncated } = await fetchDiff(
     token,
@@ -54,6 +76,7 @@ async function main() {
       .slice(0, 2000),
   );
   setOutput("vendor", vendor ?? "");
+  setOutput("author_kind", kind ?? "");
   setOutput("sql_tables", JSON.stringify(ok ? sqlTablesFromFiles(files) : []));
   setOutput("head_sha", headSha);
   console.log(

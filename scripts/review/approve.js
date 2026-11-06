@@ -5,7 +5,8 @@
  * 承認の直前に PR の head を取り直し、審査した SHA と違えば何もしない（新しい push の審査が別に走る）。
  *
  * env: GH_TOKEN（審査の App のトークン）・GITHUB_REPOSITORY・PR_NUMBER・REVIEWED_SHA・GATE_OK・GATE_REASON・
- *      LLM_RESULT（needs.llm.result）・VERDICT（needs.llm.outputs.verdict、無いこともある）
+ *      LLM_RESULT（needs.llm.result）・VERDICT（needs.llm.outputs.verdict、無いこともある）・
+ *      AUTHOR_KIND（needs.gate.outputs.author_kind。owner なら審査の中身でない理由では COMMENT）
  */
 import { decideAction, parseVerdict } from "../lib/reviewPr.js";
 import { gh, requireEnv } from "./common.js";
@@ -44,6 +45,7 @@ async function main() {
     verdict,
     reviewedSha,
     currentHeadSha: pr.head.sha,
+    softFail: process.env.AUTHOR_KIND === "owner",
   });
   if (action.event === "NONE") {
     console.log(
