@@ -848,7 +848,7 @@ ${insert}`);
     if (fn.items) return allFresh(fn.items);
     return [];
   };
-  const { report, alerts } = await runDataHealthChecks({
+  const { alerts } = await runDataHealthChecks({
     targetDate: "2026-10-20",
     now: new Date("2026-10-19T21:35:00Z"),
     mode: "live",
