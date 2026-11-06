@@ -6,6 +6,7 @@
  * 型は3つ: motor_gap（予選2〜3日目）・motor_up（予選4日目以降）・final_gap（優勝戦の前夜か当日）。
  * final_six（6艇の展示の並べ）はオーナー 11/1 に取り下げ、final_gap に置き換えた（hq 4a4e2e4）。選べない。
  *
+ * series_day_text: motor_gap・motor_up・border で必須（公式の「初日」「N日目」「最終日」。日付から数えない）。final_gap は使わない。
  * texts.hook・texts.close の要素は文字列（白）か { "text": "…", "em": true }（金・大きい字）。
  * final_gap（依頼文 4節）: 主役1人と優勝戦の6人。
  *   "when": "eve"|"today"（札「優勝戦の前夜」「今日の優勝戦」）
@@ -40,6 +41,8 @@ export const CENTER_MAX_W = 720;
 /** 左寄せの文の幅（60〜900） */
 export const LEFT = 60;
 export const RIGHT = 900;
+/** 札の左右の内側24pxを除いた文字の幅 */
+export const TAG_MAX_W = RIGHT - LEFT - 48;
 
 export const VARIANTS = ["motor_gap", "motor_up", "final_gap", "border"];
 
@@ -141,13 +144,26 @@ export const winsOf = (runs) => runs.filter((r) => r.rank === 1).length;
 export const fmt2rate1 = (v) => v.toFixed(1);
 /** 全機の中の上からの順位（同値は上にそろえる） */
 export const rankInAll = (all, v) => 1 + all.filter((x) => x > v).length;
-/** final_gap の札。when が today なら「今日の優勝戦」、eve なら「優勝戦の前夜」 */
+/** YYYY-MM-DD の実在する日を「M/D（曜）」にする。曜日は UTC で求める */
+export function dateLabel(date) {
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date))
+    return null;
+  const [year, month, day] = date.split("-").map(Number);
+  const d = new Date(Date.UTC(year, month - 1, day));
+  // Date.UTC が 0〜99 年を 1900〜1999 年にする挙動を補う
+  if (year < 100) d.setUTCFullYear(year, month - 1, day);
+  if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day)
+    return null;
+  return `${month}/${day}（${"日月火水木金土"[d.getUTCDay()]}）`;
+}
+/** 全型の札。日付は束の date、日目は公式の文言をそのまま使う */
 export const tagText = (b) =>
   b.variant === "final_gap"
-    ? `${b.venue} ${b.when === "today" ? "今日の優勝戦" : "優勝戦の前夜"}`
+    ? `${dateLabel(b.date)}${b.venue} ${b.when === "today" ? "今日の優勝戦" : "優勝戦の前夜"}`
     : b.variant === "border"
-      ? `${b.venue} ${b.grade} 予選最終日`
-      : `${b.venue} ${b.grade} 開催中`;
+      ? `${dateLabel(b.date)}${b.venue} ${b.grade} ${b.series_day_text} 予選最終日`
+      : `${dateLabel(b.date)}${b.venue} ${b.grade} ${b.series_day_text}`;
+export const tagSize = (b) => fitSize(tagText(b), TAG_MAX_W, 40);
 /** 冒頭と締めの締切。border は3人の最初、final_gap は前夜なら「明日」。ほかは null */
 export const deadlineText = (b) =>
   b?.variant === "final_gap" && b.final_deadline
@@ -501,6 +517,11 @@ export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
     return [...why, `variant が ${VARIANTS.join("|")} でない: ${b.variant}`];
   for (const k of ["date", "venue", "as_of"])
     if (typeof b[k] !== "string" || !b[k]) why.push(`${k} が無い`);
+  if (dateLabel(b.date) == null)
+    why.push("date が YYYY-MM-DD の実在する日でない");
+  if (b.variant !== "final_gap" &&
+      (typeof b.series_day_text !== "string" || !/^(初日|最終日|([2-9]|1[0-2])日目)$/.test(b.series_day_text)))
+    why.push("series_day_text が「初日」「N日目」「最終日」でない");
   // final_gap は grade を使わず、hq の束（依頼文 4節）にも無い
   if (b.variant !== "final_gap" && (typeof b.grade !== "string" || !b.grade))
     why.push("grade が無い");
@@ -513,7 +534,8 @@ export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
     why.push("final_deadline は final_gap の型だけ");
   if (b.variant === "final_gap" && b.when !== "eve" && b.when !== "today")
     why.push(`when が eve|today でない: ${b.when}`);
-  else if (b.variant === "final_gap") why.push(...finalDateReasons(b));
+  else if (b.variant === "final_gap" && dateLabel(b.date) != null)
+    why.push(...finalDateReasons(b));
   if (!Array.isArray(b.texts?.hook) || !b.texts.hook.length)
     why.push("texts.hook が無い");
   if (!Array.isArray(b.texts?.close) || !b.texts.close.length)
@@ -683,6 +705,8 @@ export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
   for (const l of fits)
     if (l.size != null && l.y + l.size * 1.3 > SAFE.bottom)
       why.push(`文が y${SAFE.bottom} を越える: ${l.text}`);
+  if (tagSize(b) == null)
+    why.push(`札が幅 ${TAG_MAX_W}px に ${MIN_FONT}px で収まらない`);
   const dl = deadlineText(b);
   if (dl && fitSize(dl, RIGHT - DEADLINE_LINE.x, DEADLINE_LINE.size) == null)
     why.push(`締切の行が ${RIGHT - DEADLINE_LINE.x}px に収まらない: ${dl}`);
