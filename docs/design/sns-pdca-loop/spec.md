@@ -107,7 +107,7 @@ flowchart LR
 
 根拠: [analysis/baseline-and-power.md](analysis/baseline-and-power.md)（スクリプト `scripts/analysis/sns-pdca-baseline/`、結果 `data/analysis/sns-pdca-baseline/`）。
 
-**事実**: SNS からサイトに来る人は、投稿していた期間でも X 1.11人/日・YouTube 0.22人/日。SNS 由来でソナーを開いた人は4日で1人。Shorts は 13,575回の再生でサイトへの流入が延べ4人。この量では、サイト流入とソナー利用で改善を週ごとに判定できない（2倍になっても版ごとに6週）。
+**事実**: SNS からサイトに来る人は、投稿していた期間でも X・YouTube とも1日1人前後かそれ未満（実数は hq、2026-11-06 オーナー決定）。SNS 由来でソナーを開いた人はごくわずか。Shorts の再生からサイトへの流入もごくわずか。この量では、サイト流入とソナー利用で改善を週ごとに判定できない（2倍になっても版ごとに6週）。
 
 **判定の段（Q3、2026-10-12 ユーザー決定）**
 

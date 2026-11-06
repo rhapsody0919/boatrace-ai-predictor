@@ -80,5 +80,5 @@
 - 内部トラフィック除外の条件（IP 等）・設定時刻: 不明・記録はユーザー設定としての日付だけ。Admin API v1alpha で読めない（scripts/analysis/ga4-organic-weekly-export.js の notes.internalTraffic）
 - GA4 プロパティのタイムゾーン: 不明・docs・コミット済みのコードに記録なし。scripts/analysis/ga4-organic-weekly-export.js（この PR）が `settings.property.timeZone` を読む作りだが、同じフォルダの ga4-organic-0427-1019.json・ga4-organic-0928-1019.json の `settings.property` は「Google Analytics Admin API has not been used in project … or it is disabled」のエラーで読めていない（GCP で Admin API を有効にすれば読める）
 - 参考: 月別 PV を出す i18n-demand-report.js 等を JST 9時より前に走らせると期間の始まりが前月末になる（スクリプト側の日付計算の話で、GA4 のタイムゾーンとは別）（docs/knowledge/measurement.md:32）
-- 参考: GA4 の PV は AdSense の PV と大きく食い違う（9/29 時点 GA4 ja 29,270 に対し AdSense 10,573）（docs/knowledge/measurement.md:31）
+- 参考: GA4 の PV は AdSense の PV と大きく食い違う（9/29 時点で AdSense は GA4 の約36%。実数は hq）（docs/knowledge/measurement.md:31）
 - 5〜8月の GA4 の計測コードの変更: 7/14 の app_language、7/31 の src/App.jsx の GA 初期化の書式変更（#160。中身は同じ）、8/29 の / の描画元の変更（#415、上表）、8/31 の deep_link_click（`git log -G'trackEvent\(|gtag\(' -- src`）

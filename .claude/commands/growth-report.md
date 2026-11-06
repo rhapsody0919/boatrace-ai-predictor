@@ -10,7 +10,7 @@ Search Consoleの検索パフォーマンスから集客状況を確認し、ト
    ```bash
    node scripts/analysis/search-console-report.js
    ```
-   `data/analysis/search-console/report-{日付}.json` に保存される（構造: `{generatedAt, days, topQueries, topPages, venuePages}`、各行は`{keys: [クエリ/URL], clicks, impressions, ctr, position}`）。
+   `data/analysis/search-console/report-{日付}.json` に保存される（手元だけに残る。`.gitignore` 済みで公開のリポジトリにコミットしない。2026-11-06 オーナー決定。正本の置き場は hq で、移す作業は hq の担当）（構造: `{generatedAt, days, topQueries, topPages, venuePages}`、各行は`{keys: [クエリ/URL], clicks, impressions, ctr, position}`）。
 
 2. **トレンド分析**（Claudeが実施）
    過去のreport-*.jsonと比較して以下を算出・報告する：

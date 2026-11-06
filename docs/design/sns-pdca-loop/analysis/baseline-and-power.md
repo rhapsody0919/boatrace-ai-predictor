@@ -10,7 +10,7 @@ node scripts/analysis/sns-pdca-baseline/youtube-shorts-metrics.js --since=2026-0
 node scripts/analysis/sns-pdca-baseline/power.js --ga4=data/analysis/sns-pdca-baseline/ga4-2026-08-15_2026-10-11.json --youtube=data/analysis/sns-pdca-baseline/youtube-2026-08-01_2026-10-11.json
 ```
 
-worktree で動かすときは `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` に本体の `credentials/google-service-account.json` を渡す。結果は `data/analysis/sns-pdca-baseline/`（ga4-*.json・youtube-*.json・power-2026-10-12.json）。
+worktree で動かすときは `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` に本体の `credentials/google-service-account.json` を渡す。結果は `data/analysis/sns-pdca-baseline/`（youtube-*.json）。ga4-*.json・power-2026-10-12.json（GA4 の実数を含む）は hq へ移した（2026-11-06）。
 
 ## 前提
 
@@ -21,21 +21,9 @@ worktree で動かすときは `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` に本体の `c
 
 ## 基準値
 
-### サイト流入（ga4-2026-08-15_2026-10-11.json#periods）
+### サイト流入（GA4）
 
-| 期間 | X 由来 人/日（SD、0の日） | YouTube 由来 人/日 |
-|---|---|---|
-| 8/15〜8/28（投稿前） | 0.15 | 0 |
-| 8/29〜9/15（投稿期、18日） | 1.11（1.37、8/18） | 0.22（合計4人） |
-| 9/14〜10/11（止まった後、28日） | 0.39（0.50、17/28） | 0 |
-
-- 投稿期の X は1投稿あたり約0.4人（20人÷51件）
-- `sonar-preview` の UTM が付いた流入はまだ0件
-- 対照: 自然検索は 9/14〜10/11 で平均約34人/日（SD 約7）
-
-### 龍神ソナー（#sonarTabUsersBySource、10/8〜10/11）
-
-- 全流入元でソナーのタブを開いた人は1日15〜30人。SNS 由来は4日で1人（t.co）
+X・YouTube 由来の人/日、自然検索の対照、ソナーのタブを開いた人の実数は hq へ移した（2026-11-06 オーナー決定）。SNS 由来の流入は1日1人前後で、週ごとの判定には足りない。
 
 ### YouTube Shorts（youtube-2026-08-01_2026-10-11.json）
 
@@ -51,13 +39,13 @@ worktree で動かすときは `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` に本体の `c
 | 2日の engagedViews/views（2日で30回以上の29本） | 平均0.126（SD 0.069） |
 | 2日の平均視聴率（同、100%超の外れ値を除く28本） | 56.4%（SD 13.8） |
 
-- 13,575回の再生に対し、YouTube 由来のサイトユーザーは延べ4人（約0.03%）。Shorts の再生画面からは外部へリンクできない（2023-08-31 以降）
+- Shorts の再生に対し、YouTube 由来のサイトユーザーはごくわずか（実数は hq）。Shorts の再生画面からは外部へリンクできない（2023-08-31 以降）
 
 ## 必要件数（power-2026-10-12.json#perArm、版ごと、検出力0.8・両側α=0.05）
 
 | 指標（基準値） | +20% | +50% | +100% |
 |---|---|---|---|
-| X 由来ユーザー/日（1.11、過分散1.68） | 654日 | 119日 | 36日 |
+| X 由来ユーザー/日（基準値は hq、過分散1.68） | 654日 | 119日 | 36日 |
 | 同 /週 | 94週 | 17週 | 6週 |
 | SNS 由来ソナー利用/日（仮置き0.25、ポアソン） | 1,727日 | 314日 | 95日 |
 | YouTube views（対数 SD 1.72） | 1,402本 | 284本 | 97本 |

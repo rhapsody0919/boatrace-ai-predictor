@@ -71,10 +71,10 @@
 
 ## 公開後の読み取り
 
-`node scripts/analysis/assist-ga4/report.js --from=YYYY-MM-DD [--to=YYYY-MM-DD]` で取り、`data/analysis/assist-ga4/` に JSON で残す。本番（www.boat-ai.jp）だけを数え、Preview の閲覧は `excludedHosts` に分ける。内訳は各パラメータを持つイベントだけで取る（値が空欄の行は値が届いていない分で、登録前の分を含む）。
+`node scripts/analysis/assist-ga4/report.js --from=YYYY-MM-DD [--to=YYYY-MM-DD]` で取る。結果の JSON は公開のリポジトリに置かず hq に置く（2026-11-06 オーナー決定。出力先の変更は hq の担当）。本番（www.boat-ai.jp）だけを数え、Preview の閲覧は `excludedHosts` に分ける。内訳は各パラメータを持つイベントだけで取る（値が空欄の行は値が届いていない分で、登録前の分を含む）。
 
 | 期間 | 結果 | 要点 |
 |---|---|---|
-| 2026-10-11（公開1日目） | [2026-10-11.json](../../../data/analysis/assist-ga4/2026-10-11.json) | /assist 110 PV・16人（再訪13人）。レース詳細 947 PV・61人に対し PV 11.6%・人数 26%。入口は tab_row 59・top 39・copy_toast 3。レンズは flow 53・power 27・axis 24・bet 19。深掘り5人・6艇比較3人・ガイド2人で、割合では読めない人数。ユーザー本人や他のレーンの確認が混ざりうる |
+| 2026-10-11（公開1日目） | hq へ移した | 実数（PV・人数・入口・レンズの内訳）は hq。深掘り・6艇比較・ガイドは割合では読めない人数。ユーザー本人や他のレーンの確認が混ざりうる |
 
 次は1週間分（10/11〜17）を 10/18 に読む（入口ごとの到達、出走表へ戻る割合、レンズごとの使われ方）。

@@ -34,7 +34,7 @@ Search Console・GA4・競合（kyoteibiyori）動向・キーワード需要を
 node scripts/analysis/search-console-report.js
 ```
 
-`data/analysis/search-console/report-{日付}.json`と過去レポートを比較し、日割りトレンド・トップクエリの順位変動・新機能記事/`/winning-technique`の検索状況・会場ガイド（`/venues`配下）の状況を確認する。詳細な解釈手順・注意点は`/growth-report`を参照。
+`data/analysis/search-console/report-{日付}.json`（手元だけに残る。`.gitignore` 済みで公開のリポジトリにコミットしない。2026-11-06 オーナー決定。正本の置き場は hq で、移す作業は hq の担当）と過去レポートを比較し、日割りトレンド・トップクエリの順位変動・新機能記事/`/winning-technique`の検索状況・会場ガイド（`/venues`配下）の状況を確認する。詳細な解釈手順・注意点は`/growth-report`を参照。
 
 このスクリプトは以下2つの追加分析も出力する。
 

@@ -8,7 +8,7 @@
    ```bash
    node scripts/analysis/i18n-demand-report.js --days=30
    ```
-   `data/analysis/i18n-demand/report-{日付}.json` に保存される。
+   `data/analysis/i18n-demand/report-{日付}.json` に保存される（手元だけに残る。`.gitignore` 済みで公開のリポジトリにコミットしない。2026-11-06 オーナー決定。正本の置き場は hq で、移す作業は hq の担当）。
    構造: `{generatedAt, days, byLanguage: {lng: {pv, users}}, shareOfPv, languageSwitches, byCountry, bySource}`
 
 2. **トレンド分析**（Claudeが実施）
