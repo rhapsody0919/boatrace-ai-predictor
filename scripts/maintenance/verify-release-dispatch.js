@@ -5,8 +5,9 @@
  *       300件以上は全部見ていないので出す／master の先が10分以内なら待つ／検査が赤なら止める・走っていれば待つ／
  *       本番の版が master の祖先でなければ失敗／前に出した版より本番が古い（Instant Rollback）なら失敗／
  *       前回叩いたのに本番の版が動いていなければ stuck
- *   (b) 検査の読み方（summarizeGates）: 出す範囲の中で一番新しいコミットの run（skipped を除く）を見る。
- *       [automated] の skipped の run が後に来ても、その前の PR の失敗を素通しにしない。範囲の外の run は見ない
+ *   (b) 検査の読み方（summarizeGates）: 出す範囲の run（skipped を除く）を見る。[automated] の skipped の run が後に来ても、
+ *       その前の PR の失敗を素通しにしない。落ちた step が後の run で走って通っていれば直ったとみ、飛ばされただけ
+ *       （ml-tests の pytest）では直ったとみない。jobs を読めなければ red。範囲の外の run は見ない
  *   (c) 起動（createReleaseDispatchRun）: shadow は叩かない、live は Deploy Hook を POST、鍵・版・Hook が無い・HTTP 失敗は失敗、
  *       stuck は叩かずに失敗（巻き戻しと区別できない）、出した記録（released・fromSha・lastReleasedSha）を返す、比べる先は読んだ master の sha、
  *       拾い直し（UTC の分が30より前の起動）は前が「待つ」のときだけ動き、それ以外は前の記録を残す、出すべき差分が13時間残れば alerts
@@ -183,11 +184,84 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
 // ---------------------------------------------------------------- (b)
 {
   const range = [MID, HEAD];
+  const ids = { [MID]: 1, [HEAD]: 2, [DEPLOYED]: 3 };
   const run = (head_sha, status, conclusion) => ({
+    id: ids[head_sha],
     head_sha,
     status,
     conclusion,
   });
+  const job = (name, conclusion, steps) => ({
+    name,
+    conclusion,
+    steps: Object.entries(steps).map(([n, c]) => ({ name: n, conclusion: c })),
+  });
+  // quality-gates の MID で pytest が落ち、HEAD では ml-tests の pytest が push の差分で飛ばされた（Codex の P1）
+  const mlFailed = new Map([
+    [
+      1,
+      [
+        job("verify", "success", { "Run CI-tier verifications": "success" }),
+        job("ml-tests", "failure", {
+          "pytest (scripts/ml/analogy/tests)": "failure",
+        }),
+      ],
+    ],
+    [
+      2,
+      [
+        job("verify", "success", { "Run CI-tier verifications": "success" }),
+        job("ml-tests", "success", {
+          "pytest (scripts/ml/analogy/tests)": "skipped",
+        }),
+      ],
+    ],
+  ]);
+  const [mlStill] = summarizeGates(
+    range,
+    [
+      {
+        workflow: "quality-gates.yml",
+        runs: [
+          run(HEAD, "completed", "success"),
+          run(MID, "completed", "failure"),
+        ],
+      },
+    ],
+    mlFailed,
+  );
+  check(
+    mlStill.state === "red" &&
+      mlStill.headSha === MID &&
+      mlStill.unresolved?.[0]?.includes("pytest"),
+    "(b) 後の run が成功でも、落ちた step（ml-tests の pytest）が後で走って通っていなければ直ったとみない",
+    JSON.stringify(mlStill),
+  );
+  const mlFixed = new Map(mlFailed);
+  mlFixed.set(2, [
+    job("verify", "success", { "Run CI-tier verifications": "success" }),
+    job("ml-tests", "success", {
+      "pytest (scripts/ml/analogy/tests)": "success",
+    }),
+  ]);
+  const [mlOk] = summarizeGates(
+    range,
+    [
+      {
+        workflow: "quality-gates.yml",
+        runs: [
+          run(HEAD, "completed", "success"),
+          run(MID, "completed", "failure"),
+        ],
+      },
+    ],
+    mlFixed,
+  );
+  check(
+    mlOk.state === "green",
+    "(b) 落ちた step が後の run で走って通っていれば直ったとみる",
+    JSON.stringify(mlOk),
+  );
   const [qg] = summarizeGates(range, [
     {
       workflow: "quality-gates.yml",
@@ -202,7 +276,29 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
     "(b) [automated] の skipped の run が後に来ても、その前の PR の失敗を見る",
     JSON.stringify(qg),
   );
-  const [fixed] = summarizeGates(range, [
+  const pmc = (c) => [job("check", c, { Build: c })];
+  const [fixed] = summarizeGates(
+    range,
+    [
+      {
+        workflow: "post-merge-checks.yml",
+        runs: [
+          run(HEAD, "completed", "success"),
+          run(MID, "completed", "failure"),
+        ],
+      },
+    ],
+    new Map([
+      [1, pmc("failure")],
+      [2, pmc("success")],
+    ]),
+  );
+  check(
+    fixed.state === "green",
+    "(b) 落ちた step（木の全体を見るビルド）が後の run で通っていれば、前の失敗は直っているとみる",
+    JSON.stringify(fixed),
+  );
+  const [noJobs] = summarizeGates(range, [
     {
       workflow: "post-merge-checks.yml",
       runs: [
@@ -212,9 +308,9 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
     },
   ]);
   check(
-    fixed.state === "green",
-    "(b) 範囲の一番新しいコミットの run が通っていれば、前の失敗は直っているとみる（検査は木の全体を見る）",
-    JSON.stringify(fixed),
+    noJobs.state === "red",
+    "(b) 失敗した run の jobs を読めていなければ red（安全側）",
+    JSON.stringify(noJobs),
   );
   const [running] = summarizeGates(range, [
     {
@@ -288,7 +384,24 @@ function fakeGitHub({
     if (url.includes("/actions/workflows/"))
       return reply(200, {
         workflow_runs: [
-          { head_sha: HEAD, status: "completed", conclusion: gateConclusion },
+          {
+            id: 99,
+            head_sha: HEAD,
+            status: "completed",
+            conclusion: gateConclusion,
+          },
+        ],
+      });
+    if (url.includes("/actions/runs/99/jobs"))
+      return reply(200, {
+        jobs: [
+          {
+            name: "verify",
+            conclusion: gateConclusion,
+            steps: [
+              { name: "Run CI-tier verifications", conclusion: gateConclusion },
+            ],
+          },
         ],
       });
     if (url === "https://hook.example/deploy") return reply(hookStatus, {});
