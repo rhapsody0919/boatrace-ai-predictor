@@ -144,7 +144,7 @@ node --env-file=.env.local scripts/linear-cli.js create "タイトル" "説明"
 
 ブランチ戦略・デプロイフロー・コミットメッセージ・検証とテストは [AGENTS.md](../AGENTS.md) が正本。
 
-Claude の枝は `claude/` で始める。push・PR の作成・マージは作成の App（ryujin-maker）の名義で、`node scripts/maintenance/ryujin-maker-token.js -- git push …`・`-- gh pr create …` の形で行う（オーナー決定 2026-11-06。手順は `/create-pr`・`/merge-pr`）。`--admin` は使わない。
+Claude の枝は `claude/` で始める。push・PR の作成・マージは作成の App（ryujin-maker）の名義で、`node scripts/maintenance/ryujin-maker-token.js -- git push …`・`-- gh pr create …` の形で行う（オーナー決定 2026-11-06。手順は `/create-pr`・`/merge-pr`）。鍵（`~/.config/ryujin/ryujin-maker.pem`）が置かれた後は `--admin` を使わない（フックが止める）。
 
 ### 仕様書駆動開発（SDD、大規模機能向け）
 仕様に曖昧さが残る・設計判断が重要な大規模機能は `/step1-spec` から順に SDD フローを使う（小〜中規模の Linear チケットは `/implement` で直接実装）。詳細は `docs/operation/sdd-and-codex-review.md` を参照。

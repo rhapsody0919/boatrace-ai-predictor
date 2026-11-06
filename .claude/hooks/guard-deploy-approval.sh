@@ -13,12 +13,13 @@
 #
 # 審査の素通り（2026-11-06、admin の bypass を外す決定。ADR-0097 の追記、system-architect の審査 P1-1）:
 # Claude の素の gh はオーナー（admin、CODEOWNERS の持ち主）なので、bypass を外しても、オーナーの名義の承認や
-# ruleset の書き換えで審査を越えられる。次を止める。
+# ruleset の書き換えで審査を越えられる。次を止める（読み取りの gh api は止めない）。
 #   承認        gh pr review の --approve / -a、REST の pulls/N/reviews への書き込み、GraphQL の addPullRequestReview・submitPullRequestReview
-#   bypass      gh pr merge の --admin
 #   ruleset     REST の /rulesets・/branches/…/protection への書き込み（-X・--method・-f・-F・--field・--raw-field・--input）、
 #               GraphQL の createRepositoryRuleset・updateRepositoryRuleset・deleteRepositoryRuleset
-#   読み取り（gh api の GET）は止めない。検証: scripts/maintenance/verify-guard-deploy-approval.js
+#   bypass      gh pr merge の --admin。作成の App の鍵（RYUJIN_MAKER_KEY_FILE、既定 ~/.config/ryujin/ryujin-maker.pem）が
+#               置かれた後だけ止める（置かれる前は ryujin-maker の名義でマージできないので、今までの道を残す）
+# 照合は tool_input.command（jq で取り出し、改行を空白に寄せたもの）に対して行う。検証: scripts/maintenance/verify-guard-deploy-approval.js
 input=$(cat)
 case "$input" in
   *pending_deployments*|*approveDeployments*|*"/environments"*|*"gh workflow run"*|*"/dispatches"*|*"gh auth token"*)
@@ -27,15 +28,25 @@ case "$input" in
     ;;
 esac
 
+# 審査の素通りの照合は、関係する語を含む呼び出しだけにする（毎回の Bash で grep を起こさない）
+case "$input" in
+  *review*|*merge*|*uleset*|*protection*|*PullRequestReview*) ;;
+  *) exit 0 ;;
+esac
+cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null | tr '\n' ' ')
+[ -n "$cmd" ] || cmd=$input
+
 deny_review() {
   echo "PR の承認・admin の bypass でのマージ・ruleset とブランチ保護の変更は Claude から実行しない（審査を素通りしないため。ADR-0097 の 2026-11-06 の追記）。マージは /merge-pr の手順で ryujin-maker の名義で行い、承認は審査の App（review.yml）かオーナー本人が付ける。" >&2
   exit 2
 }
-write_flag='(-X|--method)[[:space:]=]*"?(PUT|PATCH|POST|DELETE)|[[:space:]](-f|-F|--field|--raw-field|--input)[[:space:]=]'
-if printf '%s' "$input" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+review([^;&|]*)[[:space:]](--approve|-a)([[:space:]"]|$)'; then deny_review; fi
-if printf '%s' "$input" | grep -Eq 'gh[[:space:]]+pr[[:space:]]+merge[^;&|]*[[:space:]]--admin([[:space:]"=]|$)'; then deny_review; fi
-if printf '%s' "$input" | grep -Eq 'addPullRequestReview|submitPullRequestReview|(create|update|delete)RepositoryRuleset'; then deny_review; fi
-if printf '%s' "$input" | grep -Eq '/rulesets|/branches/[^[:space:]"]*/protection|/pulls/[0-9]+/reviews'; then
-  if printf '%s' "$input" | grep -Eq "$write_flag"; then deny_review; fi
+has() { printf '%s' "$cmd" | grep -Eq "$1"; }
+end='([[:space:]"'"'"'=;&|)\\]|$)'
+if has "gh[[:space:]]+pr[[:space:]]+review.*[[:space:]](--approve|-a)$end"; then deny_review; fi
+if has 'addPullRequestReview|submitPullRequestReview|(create|update|delete)RepositoryRuleset'; then deny_review; fi
+if has '/rulesets|/branches/[^[:space:]]*/protection|/pulls/[0-9]+/reviews'; then
+  if has "(-X|--method)[[:space:]=]*[\"']?(PUT|PATCH|POST|DELETE)|[[:space:]](-[fF]|--field|--raw-field|--input)"; then deny_review; fi
 fi
+key=${RYUJIN_MAKER_KEY_FILE:-$HOME/.config/ryujin/ryujin-maker.pem}
+if [ -f "$key" ] && has "gh[[:space:]]+pr[[:space:]]+merge.*[[:space:]]--admin$end"; then deny_review; fi
 exit 0

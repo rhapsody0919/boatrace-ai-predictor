@@ -176,11 +176,34 @@ export async function mintInstallationToken({
 export function parseArgs(argv) {
   const workflows = argv[0] === "--workflows";
   const rest = workflows ? argv.slice(1) : argv;
-  if (rest[0] === "--" && ALLOWED_COMMANDS.has(rest[1])) {
-    return { workflows, command: rest[1], args: rest.slice(2) };
+  if (rest[0] !== "--" || !ALLOWED_COMMANDS.has(rest[1]))
+    throw new Error(USAGE);
+  const [command, ...args] = rest.slice(1);
+  if (TOKEN_PRINTING.some((words) => words.every((w, i) => args[i] === w))) {
+    throw new Error(
+      `${command} ${args.slice(0, 2).join(" ")} はトークンを出しうるので動かさない`,
+    );
   }
-  throw new Error(USAGE);
+  // git は資格情報の helper を gh auth git-credential だけに固定する（~/.gitconfig・システムの osxkeychain の
+  // オーナーの資格情報で push しない）。空の値で前の helper を全部外してから足す
+  const pinned =
+    command === "git"
+      ? [
+          "-c",
+          "credential.helper=",
+          "-c",
+          "credential.helper=!gh auth git-credential",
+          ...args,
+        ]
+      : args;
+  return { workflows, command, args: pinned };
 }
+
+/**
+ * トークンを標準出力に出しうる命令（`gh auth status -t`・`gh auth token`・`git credential fill`）。
+ * 先頭の語だけを見るので `git -c … credential fill` 等の言い換えは塞げない（守りに数えない）
+ */
+const TOKEN_PRINTING = [["auth"], ["credential"]];
 
 async function main() {
   const { workflows, command, args } = parseArgs(process.argv.slice(2));

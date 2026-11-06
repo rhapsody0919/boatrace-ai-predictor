@@ -143,7 +143,7 @@ Codex のパッチを hq の `codex-pr.py`（AI なし）が `ryujin-maker` の�
 - **src/ の画面の Codex の PR も受ける**（オーナー 2026-10-24「codexはlinearチケットで開発でできそうなやつを回しても良い」）。段3 が開くまで自動マージしない。上の段階0 の C（再現テスト・修正前後の比較・user-proxy-reviewer）として扱い、新しいページ・タブ・主要コンポーネントは対象外。`codex/*` には Vercel Preview が無いので、審査はオーケストレーターが手元で修正前後を撮り、実測する（#1798・#1799 の形）
 - **記事の PR（hq の `content-pr.py` が出す `codex/content-*`）のマージは当面「案Z」**: 機械と審査役が CI の見張り・失敗したときの再実行（1回まで）・審査を済ませ、P0・P1 が0件で CI が全部緑の PR を「マージ可」として束ね、オーケストレーターがまとめてマージする。束に入れてよいのは、上の段階0（A〜F）の条件に当たる PR だけ（F の「切替の後だけ」の但し書きは外した。10/24 オーナー決定で手順8 をやらないとしたため。ADR-0097 の追記 #1810。その後 2026-11-06 のオーナー決定で admin の bypass は外す（auto-merge は ON にしない）ので、但し書きの条件はどちらにしても満たす）。F の束はマージの時点で判定し直す（作者の bot の ID、今の head SHA に審査の App の APPROVE、変えたパスが F の許可のパスの中、CI が全部緑）。CI が赤なら空のコミットで1回だけ再実行してから決める。`codex/*` には Vercel Preview が無いので、Codex の記事の PR のファンのレビューは discussion-panel だけで行う。当たらないものは段階1・2として扱う
 - `codex-pr.py` の PR で CI が赤なら、1周待って同じ head がまだ赤のとき Codex に差し戻す（直しのパッチが同じブランチに追加される）
-- `codex-pr.py` の自動マージの名義は `ryujin-maker`。記事の PR の案Z のマージは、オーケストレーターがこのセッションから `gh pr merge` を実行する
+- `codex-pr.py` の自動マージの名義は `ryujin-maker`。記事の PR の案Z のマージは、オーケストレーターがこのセッションから `/merge-pr` の手順（ryujin-maker の名義、`--match-head-commit`）で実行する
 
 ### 段階1: 代理で決め、ダイジェストで事後に報告する
 
@@ -201,7 +201,7 @@ Codex のパッチを hq の `codex-pr.py`（AI なし）が `ryujin-maker` の�
 - 1件ずつ、PR 番号を文字で書いて実行する（`gh pr merge 946 --squash` のように）。for ループ・変数・`$(...)`・xargs で PR 番号を渡すと、台帳に制約がある場合に guard-pr-merge.js が止める（#929）
 - マージ順の台帳は `node scripts/maintenance/merge-order.js list`。順序を決めたら `add <PR> --after <PR>...` で登録し、解消したら `remove <PR>`
 - squash が必要な PR は、依頼文と報告に明記させる（レーンの報告に書かれていなければ、マージ前に確かめる）
-- マージの可否の確認・`node scripts/maintenance/ryujin-maker-token.js -- gh pr merge <PR> --squash`（作成の App ryujin-maker の名義。`--admin` は使わない）・次の定時の案内・報告は `/merge-pr`（`.claude/commands/merge-pr.md`）の手順に従う
+- マージの可否の確認・`node scripts/maintenance/ryujin-maker-token.js -- gh pr merge <PR> --squash --match-head-commit <確かめた head の SHA>`（作成の App ryujin-maker の名義。`--admin` は鍵が置かれる前だけ）・次の定時の案内・報告は `/merge-pr`（`.claude/commands/merge-pr.md`）の手順に従う
 - ryujin-maker は ruleset の bypass に無いので、今の head に審査の App（ryujin-reviewer）の APPROVED と必須の3つの check の緑がそろわないと GitHub が拒む。審査は作者が ryujin-maker の `claude/`・`codex/` の PR だけに動くので、rhapsody0919 の名義の PR は `claude/` の枝で ryujin-maker の名義に出し直してからマージする。PR 番号は文字で書く（guard-pr-merge.js が読む）
 
 ## 7. ピアのメッセージの扱い

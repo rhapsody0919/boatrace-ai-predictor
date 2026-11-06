@@ -265,11 +265,11 @@ Claude 側の道具は `scripts/maintenance/ryujin-maker-token.js`（秘密鍵�
 
 **残る穴**: Claude のセッションの素の `gh` はオーナー（rhapsody0919、admin、CODEOWNERS の持ち主）のままなので、オーナーの名義の承認（`gh pr review --approve`）や ruleset の API で審査を越えられる。これは `.claude/hooks/guard-deploy-approval.sh` の文字の照合で止める（承認・`--admin`・ruleset とブランチ保護の書き込み。`scripts/maintenance/verify-guard-deploy-approval.js`）。言い換えを全部は塞げない。塞ぎきるには Claude の素の gh を App にする（shim を入れる）しかない。
 
-### 9-1. 前提（9-4 の前に全部そろえる）
-- **審査の月の上限と費用の上限を、件数を決めて上げる（オーナーの判断。新しい費用）**: review.yml の関門は、作成の App が起動した今月の審査の run の数（取り消し・skipped も含む。`scripts/review/gate.js`・`scripts/lib/reviewPr.js` の `monthlyRunsPath`）が repo の変数 `REVIEW_MONTHLY_LIMIT`（未設定なら300）を超えると、全部の PR に REQUEST_CHANGES を付ける。OpenAI の月の上限（5-1 の 60ドル）に当たっても審査が失敗して REQUEST_CHANGES になる。bypass を外した後にどちらかに当たると、Codex の PR も Claude の PR も一切マージできなくなる
+### 9-1. 前提（最初の1つは 9-2 の前、他は 9-4 の前にそろえる）
+- **9-2 の前に、審査の月の上限と費用の上限を、件数を決めて上げる（オーナーの判断。新しい費用）**。鍵を置いた時から Claude の push は全部 ryujin-maker の名義になり、同じ上限を数え始めるため: review.yml の関門は、作成の App が起動した今月の審査の run の数（取り消し・skipped も含む。`scripts/review/gate.js`・`scripts/lib/reviewPr.js` の `monthlyRunsPath`）が repo の変数 `REVIEW_MONTHLY_LIMIT`（未設定なら300）を超えると、全部の PR に REQUEST_CHANGES を付ける。OpenAI の月の上限（5-1 の 60ドル）に当たっても審査が失敗して REQUEST_CHANGES になる。bypass を外した後にどちらかに当たると、Codex の PR も Claude の PR も一切マージできなくなる
   - 実測: 11月（1〜6日）の review.yml の run は、actor が ryujin-maker[bot] で118件、rhapsody0919（Claude の push）で280件。切替の後は両方が ryujin-maker に数えられ、1日約66件・月約2,000件の見込み（推測。push の数で増減する）。300件の残りは約3日で尽きる
   - 費用: 1回 0.1〜0.2ドル（5 の見込み、未実測）なら月 200〜400ドル（推測）。9-3 で1件の実費を OpenAI の Usage で測ってから値を決める
-  - 推奨の値: `REVIEW_MONTHLY_LIMIT` は 2,500、OpenAI の月の上限は 9-3 の実費 × 2,500 に2割を足した額、通知はその8割
+  - 推奨の値: 9-2 の前に `REVIEW_MONTHLY_LIMIT` を 2,500、OpenAI の月の上限を仮に 400ドル（見込みの上の端）・通知を 320ドルに置く。9-3 で測った実費 × 2,500 に2割を足した額に直す
   - 操作: Settings → Secrets and variables → Actions → Variables → New repository variable → 名前 `REVIEW_MONTHLY_LIMIT`、値は決めた件数。OpenAI は 5-1 の Limits
   - Claude は手元でコミットをまとめてから push し、run の数を減らす（`/create-pr`）
 - **#2297（`.github/CODEOWNERS`）がマージ済み**で、9-4 で「Require review from Code Owners」を ON にする。これが無いと、ryujin-maker の名義の `claude/` の PR は審査の App の承認と必須の check だけで `.github/**`・`scripts/review/**`・`.claude/**` を含めてマージできる（ryujin-maker は Workflows: write を持つ）。CODEOWNERS の行のうち Codex の試験（`scripts/maintenance/verify-*.js`）をどう扱うかは #2297 の推奨を読んで決める

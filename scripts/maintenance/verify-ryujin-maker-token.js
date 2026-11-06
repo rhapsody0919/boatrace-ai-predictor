@@ -265,9 +265,13 @@ try {
     parseArgs(["--workflows", "--", "git", "push"]).workflows === true,
     "`--workflows -- git ...` は workflows を足す形",
   );
+  const gitExec = parseArgs(["--", "git", "push", "-u", "origin", "HEAD"]);
   check(
-    parseArgs(["--", "git", "push"]).command === "git",
-    "`-- git ...` は git を動かす形",
+    gitExec.command === "git" &&
+      gitExec.args.join(" ") ===
+        "-c credential.helper= -c credential.helper=!gh auth git-credential push -u origin HEAD",
+    "`-- git ...` は資格情報の helper を gh auth git-credential だけに固定して git を動かす",
+    JSON.stringify(gitExec.args),
   );
   for (const argv of [
     [],
@@ -276,6 +280,9 @@ try {
     ["--"],
     ["--workflows"],
     ["gh", "pr", "list"],
+    ["--", "gh", "auth", "status", "-t"],
+    ["--", "gh", "auth", "token"],
+    ["--", "git", "credential", "fill"],
   ]) {
     check(
       errorOf(() => parseArgs(argv)) !== null,
