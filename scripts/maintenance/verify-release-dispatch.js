@@ -5,9 +5,9 @@
  *       300件以上は全部見ていないので出す／master の先が10分以内なら待つ／検査が赤なら止める・走っていれば待つ／
  *       本番の版が master の祖先でなければ失敗／前に出した版より本番が古い（Instant Rollback）なら失敗／
  *       前回叩いたのに本番の版が動いていなければ stuck
- *   (b) 検査の読み方（summarizeGates）: 出す範囲の run（skipped を除く）を見る。[automated] の skipped の run が後に来ても、
- *       その前の PR の失敗を素通しにしない。落ちた step が後の run で走って通っていれば直ったとみ、飛ばされただけ
- *       （ml-tests の pytest）では直ったとみない。jobs を読めなければ red。範囲の外の run は見ない
+ *   (b) 検査の読み方（summarizeGates・fetchGateRuns）: 出す範囲の run（skipped を除く）を見る。[automated] の skipped の run が
+ *       後に来ても前の PR の失敗を素通しにしない。範囲の中に失敗が1本でもあれば red（後の run の成功では解かない）。
+ *       走っている run があれば pending。範囲の外の run は見ない。範囲の一番古いコミットまで読み切れなければ red
  *   (c) 起動（createReleaseDispatchRun）: shadow は叩かない、live は Deploy Hook を POST、鍵・版・Hook が無い・HTTP 失敗は失敗、
  *       stuck は叩かずに失敗（巻き戻しと区別できない）、出した記録（released・fromSha・lastReleasedSha）を返す、比べる先は読んだ master の sha、
  *       拾い直し（UTC の分が30より前の起動）は前が「待つ」のときだけ動き、それ以外は前の記録を残す、出すべき差分が13時間残れば alerts
@@ -235,9 +235,8 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
   );
   check(
     mlStill.state === "red" &&
-      mlStill.headSha === MID &&
-      mlStill.unresolved?.[0]?.includes("pytest"),
-    "(b) 後の run が成功でも、落ちた step（ml-tests の pytest）が後で走って通っていなければ直ったとみない",
+      mlStill.headSha === MID,
+    "(b) 後の run が成功でも、範囲の前の方の失敗（ml-tests の pytest）は解かない",
     JSON.stringify(mlStill),
   );
   const mlFixed = new Map(mlFailed);
@@ -261,8 +260,8 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
     mlFixed,
   );
   check(
-    mlOk.state === "green",
-    "(b) 落ちた step が後の run で走って通っていれば直ったとみる",
+    mlOk.state === "red" && mlOk.headSha === MID,
+    "(b) 落ちた step が後の run で通っていても解かない（前処理だけが通って pytest が走らない組み合わせがある。Codex の P1）",
     JSON.stringify(mlOk),
   );
   const [qg] = summarizeGates(range, [
@@ -297,8 +296,8 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
     ]),
   );
   check(
-    fixed.state === "green",
-    "(b) 落ちた step（木の全体を見るビルド）が後の run で通っていれば、前の失敗は直っているとみる",
+    fixed.state === "red",
+    "(b) 範囲の中に失敗した run が1本でもあれば red（解けるのは再実行で通したときか、手で出したとき）",
     JSON.stringify(fixed),
   );
   const [noJobs] = summarizeGates(range, [
@@ -312,7 +311,7 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
   ]);
   check(
     noJobs.state === "red",
-    "(b) 失敗した run の jobs を読めていなければ red（安全側）",
+    "(b) 失敗した run があれば jobs を読まずに red",
     JSON.stringify(noJobs),
   );
   const [running] = summarizeGates(range, [
