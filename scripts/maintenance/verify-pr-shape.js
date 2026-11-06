@@ -264,6 +264,42 @@ function collectPrShape(cwd, base, head) {
     "消したバイナリは通る",
     mechanicalRejections([rm], modes(), false).length === 0,
   );
+
+  // LFS は足した行の頭のポインタだけ（verify で絞った線。gate は本文のどこかに URL があれば落とした）
+  const lfsUrl = ["https://git-lfs", "github.com/spec/v1"].join(".");
+  check(
+    "通す: 試験の文字列の中の LFS の URL",
+    mechanicalRejections(
+      [
+        file("t.js", {
+          patch: `@@ -0,0 +1 @@\n+  const p = "version ${lfsUrl}";`,
+        }),
+      ],
+      modes("t.js"),
+      false,
+    ).length === 0,
+  );
+  check(
+    "通す: 消したファイルの LFS のポインタ",
+    mechanicalRejections(
+      [
+        file("old.dat", {
+          status: "removed",
+          patch: `@@ -1 +0,0 @@\n-version ${lfsUrl}`,
+        }),
+      ],
+      modes(),
+      false,
+    ).length === 0,
+  );
+  check(
+    "落とす: 変更で足した行の頭の LFS のポインタ",
+    mechanicalRejections(
+      [file("a.dat", { patch: `@@ -1 +1 @@\n-x\n+version ${lfsUrl}` })],
+      modes("a.dat"),
+      false,
+    ).length > 0,
+  );
 }
 
 // 2. git の出力の読み取り

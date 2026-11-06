@@ -979,7 +979,7 @@
       "script": "verify-pr-shape.js",
       "tier": "ci",
       "args": ["--base=origin/master"],
-      "guards": "PR の差分の形（scripts/lib/prShape.js）。symlink・submodule・.gitmodules・Git LFS のポインタ・.gitattributes・本文の無い差分（バイナリ・NUL を含む JS・中身を変えない改名や複製）・299ファイル超・差分20万字超を落とす。もとは review.yml の gate（AI 審査、2026-11-06 にゼロベース再設計 v3.3 で外した）の検査で、判定の関数は gate と同じ。一時の git の木で、git から作った入力の判定が compare API の形の入力の判定と同じことを確かめる。verify で足した線: 先頭の印（magic bytes）が拡張子と合う png・jpg・gif・webp・wav・mp4・woff2・ttf・gz の追加と変更は通す（モック・ブログの画像・試験の固定データ）"
+      "guards": "PR の差分の形（scripts/lib/prShape.js）。symlink・submodule・.gitmodules・Git LFS のポインタ・.gitattributes・本文の無い差分（バイナリ・NUL を含む JS・中身を変えない改名や複製）・299ファイル超・差分20万字超を落とす。もとは review.yml の gate（AI 審査、2026-11-06 にゼロベース再設計 v3.3 で外した）の検査で、判定の関数は gate と同じ。一時の git の木で、git から作った入力の判定が compare API の形の入力の判定と同じことを確かめる。verify で足した線: 先頭の印（magic bytes）が拡張子と合う png・jpg・gif・webp・wav・mp4・woff2・ttf・gz の追加と変更は通す（モック・ブログの画像・試験の固定データ）。LFS は足した行の頭のポインタだけを落とす（gate は本文のどこかに URL があれば落とした）"
     },
     {
       "script": "verify-pre-race-parsers.js",

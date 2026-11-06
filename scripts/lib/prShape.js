@@ -48,7 +48,14 @@ export function mechanicalRejections(files, headModes, treeTruncated) {
       reasons.push(
         `${f.filename}: 差分の本文が無い（バイナリ・大きすぎる・中身を変えない改名や複製）`,
       );
-    if (f.patch !== undefined && /git-lfs\.github\.com\/spec/.test(f.patch))
+    // ポインタは1行目が「version https://git-lfs.github.com/spec/v1」のファイル。足した行の頭にあるときだけ落とす。
+    // gate は本文のどこかに URL があれば（消したファイル・試験の文字列でも）落としていたが、verify は必須の check なので、
+    // この検査の試験そのもの（URL を文字列で持つ）を変える PR まで止めないよう、足した行の頭に絞った
+    if (
+      f.patch !== undefined &&
+      f.status !== "removed" &&
+      /^\+version https:\/\/git-lfs\.github\.com\/spec\//m.test(f.patch)
+    )
       reasons.push(`${f.filename}: Git LFS のポインタ`);
     const mode = headModes.get(f.filename);
     if (mode === "120000") reasons.push(`${f.filename}: シンボリックリンク`);
