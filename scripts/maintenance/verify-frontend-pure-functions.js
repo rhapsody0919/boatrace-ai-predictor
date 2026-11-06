@@ -32,6 +32,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
 
 const TARGETS = {
+  motorMeetParts: "src/utils/motorMeetParts.js",
   meetStRank: "src/components/race/meetStRank.js",
   semifinalCount: "src/pure/semifinalCount.js",
   finishPosition: "src/pure/finishPosition.js",
@@ -2578,7 +2579,23 @@ function suiteMeetStRank(m, check) {
   ], { beforeRaceId }).map(({ rank }) => rank), [1, 1, 3]);
 }
 
+function suiteMotorMeetParts({ countMeetPartsChanges: count }, check) {
+  const events = [
+    { date: "2026-10-30", parts: ["ピストン"] },
+    { date: "2026-11-02", parts: ["リング", "ピストン"], propellerChanged: true },
+    { date: "2026-11-03", parts: [], propellerChanged: true },
+    { date: "2026-11-05", parts: ["キャブ"] },
+  ];
+  check("今節だけ・プロペラ除外", count(events, { from: "2026-10-31", to: "2026-11-04" }),
+    { count: 2, parts: ["リング", "ピストン"] });
+  check("両端を含み日付順・入力を変更しない", count([...events].reverse(), { from: "2026-10-30", to: "2026-11-05" }),
+    { count: 4, parts: ["ピストン", "リング", "ピストン", "キャブ"] });
+  check("配列以外", count(null, { from: "2026-10-30", to: "2026-11-05" }), { count: 0, parts: [] });
+  check("プロペラだけ", count([events[2]], { from: "2026-11-03", to: "2026-11-03" }), { count: 0, parts: [] });
+}
+
 const SUITES = {
+  motorMeetParts: suiteMotorMeetParts,
   meetStRank: suiteMeetStRank,
   semifinalCount: suiteSemifinalCount,
   nextOpenDate: suiteNextOpenDate,
@@ -2607,6 +2624,9 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  ["motorMeetParts", "初日の交換を除外", "event.date >= from", "event.date > from"],
+  ["motorMeetParts", "当日の交換を除外", "event.date <= to", "event.date < to"],
+  ["motorMeetParts", "部品の順を逆転", "a.date.localeCompare(b.date)", "b.date.localeCompare(a.date)"],
   ["meetStRank", "当該レースを含める", "run.raceId < beforeRaceId", "run.raceId <= beforeRaceId"],
   ["meetStRank", "3走ちょうどを出さない", "n >= minRuns", "n > minRuns"],
   ["meetStRank", "同順位をなくす", "value < Math.round(row.avg * 1000)", "value <= Math.round(row.avg * 1000)"],
