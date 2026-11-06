@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** JST 日付関数の現在の挙動を固定する（BOA-1113）。DB・通信・実時刻は使わない。 */
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import * as B from "../lib/dateUtils.js";
 import * as F from "../../src/utils/dateUtils.js";
 
@@ -34,6 +35,18 @@ function withFixedTime(instant, run) {
 
 // 期待値は計算で作らず、依頼の表の値をそのまま置く。
 const CLOCK_CASES = [
+  {
+    instant: "2026-10-24T15:00:00Z",
+    today: "2026-10-25", yesterday: "2026-10-24", weekAgo: "2026-10-18",
+    hhmm: "00:00", wallClock: "2026-10-25T00:00:00.000Z",
+    dates: ["2026-10-25", "2026-10-24", "2026-10-23"],
+  },
+  {
+    instant: "2026-10-24T14:59:59.999Z",
+    today: "2026-10-24", yesterday: "2026-10-23", weekAgo: "2026-10-17",
+    hhmm: "23:59", wallClock: "2026-10-24T23:59:59.999Z",
+    dates: ["2026-10-24", "2026-10-23", "2026-10-22"],
+  },
   {
     instant: "2026-10-25T00:30:00+09:00",
     today: "2026-10-25", yesterday: "2026-10-24", weekAgo: "2026-10-18",
@@ -73,6 +86,8 @@ for (const c of CLOCK_CASES) {
     eq("F.getTodayJST", F.getTodayJST(), c.today);
     eq("B.getYesterdayDateJST", B.getYesterdayDateJST(), c.yesterday);
     eq("F.getYesterdayJST", F.getYesterdayJST(), c.yesterday);
+    eq("F.getDaysAgoJST(7)", F.getDaysAgoJST(7), c.weekAgo);
+    eq("F.getDaysAgoJST(0)", F.getDaysAgoJST(0), c.today);
     eq("B.getDateDaysAgo(7)", B.getDateDaysAgo(7), c.weekAgo);
     eq("B.getDateDaysAgo(0)", B.getDateDaysAgo(0), c.today);
     eq("F.getNowHHMMJST", F.getNowHHMMJST(), c.hhmm);
@@ -140,4 +155,10 @@ console.log(`KNOWN_GAPS: ${KNOWN_GAPS.length}件（assert 対象外）`);
 for (const gap of KNOWN_GAPS) {
   console.log(`${gap.input}: ${gap.specification} / 記録値=${gap.current} / 今の値=`, gap.observe());
 }
+
+// 同値の式への回帰は出力比較では検出できないため、共通化も確認する（BOA-1352）。
+const serviceSource = readFileSync(new URL("../../src/services/supabaseDataService.js", import.meta.url), "utf8");
+check("サービスに自前の jstToday 関数を残さない", /function jstToday\(/.test(serviceSource), false);
+check("サービスの開始日は共通関数", /const startDateStr = getDaysAgoJST\(days\);/.test(serviceSource), true);
+check("ダイジェストの日付は共通関数", /const jstToday = getTodayJST\(\);/.test(serviceSource), true);
 console.log(`✅ JST 日付関数: ${passed} assertions passed`);
