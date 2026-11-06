@@ -65,7 +65,8 @@ export const RULES = [
   },
 ];
 
-const PUBLIC_OK = /public-ok:\s*\S.*$/;
+// 理由が空（md の注の閉じ `-->` だけ）は外す口にしない
+const PUBLIC_OK = /public-ok:\s*(?!-->)\S.*$/;
 const BINARY_EXT =
   /\.(png|jpe?g|gif|webp|avif|svg|ico|mp4|mov|webm|mp3|wav|m4a|pdf|woff2?|ttf|otf|zip|gz)$/i;
 
@@ -93,22 +94,36 @@ export function addedLines(diffText) {
   const out = [];
   let file = null;
   let lineNo = 0;
+  // hunk の中の残りの行数。0 のあいだだけ「+++」を見出しとして読む
+  // （足した行の中身が「++ 」で始まると「+++ 」に見えるため）
+  let oldLeft = 0;
+  let newLeft = 0;
   for (const raw of diffText.split("\n")) {
+    if (oldLeft > 0 || newLeft > 0) {
+      if (raw.startsWith("+")) {
+        if (file && isTargetFile(file))
+          out.push({ file, line: lineNo, text: raw.slice(1) });
+        lineNo += 1;
+        newLeft -= 1;
+      } else if (raw.startsWith("-")) {
+        oldLeft -= 1;
+      } else if (raw.startsWith(" ")) {
+        oldLeft -= 1;
+        newLeft -= 1;
+        lineNo += 1;
+      }
+      continue;
+    }
     if (raw.startsWith("+++ ")) {
       const p = raw.slice(4);
       file = p === "/dev/null" ? null : p.replace(/^b\//, "");
       continue;
     }
-    if (raw.startsWith("--- ")) continue;
-    const hunk = raw.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    const hunk = raw.match(/^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
     if (hunk) {
-      lineNo = Number(hunk[1]);
-      continue;
-    }
-    if (raw.startsWith("+") && file) {
-      if (isTargetFile(file))
-        out.push({ file, line: lineNo, text: raw.slice(1) });
-      lineNo += 1;
+      oldLeft = hunk[1] === undefined ? 1 : Number(hunk[1]);
+      lineNo = Number(hunk[2]);
+      newLeft = hunk[3] === undefined ? 1 : Number(hunk[3]);
     }
   }
   return out;
@@ -121,164 +136,195 @@ export function findViolations(lines) {
     .filter((l) => l.rules.length > 0);
 }
 
-// --- 判定ロジックの固定入力での検証 ---
-const failures = [];
-function check(label, actual, expected) {
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    failures.push(
-      `${label}: 期待 ${JSON.stringify(expected)} / 実際 ${JSON.stringify(actual)}`,
-    );
-  }
-}
-check("収益と数字", matchLine("推定収益は約550"), ["revenue"]);
-check("収益だけ（数字なし）は通す", matchLine("収益化の方針"), []);
-check("全角の数字も数字", matchLine("売上は５"), ["revenue"]);
-check("期間あたりのドル", matchLine("上限 $150/月"), ["money-per-period"]);
-check("円/月", matchLine("約550円/月"), ["money-per-period"]);
-check("RPM と数字", matchLine("ページ RPM 52"), ["ad-rate"]);
-check("CTR だけ（数字なし）は通す", matchLine("CTR を見る"), []);
-check("PV の数", matchLine("13,313PV"), ["traffic-count"]);
-check("万PV", matchLine("3.3万PV/月"), ["traffic-count"]);
-check("目標の語", matchLine("月100万PV を目指す"), ["traffic-count", "goal"]);
-check("KPI", matchLine("KPI の表"), ["goal"]);
-check("GA4 のキー", matchLine('  "screenPageViews": 10,'), ["ga4-raw"]);
-check("外す口", matchLine("13,313PV public-ok: サイトに出ている数"), []);
-check(
-  "md の注の外す口",
-  matchLine("13,313PV <!-- public-ok: 記事の例 -->"),
-  [],
-);
-check("理由の無い外す口は効かない", matchLine("13,313PV public-ok:"), [
-  "traffic-count",
-]);
-check("対象: docs", isTargetFile("docs/a.txt"), true);
-check("対象: 任意の md", isTargetFile("public/blog/a.md"), true);
-check("対象外: package.json", isTargetFile("package.json"), false);
-check("対象外: src のコード", isTargetFile("src/utils/analytics.js"), false);
-check("対象外: 画像", isTargetFile("docs/a.png"), false);
-check(
-  "diff から足した行だけを取る",
-  addedLines(
-    [
-      "diff --git a/docs/x.md b/docs/x.md",
-      "--- a/docs/x.md",
-      "+++ b/docs/x.md",
-      "@@ -3,0 +4,2 @@",
-      "+13,313PV",
-      "+ok",
-      "diff --git a/src/a.js b/src/a.js",
-      "--- a/src/a.js",
-      "+++ b/src/a.js",
-      "@@ -1 +1 @@",
-      "-old",
-      "+const pv = 13313; // 13,313PV",
-    ].join("\n"),
-  ),
-  [
-    { file: "docs/x.md", line: 4, text: "13,313PV" },
-    { file: "docs/x.md", line: 5, text: "ok" },
-  ],
-);
-check(
-  "消したファイルは見ない",
-  addedLines(
-    ["--- a/docs/x.md", "+++ /dev/null", "@@ -1 +0,0 @@", "-13,313PV"].join(
-      "\n",
-    ),
-  ),
-  [],
-);
-if (failures.length > 0) {
-  console.error("NG: お金・PV の語の検査ロジックが期待どおりに動いていません");
-  for (const f of failures) console.error(`  - ${f}`);
-  process.exit(1);
-}
-
-function git(args) {
-  return execFileSync("git", args, {
-    cwd: repoRoot,
-    encoding: "utf8",
-    maxBuffer: 512 * 1024 * 1024,
-  });
-}
-
-// --- 今の全ファイルに当てた数（誤検知の実測） ---
-if (process.argv.includes("--scan-all")) {
-  const files = git(["ls-files"])
-    .split("\n")
-    .filter(Boolean)
-    .filter(isTargetFile);
-  const byFile = new Map();
-  for (const file of files) {
-    let text;
-    try {
-      text = readFileSync(path.join(repoRoot, file), "utf8");
-    } catch (err) {
-      console.error(`読めないので飛ばした: ${file}（${err.message}）`);
-      continue;
+function main() {
+  // --- 判定ロジックの固定入力での検証 ---
+  const failures = [];
+  function check(label, actual, expected) {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      failures.push(
+        `${label}: 期待 ${JSON.stringify(expected)} / 実際 ${JSON.stringify(actual)}`,
+      );
     }
-    const lines = text
-      .split("\n")
-      .map((t, i) => ({ file, line: i + 1, text: t }));
-    const v = findViolations(lines);
-    if (v.length > 0) byFile.set(file, v);
   }
-  console.log(JSON.stringify(Object.fromEntries(byFile)));
-  process.exit(0);
-}
-
-// --- PR の差分を見る ---
-const base =
-  process.argv
-    .slice(2)
-    .filter((a) => a.startsWith("--base="))
-    .map((a) => a.slice("--base=".length))
-    .pop() || "origin/master";
-
-let diff;
-try {
-  git(["rev-parse", "--verify", "--quiet", `${base}^{commit}`]);
-  diff = git([
-    "diff",
-    "--unified=0",
-    "--no-renames",
-    "--no-color",
-    "--diff-filter=AM",
-    `${base}...HEAD`,
+  check("収益と数字", matchLine("推定収益は約550"), ["revenue"]);
+  check("収益だけ（数字なし）は通す", matchLine("収益化の方針"), []);
+  check("全角の数字も数字", matchLine("売上は５"), ["revenue"]);
+  check("期間あたりのドル", matchLine("上限 $150/月"), ["money-per-period"]);
+  check("円/月", matchLine("約550円/月"), ["money-per-period"]);
+  check("RPM と数字", matchLine("ページ RPM 52"), ["ad-rate"]);
+  check("CTR だけ（数字なし）は通す", matchLine("CTR を見る"), []);
+  check("PV の数", matchLine("13,313PV"), ["traffic-count"]);
+  check("万PV", matchLine("3.3万PV/月"), ["traffic-count"]);
+  check("目標の語", matchLine("月100万PV を目指す"), ["traffic-count", "goal"]);
+  check("KPI", matchLine("KPI の表"), ["goal"]);
+  check("GA4 のキー", matchLine('  "screenPageViews": 10,'), ["ga4-raw"]);
+  check("外す口", matchLine("13,313PV public-ok: サイトに出ている数"), []);
+  check(
+    "md の注の外す口",
+    matchLine("13,313PV <!-- public-ok: 記事の例 -->"),
+    [],
+  );
+  check("理由の無い外す口は効かない", matchLine("13,313PV public-ok:"), [
+    "traffic-count",
   ]);
-} catch (err) {
-  const message = `base（${base}）との差分を取れませんでした: ${err.message.split("\n")[0]}`;
-  if (process.env.CI) {
-    console.error(`NG: ${message}`);
+  check(
+    "md の注の閉じだけの外す口は効かない",
+    matchLine("13,313PV <!-- public-ok: -->"),
+    ["traffic-count"],
+  );
+  check("対象: docs", isTargetFile("docs/a.txt"), true);
+  check("対象: 任意の md", isTargetFile("public/blog/a.md"), true);
+  check("対象外: package.json", isTargetFile("package.json"), false);
+  check("対象外: src のコード", isTargetFile("src/utils/analytics.js"), false);
+  check("対象外: 画像", isTargetFile("docs/a.png"), false);
+  check(
+    "diff から足した行だけを取る",
+    addedLines(
+      [
+        "diff --git a/docs/x.md b/docs/x.md",
+        "--- a/docs/x.md",
+        "+++ b/docs/x.md",
+        "@@ -3,0 +4,2 @@",
+        "+13,313PV",
+        "+ok",
+        "diff --git a/src/a.js b/src/a.js",
+        "--- a/src/a.js",
+        "+++ b/src/a.js",
+        "@@ -1 +1 @@",
+        "-old",
+        "+const pv = 13313; // 13,313PV",
+      ].join("\n"),
+    ),
+    [
+      { file: "docs/x.md", line: 4, text: "13,313PV" },
+      { file: "docs/x.md", line: 5, text: "ok" },
+    ],
+  );
+  check(
+    "「++ 」で始まる足した行を見出しと取り違えない",
+    addedLines(
+      [
+        "--- a/docs/x.md",
+        "+++ b/docs/x.md",
+        "@@ -0,0 +1,2 @@",
+        "+++ 13,313PV",
+        "+月100万PV",
+      ].join("\n"),
+    ).map((l) => `${l.file}:${l.line}:${l.text}`),
+    ["docs/x.md:1:++ 13,313PV", "docs/x.md:2:月100万PV"],
+  );
+  check(
+    "消したファイルは見ない",
+    addedLines(
+      ["--- a/docs/x.md", "+++ /dev/null", "@@ -1 +0,0 @@", "-13,313PV"].join(
+        "\n",
+      ),
+    ),
+    [],
+  );
+  if (failures.length > 0) {
+    console.error(
+      "NG: お金・PV の語の検査ロジックが期待どおりに動いていません",
+    );
+    for (const f of failures) console.error(`  - ${f}`);
     process.exit(1);
   }
-  console.log(`スキップ: ${message}（手元のため。CIでは失敗扱い）`);
-  process.exit(0);
-}
 
-const added = addedLines(diff);
-const violations = findViolations(added);
-if (violations.length > 0) {
-  const labels = new Map(RULES.map((r) => [r.id, r.label]));
-  console.error(
-    `NG: 公開のリポジトリに置かない数（収益・費用・GA4 の生データ・PV の目標）の書き方が、足した行に ${violations.length} 行あります。`,
-  );
-  for (const v of violations) {
-    const why = v.rules.map((id) => labels.get(id)).join("・");
-    console.error(
-      `  - ${v.file}:${v.line} [${why}] ${v.text.trim().slice(0, 120)}`,
-    );
+  function git(args) {
+    return execFileSync("git", args, {
+      cwd: repoRoot,
+      encoding: "utf8",
+      maxBuffer: 512 * 1024 * 1024,
+    });
   }
-  console.error(
-    [
-      "",
-      "この数は hq（非公開）に置いてください（2026-11-06 オーナー決定）。公開のリポジトリには、数に依らない結論と「実数は hq」の一言だけを書きます。",
-      "サイトに出ている数・記事の例など、公開してよいものだけは、行の末尾に `public-ok: <理由>` を付けると通ります。",
-    ].join("\n"),
+
+  // --- 今の全ファイルに当てた数（誤検知の実測） ---
+  if (process.argv.includes("--scan-all")) {
+    const files = git(["-c", "core.quotePath=false", "ls-files"])
+      .split("\n")
+      .filter(Boolean)
+      .filter(isTargetFile);
+    const byFile = new Map();
+    for (const file of files) {
+      let text;
+      try {
+        text = readFileSync(path.join(repoRoot, file), "utf8");
+      } catch (err) {
+        console.error(`読めないので飛ばした: ${file}（${err.message}）`);
+        continue;
+      }
+      const lines = text
+        .split("\n")
+        .map((t, i) => ({ file, line: i + 1, text: t }));
+      const v = findViolations(lines);
+      if (v.length > 0) byFile.set(file, v);
+    }
+    console.log(JSON.stringify(Object.fromEntries(byFile)));
+    process.exit(0);
+  }
+
+  // --- PR の差分を見る ---
+  const base =
+    process.argv
+      .slice(2)
+      .filter((a) => a.startsWith("--base="))
+      .map((a) => a.slice("--base=".length))
+      .pop() || "origin/master";
+
+  let diff;
+  try {
+    git(["rev-parse", "--verify", "--quiet", `${base}^{commit}`]);
+    diff = git([
+      "-c",
+      "core.quotePath=false",
+      "diff",
+      "--unified=0",
+      "--find-renames",
+      "--no-color",
+      "--diff-filter=AMR",
+      `${base}...HEAD`,
+    ]);
+  } catch (err) {
+    const message = `base（${base}）との差分を取れませんでした: ${err.message.split("\n")[0]}`;
+    if (process.env.CI) {
+      console.error(`NG: ${message}`);
+      process.exit(1);
+    }
+    console.log(`スキップ: ${message}（手元のため。CIでは失敗扱い）`);
+    process.exit(0);
+  }
+
+  const added = addedLines(diff);
+  const violations = findViolations(added);
+  if (violations.length > 0) {
+    const labels = new Map(RULES.map((r) => [r.id, r.label]));
+    console.error(
+      `NG: 公開のリポジトリに置かない数（収益・費用・GA4 の生データ・PV の目標）の書き方が、足した行に ${violations.length} 行あります。`,
+    );
+    for (const v of violations) {
+      const why = v.rules.map((id) => labels.get(id)).join("・");
+      console.error(
+        `  - ${v.file}:${v.line} [${why}] ${v.text.trim().slice(0, 120)}`,
+      );
+    }
+    console.error(
+      [
+        "",
+        "この数は hq（非公開）に置いてください（2026-11-06 オーナー決定）。公開のリポジトリには、数に依らない結論と「実数は hq」の一言だけを書きます。",
+        "サイトに出ている数・記事の例など、公開してよいものだけは、行の末尾に `public-ok: <理由>` を付けると通ります。",
+      ].join("\n"),
+    );
+    process.exit(1);
+  }
+
+  console.log(
+    `OK: PR（${base}...HEAD）の足した行 ${added.length} 行に、公開のリポジトリに置かない数の書き方は無い`,
   );
-  process.exit(1);
 }
 
-console.log(
-  `OK: PR（${base}...HEAD）の足した行 ${added.length} 行に、公開のリポジトリに置かない数の書き方は無い`,
-);
+// import したときは CLI を動かさない（関数だけを使えるように）
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+)
+  main();
