@@ -1893,6 +1893,11 @@
       "script": "verify-worktree-in-use.js",
       "tier": "ci",
       "guards": "稼働中セッションの worktree（作業開始直後・ロックなしのデスクトップアプリ）を「片付けてよい」に分類しないこと（check-worktrees.js）"
+    },
+    {
+      "script": "verify-zh-tw-no-kana.js",
+      "tier": "ci",
+      "guards": "zh-TW のロケールにひらがな・カタカナが入らないこと（verify-i18n-consistency.js の検査5は en・ko だけで zh-TW を見ない）"
     }
   ]
 }
