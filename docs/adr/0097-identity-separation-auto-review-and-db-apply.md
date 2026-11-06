@@ -23,6 +23,7 @@
 
 - 切替の後、Claude の `gh` は作成の App の短命のトークン（hq の道具が Keychain の秘密鍵から作る）を使い、admin を持たない
 - CODEOWNERS は置かない。仕組みの変更（.github・.claude・AGENTS.md・vercel.json・package.json・DB の適用コード）も審査の App の承認だけで通る（オーナー判断）
+  - 2026-11-06 に置き換え（オーナーのゼロベース再設計 A2 ②・③）: `.github/CODEOWNERS` で守る場所の持ち主を rhapsody0919 にする。ruleset の `require_code_owner_review` を ON にするのはオーナーの操作。ON にすると、作成の App の PR（Codex・記事）が守る場所に触れたときはオーナーの承認が要る。持ち主の名義の PR（Claude）は admin の bypass でマージするので止まらない。`[automated]` の直接 push も止まらない
 
 ### 審査（`.github/workflows/review.yml`、段取り E）
 
@@ -159,8 +160,3 @@ D はまず1〜2週間、当てずに「当てるはずだった」を通知す�
 ## 追記: ADR-0034 の置き換え（2026-10-20）
 
 記事の PR を管理画面の承認で PAT（Vercel の `GITHUB_MERGE_TOKEN`）を使ってマージする道（ADR-0034）は、書き込みの身元を増やすのでこの ADR の方針と合わない。BOA-908（オーナー yes 10/20 夕）で止め、記事の PR も他の PR と同じ道（CI・4つのレビュー・マージの承認、段階0 F）でマージする。経緯と止めたものは ADR-0034 の追記。
-
-## 追記: CODEOWNERS を置く（2026-11-06、ゼロベース再設計 A2 ②）
-
-上の「CODEOWNERS は置かない（オーナー判断）」は、オーナーのゼロベース再設計（2026-11-06、A2 の作業の列 ②・③）で置き換える。`.github/CODEOWNERS` で守る場所の持ち主を rhapsody0919 にし、ruleset の `require_code_owner_review` を ON にするのはオーナーの操作。ON にすると、作成の App の PR（Codex・記事）が守る場所に触れたときはオーナーの承認が要る。持ち主の名義の PR（Claude）は admin の bypass でマージするので止まらない。`[automated]` の直接 push も止まらない。
-
