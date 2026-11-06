@@ -1014,6 +1014,12 @@
       "guards": "ブログ・翻訳記事・ブログ一覧のボット向けスナップショットを Preview で作るか（scripts/lib/previewSnapshotPlan.js、Vercel の費用 2026-11-05）。本番・手元は必ず作り、Preview は最新のコミットのメッセージの [bot-html] か BOT_SNAPSHOTS_ON_PREVIEW=1 のときだけ作ること。生成スクリプトが判定に環境変数を渡し、作らないときはブログ等を呼ばず status.json に理由を残すこと"
     },
     {
+      "script": "verify-private-metrics-words.js",
+      "tier": "ci",
+      "args": ["--base=origin/master"],
+      "guards": "PR で足した行（docs・data・.claude・md・json。package の json は除く）に、公開のリポジトリに置かない数（お金・流入の数・目標）の書き方が入っていないこと。置き場は hq（非公開、オーナー決定 2026年11月6日）。行の末尾の public-ok: 理由 で外せる。既にある行は見ない"
+    },
+    {
       "script": "verify-pure-imports.js",
       "tier": "ci",
       "guards": "pure の根（src/pure・scripts/lib/pure）の中のファイルが、根の外の部品・ES の組み込みの外のグローバルを使わないこと（docs/design/codex-direct-pr/design.md §4.2 と追記「共有の根」、開発効率の計画 段1b、2026-10-24）。ESLint のパーサの AST で import 宣言・export … from・import()・require()・コメントの型の import（JSDoc の import(\"…\")・@import・/// <reference>）の行き先をパスに解決し、src/pure からは src/pure の .js だけ、scripts/lib/pure からは scripts/lib/pure と src/pure の .js だけを許す（片方向）。../ での脱出・再 export・JSON・npm・node: の部品・文字列でない import()/require() は不合格。グローバルは eslint.config.js を使わず自分の設定で ES の組み込みだけにして no-undef を当て、globalThis・window・self・process・eval・Function・import.meta・fetch・XMLHttpRequest・WebSocket は名指しで禁止。組み込みの書き換え（JSON.stringify=・Date.prototype.toJSON=・Object.defineProperty(Object.prototype, …) 等）も禁止。設定コメントは効かせない。根の中に .js の通常のファイル以外（JSON・リンク等）があっても失敗。段2 の Codex の自動マージは pure の根の中だけで、その前提を機械で守る。根が無いときは対象0件で OK。禁止の形を1つずつ lintText と仮のパスで流して落ちることを毎回自己テストで確かめる（ディスクに書かない）"
