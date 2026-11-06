@@ -48,13 +48,14 @@ export function mechanicalRejections(files, headModes, treeTruncated) {
       reasons.push(
         `${f.filename}: 差分の本文が無い（バイナリ・大きすぎる・中身を変えない改名や複製）`,
       );
-    // ポインタは1行目が「version https://git-lfs.github.com/spec/v1」のファイル。足した行の頭にあるときだけ落とす。
-    // gate は本文のどこかに URL があれば（消したファイル・試験の文字列でも）落としていたが、verify は必須の check なので、
-    // この検査の試験そのもの（URL を文字列で持つ）を変える PR まで止めないよう、足した行の頭に絞った
+    // ポインタは1行目が「version https://git-lfs.github.com/spec/v1」のファイル。行の頭（足した行か、変えない行＝
+    // 既にあるポインタの oid・size を変えたとき）にあるときだけ落とす。gate は本文のどこかに URL があれば（消したファイル・
+    // 試験の文字列でも）落としていたが、verify は必須の check なので、この検査の試験そのもの（URL を文字列で持つ）を
+    // 変える PR まで止めないよう、行の頭に絞った
     if (
       f.patch !== undefined &&
       f.status !== "removed" &&
-      /^\+version https:\/\/git-lfs\.github\.com\/spec\//m.test(f.patch)
+      /^[+ ]version https:\/\/git-lfs\.github\.com\/spec\//m.test(f.patch)
     )
       reasons.push(`${f.filename}: Git LFS のポインタ`);
     const mode = headModes.get(f.filename);
@@ -78,7 +79,7 @@ const STATUS = {
 /**
  * `git diff --raw -z -M --no-abbrev` の出力を、compare の files に近い形の土台（パス・状態・モード）にする
  * @param {string} rawZ
- * @returns {{ filename: string, status: string, previous_filename?: string, dstMode: string }[]}
+ * @returns {{ filename: string, status: string, previous_filename?: string, srcMode: string, dstMode: string, srcSha: string, dstSha: string }[]}
  */
 export function parseRawDiff(rawZ) {
   const parts = rawZ.split("\0");
@@ -90,23 +91,22 @@ export function parseRawDiff(rawZ) {
       i += 1;
       continue;
     }
-    const m = /^:(\d{6}) (\d{6}) [0-9a-f]+ [0-9a-f]+ ([AMDRCTUX])(\d*)$/.exec(
-      head,
-    );
+    const m =
+      /^:(\d{6}) (\d{6}) ([0-9a-f]+) ([0-9a-f]+) ([AMDRCTUX])(\d*)$/.exec(head);
     if (!m) throw new Error(`git diff --raw の行を読めない: ${head}`);
-    const [, , dstMode, letter] = m;
+    const [, srcMode, dstMode, srcSha, dstSha, letter] = m;
     const status = STATUS[letter];
     if (!status) throw new Error(`git diff --raw の状態を扱えない: ${letter}`);
+    const base = { status, srcMode, dstMode, srcSha, dstSha };
     if (letter === "R" || letter === "C") {
       out.push({
         filename: parts[i + 2],
         previous_filename: parts[i + 1],
-        status,
-        dstMode,
+        ...base,
       });
       i += 3;
     } else {
-      out.push({ filename: parts[i + 1], status, dstMode });
+      out.push({ filename: parts[i + 1], ...base });
       i += 2;
     }
   }
@@ -169,16 +169,32 @@ export function isAllowedMedia(file, head) {
   );
 }
 
+const EMPTY_BLOB = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391";
+const REGULAR = /^100(644|755)$/;
+
 /**
- * 機械の検査（gate と同じ判定）から、通してよい画像等の「差分の本文が無い」だけを外す
- * @param {string[]} reasons mechanicalRejections の結果
- * @param {Set<string>} allowedMedia isAllowedMedia が真のファイル名
+ * 本文が無くても中身を隠さない差分か: 空のファイルの追加（.gitkeep 等）と、中身を変えない実行権の変更（chmod +x）。
+ * どちらも普通のファイル（symlink・submodule でない）に限る
+ * @param {{ status: string, srcMode: string, dstMode: string, srcSha: string, dstSha: string }} entry parseRawDiff の1件
  */
-export function withoutAllowedMedia(reasons, allowedMedia) {
+export function isHarmlessNoBody(entry) {
+  if (!REGULAR.test(entry.dstMode)) return false;
+  if (entry.status === "added") return entry.dstSha === EMPTY_BLOB;
+  return (
+    entry.status === "modified" &&
+    REGULAR.test(entry.srcMode) &&
+    entry.srcSha === entry.dstSha
+  );
+}
+
+/**
+ * 機械の検査（gate と同じ判定）から、通してよいファイル（画像等・空のファイル・実行権だけ）の「差分の本文が無い」だけを外す
+ * @param {string[]} reasons mechanicalRejections の結果
+ * @param {Set<string>} allowed 通してよいファイル名
+ */
+export function withoutAllowedNoBody(reasons, allowed) {
   return reasons.filter(
     (r) =>
-      ![...allowedMedia].some((name) =>
-        r.startsWith(`${name}: 差分の本文が無い`),
-      ),
+      ![...allowed].some((name) => r.startsWith(`${name}: 差分の本文が無い`)),
   );
 }

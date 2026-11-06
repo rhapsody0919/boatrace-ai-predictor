@@ -18,6 +18,7 @@
  */
 import { execFileSync } from "node:child_process";
 import {
+  chmodSync,
   mkdtempSync,
   mkdirSync,
   rmSync,
@@ -31,9 +32,10 @@ import {
   LIMITS,
   mechanicalRejections,
   isAllowedMedia,
+  isHarmlessNoBody,
   parseRawDiff,
   patchOf,
-  withoutAllowedMedia,
+  withoutAllowedNoBody,
 } from "../lib/prShape.js";
 
 const ROOT = path.resolve(
@@ -99,7 +101,9 @@ function collectPrShape(cwd, base, head) {
     return {
       filename: e.filename,
       status: e.status,
-      patch: patchOf(text),
+      // 消したファイルの本文は数えない（消すことは中身を持ち込まない。compare も大きいファイルは本文を返さず、
+      // gate は大きいファイルの削除を上限に数えていなかった）
+      patch: e.status === "removed" ? undefined : patchOf(text),
       ...(e.previous_filename
         ? { previous_filename: e.previous_filename }
         : {}),
@@ -110,27 +114,31 @@ function collectPrShape(cwd, base, head) {
       .filter((e) => e.status !== "removed")
       .map((e) => [e.filename, e.dstMode]),
   );
-  // 本文の無い普通のファイル（symlink・submodule を除く）だけ、先頭の16バイトを読んで画像等かを確かめる
-  const allowedMedia = new Set(
+  // 本文の無い差分のうち通してよい物: 空のファイル・実行権だけの変更（raw の SHA とモードで決まる）と、
+  // 普通のファイル（symlink・submodule を除く）で先頭の16バイトが拡張子の印と合う画像等
+  const byName = new Map(entries.map((e) => [e.filename, e]));
+  const allowed = new Set(
     files
       .filter(
         (f) =>
           f.patch === undefined &&
-          /^1006[0-7]{2}$/.test(headModes.get(f.filename) ?? ""),
+          /^100(644|755)$/.test(headModes.get(f.filename) ?? ""),
       )
-      .filter((f) =>
-        isAllowedMedia(
-          f,
-          execFileSync(
-            "git",
-            [...GIT_FLAGS, "cat-file", "blob", `${head}:${f.filename}`],
-            { cwd, maxBuffer: 256 * 1024 * 1024 },
-          ).subarray(0, 16),
-        ),
+      .filter(
+        (f) =>
+          isHarmlessNoBody(byName.get(f.filename)) ||
+          isAllowedMedia(
+            f,
+            execFileSync(
+              "git",
+              [...GIT_FLAGS, "cat-file", "blob", `${head}:${f.filename}`],
+              { cwd, maxBuffer: 256 * 1024 * 1024 },
+            ).subarray(0, 16),
+          ),
       )
       .map((f) => f.filename),
   );
-  return { files, headModes, allowedMedia };
+  return { files, headModes, allowed };
 }
 
 // 1. 判定（固定の入力）
@@ -321,7 +329,14 @@ function collectPrShape(cwd, base, head) {
   const parsed = parseRawDiff(raw);
   check(
     "--raw -z を読む（空白を含む名前・改名の2つのパス・削除）",
-    JSON.stringify(parsed) ===
+    JSON.stringify(
+      parsed.map(({ filename, previous_filename, status, dstMode }) => ({
+        filename,
+        ...(previous_filename ? { previous_filename } : {}),
+        status,
+        dstMode,
+      })),
+    ) ===
       JSON.stringify([
         { filename: "src/a b.js", status: "modified", dstMode: "100644" },
         { filename: "link", status: "added", dstMode: "120000" },
@@ -334,6 +349,51 @@ function collectPrShape(cwd, base, head) {
         { filename: "gone.png", status: "removed", dstMode: "000000" },
       ]),
     JSON.stringify(parsed),
+  );
+  check(
+    "--raw -z の元のモードと SHA を読む",
+    parsed[1].srcMode === "000000" &&
+      parsed[1].srcSha === zero &&
+      parsed[1].dstSha === sha,
+  );
+
+  // 本文が無くても中身を隠さない差分（verify で足した線）
+  const EMPTY = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391";
+  const e = (status, srcMode, dstMode, srcSha, dstSha) => ({
+    status,
+    srcMode,
+    dstMode,
+    srcSha,
+    dstSha,
+  });
+  check(
+    "通す: 空のファイルの追加（.gitkeep）",
+    isHarmlessNoBody(e("added", "000000", "100644", zero, EMPTY)),
+  );
+  check(
+    "通す: 中身を変えない実行権の変更",
+    isHarmlessNoBody(e("modified", "100644", "100755", sha, sha)),
+  );
+  check(
+    "通さない: 中身も変わったバイナリ（モードが変わっても）",
+    !isHarmlessNoBody(e("modified", "100644", "100755", sha, "c".repeat(40))),
+  );
+  check(
+    "通さない: 空でない本文の無い追加",
+    !isHarmlessNoBody(e("added", "000000", "100644", zero, sha)),
+  );
+  check(
+    "通さない: 空の symlink・submodule",
+    !isHarmlessNoBody(e("added", "000000", "120000", zero, EMPTY)) &&
+      !isHarmlessNoBody(e("added", "000000", "160000", zero, EMPTY)),
+  );
+  check(
+    "通さない: 普通のファイルから symlink への変更",
+    !isHarmlessNoBody(e("modified", "100644", "120000", sha, sha)),
+  );
+  check(
+    "通さない: 中身を変えない改名",
+    !isHarmlessNoBody(e("renamed", "100644", "100644", sha, sha)),
   );
   let threw = false;
   try {
@@ -420,7 +480,7 @@ function collectPrShape(cwd, base, head) {
   check(
     "外すのは通すファイルの「差分の本文が無い」だけ（同じ名で始まる別のファイル・別の理由は残す）",
     JSON.stringify(
-      withoutAllowedMedia(
+      withoutAllowedNoBody(
         [
           "a.png: 差分の本文が無い（…）",
           "a.png.js: 差分の本文が無い（…）",
@@ -451,6 +511,10 @@ function collectPrShape(cwd, base, head) {
     write("src/a.js", "export const a = 1;\n");
     write("moved-from.js", "export const moved = 1;\n".repeat(5));
     write("old.bin", Buffer.from([0, 1, 2, 3]));
+    write("run.sh", "echo ok\n");
+    const lfsPointer = (oid) =>
+      `version https://git-lfs.github.com/spec/v1\noid sha256:${oid}\nsize 10\n`;
+    write("ptr.dat", lfsPointer("aaa"));
     g("add", "-A");
     g("commit", "-q", "-m", "base");
     g("branch", "base");
@@ -474,6 +538,10 @@ function collectPrShape(cwd, base, head) {
       "public/fake.png",
       Buffer.from([0x63, 0x00, 0x6e, 0x73, 0x6f, 0x6c, 0x65]),
     );
+    // 空のファイル（通す）・実行権だけの変更（通す）・既にある LFS のポインタの oid の変更（落とす）
+    write("data/.gitkeep", "");
+    chmodSync(path.join(dir, "run.sh"), 0o755);
+    write("ptr.dat", lfsPointer("bbb"));
     g("add", "-A");
     g(
       "update-index",
@@ -508,8 +576,15 @@ function collectPrShape(cwd, base, head) {
         "added",
         "@@ -0,0 +1,3 @@\n+version https://git-lfs.github.com/spec/v1\n+oid sha256:abc\n+size 10",
       ),
+      f("data/.gitkeep", "added", undefined),
       f("docs/.gitattributes", "added", "@@ -0,0 +1 @@\n+*.bin binary"),
       f("docs/design/x/mock/a-375.png", "added", undefined),
+      f(
+        "ptr.dat",
+        "modified",
+        "@@ -1,3 +1,3 @@\n version https://git-lfs.github.com/spec/v1\n-oid sha256:aaa\n+oid sha256:bbb\n size 10",
+      ),
+      f("run.sh", "modified", undefined),
       f("img.bin", "added", undefined),
       f(
         "link",
@@ -535,6 +610,9 @@ function collectPrShape(cwd, base, head) {
     const expectedModes = new Map([
       [".gitmodules", "100644"],
       ["big.dat", "100644"],
+      ["data/.gitkeep", "100644"],
+      ["ptr.dat", "100644"],
+      ["run.sh", "100755"],
       ["docs/.gitattributes", "100644"],
       ["docs/design/x/mock/a-375.png", "100644"],
       ["img.bin", "100644"],
@@ -583,6 +661,7 @@ function collectPrShape(cwd, base, head) {
       ".gitattributes の変更",
       "img.bin: 差分の本文が無い",
       "moved-to.js: 差分の本文が無い",
+      "ptr.dat: Git LFS のポインタ",
     ]) {
       check(
         `一時の木: 落とす理由に「${kind}」がある`,
@@ -596,22 +675,27 @@ function collectPrShape(cwd, base, head) {
       ),
     );
 
-    // verify で足した線: 先頭の印が合う画像だけを gate の判定から外す（他の理由は gate のまま）
+    // verify で足した線: 印の合う画像・空のファイル・実行権だけの変更を gate の判定から外す（他の理由は gate のまま）
+    const allowedNames = [
+      "data/.gitkeep",
+      "docs/design/x/mock/a-375.png",
+      "run.sh",
+    ];
     check(
-      "一時の木: 通す画像は印の合う PNG だけ（拡張子だけの .png・バイナリ・symlink は通さない）",
-      JSON.stringify([...fromGit.allowedMedia]) ===
-        JSON.stringify(["docs/design/x/mock/a-375.png"]),
-      JSON.stringify([...fromGit.allowedMedia]),
+      "一時の木: 通すのは印の合う PNG・空のファイル・実行権だけ（拡張子だけの .png・バイナリ・symlink は通さない）",
+      JSON.stringify([...fromGit.allowed].sort()) ===
+        JSON.stringify(allowedNames),
+      JSON.stringify([...fromGit.allowed]),
     );
-    const finalReasons = withoutAllowedMedia(gitReasons, fromGit.allowedMedia);
+    const finalReasons = withoutAllowedNoBody(gitReasons, fromGit.allowed);
     check(
-      "一時の木: 外すのは通す画像の「差分の本文が無い」1件だけ",
+      "一時の木: 外すのは通すファイルの「差分の本文が無い」3件だけ",
       JSON.stringify(finalReasons) ===
         JSON.stringify(
           gitReasons.filter(
-            (r) => !r.startsWith("docs/design/x/mock/a-375.png: "),
+            (r) => !allowedNames.some((n) => r.startsWith(`${n}: `)),
           ),
-        ) && finalReasons.length === gitReasons.length - 1,
+        ) && finalReasons.length === gitReasons.length - 3,
       JSON.stringify(finalReasons),
     );
   } finally {
@@ -632,12 +716,11 @@ const base =
     .map((a) => a.slice("--base=".length))
     .pop() || "origin/master";
 
-let shape;
+// base を解決できないときだけ手元で飛ばす。差分の読み取りの失敗（読めない raw・大きすぎる blob 等）は手元でも落とす
 try {
   git(ROOT, ["rev-parse", "--verify", "--quiet", `${base}^{commit}`]);
-  shape = collectPrShape(ROOT, base, "HEAD");
 } catch (err) {
-  const message = `base（${base}）との差分を取れませんでした: ${String(err.message).split("\n")[0]}`;
+  const message = `base（${base}）を解決できませんでした: ${String(err.message).split("\n")[0]}`;
   if (process.env.CI) {
     console.error(`NG: ${message}`);
     process.exit(1);
@@ -645,14 +728,23 @@ try {
   console.log(`スキップ: ${message}（手元のため。CIでは失敗扱い）`);
   process.exit(0);
 }
+let shape;
+try {
+  shape = collectPrShape(ROOT, base, "HEAD");
+} catch (err) {
+  console.error(
+    `NG: ${base}...HEAD の差分を読めない（読めない差分は通さない）: ${String(err.message).split("\n")[0]}`,
+  );
+  process.exit(1);
+}
 
 if (shape.files.length === 0) {
   console.log(`OK: ${base}...HEAD に差分が無い（master の上）`);
   process.exit(0);
 }
-const reasons = withoutAllowedMedia(
+const reasons = withoutAllowedNoBody(
   mechanicalRejections(shape.files, shape.headModes, false),
-  shape.allowedMedia,
+  shape.allowed,
 );
 if (reasons.length > 0) {
   console.error(`NG: PR（${base}...HEAD）の差分の形を機械の検査で落とした`);

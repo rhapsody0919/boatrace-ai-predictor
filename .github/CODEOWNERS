@@ -57,13 +57,27 @@
 /scripts/maintenance/pr-lane.js       @rhapsody0919
 /config/pr-path-rules.json            @rhapsody0919
 
-# 既存の e2e の spec と verify（v3.3 の H5「試験の弱まり」）
+# 既存の e2e の spec と verify と、試験の固定データの .gz（v3.3 の H5「試験の弱まり」）
 # CODEOWNERS は「今あるファイル」と「新しいファイル」を書き分けられない（glob はこれから足すファイルにも当たる）。
 # 新しい spec・verify を足す PR は持ち主の承認なしで通したいので、glob にせず、2026-11-06 の master にあった
 # ファイルを1行ずつ並べる。この一覧に無い（後から足した）spec・verify は守られない。足した物を守るときは、
-# 下の2つの塊を作り直す PR を持ち主の承認で入れる:
+# 下の3つの塊を作り直す PR を持ち主の承認で入れる:
 #   git ls-files -- 'e2e/*.spec.js' 'e2e/**/*.spec.js' | sort -u | sed 's|^|/|; s|$| @rhapsody0919|'
 #   git ls-files -- 'scripts/maintenance/verify-*' | sort | sed 's|^|/|; s|$| @rhapsody0919|'
+#   git ls-files -- '*.gz' | sed 's|^|/|; s|$| @rhapsody0919|'
+# .gz は verify-pr-shape.js が先頭の印だけで通し、差分で中身を読めないので、既存の物の差し替えは持ち主が見る
+
+# --- 既存の試験の固定データ（.gz、10本） ---
+/e2e/analogy-outlook-fixture.json.gz @rhapsody0919
+/e2e/analogy-v16-fixture.json.gz @rhapsody0919
+/e2e/thinking-assist-fixture.json.gz @rhapsody0919
+/scripts/ml/analogy/testdata/treeshap-parity/model_win.json.gz @rhapsody0919
+/scripts/ml/analogy/testdata/treeshap-parity/model_win_racecard.json.gz @rhapsody0919
+/scripts/ml/analogy/testdata/treeshap-parity/parity_fixture.json.gz @rhapsody0919
+/sns-video-studio/remotion/scripts/full-picture/fixtures/2026-10-12-01-12.json.gz @rhapsody0919
+/sns-video-studio/remotion/scripts/full-picture/fixtures/2026-10-15-15-10.json.gz @rhapsody0919
+/sns-video-studio/remotion/scripts/full-picture/fixtures/2026-10-16-24-11.json.gz @rhapsody0919
+/sns-video-studio/remotion/scripts/full-picture/fixtures/2026-10-19-19-10.json.gz @rhapsody0919
 
 # --- 既存の e2e の spec（136本） ---
 /e2e/acceptance/analogy-finder.spec.js @rhapsody0919
