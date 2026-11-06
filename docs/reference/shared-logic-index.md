@@ -140,6 +140,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/placementDistribution.js` | 2着・3着のコース別統計分布 | getPlacementBaseline, PLACEMENT_DISTRIBUTION, GLOBAL_PLACEMENT_AVERAGE |
 | `scripts/lib/pointRankJob.js` | 得点率（B2、racer_series_points）の共通ラッパ向けハンドラー（tasks.md T4b-12-1、plan.md §4.3）。 | isLastChanceForPending, runPointRankJob, POINT_RANK_CONCURRENCY |
 | `scripts/lib/pointRankParser.js` | boatrace.jp 得点率一覧ページ（pointrank）の共通パーサー | parsePointRankTable, parseHayamiSeriesDay, parsePointRankAsOf, parseHayamiRaceNumber |
+| `scripts/lib/prShape.js` | PR の差分の形の機械の検査（symlink・submodule・LFS・バイナリ・.gitattributes・上限超え）。純粋関数。 | mechanicalRejections, parseRawDiff, patchOf, isAllowedMedia, isHarmlessNoBody ほか2件 |
 | `scripts/lib/preRaceRows.js` | 出走表・直前情報の全項目の解析結果（scripts/lib/raceListParser.js・beforeInfoParser.js）から、DBへ書く行を作る | formatJstHm, buildRaceEntryRows, buildRaceConditionRow, buildExhibitionRows, planDeadlineUpdates |
 | `scripts/lib/preRaceSchema.js` | 出走表・直前情報の新しい列（マイグレーション081・082）が、接続先のDBに適用済みかの判定 | PRE_RACE_SCHEMA_TARGETS, detectPreRaceSchema, clearPreRaceSchemaCache, PRE_RACE_OPTIONAL_COLUMN_GROUPS |
 | `scripts/lib/preciousPaths.js` | gitに入らない「取り直しが高くつくデータ」の置き場所。 | PRECIOUS_PATHS, BACKUP_DIR_FROM_HOME |
@@ -188,7 +189,6 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/releaseDispatch.js` | 本番のデプロイをまとめて出す（ADR-0106、オーナー 2026-11-06 決定）。Vercel Cron（api/cron/release-dispatc… | staleReleaseAlerts, summarizeGates, decideRelease, fetchMasterHead, fetchCompare ほか11件 |
 | `scripts/lib/renderWithFreshPage.js` | 新しいページを開く関数を作る。ブラウザが落ちていたら起動し直してから開く。 | createPageOpener, renderWithFreshPage |
 | `scripts/lib/reportComparison.js` | 定点観測レポート（search-console-report.js / i18n-demand-report.js）の | findPreviousReport, findRecentReports, detectTrend, perDay, formatDelta |
-| `scripts/lib/reviewPr.js` | AI の PR の審査（.github/workflows/review.yml、ADR-0097）の純粋関数。 | vendorForBranch, vendorForPr, authorKind, monthlyLimitReason, mechanicalRejections ほか10件 |
 | `scripts/lib/riskRuleMatcher.js` | SNSリスクルールの部分一致判定（Node・Edge共通の純粋関数）。 | matchRiskRules, draftRiskFields, bundleRiskFields |
 | `scripts/lib/riskRules.js` | SNSマーケティングハブ Phase 2用 risk-rules.json 決定的照合ユーティリティ | checkRiskRules |
 | `scripts/lib/roQuery.js` | 本番の読み取り専用ロール claude_ro で1文を実行する（scripts/db/ro-query.js の本体、ADR-0096）。 | checkReadStatement, parseRowLimit, checkRoUrl, runReadOnlyQuery, formatResult ほか4件 |
@@ -426,4 +426,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 384 ファイル / export 2264 件。
+対象 384 ファイル / export 2256 件。
