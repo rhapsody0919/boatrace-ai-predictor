@@ -24,8 +24,11 @@ import {
   RELEASE_GATE_WORKFLOWS,
   RELEASE_HOOK_ENV,
   STALE_RELEASE_MS,
+  GATE_RUNS_PER_PAGE,
   createReleaseDispatchRun,
   decideRelease,
+  fetchCompare,
+  fetchGateRuns,
   staleReleaseAlerts,
   summarizeGates,
 } from "../lib/releaseDispatch.js";
@@ -318,6 +321,18 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
       runs: [run(HEAD, "in_progress", null), run(MID, "completed", "success")],
     },
   ]);
+  const [uncovered] = summarizeGates(range, [
+    {
+      workflow: "quality-gates.yml",
+      runs: [run(HEAD, "completed", "success")],
+      covered: false,
+    },
+  ]);
+  check(
+    uncovered.state === "red",
+    "(b) 読んだ run が範囲の一番古いコミットまで届いていなければ red（止まっている間に push が溜まった。Codex の P1）",
+    JSON.stringify(uncovered),
+  );
   const [olderRunning] = summarizeGates(range, [
     {
       workflow: "quality-gates.yml",
@@ -638,6 +653,70 @@ for (const [label, env, expect] of [
         now: NOW,
       }).length === 0,
     "(c) 出すべき差分が13時間を過ぎて残る（shadow のまま・待つが続く）なら alerts、live で出した・差分なし・13時間以内なら出さない",
+  );
+}
+
+// 範囲の外の run に届くまでページをめくる。届かなければ covered=false。compare の commits が足りなければ complete=false
+{
+  const range = Array.from({ length: 250 }, (_, i) => `r${i}`.padEnd(40, "0"));
+  const pages = [];
+  const reply = (body) => ({ ok: true, status: 200, json: async () => body });
+  const page = (from, n) =>
+    Array.from({ length: n }, (_, i) => ({
+      id: from + i,
+      head_sha: range[range.length - 1 - from - i] ?? "z".repeat(40),
+      status: "completed",
+      conclusion: "success",
+    }));
+  const f = async (url) => {
+    pages.push(url);
+    const p = Number(new URL(url).searchParams.get("page"));
+    return reply({
+      workflow_runs: page((p - 1) * GATE_RUNS_PER_PAGE, GATE_RUNS_PER_PAGE),
+    });
+  };
+  const got = await fetchGateRuns({
+    fetchImpl: f,
+    token: "t",
+    rangeShas: range,
+  });
+  check(
+    got.every((g) => g.covered === true) &&
+      pages.filter((u) => u.includes("quality-gates")).length === 3,
+    "(b) 範囲の外の run に届くまでページをめくり、届けば covered",
+    JSON.stringify(got.map((g) => [g.workflow, g.covered, g.runs.length])),
+  );
+  const short = await fetchGateRuns({
+    fetchImpl: async () =>
+      reply({ workflow_runs: page(0, GATE_RUNS_PER_PAGE) }),
+    token: "t",
+    rangeShas: range,
+  });
+  check(
+    short.every((g) => g.covered === false),
+    "(b) ページの上限まで読んでも範囲の外に届かなければ covered=false",
+  );
+  const cmp = await fetchCompare({
+    fetchImpl: async () =>
+      reply({
+        status: "ahead",
+        ahead_by: 300,
+        files: [],
+        commits: [{ sha: HEAD }],
+      }),
+    token: "t",
+    deployedSha: DEPLOYED,
+    headSha: HEAD,
+  });
+  const notComplete = await fetchGateRuns({
+    fetchImpl: async () => reply({ workflow_runs: [] }),
+    token: "t",
+    rangeShas: cmp.commitShas,
+    complete: cmp.complete,
+  });
+  check(
+    cmp.complete === false && notComplete.every((g) => g.covered === false),
+    "(b) compare の commits が ahead_by より少なければ範囲を全部見ていないとみる",
   );
 }
 
