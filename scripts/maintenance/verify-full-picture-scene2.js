@@ -5285,7 +5285,6 @@ const venueZ1 = (f) => {
   const {
     mkdtempSync,
     writeFileSync: wf3,
-    readFileSync: rf3,
     existsSync: ex3,
   } = await import("node:fs");
   const { tmpdir } = await import("node:os");
@@ -6793,7 +6792,7 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
 // 何日目と SG・G1 の大会名を題・サムネ・冒頭の見出し・説明欄の4行目に（オーナー 11/4「全ての SNS に日付・何日目・レース名・締切の時刻を記載」）。
 // 文と規則は共通の部品（BOA-1309、verify-sns-race-labels.js が固定）で、f01 は材料の race.seriesDayText・race.raceTitle（/2、BOA-1310）を使う
 {
-  const { SERIES_LINE, seriesOf, f01TitleThumbCheck } =
+  const { SERIES_LINE, f01TitleThumbCheck } =
     await import("../../sns-video-studio/remotion/scripts/full-picture/f01.mjs");
   const NAMES = ["大久保信一郎", "齋藤勇", "西村", "山田", "佐藤", "鈴木"];
   const make = (race) => {
