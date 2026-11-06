@@ -23,7 +23,7 @@
 
 - 切替の後、Claude の `gh` は作成の App の短命のトークン（hq の道具が Keychain の秘密鍵から作る）を使い、admin を持たない
 - CODEOWNERS は置かない。仕組みの変更（.github・.claude・AGENTS.md・vercel.json・package.json・DB の適用コード）も審査の App の承認だけで通る（オーナー判断）
-  - 2026-11-06 に置き換え（オーナーのゼロベース再設計 A2 ②・③）: `.github/CODEOWNERS` で守る場所の持ち主を rhapsody0919 にする。ruleset の `require_code_owner_review` を ON にするのはオーナーの操作。ON にすると、作成の App の PR（Codex・記事）が守る場所に触れたときはオーナーの承認が要る。持ち主の名義の PR（Claude）は admin の bypass でマージするので止まらない。`[automated]` の直接 push も止まらない
+  - 2026-11-06 に置き換え（オーナーのゼロベース再設計 A2 ②・③）: `.github/CODEOWNERS` で守る場所の持ち主を rhapsody0919 にする。ruleset の `require_code_owner_review` を ON にするのはオーナーの操作。ON にすると、作成の App の PR（Codex・記事）が守る場所に触れたときはオーナーの承認が要る。今（上の切替の前）は Claude の PR は持ち主の名義で、作者は自分の PR を承認できないので admin の bypass だけでマージしており、止まらない（bypass を外すか、切替で Claude が作成の App の名義になると、守る場所に触れる Claude の PR もオーナーの承認待ちになる）。`[automated]` の直接 push も止まらない
 
 ### 審査（`.github/workflows/review.yml`、段取り E）
 
