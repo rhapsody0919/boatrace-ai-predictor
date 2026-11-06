@@ -528,6 +528,17 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
     failureAlertAfter: 3,
   },
+  // 本番のデプロイをまとめて出す（ADR-0106、scripts/lib/releaseDispatch.js）。1日3回。出せない・前回が出ていない・
+  // master の検査が赤いは1回目から通知する（次の定時まで6〜12時間空くため）。
+  // 死活は livenessStaleMin（定時の間は最大12時間＋拾い直しの20分）を過ぎたら通知する（monitor.js、shadow・live の間）
+  release_dispatch: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+    livenessStaleMin: 13 * 60,
+  },
   // BOA-822 イン崩れ注意度の監視（scripts/lib/inCautionHealth.js）。DB は読み取りだけ。問題は実行の失敗にして1回目から通知する。
   // 夜の表（JST 04:30、api/cron/in-caution-health.js）と今日の unified（05:45、api/cron/in-caution-today-health.js）を
   // 別のジョブにする。成功の記録が失敗の記録を消すので、同じジョブだと 04:30 の失敗が 07:00 の通知の前に消える

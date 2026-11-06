@@ -16,11 +16,11 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 
   | ブランチ | 用途 | デプロイ先 |
   |---------|------|-----------|
-  | `master` | 本番リリース | www.boat-ai.jp |
+  | `master` | 本番リリース | www.boat-ai.jp（ADR-0106 の切り替えの後（`vercel.json` の `git.deploymentEnabled.master` が false。それまではマージごとに出る）は、push ごとではなく1日3回の定時にまとめて出す） |
   | `codex/*` 以外の全ブランチ | 機能開発 | Vercel Preview（PR単位で自動生成） |
   | `codex/*` | Codex の機能開発 | **Preview を作らない**（`vercel.json` の `git.deploymentEnabled`） |
 
-  デプロイフロー: 作業ブランチ → PR作成（Vercel Previewで確認。`codex/*` は CI の e2e・layout で確認） → レビュー → `master` にマージ（本番デプロイ）
+  デプロイフロー: 作業ブランチ → PR作成（Vercel Previewで確認。`codex/*` は CI の e2e・layout で確認） → レビュー → `master` にマージ → 本番デプロイ（ADR-0106 の切り替えの後（`vercel.json` の `git.deploymentEnabled.master` が false。それまではマージごとに出る）は次の定時 JST 05:45・11:45・17:45。古い版が最大約12時間動くので、マイグレーション・SNS の新しい型・cron の変更は出ている版と両立させる）
 
   `codex/*` の Preview を止めているのは、Preview 環境の環境変数に本番 DB の管理者キーが載るため。Codex が書いたコードが、レビュー・マージの前にそのキーを持って動かないようにしている（`scripts/maintenance/verify-codex-no-preview.js` が設定を固定）。マージ後は本番で同じキーを持って動くので、これはマージ前の歯止めにすぎない
 
