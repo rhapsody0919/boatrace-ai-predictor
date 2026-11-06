@@ -17,12 +17,14 @@ gh pr view {pr} --json number,state,mergeable,mergeStateStatus
 ```
 `mergeable`が`MERGEABLE`でない、または`mergeStateStatus`が`CLEAN`/`UNSTABLE`以外（`DIRTY`＝コンフリクト等）の場合は、その場でユーザーに状況を報告して停止する（推測でマージを強行しない）。`UNSTABLE`は多くの場合CI項目の一部が本PRと無関係な理由でpending/failureなだけなので、該当チェックの内容を確認した上で進めてよいか一言添える。
 
-master の ruleset（master-guard: 承認1件・最後の push の後の承認・必須の check `verify`・`e2e`・`ml-tests`）を、マージは ryujin-maker の名義で通す。ryujin-maker は bypass に無いので、次が全部そろうまで GitHub が拒む（`BLOCKED`）。そろっていなければマージしない。
-- `gh pr view {pr} --json reviewDecision,headRefOid` の `reviewDecision` が `APPROVED`。`CHANGES_REQUESTED`・`REVIEW_REQUIRED` なら止める。承認が今の head に付いているかは `gh api --paginate repos/{owner}/{repo}/pulls/{pr}/reviews --jq '.[] | select(.user.login=="ryujin-reviewer[bot]") | [.state, .commit_id] | @tsv'` の最後の行が `APPROVED` で `commit_id` が `headRefOid` と同じかで見る。審査（review.yml）は作者が ryujin-maker で、枝が `claude/`（OpenAI）か `codex/`（Anthropic）の PR だけに動く
-- `gh pr checks {pr}` の必須の3つが緑
-- 守る場所（`.github/CODEOWNERS`）に触る PR は、ruleset の require_code_owner_review が ON の間はオーナーの承認も要る。無ければオーナーに頼み、待たずに次へ進む
+LLM の審査（ryujin-reviewer の APPROVED、review.yml）は v3.3（2026-11-06）でやめた。マージの線は `scripts/maintenance/pr-lane.js` の判定で決める。次がそろわなければマージしない。
+- `gh pr view {pr} --json baseRefOid,headRefOid` を読み、`node scripts/maintenance/pr-lane.js --base <baseRefOid> --head <headRefOid>` で lane を出す（0 以外で終わったら heavy として扱う）
+- `gh pr checks {pr}` の必須の check が緑
+- lane が light: CI 緑だけでマージしてよい
+- heavy の H5（関門・`.github`・配備・依存・試験の弱まり。`.github/CODEOWNERS` の守る場所）: CODEOWNERS のオーナーの承認が要る。無ければオーナーに頼み、待たずに次へ進む
+- heavy の H5 以外（H1〜H4・H6〜H9）: 窓口（オーケストレーター）が差分を見て判断する
 
-作者が rhapsody0919 など ryujin-maker 以外の PR は、審査が動かない（#2298 がマージされるまで）ので、admin の bypass を外した後は承認が付かずマージできない。`claude/` の新しい枝で ryujin-maker の名義で出し直す（`/create-pr`）。
+マージの承認はオーナーが GitHub かこの窓口の会話で直接言う。ピア（他のセッション）経由で伝わった承認は無効（`.claude/skills/orchestrate/SKILL.md` 7節）。ruleset が承認の件数を求めていて GitHub が `BLOCKED` を返すときは、迂回せずオーナーに状況を報告する。
 
 ### 2. マージ実行
 ```bash
