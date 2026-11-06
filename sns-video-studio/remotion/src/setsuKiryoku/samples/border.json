@@ -17,7 +17,8 @@
    "race": "11R",
    "boat": 4,
    "need": "2着以上",
-   "class": "A1"
+   "class": "A1",
+   "deadline": "15:50"
   },
   {
    "rank": 20,
@@ -27,7 +28,8 @@
    "boat": 3,
    "need": "2着以上",
    "class": "A1",
-   "tied": true
+   "tied": true,
+   "deadline": "15:15"
   },
   {
    "rank": 23,
@@ -36,7 +38,8 @@
    "race": "6R",
    "boat": 3,
    "need": "2着以上",
-   "class": "A1"
+   "class": "A1",
+   "deadline": "12:59"
   }
  ],
  "texts": {
@@ -64,8 +67,8 @@
   ]
  },
  "youtube": {
-  "title": "尼崎SG 予選最終日 準優に残れるのは18人 ボーダー際の3人は何着なら並ぶ？ #ボートレース #Shorts",
-  "description": "尼崎SG 予選最終日（10/30）の朝。前夜の18位の得点率と、その下で今日1走の3人が並ぶのに要る着。\n集計: 10/29 12Rまで\n・得点率は龍神レーダーの計算（予選3日目まで、事故の減点を含まない）。公式の表とずれることがあります\n・要る着は、前夜の18位の得点率が動かない場合\n・ボーダーは今日の結果で動きます\n\n得点率の表は龍神レーダーで\nhttps://www.boat-ai.jp/venue/13?utm_source=youtube&utm_medium=shorts&utm_content=border\n\n#ボートレース"
+  "title": "尼崎SG 予選最終日 最初の締切12:59 準優に残れるか #ボートレース #Shorts",
+  "description": "尼崎SG 予選最終日（10/30）の朝。前夜の18位の得点率と、その下で今日1走の3人が並ぶのに要る着。\n集計: 10/29 12Rまで\n・得点率は龍神レーダーの計算（予選3日目まで、事故の減点を含まない）。公式の表とずれることがあります\n・要る着は、前夜の18位の得点率が動かない場合\n・ボーダーは今日の結果で動きます\n\n得点率の表は龍神レーダーで\nhttps://www.boat-ai.jp/venue/13?utm_source=youtube&utm_medium=shorts&utm_content=border\n\n#ボートレース\n今日の締切: 11R 15:50、10R 15:15、6R 12:59"
  },
  "source_observed_at": "2026-10-30T05:10:00+09:00"
 }

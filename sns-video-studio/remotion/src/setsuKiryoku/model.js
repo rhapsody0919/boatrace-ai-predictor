@@ -148,11 +148,13 @@ export const tagText = (b) =>
     : b.variant === "border"
       ? `${b.venue} ${b.grade} 予選最終日`
       : `${b.venue} ${b.grade} 開催中`;
-/** final_gap の締切の行（冒頭と締めの頁の札の下）。前夜は「明日」を頭に付ける（今日の締切と取り違えない）。final_deadline が無ければ null */
+/** 冒頭と締めの締切。border は3人の最初、final_gap は前夜なら「明日」。ほかは null */
 export const deadlineText = (b) =>
   b?.variant === "final_gap" && b.final_deadline
     ? `${b.when === "eve" ? "明日 " : ""}${b.final_deadline.race} 締切予定 ${b.final_deadline.time}`
-    : null;
+    : b?.variant === "border"
+      ? `最初の締切 ${(b.racers ?? []).map((r) => r.deadline ?? "").sort()[0] ?? ""}`
+      : null;
 /** 締切の行の位置と大きさ（札 y120〜190 の下、hook の 320・close の 480 より上） */
 export const DEADLINE_LINE = { x: 60, y: 218, size: 48 };
 export const closeTail = (b) =>
@@ -163,6 +165,12 @@ export const closeTail = (b) =>
 export const fmtRate = (v) => v.toFixed(2);
 /** border の順位の札。tied（同率、hq の BR02 が出す）なら「同率20位」 */
 export const rankLabel = (r) => `${r.tied === true ? "同率" : ""}${r.rank}位`;
+
+/** border の今日のレース行（描画・文字検査で共有） */
+export const borderCardRaceText = (r) =>
+  `今日 ${r.race} 締切${r.deadline} ${r.boat}号艇`;
+export const borderCardRaceSize = (r) =>
+  fitSize(borderCardRaceText(r), 560 - LEFT, 40);
 
 // ---------- 配置（描画と検査で同じ値） ----------
 
@@ -382,6 +390,7 @@ export function screenTexts(b) {
         String(r.racer ?? ""),
         String(r.class ?? ""),
         String(r.need ?? ""),
+        borderCardRaceText(r),
       );
   else t.push(String(b.racer ?? ""), String(b.class ?? ""));
   const dl = deadlineText(b);
@@ -438,6 +447,7 @@ export function allowedNumbers(b) {
         [fmtRate(r.rate), r.rate.toFixed(1), r.rate].forEach(add);
       add(String(r.race ?? "").replace(/R$/, ""));
       add(r.boat);
+      for (const num of String(r.deadline ?? "").match(/\d+/g) ?? []) add(num);
     }
   } else if (b.variant === "final_gap") {
     const h = b.hero ?? {};
@@ -494,6 +504,11 @@ export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
   // final_gap は grade を使わず、hq の束（依頼文 4節）にも無い
   if (b.variant !== "final_gap" && (typeof b.grade !== "string" || !b.grade))
     why.push("grade が無い");
+  if (
+    b.variant !== "border" && Array.isArray(b.racers) &&
+    b.racers.some((r) => r?.deadline !== undefined)
+  )
+    why.push("racers[].deadline は border の型だけ");
   if (b.variant !== "final_gap" && b.final_deadline != null)
     why.push("final_deadline は final_gap の型だけ");
   if (b.variant === "final_gap" && b.when !== "eve" && b.when !== "today")
@@ -537,6 +552,7 @@ export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
       ];
     if (!Array.isArray(b.racers) || b.racers.length !== 3)
       return [`racers が3人でない: ${b.racers?.length}`];
+    why.push(...borderDeadlineReasons(b));
     b.racers.forEach((r, i) => {
       if (typeof r.racer !== "string" || !r.racer)
         why.push(`racers[${i}].racer が無い`);
@@ -559,6 +575,8 @@ export function checkBundle(b0, { rules = [], matchRiskRules = null } = {}) {
         );
       if (typeof r.race !== "string" || !/^([1-9]|1[0-2])R$/.test(r.race))
         why.push(`racers[${i}].race が「11R」の形でない: ${r.race}`);
+      if (borderCardRaceSize(r) == null)
+        why.push(`札のレース行が ${560 - LEFT}px に収まらない: ${borderCardRaceText(r)}`);
       if (!isInt(r.boat, 1, 6))
         why.push(`racers[${i}].boat が1〜6でない: ${r.boat}`);
       if (r.tied !== undefined && typeof r.tied !== "boolean")
@@ -737,6 +755,11 @@ function finalDateReasons(b) {
   return [];
 }
 
+// 全角英数・コロンをそろえ、数字に隣接した部分一致を避ける（両型で共有）。
+const flat = (t) => norm(t ?? "").replace(/：/g, ":");
+const has = (text, token) =>
+  new RegExp(`(^|[^0-9])${token.replace(":", "\\:")}(?![0-9])`).test(text);
+
 /**
  * final_gap の締切（任意）の検査: 形（R は 1〜12、時刻は HH:MM）と、題に時刻・説明欄に R と時刻があること。
  * 値が正しいか（DB の締切と同じか）は送る口（push-setsu-kiryoku-short.js）が照らす: 当日は races.start_time（朝の races_init が
@@ -754,15 +777,30 @@ export function finalDeadlineReasons(b) {
     out.push(`final_deadline.time が HH:MM でない: ${d.time}`);
   if (out.length) return out;
   // 全角の英数・コロンは半角にそろえて探す。R・時刻は前後が数字でない所だけ（"1R" が "11R" に、"5:45" が "15:45" に当たらない）
-  const flat = (t) => norm(t ?? "").replace(/：/g, ":");
-  const has = (text, token) =>
-    new RegExp(`(^|[^0-9])${token.replace(":", "\\:")}(?![0-9])`).test(text);
   const title = flat(b.youtube?.title);
   const desc = flat(b.youtube?.description);
   if (!has(title, d.time))
     out.push(`youtube.title に締切の時刻 ${d.time} が無い`);
   if (!has(desc, d.time) || !has(desc, d.race))
     out.push(`youtube.description に締切（${d.race} ${d.time}）が無い`);
+  return out;
+}
+
+/** border は3人それぞれの当日の締切が必須。DB との照合は送る口（BOA-1342） */
+export function borderDeadlineReasons(b) {
+  const out = [];
+  for (const [i, r] of b.racers.entries())
+    if (typeof r.deadline !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(r.deadline))
+      out.push(`racers[${i}].deadline が HH:MM でない: ${r.deadline}`);
+  if (out.length) return out;
+  const first = b.racers.map((r) => r.deadline).sort()[0];
+  if (!has(flat(b.youtube?.title), first))
+    out.push(`youtube.title に締切の時刻 ${first} が無い`);
+  const desc = flat(b.youtube?.description);
+  for (const r of b.racers)
+    if (typeof r.race === "string" && /^([1-9]|1[0-2])R$/.test(r.race) &&
+        (!has(desc, r.race) || !has(desc, r.deadline)))
+      out.push(`youtube.description に締切（${r.race} ${r.deadline}）が無い`);
   return out;
 }
 
