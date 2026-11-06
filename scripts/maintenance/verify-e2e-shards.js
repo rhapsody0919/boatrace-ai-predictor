@@ -207,13 +207,45 @@ for (const file of ["e2e-smoke-test.yml", "e2e-live.yml", "e2e-rerecord.yml"]) {
   ).replace(/^\s*#.*\n/gm, "");
   const body = wf.slice(wf.indexOf("\njobs:\n"));
   const jobs = [
-    ...body.matchAll(/^ {2}([a-z0-9-]+):\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:\n|(?![\s\S]))/gm),
+    ...body.matchAll(
+      /^ {2}([a-z0-9-]+):\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:\n|(?![\s\S]))/gm,
+    ),
   ];
   check(`${file} のジョブを読めた`, jobs.length > 0, true);
   const missing = jobs
     .filter(([, , text]) => !/^ {4}timeout-minutes: \d+$/m.test(text))
     .map(([, name]) => name);
   check(`${file} の全ジョブに timeout-minutes がある`, missing, []);
+}
+
+// e2e の集約（必須の check の e2e）。skipped の必須 check は通過扱いになるので、取り消しで skipped にならないこと、
+// 組の結果が success 以外なら落とすこと（もとは verify-review-workflow.js の 7。review.yml を外したのでここへ移した）
+{
+  const e2e = readFileSync(
+    path.join(repoRoot, ".github/workflows/e2e-smoke-test.yml"),
+    "utf8",
+  );
+  const agg = e2e.slice(e2e.indexOf("\n  e2e:\n"));
+  check(
+    "e2e の集約の job は always() で走る（取り消しで skipped にならない）",
+    /^ {2}e2e:\n {4}needs: \[e2e-scope, e2e-shard, e2e-light\]\n(?: {4}#.*\n)* {4}if: always\(\)\n/m.test(
+      e2e,
+    ),
+    true,
+  );
+  // 範囲（ADR-0100）ごとに走るべき組の結果を見る。範囲が分からないときも落とす
+  check(
+    "e2e の集約は組の結果が success 以外なら落とす",
+    /full\) job=e2e-shard; result="\$\{\{ needs\.e2e-shard\.result \}\}"/.test(
+      agg,
+    ) &&
+      /light\) job=e2e-light; result="\$\{\{ needs\.e2e-light\.result \}\}"/.test(
+        agg,
+      ) &&
+      /\*\) echo "[^"\n]*"; exit 1 ;;/.test(agg) &&
+      /if \[ "\$result" != "success" \]; then[\s\S]*?exit 1/.test(agg),
+    true,
+  );
 }
 
 if (failures.length > 0) {

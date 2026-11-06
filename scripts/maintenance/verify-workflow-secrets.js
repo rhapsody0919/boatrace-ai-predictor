@@ -9,6 +9,8 @@
  * 確認する観点:
  *   1. 下の鍵を参照する job は environment に prod-jobs・ryujin-bot・production-db・production-db-auto のどれかを持つ
  *   2. pull_request で動く workflow は、anon（VITE_SUPABASE_*）以外の secret を参照しない
+ *   3. 外した AI 審査（review.yml）の鍵（REVIEWER_APP_PRIVATE_KEY・OPENAI_API_KEY・ANTHROPIC_API_KEY・CLAUDE_RO_DB_URL）と
+ *      Environment（pr-review・db-readonly）をどの workflow も使わない
  *
  * YAML は字句で読む（job は2字下げの `名前:`、environment は4字下げ）。
  */
@@ -47,7 +49,16 @@ const PUBLIC_SECRETS = new Set([
   "VITE_SUPABASE_ANON_KEY",
   "SLACK_PR_WEBHOOK_URL",
 ]);
-
+// AI 審査（review.yml、2026-11-06 にゼロベース再設計 v3.3 で外した）だけが使っていた鍵と Environment。
+// 審査の App の鍵で承認を付ける・本番の読み取りの接続を使う workflow を新しく足させない（もとは verify-review-workflow.js の検査。
+// オーナーが Environment と鍵を消すまでは残る）
+export const RETIRED_SECRETS = [
+  "REVIEWER_APP_PRIVATE_KEY",
+  "OPENAI_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "CLAUDE_RO_DB_URL",
+];
+export const RETIRED_ENVIRONMENTS = ["pr-review", "db-readonly"];
 
 /** @returns {{ id: string, text: string }[]} */
 export function splitJobs(yamlText) {
@@ -101,13 +112,25 @@ export function checkWorkflow(file, yamlText) {
   const onPullRequest = triggers(yamlText).has("pull_request");
   // jobs: より前（最上位の env 等）の secret は、どの job でも Environment の外（repo の secret）から読まれる
   const head = yamlText.split(/^jobs:\s*$/m)[0];
-  const topLevel = secretsIn(head).filter((s) => !PUBLIC_SECRETS.has(s) && s !== "GITHUB_TOKEN");
+  const topLevel = secretsIn(head).filter(
+    (s) => !PUBLIC_SECRETS.has(s) && s !== "GITHUB_TOKEN",
+  );
   if (topLevel.length > 0) {
-    problems.push(`${file}: workflow の最上位で ${topLevel.join(", ")} を参照する（job の Environment が効かない）`);
+    problems.push(
+      `${file}: workflow の最上位で ${topLevel.join(", ")} を参照する（job の Environment が効かない）`,
+    );
   }
+  const retired = secretsIn(yamlText).filter((s) =>
+    RETIRED_SECRETS.includes(s),
+  );
+  if (retired.length > 0)
+    problems.push(`${file}: 外した審査の鍵 ${retired.join(", ")} を参照する`);
   for (const job of splitJobs(yamlText)) {
     const used = secretsIn(job.text);
     const key = `${file}:${job.id}`;
+    const jobEnv = jobEnvironment(job.text);
+    if (RETIRED_ENVIRONMENTS.includes(jobEnv))
+      problems.push(`${key}: 外した審査の Environment ${jobEnv} を使う`);
     const protectedUsed = used.filter((s) => PROTECTED_SECRETS.includes(s));
     const env = jobEnvironment(job.text);
     if (protectedUsed.length > 0 && !MASTER_ONLY_ENVIRONMENTS.has(env)) {
@@ -174,12 +197,33 @@ function main() {
     "pull_request で他の secret は落とす",
     checkWorkflow(
       "x.yml",
-      pr.replace("VITE_SUPABASE_ANON_KEY", "OPENAI_API_KEY"),
+      pr.replace("VITE_SUPABASE_ANON_KEY", "SOME_OTHER_KEY"),
     ).length === 1,
   );
   check(
     "最上位の env の secret は落とす",
-    checkWorkflow("x.yml", good.replace("jobs:\n", "env:\n  K: ${{ secrets.SUPABASE_SERVICE_KEY }}\njobs:\n")).length === 1,
+    checkWorkflow(
+      "x.yml",
+      good.replace(
+        "jobs:\n",
+        "env:\n  K: ${{ secrets.SUPABASE_SERVICE_KEY }}\njobs:\n",
+      ),
+    ).length === 1,
+  );
+  check(
+    "外した審査の鍵は push の workflow でも落とす",
+    checkWorkflow(
+      "x.yml",
+      good.replace("SUPABASE_SERVICE_KEY", "REVIEWER_APP_PRIVATE_KEY"),
+    ).some((p) => p.includes("外した審査の鍵")),
+  );
+  check(
+    "外した審査の Environment（pr-review・db-readonly）は落とす",
+    ["pr-review", "db-readonly"].every((env) =>
+      checkWorkflow("x.yml", good.replace("prod-jobs", env)).some((p) =>
+        p.includes("外した審査の Environment"),
+      ),
+    ),
   );
   check(
     "job を2字下げで分ける",
