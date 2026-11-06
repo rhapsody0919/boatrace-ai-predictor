@@ -9,7 +9,7 @@ name: AI Review
 #              codex/ の PR は Anthropic で審査し、判定を出す（作った側と別のベンダー）
 #   approve    Environment pr-review の審査の App の鍵だけ。head が審査した SHA のままで P0 が0件なら、その SHA に APPROVE。
 #              承認しないときは REQUEST_CHANGES（審査の App の最新の状態でマージを止める）。持ち主の名義の PR は、
-#              審査の中身でない理由（関門・上限・審査の失敗）では COMMENT にする（P0 は REQUEST_CHANGES）
+#              月の上限・審査の失敗では COMMENT にする（機械の検査で止めたとき・P0 は REQUEST_CHANGES）
 #
 # pull_request_target は master にある定義で動く（PR がこのファイルを書き換えても、その PR の審査には効かない）。
 # そのかわり鍵に届くので、次を守る。配線は scripts/maintenance/verify-review-workflow.js が検査する。
@@ -56,6 +56,7 @@ jobs:
       reason: ${{ steps.gate.outputs.reason }}
       vendor: ${{ steps.gate.outputs.vendor }}
       author_kind: ${{ steps.gate.outputs.author_kind }}
+      limit_only: ${{ steps.gate.outputs.limit_only }}
       sql_tables: ${{ steps.gate.outputs.sql_tables }}
       head_sha: ${{ steps.gate.outputs.head_sha }}
     steps:
@@ -178,6 +179,7 @@ jobs:
           GATE_OK: ${{ needs.gate.outputs.ok }}
           GATE_REASON: ${{ needs.gate.outputs.reason }}
           AUTHOR_KIND: ${{ needs.gate.outputs.author_kind }}
+          GATE_LIMIT_ONLY: ${{ needs.gate.outputs.limit_only }}
           LLM_RESULT: ${{ needs.llm.result }}
           VERDICT: ${{ needs.llm.outputs.verdict }}
         run: node scripts/review/approve.js

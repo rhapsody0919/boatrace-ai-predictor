@@ -6,7 +6,7 @@
  * env: GITHUB_TOKEN（読み取り）・GITHUB_REPOSITORY・BASE_SHA・HEAD_SHA・HEAD_REF・PR_AUTHOR（作者の login）・
  *      PR_AUTHOR_ID（作者の数値の id）・OWNER_ID（リポジトリの持ち主の数値の id）・MAKER_BOT_ID（作成の App の数値の id、任意）・
  *      MONTHLY_LIMIT（任意、既定300。作成の App の PR）・OWNER_MONTHLY_LIMIT（任意、既定300。持ち主の名義の PR）
- * 出力に author_kind（owner・maker・空）を足す
+ * 出力に author_kind（owner・maker・空）と limit_only（止めた理由が月の上限だけか）を足す
  * 出力: ok（true/false）・reason・vendor・sql_tables（JSON の配列）・head_sha
  */
 import {
@@ -47,8 +47,10 @@ async function main() {
 
   const actor = requireEnv("PR_AUTHOR");
   const now = new Date();
-  const all = await gh(token, "GET", monthlyRunsPath(repo, actor, now));
-  const skipped = await gh(token, "GET", monthlyRunsPath(repo, actor, now, "skipped"));
+  const [all, skipped] = await Promise.all([
+    gh(token, "GET", monthlyRunsPath(repo, actor, now)),
+    gh(token, "GET", monthlyRunsPath(repo, actor, now, "skipped")),
+  ]);
   const overLimit = monthlyLimitReason({
     total: all.total_count,
     skipped: skipped.total_count,
@@ -65,6 +67,8 @@ async function main() {
     headSha,
   );
   reasons.push(...mechanicalRejections(files, headModes, treeTruncated));
+  // 止めた理由が月の上限だけか（持ち主の PR は、このときだけ COMMENT にする。機械の検査で止めたときは差し戻す）
+  const limitOnly = reasons.length === 1 && reasons[0] === overLimit;
 
   const ok = reasons.length === 0;
   setOutput("ok", ok ? "true" : "false");
@@ -77,6 +81,7 @@ async function main() {
   );
   setOutput("vendor", vendor ?? "");
   setOutput("author_kind", kind ?? "");
+  setOutput("limit_only", limitOnly ? "true" : "false");
   setOutput("sql_tables", JSON.stringify(ok ? sqlTablesFromFiles(files) : []));
   setOutput("head_sha", headSha);
   console.log(

@@ -32,6 +32,7 @@ import {
   sqlTablesFromFiles,
   authorKind,
   monthlyLimitReason,
+  softFailFor,
   vendorForBranch,
   vendorForPr,
 } from "../lib/reviewPr.js";
@@ -121,6 +122,10 @@ check("ブランチ名が無ければ審査しない", vendorForBranch(undefined
     "上限・件数が数でなければ止める",
     monthlyLimitReason({ total: 1, skipped: 0, kind: "maker", makerLimit: "abc" }) !== null &&
       monthlyLimitReason({ total: undefined, skipped: 0, kind: "owner" }) !== null,
+  );
+  check(
+    "作者が分からないときは上限の理由を足さない",
+    monthlyLimitReason({ total: 9999, skipped: 0, kind: null, makerLimit: "1" }) === null,
   );
 }
 
@@ -383,6 +388,14 @@ check("ブランチ名が無ければ審査しない", vendorForBranch(undefined
     "P0 があれば承認しない",
     decideAction({ ...base, verdict: p0 }).event === "REQUEST_CHANGES",
   );
+  check(
+    "softFail は持ち主の PR で、関門を通ったか止めた理由が上限だけのとき",
+    softFailFor({ authorKind: "owner", gateOk: true, gateLimitOnly: false }) &&
+      softFailFor({ authorKind: "owner", gateOk: false, gateLimitOnly: true }) &&
+      !softFailFor({ authorKind: "owner", gateOk: false, gateLimitOnly: false }) &&
+      !softFailFor({ authorKind: "maker", gateOk: false, gateLimitOnly: true }) &&
+      !softFailFor({ authorKind: "", gateOk: true, gateLimitOnly: false }),
+  );
   // 持ち主の名義の PR（softFail）: 審査の中身でない理由では COMMENT、P0 は差し戻し、P0 なしは承認
   const soft = { ...base, softFail: true };
   check(
@@ -490,7 +503,9 @@ const jobBlocks = Object.fromEntries(
   check(
     "approve に作者の種類を渡す（持ち主の PR の COMMENT）",
     /author_kind: \$\{\{ steps\.gate\.outputs\.author_kind \}\}/.test(jobBlocks.gate) &&
-      /AUTHOR_KIND: \$\{\{ needs\.gate\.outputs\.author_kind \}\}/.test(jobBlocks.approve),
+      /AUTHOR_KIND: \$\{\{ needs\.gate\.outputs\.author_kind \}\}/.test(jobBlocks.approve) &&
+      /limit_only: \$\{\{ steps\.gate\.outputs\.limit_only \}\}/.test(jobBlocks.gate) &&
+      /GATE_LIMIT_ONLY: \$\{\{ needs\.gate\.outputs\.limit_only \}\}/.test(jobBlocks.approve),
   );
   check(
     "head は同じリポジトリだけ",

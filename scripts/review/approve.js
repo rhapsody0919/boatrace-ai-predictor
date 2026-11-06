@@ -6,9 +6,10 @@
  *
  * env: GH_TOKEN（審査の App のトークン）・GITHUB_REPOSITORY・PR_NUMBER・REVIEWED_SHA・GATE_OK・GATE_REASON・
  *      LLM_RESULT（needs.llm.result）・VERDICT（needs.llm.outputs.verdict、無いこともある）・
- *      AUTHOR_KIND（needs.gate.outputs.author_kind。owner なら審査の中身でない理由では COMMENT）
+ *      AUTHOR_KIND（needs.gate.outputs.author_kind）・GATE_LIMIT_ONLY（needs.gate.outputs.limit_only）。
+ *      持ち主の PR は、月の上限・審査の失敗では COMMENT
  */
-import { decideAction, parseVerdict } from "../lib/reviewPr.js";
+import { decideAction, parseVerdict, softFailFor } from "../lib/reviewPr.js";
 import { gh, requireEnv } from "./common.js";
 
 async function main() {
@@ -45,7 +46,11 @@ async function main() {
     verdict,
     reviewedSha,
     currentHeadSha: pr.head.sha,
-    softFail: process.env.AUTHOR_KIND === "owner",
+    softFail: softFailFor({
+      authorKind: process.env.AUTHOR_KIND,
+      gateOk: process.env.GATE_OK === "true",
+      gateLimitOnly: process.env.GATE_LIMIT_ONLY === "true",
+    }),
   });
   if (action.event === "NONE") {
     console.log(

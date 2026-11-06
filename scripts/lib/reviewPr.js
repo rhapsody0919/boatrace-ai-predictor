@@ -49,6 +49,7 @@ export function authorKind({ authorId, ownerId, makerId }) {
  * 持ち主の名義の PR は REVIEW_OWNER_MONTHLY_LIMIT（未設定なら300）、作成の App の PR は REVIEW_MONTHLY_LIMIT（未設定なら300）
  */
 export function monthlyLimitReason({ total, skipped, kind, makerLimit, ownerLimit }) {
+  if (kind !== "owner" && kind !== "maker") return null; // 作者が分からないときは、相手が決まらない理由で既に止めている
   const raw = kind === "owner" ? ownerLimit : makerLimit;
   const limit = Number(raw || 300);
   const name = kind === "owner" ? "REVIEW_OWNER_MONTHLY_LIMIT" : "REVIEW_MONTHLY_LIMIT";
@@ -251,13 +252,22 @@ export function parseVerdict(text) {
 }
 
 /**
+ * 持ち主の PR で、審査の中身でない理由を COMMENT にするか。関門を通ったか、止めた理由が月の上限だけのときだけ。
+ * 機械の検査（symlink・LFS・差分の上限超え等）で止めたときは差し戻す（fail closed のまま）
+ */
+export function softFailFor({ authorKind, gateOk, gateLimitOnly }) {
+  return authorKind === "owner" && (gateOk === true || gateLimitOnly === true);
+}
+
+/**
  * 承認するかを決める。承認は、関門を通り・審査が成功し・P0 が0件で・head が審査した SHA のままのときだけ
  *
  * @param {{ gateOk: boolean, gateReason: string, llmResult: string, verdict: ReturnType<typeof parseVerdict> | null,
  *           reviewedSha: string, currentHeadSha: string, softFail?: boolean }} args
  * 承認しないときは REQUEST_CHANGES を付ける。審査の App の最新の状態がマージを止める側になり、承認と新しい push が
  * 競って古い SHA への承認が残った場合も、次の審査が承認しなければ止まる。
- * softFail（持ち主の名義の PR）のときは、審査の中身でない理由（関門・審査の失敗・答えを読めない）では COMMENT にする。
+ * softFail（持ち主の名義の PR で、関門を通ったか止めた理由が月の上限だけ）のときは、審査の中身でない理由（月の上限・
+ * 審査の失敗・答えを読めない）では COMMENT にする。機械の検査で止めた持ち主の PR は softFail にせず差し戻す（fail closed）。
  * 上限や API の不調で持ち主の PR 全部に差し戻しが付き、/merge-pr が止まるのを防ぐ。P0 は softFail でも REQUEST_CHANGES
  * @returns {{ event: "APPROVE" | "REQUEST_CHANGES" | "COMMENT" | "NONE", body: string }}
  */
