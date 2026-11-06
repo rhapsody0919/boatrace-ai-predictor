@@ -1,0 +1,38 @@
+# 守る場所の持ち主（ゼロベース再設計 A2 の②）。
+# ruleset の require_code_owner_review を ON にすると、ここに当たるパスを変える PR は持ち主（@rhapsody0919）の承認が要る。
+#
+# 書式（GitHub の CODEOWNERS）:
+# - 1つのパスに複数の行が当たるときは、後の行が勝つ。いまは持ち主が1人なので順は効かない
+# - 先頭の / はリポジトリの根に固定する。/ が無い名前（例 package.json）は全ての階層に当たるので、根だけを守るときは / を付ける
+# - * は / をまたがない。** は階層をまたぐ。! の否定と [] の文字クラスは使えない
+
+# CI・審査・配備の設定
+/.github/**                           @rhapsody0919
+/scripts/review/**                    @rhapsody0919
+/vercel.json                          @rhapsody0919
+
+# 依存
+/package.json                         @rhapsody0919
+/package-lock.json                    @rhapsody0919
+
+# 本番 DB の移行（このリポジトリには無い。本当の置き場は docs/db-migration/、PR 本文を参照）
+/supabase/migrations/**               @rhapsody0919
+
+# 試験・lint の設定
+/playwright*.config.js                @rhapsody0919
+/eslint.config.js                     @rhapsody0919
+
+# AI への規約・設定
+/AGENTS.md                            @rhapsody0919
+/.claude/**                           @rhapsody0919
+
+# 本番に触る・見張る・共通の script
+/scripts/db/**                        @rhapsody0919
+/scripts/watch/**                     @rhapsody0919
+/scripts/lib/**                       @rhapsody0919
+
+# 品質の関門と道の判定
+/scripts/maintenance/verify-*.js      @rhapsody0919
+/scripts/maintenance/*-allowlist.json @rhapsody0919
+/scripts/maintenance/pr-lane.js       @rhapsody0919
+/config/pr-path-rules.json            @rhapsody0919
