@@ -4,7 +4,8 @@
   "ignoreCommand": "node scripts/vercel-ignore-build.js",
   "git": {
     "deploymentEnabled": {
-      "codex/**": false
+      "codex/**": false,
+      "master": false
     }
   },
   "crons": [
