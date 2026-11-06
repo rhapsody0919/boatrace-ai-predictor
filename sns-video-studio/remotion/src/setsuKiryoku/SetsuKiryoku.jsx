@@ -59,6 +59,8 @@ import {
   tagText,
   timeline,
   deadlineText,
+  borderCardRaceText,
+  borderCardRaceSize,
   DEADLINE_LINE,
 } from "./model.js";
 
@@ -764,11 +766,12 @@ function ThreeCards({ b }) {
               weight={400}
             >{`得点率 ${fmtRate(r.rate)}`}</T>
             <T
-              x={90}
+              x={LEFT}
+              w={560 - LEFT}
               y={y + 128}
-              size={40}
+              size={borderCardRaceSize(r)}
               weight={400}
-            >{`今日 ${r.race} ${r.boat}号艇`}</T>
+            >{borderCardRaceText(r)}</T>
             <div
               style={{
                 position: "absolute",

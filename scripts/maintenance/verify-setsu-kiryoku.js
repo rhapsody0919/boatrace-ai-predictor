@@ -25,6 +25,9 @@ import {
   MIN_FONT,
   barsLayout,
   borderNameLayout,
+  borderCardRaceText,
+  borderCardRaceSize,
+  allowedNumbers,
   checkBundle,
   finalGapTexts,
   normalizeBundle,
@@ -67,6 +70,55 @@ const t = (name, fn) => {
   n += 1;
   console.log(`ok - ${name}`);
 };
+
+t("border: 札・冒頭とサムネの締切、題・説明欄を照合する", () => {
+  const b = load("border");
+  assert.equal(deadlineText(b), "最初の締切 12:59");
+  assert.equal(borderCardRaceText(b.racers[0]), "今日 11R 締切15:50 4号艇");
+  assert.equal(borderCardRaceText(b.racers[2]), "今日 6R 締切12:59 3号艇");
+  assert.ok(screenTexts(b).includes(borderCardRaceText(b.racers[0])));
+  assert.deepEqual(check(b), []);
+  for (const r of b.racers) assert.ok(borderCardRaceSize(r) >= MIN_FONT);
+  for (const num of ["12", "59", "15", "50"]) assert.ok(allowedNumbers(b).has(num));
+  assert.ok(screenTexts(b).includes(deadlineText(b)));
+  const noRace = clone(b);
+  delete noRace.racers[0].race;
+  fails(noRace, /racers\[0\].race が「11R」の形でない/, "R の欠落");
+  for (const deadline of ["25:00", "9:30", undefined]) {
+    const a = clone(b);
+    a.racers[1].deadline = deadline;
+    fails(a, /racers\[1\].deadline が HH:MM でない/, "締切の形・欠落");
+  }
+  const title = clone(b);
+  title.youtube.title = title.youtube.title.replace("12:59", "");
+  fails(title, /youtube.title に締切の時刻 12:59 が無い/, "題の締切");
+  const desc = clone(b);
+  desc.youtube.description = desc.youtube.description.replace("10R 15:15", "");
+  fails(desc, /youtube.description に締切（10R 15:15）が無い/, "説明欄の締切");
+  const race = clone(b);
+  race.racers[0].race = "1R";
+  fails(race, /youtube.description に締切（1R 15:50）が無い/, "1R と11Rを区別");
+  const only1R = clone(b);
+  only1R.youtube.description = "1R 15:50、10R 15:15、6R 12:59";
+  fails(only1R, /youtube.description に締切（11R 15:50）が無い/, "1Rだけで11Rを満たさない");
+  const wide = clone(b);
+  wide.racers[0].race = "11R".repeat(30);
+  fails(wide, /札のレース行が 500px に収まらない/, "札の幅");
+  const hook = clone(b);
+  hook.racers.forEach((r) => { r.deadline = "12:59".repeat(30); });
+  fails(hook, /締切の行が 840px に収まらない/, "hook の締切行の幅");
+  const full = clone(b);
+  full.youtube.title = full.youtube.title.replace("12:59", "１２：５９");
+  full.youtube.description = full.youtube.description.replaceAll(":", "：");
+  assert.deepEqual(check(full), []);
+  for (const v of ["final_gap", "motor_gap", "motor_up"]) {
+    const a = load(v);
+    a.racers = [{ deadline: "12:59" }];
+    fails(a, /racers\[\].deadline は border の型だけ/, "他の型の締切");
+  }
+  for (const v of ["motor_gap", "motor_up"])
+    assert.equal(deadlineText(load(v)), null);
+});
 
 for (const v of VARIANTS) {
   t(`見本 ${v} が検査を通る`, () => {
