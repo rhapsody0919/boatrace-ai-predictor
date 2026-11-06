@@ -29,9 +29,27 @@ const keyPresent = path.join(dir, "key.pem");
 writeFileSync(keyPresent, "dummy", { mode: 0o600 });
 const keyAbsent = path.join(dir, "none.pem");
 
-const run = (command, keyFile) =>
+// push の照合用: origin がこのリポジトリの、枝の違う使い捨ての git の置き場（ネットワークには出ない）
+const makeRepo = (name, branch, origin) => {
+  const repo = path.join(dir, name);
+  const git = (...args) =>
+    spawnSync("git", ["-C", repo, ...args], { encoding: "utf8" });
+  spawnSync("git", ["init", "-q", "-b", branch, repo]);
+  git("remote", "add", "origin", origin);
+  return repo;
+};
+const OURS = "https://github.com/rhapsody0919/boatrace-ai-predictor.git";
+const repoClaude = makeRepo("claude", "claude/x", OURS);
+const repoFeature = makeRepo("feature", "feature/x", OURS);
+const repoOther = makeRepo(
+  "other",
+  "feature/x",
+  "https://github.com/o/other.git",
+);
+
+const run = (command, keyFile, cwd = dir) =>
   spawnSync("bash", [hook], {
-    input: JSON.stringify({ tool_name: "Bash", tool_input: { command } }),
+    input: JSON.stringify({ tool_name: "Bash", cwd, tool_input: { command } }),
     encoding: "utf8",
     env: { ...process.env, RYUJIN_MAKER_KEY_FILE: keyFile },
   }).status;
@@ -123,12 +141,54 @@ const cases = [
   ],
   [`${PR} view 123 --json reviewDecision`, false, "PR の読み取り"],
   [`git commit -m "admin の話"`, false, "普段の作業"],
+  [
+    "git push -u origin HEAD",
+    false,
+    "claude/ の枝の push",
+    keyPresent,
+    repoClaude,
+  ],
+  [
+    "node scripts/maintenance/ryujin-maker-token.js -- git push -u origin HEAD",
+    true,
+    "claude/ でない枝の push（道具を通しても）",
+    keyPresent,
+    repoFeature,
+  ],
+  [
+    "git push -u origin HEAD",
+    true,
+    "claude/ でない枝の push",
+    keyPresent,
+    repoFeature,
+  ],
+  [
+    "git -c x=y push origin master",
+    true,
+    "master への push",
+    keyPresent,
+    repoFeature,
+  ],
+  [
+    "git push -u origin HEAD:claude/x-v2",
+    false,
+    "claude/ の refspec を明示した push",
+    keyPresent,
+    repoFeature,
+  ],
+  [
+    "git push -u origin HEAD",
+    false,
+    "他のリポジトリの push は見ない",
+    keyPresent,
+    repoOther,
+  ],
 ];
 
 let failures = 0;
 try {
-  for (const [command, shouldBlock, label, keyFile = keyPresent] of cases) {
-    const status = run(command, keyFile);
+  for (const [command, shouldBlock, label, keyFile = keyPresent, cwd] of cases) {
+    const status = run(command, keyFile, cwd);
     const ok = shouldBlock ? status === 2 : status === 0;
     if (!ok) failures += 1;
     console.log(

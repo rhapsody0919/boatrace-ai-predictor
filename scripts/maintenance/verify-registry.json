@@ -601,7 +601,7 @@
     {
       "script": "verify-guard-deploy-approval.js",
       "tier": "ci",
-      "guards": ".claude/hooks/guard-deploy-approval.sh。本番 DB の適用の起動・承認・Environments の変更（2026-10-02）に加え、Claude の素の gh（オーナー、admin）での PR の承認・--admin のマージ・ruleset とブランチ保護の書き換えを止め、読み取りと ryujin-maker の名義のマージを通すこと（2026-11-06、ADR-0097 の追記）"
+      "guards": ".claude/hooks/guard-deploy-approval.sh。本番 DB の適用の起動・承認・Environments の変更（2026-10-02）に加え、Claude の素の gh（オーナー、admin）での PR の承認・--admin のマージ・ruleset とブランチ保護の書き換えを止め、読み取りと ryujin-maker の名義のマージを通すこと。--admin は作成の App の鍵が置かれた後だけ止める。このリポジトリへの claude/ でない枝の push を止める（2026-11-06、ADR-0097 の追記）"
     },
     {
       "script": "verify-guard-pr-merge.js",

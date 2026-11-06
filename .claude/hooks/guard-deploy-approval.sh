@@ -30,7 +30,7 @@ esac
 
 # 審査の素通りの照合は、関係する語を含む呼び出しだけにする（毎回の Bash で grep を起こさない）
 case "$input" in
-  *review*|*merge*|*uleset*|*protection*|*PullRequestReview*) ;;
+  *review*|*merge*|*uleset*|*protection*|*PullRequestReview*|*push*) ;;
   *) exit 0 ;;
 esac
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null | tr '\n' ' ')
@@ -49,4 +49,26 @@ if has '/rulesets|/branches/[^[:space:]]*/protection|/pulls/[0-9]+/reviews'; the
 fi
 key=${RYUJIN_MAKER_KEY_FILE:-$HOME/.config/ryujin/ryujin-maker.pem}
 if [ -f "$key" ] && has "gh[[:space:]]+pr[[:space:]]+merge.*[[:space:]]--admin$end"; then deny_review; fi
+
+# Claude の push は claude/ の枝だけ（このリポジトリのときだけ見る）。他の接頭辞の枝は Vercel が Preview を作り
+# 本番 DB の管理者キーを持って動き、review.yml も審査しない（2026-11-06、/code-review の指摘）。
+# 今の枝が claude/ で始まるか、コマンドに claude/ の refspec があれば通す
+if has "(^|[[:space:];&|(])git([[:space:]]+-[cC][[:space:]]+[^[:space:]]+)*[[:space:]]+push([[:space:]]|$)"; then
+  dir=$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null)
+  [ -n "$dir" ] || dir=$PWD
+  case "$(git -C "$dir" remote get-url origin 2>/dev/null)" in
+    *rhapsody0919/boatrace-ai-predictor*)
+      branch=$(git -C "$dir" branch --show-current 2>/dev/null)
+      case "$branch" in
+        claude/*) ;;
+        *)
+          if ! has "[[:space:]:]claude/"; then
+            echo "このリポジトリへの Claude の push は claude/ の枝だけにする（今の枝: ${branch:-不明}）。git branch -m claude/<名前> に直してから push する（AGENTS.md の枝の表、/create-pr）。" >&2
+            exit 2
+          fi
+          ;;
+      esac
+      ;;
+  esac
+fi
 exit 0
