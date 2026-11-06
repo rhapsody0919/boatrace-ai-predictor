@@ -39,6 +39,9 @@ import {
   hookLayout,
   rankLabel,
   tagText,
+  tagSize,
+  TAG_MAX_W,
+  dateLabel,
   timeline,
   deadlineText,
   screenTexts,
@@ -70,6 +73,57 @@ const t = (name, fn) => {
   n += 1;
   console.log(`ok - ${name}`);
 };
+
+t("札に日付・公式の日目を出す（BOA-1307）", () => {
+  const expected = {
+    motor_gap: "10/31（土）尼崎 SG 5日目",
+    motor_up: "10/31（土）尼崎 SG 5日目",
+    border: "10/30（金）尼崎 SG 4日目 予選最終日",
+    final_gap: "11/1（日）尼崎 今日の優勝戦",
+  };
+  for (const v of VARIANTS) {
+    const b = load(v);
+    assert.equal(tagText(b), expected[v]);
+    assert.equal(tagSize(b), 40);
+    assert.deepEqual(check(b), []);
+    assert.ok(!screenTexts(b).includes(tagText(b)));
+  }
+  const f = load("final_gap");
+  assert.equal(tagText({ ...f, when: "eve" }), "11/1（日）尼崎 優勝戦の前夜");
+  assert.ok(!Object.hasOwn(f, "series_day_text"));
+  assert.deepEqual(check(f), []);
+});
+
+t("日付の形・実在・曜日（UTC）を照合する", () => {
+  assert.equal(dateLabel("2026-11-03"), "11/3（火）");
+  assert.equal(dateLabel("2026-01-05"), "1/5（月）");
+  assert.equal(dateLabel("2024-02-29"), "2/29（木）");
+  assert.equal(dateLabel("0004-02-29"), "2/29（日）");
+  for (const d of ["2026-11-31", "11/3", "2026-02-29", "2026-00-01", "2026-13-01", "2026-01-00", "2026-1-05", null])
+    assert.equal(dateLabel(d), null);
+  for (const v of VARIANTS)
+    for (const date of ["2026-11-31", "11/3"])
+      fails({ ...load(v), date }, /date が YYYY-MM-DD の実在する日でない/, `${v} の日付 ${date}`);
+});
+
+t("公式の日目の欠落・形の誤りと札の幅超過を落とす", () => {
+  for (const v of ["motor_gap", "motor_up", "border"]) {
+    const b = load(v);
+    for (const series_day_text of [undefined, "3日", "13日目", "1日目"])
+      fails({ ...b, series_day_text }, /series_day_text/, `${v} の日目 ${series_day_text}`);
+    for (const series_day_text of ["初日", "最終日", "2日目", "9日目", "10日目", "12日目"])
+      assert.deepEqual(check({ ...b, series_day_text }), []);
+  }
+  fails({ ...load("final_gap"), when: "eve", date: "11/3" },
+    /date が YYYY-MM-DD の実在する日でない/, "前夜の不正な日付");
+  assert.equal(TAG_MAX_W, 792);
+  const shrunk = { ...load("border"), grade: "SG あああ" };
+  assert.ok(tagSize(shrunk) >= MIN_FONT && tagSize(shrunk) < 40);
+  assert.deepEqual(check(shrunk), []);
+  const wide = { ...load("border"), grade: "SG 第71回ボートレースダービー 予選の最終日のレース" };
+  assert.equal(tagSize(wide), null);
+  fails(wide, /札が幅 792px に 36px で収まらない/, "長い札");
+});
 
 t("border: 札・冒頭とサムネの締切、題・説明欄を照合する", () => {
   const b = load("border");
@@ -373,8 +427,8 @@ t("final_gap の見本は尼崎 11/1 の値（龍神 DB の読み取りで照合
       "35:16:2/7",
     ],
   );
-  assert.equal(tagText(f), "尼崎 今日の優勝戦");
-  assert.equal(tagText({ ...f, when: "eve" }), "尼崎 優勝戦の前夜");
+  assert.equal(tagText(f), "11/1（日）尼崎 今日の優勝戦");
+  assert.equal(tagText({ ...f, when: "eve" }), "11/1（日）尼崎 優勝戦の前夜");
 });
 
 t("final_gap: 名前と級が欠けたら止める（オーナー 11/1 の恒久の決まり）", () => {
