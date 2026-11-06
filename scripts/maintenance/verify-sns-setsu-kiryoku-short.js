@@ -7,6 +7,7 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
 import {
+  createRestStore,
   checkShortBundle,
   checkTiming,
   checkVideo,
@@ -317,6 +318,10 @@ const store = {
     );
     return { uploads: a.u, general: a.g + r.n };
   },
+  raceStartTimes: async (date, venue, numbers) => numbers.map((n) => ({
+    race_id: `${date}-${venue}-${String(n).padStart(2, "0")}`,
+    start_time: ({ 11: "15:50:00", 10: "15:15:00", 6: "12:59:00" })[n],
+  })),
   // 本番の createRestStore.finalRace と同じ形: R があればそのレースが優勝戦のときだけ、無ければ「優勝戦」の1件
   finalRace: async (date, venue, raceNumber = null) => {
     const final =
@@ -1467,4 +1472,56 @@ test("当日の締切: 束の R の優勝戦と時刻が合えば通り、違う
   assert.ok((wrongTime.reasons ?? []).some((x) => /DB の優勝戦（12R 16:40）と違う/.test(x)), JSON.stringify(wrongTime.reasons));
   const wrongRace = await push(withDl("11R", "16:40"), { dryRun: true });
   assert.ok((wrongRace.reasons ?? []).some((x) => /優勝戦が DB に無い/.test(x)), JSON.stringify(wrongRace.reasons));
+});
+
+test("border の締切: 3人すべてを races と照合し、不一致・行なし・null・読取失敗で拒否する（BOA-1342）", async () => {
+  const b = { ...await sampleOf("border"), date: DAY, send_time: "08:00", source_observed_at: `${DAY}T07:55:00+09:00` };
+  const rows = await store.raceStartTimes(DAY, "13", [11, 10, 6]);
+  const options = { now: at("07:58:00"), dryRun: true };
+  const ok = await push(b, { ...options, store: { ...store, raceStartTimes: async (...args) => {
+    assert.deepEqual(args, [DAY, "13", [11, 10, 6]]);
+    return rows;
+  } } });
+  assert.equal(ok.reasons, undefined, JSON.stringify(ok.reasons));
+  const { borderDeadlineMismatch } = await import("../sns/push-setsu-kiryoku-short.js");
+
+  const badRows = [
+    [rows.map((r, i) => i === 2 ? { ...r, start_time: "13:05:00" } : r), ["6R", "12:59", "13:05"]],
+    [rows.filter((_, i) => i !== 1), ["10R", "15:15", "行なし"]],
+    [rows.map((r, i) => i === 1 ? { ...r, start_time: null } : r), ["10R", "15:15", "締切なし"]],
+    [rows.map((r, i) => i === 0 ? { ...r, start_time: "15:55:00" } : r), ["11R", "15:50", "15:55"]],
+  ];
+  for (const [changed, words] of badRows) {
+    const result = await push(b, { ...options, store: { ...store, raceStartTimes: async () => changed } });
+    assert.equal(resultLine(result).code, 1);
+    const reason = borderDeadlineMismatch(b.racers, changed);
+    for (const word of words) {
+      assert.ok(reason.includes(word), reason);
+      assert.ok(result.reasons.some((r) => r.includes(word)), JSON.stringify(result.reasons));
+    }
+  }
+  assert.equal(borderDeadlineMismatch(b.racers, [...rows].reverse()), null);
+  const broken = await push(b, { ...options, store: { ...store, raceStartTimes: async () => { throw new Error("read failed"); } } });
+  assert.equal(resultLine(broken).code, 1);
+  assert.match(broken.reasons.join(" "), /read failed/);
+  const rejected = await push(b, { ...options, dryRun: false, store: { ...store, raceStartTimes: async () => badRows[0][0] } });
+  assert.equal(resultLine(rejected).code, 1);
+  assert.match(rejected.notes[0], /6R.*12:59.*13:05/);
+  assert.deepEqual(await counts(), NOTHING);
+  assert.deepEqual(saved, []);
+});
+
+test("raceStartTimes: 指定した日・会場・R だけを REST で読み、HTTP 失敗を投げる", async () => {
+  const rows = await store.raceStartTimes(DAY, "13", [11, 10, 6]);
+  const requests = [];
+  const rest = createRestStore({ url: "https://db.invalid", key: "test-only", fetchImpl: async (url) => {
+    requests.push(url);
+    return new Response(JSON.stringify(rows));
+  } });
+  assert.deepEqual(await rest.raceStartTimes(DAY, "13", [11, 10, 6]), rows);
+  assert.equal(requests[0], `https://db.invalid/rest/v1/races?race_id=in.(${DAY}-13-11,${DAY}-13-10,${DAY}-13-06)&select=race_id,start_time`);
+  const failed = createRestStore({ url: "https://db.invalid", key: "test-only", fetchImpl: async () => new Response("read failed", { status: 503 }) });
+  await assert.rejects(failed.raceStartTimes(DAY, "13", [11, 10, 6]), /HTTP 503.*read failed/);
+  const offline = createRestStore({ url: "https://db.invalid", key: "test-only", fetchImpl: async () => { throw new Error("offline"); } });
+  await assert.rejects(offline.raceStartTimes(DAY, "13", [11, 10, 6]), /offline/);
 });
