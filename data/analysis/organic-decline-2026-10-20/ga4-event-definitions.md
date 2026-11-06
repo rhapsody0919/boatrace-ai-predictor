@@ -63,7 +63,7 @@
 
 - 登録日より前には遡らない（docs/design/analogy-reaction-measurement/ga4-custom-dimensions.md:3）
 - docs/design/in-collapse-caution/measurement.md:46 に「登録済み14件」とあるが、14件の内訳は書かれていない
-- 公開後の読み取り: `scripts/analysis/assist-ga4/report.js`（本番ホストだけ、Preview は excludedHosts）、結果 data/analysis/assist-ga4/2026-10-11.json（docs/design/thinking-assist/events.md:61〜67）。ソナーの読み取りスクリプトは repo に無い（週1回のまとめは hq が作る、events.md:3）
+- 公開後の読み取り: `scripts/analysis/assist-ga4/report.js`（本番ホストだけ、Preview は excludedHosts）、結果は hq（2026-11-06 に公開のリポジトリから外した。docs/design/thinking-assist/events.md の「公開後の読み取り」）。ソナーの読み取りスクリプトは repo に無い（週1回のまとめは hq が作る、events.md:3）
 
 ## 6. 内部トラフィック・タイムゾーン・計測の切れ目
 | 日付 | 内容 | 比較への影響 | 出典 |
@@ -78,7 +78,7 @@
 | 2026-10-08〜11 | tab_id 登録（10/8）、ソナー別タブ化（10/9 09:17）、思考アシスト公開（10/11） | レース詳細の中の動きの前後比較は 10/11 以降 | docs/knowledge/measurement.md:27、docs/design/in-collapse-caution/measurement.md:7 |
 
 - 内部トラフィック除外の条件（IP 等）・設定時刻: 不明・記録はユーザー設定としての日付だけ。Admin API v1alpha で読めない（scripts/analysis/ga4-organic-weekly-export.js の notes.internalTraffic）
-- GA4 プロパティのタイムゾーン: 不明・docs・コミット済みのコードに記録なし。scripts/analysis/ga4-organic-weekly-export.js（この PR）が `settings.property.timeZone` を読む作りだが、同じフォルダの ga4-organic-0427-1019.json・ga4-organic-0928-1019.json の `settings.property` は「Google Analytics Admin API has not been used in project … or it is disabled」のエラーで読めていない（GCP で Admin API を有効にすれば読める）
+- GA4 プロパティのタイムゾーン: 不明・docs・コミット済みのコードに記録なし。scripts/analysis/ga4-organic-weekly-export.js（この PR）が `settings.property.timeZone` を読む作りだが、2026-10-20 に取った ga4-organic-*.json（今は hq）の `settings.property` は「Google Analytics Admin API has not been used in project … or it is disabled」のエラーで読めていない（GCP で Admin API を有効にすれば読める）
 - 参考: 月別 PV を出す i18n-demand-report.js 等を JST 9時より前に走らせると期間の始まりが前月末になる（スクリプト側の日付計算の話で、GA4 のタイムゾーンとは別）（docs/knowledge/measurement.md:32）
 - 参考: GA4 の PV は AdSense の PV と大きく食い違う（9/29 時点で AdSense は GA4 の約36%。実数は hq）（docs/knowledge/measurement.md:31）
 - 5〜8月の GA4 の計測コードの変更: 7/14 の app_language、7/31 の src/App.jsx の GA 初期化の書式変更（#160。中身は同じ）、8/29 の / の描画元の変更（#415、上表）、8/31 の deep_link_click（`git log -G'trackEvent\(|gtag\(' -- src`）

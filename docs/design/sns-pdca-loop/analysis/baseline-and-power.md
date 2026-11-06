@@ -7,7 +7,7 @@ spec の「統計検証」節の根拠。読み取りのみ（GA4・YouTube Anal
 ```bash
 node scripts/analysis/sns-pdca-baseline/ga4-sns-inflow.js --from=2026-08-15 --to=2026-10-11
 node scripts/analysis/sns-pdca-baseline/youtube-shorts-metrics.js --since=2026-08-01 --to=2026-10-11
-node scripts/analysis/sns-pdca-baseline/power.js --ga4=data/analysis/sns-pdca-baseline/ga4-2026-08-15_2026-10-11.json --youtube=data/analysis/sns-pdca-baseline/youtube-2026-08-01_2026-10-11.json
+node scripts/analysis/sns-pdca-baseline/power.js --ga4=data/analysis/sns-pdca-baseline/ga4-2026-08-15_2026-10-11.json  # ga4-*.json は上の1行目で手元に作る（コミットしない） --youtube=data/analysis/sns-pdca-baseline/youtube-2026-08-01_2026-10-11.json
 ```
 
 worktree で動かすときは `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` に本体の `credentials/google-service-account.json` を渡す。結果は `data/analysis/sns-pdca-baseline/`（youtube-*.json）。ga4-*.json・power-2026-10-12.json（GA4 の実数を含む）は hq へ移した（2026-11-06）。
@@ -41,7 +41,7 @@ X・YouTube 由来の人/日、自然検索の対照、ソナーのタブを開�
 
 - Shorts の再生に対し、YouTube 由来のサイトユーザーはごくわずか（実数は hq）。Shorts の再生画面からは外部へリンクできない（2023-08-31 以降）
 
-## 必要件数（power-2026-10-12.json#perArm、版ごと、検出力0.8・両側α=0.05）
+## 必要件数（power.js の perArm。結果の JSON は hq、版ごと、検出力0.8・両側α=0.05）
 
 | 指標（基準値） | +20% | +50% | +100% |
 |---|---|---|---|

@@ -28,7 +28,7 @@
 - レース詳細の中の動きを前後で比べる基準は 10/11 以降しか使えない（tab_id 登録 10/8、ソナー別タブ化 10/9 09:17、思考アシスト公開 10/11）（2026-10-12、同 measurement.md）
 - 9/28 以前の / の PV にはレース詳細が混ざっている。ページ別の比較は 9/29 以降（2026-10-12、BOA-531、同 measurement.md）
 - 置き場所を比べる機能は、イベントを共通にしてパラメータで置き場所を区別すると、後で動かしても前後がつながる（2026-10-12、同 measurement.md）
-- sessionSource の data_race_table・outcome_pattern_preview・volatility_display・venue_tendency_panel（medium は (not set)、チャネルは Unassigned）は、PR #656（2026-09-15）より前に汚れた人の、後の直接の訪問。GA4 は直接の訪問に前回の直接でない流入元を引き継ぐ。9/17〜10/22 の該当は15人で全員の初回訪問が 9/14 以前、改名後に初めて来た人には出ない。検索・SNS の流入は上書きされない（そちらが来れば流入元はそれになる）。読み替えは「Direct に足す」。引き継ぎの期間の目安は GA4 既定の90日（このプロパティの設定は未確認）で、12月中旬に消える見込み（2026-10-22、GA4 Data API の sessionSource×newVsReturning・firstSessionDate、BOA-996）
+- sessionSource の data_race_table・outcome_pattern_preview・volatility_display・venue_tendency_panel（medium は (not set)、チャネルは Unassigned）は、PR #656（2026-09-15）より前に汚れた人の、後の直接の訪問。GA4 は直接の訪問に前回の直接でない流入元を引き継ぐ。9/17〜10/22 の該当者は全員の初回訪問が 9/14 以前、改名後に初めて来た人には出ない。検索・SNS の流入は上書きされない（そちらが来れば流入元はそれになる）。読み替えは「Direct に足す」。引き継ぎの期間の目安は GA4 既定の90日（このプロパティの設定は未確認）で、12月中旬に消える見込み（2026-10-22、GA4 Data API の sessionSource×newVsReturning・firstSessionDate、BOA-996）
 - GA4 の PV は 9/29（page_view の修正）と 10/1（内部トラフィックの除外）で切れる。注記は scripts/lib/ga4MeasurementBreaks.js が出す（2026-10-01、memory seo_keyword_strategy_2026_09_29）
 - PV の絶対値は AdSense の PV とも突き合わせる（2026-09-29 は AdSense の PV が GA4 日本語 PV の約36%。実数は hq）（2026-10-05、memory ai_agent_era_strategy_2026_10_05）
 - i18n-demand-report.js 等の月別 PV を JST 9時より前に実行すると、期間の始まりが前月の末日になる（2026-10-06、memory project_ai_multi_venture_ops_2026_10_05）
