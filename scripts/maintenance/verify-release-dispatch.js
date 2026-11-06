@@ -566,7 +566,7 @@ for (const [label, env, expect] of [
   // master の push ごとの本番デプロイを止める（ADR-0106 の PR 2）。本番を出すのは上の定時の Deploy Hook だけになる
   check(
     vercel.git?.deploymentEnabled?.master === false,
-    "(c) vercel.json: git.deploymentEnabled.master が false（push ごとに本番を出さない）",
+    "(e) vercel.json: git.deploymentEnabled.master が false（push ごとに本番を出さない）",
     JSON.stringify(vercel.git?.deploymentEnabled),
   );
 }
