@@ -6,8 +6,8 @@
     "tables": 107,
     "rpcs": 68,
     "sourceFiles": 1685,
-    "filesWithAccess": 270,
-    "tableReaders": 988,
+    "filesWithAccess": 271,
+    "tableReaders": 990,
     "tableWriters": 189,
     "rpcCallers": 51,
     "nameMentions": 232,
@@ -1616,7 +1616,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1068",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1101",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1869,7 +1869,7 @@
             "scripts/maintenance/backfill-exhibition-by-race-id.js:48",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/maintenance/verify-pre-race-parsers.js:1868",
-            "scripts/sns/push-setsu-kiryoku-short.js:1068",
+            "scripts/sns/push-setsu-kiryoku-short.js:1101",
             "src/services/racerService.js:148",
             "src/services/sherlockService.js:83",
             "src/services/supabaseDataService.js:480",
@@ -2090,7 +2090,7 @@
             "scripts/lib/analogyV16Exhibition.js:296",
             "scripts/lib/snsTodayDigestV3.js:112",
             "scripts/maintenance/verify-analogy-v16.js:286",
-            "scripts/sns/push-setsu-kiryoku-short.js:1068",
+            "scripts/sns/push-setsu-kiryoku-short.js:1101",
             "src/services/supabaseDataService.js:5405",
             "src/services/supabaseDataService.js:5483"
           ],
@@ -6642,7 +6642,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1055",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1088",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6651,7 +6651,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1060",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1093",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6847,8 +6847,8 @@
             "scripts/maintenance/verify-full-picture-scene2.js:3633",
             "scripts/ml/analogy/build-wind-basis.js:95",
             "scripts/sns/push-finals-image.js:1294",
-            "scripts/sns/push-setsu-kiryoku-short.js:1055",
-            "scripts/sns/push-setsu-kiryoku-short.js:1060",
+            "scripts/sns/push-setsu-kiryoku-short.js:1088",
+            "scripts/sns/push-setsu-kiryoku-short.js:1093",
             "scripts/verification/verify-series-points-border.mjs:79",
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:158",
@@ -7008,8 +7008,8 @@
             "scripts/lib/snsTodayDigestV3.js:104",
             "scripts/maintenance/verify-full-picture-scene2.js:3633",
             "scripts/sns/push-finals-image.js:1294",
-            "scripts/sns/push-setsu-kiryoku-short.js:1055",
-            "scripts/sns/push-setsu-kiryoku-short.js:1060",
+            "scripts/sns/push-setsu-kiryoku-short.js:1088",
+            "scripts/sns/push-setsu-kiryoku-short.js:1093",
             "scripts/verification/verify-series-points-border.mjs:79",
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:158",
@@ -7933,7 +7933,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1067",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1100",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -8669,7 +8669,7 @@
             "scripts/maintenance/verify-e2e-har-merge.js:58",
             "scripts/maintenance/verify-sns-today-plan.js:2665",
             "scripts/maintenance/verify-sns-today-plan.js:2667",
-            "scripts/sns/push-setsu-kiryoku-short.js:1067",
+            "scripts/sns/push-setsu-kiryoku-short.js:1100",
             "scripts/verification/verify-series-points-border.mjs:47",
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
@@ -9311,7 +9311,7 @@
             "scripts/lib/analogyV16Exhibition.js:299",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/verify-analogy-v16.js:289",
-            "scripts/sns/push-setsu-kiryoku-short.js:1067"
+            "scripts/sns/push-setsu-kiryoku-short.js:1100"
           ],
           "writers": [],
           "sql": [
@@ -17392,6 +17392,16 @@
           "test": true
         },
         {
+          "ref": "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1522",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "race_id",
+            "start_time"
+          ],
+          "test": true
+        },
+        {
           "ref": "scripts/maintenance/verify-sns-today-plan.js:2660",
           "op": "rest",
           "via": "rest",
@@ -17467,7 +17477,16 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1066",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1081",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "race_id",
+            "start_time"
+          ]
+        },
+        {
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1099",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -17970,11 +17989,13 @@
             "scripts/maintenance/verify-pretest-row-pick.js:93",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
             "scripts/maintenance/verify-sns-auto-plan.js:615",
+            "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1522",
             "scripts/maintenance/verify-sns-today-plan.js:2662",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
             "scripts/sns/push-full-picture.js:839",
-            "scripts/sns/push-setsu-kiryoku-short.js:1066",
+            "scripts/sns/push-setsu-kiryoku-short.js:1081",
+            "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
@@ -18261,10 +18282,12 @@
             "scripts/maintenance/check-result-shadow.js:125",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
+            "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1522",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
             "scripts/sns/push-full-picture.js:839",
-            "scripts/sns/push-setsu-kiryoku-short.js:1066",
+            "scripts/sns/push-setsu-kiryoku-short.js:1081",
+            "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
@@ -18457,7 +18480,7 @@
             "scripts/maintenance/verify-sns-today-plan.js:2661",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-full-picture.js:839",
-            "scripts/sns/push-setsu-kiryoku-short.js:1066",
+            "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
             "src/services/supabaseDataService.js:2562",
             "src/services/supabaseDataService.js:7277"
@@ -20042,7 +20065,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:971",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:998",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20054,7 +20077,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:984",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1011",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20111,8 +20134,8 @@
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
-            "scripts/sns/push-setsu-kiryoku-short.js:971",
-            "scripts/sns/push-setsu-kiryoku-short.js:984",
+            "scripts/sns/push-setsu-kiryoku-short.js:1011",
+            "scripts/sns/push-setsu-kiryoku-short.js:998",
             "scripts/sns/push-upset-win-short.js:585",
             "scripts/sns/push-upset-win-short.js:597"
           ],
@@ -20132,8 +20155,8 @@
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
-            "scripts/sns/push-setsu-kiryoku-short.js:971",
-            "scripts/sns/push-setsu-kiryoku-short.js:984",
+            "scripts/sns/push-setsu-kiryoku-short.js:1011",
+            "scripts/sns/push-setsu-kiryoku-short.js:998",
             "scripts/sns/push-upset-win-short.js:585",
             "scripts/sns/push-upset-win-short.js:597"
           ],
@@ -20152,8 +20175,8 @@
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
-            "scripts/sns/push-setsu-kiryoku-short.js:971",
-            "scripts/sns/push-setsu-kiryoku-short.js:984",
+            "scripts/sns/push-setsu-kiryoku-short.js:1011",
+            "scripts/sns/push-setsu-kiryoku-short.js:998",
             "scripts/sns/push-upset-win-short.js:585",
             "scripts/sns/push-upset-win-short.js:597"
           ],
@@ -20189,8 +20212,8 @@
             "scripts/sns/push-finals-image.js:1320",
             "scripts/sns/push-full-picture.js:846",
             "scripts/sns/push-research-image.js:711",
-            "scripts/sns/push-setsu-kiryoku-short.js:971",
-            "scripts/sns/push-setsu-kiryoku-short.js:984",
+            "scripts/sns/push-setsu-kiryoku-short.js:1011",
+            "scripts/sns/push-setsu-kiryoku-short.js:998",
             "scripts/sns/push-upset-win-short.js:585",
             "scripts/sns/push-upset-win-short.js:597"
           ],
@@ -20478,7 +20501,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:997",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1024",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20494,7 +20517,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1006",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1033",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20584,8 +20607,8 @@
             "scripts/sns/push-full-picture.js:878",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
-            "scripts/sns/push-setsu-kiryoku-short.js:1006",
-            "scripts/sns/push-setsu-kiryoku-short.js:997",
+            "scripts/sns/push-setsu-kiryoku-short.js:1024",
+            "scripts/sns/push-setsu-kiryoku-short.js:1033",
             "scripts/sns/push-upset-win-short.js:604"
           ],
           "writers": [],
@@ -20617,7 +20640,7 @@
             "api/_lib/snsClaimCheck.js:467",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
-            "scripts/sns/push-setsu-kiryoku-short.js:997",
+            "scripts/sns/push-setsu-kiryoku-short.js:1024",
             "scripts/sns/push-upset-win-short.js:604"
           ],
           "writers": [],
@@ -20647,8 +20670,8 @@
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
-            "scripts/sns/push-setsu-kiryoku-short.js:1006",
-            "scripts/sns/push-setsu-kiryoku-short.js:997",
+            "scripts/sns/push-setsu-kiryoku-short.js:1024",
+            "scripts/sns/push-setsu-kiryoku-short.js:1033",
             "scripts/sns/push-upset-win-short.js:604"
           ],
           "writers": [],
@@ -20691,8 +20714,8 @@
             "scripts/sns/push-full-picture.js:878",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
-            "scripts/sns/push-setsu-kiryoku-short.js:1006",
-            "scripts/sns/push-setsu-kiryoku-short.js:997",
+            "scripts/sns/push-setsu-kiryoku-short.js:1024",
+            "scripts/sns/push-setsu-kiryoku-short.js:1033",
             "scripts/sns/push-upset-win-short.js:604"
           ],
           "writers": [],
@@ -20713,7 +20736,7 @@
         "held_reason": {
           "readers": [
             "scripts/sns/push-research-image.js:695",
-            "scripts/sns/push-setsu-kiryoku-short.js:997",
+            "scripts/sns/push-setsu-kiryoku-short.js:1024",
             "scripts/sns/push-upset-win-short.js:604"
           ],
           "writers": [],
@@ -20747,7 +20770,7 @@
           "readers": [
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-research-image.js:695",
-            "scripts/sns/push-setsu-kiryoku-short.js:997",
+            "scripts/sns/push-setsu-kiryoku-short.js:1024",
             "scripts/sns/push-upset-win-short.js:604"
           ],
           "writers": [],
@@ -20781,7 +20804,7 @@
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
-            "scripts/sns/push-setsu-kiryoku-short.js:997",
+            "scripts/sns/push-setsu-kiryoku-short.js:1024",
             "scripts/sns/push-upset-win-short.js:604"
           ],
           "writers": [],
@@ -20801,8 +20824,8 @@
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
             "scripts/sns/push-research-image.js:695",
-            "scripts/sns/push-setsu-kiryoku-short.js:1006",
-            "scripts/sns/push-setsu-kiryoku-short.js:997",
+            "scripts/sns/push-setsu-kiryoku-short.js:1024",
+            "scripts/sns/push-setsu-kiryoku-short.js:1033",
             "scripts/sns/push-upset-win-short.js:604"
           ],
           "writers": [],
@@ -20823,7 +20846,7 @@
             "api/_lib/snsClaimCheck.js:409",
             "scripts/sns/push-finals-image.js:1299",
             "scripts/sns/push-full-picture.js:889",
-            "scripts/sns/push-setsu-kiryoku-short.js:997"
+            "scripts/sns/push-setsu-kiryoku-short.js:1024"
           ],
           "writers": [],
           "sql": []
@@ -21754,7 +21777,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1002",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1029",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -21818,7 +21841,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:960",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:987",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -21883,8 +21906,8 @@
             "scripts/sns/push-finals-image.js:1384",
             "scripts/sns/push-full-picture.js:895",
             "scripts/sns/push-full-picture.js:918",
-            "scripts/sns/push-setsu-kiryoku-short.js:1002",
-            "scripts/sns/push-setsu-kiryoku-short.js:960",
+            "scripts/sns/push-setsu-kiryoku-short.js:1029",
+            "scripts/sns/push-setsu-kiryoku-short.js:987",
             "scripts/sns/today-picks.js:93"
           ],
           "writers": [],
@@ -21939,7 +21962,7 @@
             "scripts/maintenance/verify-sns-daily-runner.js:965",
             "scripts/maintenance/verify-sns-today-plan.js:738",
             "scripts/sns/delete-x-post.js:118",
-            "scripts/sns/push-setsu-kiryoku-short.js:1002",
+            "scripts/sns/push-setsu-kiryoku-short.js:1029",
             "scripts/sns/today-picks.js:93"
           ],
           "writers": [],
@@ -23820,7 +23843,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:992",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1019",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23876,7 +23899,7 @@
             "api/_lib/snsXSendStore.js:157",
             "scripts/lib/snsMetricsRunner.js:526",
             "scripts/sns/push-finals-image.js:1328",
-            "scripts/sns/push-setsu-kiryoku-short.js:992"
+            "scripts/sns/push-setsu-kiryoku-short.js:1019"
           ],
           "writers": [],
           "sql": [
@@ -23970,7 +23993,7 @@
         },
         "expiry_minutes": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:992"
+            "scripts/sns/push-setsu-kiryoku-short.js:1019"
           ],
           "writers": [],
           "sql": [
@@ -23980,7 +24003,7 @@
         },
         "max_source_age_seconds": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:992"
+            "scripts/sns/push-setsu-kiryoku-short.js:1019"
           ],
           "writers": [],
           "sql": [
@@ -23991,7 +24014,7 @@
         "daily_limit": {
           "readers": [
             "scripts/sns/push-finals-image.js:1328",
-            "scripts/sns/push-setsu-kiryoku-short.js:992"
+            "scripts/sns/push-setsu-kiryoku-short.js:1019"
           ],
           "writers": [],
           "sql": [
@@ -24003,7 +24026,7 @@
         "daily_baseline_date": {
           "readers": [
             "scripts/sns/push-finals-image.js:1328",
-            "scripts/sns/push-setsu-kiryoku-short.js:992"
+            "scripts/sns/push-setsu-kiryoku-short.js:1019"
           ],
           "writers": [],
           "sql": [
@@ -24016,7 +24039,7 @@
         "daily_external_count": {
           "readers": [
             "scripts/sns/push-finals-image.js:1328",
-            "scripts/sns/push-setsu-kiryoku-short.js:992"
+            "scripts/sns/push-setsu-kiryoku-short.js:1019"
           ],
           "writers": [],
           "sql": [
@@ -24053,7 +24076,7 @@
         },
         "daily_limit_youtube": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:992"
+            "scripts/sns/push-setsu-kiryoku-short.js:1019"
           ],
           "writers": [],
           "sql": [
@@ -24393,7 +24416,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1011",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1038",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -24409,7 +24432,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1015",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1042",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -24420,7 +24443,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1020",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1047",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -24476,9 +24499,9 @@
             "scripts/sns/push-finals-image.js:1353",
             "scripts/sns/push-full-picture.js:898",
             "scripts/sns/push-research-image.js:722",
-            "scripts/sns/push-setsu-kiryoku-short.js:1011",
-            "scripts/sns/push-setsu-kiryoku-short.js:1015",
-            "scripts/sns/push-setsu-kiryoku-short.js:1020"
+            "scripts/sns/push-setsu-kiryoku-short.js:1038",
+            "scripts/sns/push-setsu-kiryoku-short.js:1042",
+            "scripts/sns/push-setsu-kiryoku-short.js:1047"
           ],
           "writers": [],
           "sql": [
@@ -24502,8 +24525,8 @@
             "scripts/sns/push-finals-image.js:1353",
             "scripts/sns/push-full-picture.js:898",
             "scripts/sns/push-research-image.js:722",
-            "scripts/sns/push-setsu-kiryoku-short.js:1011",
-            "scripts/sns/push-setsu-kiryoku-short.js:1020"
+            "scripts/sns/push-setsu-kiryoku-short.js:1038",
+            "scripts/sns/push-setsu-kiryoku-short.js:1047"
           ],
           "writers": [],
           "sql": [
@@ -24540,9 +24563,9 @@
             "scripts/sns/push-finals-image.js:1353",
             "scripts/sns/push-full-picture.js:898",
             "scripts/sns/push-research-image.js:722",
-            "scripts/sns/push-setsu-kiryoku-short.js:1011",
-            "scripts/sns/push-setsu-kiryoku-short.js:1015",
-            "scripts/sns/push-setsu-kiryoku-short.js:1020"
+            "scripts/sns/push-setsu-kiryoku-short.js:1038",
+            "scripts/sns/push-setsu-kiryoku-short.js:1042",
+            "scripts/sns/push-setsu-kiryoku-short.js:1047"
           ],
           "writers": [],
           "sql": [
@@ -24616,8 +24639,8 @@
             "api/_lib/snsXSendStore.js:70",
             "scripts/lib/snsSendRunner.js:690",
             "scripts/sns/push-research-image.js:722",
-            "scripts/sns/push-setsu-kiryoku-short.js:1011",
-            "scripts/sns/push-setsu-kiryoku-short.js:1020"
+            "scripts/sns/push-setsu-kiryoku-short.js:1038",
+            "scripts/sns/push-setsu-kiryoku-short.js:1047"
           ],
           "writers": [],
           "sql": [
@@ -24634,7 +24657,7 @@
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/sns/push-finals-image.js:1344",
             "scripts/sns/push-full-picture.js:898",
-            "scripts/sns/push-setsu-kiryoku-short.js:1020"
+            "scripts/sns/push-setsu-kiryoku-short.js:1047"
           ],
           "writers": [],
           "sql": [
@@ -24670,7 +24693,7 @@
             "scripts/maintenance/verify-sns-send-runner.js:504",
             "scripts/sns/push-finals-image.js:1353",
             "scripts/sns/push-research-image.js:722",
-            "scripts/sns/push-setsu-kiryoku-short.js:1011"
+            "scripts/sns/push-setsu-kiryoku-short.js:1038"
           ],
           "writers": [],
           "sql": [
@@ -24695,7 +24718,7 @@
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/sns/push-finals-image.js:1353",
             "scripts/sns/push-research-image.js:722",
-            "scripts/sns/push-setsu-kiryoku-short.js:1011"
+            "scripts/sns/push-setsu-kiryoku-short.js:1038"
           ],
           "writers": [],
           "sql": [
@@ -24709,7 +24732,7 @@
             "api/_lib/snsXSendStore.js:137",
             "scripts/sns/push-finals-image.js:1353",
             "scripts/sns/push-research-image.js:722",
-            "scripts/sns/push-setsu-kiryoku-short.js:1011"
+            "scripts/sns/push-setsu-kiryoku-short.js:1038"
           ],
           "writers": [],
           "sql": [
@@ -24724,7 +24747,7 @@
             "scripts/sns/delete-x-post.js:110",
             "scripts/sns/push-finals-image.js:1353",
             "scripts/sns/push-research-image.js:722",
-            "scripts/sns/push-setsu-kiryoku-short.js:1011"
+            "scripts/sns/push-setsu-kiryoku-short.js:1038"
           ],
           "writers": [],
           "sql": [
@@ -24758,7 +24781,7 @@
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/maintenance/verify-sns-send-runner.js:504",
             "scripts/sns/push-finals-image.js:1344",
-            "scripts/sns/push-setsu-kiryoku-short.js:1020"
+            "scripts/sns/push-setsu-kiryoku-short.js:1047"
           ],
           "writers": [],
           "sql": [
@@ -24780,8 +24803,8 @@
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/sns/push-finals-image.js:1344",
             "scripts/sns/push-research-image.js:722",
-            "scripts/sns/push-setsu-kiryoku-short.js:1011",
-            "scripts/sns/push-setsu-kiryoku-short.js:1020"
+            "scripts/sns/push-setsu-kiryoku-short.js:1038",
+            "scripts/sns/push-setsu-kiryoku-short.js:1047"
           ],
           "writers": [],
           "sql": [
@@ -24811,7 +24834,7 @@
         "attempt_dates": {
           "readers": [
             "scripts/sns/push-finals-image.js:1338",
-            "scripts/sns/push-setsu-kiryoku-short.js:1015"
+            "scripts/sns/push-setsu-kiryoku-short.js:1042"
           ],
           "writers": [],
           "sql": [
@@ -24823,7 +24846,7 @@
         "attempt_channels": {
           "readers": [
             "scripts/sns/push-finals-image.js:1338",
-            "scripts/sns/push-setsu-kiryoku-short.js:1015"
+            "scripts/sns/push-setsu-kiryoku-short.js:1042"
           ],
           "writers": [],
           "sql": [
@@ -24897,7 +24920,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1032",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1059",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -24932,7 +24955,7 @@
         },
         "quota_day": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1032"
+            "scripts/sns/push-setsu-kiryoku-short.js:1059"
           ],
           "writers": [],
           "sql": [
@@ -24941,7 +24964,7 @@
         },
         "upload_reserved": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1032"
+            "scripts/sns/push-setsu-kiryoku-short.js:1059"
           ],
           "writers": [],
           "sql": [
@@ -24950,7 +24973,7 @@
         },
         "general_reserved": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1032"
+            "scripts/sns/push-setsu-kiryoku-short.js:1059"
           ],
           "writers": [],
           "sql": [
@@ -25008,7 +25031,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1025",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1052",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -25033,7 +25056,7 @@
       "columns": {
         "id": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1025"
+            "scripts/sns/push-setsu-kiryoku-short.js:1052"
           ],
           "writers": [],
           "sql": [
@@ -25043,7 +25066,7 @@
         },
         "verified": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1025"
+            "scripts/sns/push-setsu-kiryoku-short.js:1052"
           ],
           "writers": [],
           "sql": [
@@ -25053,7 +25076,7 @@
         },
         "baseline_day": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1025"
+            "scripts/sns/push-setsu-kiryoku-short.js:1052"
           ],
           "writers": [],
           "sql": [
@@ -25063,7 +25086,7 @@
         },
         "upload_limit": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1025"
+            "scripts/sns/push-setsu-kiryoku-short.js:1052"
           ],
           "writers": [],
           "sql": [
@@ -25072,7 +25095,7 @@
         },
         "general_limit": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1025"
+            "scripts/sns/push-setsu-kiryoku-short.js:1052"
           ],
           "writers": [],
           "sql": [
@@ -25081,7 +25104,7 @@
         },
         "external_uploads": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1025"
+            "scripts/sns/push-setsu-kiryoku-short.js:1052"
           ],
           "writers": [],
           "sql": [
@@ -25091,7 +25114,7 @@
         },
         "external_general": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1025"
+            "scripts/sns/push-setsu-kiryoku-short.js:1052"
           ],
           "writers": [],
           "sql": [
@@ -25115,7 +25138,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1034",
+          "ref": "scripts/sns/push-setsu-kiryoku-short.js:1061",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -25156,7 +25179,7 @@
         },
         "quota_day": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1034"
+            "scripts/sns/push-setsu-kiryoku-short.js:1061"
           ],
           "writers": [],
           "sql": [
@@ -25172,7 +25195,7 @@
         },
         "units": {
           "readers": [
-            "scripts/sns/push-setsu-kiryoku-short.js:1034"
+            "scripts/sns/push-setsu-kiryoku-short.js:1061"
           ],
           "writers": [],
           "sql": [
