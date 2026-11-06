@@ -1,25 +1,30 @@
 #!/usr/bin/env node
 /**
  * ryujin-maker-token.js - 作成の App（ryujin-maker、ADR-0097）の秘密鍵から、このリポジトリだけに効く
- * 1時間のインストールのトークンを作り、gh・git に GH_TOKEN で渡す。Claude のセッションの push・PR 作成・
+ * 1時間のインストールのトークンを作り、gh・git に GH_TOKEN で渡して動かす。Claude のセッションの push・PR 作成・
  * マージを ryujin-maker の名義にするため（オーナー決定 2026-11-06。admin の bypass を外す前提）。
  *
  * 使い方:
  *   node scripts/maintenance/ryujin-maker-token.js -- gh pr create --base master --fill
  *   node scripts/maintenance/ryujin-maker-token.js -- git push -u origin HEAD
- *   node scripts/maintenance/ryujin-maker-token.js -- gh pr merge 1234 --squash
- *     `--` の後の gh・git を、トークンを環境変数 GH_TOKEN に入れて動かす（トークンは画面にもファイルにも出ない）。
+ *   node scripts/maintenance/ryujin-maker-token.js -- gh pr merge 1234 --squash --match-head-commit <sha>
+ *   node scripts/maintenance/ryujin-maker-token.js --workflows -- git push -u origin HEAD
+ *     `--` の後の gh・git を、トークンを環境変数 GH_TOKEN に入れて動かす。トークンは標準出力・ファイルに出さない
+ *     （Claude の Bash の道具では標準出力が端末でないので、出す形を作ると会話の記録に残りうる。だから出す形を持たない）。
  *     git push は ~/.gitconfig の `credential.https://github.com.helper=!gh auth git-credential` が GH_TOKEN を
  *     x-access-token として渡す（2026-11-06 に `git credential fill` で確かめた）
- *   GH_TOKEN=$(node scripts/maintenance/ryujin-maker-token.js --print) gh ...
- *     トークンを標準出力に出す。`$(...)` の中で受けるときだけ使う。引数なしでは出さない（付け忘れて会話の記録に残さない）
+ *     `--workflows` は .github/workflows を変える枝の push・マージのときだけ付ける（トークンに workflows: write を足す）
+ *
+ * トークンの権限（このリポジトリだけ）: contents・pull_requests は write、checks・statuses・actions は read。
+ * workflows: write は `--workflows` のときだけ。
  *
  * 置き場（既定。環境変数で変えられる）:
- *   秘密鍵   ~/.config/ryujin/ryujin-maker.pem（RYUJIN_MAKER_KEY_FILE）。オーナーが置く。権限は 600（持ち主だけ）しか受けない
+ *   秘密鍵   ~/.config/ryujin/ryujin-maker.pem（RYUJIN_MAKER_KEY_FILE）。オーナーが置く。持ち主が自分で、権限が 600（持ち主だけ）のものしか受けない
  *   App ID   5377197（RYUJIN_MAKER_APP_ID）。秘密ではない（JWT の iss に入る値。hq の config/github-apps.json と同じ）
  *   Installation ID は置かない。JWT で GET /repos/{repo}/installation を引いて決める（hq の scripts/app-token.sh と同じ）
  *
- * 守ること: 鍵の中身・トークン・JWT を標準エラー・例外の文に出さない。外部の依存は使わない（Node の組み込みの crypto と fetch）。
+ * 守ること: 鍵の中身・トークン・JWT を標準出力・標準エラー・例外の文に出さない。外部の依存は使わない（Node の組み込みの crypto と fetch）。
+ * `-- git` は git のどの命令も動かせるので、gh と git に限ることは守りに数えない。
  * 検証: scripts/maintenance/verify-ryujin-maker-token.js（使い捨ての鍵で試す。本物の鍵は読まない）
  */
 import { spawnSync } from "node:child_process";
@@ -37,14 +42,26 @@ export const DEFAULT_KEY_FILE = path.join(
   "ryujin",
   "ryujin-maker.pem",
 );
-/** `--` の後に置ける命令。トークンを渡す相手を gh と git に限る */
+/** `--` の後に置ける命令 */
 export const ALLOWED_COMMANDS = new Set(["gh", "git"]);
 const API = "https://api.github.com";
 const TIMEOUT_MS = 20_000;
 const USAGE =
-  "使い方: node scripts/maintenance/ryujin-maker-token.js -- gh <引数> | -- git <引数> | --print（$(...) の中だけ）";
+  "使い方: node scripts/maintenance/ryujin-maker-token.js [--workflows] -- gh <引数> | -- git <引数>";
 
 const b64url = (buf) => Buffer.from(buf).toString("base64url");
+
+/** トークンに付ける権限。App の権限の内側で、要るものだけ */
+export function tokenPermissions({ workflows }) {
+  return {
+    contents: "write",
+    pull_requests: "write",
+    checks: "read",
+    statuses: "read",
+    actions: "read",
+    ...(workflows ? { workflows: "write" } : {}),
+  };
+}
 
 /** App の JWT（RS256）。iat は時計のずれに備えて60秒前、exp は GitHub の上限10分の内側の9分後 */
 export function buildJwt({ appId, privateKey, nowSec }) {
@@ -61,19 +78,21 @@ export function buildJwt({ appId, privateKey, nowSec }) {
 }
 
 /**
- * 秘密鍵を読む。持ち主以外が読める・書ける権限（group・other のどれか）なら読まずに止める。
+ * 秘密鍵を読む。持ち主が自分でない・持ち主以外が読める書ける権限（group・other のどれか）なら読まずに止める。
  * 失敗の文には鍵のパスだけを書き、中身も Node の例外の文も出さない。
  */
-export function loadPrivateKey(keyFile) {
+export function loadPrivateKey(keyFile, uid = process.getuid?.()) {
   let st;
   try {
     st = statSync(keyFile);
   } catch {
     throw new Error(
-      `秘密鍵が無い: ${keyFile}（オーナーが置く。docs/operation/identity-separation-owner-steps.md の 9）`,
+      `秘密鍵が無い: ${keyFile}（オーナーが置く。docs/operation/identity-separation-owner-steps.md の 9-2）`,
     );
   }
   if (!st.isFile()) throw new Error(`秘密鍵がファイルでない: ${keyFile}`);
+  if (uid !== undefined && st.uid !== uid)
+    throw new Error(`秘密鍵の持ち主が今のユーザーでない: ${keyFile}`);
   if ((st.mode & 0o077) !== 0) {
     throw new Error(
       `秘密鍵の権限が広い（${(st.mode & 0o777).toString(8)}）: ${keyFile}。オーナーが chmod 600 にする`,
@@ -112,11 +131,12 @@ async function callGitHub(fetchImpl, method, url, jwt, body) {
   return json;
 }
 
-/** インストールのトークンを作る。トークンはこのリポジトリだけに絞る（App の他のインストール先には効かない） */
+/** インストールのトークンを作る。このリポジトリだけ・要る権限だけに絞る */
 export async function mintInstallationToken({
   appId,
   privateKey,
   repo = REPO,
+  workflows = false,
   fetchImpl = fetch,
   nowSec,
 }) {
@@ -143,6 +163,7 @@ export async function mintInstallationToken({
     jwt,
     {
       repositories: [repo.split("/")[1]],
+      permissions: tokenPermissions({ workflows }),
     },
   );
   if (typeof created?.token !== "string" || created.token === "") {
@@ -151,37 +172,31 @@ export async function mintInstallationToken({
   return created.token;
 }
 
-/** 引数を読む。{ mode: "print" } か { mode: "exec", command, args }。それ以外は例外 */
+/** 引数を読む。{ workflows, command, args }。それ以外は例外（鍵を読む前に止める） */
 export function parseArgs(argv) {
-  if (argv.length === 1 && argv[0] === "--print") return { mode: "print" };
-  if (argv[0] === "--" && ALLOWED_COMMANDS.has(argv[1])) {
-    return { mode: "exec", command: argv[1], args: argv.slice(2) };
+  const workflows = argv[0] === "--workflows";
+  const rest = workflows ? argv.slice(1) : argv;
+  if (rest[0] === "--" && ALLOWED_COMMANDS.has(rest[1])) {
+    return { workflows, command: rest[1], args: rest.slice(2) };
   }
   throw new Error(USAGE);
 }
 
 async function main() {
-  const parsed = parseArgs(process.argv.slice(2));
+  const { workflows, command, args } = parseArgs(process.argv.slice(2));
   const keyFile = process.env.RYUJIN_MAKER_KEY_FILE || DEFAULT_KEY_FILE;
   const appId = process.env.RYUJIN_MAKER_APP_ID || DEFAULT_APP_ID;
   const token = await mintInstallationToken({
     appId,
     privateKey: loadPrivateKey(keyFile),
+    workflows,
   });
-  if (parsed.mode === "print") {
-    if (process.stdout.isTTY)
-      throw new Error(
-        "標準出力が端末なのでトークンを出さない（$(...) の中で使う）",
-      );
-    process.stdout.write(token);
-    return 0;
-  }
-  const child = spawnSync(parsed.command, parsed.args, {
+  const child = spawnSync(command, args, {
     stdio: "inherit",
     env: { ...process.env, GH_TOKEN: token },
   });
   if (child.error)
-    throw new Error(`${parsed.command} を起動できない: ${child.error.message}`);
+    throw new Error(`${command} を起動できない: ${child.error.message}`);
   return child.status ?? 1;
 }
 

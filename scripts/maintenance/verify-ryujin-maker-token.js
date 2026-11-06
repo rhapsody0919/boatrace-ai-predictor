@@ -9,7 +9,9 @@
  *   (c) 壊れた鍵の失敗の文に、ファイルの中身が出ない
  *   (d) GitHub への呼び出しの形（GET installation → POST access_tokens、このリポジトリだけに絞る）と、返すトークン
  *   (e) GitHub の失敗の文に JWT が出ない
- *   (f) 引数なしではトークンを出さない（--print か `-- gh`・`-- git` だけ受ける）。CLI も鍵を読む前に止まる
+ *   (d') トークンの権限は既定で contents・pull_requests の write と checks・statuses・actions の read だけ。workflows は --workflows のときだけ
+ *   (f) トークンを標準出力に出す形が無い（`[--workflows] -- gh|git` だけ受ける）。引数の誤りは鍵を読む前に止まる
+ *   (g) 持ち主が今のユーザーでない鍵は読まない
  */
 import { spawnSync } from "node:child_process";
 import { generateKeyPairSync, verify } from "node:crypto";
@@ -114,6 +116,14 @@ try {
     "鍵が無いときは置き場を言って止める",
     missingErr ?? "止まらなかった",
   );
+  const otherUidErr = errorOf(() =>
+    loadPrivateKey(keyFile, (process.getuid?.() ?? 0) + 1),
+  );
+  check(
+    otherUidErr?.includes("持ち主が今のユーザーでない"),
+    "(g) 持ち主が今のユーザーでない鍵は読まない",
+    otherUidErr ?? "止まらなかった",
+  );
 
   console.log("(c) 壊れた鍵");
   const marker = "MARKER-SHOULD-NOT-APPEAR-0123456789";
@@ -166,11 +176,36 @@ try {
     calls.every((c) => /^Bearer [\w-]+\.[\w-]+\.[\w-]+$/.test(c.auth)),
     "どちらも JWT を Bearer で送る",
   );
+  const sent = JSON.parse(calls[1].body);
   check(
-    calls[1].body ===
-      JSON.stringify({ repositories: ["boatrace-ai-predictor"] }),
+    JSON.stringify(sent.repositories) === '["boatrace-ai-predictor"]',
     "トークンをこのリポジトリだけに絞る",
     String(calls[1].body),
+  );
+  check(
+    JSON.stringify(sent.permissions) ===
+      JSON.stringify({
+        contents: "write",
+        pull_requests: "write",
+        checks: "read",
+        statuses: "read",
+        actions: "read",
+      }),
+    "既定の権限は contents・pull_requests の write と checks・statuses・actions の read だけ（workflows は無い）",
+    JSON.stringify(sent.permissions),
+  );
+  calls.length = 0;
+  await mintInstallationToken({
+    appId: "5377197",
+    privateKey: loadPrivateKey(keyFile),
+    workflows: true,
+    fetchImpl: fakeFetch,
+    nowSec: now,
+  });
+  check(
+    JSON.parse(calls[1].body).permissions.workflows === "write",
+    "workflows: true のときだけ workflows: write を足す",
+    String(calls[1]?.body),
   );
 
   console.log("(e) GitHub の失敗");
@@ -219,13 +254,16 @@ try {
   );
 
   console.log("(f) 引数");
-  check(parseArgs(["--print"]).mode === "print", "--print はトークンを出す形");
   const exec = parseArgs(["--", "gh", "pr", "view", "1"]);
   check(
-    exec.mode === "exec" &&
+    exec.workflows === false &&
       exec.command === "gh" &&
       exec.args.join(" ") === "pr view 1",
-    "`-- gh ...` は gh を動かす形",
+    "`-- gh ...` は gh を動かす形（workflows なし）",
+  );
+  check(
+    parseArgs(["--workflows", "--", "git", "push"]).workflows === true,
+    "`--workflows -- git ...` は workflows を足す形",
   );
   check(
     parseArgs(["--", "git", "push"]).command === "git",
@@ -234,7 +272,9 @@ try {
   for (const argv of [
     [],
     ["--", "sh", "-c", "env"],
-    ["--print", "extra"],
+    ["--print"],
+    ["--"],
+    ["--workflows"],
     ["gh", "pr", "list"],
   ]) {
     check(
@@ -255,10 +295,14 @@ try {
     "引数なしの CLI は何も出さずに使い方で止まる",
     JSON.stringify({ status: cli.status, stdout: cli.stdout }),
   );
-  const cliWide = spawnSync(process.execPath, [script, "--print"], {
-    encoding: "utf8",
-    env: { ...process.env, RYUJIN_MAKER_KEY_FILE: wide },
-  });
+  const cliWide = spawnSync(
+    process.execPath,
+    [script, "--", "gh", "--version"],
+    {
+      encoding: "utf8",
+      env: { ...process.env, RYUJIN_MAKER_KEY_FILE: wide },
+    },
+  );
   check(
     cliWide.status === 1 &&
       cliWide.stdout === "" &&

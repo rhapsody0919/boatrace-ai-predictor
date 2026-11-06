@@ -52,6 +52,7 @@ push と PR の作成は作成の App（ryujin-maker）の名義で行う（オ�
 node scripts/maintenance/ryujin-maker-token.js -- git push -u origin HEAD
 ```
 
+- `.github/workflows/` を変える枝は `--workflows` を付ける（`node scripts/maintenance/ryujin-maker-token.js --workflows -- git push -u origin HEAD`。マージのときも同じ）。付けないトークンには workflows の権限が無く、GitHub が push を拒む
 - 審査は push のたびに走り、月の上限（repo の変数 `REVIEW_MONTHLY_LIMIT`、既定300）に数えられる。手元でコミットをまとめてから push する
 - 鍵がまだ置かれていない（`秘密鍵が無い` で止まる）間は、今までどおり素の `git push`・`gh pr create` で出してよい。その PR は admin の bypass を外した後はマージできないので、鍵が置かれたら ryujin-maker の名義で出し直す
 

@@ -261,12 +261,19 @@ review.yml の llm の job は、終わるとき（失敗も含む）にログ�
 
 AI のセッションがオーナーの gh（rhapsody0919、admin）で `gh pr merge --admin` しており、審査・CODEOWNERS を素通りできる。これを止めるため、Claude の push・PR の作成・マージを作成の App（ryujin-maker）の名義にした上で、master-guard の bypass から「Repository admin」を外す。ryujin-bot（Integration 5220661）の bypass は always のまま残す（8 の手順2 の理由のとおり）。auto-merge は ON にしない。
 
-Claude 側の道具は `scripts/maintenance/ryujin-maker-token.js`（秘密鍵から、このリポジトリだけに効く1時間のトークンを作り、`GH_TOKEN` で gh・git を動かす）。hq の `scripts/app-token.sh`（鍵は Keychain）とは別の道具で、鍵も別にする（下の 9-2）。
+Claude 側の道具は `scripts/maintenance/ryujin-maker-token.js`（秘密鍵から、このリポジトリだけ・要る権限だけに効く1時間のトークンを作り、`GH_TOKEN` で gh・git を動かす。トークンは画面に出さない）。hq の `scripts/app-token.sh`・`gh-shim`（鍵は Keychain、`~/hq/runbooks/gh-app-shim.md`）とは別の道具で、鍵も別にする（下の 9-2）。hq の runbook は「bypass を外す前に shim を入れる」と書くが、shim は入っていない（2026-11-06、`~/.bashrc`・`~/.bash_profile` に行が無い）。今はこの道具を使い、shim に寄せるかは後で hq と決める（shim は `GH_TOKEN` が App のトークンならそのまま通すので、両方入れても壊れない。shim に寄せると Claude の素の gh も App になり、`gh run rerun` 等の App の権限に無い操作が通らなくなる）。
+
+**残る穴**: Claude のセッションの素の `gh` はオーナー（rhapsody0919、admin、CODEOWNERS の持ち主）のままなので、オーナーの名義の承認（`gh pr review --approve`）や ruleset の API で審査を越えられる。これは `.claude/hooks/guard-deploy-approval.sh` の文字の照合で止める（承認・`--admin`・ruleset とブランチ保護の書き込み。`scripts/maintenance/verify-guard-deploy-approval.js`）。言い換えを全部は塞げない。塞ぎきるには Claude の素の gh を App にする（shim を入れる）しかない。
 
 ### 9-1. 前提（9-4 の前に全部そろえる）
-- **審査の月の上限を上げる**: review.yml の関門は、作成の App が起動した今月の審査の run の数が repo の変数 `REVIEW_MONTHLY_LIMIT`（未設定なら300）を超えると、全部の PR に REQUEST_CHANGES を付ける。bypass を外した後にこれに当たると、Codex の PR も Claude の PR も一切マージできなくなる。11/1〜6 の実測で ryujin-maker の起動は118件・rhapsody0919 の起動は280件（Claude の push）。切替の後は両方が ryujin-maker に数えられ、1日約66件・月約2,000件の見込み（推測。push の数で増減する）
-  - 費用: 1回 0.1〜0.2ドル（3 の注の見込み、未実測）なら月 200〜400ドルの新しい費用（推測）。OpenAI・Anthropic の月の上限（5）も合わせて見直す
-  - 操作: Settings → Secrets and variables → Actions → Variables → New repository variable → 名前 `REVIEW_MONTHLY_LIMIT`、値は決めた件数
+- **審査の月の上限と費用の上限を、件数を決めて上げる（オーナーの判断。新しい費用）**: review.yml の関門は、作成の App が起動した今月の審査の run の数（取り消し・skipped も含む。`scripts/review/gate.js`・`scripts/lib/reviewPr.js` の `monthlyRunsPath`）が repo の変数 `REVIEW_MONTHLY_LIMIT`（未設定なら300）を超えると、全部の PR に REQUEST_CHANGES を付ける。OpenAI の月の上限（5-1 の 60ドル）に当たっても審査が失敗して REQUEST_CHANGES になる。bypass を外した後にどちらかに当たると、Codex の PR も Claude の PR も一切マージできなくなる
+  - 実測: 11月（1〜6日）の review.yml の run は、actor が ryujin-maker[bot] で118件、rhapsody0919（Claude の push）で280件。切替の後は両方が ryujin-maker に数えられ、1日約66件・月約2,000件の見込み（推測。push の数で増減する）。300件の残りは約3日で尽きる
+  - 費用: 1回 0.1〜0.2ドル（5 の見込み、未実測）なら月 200〜400ドル（推測）。9-3 で1件の実費を OpenAI の Usage で測ってから値を決める
+  - 推奨の値: `REVIEW_MONTHLY_LIMIT` は 2,500、OpenAI の月の上限は 9-3 の実費 × 2,500 に2割を足した額、通知はその8割
+  - 操作: Settings → Secrets and variables → Actions → Variables → New repository variable → 名前 `REVIEW_MONTHLY_LIMIT`、値は決めた件数。OpenAI は 5-1 の Limits
+  - Claude は手元でコミットをまとめてから push し、run の数を減らす（`/create-pr`）
+- **#2297（`.github/CODEOWNERS`）がマージ済み**で、9-4 で「Require review from Code Owners」を ON にする。これが無いと、ryujin-maker の名義の `claude/` の PR は審査の App の承認と必須の check だけで `.github/**`・`scripts/review/**`・`.claude/**` を含めてマージできる（ryujin-maker は Workflows: write を持つ）。CODEOWNERS の行のうち Codex の試験（`scripts/maintenance/verify-*.js`）をどう扱うかは #2297 の推奨を読んで決める
+- **#2298（持ち主の名義の PR も審査する）の扱いを決める**: #2298 がマージされると、rhapsody0919 の名義の PR にも審査の App の承認が付き、bypass を外した後もマージできる。そうなると Claude が admin の gh で PR を出し続けられ、ryujin-maker の名義に移す意味が薄れる。推奨は、#2298 を `codex/` の取り込みの審査だけに絞るか閉じる（この PR の方針を採る場合）。9-5 と `/merge-pr` の「持ち主の PR はマージできない」はこの決定に合わせて直す
 - 作者が rhapsody0919・tinaba96 の開いている PR を片づける（下の 9-5）
 - このリポジトリの PR（道具と手順の PR、`claude/**` の Preview を止める PR）がマージ済み
 
@@ -280,25 +287,28 @@ Claude in Chrome の入っていないブラウザ、Claude から見えない�
    mv ~/Downloads/ryujin-maker.*.private-key.pem ~/.config/ryujin/ryujin-maker.pem
    chmod 600 ~/.config/ryujin/ryujin-maker.pem
    ```
-   道具は権限が 600 でない鍵を読まない。置き場を変えるときは環境変数 `RYUJIN_MAKER_KEY_FILE`
+   道具は権限が 600 でない・持ち主が自分でない鍵を読まない。置き場を変えるときは環境変数 `RYUJIN_MAKER_KEY_FILE`
 3. Claude に「置いた」とだけ返す
+- Claude は鍵のファイルを開かない・`cat` しない（道具だけが読む）。同じ Mac のユーザーなので技術的には読めるのは、Keychain の鍵と同じ
 - 戻し方: App の設定の Private keys でこの鍵を Delete し、ファイルを消す
 
 ### 9-3. Claude が1本試す（Claude、15分）
 1. docs だけの小さな PR を `claude/` の枝で作る。push と作成は `node scripts/maintenance/ryujin-maker-token.js -- git push -u origin HEAD`・`... -- gh pr create --base master --fill`
-2. 確かめる: PR の作者が `app/ryujin-maker`、push の actor が `ryujin-maker[bot]`（`gh api "repos/rhapsody0919/boatrace-ai-predictor/activity?ref=refs/heads/<枝>" --jq '.[0].actor.login'`）、review.yml の gate が success で vendor が openai、審査の App の APPROVED が今の head に付く
-3. 必須の3つの check が緑になったら、`/merge-pr` の手順で ryujin-maker の名義でマージする（このときはまだ admin の bypass があるが、ryujin-maker は bypass に無いので、承認と check がそろわなければ GitHub が拒むことをここで実測する）
-4. 結果をオーナーに報告する。通らなければ 9-4 に進まない
+2. 確かめる: PR の作者が `app/ryujin-maker`、push の actor が `ryujin-maker[bot]`（`gh api "repos/rhapsody0919/boatrace-ai-predictor/activity?ref=refs/heads/<枝>" --jq '.[0].actor.login'`）、review.yml の gate が success で vendor が openai、審査の App の APPROVED が今の head に付く（`pulls/<n>/reviews` の `commit_id`）。`claude/**` の Preview が作られないこと（vercel.json の PR の後）
+3. 拒まれる道を1回試す: 審査の APPROVED が付く前に、ryujin-maker の名義でマージを1回だけ試し、GitHub が拒むことを見る（ryujin-maker は bypass に無い）
+4. 必須の3つの check が緑で APPROVED が付いたら、`/merge-pr` の手順で ryujin-maker の名義でマージする
+5. その審査の1件の実費を OpenAI の Usage で見て、9-1 の値をオーナーに出す
+6. 結果をオーナーに報告する。通らなければ 9-4 に進まない
 
 ### 9-4. bypass を外し、code owner の審査を ON（オーナー、5分）
 1. Settings → Rules → Rulesets → master-guard
 2. Bypass list の「Repository admin」の行を削除する。「ryujin-bot」（Integration）は **残す**
-3. 「Require a pull request before merging」を開き、「Require review from Code Owners」に印を付ける（`.github/CODEOWNERS` が master に入るまでは効かない。入った後は、守る場所に触る PR はオーナーの承認が要る。Codex の PR の約半分が `scripts/maintenance/verify-*.js` に触るので、#2297 の本文の推奨を読んでから決める）
+3. 「Require a pull request before merging」を開き、「Require review from Code Owners」に印を付ける（必ず ON。`.github/CODEOWNERS`（#2297）が master に入るまでは効かない。入った後は、守る場所に触る PR はオーナーの承認が要る）
 4. Save changes
-5. Claude が読み取りで確かめる: `gh api repos/rhapsody0919/boatrace-ai-predictor/rulesets/24693068 --jq '.bypass_actors'` が ryujin-bot の1行だけ、`require_code_owner_review` が true
+5. Claude が読み取りで確かめる: `gh api repos/rhapsody0919/boatrace-ai-predictor/rulesets/24693068 --jq '{bypass: .bypass_actors, code_owner: (.rules[] | select(.type=="pull_request") | .parameters.require_code_owner_review)}'` で、bypass が Integration 5220661 の1行だけ、code_owner が true
 
 ### 9-5. 開いている人の名義の PR の扱い
-- 審査（review.yml）は作者が ryujin-maker の PR だけに動くので、bypass を外した後、作者が rhapsody0919 の PR は承認が付かずマージできない
+- 審査（review.yml）は作者が ryujin-maker の PR だけに動くので、bypass を外した後、作者が rhapsody0919 の PR は承認が付かずマージできない（#2298 をマージしない前提。9-1）
 - 9-4 の前にマージできるものは今までどおりマージする（オーナーの承認・CI 緑のもの）
 - 残すものは、PR の head から `claude/` の新しい枝を切り、ryujin-maker の名義で push・PR を出し直し、古い PR は新しい PR のリンクを書いて閉じる（force push はしない）
 - 作者が tinaba96 の PR は、オーナーが PR の画面で承認すれば（作者と承認者が別）、必須の check が緑ならマージできる
@@ -308,6 +318,7 @@ Claude in Chrome の入っていないブラウザ、Claude から見えない�
 1. master-guard の Bypass list に「Repository admin」（always）を足し直す
 2. 「Require review from Code Owners」の印を外す
 3. Claude は `ryujin-maker-token.js` を使わず、素の gh・git に戻す（鍵は App の設定で消す）
+- 月の上限・費用の上限に当たって止まったときは、戻さずに `REVIEW_MONTHLY_LIMIT`・OpenAI の上限を上げ、止まった PR に空のコミットを足して審査をやり直す
 
 ---
 
