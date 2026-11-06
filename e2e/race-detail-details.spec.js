@@ -64,14 +64,18 @@ test.describe("レース詳細の表示の細部", () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     // 発走前の AI予想（.prediction-result）と確定後の振り返り（.race-ai-prediction-tab）の
     // どちらになるかは録画の時刻しだいなので、トップのレースから辿って出た方を測る
+    // トップにレースのリンクが無い時刻（夜の live）は固定のレースの確定後の表示を測る（BOA-1372）
     await page.goto("/");
     // ブログ欄の記事タイトルにもRレース番号が入ることがある（例:「唐津12Rで読む」）ため、
     // href が /race/ のリンクだけを対象にする（アクセシブルネームでの絞り込みだとブログ記事に先に一致する）。
-    await page
+    const raceLinks = page
       .locator('a[href*="/race/"]')
-      .filter({ hasText: /\d{1,2}\s*R/ })
-      .first()
-      .click();
+      .filter({ hasText: /\d{1,2}\s*R/ });
+    if ((await raceLinks.count()) > 0) {
+      await raceLinks.first().click();
+    } else {
+      await page.goto(`${RACE}?tab=aiPrediction`);
+    }
     await page.waitForURL(/\/race\//);
     await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
     const row = page.locator(".turn-pattern-row").first();
@@ -1145,6 +1149,9 @@ test.describe("横スクロールの表の仕上げ", () => {
       const hint = page.locator(".mcc-list-hint");
       await hint.locator(":scope > .hscroll-more").click();
       await expect(hint.locator(":scope > .hscroll-less")).toBeVisible();
+      await page.evaluate(() =>
+        Promise.all(document.getAnimations().map((a) => a.finished)),
+      );
       const { line, bg, ring } = await hint.evaluate((el) => {
         const td = el.querySelector("tbody tr td:nth-child(2)");
         const shadow = getComputedStyle(td).boxShadow;
