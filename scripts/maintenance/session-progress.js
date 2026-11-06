@@ -85,7 +85,7 @@ export function buildNotice(edits) {
     "  - 元の依頼と目的が別物、または別ディレクトリ・別リポジトリ → 新しい worktree と新セッション",
     "",
     "この判定は長さだけを見ている。タスクの性質による切り分けは",
-    ".claude/CLAUDE.md「セッション内のスコープ管理」が正本。",
+    ".claude/skills/owner-session/SKILL.md「セッション内のスコープ管理」が正本。",
   ].join("\n");
 }
 

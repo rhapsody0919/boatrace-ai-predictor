@@ -16,7 +16,7 @@ paths:
 
 # コンテンツ運用フロー（新機能展開・SNS運用・品質維持）
 
-コンテンツ・SNSまわりを触るときに読み込まれる（上の`paths`）。セッション開始時の確認だけは常時発火する必要があるので、[`session-start-checks.md`](./session-start-checks.md)（常時読み込み）に置いてある。
+コンテンツ・SNSまわりを触るときに読み込まれる（上の`paths`）。セッション開始時の確認は、対話のセッションが使う skill の [`owner-session`](../skills/owner-session/SKILL.md) に置いてある（作り手は回さない）。
 
 ## フローA: 新機能マルチチャネル展開
 

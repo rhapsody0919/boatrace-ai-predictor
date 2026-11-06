@@ -39,8 +39,7 @@ model: opus
 - `docs/knowledge/ui-implementation.md`（画面の実装の落とし穴）
 - `docs/knowledge/ui-layout.md`（画面の決まり）
 - `docs/knowledge/batch-and-ci.md`（定時実行・CI・E2E の落とし穴）
-- `.claude/rules/review-fix-cycle.md`（重大度と再現手順、修正を再現テストで固定する決まり）
-- `AGENTS.md` の「レビュアーの姿勢」「boatAI 固有の最重要観点（過去に実際に問題になった箇所を厚く）」「Review guidelines」の節（観点の正本。下に要約）
+- `AGENTS.md` の「PR の決まり」（重大度・再現の試験）と `.claude/rules/code-pitfalls.md`（旧 AGENTS.md の「boatAI 固有の最重要観点」「Review guidelines」。観点の正本。下に要約）
 
 ## 見る観点（出典は `AGENTS.md` の上の3節）
 1. 数字・ラベルと元の列・定義: 画面の見出し（例「1着率」）と、それを出すコードの列・計算（例 2連対の列）と、`data-columns.md`・`data-definitions.md` の定義が一致するか。スケール不一致、JOIN 漏れ、期間ズレ、NULL の扱い。1000行を超えうる取得に `.range()` が無い（実際の行数は確かめられなければ unknown に書く）
@@ -59,7 +58,7 @@ model: opus
 
 並べる順: 利用者に誤った数字・言葉が出る食い違い＞知見の決まりへの違反（用語・i18n・数字の言い方）＞テストの抜け。同じ重さなら、見せる画面に近い方を先に。
 
-## 重大度（`AGENTS.md`「レビュアーの姿勢」・`.claude/rules/review-fix-cycle.md` と同じ4段階）
+## 重大度（`AGENTS.md`「PR の決まり」と同じ4段階）
 - P0: 本番障害・データ破損や欠落・秘密情報の漏洩・法令表示の欠落
 - P1: 機能不全・回帰・後方互換の破壊・禁止用語の混入・集計の誤り（利用者に誤った数字や言葉が出る）
 - P2: 保守性の低下・将来のバグの温床・検証手順やテストの欠落

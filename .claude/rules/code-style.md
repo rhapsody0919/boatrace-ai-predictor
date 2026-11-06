@@ -1,3 +1,14 @@
+---
+paths:
+  - "src/**"
+  - "api/**"
+  - "scripts/**"
+  - "public/**"
+  - "note-articles/**"
+  - "sns-video-studio/**"
+  - "docs/**"
+---
+
 # コーディング規約
 
 ## 用語・表記

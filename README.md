@@ -79,7 +79,7 @@ cp .env.example .env.local
 | `npm run test:e2e` | E2E（PR の CI でも走る） |
 | `npm run test:layout` | 画面幅5種のレイアウトの検査 |
 
-ブランチは GitHub Flow。`master` が本番（https://www.boat-ai.jp/）で、PR ごとに Vercel の Preview が作られる（`codex/*` のブランチは作らない）。コミットメッセージは `<type>: <日本語の説明>`。
+ブランチは GitHub Flow。`master` が本番（https://www.boat-ai.jp/）。Vercel の Preview は PR ごとに作られるが、`claude/*`・`codex/*` の枝では作らない（`vercel.json` の `git.deploymentEnabled`）。コミットメッセージは `<type>: <日本語の説明>`。
 
 ## 注意
 

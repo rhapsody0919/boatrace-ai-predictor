@@ -3,7 +3,7 @@
  * verify-agent-definitions.js - サブエージェント定義（.claude/agents/）の整合を検証する。
  *
  * 背景: 2026-09-25、PR #829 でサブエージェント定義3本を新設し、その使い分けを
- * `.claude/CLAUDE.md`「サブエージェントの使い分け」に散文で書いた。しかし
+ * `.claude/skills/owner-session/SKILL.md`「サブエージェントの使い分け」に散文で書いた。しかし
  * ADR-0072 / ADR-0075 が実測で示したとおり、このプロジェクトでは散文ルールは守られない
  * （fixコミット169件のうち「防ぐ仕組みが無かった」が142件、CIで止まった例は0件）。
  * 同じPRで、同一概念が .claude/commands/ の3ファイルに複製されていて片方だけ直しかけた
@@ -12,11 +12,11 @@
  * 検証する4点:
  *   1. .claude/settings.json に CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS が再混入していないこと
  *      （teammateはworktree分離されないため、「新規タスクはworktreeで隔離」という
- *      Git安全策と両立しない。ADR外だが CLAUDE.md「サブエージェントの使い分け」に理由あり）
+ *      Git安全策と両立しない。ADR外だが owner-session の SKILL.md「サブエージェントの使い分け」に理由あり）
  *   2. .claude/agents/*.md のフロントマターが name / description を持ち、
  *      name がファイル名と一致し、ハイフン区切りであること
  *      （ハイフン必須の理由は AGENT_NAME_PATTERN のコメント参照）
- *   3. .claude/CLAUDE.md の「サブエージェントの使い分け」表と、実ファイルが一致すること
+ *   3. .claude/skills/owner-session/SKILL.md の「サブエージェントの使い分け」表と、実ファイルが一致すること
  *      （verify-registry.json と同じ台帳方式。定義を足して表に書き忘れる／
  *      表にあるが定義が無い、の双方を止める）
  *   4. ドキュメント中のエージェント参照が実在すること
@@ -38,7 +38,7 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
 const AGENTS_DIR = path.join(ROOT, ".claude/agents");
-const CLAUDE_MD = path.join(ROOT, ".claude/CLAUDE.md");
+const CLAUDE_MD = path.join(ROOT, ".claude/skills/owner-session/SKILL.md");
 const SETTINGS_JSON = path.join(ROOT, ".claude/settings.json");
 const TABLE_HEADING = "### サブエージェントの使い分け";
 
@@ -49,7 +49,7 @@ const TABLE_HEADING = "### サブエージェントの使い分け";
 const FORBIDDEN_ENV_KEYS = [
   {
     key: "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS",
-    why: "teammateは自動でworktree分離されず、Agent tool呼び出しでisolationを渡すとteammateにならないため、「新規タスクはworktreeで隔離する」というGit安全策と両立しない。デスクトップアプリでは機能自体が非対応（.claude/CLAUDE.md「サブエージェントの使い分け」参照）",
+    why: "teammateは自動でworktree分離されず、Agent tool呼び出しでisolationを渡すとteammateにならないため、「新規タスクはworktreeで隔離する」というGit安全策と両立しない。デスクトップアプリでは機能自体が非対応（.claude/skills/owner-session/SKILL.md「サブエージェントの使い分け」参照）",
   },
 ];
 
@@ -152,7 +152,7 @@ try {
     .sort();
 } catch {
   problems.push(
-    `.claude/agents/ がありません。サブエージェント定義の置き場です（.claude/CLAUDE.md「サブエージェントの使い分け」参照）`,
+    `.claude/agents/ がありません。サブエージェント定義の置き場です（.claude/skills/owner-session/SKILL.md「サブエージェントの使い分け」参照）`,
   );
 }
 
@@ -192,14 +192,16 @@ let claudeMd = "";
 try {
   claudeMd = await fs.readFile(CLAUDE_MD, "utf8");
 } catch (err) {
-  problems.push(`.claude/CLAUDE.md を読めません: ${err.message}`);
+  problems.push(
+    `.claude/skills/owner-session/SKILL.md を読めません: ${err.message}`,
+  );
 }
 
 const tableNames = new Set();
 const headingIndex = claudeMd.indexOf(TABLE_HEADING);
 if (headingIndex === -1) {
   problems.push(
-    `.claude/CLAUDE.md に「${TABLE_HEADING}」の節がありません。サブエージェントの台帳はこの節の表です`,
+    `.claude/skills/owner-session/SKILL.md に「${TABLE_HEADING}」の節がありません。サブエージェントの台帳はこの節の表です`,
   );
 } else {
   // 次の見出し（## または ---）までを節の範囲とする
@@ -212,7 +214,7 @@ if (headingIndex === -1) {
   }
   if (tableNames.size === 0) {
     problems.push(
-      `.claude/CLAUDE.md「${TABLE_HEADING}」の表からエージェント名を1件も読み取れません。各行を「| \`name\` | 用途 | 呼ぶタイミング |」の形式で書いてください`,
+      `.claude/skills/owner-session/SKILL.md「${TABLE_HEADING}」の表からエージェント名を1件も読み取れません。各行を「| \`name\` | 用途 | 呼ぶタイミング |」の形式で書いてください`,
     );
   }
   for (const name of definedNames) {
@@ -313,7 +315,7 @@ if (problems.length > 0) {
   );
   for (const p of problems) console.error(`  - ${p}`);
   console.error(
-    "\n詳細: .claude/CLAUDE.md「サブエージェントの使い分け」/ .claude/agents/",
+    "\n詳細: .claude/skills/owner-session/SKILL.md「サブエージェントの使い分け」/ .claude/agents/",
   );
   process.exit(1);
 }

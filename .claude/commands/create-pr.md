@@ -42,7 +42,7 @@ CLAUDE.mdのコミットメッセージ規約に従い、コミットを作成:
 npm run build
 ```
 
-**エラーがあれば、push・PR作成に進む前にここで直す**。E2E と verify の全件は CI に任せ、手元では変更に関係するもの（`verify:sitemap`・`verify:content-index`・`verify:adr-numbers`・`verify:er-diagram` や対象の spec）だけを実行する（AGENTS.md「検証・テスト」）。
+**エラーがあれば、push・PR作成に進む前にここで直す**。E2E と verify の全件は CI に任せ、手元では変更に関係するもの（`verify:sitemap`・`verify:content-index`・`verify:adr-numbers`・`verify:er-diagram` や対象の spec）だけを実行する（AGENTS.md「コマンド」「PR の決まり」）。
 
 ### 4. リモートにpush
 
