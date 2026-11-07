@@ -82,7 +82,7 @@
 | 61 | 64 | 本番 Supabase に接続しない | 残す | 安全2 |
 | 62 | 68-69 | 範囲を越えない | 残す | 「作業の進め方」 |
 | 63 | 73-81 | 変えてはならない物 | 残す | 安全4 |
-| 64 | 84 | 「競艇」を画面に使わない | paths＋残す | `code-style.md`、索引に1行。verify へ移すのは #2311（同じ verify-registry.json を変える）のマージの後に回す |
+| 64 | 84 | 「競艇」を画面に使わない | paths＋残す | `code-style.md`、索引に1行。src/ は `verify-kyotei-wording.js`（verify:ci）へ移した（2026-11-07） |
 | 65 | 85 | 「似たレース」でなく「類似レース」 | 残す＋paths | 索引に1行、`code-pitfalls.md` |
 | 66 | 88 | type の一覧 | 残す | 「PR の決まり」 |
 | 67 | 92 | 再現試験の置き場 | 残す | 「PR の決まり」 |
@@ -121,7 +121,7 @@
 
 | # | ファイル | 決まり | 分類 | 移し先・理由 |
 |---|---|---|---|---|
-| 98 | code-style.md | 「競艇」の禁止と例外1・2 | paths | paths を付けた（src・api・scripts・public・note-articles・sns-video-studio・docs）。verify へ移して外すのは #2311 の後に回す |
+| 98 | code-style.md | 「競艇」の禁止と例外1・2 | paths | paths を付けた（src・api・scripts・public・note-articles・sns-video-studio・docs）。src/ の検査は `verify-kyotei-wording.js` へ移した（2026-11-07）。例外1・2の決まりは code-style.md に残す。code-pitfalls.md の重複の文は消した |
 | 99 | code-style.md | JS（ES Modules・async/await・エラー処理） | paths | 同じファイル。lint への移しは T5 |
 | 100 | documentation.md | 文書の置き場・名前・書かない物 | paths | paths を付けた（docs・*.md） |
 | 101 | session-start-checks.md | 起動時に session-start-check.js を回す | skill | owner-session「セッションの始めの確認」。作り手の起動では回さない（T4 で node_modules の無い worktree で落ち、max-turns を食った） |
@@ -142,7 +142,7 @@
 | 消す | 13 | 15 |
 | 計（行） | 106 | — |
 
-「主」は表の最初に書いた分類で数えた。「移す」の12件は全て既に CI・hook が守っていた物。「競艇」を verify へ移すのは #2311 の後に回すので、64・98 は今の置き場（paths）で数えた。
+「主」は表の最初に書いた分類で数えた。「移す」の12件は全て既に CI・hook が守っていた物。「競艇」の src/ の検査は 2026-11-07 に verify へ移したが、例外の決まりは code-style.md に残るので、64・98 は paths で数えた。
 
 ## commands・agents の一覧（作り手は使わない。消さずに置き、窓口の手順の置き場は別の票で決める）
 

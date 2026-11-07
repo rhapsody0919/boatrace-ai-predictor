@@ -63,6 +63,11 @@
       "guards": ".claude/agents/ のサブエージェント定義とCLAUDE.mdの台帳・参照の整合、およびAgent Teams設定の再混入（PR #829）"
     },
     {
+      "script": "verify-agents-entry.js",
+      "tier": "ci",
+      "guards": "作り手が毎回読む入口を短く保つ（T1、2026-11-07）。AGENTS.md は200行未満（公式の目安 code.claude.com/docs/en/memory.md）・.claude/CLAUDE.md は30行未満で、1行足すなら1行削るを機械にする。.claude/CLAUDE.md の `@AGENTS.md` の取り込み、AGENTS.md の安全の6点の語、.claude/rules/*.md が全て frontmatter の paths を持つこと（常時の rules を置かない）"
+    },
+    {
       "script": "verify-aggregate-racer-stats.js",
       "tier": "ci",
       "guards": "選手別の日次集計（aggregate-racer-stats.js）が取得エラーを握りつぶさず、変わった行だけ書き、1日1回だけ起動する（BOA-600）"
@@ -704,6 +709,11 @@
       "script": "verify-ko-meet-f-wording.js",
       "tier": "ci",
       "guards": "ko の今節・F まわりの文言（BOA-734）。今節タブの賞典除外・F の6キーと F 凡例の全文が決めた表現で、旧表現（「준결승전·우승전 출전 제외(이번 시리즈 F)」等）が残っていないこと"
+    },
+    {
+      "script": "verify-kyotei-wording.js",
+      "tier": "ci",
+      "guards": "src/ に「競艇」の新しい行が入らないこと（T1、2026-11-07。決まりの正本は .claude/rules/code-style.md「用語・表記」、役所の広告出稿の対象から外れるため）。今ある行（meta＝例外1・コメント・禁止語の一覧・駅名）は kyotei-wording-allowlist.json に（ファイル, 行の中身）で固定し、一覧の残骸も失敗にする。src/data/blog-posts/ は content-pr-gate が見るので除く"
     },
     {
       "script": "verify-latest-by-race-id.js",

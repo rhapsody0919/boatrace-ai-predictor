@@ -2,7 +2,7 @@
 
 このリポジトリでコードを変える作り手（Claude を含む。記事の seo-human の Codex も）は、このファイルだけで判断できるように読む。
 Claude に固有の物（hook・skills・権限）は `.claude/CLAUDE.md`。分野ごとの決まりは `.claude/rules/`（`paths` に当たるファイルを触ったときだけ読まれる）。
-200行未満を保つ（公式の目安。`scripts/maintenance/check-agents-entry.js` が見る）。1行足すなら1行削る。
+200行未満を保つ（公式の目安。`scripts/maintenance/verify-agents-entry.js` が見る）。1行足すなら1行削る。
 
 boatAI はボートレースの AI 予想サービス（React 19・Vite・react-router-dom のモバイルファーストの PWA、純粋なクライアント SPA）。DB は Supabase。投票できるのは日本国内に住む20歳以上だけの公営競技を扱う。
 
@@ -100,7 +100,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
 
 - 作業の前に `docs/knowledge/README.md`（知見の正本の索引）を読み、関係する話題ファイルを読む
 - 決定の記録は `docs/adr/`（番号順）。運用は `docs/operation/`、設計は `docs/design/`、参照は `docs/reference/`
-- 用語・禁止語は `docs/reference/i18n-glossary.md`（「競艇」は画面の本文・見出し・UI に使わない。「似たレース」でなく「類似レース」）、表現の規則は `sns-video-studio/remotion/risk-rules.json`
+- 用語・禁止語は `docs/reference/i18n-glossary.md`（「似たレース」でなく「類似レース」。「競艇」は src/ を `verify-kyotei-wording.js` が見る）、表現の規則は `sns-video-studio/remotion/risk-rules.json`
 - SPA の SEO の制約は `docs/reference/seo-architecture-constraints.md`、環境変数は `docs/setup/env-vars.md`
 - 文書の置き場と名前は `.claude/rules/documentation.md`、コードの落とし穴（Supabase の1000行・i18n・タッチ・法令の表示）は `.claude/rules/code-pitfalls.md`
 - 決まりの移し先の一覧は `docs/operation/agent-instructions-classification.md`
