@@ -43,8 +43,8 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
 | 依存を入れる | `npm ci` |
 | 手元の画面 | `npm run dev`（作り手が自分で起動し、確かめたら止める） |
 | 本番のビルド | `npm run build`（PR の前に通す。`api/` は束ねないので、`api/`・`scripts/` を変えたら `node scripts/maintenance/verify-relative-imports.js` も） |
-| lint | `npm run lint` |
-| 検査の一式 | `npm run verify:ci`（PR の CI と同じ。手元では全件を流さず、変更に関係する `npm run verify:*` だけ） |
+| lint | `node scripts/maintenance/lint-changed.js`（差分のファイルだけ。編集ごとの hook は無いので、PR の前に回す。全体は `npm run lint`） |
+| 検査の一式 | `npm run verify`（`verify:ci`＋差分の lint。PR の CI と同じ。CI は循環の import・重複のコードも見る。手元では全件を流さず、変更に関係する `npm run verify:*` だけ） |
 | E2E | `npm run test:e2e`（手元では全件を流さない。`bash scripts/maintenance/run-heavy.sh playwright test --workers=1 e2e/<対象>.spec.js`） |
 | レイアウト | `npm run test:layout`（375/768/1024/1440/1920px。CSS・レイアウトを変えたら） |
 | E2E の再実行 | `node scripts/maintenance/e2e-rerun.js <PR> --apply`（落ちた job だけ。1回まで。2回目も落ちたら上げる） |
@@ -74,7 +74,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
 - 変更には再現の試験か検査を付け、CI が呼ぶ場所に置く: 画面の動きは `e2e/`、レイアウトは `e2e/layout.spec.js`、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（`verify-registry.json` に登録。未登録だと `verify:ci` が落ちる）。`scripts/tests/` 等 CI が呼ばない所に置かない
 - マイグレーション・ADR の番号は予約しない。PR を作るときに `origin/master` の最大＋1。CI の `verify:migration-numbers`・`verify:adr-numbers` で落ちたら付け直す
 - 新しいページ・分析タブ・主要な機能には `docs/design/{slug}/content-index.json`（対象外なら `not_applicable: true`）
-- 必須の check は `verify`（`npm run verify:ci`）・`ml-tests`・`e2e`。落ちたら直して push する
+- 必須の check は `verify`（`npm run verify` と本番の build）・`ml-tests`・`e2e`。落ちたら直して push する
 - PR 本文は `.github/pull_request_template.md` の見出しに次を足す
   - **元の票**: Linear の ID と URL、元にした `origin/master` の SHA
   - **変えたファイル**: 一覧と、票の「変えてよいファイル」に収まるか
