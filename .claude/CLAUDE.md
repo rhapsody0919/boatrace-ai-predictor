@@ -9,4 +9,4 @@
 - 分野の決まりは `.claude/rules/`（`paths` に当たるファイルを触ったときだけ読まれる）。常時の rules は置かない
 - skills: オーナーと対話するセッション（報告・確認・マージ・サブエージェントの選び方・セッションの始めの確認）は `owner-session`、オーケストレーターは `/orchestrate`、「議論して」は `discussion-panel`
 - 権限: `.claude/settings.json` の allow・deny。使い捨ての作り手は起動の引数（`--allowedTools`・`--permission-mode`）で決める
-- この入口は30行未満を保つ（`scripts/maintenance/check-agents-entry.js` が見る）
+- この入口は30行未満を保つ（`scripts/maintenance/verify-agents-entry.js` が見る）

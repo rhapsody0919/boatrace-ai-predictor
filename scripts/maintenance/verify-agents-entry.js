@@ -1,8 +1,6 @@
 /**
- * check-agents-entry.js - 作り手が毎回読む入口（AGENTS.md・.claude/CLAUDE.md）を短く保ち、安全の6点が残っているかを見る。
- * ファイルを読むだけで、ネットワークにも DB にも接続しない。
- * 名前が check- なのは、verify-registry.json への登録を #2311（同じ台帳を変える）のマージの後にするため。
- * その後 verify-agents-entry.js へ改名し、tier ci で登録して CI に入れる。
+ * verify-agents-entry.js - 作り手が毎回読む入口（AGENTS.md・.claude/CLAUDE.md）を短く保ち、安全の6点が残っているかを見る。
+ * ファイルを読むだけで、ネットワークにも DB にも接続しない。verify-registry.json の tier ci（PR ごとの Quality Gates）。
  *
  * 守るもの:
  *   (a) AGENTS.md は200行未満（公式の目安 code.claude.com/docs/en/memory.md）、.claude/CLAUDE.md は30行未満（入口だけ）。
@@ -78,10 +76,10 @@ const failures = [
 ].filter(Boolean);
 
 if (failures.length > 0) {
-  console.error("check-agents-entry: NG");
+  console.error("verify-agents-entry: NG");
   failures.forEach((f) => console.error(`  - ${f}`));
   process.exit(1);
 }
 console.log(
-  `check-agents-entry: OK（AGENTS.md ${lineCount(agents)} 行・.claude/CLAUDE.md ${lineCount(entry)} 行・安全の語 ${SAFETY_TERMS.length} 件・rules は全て paths 付き）`,
+  `verify-agents-entry: OK（AGENTS.md ${lineCount(agents)} 行・.claude/CLAUDE.md ${lineCount(entry)} 行・安全の語 ${SAFETY_TERMS.length} 件・rules は全て paths 付き）`,
 );

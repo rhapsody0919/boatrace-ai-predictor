@@ -1,0 +1,153 @@
+{
+  "$comment": [
+    "verify-kyotei-wording.js の一覧。src/ で「競艇」を含んでよい行（ファイルと、行の中身の trim の完全一致）。",
+    "2026-11-07 にその時点の src の全ての行で固定した（meta＝code-style.md 例外1、コメント、禁止語の一覧、駅名など）。新しく足すのは meta（<title>・description・keywords・OGP）だけで、PR 本文に書く。画面の本文・見出し・UI の行は足さず「ボートレース」に直す。",
+    "例外1は暫定の措置。役所への営業の前に、ここに残る meta の行を外す。"
+  ],
+  "entries": [
+    {
+      "file": "src/components/HomeAiIntro.jsx",
+      "line": "* 「競艇ai予想 無料」等でトップが6〜8位にいるため、何のサイトかを説明する本文と、"
+    },
+    {
+      "file": "src/components/race/SgNowBanner.jsx",
+      "line": "* 「{会場}競艇予想 ai」は SG 開催週に跳ねる（桐生SGの週に1週1,489表示）ため、トップから"
+    },
+    {
+      "file": "src/data/morningDigestCopy.js",
+      "line": "// title・description・keywords は画面に表示されないメタ情報なので「競艇」を含めてよい（code-style.md 例外1）。"
+    },
+    {
+      "file": "src/data/morningDigestCopy.js",
+      "line": "// 画面に出る h1 と、AIスナップショットの本文に使う lead には「競艇」を入れない。"
+    },
+    {
+      "file": "src/data/morningDigestCopy.js",
+      "line": "// 「鉄板・荒れる」は検索語（「競艇 鉄板レース 今日」「競艇 荒れるレース 今日」）に合わせた語で、"
+    },
+    {
+      "file": "src/data/morningDigestCopy.js",
+      "line": "\"今日の競艇 鉄板・荒れるの判断材料｜逃げが堅い選手・まくりが利く選手 - 龍神レーダー\","
+    },
+    {
+      "file": "src/data/morningDigestCopy.js",
+      "line": "\"今日（本日）の競艇全レースから、逃げが堅い1号艇（鉄板の判断材料）と、1号艇に逃げられやすかった実績のある選手、まくりが利く選手（荒れる要因）を抽出。会場とレースグレードの有利不利を除いて比較し、AIのイン崩れ指数と突き合わせた今日の注目レースも掲載。昨日のフライング・帰郷選手も無料で確認できます。\","
+    },
+    {
+      "file": "src/data/morningDigestCopy.js",
+      "line": "\"競艇,ボートレース,鉄板レース,荒れるレース,今日,本日,逃げ率,まくり率,フライング,帰郷,データ分析,無料\","
+    },
+    {
+      "file": "src/data/snsFormatCatalogContent.js",
+      "line": "\"艇番カラーは公式配色（src/utils/colors.jsのBOAT_COLORS）を必ず使う。ロゴは金の龍（public/logo.png）で統一。動画カバー画像（frame=0）はサムネイルとしてそのまま使われるため、frame=0で主要情報が視認できる状態にする（GOLD統一・非対称配置・実データ背景・ベタ塗り帯の思想を基調とする）。「競艇」表記禁止・廃止済みモデル名の不使用・射幸心を煽る表現の禁止はrisk-rules.jsonと連動。\","
+    },
+    {
+      "file": "src/data/theoryCatalog.js",
+      "line": "* 使わない語: 「数える」「集計」「算出」「対象」（D-41・D-42）、「似た」「似ている」「ふつう」「いつも」「競艇」「鉄板」「大本線」"
+    },
+    {
+      "file": "src/data/thinkingAssistCopy.js",
+      "line": "* 使わない語: 「似たレース」「いつも」「競艇」「鉄板」「大本線」（spec 位置づけ・N-7、受け入れ E2E の禁止語）"
+    },
+    {
+      "file": "src/data/venueGuidesZhTw.js",
+      "line": "\"賽場緊鄰同名車站——「競艇場前」站（此為當地實際站名），是少見以場館命名車站的例子。平穩的水面讓比賽結果相對容易判讀，很適合初次下注的旅客。\","
+    },
+    {
+      "file": "src/data/venueGuidesZhTw.js",
+      "line": "\"西武多摩川線「競艇場前」站 → 步行約3分鐘\","
+    },
+    {
+      "file": "src/data/venueGuidesZhTw.js",
+      "line": "\"名鐵蒲郡線「蒲郡競艇場前」站，或從JR蒲郡站搭乘每30分鐘一班的直達巴士\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"description\": \"龍神レーダー（boat-ai.jp）は、全国24場のボートレース（競艇）全レースをAIが毎日予想する無料サイト。1マークの展開予測とイン崩れ指数を公開。会員登録なしで今すぐ使えます。\""
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaTitle\": \"{{venue}}競艇の予想・出走表｜本日の全レースAI予想 - 龍神レーダー\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaDescription\": \"{{venue}}競艇（ボートレース{{venue}}）の本日の出走表と全レースのAI予想。締切時刻、1マークの展開予測、直近1年の1コースの1着率と決まり手を無料・登録不要で確認できます。\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaTitleSeries\": \"{{venue}}競艇の予想・出走表 {{series}}｜本日のAI予想 - 龍神レーダー\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaDescriptionSeries\": \"{{venue}}競艇（ボートレース{{venue}}）で{{series}}開催中。本日の出走表と全レースのAI予想、節の得点率ランキングを無料・登録不要で公開しています。\""
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaTitle\": \"{{venue}}競艇 {{race}}R AI予想・展開予測（{{date}}）- 龍神レーダー\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaDescription\": \"{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rの出走表データ・AI予想・1マークの展開予測・イン崩れ指数を無料で確認できます。\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaTitleResult\": \"{{venue}}競艇 {{race}}R 結果・払戻（{{date}}）- 龍神レーダー\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaDescriptionResult\": \"{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rのレース結果と払戻金、出走表データ・AI予想を無料で確認できます。\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaTitleCancelled\": \"{{venue}}競艇 {{race}}R 中止（{{date}}）- 龍神レーダー\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaDescriptionCancelled\": \"{{date}}の{{venue}}競艇（ボートレース{{venue}}）{{race}}Rは中止になりました。同じ日のほかのレースの出走表・AI予想は龍神レーダーで確認できます。\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"title\": \"競艇・ボートレースのデータ分析ツール（無料18種） - 龍神レーダー\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"description\": \"競艇（ボートレース）の出目分布・決まり手・モーター調子・選手調子・展示タイム・スタート・回収率など18種類のデータ分析を無料で。全24会場・レースごとの傾向を確認し、舟券の買い目選定や除外判断の根拠に使えます。\""
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaTitle\": \"{{venue}}競艇 {{series}} 得点率ランキング・準優ボーダー | 龍神レーダー\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"metaDescription\": \"{{venue}}競艇（ボートレース{{venue}}）{{series}}の全選手の得点率ランキングと準優ボーダー、準優勝戦・優勝戦の勝ち上がりメンバーを一覧で。予選最終日は勝負駆けの選手も分かります。\","
+    },
+    {
+      "file": "src/pages/BlogPost.jsx",
+      "line": "// h1・一覧カードは title・description のまま（「競艇」は画面に出さない。code-style.md 例外1）"
+    },
+    {
+      "file": "src/pages/RacerProfile.jsx",
+      "line": "// title・description は画面に表示されないメタ情報なので「競艇」を含めてよい（code-style.md 例外1の暫定措置。"
+    },
+    {
+      "file": "src/pages/RacerProfile.jsx",
+      "line": "? `${displayName}（競艇）選手の成績・勝率・決まり手 | 龍神レーダー`"
+    },
+    {
+      "file": "src/pages/RacerProfile.jsx",
+      "line": "? `${displayName}選手（${who}）の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別・枠番別成績、決まり手、直近のレース一覧とプロフィール。`"
+    },
+    {
+      "file": "src/pages/VenueRaceListPage.jsx",
+      "line": "// SG・G1 開催中は節タイトルを title・description に入れる（ja は「{会場}競艇のAI予想 {節タイトル}」。他言語は従来の文言に節タイトルを括弧書きで添える）"
+    },
+    {
+      "file": "src/utils/blogChartContract.js",
+      "line": "const BANNED_WORDS = [\"競艇\"];"
+    },
+    {
+      "file": "src/utils/venueSeriesTitle.js",
+      "line": "* 「{会場}競艇予想 ai」は SG 開催週に跳ねる（桐生SGの週に「桐生競艇予想 ai」が1週1,489表示）ため、"
+    }
+  ]
+}
