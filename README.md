@@ -4,7 +4,7 @@
 
 **公式サイト**: https://www.boat-ai.jp/
 
-作業の規約（Claude・Codex 共通）は [AGENTS.md](./AGENTS.md)、Claude に固有の進め方は [.claude/CLAUDE.md](./.claude/CLAUDE.md)。設計資料は `docs/` にある（置き場の決まりは `.claude/rules/documentation.md`）。
+作業の規約（Claude・Codex 共通）は [AGENTS.md](./AGENTS.md)、Claude に固有の進め方は [.claude/CLAUDE.md](./.claude/CLAUDE.md)。設計の資料は `docs/` にある（置き場の決まりは `.claude/rules/documentation.md`）。
 
 ---
 
