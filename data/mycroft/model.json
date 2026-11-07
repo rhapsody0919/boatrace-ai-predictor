@@ -1,41 +1,41 @@
 {
   "model_id": "mycroft",
   "version": "v1",
-  "trained_at": "2026-10-31T21:37:51.190458+00:00",
-  "n_races": 51435,
+  "trained_at": "2026-11-07T22:07:09.193247+00:00",
+  "n_races": 52479,
   "n_params": 121286,
   "max_history": 32,
   "metrics": {
-    "top1_hit_rate": 0.5626,
-    "winner_logloss": 0.3235,
-    "auc": 0.8258,
-    "ndcg_at_1": 0.6546,
-    "ndcg_at_3": 0.7425
+    "top1_hit_rate": 0.5627,
+    "winner_logloss": 0.3237,
+    "auc": 0.8294,
+    "ndcg_at_1": 0.654,
+    "ndcg_at_3": 0.7422
   },
   "vs_watson": {
-    "top1_hit_rate": 0.5598,
-    "winner_logloss": 0.3306,
-    "auc": 0.8388,
-    "ndcg_at_1": 0.6529,
-    "ndcg_at_3": 0.7423
+    "top1_hit_rate": 0.5567,
+    "winner_logloss": 0.3264,
+    "auc": 0.8397,
+    "ndcg_at_1": 0.6499,
+    "ndcg_at_3": 0.7396
   },
   "ensemble_with_watson": {
-    "mycroft_weight": 0.6396,
-    "top1_hit_rate": 0.5663,
-    "winner_logloss": 0.3214,
-    "auc": 0.8531,
-    "ndcg_at_1": 0.6584,
-    "ndcg_at_3": 0.7458,
-    "logloss_gain_vs_watson": 0.0092,
-    "top1_gain_vs_watson": 0.0065
+    "mycroft_weight": 0.6646,
+    "top1_hit_rate": 0.5649,
+    "winner_logloss": 0.3215,
+    "auc": 0.8528,
+    "ndcg_at_1": 0.6562,
+    "ndcg_at_3": 0.7448,
+    "logloss_gain_vs_watson": 0.0049,
+    "top1_gain_vs_watson": 0.0082
   },
-  "delta_r2": 0.0345,
+  "delta_r2": 0.0331,
   "delta_r2_detail": {
     "r2": {
-      "model_only": 0.2702,
-      "odds_only": 0.2436,
-      "combined": 0.2781
+      "model_only": 0.2784,
+      "odds_only": 0.2546,
+      "combined": 0.2877
     },
-    "n_eval_races": 2367
+    "n_eval_races": 2553
   }
 }
