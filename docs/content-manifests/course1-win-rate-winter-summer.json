@@ -1,0 +1,116 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "course1-win-rate-winter-summer",
+ "kind": "new",
+ "ticket": "OC-20261107T100108-seo-human-1",
+ "paths": [
+  "public/blog/course1-win-rate-winter-summer.md",
+  "src/data/blog-posts/course1-win-rate-winter-summer.json"
+ ],
+ "files": {
+  "public/blog/course1-win-rate-winter-summer.md": "82480247e28d6758a37f67bf42a26ad412263d1e9044d343df065d0d0b9593b2",
+  "src/data/blog-posts/course1-win-rate-winter-summer.json": "32983e81d3dca951feb5e491cac96a69498eda02540ae3f3bc85e28d7e12e46a"
+ },
+ "content_sha256": "e19e82cf6ac83b26c0979a6aa9fdb26c78b68ae48af10154e0b365e55e30537f",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "e19e82cf6ac83b26c0979a6aa9fdb26c78b68ae48af10154e0b365e55e30537f",
+   "model": "opus",
+   "at": "2026-11-07T10:11:26+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "e19e82cf6ac83b26c0979a6aa9fdb26c78b68ae48af10154e0b365e55e30537f",
+   "model": "opus",
+   "at": "2026-11-07T10:11:26+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "e19e82cf6ac83b26c0979a6aa9fdb26c78b68ae48af10154e0b365e55e30537f",
+   "model": "opus",
+   "at": "2026-11-07T10:11:26+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "e19e82cf6ac83b26c0979a6aa9fdb26c78b68ae48af10154e0b365e55e30537f",
+   "model": "opus",
+   "at": "2026-11-07T10:11:26+09:00"
+  }
+ ],
+ "evidence": [
+  {
+   "h2": "全国の冬の半年と夏の半年の進入コース別の1着率",
+   "evidence": [
+    "data/analysis/venue-summary-stats/venue-techniques.json"
+   ]
+  },
+  {
+   "h2": "全24場の冬の半年と夏の半年",
+   "evidence": [
+    "data/analysis/venue-summary-stats/venue-techniques.json"
+   ]
+  },
+  {
+   "h2": "会場ごとの冬と夏の差は24場とも確認できない",
+   "evidence": [
+    "data/analysis/venue-summary-stats/venue-techniques.json",
+    "docs/reference/venue-summary-stats.md"
+   ]
+  },
+  {
+   "h2": "会場の並び順は冬と夏で保たれる",
+   "evidence": [
+    "data/analysis/venue-summary-stats/venue-techniques.json"
+   ]
+  },
+  {
+   "h2": "半年の差を季節の差と言えるか",
+   "evidence": [
+    "data/analysis/venue-summary-stats/venue-techniques.json",
+    "docs/reference/venue-summary-stats.md"
+   ]
+  },
+  {
+   "h2": "今日のレースでの使い方",
+   "evidence": [
+    "data/analysis/venue-summary-stats/venue-techniques.json",
+    "src/locales/ja/common.json"
+   ]
+  },
+  {
+   "h2": "よくある質問",
+   "evidence": [
+    "data/analysis/venue-summary-stats/venue-techniques.json"
+   ]
+  },
+  {
+   "h2": "集計の範囲と注意",
+   "evidence": [
+    "docs/reference/venue-summary-stats.md"
+   ]
+  }
+ ],
+ "sources": "data/analysis/venue-summary-stats/venue-techniques.json（scripts/analysis/venue-summary-stats/count-venue-techniques.mjs の出力、sha256 72b4a8a9…3d908b00）の windows.12m_first_half（2025-10-31〜2026-04-30）と 12m_second_half（2026-05-01〜2026-10-30）の all と venues.*（races・by_course.wins）。12m（2025-10-31〜2026-10-30）は徳山・戸田の比べと会場ページの値。venue_difference の course1.split_half_spearman 0.8304。\n分母は結果と決まり手のあるレース（不成立・中止・1着なし・決まり手なしを除く）、コースは進入コース、〜2025-12-02 は kb_archive、以後は race_results（docs/reference/venue-summary-stats.md:14-17）。\n比べは2群の比率の z（自分で計算）。全国の進入コース別は記事で同時に比べた7組の Bonferroni（|z|>2.69）で全部「差を確認できない」、会場は24組（|z|>3.08）。",
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-07T10:13:17+09:00",
+ "run": "20261107T100108-seo-human",
+ "engine": "claude"
+}
