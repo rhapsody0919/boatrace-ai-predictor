@@ -69,6 +69,7 @@
       ],
       "changed": [
         "^e2e/.*\\.spec\\.js$",
+        "^e2e/(?!.*\\.spec\\.js$)",
         "^scripts/maintenance/verify-[^/]+\\.(js|mjs|cjs|sh)$"
       ],
       "rowsOnlyAdded": ["^scripts/maintenance/verify-registry\\.json$"]

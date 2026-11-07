@@ -73,4 +73,4 @@ PR の URL（`gh pr view --json url --jq '.url'`）をユーザーに報告す�
 
 ### 7. 完了後
 
-PR番号を報告し、`.claude/CLAUDE.md`「実装完了後の自動レビュー」（`/code-review` と Codex の審査）に進む。
+PR番号を報告し、マージは `/merge-pr` の手順（pr-lane.js の判定・必須の check、heavy はオーナーの承認）に従う。LLM の審査（Codex・review.yml）は v3.3（2026-11-06）でやめた。

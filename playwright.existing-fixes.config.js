@@ -1,5 +1,6 @@
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
+  forbidOnly: !!process.env.CI,
   testDir: './e2e/acceptance', testMatch: 'sns-existing-fixes.spec.js', workers: 1,
   use: { baseURL: 'http://127.0.0.1:47854', viewport: { width: 375, height: 812 } },
   reporter: 'list',

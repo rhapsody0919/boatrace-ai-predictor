@@ -95,6 +95,8 @@ export default defineConfig({
   // コールドスタートで1回目だけ遅れることで、2回目はキャッシュが温まり通る。
   // 2回続けて落ちるものは本物の不具合として失敗のまま残る
   retries: process.env.CI ? 1 : 0,
+  // CI で test.only・describe.only が残ったら落とす（.only で他の試験が走らないまま緑になるのを防ぐ。2026-11-07 ハーネスの照合 P4）
+  forbidOnly: !!process.env.CI,
   // JSONも出すのは、skipされたテストを機械的に数えるため。
   // データ依存の test.skip() が常に真になると、そのテストは無言で無効化され、
   // 「テストがある」まま何も検証しない状態が続く。実際に320px横スクロールの

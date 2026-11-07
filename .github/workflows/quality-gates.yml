@@ -14,10 +14,11 @@ on:
   pull_request:
     branches:
       - master
-  # masterへのマージ後にも1回走らせる。masterにブランチ保護が無く
-  # "Require branches to be up to date" も効かないため、2つのPRが同じ
+  # masterへのマージ後にも1回走らせる。master には ruleset（master-guard）があるが、
+  # "Require branches to be up to date" は求めていないため、2つのPRが同じ
   # 時点のmasterに対して緑になり、片方がマージされた後にもう片方が
   # 再検証されずマージされうる（063の番号重複はこの経路で入った）。
+  # bot の直接 push（e2e-rerecord 等、ruleset の bypass）も PR を通らない。
   # マージ後に走らせることで、少なくとも検知はできる状態にする。
   push:
     branches:

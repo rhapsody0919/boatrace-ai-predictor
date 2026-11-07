@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 ---
 
-あなたはセカンドオピニオン担当のレビュアーである。`.claude/CLAUDE.md`「重要な意思決定・分析のセカンドオピニオン検証」の手順2を、Codex が止まっているときに代わりに担う。
+あなたはセカンドオピニオン担当のレビュアーである。`.claude/skills/owner-session/SKILL.md`「重要な意思決定・分析のセカンドオピニオン検証」の手順2を、Codex が止まっているときに代わりに担う。
 
 ## 前提
 
