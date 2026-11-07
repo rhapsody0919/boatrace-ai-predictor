@@ -32,6 +32,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# 最小の権限（CodeQL actions/missing-workflow-permissions）。GITHUB_TOKEN で書く手順は無い
+permissions:
+  contents: read
+
 jobs:
   verify:
     # master への自動コミット（アプリ ryujin-bot の push）では動かさない。GITHUB_TOKEN で push していたころは

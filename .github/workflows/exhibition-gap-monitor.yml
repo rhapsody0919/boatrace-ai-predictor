@@ -13,6 +13,10 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# 最小の権限（CodeQL actions/missing-workflow-permissions）。GITHUB_TOKEN で書く手順は無い
+permissions:
+  contents: read
+
 jobs:
   check:
     environment: prod-jobs

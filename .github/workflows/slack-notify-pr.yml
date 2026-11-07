@@ -7,6 +7,10 @@ on:
   pull_request:
     types: [opened]
 
+# 最小の権限（CodeQL actions/missing-workflow-permissions）。GITHUB_TOKEN で書く手順は無い
+permissions:
+  contents: read
+
 jobs:
   notify:
     runs-on: ubuntu-latest

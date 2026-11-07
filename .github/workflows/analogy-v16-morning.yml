@@ -21,6 +21,10 @@ concurrency:
   group: analogy-v16-morning
   cancel-in-progress: false
 
+# 最小の権限（CodeQL actions/missing-workflow-permissions）。GITHUB_TOKEN で書く手順は無い
+permissions:
+  contents: read
+
 jobs:
   morning:
     environment: prod-jobs

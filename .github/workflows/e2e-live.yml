@@ -25,6 +25,10 @@ concurrency:
   group: e2e-live
   cancel-in-progress: true
 
+# 最小の権限（CodeQL actions/missing-workflow-permissions）。GITHUB_TOKEN で書く手順は無い
+permissions:
+  contents: read
+
 jobs:
   # 組の分け方（e2e/shards.json）を matrix に直す。誤りがあればここで落とす
   shards:
