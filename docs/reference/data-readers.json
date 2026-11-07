@@ -662,7 +662,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:134",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:133",
           "op": "select",
           "via": "client",
           "columns": [
@@ -673,7 +673,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:192",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
           "op": "select",
           "via": "client",
           "columns": [
@@ -684,7 +684,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:374",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
           "op": "select",
           "via": "client",
           "columns": [
@@ -771,9 +771,9 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:134",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:192",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:374",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:133",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
             "scripts/lib/analogyDispatch.js:80",
             "scripts/lib/analogyV16Exhibition.js:289",
@@ -791,9 +791,9 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:134",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:192",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:374",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:133",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
             "scripts/lib/analogyDispatch.js:80",
             "scripts/lib/analogyV16Exhibition.js:289",
@@ -812,8 +812,8 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:134",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:192",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:133",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
             "scripts/lib/analogyV16Exhibition.js:289"
           ],
           "writers": [],
@@ -824,8 +824,8 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:134",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:192",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:133",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
             "scripts/maintenance/verify-analogy-v16.js:279"
           ],
           "writers": [],
@@ -854,7 +854,7 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:374",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
             "scripts/lib/analogyV16Exhibition.js:289"
           ],
           "writers": [],
@@ -865,7 +865,7 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:374",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
             "scripts/lib/analogyV16Exhibition.js:289",
             "scripts/maintenance/verify-analogy-v16.js:279"
@@ -2583,7 +2583,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:243",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:241",
           "op": "select",
           "via": "client",
           "columns": [
@@ -2610,14 +2610,14 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
           ],
           "writers": [],
           "sql": []
         },
         "boat_number": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
           ],
           "writers": [],
           "sql": []
@@ -2694,35 +2694,35 @@
         },
         "course": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
           ],
           "writers": [],
           "sql": []
         },
         "start_timing": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
           ],
           "writers": [],
           "sql": []
         },
         "is_flying": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
           ],
           "writers": [],
           "sql": []
         },
         "is_late_start": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
           ],
           "writers": [],
           "sql": []
         },
         "finish_raw": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:243"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
           ],
           "writers": [],
           "sql": []
@@ -2760,7 +2760,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:239",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:237",
           "op": "select",
           "via": "client",
           "columns": [
@@ -2803,7 +2803,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:239"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
           ],
           "writers": [],
           "sql": []
@@ -2875,7 +2875,7 @@
         },
         "has_result": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:239"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
           ],
           "writers": [],
           "sql": []
@@ -2902,14 +2902,14 @@
         },
         "payout_3tan": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:239"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
           ],
           "writers": [],
           "sql": []
         },
         "payout_3fuku": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:239"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
           ],
           "writers": [],
           "sql": []
@@ -11102,7 +11102,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12147,7 +12147,7 @@
             "scripts/analysis/discover-exacta-rules.js:70",
             "scripts/analysis/find-missing-dates.js:33",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/analysis/recalculate-all-rules.js:227",
             "scripts/analysis/recalculate-trio-rules.js:142",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
@@ -12237,7 +12237,7 @@
             "scripts/analysis/compare-pcexpect.js:108",
             "scripts/analysis/discover-exacta-rules.js:70",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-all-venues-label-accuracy.js:106",
@@ -12299,7 +12299,7 @@
             "scripts/analysis/compare-pcexpect.js:108",
             "scripts/analysis/discover-exacta-rules.js:70",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-poirot.js:81",
@@ -12341,7 +12341,7 @@
             "scripts/analysis/compare-pcexpect.js:108",
             "scripts/analysis/discover-exacta-rules.js:70",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-poirot.js:81",
@@ -12431,7 +12431,7 @@
           "readers": [
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "src/services/adminRuleService.js:87",
@@ -12449,7 +12449,7 @@
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/compare-pcexpect.js:108",
             "scripts/analysis/discover-exacta-rules.js:70",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/daily/calculate-venue-grade-stats.js:73",
@@ -12469,7 +12469,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:120",
             "scripts/analysis/compare-pcexpect.js:108",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
@@ -12495,7 +12495,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:120",
             "scripts/analysis/compare-pcexpect.js:108",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/analysis/verify-race-analysis-rpc.js:285"
@@ -12804,7 +12804,7 @@
         },
         "actual_course_1": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2542",
             "src/services/supabaseDataService.js:7744"
@@ -12824,7 +12824,7 @@
         },
         "actual_course_2": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2542",
             "src/services/supabaseDataService.js:7744"
@@ -12843,7 +12843,7 @@
         },
         "actual_course_3": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2542",
             "src/services/supabaseDataService.js:7744"
@@ -12862,7 +12862,7 @@
         },
         "actual_course_4": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2542",
             "src/services/supabaseDataService.js:7744"
@@ -12881,7 +12881,7 @@
         },
         "actual_course_5": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2542",
             "src/services/supabaseDataService.js:7744"
@@ -12900,7 +12900,7 @@
         },
         "actual_course_6": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
             "src/services/supabaseDataService.js:2542",
             "src/services/supabaseDataService.js:7744"
@@ -12919,7 +12919,7 @@
         },
         "race_status": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/daily/update-outcome-frequencies.js:19",
@@ -12935,7 +12935,7 @@
         },
         "refund_boats": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:226",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/daily/calculate-venue-grade-stats.js:73"
           ],
           "writers": [],
@@ -13406,7 +13406,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13688,7 +13688,7 @@
         "race_id": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
             "scripts/daily/generate-morning-digest.js:699",
             "scripts/daily/scrape-results.js:639",
             "scripts/daily/scrape-results.js:709",
@@ -13715,7 +13715,7 @@
         "boat_number": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
             "scripts/daily/generate-morning-digest.js:699",
             "scripts/daily/scrape-results.js:639",
             "scripts/daily/scrape-results.js:709",
@@ -13740,7 +13740,7 @@
         "start_timing": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
             "scripts/daily/generate-morning-digest.js:699",
             "src/services/supabaseDataService.js:6810",
             "src/services/supabaseDataService.js:7737"
@@ -13755,7 +13755,7 @@
         "is_flying": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
             "src/services/supabaseDataService.js:2448",
             "src/services/supabaseDataService.js:6810",
             "src/services/supabaseDataService.js:7737"
@@ -13769,7 +13769,7 @@
         "is_late_start": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
             "src/services/supabaseDataService.js:7737"
           ],
           "writers": [],
@@ -13787,7 +13787,7 @@
         },
         "finish_mark": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:231",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
             "scripts/daily/generate-morning-digest.js:699",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
@@ -16435,7 +16435,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:131",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16445,7 +16445,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:234",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17910,8 +17910,8 @@
             "scripts/analysis/backtest-unified-model-place-trifecta.js:94",
             "scripts/analysis/backtest-unified-model.js:109",
             "scripts/analysis/calibrate-unified-model.js:160",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:234",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:131",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
@@ -18049,7 +18049,7 @@
             "api/_lib/snsClaimCheck.js:498",
             "api/odds/live.js:72",
             "scripts/analysis/analyze-upset-factors.js:108",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:131",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
@@ -18258,7 +18258,7 @@
             "api/_lib/snsClaimCheck.js:498",
             "api/_lib/snsTodayDigest.js:50",
             "api/odds/live.js:72",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:132",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:131",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/daily/generate-morning-digest.js:133",
             "scripts/daily/scrape-results.js:1501",
@@ -18446,7 +18446,7 @@
             "api/_lib/snsClaimCheck.js:472",
             "api/_lib/snsClaimCheck.js:498",
             "api/_lib/snsTodayDigest.js:50",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:234",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/daily/scrape-point-rank.js:349",
             "scripts/daily/scrape-results.js:839",
