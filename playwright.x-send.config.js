@@ -1,5 +1,6 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
+  forbidOnly: !!process.env.CI,
   testDir: "./e2e/acceptance",
   testMatch: "sns-x-send.spec.js",
   workers: 1,

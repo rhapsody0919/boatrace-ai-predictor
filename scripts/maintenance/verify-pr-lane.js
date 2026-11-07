@@ -297,6 +297,26 @@ expect(
   "heavy",
   ["H5"],
 );
+// e2e/ の下の spec 以外（global-setup・har-merge・録画のポインタ・shards・*-fixture・support/ 等）の変更も、試験を弱めうるので H5（2026-11-07 ハーネスの照合 P4）
+expect(
+  "e2e の補助ファイルの変更",
+  [
+    "M e2e/global-setup.js",
+    "M e2e/har-merge.js",
+    "M e2e/viewport-skip.js",
+    "M e2e/recording.json",
+    "M e2e/shards.json",
+    "M e2e/analogy-v16-fixture.js",
+    "D e2e/support/sns-x-send-server.js",
+  ],
+  "heavy",
+  ["H5"],
+);
+expect(
+  "新しい e2e の補助ファイルと新しい spec（追加は当てない）",
+  ["A e2e/new-thing-fixture.js", "A e2e/new-thing.spec.js"],
+  "light",
+);
 expect(
   "#2237 既存の verify の変更",
   ["M scripts/maintenance/verify-ai-copy-text.js"],
