@@ -623,6 +623,12 @@ input:focus-visible,
   color: var(--text-secondary);
 }
 
+/* 1着の金の線（行の外）と「1着」の間に余白を取る（BOA-1027）。列の左端は全行・見出しでそろえるため両方に足す */
+.rr-row,
+.rr-row-head {
+  padding-left: 0.5rem;
+}
+
 .rr-row-head .rr-head-st,
 .rr-row-head .rr-head-time {
   text-align: right;
