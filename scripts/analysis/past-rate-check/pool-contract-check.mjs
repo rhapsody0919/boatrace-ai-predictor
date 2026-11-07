@@ -118,7 +118,6 @@ async function sampleLayers() {
 
 // ---------- (f) D-6 ----------
 // status を除いて比べる（分割代入で外す）
-// eslint-disable-next-line no-unused-vars
 const canon = (j) => { const { status, ...rest } = j; return JSON.stringify(rest); };
 async function d6(metas) {
   const prior = (process.env.PCC_PRIOR || "").split(",").filter(Boolean).flatMap((f) => {
@@ -184,7 +183,6 @@ async function d6(metas) {
       const rid = name.replace(".json.gz", "");
       const [x, y] = await Promise.all(rs.slice(0, 2).map((run) => readObject(objectPath(rid, run, "layer", rid))));
       // run_id・status を除いて比べる
-      // eslint-disable-next-line no-unused-vars
       const strip = ({ run_id, status, ...o }) => JSON.stringify(o);
       if (JSON.stringify(x.rows) === JSON.stringify(y.rows)) rowsEq++; else changed.push(rid);
       if (strip(x) === strip(y)) restEq++;
