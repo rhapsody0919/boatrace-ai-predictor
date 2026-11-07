@@ -287,3 +287,22 @@
     font-size: var(--font-size-xs);
   }
 }
+
+/* ===== Verification Notice（容器は .moriarty-notice--warning を使い、中の並びだけ定義する） ===== */
+.moriarty-verification-title {
+  margin: 0 0 var(--spacing-2) 0;
+  font-weight: var(--font-weight-bold);
+}
+
+.moriarty-verification-reasons {
+  margin: 0 0 var(--spacing-2) 0;
+  padding-left: var(--spacing-5);
+}
+
+.moriarty-verification-reasons li + li {
+  margin-top: var(--spacing-1);
+}
+
+.moriarty-verification-footer {
+  margin: 0;
+}
