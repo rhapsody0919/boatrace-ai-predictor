@@ -15,6 +15,11 @@ const RACE = "/race/2026-09-29-16-12";
 async function showAsPreRace(page) {
   await page.route("**/api/predictions/**", async (route) => {
     const response = await fetchRecorded(route);
+    if (response.status() < 200 || response.status() >= 300) {
+      throw new Error(
+        `/api/predictions が ${response.status()} を返した（関門の 403 なら INTERNAL_API_KEY を確かめる）`,
+      );
+    }
     const body = await response.json().catch(() => null);
     if (!body) return route.fulfill(response.fulfillOptions());
     const clear = (v) => {

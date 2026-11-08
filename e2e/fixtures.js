@@ -17,6 +17,7 @@ import {
   harKey,
   LOCAL_ORIGIN_PLACEHOLDER,
 } from "./har-merge.js";
+import { liveApiHeaders } from "./live-api-key.js";
 
 /**
  * E2Eの通信と時計を「録画時点」に固定する共通fixture（BOA-466、ADR-0077）。
@@ -333,6 +334,17 @@ export async function fetchRecorded(route, options = {}) {
   const request = route.request();
   // options.url で取り先を差し替えられる（route.fetch({ url }) と同じ）
   const url = options.url ?? request.url();
+  // live は /api/ の関門（BOA-1110）の合言葉を付ける（record・replay は変えない）
+  if (E2E_MODE === "live") {
+    options = {
+      ...options,
+      headers: liveApiHeaders(
+        url,
+        { ...request.headers(), ...options.headers },
+        { mode: E2E_MODE },
+      ),
+    };
+  }
   if (E2E_MODE === "live") return fromApiResponse(await route.fetch(options));
   if (E2E_MODE === "record") {
     return recordThrough(
@@ -589,12 +601,15 @@ export const test = base.extend({
   context: async ({ context, cookieConsent }, use, testInfo) => {
     await applyCookieConsent(context, cookieConsent);
     await applyRecording(context, testInfo);
+    // Playwright の fixture の use() で、React の Hook ではない
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(context);
     await waitForInflight(context);
   },
   // context の "page" でも包むが、fixture の page は念のためここでも包む（二重には包まない）
   page: async ({ page }, use) => {
     guardRoutes(page);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
   },
 });
