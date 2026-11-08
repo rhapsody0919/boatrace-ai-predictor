@@ -8,6 +8,7 @@
  *   2. 1本の失敗の扱い（rerun は許可の一覧・1回目・同じ日・後の run が無いときだけ）と、鍵が直った後の追い上げ
  *   3. Issue の印（同じ run を2回書かない）
  *   3b. 結論が cancelled の run のうち、GitHub の時間切れだけを拾う（concurrency の置き換え・人の取り消しは拾わない。BOA-1162）
+ *   3c. 毎晩の網羅の表（e2e-nightly.yml）が7日より古いとき知らせる。run がまだ無いときは、workflow が入って8日たつまで知らせない（最初の日に誤報しない）
  *   4. 登録の漏れ: Environment prod-jobs・ryujin-bot を使う workflow は全部見張りの一覧にあり、job-watch.yml の workflows に名前で並ぶ
  *   5. 許可の一覧: 見張りの一覧の中だけ。送信・master への push・db-apply・審査・10分ごとの job は入れない
  *   6. 配線: actions: write は rerun の job だけ、run に ${{ }} を書かない、action は SHA で固定、資格情報を残さない
@@ -22,6 +23,7 @@ import {
   handledMarkers,
   jobTimeouts,
   jstDate,
+  nightlyTableStale,
   recoveryReruns,
   runMarker,
 } from "../lib/jobWatch.js";
@@ -299,6 +301,54 @@ const run = (o = {}) => ({
     /r\.conclusion === "cancelled"\)/.test(src) &&
       /cancelledByTimeout\(jobs, yaml\)/.test(src) &&
       /if \(r\.conclusion === "cancelled" && !timedOut\) continue;/.test(src),
+  );
+}
+
+// 3c. 毎晩の網羅の表が古い
+{
+  const now = new Date("2026-11-20T03:00:00Z");
+  const stale = (lastSuccessAt, workflowCreatedAt) =>
+    nightlyTableStale({ now, lastSuccessAt, workflowCreatedAt }).stale;
+  check(
+    "最後の成功が7日以内なら知らせない",
+    !stale("2026-11-13T03:00:01Z", "2026-11-01T00:00:00Z"),
+  );
+  check(
+    "最後の成功が7日より古ければ知らせる",
+    stale("2026-11-13T02:59:59Z", "2026-11-01T00:00:00Z"),
+  );
+  check(
+    "成功がまだ無く、workflow が入って8日以内なら知らせない（最初の日に誤報しない）",
+    !stale(null, "2026-11-12T03:00:01Z") &&
+      !stale(null, "2026-11-20T00:00:00Z"),
+  );
+  check(
+    "成功がまだ無く、workflow が入って8日を過ぎたら知らせる",
+    stale(null, "2026-11-12T02:59:59Z"),
+  );
+  check(
+    "workflow が無い（入った時刻が分からない）ときは知らせない",
+    !stale(null, null),
+  );
+  check(
+    "知らせる文に最後の成功の日（JST）と日数が入る",
+    /2026-11-0[89]/.test(
+      nightlyTableStale({
+        now,
+        lastSuccessAt: "2026-11-08T16:00:00Z",
+        workflowCreatedAt: null,
+      }).reason,
+    ),
+  );
+  const src = readFileSync(
+    path.join(ROOT, "scripts/watch/job-watch.js"),
+    "utf8",
+  );
+  check(
+    "scan は表の古さを job-watch-failure に書き、同じ最後の成功では印で1回に絞る",
+    /nightlyTableStale\(/.test(src) &&
+      /runMarker\(nightly\.lastSuccess\?\.id \?\? 0, 1, "stale"\)/.test(src) &&
+      /if \(!done\.has\(marker\)\)\s*failureItems\.push/.test(src),
   );
 }
 

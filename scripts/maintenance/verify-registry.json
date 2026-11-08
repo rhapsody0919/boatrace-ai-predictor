@@ -404,6 +404,11 @@
       "guards": "e2e の束（e2e-build.js、ADR-0077 決定8）。再生の束は録画のオリジンで build する（違うと全件が本番へ素通し、#1319）、GA の ID を空に固定、3つのワークフローで E2E_SERVE: preview の段の前に同じモードの npm run build:e2e がある（PR ゲート・撮り・strict 再生・Live を同時に preview にし、dev に戻った段・モードの取り違えを CI の前に落とす）"
     },
     {
+      "script": "verify-e2e-coverage-map.js",
+      "tier": "ci",
+      "guards": "毎晩の全件で作る spec→src の表（scripts/lib/e2eCoverageMap.js、docs/design/ci-minutes-reduction/design.md 12章）。固定の小さな束・source map・V8 coverage で、呼ばれていない関数のファイルは外れ動いた関数のファイルは入ること、束の上の関数（モジュールの評価）と関数の中の分岐の範囲は数えないこと、node_modules・仮想モジュール・対応の無い位置は入らないこと、表の組み立て（行の和・自分で context を作る spec と行の無い spec は always・何も取れなければ落とす）、E2E_SOURCEMAP=1 のときだけ build に source map の引数を足すこと"
+    },
+    {
       "script": "verify-e2e-har-merge.js",
       "tier": "ci",
       "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化・Vercel Cron の dispatch（inputs.gate=true）を schedule と同じ扱いにすること（BOA-929）、素通し一覧の集計（ADR-0077）"

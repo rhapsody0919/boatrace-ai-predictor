@@ -211,3 +211,39 @@ export function handledMarkers(texts) {
   }
   return set;
 }
+
+/** 毎晩の網羅の表（e2e-nightly.yml が作る artifact e2e-coverage-map）をこの日数より古いままにしない */
+export const NIGHTLY_MAX_AGE_DAYS = 7;
+/** workflow が master に入ってからこの日数までは、run が無くても知らせない（最初の日の誤報を避ける） */
+export const NIGHTLY_FIRST_RUN_GRACE_DAYS = 8;
+
+const DAY_MS = 86_400_000;
+
+/**
+ * 毎晩の網羅の表が古いか（docs/design/ci-minutes-reduction/design.md 12章。PR の選別が古い表で選ばないための見張り）
+ * - master で成功した最新の run が NIGHTLY_MAX_AGE_DAYS より古い → 古い
+ * - 成功した run がまだ無い → workflow が master に入ってから NIGHTLY_FIRST_RUN_GRACE_DAYS を過ぎたときだけ古い。
+ *   入った時刻が分からない（workflow が無い）ときは知らせない
+ *
+ * @param {{ now: Date, lastSuccessAt: string | null, workflowCreatedAt: string | null }} input ISO の時刻
+ * @returns {{ stale: boolean, reason: string }}
+ */
+export function nightlyTableStale({ now, lastSuccessAt, workflowCreatedAt }) {
+  if (lastSuccessAt) {
+    const days = (now.getTime() - Date.parse(lastSuccessAt)) / DAY_MS;
+    return days > NIGHTLY_MAX_AGE_DAYS
+      ? {
+          stale: true,
+          reason: `毎晩の網羅の表（E2E Nightly）の最後の成功が ${jstDate(lastSuccessAt)}（${Math.floor(days)}日前）。${NIGHTLY_MAX_AGE_DAYS}日を超えた。PR の選別が古い表で選ばないよう、E2E Nightly の失敗を直す`,
+        }
+      : { stale: false, reason: "" };
+  }
+  if (!workflowCreatedAt) return { stale: false, reason: "" };
+  const days = (now.getTime() - Date.parse(workflowCreatedAt)) / DAY_MS;
+  return days > NIGHTLY_FIRST_RUN_GRACE_DAYS
+    ? {
+        stale: true,
+        reason: `毎晩の網羅の表（E2E Nightly）が master で一度も成功していない（workflow が入ってから ${Math.floor(days)}日）`,
+      }
+    : { stale: false, reason: "" };
+}
