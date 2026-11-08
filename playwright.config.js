@@ -90,7 +90,7 @@ export default defineConfig({
   // 既定の5秒expect・30秒テストではDBが少し遅いだけで大量に失敗するため余裕を持たせる
   timeout: 60000,
   expect: { timeout: 15000 },
-  // smoke.spec.jsには個別のtimeout指定が多数あり上記の延長が効かないため、CIでは
+  // e2e/smoke/ の spec には個別のtimeout指定が多数あり上記の延長が効かないため、CIでは
   // 1回だけリトライする。実行のたびに別のテストが単発で落ちる原因は、CDN・RPCの
   // コールドスタートで1回目だけ遅れることで、2回目はキャッシュが温まり通る。
   // 2回続けて落ちるものは本物の不具合として失敗のまま残る
@@ -115,20 +115,20 @@ export default defineConfig({
   //
   // 既存の smoke 側は従来どおり1回だけ走らせ（ビューポートも変えない。
   // レスポンシブ分岐の前提が変わって既存テストが揺れるのを避ける）、
-  // 幅を横断するのは layout.spec.js だけにする。smoke の934件のうち792件は
+  // 幅を横断するのは e2e/layout/ の spec だけにする。smoke の934件のうち792件は
   // venue-guide-data.spec.js のデータ検証でブラウザを使わないため多軸化しても
-  // 意味が無く、対象になるのは smoke.spec.js の142件だけ。それを3軸に広げても
+  // 意味が無く、対象になるのは e2e/smoke/ の spec（旧 smoke.spec.js）の142件だけ。それを3軸に広げても
   // 得られるのは主に「モバイルでも同じ要素が見えるか」で、レイアウト崩れの
   // 検知は専用テストのほうが直接的かつ具体的に失敗理由を出せる。
   projects: [
     {
       name: "smoke",
       // acceptance/ は playwright.acceptance.config.js で別に走らせる（PRゲート外）
-      testIgnore: [/layout\.spec\.js/, /acceptance\//],
+      testIgnore: [/\/e2e\/layout\//, /acceptance\//],
     },
     {
       name: "layout-mobile",
-      testMatch: /layout\.spec\.js/,
+      testMatch: /\/e2e\/layout\/.*\.spec\.js$/,
       use: {
         viewport: { width: 375, height: 812 },
         isMobile: true,
@@ -139,22 +139,22 @@ export default defineConfig({
     // 「3列に必要な幅に届かず列が落ちる」帯の崩れを見逃す（実際に見逃した）
     {
       name: "layout-tablet",
-      testMatch: /layout\.spec\.js/,
+      testMatch: /\/e2e\/layout\/.*\.spec\.js$/,
       use: { viewport: { width: 768, height: 1024 } },
     },
     {
       name: "layout-laptop",
-      testMatch: /layout\.spec\.js/,
+      testMatch: /\/e2e\/layout\/.*\.spec\.js$/,
       use: { viewport: { width: 1024, height: 768 } },
     },
     {
       name: "layout-desktop",
-      testMatch: /layout\.spec\.js/,
+      testMatch: /\/e2e\/layout\/.*\.spec\.js$/,
       use: { viewport: { width: 1440, height: 900 } },
     },
     {
       name: "layout-wide",
-      testMatch: /layout\.spec\.js/,
+      testMatch: /\/e2e\/layout\/.*\.spec\.js$/,
       use: { viewport: { width: 1920, height: 1080 } },
     },
   ],

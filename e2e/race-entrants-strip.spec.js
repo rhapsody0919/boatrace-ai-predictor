@@ -102,7 +102,7 @@ test.describe("レース詳細: 出走6艇と 1R〜12R の帯", () => {
   test("本日の締切前は、見出しに締切時刻を出す（ファン評価2周目 指摘2）", async ({
     page,
   }) => {
-    // smoke.spec.js の「AI用にコピー」と同じ固定: 戸田8R（2026-09-18）の締切前の 13:46 に時計を置き、
+    // e2e/smoke/race-detail-ai-copy.spec.js の「AI用にコピー」と同じ固定: 戸田8R（2026-09-18）の締切前の 13:46 に時計を置き、
     // 結果を外して締切前の状態にする
     await page.clock.setFixedTime(new Date("2026-09-18T13:46:00+09:00"));
     await page.route("**/api/predictions/2026-09-18*", async (route) => {
@@ -118,7 +118,7 @@ test.describe("レース詳細: 出走6艇と 1R〜12R の帯", () => {
       } catch (error) {
         // live では fetchRecorded が本番の応答を待つ。アサーションが先に通ってページが閉じた後の
         // 失敗（「Target page, context or browser has been closed」）はテストの結果ではない
-        // （BOA-1225。smoke.spec.js の routeUnfinished と同じ考え方。page のルートを途中で0件にしない
+        // （BOA-1225。e2e/smoke/race-detail-before-info-weight.spec.js の routeUnfinished と同じ考え方。page のルートを途中で0件にしない
         // 決まり（e2e/fixtures.js）があるので unrouteAll は足さず、閉じた後の失敗だけを捨てる）
         if (page.isClosed() || /has been closed/.test(String(error?.message)))
           return;

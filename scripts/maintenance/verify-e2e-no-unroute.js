@@ -6,8 +6,8 @@
  * それを context 側のルート（e2e/fixtures.js の録画の再生 routeFromHAR）へ送り直す。
  * 同じ要求がクライアント側の page→context の経路でも処理され、
  * 「Route is already handled!」で落ちる。同じ仕組みで2回落ちた。
- *   - BOA-466（#913）: smoke.spec.js の afterEach の page.unrouteAll（展示前の体重テスト5件）
- *   - BOA-661（#1084）: smoke.spec.js のオリジナル展示の再訪テストと ga-pageview.spec.js の
+ *   - BOA-466（#913）: smoke の spec（旧 smoke.spec.js、現 e2e/smoke/race-detail-before-info-weight.spec.js）の afterEach の page.unrouteAll（展示前の体重テスト5件）
+ *   - BOA-661（#1084）: smoke の spec（旧 smoke.spec.js、現 e2e/smoke/race-detail-before-info.spec.js）のオリジナル展示の再訪テストと ga-pageview.spec.js の
  *     /admin のスタブが、テストの途中で page.unroute していた
  *
  * 検出するもの（コメント・文字列・正規表現リテラルの中は除く）:

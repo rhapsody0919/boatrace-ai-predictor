@@ -1,23 +1,87 @@
 {
   "$comment": [
     "E2E の組の分け方の正本（BOA-929・BOA-769、ADR-0100）。e2e-smoke-test.yml の e2e-shard、e2e-rerecord.yml の replay、check-e2e-shard-coverage.js がこれを読む（scripts/maintenance/e2e-shards.js）。",
-    "specs: e2e/ からの spec のパス。projects: 指定すればそのプロジェクトだけを走らせる（smoke プロジェクトは layout.spec.js を無視し、layout-* は layout.spec.js だけに当たるので、layout の一部の幅と他の spec を同じ組に混ぜるときは smoke も並べる）。最後の組は rest: true で、上の組に書いた spec を除く残り全部（新しい spec は自動でここに入る）。",
+    "specs: e2e/ からの spec のパス。projects: 指定すればそのプロジェクトだけを走らせる（smoke プロジェクトは e2e/layout/ を無視し、layout-* は e2e/layout/ だけに当たるので、layout の一部の幅と他の spec を同じ組に混ぜるときは smoke も並べる）。最後の組は rest: true で、上の組に書いた spec を除く残り全部（新しい spec は自動でここに入る）。",
     "所要（worker 秒、リトライ込み）は run 39870857258（2026-10-23、全2,234件・合計8,626）の実測。組の目安は合計の1/5（約1,700）。spec を足して rest が重くなったら、ここを書き換えて組を足すか移す。",
-    "1: smoke 1,784 / 2: layout 3幅 1,421＋race-odds-live 359 / 3: layout 2幅 995＋thinking-assist-states 579＋race-share-text 180 / 4: 10本 1,637 / 5: 残り 約1,670"
+    "2026-11-08: smoke.spec.js を e2e/smoke/ 配下の20本、layout.spec.js を e2e/layout/ 配下の14本に割った（CI-02、ページごと。題・件数は同じ）。割った後の所要は未計測で、旧の所要を行数で按分した目安に置き換えた（行数で按分した目安、次の実測で直す）。組ごとの合計は旧と同じ。",
+    "1: smoke 1,784 を行数で按分 → analysis 132・articles 25・contrast 35・guides 48・holmes 13・home 36・i18n 102・race-detail-ai-copy 70・race-detail-basic 178・race-detail-before-info-weight 104・race-detail-before-info 243・race-detail-course 166・race-detail-heading 44・race-detail-meet 209・race-detail-motor 55・race-detail-odds-analysis 58・race-detail-recent-runs 49・racers 46・races-results 59・venues 113",
+    "2・3: layout の旧所要（3幅 1,421＋2幅 995＝2,416、5幅の合計）を行数で按分（5幅の合計での各本の目安）→ admin 267・all-pages 115・articles 283・hit-races 157・home 135・hscroll 214・race-detail-before-info 96・race-detail-meet 47・race-detail-pattern-rate 84・race-detail 453・sonar 154・thinking-assist 205・today 89・venues 116",
+    "2: layout 3幅 1,421＋race-odds-live 359 / 3: layout 2幅 995＋thinking-assist-states 579＋race-share-text 180 / 4: 10本 1,637 / 5: 残り 約1,670"
   ],
   "shards": [
-    { "specs": ["smoke.spec.js"] },
     {
-      "specs": ["layout.spec.js", "race-odds-live.spec.js"],
-      "projects": ["layout-mobile", "layout-tablet", "layout-laptop", "smoke"]
+      "specs": [
+        "smoke/analysis.spec.js",
+        "smoke/articles.spec.js",
+        "smoke/contrast.spec.js",
+        "smoke/guides.spec.js",
+        "smoke/holmes.spec.js",
+        "smoke/home.spec.js",
+        "smoke/i18n.spec.js",
+        "smoke/race-detail-ai-copy.spec.js",
+        "smoke/race-detail-basic.spec.js",
+        "smoke/race-detail-before-info-weight.spec.js",
+        "smoke/race-detail-before-info.spec.js",
+        "smoke/race-detail-course.spec.js",
+        "smoke/race-detail-heading.spec.js",
+        "smoke/race-detail-meet.spec.js",
+        "smoke/race-detail-motor.spec.js",
+        "smoke/race-detail-odds-analysis.spec.js",
+        "smoke/race-detail-recent-runs.spec.js",
+        "smoke/racers.spec.js",
+        "smoke/races-results.spec.js",
+        "smoke/venues.spec.js"
+      ]
     },
     {
       "specs": [
-        "layout.spec.js",
-        "thinking-assist-states.spec.js",
-        "race-share-text.spec.js"
+        "layout/admin.spec.js",
+        "layout/all-pages.spec.js",
+        "layout/articles.spec.js",
+        "layout/hit-races.spec.js",
+        "layout/home.spec.js",
+        "layout/hscroll.spec.js",
+        "layout/race-detail-before-info.spec.js",
+        "layout/race-detail-meet.spec.js",
+        "layout/race-detail-pattern-rate.spec.js",
+        "layout/race-detail.spec.js",
+        "layout/sonar.spec.js",
+        "layout/thinking-assist.spec.js",
+        "layout/today.spec.js",
+        "layout/venues.spec.js",
+        "race-odds-live.spec.js"
       ],
-      "projects": ["layout-desktop", "layout-wide", "smoke"]
+      "projects": [
+        "layout-mobile",
+        "layout-tablet",
+        "layout-laptop",
+        "smoke"
+      ]
+    },
+    {
+      "specs": [
+        "layout/admin.spec.js",
+        "layout/all-pages.spec.js",
+        "layout/articles.spec.js",
+        "layout/hit-races.spec.js",
+        "layout/home.spec.js",
+        "layout/hscroll.spec.js",
+        "layout/race-detail-before-info.spec.js",
+        "layout/race-detail-meet.spec.js",
+        "layout/race-detail-pattern-rate.spec.js",
+        "layout/race-detail.spec.js",
+        "layout/sonar.spec.js",
+        "layout/thinking-assist.spec.js",
+        "layout/today.spec.js",
+        "layout/venues.spec.js",
+        "race-share-text.spec.js",
+        "thinking-assist-states.spec.js"
+      ],
+      "projects": [
+        "layout-desktop",
+        "layout-wide",
+        "smoke"
+      ]
     },
     {
       "specs": [
@@ -33,6 +97,8 @@
         "flying-late-badge.spec.js"
       ]
     },
-    { "rest": true }
+    {
+      "rest": true
+    }
   ]
 }

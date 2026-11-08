@@ -18,7 +18,7 @@ for (const lang of ["ja", "en"]) {
         page.locator(selector).getAttribute("content"),
       ),
     );
-    // 既存 smoke.spec.js と同じ本日の会場→レースの経路。時計は録画に固定される。
+    // 既存の e2e/smoke/ の spec と同じ本日の会場→レースの経路。時計は録画に固定される。
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
     await expect(page).toHaveURL(/\/race\//);

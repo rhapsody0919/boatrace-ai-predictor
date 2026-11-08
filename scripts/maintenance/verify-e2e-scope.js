@@ -94,7 +94,7 @@ for (const file of [
   "src/data/blog-posts/sub/dir/x.json",
   "scripts/maintenance/e2e-scope.js",
   "scripts/content/content-pr-gate.json",
-  "e2e/smoke.spec.js",
+  "e2e/smoke/home.spec.js",
   ".github/workflows/e2e-smoke-test.yml",
   "package.json",
   "package-lock.json",
