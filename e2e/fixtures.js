@@ -598,16 +598,16 @@ export const test = base.extend({
    * 同意後の挙動（GA の page_view 等）を見るテストは "accepted" を指定する
    */
   cookieConsent: ["rejected", { option: true }],
-  context: async ({ context, cookieConsent }, use, testInfo) => {
+  context: async ({ context, cookieConsent }, provide, testInfo) => {
     await applyCookieConsent(context, cookieConsent);
     await applyRecording(context, testInfo);
-    await use(context);
+    await provide(context);
     await waitForInflight(context);
   },
   // context の "page" でも包むが、fixture の page は念のためここでも包む（二重には包まない）
-  page: async ({ page }, use) => {
+  page: async ({ page }, provide) => {
     guardRoutes(page);
-    await use(page);
+    await provide(page);
   },
 });
 
