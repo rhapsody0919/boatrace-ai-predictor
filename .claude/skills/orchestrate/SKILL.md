@@ -56,8 +56,8 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
   - hq の SNS の依頼は、hq からこのレーンへ直接渡す
   - このレーンは Opus・high で固定する（チケットごとの切り替えと格上げの申告は要らない）
   - 依頼の台帳は Linear。ラベル `sns-基盤` を付け、本文の頭に `done_when:` と依頼元の `hq:` の1行を書く
-  - 振り分けの線: 画面・送信の本番の動き・マイグレーションは `sns-基盤`（Claude のレーン）、それ以外の試験で守れるものは `codex-ok`。ラベルは起票する hq が付ける。守りの仕組み・本番 DB の適用・鍵・ブラウザの確認は 4. のとおり Codex に回さない
-  - レーンは `sns-基盤` の未着手を優先度の順に取る。`codex-ok` の付いたものは取らない
+  - 振り分けの線: 画面・送信の本番の動き・マイグレーションは `sns-基盤`（Claude のレーン）、それ以外の試験で守れるものは `claude-ok`（hq の作り手、`docs/operation/codex-backlog.md` の型）。ラベルは起票する hq が付ける。守りの仕組み・本番 DB の適用・鍵・ブラウザの確認は 4. のとおり作り手に回さない
+  - レーンは `sns-基盤` の未着手を優先度の順に取る。`claude-ok` の付いたものは取らない（作り手が取る）
   - オーケストレーターが持つのは、審査・マージ・マイグレーションの番号・db-apply の手順だけ
   - このレーンの報告・マージ依頼の宛先はオーケストレーター（3. の報告ルールのとおり）
   - 閉じた起票は hq の archive_closed（`~/hq/platform/ticket.py`）がチームと状態で絞ってアーカイブするので、このラベルにも効く
@@ -83,7 +83,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 
 次のいずれかに当たり、条件をすべて満たす PR。
 
-- A. 画面が変わらない PR: CI が全部緑で CLEAN（承認待ちだけが理由の BLOCKED を含む。6. を参照）、レビュー結果が PR コメントにある、別ベンダーの審査（Claude の PR は Codex。止まっているときは代わりの審査）で実在する P0・P1 が0件、マージ順の制約を守っている。別ベンダーの審査には、review.yml の審査（作成の App の PR を別ベンダーの LLM が審査し、審査の App が承認する）も含める。review.yml は P0 が0件なら P1 が残っていても APPROVE するので、APPROVE があり、承認の本文の指摘に P1 が無いこと（P1 があれば実在を確かめて直す）を条件にする
+- A. 画面が変わらない PR: CI の必須の check が全部緑で CLEAN（承認待ちだけが理由の BLOCKED を含む。6. を参照）、pr-lane.js が light、マージ順の制約を守っている。LLM の審査は無い（D2、2026-11-06）
 - B. 画面が変わる PR のうち、ユーザーが承認したモック・仕様の実装であるもの。A の条件に加えて次をすべて満たす
   - 承認したモックの画像が `docs/design/{slug}/mock/`（承認日つき）にあり、mock-diff-checker（`.claude/agents/mock-diff-checker.md`）が Preview（`claude/*` は Preview が無いので、PR の head で起動した手元の dev サーバー。作業ツリーの HEAD が PR の headRefOid と同じで未コミットの変更が無いことを確かめて SHA を渡す）と並べて「承認範囲内」と判定した
   - 受け入れ E2E が「存在して」緑（無い PR は B に当たらない）

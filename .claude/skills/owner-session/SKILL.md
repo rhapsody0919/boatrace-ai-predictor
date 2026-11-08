@@ -69,7 +69,7 @@ node scripts/maintenance/session-start-check.js
 | `acceptance-test-writer` | UI機能の受け入れE2Eを spec.md・screens.md だけから書く（plan/tasks/src は読まない） | `/step3`完了後、`/step4`着手前（UI機能のみ。`.claude/rules/sdd-workflow.md`） |
 | `data-accuracy-verifier` | 集計結果が実データと一致するかだけの検証 | 実装完了後の自動レビュー2番（新規の集計・分析機能を含む場合） |
 | `content-qa` | ブログ記事の公開前品質チェック7観点 | 記事の新規公開・改稿前 |
-| `boatrace-fan-reviewer` | 変更画面をファン視点の固定7観点で評価（P0〜P3）。`claude/*` は Preview が無いので手元の dev サーバーの URL で | 「ファン評価あり」の作業で、CI緑の後に周ごと新規起動（`.claude/rules/review-fix-cycle.md`） |
+| `boatrace-fan-reviewer` | 変更画面をファン視点の固定7観点で評価（P0〜P3）。`claude/*` は Preview が無いので手元の dev サーバーの URL で | 「ファン評価あり」の作業で、CI緑の後に周ごと新規起動 |
 | `mock-diff-checker` | 承認済みモックと実画面（Preview か手元の dev サーバー）を比べ、承認範囲の内外の差分を列挙する | UI PR を段階0で自己マージする前（`.claude/skills/orchestrate/SKILL.md` §4） |
 | `user-proxy-reviewer` | ユーザーの過去の判断（memory・CLAUDE.md・rules）から、提案が通るかを判定する | 段階1の代理判定（同 §4） |
 | `data-scientist` | 指標の効き目・言える範囲（相関・1着率の差・母集団） | 障害の対応で今すぐ数字が要るとき、または社員の答えが2周で返らないとき（試用のあいだ）。全貌動画の型の関門の段2（台本会議） |
