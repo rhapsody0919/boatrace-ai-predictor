@@ -138,12 +138,20 @@ export const jstDate = (iso) =>
  *
  * @param {{ id: number, path: string, attempt: number, createdAt: string, category: string,
  *           newerRun: boolean }} run newerRun は、同じ workflow の後の run が成功済みか動いているか
- * @param {{ rerunAllowed: Set<string>, now: Date }} ctx
+ * @param {{ rerunAllowed: Set<string>, now: Date, canaryOkAfter?: boolean }} ctx
+ *   canaryOkAfter は、この run より後にカナリアが成功しているか（鍵は正しい）
  * @returns {{ action: "rerun" | "key-issue" | "failure-issue", reason: string }}
  */
-export function decideRun(run, { rerunAllowed, now }) {
-  if (run.category === "config")
+export function decideRun(run, { rerunAllowed, now, canaryOkAfter = false }) {
+  if (run.category === "config") {
+    if (canaryOkAfter)
+      return {
+        action: "failure-issue",
+        reason:
+          "鍵・設定の誤りに見える失敗だが、カナリアは緑（prod-jobs の鍵は正しい）。workflow の env の渡し忘れか試験の側",
+      };
     return { action: "key-issue", reason: "鍵・設定の誤り" };
+  }
   const why = rerunBlockers(run, { rerunAllowed, now });
   if (run.category === "transient" && why.length === 0) {
     return { action: "rerun", reason: "一時的な失敗（1回だけ rerun）" };

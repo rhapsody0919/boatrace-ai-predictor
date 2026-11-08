@@ -144,6 +144,15 @@ async function openIssue(label) {
   return issues.find((i) => !i.pull_request) ?? null;
 }
 
+// scan の窓（since）の中に更新された、閉じた Issue（件数の上限つき）
+async function closedIssues(label, since) {
+  const issues = await gh(
+    "GET",
+    `/repos/${repo}/issues?labels=${label}&state=closed&since=${since}&per_page=10`,
+  );
+  return issues.filter((i) => !i.pull_request);
+}
+
 async function issueTexts(issue) {
   if (!issue) return [];
   const comments = await listAll(
@@ -188,10 +197,28 @@ async function scan() {
 
   const keyIssue = await openIssue(KEY_LABEL);
   const failureIssue = await openIssue(FAILURE_LABEL);
-  const done = handledMarkers([
+  const openTexts = [
     ...(await issueTexts(keyIssue)),
     ...(await issueTexts(failureIssue)),
-  ]);
+  ];
+  // 閉じた Issue も、窓（since）の中に更新されたものは読む。閉じて立て直す繰り返しで同じ run を書き直さない
+  const closedTexts = [];
+  for (const label of [KEY_LABEL, FAILURE_LABEL]) {
+    for (const issue of await closedIssues(label, since)) {
+      closedTexts.push(...(await issueTexts(issue)));
+    }
+  }
+  const openDone = handledMarkers(openTexts);
+  const done = handledMarkers([...openTexts, ...closedTexts]);
+
+  // この run より後にカナリアが成功しているか（鍵は正しい）
+  const canaryOkAfter = (r) =>
+    runs.some(
+      (o) =>
+        o.path === CANARY_PATH &&
+        o.conclusion === "success" &&
+        Date.parse(o.created_at) > Date.parse(r.created_at),
+    );
 
   // 同じ workflow の後の run が成功済み・動いているか（rerun しても重なるだけ）
   const newerRun = (r) =>
@@ -223,8 +250,9 @@ async function scan() {
     if (alreadyNoted) {
       // 印は時間切れと判った cancelled にしか書かないので、印のある run はどれも失敗に数える
       failedCount += 1;
-      // 既に書いた run のログは読み直さない。鍵の Issue に書いたものは、鍵が直った後の追い上げの候補にだけ入れる
-      if (done.has(runMarker(r.id, r.attempt, "key"))) {
+      // 既に書いた run のログは読み直さない。開いている鍵の Issue に書いたものだけ、鍵が直った後の追い上げの候補に入れる
+      // （閉じた鍵の Issue に書いたものは、閉じたときに扱い済み）
+      if (openDone.has(runMarker(r.id, r.attempt, "key"))) {
         classified.push({ ...r, category: "config", newerRun: newerRun(r) });
       }
       continue;
@@ -237,7 +265,11 @@ async function scan() {
     const category = classifyLog(await failedJobLog(jobs, { timedOut }));
     const run = { ...r, category, timedOut, newerRun: newerRun(r) };
     classified.push(run);
-    const d = decideRun(run, { rerunAllowed, now });
+    const d = decideRun(run, {
+      rerunAllowed,
+      now,
+      canaryOkAfter: canaryOkAfter(r),
+    });
     if (d.action === "key-issue") {
       keyItems.push({
         text: line(run, d.reason),

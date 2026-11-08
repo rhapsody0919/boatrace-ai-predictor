@@ -122,6 +122,17 @@ const run = (o = {}) => ({
     decideRun(run({ category: "config" }), ctx).action === "key-issue",
   );
   check(
+    "鍵・設定の誤りに見えても、この run より後にカナリアが緑なら失敗の Issue へ",
+    decideRun(run({ category: "config" }), { ...ctx, canaryOkAfter: true })
+      .action === "failure-issue",
+  );
+  check(
+    "カナリアが run より前だけ（か無い）なら今どおり鍵の Issue へ",
+    decideRun(run({ category: "config" }), { ...ctx, canaryOkAfter: false })
+      .action === "key-issue" &&
+      decideRun(run({ category: "config" }), ctx).action === "key-issue",
+  );
+  check(
     "外部の 403・429・503 は rerun しない（ADR-0067）",
     decideRun(run({ category: "external-block" }), ctx).action ===
       "failure-issue",
@@ -455,6 +466,13 @@ const nameOf = (f) =>
     "見回りは push で動く見張りの対象（Post-merge Checks 等）も数える",
     /r\.event === "push"/.test(js) &&
       /github\.event\.workflow_run\.event == 'push'/.test(jobs.scan),
+  );
+  check(
+    "scan は閉じた Issue（state=closed）の本文・コメントも handledMarkers に渡す",
+    /state=closed&since=\$\{since\}/.test(js) &&
+      /handledMarkers\(\[\s*\.\.\.openTexts,\s*\.\.\.closedTexts\s*\]\)/.test(
+        js,
+      ),
   );
   check(
     "見回りは master の run だけを一覧で取る（PR の CI を取らない）",
