@@ -29,6 +29,10 @@ concurrency:
   group: train-analogy
   cancel-in-progress: false
 
+# 最小の権限（CodeQL actions/missing-workflow-permissions）。GITHUB_TOKEN で書く手順は無い
+permissions:
+  contents: read
+
 jobs:
   train:
     environment: prod-jobs

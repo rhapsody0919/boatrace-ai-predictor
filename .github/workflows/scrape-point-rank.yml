@@ -12,6 +12,10 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# 最小の権限（CodeQL actions/missing-workflow-permissions）。GITHUB_TOKEN で書く手順は無い
+permissions:
+  contents: read
+
 jobs:
   # SKIP_POINT_RANK_ON_GHA=true の間は、Vercel が健全な場合に限り、この取得を行わない（フェイルセーフ付きSKIP）。
   # 変数が未設定・true 以外なら、この gate ジョブは起動せず（DB も読まない）、従来どおり取得ジョブが実行される。
