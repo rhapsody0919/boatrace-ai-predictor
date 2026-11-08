@@ -58,7 +58,7 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1024, height: 900 });
-    // 選手5250: 全角英数字の長い節名（第２０回マンスリーＢＯＡＴＲＡＣＥ杯　男女Ｗ優勝戦）で 976/958 だった
+    // 選手5250: 全角英数字の長い節名（第２０回マンスリーＢＯＡＴＲＡＣＥ杯 男女Ｗ優勝戦）で 976/958 だった
     await page.goto("/racer/5250");
     // レース一覧は6列＋節の見出し行の表（BOA-623）
     const table = page.locator(".racer-vc-race-list .rrt-table").first();
@@ -104,15 +104,25 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     });
     await expect(chart).toBeVisible({ timeout: 30000 });
     await chart.scrollIntoViewIfNeeded();
-    const dot = chart.locator('circle[fill="var(--color-error)"]').last();
-    // 点は取得と描画の後に出る。待たずに boundingBox を取ると null になる（BOA-623 で
-    // 履歴の取得列が増え、録画に無い取得が本番へ素通しになって遅くなったときに落ちた）
-    await expect(dot).toBeVisible({ timeout: 30000 });
-    const box = await dot.boundingBox();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await expect(chart.locator(".recharts-tooltip-label")).toHaveText(
-      "26-09-19 戸田 9R",
-    );
+    const dots = chart.locator('circle[fill="var(--color-error)"]');
+    // 点は取得と描画の後に出る。boundingBox は待たずに null を返す（BOA-623 で履歴の取得列が
+    // 増え、録画に無い取得が本番へ素通しになって遅くなったときに落ちた）。hover() は点が
+    // 見える・止まるまで待ち、描き直しで外れた要素も探し直す。点は古い順なので本番に F が
+    // 増えると .last() は別の走になる。F の点を順に hover し、9/19 戸田9R の点を探す
+    await expect(dots.first()).toBeVisible({ timeout: 30000 });
+    const label = chart.locator(".recharts-tooltip-label");
+    const count = await dots.count();
+    let found = false;
+    for (let i = 0; i < count && !found; i += 1) {
+      await dots.nth(i).hover({ timeout: 30000 });
+      found = (await label.textContent().catch(() => "")) === "26-09-19 戸田 9R";
+    }
+    if (!found) {
+      throw new Error(
+        "選手3928 の 2026-09-19 戸田9R の F の点がグラフに無い（本番データが変わった）",
+      );
+    }
+    await expect(label).toHaveText("26-09-19 戸田 9R");
     await expect(chart.locator(".recharts-tooltip-wrapper")).toContainText(
       "F.04",
     );
