@@ -111,7 +111,7 @@
         "words": ["競艇", "的中率", "回収率"],
         "riskRules": "sns-video-studio/remotion/risk-rules.json",
         "scan": ["^src/", "^public/"],
-        "except": ["^public/blog/"]
+        "except": ["^public/blog/", "^src/data/blog-posts/"]
       }
     }
   ]

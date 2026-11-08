@@ -502,6 +502,22 @@ expect(
   ["H9"],
   patch("src/components/HitRaces.jsx", ["<p>一攫千金</p>"]),
 );
+expect(
+  "記事の JSON（src/data/blog-posts/）の語は H9 に当てない",
+  ["M src/data/blog-posts/kyotei-guide.json"],
+  "light",
+  [],
+  patch("src/data/blog-posts/kyotei-guide.json", [
+    '  "metaTitle": "競艇の回収率の見方",',
+  ]),
+);
+expect(
+  "src/data/ の記事以外の語は今までどおり H9",
+  ["M src/data/morningDigestCopy.js"],
+  "heavy",
+  ["H9"],
+  patch("src/data/morningDigestCopy.js", ['  title: "的中率",']),
+);
 
 // ---- unified diff の読み方 ----
 {
