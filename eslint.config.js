@@ -79,4 +79,10 @@ export default defineConfig([
       globals: { ...globals.node },
     },
   },
+  {
+    // Playwright の fixture の use(...) は React の hook ではない。verify-no-undef.js の
+    // rules-of-hooks を src の外で off にする（ignores: ["src/**"]）のと同じ考えで、e2e/ には当てない（BOA-1392）
+    files: ["e2e/**/*.{js,mjs,cjs}"],
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
 ]);
