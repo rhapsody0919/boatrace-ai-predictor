@@ -341,3 +341,38 @@ P0 は無し。ADR-0072・0075・0079・0097・0100 の守りを壊す穴は無�
 - E（e2e-scope の拡張）は段2b として別の PR。閉包の verify を入れ、ADR-0100 に追記する
 - 組の数・キャッシュ・重い spec は、A のマージ後の7日の所要で決める（段3）
 - 見込みの合計（A＋E）: 週 約 −13,300〜−14,600分（E2E の3本の約 −56〜−61%）
+
+## 12. CI02: 遅さの原因を直し、流す範囲を網羅で選ぶ（2026-11-08 深夜、オーナー「回数を減らすのは止血、遅さの原因を直す」）
+
+正本: hq の `drafts/ci02-when-to-run-ci-20261108.md`（ops-architect の独立の審査4回、4回目で推す）。ここには龍神で入れる物と順だけを書く。
+
+### 12.1 根本の原因
+
+- (a) 撮り直し（E2E_RECORD）の後始末 `waitForInflight` が、録画の対象で未着の通信を最大30秒待つ（`e2e/fixtures.js`）。11/8 は2,557件中489件で打ち切り、終わった430件中299件が約31秒。これが重なって90分の上限に当たる
+- (b) どの PR にも全 spec（全ページを巡る smoke.spec.js 6,133行・layout.spec.js 2,555行を含む）を流す
+- 回数（draft で流さない等）ではない。draft の決まりは入れない（v1 の実測で PR 246本中 draft 0本）。BOA-1394（時間切れの日は撮らない）は止血で、(1) が入ったら外す
+
+### 12.2 入れる順（1段1PR。`.github`・config に触る PR は H5 でオーナー承認のマージ）
+
+```
+1 未着 URL を出す ─→ URL ごとに 外す／固定の応答／待ちを短く ─→ 時間切れ0が続く ─→ BOA-1394 の gate を外す（.github, H5）
+2 smoke・layout をページごとに割る（移すだけ、件数同じを verify）・shards.json を書き直す
+3 master 毎晩の全件（録画の再生、撮り直しと独立）＋ page.coverage で spec→src の表を artifact に（.github, H5）
+     └ 最初の PR で ^1.64.1 の page.coverage と source map でファイルへ戻せるかを確かめる。駄目なら 4 へ進まない
+4 e2e-scope に selected（base 側で最新の表を引き、当たる spec だけ）（.github, H5）
+5 e2e-scope の none を「E2E の閉包の外」へ（relativeImportGraph.js の reach）（.github, H5。hq の maker-merge と同じ日）
+```
+
+| 段 | 触る物 | 確かめる物 |
+|---|---|---|
+| 1 | `e2e/fixtures.js`（行を出すだけ）。後で URL ごとに `RECORDED_URL`・spec の固定の応答・待ちの長さ | 撮り直しのログの `[e2e record] 未着:` を URL ごとに数える。一律の abort はしない（replay は strict で、欠けは採用の失敗） |
+| 2 | `e2e/smoke*.spec.js`・`e2e/layout*.spec.js`・`e2e/shards.json` | 割る前後で `playwright test --list` の件数が同じ（layout の幅の projects ごとも）。`browser.newContext` を自分で作る所はその spec で coverage を自分で取る |
+| 3 | 新しい毎晩の job、`vite.config.js`（毎晩の build だけ `sourcemap: 'hidden'`、本番に出さない）、`job-watch.yml`（毎晩の job の登録と「表が7日超」） | 表が spec ごとに src のファイルを持つ |
+| 4 | `e2e-scope.js`（1ファイルで完結か依存も RUNNER_TEMP へ写す）、`e2e-shards.js`（selected は rest を使わず名指しの組だけ。job 名 `e2e-shard` のまま）、`e2e-smoke-test.yml`（e2e-shard の if・集約の case・Check shard coverage と @blog の if に selected、e2e-scope の job に `actions: read`、集約の `--list` を選んだ spec に） | 選んだ spec だけで check-e2e-shard-coverage.js が通る。共通の物・新規・表に無い・7日超・読めない → full。`--only-changed` は使わない（Node の import しか辿らない） |
+| 5 | `e2e-scope.js`・`verify-e2e-scope.js` | 閉包の中のファイルを触ると none にならない |
+
+### 12.3 誤りなら原因は何か
+
+- 「詰まる URL を外せば待ちが消える」: 詰まりが本番全体の遅さなら外す先が無い（1 の URL で決まる）
+- 「source map でファイル単位に戻せる」「1.64 で page.coverage が使える」: 未検証。3 の最初の PR で確かめる
+- 効果（1日 455分→約140分、CI01）は未検証。4 の効果は未測で、2・3 の後1週の PR で当たった spec の割合を測る
