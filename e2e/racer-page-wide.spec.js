@@ -115,7 +115,8 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     let found = false;
     for (let i = 0; i < count && !found; i += 1) {
       await dots.nth(i).hover({ timeout: 30000 });
-      found = (await label.textContent().catch(() => "")) === "26-09-19 戸田 9R";
+      found =
+        (await label.textContent().catch(() => "")) === "26-09-19 戸田 9R";
     }
     if (!found) {
       throw new Error(
