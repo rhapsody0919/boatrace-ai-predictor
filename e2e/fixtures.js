@@ -601,15 +601,12 @@ export const test = base.extend({
   context: async ({ context, cookieConsent }, use, testInfo) => {
     await applyCookieConsent(context, cookieConsent);
     await applyRecording(context, testInfo);
-    // Playwright の fixture の use() で、React の Hook ではない
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(context);
     await waitForInflight(context);
   },
   // context の "page" でも包むが、fixture の page は念のためここでも包む（二重には包まない）
   page: async ({ page }, use) => {
     guardRoutes(page);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(page);
   },
 });
