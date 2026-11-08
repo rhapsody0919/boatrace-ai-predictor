@@ -5,7 +5,10 @@
  * 守るもの:
  *   (a) AGENTS.md は200行未満（公式の目安 code.claude.com/docs/en/memory.md）、.claude/CLAUDE.md は30行未満（入口だけ）。
  *       1行足すなら1行削るを機械にする
- *   (b) .claude/CLAUDE.md が `@AGENTS.md` で AGENTS.md を取り込む（Claude は AGENTS.md を自動では読まない）
+ *   (b) .claude/CLAUDE.md が `@../AGENTS.md` で AGENTS.md を取り込む（Claude は AGENTS.md を自動では読まない）。
+ *       @ の先は書いたファイルの置き場からの相対で解かれる。`@AGENTS.md` は .claude/AGENTS.md を指し、黙って何も取り込まない
+ *       （2026-11-08、claude 2.1.310 で確かめ。#2315〜の間 AGENTS.md が誰の文脈にも入っていなかった）
+ *   (e) .claude/CLAUDE.md・AGENTS.md の行頭の `@パス` が、そのファイルの置き場からの相対で実在するファイルを指す
  *   (c) AGENTS.md に安全の6点の語が残っている（主語は「作り手」）
  *   (d) .claude/rules/*.md が全て frontmatter の paths を持つ（常時の rules を置かない）
  */
@@ -54,6 +57,24 @@ const alwaysOnRules = fs
     return !(front && /^paths:/m.test(front[1]));
   });
 
+// 行頭の `@パス`（取り込み）を、書いたファイルの置き場からの相対で解く
+const IMPORT_SOURCES = ["AGENTS.md", ".claude/CLAUDE.md"];
+const brokenImports = IMPORT_SOURCES.flatMap((rel) =>
+  read(rel)
+    .split("\n")
+    .map((line) => line.trim().match(/^@(\S+)$/))
+    .filter(Boolean)
+    .map((m) => m[1])
+    .filter((target) => {
+      const resolved = path.resolve(ROOT, path.dirname(rel), target);
+      return !(fs.existsSync(resolved) && fs.statSync(resolved).isFile());
+    })
+    .map(
+      (target) =>
+        `${rel} の \`@${target}\` の先（${path.join(path.dirname(rel), target)}）が無い。@ の先は ${rel} の置き場からの相対で解かれ、無ければ黙って何も取り込まない`,
+    ),
+);
+
 const failures = [
   ...LIMITS.map(([rel, max]) => {
     const n = lineCount(read(rel));
@@ -61,9 +82,10 @@ const failures = [
       ? null
       : `${rel} が ${n} 行（${max} 行未満にする。1行足すなら1行削る）`;
   }),
-  /^@AGENTS\.md$/m.test(entry)
+  /^@\.\.\/AGENTS\.md$/m.test(entry)
     ? null
-    : ".claude/CLAUDE.md に `@AGENTS.md` の取り込みの行が無い",
+    : ".claude/CLAUDE.md に `@../AGENTS.md` の取り込みの行が無い（`@AGENTS.md` は .claude/AGENTS.md を指す）",
+  ...brokenImports,
   ...SAFETY_TERMS.map(([label, term]) =>
     agents.includes(term)
       ? null
@@ -81,5 +103,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `verify-agents-entry: OK（AGENTS.md ${lineCount(agents)} 行・.claude/CLAUDE.md ${lineCount(entry)} 行・安全の語 ${SAFETY_TERMS.length} 件・rules は全て paths 付き）`,
+  `verify-agents-entry: OK（AGENTS.md ${lineCount(agents)} 行・.claude/CLAUDE.md ${lineCount(entry)} 行・安全の語 ${SAFETY_TERMS.length} 件・@ の取り込み先は実在・rules は全て paths 付き）`,
 );

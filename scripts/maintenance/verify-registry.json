@@ -65,7 +65,7 @@
     {
       "script": "verify-agents-entry.js",
       "tier": "ci",
-      "guards": "作り手が毎回読む入口を短く保つ（T1、2026-11-07）。AGENTS.md は200行未満（公式の目安 code.claude.com/docs/en/memory.md）・.claude/CLAUDE.md は30行未満で、1行足すなら1行削るを機械にする。.claude/CLAUDE.md の `@AGENTS.md` の取り込み、AGENTS.md の安全の6点の語、.claude/rules/*.md が全て frontmatter の paths を持つこと（常時の rules を置かない）"
+      "guards": "作り手が毎回読む入口を短く保つ（T1、2026-11-07）。AGENTS.md は200行未満（公式の目安 code.claude.com/docs/en/memory.md）・.claude/CLAUDE.md は30行未満で、1行足すなら1行削るを機械にする。.claude/CLAUDE.md の `@../AGENTS.md` の取り込みと、行頭の `@パス` の先が置き場からの相対で実在すること（`@AGENTS.md` は .claude/AGENTS.md を指し黙って空振りした、2026-11-08）、AGENTS.md の安全の6点の語、.claude/rules/*.md が全て frontmatter の paths を持つこと（常時の rules を置かない）"
     },
     {
       "script": "verify-aggregate-racer-stats.js",
