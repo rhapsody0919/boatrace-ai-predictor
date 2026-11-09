@@ -126,6 +126,11 @@ function CourseSection({ summary }) {
         実際に何コースに入ったかで分けた公式の成績です（何号艇で出たかで分けた成績は、下の「枠番別成績」）。
         進入が10走未満のコースは率を出さず、10〜29走は「参考」と付けています。
       </p>
+      {summary.courses.some((c) => c.entries > 0 && c.entries < 10) && (
+        <p className="racer-official-note">
+          進入が少ないコースは、その選手が主に入るコースが別にあるためです。
+        </p>
+      )}
       <p className="racer-official-note">
         公式サイトの選手のコース別成績のページとは集計の期間が違うため、値が合わないことがあります（このページは上の期間の期別成績を足したものです）。
       </p>
