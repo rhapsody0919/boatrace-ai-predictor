@@ -78,6 +78,14 @@
   vertical-align: 1px;
 }
 
+.favorite-runs__stage {
+  display: inline-block;
+  margin-right: 0.25rem;
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  vertical-align: 1px;
+}
+
 .favorite-runs__who {
   grid-area: who;
   display: flex;
