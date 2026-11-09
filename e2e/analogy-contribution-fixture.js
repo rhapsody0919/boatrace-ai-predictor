@@ -1,6 +1,6 @@
 /**
  * アナロジー・ファインダーの寄与度 API（/api/analogy/contribution）の応答の差し替え用（BOA-271）。
- * analogy-contribution.spec.js と layout.spec.js で共有する。テーマとシェアの値は
+ * analogy-contribution.spec.js と e2e/layout/sonar.spec.js で共有する。テーマとシェアの値は
  * Phase M の実測（docs/design/analogy-finder/spec.md FR-1）に近づけた固定値
  */
 export const THEMES = [

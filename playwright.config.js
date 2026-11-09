@@ -115,7 +115,7 @@ export default defineConfig({
   //
   // 既存の smoke 側は従来どおり1回だけ走らせ（ビューポートも変えない。
   // レスポンシブ分岐の前提が変わって既存テストが揺れるのを避ける）、
-  // 幅を横断するのは layout.spec.js だけにする。smoke の934件のうち792件は
+  // 幅を横断するのは e2e/layout/ の spec だけにする。smoke の934件のうち792件は
   // venue-guide-data.spec.js のデータ検証でブラウザを使わないため多軸化しても
   // 意味が無く、対象になるのは smoke.spec.js の142件だけ。それを3軸に広げても
   // 得られるのは主に「モバイルでも同じ要素が見えるか」で、レイアウト崩れの
@@ -124,11 +124,11 @@ export default defineConfig({
     {
       name: "smoke",
       // acceptance/ は playwright.acceptance.config.js で別に走らせる（PRゲート外）
-      testIgnore: [/layout\.spec\.js/, /acceptance\//],
+      testIgnore: [/\/e2e\/layout\//, /acceptance\//],
     },
     {
       name: "layout-mobile",
-      testMatch: /layout\.spec\.js/,
+      testMatch: /\/e2e\/layout\/.*\.spec\.js$/,
       use: {
         viewport: { width: 375, height: 812 },
         isMobile: true,
@@ -139,22 +139,22 @@ export default defineConfig({
     // 「3列に必要な幅に届かず列が落ちる」帯の崩れを見逃す（実際に見逃した）
     {
       name: "layout-tablet",
-      testMatch: /layout\.spec\.js/,
+      testMatch: /\/e2e\/layout\/.*\.spec\.js$/,
       use: { viewport: { width: 768, height: 1024 } },
     },
     {
       name: "layout-laptop",
-      testMatch: /layout\.spec\.js/,
+      testMatch: /\/e2e\/layout\/.*\.spec\.js$/,
       use: { viewport: { width: 1024, height: 768 } },
     },
     {
       name: "layout-desktop",
-      testMatch: /layout\.spec\.js/,
+      testMatch: /\/e2e\/layout\/.*\.spec\.js$/,
       use: { viewport: { width: 1440, height: 900 } },
     },
     {
       name: "layout-wide",
-      testMatch: /layout\.spec\.js/,
+      testMatch: /\/e2e\/layout\/.*\.spec\.js$/,
       use: { viewport: { width: 1920, height: 1080 } },
     },
   ],

@@ -127,7 +127,7 @@
 /e2e/in-caution-lists.spec.js @rhapsody0919
 /e2e/jst-date-timezone.spec.js @rhapsody0919
 /e2e/ko-keep-all.spec.js @rhapsody0919
-/e2e/layout.spec.js @rhapsody0919
+/e2e/layout/ @rhapsody0919
 /e2e/meet-form-nav.spec.js @rhapsody0919
 /e2e/meet-page-head-before-data.spec.js @rhapsody0919
 /e2e/meet-page.spec.js @rhapsody0919
