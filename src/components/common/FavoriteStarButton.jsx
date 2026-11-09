@@ -27,7 +27,7 @@ export default function FavoriteStarButton({ type, id, name, entry, withLabel = 
         ...params, fav_count: count + (result === "added" ? 1 : -1),
       });
       showToast(t(result === "removed" ? "favorites.toast.removed" :
-        isRacer ? "favorites.toast.addedRacer" : "favorites.toast.addedVenue"));
+        isRacer ? "favorites.toast.addedRacer" : "favorites.toast.addedVenue"), "success", { duration: 4000 });
     }
   };
 

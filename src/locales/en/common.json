@@ -3968,8 +3968,8 @@
       "ariaRemove": "Remove {{name}} from favorites"
     },
     "toast": {
-      "addedRacer": "Added to favorites. Today's races will appear in “Favorite racers' races” on the home page.",
-      "addedVenue": "Added to favorites. Today's meet will appear in “Favorite racers' races” on the home page.",
+      "addedRacer": "Added to favorites. Races show on the home page.",
+      "addedVenue": "Added to favorites. The meet shows on the home page.",
       "removed": "Removed from favorites.",
       "racerLimit": "You can save up to {{max}} favorite racers. Remove another racer to add one.",
       "saveFailed": "Favorites cannot be saved in this browser.",
