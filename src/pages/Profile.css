@@ -300,10 +300,6 @@
     /* #0ea5e9はテキスト色として2.5〜2.8:1しかなくAA未達(axe-core検出)。
        両テーマ・両背景で安全なvar(--brand-accent-secondary)に変更 */
     color: var(--brand-accent-secondary);
-    text-decoration: none;
-}
-
-.contact-note a:hover {
     text-decoration: underline;
 }
 
