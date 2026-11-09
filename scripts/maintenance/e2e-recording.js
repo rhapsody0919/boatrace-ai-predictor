@@ -223,6 +223,8 @@ export function judgeAdoption(counts, current, problems = []) {
 
 /** 定期実行で録画を始めない時刻（JST の時）。これ以降は発走前のレースが夜間開催の数場だけになる */
 export const RECORD_CUTOFF_HOUR_JST = 19;
+/** これより前（JST）の起動では撮らない（定期実行は10時台から） */
+export const RECORD_START_HOUR_JST = 10;
 
 const jstDate = (d) =>
   new Date(new Date(d).getTime() + 9 * 60 * 60 * 1000).toISOString();
@@ -235,7 +237,7 @@ const jstDate = (d) =>
  * - 今日（JST）撮った録画が既に採用済みなら撮らない（その日の後の起動を空振りさせる）
  * - 遅れて夜に起動したら撮らない（発走前のレースが少なく、skip が増えて不採用になるだけ）
  */
-export function scheduleGate(now, pointer) {
+export function scheduleGate(now, pointer, todayRuns = null) {
   const today = jstDate(now).slice(0, 10);
   if (
     pointer?.recordedAt &&
@@ -258,7 +260,37 @@ export function scheduleGate(now, pointer) {
       ],
     };
   }
+  if (hour < RECORD_START_HOUR_JST) {
+    return {
+      run: false,
+      notify: false,
+      reasons: [
+        `起動が JST${hour}時台で早いため撮らなかった（${RECORD_START_HOUR_JST}時より前は撮らない）`,
+      ],
+    };
+  }
+  // 同じ日に record が時間切れ（cancelled）になったら、残りの起動では撮らない（1回91分がむだになる）。
+  // todayRuns が取れなかった（null）ときは今のまま撮る
+  const timedOut = (todayRuns ?? []).filter(
+    (r) => r.recordCancelled && jstDate(r.createdAt).slice(0, 10) === today,
+  );
+  if (timedOut.length > 0) {
+    return {
+      run: false,
+      notify: false,
+      reasons: [
+        `本日すでに時間切れ（${today}、実行 ${timedOut.map((r) => r.id).join(", ")} の record が cancelled）`,
+      ],
+    };
+  }
   return { run: true, notify: false, reasons: [] };
+}
+
+/** 1回の実行のジョブ一覧から、record ジョブが cancelled（時間切れ）で終わったか */
+export function recordCancelledInJobs(jobs) {
+  return (jobs ?? []).some(
+    (job) => job.name === "record" && job.conclusion === "cancelled",
+  );
 }
 
 /** e2e-rerecord.yml の Slack 通知ステップの名前の頭。通知済みかの判定に使う */
@@ -315,13 +347,15 @@ function collectTodayRuns(now) {
   const { workflow_runs: runs = [] } = gh(
     `repos/${repo}/actions/workflows/e2e-rerecord.yml/runs?branch=master&per_page=30&created=${encodeURIComponent(`>=${since}`)}`,
   );
-  return runs.map((run) => ({
-    id: run.id,
-    createdAt: run.created_at,
-    notified: notifiedInJobs(
-      gh(`repos/${repo}/actions/runs/${run.id}/jobs`).jobs,
-    ),
-  }));
+  return runs.map((run) => {
+    const jobs = gh(`repos/${repo}/actions/runs/${run.id}/jobs`).jobs;
+    return {
+      id: run.id,
+      createdAt: run.created_at,
+      notified: notifiedInJobs(jobs),
+      recordCancelled: recordCancelledInJobs(jobs),
+    };
+  });
 }
 
 function tagFor(recordedAt) {
@@ -475,9 +509,17 @@ async function main() {
       );
       return;
     case "gate": {
+      const now = new Date();
+      let todayRuns = null;
+      try {
+        todayRuns = collectTodayRuns(now);
+      } catch {
+        // 取れないときは今のまま撮る
+      }
       const result = scheduleGate(
-        new Date(),
+        now,
         existsSync(POINTER_PATH) ? readPointer() : null,
+        todayRuns,
       );
       console.log(JSON.stringify(result));
       return;

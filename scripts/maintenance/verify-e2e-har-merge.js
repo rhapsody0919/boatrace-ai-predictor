@@ -19,6 +19,7 @@ import {
   NOTIFY_STEP_PREFIX,
   notifiedInJobs,
   notifyDedupe,
+  recordCancelledInJobs,
   RECORD_CUTOFF_HOUR_JST,
   scheduleGate,
 } from "./e2e-recording.js";
@@ -178,6 +179,51 @@ check(
       .notify,
   ],
   [false, true],
+);
+
+// --- 同じ日に record が時間切れなら撮らない・JST10時より前は撮らない
+const timedOutRun = (s) => [
+  { id: 1, createdAt: jst(s).toISOString(), recordCancelled: true },
+];
+const gateAt = (s, runs) => scheduleGate(jst(s), null, runs);
+check(
+  "今日 record が時間切れなら撮らない（理由つき）",
+  [
+    gateAt("2026-11-07T14:00:00", timedOutRun("2026-11-07T10:30:00")).run,
+    gateAt("2026-11-07T14:00:00", timedOutRun("2026-11-07T10:30:00"))
+      .reasons[0].includes("本日すでに時間切れ"),
+  ],
+  [false, true],
+);
+check(
+  "時間切れが昨日だけなら撮る",
+  gateAt("2026-11-07T14:00:00", timedOutRun("2026-11-06T10:30:00")).run,
+  true,
+);
+check(
+  "今日の run が時間切れでなければ撮る",
+  gateAt("2026-11-07T14:00:00", [
+    { id: 2, createdAt: jst("2026-11-07T10:30:00").toISOString() },
+  ]).run,
+  true,
+);
+check("run の取得に失敗（null）なら撮る", gateAt("2026-11-07T14:00:00", null).run, true);
+check(
+  "JST 9:59 は撮らない・10:00 は撮る",
+  [
+    gateAt("2026-11-07T09:59:00", null).run,
+    gateAt("2026-11-07T10:00:00", null).run,
+  ],
+  [false, true],
+);
+check(
+  "record ジョブの cancelled だけを時間切れとみなす",
+  [
+    recordCancelledInJobs([{ name: "record", conclusion: "cancelled" }]),
+    recordCancelledInJobs([{ name: "replay (1/3)", conclusion: "cancelled" }]),
+    recordCancelledInJobs([{ name: "record", conclusion: "success" }]),
+  ],
+  [true, false, false],
 );
 
 // --- 定期実行の起動時刻（e2e-rerecord.yml）。1日4回・JST10〜17時・0分を避ける。
