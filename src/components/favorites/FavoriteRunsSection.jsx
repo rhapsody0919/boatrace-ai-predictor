@@ -28,6 +28,7 @@ import {
 import { dataService } from "../../services/dataService";
 import { getTodayJST } from "../../utils/dateUtils";
 import { racerPagePath } from "../../utils/racerPagePath";
+import { getStageChip } from "../../utils/raceDetailHeading";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { trackEvent } from "../../utils/analytics";
 import { isAnalogyFinderEnabled } from "../../config/featureFlags";
@@ -62,9 +63,7 @@ function useTodayEntries(enabled) {
   useEffect(() => {
     if (!enabled) return undefined;
     let cancelled = false;
-    setResult((prev) =>
-      prev.status === "ready" ? prev : { status: "loading", venues: null },
-    );
+    // 読み込み中は status が "idle" のまま（ready でない間は区画を出さないので、見た目は同じ）
     const date = getTodayJST();
     dataService
       .getPredictions(date, { light: true })
@@ -198,16 +197,24 @@ function RunInfo({ row, info, seriesDay }) {
   );
 }
 
-function RunRow({ row, state, extra, info, seriesDay }) {
+function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
   const { t, i18n } = useTranslation();
   const localize = useLocalizedPath();
   const isJa = i18n.resolvedLanguage === "ja";
   const grade = ["SG", "G1"].includes(row.raceGrade)
     ? GRADE_CONFIG[row.raceGrade]
     : null;
+  // 優勝戦・準優勝戦だけ札を出す（レース詳細の見出しと同じ getStageChip）
+  const stageChip = getStageChip(raceStage, t);
+  const stage =
+    stageChip && (stageChip.variant === "final" || stageChip.variant === "semifinal")
+      ? stageChip
+      : null;
+  // 締切後の行は結果を見る段階なので、予測に誘導するソナー・アシストは出さない
+  const isPast = state === "past";
   const links = [
     { kind: "racer_page", to: racerPagePath(row.racerId), label: "linkRacer" },
-    ...(isAnalogyFinderEnabled()
+    ...(isAnalogyFinderEnabled() && !isPast
       ? [
           {
             kind: "sonar",
@@ -217,7 +224,7 @@ function RunRow({ row, state, extra, info, seriesDay }) {
         ]
       : []),
     // 思考アシストは ja 専用のページ（spec 4）
-    ...(isJa
+    ...(isJa && !isPast
       ? [
           {
             kind: "assist",
@@ -248,6 +255,15 @@ function RunRow({ row, state, extra, info, seriesDay }) {
             style={{ backgroundColor: grade.color }}
           >
             {grade.label}
+          </span>
+        )}
+        {stage && (
+          <span
+            className="favorite-runs__stage"
+            data-stage={stage.variant}
+            title={stage.title}
+          >
+            {stage.emoji} {stage.label}
           </span>
         )}
         {t(`venues.${row.venueCode}`)} {row.raceNumber}R
@@ -303,13 +319,28 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM, nextOpenDates
         : EMPTY_RUNS,
     [status, venues, racers, nowHHMM],
   );
+  // 締切後の行は直近の結果が先頭（締切の新しい順。同時刻は元の順を保つ）
+  const pastNewestFirst = useMemo(
+    () =>
+      runs.past
+        .map((row, index) => ({ row, index }))
+        .sort(
+          (a, b) =>
+            b.row.startTime.localeCompare(a.row.startTime) || a.index - b.index,
+        )
+        .map(({ row }) => row),
+    [runs],
+  );
   const rows = useMemo(() => [...runs.upcoming, ...runs.past], [runs]);
-  const seriesDayOf = useMemo(() => {
-    const map = new Map();
+  const { seriesDayOf, raceStageOf } = useMemo(() => {
+    const days = new Map();
+    const stages = new Map();
     for (const venue of venues ?? [])
-      for (const race of venue.races)
-        map.set(race.raceId, race.seriesDay ?? null);
-    return map;
+      for (const race of venue.races) {
+        days.set(race.raceId, race.seriesDay ?? null);
+        stages.set(race.raceId, race.raceStage ?? null);
+      }
+    return { seriesDayOf: days, raceStageOf: stages };
   }, [venues]);
   const infoOf = useFavoriteRunStats(rows, visible);
   const fallback = useMemo(
@@ -370,6 +401,7 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM, nextOpenDates
                   extra={!showMore && index >= NARROW_VISIBLE}
                   info={infoOf(row)}
                   seriesDay={seriesDayOf.get(row.raceId)}
+                  raceStage={raceStageOf.get(row.raceId)}
                 />
               ))}
             </ul>
@@ -396,13 +428,14 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM, nextOpenDates
               </button>
               {showPast && (
                 <ul className="favorite-runs__list">
-                  {past.map((row) => (
+                  {pastNewestFirst.map((row) => (
                     <RunRow
                       key={`${row.raceId}-${row.racerId}`}
                       row={row}
                       state="past"
                       info={infoOf(row)}
                       seriesDay={seriesDayOf.get(row.raceId)}
+                      raceStage={raceStageOf.get(row.raceId)}
                     />
                   ))}
                 </ul>
