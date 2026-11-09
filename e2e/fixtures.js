@@ -442,9 +442,10 @@ export async function applyRecording(context, testInfo) {
     // テスト終了時にまだ応答を受け取っていないリクエストは、context が閉じると
     // 録画されずに終わる（別のテストがそのURLを必要としても録画に無くなる）。
     // context を閉じる前に受け取り切るのを待つ
-    const inflight = new Set();
+    // 値は送った時刻。待ちの打ち切りで、どの URL が何秒届かなかったかを出す（CI02 の 1）
+    const inflight = new Map();
     context.on("request", (request) => {
-      if (RECORDED_URL.test(request.url())) inflight.add(request);
+      if (RECORDED_URL.test(request.url())) inflight.set(request, Date.now());
     });
     context.on("requestfinished", (request) => inflight.delete(request));
     context.on("requestfailed", (request) => inflight.delete(request));
@@ -544,7 +545,21 @@ function notePassthrough(testInfo, method, url) {
 const inflightByContext = new WeakMap();
 const INFLIGHT_WAIT_MS = 30000;
 
-async function waitForInflight(context) {
+/**
+ * 待ちを打ち切ったときに出す行。1件1行で、URL ごとに数えられる形にする
+ * （`gh run view --log | grep "e2e record] 未着"` で集計する。CI02 の 1）。
+ * 照会の文字列は長いので、パスと照会を分けて照会だけ切り詰める
+ */
+export function describeInflight(entries, now, testTitle) {
+  return entries.map(([method, url, startedAt]) => {
+    const { pathname, search } = new URL(url);
+    const query = search.length > 300 ? `${search.slice(0, 300)}…` : search;
+    const waited = ((now - startedAt) / 1000).toFixed(1);
+    return `[e2e record] 未着: ${method} ${pathname}${query} 待ち${waited}秒（${testTitle}）`;
+  });
+}
+
+async function waitForInflight(context, testInfo) {
   const inflight = inflightByContext.get(context);
   if (!inflight) return;
   const deadline = Date.now() + INFLIGHT_WAIT_MS;
@@ -555,6 +570,18 @@ async function waitForInflight(context) {
     console.warn(
       `[e2e record] ${inflight.size}件の応答が${INFLIGHT_WAIT_MS / 1000}秒以内に届かず、録画から外れます`,
     );
+    const title = [
+      path.basename(testInfo.file),
+      ...testInfo.titlePath.slice(1),
+    ].join(" › ");
+    const entries = [...inflight].map(([request, startedAt]) => [
+      request.method(),
+      request.url(),
+      startedAt,
+    ]);
+    for (const line of describeInflight(entries, Date.now(), title)) {
+      console.warn(line);
+    }
   }
 }
 
@@ -602,7 +629,7 @@ export const test = base.extend({
     await applyCookieConsent(context, cookieConsent);
     await applyRecording(context, testInfo);
     await provide(context);
-    await waitForInflight(context);
+    await waitForInflight(context, testInfo);
   },
   // context の "page" でも包むが、fixture の page は念のためここでも包む（二重には包まない）
   page: async ({ page }, provide) => {
