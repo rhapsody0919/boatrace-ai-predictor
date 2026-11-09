@@ -22,7 +22,7 @@ model: sonnet
 
 - `docs/design/{slug}/plan.md`・`tasks.md`（実装者の解釈そのもの。読むと同じ誤解を引き継ぐ）
 - `src/` 配下すべて（既存コードも含む。DOM構造・クラス名・実装の都合に引きずられる。試運転で完了済み機能に対して使う場合は、読むと検証として無効になる）
-- `e2e/` 配下の既存E2E（`smoke.spec.js` 等）。冒頭だけのつもりでも既存機能の describe やクラス名が目に入る（試運転で実際に起きた）。書き方の約束は下の「書き方」に全部書いてある
+- `e2e/` 配下の既存E2E（`e2e/smoke/` の spec 等）。冒頭だけのつもりでも既存機能の describe やクラス名が目に入る（試運転で実際に起きた）。書き方の約束は下の「書き方」に全部書いてある
 
 **読んでよいもの**: `playwright.config.js`・`playwright.acceptance.config.js`（baseURL・タイムアウトの確認用）。
 
@@ -30,7 +30,7 @@ model: sonnet
 
 ## 出力
 
-`e2e/acceptance/{slug}.spec.js` を1ファイル作る。**書き込みはこのディレクトリ配下のみ**。他のファイル（`playwright.config.js`・`e2e/smoke.spec.js`・設計ドキュメント）は変更しない。
+`e2e/acceptance/{slug}.spec.js` を1ファイル作る。**書き込みはこのディレクトリ配下のみ**。他のファイル（`playwright.config.js`・`e2e/smoke/`・設計ドキュメント）は変更しない。
 
 ### 書き方
 
