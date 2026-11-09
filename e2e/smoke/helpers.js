@@ -32,7 +32,11 @@ export const ANALYSIS_FIXED_NOON_JST = new Date(
  * 分析ツールのタブを、当日開催データが確実にある固定の過去日で開く（BOA-664）。
  * withRace=false のタブ（venue_code/race_id を受け付けない）では付与しない。
  */
-export async function gotoAnalysisTabOnFixedDate(page, tab, { withRace = true } = {}) {
+export async function gotoAnalysisTabOnFixedDate(
+  page,
+  tab,
+  { withRace = true } = {},
+) {
   await page.clock.setFixedTime(ANALYSIS_FIXED_NOON_JST);
   const params = new URLSearchParams({ tab });
   if (withRace) {
@@ -59,7 +63,9 @@ export const FIXED_RACE_DATE = "2026-09-18";
 export const FIXED_RACE_ID = `${FIXED_RACE_DATE}-02-08`;
 
 /** 締切 14:16 の30分前。この時刻のブラウザでは「当日・発走前」として描画される */
-export const FIXED_RACE_BEFORE_START = new Date(`${FIXED_RACE_DATE}T13:46:00+09:00`);
+export const FIXED_RACE_BEFORE_START = new Date(
+  `${FIXED_RACE_DATE}T13:46:00+09:00`,
+);
 
 /**
  * 固定のレースを「当日・発走前」の状態で開く。AI用コピー・AI予想タブの予想・
