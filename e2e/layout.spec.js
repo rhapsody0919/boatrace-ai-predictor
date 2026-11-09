@@ -227,7 +227,12 @@ for (const theme of ["light", "dark"]) {
     );
     await expect(link).toHaveCSS("text-decoration-line", "none");
     await link.hover();
-    await expect(link).toHaveCSS("color", await tokenColor("--text-primary"));
+    // hover の色の遷移の途中を読まないよう、最終の色になるまで待つ
+    await expect
+      .poll(() => link.evaluate((el) => getComputedStyle(el).color), {
+        timeout: 5000,
+      })
+      .toBe(await tokenColor("--text-primary"));
     await expect(link).toHaveCSS("text-decoration-line", "underline");
   });
 }
