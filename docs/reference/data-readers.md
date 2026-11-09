@@ -916,12 +916,12 @@
   - `scripts/maintenance/restore-entries-branch-hometown.js:119` select(helper:upsertChangedRows)
   - `scripts/maintenance/verify-analogy-v16.js:289` rest(rest) [is_absent, race_id] （検査）
   - `scripts/maintenance/verify-data-readers.js:557` select(embed) [racer_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:47` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:48` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:52` rest(rest) [race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:49` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:53` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:57` rest(rest) [name, race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:54` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:58` rest(rest) [name, race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:59` rest(rest) [name, race_id] （検査）
   - `scripts/maintenance/verify-full-picture-scene2.js:3168` rest(rest) （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select(embed) [racer_id] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:2665` rest(rest) [race_id] （検査）

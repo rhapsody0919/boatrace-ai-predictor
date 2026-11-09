@@ -7831,15 +7831,6 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:47",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "race_id"
-          ],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verify-e2e-har-merge.js:48",
           "op": "rest",
           "via": "rest",
@@ -7849,7 +7840,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:52",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:49",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7867,7 +7858,16 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:57",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:54",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "race_id"
+          ],
+          "test": true
+        },
+        {
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:58",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7877,7 +7877,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:58",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:59",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -8661,12 +8661,12 @@
             "scripts/maintenance/migrate-to-supabase.js:259",
             "scripts/maintenance/racelist-backfill.js:458",
             "scripts/maintenance/verify-analogy-v16.js:289",
-            "scripts/maintenance/verify-e2e-har-merge.js:47",
             "scripts/maintenance/verify-e2e-har-merge.js:48",
-            "scripts/maintenance/verify-e2e-har-merge.js:52",
+            "scripts/maintenance/verify-e2e-har-merge.js:49",
             "scripts/maintenance/verify-e2e-har-merge.js:53",
-            "scripts/maintenance/verify-e2e-har-merge.js:57",
+            "scripts/maintenance/verify-e2e-har-merge.js:54",
             "scripts/maintenance/verify-e2e-har-merge.js:58",
+            "scripts/maintenance/verify-e2e-har-merge.js:59",
             "scripts/maintenance/verify-sns-today-plan.js:2665",
             "scripts/maintenance/verify-sns-today-plan.js:2667",
             "scripts/sns/push-setsu-kiryoku-short.js:1100",
