@@ -20,7 +20,7 @@ import {
   decideRun,
   handledMarkers,
   jstDate,
-  nightlyTableStale,
+  nightlyFailureItem,
   recoveryReruns,
   rerunBlockers,
   runMarker,
@@ -36,7 +36,6 @@ const CONFIG = JSON.parse(
 const KEY_LABEL = "job-watch-key";
 const FAILURE_LABEL = "job-watch-failure";
 const CANARY_PATH = ".github/workflows/key-canary.yml";
-const NIGHTLY_FILE = "e2e-nightly.yml";
 const LOG_TAIL = 200_000;
 
 function fail(message) {
@@ -53,11 +52,7 @@ async function gh(
   method,
   pathAndQuery,
   body,
-  {
-    raw = false,
-    accept = "application/vnd.github+json",
-    notFoundNull = false,
-  } = {},
+  { raw = false, accept = "application/vnd.github+json" } = {},
 ) {
   const res = await fetch(`https://api.github.com${pathAndQuery}`, {
     method,
@@ -69,7 +64,6 @@ async function gh(
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (notFoundNull && res.status === 404) return null;
   if (!res.ok)
     fail(
       `GitHub API ${method} ${pathAndQuery.split("?")[0]} が ${res.status} を返した`,
@@ -158,26 +152,6 @@ async function closedIssues(label, since) {
     `/repos/${repo}/issues?labels=${label}&state=closed&since=${since}&per_page=10`,
   );
   return issues.filter((i) => !i.pull_request);
-}
-
-// 毎晩の網羅の表（e2e-nightly.yml）の、master で成功した最新の run と、workflow が入った時刻。workflow が無ければ null
-async function nightlyState() {
-  const wf = await gh(
-    "GET",
-    `/repos/${repo}/actions/workflows/${NIGHTLY_FILE}`,
-    null,
-    { notFoundNull: true },
-  );
-  if (!wf) return { lastSuccess: null, workflowCreatedAt: null };
-  const data = await gh(
-    "GET",
-    `/repos/${repo}/actions/workflows/${NIGHTLY_FILE}/runs?branch=master&status=success&per_page=1`,
-  );
-  const last = data.workflow_runs[0] ?? null;
-  return {
-    lastSuccess: last ? { id: last.id, at: last.created_at } : null,
-    workflowCreatedAt: wf.created_at,
-  };
 }
 
 async function issueTexts(issue) {
@@ -322,17 +296,8 @@ async function scan() {
   }
 
   // 毎晩の網羅の表が7日より古い（PR の選別が古い表で選ぶのを防ぐ）。同じ最後の成功では1回だけ書く
-  const nightly = await nightlyState();
-  const stale = nightlyTableStale({
-    now,
-    lastSuccessAt: nightly.lastSuccess?.at ?? null,
-    workflowCreatedAt: nightly.workflowCreatedAt,
-  });
-  if (stale.stale) {
-    const marker = runMarker(nightly.lastSuccess?.id ?? 0, 1, "stale");
-    if (!done.has(marker))
-      failureItems.push({ text: `- ${stale.reason}`, marker });
-  }
+  const nightly = await nightlyFailureItem({ gh, repo, now, done });
+  if (nightly) failureItems.push(nightly);
 
   await writeIssue(
     KEY_LABEL,

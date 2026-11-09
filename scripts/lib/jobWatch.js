@@ -247,3 +247,42 @@ export function nightlyTableStale({ now, lastSuccessAt, workflowCreatedAt }) {
       }
     : { stale: false, reason: "" };
 }
+
+/**
+ * 毎晩の網羅の表の見張りの項目（job-watch-failure に書く1行と印）。古くない、または同じ最後の成功の分を書いた後なら null。
+ * GitHub への問い合わせは gh（scripts/watch/job-watch.js の gh と同じ形）で受け取る。
+ * workflow は一覧（per_page=100、2026-11-09 時点で46本）から探すので、まだ入っていなくても 404 で止まらない
+ *
+ * @param {{ gh: Function, repo: string, now: Date, done: Set<string>, file?: string }} input
+ * @returns {Promise<{ text: string, marker: string } | null>}
+ */
+export async function nightlyFailureItem({
+  gh,
+  repo,
+  now,
+  done,
+  file = "e2e-nightly.yml",
+}) {
+  const { workflows } = await gh(
+    "GET",
+    `/repos/${repo}/actions/workflows?per_page=100`,
+  );
+  const wf = workflows.find((w) => w.path === `.github/workflows/${file}`);
+  const runs = wf
+    ? (
+        await gh(
+          "GET",
+          `/repos/${repo}/actions/workflows/${file}/runs?branch=master&status=success&per_page=1`,
+        )
+      ).workflow_runs
+    : [];
+  const last = runs[0] ?? null;
+  const stale = nightlyTableStale({
+    now,
+    lastSuccessAt: last?.created_at ?? null,
+    workflowCreatedAt: wf?.created_at ?? null,
+  });
+  if (!stale.stale) return null;
+  const marker = runMarker(last?.id ?? 0, 1, "stale");
+  return done.has(marker) ? null : { text: `- ${stale.reason}`, marker };
+}

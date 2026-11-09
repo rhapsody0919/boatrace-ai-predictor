@@ -23,6 +23,7 @@ import {
   handledMarkers,
   jobTimeouts,
   jstDate,
+  nightlyFailureItem,
   nightlyTableStale,
   recoveryReruns,
   runMarker,
@@ -340,15 +341,46 @@ const run = (o = {}) => ({
       }).reason,
     ),
   );
+  // scan が使う項目の作り方（gh の偽物で、workflow の有無・最後の成功・同じ印の重複を確かめる）
+  const fakeGh = (wf, run) => async (_m, p) =>
+    p.includes("/runs?")
+      ? { workflow_runs: run ? [run] : [] }
+      : { workflows: wf ? [wf] : [] };
+  const wf = {
+    path: ".github/workflows/e2e-nightly.yml",
+    created_at: "2026-11-01T00:00:00Z",
+  };
+  const oldRun = { id: 42, created_at: "2026-11-10T00:00:00Z" };
+  const item = (g, done = new Set()) =>
+    nightlyFailureItem({ gh: g, repo: "o/r", now, done });
+  const first = await item(fakeGh(wf, oldRun));
+  check(
+    "古い表は job-watch-failure の項目になり、印は最後の成功の run で作る",
+    first?.marker === runMarker(42, 1, "stale") &&
+      /最後の成功/.test(first.text),
+  );
+  check(
+    "同じ最後の成功の分を書いた後は、もう項目にしない",
+    (await item(fakeGh(wf, oldRun), new Set([first?.marker]))) === null,
+  );
+  check(
+    "最後の成功が新しければ項目にしない",
+    (await item(fakeGh(wf, { id: 43, created_at: "2026-11-19T00:00:00Z" }))) ===
+      null,
+  );
+  check(
+    "workflow がまだ一覧に無ければ（404 にせず）項目にしない",
+    (await item(fakeGh(null, null))) === null,
+  );
   const src = readFileSync(
     path.join(ROOT, "scripts/watch/job-watch.js"),
     "utf8",
   );
   check(
-    "scan は表の古さを job-watch-failure に書き、同じ最後の成功では印で1回に絞る",
-    /nightlyTableStale\(/.test(src) &&
-      /runMarker\(nightly\.lastSuccess\?\.id \?\? 0, 1, "stale"\)/.test(src) &&
-      /if \(!done\.has\(marker\)\)\s*failureItems\.push/.test(src),
+    "scan は表の項目を job-watch-failure に足す",
+    /const nightly = await nightlyFailureItem\(\{ gh, repo, now, done \}\);\s*if \(nightly\) failureItems\.push\(nightly\);/.test(
+      src,
+    ),
   );
 }
 
