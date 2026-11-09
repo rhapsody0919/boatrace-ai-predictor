@@ -81,6 +81,7 @@ export default function Contact() {
           }}
         >
           <iframe
+            title="お問い合わせフォーム"
             src="https://docs.google.com/forms/d/e/1FAIpQLSeiioPc2vCicOWbKogOXTVAcfaZD31vZHQgltI_K8ENpQFTzg/viewform?embedded=true"
             width="100%"
             height="721"
