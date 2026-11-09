@@ -56,4 +56,17 @@
   .first-visit-guide-card {
     padding: var(--spacing-3) var(--spacing-3-5);
   }
+
+  .first-visit-guide-card__close {
+    min-width: 44px;
+    min-height: 44px;
+    top: 0;
+    right: 0;
+  }
+
+  .first-visit-guide-card__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }

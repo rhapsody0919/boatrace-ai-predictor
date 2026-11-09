@@ -281,8 +281,8 @@
 
   .nav-btn {
     padding: 0.5rem 0.6rem;
-    font-size: 0.8rem;
-    min-height: 40px;
+    font-size: 0.85rem;
+    min-height: 44px;
     flex-shrink: 0;
   }
 
@@ -330,13 +330,14 @@
 
   .nav-btn {
     padding: 0.4rem 0.5rem;
-    font-size: 0.8rem;
-    min-height: 40px;
+    font-size: 0.85rem;
+    min-height: 44px;
   }
 
   .menu-btn {
     font-size: 1.2rem;
     padding: 0.4rem 0.7rem;
+    min-width: 44px;
   }
 
   .submenu {
