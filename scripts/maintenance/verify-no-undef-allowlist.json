@@ -33,10 +33,6 @@
       "e2e/race-result-display-fixes.spec.js": {
         "count": 1,
         "reason": "コメントに公式の選手名の表記（全角空白で詰めた名前）をそのまま書いている"
-      },
-      "e2e/racer-page-wide.spec.js": {
-        "count": 1,
-        "reason": "コメントに公式の節名の表記をそのまま書いている"
       }
     },
     "react-hooks/rules-of-hooks": {}
