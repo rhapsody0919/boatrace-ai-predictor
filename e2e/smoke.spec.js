@@ -4374,9 +4374,9 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
 
   for (const path of PAGES) {
     for (const theme of ["light", "dark"]) {
-      test(`${path}（${theme}テーマ）でcolor-contrast違反が無い${blogTag(path)}`, async ({
+      test(`${path}（${theme}テーマ）でcritical・seriousのaxe違反が無い${blogTag(path)}`, async ({
         page,
-      }) => {
+      }, testInfo) => {
         const { default: AxeBuilder } = await import("@axe-core/playwright");
         await page.goto(path);
         await page.evaluate(
@@ -4395,13 +4395,34 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
           });
 
         const results = await new AxeBuilder({ page })
-          .withRules(["color-contrast"])
+          .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
           .analyze();
 
-        expect(
-          results.violations,
-          JSON.stringify(results.violations, null, 2),
-        ).toEqual([]);
+        // critical・serious は落とす。moderate・minor は落とさず、規則の id ごとの件数を添付に残す
+        const blocking = results.violations.filter(
+          (v) => v.impact === "critical" || v.impact === "serious",
+        );
+        const nonBlocking = {};
+        for (const v of results.violations) {
+          if (v.impact === "critical" || v.impact === "serious") continue;
+          nonBlocking[v.id] = {
+            impact: v.impact,
+            count: v.nodes.length,
+          };
+        }
+        await testInfo.attach("axe-moderate-minor.json", {
+          body: JSON.stringify({ path, theme, rules: nonBlocking }, null, 2),
+          contentType: "application/json",
+        });
+
+        const message = blocking
+          .map(
+            (v) =>
+              `${v.id}（${v.impact}）${path} ${theme}テーマ: ` +
+              v.nodes.map((n) => n.target.join(" ")).join(", "),
+          )
+          .join("\n");
+        expect(blocking, message).toEqual([]);
       });
     }
   }
