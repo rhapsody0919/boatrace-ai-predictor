@@ -85,3 +85,14 @@ ADR-0077（録画の再生と時計の固定）は変えない。軽い組も同
 - **辿り方**（system-architect の審査で広げた）: 根は e2e/・src/・設定・index.html と、e2e の3つのワークフローが `node` で呼ぶ scripts。相対と `/` 始まり（vite は root から解く）の import（括弧の中のコメント可）、CSS の @import・url()、`"../..."` の文字列（`${` で切れた頭・ディレクトリはその下の全部を読みうるとみなす）、src の外（Node 側）では一覧の頭で始まる文字列（cwd・ROOT から組み立てる読み）。解けない指定も捨てず頭として照らす
 - **`verify-e2e-scope.js` 自身は0件にしない**（守りを弱める PR が e2e なしで通り、後の PR で抜け道を作る段を塞ぐ）
 - **限界**: 辿り方は正規表現で、パスを分けて組み立てる書き方（`path.join(root, "scripts", name)` 等）は拾えない。今の e2e・src にその形で一覧のディレクトリを読む所は無い。読む所を足すときは verify に固定の入力を足す
+
+## 追記（2026-11-08、CI02）: 範囲 selected と、none を閉包の外へ
+
+正本の設計は `docs/design/ci-minutes-reduction/design.md` 12章（hq の CI02）。各段の PR で、この追記の該当の行を「予定」から「済み」に直す。
+
+- **予定（段4）: 範囲 `selected` を足す**。master の毎晩の全件（段3）が page.coverage で作る spec→src の表（artifact）を、base 側の e2e-scope が引き、差分に当たる spec だけを流す。共通の物（CSS・index.html・main.jsx・package*.json・vite と playwright の設定・fixtures.js・shards.json）・新しいファイル・表に無い・表が7日超・読めない → `full`。spec 自体の変更はその spec も足す
+  - 組: selected では shards.json の rest（`--grep-invert` で残り全部）を使わず、選んだ spec を名指しした組だけを作る。job 名は `e2e-shard` のまま（決定2の集約 `e2e`・maker-merge の照合を変えない）
+  - 集約の検査（check-e2e-shard-coverage.js）が受け取る一覧は、選んだ spec の一覧にする
+  - 決定3（判定は base 側、guard が master の一覧で判定し直す）は変えない。guard は selected を full と同じく `e2e-shard` が全部成功で見る
+- **予定（段5）: none を手の一覧から「E2E の閉包の外」へ**。e2e/・src/・playwright*.config.js・vite.config.js から `scripts/lib/relativeImportGraph.js` の reach で辿れる物＋index.html・public/・package*.json・e2e-smoke-test.yml・e2e-scope.js・content-pr-gate.json の外だけが none。辿れないときは full。11/3〜11/7 の full 171 run 中 37 run・1,639分が閉包の外（hq の実測）。hq の maker-merge の required_checks を同じ日に入れる
+- 変えないもの: 必須は集約 `e2e` 1本、paths フィルタは使わない、`pull_request_target` は使わない、ADR-0077（どう流すか）

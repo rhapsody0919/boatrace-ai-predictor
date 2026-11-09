@@ -1,6 +1,6 @@
 # boatAI — Claude Code の入口
 
-@AGENTS.md
+@../AGENTS.md
 
 上が作り手の決まりの正本。ここには Claude に固有の物だけを書く。
 
