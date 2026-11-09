@@ -39,6 +39,7 @@ export const SocialShareButtons = ({
                 title={title}
                 hashtags={hashtags}
                 className="social-share-button"
+                aria-label="Xでシェアする"
                 onClick={track('x')}
             >
                 <XIcon size={size} round />
@@ -49,6 +50,7 @@ export const SocialShareButtons = ({
                 quote={title}
                 hashtag={`#${hashtags[0]}`}
                 className="social-share-button"
+                aria-label="Facebookでシェアする"
                 onClick={track('facebook')}
             >
                 <FacebookIcon size={size} round />
@@ -57,6 +59,7 @@ export const SocialShareButtons = ({
             <LineShareButton
                 url={lineTitle ? `${lineTitle}\n${shareUrl}` : shareUrl}
                 className="social-share-button"
+                aria-label="LINEでシェアする"
                 onClick={track('line')}
             >
                 <LineIcon size={size} round />
