@@ -124,7 +124,9 @@ export default defineConfig({
     {
       name: "smoke",
       // acceptance/ は playwright.acceptance.config.js で別に走らせる（PRゲート外）
-      testIgnore: [/\/e2e\/layout\//, /acceptance\//],
+      // e2e/smoke/ は smoke.spec.js を割った先。差分の上限（20万字）に収めるため2つの PR で置き、
+      // smoke.spec.js を消す PR（CI-02、#2399）でこの除外を外す。それまでは同じ試験を2回流さない
+      testIgnore: [/\/e2e\/layout\//, /\/e2e\/smoke\//, /acceptance\//],
     },
     {
       name: "layout-mobile",
