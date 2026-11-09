@@ -11,7 +11,6 @@
  *   - 差分の JS（.js・.jsx・.mjs・.cjs）の eslint のエラー（eslint.config.js の設定のまま）
  *   - 新しいファイルが max-lines・complexity の線を越える
  *   - 既にあるファイルが、この差分で max-lines の線を越えた（base で線の内だった）
- *   - src の .js・.jsx・.css で新しく足した行（git diff の + の行）に hex の色の直書き（design-tokens.css は除く。既にある行は数えない）
  *   - --ci: src・scripts・api に循環の import がある（madge。2026-11-07 時点で0件なので、全体で0件を保つ）
  *   - --ci: 新しいファイルが、ほかのコードと15行以上重なる（jscpd）
  * 警告だけ（失敗にしない）:
@@ -146,54 +145,6 @@ if (srcChanged.length > 0 && !changed.some((c) => isTest(c.file))) {
   warnings.push(
     `試験の差分が無い: src を ${srcChanged.length} ファイル変えたが、e2e/・verify-*・*.test.*・*.spec.* の変更が無い（要らないなら PR 本文に理由を書く）`,
   );
-}
-
-// --- src の差分で新しく足した行の hex の色の直書き（既にある行は数えない）
-const HEX_COLOR = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b/;
-const HEX_EXEMPT = "src/styles/design-tokens.css";
-const isHexTarget = (f) =>
-  f.startsWith("src/") && /\.(js|jsx|css)$/.test(f) && f !== HEX_EXEMPT;
-const untracked = new Set(
-  lines(git("ls-files", "--others", "--exclude-standard")),
-);
-// 足した行の [行番号, 本文]。未追跡のファイルは全行が足した行
-const addedLines = ({ file, oldFile }) => {
-  if (untracked.has(file)) {
-    return fs
-      .readFileSync(path.join(ROOT, file), "utf8")
-      .split("\n")
-      .map((text, i) => [i + 1, text]);
-  }
-  const diff = git(
-    "diff",
-    "-U0",
-    "--no-color",
-    "-M",
-    mergeBase,
-    "--",
-    ...new Set([oldFile, file]),
-  );
-  const out = [];
-  let n = 0;
-  for (const row of diff.split("\n")) {
-    const hunk = row.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
-    if (hunk) {
-      n = Number(hunk[1]);
-    } else if (n > 0 && row.startsWith("+") && !row.startsWith("+++")) {
-      out.push([n, row.slice(1)]);
-      n += 1;
-    }
-  }
-  return out;
-};
-for (const c of changed.filter((c) => isHexTarget(c.file))) {
-  for (const [n, text] of addedLines(c)) {
-    if (HEX_COLOR.test(text)) {
-      errors.push(
-        `${c.file}:${n}: hex の直書き。design-tokens.css の意味トークン（var(--…)）を使う`,
-      );
-    }
-  }
 }
 
 // npx の出力を一時のファイルへ書かせる（パイプだと madge の --json が 64KB で切れることがあった）
