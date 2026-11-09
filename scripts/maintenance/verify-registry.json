@@ -1290,6 +1290,11 @@
       "guards": "動画（sns-video-studio/remotion/src）から相対 import で辿れるファイルが、src/config/languages.js・src/data/blogPosts*.js と import.meta.glob（Vite 専用、Remotion の webpack は変換しない）に届かないこと。2026-11-04 #2236 で upsetWin/model.js → raceSeriesText.js → raceDetailHeading.js → languages.js → blogPostsEn.js が繋がり、Getting composition で全部の動画が落ちた。日目のラベルは src/utils/seriesDayLabel.js に分けた"
     },
     {
+      "script": "verify-render-jsx.js",
+      "tier": "ci",
+      "guards": "scripts/lib/renderJsx.js が .jsx の部品を jsdom に描けること（CSS の import の無視・描き直し）と、部品を1か所壊すと同じ確かめが落ちること"
+    },
+    {
       "script": "verify-render-with-fresh-page.js",
       "tier": "ci",
       "guards": "ブログのスナップショット生成で、ページが1つ落ちても後続の記事を取りこぼさないこと（scripts/lib/renderWithFreshPage.js）。2026-10-11 の本番ビルドで、落ちたページを使い続けた後続の3記事が失敗し、AI クローラーに中身の無い画面が返っていた"
