@@ -82,7 +82,9 @@ for (const theme of ["light", "dark"]) {
         probe.remove();
         return result;
       });
-      expect.soft(colors.title, JSON.stringify(colors)).toBeGreaterThanOrEqual(4.5);
+      expect
+        .soft(colors.title, JSON.stringify(colors))
+        .toBeGreaterThanOrEqual(4.5);
       expect
         .soft(colors.description, JSON.stringify(colors))
         .toBeGreaterThanOrEqual(4.5);
@@ -218,7 +220,9 @@ test.describe("レイアウト: /blog はカテゴリで絞って件数が列数
 });
 
 for (const theme of ["light", "dark"]) {
-  test(`BOA-1010: スコープ外に戻るリンクの基本指定が漏れない ${theme} @blog`, async ({ page }) => {
+  test(`BOA-1010: スコープ外に戻るリンクの基本指定が漏れない ${theme} @blog`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/blog/10000-races-analysis");
     await expect(page.locator(".blog-post-header .back-link")).toBeVisible();
@@ -237,7 +241,9 @@ for (const theme of ["light", "dark"]) {
     expect(styles).toEqual({ display: "inline", weight: "400" });
   });
 
-  test(`BOA-1010: ブログの戻るリンクの色・ホバー・余白を保つ ${theme} @blog`, async ({ page }) => {
+  test(`BOA-1010: ブログの戻るリンクの色・ホバー・余白を保つ ${theme} @blog`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/blog/10000-races-analysis");
     const link = page.locator(".blog-post-header .back-link");
@@ -245,14 +251,15 @@ for (const theme of ["light", "dark"]) {
     await page.evaluate((theme) => {
       document.documentElement.setAttribute("data-theme", theme);
     }, theme);
-    const tokenColor = (token) => page.evaluate((token) => {
-      const probe = document.createElement("span");
-      probe.style.color = `var(${token})`;
-      document.body.append(probe);
-      const color = getComputedStyle(probe).color;
-      probe.remove();
-      return color;
-    }, token);
+    const tokenColor = (token) =>
+      page.evaluate((token) => {
+        const probe = document.createElement("span");
+        probe.style.color = `var(${token})`;
+        document.body.append(probe);
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+      }, token);
     const spacing = await link.evaluate((link) => {
       const probe = document.createElement("span");
       probe.style.marginRight = "var(--spacing-3)";
@@ -261,7 +268,10 @@ for (const theme of ["light", "dark"]) {
       probe.remove();
       return margin;
     });
-    await expect(link).toHaveCSS("color", await tokenColor("--brand-accent-secondary"));
+    await expect(link).toHaveCSS(
+      "color",
+      await tokenColor("--brand-accent-secondary"),
+    );
     await expect(link).toHaveCSS("text-decoration-line", "none");
     await expect(link).toHaveCSS("margin-right", spacing);
     await expect(link).toHaveCSS("display", "inline-block");
@@ -271,7 +281,9 @@ for (const theme of ["light", "dark"]) {
     await expect(link).toHaveCSS("text-decoration-line", "underline");
   });
 
-  test(`BOA-1010: レース詳細の空状態の戻るリンクの表示を保つ ${theme}`, async ({ page }) => {
+  test(`BOA-1010: レース詳細の空状態の戻るリンクの表示を保つ ${theme}`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/race/invalid");
     const link = page.locator(".race-detail-page-v2__empty .back-link");

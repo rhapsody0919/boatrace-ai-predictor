@@ -11,7 +11,7 @@ import { test, expect } from "./fixtures.js";
  * （e2e/layout/ の spec の layout-mobile は375px。あちらは横あふれとグリッドの
  * 空きだけを見る汎用テストで、個々の表の中の列の位置までは見ない）。
  *
- * 対象レースは e2e/layout/race-detail.spec.js と同じく過去の固定レース。当日のレースを使うと
+ * 対象レースは e2e/layout/race-detail-1.spec.js 等と同じく過去の固定レース。当日のレースを使うと
  * 節の進行で行数が変わり、日によって通ったり落ちたりする。
  *
  * 確かめることは3つあるが、テストは1本にまとめて `test.step` で分けている。
