@@ -3,6 +3,63 @@ import { BOAT_COLORS } from "../../../utils/colors";
 import FlyingBadge from "../FlyingBadge";
 import { formatRate, formatWinRate } from "./format";
 
+function formatBarValue(metric, value, valueDigits, needsOwnAggregation) {
+  if (metric === "avgSt") {
+    return value !== null && value !== undefined
+      ? value.toFixed(valueDigits)
+      : "—";
+  }
+  return metric === "winRate"
+    ? formatWinRate(value, needsOwnAggregation)
+    : formatRate(value);
+}
+
+function ValueCell({
+  value,
+  n,
+  isSmallSample,
+  loading,
+  isBest,
+  metric,
+  valueDigits,
+  needsOwnAggregation,
+}) {
+  const { t } = useTranslation();
+  return (
+    <span className="rbit-value">
+      {loading ? (
+        <span className="rbit-skeleton" aria-hidden="true" />
+      ) : (
+        <span className={`rbit-value-num${isBest ? " ind-best" : ""}`}>
+          {formatBarValue(metric, value, valueDigits, needsOwnAggregation)}
+        </span>
+      )}
+      {n !== null && n !== undefined && (
+        <span className={`rbit-n${isSmallSample ? " is-small-sample" : ""}`}>
+          {t(n === 0 ? "basicInfo.noData" : "basicInfo.sampleCount", { n })}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function AccidentBadge({ accident }) {
+  const { t } = useTranslation();
+  return (
+    <span
+      className={`rbit-accident-badge${accident.status === "over" ? " is-over" : ""}`}
+    >
+      {accident.status === "over"
+        ? t("basicInfo.accidentBadgeOver", {
+            rate: accident.rate.toFixed(2),
+          })
+        : t("basicInfo.accidentBadgeNear", {
+            need: accident.need,
+          })}
+    </span>
+  );
+}
+
 // 6艇の横棒グラフの1行（押すと展開する）
 export default function BarRow({
   boat,
@@ -22,7 +79,6 @@ export default function BarRow({
   currentMeet,
   accident,
 }) {
-  const { t } = useTranslation();
   const color = BOAT_COLORS[boat] || {};
   return (
     <button
@@ -68,43 +124,21 @@ export default function BarRow({
           />
         )}
       </span>
-      <span className="rbit-value">
-        {loading ? (
-          <span className="rbit-skeleton" aria-hidden="true" />
-        ) : (
-          <span className={`rbit-value-num${isBest ? " ind-best" : ""}`}>
-            {metric === "avgSt"
-              ? value !== null && value !== undefined
-                ? value.toFixed(valueDigits)
-                : "—"
-              : metric === "winRate"
-                ? formatWinRate(value, needsOwnAggregation)
-                : formatRate(value)}
-          </span>
-        )}
-        {n !== null && n !== undefined && (
-          <span className={`rbit-n${isSmallSample ? " is-small-sample" : ""}`}>
-            {t(n === 0 ? "basicInfo.noData" : "basicInfo.sampleCount", { n })}
-          </span>
-        )}
-      </span>
+      <ValueCell
+        value={value}
+        n={n}
+        isSmallSample={isSmallSample}
+        loading={loading}
+        isBest={isBest}
+        metric={metric}
+        valueDigits={valueDigits}
+        needsOwnAggregation={needsOwnAggregation}
+      />
       <span className="rbit-expand-arrow">{expanded ? "▼" : "▶"}</span>
       {/* 今期の事故率（BOA-327）。B2ラインを超えた選手と、あとF1本（20点）以内で
           超える選手にだけ出す（出走30走以上。accidentRate.js）。名前の列に入れると列が広がり、
           その行だけ棒の枠が短くなって6艇の長さを比べられなくなるので、2段目に置く */}
-      {accident?.showBadge && (
-        <span
-          className={`rbit-accident-badge${accident.status === "over" ? " is-over" : ""}`}
-        >
-          {accident.status === "over"
-            ? t("basicInfo.accidentBadgeOver", {
-                rate: accident.rate.toFixed(2),
-              })
-            : t("basicInfo.accidentBadgeNear", {
-                need: accident.need,
-              })}
-        </span>
-      )}
+      {accident?.showBadge && <AccidentBadge accident={accident} />}
     </button>
   );
 }

@@ -8,67 +8,42 @@ import { bestOf } from "../../../utils/bestOf";
 export const findOfficialRow = (officialRates, boatNumber) =>
   (officialRates ?? []).find((r) => r.boat_number === boatNumber) ?? null;
 
-// 表示用の1艇分の値を計算する（value/n/isSmallSample/loading）
-function valueFor(p, ctx) {
-  const {
-    metric,
-    scope,
-    grade,
-    period,
-    venueCode,
-    needsOwnAggregation,
-    officialRates,
-    officialAvgSt,
-    recordsOf,
-    periodAnchor,
-  } = ctx;
+const NO_VALUE = { value: null, n: null, isSmallSample: false };
 
-  if (!needsOwnAggregation && metric === "avgSt") {
-    // 公式の平均STは全国の値だけ（当地の公式の平均STは無い）
-    const v =
-      scope === "local"
-        ? null
-        : ((officialAvgSt?.rows ?? []).find((r) => r.boatNumber === p.number)
-            ?.avgSt ?? null);
-    return {
-      value: v,
-      n: null,
-      isSmallSample: false,
-      loading: officialAvgSt === undefined,
-    };
-  }
-  if (!needsOwnAggregation) {
-    const row = findOfficialRow(officialRates, p.number);
-    if (!row)
-      return {
-        value: null,
-        n: null,
-        isSmallSample: false,
-        loading: officialRates === null,
-      };
-    const value =
-      scope === "local"
-        ? metric === "winRate"
-          ? row.local_win_rate
-          : metric === "top2Rate"
-            ? row.local_2rate
-            : row.local_3rate
-        : metric === "winRate"
-          ? row.win_rate
-          : metric === "top2Rate"
-            ? row.global_2rate
-            : row.global_3rate;
-    return {
-      value: value === null || value === undefined ? null : Number(value),
-      n: null,
-      isSmallSample: false,
-      loading: false,
-    };
-  }
+const LOCAL_RATE_KEYS = { winRate: "local_win_rate", top2Rate: "local_2rate" };
+const GLOBAL_RATE_KEYS = { winRate: "win_rate", top2Rate: "global_2rate" };
 
+// 公式の平均STは全国の値だけ（当地の公式の平均STは無い）
+function officialAvgStValue(p, scope, officialAvgSt) {
+  const v =
+    scope === "local"
+      ? null
+      : ((officialAvgSt?.rows ?? []).find((r) => r.boatNumber === p.number)
+          ?.avgSt ?? null);
+  return { ...NO_VALUE, value: v, loading: officialAvgSt === undefined };
+}
+
+function officialRateValue(p, ctx) {
+  const { metric, scope, officialRates } = ctx;
+  const row = findOfficialRow(officialRates, p.number);
+  if (!row) return { ...NO_VALUE, loading: officialRates === null };
+  const value =
+    scope === "local"
+      ? row[LOCAL_RATE_KEYS[metric] ?? "local_3rate"]
+      : row[GLOBAL_RATE_KEYS[metric] ?? "global_3rate"];
+  return {
+    ...NO_VALUE,
+    value: value === null || value === undefined ? null : Number(value),
+    loading: false,
+  };
+}
+
+// 自社集計（records から絞って計算する）
+function ownAggregationValue(p, ctx) {
+  const { metric, scope, grade, period, venueCode, recordsOf, periodAnchor } =
+    ctx;
   const records = recordsOf(p.racerId);
-  if (records === undefined)
-    return { value: null, n: null, isSmallSample: false, loading: true };
+  if (records === undefined) return { ...NO_VALUE, loading: true };
   const filtered = filterRecords(records ?? [], {
     venueCode,
     scope,
@@ -91,6 +66,14 @@ function valueFor(p, ctx) {
     isSmallSample: rates.n > 0 && rates.n < SMALL_SAMPLE_THRESHOLD,
     loading: false,
   };
+}
+
+// 表示用の1艇分の値を計算する（value/n/isSmallSample/loading）
+function valueFor(p, ctx) {
+  const { metric, scope, needsOwnAggregation, officialAvgSt } = ctx;
+  if (needsOwnAggregation) return ownAggregationValue(p, ctx);
+  if (metric === "avgSt") return officialAvgStValue(p, scope, officialAvgSt);
+  return officialRateValue(p, ctx);
 }
 
 export function computeBarValues(sortedPlayers, ctx) {
