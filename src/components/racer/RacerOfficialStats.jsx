@@ -275,7 +275,11 @@ export default function RacerOfficialStats({ rows, racerName }) {
                 />
                 {/* 期の名前だけだと今の半期と読み違えるので、集計期間を添える（ファン評価 #2051 1周目）。
                     375px で右端が切れないよう、系列名は短くする */}
+                {/* 位置の移動の動き（transform の transition）は止める。動いている途中は右端が
+                    画面の外（397〜406px）にあり、収まる位置へ着く前の値が見えてしまう */}
                 <Tooltip
+                  isAnimationActive={false}
+                  allowEscapeViewBox={{ x: false, y: false }}
                   wrapperStyle={{ maxWidth: 200 }}
                   contentStyle={{ whiteSpace: "normal" }}
                   formatter={(value) => value?.toFixed(2)}
