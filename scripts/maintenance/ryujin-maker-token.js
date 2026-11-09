@@ -20,6 +20,8 @@
  *
  * 置き場（既定。環境変数で変えられる）:
  *   秘密鍵   ~/.config/ryujin/ryujin-maker.pem（RYUJIN_MAKER_KEY_FILE）。オーナーが置く。持ち主が自分で、権限が 600（持ち主だけ）のものしか受けない
+ *   鍵のファイルが無いときに限り、macOS の Keychain（サービス ryujin-maker-key・アカウント hq。
+ *     RYUJIN_MAKER_KEYCHAIN_SERVICE・RYUJIN_MAKER_KEYCHAIN_ACCOUNT で変える）の base64 の PEM を読む
  *   App ID   5377197（RYUJIN_MAKER_APP_ID）。秘密ではない（JWT の iss に入る値。hq の config/github-apps.json と同じ）
  *   Installation ID は置かない。JWT で GET /repos/{repo}/installation を引いて決める（hq の scripts/app-token.sh と同じ）
  *
@@ -103,6 +105,46 @@ export function loadPrivateKey(keyFile, uid = process.getuid?.()) {
   } catch {
     throw new Error(`秘密鍵が読めない（PEM の秘密鍵か確かめる）: ${keyFile}`);
   }
+}
+
+/**
+ * 鍵のファイルが無いときだけ使う。macOS の Keychain から `security find-generic-password -w` の出力
+ * （base64 の PEM）を読む。失敗の文には鍵のパスと名前だけを書き、中身も security の出力も出さない。
+ */
+export function loadPrivateKeyFromKeychain({
+  keyFile,
+  service = process.env.RYUJIN_MAKER_KEYCHAIN_SERVICE || "ryujin-maker-key",
+  account = process.env.RYUJIN_MAKER_KEYCHAIN_ACCOUNT || "hq",
+  run = spawnSync,
+} = {}) {
+  const missing = new Error(
+    `秘密鍵が無い: ${keyFile}、Keychain（${service}）も見たが読めない（オーナーが置く。docs/operation/identity-separation-owner-steps.md の 9-2）`,
+  );
+  const res = run(
+    "security",
+    ["find-generic-password", "-s", service, "-a", account, "-w"],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: TIMEOUT_MS },
+  );
+  if (res.error || res.status !== 0 || !res.stdout?.trim()) throw missing;
+  try {
+    return createPrivateKey(Buffer.from(res.stdout.trim(), "base64"));
+  } catch {
+    throw new Error(
+      `Keychain（${service}）の鍵が読めない（base64 の PEM か確かめる）`,
+    );
+  }
+}
+
+/** ファイルがあればファイルの検査どおり。ファイルが無いときに限り Keychain を見る */
+export function loadPrivateKeyWithFallback(keyFile, options = {}) {
+  let exists = true;
+  try {
+    statSync(keyFile);
+  } catch {
+    exists = false;
+  }
+  if (exists) return loadPrivateKey(keyFile);
+  return loadPrivateKeyFromKeychain({ keyFile, ...options });
 }
 
 /** GitHub の API を1回呼ぶ。失敗の文は状態の番号と GitHub の message だけ（トークン・JWT は入れない） */
@@ -211,7 +253,7 @@ async function main() {
   const appId = process.env.RYUJIN_MAKER_APP_ID || DEFAULT_APP_ID;
   const token = await mintInstallationToken({
     appId,
-    privateKey: loadPrivateKey(keyFile),
+    privateKey: loadPrivateKeyWithFallback(keyFile),
     workflows,
   });
   const child = spawnSync(command, args, {
