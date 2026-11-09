@@ -14,7 +14,7 @@
 
 | # | 旧の行 | 決まり | 分類 | 移し先・理由 |
 |---|---|---|---|---|
-| 1 | 1-3 | AGENTS.md と CLAUDE.md の分担 | 残す | 入口の冒頭（`@AGENTS.md` で取り込む形に変えた） |
+| 1 | 1-3 | AGENTS.md と CLAUDE.md の分担 | 残す | 入口の冒頭（`@../AGENTS.md` で取り込む形に変えた。@ の先は .claude/ からの相対） |
 | 2 | 5 | 作業の前に docs/knowledge/README.md を読む | 残す | AGENTS.md「知識の索引」 |
 | 3 | 7-14 | 分析は既存スクリプト→拡張→node -e→SQL の順 | paths | `.claude/rules/analysis.md` の末尾 |
 | 4 | 16-17 | 調べたデータは絞らず全て報告する | skill | owner-session「調査・分析の報告」 |
@@ -30,7 +30,7 @@
 | 14 | 116-130 | セッションのスコープ管理 | skill＋移す | owner-session。編集回数の知らせは hook（`track-session-progress.sh`、既に） |
 | 15 | 132-137 | 小さな作業で大きな設計に気づいたとき | skill | owner-session |
 | 16 | 139-140 | モバイル・余白 | paths | `mobile-ui.md`（既に paths。入口の指し先の文は重複なので消した） |
-| 17 | 145 | 開発フローは AGENTS.md が正本 | 残す | 入口の `@AGENTS.md` |
+| 17 | 145 | 開発フローは AGENTS.md が正本 | 残す | 入口の `@../AGENTS.md` |
 | 18 | 147 | claude/ の枝・ryujin-maker の名義で push・PR | 残す＋移す | 入口。claude/ 以外の push は hook（`guard-deploy-approval.sh`、既に） |
 | 19 | 149-156 | SDD のフロー | skill＋paths | owner-session、細則は `sdd-workflow.md`（既に paths） |
 | 20 | 160 | `/code-review` のセルフレビュー | 消す | D2 |
