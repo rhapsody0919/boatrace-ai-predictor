@@ -18,6 +18,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
    - `.github/workflows/` の全部
    - `package.json` の `scripts`、`scripts/maintenance/run-verify-registry.js`・`guard-pr-merge.js`、`playwright.config.*`、`e2e/fixtures.js`
    - verify の期待値: 既存の `scripts/maintenance/verify-*.js`・`e2e/*.spec.js` の期待値・条件を緩めない（落ちる試験を通すために変えない。誤りだと思ったら止める）。`verify-registry.json` は、自分が足した `verify-*.js` の `"tier": "ci"` の1行を名前の順の位置に足すことだけ許す（`node scripts/maintenance/run-verify-registry.js --sort`）
+   - 例外: 既存の `verify-*.js` を振る舞いの試験へ置き換える変更は、hq の作り手の確かめ（機械の変異検査: 旧の verify が落とす変異 ⊆ 新の試験が落とす変異）を通したときだけ可
    - `vercel.json`（AI の枝の Preview を止める設定。`verify-codex-no-preview.js` が固定）
    - `docs/operation/codex-backlog.md`「回すもの・回さないもの」の (a)（`scripts/db/**`・`scripts/watch/**`・`scripts/lib/dbApplySql.js` 等の守りの本体）
 5. **300行5ファイル**: 1つの PR は関心事1つ、差分は300行・5ファイル以内。`src/` と `docs/` を混ぜない。超えそうなら止める。票に「変えてよいファイル」があればその外を変えない
