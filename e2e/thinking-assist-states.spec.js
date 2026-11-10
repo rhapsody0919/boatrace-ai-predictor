@@ -1150,6 +1150,7 @@ test.describe("思考アシスト: PR5 のシート・ガイド（デザイナ�
 test.describe("思考アシスト: 上部の切り替え（PR6、承認モック pr6-switch）", () => {
   test.use({ viewport: { width: 375, height: 812 } });
   test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-10-20T12:00:00+09:00"));
     await routeThinkingAssistV16(page, { preview: true });
   });
   const group = (page) => page.getByRole("group", { name: "表示" });
