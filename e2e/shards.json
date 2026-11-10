@@ -6,7 +6,22 @@
     "1: smoke 1,784 / 2: layout 3幅 1,421＋race-odds-live 359 / 3: layout 2幅 995＋thinking-assist-states 579＋race-share-text 180 / 4: 10本 1,637 / 5: 残り 約1,670"
   ],
   "shards": [
-    { "specs": ["smoke.spec.js"] },
+    {
+      "specs": [
+        "smoke.spec.js",
+        "smoke/analysis-1.spec.js",
+        "smoke/analysis-2.spec.js",
+        "smoke/articles.spec.js",
+        "smoke/contrast.spec.js",
+        "smoke/guides.spec.js",
+        "smoke/holmes.spec.js",
+        "smoke/home.spec.js",
+        "smoke/i18n.spec.js",
+        "smoke/racers.spec.js",
+        "smoke/races-results.spec.js",
+        "smoke/venues.spec.js"
+      ]
+    },
     {
       "specs": ["layout.spec.js", "race-odds-live.spec.js"],
       "projects": ["layout-mobile", "layout-tablet", "layout-laptop", "smoke"]
