@@ -8,12 +8,43 @@
   "shards": [
     { "specs": ["smoke.spec.js"] },
     {
-      "specs": ["layout.spec.js", "race-odds-live.spec.js"],
+      "specs": [
+        "layout/admin-layout.spec.js",
+        "layout/all-pages-layout.spec.js",
+        "layout/articles-layout.spec.js",
+        "layout/hit-races-layout.spec.js",
+        "layout/home-layout.spec.js",
+        "layout/hscroll-layout.spec.js",
+        "layout/race-detail-1-layout.spec.js",
+        "layout/race-detail-2-layout.spec.js",
+        "layout/race-detail-before-info-layout.spec.js",
+        "layout/race-detail-meet-layout.spec.js",
+        "layout/race-detail-pattern-rate-layout.spec.js",
+        "layout/sonar-layout.spec.js",
+        "layout/thinking-assist-layout.spec.js",
+        "layout/today-layout.spec.js",
+        "layout/venues-layout.spec.js",
+        "race-odds-live.spec.js"
+      ],
       "projects": ["layout-mobile", "layout-tablet", "layout-laptop", "smoke"]
     },
     {
       "specs": [
-        "layout.spec.js",
+        "layout/admin-layout.spec.js",
+        "layout/all-pages-layout.spec.js",
+        "layout/articles-layout.spec.js",
+        "layout/hit-races-layout.spec.js",
+        "layout/home-layout.spec.js",
+        "layout/hscroll-layout.spec.js",
+        "layout/race-detail-1-layout.spec.js",
+        "layout/race-detail-2-layout.spec.js",
+        "layout/race-detail-before-info-layout.spec.js",
+        "layout/race-detail-meet-layout.spec.js",
+        "layout/race-detail-pattern-rate-layout.spec.js",
+        "layout/sonar-layout.spec.js",
+        "layout/thinking-assist-layout.spec.js",
+        "layout/today-layout.spec.js",
+        "layout/venues-layout.spec.js",
         "thinking-assist-states.spec.js",
         "race-share-text.spec.js"
       ],
