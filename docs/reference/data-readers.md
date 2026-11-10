@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1707 |
+| 読んだファイル | 1708 |
 | 読み書きのあるファイル | 272 |
 | 表の読み手（箇所） | 991 |
 | 表の書き手（箇所） | 189 |
@@ -1303,7 +1303,7 @@
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:358` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:64` select(helper:fetchAll)
-  - `scripts/maintenance/verify-bot-race-function.js:801` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
+  - `scripts/maintenance/verify-bot-race-function.js:802` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
   - `src/services/racerService.js:86` select [end_date, start_date, venue_code]
   - `src/services/supabaseDataService.js:1421` select [end_date, start_date, venue_code]
   - `src/services/supabaseDataService.js:1447` select [end_date, grade, start_date, title, venue_code]
