@@ -525,6 +525,14 @@
     "accept": "Accept",
     "reject": "Reject"
   },
+  "contactPage": {
+    "formTitle": "Contact form"
+  },
+  "share": {
+    "x": "Share on X",
+    "facebook": "Share on Facebook",
+    "line": "Share on LINE"
+  },
   "footer": {
     "blog": "Blog",
     "operator": "Operator",

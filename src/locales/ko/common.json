@@ -520,6 +520,14 @@
     "accept": "동의",
     "reject": "거부"
   },
+  "contactPage": {
+    "formTitle": "문의 양식"
+  },
+  "share": {
+    "x": "X에 공유하기",
+    "facebook": "Facebook에 공유하기",
+    "line": "LINE에 공유하기"
+  },
   "footer": {
     "blog": "블로그",
     "operator": "운영자",

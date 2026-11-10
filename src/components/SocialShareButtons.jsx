@@ -6,6 +6,7 @@ import {
     FacebookIcon,
     LineIcon
 } from 'react-share';
+import { useTranslation } from 'react-i18next';
 import './SocialShareButtons.css';
 import { trackEvent } from '../utils/analytics';
 import { raceShareEventOf } from '../utils/shareEvents';
@@ -20,6 +21,7 @@ export const SocialShareButtons = ({
     raceId = null,
     shareKind = null
 }) => {
+    const { t } = useTranslation();
     const track = (channel) => () => {
         const ev = raceShareEventOf({ raceId, channel, kind: shareKind });
         if (ev) trackEvent(ev.name, ev.params);
@@ -39,6 +41,7 @@ export const SocialShareButtons = ({
                 title={title}
                 hashtags={hashtags}
                 className="social-share-button"
+                aria-label={t('share.x')}
                 onClick={track('x')}
             >
                 <XIcon size={size} round />
@@ -49,6 +52,7 @@ export const SocialShareButtons = ({
                 quote={title}
                 hashtag={`#${hashtags[0]}`}
                 className="social-share-button"
+                aria-label={t('share.facebook')}
                 onClick={track('facebook')}
             >
                 <FacebookIcon size={size} round />
@@ -57,6 +61,7 @@ export const SocialShareButtons = ({
             <LineShareButton
                 url={lineTitle ? `${lineTitle}\n${shareUrl}` : shareUrl}
                 className="social-share-button"
+                aria-label={t('share.line')}
                 onClick={track('line')}
             >
                 <LineIcon size={size} round />
