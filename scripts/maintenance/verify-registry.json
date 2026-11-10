@@ -1762,6 +1762,11 @@
       "guards": "BOA-969: 変異の一時ファイル除外、stat/readdir/read の ENOENT と他のエラーの区別、verify 2本への接続"
     },
     {
+      "script": "verify-split-data-layer.js",
+      "tier": "ci",
+      "guards": "データ層の振り分けスクリプト（scripts/maintenance/split-data-layer.mjs・scripts/maintenance/splitDataLayer/、BOA-1432 RA02a、hq の設計図 drafts/ryujin-target-architecture-20261110.md §3）の変換: メソッド→export の関数（本体の字のまま）・this.X→X・上の単位の領域（1つの領域だけが使えばその領域、ほかは core）・影の名前を取り違えない・殻（短い形・再 export・使わない import を外す）・何回かに分けて回す・委ねのメソッド・400行の手前で次のファイル・ファイルの間の import は後ろ→前だけ・止める場合（表に無い・既に移した・core を最初に入れない・まだ移していない領域・domain-direct・this のほかの使い方）・AST hash"
+    },
+    {
       "script": "verify-st-consideration.js",
       "tier": "ci",
       "guards": "BOA-1031: ST考察の4純関数、Fと欠損の除外・同順位・内側最速、安定/出遅/抜出の整数比較の境界と母数、ヒストグラム、履歴の逆順と入力不変"
