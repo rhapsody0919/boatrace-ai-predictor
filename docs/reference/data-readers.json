@@ -7,7 +7,7 @@
     "rpcs": 68,
     "sourceFiles": 1717,
     "filesWithAccess": 272,
-    "tableReaders": 991,
+    "tableReaders": 992,
     "tableWriters": 189,
     "rpcCallers": 51,
     "nameMentions": 232,
@@ -17331,12 +17331,19 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-live-api-key.js:23",
+          "ref": "scripts/maintenance/verify-e2e-live-api-key.js:32",
           "op": "rest",
           "via": "rest",
           "columns": [
             "*"
           ],
+          "test": true
+        },
+        {
+          "ref": "scripts/maintenance/verify-e2e-live-api-key.js:33",
+          "op": "rest",
+          "via": "rest",
+          "columns": [],
           "test": true
         },
         {
