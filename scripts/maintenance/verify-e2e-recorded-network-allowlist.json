@@ -23,7 +23,7 @@
     },
     {
       "file": "e2e/fixtures.js",
-      "code": "route.fetch({",
+      "code": "route.fetch(keyedFetchOptions(request, request.url())),",
       "reason": "record モードで context.route から本番の実応答を取って録画に書き出す fixtures.js 自身の実装（本番の /api/ には合言葉を付ける、BOA-1436）"
     },
     {

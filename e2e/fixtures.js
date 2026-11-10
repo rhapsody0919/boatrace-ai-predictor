@@ -319,6 +319,17 @@ async function recordThrough(request, fetchResponse) {
 }
 
 /**
+ * route.fetch の options に、本番の /api/ の合言葉（BOA-1110）を足す（live・record、BOA-1436）。
+ * 付けない要求（/rest/v1・本番以外の host・replay）は options をそのまま返す。route.fetch の headers は
+ * 元のヘッダを丸ごと差し替え、request.headers() は cookie 等を返さないため、付けない要求のヘッダは触らない
+ */
+function keyedFetchOptions(request, url, options = {}) {
+  const base = { ...request.headers(), ...options.headers };
+  const headers = liveApiHeaders(url, base, { mode: E2E_MODE });
+  return headers === base ? options : { ...options, headers };
+}
+
+/**
  * spec の page.route で「実応答を取ってから加工する」ときに route.fetch() の代わりに使う。
  *
  * route.fetch() はブラウザの通信経路を通らずに直接ネットワークへ出るため、
@@ -338,14 +349,7 @@ export async function fetchRecorded(route, options = {}) {
   const url = options.url ?? request.url();
   // live・record は本番の /api/ の関門（BOA-1110）の合言葉を付ける（replay は変えない、BOA-1436）
   if (E2E_MODE === "live" || E2E_MODE === "record") {
-    options = {
-      ...options,
-      headers: liveApiHeaders(
-        url,
-        { ...request.headers(), ...options.headers },
-        { mode: E2E_MODE },
-      ),
-    };
+    options = keyedFetchOptions(request, url, options);
   }
   if (E2E_MODE === "live") return fromApiResponse(await route.fetch(options));
   if (E2E_MODE === "record") {
@@ -468,13 +472,9 @@ export async function applyRecording(context, testInfo) {
       const request = route.request();
       let response;
       try {
-        // 本番の /api/ へ出るので合言葉を付ける（BOA-1436。/rest/v1 には付かない）
+        // 本番の /api/ へ出るので合言葉を付ける（BOA-1436。/rest/v1 等はヘッダを変えない）
         response = await recordThrough(request, () =>
-          route.fetch({
-            headers: liveApiHeaders(request.url(), request.headers(), {
-              mode: E2E_MODE,
-            }),
-          }),
+          route.fetch(keyedFetchOptions(request, request.url())),
         );
       } catch (error) {
         // 本番側の失敗（切断・タイムアウト）は録画せず、ブラウザにも失敗として返す。

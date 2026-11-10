@@ -72,17 +72,28 @@ assert.match(
   src,
   /if \(E2E_MODE === "live"\) return fromApiResponse\(await route\.fetch\(options\)\);/,
 );
-// fetchRecorded は live・record で合言葉を付ける（BOA-1436）
+// 合言葉は keyedFetchOptions を通して付け、付けない要求はヘッダを差し替えない（cookie 等を落とさない、BOA-1436）
 assert.match(
   src,
-  /if \(E2E_MODE === "live" \|\| E2E_MODE === "record"\) \{\n\s+options = \{\n\s+\.\.\.options,\n\s+headers: liveApiHeaders\(/,
-  "fetchRecorded の live・record の枝が liveApiHeaders を通す",
+  /function keyedFetchOptions\(request, url, options = \{\}\) \{\n\s+const base = \{ \.\.\.request\.headers\(\), \.\.\.options\.headers \};\n\s+const headers = liveApiHeaders\(url, base, \{ mode: E2E_MODE \}\);\n\s+return headers === base \? options : \{ \.\.\.options, headers \};/,
+  "keyedFetchOptions が liveApiHeaders を通し、付けない要求の options を変えない",
 );
-// context.route の録画（record）も route.fetch に合言葉を付ける（BOA-1436）
+// liveApiHeaders は付けない要求で元のヘッダの物そのものを返す（keyedFetchOptions の === が頼る）
+for (const mode of [...KEY_MODES, "replay"]) {
+  assert.equal(liveApiHeaders("https://abc.supabase.co/rest/v1/x", base, { mode, env }), base);
+}
+assert.equal(liveApiHeaders(API, base, { mode: "replay", env }), base);
+// fetchRecorded は live・record で合言葉を付ける
 assert.match(
   src,
-  /recordThrough\(request, \(\) =>\s+route\.fetch\(\{\s+headers: liveApiHeaders\(request\.url\(\), request\.headers\(\), \{\s+mode: E2E_MODE,/,
-  "record の context.route が liveApiHeaders を通す",
+  /if \(E2E_MODE === "live" \|\| E2E_MODE === "record"\) \{\n\s+options = keyedFetchOptions\(request, url, options\);/,
+  "fetchRecorded の live・record の枝が keyedFetchOptions を通す",
+);
+// context.route の録画（record）も route.fetch に合言葉を付ける
+assert.match(
+  src,
+  /recordThrough\(request, \(\) =>\s+route\.fetch\(keyedFetchOptions\(request, request\.url\(\)\)\),/,
+  "record の context.route が keyedFetchOptions を通す",
 );
 assert.ok(
   !/recordThrough\(request, \(\) => route\.fetch\(\)\)/.test(src),

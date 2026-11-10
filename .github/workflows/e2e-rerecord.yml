@@ -186,6 +186,11 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
         run: |
+          # 鍵が無いと /api が全部録画から外れ、judge まで気づかない。撮る前に止める（BOA-1436）
+          if [ -z "$INTERNAL_API_KEY" ]; then
+            echo "::error::INTERNAL_API_KEY が無い（environment prod-jobs の secret）"
+            exit 1
+          fi
           set +e
           npx playwright test > record.log 2>&1
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
