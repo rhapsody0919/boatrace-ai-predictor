@@ -17,7 +17,7 @@ import {
   racerHistoryCutoff,
   toReturnRate,
 } from "../../src/utils/racerVenueBoatStats.js";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { dataLayerImportNames, dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
 
 // 1. 呼び出し側
 const service = readDataLayerSource();
@@ -27,14 +27,14 @@ assert.doesNotMatch(
   "サービス層に集計の写しが残っていない",
 );
 assert.doesNotMatch(service, /function toReturnRate\(/);
-assert.match(
-  service,
-  /import \{\s*racerHistoryCutoff,\s*toReturnRate,\s*\} from "\.\.\/utils\/racerVenueBoatStats\.js";/,
-);
-const history = service.slice(
-  service.indexOf("  getRacerRaceHistory(racerId) {"),
-  service.indexOf("  getRacerBoatReturnRate(racerId) {"),
-);
+assert.deepEqual(dataLayerImportNames("../utils/racerVenueBoatStats.js", service), [
+  "racerHistoryCutoff",
+  "toReturnRate",
+]);
+// 殻のメソッドの形では、旧と同じく次のメソッド getRacerBoatReturnRate の頭まで
+const history = dataLayerMethod("getRacerRaceHistory", {
+  until: "  getRacerBoatReturnRate(racerId) {",
+});
 assert.match(
   history,
   /fetchRacerEntriesSince\(\s*racerId,\s*"race_id, boat_number",\s*racerHistoryCutoff\(\),?\s*\)/,

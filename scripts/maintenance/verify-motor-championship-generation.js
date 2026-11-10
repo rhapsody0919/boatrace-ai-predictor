@@ -26,7 +26,7 @@ import {
   currentMotorGenerationStart,
   isInMotorGeneration,
 } from "../../src/utils/motorGeneration.js";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
 
 const failures = [];
 const check = (label, ok) => {
@@ -70,10 +70,9 @@ check(
 
 // 3. サービス層が世代の絞り込みを通っていること
 const src = readDataLayerSource();
-// 引数が増えて Prettier で改行されても見つかるよう、空白を挟んで探す
-const begin = src.search(/getVenueMotorChampionshipHistory\(\s*venueCode/);
-const end = src.indexOf("\n  },\n", begin);
-const body = begin >= 0 && end > begin ? src.slice(begin, end) : "";
+// 殻のメソッドでも移した関数でも、名前から終わりまで（頭の字下げ・export は照らさない）
+const method = dataLayerMethod("getVenueMotorChampionshipHistory");
+const body = method.slice(method.indexOf("getVenueMotorChampionshipHistory("));
 check("getVenueMotorChampionshipHistory が見つかる", body.length > 0);
 // 使用開始日の取得は枠番別成績（BOA-301）と共通の getMotorGenerationStart に寄せた
 const helperBegin = src.indexOf("async function getMotorGenerationStart(");

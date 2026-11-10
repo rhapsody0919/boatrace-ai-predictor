@@ -21,7 +21,7 @@ import {
 } from "../../src/utils/meetPageModel.js";
 
 import { readFileSync } from "node:fs";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { dataLayerMethod } from "./dataLayerSource.js";
 import { transformSync } from "esbuild";
 
 const failures = [];
@@ -284,14 +284,16 @@ check(
 );
 
 // 取得関数の本体をローカルの応答だけで実行し、指定日のグレードの受け渡しも検査する。
-const serviceSource = readDataLayerSource();
-const methodStart = serviceSource.indexOf("  async getMeetPage(");
-const bodyStart = serviceSource.indexOf("{", methodStart) + 1;
-const bodyEnd = serviceSource.indexOf("    // 予選中で公式の表があれば", bodyStart);
+const meetPageMethod = dataLayerMethod("getMeetPage");
+const bodyStart = meetPageMethod.indexOf("{") + 1;
+const bodyEnd = meetPageMethod.indexOf("    // 予選中で公式の表があれば", bodyStart);
+if (bodyEnd < 0) {
+  throw new Error("getMeetPage の本文か、切り出しの印の注釈「予選中で公式の表があれば」が見つからない");
+}
 const getMeetPage = new (Object.getPrototypeOf(async function () {}).constructor)(
   "supabase", "meetDaysOf", "meetPageState", "seriesDayByDate", "isRaceCancelled",
   "venueCode", "startDate", "today",
-  serviceSource.slice(bodyStart, bodyEnd),
+  meetPageMethod.slice(bodyStart, bodyEnd),
 );
 for (const [label, races, expected] of [
   ["指定日の一般戦", [{ race_id: id(middleStart, 1), race_grade: "ippan" }], "outOfScope"],

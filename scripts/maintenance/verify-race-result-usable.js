@@ -5,7 +5,7 @@ import {
   isUsableRaceResult,
   isNoRaceResult,
 } from "../../src/utils/raceResultUsable.js";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { dataLayerImportNames, readDataLayerSource } from "./dataLayerSource.js";
 
 const cases = [
   [null, false, false],
@@ -22,8 +22,8 @@ for (const [result, usable, noRace] of cases) {
 
 const service = readDataLayerSource();
 assert.doesNotMatch(service, /function\s+(?:isUsableRaceResult|isNoRaceResult)\s*\(/);
-assert.match(
-  service,
-  /import\s*\{\s*isUsableRaceResult,\s*isNoRaceResult,?\s*\}\s*from\s*["']\.\.\/utils\/raceResultUsable\.js["']/,
-);
+assert.deepEqual(dataLayerImportNames("../utils/raceResultUsable.js", service), [
+  "isNoRaceResult",
+  "isUsableRaceResult",
+]);
 console.log("✅ raceResultUsable: 5入力・サービスのimportを確認");

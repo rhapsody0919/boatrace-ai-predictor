@@ -17,7 +17,7 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
 import {
   fetchAllInChunks,
   fetchAllPages,
@@ -204,11 +204,11 @@ await check("値が無い: 要求を送らず空配列", async () => {
 // --- B. 静的な検査 ---
 const source = readDataLayerSource();
 
+// 殻のメソッドの形では、旧と同じく次の1行の頭のメソッドの前まで（頭の改行も旧のまま付ける）
 function methodBody(name) {
-  const start = source.indexOf(`\n  ${name}(`);
-  assert.ok(start >= 0, `${name} が見つからない`);
-  const next = source.slice(start + 1).search(/\n {2}[a-zA-Z]+\([^)]*\) \{/);
-  return source.slice(start, next < 0 ? undefined : start + 1 + next);
+  const body = dataLayerMethod(name, { until: /\n {2}[a-zA-Z]+\([^)]*\) \{/ });
+  assert.ok(body, `${name} が見つからない`);
+  return `\n${body}`;
 }
 
 for (const name of [
