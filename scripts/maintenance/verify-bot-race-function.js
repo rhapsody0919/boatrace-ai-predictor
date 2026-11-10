@@ -17,14 +17,97 @@
  * 4. 本日（JST）の id だけ。過去・未来・形の違う id・範囲外の会場とレース番号は 404。言語は en・zh-TW・ko だけ、
  *    ja の関数は接頭辞なし・言語版の関数は接頭辞ありだけを受ける
  * 5. 材料が取れない・壊れた・0件 → 503・no-store。材料は取れたがその id が無い → 404。60秒の使い回し
- * 6. 人のレース詳細（RaceDetailPage.jsx）が同じ関数を使い続けていること、vercel.json で syd1・edge でないこと
+ * 6. vercel.json で syd1・edge でないこと（設定の値なので本文を読む）
+ * 9. 人のレース詳細がボットと同じ関数で同じ物を出すこと（BOA-1407。本文の正規表現から描画の試験へ置き換え）:
+ *    RaceDetailPage を jsdom に描き（scripts/lib/renderJsx.js の module hooks、supabase は偽のクライアント、
+ *    /api/predictions は差し替えた fetch）、同じ材料・同じ時計のボットの HTML と、見出し・title・description・canonical・
+ *    パンくず・一覧へのリンク・帯の /race/ と節のリンク・出走6艇の /racer/ を比べる。さらに共有の関数
+ *    （raceDetailHeading.js の4つ・meetPageModel.js の needsMeetSeries・meetLinkStartDateOf・seriesCoveringDate・
+ *    raceEntrants.js の entrantRowsOf）の戻り値を hook で差し替え、画面とサービス層（getSeriesOfDate）の出力が
+ *    差し替えた値に従うことを見る（同じ値を出す写しを持っても落ちる）
  */
 process.env.TZ = "UTC";
 
 import { readFileSync } from "node:fs";
+import { register } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDataLayerSource } from "./dataLayerSource.js";
+
+// §9 の描画のため、src/ の .jsx・.js を renderJsx の module hooks で読む。その上に2つの差し替えを重ねる
+// （後に登録した hook が先に呼ばれ、nextResolve で renderJsx の拡張子の補いを通った後の URL を見る）:
+// - src/services/supabaseClient.js → 偽のクライアント（globalThis[FAKE_KEY]）
+// - 共有の関数のファイル → 本物を ?real で読み、名前の関数だけを globalThis[SPY_KEY] を通す包みにした物
+//   （ボットも画面も同じ包みを通る。既定は本物をそのまま呼ぶ）
+const FAKE_KEY = "__verifyBotRaceSupabase";
+const SPY_KEY = "__verifyBotRaceSpy";
+const SPIED = {
+  "/src/utils/raceDetailHeading.js": [
+    "getRaceDetailHeading",
+    "getRaceDetailMeta",
+    "getRaceDetailBreadcrumbItems",
+    "getRaceListLink",
+  ],
+  "/src/utils/meetPageModel.js": [
+    "needsMeetSeries",
+    "meetLinkStartDateOf",
+    "seriesCoveringDate",
+  ],
+  "/src/utils/raceEntrants.js": ["entrantRowsOf"],
+};
+const HOOKS = `
+const SPIED = ${JSON.stringify(SPIED)};
+const dataUrl = (src) => "data:text/javascript," + encodeURIComponent(src);
+export async function resolve(specifier, context, nextResolve) {
+  const resolved = await nextResolve(specifier, context);
+  const url = resolved.url;
+  if (!url.startsWith("file:")) return resolved;
+  if (url.endsWith("/src/services/supabaseClient.js")) {
+    return { url: dataUrl("export const supabase = globalThis.${FAKE_KEY};"), shortCircuit: true };
+  }
+  for (const [suffix, names] of Object.entries(SPIED)) {
+    if (!url.endsWith(suffix)) continue;
+    const real = JSON.stringify(url + "?real");
+    const wrappers = names.map(
+      (n) => "export function " + n + "(...a) { const s = globalThis.${SPY_KEY}; return s ? s.call(" +
+        JSON.stringify(n) + ", real." + n + ", a) : real." + n + "(...a); }",
+    );
+    return {
+      url: dataUrl(["import * as real from " + real + ";", "export * from " + real + ";", ...wrappers].join("\\n")),
+      shortCircuit: true,
+    };
+  }
+  return resolved;
+}
+// src/data/blogPosts*.js 等の import.meta.glob を使うファイルは、import.meta.env が無いときの Node の分岐（fs で読む）を持つ。
+// renderJsx は import.meta.env を定めて変換するので Vite の分岐へ入って落ちる。こうしたファイルだけ変換せずに読む
+export async function load(url, context, nextLoad) {
+  if (url.startsWith("file:") && url.includes("/src/") && url.endsWith(".js")) {
+    const raw = await nextLoad(url + "?raw", { ...context, format: "module" });
+    if (String(raw.source).includes("import.meta.glob(")) {
+      return { format: "module", source: raw.source, shortCircuit: true };
+    }
+  }
+  return nextLoad(url, context);
+}
+`;
+register(new URL("../lib/renderJsx.js", import.meta.url));
+register(`data:text/javascript,${encodeURIComponent(HOOKS)}`);
+
+/** 共有の関数の呼び出しを数え、overrides[name] があれば (本物, ...引数) で代わりに呼ぶ */
+const spy = {
+  overrides: {},
+  calls: {},
+  call(name, real, args) {
+    (this.calls[name] ??= []).push(args);
+    const override = this.overrides[name];
+    return override ? override(real, ...args) : real(...args);
+  },
+  reset() {
+    this.overrides = {};
+    this.calls = {};
+  },
+};
+globalThis[SPY_KEY] = spy;
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -155,7 +238,12 @@ const tJa = await getLocaleT("ja");
 // BOA-1200: 同じレースの状態だけを変えて4言語のメタを確認する。
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const t = await getLocaleT(lang);
-  const key = { raceId: "2026-10-12-01-12", venueCode: 1, raceNo: 12, date: "2026-10-12" };
+  const key = {
+    raceId: "2026-10-12-01-12",
+    venueCode: 1,
+    raceNo: 12,
+    date: "2026-10-12",
+  };
   const titles = [];
   for (const [state, suffix] of [
     [{}, ""],
@@ -165,19 +253,43 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   ]) {
     const meta = getRaceDetailMeta(t, key, lang, state);
     const baseline = getRaceDetailMeta(t, key, lang);
-    const params = { venue: t("venues.1"), race: 12, date: formatDateLocalized(key.date, lang) };
-    check(`${lang} title ${suffix}`, meta.title, t(`raceDetailPage.metaTitle${suffix}`, params));
-    check(`${lang} description ${suffix}`, meta.description, t(`raceDetailPage.metaDescription${suffix}`, params));
+    const params = {
+      venue: t("venues.1"),
+      race: 12,
+      date: formatDateLocalized(key.date, lang),
+    };
+    check(
+      `${lang} title ${suffix}`,
+      meta.title,
+      t(`raceDetailPage.metaTitle${suffix}`, params),
+    );
+    check(
+      `${lang} description ${suffix}`,
+      meta.description,
+      t(`raceDetailPage.metaDescription${suffix}`, params),
+    );
     check(`${lang} canonical ${suffix}`, meta.canonical, baseline.canonical);
     const json = fresh();
     const race = json.races.find((r) => r.raceId === key.raceId);
     race.result = state.finished ? { finished: true, rank1: 1 } : null;
     race.cancellationStatus = state.cancelled ? "confirmed" : null;
-    const { res } = await call(`/api/bot-page/${lang === "ja" ? "" : lang + "/"}race/${key.raceId}`, {
-      json, langMode: lang === "ja" ? "ja" : "prefixed",
-    });
-    check(`${lang} bot title ${suffix}`, decode(attr(res.body, /<title>([^<]*)<\/title>/)), meta.title);
-    check(`${lang} bot description ${suffix}`, decode(attr(res.body, /<meta name="description" content="([^"]*)"/)), meta.description);
+    const { res } = await call(
+      `/api/bot-page/${lang === "ja" ? "" : lang + "/"}race/${key.raceId}`,
+      {
+        json,
+        langMode: lang === "ja" ? "ja" : "prefixed",
+      },
+    );
+    check(
+      `${lang} bot title ${suffix}`,
+      decode(attr(res.body, /<title>([^<]*)<\/title>/)),
+      meta.title,
+    );
+    check(
+      `${lang} bot description ${suffix}`,
+      decode(attr(res.body, /<meta name="description" content="([^"]*)"/)),
+      meta.description,
+    );
     titles.push(meta.title);
   }
   check(`${lang} 3状態のtitle`, new Set(titles).size, 3);
@@ -482,26 +594,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   check("POST: 405", post.res.statusCode, 405);
 }
 
-// ---- 6. 人の画面と同じ関数・配置 ----
+// ---- 6. 配置（vercel.json の値。設定なので本文を読む） ----
 {
-  const page = read("src/pages/RaceDetailPage.jsx");
-  for (const fn of [
-    "getRaceDetailHeading",
-    "getRaceDetailMeta",
-    "getRaceDetailBreadcrumbItems",
-    "getRaceListLink",
-  ]) {
-    check(
-      `RaceDetailPage.jsx が ${fn} を使う`,
-      new RegExp(`\\b${fn}\\(`).test(page),
-      true,
-    );
-  }
-  check(
-    "RaceDetailPage.jsx に見出しの組み立ての別実装が残っていない",
-    /function getStageChip|function getSeriesDayLabel/.test(page),
-    false,
-  );
   const vercel = JSON.parse(read("vercel.json"));
   check(
     "vercel.json: syd1",
@@ -760,22 +854,6 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     [racerLinks(cRes.res.body).length, raceLinks(cRes.res.body).length],
     [0, 12],
   );
-
-  // 人の画面が同じ関数を使う（二重実装しない）
-  const strip = read("src/components/race/RaceNumberStrip.jsx");
-  const summary = read("src/components/race/RaceEntrantsSummary.jsx");
-  const service = readDataLayerSource();
-  check(
-    "人の帯・出走6艇・節の取得が同じ関数を使う",
-    [
-      /\bneedsMeetSeries\(/.test(strip),
-      /\bmeetLinkStartDateOf\(/.test(strip),
-      /\bentrantRowsOf\(/.test(summary),
-      /\bseriesCoveringDate\(/.test(service),
-      /SERIES_POSTPONE_TOLERANCE_DAYS\s*=/.test(service),
-    ],
-    [true, true, true, true, false],
-  );
 }
 
 // ---- 8. 節（race_series）の取得 ----
@@ -831,6 +909,573 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   check("節: 環境変数が無いと SeriesFetchError", noEnv, "SeriesFetchError");
 }
 
+// ---- 9. 人のレース詳細がボットと同じ関数で同じ物を出す（BOA-1407。描画の試験） ----
+{
+  // サービス層のキャッシュ・取得の console.log は検査の出力に混ぜない（§9 の終わりで戻す）
+  const sectionLog = console.log;
+  console.log = () => {};
+  const { JSDOM } = await import("jsdom");
+  const dom = new JSDOM(
+    "<!doctype html><html><head></head><body></body></html>",
+    // requestAnimationFrame を持たせる（タブの部品が使う）
+    { url: "http://localhost/", pretendToBeVisual: true },
+  );
+  const { window } = dom;
+  for (const key of [
+    "window",
+    "document",
+    "navigator",
+    "HTMLElement",
+    "Node",
+    "Event",
+    "MouseEvent",
+    "getComputedStyle",
+    "localStorage",
+    "sessionStorage",
+    "requestAnimationFrame",
+    "cancelAnimationFrame",
+  ]) {
+    const value = key === "window" ? window : window[key];
+    if (value !== undefined)
+      Object.defineProperty(globalThis, key, {
+        value,
+        configurable: true,
+        writable: true,
+      });
+  }
+  window.scrollTo = () => {};
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+  // 時計: 画面は Date で「本日（JST）」を決める。ボットの now と同じ時刻に止める
+  const RealDate = Date;
+  let clock = NOW;
+  globalThis.Date = class extends RealDate {
+    constructor(...args) {
+      super(...(args.length ? args : [clock]));
+    }
+    static now() {
+      return clock;
+    }
+  };
+
+  // 偽の supabase（メモリ上の表）。絞り（eq・lte・gte・lt・gt・in）・order・limit・range を表に当て、
+  // 問い合わせを calls に残す。知らない鎖の関数は素通し（race_series 以外の表は空）
+  const fake = { tables: {}, calls: [] };
+  const runQuery = (q, single) => {
+    let rows = (fake.tables[q.table] ?? []).map((r) => ({ ...r }));
+    for (const [op, col, val] of q.ops) {
+      if (op === "eq") rows = rows.filter((r) => r[col] === val);
+      else if (op === "lte") rows = rows.filter((r) => r[col] <= val);
+      else if (op === "gte") rows = rows.filter((r) => r[col] >= val);
+      else if (op === "lt") rows = rows.filter((r) => r[col] < val);
+      else if (op === "gt") rows = rows.filter((r) => r[col] > val);
+      else if (op === "in") rows = rows.filter((r) => val.includes(r[col]));
+      else if (op === "order") {
+        const dir = val?.ascending === false ? -1 : 1;
+        rows.sort((a, b) =>
+          a[col] < b[col] ? -dir : a[col] > b[col] ? dir : 0,
+        );
+      } else if (op === "limit") rows = rows.slice(0, col);
+      else if (op === "range") rows = rows.slice(col, val + 1);
+    }
+    return { data: single ? (rows[0] ?? null) : rows, error: null };
+  };
+  const chainOf = (q) => {
+    const chain = new Proxy(
+      {},
+      {
+        get(_, prop) {
+          if (prop === "then")
+            return (res, rej) =>
+              Promise.resolve()
+                .then(() => runQuery(q, false))
+                .then(res, rej);
+          if (prop === "single" || prop === "maybeSingle")
+            return () => Promise.resolve().then(() => runQuery(q, true));
+          return (...args) => {
+            q.ops.push([prop, ...args]);
+            return chain;
+          };
+        },
+      },
+    );
+    return chain;
+  };
+  globalThis[FAKE_KEY] = new Proxy(
+    {},
+    {
+      get(_, prop) {
+        if (prop === "from")
+          return (table) => {
+            const q = { table, ops: [] };
+            fake.calls.push(q);
+            return chainOf(q);
+          };
+        if (prop === "rpc") return async () => ({ data: null, error: null });
+        if (prop === "then") return undefined;
+        return () => ({});
+      },
+    },
+  );
+
+  // 画面の /api/predictions は差し替えた fetch で、ボットと同じフィクスチャを返す。他の URL は 404（通信しない）
+  const pagePredictions = {};
+  globalThis.fetch = async (url) => {
+    const m = String(url).match(
+      /\/api\/predictions\/(\d{4}-\d{2}-\d{2})(\?|$)/,
+    );
+    const body = m && pagePredictions[m[1]];
+    return body
+      ? jsonResponse(body)
+      : new Response("not found", { status: 404 });
+  };
+
+  // i18n: 画面の src/i18n.js は import.meta.glob で locales を読むので、同じ locales で i18next を初めから組む
+  const i18next = (await import("i18next")).default;
+  const { initReactI18next } = await import("react-i18next");
+  const LANGS = ["ja", "en", "zh-TW", "ko"];
+  await i18next.use(initReactI18next).init({
+    resources: Object.fromEntries(
+      LANGS.map((l) => [
+        l,
+        { common: JSON.parse(read(`src/locales/${l}/common.json`)) },
+      ]),
+    ),
+    lng: "ja",
+    fallbackLng: "ja",
+    supportedLngs: LANGS,
+    defaultNS: "common",
+    ns: ["common"],
+    interpolation: { escapeValue: false },
+    react: { useSuspense: false },
+  });
+
+  const React = await import("react");
+  const { createRoot } = await import("react-dom/client");
+  const { MemoryRouter, Routes, Route } = await import("react-router-dom");
+  const { default: RaceDetailRoute } =
+    await import("../../src/pages/RaceDetailPage.jsx");
+  const { supabaseDataService, clearCache } =
+    await import("../../src/services/supabaseDataService.js");
+  // 帯が節を引いたかは、公開の入口 getSeriesOfDate の呼び出しで見る（race_series は他の部品も引くので表では見分けない）
+  const seriesOfDateCalls = [];
+  const realSeriesOfDate = supabaseDataService.getSeriesOfDate;
+  supabaseDataService.getSeriesOfDate = function (...args) {
+    seriesOfDateCalls.push(args);
+    return realSeriesOfDate.apply(this, args);
+  };
+  const h = React.createElement;
+  const act = (fn) =>
+    React.act(async () => {
+      await fn();
+    });
+  const tick = () => act(() => new Promise((r) => setTimeout(r, 5)));
+
+  const KOJIMA_G1 = {
+    venue_code: 16,
+    start_date: "2026-09-28",
+    end_date: "2026-10-03",
+    title: "児島キングカップ開設７４周年記念競走",
+    grade: "G1",
+  };
+  const fixtureOf = (d) =>
+    JSON.parse(
+      read(
+        `scripts/lib/__fixtures__/predictions-light/predictions-light-${d}.json`,
+      ),
+    );
+
+  /** 人のレース詳細を描き、比べる値を取り出す。描いた後は外す */
+  async function renderPage({ id, lang = "ja", json, series = [] }) {
+    const date = id.slice(0, 10);
+    clock = Date.parse(`${date}T08:00:00+09:00`);
+    pagePredictions[date] = json;
+    fake.tables = { race_series: series };
+    fake.calls.length = 0;
+    seriesOfDateCalls.length = 0;
+    clearCache();
+    window.localStorage.clear();
+    await i18next.changeLanguage(lang);
+    window.document.head.innerHTML = "";
+    const container = window.document.createElement("div");
+    window.document.body.appendChild(container);
+    const root = createRoot(container);
+    const prefix = lang === "ja" ? "" : `/${lang}`;
+    const origError = console.error;
+    const origLog = console.log;
+    console.error = () => {};
+    console.log = () => {};
+    try {
+      await act(() =>
+        root.render(
+          h(
+            MemoryRouter,
+            { initialEntries: [`${prefix}/race/${id}`] },
+            h(
+              Routes,
+              null,
+              h(Route, {
+                path: `${prefix}/race/:raceId`,
+                element: h(RaceDetailRoute),
+              }),
+            ),
+          ),
+        ),
+      );
+      // 予想の取得（軽量版→フル版）と節の取得が終わるまで回す
+      for (let i = 0; i < 40; i++) await tick();
+      return {
+        view: extractPage(container),
+        seriesCalls: seriesOfDateCalls.map((a) => [...a]),
+      };
+    } finally {
+      await act(() => root.unmount());
+      container.remove();
+      console.error = origError;
+      console.log = origLog;
+    }
+  }
+
+  const text = (el) => el?.textContent.replace(/\s+/g, " ").trim() ?? null;
+  const hrefOf = (el) => el?.getAttribute("href") ?? null;
+  function extractPage(container) {
+    const doc = window.document;
+    const h1 = container.querySelector(".page-header h1")?.cloneNode(true);
+    h1?.querySelector('[data-testid="race-detail-deadline"]')?.remove();
+    const strip = container.querySelector('[data-testid="race-number-strip"]');
+    return {
+      title: doc.head.querySelector("title")?.textContent ?? null,
+      description:
+        doc.head
+          .querySelector('meta[name="description"]')
+          ?.getAttribute("content") ?? null,
+      canonical: hrefOf(doc.head.querySelector('link[rel="canonical"]')),
+      crumbs: [...container.querySelectorAll(".breadcrumb-list li")].map(
+        (li) => [
+          text(li.querySelector("a, .breadcrumb-current")),
+          hrefOf(li.querySelector("a")),
+        ],
+      ),
+      kicker: [...container.querySelectorAll(".race-detail-kicker > span")].map(
+        text,
+      ),
+      h1: text(h1),
+      backLink: hrefOf(container.querySelector(".page-header a.back-link")),
+      strip: strip
+        ? [...strip.querySelectorAll("ul a")].map((a) => [
+            hrefOf(a),
+            text(a),
+            a.getAttribute("aria-current"),
+          ])
+        : null,
+      meet: strip
+        ? [
+            ...strip.querySelectorAll('[data-testid="race-number-strip-meet"]'),
+          ].map((a) => [hrefOf(a), text(a)])
+        : null,
+      entrants: [
+        ...container.querySelectorAll('[data-testid="race-entrants"] li'),
+      ].map((li) => [
+        text(li.querySelector(".rol-boat-badge")),
+        text(li.querySelector(".race-entrants__name")),
+        hrefOf(li.querySelector("a")),
+        text(li.querySelector(".race-entrants__grade")),
+      ]),
+    };
+  }
+
+  /** ボットの HTML から同じ形の値を取り出す */
+  function extractBot(html) {
+    const doc = new JSDOM(html).window.document;
+    const body = doc.body;
+    const nav = [...body.querySelectorAll("nav")];
+    const crumbNav = nav.find((n) => n.querySelector("ol"));
+    const stripNav = nav.find((n) => n.hasAttribute("aria-label"));
+    const h1 = body.querySelector("h1");
+    const entrants = body.querySelector("ul[aria-label]");
+    const kicker = body.querySelector("p");
+    return {
+      title: doc.querySelector("title")?.textContent ?? null,
+      description:
+        doc
+          .querySelector('meta[name="description"]')
+          ?.getAttribute("content") ?? null,
+      canonical: hrefOf(doc.querySelector('link[rel="canonical"]')),
+      crumbs: [...crumbNav.querySelectorAll("li")].map((li) => [
+        text(li),
+        hrefOf(li.querySelector("a")),
+      ]),
+      kicker:
+        kicker && kicker.compareDocumentPosition(h1) & 4
+          ? [...kicker.querySelectorAll("span")].map(text)
+          : [],
+      h1: text(h1),
+      backLink: hrefOf(h1.nextElementSibling),
+      strip: [...stripNav.querySelectorAll("ul a")].map((a) => [
+        hrefOf(a),
+        text(a),
+        a.getAttribute("aria-current"),
+      ]),
+      meet: [...stripNav.querySelectorAll(":scope > a")].map((a) => [
+        hrefOf(a),
+        text(a),
+      ]),
+      entrants: entrants
+        ? [...entrants.querySelectorAll("li")].map((li) => [
+            text(li.querySelector(":scope > span")),
+            text(li.querySelector("a, span[translate]")),
+            hrefOf(li.querySelector("a")),
+            text(li.querySelector(":scope > span[translate]")),
+          ])
+        : [],
+    };
+  }
+
+  /** 同じ材料・時計・節でボットの HTML を作る */
+  async function renderBot({ id, lang = "ja", json, seriesRow = null }) {
+    const date = id.slice(0, 10);
+    const { res } = await call(
+      `/api/bot-page/${lang === "ja" ? "" : `${lang}/`}race/${id}`,
+      {
+        langMode: lang === "ja" ? "ja" : "prefixed",
+        json,
+        now: () => Date.parse(`${date}T08:00:00+09:00`),
+        getSeries: async () => seriesRow,
+      },
+    );
+    check(`ボット ${lang} ${id}: 200`, res.statusCode, 200);
+    return extractBot(res.body);
+  }
+
+  // 9a. 同じ入力で人とボットが同じ物を出す
+  const json29 = fixtureOf("2026-09-29");
+  const json22 = fixtureOf("2026-09-22");
+  const json12 = fixtureOf("2026-10-12");
+  const hamaNoDay = json12.races.find(
+    (r) => r.venueCode === 6 && r.seriesDay == null,
+  );
+  const cases = [
+    {
+      label: "児島12R（G1・節のリンクあり）",
+      id: "2026-09-29-16-12",
+      json: json29,
+      series: [
+        { ...KOJIMA_G1, start_date: "2026-09-14", end_date: "2026-09-19" },
+        KOJIMA_G1,
+        { ...KOJIMA_G1, start_date: "2026-10-08", end_date: "2026-10-13" },
+      ],
+      seriesRow: KOJIMA_G1,
+      expectSeriesQuery: true,
+    },
+    {
+      label: "児島12R en",
+      id: "2026-09-29-16-12",
+      lang: "en",
+      json: json29,
+      series: [KOJIMA_G1],
+      seriesRow: KOJIMA_G1,
+      expectSeriesQuery: true,
+    },
+    {
+      label: "戸田5R（一般戦・節を引かない）",
+      id: "2026-09-22-02-05",
+      json: json22,
+      expectSeriesQuery: false,
+    },
+    {
+      label: "桐生12R（優勝戦・節タイトル）",
+      id: "2026-10-12-01-12",
+      json: json12,
+    },
+    {
+      label: "浜名湖（日目を他レースで補う）",
+      id: hamaNoDay.raceId,
+      json: json12,
+    },
+  ];
+  for (const c of cases) {
+    const page = await renderPage(c);
+    const bot = await renderBot(c);
+    check(
+      `人とボット ${c.label}: 帯と出走6艇が描かれた`,
+      [(page.view.strip ?? []).length > 1, page.view.entrants.length],
+      [true, 6],
+    );
+    for (const key of Object.keys(bot))
+      check(`人とボット ${c.label}: ${key}`, page.view[key], bot[key]);
+    if (c.expectSeriesQuery !== undefined)
+      check(
+        `人 ${c.label}: 節を引くのは G1 だけ（会場・日で）`,
+        page.seriesCalls,
+        c.expectSeriesQuery ? [[16, c.id.slice(0, 10)]] : [],
+      );
+  }
+  // 比べた値が空振りしていない（節のリンク・節タイトル・種別・日目）
+  const kojima = await renderPage(cases[0]);
+  check(
+    "人 児島12R: 節のリンクは /venue/16/meet/2026-09-28",
+    kojima.view.meet,
+    [["/venue/16/meet/2026-09-28", tJa("raceStrip.meetLink")]],
+  );
+  const kiryu = await renderPage(cases[3]);
+  check(
+    "人 桐生12R: 節タイトルと優勝戦",
+    [kiryu.view.kicker.includes("第8回日本一しょうゆ杯"), kiryu.view.h1],
+    [true, "🚤 桐生 12R 🏆 優勝戦"],
+  );
+  const hama = await renderPage(cases[4]);
+  check("人 浜名湖: 日目を補う", hama.view.h1?.endsWith("3日目"), true);
+
+  // 9b. 共有の関数の戻り値を差し替えると、人の画面とサービス層がそれに従う（同じ値の写しでは通らない）
+  const withOverride = async (overrides, fn) => {
+    spy.overrides = overrides;
+    try {
+      return await fn();
+    } finally {
+      spy.reset();
+    }
+  };
+  const SPY_HEADING = {
+    gradeConfig: { label: "SPY-G", color: "#000" },
+    seriesTitle: "SPY-節",
+    stageChip: { variant: "plain", label: "SPY-種別", isOfficial: false },
+    seriesDayLabel: "SPY-日目",
+  };
+  const heading = await withOverride(
+    { getRaceDetailHeading: () => SPY_HEADING },
+    () => renderPage(cases[0]),
+  );
+  check(
+    "人: 見出しは getRaceDetailHeading の値",
+    [heading.view.kicker, heading.view.h1],
+    [["SPY-G", "SPY-節"], "🚤 児島 12R SPY-種別 SPY-日目"],
+  );
+  const meta = await withOverride(
+    {
+      getRaceDetailMeta: () => ({
+        title: "SPY-title",
+        description: "SPY-description",
+        canonical: "https://example.invalid/spy",
+      }),
+    },
+    () => renderPage(cases[0]),
+  );
+  check(
+    "人: title・description・canonical は getRaceDetailMeta の値",
+    [meta.view.title, meta.view.description, meta.view.canonical],
+    ["SPY-title", "SPY-description", "https://example.invalid/spy"],
+  );
+  const crumbs = await withOverride(
+    {
+      getRaceDetailBreadcrumbItems: () => [
+        { name: "SPY-1", url: "/spy-1" },
+        { name: "SPY-2", url: "/spy-2" },
+      ],
+    },
+    () => renderPage(cases[0]),
+  );
+  check(
+    "人: パンくずは getRaceDetailBreadcrumbItems の値",
+    crumbs.view.crumbs,
+    [
+      ["SPY-1", "/spy-1"],
+      ["SPY-2", null],
+    ],
+  );
+  const listLink = await withOverride(
+    { getRaceListLink: () => "/spy-list" },
+    () => renderPage(cases[0]),
+  );
+  check(
+    "人: レース一覧へのリンクは getRaceListLink の値",
+    listLink.view.backLink,
+    "/spy-list",
+  );
+  const noNeed = await withOverride({ needsMeetSeries: () => false }, () =>
+    renderPage(cases[0]),
+  );
+  check(
+    "人: needsMeetSeries が false なら G1 でも節を引かずリンクも無い",
+    [noNeed.seriesCalls.length, noNeed.view.meet],
+    [0, []],
+  );
+  const need = await withOverride({ needsMeetSeries: () => true }, () =>
+    renderPage(cases[2]),
+  );
+  check(
+    "人: needsMeetSeries が true なら一般戦でも節を引く",
+    need.seriesCalls.length > 0,
+    true,
+  );
+  const meetStart = await withOverride(
+    { meetLinkStartDateOf: () => "2099-01-01" },
+    () => renderPage(cases[0]),
+  );
+  check(
+    "人: 節のリンクの初日は meetLinkStartDateOf の値",
+    meetStart.view.meet.map(([href]) => href),
+    ["/venue/16/meet/2099-01-01"],
+  );
+  const rows = await withOverride(
+    {
+      entrantRowsOf: (real, players) =>
+        real(players)
+          .slice(0, 2)
+          .map((r) => ({ ...r, name: `SPY${r.number}`, grade: "Z9" })),
+    },
+    () => renderPage(cases[0]),
+  );
+  check(
+    "人: 出走6艇の行は entrantRowsOf の値",
+    rows.view.entrants.map(([n, name, , grade]) => [n, name, grade]),
+    [
+      ["1", "SPY1", "Z9"],
+      ["2", "SPY2", "Z9"],
+    ],
+  );
+
+  // サービス層の節の取得（公開の入口 supabaseDataService.getSeriesOfDate を偽の supabase の上で呼ぶ）
+  const seriesOf = async (date) => {
+    clearCache();
+    return supabaseDataService.getSeriesOfDate(16, date);
+  };
+  fake.tables = {
+    race_series: [
+      { ...KOJIMA_G1, start_date: "2026-09-14", end_date: "2026-09-19" },
+      KOJIMA_G1,
+      { ...KOJIMA_G1, venue_code: 4, start_date: "2026-10-01" },
+    ],
+  };
+  check(
+    "サービス層: その日を含む節・順延の3日以内は同じ節・4日後は null・前の節の範囲外は null",
+    [
+      (await seriesOf("2026-09-29"))?.start_date,
+      (await seriesOf("2026-10-06"))?.start_date,
+      await seriesOf("2026-10-07"),
+      await seriesOf("2026-09-24"),
+    ],
+    ["2026-09-28", "2026-09-28", null, null],
+  );
+  const SENTINEL = { start_date: "2099-01-01", end_date: "2099-01-01" };
+  const covered = await withOverride(
+    {
+      seriesCoveringDate: (real, latest, date) =>
+        latest?.start_date === "2026-09-28" && date === "2026-10-07"
+          ? SENTINEL
+          : real(latest, date),
+    },
+    () => seriesOf("2026-10-07"),
+  );
+  check(
+    "サービス層: 節の範囲の判定は seriesCoveringDate（その日以前のいちばん新しい節とその日を渡す）",
+    covered,
+    SENTINEL,
+  );
+  delete globalThis[FAKE_KEY];
+  globalThis.Date = RealDate;
+  console.log = sectionLog;
+}
+
 if (failures.length > 0) {
   console.error(
     `❌ verify-bot-race-function: ${failures.length}件の失敗（${checked}件中）`,
@@ -839,3 +1484,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(`✅ verify-bot-race-function: ${checked}件すべて通過`);
+// 描いた画面のタイマー（締切の時計等）を待たずに終える
+process.exit(0);
