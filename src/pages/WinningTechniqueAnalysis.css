@@ -41,6 +41,7 @@
 
 @media (max-width: 480px) {
   .analysis-tab-btn {
+    min-height: 44px;
     padding: 0.5rem 0.9rem;
     font-size: 0.85rem;
   }
