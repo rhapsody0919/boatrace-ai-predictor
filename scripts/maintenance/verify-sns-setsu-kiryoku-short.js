@@ -1458,10 +1458,13 @@ test("会場のページの印（snsScreenMarkers の venue）は画面の部品
       );
     }
   } finally {
-    for (const v of views) await v.unmount();
-    for (const [k, d] of saved) {
-      if (d) Object.defineProperty(globalThis, k, d);
-      else delete globalThis[k];
+    try {
+      for (const v of views) await v.unmount();
+    } finally {
+      for (const [k, d] of saved) {
+        if (d) Object.defineProperty(globalThis, k, d);
+        else delete globalThis[k];
+      }
     }
   }
   assert.deepEqual(SCREEN_MARKERS.venue, [
