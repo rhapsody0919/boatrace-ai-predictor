@@ -2,6 +2,7 @@
 // 置換は (1) 母集団に「6艇とも出走時の級別が A1」の列 all_a1 を足して pool を all_a1 に絞る、(2) 範囲の展開を v20A1・allA1 にする、だけ。
 // 母集団・除外・進入の型・スリットの形・セル集計・tri/wt は prep8／prep8b と同じ SQL のまま。使い方: node gen_p9b.js [list のキー（空白区切り）]
 import fs from "node:fs"; import path from "node:path";
+import process from "node:process";
 const dir = path.dirname(new URL(import.meta.url).pathname);
 const rd = (f) => fs.readFileSync(path.join(dir, f), "utf8");
 const wr = (f, s) => fs.writeFileSync(path.join(dir, f), s);
