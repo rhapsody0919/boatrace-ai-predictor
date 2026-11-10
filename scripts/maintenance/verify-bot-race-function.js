@@ -24,6 +24,7 @@ process.env.TZ = "UTC";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readDataLayerSource } from "./dataLayerSource.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -763,7 +764,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   // 人の画面が同じ関数を使う（二重実装しない）
   const strip = read("src/components/race/RaceNumberStrip.jsx");
   const summary = read("src/components/race/RaceEntrantsSummary.jsx");
-  const service = read("src/services/supabaseDataService.js");
+  const service = readDataLayerSource();
   check(
     "人の帯・出走6艇・節の取得が同じ関数を使う",
     [

@@ -38,6 +38,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readDataLayerSource } from "./dataLayerSource.js";
 import {
   formatGenerationDate,
   isClippedByGeneration,
@@ -55,7 +56,7 @@ const check = (label, ok) => {
   if (!ok) failures.push(label);
 };
 
-const src = read("src/services/supabaseDataService.js");
+const src = readDataLayerSource();
 const slice0 = (text, beginMarker, endMarker) => {
   const begin = text.indexOf(beginMarker);
   const end = text.indexOf(endMarker, begin);

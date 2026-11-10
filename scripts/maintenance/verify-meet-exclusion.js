@@ -17,7 +17,7 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readDataLayerSource } from "./dataLayerSource.js";
 import { meetExclusionsOf } from "../../src/pure/meetExclusion.js";
 import * as seriesPoints from "../../src/pure/seriesPoints.js";
 import * as meetExclusionShim from "../../src/services/meetExclusion.js";
@@ -494,10 +494,7 @@ check("B12 L1の純関数はレースと艇番で結合し、重複・不明な�
 });
 
 // 旧の場所（getMeetScoreboard）が新しい関数を呼んでいること。即時関数が戻っていないこと
-const service = readFileSync(
-  new URL("../../src/services/supabaseDataService.js", import.meta.url),
-  "utf8",
-);
+const service = readDataLayerSource();
 check("C1 getMeetScoreboard は meetExclusionsOf を呼ぶ", () => {
   // 書き方（import の改行・展開の形）には縛られないよう、名前と行き先だけを見る
   assert.match(service, /from\s*["']\.\/meetExclusion\.js["']/);

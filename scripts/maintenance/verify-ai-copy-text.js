@@ -172,7 +172,7 @@ const bundled = await bundle({
       b.onLoad({ filter: /.*/, namespace: "copy-text" }, () => ({
         contents: "export const aiCopyPageUrl = () => {}; export const buildAiCopyText = ({ rows }) => rows;",
       }));
-      b.onResolve({ filter: /(?:useRaceAnalysisData|useRaceEntryFlyingRows|useCurrentMeetFlyingBoats|useSixBoatCourseStats|supabaseDataService)$/ },
+      b.onResolve({ filter: /(?:useRaceAnalysisData|useRaceEntryFlyingRows|useCurrentMeetFlyingBoats|useSixBoatCourseStats|supabaseDataService|(?:^|\/)(?:core|[A-Za-z0-9_]*Queries)[A-Za-z0-9_]*)$/ },
         (args) => ({ path: args.path, namespace: "offline" }));
       b.onLoad({ filter: /.*/, namespace: "offline" }, (args) => ({
         contents: args.path === "translation"

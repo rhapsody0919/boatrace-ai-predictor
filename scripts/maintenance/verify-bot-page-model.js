@@ -19,6 +19,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import i18next from "i18next";
+import { readDataLayerSource } from "./dataLayerSource.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -510,14 +511,15 @@ checkThrows(
 }
 
 // ---- 5. 人の画面が同じ関数を使っている ----
+const DATA_LAYER = "data-layer";
 const USES = [
   [
-    "src/services/supabaseDataService.js",
+    DATA_LAYER,
     /import \{ transformTodayRaces \} from "\.\.\/utils\/todayRaces\.js"/,
     "transformTodayRaces を todayRaces.js から import",
   ],
   [
-    "src/services/supabaseDataService.js",
+    DATA_LAYER,
     /function transformTodayRaces\(/,
     null,
   ],
@@ -549,7 +551,7 @@ const USES = [
 ];
 for (const [rel, re, label] of USES) {
   checked += 1;
-  const has = re.test(read(rel));
+  const has = re.test(rel === DATA_LAYER ? readDataLayerSource() : read(rel));
   if (label && !has)
     failures.push(`${rel}: ${label}していない（文字の組み方が二重になる）`);
   if (!label && has)
