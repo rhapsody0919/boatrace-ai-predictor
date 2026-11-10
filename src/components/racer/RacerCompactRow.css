@@ -102,3 +102,21 @@
 .racer-compact-row-detail-pair .detail-value {
   font-weight: var(--font-weight-semibold);
 }
+
+/* 375px: タップ領域44px以上・本文字13.6px以上（BOA-1414）。デスクトップ幅は変えない */
+@media (max-width: 480px) {
+  .racer-compact-row-main {
+    min-height: 2.75rem;
+  }
+
+  .racer-compact-row-chevron {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .racer-compact-row-branch,
+  .racer-compact-row-win-rate-label,
+  .racer-compact-row-detail {
+    font-size: var(--font-size-sm);
+  }
+}
