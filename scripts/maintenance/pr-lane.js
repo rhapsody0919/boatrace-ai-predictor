@@ -57,6 +57,12 @@ export function loadRules(
   });
 }
 
+/** config/pr-path-rules.json の moveOnly（移すだけの判定の from・to。無ければ undefined） */
+export function loadMoveOnly(root = SELF_ROOT) {
+  return JSON.parse(readFileSync(join(root, "config/pr-path-rules.json"), "utf8"))
+    .moveOnly;
+}
+
 const anyMatch = (patterns = [], path) =>
   patterns.some((p) => new RegExp(p).test(path));
 
@@ -176,6 +182,7 @@ export function classify({
   patches = new Map(),
   trees = [],
   rules = loadRules(),
+  moved = new Set(),
 }) {
   const changedSet = new Set(changes.map((c) => c.path));
   const hits = [];
@@ -188,6 +195,8 @@ export function classify({
       const added = status === "A";
       if (anyMatch(rule.except, path)) continue;
       if (added && anyMatch(rule.exceptAdded, path)) continue;
+      // 移すだけ（moveOnlyPaths）と分かったデータ層のファイルは、H3（数字の定義）と H9（語が新しく入る）を外す
+      if (rule.exceptMoveOnly && moved.has(path)) continue;
       const p = (rule.paths ?? []).find((re) => new RegExp(re).test(path));
       if (p) hit(rule, path, `パス ${p}`);
       const a =
@@ -243,6 +252,155 @@ export function classify({
   const order = (h) => Number(h.rule.slice(1));
   hits.sort((x, y) => order(x) - order(y) || x.file.localeCompare(y.file));
   return { lane: hits.length > 0 ? "heavy" : "light", hits };
+}
+
+// ---- 移すだけ（BOA-1433 RA02b、hq の設計図 drafts/ryujin-target-architecture-20261110.md §5.3 RA02②） ----
+// split-data-layer.mjs が supabaseDataService.js（from）から新しい core*.js・*Queries*.js（to）へ字のまま移した PR を見分ける。
+// npm の部品を使わない約束（上の hq との約束）なので構文木でなく行で比べる。スクリプトは本体の字をそのまま写すので、
+// 決まった正規化の後の行の多重集合が一致すれば、AST が同じより強い（字まで同じ）。比べ方:
+//   from の base の行 ＝ from の head の行 ＋ to の行 − 殻に新しく足した `  getX,`（委ねるだけのメソッドは base から外す）
+//   外す行: import・再 export の文（複数行も）・空行・to の頭の決まった2行の注釈
+//   正規化: 頭の `export ` を外す・字下げ2のメソッドの頭 `  [async ]getX(` → `[async ]function getX(`・`  },` → `  }`・
+//           `this.getX(` → `getX(`・注釈の行は前後の空白を外す（両側に同じく当てる）
+// 加えて、モジュールの上で呼び出しを含む初期化の行は、to の各ファイルの中で base と同じ順であること
+const MOVE_HEADER = [
+  /^\/\/ src\/services\/supabaseDataService\.js から scripts\/maintenance\/split-data-layer\.mjs で字のまま移した（領域: [A-Za-z]+）。$/,
+  /^\/\/ 本体の字下げは元のまま。手で直すときは普通の関数として直してよい$/,
+];
+const SHORTHAND = /^ {2}[A-Za-z_$][\w$]*,$/;
+const INIT_CALL = /^(?:export )?(?:const|let|var) [^=]+=.*\(/;
+
+const COMMENT = /^\s*(\/\*|\*|\/\/)/;
+const STMT_END = /;\s*(\/\/.*)?$/;
+
+/** 上の import・再 export の文（複数行も）とその直前の注釈の行（間の空行も）・空行を外した行（殻で使わなくなった import はスクリプトが注釈ごと外す） */
+export function bodyLines(text) {
+  const out = [];
+  let pending = [];
+  let inStmt = false;
+  for (const line of text.split("\n")) {
+    if (inStmt || /^(?:import\b|export \{)/.test(line)) {
+      inStmt = !STMT_END.test(line);
+      pending = [];
+    } else if (line.trim() === "") {
+      // 空行は数えない（注釈と次の文の間の空行の有無で結果を変えない）
+    } else if (COMMENT.test(line)) {
+      pending.push(line);
+    } else {
+      out.push(...pending, line);
+      pending = [];
+    }
+  }
+  return [...out, ...pending];
+}
+
+/** 移す前後で同じに数える正規化（両側に同じく当てる） */
+export function canonLine(line) {
+  const t = line
+    .replace(/\s+$/, "")
+    .replace(/^export /, "")
+    .replace(/^ {2}(async )?([A-Za-z_$][\w$]*)\(/, "$1function $2(")
+    .replace(/^ {2}\},/, "  }")
+    .replace(/\bthis\.([A-Za-z_$][\w$]*)\(/g, "$1(");
+  return COMMENT.test(t) ? t.trim() : t;
+}
+
+const tally = (lines) => {
+  const m = new Map();
+  for (const l of lines) m.set(l, (m.get(l) ?? 0) + 1);
+  return m;
+};
+const minus = (a, b) => {
+  const out = new Map(a);
+  for (const [k, n] of b) {
+    const left = (out.get(k) ?? 0) - n;
+    if (left < 0) return null;
+    if (left === 0) out.delete(k);
+    else out.set(k, left);
+  }
+  return out;
+};
+const sameTally = (a, b) =>
+  a.size === b.size && [...a].every(([k, n]) => b.get(k) === n);
+
+// 委ねるだけのメソッド（`  getG(v) {` `    return getG(v);` `  },`）のうち、殻で短い形になった物を、直前の注釈ごと base から外す
+function dropDelegations(lines, names) {
+  const out = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const m = /^ {2}(?:async )?([A-Za-z_$][\w$]*)\(([^)]*)\) \{$/.exec(lines[i]);
+    const isDelegation =
+      m &&
+      names.has(m[1]) &&
+      lines[i + 1] === `    return ${m[1]}(${m[2]});` &&
+      lines[i + 2] === "  },";
+    if (!isDelegation) {
+      out.push(lines[i]);
+      continue;
+    }
+    while (out.length > 0 && /^ {2}\S/.test(out.at(-1)) && COMMENT.test(out.at(-1))) out.pop();
+    while (out.length > 0 && /^ {3}\*/.test(out.at(-1))) out.pop();
+    while (out.length > 0 && /^ {2}\/\*\*/.test(out.at(-1))) out.pop();
+    i += 2;
+  }
+  return out;
+}
+
+// 呼び出しを含む上の初期化の行が、各 to の中で base と同じ順か
+function sameInitOrder(baseLines, toTexts) {
+  const order = baseLines.filter((l) => INIT_CALL.test(l)).map(canonLine);
+  return toTexts.every((t) => {
+    const seq = bodyLines(t)
+      .filter((l) => INIT_CALL.test(l))
+      .map(canonLine);
+    const idx = seq.map((l) => order.indexOf(l));
+    return idx.every((v, i) => v >= 0 && (i === 0 || v > idx[i - 1]));
+  });
+}
+
+/**
+ * 移すだけの PR なら、外してよいパスの集合（from と to の全部）。違えば空。
+ * @param {{from: string, to: string[]}|undefined} moveOnly config/pr-path-rules.json の moveOnly
+ * @param {{status: string, path: string}[]} changes
+ * @param {(side: "base"|"head", path: string) => string|null} readText 読めなければ null（安全側で空を返す）
+ */
+export function moveOnlyPaths(moveOnly, changes, readText) {
+  if (!moveOnly) return new Set();
+  const from = changes.filter((c) => new RegExp(moveOnly.from).test(c.path));
+  const to = changes.filter((c) => anyMatch(moveOnly.to, c.path));
+  const ok =
+    from.length === 1 &&
+    from[0].status === "M" &&
+    to.length > 0 &&
+    to.every((c) => c.status === "A");
+  if (!ok) return new Set();
+  const texts = [readText("base", from[0].path), readText("head", from[0].path)];
+  const toTexts = to.map((c) => readText("head", c.path));
+  if ([...texts, ...toTexts].some((t) => typeof t !== "string")) return new Set();
+  const [base, head] = texts.map(bodyLines);
+  // 殻に新しく足した `  getX,`（base にもある同じ形の行は数から引く。上の単位の object の中の行も同じ形なので負は 0 に）
+  const baseShort = tally(base.filter((l) => SHORTHAND.test(l)));
+  const added = new Map(
+    [...tally(head.filter((l) => SHORTHAND.test(l)))]
+      .map(([k, n]) => [k, n - (baseShort.get(k) ?? 0)])
+      .filter(([, n]) => n > 0),
+  );
+  if (added.size === 0) return new Set();
+  const names = new Set([...added.keys()].map((l) => l.trim().slice(0, -1)));
+  // 短い形の名前ごとに、base にそのメソッドの頭があり head に無い（殻に名前だけ足す PR を通さない）
+  const headOf = (lines, n) =>
+    lines.some((l) => new RegExp(`^ {2}(?:async )?${n.replace(/\$/g, "\\$")}\\(`).test(l));
+  if ([...names].some((n) => !headOf(base, n) || headOf(head, n))) return new Set();
+  const toLines = toTexts.flatMap((t) =>
+    bodyLines(t).filter((l, i) => !(i < 2 && MOVE_HEADER[i].test(l))),
+  );
+  const right = minus(
+    tally([...head, ...toLines].map(canonLine)),
+    new Map([...added].map(([k, n]) => [canonLine(k), n])),
+  );
+  const left = tally(dropDelegations(base, names).map(canonLine));
+  if (!right || !sameTally(left, right)) return new Set();
+  if (!sameInitOrder(base, toTexts)) return new Set();
+  return new Set([from[0].path, ...to.map((c) => c.path)]);
 }
 
 // ---- git から読む部分 ----
@@ -476,7 +634,17 @@ function classifyCommitsInner(repo, base, head) {
       : new Map();
   const needTrees = rules.some((r) => r.reachFrom);
   const trees = needTrees ? [gitTree(repo, mb), gitTree(repo, headSha)] : [];
-  const result = classify({ changes, patches, trees, rules });
+  const readText = (side, p) => {
+    try {
+      return git(repo, ["show", `${side === "base" ? mb : headSha}:${p}`], {
+        encoding: "utf8",
+      });
+    } catch {
+      return null; // 読めなければ移すだけと見なさない（安全側）
+    }
+  };
+  const moved = moveOnlyPaths(loadMoveOnly(), changes, readText);
+  const result = classify({ changes, patches, trees, rules, moved });
   remaining(); // 辿り終えた時点で上限を超えていたら判定に使わない
   // light なのに hits がある出力は出さない（hq は矛盾として heavy に扱う。classify は hits の有無で lane を決めるので起きない）
   if ((result.lane === "light") !== (result.hits.length === 0))
