@@ -354,6 +354,11 @@
       "guards": "本番 DB の自動の適用の突き合わせ（scripts/lib/dbReconcile.js・scripts/db/db-reconcile.js、ADR-0097）。台帳の状態を先頭の語で読む、5点の検査（切り替えより後に squash で足された・merge_commit_sha の一致・blob が PR の head と今の master で同じ・審査の App の head SHA への承認・同じコミットで足した「未適用」の行・runbook が無い）がそれぞれ単独で落とす、番号の順に1本だけ選び通らなければ止めて後ろを当てない、db-apply の他の run が動いている・待っているときは何もしない"
     },
     {
+      "script": "verify-dependency-rules.js",
+      "tier": "ci",
+      "guards": "依存の向きの関所の部品（dependency-rules.cjs の規則10個、lintBaselines.js の純関数: データ層の和の中で関数が移っても緑・基準に無い辺は赤・基準の行が増えたら赤・src/utils の新規ファイルは赤・facade-frozen を error にする条件、BOA-1428）"
+    },
+    {
       "script": "verify-deploy-hook-policy.js",
       "tier": "ci",
       "guards": "Deploy Hookを叩く条件の判定（scripts/lib/deployHookPolicy.js、BOA-361）"
