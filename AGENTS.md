@@ -72,7 +72,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
 ## PR の決まり
 
 - コミットは `<type>: <日本語の説明>`。type は `feat`・`fix`・`content`・`refactor`・`docs`・`chore`。Claude の署名（`Co-Authored-By: Claude`）は付いてよい
-- 変更には再現の試験か検査を付け、CI が呼ぶ場所に置く: 画面の動きは `e2e/`、レイアウトは `e2e/layout.spec.js`、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（`verify-registry.json` に登録。未登録だと `verify:ci` が落ちる）。`scripts/tests/` 等 CI が呼ばない所に置かない
+- 変更には再現の試験か検査を付け、CI が呼ぶ場所に置く: 画面の動きは `e2e/`、レイアウトは `e2e/layout/` の該当ページの `*-layout.spec.js`（名に `layout.spec.js` が無いと layout-* の幅で走らない）、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（`verify-registry.json` に登録。未登録だと `verify:ci` が落ちる）。`scripts/tests/` 等 CI が呼ばない所に置かない
 - マイグレーション・ADR の番号は予約しない。PR を作るときに `origin/master` の最大＋1。CI の `verify:migration-numbers`・`verify:adr-numbers` で落ちたら付け直す
 - 新しいページ・分析タブ・主要な機能には `docs/design/{slug}/content-index.json`（対象外なら `not_applicable: true`）
 - 必須の check は `verify`（`npm run verify` と本番の build）・`ml-tests`・`e2e`。落ちたら直して push する
