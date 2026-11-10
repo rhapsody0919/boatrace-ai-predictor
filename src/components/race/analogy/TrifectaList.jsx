@@ -9,7 +9,7 @@ import {
 } from "../../../utils/analogyAggregate";
 import { SCOPE_FLOW } from "./analogyColors";
 
-function Row({ combo, count, total, max, onPick, picked = false }) {
+function Row({ combo, count, total, max, onPick, picked = false, minPct = 0 }) {
   const { t } = useTranslation();
   const body = (
     <>
@@ -24,7 +24,7 @@ function Row({ combo, count, total, max, onPick, picked = false }) {
       <span className="af-trk">
         <span
           className="af-trk-f"
-          style={{ width: `${(count / max) * 100}%` }}
+          style={{ width: `${Math.max((count / max) * 100, minPct)}%` }}
         />
       </span>
       <span className="af-bar-v">
@@ -136,14 +136,15 @@ export default function TrifectaList({
     return (
       <p className="af-foot">{t("aiPredictionTab.analogy.similar.none")}</p>
     );
-  const max = all[0][1];
+  // 棒の長さは全体に対する割合（全幅＝100%）。見えなくならない最小の幅だけ付ける
   const row = ([combo, c]) => (
     <Row
       key={combo.join("-")}
       combo={combo}
       count={c}
       total={total}
-      max={max}
+      max={total}
+      minPct={2}
       onPick={onPick}
       picked={picked === combo.join("-")}
     />
