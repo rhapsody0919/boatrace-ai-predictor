@@ -34,7 +34,7 @@ for (const key of KEYS) {
   if (s2 !== 2 * n || s3 < 3 * n) fail(`2着以内・3着以内の合計が合わない ${key}`);
   const extraTop3 = s3 - 3 * n; // kb の3着同着（finish_rank=3 が2艇）。母集団の定義（120）は3着同着を除いていない
   for (let k = 0; k < 6; k++) { const ex = k === 0 ? n - r1[0] : n - r1[0] - r1[k]; if (cn[k] !== ex) fail(`比べる相手の件数 ${key} k=${k + 1}`); }
-  for (const [c, v] of Object.entries(tri)) if (!/^[1-6]{3}$/.test(c) || new Set(c).size !== 3) fail('出目の形 ' + c);
+  for (const c of Object.keys(tri)) if (!/^[1-6]{3}$/.test(c) || new Set(c).size !== 3) fail('出目の形 ' + c);
   for (let k = 0; k < 6; k++) { const v = sum(Object.entries(tri).filter(([c]) => c[0] === String(k + 1)).map(([, x]) => x)); if (v !== r1[k]) fail(`出目の1着と r1 ${key}`); }
   subsets[key] = {
     conditions: key.startsWith('1111+') ? `4条件すべて＋${{ round: 'ラウンド=yusho', grade: 'グレード=G1', motor: '1号艇のモーター帯=2（5〜6位）' }[key.slice(5)]}`

@@ -469,7 +469,7 @@ for (const [s, S] of Object.entries(out.scopes)) {
     "| 型 | n | 出現率 | 1着 1〜6 | 2着 1〜6 | 3着 1〜6 | 決まり手 | 万舟率 |",
     "|---|---|---|---|---|---|---|---|",
   );
-  for (const [et, C] of Object.entries(S.cells)) {
+  for (const C of Object.values(S.cells)) {
     const o = C.forms.any;
     P(
       `| ${C.label} | ${o.n} | ${f3(o.n / e.n_ok)} | ${o.first_boat.join(", ")} | ${o.second_boat.join(", ")} | ${o.third_boat.join(", ")} | ${Object.values(o.technique).join(", ")} | ${ci(o.manshu_rate)} |`,
