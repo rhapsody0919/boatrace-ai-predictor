@@ -199,15 +199,21 @@ assert.ok(
 clearCache();
 fake.calls.length = 0;
 const history = await supabaseDataService.getRacerRaceHistory(RACER);
-const cutoffAtEnd = racerHistoryCutoff();
+// 呼ぶ間に racerHistoryCutoff の日が変わると、窓の端の走（R.edge）の期待が崩れる（数ミリ秒の境だけ）。揺れでなく分かる文で止める
+assert.equal(
+  racerHistoryCutoff(),
+  cutoffAtStart,
+  "実行の間に日の境をまたいだ（もう一度回せば通る）",
+);
 const entryQueries = fake.calls.filter((q) => q.table === "race_entries");
 assert.equal(entryQueries.length, 1, "race_entries は1回のページ読みで取る");
 const [entryQuery] = entryQueries;
 assert.equal(entryQuery.select, "race_id, boat_number");
 const since = entryQuery.filters.find(([op]) => op === "gte")?.[2];
-assert.ok(
-  since === cutoffAtStart || since === cutoffAtEnd,
-  `期間の始まりは racerHistoryCutoff() と同じ（${cutoffAtStart}）: ${since}`,
+assert.equal(
+  since,
+  cutoffAtStart,
+  "期間の始まりは racerHistoryCutoff() と同じ",
 );
 assert.deepEqual(entryQuery.filters, [
   ["eq", "racer_id", RACER],
