@@ -77,6 +77,11 @@ export function splitUnits(lines, indent = "") {
     else fail(`単位の外の行: ${line.slice(0, 60)}`);
   });
   close();
+  // 最後の単位の後ろの注釈は、どの単位にも入らず比べられない（足しても移すだけに見える）ので判定しない
+  if (lead.some((l) => l.trim() !== ""))
+    fail(
+      `最後の単位の後ろに注釈だけの行: ${lead.find((l) => l.trim() !== "").slice(0, 60)}`,
+    );
   return units;
 }
 

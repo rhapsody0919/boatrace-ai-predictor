@@ -670,6 +670,20 @@ const moveRun = (texts, changes = moveChanges) => {
   );
   const extra = lines("export function getNew() {", "  return 1;", "}");
   assert.match(why({ to: MOVE_TO + extra }), /getNew/, "新しい関数を足す");
+  // 最後の単位の後ろの注釈（どの単位にも入らず比べられなかった。11/11 窓口の調べ neg1）
+  const tail = "// 手で足した注釈\n";
+  assert.match(why({ to: MOVE_TO + tail }), /注釈だけ/, "to の末に注釈を足す");
+  assert.match(
+    why({ head: MOVE_HEAD + tail }),
+    /注釈だけ/,
+    "殻の末に注釈を足す",
+  );
+  assert.match(
+    why({ head: MOVE_HEAD.replace("\n};\n", "\n  // 手で足した注釈\n};\n") }),
+    /注釈だけ/,
+    "object の最後のメンバーの後ろに注釈を足す",
+  );
+  assert.equal(why({ to: MOVE_TO + "\n\n" }), null, "末の空行は移すだけのまま");
   // 審査の重大1: 行の順と単位の境を見る（行の多重集合では通ってしまう形）
   const swap = MOVE_TO.replace(
     "    const n = a(v) + K.size;\n    const m = J.size;",
