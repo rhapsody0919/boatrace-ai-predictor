@@ -6,6 +6,8 @@
  *       T5（max-lines・complexity は差分のファイルだけ、no-cycle は CI の madge、jscpd も差分だけ、試験の差分の警告）
  *
  * 差分: --base（既定 origin/master）と HEAD の merge-base から、作業ツリーまで（コミット前の変更と未追跡のファイルを含む）。
+ *       master への push（GITHUB_EVENT_NAME=push）は HEAD^1 から。
+ * --ci の大きさ（max-lines・complexity）は eslint でなく lintTrees.js の判定（関数の単位の AST hash を base と比べる）。
  *
  * 失敗にするもの:
  *   - 差分の JS（.js・.jsx・.mjs・.cjs）の eslint のエラー（eslint.config.js の設定のまま）
@@ -29,6 +31,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
+import { runSizeGate } from "./lintTrees.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -58,6 +61,8 @@ const lineCount = (text) =>
 
 const mergeBase = (() => {
   try {
+    // master への push は squash だけなので親が base（merge-base だと HEAD になり差分が空）
+    if (process.env.GITHUB_EVENT_NAME === "push") return git("rev-parse", "HEAD^1");
     return git("merge-base", baseRef, "HEAD");
   } catch (e) {
     console.error(
@@ -118,6 +123,7 @@ for (const r of results) {
       (m.severity === 2 ? errors : warnings).push(`eslint ${text}`);
       continue;
     }
+    if (ci) continue; // --ci の大きさは lintTrees.js の判定に任せる
     const crossed =
       m.ruleId === "max-lines" &&
       !info.added &&
@@ -163,6 +169,12 @@ const runToFile = (cmd, cmdArgs) => {
 };
 
 if (ci) {
+  // --- 大きさ（関数の単位の AST hash を base と比べる）
+  const size = runSizeGate({ cwd: ROOT, base: mergeBase, changed });
+  size.log.forEach((l) => console.log(l));
+  errors.push(...size.errors);
+  warnings.push(...size.warnings);
+
   // --- 循環の import（madge）
   const madge = runToFile("npx", [
     "--yes",
