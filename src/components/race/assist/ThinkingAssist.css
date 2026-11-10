@@ -2478,3 +2478,38 @@
   opacity: 0.45;
   cursor: default;
 }
+
+/* 375px の最初の画面（BOA-1415、BOA-1380 の検査）: 押せる部品の高さ 44px 以上・本文の字 13.6px 以上。
+   デスクトップ幅は変えない */
+@media (max-width: 480px) {
+  .ta-seg button,
+  .ta-scope-toggle,
+  .ta-hint button,
+  .ta-num-btn,
+  .ta-pos3 button,
+  .ta-kv-btn,
+  .ta-linkish,
+  .ta-feat-item .ta-tag {
+    min-height: 44px;
+  }
+
+  .ta-add {
+    width: 44px;
+    height: 44px;
+  }
+
+  .ta-note,
+  .ta-pill,
+  .ta-header-foot,
+  .ta-rough-scope,
+  .ta-seg button,
+  .ta-bar-btn,
+  .ta-bar-more,
+  .ta-scope,
+  .ta-hint,
+  .ta-num-btn,
+  .ta-linkish,
+  .ta-feat-item .ta-tag {
+    font-size: var(--font-size-sm);
+  }
+}
