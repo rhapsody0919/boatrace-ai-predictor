@@ -623,6 +623,7 @@ function RaceBeforeInfoTab({
           ...row,
           label: `${row.label} ※`,
           shortLabel: `${row.shortLabel} ※`,
+          turnMark: true,
         }
       : row;
   const rows = [
@@ -956,27 +957,54 @@ function RaceBeforeInfoTab({
                 {rows.map((row) => (
                   <tr key={row.key}>
                     <td className="drt-label-cell">
-                      {row.tab ? (
-                        <Link
-                          to={deepLink(row.tab)}
-                          className="drt-label-link"
-                          onClick={onLinkClick(row.tab)}
-                        >
-                          <span className="drt-label-full">{row.label}</span>
-                          <span className="drt-label-short">
-                            {row.shortLabel}
-                          </span>
-                          <span className="drt-link-arrow">›</span>
-                        </Link>
-                      ) : (
+                      {row.turnMark ? (
+                        // 末尾の1文字・※・? を束ねて、※と? だけが2行目に落ちないようにする
                         <>
-                          <span className="drt-label-full">{row.label}</span>
+                          <span className="drt-label-full">
+                            {row.label.slice(0, -3)}
+                          </span>
                           <span className="drt-label-short">
-                            {row.shortLabel}
+                            {row.shortLabel.slice(0, -3)}
+                          </span>
+                          <span className="drt-turn-tail">
+                            <span className="drt-label-full">
+                              {row.label.slice(-3)}
+                            </span>
+                            <span className="drt-label-short">
+                              {row.shortLabel.slice(-3)}
+                            </span>
+                            <TermHintButton termKey={row.key} />
                           </span>
                         </>
+                      ) : (
+                        <>
+                          {row.tab ? (
+                            <Link
+                              to={deepLink(row.tab)}
+                              className="drt-label-link"
+                              onClick={onLinkClick(row.tab)}
+                            >
+                              <span className="drt-label-full">
+                                {row.label}
+                              </span>
+                              <span className="drt-label-short">
+                                {row.shortLabel}
+                              </span>
+                              <span className="drt-link-arrow">›</span>
+                            </Link>
+                          ) : (
+                            <>
+                              <span className="drt-label-full">
+                                {row.label}
+                              </span>
+                              <span className="drt-label-short">
+                                {row.shortLabel}
+                              </span>
+                            </>
+                          )}
+                          <TermHintButton termKey={row.key} />
+                        </>
                       )}
-                      <TermHintButton termKey={row.key} />
                     </td>
                     {sortedPlayers.map((p) => (
                       <td
