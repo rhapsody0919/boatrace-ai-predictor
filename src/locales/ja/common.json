@@ -2519,6 +2519,18 @@
   "raceSummary": {
     "title": "出走6艇"
   },
+  "frontTaking": {
+    "badge": "イン屋",
+    "badgeAria": "イン屋（前付けの割合が高い選手）"
+  },
+  "racerFrontTaking": {
+    "title": "前付けの傾向",
+    "noRuns": "進入コースが記録された2〜6号艇の走は0走です。",
+    "lead": "進入コースが記録された2〜6号艇の{{runs}}走のうち、枠番より内のコースに入った（前付け）のは{{taken}}走（{{rate}}%）です。",
+    "course": "{{course}}コース {{count}}走",
+    "badgeOn": "走数が{{minRuns}}走以上で前付けの割合が{{minRate}}%以上の選手に「イン屋」の札を付けています。過去の走の集計で、次のレースの進入を示すものではありません。",
+    "badgeOff": "走数が{{minRuns}}走以上で前付けの割合が{{minRate}}%以上の選手に「イン屋」の札を付けています。この選手は札の対象外です。"
+  },
   "raceStrip": {
     "label": "{{venue}}のレース",
     "meetLink": "この節の得点率・勝ち上がり ›",
