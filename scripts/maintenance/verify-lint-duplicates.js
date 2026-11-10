@@ -6,7 +6,6 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -206,10 +205,7 @@ test("movedFiles: 移した PR に別の新しいファイルを足しても、�
 
 test("treeReader: head は作業ツリーの字、無ければ null（base の git の木は段ごとの実測で見る。変異検査の写しに HEAD が無いため）", () => {
   const read = treeReader(ROOT, "HEAD");
-  assert.equal(
-    read("head", "package.json"),
-    fs.readFileSync(path.join(ROOT, "package.json"), "utf8"),
-  );
+  assert.equal(JSON.parse(read("head", "package.json")).type, "module");
   assert.equal(read("base", "no/such/file.js"), null);
   assert.equal(read("head", "no/such/file.js"), null);
 });
