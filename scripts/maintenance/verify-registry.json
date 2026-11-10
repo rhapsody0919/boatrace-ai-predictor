@@ -1757,6 +1757,11 @@
       "guards": "BOA-969: 変異の一時ファイル除外、stat/readdir/read の ENOENT と他のエラーの区別、verify 2本への接続"
     },
     {
+      "script": "verify-split-data-layer.js",
+      "tier": "ci",
+      "guards": "split-data-layer.mjs（supabaseDataService.js の領域ごとの振り分け、BOA-1432）の変換の純関数: メソッド→export function・this の置換・400行の詰め方・表に無いメソッドで止まること・領域の間の import と facade"
+    },
+    {
       "script": "verify-st-consideration.js",
       "tier": "ci",
       "guards": "BOA-1031: ST考察の4純関数、Fと欠損の除外・同順位・内側最速、安定/出遅/抜出の整数比較の境界と母数、ヒストグラム、履歴の逆順と入力不変"
