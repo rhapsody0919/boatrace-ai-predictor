@@ -22,19 +22,11 @@
  *    （サービス層は import.meta.env に依存し node から実行できないため、ソースを検査する）
  */
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   currentMotorGenerationStart,
   isInMotorGeneration,
 } from "../../src/utils/motorGeneration.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SERVICE = path.resolve(
-  __dirname,
-  "../../src/services/supabaseDataService.js",
-);
+import { readDataLayerSource } from "./dataLayerSource.js";
 
 const failures = [];
 const check = (label, ok) => {
@@ -77,7 +69,7 @@ check(
 );
 
 // 3. サービス層が世代の絞り込みを通っていること
-const src = readFileSync(SERVICE, "utf8");
+const src = readDataLayerSource();
 // 引数が増えて Prettier で改行されても見つかるよう、空白を挟んで探す
 const begin = src.search(/getVenueMotorChampionshipHistory\(\s*venueCode/);
 const end = src.indexOf("\n  },\n", begin);

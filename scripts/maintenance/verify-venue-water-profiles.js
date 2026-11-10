@@ -21,6 +21,7 @@ import { VENUE_WATER_PROFILES } from "../../src/data/venueWaterProfiles.js";
 import { VENUE_GUIDES_EN } from "../../src/data/venueGuidesEn.js";
 import { VENUE_GUIDES_ZH_TW } from "../../src/data/venueGuidesZhTw.js";
 import { VENUE_GUIDES_KO } from "../../src/data/venueGuidesKo.js";
+import { readDataLayerSource } from "./dataLayerSource.js";
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -90,7 +91,7 @@ if (Object.keys(VENUE_WATER_PROFILES).length !== 24) {
 }
 
 // 2. 画面が DB の water_type と水質からの潮の推定を使わない
-const service = read("src/services/supabaseDataService.js");
+const service = readDataLayerSource();
 const fn = service.slice(
   service.indexOf("getVenueCharacteristics(venueCode)"),
   service.indexOf("getNationalAverageOutcomeDistribution()"),

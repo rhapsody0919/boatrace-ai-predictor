@@ -11,18 +11,9 @@
  *   - fetchAllByIn が in() の値を並べてから分けて読む（URL の長さの上限、BOA-1051）。in() の列はテーブルの並びの先頭の列
  *   - fetchAllByIn の呼び出しで渡しているテーブルが、すべて FETCH_ALL_BY_IN_ORDER にある
  */
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { readDataLayerSource } from "./dataLayerSource.js";
 
-const ROOT = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
-const source = fs.readFileSync(
-  path.join(ROOT, "src/services/supabaseDataService.js"),
-  "utf8",
-);
+const source = readDataLayerSource();
 
 let failures = 0;
 function check(label, pass, detail = "") {
