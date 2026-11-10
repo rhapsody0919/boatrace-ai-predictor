@@ -12,7 +12,7 @@
  * 語（H9）の risk-rules.json は、判定する repo の merge-base の木から読む（PR 自身が語を消して軽くできないように）。
  *
  * hq との約束（段L の影、2026-11-05）: Node の組み込みと git だけを使う（npm の部品・DB・ネットワークなし。hq の写しは
- * この script・config/pr-path-rules.json・scripts/lib/relativeImportGraph.js だけを同じ配置で持つ）。100秒（BUDGET_MS）で
+ * この script・config/pr-path-rules.json・scripts/lib/relativeImportGraph.js・移すだけの判定 prLaneMoveOnly*.js を同じ配置で持つ）。100秒（BUDGET_MS）で
  * 打ち切り、0 以外で終える（hq の上限は 120秒）。lane が light なら hits は必ず空。
  */
 import { execFileSync } from "node:child_process";
@@ -21,6 +21,7 @@ import { join } from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { CODE, reach } from "../lib/relativeImportGraph.js";
+import { moveOnlyPaths } from "./prLaneMoveOnly.js";
 
 const SELF_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 /** コミットの木を辿るときの仮の絶対パスの根（手元のファイルと混ざらないよう実在しない名前にする） */
@@ -55,6 +56,12 @@ export function loadRules(
       },
     };
   });
+}
+
+/** config/pr-path-rules.json の moveOnly（移すだけの判定の from・to。無ければ undefined） */
+export function loadMoveOnly(root = SELF_ROOT) {
+  return JSON.parse(readFileSync(join(root, "config/pr-path-rules.json"), "utf8"))
+    .moveOnly;
 }
 
 const anyMatch = (patterns = [], path) =>
@@ -176,6 +183,7 @@ export function classify({
   patches = new Map(),
   trees = [],
   rules = loadRules(),
+  moved = new Set(),
 }) {
   const changedSet = new Set(changes.map((c) => c.path));
   const hits = [];
@@ -188,6 +196,8 @@ export function classify({
       const added = status === "A";
       if (anyMatch(rule.except, path)) continue;
       if (added && anyMatch(rule.exceptAdded, path)) continue;
+      // 移すだけ（moveOnlyPaths）と分かったデータ層のファイルは、H3（数字の定義）と H9（語が新しく入る）を外す
+      if (rule.exceptMoveOnly && moved.has(path)) continue;
       const p = (rule.paths ?? []).find((re) => new RegExp(re).test(path));
       if (p) hit(rule, path, `パス ${p}`);
       const a =
@@ -476,7 +486,17 @@ function classifyCommitsInner(repo, base, head) {
       : new Map();
   const needTrees = rules.some((r) => r.reachFrom);
   const trees = needTrees ? [gitTree(repo, mb), gitTree(repo, headSha)] : [];
-  const result = classify({ changes, patches, trees, rules });
+  const readText = (side, p) => {
+    try {
+      return git(repo, ["show", `${side === "base" ? mb : headSha}:${p}`], {
+        encoding: "utf8",
+      });
+    } catch {
+      return null; // 読めなければ移すだけと見なさない（安全側）
+    }
+  };
+  const moved = moveOnlyPaths(loadMoveOnly(), changes, readText);
+  const result = classify({ changes, patches, trees, rules, moved });
   remaining(); // 辿り終えた時点で上限を超えていたら判定に使わない
   // light なのに hits がある出力は出さない（hq は矛盾として heavy に扱う。classify は hits の有無で lane を決めるので起きない）
   if ((result.lane === "light") !== (result.hits.length === 0))

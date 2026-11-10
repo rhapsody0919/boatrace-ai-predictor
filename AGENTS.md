@@ -21,7 +21,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
    - 例外: 既存の `verify-*.js` を振る舞いの試験へ置き換える変更は、hq の作り手の確かめ（機械の変異検査: 旧の verify が落とす変異 ⊆ 新の試験が落とす変異）を通したときだけ可
    - `vercel.json`（AI の枝の Preview を止める設定。`verify-codex-no-preview.js` が固定）
    - `docs/operation/codex-backlog.md`「回すもの・回さないもの」の (a)（`scripts/db/**`・`scripts/watch/**`・`scripts/lib/dbApplySql.js` 等の守りの本体）
-5. **300行5ファイル**: 1つの PR は関心事1つ、差分は300行・5ファイル以内。`src/` と `docs/` を混ぜない。超えそうなら止める。票に「変えてよいファイル」があればその外を変えない
+5. **300行5ファイル**: 1つの PR は関心事1つ、差分は300行・5ファイル以内。`src/` と `docs/` を混ぜない。超えそうなら止める。票に「変えてよいファイル」があればその外を変えない。`node scripts/maintenance/split-data-layer.mjs` の出力そのままの PR（pr-lane が移すだけと判定する物、config/pr-path-rules.json の moveOnly）は300行5ファイルの線の外
 6. **マージしない**。`gh pr merge`・承認（approve）・自動マージの設定（`--auto`）をしない。force push をしない
 
 ## 作業の進め方
