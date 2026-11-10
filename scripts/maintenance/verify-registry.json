@@ -1515,6 +1515,11 @@
       "guards": "sitemap.xml の lastmod を実際の更新日（記事の md の最終コミット日・開催日）から取ること。生成日や mtime に戻ると、Google が lastmod を再クロールの合図として使わなくなる（BOA-599）。あわせて、言語版の組（hreflang）を xhtml:link で出すこと（BOA-560）"
     },
     {
+      "script": "verify-size-baseline.js",
+      "tier": "ci",
+      "guards": "大きさの関所の部品（sizeBaselines.js、BOA-1429）。関数の単位の AST hash（コメント・空白に依らない、メソッドを export async function へ移して this.X( を X( にしても同じ）と、基準との比べ方: 基準の単位だけ→緑、同じ場所の1行直し→警告、行・複雑さが増える→赤、線を越える新しい関数→赤、字のままの移動→緑・1字変えて移す→赤、新しいファイルの max-lines は基準の単位の行を除く、基準の units の増加・initial_count の変更→赤、件数が半分以下で旗が立つ"
+    },
+    {
       "script": "verify-snapshot-status.js",
       "tier": "ci",
       "guards": "AI スナップショット生成の結果のまとめ（scripts/lib/snapshotStatus.js）。失敗・途中停止を OK と書かず、ログの最後と /ai-snapshots/status.json に件数と失敗した記事の ID を残すこと（SEO 再点検 F5。#1393 の前は失敗がログに埋もれ、本番で3記事が欠けたままだった）。Preview でブログ等を作らなかったときは ok のまま理由を残し照合を note にすること、選手ページの描いた時刻が24時間を越えた・途中で止まったら毎日の照合で落とすこと（Vercel の費用 2026-11-05）"
