@@ -658,6 +658,18 @@
   "raceSummary": {
     "title": "Six entrants"
   },
+  "frontTaking": {
+    "badge": "Front-taker",
+    "badgeAria": "Front-taker (racer who often takes an inner course than their lane)"
+  },
+  "racerFrontTaking": {
+    "title": "Front-taking tendency",
+    "noRuns": "There are 0 runs from lanes 2–6 with a recorded entry course.",
+    "lead": "Of {{runs}} runs from lanes 2–6 with a recorded entry course, {{taken}} runs ({{rate}}%) entered a course inside their lane (front-taking).",
+    "course": "Course {{course}}: {{count}} runs",
+    "badgeOn": "The \"Front-taker\" badge is given to racers with at least {{minRuns}} runs and a front-taking rate of {{minRate}}% or more. It summarizes past runs and does not indicate the entry in the next race.",
+    "badgeOff": "The \"Front-taker\" badge is given to racers with at least {{minRuns}} runs and a front-taking rate of {{minRate}}% or more. This racer does not qualify for the badge."
+  },
   "raceStrip": {
     "label": "Races at {{venue}}",
     "meetLink": "Score rate and advancement for this meet ›",

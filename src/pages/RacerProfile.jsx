@@ -10,6 +10,9 @@ import {
   RacerNewsList,
   RacerOfficialStats,
 } from "../components/racer";
+import RacerFrontTaking from "../components/racer/RacerFrontTaking";
+import { summarizeFrontTaking } from "../utils/frontTaking";
+import { supabaseDataService } from "../services/supabaseDataService";
 import InlineFetchError from "../components/InlineFetchError";
 import {
   getRacerPageData,
@@ -140,6 +143,34 @@ export default function RacerProfile() {
     periodStats?.racerId === racerId ? periodStats.rows : null;
   const periodFailed = periodStatsFailedId === racerId && !periodRows;
 
+  // 前付けの傾向（BOA-1422）。既存の getRacerScopedRaceStats（新しいクエリは無い）を racerId つきで持つ
+  const [frontTakingLoad, setFrontTakingLoad] = useState(null);
+  const [frontTakingRetry, setFrontTakingRetry] = useState(0);
+  useEffect(() => {
+    if (!validId) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRacerScopedRaceStats(racerId)
+      .then((records) => {
+        if (cancelled) return;
+        setFrontTakingLoad({ racerId, summary: summarizeFrontTaking(records) });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("前付けの傾向の取得エラー:", errorMessageOf(err));
+        setFrontTakingLoad({ racerId, failed: true });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [racerId, validId, frontTakingRetry]);
+  const frontTaking =
+    frontTakingLoad?.racerId === racerId && !frontTakingLoad.failed
+      ? frontTakingLoad.summary
+      : null;
+  const frontTakingFailed =
+    frontTakingLoad?.racerId === racerId && frontTakingLoad.failed === true;
+
   const hasNews = (data?.news?.length ?? 0) > 0;
   // インデックス判定は sitemap と共通（src/utils/racerIndexPolicy.js）。ニュースがある選手、または
   // 現役の A1 選手（最新の出走が A1 で直近30日以内）を index にする（集客レーン、2026-10-02）。
@@ -240,8 +271,19 @@ export default function RacerProfile() {
               profile={data.profile}
               grade={data.grade}
               racerId={racerId}
+              isInya={frontTaking?.isInya === true}
             />
             <RacerProfileCard profile={data.profile} racerId={racerId} />
+            {data.profile && (
+              <RacerFrontTaking
+                summary={frontTaking}
+                failed={frontTakingFailed}
+                onRetry={() => {
+                  setFrontTakingLoad(null);
+                  setFrontTakingRetry((n) => n + 1);
+                }}
+              />
+            )}
             {periodFailed ? (
               <InlineFetchError
                 onRetry={() => {

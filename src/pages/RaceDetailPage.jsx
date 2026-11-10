@@ -362,7 +362,10 @@ function RaceDetailPage({ showViewSwitch = false }) {
               />
               {/* 中止のレースは出走6艇を出さない。中止の知らせを最初の画面に残す（ファン評価1周目 指摘1） */}
               {!prediction?.error && !isRaceCancelled(prediction) && (
-                <RaceEntrantsSummary players={prediction?.allPlayers} />
+                <RaceEntrantsSummary
+                  players={prediction?.allPlayers}
+                  raceId={raceId}
+                />
               )}
               <PredictionSection
                 prediction={prediction}
