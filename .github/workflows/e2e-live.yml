@@ -21,9 +21,11 @@ on:
     - cron: '0 5 * * *'
   workflow_dispatch:
 
+# 定時と dispatch を別の列にする: 定時の基準と deploy-guard の確かめ（dispatch）を止め合わせないため（BOA-1424）。
+# 定時は新しい定時が古いのを取り消し、dispatch は走っている run を止めず順番を待つ。
 concurrency:
-  group: e2e-live
-  cancel-in-progress: true
+  group: e2e-live-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'schedule' }}
 
 # 最小の権限（CodeQL actions/missing-workflow-permissions）。GITHUB_TOKEN で書く手順は無い
 permissions:
