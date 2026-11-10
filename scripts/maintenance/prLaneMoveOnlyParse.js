@@ -99,8 +99,13 @@ export function listComments(units) {
   return units
     .filter((u) => u.kind === "import" || u.kind === "export")
     .flatMap((u) =>
-      u.lines.flatMap((l) => {
+      u.lines.flatMap((l, i) => {
         if (l.trim() === "") return [];
+        // 頭の行より後ろ（文の中）のブロックの注釈は名前を消せる（`/**` と `*/` で囲む）。文の中は `//` だけ許す
+        if (i > u.lines.indexOf(u.head) && /^\s*(?:\/\*|\*)/.test(l))
+          fail(
+            `import・export の文の中のブロックの注釈: ${l.trim().slice(0, 60)}`,
+          );
         if (COMMENT_LINE.test(l)) return [l.trim()];
         if (l.includes("/*"))
           fail(`import・export の行の中の注釈: ${l.trim().slice(0, 60)}`);

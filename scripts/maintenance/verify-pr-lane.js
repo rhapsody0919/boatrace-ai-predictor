@@ -745,7 +745,7 @@ const moveRun = (texts, changes = moveChanges) => {
         "import {\n  a,\n  /*\n  b,\n  */\n}",
       ),
     }),
-    /import に注釈/,
+    /文の中のブロックの注釈/,
     "to の import の名前を注釈で消す",
   );
   assert.match(
@@ -767,6 +767,33 @@ const moveRun = (texts, changes = moveChanges) => {
     why({ head: MOVE_HEAD.replace("import { c }", "import { c /* x */ }") }),
     /行の中の注釈/,
     "殻の import の行の中に注釈",
+  );
+  // 再審査（11/11）重大: base にある `/**`・`*/` を殻の import の中に差し込み、名前を注釈にして消す
+  const blockBase = MOVE_BASE.replace("/** 頭の注釈 */", "/**\n * h\n */");
+  assert.match(
+    why({
+      base: blockBase,
+      head: MOVE_HEAD.replace("/** 頭の注釈 */\n", "").replace(
+        'import { getX, getY } from "./scheduleQueries.js";',
+        'import {\n  /**\n  getX,\n  */\n  getY,\n} from "./scheduleQueries.js";',
+      ),
+    }),
+    /注釈/,
+    "殻の import の名前を base の注釈の字で囲む",
+  );
+  // 本物の殻と同じ形: 複数行の import の中の `//` の注釈を殻にそのまま残すのは移すだけのまま
+  const slashBase = MOVE_BASE.replace(
+    'import { c } from "../utils/c.js";',
+    'import {\n  // c の注釈\n  // 2行目\n  c,\n} from "../utils/c.js";',
+  );
+  const slashHead = MOVE_HEAD.replace(
+    'import { c } from "../utils/c.js";',
+    'import {\n  // c の注釈\n  // 2行目\n  c,\n} from "../utils/c.js";',
+  );
+  assert.equal(
+    why({ base: slashBase, head: slashHead }),
+    null,
+    "殻の import の中の // の注釈はそのまま残してよい",
   );
   // 審査の重大1: 行の順と単位の境を見る（行の多重集合では通ってしまう形）
   const swap = MOVE_TO.replace(
