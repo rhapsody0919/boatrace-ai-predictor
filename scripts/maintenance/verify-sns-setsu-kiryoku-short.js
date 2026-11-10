@@ -1397,21 +1397,76 @@ test("dry-run の時計: date が今日なら今、見本の束（今日でな�
 });
 
 test("会場のページの印（snsScreenMarkers の venue）は画面の部品に実在する data-testid", async () => {
-  const src = async (p) =>
-    readFile(
-      new URL(`../../src/components/venue/${p}`, import.meta.url),
-      "utf8",
+  // 会場のページ（src/pages/VenueRaceListPage.jsx）と同じ props で2つの部品を jsdom に描き、印の各セレクタが
+  // 描いた DOM でちょうど1件に当たることを見る（BOA-1410。本文の includes から置き換え）。
+  // renderJsx は module hooks と jsdom の global を process 全体に入れるので、このテストの中で初めて読み、
+  // 終わったら global を元に戻す（他のテストの前提を変えない）。
+  // 会場カードの「もっと詳しく」が取りに行く fetch は、この間だけ拒否する偽に替える（通信しない。取得は失敗として畳まれる）
+  const DOM_GLOBALS = [
+    "window",
+    "document",
+    "navigator",
+    "HTMLElement",
+    "Node",
+    "Event",
+    "MouseEvent",
+    "getComputedStyle",
+    "localStorage",
+    "sessionStorage",
+    "requestAnimationFrame",
+    "cancelAnimationFrame",
+    "IS_REACT_ACT_ENVIRONMENT",
+    "fetch",
+  ];
+  const saved = DOM_GLOBALS.map((k) => [
+    k,
+    Object.getOwnPropertyDescriptor(globalThis, k),
+  ]);
+  const views = [];
+  try {
+    globalThis.fetch = async () => {
+      throw new Error("verify: 通信しない");
+    };
+    const { renderJsx } = await import("../lib/renderJsx.js");
+    const component = (p) =>
+      new URL(`../../src/components/venue/${p}`, import.meta.url);
+    // 本日の会場のページは要約2行を出し、会場カードは畳んで（collapsible）出す。会場コードは数（1〜24）
+    views.push(
+      await renderJsx(component("VenueSummaryLines.jsx"), { venueCode: 13 }),
     );
-  assert.ok(
-    (await src("VenueSummaryLines.jsx")).includes(
-      'data-testid="venue-summary-lines"',
-    ),
-  );
-  assert.ok(
-    (await src("VenueCharacteristicsCard.jsx")).includes(
-      'data-testid="venue-characteristics-teaser"',
-    ),
-  );
+    views.push(
+      await renderJsx(component("VenueCharacteristicsCard.jsx"), {
+        venueCode: 13,
+        collapsible: true,
+      }),
+    );
+    await views[1].act(() => new Promise((r) => setTimeout(r, 0)));
+    const [summary, card] = views.map((v) => v.container);
+    for (const [selector, inside, other] of [
+      [SCREEN_MARKERS.venue[0], summary, card],
+      [SCREEN_MARKERS.venue[1], card, summary],
+    ]) {
+      assert.equal(
+        inside.querySelectorAll(selector).length,
+        1,
+        `${selector} が部品の描画にちょうど1件ない`,
+      );
+      assert.equal(
+        other.querySelectorAll(selector).length,
+        0,
+        `${selector} が別の部品にも出る`,
+      );
+    }
+  } finally {
+    try {
+      for (const v of views) await v.unmount();
+    } finally {
+      for (const [k, d] of saved) {
+        if (d) Object.defineProperty(globalThis, k, d);
+        else delete globalThis[k];
+      }
+    }
+  }
   assert.deepEqual(SCREEN_MARKERS.venue, [
     '[data-testid="venue-summary-lines"]',
     '[data-testid="venue-characteristics-teaser"]',
