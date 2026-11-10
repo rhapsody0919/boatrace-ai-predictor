@@ -32,6 +32,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
 import { runSizeGate } from "./lintTrees.js";
+import { runDepTreeGate } from "./lintDepTree.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -174,6 +175,12 @@ if (ci) {
   size.log.forEach((l) => console.log(l));
   errors.push(...size.errors);
   warnings.push(...size.warnings);
+
+  // --- 依存の向き（dependency-cruiser を base と HEAD に回して差分を見る）・src/utils の新しいファイル
+  const dep = runDepTreeGate({ cwd: ROOT, base: mergeBase, changed });
+  dep.log.forEach((l) => console.log(l));
+  errors.push(...dep.errors);
+  warnings.push(...dep.warnings);
 
   // --- 循環の import（madge）
   const madge = runToFile("npx", [
