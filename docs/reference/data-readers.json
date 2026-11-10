@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1707,
+    "sourceFiles": 1728,
     "filesWithAccess": 272,
-    "tableReaders": 991,
+    "tableReaders": 992,
     "tableWriters": 189,
     "rpcCallers": 51,
     "nameMentions": 232,
@@ -13063,7 +13063,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-bot-race-function.js:801",
+          "ref": "scripts/maintenance/verify-bot-race-function.js:802",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -13145,7 +13145,7 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:801",
+            "scripts/maintenance/verify-bot-race-function.js:802",
             "src/services/racerService.js:86",
             "src/services/supabaseDataService.js:1421",
             "src/services/supabaseDataService.js:1447",
@@ -13164,7 +13164,7 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:801",
+            "scripts/maintenance/verify-bot-race-function.js:802",
             "src/services/racerService.js:86",
             "src/services/supabaseDataService.js:1421",
             "src/services/supabaseDataService.js:1447",
@@ -13183,7 +13183,7 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:801",
+            "scripts/maintenance/verify-bot-race-function.js:802",
             "src/services/racerService.js:86",
             "src/services/supabaseDataService.js:1421",
             "src/services/supabaseDataService.js:1447",
@@ -13204,7 +13204,7 @@
           "readers": [
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:801",
+            "scripts/maintenance/verify-bot-race-function.js:802",
             "src/services/supabaseDataService.js:1447",
             "src/services/supabaseDataService.js:7253"
           ],
@@ -13220,7 +13220,7 @@
           "readers": [
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:801",
+            "scripts/maintenance/verify-bot-race-function.js:802",
             "src/services/supabaseDataService.js:1447",
             "src/services/supabaseDataService.js:7253"
           ],
@@ -17331,12 +17331,19 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-live-api-key.js:23",
+          "ref": "scripts/maintenance/verify-e2e-live-api-key.js:32",
           "op": "rest",
           "via": "rest",
           "columns": [
             "*"
           ],
+          "test": true
+        },
+        {
+          "ref": "scripts/maintenance/verify-e2e-live-api-key.js:33",
+          "op": "rest",
+          "via": "rest",
+          "columns": [],
           "test": true
         },
         {

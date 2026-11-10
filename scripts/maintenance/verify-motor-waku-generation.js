@@ -32,6 +32,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readDataLayerSource } from "./dataLayerSource.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -43,7 +44,7 @@ const check = (label, ok) => {
   if (!ok) failures.push(label);
 };
 
-const src = read("src/services/supabaseDataService.js");
+const src = readDataLayerSource();
 const methodBody = (name) => {
   const begin = src.indexOf(`  ${name}(venueCode`);
   const end = src.indexOf("\n  },\n", begin);

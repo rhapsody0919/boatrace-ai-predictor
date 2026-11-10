@@ -115,8 +115,14 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
     let found = false;
     for (let i = 0; i < count && !found; i += 1) {
       await dots.nth(i).hover({ timeout: 30000 });
-      found =
-        (await label.textContent().catch(() => "")) === "26-09-19 戸田 9R";
+      // hover の直後は tooltip の旧ラベルを読むことがあるので、落ち着くまで待つ
+      found = await expect
+        .poll(() => label.textContent().catch(() => ""), { timeout: 3000 })
+        .toBe("26-09-19 戸田 9R")
+        .then(
+          () => true,
+          () => false,
+        );
     }
     if (!found) {
       throw new Error(

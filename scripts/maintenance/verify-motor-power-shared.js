@@ -18,12 +18,10 @@ import {
   computeVenueMotorPowerIndexes,
   motorWindowFrom,
 } from "../../src/utils/motorPowerIndex.js";
+import { readDataLayerSource } from "./dataLayerSource.js";
 
 // 1. サービス層
-const service = readFileSync(
-  new URL("../../src/services/supabaseDataService.js", import.meta.url),
-  "utf8",
-);
+const service = readDataLayerSource();
 assert.match(
   service,
   /import \{\s*computeMotorPowerIndex,\s*motorWindowFrom,\s*\} from "\.\.\/utils\/motorPowerIndex\.js";/,

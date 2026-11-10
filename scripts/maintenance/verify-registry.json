@@ -354,6 +354,11 @@
       "guards": "本番 DB の自動の適用の突き合わせ（scripts/lib/dbReconcile.js・scripts/db/db-reconcile.js、ADR-0097）。台帳の状態を先頭の語で読む、5点の検査（切り替えより後に squash で足された・merge_commit_sha の一致・blob が PR の head と今の master で同じ・審査の App の head SHA への承認・同じコミットで足した「未適用」の行・runbook が無い）がそれぞれ単独で落とす、番号の順に1本だけ選び通らなければ止めて後ろを当てない、db-apply の他の run が動いている・待っているときは何もしない"
     },
     {
+      "script": "verify-dependency-rules.js",
+      "tier": "ci",
+      "guards": "依存の向きの関所の部品（dependency-rules.cjs の規則10個、lintBaselines.js の純関数: データ層の和の中で関数が移っても緑・基準に無い辺は赤・基準の行が増えたら赤・src/utils の新規ファイルは赤・facade-frozen を error にする条件、BOA-1428）"
+    },
+    {
       "script": "verify-deploy-hook-policy.js",
       "tier": "ci",
       "guards": "Deploy Hookを叩く条件の判定（scripts/lib/deployHookPolicy.js、BOA-361）"
@@ -404,6 +409,11 @@
       "guards": "e2e の束（e2e-build.js、ADR-0077 決定8）。再生の束は録画のオリジンで build する（違うと全件が本番へ素通し、#1319）、GA の ID を空に固定、3つのワークフローで E2E_SERVE: preview の段の前に同じモードの npm run build:e2e がある（PR ゲート・撮り・strict 再生・Live を同時に preview にし、dev に戻った段・モードの取り違えを CI の前に落とす）"
     },
     {
+      "script": "verify-e2e-coverage-map.js",
+      "tier": "ci",
+      "guards": "毎晩の全件で作る spec→src の表（scripts/lib/e2eCoverageMap.js、docs/design/ci-minutes-reduction/design.md 12章）。固定の小さな束・source map・V8 coverage で、呼ばれていない関数のファイルは外れ動いた関数のファイルは入ること、束の上の関数（モジュールの評価）と関数の中の分岐の範囲は数えないこと、node_modules・仮想モジュール・対応の無い位置は入らないこと、表の組み立て（行の和・自分で context を作る spec と行の無い spec は always・何も取れなければ落とす）、E2E_SOURCEMAP=1 のときだけ build に source map の引数を足すこと"
+    },
+    {
       "script": "verify-e2e-har-merge.js",
       "tier": "ci",
       "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化・Vercel Cron の dispatch（inputs.gate=true）を schedule と同じ扱いにすること（BOA-929）、素通し一覧の集計（ADR-0077）"
@@ -411,7 +421,7 @@
     {
       "script": "verify-e2e-live-api-key.js",
       "tier": "ci",
-      "guards": "E2E Live の /api の合言葉（BOA-1110）は live の /api/ の要求だけに付き、replay・record・/api/ 以外には付かず、鍵の値をログ・例外の文・録画に出さないこと"
+      "guards": "E2E の /api の合言葉（BOA-1110）は live・record（BOA-1436）の、本番（boat-ai.jp）か本番へ転送する localhost の /api/ の要求だけに付き、replay・未知のモード・/api/ 以外・本番以外の host には付かず、鍵の値をログ・例外の文・録画に出さないこと。record が 401・403・5xx を録画しないこと（BOA-1436）"
     },
     {
       "script": "verify-e2e-no-unroute.js",
@@ -1515,6 +1525,11 @@
       "guards": "sitemap.xml の lastmod を実際の更新日（記事の md の最終コミット日・開催日）から取ること。生成日や mtime に戻ると、Google が lastmod を再クロールの合図として使わなくなる（BOA-599）。あわせて、言語版の組（hreflang）を xhtml:link で出すこと（BOA-560）"
     },
     {
+      "script": "verify-size-baseline.js",
+      "tier": "ci",
+      "guards": "大きさの関所の部品（sizeBaselines.js、BOA-1429）。関数の単位の AST hash（コメント・空白に依らない、メソッドを export async function へ移して this.X( を X( にしても同じ）と、基準との比べ方: 基準の単位だけ→緑、同じ場所の1行直し→警告、行・複雑さが増える→赤、線を越える新しい関数→赤、字のままの移動→緑・1字変えて移す→赤、新しいファイルの max-lines は基準の単位の行を除く、基準の units の増加・initial_count の変更→赤、件数が半分以下で旗が立つ"
+    },
+    {
       "script": "verify-snapshot-status.js",
       "tier": "ci",
       "guards": "AI スナップショット生成の結果のまとめ（scripts/lib/snapshotStatus.js）。失敗・途中停止を OK と書かず、ログの最後と /ai-snapshots/status.json に件数と失敗した記事の ID を残すこと（SEO 再点検 F5。#1393 の前は失敗がログに埋もれ、本番で3記事が欠けたままだった）。Preview でブログ等を作らなかったときは ok のまま理由を残し照合を note にすること、選手ページの描いた時刻が24時間を越えた・途中で止まったら毎日の照合で落とすこと（Vercel の費用 2026-11-05）"
@@ -1750,6 +1765,11 @@
       "script": "verify-source-file-walk.js",
       "tier": "ci",
       "guards": "BOA-969: 変異の一時ファイル除外、stat/readdir/read の ENOENT と他のエラーの区別、verify 2本への接続"
+    },
+    {
+      "script": "verify-split-data-layer.js",
+      "tier": "ci",
+      "guards": "データ層の振り分けスクリプト（scripts/maintenance/split-data-layer.mjs・scripts/maintenance/splitDataLayer/、BOA-1432 RA02a、hq の設計図 drafts/ryujin-target-architecture-20261110.md §3）の変換: メソッド→export の関数（本体の字のまま）・this.X→X・上の単位の領域（1つの領域だけが使えばその領域、ほかは core）・影の名前を取り違えない・殻（短い形・再 export・使わない import を外す）・何回かに分けて回す・委ねのメソッド・400行の手前で次のファイル・ファイルの間の import は後ろ→前だけ・止める場合（表に無い・既に移した・core を最初に入れない・まだ移していない領域・domain-direct・this のほかの使い方）・AST hash"
     },
     {
       "script": "verify-st-consideration.js",

@@ -17,12 +17,10 @@ import {
   racerHistoryCutoff,
   toReturnRate,
 } from "../../src/utils/racerVenueBoatStats.js";
+import { readDataLayerSource } from "./dataLayerSource.js";
 
 // 1. 呼び出し側
-const service = readFileSync(
-  new URL("../../src/services/supabaseDataService.js", import.meta.url),
-  "utf8",
-);
+const service = readDataLayerSource();
 assert.doesNotMatch(
   service,
   /export function aggregateRacerVenueBoatStats\(/,

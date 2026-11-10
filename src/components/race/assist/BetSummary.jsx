@@ -15,6 +15,28 @@ import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
 const yen = (n) => n.toLocaleString("ja-JP");
 
+// 拡連複: 3艇が3着以内のとき、その3艇の中の組んだ組はすべて当たる。組んだ組が2つ以上入る3艇組ごとに
+// 払戻（下限）の和を取り、最小〜最大を返す。該当が無ければ null
+function simultaneousPayoutRange(rows) {
+  const sums = new Map();
+  const boats = [...new Set(rows.flatMap((r) => r.ticket.split("-")))];
+  for (const r of rows) {
+    const pair = r.ticket.split("-");
+    for (const c of boats) {
+      if (pair.includes(c)) continue;
+      const key = [...pair, c].sort().join("-");
+      const s = sums.get(key) ?? { n: new Set(), sum: 0 };
+      if (!s.n.has(r.ticket)) {
+        s.n.add(r.ticket);
+        s.sum += r.payout;
+      }
+      sums.set(key, s);
+    }
+  }
+  const vals = [...sums.values()].filter((s) => s.n.size >= 2).map((s) => s.sum);
+  return vals.length ? { min: Math.min(...vals), max: Math.max(...vals) } : null;
+}
+
 /**
  * 組んだ買い目の配分（FR-8、screens S-1a）: 予算・均等／均等払戻・組ごとのオッズ・人気・金額・払戻、
  * 最下行に合計・残り・丸めた後の倍率の幅。予算が 100円×点数 に足りなければ最低額だけを出す（F05）。
@@ -55,6 +77,10 @@ export default function BetSummary({
   // 拡連複は同じレースで最大3組が当たるので、合成オッズの式（どれか1組だけ当たる前提）が当てはまらない
   const composite =
     result && !result.insufficient && !wide ? result.composite : null;
+  const simul =
+    wide && result && !result.insufficient
+      ? simultaneousPayoutRange(result.rows)
+      : null;
   const oddsCell = (r) => {
     const w = wide ? oddsRange?.[r.ticket] : null;
     if (!wide) return r.odds;
@@ -170,6 +196,11 @@ export default function BetSummary({
             </tr>
           </tbody>
         </table>
+      )}
+      {simul && (
+        <p className="ta-note ta-num">
+          {ASSIST_COPY.wideSimulLine(simul.min, simul.max)}
+        </p>
       )}
       {result?.topped && <p className="ta-note">{ASSIST_COPY.toppedNote}</p>}
       {result?.missing.length > 0 && (
