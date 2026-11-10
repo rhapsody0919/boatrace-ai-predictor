@@ -11,14 +11,22 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseModule } from "./splitDataLayer/ast.js";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 const servicesDir = path.join(repoRoot, "src/services");
 const MAIN = "supabaseDataService.js";
 
 /** データ層のファイルの相対パス（repo 根から）を名前の順に返す。 */
 export function dataLayerPaths() {
   const names = readdirSync(servicesDir)
-    .filter((n) => n === MAIN || /^core\d*\.js$/.test(n) || /^[A-Za-z]+Queries\d*\.js$/.test(n))
+    .filter(
+      (n) =>
+        n === MAIN ||
+        /^core\d*\.js$/.test(n) ||
+        /^[A-Za-z]+Queries\d*\.js$/.test(n),
+    )
     .sort();
   return names.map((n) => `src/services/${n}`);
 }
@@ -56,6 +64,20 @@ const keyName = (key) => key?.name ?? key?.value;
  * - method: 上の変数の宣言の object（殻の supabaseDataService）のメソッド name
  * - fn: `export function name(`・`export async function name(` の関数の宣言
  */
+// object の値に入れた ObjectMethod のうち名前が name の物（殻の supabaseDataService 等）
+const objectMethods = (decl, name) =>
+  decl.type !== "VariableDeclaration"
+    ? []
+    : decl.declarations
+        .filter((d) => d.init?.type === "ObjectExpression")
+        .flatMap((d) => d.init.properties)
+        .filter(
+          (p) =>
+            p.type === "ObjectMethod" &&
+            p.kind === "method" &&
+            keyName(p.key) === name,
+        );
+
 function findDeclarations(name) {
   const { source, files } = parsedDataLayer();
   const method = [];
@@ -65,18 +87,14 @@ function findDeclarations(name) {
       const exported = stmt.type === "ExportNamedDeclaration";
       const decl = exported ? stmt.declaration : stmt;
       if (!decl) continue;
-      if (exported && decl.type === "FunctionDeclaration" && decl.id?.name === name) {
+      if (
+        exported &&
+        decl.type === "FunctionDeclaration" &&
+        decl.id?.name === name
+      )
         fn.push({ start: offset + decl.start, end: offset + decl.end });
-      }
-      if (decl.type !== "VariableDeclaration") continue;
-      for (const d of decl.declarations) {
-        if (d.init?.type !== "ObjectExpression") continue;
-        for (const p of d.init.properties) {
-          if (p.type === "ObjectMethod" && p.kind === "method" && keyName(p.key) === name) {
-            method.push({ start: offset + p.start, end: offset + p.end });
-          }
-        }
-      }
+      for (const p of objectMethods(decl, name))
+        method.push({ start: offset + p.start, end: offset + p.end });
     }
   }
   return { source, method, fn };
@@ -120,7 +138,9 @@ export function dataLayerMethod(name, { until } = {}) {
  */
 export function dataLayerCall(name) {
   const n = escapeRe(name);
-  return findDeclarations(name).method.length > 0 ? `this\\.${n}\\(` : `(?<![\\w$.])${n}\\(`;
+  return findDeclarations(name).method.length > 0
+    ? `this\\.${n}\\(`
+    : `(?<![\\w$.])${n}\\(`;
 }
 
 /**
@@ -131,7 +151,10 @@ export function dataLayerCall(name) {
 export function dataLayerImportNames(from, source = readDataLayerSource()) {
   const re = new RegExp(`import \\{([^}]*)\\} from "${escapeRe(from)}";`, "g");
   const names = [...source.matchAll(re)].flatMap((m) =>
-    m[1].split(",").map((s) => s.trim().replace(/\s+/g, " ")).filter(Boolean),
+    m[1]
+      .split(",")
+      .map((s) => s.trim().replace(/\s+/g, " "))
+      .filter(Boolean),
   );
   return [...new Set(names)].sort();
 }
