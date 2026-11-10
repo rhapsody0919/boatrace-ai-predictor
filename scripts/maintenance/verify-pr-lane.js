@@ -766,6 +766,95 @@ const moveRun = (texts, changes = moveChanges) => {
     ["H3 src/pure/raceModel.js"],
     "src/pure は外さない",
   );
+  // 審査（2回目）の再現: 頭の行で名前が隠れる・生の this・文字列の中の this.・注釈の後ろのコード・見えない名前・殻の import
+  const param = (t) => t.replace("getY(v) {", "getY(getX) {");
+  assert.notEqual(
+    why({ base: param(MOVE_BASE), to: param(MOVE_TO) }),
+    null,
+    "頭の行の引数で名前が隠れる",
+  );
+  const rawThis = (t) =>
+    t.replace(
+      'return "的中率" + b(v);',
+      'return "的中率" + b(v)\n      * this["k"];',
+    );
+  assert.match(
+    why({ base: rawThis(MOVE_BASE), to: rawThis(MOVE_TO) }),
+    /this/,
+    "`*` で始まる行の this",
+  );
+  const strThis = (t) => t.replace('"的中率"', '"this.getY"');
+  assert.match(
+    why({
+      base: strThis(MOVE_BASE),
+      to: MOVE_TO.replace('"的中率"', '"getY"'),
+    }),
+    /this/,
+    "文字列の中の this.",
+  );
+  const afterComment = MOVE_TO.replace(
+    "\nconst K",
+    '\n/* x */ import "../utils/side.js";\nconst K',
+  );
+  assert.match(why({ to: afterComment }), /注釈の後ろ/, "注釈の後ろのコード");
+  const noImport = MOVE_TO.replace(
+    'import { a, b } from "../utils/a.js";',
+    'import { a } from "../utils/a.js";',
+  );
+  assert.match(
+    why({ to: noImport }),
+    /b が見えない/,
+    "to で使う名前の import を外す",
+  );
+  const headNoImport = MOVE_HEAD.replace(
+    'import { c } from "../utils/c.js";\n',
+    "",
+  );
+  assert.match(
+    why({ head: headNoImport }),
+    /c が見えない/,
+    "殻で使う名前の import を外す",
+  );
+  const headOrder = (t) =>
+    t.replace(
+      'import { c } from "../utils/c.js";',
+      'import { c } from "../utils/c.js";\nimport "../utils/s.js";',
+    );
+  const swapped = MOVE_HEAD.replace(
+    'import { c } from "../utils/c.js";',
+    'import "../utils/s.js";\nimport { c } from "../utils/c.js";',
+  );
+  assert.equal(
+    why({ base: headOrder(MOVE_BASE), head: headOrder(MOVE_HEAD) }),
+    null,
+    "副作用の import を残す",
+  );
+  assert.match(
+    why({ base: headOrder(MOVE_BASE), head: swapped }),
+    /import の順/,
+    "殻の import の順を変える",
+  );
+  assert.match(
+    why({ base: headOrder(MOVE_BASE) }),
+    /副作用/,
+    "殻の副作用の import を外す",
+  );
+  const selfImport = MOVE_TO.replace(
+    "\nconst K",
+    '\nimport { supabaseDataService } from "./supabaseDataService.js";\nconst K',
+  );
+  assert.match(why({ to: selfImport }), /import/, "to が殻を import する");
+  assert.match(
+    why({ to: MOVE_TO.replace("+ getY(v);", "+ this.getY(v);") }),
+    /getX/,
+    "to に this が残る",
+  );
+  const keepLet = (t) => t.replace("/** 殻 */", "let L = 0;\n\n/** 殻 */");
+  assert.match(
+    why({ base: keepLet(MOVE_BASE), head: keepLet(MOVE_HEAD) }),
+    /宣言でない文/,
+    "殻に残す上の let",
+  );
   // 委ねるだけのメソッドは、上の関数を移したときだけ短い形にしてよい
   const delBase = MOVE_BASE.replace(
     "  getZ(v) {\n    return c(v);\n  },",
@@ -779,6 +868,15 @@ const moveRun = (texts, changes = moveChanges) => {
     why({ base: delBase, head: delHead }),
     null,
     "委ねるだけのメソッド",
+  );
+  const delAsync = delBase.replace(
+    "  clearCache() {",
+    "  async clearCache() {",
+  );
+  assert.notEqual(
+    why({ base: delAsync, head: delHead }),
+    null,
+    "async のメソッドが同期の関数に委ねる",
   );
   const delArgs = delBase.replace(
     "return clearCache();",

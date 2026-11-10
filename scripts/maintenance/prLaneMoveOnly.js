@@ -17,8 +17,10 @@
  *      その to が export する名前だけ。副作用だけの import は to に置かない・base の物は head に残す。to は from を import しない・to の間で循環しない
  *   4. export: head の from の export は base にあった物か、to から as 無しで base が export していた名前だけ。base が export していた名前は全部残す
  *   5. `this.X` の X はこの PR で移したメソッド・委ねるだけで消したメソッド・base で既に `  X,` だったメンバーだけで、その to から見える。
- *      移したメソッドの名前は base の上の名前・import とぶつからず、to の単位の本文に裸で出ない（局所の名前に隠れる・別の物を指すのを防ぐ）
- *   6. to の中の関数でない単位（const・class）は base と同じ順。to の関数に this が残らない
+ *      移したメソッドの名前は base の上の名前・import とぶつからず、base の本文（メソッドの頭の名前の字を除く）に裸で出ない（局所の名前に隠れる・別の物を指すのを防ぐ）
+ *   6. to の中の関数でない単位（const・class）は base と同じ順。to の関数に this が残らない。this. が文字列・注釈の中に無い
+ *   7. base の上の名前と移したメソッドの名前は、to・殻の本文に裸で出るならそのファイルで見える（import か宣言）。殻の import の順は base のまま
+ *   8. 委ねるだけのメソッドが async なら上の関数も async。上に宣言でない文（let・式の文等）があれば判定しない。`*\/` の後ろに字がある注釈の行も判定しない
  */
 import { dirname, posix } from "node:path";
 import {
@@ -35,6 +37,7 @@ import {
   same,
   bareRe,
   codeOnly,
+  bareNames,
   serviceObject,
   delegation,
   parseToFile,
@@ -65,8 +68,17 @@ function matchUnits(ctx, toFiles) {
           `to の単位 ${u.name ?? u.head} が base のどの単位とも字が合わない`,
         );
       if (used.has(b.base)) fail(`base の単位 ${u.name} を2回移した`);
-      if (b.method && u.lines.some((l) => /\bthis\b/.test(codeOnly(l))))
+      if (b.method && u.lines.some((l) => /\bthis\b/.test(l)))
         fail(`${u.name} に this が残る`);
+      const thisCount = (ls, f) =>
+        ls.reduce((n, l) => n + (f(l).match(/\bthis\./g) ?? []).length, 0);
+      if (
+        b.method &&
+        thisCount(b.base.lines, (l) => l) !== thisCount(b.base.lines, codeOnly)
+      )
+        fail(
+          `${u.name} の this. が文字列・注釈の中にある（書き換えが値を変えうる）`,
+        );
       used.add(b.base);
       f.matched.push({ unit: u, ...b, thisNames });
     }
@@ -97,9 +109,13 @@ function checkFacade(ctx, head, used) {
     const h = obj.members[i];
     const d = delegation(b);
     const topD = d && ctx.topByName.get(d.name);
+    const asyncOk =
+      !/^ {2}async /.test(b.head) ||
+      /^(?:export )?async function /.test(topD?.head ?? "");
     const delegOk =
       topD &&
       used.has(topD) &&
+      asyncOk &&
       topD.head.includes(`function ${d.name}(${d.params})`);
     if (used.has(b) || delegOk) {
       if (!h.shorthand || h.name !== b.name)
@@ -125,6 +141,17 @@ function checkImports(ctx, head, toFiles) {
       t.exports.has(s.imported)
     );
   };
+  const srcOrder = (units) =>
+    units
+      .filter((u) => u.kind === "import")
+      .map((u) => importSpecs(u.text)[0].source);
+  const baseOrder = srcOrder(ctx.base);
+  let at = 0;
+  for (const x of srcOrder(head).filter((y) => baseOrder.includes(y))) {
+    const next = baseOrder.indexOf(x, at);
+    if (next < 0) fail("殻の import の順が base と違う");
+    at = next + 1;
+  }
   const headSpecs = head
     .filter((u) => u.kind === "import")
     .flatMap((u) => importSpecs(u.text));
@@ -197,7 +224,7 @@ function checkNames(ctx, toFiles, used, dropped, headSpecs) {
       fail(`殻が ${n} を import しない`);
     const re = bareRe(n);
     for (const l of ctx.baseLines)
-      if (!METHOD_HEAD.test(l) && re.test(codeOnly(l)))
+      if (re.test(codeOnly(l.replace(METHOD_HEAD, "  $1("))))
         fail(`base に裸の ${n} がある（名前が別の物を指しうる）`);
   }
   for (const f of toFiles) {
@@ -214,6 +241,39 @@ function checkNames(ctx, toFiles, used, dropped, headSpecs) {
     if (order.some((v, i) => i > 0 && v < order[i - 1]))
       fail(`to ${f.path} の const の順が base と違う`);
   }
+}
+
+// 単位の中で同じ名前を宣言していれば局所の名前（base と字が同じなので同じ物を指す）
+const declaresLocally = (u, n) =>
+  u.lines.some((l) =>
+    new RegExp(
+      `\\b(?:const|let|var|function|class) ${n.replace(/\$/g, "\\$")}\\b`,
+    ).test(l),
+  );
+
+/** base の上の名前と移したメソッドの名前が裸で出たら、そのファイルで見える（import か自分の単位）こと */
+function checkVisible(ctx, head, toFiles, headSpecs, movedMethods) {
+  const watch = new Set([...ctx.moduleNames, ...movedMethods]);
+  const headVisible = new Set([
+    ...headSpecs.map((s) => s.local),
+    ...head.map((u) => u.name).filter(Boolean),
+  ]);
+  const files = [
+    { path: "殻", visible: headVisible, units: head },
+    ...toFiles.map((f) => ({
+      path: f.path,
+      visible: f.visible,
+      units: f.units,
+    })),
+  ];
+  for (const f of files)
+    for (const u of f.units.filter(
+      (x) => x.kind !== "import" && x.kind !== "export",
+    ))
+      for (const l of u.lines)
+        for (const n of bareNames(l))
+          if (watch.has(n) && !f.visible.has(n) && !declaresLocally(u, n))
+            fail(`${f.path} で ${n} が見えない（import も宣言も無い）`);
 }
 
 function check(moveOnly, changes, readText) {
@@ -242,6 +302,10 @@ function check(moveOnly, changes, readText) {
     path: c.path,
     ...parseToFile(read("head", c.path)),
   }));
+  if ([...base, ...head].some((u) => u.kind === "other"))
+    fail(
+      "上に宣言でない文（let・式の文・分割の const 等）がある（単位の境を決められない）",
+    );
   const obj = serviceObject(base);
   const baseTop = base.filter(
     (u) => ["function", "value", "other"].includes(u.kind) && u !== obj.unit,
@@ -250,6 +314,7 @@ function check(moveOnly, changes, readText) {
     .filter((u) => u.kind === "import")
     .flatMap((u) => importSpecs(u.text));
   const ctx = {
+    base,
     obj,
     baseTop,
     baseLines: baseText.split("\n"),
@@ -278,6 +343,8 @@ function check(moveOnly, changes, readText) {
   const { headSpecs, toBySource } = checkImports(ctx, head, toFiles);
   checkExports(ctx, head, toBySource);
   checkNames(ctx, toFiles, used, dropped, headSpecs);
+  const moved = ctx.obj.members.filter((m) => used.has(m)).map((m) => m.name);
+  checkVisible(ctx, head, toFiles, headSpecs, moved);
   return new Set([from[0].path, ...to.map((c) => c.path)]);
 }
 

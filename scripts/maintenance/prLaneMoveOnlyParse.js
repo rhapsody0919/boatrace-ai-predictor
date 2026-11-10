@@ -31,6 +31,8 @@ function kinds(lines, indent = "") {
     const t = line.trim();
     if (inBlock) {
       if (t.includes("*/")) inBlock = false;
+      if (!inBlock && !t.endsWith("*/"))
+        fail(`注釈の後ろに字がある行: ${t.slice(0, 60)}`);
       return "c";
     }
     if (t === "") return "b";
@@ -38,6 +40,8 @@ function kinds(lines, indent = "") {
     if (t.startsWith("//")) return "c";
     if (t.startsWith("/*")) {
       inBlock = !t.slice(2).includes("*/");
+      if (!inBlock && !t.endsWith("*/"))
+        fail(`注釈の後ろに字がある行: ${t.slice(0, 60)}`);
       return "c";
     }
     return "x";
@@ -179,6 +183,9 @@ export const same = (a, b) =>
   a.length === b.length && a.every((l, i) => l === b[i]);
 export const bareRe = (n) =>
   new RegExp(`(?<![\\w$.])${n.replace(/\$/g, "\\$")}(?![\\w$])`);
+/** 文字列・注釈の中でない識別子（`.` の後ろでない）の集合。字の読み方は近似（名前の検査にだけ使う） */
+export const bareNames = (l) =>
+  new Set(codeOnly(l).match(/(?<![\w$.])[A-Za-z_$][\w$]*/g) ?? []);
 export const codeOnly = (l) =>
   /^\s*(?:\/\/|\/?\*)/.test(l)
     ? ""
