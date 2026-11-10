@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures.js";
+import { test, expect, e2eTodayJST } from "./fixtures.js";
 import {
   RACER,
   VENUE,
@@ -23,6 +23,12 @@ import {
 
 // 開発機の負荷が高いと、最初に開くトップの変換・読み込みが既定の60秒を超えることがある
 test.describe.configure({ timeout: 180_000 });
+
+// 出走の締切（既定 23:0n、締切後の題は 08:00）を実時計と比べるため、時計を今日の JST 12:00 に固定する。
+// live の実時計だと 23 時台に「締切後」へ倒れ、締切前の題が落ちる（BOA-1447）
+test.beforeEach(async ({ page }) => {
+  await page.clock.setFixedTime(new Date(`${e2eTodayJST()}T12:00:00+09:00`));
+});
 
 test("☆0件なら予測を読まず、区画は代わりの表示になり、会場カード24件が出る（#2225 の再発防止）", async ({
   page,

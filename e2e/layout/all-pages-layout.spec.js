@@ -5,6 +5,8 @@ import {
   gotoAndSettle,
   inspectGrids,
   expectNoWastedGrids,
+  serveFixedDigest,
+  serveFixedHitRaces,
 } from "./helpers.js";
 
 /**
@@ -63,6 +65,16 @@ const PAGES = [
   "/race/2026-10-06-18-10/assist",
 ];
 
+/**
+ * 当日の的中・朝のダイジェストは 0:00〜7:00 JST に未生成で、主データが出ない。
+ * その2つの path だけ、生成済みの過去日の応答に差し替えてから開く（BOA-1447）
+ */
+async function gotoPage(page, path) {
+  if (path === "/hit-races") await serveFixedHitRaces(page, "all");
+  if (path === "/today") await serveFixedDigest(page);
+  await gotoAndSettle(page, path);
+}
+
 /** 記事のページ（/blog・/blog/{id}）とホーム（最新記事のカードを出す）を開く試験の題に付ける印。記事だけの PR の軽い組で走らせる（BOA-929） */
 const blogTag = (path) =>
   /^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? " @blog" : "";
@@ -70,7 +82,7 @@ const blogTag = (path) =>
 test.describe("レイアウト: 横スクロールが発生しない", () => {
   for (const path of PAGES) {
     test(`${path} で横スクロールが出ない${blogTag(path)}`, async ({ page }) => {
-      await gotoAndSettle(page, path);
+      await gotoPage(page, path);
 
       const overflow = await page.evaluate((tolerance) => {
         const de = document.documentElement;
@@ -110,7 +122,7 @@ test.describe("レイアウト: グリッドの幅が無駄になっていない
     test(`${path} のグリッドに使われていない幅が無い${blogTag(path)}`, async ({
       page,
     }) => {
-      await gotoAndSettle(page, path);
+      await gotoPage(page, path);
       expectNoWastedGrids(await inspectGrids(page));
     });
   }

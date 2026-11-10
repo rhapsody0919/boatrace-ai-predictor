@@ -1,6 +1,11 @@
 // 旧 e2e/layout.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
 import { test, expect, fetchRecorded } from "../fixtures.js";
-import { gotoAndSettle, inspectGrids, expectNoWastedGrids } from "./helpers.js";
+import {
+  DIGEST_FIXED_DATE,
+  gotoAndSettle,
+  inspectGrids,
+  expectNoWastedGrids,
+} from "./helpers.js";
 
 /**
  * BOA-460 の再現テスト。
@@ -20,8 +25,6 @@ import { gotoAndSettle, inspectGrids, expectNoWastedGrids } from "./helpers.js";
  * 前だと未生成で、ページがカードを出さないため検査が空振りする）。過去日の行は
  * 消えない（generate-morning-digest.js の delete は同じ digest_date だけを消す）。
  */
-const DIGEST_FIXED_DATE = "2026-09-22";
-
 /** morning_digest_rows の応答を、セクションごとに先頭 `perSection` 行だけに絞る */
 async function capDigestRowsPerSection(page, perSection) {
   await page.route(/\/rest\/v1\/morning_digest_rows/, async (route) => {
