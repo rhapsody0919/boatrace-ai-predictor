@@ -320,6 +320,15 @@
   }
 }
 
+/* 375px のタップ領域を44px以上、本文字を13.6px以上にする（BOA-1416） */
+@media (max-width: 480px) {
+  .category-filter button,
+  .sort-filter button {
+    min-height: 44px;
+    font-size: 0.85rem;
+  }
+}
+
 /* 極小スマートフォン対応 */
 @media (max-width: 320px) {
   .blog-header h1 {
