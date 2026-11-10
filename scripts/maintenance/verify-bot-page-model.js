@@ -5,10 +5,10 @@
  *
  * 守るもの:
  * 1. botPageModel.js から辿れるモジュールが素の Node（vite の変換なし）から import でき、ブラウザ専用の依存を
- *    持ち込んでいない。window・document・localStorage・sessionStorage を触ると例外を投げる Proxy を globalThis に
- *    立てた中で import し、2〜4 の全モデルを組み、木の全モジュールの export された関数も呼ぶ（終わったら戻す）。
+ *    持ち込んでいない。window・document・localStorage・sessionStorage・fetch・XMLHttpRequest・WebSocket を
+ *    触ると（typeof でも）例外を投げる getter を globalThis に立てた中で import し、2〜4 の全モデルを組み、木の全モジュールの export された関数も呼ぶ（終わったら戻す）。
  *    import の木（リポジトリの中、node_modules を除く）は module hooks で観測し、木の中から react* を import する・
- *    src/services/supabaseClient.js が木に入るのを落とし、import.meta.env は blogPosts*.js の外で触ると例外にする。
+ *    @supabase/* や URL に supabaseClient を含む物が木に入るのを落とし、import.meta.env は blogPosts*.js の外で触ると例外にする。
  *    拡張子の無い import は素の Node が解けずに落ちる。限界: どの入口からも通らない分岐の中の依存は見えない
  * 2. 本番の /api/races/today の実物（2026-10-11 に1回保存したフィクスチャ）から、トップと会場ページの
  *    モデルが人の画面と同じ文字で組める（会場数・レース数・締切時刻・見出し・meta）
@@ -108,11 +108,12 @@ export async function resolve(specifier, context, nextResolve) {
   if (active() && inTree(parent) && /^react/.test(specifier)) {
     throw violation(rel(parent) + ": ブラウザ専用の依存（react）を import している（" + specifier + "）");
   }
+  if (active() && inTree(parent) && specifier.startsWith("@supabase/")) {
+    throw violation(rel(parent) + ": ブラウザ専用の依存（supabase）を import している（" + specifier + "）");
+  }
   const resolved = await nextResolve(specifier, context);
-  if (active() && inTree(resolved.url)) {
-    if (resolved.url === root + "src/services/supabaseClient.js") {
-      throw violation(rel(parent) + ": ブラウザ専用の依存（supabaseClient）を import している");
-    }
+  if (active() && inTree(parent) && /supabaseClient/.test(resolved.url)) {
+    throw violation(rel(parent) + ": ブラウザ専用の依存（supabaseClient）を import している（" + rel(resolved.url) + "）");
   }
   return resolved;
 }
@@ -128,7 +129,11 @@ export async function load(url, context, nextLoad) {
     : 'Object.defineProperty(import.meta, "env", { configurable: true, get() {' +
       " (globalThis.${ENV_HIT_KEY} ??= []).push(" + file + ");" +
       " throw new Error(" + file + ' + ": ブラウザ専用の依存（import.meta.env）を使っている"); } });';
-  return { ...loaded, source: roster + trap + String(loaded.source) };
+  // 先頭が #! の行なら、その行の後ろに足す（#! は1行目にしか書けない）
+  const source = String(loaded.source);
+  const cut = source.startsWith("#!") ? source.indexOf("\\n") + 1 || source.length : 0;
+  const head = cut === source.length && !source.endsWith("\\n") ? source + "\\n" : source.slice(0, cut);
+  return { ...loaded, source: head + roster + trap + source.slice(cut) };
 }
 `;
 const guardState = new Int32Array(new SharedArrayBuffer(8));
@@ -140,13 +145,17 @@ register(`data:text/javascript,${encodeURIComponent(GUARD_HOOKS)}`, {
   },
 });
 
-// window・document・localStorage・sessionStorage は、触ると例外を投げ、触ったことを残す Proxy にする。
-// typeof では落ちないが、中身を読む・書く・in で調べると落ちる（try で握りつぶされても browserTouches に残る）
+// window・document・localStorage・sessionStorage（と §1 の間は通信の fetch・XMLHttpRequest・WebSocket）は、
+// globalThis の getter にして、触ると例外を投げ、触ったことを残す。typeof でも落ちる（Node に無い名前は typeof が
+// "undefined" になり、ブラウザ側の分岐を検査してしまうのを避ける）。try で握りつぶされても browserTouches に残る
 const BROWSER_GLOBALS = [
   "window",
   "document",
   "localStorage",
   "sessionStorage",
+  "fetch",
+  "XMLHttpRequest",
+  "WebSocket",
 ];
 const browserTouches = [];
 let touchContext = "";
@@ -161,22 +170,12 @@ function installBrowserTraps() {
       browserTouches.push(message);
       throw new Error(message);
     };
-    const trap = new Proxy(
-      {},
-      {
-        get: (_, key) => touch(`${name}.${String(key)}`),
-        set: (_, key) => touch(`${name}.${String(key)} への代入`),
-        has: (_, key) => touch(`"${String(key)}" in ${name}`),
-        ownKeys: () => touch(`${name} のキーの一覧`),
-        getOwnPropertyDescriptor: (_, key) => touch(`${name}.${String(key)}`),
-        defineProperty: (_, key) => touch(`${name}.${String(key)} の定義`),
-        deleteProperty: (_, key) => touch(`${name}.${String(key)} の削除`),
-      },
-    );
     Object.defineProperty(globalThis, name, {
-      value: trap,
       configurable: true,
-      writable: true,
+      get: () => touch(name),
+      set: () => {
+        touch(`${name} への代入`);
+      },
     });
   }
   return () => {
@@ -300,48 +299,27 @@ check("トップ: 非開催の会場は名前だけ", top.venues[3], {
 // BOA-1220: 人の会場カードと同じ日目・表示条件。時計は JST の HH:MM。
 {
   const labelOf = (json, nowHHMM, code = 1) =>
-    buildTopModel(json, { t, today: TODAY, nowHHMM }).venues.find(
-      (v) => v.venueCode === code,
-    ).seriesDayLabel;
+    buildTopModel(json, { t, today: TODAY, nowHHMM }).venues
+      .find((v) => v.venueCode === code).seriesDayLabel;
   check("日目: 下関は初日", labelOf(fresh(), "12:00", 19), "初日");
-  check(
-    "日目: 唐津は全レース終了で非表示",
-    labelOf(fresh(), "23:00", 23),
-    null,
-  );
-  check(
-    "日目: 時計なしは人のカード同様非表示",
-    labelOf(fresh(), undefined),
-    null,
-  );
+  check("日目: 唐津は全レース終了で非表示", labelOf(fresh(), "23:00", 23), null);
+  check("日目: 時計なしは人のカード同様非表示", labelOf(fresh(), undefined), null);
   const json = fresh();
   const races = json.data.find((v) => v.place_cd === 1).races;
-  races.forEach((r) => {
-    r.isFinalDay = false;
-  });
+  races.forEach((r) => { r.isFinalDay = false; });
   races.at(-1).isFinalDay = true;
   check("日目: 後続レースだけ最終日の印", labelOf(json, "12:00"), "最終日");
-  races.forEach((r) => {
-    r.seriesDay = 1;
-  });
+  races.forEach((r) => { r.seriesDay = 1; });
   check("日目: 初日と最終日の印が重なれば初日", labelOf(json, "12:00"), "初日");
-  races.forEach((r) => {
-    r.seriesDay = null;
-    r.isFinalDay = null;
-  });
+  races.forEach((r) => { r.seriesDay = null; r.isFinalDay = null; });
   check("日目: 値なし", labelOf(json, "12:00"), null);
   races.at(-1).seriesDay = 5;
   check("日目: 後続レースの値で補完", labelOf(json, "12:00"), "5日目");
-  races.forEach((r) => {
-    r.startTime = "12:00";
-  });
+  races.forEach((r) => { r.startTime = "12:00"; });
   check("日目: 締切と同時刻は次レースに含めない", labelOf(json, "12:00"), null);
   races.at(-1).startTime = null;
   check("日目: 時刻欠損は次レースに含める", labelOf(json, "12:00"), "5日目");
-  races.forEach((r) => {
-    r.cancellationStatus = "confirmed";
-    r.result = null;
-  });
+  races.forEach((r) => { r.cancellationStatus = "confirmed"; r.result = null; });
   check("日目: 丸一日中止は時刻欠損でも非表示", labelOf(json, "12:00"), null);
 }
 
@@ -663,12 +641,7 @@ checkThrows(
 {
   const { seriesOfDate, seriesCoveringDate, SERIES_POSTPONE_TOLERANCE_DAYS } =
     await import("../../src/utils/meetPageModel.js");
-  const row = {
-    start_date: "2026-10-06",
-    end_date: "2026-10-11",
-    title: "節",
-    grade: "G1",
-  };
+  const row = { start_date: "2026-10-06", end_date: "2026-10-11", title: "節", grade: "G1" };
   check("順延3日", seriesOfDate([row], "2026-10-14"), row);
   check("順延4日", seriesOfDate([row], "2026-10-15"), null);
   check("未来の節・空", seriesOfDate([row], "2026-10-05"), null);
@@ -683,12 +656,8 @@ checkThrows(
   ];
   const before = JSON.stringify(rows);
   for (const date of [
-    "2026-08-31",
-    "2026-10-06",
-    "2026-10-11",
-    "2026-10-14",
-    "2026-10-15",
-    "2026-10-20",
+    "2026-08-31", "2026-10-06", "2026-10-11",
+    "2026-10-14", "2026-10-15", "2026-10-20",
   ]) {
     const latest = rows
       .filter((r) => r.start_date <= date)
@@ -703,35 +672,20 @@ checkThrows(
   check("節一覧を並べ替えない", JSON.stringify(rows), before);
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const json = fresh();
-    json.data
-      .find((v) => v.place_cd === 1)
-      .races.forEach((r) => {
-        r.raceGrade = "G1";
-        r.raceTitle = "公式の節";
-      });
+    json.data.find((v) => v.place_cd === 1).races.forEach((r) => { r.raceGrade = "G1"; r.raceTitle = "公式の節"; });
     const options = { t, lang, today: "2026-10-11", seriesRows: [row] };
     const model = buildVenueModel(json, 1, options);
     check(`${lang}: 節リンク`, model.meetBanner, {
       href: `${lang === "ja" ? "" : `/${lang}`}/venue/1/meet/2026-10-06`,
-      name: "G1 公式の節",
-      inProgress: t("venueMeetBanner.inProgress"),
-      link: t("venueMeetBanner.link"),
+      name: "G1 公式の節", inProgress: t("venueMeetBanner.inProgress"), link: t("venueMeetBanner.link"),
     });
-    check(
-      "行なし",
-      buildVenueModel(json, 1, { ...options, seriesRows: [] }).meetBanner,
-      null,
-    );
-    check(
-      "期限切れ",
-      buildVenueModel(json, 1, { ...options, today: "2026-10-15" }).meetBanner,
-      null,
-    );
-    for (const race of json.data.find((v) => v.place_cd === 1).races)
-      race.raceTitle = "グランプリ";
+    check("行なし", buildVenueModel(json, 1, { ...options, seriesRows: [] }).meetBanner, null);
+    check("期限切れ", buildVenueModel(json, 1, { ...options, today: "2026-10-15" }).meetBanner, null);
+    for (const race of json.data.find((v) => v.place_cd === 1).races) race.raceTitle = "グランプリ";
     check("対象外", buildVenueModel(json, 1, options).meetBanner, null);
   }
 }
+
 
 // ---- 1. の続き: 木の全モジュールの export された関数を、罠の中で全部呼ぶ ----
 // 上のモデルが通らない分岐の依存も、export された関数の入口から届く物は落とす。
@@ -747,27 +701,65 @@ const treeUrls = [...new Set(globalThis[TREE_KEY] ?? [])];
     [TODAY, "ja"],
     [[], TODAY],
   ];
+  // 引数が合わない等の例外は見ない。Promise は 50ms だけ待つ
+  const settle = async (call) => {
+    try {
+      const value = call();
+      if (typeof value?.then === "function") {
+        await Promise.race([
+          value.catch(() => {}),
+          new Promise((r) => setTimeout(r, 50)),
+        ]);
+      }
+      return value;
+    } catch {
+      return undefined;
+    }
+  };
+  const isClass = (fn) =>
+    /^class[\s{]/.test(Function.prototype.toString.call(fn));
+  // 関数は6通りの引数で呼ぶ。class は6通りで new し、prototype のメソッドも呼ぶ
+  const sweep = async (fn, label) => {
+    for (const args of ARG_SETS) {
+      touchContext = `（${label} を呼んで）`;
+      if (!isClass(fn)) {
+        await settle(() => fn(...args));
+        continue;
+      }
+      const instance = await settle(() => new fn(...args));
+      if (!instance) continue;
+      for (const key of Object.getOwnPropertyNames(fn.prototype)) {
+        const method = fn.prototype[key];
+        if (key === "constructor" || typeof method !== "function") continue;
+        for (const margs of ARG_SETS) {
+          touchContext = `（${label}.prototype.${key} を呼んで）`;
+          await settle(() => method.apply(instance, margs));
+        }
+      }
+    }
+  };
   for (const url of treeUrls) {
     const ns = await import(url);
-    for (const [name, fn] of Object.entries(ns)) {
-      if (typeof fn !== "function") continue;
-      touchContext = `（${url.slice(ROOT_URL.length)} の ${name} を呼んで）`;
-      for (const args of ARG_SETS) {
-        try {
-          const value = fn(...args);
-          if (typeof value?.then === "function") {
-            await Promise.race([
-              value.catch(() => {}),
-              new Promise((r) => setTimeout(r, 50)),
-            ]);
+    const file = url.slice(ROOT_URL.length);
+    for (const [name, value] of Object.entries(ns)) {
+      if (typeof value === "function") {
+        await sweep(value, `${file} の ${name}`);
+      } else if (value && typeof value === "object") {
+        // export がオブジェクトなら、1段だけ自分の関数のプロパティも呼ぶ
+        for (const [key, prop] of Object.entries(value)) {
+          if (typeof prop === "function") {
+            await sweep(
+              isClass(prop) ? prop : prop.bind(value),
+              `${file} の ${name}.${key}`,
+            );
           }
-        } catch {
-          // 引数が合わない等は見ない
         }
       }
     }
   }
   touchContext = "";
+  // 遅れて（タイマー等で）触るものも数える
+  await new Promise((r) => setTimeout(r, 100));
 }
 
 // ---- 1. の締め: 罠を外し、触った依存・握りつぶされた違反が無いかを見る ----
