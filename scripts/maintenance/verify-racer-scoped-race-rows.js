@@ -16,7 +16,7 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readDataLayerSource } from "./dataLayerSource.js";
 import { computeRates, getRecentRaces } from "../../src/components/race/basicInfoStats.js";
 import { buildRacerScopedRaceRows } from "../../src/services/racerScopedRaceRows.js";
 
@@ -473,10 +473,7 @@ check("B6 出遅れの ST 欠落・false・フラグ未取得は従来の扱い"
 
 console.log("C. 呼び出し");
 
-const service = readFileSync(
-  new URL("../../src/services/supabaseDataService.js", import.meta.url),
-  "utf8",
-);
+const service = readDataLayerSource();
 check("C1 getRacerScopedRaceStats は buildRacerScopedRaceRows を呼ぶ", () => {
   // 書き方（import の改行・引数の並び）には縛られないよう、名前と行き先だけを見る
   assert.match(service, /from\s*["']\.\/racerScopedRaceRows\.js["']/);

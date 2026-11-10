@@ -21,6 +21,7 @@ import {
 } from "../../src/utils/meetPageModel.js";
 
 import { readFileSync } from "node:fs";
+import { readDataLayerSource } from "./dataLayerSource.js";
 import { transformSync } from "esbuild";
 
 const failures = [];
@@ -283,9 +284,7 @@ check(
 );
 
 // 取得関数の本体をローカルの応答だけで実行し、指定日のグレードの受け渡しも検査する。
-const serviceSource = readFileSync(
-  new URL("../../src/services/supabaseDataService.js", import.meta.url), "utf8",
-);
+const serviceSource = readDataLayerSource();
 const methodStart = serviceSource.indexOf("  async getMeetPage(");
 const bodyStart = serviceSource.indexOf("{", methodStart) + 1;
 const bodyEnd = serviceSource.indexOf("    // 予選中で公式の表があれば", bodyStart);

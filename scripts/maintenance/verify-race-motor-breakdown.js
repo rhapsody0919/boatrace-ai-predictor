@@ -8,7 +8,7 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readDataLayerSource } from "./dataLayerSource.js";
 import {
   pastMotorRows,
   recalcMotorRows,
@@ -644,10 +644,7 @@ check("A6 入力を書き換えない", () => {
 });
 
 // サービスが pure の関数を呼ぶこと（整形がサービスに戻っていないこと）
-const service = readFileSync(
-  new URL("../../src/services/supabaseDataService.js", import.meta.url),
-  "utf8",
-);
+const service = readDataLayerSource();
 check("C1 getRaceMotorBreakdown は pure の3関数を呼ぶ", () => {
   assert.match(service, /from "\.\.\/pure\/raceMotorBreakdown\.js"/);
   assert.match(service, /pastMotorRows\(rows, statsAsOf, pretestAsOf\)/);

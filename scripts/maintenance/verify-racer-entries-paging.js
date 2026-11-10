@@ -17,7 +17,7 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readDataLayerSource } from "./dataLayerSource.js";
 import {
   fetchAllInChunks,
   fetchAllPages,
@@ -202,10 +202,7 @@ await check("値が無い: 要求を送らず空配列", async () => {
 });
 
 // --- B. 静的な検査 ---
-const source = readFileSync(
-  new URL("../../src/services/supabaseDataService.js", import.meta.url),
-  "utf8",
-);
+const source = readDataLayerSource();
 
 function methodBody(name) {
   const start = source.indexOf(`\n  ${name}(`);

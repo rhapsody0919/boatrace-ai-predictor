@@ -25,6 +25,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readDataLayerSource } from "./dataLayerSource.js";
 import {
   formatPowerIndex,
   formatRateOrCount,
@@ -143,7 +144,7 @@ check(
   ),
 );
 {
-  const svc = read("src/services/supabaseDataService.js");
+  const svc = readDataLayerSource();
   check(
     "部品交換に、交換が記録されたレース番号を添える（キャッシュのキーも上げる）",
     svc.includes("eventRaceNos") &&
@@ -225,7 +226,7 @@ check(
 {
   // 使用履歴の節ごとの2連率も、着順の付かなかった走を分母に数える（機力指数・枠番別と
   // そろえる。BOA-549、戸田14号機で 4/6 と 22/38 が食い違っていた）
-  const svc = read("src/services/supabaseDataService.js");
+  const svc = readDataLayerSource();
   const usage = svc.slice(
     svc.indexOf("  getMotorUsageHistory("),
     svc.indexOf("\n  },\n", svc.indexOf("  getMotorUsageHistory(")),
@@ -295,7 +296,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
 // ---- BOA-557（BOA-549 ファン評価の残り） ----
 {
   const chart = read("src/components/analysis/MotorConditionChart.jsx");
-  const service = read("src/services/supabaseDataService.js");
+  const service = readDataLayerSource();
   const racerCard = read("src/components/racer/RacerMotorStatusCard.jsx");
   const trendChart = read("src/components/analysis/TrendLineChart.jsx");
   // 当日のレースも「このレースの直前まで」。終了後に開くとそのレース自身の結果が入り、
@@ -437,7 +438,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     "competitionRank: 小さいほど良い指標（事故率）は昇順",
     competitionRank([0.1, 0.2, 0.2, 0.5], 0.5, { ascending: true }).rank === 4,
   );
-  const service = read("src/services/supabaseDataService.js");
+  const service = readDataLayerSource();
   const chart = read("src/components/analysis/MotorConditionChart.jsx");
   check(
     "会場内順位は competitionRank で出し、同値なら「◯位タイ」の文言を使う",
