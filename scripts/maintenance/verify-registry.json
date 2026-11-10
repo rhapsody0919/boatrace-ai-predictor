@@ -1532,7 +1532,7 @@
     {
       "script": "verify-size-baseline.js",
       "tier": "ci",
-      "guards": "大きさの関所の部品（sizeBaselines.js、BOA-1429）。関数の単位の AST hash（コメント・空白に依らない、メソッドを export async function へ移して this.X( を X( にしても同じ）と、基準との比べ方: 基準の単位だけ→緑、同じ場所の1行直し→警告、行・複雑さが増える→赤、線を越える新しい関数→赤、字のままの移動→緑・1字変えて移す→赤、新しいファイルの max-lines は基準の単位の行を除く、基準の units の増加・initial_count の変更→赤、件数が半分以下で旗が立つ"
+      "guards": "大きさの関所の部品（sizeBaselines.js、BOA-1429）。関数の単位の AST hash（コメント・空白に依らない、メソッドを export async function へ移して this.X( を X( にしても同じ）と、基準との比べ方: 基準の単位だけ→緑、同じファイル・同じ名前の既にある単位は1行直し・行や複雑さが増えても半分の線まで警告（#2450、設計 §4.5）、旗が立つと同じ直しも赤、名前を変えて伸ばす・別のファイルの同じ名前→赤、線を越える新しい関数→赤、字のままの移動→緑・1字変えて移す→赤、新しいファイルの max-lines は基準の単位の行を除く、基準の units の増加・initial_count の変更→赤、件数が半分以下で旗が立つ"
     },
     {
       "script": "verify-snapshot-status.js",

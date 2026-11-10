@@ -79,7 +79,7 @@
 /sns-video-studio/remotion/scripts/full-picture/fixtures/2026-10-16-24-11.json.gz @rhapsody0919
 /sns-video-studio/remotion/scripts/full-picture/fixtures/2026-10-19-19-10.json.gz @rhapsody0919
 
-# --- 既存の e2e の spec（136本） ---
+# --- 既存の e2e の spec（175本）と、2026-11-10 に smoke.spec.js・layout.spec.js を割って切り出した e2e/smoke/・e2e/layout/ の helpers.js（2本。作り直すときは足す） ---
 /e2e/acceptance/analogy-finder.spec.js @rhapsody0919
 /e2e/acceptance/in-collapse-caution.spec.js @rhapsody0919
 /e2e/acceptance/meet-page.spec.js @rhapsody0919
@@ -127,7 +127,22 @@
 /e2e/in-caution-lists.spec.js @rhapsody0919
 /e2e/jst-date-timezone.spec.js @rhapsody0919
 /e2e/ko-keep-all.spec.js @rhapsody0919
-/e2e/layout.spec.js @rhapsody0919
+/e2e/layout/admin-layout.spec.js @rhapsody0919
+/e2e/layout/all-pages-layout.spec.js @rhapsody0919
+/e2e/layout/articles-layout.spec.js @rhapsody0919
+/e2e/layout/helpers.js @rhapsody0919
+/e2e/layout/hit-races-layout.spec.js @rhapsody0919
+/e2e/layout/home-layout.spec.js @rhapsody0919
+/e2e/layout/hscroll-layout.spec.js @rhapsody0919
+/e2e/layout/race-detail-1-layout.spec.js @rhapsody0919
+/e2e/layout/race-detail-2-layout.spec.js @rhapsody0919
+/e2e/layout/race-detail-before-info-layout.spec.js @rhapsody0919
+/e2e/layout/race-detail-meet-layout.spec.js @rhapsody0919
+/e2e/layout/race-detail-pattern-rate-layout.spec.js @rhapsody0919
+/e2e/layout/sonar-layout.spec.js @rhapsody0919
+/e2e/layout/thinking-assist-layout.spec.js @rhapsody0919
+/e2e/layout/today-layout.spec.js @rhapsody0919
+/e2e/layout/venues-layout.spec.js @rhapsody0919
 /e2e/meet-form-nav.spec.js @rhapsody0919
 /e2e/meet-page-head-before-data.spec.js @rhapsody0919
 /e2e/meet-page.spec.js @rhapsody0919
@@ -189,7 +204,33 @@
 /e2e/result-st-chart.spec.js @rhapsody0919
 /e2e/route-after-test-end.spec.js @rhapsody0919
 /e2e/seo-canonical.spec.js @rhapsody0919
-/e2e/smoke.spec.js @rhapsody0919
+/e2e/smoke/analysis-1.spec.js @rhapsody0919
+/e2e/smoke/analysis-2.spec.js @rhapsody0919
+/e2e/smoke/articles.spec.js @rhapsody0919
+/e2e/smoke/contrast.spec.js @rhapsody0919
+/e2e/smoke/guides.spec.js @rhapsody0919
+/e2e/smoke/helpers.js @rhapsody0919
+/e2e/smoke/holmes.spec.js @rhapsody0919
+/e2e/smoke/home.spec.js @rhapsody0919
+/e2e/smoke/i18n.spec.js @rhapsody0919
+/e2e/smoke/race-detail-ai-copy.spec.js @rhapsody0919
+/e2e/smoke/race-detail-basic-1.spec.js @rhapsody0919
+/e2e/smoke/race-detail-basic-2.spec.js @rhapsody0919
+/e2e/smoke/race-detail-before-info-1.spec.js @rhapsody0919
+/e2e/smoke/race-detail-before-info-2.spec.js @rhapsody0919
+/e2e/smoke/race-detail-before-info-3.spec.js @rhapsody0919
+/e2e/smoke/race-detail-before-info-weight.spec.js @rhapsody0919
+/e2e/smoke/race-detail-course-1.spec.js @rhapsody0919
+/e2e/smoke/race-detail-course-2.spec.js @rhapsody0919
+/e2e/smoke/race-detail-heading.spec.js @rhapsody0919
+/e2e/smoke/race-detail-meet-1.spec.js @rhapsody0919
+/e2e/smoke/race-detail-meet-2.spec.js @rhapsody0919
+/e2e/smoke/race-detail-motor.spec.js @rhapsody0919
+/e2e/smoke/race-detail-odds-analysis.spec.js @rhapsody0919
+/e2e/smoke/race-detail-recent-runs.spec.js @rhapsody0919
+/e2e/smoke/racers.spec.js @rhapsody0919
+/e2e/smoke/races-results.spec.js @rhapsody0919
+/e2e/smoke/venues.spec.js @rhapsody0919
 /e2e/sns-hub-blog-draft.spec.js @rhapsody0919
 /e2e/theme-toggle-i18n.spec.js @rhapsody0919
 /e2e/thinking-assist-states.spec.js @rhapsody0919
