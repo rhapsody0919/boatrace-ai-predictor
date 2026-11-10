@@ -181,8 +181,9 @@ export function methodAsFunction(member, thisNames) {
 
 export const same = (a, b) =>
   a.length === b.length && a.every((l, i) => l === b[i]);
-export const bareRe = (n) =>
-  new RegExp(`(?<![\\w$.])${n.replace(/\$/g, "\\$")}(?![\\w$])`);
+/** 正規表現の記号を全部逃す（識別子を正規表現に入れるとき） */
+export const escapeRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const bareRe = (n) => new RegExp(`(?<![\\w$.])${escapeRe(n)}(?![\\w$])`);
 /** 文字列・注釈の中でない識別子（`.` の後ろでない）の集合。字の読み方は近似（名前の検査にだけ使う） */
 export const bareNames = (l) =>
   new Set(codeOnly(l).match(/(?<![\w$.])[A-Za-z_$][\w$]*/g) ?? []);

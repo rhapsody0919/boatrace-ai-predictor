@@ -38,6 +38,7 @@ import {
   bareRe,
   codeOnly,
   bareNames,
+  escapeRe,
   serviceObject,
   delegation,
   parseToFile,
@@ -246,9 +247,7 @@ function checkNames(ctx, toFiles, used, dropped, headSpecs) {
 // 単位の中で同じ名前を宣言していれば局所の名前（base と字が同じなので同じ物を指す）
 const declaresLocally = (u, n) =>
   u.lines.some((l) =>
-    new RegExp(
-      `\\b(?:const|let|var|function|class) ${n.replace(/\$/g, "\\$")}\\b`,
-    ).test(l),
+    new RegExp(`\\b(?:const|let|var|function|class) ${escapeRe(n)}\\b`).test(l),
   );
 
 /** base の上の名前と移したメソッドの名前が裸で出たら、そのファイルで見える（import か自分の単位）こと */
