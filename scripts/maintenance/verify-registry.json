@@ -761,6 +761,11 @@
       "guards": "Linear の起票の前の関所（scripts/lib/linearIssueGate.js）が、未アーカイブ件数が閾値230件以上・数えられないときに起票を止め、件数と閾値の入った文で通知すること（無料枠250件の手前で止める。hq 台帳 PL48、閾値は 2026-10-21 hq 決定）。check-revision-escalation.js・create-vup-linear-ticket.js が数えてから issueCreate を送り、230件では送らないこと、夜間のジョブは止めたら保留で終わること、issueCreate を送るファイルがすべて関所を読み込むこと（fetch を差し替え、実 Linear・Slack に触れない。linear-cli.js は verify-linear-cli.js が見る）"
     },
     {
+      "script": "verify-lint-duplicates.js",
+      "tier": "ci",
+      "guards": "lint-changed.js --ci の jscpd の重なりの分け方（scripts/maintenance/lintDuplicates.js、HR03 第2波の詰まりの直し）: 新しいファイルの側の重なりは赤・既にあるファイルだけの重なりは警告。split-data-layer.mjs の出力そのままの PR（prLaneMoveOnly.js の moveOnlyPaths）で差分の側が全部移しただけのファイルなら警告。to に手で写しを足す・1字変える・移すだけでない新しいファイルが側にある場合は赤のまま。外部接続なし"
+    },
+    {
       "script": "verify-localize-path.js",
       "tier": "ci",
       "guards": "言語コード・パス変換の既存出力と、languages.js から pure/localizePath.js への再 export の参照同一性（BOA-1344）"

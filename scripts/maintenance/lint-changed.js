@@ -14,7 +14,8 @@
  *   - 新しいファイルが max-lines・complexity の線を越える
  *   - 既にあるファイルが、この差分で max-lines の線を越えた（base で線の内だった）
  *   - --ci: src・scripts・api に循環の import がある（madge。2026-11-07 時点で0件なので、全体で0件を保つ）
- *   - --ci: 新しいファイルが、ほかのコードと15行以上重なる（jscpd）
+ *   - --ci: 新しいファイルが、ほかのコードと15行以上重なる（jscpd）。split-data-layer.mjs の出力そのままの PR で、
+ *     差分の側が全部移しただけのファイルの重なりは警告（base の殻の字そのまま。lintDuplicates.js）
  * 警告だけ（失敗にしない）:
  *   - 既にあるファイルの complexity の越え・既に線を越えていたファイルの max-lines
  *   - --ci: 既にあるファイルの重なり
@@ -31,6 +32,13 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
+import {
+  classifyDuplicates,
+  loadMoveOnly,
+  movedFiles,
+  notMovedReason,
+  treeReader,
+} from "./lintDuplicates.js";
 import { runSizeGate } from "./lintTrees.js";
 
 const ROOT = path.resolve(
@@ -227,15 +235,21 @@ if (ci) {
       errors.push(`jscpd の結果が無い（終了コード ${res.status}）`);
     } else {
       const { duplicates } = JSON.parse(fs.readFileSync(report, "utf8"));
-      for (const d of duplicates) {
-        const sides = [d.firstFile, d.secondFile];
-        const hit = sides.filter((s) => byFile.has(s.name));
-        if (hit.length === 0) continue;
-        const text = `重なり ${d.lines} 行: ${sides.map((s) => `${s.name}:${s.start}-${s.end}`).join(" と ")}`;
-        (hit.some((s) => byFile.get(s.name).added) ? errors : warnings).push(
-          text,
+      // split-data-layer.mjs の出力そのままの PR は、移したファイルの側の重なりを警告に下げる（lintDuplicates.js）
+      const moveOnly = loadMoveOnly(ROOT);
+      const readText = treeReader(ROOT, mergeBase);
+      const moved = movedFiles(moveOnly, changed, readText);
+      if (moved.size > 0)
+        console.log(
+          `jscpd: 移しただけのファイル ${moved.size} 本（prLaneMoveOnly.js）`,
         );
-      }
+      const why =
+        moved.size > 0 ? null : notMovedReason(moveOnly, changed, readText);
+      if (why)
+        console.log(`jscpd: 移しただけと見なさない（重なりは下げない）: ${why}`);
+      const dup = classifyDuplicates(duplicates, byFile, moved);
+      errors.push(...dup.errors);
+      warnings.push(...dup.warnings);
     }
   }
 }
