@@ -4,6 +4,7 @@
 // 使い方: node gen_p10.js [list のキー（空白区切り）]
 import fs from "node:fs";
 import path from "node:path";
+import process from "node:process";
 const dir = path.dirname(new URL(import.meta.url).pathname);
 const rd = (f) => fs.readFileSync(path.join(dir, f), "utf8");
 const wr = (f, s) => fs.writeFileSync(path.join(dir, f), s);
