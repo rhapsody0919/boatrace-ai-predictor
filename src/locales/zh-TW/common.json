@@ -652,6 +652,18 @@
   "raceSummary": {
     "title": "出賽6艇"
   },
+  "frontTaking": {
+    "badge": "內側搶道",
+    "badgeAria": "內側搶道（前付比例較高的選手）"
+  },
+  "racerFrontTaking": {
+    "title": "前付傾向",
+    "noRuns": "有進入航道記錄的2～6號艇出賽為0場。",
+    "lead": "在有進入航道記錄的2～6號艇{{runs}}場出賽中，進入比艇號更內側航道（前付）的有{{taken}}場（{{rate}}%）。",
+    "course": "{{course}}號航道 {{count}}場",
+    "badgeOn": "出賽場數達{{minRuns}}場以上且前付比例達{{minRate}}%以上的選手會標示「內側搶道」標籤。這是過去出賽的統計，並不代表下一場比賽的進入航道。",
+    "badgeOff": "出賽場數達{{minRuns}}場以上且前付比例達{{minRate}}%以上的選手會標示「內側搶道」標籤。此選手不在標籤對象內。"
+  },
   "raceStrip": {
     "label": "{{venue}}的比賽",
     "meetLink": "本節得分率、晉級 ›",
