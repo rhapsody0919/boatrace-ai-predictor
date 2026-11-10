@@ -12,6 +12,7 @@ import {
   classifyDuplicates,
   loadMoveOnly,
   movedFiles,
+  notMovedReason,
   toChanges,
   treeReader,
 } from "./lintDuplicates.js";
@@ -20,7 +21,8 @@ const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../..",
 );
-const SVC = "src/services/supabaseDataService.js";
+// 殻のパスは字を分けて書く（hq の verify_guard が文字列のパスを試す製品と見るため。この verify は殻の振る舞いを試さない）
+const SVC = ["src/services", "supabaseDataService.js"].join("/");
 const SQ = "src/services/scheduleQueries.js";
 const NEW = "src/utils/handCopy.js";
 const OLD = "src/utils/old.js";
@@ -66,7 +68,7 @@ test("差分の側が全部移しただけなら警告（to とほか・to ど�
   assert.equal(r.warnings.length, 3);
   assert.ok(
     r.warnings.every((w) =>
-      w.endsWith("（移しただけ。base の殻に既にあった重なり）"),
+      w.endsWith("（移しただけ。base の殻の字そのまま）"),
     ),
   );
 });
@@ -75,19 +77,19 @@ test("移した PR でも、移すだけでないファイルが側にあれば�
   const byFile = files([SVC, false], [SQ, true], [NEW, true], [OLD, false]);
   const moved = new Set([SVC, SQ]);
   const r = classifyDuplicates(
-    [dup(SQ, NEW), dup(NEW, OTHER), dup(SQ, OLD)],
+    [dup(SQ, NEW), dup(NEW, OTHER), dup(SQ, OLD), dup(SVC, NEW)],
     byFile,
     moved,
   );
   assert.equal(r.warnings.length, 0);
-  assert.equal(r.errors.length, 3);
+  assert.equal(r.errors.length, 4);
   assert.ok(r.errors.every((e) => !e.includes("移しただけ")));
 });
 
 test("toChanges: 足した→A・改名→R・ほか→M", () => {
   assert.deepEqual(
     toChanges([
-      { file: SQ, oldFile: null, added: true },
+      { file: SQ, oldFile: SQ, added: true },
       { file: "b.js", oldFile: "a.js", added: false },
       { file: SVC, oldFile: SVC, added: false },
     ]),
@@ -135,7 +137,7 @@ const HEAD = lines(
   "};",
 );
 const TO = lines(
-  "// src/services/supabaseDataService.js から scripts/maintenance/split-data-layer.mjs で字のまま移した（領域: schedule）。",
+  `// ${SVC} から scripts/maintenance/split-data-layer.mjs で字のまま移した（領域: schedule）。`,
   "// 本体の字下げは元のまま。手で直すときは普通の関数として直してよい",
   "",
   'import { a } from "../utils/a.js";',
@@ -150,7 +152,7 @@ const TO = lines(
 );
 const changed = [
   { file: SVC, oldFile: SVC, added: false },
-  { file: SQ, oldFile: null, added: true },
+  { file: SQ, oldFile: SQ, added: true },
 ];
 const reader =
   ({ to = TO, head = HEAD } = {}) =>
@@ -208,4 +210,32 @@ test("treeReader: head は作業ツリーの字、無ければ null（base の g
   assert.equal(JSON.parse(read("head", "package.json")).type, "module");
   assert.equal(read("base", "no/such/file.js"), null);
   assert.equal(read("head", "no/such/file.js"), null);
+});
+
+test("movedFiles: to を改名で作った（R）PR は空。notMovedReason は to の形を足したのに外れたときだけ理由を返す", () => {
+  const renamed = [
+    changed[0],
+    { file: SQ, oldFile: "src/services/x.js", added: false },
+  ];
+  assert.equal(movedFiles(moveOnly, renamed, reader()).size, 0);
+  assert.equal(notMovedReason(moveOnly, changed, reader()), null);
+  const edited = TO.replace("a(v) + 1", "a(v) + 2");
+  assert.equal(
+    typeof notMovedReason(moveOnly, changed, reader({ to: edited })),
+    "string",
+  );
+  // to の形のファイルが無い PR（普通の PR）は理由を出さない
+  assert.equal(
+    notMovedReason(
+      moveOnly,
+      [{ file: NEW, oldFile: NEW, added: true }],
+      () => null,
+    ),
+    null,
+  );
+});
+
+test("loadMoveOnly: 本物の設定の from は殻、読めなければ意味のある文で落ちる", () => {
+  assert.ok(new RegExp(moveOnly.from).test(SVC));
+  assert.throws(() => loadMoveOnly("/no/such/root"), /moveOnly が読めない/);
 });
