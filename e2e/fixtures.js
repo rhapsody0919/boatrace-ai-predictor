@@ -585,6 +585,113 @@ async function waitForInflight(context, testInfo) {
   }
 }
 
+/**
+ * E2E_COVERAGE=1（毎晩の全件、.github/workflows/e2e-nightly.yml）のときだけ、test ごとに「動いた src のファイル」を
+ * test-results/.e2e-coverage/<pid>.jsonl に1行足す（docs/design/ci-minutes-reduction/design.md 12章）。
+ * 束は E2E_SOURCEMAP=1 の build:e2e で作る（dist/assets/*.js.map が要る）。無いときは tests ごと落とさず、
+ * 何が足りないかを書いて投げる（黙って空の表にしない）。数え方は scripts/lib/e2eCoverageMap.js
+ */
+const E2E_COVERAGE = process.env.E2E_COVERAGE === "1";
+export const COVERAGE_DIR = path.join(
+  repoRoot,
+  "test-results",
+  ".e2e-coverage",
+);
+const E2E_DIR = path.join(repoRoot, "e2e");
+
+// 束の source map はワーカーの中でファイルごとに1回だけ読む
+const traceMaps = new Map();
+async function traceMapFor(bundleFile) {
+  if (!traceMaps.has(bundleFile)) {
+    traceMaps.set(
+      bundleFile,
+      (async () => {
+        const { TraceMap } = await import("@jridgewell/trace-mapping");
+        let text;
+        try {
+          text = readFileSync(`${bundleFile}.map`, "utf8");
+        } catch (error) {
+          throw new Error(
+            `${bundleFile}.map を読めません（E2E_SOURCEMAP=1 で npm run build:e2e したか）: ${error.message}`,
+          );
+        }
+        return new TraceMap(text);
+      })(),
+    );
+  }
+  return traceMaps.get(bundleFile);
+}
+
+async function sourcesOfCoverage(entries) {
+  const { coveredSources } = await import("../scripts/lib/e2eCoverageMap.js");
+  const files = new Set();
+  for (const entry of entries) {
+    let pathname;
+    try {
+      pathname = new URL(entry.url).pathname;
+    } catch {
+      continue;
+    }
+    if (!/^\/assets\/.+\.js$/.test(pathname)) continue;
+    const bundleFile = path.join(repoRoot, "dist", pathname);
+    const source = entry.source ?? readFileSync(bundleFile, "utf8");
+    for (const f of coveredSources(
+      entry,
+      source,
+      await traceMapFor(bundleFile),
+    ))
+      files.add(f);
+  }
+  return files;
+}
+
+/**
+ * fixture の page と、test の中で context に増えた page（window.open 等）の JS coverage を取る。
+ * 増えた page は "page" の出来事で始めるので、最初の遷移に間に合わないことがある（その分は取れない。
+ * 取れない spec は、表の組み立てで「常に流す」側に入る）。閉じた page は止められず、その分も取れない
+ */
+async function provideWithCoverage(page, provide, testInfo) {
+  const options = { resetOnNavigation: false };
+  await page.coverage.startJSCoverage(options);
+  const started = [Promise.resolve(page)];
+  const onPage = (extra) => {
+    started.push(
+      extra.coverage.startJSCoverage(options).then(
+        () => extra,
+        () => null,
+      ),
+    );
+  };
+  page.context().on("page", onPage);
+  try {
+    await provide(page);
+  } finally {
+    page.context().off("page", onPage);
+    const entries = [];
+    for (const p of await Promise.all(started)) {
+      if (!p) continue;
+      try {
+        entries.push(...(await p.coverage.stopJSCoverage()));
+      } catch (error) {
+        console.warn(
+          `[e2e coverage] 止められない page があります: ${error.message}`,
+        );
+      }
+    }
+    const files = await sourcesOfCoverage(entries);
+    mkdirSync(COVERAGE_DIR, { recursive: true });
+    appendFileSync(
+      path.join(COVERAGE_DIR, `${process.pid}.jsonl`),
+      `${JSON.stringify({
+        spec: path.relative(E2E_DIR, testInfo.file).split(path.sep).join("/"),
+        project: testInfo.project.name,
+        title: testInfo.titlePath.slice(1).join(" › "),
+        files: [...files].sort(),
+      })}\n`,
+    );
+  }
+}
+
 /** Cookie 同意の保存先（src/utils/analytics.js の CONSENT_KEY と同じ） */
 export const COOKIE_CONSENT_KEY = "boatai:cookie-consent";
 
@@ -632,9 +739,13 @@ export const test = base.extend({
     await waitForInflight(context, testInfo);
   },
   // context の "page" でも包むが、fixture の page は念のためここでも包む（二重には包まない）
-  page: async ({ page }, provide) => {
+  page: async ({ page }, provide, testInfo) => {
     guardRoutes(page);
-    await provide(page);
+    if (!E2E_COVERAGE) {
+      await provide(page);
+      return;
+    }
+    await provideWithCoverage(page, provide, testInfo);
   },
 });
 

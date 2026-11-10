@@ -11,6 +11,8 @@
  * build の後に dist/.e2e-build.json（どのモードの束か・焼き込んだ宛先）を書き、playwright.config.js が
  * preview の起動の前に、今のモードと合っているかを確かめる（再生の束で本番データを走らせない）。
  *
+ * E2E_SOURCEMAP=1 のときだけ vite build に --sourcemap hidden を渡す（毎晩の網羅の表用、e2e-nightly.yml。束の中身は変わらない）。
+ *
  * 使い方: npm run build:e2e   （E2E_LIVE・E2E_RECORD・E2E_RECORDING_SOURCE は playwright と同じ）
  * 決定: ADR-0077 決定8。検証: scripts/maintenance/verify-e2e-build.js
  */
@@ -62,13 +64,22 @@ export function buildEnv(env, supabaseUrl) {
   return { ...env, VITE_SUPABASE_URL: supabaseUrl, VITE_GA_MEASUREMENT_ID: "" };
 }
 
+/**
+ * vite build に足す引数（純粋関数）。E2E_SOURCEMAP=1 のときだけ hidden の source map を出す
+ * （束に sourceMappingURL は入らず、dist/assets/*.js.map だけが増える）。毎晩の網羅の表（E2E_COVERAGE=1）が
+ * 動いた関数を src へ戻すのに使う。本番の build・vite.config.js は変えない
+ */
+export function viteBuildArgs(env) {
+  return env.E2E_SOURCEMAP === "1" ? ["--sourcemap", "hidden"] : [];
+}
+
 function main() {
   const mode = e2eMode(process.env);
   const supabaseUrl = buildSupabaseUrl(mode, process.env, (f) =>
     JSON.parse(readFileSync(path.join(ROOT, f), "utf8")),
   );
   const started = Date.now();
-  const r = spawnSync("npx", ["vite", "build"], {
+  const r = spawnSync("npx", ["vite", "build", ...viteBuildArgs(process.env)], {
     cwd: ROOT,
     stdio: "inherit",
     env: buildEnv(process.env, supabaseUrl),

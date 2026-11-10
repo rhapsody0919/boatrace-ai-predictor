@@ -1,0 +1,212 @@
+name: E2E Nightly (全件と網羅の表)
+
+# 毎晩 master で、録画の再生で全 E2E spec を流し、spec ごとの「動いた src のファイル」の表（spec → src[]）を作って
+# artifact e2e-coverage-map に置く（docs/design/ci-minutes-reduction/design.md 12章、ADR-0100）。
+# 表は、後の PR で「PR の差分に当たる spec だけ」を流す選別に使う。毎晩の全件は、選別の抜けとマージの組み合わせの壊れを拾う網も兼ねる。
+#
+# - 流し方は PR ゲート（e2e-smoke-test.yml の e2e-shard）と同じ: 組の分け方 e2e/shards.json、録画の再生（strict にしない）、
+#   vite preview。違うのは E2E_SOURCEMAP=1（束に hidden の source map を出す）と E2E_COVERAGE=1（test ごとに動いた src を記録する）だけ
+# - 表の組み立ては scripts/maintenance/e2e-coverage-map.js。自分で browser.newContext() を作る spec・coverage の行が無い spec は
+#   表の always に入り、選別では常に流す。1ファイルも取れていなければ表を作らず落とす（空の表で全件が always になるのを防ぐ）
+# - 録画は公開済みの物を使う。e2e-rerecord.yml の撮り直しとは独立
+# - 失敗・7日より古い表は Job Watch（job-watch.yml）が知らせる。全件が通らなかった run の表も artifact には上げるが、
+#   選別で使うのは成功した run の表だけ（行が欠けた spec は always に倒れるので、古くなる向きには壊れない）
+# - 鍵は e2e-smoke-test.yml と同じ secrets だけ。master でだけ動く
+
+on:
+  schedule:
+    # JST 22:47。毎時0分は混むので避ける
+    - cron: '47 13 * * *'
+  workflow_dispatch:
+
+# 同時に2本は走らせない（前の run は最後まで走らせる。表を途中で捨てない）
+concurrency:
+  group: e2e-nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # 組の分け方（e2e/shards.json）を e2e-shard の matrix に直す。誤りがあればここで落とす
+  plan:
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.shards.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Read e2e shards
+        id: shards
+        run: |
+          set -euo pipefail
+          node scripts/maintenance/e2e-shards.js --matrix | tee -a "$GITHUB_OUTPUT"
+
+  # PR ゲートの e2e-shard と同じ作り。timeout は PR ゲートと同じ 45分に coverage の計測の上乗せを見て 60分
+  # （計測の分の実測はまだ無い。初回の run で見直す）
+  e2e-shard:
+    needs: plan
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    name: e2e-shard (${{ matrix.shard }}/${{ strategy.job-total }})
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Cache E2E recording
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/boatai-e2e-recording
+          key: e2e-recording-${{ hashFiles('e2e/recording.json') }}
+
+      # E2E_SOURCEMAP=1: dist/assets/*.js.map を出す（束の中身は変わらない）。表が動いた関数を src へ戻すのに使う
+      - name: Build (e2e の束、録画の再生用、source map つき)
+        env:
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          E2E_SOURCEMAP: '1'
+        run: npm run build:e2e
+
+      # E2E_COVERAGE=1: test ごとに動いた src のファイルを test-results/.e2e-coverage/<pid>.jsonl に書く（e2e/fixtures.js）
+      - name: Run E2E (録画の再生、coverage つき)
+        env:
+          CI: true
+          E2E_SERVE: preview
+          E2E_COVERAGE: '1'
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-${{ matrix.shard }}.zip
+        run: npx playwright test --fully-parallel --reporter=list,blob ${{ matrix.args }}
+
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-nightly-blob-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+
+      - name: Upload coverage rows
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-nightly-coverage-${{ matrix.shard }}
+          path: test-results/.e2e-coverage/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Upload Playwright trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-nightly-traces-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
+  # 集約。全件が通ったか・全 spec がちょうど1回ずつ走ったかを確かめ、coverage の行から表を作って artifact に上げる
+  aggregate:
+    needs: [plan, e2e-shard]
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: e2e-nightly-blob-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      - name: Download coverage rows
+        uses: actions/download-artifact@v4
+        with:
+          pattern: e2e-nightly-coverage-*
+          path: coverage-by-shard
+
+      # merge-reports はテストが落ちていても終了コード0を返す。合否は最後の手順で組の結果から決める
+      - name: Merge reports
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-results.json
+        run: npx playwright merge-reports --reporter=dot,json all-blob-reports
+
+      - name: Check skipped tests
+        run: node scripts/maintenance/check-e2e-skips.js
+
+      # 全 spec の一覧（表の組み立てにも使う）。--list は Vite の env 読み込みがバナーを標準出力に出すため、
+      # レポーターに直接書かせる（e2e-smoke-test.yml の集約と同じ）
+      - name: List all specs
+        if: always()
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-list.json
+        run: npx playwright test --list --reporter=json
+
+      - name: Check shard coverage
+        if: always()
+        run: node scripts/maintenance/check-e2e-shard-coverage.js e2e-list.json e2e-results.json
+
+      - name: Build coverage map
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p coverage-by-shard
+          node scripts/maintenance/e2e-coverage-map.js --coverage-dir=coverage-by-shard --list=e2e-list.json --out=e2e-coverage-map.json
+          {
+            echo "### 網羅の表"
+            node -e 'const m=JSON.parse(require("fs").readFileSync("e2e-coverage-map.json","utf8"));console.log("spec "+Object.keys(m.specs).length+" 本に src の対応を取れた。常に流す spec: "+m.always.length+" 本（"+m.always.join(", ")+"）")'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage map
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-coverage-map
+          path: e2e-coverage-map.json
+          if-no-files-found: error
+          retention-days: 14
+
+      # 全件が通らなかった run は失敗にする（表は上で上げてあるが、選別に使うのは成功した run の表だけ）
+      - name: Fail if any shard failed
+        if: always()
+        env:
+          SHARD_RESULT: ${{ needs.e2e-shard.result }}
+        run: |
+          if [ "$SHARD_RESULT" != "success" ]; then
+            echo "e2e-shard の結果: $SHARD_RESULT（どの組が落ちたかは e2e-shard の各ジョブを参照）"
+            exit 1
+          fi
