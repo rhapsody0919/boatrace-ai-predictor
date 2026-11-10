@@ -249,7 +249,7 @@
     {
       "script": "verify-bot-page-model.js",
       "tier": "ci",
-      "guards": "ボット向け HTML（ADR 0089）のモデル src/utils/botPageModel.js。import の経路にブラウザ専用の依存（supabaseClient・import.meta.env・localStorage 等）が無く Node から読めること、本番の /api/races/today のフィクスチャから人の画面と同じ文字（会場名・節の名前・レース番号・締切時刻・グレード・中止・見出し・title・description・canonical）で組めること、UTC で動かしても日付が前日にずれないこと、0件と壊れた入力を区別すること（壊れた入力で開催なしにしない。ADR 0069）、選手名・オッズ・着順・荒れ度等を入れないこと、人の画面が同じ関数（transformTodayRaces・pageMeta・raceListDisplay）を使い続けていること"
+      "guards": "ボット向け HTML（ADR 0089）のモデル src/utils/botPageModel.js。import の経路が素の Node から読め、ブラウザ専用の依存を持たないこと（window・document・localStorage・sessionStorage を触ると落ちる罠の中で import して全モデルと木の export された関数を呼び、module hooks で react・supabaseClient の import と blogPosts*.js の外の import.meta.env を落とす）、本番の /api/races/today のフィクスチャから人の画面と同じ文字（会場名・節の名前・レース番号・締切時刻・グレード・中止・見出し・title・description・canonical）で組めること、UTC で動かしても日付が前日にずれないこと、0件と壊れた入力を区別すること（壊れた入力で開催なしにしない。ADR 0069）、選手名・オッズ・着順・荒れ度等を入れないこと、人の画面が同じ関数（transformTodayRaces・pageMeta・raceListDisplay）を使い続けていること（VenueGridPage・VenueRaceListPage・VenueGridCard・RaceCard を jsdom に描いて title 等・会場カードの代表値・レース番号・締切がモデルと同じで、共有の関数を呼んでいることを記録係の hook で見る。データ層は公開の入口 getRaces から。src の本文は読まない、BOA-1409）"
     },
     {
       "script": "verify-bot-push-workflows.js",
