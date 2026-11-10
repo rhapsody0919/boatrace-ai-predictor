@@ -80,7 +80,8 @@ export function parseService(source) {
 }
 
 export function importParts(node) {
-  return node.specifiers.map((s) => ({
+  return node.specifiers.map((s, idx) => ({
+    idx,
     kind: s.type,
     local: s.local.name,
     imported:

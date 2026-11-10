@@ -103,7 +103,10 @@ export function renderFile(ctx, area, items, deps, needExport) {
   const imps = sortSources(ctx, deps.keys()).map((s) => {
     const parts = [...deps.get(s).values()];
     const rest = parts.filter((p) => p.kind !== "ImportSpecifier");
-    const names = parts.filter((p) => p.kind === "ImportSpecifier").sort((p, q) => (p.local < q.local ? -1 : 1));
+    // 元の import は元の名前の並び（本文の import の字を見る verify があるため）、出したファイルからは名前の順
+    const names = parts
+      .filter((p) => p.kind === "ImportSpecifier")
+      .sort((p, q) => (p.idx ?? 0) - (q.idx ?? 0) || (p.local < q.local ? -1 : p.local > q.local ? 1 : 0));
     return renderImport(s, [...rest, ...names]);
   });
   const bodies = items.map((x, i) => {
