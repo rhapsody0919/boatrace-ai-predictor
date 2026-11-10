@@ -25,7 +25,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
 import {
   formatPowerIndex,
   formatRateOrCount,
@@ -227,10 +227,7 @@ check(
   // 使用履歴の節ごとの2連率も、着順の付かなかった走を分母に数える（機力指数・枠番別と
   // そろえる。BOA-549、戸田14号機で 4/6 と 22/38 が食い違っていた）
   const svc = readDataLayerSource();
-  const usage = svc.slice(
-    svc.indexOf("  getMotorUsageHistory("),
-    svc.indexOf("\n  },\n", svc.indexOf("  getMotorUsageHistory(")),
-  );
+  const usage = dataLayerMethod("getMotorUsageHistory", svc);
   check(
     "使用履歴: 着順の付かなかった走も、結果の出たレースなら分母に数える（キャッシュのキーも上げる）",
     /\} else if \(isUsableRaceResult\(result\)\) \{\s*n \+= 1;/.test(usage) &&
@@ -307,7 +304,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   );
   check(
     "一覧の機力指数も当日のレースは「このレースの直前まで」",
-    /this\.getMotorPowerIndex\(\s*venueCode,\s*row\.motor_number,\s*days,\s*raceId,?\s*\)/.test(
+    /(?<![\w$.])(?:this\.)?getMotorPowerIndex\(\s*venueCode,\s*row\.motor_number,\s*days,\s*raceId,?\s*\)/.test(
       service,
     ),
   );

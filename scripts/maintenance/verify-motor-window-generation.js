@@ -38,7 +38,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
 import {
   formatGenerationDate,
   isClippedByGeneration,
@@ -67,7 +67,7 @@ const slice = (beginMarker, endMarker) => {
   const end = src.indexOf(endMarker, begin + beginMarker.length);
   return begin >= 0 && end > begin ? src.slice(begin, end) : "";
 };
-const methodBody = (name) => slice(`  ${name}(`, "\n  },\n");
+const methodBody = (name) => dataLayerMethod(name, src);
 
 // BOA-1019: レース日以前で最新の使用開始日。当日は新しい世代に含める。
 const generationRows = [
@@ -239,8 +239,8 @@ check(
 );
 check(
   "一覧表（過去）: 優出・優勝・1着率はレース日以前の公式スナップショット",
-  pastBranch.includes(
-    "this.getVenueMotorStats(venueCode, row.motor_number, raceDate)",
+  /(?<![\w$.])(?:this\.)?getVenueMotorStats\(venueCode, row\.motor_number, raceDate\)/.test(
+    pastBranch,
   ),
 );
 check(
@@ -430,8 +430,8 @@ check(
   check(
     // 会場全体の取得は getVenueMotorSnapshot に移した（BOA-428。一覧の6基と共有する）
     "会場内順位: asOfDate 以前のスナップショットで順位を出す",
-    methodBody("getVenueMotorRanking").includes(
-      "this.getVenueMotorSnapshot(venueCode, asOfDate)",
+    /(?<![\w$.])(?:this\.)?getVenueMotorSnapshot\(venueCode, asOfDate\)/.test(
+      methodBody("getVenueMotorRanking"),
     ) &&
       methodBody("getVenueMotorSnapshot").includes(
         '.lte("scraped_date", asOfDate ?? "9999-12-31")',

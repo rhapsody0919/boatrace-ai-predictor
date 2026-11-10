@@ -197,7 +197,7 @@ check(
 );
 check(
   "サービス: 自前の値は「このレースより前」、前の節までの走数は節の初日より前で数える",
-  /this\.getMotorPowerIndex\(venueCode, r\.motor_number, 90, raceId\)/.test(
+  /(?<![\w$.])(?:this\.)?getMotorPowerIndex\(venueCode, r\.motor_number, 90, raceId\)/.test(
     service,
   ) &&
     /getMotorPowerIndex\(\s*venueCode,\s*r\.motor_number,\s*90,\s*meetStart,?\s*\)/.test(
