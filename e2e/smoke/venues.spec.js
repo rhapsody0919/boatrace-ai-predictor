@@ -1,5 +1,10 @@
 // 旧 e2e/smoke.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
 import { test, expect, e2eNow, e2eTodayJST } from "../fixtures.js";
+import {
+  ensureOpenVenues,
+  rewriteTodayRaces,
+  setJstNoon,
+} from "../today-races-rewrite.js";
 
 test.describe("会場ガイド (venues)", () => {
   test("/en のハンバーガーメニューから会場ガイドへ遷移できる", async ({
@@ -63,6 +68,9 @@ async function expectVenueGridLoaded(page) {
 
 test.describe("開催場一覧ページ（venue-list-redesign）", () => {
   test("トップページに24会場のグリッドが固定表示される", async ({ page }) => {
+    // 深夜は本日のレースに開催中の会場が無い。取得の失敗とは別に、開催中の会場を1つ足して見る
+    await setJstNoon(page);
+    await rewriteTodayRaces(page, (venues) => ensureOpenVenues(venues, 1));
     await page.goto("/");
     await expectVenueGridLoaded(page);
   });

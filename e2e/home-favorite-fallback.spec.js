@@ -1,5 +1,10 @@
 import { test, expect, e2eTodayJST } from "./fixtures.js";
-import { rewriteTodayRaces, venueCodeOf } from "./today-races-rewrite.js";
+import {
+  ensureOpenVenues,
+  rewriteTodayRaces,
+  setJstNoon,
+  venueCodeOf,
+} from "./today-races-rewrite.js";
 import {
   RACER,
   expectVenueCards,
@@ -29,8 +34,9 @@ const closedCodeOf = (venues) => {
  */
 async function prepareToday(page, { grades = true, fixedStates = false } = {}) {
   const info = {};
+  await setJstNoon(page);
   await rewriteTodayRaces(page, (venues) => {
-    const open = venues.filter((v) => (v.races ?? []).length > 0);
+    const open = ensureOpenVenues(venues, 2);
     for (const v of venues)
       for (const r of v.races ?? []) {
         r.raceGrade = "ippan";
