@@ -42,6 +42,11 @@ export const WORKFLOW_EXCLUSIONS = Object.freeze({
     kind: "no_table",
     reason: "本番データでの E2E（失敗は Slack）。表を書かない",
   },
+  "e2e-rerecord.yml": {
+    kind: "no_table",
+    reason:
+      "E2E の録画の撮り直し（prod-jobs は record ジョブの /api の合言葉だけ、BOA-1436。失敗は Slack）。表を書かない",
+  },
   "exhibition-gap-monitor.yml": {
     kind: "no_table",
     reason: "展示データの欠けの監視そのもの。表を書かない",

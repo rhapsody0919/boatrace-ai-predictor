@@ -421,7 +421,7 @@
     {
       "script": "verify-e2e-live-api-key.js",
       "tier": "ci",
-      "guards": "E2E Live の /api の合言葉（BOA-1110）は live の /api/ の要求だけに付き、replay・record・/api/ 以外には付かず、鍵の値をログ・例外の文・録画に出さないこと"
+      "guards": "E2E の /api の合言葉（BOA-1110）は live・record（BOA-1436）の、本番（boat-ai.jp）か本番へ転送する localhost の /api/ の要求だけに付き、replay・未知のモード・/api/ 以外・本番以外の host には付かず、鍵の値をログ・例外の文・録画に出さないこと。record が 401・403・5xx を録画しないこと（BOA-1436）"
     },
     {
       "script": "verify-e2e-no-unroute.js",

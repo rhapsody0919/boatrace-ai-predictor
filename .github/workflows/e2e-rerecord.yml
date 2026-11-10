@@ -39,7 +39,8 @@ name: E2E Re-record (録画の自動撮り直し)
 #     record が artifact で渡した録画（e2e/recordings/）をダウンロードして使う
 #   - judge: 組ごとのレポートを集約し、採用判定・Release公開・古い録画の削除・Slack通知を行う。
 #     ryujin-bot のトークンを使うため environment: ryujin-bot はこのジョブだけに付ける
-#     （record・replay は本番Supabaseの読み取り専用キーしか使わず、environment は不要）
+#     （replay は本番Supabaseの読み取り専用キーしか使わず、environment は不要。record は本番の /api/ の
+#     合言葉 INTERNAL_API_KEY のため environment: prod-jobs を付ける、BOA-1436）
 #   - 3ジョブとも同じコミット（record が解決したSHA）を checkout する。ジョブをまたいで
 #     `ref: master` を名前で再解決すると、ジョブの間に master が進んだ場合、録画と再生で
 #     違うコードのテストを比べることになる
@@ -70,7 +71,8 @@ name: E2E Re-record (録画の自動撮り直し)
 # 必要な権限: contents: write（Release の作成・削除とポインタの push）、
 # actions: read（その日の他の実行が通知済みかを見る）。
 # 使う Secrets: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY（本番の読み取りのみ、repoのSecrets）、
-# SLACK_WEBHOOK_URL、RYUJIN_BOT_APP_ID / RYUJIN_BOT_PRIVATE_KEY（judgeジョブのみ、environment ryujin-bot）
+# SLACK_WEBHOOK_URL、RYUJIN_BOT_APP_ID / RYUJIN_BOT_PRIVATE_KEY（judgeジョブのみ、environment ryujin-bot）、
+# INTERNAL_API_KEY（recordジョブのみ、environment prod-jobs。本番の /api/ の関門の合言葉、BOA-1436）
 
 on:
   schedule:
@@ -98,6 +100,9 @@ permissions:
 
 jobs:
   record:
+    # 録画は本番の /api/ に出るので、関門（BOA-1110）の合言葉 INTERNAL_API_KEY が要る（BOA-1436。
+    # 無いと 403 を返し、11/6 から毎回90分で打ち切れていた）。e2e-live.yml と同じ prod-jobs の鍵を使う
+    environment: prod-jobs
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     outputs:
@@ -179,6 +184,7 @@ jobs:
           E2E_SERVE: preview
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
         run: |
           set +e
           npx playwright test > record.log 2>&1

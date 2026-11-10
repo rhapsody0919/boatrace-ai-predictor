@@ -277,9 +277,11 @@ async function recordThrough(request, fetchResponse) {
 
   const response = await fetchResponse();
   const body = await response.body();
-  // 本番DBの一時的な失敗（statement timeout の500等）は録画に固定しない。
+  // 本番DBの一時的な失敗（statement timeout の500等）と、関門・認証の拒否（401・403。合言葉の
+  // 付け忘れ・鍵の入れ替え中、BOA-1436）は録画に固定しない。
   // このテストにはそのまま返し、次に同じリクエストが来たら取り直す
-  if (response.status() >= 500) {
+  const status = response.status();
+  if (status >= 500 || status === 401 || status === 403) {
     return toResponse(response.status(), response.headersArray(), body);
   }
   const mimeType = response.headers()["content-type"] ?? "";
@@ -334,8 +336,8 @@ export async function fetchRecorded(route, options = {}) {
   const request = route.request();
   // options.url で取り先を差し替えられる（route.fetch({ url }) と同じ）
   const url = options.url ?? request.url();
-  // live は /api/ の関門（BOA-1110）の合言葉を付ける（record・replay は変えない）
-  if (E2E_MODE === "live") {
+  // live・record は本番の /api/ の関門（BOA-1110）の合言葉を付ける（replay は変えない、BOA-1436）
+  if (E2E_MODE === "live" || E2E_MODE === "record") {
     options = {
       ...options,
       headers: liveApiHeaders(
@@ -466,7 +468,14 @@ export async function applyRecording(context, testInfo) {
       const request = route.request();
       let response;
       try {
-        response = await recordThrough(request, () => route.fetch());
+        // 本番の /api/ へ出るので合言葉を付ける（BOA-1436。/rest/v1 には付かない）
+        response = await recordThrough(request, () =>
+          route.fetch({
+            headers: liveApiHeaders(request.url(), request.headers(), {
+              mode: E2E_MODE,
+            }),
+          }),
+        );
       } catch (error) {
         // 本番側の失敗（切断・タイムアウト）は録画せず、ブラウザにも失敗として返す。
         // テスト終了で context が閉じた場合も同じ経路に来る
