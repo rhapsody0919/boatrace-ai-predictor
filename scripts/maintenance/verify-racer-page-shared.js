@@ -32,7 +32,7 @@ assert.deepEqual(dataLayerImportNames("../utils/racerVenueBoatStats.js", service
   "toReturnRate",
 ]);
 // 殻のメソッドの形では、旧と同じく次のメソッド getRacerBoatReturnRate の頭まで
-const history = dataLayerMethod("getRacerRaceHistory", service, {
+const history = dataLayerMethod("getRacerRaceHistory", {
   until: "  getRacerBoatReturnRate(racerId) {",
 });
 assert.match(

@@ -206,7 +206,7 @@ const source = readDataLayerSource();
 
 // 殻のメソッドの形では、旧と同じく次の1行の頭のメソッドの前まで（頭の改行も旧のまま付ける）
 function methodBody(name) {
-  const body = dataLayerMethod(name, source, { until: /\n {2}[a-zA-Z]+\([^)]*\) \{/ });
+  const body = dataLayerMethod(name, { until: /\n {2}[a-zA-Z]+\([^)]*\) \{/ });
   assert.ok(body, `${name} が見つからない`);
   return `\n${body}`;
 }

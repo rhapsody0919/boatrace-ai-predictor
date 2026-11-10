@@ -27,7 +27,7 @@ assert.deepEqual(dataLayerImportNames("../utils/motorPowerIndex.js", service), [
   "motorWindowFrom",
 ]);
 // 殻のメソッドの形では、旧と同じく次のメソッド getMotorUsageHistory の頭まで
-const method = dataLayerMethod("getMotorPowerIndex", service, {
+const method = dataLayerMethod("getMotorPowerIndex", {
   until: "  getMotorUsageHistory(",
 });
 assert.match(

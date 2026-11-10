@@ -71,7 +71,7 @@ check(
 // 3. サービス層が世代の絞り込みを通っていること
 const src = readDataLayerSource();
 // 殻のメソッドでも移した関数でも、名前から終わりまで（頭の字下げ・export は照らさない）
-const method = dataLayerMethod("getVenueMotorChampionshipHistory", src);
+const method = dataLayerMethod("getVenueMotorChampionshipHistory");
 const body = method.slice(method.indexOf("getVenueMotorChampionshipHistory("));
 check("getVenueMotorChampionshipHistory が見つかる", body.length > 0);
 // 使用開始日の取得は枠番別成績（BOA-301）と共通の getMotorGenerationStart に寄せた

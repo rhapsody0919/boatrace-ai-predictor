@@ -45,7 +45,7 @@ const check = (label, ok) => {
 };
 
 const src = readDataLayerSource();
-const methodBody = (name) => dataLayerMethod(name, src);
+const methodBody = (name) => dataLayerMethod(name);
 
 check(
   "日数の窓の定数 MOTOR_WAKU_STATS_WINDOW_DAYS が残っていない",

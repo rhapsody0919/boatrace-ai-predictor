@@ -23,7 +23,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { dataLayerCall, readDataLayerSource } from "./dataLayerSource.js";
 import {
   motorRateView,
   motorRate3View,
@@ -197,9 +197,9 @@ check(
 );
 check(
   "サービス: 自前の値は「このレースより前」、前の節までの走数は節の初日より前で数える",
-  /(?<![\w$.])(?:this\.)?getMotorPowerIndex\(venueCode, r\.motor_number, 90, raceId\)/.test(
-    service,
-  ) &&
+  new RegExp(
+    String.raw`${dataLayerCall("getMotorPowerIndex")}venueCode, r\.motor_number, 90, raceId\)`,
+  ).test(service) &&
     /getMotorPowerIndex\(\s*venueCode,\s*r\.motor_number,\s*90,\s*meetStart,?\s*\)/.test(
       service,
     ),

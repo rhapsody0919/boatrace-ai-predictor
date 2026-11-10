@@ -25,7 +25,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
+import { dataLayerCall, dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
 import {
   formatPowerIndex,
   formatRateOrCount,
@@ -226,8 +226,7 @@ check(
 {
   // 使用履歴の節ごとの2連率も、着順の付かなかった走を分母に数える（機力指数・枠番別と
   // そろえる。BOA-549、戸田14号機で 4/6 と 22/38 が食い違っていた）
-  const svc = readDataLayerSource();
-  const usage = dataLayerMethod("getMotorUsageHistory", svc);
+  const usage = dataLayerMethod("getMotorUsageHistory");
   check(
     "使用履歴: 着順の付かなかった走も、結果の出たレースなら分母に数える（キャッシュのキーも上げる）",
     /\} else if \(isUsableRaceResult\(result\)\) \{\s*n \+= 1;/.test(usage) &&
@@ -304,9 +303,9 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   );
   check(
     "一覧の機力指数も当日のレースは「このレースの直前まで」",
-    /(?<![\w$.])(?:this\.)?getMotorPowerIndex\(\s*venueCode,\s*row\.motor_number,\s*days,\s*raceId,?\s*\)/.test(
-      service,
-    ),
+    new RegExp(
+      String.raw`${dataLayerCall("getMotorPowerIndex")}\s*venueCode,\s*row\.motor_number,\s*days,\s*raceId,?\s*\)`,
+    ).test(service),
   );
   // 展示タイムは速い（小さい）ほど上。枠番別成績の小さな線が逆（遅いほど上）で、
   // 下の推移グラフを「上ほど速い」にしたとき同じタブで向きが食い違った（PR #1193 ファン評価1周目）
