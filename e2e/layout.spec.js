@@ -134,6 +134,11 @@ for (const theme of ["light", "dark"]) {
       page,
     }) => {
       await page.goto(target.path);
+      // hover の色の遷移の途中を読まない
+      await page.addStyleTag({
+        content:
+          "*, *::before, *::after { transition: none !important; }",
+      });
       const card = page
         .locator(target.selector)
         .first()
