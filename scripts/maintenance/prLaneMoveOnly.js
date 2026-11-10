@@ -21,6 +21,8 @@
  *   6. to の中の関数でない単位（const・class）は base と同じ順。to の関数に this が残らない。this. が文字列・注釈の中に無い
  *   7. base の上の名前と移したメソッドの名前は、to・殻の本文に裸で出るならそのファイルで見える（import か宣言）。殻の import の順は base のまま
  *   8. 委ねるだけのメソッドが async なら上の関数も async。上に宣言でない文（let・式の文等）があれば判定しない。`*\/` の後ろに字がある注釈の行も判定しない
+ *   9. 注釈: 最後の単位の後ろに注釈だけの行を置かない。ブロックの注釈の閉じは行の末だけ（後ろにコードを隠さない）。to の import に注釈を置かない。
+ *      殻の import・export の注釈は base の注釈の列から抜いただけ（順も）。単位と単位の間の空行は見ない
  */
 import { dirname, posix } from "node:path";
 import {
@@ -43,6 +45,7 @@ import {
   delegation,
   parseToFile,
   exportedNames,
+  listComments,
 } from "./prLaneMoveOnlyParse.js";
 // ---- 照合 ----
 
@@ -275,6 +278,17 @@ function checkVisible(ctx, head, toFiles, headSpecs, movedMethods) {
             fail(`${f.path} で ${n} が見えない（import も宣言も無い）`);
 }
 
+/** xs が ys から字を抜いただけの列か（順も同じ） */
+const isSubsequence = (xs, ys) => {
+  let j = 0;
+  for (const x of xs) {
+    while (j < ys.length && ys[j] !== x) j++;
+    if (j === ys.length) return false;
+    j++;
+  }
+  return true;
+};
+
 function check(moveOnly, changes, readText) {
   if (!moveOnly) fail("設定に moveOnly が無い");
   const from = changes.filter((c) => new RegExp(moveOnly.from).test(c.path));
@@ -305,6 +319,9 @@ function check(moveOnly, changes, readText) {
     fail(
       "上に宣言でない文（let・式の文・分割の const 等）がある（単位の境を決められない）",
     );
+  // import・export は名前だけで比べるので、注釈は別に見る: 殻の注釈は base の注釈の列から抜いただけ（順も）
+  if (!isSubsequence(listComments(head), listComments(base)))
+    fail("殻の import・export の注釈が base に無い（足した・順を変えた）");
   const obj = serviceObject(base);
   const baseTop = base.filter(
     (u) => ["function", "value", "other"].includes(u.kind) && u !== obj.unit,

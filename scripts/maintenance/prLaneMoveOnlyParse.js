@@ -30,8 +30,10 @@ function kinds(lines, indent = "") {
   return lines.map((line) => {
     const t = line.trim();
     if (inBlock) {
-      if (t.includes("*/")) inBlock = false;
-      if (!inBlock && !t.endsWith("*/"))
+      const end = t.indexOf("*/");
+      if (end >= 0) inBlock = false;
+      // 閉じの `*/` が行の末でなければ、後ろの字（コード）を注釈に隠せる
+      if (end >= 0 && end !== t.length - 2)
         fail(`注釈の後ろに字がある行: ${t.slice(0, 60)}`);
       return "c";
     }
@@ -39,8 +41,10 @@ function kinds(lines, indent = "") {
     if (!line.startsWith(indent) || line[indent.length] === " ") return "x";
     if (t.startsWith("//")) return "c";
     if (t.startsWith("/*")) {
-      inBlock = !t.slice(2).includes("*/");
-      if (!inBlock && !t.endsWith("*/"))
+      // 最初の `*/` で閉じる。`/* a */ code /* b */` は末が `*/` でもコードを含む
+      const end = t.indexOf("*/", 2);
+      inBlock = end < 0;
+      if (!inBlock && end !== t.length - 2)
         fail(`注釈の後ろに字がある行: ${t.slice(0, 60)}`);
       return "c";
     }
@@ -85,11 +89,32 @@ export function splitUnits(lines, indent = "") {
   return units;
 }
 
+const COMMENT_LINE = /^\s*(?:\/\/|\/?\*)/;
+
+/**
+ * import・export の単位の注釈（注釈だけの行と、行末の `// …`）の列。照合は名前だけなので、注釈は別に比べる。
+ * コードの行の中の `/* … *\/` は読まない（移すだけと見なさない）
+ */
+export function listComments(units) {
+  return units
+    .filter((u) => u.kind === "import" || u.kind === "export")
+    .flatMap((u) =>
+      u.lines.flatMap((l) => {
+        if (l.trim() === "") return [];
+        if (COMMENT_LINE.test(l)) return [l.trim()];
+        if (l.includes("/*"))
+          fail(`import・export の行の中の注釈: ${l.trim().slice(0, 60)}`);
+        const tail = /\/\/.*$/.exec(l);
+        return tail ? [tail[0]] : [];
+      }),
+    );
+}
+
 /** import・export の文を1つの文に束ねる（閉じなければ移すだけと見なさない） */
 function joinStatements(units) {
   return units.map((u) => {
     const code = u.lines
-      .filter((l) => l.trim() !== "" && !/^\s*(?:\/\/|\/?\*)/.test(l))
+      .filter((l) => l.trim() !== "" && !COMMENT_LINE.test(l))
       .map((l) => l.replace(/,\s*\/\/.*$/, ","));
     const text = code.join("\n");
     if (IMPORT_HEAD.test(u.head)) {
@@ -252,6 +277,8 @@ export function parseToFile(text) {
     (u) => !["import", "function", "value"].includes(u.kind),
   );
   if (bad) fail(`to に移す単位でない文: ${bad.head}`);
+  // split-data-layer.mjs は to の import に注釈を書かない（renderImport）
+  if (listComments(units).length > 0) fail("to の import に注釈がある");
   const exports = new Set(
     units
       .filter((u) => u.name && u.head.startsWith("export "))

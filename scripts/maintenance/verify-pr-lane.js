@@ -684,6 +684,90 @@ const moveRun = (texts, changes = moveChanges) => {
     "object の最後のメンバーの後ろに注釈を足す",
   );
   assert.equal(why({ to: MOVE_TO + "\n\n" }), null, "末の空行は移すだけのまま");
+  assert.match(
+    why({ to: MOVE_TO + "/*\n * x\n */\n" }),
+    /注釈だけ/,
+    "to の末に複数行の注釈を足す",
+  );
+  assert.match(
+    why({ head: MOVE_HEAD.replace("\n};\n", "\n  // 手で足した注釈\n\n};\n") }),
+    /注釈だけ/,
+    "object の末に注釈と空行を足す",
+  );
+  // 審査（11/11）重大1: `/* a */ code /* b */` の行は注釈でない（import・export の前に置くとコードを隠せた）
+  const hidden = "/* a */ globalThis.evil = 1; /* b */\n";
+  const toHead = (t) => MOVE_TO.replace("\n\nimport {", `\n\n${t}import {`);
+  assert.match(
+    why({ to: toHead(hidden) }),
+    /注釈の後ろに字/,
+    "to の import の前に隠す",
+  );
+  assert.match(
+    why({ head: MOVE_HEAD.replace("import { c }", `${hidden}import { c }`) }),
+    /注釈の後ろに字/,
+    "殻の import の前に隠す",
+  );
+  assert.match(
+    why({
+      head: MOVE_HEAD.replace(
+        "export { clearCache }",
+        `${hidden}export { clearCache }`,
+      ),
+    }),
+    /注釈の後ろに字/,
+    "殻の export の前に隠す",
+  );
+  assert.match(
+    why({ to: toHead("/*\n x */ globalThis.evil = 1;\n") }),
+    /注釈の後ろに字/,
+    "複数行の注釈の閉じの後ろに隠す",
+  );
+  // 中1: import・export の注釈（名前だけで比べていた）
+  assert.match(
+    why({ to: toHead("// 足した\n") }),
+    /import に注釈/,
+    "to の import の前に注釈",
+  );
+  assert.match(
+    why({
+      to: MOVE_TO.replace(
+        "import { a, b }",
+        "import {\n  a, // 足した\n  b,\n}",
+      ),
+    }),
+    /import に注釈/,
+    "to の import の行末に注釈",
+  );
+  assert.match(
+    why({
+      to: MOVE_TO.replace(
+        "import { a, b }",
+        "import {\n  a,\n  /*\n  b,\n  */\n}",
+      ),
+    }),
+    /import に注釈/,
+    "to の import の名前を注釈で消す",
+  );
+  assert.match(
+    why({ head: MOVE_HEAD.replace("import { c }", "// 足した\nimport { c }") }),
+    /殻の import・export の注釈/,
+    "殻の import の前に注釈を足す",
+  );
+  assert.match(
+    why({
+      head: MOVE_HEAD.replace(
+        "export { clearCache }",
+        "// 足した\nexport { clearCache }",
+      ),
+    }),
+    /殻の import・export の注釈/,
+    "殻の export の前に注釈を足す",
+  );
+  assert.match(
+    why({ head: MOVE_HEAD.replace("import { c }", "import { c /* x */ }") }),
+    /行の中の注釈/,
+    "殻の import の行の中に注釈",
+  );
   // 審査の重大1: 行の順と単位の境を見る（行の多重集合では通ってしまう形）
   const swap = MOVE_TO.replace(
     "    const n = a(v) + K.size;\n    const m = J.size;",
