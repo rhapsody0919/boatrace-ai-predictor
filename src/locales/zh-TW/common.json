@@ -520,6 +520,14 @@
     "accept": "同意",
     "reject": "拒絕"
   },
+  "contactPage": {
+    "formTitle": "聯絡表單"
+  },
+  "share": {
+    "x": "分享到 X",
+    "facebook": "分享到 Facebook",
+    "line": "分享到 LINE"
+  },
   "footer": {
     "blog": "部落格",
     "operator": "營運者",

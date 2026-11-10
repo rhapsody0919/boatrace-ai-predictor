@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function Contact() {
+  const { t } = useTranslation();
   return (
     <>
       <title>お問い合わせ | 龍神レーダー</title>
@@ -81,7 +83,7 @@ export default function Contact() {
           }}
         >
           <iframe
-            title="お問い合わせフォーム"
+            title={t("contactPage.formTitle")}
             src="https://docs.google.com/forms/d/e/1FAIpQLSeiioPc2vCicOWbKogOXTVAcfaZD31vZHQgltI_K8ENpQFTzg/viewform?embedded=true"
             width="100%"
             height="721"
