@@ -56,14 +56,34 @@ ok(r.errors.length === 1, `旗が立つと同じ直しも赤（${verdict(r)}）`
 
 const grown = BIG.replace("const a5 = 5;", "const a5 = 5;\n  const extra = 1;");
 r = check(baseline, [{ file: "src/a.js", source: grown, isNew: false }]);
-ok(r.errors.length === 1, `同じ場所で行を増やす→赤（${verdict(r)}）`);
+ok(
+  r.errors.length === 0 && r.warnings.length === 1,
+  `同じ場所で行を増やす→半分の線までは警告（${verdict(r)}）`,
+);
+
+r = check(baseline, [{ file: "src/a.js", source: grown, isNew: false }], true);
+ok(r.errors.length === 1, `旗が立つと行を増やす直しは赤（${verdict(r)}）`);
 
 const branchy = BIG.replace(
   "const a5 = 5;",
   Array.from({ length: 16 }, (_, i) => `if (a${i}) a${i};`).join(" "),
 );
 r = check(baseline, [{ file: "src/a.js", source: branchy, isNew: false }]);
-ok(r.errors.length === 1, `複雑さを増やす→赤（${verdict(r)}）`);
+ok(
+  r.errors.length === 0 && r.warnings.length === 1,
+  `複雑さを増やす→半分の線までは警告（${verdict(r)}）`,
+);
+
+r = check(baseline, [{ file: "src/a.js", source: branchy, isNew: false }], true);
+ok(r.errors.length === 1, `旗が立つと複雑さを増やす直しは赤（${verdict(r)}）`);
+
+r = check(baseline, [
+  { file: "src/a.js", source: grown.replace("function big(", "function big2("), isNew: false },
+]);
+ok(r.errors.length === 1, `同じファイルで名前を変えて伸ばす→赤（${verdict(r)}）`);
+
+r = check(baseline, [{ file: "src/other.js", source: grown, isNew: false }]);
+ok(r.errors.length === 1, `別のファイルの同じ名前は既にある単位と見なさない→赤（${verdict(r)}）`);
 
 r = check(baseline, [{ file: "src/new.js", source: fn("fresh", 101), isNew: true }]);
 ok(r.errors.length === 1, `線を越える新しい関数（101行）→赤（${verdict(r)}）`);

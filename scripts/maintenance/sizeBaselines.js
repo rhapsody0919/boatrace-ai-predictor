@@ -230,10 +230,14 @@ function judgeUnit(u, file, baseline, strictExisting) {
   const prev = Object.values(baseline.units).find(
     (b) => b.file === file && b.name === u.name,
   );
-  const notGrown =
-    prev && u.lines <= prev.lines && u.complexity <= prev.complexity;
-  if (notGrown && !strictExisting) {
-    return { level: "warn", text: `${where} 既にある大きい単位（増えていない）` };
+  // 既にある単位は増えても半分の線（strictExisting）まで警告（設計図 §4.5）
+  if (prev && !strictExisting) {
+    const grown = u.lines > prev.lines || u.complexity > prev.complexity;
+    const was = `base は ${prev.lines} 行・複雑さ ${prev.complexity}`;
+    return {
+      level: "warn",
+      text: `${where} 既にある大きい単位（${grown ? `増えた、${was}` : "増えていない"}）`,
+    };
   }
   return { level: "error", text: `${where} 線を越える単位で基準に無い` };
 }
