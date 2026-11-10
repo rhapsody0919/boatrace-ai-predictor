@@ -86,7 +86,7 @@ assert.match(
 );
 assert.ok(
   !/recordThrough\(request, \(\) => route\.fetch\(\)\)/.test(src),
-  "record の context.route が合言葉なしの route.fetch() に戻っている",
+  "record の context.route が合言葉なしの route.fetch の呼び出しに戻っている",
 );
 // 401・403・5xx は録画しない（BOA-1436）
 assert.match(

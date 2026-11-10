@@ -178,10 +178,6 @@ const SKIP_DIRS = [
 // 自分の /api を取りに行くが合言葉が要らないもの（理由を必ず書く）
 const EXEMPT = new Map([
   [
-    "scripts/maintenance/verify-e2e-live-api-key.js",
-    "E2E の合言葉の付け方（liveApiHeaders）を関数で確かめる試験。本番の URL は文字列として渡すだけで通信しない（BOA-1436）",
-  ],
-  [
     "scripts/maintenance/verify-odds-live-api.js",
     "関数を直接呼ぶ試験。本番の /api を叩かない（fetch は公式の取得の差し替え）",
   ],
