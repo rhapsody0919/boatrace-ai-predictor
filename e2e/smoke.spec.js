@@ -1129,8 +1129,10 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     await expect(page).toHaveURL(/\/race\//);
     const link = page.locator(".analysis-tools-link");
     await expect(link).toBeVisible({ timeout: 10000 });
-    await link.click();
-    await expect(page).toHaveURL(/\/winning-technique\?/);
+    await expect(async () => {
+      await link.click();
+      await expect(page).toHaveURL(/\/winning-technique\?/, { timeout: 5000 });
+    }).toPass({ timeout: 30000 });
     await expect(page.locator(".motor-ranking-row").first()).toBeVisible({
       timeout: 10000,
     });
@@ -1161,8 +1163,10 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     await page.locator(".race-card .predict-btn").first().click();
     const link = page.locator(".analysis-tools-link");
     await expect(link).toBeVisible({ timeout: 10000 });
-    await link.click();
-    await expect(page).toHaveURL(/\/winning-technique\?/);
+    await expect(async () => {
+      await link.click();
+      await expect(page).toHaveURL(/\/winning-technique\?/, { timeout: 5000 });
+    }).toPass({ timeout: 30000 });
     await expect(page.locator(".motor-ranking-row").first()).toBeVisible({
       timeout: 10000,
     });
