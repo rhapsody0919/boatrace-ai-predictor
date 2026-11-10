@@ -238,12 +238,7 @@ const tJa = await getLocaleT("ja");
 // BOA-1200: 同じレースの状態だけを変えて4言語のメタを確認する。
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const t = await getLocaleT(lang);
-  const key = {
-    raceId: "2026-10-12-01-12",
-    venueCode: 1,
-    raceNo: 12,
-    date: "2026-10-12",
-  };
+  const key = { raceId: "2026-10-12-01-12", venueCode: 1, raceNo: 12, date: "2026-10-12" };
   const titles = [];
   for (const [state, suffix] of [
     [{}, ""],
@@ -253,43 +248,19 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   ]) {
     const meta = getRaceDetailMeta(t, key, lang, state);
     const baseline = getRaceDetailMeta(t, key, lang);
-    const params = {
-      venue: t("venues.1"),
-      race: 12,
-      date: formatDateLocalized(key.date, lang),
-    };
-    check(
-      `${lang} title ${suffix}`,
-      meta.title,
-      t(`raceDetailPage.metaTitle${suffix}`, params),
-    );
-    check(
-      `${lang} description ${suffix}`,
-      meta.description,
-      t(`raceDetailPage.metaDescription${suffix}`, params),
-    );
+    const params = { venue: t("venues.1"), race: 12, date: formatDateLocalized(key.date, lang) };
+    check(`${lang} title ${suffix}`, meta.title, t(`raceDetailPage.metaTitle${suffix}`, params));
+    check(`${lang} description ${suffix}`, meta.description, t(`raceDetailPage.metaDescription${suffix}`, params));
     check(`${lang} canonical ${suffix}`, meta.canonical, baseline.canonical);
     const json = fresh();
     const race = json.races.find((r) => r.raceId === key.raceId);
     race.result = state.finished ? { finished: true, rank1: 1 } : null;
     race.cancellationStatus = state.cancelled ? "confirmed" : null;
-    const { res } = await call(
-      `/api/bot-page/${lang === "ja" ? "" : lang + "/"}race/${key.raceId}`,
-      {
-        json,
-        langMode: lang === "ja" ? "ja" : "prefixed",
-      },
-    );
-    check(
-      `${lang} bot title ${suffix}`,
-      decode(attr(res.body, /<title>([^<]*)<\/title>/)),
-      meta.title,
-    );
-    check(
-      `${lang} bot description ${suffix}`,
-      decode(attr(res.body, /<meta name="description" content="([^"]*)"/)),
-      meta.description,
-    );
+    const { res } = await call(`/api/bot-page/${lang === "ja" ? "" : lang + "/"}race/${key.raceId}`, {
+      json, langMode: lang === "ja" ? "ja" : "prefixed",
+    });
+    check(`${lang} bot title ${suffix}`, decode(attr(res.body, /<title>([^<]*)<\/title>/)), meta.title);
+    check(`${lang} bot description ${suffix}`, decode(attr(res.body, /<meta name="description" content="([^"]*)"/)), meta.description);
     titles.push(meta.title);
   }
   check(`${lang} 3状態のtitle`, new Set(titles).size, 3);
@@ -959,8 +930,25 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   };
 
   // 偽の supabase（メモリ上の表）。絞り（eq・lte・gte・lt・gt・in）・order・limit・range を表に当て、
-  // 問い合わせを calls に残す。知らない鎖の関数は素通し（race_series 以外の表は空）
-  const fake = { tables: {}, calls: [] };
+  // 問い合わせを calls に残す（race_series 以外の表は空）。知らない鎖の関数は素通しせず例外にし、unknown に残して
+  // §9 の終わりに 0件を見る（部品が握りつぶしても、絞りを当てない関数で材料しだいの偽の緑にしない）
+  const KNOWN_OPS = new Set([
+    "select",
+    "eq",
+    "lte",
+    "gte",
+    "lt",
+    "gt",
+    "in",
+    "order",
+    "limit",
+    "range",
+  ]);
+  const fake = { tables: {}, calls: [], unknown: [] };
+  const unknownOp = (where) => {
+    fake.unknown.push(where);
+    throw new Error(`偽の supabase に無い関数: ${where}`);
+  };
   const runQuery = (q, single) => {
     let rows = (fake.tables[q.table] ?? []).map((r) => ({ ...r }));
     for (const [op, col, val] of q.ops) {
@@ -985,6 +973,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       {},
       {
         get(_, prop) {
+          if (typeof prop === "symbol") return undefined;
           if (prop === "then")
             return (res, rej) =>
               Promise.resolve()
@@ -992,6 +981,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
                 .then(res, rej);
           if (prop === "single" || prop === "maybeSingle")
             return () => Promise.resolve().then(() => runQuery(q, true));
+          if (!KNOWN_OPS.has(prop))
+            return unknownOp(`${q.table}.${String(prop)}`);
           return (...args) => {
             q.ops.push([prop, ...args]);
             return chain;
@@ -1005,6 +996,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     {},
     {
       get(_, prop) {
+        if (typeof prop === "symbol") return undefined;
         if (prop === "from")
           return (table) => {
             const q = { table, ops: [] };
@@ -1013,24 +1005,27 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
           };
         if (prop === "rpc") return async () => ({ data: null, error: null });
         if (prop === "then") return undefined;
-        return () => ({});
+        return unknownOp(`supabase.${String(prop)}`);
       },
     },
   );
 
   // 画面の /api/predictions は差し替えた fetch で、ボットと同じフィクスチャを返す。他の URL は 404（通信しない）
   const pagePredictions = {};
+  let predictionFetches = 0;
   globalThis.fetch = async (url) => {
     const m = String(url).match(
       /\/api\/predictions\/(\d{4}-\d{2}-\d{2})(\?|$)/,
     );
     const body = m && pagePredictions[m[1]];
+    if (body) predictionFetches += 1;
     return body
       ? jsonResponse(body)
       : new Response("not found", { status: 404 });
   };
 
-  // i18n: 画面の src/i18n.js は import.meta.glob で locales を読むので、同じ locales で i18next を初めから組む
+  // i18n: 画面の src/i18n.js は import.meta.glob で locales を読む（Node では動かない）ので、同じ locales で i18next を初めから組む。
+  // そのため言語の切り替えの仕組み（URL の接頭辞→言語、localStorage の検出）そのものは見ていない。ここでは changeLanguage で決め打つ
   const i18next = (await import("i18next")).default;
   const { initReactI18next } = await import("react-i18next");
   const LANGS = ["ja", "en", "zh-TW", "ko"];
@@ -1059,10 +1054,16 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     await import("../../src/services/supabaseDataService.js");
   // 帯が節を引いたかは、公開の入口 getSeriesOfDate の呼び出しで見る（race_series は他の部品も引くので表では見分けない）
   const seriesOfDateCalls = [];
+  let seriesOfDateSettled = 0;
   const realSeriesOfDate = supabaseDataService.getSeriesOfDate;
   supabaseDataService.getSeriesOfDate = function (...args) {
     seriesOfDateCalls.push(args);
-    return realSeriesOfDate.apply(this, args);
+    const settle = () => {
+      seriesOfDateSettled += 1;
+    };
+    const p = realSeriesOfDate.apply(this, args);
+    p.then(settle, settle);
+    return p;
   };
   const h = React.createElement;
   const act = (fn) =>
@@ -1085,14 +1086,33 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       ),
     );
 
-  /** 人のレース詳細を描き、比べる値を取り出す。描いた後は外す */
-  async function renderPage({ id, lang = "ja", json, series = [] }) {
+  // 描いた後の待ちの上限（5ms の回数）。目安（根拠なし）。手元では10回前後で揃う
+  const MAX_TICKS = 400;
+  /**
+   * 人のレース詳細を描き、比べる値を取り出す。描いた後は外す。
+   * 待ちは「予想の取得が2回（軽量版とフル版）・帯と出走6艇が出た・getSeriesOfDate が seriesCalls 回終わった」まで。
+   * 上限に届いたら、その時の様子を失敗として残して、その時点の描画で比べを続ける。
+   * 描く間の console.error はためておき、errors で返す（比べて落ちたときに出す）
+   */
+  async function renderPage({
+    id,
+    lang = "ja",
+    json,
+    series = [],
+    seriesCalls,
+  }) {
+    if (!Number.isInteger(seriesCalls))
+      throw new Error(
+        `renderPage(${id}): 節の呼び出しの期待の数 seriesCalls が無い`,
+      );
     const date = id.slice(0, 10);
     clock = Date.parse(`${date}T08:00:00+09:00`);
     pagePredictions[date] = json;
     fake.tables = { race_series: series };
     fake.calls.length = 0;
     seriesOfDateCalls.length = 0;
+    seriesOfDateSettled = 0;
+    predictionFetches = 0;
     clearCache();
     window.localStorage.clear();
     await i18next.changeLanguage(lang);
@@ -1103,7 +1123,12 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const prefix = lang === "ja" ? "" : `/${lang}`;
     const origError = console.error;
     const origLog = console.log;
-    console.error = () => {};
+    const errors = [];
+    console.error = (...args) => {
+      errors.push(
+        args.map((a) => (a instanceof Error ? a.stack : String(a))).join(" "),
+      );
+    };
     console.log = () => {};
     try {
       await act(() =>
@@ -1122,11 +1147,36 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
           ),
         ),
       );
-      // 予想の取得（軽量版→フル版）と節の取得が終わるまで回す
-      for (let i = 0; i < 40; i++) await tick();
+      const state = () => ({
+        predictionFetches,
+        strip: !!container.querySelector('[data-testid="race-number-strip"]'),
+        entrants: !!container.querySelector('[data-testid="race-entrants"] li'),
+        seriesSettled: seriesOfDateSettled,
+      });
+      const ready = (st) =>
+        st.predictionFetches >= 2 &&
+        st.strip &&
+        st.entrants &&
+        st.seriesSettled >= seriesCalls;
+      let ticks = 0;
+      while (!ready(state()) && ticks < MAX_TICKS) {
+        await tick();
+        ticks += 1;
+      }
+      const reached = ready(state());
+      check(
+        `人 ${lang} ${id}: ${MAX_TICKS} 回の待ちの内に描画が揃う（予想2回・帯・出走6艇・節 ${seriesCalls} 回）`,
+        reached ? null : state(),
+        null,
+      );
+      // 揃った後の状態の更新（節のリンク等）を描き切る
+      await tick();
       return {
         view: extractPage(container),
         seriesCalls: seriesOfDateCalls.map((a) => [...a]),
+        errors: reached
+          ? errors
+          : [...errors, `待ちの上限: ${JSON.stringify(state())}`],
       };
     } finally {
       await act(() => root.unmount());
@@ -1265,7 +1315,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
         { ...KOJIMA_G1, start_date: "2026-10-08", end_date: "2026-10-13" },
       ],
       seriesRow: KOJIMA_G1,
-      expectSeriesQuery: true,
+      seriesCalls: 1,
     },
     {
       label: "児島12R en",
@@ -1274,26 +1324,43 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       json: json29,
       series: [KOJIMA_G1],
       seriesRow: KOJIMA_G1,
-      expectSeriesQuery: true,
+      seriesCalls: 1,
     },
     {
       label: "戸田5R（一般戦・節を引かない）",
       id: "2026-09-22-02-05",
       json: json22,
-      expectSeriesQuery: false,
+      seriesCalls: 0,
     },
     {
       label: "桐生12R（優勝戦・節タイトル）",
       id: "2026-10-12-01-12",
       json: json12,
+      seriesCalls: 0,
     },
     {
       label: "浜名湖（日目を他レースで補う）",
       id: hamaNoDay.raceId,
       json: json12,
+      seriesCalls: 0,
     },
   ];
+  // 比べて落ちたら、描く間にためた console.error を出す（原因の手がかり）
+  const reportErrors = (label, page, before) => {
+    if (failures.length === before || page.errors.length === 0) return;
+    console.error(
+      `[${label}] 描く間の console.error（${page.errors.length}件、先頭10件）:`,
+    );
+    for (const e of page.errors.slice(0, 10)) console.error(`  ${e}`);
+  };
+  // check して、落ちたら描く間の console.error を出す
+  const checkPage = (page, label, actual, expected) => {
+    const before = failures.length;
+    check(label, actual, expected);
+    reportErrors(label, page, before);
+  };
   for (const c of cases) {
+    const before = failures.length;
     const page = await renderPage(c);
     const bot = await renderBot(c);
     check(
@@ -1303,28 +1370,35 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     );
     for (const key of Object.keys(bot))
       check(`人とボット ${c.label}: ${key}`, page.view[key], bot[key]);
-    if (c.expectSeriesQuery !== undefined)
-      check(
-        `人 ${c.label}: 節を引くのは G1 だけ（会場・日で）`,
-        page.seriesCalls,
-        c.expectSeriesQuery ? [[16, c.id.slice(0, 10)]] : [],
-      );
+    check(
+      `人 ${c.label}: 節を引くのは G1 だけ（会場・日で）`,
+      page.seriesCalls,
+      c.seriesCalls ? [[16, c.id.slice(0, 10)]] : [],
+    );
+    reportErrors(c.label, page, before);
   }
   // 比べた値が空振りしていない（節のリンク・節タイトル・種別・日目）
   const kojima = await renderPage(cases[0]);
-  check(
+  checkPage(
+    kojima,
     "人 児島12R: 節のリンクは /venue/16/meet/2026-09-28",
     kojima.view.meet,
     [["/venue/16/meet/2026-09-28", tJa("raceStrip.meetLink")]],
   );
   const kiryu = await renderPage(cases[3]);
-  check(
+  checkPage(
+    kiryu,
     "人 桐生12R: 節タイトルと優勝戦",
     [kiryu.view.kicker.includes("第8回日本一しょうゆ杯"), kiryu.view.h1],
     [true, "🚤 桐生 12R 🏆 優勝戦"],
   );
   const hama = await renderPage(cases[4]);
-  check("人 浜名湖: 日目を補う", hama.view.h1?.endsWith("3日目"), true);
+  checkPage(
+    hama,
+    "人 浜名湖: 日目を補う",
+    hama.view.h1?.endsWith("3日目"),
+    true,
+  );
 
   // 9b. 共有の関数の戻り値を差し替えると、人の画面とサービス層がそれに従う（同じ値の写しでは通らない）
   const withOverride = async (overrides, fn) => {
@@ -1345,7 +1419,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     { getRaceDetailHeading: () => SPY_HEADING },
     () => renderPage(cases[0]),
   );
-  check(
+  checkPage(
+    heading,
     "人: 見出しは getRaceDetailHeading の値",
     [heading.view.kicker, heading.view.h1],
     [["SPY-G", "SPY-節"], "🚤 児島 12R SPY-種別 SPY-日目"],
@@ -1360,7 +1435,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     },
     () => renderPage(cases[0]),
   );
-  check(
+  checkPage(
+    meta,
     "人: title・description・canonical は getRaceDetailMeta の値",
     [meta.view.title, meta.view.description, meta.view.canonical],
     ["SPY-title", "SPY-description", "https://example.invalid/spy"],
@@ -1374,7 +1450,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     },
     () => renderPage(cases[0]),
   );
-  check(
+  checkPage(
+    crumbs,
     "人: パンくずは getRaceDetailBreadcrumbItems の値",
     crumbs.view.crumbs,
     [
@@ -1386,23 +1463,26 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     { getRaceListLink: () => "/spy-list" },
     () => renderPage(cases[0]),
   );
-  check(
+  checkPage(
+    listLink,
     "人: レース一覧へのリンクは getRaceListLink の値",
     listLink.view.backLink,
     "/spy-list",
   );
   const noNeed = await withOverride({ needsMeetSeries: () => false }, () =>
-    renderPage(cases[0]),
+    renderPage({ ...cases[0], seriesCalls: 0 }),
   );
-  check(
+  checkPage(
+    noNeed,
     "人: needsMeetSeries が false なら G1 でも節を引かずリンクも無い",
     [noNeed.seriesCalls.length, noNeed.view.meet],
     [0, []],
   );
   const need = await withOverride({ needsMeetSeries: () => true }, () =>
-    renderPage(cases[2]),
+    renderPage({ ...cases[2], seriesCalls: 1 }),
   );
-  check(
+  checkPage(
+    need,
     "人: needsMeetSeries が true なら一般戦でも節を引く",
     need.seriesCalls.length > 0,
     true,
@@ -1411,7 +1491,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     { meetLinkStartDateOf: () => "2099-01-01" },
     () => renderPage(cases[0]),
   );
-  check(
+  checkPage(
+    meetStart,
     "人: 節のリンクの初日は meetLinkStartDateOf の値",
     meetStart.view.meet.map(([href]) => href),
     ["/venue/16/meet/2099-01-01"],
@@ -1425,7 +1506,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     },
     () => renderPage(cases[0]),
   );
-  check(
+  checkPage(
+    rows,
     "人: 出走6艇の行は entrantRowsOf の値",
     rows.view.entrants.map(([n, name, , grade]) => [n, name, grade]),
     [
@@ -1471,6 +1553,11 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     covered,
     SENTINEL,
   );
+  check(
+    "偽の supabase に無い関数を呼んでいない",
+    [...new Set(fake.unknown)],
+    [],
+  );
   delete globalThis[FAKE_KEY];
   globalThis.Date = RealDate;
   console.log = sectionLog;
@@ -1484,5 +1571,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(`✅ verify-bot-race-function: ${checked}件すべて通過`);
-// 描いた画面のタイマー（締切の時計等）を待たずに終える
+// 描いた画面のタイマー（締切の時計等）を待たずに終える。後で非同期の check を足すときは、この行より前で await し終えること
+// （ここより後に残った約束は、結果を出さずに黙って切られる）
 process.exit(0);
