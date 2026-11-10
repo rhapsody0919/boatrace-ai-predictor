@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /** JST 日付関数の現在の挙動を固定する（BOA-1113）。DB・通信・実時刻は使わない。 */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import * as B from "../lib/dateUtils.js";
 import * as F from "../../src/utils/dateUtils.js";
+import { readDataLayerSource } from "./dataLayerSource.js";
 
 const RealDate = globalThis.Date;
 let passed = 0;
@@ -157,7 +157,7 @@ for (const gap of KNOWN_GAPS) {
 }
 
 // 同値の式への回帰は出力比較では検出できないため、共通化も確認する（BOA-1352）。
-const serviceSource = readFileSync(new URL("../../src/services/supabaseDataService.js", import.meta.url), "utf8");
+const serviceSource = readDataLayerSource();
 check("サービスに自前の jstToday 関数を残さない", /function jstToday\(/.test(serviceSource), false);
 check("サービスの開始日は共通関数", /const startDateStr = getDaysAgoJST\(days\);/.test(serviceSource), true);
 check("ダイジェストの日付は共通関数", /const jstToday = getTodayJST\(\);/.test(serviceSource), true);

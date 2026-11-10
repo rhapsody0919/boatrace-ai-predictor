@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readDataLayerSource } from "./dataLayerSource.js";
 /**
  * verify-series-points-stage-rules.js — 得点率の「種別判定」の回帰テスト
  * （BOA-457 / BOA-458）。
@@ -568,10 +569,7 @@ check(
     [true, false, false, false],
   );
   {
-    const service = readFileSync(
-      new URL("../../src/services/supabaseDataService.js", import.meta.url),
-      "utf8",
-    );
+    const service = readDataLayerSource();
     check(
       "今節の出走判定は、本番STの「欠」の行を出走に数えない",
       /\.filter\(\(r\) => !isAbsentStartRow\(r\)\)\s*\.map\(\(r\) => `\$\{r\.race_id\}\|\$\{r\.boat_number\}`\)/.test(

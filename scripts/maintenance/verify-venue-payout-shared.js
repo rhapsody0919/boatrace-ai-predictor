@@ -9,7 +9,6 @@
  *   4. rank-data.js が新しい dataset の引数の誤りを、DB を読む前に拒否する
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
@@ -19,12 +18,10 @@ import {
   venuePayoutRates,
 } from "../../src/utils/venuePayoutStats.js";
 import { isUsableRaceResult } from "../../src/utils/raceResultUsable.js";
+import { readDataLayerSource } from "./dataLayerSource.js";
 
 // 1. サービス層
-const service = readFileSync(
-  new URL("../../src/services/supabaseDataService.js", import.meta.url),
-  "utf8",
-);
+const service = readDataLayerSource();
 const body = service.slice(
   service.indexOf("getTodaysVenueRanking("),
   service.indexOf("getVenueDaySummary("),
