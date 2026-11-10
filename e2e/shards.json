@@ -8,7 +8,21 @@
   "shards": [
     {
       "specs": [
-        "smoke.spec.js",
+        "smoke/race-detail-ai-copy.spec.js",
+        "smoke/race-detail-basic-1.spec.js",
+        "smoke/race-detail-basic-2.spec.js",
+        "smoke/race-detail-before-info-1.spec.js",
+        "smoke/race-detail-before-info-2.spec.js",
+        "smoke/race-detail-before-info-3.spec.js",
+        "smoke/race-detail-before-info-weight.spec.js",
+        "smoke/race-detail-course-1.spec.js",
+        "smoke/race-detail-course-2.spec.js",
+        "smoke/race-detail-heading.spec.js",
+        "smoke/race-detail-meet-1.spec.js",
+        "smoke/race-detail-meet-2.spec.js",
+        "smoke/race-detail-motor.spec.js",
+        "smoke/race-detail-odds-analysis.spec.js",
+        "smoke/race-detail-recent-runs.spec.js",
         "smoke/analysis-1.spec.js",
         "smoke/analysis-2.spec.js",
         "smoke/articles.spec.js",
