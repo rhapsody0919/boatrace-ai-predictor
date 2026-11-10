@@ -26,7 +26,7 @@ import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { planSplit, reportSplit } from "./splitDataLayer/plan.js";
-import { AREAS, SERVICE_FILE } from "./splitDataLayer/table.js";
+import { SERVICE_FILE } from "./splitDataLayer/table.js";
 
 export { planSplit, reportSplit };
 
@@ -45,14 +45,17 @@ export function main(argv, root = ROOT) {
     console.log(table("| 領域 | メソッド | 上の単位 | 行 |", rows));
     return 0;
   }
-  const areas = argv.filter((a) => !a.startsWith("--"));
+  const flags = argv.filter((a) => a.startsWith("--"));
+  if (flags.length) {
+    console.error(`知らない旗: ${flags.join(" ")}（--report だけ）。書かずに止める`);
+    return 2;
+  }
+  const areas = argv;
   if (areas.length === 0) {
     console.error("使い方: node scripts/maintenance/split-data-layer.mjs <領域…> | --report");
     return 2;
   }
-  // 領域の順は表の順にそろえる（渡す順で出力が変わらない）
-  const order = [...AREAS.filter((a) => areas.includes(a)), ...areas.filter((a) => !AREAS.includes(a))];
-  const plan = planSplit(source, order, { existingFiles: readdirSync(dir) });
+  const plan = planSplit(source, areas, { existingFiles: readdirSync(dir) });
   for (const [f, text] of Object.entries(plan.files)) writeFileSync(path.join(dir, f), text);
   writeFileSync(file, plan.facade);
   const rows = plan.mapping.map((r) => `| ${r.name} | ${r.file} | ${r.hash} |`);

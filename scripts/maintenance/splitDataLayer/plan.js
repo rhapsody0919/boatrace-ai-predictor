@@ -3,12 +3,13 @@
  * 確かめ: 移した単位の AST hash が元と同じ・殻の object のメンバーの並びが元と同じ・殻に残るメソッドの hash が同じ
  */
 import { parseModule, astHash, declaredNames } from "./ast.js";
+import { freeNames } from "./freeNames.js";
 import { parseService, countLines } from "./service.js";
 import { analyzeService, checkAreas, movingItems, namesOf } from "./analyze.js";
 import { pack, renderFile } from "./render.js";
 import { resolveFiles } from "./build.js";
 import { buildFacade } from "./facade.js";
-import { METHOD_TABLE, MAX_LINES, SERVICE_OBJECT, areaOfFile } from "./table.js";
+import { METHOD_TABLE, MAX_LINES, SERVICE_OBJECT, SERVICE_FILE, areaOfFile } from "./table.js";
 
 function parseOrThrow(text, what) {
   try {
@@ -55,7 +56,7 @@ function outHashes(files) {
   return out;
 }
 
-function mappingOf(moving, files) {
+export function mappingOf(moving, files) {
   const out = outHashes(files);
   const mapping = [];
   for (const items of moving.values())
@@ -85,6 +86,21 @@ function checkFacade(ctx, facadeText) {
   }
 }
 
+// 出した各ファイル（殻も）の import の取りこぼしと余り: 元で上の名前だった物を使うなら import か宣言があり、import は全部使う
+export function checkImports(files, topNames) {
+  for (const [f, text] of Object.entries(files)) {
+    const body = parseOrThrow(text, f).program.body;
+    const missing = [...freeNames({ type: "Program", body })].filter((n) => topNames.has(n));
+    if (missing.length) throw new Error(`${f} が ${missing.join("・")} を import も宣言もせずに使う`);
+    const refs = freeNames({ type: "Program", body: body.filter((x) => x.type !== "ImportDeclaration") });
+    const unused = body
+      .filter((x) => x.type === "ImportDeclaration")
+      .flatMap((x) => x.specifiers.map((y) => y.local.name))
+      .filter((n) => !refs.has(n));
+    if (unused.length) throw new Error(`${f} に使わない import: ${unused.join("・")}`);
+  }
+}
+
 function reportOf(ctx) {
   const rows = Object.fromEntries(Object.keys(ctx.table).map((a) => [a, { methods: 0, units: 0, lines: 0 }]));
   for (const u of ctx.decls) {
@@ -106,8 +122,11 @@ function reportOf(ctx) {
  * @param {{table?: object, maxLines?: number, existingFiles?: string[]}} [opts]
  * @returns {{files: Record<string, string>, facade: string, mapping: object[], report: object}}
  */
-export function planSplit(source, areas, opts = {}) {
+export function planSplit(source, areasIn, opts = {}) {
   const ctx = analyzeService(parseService(source), opts.table ?? METHOD_TABLE);
+  // 渡す順で出力を変えない（表の順にそろえる。知らない名前は checkAreas が止める）
+  const known = Object.keys(ctx.table);
+  const areas = [...known.filter((a) => areasIn.includes(a)), ...areasIn.filter((a) => !known.includes(a))];
   checkAreas(ctx, areas);
   const moving = movingItems(ctx, areas);
   const r = fit(ctx, moving, areas, opts.maxLines ?? MAX_LINES);
@@ -115,6 +134,7 @@ export function planSplit(source, areas, opts = {}) {
   for (const f of Object.keys(r.files)) if (existing.has(f)) throw new Error(`src/services/${f} が既にある`);
   const mapping = mappingOf(moving, r.files);
   checkFacade(ctx, r.facade);
+  checkImports({ ...r.files, [SERVICE_FILE]: r.facade }, new Set(ctx.topOf.keys()));
   return { files: r.files, facade: r.facade, mapping, report: reportOf(ctx) };
 }
 

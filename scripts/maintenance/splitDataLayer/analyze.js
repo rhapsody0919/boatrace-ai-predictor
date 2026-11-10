@@ -2,7 +2,7 @@
  * splitDataLayer/analyze.js - 表の確かめ・名前の索引・参照・上の単位の領域・移す並び（split-data-layer.mjs、BOA-1432）
  */
 import { thisMembers } from "./ast.js";
-import { freeNames } from "./freeNames.js";
+import { scanNames } from "./freeNames.js";
 import { importParts } from "./service.js";
 import { SERVICE_OBJECT, SERVICE_FILE } from "./table.js";
 
@@ -11,6 +11,7 @@ function methodAreas(table) {
   for (const [a, names] of Object.entries(table))
     for (const n of names) {
       if (areaOfMethod.has(n)) throw new Error(`表に2回: ${n}`);
+      if (!/^get[A-Z]/.test(n)) throw new Error(`表の名前は get で始める: ${n}（大域の名前と重ねない）`);
       areaOfMethod.set(n, a);
     }
   return areaOfMethod;
@@ -70,14 +71,19 @@ function analyzeItem(item, isMethod, topNames, memberNames) {
   const own = new Set(isMethod ? [] : item.names);
   const n = item.node;
   const target = !isMethod && n.type === "ExportNamedDeclaration" ? n.declaration : n;
-  const used = new Set([...freeNames(target)].filter((x) => topNames.has(x) && !own.has(x)));
-  if (!isMethod) return { used, thisRefs: [] };
+  const scan = scanNames(target);
+  const used = new Set([...scan.free].filter((x) => topNames.has(x) && !own.has(x)));
+  const assigned = new Set([...scan.assigned].filter((x) => topNames.has(x) && !own.has(x)));
+  if (!isMethod) return { used, assigned, thisRefs: [] };
   const t = thisMembers(n);
   if (t.bad.length) throw new Error(`${item.name} で this をメンバーの読み以外に使っている`);
+  const hidden = t.found.filter((r) => scan.thisShadowed.has(r.name)).map((r) => r.name);
+  if (hidden.length)
+    throw new Error(`${item.name} の this.${hidden[0]} を ${hidden[0]} にすると局所の名前に隠れる（止める）`);
   for (const r of t.found)
     if (!memberNames.has(r.name))
       throw new Error(`${item.name} の this.${r.name} が ${SERVICE_OBJECT} に無い`);
-  return { used, thisRefs: t.found };
+  return { used, assigned, thisRefs: t.found };
 }
 
 // 上の単位の領域: 使うメソッドの領域の和を単位から単位へ伝え、1つならその領域、ほか（2つ以上・0）は core
@@ -108,6 +114,17 @@ function unitAreaOf(ctx) {
   };
 }
 
+// 上の let・var を自分の外で代入すると、別のファイルへ移した後は import の束縛への代入になり実行時に落ちる
+function checkReassigned(decls, methods, info, topOf) {
+  for (const x of [...decls, ...methods])
+    for (const n of info.get(x).assigned) {
+      const u = topOf.get(n);
+      const mutable = u?.isDecl && u.node.type === "VariableDeclaration" && u.node.kind !== "const";
+      if (u?.isImport || mutable)
+        throw new Error(`${x.name ?? x.names.join("・")} が上の ${n} に代入する（移すと import の束縛への代入になる。止める）`);
+    }
+}
+
 export function analyzeService(svc, table) {
   const areaOfMethod = methodAreas(table);
   const memberNames = checkTable(svc, areaOfMethod);
@@ -119,6 +136,7 @@ export function analyzeService(svc, table) {
   const info = new Map();
   decls.forEach((u) => info.set(u, analyzeItem(u, false, topNames, memberNames)));
   methods.forEach((m) => info.set(m, analyzeItem(m, true, topNames, memberNames)));
+  checkReassigned(decls, methods, info, topOf);
   const ctx = { svc, table, areaOfMethod, memberNames, topOf, importOf, decls, methods, delegated, info };
   ctx.areaOfUnit = unitAreaOf(ctx);
   ctx.areaOf = (x) => (x.kind === "unit" ? ctx.areaOfUnit(x.item) : areaOfMethod.get(x.item.name));
@@ -133,7 +151,12 @@ export function checkAreas(ctx, areas) {
     const left =
       ctx.methods.some((m) => ctx.areaOfMethod.get(m.name) === a) ||
       ctx.decls.some((u) => ctx.areaOfUnit(u) === a);
-    if (!left) throw new Error(`領域 ${a} は既に移した（${SERVICE_FILE} に残りが無い）`);
+    if (!left)
+      throw new Error(
+        a === "core"
+          ? `core に移す物が無い（既に移したか、2つ以上の領域が使う上の単位が無い）`
+          : `領域 ${a} は既に移した（${SERVICE_FILE} に残りが無い）`,
+      );
   }
   if (!areas.includes("core") && ctx.decls.some((u) => ctx.areaOfUnit(u) === "core"))
     throw new Error("core の単位が残っている。最初の回に core を入れる");

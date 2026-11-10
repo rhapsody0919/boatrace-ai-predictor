@@ -77,6 +77,8 @@ function checkCycle(edges) {
 function checkDomainDirect(edges) {
   for (const [a, b, name, by] of edges) {
     const [fa, fb] = [areaOfFile(a), areaOfFile(b)];
+    if (fa === "core" && fb && fb !== "core")
+      throw new Error(`${a} の ${by} が領域の ${b} の ${name} を読む（core は領域を読まない）`);
     const plain = fa && fb && fa !== "core" && fb !== "core" && fa !== fb;
     if (plain && !SHARED_AREAS.includes(fb))
       throw new Error(

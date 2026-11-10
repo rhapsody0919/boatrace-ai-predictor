@@ -11,6 +11,7 @@ import { planSplit } from "./split-data-layer.mjs";
 import { astHash, parseModule } from "./splitDataLayer/ast.js";
 import { freeNames } from "./splitDataLayer/freeNames.js";
 import { findCycle } from "./splitDataLayer/build.js";
+import { checkImports, mappingOf } from "./splitDataLayer/plan.js";
 import { fileNameOf, areaOfFile } from "./splitDataLayer/table.js";
 
 const src = (lines) => lines.join("\n") + "\n";
@@ -258,4 +259,67 @@ test("自由な名前・AST hash・循環の検出", () => {
   assert.notEqual(astHash(fn), astHash(fn2), "1字でも変えれば違う hash");
   assert.deepEqual(findCycle(new Map([["a", new Set(["b"])], ["b", new Set(["a"])]])), ["a", "b", "a"]);
   assert.equal(findCycle(new Map([["a", new Set(["b"])], ["b", new Set()]])), null);
+});
+
+test("審査の指摘: this.X を X にすると局所の名前に隠れる・class の this・外からの let の代入は止める／残す", () => {
+  const hidden = src(["export const supabaseDataService = {", "  getA(getB) {", "    return this.getB(getB);", "  },", "  getB(v) {", "    return v;", "  },", "};"]);
+  assert.throws(() => planSplit(hidden, ["schedule"], { table: { core: [], schedule: ["getA", "getB"] } }), /隠れる/);
+  const cls = src(["export const supabaseDataService = {", "  getA() {", "    class C { v = this.getB(); }", "    return C;", "  },", "  getB() {", "    return 1;", "  },", "};"]);
+  const p = planSplit(cls, ["schedule"], { table: { core: [], schedule: ["getA", "getB"] } });
+  assert.match(p.files["scheduleQueries.js"], /v = this\.getB\(\);/, "class の中の this は置き換えない");
+  const re = src(["let counter = 0;", "export const supabaseDataService = {", "  getA() {", "    counter += 1;", "    return counter;", "  },", "};"]);
+  assert.throws(() => planSplit(re, ["core", "schedule"], { table: { core: [], schedule: ["getA"] } }), /代入/);
+  assert.throws(() => planSplit(BASE, ["core"], { table: { core: [], schedule: ["getS", "fooS2"], race: ["getR"] } }), /get で始める/);
+});
+
+test("審査の指摘: core は領域を読まない・ファイルを跨ぐ循環は止める・1単位で線を越える物は1ファイル・渡す順で同じ出力", () => {
+  const coreReads = src([
+    "function helperS() {",
+    "  return 1;",
+    "}",
+    "export function clearX() {",
+    "  return helperS();",
+    "}",
+    "export const supabaseDataService = {",
+    "  getS() {",
+    "    return helperS();",
+    "  },",
+    "};",
+  ]);
+  assert.throws(() => planSplit(coreReads, ["core", "schedule"], { table: { core: [], schedule: ["getS"] } }), /core は領域を読まない/);
+  const body = (n) => Array.from({ length: n }, (_, i) => `    const v${i} = ${i};`);
+  const mutual = src([
+    "export const supabaseDataService = {",
+    "  getA() {",
+    ...body(8),
+    "    return this.getB();",
+    "  },",
+    "  getB() {",
+    ...body(8),
+    "    return this.getA();",
+    "  },",
+    "};",
+  ]);
+  assert.throws(() => planSplit(mutual, ["schedule"], { table: { core: [], schedule: ["getA", "getB"] }, maxLines: 14 }), /循環/);
+  const big = src(["export const supabaseDataService = {", "  getA() {", ...body(30), "    return 1;", "  },", "  getB() {", "    return 2;", "  },", "};"]);
+  const t = { core: [], schedule: ["getA", "getB"] };
+  const pb = planSplit(big, ["schedule"], { table: t, maxLines: 20 });
+  assert.deepEqual(Object.keys(pb.files).sort(), ["scheduleQueries.js", "scheduleQueries2.js"]);
+  assert.ok(pb.files["scheduleQueries.js"].split("\n").length > 20, "1単位で越える物はそのまま1ファイル");
+  const x = planSplit(BASE, ["schedule", "core"], { table: TABLE });
+  const y = planSplit(BASE, ["core", "schedule"], { table: TABLE });
+  assert.deepEqual(x.files, y.files);
+  assert.equal(x.facade, y.facade);
+});
+
+test("審査の指摘: 書いた後の確かめ（import の取りこぼし・余り・AST hash の食い違い）と switch のスコープ", () => {
+  assert.throws(() => checkImports({ "a.js": "export const z = K;\n" }, new Set(["K"])), /import も宣言もせずに使う/);
+  assert.throws(() => checkImports({ "a.js": 'import { q } from "lib-q";\nexport const z = 1;\n' }, new Set()), /使わない import: q/);
+  checkImports({ "a.js": 'import { q } from "lib-q";\nexport const z = q;\n' }, new Set(["q"]));
+  const node = parseModule("const K = 1;").program.body[0];
+  const moving = new Map([["core", [{ kind: "unit", item: { names: ["K"], node } }]]]);
+  assert.throws(() => mappingOf(moving, { "core.js": "export const K = 2;\n" }), /AST hash が元と違う/);
+  assert.equal(mappingOf(moving, { "core.js": "export const K = 1;\n" })[0].file, "src/services/core.js");
+  const sw = parseModule("function f(x) { switch (x) { case 1: const y = 2; return y; default: return Z; } }").program.body[0];
+  assert.deepEqual([...freeNames(sw)].sort(), ["Z"]);
 });

@@ -117,7 +117,7 @@ export function thisMembers(method) {
   const found = [];
   const bad = [];
   const visit = (n, parent, key) => {
-    if (n !== method && isFunctionNode(n)) return false;
+    if (n !== method && (isFunctionNode(n) || n.type === "ClassBody")) return false; // this が変わる所
     if (n.type !== "ThisExpression") return undefined;
     if (parent && key === "object" && isThisMember(parent))
       found.push({ name: parent.property.name, start: parent.start, end: parent.end });

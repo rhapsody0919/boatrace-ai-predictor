@@ -32,7 +32,9 @@ function lexicalNames(stmts) {
 function makeWalker() {
   const free = new Set();
   const scopes = [];
-  const w = { free };
+  // thisShadowed: this.X の X がその位置で局所の名前に隠れる（X に置き換えると別の物を呼ぶ）。assigned: 代入の左の自由な名前
+  const w = { free, thisShadowed: new Set(), assigned: new Set() };
+  w.bound = (name) => scopes.some((s) => s.has(name));
   w.scoped = (names, fn) => {
     scopes.push(new Set(names));
     fn();
@@ -110,6 +112,8 @@ function switchLike(n, w) {
 }
 
 function member(n, w) {
+  if (n.object.type === "ThisExpression" && !n.computed && w.bound(n.property.name))
+    w.thisShadowed.add(n.property.name);
   w.visit(n.object);
   if (n.computed) w.visit(n.property);
 }
@@ -120,6 +124,10 @@ function keyed(n, w) {
 }
 
 const skip = () => undefined;
+
+function assignTarget(t, w) {
+  if (t.type === "Identifier" && !w.bound(t.name)) w.assigned.add(t.name);
+}
 
 const HANDLERS = {
   Identifier: (n, w) => w.ref(n.name),
@@ -155,14 +163,40 @@ const HANDLERS = {
   MemberExpression: member,
   OptionalMemberExpression: member,
   LabeledStatement: (n, w) => w.visit(n.body),
+  AssignmentExpression: (n, w) => {
+    assignTarget(n.left, w);
+    w.visit(n.left);
+    w.visit(n.right);
+  },
+  UpdateExpression: (n, w) => {
+    assignTarget(n.argument, w);
+    w.visit(n.argument);
+  },
+  Program: (n, w) => {
+    const names = n.body.flatMap((s) =>
+      s.type === "ImportDeclaration" ? s.specifiers.map((x) => x.local.name) : [],
+    );
+    const decls = n.body.map((s) => (s.type === "ExportNamedDeclaration" && s.declaration ? s.declaration : s));
+    w.scoped([...names, ...lexicalNames(decls), ...varNames(n)], () =>
+      n.body.forEach((s) => (s.type === "ImportDeclaration" ? undefined : w.visit(s))),
+    );
+  },
+  ImportDeclaration: skip,
+  ExportNamedDeclaration: (n, w) => {
+    if (n.source) return; // 再 export は束縛を作らず読まない
+    w.visit(n.declaration);
+    n.specifiers.forEach((x) => w.visit(x.local));
+  },
   BreakStatement: skip,
   ContinueStatement: skip,
   MetaProperty: skip,
   PrivateName: skip,
 };
 
-export function freeNames(root) {
+export function scanNames(root) {
   const w = makeWalker();
   w.visit(root);
-  return w.free;
+  return { free: w.free, thisShadowed: w.thisShadowed, assigned: w.assigned };
 }
+
+export const freeNames = (root) => scanNames(root).free;
