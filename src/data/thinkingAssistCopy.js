@@ -220,6 +220,12 @@ export const ASSIST_COPY = Object.freeze({
     "拡連複のオッズは公式の下限〜上限。払戻とトリガミは下限で、その組だけ当たったときの値で計算",
   wideMultiNote:
     "拡連複は3着以内の2艇の組なので、同じレースで最大3組が当たることがある（そのときの払戻は組ごとの和）",
+  wideSimulLine: (min, max) =>
+    `2組以上が同時に当たると下限で ${
+      min === max
+        ? `${min.toLocaleString("ja-JP")}円`
+        : `${min.toLocaleString("ja-JP")}〜${max.toLocaleString("ja-JP")}円`
+    }（組の和）`,
   // 固定フッターの2行目（拡連複は合成オッズの代わりに）
   wideFoot: "合成オッズは出さない（組ごとに見る）",
   composite: (v) => `合成 ${v}`,
