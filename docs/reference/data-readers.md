@@ -1632,7 +1632,7 @@
   - `scripts/maintenance/verify-rpc-output-keys.js:321` select [race_date, venue_code] （検査）
   - `scripts/maintenance/verify-scrape-slots-on-db.js:69` select [cancellation_status, race_date, race_id, start_time] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:615` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1522` rest(rest) [race_id, start_time] （検査）
+  - `scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577` rest(rest) [race_id, start_time] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:2660` rest(rest) [race_date] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:2661` rest(rest) [cancellation_status] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:2662` rest(rest) [race_id] （検査）

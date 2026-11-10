@@ -17408,7 +17408,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1522",
+          "ref": "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -18005,7 +18005,7 @@
             "scripts/maintenance/verify-pretest-row-pick.js:93",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
             "scripts/maintenance/verify-sns-auto-plan.js:615",
-            "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1522",
+            "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
             "scripts/maintenance/verify-sns-today-plan.js:2662",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
@@ -18298,7 +18298,7 @@
             "scripts/maintenance/check-result-shadow.js:125",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
-            "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1522",
+            "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
             "scripts/sns/push-full-picture.js:839",
