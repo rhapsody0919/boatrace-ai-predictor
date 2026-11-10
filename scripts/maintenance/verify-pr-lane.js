@@ -28,9 +28,9 @@ import {
   globalSelectors,
   headerPath,
   loadMoveOnly,
-  moveOnlyPaths,
   parsePatch,
 } from "./pr-lane.js";
+import { moveOnlyPaths, moveOnlyReason } from "./prLaneMoveOnly.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -551,16 +551,22 @@ expect(
   assert.equal(headerPath("/dev/null"), null);
 }
 
-// ---- 移すだけ（BOA-1433 RA02b）: split-data-layer.mjs が字のまま移した PR は H3・H9 を外す ----
+// ---- 移すだけ（BOA-1433 RA02b）: split-data-layer.mjs が字のまま移した PR は H3・H9 を外す（prLaneMoveOnly.js） ----
 // fixture の import は文字列の中に置く（行の頭に相対の import を書くと verify-relative-imports が参照先を探す）
 const SVC = "src/services/supabaseDataService.js";
 const SQ = "src/services/scheduleQueries.js";
 const lines = (...ls) => ls.join("\n") + "\n";
 const MOVE_BASE = lines(
   "/** 頭の注釈 */",
-  'import { a } from "../utils/a.js";',
+  'import { a, b } from "../utils/a.js";',
+  'import { c } from "../utils/c.js";',
   "",
   "const K = new Map();",
+  "const J = new Set();",
+  "",
+  "export function clearCache() {",
+  "  K.clear();",
+  "}",
   "",
   "/** 殻 */",
   "export const supabaseDataService = {",
@@ -568,26 +574,30 @@ const MOVE_BASE = lines(
   "   * X の注釈",
   "   */",
   "  async getX(v) {",
-  "    return a(v) + K.size + this.getY(v);",
+  "    const n = a(v) + K.size;",
+  "    const m = J.size;",
+  "    return n + m + this.getY(v);",
   "  },",
   "  getY(v) {",
-  '    return "的中率" + v;',
+  '    return "的中率" + b(v);',
   "  },",
   "  getZ(v) {",
-  "    return v;",
+  "    return c(v);",
   "  },",
   "};",
 );
 const MOVE_HEAD = lines(
   "/** 頭の注釈 */",
+  'import { c } from "../utils/c.js";',
   'import { getX, getY } from "./scheduleQueries.js";',
+  'export { clearCache } from "./scheduleQueries.js";',
   "",
   "/** 殻 */",
   "export const supabaseDataService = {",
   "  getX,",
   "  getY,",
   "  getZ(v) {",
-  "    return v;",
+  "    return c(v);",
   "  },",
   "};",
 );
@@ -595,17 +605,24 @@ const MOVE_TO = lines(
   "// src/services/supabaseDataService.js から scripts/maintenance/split-data-layer.mjs で字のまま移した（領域: schedule）。",
   "// 本体の字下げは元のまま。手で直すときは普通の関数として直してよい",
   "",
-  'import { a } from "../utils/a.js";',
+  'import { a, b } from "../utils/a.js";',
   "",
   "const K = new Map();",
+  "const J = new Set();",
+  "",
+  "export function clearCache() {",
+  "  K.clear();",
+  "}",
   "/**",
   " * X の注釈",
   " */",
   "export async function getX(v) {",
-  "    return a(v) + K.size + getY(v);",
+  "    const n = a(v) + K.size;",
+  "    const m = J.size;",
+  "    return n + m + getY(v);",
   "  }",
   "export function getY(v) {",
-  '    return "的中率" + v;',
+  '    return "的中率" + b(v);',
   "  }",
 );
 const moveOnly = loadMoveOnly();
@@ -613,49 +630,165 @@ const moveChanges = [
   { status: "M", path: SVC },
   { status: "A", path: SQ },
 ];
-const moveRun = (to, { changes = moveChanges, head = MOVE_HEAD } = {}) => {
-  const read = (side, p) =>
-    p === SVC ? (side === "base" ? MOVE_BASE : head) : p === SQ ? to : null;
-  const moved = moveOnlyPaths(moveOnly, changes, read);
+const reader =
+  ({ base = MOVE_BASE, head = MOVE_HEAD, to = MOVE_TO } = {}) =>
+  (side, p) =>
+    p === SVC ? (side === "base" ? base : head) : p === SQ ? to : null;
+const why = (texts, changes = moveChanges) =>
+  moveOnlyReason(moveOnly, changes, reader(texts));
+const moveRun = (texts, changes = moveChanges) => {
+  const moved = moveOnlyPaths(moveOnly, changes, reader(texts));
+  const added = ['    return "的中率" + b(v);'];
   const r = classify({
     changes,
-    patches: new Map(changes.map((c) => [c.path, { added: [], removed: [] }]).concat([[SQ, { added: ['    return "的中率" + v;'], removed: [] }]])),
+    patches: new Map(
+      changes.map((c) => [
+        c.path,
+        { added: c.path === SQ ? added : [], removed: [] },
+      ]),
+    ),
     trees: [],
     moved,
   });
   return { moved, r };
 };
 {
-  const ok = moveRun(MOVE_TO);
-  assert.deepEqual([...ok.moved].sort(), [SQ, SVC], "字のまま移す→移すだけ");
-  assert.equal(ok.r.lane, "light", `字のまま移す→軽（${JSON.stringify(ok.r.hits)}）`);
-  const oneChar = moveRun(MOVE_TO.replace("K.size + getY", "K.size - getY"));
+  const ok = moveRun({});
+  assert.equal(why({}), null, "字のまま移す→移すだけ");
+  assert.deepEqual([...ok.moved].sort(), [SQ, SVC]);
+  assert.equal(
+    ok.r.lane,
+    "light",
+    `字のまま移す→軽（${JSON.stringify(ok.r.hits)}）`,
+  );
+  const oneChar = moveRun({ to: MOVE_TO.replace("n + m +", "n - m +") });
   assert.equal(oneChar.moved.size, 0, "移して1字変える→移すだけでない");
-  assert.deepEqual(rulesOf(oneChar.r), ["H3", "H9"], "移して1字変える→重（H3・H9）");
-  const extra = moveRun(MOVE_TO + lines("export function getNew() {", "  return 1;", "}"));
-  assert.equal(extra.r.lane, "heavy", "新しい関数を足す→重");
-  assert.ok(rulesOf(extra.r).includes("H3"));
-  // 殻にだけ短い形を足す（中身の無い名前）・移した先が既存のファイル・読めない・src/pure を混ぜる
-  const fakeHead = MOVE_HEAD.replace("  getY,\n", "  getY,\n  getW,\n");
-  assert.equal(moveRun(MOVE_TO, { head: fakeHead }).moved.size, 0, "殻に名前だけ足す→移すだけでない");
-  const modified = [{ status: "M", path: SVC }, { status: "M", path: SQ }];
-  assert.equal(moveRun(MOVE_TO, { changes: modified }).moved.size, 0, "既存のファイルへ移す→移すだけでない");
-  assert.equal(moveRun(null).moved.size, 0, "読めない→移すだけでない（安全側）");
-  const withPure = [...moveChanges, { status: "M", path: "src/pure/raceModel.js" }];
-  const pure = moveRun(MOVE_TO, { changes: withPure });
-  assert.deepEqual(pure.r.hits.map((h) => `${h.rule} ${h.file}`), ["H3 src/pure/raceModel.js"], "src/pure は外さない");
-  // 初期化に呼び出しを含む上の行の順を変える→移すだけでない
-  const twoInit = (x, y) => MOVE_TO.replace("const K = new Map();", `${x}\n${y}`);
-  const base2 = MOVE_BASE.replace("const K = new Map();", "const K = new Map();\nconst J = new Set();");
-  const read2 = (to) => (side, p) => (p === SVC ? (side === "base" ? base2 : MOVE_HEAD) : to);
-  assert.equal(moveOnlyPaths(moveOnly, moveChanges, read2(twoInit("const K = new Map();", "const J = new Set();"))).size, 2);
-  assert.equal(moveOnlyPaths(moveOnly, moveChanges, read2(twoInit("const J = new Set();", "const K = new Map();"))).size, 0, "初期化の順を変える→移すだけでない");
-  // 委ねるだけのメソッドを短い形にして上の関数を使う（注釈ごと消える）
-  const delBase = MOVE_BASE.replace("  getZ(v) {\n    return v;\n  },", "  /** Z */\n  getZ(v) {\n    return getZ(v);\n  },");
-  const delHead = MOVE_HEAD.replace("  getZ(v) {\n    return v;\n  },", "  getZ,");
-  const readDel = (side, p) => (p === SVC ? (side === "base" ? delBase : delHead) : MOVE_TO);
-  assert.equal(moveOnlyPaths(moveOnly, moveChanges, readDel).size, 2, "委ねるだけのメソッド");
-  assert.equal(moveOnlyPaths(undefined, moveChanges, readDel).size, 0, "設定が無ければ外さない");
+  assert.deepEqual(
+    rulesOf(oneChar.r),
+    ["H3", "H9"],
+    "移して1字変える→重（H3・H9）",
+  );
+  const extra = lines("export function getNew() {", "  return 1;", "}");
+  assert.match(why({ to: MOVE_TO + extra }), /getNew/, "新しい関数を足す");
+  // 審査の重大1: 行の順と単位の境を見る（行の多重集合では通ってしまう形）
+  const swap = MOVE_TO.replace(
+    "    const n = a(v) + K.size;\n    const m = J.size;",
+    "    const m = J.size;\n    const n = a(v) + K.size;",
+  );
+  assert.match(why({ to: swap }), /getX/, "単位の中の文を入れ替える");
+  const hop = MOVE_TO.replace("    const m = J.size;\n", "").replace(
+    "  }\nexport function getY(v) {\n",
+    "  }\nexport function getY(v) {\n    const m = J.size;\n",
+  );
+  assert.match(why({ to: hop }), /getX|getY/, "文を別の関数へ移す");
+  const order = MOVE_TO.replace(
+    "const K = new Map();\nconst J = new Set();",
+    "const J = new Set();\nconst K = new Map();",
+  );
+  assert.match(why({ to: order }), /const の順/, "上の const の順を変える");
+  // 審査の重大2: import と export は名前・元・as まで base と同じか、この PR の to から
+  const src = MOVE_TO.replace('"../utils/a.js"', '"../utils/a2.js"');
+  assert.match(why({ to: src }), /import/, "import の元を差し替える");
+  const alias = MOVE_TO.replace("import { a, b }", "import { a, c as b }");
+  assert.match(why({ to: alias }), /import/, "as で別の物を同じ名前にする");
+  const side = MOVE_TO.replace(
+    "\nconst K",
+    '\nimport "../utils/side.js";\nconst K',
+  );
+  assert.match(why({ to: side }), /副作用/, "副作用だけの import を足す");
+  const reexp = MOVE_HEAD.replace("{ clearCache }", "{ clearCache, getX }");
+  assert.match(
+    why({ head: reexp }),
+    /export/,
+    "base で export していない名前を殻から export",
+  );
+  const lost = MOVE_HEAD.replace(
+    'export { clearCache } from "./scheduleQueries.js";\n',
+    "",
+  );
+  assert.match(why({ head: lost }), /clearCache/, "base の export を落とす");
+  // 審査の重大3: import の頭と終わり（import(・import.meta を import と見ない、; の無い import は閉じない）
+  const dyn = MOVE_TO.replace(
+    "\nconst K",
+    '\nimport("../utils/side.js");\nconst K',
+  );
+  assert.notEqual(why({ to: dyn }), null, "import( を足す");
+  const meta = MOVE_TO.replace("\nconst K", "\nimport.meta.x = 1;\nconst K");
+  assert.notEqual(why({ to: meta }), null, "import.meta を足す");
+  const open = MOVE_TO.replace(
+    'import { a, b } from "../utils/a.js";',
+    'import { a, b } from "../utils/a.js"\nglobalThis.evil = 1;',
+  );
+  assert.notEqual(why({ to: open }), null, "; の無い import の後ろに文");
+  // this.X → X は、移したメソッドを指し、局所の名前に隠れないときだけ
+  const shadow = (t) => t.replace("const m = J.size;", "const getY = J.size;");
+  assert.match(
+    why({ base: shadow(MOVE_BASE), to: shadow(MOVE_TO) }),
+    /裸の getY/,
+    "this.X が局所の名前に隠れる",
+  );
+  const stay = (t) => t.replace("this.getY(v)", "this.getZ(v)");
+  const stayTo = MOVE_TO.replace("+ getY(v)", "+ getZ(v)");
+  assert.notEqual(
+    why({ base: stay(MOVE_BASE), to: stayTo }),
+    null,
+    "this.X が殻に残るメソッド",
+  );
+  // 殻: 名前だけ足す・残すメンバーを変える・既存のファイルへ・読めない・設定なし・src/pure は外さない
+  assert.notEqual(
+    why({ head: MOVE_HEAD.replace("  getY,\n", "  getY,\n  getW,\n") }),
+    null,
+    "殻に名前だけ足す",
+  );
+  assert.match(
+    why({ head: MOVE_HEAD.replace("return c(v)", "return c(v + 1)") }),
+    /getZ/,
+    "残すメンバーを変える",
+  );
+  const modified = [
+    { status: "M", path: SVC },
+    { status: "M", path: SQ },
+  ];
+  assert.notEqual(why({}, modified), null, "既存のファイルへ移す");
+  assert.match(why({ to: null }), /読めない/, "読めない→安全側");
+  assert.equal(
+    moveOnlyPaths(undefined, moveChanges, reader()).size,
+    0,
+    "設定が無ければ外さない",
+  );
+  const withPure = [
+    ...moveChanges,
+    { status: "M", path: "src/pure/raceModel.js" },
+  ];
+  const pure = moveRun({}, withPure);
+  assert.deepEqual(
+    pure.r.hits.map((h) => `${h.rule} ${h.file}`),
+    ["H3 src/pure/raceModel.js"],
+    "src/pure は外さない",
+  );
+  // 委ねるだけのメソッドは、上の関数を移したときだけ短い形にしてよい
+  const delBase = MOVE_BASE.replace(
+    "  getZ(v) {\n    return c(v);\n  },",
+    "  /** Z */\n  clearCache() {\n    return clearCache();\n  },\n  getZ(v) {\n    return c(v);\n  },",
+  );
+  const delHead = MOVE_HEAD.replace(
+    "  getZ(v) {",
+    "  clearCache,\n  getZ(v) {",
+  ).replace("import { getX, getY }", "import { clearCache, getX, getY }");
+  assert.equal(
+    why({ base: delBase, head: delHead }),
+    null,
+    "委ねるだけのメソッド",
+  );
+  const delArgs = delBase.replace(
+    "return clearCache();",
+    "return clearCache(1);",
+  );
+  assert.notEqual(
+    why({ base: delArgs, head: delHead }),
+    null,
+    "引数を変えて委ねる",
+  );
 }
 
 // ---- CLI（一時の git の木） ----
@@ -730,6 +863,26 @@ const moveRun = (to, { changes = moveChanges, head = MOVE_HEAD } = {}) => {
   g("add", "-A");
   g("commit", "-q", "-m", "words");
   const words = g("rev-parse", "HEAD");
+  // 移すだけ（BOA-1433）: git から base・head の字を読む道。移す前の殻・移した木・移して1字変えた木
+  const moveCommit = (files, msg) => {
+    for (const [p, text] of files) put(p, text);
+    g("add", "-A");
+    g("commit", "-q", "-m", msg);
+    return g("rev-parse", "HEAD");
+  };
+  g("checkout", "-q", "-b", "move", start);
+  const moveBase = moveCommit([[SVC, MOVE_BASE]], "move base");
+  const moveHead = moveCommit(
+    [
+      [SVC, MOVE_HEAD],
+      [SQ, MOVE_TO],
+    ],
+    "move",
+  );
+  const moveChanged = moveCommit(
+    [[SQ, MOVE_TO.replace("n + m +", "n - m +")]],
+    "move and change",
+  );
 
   const cli = (base, head) =>
     spawnSync(
@@ -780,6 +933,16 @@ const moveRun = (to, { changes = moveChanges, head = MOVE_HEAD } = {}) => {
     ],
     "空白・引用符を含むパスでも足した行の語を読む",
   );
+  assert.deepEqual(
+    JSON.parse(cli(moveBase, moveHead).stdout),
+    { lane: "light", hits: [] },
+    "CLI: 移すだけ→軽",
+  );
+  assert.equal(
+    JSON.parse(cli(moveBase, moveChanged).stdout).lane,
+    "heavy",
+    "CLI: 移して1字変える→重",
+  );
 
   const bad = cli(master, "0000000000000000000000000000000000000000");
   assert.notEqual(bad.status, 0, "判定できないときは 0 以外");
@@ -820,11 +983,13 @@ const moveRun = (to, { changes = moveChanges, head = MOVE_HEAD } = {}) => {
     "上限を超えたら投げる（CLI は 0 以外）",
   );
 
-  // hq の写し: pr-lane.js・規則・relativeImportGraph.js だけを同じ配置で（node_modules なし）置いても動く
+  // hq の写し: pr-lane.js・prLaneMoveOnly*.js・規則・relativeImportGraph.js だけを同じ配置で（node_modules なし）置いても動く
   {
     const copy = mkdtempSync(join(tmpdir(), "pr-lane-hq-"));
     for (const p of [
       "scripts/maintenance/pr-lane.js",
+      "scripts/maintenance/prLaneMoveOnly.js",
+      "scripts/maintenance/prLaneMoveOnlyParse.js",
       "config/pr-path-rules.json",
       "scripts/lib/relativeImportGraph.js",
     ]) {
@@ -894,6 +1059,7 @@ const moveRun = (to, { changes = moveChanges, head = MOVE_HEAD } = {}) => {
 // hq との約束: Node の組み込みと相対の import だけ（npm の部品を使わない）
 for (const p of [
   "scripts/maintenance/pr-lane.js",
+  "scripts/maintenance/prLaneMoveOnly.js",
   "scripts/lib/relativeImportGraph.js",
 ]) {
   const src = readFileSync(join(ROOT, p), "utf8");
@@ -903,44 +1069,6 @@ for (const p of [
   assert.ok(specs.length > 0, p);
   for (const s of specs)
     assert.match(s, /^(node:|\.\.?\/)/, `${p} が組み込み以外を import: ${s}`);
-}
-
-// CLI: 一時の git の木で、移すだけの PR は H3・H9 を外して軽（git から base・head の字を読む道）
-{
-  const repo = mkdtempSync(join(tmpdir(), "pr-lane-move-"));
-  const g = (...args) =>
-    execFileSync("git", ["-c", "user.name=pr-lane", "-c", "user.email=pr-lane@example.invalid", "-c", "commit.gpgsign=false", ...args], {
-      cwd: repo,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    }).trim();
-  const put = (p, text) => {
-    mkdirSync(dirname(join(repo, p)), { recursive: true });
-    writeFileSync(join(repo, p), text);
-  };
-  g("init", "-q", "-b", "main");
-  put("sns-video-studio/remotion/risk-rules.json", readFileSync(join(ROOT, "sns-video-studio/remotion/risk-rules.json"), "utf8"));
-  put(SVC, MOVE_BASE);
-  g("add", "-A");
-  g("commit", "-q", "-m", "base");
-  const base = g("rev-parse", "HEAD");
-  put(SVC, MOVE_HEAD);
-  put(SQ, MOVE_TO);
-  g("add", "-A");
-  g("commit", "-q", "-m", "move");
-  const moveHead = g("rev-parse", "HEAD");
-  put(SQ, MOVE_TO.replace("K.size + getY", "K.size - getY"));
-  g("add", "-A");
-  g("commit", "-q", "-m", "move and change");
-  const changed = g("rev-parse", "HEAD");
-  const cli = (head) =>
-    JSON.parse(
-      spawnSync(process.execPath, [join(ROOT, "scripts/maintenance/pr-lane.js"), "--base", base, "--head", head, "--repo", repo], {
-        encoding: "utf8",
-      }).stdout,
-    );
-  assert.equal(cli(moveHead).lane, "light", "CLI: 移すだけ→軽");
-  assert.equal(cli(changed).lane, "heavy", "CLI: 移して1字変える→重");
 }
 
 console.log("verify-pr-lane: OK");

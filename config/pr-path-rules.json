@@ -9,7 +9,7 @@
     "rowsOnlyAdded: このファイルは行の追加だけなら当てない（既存の行を消す・書き換えると当たる）。",
     "globalSelectors: 追加のときだけ、ファイルの中身に全体に効くセレクタ（:root・html・body・* で始まる、またはクラスで絞らない。括弧の中・属性・ID は絞りに数えない）があれば当たる。入れ子の規則と @keyframes 等の中、文字列・コメントの中は数えない（pr-lane.js の globalSelectors）。H7 の CSS は、既存の src の .css の変更・削除を changed で当て（Vite の SPA では CSS は全部全体に効き、既存の画面に効く範囲を差分から決められない。#2144）、新しい .css は全体のセレクタを持つときだけ当てる。",
     "terms: 差分で足した行に新しく入った語（足した行の数が消した行の数より多い語）で当たる。scan に当たり except に当たらないファイルだけを見る。riskRules の platforms が all の patterns も足す。",
-    "moveOnly: from（1つ、変更）から to（新しいファイル）へ split-data-layer.mjs が字のまま移しただけの PR なら（pr-lane.js の moveOnlyPaths、BOA-1433）、exceptMoveOnly の規則を from と to に当てない。行の多重集合が決まった正規化で一致するときだけで、1字でも変えた・関数を足した PR は当たる。src/pure・新しい .jsx（H4）・scripts（H1）は外さない。"
+    "moveOnly: from（1つ、変更）から to（from の隣の新しいファイル）へ split-data-layer.mjs が字のまま移しただけの PR なら（scripts/maintenance/prLaneMoveOnly.js、BOA-1433）、exceptMoveOnly の規則を from と to に当てない。単位（上の宣言・object のメンバー）を名前で対応させ、決まった正規化の後の行の列が順まで同じこと、import・export の名前（元・as）が base と同じかこの PR の to からだけであること等を確かめる。1字・1行の順でも変えた PR・関数を足した PR は当たる。src/pure・新しい .jsx（H4）・scripts（H1）は外さない。"
   ],
   "moveOnly": {
     "from": "^src/services/supabaseDataService\\.js$",
