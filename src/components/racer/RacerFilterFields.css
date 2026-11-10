@@ -74,3 +74,18 @@
   background: color-mix(in srgb, var(--brand-accent-primary) 14%, transparent);
   font-weight: var(--font-weight-semibold);
 }
+
+/* 375px: タップ領域44px以上・本文字13.6px以上（BOA-1414）。デスクトップ幅は変えない */
+@media (max-width: 480px) {
+  .racer-filter-field label,
+  .racer-filter-range .unit,
+  .racer-filter-chip {
+    font-size: var(--font-size-sm);
+  }
+
+  .racer-filter-select:not([multiple]),
+  .racer-filter-range input,
+  .racer-filter-chip {
+    min-height: 2.75rem;
+  }
+}
