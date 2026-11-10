@@ -409,6 +409,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/adminRuleService.js` | 管理者向けルール分析サービス | getRuleApplicationHistory |
 | `src/services/analogyFeedback.js` | 龍神ソナー（BOA-271）の「画面の中の声」を analogy_feedback に送る（docs/db-migration/143_analogy_feed… | sendAnalogyFeedback |
 | `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getRaceSt30, getAnalogyFacts, getAnalogyLayer, getAnalogySimilar ほか2件 |
+| `src/services/core.js` | — | withCache, clearCache, chunkArray, fetchAllByIn, isPastRace ほか7件 |
 | `src/services/currentMeetEntries.js` | 選手の今節の走（同じ会場・同じモーター）を特定する取得（BOA-861）。 | fetchCurrentMeetRaceEntries |
 | `src/services/dataService.js` | データ取得サービス | dataService |
 | `src/services/fetchAllPages.js` | .range() のページを、短いページが返るまで読み続けて全件を返す（BOA-1051）。 | fetchAllPages, fetchAllInChunks |
@@ -421,13 +422,14 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/racerScopedRaceRows.js` | 選手の走ごとの行（getRacerScopedRaceStats の返り値）の整形（純関数）。 | buildRacerScopedRaceRows |
 | `src/services/racerService.js` | 選手個別ページ用データ取得サービス | getRacerPageData, getRacerCurrentMotorStatus, getRacerAllPeriodStats, getRacerStats |
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, getVenueName, getTodaysMatchingRaces ほか1件 |
+| `src/services/scheduleQueries.js` | — | getRaces, getUpcomingSeries, getSeriesOfDate, getAvailableDates, getRaceHistorySummary ほか3件 |
 | `src/services/sherlockModel.js` | シャーロック予想 共有モデルロジック（純粋関数のみ） | mean, buildFeatures, softmax, predictConditionalLogit, impliedProbs ほか5件 |
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
 | `src/services/snsHubService.js` | — | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか16件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
-| `src/services/supabaseDataService.js` | Supabase データサービス | clearCache, aggregateRacerCrossStats, FETCH_ALL_BY_IN_ORDER, supabaseDataService |
+| `src/services/supabaseDataService.js` | Supabase データサービス | supabaseDataService |
 | `src/services/watsonService.js` | ワトソン予想 データ取得サービス | getWatsonModelInfo, getWatsonPredictions |
 
 ---
 
-対象 388 ファイル / export 2276 件。
+対象 390 ファイル / export 2293 件。
