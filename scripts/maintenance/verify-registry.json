@@ -1228,7 +1228,7 @@
     {
       "script": "verify-racer-page-shared.js",
       "tier": "ci",
-      "guards": "BOA-1244: 選手ページの会場×枠番の絞り込みと番付の racer_page が同じ純関数 src/utils/racerVenueBoatStats.js（aggregateRacerVenueBoatStats・toReturnRate・racerHistoryCutoff）を使う（サービス層に写しが無い、730日の切りが移す前の式と同じ、会場で絞る集計は会場の走だけを読んでも同じ値（乱数2,000通り））、rank-data.js が racer_page の引数の誤りを DB の前に拒否する（DB・通信なし）"
+      "guards": "BOA-1244: 選手ページの会場×枠番の絞り込みと番付の racer_page が同じ純関数 src/utils/racerVenueBoatStats.js（aggregateRacerVenueBoatStats・toReturnRate・racerHistoryCutoff）を使う（BOA-1406: サービス層は偽の supabase の上で getRacerRaceHistory・getRacerBoatReturnRate を呼び、取得が列 race_id, boat_number・racerHistoryCutoff() 以降で、返す履歴を純関数で数えた値と回収率が手で数えた値になる、730日の切りが移す前の式と同じ、会場で絞る集計は会場の走だけを読んでも同じ値（乱数2,000通り））、rank-data.js が racer_page の引数の誤りを DB の前に拒否する（DB・通信なし）"
     },
     {
       "script": "verify-racer-profile-sync.js",
