@@ -87,50 +87,71 @@ export const weakenRowPatterns = (human) => [
   ...(human.weaken?.removedRows ?? []),
 ];
 
+/** DB の書き手: 中身は base・head の木から読む。無い側（追加の base・削除の head）は見ない。読めなければ当てる（安全側） */
+function writerReason({ spec, file, status, readBlob }) {
+  if (!anyMatch(spec.writerFiles, file)) return null;
+  const sides = [status !== "A" && "base", status !== "D" && "head"];
+  const texts = sides.filter(Boolean).map((s) => readBlob(s, file));
+  const hit = texts.some(
+    (t) =>
+      typeof t !== "string" ||
+      spec.writerContent.some((p) => new RegExp(p).test(t)),
+  );
+  return hit
+    ? `${spec.reason}（.from(…).upsert 等・SERVICE_ROLE を持つ、または中身を読めない）`
+    : null;
+}
+
+/** weaken（守りを弱める変更）の当たりと理由 */
+function weakenReason({ spec: w, file, status, patch }) {
+  const del = status === "D";
+  // 行を読めない（patch 無し）ときは当てる（安全側）
+  const rows = (pick) => del || !patch || pick(patch).length > 0;
+  const cases = [
+    [del && anyMatch(w.deleted, file), "削除"],
+    [
+      status !== "A" && anyMatch(w.changedScripts, file),
+      "既存の .mjs・.cjs・.sh の verify の変更",
+    ],
+    [
+      !del &&
+        anyMatch(w.addedRows, file) &&
+        (!patch || patch.added.length > 0),
+      "allowlist に行を足す",
+    ],
+    [
+      anyMatch(w.registryRows, file) && rows(changedRows),
+      "台帳の既存の行の変更・削除",
+    ],
+    [
+      status !== "A" &&
+        anyMatch(w.removedRows, file) &&
+        rows((p) => p.removed),
+      "行の削除・書き換え",
+    ],
+  ];
+  const found = cases.find(([ok]) => ok);
+  return found ? `${w.reason}（${found[1]}）` : null;
+}
+
+/** 1つの kind が1ファイルに当たる理由（当たらなければ null） */
+function humanReason(kind, ctx) {
+  const { spec, file, hits } = ctx;
+  if (anyMatch(spec.paths, file, "i")) return spec.reason;
+  if (spec.fromRule) {
+    const h = hits.find((x) => x.rule === spec.fromRule && x.file === file);
+    return h ? `${spec.reason}（${h.reason}）` : null;
+  }
+  if (spec.writerFiles) return writerReason(ctx);
+  return kind === "weaken" ? weakenReason(ctx) : null;
+}
+
 /** 1ファイルが当たる human の kind と理由（heavy の hits のファイルだけに使う） */
 function humanKinds({ human, file, status, patch, hits, readBlob }) {
   const found = [];
   for (const [kind, spec] of Object.entries(human)) {
-    let reason = null;
-    if (anyMatch(spec.paths, file, "i")) reason = spec.reason;
-    else if (spec.fromRule) {
-      const h = hits.find((x) => x.rule === spec.fromRule && x.file === file);
-      if (h) reason = `${spec.reason}（${h.reason}）`;
-    } else if (anyMatch(spec.writerFiles, file)) {
-      // 中身は base・head の木から読む。無い側（追加の base・削除の head）は見ない。読めなければ当てる（安全側）
-      const sides = [status !== "A" && "base", status !== "D" && "head"];
-      const texts = sides.filter(Boolean).map((s) => readBlob(s, file));
-      if (
-        texts.some(
-          (t) =>
-            typeof t !== "string" ||
-            spec.writerContent.some((p) => new RegExp(p).test(t)),
-        )
-      )
-        reason = `${spec.reason}（.from(…).upsert 等・SERVICE_ROLE を持つ、または中身を読めない）`;
-    } else if (kind === "weaken") {
-      const w = spec;
-      if (status === "D" && anyMatch(w.deleted, file)) reason = `${w.reason}（削除）`;
-      else if (status !== "A" && anyMatch(w.changedScripts, file))
-        reason = `${w.reason}（既存の .mjs・.cjs・.sh の verify の変更）`;
-      else if (
-        status !== "D" &&
-        anyMatch(w.addedRows, file) &&
-        (!patch || patch.added.length > 0)
-      )
-        reason = `${w.reason}（allowlist に行を足す）`;
-      else if (
-        anyMatch(w.registryRows, file) &&
-        (status === "D" || !patch || changedRows(patch).length > 0)
-      )
-        reason = `${w.reason}（台帳の既存の行の変更・削除）`;
-      else if (
-        status !== "A" &&
-        anyMatch(w.removedRows, file) &&
-        (status === "D" || !patch || patch.removed.length > 0)
-      )
-        reason = `${w.reason}（行の削除・書き換え）`;
-    }
+    const ctx = { spec, file, status, patch, hits, readBlob };
+    const reason = humanReason(kind, ctx);
     if (reason) found.push({ kind, file, reason });
   }
   return found;
