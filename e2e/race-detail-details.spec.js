@@ -145,6 +145,52 @@ test.describe("レース詳細の表示の細部", () => {
     ).toHaveCount(0);
   });
 
+  // 375px で「今節まわり足 ※ ?」の※と? だけが2行目に落ちない（BOA-1029）。
+  // 見出しの最後の「足」・※・? の上端が同じ行（4px 以内）にある
+  test("直前情報: 375pxでまわり足の「※」と「?」が見出しの最後の字と同じ行に残る（BOA-1029）", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto("/race/2026-10-02-12-12?tab=beforeInfo");
+    await expect(
+      page.getByTestId("rbi-turn-time-venue-note"),
+    ).toBeVisible({ timeout: 30000 });
+    const cells = page
+      .locator(".race-before-info-tab .drt-label-cell")
+      .filter({ hasText: "まわり足" });
+    await expect(cells).toHaveCount(2);
+    const tops = await cells.evaluateAll((els) =>
+      els.map((cell) => {
+        const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+        let foot = null;
+        let mark = null;
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          const parent = n.parentElement;
+          if (!parent || getComputedStyle(parent).display === "none") continue;
+          const text = n.textContent;
+          const f = text.indexOf("足");
+          const m = text.indexOf("※");
+          const topOf = (i) => {
+            const r = document.createRange();
+            r.setStart(n, i);
+            r.setEnd(n, i + 1);
+            return r.getBoundingClientRect().top;
+          };
+          if (f >= 0) foot = topOf(f);
+          if (m >= 0) mark = topOf(m);
+        }
+        const btn = cell.querySelector(".term-hint__button");
+        return { foot, mark, hint: btn.getBoundingClientRect().top };
+      }),
+    );
+    for (const { foot, mark, hint } of tops) {
+      expect(foot).not.toBeNull();
+      expect(mark).not.toBeNull();
+      expect(Math.abs(mark - foot)).toBeLessThanOrEqual(4);
+      expect(Math.abs(hint - foot)).toBeLessThanOrEqual(4);
+    }
+  });
+
   test("基本情報の勝率バー: 最下位の艇も棒が空にならない（BOA-618）", async ({
     page,
   }) => {
@@ -203,7 +249,9 @@ test.describe("レース詳細の表示の細部", () => {
     const names = page.locator(".rpr-racer-name");
     await expect(names.first()).toBeVisible({ timeout: 30000 });
     const texts = await names.allTextContents();
-    for (const n of texts) expect(n).not.toMatch(/　/);
+    for (const n of texts) {
+      expect(n.includes(String.fromCharCode(0x3000))).toBe(false);
+    }
   });
 
   test("1440・1920px: ST考察の6艇の列は等幅、枠別情報のカードの右端がそろう（BOA-619）", async ({

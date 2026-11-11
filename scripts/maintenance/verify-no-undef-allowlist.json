@@ -26,10 +26,6 @@
         "count": 1,
         "reason": "試験用の選手名に全角空白を入れている（公式の選手名の形）。\\u3000 への書き換えは別の作業"
       },
-      "e2e/race-detail-details.spec.js": {
-        "count": 1,
-        "reason": "全角空白が残っていないことを見る正規表現。\\u3000 への書き換えは別の作業"
-      },
       "e2e/race-result-display-fixes.spec.js": {
         "count": 1,
         "reason": "コメントに公式の選手名の表記（全角空白で詰めた名前）をそのまま書いている"
