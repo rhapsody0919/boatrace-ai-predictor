@@ -1,5 +1,29 @@
 // 旧 e2e/smoke.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
-import { test, expect } from "../fixtures.js";
+import { test, expect, e2eTodayJST, fetchRecorded } from "../fixtures.js";
+import { HIT_RACES_FIXED_DATE } from "../layout/helpers.js";
+
+/**
+ * 分析ツールが読む「今日」の races（開催会場・本日のレース・好調/不調ランキングの出走表）を、
+ * 生成済みの固定の過去日に向け直す。0:00〜7:00 JST は当日の行が無く、表が出ない（BOA-1458）。
+ * ほかの日付の要求はそのまま通す。route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+ */
+async function serveFixedTodaysRaces(page) {
+  const todayJst = e2eTodayJST();
+  await page.route(/\/rest\/v1\/races\?.*race_date=eq\./, async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get("race_date") !== `eq.${todayJst}`) {
+      await route.fallback();
+      return;
+    }
+    url.searchParams.set("race_date", `eq.${HIT_RACES_FIXED_DATE}`);
+    const response = await fetchRecorded(route, { url: url.toString() });
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      body: await response.body(),
+    });
+  });
+}
 
 test.describe("選手一覧ページ (/racers)", () => {
   test("ハンバーガーメニューから選手一覧へ遷移できる", async ({ page }) => {
@@ -141,6 +165,7 @@ test.describe("選手個別ページ（racer-news-feature）", () => {
   test("データ分析ツールの好調・不調選手ランキングから選手ページへ遷移できる", async ({
     page,
   }) => {
+    await serveFixedTodaysRaces(page);
     await page.goto("/winning-technique");
     await page.click('button:has-text("好調・不調選手ランキング")');
     // Supabaseからのデータ取得に数秒かかるため、テーブル見出しの表示を先に待つ

@@ -200,25 +200,6 @@ function analyzeLowScoreBoatsByVolatility(races, modelName = 'standard') {
   return results;
 }
 
-// 相関係数を計算
-function calculateCorrelation(x, y) {
-  const n = x.length;
-  if (n === 0 || n !== y.length) return null;
-
-  const sumX = x.reduce((a, b) => a + b, 0);
-  const sumY = y.reduce((a, b) => a + b, 0);
-  const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
-  const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
-  const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0);
-
-  const numerator = n * sumXY - sumX * sumY;
-  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-
-  if (denominator === 0) return null;
-
-  return numerator / denominator;
-}
-
 // レポートを生成
 function generateReport(allStats, volatilityStats, lowScoreAnalysis, lowScoreByVolatility, totalRaces) {
   let report = '';
