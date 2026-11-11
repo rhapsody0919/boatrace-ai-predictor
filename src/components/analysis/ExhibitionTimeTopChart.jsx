@@ -63,8 +63,7 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
         setLoading(true);
         setError(null);
         const venueCode = parseInt(selectedVenue, 10);
-        const data =
-          await getExhibitionTimeTopStats(venueCode);
+        const data = await getExhibitionTimeTopStats(venueCode);
         setStatsData(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));

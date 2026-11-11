@@ -45,10 +45,7 @@ function ExhibitionTimeTrendChart({
         setLoading(true);
         setError(null);
         setDrillDownRacer(null);
-        const data =
-          await getRaceExhibitionTimeBreakdown(
-            selectedRace,
-          );
+        const data = await getRaceExhibitionTimeBreakdown(selectedRace);
         setBreakdown(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
@@ -67,8 +64,7 @@ function ExhibitionTimeTrendChart({
       try {
         setLoading(true);
         setError(null);
-        const data =
-          await getExhibitionTimeTrend(drillDownRacer);
+        const data = await getExhibitionTimeTrend(drillDownRacer);
         setTrendData(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
