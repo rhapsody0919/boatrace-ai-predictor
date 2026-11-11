@@ -9,11 +9,96 @@
     "rowsOnlyAdded: このファイルは行の追加だけなら当てない（既存の行を消す・書き換えると当たる）。",
     "globalSelectors: 追加のときだけ、ファイルの中身に全体に効くセレクタ（:root・html・body・* で始まる、またはクラスで絞らない。括弧の中・属性・ID は絞りに数えない）があれば当たる。入れ子の規則と @keyframes 等の中、文字列・コメントの中は数えない（pr-lane.js の globalSelectors）。H7 の CSS は、既存の src の .css の変更・削除を changed で当て（Vite の SPA では CSS は全部全体に効き、既存の画面に効く範囲を差分から決められない。#2144）、新しい .css は全体のセレクタを持つときだけ当てる。",
     "terms: 差分で足した行に新しく入った語（足した行の数が消した行の数より多い語）で当たる。scan に当たり except に当たらないファイルだけを見る。riskRules の platforms が all の patterns も足す。",
-    "moveOnly: from（1つ、変更）から to（from の隣の新しいファイル）へ split-data-layer.mjs が字のまま移しただけの PR なら（scripts/maintenance/prLaneMoveOnly.js、BOA-1433）、exceptMoveOnly の規則を from と to に当てない。単位（上の宣言・object のメンバー）を名前で対応させ、決まった正規化の後の行の列が順まで同じこと、import・export の名前（元・as）が base と同じかこの PR の to からだけであること等を確かめる。1字・1行の順でも変えた PR・関数を足した PR は当たる。src/pure・新しい .jsx（H4）・scripts（H1）は外さない。"
+    "moveOnly: from（1つ、変更）から to（from の隣の新しいファイル）へ split-data-layer.mjs が字のまま移しただけの PR なら（scripts/maintenance/prLaneMoveOnly.js、BOA-1433）、exceptMoveOnly の規則を from と to に当てない。単位（上の宣言・object のメンバー）を名前で対応させ、決まった正規化の後の行の列が順まで同じこと、import・export の名前（元・as）が base と同じかこの PR の to からだけであること等を確かめる。1字・1行の順でも変えた PR・関数を足した PR は当たる。src/pure・新しい .jsx（H4）・scripts（H1）は外さない。",
+    "human: heavy の hits のファイルに、人にしか判断できない理由（kind ごと）を付ける。パスの型は大小を問わない。sns・terms は fromRule の hits を写す。db の writerFiles の中身（base か head）が writerContent に当たる、または読めないと当てる。weaken は deleted（削除）・changedScripts（追加以外）・addedRows（行を足す）・registryRows（既存の行の変更・削除）・removedRows（行の削除・書き換え）。",
+    "needs: 規則の needs（kind の名。H5 は kind → パスの型）。機械の確かめで人が要らなくなる物。needsUnlessHuman の kind の human に入る物は除く。",
+    "reservedPatterns: 今の木に当たらなくても残す型（verify-pr-lane.js の死んだ型の検査から除く）。"
   ],
   "moveOnly": {
     "from": "^src/services/supabaseDataService\\.js$",
     "to": ["^src/services/core[0-9]*\\.js$", "^src/services/[A-Za-z]+Queries[0-9]*\\.js$"]
+  },
+  "reservedPatterns": [
+    {
+      "pattern": "^supabase/",
+      "reason": "今の master に supabase/ は無い（マイグレーションは docs/db-migration/）。将来置かれても重い道にするための予約"
+    }
+  ],
+  "human": {
+    "github": { "reason": "ワークフロー・設定（.github/）", "paths": ["^\\.github/"] },
+    "secret": {
+      "reason": "鍵・認証・配備・依存の定義",
+      "paths": [
+        "(token|secret|credential|keychain)",
+        "(^|/)\\.(env|npmrc)",
+        "^(vercel\\.json|middleware\\.js)$",
+        "^package(-lock)?\\.json$",
+        "^sns-video-studio/(?!.*node_modules/)(.+/)?package(-lock)?\\.json$"
+      ]
+    },
+    "db": {
+      "reason": "DB・本番で動くバッチの変更（DB の書き手を含む）",
+      "paths": ["^docs/db-migration/", "^supabase/", "^scripts/db/", "^scripts/lib/"],
+      "writerFiles": ["^scripts/.*\\.(js|mjs|cjs)$"],
+      "writerContent": [
+        "\\.from\\([^;]{0,200}?\\)\\s*\\.\\s*(upsert|insert|update|delete)\\(",
+        "SERVICE_ROLE"
+      ]
+    },
+    "sns": { "reason": "SNS の自動送信に届く変更", "fromRule": "H2" },
+    "terms": { "reason": "事業・法務・ブランドの語が新しく入る", "fromRule": "H9" },
+    "seo": {
+      "reason": "SEO・クローラー向けの出力",
+      "paths": [
+        "^public/robots\\.txt$",
+        "^public/sitemap",
+        "^public/llms",
+        "^index\\.html$",
+        "^api/_lib/botPage\\.js$"
+      ]
+    },
+    "judge": {
+      "reason": "判定とビルドの守り（足すだけでも人）",
+      "paths": [
+        "^scripts/maintenance/pr-lane\\.js$",
+        "^config/pr-path-rules\\.json$",
+        "^scripts/lib/relativeImportGraph\\.js$",
+        "^scripts/maintenance/prLaneMoveOnly[^/]*\\.js$",
+        "^scripts/maintenance/run-verify-registry\\.js$",
+        "^scripts/maintenance/e2e-scope\\.js$",
+        "^scripts/maintenance/guard-pr-merge\\.js$",
+        "^scripts/vercel-ignore-build\\.js$",
+        "^scripts/watch/"
+      ]
+    },
+    "fixture": { "reason": "E2E の録画・fixtures", "paths": ["^e2e/fixtures\\.js$", "\\.gz$"] },
+    "weaken": {
+      "reason": "試験・検査・守りを弱めうる変更",
+      "deleted": [
+        "^scripts/maintenance/verify-[^/]+\\.(js|mjs|cjs|sh)$",
+        "^e2e/.*\\.spec\\.js$",
+        "^e2e/(?!.*\\.spec\\.js$)"
+      ],
+      "changedScripts": ["^scripts/maintenance/verify-[^/]+\\.(mjs|cjs|sh)$"],
+      "addedRows": ["-allowlist\\.json$"],
+      "registryRows": ["^scripts/maintenance/verify-registry\\.json$"],
+      "removedRows": [
+        "^eslint\\.config\\.js$",
+        "^playwright[^/]*\\.config\\.js$",
+        "^AGENTS\\.md$",
+        "^\\.claude/"
+      ]
+    },
+    "css-core": {
+      "reason": "核の CSS（スクショ差の job が入るまで人）",
+      "paths": [
+        "^src/components/Header\\.css$",
+        "^src/components/LanguageSwitcher\\.css$",
+        "^src/App\\.css$",
+        "^src/styles/",
+        "^src/index\\.css$"
+      ]
+    }
   },
   "rules": [
     {
@@ -21,7 +106,9 @@
       "title": "本番 DB の変更と、本番で動く scripts/**",
       "paths": ["^docs/db-migration/", "^supabase/", "^scripts/"],
       "exceptAdded": ["^scripts/maintenance/verify-[^/]+\\.(js|mjs|cjs|sh)$"],
-      "except": ["^scripts/maintenance/verify-registry\\.json$"]
+      "except": ["^scripts/maintenance/verify-registry\\.json$"],
+      "needs": "line-mutation",
+      "needsUnlessHuman": ["db", "judge"]
     },
     {
       "id": "H2",
@@ -42,13 +129,15 @@
       "id": "H3",
       "title": "表示する数字の定義（集計・算出・母数・期間・並び順の基準）",
       "paths": ["^src/pure/", "^src/services/", "^scripts/analysis/"],
-      "exceptMoveOnly": true
+      "exceptMoveOnly": true,
+      "needs": "line-mutation"
     },
     {
       "id": "H4",
       "title": "新しいページ・ルート・承認したモックの実装",
       "added": ["^src/pages/", "^src/components/.*\\.jsx$"],
-      "paths": ["^src/main\\.jsx$", "^src/AppRouter\\.jsx$"]
+      "paths": ["^src/main\\.jsx$", "^src/AppRouter\\.jsx$"],
+      "needs": "route-in-e2e"
     },
     {
       "id": "H5",
@@ -78,13 +167,21 @@
         "^e2e/(?!.*\\.spec\\.js$)",
         "^scripts/maintenance/verify-[^/]+\\.(js|mjs|cjs|sh)$"
       ],
-      "rowsOnlyAdded": ["^scripts/maintenance/verify-registry\\.json$"]
+      "rowsOnlyAdded": ["^scripts/maintenance/verify-registry\\.json$"],
+      "needs": {
+        "verify-mutation": ["^scripts/maintenance/verify-[^/]+\\.js$"],
+        "base-spec-on-head": [
+          "^e2e/.*\\.spec\\.js$",
+          "^e2e/(?!fixtures\\.js$)(?!.*\\.spec\\.js$)(?!.*\\.gz$)"
+        ]
+      }
     },
     {
       "id": "H6",
       "title": "api/** と、api/**・middleware.js から import でたどれるファイル",
       "paths": ["^api/"],
-      "reachFrom": ["^api/", "^middleware\\.js$"]
+      "reachFrom": ["^api/", "^middleware\\.js$"],
+      "needs": "line-mutation"
     },
     {
       "id": "H7",
@@ -102,13 +199,16 @@
         "^public/llms"
       ],
       "changed": ["^src/.*\\.css$"],
-      "globalSelectors": ["^src/.*\\.css$"]
+      "globalSelectors": ["^src/.*\\.css$"],
+      "needs": "screenshot-diff",
+      "needsUnlessHuman": ["css-core"]
     },
     {
       "id": "H8",
       "title": "fs・URL で読まれるデータ",
       "paths": ["^data/", "^config/[^/]+\\.json$", "^src/locales/ja/"],
-      "exceptAdded": ["^data/analysis/"]
+      "exceptAdded": ["^data/analysis/"],
+      "needs": "line-mutation"
     },
     {
       "id": "H9",
