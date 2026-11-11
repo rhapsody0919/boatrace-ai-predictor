@@ -14,9 +14,11 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { parse } from "acorn";
 import {
+  DATA_LAYER_KEY,
   FACADE,
   compareEdgesToBaseline,
   facadeShouldBeError,
+  isDataLayer,
   newUtilsFileProblems,
 } from "./lintBaselines.js";
 
@@ -66,7 +68,8 @@ export function subtractEdges(a, b) {
 /** 辺 → 基準の形 { rule: { from: [to] } } */
 export function baselineOfEdges(edges) {
   const out = {};
-  for (const { rule, from, to } of edges) {
+  for (const { rule, from: file, to } of edges) {
+    const from = isDataLayer(file) ? DATA_LAYER_KEY : file;
     out[rule] ??= {};
     out[rule][from] ??= [];
     if (!out[rule][from].includes(to)) out[rule][from].push(to);
