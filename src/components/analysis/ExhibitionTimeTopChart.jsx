@@ -16,7 +16,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import BandWrapAxisTick from "../BandWrapAxisTick";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getExhibitionTimeTopStats } from "../../services/venueQueries3.js";
 import "./WinningTechniqueChart.css";
 
 const VENUES = [
@@ -63,8 +63,7 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
         setLoading(true);
         setError(null);
         const venueCode = parseInt(selectedVenue, 10);
-        const data =
-          await supabaseDataService.getExhibitionTimeTopStats(venueCode);
+        const data = await getExhibitionTimeTopStats(venueCode);
         setStatsData(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));

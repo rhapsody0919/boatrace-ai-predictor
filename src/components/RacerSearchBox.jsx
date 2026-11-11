@@ -1,7 +1,7 @@
 // i18n-allow-file: Header.jsx が ja のときだけ描画する（選手データ・検索が ja のみのため）
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getAllRacersWithGrade } from "../services/racerQueries.js";
 import BranchFilterSelect from "./racer/BranchFilterSelect";
 import RangeFilterInput from "./racer/RangeFilterInput";
 import GradeFilterChips from "./racer/GradeFilterChips";
@@ -86,8 +86,7 @@ function RacerSearchBox() {
     if (fetchStartedRef.current) return;
     fetchStartedRef.current = true;
     setLoading(true);
-    supabaseDataService
-      .getAllRacersWithGrade()
+    getAllRacersWithGrade()
       .then((data) => setRacers(data))
       .catch((err) => {
         console.error("選手一覧取得エラー:", err.message);
