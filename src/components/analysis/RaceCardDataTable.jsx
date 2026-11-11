@@ -8,7 +8,11 @@
 import { useState, useEffect } from "react";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import {
+  getRaceOfficialAvgSt,
+  getRaceRacerStats,
+} from "../../services/raceQueries2.js";
+import { getRaceEntriesDetail } from "../../services/raceQueries3.js";
 import { getRaceSt30 } from "../../services/analogyService";
 import InlineFetchError from "../InlineFetchError";
 import { formatExhibitionSt } from "../../utils/formatters";
@@ -92,9 +96,9 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
         // 30走は v16 の API から取る。その失敗で表全体を消さず、列の下に取得失敗を出す
         setSt30Failed(false);
         const [entryRows, stats, official, st30] = await Promise.all([
-          supabaseDataService.getRaceEntriesDetail(selectedRace),
-          supabaseDataService.getRaceRacerStats(selectedRace),
-          supabaseDataService.getRaceOfficialAvgSt(selectedRace),
+          getRaceEntriesDetail(selectedRace),
+          getRaceRacerStats(selectedRace),
+          getRaceOfficialAvgSt(selectedRace),
           getRaceSt30(selectedRace).catch((err) => {
             console.error("平均ST(30走)の取得に失敗:", err?.message ?? err);
             setSt30Failed(true);

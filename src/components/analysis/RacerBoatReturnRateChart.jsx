@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRaceRacerBoatReturnRate } from "../../services/raceQueries3.js";
 import { bestOf } from "../../utils/bestOf";
 import "./MotorConditionChart.css";
 
@@ -66,7 +66,7 @@ function RacerBoatReturnRateChart({
         setLoading(true);
         setError(null);
         const data =
-          await supabaseDataService.getRaceRacerBoatReturnRate(selectedRace);
+          await getRaceRacerBoatReturnRate(selectedRace);
         setBreakdown(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));

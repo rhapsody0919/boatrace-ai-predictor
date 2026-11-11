@@ -7,7 +7,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getTodaysRacerFormRanking } from "../../services/racerQueries3.js";
 import "./MotorConditionChart.css";
 
 const VENUE_NAMES = {
@@ -106,7 +106,7 @@ function RacerFormRankingChart() {
       try {
         setLoading(true);
         setError(null);
-        const data = await supabaseDataService.getTodaysRacerFormRanking(10);
+        const data = await getTodaysRacerFormRanking(10);
         setRanking(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
