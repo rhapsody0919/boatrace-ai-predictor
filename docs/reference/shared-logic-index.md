@@ -415,6 +415,9 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/fetchAllPages.js` | .range() のページを、短いページが返るまで読み続けて全件を返す（BOA-1051）。 | fetchAllPages, fetchAllInChunks |
 | `src/services/liveOddsService.js` | オッズのライブ取得（BOA-487）。/api/odds/live を呼ぶ。 | fetchLiveOdds, LIVE_PAGE_OF_BET_TYPE, LiveOddsError |
 | `src/services/meetExclusion.js` | 再 export だけのファイル。本体は `src/pure/meetExclusion.js`（開発効率の計画 段3、pure の根へ移した）。 | — |
+| `src/services/meetQueries.js` | — | getCurrentMeetFlyingBoats, getRaceMeetPrevRuns, getRacerMeetExhibitionTrendBefore, getMeetOriginalExhibitionByRaceBoat |
+| `src/services/meetQueries2.js` | — | getMeetScoreboard |
+| `src/services/meetQueries3.js` | — | getMeetPage |
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
@@ -447,4 +450,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 405 ファイル / export 2359 件。
+対象 408 ファイル / export 2365 件。
