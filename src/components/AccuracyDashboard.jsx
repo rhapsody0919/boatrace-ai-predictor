@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import UpdateStatus from "./UpdateStatus";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getUnifiedModelAccuracy } from "../services/predictionQueries3.js";
+import { getUnifiedVolatilityAccuracy } from "../services/predictionQueries4.js";
 import { formatPercent } from "../utils/formatters";
 import { ReliabilityWarning, VolatilityAccuracySection } from "./accuracy";
 import LoadingScreen from "./LoadingScreen";
@@ -65,8 +66,8 @@ function LegacyAccuracyDashboard({ onRefresh, isRefreshing }) {
       try {
         setLoading(true);
         const [accuracyData, volatilityData] = await Promise.all([
-          supabaseDataService.getUnifiedModelAccuracy(),
-          supabaseDataService.getUnifiedVolatilityAccuracy(),
+          getUnifiedModelAccuracy(),
+          getUnifiedVolatilityAccuracy(),
         ]);
         if (!cancelled) {
           setModelAccuracy(accuracyData);

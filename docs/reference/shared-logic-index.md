@@ -388,7 +388,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/venueMotorRanking.js` | 会場のモーターの順位と並べ替え（純関数、BOA-428）。 | rankBy, sortMotorRows, formatMotorRate, formatSlashDate, currentSeriesRiders ほか3件 |
 | `src/utils/venuePayoutStats.js` | 会場ごとの配当・逃げの集計（純関数、BOA-1242）。 | tallyVenuePayouts, venuePayoutRates, rankVenuesByPayout, HIGH_PAYOUT_YEN |
 | `src/utils/venuePlaceRates.js` | 会場特徴カードの「もっと詳しく」（BOA-269）の集計。 | placeRatesByBoat, techniqueBreakdown, nationalWinRateByBoat, groupWinningTechniqueRows, poolTechniqueCounts ほか1件 |
-| `src/utils/venueSeriesTitle.js` | 会場ページの title・description に入れる節タイトルを決める（集客レーン Phase3、2026-09-30）。 | getVenueSeriesTitle |
+| `src/utils/venueSeriesTitle.js` | — | — |
 | `src/utils/venueSummary.js` | 会場ページ（/venue/N）の見出しの直下に置く常設の要約2行（BOA-1189 GS02-b、2026-10-31 オーナー決定）。 | venueSummaryLines, venueSummaryPeriod, formatCount, formatRate |
 | `src/utils/venueUtils.js` | — | VENUE_CODE_TO_BLOG_ID, getVenueBlogId, getVenueGuidePath |
 | `src/utils/volatilityHighlights.js` | ホームの「本日のイン崩れ注意度ハイライト」で、「イン崩れ注意（高）」と「本命有利」に出すレースを選ぶ | pickVolatilityHighlights |
@@ -456,4 +456,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 414 ファイル / export 2394 件。
+対象 414 ファイル / export 2393 件。

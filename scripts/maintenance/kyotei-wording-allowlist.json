@@ -146,7 +146,7 @@
       "line": "const BANNED_WORDS = [\"競艇\"];"
     },
     {
-      "file": "src/utils/venueSeriesTitle.js",
+      "file": "src/shared/venueSeriesTitle.js",
       "line": "* 「{会場}競艇予想 ai」は SG 開催週に跳ねる（桐生SGの週に「桐生競艇予想 ai」が1週1,489表示）ため、"
     }
   ]
