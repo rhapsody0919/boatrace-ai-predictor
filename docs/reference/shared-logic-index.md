@@ -422,6 +422,14 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/predictionQueries2.js` | — | getPredictions |
 | `src/services/predictionQueries3.js` | — | getAccuracy, getUnifiedModelAccuracy |
 | `src/services/predictionQueries4.js` | — | getUnifiedVolatilityAccuracy, getInCautionAccuracy, getUnifiedTrifectaReference |
+| `src/services/raceQueries.js` | — | raceOddsCacheTtl, getRaceWinnerCourses, getRaceEntryOfficialRatesBreakdown, getRaceRacerFormBreakdown, getRaceStPredictabilityBreakdown ほか1件 |
+| `src/services/raceQueries2.js` | — | getRaceExhibitionTimeBreakdown, getRaceEntryWeights, getRaceExhibitionBasics, getRaceRacerStats, getRaceOfficialAvgSt ほか1件 |
+| `src/services/raceQueries3.js` | — | getRaceFinalOdds, getRaceEntriesDetail, getRaceResultSummary, getRaceRacerBoatReturnRate, getRaceTechniqueProfileBreakdown |
+| `src/services/raceQueries4.js` | — | getRaceStartTimings, getRacePitReport, getRaceOriginalExhibition |
+| `src/services/racerQueries.js` | — | fetchRacerEntriesSince, getRacerFormTrend, getRacerFormSummary, getRacerTechniqueProfile, getRacerAggregatedStats ほか5件 |
+| `src/services/racerQueries2.js` | — | getRacerVenueStats, getRacerScopedRaceStats, getRacerRaceHistory |
+| `src/services/racerQueries3.js` | — | getRacerBoatReturnRate, getStDeviationTrend, getExhibitionTimeTrend, getTodaysRacerFormRanking |
+| `src/services/racerQueries4.js` | — | getRacerPeriodStats, getRacerAccidentRecords |
 | `src/services/racerRaceHistoryRows.js` | 選手の出走履歴の行（getRacerRaceHistory の返り値）の整形（純関数）。 | isUnrankedFinishMark, buildRacerRaceHistoryRows |
 | `src/services/racerScopedRaceRows.js` | 選手の走ごとの行（getRacerScopedRaceStats の返り値）の整形（純関数）。 | buildRacerScopedRaceRows |
 | `src/services/racerService.js` | 選手個別ページ用データ取得サービス | getRacerPageData, getRacerCurrentMotorStatus, getRacerAllPeriodStats, getRacerStats |
@@ -439,4 +447,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 397 ファイル / export 2320 件。
+対象 405 ファイル / export 2359 件。
