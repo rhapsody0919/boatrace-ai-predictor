@@ -18,7 +18,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRaceTechniqueProfileBreakdown } from "../../services/raceQueries3.js";
 import { translateTechnique } from "../race/raceIndicators";
 import "./MotorConditionChart.css";
 import { techniqueColor, sortTechniquesOfficial } from "../../utils/techniqueColors";
@@ -77,7 +77,7 @@ function RacerTechniqueProfileChart({
         setLoading(true);
         setError(null);
         const data =
-          await supabaseDataService.getRaceTechniqueProfileBreakdown(
+          await getRaceTechniqueProfileBreakdown(
             selectedRace,
           );
         setBreakdown(data);
