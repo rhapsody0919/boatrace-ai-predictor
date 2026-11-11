@@ -1,6 +1,9 @@
-import { test, expect, e2eTodayJST } from "./fixtures.js";
+import { test, expect } from "./fixtures.js";
 import { localizePath } from "../src/config/languages.js";
 import { homeSocialProblems, leftPageSocialValues } from "./home-social-meta.js";
+
+// all-pages-layout の PAGES と同じ固定の過去日
+const RACE_DATE = "2026-08-11";
 
 const socialSelectors = [
   'meta[property="og:title"]',
@@ -18,13 +21,14 @@ for (const lang of ["ja", "en"]) {
         page.locator(selector).getAttribute("content"),
       ),
     );
-    // 既存 smoke.spec.js と同じ本日の会場→レースの経路。時計は録画に固定される。
+    // 会場→レースの経路。今日の開催に依らないよう、固定の過去日の会場一覧から入る。
+    await page.goto(localizePath(`/races/${RACE_DATE}`, lang));
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
     await expect(page).toHaveURL(/\/race\//);
     const racePath = new URL(page.url()).pathname;
     expect(racePath.startsWith(localizePath("/race/", lang))).toBe(true);
-    expect(racePath).toContain(`/race/${e2eTodayJST()}-`);
+    expect(racePath).toContain(`/race/${RACE_DATE}-`);
     // ディープリンクでも同じメタを出す。
     await page.goto(racePath, { waitUntil: "domcontentloaded" });
     await expect(page.locator(".race-detail-page-v2 h1")).toBeVisible();
