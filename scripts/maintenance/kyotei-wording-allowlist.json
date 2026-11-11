@@ -62,6 +62,14 @@
       "line": "\"名鐵蒲郡線「蒲郡競艇場前」站，或從JR蒲郡站搭乘每30分鐘一班的直達巴士\","
     },
     {
+      "file": "src/hooks/useSocialMeta.js",
+      "line": "\"ボートレースのデータ分析とAI予想が無料｜競艇 龍神レーダー\","
+    },
+    {
+      "file": "src/locales/ja/common.json",
+      "line": "\"title\": \"ボートレースのデータ分析とAI予想が無料｜競艇 龍神レーダー\","
+    },
+    {
       "file": "src/locales/ja/common.json",
       "line": "\"description\": \"龍神レーダー（boat-ai.jp）は、全国24場のボートレース（競艇）全レースをAIが毎日予想する無料サイト。1マークの展開予測とイン崩れ指数を公開。会員登録なしで今すぐ使えます。\""
     },
