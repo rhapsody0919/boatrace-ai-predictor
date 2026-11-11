@@ -1,0 +1,108 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "naruto-water-wind-guide",
+ "kind": "new",
+ "ticket": "OC-20261108T100123-seo-human-1",
+ "paths": [
+  "public/blog/naruto-water-wind-guide.md",
+  "src/data/blog-posts/naruto-water-wind-guide.json"
+ ],
+ "files": {
+  "public/blog/naruto-water-wind-guide.md": "c9c2acef9cc94a9bb2cecac7642eb9f878a4bbb79894eacce0a50c3196381f6e",
+  "src/data/blog-posts/naruto-water-wind-guide.json": "c64549b1978b121117bbe586ce5b7a5bf3154983dd8f60f767a2b29684351c51"
+ },
+ "content_sha256": "258a489c3fa89f3c7072328913d37a571575c52d5a41b10d438945ee053e4e9f",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "258a489c3fa89f3c7072328913d37a571575c52d5a41b10d438945ee053e4e9f",
+   "model": "opus",
+   "at": "2026-11-08T10:07:54+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "258a489c3fa89f3c7072328913d37a571575c52d5a41b10d438945ee053e4e9f",
+   "model": "opus",
+   "at": "2026-11-08T10:07:54+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "258a489c3fa89f3c7072328913d37a571575c52d5a41b10d438945ee053e4e9f",
+   "model": "opus",
+   "at": "2026-11-08T10:07:54+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "258a489c3fa89f3c7072328913d37a571575c52d5a41b10d438945ee053e4e9f",
+   "model": "opus",
+   "at": "2026-11-08T10:07:54+09:00"
+  }
+ ],
+ "evidence": [
+  {
+   "h2": "鳴門の1コースは直近1年で2,125レース中1,036回",
+   "evidence": [
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json"
+   ]
+  },
+  {
+   "h2": "風別の逃げ：追い風4m以上は2,933レース中1,145回",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "scripts/analysis/analyze-weather-in-escape.js",
+    "src/utils/windDirection.js"
+   ]
+  },
+  {
+   "h2": "強い追い風で増えたのは差し",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "public/blog/tailwind-strength-sashi-by-venue.md"
+   ]
+  },
+  {
+   "h2": "画面の「イン逃げ率」は、進入1コースの1着率",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "src/locales/ja/common.json"
+   ]
+  },
+  {
+   "h2": "今日の鳴門では、風の行から展示の進入へ進む",
+   "evidence": [
+    "src/data/venueWaterProfiles.js",
+    "src/utils/windDirection.js",
+    "scripts/analysis/analyze-weather-in-escape.js"
+   ]
+  },
+  {
+   "h2": "数字の範囲と注意",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json"
+   ]
+  }
+ ],
+ "sources": "表2〜表4: data/analysis/weather-in-escape.json#wind.venues.14（scripts/analysis/analyze-weather-in-escape.js、2020-02-01〜2026-09-30、公式K/Bファイルの解析）。分母は1コース艇・1着艇があり風を区分できた鳴門のレースを5区分に分けた各 n（計14,617、all.n と一致）、分子は techniques の各決まり手。割合は件数÷n×100 を小数1桁に1回だけ丸めた。1コースの1着率は inWinRate の転記。方位と区分は同スクリプトの VENUE_WIND_OFFSET（鳴門 6）・windBin と src/utils/windDirection.js（鳴門 135度）。\n表1: data/analysis/venue-course-win-rate/venue-course-win-rate.json#periods.12m（scripts/analysis/venue-course-win-rate/count-venue-course-wins.mjs）、2025-10-20〜2026-10-19。鳴門 venues.14.by_course[0] 2,125中1,036、全国 all.by_course[0] 55,414中30,732。\n4場（鳴門・下関・芦屋・唐津）は掲載済みの public/blog/tailwind-strength-sashi-by-venue.md:53 の転記。",
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-08T10:09:26+09:00",
+ "run": "20261108T100123-seo-human",
+ "engine": "claude"
+}
