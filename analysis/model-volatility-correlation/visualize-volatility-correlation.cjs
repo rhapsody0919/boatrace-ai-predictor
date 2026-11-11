@@ -260,7 +260,7 @@ function main() {
       if (fileData.races) {
         allRaces.push(...fileData.races);
       }
-    } catch (error) {
+    } catch {
       // エラーは無視
     }
   }

@@ -1,4 +1,5 @@
 import { test, expect, fetchRecorded } from "./fixtures.js";
+import { ensureOpenVenues, rewriteTodayRaces } from "./today-races-rewrite.js";
 
 // SEO 点検 F3（2026-10-11）。会場のレース一覧からレース詳細へ進む「詳細を見る」が button の onClick で、
 // 遷移先の URL を持たず、検索エンジンがレース詳細へのリンクを辿れなかった。URL を持つリンクにする
@@ -7,7 +8,8 @@ test.describe.configure({ timeout: 120000 });
 test("会場のレース一覧の「詳細を見る」は、レース詳細の URL を持つリンクで、押すとレース詳細へ進む", async ({
   page,
 }) => {
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  // 入り口は固定の過去日（今日の開催中の会場は 0:00〜7:00 JST に無い）
+  await page.goto("/races/2026-08-11", { waitUntil: "domcontentloaded" });
   await page.locator(".venue-grid-card--open").first().click();
   const link = page.locator(".race-card .predict-btn").first();
   await expect(link).toBeVisible({ timeout: 30000 });
@@ -19,6 +21,9 @@ test("会場のレース一覧の「詳細を見る」は、レース詳細の U
 });
 
 test("英語の会場ページでは、リンク先も英語のレース詳細", async ({ page }) => {
+  // /races/{日付} は ja 専用（/en/races/… は ja 版へ移る）ので、英語は今日の /en/ から入る。
+  // 深夜に会場が無い日でも入れるよう、本日のレースの応答に開催中の会場を足す
+  await rewriteTodayRaces(page, (venues) => ensureOpenVenues(venues, 1));
   await page.goto("/en/", { waitUntil: "domcontentloaded" });
   await page.locator(".venue-grid-card--open").first().click();
   const link = page.locator(".race-card .predict-btn").first();
@@ -102,7 +107,9 @@ test("リンクにしても、ボタンと同じ見た目（幅いっぱい・�
 
 // BOA-1231: 会場だけでミニ出走表から ja 専用の選手ページへ進める。
 test("会場のミニ出走表の6選手名は、日英とも選手ページへのリンク", async ({ page }) => {
-  for (const home of ["/", "/en/"]) {
+  // 英語は /races/{日付} が ja 専用のため、今日の /en/ から入る（応答に開催中の会場を足す）
+  await rewriteTodayRaces(page, (venues) => ensureOpenVenues(venues, 1));
+  for (const home of ["/races/2026-08-11", "/en/"]) {
     await page.goto(home, { waitUntil: "domcontentloaded" });
     await page.locator(".venue-grid-card--open").first().click();
     const card = page.locator(".race-card").first();

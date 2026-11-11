@@ -1,6 +1,11 @@
 // 旧 e2e/smoke.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
 import { test, expect, applyCookieConsent, e2eTodayJST } from "../fixtures.js";
 import {
+  ensureOpenVenues,
+  rewriteTodayRaces,
+  setJstNoon,
+} from "../today-races-rewrite.js";
+import {
   ANALYSIS_FIXED_RACE_ID,
   gotoAnalysisTabOnFixedDate,
 } from "./helpers.js";
@@ -202,6 +207,9 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     page,
   }) => {
     // venue-list-redesign: / は開催場一覧 → 会場別レース一覧 → /race/:raceId の3階層
+    // 導線は今日のレース限定なので、本日のレースの応答に開催中の会場を足して入る（深夜でも会場が出る）
+    await setJstNoon(page);
+    await rewriteTodayRaces(page, (venues) => ensureOpenVenues(venues, 1));
     await page.goto("/");
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
@@ -237,6 +245,8 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     page,
   }) => {
     const today = e2eTodayJST();
+    await setJstNoon(page);
+    await rewriteTodayRaces(page, (venues) => ensureOpenVenues(venues, 1));
     await page.goto(`/races/${today}`);
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();

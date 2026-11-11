@@ -1,4 +1,9 @@
-import { test, expect, e2eTodayJST } from "./fixtures.js";
+import { test, expect } from "./fixtures.js";
+import {
+  ensureOpenVenues,
+  rewriteTodayRaces,
+  setJstNoon,
+} from "./today-races-rewrite.js";
 
 /**
  * 会場ページの title・description・h1（集客レーン Phase3）の固定。
@@ -13,18 +18,20 @@ import { test, expect, e2eTodayJST } from "./fixtures.js";
  * ここでは、その日に開催中の会場（録画の先頭の会場）で文言の組み立てを見る。
  */
 
-async function firstOpenVenue(page) {
-  await page.goto("/");
+// 今日が題の試験は、本日のレースの応答に開催中の会場を足してトップから入る。
+// 過去日の試験は固定の過去日の一覧から入る（どちらも深夜の会場無しに依らない）
+async function firstOpenVenue(page, { from, codePattern }) {
+  await page.goto(from);
   const card = page.locator("a.venue-grid-card--open").first();
   await expect(card).toBeVisible({ timeout: 20000 });
   const href = await card.getAttribute("href");
   const name = (
     await card.locator(".venue-grid-card__name").textContent()
   ).trim();
-  const code = href.match(/\/venue\/(\d+)$/)?.[1];
+  const code = href.match(codePattern)?.[1];
   expect(
     code,
-    `会場カードのリンクが /venue/:code ではない: ${href}`,
+    `会場カードのリンクが想定の形ではない: ${href}`,
   ).toBeTruthy();
   return { href, name, code };
 }
@@ -33,7 +40,12 @@ test.describe("会場ページの title・description・h1", () => {
   test("本日の会場ページ: title・description に競艇、h1 には出さない", async ({
     page,
   }) => {
-    const venue = await firstOpenVenue(page);
+    await setJstNoon(page);
+    await rewriteTodayRaces(page, (venues) => ensureOpenVenues(venues, 1));
+    const venue = await firstOpenVenue(page, {
+      from: "/",
+      codePattern: /\/venue\/(\d+)$/,
+    });
     await page.goto(venue.href);
 
     const h1 = page.locator(".venue-race-list-page h1");
@@ -54,8 +66,11 @@ test.describe("会場ページの title・description・h1", () => {
   });
 
   test("過去日付の会場ページは従来の title・h1 のまま", async ({ page }) => {
-    const venue = await firstOpenVenue(page);
-    await page.goto(`/races/${e2eTodayJST()}/${venue.code}`);
+    const venue = await firstOpenVenue(page, {
+      from: "/races/2026-08-11",
+      codePattern: /\/races\/2026-08-11\/(\d+)$/,
+    });
+    await page.goto(`/races/2026-08-11/${venue.code}`);
 
     const h1 = page.locator(".venue-race-list-page h1");
     await expect(h1).toContainText(`${venue.name} レース一覧`);

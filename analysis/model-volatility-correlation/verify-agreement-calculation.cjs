@@ -1,12 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// JSONデータを読み込む
-function loadData() {
-  const dataPath = path.join(__dirname, 'model-agreement-analysis-data.json');
-  return JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-}
-
 // 予測データを再読み込みして詳細を確認
 function loadAllPredictions() {
   const predictionsDir = path.join(__dirname, '../../data/predictions');
@@ -22,7 +16,7 @@ function loadAllPredictions() {
       if (data.races) {
         allRaces.push(...data.races.map(r => ({ ...r, date: data.date || file.replace('.json', '') })));
       }
-    } catch (error) {
+    } catch {
       // エラーは無視
     }
   }

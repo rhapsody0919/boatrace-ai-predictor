@@ -1,6 +1,30 @@
 // 旧 e2e/smoke.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
-import { test, expect } from "../fixtures.js";
+import { test, expect, e2eTodayJST, fetchRecorded } from "../fixtures.js";
+import { HIT_RACES_FIXED_DATE } from "../layout/helpers.js";
 import { gotoAnalysisTabOnFixedDate } from "./helpers.js";
+
+/**
+ * 分析ツールが読む「今日」の races（開催会場・本日のレース・好調/不調ランキングの出走表）を、
+ * 生成済みの固定の過去日に向け直す。0:00〜7:00 JST は当日の行が無く、表が出ない（BOA-1458）。
+ * ほかの日付の要求はそのまま通す。route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+ */
+async function serveFixedTodaysRaces(page) {
+  const todayJst = e2eTodayJST();
+  await page.route(/\/rest\/v1\/races\?.*race_date=eq\./, async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get("race_date") !== `eq.${todayJst}`) {
+      await route.fallback();
+      return;
+    }
+    url.searchParams.set("race_date", `eq.${HIT_RACES_FIXED_DATE}`);
+    const response = await fetchRecorded(route, { url: url.toString() });
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      body: await response.body(),
+    });
+  });
+}
 
 test.describe("データ分析ツール（BOA-150/151/152）", () => {
   test("ハンバーガーメニューからデータ分析ツールへ遷移できる", async ({
@@ -57,6 +81,7 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
   test("モーター調子タブで本日のレースの枠番別モーター調子→クリックで推移グラフに切り替わる（BOA-151）", async ({
     page,
   }) => {
+    await serveFixedTodaysRaces(page);
     await page.goto("/winning-technique");
     await page.click('.analysis-tab-btn:has-text("モーター調子")');
     const breakdown = page.locator(".motor-ranking-row");
@@ -77,6 +102,7 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
   test("選手調子タブで本日のレースの枠番別勝率変化→クリックで推移グラフに切り替わる（BOA-152）", async ({
     page,
   }) => {
+    await serveFixedTodaysRaces(page);
     await page.goto("/winning-technique");
     await page.click('.analysis-tab-btn:has-text("選手調子")');
     const rows = page.locator(".motor-ranking-row");
@@ -92,6 +118,7 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
   test("STのズレタブで本日のレースの枠番別ズレ実績→クリックで推移グラフに切り替わる（BOA-153）", async ({
     page,
   }) => {
+    await serveFixedTodaysRaces(page);
     await page.goto("/winning-technique");
     await page.click('.analysis-tab-btn:has-text("STのズレ")');
     const rows = page.locator(".motor-ranking-row");
