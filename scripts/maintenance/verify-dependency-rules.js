@@ -12,6 +12,7 @@ import {
   newUtilsFileProblems,
   facadeShouldBeError,
 } from "./lintBaselines.js";
+import { baselineOfEdges } from "./lintDepTree.js";
 
 const require = createRequire(import.meta.url);
 
@@ -107,4 +108,33 @@ test("dependency-rules.cjs が読めて規則の名前が10個", () => {
     ],
   );
   assert.equal(forbidden.find((r) => r.name === "facade-frozen").severity, "warn");
+});
+
+test("baselineOfEdges は和の中の from を <data-layer> にまとめ、和の外はそのまま残す", () => {
+  const to = "src/components/race/basicInfoStats.js";
+  const base = baselineOfEdges([
+    edge("src/services/supabaseDataService.js", to),
+    edge("src/services/raceService.js", to),
+  ]);
+  assert.deepEqual(Object.keys(base["services-no-ui"]).sort(), [
+    "<data-layer>",
+    "src/services/raceService.js",
+  ]);
+  assert.deepEqual(base["services-no-ui"]["<data-layer>"], [to]);
+});
+
+test("和の中で移しただけの辺は緑、base に無い to は赤", () => {
+  const to = "src/components/race/basicInfoStats.js";
+  const base = baselineOfEdges([edge("src/services/supabaseDataService.js", to)]);
+  assert.equal(
+    compareEdgesToBaseline([edge("src/services/raceQueries2.js", to)], base).ok,
+    true,
+  );
+  assert.equal(
+    compareEdgesToBaseline(
+      [edge("src/services/raceQueries2.js", "src/components/race/Other.js")],
+      base,
+    ).ok,
+    false,
+  );
 });
