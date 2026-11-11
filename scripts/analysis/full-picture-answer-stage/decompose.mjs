@@ -2,7 +2,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { answerOf } from "./lib/answer.mjs";
 import { formsOfAvgSt } from "./lib/forms.mjs";
-import { slitForms, SLIT_FORMS } from "./lib/analogyScenario.js";
+import { slitForms, SLIT_FORMS } from "../../../src/utils/analogyScenario.js";
 const db = {}; for (const f of ["races.json", "even1.json", "even2.json"]) if (existsSync(f)) Object.assign(db, JSON.parse(readFileSync(f, "utf8")));
 const act = JSON.parse(readFileSync("actual.json", "utf8"));
 const toSc = (r) => ({ cells: { waku: { forms: Object.fromEntries(Object.entries(r.forms ?? {}).map(([f, c]) => [f, { n: c.n, tri: { "1-x": c.k } }])) } } });
