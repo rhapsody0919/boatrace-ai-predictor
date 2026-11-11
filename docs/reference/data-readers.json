@@ -5,8 +5,8 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1758,
-    "filesWithAccess": 291,
+    "sourceFiles": 1764,
+    "filesWithAccess": 296,
     "tableReaders": 992,
     "tableWriters": 189,
     "rpcCallers": 51,
@@ -1647,6 +1647,55 @@
           ]
         },
         {
+          "ref": "src/services/motorQueries.js:323",
+          "op": "select",
+          "via": "helper:fetchAllByIn",
+          "columns": []
+        },
+        {
+          "ref": "src/services/motorQueries5.js:106",
+          "op": "select",
+          "via": "helper:fetchAllByIn",
+          "columns": []
+        },
+        {
+          "ref": "src/services/motorQueries6.js:120",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "adjustment_weight",
+            "boat_number",
+            "exhibition_course",
+            "exhibition_time",
+            "is_absent",
+            "parts_changed",
+            "prev_entry_course",
+            "prev_finish_mark",
+            "prev_finish_rank",
+            "prev_race_no",
+            "prev_start_timing",
+            "propeller_change",
+            "race_id",
+            "tilt",
+            "today_weight",
+            "updated_at"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries6.js:136",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "adjustment_weight",
+            "boat_number",
+            "exhibition_time",
+            "parts_changed",
+            "propeller_change",
+            "race_id",
+            "tilt"
+          ]
+        },
+        {
           "ref": "src/services/raceQueries.js:34",
           "op": "select",
           "via": "client",
@@ -1760,55 +1809,6 @@
             "race_id",
             "start_timing"
           ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:460",
-          "op": "select",
-          "via": "helper:fetchAllByIn",
-          "columns": []
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1653",
-          "op": "select",
-          "via": "helper:fetchAllByIn",
-          "columns": []
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:2041",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "adjustment_weight",
-            "boat_number",
-            "exhibition_course",
-            "exhibition_time",
-            "is_absent",
-            "parts_changed",
-            "prev_entry_course",
-            "prev_finish_mark",
-            "prev_finish_rank",
-            "prev_race_no",
-            "prev_start_timing",
-            "propeller_change",
-            "race_id",
-            "tilt",
-            "today_weight",
-            "updated_at"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:2057",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "adjustment_weight",
-            "boat_number",
-            "exhibition_time",
-            "parts_changed",
-            "propeller_change",
-            "race_id",
-            "tilt"
-          ]
         }
       ],
       "writers": [
@@ -1871,15 +1871,15 @@
             "scripts/maintenance/verify-pre-race-parsers.js:1868",
             "scripts/sns/push-setsu-kiryoku-short.js:1101",
             "src/services/meetQueries2.js:197",
+            "src/services/motorQueries6.js:120",
+            "src/services/motorQueries6.js:136",
             "src/services/raceQueries.js:251",
             "src/services/raceQueries.js:34",
             "src/services/raceQueries2.js:174",
             "src/services/raceQueries2.js:41",
             "src/services/raceQueries3.js:90",
             "src/services/racerService.js:148",
-            "src/services/sherlockService.js:83",
-            "src/services/supabaseDataService.js:2041",
-            "src/services/supabaseDataService.js:2057"
+            "src/services/sherlockService.js:83"
           ],
           "writers": [],
           "sql": [
@@ -1904,15 +1904,15 @@
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/maintenance/verify-pre-race-parsers.js:1868",
             "src/services/meetQueries2.js:197",
+            "src/services/motorQueries6.js:120",
+            "src/services/motorQueries6.js:136",
             "src/services/raceQueries.js:251",
             "src/services/raceQueries.js:34",
             "src/services/raceQueries2.js:174",
             "src/services/raceQueries2.js:41",
             "src/services/raceQueries3.js:90",
             "src/services/racerService.js:148",
-            "src/services/sherlockService.js:83",
-            "src/services/supabaseDataService.js:2041",
-            "src/services/supabaseDataService.js:2057"
+            "src/services/sherlockService.js:83"
           ],
           "writers": [],
           "sql": [
@@ -1933,13 +1933,13 @@
             "scripts/lib/analogyV16Exhibition.js:296",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "src/services/meetQueries2.js:197",
+            "src/services/motorQueries6.js:120",
+            "src/services/motorQueries6.js:136",
             "src/services/raceQueries2.js:174",
             "src/services/raceQueries2.js:41",
             "src/services/raceQueries3.js:90",
             "src/services/racerService.js:148",
-            "src/services/sherlockService.js:83",
-            "src/services/supabaseDataService.js:2041",
-            "src/services/supabaseDataService.js:2057"
+            "src/services/sherlockService.js:83"
           ],
           "writers": [],
           "sql": [
@@ -1969,70 +1969,70 @@
         },
         "tilt": {
           "readers": [
-            "src/services/raceQueries2.js:174",
-            "src/services/supabaseDataService.js:2041",
-            "src/services/supabaseDataService.js:2057"
+            "src/services/motorQueries6.js:120",
+            "src/services/motorQueries6.js:136",
+            "src/services/raceQueries2.js:174"
           ],
           "writers": [],
           "sql": []
         },
         "propeller_change": {
           "readers": [
-            "src/services/racerService.js:148",
-            "src/services/supabaseDataService.js:2041",
-            "src/services/supabaseDataService.js:2057"
+            "src/services/motorQueries6.js:120",
+            "src/services/motorQueries6.js:136",
+            "src/services/racerService.js:148"
           ],
           "writers": [],
           "sql": []
         },
         "parts_changed": {
           "readers": [
-            "src/services/racerService.js:148",
-            "src/services/supabaseDataService.js:2041",
-            "src/services/supabaseDataService.js:2057"
+            "src/services/motorQueries6.js:120",
+            "src/services/motorQueries6.js:136",
+            "src/services/racerService.js:148"
           ],
           "writers": [],
           "sql": []
         },
         "adjustment_weight": {
           "readers": [
-            "src/services/supabaseDataService.js:2041",
-            "src/services/supabaseDataService.js:2057"
+            "src/services/motorQueries6.js:120",
+            "src/services/motorQueries6.js:136"
           ],
           "writers": [],
           "sql": []
         },
         "today_weight": {
           "readers": [
-            "src/services/supabaseDataService.js:2041"
+            "src/services/motorQueries6.js:120"
           ],
           "writers": [],
           "sql": []
         },
         "prev_race_no": {
           "readers": [
-            "src/services/supabaseDataService.js:2041"
+            "src/services/motorQueries6.js:120"
           ],
           "writers": [],
           "sql": []
         },
         "prev_entry_course": {
           "readers": [
-            "src/services/supabaseDataService.js:2041"
+            "src/services/motorQueries6.js:120"
           ],
           "writers": [],
           "sql": []
         },
         "prev_start_timing": {
           "readers": [
-            "src/services/supabaseDataService.js:2041"
+            "src/services/motorQueries6.js:120"
           ],
           "writers": [],
           "sql": []
         },
         "prev_finish_rank": {
           "readers": [
-            "src/services/supabaseDataService.js:2041"
+            "src/services/motorQueries6.js:120"
           ],
           "writers": [],
           "sql": []
@@ -2044,7 +2044,7 @@
         },
         "updated_at": {
           "readers": [
-            "src/services/supabaseDataService.js:2041"
+            "src/services/motorQueries6.js:120"
           ],
           "writers": [],
           "sql": [
@@ -2054,7 +2054,7 @@
         "exhibition_course": {
           "readers": [
             "scripts/lib/analogyV16Exhibition.js:208",
-            "src/services/supabaseDataService.js:2041"
+            "src/services/motorQueries6.js:120"
           ],
           "writers": [],
           "sql": []
@@ -2071,7 +2071,7 @@
         },
         "prev_finish_mark": {
           "readers": [
-            "src/services/supabaseDataService.js:2041"
+            "src/services/motorQueries6.js:120"
           ],
           "writers": [],
           "sql": []
@@ -2091,8 +2091,8 @@
             "scripts/lib/snsTodayDigestV3.js:112",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/sns/push-setsu-kiryoku-short.js:1101",
-            "src/services/raceQueries2.js:174",
-            "src/services/supabaseDataService.js:2041"
+            "src/services/motorQueries6.js:120",
+            "src/services/raceQueries2.js:174"
           ],
           "writers": [],
           "sql": []
@@ -4307,21 +4307,11 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1415",
+          "ref": "src/services/motorQueries2.js:40",
           "op": "select",
           "via": "client",
           "columns": [
-            "race_date",
-            "venue_code"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1435",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "motor_2rate",
-            "motor_number",
+            "pretest_rank",
             "pretest_time",
             "race_date",
             "racer_id",
@@ -4329,11 +4319,21 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:2120",
+          "ref": "src/services/motorQueries4.js:161",
           "op": "select",
           "via": "client",
           "columns": [
-            "pretest_rank",
+            "race_date",
+            "venue_code"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries4.js:181",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "motor_2rate",
+            "motor_number",
             "pretest_time",
             "race_date",
             "racer_id",
@@ -4352,9 +4352,9 @@
             "scripts/lib/motorPretestJob.js:269",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:173",
-            "src/services/supabaseDataService.js:1415",
-            "src/services/supabaseDataService.js:1435",
-            "src/services/supabaseDataService.js:2120"
+            "src/services/motorQueries2.js:40",
+            "src/services/motorQueries4.js:161",
+            "src/services/motorQueries4.js:181"
           ],
           "writers": [],
           "sql": []
@@ -4365,9 +4365,9 @@
             "scripts/lib/motorPretestJob.js:269",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:173",
-            "src/services/supabaseDataService.js:1415",
-            "src/services/supabaseDataService.js:1435",
-            "src/services/supabaseDataService.js:2120"
+            "src/services/motorQueries2.js:40",
+            "src/services/motorQueries4.js:161",
+            "src/services/motorQueries4.js:181"
           ],
           "writers": [],
           "sql": []
@@ -4377,8 +4377,8 @@
             "scripts/lib/motorPretestJob.js:269",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:173",
-            "src/services/supabaseDataService.js:1435",
-            "src/services/supabaseDataService.js:2120"
+            "src/services/motorQueries2.js:40",
+            "src/services/motorQueries4.js:181"
           ],
           "writers": [],
           "sql": []
@@ -4393,14 +4393,14 @@
         "motor_number": {
           "readers": [
             "src/services/meetQueries2.js:173",
-            "src/services/supabaseDataService.js:1435"
+            "src/services/motorQueries4.js:181"
           ],
           "writers": [],
           "sql": []
         },
         "motor_2rate": {
           "readers": [
-            "src/services/supabaseDataService.js:1435"
+            "src/services/motorQueries4.js:181"
           ],
           "writers": [],
           "sql": []
@@ -4419,8 +4419,8 @@
           "readers": [
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:173",
-            "src/services/supabaseDataService.js:1435",
-            "src/services/supabaseDataService.js:2120"
+            "src/services/motorQueries2.js:40",
+            "src/services/motorQueries4.js:181"
           ],
           "writers": [],
           "sql": []
@@ -4429,7 +4429,7 @@
           "readers": [
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:173",
-            "src/services/supabaseDataService.js:2120"
+            "src/services/motorQueries2.js:40"
           ],
           "writers": [],
           "sql": []
@@ -6728,6 +6728,25 @@
           ]
         },
         {
+          "ref": "src/services/motorQueries.js:205",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "is_final_day",
+            "race_id",
+            "series_day"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries3.js:278",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_id",
+            "race_stage"
+          ]
+        },
+        {
           "ref": "src/services/racerQueries2.js:217",
           "op": "select",
           "via": "helper:fetchAllByIn",
@@ -6738,25 +6757,6 @@
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:342",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "is_final_day",
-            "race_id",
-            "series_day"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1158",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "race_id",
-            "race_stage"
-          ]
         }
       ],
       "writers": [
@@ -6855,8 +6855,8 @@
             "src/services/currentMeetEntries.js:44",
             "src/services/meetQueries2.js:109",
             "src/services/meetQueries3.js:55",
-            "src/services/supabaseDataService.js:1158",
-            "src/services/supabaseDataService.js:342"
+            "src/services/motorQueries.js:205",
+            "src/services/motorQueries3.js:278"
           ],
           "writers": [],
           "sql": [
@@ -6963,7 +6963,7 @@
             "src/services/currentMeetEntries.js:44",
             "src/services/meetQueries2.js:109",
             "src/services/meetQueries3.js:55",
-            "src/services/supabaseDataService.js:342"
+            "src/services/motorQueries.js:205"
           ],
           "writers": [
             "scripts/maintenance/backfill-series-day.js:175"
@@ -6983,7 +6983,7 @@
             "src/services/currentMeetEntries.js:44",
             "src/services/meetQueries2.js:109",
             "src/services/meetQueries3.js:55",
-            "src/services/supabaseDataService.js:342"
+            "src/services/motorQueries.js:205"
           ],
           "writers": [],
           "sql": [
@@ -7015,7 +7015,7 @@
             "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/meetQueries2.js:109",
             "src/services/meetQueries3.js:55",
-            "src/services/supabaseDataService.js:1158"
+            "src/services/motorQueries3.js:278"
           ],
           "writers": [],
           "sql": [
@@ -8079,6 +8079,111 @@
           ]
         },
         {
+          "ref": "src/services/motorQueries.js:234",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "motor_2rate",
+            "race_id"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries.js:310",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "motor_2rate",
+            "motor_3rate",
+            "motor_number",
+            "race_id"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries2.js:106",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "global_2rate",
+            "motor_number",
+            "race_id"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries2.js:297",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "grade",
+            "motor_number",
+            "player_name",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries3.js:173",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "motor_2rate",
+            "motor_3rate",
+            "motor_number",
+            "player_name",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries3.js:296",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "motor_number",
+            "player_name",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries4.js:186",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "motor_2rate",
+            "motor_number",
+            "player_name",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries5.js:87",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "motor_number",
+            "race_id"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries5.js:243",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "boat_number",
+            "motor_number",
+            "player_name",
+            "race_id",
+            "racer_id"
+          ]
+        },
+        {
           "ref": "src/services/mycroftService.js:82",
           "op": "select",
           "via": "client",
@@ -8383,111 +8488,6 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:371",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "motor_2rate",
-            "race_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:447",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "motor_2rate",
-            "motor_3rate",
-            "motor_number",
-            "race_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:630",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "motor_2rate",
-            "motor_3rate",
-            "motor_number",
-            "player_name",
-            "race_id",
-            "racer_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:865",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "global_2rate",
-            "motor_number",
-            "race_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:948",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "grade",
-            "motor_number",
-            "player_name",
-            "race_id",
-            "racer_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1176",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "motor_number",
-            "player_name",
-            "race_id",
-            "racer_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1440",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "motor_2rate",
-            "motor_number",
-            "player_name",
-            "race_id",
-            "racer_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1634",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "motor_number",
-            "race_id"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1790",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "motor_number",
-            "player_name",
-            "race_id",
-            "racer_id"
-          ]
-        },
-        {
           "ref": "src/services/watsonService.js:75",
           "op": "select",
           "via": "client",
@@ -8681,6 +8681,15 @@
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:99",
             "src/services/meetQueries3.js:72",
+            "src/services/motorQueries.js:234",
+            "src/services/motorQueries.js:310",
+            "src/services/motorQueries2.js:106",
+            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries3.js:173",
+            "src/services/motorQueries3.js:296",
+            "src/services/motorQueries4.js:186",
+            "src/services/motorQueries5.js:243",
+            "src/services/motorQueries5.js:87",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
@@ -8708,15 +8717,6 @@
             "src/services/racerService.js:112",
             "src/services/racerService.js:31",
             "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:1176",
-            "src/services/supabaseDataService.js:1440",
-            "src/services/supabaseDataService.js:1634",
-            "src/services/supabaseDataService.js:1790",
-            "src/services/supabaseDataService.js:371",
-            "src/services/supabaseDataService.js:447",
-            "src/services/supabaseDataService.js:630",
-            "src/services/supabaseDataService.js:865",
-            "src/services/supabaseDataService.js:948",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8795,6 +8795,13 @@
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:99",
             "src/services/meetQueries3.js:72",
+            "src/services/motorQueries.js:310",
+            "src/services/motorQueries2.js:106",
+            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries3.js:173",
+            "src/services/motorQueries3.js:296",
+            "src/services/motorQueries5.js:243",
+            "src/services/motorQueries5.js:87",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
@@ -8814,13 +8821,6 @@
             "src/services/racerQueries3.js:27",
             "src/services/racerQueries3.js:99",
             "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:1176",
-            "src/services/supabaseDataService.js:1634",
-            "src/services/supabaseDataService.js:1790",
-            "src/services/supabaseDataService.js:447",
-            "src/services/supabaseDataService.js:630",
-            "src/services/supabaseDataService.js:865",
-            "src/services/supabaseDataService.js:948",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8858,6 +8858,11 @@
             "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/meetQueries2.js:99",
             "src/services/meetQueries3.js:72",
+            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries3.js:173",
+            "src/services/motorQueries3.js:296",
+            "src/services/motorQueries4.js:186",
+            "src/services/motorQueries5.js:243",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:241",
@@ -8866,11 +8871,6 @@
             "src/services/raceQueries3.js:291",
             "src/services/raceQueries3.js:83",
             "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:1176",
-            "src/services/supabaseDataService.js:1440",
-            "src/services/supabaseDataService.js:1790",
-            "src/services/supabaseDataService.js:630",
-            "src/services/supabaseDataService.js:948",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8901,10 +8901,10 @@
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/check-morning-init-shadow.js:152",
+            "src/services/motorQueries2.js:297",
             "src/services/raceQueries3.js:83",
             "src/services/racerService.js:31",
-            "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:948"
+            "src/services/sherlockService.js:77"
           ],
           "writers": [],
           "sql": [
@@ -8997,16 +8997,16 @@
             "src/services/currentMeetEntries.js:26",
             "src/services/meetQueries.js:240",
             "src/services/meetQueries2.js:99",
+            "src/services/motorQueries.js:310",
+            "src/services/motorQueries2.js:106",
+            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries3.js:173",
+            "src/services/motorQueries3.js:296",
+            "src/services/motorQueries4.js:186",
+            "src/services/motorQueries5.js:243",
+            "src/services/motorQueries5.js:87",
             "src/services/raceQueries3.js:83",
-            "src/services/racerService.js:112",
-            "src/services/supabaseDataService.js:1176",
-            "src/services/supabaseDataService.js:1440",
-            "src/services/supabaseDataService.js:1634",
-            "src/services/supabaseDataService.js:1790",
-            "src/services/supabaseDataService.js:447",
-            "src/services/supabaseDataService.js:630",
-            "src/services/supabaseDataService.js:865",
-            "src/services/supabaseDataService.js:948"
+            "src/services/racerService.js:112"
           ],
           "writers": [],
           "sql": [
@@ -9029,12 +9029,12 @@
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
+            "src/services/motorQueries.js:234",
+            "src/services/motorQueries.js:310",
+            "src/services/motorQueries3.js:173",
+            "src/services/motorQueries4.js:186",
             "src/services/raceQueries3.js:83",
-            "src/services/sherlockService.js:77",
-            "src/services/supabaseDataService.js:1440",
-            "src/services/supabaseDataService.js:371",
-            "src/services/supabaseDataService.js:447",
-            "src/services/supabaseDataService.js:630"
+            "src/services/sherlockService.js:77"
           ],
           "writers": [],
           "sql": [
@@ -9100,9 +9100,9 @@
         },
         "global_2rate": {
           "readers": [
+            "src/services/motorQueries2.js:106",
             "src/services/raceQueries.js:143",
-            "src/services/raceQueries3.js:83",
-            "src/services/supabaseDataService.js:865"
+            "src/services/raceQueries3.js:83"
           ],
           "writers": [],
           "sql": [
@@ -9134,8 +9134,8 @@
         "motor_3rate": {
           "readers": [
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "src/services/supabaseDataService.js:447",
-            "src/services/supabaseDataService.js:630"
+            "src/services/motorQueries.js:310",
+            "src/services/motorQueries3.js:173"
           ],
           "writers": [],
           "sql": []
@@ -9193,6 +9193,11 @@
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:99",
             "src/services/meetQueries3.js:72",
+            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries3.js:173",
+            "src/services/motorQueries3.js:296",
+            "src/services/motorQueries4.js:186",
+            "src/services/motorQueries5.js:243",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:189",
             "src/services/raceQueries.js:241",
@@ -9214,12 +9219,7 @@
             "src/services/racerQueries3.js:295",
             "src/services/racerQueries3.js:99",
             "src/services/racerService.js:112",
-            "src/services/racerService.js:31",
-            "src/services/supabaseDataService.js:1176",
-            "src/services/supabaseDataService.js:1440",
-            "src/services/supabaseDataService.js:1790",
-            "src/services/supabaseDataService.js:630",
-            "src/services/supabaseDataService.js:948"
+            "src/services/racerService.js:31"
           ],
           "writers": [
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
@@ -11865,6 +11865,53 @@
           ]
         },
         {
+          "ref": "src/services/motorQueries2.js:125",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_id",
+            "rank1",
+            "rank2",
+            "rank3"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries2.js:316",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_id",
+            "race_status",
+            "rank1",
+            "rank2",
+            "rank3",
+            "rank4",
+            "rank5",
+            "rank6"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries3.js:305",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_id",
+            "rank1"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries5.js:100",
+          "op": "select",
+          "via": "helper:fetchAllByIn",
+          "columns": []
+        },
+        {
+          "ref": "src/services/motorQueries5.js:255",
+          "op": "select",
+          "via": "helper:fetchAllByIn",
+          "columns": []
+        },
+        {
           "ref": "src/services/raceQueries.js:83",
           "op": "select",
           "via": "helper:fetchAllByIn",
@@ -11954,53 +12001,6 @@
             "rank2",
             "rank3"
           ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:884",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "race_id",
-            "rank1",
-            "rank2",
-            "rank3"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:967",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "race_id",
-            "race_status",
-            "rank1",
-            "rank2",
-            "rank3",
-            "rank4",
-            "rank5",
-            "rank6"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1185",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "race_id",
-            "rank1"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1647",
-          "op": "select",
-          "via": "helper:fetchAllByIn",
-          "columns": []
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1802",
-          "op": "select",
-          "via": "helper:fetchAllByIn",
-          "columns": []
         },
         {
           "ref": "src/services/venueQueries2.js:56",
@@ -12198,12 +12198,12 @@
             "src/services/adminRuleService.js:87",
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
+            "src/services/motorQueries2.js:125",
+            "src/services/motorQueries2.js:316",
+            "src/services/motorQueries3.js:305",
             "src/services/raceQueries3.js:125",
             "src/services/raceQueries4.js:29",
-            "src/services/ruleMatchService.js:118",
-            "src/services/supabaseDataService.js:1185",
-            "src/services/supabaseDataService.js:884",
-            "src/services/supabaseDataService.js:967"
+            "src/services/ruleMatchService.js:118"
           ],
           "writers": [],
           "sql": [
@@ -12266,11 +12266,11 @@
             "src/services/adminRuleService.js:87",
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
+            "src/services/motorQueries2.js:125",
+            "src/services/motorQueries2.js:316",
+            "src/services/motorQueries3.js:305",
             "src/services/raceQueries3.js:125",
-            "src/services/ruleMatchService.js:118",
-            "src/services/supabaseDataService.js:1185",
-            "src/services/supabaseDataService.js:884",
-            "src/services/supabaseDataService.js:967"
+            "src/services/ruleMatchService.js:118"
           ],
           "writers": [],
           "sql": [
@@ -12318,10 +12318,10 @@
             "src/services/adminRuleService.js:87",
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
+            "src/services/motorQueries2.js:125",
+            "src/services/motorQueries2.js:316",
             "src/services/raceQueries3.js:125",
-            "src/services/ruleMatchService.js:118",
-            "src/services/supabaseDataService.js:884",
-            "src/services/supabaseDataService.js:967"
+            "src/services/ruleMatchService.js:118"
           ],
           "writers": [],
           "sql": [
@@ -12359,10 +12359,10 @@
             "src/services/adminRuleService.js:87",
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
+            "src/services/motorQueries2.js:125",
+            "src/services/motorQueries2.js:316",
             "src/services/raceQueries3.js:125",
-            "src/services/ruleMatchService.js:118",
-            "src/services/supabaseDataService.js:884",
-            "src/services/supabaseDataService.js:967"
+            "src/services/ruleMatchService.js:118"
           ],
           "writers": [],
           "sql": [
@@ -12608,7 +12608,7 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
-            "src/services/supabaseDataService.js:967"
+            "src/services/motorQueries2.js:316"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:588",
@@ -12627,7 +12627,7 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
-            "src/services/supabaseDataService.js:967"
+            "src/services/motorQueries2.js:316"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:588",
@@ -12646,7 +12646,7 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
-            "src/services/supabaseDataService.js:967"
+            "src/services/motorQueries2.js:316"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:588",
@@ -12924,8 +12924,8 @@
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/maintenance/update-venue-stats.js:32",
-            "src/services/raceQueries3.js:125",
-            "src/services/supabaseDataService.js:967"
+            "src/services/motorQueries2.js:316",
+            "src/services/raceQueries3.js:125"
           ],
           "writers": [],
           "sql": [
@@ -15752,6 +15752,15 @@
           ]
         },
         {
+          "ref": "src/services/motorQueries4.js:205",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "name",
+            "racer_id"
+          ]
+        },
+        {
           "ref": "src/services/racerQueries.js:310",
           "op": "select",
           "via": "client",
@@ -15782,15 +15791,6 @@
             "racer_id",
             "registration_period",
             "weight_kg"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1459",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "name",
-            "racer_id"
           ]
         }
       ],
@@ -15845,9 +15845,9 @@
             "scripts/maintenance/fan-backfill.js:544",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "scripts/sns/delete-x-post.js:124",
+            "src/services/motorQueries4.js:205",
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:1459"
+            "src/services/racerService.js:18"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15859,9 +15859,9 @@
             "scripts/lib/racerNews/officialGradeAnnouncements.js:174",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "scripts/sns/delete-x-post.js:124",
+            "src/services/motorQueries4.js:205",
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18",
-            "src/services/supabaseDataService.js:1459"
+            "src/services/racerService.js:18"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -17566,6 +17566,24 @@
           ]
         },
         {
+          "ref": "src/services/motorQueries.js:112",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_date",
+            "race_id",
+            "venue_code"
+          ]
+        },
+        {
+          "ref": "src/services/motorQueries3.js:278",
+          "op": "select",
+          "via": "embed",
+          "columns": [
+            "venue_code"
+          ]
+        },
+        {
           "ref": "src/services/mycroftService.js:78",
           "op": "select",
           "via": "client",
@@ -17665,24 +17683,6 @@
             "race_id",
             "race_number",
             "start_time",
-            "venue_code"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:283",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "race_date",
-            "race_id",
-            "venue_code"
-          ]
-        },
-        {
-          "ref": "src/services/supabaseDataService.js:1158",
-          "op": "select",
-          "via": "embed",
-          "columns": [
             "venue_code"
           ]
         },
@@ -18015,13 +18015,13 @@
             "scripts/sns/today-picks.js:101",
             "src/services/meetQueries.js:183",
             "src/services/meetQueries3.js:62",
+            "src/services/motorQueries.js:112",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
             "src/services/racerQueries3.js:252",
             "src/services/ruleMatchService.js:133",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:73",
-            "src/services/supabaseDataService.js:283",
             "src/services/venueQueries2.js:134",
             "src/services/venueQueries2.js:43",
             "src/services/watsonService.js:71"
@@ -18116,6 +18116,7 @@
             "scripts/sns/push-finals-image.js:1290",
             "scripts/sns/push-full-picture.js:839",
             "scripts/sns/today-picks.js:101",
+            "src/services/motorQueries.js:112",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
             "src/services/racerQueries3.js:252",
@@ -18123,7 +18124,6 @@
             "src/services/scheduleQueries.js:205",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:73",
-            "src/services/supabaseDataService.js:283",
             "src/services/venueQueries2.js:134",
             "src/services/venueQueries2.js:43",
             "src/services/watsonService.js:71"
@@ -18198,14 +18198,14 @@
             "scripts/maintenance/verify-pretest-row-pick.js:128",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
             "scripts/maintenance/verify-rpc-output-keys.js:321",
+            "src/services/motorQueries.js:112",
+            "src/services/motorQueries3.js:278",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:205",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:73",
-            "src/services/supabaseDataService.js:1158",
-            "src/services/supabaseDataService.js:283",
             "src/services/venueQueries2.js:134",
             "src/services/venueQueries2.js:43",
             "src/services/watsonService.js:71"
@@ -26465,7 +26465,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/supabaseDataService.js:316",
+          "ref": "src/services/motorQueries.js:179",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26490,14 +26490,14 @@
       "columns": {
         "venue_code": {
           "readers": [
-            "src/services/supabaseDataService.js:316"
+            "src/services/motorQueries.js:179"
           ],
           "writers": [],
           "sql": []
         },
         "start_date": {
           "readers": [
-            "src/services/supabaseDataService.js:316"
+            "src/services/motorQueries.js:179"
           ],
           "writers": [],
           "sql": []
@@ -26542,7 +26542,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1085",
+          "ref": "src/services/motorQueries3.js:54",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26553,7 +26553,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1314",
+          "ref": "src/services/motorQueries3.js:361",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26562,7 +26562,7 @@
           ]
         },
         {
-          "ref": "src/services/supabaseDataService.js:1324",
+          "ref": "src/services/motorQueries3.js:371",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26600,9 +26600,9 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/supabaseDataService.js:1085",
-            "src/services/supabaseDataService.js:1314",
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:361",
+            "src/services/motorQueries3.js:371",
+            "src/services/motorQueries3.js:54"
           ],
           "writers": [],
           "sql": []
@@ -26611,8 +26611,8 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/supabaseDataService.js:1085",
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:371",
+            "src/services/motorQueries3.js:54"
           ],
           "writers": [],
           "sql": []
@@ -26621,9 +26621,9 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/supabaseDataService.js:1085",
-            "src/services/supabaseDataService.js:1314",
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:361",
+            "src/services/motorQueries3.js:371",
+            "src/services/motorQueries3.js:54"
           ],
           "writers": [],
           "sql": []
@@ -26636,21 +26636,21 @@
         "race_count": {
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:371"
           ],
           "writers": [],
           "sql": []
         },
         "final_count": {
           "readers": [
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:371"
           ],
           "writers": [],
           "sql": []
         },
         "championship_count": {
           "readers": [
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:371"
           ],
           "writers": [],
           "sql": []
@@ -26672,28 +26672,28 @@
         },
         "win_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:371"
           ],
           "writers": [],
           "sql": []
         },
         "top2_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:371"
           ],
           "writers": [],
           "sql": []
         },
         "top3_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:371"
           ],
           "writers": [],
           "sql": []
         },
         "accident_rate": {
           "readers": [
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:371"
           ],
           "writers": [],
           "sql": []
@@ -26715,7 +26715,7 @@
         },
         "stats_period_end": {
           "readers": [
-            "src/services/supabaseDataService.js:1324"
+            "src/services/motorQueries3.js:371"
           ],
           "writers": [],
           "sql": []

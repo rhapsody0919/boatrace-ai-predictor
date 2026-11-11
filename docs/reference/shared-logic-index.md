@@ -419,6 +419,12 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/meetQueries2.js` | — | getMeetScoreboard |
 | `src/services/meetQueries3.js` | — | getMeetPage |
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
+| `src/services/motorQueries.js` | — | findBoatColumnIndex, courseOfBoat, toMaintenanceResult, beforeKey, includeKey ほか8件 |
+| `src/services/motorQueries2.js` | — | fetchPretestByRacer, getMotorPowerIndex, getRaceMotorFreshness, getMotorUsageHistory |
+| `src/services/motorQueries3.js` | — | getVenueMotorStats, getRaceMotorBreakdown, getVenueMotorChampionshipHistory, getVenueMotorSnapshot |
+| `src/services/motorQueries4.js` | — | getVenueMotorRanking, getVenueMotorRanks, getVenueMotorList |
+| `src/services/motorQueries5.js` | — | getMotorWakuStats, getMotorRacerWakuStats, getMotorConditionTrend |
+| `src/services/motorQueries6.js` | — | getMotorPartsHistory, getRaceMotorMaintenanceBreakdown |
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
 | `src/services/predictionQueries.js` | — | buildFetchFailedPredictions, buildRaceResult, generateReasoning, VENUE_NAMES |
@@ -450,4 +456,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 408 ファイル / export 2365 件。
+対象 414 ファイル / export 2394 件。
