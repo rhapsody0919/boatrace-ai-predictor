@@ -6,7 +6,8 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRaceExhibitionTimeBreakdown } from "../../services/raceQueries2.js";
+import { getExhibitionTimeTrend } from "../../services/racerQueries3.js";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import TrendLineChart from "./TrendLineChart";
@@ -45,7 +46,7 @@ function ExhibitionTimeTrendChart({
         setError(null);
         setDrillDownRacer(null);
         const data =
-          await supabaseDataService.getRaceExhibitionTimeBreakdown(
+          await getRaceExhibitionTimeBreakdown(
             selectedRace,
           );
         setBreakdown(data);
@@ -67,7 +68,7 @@ function ExhibitionTimeTrendChart({
         setLoading(true);
         setError(null);
         const data =
-          await supabaseDataService.getExhibitionTimeTrend(drillDownRacer);
+          await getExhibitionTimeTrend(drillDownRacer);
         setTrendData(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));

@@ -9,7 +9,8 @@
 import { useState, useEffect } from "react";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRaceRacerStats } from "../../services/raceQueries2.js";
+import { getRaceEntriesDetail } from "../../services/raceQueries3.js";
 import AttackDefenseTable from "../race/AttackDefenseTable";
 import "./MotorConditionChart.css";
 
@@ -67,8 +68,8 @@ function AttackDefenseAnalysis({
         setLoading(true);
         setError(null);
         const [stats, entries] = await Promise.all([
-          supabaseDataService.getRaceRacerStats(selectedRace),
-          supabaseDataService.getRaceEntriesDetail(selectedRace),
+          getRaceRacerStats(selectedRace),
+          getRaceEntriesDetail(selectedRace),
         ]);
         setRacerStats(stats);
         setPlayers(
