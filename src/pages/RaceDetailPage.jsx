@@ -38,6 +38,7 @@ import {
 } from "../hooks/useDatePredictions";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
+import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
@@ -164,6 +165,11 @@ function RaceDetailPage({ showViewSwitch = false }) {
         finished: !!racePrediction?.result,
       })
     : {};
+  // 中身の無い枝（URLの形が不正・NO_DATA・見つからない）だけ noindex。
+  // 読み込み中と取得の失敗は一時的な状態なので noindex にしない（枝の並びは下の描画と同じ）
+  useRobotsMeta(
+    !parsed || (!loading && error !== FETCH_FAILED_ERROR && !!(error || !racePrediction)),
+  );
   useSocialMeta({
     title: pageMeta.title,
     description: pageMeta.description,
