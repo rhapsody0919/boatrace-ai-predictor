@@ -418,6 +418,10 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
+| `src/services/predictionQueries.js` | — | buildFetchFailedPredictions, buildRaceResult, generateReasoning, VENUE_NAMES |
+| `src/services/predictionQueries2.js` | — | getPredictions |
+| `src/services/predictionQueries3.js` | — | getAccuracy, getUnifiedModelAccuracy |
+| `src/services/predictionQueries4.js` | — | getUnifiedVolatilityAccuracy, getInCautionAccuracy, getUnifiedTrifectaReference |
 | `src/services/racerRaceHistoryRows.js` | 選手の出走履歴の行（getRacerRaceHistory の返り値）の整形（純関数）。 | isUnrankedFinishMark, buildRacerRaceHistoryRows |
 | `src/services/racerScopedRaceRows.js` | 選手の走ごとの行（getRacerScopedRaceStats の返り値）の整形（純関数）。 | buildRacerScopedRaceRows |
 | `src/services/racerService.js` | 選手個別ページ用データ取得サービス | getRacerPageData, getRacerCurrentMotorStatus, getRacerAllPeriodStats, getRacerStats |
@@ -428,8 +432,11 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/snsHubService.js` | — | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか16件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
 | `src/services/supabaseDataService.js` | Supabase データサービス | supabaseDataService |
+| `src/services/venueQueries.js` | — | getVenueTechniquePeriodStats, getVenueCharacteristics, getNationalAverageOutcomeDistribution, getOutcomeDistribution, getWinningTechniqueStats ほか1件 |
+| `src/services/venueQueries2.js` | — | getTodaysVenueRanking, getVenueDaySummary, getVenueFirstWinRateRanking, getTopStartStats, getLosingTechniqueStats ほか1件 |
+| `src/services/venueQueries3.js` | — | getNigeSimulation, getNigeOutcomeDistribution, getExhibitionTimeTopStats, getVenueGradeBoatStats, getVenuesWithGradeStats |
 | `src/services/watsonService.js` | ワトソン予想 データ取得サービス | getWatsonModelInfo, getWatsonPredictions |
 
 ---
 
-対象 390 ファイル / export 2293 件。
+対象 397 ファイル / export 2320 件。
