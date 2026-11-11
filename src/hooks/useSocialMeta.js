@@ -8,12 +8,12 @@ const DEFAULT_META = {
   'meta[name="keywords"]':
     "ボートレース,AI分析,過去データ,データサイエンス,無料,データ分析,モーター性能,選手データ,龍神レーダー",
   'meta[property="og:title"]':
-    "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+    "ボートレースのデータ分析とAI予想が無料｜競艇 龍神レーダー",
   'meta[property="og:description"]':
     "選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービス。全24場に対応し、完全無料・登録不要で使えます。",
   'meta[property="og:image"]': "https://www.boat-ai.jp/ogp-image.png",
   'meta[name="twitter:title"]':
-    "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+    "ボートレースのデータ分析とAI予想が無料｜競艇 龍神レーダー",
   'meta[name="twitter:description"]':
     "選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービス。完全無料・登録不要。",
   'meta[name="twitter:image"]': "https://www.boat-ai.jp/ogp-image.png",
