@@ -7,7 +7,7 @@
  * 検証: scripts/maintenance/verify-bot-page-model.js
  */
 import { localizePath } from "../pure/localizePath.js";
-import { getVenueSeriesTitle } from "./venueSeriesTitle.js";
+import { getVenueSeriesTitle } from "../shared/venueSeriesTitle.js";
 
 const SITE_ORIGIN = "https://www.boat-ai.jp";
 
