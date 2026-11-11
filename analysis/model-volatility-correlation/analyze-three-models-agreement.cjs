@@ -42,14 +42,6 @@ function arraysEqual(arr1, arr2) {
   return arr1.every((val, index) => val === arr2[index]);
 }
 
-// 配列が完全に一致するかチェック（順序は問わない）
-function arraysEqualUnordered(arr1, arr2) {
-  if (!arr1 || !arr2 || arr1.length !== arr2.length) return false;
-  const sorted1 = [...arr1].sort();
-  const sorted2 = [...arr2].sort();
-  return sorted1.every((val, index) => val === sorted2[index]);
-}
-
 // 配当取得関数
 function getWinPayout(result, boatNumber) {
   if (!result || !result.payouts || !result.payouts.win) return 0;

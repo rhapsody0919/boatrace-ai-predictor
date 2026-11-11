@@ -1,5 +1,29 @@
 // 旧 e2e/smoke.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
-import { test, expect, fetchRecorded } from "../fixtures.js";
+import { test, expect, e2eTodayJST, fetchRecorded } from "../fixtures.js";
+import { HIT_RACES_FIXED_DATE } from "../layout/helpers.js";
+
+/**
+ * 分析ツールが読む「今日」の races（開催会場・本日のレース・好調/不調ランキングの出走表）を、
+ * 生成済みの固定の過去日に向け直す。0:00〜7:00 JST は当日の行が無く、表が出ない（BOA-1458）。
+ * ほかの日付の要求はそのまま通す。route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+ */
+async function serveFixedTodaysRaces(page) {
+  const todayJst = e2eTodayJST();
+  await page.route(/\/rest\/v1\/races\?.*race_date=eq\./, async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get("race_date") !== `eq.${todayJst}`) {
+      await route.fallback();
+      return;
+    }
+    url.searchParams.set("race_date", `eq.${HIT_RACES_FIXED_DATE}`);
+    const response = await fetchRecorded(route, { url: url.toString() });
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      body: await response.body(),
+    });
+  });
+}
 
 test.describe("言語切替 (回帰: 対応外言語クリックでホームに飛ばされない)", () => {
   test("/en/venues で対応外言語(日本語)ボタンは無効化され、クリックしても遷移しない", async ({
@@ -84,6 +108,7 @@ test("英語の分析ツールで会場名・注記・選手ページのリン�
   await expect(note).toBeVisible();
   await expect(note).not.toContainText("件を集計中");
 
+  await serveFixedTodaysRaces(page);
   await page.goto("/en/winning-technique?tab=formranking");
   const link = page.locator(".racer-page-link-inline").first();
   await link.waitFor({ timeout: 30000 });

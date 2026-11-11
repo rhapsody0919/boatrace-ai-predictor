@@ -2,16 +2,16 @@
  "schema": "content-pr-manifest/v1",
  "id": "venue-kiryu",
  "kind": "revision",
- "ticket": "BOA-1247",
+ "ticket": "OC-20261111T100243-seo-human-1",
  "paths": [
   "public/blog/venue-kiryu.md",
   "src/data/blog-posts/venue-kiryu.json"
  ],
  "files": {
-  "public/blog/venue-kiryu.md": "be4971c80b7d35fac3daf8a75ce2fe07f86b67e45290ccbc763c4dd6b9ace0b9",
+  "public/blog/venue-kiryu.md": "fc393ed2be2aa3694dfa032f4c1eb147d106c08d04654b054a8e060859a1636b",
   "src/data/blog-posts/venue-kiryu.json": "a78e260bc56e73957aa665d1a17bbe1b29f276e91663ac29b8908f4aab2a4d1c"
  },
- "content_sha256": "863b841782e14c3773e776fe151c6d8625e2610f2f2ae68b28832a91c5f74d41",
+ "content_sha256": "f9a4a252d7c9bf3002adc61a86e4063700878438f5074dd79eae6b82a76cbe9f",
  "judgement_words": [],
  "reviews": [
   {
@@ -20,9 +20,9 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "863b841782e14c3773e776fe151c6d8625e2610f2f2ae68b28832a91c5f74d41",
-   "model": "codex-default/high",
-   "at": "2026-11-04T16:13:53+09:00"
+   "reviewed_sha256": "f9a4a252d7c9bf3002adc61a86e4063700878438f5074dd79eae6b82a76cbe9f",
+   "model": "opus",
+   "at": "2026-11-11T10:04:57+09:00"
   },
   {
    "role": "wording-editor",
@@ -30,9 +30,9 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "863b841782e14c3773e776fe151c6d8625e2610f2f2ae68b28832a91c5f74d41",
-   "model": "codex-default/high",
-   "at": "2026-11-04T16:13:53+09:00"
+   "reviewed_sha256": "f9a4a252d7c9bf3002adc61a86e4063700878438f5074dd79eae6b82a76cbe9f",
+   "model": "opus",
+   "at": "2026-11-11T10:04:57+09:00"
   },
   {
    "role": "fan",
@@ -40,9 +40,9 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "863b841782e14c3773e776fe151c6d8625e2610f2f2ae68b28832a91c5f74d41",
-   "model": "codex-default/high",
-   "at": "2026-11-04T16:13:53+09:00"
+   "reviewed_sha256": "f9a4a252d7c9bf3002adc61a86e4063700878438f5074dd79eae6b82a76cbe9f",
+   "model": "opus",
+   "at": "2026-11-11T10:04:57+09:00"
   },
   {
    "role": "seo-marketer",
@@ -50,9 +50,9 @@
    "result": "pass",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "863b841782e14c3773e776fe151c6d8625e2610f2f2ae68b28832a91c5f74d41",
-   "model": "codex-default/high",
-   "at": "2026-11-04T16:13:53+09:00"
+   "reviewed_sha256": "f9a4a252d7c9bf3002adc61a86e4063700878438f5074dd79eae6b82a76cbe9f",
+   "model": "opus",
+   "at": "2026-11-11T10:04:57+09:00"
   }
  ],
  "evidence": [
@@ -60,7 +60,9 @@
    "h2": "桐生ボートレース場の基本情報",
    "evidence": [
     "public/blog/venue-kiryu.md",
-    "src/data/venueWaterProfiles.js"
+    "src/data/venueWaterProfiles.js",
+    "src/components/venue/VenueCharacteristicsCard.jsx",
+    "src/locales/ja/common.json"
    ]
   },
   {
@@ -93,9 +95,9 @@
    ]
   }
  ],
- "sources": "data/analysis/venue-course-win-rate/venue-course-win-rate.json#periods.12m.venues.01（scripts/analysis/venue-course-win-rate/count-venue-course-wins.mjs）、2025-10-20〜2026-10-19。分母は不成立を除く結果のある2,409レース。1号艇1着1,201回、進入1コース1着1,223回。返還艇の1着を除き、同着は艇番の小さい艇を採用。\ndata/analysis/weather-in-escape.json#wind.venues.1.bins（scripts/analysis/analyze-weather-in-escape.js、公開用public/data/weather-in-escape.jsonとinputHash・桐生の各行の件数と率を照合）。2020-02-01〜2026-09-30の公式K/B解析結果。分母は進入1コース・1着艇が分かり、風速と風の区分が得られるレースを5区分に分けた各n。1コースの1着率はinWinRateを転記、逃げ506回はtail_strong.techniques.逃げ、41.6%は506÷1,216×100を小数1桁に1回丸めた。\n基本情報はpublic/blog/venue-kiryu.mdとsrc/data/venueWaterProfiles.js:15。風向対応と区分はdocs/design/weather-in-escape/preregistration.md、scripts/analysis/analyze-weather-in-escape.jsのoffset=5・windBin、画面の表示件数条件はsrc/components/analysis/WeatherInEscapeChart.jsx:40-41。字数・照合結果は作業フォルダのvenue-kiryu-validation.jsonに記録。",
+ "sources": "数は 11/04 掲載版から変えていない。data/analysis/venue-course-win-rate/venue-course-win-rate.json#periods.12m.venues.01（scripts/analysis/venue-course-win-rate/count-venue-course-wins.mjs）、2025-10-20〜2026-10-19、不成立を除く2,409レース、返還艇の1着を除き同着は艇番の小さい艇。風別は data/analysis/weather-in-escape.json#wind.venues.1.bins（scripts/analysis/analyze-weather-in-escape.js）、2020-02-01〜2026-09-30、逃げ41.6%は506÷1,216×100を1回丸め。\n直した段落の根拠: src/config/languages.js:15（/venues は en・zh-TW・ko だけ）、src/AppRouter.jsx:190、src/pages/VenueRaceListPage.jsx:320-323（会場ページに折りたたみのカード）、src/components/venue/VenueCharacteristicsCard.jsx:55-66、src/data/venueWaterProfiles.js:15（桐生 fresh）、src/locales/ja/common.json:110-119・135・137・115（注記に期間とレース数）。",
  "author": "hq-employee:seo-human",
- "created_at": "2026-11-04T16:15:57+09:00",
- "run": "20261104T160639-seo-human",
- "engine": "codex"
+ "created_at": "2026-11-11T10:05:39+09:00",
+ "run": "20261111T100243-seo-human",
+ "engine": "claude"
 }

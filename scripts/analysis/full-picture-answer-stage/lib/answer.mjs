@@ -4,7 +4,7 @@
  * p＝今日の予想の形と同じ本番のスタートの形だった過去で1号艇が1着の割合、p0＝同じ範囲（同じ会場・級の組み合わせ・期間・枠なり）のどの形でもの割合。
  * 段は p の Wilson 95% 区間と p0 で決める。データが薄いレース（同じ形の過去が MIN_N 件未満、形が無い）は作らない（オーナー 10/25）。
  */
-import { SLIT_FORMS } from "./analogyScenario.js";
+import { SLIT_FORMS } from "../../../../src/utils/analogyScenario.js";
 
 /** 段を出す件数の下限・区間の z。目安（根拠なし）。BOA-1096 の統計検証で見直す */
 export const ANSWER_RULE = { minN: 30, z: 1.96 };
