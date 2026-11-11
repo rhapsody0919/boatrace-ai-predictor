@@ -51,7 +51,13 @@ const cases = [
     true,
     "ルートの .md と note の原稿",
   ],
+  [["analysis/report.md", "analysis/a/b.json"], true, "ルート直下の analysis/"],
   // 2. ビルドする
+  [
+    ["analysis/report.md", "src/App.jsx"],
+    false,
+    "analysis/ と src/ が混ざる",
+  ],
   [
     ["public/blog/some-article.md"],
     false,
