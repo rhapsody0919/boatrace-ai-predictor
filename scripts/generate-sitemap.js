@@ -726,12 +726,24 @@ async function generateSitemap() {
     }
   };
 
+  // レース詳細の言語版。ja の行（loc /race/<id>）を同じ lastmod・changefreq・priority で展開する
+  // （思考アシストは ja 専用なので足さない）
+  const localizedRaceDetailPages = SUPPORTED_LANGUAGES.filter(
+    ({ code }) => code !== DEFAULT_LANGUAGE,
+  ).flatMap(({ code }) =>
+    raceDetailPages.map((page) => ({
+      ...page,
+      loc: localizePath(page.loc, code),
+    })),
+  );
+
   const allPages = [
     ...staticPages,
     ...localizedPages,
     ...blogPosts,
     ...racePages,
     ...raceDetailPages,
+    ...localizedRaceDetailPages,
     ...racerPages,
     ...meetPages,
   ];
