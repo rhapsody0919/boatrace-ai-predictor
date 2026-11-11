@@ -1,6 +1,12 @@
 // 旧 e2e/layout.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
-import { test, expect, e2eTodayJST, fetchRecorded } from "../fixtures.js";
-import { gotoAndSettle, inspectGrids, expectNoWastedGrids } from "./helpers.js";
+import { test, expect } from "../fixtures.js";
+import {
+  HIT_RACES_FIXED_DATE,
+  gotoAndSettle,
+  inspectGrids,
+  expectNoWastedGrids,
+  serveFixedHitRaces,
+} from "./helpers.js";
 
 /**
  * BOA-527 の再現テスト。
@@ -13,89 +19,8 @@ import { gotoAndSettle, inspectGrids, expectNoWastedGrids } from "./helpers.js";
  * 件数を固定して検査するため、「今日」の予想データの応答を生成済みの過去日
  * （HIT_RACES_FIXED_DATE）の行に差し替え、そのうち展開予測が的中したレースを
  * 先頭から `hits` 件だけ残す（検査するのは既定の「今日」タブのグリッド）。
- *
- * 的中の判定は HitRaces.jsx の extractHitRaces と同じ
- * （unified の turnPrediction のパターンに、実際の1着コースが含まれる）。
- * getPredictions はまず Edge API（`/api/predictions/{date}`。dev では vite.config.js が
- * 本番へ転送する）を読み、空・失敗なら Supabase の races への直接クエリに落ちる。
- * どちらの経路でも「今日」が固定日の的中だけになるよう、両方を差し替える。
+ * 差し替え（serveFixedHitRaces）は helpers.js にある（all-pages-layout の /hit-races も使う）。
  */
-const HIT_RACES_FIXED_DATE = "2026-09-22";
-
-/** 展開予測の的中か（HitRaces.jsx の extractHitRaces と同じ判定） */
-function isTurnPredictionHit(turn, rank1) {
-  if (!turn || !rank1) return false;
-  return (turn.patterns || [turn]).some((p) => p.winnerCourse === rank1);
-}
-
-/** Edge API の races 要素 */
-function isEdgeRaceHit(race) {
-  return isTurnPredictionHit(
-    race.predictions?.unified?.turnPrediction,
-    race.result?.rank1,
-  );
-}
-
-/** Supabase races 直接クエリの行 */
-function isSupabaseRowHit(row) {
-  const unified = (row.predictions || []).find((p) => p.model_id === "unified");
-  const result = Array.isArray(row.race_results)
-    ? row.race_results[0]
-    : row.race_results;
-  return isTurnPredictionHit(
-    unified?.feature_contributions?.turnPrediction,
-    result?.rank1,
-  );
-}
-
-/**
- * 「今日」の予想データ応答を、固定日の的中レース先頭 `hits` 件（"all" なら全件）に
- * 差し替える。当日以外の日付はそのまま通す（「今日」タブのグリッドには影響しない）。
- * 返り値の `available` に固定日の的中件数が入る（ケースを作れたかの確認用）
- */
-async function serveFixedHitRaces(page, hits) {
-  // ブラウザの時計は録画時刻に固定されている（e2e/fixtures.js）。Node 側の「今日」も揃える
-  const todayJst = e2eTodayJST();
-  const state = { available: null };
-  const pick = (hitRows) => {
-    state.available = hitRows.length;
-    return hits === "all" ? hitRows : hitRows.slice(0, hits);
-  };
-
-  await page.route(`**/api/predictions/${todayJst}*`, async (route) => {
-    const url = new URL(route.request().url());
-    url.pathname = `/api/predictions/${HIT_RACES_FIXED_DATE}`;
-    // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
-    const response = await fetchRecorded(route, { url: url.toString() });
-    const body = await response.json();
-    const races = pick((body.races || []).filter(isEdgeRaceHit));
-    await route.fulfill({
-      status: response.status(),
-      headers: response.headers(),
-      json: { ...body, races },
-    });
-  });
-
-  await page.route(/\/rest\/v1\/races\?.*race_date=eq\./, async (route) => {
-    const url = new URL(route.request().url());
-    if (url.searchParams.get("race_date") !== `eq.${todayJst}`) {
-      await route.fallback();
-      return;
-    }
-    url.searchParams.set("race_date", `eq.${HIT_RACES_FIXED_DATE}`);
-    const response = await fetchRecorded(route, { url: url.toString() });
-    const rows = await response.json();
-    const kept = pick(
-      (Array.isArray(rows) ? rows : []).filter(isSupabaseRowHit),
-    );
-    await route.fulfill({
-      status: response.status(),
-      headers: response.headers(),
-      json: kept,
-    });
-  });
-  return state;
-}
 
 test.describe("レイアウト: /hit-races は的中が列数より少なくても幅を余らせない（BOA-527）", () => {
   // 1〜3件は、1440px（4列）・1920px（6列）の列数を下回る側。

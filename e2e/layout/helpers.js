@@ -1,5 +1,5 @@
 // 旧 e2e/layout.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
-import { expect } from "../fixtures.js";
+import { expect, e2eTodayJST, fetchRecorded } from "../fixtures.js";
 
 /** グリッドの空トラックとみなす最小の余白。gapや端数の誤差を除くための閾値 */
 export const TRAILING_GAP_THRESHOLD_PX = 40;
@@ -33,6 +33,116 @@ export const READY_SELECTORS = {
   "/venue/16/meet/2026-09-28": ".meet-ranking__table tbody tr",
   "/race/2026-10-06-18-10/assist": ".ta-lane",
 };
+
+/**
+ * 当日の的中・朝のダイジェストは 0:00〜7:00 JST の live 実行だと未生成で、
+ * 主データを待ち切れず落ちる。生成済みの過去日に差し替えるための固定日。
+ * 件数を絞る試験（hit-races-layout・today-layout）と、PAGES の /hit-races・/today が共有する（BOA-1447）
+ */
+export const HIT_RACES_FIXED_DATE = "2026-09-22";
+export const DIGEST_FIXED_DATE = "2026-09-22";
+
+/**
+ * 「今日」の朝のダイジェスト（morning_digest_days / morning_digest_rows）の要求を
+ * DIGEST_FIXED_DATE の行に向け直す。ほかの日付の要求はそのまま通す
+ */
+export async function serveFixedDigest(page) {
+  const todayJst = e2eTodayJST();
+  await page.route(
+    /\/rest\/v1\/morning_digest_(days|rows)\?/,
+    async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get("digest_date") !== `eq.${todayJst}`) {
+        await route.fallback();
+        return;
+      }
+      url.searchParams.set("digest_date", `eq.${DIGEST_FIXED_DATE}`);
+      // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+      const response = await fetchRecorded(route, { url: url.toString() });
+      await route.fulfill({
+        status: response.status(),
+        headers: response.headers(),
+        body: await response.body(),
+      });
+    },
+  );
+}
+
+/** 展開予測の的中か（HitRaces.jsx の extractHitRaces と同じ判定） */
+function isTurnPredictionHit(turn, rank1) {
+  if (!turn || !rank1) return false;
+  return (turn.patterns || [turn]).some((p) => p.winnerCourse === rank1);
+}
+
+/** Edge API の races 要素 */
+function isEdgeRaceHit(race) {
+  return isTurnPredictionHit(
+    race.predictions?.unified?.turnPrediction,
+    race.result?.rank1,
+  );
+}
+
+/** Supabase races 直接クエリの行 */
+function isSupabaseRowHit(row) {
+  const unified = (row.predictions || []).find((p) => p.model_id === "unified");
+  const result = Array.isArray(row.race_results)
+    ? row.race_results[0]
+    : row.race_results;
+  return isTurnPredictionHit(
+    unified?.feature_contributions?.turnPrediction,
+    result?.rank1,
+  );
+}
+
+/**
+ * 「今日」の予想データ応答を、固定日の的中レース先頭 `hits` 件（"all" なら全件）に
+ * 差し替える。当日以外の日付はそのまま通す（「今日」タブのグリッドには影響しない）。
+ * 返り値の `available` に固定日の的中件数が入る（ケースを作れたかの確認用）。
+ * getPredictions は Edge API を読み、空・失敗なら Supabase の races 直接クエリに落ちるため両方を差し替える
+ */
+export async function serveFixedHitRaces(page, hits) {
+  // ブラウザの時計は録画時刻に固定されている（e2e/fixtures.js）。Node 側の「今日」も揃える
+  const todayJst = e2eTodayJST();
+  const state = { available: null };
+  const pick = (hitRows) => {
+    state.available = hitRows.length;
+    return hits === "all" ? hitRows : hitRows.slice(0, hits);
+  };
+
+  await page.route(`**/api/predictions/${todayJst}*`, async (route) => {
+    const url = new URL(route.request().url());
+    url.pathname = `/api/predictions/${HIT_RACES_FIXED_DATE}`;
+    // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+    const response = await fetchRecorded(route, { url: url.toString() });
+    const body = await response.json();
+    const races = pick((body.races || []).filter(isEdgeRaceHit));
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: { ...body, races },
+    });
+  });
+
+  await page.route(/\/rest\/v1\/races\?.*race_date=eq\./, async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get("race_date") !== `eq.${todayJst}`) {
+      await route.fallback();
+      return;
+    }
+    url.searchParams.set("race_date", `eq.${HIT_RACES_FIXED_DATE}`);
+    const response = await fetchRecorded(route, { url: url.toString() });
+    const rows = await response.json();
+    const kept = pick(
+      (Array.isArray(rows) ? rows : []).filter(isSupabaseRowHit),
+    );
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json: kept,
+    });
+  });
+  return state;
+}
 
 export async function gotoAndSettle(page, path) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
