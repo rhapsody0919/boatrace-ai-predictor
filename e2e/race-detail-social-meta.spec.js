@@ -1,6 +1,7 @@
 import { test, expect } from "./fixtures.js";
 import { localizePath } from "../src/config/languages.js";
 import { homeSocialProblems, leftPageSocialValues } from "./home-social-meta.js";
+import { ensureOpenVenues, rewriteTodayRaces } from "./today-races-rewrite.js";
 
 // all-pages-layout の PAGES と同じ固定の過去日
 const RACE_DATE = "2026-08-11";
@@ -21,14 +22,21 @@ for (const lang of ["ja", "en"]) {
         page.locator(selector).getAttribute("content"),
       ),
     );
-    // 会場→レースの経路。今日の開催に依らないよう、固定の過去日の会場一覧から入る。
-    await page.goto(localizePath(`/races/${RACE_DATE}`, lang));
+    // 会場→レースの経路。ja は今日の開催に依らないよう、固定の過去日の会場一覧から入る。
+    // /races/{日付} は ja 専用（/en/races/… は ja 版へ移る）ので、en は今日のトップから入る
+    if (lang === "ja") {
+      await page.goto(`/races/${RACE_DATE}`);
+    } else {
+      await rewriteTodayRaces(page, (venues) => ensureOpenVenues(venues, 1));
+      await page.goto(homePath);
+    }
     await page.locator(".venue-grid-card--open").first().click();
     await page.locator(".race-card .predict-btn").first().click();
     await expect(page).toHaveURL(/\/race\//);
     const racePath = new URL(page.url()).pathname;
     expect(racePath.startsWith(localizePath("/race/", lang))).toBe(true);
-    expect(racePath).toContain(`/race/${RACE_DATE}-`);
+    expect(racePath).toMatch(/\/race\/\d{4}-\d{2}-\d{2}-/);
+    if (lang === "ja") expect(racePath).toContain(`/race/${RACE_DATE}-`);
     // ディープリンクでも同じメタを出す。
     await page.goto(racePath, { waitUntil: "domcontentloaded" });
     await expect(page.locator(".race-detail-page-v2 h1")).toBeVisible();
