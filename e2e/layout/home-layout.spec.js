@@ -1,6 +1,10 @@
 // 旧 e2e/layout.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
 import { test, expect } from "../fixtures.js";
-import { rewriteTodayRaces } from "../today-races-rewrite.js";
+import {
+  ensureOpenVenues,
+  rewriteTodayRaces,
+  setJstNoon,
+} from "../today-races-rewrite.js";
 import { OVERFLOW_TOLERANCE_PX, gotoAndSettle } from "./helpers.js";
 
 /**
@@ -78,7 +82,9 @@ test.describe("レイアウト: トップの会場カードの日目の札（BOA
     },
   ]) {
     test(`${path} の「${label}」の札がカードに収まる`, async ({ page }) => {
+      await setJstNoon(page);
       await rewriteTodayRaces(page, (venues) => {
+        ensureOpenVenues(venues, 1);
         for (const v of venues)
           (v.races ?? []).forEach((r, i, races) => {
             r.startTime = "23:59";
