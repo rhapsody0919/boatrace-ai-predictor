@@ -23,6 +23,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { dataLayerCall, readDataLayerSource } from "./dataLayerSource.js";
 import {
   motorRateView,
   motorRate3View,
@@ -164,7 +165,7 @@ check(
 
 // ---- 3. ソース ----
 const chart = read("src/components/analysis/MotorConditionChart.jsx");
-const service = read("src/services/supabaseDataService.js");
+const service = readDataLayerSource();
 check(
   "一覧の2連率の列は motorRateView、過去レースの3連率は motorRate3View で決める",
   chart.includes("breakdown.map(motorRateView)") &&
@@ -196,9 +197,9 @@ check(
 );
 check(
   "サービス: 自前の値は「このレースより前」、前の節までの走数は節の初日より前で数える",
-  /this\.getMotorPowerIndex\(venueCode, r\.motor_number, 90, raceId\)/.test(
-    service,
-  ) &&
+  new RegExp(
+    String.raw`${dataLayerCall("getMotorPowerIndex")}venueCode, r\.motor_number, 90, raceId\)`,
+  ).test(service) &&
     /getMotorPowerIndex\(\s*venueCode,\s*r\.motor_number,\s*90,\s*meetStart,?\s*\)/.test(
       service,
     ),

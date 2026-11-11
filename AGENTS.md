@@ -21,7 +21,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
    - 例外: 既存の `verify-*.js` を振る舞いの試験へ置き換える変更は、hq の作り手の確かめ（機械の変異検査: 旧の verify が落とす変異 ⊆ 新の試験が落とす変異）を通したときだけ可
    - `vercel.json`（AI の枝の Preview を止める設定。`verify-codex-no-preview.js` が固定）
    - `docs/operation/codex-backlog.md`「回すもの・回さないもの」の (a)（`scripts/db/**`・`scripts/watch/**`・`scripts/lib/dbApplySql.js` 等の守りの本体）
-5. **300行5ファイル**: 1つの PR は関心事1つ、差分は300行・5ファイル以内。`src/` と `docs/` を混ぜない。超えそうなら止める。票に「変えてよいファイル」があればその外を変えない
+5. **300行5ファイル**: 1つの PR は関心事1つ、差分は300行・5ファイル以内。`src/` と `docs/` を混ぜない。超えそうなら止める。票に「変えてよいファイル」があればその外を変えない。`node scripts/maintenance/split-data-layer.mjs` の出力そのままの PR（pr-lane が移すだけと判定する物、config/pr-path-rules.json の moveOnly）は300行5ファイルの線の外
 6. **マージしない**。`gh pr merge`・承認（approve）・自動マージの設定（`--auto`）をしない。force push をしない
 
 ## 作業の進め方
@@ -72,7 +72,7 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
 ## PR の決まり
 
 - コミットは `<type>: <日本語の説明>`。type は `feat`・`fix`・`content`・`refactor`・`docs`・`chore`。Claude の署名（`Co-Authored-By: Claude`）は付いてよい
-- 変更には再現の試験か検査を付け、CI が呼ぶ場所に置く: 画面の動きは `e2e/`、レイアウトは `e2e/layout.spec.js`、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（`verify-registry.json` に登録。未登録だと `verify:ci` が落ちる）。`scripts/tests/` 等 CI が呼ばない所に置かない
+- 変更には再現の試験か検査を付け、CI が呼ぶ場所に置く: 画面の動きは `e2e/`、レイアウトは `e2e/layout/` の該当ページの `*-layout.spec.js`（名に `layout.spec.js` が無いと layout-* の幅で走らない）、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（`verify-registry.json` に登録。未登録だと `verify:ci` が落ちる）。`scripts/tests/` 等 CI が呼ばない所に置かない
 - マイグレーション・ADR の番号は予約しない。PR を作るときに `origin/master` の最大＋1。CI の `verify:migration-numbers`・`verify:adr-numbers` で落ちたら付け直す
 - 新しいページ・分析タブ・主要な機能には `docs/design/{slug}/content-index.json`（対象外なら `not_applicable: true`）
 - 必須の check は `verify`（`npm run verify` と本番の build）・`ml-tests`・`e2e`。落ちたら直して push する

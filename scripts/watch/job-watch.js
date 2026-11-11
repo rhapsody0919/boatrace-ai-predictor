@@ -20,6 +20,7 @@ import {
   decideRun,
   handledMarkers,
   jstDate,
+  nightlyFailureItem,
   recoveryReruns,
   rerunBlockers,
   runMarker,
@@ -293,6 +294,10 @@ async function scan() {
       });
     }
   }
+
+  // 毎晩の網羅の表が7日より古い（PR の選別が古い表で選ぶのを防ぐ）。同じ最後の成功では1回だけ書く
+  const nightly = await nightlyFailureItem({ gh, repo, now, done });
+  if (nightly) failureItems.push(nightly);
 
   await writeIssue(
     KEY_LABEL,

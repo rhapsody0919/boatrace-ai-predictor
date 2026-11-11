@@ -3,7 +3,10 @@
  * 設計: docs/proposal/dev-process-redesign-2026-11-05.md 1.2（#2277）。H の一覧は config/pr-path-rules.json。
  *
  * 使い方: node scripts/maintenance/pr-lane.js --base <sha> --head <sha> [--repo <git のディレクトリ>]
- *   標準出力: { "lane": "light"|"heavy", "hits": [{ "rule": "H1"〜"H9", "file", "reason" }] }
+ *   標準出力: { "lane": "light"|"heavy", "hits": [{ "rule": "H1"〜"H9", "file", "reason" }],
+ *     "human": [{ "kind", "file", "reason" }], "needs": [{ "kind", "file", "rule" }] }
+ *   human・needs は出すだけで lane の判定には使わない（light なら空。heavy なら hits の全部のファイルがどちらかに入る。
+ *   入らない物は human の unclassified）。当て方は config/pr-path-rules.json の human と各規則の needs
  *   終了コード: 0＝判定できた。0 以外＝判定できない（呼び手は heavy として扱う。標準出力には lane: heavy と error を出す）
  *   --repo: 差分と木を読む git の作業ディレクトリ（既定は今のディレクトリ）。規則はこのスクリプトの隣（../../config）から読む
  *
@@ -12,7 +15,7 @@
  * 語（H9）の risk-rules.json は、判定する repo の merge-base の木から読む（PR 自身が語を消して軽くできないように）。
  *
  * hq との約束（段L の影、2026-11-05）: Node の組み込みと git だけを使う（npm の部品・DB・ネットワークなし。hq の写しは
- * この script・config/pr-path-rules.json・scripts/lib/relativeImportGraph.js だけを同じ配置で持つ）。100秒（BUDGET_MS）で
+ * この script・config/pr-path-rules.json・scripts/lib/relativeImportGraph.js・移すだけの判定 prLaneMoveOnly*.js を同じ配置で持つ）。100秒（BUDGET_MS）で
  * 打ち切り、0 以外で終える（hq の上限は 120秒）。lane が light なら hits は必ず空。
  */
 import { execFileSync } from "node:child_process";
@@ -21,6 +24,7 @@ import { join } from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { CODE, reach } from "../lib/relativeImportGraph.js";
+import { moveOnlyPaths } from "./prLaneMoveOnly.js";
 
 const SELF_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 /** コミットの木を辿るときの仮の絶対パスの根（手元のファイルと混ざらないよう実在しない名前にする） */
@@ -57,8 +61,152 @@ export function loadRules(
   });
 }
 
-const anyMatch = (patterns = [], path) =>
-  patterns.some((p) => new RegExp(p).test(path));
+/** config/pr-path-rules.json の moveOnly（移すだけの判定の from・to。無ければ undefined） */
+export function loadMoveOnly(root = SELF_ROOT) {
+  return JSON.parse(readFileSync(join(root, "config/pr-path-rules.json"), "utf8"))
+    .moveOnly;
+}
+
+/** config/pr-path-rules.json の human（人にしか判断できない理由の kind ごとの型） */
+export function loadHuman(root = SELF_ROOT) {
+  return JSON.parse(readFileSync(join(root, "config/pr-path-rules.json"), "utf8"))
+    .human;
+}
+
+const anyMatch = (patterns = [], path, flags = "") =>
+  patterns.some((p) => new RegExp(p, flags).test(path));
+
+/** 既存の行を変えた・消した行（配列の末尾に足したときの "}" → "}," は数えない） */
+const changedRows = (patch) =>
+  patch.removed.filter((line) => !patch.added.includes(`${line},`));
+
+/** human のうち、足した行・消した行を読む必要があるファイル（CLI が patch を取る対象） */
+export const weakenRowPatterns = (human) => [
+  ...(human.weaken?.addedRows ?? []),
+  ...(human.weaken?.registryRows ?? []),
+  ...(human.weaken?.removedRows ?? []),
+];
+
+/** DB の書き手: 中身は base・head の木から読む。無い側（追加の base・削除の head）は見ない。読めなければ当てる（安全側） */
+function writerReason({ spec, file, status, readBlob }) {
+  if (!anyMatch(spec.writerFiles, file)) return null;
+  const sides = [status !== "A" && "base", status !== "D" && "head"];
+  const texts = sides.filter(Boolean).map((s) => readBlob(s, file));
+  const hit = texts.some(
+    (t) =>
+      typeof t !== "string" ||
+      spec.writerContent.some((p) => new RegExp(p).test(t)),
+  );
+  return hit
+    ? `${spec.reason}（.from(…).upsert 等・SERVICE_ROLE を持つ、または中身を読めない）`
+    : null;
+}
+
+/** weaken（守りを弱める変更）の当たりと理由 */
+function weakenReason({ spec: w, file, status, patch }) {
+  const del = status === "D";
+  // 行を読めない（patch 無し）ときは当てる（安全側）
+  const rows = (pick) => del || !patch || pick(patch).length > 0;
+  const cases = [
+    [del && anyMatch(w.deleted, file), "削除"],
+    [
+      status !== "A" && anyMatch(w.changedScripts, file),
+      "既存の .mjs・.cjs・.sh の verify の変更",
+    ],
+    [
+      !del &&
+        anyMatch(w.addedRows, file) &&
+        (!patch || patch.added.length > 0),
+      "allowlist に行を足す",
+    ],
+    [
+      anyMatch(w.registryRows, file) && rows(changedRows),
+      "台帳の既存の行の変更・削除",
+    ],
+    [
+      status !== "A" &&
+        anyMatch(w.removedRows, file) &&
+        rows((p) => p.removed),
+      "行の削除・書き換え",
+    ],
+  ];
+  const found = cases.find(([ok]) => ok);
+  return found ? `${w.reason}（${found[1]}）` : null;
+}
+
+/** 1つの kind が1ファイルに当たる理由（当たらなければ null） */
+function humanReason(kind, ctx) {
+  const { spec, file, hits } = ctx;
+  if (anyMatch(spec.paths, file, "i")) return spec.reason;
+  if (spec.fromRule) {
+    const h = hits.find((x) => x.rule === spec.fromRule && x.file === file);
+    return h ? `${spec.reason}（${h.reason}）` : null;
+  }
+  if (spec.writerFiles) return writerReason(ctx);
+  return kind === "weaken" ? weakenReason(ctx) : null;
+}
+
+/** 1ファイルが当たる human の kind と理由（heavy の hits のファイルだけに使う） */
+function humanKinds({ human, file, status, patch, hits, readBlob }) {
+  const found = [];
+  for (const [kind, spec] of Object.entries(human)) {
+    const ctx = { spec, file, status, patch, hits, readBlob };
+    const reason = humanReason(kind, ctx);
+    if (reason) found.push({ kind, file, reason });
+  }
+  return found;
+}
+
+/**
+ * heavy の hits について、人にしか判断できない理由（human）と機械の確かめ（needs）を出す。lane の判定には使わない。
+ * hits のファイルで、どちらにも入らない物は unclassified として human に入れる（黙って抜けないように）
+ */
+function explain({ hits, changes, patches, rules, human, readBlob }) {
+  const status = new Map(changes.map((c) => [c.path, c.status]));
+  const files = [...new Set(hits.map((h) => h.file))];
+  const humans = [];
+  const needs = [];
+  for (const file of files) {
+    const mine = humanKinds({
+      human,
+      file,
+      status: status.get(file),
+      patch: patches.get(file),
+      hits,
+      readBlob,
+    });
+    const own = [];
+    for (const h of hits.filter((x) => x.file === file)) {
+      const rule = rules.find((r) => r.id === h.rule);
+      if (!rule?.needs) continue;
+      if ((rule.needsUnlessHuman ?? []).some((k) => mine.some((m) => m.kind === k)))
+        continue;
+      const kinds =
+        typeof rule.needs === "string"
+          ? [rule.needs]
+          : Object.keys(rule.needs).filter((k) =>
+              anyMatch(rule.needs[k], file),
+            );
+      for (const kind of kinds)
+        if (!own.some((n) => n.kind === kind))
+          own.push({ kind, file, rule: h.rule });
+    }
+    humans.push(...mine);
+    needs.push(...own);
+    if (mine.length === 0 && own.length === 0)
+      humans.push({
+        kind: "unclassified",
+        file,
+        reason: hits
+          .filter((x) => x.file === file)
+          .map((x) => `${x.rule}: ${x.reason}`)
+          .join(" / "),
+      });
+  }
+  const order = (x, y) =>
+    x.file.localeCompare(y.file) || x.kind.localeCompare(y.kind);
+  return { human: humans.sort(order), needs: needs.sort(order) };
+}
 
 const count = (lines, word) =>
   lines.reduce((n, line) => n + line.split(word).length - 1, 0);
@@ -169,13 +317,17 @@ function reachedFiles(entryPatterns, trees, changedSet) {
  *   trees?: { files: string[], io: import("../lib/relativeImportGraph.js").GraphIo }[],
  *   rules?: object[],
  * }} input
- * @returns {{ lane: "light"|"heavy", hits: { rule: string, file: string, reason: string }[] }}
+ * @returns {{ lane: "light"|"heavy", hits: { rule: string, file: string, reason: string }[],
+ *   human: { kind: string, file: string, reason: string }[], needs: { kind: string, file: string, rule: string }[] }}
  */
 export function classify({
   changes,
   patches = new Map(),
   trees = [],
   rules = loadRules(),
+  moved = new Set(),
+  human = loadHuman(),
+  readBlob = () => null,
 }) {
   const changedSet = new Set(changes.map((c) => c.path));
   const hits = [];
@@ -188,6 +340,8 @@ export function classify({
       const added = status === "A";
       if (anyMatch(rule.except, path)) continue;
       if (added && anyMatch(rule.exceptAdded, path)) continue;
+      // 移すだけ（moveOnlyPaths）と分かったデータ層のファイルは、H3（数字の定義）と H9（語が新しく入る）を外す
+      if (rule.exceptMoveOnly && moved.has(path)) continue;
       const p = (rule.paths ?? []).find((re) => new RegExp(re).test(path));
       if (p) hit(rule, path, `パス ${p}`);
       const a =
@@ -242,7 +396,12 @@ export function classify({
   }
   const order = (h) => Number(h.rule.slice(1));
   hits.sort((x, y) => order(x) - order(y) || x.file.localeCompare(y.file));
-  return { lane: hits.length > 0 ? "heavy" : "light", hits };
+  const lane = hits.length > 0 ? "heavy" : "light";
+  const why =
+    lane === "light"
+      ? { human: [], needs: [] }
+      : explain({ hits, changes, patches, rules, human, readBlob });
+  return { lane, hits, ...why };
 }
 
 // ---- git から読む部分 ----
@@ -457,9 +616,11 @@ function classifyCommitsInner(repo, base, head) {
   const rules = loadRules(SELF_ROOT, (p) =>
     git(repo, ["show", `${mb}:${p}`], { encoding: "utf8" }),
   );
-  // 行を見る必要があるファイルだけ patch を取る（H5 の行の追加だけ・H7 の全体のセレクタ・H9 の語）
+  const human = loadHuman();
+  // 行を見る必要があるファイルだけ patch を取る（H5 の行の追加だけ・H7 の全体のセレクタ・H9 の語・human の weaken の行）
   const needLines = changes
     .filter(({ status, path: p }) =>
+      anyMatch(weakenRowPatterns(human), p) ||
       rules.some(
         (r) =>
           anyMatch(r.rowsOnlyAdded, p) ||
@@ -476,7 +637,25 @@ function classifyCommitsInner(repo, base, head) {
       : new Map();
   const needTrees = rules.some((r) => r.reachFrom);
   const trees = needTrees ? [gitTree(repo, mb), gitTree(repo, headSha)] : [];
-  const result = classify({ changes, patches, trees, rules });
+  const readText = (side, p) => {
+    try {
+      return git(repo, ["show", `${side === "base" ? mb : headSha}:${p}`], {
+        encoding: "utf8",
+      });
+    } catch {
+      return null; // 読めなければ移すだけと見なさない（安全側）
+    }
+  };
+  const moved = moveOnlyPaths(loadMoveOnly(), changes, readText);
+  const result = classify({
+    changes,
+    patches,
+    trees,
+    rules,
+    moved,
+    human,
+    readBlob: readText,
+  });
   remaining(); // 辿り終えた時点で上限を超えていたら判定に使わない
   // light なのに hits がある出力は出さない（hq は矛盾として heavy に扱う。classify は hits の有無で lane を決めるので起きない）
   if ((result.lane === "light") !== (result.hits.length === 0))
@@ -504,7 +683,17 @@ function main() {
       String(error?.message ?? error).trim();
     console.error(`pr-lane: 判定できない（重い道として扱う）: ${message}`);
     console.log(
-      JSON.stringify({ lane: "heavy", hits: [], error: message }, null, 2),
+      JSON.stringify(
+        {
+          lane: "heavy",
+          hits: [],
+          error: message,
+          human: [{ kind: "error", file: "", reason: message }],
+          needs: [],
+        },
+        null,
+        2,
+      ),
     );
     process.exitCode = 1;
   }

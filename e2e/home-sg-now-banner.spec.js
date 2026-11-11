@@ -1,5 +1,9 @@
 import { test, expect } from "./fixtures.js";
-import { rewriteTodayRaces } from "./today-races-rewrite.js";
+import {
+  ensureOpenVenues,
+  rewriteTodayRaces,
+  setJstNoon,
+} from "./today-races-rewrite.js";
 
 /**
  * トップの「SG開催中」帯（集客レーン、2026-10-02）の固定。
@@ -17,8 +21,9 @@ test("SGの会場がある日は、トップに開催中の帯を出し、会場
   page,
 }) => {
   let venueCode = null;
+  await setJstNoon(page);
   await rewriteTodayRaces(page, (venues) => {
-    const first = venues.find((v) => (v.races ?? []).length > 0);
+    const first = ensureOpenVenues(venues, 1)[0];
     venueCode = first.place_cd ?? first.placeCd;
     for (const r of first.races) {
       r.raceGrade = "SG";
@@ -35,7 +40,9 @@ test("SGの会場がある日は、トップに開催中の帯を出し、会場
 });
 
 test("SGの会場が無い日は帯を出さない", async ({ page }) => {
+  await setJstNoon(page);
   await rewriteTodayRaces(page, (venues) => {
+    ensureOpenVenues(venues, 1);
     for (const v of venues)
       for (const r of v.races ?? []) {
         if (r.raceGrade === "SG") r.raceGrade = "ippan";

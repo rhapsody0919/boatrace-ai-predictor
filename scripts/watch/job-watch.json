@@ -12,6 +12,10 @@
       "reason": "鍵は使わないが、master への push の失敗を知らせる。Codex の PR の自動マージの後の検査（docs/design/codex-direct-pr/design.md §5.4）。rerun はしない"
     },
     {
+      "path": ".github/workflows/e2e-nightly.yml",
+      "reason": "鍵は使わないが、毎晩の全件と網羅の表（PR の選別に使う spec→src の表）の失敗を知らせる（docs/design/ci-minutes-reduction/design.md 12章）。rerun はしない。scan は、成功の最新が7日より古いことも job-watch-failure に書く"
+    },
+    {
       "path": ".github/workflows/sns-makers.yml",
       "reason": "鍵は使わないが、master への push で SNS の作り手（Remotion の束と描画）が壊れたことを知らせる（ADR-0105）。rerun はしない"
     }
@@ -27,6 +31,7 @@
     ".github/workflows/content-ops-nightly-check.yml",
     ".github/workflows/db-apply.yml",
     ".github/workflows/e2e-live.yml",
+    ".github/workflows/e2e-nightly.yml",
     ".github/workflows/e2e-rerecord.yml",
     ".github/workflows/exhibition-gap-monitor.yml",
     ".github/workflows/generate-moriarty.yml",

@@ -277,9 +277,11 @@ async function recordThrough(request, fetchResponse) {
 
   const response = await fetchResponse();
   const body = await response.body();
-  // 本番DBの一時的な失敗（statement timeout の500等）は録画に固定しない。
+  // 本番DBの一時的な失敗（statement timeout の500等）と、関門・認証の拒否（401・403。合言葉の
+  // 付け忘れ・鍵の入れ替え中、BOA-1436）は録画に固定しない。
   // このテストにはそのまま返し、次に同じリクエストが来たら取り直す
-  if (response.status() >= 500) {
+  const status = response.status();
+  if (status >= 500 || status === 401 || status === 403) {
     return toResponse(response.status(), response.headersArray(), body);
   }
   const mimeType = response.headers()["content-type"] ?? "";
@@ -317,6 +319,17 @@ async function recordThrough(request, fetchResponse) {
 }
 
 /**
+ * route.fetch の options に、本番の /api/ の合言葉（BOA-1110）を足す（live・record、BOA-1436）。
+ * 付けない要求（/rest/v1・本番以外の host・replay）は options をそのまま返す。route.fetch の headers は
+ * 元のヘッダを丸ごと差し替え、request.headers() は cookie 等を返さないため、付けない要求のヘッダは触らない
+ */
+function keyedFetchOptions(request, url, options = {}) {
+  const base = { ...request.headers(), ...options.headers };
+  const headers = liveApiHeaders(url, base, { mode: E2E_MODE });
+  return headers === base ? options : { ...options, headers };
+}
+
+/**
  * spec の page.route で「実応答を取ってから加工する」ときに route.fetch() の代わりに使う。
  *
  * route.fetch() はブラウザの通信経路を通らずに直接ネットワークへ出るため、
@@ -334,16 +347,9 @@ export async function fetchRecorded(route, options = {}) {
   const request = route.request();
   // options.url で取り先を差し替えられる（route.fetch({ url }) と同じ）
   const url = options.url ?? request.url();
-  // live は /api/ の関門（BOA-1110）の合言葉を付ける（record・replay は変えない）
-  if (E2E_MODE === "live") {
-    options = {
-      ...options,
-      headers: liveApiHeaders(
-        url,
-        { ...request.headers(), ...options.headers },
-        { mode: E2E_MODE },
-      ),
-    };
+  // live・record は本番の /api/ の関門（BOA-1110）の合言葉を付ける（replay は変えない、BOA-1436）
+  if (E2E_MODE === "live" || E2E_MODE === "record") {
+    options = keyedFetchOptions(request, url, options);
   }
   if (E2E_MODE === "live") return fromApiResponse(await route.fetch(options));
   if (E2E_MODE === "record") {
@@ -466,7 +472,10 @@ export async function applyRecording(context, testInfo) {
       const request = route.request();
       let response;
       try {
-        response = await recordThrough(request, () => route.fetch());
+        // 本番の /api/ へ出るので合言葉を付ける（BOA-1436。/rest/v1 等はヘッダを変えない）
+        response = await recordThrough(request, () =>
+          route.fetch(keyedFetchOptions(request, request.url())),
+        );
       } catch (error) {
         // 本番側の失敗（切断・タイムアウト）は録画せず、ブラウザにも失敗として返す。
         // テスト終了で context が閉じた場合も同じ経路に来る
@@ -585,6 +594,113 @@ async function waitForInflight(context, testInfo) {
   }
 }
 
+/**
+ * E2E_COVERAGE=1（毎晩の全件、.github/workflows/e2e-nightly.yml）のときだけ、test ごとに「動いた src のファイル」を
+ * test-results/.e2e-coverage/<pid>.jsonl に1行足す（docs/design/ci-minutes-reduction/design.md 12章）。
+ * 束は E2E_SOURCEMAP=1 の build:e2e で作る（dist/assets/*.js.map が要る）。無いときは tests ごと落とさず、
+ * 何が足りないかを書いて投げる（黙って空の表にしない）。数え方は scripts/lib/e2eCoverageMap.js
+ */
+const E2E_COVERAGE = process.env.E2E_COVERAGE === "1";
+export const COVERAGE_DIR = path.join(
+  repoRoot,
+  "test-results",
+  ".e2e-coverage",
+);
+const E2E_DIR = path.join(repoRoot, "e2e");
+
+// 束の source map はワーカーの中でファイルごとに1回だけ読む
+const traceMaps = new Map();
+async function traceMapFor(bundleFile) {
+  if (!traceMaps.has(bundleFile)) {
+    traceMaps.set(
+      bundleFile,
+      (async () => {
+        const { TraceMap } = await import("@jridgewell/trace-mapping");
+        let text;
+        try {
+          text = readFileSync(`${bundleFile}.map`, "utf8");
+        } catch (error) {
+          throw new Error(
+            `${bundleFile}.map を読めません（E2E_SOURCEMAP=1 で npm run build:e2e したか）: ${error.message}`,
+          );
+        }
+        return new TraceMap(text);
+      })(),
+    );
+  }
+  return traceMaps.get(bundleFile);
+}
+
+async function sourcesOfCoverage(entries) {
+  const { coveredSources } = await import("../scripts/lib/e2eCoverageMap.js");
+  const files = new Set();
+  for (const entry of entries) {
+    let pathname;
+    try {
+      pathname = new URL(entry.url).pathname;
+    } catch {
+      continue;
+    }
+    if (!/^\/assets\/.+\.js$/.test(pathname)) continue;
+    const bundleFile = path.join(repoRoot, "dist", pathname);
+    const source = entry.source ?? readFileSync(bundleFile, "utf8");
+    for (const f of coveredSources(
+      entry,
+      source,
+      await traceMapFor(bundleFile),
+    ))
+      files.add(f);
+  }
+  return files;
+}
+
+/**
+ * fixture の page と、test の中で context に増えた page（window.open 等）の JS coverage を取る。
+ * 増えた page は "page" の出来事で始めるので、最初の遷移に間に合わないことがある（その分は取れない。
+ * 取れない spec は、表の組み立てで「常に流す」側に入る）。閉じた page は止められず、その分も取れない
+ */
+async function provideWithCoverage(page, provide, testInfo) {
+  const options = { resetOnNavigation: false };
+  await page.coverage.startJSCoverage(options);
+  const started = [Promise.resolve(page)];
+  const onPage = (extra) => {
+    started.push(
+      extra.coverage.startJSCoverage(options).then(
+        () => extra,
+        () => null,
+      ),
+    );
+  };
+  page.context().on("page", onPage);
+  try {
+    await provide(page);
+  } finally {
+    page.context().off("page", onPage);
+    const entries = [];
+    for (const p of await Promise.all(started)) {
+      if (!p) continue;
+      try {
+        entries.push(...(await p.coverage.stopJSCoverage()));
+      } catch (error) {
+        console.warn(
+          `[e2e coverage] 止められない page があります: ${error.message}`,
+        );
+      }
+    }
+    const files = await sourcesOfCoverage(entries);
+    mkdirSync(COVERAGE_DIR, { recursive: true });
+    appendFileSync(
+      path.join(COVERAGE_DIR, `${process.pid}.jsonl`),
+      `${JSON.stringify({
+        spec: path.relative(E2E_DIR, testInfo.file).split(path.sep).join("/"),
+        project: testInfo.project.name,
+        title: testInfo.titlePath.slice(1).join(" › "),
+        files: [...files].sort(),
+      })}\n`,
+    );
+  }
+}
+
 /** Cookie 同意の保存先（src/utils/analytics.js の CONSENT_KEY と同じ） */
 export const COOKIE_CONSENT_KEY = "boatai:cookie-consent";
 
@@ -632,9 +748,13 @@ export const test = base.extend({
     await waitForInflight(context, testInfo);
   },
   // context の "page" でも包むが、fixture の page は念のためここでも包む（二重には包まない）
-  page: async ({ page }, provide) => {
+  page: async ({ page }, provide, testInfo) => {
     guardRoutes(page);
-    await provide(page);
+    if (!E2E_COVERAGE) {
+      await provide(page);
+      return;
+    }
+    await provideWithCoverage(page, provide, testInfo);
   },
 });
 

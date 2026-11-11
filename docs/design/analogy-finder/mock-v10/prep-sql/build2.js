@@ -292,7 +292,7 @@ const result = {
   top3: R.rank.slice(0, 3).join("-"),
   finish_order_by_rank: R.rank,
   technique: R.winning_technique,
-  by_boat: R.st.map(([b, st, f, l, mark, code, ec]) => ({
+  by_boat: R.st.map(([b, st, f, l, , code]) => ({
     boat: b,
     finish: code,
     start_timing: st,

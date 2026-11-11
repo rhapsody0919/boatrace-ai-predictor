@@ -1,5 +1,10 @@
 import { test, expect } from "./fixtures.js";
-import { rewriteTodayRaces, venueCodeOf } from "./today-races-rewrite.js";
+import {
+  ensureOpenVenues,
+  rewriteTodayRaces,
+  setJstNoon,
+  venueCodeOf,
+} from "./today-races-rewrite.js";
 
 /**
  * トップの会場カードの「N日目」の札（BOA-1199、モック A案 docs/design/top-venue-series-day/APPROVED.md）。
@@ -11,38 +16,36 @@ import { rewriteTodayRaces, venueCodeOf } from "./today-races-rewrite.js";
 
 test.describe.configure({ timeout: 180_000 });
 
-const cardOf = (page, code, prefix = "") =>
-  page.locator(`a.venue-grid-card--open[href="${prefix}/venue/${code}"]`);
+// 録画に開催中の会場が足りる時刻では足す分岐が通らないので、空配列で直接確かめる
+test("ensureOpenVenues は、開催中の会場が足りないとき（深夜の空配列）に n 会場を作って足す", () => {
+  const venues = [];
+  const open = ensureOpenVenues(venues, 3);
+  expect(open).toHaveLength(3);
+  expect(venues).toHaveLength(3);
+  expect(new Set(venues.map(venueCodeOf)).size).toBe(3);
+  for (const v of venues) expect(v.races).toHaveLength(1);
+  // 足りているときは足さない
+  expect(ensureOpenVenues(venues, 2)).toHaveLength(3);
+  expect(venues).toHaveLength(3);
+});
 
-// 録画（または E2E_LIVE の本番）に開催中の会場が n 未満なら、足りない分を作って足す。
-// 開催の少ない日でもテストが黙って緩まない・タイムアウトで落ちないようにする
-function ensureOpenVenues(venues, n) {
-  const open = venues.filter((v) => (v.races ?? []).length > 0);
-  const used = new Set(venues.map(venueCodeOf));
-  for (let code = 1; open.length < n && code <= 24; code++) {
-    if (used.has(code)) continue;
-    const venue = {
-      place_cd: code,
-      races: [{ raceNo: 12, startTime: "23:59", placeCd: code, date: null }],
-    };
-    venues.push(venue);
-    open.push(venue);
-  }
-  return open;
-}
+const cardOf =(page, code, prefix = "") =>
+  page.locator(`a.venue-grid-card--open[href="${prefix}/venue/${code}"]`);
 
 // 最初に races のある会場を書き換え、その会場コードを返す
 function rewriteFirstVenue(page, edit) {
   const picked = { code: null };
-  const ready = rewriteTodayRaces(page, (venues) => {
-    const venue = ensureOpenVenues(venues, 1)[0];
-    picked.code = venueCodeOf(venue);
-    venue.races.forEach((r, i) => {
-      r.cancellationStatus = null;
-      r.raceStage = null;
-      edit(r, i, venue.races.length);
-    });
-  });
+  const ready = setJstNoon(page).then(() =>
+    rewriteTodayRaces(page, (venues) => {
+      const venue = ensureOpenVenues(venues, 1)[0];
+      picked.code = venueCodeOf(venue);
+      venue.races.forEach((r, i) => {
+        r.cancellationStatus = null;
+        r.raceStage = null;
+        edit(r, i, venue.races.length);
+      });
+    }),
+  );
   return { picked, ready };
 }
 
@@ -106,6 +109,7 @@ test("全レース終了の会場・丸一日中止の会場・次開催の会�
   page,
 }) => {
   const codes = { finished: null, cancelled: null };
+  await setJstNoon(page);
   await rewriteTodayRaces(page, (venues) => {
     const open = ensureOpenVenues(venues, 3);
     for (const v of open)

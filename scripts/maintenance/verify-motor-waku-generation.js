@@ -32,6 +32,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -43,12 +44,8 @@ const check = (label, ok) => {
   if (!ok) failures.push(label);
 };
 
-const src = read("src/services/supabaseDataService.js");
-const methodBody = (name) => {
-  const begin = src.indexOf(`  ${name}(venueCode`);
-  const end = src.indexOf("\n  },\n", begin);
-  return begin >= 0 && end > begin ? src.slice(begin, end) : "";
-};
+const src = readDataLayerSource();
+const methodBody = (name) => dataLayerMethod(name);
 
 check(
   "日数の窓の定数 MOTOR_WAKU_STATS_WINDOW_DAYS が残っていない",

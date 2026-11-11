@@ -1,4 +1,5 @@
 // prep8（＋あれば prep8b）から D.scn を作る
+/* global __dirname */
 const fs = require('fs');
 const P = require('../prep/prep8.json');
 const B = fs.existsSync(__dirname + '/../prep/prep8b.json') ? require('../prep/prep8b.json') : null;

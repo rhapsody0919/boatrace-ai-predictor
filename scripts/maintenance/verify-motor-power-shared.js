@@ -18,20 +18,18 @@ import {
   computeVenueMotorPowerIndexes,
   motorWindowFrom,
 } from "../../src/utils/motorPowerIndex.js";
+import { dataLayerImportNames, dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
 
 // 1. サービス層
-const service = readFileSync(
-  new URL("../../src/services/supabaseDataService.js", import.meta.url),
-  "utf8",
-);
-assert.match(
-  service,
-  /import \{\s*computeMotorPowerIndex,\s*motorWindowFrom,\s*\} from "\.\.\/utils\/motorPowerIndex\.js";/,
-);
-const method = service.slice(
-  service.indexOf("  getMotorPowerIndex("),
-  service.indexOf("  getMotorUsageHistory("),
-);
+const service = readDataLayerSource();
+assert.deepEqual(dataLayerImportNames("../utils/motorPowerIndex.js", service), [
+  "computeMotorPowerIndex",
+  "motorWindowFrom",
+]);
+// 殻のメソッドの形では、旧と同じく次のメソッド getMotorUsageHistory の頭まで
+const method = dataLayerMethod("getMotorPowerIndex", {
+  until: "  getMotorUsageHistory(",
+});
 assert.match(
   method,
   /const index = computeMotorPowerIndex\(entries, resultByRaceId\);\s*return index \? \{ \.\.\.windowed, \.\.\.index \} : windowed;/,

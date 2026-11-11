@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // BOA-1021: 集計対象・不成立の判定とサービスからの切り出しを固定する。
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import {
   isUsableRaceResult,
   isNoRaceResult,
 } from "../../src/utils/raceResultUsable.js";
+import { dataLayerImportNames, readDataLayerSource } from "./dataLayerSource.js";
 
 const cases = [
   [null, false, false],
@@ -20,13 +20,10 @@ for (const [result, usable, noRace] of cases) {
   assert.equal(isNoRaceResult(result), noRace, `noRace: ${label}`);
 }
 
-const service = readFileSync(
-  new URL("../../src/services/supabaseDataService.js", import.meta.url),
-  "utf8",
-);
+const service = readDataLayerSource();
 assert.doesNotMatch(service, /function\s+(?:isUsableRaceResult|isNoRaceResult)\s*\(/);
-assert.match(
-  service,
-  /import\s*\{\s*isUsableRaceResult,\s*isNoRaceResult,?\s*\}\s*from\s*["']\.\.\/utils\/raceResultUsable\.js["']/,
-);
+assert.deepEqual(dataLayerImportNames("../utils/raceResultUsable.js", service), [
+  "isNoRaceResult",
+  "isUsableRaceResult",
+]);
 console.log("✅ raceResultUsable: 5入力・サービスのimportを確認");

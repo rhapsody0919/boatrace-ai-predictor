@@ -29,6 +29,7 @@ on:
       - Content Ops Nightly Check
       - DB Apply (production)
       - E2E Live (本番データ)
+      - E2E Nightly (全件と網羅の表)
       - E2E Re-record (録画の自動撮り直し)
       - Exhibition Gap Monitor
       - Generate Moriarty Recommendations

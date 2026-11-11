@@ -6,13 +6,16 @@
  *       T5（max-lines・complexity は差分のファイルだけ、no-cycle は CI の madge、jscpd も差分だけ、試験の差分の警告）
  *
  * 差分: --base（既定 origin/master）と HEAD の merge-base から、作業ツリーまで（コミット前の変更と未追跡のファイルを含む）。
+ *       master への push（GITHUB_EVENT_NAME=push）は HEAD^1 から。
+ * --ci の大きさ（max-lines・complexity）は eslint でなく lintTrees.js の判定（関数の単位の AST hash を base と比べる）。
  *
  * 失敗にするもの:
  *   - 差分の JS（.js・.jsx・.mjs・.cjs）の eslint のエラー（eslint.config.js の設定のまま）
  *   - 新しいファイルが max-lines・complexity の線を越える
  *   - 既にあるファイルが、この差分で max-lines の線を越えた（base で線の内だった）
  *   - --ci: src・scripts・api に循環の import がある（madge。2026-11-07 時点で0件なので、全体で0件を保つ）
- *   - --ci: 新しいファイルが、ほかのコードと15行以上重なる（jscpd）
+ *   - --ci: 新しいファイルが、ほかのコードと15行以上重なる（jscpd）。split-data-layer.mjs の出力そのままの PR で、
+ *     差分の側が全部移しただけのファイルの重なりは警告（base の殻の字そのまま。lintDuplicates.js）
  * 警告だけ（失敗にしない）:
  *   - 既にあるファイルの complexity の越え・既に線を越えていたファイルの max-lines
  *   - --ci: 既にあるファイルの重なり
@@ -29,6 +32,15 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
+import {
+  classifyDuplicates,
+  loadMoveOnly,
+  movedFiles,
+  notMovedReason,
+  treeReader,
+} from "./lintDuplicates.js";
+import { runSizeGate } from "./lintTrees.js";
+import { runDepTreeGate } from "./lintDepTree.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -58,6 +70,8 @@ const lineCount = (text) =>
 
 const mergeBase = (() => {
   try {
+    // master への push は squash だけなので親が base（merge-base だと HEAD になり差分が空）
+    if (process.env.GITHUB_EVENT_NAME === "push") return git("rev-parse", "HEAD^1");
     return git("merge-base", baseRef, "HEAD");
   } catch (e) {
     console.error(
@@ -118,6 +132,7 @@ for (const r of results) {
       (m.severity === 2 ? errors : warnings).push(`eslint ${text}`);
       continue;
     }
+    if (ci) continue; // --ci の大きさは lintTrees.js の判定に任せる
     const crossed =
       m.ruleId === "max-lines" &&
       !info.added &&
@@ -163,6 +178,18 @@ const runToFile = (cmd, cmdArgs) => {
 };
 
 if (ci) {
+  // --- 大きさ（関数の単位の AST hash を base と比べる）
+  const size = runSizeGate({ cwd: ROOT, base: mergeBase, changed });
+  size.log.forEach((l) => console.log(l));
+  errors.push(...size.errors);
+  warnings.push(...size.warnings);
+
+  // --- 依存の向き（dependency-cruiser を base と HEAD に回して差分を見る）・src/utils の新しいファイル
+  const dep = runDepTreeGate({ cwd: ROOT, base: mergeBase, changed });
+  dep.log.forEach((l) => console.log(l));
+  errors.push(...dep.errors);
+  warnings.push(...dep.warnings);
+
   // --- 循環の import（madge）
   const madge = runToFile("npx", [
     "--yes",
@@ -215,15 +242,21 @@ if (ci) {
       errors.push(`jscpd の結果が無い（終了コード ${res.status}）`);
     } else {
       const { duplicates } = JSON.parse(fs.readFileSync(report, "utf8"));
-      for (const d of duplicates) {
-        const sides = [d.firstFile, d.secondFile];
-        const hit = sides.filter((s) => byFile.has(s.name));
-        if (hit.length === 0) continue;
-        const text = `重なり ${d.lines} 行: ${sides.map((s) => `${s.name}:${s.start}-${s.end}`).join(" と ")}`;
-        (hit.some((s) => byFile.get(s.name).added) ? errors : warnings).push(
-          text,
+      // split-data-layer.mjs の出力そのままの PR は、移したファイルの側の重なりを警告に下げる（lintDuplicates.js）
+      const moveOnly = loadMoveOnly(ROOT);
+      const readText = treeReader(ROOT, mergeBase);
+      const moved = movedFiles(moveOnly, changed, readText);
+      if (moved.size > 0)
+        console.log(
+          `jscpd: 移しただけのファイル ${moved.size} 本（prLaneMoveOnly.js）`,
         );
-      }
+      const why =
+        moved.size > 0 ? null : notMovedReason(moveOnly, changed, readText);
+      if (why)
+        console.log(`jscpd: 移しただけと見なさない（重なりは下げない）: ${why}`);
+      const dup = classifyDuplicates(duplicates, byFile, moved);
+      errors.push(...dup.errors);
+      warnings.push(...dup.warnings);
     }
   }
 }

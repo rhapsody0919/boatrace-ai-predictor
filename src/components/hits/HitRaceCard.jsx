@@ -74,7 +74,7 @@ function HitRaceCard({
           className="race-card-date"
           style={{
             fontSize: "0.85rem",
-            color: "#64748b",
+            color: "var(--text-secondary)",
             marginBottom: "0.5rem",
           }}
         >

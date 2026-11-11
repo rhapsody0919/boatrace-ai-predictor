@@ -10,9 +10,9 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1708 |
-| 読み書きのあるファイル | 272 |
-| 表の読み手（箇所） | 991 |
+| 読んだファイル | 1764 |
+| 読み書きのあるファイル | 296 |
+| 表の読み手（箇所） | 992 |
 | 表の書き手（箇所） | 189 |
 | RPC の呼び手（箇所） | 51 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 232 |
@@ -86,7 +86,7 @@
 | [racer_period_stats](#t-racer_period_stats) | table | anon 可 | 8 | 0 | data_health_racer_period_stats, data_health_table_rows |  |  |  |
 | [racer_profiles](#t-racer_profiles) | table | anon 可 | 16 | 3 | data_health_table_rows |  | racer_profiles |  |
 | [racer_series_points](#t-racer_series_points) | table | anon 可 | 5 | 1 | data_health_nightly_freshness, data_health_table_rows |  | point_rank |  |
-| [races](#t-races) | table | anon 可 | 159 | 20 | claim_scrape_slots, claim_scrape_slots_by_offset, compute_nige_second_by_course ほか24 |  | exhibition, kfile_sync, race_info ほか4 |  |
+| [races](#t-races) | table | anon 可 | 160 | 20 | claim_scrape_slots, claim_scrape_slots_by_offset, compute_nige_second_by_course ほか24 |  | exhibition, kfile_sync, race_info ほか4 |  |
 | [raw_snapshots](#t-raw_snapshots) | table | service だけ | 0 | 1 |  |  | fan_period |  |
 | [rule_applications](#t-rule_applications) | table | service だけ | 1 | 2 |  |  |  |  |
 | [scrape_job_state](#t-scrape_job_state) | table | service だけ | 13 | 14 |  | scrape_breaker_open | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか44 |  |
@@ -173,15 +173,15 @@
 | get_admin_rule_performance | service だけ |  | api/admin/rules/performance.js:41, scripts/maintenance/verify-admin-rule-performance.js:211 |  | predictions, race_results |  |  |
 | get_in_caution_band_rates | service だけ |  | scripts/daily/generate-unified-predictions.js:231, scripts/lib/inCautionHealth.js:107 |  | in_caution_gap_band_daily |  |  |
 | get_latest_racer_grades | service だけ |  | scripts/daily/update-racer-grade-cache.js:17 |  | race_entries |  |  |
-| get_predictions_by_date | anon 可 |  | api/predictions/[date].js:61, src/services/supabaseDataService.js:1558 / 名前の文字列: api/predictions/[date].js:57, scripts/maintenance/check-anon-access.js:103 |  | exhibition_data, prediction_odds, predictions, race_conditions, race_entries, race_payouts, race_results, races |  |  |
-| get_predictions_by_date_light | anon 可 |  | api/predictions/[date].js:61, scripts/maintenance/verify-predictions-response.js:156, src/services/supabaseDataService.js:1558 / 名前の文字列: api/predictions/[date].js:57, scripts/maintenance/check-anon-access.js:104, scripts/maintenance/check-anon-access.js:177 |  | exhibition_data, prediction_odds, predictions, race_conditions, race_entries, race_payouts, race_results, races |  |  |
-| get_race_exhibition_trend | anon 可 |  | scripts/lib/raceIndicatorData.js:47, src/services/supabaseDataService.js:5263 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:333, scripts/maintenance/check-anon-access.js:105 |  | exhibition_data, race_entries |  |  |
+| get_predictions_by_date | anon 可 |  | api/predictions/[date].js:61, src/services/predictionQueries2.js:202 / 名前の文字列: api/predictions/[date].js:57, scripts/maintenance/check-anon-access.js:103 |  | exhibition_data, prediction_odds, predictions, race_conditions, race_entries, race_payouts, race_results, races |  |  |
+| get_predictions_by_date_light | anon 可 |  | api/predictions/[date].js:61, scripts/maintenance/verify-predictions-response.js:156, src/services/predictionQueries2.js:202 / 名前の文字列: api/predictions/[date].js:57, scripts/maintenance/check-anon-access.js:104, scripts/maintenance/check-anon-access.js:177 |  | exhibition_data, prediction_odds, predictions, race_conditions, race_entries, race_payouts, race_results, races |  |  |
+| get_race_exhibition_trend | anon 可 |  | scripts/lib/raceIndicatorData.js:47, src/services/raceQueries2.js:22 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:333, scripts/maintenance/check-anon-access.js:105 |  | exhibition_data, race_entries |  |  |
 | get_race_history_summary | service だけ |  | なし |  | predictions, races |  |  |
-| get_race_return_rate | anon 可 |  | scripts/lib/raceIndicatorData.js:37, src/services/supabaseDataService.js:5931 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:358, scripts/maintenance/check-anon-access.js:106 |  | race_entries, race_results |  |  |
-| get_race_st_predictability | anon 可 |  | scripts/lib/raceIndicatorData.js:32, src/services/supabaseDataService.js:5038 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:324, scripts/maintenance/check-anon-access.js:107 |  | exhibition_data, race_entries, race_start_timings |  |  |
-| get_race_technique_profile | anon 可 |  | scripts/lib/raceIndicatorData.js:42, src/services/supabaseDataService.js:6399 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:342, scripts/maintenance/check-anon-access.js:108 |  | race_entries, race_results |  |  |
-| get_racer_accident_records | anon 可 |  | src/services/supabaseDataService.js:7525 / 名前の文字列: scripts/maintenance/check-anon-access.js:112, sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:683 |  | race_conditions, race_entries, race_start_timings |  |  |
-| get_today_races | anon 可 |  | api/races/today.js:30, scripts/maintenance/verify-display-coverage.js:175, src/services/supabaseDataService.js:1405 / 名前の文字列: scripts/maintenance/check-anon-access.js:113, scripts/maintenance/check-anon-access.js:176 |  | predictions, race_conditions, race_entries, race_results, races |  |  |
+| get_race_return_rate | anon 可 |  | scripts/lib/raceIndicatorData.js:37, src/services/raceQueries3.js:149 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:358, scripts/maintenance/check-anon-access.js:106 |  | race_entries, race_results |  |  |
+| get_race_st_predictability | anon 可 |  | scripts/lib/raceIndicatorData.js:32, src/services/raceQueries.js:232 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:324, scripts/maintenance/check-anon-access.js:107 |  | exhibition_data, race_entries, race_start_timings |  |  |
+| get_race_technique_profile | anon 可 |  | scripts/lib/raceIndicatorData.js:42, src/services/raceQueries3.js:282 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:342, scripts/maintenance/check-anon-access.js:108 |  | race_entries, race_results |  |  |
+| get_racer_accident_records | anon 可 |  | src/services/racerQueries4.js:129 / 名前の文字列: scripts/maintenance/check-anon-access.js:112, sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:683 |  | race_conditions, race_entries, race_start_timings |  |  |
+| get_today_races | anon 可 |  | api/races/today.js:30, scripts/maintenance/verify-display-coverage.js:175, src/services/scheduleQueries.js:52 / 名前の文字列: scripts/maintenance/check-anon-access.js:113, scripts/maintenance/check-anon-access.js:176 |  | predictions, race_conditions, race_entries, race_results, races |  |  |
 | guard_sns_diff_approval | service だけ |  | トリガー: sns_drafts | sns_diff_content | sns_x_send_jobs |  |  |
 | guard_sns_preview_bundle_draft | service だけ |  | トリガー: sns_drafts | sns_bundle_send_allowed | sns_bundle_imports, sns_drafts, sns_x_send_jobs |  |  |
 | guard_sns_x_approval | service だけ |  | トリガー: sns_drafts |  | sns_x_send_jobs | sns_x_send_jobs |  |
@@ -274,10 +274,10 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/ml/analogy/in_caution_bands.py:211`, `scripts/ml/analogy/in_caution_bands.py:230`, `scripts/ml/analogy/tests/test_in_caution_bands.py:342`
 - 読み手（5）: 
   - `api/accuracy/index.js:31` select(rest) [data, key]
-  - `src/services/supabaseDataService.js:1910` select [data, key]
-  - `src/services/supabaseDataService.js:5794` select [data, key]
-  - `src/services/supabaseDataService.js:5820` select [data, key]
-  - `src/services/supabaseDataService.js:5842` select [data, key]
+  - `src/services/predictionQueries3.js:347` select [data, key]
+  - `src/services/predictionQueries3.js:381` select [data, key]
+  - `src/services/predictionQueries4.js:22` select [data, key]
+  - `src/services/predictionQueries4.js:44` select [data, key]
 - 書き手（3）: 
   - `scripts/daily/calculate-accuracy.js:482` upsert [data, key, updated_at]
   - `scripts/daily/calculate-unified-model-accuracy.js:171` upsert [data, key, updated_at]
@@ -358,7 +358,7 @@
   - `src/services/moriartyService.js:68` select [model_id, race_id, recommendation]
   - `src/services/moriartyService.js:141` select [actual_hit, actual_payout, bet_fraction, expected_value, model_id, race_id, reasons, recommendation]
   - `src/services/moriartyService.js:268` select [actual_hit, expected_value, model_id, recommendation]
-  - `src/services/supabaseDataService.js:7704` select [expected_hit_rate, expected_payout, expected_value, model_id, race_id, reasons, recommendation]
+  - `src/services/predictionQueries4.js:62` select [expected_hit_rate, expected_payout, expected_value, model_id, race_id, reasons, recommendation]
 - 書き手（4）: 
   - `scripts/daily/generate-moriarty-recommendations.js:348` upsert [?]
   - `scripts/daily/generate-unified-trifecta-reference.js:202` delete
@@ -412,25 +412,25 @@
   - `scripts/ml/export-training-data.js:79` select(helper:fetchAll)
   - `scripts/sns/push-setsu-kiryoku-short.js:1101` rest(rest) [is_absent, race_id]
   - `scripts/sns/rank-data.js:514` select(helper:readAllIn)
+  - `src/services/meetQueries.js:257` select(helper:fetchAllByIn)
+  - `src/services/meetQueries2.js:197` select [boat_number, exhibition_time, race_id]
+  - `src/services/motorQueries.js:323` select(helper:fetchAllByIn)
+  - `src/services/motorQueries5.js:106` select(helper:fetchAllByIn)
+  - `src/services/motorQueries6.js:120` select [adjustment_weight, boat_number, exhibition_course, exhibition_time, is_absent, parts_changed, prev_entry_course, prev_finish_mark, prev_finish_rank, prev_race_no, prev_start_timing, propeller_change, race_id, tilt, today_weight, updated_at]
+  - `src/services/motorQueries6.js:136` select [adjustment_weight, boat_number, exhibition_time, parts_changed, propeller_change, race_id, tilt]
+  - `src/services/raceQueries.js:34` select [boat_number, race_id, start_flag]
+  - `src/services/raceQueries.js:251` select [boat_number, race_id, start_timing]
+  - `src/services/raceQueries.js:307` select(helper:fetchAllByIn)
+  - `src/services/raceQueries2.js:41` select [boat_number, exhibition_time, race_id]
+  - `src/services/raceQueries2.js:84` select(helper:fetchAllByIn)
+  - `src/services/raceQueries2.js:174` select [boat_number, exhibition_time, is_absent, race_id, start_flag, start_timing, tilt]
+  - `src/services/raceQueries3.js:90` select [boat_number, exhibition_time, race_id, start_flag, start_timing]
+  - `src/services/racerQueries2.js:207` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:294` select(helper:fetchAllByIn)
+  - `src/services/racerQueries3.js:119` select(helper:fetchAllByIn)
+  - `src/services/racerQueries3.js:194` select(helper:fetchAllByIn)
   - `src/services/racerService.js:148` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
   - `src/services/sherlockService.js:83` select [boat_number, exhibition_time, race_id, start_timing]
-  - `src/services/supabaseDataService.js:481` select [boat_number, race_id, start_flag]
-  - `src/services/supabaseDataService.js:789` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:3696` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4583` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4658` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4798` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:5057` select [boat_number, race_id, start_timing]
-  - `src/services/supabaseDataService.js:5113` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:5204` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:5282` select [boat_number, exhibition_time, race_id]
-  - `src/services/supabaseDataService.js:5325` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:5395` select [adjustment_weight, boat_number, exhibition_course, exhibition_time, is_absent, parts_changed, prev_entry_course, prev_finish_mark, prev_finish_rank, prev_race_no, prev_start_timing, propeller_change, race_id, tilt, today_weight, updated_at]
-  - `src/services/supabaseDataService.js:5411` select [adjustment_weight, boat_number, exhibition_time, parts_changed, propeller_change, race_id, tilt]
-  - `src/services/supabaseDataService.js:5473` select [boat_number, exhibition_time, is_absent, race_id, start_flag, start_timing, tilt]
-  - `src/services/supabaseDataService.js:5522` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:5872` select [boat_number, exhibition_time, race_id, start_flag, start_timing]
-  - `src/services/supabaseDataService.js:6801` select [boat_number, exhibition_time, race_id]
 - 書き手（3）: 
   - `scripts/daily/generate-predictions.js:1070` upsert(helper:upsertChangedRows) [?]
   - `scripts/daily/scrape-exhibition-data.js:265` upsert(helper:upsertChangedRows) [?]
@@ -442,7 +442,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（1）: 
-  - `src/services/supabaseDataService.js:7683` select [*, boat_number, venue_code]
+  - `src/services/venueQueries3.js:144` select [*, boat_number, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-exhibition-time-top-stats.js:137` delete
   - `scripts/daily/update-exhibition-time-top-stats.js:146` insert [?]
@@ -523,7 +523,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `scripts/maintenance/verify-full-picture-scene2.js:3533` rest(rest) （検査）
-  - `src/services/supabaseDataService.js:6540` select [*, boat_number, percentage, venue_code]
+  - `src/services/venueQueries2.js:279` select [*, boat_number, percentage, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-losing-technique-stats.js:152` delete
   - `scripts/daily/update-losing-technique-stats.js:162` insert [?]
@@ -564,7 +564,7 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-perrace/finish_targets.py:335`, `scripts/analysis/analogy-finder-perrace/race_level.py:396`, `scripts/analysis/analogy-finder-perrace/race_level.py:397`, `scripts/analysis/analogy-finder-perrace/race_level.py:398`, `scripts/analysis/analogy-finder-perrace/venue_magnitude.py:26`, `scripts/analysis/boa845-axis-place/effect.py:98`, `scripts/ml/analogy/make_treeshap_testdata.py:209`, `scripts/ml/analogy/make_treeshap_testdata.py:214`, `scripts/ml/analogy/perrace.py:53`, `scripts/ml/analogy/tests/test_perrace.py:75`, `scripts/ml/analogy/tests/test_perrace.py:76`, `scripts/ml/analogy/tests/test_perrace.py:77`, `scripts/ml/analogy/tests/test_perrace.py:85`, `scripts/ml/predict.py:26`, `scripts/ml/predict_mycroft.py:30`, `scripts/ml/predict_watson.py:26`, `scripts/ml/train_mycroft.py:37`, `scripts/ml/train_rf.py:28`, `scripts/ml/train_v2.py:29`, `scripts/ml/train_watson.py:42`, `scripts/ml/watson_scores.py:23`
 - 読み手（2）: 
   - `scripts/daily/calculate-accuracy.js:370` select [hit_rate_place, hit_rate_trifecta, hit_rate_trio, hit_rate_win, model_id, recovery_rate_place, recovery_rate_trifecta, recovery_rate_trio, recovery_rate_win, total_predictions]
-  - `src/services/supabaseDataService.js:1613` select [display_name, hit_rate_place, hit_rate_trifecta, hit_rate_trio, hit_rate_win, model_id, recovery_rate_place, recovery_rate_trifecta, recovery_rate_trio, recovery_rate_win, total_predictions]
+  - `src/services/predictionQueries3.js:50` select [display_name, hit_rate_place, hit_rate_trifecta, hit_rate_trio, hit_rate_win, model_id, recovery_rate_place, recovery_rate_trifecta, recovery_rate_trio, recovery_rate_win, total_predictions]
 - 書き手（1）: 
   - `scripts/daily/calculate-accuracy.js:536` update [hit_rate_place, hit_rate_trifecta, hit_rate_trio, hit_rate_win, last_evaluated_at, recovery_rate_place, recovery_rate_trifecta, recovery_rate_trio, recovery_rate_win, total_predictions, updated_at]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -575,7 +575,7 @@
 - 取得のジョブ: morning_digest
 - 読み手（2）: 
   - `scripts/maintenance/verify-morning-digest.js:40` select [digest_date, generated_at, notes, race_count, venue_count] （検査）
-  - `src/services/supabaseDataService.js:7979` select [*, digest_date]
+  - `src/services/scheduleQueries.js:267` select [*, digest_date]
 - 書き手（2）: 
   - `scripts/daily/generate-morning-digest.js:890` upsert [?]
   - `scripts/daily/generate-morning-digest.js:919` update [generated_at]
@@ -587,7 +587,7 @@
 - 取得のジョブ: morning_digest
 - 読み手（2）: 
   - `scripts/maintenance/verify-morning-digest.js:58` select [*, digest_date] （検査）
-  - `src/services/supabaseDataService.js:7984` select [*, digest_date, rank, section]
+  - `src/services/scheduleQueries.js:272` select [*, digest_date, rank, section]
 - 書き手（3）: 
   - `scripts/daily/generate-morning-digest.js:895` delete
   - `scripts/daily/generate-morning-digest.js:904` insert [?]
@@ -601,10 +601,10 @@
   - `scripts/lib/motorPretestJob.js:252` select [race_date, venue_code]
   - `scripts/lib/motorPretestJob.js:269` select [race_date, racer_id, venue_code]
   - `scripts/maintenance/verify-pretest-row-pick.js:74` select [pretest_rank, pretest_time, race_date, racer_id, series_title, venue_code] （検査）
-  - `src/services/supabaseDataService.js:3458` select [race_date, venue_code]
-  - `src/services/supabaseDataService.js:3478` select [motor_2rate, motor_number, pretest_time, race_date, racer_id, venue_code]
-  - `src/services/supabaseDataService.js:6777` select [motor_number, pretest_rank, pretest_time, race_date, racer_class, racer_id, venue_code]
-  - `src/services/supabaseDataService.js:8052` select [pretest_rank, pretest_time, race_date, racer_id, venue_code]
+  - `src/services/meetQueries2.js:173` select [motor_number, pretest_rank, pretest_time, race_date, racer_class, racer_id, venue_code]
+  - `src/services/motorQueries2.js:40` select [pretest_rank, pretest_time, race_date, racer_id, venue_code]
+  - `src/services/motorQueries4.js:161` select [race_date, venue_code]
+  - `src/services/motorQueries4.js:181` select [motor_2rate, motor_number, pretest_time, race_date, racer_id, venue_code]
 - 書き手（0）: なし
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: boat_number, boat_2rate, created_at, updated_at
 
@@ -623,7 +623,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（1）: 
-  - `src/services/supabaseDataService.js:7594` select [*, count_90days, first_boat, venue_code]
+  - `src/services/venueQueries3.js:55` select [*, count_90days, first_boat, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-nige-outcome-distribution.js:119` delete
   - `scripts/daily/update-nige-outcome-distribution.js:129` insert [?]
@@ -635,7 +635,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `scripts/daily/update-course-baseline-stats.js:168` select(helper:upsertChangedRows)
-  - `src/services/supabaseDataService.js:7560` select [exacta_rate, nige_races, second_count, second_course, second_rate, total_races, venue_code, window_days, window_end, window_start]
+  - `src/services/venueQueries3.js:21` select [exacta_rate, nige_races, second_count, second_course, second_rate, total_races, venue_code, window_days, window_end, window_start]
 - 書き手（1）: 
   - `scripts/daily/update-course-baseline-stats.js:168` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -650,8 +650,8 @@
   - `scripts/analysis/validate-outcome-distribution.js:143` select(helper:fetchAll)
   - `scripts/analysis/verify-outcome-distribution-coverage.js:26` select(helper:fetchAll)
   - `scripts/maintenance/verify-full-picture-scene2.js:2849` rest(rest) （検査）
-  - `src/services/supabaseDataService.js:2094` select [count_90days, first_boat]
-  - `src/services/supabaseDataService.js:2147` select [*, count_90days, first_boat, venue_code]
+  - `src/services/venueQueries.js:94` select [count_90days, first_boat]
+  - `src/services/venueQueries.js:147` select [*, count_90days, first_boat, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-outcome-distribution.js:114` delete
   - `scripts/daily/update-outcome-distribution.js:125` insert [?]
@@ -747,9 +747,9 @@
   - `scripts/maintenance/verify-admin-rule-performance.js:268` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick] （検査）
   - `scripts/maintenance/verify-full-picture-scene2.js:3001` rest(rest) （検査）
   - `src/services/adminRuleService.js:69` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
+  - `src/services/predictionQueries3.js:67` select [is_hit_place, is_hit_trifecta, is_hit_trio, is_hit_win, model_id, payout_place, payout_trifecta, payout_trio, payout_win, race_id]
+  - `src/services/raceQueries2.js:212` select [feature_contributions, model_id, predicted_at, race_id]
   - `src/services/ruleMatchService.js:104` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
-  - `src/services/supabaseDataService.js:1630` select [is_hit_place, is_hit_trifecta, is_hit_trio, is_hit_win, model_id, payout_place, payout_trifecta, payout_trio, payout_win, race_id]
-  - `src/services/supabaseDataService.js:5576` select [feature_contributions, model_id, predicted_at, race_id]
 - 書き手（10）: 
   - `scripts/daily/generate-predictions.js:1720` upsert [?]
   - `scripts/daily/generate-unified-predictions.js:508` upsert [?]
@@ -809,12 +809,12 @@
   - `scripts/verification/verify-series-points-needed.mjs:74` select [race_id, race_stage]
   - `scripts/verification/verify-series-points-official.mjs:158` select [is_final_day, race_id, race_stage]
   - `src/services/currentMeetEntries.js:44` select [is_final_day, race_id, series_day]
-  - `src/services/supabaseDataService.js:661` select [is_final_day, race_id, series_day]
-  - `src/services/supabaseDataService.js:3201` select [race_id, race_stage]
-  - `src/services/supabaseDataService.js:4593` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4804` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:6713` select [is_final_day, race_id, race_stage, race_title, series_day]
-  - `src/services/supabaseDataService.js:7260` select [is_final_day, race_id, race_stage, race_title, series_day]
+  - `src/services/meetQueries2.js:109` select [is_final_day, race_id, race_stage, race_title, series_day]
+  - `src/services/meetQueries3.js:55` select [is_final_day, race_id, race_stage, race_title, series_day]
+  - `src/services/motorQueries.js:205` select [is_final_day, race_id, series_day]
+  - `src/services/motorQueries3.js:278` select [race_id, race_stage]
+  - `src/services/racerQueries2.js:217` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:300` select(helper:fetchAllByIn)
 - 書き手（6）: 
   - `scripts/lib/raceConditionsWriter.js:44` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/backfill-race-conditions.js:185` upsert [?]
@@ -936,50 +936,50 @@
   - `scripts/verification/verify-series-points-needed.mjs:41` select [boat_number, player_name, race_id, racer_id]
   - `scripts/verification/verify-series-points-official.mjs:149` select [boat_number, player_name, race_id, racer_id]
   - `src/services/currentMeetEntries.js:26` select [boat_number, motor_number, race_id, racer_id]
+  - `src/services/meetQueries.js:37` select [boat_number, f_count, race_id, racer_id]
+  - `src/services/meetQueries.js:49` select [boat_number, race_id, racer_id]
+  - `src/services/meetQueries.js:125` select [boat_number, race_id, racer_id]
+  - `src/services/meetQueries.js:136` select [boat_number, race_id, racer_id]
+  - `src/services/meetQueries.js:240` select [boat_number, motor_number, race_id, racer_id]
+  - `src/services/meetQueries2.js:99` select [boat_number, motor_number, player_name, race_id, racer_id]
+  - `src/services/meetQueries3.js:72` select [boat_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries.js:234` select [motor_2rate, race_id]
+  - `src/services/motorQueries.js:310` select [boat_number, motor_2rate, motor_3rate, motor_number, race_id]
+  - `src/services/motorQueries2.js:106` select [boat_number, global_2rate, motor_number, race_id]
+  - `src/services/motorQueries2.js:297` select [boat_number, grade, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries3.js:173` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries3.js:296` select [boat_number, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries4.js:186` select [motor_2rate, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries5.js:87` select [boat_number, motor_number, race_id]
+  - `src/services/motorQueries5.js:243` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/mycroftService.js:82` select [boat_number, player_name, race_id]
+  - `src/services/raceQueries.js:143` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]
+  - `src/services/raceQueries.js:166` select [boat_number, local_win_rate, player_name, race_id, racer_id, win_rate]
+  - `src/services/raceQueries.js:189` select [race_id, racer_id, win_rate]
+  - `src/services/raceQueries.js:241` select [boat_number, player_name, race_id, racer_id]
+  - `src/services/raceQueries.js:279` select [boat_number, race_id, racer_id]
+  - `src/services/raceQueries2.js:31` select [boat_number, player_name, race_id, racer_id]
+  - `src/services/raceQueries2.js:65` select [boat_number, race_id, racer_id]
+  - `src/services/raceQueries2.js:144` select [boat_number, race_id, weight_kg]
+  - `src/services/raceQueries2.js:250` select [boat_number, race_id, racer_id]
+  - `src/services/raceQueries3.js:83` select [age, boat_number, global_2rate, grade, local_win_rate, motor_2rate, motor_number, player_name, race_id, win_rate]
+  - `src/services/raceQueries3.js:157` select [boat_number, player_name, race_id, racer_id]
+  - `src/services/raceQueries3.js:187` select [boat_number, race_id, racer_id]
+  - `src/services/raceQueries3.js:291` select [boat_number, player_name, race_id, racer_id]
+  - `src/services/raceQueries3.js:316` select [boat_number, race_id, racer_id]
+  - `src/services/racerQueries.js:18` select [?, race_id, racer_id]
+  - `src/services/racerQueries.js:46` select [local_win_rate, race_id, racer_id, win_rate]
+  - `src/services/racerQueries.js:82` select [local_win_rate, race_id, racer_id, win_rate]
+  - `src/services/racerQueries.js:102` select [race_id, racer_id, win_rate]
+  - `src/services/racerQueries.js:139` select [boat_number, race_id, racer_id]
+  - `src/services/racerQueries3.js:27` select [boat_number, race_id, racer_id]
+  - `src/services/racerQueries3.js:99` select [boat_number, race_id, racer_id]
+  - `src/services/racerQueries3.js:182` select [boat_number, race_id, racer_id]
+  - `src/services/racerQueries3.js:263` select(helper:fetchAllByIn)
+  - `src/services/racerQueries3.js:295` select [race_id, racer_id, win_rate]
   - `src/services/racerService.js:31` select [grade, race_id, racer_id]
   - `src/services/racerService.js:112` select [motor_number, race_id, racer_id]
   - `src/services/sherlockService.js:77` select [boat_2rate, boat_number, grade, local_win_rate, motor_2rate, player_name, race_id, win_rate]
-  - `src/services/supabaseDataService.js:527` select [?, race_id, racer_id]
-  - `src/services/supabaseDataService.js:690` select [motor_2rate, race_id]
-  - `src/services/supabaseDataService.js:776` select [boat_number, motor_2rate, motor_3rate, motor_number, race_id]
-  - `src/services/supabaseDataService.js:2370` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]
-  - `src/services/supabaseDataService.js:2406` select [boat_number, f_count, race_id, racer_id]
-  - `src/services/supabaseDataService.js:2418` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:2494` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:2505` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:2673` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id, racer_id]
-  - `src/services/supabaseDataService.js:2908` select [boat_number, global_2rate, motor_number, race_id]
-  - `src/services/supabaseDataService.js:2991` select [boat_number, grade, motor_number, player_name, race_id, racer_id]
-  - `src/services/supabaseDataService.js:3219` select [boat_number, motor_number, player_name, race_id, racer_id]
-  - `src/services/supabaseDataService.js:3483` select [motor_2rate, motor_number, player_name, race_id, racer_id]
-  - `src/services/supabaseDataService.js:3677` select [boat_number, motor_number, race_id]
-  - `src/services/supabaseDataService.js:3833` select [boat_number, motor_number, player_name, race_id, racer_id]
-  - `src/services/supabaseDataService.js:3930` select [boat_number, local_win_rate, player_name, race_id, racer_id, win_rate]
-  - `src/services/supabaseDataService.js:3953` select [race_id, racer_id, win_rate]
-  - `src/services/supabaseDataService.js:3996` select [local_win_rate, race_id, racer_id, win_rate]
-  - `src/services/supabaseDataService.js:4032` select [local_win_rate, race_id, racer_id, win_rate]
-  - `src/services/supabaseDataService.js:4052` select [race_id, racer_id, win_rate]
-  - `src/services/supabaseDataService.js:4089` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:4641` select [boat_number, motor_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:4849` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:5047` select [boat_number, player_name, race_id, racer_id]
-  - `src/services/supabaseDataService.js:5085` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:5184` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:5272` select [boat_number, player_name, race_id, racer_id]
-  - `src/services/supabaseDataService.js:5306` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:5443` select [boat_number, race_id, weight_kg]
-  - `src/services/supabaseDataService.js:5510` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:5614` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:5865` select [age, boat_number, global_2rate, grade, local_win_rate, motor_2rate, motor_number, player_name, race_id, win_rate]
-  - `src/services/supabaseDataService.js:5939` select [boat_number, player_name, race_id, racer_id]
-  - `src/services/supabaseDataService.js:5969` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:6083` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:6115` select [race_id, racer_id, win_rate]
-  - `src/services/supabaseDataService.js:6408` select [boat_number, player_name, race_id, racer_id]
-  - `src/services/supabaseDataService.js:6433` select [boat_number, race_id, racer_id]
-  - `src/services/supabaseDataService.js:6703` select [boat_number, motor_number, player_name, race_id, racer_id]
-  - `src/services/supabaseDataService.js:7277` select [boat_number, player_name, race_id, racer_id]
   - `src/services/watsonService.js:75` select [boat_number, player_name, race_id]
 - 書き手（10）: 
   - `scripts/daily/generate-predictions.js:1035` upsert(helper:upsertChangedRows) [?]
@@ -1000,7 +1000,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `api/race-history/summary.js:37` select(rest) [data, key]
-  - `src/services/supabaseDataService.js:2003` select [data, key]
+  - `src/services/scheduleQueries.js:178` select [data, key]
 - 書き手（1）: 
   - `scripts/daily/update-race-history-cache.js:121` upsert [data, key, updated_at]
 
@@ -1036,8 +1036,8 @@
   - `scripts/lib/scrapeJobs/predictionOddsHandlers.js:81` select [captured_at, race_id, trifecta_all, trio_all]
   - `scripts/maintenance/check-odds-shadow.js:200` select [?, race_id, source]
   - `scripts/ml/export-training-data.js:224` select(helper:fetchAll)
+  - `src/services/raceQueries2.js:306` select [?, captured_at, race_id]
   - `src/services/sherlockService.js:87` select [captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6, race_id]
-  - `src/services/supabaseDataService.js:5670` select [?, captured_at, race_id]
 - 書き手（3）: 
   - `scripts/daily/scrape-odds.js:746` upsert [?]
   - `scripts/daily/scrape-odds.js:769` upsert [?]
@@ -1051,7 +1051,7 @@
 - 読み手（3）: 
   - `scripts/analysis/check-win-odds-vs-final.js:50` select(helper:fetchAll)
   - `scripts/lib/scrapeJobs/finalOddsHandlers.js:129` select [?, race_id]
-  - `src/services/supabaseDataService.js:5740` select [captured_at, exacta_all, place_all, quinella_all, race_id, trifecta_all, trio_all, wide_all, win_all]
+  - `src/services/raceQueries3.js:31` select [captured_at, exacta_all, place_all, quinella_all, race_id, trifecta_all, trio_all, wide_all, win_all]
 - 書き手（1）: 
   - `scripts/lib/scrapeJobs/finalOddsHandlers.js:144` upsert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -1066,7 +1066,7 @@
   - `scripts/lib/boatcast/oritenJob.js:181` select [content_hash, parser_version, race_id]
   - `scripts/lib/boatcast/oritenJob.js:221` select(helper:upsertChangedRows)
   - `scripts/maintenance/verify-e2e-no-unroute.js:199` rest(rest) （検査）
-  - `src/services/supabaseDataService.js:7920` select [item_labels, race_id, updated_at]
+  - `src/services/raceQueries4.js:165` select [item_labels, race_id, updated_at]
 - 書き手（1）: 
   - `scripts/lib/boatcast/oritenJob.js:221` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -1080,8 +1080,8 @@
   - `scripts/analysis/original-exhibition/fetch.mjs:49` select(helper:all)
   - `scripts/lib/boatcast/oritenJob.js:201` select(helper:upsertChangedRows)
   - `scripts/lib/boatcast/oritenJob.js:240` select [boat_number, kind, race_id]
-  - `src/services/supabaseDataService.js:4722` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:7925` select [boat_number, kind, race_id, value]
+  - `src/services/meetQueries.js:321` select(helper:fetchAllByIn)
+  - `src/services/raceQueries4.js:170` select [boat_number, kind, race_id, value]
 - 書き手（2）: 
   - `scripts/lib/boatcast/oritenJob.js:201` upsert(helper:upsertChangedRows) [?]
   - `scripts/lib/boatcast/oritenJob.js:248` delete
@@ -1117,7 +1117,7 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/lib/pitReportSchema.js:14`
 - 読み手（2）: 
   - `scripts/lib/pitReportJob.js:242` select(helper:upsertChangedRows)
-  - `src/services/supabaseDataService.js:7849` select [boat_number, comment_text, confidence_stars, previous_race_number, race_id, racer_id]
+  - `src/services/raceQueries4.js:94` select [boat_number, comment_text, confidence_stars, previous_race_number, race_id, racer_id]
 - 書き手（2）: 
   - `scripts/lib/pitReportJob.js:242` upsert(helper:upsertChangedRows) [?]
   - `scripts/lib/pitReportJob.js:259` delete
@@ -1133,7 +1133,7 @@
   - `scripts/lib/pitReportJob.js:207` select [content_hash, parser_version, race_id, raw_storage_path]
   - `scripts/lib/pitReportJob.js:270` select(helper:upsertChangedRows)
   - `scripts/maintenance/backfill-pit-reports.js:134` select(helper:fetchAll)
-  - `src/services/supabaseDataService.js:7842` select [comment_count, created_at, race_id, reporter_name, status, target_from, target_to, updated_at]
+  - `src/services/raceQueries4.js:87` select [comment_count, created_at, race_id, reporter_name, status, target_from, target_to, updated_at]
 - 書き手（1）: 
   - `scripts/lib/pitReportJob.js:270` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -1254,27 +1254,27 @@
   - `scripts/verification/verify-series-points-needed.mjs:50` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `scripts/verification/verify-series-points-official.mjs:164` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/adminRuleService.js:87` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
+  - `src/services/meetQueries.js:173` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id, rank1, rank2, rank3, rank4, rank5, rank6]
+  - `src/services/meetQueries2.js:154` select(helper:fetchAllByIn)
+  - `src/services/meetQueries3.js:67` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
+  - `src/services/motorQueries2.js:125` select [race_id, rank1, rank2, rank3]
+  - `src/services/motorQueries2.js:316` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
+  - `src/services/motorQueries3.js:305` select [race_id, rank1]
+  - `src/services/motorQueries5.js:100` select(helper:fetchAllByIn)
+  - `src/services/motorQueries5.js:255` select(helper:fetchAllByIn)
+  - `src/services/raceQueries.js:83` select(helper:fetchAllByIn)
+  - `src/services/raceQueries3.js:125` select [race_id, race_status, rank1, rank2, rank3, winning_technique]
+  - `src/services/raceQueries3.js:211` select(helper:fetchAllByIn)
+  - `src/services/raceQueries3.js:334` select(helper:fetchAllByIn)
+  - `src/services/raceQueries4.js:29` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id]
+  - `src/services/racerQueries.js:149` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:52` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:193` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:287` select(helper:fetchAllByIn)
+  - `src/services/racerQueries3.js:37` select(helper:fetchAllByIn)
   - `src/services/ruleMatchService.js:118` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
-  - `src/services/supabaseDataService.js:1474` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:2542` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id, rank1, rank2, rank3, rank4, rank5, rank6]
-  - `src/services/supabaseDataService.js:2927` select [race_id, rank1, rank2, rank3]
-  - `src/services/supabaseDataService.js:3010` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
-  - `src/services/supabaseDataService.js:3228` select [race_id, rank1]
-  - `src/services/supabaseDataService.js:3690` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:3845` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4099` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4428` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4569` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4791` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4859` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:5907` select [race_id, race_status, rank1, rank2, rank3, winning_technique]
-  - `src/services/supabaseDataService.js:5993` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:6205` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:6293` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:6451` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:6758` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:7272` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
-  - `src/services/supabaseDataService.js:7744` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id]
+  - `src/services/venueQueries2.js:56` select(helper:fetchAllByIn)
+  - `src/services/venueQueries2.js:144` select(helper:fetchAllByIn)
 - 書き手（10）: 
   - `scripts/daily/scrape-results.js:438` update [?]
   - `scripts/daily/scrape-results.js:588` update [rank4, rank5, rank6]
@@ -1303,12 +1303,12 @@
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:358` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:64` select(helper:fetchAll)
-  - `scripts/maintenance/verify-bot-race-function.js:802` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
+  - `scripts/maintenance/verify-bot-race-function.js:851` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
+  - `src/services/meetQueries3.js:48` select [end_date, grade, start_date, title, venue_code]
+  - `src/services/raceQueries2.js:240` select [end_date, start_date, venue_code]
   - `src/services/racerService.js:86` select [end_date, start_date, venue_code]
-  - `src/services/supabaseDataService.js:1421` select [end_date, start_date, venue_code]
-  - `src/services/supabaseDataService.js:1447` select [end_date, grade, start_date, title, venue_code]
-  - `src/services/supabaseDataService.js:5604` select [end_date, start_date, venue_code]
-  - `src/services/supabaseDataService.js:7253` select [end_date, grade, start_date, title, venue_code]
+  - `src/services/scheduleQueries.js:68` select [end_date, start_date, venue_code]
+  - `src/services/scheduleQueries.js:94` select [end_date, grade, start_date, title, venue_code]
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -1351,15 +1351,15 @@
   - `scripts/sns/rank-data.js:528` select(helper:readAllIn)
   - `scripts/verification/verify-series-points-border.mjs:64` select [boat_number, finish_mark, race_id]
   - `scripts/verification/verify-series-points-needed.mjs:58` select [boat_number, finish_mark, race_id]
-  - `src/services/supabaseDataService.js:1487` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:2448` select [boat_number, is_flying, race_id]
-  - `src/services/supabaseDataService.js:2548` select [boat_number, entry_course, finish_mark, race_id]
-  - `src/services/supabaseDataService.js:4575` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4812` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:5107` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:5198` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:6810` select [boat_number, finish_mark, is_flying, race_id, start_timing]
-  - `src/services/supabaseDataService.js:7737` select [boat_number, entry_course, finish_mark, finish_rank, is_flying, is_late_start, race_id, start_timing]
+  - `src/services/meetQueries.js:79` select [boat_number, is_flying, race_id]
+  - `src/services/meetQueries.js:179` select [boat_number, entry_course, finish_mark, race_id]
+  - `src/services/meetQueries2.js:206` select [boat_number, finish_mark, is_flying, race_id, start_timing]
+  - `src/services/raceQueries.js:96` select(helper:fetchAllByIn)
+  - `src/services/raceQueries.js:301` select(helper:fetchAllByIn)
+  - `src/services/raceQueries4.js:22` select [boat_number, entry_course, finish_mark, finish_rank, is_flying, is_late_start, race_id, start_timing]
+  - `src/services/racerQueries2.js:199` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:308` select(helper:fetchAllByIn)
+  - `src/services/racerQueries3.js:113` select(helper:fetchAllByIn)
 - 書き手（6）: 
   - `scripts/daily/scrape-results.js:709` upsert [?]
   - `scripts/daily/scrape-results.js:1105` upsert(helper:upsertChangedRows) [?]
@@ -1386,7 +1386,7 @@
   - `scripts/daily/generate-predictions.js:553` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-unified-predictions.js:118` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-unified-trifecta-reference.js:117` select [avg_st, course_race_counts, racer_id, venue_code]
-  - `src/services/supabaseDataService.js:4148` select [avg_st, avg_st_last_30, course_race_counts, flying_rate, racer_id, st_stddev, total_races, venue_code]
+  - `src/services/racerQueries.js:198` select [avg_st, avg_st_last_30, course_race_counts, flying_rate, racer_id, st_stddev, total_races, venue_code]
 - 書き手（1）: 
   - `scripts/analysis/aggregate-racer-stats.js:453` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -1410,7 +1410,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `scripts/sns/rank-data.js:477` select(helper:readAll)
-  - `src/services/supabaseDataService.js:4357` select [data, key]
+  - `src/services/racerQueries.js:342` select [data, key]
 - 書き手（1）: 
   - `scripts/daily/update-racer-grade-cache.js:46` upsert [data, key, updated_at]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -1447,11 +1447,11 @@
   - `scripts/analysis/racer-period-stats/fetch-period-stats.mjs:9` select [*, period_no, period_year, racer_id]
   - `scripts/maintenance/verify-full-picture-scene2.js:2601` rest(rest) （検査）
   - `scripts/maintenance/verify-full-picture-scene2.js:3683` rest(rest) （検査）
-  - `src/services/supabaseDataService.js:4176` select [avg_st, period_no, period_year, racer_id]
-  - `src/services/supabaseDataService.js:4215` select [?, period_no, period_year, racer_id]
-  - `src/services/supabaseDataService.js:5620` select [avg_st, period_no, period_year, racer_id]
-  - `src/services/supabaseDataService.js:7466` select [avg_st, calc_from, calc_to, finals, period_no, period_year, racer_id, starts, top2_rate, win_rate, wins]
-  - `src/services/supabaseDataService.js:7475` select [period_no, period_year, racer_id]
+  - `src/services/raceQueries2.js:256` select [avg_st, period_no, period_year, racer_id]
+  - `src/services/racerQueries.js:226` select [avg_st, period_no, period_year, racer_id]
+  - `src/services/racerQueries.js:265` select [?, period_no, period_year, racer_id]
+  - `src/services/racerQueries4.js:70` select [avg_st, calc_from, calc_to, finals, period_no, period_year, racer_id, starts, top2_rate, win_rate, wins]
+  - `src/services/racerQueries4.js:79` select [period_no, period_year, racer_id]
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -1474,9 +1474,9 @@
   - `scripts/maintenance/restore-entries-branch-hometown.js:62` select(helper:fetchAll)
   - `scripts/maintenance/verify-sns-x-delete.js:418` rest(rest) （検査）
   - `scripts/sns/delete-x-post.js:124` rest(rest) [name, racer_id]
+  - `src/services/motorQueries4.js:205` select [name, racer_id]
+  - `src/services/racerQueries.js:310` select [birth_date, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
   - `src/services/racerService.js:18` select [birth_date, blood_type, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
-  - `src/services/supabaseDataService.js:3502` select [name, racer_id]
-  - `src/services/supabaseDataService.js:4325` select [birth_date, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
 - 書き手（3）: 
   - `scripts/lib/racerProfileSync.js:265` update [?]
   - `scripts/lib/racerProfileSync.js:283` upsert [birth_date, blood_type, branch, grade_at_scrape, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
@@ -1492,8 +1492,8 @@
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:203` select [meet_start_date, penalty_points, racer_id, rank, remarks, score_rate, total_points, venue_code]
   - `scripts/verification/verify-series-points-official.mjs:46` select [meet_start_date, penalty_points, placements, player_name, racer_id, rank, remarks, score_rate, total_points, venue_code]
   - `scripts/verification/verify-series-points-official.mjs:135` select [meet_start_date, racer_id, venue_code]
-  - `src/services/supabaseDataService.js:6822` select [meet_start_date, penalty_points, placements, racer_id, remarks, scraped_at, total_points, venue_code]
-  - `src/services/supabaseDataService.js:7282` select [meet_start_date, scraped_at, venue_code]
+  - `src/services/meetQueries2.js:218` select [meet_start_date, penalty_points, placements, racer_id, remarks, scraped_at, total_points, venue_code]
+  - `src/services/meetQueries3.js:77` select [meet_start_date, scraped_at, venue_code]
 - 書き手（1）: 
   - `scripts/daily/scrape-point-rank.js:624` upsert(helper:upsertWithOptionalColumns) [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: id, grade, next_race_1, next_race_2, next_series_day
@@ -1505,7 +1505,7 @@
 - 本体で読む RPC: claim_scrape_slots, claim_scrape_slots_by_offset, compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats, compute_venue_course_entry_baseline, compute_venue_course_technique_baseline, data_health_cancellation_with_result, data_health_coverage, data_health_entries_duplicates, data_health_monthly_result, data_health_morning_freshness, data_health_nightly_freshness, data_health_pit_reports, data_health_pre_race_fields, data_health_race_series, data_health_racer_period_stats, data_health_table_rows, ensure_scrape_slots, get_predictions_by_date, get_predictions_by_date_light, get_race_history_summary, get_today_races, update_venue_stats
 - 取得のジョブ: exhibition, kfile_sync, race_info, race_status, races_init, result, result_catchup
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-fr2-holdout.py:340`, `scripts/analysis/analogy-finder-fr2-strat/features_prod.py:169`, `scripts/analysis/analogy-finder-fr2-strat/features_prod.py:348`, `scripts/analysis/analogy-finder-fr2-strat/features_prod.py:354`, `scripts/analysis/analogy-finder-phase-m/build_dataset.py:127`, `scripts/analysis/analogy-finder-phase-m/build_dataset.py:280`, `scripts/analysis/analogy-finder-phase-m/build_dataset.py:294`, `scripts/analysis/analogy-finder-phase-m/md3_odds.py:94`, `scripts/analysis/analogy-finder-phase-m/md3_odds_v2.py:235`, `scripts/analysis/analogy-finder-t1/t1_1_stage_rule.py:263`, `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:74`, `scripts/analysis/analogy-finder-t1/t1_2_series_runs.py:133`, `scripts/analysis/analogy-finder-t1/t1_2_series_runs.py:157`, `scripts/analysis/analogy-finder-t1/t1_2_series_runs.py:159`, `scripts/analysis/analogy-finder-t1/t1_4_hint_threshold.py:108`, `scripts/analysis/analogy-finder-t1/t1_5_boat1_exhibition.py:112`, `scripts/analysis/analogy-finder-t1/t1_5_boat1_exhibition.py:173`, `scripts/analysis/analogy-finder-t1/t1_5_boat1_exhibition.py:198`, `scripts/analysis/analogy-finder-v16/t2_4_rerank_agreement.py:88`, `scripts/analysis/boa845-axis-place/build_pool.py:47`, `scripts/analysis/boa845-axis-place/common.py:98`, `scripts/analysis/boa845-axis-place/common.py:105`, `scripts/analysis/boa845-axis-place/common.py:110`, `scripts/analysis/boa845-axis-place/display.py:58`, `scripts/analysis/boa845-axis-place/mark_rule.py:82`, `scripts/analysis/boa845-axis-place/today_counts.py:42`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:6`, `scripts/analysis/in-collapse-caution/round2/c2_rebuild.py:25`, `scripts/analysis/in-collapse-caution/round3/c2_round3.py:29`, `scripts/analysis/in-collapse-caution/round4/sparse_cells.py:29`, `scripts/analysis/in-collapse-caution/round4/sparse_cells.py:56`, `scripts/analysis/original-exhibition/analyze.py:87`, `scripts/analysis/original-exhibition/analyze.py:92`, `scripts/analysis/original-exhibition/analyze.py:93`, `scripts/analysis/original-exhibition/analyze.py:105`, `scripts/analysis/original-exhibition/analyze2.py:11`, `scripts/analysis/original-exhibition/analyze4.py:86`, `scripts/analysis/original-exhibition/analyze4.py:100`, `scripts/analysis/original-exhibition/analyze4.py:141`, `scripts/analysis/original-exhibition/analyze4.py:152`, `scripts/analysis/original-exhibition/analyze4.py:165`, `scripts/analysis/original-exhibition/build.py:6`, `scripts/analysis/original-exhibition/forecast-slit.py:24`, `scripts/analysis/original-exhibition/forecast-slit.py:27`, `scripts/analysis/past-rate-check/label-threshold.py:142`, `scripts/analysis/past-rate-check/label-threshold.py:443`, `scripts/analysis/past-rate-check/slit-pattern-rates.py:76`, `scripts/analysis/past-rate-check/slit-pattern-rates.py:90`, `scripts/maintenance/delete-phantom-races.js:89`, `scripts/ml/analogy/features.py:303`, `scripts/ml/analogy/features.py:540`, `scripts/ml/analogy/features.py:546`, `scripts/ml/analogy/make_treeshap_testdata.py:219`, `scripts/ml/analogy/perrace.py:159`, `scripts/ml/analogy/tests/test_in_caution_bands.py:100`, `scripts/ml/analogy/tests/test_perrace.py:110`, `scripts/ml/analogy/tests/test_v16_pool.py:107`, `scripts/ml/analogy/tests/test_v16_scenario.py:56`, `scripts/ml/analogy/tests/test_v16_scenario.py:59`, `scripts/ml/analogy/tests/test_v16_scenario.py:64`, `scripts/ml/analogy/v16_history.py:53`, `scripts/ml/analogy/v16_morning.py:289`, `scripts/ml/analogy/v16_morning.py:373`, `scripts/ml/analogy/v16_pool.py:74`, `scripts/ml/analogy/v16_scenario.py:69`
-- 読み手（159）: 
+- 読み手（160）: 
   - `api/_lib/analogyV16.js:101` rest(rest) [race_date, race_id, start_time, venue_code]
   - `api/_lib/racerEntryExhibition.js:196` rest(rest) [cancellation_status, race_date, race_id, start_time]
   - `api/_lib/snsClaimCheck.js:226` rest(rest) [cancellation_status, race_date, race_id, start_time]
@@ -1624,14 +1624,15 @@
   - `scripts/maintenance/update-venue-stats.js:32` select [race_date, race_id, venue_code]
   - `scripts/maintenance/verify-analogy-v16.js:276` rest(rest) [cancellation_status, race_date, race_id, start_time] （検査）
   - `scripts/maintenance/verify-data-readers.js:557` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-e2e-live-api-key.js:23` rest(rest) [*] （検査）
+  - `scripts/maintenance/verify-e2e-live-api-key.js:32` rest(rest) [*] （検査）
+  - `scripts/maintenance/verify-e2e-live-api-key.js:33` rest(rest) （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select [race_date, race_id, venue_code] （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:128` select [race_date, venue_code] （検査）
   - `scripts/maintenance/verify-rpc-output-keys.js:266` select [race_date] （検査）
   - `scripts/maintenance/verify-rpc-output-keys.js:321` select [race_date, venue_code] （検査）
   - `scripts/maintenance/verify-scrape-slots-on-db.js:69` select [cancellation_status, race_date, race_id, start_time] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:615` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1522` rest(rest) [race_id, start_time] （検査）
+  - `scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577` rest(rest) [race_id, start_time] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:2660` rest(rest) [race_date] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:2661` rest(rest) [cancellation_status] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:2662` rest(rest) [race_id] （検査）
@@ -1646,24 +1647,24 @@
   - `scripts/sns/rank-data.js:352` select(helper:readAll)
   - `scripts/sns/rank-data.js:500` select(helper:readAllIn)
   - `scripts/sns/today-picks.js:101` rest(rest) [cancellation_status, race_date, race_id, start_time]
+  - `src/services/meetQueries.js:183` select [cancellation_status, race_id]
+  - `src/services/meetQueries2.js:163` select(helper:fetchAllByIn)
+  - `src/services/meetQueries3.js:62` select [cancellation_status, race_grade, race_id]
+  - `src/services/motorQueries.js:112` select [race_date, race_id, venue_code]
+  - `src/services/motorQueries3.js:278` select(embed) [venue_code]
   - `src/services/mycroftService.js:78` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/poirotService.js:48` select [race_date, race_id, race_number, start_time, venue_code]
+  - `src/services/racerQueries2.js:51` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:187` select(helper:fetchAllByIn)
+  - `src/services/racerQueries2.js:281` select(helper:fetchAllByIn)
+  - `src/services/racerQueries3.js:252` select [race_date, race_id, race_number, venue_code]
   - `src/services/ruleMatchService.js:133` select [race_id, start_time]
+  - `src/services/scheduleQueries.js:125` select [race_date]
+  - `src/services/scheduleQueries.js:205` select [race_date, venue_code]
+  - `src/services/scheduleQueries.js:229` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/sherlockService.js:73` select [race_date, race_id, race_number, start_time, venue_code]
-  - `src/services/supabaseDataService.js:602` select [race_date, race_id, venue_code]
-  - `src/services/supabaseDataService.js:1950` select [race_date]
-  - `src/services/supabaseDataService.js:2316` select [race_date, venue_code]
-  - `src/services/supabaseDataService.js:2340` select [race_date, race_id, race_number, start_time, venue_code]
-  - `src/services/supabaseDataService.js:2552` select [cancellation_status, race_id]
-  - `src/services/supabaseDataService.js:3201` select(embed) [venue_code]
-  - `src/services/supabaseDataService.js:4427` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4563` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:4785` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:6072` select [race_date, race_id, race_number, venue_code]
-  - `src/services/supabaseDataService.js:6192` select [race_date, race_id, venue_code]
-  - `src/services/supabaseDataService.js:6283` select [race_date, race_id, venue_code]
-  - `src/services/supabaseDataService.js:6767` select(helper:fetchAllByIn)
-  - `src/services/supabaseDataService.js:7267` select [cancellation_status, race_grade, race_id]
+  - `src/services/venueQueries2.js:43` select [race_date, race_id, venue_code]
+  - `src/services/venueQueries2.js:134` select [race_date, race_id, venue_code]
   - `src/services/watsonService.js:71` select [race_date, race_id, race_number, start_time, venue_code]
 - 書き手（20）: 
   - `scripts/daily/generate-predictions.js:971` upsert(helper:upsertChangedRows) [?]
@@ -2165,7 +2166,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `scripts/daily/update-course-baseline-stats.js:146` select(helper:upsertChangedRows)
-  - `src/services/supabaseDataService.js:6617` select [avg_st, breakout_count, breakout_rate, course, grade, late_rate, runs, st_histogram, stable_rate, window_days, window_end, window_start]
+  - `src/services/venueQueries2.js:356` select [avg_st, breakout_count, breakout_rate, course, grade, late_rate, runs, st_histogram, stable_rate, window_days, window_end, window_start]
 - 書き手（1）: 
   - `scripts/daily/update-course-baseline-stats.js:146` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -2175,7 +2176,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（1）: 
-  - `src/services/supabaseDataService.js:6510` select [*, boat_number, venue_code]
+  - `src/services/venueQueries2.js:249` select [*, boat_number, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-top-start-stats.js:143` delete
   - `scripts/daily/update-top-start-stats.js:152` insert [?]
@@ -2248,8 +2249,8 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（3）: 
   - `scripts/daily/calculate-venue-grade-stats.js:190` select(helper:upsertChangedRows)
-  - `src/services/supabaseDataService.js:7787` select [boat_number, manshu_count, payout_count, payout_trio_sum, race_count, race_grade, technique_breakdown, top2, top3, venue_code, wins]
-  - `src/services/supabaseDataService.js:7804` select [venue_code]
+  - `src/services/venueQueries3.js:172` select [boat_number, manshu_count, payout_count, payout_trio_sum, race_count, race_grade, technique_breakdown, top2, top3, venue_code, wins]
+  - `src/services/venueQueries3.js:189` select [venue_code]
 - 書き手（1）: 
   - `scripts/daily/calculate-venue-grade-stats.js:190` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -2262,7 +2263,7 @@
 - 読み手（3）: 
   - `scripts/lib/boatcast/motorStartJob.js:144` select(helper:upsertChangedRows)
   - `scripts/sns/rank-data.js:330` select(helper:readAll)
-  - `src/services/supabaseDataService.js:635` select [start_date, venue_code]
+  - `src/services/motorQueries.js:179` select [start_date, venue_code]
 - 書き手（1）: 
   - `scripts/lib/boatcast/motorStartJob.js:144` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -2274,9 +2275,9 @@
 - 取得のジョブ: venue_motor_stats
 - 読み手（4）: 
   - `scripts/daily/generate-morning-digest.js:196` select [motor_number, race_count, scraped_date, venue_code]
-  - `src/services/supabaseDataService.js:3128` select [*, motor_number, scraped_date, venue_code]
-  - `src/services/supabaseDataService.js:3357` select [scraped_date, venue_code]
-  - `src/services/supabaseDataService.js:3367` select [accident_rate, championship_count, final_count, motor_number, race_count, scraped_date, stats_period_end, top2_rate, top3_rate, venue_code, win_rate]
+  - `src/services/motorQueries3.js:54` select [*, motor_number, scraped_date, venue_code]
+  - `src/services/motorQueries3.js:361` select [scraped_date, venue_code]
+  - `src/services/motorQueries3.js:371` select [accident_rate, championship_count, final_count, motor_number, race_count, scraped_date, stats_period_end, top2_rate, top3_rate, venue_code, win_rate]
 - 書き手（1）: 
   - `scripts/daily/scrape-venue-motor-stats.js:134` upsert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -2293,7 +2294,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（1）: 
-  - `src/services/supabaseDataService.js:2024` select [last_updated, period_days, period_from, period_to, race_count, total_races, venue_code, winning_technique]
+  - `src/services/venueQueries.js:24` select [last_updated, period_days, period_from, period_to, race_count, total_races, venue_code, winning_technique]
 - 書き手（2）: 
   - `scripts/daily/update-winning-technique-stats.js:236` delete
   - `scripts/daily/update-winning-technique-stats.js:245` insert [?]
@@ -2307,9 +2308,9 @@
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:89` select [cluster, code]
   - `scripts/daily/generate-predictions.js:42` select [avg_first_win_rate, code]
   - `scripts/maintenance/update-venue-stats.js:74` select [avg_first_win_rate, avg_first_win_rate_race_count, code, name]
-  - `src/services/supabaseDataService.js:899` select [avg_first_win_rate, code]
-  - `src/services/supabaseDataService.js:2056` select [cluster, code]
-  - `src/services/supabaseDataService.js:6371` select [avg_first_win_rate, avg_first_win_rate_race_count, code]
+  - `src/services/core.js:324` select [avg_first_win_rate, code]
+  - `src/services/venueQueries.js:56` select [cluster, code]
+  - `src/services/venueQueries2.js:222` select [avg_first_win_rate, avg_first_win_rate_race_count, code]
 - 書き手（2）: 
   - `scripts/maintenance/update-venue-stats.js:46` update [avg_first_win_rate, avg_first_win_rate_race_count, updated_at]
   - `scripts/maintenance/update-venue-stats.js:58` update [avg_first_win_rate, avg_first_win_rate_race_count, updated_at]
@@ -2331,7 +2332,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `scripts/maintenance/verify-full-picture-scene2.js:2871` rest(rest) （検査）
-  - `src/services/supabaseDataService.js:2243` select [*, boat_number, percentage, venue_code]
+  - `src/services/venueQueries.js:243` select [*, boat_number, percentage, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-winning-technique-stats.js:161` delete
   - `scripts/daily/update-winning-technique-stats.js:171` insert [?]
@@ -2341,7 +2342,7 @@
 
 写しの取得より後のマイグレーションで足したもの、消したもの、別のスキーマ、誤りのどれか。
 
-- rpc `get_course_win_rate_baseline`: `src/services/supabaseDataService.js:4279`
+- rpc `get_course_win_rate_baseline`: `src/services/venueQueries.js:343`
 - table `eve_race_deadlines`: `scripts/lib/eveDeadlinesJob.js:77`, `scripts/lib/eveDeadlinesJob.js:274`, `scripts/lib/eveDeadlinesJob.js:422`
 - table `racer_career_meta`: `scripts/lib/racerCareerJob.js:621`, `scripts/lib/racerCareerJob.js:846`, `scripts/lib/racerCareerJob.js:908`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:646`
