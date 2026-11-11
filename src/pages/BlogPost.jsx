@@ -12,6 +12,7 @@ import {
 } from "../data/blogPosts";
 import { parseLangFromPath, localizePath } from "../config/languages";
 import Header from "../components/Header";
+import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
 // ビルドの時に画像のヘッダーから作る実寸の表（vite.config.js の仮想モジュール、BOA-908）
@@ -139,6 +140,9 @@ export default function BlogPost() {
   const mdPath = isTranslated
     ? `/blog/${id}${getBlogMdSuffix(lng)}.md`
     : `/blog/${id}.md`;
+
+  // 記事の id が一覧に無いときだけ noindex（読み込み・取得の失敗では出さない）
+  useRobotsMeta(!basePost);
 
   const postUrl = post
     ? `https://www.boat-ai.jp${localizePath(`/blog/${id}`, isTranslated ? lng : "ja")}`
