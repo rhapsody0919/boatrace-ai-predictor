@@ -6,7 +6,7 @@
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getInCautionAccuracy } from "../../services/predictionQueries4.js";
 import { IN_CAUTION_CONFIG } from "../../constants/inCautionConfig";
 import { inCautionAccuracyView, pct1 } from "../../utils/inCautionAccuracy";
 import { errorMessageOf } from "../../utils/errorMessage.js";
@@ -85,8 +85,7 @@ function InCautionAccuracyChart() {
 
   useEffect(() => {
     let cancelled = false;
-    supabaseDataService
-      .getInCautionAccuracy()
+    getInCautionAccuracy()
       .then((d) => {
         if (cancelled) return;
         setData(d);

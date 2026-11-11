@@ -16,7 +16,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import BandWrapAxisTick from "../BandWrapAxisTick";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getLosingTechniqueStats } from "../../services/venueQueries2.js";
 import { translateTechnique } from "../race/raceIndicators";
 import "./WinningTechniqueChart.css";
 import { techniqueColor, sortTechniquesOfficial } from "../../utils/techniqueColors";
@@ -66,7 +66,7 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
         setError(null);
         const venueCode = parseInt(selectedVenue, 10);
         const data =
-          await supabaseDataService.getLosingTechniqueStats(venueCode);
+          await getLosingTechniqueStats(venueCode);
         setStatsData(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));

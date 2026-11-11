@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getOutcomeDistribution } from "../../services/venueQueries.js";
 import "./OutcomeDistributionTable.css";
 
 const VENUES = [
@@ -50,7 +50,7 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
         setError(null);
         const venueCode = parseInt(selectedVenue, 10);
         const data =
-          await supabaseDataService.getOutcomeDistribution(venueCode);
+          await getOutcomeDistribution(venueCode);
         setOutcomeData(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
