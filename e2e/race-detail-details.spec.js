@@ -249,7 +249,9 @@ test.describe("レース詳細の表示の細部", () => {
     const names = page.locator(".rpr-racer-name");
     await expect(names.first()).toBeVisible({ timeout: 30000 });
     const texts = await names.allTextContents();
-    for (const n of texts) expect(n).not.toMatch(new RegExp(String.fromCharCode(0x3000)));
+    for (const n of texts) {
+      expect(n.includes(String.fromCharCode(0x3000))).toBe(false);
+    }
   });
 
   test("1440・1920px: ST考察の6艇の列は等幅、枠別情報のカードの右端がそろう（BOA-619）", async ({
