@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { aggregateRacerCrossStats } from "../services/core.js";
 import {
-  supabaseDataService,
-  aggregateRacerCrossStats,
-} from "../services/supabaseDataService";
+  getRacerRaceHistory,
+  getRacerScopedRaceStats,
+} from "../services/racerQueries2.js";
 import {
   buildMeetResults,
   getRecentRaces,
@@ -59,8 +60,8 @@ export function useFavoriteRunStats(rows, visible) {
         const id = queue.shift();
         try {
           const [history, records] = await Promise.all([
-            supabaseDataService.getRacerRaceHistory(id),
-            supabaseDataService.getRacerScopedRaceStats(id),
+            getRacerRaceHistory(id),
+            getRacerScopedRaceStats(id),
           ]);
           setByRacer((prev) => ({
             ...prev,
