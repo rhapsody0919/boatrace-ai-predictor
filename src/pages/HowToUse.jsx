@@ -8,322 +8,298 @@ const TITLE = "使い方ガイド | 龍神レーダー - 初心者でもわか�
 const DESCRIPTION =
   "龍神レーダーの使い方を6つのステップで解説。レース場の選び方、データ出走表の見方、レース詳細のタブ（基本情報・AI予想・今節・直前情報ほか）の使い分けまで、初心者にもわかりやすく説明します。";
 
-export default function HowToUse() {
-  const navigate = useNavigate();
-  const [activeStep, setActiveStep] = useState(0);
-
-  useSocialMeta({
-    title: TITLE,
-    description: DESCRIPTION,
-    url: "https://www.boat-ai.jp/how-to-use",
-    keywords:
-      "龍神レーダー使い方,ボートレース分析方法,初心者ガイド,データ出走表,展開予測,イン崩れ指数,レース詳細タブ,今節,ST考察",
-  });
-
-  const steps = [
-    {
-      title: "ステップ1: レース場を選ぶ",
-      icon: "🏟️",
-      content: (
-        <>
-          <p>
-            <strong>トップページ</strong>にアクセスすると、
-            <strong>全24場のレース場カード</strong>
-            が一覧で並びます。本日開催中の場には次のレースの発走時刻が表示され、開催のない場は「本日開催なし」と表示されます。
-          </p>
-          <div className="step-detail">
-            <h4>💡 レース場の選び方</h4>
-            <ul>
-              <li>
-                <strong>気になるレース場のカードをタップ</strong>
-                すると、その場のレース一覧に移動します
-              </li>
-              <li>全24場（桐生、戸田、江戸川、平和島...など）に対応</li>
-              <li>
-                カードには<strong>グレード（G1・G3など）</strong>・
-                <strong>ナイター/ミッドナイトのアイコン</strong>・
-                <strong>準優勝戦・優勝戦の表示</strong>
-                が出るので、節の進み具合もここで分かります
-              </li>
-            </ul>
-          </div>
-          <div className="example-box">
-            <p className="example-title">📌 例</p>
-            <p>「今日は平和島で舟券を買いたい」→ 「平和島」のカードをタップ</p>
-          </div>
-        </>
-      ),
-    },
-    {
-      title: "ステップ2: 予想を見たいレースを選ぶ",
-      icon: "🏁",
-      content: (
-        <>
-          <p>
-            レース場を選ぶと、<strong>その日のレース一覧</strong>
-            が表示されます。
-          </p>
-          <div className="step-detail">
-            <h4>💡 レースの見方</h4>
-            <ul>
-              <li>
-                各レースには<strong>レース番号</strong>と
-                <strong>締切予定時刻</strong>が表示されます
-              </li>
-              <li>
-                <strong>イン崩れ指数</strong>
-                バッジで、1号艇（インコース）が崩れやすいレースかどうかがわかります
-                <ul>
-                  <li>
-                    🎯 <strong>本命有利</strong>:
-                    1号艇が有利で堅く決まりやすいレース
-                  </li>
-                  <li>
-                    （バッジなし）<strong>標準</strong>: 平均的な傾向のレース
-                  </li>
-                  <li>
-                    🌪️ <strong>イン崩れ注意（高）</strong>:
-                    1号艇が崩れて波乱が起きやすいレース
-                  </li>
-                </ul>
-              </li>
-              <li>
-                各レースのカードには
-                <strong>6艇の勝率・当地勝率・モーター2連率</strong>
-                の要約も出るので、一覧のまま当たりを付けられます
-              </li>
-              <li>
-                <strong>「詳細を見る」</strong>ボタンをタップ
-              </li>
-            </ul>
-          </div>
-          <div className="example-box">
-            <p className="example-title">📌 例</p>
-            <p>「平和島 10R（14:30締切）🎯本命有利」→「詳細を見る」をタップ</p>
-          </div>
-        </>
-      ),
-    },
-    {
-      title: "ステップ3: データ出走表を見る",
-      icon: "📋",
-      content: (
-        <>
-          <p>
-            発走前のレースを選ぶと、まず
-            <strong>データ出走表</strong>
-            （出走6選手×客観的なデータの一覧表）が表示されます（結果が確定したレースでは「結果」タブが開くため表示されません）。龍神レーダーは
-            <strong>「予想モデルを選ぶ」機能は提供していません</strong>
-            。誰が見ても同じ客観的なデータをもとに、自分で予想を組み立てる形です。
-          </p>
-          <div className="step-detail">
-            <h4>💡 データ出走表に含まれる指標</h4>
-            <ul>
-              <li>
-                <strong>級別・全国勝率</strong>: 選手の実力の目安
-              </li>
-              <li>
-                <strong>モーター2連率</strong>: 使用モーターの調子
-              </li>
-              <li>
-                <strong>調子（勝率Δ）</strong>: 最近の勝率の上昇/下降
-              </li>
-              <li>
-                <strong>ST安定度・展示タイム</strong>: スタートの正確さ・機力
-              </li>
-              <li>
-                <strong>決まり手型</strong>: その選手が得意な勝ちパターン
-              </li>
-              <li>
-                <strong>単勝回収率</strong>: 過去にその艇番で走った際の回収率
-              </li>
-            </ul>
-          </div>
-          <div className="tip-box">
-            <h4>📝 見方のコツ</h4>
-            <p>
-              各指標は<strong>レース内での相対順位</strong>
-              で色分けされています。最も良い数値のマスがハイライトされるので、6艇を比較しながら注目艇を見つけられます。
-            </p>
-          </div>
-        </>
-      ),
-    },
-    {
-      title: "ステップ4: タブを切り替えて深掘りする",
-      icon: "🗂️",
-      content: (
-        <>
-          <p>
-            データ出走表の上にタブが並んでいます。見たい切り口に合わせて切り替えてください。発走前は
-            <strong>7つ</strong>、レースが確定すると「結果」が加わって
-            <strong>8つ</strong>
-            になります。スマホでは4つほどしか画面に入らないため、
-            <strong>タブの並びを横にスワイプ</strong>
-            すると残りが出てきます（右端の「›」でも送れます）。
-          </p>
-          <div className="step-detail">
-            <h4>💡 タブの内容（左から順）</h4>
-            <p className="step-note">
-              前半の4つは<strong>6艇をまとめて見る</strong>
-              タブ、後半は<strong>艇を1つ選んで掘る</strong>タブです。
-            </p>
-            <ul>
-              <li>
-                <strong>基本情報</strong>:
-                選手ごとの勝率・2連対率・3連対率・平均STを、会場（全国/当地）・グレード（全レース/一般戦/SG・G1）・期間（今期/直近3ヶ月/直近1ヶ月）で切り替えて比較。走数（n）も併記
-              </li>
-              <li>
-                <strong>AI予想</strong>: 展開予測とイン崩れ注意度（ステップ5）
-              </li>
-              <li>
-                <strong>今節</strong>:
-                出走6選手の今節の得点率・節内順位・準優の目安までの必要得点。
-                <strong>勝負駆け</strong>がかかっているのが誰かを読む場所です
-              </li>
-              <li>
-                <strong>直前情報</strong>: 展示タイム・気象・ピットレポート
-              </li>
-              <li>
-                <strong>枠別情報</strong>: 本日入る想定コースでの成績に加え、
-                <strong>ST考察</strong>
-                （安定率・抜出・出遅率を同じコース・同じ級別の平均との差つきで表示）と
-                <strong>逃げシミュレーション</strong>
-                （1コースが逃げたとき2着に来たコースの割合と2連単の出現率）
-              </li>
-              <li>
-                <strong>モータ情報</strong>: この会場のモーターの成績・調子
-              </li>
-              <li>
-                <strong>オッズ一覧</strong>: 発売中のオッズ
-              </li>
-              <li>
-                <strong>結果</strong>:
-                レース確定後の着順と配当。確定するまでこのタブは出ません
-              </li>
-            </ul>
-          </div>
-          <div className="tip-box">
-            <h4>📝 見方のコツ</h4>
-            <p>
-              レース確定後に開くと
-              <strong>「結果」タブが最初に選ばれます</strong>
-              。発走前は「基本情報」から始まります。まず基本情報で6艇の力関係を掴み、節の後半なら「今節」で勝負駆けを確認、締切が近ければ「直前情報」で展示タイムを見る、という順番がおすすめです。
-            </p>
-          </div>
-        </>
-      ),
-    },
-    {
-      title: "ステップ5: 展開予測とイン崩れ指数を見る",
-      icon: "🌊",
-      content: (
-        <>
-          <p>
-            タブの
-            <strong>「AI予想」</strong>
-            を開くと、AIによる2種類の分析結果が確認できます。
-          </p>
-          <div className="step-detail">
-            <h4>💡 展開予測</h4>
-            <ul>
-              <li>
-                1マーク（最初のターン）の攻防で
-                <strong>どの艇がどの決まり手で1着になりそうか</strong>
-                を、確率付きの上位パターンとして提示します
-              </li>
-              <li>
-                実測的中率は
-                <strong>約8割</strong>
-                （上位パターンのいずれかが実際の1着コースと一致すれば的中）。会場によって的中率に差があり、実績は「成績」ページで確認できます
-              </li>
-            </ul>
-          </div>
-          <div className="step-detail">
-            <h4>💡 イン崩れ指数</h4>
-            <ul>
-              <li>
-                1号艇（インコース）が
-                <strong>崩れやすいかどうか</strong>
-                を、過去90日・同会場のレースと比較した相対的な指数（パーセンタイル）で示します
-              </li>
-              <li>
-                「イン崩れ注意（高）」ラベルのレースは、実際にどの程度崩れているかの実測値も確認できます
-              </li>
-            </ul>
-          </div>
-          <div className="example-box">
-            <p className="example-title">📌 例</p>
-            <p>
-              展開予測で「1コース 逃げ 39%」「3コース まくり
-              10%」と出ていれば、1コースを軸にしつつ3コースも警戒する、といった読み方ができます
-            </p>
-          </div>
-        </>
-      ),
-    },
-    {
-      title: "ステップ6: 予測実績を確認する",
-      icon: "📈",
-      content: (
-        <>
-          <p>レース終了後、AIの分析が的中だったかを確認できます。</p>
-          <div className="step-detail">
-            <h4>💡 実績の確認方法</h4>
-            <ul>
-              <li>
-                <strong>各レースの「AI予想」タブ</strong>:
-                そのレースの展開予測が的中したかを表示（結果が確定したレースを開くと出ます）
-              </li>
-              <li>
-                <strong>「的中」タブ</strong>（/hit-races）:
-                過去14日間で展開予測が的中したレース一覧を会場別に表示
-              </li>
-              <li>
-                <strong>「成績」タブ</strong>（/accuracy）:
-                展開予測の実測的中率を、全体・会場別で公開
-              </li>
-            </ul>
-          </div>
-          <div className="tip-box">
-            <h4>📊 実績の見方</h4>
-            <p>
-              展開予測の実測的中率は
-              <strong>会場によって差があります</strong>
-              （例:
-              ある会場は9割超、別の会場は7割弱）。よく使う会場の実績を「成績」ページで確認してから活用すると、精度への理解が深まります。
-            </p>
-          </div>
-          <div className="step-detail">
-            <h4>⚠️ 重要な注意事項</h4>
-            <div className="warning-box">
-              <p>
-                <strong>龍神レーダーは分析情報のみを提供しています</strong>
-              </p>
-              <p>
-                舟券の購入は
-                <a
-                  href="https://www.boatrace.jp/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  公式サイト
-                </a>
-                でご確認ください。分析データは参考情報としてご活用ください。
-              </p>
-            </div>
-          </div>
-        </>
-      ),
-    },
-  ];
-
+function HowToStepVenueSelectContent() {
   return (
     <>
-      <title>{TITLE}</title>
-      <meta name="description" content={DESCRIPTION} />
-      <link rel="canonical" href="https://www.boat-ai.jp/how-to-use" />
+      <p>
+        <strong>トップページ</strong>にアクセスすると、
+        <strong>全24場のレース場カード</strong>
+        が一覧で並びます。本日開催中の場には次のレースの発走時刻が表示され、開催のない場は「本日開催なし」と表示されます。
+      </p>
+      <div className="step-detail">
+        <h4>💡 レース場の選び方</h4>
+        <ul>
+          <li>
+            <strong>気になるレース場のカードをタップ</strong>
+            すると、その場のレース一覧に移動します
+          </li>
+          <li>全24場（桐生、戸田、江戸川、平和島...など）に対応</li>
+          <li>
+            カードには<strong>グレード（G1・G3など）</strong>・
+            <strong>ナイター/ミッドナイトのアイコン</strong>・
+            <strong>準優勝戦・優勝戦の表示</strong>
+            が出るので、節の進み具合もここで分かります
+          </li>
+        </ul>
+      </div>
+      <div className="example-box">
+        <p className="example-title">📌 例</p>
+        <p>「今日は平和島で舟券を買いたい」→ 「平和島」のカードをタップ</p>
+      </div>
+    </>
+  );
+}
 
+function HowToStepRacePickContent() {
+  return (
+    <>
+      <p>
+        レース場を選ぶと、<strong>その日のレース一覧</strong>
+        が表示されます。
+      </p>
+      <div className="step-detail">
+        <h4>💡 レースの見方</h4>
+        <ul>
+          <li>
+            各レースには<strong>レース番号</strong>と
+            <strong>締切予定時刻</strong>が表示されます
+          </li>
+          <li>
+            <strong>イン崩れ指数</strong>
+            バッジで、1号艇（インコース）が崩れやすいレースかどうかがわかります
+            <ul>
+              <li>
+                🎯 <strong>本命有利</strong>:
+                1号艇が有利で堅く決まりやすいレース
+              </li>
+              <li>
+                （バッジなし）<strong>標準</strong>: 平均的な傾向のレース
+              </li>
+              <li>
+                🌪️ <strong>イン崩れ注意（高）</strong>:
+                1号艇が崩れて波乱が起きやすいレース
+              </li>
+            </ul>
+          </li>
+          <li>
+            各レースのカードには
+            <strong>6艇の勝率・当地勝率・モーター2連率</strong>
+            の要約も出るので、一覧のまま当たりを付けられます
+          </li>
+          <li>
+            <strong>「詳細を見る」</strong>ボタンをタップ
+          </li>
+        </ul>
+      </div>
+      <div className="example-box">
+        <p className="example-title">📌 例</p>
+        <p>「平和島 10R（14:30締切）🎯本命有利」→「詳細を見る」をタップ</p>
+      </div>
+    </>
+  );
+}
+
+function HowToStepDataTableContent() {
+  return (
+    <>
+      <p>
+        発走前のレースを選ぶと、まず
+        <strong>データ出走表</strong>
+        （出走6選手×客観的なデータの一覧表）が表示されます（結果が確定したレースでは「結果」タブが開くため表示されません）。龍神レーダーは
+        <strong>「予想モデルを選ぶ」機能は提供していません</strong>
+        。誰が見ても同じ客観的なデータをもとに、自分で予想を組み立てる形です。
+      </p>
+      <div className="step-detail">
+        <h4>💡 データ出走表に含まれる指標</h4>
+        <ul>
+          <li>
+            <strong>級別・全国勝率</strong>: 選手の実力の目安
+          </li>
+          <li>
+            <strong>モーター2連率</strong>: 使用モーターの調子
+          </li>
+          <li>
+            <strong>調子（勝率Δ）</strong>: 最近の勝率の上昇/下降
+          </li>
+          <li>
+            <strong>ST安定度・展示タイム</strong>: スタートの正確さ・機力
+          </li>
+          <li>
+            <strong>決まり手型</strong>: その選手が得意な勝ちパターン
+          </li>
+          <li>
+            <strong>単勝回収率</strong>: 過去にその艇番で走った際の回収率
+          </li>
+        </ul>
+      </div>
+      <div className="tip-box">
+        <h4>📝 見方のコツ</h4>
+        <p>
+          各指標は<strong>レース内での相対順位</strong>
+          で色分けされています。最も良い数値のマスがハイライトされるので、6艇を比較しながら注目艇を見つけられます。
+        </p>
+      </div>
+    </>
+  );
+}
+
+function HowToStepTabDeepDiveContent() {
+  return (
+    <>
+      <p>
+        データ出走表の上にタブが並んでいます。見たい切り口に合わせて切り替えてください。発走前は
+        <strong>7つ</strong>、レースが確定すると「結果」が加わって
+        <strong>8つ</strong>
+        になります。スマホでは4つほどしか画面に入らないため、
+        <strong>タブの並びを横にスワイプ</strong>
+        すると残りが出てきます（右端の「›」でも送れます）。
+      </p>
+      <div className="step-detail">
+        <h4>💡 タブの内容（左から順）</h4>
+        <p className="step-note">
+          前半の4つは<strong>6艇をまとめて見る</strong>
+          タブ、後半は<strong>艇を1つ選んで掘る</strong>タブです。
+        </p>
+        <ul>
+          <li>
+            <strong>基本情報</strong>:
+            選手ごとの勝率・2連対率・3連対率・平均STを、会場（全国/当地）・グレード（全レース/一般戦/SG・G1）・期間（今期/直近3ヶ月/直近1ヶ月）で切り替えて比較。走数（n）も併記
+          </li>
+          <li>
+            <strong>AI予想</strong>: 展開予測とイン崩れ注意度（ステップ5）
+          </li>
+          <li>
+            <strong>今節</strong>:
+            出走6選手の今節の得点率・節内順位・準優の目安までの必要得点。
+            <strong>勝負駆け</strong>がかかっているのが誰かを読む場所です
+          </li>
+          <li>
+            <strong>直前情報</strong>: 展示タイム・気象・ピットレポート
+          </li>
+          <li>
+            <strong>枠別情報</strong>: 本日入る想定コースでの成績に加え、
+            <strong>ST考察</strong>
+            （安定率・抜出・出遅率を同じコース・同じ級別の平均との差つきで表示）と
+            <strong>逃げシミュレーション</strong>
+            （1コースが逃げたとき2着に来たコースの割合と2連単の出現率）
+          </li>
+          <li>
+            <strong>モータ情報</strong>: この会場のモーターの成績・調子
+          </li>
+          <li>
+            <strong>オッズ一覧</strong>: 発売中のオッズ
+          </li>
+          <li>
+            <strong>結果</strong>:
+            レース確定後の着順と配当。確定するまでこのタブは出ません
+          </li>
+        </ul>
+      </div>
+      <div className="tip-box">
+        <h4>📝 見方のコツ</h4>
+        <p>
+          レース確定後に開くと
+          <strong>「結果」タブが最初に選ばれます</strong>
+          。発走前は「基本情報」から始まります。まず基本情報で6艇の力関係を掴み、節の後半なら「今節」で勝負駆けを確認、締切が近ければ「直前情報」で展示タイムを見る、という順番がおすすめです。
+        </p>
+      </div>
+    </>
+  );
+}
+
+function HowToStepTenkaiInKuzureContent() {
+  return (
+    <>
+      <p>
+        タブの
+        <strong>「AI予想」</strong>
+        を開くと、AIによる2種類の分析結果が確認できます。
+      </p>
+      <div className="step-detail">
+        <h4>💡 展開予測</h4>
+        <ul>
+          <li>
+            1マーク（最初のターン）の攻防で
+            <strong>どの艇がどの決まり手で1着になりそうか</strong>
+            を、確率付きの上位パターンとして提示します
+          </li>
+          <li>
+            実測的中率は
+            <strong>約8割</strong>
+            （上位パターンのいずれかが実際の1着コースと一致すれば的中）。会場によって的中率に差があり、実績は「成績」ページで確認できます
+          </li>
+        </ul>
+      </div>
+      <div className="step-detail">
+        <h4>💡 イン崩れ指数</h4>
+        <ul>
+          <li>
+            1号艇（インコース）が
+            <strong>崩れやすいかどうか</strong>
+            を、過去90日・同会場のレースと比較した相対的な指数（パーセンタイル）で示します
+          </li>
+          <li>
+            「イン崩れ注意（高）」ラベルのレースは、実際にどの程度崩れているかの実測値も確認できます
+          </li>
+        </ul>
+      </div>
+      <div className="example-box">
+        <p className="example-title">📌 例</p>
+        <p>
+          展開予測で「1コース 逃げ 39%」「3コース まくり
+          10%」と出ていれば、1コースを軸にしつつ3コースも警戒する、といった読み方ができます
+        </p>
+      </div>
+    </>
+  );
+}
+
+function HowToStepResultsCheckContent() {
+  return (
+    <>
+      <p>レース終了後、AIの分析が的中だったかを確認できます。</p>
+      <div className="step-detail">
+        <h4>💡 実績の確認方法</h4>
+        <ul>
+          <li>
+            <strong>各レースの「AI予想」タブ</strong>:
+            そのレースの展開予測が的中したかを表示（結果が確定したレースを開くと出ます）
+          </li>
+          <li>
+            <strong>「的中」タブ</strong>（/hit-races）:
+            過去14日間で展開予測が的中したレース一覧を会場別に表示
+          </li>
+          <li>
+            <strong>「成績」タブ</strong>（/accuracy）:
+            展開予測の実測的中率を、全体・会場別で公開
+          </li>
+        </ul>
+      </div>
+      <div className="tip-box">
+        <h4>📊 実績の見方</h4>
+        <p>
+          展開予測の実測的中率は
+          <strong>会場によって差があります</strong>
+          （例:
+          ある会場は9割超、別の会場は7割弱）。よく使う会場の実績を「成績」ページで確認してから活用すると、精度への理解が深まります。
+        </p>
+      </div>
+      <div className="step-detail">
+        <h4>⚠️ 重要な注意事項</h4>
+        <div className="warning-box">
+          <p>
+            <strong>龍神レーダーは分析情報のみを提供しています</strong>
+          </p>
+          <p>
+            舟券の購入は
+            <a
+              href="https://www.boatrace.jp/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              公式サイト
+            </a>
+            でご確認ください。分析データは参考情報としてご活用ください。
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function HowToStructuredData({ steps }) {
+  return (
+    <>
       {/* HowTo Structured Data */}
       <script type="application/ld+json">
         {JSON.stringify({
@@ -361,71 +337,169 @@ export default function HowToUse() {
           ],
         })}
       </script>
+    </>
+  );
+}
 
-      <Header />
-
-      <div className="how-to-use-container">
-        <div className="how-to-use-header">
-          <h1>📚 使い方ガイド</h1>
-          <p>龍神レーダーの使い方を初心者にもわかりやすく解説</p>
-        </div>
-
-        {/* ステップナビゲーション */}
-        <div className="steps-navigation">
-          {steps.map((step, index) => (
-            <button
-              key={index}
-              className={`step-nav-btn ${activeStep === index ? "active" : ""} ${activeStep > index ? "completed" : ""}`}
-              onClick={() => setActiveStep(index)}
-            >
-              <span className="step-icon">{step.icon}</span>
-              <span className="step-number">Step {index + 1}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* ステップコンテンツ */}
-        <div className="step-content">
-          <div className="step-header">
-            <span className="step-icon-large">{steps[activeStep].icon}</span>
-            <h2>{steps[activeStep].title}</h2>
-          </div>
-          <div className="step-body">{steps[activeStep].content}</div>
-        </div>
-
-        {/* ナビゲーションボタン */}
-        <div className="step-navigation-buttons">
-          {activeStep > 0 && (
-            <button
-              onClick={() => setActiveStep(activeStep - 1)}
-              className="nav-button prev"
-            >
-              ← 前のステップ
-            </button>
-          )}
-          {activeStep < steps.length - 1 ? (
-            <button
-              onClick={() => setActiveStep(activeStep + 1)}
-              className="nav-button next"
-            >
-              次のステップ →
-            </button>
-          ) : (
-            <button onClick={() => navigate("/")} className="nav-button finish">
-              データ分析を見る 🚀
-            </button>
-          )}
-        </div>
-
-        {/* よくある質問へのリンク */}
-        <div className="faq-link-section">
-          <h3>💡 もっと詳しく知りたい方へ</h3>
-          <p>よくある質問もご覧ください</p>
-          <button onClick={() => navigate("/faq")} className="faq-button">
-            FAQ（よくある質問）
+function HowToStepsNavigation({ steps, activeStep, setActiveStep }) {
+  return (
+    <>
+      {/* ステップナビゲーション */}
+      <div className="steps-navigation">
+        {steps.map((step, index) => (
+          <button
+            key={index}
+            className={`step-nav-btn ${activeStep === index ? "active" : ""} ${activeStep > index ? "completed" : ""}`}
+            onClick={() => setActiveStep(index)}
+          >
+            <span className="step-icon">{step.icon}</span>
+            <span className="step-number">Step {index + 1}</span>
           </button>
-        </div>
+        ))}
       </div>
+    </>
+  );
+}
+
+function HowToStepBody({ step }) {
+  return (
+    <>
+      {/* ステップコンテンツ */}
+      <div className="step-content">
+        <div className="step-header">
+          <span className="step-icon-large">{step.icon}</span>
+          <h2>{step.title}</h2>
+        </div>
+        <div className="step-body">{step.content}</div>
+      </div>
+    </>
+  );
+}
+
+function HowToStepButtons({ activeStep, stepCount, setActiveStep, navigate }) {
+  return (
+    <>
+      {/* ナビゲーションボタン */}
+      <div className="step-navigation-buttons">
+        {activeStep > 0 && (
+          <button
+            onClick={() => setActiveStep(activeStep - 1)}
+            className="nav-button prev"
+          >
+            ← 前のステップ
+          </button>
+        )}
+        {activeStep < stepCount - 1 ? (
+          <button
+            onClick={() => setActiveStep(activeStep + 1)}
+            className="nav-button next"
+          >
+            次のステップ →
+          </button>
+        ) : (
+          <button onClick={() => navigate("/")} className="nav-button finish">
+            データ分析を見る 🚀
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
+function HowToFaqLink({ navigate }) {
+  return (
+    <>
+      {/* よくある質問へのリンク */}
+      <div className="faq-link-section">
+        <h3>💡 もっと詳しく知りたい方へ</h3>
+        <p>よくある質問もご覧ください</p>
+        <button onClick={() => navigate("/faq")} className="faq-button">
+          FAQ（よくある質問）
+        </button>
+      </div>
+    </>
+  );
+}
+
+export default function HowToUse() {
+  const navigate = useNavigate();
+  const [activeStep, setActiveStep] = useState(0);
+
+  useSocialMeta({
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "https://www.boat-ai.jp/how-to-use",
+    keywords:
+      "龍神レーダー使い方,ボートレース分析方法,初心者ガイド,データ出走表,展開予測,イン崩れ指数,レース詳細タブ,今節,ST考察",
+  });
+
+  const steps = [
+    {
+      title: "ステップ1: レース場を選ぶ",
+      icon: "🏟️",
+      content: <HowToStepVenueSelectContent />,
+    },
+    {
+      title: "ステップ2: 予想を見たいレースを選ぶ",
+      icon: "🏁",
+      content: <HowToStepRacePickContent />,
+    },
+    {
+      title: "ステップ3: データ出走表を見る",
+      icon: "📋",
+      content: <HowToStepDataTableContent />,
+    },
+    {
+      title: "ステップ4: タブを切り替えて深掘りする",
+      icon: "🗂️",
+      content: <HowToStepTabDeepDiveContent />,
+    },
+    {
+      title: "ステップ5: 展開予測とイン崩れ指数を見る",
+      icon: "🌊",
+      content: <HowToStepTenkaiInKuzureContent />,
+    },
+    {
+      title: "ステップ6: 予測実績を確認する",
+      icon: "📈",
+      content: <HowToStepResultsCheckContent />,
+    },
+  ];
+
+  return (
+    <>
+    <title>{TITLE}</title>
+    <meta name="description" content={DESCRIPTION} />
+    <link rel="canonical" href="https://www.boat-ai.jp/how-to-use" />
+
+    <HowToStructuredData steps={steps} />
+
+    <Header />
+
+    <div className="how-to-use-container">
+      <div className="how-to-use-header">
+        <h1>📚 使い方ガイド</h1>
+        <p>龍神レーダーの使い方を初心者にもわかりやすく解説</p>
+      </div>
+
+      <HowToStepsNavigation
+        steps={steps}
+        activeStep={activeStep}
+        setActiveStep={setActiveStep}
+      />
+
+      <HowToStepBody step={steps[activeStep]} />
+
+      <HowToStepButtons
+        activeStep={activeStep}
+        stepCount={steps.length}
+        setActiveStep={setActiveStep}
+        navigate={navigate}
+      />
+
+      <HowToFaqLink navigate={navigate} />
+
+    </div>
     </>
   );
 }
