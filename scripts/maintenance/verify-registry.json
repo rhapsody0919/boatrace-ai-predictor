@@ -65,7 +65,7 @@
     {
       "script": "verify-agents-entry.js",
       "tier": "ci",
-      "guards": "作り手が毎回読む入口を短く保つ（T1、2026-11-07）。AGENTS.md は200行未満（公式の目安 code.claude.com/docs/en/memory.md）・.claude/CLAUDE.md は30行未満で、1行足すなら1行削るを機械にする。.claude/CLAUDE.md の `@../AGENTS.md` の取り込みと、行頭の `@パス` の先が置き場からの相対で実在すること（`@AGENTS.md` は .claude/AGENTS.md を指し黙って空振りした、2026-11-08）、AGENTS.md の安全の6点の語、.claude/rules/*.md が全て frontmatter の paths を持つこと（常時の rules を置かない）"
+      "guards": "作り手が毎回読む入口を短く保つ（T1、2026-11-07）。AGENTS.md は200行未満（公式の目安 code.claude.com/docs/en/memory.md）・.claude/CLAUDE.md は30行未満で、1行足すなら1行削るを機械にする。.claude/CLAUDE.md の `@../AGENTS.md` の取り込みと、行頭の `@パス` の先が置き場からの相対で実在すること（`@AGENTS.md` は .claude/AGENTS.md を指し黙って空振りした、2026-11-08）、AGENTS.md の安全の6点の語、.claude/rules/ が無いこと（rules は置かない、ZB03③）"
     },
     {
       "script": "verify-aggregate-racer-stats.js",
@@ -279,7 +279,7 @@
     {
       "script": "verify-code-pitfalls.js",
       "tier": "ci",
-      "guards": "件数がデータで変わるグリッドに repeat(auto-fill, ...)・固定列数 repeat(N, ...) を新しく使わないこと（ZB03 ①・BOA-1454。正本 .claude/rules/component-reuse.md「CSS」、BOA-460・527・528 で3回再発）。src/ の *.css の該当の出現（改行をまたぐ形・1行に2つも）を全体の件数で凍結し（53 件）、増えたら失敗、減ったら凍結を下げるよう出す。JS・JSX の本文は読まない"
+      "guards": "件数がデータで変わるグリッドに repeat(auto-fill, ...)・固定列数 repeat(N, ...) を新しく使わないこと（ZB03 ①・BOA-1454。正本はこの verify、BOA-460・527・528 で3回再発）。src/ の *.css の該当の出現（改行をまたぐ形・1行に2つも）を全体の件数で凍結し（53 件）、増えたら失敗、減ったら凍結を下げるよう出す。JS・JSX の本文は読まない"
     },
     {
       "script": "verify-codex-no-preview.js",
@@ -406,7 +406,7 @@
     {
       "script": "verify-doc-placement.js",
       "tier": "ci",
-      "guards": "文書をリポジトリの根に置かないこと・docs/ のファイル名が kebab-case であること（ZB03 ②・BOA-1455。正本 .claude/rules/documentation.md）。根の一覧（33 個、.git・node_modules と根の .gitignore の1段の型を除く）を凍結して新しい名前を失敗に、docs/（db-migration を除く）の kebab-case でないファイル 188 件を凍結して増えたら失敗。名前だけを見て、中身を読むのは .gitignore だけ"
+      "guards": "文書をリポジトリの根に置かないこと・docs/ のファイル名が kebab-case であること（ZB03 ②・BOA-1455）。根の一覧（33 個、.git・node_modules と根の .gitignore の1段の型を除く）を凍結して新しい名前を失敗に、docs/（db-migration を除く）の kebab-case でないファイル 188 件を凍結して増えたら失敗。名前だけを見て、中身を読むのは .gitignore だけ"
     },
     {
       "script": "verify-e2e-blog-tags.js",
@@ -748,7 +748,7 @@
     {
       "script": "verify-kyotei-wording.js",
       "tier": "ci",
-      "guards": "src/ に「競艇」の新しい行が入らないこと（T1、2026-11-07。決まりの正本は .claude/rules/code-style.md「用語・表記」、役所の広告出稿の対象から外れるため）。今ある行（meta＝例外1・コメント・禁止語の一覧・駅名）は kyotei-wording-allowlist.json に（ファイル, 行の中身）で固定し、一覧の残骸も失敗にする。src/data/blog-posts/ は content-pr-gate が見るので除く"
+      "guards": "src/ に「競艇」の新しい行が入らないこと（T1、2026-11-07。決まりの正本は verify-kyotei-wording.js の頭の注釈、役所の広告出稿の対象から外れるため）。今ある行（meta＝例外1・コメント・禁止語の一覧・駅名）は kyotei-wording-allowlist.json に（ファイル, 行の中身）で固定し、一覧の残骸も失敗にする。src/data/blog-posts/ は content-pr-gate が見るので除く"
     },
     {
       "script": "verify-latest-by-race-id.js",
@@ -1844,7 +1844,7 @@
     {
       "script": "verify-ui-wording.js",
       "tier": "ci",
-      "guards": "画面の文言（src/locales/ja の JSON の値）に禁止語（数える・似た・似ている・ふつう・いつも・似たレース・必ず当たる・的中保証・鉄板）を新しく入れないこと、ソナー・思考アシストのキー（analogy・assist）で 集計・算出・対象 を新しく使わないこと（ZB03 ②・BOA-1455。正本 .claude/rules/code-pitfalls.md「言い方の規則」）。件数で凍結（禁止語 0・ソナー 1）し、増えたら失敗。src の JS・JSX は読まない"
+      "guards": "画面の文言（src/locales/ja の JSON の値）に禁止語（数える・似た・似ている・ふつう・いつも・似たレース・必ず当たる・的中保証・鉄板）を新しく入れないこと、ソナー・思考アシストのキー（analogy・assist）で 集計・算出・対象 を新しく使わないこと（ZB03 ②・BOA-1455）。件数で凍結（禁止語 0・ソナー 1）し、増えたら失敗。src の JS・JSX は読まない"
     },
     {
       "script": "verify-unchanged-rows-summary.js",

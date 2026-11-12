@@ -2,7 +2,7 @@
  * verify-ui-wording.js - 画面の文言（locales）の禁止語を試験にする（ZB03 ②、BOA-1455）。
  * ファイルを読むだけで、ネットワークにも DB にも接続しない。読むのは src/locales/ja/ の *.json だけ（JS・JSX の本文は読まない）。
  *
- * 決まり（正本 .claude/rules/code-pitfalls.md「言い方の規則」）:
+ * 決まり（正本はこの verify。旧 rules の code-pitfalls.md「言い方の規則」）:
  *   (a) 禁止語: 数える・似た・似ている・ふつう・いつも・似たレース（「類似レース」と書く）・必ず当たる・的中保証・鉄板
  *   (b) 龍神ソナー・思考アシストの置き場（キーに analogy・assist を含む値）では 集計・算出・対象 も使わない
  *   src/ の JS・JSX の文言（morningDigestCopy.js・thinkingAssistCopy.js 等）はここでは見ない（後で ESLint へ移す）。
@@ -23,8 +23,8 @@ const SONAR_EXTRA = ["集計", "算出", "対象"];
 const SONAR_KEY = /analogy|assist/i;
 const HOW_TO_FIX = {
   banned:
-    "禁止語を言い換える（「似たレース」は「類似レース」、誇大・保証の表現は外す）。.claude/rules/code-pitfalls.md「言い方の規則」",
-  sonar: "ソナー・思考アシストの文言では 集計・算出・対象 を使わず言い換える。.claude/rules/code-pitfalls.md「言い方の規則」",
+    "禁止語を言い換える（「似たレース」は「類似レース」、誇大・保証の表現は外す）。正本は verify-ui-wording.js",
+  sonar: "ソナー・思考アシストの文言では 集計・算出・対象 を使わず言い換える。正本は verify-ui-wording.js",
 };
 
 const walk = (dir, ext) =>

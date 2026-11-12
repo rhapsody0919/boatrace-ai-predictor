@@ -569,7 +569,7 @@ async function main() {
   if (failed) {
     console.error(
       "\nRLS・権限の規律違反があります。docs/db-migration/076_enable_rls_on_public_tables.sql のヘッダーと" +
-        " .claude/rules/data-acquisition.md「DBマイグレーションのRLS規律」を参照してください",
+        " この verify の頭の注釈（失敗にする条件）を参照してください",
     );
     process.exit(1);
   }
