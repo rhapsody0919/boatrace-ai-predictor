@@ -47,14 +47,8 @@ import BarRow from "./basic-info/BarRow";
 import ExpandedPanel from "./basic-info/ExpandedPanel";
 import "./RaceBasicInfoTab.css";
 
-function RaceBasicInfoTab({
-  raceId,
-  venueCode,
-  players,
-  focusedBoat,
-  onFocusBoat,
-}) {
-  const { t } = useTranslation();
+// 指標・範囲・グレード・期間の選択state。グレードと期間は互いに連動する
+function useBasicInfoFilters() {
   const [metric, setMetric] = useState("winRate");
   const [scope, setScope] = useState("national");
   const [grade, setGradeState] = useState("all");
@@ -69,16 +63,25 @@ function RaceBasicInfoTab({
     setPeriodState(p);
     if (p === "official") setGradeState("all");
   };
-  // 展開中の艇はタブをまたいで共有する（BOA-492）。null は「誰も展開していない」で、
-  // 従来のタブ内stateと同じ初期値。枠別・今節タブで艇を選んでからこのタブへ来ると、
-  // その艇が展開済みで開く
-  const expandedBoat = focusedBoat ?? null;
-  // 展開パネルの内訳（トレンド/当地/条件別）。どの艇のものかを一緒に持ち、
-  // 艇が変わったら "trend" に戻す。艇の選択はタブ間共有（BOA-492）で
-  // このタブの操作以外でも変わるため、押した瞬間に戻すのでは足りない。
-  // 副作用として、同じ艇を閉じて開き直したときは前の内訳が復元される
-  // （従来は毎回 "trend" に戻っていた）。同じ選手の同じ切り口に戻るだけなので
-  // そのままにしている
+  return {
+    metric,
+    setMetric,
+    scope,
+    setScope,
+    grade,
+    setGrade,
+    period,
+    setPeriod,
+  };
+}
+
+// 展開パネルの内訳（トレンド/当地/条件別）。どの艇のものかを一緒に持ち、
+// 艇が変わったら "trend" に戻す。艇の選択はタブ間共有（BOA-492）で
+// このタブの操作以外でも変わるため、押した瞬間に戻すのでは足りない。
+// 副作用として、同じ艇を閉じて開き直したときは前の内訳が復元される
+// （従来は毎回 "trend" に戻っていた）。同じ選手の同じ切り口に戻るだけなので
+// そのままにしている
+function useExpandedView(expandedBoat) {
   const [expandedViewState, setExpandedViewState] = useState({
     boat: null,
     view: "trend",
@@ -87,16 +90,18 @@ function RaceBasicInfoTab({
     expandedViewState.boat === expandedBoat ? expandedViewState.view : "trend";
   const setExpandedView = (view) =>
     setExpandedViewState({ boat: expandedBoat, view });
+  return { expandedView, setExpandedView };
+}
 
-  const sortedPlayers = [...(players ?? [])].sort(
-    (a, b) => a.number - b.number,
-  );
+// 取得系のフックと、レースの日付にそろえた派生値をまとめる
+function useBasicInfoSources({
+  raceId,
+  sortedPlayers,
+  expandedBoat,
+  needsOwnAggregation,
+}) {
   const racerIdsKey = sortedPlayers.map((p) => p.racerId ?? "").join(",");
   const raceDate = parseRaceId(raceId)?.date ?? null;
-
-  // 「公式」（全レース）のときだけ公式の値（勝率/2連対率/3連対率は出走表、平均STは期別成績）を出し、
-  // それ以外（今期・直近・グレードで絞る）は当サイトの走（getRacerScopedRaceStats）から計算する（BOA-775）
-  const needsOwnAggregation = period !== "official" || grade !== "all";
 
   const officialRates = useOfficialRates(raceId);
   const { officialAvgSt, retryOfficialAvgSt } = useOfficialAvgSt(raceId);
@@ -131,6 +136,163 @@ function RaceBasicInfoTab({
   // 「今期」の初日（BOA-775）。表示中のレースの日付で決める
   const currentTermFrom = currentTermStart(raceDate);
 
+  return {
+    officialRates,
+    officialAvgSt,
+    retryOfficialAvgSt,
+    periodStats,
+    periodFailed,
+    retryPeriod,
+    accidentRecords,
+    accidentByRacer,
+    accidentRangeLabel,
+    retryAccident,
+    scopedStatsByRacer,
+    currentMeetFlyingBoats,
+    recordsOf,
+    periodAnchor,
+    currentTermFrom,
+  };
+}
+
+// 1艇ぶんのバーと、展開中ならその展開パネル
+function BasicInfoBarBlock({ row, shared }) {
+  const { boat, value, n, isSmallSample, loading } = row;
+  const {
+    sortedPlayers,
+    expandedBoat,
+    toggleExpanded,
+    scale,
+    filters,
+    needsOwnAggregation,
+    src,
+    raceId,
+    venueCode,
+    expandedViewCtl,
+  } = shared;
+  const { metric, setMetric } = filters;
+  const { barWidthPercent, valueDigits, bestBoats } = scale;
+  const { officialRates, accidentByRacer, scopedStatsByRacer, recordsOf } = src;
+  const player = sortedPlayers.find((p) => p.number === boat);
+  const accident = accidentByRacer.get(player?.racerId);
+  return (
+    <div className="rbit-bar-block">
+      <BarRow
+        boat={boat}
+        value={value}
+        n={n}
+        isSmallSample={isSmallSample}
+        loading={loading}
+        player={player}
+        expanded={expandedBoat === boat}
+        onToggle={() => toggleExpanded(boat)}
+        barWidth={barWidthPercent(value)}
+        isBest={bestBoats.has(boat)}
+        metric={metric}
+        valueDigits={valueDigits}
+        needsOwnAggregation={needsOwnAggregation}
+        officialRow={findOfficialRow(officialRates, boat)}
+        currentMeet={src.currentMeetFlyingBoats.has(boat)}
+        accident={accident}
+      />
+
+      {expandedBoat === boat && (
+        <ExpandedPanel
+          boat={boat}
+          player={player}
+          raceId={raceId}
+          venueCode={venueCode}
+          metric={metric}
+          setMetric={setMetric}
+          needsOwnAggregation={needsOwnAggregation}
+          expandedView={expandedViewCtl.expandedView}
+          setExpandedView={expandedViewCtl.setExpandedView}
+          rawRecords={scopedStatsByRacer[player?.racerId]}
+          records={recordsOf(player?.racerId)}
+          accident={accident}
+          accidentFailed={src.accidentRecords === null}
+          accidentRangeLabel={src.accidentRangeLabel}
+          onRetryAccident={src.retryAccident}
+          nowRow={findOfficialRow(officialRates, player?.number)}
+          periodStats={src.periodStats}
+          periodFailed={src.periodFailed}
+          onRetryPeriod={src.retryPeriod}
+        />
+      )}
+    </div>
+  );
+}
+
+// Fバッジ・Lバッジ・事故率の目印の凡例
+function BasicInfoLegends({ officialRates, accidentByRacer }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {/* Fバッジ・Lバッジの凡例。選手名の行は <button> で「?」を置けず、説明は
+          title（ホバー）だけになるため、スマホでは意味を知る手段が無かった
+          （BOA-440 ファン評価1周目）。バッジが1つも無いレースでは出さない */}
+      {(officialRates ?? []).some(
+        (r) => (r.f_count ?? 0) > 0 || (r.l_count ?? 0) > 0,
+      ) && <p className="rbit-note">{t("flyingBadge.legend")}</p>}
+      {/* 事故率の目印の凡例（BOA-327）。目印が1つでも出ているときだけ。「あと◯点」を予選の得点と
+          取り違えないよう、何の点数かを書く（ファン評価1周目） */}
+      {[...accidentByRacer.values()].some((a) => a.showBadge) && (
+        <p className="rbit-note">{t("basicInfo.accidentLegend")}</p>
+      )}
+    </>
+  );
+}
+
+function BasicInfoFilterBar({ filters, needsOwnAggregation, src }) {
+  return (
+    <FilterControls
+      metric={filters.metric}
+      setMetric={filters.setMetric}
+      scope={filters.scope}
+      setScope={filters.setScope}
+      grade={filters.grade}
+      setGrade={filters.setGrade}
+      period={filters.period}
+      setPeriod={filters.setPeriod}
+      needsOwnAggregation={needsOwnAggregation}
+      officialAvgSt={src.officialAvgSt}
+      onRetryOfficialAvgSt={src.retryOfficialAvgSt}
+      currentTermFrom={src.currentTermFrom}
+    />
+  );
+}
+
+function RaceBasicInfoTab({
+  raceId,
+  venueCode,
+  players,
+  focusedBoat,
+  onFocusBoat,
+}) {
+  const { t } = useTranslation();
+  const filters = useBasicInfoFilters();
+  const { metric, scope, grade, period } = filters;
+  // 展開中の艇はタブをまたいで共有する（BOA-492）。null は「誰も展開していない」で、
+  // 従来のタブ内stateと同じ初期値。枠別・今節タブで艇を選んでからこのタブへ来ると、
+  // その艇が展開済みで開く
+  const expandedBoat = focusedBoat ?? null;
+  const expandedViewCtl = useExpandedView(expandedBoat);
+
+  const sortedPlayers = [...(players ?? [])].sort(
+    (a, b) => a.number - b.number,
+  );
+
+  // 「公式」（全レース）のときだけ公式の値（勝率/2連対率/3連対率は出走表、平均STは期別成績）を出し、
+  // それ以外（今期・直近・グレードで絞る）は当サイトの走（getRacerScopedRaceStats）から計算する（BOA-775）
+  const needsOwnAggregation = period !== "official" || grade !== "all";
+
+  const src = useBasicInfoSources({
+    raceId,
+    sortedPlayers,
+    expandedBoat,
+    needsOwnAggregation,
+  });
+
   if (sortedPlayers.length === 0) return null;
 
   const values = computeBarValues(sortedPlayers, {
@@ -140,39 +302,40 @@ function RaceBasicInfoTab({
     period,
     venueCode,
     needsOwnAggregation,
-    officialRates,
-    officialAvgSt,
-    recordsOf,
-    periodAnchor,
+    officialRates: src.officialRates,
+    officialAvgSt: src.officialAvgSt,
+    recordsOf: src.recordsOf,
+    periodAnchor: src.periodAnchor,
   });
-  const { isRelativeScaleMetric, barWidthPercent, valueDigits, bestBoats } =
-    buildBarScale(values, metric, needsOwnAggregation);
+  const scale = buildBarScale(values, metric, needsOwnAggregation);
 
-  const toggleExpanded = (boatNumber) => {
-    onFocusBoat(expandedBoat === boatNumber ? null : boatNumber);
+  const shared = {
+    sortedPlayers,
+    expandedBoat,
+    toggleExpanded: (boatNumber) => {
+      onFocusBoat(expandedBoat === boatNumber ? null : boatNumber);
+    },
+    scale,
+    filters,
+    needsOwnAggregation,
+    src,
+    raceId,
+    venueCode,
+    expandedViewCtl,
   };
 
   return (
     <div className="race-basic-info-tab">
-      <FilterControls
-        metric={metric}
-        setMetric={setMetric}
-        scope={scope}
-        setScope={setScope}
-        grade={grade}
-        setGrade={setGrade}
-        period={period}
-        setPeriod={setPeriod}
+      <BasicInfoFilterBar
+        filters={filters}
         needsOwnAggregation={needsOwnAggregation}
-        officialAvgSt={officialAvgSt}
-        onRetryOfficialAvgSt={retryOfficialAvgSt}
-        currentTermFrom={currentTermFrom}
+        src={src}
       />
 
       {/* 勝率（公式の点数）・平均STの棒は、6艇の中の最小〜最大で長さを決める。
           平均STは差が0.03秒でも棒の長さが10%と100%に開くので、長さだけで差の大きさを
           読ませないよう書き添える（#1064 ファン評価2周目） */}
-      {isRelativeScaleMetric && (
+      {scale.isRelativeScaleMetric && (
         <p className="rbit-metric-caveat rbit-relative-note">
           {t("basicInfo.relativeBarNote")}
         </p>
@@ -181,70 +344,16 @@ function RaceBasicInfoTab({
       <div className="race-split">
         <div className="race-split__main">
           <div className="rbit-bars">
-            {values.map(({ boat, value, n, isSmallSample, loading }) => {
-              const player = sortedPlayers.find((p) => p.number === boat);
-              const accident = accidentByRacer.get(player?.racerId);
-              return (
-                <div key={boat} className="rbit-bar-block">
-                  <BarRow
-                    boat={boat}
-                    value={value}
-                    n={n}
-                    isSmallSample={isSmallSample}
-                    loading={loading}
-                    player={player}
-                    expanded={expandedBoat === boat}
-                    onToggle={() => toggleExpanded(boat)}
-                    barWidth={barWidthPercent(value)}
-                    isBest={bestBoats.has(boat)}
-                    metric={metric}
-                    valueDigits={valueDigits}
-                    needsOwnAggregation={needsOwnAggregation}
-                    officialRow={findOfficialRow(officialRates, boat)}
-                    currentMeet={currentMeetFlyingBoats.has(boat)}
-                    accident={accident}
-                  />
-
-                  {expandedBoat === boat && (
-                    <ExpandedPanel
-                      boat={boat}
-                      player={player}
-                      raceId={raceId}
-                      venueCode={venueCode}
-                      metric={metric}
-                      setMetric={setMetric}
-                      needsOwnAggregation={needsOwnAggregation}
-                      expandedView={expandedView}
-                      setExpandedView={setExpandedView}
-                      rawRecords={scopedStatsByRacer[player?.racerId]}
-                      records={recordsOf(player?.racerId)}
-                      accident={accident}
-                      accidentFailed={accidentRecords === null}
-                      accidentRangeLabel={accidentRangeLabel}
-                      onRetryAccident={retryAccident}
-                      nowRow={findOfficialRow(officialRates, player?.number)}
-                      periodStats={periodStats}
-                      periodFailed={periodFailed}
-                      onRetryPeriod={retryPeriod}
-                    />
-                  )}
-                </div>
-              );
-            })}
+            {values.map((row) => (
+              <BasicInfoBarBlock key={row.boat} row={row} shared={shared} />
+            ))}
           </div>
         </div>
         <div className="race-split__side">
-          {/* Fバッジ・Lバッジの凡例。選手名の行は <button> で「?」を置けず、説明は
-              title（ホバー）だけになるため、スマホでは意味を知る手段が無かった
-              （BOA-440 ファン評価1周目）。バッジが1つも無いレースでは出さない */}
-          {(officialRates ?? []).some(
-            (r) => (r.f_count ?? 0) > 0 || (r.l_count ?? 0) > 0,
-          ) && <p className="rbit-note">{t("flyingBadge.legend")}</p>}
-          {/* 事故率の目印の凡例（BOA-327）。目印が1つでも出ているときだけ。「あと◯点」を予選の得点と
-              取り違えないよう、何の点数かを書く（ファン評価1周目） */}
-          {[...accidentByRacer.values()].some((a) => a.showBadge) && (
-            <p className="rbit-note">{t("basicInfo.accidentLegend")}</p>
-          )}
+          <BasicInfoLegends
+            officialRates={src.officialRates}
+            accidentByRacer={src.accidentByRacer}
+          />
         </div>
       </div>
     </div>
