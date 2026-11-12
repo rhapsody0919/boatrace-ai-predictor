@@ -735,7 +735,7 @@
   - `src/services/adminRuleService.js:69` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
   - `src/services/predictionQueries3.js:132` select [is_hit_place, is_hit_trifecta, is_hit_trio, is_hit_win, model_id, payout_place, payout_trifecta, payout_trio, payout_win, race_id]
   - `src/services/raceQueries2.js:212` select [feature_contributions, model_id, predicted_at, race_id]
-  - `src/services/ruleMatchService.js:104` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
+  - `src/services/ruleMatchService.js:124` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
 - 書き手（10）: 
   - `scripts/daily/generate-predictions.js:1720` upsert [?]
   - `scripts/daily/generate-unified-predictions.js:508` upsert [?]
@@ -1234,7 +1234,7 @@
   - `src/services/racerQueries2.js:193` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:287` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:37` select(helper:fetchAllByIn)
-  - `src/services/ruleMatchService.js:118` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
+  - `src/services/ruleMatchService.js:146` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
   - `src/services/venueQueries2.js:56` select(helper:fetchAllByIn)
   - `src/services/venueQueries2.js:144` select(helper:fetchAllByIn)
 - 書き手（10）: 
@@ -1616,7 +1616,7 @@
   - `src/services/racerQueries2.js:187` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:281` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:252` select [race_date, race_id, race_number, venue_code]
-  - `src/services/ruleMatchService.js:133` select [race_id, start_time]
+  - `src/services/ruleMatchService.js:158` select [race_id, start_time]
   - `src/services/scheduleQueries.js:125` select [race_date]
   - `src/services/scheduleQueries.js:205` select [race_date, venue_code]
   - `src/services/scheduleQueries.js:229` select [race_date, race_id, race_number, start_time, venue_code]

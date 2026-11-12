@@ -5694,7 +5694,7 @@
           ]
         },
         {
-          "ref": "src/services/ruleMatchService.js:104",
+          "ref": "src/services/ruleMatchService.js:124",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5856,7 +5856,7 @@
             "src/services/adminRuleService.js:69",
             "src/services/predictionQueries3.js:132",
             "src/services/raceQueries2.js:212",
-            "src/services/ruleMatchService.js:104"
+            "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
           "sql": [
@@ -5895,7 +5895,7 @@
             "src/services/adminRuleService.js:69",
             "src/services/predictionQueries3.js:132",
             "src/services/raceQueries2.js:212",
-            "src/services/ruleMatchService.js:104"
+            "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
           "sql": [
@@ -5922,7 +5922,7 @@
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:69",
-            "src/services/ruleMatchService.js:104"
+            "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
           "sql": [
@@ -5945,7 +5945,7 @@
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:69",
-            "src/services/ruleMatchService.js:104"
+            "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
           "sql": [
@@ -5966,7 +5966,7 @@
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:69",
-            "src/services/ruleMatchService.js:104"
+            "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
           "sql": [
@@ -5981,7 +5981,7 @@
             "scripts/analysis/collect-venue-stats.js:215",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:69",
-            "src/services/ruleMatchService.js:104"
+            "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
           "sql": [
@@ -6155,7 +6155,7 @@
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:69",
             "src/services/raceQueries2.js:212",
-            "src/services/ruleMatchService.js:104"
+            "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
           "sql": [
@@ -11585,7 +11585,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/ruleMatchService.js:118",
+          "ref": "src/services/ruleMatchService.js:146",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11792,7 +11792,7 @@
             "src/services/motorQueries3.js:305",
             "src/services/raceQueries3.js:125",
             "src/services/raceQueries4.js:29",
-            "src/services/ruleMatchService.js:118"
+            "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
           "sql": [
@@ -11856,7 +11856,7 @@
             "src/services/motorQueries2.js:316",
             "src/services/motorQueries3.js:305",
             "src/services/raceQueries3.js:125",
-            "src/services/ruleMatchService.js:118"
+            "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
           "sql": [
@@ -11904,7 +11904,7 @@
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:316",
             "src/services/raceQueries3.js:125",
-            "src/services/ruleMatchService.js:118"
+            "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
           "sql": [
@@ -11942,7 +11942,7 @@
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:316",
             "src/services/raceQueries3.js:125",
-            "src/services/ruleMatchService.js:118"
+            "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
           "sql": [
@@ -11965,7 +11965,7 @@
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
             "src/services/adminRuleService.js:87",
-            "src/services/ruleMatchService.js:118"
+            "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
           "sql": [
@@ -11981,7 +11981,7 @@
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/maintenance/backfill-place-hits.js:31",
             "src/services/adminRuleService.js:87",
-            "src/services/ruleMatchService.js:118"
+            "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
           "sql": [
@@ -11997,7 +11997,7 @@
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/maintenance/backfill-place-hits.js:31",
             "src/services/adminRuleService.js:87",
-            "src/services/ruleMatchService.js:118"
+            "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
           "sql": [
@@ -12015,7 +12015,7 @@
             "scripts/analysis/verify-calculations.js:28",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "src/services/adminRuleService.js:87",
-            "src/services/ruleMatchService.js:118"
+            "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
           "sql": [
@@ -12034,7 +12034,7 @@
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/daily/update-outcome-frequencies.js:19",
             "src/services/adminRuleService.js:87",
-            "src/services/ruleMatchService.js:118"
+            "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
           "sql": [
@@ -17171,7 +17171,7 @@
           ]
         },
         {
-          "ref": "src/services/ruleMatchService.js:133",
+          "ref": "src/services/ruleMatchService.js:158",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17552,7 +17552,7 @@
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
             "src/services/racerQueries3.js:252",
-            "src/services/ruleMatchService.js:133",
+            "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:73",
             "src/services/venueQueries2.js:134",
@@ -17839,7 +17839,7 @@
             "scripts/sns/today-picks.js:101",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
-            "src/services/ruleMatchService.js:133",
+            "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:73",
             "src/services/watsonService.js:71"
