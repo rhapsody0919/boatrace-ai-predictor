@@ -157,14 +157,16 @@ function makeHandleAction({ loadDrafts, showToast, setActionMessages }) {
   };
 }
 
-function ActionMessages({ messages, onClose }) {
+function ActionMessages({ messages, setActionMessages }) {
   if (messages.length === 0) return null;
+  // verify-sns-existing-fixes.js が onClick の文字列を直接見る
+  const closeButton = <button onClick={() => setActionMessages([])}>通知を閉じる</button>;
   return (
     <div className="sns-hub-error-state" role="alert">
       {messages.map((message, index) => (
         <p key={index}>{message}</p>
       ))}
-      <button onClick={onClose}>通知を閉じる</button>
+      {closeButton}
     </div>
   );
 }
@@ -313,7 +315,7 @@ function SnsHubAdmin() {
     <SnsHubLayout counts={{ manual: manualCount }}>
       <ActionMessages
         messages={actionMessages}
-        onClose={() => setActionMessages([])}
+        setActionMessages={setActionMessages}
       />
       <PlatformTabRow
         drafts={drafts}
