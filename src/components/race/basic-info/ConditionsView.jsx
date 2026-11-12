@@ -6,6 +6,95 @@ import ConditionsTable from "./ConditionsTable";
 import ConditionsHowToRead from "./ConditionsHowToRead";
 import PeriodBox from "./PeriodBox";
 
+// n=0 の行は畳む（BOA-432）。B級中心の選手では
+// 「SG・G1 — (n=0)」が毎回並ぶだけで読む値が無い
+// （ナイターの行を出さないのと同じ理屈）。
+// ただし **F持ち/Fなしは対で意味を持つ**（同じ「F数が
+// 取れている走」を分け合う設計）ので、片方だけ消さず
+// 両方0のときだけ両方畳む
+function visibleConditionRows(records, venueCode, metric) {
+  return buildConditionRows(records, {
+    venueCode,
+    metric,
+  })
+    .filter((r) => !r.unavailable)
+    .filter((r, _i, rows) => {
+      if (r.key === "fHolding" || r.key === "fClean") {
+        return rows.some(
+          (x) => (x.key === "fHolding" || x.key === "fClean") && x.n > 0,
+        );
+      }
+      return r.n > 0;
+    });
+}
+
+// C: Fを持った選手の見どころはスタートの踏み方なので、
+// 指標が勝率等でも平均STを併記する。勝率だけだと
+// 「F持ち時27.3% vs F無し時11.1%」のように
+// 「Fを持っている方が走る」と読めてしまう
+function ConditionsFStNote({ condRows }) {
+  const { t } = useTranslation();
+  const holding = condRows.find((r) => r.key === "fHolding");
+  const clean = condRows.find((r) => r.key === "fClean");
+  if (!holding?.avgStN && !clean?.avgStN) return null;
+  const fmt = (row) =>
+    row?.avgSt === null || row?.avgSt === undefined
+      ? "—"
+      : row.avgSt.toFixed(2);
+  return (
+    <p className="rbit-conditions-caveat">
+      {t("basicInfo.conditionsFStNote", {
+        holding: fmt(holding),
+        holdingN: holding?.avgStN ?? 0,
+        clean: fmt(clean),
+        cleanN: clean?.avgStN ?? 0,
+      })}
+    </p>
+  );
+}
+
+// D: 外枠中心の選手は勝率だと全行0.0%に潰れて情報がゼロになる。
+// 実例（同レース4号艇）: 勝率は全行0.0%だが、3連対率にすると
+// 全国41.5%・最終日50.0%・波5cm以上50.0%と差が出る。
+// ただし3連対率も全部0の選手（1着も3着も無い新人）はいるので、
+// **切り替えて実際に差が出る場合だけ**誘導する
+function ConditionsAllZeroHint({
+  condRows,
+  records,
+  venueCode,
+  metric,
+  onSelectTop3,
+}) {
+  const { t } = useTranslation();
+  if (!(
+    metric !== "top3Rate" &&
+    metric !== "avgSt" &&
+    condRows.some((r) => r.n > 0) &&
+    // 厳密に0で判定すると「全国0.5%・一般戦0.6%」のような
+    // 実質潰れている選手を拾えない。1%未満＝100走に1回未満で
+    // 行間の差が読めない状態とみなす
+    condRows.every((r) => r.value === null || r.value < 1) &&
+    buildConditionRows(records, {
+      venueCode,
+      metric: "top3Rate",
+    }).some((r) => r.value !== null && r.value >= 1)
+  )) {
+    return null;
+  }
+  return (
+    <p className="rbit-conditions-zero">
+      {t("basicInfo.conditionsAllZeroHint")}
+      <button
+        type="button"
+        className="rbit-conditions-zero-action"
+        onClick={onSelectTop3}
+      >
+        {t("basicInfo.conditionsAllZeroAction")}
+      </button>
+    </p>
+  );
+}
+
 export default function ConditionsView({
   records,
   raceId,
@@ -27,25 +116,7 @@ export default function ConditionsView({
   if (records.length === 0) {
     return <p className="rbit-expanded-empty">{t("basicInfo.noHistory")}</p>;
   }
-  const condRows = buildConditionRows(records, {
-    venueCode,
-    metric,
-  })
-    .filter((r) => !r.unavailable)
-    // n=0 の行は畳む（BOA-432）。B級中心の選手では
-    // 「SG・G1 — (n=0)」が毎回並ぶだけで読む値が無い
-    // （ナイターの行を出さないのと同じ理屈）。
-    // ただし **F持ち/Fなしは対で意味を持つ**（同じ「F数が
-    // 取れている走」を分け合う設計）ので、片方だけ消さず
-    // 両方0のときだけ両方畳む
-    .filter((r, _i, rows) => {
-      if (r.key === "fHolding" || r.key === "fClean") {
-        return rows.some(
-          (x) => (x.key === "fHolding" || x.key === "fClean") && x.n > 0,
-        );
-      }
-      return r.n > 0;
-    });
+  const condRows = visibleConditionRows(records, venueCode, metric);
 
   return (
     <div className="rbit-conditions">
@@ -72,57 +143,14 @@ export default function ConditionsView({
           n: records.filter((r) => r.boatNumber === boat).length,
         })}
       </p>
-      {/* C: Fを持った選手の見どころはスタートの踏み方なので、
-          指標が勝率等でも平均STを併記する。勝率だけだと
-          「F持ち時27.3% vs F無し時11.1%」のように
-          「Fを持っている方が走る」と読めてしまう */}
-      {metric !== "avgSt" &&
-        (() => {
-          const holding = condRows.find((r) => r.key === "fHolding");
-          const clean = condRows.find((r) => r.key === "fClean");
-          if (!holding?.avgStN && !clean?.avgStN) return null;
-          const fmt = (row) =>
-            row?.avgSt === null || row?.avgSt === undefined
-              ? "—"
-              : row.avgSt.toFixed(2);
-          return (
-            <p className="rbit-conditions-caveat">
-              {t("basicInfo.conditionsFStNote", {
-                holding: fmt(holding),
-                holdingN: holding?.avgStN ?? 0,
-                clean: fmt(clean),
-                cleanN: clean?.avgStN ?? 0,
-              })}
-            </p>
-          );
-        })()}
-      {/* D: 外枠中心の選手は勝率だと全行0.0%に潰れて情報がゼロになる。
-          実例（同レース4号艇）: 勝率は全行0.0%だが、3連対率にすると
-          全国41.5%・最終日50.0%・波5cm以上50.0%と差が出る。
-          ただし3連対率も全部0の選手（1着も3着も無い新人）はいるので、
-          **切り替えて実際に差が出る場合だけ**誘導する */}
-      {metric !== "top3Rate" &&
-        metric !== "avgSt" &&
-        condRows.some((r) => r.n > 0) &&
-        // 厳密に0で判定すると「全国0.5%・一般戦0.6%」のような
-        // 実質潰れている選手を拾えない。1%未満＝100走に1回未満で
-        // 行間の差が読めない状態とみなす
-        condRows.every((r) => r.value === null || r.value < 1) &&
-        buildConditionRows(records, {
-          venueCode,
-          metric: "top3Rate",
-        }).some((r) => r.value !== null && r.value >= 1) && (
-          <p className="rbit-conditions-zero">
-            {t("basicInfo.conditionsAllZeroHint")}
-            <button
-              type="button"
-              className="rbit-conditions-zero-action"
-              onClick={onSelectTop3}
-            >
-              {t("basicInfo.conditionsAllZeroAction")}
-            </button>
-          </p>
-        )}
+      {metric !== "avgSt" && <ConditionsFStNote condRows={condRows} />}
+      <ConditionsAllZeroHint
+        condRows={condRows}
+        records={records}
+        venueCode={venueCode}
+        metric={metric}
+        onSelectTop3={onSelectTop3}
+      />
       <ConditionsHowToRead condRows={condRows} />
       {/* 取得失敗を「前期のデータが無い」に化けさせない。
           095未適用（forbidden）のときは枠ごと出さないのが
