@@ -9,50 +9,46 @@ import RacerSearchBox from "./RacerSearchBox";
 import { THEME_SWITCHING_ENABLED } from "../config/theme";
 import "./Header.css";
 
-function Header() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { t } = useTranslation();
-  const localize = useLocalizedPath();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCompressed, setIsCompressed] = useState(false);
-  const menuRef = useRef(null);
+// パス（言語プレフィックス除去後）が完全一致でタブ名になるもの（タブ名はパスの先頭の / を除いた形）
+const EXACT_TABS = new Set([
+  "hit-races",
+  "accuracy",
+  "winning-technique",
+  "today",
+  "picks",
+  "racers",
+  "how-to-use",
+  "guide",
+  "faq",
+  "about",
+  "profile",
+]);
 
-  // 現在のページ/タブを判定（言語プレフィックスを除いて比較）
-  const getActiveTab = () => {
-    const { basePath: pathname } = parseLangFromPath(location.pathname);
-    if (pathname === "/") {
-      // ホームページの場合はハッシュを確認
-      const hash = location.hash.slice(1);
-      return hash || "races";
-    }
-    // その他のページ
-    if (pathname === "/hit-races") return "hit-races";
-    if (pathname === "/accuracy") return "accuracy";
-    if (pathname === "/winning-technique") return "winning-technique";
-    if (pathname === "/today") return "today";
-    if (pathname === "/picks") return "picks";
-    if (pathname.startsWith("/races")) return "past-races";
-    if (pathname === "/racers") return "racers";
-    if (pathname === "/how-to-use") return "how-to-use";
-    if (pathname === "/guide") return "guide";
-    if (pathname.startsWith("/venues")) return "venues";
-    if (pathname.startsWith("/blog")) return "blog";
-    if (pathname === "/faq") return "faq";
-    if (pathname === "/about") return "about";
-    if (pathname === "/profile") return "profile";
-    return "races";
-  };
+// 前方一致でタブ名になるもの
+const PREFIX_TABS = [
+  ["/races", "past-races"],
+  ["/venues", "venues"],
+  ["/blog", "blog"],
+];
 
-  const activeTab = getActiveTab();
+// 現在のページ/タブを判定（言語プレフィックスを除いて比較）
+const getActiveTab = (location) => {
+  const { basePath: pathname } = parseLangFromPath(location.pathname);
+  if (pathname === "/") {
+    // ホームページの場合はハッシュを確認
+    const hash = location.hash.slice(1);
+    return hash || "races";
+  }
+  // その他のページ
+  if (EXACT_TABS.has(pathname.slice(1)) && pathname.startsWith("/")) {
+    return pathname.slice(1);
+  }
+  const prefixed = PREFIX_TABS.find(([prefix]) => pathname.startsWith(prefix));
+  return prefixed ? prefixed[1] : "races";
+};
 
-  // 会場別ビジターガイドは対応言語（config の LANGUAGE_ONLY_PATHS）のみメニューに表示する
-  const { lng: currentLng } = parseLangFromPath(location.pathname);
-  const showVenues = getAvailableLanguages("/venues").some(
-    (l) => l.code === currentLng,
-  );
-
-  // メニュー外クリック検出
+// メニュー外クリック検出
+const useClickOutside = (menuRef, isMenuOpen, setIsMenuOpen) => {
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -64,15 +60,18 @@ function Header() {
       document.addEventListener("click", handleClickOutside);
       return () => document.removeEventListener("click", handleClickOutside);
     }
-  }, [isMenuOpen]);
+    // menuRef と setIsMenuOpen は描画をまたいで同じ物なので、旧の [isMenuOpen] と同じ回数で動く
+  }, [isMenuOpen, menuRef, setIsMenuOpen]);
+};
 
-  // スクロール検出：デスクトップのみ圧縮
-  // 圧縮と復帰の閾値を分ける（BOA-459）。ヘッダーは sticky で文書の流れの中にあり、
-  // 圧縮で約22px縮むと、ブラウザのスクロールアンカーがその分 scrollY を戻す。
-  // 閾値が1つ（100px）だと、101〜122pxに止めた瞬間に
-  // 「圧縮→scrollYが100未満に戻る→復帰→scrollYが100超に戻る→圧縮」が毎フレーム続き、
-  // ヘッダーと下の内容が揺れ続けていた（E2Eでは要素が stable にならずクリックできない）。
-  // 2つの閾値の差を縮む量より大きく取れば、どちらの状態でも反対側の閾値を跨がない
+// スクロール検出：デスクトップのみ圧縮
+// 圧縮と復帰の閾値を分ける（BOA-459）。ヘッダーは sticky で文書の流れの中にあり、
+// 圧縮で約22px縮むと、ブラウザのスクロールアンカーがその分 scrollY を戻す。
+// 閾値が1つ（100px）だと、101〜122pxに止めた瞬間に
+// 「圧縮→scrollYが100未満に戻る→復帰→scrollYが100超に戻る→圧縮」が毎フレーム続き、
+// ヘッダーと下の内容が揺れ続けていた（E2Eでは要素が stable にならずクリックできない）。
+// 2つの閾値の差を縮む量より大きく取れば、どちらの状態でも反対側の閾値を跨がない
+const useScrollCompress = (setIsCompressed) => {
   useEffect(() => {
     const COMPRESS_ABOVE = 100;
     const EXPAND_BELOW = 50;
@@ -92,7 +91,185 @@ function Header() {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    // setIsCompressed は描画をまたいで同じ物なので、旧の [] と同じく1回だけ登録する
+  }, [setIsCompressed]);
+};
+
+// サブメニューのボタン項目（クリックでタブ遷移してメニューを閉じる）
+function SubmenuButton({ tab, activeTab, onTab, onClose, children }) {
+  return (
+    <button
+      className={`submenu-item submenu-item-button ${activeTab === tab ? "active" : ""}`}
+      onClick={() => {
+        onTab(tab);
+        onClose();
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// サブメニューのリンク項目
+function SubmenuLink({ to, tab, activeTab, onClose, children }) {
+  return (
+    <Link
+      to={to}
+      className={`submenu-item ${activeTab === tab ? "active" : ""}`}
+      onClick={onClose}
+    >
+      {children}
+    </Link>
+  );
+}
+
+// サブメニュー本体
+function Submenu({ activeTab, currentLng, showVenues, onTab, onClose }) {
+  const { t } = useTranslation();
+  const localize = useLocalizedPath();
+  const link = { activeTab, onClose };
+  return (
+    <div className="submenu">
+      <div className="submenu-settings-row">
+        <LanguageSwitcher />
+        {THEME_SWITCHING_ENABLED && <ThemeToggle />}
+      </div>
+      <SubmenuButton
+        tab="races"
+        activeTab={activeTab}
+        onTab={onTab}
+        onClose={onClose}
+      >
+        {t("nav.predictions")}
+      </SubmenuButton>
+      <SubmenuLink
+        to={localize("/winning-technique")}
+        tab="winning-technique"
+        {...link}
+      >
+        {t("nav.winningTechnique")}
+      </SubmenuLink>
+      {/* 本日のデータ一覧（/today）は ja専用のため、選手一覧と同じく ja でのみ出す */}
+      {/* i18n-allow-start: ja のときだけ出すリンク（遷移先が ja専用ページ） */}
+      {currentLng === "ja" && (
+        <SubmenuLink to="/today" tab="today" {...link}>
+          本日のデータ一覧
+        </SubmenuLink>
+      )}
+      {/* i18n-allow-end */}
+      <SubmenuButton
+        tab="hit-races"
+        activeTab={activeTab}
+        onTab={onTab}
+        onClose={onClose}
+      >
+        {t("nav.hits")}
+      </SubmenuButton>
+      <SubmenuLink to={localize("/accuracy")} tab="accuracy" {...link}>
+        {t("nav.accuracy")}
+      </SubmenuLink>
+      <SubmenuLink to={localize("/races")} tab="past-races" {...link}>
+        {t("nav.pastRaces")}
+      </SubmenuLink>
+      {/* i18n-allow-start: ja のときだけ出すリンク（遷移先が ja専用ページ） */}
+      {currentLng === "ja" && (
+        <SubmenuLink to="/racers" tab="racers" {...link}>
+          選手一覧
+        </SubmenuLink>
+      )}
+      {/* i18n-allow-end */}
+      <SubmenuLink to={localize("/how-to-use")} tab="how-to-use" {...link}>
+        {t("nav.howToUse")}
+      </SubmenuLink>
+      <SubmenuLink to={localize("/guide")} tab="guide" {...link}>
+        {t("nav.guide")}
+      </SubmenuLink>
+      {showVenues && (
+        <SubmenuLink to={localize("/venues")} tab="venues" {...link}>
+          {t("nav.venues")}
+        </SubmenuLink>
+      )}
+      <SubmenuLink to={localize("/blog")} tab="blog" {...link}>
+        {t("nav.blog")}
+      </SubmenuLink>
+      <SubmenuLink to={localize("/faq")} tab="faq" {...link}>
+        {t("nav.faq")}
+      </SubmenuLink>
+      <SubmenuLink to={localize("/about")} tab="about" {...link}>
+        {t("nav.about")}
+      </SubmenuLink>
+      <SubmenuLink to={localize("/profile")} tab="profile" {...link}>
+        {t("nav.profile")}
+      </SubmenuLink>
+    </div>
+  );
+}
+
+// ヘッダー上部のナビ
+function HeaderNav({
+  activeTab,
+  currentLng,
+  isMenuOpen,
+  setIsMenuOpen,
+  onTab,
+}) {
+  const { t } = useTranslation();
+  const localize = useLocalizedPath();
+  return (
+    <nav className="nav">
+      <Link
+        to={localize("/winning-technique")}
+        className={`nav-btn nav-btn-primary ${activeTab === "winning-technique" ? "active" : ""}`}
+      >
+        <span className="nav-btn-label-full">{t("nav.winningTechnique")}</span>
+        <span className="nav-btn-label-short">
+          {t("nav.winningTechniqueShort")}
+        </span>
+      </Link>
+      <button
+        className={`nav-btn ${activeTab === "races" ? "active" : ""}`}
+        onClick={() => onTab("races")}
+      >
+        {t("nav.predictions")}
+      </button>
+      <button
+        className={`nav-btn ${activeTab === "hit-races" ? "active" : ""}`}
+        onClick={() => onTab("hit-races")}
+      >
+        {t("nav.hits")}
+      </button>
+      {currentLng === "ja" && <RacerSearchBox />}
+      <button
+        className="nav-btn menu-btn"
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        aria-label={t("nav.menuLabel")}
+        aria-expanded={isMenuOpen}
+      >
+        ☰
+      </button>
+    </nav>
+  );
+}
+
+function Header() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const localize = useLocalizedPath();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCompressed, setIsCompressed] = useState(false);
+  const menuRef = useRef(null);
+
+  const activeTab = getActiveTab(location);
+
+  // 会場別ビジターガイドは対応言語（config の LANGUAGE_ONLY_PATHS）のみメニューに表示する
+  const { lng: currentLng } = parseLangFromPath(location.pathname);
+  const showVenues = getAvailableLanguages("/venues").some(
+    (l) => l.code === currentLng,
+  );
+
+  useClickOutside(menuRef, isMenuOpen, setIsMenuOpen);
+  useScrollCompress(setIsCompressed);
 
   // ロゴクリック時の処理
   const handleLogoClick = () => {
@@ -125,164 +302,25 @@ function Header() {
             <span className="logo-tagline">{t("nav.logoTagline")}</span>
           </span>
         </button>
-        <nav className="nav">
-          <Link
-            to={localize("/winning-technique")}
-            className={`nav-btn nav-btn-primary ${activeTab === "winning-technique" ? "active" : ""}`}
-          >
-            <span className="nav-btn-label-full">
-              {t("nav.winningTechnique")}
-            </span>
-            <span className="nav-btn-label-short">
-              {t("nav.winningTechniqueShort")}
-            </span>
-          </Link>
-          <button
-            className={`nav-btn ${activeTab === "races" ? "active" : ""}`}
-            onClick={() => handleTabClick("races")}
-          >
-            {t("nav.predictions")}
-          </button>
-          <button
-            className={`nav-btn ${activeTab === "hit-races" ? "active" : ""}`}
-            onClick={() => handleTabClick("hit-races")}
-          >
-            {t("nav.hits")}
-          </button>
-          {currentLng === "ja" && <RacerSearchBox />}
-          <button
-            className="nav-btn menu-btn"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label={t("nav.menuLabel")}
-            aria-expanded={isMenuOpen}
-          >
-            ☰
-          </button>
-        </nav>
+        <HeaderNav
+          activeTab={activeTab}
+          currentLng={currentLng}
+          isMenuOpen={isMenuOpen}
+          setIsMenuOpen={setIsMenuOpen}
+          onTab={handleTabClick}
+        />
         {/* サブメニュー - navの外に配置してoverflowの影響を受けないようにする */}
         {isMenuOpen && (
           <div className="menu-overlay" onClick={() => setIsMenuOpen(false)} />
         )}
         {isMenuOpen && (
-          <div className="submenu">
-            <div className="submenu-settings-row">
-              <LanguageSwitcher />
-              {THEME_SWITCHING_ENABLED && <ThemeToggle />}
-            </div>
-            <button
-              className={`submenu-item submenu-item-button ${activeTab === "races" ? "active" : ""}`}
-              onClick={() => {
-                handleTabClick("races");
-                setIsMenuOpen(false);
-              }}
-            >
-              {t("nav.predictions")}
-            </button>
-            <Link
-              to={localize("/winning-technique")}
-              className={`submenu-item ${activeTab === "winning-technique" ? "active" : ""}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t("nav.winningTechnique")}
-            </Link>
-            {/* 本日のデータ一覧（/today）は ja専用のため、選手一覧と同じく ja でのみ出す */}
-            {/* i18n-allow-start: ja のときだけ出すリンク（遷移先が ja専用ページ） */}
-            {currentLng === "ja" && (
-              <Link
-                to="/today"
-                className={`submenu-item ${activeTab === "today" ? "active" : ""}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                本日のデータ一覧
-              </Link>
-            )}
-            {/* i18n-allow-end */}
-            <button
-              className={`submenu-item submenu-item-button ${activeTab === "hit-races" ? "active" : ""}`}
-              onClick={() => {
-                handleTabClick("hit-races");
-                setIsMenuOpen(false);
-              }}
-            >
-              {t("nav.hits")}
-            </button>
-            <Link
-              to={localize("/accuracy")}
-              className={`submenu-item ${activeTab === "accuracy" ? "active" : ""}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t("nav.accuracy")}
-            </Link>
-            <Link
-              to={localize("/races")}
-              className={`submenu-item ${activeTab === "past-races" ? "active" : ""}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t("nav.pastRaces")}
-            </Link>
-            {/* i18n-allow-start: ja のときだけ出すリンク（遷移先が ja専用ページ） */}
-            {currentLng === "ja" && (
-              <Link
-                to="/racers"
-                className={`submenu-item ${activeTab === "racers" ? "active" : ""}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                選手一覧
-              </Link>
-            )}
-            {/* i18n-allow-end */}
-            <Link
-              to={localize("/how-to-use")}
-              className={`submenu-item ${activeTab === "how-to-use" ? "active" : ""}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t("nav.howToUse")}
-            </Link>
-            <Link
-              to={localize("/guide")}
-              className={`submenu-item ${activeTab === "guide" ? "active" : ""}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t("nav.guide")}
-            </Link>
-            {showVenues && (
-              <Link
-                to={localize("/venues")}
-                className={`submenu-item ${activeTab === "venues" ? "active" : ""}`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {t("nav.venues")}
-              </Link>
-            )}
-            <Link
-              to={localize("/blog")}
-              className={`submenu-item ${activeTab === "blog" ? "active" : ""}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t("nav.blog")}
-            </Link>
-            <Link
-              to={localize("/faq")}
-              className={`submenu-item ${activeTab === "faq" ? "active" : ""}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t("nav.faq")}
-            </Link>
-            <Link
-              to={localize("/about")}
-              className={`submenu-item ${activeTab === "about" ? "active" : ""}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t("nav.about")}
-            </Link>
-            <Link
-              to={localize("/profile")}
-              className={`submenu-item ${activeTab === "profile" ? "active" : ""}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {t("nav.profile")}
-            </Link>
-          </div>
+          <Submenu
+            activeTab={activeTab}
+            currentLng={currentLng}
+            showVenues={showVenues}
+            onTab={handleTabClick}
+            onClose={() => setIsMenuOpen(false)}
+          />
         )}
       </div>
     </header>
