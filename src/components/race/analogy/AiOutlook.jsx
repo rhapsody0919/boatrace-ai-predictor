@@ -22,21 +22,19 @@ function OutlookShell({ children }) {
 function OutlookError({ retry }) {
   const { t } = useTranslation();
   return (
-    <OutlookShell>
+    <>
       <p className="af-warn">{t("aiPredictionTab.analogy.states.error")}</p>
       <button type="button" className="af-btn" onClick={retry}>
         {t("aiPredictionTab.analogy.states.retry")}
       </button>
-    </OutlookShell>
+    </>
   );
 }
 
 function OutlookLoading() {
   const { t } = useTranslation();
   return (
-    <OutlookShell>
-      <p className="af-sub">{t("aiPredictionTab.analogy.states.loading")}</p>
-    </OutlookShell>
+    <p className="af-sub">{t("aiPredictionTab.analogy.states.loading")}</p>
   );
 }
 
@@ -140,31 +138,29 @@ function OutlookReady({ row, data, boat, target }) {
   const pct = to100(shares);
   const max = Math.max(...shares, 0.0001);
   return (
-    <OutlookShell>
-      <div className="af-ai-body">
-        <h4 className="af-h3">
-          {t(`${k}.heading`, {
-            boat,
-            finish: t(`${k}.finish.${target}`),
-          })}
-        </h4>
-        <p className="af-sub">{t(`${k}.lede`)}</p>
-        <div className="af-ai-themes">
-          {themes.map((th, i) => (
-            <OutlookTheme
-              key={th.key}
-              th={th}
-              row={row}
-              boat={boat}
-              share={shares[i]}
-              max={max}
-              pct={pct[i]}
-            />
-          ))}
-        </div>
-        <OutlookNotes row={row} boat={boat} data={data} />
+    <div className="af-ai-body">
+      <h4 className="af-h3">
+        {t(`${k}.heading`, {
+          boat,
+          finish: t(`${k}.finish.${target}`),
+        })}
+      </h4>
+      <p className="af-sub">{t(`${k}.lede`)}</p>
+      <div className="af-ai-themes">
+        {themes.map((th, i) => (
+          <OutlookTheme
+            key={th.key}
+            th={th}
+            row={row}
+            boat={boat}
+            share={shares[i]}
+            max={max}
+            pct={pct[i]}
+          />
+        ))}
       </div>
-    </OutlookShell>
+      <OutlookNotes row={row} boat={boat} data={data} />
+    </div>
   );
 }
 
@@ -185,8 +181,12 @@ export default function AiOutlook({ boat, target, stage }) {
   // 展示前で集計が無いときは準備中の1文だけ（見出し・説明文も隠す。spec FR-E）
   if (status === "preparing")
     return <p className="af-warn">{t(`${k}.preparing`)}</p>;
-  if (status === "error") return <OutlookError retry={retry} />;
+  // 殻は状態が変わっても同じ位置の同じ details のまま（利用者が開いた open を保つ）
+  let body;
   const row = data?.boats?.[String(boat)];
-  if (!row) return <OutlookLoading />;
-  return <OutlookReady row={row} data={data} boat={boat} target={target} />;
+  if (status === "error") body = <OutlookError retry={retry} />;
+  else if (!row) body = <OutlookLoading />;
+  else
+    body = <OutlookReady row={row} data={data} boat={boat} target={target} />;
+  return <OutlookShell>{body}</OutlookShell>;
 }
