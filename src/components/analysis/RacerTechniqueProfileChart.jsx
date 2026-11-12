@@ -50,6 +50,56 @@ const VENUE_NAMES = {
   24: "大村",
 };
 
+// dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
+function buildChartData(breakdown, allTechniques) {
+  return breakdown.map((row) => {
+    const item = {
+      boat_number: `${row.boat_number} ${row.player_name?.replace(/\s+/g, "") ?? ""}`,
+    };
+    allTechniques.forEach((technique) => {
+      const match = row.techniques.find((tech) => tech.technique === technique);
+      item[technique] = match ? match.percentage : 0;
+    });
+    return item;
+  });
+}
+
+function ProfileHeading({ t }) {
+  return (
+    <>
+      <h2>{t("analysis.techProfile.title")}</h2>
+      <p className="section-description">
+        {t("analysis.techProfile.description")}
+      </p>
+    </>
+  );
+}
+
+function TechniqueResults({
+  chartData,
+  allTechniques,
+  breakdown,
+  techniqueLabel,
+  t,
+}) {
+  return (
+    <>
+      <TechniqueStackedChart
+        chartData={chartData}
+        allTechniques={allTechniques}
+        techniqueLabel={techniqueLabel}
+        t={t}
+      />
+
+      <TechniqueBreakdownTable
+        breakdown={breakdown}
+        techniqueLabel={techniqueLabel}
+        t={t}
+      />
+    </>
+  );
+}
+
 function RacerTechniqueProfileChart({
   initialVenueCode = null,
   initialRaceId = null,
@@ -100,73 +150,25 @@ function RacerTechniqueProfileChart({
     ),
   ]);
 
-  // dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
-  const chartData = breakdown.map((row) => {
-    const item = {
-      boat_number: `${row.boat_number} ${row.player_name?.replace(/\s+/g, "") ?? ""}`,
-    };
-    allTechniques.forEach((technique) => {
-      const match = row.techniques.find((tech) => tech.technique === technique);
-      item[technique] = match ? match.percentage : 0;
-    });
-    return item;
-  });
+  const chartData = buildChartData(breakdown, allTechniques);
 
   return (
     <div className="motor-condition-container">
-      {!embedded && (
-        <>
-          <h2>{t("analysis.techProfile.title")}</h2>
-          <p className="section-description">
-            {t("analysis.techProfile.description")}
-          </p>
-        </>
-      )}
+      {!embedded && <ProfileHeading t={t} />}
 
       {!embedded &&
         (venues.length === 0 && !loading ? (
           <div className="empty-state">{t("analysis.noRacesToday")}</div>
         ) : (
-          <div className="controls-section">
-            <label htmlFor="technique-profile-venue-select">
-              {t("analysis.venueSelectTodayLabel")}
-            </label>
-            <select
-              id="technique-profile-venue-select"
-              value={selectedVenue ?? ""}
-              onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
-              className="venue-select"
-            >
-              {venues.map((v) => (
-                <option key={v} value={v}>
-                  {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-                </option>
-              ))}
-            </select>
-
-            {races.length > 0 && (
-              <>
-                <label htmlFor="technique-profile-race-select">
-                  {t("analysis.raceSelectLabel")}
-                </label>
-                <select
-                  id="technique-profile-race-select"
-                  value={selectedRace ?? ""}
-                  onChange={(e) => setSelectedRace(e.target.value)}
-                  className="venue-select"
-                >
-                  {races.map((r) => (
-                    <option key={r.race_id} value={r.race_id}>
-                      {t("analysis.raceOption", {
-                        number: r.race_number,
-                        time: r.start_time?.slice(0, 5),
-                      })}
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-          </div>
+          <VenueRaceControls
+            venues={venues}
+            selectedVenue={selectedVenue}
+            setSelectedVenue={setSelectedVenue}
+            races={races}
+            selectedRace={selectedRace}
+            setSelectedRace={setSelectedRace}
+            t={t}
+          />
         ))}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
@@ -177,96 +179,163 @@ function RacerTechniqueProfileChart({
       )}
 
       {!loading && !error && breakdown.length > 0 && (
-        <>
-          <div translate="no">
-            <ResponsiveContainer width="100%" height={360}>
-              <BarChart
-                data={chartData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 40 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="boat_number"
-                  interval={0}
-                  tick={{ fontSize: 11 }}
-                  angle={-35}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis
-                  label={{
-                    value: t("analysis.techProfile.yAxis"),
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                  domain={[0, 100]}
-                  ticks={[0, 20, 40, 60, 80, 100]}
-                />
-                <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
-                <Legend
-                  // 凡例の文字は本文色にし、色は横の四角で示す。系列の色（橙・灰）の文字は
-                  // ライトで約2〜2.5:1 と読みにくかった（BOA-711）
-                  formatter={(value) => (
-                    <span style={{ color: "var(--text-primary)" }}>
-                      {value}
-                    </span>
-                  )}
-                />
-                {allTechniques.map((technique, idx) => (
-                  <Bar
-                    key={technique}
-                    dataKey={technique}
-                    name={techniqueLabel(technique)}
-                    stackId="technique"
-                    fill={techniqueColor(technique, idx)}
-                  />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="table-wrapper">
-            <table className="motor-ranking-table">
-              <thead>
-                <tr>
-                  <th>{t("analysis.laneHeader")}</th>
-                  <th>{t("table.playerName")}</th>
-                  <th>{t("analysis.techProfile.winCountHeader")}</th>
-                  <th>{t("analysis.techProfile.compositionHeader")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {breakdown.map((row) => (
-                  <tr
-                    key={row.boat_number}
-                    className="motor-ranking-row non-clickable-row"
-                  >
-                    <td className="rank">{row.boat_number}</td>
-                    <td>
-                      <Link to={`/racer/${row.racer_id}`} translate="no">
-                        {row.player_name?.replace(/\s+/g, "")}
-                      </Link>
-                    </td>
-                    <td className="rate">{row.win_count}</td>
-                    <td className="rate">
-                      {row.techniques.length > 0
-                        ? row.techniques
-                            .map(
-                              (tech) =>
-                                `${techniqueLabel(tech.technique)} ${tech.percentage.toFixed(0)}%`,
-                            )
-                            .join(" / ")
-                        : t("analysis.noData")}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+        <TechniqueResults
+          chartData={chartData}
+          allTechniques={allTechniques}
+          breakdown={breakdown}
+          techniqueLabel={techniqueLabel}
+          t={t}
+        />
       )}
 
       <p className="table-note">{t("analysis.techProfile.note")}</p>
+    </div>
+  );
+}
+
+function VenueRaceControls({
+  venues,
+  selectedVenue,
+  setSelectedVenue,
+  races,
+  selectedRace,
+  setSelectedRace,
+  t,
+}) {
+  return (
+    <div className="controls-section">
+      <label htmlFor="technique-profile-venue-select">
+        {t("analysis.venueSelectTodayLabel")}
+      </label>
+      <select
+        id="technique-profile-venue-select"
+        value={selectedVenue ?? ""}
+        onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
+        className="venue-select"
+      >
+        {venues.map((v) => (
+          <option key={v} value={v}>
+            {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
+          </option>
+        ))}
+      </select>
+
+      {races.length > 0 && (
+        <>
+          <label htmlFor="technique-profile-race-select">
+            {t("analysis.raceSelectLabel")}
+          </label>
+          <select
+            id="technique-profile-race-select"
+            value={selectedRace ?? ""}
+            onChange={(e) => setSelectedRace(e.target.value)}
+            className="venue-select"
+          >
+            {races.map((r) => (
+              <option key={r.race_id} value={r.race_id}>
+                {t("analysis.raceOption", {
+                  number: r.race_number,
+                  time: r.start_time?.slice(0, 5),
+                })}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
+    </div>
+  );
+}
+
+function TechniqueStackedChart({ chartData, allTechniques, techniqueLabel, t }) {
+  return (
+    <div translate="no">
+      <ResponsiveContainer width="100%" height={360}>
+        <BarChart
+          data={chartData}
+          margin={{ top: 5, right: 30, left: 20, bottom: 40 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="boat_number"
+            interval={0}
+            tick={{ fontSize: 11 }}
+            angle={-35}
+            textAnchor="end"
+            height={60}
+          />
+          <YAxis
+            label={{
+              value: t("analysis.techProfile.yAxis"),
+              angle: -90,
+              position: "insideLeft",
+            }}
+            domain={[0, 100]}
+            ticks={[0, 20, 40, 60, 80, 100]}
+          />
+          <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+          <Legend
+            // 凡例の文字は本文色にし、色は横の四角で示す。系列の色（橙・灰）の文字は
+            // ライトで約2〜2.5:1 と読みにくかった（BOA-711）
+            formatter={(value) => (
+              <span style={{ color: "var(--text-primary)" }}>
+                {value}
+              </span>
+            )}
+          />
+          {allTechniques.map((technique, idx) => (
+            <Bar
+              key={technique}
+              dataKey={technique}
+              name={techniqueLabel(technique)}
+              stackId="technique"
+              fill={techniqueColor(technique, idx)}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function TechniqueBreakdownTable({ breakdown, techniqueLabel, t }) {
+  return (
+    <div className="table-wrapper">
+      <table className="motor-ranking-table">
+        <thead>
+          <tr>
+            <th>{t("analysis.laneHeader")}</th>
+            <th>{t("table.playerName")}</th>
+            <th>{t("analysis.techProfile.winCountHeader")}</th>
+            <th>{t("analysis.techProfile.compositionHeader")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {breakdown.map((row) => (
+            <tr
+              key={row.boat_number}
+              className="motor-ranking-row non-clickable-row"
+            >
+              <td className="rank">{row.boat_number}</td>
+              <td>
+                <Link to={`/racer/${row.racer_id}`} translate="no">
+                  {row.player_name?.replace(/\s+/g, "")}
+                </Link>
+              </td>
+              <td className="rate">{row.win_count}</td>
+              <td className="rate">
+                {row.techniques.length > 0
+                  ? row.techniques
+                      .map(
+                        (tech) =>
+                          `${techniqueLabel(tech.technique)} ${tech.percentage.toFixed(0)}%`,
+                      )
+                      .join(" / ")
+                  : t("analysis.noData")}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
