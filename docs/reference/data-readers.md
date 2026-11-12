@@ -22,7 +22,7 @@
 | コードが使うのに写しに無い名前 | 4 |
 | 名前が式で拾えなかった箇所 | 32 |
 | 構文木にできなかったファイル | 0 |
-| 対象外の言語のファイル（Python 等） | 54 |
+| 対象外の言語のファイル（Python 等） | 55 |
 
 ## 表
 
@@ -2383,7 +2383,7 @@
   - `scripts/maintenance/kb-backfill.js:776` 表の名前が変数（.from(式)）
   - `scripts/maintenance/motor-pretest-backfill.js:454` 表の名前が変数（.from(式)）
 - 構文木にできなかったファイル: 0
-- 対象外の言語で DB を読み書きしうるファイル（Python。拾っていない）: 54
+- 対象外の言語で DB を読み書きしうるファイル（Python。拾っていない）: 55
   - `scripts/analysis/analogy-finder-fr2-holdout.py`
   - `scripts/analysis/analogy-finder-fr2-strat/features_prod.py`
   - `scripts/analysis/analogy-finder-perrace/finish_targets.py`
@@ -2413,6 +2413,7 @@
   - `scripts/analysis/original-exhibition/forecast-slit.py`
   - `scripts/analysis/past-rate-check/label-threshold.py`
   - `scripts/analysis/past-rate-check/slit-pattern-rates.py`
+  - `scripts/maintenance/guard_weakening/verify_guard.py`
   - `scripts/ml/analogy/db.py`
   - `scripts/ml/analogy/features.py`
   - `scripts/ml/analogy/in_caution_bands.py`

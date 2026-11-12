@@ -17,7 +17,7 @@
     "notInSnapshot": 4,
     "unresolved": 32,
     "parseErrors": 0,
-    "uncoveredFiles": 54
+    "uncoveredFiles": 55
   },
   "tables": {
     "accuracy_cache": {
@@ -30747,6 +30747,7 @@
     "scripts/analysis/original-exhibition/forecast-slit.py",
     "scripts/analysis/past-rate-check/label-threshold.py",
     "scripts/analysis/past-rate-check/slit-pattern-rates.py",
+    "scripts/maintenance/guard_weakening/verify_guard.py",
     "scripts/ml/analogy/db.py",
     "scripts/ml/analogy/features.py",
     "scripts/ml/analogy/in_caution_bands.py",
