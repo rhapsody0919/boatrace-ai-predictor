@@ -72,16 +72,31 @@ const rulesOf = (r) => [...new Set(r.hits.map((h) => h.rule))].sort();
 // 約束: light なら human・needs は空。heavy なら hits の全部のファイルが human か needs に入る（file・kind の順、同じ組は1回）
 const promise = (name, r) => {
   if (r.lane === "light") {
-    assert.deepEqual([r.human, r.needs], [[], []], `${name}: light なのに human・needs`);
+    assert.deepEqual(
+      [r.human, r.needs],
+      [[], []],
+      `${name}: light なのに human・needs`,
+    );
     return;
   }
   const covered = new Set([...r.human, ...r.needs].map((x) => x.file));
   for (const h of r.hits)
-    assert.ok(covered.has(h.file), `${name}: ${h.file} が human にも needs にも入らない`);
+    assert.ok(
+      covered.has(h.file),
+      `${name}: ${h.file} が human にも needs にも入らない`,
+    );
   for (const list of [r.human, r.needs]) {
     const keys = list.map((x) => `${x.file}\0${x.kind}`);
     assert.equal(new Set(keys).size, keys.length, `${name}: 同じ組が2回`);
-    assert.deepEqual(keys, [...keys].sort((a, b) => a.split("\0")[0].localeCompare(b.split("\0")[0]) || a.split("\0")[1].localeCompare(b.split("\0")[1])), `${name}: 並び`);
+    assert.deepEqual(
+      keys,
+      [...keys].sort(
+        (a, b) =>
+          a.split("\0")[0].localeCompare(b.split("\0")[0]) ||
+          a.split("\0")[1].localeCompare(b.split("\0")[1]),
+      ),
+      `${name}: 並び`,
+    );
   }
 };
 const expect = (name, changes, lane, rules = [], patches, opts) => {
@@ -536,6 +551,99 @@ expect(
   ["H9"],
   patch("src/data/morningDigestCopy.js", ['  title: "的中率",']),
 );
+
+// ---- 別のファイルへ字のまま移した語の行は H9 に当てない（#2504 BOA-1403 の分割の誤検知） ----
+{
+  const BIG = "src/pages/VenueGridPage.jsx";
+  const PART = "src/components/HitRaces.jsx";
+  const LINE = "<p>回収率100%は超えていません</p>";
+  const files = (...entries) => new Map(entries);
+  const h9 = (r) => r.hits.filter((h) => h.rule === "H9").map((h) => h.file);
+  expect(
+    "別のファイルへ移しただけ（字下げだけ違う）は H9 に当てない",
+    [`M ${BIG}`, `M ${PART}`],
+    "light",
+    [],
+    files(
+      [BIG, { added: [], removed: [`              ${LINE}`] }],
+      [PART, { added: [`      ${LINE}`, "<p>見出し</p>"], removed: [] }],
+    ),
+  );
+  expect(
+    "消したファイルから移しただけも H9 に当てない",
+    [`D ${BIG}`, `M ${PART}`],
+    "light",
+    [],
+    files(
+      [BIG, { added: [], removed: [LINE] }],
+      [PART, { added: [LINE], removed: [] }],
+    ),
+  );
+  const fresh = expect(
+    "移した上に新しい語を足せば H9（移した先に当たる）",
+    [`M ${BIG}`, `M ${PART}`],
+    "heavy",
+    ["H9"],
+    files(
+      [BIG, { added: [], removed: [LINE] }],
+      [PART, { added: [LINE, "<p>的中率で見る</p>"], removed: [] }],
+    ),
+  );
+  assert.deepEqual(h9(fresh), [PART], "移した先だけに当たる");
+  assert.match(fresh.hits.find((h) => h.rule === "H9").reason, /的中率$/);
+  expect(
+    "移して1字変えれば H9",
+    [`M ${BIG}`, `M ${PART}`],
+    "heavy",
+    ["H9"],
+    files(
+      [BIG, { added: [], removed: [LINE] }],
+      [PART, { added: [LINE.replace("100", "120")], removed: [] }],
+    ),
+  );
+  const dup = expect(
+    "元に残したまま別のファイルへ写す（複製）は H9",
+    [`M ${BIG}`, `M ${PART}`],
+    "heavy",
+    ["H9"],
+    files(
+      [BIG, { added: [`  ${LINE}`], removed: [LINE] }],
+      [PART, { added: [LINE], removed: [] }],
+    ),
+  );
+  assert.deepEqual(h9(dup), [PART]);
+  expect(
+    "1行を2つのファイルへ写せば H9（消した行と1対1）",
+    [`M ${BIG}`, `M ${PART}`, "M src/components/RaceCard.jsx"],
+    "heavy",
+    ["H9"],
+    files(
+      [BIG, { added: [], removed: [LINE] }],
+      [PART, { added: [LINE], removed: [] }],
+      ["src/components/RaceCard.jsx", { added: [LINE], removed: [] }],
+    ),
+  );
+  expect(
+    "移し元の行を書き換えて残せば、移し元に新しい語が入ったとして H9",
+    [`M ${BIG}`, `M ${PART}`],
+    "heavy",
+    ["H9"],
+    files(
+      [BIG, { added: ["<p>回収率は未達</p>"], removed: [LINE] }],
+      [PART, { added: [LINE], removed: [] }],
+    ),
+  );
+  expect(
+    "語を見ないファイル（記事）から持ち込んだ行は H9",
+    ["M src/data/blog-posts/guide.json", `M ${PART}`],
+    "heavy",
+    ["H9"],
+    files(
+      ["src/data/blog-posts/guide.json", { added: [], removed: [LINE] }],
+      [PART, { added: [LINE], removed: [] }],
+    ),
+  );
+}
 
 // ---- unified diff の読み方 ----
 {
@@ -1039,20 +1147,40 @@ const moveRun = (texts, changes = moveChanges) => {
   for (const r of config.reservedPatterns)
     assert.ok(r.reason, `reservedPatterns に理由が要る: ${r.pattern}`);
   const keys = [
-    "paths", "added", "changed", "exceptAdded", "except",
-    "reachFrom", "rowsOnlyAdded", "globalSelectors",
+    "paths",
+    "added",
+    "changed",
+    "exceptAdded",
+    "except",
+    "reachFrom",
+    "rowsOnlyAdded",
+    "globalSelectors",
   ];
   const patterns = [
     ...config.rules.flatMap((rule) =>
       [
         ...keys.flatMap((k) => rule[k] ?? []),
         ...(rule.terms ? [...rule.terms.scan, ...rule.terms.except] : []),
-        ...(typeof rule.needs === "object" ? Object.values(rule.needs).flat() : []),
+        ...(typeof rule.needs === "object"
+          ? Object.values(rule.needs).flat()
+          : []),
       ].map((p) => [rule.id, p, ""]),
     ),
-    ...[config.moveOnly.from, ...config.moveOnly.to].map((p) => ["moveOnly", p, ""]),
+    ...[config.moveOnly.from, ...config.moveOnly.to].map((p) => [
+      "moveOnly",
+      p,
+      "",
+    ]),
     ...Object.entries(config.human).flatMap(([kind, spec]) =>
-      ["paths", "writerFiles", "deleted", "changedScripts", "addedRows", "registryRows", "removedRows"]
+      [
+        "paths",
+        "writerFiles",
+        "deleted",
+        "changedScripts",
+        "addedRows",
+        "registryRows",
+        "removedRows",
+      ]
         .flatMap((k) => spec[k] ?? [])
         .map((p) => [`human.${kind}`, p, "i"]),
     ),
@@ -1089,53 +1217,222 @@ const moveRun = (texts, changes = moveChanges) => {
     promise(changes.join(","), r);
     return r;
   };
-  const ex = (changes, opts = {}, { human = [], noHuman = [], needs = [], noNeeds = [] } = {}) => {
+  const ex = (
+    changes,
+    opts = {},
+    { human = [], noHuman = [], needs = [], noNeeds = [] } = {},
+  ) => {
     const r = explain(changes, opts);
     const h = r.human.map((x) => `${x.kind} ${x.file}`);
     const n = r.needs.map((x) => `${x.kind} ${x.file}`);
     const at = `${changes.join(",")} human=${h} needs=${n}`;
-    for (const x of human) assert.ok(h.includes(x), `${at}: human に ${x} が無い`);
-    for (const x of noHuman) assert.ok(!h.includes(x), `${at}: human に ${x} がある`);
-    for (const x of needs) assert.ok(n.includes(x), `${at}: needs に ${x} が無い`);
-    for (const x of noNeeds) assert.ok(!n.includes(x), `${at}: needs に ${x} がある`);
+    for (const x of human)
+      assert.ok(h.includes(x), `${at}: human に ${x} が無い`);
+    for (const x of noHuman)
+      assert.ok(!h.includes(x), `${at}: human に ${x} がある`);
+    for (const x of needs)
+      assert.ok(n.includes(x), `${at}: needs に ${x} が無い`);
+    for (const x of noNeeds)
+      assert.ok(!n.includes(x), `${at}: needs に ${x} がある`);
   };
-  const upsert = { "scripts/daily/w.js": { head: 'await sb.from("x").upsert(rows);\n' } };
+  const upsert = {
+    "scripts/daily/w.js": { head: 'await sb.from("x").upsert(rows);\n' },
+  };
 
-  ex(["M .github/workflows/ci.yml"], {}, { human: ["github .github/workflows/ci.yml"] });
-  ex(["A scripts/maintenance/ryujin-maker-token.js"], {}, { human: ["secret scripts/maintenance/ryujin-maker-token.js"] });
+  ex(
+    ["M .github/workflows/ci.yml"],
+    {},
+    { human: ["github .github/workflows/ci.yml"] },
+  );
+  ex(
+    ["A scripts/maintenance/ryujin-maker-token.js"],
+    {},
+    { human: ["secret scripts/maintenance/ryujin-maker-token.js"] },
+  );
   ex(["M package-lock.json"], {}, { human: ["secret package-lock.json"] });
-  ex(["M scripts/analysis/foo.js"], {}, {
-    noHuman: ["secret scripts/analysis/foo.js", "db scripts/analysis/foo.js", "github scripts/analysis/foo.js"],
-    needs: ["line-mutation scripts/analysis/foo.js"],
-  });
-  ex(["M scripts/lib/x.js"], {}, { human: ["db scripts/lib/x.js"], noNeeds: ["line-mutation scripts/lib/x.js"] });
-  ex(["M scripts/daily/w.js"], { blobs: upsert }, { human: ["db scripts/daily/w.js"] });
-  ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { base: 'sb\n.from("x")\n  .delete()\n', head: "" } } }, { human: ["db scripts/daily/w.js"] });
-  ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { head: "const k = process.env.SUPABASE_SERVICE_ROLE_KEY;\n" } } }, { human: ["db scripts/daily/w.js"] });
-  ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { head: null } } }, { human: ["db scripts/daily/w.js"] });
-  ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { head: 'sb.from("x").select("*");\n' } } }, { noHuman: ["db scripts/daily/w.js"], needs: ["line-mutation scripts/daily/w.js"] });
-  ex(["M scripts/sns/post.js"], {}, { human: ["sns scripts/sns/post.js"], noHuman: ["terms scripts/sns/post.js"] });
-  ex(["M src/components/Foo.jsx"], { patches: patch("src/components/Foo.jsx", ["<p>回収率</p>"]) }, { human: ["terms src/components/Foo.jsx"], noHuman: ["sns src/components/Foo.jsx"] });
+  ex(
+    ["M scripts/analysis/foo.js"],
+    {},
+    {
+      noHuman: [
+        "secret scripts/analysis/foo.js",
+        "db scripts/analysis/foo.js",
+        "github scripts/analysis/foo.js",
+      ],
+      needs: ["line-mutation scripts/analysis/foo.js"],
+    },
+  );
+  ex(
+    ["M scripts/lib/x.js"],
+    {},
+    {
+      human: ["db scripts/lib/x.js"],
+      noNeeds: ["line-mutation scripts/lib/x.js"],
+    },
+  );
+  ex(
+    ["M scripts/daily/w.js"],
+    { blobs: upsert },
+    { human: ["db scripts/daily/w.js"] },
+  );
+  ex(
+    ["M scripts/daily/w.js"],
+    {
+      blobs: {
+        "scripts/daily/w.js": {
+          base: 'sb\n.from("x")\n  .delete()\n',
+          head: "",
+        },
+      },
+    },
+    { human: ["db scripts/daily/w.js"] },
+  );
+  ex(
+    ["M scripts/daily/w.js"],
+    {
+      blobs: {
+        "scripts/daily/w.js": {
+          head: "const k = process.env.SUPABASE_SERVICE_ROLE_KEY;\n",
+        },
+      },
+    },
+    { human: ["db scripts/daily/w.js"] },
+  );
+  ex(
+    ["M scripts/daily/w.js"],
+    { blobs: { "scripts/daily/w.js": { head: null } } },
+    { human: ["db scripts/daily/w.js"] },
+  );
+  ex(
+    ["M scripts/daily/w.js"],
+    {
+      blobs: { "scripts/daily/w.js": { head: 'sb.from("x").select("*");\n' } },
+    },
+    {
+      noHuman: ["db scripts/daily/w.js"],
+      needs: ["line-mutation scripts/daily/w.js"],
+    },
+  );
+  ex(
+    ["M scripts/sns/post.js"],
+    {},
+    {
+      human: ["sns scripts/sns/post.js"],
+      noHuman: ["terms scripts/sns/post.js"],
+    },
+  );
+  ex(
+    ["M src/components/Foo.jsx"],
+    { patches: patch("src/components/Foo.jsx", ["<p>回収率</p>"]) },
+    {
+      human: ["terms src/components/Foo.jsx"],
+      noHuman: ["sns src/components/Foo.jsx"],
+    },
+  );
   ex(["M public/robots.txt"], {}, { human: ["seo public/robots.txt"] });
-  ex(["M scripts/maintenance/pr-lane.js"], {}, { human: ["judge scripts/maintenance/pr-lane.js"], noNeeds: ["line-mutation scripts/maintenance/pr-lane.js"] });
-  ex(["M e2e/fixtures.js"], {}, { human: ["fixture e2e/fixtures.js"], noNeeds: ["base-spec-on-head e2e/fixtures.js"] });
-  ex(["M e2e/recordings/x.json.gz"], {}, { human: ["fixture e2e/recordings/x.json.gz"], noNeeds: ["base-spec-on-head e2e/recordings/x.json.gz"] });
-  ex(["D scripts/maintenance/verify-foo.js"], {}, { human: ["weaken scripts/maintenance/verify-foo.js"] });
-  ex(["M scripts/maintenance/verify-foo.js"], {}, { noHuman: ["weaken scripts/maintenance/verify-foo.js"], needs: ["verify-mutation scripts/maintenance/verify-foo.js"] });
-  ex(["M scripts/maintenance/verify-foo.mjs"], {}, { human: ["weaken scripts/maintenance/verify-foo.mjs"] });
+  ex(
+    ["M scripts/maintenance/pr-lane.js"],
+    {},
+    {
+      human: ["judge scripts/maintenance/pr-lane.js"],
+      noNeeds: ["line-mutation scripts/maintenance/pr-lane.js"],
+    },
+  );
+  ex(
+    ["M e2e/fixtures.js"],
+    {},
+    {
+      human: ["fixture e2e/fixtures.js"],
+      noNeeds: ["base-spec-on-head e2e/fixtures.js"],
+    },
+  );
+  ex(
+    ["M e2e/recordings/x.json.gz"],
+    {},
+    {
+      human: ["fixture e2e/recordings/x.json.gz"],
+      noNeeds: ["base-spec-on-head e2e/recordings/x.json.gz"],
+    },
+  );
+  ex(
+    ["D scripts/maintenance/verify-foo.js"],
+    {},
+    { human: ["weaken scripts/maintenance/verify-foo.js"] },
+  );
+  ex(
+    ["M scripts/maintenance/verify-foo.js"],
+    {},
+    {
+      noHuman: ["weaken scripts/maintenance/verify-foo.js"],
+      needs: ["verify-mutation scripts/maintenance/verify-foo.js"],
+    },
+  );
+  ex(
+    ["M scripts/maintenance/verify-foo.mjs"],
+    {},
+    { human: ["weaken scripts/maintenance/verify-foo.mjs"] },
+  );
   ex(["D e2e/foo.spec.js"], {}, { human: ["weaken e2e/foo.spec.js"] });
-  ex(["M e2e/foo.spec.js"], {}, { noHuman: ["weaken e2e/foo.spec.js"], needs: ["base-spec-on-head e2e/foo.spec.js"] });
-  ex(["M docs/x-allowlist.json"], { patches: patch("docs/x-allowlist.json", ['  "a",']) }, { human: ["weaken docs/x-allowlist.json"] });
-  ex(["M docs/x-allowlist.json"], { patches: patch("docs/x-allowlist.json", [], ['  "a",']) }, { noHuman: ["weaken docs/x-allowlist.json"], human: ["unclassified docs/x-allowlist.json"] });
+  ex(
+    ["M e2e/foo.spec.js"],
+    {},
+    {
+      noHuman: ["weaken e2e/foo.spec.js"],
+      needs: ["base-spec-on-head e2e/foo.spec.js"],
+    },
+  );
+  ex(
+    ["M docs/x-allowlist.json"],
+    { patches: patch("docs/x-allowlist.json", ['  "a",']) },
+    { human: ["weaken docs/x-allowlist.json"] },
+  );
+  ex(
+    ["M docs/x-allowlist.json"],
+    { patches: patch("docs/x-allowlist.json", [], ['  "a",']) },
+    {
+      noHuman: ["weaken docs/x-allowlist.json"],
+      human: ["unclassified docs/x-allowlist.json"],
+    },
+  );
   const reg = "scripts/maintenance/verify-registry.json";
-  ex([`M ${reg}`], { patches: patch(reg, ['{ "name": "b" }'], ['{ "name": "a" }']) }, { human: [`weaken ${reg}`] });
-  ex(["M AGENTS.md"], { patches: patch("AGENTS.md", ["b"], ["a"]) }, { human: ["weaken AGENTS.md"] });
-  ex(["M AGENTS.md"], { patches: patch("AGENTS.md", ["b"]) }, { noHuman: ["weaken AGENTS.md"], human: ["unclassified AGENTS.md"] });
-  ex(["M src/App.css"], {}, { human: ["css-core src/App.css"], noNeeds: ["screenshot-diff src/App.css"] });
-  ex(["M src/components/Foo.css"], {}, { noHuman: ["css-core src/components/Foo.css"], needs: ["screenshot-diff src/components/Foo.css"] });
+  ex(
+    [`M ${reg}`],
+    { patches: patch(reg, ['{ "name": "b" }'], ['{ "name": "a" }']) },
+    { human: [`weaken ${reg}`] },
+  );
+  ex(
+    ["M AGENTS.md"],
+    { patches: patch("AGENTS.md", ["b"], ["a"]) },
+    { human: ["weaken AGENTS.md"] },
+  );
+  ex(
+    ["M AGENTS.md"],
+    { patches: patch("AGENTS.md", ["b"]) },
+    { noHuman: ["weaken AGENTS.md"], human: ["unclassified AGENTS.md"] },
+  );
+  ex(
+    ["M src/App.css"],
+    {},
+    {
+      human: ["css-core src/App.css"],
+      noNeeds: ["screenshot-diff src/App.css"],
+    },
+  );
+  ex(
+    ["M src/components/Foo.css"],
+    {},
+    {
+      noHuman: ["css-core src/components/Foo.css"],
+      needs: ["screenshot-diff src/components/Foo.css"],
+    },
+  );
   ex(["M src/pure/x.js"], {}, { needs: ["line-mutation src/pure/x.js"] });
   ex(["M api/x.js"], {}, { needs: ["line-mutation api/x.js"] });
-  ex(["A src/pages/NewPage.jsx"], {}, { needs: ["route-in-e2e src/pages/NewPage.jsx"] });
+  ex(
+    ["A src/pages/NewPage.jsx"],
+    {},
+    { needs: ["route-in-e2e src/pages/NewPage.jsx"] },
+  );
   ex(["M data/x.json"], {}, { needs: ["line-mutation data/x.json"] });
 }
 
@@ -1211,6 +1508,51 @@ const moveRun = (texts, changes = moveChanges) => {
   g("add", "-A");
   g("commit", "-q", "-m", "words");
   const words = g("rev-parse", "HEAD");
+  // 別のファイルへ字のまま移す（H9 に当てない）・移して新しい語・PR で risk-rules の語を消す（merge-base の語で当てる）
+  g("checkout", "-q", "-b", "split", start);
+  put(
+    "src/pages/Long.jsx",
+    "export default () => (\n  <div>\n        <p>回収率は未達</p>\n        <p>一攫千金ではない</p>\n  </div>\n);\n",
+  );
+  g("add", "-A");
+  g("commit", "-q", "-m", "split base");
+  const splitBase = g("rev-parse", "HEAD");
+  put(
+    "src/pages/Long.jsx",
+    'import Part from "./long/Part.jsx";\nexport default () => <Part />;\n',
+  );
+  put(
+    "src/pages/long/Part.jsx",
+    "export default () => (\n  <div>\n    <p>回収率は未達</p>\n    <p>一攫千金ではない</p>\n  </div>\n);\n",
+  );
+  g("add", "-A");
+  g("commit", "-q", "-m", "split");
+  const splitHead = g("rev-parse", "HEAD");
+  put(
+    "src/pages/long/Part.jsx",
+    "export default () => (\n  <div>\n    <p>回収率は未達</p>\n    <p>一攫千金ではない</p>\n    <p>的中率</p>\n  </div>\n);\n",
+  );
+  g("add", "-A");
+  g("commit", "-q", "-m", "split and new word");
+  const splitFresh = g("rev-parse", "HEAD");
+  g("checkout", "-q", "-b", "weaken", start);
+  const risk = JSON.parse(
+    readFileSync(
+      join(repo, "sns-video-studio/remotion/risk-rules.json"),
+      "utf8",
+    ),
+  );
+  put(
+    "sns-video-studio/remotion/risk-rules.json",
+    JSON.stringify({
+      ...risk,
+      rules: risk.rules.filter((r) => !r.patterns.includes("一攫千金")),
+    }),
+  );
+  put("src/pages/Other.jsx", "export default () => <p>一攫千金</p>;\n");
+  g("add", "-A");
+  g("commit", "-q", "-m", "weaken words");
+  const weaken = g("rev-parse", "HEAD");
   // 移すだけ（BOA-1433）: git から base・head の字を読む道。移す前の殻・移した木・移して1字変えた木
   const moveCommit = (files, msg) => {
     for (const [p, text] of files) put(p, text);
@@ -1286,6 +1628,28 @@ const moveRun = (texts, changes = moveChanges) => {
     ],
     "空白・引用符を含むパスでも足した行の語を読む",
   );
+  const h9Files = (base, head) => {
+    const r = cli(base, head);
+    assert.equal(r.status, 0, r.stderr);
+    return JSON.parse(r.stdout)
+      .hits.filter((h) => h.rule === "H9")
+      .map((h) => h.file);
+  };
+  assert.deepEqual(
+    h9Files(splitBase, splitHead),
+    [],
+    "CLI: 別のファイルへ字のまま移しただけは H9 に当てない",
+  );
+  assert.deepEqual(
+    h9Files(splitBase, splitFresh),
+    ["src/pages/long/Part.jsx"],
+    "CLI: 移した上に新しい語を足せば H9",
+  );
+  assert.deepEqual(
+    h9Files(master, weaken),
+    ["src/pages/Other.jsx"],
+    "CLI: PR が risk-rules から語を消しても merge-base の語で H9",
+  );
   assert.deepEqual(
     JSON.parse(cli(moveBase, moveHead).stdout),
     { lane: "light", hits: [], human: [], needs: [] },
@@ -1301,7 +1665,10 @@ const moveRun = (texts, changes = moveChanges) => {
   assert.notEqual(bad.status, 0, "判定できないときは 0 以外");
   assert.equal(JSON.parse(bad.stdout).lane, "heavy");
   assert.deepEqual(
-    [JSON.parse(bad.stdout).human.map((x) => [x.kind, x.file]), JSON.parse(bad.stdout).needs],
+    [
+      JSON.parse(bad.stdout).human.map((x) => [x.kind, x.file]),
+      JSON.parse(bad.stdout).needs,
+    ],
     [[["error", ""]], []],
     "判定できないときは human に error の要素",
   );

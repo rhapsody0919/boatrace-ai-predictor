@@ -13,6 +13,7 @@
  * 差分は base と head の merge-base から head まで（three-dot と同じ）、--no-renames（名前を変えたファイルは元のパスでも判定する）。
  * import の閉包（H2・H6）は merge-base と head の両方のコミットの木を git から読んで辿る（手元のファイルは見ない。消したファイルも元の木で辿る）。
  * 語（H9）の risk-rules.json は、判定する repo の merge-base の木から読む（PR 自身が語を消して軽くできないように）。
+ * 語を含む足した行が、同じ PR が語を見る別のファイルから消した行と前後の空白を除いて同じ（字のまま移しただけ）なら数えない（withoutMovedLines）。
  *
  * hq との約束（段L の影、2026-11-05）: Node の組み込みと git だけを使う（npm の部品・DB・ネットワークなし。hq の写しは
  * この script・config/pr-path-rules.json・scripts/lib/relativeImportGraph.js・移すだけの判定 prLaneMoveOnly*.js を同じ配置で持つ）。100秒（BUDGET_MS）で
@@ -63,14 +64,16 @@ export function loadRules(
 
 /** config/pr-path-rules.json の moveOnly（移すだけの判定の from・to。無ければ undefined） */
 export function loadMoveOnly(root = SELF_ROOT) {
-  return JSON.parse(readFileSync(join(root, "config/pr-path-rules.json"), "utf8"))
-    .moveOnly;
+  return JSON.parse(
+    readFileSync(join(root, "config/pr-path-rules.json"), "utf8"),
+  ).moveOnly;
 }
 
 /** config/pr-path-rules.json の human（人にしか判断できない理由の kind ごとの型） */
 export function loadHuman(root = SELF_ROOT) {
-  return JSON.parse(readFileSync(join(root, "config/pr-path-rules.json"), "utf8"))
-    .human;
+  return JSON.parse(
+    readFileSync(join(root, "config/pr-path-rules.json"), "utf8"),
+  ).human;
 }
 
 const anyMatch = (patterns = [], path, flags = "") =>
@@ -114,9 +117,7 @@ function weakenReason({ spec: w, file, status, patch }) {
       "既存の .mjs・.cjs・.sh の verify の変更",
     ],
     [
-      !del &&
-        anyMatch(w.addedRows, file) &&
-        (!patch || patch.added.length > 0),
+      !del && anyMatch(w.addedRows, file) && (!patch || patch.added.length > 0),
       "allowlist に行を足す",
     ],
     [
@@ -124,9 +125,7 @@ function weakenReason({ spec: w, file, status, patch }) {
       "台帳の既存の行の変更・削除",
     ],
     [
-      status !== "A" &&
-        anyMatch(w.removedRows, file) &&
-        rows((p) => p.removed),
+      status !== "A" && anyMatch(w.removedRows, file) && rows((p) => p.removed),
       "行の削除・書き換え",
     ],
   ];
@@ -179,7 +178,11 @@ function explain({ hits, changes, patches, rules, human, readBlob }) {
     for (const h of hits.filter((x) => x.file === file)) {
       const rule = rules.find((r) => r.id === h.rule);
       if (!rule?.needs) continue;
-      if ((rule.needsUnlessHuman ?? []).some((k) => mine.some((m) => m.kind === k)))
+      if (
+        (rule.needsUnlessHuman ?? []).some((k) =>
+          mine.some((m) => m.kind === k),
+        )
+      )
         continue;
       const kinds =
         typeof rule.needs === "string"
@@ -210,6 +213,77 @@ function explain({ hits, changes, patches, rules, human, readBlob }) {
 
 const count = (lines, word) =>
   lines.reduce((n, line) => n + line.split(word).length - 1, 0);
+
+/**
+ * 語（H9）の数えから、別のファイルへ字のまま移しただけの行を外す（部品の分割で既存の文言が新しいファイルへ動く形）。
+ * 語を含む足した行のうち、同じ PR が paths の別のファイルから消した行と、前後の空白を除いて一字違わず同じ物を、
+ * 消した行と1対1で対にし、足した側・消した側の両方の数えから外す。
+ * - 同じファイルの中で足して消した同じ行は先にそのファイルの中で対にする（別のファイルの行と二重に使わない。複製は移動に数えない）
+ * - 移し元は paths（語を見るファイル）だけ。語を見ないファイル（記事・docs 等）から持ち込んだ行は今どおり新しい語
+ * - 1字でも変えた行・新しい行は残るので、今どおり「足した行の語の数 > 消した行の語の数」で当たる
+ * @param {Map<string, { added: string[], removed: string[] }>} patches
+ * @param {string[]} paths 語を見るファイル（順に対にする。git の差分の順）
+ * @param {string[]} words
+ * @returns {Map<string, { added: string[], removed: string[] }>} 移動を外した語を含む行（patches に無いパスは入れない）
+ */
+export function withoutMovedLines(patches, paths, words) {
+  const hasWord = (line) => words.some((w) => line.includes(w));
+  const bag = (lines) => {
+    const m = new Map();
+    for (const l of lines) m.set(l, (m.get(l) ?? 0) + 1);
+    return m;
+  };
+  const files = paths
+    .filter((p) => patches.has(p))
+    .map((path) => {
+      const p = patches.get(path);
+      const added = p.added.filter(hasWord).map((l) => l.trim());
+      const removed = p.removed.filter(hasWord).map((l) => l.trim());
+      // 同じファイルの中の対を除いた残り（別のファイルと対にできる行）
+      const freeAdded = bag(added);
+      const freeRemoved = bag(removed);
+      for (const [line, n] of freeAdded) {
+        const k = Math.min(n, freeRemoved.get(line) ?? 0);
+        freeAdded.set(line, n - k);
+        freeRemoved.set(line, (freeRemoved.get(line) ?? 0) - k);
+      }
+      return { path, added, removed, freeAdded, freeRemoved };
+    });
+  const movedIn = new Map(files.map((f) => [f.path, new Map()]));
+  const movedOut = new Map(files.map((f) => [f.path, new Map()]));
+  const take = (m, line) => m.set(line, (m.get(line) ?? 0) + 1);
+  for (const to of files) {
+    for (const [line, n] of to.freeAdded) {
+      for (let i = 0; i < n; i += 1) {
+        const from = files.find(
+          (f) => f !== to && (f.freeRemoved.get(line) ?? 0) > 0,
+        );
+        if (!from) break;
+        from.freeRemoved.set(line, from.freeRemoved.get(line) - 1);
+        take(movedIn.get(to.path), line);
+        take(movedOut.get(from.path), line);
+      }
+    }
+  }
+  const drop = (lines, moved) => {
+    const left = new Map(moved);
+    return lines.filter((l) => {
+      const k = left.get(l) ?? 0;
+      if (k === 0) return true;
+      left.set(l, k - 1);
+      return false;
+    });
+  };
+  return new Map(
+    files.map((f) => [
+      f.path,
+      {
+        added: drop(f.added, movedIn.get(f.path)),
+        removed: drop(f.removed, movedOut.get(f.path)),
+      },
+    ]),
+  );
+}
 
 /** 括弧（:not()・:is() の中・[...]）の外のカンマで割る */
 const splitTop = (prelude) => {
@@ -336,6 +410,18 @@ export function classify({
       hits.push({ rule: rule.id, file, reason });
   };
   for (const rule of rules) {
+    const termLines = rule.terms
+      ? withoutMovedLines(
+          patches,
+          changes
+            .map((c) => c.path)
+            .filter(
+              (p) =>
+                anyMatch(rule.terms.scan, p) && !anyMatch(rule.terms.except, p),
+            ),
+          rule.terms.words,
+        )
+      : null;
     for (const { status, path } of changes) {
       const added = status === "A";
       if (anyMatch(rule.except, path)) continue;
@@ -377,8 +463,10 @@ export function classify({
           // 行を読めないときは語を確かめられないので当てる（安全側。rowsOnlyAdded と同じ）
           hit(rule, path, "差分の行を読めない（安全側）");
         } else {
+          // 別のファイルから字のまま移した行は数えない（withoutMovedLines）。語の一覧は merge-base の木から読んだ物
+          const lines = termLines.get(path);
           const fresh = rule.terms.words.filter(
-            (w) => count(patch.added, w) > count(patch.removed, w),
+            (w) => count(lines.added, w) > count(lines.removed, w),
           );
           if (fresh.length > 0)
             hit(rule, path, `足した行に新しく入った語: ${fresh.join("・")}`);
@@ -619,16 +707,17 @@ function classifyCommitsInner(repo, base, head) {
   const human = loadHuman();
   // 行を見る必要があるファイルだけ patch を取る（H5 の行の追加だけ・H7 の全体のセレクタ・H9 の語・human の weaken の行）
   const needLines = changes
-    .filter(({ status, path: p }) =>
-      anyMatch(weakenRowPatterns(human), p) ||
-      rules.some(
-        (r) =>
-          anyMatch(r.rowsOnlyAdded, p) ||
-          (status === "A" && anyMatch(r.globalSelectors, p)) ||
-          (r.terms &&
-            anyMatch(r.terms.scan, p) &&
-            !anyMatch(r.terms.except, p)),
-      ),
+    .filter(
+      ({ status, path: p }) =>
+        anyMatch(weakenRowPatterns(human), p) ||
+        rules.some(
+          (r) =>
+            anyMatch(r.rowsOnlyAdded, p) ||
+            (status === "A" && anyMatch(r.globalSelectors, p)) ||
+            (r.terms &&
+              anyMatch(r.terms.scan, p) &&
+              !anyMatch(r.terms.except, p)),
+        ),
     )
     .map((c) => c.path);
   const patches =
