@@ -152,41 +152,22 @@ function usePastVenues(date) {
   return { venuesData: groupRacesByVenue(races), loading, error };
 }
 
-function TodayVenueGridPage() {
-  const { t, i18n } = useTranslation();
-  const localize = useLocalizedPath();
-  const nowHHMM = useNowHHMM(true);
-  const isFirstVisit = useFirstVisit();
-  const {
-    venuesData,
-    loading,
-    error,
-    lastUpdated,
-    isRefreshing,
-    handleRefresh,
-  } = useTodayVenues();
-  const nextOpenDates = useNextOpenDates();
-  // title・description・canonical はボット向け HTML（ADR 0089）と同じ関数で組む
-  const meta = getTopPageMeta(t, i18n.resolvedLanguage);
-  useSocialMeta({
-    title: meta.title,
-    description: meta.description,
-    url: meta.canonical,
-  });
-
+// 本日の会場グリッドのセクション（見出し・更新表示・導入・グリッド）
+function TodayVenuesSection({
+  t,
+  i18n,
+  localize,
+  nowHHMM,
+  isFirstVisit,
+  venuesData,
+  loading,
+  error,
+  lastUpdated,
+  isRefreshing,
+  handleRefresh,
+  nextOpenDates,
+}) {
   return (
-    <div className="app">
-      <title>{meta.title}</title>
-      <meta name="description" content={meta.description} />
-      <meta
-        property="og:locale"
-        content={getLanguage(i18n.resolvedLanguage).ogLocale}
-      />
-      <link rel="canonical" href={meta.canonical} />
-      <Header />
-
-      <div className="container">
-        <main className="main-content">
           <section className="race-list-section" id="today-venues">
             <h2>
               🏁 {t("home.todayRaces")}{" "}
@@ -262,11 +243,12 @@ function TodayVenueGridPage() {
               </>
             )}
           </section>
+  );
+}
 
-          {/* 何のサイトかを説明する本文と実績（集客レーン Phase3。検索向けにクロールできる本文として置く） */}
-          <HomeAiIntro />
-
-          {/* ブログ記事セクション */}
+// ブログ記事セクション
+function HomeBlogSection({ t, i18n, localize }) {
+  return (
           <section className="blog-preview-section">
             <h2>📝 {t("home.blogTitle")}</h2>
             <p className="blog-preview-lead">{t("home.blogDesc")}</p>
@@ -317,9 +299,12 @@ function TodayVenueGridPage() {
               </Link>
             </div>
           </section>
-        </main>
-      </div>
+  );
+}
 
+// ページ下部のフッター（リンク・免責・最新記事の更新日）
+function TodayVenueFooter({ t, i18n }) {
+  return (
       <Footer
         links={[
           { to: "/blog", label: t("footer.blog") },
@@ -353,6 +338,67 @@ function TodayVenueGridPage() {
           </>
         }
       />
+  );
+}
+
+function TodayVenueGridPage() {
+  const { t, i18n } = useTranslation();
+  const localize = useLocalizedPath();
+  const nowHHMM = useNowHHMM(true);
+  const isFirstVisit = useFirstVisit();
+  const {
+    venuesData,
+    loading,
+    error,
+    lastUpdated,
+    isRefreshing,
+    handleRefresh,
+  } = useTodayVenues();
+  const nextOpenDates = useNextOpenDates();
+  // title・description・canonical はボット向け HTML（ADR 0089）と同じ関数で組む
+  const meta = getTopPageMeta(t, i18n.resolvedLanguage);
+  useSocialMeta({
+    title: meta.title,
+    description: meta.description,
+    url: meta.canonical,
+  });
+
+  return (
+    <div className="app">
+      <title>{meta.title}</title>
+      <meta name="description" content={meta.description} />
+      <meta
+        property="og:locale"
+        content={getLanguage(i18n.resolvedLanguage).ogLocale}
+      />
+      <link rel="canonical" href={meta.canonical} />
+      <Header />
+
+      <div className="container">
+        <main className="main-content">
+          <TodayVenuesSection
+            t={t}
+            i18n={i18n}
+            localize={localize}
+            nowHHMM={nowHHMM}
+            isFirstVisit={isFirstVisit}
+            venuesData={venuesData}
+            loading={loading}
+            error={error}
+            lastUpdated={lastUpdated}
+            isRefreshing={isRefreshing}
+            handleRefresh={handleRefresh}
+            nextOpenDates={nextOpenDates}
+          />
+
+          {/* 何のサイトかを説明する本文と実績（集客レーン Phase3。検索向けにクロールできる本文として置く） */}
+          <HomeAiIntro />
+
+          <HomeBlogSection t={t} i18n={i18n} localize={localize} />
+        </main>
+      </div>
+
+      <TodayVenueFooter t={t} i18n={i18n} />
     </div>
   );
 }
