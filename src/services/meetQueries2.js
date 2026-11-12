@@ -368,7 +368,11 @@ function seriesContextOf({ meetRows, conditions, raceId }) {
 function startMapsOf(meetStarts) {
   const rows = meetStarts ?? [];
   return {
-    startedKeys: new Set(rows.filter((r) => !isAbsentStartRow(r)).map(keyOf)),
+    startedKeys: new Set(
+      rows
+        .filter((r) => !isAbsentStartRow(r))
+        .map((r) => `${r.race_id}|${r.boat_number}`),
+    ),
     racesWithSt: new Set(rows.map((r) => r.race_id)),
     markByKey: new Map(
       rows
