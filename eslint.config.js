@@ -106,6 +106,8 @@ export default defineConfig([
           "localStorage",
           "sessionStorage",
           "navigator",
+          "location",
+          "history",
           "self",
           "globalThis",
         ].map((name) => ({ name, message: SHARED_MSG("ブラウザ依存") })),
@@ -121,14 +123,16 @@ export default defineConfig([
           message: SHARED_MSG("動的 import（supabaseClient 等）"),
         },
       ],
+      // 字から window を作る抜け道（Function("return window")・eval）も塞ぐ。function の this は静的に見られない
+      "no-eval": "error",
+      "no-new-func": "error",
       "no-restricted-imports": [
         "error",
         {
           patterns: [
             {
               group: [
-                "**/supabaseClient",
-                "**/supabaseClient.js",
+                "**/supabaseClient*",
                 "@supabase/*",
                 "react",
                 "react/*",
