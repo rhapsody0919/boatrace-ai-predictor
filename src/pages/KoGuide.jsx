@@ -188,6 +188,353 @@ const RACE_TABS = [
 const RACE_TABS_INTRO =
   "경주 페이지는 아래 순서의 탭으로 나뉩니다. 앞의 4개 탭은 6명을 한꺼번에 비교하고, 뒤의 탭은 보트 하나를 골라 깊이 살펴봅니다.";
 
+function HeroSection() {
+  return (
+    <section className="eg-hero">
+      <h1>🚤 일본 경정(쿄테이)이란?</h1>
+      <p className="eg-hero-lead">
+        일본 경정(BOAT RACE, 일본어로는 쿄테이)은 일본의 4대 공영 경기 중
+        하나로, 전국 24개 경정장에서 거의 매일 열립니다. 6척의 모터보트가
+        600m 수면을 3바퀴 돌아 승부를 가리고, 결과에 합법적으로 베팅할 수
+        있습니다. 미사리 경정을 아는 분이라면 이미 절반은 아는 셈 — 이
+        가이드는 나머지 절반, 일본만의 특징과 AI 예측 읽는 법을 안내합니다.
+      </p>
+    </section>
+  );
+}
+
+function KoreaVsJapanSection() {
+  return (
+    <section className="eg-section eg-highlight">
+      <h2>🇰🇷🇯🇵 한국 경정과 일본 경정, 무엇이 다른가</h2>
+      <p>
+        한국 경정(미사리)과 기본 규칙은 같지만, 예측 관점에서 중요한 차이가
+        있습니다:
+      </p>
+      <div className="eg-table-wrapper">
+        <table className="eg-table">
+          <thead>
+            <tr>
+              <th>항목</th>
+              <th>한국 경정</th>
+              <th>일본 경정</th>
+            </tr>
+          </thead>
+          <tbody>
+            {DIFFERENCES.map((d) => (
+              <tr key={d.item}>
+                <td>
+                  <strong>{d.item}</strong>
+                </td>
+                <td>{d.kr}</td>
+                <td>{d.jp}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="eg-note">
+        핵심 차이는 <strong>1코스 승률</strong>입니다. 일본은 약 50%로
+        한국(약 34%)보다 훨씬 높아, 예측의 출발점이 「1코스가 지키느냐,
+        무너지느냐」가 됩니다. 용신 레이더의 「1코스 이변 지수」는 바로
+        이것을 경주마다 수치화한 것입니다.
+      </p>
+    </section>
+  );
+}
+
+function BasicInfoSection() {
+  return (
+    <section className="eg-section">
+      <h2>⚡ 기본 정보</h2>
+      <div className="eg-facts-grid">
+        <div className="eg-fact">
+          <strong>6척</strong>
+          <span>매 경주 1-6번, 색상 고정</span>
+        </div>
+        <div className="eg-fact">
+          <strong>3바퀴 / 1,800m</strong>
+          <span>600m 수면 코스</span>
+        </div>
+        <div className="eg-fact">
+          <strong>약 1분 50초</strong>
+          <span>짧고 강렬한 승부</span>
+        </div>
+        <div className="eg-fact">
+          <strong>24개 경정장</strong>
+          <span>동쪽 키류부터 서쪽 오무라까지</span>
+        </div>
+        <div className="eg-fact">
+          <strong>플라잉 스타트</strong>
+          <span>스타트 라인 통과 시 이미 주행 중</span>
+        </div>
+        <div className="eg-fact">
+          <strong>패리뮤추얼 방식</strong>
+          <span>배당률은 베팅 총액으로 결정 (경마와 동일)</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TechniquesSection() {
+  return (
+    <section className="eg-section">
+      <h2>🥇 6가지 승리 전법 (키마리테)</h2>
+      <p>
+        모든 승리는 「어떻게 이겼는가」로 공식 분류됩니다. 한국 경정과 같은
+        개념이지만 일본어 용어를 알아두면 일본 중계와 용신 레이더 예측을
+        읽을 수 있습니다.
+      </p>
+      <div className="eg-technique-list">
+        {TECHNIQUES.map((t) => (
+          <div key={t.name} className="eg-technique">
+            <div className="eg-technique-name">
+              <strong>{t.name}</strong>{" "}
+              <span className="eg-kanji">{t.kanji}</span>
+            </div>
+            <p>{t.desc}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RacerClassesSection() {
+  return (
+    <section className="eg-section">
+      <h2>🏅 선수 등급</h2>
+      <p>
+        약 1,600명의 프로 선수가 4개 등급으로 나뉘며, 반년마다 재심사를
+        받습니다. 등급은 성적을 예측하는 강력한 지표입니다:
+      </p>
+      <ul className="eg-list">
+        <li>
+          <strong>A1</strong> — 최정예 (상위 약 20%). 1코스의 A1 선수는
+          최강의 인기 후보입니다.
+        </li>
+        <li>
+          <strong>A2</strong> — 실력 있는 상위권 선수.
+        </li>
+        <li>
+          <strong>B1</strong> — 다수를 차지하는 중견 선수.
+        </li>
+        <li>
+          <strong>B2</strong> — 신인 및 하위권 선수.
+        </li>
+      </ul>
+      <p className="eg-note">
+        여자 선수가 남자 선수와 같은 경주에서 직접 겨루는, 몇 안 되는 스포츠
+        중 하나입니다.
+      </p>
+    </section>
+  );
+}
+
+function BetTypesSection() {
+  return (
+    <section className="eg-section">
+      <h2>🎫 베팅 방식</h2>
+      <div className="eg-table-wrapper">
+        <table className="eg-table">
+          <thead>
+            <tr>
+              <th>방식</th>
+              <th>맞히는 것</th>
+              <th>난이도</th>
+            </tr>
+          </thead>
+          <tbody>
+            {BET_TYPES.map((b) => (
+              <tr key={b.name}>
+                <td>
+                  <strong>{b.name}</strong>
+                </td>
+                <td>{b.pick}</td>
+                <td>{b.difficulty}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="eg-note">
+        삼쌍승식(일본의 3연단)이 압도적으로 인기 있는 방식으로, ¥100당 평균
+        배당은 약 ¥7,000, 큰 이변 때는 ¥100,000를 넘기도 합니다.
+      </p>
+    </section>
+  );
+}
+
+function ReadingPredictionSection({ t }) {
+  return (
+    <section className="eg-section">
+      <h2>🤖 용신 레이더 예측 보는 법</h2>
+      <p>
+        용신 레이더는 경주마다 선수 성적, 모터 성능, 경정장 특성, 스타트
+        타이밍 등의 데이터를 분석해 모든 추천의 <strong>이유</strong>
+        까지 보여줍니다. 완전 무료입니다.
+      </p>
+      <ol className="eg-steps">
+        <li>
+          <Link to="/ko/">홈 화면</Link>에서{" "}
+          <strong>경정장과 경주를 선택</strong>합니다. 각 경주 카드에 발매
+          마감 시각과 예상 전개가 표시됩니다.
+        </li>
+        <li>
+          <strong>6척의 객관적 데이터 표</strong>를 확인합니다. 용신
+          레이더는 예측 모델을 고르게 하지 않습니다 — 모두가 같은 데이터를
+          보고 직접 판단합니다:
+          <div className="eg-models">
+            {DATA_POINTS.map((d) => (
+              <div key={d.name} className="eg-model">
+                <span className="eg-model-icon">{d.icon}</span>
+                <strong>{d.name}</strong>
+                <p>{d.desc}</p>
+              </div>
+            ))}
+          </div>
+        </li>
+        <li>
+          <strong>「AI 예상」 탭을 엽니다</strong> — 1턴 마크 전개
+          예측(전개별 확률 포함)과 1코스 이변 지수(높을수록 혼전 가능성이
+          크고, 배당은 높아지고 적중률은 낮아집니다)를 볼 수 있습니다.
+          경주가 끝나면 예측이 적중했는지도 여기서 확인합니다.
+        </li>
+      </ol>
+      <p>{RACE_TABS_INTRO}</p>
+      <ul className="eg-list eg-race-tabs">
+        {RACE_TABS.map((tab) => (
+          <li key={tab.key}>
+            <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function ExampleRaceSection() {
+  return (
+    <section className="eg-section">
+      <h2>📋 실제 사례: 데이터 읽고 투표용지 작성하기</h2>
+      <p>
+        많은 입문 가이드는 가상의 숫자로 설명합니다. 여기서는 실제 경주 —{" "}
+        {EXAMPLE_RACE.date} {EXAMPLE_RACE.venue} {EXAMPLE_RACE.raceNo}R — 의
+        실제 출주표 데이터, 실제 베팅, 실제 배당금을 보여드립니다.
+      </p>
+      <div className="eg-table-wrapper">
+        <table className="eg-table">
+          <thead>
+            <tr>
+              <th>정번호</th>
+              <th>선수</th>
+              <th>급별</th>
+              <th>승률</th>
+              <th>현지 승률</th>
+              <th>모터 2연대율</th>
+            </tr>
+          </thead>
+          <tbody>
+            {EXAMPLE_RACE.entries.map((e) => (
+              <tr key={e.boat}>
+                <td>
+                  <strong>{e.boat}</strong>
+                </td>
+                <td translate="no">{e.name}</td>
+                <td>{e.grade}</td>
+                <td>{e.winRate}</td>
+                <td>{e.localWinRate}</td>
+                <td>{e.motor2Rate}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <strong>해석:</strong> 1번 보트는 A1급이며 이 경정장 현지 승률이
+        가장 높습니다(6.59) — 1코스에서 인빠지기로 이기는 전형적인 유력
+        후보입니다. 3번 보트는 A2급이지만 모터 2연대율(38.0%)이 다른
+        보트보다 눈에 띄게 높습니다 — 급별만 보지 않고 모터 성능까지 고려해
+        2착 후보로 꼽는 흔한 이유입니다.
+      </p>
+      <p>
+        <strong>베팅:</strong> 3연단(트리펙타)으로{" "}
+        <strong>1 → 3 → 4</strong> 순서를 선택 — 투표용지의 해당 경주 칸에서
+        1착란에 「1」, 2착란에 「3」, 3착란에 「4」를 표시합니다.
+      </p>
+      <p className="eg-note">
+        <strong>결과:</strong> 1번 보트가 인빠지기로 우승, 3번 보트가 2착,
+        4번 보트가 3착 — 예상과 정확히 일치했습니다. 배당금은 100엔당{" "}
+        <strong>{EXAMPLE_RACE.payout}</strong>입니다.
+      </p>
+      <p>
+        <Link to={`/ko/race/${EXAMPLE_RACE.raceId}`}>
+          → 이 경주에 대한 용신 레이더의 전체 데이터 분석 보기
+        </Link>
+      </p>
+    </section>
+  );
+}
+
+function VenueGuideSection() {
+  return (
+    <section className="eg-section">
+      <h2>🏟️ 직접 경정장에 가보기</h2>
+      <p>
+        현장 관람은 입장료 ¥100로 저렴하고 잊지 못할 경험입니다. 일본 전국
+        24개 경정장 모두의 한국어 가이드를 준비했습니다 — 하네다 공항 근처의
+        헤이와지마, 오사카 스미노에의 나이터 경주 등.
+      </p>
+      <p>
+        <Link to="/ko/venues">→ 경정장 가이드 보기</Link>
+      </p>
+    </section>
+  );
+}
+
+function DisclaimerSection() {
+  return (
+    <section className="eg-section eg-disclaimer">
+      <h2>⚖️ 중요: 베팅 자격과 법적 안내</h2>
+      <ul className="eg-list">
+        <li>
+          일본 경정 베팅은 일본 공식 채널(경정장 및 공식 TELEBOAT)을
+          통해서만 합법이며, <strong>일본 국내에 체류 중</strong>이고{" "}
+          <strong>20세 이상</strong>이어야 합니다.
+        </li>
+        <li>
+          <strong>
+            대한민국 법률상 내국인의 해외 도박은 처벌 대상이 될 수 있습니다.
+          </strong>{" "}
+          해외 불법 중계·사설 베팅 사이트 이용은 절대 하지 마십시오.
+        </li>
+        <li>
+          용신 레이더는 <strong>정보와 AI 분석만을 제공</strong>합니다.
+          베팅을 받지 않으며, 베팅을 권유하지 않고, 예측은 결과를 보장하지
+          않습니다.
+        </li>
+        <li>
+          책임 있는 이용을 부탁드립니다.{" "}
+          <Link to="/ko/responsible-gambling">책임 있는 베팅</Link> 페이지를
+          참고하세요.
+        </li>
+      </ul>
+    </section>
+  );
+}
+
+function CtaSection() {
+  return (
+    <section className="eg-cta">
+      <h2>AI의 실력을 직접 확인해 보세요</h2>
+      <Link to="/ko/" className="eg-cta-button">
+        🏁 오늘의 무료 예측 보기
+      </Link>
+    </section>
+  );
+}
+
 export default function KoGuide() {
   const { t } = useTranslation();
 
@@ -204,318 +551,37 @@ export default function KoGuide() {
 
       <div className="eg-container">
         {/* Hero */}
-        <section className="eg-hero">
-          <h1>🚤 일본 경정(쿄테이)이란?</h1>
-          <p className="eg-hero-lead">
-            일본 경정(BOAT RACE, 일본어로는 쿄테이)은 일본의 4대 공영 경기 중
-            하나로, 전국 24개 경정장에서 거의 매일 열립니다. 6척의 모터보트가
-            600m 수면을 3바퀴 돌아 승부를 가리고, 결과에 합법적으로 베팅할 수
-            있습니다. 미사리 경정을 아는 분이라면 이미 절반은 아는 셈 — 이
-            가이드는 나머지 절반, 일본만의 특징과 AI 예측 읽는 법을 안내합니다.
-          </p>
-        </section>
+        <HeroSection />
 
         {/* Korea vs Japan */}
-        <section className="eg-section eg-highlight">
-          <h2>🇰🇷🇯🇵 한국 경정과 일본 경정, 무엇이 다른가</h2>
-          <p>
-            한국 경정(미사리)과 기본 규칙은 같지만, 예측 관점에서 중요한 차이가
-            있습니다:
-          </p>
-          <div className="eg-table-wrapper">
-            <table className="eg-table">
-              <thead>
-                <tr>
-                  <th>항목</th>
-                  <th>한국 경정</th>
-                  <th>일본 경정</th>
-                </tr>
-              </thead>
-              <tbody>
-                {DIFFERENCES.map((d) => (
-                  <tr key={d.item}>
-                    <td>
-                      <strong>{d.item}</strong>
-                    </td>
-                    <td>{d.kr}</td>
-                    <td>{d.jp}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="eg-note">
-            핵심 차이는 <strong>1코스 승률</strong>입니다. 일본은 약 50%로
-            한국(약 34%)보다 훨씬 높아, 예측의 출발점이 「1코스가 지키느냐,
-            무너지느냐」가 됩니다. 용신 레이더의 「1코스 이변 지수」는 바로
-            이것을 경주마다 수치화한 것입니다.
-          </p>
-        </section>
+        <KoreaVsJapanSection />
 
         {/* Quick facts */}
-        <section className="eg-section">
-          <h2>⚡ 기본 정보</h2>
-          <div className="eg-facts-grid">
-            <div className="eg-fact">
-              <strong>6척</strong>
-              <span>매 경주 1-6번, 색상 고정</span>
-            </div>
-            <div className="eg-fact">
-              <strong>3바퀴 / 1,800m</strong>
-              <span>600m 수면 코스</span>
-            </div>
-            <div className="eg-fact">
-              <strong>약 1분 50초</strong>
-              <span>짧고 강렬한 승부</span>
-            </div>
-            <div className="eg-fact">
-              <strong>24개 경정장</strong>
-              <span>동쪽 키류부터 서쪽 오무라까지</span>
-            </div>
-            <div className="eg-fact">
-              <strong>플라잉 스타트</strong>
-              <span>스타트 라인 통과 시 이미 주행 중</span>
-            </div>
-            <div className="eg-fact">
-              <strong>패리뮤추얼 방식</strong>
-              <span>배당률은 베팅 총액으로 결정 (경마와 동일)</span>
-            </div>
-          </div>
-        </section>
+        <BasicInfoSection />
 
         {/* Winning techniques */}
-        <section className="eg-section">
-          <h2>🥇 6가지 승리 전법 (키마리테)</h2>
-          <p>
-            모든 승리는 「어떻게 이겼는가」로 공식 분류됩니다. 한국 경정과 같은
-            개념이지만 일본어 용어를 알아두면 일본 중계와 용신 레이더 예측을
-            읽을 수 있습니다.
-          </p>
-          <div className="eg-technique-list">
-            {TECHNIQUES.map((t) => (
-              <div key={t.name} className="eg-technique">
-                <div className="eg-technique-name">
-                  <strong>{t.name}</strong>{" "}
-                  <span className="eg-kanji">{t.kanji}</span>
-                </div>
-                <p>{t.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        <TechniquesSection />
 
         {/* Racer classes */}
-        <section className="eg-section">
-          <h2>🏅 선수 등급</h2>
-          <p>
-            약 1,600명의 프로 선수가 4개 등급으로 나뉘며, 반년마다 재심사를
-            받습니다. 등급은 성적을 예측하는 강력한 지표입니다:
-          </p>
-          <ul className="eg-list">
-            <li>
-              <strong>A1</strong> — 최정예 (상위 약 20%). 1코스의 A1 선수는
-              최강의 인기 후보입니다.
-            </li>
-            <li>
-              <strong>A2</strong> — 실력 있는 상위권 선수.
-            </li>
-            <li>
-              <strong>B1</strong> — 다수를 차지하는 중견 선수.
-            </li>
-            <li>
-              <strong>B2</strong> — 신인 및 하위권 선수.
-            </li>
-          </ul>
-          <p className="eg-note">
-            여자 선수가 남자 선수와 같은 경주에서 직접 겨루는, 몇 안 되는 스포츠
-            중 하나입니다.
-          </p>
-        </section>
+        <RacerClassesSection />
 
         {/* Betting types */}
-        <section className="eg-section">
-          <h2>🎫 베팅 방식</h2>
-          <div className="eg-table-wrapper">
-            <table className="eg-table">
-              <thead>
-                <tr>
-                  <th>방식</th>
-                  <th>맞히는 것</th>
-                  <th>난이도</th>
-                </tr>
-              </thead>
-              <tbody>
-                {BET_TYPES.map((b) => (
-                  <tr key={b.name}>
-                    <td>
-                      <strong>{b.name}</strong>
-                    </td>
-                    <td>{b.pick}</td>
-                    <td>{b.difficulty}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="eg-note">
-            삼쌍승식(일본의 3연단)이 압도적으로 인기 있는 방식으로, ¥100당 평균
-            배당은 약 ¥7,000, 큰 이변 때는 ¥100,000를 넘기도 합니다.
-          </p>
-        </section>
+        <BetTypesSection />
 
         {/* How to read boatAI */}
-        <section className="eg-section">
-          <h2>🤖 용신 레이더 예측 보는 법</h2>
-          <p>
-            용신 레이더는 경주마다 선수 성적, 모터 성능, 경정장 특성, 스타트
-            타이밍 등의 데이터를 분석해 모든 추천의 <strong>이유</strong>
-            까지 보여줍니다. 완전 무료입니다.
-          </p>
-          <ol className="eg-steps">
-            <li>
-              <Link to="/ko/">홈 화면</Link>에서{" "}
-              <strong>경정장과 경주를 선택</strong>합니다. 각 경주 카드에 발매
-              마감 시각과 예상 전개가 표시됩니다.
-            </li>
-            <li>
-              <strong>6척의 객관적 데이터 표</strong>를 확인합니다. 용신
-              레이더는 예측 모델을 고르게 하지 않습니다 — 모두가 같은 데이터를
-              보고 직접 판단합니다:
-              <div className="eg-models">
-                {DATA_POINTS.map((d) => (
-                  <div key={d.name} className="eg-model">
-                    <span className="eg-model-icon">{d.icon}</span>
-                    <strong>{d.name}</strong>
-                    <p>{d.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </li>
-            <li>
-              <strong>「AI 예상」 탭을 엽니다</strong> — 1턴 마크 전개
-              예측(전개별 확률 포함)과 1코스 이변 지수(높을수록 혼전 가능성이
-              크고, 배당은 높아지고 적중률은 낮아집니다)를 볼 수 있습니다.
-              경주가 끝나면 예측이 적중했는지도 여기서 확인합니다.
-            </li>
-          </ol>
-          <p>{RACE_TABS_INTRO}</p>
-          <ul className="eg-list eg-race-tabs">
-            {RACE_TABS.map((tab) => (
-              <li key={tab.key}>
-                <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
-              </li>
-            ))}
-          </ul>
-        </section>
+        <ReadingPredictionSection t={t} />
 
         {/* Real example (BOA-250): actual past race data */}
-        <section className="eg-section">
-          <h2>📋 실제 사례: 데이터 읽고 투표용지 작성하기</h2>
-          <p>
-            많은 입문 가이드는 가상의 숫자로 설명합니다. 여기서는 실제 경주 —{" "}
-            {EXAMPLE_RACE.date} {EXAMPLE_RACE.venue} {EXAMPLE_RACE.raceNo}R — 의
-            실제 출주표 데이터, 실제 베팅, 실제 배당금을 보여드립니다.
-          </p>
-          <div className="eg-table-wrapper">
-            <table className="eg-table">
-              <thead>
-                <tr>
-                  <th>정번호</th>
-                  <th>선수</th>
-                  <th>급별</th>
-                  <th>승률</th>
-                  <th>현지 승률</th>
-                  <th>모터 2연대율</th>
-                </tr>
-              </thead>
-              <tbody>
-                {EXAMPLE_RACE.entries.map((e) => (
-                  <tr key={e.boat}>
-                    <td>
-                      <strong>{e.boat}</strong>
-                    </td>
-                    <td translate="no">{e.name}</td>
-                    <td>{e.grade}</td>
-                    <td>{e.winRate}</td>
-                    <td>{e.localWinRate}</td>
-                    <td>{e.motor2Rate}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p>
-            <strong>해석:</strong> 1번 보트는 A1급이며 이 경정장 현지 승률이
-            가장 높습니다(6.59) — 1코스에서 인빠지기로 이기는 전형적인 유력
-            후보입니다. 3번 보트는 A2급이지만 모터 2연대율(38.0%)이 다른
-            보트보다 눈에 띄게 높습니다 — 급별만 보지 않고 모터 성능까지 고려해
-            2착 후보로 꼽는 흔한 이유입니다.
-          </p>
-          <p>
-            <strong>베팅:</strong> 3연단(트리펙타)으로{" "}
-            <strong>1 → 3 → 4</strong> 순서를 선택 — 투표용지의 해당 경주 칸에서
-            1착란에 「1」, 2착란에 「3」, 3착란에 「4」를 표시합니다.
-          </p>
-          <p className="eg-note">
-            <strong>결과:</strong> 1번 보트가 인빠지기로 우승, 3번 보트가 2착,
-            4번 보트가 3착 — 예상과 정확히 일치했습니다. 배당금은 100엔당{" "}
-            <strong>{EXAMPLE_RACE.payout}</strong>입니다.
-          </p>
-          <p>
-            <Link to={`/ko/race/${EXAMPLE_RACE.raceId}`}>
-              → 이 경주에 대한 용신 레이더의 전체 데이터 분석 보기
-            </Link>
-          </p>
-        </section>
+        <ExampleRaceSection />
 
         {/* Venue guides */}
-        <section className="eg-section">
-          <h2>🏟️ 직접 경정장에 가보기</h2>
-          <p>
-            현장 관람은 입장료 ¥100로 저렴하고 잊지 못할 경험입니다. 일본 전국
-            24개 경정장 모두의 한국어 가이드를 준비했습니다 — 하네다 공항 근처의
-            헤이와지마, 오사카 스미노에의 나이터 경주 등.
-          </p>
-          <p>
-            <Link to="/ko/venues">→ 경정장 가이드 보기</Link>
-          </p>
-        </section>
+        <VenueGuideSection />
 
         {/* Legal disclaimer */}
-        <section className="eg-section eg-disclaimer">
-          <h2>⚖️ 중요: 베팅 자격과 법적 안내</h2>
-          <ul className="eg-list">
-            <li>
-              일본 경정 베팅은 일본 공식 채널(경정장 및 공식 TELEBOAT)을
-              통해서만 합법이며, <strong>일본 국내에 체류 중</strong>이고{" "}
-              <strong>20세 이상</strong>이어야 합니다.
-            </li>
-            <li>
-              <strong>
-                대한민국 법률상 내국인의 해외 도박은 처벌 대상이 될 수 있습니다.
-              </strong>{" "}
-              해외 불법 중계·사설 베팅 사이트 이용은 절대 하지 마십시오.
-            </li>
-            <li>
-              용신 레이더는 <strong>정보와 AI 분석만을 제공</strong>합니다.
-              베팅을 받지 않으며, 베팅을 권유하지 않고, 예측은 결과를 보장하지
-              않습니다.
-            </li>
-            <li>
-              책임 있는 이용을 부탁드립니다.{" "}
-              <Link to="/ko/responsible-gambling">책임 있는 베팅</Link> 페이지를
-              참고하세요.
-            </li>
-          </ul>
-        </section>
+        <DisclaimerSection />
 
         {/* CTA */}
-        <section className="eg-cta">
-          <h2>AI의 실력을 직접 확인해 보세요</h2>
-          <Link to="/ko/" className="eg-cta-button">
-            🏁 오늘의 무료 예측 보기
-          </Link>
-        </section>
+        <CtaSection />
       </div>
       <Footer links={getSiteFooterLinks(t)} />
     </div>
