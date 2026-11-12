@@ -28,12 +28,12 @@ for (const theme of ["light", "dark"]) {
     await expect(link).toHaveCSS("text-decoration-line", "none");
     // 本日ビューは読み込み後に次のレースへ自動でスクロールし、5秒は高さの変化に合わせて戻す（VenueRaceListPage の
     // holdScrollPosition、BOA-546）。1R の発走後の昼の e2e-live では、hover の後にリンクが画面外へ動いて hover が外れた（BOA-1490）。
-    // 読み込みの終わりを待ち、確かめるたびに hover し直す（hover は画面外の要素を視野へ戻す）。上限はスクロールし直す5秒より長く
+    // 一覧の描画を待ち（自動スクロールはまだ続きうる）、確かめるたびに hover し直す（hover は画面外の要素を視野へ戻す）。上限はスクロールし直す5秒より長く
     await expect(
       page
         .locator(".race-list-section, .venue-race-list-page__empty")
         .first(),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10000 });
     const hoveredColor = async () => {
       await link.hover();
       return link.evaluate((el) => getComputedStyle(el).color);
