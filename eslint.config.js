@@ -32,6 +32,10 @@ const jsxUsesVars = {
   },
 };
 
+// src/shared の規則（下の最後の塊、BOA-1485）の文
+const SHARED_MSG = (what) =>
+  `src/shared はボットと共有する純関数の置き場。${what}を持ち込まない（BOA-1485）`;
+
 export default defineConfig([
   globalIgnores(["dist"]),
   {
@@ -84,5 +88,58 @@ export default defineConfig([
     // rules-of-hooks を src の外で off にする（ignores: ["src/**"]）のと同じ考えで、e2e/ には当てない（BOA-1392）
     files: ["e2e/**/*.{js,mjs,cjs}"],
     rules: { "react-hooks/rules-of-hooks": "off" },
+  },
+  {
+    // src/shared はボット（api/_lib の Node）と画面が共有する純関数の置き場（BOA-1452・HR37）。
+    // ボットで届かない分岐の window・import.meta.env・動的 import は verify-bot-page-model の §1 の罠
+    // （通った道だけを見る）が見逃すため、書いた時点でここで止める（BOA-1485、#2466 の残りの穴）。
+    // no-restricted-globals は typeof window も数える。globalThis・self は window の抜け道なので同じ扱い。
+    // import.meta は env 以外も含めて全部禁じる（分割代入 const { env } = import.meta の抜け道を塞ぐため）。
+    // 動的 import() は行き先を問わず全部禁じる（supabaseClient の字を変数に入れる抜け道を塞ぐため）。
+    files: ["src/shared/**/*.{js,jsx,mjs,cjs}"],
+    rules: {
+      "no-restricted-globals": [
+        "error",
+        ...[
+          "window",
+          "document",
+          "localStorage",
+          "sessionStorage",
+          "navigator",
+          "self",
+          "globalThis",
+        ].map((name) => ({ name, message: SHARED_MSG("ブラウザ依存") })),
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "MetaProperty[meta.name='import']",
+          message: SHARED_MSG("import.meta（env を含む）"),
+        },
+        {
+          selector: "ImportExpression",
+          message: SHARED_MSG("動的 import（supabaseClient 等）"),
+        },
+      ],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/supabaseClient",
+                "**/supabaseClient.js",
+                "@supabase/*",
+                "react",
+                "react/*",
+                "react-dom",
+                "react-dom/*",
+              ],
+              message: SHARED_MSG("supabase・react"),
+            },
+          ],
+        },
+      ],
+    },
   },
 ]);
