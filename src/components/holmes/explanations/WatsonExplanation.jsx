@@ -3,24 +3,10 @@ import watsonModel from "../../../../data/watson/model.json";
 
 const N_FEATURES = watsonModel.n_features ?? 36;
 
-function WatsonExplanation() {
+
+function WatsonFlowDefs() {
   return (
-    <section className="holmes-section explanation-section">
-      <h3>仕組みを知る</h3>
-
-      <p className="explanation-summary">
-        {N_FEATURES}
-        の特徴量から「6艇の順位」を直接学習する勾配ブースティングモデル。
-        表データにおける予測精度と、SHAP値による判断根拠の可視化を両立します。
-      </p>
-
-      <div className="explanation-diagram">
-        <svg
-          viewBox="0 0 640 160"
-          width="100%"
-          height="auto"
-          aria-label="ワトソン処理フロー図"
-        >
+    <>
           <defs>
             <marker
               id="watson-arrow"
@@ -33,7 +19,13 @@ function WatsonExplanation() {
               <path d="M0,0 L0,6 L8,3 z" fill="#0284c7" />
             </marker>
           </defs>
+    </>
+  );
+}
 
+function WatsonFlowFeatures() {
+  return (
+    <>
           {/* 特徴量ボックス */}
           <rect
             x="10"
@@ -88,6 +80,13 @@ function WatsonExplanation() {
             markerEnd="url(#watson-arrow)"
           />
 
+    </>
+  );
+}
+
+function WatsonFlowTrees() {
+  return (
+    <>
           {/* 決定木ボックス */}
           <rect
             x="170"
@@ -162,6 +161,13 @@ function WatsonExplanation() {
             markerEnd="url(#watson-arrow)"
           />
 
+    </>
+  );
+}
+
+function WatsonFlowScoreAndRank() {
+  return (
+    <>
           {/* スコア集計ボックス */}
           <rect
             x="370"
@@ -238,30 +244,12 @@ function WatsonExplanation() {
           >
             1位〜6位
           </text>
-        </svg>
-      </div>
+    </>
+  );
+}
 
-      <ul className="explanation-key-points">
-        <li style={{ "--bullet-color": "#0284c7" }}>
-          {/* #0284c7はカード背景で片方のテーマのみ通過のため両テーマ対応の銀トークンに変更 */}
-          <span style={{ color: "var(--brand-accent-secondary)" }}>
-            LambdaRank
-          </span>{" "}
-          により、単純な回帰・分類でなく「6艇の順位」を直接最適化
-        </li>
-        <li>
-          選手・モーター・展示タイム・気象・レース内相対値など{N_FEATURES}
-          の特徴量を自動的に組み合わせて判断
-        </li>
-        <li>
-          SHAP値（LightGBM内蔵のTreeSHAP）で「なぜこの艇を1位と予測したか」を数値で説明できる高い解釈性
-        </li>
-        <li>表形式データに強く、欠損値・カテゴリ変数をそのまま扱える実用性</li>
-      </ul>
-
-      <details className="explanation-details">
-        <summary>詳しい仕組みを見る</summary>
-        <div className="explanation-detail-body">
+function WatsonGbdtBlock() {
+  return (
           <div className="explanation-detail-block">
             <h4>勾配ブースティング決定木 (GBDT) とは</h4>
             <p>
@@ -271,7 +259,11 @@ function WatsonExplanation() {
               XGBoost より数倍高速に学習できます。
             </p>
           </div>
+  );
+}
 
+function WatsonLambdaRankBlock() {
+  return (
           <div className="explanation-detail-block">
             <h4>LambdaRank 目的関数</h4>
             <p>
@@ -288,7 +280,11 @@ function WatsonExplanation() {
               に与える影響量でグラジエントを重み付けします。
             </p>
           </div>
+  );
+}
 
+function WatsonShapBlock() {
+  return (
           <div className="explanation-detail-block">
             <h4>SHAP値による解釈性</h4>
             <p>
@@ -298,7 +294,11 @@ function WatsonExplanation() {
               +0.12点」のように、 人間が理解できる根拠を提供できます。
             </p>
           </div>
+  );
+}
 
+function WatsonWalkthroughBlock() {
+  return (
           <div className="explanation-detail-block">
             <h4>具体的なウォークスルー</h4>
             <p>
@@ -312,7 +312,11 @@ function WatsonExplanation() {
               スコア順のランキングと診断ポイント（SHAP寄与上位）を表示します。
             </p>
           </div>
+  );
+}
 
+function WatsonProsConsBlock() {
+  return (
           <div className="explanation-detail-block">
             <h4>強み・弱み</h4>
             <div className="explanation-pros-cons">
@@ -335,7 +339,11 @@ function WatsonExplanation() {
               </div>
             </div>
           </div>
+  );
+}
 
+function WatsonDifferenceBlock() {
+  return (
           <div className="explanation-detail-block">
             <h4>既存モデルとの違い</h4>
             <p>
@@ -347,8 +355,87 @@ function WatsonExplanation() {
               で「6艇の順序関係」そのものを1つのモデルで学習する点が異なります。
             </p>
           </div>
+  );
+}
+
+function WatsonFlowDiagram() {
+  return (
+      <div className="explanation-diagram">
+        <svg
+          viewBox="0 0 640 160"
+          width="100%"
+          height="auto"
+          aria-label="ワトソン処理フロー図"
+        >
+          <WatsonFlowDefs />
+
+          <WatsonFlowFeatures />
+          <WatsonFlowTrees />
+          <WatsonFlowScoreAndRank />
+        </svg>
+      </div>
+  );
+}
+
+function WatsonKeyPoints() {
+  return (
+      <ul className="explanation-key-points">
+        <li style={{ "--bullet-color": "#0284c7" }}>
+          {/* #0284c7はカード背景で片方のテーマのみ通過のため両テーマ対応の銀トークンに変更 */}
+          <span style={{ color: "var(--brand-accent-secondary)" }}>
+            LambdaRank
+          </span>{" "}
+          により、単純な回帰・分類でなく「6艇の順位」を直接最適化
+        </li>
+        <li>
+          選手・モーター・展示タイム・気象・レース内相対値など{N_FEATURES}
+          の特徴量を自動的に組み合わせて判断
+        </li>
+        <li>
+          SHAP値（LightGBM内蔵のTreeSHAP）で「なぜこの艇を1位と予測したか」を数値で説明できる高い解釈性
+        </li>
+        <li>表形式データに強く、欠損値・カテゴリ変数をそのまま扱える実用性</li>
+      </ul>
+  );
+}
+
+function WatsonDetails() {
+  return (
+      <details className="explanation-details">
+        <summary>詳しい仕組みを見る</summary>
+        <div className="explanation-detail-body">
+          <WatsonGbdtBlock />
+
+          <WatsonLambdaRankBlock />
+
+          <WatsonShapBlock />
+
+          <WatsonWalkthroughBlock />
+
+          <WatsonProsConsBlock />
+
+          <WatsonDifferenceBlock />
         </div>
       </details>
+  );
+}
+
+function WatsonExplanation() {
+  return (
+    <section className="holmes-section explanation-section">
+      <h3>仕組みを知る</h3>
+
+      <p className="explanation-summary">
+        {N_FEATURES}
+        の特徴量から「6艇の順位」を直接学習する勾配ブースティングモデル。
+        表データにおける予測精度と、SHAP値による判断根拠の可視化を両立します。
+      </p>
+
+      <WatsonFlowDiagram />
+
+      <WatsonKeyPoints />
+
+      <WatsonDetails />
     </section>
   );
 }
