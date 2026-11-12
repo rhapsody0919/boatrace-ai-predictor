@@ -109,6 +109,7 @@
     "sns:push-full-picture": "node --env-file=.env.local scripts/sns/push-full-picture.js",
     "verify": "npm run verify:ci && node scripts/maintenance/lint-changed.js",
     "verify:ci": "node scripts/maintenance/run-verify-registry.js",
+    "verify:pr": "node scripts/maintenance/lint-changed.js --ci && node scripts/maintenance/verify-no-undef.js",
     "verify:registry": "node scripts/maintenance/run-verify-registry.js --check",
     "verify:list": "node scripts/maintenance/run-verify-registry.js --list",
     "test:e2e": "bash scripts/maintenance/run-heavy.sh playwright test",
@@ -169,6 +170,9 @@
     "twitter-text": "^3.1.0",
     "vite": "^7.2.4"
   },
+  "engines": {
+    "node": "24.x"
+  },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@babel/parser": "^7.28.5",
@@ -178,13 +182,16 @@
     "@playwright/test": "^1.64.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "dependency-cruiser": "16.10.4",
     "dotenv": "^17.2.3",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "gh-pages": "^6.3.0",
     "globals": "^16.5.0",
+    "jscpd": "4.3.0",
     "jsdom": "^26.1.0",
+    "madge": "8.0.0",
     "pg": "^8.23.1",
     "postcss": "^8.5.6"
   }
