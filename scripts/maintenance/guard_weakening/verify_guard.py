@@ -15,12 +15,15 @@ sandbox-exec が無い環境では判定を出さず止める側。静的な確�
 使い方: evaluate(repo, changes, master_text, cfg) -> Verdict。changes は {パス: A|M|D}（git diff --name-status --no-renames origin/master）。"""
 from __future__ import annotations
 
+import contextlib
+import hashlib
 import json
 import os
 import re
 import shutil
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, FrozenSet, Iterable, List, Mapping, Optional, Sequence, Tuple
@@ -82,6 +85,54 @@ walk(ast.program, null, "");
 console.log(JSON.stringify({ error: null, mutants: out }));
 """
 
+# 振る舞いの等価（HR34 #2511）: 注釈・位置と、console.* と process.stdout/stderr.write の引数に直に置いた文字列だけが違う2本は同じ木になる。
+# 文字列として外すのは、引数そのものの StringLiteral・TemplateLiteral の quasis・それらと名前（x・a.b）だけを + でつないだ式の文字列だけ。
+# 呼び出し・代入・関数等を含む引数は中の文字列も比べたまま（ops 審査 11/12 P0-1）。console を自前で定義する本文では使わない（P2-10）。案内の文でも定数に置いた物（hints の表等）は等価にしない（使い道を静的に言えない）
+NORMALIZE_JS = r"""
+const path = require("path"), fs = require("fs"), crypto = require("crypto");
+const nm = process.argv[1], files = process.argv.slice(2);
+const { createRequire } = require("module");
+const parser = createRequire(path.join(nm, "x.js"))("@babel/parser");
+const DROP = new Set(["start", "end", "loc", "range", "extra", "comments", "leadingComments", "trailingComments", "innerComments", "tokens"]);
+function isMsgCall(n) {
+  if (!n || n.type !== "CallExpression" || n.callee.type !== "MemberExpression" || n.callee.computed) return false;
+  const c = n.callee;
+  if (c.object.type === "Identifier" && c.object.name === "console") return true;
+  return c.property.type === "Identifier" && c.property.name === "write" && c.object.type === "MemberExpression" && !c.object.computed
+    && c.object.object.type === "Identifier" && c.object.object.name === "process" && ["stdout", "stderr"].includes(c.object.property.name);
+}
+const NAME = (e) => e.type === "Identifier" || (e.type === "MemberExpression" && !e.computed && NAME(e.object));
+function msgArg(a) {
+  if (a.type === "StringLiteral") return { type: "StringLiteral", value: "<msg>" };
+  if (a.type === "TemplateLiteral" && a.expressions.every(NAME))
+    return { type: "TemplateLiteral", quasis: a.quasis.map((q) => ({ type: "TemplateElement", value: "<msg>", tail: q.tail })), expressions: a.expressions.map((x) => norm(x)) };
+  if (a.type === "BinaryExpression" && a.operator === "+") {
+    const l = NAME(a.left) ? norm(a.left) : msgArg(a.left), r = NAME(a.right) ? norm(a.right) : msgArg(a.right);
+    if (l && r) return { type: "BinaryExpression", operator: "+", left: l, right: r };
+  }
+  return null;
+}
+let SHADOW = false;
+function norm(n) {
+  if (Array.isArray(n)) return n.map((x) => norm(x));
+  if (!n || typeof n !== "object") return n;
+  const out = {};
+  for (const k of Object.keys(n)) {
+    if (DROP.has(k)) continue;
+    out[k] = (k === "arguments" && !SHADOW && isMsgCall(n)) ? n[k].map((a) => msgArg(a) || norm(a)) : norm(n[k]);
+  }
+  return out;
+}
+console.log(JSON.stringify(files.map((f) => {
+  try {
+    const src = fs.readFileSync(f, "utf8");
+    SHADOW = /\b(?:const|let|var|function|class)\s+(?:console|process)\b|\b(?:console|process)\s*=[^=]|globalThis\.(?:console|process)\b/.test(src);
+    const ast = parser.parse(src, { sourceType: "unambiguous", errorRecovery: false, plugins: ["jsx"] });
+    return crypto.createHash("sha256").update(JSON.stringify([SHADOW, norm(ast.program)])).digest("hex");
+  } catch (e) { return null; }
+})));
+"""
+
 WRITE_RE = re.compile(r"\b(?:writeFile|writeFileSync|appendFile|appendFileSync|mkdir|mkdirSync|mkdtemp|mkdtempSync|rm|rmSync|rmdir|rmdirSync|unlink|unlinkSync|"
                       r"rename|renameSync|copyFile|copyFileSync|cp|cpSync|createWriteStream|truncate|truncateSync|symlink|symlinkSync)\s*\(")
 NET_RE = re.compile(r"""(?:["'`](?:node:)?(?:child_process|net|http|https|http2|dgram|dns|tls|worker_threads|cluster|vm)["'`])|\bfetch\s*\(|\bWebSocket\b|\bXMLHttpRequest\b|\bexecSync\b|\bspawnSync\b""")
@@ -90,7 +141,7 @@ READ_RE = re.compile(r"\b(?:readFile|readFileSync|readdir|readdirSync|createRead
 LITERAL_RE = re.compile(r"""(["'`])((?:\\.|(?!\1)[^\\\n])*)\1""")
 SRC_LIT_RE = re.compile(r"(?:^|[/\\])(?:src|api)(?:[/\\]|$)")
 ALLOWED_WINDOW_RE = re.compile(r"\.css\b|locales")
-CODE_LIT_RE = re.compile(r"\.(?:m?js|cjs|jsx|tsx?)$")
+CODE_LIT_RE = re.compile(r"^[A-Za-z0-9_@./~${}-]+\.(?:m?js|cjs|jsx|tsx?)$")  # パスの形だけ（空白・和文を含む案内の文の末尾の .js は数えない、HR34 #2511 ui-wording）
 IMPORT_SPEC_RE = re.compile(r"""\b(?:from|import)\s*\(?\s*(["'`])[^"'`\n]*\1""")
 COMMENT_RE = re.compile(r"/\*.*?\*/|(?<![:\"'`])//[^\n]*", re.S)
 
@@ -159,16 +210,31 @@ def _registry_rows(text: Optional[str]) -> Tuple[Optional[Dict[str, Json]], Opti
         return None, None, f"registry の JSON が読めない・形が違う（{type(e).__name__}）"
 
 
+# registry の説明の欄（run-verify-registry.js は表示と「空でない」の確かめにだけ使う。11/12 龍神 origin/master で読んだ）。
+# script・tier・command・args・timeoutSec・runner 等の動きの欄は今までどおり変えたら人（HR34 #2511 の guards の書き換え5件）
+REGISTRY_DESC_KEYS = frozenset({"guards", "note", "reason"})
+REGISTRY_DESC_TOP = frozenset({"$comment"})
+
+
+def _strip(d: Mapping[str, object], keys: FrozenSet[str]) -> Dict[str, object]:
+    return {k: v for k, v in d.items() if k not in keys}
+
+
 def registry_diff(old_text: Optional[str], new_text: Optional[str]) -> Tuple[List[str], List[str], List[str]]:
-    """(足した script, 消した script, 理由=許さない変更)。既存の行の中身の変更・registry の他の欄の変更は理由に出す"""
+    """(足した script, 消した script, 理由=許さない変更)。既存の行の動きの欄の変更・registry の他の欄の変更は理由に出す。
+    説明の欄（REGISTRY_DESC_KEYS・$comment）の書き換えは理由にしない。ただし guards を空にする・manual の reason を空にするのは理由に出す"""
     old, old_top, e1 = _registry_rows(old_text)
     new, new_top, e2 = _registry_rows(new_text)
     if old is None or new is None or old_top is None or new_top is None:
         return [], [], [e1 or e2]
     why: List[str] = []
-    if old_top != new_top:
+    if _strip(old_top, REGISTRY_DESC_TOP) != _strip(new_top, REGISTRY_DESC_TOP):
         why.append("registry の entries 以外の欄が変わっている")
-    changed = sorted(k for k in old if k in new and old[k] != new[k])
+    changed = sorted(k for k in old if k in new and _strip(old[k], REGISTRY_DESC_KEYS) != _strip(new[k], REGISTRY_DESC_KEYS))  # type: ignore[arg-type]
+    emptied = sorted(k for k in old if k in new and new[k] != old[k] and (not str(new[k].get("guards") or "").strip()  # type: ignore[union-attr]
+                                                                     or (new[k].get("tier") == "manual" and not str(new[k].get("reason") or "").strip())))  # type: ignore[union-attr]
+    if emptied:
+        why.append("説明の欄（guards・manual の reason）を空にした: " + "・".join(emptied[:5]))
     if changed:
         why.append("既存の行が変わっている: " + "・".join(changed[:5]))
     return sorted(set(new) - set(old)), sorted(set(old) - set(new)), why
@@ -294,6 +360,19 @@ class Runner:
         if self.git:
             _git(self.repo, "update-index", "--add", "--", rel)
 
+    def put(self, rel: str, data: bytes) -> None:
+        """写しにファイルを置く（無ければ親も作る）。索引も合わせる（データの注入用）"""
+        p = self.repo / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(data)
+        if self.git:
+            _git(self.repo, "update-index", "--add", "--", rel)
+
+    def drop(self, rel: str) -> None:
+        (self.repo / rel).unlink(missing_ok=True)
+        if self.git:
+            _git(self.repo, "update-index", "--force-remove", "--", rel)
+
     def passes(self, script: Path) -> bool:
         """script（コピーの中）を回して 0 で終われば True。timeout・起動できないは落ちた扱い"""
         argv = [*native_arch_prefix(), "node", str(script)]
@@ -343,6 +422,22 @@ def make_mutants(repo: Path, nm: Path, rel: str) -> Tuple[List[Json], str]:
     if d.get("error"):
         return [], f"{rel}: @babel/parser が解析できない（{d['error']}）"
     return [{**m, "file": rel} for m in d["mutants"]], ""
+
+
+def same_ast(nm: Path, old_text: str, new_text: str) -> bool:
+    """注釈・位置・console 等の案内の文だけの違いなら True（NORMALIZE_JS）。解析できない・node が回らないは False（比べる側へ回す）"""
+    d = Path(tempfile.mkdtemp(prefix="verify-guard-ast-")).resolve()
+    try:
+        (d / "old.js").write_text(old_text, encoding="utf-8")
+        (d / "new.js").write_text(new_text, encoding="utf-8")
+        r = subprocess.run(["node", "--permission", f"--allow-fs-read={d}", f"--allow-fs-read={nm.resolve()}", "-e", NORMALIZE_JS,
+                            str(nm.resolve()), str(d / "old.js"), str(d / "new.js")], capture_output=True, text=True, timeout=60)
+        a, b = json.loads(r.stdout)
+        return bool(a) and a == b
+    except (subprocess.TimeoutExpired, ValueError, OSError):
+        return False
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
 
 
 def pick(mutants: List[Json], limit: int) -> List[Json]:
@@ -414,8 +509,8 @@ def mutation_gate(runner: Runner, script_rel: str, old_text: str, new_exists: bo
     return True, "", rec
 
 
-def addition_gate(runner: Runner, script_rel: str, cfg: Json) -> Tuple[bool, str, Json]:
-    """新しい verify の「常に緑」の拒否。製品のファイル（新の verify が import・読む src/・api/・scripts/）ごとに機械の変異を作り、
+def _product_gate(runner: Runner, script_rel: str, cfg: Json) -> Tuple[bool, str, Json]:
+    """新しい verify の「常に緑」の拒否（製品のコードの変異）。製品のファイル（新の verify が import・読む src/・api/・scripts/）ごとに機械の変異を作り、
     変異の作れる製品のファイルのどれにも、新の verify が落とす変異が1つ以上あることを求める（HR34。前は全体で1つ落とせば通した）。
     1つでも何も落とさない製品のファイルがあれば通さない（import しただけで見ていない物・試しの道具だけ落とす verify を止める）。
     変異が作れない・製品のファイルが見つからないときも通さない（止める側）。変異は上限を製品のファイルの数で割って等間隔に選び、1つ落とせばそのファイルは次へ。
@@ -462,6 +557,374 @@ def addition_gate(runner: Runner, script_rel: str, cfg: Json) -> Tuple[bool, str
         return False, (f"{script_rel}: 製品のファイル {len(blind)}/{len(per)} で機械の変異を1つも落とさない（{'・'.join(blind[:3])}。"
                        "常に緑・見ていない製品のファイルがある verify は通さない）"), rec
     return True, "", rec
+
+
+# データを見る verify の注入（ops 審査 11/12 verify_guard のデータ変異。A=新しい追加だけ、P0-1）------------------------------
+# 注入の種類・場所・名前は全てこの表と関数が決める（PR の側の registry・fixture・コメントからは受け取らない、P1-1）。
+# verify の文字列・正規表現から取るのは「禁じる形の候補」だけ。デコイ（身代わりの語だけ禁じる）は止められず、落とした語を record に残して人・監査役が拾う（P1-2）
+EXTRACT_JS = r"""
+const path = require("path"), fs = require("fs");
+const nm = process.argv[1], file = process.argv[2];
+const { createRequire } = require("module");
+const parser = createRequire(path.join(nm, "x.js"))("@babel/parser");
+let ast;
+try { ast = parser.parse(fs.readFileSync(file, "utf8"), { sourceType: "unambiguous", errorRecovery: false, plugins: ["jsx"] }); }
+catch (e) { console.log(JSON.stringify({ error: String(e.message).slice(0, 200), strings: [], regexes: [] })); process.exit(0); }
+const strings = [], regexes = [];
+function walk(n) {
+  if (!n || typeof n.type !== "string") return;
+  if (n.type === "StringLiteral") strings.push(n.value);
+  else if (n.type === "TemplateElement") strings.push(n.value.cooked == null ? n.value.raw : n.value.cooked);
+  else if (n.type === "RegExpLiteral") regexes.push({ pattern: n.pattern, flags: n.flags });
+  for (const k of Object.keys(n)) {
+    if (k === "loc" || k === "leadingComments" || k === "trailingComments" || k === "innerComments") continue;
+    const v = n[k];
+    if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v.type === "string") walk(v);
+  }
+}
+walk(ast.program);
+console.log(JSON.stringify({ error: null, strings, regexes }));
+"""
+PATHLIKE_RE = re.compile(r"^[A-Za-z0-9_.@-]+(?:/[A-Za-z0-9_.@-]+)*$")
+DATA_SKIP_DIRS = ("node_modules", ".git")
+DOCS_BAD_NAME = "Probe_X.MD"  # kebab-case でない名前（道具が決める）
+MAX_ENTRIES = 400
+
+
+def extract_literals(repo: Path, nm: Path, rel: str) -> Tuple[List[str], List[Json], str]:
+    """(文字列リテラルの並び, 正規表現リテラルの並び, 失敗の理由)。コメントは含まない"""
+    try:
+        r = subprocess.run(["node", "--permission", f"--allow-fs-read={repo.resolve()}", f"--allow-fs-read={nm.resolve()}", "-e", EXTRACT_JS,
+                            str(nm.resolve()), str((repo / rel).resolve())], capture_output=True, text=True, timeout=60)
+        d = json.loads(r.stdout)
+    except (subprocess.TimeoutExpired, ValueError, OSError) as e:
+        return [], [], f"{rel}: 文字列の抽出に失敗（{type(e).__name__}）"
+    if d.get("error"):
+        return [], [], f"{rel}: @babel/parser が解析できない（{d['error']}）"
+    seen: List[str] = []
+    for x in d["strings"]:
+        if x not in seen:
+            seen.append(x)
+    return seen, d["regexes"], ""
+
+
+def _regex_samples(pattern: str, flags: str, limit: int = 6) -> List[str]:
+    """正規表現に当たる文字列の例（sre_parse で木を歩く。JS 特有の書き方は黙って捨てる）。出した例は re.search で当たるものだけ"""
+    try:
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            try:
+                import re._parser as sp  # type: ignore[import-not-found]  # 3.11+
+            except ImportError:
+                import sre_parse as sp  # type: ignore[no-redef]
+        tree = sp.parse(pattern)
+    except Exception:  # noqa: BLE001  JS だけの構文・読めない型は捨てる
+        return []
+
+    def cat(c: object) -> str:
+        n = str(c)
+        return " " if "SPACE" in n and "NOT" not in n else ("1" if "DIGIT" in n and "NOT" not in n else "a")
+
+    def gen(items: object) -> List[str]:
+        outs = [""]
+        for op, av in items:  # type: ignore[attr-defined]
+            n = str(op)
+            if n == "LITERAL":
+                opts = [chr(av)]
+            elif n == "ANY":
+                opts = ["a"]
+            elif n == "IN":
+                first = [x for x in av if str(x[0]) != "NEGATE"]
+                if not first or any(str(x[0]) == "NEGATE" for x in av):
+                    opts = ["~"]
+                else:
+                    k, v = first[0]
+                    opts = [chr(v)] if str(k) == "LITERAL" else [chr(v[0])] if str(k) == "RANGE" else [cat(v)]
+            elif n == "CATEGORY":
+                opts = [cat(av)]
+            elif n == "BRANCH":
+                opts = [o for br in av[1] for o in gen(br)][:limit]
+            elif n == "SUBPATTERN":
+                opts = gen(av[-1])
+            elif n in ("MAX_REPEAT", "MIN_REPEAT"):
+                inner = gen(av[2])
+                opts = [(i * av[0]) for i in inner] if av[0] else [""]
+            elif n in ("AT", "ASSERT", "ASSERT_NOT"):
+                opts = [""]
+            else:
+                return []
+            outs = [a + b for a in outs for b in opts][:limit]
+            if not outs:
+                return []
+        return outs
+
+    fl = (re.I if "i" in flags else 0)
+    ok: List[str] = []
+    for smp in gen(tree):
+        try:
+            if smp and re.search(pattern, smp, fl) and smp not in ok:
+                ok.append(smp)
+        except re.error:
+            return []
+    return ok
+
+
+def _word_ok(s: str) -> bool:
+    return 1 <= len(s) <= 60 and "\n" not in s and not re.match(r"^(?:node:|\.{1,2}/)", s) and s not in ("utf8", "utf-8")
+
+
+def data_targets(repo: Path, strings: Sequence[str]) -> Dict[str, object]:
+    """verify の文字列が指すデータの場所（固定の表。見つからない種類は入れない）。
+    dirs: 文字列を path.join の引数と見て、根から実在のディレクトリを辿って着いた所（同じ並びの文字列でつなぐ）。
+    json: locales の下の最初の .json（無ければ文字列が指す実在の .json）。css: 文字列が .css を含むとき、dirs の下（無ければ指された）最初の .css。
+    docs: dirs のうち docs の下の物。root: 根にある名前と同じ文字列が3つ以上（根の一覧を持つ verify）"""
+    cur = repo
+    seen: List[Path] = []
+    files: List[Path] = []
+    root_names = {c.name for c in repo.iterdir()} - set(DATA_SKIP_DIRS)
+    for s in strings:
+        if not PATHLIKE_RE.match(s) or len(s) > 100:
+            continue
+        for tok in s.split("/"):
+            if tok in ("", ".", ".."):
+                continue
+            if tok in DATA_SKIP_DIRS:
+                continue
+            if (cur / tok).is_dir():
+                cur = cur / tok
+                seen.append(cur)
+            elif (repo / tok).is_dir() and cur != repo:
+                cur = repo / tok
+                seen.append(cur)
+            elif (cur / tok).is_file():
+                files.append(cur / tok)
+            elif (repo / tok).is_file():
+                files.append(repo / tok)
+    # 先頭が実在の根の下の物から始まる（cur が根のとき最初の tok は repo/tok が見える）
+    dirs = sorted({_rel(d, repo) for d in seen})
+    maximal = [d for d in dirs if not any(o != d and o.startswith(d + "/") for o in dirs)]
+    t: Dict[str, object] = {"dirs": dirs}
+    root_hits = sorted({s for s in strings if s in root_names})
+    root_kind = len(root_hits) >= 3
+    json_dirs = [d for d in maximal if "locales" in d.split("/")]
+    json_files: List[str] = []
+    for d in json_dirs:
+        json_files += sorted(_rel(f, repo) for f in (repo / d).rglob("*.json") if not any(x in f.parts for x in DATA_SKIP_DIRS))
+    if not json_files and any(x.endswith(".json") for x in strings):
+        json_files = sorted(_rel(f, repo) for f in files if f.suffix == ".json" and (not root_kind or f.parent != repo))
+    if json_files:
+        t["json"] = json_files[0]
+    if any(".css" in x for x in strings):
+        css_files = [_rel(f, repo) for f in files if f.suffix == ".css"]
+        for d in maximal:
+            css_files += sorted(_rel(f, repo) for f in (repo / d).rglob("*.css") if not any(x in f.parts for x in DATA_SKIP_DIRS))
+        if css_files:
+            t["css"] = css_files[0]
+    docs = [d for d in dirs if d == "docs" or d.startswith("docs/")]
+    if docs:
+        t["docs"] = docs
+    if root_kind:
+        t["root"] = root_hits
+    return t if len(t) > 1 else {}  # 種類が1つも無ければ空（dirs だけでは注入先にならない）
+
+
+def _insert_json(text: str, entries: Sequence[Tuple[str, str]]) -> Tuple[Optional[str], str]:
+    """JSON のオブジェクトの末尾に鍵と値を足す。(新しい本文, 失敗の理由)。足したあとも有効な JSON であることを確かめる（P1-3）"""
+    try:
+        d = json.loads(text)
+    except ValueError:
+        return None, "注入先の JSON が元から読めない"
+    if not isinstance(d, dict):
+        return None, "注入先の JSON がオブジェクトでない"
+    body = text.rstrip()
+    if not body.endswith("}"):
+        return None, "注入先の JSON の終わりが } でない"
+    pairs = ", ".join(f"{json.dumps(k, ensure_ascii=False)}: {json.dumps(v, ensure_ascii=False)}" for k, v in entries)
+    new = body[:-1].rstrip() + ("," if d else "") + " " + pairs + "\n}\n"
+    try:
+        nd = json.loads(new)
+    except ValueError:
+        return None, "注入のあとの JSON が壊れた"
+    if not all(k in nd for k, _ in entries):
+        return None, "注入した鍵が（重複等で）残らない"
+    return new, ""
+
+
+def _css_rule(i: int, h: str, word: str) -> Optional[str]:
+    """1行の規則。語が { } 改行・コメントの記号を含むとき: 語自体が1行の釣り合った規則ならそのまま、でなければ捨てる（P1-3）"""
+    w = word.strip()
+    if "\n" in w or "*/" in w or "/*" in w:
+        return None
+    if "{" in w or "}" in w:
+        return w if re.fullmatch(r"[^{}]*\{[^{}]*\}", w) else None
+    return f".zz-probe-{h}-{i}{{--p:{w}}}"
+
+
+@contextlib.contextmanager
+def _injected(rn: "Runner", files: Mapping[str, bytes]):  # type: ignore[no-untyped-def]
+    saved = {rel: ((rn.repo / rel).read_bytes() if (rn.repo / rel).is_file() else None) for rel in files}
+    try:
+        for rel, data in files.items():
+            rn.put(rel, data)
+        yield
+    finally:
+        for rel, orig in saved.items():
+            if orig is None:
+                rn.drop(rel)
+            else:
+                rn.put(rel, orig)
+
+
+def _find_kill(items: List[object], red: Callable[[List[object]], bool]) -> Optional[List[object]]:
+    """items 全部で赤になるか、なるなら半分ずつに絞って落とす最小の組（組み合わせが要るならそこで止まる）"""
+    if not items or not red(items):
+        return None
+    cur = items
+    while len(cur) > 1:
+        h = len(cur) // 2
+        if red(cur[:h]):
+            cur = cur[:h]
+        elif red(cur[h:]):
+            cur = cur[h:]
+        else:
+            break
+    return cur
+
+
+def data_gate(runner: Runner, script_rel: str, strings: Sequence[str], regexes: Sequence[Json], targets: Mapping[str, object]) -> Tuple[bool, str, Json]:
+    """データを見る新しい verify の関門。固定の表の種類（json・css・docs の名前・根の名前）ごとに、verify の文字列・正規表現から取った禁じる形の候補を
+    まとめて1回注入し、赤になれば半分ずつに絞って落とした語を record に残す。落ちたものがどれか1つ以上あり、かつ対照（どの文字列にも当たらない
+    probe-benign-<hash> を同じ場所に注入）が全部緑のままであることを求める（P0-2）。緑を保てなければ人へ。名前の検査は道具が決めた名前（zz-probe-<hash>・docs/Probe_X.MD）。
+    (通ったか, 通らない理由, record)。呼ぶのは addition_gate（A）だけ"""
+    path = runner.repo / script_rel
+    h = hashlib.sha1(path.read_bytes()).hexdigest()[:8]
+    benign = f"probe-benign-{h}"
+    t0 = time.monotonic()
+    rec: Json = {"targets": {k: v for k, v in targets.items() if k != "dirs"}, "killed": {}, "contrast": {}, "runs": 0}
+    words = [w for w in strings if _word_ok(w)]
+    hints: List[str] = []
+    for r in regexes:
+        for smp in _regex_samples(str(r["pattern"]), str(r["flags"])):
+            if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{2,}", smp) and smp not in hints:
+                hints.append(smp)
+            if _word_ok(smp) and smp not in words:
+                words.append(smp)
+        # 規則の例は CSS・値の候補にも使う（上で words に足した）
+    hints = hints[:4]
+    entries: List[Tuple[str, str]] = []  # (鍵, 語)
+    for i, w in enumerate(words):
+        entries.append((f"zz-probe-{h}-{i}", w))
+        for k in hints:
+            entries.append((f"zz-probe-{h}-{i}-{k}", w))
+    entries = entries[:MAX_ENTRIES]
+
+    def red_of(build: Callable[[List[object]], Optional[Dict[str, bytes]]]) -> Callable[[List[object]], bool]:
+        def red(items: List[object]) -> bool:
+            files = build(items)
+            if files is None:
+                return False  # 壊れた注入は数えない（P1-3）
+            rec["runs"] = int(rec["runs"]) + 1  # type: ignore[call-overload]
+            with _injected(runner, files):
+                return not runner.passes(path)
+        return red
+
+    def run_one(kind: str, items: List[object], build: Callable[[List[object]], Optional[Dict[str, bytes]]],
+                benign_files: Optional[Dict[str, bytes]], label: Callable[[List[object]], object]) -> Optional[str]:
+        """kind を試す。戻りは通らない理由（無ければ None）。落とせなかった kind は rec に書くだけで理由にしない"""
+        got = _find_kill(items, red_of(build))
+        if got is None:
+            rec["killed"][kind] = []  # type: ignore[index]
+            return None
+        rec["killed"][kind] = label(got)  # type: ignore[index]
+        if benign_files is None:
+            rec["contrast"][kind] = "対照を作れない"  # type: ignore[index]
+            return f"{script_rel}: 注入の対照（{kind}）を作れず、規則への反応と何にでも反応するのを分けられない"
+        rec["runs"] = int(rec["runs"]) + 1  # type: ignore[call-overload]
+        with _injected(runner, benign_files):
+            green = runner.passes(path)
+        rec["contrast"][kind] = "green" if green else "red"  # type: ignore[index]
+        if not green:
+            return (f"{script_rel}: どの文字列にも当たらない無害な値（{benign}）を同じ場所（{kind}）に入れても落ちる"
+                    "（hash・全文の照合・知らないファイルへの反応など、何にでも反応する疑い。人が見る）")
+        return None
+
+    def docs_benign() -> Optional[Dict[str, bytes]]:
+        ds = targets.get("docs")
+        return {f"{ds[0]}/{benign}.md": b"x\n"} if ds else None  # type: ignore[index]
+
+    problems: List[str] = []
+    skipped: List[str] = []
+    jf = targets.get("json")
+    if jf:
+        orig = (runner.repo / str(jf)).read_text(encoding="utf-8")
+
+        def b_json(items: List[object]) -> Optional[Dict[str, bytes]]:
+            new, why = _insert_json(orig, items)  # type: ignore[arg-type]
+            if new is None:
+                skipped.append(f"json: {why}")
+                return None
+            return {str(jf): new.encode("utf-8")}
+        bn, why = _insert_json(orig, [(k, benign) for k, _ in entries]) if entries else (None, "候補なし")
+        if bn is None:
+            skipped.append(f"json: {why}")
+        else:
+            p = run_one("json", list(entries), b_json, {str(jf): bn.encode("utf-8")}, lambda g: [{"key": k, "word": w} for k, w in g][:6])  # type: ignore[misc]
+            if p:
+                problems.append(p)
+    cf = targets.get("css")
+    if cf:
+        orig_css = (runner.repo / str(cf)).read_text(encoding="utf-8")
+        crules = [(w, r) for i, w in enumerate(words) if (r := _css_rule(i, h, w))]
+
+        def b_css(items: List[object]) -> Optional[Dict[str, bytes]]:
+            return {str(cf): (orig_css.rstrip("\n") + "\n" + "\n".join(r for _, r in items) + "\n").encode("utf-8")}  # type: ignore[misc]
+        if crules:
+            bn_css = {str(cf): (orig_css.rstrip("\n") + f"\n.zz-probe-{h}-b{{--p:{benign}}}\n").encode("utf-8")}
+            p = run_one("css", list(crules), b_css, bn_css, lambda g: [w for w, _ in g][:6])  # type: ignore[misc]
+            if p:
+                problems.append(p)
+    ds = targets.get("docs")
+    if ds:
+        p = run_one("docs", list(ds), lambda items: {f"{d}/{DOCS_BAD_NAME}": b"x\n" for d in items}, docs_benign(), lambda g: [f"{d}/{DOCS_BAD_NAME}" for d in g])  # type: ignore[misc]
+        if p:
+            problems.append(p)
+    if targets.get("root"):
+        p = run_one("root", [f"zz-probe-{h}"], lambda items: {str(items[0]): b"x\n"}, docs_benign(), lambda g: list(g))  # type: ignore[misc]
+        if p:
+            problems.append(p)
+    rec["skipped"] = skipped
+    rec["elapsed_sec"] = round(time.monotonic() - t0, 1)
+    if problems:
+        return False, problems[0], rec
+    if not any(rec["killed"].values()):  # type: ignore[union-attr]
+        return False, (f"{script_rel}: データの場所（{'・'.join(k for k in targets if k != 'dirs')}）に禁じる形の候補を入れても1つも落ちない"
+                       "（常に緑・見ていないデータの疑い、または注入が妥当な形を作れなかった）"), rec
+    return True, "", rec
+
+
+def addition_gate(runner: Runner, script_rel: str, cfg: Json) -> Tuple[bool, str, Json]:
+    """新しい verify（A だけ。M・D は mutation_gate のまま、ops 審査 P0-1）の「常に緑」の拒否。
+    製品のコードを見る verify は _product_gate（製品のファイルごとの変異）、データ（locales の json・css・docs の名前・根の名前）を見る verify は data_gate（対照つきの注入）。
+    両方を持つ verify は両方の関門を求める（P1-4）。データの場所を文字列から見つけられない（パスを動的に組む等）verify で製品も無ければ人へ"""
+    repo = runner.repo
+    path = repo / script_rel
+    strings, regexes, err = extract_literals(repo, runner.nm, script_rel)
+    targets = {} if err else data_targets(repo, strings)
+    prods = product_files(repo, script_rel, [path.read_text(encoding="utf-8")])
+    if prods or not targets:
+        ok, why, rec = _product_gate(runner, script_rel, cfg)
+        if not ok:
+            if not prods:
+                why += ("。データの場所も文字列から見つけられない（動的なパスは人が見る）" if not err else f"。{err}")
+            return False, why, rec
+        if not targets:
+            return True, "", rec
+    else:
+        rec = {"script": script_rel, "products": []}
+    ok, why, drec = data_gate(runner, script_rel, strings, regexes, targets)
+    rec["data"] = drec
+    return ok, why, rec
 
 
 # 全体 ---------------------------------------------------------------------------
@@ -519,6 +982,10 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
                 if old is None:
                     human.append(f"{p}: origin/master に無い（今ある verify の変更として見られない）")
                     continue
+                if st == "M" and same_ast(nm, old, (rn.repo / p).read_text(encoding="utf-8")):
+                    excused.add(p)  # 注釈・案内の文だけの変更（HR34 #2511）。振る舞いが同じなので変異で比べるまでもない
+                    record.setdefault("same_ast", []).append(p)  # type: ignore[union-attr]
+                    continue
                 if st == "M":
                     probs = static_added_problems(old, (rn.repo / p).read_text(encoding="utf-8"))
                     if probs:  # 変更の新しい本文にも ① と同じ語の確かめ（P1-4）。旧から増えた語・新しく出た src の読みだけ止める
@@ -543,11 +1010,9 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
                     human += [f"{REGISTRY}: {x}" for x in why]
                 elif bad_removed:
                     human.append(f"{REGISTRY}: 行の削除は変異検査を通した verify の削除だけ許す（{'・'.join(bad_removed[:5])}）")
-                elif not added and not removed:
-                    human.append(f"{REGISTRY}: 行の追加も削除も無い変更（中身は許さない）")
-                else:
+                else:  # 行の追加・削除・説明の欄の書き換え（HR34）のどれか。動きの欄の変更は why で人へ出ている
                     excused.add(REGISTRY)
-                    record["registry"] = {"added": added, "removed": removed}
+                    record["registry"] = {"added": added, "removed": removed, "desc_only": not added and not removed}
     return Verdict(frozenset(excused), human, record)
 
 
