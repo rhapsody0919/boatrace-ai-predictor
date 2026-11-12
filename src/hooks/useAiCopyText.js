@@ -8,7 +8,7 @@
  * 純関数の utils/aiCopyText.js が行う（BOA-770）。
  */
 import { useEffect, useState } from "react";
-import { getRaceOriginalExhibition } from "../services/raceQueries4.js";
+import { supabaseDataService } from "../services/supabaseDataService";
 import { useTranslation } from "react-i18next";
 import { useRaceAnalysisData } from "./useRaceAnalysisData";
 import { useSixBoatCourseStats } from "./useSixBoatCourseStats";
@@ -374,7 +374,7 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
   useEffect(() => {
     if (!raceId) return undefined;
     let cancelled = false;
-    getRaceOriginalExhibition(raceId)
+    supabaseDataService.getRaceOriginalExhibition(raceId)
       .then((data) => {
         if (!cancelled) setFetchedExhibition({ raceId, data });
       })
