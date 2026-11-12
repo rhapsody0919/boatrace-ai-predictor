@@ -72,7 +72,7 @@ jobs:
         run: npm run verify:ci
 
       # 差分のファイルだけの eslint と、大きさ・複雑さの線・循環の import（madge）・重複のコード（jscpd）（T3・T5、2026-11-07）。
-      # 手元の `npm run verify` と同じ検査に、--ci で madge・jscpd を足す（npx で固定の版を取る）。
+      # 手元の `npm run verify:pr` と同じ検査。--ci で madge・jscpd を足す（devDependencies の固定の版を npx --no で使う、CI03）。
       # 編集ごとの hook（prettier・eslint --fix）を外した代わり。ジョブの名（verify）は ruleset の必須の check なので変えない
       - name: Lint the changed files
         run: node scripts/maintenance/lint-changed.js --ci --base=origin/master
