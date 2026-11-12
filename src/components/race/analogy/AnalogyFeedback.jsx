@@ -63,23 +63,11 @@ function markDone(raceId) {
   }
 }
 
-export default function AnalogyFeedback({ raceId, stage, tab }) {
-  const { t, i18n } = useTranslation();
-  const k = "aiPredictionTab.analogy.feedback";
-  const qId = useId();
-  const textId = useId();
-  const [verdict, setVerdict] = useState(null);
-  const [reasons, setReasons] = useState([]);
-  const [comment, setComment] = useState("");
-  const [status, setStatus] = useState(() =>
-    readDone().includes(raceId) ? "sent" : "idle",
-  );
-  const [failed, setFailed] = useState(false);
-  const voteSent = useRef(false);
-  const key = useRef(null);
-  const boxRef = useRef(null);
+const K = "aiPredictionTab.analogy.feedback";
 
-  // 見えたらレースごとに1回（押下率の分母）
+/** 見えたらレースごとに1回（押下率の分母） */
+function useViewTracking(raceId, status) {
+  const boxRef = useRef(null);
   const viewed = useRef(false);
   useEffect(() => {
     const el = boxRef.current;
@@ -94,6 +82,22 @@ export default function AnalogyFeedback({ raceId, stage, tab }) {
     io.observe(el);
     return () => io.disconnect();
   }, [raceId, status]);
+  return boxRef;
+}
+
+/** 状態と送信（1段目の vote・2段目の detail・計測） */
+function useAnalogyFeedback({ raceId, stage, tab, i18n }) {
+  const [verdict, setVerdict] = useState(null);
+  const [reasons, setReasons] = useState([]);
+  const [comment, setComment] = useState("");
+  const [status, setStatus] = useState(() =>
+    readDone().includes(raceId) ? "sent" : "idle",
+  );
+  const [failed, setFailed] = useState(false);
+  const voteSent = useRef(false);
+  const key = useRef(null);
+
+  const boxRef = useViewTracking(raceId, status);
 
   const base = () => {
     key.current ??= clientKey();
@@ -155,18 +159,96 @@ export default function AnalogyFeedback({ raceId, stage, tab }) {
     }
   };
 
-  if (status === "sent")
-    return (
-      <div className="af-v16-box af-fb" data-testid="analogy-feedback">
-        <p className="af-fb-thanks" role="status">
-          {t(`${k}.thanks`)}
-        </p>
-      </div>
-    );
-
   const toggleReason = (r) =>
     setReasons((list) =>
       list.includes(r) ? list.filter((x) => x !== r) : [...list, r],
+    );
+
+  return [
+    boxRef,
+    {
+      verdict,
+      reasons,
+      comment,
+      setComment,
+      status,
+      failed,
+      vote,
+      send,
+      toggleReason,
+    },
+  ];
+}
+
+function ReasonsFieldset({ t, reasons, onToggle }) {
+  return (
+    <fieldset className="af-fb-reasons">
+      <legend className="af-fb-sub">{t(`${K}.lackingAsk`)}</legend>
+      {REASONS.map((r) => (
+        <label key={r} className="af-fb-chk">
+          <input
+            type="checkbox"
+            checked={reasons.includes(r)}
+            onChange={() => onToggle(r)}
+          />
+          {t(`${K}.reasons.${r}`)}
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
+function CommentForm({
+  t,
+  verdict,
+  comment,
+  setComment,
+  textId,
+  sending,
+  onSend,
+}) {
+  return (
+    <>
+      <textarea
+        id={textId}
+        className="af-fb-text"
+        value={comment}
+        maxLength={MAX_COMMENT}
+        aria-label={verdict === "lacking" ? t(`${K}.commentLabel`) : undefined}
+        placeholder={t(`${K}.${verdict}Example`)}
+        onChange={(e) => setComment(e.target.value)}
+      />
+      <p className="af-fb-count" aria-live="polite">
+        {t(`${K}.count`, { n: comment.length, max: MAX_COMMENT })}
+      </p>
+      <div>
+        <button
+          type="button"
+          className="af-fb-send"
+          disabled={sending}
+          onClick={onSend}
+        >
+          {t(`${K}.send`)}
+        </button>
+      </div>
+    </>
+  );
+}
+
+export default function AnalogyFeedback({ raceId, stage, tab }) {
+  const { t, i18n } = useTranslation();
+  const qId = useId();
+  const textId = useId();
+  const [boxRef, fb] = useAnalogyFeedback({ raceId, stage, tab, i18n });
+  const { verdict } = fb;
+
+  if (fb.status === "sent")
+    return (
+      <div className="af-v16-box af-fb" data-testid="analogy-feedback">
+        <p className="af-fb-thanks" role="status">
+          {t(`${K}.thanks`)}
+        </p>
+      </div>
     );
 
   return (
@@ -176,7 +258,7 @@ export default function AnalogyFeedback({ raceId, stage, tab }) {
       ref={boxRef}
     >
       <p className="af-fb-q" id={qId}>
-        {t(`${k}.question`)}
+        {t(`${K}.question`)}
       </p>
       <div className="af-seg" role="group" aria-labelledby={qId}>
         {["useful", "lacking"].map((v) => (
@@ -184,66 +266,41 @@ export default function AnalogyFeedback({ raceId, stage, tab }) {
             key={v}
             type="button"
             aria-pressed={verdict === v}
-            onClick={() => vote(v)}
+            onClick={() => fb.vote(v)}
           >
-            {t(`${k}.${v}`)}
+            {t(`${K}.${v}`)}
           </button>
         ))}
       </div>
       {verdict === "lacking" && (
-        <fieldset className="af-fb-reasons">
-          <legend className="af-fb-sub">{t(`${k}.lackingAsk`)}</legend>
-          {REASONS.map((r) => (
-            <label key={r} className="af-fb-chk">
-              <input
-                type="checkbox"
-                checked={reasons.includes(r)}
-                onChange={() => toggleReason(r)}
-              />
-              {t(`${k}.reasons.${r}`)}
-            </label>
-          ))}
-        </fieldset>
+        <ReasonsFieldset
+          t={t}
+          reasons={fb.reasons}
+          onToggle={fb.toggleReason}
+        />
       )}
       {verdict === "useful" && (
         <label className="af-fb-sub" htmlFor={textId}>
-          {t(`${k}.usefulAsk`)}
+          {t(`${K}.usefulAsk`)}
         </label>
       )}
       {verdict && (
-        <>
-          <textarea
-            id={textId}
-            className="af-fb-text"
-            value={comment}
-            maxLength={MAX_COMMENT}
-            aria-label={
-              verdict === "lacking" ? t(`${k}.commentLabel`) : undefined
-            }
-            placeholder={t(`${k}.${verdict}Example`)}
-            onChange={(e) => setComment(e.target.value)}
-          />
-          <p className="af-fb-count" aria-live="polite">
-            {t(`${k}.count`, { n: comment.length, max: MAX_COMMENT })}
-          </p>
-          <div>
-            <button
-              type="button"
-              className="af-fb-send"
-              disabled={status === "sending"}
-              onClick={send}
-            >
-              {t(`${k}.send`)}
-            </button>
-          </div>
-        </>
+        <CommentForm
+          t={t}
+          verdict={verdict}
+          comment={fb.comment}
+          setComment={fb.setComment}
+          textId={textId}
+          sending={fb.status === "sending"}
+          onSend={fb.send}
+        />
       )}
-      {failed && (
+      {fb.failed && (
         <p className="af-fb-error" role="alert">
-          {t(`${k}.error`)}
+          {t(`${K}.error`)}
         </p>
       )}
-      <p className="af-fb-note">{t(`${k}.note`)}</p>
+      <p className="af-fb-note">{t(`${K}.note`)}</p>
     </div>
   );
 }
