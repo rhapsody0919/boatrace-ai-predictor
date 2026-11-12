@@ -537,6 +537,124 @@ expect(
   patch("src/data/morningDigestCopy.js", ['  title: "的中率",']),
 );
 
+// ---- 別のファイルへ字のまま移した語の行は H9 に当てない（#2504 BOA-1403 の分割の誤検知） ----
+{
+  const BIG = "src/pages/VenueGridPage.jsx";
+  const PART = "src/components/HitRaces.jsx";
+  const LINE = "<p>回収率100%は超えていません</p>";
+  const files = (...entries) => new Map(entries);
+  const h9 = (r) => r.hits.filter((h) => h.rule === "H9").map((h) => h.file);
+  expect(
+    "別のファイルへ移しただけ（字下げだけ違う）は H9 に当てない",
+    [`M ${BIG}`, `M ${PART}`],
+    "light",
+    [],
+    files(
+      [BIG, { added: [], removed: [`              ${LINE}`] }],
+      [PART, { added: [`      ${LINE}`, "<p>見出し</p>"], removed: [] }],
+    ),
+  );
+  expect(
+    "消したファイルから移しただけも H9 に当てない",
+    [`D ${BIG}`, `M ${PART}`],
+    "light",
+    [],
+    files(
+      [BIG, { added: [], removed: [LINE] }],
+      [PART, { added: [LINE], removed: [] }],
+    ),
+  );
+  const fresh = expect(
+    "移した上に新しい語を足せば H9（移した先に当たる）",
+    [`M ${BIG}`, `M ${PART}`],
+    "heavy",
+    ["H9"],
+    files(
+      [BIG, { added: [], removed: [LINE] }],
+      [PART, { added: [LINE, "<p>的中率で見る</p>"], removed: [] }],
+    ),
+  );
+  assert.deepEqual(h9(fresh), [PART], "移した先だけに当たる");
+  assert.match(fresh.hits.find((h) => h.rule === "H9").reason, /的中率$/);
+  expect(
+    "移して1字変えれば H9",
+    [`M ${BIG}`, `M ${PART}`],
+    "heavy",
+    ["H9"],
+    files(
+      [BIG, { added: [], removed: [LINE] }],
+      [PART, { added: [LINE.replace("100", "120")], removed: [] }],
+    ),
+  );
+  const dup = expect(
+    "元に残したまま別のファイルへ写す（複製）は H9",
+    [`M ${BIG}`, `M ${PART}`],
+    "heavy",
+    ["H9"],
+    files(
+      [BIG, { added: [`  ${LINE}`], removed: [LINE] }],
+      [PART, { added: [LINE], removed: [] }],
+    ),
+  );
+  assert.deepEqual(h9(dup), [PART]);
+  expect(
+    "1行を2つのファイルへ写せば H9（消した行と1対1）",
+    [`M ${BIG}`, `M ${PART}`, "M src/components/RaceCard.jsx"],
+    "heavy",
+    ["H9"],
+    files(
+      [BIG, { added: [], removed: [LINE] }],
+      [PART, { added: [LINE], removed: [] }],
+      ["src/components/RaceCard.jsx", { added: [LINE], removed: [] }],
+    ),
+  );
+  expect(
+    "移し元の行を書き換えて残せば、移し元に新しい語が入ったとして H9",
+    [`M ${BIG}`, `M ${PART}`],
+    "heavy",
+    ["H9"],
+    files(
+      [BIG, { added: ["<p>回収率は未達</p>"], removed: [LINE] }],
+      [PART, { added: [LINE], removed: [] }],
+    ),
+  );
+  expect(
+    "語を見ないファイル（記事）から持ち込んだ行は H9",
+    ["M src/data/blog-posts/guide.json", `M ${PART}`],
+    "heavy",
+    ["H9"],
+    files(
+      ["src/data/blog-posts/guide.json", { added: [], removed: [LINE] }],
+      [PART, { added: [LINE], removed: [] }],
+    ),
+  );
+  // 移すだけ（moveOnly）で外すファイルは移し元の席を取らない: from → to へ字のまま移した行を、
+  // パスの順が先の別のファイルにも足すと、そのファイルに当たる（審査 P0）
+  {
+    const FROM = "src/services/supabaseDataService.js";
+    const TO = "src/services/core2.js";
+    const OTHER = "src/a/New.jsx";
+    const r = classify({
+      changes: [
+        { status: "A", path: OTHER },
+        { status: "A", path: TO },
+        { status: "M", path: FROM },
+      ],
+      patches: files(
+        [OTHER, { added: [LINE], removed: [] }],
+        [TO, { added: [LINE], removed: [] }],
+        [FROM, { added: [], removed: [LINE] }],
+      ),
+      trees: [],
+      moved: new Set([FROM, TO]),
+    });
+    assert.ok(
+      r.hits.some((h) => h.rule === "H9" && h.file === OTHER),
+      `移すだけのファイルの行を別のファイルへ写すと H9（${JSON.stringify(r.hits)}）`,
+    );
+  }
+}
+
 // ---- unified diff の読み方 ----
 {
   const p = parsePatch(
@@ -1211,6 +1329,51 @@ const moveRun = (texts, changes = moveChanges) => {
   g("add", "-A");
   g("commit", "-q", "-m", "words");
   const words = g("rev-parse", "HEAD");
+  // 別のファイルへ字のまま移す（H9 に当てない）・移して新しい語・PR で risk-rules の語を消す（merge-base の語で当てる）
+  g("checkout", "-q", "-b", "split", start);
+  put(
+    "src/pages/Long.jsx",
+    "export default () => (\n  <div>\n        <p>回収率は未達</p>\n        <p>一攫千金ではない</p>\n  </div>\n);\n",
+  );
+  g("add", "-A");
+  g("commit", "-q", "-m", "split base");
+  const splitBase = g("rev-parse", "HEAD");
+  put(
+    "src/pages/Long.jsx",
+    'import Part from "./long/Part.jsx";\nexport default () => <Part />;\n',
+  );
+  put(
+    "src/pages/long/Part.jsx",
+    "export default () => (\n  <div>\n    <p>回収率は未達</p>\n    <p>一攫千金ではない</p>\n  </div>\n);\n",
+  );
+  g("add", "-A");
+  g("commit", "-q", "-m", "split");
+  const splitHead = g("rev-parse", "HEAD");
+  put(
+    "src/pages/long/Part.jsx",
+    "export default () => (\n  <div>\n    <p>回収率は未達</p>\n    <p>一攫千金ではない</p>\n    <p>的中率</p>\n  </div>\n);\n",
+  );
+  g("add", "-A");
+  g("commit", "-q", "-m", "split and new word");
+  const splitFresh = g("rev-parse", "HEAD");
+  g("checkout", "-q", "-b", "weaken", start);
+  const risk = JSON.parse(
+    readFileSync(
+      join(repo, "sns-video-studio/remotion/risk-rules.json"),
+      "utf8",
+    ),
+  );
+  put(
+    "sns-video-studio/remotion/risk-rules.json",
+    JSON.stringify({
+      ...risk,
+      rules: risk.rules.filter((r) => !r.patterns.includes("一攫千金")),
+    }),
+  );
+  put("src/pages/Other.jsx", "export default () => <p>一攫千金</p>;\n");
+  g("add", "-A");
+  g("commit", "-q", "-m", "weaken words");
+  const weaken = g("rev-parse", "HEAD");
   // 移すだけ（BOA-1433）: git から base・head の字を読む道。移す前の殻・移した木・移して1字変えた木
   const moveCommit = (files, msg) => {
     for (const [p, text] of files) put(p, text);
@@ -1285,6 +1448,28 @@ const moveRun = (texts, changes = moveChanges) => {
       ["H9", 'src/q"x.jsx'],
     ],
     "空白・引用符を含むパスでも足した行の語を読む",
+  );
+  const h9Files = (base, head) => {
+    const r = cli(base, head);
+    assert.equal(r.status, 0, r.stderr);
+    return JSON.parse(r.stdout)
+      .hits.filter((h) => h.rule === "H9")
+      .map((h) => h.file);
+  };
+  assert.deepEqual(
+    h9Files(splitBase, splitHead),
+    [],
+    "CLI: 別のファイルへ字のまま移しただけは H9 に当てない",
+  );
+  assert.deepEqual(
+    h9Files(splitBase, splitFresh),
+    ["src/pages/long/Part.jsx"],
+    "CLI: 移した上に新しい語を足せば H9",
+  );
+  assert.deepEqual(
+    h9Files(master, weaken),
+    ["src/pages/Other.jsx"],
+    "CLI: PR が risk-rules から語を消しても merge-base の語で H9",
   );
   assert.deepEqual(
     JSON.parse(cli(moveBase, moveHead).stdout),
