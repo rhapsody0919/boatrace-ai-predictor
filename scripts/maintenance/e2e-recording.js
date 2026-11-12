@@ -81,7 +81,6 @@ function repoSlug() {
   return m[1];
 }
 
-/** 手元で撮った（まだ Release に上げていない）録画の目印。global-teardown が書く */
 /** 一時の失敗とみなす HTTP の状態（再試行する）。404 等の恒久の失敗は再試行せずそのまま返す */
 export const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 /** 再試行の前の待ち（ms）。回数は長さ+1。最小でよい（BOA-1397: releases の 504 で shard が試験の前に落ちた） */
@@ -101,6 +100,7 @@ export async function fetchWithRetry(
     try {
       const response = await fetchImpl(url);
       if (response.ok || !RETRYABLE_STATUS.has(response.status) || last) return response;
+      await response.body?.cancel?.(); // 捨てる応答の本文を読まずに閉じる（接続を早く返す）
       log(`[e2e recording] 取得が ${response.status}。${delays[attempt]}ms 待って再試行（${attempt + 1}/${delays.length}）: ${url}`);
     } catch (error) {
       if (last) throw error;
@@ -110,6 +110,7 @@ export async function fetchWithRetry(
   }
 }
 
+/** 手元で撮った（まだ Release に上げていない）録画の目印。global-teardown が書く */
 export const LOCAL_MARK = "local";
 
 /**
