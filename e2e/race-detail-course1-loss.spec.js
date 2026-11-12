@@ -41,10 +41,11 @@ test("1コース34走: まくられ・差されを件数と割合で出し、逃
   }
   await expect(card.locator("[translate=no]")).toBeVisible();
   await expect(card).toContainText("※割合の分母は1コースで走った全ての走です");
-  // 直後の兄弟が「1コースが逃げたとき」のカード
-  expect(
-    await card.evaluate((el) => el.nextElementSibling?.className),
-  ).toContain("nsc-card");
+  // 直後の兄弟が「1コースが逃げたとき」のカード。逃げのカードは取得（本番では DB）の後に出るので、出るまで待つ
+  // （BOA-1491: 待たずに読むと取得の応答の前に兄弟を見て落ちた）
+  await expect(card.locator("xpath=following-sibling::*[1]")).toHaveClass(
+    /nsc-card/,
+  );
   // 6艇の表の期間を切り替えても値は変わらない
   await page.locator(".six-boat-course button", { hasText: /^当地$/ }).click();
   await expect(card).toContainText("34走中5走");
