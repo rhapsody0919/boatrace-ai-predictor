@@ -55,7 +55,8 @@ const rankData = readFileSync(
 );
 assert.match(
   rankData,
-  /import \{ SMALL_SAMPLE_THRESHOLD \} from "\.\.\/\.\.\/src\/components\/race\/basicInfoStats\.js";/,
+  // BOA-1501 で src/pure へ移す。移す前後のどちらの置き場でも合格（移した後に元の場所の分岐は外す）
+  /import \{ SMALL_SAMPLE_THRESHOLD \} from "\.\.\/\.\.\/src\/(?:pure|components\/race)\/basicInfoStats\.js";/,
 );
 assert.match(rankData, /m\.sample_count >= SMALL_SAMPLE_THRESHOLD/);
 const chart = readFileSync(

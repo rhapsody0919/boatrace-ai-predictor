@@ -17,8 +17,13 @@
  */
 import assert from "node:assert/strict";
 import { readDataLayerSource } from "./dataLayerSource.js";
-import { computeRates, getRecentRaces } from "../../src/components/race/basicInfoStats.js";
+import { existsSync } from "node:fs";
 import { buildRacerScopedRaceRows } from "../../src/services/racerScopedRaceRows.js";
+// BOA-1501 で src/pure へ移す。移す前後のどちらでも本体を読む（移した後に元の場所の分岐は外す）
+const BASIC_INFO_STATS = existsSync(new URL("../../src/pure/basicInfoStats.js", import.meta.url))
+  ? "../../src/pure/basicInfoStats.js"
+  : "../../src/components/race/basicInfoStats.js";
+const { computeRates, getRecentRaces } = await import(BASIC_INFO_STATS);
 
 const R1 = "2026-10-01-04-01";
 const R9 = "2026-10-01-04-09";
