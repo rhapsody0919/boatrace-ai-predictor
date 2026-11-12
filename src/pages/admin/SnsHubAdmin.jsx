@@ -54,37 +54,42 @@ const FULL_FETCH = {
   approvers: true,
 };
 
-function SnsHubAdmin() {
-  const [actionMessages, setActionMessages] = useState([]);
-  const [activeTab, setActiveTab] = useState("blog");
-  const [activeStatusFilter, setActiveStatusFilter] = useState("review");
+// 承認待ちの下書きのうち、platform が条件に合う件数
+function countReview(drafts, matchPlatform) {
+  return drafts.filter(
+    (d) =>
+      matchPlatform(d.platform) && STATUS_FILTERS[0].statuses.includes(d.status),
+  ).length;
+}
+
+// 同じネタ（content_group_id）から派生したYouTube下書きの公開URLの逆引き。
+// note下書きの投稿導線で「YouTube動画URLをコピー」ボタンを出すために使う（2026-09-03）
+function buildYoutubeUrlMap(drafts) {
+  const map = {};
+  for (const d of drafts) {
+    if (
+      d.platform === "youtube" &&
+      d.content_group_id &&
+      d.source_data?.youtube_url
+    ) {
+      map[d.content_group_id] = d.source_data.youtube_url;
+    }
+  }
+  return map;
+}
+
+// 下書きと承認者の読み込み。
+// silent=trueの場合、全画面ローディング表示を出さずに裏側でデータだけ更新する
+// （2026-08-31）。fetchで指定した種類だけを再取得する（2026-09-01）
+function useDraftsLoader(showToast) {
   const [drafts, setDrafts] = useState([]);
   const [approvers, setApprovers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { toast, showToast } = useToast();
   // 下書きの読み込みの番号。操作の後の読み直しと「更新」等が重なったとき、後から届いた古い応答で
   // 新しい一覧を上書きしない（最後に始めた読み込みの結果だけを使う）
   const draftReadEpoch = useRef(0);
 
-  // 同じネタ（content_group_id）から派生したYouTube下書きの公開URLの逆引き。
-  // note下書きの投稿導線で「YouTube動画URLをコピー」ボタンを出すために使う（2026-09-03）
-  const youtubeUrlByGroupId = useMemo(() => {
-    const map = {};
-    for (const d of drafts) {
-      if (
-        d.platform === "youtube" &&
-        d.content_group_id &&
-        d.source_data?.youtube_url
-      ) {
-        map[d.content_group_id] = d.source_data.youtube_url;
-      }
-    }
-    return map;
-  }, [drafts]);
-
-  // silent=trueの場合、全画面ローディング表示を出さずに裏側でデータだけ更新する
-  // （2026-08-31）。fetchで指定した種類だけを再取得する（2026-09-01）
   const loadDrafts = useCallback(
     async ({ silent = false, fetch: fetchScope = FULL_FETCH } = {}) => {
       if (!silent) {
@@ -121,8 +126,16 @@ function SnsHubAdmin() {
     loadDrafts();
   }, [loadDrafts]);
 
-  // reloadScope: このアクション後にloadDraftsへ渡すfetch指定。省略時はdraftsのみ
-  async function handleAction(actionFn, args, reloadScope = { drafts: true }) {
+  return { drafts, approvers, loading, error, loadDrafts };
+}
+
+// reloadScope: このアクション後にloadDraftsへ渡すfetch指定。省略時はdraftsのみ
+function makeHandleAction({ loadDrafts, showToast, setActionMessages }) {
+  return async function handleAction(
+    actionFn,
+    args,
+    reloadScope = { drafts: true },
+  ) {
     try {
       const result = await actionFn(...args);
       const messages = actionFeedback(result);
@@ -141,29 +154,149 @@ function SnsHubAdmin() {
       await loadDrafts({ silent: true, fetch: reloadScope });
       showToast("操作に失敗しました。最新状態を確認してください。", "error");
     }
-  }
+  };
+}
 
-  if (loading) {
+function ActionMessages({ messages, setActionMessages }) {
+  if (messages.length === 0) return null;
+  // verify-sns-existing-fixes.js が onClick の文字列を直接見る
+  const closeButton = <button onClick={() => setActionMessages([])}>通知を閉じる</button>;
+  return (
+    <div className="sns-hub-error-state" role="alert">
+      {messages.map((message, index) => (
+        <p key={index}>{message}</p>
+      ))}
+      {closeButton}
+    </div>
+  );
+}
+
+function PlatformTabRow({ drafts, activeTab, onSelectTab, onRefresh }) {
+  return (
+    <div className="tab-navigation-row">
+      <div className="sns-hub-tab-navigation">
+        {PLATFORM_TABS.map((tab) => {
+          // 件数は「承認待ち」だけ（対応が必要な件数という意味を保つため）
+          const count = countReview(drafts, (platform) => platform === tab.id);
+          return (
+            <button
+              key={tab.id}
+              className={`sns-hub-tab-btn ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => onSelectTab(tab.id)}
+            >
+              {tab.label} ({count})
+            </button>
+          );
+        })}
+      </div>
+      <button className="refresh-btn" onClick={onRefresh}>
+        🔄 更新
+      </button>
+    </div>
+  );
+}
+
+function StatusFilterRow({ drafts, activeTab, activeFilter, onSelectFilter }) {
+  return (
+    <div className="status-filter-row">
+      {STATUS_FILTERS.map((filter) => {
+        const count = drafts.filter(
+          (d) => d.platform === activeTab && filter.statuses.includes(d.status),
+        ).length;
+        return (
+          <button
+            key={filter.id}
+            className={`status-filter-btn ${activeFilter === filter.id ? "active" : ""}`}
+            onClick={() => onSelectFilter(filter.id)}
+          >
+            {filter.label} ({count})
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function DraftList({
+  visibleDrafts,
+  youtubeUrlByGroupId,
+  approvers,
+  loadDrafts,
+  handleAction,
+}) {
+  if (visibleDrafts.length === 0) {
     return (
-      <SnsHubLayout counts={{ manual: null }}>
-        <div className="sns-hub-loading-state">
-          <div className="spinner" />
-          <p>データを読み込み中...</p>
-        </div>
-      </SnsHubLayout>
+      <div className="empty-state">
+        <p>該当する下書きはありません。</p>
+      </div>
     );
   }
+  return (
+    <div className="draft-list">
+      {visibleDrafts.map((draft) => (
+        <DraftCard
+          key={draft.id}
+          draft={draft}
+          youtubeUrl={youtubeUrlByGroupId[draft.content_group_id]}
+          approvers={approvers}
+          onXChanged={() =>
+            loadDrafts({ silent: true, fetch: { drafts: true } })
+          }
+          onApprove={(approverId) =>
+            handleAction(approveDraft, [draft.id, approverId])
+          }
+          onPublishYoutube={(approverId) =>
+            handleAction(publishYoutube, [draft.id, approverId])
+          }
+          onMarkPosted={() => handleAction(markDraftPosted, [draft.id])}
+          onArchive={() => handleAction(archiveDraft, [draft.id])}
+        />
+      ))}
+    </div>
+  );
+}
 
-  if (error) {
-    return (
-      <SnsHubLayout counts={{ manual: null }}>
-        <div className="sns-hub-error-state">
-          <p>エラーが発生しました: {error}</p>
-          <button onClick={() => loadDrafts()}>再読み込み</button>
-        </div>
-      </SnsHubLayout>
-    );
-  }
+function LoadingView() {
+  return (
+    <SnsHubLayout counts={{ manual: null }}>
+      <div className="sns-hub-loading-state">
+        <div className="spinner" />
+        <p>データを読み込み中...</p>
+      </div>
+    </SnsHubLayout>
+  );
+}
+
+function ErrorView({ error, onReload }) {
+  return (
+    <SnsHubLayout counts={{ manual: null }}>
+      <div className="sns-hub-error-state">
+        <p>エラーが発生しました: {error}</p>
+        <button onClick={onReload}>再読み込み</button>
+      </div>
+    </SnsHubLayout>
+  );
+}
+
+function SnsHubAdmin() {
+  const [actionMessages, setActionMessages] = useState([]);
+  const [activeTab, setActiveTab] = useState("blog");
+  const [activeStatusFilter, setActiveStatusFilter] = useState("review");
+  const { toast, showToast } = useToast();
+  const { drafts, approvers, loading, error, loadDrafts } =
+    useDraftsLoader(showToast);
+  const youtubeUrlByGroupId = useMemo(
+    () => buildYoutubeUrlMap(drafts),
+    [drafts],
+  );
+  const handleAction = makeHandleAction({
+    loadDrafts,
+    showToast,
+    setActionMessages,
+  });
+
+  if (loading) return <LoadingView />;
+  if (error) return <ErrorView error={error} onReload={() => loadDrafts()} />;
 
   const activeStatusDef = STATUS_FILTERS.find(
     (f) => f.id === activeStatusFilter,
@@ -174,94 +307,36 @@ function SnsHubAdmin() {
   );
 
   // ナビの「手動承認」の件数は、この画面が持つ最新の一覧から出す（操作のたびに追従させる）
-  const manualCount = drafts.filter(
-    (d) =>
-      PLATFORM_TABS.some((tab) => tab.id === d.platform) &&
-      STATUS_FILTERS[0].statuses.includes(d.status),
-  ).length;
+  const manualCount = countReview(drafts, (platform) =>
+    PLATFORM_TABS.some((tab) => tab.id === platform),
+  );
 
   return (
     <SnsHubLayout counts={{ manual: manualCount }}>
-      {actionMessages.length > 0 && (
-        <div className="sns-hub-error-state" role="alert">
-          {actionMessages.map((message, index) => (
-            <p key={index}>{message}</p>
-          ))}
-          <button onClick={() => setActionMessages([])}>通知を閉じる</button>
-        </div>
-      )}
-
-      <div className="tab-navigation-row">
-        <div className="sns-hub-tab-navigation">
-          {PLATFORM_TABS.map((tab) => {
-            // 件数は「承認待ち」だけ（対応が必要な件数という意味を保つため）
-            const count = drafts.filter(
-              (d) =>
-                d.platform === tab.id &&
-                STATUS_FILTERS[0].statuses.includes(d.status),
-            ).length;
-            return (
-              <button
-                key={tab.id}
-                className={`sns-hub-tab-btn ${activeTab === tab.id ? "active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label} ({count})
-              </button>
-            );
-          })}
-        </div>
-        <button className="refresh-btn" onClick={() => loadDrafts()}>
-          🔄 更新
-        </button>
-      </div>
-
-      <div className="status-filter-row">
-        {STATUS_FILTERS.map((filter) => {
-          const count = drafts.filter(
-            (d) =>
-              d.platform === activeTab && filter.statuses.includes(d.status),
-          ).length;
-          return (
-            <button
-              key={filter.id}
-              className={`status-filter-btn ${activeStatusFilter === filter.id ? "active" : ""}`}
-              onClick={() => setActiveStatusFilter(filter.id)}
-            >
-              {filter.label} ({count})
-            </button>
-          );
-        })}
-      </div>
-
+      <ActionMessages
+        messages={actionMessages}
+        setActionMessages={setActionMessages}
+      />
+      <PlatformTabRow
+        drafts={drafts}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        onRefresh={() => loadDrafts()}
+      />
+      <StatusFilterRow
+        drafts={drafts}
+        activeTab={activeTab}
+        activeFilter={activeStatusFilter}
+        onSelectFilter={setActiveStatusFilter}
+      />
       <div className="sns-hub-tab-content">
-        {visibleDrafts.length === 0 ? (
-          <div className="empty-state">
-            <p>該当する下書きはありません。</p>
-          </div>
-        ) : (
-          <div className="draft-list">
-            {visibleDrafts.map((draft) => (
-              <DraftCard
-                key={draft.id}
-                draft={draft}
-                youtubeUrl={youtubeUrlByGroupId[draft.content_group_id]}
-                approvers={approvers}
-                onXChanged={() =>
-                  loadDrafts({ silent: true, fetch: { drafts: true } })
-                }
-                onApprove={(approverId) =>
-                  handleAction(approveDraft, [draft.id, approverId])
-                }
-                onPublishYoutube={(approverId) =>
-                  handleAction(publishYoutube, [draft.id, approverId])
-                }
-                onMarkPosted={() => handleAction(markDraftPosted, [draft.id])}
-                onArchive={() => handleAction(archiveDraft, [draft.id])}
-              />
-            ))}
-          </div>
-        )}
+        <DraftList
+          visibleDrafts={visibleDrafts}
+          youtubeUrlByGroupId={youtubeUrlByGroupId}
+          approvers={approvers}
+          loadDrafts={loadDrafts}
+          handleAction={handleAction}
+        />
       </div>
 
       <Toast
