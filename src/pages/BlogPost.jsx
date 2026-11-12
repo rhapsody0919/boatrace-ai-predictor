@@ -111,24 +111,7 @@ const UI_TEXT = {
   },
 };
 
-export default function BlogPost() {
-  const { id } = useParams();
-  const { pathname } = useLocation();
-  const [content, setContent] = useState("");
-  // 記事の図の JSON（src ごと）。本文と同じ時点でそろえる（src/utils/blogChartLoader.js）
-  const [charts, setCharts] = useState(() => new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [readProgress, setReadProgress] = useState(0);
-  const [showBackToTop, setShowBackToTop] = useState(false);
-  const [headings, setHeadings] = useState([]);
-  const articleRef = useRef(null);
-
-  const { lng } = parseLangFromPath(pathname);
-  const isTranslated = lng !== "ja" && isBlogLangAvailable(id, lng);
-  const t = UI_TEXT[isTranslated ? lng : "ja"];
-  const chartLang = isTranslated ? lng : "ja";
-
+function resolvePostView(id, lng, isTranslated) {
   const basePost = getPostById(id);
   const post =
     isTranslated && basePost
@@ -140,19 +123,31 @@ export default function BlogPost() {
   const mdPath = isTranslated
     ? `/blog/${id}${getBlogMdSuffix(lng)}.md`
     : `/blog/${id}.md`;
+  return { basePost, post, relatedPosts, mdPath };
+}
 
-  // 記事の id が一覧に無いときだけ noindex（読み込み・取得の失敗では出さない）
-  useRobotsMeta(!basePost);
-
+function buildPostUrls(post, id, lang) {
   const postUrl = post
-    ? `https://www.boat-ai.jp${localizePath(`/blog/${id}`, isTranslated ? lng : "ja")}`
+    ? `https://www.boat-ai.jp${localizePath(`/blog/${id}`, lang)}`
     : null;
   const postImageUrl = post
     ? post.image
       ? `https://www.boat-ai.jp${post.image}`
       : "https://www.boat-ai.jp/ogp-image.png"
     : null;
+  return { postUrl, postImageUrl };
+}
 
+function useBlogMarkdownLoader({
+  id,
+  basePost,
+  mdPath,
+  t,
+  setContent,
+  setCharts,
+  setLoading,
+  setError,
+}) {
   useEffect(() => {
     if (!basePost) {
       setError(t.notFound);
@@ -196,7 +191,9 @@ export default function BlogPost() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mdPath/t は id/isTranslated から導出される
   }, [id, basePost, mdPath]);
+}
 
+function useReadProgress(id, setReadProgress, setShowBackToTop) {
   useEffect(() => {
     // rAFで間引き、フリングスクロール中に毎イベントscrollHeight（強制リフロー）や
     // setStateを連発しないようにする
@@ -222,8 +219,10 @@ export default function BlogPost() {
       window.removeEventListener("scroll", handleScroll);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
-  }, [id]);
+  }, [id, setReadProgress, setShowBackToTop]);
+}
 
+function useTocHeadings(articleRef, content, setHeadings) {
   // 目次のid/テキストは、実際にDOMへレンダーされたh2/h3から収集する（見出しテキストの
   // 一致判定に頼らないため、同名見出しの重複やMarkdownリンクを含む見出しでもズレない）
   useEffect(() => {
@@ -243,11 +242,11 @@ export default function BlogPost() {
         };
       }),
     );
-  }, [content]);
+  }, [content, articleRef, setHeadings]);
+}
 
-  const faqItems = useMemo(() => extractFaqItems(content), [content]);
-
-  const articleContent = useMemo(
+function useArticleContent(content, charts, chartLang) {
+  return useMemo(
     () => (
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
@@ -294,51 +293,19 @@ export default function BlogPost() {
     // scroll起因の再レンダーのたびに記事全文を再パースしていた問題への対処
     [content, charts, chartLang],
   );
+}
 
-  // 画面に出ない所（<title>・meta description・OGP/Twitter）だけ metaTitle・metaDescription を優先する。
-  // h1・一覧カードは title・description のまま（「競艇」は画面に出さない。code-style.md 例外1）
-  const metaTitle = post?.metaTitle ?? post?.title;
-  const metaDescription = post?.metaDescription ?? post?.description;
-
-  useSocialMeta({
-    title: metaTitle,
-    description: metaDescription,
-    url: postUrl,
-    image: postImageUrl,
-    keywords: post?.tags.join(", "),
-  });
-
-  if (loading) {
-    return (
-      <div className="blog-post-container">
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>{t.loading}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !post) {
-    return (
-      <div className="blog-post-container">
-        <div className="error">
-          <h2>{t.errorTitle}</h2>
-          <p>{error || t.notFound}</p>
-          <Link to={t.backHref} className="back-button">
-            {t.backToBlog}
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const url = postUrl;
-  const imageUrl = postImageUrl;
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
+function ArticleHeadMeta({
+  post,
+  t,
+  metaTitle,
+  metaDescription,
+  url,
+  imageUrl,
+  content,
+  faqItems,
+  lang,
+}) {
   return (
     <>
       {/* Basic Meta Tags */}
@@ -404,13 +371,13 @@ export default function BlogPost() {
               "@type": "ListItem",
               position: 1,
               name: t.home,
-              item: `https://www.boat-ai.jp${localizePath("/", isTranslated ? lng : "ja")}`,
+              item: `https://www.boat-ai.jp${localizePath("/", lang)}`,
             },
             {
               "@type": "ListItem",
               position: 2,
               name: t.blogLabel,
-              item: `https://www.boat-ai.jp${localizePath("/blog", isTranslated ? lng : "ja")}`,
+              item: `https://www.boat-ai.jp${localizePath("/blog", lang)}`,
             },
             {
               "@type": "ListItem",
@@ -421,6 +388,250 @@ export default function BlogPost() {
           ],
         })}
       </script>
+    </>
+  );
+}
+
+function LoadingView({ t }) {
+    return (
+      <div className="blog-post-container">
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>{t.loading}</p>
+        </div>
+      </div>
+    );
+}
+
+function ErrorView({ t, error }) {
+    return (
+      <div className="blog-post-container">
+        <div className="error">
+          <h2>{t.errorTitle}</h2>
+          <p>{error || t.notFound}</p>
+          <Link to={t.backHref} className="back-button">
+            {t.backToBlog}
+          </Link>
+        </div>
+      </div>
+    );
+}
+
+function BackToTopButton({ t }) {
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  return (
+    <button
+      type="button"
+      className="back-to-top-button"
+      onClick={scrollToTop}
+      aria-label={t.backToTop}
+    >
+      ↑
+    </button>
+  );
+}
+
+function PostHeader({ post, t }) {
+  return (
+    <div className="blog-post-header">
+      <Link to={t.backHref} className="back-link">
+        {t.backToBlog}
+      </Link>
+      <span className="category-badge">{post.category}</span>
+      <h1>{post.title}</h1>
+      <div className="post-meta">
+        <span className="date">📅 {post.date}</span>
+        <span className="read-time">📖 {post.readTime}</span>
+      </div>
+      <div className="tags">
+        {post.tags.map((tag) => (
+          <span key={tag} className="tag">
+            #{tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TocSection({ headings, t }) {
+  return (
+    <details className="toc-section">
+      <summary className="toc-summary">
+        📑 {t.tocTitle} ({headings.length})
+      </summary>
+      <nav className="toc-list" aria-label={t.tocTitle}>
+        {headings.map((h) => (
+          <a
+            key={h.id}
+            href={`#${h.id}`}
+            className={`toc-link toc-link-level-${h.level}`}
+          >
+            {h.text}
+          </a>
+        ))}
+      </nav>
+    </details>
+  );
+}
+
+function RelatedPostsSection({ relatedPosts, t, lang }) {
+  return (
+    <div className="related-posts">
+      <h2>{t.relatedPosts}</h2>
+      <div className="related-grid">
+        {relatedPosts.map((relatedPost) => (
+          <Link
+            key={relatedPost.id}
+            to={localizePath(`/blog/${relatedPost.id}`, lang)}
+            className="related-card"
+          >
+            <span className="category-badge">{relatedPost.category}</span>
+            <h3>{relatedPost.title}</h3>
+            <p>{relatedPost.description}</p>
+            <span className="read-more">{t.readMore}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PostCta({ t }) {
+  return (
+    <div className="post-cta">
+      <h3>{t.ctaTitle}</h3>
+      <p>{t.ctaDesc}</p>
+      <Link to={t.homeHref} className="cta-button">
+        {t.ctaButton}
+      </Link>
+    </div>
+  );
+}
+
+function usePostSocialMeta(post, postUrl, postImageUrl) {
+  // 画面に出ない所（<title>・meta description・OGP/Twitter）だけ metaTitle・metaDescription を優先する。
+  // h1・一覧カードは title・description のまま（「競艇」は画面に出さない。code-style.md 例外1）
+  const metaTitle = post?.metaTitle ?? post?.title;
+  const metaDescription = post?.metaDescription ?? post?.description;
+
+  useSocialMeta({
+    title: metaTitle,
+    description: metaDescription,
+    url: postUrl,
+    image: postImageUrl,
+    keywords: post?.tags.join(", "),
+  });
+  return { metaTitle, metaDescription };
+}
+
+function PostBody({
+  post,
+  t,
+  lang,
+  headings,
+  articleRef,
+  articleContent,
+  relatedPosts,
+}) {
+  return (
+    <div className="blog-post-container">
+      <PostHeader post={post} t={t} />
+
+      {headings.length > 0 && <TocSection headings={headings} t={t} />}
+
+      <article className="blog-post-content" ref={articleRef}>
+        {articleContent}
+      </article>
+
+      {/* Related Posts */}
+      {relatedPosts.length > 0 && (
+        <RelatedPostsSection relatedPosts={relatedPosts} t={t} lang={lang} />
+      )}
+
+      {/* CTA */}
+      <PostCta t={t} />
+    </div>
+  );
+}
+
+export default function BlogPost() {
+  const { id } = useParams();
+  const { pathname } = useLocation();
+  const [content, setContent] = useState("");
+  // 記事の図の JSON（src ごと）。本文と同じ時点でそろえる（src/utils/blogChartLoader.js）
+  const [charts, setCharts] = useState(() => new Map());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [readProgress, setReadProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [headings, setHeadings] = useState([]);
+  const articleRef = useRef(null);
+
+  const { lng } = parseLangFromPath(pathname);
+  const isTranslated = lng !== "ja" && isBlogLangAvailable(id, lng);
+  const t = UI_TEXT[isTranslated ? lng : "ja"];
+  const chartLang = isTranslated ? lng : "ja";
+
+  const { basePost, post, relatedPosts, mdPath } = resolvePostView(
+    id,
+    lng,
+    isTranslated,
+  );
+
+  // 記事の id が一覧に無いときだけ noindex（読み込み・取得の失敗では出さない）
+  useRobotsMeta(!basePost);
+
+  const { postUrl, postImageUrl } = buildPostUrls(post, id, chartLang);
+
+  useBlogMarkdownLoader({
+    id,
+    basePost,
+    mdPath,
+    t,
+    setContent,
+    setCharts,
+    setLoading,
+    setError,
+  });
+
+  useReadProgress(id, setReadProgress, setShowBackToTop);
+
+  useTocHeadings(articleRef, content, setHeadings);
+
+  const faqItems = useMemo(() => extractFaqItems(content), [content]);
+
+  const articleContent = useArticleContent(content, charts, chartLang);
+
+  const { metaTitle, metaDescription } = usePostSocialMeta(
+    post,
+    postUrl,
+    postImageUrl,
+  );
+
+  if (loading) {
+    return <LoadingView t={t} />;
+  }
+
+  if (error || !post) {
+    return <ErrorView t={t} error={error} />;
+  }
+
+  return (
+    <>
+      <ArticleHeadMeta
+        post={post}
+        t={t}
+        metaTitle={metaTitle}
+        metaDescription={metaDescription}
+        url={postUrl}
+        imageUrl={postImageUrl}
+        content={content}
+        faqItems={faqItems}
+        lang={chartLang}
+      />
 
       <Header />
 
@@ -429,93 +640,17 @@ export default function BlogPost() {
         style={{ width: `${readProgress}%` }}
       />
 
-      {showBackToTop && (
-        <button
-          type="button"
-          className="back-to-top-button"
-          onClick={scrollToTop}
-          aria-label={t.backToTop}
-        >
-          ↑
-        </button>
-      )}
+      {showBackToTop && <BackToTopButton t={t} />}
 
-      <div className="blog-post-container">
-        <div className="blog-post-header">
-          <Link to={t.backHref} className="back-link">
-            {t.backToBlog}
-          </Link>
-          <span className="category-badge">{post.category}</span>
-          <h1>{post.title}</h1>
-          <div className="post-meta">
-            <span className="date">📅 {post.date}</span>
-            <span className="read-time">📖 {post.readTime}</span>
-          </div>
-          <div className="tags">
-            {post.tags.map((tag) => (
-              <span key={tag} className="tag">
-                #{tag}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {headings.length > 0 && (
-          <details className="toc-section">
-            <summary className="toc-summary">
-              📑 {t.tocTitle} ({headings.length})
-            </summary>
-            <nav className="toc-list" aria-label={t.tocTitle}>
-              {headings.map((h) => (
-                <a
-                  key={h.id}
-                  href={`#${h.id}`}
-                  className={`toc-link toc-link-level-${h.level}`}
-                >
-                  {h.text}
-                </a>
-              ))}
-            </nav>
-          </details>
-        )}
-
-        <article className="blog-post-content" ref={articleRef}>
-          {articleContent}
-        </article>
-
-        {/* Related Posts */}
-        {relatedPosts.length > 0 && (
-          <div className="related-posts">
-            <h2>{t.relatedPosts}</h2>
-            <div className="related-grid">
-              {relatedPosts.map((relatedPost) => (
-                <Link
-                  key={relatedPost.id}
-                  to={localizePath(
-                    `/blog/${relatedPost.id}`,
-                    isTranslated ? lng : "ja",
-                  )}
-                  className="related-card"
-                >
-                  <span className="category-badge">{relatedPost.category}</span>
-                  <h3>{relatedPost.title}</h3>
-                  <p>{relatedPost.description}</p>
-                  <span className="read-more">{t.readMore}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* CTA */}
-        <div className="post-cta">
-          <h3>{t.ctaTitle}</h3>
-          <p>{t.ctaDesc}</p>
-          <Link to={t.homeHref} className="cta-button">
-            {t.ctaButton}
-          </Link>
-        </div>
-      </div>
+      <PostBody
+        post={post}
+        t={t}
+        lang={chartLang}
+        headings={headings}
+        articleRef={articleRef}
+        articleContent={articleContent}
+        relatedPosts={relatedPosts}
+      />
     </>
   );
 }
