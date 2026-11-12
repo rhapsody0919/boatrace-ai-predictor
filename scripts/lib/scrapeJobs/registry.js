@@ -594,6 +594,21 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
   },
 
+  // BOA-1479 決まり手・逃げの分布の集計（outcome_distribution・nige_outcome_distribution）。
+  // 過去90日の race_results を会場ごとに集計する。外部サイトへの通信は無い。
+  // 実装: scripts/daily/update-outcome-distribution.js・update-nige-outcome-distribution.js
+  // （1回の呼び出しで2本を続けて回す）。実測の実行時間は shadow の last_report で確かめる。
+  //
+  // 07:30 JST（cron: 07:30・12:30 JST）なのは、材料の race_results を書く kfile_sync
+  // （07:00 / 12:00）より後にするため。GitHub 側の 00:30・00:42 JST は前日分が揃う前で、
+  // 前々日までの集計になっていた。
+  outcome_distribution_update: {
+    kind: "daily",
+    targetTimeJst: "07:30",
+    leaseSec: 300,
+    maxDurationSec: 300,
+  },
+
   // GS00 案2 選手ページの集計の表の main 層（racer_venue_stats・racer_term_stats・racer_course_stats・racer_championships、
   // マイグレーション190）。外部サイトへの通信は無く、数えるのは SQL 側（RPC compute_racer_career_counts）。
   // 23:30 指定（cron: 23:30・01:00 JST）。直近3日に出た選手（約700〜950人）を50人ずつ、main の全期間で計算し直す。

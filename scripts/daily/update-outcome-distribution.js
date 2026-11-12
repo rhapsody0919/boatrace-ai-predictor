@@ -1,4 +1,5 @@
-import { supabase } from "../lib/supabaseClient.js";
+import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
+import { isDirectRun } from "../lib/isDirectRun.js";
 import {
   TRIFECTA_PAYOUT_COLUMN,
   aggregateOutcomeDistribution,
@@ -144,29 +145,66 @@ async function upsertOutcomeDistribution(aggregated) {
   return totalInserted;
 }
 
-async function main() {
-  console.log("=== Outcome Distribution 日次更新 ===");
+/**
+ * 集計を実行して outcome_distribution へ書き込む。Vercel Cron
+ * （api/cron/outcome-distribution-update.js）と CLI の両方から呼ぶ。
+ * 戻り値は共通ラッパの run() の契約に合わせる。dryRun は集計だけで書かない。
+ *
+ * @param {{dryRun?: boolean}} [opts]
+ */
+export async function runOutcomeDistribution({ dryRun = false } = {}) {
+  if (!isSupabaseEnabled()) {
+    throw new Error(
+      "Supabaseの環境変数が未設定です（SUPABASE_URL / SUPABASE_SERVICE_KEY）",
+    );
+  }
+  console.log(
+    `=== Outcome Distribution 日次更新${dryRun ? "（dry-run）" : ""} ===`,
+  );
   console.log("実行日時: " + new Date().toISOString());
 
   // 1. レース結果取得
   const raceResults = await fetchAllRaceResults();
   if (!raceResults || raceResults.length === 0) {
+    // 0件は成功にしない（共通ラッパの0件ガードが error にする）
     console.log("\nデータがないため終了します");
-    return;
+    return {
+      outcome: "ok",
+      rowsWritten: 0,
+      rowsExpected: 1,
+      rowsParsed: 0,
+      report: { sourceRaces: 0, venues: 0 },
+    };
   }
 
   // 2. venue_code ごとに集計
   const aggregated = await aggregateByVenue(raceResults);
-  console.log("\n集計完了: " + Object.keys(aggregated).length + "会場");
+  const venues = Object.keys(aggregated).length;
+  console.log("\n集計完了: " + venues + "会場");
 
-  // 3. outcome_distribution テーブルに upsert
-  const totalInserted = await upsertOutcomeDistribution(aggregated);
+  // 3. outcome_distribution テーブルへ（会場ごとの delete→insert。同じ日の再実行でも結果は同じ）
+  const totalInserted = dryRun
+    ? 0
+    : await upsertOutcomeDistribution(aggregated);
 
   console.log("\n=== 完了 ===");
   console.log("合計挿入件数: " + totalInserted + "件");
+
+  return {
+    outcome: "ok",
+    rowsWritten: totalInserted,
+    rowsExpected: 1,
+    rowsParsed: raceResults.length,
+    report: { sourceRaces: raceResults.length, venues },
+  };
 }
 
-main().catch((err) => {
-  console.error("エラー:", err.message);
-  process.exit(1);
-});
+// --- CLI（node scripts/daily/update-outcome-distribution.js [--dry-run]） ---
+if (isDirectRun(import.meta.url)) {
+  runOutcomeDistribution({
+    dryRun: process.argv.includes("--dry-run"),
+  }).catch((err) => {
+    console.error("エラー:", err.message);
+    process.exit(1);
+  });
+}
