@@ -277,6 +277,11 @@
       "guards": "バグ原因の定点観測の集計基準（bug-cause-report.js）。基準が変わると第1期と比較できなくなる"
     },
     {
+      "script": "verify-code-pitfalls.js",
+      "tier": "ci",
+      "guards": "件数がデータで変わるグリッドに repeat(auto-fill, ...)・固定列数 repeat(N, ...) を新しく使わないこと（ZB03 ①・BOA-1454。正本 .claude/rules/component-reuse.md「CSS」、BOA-460・527・528 で3回再発）。src/ の *.css の該当の出現（改行をまたぐ形・1行に2つも）を全体の件数で凍結し（53 件）、増えたら失敗、減ったら凍結を下げるよう出す。JS・JSX の本文は読まない"
+    },
+    {
       "script": "verify-codex-no-preview.js",
       "tier": "ci",
       "guards": "codex/・claude/ のブランチで Vercel が Preview を作らない設定（vercel.json の git.deploymentEnabled[\"codex/**\"]・[\"claude/**\"]=false。claude/ は 2026-11-06 オーナー決定）。Preview 環境に載る本番 DB の管理者キーを、レビュー・マージの前の AI のコードに渡さないため。全体の false（本番デプロイまで止まる）と、AI の枝に当たりうる true の規則も検知する"
