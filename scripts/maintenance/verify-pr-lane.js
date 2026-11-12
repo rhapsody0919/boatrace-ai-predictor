@@ -72,31 +72,16 @@ const rulesOf = (r) => [...new Set(r.hits.map((h) => h.rule))].sort();
 // 約束: light なら human・needs は空。heavy なら hits の全部のファイルが human か needs に入る（file・kind の順、同じ組は1回）
 const promise = (name, r) => {
   if (r.lane === "light") {
-    assert.deepEqual(
-      [r.human, r.needs],
-      [[], []],
-      `${name}: light なのに human・needs`,
-    );
+    assert.deepEqual([r.human, r.needs], [[], []], `${name}: light なのに human・needs`);
     return;
   }
   const covered = new Set([...r.human, ...r.needs].map((x) => x.file));
   for (const h of r.hits)
-    assert.ok(
-      covered.has(h.file),
-      `${name}: ${h.file} が human にも needs にも入らない`,
-    );
+    assert.ok(covered.has(h.file), `${name}: ${h.file} が human にも needs にも入らない`);
   for (const list of [r.human, r.needs]) {
     const keys = list.map((x) => `${x.file}\0${x.kind}`);
     assert.equal(new Set(keys).size, keys.length, `${name}: 同じ組が2回`);
-    assert.deepEqual(
-      keys,
-      [...keys].sort(
-        (a, b) =>
-          a.split("\0")[0].localeCompare(b.split("\0")[0]) ||
-          a.split("\0")[1].localeCompare(b.split("\0")[1]),
-      ),
-      `${name}: 並び`,
-    );
+    assert.deepEqual(keys, [...keys].sort((a, b) => a.split("\0")[0].localeCompare(b.split("\0")[0]) || a.split("\0")[1].localeCompare(b.split("\0")[1])), `${name}: 並び`);
   }
 };
 const expect = (name, changes, lane, rules = [], patches, opts) => {
@@ -1172,40 +1157,20 @@ const moveRun = (texts, changes = moveChanges) => {
   for (const r of config.reservedPatterns)
     assert.ok(r.reason, `reservedPatterns に理由が要る: ${r.pattern}`);
   const keys = [
-    "paths",
-    "added",
-    "changed",
-    "exceptAdded",
-    "except",
-    "reachFrom",
-    "rowsOnlyAdded",
-    "globalSelectors",
+    "paths", "added", "changed", "exceptAdded", "except",
+    "reachFrom", "rowsOnlyAdded", "globalSelectors",
   ];
   const patterns = [
     ...config.rules.flatMap((rule) =>
       [
         ...keys.flatMap((k) => rule[k] ?? []),
         ...(rule.terms ? [...rule.terms.scan, ...rule.terms.except] : []),
-        ...(typeof rule.needs === "object"
-          ? Object.values(rule.needs).flat()
-          : []),
+        ...(typeof rule.needs === "object" ? Object.values(rule.needs).flat() : []),
       ].map((p) => [rule.id, p, ""]),
     ),
-    ...[config.moveOnly.from, ...config.moveOnly.to].map((p) => [
-      "moveOnly",
-      p,
-      "",
-    ]),
+    ...[config.moveOnly.from, ...config.moveOnly.to].map((p) => ["moveOnly", p, ""]),
     ...Object.entries(config.human).flatMap(([kind, spec]) =>
-      [
-        "paths",
-        "writerFiles",
-        "deleted",
-        "changedScripts",
-        "addedRows",
-        "registryRows",
-        "removedRows",
-      ]
+      ["paths", "writerFiles", "deleted", "changedScripts", "addedRows", "registryRows", "removedRows"]
         .flatMap((k) => spec[k] ?? [])
         .map((p) => [`human.${kind}`, p, "i"]),
     ),
@@ -1242,222 +1207,53 @@ const moveRun = (texts, changes = moveChanges) => {
     promise(changes.join(","), r);
     return r;
   };
-  const ex = (
-    changes,
-    opts = {},
-    { human = [], noHuman = [], needs = [], noNeeds = [] } = {},
-  ) => {
+  const ex = (changes, opts = {}, { human = [], noHuman = [], needs = [], noNeeds = [] } = {}) => {
     const r = explain(changes, opts);
     const h = r.human.map((x) => `${x.kind} ${x.file}`);
     const n = r.needs.map((x) => `${x.kind} ${x.file}`);
     const at = `${changes.join(",")} human=${h} needs=${n}`;
-    for (const x of human)
-      assert.ok(h.includes(x), `${at}: human に ${x} が無い`);
-    for (const x of noHuman)
-      assert.ok(!h.includes(x), `${at}: human に ${x} がある`);
-    for (const x of needs)
-      assert.ok(n.includes(x), `${at}: needs に ${x} が無い`);
-    for (const x of noNeeds)
-      assert.ok(!n.includes(x), `${at}: needs に ${x} がある`);
+    for (const x of human) assert.ok(h.includes(x), `${at}: human に ${x} が無い`);
+    for (const x of noHuman) assert.ok(!h.includes(x), `${at}: human に ${x} がある`);
+    for (const x of needs) assert.ok(n.includes(x), `${at}: needs に ${x} が無い`);
+    for (const x of noNeeds) assert.ok(!n.includes(x), `${at}: needs に ${x} がある`);
   };
-  const upsert = {
-    "scripts/daily/w.js": { head: 'await sb.from("x").upsert(rows);\n' },
-  };
+  const upsert = { "scripts/daily/w.js": { head: 'await sb.from("x").upsert(rows);\n' } };
 
-  ex(
-    ["M .github/workflows/ci.yml"],
-    {},
-    { human: ["github .github/workflows/ci.yml"] },
-  );
-  ex(
-    ["A scripts/maintenance/ryujin-maker-token.js"],
-    {},
-    { human: ["secret scripts/maintenance/ryujin-maker-token.js"] },
-  );
+  ex(["M .github/workflows/ci.yml"], {}, { human: ["github .github/workflows/ci.yml"] });
+  ex(["A scripts/maintenance/ryujin-maker-token.js"], {}, { human: ["secret scripts/maintenance/ryujin-maker-token.js"] });
   ex(["M package-lock.json"], {}, { human: ["secret package-lock.json"] });
-  ex(
-    ["M scripts/analysis/foo.js"],
-    {},
-    {
-      noHuman: [
-        "secret scripts/analysis/foo.js",
-        "db scripts/analysis/foo.js",
-        "github scripts/analysis/foo.js",
-      ],
-      needs: ["line-mutation scripts/analysis/foo.js"],
-    },
-  );
-  ex(
-    ["M scripts/lib/x.js"],
-    {},
-    {
-      human: ["db scripts/lib/x.js"],
-      noNeeds: ["line-mutation scripts/lib/x.js"],
-    },
-  );
-  ex(
-    ["M scripts/daily/w.js"],
-    { blobs: upsert },
-    { human: ["db scripts/daily/w.js"] },
-  );
-  ex(
-    ["M scripts/daily/w.js"],
-    {
-      blobs: {
-        "scripts/daily/w.js": {
-          base: 'sb\n.from("x")\n  .delete()\n',
-          head: "",
-        },
-      },
-    },
-    { human: ["db scripts/daily/w.js"] },
-  );
-  ex(
-    ["M scripts/daily/w.js"],
-    {
-      blobs: {
-        "scripts/daily/w.js": {
-          head: "const k = process.env.SUPABASE_SERVICE_ROLE_KEY;\n",
-        },
-      },
-    },
-    { human: ["db scripts/daily/w.js"] },
-  );
-  ex(
-    ["M scripts/daily/w.js"],
-    { blobs: { "scripts/daily/w.js": { head: null } } },
-    { human: ["db scripts/daily/w.js"] },
-  );
-  ex(
-    ["M scripts/daily/w.js"],
-    {
-      blobs: { "scripts/daily/w.js": { head: 'sb.from("x").select("*");\n' } },
-    },
-    {
-      noHuman: ["db scripts/daily/w.js"],
-      needs: ["line-mutation scripts/daily/w.js"],
-    },
-  );
-  ex(
-    ["M scripts/sns/post.js"],
-    {},
-    {
-      human: ["sns scripts/sns/post.js"],
-      noHuman: ["terms scripts/sns/post.js"],
-    },
-  );
-  ex(
-    ["M src/components/Foo.jsx"],
-    { patches: patch("src/components/Foo.jsx", ["<p>回収率</p>"]) },
-    {
-      human: ["terms src/components/Foo.jsx"],
-      noHuman: ["sns src/components/Foo.jsx"],
-    },
-  );
+  ex(["M scripts/analysis/foo.js"], {}, {
+    noHuman: ["secret scripts/analysis/foo.js", "db scripts/analysis/foo.js", "github scripts/analysis/foo.js"],
+    needs: ["line-mutation scripts/analysis/foo.js"],
+  });
+  ex(["M scripts/lib/x.js"], {}, { human: ["db scripts/lib/x.js"], noNeeds: ["line-mutation scripts/lib/x.js"] });
+  ex(["M scripts/daily/w.js"], { blobs: upsert }, { human: ["db scripts/daily/w.js"] });
+  ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { base: 'sb\n.from("x")\n  .delete()\n', head: "" } } }, { human: ["db scripts/daily/w.js"] });
+  ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { head: "const k = process.env.SUPABASE_SERVICE_ROLE_KEY;\n" } } }, { human: ["db scripts/daily/w.js"] });
+  ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { head: null } } }, { human: ["db scripts/daily/w.js"] });
+  ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { head: 'sb.from("x").select("*");\n' } } }, { noHuman: ["db scripts/daily/w.js"], needs: ["line-mutation scripts/daily/w.js"] });
+  ex(["M scripts/sns/post.js"], {}, { human: ["sns scripts/sns/post.js"], noHuman: ["terms scripts/sns/post.js"] });
+  ex(["M src/components/Foo.jsx"], { patches: patch("src/components/Foo.jsx", ["<p>回収率</p>"]) }, { human: ["terms src/components/Foo.jsx"], noHuman: ["sns src/components/Foo.jsx"] });
   ex(["M public/robots.txt"], {}, { human: ["seo public/robots.txt"] });
-  ex(
-    ["M scripts/maintenance/pr-lane.js"],
-    {},
-    {
-      human: ["judge scripts/maintenance/pr-lane.js"],
-      noNeeds: ["line-mutation scripts/maintenance/pr-lane.js"],
-    },
-  );
-  ex(
-    ["M e2e/fixtures.js"],
-    {},
-    {
-      human: ["fixture e2e/fixtures.js"],
-      noNeeds: ["base-spec-on-head e2e/fixtures.js"],
-    },
-  );
-  ex(
-    ["M e2e/recordings/x.json.gz"],
-    {},
-    {
-      human: ["fixture e2e/recordings/x.json.gz"],
-      noNeeds: ["base-spec-on-head e2e/recordings/x.json.gz"],
-    },
-  );
-  ex(
-    ["D scripts/maintenance/verify-foo.js"],
-    {},
-    { human: ["weaken scripts/maintenance/verify-foo.js"] },
-  );
-  ex(
-    ["M scripts/maintenance/verify-foo.js"],
-    {},
-    {
-      noHuman: ["weaken scripts/maintenance/verify-foo.js"],
-      needs: ["verify-mutation scripts/maintenance/verify-foo.js"],
-    },
-  );
-  ex(
-    ["M scripts/maintenance/verify-foo.mjs"],
-    {},
-    { human: ["weaken scripts/maintenance/verify-foo.mjs"] },
-  );
+  ex(["M scripts/maintenance/pr-lane.js"], {}, { human: ["judge scripts/maintenance/pr-lane.js"], noNeeds: ["line-mutation scripts/maintenance/pr-lane.js"] });
+  ex(["M e2e/fixtures.js"], {}, { human: ["fixture e2e/fixtures.js"], noNeeds: ["base-spec-on-head e2e/fixtures.js"] });
+  ex(["M e2e/recordings/x.json.gz"], {}, { human: ["fixture e2e/recordings/x.json.gz"], noNeeds: ["base-spec-on-head e2e/recordings/x.json.gz"] });
+  ex(["D scripts/maintenance/verify-foo.js"], {}, { human: ["weaken scripts/maintenance/verify-foo.js"] });
+  ex(["M scripts/maintenance/verify-foo.js"], {}, { noHuman: ["weaken scripts/maintenance/verify-foo.js"], needs: ["verify-mutation scripts/maintenance/verify-foo.js"] });
+  ex(["M scripts/maintenance/verify-foo.mjs"], {}, { human: ["weaken scripts/maintenance/verify-foo.mjs"] });
   ex(["D e2e/foo.spec.js"], {}, { human: ["weaken e2e/foo.spec.js"] });
-  ex(
-    ["M e2e/foo.spec.js"],
-    {},
-    {
-      noHuman: ["weaken e2e/foo.spec.js"],
-      needs: ["base-spec-on-head e2e/foo.spec.js"],
-    },
-  );
-  ex(
-    ["M docs/x-allowlist.json"],
-    { patches: patch("docs/x-allowlist.json", ['  "a",']) },
-    { human: ["weaken docs/x-allowlist.json"] },
-  );
-  ex(
-    ["M docs/x-allowlist.json"],
-    { patches: patch("docs/x-allowlist.json", [], ['  "a",']) },
-    {
-      noHuman: ["weaken docs/x-allowlist.json"],
-      human: ["unclassified docs/x-allowlist.json"],
-    },
-  );
+  ex(["M e2e/foo.spec.js"], {}, { noHuman: ["weaken e2e/foo.spec.js"], needs: ["base-spec-on-head e2e/foo.spec.js"] });
+  ex(["M docs/x-allowlist.json"], { patches: patch("docs/x-allowlist.json", ['  "a",']) }, { human: ["weaken docs/x-allowlist.json"] });
+  ex(["M docs/x-allowlist.json"], { patches: patch("docs/x-allowlist.json", [], ['  "a",']) }, { noHuman: ["weaken docs/x-allowlist.json"], human: ["unclassified docs/x-allowlist.json"] });
   const reg = "scripts/maintenance/verify-registry.json";
-  ex(
-    [`M ${reg}`],
-    { patches: patch(reg, ['{ "name": "b" }'], ['{ "name": "a" }']) },
-    { human: [`weaken ${reg}`] },
-  );
-  ex(
-    ["M AGENTS.md"],
-    { patches: patch("AGENTS.md", ["b"], ["a"]) },
-    { human: ["weaken AGENTS.md"] },
-  );
-  ex(
-    ["M AGENTS.md"],
-    { patches: patch("AGENTS.md", ["b"]) },
-    { noHuman: ["weaken AGENTS.md"], human: ["unclassified AGENTS.md"] },
-  );
-  ex(
-    ["M src/App.css"],
-    {},
-    {
-      human: ["css-core src/App.css"],
-      noNeeds: ["screenshot-diff src/App.css"],
-    },
-  );
-  ex(
-    ["M src/components/Foo.css"],
-    {},
-    {
-      noHuman: ["css-core src/components/Foo.css"],
-      needs: ["screenshot-diff src/components/Foo.css"],
-    },
-  );
+  ex([`M ${reg}`], { patches: patch(reg, ['{ "name": "b" }'], ['{ "name": "a" }']) }, { human: [`weaken ${reg}`] });
+  ex(["M AGENTS.md"], { patches: patch("AGENTS.md", ["b"], ["a"]) }, { human: ["weaken AGENTS.md"] });
+  ex(["M AGENTS.md"], { patches: patch("AGENTS.md", ["b"]) }, { noHuman: ["weaken AGENTS.md"], human: ["unclassified AGENTS.md"] });
+  ex(["M src/App.css"], {}, { human: ["css-core src/App.css"], noNeeds: ["screenshot-diff src/App.css"] });
+  ex(["M src/components/Foo.css"], {}, { noHuman: ["css-core src/components/Foo.css"], needs: ["screenshot-diff src/components/Foo.css"] });
   ex(["M src/pure/x.js"], {}, { needs: ["line-mutation src/pure/x.js"] });
   ex(["M api/x.js"], {}, { needs: ["line-mutation api/x.js"] });
-  ex(
-    ["A src/pages/NewPage.jsx"],
-    {},
-    { needs: ["route-in-e2e src/pages/NewPage.jsx"] },
-  );
+  ex(["A src/pages/NewPage.jsx"], {}, { needs: ["route-in-e2e src/pages/NewPage.jsx"] });
   ex(["M data/x.json"], {}, { needs: ["line-mutation data/x.json"] });
 }
 
@@ -1690,10 +1486,7 @@ const moveRun = (texts, changes = moveChanges) => {
   assert.notEqual(bad.status, 0, "判定できないときは 0 以外");
   assert.equal(JSON.parse(bad.stdout).lane, "heavy");
   assert.deepEqual(
-    [
-      JSON.parse(bad.stdout).human.map((x) => [x.kind, x.file]),
-      JSON.parse(bad.stdout).needs,
-    ],
+    [JSON.parse(bad.stdout).human.map((x) => [x.kind, x.file]), JSON.parse(bad.stdout).needs],
     [[["error", ""]], []],
     "判定できないときは human に error の要素",
   );
