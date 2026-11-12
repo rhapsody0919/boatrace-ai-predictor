@@ -35,6 +35,109 @@ const nameParts = (name) =>
     </span>
   ));
 
+const cellClass = (boat, best) =>
+  `drt-cell ${best?.has(boat) ? "drt-best" : ""}`;
+
+function BoatHeaderRows({ players }) {
+  return (
+    <>
+      <tr>
+        <th className="drt-label-th"></th>
+        {players.map((p) => {
+          const color = BOAT_COLORS[p.number] || {};
+          return (
+            <th
+              key={p.number}
+              className="drt-boat-th"
+              style={{ background: color.bg, color: color.text }}
+            >
+              {p.number}
+            </th>
+          );
+        })}
+      </tr>
+      <tr>
+        <th className="drt-label-th"></th>
+        {players.map((p) => (
+          <th key={p.number} className="drt-name-th">
+            {/* 姓と名を別の塊にする。スマホでは2行に分け、名前の途中で
+                折れないようにする（BOA-612。PCでは続けて1行に並ぶ） */}
+            {p.racerId ? (
+              <Link to={`/racer/${p.racerId}`} translate="no">
+                {nameParts(p.name)}
+              </Link>
+            ) : (
+              <span translate="no">{nameParts(p.name)}</span>
+            )}
+            {p.racerId && (
+              <div className="drt-name-favorite">
+                <FavoriteStarButton
+                  type="racer"
+                  id={p.racerId}
+                  name={p.name}
+                  entry="race_table"
+                />
+              </div>
+            )}
+          </th>
+        ))}
+      </tr>
+    </>
+  );
+}
+
+function RowLabelCell({ row, deepLink }) {
+  return (
+    <td className="drt-label-cell">
+      {row.tab ? (
+        <Link
+          to={deepLink(row.tab)}
+          className="drt-label-link"
+          onClick={() =>
+            trackEvent("deep_link_click", {
+              tab: row.tab,
+              link_source: "data_race_table",
+            })
+          }
+        >
+          <span className="drt-label-full">{row.label}</span>
+          <span className="drt-label-short">{row.shortLabel}</span>
+          <span className="drt-link-arrow">›</span>
+        </Link>
+      ) : (
+        <>
+          <span className="drt-label-full">{row.label}</span>
+          <span className="drt-label-short">{row.shortLabel}</span>
+        </>
+      )}
+      <TermHintButton
+        termKey={row.hintKey ?? row.key}
+        values={row.hintValues}
+      />
+      {row.note && (
+        <span
+          className={`drt-label-note${row.wrapNote ? " drt-label-note--wrap" : ""}`}
+        >
+          {row.note}
+        </span>
+      )}
+    </td>
+  );
+}
+
+function IndicatorRow({ row, players, deepLink }) {
+  return (
+    <tr>
+      <RowLabelCell row={row} deepLink={deepLink} />
+      {players.map((p) => (
+        <td key={p.number} className={cellClass(p.number, row.best)}>
+          {row.render(p)}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
 function DataRaceTable({ raceId, prediction, venueCode }) {
   const { t, i18n } = useTranslation();
   const analysis = useRaceAnalysisData(raceId, { venueCode });
@@ -83,9 +186,6 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
     ),
   });
 
-  const cellClass = (boat, best) =>
-    `drt-cell ${best?.has(boat) ? "drt-best" : ""}`;
-
   return (
     <div className="data-race-table" id="data-race-table">
       <h3 className="drt-title">
@@ -109,91 +209,16 @@ function DataRaceTable({ raceId, prediction, venueCode }) {
       <div className="drt-table-wrapper">
         <table className="drt-table">
           <thead>
-            <tr>
-              <th className="drt-label-th"></th>
-              {players.map((p) => {
-                const color = BOAT_COLORS[p.number] || {};
-                return (
-                  <th
-                    key={p.number}
-                    className="drt-boat-th"
-                    style={{ background: color.bg, color: color.text }}
-                  >
-                    {p.number}
-                  </th>
-                );
-              })}
-            </tr>
-            <tr>
-              <th className="drt-label-th"></th>
-              {players.map((p) => (
-                <th key={p.number} className="drt-name-th">
-                  {/* 姓と名を別の塊にする。スマホでは2行に分け、名前の途中で
-                      折れないようにする（BOA-612。PCでは続けて1行に並ぶ） */}
-                  {p.racerId ? (
-                    <Link to={`/racer/${p.racerId}`} translate="no">
-                      {nameParts(p.name)}
-                    </Link>
-                  ) : (
-                    <span translate="no">{nameParts(p.name)}</span>
-                  )}
-                  {p.racerId && (
-                    <div className="drt-name-favorite">
-                      <FavoriteStarButton
-                        type="racer"
-                        id={p.racerId}
-                        name={p.name}
-                        entry="race_table"
-                      />
-                    </div>
-                  )}
-                </th>
-              ))}
-            </tr>
+            <BoatHeaderRows players={players} />
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.key}>
-                <td className="drt-label-cell">
-                  {row.tab ? (
-                    <Link
-                      to={deepLink(row.tab)}
-                      className="drt-label-link"
-                      onClick={() =>
-                        trackEvent("deep_link_click", {
-                          tab: row.tab,
-                          link_source: "data_race_table",
-                        })
-                      }
-                    >
-                      <span className="drt-label-full">{row.label}</span>
-                      <span className="drt-label-short">{row.shortLabel}</span>
-                      <span className="drt-link-arrow">›</span>
-                    </Link>
-                  ) : (
-                    <>
-                      <span className="drt-label-full">{row.label}</span>
-                      <span className="drt-label-short">{row.shortLabel}</span>
-                    </>
-                  )}
-                  <TermHintButton
-                    termKey={row.hintKey ?? row.key}
-                    values={row.hintValues}
-                  />
-                  {row.note && (
-                    <span
-                      className={`drt-label-note${row.wrapNote ? " drt-label-note--wrap" : ""}`}
-                    >
-                      {row.note}
-                    </span>
-                  )}
-                </td>
-                {players.map((p) => (
-                  <td key={p.number} className={cellClass(p.number, row.best)}>
-                    {row.render(p)}
-                  </td>
-                ))}
-              </tr>
+              <IndicatorRow
+                key={row.key}
+                row={row}
+                players={players}
+                deepLink={deepLink}
+              />
             ))}
           </tbody>
         </table>
