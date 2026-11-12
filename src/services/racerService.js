@@ -7,7 +7,22 @@
  */
 
 import { supabase } from "./supabaseClient";
-import { supabaseDataService } from "./supabaseDataService";
+import { getMotorGenerationStart } from "./motorQueries.js";
+import { getMotorPowerIndex } from "./motorQueries2.js";
+import { getVenueMotorStats } from "./motorQueries3.js";
+import {
+  getRacerAggregatedStats,
+  getRacerAllPeriodStats as fetchRacerAllPeriodStats,
+  getRacerFormSummary,
+  getRacerFormTrend,
+  getRacerOfficialAvgSt,
+  getRacerTechniqueProfile,
+} from "./racerQueries.js";
+import { getRacerVenueStats } from "./racerQueries2.js";
+import {
+  getExhibitionTimeTrend,
+  getRacerBoatReturnRate,
+} from "./racerQueries3.js";
 import { parseRaceId } from "../utils/raceId";
 import { fetchCurrentMeetRaceEntries } from "./currentMeetEntries";
 import { getTodayJST } from "../utils/dateUtils";
@@ -127,17 +142,12 @@ export async function getRacerCurrentMotorStatus(racerId) {
   // 直近出走が、その会場のモーター入れ替えより前なら、そのモーターは今の同じ
   // 番号のモーターとは別物。機力指数・公式成績（どちらも現行世代の値）は出さない
   // （BOA-329。長期休養明け等で直近出走が数ヶ月前のことがある）
-  const generationStart =
-    await supabaseDataService.getMotorGenerationStart(venueCode);
+  const generationStart = await getMotorGenerationStart(venueCode);
   const preGeneration = generationStart !== null && date < generationStart;
   const [powerIndex, meetEntries, venueMotorStats, series] = await Promise.all([
-    preGeneration
-      ? null
-      : supabaseDataService.getMotorPowerIndex(venueCode, data.motor_number),
+    preGeneration ? null : getMotorPowerIndex(venueCode, data.motor_number),
     fetchCurrentMeetRaceEntries(supabase, racerId, data.motor_number),
-    preGeneration
-      ? null
-      : supabaseDataService.getVenueMotorStats(venueCode, data.motor_number),
+    preGeneration ? null : getVenueMotorStats(venueCode, data.motor_number),
     preGeneration ? null : getSeriesOfRace(venueCode, date),
   ]);
 
@@ -206,7 +216,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
  * @param {number|string} racerId
  */
 export function getRacerAllPeriodStats(racerId) {
-  return supabaseDataService.getRacerAllPeriodStats(racerId);
+  return fetchRacerAllPeriodStats(racerId);
 }
 
 export async function getRacerStats(racerId) {
@@ -220,15 +230,15 @@ export async function getRacerStats(racerId) {
     venueStats,
     officialAvgSt,
   ] = await Promise.all([
-    supabaseDataService.getRacerFormSummary(racerId),
-    supabaseDataService.getRacerFormTrend(racerId),
-    supabaseDataService.getRacerTechniqueProfile(racerId),
-    supabaseDataService.getRacerAggregatedStats(racerId),
-    supabaseDataService.getExhibitionTimeTrend(racerId),
-    supabaseDataService.getRacerBoatReturnRate(racerId),
-    supabaseDataService.getRacerVenueStats(racerId),
+    getRacerFormSummary(racerId),
+    getRacerFormTrend(racerId),
+    getRacerTechniqueProfile(racerId),
+    getRacerAggregatedStats(racerId),
+    getExhibitionTimeTrend(racerId),
+    getRacerBoatReturnRate(racerId),
+    getRacerVenueStats(racerId),
     // 平均ST（公式）: 今日の公式の出走表と同じ期の値（BOA-815）
-    supabaseDataService.getRacerOfficialAvgSt(racerId, getTodayJST()),
+    getRacerOfficialAvgSt(racerId, getTodayJST()),
   ]);
   return {
     formSummary,

@@ -290,9 +290,7 @@ const racer = read("src/services/racerService.js");
 check(
   "選手ページ: 直近出走が入れ替え前なら機力指数・公式成績を出さない",
   racer.includes("date < generationStart") &&
-    /preGeneration\s*\?\s*null\s*:\s*supabaseDataService\.getMotorPowerIndex/.test(
-      racer,
-    ),
+    /preGeneration\s*\?\s*null\s*:\s*getMotorPowerIndex\(/.test(racer),
 );
 // 2026-09-29 ファン評価1周目の修正
 check(
