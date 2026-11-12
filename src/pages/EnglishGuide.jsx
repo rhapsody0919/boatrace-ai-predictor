@@ -192,6 +192,345 @@ const RACE_TABS = [
 const RACE_TABS_INTRO =
   "The race page is split into tabs, in this order. The first four compare all 6 boats at once; the later ones let you pick one boat and dig in.";
 
+function HeroSection() {
+  return (
+    <section className="eg-hero">
+      <h1>🚤 What is Kyotei?</h1>
+      <p className="eg-hero-lead">
+        Kyotei — Japanese boat racing — is one of Japan&apos;s four
+        government-sanctioned betting sports, running nearly every day at 24
+        venues across the country. Six hydroplane boats race three laps
+        around a 600m course, and you can bet on the outcome. This guide
+        takes you from zero knowledge to reading AI predictions like a
+        local.
+      </p>
+    </section>
+  );
+}
+
+function QuickFactsSection() {
+  return (
+    <section className="eg-section">
+      <h2>⚡ Quick Facts</h2>
+      <div className="eg-facts-grid">
+        <div className="eg-fact">
+          <strong>6 boats</strong>
+          <span>Every race, numbered 1-6 with fixed colors</span>
+        </div>
+        <div className="eg-fact">
+          <strong>3 laps / 1,800m</strong>
+          <span>Around a 600m water course</span>
+        </div>
+        <div className="eg-fact">
+          <strong>~1 minute 50 sec</strong>
+          <span>Races are short and intense</span>
+        </div>
+        <div className="eg-fact">
+          <strong>24 venues</strong>
+          <span>From Kiryu in the east to Omura in the west</span>
+        </div>
+        <div className="eg-fact">
+          <strong>Flying start</strong>
+          <span>Boats are already moving at the start line</span>
+        </div>
+        <div className="eg-fact">
+          <strong>Parimutuel betting</strong>
+          <span>Odds are set by the betting pool, like horse racing</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LaneOneSection() {
+  return (
+    <section className="eg-section eg-highlight">
+      <h2>🔑 The One Thing to Know: Lane 1 Wins Half the Time</h2>
+      <p>
+        Unlike most racing sports, Kyotei has a massive positional bias. The
+        boat starting from
+        <strong>
+          {" "}
+          lane 1 (the innermost course) wins roughly 50% of all races
+          nationwide
+        </strong>{" "}
+        — because it takes the shortest line around the first turn.
+      </p>
+      <p>
+        Almost everything in Kyotei prediction revolves around one question:
+        <strong>
+          {" "}
+          will lane 1 hold, or will someone take it down?
+        </strong>{" "}
+        Ryujin Radar&apos;s &quot;Lane-1 upset index&quot; measures exactly
+        this for every race.
+      </p>
+    </section>
+  );
+}
+
+function TechniquesSection() {
+  return (
+    <section className="eg-section">
+      <h2>🥇 The 6 Winning Techniques (Kimarite)</h2>
+      <p>
+        Every win is officially classified by <em>how</em> the boat won.
+        Learning these six terms unlocks Japanese race commentary and Ryujin
+        Radar&apos;s predictions.
+      </p>
+      <div className="eg-technique-list">
+        {TECHNIQUES.map((t) => (
+          <div key={t.name} className="eg-technique">
+            <div className="eg-technique-name">
+              <strong>{t.name}</strong>{" "}
+              <span className="eg-kanji">{t.kanji}</span> — {t.en}
+            </div>
+            <p>{t.desc}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function RacerClassesSection() {
+  return (
+    <section className="eg-section">
+      <h2>🏅 Racer Classes</h2>
+      <p>
+        All ~1,600 professional racers are ranked into four classes,
+        reviewed twice a year. Class is a strong predictor of performance:
+      </p>
+      <ul className="eg-list">
+        <li>
+          <strong>A1</strong> — The elite (top ~20%). An A1 racer in lane 1
+          is a formidable favorite.
+        </li>
+        <li>
+          <strong>A2</strong> — Strong senior racers.
+        </li>
+        <li>
+          <strong>B1</strong> — The mid-tier majority.
+        </li>
+        <li>
+          <strong>B2</strong> — Rookies and lower-ranked racers.
+        </li>
+      </ul>
+      <p className="eg-note">
+        Women race alongside men in the same races — Kyotei is one of the
+        few sports where both compete directly.
+      </p>
+    </section>
+  );
+}
+
+function BetTypesSection() {
+  return (
+    <section className="eg-section">
+      <h2>🎫 Betting Types</h2>
+      <div className="eg-table-wrapper">
+        <table className="eg-table">
+          <thead>
+            <tr>
+              <th>Bet type</th>
+              <th>What you pick</th>
+              <th>Difficulty</th>
+            </tr>
+          </thead>
+          <tbody>
+            {BET_TYPES.map((b) => (
+              <tr key={b.name}>
+                <td>
+                  <strong>{b.name}</strong>
+                </td>
+                <td>{b.pick}</td>
+                <td>{b.difficulty}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* i18n-allow: 券種の日本語名を併記する（マークシート・発売所で見る表記） */}
+      <p className="eg-note">
+        The Trifecta (3連単) is by far the most popular bet — average
+        payouts are around ¥7,000 per ¥100 stake, with big upsets paying
+        over ¥100,000.
+      </p>
+    </section>
+  );
+}
+
+function ReadingPredictionSection({ t }) {
+  return (
+    <section className="eg-section">
+      <h2>🤖 How to Read Ryujin Radar&apos;s Predictions</h2>
+      <p>
+        Ryujin Radar analyzes the data behind every race — racer stats, motor
+        performance, venue bias, start timing and more — and shows you{" "}
+        <strong>why</strong> behind every pick. Completely free.
+      </p>
+      <ol className="eg-steps">
+        <li>
+          <strong>Pick a venue and race</strong> on the{" "}
+          <Link to="/en/">top page</Link>. Each race card shows the betting
+          deadline and a forecast preview.
+        </li>
+        <li>
+          <strong>View the objective Data Table</strong> for all 6 boats.
+          Ryujin Radar doesn&apos;t make you choose a prediction model —
+          everyone sees the same data and builds their own read:
+          <div className="eg-models">
+            {DATA_POINTS.map((d) => (
+              <div key={d.name} className="eg-model">
+                <span className="eg-model-icon">{d.icon}</span>
+                <strong>{d.name}</strong>
+                <p>{d.desc}</p>
+              </div>
+            ))}
+          </div>
+        </li>
+        <li>
+          <strong>Open the AI Prediction tab</strong> — the First Mark
+          forecast (how the decisive first turn is likely to unfold, with
+          win probabilities per pattern), the Lane-1 upset index (high means
+          chaos is likely: bigger payouts, lower hit rate), and, once the
+          race is over, whether the forecast hit.
+        </li>
+      </ol>
+      <p>{RACE_TABS_INTRO}</p>
+      <ul className="eg-list eg-race-tabs">
+        {RACE_TABS.map((tab) => (
+          <li key={tab.key}>
+            <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function ExampleRaceSection() {
+  return (
+    <section className="eg-section">
+      <h2>📋 A Real Example: Reading the Data &amp; Marking a Slip</h2>
+      <p>
+        Most beginner guides use made-up numbers. Here&apos;s an actual race
+        — Boat Race {EXAMPLE_RACE.venue}, {EXAMPLE_RACE.date}, Race{" "}
+        {EXAMPLE_RACE.raceNo} — with the real entry data, the real bet, and
+        the real payout.
+      </p>
+      <div className="eg-table-wrapper">
+        <table className="eg-table">
+          <thead>
+            <tr>
+              <th>Boat</th>
+              <th>Racer</th>
+              <th>Class</th>
+              <th>Win rate</th>
+              <th>Local win rate</th>
+              <th>Motor 2-rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {EXAMPLE_RACE.entries.map((e) => (
+              <tr key={e.boat}>
+                <td>
+                  <strong>{e.boat}</strong>
+                </td>
+                <td translate="no">{e.name}</td>
+                <td>{e.grade}</td>
+                <td>{e.winRate}</td>
+                <td>{e.localWinRate}</td>
+                <td>{e.motor2Rate}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <strong>Reading it:</strong> Boat 1 is A1 class with this
+        venue&apos;s best local win rate (6.59) — the textbook favorite to
+        Nige from lane 1. Boat 3 is only A2 class, but its motor has a
+        noticeably stronger 2-rate (38.0%) than the field — a common reason
+        to look past class ranking alone for the 2nd-place pick.
+      </p>
+      <p>
+        {/* i18n-allow: 券種の日本語名を併記する（マークシートの表記） */}
+        <strong>The bet:</strong> Trifecta (3連単), picking boats{" "}
+        <strong>1 → 3 → 4</strong> in that exact order on the mark sheet —
+        filling in the &quot;1&quot; oval in the 1st-place column,
+        &quot;3&quot; in the 2nd-place column, and &quot;4&quot; in the
+        3rd-place column, next to this race&apos;s number on the card.
+      </p>
+      <p className="eg-note">
+        <strong>The result:</strong> Boat 1 won by Nige, boat 3 took 2nd,
+        boat 4 took 3rd — exactly as picked. Payout:{" "}
+        <strong>{EXAMPLE_RACE.payout}</strong> for every ¥100 wagered.
+      </p>
+      <p>
+        <Link to={`/en/race/${EXAMPLE_RACE.raceId}`}>
+          → See Ryujin Radar&apos;s full data breakdown for this race
+        </Link>
+      </p>
+    </section>
+  );
+}
+
+function VenueGuideSection() {
+  return (
+    <section className="eg-section">
+      <h2>🏟️ Visit a Venue in Person</h2>
+      <p>
+        Watching Kyotei live is cheap (¥100 entrance) and unforgettable. We
+        have English visitor guides for the venues easiest to reach as a
+        traveler — including Heiwajima near Haneda Airport and
+        Suminoe&apos;s night races in Osaka.
+      </p>
+      <p>
+        <Link to="/en/venues">→ Browse the venue guides</Link>
+      </p>
+    </section>
+  );
+}
+
+function DisclaimerSection() {
+  return (
+    <section className="eg-section eg-disclaimer">
+      <h2>⚖️ Important: Who Can Bet</h2>
+      <ul className="eg-list">
+        <li>
+          Betting on Kyotei is legal only through Japan&apos;s official
+          channels (venues and the official TELEBOAT service), and requires
+          being
+          <strong> physically located in Japan</strong> and{" "}
+          <strong>20 years or older</strong>.
+        </li>
+        <li>
+          Ryujin Radar provides{" "}
+          <strong>information and AI analysis only</strong>. We do not
+          accept bets, and predictions do not guarantee results.
+        </li>
+        <li>
+          Please gamble responsibly. See our{" "}
+          <Link to="/en/responsible-gambling">responsible gambling</Link>{" "}
+          page.
+        </li>
+      </ul>
+    </section>
+  );
+}
+
+function CtaSection() {
+  return (
+    <section className="eg-cta">
+      <h2>Ready to see the AI in action?</h2>
+      <Link to="/en/" className="eg-cta-button">
+        🏁 View Today&apos;s Free Predictions
+      </Link>
+    </section>
+  );
+}
+
 export default function EnglishGuide() {
   const { t } = useTranslation();
 
@@ -210,310 +549,37 @@ export default function EnglishGuide() {
 
       <div className="eg-container">
         {/* Hero */}
-        <section className="eg-hero">
-          <h1>🚤 What is Kyotei?</h1>
-          <p className="eg-hero-lead">
-            Kyotei — Japanese boat racing — is one of Japan&apos;s four
-            government-sanctioned betting sports, running nearly every day at 24
-            venues across the country. Six hydroplane boats race three laps
-            around a 600m course, and you can bet on the outcome. This guide
-            takes you from zero knowledge to reading AI predictions like a
-            local.
-          </p>
-        </section>
+        <HeroSection />
 
         {/* Quick facts */}
-        <section className="eg-section">
-          <h2>⚡ Quick Facts</h2>
-          <div className="eg-facts-grid">
-            <div className="eg-fact">
-              <strong>6 boats</strong>
-              <span>Every race, numbered 1-6 with fixed colors</span>
-            </div>
-            <div className="eg-fact">
-              <strong>3 laps / 1,800m</strong>
-              <span>Around a 600m water course</span>
-            </div>
-            <div className="eg-fact">
-              <strong>~1 minute 50 sec</strong>
-              <span>Races are short and intense</span>
-            </div>
-            <div className="eg-fact">
-              <strong>24 venues</strong>
-              <span>From Kiryu in the east to Omura in the west</span>
-            </div>
-            <div className="eg-fact">
-              <strong>Flying start</strong>
-              <span>Boats are already moving at the start line</span>
-            </div>
-            <div className="eg-fact">
-              <strong>Parimutuel betting</strong>
-              <span>Odds are set by the betting pool, like horse racing</span>
-            </div>
-          </div>
-        </section>
+        <QuickFactsSection />
 
         {/* The key concept */}
-        <section className="eg-section eg-highlight">
-          <h2>🔑 The One Thing to Know: Lane 1 Wins Half the Time</h2>
-          <p>
-            Unlike most racing sports, Kyotei has a massive positional bias. The
-            boat starting from
-            <strong>
-              {" "}
-              lane 1 (the innermost course) wins roughly 50% of all races
-              nationwide
-            </strong>{" "}
-            — because it takes the shortest line around the first turn.
-          </p>
-          <p>
-            Almost everything in Kyotei prediction revolves around one question:
-            <strong>
-              {" "}
-              will lane 1 hold, or will someone take it down?
-            </strong>{" "}
-            Ryujin Radar&apos;s &quot;Lane-1 upset index&quot; measures exactly
-            this for every race.
-          </p>
-        </section>
+        <LaneOneSection />
 
         {/* Winning techniques */}
-        <section className="eg-section">
-          <h2>🥇 The 6 Winning Techniques (Kimarite)</h2>
-          <p>
-            Every win is officially classified by <em>how</em> the boat won.
-            Learning these six terms unlocks Japanese race commentary and Ryujin
-            Radar&apos;s predictions.
-          </p>
-          <div className="eg-technique-list">
-            {TECHNIQUES.map((t) => (
-              <div key={t.name} className="eg-technique">
-                <div className="eg-technique-name">
-                  <strong>{t.name}</strong>{" "}
-                  <span className="eg-kanji">{t.kanji}</span> — {t.en}
-                </div>
-                <p>{t.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        <TechniquesSection />
 
         {/* Racer classes */}
-        <section className="eg-section">
-          <h2>🏅 Racer Classes</h2>
-          <p>
-            All ~1,600 professional racers are ranked into four classes,
-            reviewed twice a year. Class is a strong predictor of performance:
-          </p>
-          <ul className="eg-list">
-            <li>
-              <strong>A1</strong> — The elite (top ~20%). An A1 racer in lane 1
-              is a formidable favorite.
-            </li>
-            <li>
-              <strong>A2</strong> — Strong senior racers.
-            </li>
-            <li>
-              <strong>B1</strong> — The mid-tier majority.
-            </li>
-            <li>
-              <strong>B2</strong> — Rookies and lower-ranked racers.
-            </li>
-          </ul>
-          <p className="eg-note">
-            Women race alongside men in the same races — Kyotei is one of the
-            few sports where both compete directly.
-          </p>
-        </section>
+        <RacerClassesSection />
 
         {/* Betting types */}
-        <section className="eg-section">
-          <h2>🎫 Betting Types</h2>
-          <div className="eg-table-wrapper">
-            <table className="eg-table">
-              <thead>
-                <tr>
-                  <th>Bet type</th>
-                  <th>What you pick</th>
-                  <th>Difficulty</th>
-                </tr>
-              </thead>
-              <tbody>
-                {BET_TYPES.map((b) => (
-                  <tr key={b.name}>
-                    <td>
-                      <strong>{b.name}</strong>
-                    </td>
-                    <td>{b.pick}</td>
-                    <td>{b.difficulty}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {/* i18n-allow: 券種の日本語名を併記する（マークシート・発売所で見る表記） */}
-          <p className="eg-note">
-            The Trifecta (3連単) is by far the most popular bet — average
-            payouts are around ¥7,000 per ¥100 stake, with big upsets paying
-            over ¥100,000.
-          </p>
-        </section>
+        <BetTypesSection />
 
         {/* How to read boatAI */}
-        <section className="eg-section">
-          <h2>🤖 How to Read Ryujin Radar&apos;s Predictions</h2>
-          <p>
-            Ryujin Radar analyzes the data behind every race — racer stats, motor
-            performance, venue bias, start timing and more — and shows you{" "}
-            <strong>why</strong> behind every pick. Completely free.
-          </p>
-          <ol className="eg-steps">
-            <li>
-              <strong>Pick a venue and race</strong> on the{" "}
-              <Link to="/en/">top page</Link>. Each race card shows the betting
-              deadline and a forecast preview.
-            </li>
-            <li>
-              <strong>View the objective Data Table</strong> for all 6 boats.
-              Ryujin Radar doesn&apos;t make you choose a prediction model —
-              everyone sees the same data and builds their own read:
-              <div className="eg-models">
-                {DATA_POINTS.map((d) => (
-                  <div key={d.name} className="eg-model">
-                    <span className="eg-model-icon">{d.icon}</span>
-                    <strong>{d.name}</strong>
-                    <p>{d.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </li>
-            <li>
-              <strong>Open the AI Prediction tab</strong> — the First Mark
-              forecast (how the decisive first turn is likely to unfold, with
-              win probabilities per pattern), the Lane-1 upset index (high means
-              chaos is likely: bigger payouts, lower hit rate), and, once the
-              race is over, whether the forecast hit.
-            </li>
-          </ol>
-          <p>{RACE_TABS_INTRO}</p>
-          <ul className="eg-list eg-race-tabs">
-            {RACE_TABS.map((tab) => (
-              <li key={tab.key}>
-                <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
-              </li>
-            ))}
-          </ul>
-        </section>
+        <ReadingPredictionSection t={t} />
 
         {/* Real example (BOA-250): actual past race data, not a fictional walkthrough */}
-        <section className="eg-section">
-          <h2>📋 A Real Example: Reading the Data &amp; Marking a Slip</h2>
-          <p>
-            Most beginner guides use made-up numbers. Here&apos;s an actual race
-            — Boat Race {EXAMPLE_RACE.venue}, {EXAMPLE_RACE.date}, Race{" "}
-            {EXAMPLE_RACE.raceNo} — with the real entry data, the real bet, and
-            the real payout.
-          </p>
-          <div className="eg-table-wrapper">
-            <table className="eg-table">
-              <thead>
-                <tr>
-                  <th>Boat</th>
-                  <th>Racer</th>
-                  <th>Class</th>
-                  <th>Win rate</th>
-                  <th>Local win rate</th>
-                  <th>Motor 2-rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                {EXAMPLE_RACE.entries.map((e) => (
-                  <tr key={e.boat}>
-                    <td>
-                      <strong>{e.boat}</strong>
-                    </td>
-                    <td translate="no">{e.name}</td>
-                    <td>{e.grade}</td>
-                    <td>{e.winRate}</td>
-                    <td>{e.localWinRate}</td>
-                    <td>{e.motor2Rate}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p>
-            <strong>Reading it:</strong> Boat 1 is A1 class with this
-            venue&apos;s best local win rate (6.59) — the textbook favorite to
-            Nige from lane 1. Boat 3 is only A2 class, but its motor has a
-            noticeably stronger 2-rate (38.0%) than the field — a common reason
-            to look past class ranking alone for the 2nd-place pick.
-          </p>
-          <p>
-            {/* i18n-allow: 券種の日本語名を併記する（マークシートの表記） */}
-            <strong>The bet:</strong> Trifecta (3連単), picking boats{" "}
-            <strong>1 → 3 → 4</strong> in that exact order on the mark sheet —
-            filling in the &quot;1&quot; oval in the 1st-place column,
-            &quot;3&quot; in the 2nd-place column, and &quot;4&quot; in the
-            3rd-place column, next to this race&apos;s number on the card.
-          </p>
-          <p className="eg-note">
-            <strong>The result:</strong> Boat 1 won by Nige, boat 3 took 2nd,
-            boat 4 took 3rd — exactly as picked. Payout:{" "}
-            <strong>{EXAMPLE_RACE.payout}</strong> for every ¥100 wagered.
-          </p>
-          <p>
-            <Link to={`/en/race/${EXAMPLE_RACE.raceId}`}>
-              → See Ryujin Radar&apos;s full data breakdown for this race
-            </Link>
-          </p>
-        </section>
+        <ExampleRaceSection />
 
         {/* Venue guides */}
-        <section className="eg-section">
-          <h2>🏟️ Visit a Venue in Person</h2>
-          <p>
-            Watching Kyotei live is cheap (¥100 entrance) and unforgettable. We
-            have English visitor guides for the venues easiest to reach as a
-            traveler — including Heiwajima near Haneda Airport and
-            Suminoe&apos;s night races in Osaka.
-          </p>
-          <p>
-            <Link to="/en/venues">→ Browse the venue guides</Link>
-          </p>
-        </section>
+        <VenueGuideSection />
 
         {/* Legal disclaimer */}
-        <section className="eg-section eg-disclaimer">
-          <h2>⚖️ Important: Who Can Bet</h2>
-          <ul className="eg-list">
-            <li>
-              Betting on Kyotei is legal only through Japan&apos;s official
-              channels (venues and the official TELEBOAT service), and requires
-              being
-              <strong> physically located in Japan</strong> and{" "}
-              <strong>20 years or older</strong>.
-            </li>
-            <li>
-              Ryujin Radar provides{" "}
-              <strong>information and AI analysis only</strong>. We do not
-              accept bets, and predictions do not guarantee results.
-            </li>
-            <li>
-              Please gamble responsibly. See our{" "}
-              <Link to="/en/responsible-gambling">responsible gambling</Link>{" "}
-              page.
-            </li>
-          </ul>
-        </section>
+        <DisclaimerSection />
 
         {/* CTA */}
-        <section className="eg-cta">
-          <h2>Ready to see the AI in action?</h2>
-          <Link to="/en/" className="eg-cta-button">
-            🏁 View Today&apos;s Free Predictions
-          </Link>
-        </section>
+        <CtaSection />
       </div>
       <Footer links={getSiteFooterLinks(t)} />
     </div>
