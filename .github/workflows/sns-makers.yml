@@ -11,9 +11,23 @@ name: SNS Makers
 # - 走らせない差分でも集約の job `sns-makers` は成功で終わる（skip にしない。必須のチェックにしても PR を止めないため）
 
 on:
+  # SNS は止めている（hq docs/decisions/sns-paused.md）ため、PR は作り手に届くパスを触るときだけ起こす（待ち行列の削減、2026-11-13）。
+  # 必須のチェックは e2e・verify・ml-tests のみ（ruleset master-guard）で、sns-makers は必須ではないので paths で絞っても PR は待たない。
+  # src/ 側の import 経由の届きは paths では表せない。master への push は従来どおり sns-makers-scope.js の判定で拾う
   pull_request:
     branches:
       - master
+    paths:
+      - 'sns-video-studio/remotion/**'
+      - 'scripts/sns/push-*.js'
+      - 'scripts/maintenance/verify-sns-makers.js'
+      - 'scripts/maintenance/verify-sns-makers-scope.js'
+      - 'scripts/maintenance/verify-remotion-compositions.js'
+      - 'scripts/maintenance/sns-makers-scope.js'
+      - 'scripts/lib/relativeImportGraph.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/sns-makers.yml'
   # master へのマージ後にも同じ判定で走らせる（並行する2つの PR が別々に緑になった後の組み合わせの壊れを検知する。quality-gates.yml と同じ理由）
   push:
     branches:
