@@ -51,7 +51,8 @@ const ROOT = path.resolve(
 const MAX_LINES = 400;
 const MAX_COMPLEXITY = 15;
 const DUP_MIN_LINES = 15; // jscpd の重なりの最小の行数（目安・根拠なし）
-// npx で取る版を固定する（devDependency に無いため）
+// 版は package.json の devDependencies と同じに固定する。npx は --no で手元の node_modules だけを使い、
+// ネットワークから取らない（CI03・BOA-1492。npm ci を済ませていなければ止まる）
 const MADGE = "madge@8.0.0";
 const JSCPD = "jscpd@4.3.0";
 const GRAPH_DIRS = ["src", "scripts", "api"];
@@ -192,7 +193,7 @@ if (ci) {
 
   // --- 循環の import（madge）
   const madge = runToFile("npx", [
-    "--yes",
+    "--no",
     MADGE,
     "--circular",
     "--extensions",
@@ -220,7 +221,7 @@ if (ci) {
     const res = spawnSync(
       "npx",
       [
-        "--yes",
+        "--no",
         JSCPD,
         ...GRAPH_DIRS,
         "--format",

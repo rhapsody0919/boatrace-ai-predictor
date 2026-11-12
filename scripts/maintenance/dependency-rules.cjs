@@ -2,7 +2,7 @@
  * 依存の向きの規則（dependency-cruiser の forbidden。相対 import の辺、BOA-1428）。
  * 判定の純関数は lintBaselines.js。ここは規則の宣言だけ。
  */
-// npx で固定の版を取る（madge・jscpd と同じ。lint-changed.js）。版の確認は PR 本文に書く
+// 固定の版（package.json の devDependencies と同じ。npx --no で手元の node_modules だけを使う、CI03・BOA-1492）
 const DEPENDENCY_CRUISER = "dependency-cruiser@16.10.4";
 
 const UI_DIRS = "components|pages|hooks";
