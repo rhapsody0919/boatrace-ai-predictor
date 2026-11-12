@@ -279,7 +279,7 @@
     {
       "script": "verify-code-pitfalls.js",
       "tier": "ci",
-      "guards": "件数がデータで変わるグリッドに repeat(auto-fill, ...)・固定列数 repeat(N, ...) を新しく使わないこと（ZB03 ①・BOA-1454。正本 .claude/rules/component-reuse.md「CSS」、BOA-460・527・528 で3回再発）。src/ の *.css の該当行を全体の件数で凍結し（53 行）、増えたら失敗、減ったら凍結を下げるよう出す。JS・JSX の本文は読まない"
+      "guards": "件数がデータで変わるグリッドに repeat(auto-fill, ...)・固定列数 repeat(N, ...) を新しく使わないこと（ZB03 ①・BOA-1454。正本 .claude/rules/component-reuse.md「CSS」、BOA-460・527・528 で3回再発）。src/ の *.css の該当の出現（改行をまたぐ形・1行に2つも）を全体の件数で凍結し（53 件）、増えたら失敗、減ったら凍結を下げるよう出す。JS・JSX の本文は読まない"
     },
     {
       "script": "verify-codex-no-preview.js",
