@@ -51,8 +51,8 @@ const ROOT = path.resolve(
 const MAX_LINES = 400;
 const MAX_COMPLEXITY = 15;
 const DUP_MIN_LINES = 15; // jscpd の重なりの最小の行数（目安・根拠なし）
-// 版は package.json の devDependencies と同じに固定する。npx は --no で手元の node_modules だけを使い、
-// ネットワークから取らない（CI03・BOA-1492。npm ci を済ませていなければ止まる）
+// 版は package.json の devDependencies と同じに固定する。npx は --no で手元の node_modules（無ければ npm の
+// キャッシュ）の同じ版だけを使い、ネットワークから取らない（CI03・BOA-1492。版が無ければ止まる）
 const MADGE = "madge@8.0.0";
 const JSCPD = "jscpd@4.3.0";
 const GRAPH_DIRS = ["src", "scripts", "api"];
