@@ -1303,7 +1303,7 @@
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:358` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:64` select(helper:fetchAll)
-  - `scripts/maintenance/verify-bot-race-function.js:851` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
+  - `scripts/maintenance/verify-bot-race-function.js:857` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
   - `src/services/meetQueries3.js:48` select [end_date, grade, start_date, title, venue_code]
   - `src/services/raceQueries2.js:240` select [end_date, start_date, venue_code]
   - `src/services/racerService.js:86` select [end_date, start_date, venue_code]
