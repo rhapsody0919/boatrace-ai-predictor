@@ -16,7 +16,23 @@ import {
   useAnalogyScenario,
   useAnalogySimilar,
 } from "./useAnalogyV16";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getRaceMotorBreakdown } from "../services/motorQueries3.js";
+import { getRaceMotorMaintenanceBreakdown } from "../services/motorQueries6.js";
+import { getRaceEntryOfficialRatesBreakdown } from "../services/raceQueries.js";
+import {
+  getRaceExhibitionBasics,
+  getRaceOddsSnapshots,
+} from "../services/raceQueries2.js";
+import {
+  getRaceFinalOdds,
+  getRaceTechniqueProfileBreakdown,
+} from "../services/raceQueries3.js";
+import { getRaceOriginalExhibition } from "../services/raceQueries4.js";
+import { getRacerScopedRaceStats } from "../services/racerQueries2.js";
+import {
+  getVenueCharacteristics,
+  getVenueTechniquePeriodStats,
+} from "../services/venueQueries.js";
 import {
   nextOddsRefreshDelay,
   oddsByBetType,
@@ -71,8 +87,8 @@ export function useThinkingAssistData(
     `assist-odds|${raceId}`,
     async (fresh = false) => {
       const [snaps, final] = await Promise.allSettled([
-        supabaseDataService.getRaceOddsSnapshots(raceId, { fresh }),
-        supabaseDataService.getRaceFinalOdds(raceId, { fresh }),
+        getRaceOddsSnapshots(raceId, { fresh }),
+        getRaceFinalOdds(raceId, { fresh }),
       ]);
       if (snaps.status === "rejected") throw snaps.reason;
       const out = oddsByBetType(
@@ -94,24 +110,24 @@ export function useThinkingAssistData(
   // 既存の getVenueCharacteristics は無いときに null を返す（失敗は投げる）。画面は「無い」を断定しない（D-36 (5)）
   const venueInfo = useAnalogyResource(
     `assist-venue|${parsed?.venueCode}`,
-    () => supabaseDataService.getVenueCharacteristics(parsed.venueCode),
+    () => getVenueCharacteristics(parsed.venueCode),
     enabled,
   );
   const venueTech = useAnalogyResource(
     `assist-venue-tech|${parsed?.venueCode}`,
-    () => supabaseDataService.getVenueTechniquePeriodStats(parsed.venueCode),
+    () => getVenueTechniquePeriodStats(parsed.venueCode),
     enabled && venueOpen,
   );
 
   const exhibition = useAnalogyResource(
     `assist-exhibition|${raceId}`,
-    () => supabaseDataService.getRaceExhibitionBasics(raceId),
+    () => getRaceExhibitionBasics(raceId),
     enabled,
   );
 
   const rates = useAnalogyResource(
     `assist-rates|${raceId}`,
-    () => supabaseDataService.getRaceEntryOfficialRatesBreakdown(raceId),
+    () => getRaceEntryOfficialRatesBreakdown(raceId),
     enabled,
   );
 
@@ -168,12 +184,12 @@ export function useThinkingAssistData(
   const post = stage === "post";
   const maintenance = useAnalogyResource(
     `assist-maintenance|${raceId}`,
-    () => supabaseDataService.getRaceMotorMaintenanceBreakdown(raceId),
+    () => getRaceMotorMaintenanceBreakdown(raceId),
     enabled && post,
   );
   const original = useAnalogyResource(
     `assist-original|${raceId}`,
-    () => supabaseDataService.getRaceOriginalExhibition(raceId),
+    () => getRaceOriginalExhibition(raceId),
     enabled && post,
   );
 
@@ -183,20 +199,20 @@ export function useThinkingAssistData(
     null;
   const runs = useAnalogyResource(
     `assist-runs|${deepRacerId}`,
-    () => supabaseDataService.getRacerScopedRaceStats(deepRacerId),
+    () => getRacerScopedRaceStats(deepRacerId),
     Boolean(deepRacerId),
   );
   // 6艇分を1回で取る（深掘りを初めて開いたとき）。勝ち決まり手は失敗を空で返す既存関数（D-36 (5)）
   const deepOpened = deep != null;
   const technique = useAnalogyResource(
     `assist-technique|${raceId}`,
-    () => supabaseDataService.getRaceTechniqueProfileBreakdown(raceId),
+    () => getRaceTechniqueProfileBreakdown(raceId),
     enabled && deepOpened,
   );
   const motor = useAnalogyResource(
     `assist-motor|${raceId}`,
     () =>
-      supabaseDataService.getRaceMotorBreakdown(
+      getRaceMotorBreakdown(
         raceId,
         parsed?.venueCode ?? null,
       ),

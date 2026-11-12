@@ -4,7 +4,7 @@
  * （レース単位のSOURCESマップ）とは別の小さい専用フックにしている。
  */
 import { useState, useEffect } from "react";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getUnifiedModelAccuracy } from "../services/predictionQueries3.js";
 
 export function useUnifiedModelAccuracy() {
   const [accuracy, setAccuracy] = useState(null);
@@ -12,8 +12,7 @@ export function useUnifiedModelAccuracy() {
 
   useEffect(() => {
     let cancelled = false;
-    supabaseDataService
-      .getUnifiedModelAccuracy()
+    getUnifiedModelAccuracy()
       .then((data) => {
         if (!cancelled) setAccuracy(data);
       })
