@@ -35,7 +35,9 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRaceMotorMaintenanceBreakdown } from "../../services/motorQueries6.js";
+import { getRaceOddsSnapshots } from "../../services/raceQueries2.js";
+import { getRaceFinalOdds } from "../../services/raceQueries3.js";
 import {
   fetchLiveOdds,
   LIVE_PAGE_OF_BET_TYPE,
@@ -676,8 +678,8 @@ function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
     if (!raceId) return undefined;
     // 締切時オッズ（公式、BOA-496）も同時に取る。どちらかの失敗は「データなし」にせず、まとめて再取得できるようにする
     Promise.all([
-      supabaseDataService.getRaceOddsSnapshots(raceId),
-      supabaseDataService.getRaceFinalOdds(raceId),
+      getRaceOddsSnapshots(raceId),
+      getRaceFinalOdds(raceId),
     ])
       .then(([data, final]) => {
         if (!cancelled) {
@@ -697,8 +699,7 @@ function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
   useEffect(() => {
     let cancelled = false;
     if (!raceId) return undefined;
-    supabaseDataService
-      .getRaceMotorMaintenanceBreakdown(raceId)
+    getRaceMotorMaintenanceBreakdown(raceId)
       // 戻り値は { state, rows }（BOA-497）。欠場は state によらず rows の is_absent で見る
       .then(({ rows }) => {
         if (cancelled) return;
