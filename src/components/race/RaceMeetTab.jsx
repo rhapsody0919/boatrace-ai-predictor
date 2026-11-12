@@ -31,7 +31,8 @@ import {
   BOAT_LINE_COLORS,
   getBoatChipBackground,
 } from "../../utils/colors";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getMeetScoreboard } from "../../services/meetQueries2.js";
+import { getRacerScopedRaceStats } from "../../services/racerQueries2.js";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import {
@@ -132,8 +133,7 @@ function RaceMeetTab({
     if (!raceId || venueCode === null || venueCode === undefined)
       return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getMeetScoreboard(raceId, venueCode)
+    getMeetScoreboard(raceId, venueCode)
       .then((data) => {
         if (!cancelled) setBoard(data);
       })
@@ -156,8 +156,7 @@ function RaceMeetTab({
     // setRecords(undefined) を同期で呼ぶと連鎖レンダーになるため、
     // 取得結果が来たときだけ更新する（切替中は前の選手の表が一瞬残るが、
     // 下のチップで誰を見ているかは分かる）
-    supabaseDataService
-      .getRacerScopedRaceStats(racerId)
+    getRacerScopedRaceStats(racerId)
       .then((data) => {
         if (!cancelled) setRecords(data);
       })
