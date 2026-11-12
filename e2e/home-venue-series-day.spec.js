@@ -32,6 +32,13 @@ test("ensureOpenVenues は、開催中の会場が足りないとき（深夜の
 const cardOf =(page, code, prefix = "") =>
   page.locator(`a.venue-grid-card--open[href="${prefix}/venue/${code}"]`);
 
+// BOA-1584: 今日のトップの開催中の会場の数。0（0:00〜7:00 JST 前後）なら開催中を前提とする test は skip する
+async function openVenueCount(page) {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle");
+  return page.locator(".venue-grid-card--open").count();
+}
+
 // 最初に races のある会場を書き換え、その会場コードを返す
 function rewriteFirstVenue(page, edit) {
   const picked = { code: null };
@@ -108,6 +115,7 @@ test("英語のトップでは英語の文言で出す（Last day）", async ({ 
 test("全レース終了の会場・丸一日中止の会場・次開催の会場には出さない", async ({
   page,
 }) => {
+  test.skip((await openVenueCount(page)) === 0, "開催場なし");
   const codes = { finished: null, cancelled: null };
   await setJstNoon(page);
   await rewriteTodayRaces(page, (venues) => {
