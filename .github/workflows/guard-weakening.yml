@@ -1,0 +1,76 @@
+name: Guard Weakening
+
+# 守りのファイルを弱める変更を、誰の PR でも同じ判定で機械が止める（BOA-1477。CODEOWNERS の縮小の前提）。
+# 判定は scripts/maintenance/guard_weakening/run.py（標準ライブラリの python だけ）。base（PR の base の SHA）との差に3つを当てる:
+#   1. e2e の spec の比較: 試験名が消える・expect が減る・skip/fixme/only が増えると赤。削除行が多いのは警告だけ
+#   2. 許可リスト（scripts/maintenance/*-allowlist.json）の向き: 行が減る・1対1 の付け替えだけ緑。行が増える・形の表に無いと赤
+#   3. verify の変異検査: verify-*.js・verify-registry.json の変更があるときだけ（npm ci をしてから）
+# 判定器が読めない・例外のときは赤。理由は1行ずつ注記に出る。
+# 最初は影: ruleset の必須の check に入れない（落ちてもマージを止めない）。数日 false 赤を見てから必須に上げる（オーナーの設定）。
+# 権限は contents: read だけ。secrets を使わず、checkout の資格も残さない（PR の枝のコードを回すため）。
+
+on:
+  pull_request:
+    branches:
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guard-weakening:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # base との分かれ目（merge-base）と、spec・許可リストの base 版を git show で読むため
+          fetch-depth: 0
+          persist-credentials: false
+
+      # verify の変異検査（@babel/parser）と判定器の自分の試験は node_modules が要る。要るときだけ入れる
+      - name: Detect what needs node
+        id: need
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          changed=$(git diff --name-only "$BASE_SHA"...HEAD)
+          if grep -qE '^scripts/maintenance/(verify-[^/]+\.js|verify-registry\.json|guard_weakening/)' <<<"$changed"; then
+            echo "node=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "node=false" >> "$GITHUB_OUTPUT"
+          fi
+          if grep -qE '^scripts/maintenance/guard_weakening/' <<<"$changed"; then
+            echo "selftest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "selftest=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        if: steps.need.outputs.node == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.need.outputs.node == 'true'
+        run: npm ci
+
+      # 判定器を変える PR では、判定器の試験（ケース表）を先に回す
+      - name: Self-test the judges
+        if: steps.need.outputs.selftest == 'true'
+        run: |
+          for t in scripts/maintenance/guard_weakening/tests/test_*.py; do
+            echo "== $t"
+            python3 "$t"
+          done
+
+      - name: Judge guard weakening
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 scripts/maintenance/guard_weakening/run.py --base "$BASE_SHA"
