@@ -253,19 +253,8 @@ function OtherBoats({ neighbors, boat }) {
   );
 }
 
-/**
- * 類似レース（タブ2、spec FR-B、screens S-1b）
- * @param {{data: object, stage: "racecard"|"exhibition", target: 1|2|3, exhibition: object|null}} props
- *   data は similar の応答、exhibition は facts の今日の展示（展示後の「今日: …」の値）
- */
-export default function SimilarRacesTab({
-  data,
-  stage,
-  target,
-  exhibition,
-  feedback,
-}) {
-  const { t } = useTranslation();
+/** 画面の状態（スライダー位置・選んだ艇・開いた近傍・1号艇以外・着順の流れの帯・比較の展開） */
+function useSimilarControls() {
   const [stepIdx, setStepIdx] = useState(null);
   const [boat, setBoat] = useState(null);
   const [open, setOpen] = useState(null);
@@ -273,41 +262,6 @@ export default function SimilarRacesTab({
   // 着順の流れで押した帯（よく出た3連単をその帯の内訳に絞る。BOA-816）
   const [band, setBand] = useState(null);
   const [cmpExpanded, setCmpExpanded] = useState(false);
-  const exhibitionStage = stage === "exhibition";
-
-  if (data.status === "empty_layer")
-    return <p className="af-v16-line">{t(`${k}.emptyLayer`)}</p>;
-  const sim = data.similar;
-  if (!sim?.neighbors?.length)
-    return (
-      <p className="af-v16-line">
-        {t("aiPredictionTab.analogy.states.notSaved")}
-      </p>
-    );
-
-  const { all, steps, idx, N, nb, ag } = similarSlice(sim.neighbors, stepIdx);
-  const items = visibleItems(exhibitionStage);
-  const today = todayDisplay(
-    sim.today_display ?? null,
-    exhibitionStage ? exhibition : null,
-  );
-  const far = nb[nb.length - 1];
-  const farC = far ? neighborCounts(far, exhibitionStage) : null;
-  const allShown = N >= sim.n_layer;
-  const cmp = sim.compare;
-  const cmpName = compareName(sim, t);
-  const cmpRate = (arr, b) => (cmp?.n ? arr[b - 1] / cmp.n : null);
-  const tk = TARGET[target];
-  const natRate = (b) =>
-    sim.national?.n ? sim.national[tk]?.[b - 1] / sim.national.n : null;
-  const tip = boat
-    ? boatTip(t, boat, ag.hit[target][boat - 1], ag.n, [
-        t(`${k}.tipNational`, { p: fmtPct(natRate(boat)) }),
-        ...(cmp?.n && cmp[tk]
-          ? [`${cmpName}${fmtPct(cmpRate(cmp[tk], boat))}`]
-          : []),
-      ])
-    : null;
   const selectBoat = (b) => {
     const next = boat === b ? null : b;
     setBoat(next);
@@ -323,25 +277,63 @@ export default function SimilarRacesTab({
         ?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
     );
   };
-  const [, , , venueCode, raceNumber] = String(sim.race_id ?? "").split("-");
-  const techRef =
-    cmp?.technique && cmp.n
-      ? Object.fromEntries(
-          Object.entries(cmp.technique).map(([kk, v]) => [kk, v / cmp.n]),
-        )
-      : null;
+  return {
+    stepIdx,
+    setStepIdx,
+    boat,
+    setBoat,
+    open,
+    setOpen,
+    not1,
+    setNot1,
+    band,
+    setBand,
+    cmpExpanded,
+    setCmpExpanded,
+    selectBoat,
+    pick,
+  };
+}
 
+/** 選んだ艇のひとことの文（全国・比べる相手の率つき）。艇が無ければ null */
+function boatTipText({ t, sim, ag, target, boat }) {
+  if (!boat) return null;
+  const cmp = sim.compare;
+  const cmpName = compareName(sim, t);
+  const cmpRate = (arr, b) => (cmp?.n ? arr[b - 1] / cmp.n : null);
+  const tk = TARGET[target];
+  const natRate = (b) =>
+    sim.national?.n ? sim.national[tk]?.[b - 1] / sim.national.n : null;
+  return boatTip(t, boat, ag.hit[target][boat - 1], ag.n, [
+    t(`${k}.tipNational`, { p: fmtPct(natRate(boat)) }),
+    ...(cmp?.n && cmp[tk]
+      ? [`${cmpName}${fmtPct(cmpRate(cmp[tk], boat))}`]
+      : []),
+  ]);
+}
+
+/** 決まり方の比べる相手の率（無ければ null） */
+function techReference(cmp) {
+  return cmp?.technique && cmp.n
+    ? Object.fromEntries(
+        Object.entries(cmp.technique).map(([kk, v]) => [kk, v / cmp.n]),
+      )
+    : null;
+}
+
+/** 見出しの下の並べ方の1行と、全文の折りたたみ */
+function SimilarLede({ sim, count }) {
+  const { t } = useTranslation();
   return (
-    <div className="af-tab-similar">
-      <h3 className="af-h3">{t(`${k}.heading`)}</h3>
+    <>
       {/* 並べ方は1行に縮め、全文は折りたたみに（承認モック sonar-tab v3） */}
       <p className="af-sub">
         {layerKind(sim.conditions, t)
           ? t(`${k}.ledeShortKind`, {
               kind: layerKind(sim.conditions, t),
-              n: fmtCount(sim.n_layer ?? all.length),
+              n: fmtCount(count),
             })
-          : t(`${k}.ledeShort`, { n: fmtCount(sim.n_layer ?? all.length) })}
+          : t(`${k}.ledeShort`, { n: fmtCount(count) })}
       </p>
       <details className="af-details">
         <summary>{t(`${k}.ledeFull`)}</summary>
@@ -352,143 +344,264 @@ export default function SimilarRacesTab({
           ]}
         />
       </details>
+    </>
+  );
+}
+
+/** 件数のスライダー（ソナーの図の上） */
+function SimilarSlider({ N, steps, idx, farC, onStep }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div className="af-slider">
+        <div className="af-ctl-row af-between">
+          <label className="af-lbl" htmlFor="af-sim-slider">
+            {t(`${k}.sliderLabel`)}
+          </label>
+          <span className="af-sv">
+            <b>{t("aiPredictionTab.analogy.count", { n: fmtCount(N) })}</b>
+          </span>
+        </div>
+        <p className="af-foot">{t(`${k}.outerIs`, { n: fmtCount(N) })}</p>
+        <input
+          id="af-sim-slider"
+          data-af-control="similar_range"
+          type="range"
+          min={0}
+          max={steps.length - 1}
+          step={1}
+          value={idx}
+          aria-valuetext={t("aiPredictionTab.analogy.count", {
+            n: fmtCount(N),
+          })}
+          onChange={(e) => onStep(Number(e.target.value))}
+        />
+        <div className="af-ctl-row af-between">
+          <span className="af-foot">{t(`${k}.fewer`)}</span>
+          <span className="af-foot">{t(`${k}.more`)}</span>
+        </div>
+        <p className="af-foot">{t(`${k}.sliderZoom`)}</p>
+        {farC && (
+          <p className="af-foot">
+            {t(`${k}.farthest`, {
+              n: N,
+              total: farC.total,
+              same: farC.same,
+              near: farC.near,
+            })}
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
+/** 件数が少ない・全件のときの注意の行 */
+function FewNote({ N, allShown }) {
+  const { t } = useTranslation();
+  if (N < FEW_SIMILAR)
+    return (
+      <p className="af-warn">
+        {t(`${k}.few`, { n: fmtCount(N) })}
+        {allShown ? t(`${k}.allShownAfterFew`) : ""}
+      </p>
+    );
+  return allShown ? <p className="af-foot">{t(`${k}.allShown`)}</p> : null;
+}
+
+/** 結果（件数の見出し・どの艇が勝った・ひとこと・決まり方・ほかの艇） */
+function SimilarResults({ sim, nb, ag, target, ctl, N, allShown }) {
+  const { t } = useTranslation();
+  const { boat, selectBoat } = ctl;
+  const tip = boatTipText({ t, sim, ag, target, boat });
+  return (
+    <>
+      <h3 className="af-h3">{t(`${k}.resHeading`)}</h3>
+      <div className="af-hero">
+        <span className="af-hero-n">
+          {t("aiPredictionTab.analogy.count", { n: fmtCount(ag.n) })}
+        </span>
+        <span className="af-sub">
+          {t(`${k}.resSub`, { n: fmtCount(ag.n) })}
+          {/* 結果の無いレース（返還・不成立など）は決まり方の集計から外すので、スライダーの件数より少ないことがある */}
+          {ag.n < nb.length &&
+            t(`${k}.resExcluded`, { k: fmtCount(nb.length - ag.n) })}
+        </span>
+      </div>
+      <SimilarWinBars
+        sim={sim}
+        ag={ag}
+        target={target}
+        boat={boat}
+        onSelect={selectBoat}
+      />
+      <p className="af-tip" role="status">
+        {tip ?? ""}
+      </p>
+      <FewNote N={N} allShown={allShown} />
+      <h4 className="af-h4">{t(`${k}.techHeading`)}</h4>
+      <TechniqueBars
+        counts={ag.tech}
+        n={ag.n}
+        reference={techReference(sim.compare)}
+      />
+      <OtherBoats neighbors={nb} boat={boat} />
+    </>
+  );
+}
+
+/** ソナーの中身（似ている点・近傍の比較・結果） */
+function SimilarBody({ sim, view, ctl, target, exhibitionStage }) {
+  const { nb, ag, N, items, today } = view;
+  return (
+    <>
+      <SimilarityItems
+        neighbors={nb}
+        items={items}
+        exhibitionStage={exhibitionStage}
+        conditions={sim.conditions}
+        poolRate={sim.pool_rate}
+        poolRateExhibition={sim.pool_rate_exhibition === true}
+        today={today}
+      />
+      <SimilarCompareList
+        neighbors={nb}
+        items={items}
+        exhibitionStage={exhibitionStage}
+        today={today}
+        open={ctl.open}
+        onOpen={ctl.setOpen}
+        expanded={ctl.cmpExpanded}
+        onExpanded={ctl.setCmpExpanded}
+      />
+      <SimilarResults
+        sim={sim}
+        nb={nb}
+        ag={ag}
+        target={target}
+        ctl={ctl}
+        N={N}
+        allShown={view.allShown}
+      />
+    </>
+  );
+}
+
+/** 着順の流れ（左）とよく出た3連単（右）。PC では横並び（BOA-813） */
+function SimilarFlow({ ag, ctl }) {
+  const { t } = useTranslation();
+  return (
+    <AnalogySplit
+      fig={
+        <>
+          <h4 className="af-h4">{t("aiPredictionTab.analogy.flow.heading")}</h4>
+          <FinishSankey
+            tri={ag.tri}
+            first={ctl.boat}
+            onFirst={ctl.setBoat}
+            not1={ctl.not1}
+            onNot1={ctl.setNot1}
+            band={ctl.band}
+            onBand={ctl.setBand}
+          />
+        </>
+      }
+    >
+      <h4 className="af-h4">{t(`${k}.triHeading`)}</h4>
+      <TrifectaList
+        tri={ag.tri}
+        first={ctl.boat}
+        not1={ctl.not1}
+        band={ctl.band}
+      />
+    </AnalogySplit>
+  );
+}
+
+/** 表示する近傍・集計・今日の値をまとめる */
+function similarView(sim, stepIdx, exhibitionStage, exhibition) {
+  const slice = similarSlice(sim.neighbors, stepIdx);
+  const far = slice.nb[slice.nb.length - 1];
+  return {
+    ...slice,
+    items: visibleItems(exhibitionStage),
+    today: todayDisplay(
+      sim.today_display ?? null,
+      exhibitionStage ? exhibition : null,
+    ),
+    farC: far ? neighborCounts(far, exhibitionStage) : null,
+    allShown: slice.N >= sim.n_layer,
+  };
+}
+
+/**
+ * 類似レース（タブ2、spec FR-B、screens S-1b）
+ * @param {{data: object, stage: "racecard"|"exhibition", target: 1|2|3, exhibition: object|null}} props
+ *   data は similar の応答、exhibition は facts の今日の展示（展示後の「今日: …」の値）
+ */
+export default function SimilarRacesTab({
+  data,
+  stage,
+  target,
+  exhibition,
+  feedback,
+}) {
+  const { t } = useTranslation();
+  const ctl = useSimilarControls();
+  const exhibitionStage = stage === "exhibition";
+
+  if (data.status === "empty_layer")
+    return <p className="af-v16-line">{t(`${k}.emptyLayer`)}</p>;
+  const sim = data.similar;
+  if (!sim?.neighbors?.length)
+    return (
+      <p className="af-v16-line">
+        {t("aiPredictionTab.analogy.states.notSaved")}
+      </p>
+    );
+
+  const view = similarView(sim, ctl.stepIdx, exhibitionStage, exhibition);
+  const { all, steps, idx, N, nb, farC } = view;
+  const [, , , venueCode, raceNumber] = String(sim.race_id ?? "").split("-");
+
+  return (
+    <div className="af-tab-similar">
+      <h3 className="af-h3">{t(`${k}.heading`)}</h3>
+      <SimilarLede sim={sim} count={sim.n_layer ?? all.length} />
       {/* 件数のスライダーは見出し・並べ方の説明の後（UI/UX レビュー: 操作がどのまとまりのものか分かるように） */}
       <SimilarSonar
         neighbors={nb}
-        selectedBoat={boat}
-        onBoat={selectBoat}
-        picked={open}
-        onPick={pick}
+        selectedBoat={ctl.boat}
+        onBoat={ctl.selectBoat}
+        picked={ctl.open}
+        onPick={ctl.pick}
         todayLabel={t(`${k}.todayLabel`, {
           venue: venueLabel(Number(venueCode), t),
           r: Number(raceNumber),
         })}
         legend={<SonarLegend />}
         figTop={
-          <>
-            <div className="af-slider">
-              <div className="af-ctl-row af-between">
-                <label className="af-lbl" htmlFor="af-sim-slider">
-                  {t(`${k}.sliderLabel`)}
-                </label>
-                <span className="af-sv">
-                  <b>
-                    {t("aiPredictionTab.analogy.count", { n: fmtCount(N) })}
-                  </b>
-                </span>
-              </div>
-              <p className="af-foot">{t(`${k}.outerIs`, { n: fmtCount(N) })}</p>
-              <input
-                id="af-sim-slider"
-                data-af-control="similar_range"
-                type="range"
-                min={0}
-                max={steps.length - 1}
-                step={1}
-                value={idx}
-                aria-valuetext={t("aiPredictionTab.analogy.count", {
-                  n: fmtCount(N),
-                })}
-                onChange={(e) => {
-                  setStepIdx(Number(e.target.value));
-                  setBoat(null);
-                }}
-              />
-              <div className="af-ctl-row af-between">
-                <span className="af-foot">{t(`${k}.fewer`)}</span>
-                <span className="af-foot">{t(`${k}.more`)}</span>
-              </div>
-              <p className="af-foot">{t(`${k}.sliderZoom`)}</p>
-              {farC && (
-                <p className="af-foot">
-                  {t(`${k}.farthest`, {
-                    n: N,
-                    total: farC.total,
-                    same: farC.same,
-                    near: farC.near,
-                  })}
-                </p>
-              )}
-            </div>
-          </>
+          <SimilarSlider
+            N={N}
+            steps={steps}
+            idx={idx}
+            farC={farC}
+            onStep={(i) => {
+              ctl.setStepIdx(i);
+              ctl.setBoat(null);
+            }}
+          />
         }
       >
-        <SimilarityItems
-          neighbors={nb}
-          items={items}
-          exhibitionStage={exhibitionStage}
-          conditions={sim.conditions}
-          poolRate={sim.pool_rate}
-          poolRateExhibition={sim.pool_rate_exhibition === true}
-          today={today}
-        />
-        <SimilarCompareList
-          neighbors={nb}
-          items={items}
-          exhibitionStage={exhibitionStage}
-          today={today}
-          open={open}
-          onOpen={setOpen}
-          expanded={cmpExpanded}
-          onExpanded={setCmpExpanded}
-        />
-
-        <h3 className="af-h3">{t(`${k}.resHeading`)}</h3>
-        <div className="af-hero">
-          <span className="af-hero-n">
-            {t("aiPredictionTab.analogy.count", { n: fmtCount(ag.n) })}
-          </span>
-          <span className="af-sub">
-            {t(`${k}.resSub`, { n: fmtCount(ag.n) })}
-            {/* 結果の無いレース（返還・不成立など）は決まり方の集計から外すので、スライダーの件数より少ないことがある */}
-            {ag.n < nb.length &&
-              t(`${k}.resExcluded`, { k: fmtCount(nb.length - ag.n) })}
-          </span>
-        </div>
-        <SimilarWinBars
+        <SimilarBody
           sim={sim}
-          ag={ag}
+          view={view}
+          ctl={ctl}
           target={target}
-          boat={boat}
-          onSelect={selectBoat}
+          exhibitionStage={exhibitionStage}
         />
-        <p className="af-tip" role="status">
-          {tip ?? ""}
-        </p>
-        {N < FEW_SIMILAR ? (
-          <p className="af-warn">
-            {t(`${k}.few`, { n: fmtCount(N) })}
-            {allShown ? t(`${k}.allShownAfterFew`) : ""}
-          </p>
-        ) : allShown ? (
-          <p className="af-foot">{t(`${k}.allShown`)}</p>
-        ) : null}
-        <h4 className="af-h4">{t(`${k}.techHeading`)}</h4>
-        <TechniqueBars counts={ag.tech} n={ag.n} reference={techRef} />
-        <OtherBoats neighbors={nb} boat={boat} />
       </SimilarSonar>
-      {/* PC では着順の流れを左、よく出た3連単を右に（BOA-813） */}
-      <AnalogySplit
-        fig={
-          <>
-            <h4 className="af-h4">
-              {t("aiPredictionTab.analogy.flow.heading")}
-            </h4>
-            <FinishSankey
-              tri={ag.tri}
-              first={boat}
-              onFirst={setBoat}
-              not1={not1}
-              onNot1={setNot1}
-              band={band}
-              onBand={setBand}
-            />
-          </>
-        }
-      >
-        <h4 className="af-h4">{t(`${k}.triHeading`)}</h4>
-        <TrifectaList tri={ag.tri} first={boat} not1={not1} band={band} />
-      </AnalogySplit>
+      <SimilarFlow ag={view.ag} ctl={ctl} />
       {feedback}
       <NotesFold title={t("aiPredictionTab.analogy.notes.methodCaution")}>
         <NoteList
