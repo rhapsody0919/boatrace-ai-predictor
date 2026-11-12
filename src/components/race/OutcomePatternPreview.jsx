@@ -5,7 +5,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import {
+  getOutcomeDistribution,
+  getWinningTechniqueStats,
+} from "../../services/venueQueries.js";
 import { trackEvent } from "../../utils/analytics";
 import "./OutcomePatternPreview.css";
 
@@ -62,8 +65,8 @@ function OutcomePatternPreview({
         // winning_technique_stats.total_races（=この枠番が1着だった回数、
         // 決まり手行の分母と同一）を分母に取り直して再計算する
         const [data, techniqueStats] = await Promise.all([
-          supabaseDataService.getOutcomeDistribution(venueCode),
-          supabaseDataService.getWinningTechniqueStats(venueCode),
+          getOutcomeDistribution(venueCode),
+          getWinningTechniqueStats(venueCode),
         ]);
         setOutcomeData(data);
         setBoatTotalRaces(

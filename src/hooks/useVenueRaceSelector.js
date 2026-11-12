@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { supabaseDataService } from "../services/supabaseDataService";
+import {
+  getTodaysRacesForVenue,
+  getVenuesWithTodaysRaces,
+} from "../services/scheduleQueries.js";
 
 /**
  * 「本日開催中の会場→本日のレース」選択の共通ロジック（BOA-280）
@@ -39,7 +42,7 @@ export function useVenueRaceSelector({
       try {
         setLoading(true);
         setError(null);
-        const list = await supabaseDataService.getVenuesWithTodaysRaces();
+        const list = await getVenuesWithTodaysRaces();
         setVenues(list);
         // 明示的なディープリンクは「本日開催」一覧の有無に関わらず信頼する
         const preferred =
@@ -75,7 +78,7 @@ export function useVenueRaceSelector({
         setLoading(true);
         setError(null);
         const list =
-          await supabaseDataService.getTodaysRacesForVenue(selectedVenue);
+          await getTodaysRacesForVenue(selectedVenue);
         if (cancelled) return;
         setRaces(list);
 

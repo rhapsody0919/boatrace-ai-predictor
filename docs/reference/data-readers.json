@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1765,
+    "sourceFiles": 1769,
     "filesWithAccess": 296,
     "tableReaders": 992,
     "tableWriters": 189,
@@ -17,7 +17,7 @@
     "notInSnapshot": 4,
     "unresolved": 32,
     "parseErrors": 0,
-    "uncoveredFiles": 54
+    "uncoveredFiles": 55
   },
   "tables": {
     "accuracy_cache": {
@@ -13063,7 +13063,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-bot-race-function.js:851",
+          "ref": "scripts/maintenance/verify-bot-race-function.js:857",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -13145,7 +13145,7 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/raceQueries2.js:240",
             "src/services/racerService.js:86",
@@ -13164,7 +13164,7 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/raceQueries2.js:240",
             "src/services/racerService.js:86",
@@ -13183,7 +13183,7 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/raceQueries2.js:240",
             "src/services/racerService.js:86",
@@ -13204,7 +13204,7 @@
           "readers": [
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/scheduleQueries.js:94"
           ],
@@ -13220,7 +13220,7 @@
           "readers": [
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/scheduleQueries.js:94"
           ],
@@ -30747,6 +30747,7 @@
     "scripts/analysis/original-exhibition/forecast-slit.py",
     "scripts/analysis/past-rate-check/label-threshold.py",
     "scripts/analysis/past-rate-check/slit-pattern-rates.py",
+    "scripts/maintenance/guard_weakening/verify_guard.py",
     "scripts/ml/analogy/db.py",
     "scripts/ml/analogy/features.py",
     "scripts/ml/analogy/in_caution_bands.py",

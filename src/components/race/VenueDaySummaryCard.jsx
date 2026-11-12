@@ -22,7 +22,7 @@
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getVenueDaySummary } from "../../services/venueQueries2.js";
 import { translateTechnique } from "./raceIndicators";
 import { formatDateLocalized } from "../../utils/formatters";
 import CollapsibleSection from "../venue/CollapsibleSection";
@@ -54,8 +54,7 @@ function VenueDaySummaryCard({
     if (!venueCode || !date) return undefined;
     const thisKey = `${venueCode}-${date}`;
     let cancelled = false;
-    supabaseDataService
-      .getVenueDaySummary(venueCode, date)
+    getVenueDaySummary(venueCode, date)
       .then((data) => {
         if (cancelled) return;
         setLoaded({ key: thisKey, data });

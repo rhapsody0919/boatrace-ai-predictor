@@ -13,7 +13,10 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import {
+  getVenueGradeBoatStats,
+  getVenuesWithGradeStats,
+} from "../../services/venueQueries3.js";
 import "./MotorConditionChart.css";
 
 const VENUES = [
@@ -94,8 +97,7 @@ function VenueGradeMatrix() {
   // その場合は絞り込まず全24会場を表示するフォールバックにする（0件だと
   // プルダウン自体が空になり操作不能になるため）
   useEffect(() => {
-    supabaseDataService
-      .getVenuesWithGradeStats()
+    getVenuesWithGradeStats()
       .then(setVenuesWithData)
       .catch((err) => {
         console.error("Failed to load venues with grade stats:", err);
@@ -110,7 +112,7 @@ function VenueGradeMatrix() {
         setError(null);
         const venueCode = parseInt(selectedVenue, 10);
         const data =
-          await supabaseDataService.getVenueGradeBoatStats(venueCode);
+          await getVenueGradeBoatStats(venueCode);
         setRows(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));

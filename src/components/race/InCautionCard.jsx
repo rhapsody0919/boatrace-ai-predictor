@@ -9,7 +9,7 @@ import {
   signedText as signed,
   slashDate,
 } from "../../utils/inCautionLevel";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRaceExhibitionBasics } from "../../services/raceQueries2.js";
 import { trackEvent } from "../../utils/analytics";
 import { useVisibleOnce } from "../../hooks/useVisibleOnce";
 import {
@@ -30,8 +30,7 @@ function useBoat1Absent(raceId) {
   useEffect(() => {
     if (!raceId) return undefined;
     let alive = true;
-    supabaseDataService
-      .getRaceExhibitionBasics(raceId)
+    getRaceExhibitionBasics(raceId)
       .then((rows) => {
         if (alive)
           setState({

@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1765 |
+| 読んだファイル | 1769 |
 | 読み書きのあるファイル | 296 |
 | 表の読み手（箇所） | 992 |
 | 表の書き手（箇所） | 189 |
@@ -22,7 +22,7 @@
 | コードが使うのに写しに無い名前 | 4 |
 | 名前が式で拾えなかった箇所 | 32 |
 | 構文木にできなかったファイル | 0 |
-| 対象外の言語のファイル（Python 等） | 54 |
+| 対象外の言語のファイル（Python 等） | 55 |
 
 ## 表
 
@@ -1303,7 +1303,7 @@
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:358` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:64` select(helper:fetchAll)
-  - `scripts/maintenance/verify-bot-race-function.js:851` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
+  - `scripts/maintenance/verify-bot-race-function.js:857` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
   - `src/services/meetQueries3.js:48` select [end_date, grade, start_date, title, venue_code]
   - `src/services/raceQueries2.js:240` select [end_date, start_date, venue_code]
   - `src/services/racerService.js:86` select [end_date, start_date, venue_code]
@@ -2383,7 +2383,7 @@
   - `scripts/maintenance/kb-backfill.js:776` 表の名前が変数（.from(式)）
   - `scripts/maintenance/motor-pretest-backfill.js:454` 表の名前が変数（.from(式)）
 - 構文木にできなかったファイル: 0
-- 対象外の言語で DB を読み書きしうるファイル（Python。拾っていない）: 54
+- 対象外の言語で DB を読み書きしうるファイル（Python。拾っていない）: 55
   - `scripts/analysis/analogy-finder-fr2-holdout.py`
   - `scripts/analysis/analogy-finder-fr2-strat/features_prod.py`
   - `scripts/analysis/analogy-finder-perrace/finish_targets.py`
@@ -2413,6 +2413,7 @@
   - `scripts/analysis/original-exhibition/forecast-slit.py`
   - `scripts/analysis/past-rate-check/label-threshold.py`
   - `scripts/analysis/past-rate-check/slit-pattern-rates.py`
+  - `scripts/maintenance/guard_weakening/verify_guard.py`
   - `scripts/ml/analogy/db.py`
   - `scripts/ml/analogy/features.py`
   - `scripts/ml/analogy/in_caution_bands.py`
