@@ -51,40 +51,65 @@ export default function SlitHint({
   const ref =
     version === "course" ? (courseSt.venue_course_all?.mean ?? null) : null;
   const vName = venueLabel(venue, t);
-  const exhByBoat =
-    exhibitionStage && exhibition?.course_by_boat
-      ? exhibition.course_by_boat.map((c) =>
-          c ? exhibition.st_by_course[c - 1] : null,
-        )
-      : null;
-  // 列は艇番。出走表の選手の登録番号（無い艇は null）
-  const racerIds = [1, 2, 3, 4, 5, 6].map(
-    (b) => players?.find((p) => Number(p.number) === b)?.racerId ?? null,
-  );
-  // 行ごとの6艇で一番良い値に金枠（出走表と同じ決まり、BOA-814）
-  const best = hintTableBest(courseSt, exhByBoat);
-  const tr = (label, cells, dim, bestSet) => (
-    <tr>
-      <th scope="row">{label}</th>
-      {cells.map((c, i) => (
-        <td
-          key={i}
-          className={
-            [dim?.[i] && "is-dim", bestSet?.has(i + 1) && "ind-best"]
-              .filter(Boolean)
-              .join(" ") || undefined
-          }
-        >
-          {c}
-        </td>
-      ))}
-    </tr>
-  );
+  const exhByBoat = exhByBoatOf(exhibition, exhibitionStage);
   // 同じ形の条件は1枚にまとめ、段階ごとの棒にする（カド一撃: 1〜3コースより早い／0.02秒以上早い。承認モック）。
   // 並びは「なりやすい」→「はっきりしない」→「むしろなりにくい」（BOA-890）
   const groups = hintCardGroups(rows);
   return (
     <div className="af-hint">
+      <HintHead waku={waku} />
+      {/* PC では手がかりの絵（と切り替え）を左、当てはまる条件を右に（BOA-813） */}
+      <AnalogySplit
+        fig={
+          <HintFig
+            vals={vals}
+            reference={ref}
+            vName={vName}
+            lbl={lbl}
+            version={version}
+            onVersion={onVersion}
+            tip={tip}
+            setTip={setTip}
+          />
+        }
+      >
+        <HintConds
+          groups={groups}
+          version={version}
+          vals={vals}
+          selectedForm={selectedForm}
+          onForm={onForm}
+        />
+      </AnalogySplit>
+      <ScenarioFold
+        title={t(`${k}.hintTable`)}
+        preview={t(`${k}.hintTablePreview`)}
+      >
+        <HintTable
+          courseSt={courseSt}
+          exhByBoat={exhByBoat}
+          players={players}
+          vName={vName}
+        />
+      </ScenarioFold>
+    </div>
+  );
+}
+
+/** 展示の進入コースごとの ST を艇番順に並べ直す（展示前・データ無しは null） */
+function exhByBoatOf(exhibition, exhibitionStage) {
+  return exhibitionStage && exhibition?.course_by_boat
+    ? exhibition.course_by_boat.map((c) =>
+        c ? exhibition.st_by_course[c - 1] : null,
+      )
+    : null;
+}
+
+/** 見出し・タグ・丸の数字の対応・枠なり以外の注意 */
+function HintHead({ waku }) {
+  const { t } = useTranslation();
+  return (
+    <>
       <div className="af-hint-h">
         <h4 className="af-h4">{t(`${k}.hintHeading`)}</h4>
         <span className="af-hint-tags">
@@ -102,172 +127,227 @@ export default function SlitHint({
         ))}
       </p>
       {!waku && <p className="af-warn">{t(`${k}.hintOther`)}</p>}
-      {/* PC では手がかりの絵（と切り替え）を左、当てはまる条件を右に（BOA-813） */}
-      <AnalogySplit
-        fig={
-          <>
-            <div className="af-hint-pic">
-              <SlitShapeIcon
-                st={vals}
-                height={150}
-                reference={ref}
-                refLabel={t(`${k}.hintRefShort`, { venue: vName })}
-              />
-            </div>
-            <div className="af-ctl-row">
-              <span className="af-lbl" id={lbl}>
-                {t(`${k}.hintSrc`)}
-              </span>
-              <div
-                className="af-seg"
-                role="group"
-                aria-labelledby={lbl}
-                data-af-control="slit_version"
-              >
-                {["course", "overall"].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    aria-pressed={version === v}
-                    onClick={() => onVersion(v)}
-                  >
-                    {t(`${k}.hintSrcs.${v}`)}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="af-ibtn"
-                aria-expanded={tip}
-                aria-label={t(`${k}.hintSrcAria`)}
-                onClick={() => setTip((v) => !v)}
-              >
-                <span aria-hidden="true">i</span>
-              </button>
-            </div>
-            {/* 選んでいる方の説明だけ1行。もう一方は (i)（UI/UX レビュー） */}
-            <p className="af-foot">{t(`${k}.hintSrcDef.${version}`)}</p>
-            {tip && (
-              <p className="af-scn-tip">
-                {t(
-                  `${k}.hintSrcDef.${version === "course" ? "overall" : "course"}`,
-                )}
-              </p>
-            )}
-          </>
-        }
-      >
-        {/* 結論（当てはまる条件）は図の直下。今日の値・形の絵・全体の点線で見せる（BOA-814、承認モック mock-hint-cards-v1）。
-          見方・表・割合の出し方は折りたたみ */}
-        <h4 className="af-h4">
-          {t(`${k}.hintConds`, { src: t(`${k}.hintSrcs.${version}`) })}
-        </h4>
-        {groups.length > 0 && (
-          <p className="af-foot">{t(`${k}.hintCondsNote`)}</p>
+    </>
+  );
+}
+
+/** 手がかりの絵・コース別／全体の切り替え・(i) の説明 */
+function HintFig({
+  vals,
+  reference,
+  vName,
+  lbl,
+  version,
+  onVersion,
+  tip,
+  setTip,
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <div className="af-hint-pic">
+        <SlitShapeIcon
+          st={vals}
+          height={150}
+          reference={reference}
+          refLabel={t(`${k}.hintRefShort`, { venue: vName })}
+        />
+      </div>
+      <div className="af-ctl-row">
+        <span className="af-lbl" id={lbl}>
+          {t(`${k}.hintSrc`)}
+        </span>
+        <div
+          className="af-seg"
+          role="group"
+          aria-labelledby={lbl}
+          data-af-control="slit_version"
+        >
+          {["course", "overall"].map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={version === v}
+              onClick={() => onVersion(v)}
+            >
+              {t(`${k}.hintSrcs.${v}`)}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="af-ibtn"
+          aria-expanded={tip}
+          aria-label={t(`${k}.hintSrcAria`)}
+          onClick={() => setTip((v) => !v)}
+        >
+          <span aria-hidden="true">i</span>
+        </button>
+      </div>
+      {/* 選んでいる方の説明だけ1行。もう一方は (i)（UI/UX レビュー） */}
+      <p className="af-foot">{t(`${k}.hintSrcDef.${version}`)}</p>
+      {tip && (
+        <p className="af-scn-tip">
+          {t(`${k}.hintSrcDef.${version === "course" ? "overall" : "course"}`)}
+        </p>
+      )}
+    </>
+  );
+}
+
+/**
+ * 結論（当てはまる条件）は図の直下。今日の値・形の絵・全体の点線で見せる（BOA-814、承認モック mock-hint-cards-v1）。
+ * 見方・表・割合の出し方は折りたたみ
+ */
+function HintConds({ groups, version, vals, selectedForm, onForm }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <h4 className="af-h4">
+        {t(`${k}.hintConds`, { src: t(`${k}.hintSrcs.${version}`) })}
+      </h4>
+      {groups.length > 0 && (
+        <p className="af-foot">{t(`${k}.hintCondsNote`)}</p>
+      )}
+      <div className="af-hintcs" data-af-control="slit_form">
+        {groups.length ? (
+          groups.map(({ form, rows: rs }) => (
+            <HintCard
+              key={form}
+              form={form}
+              rows={rs}
+              vals={vals}
+              selected={selectedForm === form}
+              onForm={onForm}
+            />
+          ))
+        ) : (
+          <p className="af-foot">{t(`${k}.hintNone`)}</p>
         )}
-        <div className="af-hintcs" data-af-control="slit_form">
-          {groups.length ? (
-            groups.map(({ form, rows: rs }) => (
-              <HintCard
-                key={form}
-                form={form}
-                rows={rs}
-                vals={vals}
-                selected={selectedForm === form}
-                onForm={onForm}
-              />
-            ))
-          ) : (
-            <p className="af-foot">{t(`${k}.hintNone`)}</p>
+      </div>
+    </>
+  );
+}
+
+/** 表の1行（label=行見出し、dim=薄くするセル、bestSet=金枠の艇番） */
+function hintTr(label, cells, dim, bestSet) {
+  return (
+    <tr>
+      <th scope="row">{label}</th>
+      {cells.map((c, i) => (
+        <td
+          key={i}
+          className={
+            [dim?.[i] && "is-dim", bestSet?.has(i + 1) && "ind-best"]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
+        >
+          {c}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+/** 場コース別の行のセル（ST と走数） */
+function venueCells(courseSt, t) {
+  return (courseSt.venue ?? []).map((v, i) => (
+    <>
+      {fmtSt3(v)}
+      <small>
+        {courseSt.venue_n?.[i] !== undefined
+          ? t(`${k}.runs`, { n: courseSt.venue_n[i] })
+          : ""}
+      </small>
+    </>
+  ));
+}
+
+/** 展示 ST の行のセル（フライングは赤） */
+function exhCells(exhByBoat) {
+  return exhByBoat.map((v) => (
+    <span className={v !== null && v < 0 ? "af-fst" : undefined}>
+      {fmtExhSt(v)}
+    </span>
+  ));
+}
+
+/** 選手ページの「STの推移」へ直接移る行（BOA-879、2026-10-15 オーナー依頼・ファン4人の議論） */
+function StTrendRow({ racerIds }) {
+  const { t } = useTranslation();
+  return (
+    <tr className="af-hint-link-row">
+      <th scope="row">{t(`${k}.hintStTrend`)}</th>
+      {racerIds.map((id, i) => (
+        <td key={i}>
+          {id && (
+            <Link
+              to={racerPagePath(id, "stTrend")}
+              className="af-hint-link"
+              aria-label={t(`${k}.hintStTrendLink`, {
+                boat: i + 1,
+              })}
+            >
+              ›
+            </Link>
           )}
-        </div>
-      </AnalogySplit>
-      <ScenarioFold
-        title={t(`${k}.hintTable`)}
-        preview={t(`${k}.hintTablePreview`)}
-      >
-        <div className="af-tbl">
-          <table className="af-hint-t">
-            <thead>
-              <tr>
-                <th scope="col">{t(`${k}.hintRowHead`)}</th>
-                {[1, 2, 3, 4, 5, 6].map((b) => (
-                  <th key={b} scope="col">
-                    <BoatBadge n={b} size="xs" />
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {tr(
-                t(`${k}.hintSrcs.course`),
-                (courseSt.course_filled ?? []).map(fmtSt3),
-                null,
-                best.course,
-              )}
-              {tr(
-                t(`${k}.hintSrcs.overall`),
-                (courseSt.overall ?? []).map(fmtSt3),
-                null,
-                best.overall,
-              )}
-              {tr(
-                t(`${k}.hintVenue`, { venue: vName }),
-                (courseSt.venue ?? []).map((v, i) => (
-                  <>
-                    {fmtSt3(v)}
-                    <small>
-                      {courseSt.venue_n?.[i] !== undefined
-                        ? t(`${k}.runs`, { n: courseSt.venue_n[i] })
-                        : ""}
-                    </small>
-                  </>
-                )),
-                (courseSt.venue_n ?? []).map((n) => n < VENUE_FEW_RUNS),
-                best.venue,
-              )}
-              {tr(
-                t(`${k}.hintVenueAll`, { venue: vName }),
-                (courseSt.venue_course_all?.mean ?? []).map(fmtSt3),
-              )}
-              {exhByBoat &&
-                tr(
-                  t(`${k}.hintExh`),
-                  exhByBoat.map((v) => (
-                    <span
-                      className={v !== null && v < 0 ? "af-fst" : undefined}
-                    >
-                      {fmtExhSt(v)}
-                    </span>
-                  )),
-                  null,
-                  best.exh,
-                )}
-              {racerIds.some(Boolean) && (
-                // 選手ページの「STの推移」へ直接移る（BOA-879、2026-10-15 オーナー依頼・ファン4人の議論）
-                <tr className="af-hint-link-row">
-                  <th scope="row">{t(`${k}.hintStTrend`)}</th>
-                  {racerIds.map((id, i) => (
-                    <td key={i}>
-                      {id && (
-                        <Link
-                          to={racerPagePath(id, "stTrend")}
-                          className="af-hint-link"
-                          aria-label={t(`${k}.hintStTrendLink`, {
-                            boat: i + 1,
-                          })}
-                        >
-                          ›
-                        </Link>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </ScenarioFold>
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+/** 折りたたみの中の表（艇ごとの平均 ST） */
+function HintTable({ courseSt, exhByBoat, players, vName }) {
+  const { t } = useTranslation();
+  // 列は艇番。出走表の選手の登録番号（無い艇は null）
+  const racerIds = [1, 2, 3, 4, 5, 6].map(
+    (b) => players?.find((p) => Number(p.number) === b)?.racerId ?? null,
+  );
+  // 行ごとの6艇で一番良い値に金枠（出走表と同じ決まり、BOA-814）
+  const best = hintTableBest(courseSt, exhByBoat);
+  return (
+    <div className="af-tbl">
+      <table className="af-hint-t">
+        <thead>
+          <tr>
+            <th scope="col">{t(`${k}.hintRowHead`)}</th>
+            {[1, 2, 3, 4, 5, 6].map((b) => (
+              <th key={b} scope="col">
+                <BoatBadge n={b} size="xs" />
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {hintTr(
+            t(`${k}.hintSrcs.course`),
+            (courseSt.course_filled ?? []).map(fmtSt3),
+            null,
+            best.course,
+          )}
+          {hintTr(
+            t(`${k}.hintSrcs.overall`),
+            (courseSt.overall ?? []).map(fmtSt3),
+            null,
+            best.overall,
+          )}
+          {hintTr(
+            t(`${k}.hintVenue`, { venue: vName }),
+            venueCells(courseSt, t),
+            (courseSt.venue_n ?? []).map((n) => n < VENUE_FEW_RUNS),
+            best.venue,
+          )}
+          {hintTr(
+            t(`${k}.hintVenueAll`, { venue: vName }),
+            (courseSt.venue_course_all?.mean ?? []).map(fmtSt3),
+          )}
+          {exhByBoat &&
+            hintTr(t(`${k}.hintExh`), exhCells(exhByBoat), null, best.exh)}
+          {racerIds.some(Boolean) && <StTrendRow racerIds={racerIds} />}
+        </tbody>
+      </table>
     </div>
   );
 }
