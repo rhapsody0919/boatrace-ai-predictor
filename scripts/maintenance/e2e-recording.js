@@ -82,6 +82,34 @@ function repoSlug() {
 }
 
 /** 手元で撮った（まだ Release に上げていない）録画の目印。global-teardown が書く */
+/** 一時の失敗とみなす HTTP の状態（再試行する）。404 等の恒久の失敗は再試行せずそのまま返す */
+export const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+/** 再試行の前の待ち（ms）。回数は長さ+1。最小でよい（BOA-1397: releases の 504 で shard が試験の前に落ちた） */
+export const RETRY_DELAYS_MS = [2000, 5000];
+
+/**
+ * fetch を、一時の失敗（RETRYABLE_STATUS・ネットワークの例外）のときだけ待って再試行する。
+ * 最後の試行の応答を返す（恒久の失敗や、再試行しても直らない一時の失敗は呼び出し側が !ok で落とす）。
+ * 最後の試行がネットワークの例外なら、その例外を投げる
+ */
+export async function fetchWithRetry(
+  url,
+  { fetchImpl = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), delays = RETRY_DELAYS_MS, log = console.warn } = {},
+) {
+  for (let attempt = 0; ; attempt++) {
+    const last = attempt >= delays.length;
+    try {
+      const response = await fetchImpl(url);
+      if (response.ok || !RETRYABLE_STATUS.has(response.status) || last) return response;
+      log(`[e2e recording] 取得が ${response.status}。${delays[attempt]}ms 待って再試行（${attempt + 1}/${delays.length}）: ${url}`);
+    } catch (error) {
+      if (last) throw error;
+      log(`[e2e recording] 取得が例外（${error?.message ?? error}）。${delays[attempt]}ms 待って再試行（${attempt + 1}/${delays.length}）: ${url}`);
+    }
+    await sleep(delays[attempt]);
+  }
+}
+
 export const LOCAL_MARK = "local";
 
 /**
@@ -120,7 +148,7 @@ export async function ensureRecording({ quiet = false, force = false } = {}) {
   if (!existsSync(cached)) {
     const url = `https://github.com/${repoSlug()}/releases/download/${pointer.tag}/${pointer.asset ?? ASSET_NAME}`;
     if (!quiet) console.log(`[e2e recording] 取得: ${url}`);
-    const response = await fetch(url);
+    const response = await fetchWithRetry(url);
     if (!response.ok) {
       throw new Error(
         `録画を取得できません（${response.status} ${response.statusText}）: ${url}`,

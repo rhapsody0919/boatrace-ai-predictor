@@ -434,6 +434,11 @@
       "guards": "e2e/**/*.js（recordings/を除く）が録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと。コメント・文字列・正規表現リテラルの判定はverify-e2e-no-unroute.jsと共有するstripNonCode（scripts/lib/stripNonCode.js）で行い、文字列中の`//`をコメントの開始と誤らないことを自己テストで確かめる（BOA-663）。fixtures.js自身が正当に使う箇所はverify-e2e-recorded-network-allowlist.jsonに理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する"
     },
     {
+      "script": "verify-e2e-recording-retry.js",
+      "tier": "ci",
+      "guards": "e2e-recording.js の録画の取得（fetchWithRetry）が一時の失敗（408・429・5xx・ネットワークの例外）だけ待って再試行し、404 等の恒久の失敗は再試行せずに返すこと（BOA-1397: releases の 504 で e2e の shard が試験の前に落ちた）。偽の fetch と待ちで検査し、ネットワークに触らない"
+    },
+    {
       "script": "verify-e2e-replay-har-path.js",
       "tier": "ci",
       "guards": "E2E の録画の再生（e2e/fixtures.js の replayHar）が HAR のコピーを api.har と同じ場所に置き、content._file を相対パスのまま渡すこと。Playwright 1.64 の routeFromHAR は _file が HAR の場所の外（絶対パスを含む）を指すと応答を返さず、全ての録画が空になる（#2102）。Playwright の Chromium がある所では、同じ場所の相対パスは読め・別の場所の絶対パスは読めないことを実測する（無ければ SKIP）"
