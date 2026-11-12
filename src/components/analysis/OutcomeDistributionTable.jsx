@@ -97,171 +97,226 @@ function OutcomeDistributionTable({ initialVenueCode = null }) {
       <h2>{t("analysis.outcome.title")}</h2>
       <p className="section-description">{t("analysis.outcome.description")}</p>
 
-      <div className="controls-section">
-        <label htmlFor="venue-select">{t("analysis.venueSelectLabel")}</label>
-        <select
-          id="venue-select"
-          value={selectedVenue}
-          onChange={(e) => setSelectedVenue(e.target.value)}
-          className="venue-select"
-        >
-          {VENUES.map((venue) => (
-            <option key={venue.code} value={venue.code}>
-              {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
-            </option>
-          ))}
-        </select>
-      </div>
+      <VenueSelectControls
+        selectedVenue={selectedVenue}
+        setSelectedVenue={setSelectedVenue}
+        t={t}
+      />
 
       {total_races > 0 && (
-        <div className="summary-info">
-          <p>
-            <strong>{venueLabel}</strong> -{" "}
-            {t("analysis.outcome.summary", { count: total_races })}
-            {last_updated && (
-              <span className="update-date">
-                {t("analysis.lastUpdated", { date: last_updated })}
-              </span>
-            )}
-          </p>
-        </div>
+        <SummaryInfo
+          venueLabel={venueLabel}
+          total_races={total_races}
+          last_updated={last_updated}
+          t={t}
+        />
       )}
 
-      <div className="top-patterns-section">
-        <div className="top-patterns-header">
-          <button
-            className="expand-button"
-            onClick={() => setTopPatternsExpanded(!topPatternsExpanded)}
-          >
-            <span className="chevron">{topPatternsExpanded ? "▼" : "▶"}</span>
-            <h3>{t("analysis.rankingTitle")}</h3>
-          </button>
-          <div className="limit-controls">
-            <label>{t("analysis.limitLabel")}</label>
-            {[10, 20, 50].map((limit) => (
-              <button
-                key={limit}
-                className={`limit-button ${topPatternLimit === limit ? "active" : ""}`}
-                onClick={() => setTopPatternLimit(limit)}
-              >
-                Top {limit}
-              </button>
-            ))}
-          </div>
-        </div>
+      <TopPatternsSection
+        data={data}
+        topPatternsExpanded={topPatternsExpanded}
+        setTopPatternsExpanded={setTopPatternsExpanded}
+        topPatternLimit={topPatternLimit}
+        setTopPatternLimit={setTopPatternLimit}
+        t={t}
+      />
 
-        {topPatternsExpanded && (
-          <div className="table-wrapper">
-            {(() => {
-              const allPatterns = [];
-              for (const firstBoat in data) {
-                const patterns = data[firstBoat] || [];
-                patterns.forEach((pattern) => {
-                  allPatterns.push({
-                    firstBoat: parseInt(firstBoat),
-                    secondBoat: pattern.second_boat,
-                    thirdBoat: pattern.third_boat,
-                    count: pattern.count,
-                    probability: pattern.probability,
-                    avg_payout: pattern.avg_payout,
-                  });
-                });
-              }
-              allPatterns.sort((a, b) => b.probability - a.probability);
-              const topPatterns = allPatterns.slice(0, topPatternLimit);
-
-              return (
-                <table className="top-patterns-table">
-                  <thead>
-                    <tr>
-                      <th>{t("analysis.rankHeader")}</th>
-                      <th>{t("analysis.trifectaHeader")}</th>
-                      <th>{t("analysis.countHeader")}</th>
-                      <th>{t("analysis.ratePctHeader")}</th>
-                      <th>{t("analysis.avgPayoutHeader")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topPatterns.map((pattern, idx) => (
-                      <tr key={idx}>
-                        <td className="rank">{idx + 1}</td>
-                        <td className="trifecta">
-                          {pattern.firstBoat}-{pattern.secondBoat}-
-                          {pattern.thirdBoat}
-                        </td>
-                        <td className="count">{pattern.count}</td>
-                        <td className="probability">
-                          {pattern.probability.toFixed(2)}%
-                        </td>
-                        <td className="payout">
-                          {pattern.avg_payout
-                            ? `¥${pattern.avg_payout.toLocaleString()}`
-                            : "-"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              );
-            })()}
-          </div>
-        )}
-      </div>
-
-      <div className="tabs-container">
-        {[1, 2, 3, 4, 5, 6].map((firstBoat) => {
-          const patterns = data[firstBoat] || [];
-
-          return (
-            <div key={firstBoat} className="outcome-tab">
-              <div className="tab-header">
-                <h3>{t("analysis.outcome.firstHeading", { n: firstBoat })}</h3>
-                <span className="pattern-count">
-                  {t("analysis.patternCount", { n: patterns.length })}
-                </span>
-              </div>
-
-              {patterns.length > 0 ? (
-                <div className="table-wrapper">
-                  <table className="outcome-table">
-                    <thead>
-                      <tr>
-                        <th>{t("analysis.secondHeader")}</th>
-                        <th>{t("analysis.thirdHeader")}</th>
-                        <th>{t("analysis.countHeader")}</th>
-                        <th>{t("analysis.ratePctHeader")}</th>
-                        <th>{t("analysis.avgPayoutHeader")}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {patterns.map((pattern, idx) => (
-                        <tr key={idx}>
-                          <td className="boat-num">{pattern.second_boat}</td>
-                          <td className="boat-num">{pattern.third_boat}</td>
-                          <td className="count">{pattern.count}</td>
-                          <td className="probability">
-                            {pattern.probability.toFixed(2)}%
-                          </td>
-                          <td className="payout">
-                            {pattern.avg_payout
-                              ? `¥${pattern.avg_payout.toLocaleString()}`
-                              : "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="no-patterns">{t("analysis.noData")}</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      <OutcomeTabs data={data} t={t} />
 
       <p className="table-note">{t("analysis.outcome.note")}</p>
     </div>
+  );
+}
+
+function VenueSelectControls({ selectedVenue, setSelectedVenue, t }) {
+  return (
+    <div className="controls-section">
+      <label htmlFor="venue-select">{t("analysis.venueSelectLabel")}</label>
+      <select
+        id="venue-select"
+        value={selectedVenue}
+        onChange={(e) => setSelectedVenue(e.target.value)}
+        className="venue-select"
+      >
+        {VENUES.map((venue) => (
+          <option key={venue.code} value={venue.code}>
+            {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function SummaryInfo({ venueLabel, total_races, last_updated, t }) {
+  return (
+    <div className="summary-info">
+      <p>
+        <strong>{venueLabel}</strong> -{" "}
+        {t("analysis.outcome.summary", { count: total_races })}
+        {last_updated && (
+          <span className="update-date">
+            {t("analysis.lastUpdated", { date: last_updated })}
+          </span>
+        )}
+      </p>
+    </div>
+  );
+}
+
+function TopPatternsSection({
+  data,
+  topPatternsExpanded,
+  setTopPatternsExpanded,
+  topPatternLimit,
+  setTopPatternLimit,
+  t,
+}) {
+  return (
+    <div className="top-patterns-section">
+      <div className="top-patterns-header">
+        <button
+          className="expand-button"
+          onClick={() => setTopPatternsExpanded(!topPatternsExpanded)}
+        >
+          <span className="chevron">{topPatternsExpanded ? "▼" : "▶"}</span>
+          <h3>{t("analysis.rankingTitle")}</h3>
+        </button>
+        <div className="limit-controls">
+          <label>{t("analysis.limitLabel")}</label>
+          {[10, 20, 50].map((limit) => (
+            <button
+              key={limit}
+              className={`limit-button ${topPatternLimit === limit ? "active" : ""}`}
+              onClick={() => setTopPatternLimit(limit)}
+            >
+              Top {limit}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {topPatternsExpanded && (
+        <div className="table-wrapper">
+          <TopPatternsTable data={data} topPatternLimit={topPatternLimit} t={t} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopPatternsTable({ data, topPatternLimit, t }) {
+  const allPatterns = [];
+  for (const firstBoat in data) {
+    const patterns = data[firstBoat] || [];
+    patterns.forEach((pattern) => {
+      allPatterns.push({
+        firstBoat: parseInt(firstBoat),
+        secondBoat: pattern.second_boat,
+        thirdBoat: pattern.third_boat,
+        count: pattern.count,
+        probability: pattern.probability,
+        avg_payout: pattern.avg_payout,
+      });
+    });
+  }
+  allPatterns.sort((a, b) => b.probability - a.probability);
+  const topPatterns = allPatterns.slice(0, topPatternLimit);
+
+  return (
+    <table className="top-patterns-table">
+      <thead>
+        <tr>
+          <th>{t("analysis.rankHeader")}</th>
+          <th>{t("analysis.trifectaHeader")}</th>
+          <th>{t("analysis.countHeader")}</th>
+          <th>{t("analysis.ratePctHeader")}</th>
+          <th>{t("analysis.avgPayoutHeader")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {topPatterns.map((pattern, idx) => (
+          <tr key={idx}>
+            <td className="rank">{idx + 1}</td>
+            <td className="trifecta">
+              {pattern.firstBoat}-{pattern.secondBoat}-
+              {pattern.thirdBoat}
+            </td>
+            <td className="count">{pattern.count}</td>
+            <td className="probability">
+              {pattern.probability.toFixed(2)}%
+            </td>
+            <td className="payout">
+              {pattern.avg_payout
+                ? `¥${pattern.avg_payout.toLocaleString()}`
+                : "-"}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function OutcomeTabs({ data, t }) {
+  return (
+    <div className="tabs-container">
+      {[1, 2, 3, 4, 5, 6].map((firstBoat) => {
+        const patterns = data[firstBoat] || [];
+
+        return (
+          <div key={firstBoat} className="outcome-tab">
+            <div className="tab-header">
+              <h3>{t("analysis.outcome.firstHeading", { n: firstBoat })}</h3>
+              <span className="pattern-count">
+                {t("analysis.patternCount", { n: patterns.length })}
+              </span>
+            </div>
+
+            {patterns.length > 0 ? (
+              <div className="table-wrapper">
+                <OutcomeTable patterns={patterns} t={t} />
+              </div>
+            ) : (
+              <div className="no-patterns">{t("analysis.noData")}</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function OutcomeTable({ patterns, t }) {
+  return (
+    <table className="outcome-table">
+      <thead>
+        <tr>
+          <th>{t("analysis.secondHeader")}</th>
+          <th>{t("analysis.thirdHeader")}</th>
+          <th>{t("analysis.countHeader")}</th>
+          <th>{t("analysis.ratePctHeader")}</th>
+          <th>{t("analysis.avgPayoutHeader")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {patterns.map((pattern, idx) => (
+          <tr key={idx}>
+            <td className="boat-num">{pattern.second_boat}</td>
+            <td className="boat-num">{pattern.third_boat}</td>
+            <td className="count">{pattern.count}</td>
+            <td className="probability">
+              {pattern.probability.toFixed(2)}%
+            </td>
+            <td className="payout">
+              {pattern.avg_payout
+                ? `¥${pattern.avg_payout.toLocaleString()}`
+                : "-"}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
