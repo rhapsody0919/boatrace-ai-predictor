@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { translateTechnique } from "./raceIndicators";
 import { BOAT_COLORS, getBoatChipBackground } from "../../utils/colors";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRaceFinalOdds } from "../../services/raceQueries3.js";
+import { getRaceStartTimings } from "../../services/raceQueries4.js";
 import { parseRaceId } from "../../utils/raceId";
 import VenueDaySummaryCard from "./VenueDaySummaryCard";
 import RaceStartFormation from "./RaceStartFormation";
@@ -433,8 +434,7 @@ function RaceResult({ prediction, raceId, raceStartTime = null }) {
   useEffect(() => {
     if (!finished || !raceId) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRaceStartTimings(raceId)
+    getRaceStartTimings(raceId)
       .then((data) => {
         if (!cancelled) setStartTimingState({ raceId, data, failed: false });
       })
@@ -457,8 +457,7 @@ function RaceResult({ prediction, raceId, raceStartTime = null }) {
   useEffect(() => {
     if (!finished || !raceId) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRaceFinalOdds(raceId)
+    getRaceFinalOdds(raceId)
       .then((data) => {
         if (!cancelled) setFinalOddsState({ raceId, data });
       })
