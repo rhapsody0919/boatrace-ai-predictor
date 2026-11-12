@@ -2,13 +2,10 @@
  * RaceMeetTab の「6艇の今節」比較表（行＝艇、列＝得点率・節内順位・前検）。
  * 値は RaceMeetTabModel の `buildMeetModel` の結果（m）で受け取る。
  */
-import {
-  BOAT_COLORS,
-  getBoatChipBackground,
-} from "../../utils/colors";
 import { FINISH_ABSENT, MEET_SMALL_SAMPLE_RUNS, meetRateHidden } from "./seriesPoints";
 import { rankInBorder, EXCLUDED_LABEL_KEY } from "./RaceMeetTabModel";
 import RaceMeetTabCompareSide from "./RaceMeetTabCompareSide";
+import { BoatRowSelectButton } from "./RaceMeetTabForecast";
 
 // 得点率は平均なので「1着→6着」と「3着→3着」が同じ5.00になる。
 // 次をどう見るかは並びで変わる
@@ -63,35 +60,17 @@ function PretestCell({ m, p }) {
 
 // 比較表の行見出し（艇番・名前・級別＋着順の並び）
 function PlayerHead({ m, p, finishes }) {
-  const { t, pretestOf, onFocusBoat, selectedBoat } = m;
-  const color = BOAT_COLORS[p.number] || {};
+  const { t, pretestOf } = m;
   const pt = pretestOf(p.racerId);
   return (
     <th scope="row">
-      <button
-        type="button"
-        className="rmt-row-select"
-        onClick={() => onFocusBoat(p.number)}
-        aria-pressed={p.number === selectedBoat}
-      >
-        <span
-          className="rmt-boat-chip"
-          style={{
-            background: getBoatChipBackground(p.number),
-            color: color.text,
-          }}
-        >
-          {p.number}
-        </span>
-        <span className="rmt-name" translate="no">
-          {p.name?.replace(/\s+/g, "")}
-        </span>
+      <BoatRowSelectButton m={m} p={p}>
         {pt?.racer_class && (
           <span className="rmt-class" title={t("meetTab.classTitle")}>
             {pt.racer_class}
           </span>
         )}
-      </button>
+      </BoatRowSelectButton>
       <Finishes m={m} finishes={finishes} />
     </th>
   );

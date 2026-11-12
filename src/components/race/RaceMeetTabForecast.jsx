@@ -30,30 +30,38 @@ function ForecastHead({ m }) {
   );
 }
 
-function ForecastPlayerHead({ m, p }) {
+// 行見出しの選択ボタン（艇番のチップ＋名前。children は名前の後ろに続く）。比較表と共有
+export function BoatRowSelectButton({ m, p, children }) {
   const { onFocusBoat, selectedBoat } = m;
   const color = BOAT_COLORS[p.number] || {};
   return (
-    <th scope="row">
-      <button
-        type="button"
-        className="rmt-row-select"
-        onClick={() => onFocusBoat(p.number)}
-        aria-pressed={p.number === selectedBoat}
+    <button
+      type="button"
+      className="rmt-row-select"
+      onClick={() => onFocusBoat(p.number)}
+      aria-pressed={p.number === selectedBoat}
+    >
+      <span
+        className="rmt-boat-chip"
+        style={{
+          background: getBoatChipBackground(p.number),
+          color: color.text,
+        }}
       >
-        <span
-          className="rmt-boat-chip"
-          style={{
-            background: getBoatChipBackground(p.number),
-            color: color.text,
-          }}
-        >
-          {p.number}
-        </span>
-        <span className="rmt-name" translate="no">
-          {p.name?.replace(/\s+/g, "")}
-        </span>
-      </button>
+        {p.number}
+      </span>
+      <span className="rmt-name" translate="no">
+        {p.name?.replace(/\s+/g, "")}
+      </span>
+      {children}
+    </button>
+  );
+}
+
+function ForecastPlayerHead({ m, p }) {
+  return (
+    <th scope="row">
+      <BoatRowSelectButton m={m} p={p} />
     </th>
   );
 }
