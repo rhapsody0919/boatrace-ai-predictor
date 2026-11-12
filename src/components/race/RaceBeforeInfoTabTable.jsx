@@ -25,6 +25,16 @@ function TurnMarkLabel({ row }) {
   );
 }
 
+// 指標名の長い形と短い形（幅で CSS が片方だけ見せる）
+function LabelText({ row }) {
+  return (
+    <>
+      <span className="drt-label-full">{row.label}</span>
+      <span className="drt-label-short">{row.shortLabel}</span>
+    </>
+  );
+}
+
 function PlainLabel({ row, deepLink, onLinkClick }) {
   return (
     <>
@@ -34,15 +44,11 @@ function PlainLabel({ row, deepLink, onLinkClick }) {
           className="drt-label-link"
           onClick={onLinkClick(row.tab)}
         >
-          <span className="drt-label-full">{row.label}</span>
-          <span className="drt-label-short">{row.shortLabel}</span>
+          <LabelText row={row} />
           <span className="drt-link-arrow">›</span>
         </Link>
       ) : (
-        <>
-          <span className="drt-label-full">{row.label}</span>
-          <span className="drt-label-short">{row.shortLabel}</span>
-        </>
+        <LabelText row={row} />
       )}
       <TermHintButton termKey={row.key} />
     </>
