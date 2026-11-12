@@ -14,7 +14,7 @@ import {
   uniqueSorted,
   matchesRacerFilters,
 } from "../components/racer";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getAllRacersWithGrade } from "../services/racerQueries.js";
 import "./RacersPage.css";
 
 const PAGE_SIZE = 50;
@@ -56,8 +56,7 @@ export default function RacersPage() {
 
   useEffect(() => {
     let cancelled = false;
-    supabaseDataService
-      .getAllRacersWithGrade()
+    getAllRacersWithGrade()
       .then((data) => {
         if (cancelled) return;
         setRacers(data);
