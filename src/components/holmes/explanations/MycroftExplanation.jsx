@@ -85,7 +85,7 @@ function MycroftDiagramDefs() {
   );
 }
 
-function MycroftDiagramInput() {
+function MycroftDiagramSequenceEncoder() {
   return (
     <>
       <line
@@ -164,10 +164,9 @@ function MycroftDiagramInput() {
   );
 }
 
-function MycroftDiagramEncoder() {
+function MycroftDiagramStaticFeatures() {
   return (
     <>
-
       {/* ===== 下段: 静的特徴量の分岐 ===== */}
       <rect
         x="6"
@@ -224,7 +223,7 @@ function MycroftDiagramEncoder() {
   );
 }
 
-function MycroftDiagramFusion() {
+function MycroftDiagramEmbedding() {
   return (
     <>
       <line
@@ -473,9 +472,9 @@ function MycroftDiagram() {
         aria-label="マイクロフト処理フロー図: 選手の過去32走をフォームエンコーダで読み、静的特徴量と合わせて6艇の相互作用にかけ、順位と勝率を出力する"
       >
         <MycroftDiagramDefs />
-        <MycroftDiagramInput />
-        <MycroftDiagramEncoder />
-        <MycroftDiagramFusion />
+        <MycroftDiagramSequenceEncoder />
+        <MycroftDiagramStaticFeatures />
+        <MycroftDiagramEmbedding />
         <MycroftDiagramInteraction />
         <MycroftDiagramOutput />
       </svg>
