@@ -99,6 +99,26 @@ export async function getTodaysMatchingRaces(date) {
     return [];
   }
 
+  const predictions = await fetchStandardPredictions(date);
+
+  if (!predictions || predictions.length === 0) {
+    return [];
+  }
+
+  const raceIds = predictions.map((p) => p.race_id);
+  const resultsMap = await fetchResultsMap(raceIds);
+  const racesMap = await fetchRacesMap(raceIds);
+
+  // ルールマッチング
+  const matchedRaces = buildMatchedRaces(predictions, resultsMap, racesMap);
+
+  // レース番号順にソート
+  matchedRaces.sort(compareVenueRace);
+
+  return matchedRaces;
+}
+
+async function fetchStandardPredictions(date) {
   // 予測データを取得（standardモデルのみ）
   const { data: predictions } = await supabase
     .from("predictions")
@@ -107,13 +127,21 @@ export async function getTodaysMatchingRaces(date) {
     )
     .like("race_id", `${date}-%`)
     .eq("model_id", "standard");
+  return predictions;
+}
 
-  if (!predictions || predictions.length === 0) {
-    return [];
+function indexByRaceId(rows) {
+  const map = {};
+  if (rows) {
+    rows.forEach((r) => {
+      map[r.race_id] = r;
+    });
   }
+  return map;
+}
 
+async function fetchResultsMap(raceIds) {
   // 結果データを取得
-  const raceIds = predictions.map((p) => p.race_id);
   const { data: results } = await supabase
     .from("race_results")
     .select(
@@ -121,27 +149,20 @@ export async function getTodaysMatchingRaces(date) {
     )
     .in("race_id", raceIds);
 
-  const resultsMap = {};
-  if (results) {
-    results.forEach((r) => {
-      resultsMap[r.race_id] = r;
-    });
-  }
+  return indexByRaceId(results);
+}
 
+async function fetchRacesMap(raceIds) {
   // レース情報を取得（締切時刻）
   const { data: races } = await supabase
     .from("races")
     .select("race_id, start_time")
     .in("race_id", raceIds);
 
-  const racesMap = {};
-  if (races) {
-    races.forEach((r) => {
-      racesMap[r.race_id] = r;
-    });
-  }
+  return indexByRaceId(races);
+}
 
-  // ルールマッチング
+function buildMatchedRaces(predictions, resultsMap, racesMap) {
   const matchedRaces = [];
 
   for (const pred of predictions) {
@@ -163,92 +184,138 @@ export async function getTodaysMatchingRaces(date) {
       const result = resultsMap[pred.race_id];
       const raceInfo = racesMap[pred.race_id];
 
-      // 的中判定
-      let hitInfo = null;
-      if (result) {
-        const predSorted = [...prediction.top3].sort((a, b) => a - b).join("-");
-        const resultSorted = [result.rank1, result.rank2, result.rank3]
-          .sort((a, b) => a - b)
-          .join("-");
-
-        for (const rule of rules) {
-          if (rule.betType === "trio") {
-            // 3連複: 順不同で3艇を当てる（payout_trifecta）
-            const isHit = predSorted === resultSorted;
-            if (isHit) {
-              hitInfo = { hit: true, payout: result.payout_trifecta || 0 };
-              break;
-            }
-          } else if (rule.betType === "exacta") {
-            // 3連単: 順序通りで3艇を当てる（payout_trio）
-            const predExact = prediction.top3.join("-");
-            const resultExact = `${result.rank1}-${result.rank2}-${result.rank3}`;
-            const isHit = predExact === resultExact;
-            if (isHit) {
-              hitInfo = { hit: true, payout: result.payout_trio || 0 };
-              break;
-            }
-          } else if (rule.betType === "win") {
-            const isHit = prediction.topPick === result.rank1;
-            if (isHit) {
-              hitInfo = { hit: true, payout: result.payout_win || 0 };
-              break;
-            }
-          } else if (rule.betType === "place") {
-            const isHit =
-              prediction.topPick === result.rank1 ||
-              prediction.topPick === result.rank2;
-            if (isHit) {
-              const payout =
-                prediction.topPick === result.rank1
-                  ? result.payout_place_1 || 0
-                  : result.payout_place_2 || 0;
-              hitInfo = { hit: true, payout };
-              break;
-            }
-          }
-        }
-
-        if (!hitInfo) {
-          hitInfo = { hit: false, payout: 0 };
-        }
-      }
-
-      matchedRaces.push({
-        raceId: pred.race_id,
-        venueCode,
-        venueName: getVenueName(venueCode),
-        raceNo,
-        startTime: raceInfo?.start_time || null,
-        prediction,
-        rules,
-        result: result
-          ? {
-              finished: true,
-              rank1: result.rank1,
-              rank2: result.rank2,
-              rank3: result.rank3,
-              payout_trifecta: result.payout_trifecta,
-              payout_trio: result.payout_trio,
-              payout_win: result.payout_win,
-              payout_place_1: result.payout_place_1,
-              payout_place_2: result.payout_place_2,
-            }
-          : null,
-        hitInfo,
-      });
+      matchedRaces.push(
+        buildMatchedRace(
+          pred,
+          venueCode,
+          raceNo,
+          prediction,
+          rules,
+          result,
+          raceInfo,
+        ),
+      );
     }
   }
 
-  // レース番号順にソート
-  matchedRaces.sort((a, b) => {
-    if (a.venueCode !== b.venueCode) {
-      return a.venueCode.localeCompare(b.venueCode);
-    }
-    return a.raceNo - b.raceNo;
-  });
-
   return matchedRaces;
+}
+
+function buildMatchedRace(
+  pred,
+  venueCode,
+  raceNo,
+  prediction,
+  rules,
+  result,
+  raceInfo,
+) {
+  const hitInfo = judgeHitInfo(rules, prediction, result);
+
+  return {
+    raceId: pred.race_id,
+    venueCode,
+    venueName: getVenueName(venueCode),
+    raceNo,
+    startTime: raceInfo?.start_time || null,
+    prediction,
+    rules,
+    result: formatFinishedResult(result),
+    hitInfo,
+  };
+}
+
+function formatFinishedResult(result) {
+  return result
+    ? {
+        finished: true,
+        rank1: result.rank1,
+        rank2: result.rank2,
+        rank3: result.rank3,
+        payout_trifecta: result.payout_trifecta,
+        payout_trio: result.payout_trio,
+        payout_win: result.payout_win,
+        payout_place_1: result.payout_place_1,
+        payout_place_2: result.payout_place_2,
+      }
+    : null;
+}
+
+function judgeHitInfo(rules, prediction, result) {
+  // 的中判定
+  let hitInfo = null;
+  if (result) {
+    const predSorted = [...prediction.top3].sort((a, b) => a - b).join("-");
+    const resultSorted = [result.rank1, result.rank2, result.rank3]
+      .sort((a, b) => a - b)
+      .join("-");
+
+    for (const rule of rules) {
+      const payout = hitPayout(
+        rule,
+        prediction,
+        result,
+        predSorted,
+        resultSorted,
+      );
+      if (payout !== null) {
+        hitInfo = { hit: true, payout };
+        break;
+      }
+    }
+
+    if (!hitInfo) {
+      hitInfo = { hit: false, payout: 0 };
+    }
+  }
+  return hitInfo;
+}
+
+// 的中なら払戻額、外れ（または対象外の賭け方）なら null
+function hitPayout(rule, prediction, result, predSorted, resultSorted) {
+  if (rule.betType === "trio") {
+    // 3連複: 順不同で3艇を当てる（payout_trifecta）
+    const isHit = predSorted === resultSorted;
+    if (isHit) {
+      return result.payout_trifecta || 0;
+    }
+  } else if (rule.betType === "exacta") {
+    // 3連単: 順序通りで3艇を当てる（payout_trio）
+    const predExact = prediction.top3.join("-");
+    const resultExact = `${result.rank1}-${result.rank2}-${result.rank3}`;
+    const isHit = predExact === resultExact;
+    if (isHit) {
+      return result.payout_trio || 0;
+    }
+  } else if (rule.betType === "win") {
+    const isHit = prediction.topPick === result.rank1;
+    if (isHit) {
+      return result.payout_win || 0;
+    }
+  } else if (rule.betType === "place") {
+    return placePayout(prediction, result);
+  }
+  return null;
+}
+
+function placePayout(prediction, result) {
+  const isHit =
+    prediction.topPick === result.rank1 || prediction.topPick === result.rank2;
+  if (isHit) {
+    const payout =
+      prediction.topPick === result.rank1
+        ? result.payout_place_1 || 0
+        : result.payout_place_2 || 0;
+    return payout;
+  }
+  return null;
+}
+
+function compareVenueRace(a, b) {
+  if (a.venueCode !== b.venueCode) {
+    return a.venueCode.localeCompare(b.venueCode);
+  }
+  return a.raceNo - b.raceNo;
 }
 
 /**
