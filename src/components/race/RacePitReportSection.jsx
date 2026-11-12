@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRacePitReport } from "../../services/raceQueries4.js";
 import { parseRaceId } from "../../utils/raceId";
 import {
   buildPitReportUrl,
@@ -118,8 +118,7 @@ function RacePitReportSection({ raceId, raceGrade, players }) {
   useEffect(() => {
     if (!isCandidate) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRacePitReport(raceId)
+    getRacePitReport(raceId)
       .then((data) => {
         if (cancelled) return;
         // 直前に失敗したレースへ戻ってきて今度は成功した場合に、エラー表示が残らないようにする

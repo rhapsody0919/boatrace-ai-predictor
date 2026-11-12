@@ -46,7 +46,14 @@ import BandWrapAxisTick from "../BandWrapAxisTick";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import {
+  getMeetOriginalExhibitionByRaceBoat,
+  getRacerMeetExhibitionTrendBefore,
+} from "../../services/meetQueries.js";
+import { getMeetScoreboard } from "../../services/meetQueries2.js";
+import { getRaceEntryWeights } from "../../services/raceQueries2.js";
+import { getRaceOriginalExhibition } from "../../services/raceQueries4.js";
+import { getRacerScopedRaceStats } from "../../services/racerQueries2.js";
 import {
   buildBeforeInfoRows,
   buildExhibitionCourseRow,
@@ -157,8 +164,7 @@ function RaceBeforeInfoTab({
       });
     sortedPlayers.forEach((p) => {
       if (!p.racerId) return;
-      supabaseDataService
-        .getRacerScopedRaceStats(p.racerId)
+      getRacerScopedRaceStats(p.racerId)
         .then((data) => {
           if (!cancelled) apply(p.racerId, data, false);
         })
@@ -202,8 +208,7 @@ function RaceBeforeInfoTab({
     let cancelled = false;
     sortedPlayers.forEach((p) => {
       if (!p.racerId || !p.motorNumber || !raceId) return;
-      supabaseDataService
-        .getRacerMeetExhibitionTrendBefore(p.racerId, p.motorNumber, raceId)
+      getRacerMeetExhibitionTrendBefore(p.racerId, p.motorNumber, raceId)
         .then((data) => {
           if (cancelled) return;
           setFetchedMeetTrend((prev) =>
@@ -245,8 +250,7 @@ function RaceBeforeInfoTab({
   useEffect(() => {
     if (!raceId) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRaceOriginalExhibition(raceId)
+    getRaceOriginalExhibition(raceId)
       .then((data) => {
         if (!cancelled) setFetchedExhibition({ raceId, data });
       })
@@ -293,8 +297,7 @@ function RaceBeforeInfoTab({
   useEffect(() => {
     if (meetRaceKeys.length === 0) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getMeetOriginalExhibitionByRaceBoat(meetRaceKeys)
+    getMeetOriginalExhibitionByRaceBoat(meetRaceKeys)
       .then((data) => {
         if (!cancelled) setFetchedMeetOriginal({ raceId, data });
       })
@@ -326,8 +329,7 @@ function RaceBeforeInfoTab({
     if (!raceId || venueCode === null || venueCode === undefined)
       return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getMeetScoreboard(raceId, venueCode)
+    getMeetScoreboard(raceId, venueCode)
       .then((data) => {
         if (!cancelled) setFetchedBoard({ raceId, data, failed: false });
       })
@@ -354,8 +356,7 @@ function RaceBeforeInfoTab({
   useEffect(() => {
     if (!raceId) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRaceEntryWeights(raceId)
+    getRaceEntryWeights(raceId)
       .then((data) => {
         if (!cancelled) setFetchedEntryWeights({ raceId, data });
       })

@@ -23,6 +23,7 @@ const ROOT_FROZEN = [
   ".gitignore",
   ".mcp.json",
   ".npmrc",
+  ".nvmrc",
   ".worktreeinclude",
   "AGENTS.md",
   "README.md",
