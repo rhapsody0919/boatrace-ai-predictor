@@ -1,0 +1,1256 @@
+{
+ "v": 1,
+ "source": "Vercel Observability incomingRequest（bot_name は Vercel の判定。名前の付かない UA は数えられない）",
+ "range_jst": [
+  "2026-11-06",
+  "2026-11-12"
+ ],
+ "fetched_at": "2026-11-13T07:43:25+09:00",
+ "ai_bots": [
+  "amazonbot",
+  "applebot",
+  "applebot-extended",
+  "bytespider",
+  "ccbot",
+  "chatgpt-user",
+  "claude-searchbot",
+  "claude-user",
+  "claudebot",
+  "duckassistbot",
+  "exasearchbot",
+  "google-read-aloud",
+  "gpt-actions",
+  "gptbot",
+  "meta-externalagent",
+  "mistralai-user",
+  "oai-searchbot",
+  "perplexity-user",
+  "perplexitybot",
+  "youbot"
+ ],
+ "daily_ai": {
+  "2026-11-06": {
+   "meta-externalagent": 0,
+   "exasearchbot": 51,
+   "perplexitybot": 208,
+   "claudebot": 0,
+   "oai-searchbot": 114,
+   "applebot": 8,
+   "gpt-actions": 57,
+   "google-read-aloud": 16,
+   "chatgpt-user": 34,
+   "amazonbot": 7,
+   "gptbot": 1,
+   "claude-user": 0
+  },
+  "2026-11-07": {
+   "meta-externalagent": 0,
+   "exasearchbot": 71,
+   "perplexitybot": 730,
+   "claudebot": 0,
+   "oai-searchbot": 56,
+   "applebot": 7,
+   "gpt-actions": 19,
+   "google-read-aloud": 24,
+   "chatgpt-user": 17,
+   "amazonbot": 5,
+   "gptbot": 1,
+   "claude-user": 0
+  },
+  "2026-11-08": {
+   "meta-externalagent": 8,
+   "exasearchbot": 461,
+   "perplexitybot": 386,
+   "claudebot": 1046,
+   "oai-searchbot": 245,
+   "applebot": 8,
+   "gpt-actions": 34,
+   "google-read-aloud": 23,
+   "chatgpt-user": 14,
+   "amazonbot": 0,
+   "gptbot": 2,
+   "claude-user": 0
+  },
+  "2026-11-09": {
+   "meta-externalagent": 1951,
+   "exasearchbot": 5559,
+   "perplexitybot": 172,
+   "claudebot": 655,
+   "oai-searchbot": 144,
+   "applebot": 19,
+   "gpt-actions": 25,
+   "google-read-aloud": 30,
+   "chatgpt-user": 14,
+   "amazonbot": 0,
+   "gptbot": 1,
+   "claude-user": 0
+  },
+  "2026-11-10": {
+   "meta-externalagent": 1770,
+   "exasearchbot": 265,
+   "perplexitybot": 576,
+   "claudebot": 247,
+   "oai-searchbot": 236,
+   "applebot": 18,
+   "gpt-actions": 40,
+   "google-read-aloud": 18,
+   "chatgpt-user": 28,
+   "amazonbot": 0,
+   "gptbot": 1,
+   "claude-user": 0
+  },
+  "2026-11-11": {
+   "meta-externalagent": 740,
+   "exasearchbot": 133,
+   "perplexitybot": 241,
+   "claudebot": 197,
+   "oai-searchbot": 429,
+   "applebot": 893,
+   "gpt-actions": 32,
+   "google-read-aloud": 10,
+   "chatgpt-user": 17,
+   "amazonbot": 1,
+   "gptbot": 1,
+   "claude-user": 0
+  },
+  "2026-11-12": {
+   "meta-externalagent": 5952,
+   "exasearchbot": 139,
+   "perplexitybot": 128,
+   "claudebot": 5,
+   "oai-searchbot": 155,
+   "applebot": 153,
+   "gpt-actions": 21,
+   "google-read-aloud": 18,
+   "chatgpt-user": 8,
+   "amazonbot": 24,
+   "gptbot": 1,
+   "claude-user": 2
+  }
+ },
+ "daily_all_named": {
+  "2026-11-06": {
+   "(名前なし)": 44103,
+   "bingbot": 2092,
+   "baiduspider": 1705,
+   "googlebot": 838,
+   "adsense": 495,
+   "meta-webindexer": 447,
+   "perplexitybot": 208,
+   "oai-searchbot": 114,
+   "chatgpt-operator": 112,
+   "gpt-actions": 57,
+   "exasearchbot": 51,
+   "google-association-service": 47,
+   "chatgpt-user": 34,
+   "ahrefsbot": 33,
+   "criteobot": 25,
+   "google-read-aloud": 16,
+   "google-inspectiontool": 16,
+   "google-lens": 14,
+   "google-safety": 14,
+   "chrome-privacy-preserving-prefetch-proxy": 13,
+   "applebot": 8,
+   "facebookexternalhit": 8,
+   "twitterbot": 8,
+   "duckduckbot": 8,
+   "amazonbot": 7,
+   "googleother": 5,
+   "petalbot": 2,
+   "gptbot": 1,
+   "google-image-proxy": 1,
+   "meta-externalagent": 0,
+   "shapbot": 0,
+   "claudebot": 0,
+   "seranking-backlinks": 0,
+   "google-adsbot": 0,
+   "exauser": 0,
+   "claude-user": 0,
+   "google-display-ads-bot": 0
+  },
+  "2026-11-07": {
+   "(名前なし)": 39034,
+   "bingbot": 2538,
+   "baiduspider": 2362,
+   "adsense": 1070,
+   "googlebot": 851,
+   "perplexitybot": 730,
+   "meta-webindexer": 297,
+   "exasearchbot": 71,
+   "oai-searchbot": 56,
+   "google-association-service": 45,
+   "chatgpt-operator": 26,
+   "google-read-aloud": 24,
+   "ahrefsbot": 22,
+   "gpt-actions": 19,
+   "facebookexternalhit": 19,
+   "chatgpt-user": 17,
+   "criteobot": 13,
+   "chrome-privacy-preserving-prefetch-proxy": 11,
+   "duckduckbot": 9,
+   "applebot": 7,
+   "amazonbot": 5,
+   "twitterbot": 4,
+   "google-safety": 3,
+   "google-lens": 2,
+   "petalbot": 2,
+   "gptbot": 1,
+   "google-image-proxy": 1,
+   "meta-externalagent": 0,
+   "shapbot": 0,
+   "claudebot": 0,
+   "seranking-backlinks": 0,
+   "google-inspectiontool": 0,
+   "google-adsbot": 0,
+   "googleother": 0,
+   "exauser": 0,
+   "claude-user": 0,
+   "google-display-ads-bot": 0
+  },
+  "2026-11-08": {
+   "(名前なし)": 50491,
+   "bingbot": 2167,
+   "googlebot": 1439,
+   "adsense": 1320,
+   "baiduspider": 1094,
+   "claudebot": 1046,
+   "exasearchbot": 461,
+   "perplexitybot": 386,
+   "oai-searchbot": 245,
+   "meta-webindexer": 209,
+   "chatgpt-operator": 183,
+   "google-association-service": 42,
+   "ahrefsbot": 36,
+   "gpt-actions": 34,
+   "google-read-aloud": 23,
+   "facebookexternalhit": 19,
+   "chatgpt-user": 14,
+   "criteobot": 12,
+   "duckduckbot": 10,
+   "meta-externalagent": 8,
+   "applebot": 8,
+   "chrome-privacy-preserving-prefetch-proxy": 7,
+   "googleother": 6,
+   "google-lens": 4,
+   "exauser": 3,
+   "twitterbot": 2,
+   "gptbot": 2,
+   "google-display-ads-bot": 2,
+   "shapbot": 0,
+   "seranking-backlinks": 0,
+   "google-safety": 0,
+   "amazonbot": 0,
+   "google-inspectiontool": 0,
+   "google-adsbot": 0,
+   "petalbot": 0,
+   "google-image-proxy": 0,
+   "claude-user": 0
+  },
+  "2026-11-09": {
+   "(名前なし)": 116033,
+   "exasearchbot": 5559,
+   "bingbot": 2412,
+   "meta-externalagent": 1951,
+   "seranking-backlinks": 972,
+   "googlebot": 970,
+   "baiduspider": 796,
+   "chatgpt-operator": 698,
+   "claudebot": 655,
+   "adsense": 325,
+   "meta-webindexer": 237,
+   "perplexitybot": 172,
+   "oai-searchbot": 144,
+   "ahrefsbot": 43,
+   "google-association-service": 42,
+   "google-read-aloud": 30,
+   "gpt-actions": 25,
+   "criteobot": 23,
+   "chrome-privacy-preserving-prefetch-proxy": 21,
+   "applebot": 19,
+   "facebookexternalhit": 15,
+   "chatgpt-user": 14,
+   "duckduckbot": 10,
+   "twitterbot": 8,
+   "google-safety": 6,
+   "google-adsbot": 6,
+   "google-lens": 4,
+   "petalbot": 2,
+   "google-image-proxy": 2,
+   "gptbot": 1,
+   "shapbot": 0,
+   "amazonbot": 0,
+   "google-inspectiontool": 0,
+   "googleother": 0,
+   "exauser": 0,
+   "claude-user": 0,
+   "google-display-ads-bot": 0
+  },
+  "2026-11-10": {
+   "(名前なし)": 119709,
+   "shapbot": 7065,
+   "bingbot": 2626,
+   "meta-externalagent": 1770,
+   "chatgpt-operator": 1120,
+   "googlebot": 1008,
+   "baiduspider": 769,
+   "perplexitybot": 576,
+   "meta-webindexer": 270,
+   "exasearchbot": 265,
+   "claudebot": 247,
+   "oai-searchbot": 236,
+   "google-association-service": 62,
+   "adsense": 60,
+   "ahrefsbot": 46,
+   "gpt-actions": 40,
+   "google-lens": 28,
+   "chatgpt-user": 28,
+   "google-safety": 20,
+   "applebot": 18,
+   "google-read-aloud": 18,
+   "chrome-privacy-preserving-prefetch-proxy": 15,
+   "twitterbot": 15,
+   "criteobot": 14,
+   "facebookexternalhit": 10,
+   "google-adsbot": 8,
+   "petalbot": 2,
+   "gptbot": 1,
+   "seranking-backlinks": 0,
+   "duckduckbot": 0,
+   "amazonbot": 0,
+   "google-inspectiontool": 0,
+   "googleother": 0,
+   "google-image-proxy": 0,
+   "exauser": 0,
+   "claude-user": 0,
+   "google-display-ads-bot": 0
+  },
+  "2026-11-11": {
+   "(名前なし)": 127834,
+   "bingbot": 2568,
+   "adsense": 2113,
+   "applebot": 893,
+   "meta-externalagent": 740,
+   "meta-webindexer": 672,
+   "baiduspider": 585,
+   "googlebot": 448,
+   "oai-searchbot": 429,
+   "perplexitybot": 241,
+   "claudebot": 197,
+   "exasearchbot": 133,
+   "google-association-service": 91,
+   "gpt-actions": 32,
+   "ahrefsbot": 31,
+   "twitterbot": 24,
+   "google-lens": 21,
+   "criteobot": 19,
+   "chatgpt-user": 17,
+   "duckduckbot": 14,
+   "google-read-aloud": 10,
+   "chrome-privacy-preserving-prefetch-proxy": 9,
+   "facebookexternalhit": 5,
+   "amazonbot": 1,
+   "gptbot": 1,
+   "shapbot": 0,
+   "chatgpt-operator": 0,
+   "seranking-backlinks": 0,
+   "google-safety": 0,
+   "google-inspectiontool": 0,
+   "google-adsbot": 0,
+   "googleother": 0,
+   "petalbot": 0,
+   "google-image-proxy": 0,
+   "exauser": 0,
+   "claude-user": 0,
+   "google-display-ads-bot": 0
+  },
+  "2026-11-12": {
+   "(名前なし)": 157676,
+   "meta-externalagent": 5952,
+   "bingbot": 2779,
+   "baiduspider": 691,
+   "googlebot": 676,
+   "meta-webindexer": 312,
+   "adsense": 273,
+   "oai-searchbot": 155,
+   "applebot": 153,
+   "exasearchbot": 139,
+   "perplexitybot": 128,
+   "google-lens": 105,
+   "ahrefsbot": 36,
+   "google-association-service": 29,
+   "amazonbot": 24,
+   "gpt-actions": 21,
+   "google-read-aloud": 18,
+   "twitterbot": 11,
+   "criteobot": 10,
+   "chatgpt-user": 8,
+   "chrome-privacy-preserving-prefetch-proxy": 7,
+   "duckduckbot": 6,
+   "claudebot": 5,
+   "facebookexternalhit": 4,
+   "claude-user": 2,
+   "gptbot": 1,
+   "google-image-proxy": 1,
+   "shapbot": 0,
+   "chatgpt-operator": 0,
+   "seranking-backlinks": 0,
+   "google-safety": 0,
+   "google-inspectiontool": 0,
+   "google-adsbot": 0,
+   "googleother": 0,
+   "petalbot": 0,
+   "exauser": 0,
+   "google-display-ads-bot": 0
+  }
+ },
+ "top_paths_ai": {
+  "meta-externalagent": [
+   {
+    "path": "/logo-light.png",
+    "count": 1775
+   },
+   {
+    "path": "/ogp-image.png",
+    "count": 1735
+   },
+   {
+    "path": "/favicon-32.png",
+    "count": 871
+   },
+   {
+    "path": "/race/null",
+    "count": 310
+   },
+   {
+    "path": "/en/race/null",
+    "count": 135
+   },
+   {
+    "path": "/winning-technique",
+    "count": 115
+   },
+   {
+    "path": "/ko/race/null",
+    "count": 114
+   },
+   {
+    "path": "/zh-TW/race/null",
+    "count": 96
+   },
+   {
+    "path": "/api/outcome-distribution",
+    "count": 77
+   },
+   {
+    "path": "/api/predictions/2026-11-02",
+    "count": 14
+   },
+   {
+    "path": "/api/predictions/2026-10-21",
+    "count": 12
+   },
+   {
+    "path": "/null",
+    "count": 12
+   },
+   {
+    "path": "/venue/null",
+    "count": 12
+   },
+   {
+    "path": "/api/predictions/2026-09-10",
+    "count": 11
+   },
+   {
+    "path": "/api/predictions/2026-10-24",
+    "count": 10
+   },
+   {
+    "path": "/en/venue/null",
+    "count": 10
+   },
+   {
+    "path": "/api/predictions/2026-10-14",
+    "count": 9
+   },
+   {
+    "path": "/api/predictions/2026-11-03",
+    "count": 9
+   },
+   {
+    "path": "/api/analogy/scenario/2026-10-12-23-12",
+    "count": 8
+   },
+   {
+    "path": "/api/predictions/2026-10-11",
+    "count": 8
+   }
+  ],
+  "perplexitybot": [
+   {
+    "path": "/winning-technique",
+    "count": 340
+   },
+   {
+    "path": "/robots.txt",
+    "count": 54
+   },
+   {
+    "path": "/",
+    "count": 10
+   },
+   {
+    "path": "/blog/venue-course1-win-rate-ranking",
+    "count": 10
+   },
+   {
+    "path": "/blog",
+    "count": 8
+   },
+   {
+    "path": "/race/2026-10-29-23-11",
+    "count": 6
+   },
+   {
+    "path": "/race/2026-10-31-23-12",
+    "count": 6
+   },
+   {
+    "path": "/venue/1",
+    "count": 6
+   },
+   {
+    "path": "/blog/course-prediction-tips",
+    "count": 5
+   },
+   {
+    "path": "/blog/exhibition-run-guide",
+    "count": 5
+   },
+   {
+    "path": "/blog/kiryu-water-wind-guide",
+    "count": 5
+   },
+   {
+    "path": "/blog/odds-expected-value-guide",
+    "count": 5
+   },
+   {
+    "path": "/race/2026-10-20-23-02",
+    "count": 5
+   },
+   {
+    "path": "/race/2026-11-03-10-01",
+    "count": 5
+   },
+   {
+    "path": "/racer/4205",
+    "count": 5
+   },
+   {
+    "path": "/racer/4306",
+    "count": 5
+   },
+   {
+    "path": "/racer/4464",
+    "count": 5
+   },
+   {
+    "path": "/racer/4604",
+    "count": 5
+   },
+   {
+    "path": "/racer/4895",
+    "count": 5
+   },
+   {
+    "path": "/blog/ai-prediction-accuracy-review",
+    "count": 4
+   }
+  ],
+  "oai-searchbot": [
+   {
+    "path": "/robots.txt",
+    "count": 86
+   },
+   {
+    "path": "/favicon-32.png",
+    "count": 76
+   },
+   {
+    "path": "/logo-light.png",
+    "count": 73
+   },
+   {
+    "path": "/winning-technique",
+    "count": 38
+   },
+   {
+    "path": "/api/predictions/2026-11-01",
+    "count": 16
+   },
+   {
+    "path": "/api/predictions/2026-11-03",
+    "count": 13
+   },
+   {
+    "path": "/blog/edogawa-outside-winning-techniques-guide",
+    "count": 11
+   },
+   {
+    "path": "/blog/fukuoka-water-wind-guide",
+    "count": 11
+   },
+   {
+    "path": "/blog/gamagori-makuri-wind-guide",
+    "count": 11
+   },
+   {
+    "path": "/blog/headwind-strength-makuri-by-venue",
+    "count": 11
+   },
+   {
+    "path": "/blog/karatsu-water-wind-guide",
+    "count": 11
+   },
+   {
+    "path": "/blog/tokoname-makuri-wind-guide",
+    "count": 11
+   },
+   {
+    "path": "/blog/wakamatsu-water-wind-guide",
+    "count": 11
+   },
+   {
+    "path": "/",
+    "count": 10
+   },
+   {
+    "path": "/blog/ai-index-reading-guide",
+    "count": 10
+   },
+   {
+    "path": "/blog/amagasaki-water-wind-guide",
+    "count": 10
+   },
+   {
+    "path": "/blog/biwako-water-wind-guide",
+    "count": 10
+   },
+   {
+    "path": "/blog/heiwajima-water-wind-guide",
+    "count": 10
+   },
+   {
+    "path": "/blog/kojima-water-wind-guide",
+    "count": 10
+   },
+   {
+    "path": "/blog/venue-course1-win-rate-ranking",
+    "count": 10
+   }
+  ],
+  "exasearchbot": [
+   {
+    "path": "/winning-technique",
+    "count": 56
+   },
+   {
+    "path": "/race/2026-11-08-02-01",
+    "count": 42
+   },
+   {
+    "path": "/en/blog/how-to-predict-races",
+    "count": 28
+   },
+   {
+    "path": "/blog/course-prediction-tips",
+    "count": 26
+   },
+   {
+    "path": "/en/blog/10000-races-analysis",
+    "count": 26
+   },
+   {
+    "path": "/en/blog/odds-expected-value-guide",
+    "count": 24
+   },
+   {
+    "path": "/blog/racer-form-guide",
+    "count": 20
+   },
+   {
+    "path": "/en/blog/first-mark-prediction-guide",
+    "count": 20
+   },
+   {
+    "path": "/blog/race-mood-effect-guide",
+    "count": 12
+   },
+   {
+    "path": "/en/blog/ai-prediction-accuracy-review",
+    "count": 12
+   },
+   {
+    "path": "/robots.txt",
+    "count": 12
+   },
+   {
+    "path": "/blog/odds-expected-value-guide",
+    "count": 10
+   },
+   {
+    "path": "/en/blog/rough-race-signals",
+    "count": 10
+   },
+   {
+    "path": "/en/guide",
+    "count": 10
+   },
+   {
+    "path": "/racer/4500",
+    "count": 10
+   },
+   {
+    "path": "/blog/teikoku-databank-alternative-racer-stats",
+    "count": 8
+   },
+   {
+    "path": "/accuracy",
+    "count": 6
+   },
+   {
+    "path": "/blog",
+    "count": 6
+   },
+   {
+    "path": "/blog/sg-race-guide-2026",
+    "count": 6
+   },
+   {
+    "path": "/blog/venue-tsu",
+    "count": 6
+   }
+  ],
+  "claudebot": [
+   {
+    "path": "/robots.txt",
+    "count": 51
+   },
+   {
+    "path": "/sitemap.xml",
+    "count": 49
+   },
+   {
+    "path": "/winning-technique",
+    "count": 17
+   },
+   {
+    "path": "/en/winning-technique",
+    "count": 3
+   },
+   {
+    "path": "/picks",
+    "count": 3
+   },
+   {
+    "path": "/zh-TW/winning-technique",
+    "count": 3
+   },
+   {
+    "path": "/",
+    "count": 2
+   },
+   {
+    "path": "/images/blog/roadmap-steps-en.jpg",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-02-03-05",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-02-03-10",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-02-15-04",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-02-19-03",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-02-24-05",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-02-24-10",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-03-02-05",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-03-02-10",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-03-04-04",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-03-10-11",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-03-10-12",
+    "count": 2
+   },
+   {
+    "path": "/race/2026-11-03-19-11",
+    "count": 2
+   }
+  ],
+  "gpt-actions": [
+   {
+    "path": "/",
+    "count": 48
+   },
+   {
+    "path": "/winning-technique",
+    "count": 13
+   },
+   {
+    "path": "/blog",
+    "count": 7
+   },
+   {
+    "path": "/blog/motor-condition-guide",
+    "count": 5
+   },
+   {
+    "path": "/terms",
+    "count": 5
+   },
+   {
+    "path": "/blog/assist-guide",
+    "count": 4
+   },
+   {
+    "path": "/blog/sonar-guide",
+    "count": 4
+   },
+   {
+    "path": "/race/2026-11-08-14-12",
+    "count": 4
+   },
+   {
+    "path": "/racer/4320",
+    "count": 4
+   },
+   {
+    "path": "/venue/7",
+    "count": 4
+   },
+   {
+    "path": "/accuracy",
+    "count": 3
+   },
+   {
+    "path": "/race/2026-11-02-15-07",
+    "count": 3
+   },
+   {
+    "path": "/venue/19",
+    "count": 3
+   },
+   {
+    "path": "/blog/marugame-water-wind-guide",
+    "count": 2
+   },
+   {
+    "path": "/blog/omura-wind-direction-guide",
+    "count": 2
+   },
+   {
+    "path": "/blog/picks-guide",
+    "count": 2
+   },
+   {
+    "path": "/blog/sonar-assist-intro",
+    "count": 2
+   },
+   {
+    "path": "/blog/suminoe-water-wind-guide",
+    "count": 2
+   },
+   {
+    "path": "/blog/teikoku-databank-alternative-racer-stats",
+    "count": 2
+   },
+   {
+    "path": "/blog/winning-technique-analysis-guide",
+    "count": 2
+   }
+  ],
+  "chatgpt-user": [
+   {
+    "path": "/",
+    "count": 30
+   },
+   {
+    "path": "/winning-technique",
+    "count": 16
+   },
+   {
+    "path": "/blog/motor-condition-guide",
+    "count": 6
+   },
+   {
+    "path": "/venue/12",
+    "count": 5
+   },
+   {
+    "path": "/blog/tailwind-strength-sashi-by-venue",
+    "count": 4
+   },
+   {
+    "path": "/accuracy",
+    "count": 3
+   },
+   {
+    "path": "/blog/headwind-strength-makuri-by-venue",
+    "count": 3
+   },
+   {
+    "path": "/blog/kiryu-water-wind-guide",
+    "count": 3
+   },
+   {
+    "path": "/blog/teikoku-databank-alternative-racer-stats",
+    "count": 3
+   },
+   {
+    "path": "/blog/winning-technique-analysis-guide",
+    "count": 3
+   },
+   {
+    "path": "/data/weather-in-escape.json",
+    "count": 3
+   },
+   {
+    "path": "/race/2026-11-10-12-12",
+    "count": 3
+   },
+   {
+    "path": "/race/2026-11-10-14-11",
+    "count": 3
+   },
+   {
+    "path": "/racer/4320",
+    "count": 3
+   },
+   {
+    "path": "/venue/1",
+    "count": 3
+   },
+   {
+    "path": "/blog",
+    "count": 2
+   },
+   {
+    "path": "/blog/assist-guide",
+    "count": 2
+   },
+   {
+    "path": "/blog/edogawa-outside-winning-techniques-guide",
+    "count": 2
+   },
+   {
+    "path": "/blog/exhibition-run-guide",
+    "count": 2
+   },
+   {
+    "path": "/blog/heiwajima-meet-ranking-guide",
+    "count": 2
+   }
+  ],
+  "applebot": [
+   {
+    "path": "/robots.txt",
+    "count": 28
+   },
+   {
+    "path": "/api/predictions/2026-11-07",
+    "count": 12
+   },
+   {
+    "path": "/api/predictions/2026-11-06",
+    "count": 11
+   },
+   {
+    "path": "/api/predictions/2026-11-02",
+    "count": 7
+   },
+   {
+    "path": "/api/predictions/2026-11-04",
+    "count": 6
+   },
+   {
+    "path": "/assets/main-Lfr21Fum.css",
+    "count": 6
+   },
+   {
+    "path": "/api/predictions/2026-11-03",
+    "count": 5
+   },
+   {
+    "path": "/api/predictions/2026-11-05",
+    "count": 5
+   },
+   {
+    "path": "/assets/main-7pKYErDY.css",
+    "count": 3
+   },
+   {
+    "path": "/assets/main-BaYG7ZCd.js",
+    "count": 3
+   },
+   {
+    "path": "/assets/main-C7yF5D0m.js",
+    "count": 3
+   },
+   {
+    "path": "/assets/main-DdgCmM-I.js",
+    "count": 3
+   },
+   {
+    "path": "/x/today",
+    "count": 3
+   },
+   {
+    "path": "/assets/main-BaBaMPiC.js",
+    "count": 2
+   },
+   {
+    "path": "/assets/main-ClZZdyfv.js",
+    "count": 2
+   },
+   {
+    "path": "/assets/main-DGCu3aBW.css",
+    "count": 2
+   },
+   {
+    "path": "/assets/main-Mkrqr564.js",
+    "count": 2
+   },
+   {
+    "path": "/racer/3941",
+    "count": 2
+   },
+   {
+    "path": "/racer/3952",
+    "count": 2
+   },
+   {
+    "path": "/racer/4174",
+    "count": 2
+   }
+  ],
+  "google-read-aloud": [
+   {
+    "path": "/api/outcome-distribution",
+    "count": 16
+   },
+   {
+    "path": "/",
+    "count": 8
+   },
+   {
+    "path": "/assets/main-ejvOnH_q.css",
+    "count": 7
+   },
+   {
+    "path": "/api/analogy/scenario/2026-11-06-14-12",
+    "count": 6
+   },
+   {
+    "path": "/api/predictions/2026-11-05",
+    "count": 6
+   },
+   {
+    "path": "/api/predictions/2026-11-07",
+    "count": 6
+   },
+   {
+    "path": "/api/predictions/2026-11-08",
+    "count": 6
+   },
+   {
+    "path": "/api/predictions/2026-11-09",
+    "count": 6
+   },
+   {
+    "path": "/api/predictions/2026-11-10",
+    "count": 6
+   },
+   {
+    "path": "/assets/main-lNGp5zs0.css",
+    "count": 6
+   },
+   {
+    "path": "/venue/12",
+    "count": 6
+   },
+   {
+    "path": "/venue/5",
+    "count": 5
+   },
+   {
+    "path": "/api/predictions/2026-11-04",
+    "count": 4
+   },
+   {
+    "path": "/api/predictions/2026-11-12",
+    "count": 4
+   },
+   {
+    "path": "/api/races/today",
+    "count": 4
+   },
+   {
+    "path": "/assets/main-Lfr21Fum.css",
+    "count": 4
+   },
+   {
+    "path": "/venue/17",
+    "count": 4
+   },
+   {
+    "path": "/venue/8",
+    "count": 4
+   },
+   {
+    "path": "/assets/main-CoH1ujAk.js",
+    "count": 3
+   },
+   {
+    "path": "/assets/main-CZy9-ZRF.css",
+    "count": 3
+   }
+  ],
+  "gptbot": [
+   {
+    "path": "/sitemap.xml",
+    "count": 11
+   },
+   {
+    "path": "/images/blog/first-mark-kimarite-donut-ja.jpg",
+    "count": 1
+   }
+  ],
+  "claude-user": [
+   {
+    "path": "/robots.txt",
+    "count": 4
+   },
+   {
+    "path": "/",
+    "count": 3
+   },
+   {
+    "path": "/accuracy",
+    "count": 1
+   },
+   {
+    "path": "/blog/first-mark-prediction-guide",
+    "count": 1
+   }
+  ],
+  "amazonbot": [
+   {
+    "path": "/race/2026-10-28-22-12",
+    "count": 3
+   },
+   {
+    "path": "/winning-technique",
+    "count": 3
+   },
+   {
+    "path": "/race/2026-11-05-12-01",
+    "count": 2
+   },
+   {
+    "path": "/api/analogy/scenario/2026-11-05-12-01",
+    "count": 1
+   },
+   {
+    "path": "/blog/data-race-table-guide",
+    "count": 1
+   },
+   {
+    "path": "/blog/racer-boat-return-rate-guide",
+    "count": 1
+   },
+   {
+    "path": "/blog/racer-form-ranking-guide",
+    "count": 1
+   },
+   {
+    "path": "/race/2026-10-06-18-10",
+    "count": 1
+   },
+   {
+    "path": "/race/2026-10-06-18-10/assist",
+    "count": 1
+   },
+   {
+    "path": "/race/2026-10-2...",
+    "count": 1
+   },
+   {
+    "path": "/race/2026-10-28-22-12/assist",
+    "count": 1
+   },
+   {
+    "path": "/race/2026-11-03-02-12",
+    "count": 1
+   },
+   {
+    "path": "/race/2026-11-03-02-12/assist",
+    "count": 1
+   },
+   {
+    "path": "/race/2026-11-04-01-01",
+    "count": 1
+   },
+   {
+    "path": "/race/2026-11-05-12-02",
+    "count": 1
+   },
+   {
+    "path": "/racer/3265",
+    "count": 1
+   },
+   {
+    "path": "/racer/3282",
+    "count": 1
+   },
+   {
+    "path": "/racer/3406",
+    "count": 1
+   },
+   {
+    "path": "/racer/3441",
+    "count": 1
+   },
+   {
+    "path": "/racer/3482",
+    "count": 1
+   }
+  ]
+ }
+}
