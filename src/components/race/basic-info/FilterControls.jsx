@@ -5,6 +5,7 @@ import InlineFetchError from "../../InlineFetchError";
 import { ownMetricLabel } from "./format";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
+const SCOPES = ["national", "local"];
 const GRADES = ["all", "ippan", "sgg1"];
 // 期間フィルタ（PERIODS）に「初日」「最終日」は**足さない**。2026-09-15時点では
 // 判定に使うrace_conditions.series_day/is_final_dayが全件nullだったため削除した
@@ -28,6 +29,120 @@ const PRESETS = [
   { scope: "national", grade: "sgg1" },
 ];
 
+// チップ（選択肢のボタン）の組。押すと onSelect(値) を呼ぶ
+function ChipGroup({ label, values, current, onSelect, renderLabel }) {
+  return (
+    <div className="rbit-chip-row" role="group" aria-label={label}>
+      {values.map((v) => (
+        <button
+          key={v}
+          type="button"
+          className={`rbit-chip${current === v ? " is-active" : ""}`}
+          onClick={() => onSelect(v)}
+        >
+          {renderLabel(v)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PresetRow({ scope, grade, setScope, setGrade }) {
+  const { t } = useTranslation();
+  const isPresetActive = (preset) =>
+    preset.scope === scope && preset.grade === grade;
+
+  return (
+    <div className="rbit-preset-row">
+      {PRESETS.map((preset, idx) => (
+        <button
+          key={idx}
+          type="button"
+          className={`rbit-preset${isPresetActive(preset) ? " is-active" : ""}`}
+          onClick={() => {
+            setScope(preset.scope);
+            setGrade(preset.grade);
+          }}
+        >
+          {/* 日本語は「当地一般戦」と続けて書くが、英語・韓国語は語間に
+                スペースが要るため区切りをロケール側に持たせる */}
+          {t("basicInfo.presetLabel", {
+            scope: t(`basicInfo.scopes.${preset.scope}`),
+            grade: t(`basicInfo.grades.${preset.grade}`),
+          })}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PeriodChips({ period, setPeriod, officialAvgSt }) {
+  const { t } = useTranslation();
+  return (
+    <div className="rbit-chip-row">
+      {PERIODS.map((p) => (
+        <button
+          key={p}
+          type="button"
+          className={`rbit-chip${period === p ? " is-active" : ""}`}
+          onClick={() => setPeriod(p)}
+        >
+          {t(`basicInfo.periods.${p}`)}
+        </button>
+      ))}
+      {/* 「公式」の期間は「?」に出す（公式の出走表と同じ期。BOA-775） */}
+      {officialAvgSt?.period && (
+        <TermHintButton
+          termKey="basicInfoOfficial"
+          values={{
+            from: slashDate(officialAvgSt.period.calcFrom),
+            to: slashDate(officialAvgSt.period.calcTo),
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function PeriodDetails({
+  metric,
+  scope,
+  period,
+  setPeriod,
+  officialAvgSt,
+  onRetryOfficialAvgSt,
+  currentTermFrom,
+}) {
+  const { t } = useTranslation();
+  return (
+    <details className="rbit-period-details">
+      <summary>{t("basicInfo.periodSummary")}</summary>
+      <PeriodChips
+        period={period}
+        setPeriod={setPeriod}
+        officialAvgSt={officialAvgSt}
+      />
+      {period === "official" && metric === "avgSt" && scope === "local" && (
+        <p className="rbit-period-caveat">
+          {t("basicInfo.periodOfficialNoLocalSt")}
+        </p>
+      )}
+      {period === "term" && currentTermFrom && (
+        <p className="rbit-period-caveat">
+          {t("basicInfo.periodCurrentNote", {
+            from: slashDate(currentTermFrom),
+          })}
+        </p>
+      )}
+      {officialAvgSt === null &&
+        period === "official" &&
+        metric === "avgSt" && (
+          <InlineFetchError onRetry={onRetryOfficialAvgSt} />
+        )}
+    </details>
+  );
+}
+
 // 指標・範囲・グレード・プリセット・期間の絞り込み操作
 export default function FilterControls({
   metric,
@@ -44,31 +159,22 @@ export default function FilterControls({
   currentTermFrom,
 }) {
   const { t } = useTranslation();
-  const isPresetActive = (preset) =>
-    preset.scope === scope && preset.grade === grade;
 
   return (
     <>
       <p className="rbit-note">{t("basicInfo.note")}</p>
 
-      <div
-        className="rbit-chip-row"
-        role="group"
-        aria-label={t("basicInfo.metricLabel")}
-      >
-        {METRICS.map((m) => (
-          <button
-            key={m}
-            type="button"
-            className={`rbit-chip${metric === m ? " is-active" : ""}`}
-            onClick={() => setMetric(m)}
-          >
-            {needsOwnAggregation
-              ? ownMetricLabel(t, m)
-              : t(`basicInfo.metrics.${m}`)}
-          </button>
-        ))}
-      </div>
+      <ChipGroup
+        label={t("basicInfo.metricLabel")}
+        values={METRICS}
+        current={metric}
+        onSelect={setMetric}
+        renderLabel={(m) =>
+          needsOwnAggregation
+            ? ownMetricLabel(t, m)
+            : t(`basicInfo.metrics.${m}`)
+        }
+      />
 
       {metric === "winRate" && needsOwnAggregation && (
         <p className="rbit-metric-caveat">
@@ -76,101 +182,38 @@ export default function FilterControls({
         </p>
       )}
 
-      <div
-        className="rbit-chip-row"
-        role="group"
-        aria-label={t("basicInfo.scopeLabel")}
-      >
-        {["national", "local"].map((s) => (
-          <button
-            key={s}
-            type="button"
-            className={`rbit-chip${scope === s ? " is-active" : ""}`}
-            onClick={() => setScope(s)}
-          >
-            {t(`basicInfo.scopes.${s}`)}
-          </button>
-        ))}
-      </div>
+      <ChipGroup
+        label={t("basicInfo.scopeLabel")}
+        values={SCOPES}
+        current={scope}
+        onSelect={setScope}
+        renderLabel={(s) => t(`basicInfo.scopes.${s}`)}
+      />
 
-      <div
-        className="rbit-chip-row"
-        role="group"
-        aria-label={t("basicInfo.gradeLabel")}
-      >
-        {GRADES.map((g) => (
-          <button
-            key={g}
-            type="button"
-            className={`rbit-chip${grade === g ? " is-active" : ""}`}
-            onClick={() => setGrade(g)}
-          >
-            {t(`basicInfo.grades.${g}`)}
-          </button>
-        ))}
-      </div>
+      <ChipGroup
+        label={t("basicInfo.gradeLabel")}
+        values={GRADES}
+        current={grade}
+        onSelect={setGrade}
+        renderLabel={(g) => t(`basicInfo.grades.${g}`)}
+      />
 
-      <div className="rbit-preset-row">
-        {PRESETS.map((preset, idx) => (
-          <button
-            key={idx}
-            type="button"
-            className={`rbit-preset${isPresetActive(preset) ? " is-active" : ""}`}
-            onClick={() => {
-              setScope(preset.scope);
-              setGrade(preset.grade);
-            }}
-          >
-            {/* 日本語は「当地一般戦」と続けて書くが、英語・韓国語は語間に
-                スペースが要るため区切りをロケール側に持たせる */}
-            {t("basicInfo.presetLabel", {
-              scope: t(`basicInfo.scopes.${preset.scope}`),
-              grade: t(`basicInfo.grades.${preset.grade}`),
-            })}
-          </button>
-        ))}
-      </div>
+      <PresetRow
+        scope={scope}
+        grade={grade}
+        setScope={setScope}
+        setGrade={setGrade}
+      />
 
-      <details className="rbit-period-details">
-        <summary>{t("basicInfo.periodSummary")}</summary>
-        <div className="rbit-chip-row">
-          {PERIODS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              className={`rbit-chip${period === p ? " is-active" : ""}`}
-              onClick={() => setPeriod(p)}
-            >
-              {t(`basicInfo.periods.${p}`)}
-            </button>
-          ))}
-          {/* 「公式」の期間は「?」に出す（公式の出走表と同じ期。BOA-775） */}
-          {officialAvgSt?.period && (
-            <TermHintButton
-              termKey="basicInfoOfficial"
-              values={{
-                from: slashDate(officialAvgSt.period.calcFrom),
-                to: slashDate(officialAvgSt.period.calcTo),
-              }}
-            />
-          )}
-        </div>
-        {period === "official" && metric === "avgSt" && scope === "local" && (
-          <p className="rbit-period-caveat">
-            {t("basicInfo.periodOfficialNoLocalSt")}
-          </p>
-        )}
-        {period === "term" && currentTermFrom && (
-          <p className="rbit-period-caveat">
-            {t("basicInfo.periodCurrentNote", {
-              from: slashDate(currentTermFrom),
-            })}
-          </p>
-        )}
-        {officialAvgSt === null && period === "official" && metric === "avgSt" && (
-          <InlineFetchError onRetry={onRetryOfficialAvgSt} />
-        )}
-      </details>
+      <PeriodDetails
+        metric={metric}
+        scope={scope}
+        period={period}
+        setPeriod={setPeriod}
+        officialAvgSt={officialAvgSt}
+        onRetryOfficialAvgSt={onRetryOfficialAvgSt}
+        currentTermFrom={currentTermFrom}
+      />
     </>
   );
 }
