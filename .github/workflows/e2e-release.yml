@@ -9,7 +9,8 @@ name: E2E Release (配備先)
 #
 # e2e-live.yml とは concurrency・job 名・ワークフロー名を分ける。hq の deploy-guard は e2e-live.yml の
 # workflow_dispatch の run と job 名「e2e-live (」で読むので、ここの run を取り違えない。
-# schedule は release の30分後に置くが、GitHub の schedule は遅れることがある（ADR-0106）。
+# schedule は release の30分後に置くが、GitHub の schedule は遅れることがある（ADR-0106）。schedule の起動は sha を持たないので
+# 「配備先が生きているか・いちばん新しい配備が落ちていないか」の確かめに留まり、どの release が出たかは照らさない。
 # 正確な時刻は hq が release の後に workflow_dispatch（inputs.sha）で起動する（BOA-1496 の sha の取り方と合わせる）。
 
 on:
@@ -61,22 +62,30 @@ jobs:
             done
           }
           if [ -n "$WANT" ] && ! [[ "$WANT" =~ ^[0-9a-f]{7,40}$ ]]; then
-            echo "::error::inputs.sha が sha の形でない: $WANT"; exit 1
+            echo "::error::inputs.sha が sha の形でない: ${WANT}"; exit 1
           fi
           got=""
           for i in $(seq 1 40); do
             got=$(latest_ok || true)
             if [ -z "$WANT" ] || [[ "$got" == "$WANT"* ]]; then break; fi
-            echo "待つ（${i}/40）: 本番の最新の success は ${got:-なし}、期待は $WANT"
+            echo "待つ（${i}/40）: 本番の最新の success は ${got:-なし}、期待は ${WANT}"
             sleep 30
           done
-          if [ -z "$got" ]; then echo "::error::本番の配備（Production）の success が直近10件に無い"; exit 1; fi
-          if [ -n "$WANT" ] && [[ "$got" != "$WANT"* ]]; then
-            echo "::error::20分待っても本番の配備が $WANT にならない（最新の success は $got）。release が出ていないか、配備が落ちている"
+          if [ -z "${got}" ]; then echo "::error::本番の配備（Production）の success が直近10件に無い"; exit 1; fi
+          # sha の指定が無い起動（schedule）は「配備先が生きているか」の確かめに留まる（どの release かは照らさない）。
+          # それでも、いちばん新しい配備が失敗のまま（failure・error）なら、古い版のまま緑にせず赤にする
+          newest=$(gh api "repos/${GITHUB_REPOSITORY}/deployments?environment=Production&per_page=1" --jq '.[0].id // ""')
+          newest_state=$(gh api "repos/${GITHUB_REPOSITORY}/deployments/${newest}/statuses?per_page=1" --jq '.[0].state // ""')
+          if [ "$newest_state" = "failure" ] || [ "$newest_state" = "error" ]; then
+            echo "::error::いちばん新しい本番の配備（id ${newest}）が ${newest_state}。本番は前の版（${got}）のまま"
             exit 1
           fi
-          echo "sha=$got" >> "$GITHUB_OUTPUT"
-          echo "本番の配備の sha: \`$got\`（期待: \`${WANT:-指定なし}\`）" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$WANT" ] && [[ "$got" != "$WANT"* ]]; then
+            echo "::error::20分待っても本番の配備が ${WANT} にならない（最新の success は ${got}）。release が出ていないか、配備が落ちている"
+            exit 1
+          fi
+          echo "sha=${got}" >> "$GITHUB_OUTPUT"
+          echo "本番の配備の sha: \`${got}\`（期待: \`${WANT:-指定なし}\`）" >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/setup-node@v4
         with:
