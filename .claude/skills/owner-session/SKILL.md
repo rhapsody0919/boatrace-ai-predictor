@@ -5,7 +5,7 @@ description: オーナー（人）と対話するセッション（窓口・オ�
 
 # オーナーと対話するセッションの決まり
 
-旧 `.claude/CLAUDE.md` と `.claude/rules/session-start-checks.md` から、作り手に要らない決まりを移した（2026-11、T1。分類は `docs/operation/agent-instructions-classification.md`）。置き場は窓口の手順を分ける票で決め直す。作り手の決まりは `AGENTS.md`。
+旧 `.claude/CLAUDE.md` と `.claude/rules/session-start-checks.md` から、作り手に要らない決まりを移した（2026-11、T1。ZB03 で rules を消した）。置き場は窓口の手順を分ける票で決め直す。作り手の決まりは `AGENTS.md`。
 
 ## セッションの始めの確認（旧 session-start-checks.md）
 
@@ -65,8 +65,8 @@ node scripts/maintenance/session-start-check.js
 |------|------|---------------|
 | `spec-ambiguity-detector` | 依頼文だけを見て「決まっていない点」を列挙する | **実装方針を考える前**（下記「実装前の要件確認」） |
 | `second-opinion-reviewer` | 後戻りが困難な意思決定・分析結論の批判的検証。Codex が止まっているときの代わり（PR の審査には使わない） | 上記「セカンドオピニオン検証」の手順2 |
-| `design-reviewer` | SDD設計（spec/screens/plan/tasks）の独立レビュー。実測値の再現とコード前提の裏取りが中心 | `/step3`完了後、`/step4`着手前（省略不可。`.claude/rules/sdd-workflow.md`） |
-| `acceptance-test-writer` | UI機能の受け入れE2Eを spec.md・screens.md だけから書く（plan/tasks/src は読まない） | `/step3`完了後、`/step4`着手前（UI機能のみ。`.claude/rules/sdd-workflow.md`） |
+| `design-reviewer` | SDD設計（spec/screens/plan/tasks）の独立レビュー。実測値の再現とコード前提の裏取りが中心 | `/step3`完了後、`/step4`着手前（省略不可。観点は `design-reviewer.md`） |
+| `acceptance-test-writer` | UI機能の受け入れE2Eを spec.md・screens.md だけから書く（plan/tasks/src は読まない） | `/step3`完了後、`/step4`着手前（UI機能のみ） |
 | `data-accuracy-verifier` | 集計結果が実データと一致するかだけの検証 | 実装完了後の自動レビュー2番（新規の集計・分析機能を含む場合） |
 | `content-qa` | ブログ記事の公開前品質チェック7観点 | 記事の新規公開・改稿前 |
 | `boatrace-fan-reviewer` | 変更画面をファン視点の固定7観点で評価（P0〜P3）。`claude/*` は Preview が無いので手元の dev サーバーの URL で | 「ファン評価あり」の作業で、CI緑の後に周ごと新規起動 |
@@ -98,6 +98,7 @@ node scripts/maintenance/session-start-check.js
 ## 重要な制約
 
 - モバイル実機でのテストは不可能。ユーザーに確認を依頼する
+- Codex に記録を渡さない: Codex の `/import`・`codex-plugin-cc` の `/codex:transfer` は使わない（`~/.claude/projects/` の会話記録に平文の鍵が残る）。誤って `/import` を開いたら全ての選択を外して閉じる（旧 AGENTS.md から移した、ZB03③ 2026-11、オーナー yes 11/12。作り手は `/import` を回せない）
 
 ### Linear MCPが認証切れの場合は`scripts/linear-cli.js`にフォールバック
 Linear MCP（`.mcp.json` の公式リモート MCP サーバー）はユーザーのブラウザ経由の OAuth 認証で、Claude Code のセッションからは再認証できない（`.env.local` の `LINEAR_API_KEY` とは別物）。MCP の呼び出しが認証エラーになったら、都度ユーザーに確認せず `LINEAR_API_KEY` を使う `scripts/linear-cli.js` に切り替えて続ける。
@@ -165,11 +166,11 @@ node --env-file=.env.local scripts/linear-cli.js create "タイトル" "説明"
 /step1-spec {slug} [チケット番号] → /step1-screens {slug}（UI機能のみ） → /step2 {slug} → /step3 {slug} → /step4 {slug}
 ```
 
-DB設計時のER図生成規律・長時間実装時の再開規律は`.claude/rules/sdd-workflow.md`参照（`docs/design/**`編集時に自動読み込み）。
+DB設計時の ER 図は DDL から作る（`verify-plan-erd` が見る）。
 
 ## 実装の後（旧「実装完了後の自動レビュー」のうち、別ベンダー・LLM の審査（決定 D2 で廃止）を除いた残り）
 
-2. **新規のデータ集計・分析機能（新しい統計・ランキング・傾向表示等）を含む場合は、データの正確性を複数の視点で検証する**（詳細は `.claude/rules/analysis.md` の「データ精度の検証」）。コードレビューとは別に「集計結果が実データと一致しているか」だけを見る検証を必ず行う
+2. **新規のデータ集計・分析機能（新しい統計・ランキング・傾向表示等）を含む場合は、データの正確性を複数の視点で検証する**（実データの2〜3件の突き合わせ・比率の合計と件数の妥当性・別の経路の再計算。担い手は `data-accuracy-verifier`）。コードレビューとは別に「集計結果が実データと一致しているか」だけを見る検証を必ず行う
 - RPC（`CREATE OR REPLACE FUNCTION`）を変えるマイグレーションを本番に適用したら、すぐに `node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js` を実行する（本番の実物とフロントの参照の最終照合。作り手は本番に接続しないので窓口の役目）
 7. **ユーザーへの完了報告（チャット本文）には以下を必ず全て含める**。PR コメントへのリンクや「詳細は PR 参照」で省略しない：
    - 実装内容（何をどう変えたか。ファイル・機能単位で具体的に）

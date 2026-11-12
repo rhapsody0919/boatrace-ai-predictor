@@ -2,7 +2,7 @@
  * verify-doc-placement.js - 文書の置き場の決まりを試験にする（ZB03 ②、BOA-1455）。
  * ネットワークにも DB にも接続しない。見るのはファイルの名前だけで、中身を読むのは根の .gitignore だけ。
  *
- * 決まり（正本 .claude/rules/documentation.md「新規ドキュメント作成フロー」「ファイル命名規則」）:
+ * 決まり（正本はこの verify と AGENTS.md「構造と依存の向き」の docs の行。旧 rules の documentation.md）:
  *   (a) ルートディレクトリには置かない → 根のファイル・ディレクトリの一覧を ROOT_FROZEN で凍結し、無い名前が増えたら失敗
  *       （.git・node_modules と、根の .gitignore の1段の型に当たる物＝手元の生成物 dist・test-results 等は除く）
  *   (b) ファイル名は kebab-case（例外 README.md・TODO.md・AGENTS.md）→ docs/ の下（docs/db-migration/ を除く）の
@@ -59,8 +59,8 @@ const DOCS_SKIP = "docs/db-migration";
 const NAME_EXCEPTIONS = ["README.md", "TODO.md", "AGENTS.md"];
 const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const HOW_TO_FIX = {
-  root: "根には置かない。docs/ の置き場の表（.claude/rules/documentation.md）から選んで移すか消す。手元だけの生成物なら .gitignore に足す",
-  docs: "docs/ のファイル名は kebab-case にする（例外 README.md・TODO.md・AGENTS.md。.claude/rules/documentation.md「ファイル命名規則」）",
+  root: "根には置かない。docs/ の置き場の表（AGENTS.md「構造と依存の向き」）から選んで移すか消す。手元だけの生成物なら .gitignore に足す",
+  docs: "docs/ のファイル名は kebab-case にする（例外 README.md・TODO.md・AGENTS.md）",
 };
 
 // 純関数: .gitignore の本文 → 根の名前に当てる正規表現の一覧（/ を中に含まない型だけ。否定 ! は扱わず、除く側に倒さない）
