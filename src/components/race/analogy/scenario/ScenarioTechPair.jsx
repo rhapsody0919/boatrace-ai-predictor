@@ -2,7 +2,6 @@
 import { useTranslation } from "react-i18next";
 import { TechniqueBars } from "../OutcomeBars";
 import { fmtCount } from "../../../../utils/analogyFormat";
-import { MIN_SCENARIO } from "../../../../utils/analogyScenario";
 import { k, share } from "./consts";
 
 export default function ScenarioTechPair({
