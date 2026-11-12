@@ -62,6 +62,17 @@ export default defineConfig([
     },
   },
   {
+    // src は未使用の名前の例外を ^_ だけに狭める（BOA-1046。上の ^[A-Z_] は import React・使っていない定数を隠していた。
+    // src の隠れていた未使用は BOA-1054〜1059 で消した）。scripts・sns-video-studio は今も大文字の未使用が残るので上のまま
+    files: ["src/**/*.{js,jsx,mjs,cjs}"],
+    rules: {
+      "no-unused-vars": [
+        "error",
+        { varsIgnorePattern: "^_", ignoreRestSiblings: true },
+      ],
+    },
+  },
+  {
     // Node.js（または Vercel の関数・Edge ランタイム）で動くコード。process 等のグローバルを許可する。
     // ブラウザで動く src/ には付けない（付けると src/ で process を参照しても no-undef が黙る）。
     // e2e/ は page.evaluate の中で document 等も使うため、上のブラウザ用グローバルと併存させる。
