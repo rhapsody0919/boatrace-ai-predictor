@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
-import { GRADE_CONFIG } from "../../../constants/gradeConfig";
-import { formatObservedTime } from "../weatherInfo";
-import { trueWindDirection } from "../../../utils/windDirection.js";
-import { ROUND_LABEL } from "../../../utils/assistModel";
 import { SONAR_RACE_TAB } from "../../../utils/raceUrlState";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
-import { TheoryButton } from "./SheetButtons";
+import AssistHeaderRow from "./AssistHeaderRow";
+import AssistHeaderSub from "./AssistHeaderSub";
+
+function oddsText(oddsFinal, oddsAt) {
+  if (oddsFinal) return ASSIST_COPY.oddsAtFinal;
+  return oddsAt ? ASSIST_COPY.oddsAt(oddsAt) : "";
+}
 
 /**
  * ヘッダー（spec FR-2、screens S-1 A）: 会場・R・ラウンド・グレード・締切、気象（展示後だけ）・時点の切り替え、
@@ -27,134 +29,21 @@ export default function AssistHeader({
   onVenue,
   children,
 }) {
-  const w = race?.weather ?? null;
-  // DB の風向はアイコンの番号のままなので、会場ごとに本当の方位に直す（BOA-819）
-  const windDir = trueWindDirection(w?.windDirection, venueCode);
-  const post = stage === "post";
-  // 一般（ippan）も札を出す（承認モック v7。レース詳細は出さないが、ここは会場・R・ラウンドと並べて読ませる）
-  const grade =
-    GRADE_CONFIG[race?.raceGrade]?.label ??
-    (race?.raceGrade === "ippan" ? ASSIST_COPY.gradeIppan : null);
-  const roundLabel = round ? ROUND_LABEL[round] : (race?.raceStage ?? null);
-  const observed = formatObservedTime(w?.observedAt);
   return (
     <header className="ta-header">
-      <div className="ta-header-row">
-        <h1 className="ta-header-venue">
-          {race?.venue ? (
-            <button
-              type="button"
-              className="ta-venue-btn"
-              aria-label={ASSIST_COPY.venueAria(race.venue)}
-              onClick={onVenue}
-            >
-              {race.venue} ›
-            </button>
-          ) : null}{" "}
-          {race?.raceNumber ? `${race.raceNumber}R` : ""}
-          <span className="ta-sr"> {ASSIST_COPY.title}</span>
-        </h1>
-        {roundLabel && (
-          <span className="ta-pill ta-pill-round">{roundLabel}</span>
-        )}
-        {/* 優勝戦・準優勝戦のスタートのセオリー（TC-T8）。予選・一般の日は出さない */}
-        {round && (
-          <TheoryButton
-            id="TC-T8"
-            name={ASSIST_COPY.roundTheory(ROUND_LABEL[round])}
-          />
-        )}
-        {/* 一般戦はラウンドも「一般」になるので、同じ語を2つ並べない（ファン評価 2周目 指摘8） */}
-        {grade && grade !== roundLabel && (
-          <span className="ta-pill">{grade}</span>
-        )}
-        {race?.startTime && (
-          <span className="ta-pill ta-num">
-            {ASSIST_COPY.deadline(race.startTime)}
-          </span>
-        )}
-      </div>
-      <div className="ta-header-sub">
-        {post && w ? (
-          <>
-            {(windDir || w.windSpeed != null) && (
-              <span>
-                風 {windDir ?? ""}{" "}
-                {w.windSpeed != null && (
-                  <b className="ta-num">{w.windSpeed}m</b>
-                )}{" "}
-                <TheoryButton
-                  id="TC-W1"
-                  name={ASSIST_COPY.theoryWindTitle(w.windSpeed)}
-                />
-              </span>
-            )}
-            {w.waveHeight != null && (
-              <span>
-                波 <b className="ta-num">{w.waveHeight}</b>cm
-              </span>
-            )}
-            {(w.weather || w.temperature != null) && (
-              <span>
-                {w.weather ?? ""}
-                {w.temperature != null && (
-                  <span className="ta-num"> {w.temperature}℃</span>
-                )}
-              </span>
-            )}
-            {w.waterTemperature != null && (
-              <span>
-                水温 <span className="ta-num">{w.waterTemperature}℃</span>
-              </span>
-            )}
-            {observed && (
-              <span className="ta-note ta-num">
-                {ASSIST_COPY.observedAt(observed)}
-              </span>
-            )}
-          </>
-        ) : (
-          <span>{ASSIST_COPY.weatherAfterExhibition}</span>
-        )}
-        {tidal && (
-          <span>
-            {ASSIST_COPY.tide}{" "}
-            <span className="ta-note">{ASSIST_COPY.tidePrep}</span>{" "}
-            <TheoryButton id="TC-T3" name={ASSIST_COPY.venueTide} />
-          </span>
-        )}
-        <span
-          className="ta-seg"
-          role="group"
-          aria-label={ASSIST_COPY.stageGroup}
-        >
-          <button
-            type="button"
-            aria-pressed={!post}
-            onClick={() => onStage("pre")}
-          >
-            {ASSIST_COPY.stagePre}
-          </button>
-          <button
-            type="button"
-            aria-pressed={post}
-            disabled={!canPost}
-            onClick={() => onStage("post")}
-          >
-            {ASSIST_COPY.stagePost}
-          </button>
-        </span>
-      </div>
+      <AssistHeaderRow race={race} round={round} onVenue={onVenue} />
+      <AssistHeaderSub
+        race={race}
+        venueCode={venueCode}
+        stage={stage}
+        canPost={canPost}
+        onStage={onStage}
+        tidal={tidal}
+      />
       {children}
       <div className="ta-header-foot">
         {/* オッズが無いときは買い目レンズの図に「発売後に出る」を出す（screens「状態」）。ここでは出さない */}
-        <span className="ta-num">
-          {oddsFinal
-            ? ASSIST_COPY.oddsAtFinal
-            : oddsAt
-              ? ASSIST_COPY.oddsAt(oddsAt)
-              : ""}
-        </span>
+        <span className="ta-num">{oddsText(oddsFinal, oddsAt)}</span>
         {/* 龍神ソナーは別のタブ（BOA-271）。内部タブは指定せず、ソナーの既定（差がつく材料）で開く。
             以前は ?tab=aiPrediction のままで AI予想タブに移っていた（2026-10-17 オーナー指摘） */}
         {showSonar && (
