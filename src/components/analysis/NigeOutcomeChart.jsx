@@ -5,7 +5,7 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getNigeOutcomeDistribution } from "../../services/venueQueries3.js";
 import "./OutcomeDistributionTable.css";
 
 const VENUES = [
@@ -51,7 +51,7 @@ function NigeOutcomeChart({ initialVenueCode = null }) {
         setError(null);
         const venueCode = parseInt(selectedVenue, 10);
         const data =
-          await supabaseDataService.getNigeOutcomeDistribution(venueCode);
+          await getNigeOutcomeDistribution(venueCode);
         setOutcomeData(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));

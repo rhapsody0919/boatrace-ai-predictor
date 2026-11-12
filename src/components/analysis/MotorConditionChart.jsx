@@ -7,7 +7,26 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getMotorGenerationStart } from "../../services/motorQueries.js";
+import {
+  getMotorPowerIndex,
+  getMotorUsageHistory,
+} from "../../services/motorQueries2.js";
+import {
+  getRaceMotorBreakdown,
+  getVenueMotorChampionshipHistory,
+  getVenueMotorStats,
+} from "../../services/motorQueries3.js";
+import {
+  getVenueMotorRanking,
+  getVenueMotorRanks,
+} from "../../services/motorQueries4.js";
+import {
+  getMotorConditionTrend,
+  getMotorRacerWakuStats,
+  getMotorWakuStats,
+} from "../../services/motorQueries5.js";
+import { getMotorPartsHistory } from "../../services/motorQueries6.js";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
@@ -140,7 +159,7 @@ function MotorConditionChart({
         if (isNewRaceOrVenue) setDrillDownMotor(null);
         // { rows, fetchFailed? }。会場公式のモーター成績が取れなかった行は venue_stats_failed（BOA-740）
         const { rows: data, freshness: dataFreshness } =
-          await supabaseDataService.getRaceMotorBreakdown(
+          await getRaceMotorBreakdown(
           selectedRace,
           selectedVenue,
           periodDays,
@@ -154,7 +173,7 @@ function MotorConditionChart({
         let venueGenerationStart = null;
         try {
           venueGenerationStart =
-            await supabaseDataService.getMotorGenerationStart(selectedVenue);
+            await getMotorGenerationStart(selectedVenue);
         } catch (err) {
           console.error("モーター使用開始日取得エラー:", err.message);
         }
@@ -173,12 +192,12 @@ function MotorConditionChart({
           // 表は待たせず、失敗した基だけ札を隠す。履歴は直近90日と同じ窓。
           Promise.all(data.map(async (row) => {
             try {
-              const history = await supabaseDataService.getMotorUsageHistory(
+              const history = await getMotorUsageHistory(
                 selectedVenue, row.motor_number, selectedRace, { includeTarget: true },
               );
               const meet = history.find((item) => String(item.racerId) === String(row.racer_id));
               if (!meet) return { boat: row.boat_number, unavailable: true };
-              const parts = await supabaseDataService.getMotorPartsHistory(
+              const parts = await getMotorPartsHistory(
                 selectedVenue, row.motor_number, 90, selectedRace, { includeTarget: true },
               );
               return { boat: row.boat_number, ...countMeetPartsChanges(parts.events, {
@@ -195,11 +214,10 @@ function MotorConditionChart({
         // 会場内順位は一覧表のあとから足す（表の表示を待たせない）。当日のレースは最新の
         // スナップショット、過去のレースはレース日以前で最新（BOA-521 と同じ）
         setVenueRanks(null);
-        supabaseDataService
-          .getVenueMotorRanks(
-            selectedVenue,
-            raceDate !== null && raceDate < getTodayJST() ? raceDate : null,
-          )
+        getVenueMotorRanks(
+          selectedVenue,
+          raceDate !== null && raceDate < getTodayJST() ? raceDate : null,
+        )
           .then((ranks) => {
             if (!cancelled) setVenueRanks(ranks);
           });
@@ -247,7 +265,7 @@ function MotorConditionChart({
         const isPast = raceDate !== null && raceDate < getTodayJST();
         if (isPast) {
           const generationStart =
-            await supabaseDataService.getMotorGenerationStart(selectedVenue);
+            await getMotorGenerationStart(selectedVenue);
           if (generationStart !== null && raceDate < generationStart) {
             setDrillPreGeneration(true);
             return;
@@ -270,36 +288,36 @@ function MotorConditionChart({
           wakuStats,
           racerWakuStats,
         ] = await Promise.all([
-          supabaseDataService.getMotorConditionTrend(
+          getMotorConditionTrend(
             selectedVenue,
             drillDownMotor,
             periodDays,
             beforeRaceId,
           ),
-          supabaseDataService.getMotorPowerIndex(
+          getMotorPowerIndex(
             selectedVenue,
             drillDownMotor,
             periodDays,
             beforeRaceId,
           ),
-          supabaseDataService.getMotorUsageHistory(
+          getMotorUsageHistory(
             selectedVenue,
             drillDownMotor,
             beforeRaceId,
           ),
-          supabaseDataService.getMotorPartsHistory(
+          getMotorPartsHistory(
             selectedVenue,
             drillDownMotor,
             periodDays,
             beforeRaceId,
           ),
           // 公式サイトのスナップショット（鮮度・優出等）は、過去レースならレース日以前の最新
-          supabaseDataService.getVenueMotorStats(
+          getVenueMotorStats(
             selectedVenue,
             drillDownMotor,
             isPast ? raceDate : null,
           ),
-          supabaseDataService.getVenueMotorChampionshipHistory(
+          getVenueMotorChampionshipHistory(
             selectedVenue,
             drillDownMotor,
             beforeRaceId,
@@ -307,18 +325,18 @@ function MotorConditionChart({
           // BOA-301 FR-1〜4: 会場内順位（公式の最新スナップショット）・
           // 枠番別成績・選手×枠成績（現行モーターの世代）は、periodDays
           // （既存の2連率/3連率推移トグル）とは独立した集計窓のため渡さない
-          supabaseDataService.getVenueMotorRanking(
+          getVenueMotorRanking(
             selectedVenue,
             drillDownMotor,
             undefined,
             isPast ? raceDate : null,
           ),
-          supabaseDataService.getMotorWakuStats(
+          getMotorWakuStats(
             selectedVenue,
             drillDownMotor,
             beforeRaceId,
           ),
-          supabaseDataService.getMotorRacerWakuStats(
+          getMotorRacerWakuStats(
             selectedVenue,
             drillDownMotor,
             beforeRaceId,
