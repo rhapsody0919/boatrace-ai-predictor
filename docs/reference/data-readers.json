@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1811,
+    "sourceFiles": 1829,
     "filesWithAccess": 296,
     "tableReaders": 992,
     "tableWriters": 189,
@@ -43,7 +43,7 @@
           ]
         },
         {
-          "ref": "src/services/predictionQueries3.js:347",
+          "ref": "src/services/predictionQueries3.js:439",
           "op": "select",
           "via": "client",
           "columns": [
@@ -52,7 +52,7 @@
           ]
         },
         {
-          "ref": "src/services/predictionQueries3.js:381",
+          "ref": "src/services/predictionQueries3.js:465",
           "op": "select",
           "via": "client",
           "columns": [
@@ -120,8 +120,8 @@
         "key": {
           "readers": [
             "api/accuracy/index.js:31",
-            "src/services/predictionQueries3.js:347",
-            "src/services/predictionQueries3.js:381",
+            "src/services/predictionQueries3.js:439",
+            "src/services/predictionQueries3.js:465",
             "src/services/predictionQueries4.js:22",
             "src/services/predictionQueries4.js:44"
           ],
@@ -137,8 +137,8 @@
         "data": {
           "readers": [
             "api/accuracy/index.js:31",
-            "src/services/predictionQueries3.js:347",
-            "src/services/predictionQueries3.js:381",
+            "src/services/predictionQueries3.js:439",
+            "src/services/predictionQueries3.js:465",
             "src/services/predictionQueries4.js:22",
             "src/services/predictionQueries4.js:44"
           ],
@@ -3560,7 +3560,7 @@
           ]
         },
         {
-          "ref": "src/services/predictionQueries3.js:50",
+          "ref": "src/services/predictionQueries3.js:113",
           "op": "select",
           "via": "client",
           "columns": [
@@ -3610,7 +3610,7 @@
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
             "scripts/daily/calculate-accuracy.js:536",
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [],
           "sql": [
@@ -3620,7 +3620,7 @@
         },
         "display_name": {
           "readers": [
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [],
           "sql": [
@@ -3735,7 +3735,7 @@
         "total_predictions": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3748,7 +3748,7 @@
         "hit_rate_win": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3761,7 +3761,7 @@
         "recovery_rate_win": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3799,7 +3799,7 @@
         "hit_rate_place": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3811,7 +3811,7 @@
         "hit_rate_trifecta": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3823,7 +3823,7 @@
         "hit_rate_trio": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3835,7 +3835,7 @@
         "recovery_rate_place": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3847,7 +3847,7 @@
         "recovery_rate_trifecta": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -3859,7 +3859,7 @@
         "recovery_rate_trio": {
           "readers": [
             "scripts/daily/calculate-accuracy.js:370",
-            "src/services/predictionQueries3.js:50"
+            "src/services/predictionQueries3.js:113"
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:536"
@@ -5797,7 +5797,7 @@
           ]
         },
         {
-          "ref": "src/services/predictionQueries3.js:67",
+          "ref": "src/services/predictionQueries3.js:132",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5990,7 +5990,7 @@
             "scripts/maintenance/migrate-to-supabase.js:270",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:69",
-            "src/services/predictionQueries3.js:67",
+            "src/services/predictionQueries3.js:132",
             "src/services/raceQueries2.js:212",
             "src/services/ruleMatchService.js:104"
           ],
@@ -6034,7 +6034,7 @@
             "scripts/maintenance/migrate-to-supabase.js:270",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:69",
-            "src/services/predictionQueries3.js:67",
+            "src/services/predictionQueries3.js:132",
             "src/services/raceQueries2.js:212",
             "src/services/ruleMatchService.js:104"
           ],
@@ -6180,7 +6180,7 @@
         "is_hit_win": {
           "readers": [
             "scripts/maintenance/delete-phantom-races.js:138",
-            "src/services/predictionQueries3.js:67"
+            "src/services/predictionQueries3.js:132"
           ],
           "writers": [],
           "sql": [
@@ -6195,7 +6195,7 @@
           "readers": [
             "scripts/maintenance/backfill-place-hits.js:14",
             "scripts/maintenance/delete-phantom-races.js:138",
-            "src/services/predictionQueries3.js:67"
+            "src/services/predictionQueries3.js:132"
           ],
           "writers": [
             "scripts/maintenance/backfill-place-hits.js:60"
@@ -6211,7 +6211,7 @@
         "is_hit_trifecta": {
           "readers": [
             "scripts/maintenance/delete-phantom-races.js:138",
-            "src/services/predictionQueries3.js:67"
+            "src/services/predictionQueries3.js:132"
           ],
           "writers": [],
           "sql": [
@@ -6225,7 +6225,7 @@
         "is_hit_trio": {
           "readers": [
             "scripts/maintenance/delete-phantom-races.js:138",
-            "src/services/predictionQueries3.js:67"
+            "src/services/predictionQueries3.js:132"
           ],
           "writers": [],
           "sql": [
@@ -6238,7 +6238,7 @@
         },
         "payout_win": {
           "readers": [
-            "src/services/predictionQueries3.js:67"
+            "src/services/predictionQueries3.js:132"
           ],
           "writers": [],
           "sql": [
@@ -6252,7 +6252,7 @@
         },
         "payout_place": {
           "readers": [
-            "src/services/predictionQueries3.js:67"
+            "src/services/predictionQueries3.js:132"
           ],
           "writers": [
             "scripts/maintenance/backfill-place-hits.js:60"
@@ -6267,7 +6267,7 @@
         },
         "payout_trifecta": {
           "readers": [
-            "src/services/predictionQueries3.js:67"
+            "src/services/predictionQueries3.js:132"
           ],
           "writers": [],
           "sql": [
@@ -6282,7 +6282,7 @@
         "payout_trio": {
           "readers": [
             "scripts/analysis/compare-pcexpect.js:120",
-            "src/services/predictionQueries3.js:67"
+            "src/services/predictionQueries3.js:132"
           ],
           "writers": [],
           "sql": [

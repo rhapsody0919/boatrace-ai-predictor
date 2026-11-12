@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1811 |
+| 読んだファイル | 1829 |
 | 読み書きのあるファイル | 296 |
 | 表の読み手（箇所） | 992 |
 | 表の書き手（箇所） | 189 |
@@ -274,8 +274,8 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/ml/analogy/in_caution_bands.py:211`, `scripts/ml/analogy/in_caution_bands.py:230`, `scripts/ml/analogy/tests/test_in_caution_bands.py:342`
 - 読み手（5）: 
   - `api/accuracy/index.js:31` select(rest) [data, key]
-  - `src/services/predictionQueries3.js:347` select [data, key]
-  - `src/services/predictionQueries3.js:381` select [data, key]
+  - `src/services/predictionQueries3.js:439` select [data, key]
+  - `src/services/predictionQueries3.js:465` select [data, key]
   - `src/services/predictionQueries4.js:22` select [data, key]
   - `src/services/predictionQueries4.js:44` select [data, key]
 - 書き手（3）: 
@@ -564,7 +564,7 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-perrace/finish_targets.py:335`, `scripts/analysis/analogy-finder-perrace/race_level.py:396`, `scripts/analysis/analogy-finder-perrace/race_level.py:397`, `scripts/analysis/analogy-finder-perrace/race_level.py:398`, `scripts/analysis/analogy-finder-perrace/venue_magnitude.py:26`, `scripts/analysis/boa845-axis-place/effect.py:98`, `scripts/ml/analogy/make_treeshap_testdata.py:209`, `scripts/ml/analogy/make_treeshap_testdata.py:214`, `scripts/ml/analogy/perrace.py:53`, `scripts/ml/analogy/tests/test_perrace.py:75`, `scripts/ml/analogy/tests/test_perrace.py:76`, `scripts/ml/analogy/tests/test_perrace.py:77`, `scripts/ml/analogy/tests/test_perrace.py:85`, `scripts/ml/predict.py:26`, `scripts/ml/predict_mycroft.py:30`, `scripts/ml/predict_watson.py:26`, `scripts/ml/train_mycroft.py:37`, `scripts/ml/train_rf.py:28`, `scripts/ml/train_v2.py:29`, `scripts/ml/train_watson.py:42`, `scripts/ml/watson_scores.py:23`
 - 読み手（2）: 
   - `scripts/daily/calculate-accuracy.js:370` select [hit_rate_place, hit_rate_trifecta, hit_rate_trio, hit_rate_win, model_id, recovery_rate_place, recovery_rate_trifecta, recovery_rate_trio, recovery_rate_win, total_predictions]
-  - `src/services/predictionQueries3.js:50` select [display_name, hit_rate_place, hit_rate_trifecta, hit_rate_trio, hit_rate_win, model_id, recovery_rate_place, recovery_rate_trifecta, recovery_rate_trio, recovery_rate_win, total_predictions]
+  - `src/services/predictionQueries3.js:113` select [display_name, hit_rate_place, hit_rate_trifecta, hit_rate_trio, hit_rate_win, model_id, recovery_rate_place, recovery_rate_trifecta, recovery_rate_trio, recovery_rate_win, total_predictions]
 - 書き手（1）: 
   - `scripts/daily/calculate-accuracy.js:536` update [hit_rate_place, hit_rate_trifecta, hit_rate_trio, hit_rate_win, last_evaluated_at, recovery_rate_place, recovery_rate_trifecta, recovery_rate_trio, recovery_rate_win, total_predictions, updated_at]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -747,7 +747,7 @@
   - `scripts/maintenance/verify-admin-rule-performance.js:268` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick] （検査）
   - `scripts/maintenance/verify-full-picture-scene2.js:3001` rest(rest) （検査）
   - `src/services/adminRuleService.js:69` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
-  - `src/services/predictionQueries3.js:67` select [is_hit_place, is_hit_trifecta, is_hit_trio, is_hit_win, model_id, payout_place, payout_trifecta, payout_trio, payout_win, race_id]
+  - `src/services/predictionQueries3.js:132` select [is_hit_place, is_hit_trifecta, is_hit_trio, is_hit_win, model_id, payout_place, payout_trifecta, payout_trio, payout_win, race_id]
   - `src/services/raceQueries2.js:212` select [feature_contributions, model_id, predicted_at, race_id]
   - `src/services/ruleMatchService.js:104` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
 - 書き手（10）: 
