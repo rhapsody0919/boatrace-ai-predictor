@@ -465,7 +465,8 @@ check(
 );
 check(
   "画面: 使用開始日の取得に失敗しても一覧表は出す（try/catch で null に倒す）",
-  /let venueGenerationStart = null;\s*try \{\s*venueGenerationStart =\s*await supabaseDataService\.getMotorGenerationStart/.test(
+  // 殻 supabaseDataService 経由と、領域の Queries の名前つき import の両方を受ける（BOA-1466 で後者へ移す）
+  /let venueGenerationStart = null;\s*try \{\s*venueGenerationStart =\s*await (?:supabaseDataService\.)?getMotorGenerationStart\(/.test(
     chart,
   ),
 );
