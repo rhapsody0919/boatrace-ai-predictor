@@ -119,7 +119,8 @@ function cruise(cwd, config, tmp, label) {
   const res = spawnSync(
     "npx",
     [
-      "--no", // devDependencies の版だけを使う（CI03・BOA-1492）
+      "--no", // devDependencies の版だけを使う（CI03・BOA-1492）。-- の後ろは道具の引数
+      "--",
       DEPENDENCY_CRUISER,
       "--config",
       config,

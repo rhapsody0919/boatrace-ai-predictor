@@ -194,6 +194,7 @@ if (ci) {
   // --- 循環の import（madge）
   const madge = runToFile("npx", [
     "--no",
+    "--",
     MADGE,
     "--circular",
     "--extensions",
@@ -222,6 +223,7 @@ if (ci) {
       "npx",
       [
         "--no",
+        "--",
         JSCPD,
         ...GRAPH_DIRS,
         "--format",
