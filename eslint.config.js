@@ -71,18 +71,31 @@ const RESTRICTED = {
         "onTouchStart・onTouchEnd・onTouchMove の独自実装をしない（iOS のタッチの問題）。onClick だけで書く",
     },
   ],
-  swallowCatch: [
-    "[body.type='Literal'][body.raw='null']",
-    "[body.type='ArrayExpression'][body.elements.length=0]",
-    "[body.type='CallExpression'][body.callee.name=/^set[A-Z]/][body.arguments.length=1][body.arguments.0.type='ArrayExpression'][body.arguments.0.elements.length=0]",
-  ].map((body) => ({
-    selector: `CallExpression[callee.property.name='catch'] > ArrowFunctionExpression${body}`,
-    message:
-      "取得の失敗を .catch で null・[] にしない（「データなし」と同じ表示になる）。失敗を state（failed 等）に残す",
-  })),
+  swallowCatch: (() => {
+    // 握りつぶしの値: null・[]・set<名>([])
+    const values = [
+      "Literal[raw='null']",
+      "ArrayExpression[elements.length=0]",
+      "CallExpression[callee.name=/^set[A-Z]/][arguments.length=1][arguments.0.type='ArrayExpression'][arguments.0.elements.length=0]",
+    ];
+    const cb = "CallExpression[callee.property.name='catch'] >";
+    return values
+      .flatMap((v) => [
+        // () => null（async も同じ）
+        `${cb} ArrowFunctionExpression > ${v}`,
+        // () => { return null }・function () { return [] }・() => { setRows([]) }（1文だけの本体）
+        `${cb} :matches(ArrowFunctionExpression, FunctionExpression) > BlockStatement[body.length=1] > :matches(ReturnStatement, ExpressionStatement) > ${v}`,
+      ])
+      .map((selector) => ({
+        selector,
+        message:
+          "取得の失敗を .catch で null・[] にしない（「データなし」と同じ表示になる）。失敗を state（failed 等）に残す",
+      }));
+  })(),
+  // component-reuse.md: 件数で変わるグリッドに repeat(auto-fill, …)・repeat(N, …) を使わない（auto-fit は許す）
   cssRepeat: textHits(
-    "/repeat\\(/",
-    "CSS の repeat( を JS の字に書かない。件数で変わるグリッドは CSS で auto-fit か DigestCardGrid.css の calc() 方式",
+    "/repeat\\(\\s*(auto-fill|\\d)/",
+    "件数で変わるグリッドに repeat(auto-fill, …)・repeat(N, …) を使わない。auto-fit か DigestCardGrid.css の calc() 方式",
   ),
   bannedWords: textHits(
     "/数える|似た|ふつう|いつも|必ず当たる|的中保証|鉄板/",
