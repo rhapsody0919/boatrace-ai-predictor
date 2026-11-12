@@ -1687,7 +1687,7 @@ await suite(realGate, record);
       /SUPABASE_SERVICE_KEY: \$\{\{ secrets\.SUPABASE_SERVICE_KEY \}\}/.test(
         yml.split("Check whether Vercel handles this job")[1] ?? "",
       ) &&
-      /steps:\s+- uses: actions\/checkout@v4\s+- uses: actions\/setup-node@v4\s+with:\s+node-version: '22'\s+- name: Check whether Vercel handles this job\s+id: gate\s+continue-on-error: true/.test(
+      /steps:\s+- uses: actions\/checkout@v4\s+- uses: actions\/setup-node@v4\s+with:\s+(?:node-version: '22'|node-version-file: \.nvmrc)\s+- name: Check whether Vercel handles this job\s+id: gate\s+continue-on-error: true/.test(
         yml,
       ) &&
       !yml.includes(`vars.${varName} != 'true'`);

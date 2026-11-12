@@ -2,7 +2,7 @@
  * 依存の向きの規則（dependency-cruiser の forbidden。相対 import の辺、BOA-1428）。
  * 判定の純関数は lintBaselines.js。ここは規則の宣言だけ。
  */
-// 固定の版（package.json の devDependencies と同じ。npx --no で手元の node_modules だけを使う、CI03・BOA-1492）
+// 固定の版（package.json の devDependencies と同じ。lintDepTree.js が node_modules の bin を直に起こし版を照らす、CI03・BOA-1492）
 const DEPENDENCY_CRUISER = "dependency-cruiser@16.10.4";
 
 const UI_DIRS = "components|pages|hooks";

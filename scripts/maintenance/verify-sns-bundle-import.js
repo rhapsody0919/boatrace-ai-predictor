@@ -590,10 +590,20 @@ await check("multipart実バイト数の制限と正常読込", async () => {
     new Blob([new Uint8Array(BUNDLE_LIMITS.request + 1)]),
     "draft.mp4",
   );
+  // FormDataをそのままRequestのbodyにして読み途中でcancelすると、Node 24のundiciが
+  // 閉じたstreamへenqueueして未捕捉例外になる（undici側の不具合。本番の受信streamは別経路）。
+  // 同じmultipartのバイト列を先に直列化し、通常のstreamとして渡す。
+  const hugeResponse = new Response(huge);
+  const hugeType = hugeResponse.headers.get("content-type");
+  const hugeBytes = new Uint8Array(await hugeResponse.arrayBuffer());
   await assert.rejects(
     () =>
       readBundleForm(
-        new Request("https://local.invalid", { method: "POST", body: huge }),
+        new Request("https://local.invalid", {
+          method: "POST",
+          headers: { "Content-Type": hugeType },
+          body: hugeBytes,
+        }),
       ),
     /4 MiB/,
   );
