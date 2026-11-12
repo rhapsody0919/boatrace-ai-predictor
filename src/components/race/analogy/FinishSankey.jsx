@@ -112,35 +112,16 @@ export default function FinishSankey({
   );
 }
 
-/**
- * 着順の流れの暗い枠（図だけ）。FinishSankey と撮影用の頁（src/snsCapture、完全版 f01 の撮影）が同じ部品を描く。
- * sel は選んだ帯（{p, a, b, c}）。押す操作は親が持つ（onPickFirst: 1着の四角を押す、onPickFirstKey: キーで押す、
- * onToggleLink: 帯を押す。null は外す）
- * @param {{tri: Record<string, number>, first?: number|null, not1?: boolean, sel?: {p: number, a: number, b: number, c: number}|null,
- *   onPickFirst?: (b: number) => void, onPickFirstKey?: (b: number) => void,
- *   onToggleLink?: (l: {p: number, a: number, b: number}|null) => void}} props
- */
-export function SankeyFigure({
-  tri,
-  first = null,
-  not1 = false,
-  sel = null,
-  onPickFirst,
-  onPickFirstKey,
-  onToggleLink,
-}) {
-  const { t } = useTranslation();
-  const k = "aiPredictionTab.analogy.flow";
-  const { tot, col, scale, pos, links } = sankeyLayout(tri, { first, not1 });
+/** 帯（p 着→p+1 着の流れ）の path の配列。帯を積む y は outY・inY を順に進めて決める（順序を変えない） */
+function sankeyPaths({ layout, sel, name, onToggleLink }) {
+  const { tot, scale, pos, links } = layout;
   const outY = pos.map((o) =>
     Object.fromEntries(Object.entries(o).map(([b, v]) => [b, v.y])),
   );
   const inY = pos.map((o) =>
     Object.fromEntries(Object.entries(o).map(([b, v]) => [b, v.y])),
   );
-  const name = (p, a, b, c) =>
-    t(`${k}.link`, { from: p + 1, a, to: p + 2, b, n: fmtCount(c) });
-  const paths = links.map(([p, a, b, c]) => {
+  return links.map(([p, a, b, c]) => {
     const w = Math.max(c * scale, 1);
     const y0 = outY[p][a] + w / 2;
     const y1 = inY[p + 1][b] + w / 2;
@@ -177,85 +158,137 @@ export function SankeyFigure({
       />
     );
   });
+}
+
+/** 1着の四角を押せる g で包む（押す・キーで押す）。2・3着の四角はそのまま */
+function PickableRect({ b, on, count, rect, onPickFirst, onPickFirstKey }) {
+  const { t } = useTranslation();
+  return (
+    <g
+      role="button"
+      tabIndex={0}
+      aria-label={t("aiPredictionTab.analogy.flow.first", {
+        b,
+        n: fmtCount(count),
+      })}
+      aria-pressed={on}
+      style={{ cursor: "pointer" }}
+      onClick={() => onPickFirst?.(b)}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        onPickFirstKey?.(b);
+      }}
+    >
+      {rect}
+    </g>
+  );
+}
+
+/** p 着の b 号艇の四角・艇番・件数（高さ 0 なら描かない） */
+function SankeyNode({ p, b, o, first, col, onPickFirst, onPickFirstKey }) {
+  const { t } = useTranslation();
+  if (!o[b].h) return null;
+  const on = p === 0 && first === b;
+  const c = BOAT_COLORS[b];
+  const rect = (
+    <rect
+      x={X[p]}
+      y={o[b].y}
+      width={W}
+      height={o[b].h}
+      fill={c.bg}
+      stroke={on ? "#fff" : "#94a3b8"}
+      strokeWidth={on ? 2 : 0.8}
+    />
+  );
+  return (
+    <g>
+      {p === 0 ? (
+        <PickableRect
+          b={b}
+          on={on}
+          count={col[0][b]}
+          rect={rect}
+          onPickFirst={onPickFirst}
+          onPickFirstKey={onPickFirstKey}
+        />
+      ) : (
+        rect
+      )}
+      {o[b].h >= 11 && (
+        <text
+          x={X[p] + W / 2}
+          y={o[b].y + o[b].h / 2 + 4}
+          textAnchor="middle"
+          fontSize="11"
+          fontWeight="700"
+          fill={c.text}
+          pointerEvents="none"
+        >
+          {b}
+        </text>
+      )}
+      {col[p][b] > 0 && (
+        <text
+          x={p === 2 ? X[p] + W + 6 : p === 0 ? X[p] - 6 : X[p] + W + 4}
+          y={o[b].y + o[b].h / 2 + 4}
+          textAnchor={p === 0 ? "end" : "start"}
+          fontSize="12"
+          fill={SCOPE_SUBTEXT}
+          stroke="#060d18"
+          strokeWidth="3"
+          paintOrder="stroke"
+          pointerEvents="none"
+        >
+          {t("aiPredictionTab.analogy.count", { n: fmtCount(col[p][b]) })}
+        </text>
+      )}
+    </g>
+  );
+}
+
+/**
+ * 着順の流れの暗い枠（図だけ）。FinishSankey と撮影用の頁（src/snsCapture、完全版 f01 の撮影）が同じ部品を描く。
+ * sel は選んだ帯（{p, a, b, c}）。押す操作は親が持つ（onPickFirst: 1着の四角を押す、onPickFirstKey: キーで押す、
+ * onToggleLink: 帯を押す。null は外す）
+ * @param {{tri: Record<string, number>, first?: number|null, not1?: boolean, sel?: {p: number, a: number, b: number, c: number}|null,
+ *   onPickFirst?: (b: number) => void, onPickFirstKey?: (b: number) => void,
+ *   onToggleLink?: (l: {p: number, a: number, b: number}|null) => void}} props
+ */
+export function SankeyFigure({
+  tri,
+  first = null,
+  not1 = false,
+  sel = null,
+  onPickFirst,
+  onPickFirstKey,
+  onToggleLink,
+}) {
+  const { t } = useTranslation();
+  const k = "aiPredictionTab.analogy.flow";
+  const layout = sankeyLayout(tri, { first, not1 });
+  const { col, pos } = layout;
+  const name = (p, a, b, c) =>
+    t(`${k}.link`, { from: p + 1, a, to: p + 2, b, n: fmtCount(c) });
+  const paths = sankeyPaths({ layout, sel, name, onToggleLink });
   return (
     <div className="af-dark af-dark-flat">
       <svg viewBox="0 0 400 400" role="img" aria-label={t(`${k}.aria`)}>
         {paths}
         {pos.map((o, p) =>
-          [1, 2, 3, 4, 5, 6].map((b) => {
-            if (!o[b].h) return null;
-            const on = p === 0 && first === b;
-            const c = BOAT_COLORS[b];
-            const rect = (
-              <rect
-                x={X[p]}
-                y={o[b].y}
-                width={W}
-                height={o[b].h}
-                fill={c.bg}
-                stroke={on ? "#fff" : "#94a3b8"}
-                strokeWidth={on ? 2 : 0.8}
-              />
-            );
-            return (
-              <g key={`${p}-${b}`}>
-                {p === 0 ? (
-                  <g
-                    role="button"
-                    tabIndex={0}
-                    aria-label={t(`${k}.first`, {
-                      b,
-                      n: fmtCount(col[0][b]),
-                    })}
-                    aria-pressed={on}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => onPickFirst?.(b)}
-                    onKeyDown={(e) => {
-                      if (e.key !== "Enter" && e.key !== " ") return;
-                      e.preventDefault();
-                      onPickFirstKey?.(b);
-                    }}
-                  >
-                    {rect}
-                  </g>
-                ) : (
-                  rect
-                )}
-                {o[b].h >= 11 && (
-                  <text
-                    x={X[p] + W / 2}
-                    y={o[b].y + o[b].h / 2 + 4}
-                    textAnchor="middle"
-                    fontSize="11"
-                    fontWeight="700"
-                    fill={c.text}
-                    pointerEvents="none"
-                  >
-                    {b}
-                  </text>
-                )}
-                {col[p][b] > 0 && (
-                  <text
-                    x={
-                      p === 2 ? X[p] + W + 6 : p === 0 ? X[p] - 6 : X[p] + W + 4
-                    }
-                    y={o[b].y + o[b].h / 2 + 4}
-                    textAnchor={p === 0 ? "end" : "start"}
-                    fontSize="12"
-                    fill={SCOPE_SUBTEXT}
-                    stroke="#060d18"
-                    strokeWidth="3"
-                    paintOrder="stroke"
-                    pointerEvents="none"
-                  >
-                    {t("aiPredictionTab.analogy.count", {
-                      n: fmtCount(col[p][b]),
-                    })}
-                  </text>
-                )}
-              </g>
-            );
-          }),
+          [1, 2, 3, 4, 5, 6].map((b) => (
+            <SankeyNode
+              key={`${p}-${b}`}
+              p={p}
+              b={b}
+              o={o}
+              first={first}
+              col={col}
+              onPickFirst={onPickFirst}
+              onPickFirstKey={onPickFirstKey}
+            />
+          )),
         )}
         {[0, 1, 2].map((p) => (
           <text
