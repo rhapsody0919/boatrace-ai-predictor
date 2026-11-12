@@ -7,7 +7,7 @@ import LoadingScreen from "../components/LoadingScreen";
 import DataFetchError from "../components/DataFetchError";
 import MeetRankingTable from "../components/meet/MeetRankingTable";
 import MeetQualifiersSection from "../components/meet/MeetQualifiersSection";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getMeetPage } from "../services/meetQueries3.js";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { getTodayJST } from "../utils/dateUtils";
@@ -51,8 +51,7 @@ function MeetPage() {
   useEffect(() => {
     if (!validParams) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getMeetPage(venueCode, startDate, getTodayJST())
+    getMeetPage(venueCode, startDate, getTodayJST())
       .then((page) => {
         if (!cancelled) setLoaded({ key, page });
       })
