@@ -26,14 +26,27 @@ for (const theme of ["light", "dark"]) {
       await tokenColor("--brand-accent-secondary"),
     );
     await expect(link).toHaveCSS("text-decoration-line", "none");
-    await link.hover();
-    // hover の色の遷移の途中を読まないよう、最終の色になるまで待つ
+    // 本日ビューは読み込み後に次のレースへ自動でスクロールし、5秒は高さの変化に合わせて戻す（VenueRaceListPage の
+    // holdScrollPosition、BOA-546）。1R の発走後の昼の e2e-live では、hover の後にリンクが画面外へ動いて hover が外れた（BOA-1490）。
+    // 読み込みの終わりを待ち、確かめるたびに hover し直す（hover は画面外の要素を視野へ戻す）。上限はスクロールし直す5秒より長く
+    await expect(
+      page
+        .locator(".race-list-section, .venue-race-list-page__empty")
+        .first(),
+    ).toBeVisible();
+    const hoveredColor = async () => {
+      await link.hover();
+      return link.evaluate((el) => getComputedStyle(el).color);
+    };
     await expect
-      .poll(() => link.evaluate((el) => getComputedStyle(el).color), {
-        timeout: 5000,
-      })
+      .poll(hoveredColor, { timeout: 10000 })
       .toBe(await tokenColor("--text-primary"));
-    await expect(link).toHaveCSS("text-decoration-line", "underline");
+    await expect
+      .poll(async () => {
+        await link.hover();
+        return link.evaluate((el) => getComputedStyle(el).textDecorationLine);
+      }, { timeout: 10000 })
+      .toBe("underline");
   });
 }
 
