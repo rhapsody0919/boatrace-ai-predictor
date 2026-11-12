@@ -86,26 +86,45 @@ export const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 /** 再試行の前の待ち（ms）。回数は長さ+1。最小でよい（BOA-1397: releases の 504 で shard が試験の前に落ちた） */
 export const RETRY_DELAYS_MS = [2000, 5000];
 
+const RETRY_DEFAULTS = {
+  fetchImpl: (url) => fetch(url),
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  delays: RETRY_DELAYS_MS,
+  log: (message) => console.warn(message),
+};
+
+/** 1回取る。例外は投げずに { error } で返す */
+async function attemptFetch(fetchImpl, url) {
+  try {
+    return { response: await fetchImpl(url) };
+  } catch (error) {
+    return { error };
+  }
+}
+
+const isRetryableResponse = (response) =>
+  !response.ok && RETRYABLE_STATUS.has(response.status);
+
+const failureLabel = ({ response, error }) =>
+  response ? `${response.status}` : `例外（${error?.message ?? error}）`;
+
 /**
  * fetch を、一時の失敗（RETRYABLE_STATUS・ネットワークの例外）のときだけ待って再試行する。
  * 最後の試行の応答を返す（恒久の失敗や、再試行しても直らない一時の失敗は呼び出し側が !ok で落とす）。
  * 最後の試行がネットワークの例外なら、その例外を投げる
  */
-export async function fetchWithRetry(
-  url,
-  { fetchImpl = fetch, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), delays = RETRY_DELAYS_MS, log = console.warn } = {},
-) {
+export async function fetchWithRetry(url, options = {}) {
+  const { fetchImpl, sleep, delays, log } = { ...RETRY_DEFAULTS, ...options };
   for (let attempt = 0; ; attempt++) {
+    const outcome = await attemptFetch(fetchImpl, url);
     const last = attempt >= delays.length;
-    try {
-      const response = await fetchImpl(url);
-      if (response.ok || !RETRYABLE_STATUS.has(response.status) || last) return response;
-      await response.body?.cancel?.(); // 捨てる応答の本文を読まずに閉じる（接続を早く返す）
-      log(`[e2e recording] 取得が ${response.status}。${delays[attempt]}ms 待って再試行（${attempt + 1}/${delays.length}）: ${url}`);
-    } catch (error) {
-      if (last) throw error;
-      log(`[e2e recording] 取得が例外（${error?.message ?? error}）。${delays[attempt]}ms 待って再試行（${attempt + 1}/${delays.length}）: ${url}`);
-    }
+    if (outcome.response && (last || !isRetryableResponse(outcome.response)))
+      return outcome.response;
+    if (outcome.error && last) throw outcome.error;
+    await outcome.response?.body?.cancel?.(); // 捨てる応答の本文を読まずに閉じる（接続を早く返す）
+    log(
+      `[e2e recording] 取得が ${failureLabel(outcome)}。${delays[attempt]}ms 待って再試行（${attempt + 1}/${delays.length}）: ${url}`,
+    );
     await sleep(delays[attempt]);
   }
 }
