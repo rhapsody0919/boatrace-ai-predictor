@@ -45,13 +45,13 @@ boatAI はボートレースの AI 予想サービス（React 19・Vite・react-
 | 手元の画面 | `npm run dev`（自分で起動し、確かめたら止める） |
 | 本番のビルド | `npm run build`（`api/` は束ねないので、`api/`・`scripts/` を変えたら `node scripts/maintenance/verify-relative-imports.js` も） |
 | lint | `node scripts/maintenance/lint-changed.js`（差分のファイルだけ。CI は `--ci` で依存の向き・大きさ・循環・重複も見る） |
-| 検査の一式 | `npm run verify`（PR の CI と同じ。手元では変更に関係する `npm run verify:*` だけ） |
+| PR の前の検査 | `npm run verify:pr`（`lint-changed.js --ci` と `verify-no-undef`。CI の Quality Gates と同じ判定。push の前に毎回。ほかに変更に関係する `npm run verify:*`。全件の `verify:ci` は CI が回す） |
 | E2E | `bash scripts/maintenance/run-heavy.sh playwright test --workers=1 e2e/<対象>.spec.js`（手元で全件を流さない） |
 | レイアウト | `npm run test:layout`（375/768/1024/1440/1920px。CSS・レイアウトを変えたら） |
 | E2E の再実行 | `node scripts/maintenance/e2e-rerun.js <PR> --apply`（落ちた job だけ。1回まで） |
 
 - `playwright`・`vite build` を `npm run` の外で回すときは `run-heavy.sh` を通し、playwright は `--workers=1`。書けない環境は `RYUJIN_HEAVY_LOCK_DIR` を向ける
-- CI は Node 20。Node 20 に無い API を使わない
+- Node の版は `.nvmrc`（24）と package.json の engines（24.x、Vercel の本番もこの版）。手元も CI もこの版で回す
 - E2E は録画を再生し時計を録画の時刻に固定する（`e2e/fixtures.js` の `test` と `fetchRecorded`）。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しする。Codex は手元で playwright を回さない
 - 画面の確認は手元の dev サーバーと Playwright で行う（DOM の照合とスクリーンショット。ライトとダークの両方）。一時ファイルは消す
 

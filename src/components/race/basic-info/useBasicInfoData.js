@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { supabaseDataService } from "../../../services/supabaseDataService";
+import { getRaceEntryOfficialRatesBreakdown } from "../../../services/raceQueries.js";
+import { getRaceOfficialAvgSt } from "../../../services/raceQueries2.js";
+import { getRacerScopedRaceStats } from "../../../services/racerQueries2.js";
+import {
+  getRacerAccidentRecords,
+  getRacerPeriodStats,
+} from "../../../services/racerQueries4.js";
 import { computeAccidentStats } from "../../../utils/accidentRate";
 
 export function useOfficialRates(raceId) {
@@ -8,8 +14,7 @@ export function useOfficialRates(raceId) {
   useEffect(() => {
     if (!raceId) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRaceEntryOfficialRatesBreakdown(raceId)
+    getRaceEntryOfficialRatesBreakdown(raceId)
       .then((data) => {
         if (!cancelled) setOfficialRates(data);
       })
@@ -39,8 +44,7 @@ export function useOfficialAvgSt(raceId) {
     // レースが変わる・再試行したときに、前の値や失敗を「取得中」に戻す（分割前からの挙動）
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setOfficialAvgSt(undefined);
-    supabaseDataService
-      .getRaceOfficialAvgSt(raceId)
+    getRaceOfficialAvgSt(raceId)
       .then((data) => {
         if (!cancelled) setOfficialAvgSt(data);
       })
@@ -76,8 +80,7 @@ export function useRacerPeriodStats(racerIdsKey, raceDate) {
     const ids = racerIdsKey.split(",").filter(Boolean).map(Number);
     if (ids.length === 0 || !raceDate) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRacerPeriodStats(ids, raceDate)
+    getRacerPeriodStats(ids, raceDate)
       .then((data) => {
         if (!cancelled) setPeriodStats(data);
       })
@@ -114,8 +117,7 @@ export function useAccidentData(racerIdsKey, raceDate, sortedPlayers) {
     const ids = racerIdsKey.split(",").filter(Boolean).map(Number);
     if (ids.length === 0 || !raceDate) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRacerAccidentRecords(ids, raceDate)
+    getRacerAccidentRecords(ids, raceDate)
       .then((data) => {
         if (!cancelled) setAccidentRecords(data);
       })
@@ -189,8 +191,7 @@ export function useScopedStats({
     if (!racerId) return;
     setScopedStatsByRacer((prev) => {
       if (prev[racerId]) return prev;
-      supabaseDataService
-        .getRacerScopedRaceStats(racerId)
+      getRacerScopedRaceStats(racerId)
         .then((data) => {
           setScopedStatsByRacer((cur) => ({ ...cur, [racerId]: data }));
         })

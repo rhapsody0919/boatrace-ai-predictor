@@ -13063,7 +13063,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-bot-race-function.js:851",
+          "ref": "scripts/maintenance/verify-bot-race-function.js:857",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -13145,7 +13145,7 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/raceQueries2.js:240",
             "src/services/racerService.js:86",
@@ -13164,7 +13164,7 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/raceQueries2.js:240",
             "src/services/racerService.js:86",
@@ -13183,7 +13183,7 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/raceQueries2.js:240",
             "src/services/racerService.js:86",
@@ -13204,7 +13204,7 @@
           "readers": [
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/scheduleQueries.js:94"
           ],
@@ -13220,7 +13220,7 @@
           "readers": [
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/scheduleQueries.js:94"
           ],

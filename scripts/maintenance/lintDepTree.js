@@ -12,6 +12,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import { parse } from "acorn";
 import {
   DATA_LAYER_KEY,
@@ -113,14 +114,34 @@ function writeConfig(dir) {
   return file;
 }
 
+/**
+ * dependency-cruiser の bin（このスクリプトの側の node_modules の物）。base の worktree には node_modules が
+ * 無いので npx に頼らず、HEAD の devDependencies の固定の版を node で直に起こす（CI03・BOA-1492）。版が違えば止める
+ */
+function cruiserBin() {
+  const dir = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../../node_modules/dependency-cruiser",
+  );
+  const want = DEPENDENCY_CRUISER.split("@").pop();
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(dir, "package.json"), "utf8"),
+  );
+  if (pkg.version !== want) {
+    throw new Error(
+      `dependency-cruiser の版が ${pkg.version}（固定は ${want}）。npm ci をやり直す`,
+    );
+  }
+  return path.join(dir, pkg.bin.depcruise);
+}
+
 function cruise(cwd, config, tmp, label) {
   const out = path.join(tmp, `${label}.json`);
   const fd = fs.openSync(out, "w");
   const res = spawnSync(
-    "npx",
+    process.execPath,
     [
-      "--yes",
-      DEPENDENCY_CRUISER,
+      cruiserBin(),
       "--config",
       config,
       "--output-type",

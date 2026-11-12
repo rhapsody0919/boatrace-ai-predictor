@@ -4,7 +4,7 @@
  * パターンの、レース非依存のグローバル統計値専用フック。
  */
 import { useState, useEffect } from "react";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getUnifiedVolatilityAccuracy } from "../services/predictionQueries4.js";
 
 export function useUnifiedVolatilityAccuracy() {
   const [stats, setStats] = useState(null);
@@ -12,8 +12,7 @@ export function useUnifiedVolatilityAccuracy() {
 
   useEffect(() => {
     let cancelled = false;
-    supabaseDataService
-      .getUnifiedVolatilityAccuracy()
+    getUnifiedVolatilityAccuracy()
       .then((data) => {
         if (!cancelled) setStats(data);
       })
