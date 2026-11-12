@@ -45,7 +45,10 @@ import { useState, useEffect } from "react";
 import { getDaysAgoJST, isRaceBeforeTodayJST } from "../../utils/dateUtils";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRacerScopedRaceStats } from "../../services/racerQueries2.js";
+import { getWinningTechniqueStats } from "../../services/venueQueries.js";
+import { getStCourseBaseline } from "../../services/venueQueries2.js";
+import { getNigeSimulation } from "../../services/venueQueries3.js";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { useRaceEntryFlyingRows } from "../../hooks/useRaceEntryFlyingRows";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
@@ -185,8 +188,7 @@ function RaceWakuInfoTab({
 
   useEffect(() => {
     let cancelled = false;
-    supabaseDataService
-      .getStCourseBaseline()
+    getStCourseBaseline()
       .then((data) => {
         if (!cancelled) setBaseline(data);
       })
@@ -205,8 +207,7 @@ function RaceWakuInfoTab({
   useEffect(() => {
     if (!venueCode) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getNigeSimulation(venueCode)
+    getNigeSimulation(venueCode)
       .then((data) => {
         if (!cancelled) setNigeRows(data);
       })
@@ -224,8 +225,7 @@ function RaceWakuInfoTab({
 
   useEffect(() => {
     let cancelled = false;
-    supabaseDataService
-      .getWinningTechniqueStats(venueCode)
+    getWinningTechniqueStats(venueCode)
       .then((data) => {
         if (!cancelled) setTechniqueStats(data ?? null);
       })
@@ -358,8 +358,7 @@ function RaceWakuInfoTab({
     let cancelled = false;
     ids.forEach((id) => {
       const racerId = Number(id);
-      supabaseDataService
-        .getRacerScopedRaceStats(racerId)
+      getRacerScopedRaceStats(racerId)
         .then((data) => {
           if (!cancelled)
             setScopedByRacer((prev) => ({ ...prev, [racerId]: data }));

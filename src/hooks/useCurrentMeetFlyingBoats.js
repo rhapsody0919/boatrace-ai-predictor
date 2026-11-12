@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getCurrentMeetFlyingBoats } from "../services/meetQueries.js";
 
 /**
  * 今節（前日まで）にFを切った艇番の Set（BOA-440）。基本情報タブと
@@ -16,8 +16,7 @@ export function useCurrentMeetFlyingBoats(raceId) {
   useEffect(() => {
     if (!raceId) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getCurrentMeetFlyingBoats(raceId)
+    getCurrentMeetFlyingBoats(raceId)
       .then((boats) => {
         if (!cancelled) setResult({ raceId, boats: new Set(boats ?? []) });
       })

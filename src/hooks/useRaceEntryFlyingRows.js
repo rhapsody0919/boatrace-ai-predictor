@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getRaceEntryOfficialRatesBreakdown } from "../services/raceQueries.js";
 
 /**
  * 出走表の今期F・L数（艇番 → {f_count, l_count, ...}）の Map。Fバッジを出す
@@ -15,8 +15,7 @@ export function useRaceEntryFlyingRows(raceId) {
   useEffect(() => {
     if (!raceId) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRaceEntryOfficialRatesBreakdown(raceId)
+    getRaceEntryOfficialRatesBreakdown(raceId)
       .then((rows) => {
         if (cancelled) return;
         setResult({

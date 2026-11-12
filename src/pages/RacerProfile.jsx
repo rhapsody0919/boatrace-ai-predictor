@@ -12,7 +12,7 @@ import {
 } from "../components/racer";
 import RacerFrontTaking from "../components/racer/RacerFrontTaking";
 import { summarizeFrontTaking } from "../utils/frontTaking";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getRacerScopedRaceStats } from "../services/racerQueries2.js";
 import InlineFetchError from "../components/InlineFetchError";
 import {
   getRacerPageData,
@@ -149,8 +149,7 @@ export default function RacerProfile() {
   useEffect(() => {
     if (!validId) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRacerScopedRaceStats(racerId)
+    getRacerScopedRaceStats(racerId)
       .then((records) => {
         if (cancelled) return;
         setFrontTakingLoad({ racerId, summary: summarizeFrontTaking(records) });
