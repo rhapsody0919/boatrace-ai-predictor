@@ -76,6 +76,181 @@ function useTodayValue(row, values) {
   return { of, withUnit, unit, hib };
 }
 
+/** 「n/N」の件数の文。組が無ければ "—" */
+function pairCountText(t, pair) {
+  return pair
+    ? t(`${k}.pairCount`, { hits: fmtCount(pair[0]), n: fmtCount(pair[1]) })
+    : "—";
+}
+
+/** 棒の下の順位の文字（1位・6位は「一番良い（…）」を2行に割る） */
+function stripRankText(t, row, i, word) {
+  const split = (s) => s.replace(/^(.+?)(（.+）)$/, "$1\n$2");
+  if (i === 0) return split(t(`${k}.stripTop`, { word: word(row.good) }));
+  if (i === 5) return split(t(`${k}.stripBottom`, { word: word(row.bad) }));
+  return t(`${k}.stripRank`, { rank: i + 1 });
+}
+
+/** 閉じた状態の1行の要約（項目名・?ボタン・判定・今日の順位・一番良い/悪いときの率） */
+function FactCardSummary({
+  t,
+  row,
+  label,
+  judgeKey,
+  showDesc,
+  onWhatIs,
+  me,
+  word,
+}) {
+  return (
+    <summary className="af-card-sum">
+      <span className="af-card-head">
+        <span className="af-card-name">{label}</span>
+        <button
+          type="button"
+          className="af-q"
+          aria-expanded={showDesc}
+          aria-label={t(`${k}.whatIs`, { item: label })}
+          onClick={onWhatIs}
+        >
+          ?
+        </button>
+        <span className="af-card-judge">
+          {t(`${k}.judge.${judgeKey}`, judgeLabelParams(row))}
+          {row.judge.reversed && t(`${k}.reversed`, { word: word(row.bad) })}
+        </span>
+      </span>
+      <span className="af-card-chev" aria-hidden="true" />
+      <span className="af-card-brief af-num">
+        <span>
+          {t(`${k}.briefToday`, {
+            rank: me.r ? me.rank : "—",
+            value: me.value,
+          })}
+        </span>
+        <span>
+          {t(`${k}.briefBest`, { word: word(row.good) })}{" "}
+          <b>{fmtPct(row.rates[0])}</b>
+        </span>
+        <span>
+          {t(`${k}.briefBest`, { word: word(row.bad) })}{" "}
+          <b>{fmtPct(row.rates[5])}</b>
+        </span>
+      </span>
+    </summary>
+  );
+}
+
+/** 選んだ艇の今日の値と順位、6艇の範囲 */
+function FactToday({ t, boat, me, range }) {
+  return (
+    <div>
+      <p className="af-card-today">
+        <BoatBadge n={boat} size="xs" />{" "}
+        {t(`${k}.todayValue`, { boat, value: me.value, rank: me.rank })}
+      </p>
+      {range && (
+        <p className="af-card-range">{t(`${k}.todayRangeOf6`, { range })}</p>
+      )}
+    </div>
+  );
+}
+
+/** 一番良い/悪いときの率と件数の2つ */
+function FactPair({ t, row, word }) {
+  return (
+    <div className="af-pair">
+      {[
+        [row.all[0], row.rates[0], row.good],
+        [row.all[5], row.rates[5], row.bad],
+      ].map(([pair, p, w]) => (
+        <div
+          key={w}
+          className={pair && pair[1] < MIN_RATE_N ? "is-few" : undefined}
+        >
+          <span>{t(`${k}.best`, { word: word(w) })}</span>
+          <b>{fmtPct(p)}</b>
+          <small>
+            {pairCountText(t, pair)}
+            {pair && pair[1] < MIN_RATE_N && ` ${t(`${k}.few`)}`}
+          </small>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** 6つの順位の棒（棒は6艇ではなく「この艇が6艇中何位だったか」の6区分。2026-10-06 ユーザー指摘） */
+function FactStrip({
+  t,
+  row,
+  boat,
+  todayPos,
+  usual,
+  max,
+  rateName,
+  label,
+  word,
+}) {
+  const stripAria = t(`${k}.stripLabel`, {
+    item: label,
+    rate: rateName,
+    list: row.rates
+      .map((p, i) => `${t(`${k}.stripRank`, { rank: i + 1 })} ${fmtPct(p)}`)
+      .join(t("aiPredictionTab.analogy.listSeparator")),
+  });
+  return (
+    <>
+      <p className="af-strip-title">
+        <BoatBadge n={boat} size="xs" />{" "}
+        {t(`${k}.stripTitleShort`, { rate: rateName })}
+      </p>
+      <div className="af-strip" role="img" aria-label={stripAria}>
+        {row.rates.map((p, i) => {
+          const on = todayPos === i + 1;
+          return (
+            <div
+              key={i}
+              className={`af-strip-col${on ? " is-today" : ""}${row.all[i] && row.all[i][1] < MIN_RATE_N ? " is-few" : ""}`}
+              title={row.all[i] ? pairCountText(t, row.all[i]) : ""}
+            >
+              <span className="af-num">
+                {p === null ? "—" : `${Math.round(p * 100)}%`}
+              </span>
+              <span className="af-strip-plot">
+                <span
+                  className="af-strip-bar"
+                  style={{
+                    height: `${p === null ? 0 : (p / max) * 100}%`,
+                    background: SCOPE_LINE[boat],
+                  }}
+                />
+                {usual !== null && (
+                  <span
+                    className="af-strip-usual"
+                    style={{ bottom: `${(usual / max) * 100}%` }}
+                  />
+                )}
+              </span>
+              <span className="af-strip-rank">
+                {stripRankText(t, row, i, word)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+/** 6艇の今日の値の範囲（「6艇は1.00〜10.00点」）。値が無い・有限でなければ null */
+function todayRange(t, values, hib, boat, withUnit, unit) {
+  const pos = values ? todayPosition(values, hib, boat) : null;
+  return pos && Number.isFinite(pos.min) && Number.isFinite(pos.max)
+    ? fmtRange(withUnit(pos.min), withUnit(pos.max), unit, t(`${k}.rangeSep`))
+    : null;
+}
+
 /**
  * 項目ごとのカード（spec A-7、承認モック sonar-tab v3）。閉じた状態は1行の要約（項目名・判定・今日の順位・
  * 一番良い/悪いときの率）、開くと今日の値と6艇の範囲・一番良い/悪いときの率と件数・6つの順位の棒・今日の棒の
@@ -106,34 +281,20 @@ export default function FactCard({
   const word = (w) => t(`${k}.words.${w}`);
   const rateName = t(`aiPredictionTab.analogy.rateName.${target}`);
   const usual = rateOf(usualOf(scopeFacts, boat, target));
-  const [best, worst] = [row.all[0], row.all[5]];
   const weak = row.judge.level === "unclear" || row.judge.level === "none";
   const max =
     Math.max(...row.rates.filter((p) => p !== null), usual ?? 0, 0.01) * 1.12;
   const label = t(`${k}.items.${row.key}.label`);
   const { of: todayOf, withUnit, unit, hib } = useTodayValue(row, values);
-  const stripAria = t(`${k}.stripLabel`, {
-    item: label,
-    rate: rateName,
-    list: row.rates
-      .map((p, i) => `${t(`${k}.stripRank`, { rank: i + 1 })} ${fmtPct(p)}`)
-      .join(t("aiPredictionTab.analogy.listSeparator")),
-  });
   const me = todayOf(boat);
-  const pairCount = (pair) =>
-    pair
-      ? t(`${k}.pairCount`, {
-          hits: fmtCount(pair[0]),
-          n: fmtCount(pair[1]),
-        })
-      : "—";
-
-  // 6艇の今日の値の範囲（「6艇は1.00〜10.00点」）
-  const pos = values ? todayPosition(values, hib, boat) : null;
-  const range =
-    pos && Number.isFinite(pos.min) && Number.isFinite(pos.max)
-      ? fmtRange(withUnit(pos.min), withUnit(pos.max), unit, t(`${k}.rangeSep`))
-      : null;
+  const range = todayRange(t, values, hib, boat, withUnit, unit);
+  const onWhatIs = (e) => {
+    // summary の中のボタンなので、押してもカードの開閉にしない
+    e.preventDefault();
+    e.stopPropagation();
+    setOpen(true);
+    setShowDesc((v) => !v);
+  };
 
   return (
     <details
@@ -143,47 +304,16 @@ export default function FactCard({
       data-testid="analogy-fact-card"
       data-key={row.key}
     >
-      <summary className="af-card-sum">
-        <span className="af-card-head">
-          <span className="af-card-name">{label}</span>
-          <button
-            type="button"
-            className="af-q"
-            aria-expanded={showDesc}
-            aria-label={t(`${k}.whatIs`, { item: label })}
-            onClick={(e) => {
-              // summary の中のボタンなので、押してもカードの開閉にしない
-              e.preventDefault();
-              e.stopPropagation();
-              setOpen(true);
-              setShowDesc((v) => !v);
-            }}
-          >
-            ?
-          </button>
-          <span className="af-card-judge">
-            {t(`${k}.judge.${judgeKey}`, judgeLabelParams(row))}
-            {row.judge.reversed && t(`${k}.reversed`, { word: word(row.bad) })}
-          </span>
-        </span>
-        <span className="af-card-chev" aria-hidden="true" />
-        <span className="af-card-brief af-num">
-          <span>
-            {t(`${k}.briefToday`, {
-              rank: me.r ? me.rank : "—",
-              value: me.value,
-            })}
-          </span>
-          <span>
-            {t(`${k}.briefBest`, { word: word(row.good) })}{" "}
-            <b>{fmtPct(row.rates[0])}</b>
-          </span>
-          <span>
-            {t(`${k}.briefBest`, { word: word(row.bad) })}{" "}
-            <b>{fmtPct(row.rates[5])}</b>
-          </span>
-        </span>
-      </summary>
+      <FactCardSummary
+        t={t}
+        row={row}
+        label={label}
+        judgeKey={judgeKey}
+        showDesc={showDesc}
+        onWhatIs={onWhatIs}
+        me={me}
+        word={word}
+      />
       <div className="af-card-body">
         {showDesc && (
           <p className="af-card-desc">
@@ -191,88 +321,19 @@ export default function FactCard({
           </p>
         )}
         {/* 選んだ艇の今日の値と6艇中の順位（棒の強調を出さない日も出す。2026-10-06 ユーザー指摘） */}
-        <div>
-          <p className="af-card-today">
-            <BoatBadge n={boat} size="xs" />{" "}
-            {t(`${k}.todayValue`, {
-              boat,
-              value: me.value,
-              rank: me.rank,
-            })}
-          </p>
-          {range && (
-            <p className="af-card-range">
-              {t(`${k}.todayRangeOf6`, { range })}
-            </p>
-          )}
-        </div>
-        <div className="af-pair">
-          {[
-            [best, row.rates[0], row.good],
-            [worst, row.rates[5], row.bad],
-          ].map(([pair, p, w]) => (
-            <div
-              key={w}
-              className={pair && pair[1] < MIN_RATE_N ? "is-few" : undefined}
-            >
-              <span>{t(`${k}.best`, { word: word(w) })}</span>
-              <b>{fmtPct(p)}</b>
-              <small>
-                {pairCount(pair)}
-                {pair && pair[1] < MIN_RATE_N && ` ${t(`${k}.few`)}`}
-              </small>
-            </div>
-          ))}
-        </div>
-        {/* 棒は6艇ではなく「この艇が6艇中何位だったか」の6区分（2026-10-06 ユーザー指摘） */}
-        <p className="af-strip-title">
-          <BoatBadge n={boat} size="xs" />{" "}
-          {t(`${k}.stripTitleShort`, { rate: rateName })}
-        </p>
-        <div className="af-strip" role="img" aria-label={stripAria}>
-          {row.rates.map((p, i) => {
-            const on = todayPos === i + 1;
-            return (
-              <div
-                key={i}
-                className={`af-strip-col${on ? " is-today" : ""}${row.all[i] && row.all[i][1] < MIN_RATE_N ? " is-few" : ""}`}
-                title={row.all[i] ? pairCount(row.all[i]) : ""}
-              >
-                <span className="af-num">
-                  {p === null ? "—" : `${Math.round(p * 100)}%`}
-                </span>
-                <span className="af-strip-plot">
-                  <span
-                    className="af-strip-bar"
-                    style={{
-                      height: `${p === null ? 0 : (p / max) * 100}%`,
-                      background: SCOPE_LINE[boat],
-                    }}
-                  />
-                  {usual !== null && (
-                    <span
-                      className="af-strip-usual"
-                      style={{ bottom: `${(usual / max) * 100}%` }}
-                    />
-                  )}
-                </span>
-                <span className="af-strip-rank">
-                  {i === 0
-                    ? t(`${k}.stripTop`, { word: word(row.good) }).replace(
-                        /^(.+?)(（.+）)$/,
-                        "$1\n$2",
-                      )
-                    : i === 5
-                      ? t(`${k}.stripBottom`, { word: word(row.bad) }).replace(
-                          /^(.+?)(（.+）)$/,
-                          "$1\n$2",
-                        )
-                      : t(`${k}.stripRank`, { rank: i + 1 })}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        <FactToday t={t} boat={boat} me={me} range={range} />
+        <FactPair t={t} row={row} word={word} />
+        <FactStrip
+          t={t}
+          row={row}
+          boat={boat}
+          todayPos={todayPos}
+          usual={usual}
+          max={max}
+          rateName={rateName}
+          label={label}
+          word={word}
+        />
         {!hideLine && todayPos && (
           <TodayHit
             row={row}
