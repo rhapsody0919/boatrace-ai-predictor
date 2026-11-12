@@ -31,15 +31,29 @@ import { finishPositionOf as pureFinishPositionOf } from "../../src/pure/finishP
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
 
+// RA41（BOA-1501）で src/components/race から src/pure へ移す3本は、移す前後のどちらでも本体のある方を見る
+// （移した後の元の場所は export * の殻で、変異の文字列が無いため）。移した後に元の場所の分岐は外す
+const bodyOf = (pure, old) =>
+  fs.existsSync(path.join(ROOT, pure)) ? pure : old;
+
 const TARGETS = {
   motorMeetParts: "src/utils/motorMeetParts.js",
   meetStRank: "src/components/race/meetStRank.js",
   semifinalCount: "src/pure/semifinalCount.js",
   finishPosition: "src/pure/finishPosition.js",
-  basicInfoStats: "src/components/race/basicInfoStats.js",
+  basicInfoStats: bodyOf(
+    "src/pure/basicInfoStats.js",
+    "src/components/race/basicInfoStats.js",
+  ),
   raceStatus: "src/utils/raceStatus.js",
-  courseGridStats: "src/components/race/courseGridStats.js",
-  sixBoatCourseStats: "src/components/race/sixBoatCourseStats.js",
+  courseGridStats: bodyOf(
+    "src/pure/courseGridStats.js",
+    "src/components/race/courseGridStats.js",
+  ),
+  sixBoatCourseStats: bodyOf(
+    "src/pure/sixBoatCourseStats.js",
+    "src/components/race/sixBoatCourseStats.js",
+  ),
   venueDayTrend: "src/components/race/venueDayTrend.js",
   weatherInfo: "src/components/race/weatherInfo.js",
   dateUtils: "src/utils/dateUtils.js",
