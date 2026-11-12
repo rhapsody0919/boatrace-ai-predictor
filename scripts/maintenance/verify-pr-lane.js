@@ -643,6 +643,31 @@ expect(
       [PART, { added: [LINE], removed: [] }],
     ),
   );
+  // 移すだけ（moveOnly）で外すファイルは移し元の席を取らない: from → to へ字のまま移した行を、
+  // パスの順が先の別のファイルにも足すと、そのファイルに当たる（審査 P0）
+  {
+    const FROM = "src/services/supabaseDataService.js";
+    const TO = "src/services/core2.js";
+    const OTHER = "src/a/New.jsx";
+    const r = classify({
+      changes: [
+        { status: "A", path: OTHER },
+        { status: "A", path: TO },
+        { status: "M", path: FROM },
+      ],
+      patches: files(
+        [OTHER, { added: [LINE], removed: [] }],
+        [TO, { added: [LINE], removed: [] }],
+        [FROM, { added: [], removed: [LINE] }],
+      ),
+      trees: [],
+      moved: new Set([FROM, TO]),
+    });
+    assert.ok(
+      r.hits.some((h) => h.rule === "H9" && h.file === OTHER),
+      `移すだけのファイルの行を別のファイルへ写すと H9（${JSON.stringify(r.hits)}）`,
+    );
+  }
 }
 
 // ---- unified diff の読み方 ----

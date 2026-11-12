@@ -64,16 +64,14 @@ export function loadRules(
 
 /** config/pr-path-rules.json の moveOnly（移すだけの判定の from・to。無ければ undefined） */
 export function loadMoveOnly(root = SELF_ROOT) {
-  return JSON.parse(
-    readFileSync(join(root, "config/pr-path-rules.json"), "utf8"),
-  ).moveOnly;
+  return JSON.parse(readFileSync(join(root, "config/pr-path-rules.json"), "utf8"))
+    .moveOnly;
 }
 
 /** config/pr-path-rules.json の human（人にしか判断できない理由の kind ごとの型） */
 export function loadHuman(root = SELF_ROOT) {
-  return JSON.parse(
-    readFileSync(join(root, "config/pr-path-rules.json"), "utf8"),
-  ).human;
+  return JSON.parse(readFileSync(join(root, "config/pr-path-rules.json"), "utf8"))
+    .human;
 }
 
 const anyMatch = (patterns = [], path, flags = "") =>
@@ -117,7 +115,9 @@ function weakenReason({ spec: w, file, status, patch }) {
       "既存の .mjs・.cjs・.sh の verify の変更",
     ],
     [
-      !del && anyMatch(w.addedRows, file) && (!patch || patch.added.length > 0),
+      !del &&
+        anyMatch(w.addedRows, file) &&
+        (!patch || patch.added.length > 0),
       "allowlist に行を足す",
     ],
     [
@@ -125,7 +125,9 @@ function weakenReason({ spec: w, file, status, patch }) {
       "台帳の既存の行の変更・削除",
     ],
     [
-      status !== "A" && anyMatch(w.removedRows, file) && rows((p) => p.removed),
+      status !== "A" &&
+        anyMatch(w.removedRows, file) &&
+        rows((p) => p.removed),
       "行の削除・書き換え",
     ],
   ];
@@ -178,11 +180,7 @@ function explain({ hits, changes, patches, rules, human, readBlob }) {
     for (const h of hits.filter((x) => x.file === file)) {
       const rule = rules.find((r) => r.id === h.rule);
       if (!rule?.needs) continue;
-      if (
-        (rule.needsUnlessHuman ?? []).some((k) =>
-          mine.some((m) => m.kind === k),
-        )
-      )
+      if ((rule.needsUnlessHuman ?? []).some((k) => mine.some((m) => m.kind === k)))
         continue;
       const kinds =
         typeof rule.needs === "string"
@@ -213,6 +211,21 @@ function explain({ hits, changes, patches, rules, human, readBlob }) {
 
 const count = (lines, word) =>
   lines.reduce((n, line) => n + line.split(word).length - 1, 0);
+
+/**
+ * 語を見るファイル（withoutMovedLines の移し元・移し先の候補）。この規則が見ないファイル（except・移すだけで外すファイル）は
+ * 候補にしない（外れたファイルが移し元の席を取り、別のファイルの新しい語を通すのを防ぐ）
+ */
+const termPaths = (rule, changes, moved) =>
+  changes
+    .map((c) => c.path)
+    .filter(
+      (p) =>
+        anyMatch(rule.terms.scan, p) &&
+        !anyMatch(rule.terms.except, p) &&
+        !anyMatch(rule.except, p) &&
+        !(rule.exceptMoveOnly && moved.has(p)),
+    );
 
 /**
  * 語（H9）の数えから、別のファイルへ字のまま移しただけの行を外す（部品の分割で既存の文言が新しいファイルへ動く形）。
@@ -413,12 +426,7 @@ export function classify({
     const termLines = rule.terms
       ? withoutMovedLines(
           patches,
-          changes
-            .map((c) => c.path)
-            .filter(
-              (p) =>
-                anyMatch(rule.terms.scan, p) && !anyMatch(rule.terms.except, p),
-            ),
+          termPaths(rule, changes, moved),
           rule.terms.words,
         )
       : null;
@@ -707,17 +715,16 @@ function classifyCommitsInner(repo, base, head) {
   const human = loadHuman();
   // 行を見る必要があるファイルだけ patch を取る（H5 の行の追加だけ・H7 の全体のセレクタ・H9 の語・human の weaken の行）
   const needLines = changes
-    .filter(
-      ({ status, path: p }) =>
-        anyMatch(weakenRowPatterns(human), p) ||
-        rules.some(
-          (r) =>
-            anyMatch(r.rowsOnlyAdded, p) ||
-            (status === "A" && anyMatch(r.globalSelectors, p)) ||
-            (r.terms &&
-              anyMatch(r.terms.scan, p) &&
-              !anyMatch(r.terms.except, p)),
-        ),
+    .filter(({ status, path: p }) =>
+      anyMatch(weakenRowPatterns(human), p) ||
+      rules.some(
+        (r) =>
+          anyMatch(r.rowsOnlyAdded, p) ||
+          (status === "A" && anyMatch(r.globalSelectors, p)) ||
+          (r.terms &&
+            anyMatch(r.terms.scan, p) &&
+            !anyMatch(r.terms.except, p)),
+      ),
     )
     .map((c) => c.path);
   const patches =
