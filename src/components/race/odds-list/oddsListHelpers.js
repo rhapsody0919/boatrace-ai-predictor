@@ -4,7 +4,7 @@ import { getDeadlineDate } from "../../../utils/raceDeadlineStatus";
 import { parseRaceId } from "../../../utils/raceId";
 import { formatOdds } from "../../../utils/oddsMath";
 
-export const BOAT_NUMBERS = [1, 2, 3, 4, 5, 6];
+const BOAT_NUMBERS = [1, 2, 3, 4, 5, 6];
 
 // ライブ取得の対象: 締切までこの時間以内の、当日のレース
 export const LIVE_WINDOW_MS = 90 * 60 * 1000;
@@ -90,7 +90,7 @@ export function heatBucket(numericValue) {
 }
 
 // 発走（締切）までの残り分数
-export function minutesBeforeOf(iso, deadline) {
+function minutesBeforeOf(iso, deadline) {
   if (!deadline) return null;
   return Math.max(
     0,
@@ -104,7 +104,7 @@ export function minutesBeforeOf(iso, deadline) {
 // （同じ時点を指す2つの値を並べない。記録は公式の更新の遅れを含むため）
 // 取得から何分たったら「最新」をやめて「○分前の値」と書くか（自動では取り直さないため、表示だけ言い換える。
 // BOA-532）
-export const LIVE_STALE_MS = 3 * 60 * 1000;
+const LIVE_STALE_MS = 3 * 60 * 1000;
 
 // ライブ取得した値の鮮度。状態の1行と推移パネルの最後の点で同じ判断を使う（ファン評価2周目: 状態の1行が
 // 「○分前の値」「締切済み」になっても、推移の最後の点が緑の「最新」のままだった）

@@ -13,7 +13,7 @@ import {
 } from "./oddsListHelpers";
 
 // 3連単: 1着ブロック → 2着列 → 3着行（＋合成オッズ・2連単オッズ）
-export function TrifectaTable({
+function TrifectaTable({
   boats,
   nameByBoat,
   valueOf,
@@ -96,7 +96,7 @@ export function TrifectaTable({
 }
 
 // 3連複: 艇番3つの組み合わせを2列で一覧
-export function TrioTable({ boats, oddsButton, trendPanel, selectedKey }) {
+function TrioTable({ boats, oddsButton, trendPanel, selectedKey }) {
   const combos = triosOf(boats).map((combo) => combo.join("-"));
   const items = combos.map((key) =>
     oddsButton(
@@ -117,8 +117,9 @@ export function TrioTable({ boats, oddsButton, trendPanel, selectedKey }) {
   );
 }
 
-// 2連単/2連複/拡連複: 艇番ごとのブロック → 相手艇ごとの行
-export function PairsTable({
+// 2連単/2連複/拡連複: 艇番ごとのブロック → 相手艇ごとの行。
+// 2連単は1着ブロック×2着行、順不同の券種は小さい艇番のブロック×大きい艇番の行
+function PairsTable({
   betType,
   boats,
   nameByBoat,
@@ -160,8 +161,11 @@ export function PairsTable({
   );
 }
 
-// 単勝・複勝: 艇ごとの表
-export function WinPlaceTable({
+// 単勝・複勝: 艇ごとの表。票0（公式の0.0）は「票なし」。スナップショットの null は、票0と未取得を
+// 保存時に区別していない（scrape-odds.js が 0.0 を null にし、取得漏れも null）。実際に、公式の締切時
+// オッズが27.3の艇が全行 null だった例がある（江戸川8R 9/28、ファン評価1・2周目で同じ指摘）。
+// 「票なし」と断定せず「-」とし、注記で「票なし（または未取得）」と説明する
+function WinPlaceTable({
   boats,
   nameByBoat,
   latestMap,

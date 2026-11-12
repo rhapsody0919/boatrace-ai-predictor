@@ -2,7 +2,18 @@
 import { fmtPct } from "../../../../utils/analogyFormat";
 import { k } from "./consts";
 
-export function resultText({ t, E, sl, slit, scope, allOf, formName, base, c, whole }) {
+export function resultText({
+  t,
+  E,
+  sl,
+  slit,
+  scope,
+  allOf,
+  formName,
+  base,
+  c,
+  whole,
+}) {
   const core = E
     ? sl
       ? t(`${k}.coreEntryForm`, {

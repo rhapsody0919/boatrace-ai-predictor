@@ -1,11 +1,11 @@
 // ②形のステップ（ScenarioTab から移した）
 import { useTranslation } from "react-i18next";
-import ScenarioFold from "../ScenarioFold";
 import SlitHint from "../SlitHint";
 import SlitShapePicker, { SlitChosen } from "../SlitShapePicker";
 import { ATTACK_BOAT } from "../../../../utils/analogyScenario";
 import { k } from "./consts";
 import ScenarioSlitToday from "./ScenarioSlitToday";
+import ScenarioTermsFold from "./ScenarioTermsFold";
 
 export default function ScenarioSlitStep({
   data,
@@ -70,35 +70,17 @@ export default function ScenarioSlitStep({
               }
             />
             {exhibitionStage && (
-<ScenarioSlitToday
-exhForms={exhForms}
-agreement={agreement}
-exhibition={exhibition}
-flyBoats={flyBoats}
-bar2={bar2}
-formName={formName}
-/>
+              <ScenarioSlitToday
+                exhForms={exhForms}
+                agreement={agreement}
+                exhibition={exhibition}
+                flyBoats={flyBoats}
+                bar2={bar2}
+                formName={formName}
+              />
             )}
             {!exhibitionStage && <p className="af-foot">{t(`${k}.slitPre`)}</p>}
-            <ScenarioFold
-              title={t(`${k}.termsFold`)}
-              preview={t(`${k}.termsPreview`)}
-            >
-              <ul className="af-notes-ul">
-                <li>{t(`${k}.termKado`)}</li>
-                <li>{t(`${k}.termPic`)}</li>
-                {["flat", "wall", "d2", "d3", "kado", "d1", "dash"].map((f) => (
-                  <li key={f}>
-                    {t(`${k}.slitDef`, {
-                      form: formName(f),
-                      def: t(`${k}.forms.${f}.def`),
-                    })}
-                  </li>
-                ))}
-                <li>{t(`${k}.termOverlap`)}</li>
-                <li>{t(`${k}.termShare`)}</li>
-              </ul>
-            </ScenarioFold>
+            <ScenarioTermsFold formName={formName} />
           </>
         )}
         {/* 攻める艇の今節の足へ（BOA-885）。攻める艇が決まる形（カド・ダッシュ等）を枠なりで見ているときだけ */}

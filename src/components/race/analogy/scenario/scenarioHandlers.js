@@ -1,5 +1,11 @@
 // ScenarioTab の選択の操作（状態の setter を束ねるだけ。ScenarioTab から移した）
-export function scenarioHandlers({ setEntry, setSlit, setFirst, setSlitOpen, slit }) {
+export function scenarioHandlers({
+  setEntry,
+  setSlit,
+  setFirst,
+  setSlitOpen,
+  slit,
+}) {
   const pick = (setter) => (v) => {
     setter(v);
     setFirst(null);
