@@ -677,28 +677,48 @@ function SimilarTechBox({ similar, racecardStage }) {
   );
 }
 
-function PowerSummary({ m }) {
-  const { post, racers, maintenance, original, venue, motorChip } = m;
-  const table = post
-    ? exhibitionTable({ racers, maintenance, original })
-    : null;
-  const parts = post && maintenance ? partsChangedBoats(maintenance) : null;
-  const motorBest = bestBoats(
-    "motor_2",
-    racers.map((r) => ({ boat: r.boat, value: r.motor2 })),
+function PowerExhRow({ r, table }) {
+  return (
+    <tr>
+      <td>
+        <BoatBadge n={r.boat} size="sm" />
+      </td>
+      {r.absent ? (
+        <td colSpan={4 + table.kinds.length}>{C.absent}</td>
+      ) : (
+        <>
+          <td
+            className={`ta-num${table.best.exh.has(r.boat) ? " ind-best" : ""}`}
+          >
+            {f2(r.exh)}
+          </td>
+          {r.ox.map((v, i) => (
+            <td
+              key={table.kinds[i]}
+              className={`ta-num${table.best.ox[i].has(r.boat) ? " ind-best" : ""}`}
+            >
+              {f2(v)}
+            </td>
+          ))}
+          <td
+            className={`ta-num${table.best.exhSt.has(r.boat) ? " ind-best" : ""}`}
+          >
+            {st2(r.exhSt, r.exhFlying)}
+          </td>
+          <td className="ta-num">
+            {r.weight == null ? "—" : r.weight.toFixed(1)}
+            {r.light ? ` ${C.weightLight}` : ""}
+          </td>
+          <td className="ta-num">{r.tilt ?? "—"}</td>
+        </>
+      )}
+    </tr>
   );
-  const conclusion = C.powerConclusion(
-    powerWinners({
-      table,
-      motor: {
-        best: motorBest,
-        valueOf: (boat) => racers[boat - 1]?.motor2 ?? null,
-      },
-    }),
-  );
+}
+
+function PowerExhSection({ table, venue, parts }) {
   return (
     <>
-      {conclusion && <p className="ta-power-answer">{conclusion}</p>}
       <section className="ta-box" data-guide="power">
         {table ? (
           <>
@@ -724,40 +744,7 @@ function PowerSummary({ m }) {
                 </thead>
                 <tbody>
                   {table.rows.map((r) => (
-                    <tr key={r.boat}>
-                      <td>
-                        <BoatBadge n={r.boat} size="sm" />
-                      </td>
-                      {r.absent ? (
-                        <td colSpan={4 + table.kinds.length}>{C.absent}</td>
-                      ) : (
-                        <>
-                          <td
-                            className={`ta-num${table.best.exh.has(r.boat) ? " ind-best" : ""}`}
-                          >
-                            {f2(r.exh)}
-                          </td>
-                          {r.ox.map((v, i) => (
-                            <td
-                              key={table.kinds[i]}
-                              className={`ta-num${table.best.ox[i].has(r.boat) ? " ind-best" : ""}`}
-                            >
-                              {f2(v)}
-                            </td>
-                          ))}
-                          <td
-                            className={`ta-num${table.best.exhSt.has(r.boat) ? " ind-best" : ""}`}
-                          >
-                            {st2(r.exhSt, r.exhFlying)}
-                          </td>
-                          <td className="ta-num">
-                            {r.weight == null ? "—" : r.weight.toFixed(1)}
-                            {r.light ? ` ${C.weightLight}` : ""}
-                          </td>
-                          <td className="ta-num">{r.tilt ?? "—"}</td>
-                        </>
-                      )}
-                    </tr>
+                    <PowerExhRow key={r.boat} r={r} table={table} />
                   ))}
                 </tbody>
               </table>
@@ -817,27 +804,64 @@ function PowerSummary({ m }) {
           </>
         )}
       </section>
-      <section className="ta-box">
-        <h3>{C.motorHeading}</h3>
-        <Bars6
-          values={racers.map((r) => r.motor2)}
-          raw
-          digits={1}
-          best={motorBest}
-        />
-        {motorChip && (
-          <div className="ta-chip ta-chip-hit">
-            <span className="ta-num">
-              {C.motorChip(1, motorChip.top, motorChip.value.toFixed(1))}
-            </span>
-            <b className="ta-num">
-              {C.motorChipRate(motorChip.top, motorChip.rate, motorChip.base)}
-            </b>
-            <span className="ta-scopechip ta-num">{motorChip.scope}</span>
-          </div>
-        )}
-      </section>
     </>
+  );
+}
+
+function PowerSummary({ m }) {
+  const { post, racers, maintenance, original, venue, motorChip } = m;
+  const table = post
+    ? exhibitionTable({ racers, maintenance, original })
+    : null;
+  const parts = post && maintenance ? partsChangedBoats(maintenance) : null;
+  const motorBest = bestBoats(
+    "motor_2",
+    racers.map((r) => ({ boat: r.boat, value: r.motor2 })),
+  );
+  const conclusion = C.powerConclusion(
+    powerWinners({
+      table,
+      motor: {
+        best: motorBest,
+        valueOf: (boat) => racers[boat - 1]?.motor2 ?? null,
+      },
+    }),
+  );
+  return (
+    <>
+      {conclusion && <p className="ta-power-answer">{conclusion}</p>}
+      <PowerExhSection table={table} venue={venue} parts={parts} />
+      <PowerMotorSection
+        racers={racers}
+        motorBest={motorBest}
+        motorChip={motorChip}
+      />
+    </>
+  );
+}
+
+function PowerMotorSection({ racers, motorBest, motorChip }) {
+  return (
+    <section className="ta-box">
+      <h3>{C.motorHeading}</h3>
+      <Bars6
+        values={racers.map((r) => r.motor2)}
+        raw
+        digits={1}
+        best={motorBest}
+      />
+      {motorChip && (
+        <div className="ta-chip ta-chip-hit">
+          <span className="ta-num">
+            {C.motorChip(1, motorChip.top, motorChip.value.toFixed(1))}
+          </span>
+          <b className="ta-num">
+            {C.motorChipRate(motorChip.top, motorChip.rate, motorChip.base)}
+          </b>
+          <span className="ta-scopechip ta-num">{motorChip.scope}</span>
+        </div>
+      )}
+    </section>
   );
 }
 
