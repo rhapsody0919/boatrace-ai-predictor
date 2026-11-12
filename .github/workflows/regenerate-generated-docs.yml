@@ -54,7 +54,7 @@ jobs:
       # postinstall 等のスクリプトは要らないので --ignore-scripts（PR の verify の npm ci は cache つきで5〜9秒）
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: .nvmrc
           cache: 'npm'
 
       - name: Install dependencies
