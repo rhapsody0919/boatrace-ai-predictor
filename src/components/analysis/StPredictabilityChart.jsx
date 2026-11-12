@@ -7,7 +7,8 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRaceStPredictabilityBreakdown } from "../../services/raceQueries.js";
+import { getStDeviationTrend } from "../../services/racerQueries3.js";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import TrendLineChart from "./TrendLineChart";
@@ -47,7 +48,7 @@ function StPredictabilityChart({
         setError(null);
         setDrillDownRacer(null);
         const data =
-          await supabaseDataService.getRaceStPredictabilityBreakdown(
+          await getRaceStPredictabilityBreakdown(
             selectedRace,
           );
         setBreakdown(data);
@@ -69,7 +70,7 @@ function StPredictabilityChart({
         setLoading(true);
         setError(null);
         const data =
-          await supabaseDataService.getStDeviationTrend(drillDownRacer);
+          await getStDeviationTrend(drillDownRacer);
         setTrendData(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
