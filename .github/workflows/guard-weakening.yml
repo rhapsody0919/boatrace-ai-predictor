@@ -67,6 +67,12 @@ jobs:
         if: steps.need.outputs.selftest == 'true'
         run: |
           for t in scripts/maintenance/guard_weakening/tests/test_*.py; do
+            # test_verify_guard.py（hq の写し）は macOS の sandbox-exec を前提にした試験。Linux の runner には無いので飛ばし、理由を注記に出す。
+            # Linux の上の verify の判定（検査を空にすると赤・新しい verify なしの registry の行は赤・強めると緑）は test_run.py が回す
+            if [ "$(basename "$t")" = test_verify_guard.py ] && [ ! -x /usr/bin/sandbox-exec ]; then
+              echo "::notice::SKIP $t（macOS の sandbox-exec 前提の試験。Linux では test_run.py の verify の場合で確かめる）"
+              continue
+            fi
             echo "== $t"
             python3 "$t"
           done
