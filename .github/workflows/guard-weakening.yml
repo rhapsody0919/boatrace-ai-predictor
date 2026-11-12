@@ -53,7 +53,9 @@ jobs:
         if: steps.need.outputs.node == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # verify_guard.py（hq の写し）は変異を作るとき node --permission を使う。Node 20 には無い印（20 は --experimental-permission）で、
+          # 空の出力になり JSONDecodeError で全部赤になった（#2497 の初回）。手元で通している Mac の node と同じ 24 にそろえる
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
