@@ -405,42 +405,69 @@ function ExhBandsBox({ post, bands, formLabel, notWaku }) {
   );
 }
 
+/** 展開レンズの「もし」の箱の材料（形の名前・集計・決まり手・範囲の札） */
+function flowIfView(m) {
+  const { scenario, round, hint: top } = m;
+  const formName = top ? C.formNames[top.form] : null;
+  const form = top ? formSummary(scenario, top.form) : null;
+  const tech = top ? attackTech(scenario, top.form) : null;
+  const scopeText = form
+    ? C.flowFormScope(C.flowScopeLabel(Boolean(round)), form.n)
+    : null;
+  return { formName, form, tech, scopeText };
+}
+
+/** 展示タイムの順位の区分の材料と、枠なりでないときの注記 */
+function flowBandsView(m, entry) {
+  const { scenario, national, post, exhRanks, hint: top } = m;
+  const bands =
+    top && post ? exhBands(scenario, national, top.form, exhRanks) : null;
+  const notWaku =
+    entry && entry.type !== "waku"
+      ? C.flowNotWaku(C.entryNames[entry.type])
+      : null;
+  return { bands, notWaku };
+}
+
 function FlowSummary({ m }) {
   const {
     scenario,
-    national,
     post,
     courseByBoat,
     similar,
     racecardStage,
     round,
-    exhRanks,
-    hint: top,
     original,
     racers,
     venue,
     onPower,
     onBet,
   } = m;
-  const formName = top ? C.formNames[top.form] : null;
-  const form = top ? formSummary(scenario, top.form) : null;
-  const tech = top ? attackTech(scenario, top.form) : null;
-  const bands =
-    top && post ? exhBands(scenario, national, top.form, exhRanks) : null;
-  const scopeText = form
-    ? C.flowFormScope(C.flowScopeLabel(Boolean(round)), form.n)
-    : null;
+  const view = flowIfView(m);
   const entry = post ? entrySummary(scenario, courseByBoat) : null;
-  const notWaku =
-    entry && entry.type !== "waku"
-      ? C.flowNotWaku(C.entryNames[entry.type])
-      : null;
+  const { bands, notWaku } = flowBandsView(m, entry);
   const best = post ? originalBest(original, racers) : [];
-  const bothBest =
-    best.length === 2 && best[0].boats.join() === best[1].boats.join();
-  const simLabel = similar
-    ? C.similarLabel(similar.n, similar.allInLayer)
-    : null;
+  return (
+    <>
+      <FlowIfBox view={view} onBet={onBet} />
+      {view.form && (
+        <ExhBandsBox
+          post={post}
+          bands={bands}
+          formLabel={view.scopeText}
+          notWaku={notWaku}
+        />
+      )}
+      <FlowEntryBox entry={entry} post={post} round={round} />
+      <OrgBestBox best={best} venue={venue} onPower={onPower} />
+      <SimilarTechBox similar={similar} racecardStage={racecardStage} />
+    </>
+  );
+}
+
+/** 「もし」の箱: 攻める艇が1着のときの決まり手・1着の艇・2連単の上位 */
+function FlowIfBox({ view, onBet }) {
+  const { formName, form, tech, scopeText } = view;
   return (
     <>
       {form && (
@@ -504,14 +531,14 @@ function FlowSummary({ m }) {
           </button>
         </section>
       )}
-      {form && (
-        <ExhBandsBox
-          post={post}
-          bands={bands}
-          formLabel={scopeText}
-          notWaku={notWaku}
-        />
-      )}
+    </>
+  );
+}
+
+/** 進入の箱: 展示の進入と、その進入のときの1号艇の1着 */
+function FlowEntryBox({ entry, post, round }) {
+  return (
+    <>
       {(entry || !post) && (
         <section className="ta-box">
           <h3 className="ta-h3-row">
@@ -567,6 +594,16 @@ function FlowSummary({ m }) {
           )}
         </section>
       )}
+    </>
+  );
+}
+
+/** オリジナル展示の箱 */
+function OrgBestBox({ best, venue, onPower }) {
+  const bothBest =
+    best.length === 2 && best[0].boats.join() === best[1].boats.join();
+  return (
+    <>
       {best.length > 0 && (
         // オリジナル展示（spec D-47 (7)）: 一周・まわり足の「6艇で一番」と全体の効き目だけ。直線・秒数・形ごとは出さない
         <section className="ta-box">
@@ -602,6 +639,17 @@ function FlowSummary({ m }) {
           </p>
         </section>
       )}
+    </>
+  );
+}
+
+/** 似たレースの決まり手の箱 */
+function SimilarTechBox({ similar, racecardStage }) {
+  const simLabel = similar
+    ? C.similarLabel(similar.n, similar.allInLayer)
+    : null;
+  return (
+    <>
       {similar && similar.n > 0 && (
         <section className="ta-box">
           <h3 className="ta-h3-row">
