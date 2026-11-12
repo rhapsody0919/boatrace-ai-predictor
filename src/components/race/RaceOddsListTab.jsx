@@ -33,756 +33,48 @@
  * 免責文言（BOA-311指示#1）: スクレイピング取得値のため、実際の投票内容は
  * 主催者発行のものと照合するよう明記する。
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
-import {
-  fetchLiveOdds,
-  LIVE_PAGE_OF_BET_TYPE,
-} from "../../services/liveOddsService";
+import InlineFetchError from "../InlineFetchError";
 import { getDeadlineDate } from "../../utils/raceDeadlineStatus";
 import { parseRaceId } from "../../utils/raceId";
-import InlineFetchError from "../InlineFetchError";
-import BoatBadge from "./BoatBadge";
-import {
-  compositeOdds,
-  formatOdds,
-  latestSnapshotWith,
-} from "../../utils/oddsMath";
+import { latestSnapshotWith } from "../../utils/oddsMath";
 import "./RaceOddsListTab.css";
-
-const BOAT_NUMBERS = [1, 2, 3, 4, 5, 6];
-
-// ライブ取得の対象: 締切までこの時間以内の、当日のレース
-const LIVE_WINDOW_MS = 90 * 60 * 1000;
-// 締切時オッズ（公式）を取り直す期間。締切の5分後から、最大60分後まで（api/cron/odds-final.js）
-const FINAL_ODDS_WINDOW_MS = 60 * 60 * 1000;
-// 締切時オッズ（公式）の保存を始めた日（odds_final=live、BOA-496）。これより前のレースは取得していないため、
-// 「取得できませんでした」と書かない
-const FINAL_ODDS_SINCE = "2026-09-29";
-
-// 券種定義。dataKeyはgetRaceOddsSnapshots（スナップショット行）と /api/odds/live の data の両方のキー。
-// ordered=false（trio/quinella/wide）は艇番昇順ソート済みキー（ADR-0054）
-const BET_TYPES = [
-  { id: "trifecta", dataKey: "trifectaAll", ordered: true },
-  { id: "trio", dataKey: "trioAll", ordered: false },
-  { id: "exacta", dataKey: "exactaAll", ordered: true },
-  { id: "quinella", dataKey: "quinellaAll", ordered: false },
-  { id: "wide", dataKey: "wideAll", ordered: false, isRange: true },
-  { id: "winPlace", dataKey: "win" },
-].map((bt) => ({ ...bt, page: LIVE_PAGE_OF_BET_TYPE[bt.id] }));
-
-// タブを開いたときに取るページ（単勝・複勝、3連単、3連単の表の「2単」に使う2連単）。
-// 2連単を後回しにすると、3連単の表で「最新」の真下に古い2単が並ぶ（ファン評価1周目）
-const INITIAL_LIVE_PAGES = ["tf", "3t", "2tf"];
-
-const JST_TIME = new Intl.DateTimeFormat("ja-JP", {
-  timeZone: "Asia/Tokyo",
-  hour: "numeric",
-  minute: "2-digit",
-  hour12: false,
-});
-
-// ISO文字列 → "8:04"（JST）
-function formatJstTime(iso) {
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? null : JST_TIME.format(date);
-}
-
-// 公式の「オッズ更新時間」（"08:14"）→ "8:14"
-function formatOfficialTime(hhmm) {
-  return hhmm ? hhmm.replace(/^0(\d)/, "$1") : null;
-}
-
-function todayJst(nowMs) {
-  return new Date(nowMs + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
-}
-
-/** ライブ取得の対象か（当日かつ締切前90分以内） */
-function isLiveOddsTarget(raceId, startTime, nowMs) {
-  const parsed = parseRaceId(raceId);
-  const deadline = getDeadlineDate(raceId, startTime);
-  if (!parsed || !deadline || parsed.date !== todayJst(nowMs)) return false;
-  const remaining = deadline.getTime() - nowMs;
-  return remaining > 0 && remaining <= LIVE_WINDOW_MS;
-}
-
-// レンジ値（拡連複・複勝）は下限を代表値として使う（人気度＝色分けの基準として
-// 下限の方が「最低でもこれだけ付く」という保守的な値のため）
-function valueToNumber(value, isRange) {
-  if (value == null) return null;
-  return isRange ? value.low : value;
-}
-
-// 票0（公式の「0.0」）か
-function isNoVotes(value, isRange) {
-  return valueToNumber(value, isRange) === 0;
-}
-
-function formatValue(value, isRange) {
-  if (value == null) return null;
-  return isRange
-    ? `${formatOdds(value.low)}-${formatOdds(value.high)}`
-    : formatOdds(value);
-}
-
-// オッズ値をヒートマップの濃淡バケット(0〜4、4が最も人気=オッズが低い)に変換
-function heatBucket(numericValue) {
-  if (numericValue == null || numericValue <= 0) return null;
-  const intensity = Math.max(
-    0,
-    Math.min(1, 1 - Math.log10(numericValue) / 2.4),
-  );
-  return Math.min(4, Math.floor(intensity * 5));
-}
-
-// 発走（締切）までの残り分数
-function minutesBeforeOf(iso, deadline) {
-  if (!deadline) return null;
-  return Math.max(
-    0,
-    Math.round((deadline.getTime() - new Date(iso).getTime()) / 60000),
-  );
-}
-
-// スナップショット履歴から指定キーの推移（発走までの残り分数付き）を作る。
-// ライブ値があれば末尾に「最新 8:14」として足す（スナップショットが無くてもライブ値だけで出す）。
-// 締切時オッズ（公式）の表（finalMap）があれば、0分前（締切直前）の記録を外し、末尾に「締切時（公式）」を足す
-// （同じ時点を指す2つの値を並べない。記録は公式の更新の遅れを含むため）
-// 取得から何分たったら「最新」をやめて「○分前の値」と書くか（自動では取り直さないため、表示だけ言い換える。
-// BOA-532）
-const LIVE_STALE_MS = 3 * 60 * 1000;
-
-// ライブ取得した値の鮮度。状態の1行と推移パネルの最後の点で同じ判断を使う（ファン評価2周目: 状態の1行が
-// 「○分前の値」「締切済み」になっても、推移の最後の点が緑の「最新」のままだった）
-//   final: 公式の締切時オッズ / after-deadline: 締切前に取った値で、いまは締切後 /
-//   after-deadline-pending: 締切後に取ったが、公式がまだ締切時オッズになっていない / stale / fresh
-function liveFreshnessOf(result, nowMs, deadline) {
-  if (result.final) return "final";
-  const fetchedMs = Date.parse(result.fetchedAt);
-  if (deadline && nowMs >= deadline.getTime()) {
-    return fetchedMs >= deadline.getTime()
-      ? "after-deadline-pending"
-      : "after-deadline";
-  }
-  return nowMs - fetchedMs >= LIVE_STALE_MS ? "stale" : "fresh";
-}
-
-function buildTrend(
-  snapshots,
-  betType,
-  key,
-  deadline,
-  live,
-  finalMap,
-  liveFreshness,
-) {
-  const points = snapshots
-    .map((snap) => {
-      const raw = snap[betType.dataKey]?.[key];
-      if (raw == null) return null;
-      return {
-        minutesBefore: minutesBeforeOf(snap.capturedAt, deadline),
-        value: raw,
-      };
-    })
-    .filter(Boolean)
-    .filter((p) => !finalMap || p.minutesBefore !== 0);
-  if (finalMap) {
-    const finalValue = finalMap[key];
-    if (finalValue != null) points.push({ official: true, value: finalValue });
-    return points;
-  }
-  const liveValue = live?.data?.[betType.dataKey]?.[key];
-  if (liveValue == null) return points;
-  // ライブで取れた公式の締切時オッズは、DB の締切時オッズと同じ「締切時（公式）」の点にする（0分前の記録は外す）
-  if (liveFreshness === "final") {
-    return [
-      ...points.filter((p) => p.minutesBefore !== 0),
-      { official: true, value: liveValue },
-    ];
-  }
-  // 締切後に取った値（公式がまだ締切時オッズでない）は「締切○分前」で表せないため、取得時刻で書く
-  if (liveFreshness === "after-deadline-pending") {
-    points.push({ atTime: formatJstTime(live.fetchedAt), value: liveValue });
-    return points;
-  }
-  // 時点はスナップショットと同じ「締切○分前」でそろえる（取得した時刻から数える。ファン評価2周目）。
-  // 緑の「最新」は、状態の1行が「最新」のあいだだけ
-  points.push({
-    live: liveFreshness === "fresh",
-    minutesBefore: minutesBeforeOf(live.fetchedAt, deadline),
-    value: liveValue,
-  });
-  return points;
-}
-
-// 出走艇。出走表（players）の艇から、欠場（直前情報の is_absent）の艇を除く。
-// 加えて、オッズの表のどれかがあるのに、その艇を含むキーが1つも無い艇も除く（欠場の記録が無い
-// 過去のレースで、欠場艇のブロックを「-」だけで出さないため）。票0（0）はキーがある扱い
-// （値の大小では判定しない。票0の艇を欠場と取り違えないため）
-function activeBoatsOf({ players, absentBoats, maps }) {
-  const listed = [
-    ...new Set((players ?? []).map((p) => Number(p.number))),
-  ].filter((n) => BOAT_NUMBERS.includes(n));
-  const base = listed.length > 0 ? listed.sort((a, b) => a - b) : BOAT_NUMBERS;
-  const present = new Set();
-  let anyMap = false;
-  for (const map of maps) {
-    if (!map) continue;
-    anyMap = true;
-    for (const [key, value] of Object.entries(map)) {
-      if (value != null) key.split("-").forEach((n) => present.add(Number(n)));
-    }
-  }
-  return base.filter((n) => !absentBoats.has(n) && (!anyMap || present.has(n)));
-}
-
-// 3艇の組み合わせ（艇番昇順）
-function triosOf(boats) {
-  return boats.flatMap((a) =>
-    boats
-      .filter((b) => b > a)
-      .flatMap((b) => boats.filter((c) => c > b).map((c) => [a, b, c])),
-  );
-}
-
-// グリッドで、選択中の要素の直後に推移パネルを挿入する。パネルは全幅（rol-span-all）で、グリッドの
-// grid-auto-flow: dense により、同じ行の残りの要素が前に詰まってパネルはその行の下に出る。列数（画面幅で
-// 1〜4列に変わる）によらず「選んだ行の直後」になる（BOA-530）
-function withPanelAfter(items, selectedIdx, panel) {
-  if (selectedIdx < 0 || !panel) return items;
-  return [
-    ...items.slice(0, selectedIdx + 1),
-    panel,
-    ...items.slice(selectedIdx + 1),
-  ];
-}
-
-// 小さな折れ線スパークライン（MotorWakuStatsGridと同じ発想のインラインSVG）。
-// 末尾がライブ値なら、その点を別色で打つ。
-// 各点の横位置は、下の値のマス（推移の点と同じ数の列）の中心に置く。点とマスを同じ列にそろえ、どの幅でも
-// 「どの点がどの値か」を位置で結べるようにする（ファン評価で3回出た指摘、BOA-547）
-function Sparkline({ points, isRange }) {
-  if (points.length < 2) return null;
-  const nums = points.map((p) => valueToNumber(p.value, isRange));
-  const min = Math.min(...nums);
-  const max = Math.max(...nums);
-  const range = max - min || 1;
-  const width = 200;
-  const height = 40;
-  const xy = nums.map((v, i) => [
-    ((i + 0.5) / nums.length) * width,
-    height - ((v - min) / range) * height,
-  ]);
-  const toPoints = (list) =>
-    list.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-  const last = xy[xy.length - 1];
-  const lastPoint = points[points.length - 1];
-  // 末尾が締切時オッズ（公式）なら、記録の折れ線は1つ手前まで。最後の区間を点線にし、点を青で打つ
-  // （記録の推移と別の時点・出どころのため）
-  const recorded = lastPoint.official ? xy.slice(0, -1) : xy;
-  const prev = xy[xy.length - 2];
-  return (
-    <svg
-      className="rol-sparkline"
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      {recorded.length >= 2 && (
-        <polyline points={toPoints(recorded)} fill="none" strokeWidth="2" />
-      )}
-      {lastPoint.official && (
-        <line
-          className="rol-sparkline-official-line"
-          x1={prev[0]}
-          y1={prev[1]}
-          x2={last[0]}
-          y2={last[1]}
-          strokeWidth="2"
-        />
-      )}
-      {/* 点は長さ0の丸い線端で描く（preserveAspectRatio="none" で横に引き伸ばされても円のまま。circle だと楕円になる） */}
-      {(lastPoint.live || lastPoint.official) && (
-        <line
-          className={
-            lastPoint.official ? "rol-sparkline-official" : "rol-sparkline-live"
-          }
-          x1={last[0]}
-          y1={last[1]}
-          x2={last[0]}
-          y2={last[1]}
-        />
-      )}
-    </svg>
-  );
-}
-
-// ブロック見出し（艇番バッジ＋選手名）
-function BlockHead({ n, name }) {
-  return (
-    <div className="rol-block-head">
-      <BoatBadge n={n} />
-      {name && (
-        <span className="rol-block-name" translate="no">
-          {name}
-        </span>
-      )}
-    </div>
-  );
-}
-
-// 文字列のおおよその幅（em）。全角（漢字・かな・ハングル）は1em、それ以外（数字・英字・記号）は0.65em
-// （太字の数字は約0.6em。1000倍以上を小数なしにして文字数が減ると見積もりの余裕も減るため、少し広めに取る。BOA-577）
-const approxEm = (text) =>
-  [...text].reduce(
-    (sum, ch) =>
-      sum + (/[\u1100-\u11ff\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/.test(ch) ? 1 : 0.65),
-    0,
-  );
-
-// 3連単の列の下の1行（「合成 144.6」「2単 963.7」）。見出し＋すき間＋値のおおよその幅を CSS に渡し、
-// 値が長い（4〜5桁）列や狭い画面では、列の幅に収まるまで文字を小さくする（BOA-552）
-function ColFoot({ label, value }) {
-  const em = approxEm(label) + 0.4 + approxEm(value);
-  return (
-    <div className="rol-col-foot" style={{ "--rol-foot-em": em }}>
-      <span>{label}</span>
-      <span>{value}</span>
-    </div>
-  );
-}
-
-// 画面に出す組番の書き方。キーは券種によらず "1-2-3" だが、順不同の券種（3連複・2連複・拡連複）は
-// 結果タブの払戻と同じく "1=2=3" と書く（BOA-552）
-const comboLabel = (comboKey, ordered) =>
-  ordered ? comboKey : comboKey.replaceAll("-", "=");
-
-// オッズ1件のタップ領域（左に艇番バッジ群、右にオッズ。人気度で色分け）
-function OddsButton({
-  comboKey,
-  label,
-  value,
-  isRange,
-  selected,
-  onSelect,
-  badges,
-}) {
-  const { t } = useTranslation();
-  const noVotes = isNoVotes(value, isRange);
-  const bucket = heatBucket(valueToNumber(value, isRange));
-  const text = noVotes
-    ? t("oddsList.noVotes")
-    : (formatValue(value, isRange) ?? "-");
-  return (
-    <button
-      type="button"
-      className={`rol-odds${bucket !== null ? ` rol-heat-${bucket}` : ""}${noVotes ? " is-no-votes" : ""}${selected ? " is-selected" : ""}`}
-      onClick={() => onSelect(comboKey)}
-      disabled={value == null}
-      aria-label={`${label} ${text}`}
-      aria-pressed={selected}
-      style={{ "--rol-odds-em": approxEm(text) }}
-    >
-      <span className="rol-odds-badges">{badges}</span>
-      <span className="rol-odds-value">{text}</span>
-    </button>
-  );
-}
-
-function TrendPanel({ combo, trend, isRange }) {
-  const { t } = useTranslation();
-  const labelOf = (p) => {
-    if (p.official) return t("oddsList.finalTrendLabel");
-    if (p.atTime) return t("oddsList.fetchedAt", { time: p.atTime });
-    if (p.live) {
-      return p.minutesBefore === null
-        ? t("oddsList.liveLatest")
-        : t("oddsList.liveTrendLabel", { n: p.minutesBefore });
-    }
-    if (p.minutesBefore === null) return "-";
-    if (p.minutesBefore === 0) return t("oddsList.deadlineLabel");
-    return t("oddsList.minutesBeforeLabel", { n: p.minutesBefore });
-  };
-  const valueText = (p) =>
-    isNoVotes(p.value, isRange)
-      ? t("oddsList.noVotes")
-      : (formatValue(p.value, isRange) ?? "-");
-  return (
-    <div className="rol-trend rol-span-all">
-      <div className="rol-trend-title">
-        {t("oddsList.trendTitle", { combo })}
-      </div>
-      {trend.length === 0 ? (
-        <p className="rol-no-data">{t("oddsList.noData")}</p>
-      ) : (
-        <>
-          <Sparkline points={trend} isRange={isRange} />
-          <div
-            className="rol-trend-values"
-            style={{ "--rol-trend-count": trend.length }}
-          >
-            {trend.map((p, i) => (
-              <div
-                className={`rol-trend-item${p.live ? " is-live" : ""}${p.official ? " is-official" : ""}`}
-                key={i}
-              >
-                <div
-                  className="rol-trend-value"
-                  style={{ "--rol-trend-em": approxEm(valueText(p)) }}
-                >
-                  {valueText(p)}
-                </div>
-                <div className="rol-trend-label">{labelOf(p)}</div>
-              </div>
-            ))}
-          </div>
-          {isRange && trend.length >= 2 && (
-            <p className="rol-trend-note" data-testid="odds-trend-range-note">
-              {t("oddsList.rangeTrendNote")}
-            </p>
-          )}
-          {trend.some((p) => p.official) &&
-            trend.some((p) => !p.official) && (
-            <p className="rol-trend-note" data-testid="odds-trend-note">
-              {t("oddsList.finalTrendNote")}
-            </p>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-// 締切時オッズ（公式）を表示しているときの状態の1行（BOA-496）。更新ボタンは出さない（値はもう変わらない）
-function FinalStatus({ deadline }) {
-  const { t } = useTranslation();
-  const time = deadline ? formatJstTime(deadline.toISOString()) : null;
-  return (
-    <div
-      className="rol-status is-official"
-      data-testid="odds-live-status"
-      data-state="final"
-    >
-      <span className="rol-official-dot" aria-hidden="true" />
-      <span className="rol-status-strong">{t("oddsList.liveFinal")}</span>
-      {time && <b>{t("oddsList.finalDeadlineAt", { time })}</b>}
-      <span className="rol-status-sub">{t("oddsList.finalSource")}</span>
-    </div>
-  );
-}
-
-// スナップショットの取得時刻の説明（「8:04 取得（発走30分前）」「締切時点 8:58 取得」）
-function snapshotLabel(t, snapshot, deadline) {
-  const time = formatJstTime(snapshot.capturedAt);
-  const n = minutesBeforeOf(snapshot.capturedAt, deadline);
-  if (n === 0) return t("oddsList.snapshotAtDeadline", { time });
-  if (n === null) return t("oddsList.snapshotAt", { time });
-  return t("oddsList.snapshotBefore", { time, n });
-}
-
-// ライブ取得の状態の1行（取得中・最新・失敗）。スナップショットだけのときは取得時刻の注記。
-// 取得から時間がたつと「最新」を「○分前の値」に、締切を過ぎたら「締切済み」に言い換える（BOA-532）
-function LiveStatus({
-  entry,
-  fallbackLabel,
-  onRefresh,
-  nowMs,
-  deadline,
-  finalNote,
-  finalPendingUntil,
-}) {
-  const { t } = useTranslation();
-  if (!entry) {
-    // DB のスナップショットは「取得した時点の公式表示」。公式のオッズ更新は数分遅れることがあり、
-    // 締切直前に取った値でも締切時オッズとは一致しない（BOA-496、ファン評価1周目）
-    // 締切直後〜締切時オッズ（公式）の保存まで（締切5分後から最大60分後まで取り直す）は、あとで締切時オッズに
-    // 切り替わることを予告する。予告は長い注意書きに埋もれないよう先頭に置き、この券種の記録が無いときも出す
-    // （BOA-547、ファン評価1周目）。取り直しの期間を過ぎても無ければ、取得できなかったと書く
-    if (!fallbackLabel && !finalNote) return null;
-    return (
-      <div className="rol-status is-snapshot" data-testid="odds-live-status">
-        {finalNote && (
-          <span
-            className="rol-status-strong"
-            data-testid={`odds-final-${finalNote}`}
-          >
-            {finalNote === "pending"
-              ? t("oddsList.finalPendingNote", { time: finalPendingUntil })
-              : t("oddsList.finalUnavailableNote")}
-          </span>
-        )}
-        {fallbackLabel && (
-          <>
-            <span>{t("oddsList.snapshotValues", { label: fallbackLabel })}</span>
-            <span className="rol-status-sub">
-              {t("oddsList.snapshotLagNote")}
-            </span>
-          </>
-        )}
-      </div>
-    );
-  }
-  // 取得中・失敗の「いまは○○の値」は、表示中だった状態の1行と同じく取得時刻で書く（公式更新時刻にすると、
-  // 「更新」を押した瞬間に時刻が前に戻ったように見える。ファン評価1周目、BOA-532）
-  const liveLabel = entry.result
-    ? t("oddsList.fetchedAt", { time: formatJstTime(entry.result.fetchedAt) })
-    : fallbackLabel;
-  if (entry.status === "loading") {
-    return (
-      <div
-        className="rol-status is-loading"
-        role="status"
-        data-testid="odds-live-status"
-      >
-        <span className="rol-spinner" aria-hidden="true" />
-        <span>
-          {liveLabel
-            ? t("oddsList.liveLoadingWith", { label: liveLabel })
-            : t("oddsList.liveLoading")}
-        </span>
-      </div>
-    );
-  }
-  if (entry.status === "error") {
-    return (
-      <div
-        className="rol-status is-error"
-        role="alert"
-        data-testid="odds-live-status"
-      >
-        <span>{t("oddsList.liveFailed", { label: liveLabel })}</span>
-        <button type="button" className="rol-status-btn" onClick={onRefresh}>
-          {t("oddsList.liveRetry")}
-        </button>
-      </div>
-    );
-  }
-  const { result } = entry;
-  const ageMs = nowMs - Date.parse(result.fetchedAt);
-  const freshness = liveFreshnessOf(result, nowMs, deadline);
-  const afterDeadline =
-    freshness === "after-deadline" || freshness === "after-deadline-pending";
-  return (
-    <div
-      // 「○分前の値」「締切済み」は緑の「最新」の見た目（is-live）にしない。ライブで取れた締切時オッズは、
-      // DB の締切時オッズ（FinalStatus）と同じ公式の見た目にする（ファン評価1周目）
-      className={`rol-status${freshness === "fresh" ? " is-live" : freshness === "final" ? " is-official" : ""}`}
-      data-testid="odds-live-status"
-      data-freshness={freshness}
-    >
-      {freshness === "fresh" && (
-        <span className="rol-live-dot" aria-hidden="true" />
-      )}
-      {freshness === "final" && (
-        <span className="rol-official-dot" aria-hidden="true" />
-      )}
-      <span className="rol-status-strong">
-        {result.final
-          ? t("oddsList.liveFinal")
-          : afterDeadline
-            ? t("oddsList.liveAfterDeadline")
-            : freshness === "stale"
-              ? t("oddsList.liveStale", { n: Math.floor(ageMs / 60000) })
-              : t("oddsList.liveLatest")}
-      </span>
-      {/* 取得した時刻を主に出す。取得中の「いまは○:○○取得の値」から時刻が戻ったように見えないよう、
-          公式の「オッズ更新時間」は補足にする（ファン評価2周目） */}
-      <b>
-        {t("oddsList.fetchedAt", { time: formatJstTime(result.fetchedAt) })}
-      </b>
-      {result.officialUpdatedAt && (
-        <span className="rol-status-sub">
-          {t("oddsList.officialUpdated")}{" "}
-          {formatOfficialTime(result.officialUpdatedAt)}
-        </span>
-      )}
-      {entry.unchanged && (
-        <span className="rol-status-sub" data-testid="odds-live-unchanged">
-          {t("oddsList.liveUnchanged")}
-        </span>
-      )}
-      {afterDeadline && (
-        <span className="rol-status-sub">
-          {t(
-            freshness === "after-deadline-pending"
-              ? "oddsList.liveAfterDeadlinePendingNote"
-              : "oddsList.liveAfterDeadlineNote",
-          )}
-        </span>
-      )}
-      {!result.final && (
-        <button type="button" className="rol-status-btn" onClick={onRefresh}>
-          {t("oddsList.liveRefresh")}
-        </button>
-      )}
-    </div>
-  );
-}
+import {
+  BET_TYPES,
+  LIVE_WINDOW_MS,
+  buildTrend,
+  comboLabel,
+  isNoVotes,
+  liveFreshnessOf,
+  snapshotLabel,
+  todayJst,
+} from "./odds-list/oddsListHelpers";
+import { boatsOf, officialOddsNotesOf } from "./odds-list/oddsDerived";
+import { OddsButton } from "./odds-list/OddsCells";
+import { TrendPanel } from "./odds-list/TrendPanel";
+import { FinalStatus, LiveStatus } from "./odds-list/LiveStatus";
+import { OddsEmptyState } from "./odds-list/OddsEmptyState";
+import { OddsBody } from "./odds-list/OddsBody";
+import { useOddsListState } from "./odds-list/useOddsListState";
 
 function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
   const { t } = useTranslation();
-  // スナップショット（DB）の取得結果。raceId とセットで持つ（frontend-data-fetch.md §3）
-  const [snapshotState, setSnapshotState] = useState(null);
-  const [snapshotReloadKey, setSnapshotReloadKey] = useState(0);
-  // 欠場艇（直前情報の is_absent）
-  const [absentState, setAbsentState] = useState(null);
-  // タブを開いた時刻でライブ取得の対象かを決める（表示中に締切を過ぎても、開いた時点の判断を保つ）
-  const [openedAtMs] = useState(() => Date.now());
-  const liveEnabled = isLiveOddsTarget(raceId, raceStartTime, openedAtMs);
-  // 状態の1行の「最新」「○分前の値」「締切済み」を時間とともに言い換えるための現在時刻（30秒ごと）
-  const [nowMs, setNowMs] = useState(openedAtMs);
-  useEffect(() => {
-    if (!liveEnabled) return undefined;
-    const id = setInterval(() => setNowMs(Date.now()), 30 * 1000);
-    return () => clearInterval(id);
-  }, [liveEnabled]);
-  // ライブ取得の結果（page → {status, result, requestId}）。result は直近の成功（取り直し中・失敗時も保持）。
-  // 開いたときに取るページは、初期値から loading にしておく（効果の中で同期的に setState しないため）。
-  // requestId は、取り直しが重なったときに最後の要求の結果だけを使うための番号
-  const [liveState, setLiveState] = useState(() => ({
-    raceId,
-    pages: liveEnabled
-      ? Object.fromEntries(
-          INITIAL_LIVE_PAGES.map((p, i) => [
-            p,
-            { status: "loading", result: null, requestId: i + 1 },
-          ]),
-        )
-      : {},
-  }));
-  const requestSeq = useRef(INITIAL_LIVE_PAGES.length);
-  const mounted = useRef(true);
-  // 初回取得を1回だけにする（開発時の StrictMode は効果を2回走らせ、公式へ同じページを2回取りに行くため）
-  const initialFetchStarted = useRef(false);
-  const [betTypeId, setBetTypeId] = useState(BET_TYPES[0].id);
-  // 推移を表示中の組み合わせキー（券種内で一意。例: "1-2-3"）
-  const [selectedKey, setSelectedKey] = useState(null);
-
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
-  // PredictionPanel側でRaceTabsに`key={analysisRaceId}`を付けているため、
-  // レースが変わるとこのコンポーネント自体が再マウントされ、stateは自然に
-  // 初期化される（react-hooks/set-state-in-effect: 効果本体での同期的なsetState呼び出しを
-  // 避け、非同期コールバック内でのみ呼ぶ）
-  useEffect(() => {
-    let cancelled = false;
-    if (!raceId) return undefined;
-    // 締切時オッズ（公式、BOA-496）も同時に取る。どちらかの失敗は「データなし」にせず、まとめて再取得できるようにする
-    Promise.all([
-      supabaseDataService.getRaceOddsSnapshots(raceId),
-      supabaseDataService.getRaceFinalOdds(raceId),
-    ])
-      .then(([data, final]) => {
-        if (!cancelled) {
-          setSnapshotState({ raceId, data, final, failed: false });
-        }
-      })
-      .catch((err) => {
-        // 取得失敗を「データなし」にしない。失敗として持ち、再取得できるようにする
-        console.error("オッズ一覧取得エラー:", err?.message ?? String(err));
-        if (!cancelled) setSnapshotState({ raceId, data: null, failed: true });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [raceId, snapshotReloadKey]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!raceId) return undefined;
-    supabaseDataService
-      .getRaceMotorMaintenanceBreakdown(raceId)
-      // 戻り値は { state, rows }（BOA-497）。欠場は state によらず rows の is_absent で見る
-      .then(({ rows }) => {
-        if (cancelled) return;
-        const absent = rows
-          .filter((r) => r.is_absent === true)
-          .map((r) => Number(r.boat_number));
-        setAbsentState({ raceId, absent, failed: false });
-      })
-      .catch((err) => {
-        // 欠場の判定は補助（出走表とオッズのキーでも判定できる）。取れなくても表は出す
-        console.error("欠場情報の取得エラー:", err?.message ?? String(err));
-        if (!cancelled) setAbsentState({ raceId, absent: [], failed: true });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [raceId]);
-
-  // ページ1つをライブ取得する。状態は非同期のコールバックでだけ更新する
-  const runLiveFetch = (page, requestId) => {
-    const settle = (patch) => {
-      if (!mounted.current) return;
-      setLiveState((prev) => {
-        const current = prev.pages[page];
-        // 取り直しが重なったときは、最後に始めた要求の結果だけを使う
-        if (current?.requestId !== requestId) return prev;
-        return {
-          ...prev,
-          pages: {
-            ...prev.pages,
-            [page]: {
-              ...current,
-              ...(typeof patch === "function" ? patch(current) : patch),
-            },
-          },
-        };
-      });
-    };
-    fetchLiveOdds(raceId, page)
-      .then((result) =>
-        // 取り直しても CDN（30秒）から同じ応答が返ると見た目が変わらないため、「変化なし」を出す
-        settle((current) => ({
-          status: "ok",
-          result,
-          unchanged:
-            current?.result?.fetchedAt != null &&
-            current.result.fetchedAt === result.fetchedAt,
-        })),
-      )
-      .catch((err) => {
-        // 失敗は state に持つ（スナップショットへのフォールバックと「取得に失敗しました」を出す）
-        console.error(
-          `オッズのライブ取得エラー（${page}）:`,
-          err?.message ?? String(err),
-        );
-        settle({ status: "error" });
-      });
-  };
-
-  // チップの切り替え・「更新」ボタンから呼ぶ（イベントハンドラ）
-  const startLiveFetch = (page) => {
-    const requestId = ++requestSeq.current;
-    setLiveState((prev) => ({
-      ...prev,
-      pages: {
-        ...prev.pages,
-        [page]: {
-          result: prev.pages[page]?.result ?? null,
-          status: "loading",
-          requestId,
-        },
-      },
-    }));
-    runLiveFetch(page, requestId);
-  };
-
-  // 開いたときの初回取得（単勝・複勝と3連単を並列に）。以降は「更新」ボタンで取り直す（自動更新しない）
-  useEffect(() => {
-    if (!liveEnabled || initialFetchStarted.current) return;
-    initialFetchStarted.current = true;
-    INITIAL_LIVE_PAGES.forEach((page, i) => runLiveFetch(page, i + 1));
-    // 開いたときの1回だけ
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const {
+    snapshotState,
+    setSnapshotState,
+    setSnapshotReloadKey,
+    absentState,
+    openedAtMs,
+    liveEnabled,
+    nowMs,
+    liveState,
+    betTypeId,
+    setBetTypeId,
+    selectedKey,
+    setSelectedKey,
+    startLiveFetch,
+  } = useOddsListState({ raceId, raceStartTime });
 
   const betType = BET_TYPES.find((b) => b.id === betTypeId) ?? BET_TYPES[0];
   const livePages = liveState.raceId === raceId ? liveState.pages : {};
@@ -844,56 +136,17 @@ function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
       : null;
 
   // 出走艇（全券種の最新値＋ライブ値のキーから、欠場の記録が無い過去レースの欠場艇を除く）
-  const boats = activeBoatsOf({
-    players,
-    absentBoats,
-    maps: [
-      ...BET_TYPES.filter((bt) => bt.id !== "winPlace").map(
-        (bt) =>
-          (snapshots &&
-            latestSnapshotWith(snapshots, bt.dataKey)?.[bt.dataKey]) ??
-          null,
-      ),
-      ...Object.values(livePages).flatMap((entry) =>
-        Object.entries(entry.result?.data ?? {})
-          .filter(([key]) => key !== "win" && key !== "place")
-          .map(([, map]) => map),
-      ),
-      ...BET_TYPES.filter((bt) => bt.id !== "winPlace").map(
-        (bt) => finalOdds?.[bt.dataKey] ?? null,
-      ),
-    ],
-  });
+  const boats = boatsOf({ players, absentBoats, snapshots, livePages, finalOdds });
 
-  // 当日・締切前で、まだライブ取得の対象（締切90分前以内）に入っていないレースだけ、公式のオッズへの導線を出す
-  const parsedRace = parseRaceId(raceId);
-  const beforeLiveWindow =
-    !liveEnabled &&
-    !!parsedRace &&
-    !!deadline &&
-    parsedRace.date === todayJst(openedAtMs) &&
-    deadline.getTime() > openedAtMs;
-  const officialOddsUrl = beforeLiveWindow
-    ? `https://www.boatrace.jp/owpc/pc/race/oddstf?rno=${parsedRace.raceNo}&jcd=${String(parsedRace.venueCode).padStart(2, "0")}&hd=${parsedRace.date.replace(/-/g, "")}`
-    : null;
-
-  // 締切後で締切時オッズ（公式）が無いとき: 取り直しの期間（締切5分後〜60分後）なら「pending」（あとで
-  // 切り替わる）、期間を過ぎたら「unavailable」（取得できなかった。保存を始める前のレースは除く）
-  const openedAfterDeadline = !!deadline && openedAtMs > deadline.getTime();
-  const finalNote =
-    finalOdds || !snapshots || !openedAfterDeadline
-      ? null
-      : openedAtMs - deadline.getTime() <= FINAL_ODDS_WINDOW_MS
-        ? "pending"
-        : parsedRace && parsedRace.date >= FINAL_ODDS_SINCE
-          ? "unavailable"
-          : null;
-  // 締切時オッズを取り直す期間の終わり（「16:24頃までに表示されます」）
-  const finalPendingUntil = deadline
-    ? formatJstTime(
-        new Date(deadline.getTime() + FINAL_ODDS_WINDOW_MS).toISOString(),
-      )
-    : null;
+  const { openedAfterDeadline, officialOddsUrl, finalNote, finalPendingUntil } =
+    officialOddsNotesOf({
+      raceId,
+      liveEnabled,
+      deadline,
+      openedAtMs,
+      finalOdds,
+      snapshots,
+    });
 
   const retrySnapshots = () => {
     setSnapshotState(null);
@@ -940,45 +193,13 @@ function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
     }
     if (snapshots.length === 0 && !finalOdds) {
       return (
-        <div className="race-tabs-empty">
-          {/* 締切後に「発走が近づくと…」「まだありません」とは書かない（もう入らないのに待てば出るように読める）。
-              締切時オッズがあとで入る期間なら予告し、期間を過ぎたら記録が無いと言い切る（BOA-547）。
-              当日で締切90分より前は、いつ出るか（時刻）と公式への導線を示す（ファン評価2周目、BOA-532） */}
-          <p data-testid="odds-empty-title">
-            {openedAfterDeadline && finalNote !== "pending"
-              ? t("oddsList.emptyTitleAfterDeadline")
-              : t("oddsList.emptyTitle")}
-          </p>
-          {officialOddsUrl ? (
-            <p
-              className="race-tabs-empty-body"
-              data-testid="odds-before-window"
-            >
-              {t("oddsList.liveFromTime", {
-                time: formatJstTime(
-                  new Date(deadline.getTime() - LIVE_WINDOW_MS).toISOString(),
-                ),
-              })}{" "}
-              <a
-                href={officialOddsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t("oddsList.officialOddsLink")}
-              </a>
-            </p>
-          ) : (
-            (!openedAfterDeadline || finalNote) && (
-              <p className="race-tabs-empty-body" data-testid="odds-empty-body">
-                {finalNote === "pending"
-                  ? t("oddsList.finalPendingNote", { time: finalPendingUntil })
-                  : finalNote === "unavailable"
-                    ? t("oddsList.finalUnavailableNote")
-                    : t("oddsList.emptyBody")}
-              </p>
-            )
-          )}
-        </div>
+        <OddsEmptyState
+          openedAfterDeadline={openedAfterDeadline}
+          finalNote={finalNote}
+          officialOddsUrl={officialOddsUrl}
+          deadline={deadline}
+          finalPendingUntil={finalPendingUntil}
+        />
       );
     }
   }
@@ -1030,189 +251,6 @@ function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
       />
     ) : null;
 
-  // 3連単: 1着ブロック → 2着列 → 3着行（＋合成オッズ・2連単オッズ）
-  const renderTrifecta = () => {
-    // 2連単オッズは、3連単と同じ時点の値を使う（別時刻の値が同じ列に並ばないように）。
-    // ライブ表示中は2連単のライブ値（取得済みなら）、スナップショット表示中は同じ行の値
-    // （2連単のページはチップを切り替えるまで取らないため、未取得の間はスナップショットの値を出す）
-    // スナップショットの2連単でキーが無い組は、保存時に落ちた票0（セルと同じく「票なし」）
-    // 締切時オッズ（公式）の表では、2連単も締切時オッズだけを使う（取れていなければ「-」。記録値を混ぜない）
-    const liveResult2tf = !!(liveResult && livePages["2tf"]?.result);
-    const exactaMap = useFinal
-      ? (finalOdds.exactaAll ?? null)
-      : ((liveResult ? livePages["2tf"]?.result?.data?.exactaAll : null) ??
-        latestSnapshot?.exactaAll ??
-        null);
-    const blocks = boats.map((first) => {
-      const seconds = boats.filter((n) => n !== first);
-      return (
-        <section className="rol-block" key={first}>
-          <BlockHead n={first} name={nameByBoat.get(first)} />
-          <div
-            className="rol-cols"
-            style={{ "--rol-col-count": seconds.length }}
-          >
-            {seconds.map((second) => {
-              const thirds = boats.filter((n) => n !== first && n !== second);
-              const composite = compositeOdds(
-                thirds.map((third) => valueOf(`${first}-${second}-${third}`)),
-              );
-              const exacta = exactaMap?.[`${first}-${second}`] ?? null;
-              return (
-                <div className="rol-col" key={second}>
-                  <div className="rol-col-head">
-                    <BoatBadge n={second} size="sm" />
-                  </div>
-                  {thirds.map((third) =>
-                    oddsButton(
-                      `${first}-${second}-${third}`,
-                      <BoatBadge n={third} size="xs" />,
-                    ),
-                  )}
-                  <ColFoot
-                    label={t("oddsList.compositeLabel")}
-                    value={formatValue(composite) ?? "-"}
-                  />
-                  <ColFoot
-                    label={t("oddsList.exactaShortLabel")}
-                    value={
-                      exacta === 0 ||
-                      (exacta === null &&
-                        exactaMap &&
-                        !liveResult2tf &&
-                        !useFinal)
-                        ? t("oddsList.noVotes")
-                        : (formatValue(exacta) ?? "-")
-                    }
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      );
-    });
-    const selectedFirst = selectedKey ? Number(selectedKey.split("-")[0]) : null;
-    return (
-      <div className="rol-block-grid">
-        {withPanelAfter(blocks, boats.indexOf(selectedFirst), trendPanel())}
-      </div>
-    );
-  };
-
-  // 3連複: 艇番3つの組み合わせを2列で一覧
-  const renderTrio = () => {
-    const combos = triosOf(boats).map((combo) => combo.join("-"));
-    const items = combos.map((key) =>
-      oddsButton(
-        key,
-        key
-          .split("-")
-          .map((n) => <BoatBadge key={n} n={Number(n)} size="xs" />),
-      ),
-    );
-    return (
-      <div className="rol-two-col-grid rol-trio-grid">
-        {withPanelAfter(
-          items,
-          combos.indexOf(selectedKey),
-          trendPanel(),
-        )}
-      </div>
-    );
-  };
-
-  // 2連単/2連複/拡連複: 艇番ごとのブロック → 相手艇ごとの行。
-  // 2連単は1着ブロック×2着行、順不同の券種は小さい艇番のブロック×大きい艇番の行
-  const renderPairs = () => {
-    const partnersOf = (head) =>
-      betType.ordered
-        ? boats.filter((n) => n !== head)
-        : boats.filter((n) => n > head);
-    // 順不同の券種では、最大の艇番は相手が残らないためブロックを作らない
-    const heads = boats.filter((head) => partnersOf(head).length > 0);
-    const items = heads.map((head) => {
-      const partners = partnersOf(head);
-      return (
-        <section className="rol-block" key={head}>
-          <BlockHead n={head} name={nameByBoat.get(head)} />
-          <div className="rol-rows">
-            {partners.map((partner) =>
-              oddsButton(
-                `${head}-${partner}`,
-                <BoatBadge n={partner} size="sm" />,
-              ),
-            )}
-          </div>
-        </section>
-      );
-    });
-    const selectedHead = selectedKey ? Number(selectedKey.split("-")[0]) : null;
-    return (
-      <div className="rol-two-col-grid">
-        {withPanelAfter(
-          items,
-          heads.indexOf(selectedHead),
-          trendPanel(),
-        )}
-      </div>
-    );
-  };
-
-  // 単勝・複勝: 艇ごとの表。票0（公式の0.0）は「票なし」。スナップショットの null は、票0と未取得を
-  // 保存時に区別していない（scrape-odds.js が 0.0 を null にし、取得漏れも null）。実際に、公式の締切時
-  // オッズが27.3の艇が全行 null だった例がある（江戸川8R 9/28、ファン評価1・2周目で同じ指摘）。
-  // 「票なし」と断定せず「-」とし、注記で「票なし（または未取得）」と説明する
-  const renderWinPlace = () => {
-    const winOf = (n) => latestMap?.[String(n)] ?? null;
-    const placeOf = (n) => placeMap?.[String(n)] ?? null;
-    const snapshotHasNull =
-      !liveResult &&
-      !useFinal &&
-      boats.some((n) => winOf(n) === null || placeOf(n) === null);
-    const cell = (value, range) => {
-      if (value == null) return "-";
-      if (isNoVotes(value, range)) {
-        return <span className="rol-no-votes">{t("oddsList.noVotes")}</span>;
-      }
-      return formatValue(value, range);
-    };
-    return (
-      <>
-        <table className="rol-win-table">
-          <thead>
-            <tr>
-              <th scope="col">{t("oddsList.boatColumn")}</th>
-              <th scope="col">{t("result.payoutType.win")}</th>
-              <th scope="col">{t("result.payoutType.place")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {boats.map((n) => (
-              <tr key={n}>
-                <th scope="row">
-                  <span className="rol-win-boat">
-                    <BoatBadge n={n} />
-                    {nameByBoat.get(n) && (
-                      <span className="rol-block-name" translate="no">
-                        {nameByBoat.get(n)}
-                      </span>
-                    )}
-                  </span>
-                </th>
-                <td>{cell(winOf(n), false)}</td>
-                <td>{cell(placeOf(n), true)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {snapshotHasNull && (
-          <p className="rol-callout">{t("oddsList.winNoVotesOrMissing")}</p>
-        )}
-      </>
-    );
-  };
-
   // 表示中の値が全て票0か（締切前の早い時間に起きる）
   const allNoVotes =
     latestMap &&
@@ -1221,74 +259,6 @@ function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
 
   const liveFailedWithoutData =
     liveEnabled && liveEntry?.status === "error" && !liveResult && !latestMap;
-
-  const renderBody = () => {
-    if (liveFailedWithoutData) {
-      return (
-        <InlineFetchError
-          message={t("oddsList.liveFailedNoData")}
-          onRetry={refreshLive}
-        />
-      );
-    }
-    if (!latestMap) {
-      if (liveEntry?.status === "loading" || snapshotsLoading) return null;
-      if (snapshotsFailed && !liveEnabled) return null;
-      // 締切時オッズがもう入らない締切後は「まだ」と書かない（BOA-547 ファン評価2周目）
-      return (
-        <p className="rol-no-data">
-          {t(
-            openedAfterDeadline && finalNote !== "pending"
-              ? "oddsList.noBetTypeDataAfterDeadline"
-              : "oddsList.noBetTypeData",
-          )}
-        </p>
-      );
-    }
-    return (
-      <>
-        {/* 締切時オッズ（公式）の単勝・複勝では、「締切前は…ずれる」の注意を出さない（ファン評価2周目 P2） */}
-        <p className="rol-guide">
-          {t(
-            useFinal && betType.id === "winPlace"
-              ? "oddsList.guide.winPlaceFinal"
-              : `oddsList.guide.${betType.id}`,
-          )}
-        </p>
-        {/* 取得中の薄い表示の意味は、表の上（状態の1行の近く）で示す（ファン評価1周目） */}
-        {refreshing && (
-          <p className="rol-callout" data-testid="odds-refreshing-note">
-            {t("oddsList.refreshingNote")}
-          </p>
-        )}
-        {/* 締切時オッズ（公式）が一部の券種だけ取れなかったとき、表示が切り替わる理由を示す（ファン評価1周目 P2） */}
-        {finalOdds && !useFinal && (
-          <p className="rol-callout" data-testid="odds-final-missing">
-            {t("oddsList.finalMissingForBetType")}
-          </p>
-        )}
-        {useFinal && betType.id === "trifecta" && !finalOdds.exactaAll && (
-          <p className="rol-callout" data-testid="odds-final-missing">
-            {t("oddsList.finalExactaMissing")}
-          </p>
-        )}
-        {allNoVotes && (
-          <p className="rol-callout">
-            {betType.id === "winPlace"
-              ? t("oddsList.winAllNoVotes")
-              : t("oddsList.allNoVotes")}
-          </p>
-        )}
-        {betType.id === "trifecta" && renderTrifecta()}
-        {betType.id === "trio" && renderTrio()}
-        {betType.id === "winPlace" && renderWinPlace()}
-        {["exacta", "quinella", "wide"].includes(betType.id) && renderPairs()}
-        {betType.id !== "winPlace" && (
-          <p className="rol-legend">💡 {t("oddsList.legend")}</p>
-        )}
-      </>
-    );
-  };
 
   // 最新を取得中で、表はいったん前回の値（スナップショット・前回のライブ値）を出しているとき。値を薄くし、
   // 取得後に変わる値だと分かるようにする（3連複・拡連複は切り替えてから8〜11秒かかる。BOA-532）
@@ -1334,7 +304,37 @@ function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
           />
         )
       )}
-      {renderBody()}
+      <OddsBody
+        liveFailedWithoutData={liveFailedWithoutData}
+        refreshLive={refreshLive}
+        latestMap={latestMap}
+        liveEntry={liveEntry}
+        snapshotsLoading={snapshotsLoading}
+        snapshotsFailed={snapshotsFailed}
+        liveEnabled={liveEnabled}
+        openedAfterDeadline={openedAfterDeadline}
+        finalNote={finalNote}
+        useFinal={useFinal}
+        betType={betType}
+        refreshing={refreshing}
+        finalOdds={finalOdds}
+        allNoVotes={allNoVotes}
+        tableProps={{
+          boats,
+          nameByBoat,
+          valueOf,
+          oddsButton,
+          trendPanel,
+          selectedKey,
+          liveResult,
+          livePages,
+          latestSnapshot,
+          latestMap,
+          placeMap,
+          useFinal,
+          finalOdds,
+        }}
+      />
     </div>
   );
 }

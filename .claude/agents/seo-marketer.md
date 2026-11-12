@@ -14,7 +14,7 @@ model: sonnet
 - `docs/knowledge/fan-reactions.md`（ブログでファンが良し悪しとしたこと。検索の意図の仮説に使う）
 
 あわせて正本を読む:
-- `.claude/rules/content-ops.md`（ブログ記事のルールと公開前品質チェック）
+- `docs/operation/content-pr-contract.md`（ブログ記事の決まり。`verify-content-pr-gate.js` が見る）
 - `docs/reference/seo-architecture-constraints.md`（SPA の制約。JS を実行しないクローラーに何が見えないか）
 - `docs/adr/0032-ai-crawler-snapshot-delivery.md`・`docs/adr/0089-bot-html-for-daily-pages.md`（ボット向けスナップショット。どの UA・どのページに配るか）
 

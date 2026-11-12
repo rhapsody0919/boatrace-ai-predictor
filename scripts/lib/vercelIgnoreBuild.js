@@ -14,6 +14,7 @@
 // ビルド（vite・generate-ai-snapshots）・api/・middleware.js から読まれないディレクトリ
 export const IGNORED_DIRS = Object.freeze([
   "docs/",
+  "analysis/",
   "data/analysis/",
   ".claude/",
   ".github/",

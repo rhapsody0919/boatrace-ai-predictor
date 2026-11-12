@@ -65,7 +65,7 @@
     {
       "script": "verify-agents-entry.js",
       "tier": "ci",
-      "guards": "作り手が毎回読む入口を短く保つ（T1、2026-11-07）。AGENTS.md は200行未満（公式の目安 code.claude.com/docs/en/memory.md）・.claude/CLAUDE.md は30行未満で、1行足すなら1行削るを機械にする。.claude/CLAUDE.md の `@../AGENTS.md` の取り込みと、行頭の `@パス` の先が置き場からの相対で実在すること（`@AGENTS.md` は .claude/AGENTS.md を指し黙って空振りした、2026-11-08）、AGENTS.md の安全の6点の語、.claude/rules/*.md が全て frontmatter の paths を持つこと（常時の rules を置かない）"
+      "guards": "作り手が毎回読む入口を短く保つ（T1、2026-11-07）。AGENTS.md は200行未満（公式の目安 code.claude.com/docs/en/memory.md）・.claude/CLAUDE.md は30行未満で、1行足すなら1行削るを機械にする。.claude/CLAUDE.md の `@../AGENTS.md` の取り込みと、行頭の `@パス` の先が置き場からの相対で実在すること（`@AGENTS.md` は .claude/AGENTS.md を指し黙って空振りした、2026-11-08）、AGENTS.md の安全の6点の語、.claude/rules/ が無いこと（rules は置かない、ZB03③）"
     },
     {
       "script": "verify-aggregate-racer-stats.js",
@@ -277,6 +277,11 @@
       "guards": "バグ原因の定点観測の集計基準（bug-cause-report.js）。基準が変わると第1期と比較できなくなる"
     },
     {
+      "script": "verify-code-pitfalls.js",
+      "tier": "ci",
+      "guards": "件数がデータで変わるグリッドに repeat(auto-fill, ...)・固定列数 repeat(N, ...) を新しく使わないこと（ZB03 ①・BOA-1454。正本はこの verify、BOA-460・527・528 で3回再発）。src/ の *.css の該当の出現（改行をまたぐ形・1行に2つも）を全体の件数で凍結し（53 件）、増えたら失敗、減ったら凍結を下げるよう出す。JS・JSX の本文は読まない"
+    },
+    {
       "script": "verify-codex-no-preview.js",
       "tier": "ci",
       "guards": "codex/・claude/ のブランチで Vercel が Preview を作らない設定（vercel.json の git.deploymentEnabled[\"codex/**\"]・[\"claude/**\"]=false。claude/ は 2026-11-06 オーナー決定）。Preview 環境に載る本番 DB の管理者キーを、レビュー・マージの前の AI のコードに渡さないため。全体の false（本番デプロイまで止まる）と、AI の枝に当たりうる true の規則も検知する"
@@ -399,6 +404,11 @@
       "guards": "失格（K の S0〜S2）の艇の着欄を結果ページから埋める処理（backfill-disqualified-finish-marks.js、BOA-582）が、失格の表記（転・落・沈・妨・エ・失）だけを書き、行を挿入せず、着欄が NULL の行だけを更新し（既存の値を上書きしない）、取得の間隔を空けて 429・503 で即中止すること"
     },
     {
+      "script": "verify-doc-placement.js",
+      "tier": "ci",
+      "guards": "文書をリポジトリの根に置かないこと・docs/ のファイル名が kebab-case であること（ZB03 ②・BOA-1455）。根の一覧（33 個、.git・node_modules と根の .gitignore の1段の型を除く）を凍結して新しい名前を失敗に、docs/（db-migration を除く）の kebab-case でないファイル 188 件を凍結して増えたら失敗。名前だけを見て、中身を読むのは .gitignore だけ"
+    },
+    {
       "script": "verify-e2e-blog-tags.js",
       "tier": "ci",
       "guards": "記事に関わるE2Eの @blog の印の付け漏れの検査（check-e2e-blog-tags.js）。付け漏れると記事だけの PR の軽い組でその試験が走らない（BOA-929）"
@@ -432,6 +442,11 @@
       "script": "verify-e2e-recorded-network.js",
       "tier": "ci",
       "guards": "e2e/**/*.js（recordings/を除く）が録画の再生（e2e/fixtures.js、ADR-0077）を素通りする書き方（@playwright/testからの直接import・route.continue()・route.fetch()）をしていないこと。コメント・文字列・正規表現リテラルの判定はverify-e2e-no-unroute.jsと共有するstripNonCode（scripts/lib/stripNonCode.js）で行い、文字列中の`//`をコメントの開始と誤らないことを自己テストで確かめる（BOA-663）。fixtures.js自身が正当に使う箇所はverify-e2e-recorded-network-allowlist.jsonに理由つきで載せ、理由の無いエントリと解消済みのエントリで失敗する"
+    },
+    {
+      "script": "verify-e2e-recording-retry.js",
+      "tier": "ci",
+      "guards": "e2e-recording.js の録画の取得（fetchWithRetry）が一時の失敗（408・429・5xx・ネットワークの例外）だけ待って再試行し、404 等の恒久の失敗は再試行せずに返すこと（BOA-1397: releases の 504 で e2e の shard が試験の前に落ちた）。偽の fetch と待ちで検査し、ネットワークに触らない"
     },
     {
       "script": "verify-e2e-replay-har-path.js",
@@ -733,7 +748,7 @@
     {
       "script": "verify-kyotei-wording.js",
       "tier": "ci",
-      "guards": "src/ に「競艇」の新しい行が入らないこと（T1、2026-11-07。決まりの正本は .claude/rules/code-style.md「用語・表記」、役所の広告出稿の対象から外れるため）。今ある行（meta＝例外1・コメント・禁止語の一覧・駅名）は kyotei-wording-allowlist.json に（ファイル, 行の中身）で固定し、一覧の残骸も失敗にする。src/data/blog-posts/ は content-pr-gate が見るので除く"
+      "guards": "src/ に「競艇」の新しい行が入らないこと（T1、2026-11-07。決まりの正本は verify-kyotei-wording.js の頭の注釈、役所の広告出稿の対象から外れるため）。今ある行（meta＝例外1・コメント・禁止語の一覧・駅名）は kyotei-wording-allowlist.json に（ファイル, 行の中身）で固定し、一覧の残骸も失敗にする。src/data/blog-posts/ は content-pr-gate が見るので除く"
     },
     {
       "script": "verify-latest-by-race-id.js",
@@ -1825,6 +1840,11 @@
       "script": "verify-turn-time-venues.js",
       "tier": "ci",
       "guards": "まわり足が会場独自の計測で他場と値の水準が違う会場の判定（src/utils/turnTimeVenues.js、data-catalog E12）。住之江・尼崎・徳山だけを対象にし、scripts/lib/boatcast/publicMap.js の直線なし（TWO）の会場と一致すること"
+    },
+    {
+      "script": "verify-ui-wording.js",
+      "tier": "ci",
+      "guards": "画面の文言（src/locales/ja の JSON の値）に禁止語（数える・似た・似ている・ふつう・いつも・似たレース・必ず当たる・的中保証・鉄板）を新しく入れないこと、ソナー・思考アシストのキー（analogy・assist）で 集計・算出・対象 を新しく使わないこと（ZB03 ②・BOA-1455）。件数で凍結（禁止語 0・ソナー 1）し、増えたら失敗。src の JS・JSX は読まない"
     },
     {
       "script": "verify-unchanged-rows-summary.js",

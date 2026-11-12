@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1765,
+    "sourceFiles": 1802,
     "filesWithAccess": 296,
     "tableReaders": 992,
     "tableWriters": 189,
@@ -17,7 +17,7 @@
     "notInSnapshot": 4,
     "unresolved": 32,
     "parseErrors": 0,
-    "uncoveredFiles": 54
+    "uncoveredFiles": 55
   },
   "tables": {
     "accuracy_cache": {
@@ -1788,7 +1788,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/racerService.js:148",
+          "ref": "src/services/racerService.js:158",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1878,7 +1878,7 @@
             "src/services/raceQueries2.js:174",
             "src/services/raceQueries2.js:41",
             "src/services/raceQueries3.js:90",
-            "src/services/racerService.js:148",
+            "src/services/racerService.js:158",
             "src/services/sherlockService.js:83"
           ],
           "writers": [],
@@ -1911,7 +1911,7 @@
             "src/services/raceQueries2.js:174",
             "src/services/raceQueries2.js:41",
             "src/services/raceQueries3.js:90",
-            "src/services/racerService.js:148",
+            "src/services/racerService.js:158",
             "src/services/sherlockService.js:83"
           ],
           "writers": [],
@@ -1938,7 +1938,7 @@
             "src/services/raceQueries2.js:174",
             "src/services/raceQueries2.js:41",
             "src/services/raceQueries3.js:90",
-            "src/services/racerService.js:148",
+            "src/services/racerService.js:158",
             "src/services/sherlockService.js:83"
           ],
           "writers": [],
@@ -1980,7 +1980,7 @@
           "readers": [
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
-            "src/services/racerService.js:148"
+            "src/services/racerService.js:158"
           ],
           "writers": [],
           "sql": []
@@ -1989,7 +1989,7 @@
           "readers": [
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
-            "src/services/racerService.js:148"
+            "src/services/racerService.js:158"
           ],
           "writers": [],
           "sql": []
@@ -8453,7 +8453,7 @@
           ]
         },
         {
-          "ref": "src/services/racerService.js:31",
+          "ref": "src/services/racerService.js:46",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8463,7 +8463,7 @@
           ]
         },
         {
-          "ref": "src/services/racerService.js:112",
+          "ref": "src/services/racerService.js:127",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8714,8 +8714,8 @@
             "src/services/racerQueries3.js:27",
             "src/services/racerQueries3.js:295",
             "src/services/racerQueries3.js:99",
-            "src/services/racerService.js:112",
-            "src/services/racerService.js:31",
+            "src/services/racerService.js:127",
+            "src/services/racerService.js:46",
             "src/services/sherlockService.js:77",
             "src/services/watsonService.js:75"
           ],
@@ -8903,7 +8903,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:152",
             "src/services/motorQueries2.js:297",
             "src/services/raceQueries3.js:83",
-            "src/services/racerService.js:31",
+            "src/services/racerService.js:46",
             "src/services/sherlockService.js:77"
           ],
           "writers": [],
@@ -9006,7 +9006,7 @@
             "src/services/motorQueries5.js:243",
             "src/services/motorQueries5.js:87",
             "src/services/raceQueries3.js:83",
-            "src/services/racerService.js:112"
+            "src/services/racerService.js:127"
           ],
           "writers": [],
           "sql": [
@@ -9218,8 +9218,8 @@
             "src/services/racerQueries3.js:27",
             "src/services/racerQueries3.js:295",
             "src/services/racerQueries3.js:99",
-            "src/services/racerService.js:112",
-            "src/services/racerService.js:31"
+            "src/services/racerService.js:127",
+            "src/services/racerService.js:46"
           ],
           "writers": [
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
@@ -13063,7 +13063,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-bot-race-function.js:851",
+          "ref": "scripts/maintenance/verify-bot-race-function.js:857",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -13098,7 +13098,7 @@
           ]
         },
         {
-          "ref": "src/services/racerService.js:86",
+          "ref": "src/services/racerService.js:101",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13145,10 +13145,10 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/raceQueries2.js:240",
-            "src/services/racerService.js:86",
+            "src/services/racerService.js:101",
             "src/services/scheduleQueries.js:68",
             "src/services/scheduleQueries.js:94"
           ],
@@ -13164,10 +13164,10 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/raceQueries2.js:240",
-            "src/services/racerService.js:86",
+            "src/services/racerService.js:101",
             "src/services/scheduleQueries.js:68",
             "src/services/scheduleQueries.js:94"
           ],
@@ -13183,10 +13183,10 @@
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/raceQueries2.js:240",
-            "src/services/racerService.js:86",
+            "src/services/racerService.js:101",
             "src/services/scheduleQueries.js:68",
             "src/services/scheduleQueries.js:94"
           ],
@@ -13204,7 +13204,7 @@
           "readers": [
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/scheduleQueries.js:94"
           ],
@@ -13220,7 +13220,7 @@
           "readers": [
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:851",
+            "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
             "src/services/scheduleQueries.js:94"
           ],
@@ -14522,7 +14522,7 @@
           ]
         },
         {
-          "ref": "src/services/racerService.js:46",
+          "ref": "src/services/racerService.js:61",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14572,7 +14572,7 @@
         "id": {
           "readers": [
             "scripts/lib/racerNews/dedup.js:34",
-            "src/services/racerService.js:46"
+            "src/services/racerService.js:61"
           ],
           "writers": [],
           "sql": []
@@ -14580,7 +14580,7 @@
         "racer_id": {
           "readers": [
             "scripts/generate-sitemap.js:465",
-            "src/services/racerService.js:46"
+            "src/services/racerService.js:61"
           ],
           "writers": [
             "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
@@ -14590,7 +14590,7 @@
         },
         "title": {
           "readers": [
-            "src/services/racerService.js:46"
+            "src/services/racerService.js:61"
           ],
           "writers": [
             "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
@@ -14600,7 +14600,7 @@
         },
         "summary": {
           "readers": [
-            "src/services/racerService.js:46"
+            "src/services/racerService.js:61"
           ],
           "writers": [
             "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
@@ -14611,7 +14611,7 @@
         "source_url": {
           "readers": [
             "scripts/lib/racerNews/dedup.js:34",
-            "src/services/racerService.js:46"
+            "src/services/racerService.js:61"
           ],
           "writers": [
             "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
@@ -14621,7 +14621,7 @@
         },
         "source_name": {
           "readers": [
-            "src/services/racerService.js:46"
+            "src/services/racerService.js:61"
           ],
           "writers": [
             "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
@@ -14631,7 +14631,7 @@
         },
         "published_at": {
           "readers": [
-            "src/services/racerService.js:46"
+            "src/services/racerService.js:61"
           ],
           "writers": [
             "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
@@ -14642,7 +14642,7 @@
         "created_at": {
           "readers": [
             "scripts/generate-sitemap.js:465",
-            "src/services/racerService.js:46"
+            "src/services/racerService.js:61"
           ],
           "writers": [],
           "sql": []
@@ -15777,7 +15777,7 @@
           ]
         },
         {
-          "ref": "src/services/racerService.js:18",
+          "ref": "src/services/racerService.js:33",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15847,7 +15847,7 @@
             "scripts/sns/delete-x-post.js:124",
             "src/services/motorQueries4.js:205",
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18"
+            "src/services/racerService.js:33"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15861,7 +15861,7 @@
             "scripts/sns/delete-x-post.js:124",
             "src/services/motorQueries4.js:205",
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18"
+            "src/services/racerService.js:33"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15871,7 +15871,7 @@
         "name_kana": {
           "readers": [
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18"
+            "src/services/racerService.js:33"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15881,7 +15881,7 @@
         "birth_date": {
           "readers": [
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18"
+            "src/services/racerService.js:33"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15891,7 +15891,7 @@
         "height_cm": {
           "readers": [
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18"
+            "src/services/racerService.js:33"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15901,7 +15901,7 @@
         "weight_kg": {
           "readers": [
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18"
+            "src/services/racerService.js:33"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15910,7 +15910,7 @@
         },
         "blood_type": {
           "readers": [
-            "src/services/racerService.js:18"
+            "src/services/racerService.js:33"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15921,7 +15921,7 @@
           "readers": [
             "scripts/lib/racerNews/officialGradeAnnouncements.js:174",
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18"
+            "src/services/racerService.js:33"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15932,7 +15932,7 @@
           "readers": [
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18"
+            "src/services/racerService.js:33"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -15942,7 +15942,7 @@
         "registration_period": {
           "readers": [
             "src/services/racerQueries.js:310",
-            "src/services/racerService.js:18"
+            "src/services/racerService.js:33"
           ],
           "writers": [
             "scripts/lib/racerProfileSync.js:283"
@@ -30747,6 +30747,7 @@
     "scripts/analysis/original-exhibition/forecast-slit.py",
     "scripts/analysis/past-rate-check/label-threshold.py",
     "scripts/analysis/past-rate-check/slit-pattern-rates.py",
+    "scripts/maintenance/guard_weakening/verify_guard.py",
     "scripts/ml/analogy/db.py",
     "scripts/ml/analogy/features.py",
     "scripts/ml/analogy/in_caution_bands.py",

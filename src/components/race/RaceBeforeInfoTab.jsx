@@ -46,7 +46,14 @@ import BandWrapAxisTick from "../BandWrapAxisTick";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import {
+  getMeetOriginalExhibitionByRaceBoat,
+  getRacerMeetExhibitionTrendBefore,
+} from "../../services/meetQueries.js";
+import { getMeetScoreboard } from "../../services/meetQueries2.js";
+import { getRaceEntryWeights } from "../../services/raceQueries2.js";
+import { getRaceOriginalExhibition } from "../../services/raceQueries4.js";
+import { getRacerScopedRaceStats } from "../../services/racerQueries2.js";
 import {
   buildBeforeInfoRows,
   buildExhibitionCourseRow,
@@ -157,8 +164,7 @@ function RaceBeforeInfoTab({
       });
     sortedPlayers.forEach((p) => {
       if (!p.racerId) return;
-      supabaseDataService
-        .getRacerScopedRaceStats(p.racerId)
+      getRacerScopedRaceStats(p.racerId)
         .then((data) => {
           if (!cancelled) apply(p.racerId, data, false);
         })
@@ -202,8 +208,7 @@ function RaceBeforeInfoTab({
     let cancelled = false;
     sortedPlayers.forEach((p) => {
       if (!p.racerId || !p.motorNumber || !raceId) return;
-      supabaseDataService
-        .getRacerMeetExhibitionTrendBefore(p.racerId, p.motorNumber, raceId)
+      getRacerMeetExhibitionTrendBefore(p.racerId, p.motorNumber, raceId)
         .then((data) => {
           if (cancelled) return;
           setFetchedMeetTrend((prev) =>
@@ -245,8 +250,7 @@ function RaceBeforeInfoTab({
   useEffect(() => {
     if (!raceId) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRaceOriginalExhibition(raceId)
+    getRaceOriginalExhibition(raceId)
       .then((data) => {
         if (!cancelled) setFetchedExhibition({ raceId, data });
       })
@@ -293,8 +297,7 @@ function RaceBeforeInfoTab({
   useEffect(() => {
     if (meetRaceKeys.length === 0) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getMeetOriginalExhibitionByRaceBoat(meetRaceKeys)
+    getMeetOriginalExhibitionByRaceBoat(meetRaceKeys)
       .then((data) => {
         if (!cancelled) setFetchedMeetOriginal({ raceId, data });
       })
@@ -326,8 +329,7 @@ function RaceBeforeInfoTab({
     if (!raceId || venueCode === null || venueCode === undefined)
       return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getMeetScoreboard(raceId, venueCode)
+    getMeetScoreboard(raceId, venueCode)
       .then((data) => {
         if (!cancelled) setFetchedBoard({ raceId, data, failed: false });
       })
@@ -354,8 +356,7 @@ function RaceBeforeInfoTab({
   useEffect(() => {
     if (!raceId) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getRaceEntryWeights(raceId)
+    getRaceEntryWeights(raceId)
       .then((data) => {
         if (!cancelled) setFetchedEntryWeights({ raceId, data });
       })
@@ -623,6 +624,7 @@ function RaceBeforeInfoTab({
           ...row,
           label: `${row.label} ※`,
           shortLabel: `${row.shortLabel} ※`,
+          turnMark: true,
         }
       : row;
   const rows = [
@@ -956,27 +958,54 @@ function RaceBeforeInfoTab({
                 {rows.map((row) => (
                   <tr key={row.key}>
                     <td className="drt-label-cell">
-                      {row.tab ? (
-                        <Link
-                          to={deepLink(row.tab)}
-                          className="drt-label-link"
-                          onClick={onLinkClick(row.tab)}
-                        >
-                          <span className="drt-label-full">{row.label}</span>
-                          <span className="drt-label-short">
-                            {row.shortLabel}
-                          </span>
-                          <span className="drt-link-arrow">›</span>
-                        </Link>
-                      ) : (
+                      {row.turnMark ? (
+                        // 末尾の1文字・※・? を束ねて、※と? だけが2行目に落ちないようにする
                         <>
-                          <span className="drt-label-full">{row.label}</span>
+                          <span className="drt-label-full">
+                            {row.label.slice(0, -3)}
+                          </span>
                           <span className="drt-label-short">
-                            {row.shortLabel}
+                            {row.shortLabel.slice(0, -3)}
+                          </span>
+                          <span className="drt-turn-tail">
+                            <span className="drt-label-full">
+                              {row.label.slice(-3)}
+                            </span>
+                            <span className="drt-label-short">
+                              {row.shortLabel.slice(-3)}
+                            </span>
+                            <TermHintButton termKey={row.key} />
                           </span>
                         </>
+                      ) : (
+                        <>
+                          {row.tab ? (
+                            <Link
+                              to={deepLink(row.tab)}
+                              className="drt-label-link"
+                              onClick={onLinkClick(row.tab)}
+                            >
+                              <span className="drt-label-full">
+                                {row.label}
+                              </span>
+                              <span className="drt-label-short">
+                                {row.shortLabel}
+                              </span>
+                              <span className="drt-link-arrow">›</span>
+                            </Link>
+                          ) : (
+                            <>
+                              <span className="drt-label-full">
+                                {row.label}
+                              </span>
+                              <span className="drt-label-short">
+                                {row.shortLabel}
+                              </span>
+                            </>
+                          )}
+                          <TermHintButton termKey={row.key} />
+                        </>
                       )}
-                      <TermHintButton termKey={row.key} />
                     </td>
                     {sortedPlayers.map((p) => (
                       <td

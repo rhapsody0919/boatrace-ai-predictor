@@ -4,7 +4,7 @@ import { readDataLayerSource } from "./dataLayerSource.js";
  * verify-series-points-stage-rules.js — 得点率の「種別判定」の回帰テスト
  * （BOA-457 / BOA-458）。
  *
- * `src/components/race/seriesPoints.js` は `race_conditions.race_stage` の
+ * `src/pure/seriesPoints.js` は `race_conditions.race_stage` の
  * 部分一致で「算入するか」「配点はどれか」を決める。この列は racelist ページの
  * 表示文字列をほぼ生で保存しているため会場の自由記述が入り、2026-09-28 の
  * 棚卸し（`scripts/analysis/race-stage-inventory.mjs`）では **349種** あった。
@@ -51,7 +51,7 @@ import {
   groupExcludedRacers,
   runFinishLabel,
   officialMarkOf,
-} from "../../src/components/race/seriesPoints.js";
+} from "../../src/pure/seriesPoints.js";
 import {
   getRaceStageKey,
   getRaceStageCategory,

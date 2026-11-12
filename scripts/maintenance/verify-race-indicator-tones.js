@@ -16,8 +16,15 @@
  *   - 表示の1桁で ±0.1 以内の差は色なし（「0.0」は記号が無い、「−0.1」は実質平均どおり。BOA-711）
  *   - 向きが決まらない（isBetter が null）なら色なし
  */
-import { meetStVerdictTone } from "../../src/components/race/basicInfoStats.js";
+import { existsSync } from "node:fs";
 import { diffTone } from "../../src/utils/courseBaseline.js";
+// BOA-1501 で src/pure へ移す。移す前後のどちらでも本体を読む（移した後に元の場所の分岐は外す）
+const BASIC_INFO_STATS = existsSync(
+  new URL("../../src/pure/basicInfoStats.js", import.meta.url),
+)
+  ? "../../src/pure/basicInfoStats.js"
+  : "../../src/components/race/basicInfoStats.js";
+const { meetStVerdictTone } = await import(BASIC_INFO_STATS);
 
 const CASES = [
   ["差 −0.02・3走は good", -0.02, 3, "good"],

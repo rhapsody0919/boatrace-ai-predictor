@@ -8,7 +8,10 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import {
+  getTodaysVenueRanking,
+  getVenueFirstWinRateRanking,
+} from "../../services/venueQueries2.js";
 import "./MotorConditionChart.css";
 
 function RankingTable({ title, rows, emptyMessage, valueHeader, formatValue }) {
@@ -67,8 +70,8 @@ function VenueRankingChart() {
       // 従来から安定していた本日限定の4指標まで道連れでエラー状態にしないよう、
       // 互いに独立して失敗を扱う
       const [todaysResult, firstWinRateResult] = await Promise.allSettled([
-        supabaseDataService.getTodaysVenueRanking(5),
-        supabaseDataService.getVenueFirstWinRateRanking(),
+        getTodaysVenueRanking(5),
+        getVenueFirstWinRateRanking(),
       ]);
 
       if (todaysResult.status === "fulfilled") {

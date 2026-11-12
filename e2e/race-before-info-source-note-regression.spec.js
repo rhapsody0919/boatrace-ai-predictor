@@ -25,10 +25,11 @@ for (const { width, height, label } of WIDTHS) {
 
     expect((await venueNote.textContent()).trim().startsWith("※")).toBe(true);
 
+    // 見出しは「まわり」＋ 末尾の「足 ※」（.drt-turn-tail）に分かれて描画される（BOA-1029）
     await expect(
       page
-        .locator(`.race-before-info-tab ${label}`)
-        .filter({ hasText: /^まわり足 ※$/ })
+        .locator(`.race-before-info-tab .drt-turn-tail ${label}`)
+        .filter({ hasText: /^足\s※$/ })
         .first(),
     ).toBeVisible();
   });

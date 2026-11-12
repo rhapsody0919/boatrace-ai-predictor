@@ -6,12 +6,15 @@
  * 3期の合算を率の平均で出す（着回数の合計から出すのが正）、のどれかが画面に出る。
  * 期の定義は official-data-spec、出してよい範囲は data-scientist（2026-10-28、GS00）。
  */
-import {
-  buildPeriodRows,
-  buildCourseRows,
-  periodLabel,
-  periodAppliedLabel,
-} from "../../src/utils/racerOfficialPeriodStats.js";
+import { existsSync } from "node:fs";
+// BOA-1501 で src/pure へ移す。移す前後のどちらでも本体を読む（移した後に元の場所の分岐は外す）
+const RACER_OFFICIAL_PERIOD_STATS = existsSync(
+  new URL("../../src/pure/racerOfficialPeriodStats.js", import.meta.url),
+)
+  ? "../../src/pure/racerOfficialPeriodStats.js"
+  : "../../src/utils/racerOfficialPeriodStats.js";
+const { buildPeriodRows, buildCourseRows, periodLabel, periodAppliedLabel } =
+  await import(RACER_OFFICIAL_PERIOD_STATS);
 
 const failures = [];
 let checked = 0;

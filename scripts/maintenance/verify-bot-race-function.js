@@ -53,6 +53,8 @@ const SPIED = {
     "seriesCoveringDate",
   ],
   "/src/utils/raceEntrants.js": ["entrantRowsOf"],
+  // 節の取得の公開の入口。殻（supabaseDataService）を経ても名前つき import でも、同じ包みを通る（殻を外す付け替え RA35・RA40）
+  "/src/services/scheduleQueries.js": ["getSeriesOfDate"],
 };
 const HOOKS = `
 const SPIED = ${JSON.stringify(SPIED)};
@@ -93,14 +95,18 @@ export async function load(url, context, nextLoad) {
 register(new URL("../lib/renderJsx.js", import.meta.url));
 register(`data:text/javascript,${encodeURIComponent(HOOKS)}`);
 
-/** 共有の関数の呼び出しを数え、overrides[name] があれば (本物, ...引数) で代わりに呼ぶ */
+/** 共有の関数の呼び出しを数え、overrides[name] があれば (本物, ...引数) で代わりに呼ぶ。
+ *  observers[name] は (引数, 戻り値) を見るだけで、reset では消さない（描画の待ちの数え） */
 const spy = {
   overrides: {},
   calls: {},
+  observers: {},
   call(name, real, args) {
     (this.calls[name] ??= []).push(args);
     const override = this.overrides[name];
-    return override ? override(real, ...args) : real(...args);
+    const result = override ? override(real, ...args) : real(...args);
+    this.observers[name]?.(args, result);
+    return result;
   },
   reset() {
     this.overrides = {};
@@ -1050,20 +1056,19 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const { MemoryRouter, Routes, Route } = await import("react-router-dom");
   const { default: RaceDetailRoute } =
     await import("../../src/pages/RaceDetailPage.jsx");
-  const { supabaseDataService, clearCache } =
-    await import("../../src/services/supabaseDataService.js");
-  // 帯が節を引いたかは、公開の入口 getSeriesOfDate の呼び出しで見る（race_series は他の部品も引くので表では見分けない）
+  const { clearCache } = await import("../../src/services/core.js");
+  const { getSeriesOfDate } =
+    await import("../../src/services/scheduleQueries.js");
+  // 帯が節を引いたかは、公開の入口 getSeriesOfDate の呼び出しで見る（race_series は他の部品も引くので表では見分けない）。
+  // 殻の性質の差し替えでなく module hook の包み（SPIED）で見るので、部品が殻を経ずに名前つきで import しても数える
   const seriesOfDateCalls = [];
   let seriesOfDateSettled = 0;
-  const realSeriesOfDate = supabaseDataService.getSeriesOfDate;
-  supabaseDataService.getSeriesOfDate = function (...args) {
+  spy.observers.getSeriesOfDate = (args, p) => {
     seriesOfDateCalls.push(args);
     const settle = () => {
       seriesOfDateSettled += 1;
     };
-    const p = realSeriesOfDate.apply(this, args);
-    p.then(settle, settle);
-    return p;
+    Promise.resolve(p).then(settle, settle);
   };
   const h = React.createElement;
   const act = (fn) =>
@@ -1516,10 +1521,10 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     ],
   );
 
-  // サービス層の節の取得（公開の入口 supabaseDataService.getSeriesOfDate を偽の supabase の上で呼ぶ）
+  // サービス層の節の取得（公開の入口 getSeriesOfDate を偽の supabase の上で呼ぶ。殻が持つのも同じ関数）
   const seriesOf = async (date) => {
     clearCache();
-    return supabaseDataService.getSeriesOfDate(16, date);
+    return getSeriesOfDate(16, date);
   };
   fake.tables = {
     race_series: [

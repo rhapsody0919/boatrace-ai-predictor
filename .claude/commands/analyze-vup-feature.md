@@ -39,7 +39,7 @@ kyoteibiyori.com/vup/ の指定機能をboatAI向けに詳細分析し、Linear�
 3. **UI/UX実装案・技術的実装案を提示**（競合の見た目をそのまま再現しない。上記大原則に従う）
    - 推奨コンポーネント・配置場所・既存パターンとの連携・モバイル対応方針
    - データソース（Supabaseテーブル等）・API/RPC関数・キャッシング戦略・推定工数
-   - `.claude/rules/component-reuse.md` を踏まえ、既存コンポーネント拡張で足りるかを明記する
+   - `AGENTS.md` の「落とし穴」（ヘルパーの索引）と `docs/reference/shared-logic-index.md` を踏まえ、既存コンポーネント拡張で足りるかを明記する
 
 4. **Linearチケット案を提示**（この時点ではまだ起票しない）
    - チケットタイトル（`[boatAI提案] {機能名}` 形式）

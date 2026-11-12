@@ -11,7 +11,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getVenueMotorList } from "../../services/motorQueries4.js";
+import { getVenuesWithTodaysRaces } from "../../services/scheduleQueries.js";
 import { STADIUM_NAMES as VENUE_NAMES, ALL_VENUE_CODES } from "../../constants";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
@@ -56,8 +57,7 @@ function VenueMotorRanking({ initialVenueCode = null }) {
   useEffect(() => {
     if (initialVenueCode !== null) return;
     let cancelled = false;
-    supabaseDataService
-      .getVenuesWithTodaysRaces()
+    getVenuesWithTodaysRaces()
       .then((list) => {
         if (!cancelled) setVenue(list[0] ?? ALL_VENUE_CODES[0]);
       })
@@ -73,7 +73,7 @@ function VenueMotorRanking({ initialVenueCode = null }) {
   useEffect(() => {
     if (venue === null) return;
     let cancelled = false;
-    supabaseDataService.getVenueMotorList(venue).then((data) => {
+    getVenueMotorList(venue).then((data) => {
       if (!cancelled) setLoaded({ venue, data });
     });
     return () => {

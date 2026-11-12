@@ -252,6 +252,12 @@ thead tr:last-child:not(:first-child) .drt-label-th {
   white-space: nowrap;
 }
 
+/* まわり足の見出し「…足 ※ ?」の末尾。※と? だけが2行目に落ちないよう束ねる（BOA-1029）。
+   .drt-nowrap は 767px 以下で normal に戻されるので別の名前にする */
+.drt-turn-tail {
+  white-space: nowrap;
+}
+
 /* 小標本（n<6）は灰。RaceWakuInfoTab.css の is-small-sample と同じ規約（BOA-711 U5） */
 .drt-n-small-sample {
   color: var(--text-secondary);

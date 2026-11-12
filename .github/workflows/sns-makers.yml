@@ -45,7 +45,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
 
       # PR の checkout は base と head のマージコミット（1つ目の親が base）。push は github.event.before が前の master。
       # 判定のスクリプトは base 側のものを同じ配置で取り出して動かし、辿る木は checkout（--root）。base に無ければ走らせる
@@ -84,7 +84,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
           cache: 'npm'
           cache-dependency-path: |
             package-lock.json

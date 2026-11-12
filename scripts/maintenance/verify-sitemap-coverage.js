@@ -9,6 +9,11 @@ import assert from "node:assert/strict";
 import vm from "node:vm";
 import { renderUrlEntry } from "../lib/sitemapLastmod.js";
 import { getDaysAgoJST } from "../../src/utils/dateUtils.js";
+import {
+  SUPPORTED_LANGUAGES,
+  DEFAULT_LANGUAGE,
+  localizePath,
+} from "../../src/config/languages.js";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -149,6 +154,9 @@ export async function sitemapFixture(source, pages, baseCount = 0) {
       SITE_URL: "https://www.boat-ai.jp",
       renderUrlEntry,
       alternatesFor: () => [],
+      localizePath,
+      SUPPORTED_LANGUAGES,
+      DEFAULT_LANGUAGE,
     },
   );
 }
@@ -185,9 +193,20 @@ async function verifyRaceDetails(source) {
     /fixture read failed/,
   );
   const xml = await sitemapFixture(source, pages);
-  assert.equal((xml.match(/<url>/g) ?? []).length, 3);
-  for (const page of pages)
+  // ja 3件 + 言語版（en・zh-TW・ko）3件×3言語
+  assert.equal((xml.match(/<url>/g) ?? []).length, 3 + 3 * 3);
+  for (const page of pages) {
     assert.ok(xml.includes(`<loc>https://www.boat-ai.jp${page.loc}</loc>`));
+    for (const { code } of SUPPORTED_LANGUAGES) {
+      if (code === DEFAULT_LANGUAGE) continue;
+      assert.ok(
+        xml.includes(
+          `<loc>https://www.boat-ai.jp${localizePath(page.loc, code)}</loc>`,
+        ),
+      );
+    }
+  }
+  assert.ok(!xml.includes("/assist"));
   assert.equal(
     ((await sitemapFixture(source, [], 50000)).match(/<url>/g) ?? []).length,
     50000,

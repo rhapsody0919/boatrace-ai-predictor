@@ -6,7 +6,8 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRaceRacerFormBreakdown } from "../../services/raceQueries.js";
+import { getRacerFormTrend } from "../../services/racerQueries.js";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import TrendLineChart from "./TrendLineChart";
@@ -45,7 +46,7 @@ function RacerFormChart({
         setError(null);
         setDrillDownRacer(null);
         const data =
-          await supabaseDataService.getRaceRacerFormBreakdown(selectedRace);
+          await getRaceRacerFormBreakdown(selectedRace);
         setBreakdown(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
@@ -66,7 +67,7 @@ function RacerFormChart({
         setLoading(true);
         setError(null);
         const data =
-          await supabaseDataService.getRacerFormTrend(drillDownRacer);
+          await getRacerFormTrend(drillDownRacer);
         setTrendData(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));

@@ -101,7 +101,7 @@ function escapeHtml(str) {
 // index.htmlの静的<title>（サイト共通デフォルト）がReact描画後のページ固有<title>と
 // 並存してしまう（React管理外の初期HTMLタグのため、Reactの重複排除が効かない）。
 // デフォルトタイトルと一致する<title>を除去し、ページ固有のものだけを残す。
-const DEFAULT_TITLE = "龍神レーダー - 無料のボートレースAI予想＆データ分析";
+const DEFAULT_TITLE = "ボートレースのデータ分析とAI予想が無料｜競艇 龍神レーダー";
 
 function dedupeDefaultTitle(html) {
   const titleMatches = [...html.matchAll(/<title>([^<]*)<\/title>/g)];

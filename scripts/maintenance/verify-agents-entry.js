@@ -10,7 +10,7 @@
  *       （2026-11-08、claude 2.1.310 で確かめ。#2315〜の間 AGENTS.md が誰の文脈にも入っていなかった）
  *   (e) .claude/CLAUDE.md・AGENTS.md の行頭の `@パス` が、そのファイルの置き場からの相対で実在するファイルを指す
  *   (c) AGENTS.md に安全の6点の語が残っている（主語は「作り手」）
- *   (d) .claude/rules/*.md が全て frontmatter の paths を持つ（常時の rules を置かない）
+ *   (d) .claude/rules/ が無い（常時でも paths 付きでも rules は置かない。決まりは AGENTS.md か verify へ。ZB03③ 2026-11）
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -48,14 +48,7 @@ const agents = read("AGENTS.md");
 const entry = read(".claude/CLAUDE.md");
 
 const rulesDir = path.join(ROOT, ".claude/rules");
-const alwaysOnRules = fs
-  .readdirSync(rulesDir)
-  .filter((name) => name.endsWith(".md"))
-  .filter((name) => {
-    const text = fs.readFileSync(path.join(rulesDir, name), "utf8");
-    const front = text.match(/^---\n([\s\S]*?)\n---/);
-    return !(front && /^paths:/m.test(front[1]));
-  });
+const rulesDirExists = fs.existsSync(rulesDir);
 
 // 行頭の `@パス`（取り込み）を、書いたファイルの置き場からの相対で解く
 const IMPORT_SOURCES = ["AGENTS.md", ".claude/CLAUDE.md"];
@@ -91,10 +84,9 @@ const failures = [
       ? null
       : `AGENTS.md から安全の決まり「${label}」の語（${term}）が消えた`,
   ),
-  ...alwaysOnRules.map(
-    (name) =>
-      `.claude/rules/${name} に frontmatter の paths が無い（常時の rules は置かない。AGENTS.md か skill へ）`,
-  ),
+  rulesDirExists
+    ? ".claude/rules/ が在る（rules は常時でも paths 付きでも置かない。決まりは AGENTS.md か verify へ、対話の手順は skill へ）"
+    : null,
 ].filter(Boolean);
 
 if (failures.length > 0) {
@@ -103,5 +95,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(
-  `verify-agents-entry: OK（AGENTS.md ${lineCount(agents)} 行・.claude/CLAUDE.md ${lineCount(entry)} 行・安全の語 ${SAFETY_TERMS.length} 件・@ の取り込み先は実在・rules は全て paths 付き）`,
+  `verify-agents-entry: OK（AGENTS.md ${lineCount(agents)} 行・.claude/CLAUDE.md ${lineCount(entry)} 行・安全の語 ${SAFETY_TERMS.length} 件・@ の取り込み先は実在・.claude/rules/ は無い）`,
 );
