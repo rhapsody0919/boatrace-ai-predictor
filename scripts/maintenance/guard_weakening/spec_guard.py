@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 SPEC_RE = re.compile(r"e2e/.+\.spec\.[cm]?[jt]sx?")
+E2E_CODE_RE = re.compile(r"e2e/.+\.[cm]?[jt]sx?")  # spec でない e2e の補助（fixtures・helpers）。expect・skip の数だけ合わせて見る
 DELETE_WARN_MIN = 20  # 目安（根拠なし）
 DELETE_WARN_RATIO = 2.0  # 目安（根拠なし）
 
@@ -47,8 +48,14 @@ _REGEX_PREV = set("(,=:[!&|?{};+-*%<>~^")
 _REGEX_PREV_WORDS = ("return", "typeof", "case", "do", "else", "in", "of", "void", "yield", "await")
 
 
-def strip_comments(src: str) -> str:
-    """// と /* */ のコメントを空白に置き換える（改行は残す）。文字列・テンプレート・正規表現の中は触らない。閉じない物は Unreadable"""
+def _blank(t: str) -> str:
+    """文字列・正規表現の literal の中身を空白に（両端の字と改行は残す）"""
+    return t[0] + re.sub(r"[^\n]", " ", t[1:-1]) + t[-1] if len(t) >= 2 else t
+
+
+def strip_comments(src: str, blank: bool = False) -> str:
+    """// と /* */ のコメントを空白に置き換える（改行は残す）。文字列・テンプレート・正規表現の中は触らない
+    （blank=True なら中身も空白にする。文字列の中の 'expect(' 等で数を水増しさせない）。閉じない物は Unreadable"""
     out: List[str] = []
     i, n = 0, len(src)
     last = ""  # 直前の空白でない字（コメントの前の字）
@@ -70,13 +77,13 @@ def strip_comments(src: str) -> str:
             continue
         if ch in "'\"`":
             j = _end_of_string(src, i)
-            out.append(src[i:j])
+            out.append(_blank(src[i:j]) if blank else src[i:j])
             last = ch
             i = j
             continue
         if ch == "/" and _regex_starts(last, src[max(0, i - 16):i]):
             j = _end_of_regex(src, i)
-            out.append(src[i:j])
+            out.append(_blank(src[i:j]) if blank else src[i:j])
             last = "/"
             i = j
             continue
@@ -136,19 +143,48 @@ CALL_RE = re.compile(_CALLEE)
 TITLE_RE = re.compile(r"\s*(['\"`])((?:\\.|(?!\1)[^\\])*)\1", re.S)
 EXPECT_RE = re.compile(r"(?<![\w$.])expect(?:\s*\.\s*(?:soft|poll))?\s*\(")
 NOT_TITLE = frozenset({"step", "use", "extend", "beforeEach", "afterEach", "beforeAll", "afterAll", "configure", "info", "setTimeout", "slow", "fail", "each"})
-MARKERS = ("skip", "fixme", "only")
+MARKERS = ("skip", "fixme", "only", "fail")
+# 呼び出しの形の skip 等。test.skip・describe.only・testInfo.skip・test.info().skip・test.fail のどれも（受け手を問わない）
+MARK_RE = re.compile(r"\.\s*(skip|fixme|only|fail)\s*\(")
+# expect(...) の後に付く比べ（.toBe( ・.not.toBe( ・.resolves.toBe( 等）。比べの無い expect(x) は数えない
+MATCHER_RE = re.compile(r"\s*(?:\.\s*(?:not|resolves|rejects)\s*)*\.\s*to[A-Z]\w*\s*\(")
+
+
+def _close_paren(code: str, open_at: int) -> int:
+    """code[open_at] が ( のとき対の ) の次の位置。閉じなければ -1（文字列・コメントは空白にしてある前提）"""
+    depth = 0
+    for k in range(open_at, len(code)):
+        c = code[k]
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+            if depth == 0:
+                return k + 1
+    return -1
+
+
+def count_expects(blanked: str) -> int:
+    n = 0
+    for m in EXPECT_RE.finditer(blanked):
+        end = _close_paren(blanked, m.end() - 1)
+        if end > 0 and MATCHER_RE.match(blanked, end):
+            n += 1
+    return n
+
+
+def is_e2e_code(path: str) -> bool:
+    return bool(E2E_CODE_RE.fullmatch(path))
 
 
 def facts(src: str) -> Facts:
-    """1本の spec の数え上げ（コメントを除いた本文で）"""
+    """1本の spec の数え上げ。試験名はコメントを除いた本文、expect・skip 等は文字列の中身も空白にした本文で数える"""
     code = strip_comments(src)
+    blanked = strip_comments(src, blank=True)
     titles: Counter = Counter()
     markers: Counter = Counter()
     for m in CALL_RE.finditer(code):
         head, chain = m.group(1), [x.strip() for x in m.group(2).split(".") if x.strip()]
-        for mk in MARKERS:
-            if mk in chain:
-                markers[mk] += 1
         if any(x in NOT_TITLE for x in chain):
             continue
         t = TITLE_RE.match(code, m.end())
@@ -158,7 +194,9 @@ def facts(src: str) -> Facts:
             continue
         kind = "describe" if head == "describe" or "describe" in chain else "test"
         titles[(kind, t.group(2))] += 1
-    return Facts(titles, len(EXPECT_RE.findall(code)), markers)
+    for m in MARK_RE.finditer(blanked):
+        markers[m.group(1)] += 1
+    return Facts(titles, count_expects(blanked), markers)
 
 
 def _no_body(chain: Sequence[str], code: str, after_title: int) -> bool:
@@ -175,7 +213,7 @@ def judge(changes: Mapping[str, str], base_text: Callable[[str], Optional[str]],
     差分に出た spec 全部（足した・変えた・消した）を1つに合わせて比べる。試験名・expect が別の spec へ移っただけ（分割・付け替え）は減りに数えない。
     spec の新規の追加だけの差分は何も減らないので緑。赤の理由には、減った物がどの spec から来たかを付ける"""
     v = SpecVerdict()
-    specs = sorted(x for x in changes if is_spec(x))
+    specs = sorted(x for x in changes if is_e2e_code(x))  # spec と補助。試験名は spec だけ（補助に test( は無い前提）
     if not specs:
         return v
     base: Dict[str, Facts] = {}

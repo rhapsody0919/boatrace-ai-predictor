@@ -42,8 +42,8 @@ f = sg.facts(BASE)
 check("試験名は describe 1・test 2（コメントの中は数えない）", f.titles == {("describe", "会場ページ"): 1, ("test", "見出しが出る"): 1, ("test", '375px で ${"崩れない"}'): 1}, f.titles)
 check("expect は4（expect・expect.soft・expect.poll。文字列の // はコメントでない）", f.expects == 4, f.expects)
 check("skip・fixme・only は0", sum(f.markers.values()) == 0, f.markers)
-check("正規表現の中の / と引用符で崩れない", sg.facts('test("a", () => { expect(x).toMatch(/[/"]/); expect(y); });').expects == 2)
-check("割り算の / は正規表現にしない", sg.facts('const a = b / 2; const c = d / 3; test("t", () => expect(a));').expects == 1)
+check("正規表現の中の / と引用符で崩れない", sg.facts('test("a", () => { expect(x).toMatch(/[/"]/); expect(y).toBe(1); });').expects == 2)
+check("割り算の / は正規表現にしない", sg.facts('const a = b / 2; const c = d / 3; test("t", () => expect(a).toBe(1));').expects == 1)
 check("test.step・beforeEach・describe.configure は名前に数えない",
       sg.facts('test.describe.configure({ mode: "serial" }); test.beforeEach(async () => {}); test("t", async () => { await test.step("s", async () => {}); });').titles == {("test", "t"): 1})
 
@@ -68,6 +68,18 @@ v = run(BASE, BASE + "\n/* 閉じない")
 check("head が閉じないコメント: 赤（読めない）", any("読めない" in e for e in v.errors), v.errors)
 v = run(None, BASE)
 check("版が読めない: 赤", any("読めない" in e for e in v.errors), v.errors)
+
+print("抜け道（審査 P0-2・3）")
+v = run(BASE, BASE.replace('await expect(page).toHaveURL(/\\/venue\\/1$/);', 'await expect(page);'))
+check("比べを消して expect(x) だけ残す: 赤", any("expect が減った" in e for e in v.errors), v.errors)
+v = run(BASE, BASE.replace('    await expect(page).toHaveURL(/\\/venue\\/1$/);\n', '    const s = "expect(a).toBe(1)";\n'))
+check("文字列の中の expect で数を埋める: 赤", any("expect が減った" in e for e in v.errors), v.errors)
+for name, inj in [("testInfo.skip()", "testInfo.skip();"), ("test.info().skip()", "test.info().skip();"), ("test.fail()", "test.fail();")]:
+    v = run(BASE, BASE.replace('    await page.goto("/venue/1");\n', f'    {inj}\n    await page.goto("/venue/1");\n'))
+    check(f"{name} を足す: 赤", any("が増えた" in e for e in v.errors), v.errors)
+H = "e2e/helpers/check.js"
+v = sg.judge({H: "M"}, {H: "export const ok = (l) => expect(l).toBeVisible();"}.get, {H: "export const ok = (l) => l;"}.get, {})
+check("e2e の補助の expect を減らす: 赤", any("expect が減った" in e for e in v.errors), v.errors)
 
 print("緑（弱めない）")
 stab = BASE.replace('    await page.goto("/venue/1");\n', '    await page.goto("/venue/1");\n    await page.waitForLoadState("networkidle");\n')

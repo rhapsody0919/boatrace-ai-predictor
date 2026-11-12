@@ -1,21 +1,22 @@
 name: Guard Weakening
 
 # 守りのファイルを弱める変更を、誰の PR でも同じ判定で機械が止める（BOA-1477。CODEOWNERS の縮小の前提）。
-# 判定は scripts/maintenance/guard_weakening/run.py（標準ライブラリの python だけ）。base（PR の base の SHA）との差に3つを当てる:
+# 判定は scripts/maintenance/guard_weakening/run.py（標準ライブラリの python だけ）。base（merge commit の1つ目の親）との差に3つを当てる:
 #   1. e2e の spec の比較: 試験名が消える・expect が減る・skip/fixme/only が増えると赤。削除行が多いのは警告だけ
 #   2. 許可リスト（scripts/maintenance/*-allowlist.json）の向き: 行が減る・1対1 の付け替えだけ緑。行が増える・形の表に無いと赤
 #   3. verify の変異検査: verify-*.js・verify-registry.json の変更があるときだけ（npm ci をしてから）
 # 判定器が読めない・例外のときは赤。理由は1行ずつ注記に出る。
 # 最初は影: ruleset の必須の check に入れない（落ちてもマージを止めない）。数日 false 赤を見てから必須に上げる（オーナーの設定）。
 # 権限は contents: read だけ。secrets を使わず、checkout の資格も残さない（PR の枝のコードを回すため）。
+# 比べる base は merge commit の1つ目の親（HEAD^1 = 今の base の先端）。event の base.sha は古くなりうるので使わない。
+# 判定器は base の版（HEAD^1 の scripts/maintenance/guard_weakening）を回す。PR の枝が判定器を書き換えても判定は変わらない。
+# base に判定器が無い間（この job を足す PR だけ）は PR の版を回す。この workflow の yml 自体は .github の CODEOWNERS が守る。
 
 on:
   pull_request:
-    branches:
-      - master
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
@@ -28,17 +29,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # base との分かれ目（merge-base）と、spec・許可リストの base 版を git show で読むため
+          # base（HEAD^1）の判定器と、spec・許可リストの base 版を git で読むため
           fetch-depth: 0
           persist-credentials: false
 
       # verify の変異検査（@babel/parser）と判定器の自分の試験は node_modules が要る。要るときだけ入れる
       - name: Detect what needs node
         id: need
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          changed=$(git diff --name-only "$BASE_SHA"...HEAD)
+          changed=$(git diff --name-only HEAD^1 HEAD)
           if grep -qE '^scripts/maintenance/(verify-[^/]+\.js|verify-registry\.json|guard_weakening/)' <<<"$changed"; then
             echo "node=true" >> "$GITHUB_OUTPUT"
           else
@@ -70,7 +69,20 @@ jobs:
             python3 "$t"
           done
 
+      - name: Take the judge from base
+        id: judge
+        run: |
+          dir="$RUNNER_TEMP/guard-base"
+          mkdir -p "$dir"
+          if git cat-file -e HEAD^1:scripts/maintenance/guard_weakening/run.py 2>/dev/null; then
+            git archive HEAD^1 scripts/maintenance/guard_weakening | tar -x -C "$dir"
+            echo "run=$dir/scripts/maintenance/guard_weakening/run.py" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::base に判定器が無いので PR の版を回す（判定器を足す PR だけのはず）"
+            echo "run=scripts/maintenance/guard_weakening/run.py" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Judge guard weakening
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: python3 scripts/maintenance/guard_weakening/run.py --base "$BASE_SHA"
+          JUDGE: ${{ steps.judge.outputs.run }}
+        run: python3 "$JUDGE" --repo . --base HEAD^1

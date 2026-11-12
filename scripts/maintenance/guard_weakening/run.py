@@ -10,7 +10,8 @@ HEAD（commit 済みの作業場所）を --base（PR の base の SHA）との�
 verify の実行の囲い（sandbox-exec）は macOS だけにある。GitHub Actions の上（GITHUB_ACTIONS=true）では囲いなしで回す:
   その job は使い捨ての VM・権限は contents: read・secrets を渡さない・checkout の資格を残さないので、囲いが守る物（手元の鍵・ネット）が無い。
   それ以外の Linux 等の手元では囲いが無いので verify の判定は赤（止める側）。
-使い方: python3 scripts/maintenance/guard_weakening/run.py --base <SHA か ref> [--repo .]"""
+使い方: python3 scripts/maintenance/guard_weakening/run.py --base <SHA か ref> [--repo .]
+CI では PR の merge commit を checkout し --base HEAD^1（今の base の先端）を渡す。判定器は base の版（HEAD^1 の写し）を回し、PR の枝が判定器を書き換えても効かない。"""
 from __future__ import annotations
 
 import argparse
@@ -73,6 +74,17 @@ def registry_additions_problems(changes: Mapping[str, str], base_text: Callable[
     return [f"VERIFY {vg.REGISTRY}: 新しく足した verify が無いのに行を足した: {r}" for r in added if changes.get(f"scripts/maintenance/{r}") != "A"]
 
 
+def odd_status(repo: Path, mb: str) -> List[str]:
+    """A・M・D 以外の変更（T 型の変更＝symlink 化等・U・X）。verify_guard.name_status は A・M・D だけを返すので、守りのパスに当たる物はここで赤にする（審査 P0-5）"""
+    out: List[str] = []
+    for ln in git(repo, "diff", "--name-status", "--no-renames", mb, "HEAD").splitlines():
+        st, _, p = ln.partition("\t")
+        if p and st[:1] not in "AMD" and (sg.is_e2e_code(p) or vg.is_verify_path(p) or p == vg.REGISTRY or p in gd.PARSERS
+                                          or any(gd._glob(str(g), p) for v in TYPES.values() for g in (v if isinstance(v, list) else []))):
+            out.append(f"KIND {p}: 変更の種類 {st} は向きを言えない（型の変更・symlink 化等）")
+    return out
+
+
 def sandbox_mode() -> Tuple[bool, Optional[str]]:
     """(囲いを使うか, 回せない理由)"""
     if vg.sandbox_available():
@@ -88,7 +100,7 @@ def evaluate(repo: Path, base: str) -> Tuple[List[str], List[str], Dict[str, obj
     mb = git(repo, "merge-base", base, "HEAD").strip()
     changes = vg.name_status(repo, mb)
     base_text, head_text = show(repo, mb), show(repo, "HEAD")
-    errors: List[str] = []
+    errors: List[str] = odd_status(repo, mb)
     record: Dict[str, object] = {"merge_base": mb, "head": git(repo, "rev-parse", "HEAD").strip(), "changed": len(changes)}
 
     sv = sg.judge(changes, base_text, head_text, numstat(repo, mb))
