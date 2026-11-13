@@ -67,6 +67,203 @@ function rankClass(rows, accessor, value, dir = "max") {
   return rank <= 3 ? `rcd-rank-${rank}` : "";
 }
 
+const fmt = (value, digits = 2, suffix = "") => {
+  const n = toNumber(value);
+  return n !== null ? `${n.toFixed(digits)}${suffix}` : "—";
+};
+
+function RaceCardVenueRaceControls({
+  venues,
+  loading,
+  selectedVenue,
+  setSelectedVenue,
+  races,
+  selectedRace,
+  setSelectedRace,
+  t,
+}) {
+  return venues.length === 0 && !loading ? (
+    <div className="empty-state">{t("analysis.noRacesToday")}</div>
+  ) : (
+    <div className="controls-section">
+      <label htmlFor="race-card-venue-select">
+        {t("analysis.venueSelectTodayLabel")}
+      </label>
+      <select
+        id="race-card-venue-select"
+        value={selectedVenue ?? ""}
+        onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
+        className="venue-select"
+      >
+        {venues.map((v) => (
+          <option key={v} value={v}>
+            {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
+          </option>
+        ))}
+      </select>
+
+      {races.length > 0 && (
+        <>
+          <label htmlFor="race-card-race-select">
+            {t("analysis.raceSelectLabel")}
+          </label>
+          <select
+            id="race-card-race-select"
+            value={selectedRace ?? ""}
+            onChange={(e) => setSelectedRace(e.target.value)}
+            className="venue-select"
+          >
+            {races.map((r) => (
+              <option key={r.race_id} value={r.race_id}>
+                {t("analysis.raceOption", {
+                  number: r.race_number,
+                  time: r.start_time?.slice(0, 5),
+                })}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RaceCardTableHead({ t }) {
+  return (
+    <thead>
+      <tr>
+        <th>{t("table.boatNumber")}</th>
+        <th>{t("table.playerName")}</th>
+        <th>{t("table.class")}</th>
+        <th>{t("table.age")}</th>
+        <th>{t("table.nationalWinRate")}</th>
+        <th>{t("table.nationalTop2Rate")}</th>
+        <th>{t("table.localWinRate")}</th>
+        <th>{t("table.motorTop2Rate")}</th>
+        <th>{t("dataTable.rowAvgStOfficial")}</th>
+        <th>{t("dataTable.rowAvgSt30")}</th>
+        <th>{t("table.exhibitionTime")}</th>
+        <th>{t("table.exhibitionST")}</th>
+        <th>{t("table.wakuWinRate")}</th>
+      </tr>
+    </thead>
+  );
+}
+
+function RaceCardRow({ row, entries, avgSt, counts }) {
+  return (
+    <tr>
+      <td className="rcd-boat">{row.boat_number}</td>
+      <td className="rcd-name" translate="no">
+        {row.player_name?.replace(/\s+/g, "")}
+      </td>
+      <td>{row.grade ?? "—"}</td>
+      <td>{row.age ?? "—"}</td>
+      <td
+        className={rankClass(
+          entries,
+          (r) => toNumber(r.win_rate),
+          toNumber(row.win_rate),
+        )}
+      >
+        {fmt(row.win_rate)}
+      </td>
+      <td
+        className={rankClass(
+          entries,
+          (r) => toNumber(r.global_2rate),
+          toNumber(row.global_2rate),
+        )}
+      >
+        {fmt(row.global_2rate, 1, "%")}
+      </td>
+      <td
+        className={rankClass(
+          entries,
+          (r) => toNumber(r.local_win_rate),
+          toNumber(row.local_win_rate),
+        )}
+      >
+        {fmt(row.local_win_rate)}
+      </td>
+      <td
+        className={rankClass(
+          entries,
+          (r) => toNumber(r.motor_2rate),
+          toNumber(row.motor_2rate),
+        )}
+      >
+        {fmt(row.motor_2rate, 1, "%")}
+      </td>
+      <td
+        className={rankClass(
+          entries,
+          (r) => toNumber(avgSt.official.get(r.boat_number)),
+          toNumber(avgSt.official.get(row.boat_number)),
+          "min",
+        )}
+      >
+        {fmt(avgSt.official.get(row.boat_number))}
+      </td>
+      <td
+        className={rankClass(
+          entries,
+          (r) => toNumber(avgSt.st30.get(r.boat_number)),
+          toNumber(avgSt.st30.get(row.boat_number)),
+          "min",
+        )}
+      >
+        {fmt(avgSt.st30.get(row.boat_number), 3)}
+      </td>
+      <td
+        className={rankClass(
+          entries,
+          (r) => toNumber(r.exhibition_time),
+          toNumber(row.exhibition_time),
+          "min",
+        )}
+      >
+        {fmt(row.exhibition_time)}
+      </td>
+      {/* 展示のフライング・出遅れは公式の表記（F.01 等）で出す（BOA-759） */}
+      <td>
+        {formatExhibitionSt(row.exhibition_st, row.exhibition_start_flag) ??
+          "—"}
+      </td>
+      <td>
+        {counts && counts.total > 0
+          ? `${counts.wins ?? 0}/${counts.total}（${(((counts.wins ?? 0) / counts.total) * 100).toFixed(0)}%）`
+          : "—"}
+      </td>
+    </tr>
+  );
+}
+
+function RaceCardTable({ entries, statsByBoat, avgSt, t }) {
+  return (
+    <div className="rcd-table-wrapper">
+      <table className="rcd-table">
+        <RaceCardTableHead t={t} />
+        <tbody>
+          {entries.map((row) => {
+            const stats = statsByBoat.get(row.boat_number);
+            const counts = stats?.wakuRaceCounts?.[String(row.boat_number)];
+            return (
+              <RaceCardRow
+                key={row.boat_number}
+                row={row}
+                entries={entries}
+                avgSt={avgSt}
+                counts={counts}
+              />
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
   const { t } = useTranslation();
   const {
@@ -123,11 +320,6 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
 
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
 
-  const fmt = (value, digits = 2, suffix = "") => {
-    const n = toNumber(value);
-    return n !== null ? `${n.toFixed(digits)}${suffix}` : "—";
-  };
-
   return (
     <div className="motor-condition-container">
       <h2>{t("analysis.raceCard.title")}</h2>
@@ -135,50 +327,16 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
         {t("analysis.raceCard.description")}
       </p>
 
-      {venues.length === 0 && !loading ? (
-        <div className="empty-state">{t("analysis.noRacesToday")}</div>
-      ) : (
-        <div className="controls-section">
-          <label htmlFor="race-card-venue-select">
-            {t("analysis.venueSelectTodayLabel")}
-          </label>
-          <select
-            id="race-card-venue-select"
-            value={selectedVenue ?? ""}
-            onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
-            className="venue-select"
-          >
-            {venues.map((v) => (
-              <option key={v} value={v}>
-                {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-              </option>
-            ))}
-          </select>
-
-          {races.length > 0 && (
-            <>
-              <label htmlFor="race-card-race-select">
-                {t("analysis.raceSelectLabel")}
-              </label>
-              <select
-                id="race-card-race-select"
-                value={selectedRace ?? ""}
-                onChange={(e) => setSelectedRace(e.target.value)}
-                className="venue-select"
-              >
-                {races.map((r) => (
-                  <option key={r.race_id} value={r.race_id}>
-                    {t("analysis.raceOption", {
-                      number: r.race_number,
-                      time: r.start_time?.slice(0, 5),
-                    })}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
-        </div>
-      )}
+      <RaceCardVenueRaceControls
+        venues={venues}
+        loading={loading}
+        selectedVenue={selectedVenue}
+        setSelectedVenue={setSelectedVenue}
+        races={races}
+        selectedRace={selectedRace}
+        setSelectedRace={setSelectedRace}
+        t={t}
+      />
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
@@ -188,121 +346,12 @@ function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
       )}
 
       {!loading && !error && entries.length > 0 && (
-        <div className="rcd-table-wrapper">
-          <table className="rcd-table">
-            <thead>
-              <tr>
-                <th>{t("table.boatNumber")}</th>
-                <th>{t("table.playerName")}</th>
-                <th>{t("table.class")}</th>
-                <th>{t("table.age")}</th>
-                <th>{t("table.nationalWinRate")}</th>
-                <th>{t("table.nationalTop2Rate")}</th>
-                <th>{t("table.localWinRate")}</th>
-                <th>{t("table.motorTop2Rate")}</th>
-                <th>{t("dataTable.rowAvgStOfficial")}</th>
-                <th>{t("dataTable.rowAvgSt30")}</th>
-                <th>{t("table.exhibitionTime")}</th>
-                <th>{t("table.exhibitionST")}</th>
-                <th>{t("table.wakuWinRate")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((row) => {
-                const stats = statsByBoat.get(row.boat_number);
-                const counts = stats?.wakuRaceCounts?.[String(row.boat_number)];
-                return (
-                  <tr key={row.boat_number}>
-                    <td className="rcd-boat">{row.boat_number}</td>
-                    <td className="rcd-name" translate="no">
-                      {row.player_name?.replace(/\s+/g, "")}
-                    </td>
-                    <td>{row.grade ?? "—"}</td>
-                    <td>{row.age ?? "—"}</td>
-                    <td
-                      className={rankClass(
-                        entries,
-                        (r) => toNumber(r.win_rate),
-                        toNumber(row.win_rate),
-                      )}
-                    >
-                      {fmt(row.win_rate)}
-                    </td>
-                    <td
-                      className={rankClass(
-                        entries,
-                        (r) => toNumber(r.global_2rate),
-                        toNumber(row.global_2rate),
-                      )}
-                    >
-                      {fmt(row.global_2rate, 1, "%")}
-                    </td>
-                    <td
-                      className={rankClass(
-                        entries,
-                        (r) => toNumber(r.local_win_rate),
-                        toNumber(row.local_win_rate),
-                      )}
-                    >
-                      {fmt(row.local_win_rate)}
-                    </td>
-                    <td
-                      className={rankClass(
-                        entries,
-                        (r) => toNumber(r.motor_2rate),
-                        toNumber(row.motor_2rate),
-                      )}
-                    >
-                      {fmt(row.motor_2rate, 1, "%")}
-                    </td>
-                    <td
-                      className={rankClass(
-                        entries,
-                        (r) => toNumber(avgSt.official.get(r.boat_number)),
-                        toNumber(avgSt.official.get(row.boat_number)),
-                        "min",
-                      )}
-                    >
-                      {fmt(avgSt.official.get(row.boat_number))}
-                    </td>
-                    <td
-                      className={rankClass(
-                        entries,
-                        (r) => toNumber(avgSt.st30.get(r.boat_number)),
-                        toNumber(avgSt.st30.get(row.boat_number)),
-                        "min",
-                      )}
-                    >
-                      {fmt(avgSt.st30.get(row.boat_number), 3)}
-                    </td>
-                    <td
-                      className={rankClass(
-                        entries,
-                        (r) => toNumber(r.exhibition_time),
-                        toNumber(row.exhibition_time),
-                        "min",
-                      )}
-                    >
-                      {fmt(row.exhibition_time)}
-                    </td>
-                    {/* 展示のフライング・出遅れは公式の表記（F.01 等）で出す（BOA-759） */}
-                    <td>
-                      {formatExhibitionSt(
-                        row.exhibition_st,
-                        row.exhibition_start_flag,
-                      ) ?? "—"}
-                    </td>
-                    <td>
-                      {counts && counts.total > 0
-                        ? `${counts.wins ?? 0}/${counts.total}（${(((counts.wins ?? 0) / counts.total) * 100).toFixed(0)}%）`
-                        : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <RaceCardTable
+          entries={entries}
+          statsByBoat={statsByBoat}
+          avgSt={avgSt}
+          t={t}
+        />
       )}
       {!loading && !error && st30Failed && (
         <InlineFetchError onRetry={() => setSt30Retry((n) => n + 1)} />
