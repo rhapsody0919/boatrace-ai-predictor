@@ -1,0 +1,115 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "tamagawa-water-wind-guide",
+ "kind": "new",
+ "ticket": "OC-20261113T100250-seo-human-1",
+ "paths": [
+  "public/blog/tamagawa-water-wind-guide.md",
+  "src/data/blog-posts/tamagawa-water-wind-guide.json"
+ ],
+ "files": {
+  "public/blog/tamagawa-water-wind-guide.md": "41bf0d970eb3153b3985d61f611ab400c03a1bf4a4a8351b0644f8243acfddc7",
+  "src/data/blog-posts/tamagawa-water-wind-guide.json": "632e25951b8e9d55d2e48c60935bbd3126bcec68db825fda89125be09db7ab0d"
+ },
+ "content_sha256": "8a5e3b7505312fcbbee1cf5c5c87607ad3fedb97b9366105144d0e2f24e3e75b",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "8a5e3b7505312fcbbee1cf5c5c87607ad3fedb97b9366105144d0e2f24e3e75b",
+   "model": "opus",
+   "at": "2026-11-13T10:04:54+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "8a5e3b7505312fcbbee1cf5c5c87607ad3fedb97b9366105144d0e2f24e3e75b",
+   "model": "opus",
+   "at": "2026-11-13T10:04:54+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "8a5e3b7505312fcbbee1cf5c5c87607ad3fedb97b9366105144d0e2f24e3e75b",
+   "model": "opus",
+   "at": "2026-11-13T10:04:54+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "8a5e3b7505312fcbbee1cf5c5c87607ad3fedb97b9366105144d0e2f24e3e75b",
+   "model": "opus",
+   "at": "2026-11-13T10:04:54+09:00"
+  }
+ ],
+ "evidence": [
+  {
+   "h2": "多摩川の1コースは直近1年で2,311レース中1,254回",
+   "evidence": [
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json"
+   ]
+  },
+  {
+   "h2": "風別の逃げ：追い風4m以上は1,274レース中588回",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "scripts/analysis/analyze-weather-in-escape.js",
+    "src/utils/windDirection.js"
+   ]
+  },
+  {
+   "h2": "追い風の日に増えたのは差し、4m以上では抜きも",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "public/blog/tailwind-strength-sashi-by-venue.md"
+   ]
+  },
+  {
+   "h2": "向かい風4m以上では、まくりが増えて差しが減った",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "public/blog/headwind-strength-makuri-by-venue.md"
+   ]
+  },
+  {
+   "h2": "画面の「イン逃げ率」は、進入1コースの1着率",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "src/locales/ja/common.json"
+   ]
+  },
+  {
+   "h2": "今日の多摩川では、風の行から展示の進入へ進む",
+   "evidence": [
+    "src/data/venueWaterProfiles.js",
+    "src/utils/windDirection.js",
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json"
+   ]
+  },
+  {
+   "h2": "数字の範囲と注意",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "docs/design/weather-in-escape/results.md"
+   ]
+  }
+ ],
+ "sources": "表2〜表5: data/analysis/weather-in-escape.json#wind.venues.5（scripts/analysis/analyze-weather-in-escape.js、2020-02-01〜2026-09-30、公式K/Bファイルの解析）。分母は1コース艇・1着艇があり風を区分できた多摩川のレースを5区分に分けた各 n（計15,351、all.n と一致）、分子は techniques の各決まり手。割合は件数÷n×100 を小数1桁に1回だけ丸めた。検定: 弱い・横風を基準に4つの風×6決まり手の24組を1つの問い（線 約3.08）。抜き（指標の一覧に無い）は追い風4m以上 1,274中102 と弱い・横風 8,224中462 で z≈3.36。\n表1と枠なり: data/analysis/venue-course-win-rate/venue-course-win-rate.json#periods.12m（2025-10-20〜2026-10-19）。多摩川 2,311中1,254、枠なりでない 379、全国 55,414中30,732。",
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-13T10:06:31+09:00",
+ "run": "20261113T100250-seo-human",
+ "engine": "claude"
+}
