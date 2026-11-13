@@ -48,13 +48,7 @@ const VENUES = [
   { code: "24", name: "大村" },
 ];
 
-function LosingTechniqueChart({ initialVenueCode = null }) {
-  const { t } = useTranslation();
-  const [selectedVenue, setSelectedVenue] = useState(
-    initialVenueCode !== null
-      ? String(initialVenueCode).padStart(2, "0")
-      : "03",
-  );
+function useLosingStats(selectedVenue, t) {
   const [statsData, setStatsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -79,6 +73,10 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
     loadData();
   }, [selectedVenue]);
 
+  return { statsData, loading, error };
+}
+
+function renderStateMessage(t, { loading, error, statsData }) {
   if (loading) {
     return (
       <div className="winning-technique-container">
@@ -109,22 +107,22 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
     );
   }
 
-  const { venue_name, last_updated, data } = statsData;
-  const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venue_name);
+  return null;
+}
 
-  // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
-  const techniqueLabel = (name) => translateTechnique(t, name);
-
-  const allTechniques = sortTechniquesOfficial([
+function buildAllTechniques(data) {
+  return sortTechniquesOfficial([
     ...new Set(
       Object.values(data).flatMap((boat) =>
         boat.techniques.map((tech) => tech.technique),
       ),
     ),
   ]);
+}
 
-  // dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
-  const chartData = [1, 2, 3, 4, 5, 6]
+// dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
+function buildChartData(t, data, allTechniques) {
+  return [1, 2, 3, 4, 5, 6]
     .filter((boatNumber) => data[boatNumber])
     .map((boatNumber) => {
       const row = { boat_number: t("analysis.boatN", { n: boatNumber }) };
@@ -136,120 +134,164 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
       });
       return row;
     });
+}
+
+function renderVenueControls(t, selectedVenue, setSelectedVenue) {
+  return (
+    <div className="controls-section">
+      <label htmlFor="losing-venue-select">
+        {t("analysis.venueSelectLabel")}
+      </label>
+      <select
+        id="losing-venue-select"
+        value={selectedVenue}
+        onChange={(e) => setSelectedVenue(e.target.value)}
+        className="venue-select"
+      >
+        {VENUES.map((venue) => (
+          <option key={venue.code} value={venue.code}>
+            {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function renderVenueSummary(t, venueLabel, last_updated) {
+  return (
+    <div className="summary-info">
+      <p>
+        <strong>{venueLabel}</strong> - {t("analysis.lt.summary")}
+        {last_updated && (
+          <span className="update-date">
+            {t("analysis.lastUpdated", { date: last_updated })}
+          </span>
+        )}
+      </p>
+    </div>
+  );
+}
+
+function renderTechniqueBarChart(t, chartData, allTechniques, techniqueLabel) {
+  return (
+    <ResponsiveContainer width="100%" height={360}>
+      <BarChart
+        data={chartData}
+        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis
+          dataKey="boat_number"
+          interval={0}
+          tick={(props) => <BandWrapAxisTick {...props} fontSize={11} />}
+        />
+        <YAxis
+          label={{
+            value: t("analysis.sharePctHeader"),
+            angle: -90,
+            position: "insideLeft",
+          }}
+          domain={[0, 100]}
+          ticks={[0, 20, 40, 60, 80, 100]}
+        />
+        <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+        <Legend
+          // Recharts の文字順ソートを止め、棒と同じ公式順を保つ。
+          itemSorter={null}
+          // 凡例の文字は本文色にし、色は横の四角で示す。系列の色（橙・灰）の文字は
+          // ライトで約2〜2.5:1 と読みにくかった（BOA-711）
+          formatter={(value) => (
+            <span style={{ color: "var(--text-primary)" }}>{value}</span>
+          )}
+        />
+        {allTechniques.map((technique, idx) => (
+          <Bar
+            key={technique}
+            dataKey={technique}
+            name={techniqueLabel(technique)}
+            stackId="technique"
+            fill={techniqueColor(technique, idx)}
+          />
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+function renderTechniqueTable(t, data, techniqueLabel) {
+  return (
+    <div className="table-wrapper">
+      <table className="winning-technique-table">
+        <thead>
+          <tr>
+            <th>{t("analysis.laneHeader")}</th>
+            <th>{t("analysis.techniqueHeader")}</th>
+            <th>{t("analysis.countHeader")}</th>
+            <th>{t("analysis.sharePctHeader")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[1, 2, 3, 4, 5, 6]
+            .filter((boatNumber) => data[boatNumber])
+            .flatMap((boatNumber) =>
+              data[boatNumber].techniques.map((tech, idx) => (
+                <tr key={`${boatNumber}-${tech.technique}`}>
+                  {idx === 0 && (
+                    <td
+                      rowSpan={data[boatNumber].techniques.length}
+                      className="boat-num"
+                    >
+                      {t("analysis.boatN", { n: boatNumber })}
+                    </td>
+                  )}
+                  <td>{techniqueLabel(tech.technique)}</td>
+                  <td className="count">{tech.count}</td>
+                  <td className="percentage">
+                    {tech.percentage.toFixed(2)}%
+                  </td>
+                </tr>
+              )),
+            )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function LosingTechniqueChart({ initialVenueCode = null }) {
+  const { t } = useTranslation();
+  const [selectedVenue, setSelectedVenue] = useState(
+    initialVenueCode !== null
+      ? String(initialVenueCode).padStart(2, "0")
+      : "03",
+  );
+  const { statsData, loading, error } = useLosingStats(selectedVenue, t);
+
+  const stateMessage = renderStateMessage(t, { loading, error, statsData });
+  if (stateMessage) return stateMessage;
+
+  const { venue_name, last_updated, data } = statsData;
+  const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venue_name);
+
+  // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
+  const techniqueLabel = (name) => translateTechnique(t, name);
+
+  const allTechniques = buildAllTechniques(data);
+  const chartData = buildChartData(t, data, allTechniques);
 
   return (
     <div className="winning-technique-container">
       <h2>{t("analysis.lt.title")}</h2>
       <p className="section-description">{t("analysis.lt.description")}</p>
 
-      <div className="controls-section">
-        <label htmlFor="losing-venue-select">
-          {t("analysis.venueSelectLabel")}
-        </label>
-        <select
-          id="losing-venue-select"
-          value={selectedVenue}
-          onChange={(e) => setSelectedVenue(e.target.value)}
-          className="venue-select"
-        >
-          {VENUES.map((venue) => (
-            <option key={venue.code} value={venue.code}>
-              {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
-            </option>
-          ))}
-        </select>
-      </div>
+      {renderVenueControls(t, selectedVenue, setSelectedVenue)}
 
-      {venue_name && (
-        <div className="summary-info">
-          <p>
-            <strong>{venueLabel}</strong> - {t("analysis.lt.summary")}
-            {last_updated && (
-              <span className="update-date">
-                {t("analysis.lastUpdated", { date: last_updated })}
-              </span>
-            )}
-          </p>
-        </div>
-      )}
+      {venue_name && renderVenueSummary(t, venueLabel, last_updated)}
 
-      <ResponsiveContainer width="100%" height={360}>
-        <BarChart
-          data={chartData}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="boat_number"
-            interval={0}
-            tick={(props) => <BandWrapAxisTick {...props} fontSize={11} />}
-          />
-          <YAxis
-            label={{
-              value: t("analysis.sharePctHeader"),
-              angle: -90,
-              position: "insideLeft",
-            }}
-            domain={[0, 100]}
-            ticks={[0, 20, 40, 60, 80, 100]}
-          />
-          <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
-          <Legend
-            // Recharts の文字順ソートを止め、棒と同じ公式順を保つ。
-            itemSorter={null}
-            // 凡例の文字は本文色にし、色は横の四角で示す。系列の色（橙・灰）の文字は
-            // ライトで約2〜2.5:1 と読みにくかった（BOA-711）
-            formatter={(value) => (
-              <span style={{ color: "var(--text-primary)" }}>{value}</span>
-            )}
-          />
-          {allTechniques.map((technique, idx) => (
-            <Bar
-              key={technique}
-              dataKey={technique}
-              name={techniqueLabel(technique)}
-              stackId="technique"
-              fill={techniqueColor(technique, idx)}
-            />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
+      {renderTechniqueBarChart(t, chartData, allTechniques, techniqueLabel)}
 
-      <div className="table-wrapper">
-        <table className="winning-technique-table">
-          <thead>
-            <tr>
-              <th>{t("analysis.laneHeader")}</th>
-              <th>{t("analysis.techniqueHeader")}</th>
-              <th>{t("analysis.countHeader")}</th>
-              <th>{t("analysis.sharePctHeader")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[1, 2, 3, 4, 5, 6]
-              .filter((boatNumber) => data[boatNumber])
-              .flatMap((boatNumber) =>
-                data[boatNumber].techniques.map((tech, idx) => (
-                  <tr key={`${boatNumber}-${tech.technique}`}>
-                    {idx === 0 && (
-                      <td
-                        rowSpan={data[boatNumber].techniques.length}
-                        className="boat-num"
-                      >
-                        {t("analysis.boatN", { n: boatNumber })}
-                      </td>
-                    )}
-                    <td>{techniqueLabel(tech.technique)}</td>
-                    <td className="count">{tech.count}</td>
-                    <td className="percentage">
-                      {tech.percentage.toFixed(2)}%
-                    </td>
-                  </tr>
-                )),
-              )}
-          </tbody>
-        </table>
-      </div>
+      {renderTechniqueTable(t, data, techniqueLabel)}
 
       <p className="table-note">{t("analysis.lt.note")}</p>
     </div>
