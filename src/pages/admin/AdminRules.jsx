@@ -744,124 +744,166 @@ function HistoryTab({
 
   return (
     <div className="history-tab">
-      <div className="history-filters">
-        <div className="filter-group">
-          <label>開始日:</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => {
-              onStartDateChange(e.target.value);
-              onPageChange(0);
-            }}
-          />
-        </div>
-        <div className="filter-group">
-          <label>終了日:</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => {
-              onEndDateChange(e.target.value);
-              onPageChange(0);
-            }}
-          />
-        </div>
-      </div>
+      <HistoryFilters
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={onStartDateChange}
+        onEndDateChange={onEndDateChange}
+        onPageChange={onPageChange}
+      />
 
       {historyError ? (
         <InlineFetchError message={historyError} onRetry={onRetryHistory} />
       ) : (
         <>
-          <div className="history-summary">
-            <div className="summary-row">
-              <span className="summary-label">期間成績:</span>
-              <span className="summary-value">
-                投資 {periodSummary.investment.toLocaleString()}円 → 回収{" "}
-                {periodSummary.totalPayout.toLocaleString()}円
-              </span>
-              <span
-                className={`recovery-badge ${periodSummary.recovery >= 100 ? "positive" : "negative"}`}
-              >
-                回収率 {periodSummary.recovery}%
-              </span>
-            </div>
-            <div className="summary-detail">
-              ルール適用数: {periodSummary.samples}件 / 的中数:{" "}
-              {periodSummary.hits}件 (
-              {periodSummary.samples > 0
-                ? Math.round((periodSummary.hits / periodSummary.samples) * 100)
-                : 0}
-              %)
-            </div>
-          </div>
-
-          <div className="table-wrapper">
-            <table className="rules-table">
-              <thead>
-                <tr>
-                  <th>日付</th>
-                  <th>会場</th>
-                  <th>R</th>
-                  <th>ルールID</th>
-                  <th>種別</th>
-                  <th>予測</th>
-                  <th>結果</th>
-                  <th>的中</th>
-                  <th>配当</th>
-                </tr>
-              </thead>
-              <tbody>
-                {historyData.map((item, idx) => (
-                  <tr key={`${item.raceId}-${item.ruleId}-${idx}`}>
-                    <td>{item.date}</td>
-                    <td>{item.venueName}</td>
-                    <td className="num-cell">{item.raceNo}R</td>
-                    <td className="rule-id">{item.ruleId}</td>
-                    <td>
-                      <span className={`bet-type-badge small ${item.betType}`}>
-                        {getBetTypeName(item.betType)}
-                      </span>
-                    </td>
-                    <td className="num-cell">{item.prediction}</td>
-                    <td className="num-cell">{item.result || "-"}</td>
-                    <td
-                      className={`num-cell ${item.isHit ? "recovery positive" : "recovery negative"}`}
-                    >
-                      {item.result ? (item.isHit ? "○" : "×") : "-"}
-                    </td>
-                    <td
-                      className={`num-cell ${item.isHit ? "recovery positive" : ""}`}
-                    >
-                      {item.isHit ? `+${item.payout.toLocaleString()}円` : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
+          <HistorySummary periodSummary={periodSummary} />
+          <HistoryTable historyData={historyData} />
           {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                disabled={historyPage === 0}
-                onClick={() => onPageChange(historyPage - 1)}
-              >
-                前へ
-              </button>
-              <span className="page-info">
-                {historyPage + 1} / {totalPages}
-              </span>
-              <button
-                disabled={historyPage >= totalPages - 1}
-                onClick={() => onPageChange(historyPage + 1)}
-              >
-                次へ
-              </button>
-            </div>
+            <HistoryPagination
+              historyPage={historyPage}
+              totalPages={totalPages}
+              onPageChange={onPageChange}
+            />
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// 履歴タブ: 期間の絞り込み
+function HistoryFilters({
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  onPageChange,
+}) {
+  return (
+    <div className="history-filters">
+      <div className="filter-group">
+        <label>開始日:</label>
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => {
+            onStartDateChange(e.target.value);
+            onPageChange(0);
+          }}
+        />
+      </div>
+      <div className="filter-group">
+        <label>終了日:</label>
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => {
+            onEndDateChange(e.target.value);
+            onPageChange(0);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// 履歴タブ: 期間成績
+function HistorySummary({ periodSummary }) {
+  return (
+    <div className="history-summary">
+      <div className="summary-row">
+        <span className="summary-label">期間成績:</span>
+        <span className="summary-value">
+          投資 {periodSummary.investment.toLocaleString()}円 → 回収{" "}
+          {periodSummary.totalPayout.toLocaleString()}円
+        </span>
+        <span
+          className={`recovery-badge ${periodSummary.recovery >= 100 ? "positive" : "negative"}`}
+        >
+          回収率 {periodSummary.recovery}%
+        </span>
+      </div>
+      <div className="summary-detail">
+        ルール適用数: {periodSummary.samples}件 / 的中数: {periodSummary.hits}件
+        (
+        {periodSummary.samples > 0
+          ? Math.round((periodSummary.hits / periodSummary.samples) * 100)
+          : 0}
+        %)
+      </div>
+    </div>
+  );
+}
+
+// 履歴タブ: 履歴の表
+function HistoryTable({ historyData }) {
+  return (
+    <div className="table-wrapper">
+      <table className="rules-table">
+        <thead>
+          <tr>
+            <th>日付</th>
+            <th>会場</th>
+            <th>R</th>
+            <th>ルールID</th>
+            <th>種別</th>
+            <th>予測</th>
+            <th>結果</th>
+            <th>的中</th>
+            <th>配当</th>
+          </tr>
+        </thead>
+        <tbody>
+          {historyData.map((item, idx) => (
+            <tr key={`${item.raceId}-${item.ruleId}-${idx}`}>
+              <td>{item.date}</td>
+              <td>{item.venueName}</td>
+              <td className="num-cell">{item.raceNo}R</td>
+              <td className="rule-id">{item.ruleId}</td>
+              <td>
+                <span className={`bet-type-badge small ${item.betType}`}>
+                  {getBetTypeName(item.betType)}
+                </span>
+              </td>
+              <td className="num-cell">{item.prediction}</td>
+              <td className="num-cell">{item.result || "-"}</td>
+              <td
+                className={`num-cell ${item.isHit ? "recovery positive" : "recovery negative"}`}
+              >
+                {item.result ? (item.isHit ? "○" : "×") : "-"}
+              </td>
+              <td
+                className={`num-cell ${item.isHit ? "recovery positive" : ""}`}
+              >
+                {item.isHit ? `+${item.payout.toLocaleString()}円` : "-"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// 履歴タブ: ページ送り
+function HistoryPagination({ historyPage, totalPages, onPageChange }) {
+  return (
+    <div className="pagination">
+      <button
+        disabled={historyPage === 0}
+        onClick={() => onPageChange(historyPage - 1)}
+      >
+        前へ
+      </button>
+      <span className="page-info">
+        {historyPage + 1} / {totalPages}
+      </span>
+      <button
+        disabled={historyPage >= totalPages - 1}
+        onClick={() => onPageChange(historyPage + 1)}
+      >
+        次へ
+      </button>
     </div>
   );
 }
