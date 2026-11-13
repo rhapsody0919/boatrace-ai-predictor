@@ -135,6 +135,140 @@ function RowLabel({ row }) {
   );
 }
 
+function HeaderCell({ waku, showRole }) {
+  const { t } = useTranslation();
+  const color = BOAT_COLORS[waku] || {};
+  return (
+    <th
+      className={waku === 1 ? "ad-course1-th" : ""}
+      // 1号艇（守り）の見出しの色は .ad-course1-th（トークン）で付ける
+      style={
+        waku === 1 ? undefined : { background: color.bg, color: color.text }
+      }
+    >
+      {showRole ? (
+        <>
+          <div>{t("analysis.boatN", { n: waku })}</div>
+          <div className="ad-role-sub">
+            {waku === 1
+              ? t("attackDefense.defense")
+              : t("attackDefense.attack")}
+          </div>
+        </>
+      ) : (
+        t("analysis.boatN", { n: waku })
+      )}
+    </th>
+  );
+}
+
+function HeaderRow({ sorted, showRole, stickyClass }) {
+  return (
+    <tr>
+      <th className={stickyClass}></th>
+      {sorted.map((s) => (
+        <HeaderCell
+          key={s.boatNumber}
+          waku={s.boatNumber}
+          showRole={showRole}
+        />
+      ))}
+    </tr>
+  );
+}
+
+function PlayerRow({ sorted, getPlayerName, labelClass }) {
+  const { t } = useTranslation();
+  return (
+    <tr>
+      <td className={labelClass}>{t("attackDefense.racer")}</td>
+      {sorted.map((s) => (
+        <td key={s.boatNumber} translate="no">
+          {getPlayerName(s.boatNumber)}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function WinsRow({ sorted, labelClass }) {
+  const { t } = useTranslation();
+  return (
+    <tr>
+      <td className={labelClass}>{t("attackDefense.winsPerStarts")}</td>
+      {sorted.map((s) => {
+        const waku = String(s.boatNumber);
+        const counts = s.wakuRaceCounts?.[waku];
+        return (
+          <td key={s.boatNumber}>
+            {counts ? `${counts.wins || 0}/${counts.total || 0}` : "-"}
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
+function TechniqueRow({ row, sorted, labelClass }) {
+  return (
+    <tr>
+      <td className={labelClass}>
+        <RowLabel row={row} />
+      </td>
+      {sorted.map((s) => {
+        const waku = s.boatNumber;
+        const wakuStr = String(waku);
+        const counts = s.wakuRaceCounts?.[wakuStr];
+        const wins = counts?.wins || 0;
+        const total = counts?.total || 0;
+
+        return (
+          <td key={s.boatNumber}>
+            {renderCellValue(getCellValue(row, waku, s, wakuStr, wins, total))}
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
+// デスクトップ・モバイルで同じ表。違いは見出しの役割行と固定列のクラスだけ
+function AttackDefenseGrid({
+  sorted,
+  getPlayerName,
+  showRole,
+  stickyClass,
+  labelClass,
+}) {
+  return (
+    <table className="ad-table">
+      <thead>
+        <HeaderRow
+          sorted={sorted}
+          showRole={showRole}
+          stickyClass={stickyClass}
+        />
+      </thead>
+      <tbody>
+        <PlayerRow
+          sorted={sorted}
+          getPlayerName={getPlayerName}
+          labelClass={labelClass}
+        />
+        <WinsRow sorted={sorted} labelClass={labelClass} />
+        {TECHNIQUE_ROWS.map((row) => (
+          <TechniqueRow
+            key={row.key}
+            row={row}
+            sorted={sorted}
+            labelClass={labelClass}
+          />
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 // 見出しは「号艇」表示。枠番キーは BOA-284 で決定（実進入コースではない。src/utils/racerStats.js）
 export default function AttackDefenseTable({ racerStats, players }) {
   const { t } = useTranslation();
@@ -156,161 +290,24 @@ export default function AttackDefenseTable({ racerStats, players }) {
 
       {/* Desktop table */}
       <div className="ad-table-desktop">
-        <table className="ad-table">
-          <thead>
-            <tr>
-              <th></th>
-              {sorted.map((s) => {
-                const waku = s.boatNumber;
-                const color = BOAT_COLORS[waku] || {};
-                return (
-                  <th
-                    key={waku}
-                    className={waku === 1 ? "ad-course1-th" : ""}
-                    // 1号艇（守り）の見出しの色は .ad-course1-th（トークン）で付ける
-                    style={
-                      waku === 1
-                        ? undefined
-                        : { background: color.bg, color: color.text }
-                    }
-                  >
-                    <div>{t("analysis.boatN", { n: waku })}</div>
-                    <div className="ad-role-sub">
-                      {waku === 1
-                        ? t("attackDefense.defense")
-                        : t("attackDefense.attack")}
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="ad-label-cell">{t("attackDefense.racer")}</td>
-              {sorted.map((s) => (
-                <td key={s.boatNumber} translate="no">
-                  {getPlayerName(s.boatNumber)}
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="ad-label-cell">
-                {t("attackDefense.winsPerStarts")}
-              </td>
-              {sorted.map((s) => {
-                const waku = String(s.boatNumber);
-                const counts = s.wakuRaceCounts?.[waku];
-                return (
-                  <td key={s.boatNumber}>
-                    {counts ? `${counts.wins || 0}/${counts.total || 0}` : "-"}
-                  </td>
-                );
-              })}
-            </tr>
-
-            {TECHNIQUE_ROWS.map((row) => (
-              <tr key={row.key}>
-                <td className="ad-label-cell">
-                  <RowLabel row={row} />
-                </td>
-                {sorted.map((s) => {
-                  const waku = s.boatNumber;
-                  const wakuStr = String(waku);
-                  const counts = s.wakuRaceCounts?.[wakuStr];
-                  const wins = counts?.wins || 0;
-                  const total = counts?.total || 0;
-
-                  return (
-                    <td key={s.boatNumber}>
-                      {renderCellValue(
-                        getCellValue(row, waku, s, wakuStr, wins, total),
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <AttackDefenseGrid
+          sorted={sorted}
+          getPlayerName={getPlayerName}
+          showRole
+          stickyClass={undefined}
+          labelClass="ad-label-cell"
+        />
       </div>
 
       {/* Mobile: scrollable table (same as desktop) */}
       <div className="ad-table-mobile">
-        <table className="ad-table">
-          <thead>
-            <tr>
-              <th className="ad-sticky-col"></th>
-              {sorted.map((s) => {
-                const waku = s.boatNumber;
-                const color = BOAT_COLORS[waku] || {};
-                return (
-                  <th
-                    key={waku}
-                    className={waku === 1 ? "ad-course1-th" : ""}
-                    // 1号艇（守り）の見出しの色は .ad-course1-th（トークン）で付ける
-                    style={
-                      waku === 1
-                        ? undefined
-                        : { background: color.bg, color: color.text }
-                    }
-                  >
-                    {t("analysis.boatN", { n: waku })}
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="ad-label-cell ad-sticky-col">
-                {t("attackDefense.racer")}
-              </td>
-              {sorted.map((s) => (
-                <td key={s.boatNumber} translate="no">
-                  {getPlayerName(s.boatNumber)}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <td className="ad-label-cell ad-sticky-col">
-                {t("attackDefense.winsPerStarts")}
-              </td>
-              {sorted.map((s) => {
-                const waku = String(s.boatNumber);
-                const counts = s.wakuRaceCounts?.[waku];
-                return (
-                  <td key={s.boatNumber}>
-                    {counts ? `${counts.wins || 0}/${counts.total || 0}` : "-"}
-                  </td>
-                );
-              })}
-            </tr>
-            {TECHNIQUE_ROWS.map((row) => (
-              <tr key={row.key}>
-                <td className="ad-label-cell ad-sticky-col">
-                  <RowLabel row={row} />
-                </td>
-                {sorted.map((s) => {
-                  const waku = s.boatNumber;
-                  const wakuStr = String(waku);
-                  const counts = s.wakuRaceCounts?.[wakuStr];
-                  const wins = counts?.wins || 0;
-                  const total = counts?.total || 0;
-
-                  return (
-                    <td key={s.boatNumber}>
-                      {renderCellValue(
-                        getCellValue(row, waku, s, wakuStr, wins, total),
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <AttackDefenseGrid
+          sorted={sorted}
+          getPlayerName={getPlayerName}
+          showRole={false}
+          stickyClass="ad-sticky-col"
+          labelClass="ad-label-cell ad-sticky-col"
+        />
       </div>
 
       <Legend sorted={sorted} />
