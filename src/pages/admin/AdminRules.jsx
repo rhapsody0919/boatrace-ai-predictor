@@ -486,76 +486,90 @@ function VenueTab({
       </div>
 
       {selectedVenue !== "all" && venueTotal && (
-        <div className="venue-summary">
-          <h3>{getVenueName(selectedVenue)} の運用成績</h3>
-          <div className="venue-stats">
-            <div className="stat-item">
-              <span className="stat-label">対象件数</span>
-              <span className="stat-value">{venueTotal.samples}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">的中数</span>
-              <span className="stat-value">{venueTotal.hits}</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">的中率</span>
-              <span className="stat-value">{venueTotal.hitRate}%</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-label">回収率</span>
-              <span
-                className={`stat-value recovery ${venueTotal.recovery >= 100 ? "positive" : "negative"}`}
-              >
-                {venueTotal.recovery}%
-              </span>
-            </div>
-          </div>
-        </div>
+        <VenueSummary selectedVenue={selectedVenue} venueTotal={venueTotal} />
       )}
 
-      <div className="rules-table-section">
-        <h3>
-          {selectedVenue === "all" ? "全会場" : getVenueName(selectedVenue)}
-          のルール一覧 ({venueRules.length}件)
-        </h3>
-        <div className="table-wrapper">
-          <table className="rules-table">
-            <thead>
-              <tr>
-                <th>ルールID</th>
-                {selectedVenue === "all" && <th>会場</th>}
-                <th>条件</th>
-                <th>種別</th>
-                <th>サンプル数</th>
-                <th>的中数</th>
-                <th>的中率</th>
-                <th>回収率</th>
-              </tr>
-            </thead>
-            <tbody>
-              {venueRules.map((rule) => (
-                <tr key={rule.ruleId}>
-                  <td className="rule-id">{rule.ruleId}</td>
-                  {selectedVenue === "all" && <td>{rule.venueName}</td>}
-                  <td className="rule-desc">{rule.description}</td>
-                  <td>
-                    <span className={`bet-type-badge ${rule.betType}`}>
-                      {getBetTypeName(rule.betType)}
-                    </span>
-                  </td>
-                  <td className="num-cell">{rule.samples}</td>
-                  <td className="num-cell">{rule.hits}</td>
-                  <td className="num-cell">{rule.hitRate}%</td>
-                  <td
-                    className={`num-cell recovery ${rule.recovery >= 100 ? "positive" : "negative"}`}
-                  >
-                    {rule.recovery}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <VenueRulesTable selectedVenue={selectedVenue} venueRules={venueRules} />
+    </div>
+  );
+}
+
+// 会場別タブの会場成績サマリー
+function VenueSummary({ selectedVenue, venueTotal }) {
+  return (
+    <div className="venue-summary">
+      <h3>{getVenueName(selectedVenue)} の運用成績</h3>
+      <div className="venue-stats">
+        <div className="stat-item">
+          <span className="stat-label">対象件数</span>
+          <span className="stat-value">{venueTotal.samples}</span>
         </div>
+        <div className="stat-item">
+          <span className="stat-label">的中数</span>
+          <span className="stat-value">{venueTotal.hits}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">的中率</span>
+          <span className="stat-value">{venueTotal.hitRate}%</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">回収率</span>
+          <span
+            className={`stat-value recovery ${venueTotal.recovery >= 100 ? "positive" : "negative"}`}
+          >
+            {venueTotal.recovery}%
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 会場別タブのルール一覧
+function VenueRulesTable({ selectedVenue, venueRules }) {
+  return (
+    <div className="rules-table-section">
+      <h3>
+        {selectedVenue === "all" ? "全会場" : getVenueName(selectedVenue)}
+        のルール一覧 ({venueRules.length}件)
+      </h3>
+      <div className="table-wrapper">
+        <table className="rules-table">
+          <thead>
+            <tr>
+              <th>ルールID</th>
+              {selectedVenue === "all" && <th>会場</th>}
+              <th>条件</th>
+              <th>種別</th>
+              <th>サンプル数</th>
+              <th>的中数</th>
+              <th>的中率</th>
+              <th>回収率</th>
+            </tr>
+          </thead>
+          <tbody>
+            {venueRules.map((rule) => (
+              <tr key={rule.ruleId}>
+                <td className="rule-id">{rule.ruleId}</td>
+                {selectedVenue === "all" && <td>{rule.venueName}</td>}
+                <td className="rule-desc">{rule.description}</td>
+                <td>
+                  <span className={`bet-type-badge ${rule.betType}`}>
+                    {getBetTypeName(rule.betType)}
+                  </span>
+                </td>
+                <td className="num-cell">{rule.samples}</td>
+                <td className="num-cell">{rule.hits}</td>
+                <td className="num-cell">{rule.hitRate}%</td>
+                <td
+                  className={`num-cell recovery ${rule.recovery >= 100 ? "positive" : "negative"}`}
+                >
+                  {rule.recovery}%
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
