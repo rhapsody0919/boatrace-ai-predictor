@@ -15,38 +15,275 @@ import { bestOf } from "../../utils/bestOf";
 import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
 
+
+function RacerFormSelectors({
+  t,
+  venues,
+  selectedVenue,
+  setSelectedVenue,
+  races,
+  selectedRace,
+  setSelectedRace,
+}) {
+  return (
+    <div className="controls-section">
+      <label htmlFor="racer-venue-select">
+        {t("analysis.venueSelectTodayLabel")}
+      </label>
+      <select
+        id="racer-venue-select"
+        value={selectedVenue ?? ""}
+        onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
+        className="venue-select"
+      >
+        {venues.map((v) => (
+          <option key={v} value={v}>
+            {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
+          </option>
+        ))}
+      </select>
+
+      {races.length > 0 && (
+        <>
+          <label htmlFor="racer-race-select">
+            {t("analysis.raceSelectLabel")}
+          </label>
+          <select
+            id="racer-race-select"
+            value={selectedRace ?? ""}
+            onChange={(e) => setSelectedRace(e.target.value)}
+            className="venue-select"
+          >
+            {races.map((r) => (
+              <option key={r.race_id} value={r.race_id}>
+                {t("analysis.raceOption", {
+                  number: r.race_number,
+                  time: r.start_time?.slice(0, 5),
+                })}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RacerFormDeltaCell({ row, bestDeltaBoats }) {
+  return (
+    <td
+      className={`rate${bestDeltaBoats.has(row.boat_number) && row.delta > 0 ? " ind-best" : ""}`}
+    >
+      {row.delta !== null ? (
+        <span
+          className={
+            row.delta > 0 ? "delta-up" : row.delta < 0 ? "delta-down" : ""
+          }
+        >
+          {row.delta > 0 ? "↑" : row.delta < 0 ? "↓" : "→"}{" "}
+          {Math.abs(row.delta).toFixed(2)}
+        </span>
+      ) : (
+        "-"
+      )}
+    </td>
+  );
+}
+
+function RacerFormRow({ t, row, bestDeltaBoats, setDrillDownRacer }) {
+  return (
+    <tr
+      className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""}`}
+      onClick={() => row.racer_id !== null && setDrillDownRacer(row.racer_id)}
+    >
+      <td className="rank">{row.boat_number}</td>
+      <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
+      <td className="rate">{row.win_rate?.toFixed(2)}</td>
+      <td className="rate">
+        {row.past_win_rate !== null
+          ? row.past_win_rate.toFixed(2)
+          : t("analysis.noData")}
+      </td>
+      {/* 最良は行全体ではなく、比べている値（Δ）のセルに金枠（race-detail-ui-unify R1） */}
+      <RacerFormDeltaCell row={row} bestDeltaBoats={bestDeltaBoats} />
+    </tr>
+  );
+}
+
+function RacerFormTable({ t, breakdown, bestDeltaBoats, setDrillDownRacer }) {
+  return (
+    <div className="table-wrapper">
+      <table className="motor-ranking-table">
+        <thead>
+          <tr>
+            <th>{t("analysis.laneHeader")}</th>
+            <th>{t("table.playerName")}</th>
+            <th>{t("analysis.racerForm.currentWinRateHeader")}</th>
+            <th>{t("analysis.racerForm.past90Header")}</th>
+            <th>{t("analysis.racerForm.deltaHeader")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {breakdown.map((row) => (
+            <RacerFormRow
+              key={row.boat_number}
+              t={t}
+              row={row}
+              bestDeltaBoats={bestDeltaBoats}
+              setDrillDownRacer={setDrillDownRacer}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function RacerFormTrend({
+  t,
+  breakdown,
+  trendData,
+  drillDownRacer,
+  setDrillDownRacer,
+}) {
+  const chartData = toChartData(trendData);
+  const drillDownRacerName = breakdown.find(
+    (r) => r.racer_id === drillDownRacer,
+  )?.player_name;
+  return (
+    <>
+      <DrillDownHeader
+        onBack={() => setDrillDownRacer(null)}
+        backLabel={t("analysis.backToList")}
+        heading={t("analysis.racerTrendHeading", {
+          name: drillDownRacerName?.replace(/\s+/g, ""),
+        })}
+        racerId={drillDownRacer}
+        racerLinkLabel={t("analysis.racerPageLink")}
+      />
+
+      {chartData.length > 0 ? (
+        <TrendLineChart
+          data={chartData}
+          yAxisLabel={t("analysis.racerForm.yAxis")}
+          tooltipFormatter={(value) => value.toFixed(2)}
+          series={[
+            {
+              dataKey: "national_win_rate",
+              name: t("analysis.racerForm.legendNational"),
+              stroke: "var(--brand-accent-primary)",
+              type: "stepAfter",
+            },
+            {
+              dataKey: "local_win_rate",
+              name: t("analysis.racerForm.legendLocal"),
+              stroke: "var(--brand-accent-secondary)",
+              type: "stepAfter",
+            },
+          ]}
+        />
+      ) : (
+        <div className="empty-state">{t("analysis.racerTrendEmpty")}</div>
+      )}
+    </>
+  );
+}
+
+function toChartData(trendData) {
+  return (trendData?.trend ?? []).map((row) => ({
+    date: row.date.slice(5),
+    national_win_rate: row.win_rate,
+    local_win_rate: row.local_win_rate,
+  }));
+}
+
+function RacerFormTop({ t, embedded, loading, selectors }) {
+  return (
+    <>
+      {!embedded && (
+        <>
+          <h2>{t("analysis.racerForm.title")}</h2>
+          <p className="section-description">
+            {t("analysis.racerForm.description")}
+          </p>
+        </>
+      )}
+
+      {!embedded &&
+        (selectors.venues.length === 0 && !loading ? (
+          <div className="empty-state">{t("analysis.noRacesToday")}</div>
+        ) : (
+          <RacerFormSelectors t={t} {...selectors} />
+        ))}
+    </>
+  );
+}
+
+function RacerFormContent({
+  t,
+  loading,
+  error,
+  drillDownRacer,
+  breakdown,
+  bestDeltaBoats,
+  setDrillDownRacer,
+  trendData,
+}) {
+  return (
+    <>
+      {loading && <div className="loading-state">{t("analysis.loading")}</div>}
+      {error && (
+        <div className="error-state">
+          {t("analysis.error", { message: error })}
+        </div>
+      )}
+
+      {!loading &&
+        !error &&
+        drillDownRacer === null &&
+        breakdown.length > 0 && (
+          <RacerFormTable
+            t={t}
+            breakdown={breakdown}
+            bestDeltaBoats={bestDeltaBoats}
+            setDrillDownRacer={setDrillDownRacer}
+          />
+        )}
+
+      {!loading && !error && drillDownRacer !== null && (
+        <RacerFormTrend
+          t={t}
+          breakdown={breakdown}
+          trendData={trendData}
+          drillDownRacer={drillDownRacer}
+          setDrillDownRacer={setDrillDownRacer}
+        />
+      )}
+    </>
+  );
+}
+
 function RacerFormChart({
   initialVenueCode = null,
   initialRaceId = null,
   embedded = false,
 }) {
   const { t } = useTranslation();
-  const {
-    venues,
-    selectedVenue,
-    setSelectedVenue,
-    races,
-    selectedRace,
-    setSelectedRace,
-    loading,
-    setLoading,
-    error,
-    setError,
-  } = useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
+  const { loading, setLoading, error, setError, ...selectors } =
+    useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
 
   const [breakdown, setBreakdown] = useState([]);
   const [drillDownRacer, setDrillDownRacer] = useState(null);
   const [trendData, setTrendData] = useState(null);
 
   useEffect(() => {
-    if (selectedRace === null) return;
+    if (selectors.selectedRace === null) return;
     const loadBreakdown = async () => {
       try {
         setLoading(true);
         setError(null);
         setDrillDownRacer(null);
-        const data =
-          await getRaceRacerFormBreakdown(selectedRace);
+        const data = await getRaceRacerFormBreakdown(selectors.selectedRace);
         setBreakdown(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
@@ -57,7 +294,7 @@ function RacerFormChart({
     };
     loadBreakdown();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRace]);
+  }, [selectors.selectedRace]);
 
   // 選手選択時: 節ごとの全国勝率推移を取得
   useEffect(() => {
@@ -66,8 +303,7 @@ function RacerFormChart({
       try {
         setLoading(true);
         setError(null);
-        const data =
-          await getRacerFormTrend(drillDownRacer);
+        const data = await getRacerFormTrend(drillDownRacer);
         setTrendData(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
@@ -88,179 +324,25 @@ function RacerFormChart({
     { digits: 2 },
   );
 
-  const chartData = (trendData?.trend ?? []).map((row) => ({
-    date: row.date.slice(5),
-    national_win_rate: row.win_rate,
-    local_win_rate: row.local_win_rate,
-  }));
-
-  const drillDownRacerName = breakdown.find(
-    (r) => r.racer_id === drillDownRacer,
-  )?.player_name;
-
   return (
     <div className="motor-condition-container">
-      {!embedded && (
-        <>
-          <h2>{t("analysis.racerForm.title")}</h2>
-          <p className="section-description">
-            {t("analysis.racerForm.description")}
-          </p>
-        </>
-      )}
+      <RacerFormTop
+        t={t}
+        embedded={embedded}
+        loading={loading}
+        selectors={selectors}
+      />
 
-      {!embedded &&
-        (venues.length === 0 && !loading ? (
-          <div className="empty-state">{t("analysis.noRacesToday")}</div>
-        ) : (
-          <div className="controls-section">
-            <label htmlFor="racer-venue-select">
-              {t("analysis.venueSelectTodayLabel")}
-            </label>
-            <select
-              id="racer-venue-select"
-              value={selectedVenue ?? ""}
-              onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
-              className="venue-select"
-            >
-              {venues.map((v) => (
-                <option key={v} value={v}>
-                  {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-                </option>
-              ))}
-            </select>
-
-            {races.length > 0 && (
-              <>
-                <label htmlFor="racer-race-select">
-                  {t("analysis.raceSelectLabel")}
-                </label>
-                <select
-                  id="racer-race-select"
-                  value={selectedRace ?? ""}
-                  onChange={(e) => setSelectedRace(e.target.value)}
-                  className="venue-select"
-                >
-                  {races.map((r) => (
-                    <option key={r.race_id} value={r.race_id}>
-                      {t("analysis.raceOption", {
-                        number: r.race_number,
-                        time: r.start_time?.slice(0, 5),
-                      })}
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-          </div>
-        ))}
-
-      {loading && <div className="loading-state">{t("analysis.loading")}</div>}
-      {error && (
-        <div className="error-state">
-          {t("analysis.error", { message: error })}
-        </div>
-      )}
-
-      {!loading &&
-        !error &&
-        drillDownRacer === null &&
-        breakdown.length > 0 && (
-          <div className="table-wrapper">
-            <table className="motor-ranking-table">
-              <thead>
-                <tr>
-                  <th>{t("analysis.laneHeader")}</th>
-                  <th>{t("table.playerName")}</th>
-                  <th>{t("analysis.racerForm.currentWinRateHeader")}</th>
-                  <th>{t("analysis.racerForm.past90Header")}</th>
-                  <th>{t("analysis.racerForm.deltaHeader")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {breakdown.map((row) => (
-                  <tr
-                    key={row.boat_number}
-                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""}`}
-                    onClick={() =>
-                      row.racer_id !== null && setDrillDownRacer(row.racer_id)
-                    }
-                  >
-                    <td className="rank">{row.boat_number}</td>
-                    <td translate="no">
-                      {row.player_name?.replace(/\s+/g, "")}
-                    </td>
-                    <td className="rate">{row.win_rate?.toFixed(2)}</td>
-                    <td className="rate">
-                      {row.past_win_rate !== null
-                        ? row.past_win_rate.toFixed(2)
-                        : t("analysis.noData")}
-                    </td>
-                    {/* 最良は行全体ではなく、比べている値（Δ）のセルに金枠（race-detail-ui-unify R1） */}
-                    <td
-                      className={`rate${bestDeltaBoats.has(row.boat_number) && row.delta > 0 ? " ind-best" : ""}`}
-                    >
-                      {row.delta !== null ? (
-                        <span
-                          className={
-                            row.delta > 0
-                              ? "delta-up"
-                              : row.delta < 0
-                                ? "delta-down"
-                                : ""
-                          }
-                        >
-                          {row.delta > 0 ? "↑" : row.delta < 0 ? "↓" : "→"}{" "}
-                          {Math.abs(row.delta).toFixed(2)}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-      {!loading && !error && drillDownRacer !== null && (
-        <>
-          <DrillDownHeader
-            onBack={() => setDrillDownRacer(null)}
-            backLabel={t("analysis.backToList")}
-            heading={t("analysis.racerTrendHeading", {
-              name: drillDownRacerName?.replace(/\s+/g, ""),
-            })}
-            racerId={drillDownRacer}
-            racerLinkLabel={t("analysis.racerPageLink")}
-          />
-
-          {chartData.length > 0 ? (
-            <TrendLineChart
-              data={chartData}
-              yAxisLabel={t("analysis.racerForm.yAxis")}
-              tooltipFormatter={(value) => value.toFixed(2)}
-              series={[
-                {
-                  dataKey: "national_win_rate",
-                  name: t("analysis.racerForm.legendNational"),
-                  stroke: "var(--brand-accent-primary)",
-                  type: "stepAfter",
-                },
-                {
-                  dataKey: "local_win_rate",
-                  name: t("analysis.racerForm.legendLocal"),
-                  stroke: "var(--brand-accent-secondary)",
-                  type: "stepAfter",
-                },
-              ]}
-            />
-          ) : (
-            <div className="empty-state">{t("analysis.racerTrendEmpty")}</div>
-          )}
-        </>
-      )}
+      <RacerFormContent
+        t={t}
+        loading={loading}
+        error={error}
+        drillDownRacer={drillDownRacer}
+        breakdown={breakdown}
+        bestDeltaBoats={bestDeltaBoats}
+        setDrillDownRacer={setDrillDownRacer}
+        trendData={trendData}
+      />
 
       <p className="table-note">{t("analysis.racerForm.note")}</p>
     </div>
