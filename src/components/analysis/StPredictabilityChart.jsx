@@ -17,6 +17,238 @@ import { formatExhibitionSt } from "../../utils/formatters";
 import DrillDownHeader from "./DrillDownHeader";
 import "./MotorConditionChart.css";
 
+function StPredVenueRaceControls({
+  venues,
+  loading,
+  selectedVenue,
+  setSelectedVenue,
+  races,
+  selectedRace,
+  setSelectedRace,
+  t,
+}) {
+  return venues.length === 0 && !loading ? (
+    <div className="empty-state">{t("analysis.noRacesToday")}</div>
+  ) : (
+    <div className="controls-section">
+      <label htmlFor="st-venue-select">
+        {t("analysis.venueSelectTodayLabel")}
+      </label>
+      <select
+        id="st-venue-select"
+        value={selectedVenue ?? ""}
+        onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
+        className="venue-select"
+      >
+        {venues.map((v) => (
+          <option key={v} value={v}>
+            {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
+          </option>
+        ))}
+      </select>
+
+      {races.length > 0 && (
+        <>
+          <label htmlFor="st-race-select">
+            {t("analysis.raceSelectLabel")}
+          </label>
+          <select
+            id="st-race-select"
+            value={selectedRace ?? ""}
+            onChange={(e) => setSelectedRace(e.target.value)}
+            className="venue-select"
+          >
+            {races.map((r) => (
+              <option key={r.race_id} value={r.race_id}>
+                {t("analysis.raceOption", {
+                  number: r.race_number,
+                  time: r.start_time?.slice(0, 5),
+                })}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
+    </div>
+  );
+}
+
+function StPredBreakdownRow({ row, bestDeviationBoats, setDrillDownRacer, t }) {
+  return (
+    <tr
+      className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""}`}
+      onClick={() =>
+        row.racer_id !== null && setDrillDownRacer(row.racer_id)
+      }
+    >
+      <td className="rank">{row.boat_number}</td>
+      <td translate="no">{row.player_name?.replace(/\s+/g, "")}</td>
+      <td className="rate">
+        {/* 展示のフライング・出遅れは公式の表記（F.01 等）で出す（BOA-759） */}
+        {formatExhibitionSt(row.exhibition_st, row.exhibition_start_flag) ??
+          t("analysis.notMeasured")}
+      </td>
+      {/* 最良は行全体ではなく、比べている値（平均ズレ）のセルに金枠（R1） */}
+      <td
+        className={`rate${bestDeviationBoats.has(row.boat_number) ? " ind-best" : ""}`}
+      >
+        {row.avg_deviation !== null
+          ? row.avg_deviation.toFixed(3)
+          : t("analysis.noData")}
+      </td>
+      <td className="rate">{row.sample_count}</td>
+    </tr>
+  );
+}
+
+function StPredBreakdownTable({
+  breakdown,
+  bestDeviationBoats,
+  setDrillDownRacer,
+  t,
+}) {
+  return (
+    <div className="table-wrapper">
+      <table className="motor-ranking-table">
+        <thead>
+          <tr>
+            <th>{t("analysis.laneHeader")}</th>
+            <th>{t("table.playerName")}</th>
+            <th>{t("analysis.st.todayStHeader")}</th>
+            <th>{t("analysis.st.avgDevHeader")}</th>
+            <th>{t("analysis.sampleCountHeader")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {breakdown.map((row) => (
+            <StPredBreakdownRow
+              key={row.boat_number}
+              row={row}
+              bestDeviationBoats={bestDeviationBoats}
+              setDrillDownRacer={setDrillDownRacer}
+              t={t}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function StPredDrillDown({
+  drillDownRacer,
+  drillDownRacerName,
+  setDrillDownRacer,
+  chartData,
+  t,
+}) {
+  return (
+    <>
+      <DrillDownHeader
+        onBack={() => setDrillDownRacer(null)}
+        backLabel={t("analysis.backToList")}
+        heading={t("analysis.st.trendHeading", {
+          name: drillDownRacerName?.replace(/\s+/g, ""),
+        })}
+        racerId={drillDownRacer}
+        racerLinkLabel={t("analysis.racerPageLink")}
+      />
+
+      {chartData.length > 0 ? (
+        <TrendLineChart
+          data={chartData}
+          yAxisLabel={t("analysis.st.yAxis")}
+          tooltipFormatter={(value) => value.toFixed(3)}
+          series={[
+            {
+              dataKey: "deviation",
+              name: t("analysis.st.legend"),
+              stroke: "var(--brand-accent-primary)",
+            },
+          ]}
+        />
+      ) : (
+        <div className="empty-state">{t("analysis.racerTrendEmpty")}</div>
+      )}
+    </>
+  );
+}
+
+async function loadBreakdown({
+  selectedRace,
+  setLoading,
+  setError,
+  setDrillDownRacer,
+  setBreakdown,
+  t,
+}) {
+  try {
+    setLoading(true);
+    setError(null);
+    setDrillDownRacer(null);
+    const data =
+      await getRaceStPredictabilityBreakdown(
+        selectedRace,
+      );
+    setBreakdown(data);
+  } catch (err) {
+    setError(err.message || t("analysis.dataLoadError"));
+    console.error("Failed to load race ST predictability breakdown:", err);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function loadTrend({
+  drillDownRacer,
+  setLoading,
+  setError,
+  setTrendData,
+  t,
+}) {
+  try {
+    setLoading(true);
+    setError(null);
+    const data =
+      await getStDeviationTrend(drillDownRacer);
+    setTrendData(data);
+  } catch (err) {
+    setError(err.message || t("analysis.dataLoadError"));
+    console.error("Failed to load ST deviation trend:", err);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ズレが最も小さい艇（同値は全部）。表示と同じ小数3桁で比べる（R1）
+function bestBoatsOf(breakdown) {
+  return bestOf(
+    breakdown.map((r) => ({ boat: r.boat_number, value: r.avg_deviation })),
+    "min",
+    { digits: 3 },
+  );
+}
+
+function chartDataOf(trendData) {
+  return (trendData?.trend ?? []).map((row) => ({
+    date: row.date.slice(5),
+    deviation: row.avg_deviation,
+  }));
+}
+
+function racerNameOf(breakdown, drillDownRacer) {
+  return breakdown.find((r) => r.racer_id === drillDownRacer)?.player_name;
+}
+
+function StPredHeading({ t }) {
+  return (
+    <>
+      <h2>{t("analysis.st.title")}</h2>
+      <p className="section-description">{t("analysis.st.description")}</p>
+    </>
+  );
+}
+
 function StPredictabilityChart({
   initialVenueCode = null,
   initialRaceId = null,
@@ -42,117 +274,45 @@ function StPredictabilityChart({
 
   useEffect(() => {
     if (selectedRace === null) return;
-    const loadBreakdown = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setDrillDownRacer(null);
-        const data =
-          await getRaceStPredictabilityBreakdown(
-            selectedRace,
-          );
-        setBreakdown(data);
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load race ST predictability breakdown:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadBreakdown();
+    loadBreakdown({
+      selectedRace,
+      setLoading,
+      setError,
+      setDrillDownRacer,
+      setBreakdown,
+      t,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRace]);
 
   useEffect(() => {
     if (drillDownRacer === null) return;
-    const loadTrend = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data =
-          await getStDeviationTrend(drillDownRacer);
-        setTrendData(data);
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load ST deviation trend:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadTrend();
+    loadTrend({ drillDownRacer, setLoading, setError, setTrendData, t });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drillDownRacer]);
 
-  // ズレが最も小さい艇（同値は全部）。表示と同じ小数3桁で比べる（R1）
-  const bestDeviationBoats = bestOf(
-    breakdown.map((r) => ({ boat: r.boat_number, value: r.avg_deviation })),
-    "min",
-    { digits: 3 },
-  );
+  const bestDeviationBoats = bestBoatsOf(breakdown);
 
-  const chartData = (trendData?.trend ?? []).map((row) => ({
-    date: row.date.slice(5),
-    deviation: row.avg_deviation,
-  }));
+  const chartData = chartDataOf(trendData);
 
-  const drillDownRacerName = breakdown.find(
-    (r) => r.racer_id === drillDownRacer,
-  )?.player_name;
+  const drillDownRacerName = racerNameOf(breakdown, drillDownRacer);
 
   return (
     <div className="motor-condition-container">
+      {!embedded && <StPredHeading t={t} />}
+
       {!embedded && (
-        <>
-          <h2>{t("analysis.st.title")}</h2>
-          <p className="section-description">{t("analysis.st.description")}</p>
-        </>
+        <StPredVenueRaceControls
+          venues={venues}
+          loading={loading}
+          selectedVenue={selectedVenue}
+          setSelectedVenue={setSelectedVenue}
+          races={races}
+          selectedRace={selectedRace}
+          setSelectedRace={setSelectedRace}
+          t={t}
+        />
       )}
-
-      {!embedded &&
-        (venues.length === 0 && !loading ? (
-          <div className="empty-state">{t("analysis.noRacesToday")}</div>
-        ) : (
-          <div className="controls-section">
-            <label htmlFor="st-venue-select">
-              {t("analysis.venueSelectTodayLabel")}
-            </label>
-            <select
-              id="st-venue-select"
-              value={selectedVenue ?? ""}
-              onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
-              className="venue-select"
-            >
-              {venues.map((v) => (
-                <option key={v} value={v}>
-                  {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-                </option>
-              ))}
-            </select>
-
-            {races.length > 0 && (
-              <>
-                <label htmlFor="st-race-select">
-                  {t("analysis.raceSelectLabel")}
-                </label>
-                <select
-                  id="st-race-select"
-                  value={selectedRace ?? ""}
-                  onChange={(e) => setSelectedRace(e.target.value)}
-                  className="venue-select"
-                >
-                  {races.map((r) => (
-                    <option key={r.race_id} value={r.race_id}>
-                      {t("analysis.raceOption", {
-                        number: r.race_number,
-                        time: r.start_time?.slice(0, 5),
-                      })}
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-          </div>
-        ))}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
@@ -165,82 +325,22 @@ function StPredictabilityChart({
         !error &&
         drillDownRacer === null &&
         breakdown.length > 0 && (
-          <div className="table-wrapper">
-            <table className="motor-ranking-table">
-              <thead>
-                <tr>
-                  <th>{t("analysis.laneHeader")}</th>
-                  <th>{t("table.playerName")}</th>
-                  <th>{t("analysis.st.todayStHeader")}</th>
-                  <th>{t("analysis.st.avgDevHeader")}</th>
-                  <th>{t("analysis.sampleCountHeader")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {breakdown.map((row) => (
-                  <tr
-                    key={row.boat_number}
-                    className={`motor-ranking-row ${row.racer_id === null ? "non-clickable-row" : ""}`}
-                    onClick={() =>
-                      row.racer_id !== null && setDrillDownRacer(row.racer_id)
-                    }
-                  >
-                    <td className="rank">{row.boat_number}</td>
-                    <td translate="no">
-                      {row.player_name?.replace(/\s+/g, "")}
-                    </td>
-                    <td className="rate">
-                      {/* 展示のフライング・出遅れは公式の表記（F.01 等）で出す（BOA-759） */}
-                      {formatExhibitionSt(
-                        row.exhibition_st,
-                        row.exhibition_start_flag,
-                      ) ?? t("analysis.notMeasured")}
-                    </td>
-                    {/* 最良は行全体ではなく、比べている値（平均ズレ）のセルに金枠（R1） */}
-                    <td
-                      className={`rate${bestDeviationBoats.has(row.boat_number) ? " ind-best" : ""}`}
-                    >
-                      {row.avg_deviation !== null
-                        ? row.avg_deviation.toFixed(3)
-                        : t("analysis.noData")}
-                    </td>
-                    <td className="rate">{row.sample_count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <StPredBreakdownTable
+            breakdown={breakdown}
+            bestDeviationBoats={bestDeviationBoats}
+            setDrillDownRacer={setDrillDownRacer}
+            t={t}
+          />
         )}
 
       {!loading && !error && drillDownRacer !== null && (
-        <>
-          <DrillDownHeader
-            onBack={() => setDrillDownRacer(null)}
-            backLabel={t("analysis.backToList")}
-            heading={t("analysis.st.trendHeading", {
-              name: drillDownRacerName?.replace(/\s+/g, ""),
-            })}
-            racerId={drillDownRacer}
-            racerLinkLabel={t("analysis.racerPageLink")}
-          />
-
-          {chartData.length > 0 ? (
-            <TrendLineChart
-              data={chartData}
-              yAxisLabel={t("analysis.st.yAxis")}
-              tooltipFormatter={(value) => value.toFixed(3)}
-              series={[
-                {
-                  dataKey: "deviation",
-                  name: t("analysis.st.legend"),
-                  stroke: "var(--brand-accent-primary)",
-                },
-              ]}
-            />
-          ) : (
-            <div className="empty-state">{t("analysis.racerTrendEmpty")}</div>
-          )}
-        </>
+        <StPredDrillDown
+          drillDownRacer={drillDownRacer}
+          drillDownRacerName={drillDownRacerName}
+          setDrillDownRacer={setDrillDownRacer}
+          chartData={chartData}
+          t={t}
+        />
       )}
 
       <p className="table-note">{t("analysis.st.note")}</p>
