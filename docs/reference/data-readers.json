@@ -4302,7 +4302,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries4.js:161",
+          "ref": "src/services/motorQueries4.js:139",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4311,7 +4311,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries4.js:181",
+          "ref": "src/services/motorQueries4.js:155",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4336,8 +4336,8 @@
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:144",
             "src/services/motorQueries2.js:40",
-            "src/services/motorQueries4.js:161",
-            "src/services/motorQueries4.js:181"
+            "src/services/motorQueries4.js:139",
+            "src/services/motorQueries4.js:155"
           ],
           "writers": [],
           "sql": []
@@ -4349,8 +4349,8 @@
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:144",
             "src/services/motorQueries2.js:40",
-            "src/services/motorQueries4.js:161",
-            "src/services/motorQueries4.js:181"
+            "src/services/motorQueries4.js:139",
+            "src/services/motorQueries4.js:155"
           ],
           "writers": [],
           "sql": []
@@ -4361,7 +4361,7 @@
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:144",
             "src/services/motorQueries2.js:40",
-            "src/services/motorQueries4.js:181"
+            "src/services/motorQueries4.js:155"
           ],
           "writers": [],
           "sql": []
@@ -4376,14 +4376,14 @@
         "motor_number": {
           "readers": [
             "src/services/meetQueries2.js:144",
-            "src/services/motorQueries4.js:181"
+            "src/services/motorQueries4.js:155"
           ],
           "writers": [],
           "sql": []
         },
         "motor_2rate": {
           "readers": [
-            "src/services/motorQueries4.js:181"
+            "src/services/motorQueries4.js:155"
           ],
           "writers": [],
           "sql": []
@@ -4403,7 +4403,7 @@
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:144",
             "src/services/motorQueries2.js:40",
-            "src/services/motorQueries4.js:181"
+            "src/services/motorQueries4.js:155"
           ],
           "writers": [],
           "sql": []
@@ -7911,7 +7911,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries4.js:186",
+          "ref": "src/services/motorQueries4.js:160",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8444,7 +8444,7 @@
             "src/services/motorQueries2.js:297",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
-            "src/services/motorQueries4.js:186",
+            "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:268",
             "src/services/motorQueries5.js:34",
             "src/services/mycroftService.js:82",
@@ -8614,7 +8614,7 @@
             "src/services/motorQueries2.js:297",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
-            "src/services/motorQueries4.js:186",
+            "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:268",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:166",
@@ -8745,7 +8745,7 @@
             "src/services/motorQueries2.js:297",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
-            "src/services/motorQueries4.js:186",
+            "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:268",
             "src/services/motorQueries5.js:34",
             "src/services/raceQueries3.js:83",
@@ -8771,7 +8771,7 @@
             "src/services/motorQueries.js:234",
             "src/services/motorQueries.js:310",
             "src/services/motorQueries3.js:173",
-            "src/services/motorQueries4.js:186",
+            "src/services/motorQueries4.js:160",
             "src/services/raceQueries3.js:83",
             "src/services/sherlockService.js:77"
           ],
@@ -8933,7 +8933,7 @@
             "src/services/motorQueries2.js:297",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
-            "src/services/motorQueries4.js:186",
+            "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:268",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:189",
@@ -15295,7 +15295,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries4.js:205",
+          "ref": "src/services/motorQueries4.js:176",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15388,7 +15388,7 @@
             "scripts/maintenance/fan-backfill.js:544",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "scripts/sns/delete-x-post.js:124",
-            "src/services/motorQueries4.js:205",
+            "src/services/motorQueries4.js:176",
             "src/services/racerQueries.js:310",
             "src/services/racerService.js:33"
           ],
@@ -15402,7 +15402,7 @@
             "scripts/lib/racerNews/officialGradeAnnouncements.js:174",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "scripts/sns/delete-x-post.js:124",
-            "src/services/motorQueries4.js:205",
+            "src/services/motorQueries4.js:176",
             "src/services/racerQueries.js:310",
             "src/services/racerService.js:33"
           ],

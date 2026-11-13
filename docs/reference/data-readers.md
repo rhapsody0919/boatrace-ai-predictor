@@ -602,8 +602,8 @@
   - `scripts/maintenance/verify-pretest-row-pick.js:74` select [pretest_rank, pretest_time, race_date, racer_id, series_title, venue_code] （検査）
   - `src/services/meetQueries2.js:144` select [motor_number, pretest_rank, pretest_time, race_date, racer_class, racer_id, venue_code]
   - `src/services/motorQueries2.js:40` select [pretest_rank, pretest_time, race_date, racer_id, venue_code]
-  - `src/services/motorQueries4.js:161` select [race_date, venue_code]
-  - `src/services/motorQueries4.js:181` select [motor_2rate, motor_number, pretest_time, race_date, racer_id, venue_code]
+  - `src/services/motorQueries4.js:139` select [race_date, venue_code]
+  - `src/services/motorQueries4.js:155` select [motor_2rate, motor_number, pretest_time, race_date, racer_id, venue_code]
 - 書き手（0）: なし
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: boat_number, boat_2rate, created_at, updated_at
 
@@ -928,7 +928,7 @@
   - `src/services/motorQueries2.js:297` select [boat_number, grade, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries3.js:173` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries3.js:296` select [boat_number, motor_number, player_name, race_id, racer_id]
-  - `src/services/motorQueries4.js:186` select [motor_2rate, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries5.js:34` select [boat_number, motor_number, race_id]
   - `src/services/motorQueries5.js:268` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/mycroftService.js:82` select [boat_number, player_name, race_id]
@@ -1433,7 +1433,7 @@
   - `scripts/maintenance/restore-entries-branch-hometown.js:62` select(helper:fetchAll)
   - `scripts/maintenance/verify-sns-x-delete.js:418` rest(rest) （検査）
   - `scripts/sns/delete-x-post.js:124` rest(rest) [name, racer_id]
-  - `src/services/motorQueries4.js:205` select [name, racer_id]
+  - `src/services/motorQueries4.js:176` select [name, racer_id]
   - `src/services/racerQueries.js:310` select [birth_date, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
   - `src/services/racerService.js:33` select [birth_date, blood_type, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
 - 書き手（3）: 
