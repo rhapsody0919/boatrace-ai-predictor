@@ -232,16 +232,12 @@ export default function DraftCard({
   );
 }
 
-function PostingActionLinks({ draft, onMarkPosted }) {
+// 共有できるか（iOS Safari の動画共有）の判定。対象外なら共有不可の固定値を返す
+function usePostingShareState(draft) {
   const [videoShareState, setShareState] = useState({
     checked: false,
     canShare: false,
     file: null,
-  });
-  const [copyFeedback, setCopyFeedback] = useState(null);
-  const [downloadState, setDownloadState] = useState({
-    downloading: false,
-    error: null,
   });
 
   const shouldCheckShare = Boolean(isIOSSafari() && draft.video_url);
@@ -267,6 +263,76 @@ function PostingActionLinks({ draft, onMarkPosted }) {
       cancelled = true;
     };
   }, [draft.video_url, shouldCheckShare]);
+
+  return shareState;
+}
+
+function PostingShareOrDownload({
+  draft,
+  shareState,
+  downloadState,
+  onShare,
+  onDownload,
+}) {
+  if (shareState.checked && shareState.canShare) {
+    return (
+      <button className="posting-action-btn share" onClick={onShare}>
+        📤 共有して投稿
+      </button>
+    );
+  }
+  return (
+    draft.video_url && (
+      <>
+        <button
+          className="posting-action-btn download"
+          onClick={onDownload}
+          disabled={downloadState.downloading}
+        >
+          {downloadState.downloading
+            ? "⏳ ダウンロード準備中..."
+            : "⬇️ 動画をダウンロード"}
+        </button>
+        {downloadState.error && (
+          <span className="copy-feedback">{downloadState.error}</span>
+        )}
+      </>
+    )
+  );
+}
+
+function PostingImageDownloads({ draft }) {
+  return (
+    <>
+      {/* 企画型パイプライン等、動画ではなく静止画像2枚（cover_image_url +
+          source_data.dataCardUrl）で構成される投稿には、動画用の
+          handleDownloadでは対応できないため画像専用のダウンロードボタンを
+          出す（2026-09-09、画像がダウンロードできない不具合の修正） */}
+      {!draft.video_url && draft.cover_image_url && (
+        <DownloadImageButton
+          imageUrl={draft.cover_image_url}
+          fileName={`${draft.platform}-${draft.language}-1.png`}
+          label="画像①をダウンロード"
+        />
+      )}
+      {!draft.video_url && draft.source_data?.dataCardUrl && (
+        <DownloadImageButton
+          imageUrl={draft.source_data.dataCardUrl}
+          fileName={`${draft.platform}-${draft.language}-2.png`}
+          label="画像②をダウンロード"
+        />
+      )}
+    </>
+  );
+}
+
+function PostingActionLinks({ draft, onMarkPosted }) {
+  const [copyFeedback, setCopyFeedback] = useState(null);
+  const [downloadState, setDownloadState] = useState({
+    downloading: false,
+    error: null,
+  });
+  const shareState = usePostingShareState(draft);
 
   async function handleCopyCaption() {
     const text = buildPostText(draft);
@@ -318,47 +384,15 @@ function PostingActionLinks({ draft, onMarkPosted }) {
 
   return (
     <div className="posting-action-links">
-      {shareState.checked && shareState.canShare ? (
-        <button className="posting-action-btn share" onClick={handleShare}>
-          📤 共有して投稿
-        </button>
-      ) : (
-        draft.video_url && (
-          <>
-            <button
-              className="posting-action-btn download"
-              onClick={handleDownload}
-              disabled={downloadState.downloading}
-            >
-              {downloadState.downloading
-                ? "⏳ ダウンロード準備中..."
-                : "⬇️ 動画をダウンロード"}
-            </button>
-            {downloadState.error && (
-              <span className="copy-feedback">{downloadState.error}</span>
-            )}
-          </>
-        )
-      )}
+      <PostingShareOrDownload
+        draft={draft}
+        shareState={shareState}
+        downloadState={downloadState}
+        onShare={handleShare}
+        onDownload={handleDownload}
+      />
 
-      {/* 企画型パイプライン等、動画ではなく静止画像2枚（cover_image_url +
-          source_data.dataCardUrl）で構成される投稿には、動画用の
-          handleDownloadでは対応できないため画像専用のダウンロードボタンを
-          出す（2026-09-09、画像がダウンロードできない不具合の修正） */}
-      {!draft.video_url && draft.cover_image_url && (
-        <DownloadImageButton
-          imageUrl={draft.cover_image_url}
-          fileName={`${draft.platform}-${draft.language}-1.png`}
-          label="画像①をダウンロード"
-        />
-      )}
-      {!draft.video_url && draft.source_data?.dataCardUrl && (
-        <DownloadImageButton
-          imageUrl={draft.source_data.dataCardUrl}
-          fileName={`${draft.platform}-${draft.language}-2.png`}
-          label="画像②をダウンロード"
-        />
-      )}
+      <PostingImageDownloads draft={draft} />
 
       {draft.caption_text && (
         <>
