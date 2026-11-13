@@ -72,6 +72,135 @@ const UI_TEXT = {
   },
 };
 
+function buildBreadcrumbJsonLd(t, langKey, canonicalUrl) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: t.home,
+        item: `https://www.boat-ai.jp${localizePath("/", langKey)}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: t.blogLabel,
+        item: canonicalUrl,
+      },
+    ],
+  };
+}
+
+function BlogFeaturedSection({ t, featuredPosts, langKey }) {
+  return (
+    <section className="featured-section">
+      <h2>{t.featuredHeading}</h2>
+      <div className="featured-grid">
+        {featuredPosts.map((post) => (
+          <Link
+            key={post.id}
+            to={localizePath(`/blog/${post.id}`, langKey)}
+            className="featured-card"
+          >
+            {isWithinDays(post.date, 7) && (
+              <span className="new-badge">NEW</span>
+            )}
+            <div className="featured-content">
+              <span className="category-badge">{post.category}</span>
+              <h3>{post.title}</h3>
+              <p className="description">{post.description}</p>
+              <div className="meta">
+                <span className="date">{post.date}</span>
+                <span className="read-time">📖 {post.readTime}</span>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BlogCategoryFilter({
+  t,
+  availableCategories,
+  selectedCategory,
+  setSelectedCategory,
+}) {
+  return (
+    <div className="category-filter">
+      <button
+        className={selectedCategory === "all" ? "active" : ""}
+        onClick={() => setSelectedCategory("all")}
+      >
+        {t.allButton}
+      </button>
+      {availableCategories.map((category) => (
+        <button
+          key={category}
+          className={selectedCategory === category ? "active" : ""}
+          onClick={() => setSelectedCategory(category)}
+        >
+          {category}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function BlogSortFilter({ t, sortOrder, setSortOrder }) {
+  return (
+    <div className="sort-filter">
+      <button
+        className={sortOrder === "newest" ? "active" : ""}
+        onClick={() => setSortOrder("newest")}
+      >
+        {t.sortNewest}
+      </button>
+      <button
+        className={sortOrder === "oldest" ? "active" : ""}
+        onClick={() => setSortOrder("oldest")}
+      >
+        {t.sortOldest}
+      </button>
+    </div>
+  );
+}
+
+function BlogPostGrid({ sortedPosts, langKey }) {
+  return (
+    <div className="blog-grid">
+      {sortedPosts.map((post) => (
+        <Link
+          key={post.id}
+          to={localizePath(`/blog/${post.id}`, langKey)}
+          className="blog-card"
+        >
+          {isWithinDays(post.date, 7) && <span className="new-badge">NEW</span>}
+          <div className="blog-card-content">
+            <span className="category-badge">{post.category}</span>
+            <h3>{post.title}</h3>
+            <p className="description">{post.description}</p>
+            <div className="meta">
+              <span className="date">{post.date}</span>
+              <span className="read-time">📖 {post.readTime}</span>
+            </div>
+            <div className="tags">
+              {post.tags.map((tag) => (
+                <span key={tag} className="tag">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 export default function Blog() {
   const { pathname } = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -82,9 +211,10 @@ export default function Blog() {
   const t = UI_TEXT[isTranslated ? lng : "ja"];
 
   // 翻訳版はその言語のデータが存在する記事のみを対象にする（未翻訳記事は一覧に出さない）
-  const basePosts = getPostsForLang(isTranslated ? lng : "ja");
+  const langKey = isTranslated ? lng : "ja";
+  const basePosts = getPostsForLang(langKey);
 
-  const featuredPosts = getFeaturedPosts(isTranslated ? lng : "ja");
+  const featuredPosts = getFeaturedPosts(langKey);
   const availableCategories = [
     ...new Set(basePosts.map((post) => post.category)),
   ];
@@ -100,7 +230,7 @@ export default function Blog() {
       : new Date(b.date) - new Date(a.date),
   );
 
-  const blogHref = localizePath("/blog", isTranslated ? lng : "ja");
+  const blogHref = localizePath("/blog", langKey);
   const canonicalUrl = `https://www.boat-ai.jp${blogHref}`;
 
   useSocialMeta({
@@ -118,24 +248,7 @@ export default function Blog() {
 
       {/* BreadcrumbList */}
       <script type="application/ld+json">
-        {JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "BreadcrumbList",
-          itemListElement: [
-            {
-              "@type": "ListItem",
-              position: 1,
-              name: t.home,
-              item: `https://www.boat-ai.jp${localizePath("/", isTranslated ? lng : "ja")}`,
-            },
-            {
-              "@type": "ListItem",
-              position: 2,
-              name: t.blogLabel,
-              item: canonicalUrl,
-            },
-          ],
-        })}
+        {JSON.stringify(buildBreadcrumbJsonLd(t, langKey, canonicalUrl))}
       </script>
 
       <Header />
@@ -148,101 +261,26 @@ export default function Blog() {
 
         {/* Featured Posts */}
         {selectedCategory === "all" && featuredPosts.length > 0 && (
-          <section className="featured-section">
-            <h2>{t.featuredHeading}</h2>
-            <div className="featured-grid">
-              {featuredPosts.map((post) => (
-                <Link
-                  key={post.id}
-                  to={localizePath(
-                    `/blog/${post.id}`,
-                    isTranslated ? lng : "ja",
-                  )}
-                  className="featured-card"
-                >
-                  {isWithinDays(post.date, 7) && (
-                    <span className="new-badge">NEW</span>
-                  )}
-                  <div className="featured-content">
-                    <span className="category-badge">{post.category}</span>
-                    <h3>{post.title}</h3>
-                    <p className="description">{post.description}</p>
-                    <div className="meta">
-                      <span className="date">{post.date}</span>
-                      <span className="read-time">📖 {post.readTime}</span>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
+          <BlogFeaturedSection
+            t={t}
+            featuredPosts={featuredPosts}
+            langKey={langKey}
+          />
         )}
 
         {/* Category Filter */}
-        <div className="category-filter">
-          <button
-            className={selectedCategory === "all" ? "active" : ""}
-            onClick={() => setSelectedCategory("all")}
-          >
-            {t.allButton}
-          </button>
-          {availableCategories.map((category) => (
-            <button
-              key={category}
-              className={selectedCategory === category ? "active" : ""}
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
+        <BlogCategoryFilter
+          t={t}
+          availableCategories={availableCategories}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+        />
 
         {/* Sort Order */}
-        <div className="sort-filter">
-          <button
-            className={sortOrder === "newest" ? "active" : ""}
-            onClick={() => setSortOrder("newest")}
-          >
-            {t.sortNewest}
-          </button>
-          <button
-            className={sortOrder === "oldest" ? "active" : ""}
-            onClick={() => setSortOrder("oldest")}
-          >
-            {t.sortOldest}
-          </button>
-        </div>
+        <BlogSortFilter t={t} sortOrder={sortOrder} setSortOrder={setSortOrder} />
 
         {/* Blog Posts Grid */}
-        <div className="blog-grid">
-          {sortedPosts.map((post) => (
-            <Link
-              key={post.id}
-              to={localizePath(`/blog/${post.id}`, isTranslated ? lng : "ja")}
-              className="blog-card"
-            >
-              {isWithinDays(post.date, 7) && (
-                <span className="new-badge">NEW</span>
-              )}
-              <div className="blog-card-content">
-                <span className="category-badge">{post.category}</span>
-                <h3>{post.title}</h3>
-                <p className="description">{post.description}</p>
-                <div className="meta">
-                  <span className="date">{post.date}</span>
-                  <span className="read-time">📖 {post.readTime}</span>
-                </div>
-                <div className="tags">
-                  {post.tags.map((tag) => (
-                    <span key={tag} className="tag">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <BlogPostGrid sortedPosts={sortedPosts} langKey={langKey} />
 
         {filteredPosts.length === 0 && (
           <div className="no-posts">
