@@ -415,7 +415,7 @@
   - `src/services/meetQueries.js:257` select(helper:fetchAllByIn)
   - `src/services/meetQueries2.js:166` select [boat_number, exhibition_time, race_id]
   - `src/services/motorQueries.js:323` select(helper:fetchAllByIn)
-  - `src/services/motorQueries5.js:106` select(helper:fetchAllByIn)
+  - `src/services/motorQueries5.js:56` select(helper:fetchAllByIn)
   - `src/services/motorQueries6.js:120` select [adjustment_weight, boat_number, exhibition_course, exhibition_time, is_absent, parts_changed, prev_entry_course, prev_finish_mark, prev_finish_rank, prev_race_no, prev_start_timing, propeller_change, race_id, tilt, today_weight, updated_at]
   - `src/services/motorQueries6.js:136` select [adjustment_weight, boat_number, exhibition_time, parts_changed, propeller_change, race_id, tilt]
   - `src/services/raceQueries.js:34` select [boat_number, race_id, start_flag]
@@ -929,8 +929,8 @@
   - `src/services/motorQueries3.js:173` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries3.js:296` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries4.js:186` select [motor_2rate, motor_number, player_name, race_id, racer_id]
-  - `src/services/motorQueries5.js:87` select [boat_number, motor_number, race_id]
-  - `src/services/motorQueries5.js:243` select [boat_number, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries5.js:34` select [boat_number, motor_number, race_id]
+  - `src/services/motorQueries5.js:268` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/mycroftService.js:82` select [boat_number, player_name, race_id]
   - `src/services/raceQueries.js:143` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]
   - `src/services/raceQueries.js:166` select [boat_number, local_win_rate, player_name, race_id, racer_id, win_rate]
@@ -1222,8 +1222,8 @@
   - `src/services/motorQueries2.js:125` select [race_id, rank1, rank2, rank3]
   - `src/services/motorQueries2.js:316` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/motorQueries3.js:305` select [race_id, rank1]
-  - `src/services/motorQueries5.js:100` select(helper:fetchAllByIn)
-  - `src/services/motorQueries5.js:255` select(helper:fetchAllByIn)
+  - `src/services/motorQueries5.js:50` select(helper:fetchAllByIn)
+  - `src/services/motorQueries5.js:280` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:83` select(helper:fetchAllByIn)
   - `src/services/raceQueries3.js:125` select [race_id, race_status, rank1, rank2, rank3, winning_technique]
   - `src/services/raceQueries3.js:211` select(helper:fetchAllByIn)
