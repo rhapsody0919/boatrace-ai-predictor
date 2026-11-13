@@ -1,16 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import AiCopyPromptSelector from "./AiCopyPromptSelector";
-import AiCopyButton from "./AiCopyButton";
+import AiCopyBannerButtonRow from "./AiCopyBannerButtonRow";
+import AiCopyBannerPreviewBody from "./AiCopyBannerPreviewBody";
 import { useAiCopyText } from "../../hooks/useAiCopyText";
-import { aiCopyFollowUpKeys } from "../../utils/aiCopyPrompts";
-import { isInCautionEnabled } from "../../config/featureFlags";
-
-// 脈動リングを時間差で2重に描画し、ping通知のような目立つ演出にする。
-// 常時脈動はうるさいので、表示直後に数回だけ鳴らして止める（BOA-770 推奨11）
-const PING_RINGS = [0, 0.7];
-const PING_REPEAT = 2;
 
 export default function AiCopyBanner({
   raceId,
@@ -22,7 +16,6 @@ export default function AiCopyBanner({
   onCopy,
 }) {
   const { t } = useTranslation();
-  const prefersReducedMotion = useReducedMotion();
   const [previewOpen, setPreviewOpen] = useState(false);
   // AiCopyButton自体もisReadyで自身を隠すが、バナーの他要素
   // （バッジ・券種セレクタ・プレビュー開閉）だけが先に表示され、
@@ -53,83 +46,20 @@ export default function AiCopyBanner({
         marginBottom: "1rem",
       }}
     >
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "8px",
-          // 320px幅では「コピーボタン + キャッチコピーバッジ」（どちらもnowrapで
-          // 縮まない）が横一列に収まらず、このラッパーが親（.ai-copy-banner、
-          // 内容幅262px）からあふれてページ全体を横スクロールさせていた。
-          // 折り返しを許すと必要幅が max(ボタン, バッジ) まで落ちて収まる。
-          // min-width:0は付けない（自動最小サイズが外れ、バッジ単体すら入らない
-          // 極端な狭さ〈viewport 200px未満〉で再びあふれるため）
-          flexWrap: "wrap",
-        }}
-      >
-        {/* ボタン自体は静止させ、背後にping通知風の脈動リングだけを重ねる
-            （ボタンをscaleさせるとPlaywrightのactionability判定が
-            「element is not stable」で失敗し続けるだけでなく、実クリック時の
-            座標もフレームごとにずれるため、装飾要素として分離した）。
-            リングのラッパーはボタンだけを子に持つ（キャッチコピーバッジを
-            含めると脈動範囲がバッジまで広がってしまうため） */}
-        <div style={{ position: "relative", display: "inline-block" }}>
-          {!prefersReducedMotion &&
-            PING_RINGS.map((delay) => (
-              <motion.span
-                key={delay}
-                aria-hidden="true"
-                animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
-                transition={{
-                  duration: 1.4,
-                  repeat: PING_REPEAT,
-                  ease: "easeOut",
-                  delay,
-                }}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--color-primary-500)",
-                  zIndex: 0,
-                  pointerEvents: "none",
-                }}
-              />
-            ))}
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <AiCopyButton
-              variant="banner"
-              raceId={raceId}
-              prediction={prediction}
-              race={race}
-              venueCode={venueCode}
-              promptType={promptType}
-              onCopy={onCopy}
-            />
-          </div>
-        </div>
-        {/* 以前は上下に跳ね続けていたが、うるさいので止めた（BOA-770 推奨11） */}
-        <span
-          style={{
-            fontSize: "var(--font-size-sm)",
-            fontWeight: 700,
-            color: "var(--color-primary-700)",
-            background: "#ffffff",
-            padding: "3px 10px",
-            borderRadius: "9999px",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {t("aiCopy.bannerCatchphrase")}
-        </span>
-      </div>
+      <AiCopyBannerButtonRow
+        raceId={raceId}
+        prediction={prediction}
+        race={race}
+        venueCode={venueCode}
+        promptType={promptType}
+        onCopy={onCopy}
+      />
       <AiCopyPromptSelector
         value={promptType}
         onChange={onPromptTypeChange}
         volatilityPercentile={prediction?.volatilityPercentile}
         inCautionLevel={prediction?.inCaution?.level ?? null}
       />
-
       <button
         type="button"
         onClick={() => setPreviewOpen((prev) => !prev)}
@@ -166,67 +96,10 @@ export default function AiCopyBanner({
             transition={{ duration: 0.2 }}
             style={{ width: "100%", minWidth: 0, overflow: "hidden" }}
           >
-            {/* コピーされる全文（表・注記・出典を含む、BOA-770 推奨9）。
-                表だけは横に長いので折り返さずに箱の中で横スクロールさせ、前提の行・注記・
-                質問文は折り返して読めるようにする（375px で質問文が切れていた。ファン評価2周目） */}
-            <div
-              data-testid="ai-copy-preview"
-              style={{
-                margin: "8px 0 0",
-                padding: "10px 12px",
-                background: "#ffffff",
-                border: "1px solid var(--color-primary-alpha-30)",
-                borderRadius: "var(--radius-sm)",
-                fontSize: "var(--font-size-xs)",
-                color: "var(--color-gray-700)",
-                lineHeight: 1.6,
-                maxHeight: "320px",
-                overflowY: "auto",
-              }}
-            >
-              {buildText(promptType)
-                .split("\n\n")
-                .map((block, i) => {
-                  const isTable = block.startsWith("|");
-                  return (
-                    <pre
-                      key={i}
-                      style={{
-                        margin: i === 0 ? 0 : "8px 0 0",
-                        fontFamily: "inherit",
-                        whiteSpace: isTable ? "pre" : "pre-wrap",
-                        overflowWrap: isTable ? "normal" : "anywhere",
-                        overflowX: isTable ? "auto" : "visible",
-                      }}
-                    >
-                      {block}
-                    </pre>
-                  );
-                })}
-            </div>
-            <p
-              style={{
-                margin: "8px 0 0",
-                fontSize: "var(--font-size-sm)",
-                fontWeight: 600,
-                color: "var(--color-gray-700)",
-              }}
-            >
-              {t("aiCopy.followUpHeading")}
-            </p>
-            <ul
-              style={{
-                margin: "4px 0 0",
-                paddingLeft: "1.25rem",
-                fontSize: "var(--font-size-sm)",
-                color: "var(--color-gray-600)",
-                lineHeight: 1.6,
-              }}
-            >
-              {aiCopyFollowUpKeys(isInCautionEnabled()).map((key) => (
-                <li key={key}>{t(key)}</li>
-              ))}
-            </ul>
+            <AiCopyBannerPreviewBody
+              buildText={buildText}
+              promptType={promptType}
+            />
           </motion.div>
         )}
       </AnimatePresence>
