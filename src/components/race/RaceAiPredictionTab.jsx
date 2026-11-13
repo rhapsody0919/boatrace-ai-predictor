@@ -38,6 +38,74 @@ import { getDeadlineDate } from "../../utils/raceDeadlineStatus";
 import InCautionCard from "./InCautionCard";
 import { isInCautionEnabled } from "../../config/featureFlags";
 
+// 過去に発生した割合を見る（BOA-635）。予想の有無と切り離し、PredictionBlocks の早期 return の外の
+// タブの末尾に置く（spec FR-4。BOA-822 のイン崩れ注意度のカード・出現パターンの後）
+function renderPastRate(raceId, raceStartTime, prediction) {
+  return raceId ? (
+    <PastRateLayerGate raceId={raceId}>
+      {(layer) => (
+        <PastRateChecker
+          key={raceId}
+          layer={layer}
+          raceId={raceId}
+          deadline={getDeadlineDate(raceId, raceStartTime)}
+          finished={Boolean(prediction?.result?.finished)}
+        />
+      )}
+    </PastRateLayerGate>
+  ) : null;
+}
+
+// 既存の .race-ai-prediction-tab の2段（BOA-881）に入れない。カードは列いっぱいで中を左右に分け、
+// 出現パターンはその下（承認モック 1-ai-tab-1440.png）
+function renderInCautionTab({
+  prediction,
+  venueCode,
+  venueName,
+  raceId,
+  onOpenSonarSimilar,
+  pastRate,
+}) {
+  return (
+    <div className="in-caution-tab">
+      <InCautionCard
+        inCaution={prediction?.inCaution ?? null}
+        players={prediction?.allPlayers ?? []}
+        result={prediction?.result ?? null}
+        raceId={raceId}
+        onOpenSonar={onOpenSonarSimilar}
+      />
+      {venueCode && venueName && (
+        <OutcomePatternPreview
+          venueCode={venueCode}
+          venueName={venueName}
+          prediction={prediction}
+        />
+      )}
+      {pastRate}
+    </div>
+  );
+}
+
+// 龍神ソナーは独立したタブに移した（2026-10-08）。ここに置いていた頃に見ていた人向けの案内
+function renderSonarLink(onOpenSonar, t) {
+  return (
+    onOpenSonar && (
+      <button
+        type="button"
+        className="ai-tab-sonar-link"
+        onClick={onOpenSonar}
+        data-testid="ai-tab-sonar-link"
+      >
+        <span>{t("aiPredictionTab.sonarLink")}</span>
+        <span className="ai-tab-sonar-link-go" aria-hidden="true">
+          {t("aiPredictionTab.sonarLinkGo")} ›
+        </span>
+      </button>
+    )
+  );
+}
+
 function RaceAiPredictionTab({
   prediction,
   venueCode,
@@ -61,44 +129,17 @@ function RaceAiPredictionTab({
     );
   }
 
-  // 過去に発生した割合を見る（BOA-635）。予想の有無と切り離し、PredictionBlocks の早期 return の外の
-  // タブの末尾に置く（spec FR-4。BOA-822 のイン崩れ注意度のカード・出現パターンの後）
-  const pastRate = raceId ? (
-    <PastRateLayerGate raceId={raceId}>
-      {(layer) => (
-        <PastRateChecker
-          key={raceId}
-          layer={layer}
-          raceId={raceId}
-          deadline={getDeadlineDate(raceId, raceStartTime)}
-          finished={Boolean(prediction?.result?.finished)}
-        />
-      )}
-    </PastRateLayerGate>
-  ) : null;
+  const pastRate = renderPastRate(raceId, raceStartTime, prediction);
 
   if (isInCautionEnabled()) {
-    // 既存の .race-ai-prediction-tab の2段（BOA-881）に入れない。カードは列いっぱいで中を左右に分け、
-    // 出現パターンはその下（承認モック 1-ai-tab-1440.png）
-    return (
-      <div className="in-caution-tab">
-        <InCautionCard
-          inCaution={prediction?.inCaution ?? null}
-          players={prediction?.allPlayers ?? []}
-          result={prediction?.result ?? null}
-          raceId={raceId}
-          onOpenSonar={onOpenSonarSimilar}
-        />
-        {venueCode && venueName && (
-          <OutcomePatternPreview
-            venueCode={venueCode}
-            venueName={venueName}
-            prediction={prediction}
-          />
-        )}
-        {pastRate}
-      </div>
-    );
+    return renderInCautionTab({
+      prediction,
+      venueCode,
+      venueName,
+      raceId,
+      onOpenSonarSimilar,
+      pastRate,
+    });
   }
 
   return (
@@ -109,20 +150,7 @@ function RaceAiPredictionTab({
         venueName={venueName}
         raceId={raceId}
       />
-      {/* 龍神ソナーは独立したタブに移した（2026-10-08）。ここに置いていた頃に見ていた人向けの案内 */}
-      {onOpenSonar && (
-        <button
-          type="button"
-          className="ai-tab-sonar-link"
-          onClick={onOpenSonar}
-          data-testid="ai-tab-sonar-link"
-        >
-          <span>{t("aiPredictionTab.sonarLink")}</span>
-          <span className="ai-tab-sonar-link-go" aria-hidden="true">
-            {t("aiPredictionTab.sonarLinkGo")} ›
-          </span>
-        </button>
-      )}
+      {renderSonarLink(onOpenSonar, t)}
       {pastRate}
     </>
   );
