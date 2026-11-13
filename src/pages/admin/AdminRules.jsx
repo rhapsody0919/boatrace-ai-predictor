@@ -614,100 +614,114 @@ function TodayTab({ races }) {
 
   return (
     <div className="today-tab">
-      <div className="today-summary">
-        <h3>本日の成績</h3>
-        <div className="summary-stats">
-          <div className="stat-item">
-            <span className="stat-label">適用レース</span>
-            <span className="stat-value">{races.length}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">結果確定</span>
-            <span className="stat-value">{todaySummary.total}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">的中</span>
-            <span className="stat-value">{todaySummary.hits}</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">投資</span>
-            <span className="stat-value">
-              {todaySummary.investment.toLocaleString()}円
-            </span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">回収</span>
-            <span className="stat-value">
-              {todaySummary.payout.toLocaleString()}円
-            </span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-label">回収率</span>
-            <span
-              className={`stat-value recovery ${todaySummary.recovery >= 100 ? "positive" : "negative"}`}
-            >
-              {todaySummary.recovery}%
-            </span>
-          </div>
-        </div>
-      </div>
+      <TodaySummary races={races} todaySummary={todaySummary} />
 
       <div className="today-races">
         {racesByVenue.map((venue) => (
-          <div key={venue.venueCode} className="venue-group">
-            <h4 className="venue-group-header">{venue.venueName}</h4>
-            <div className="race-cards">
-              {venue.races.map((race) => (
-                <div
-                  key={race.raceId}
-                  className={`race-card ${race.hitInfo?.hit ? "hit" : ""} ${race.result ? "finished" : ""}`}
-                >
-                  <div className="race-card-header">
-                    <span className="race-no">{race.raceNo}R</span>
-                    {race.startTime && (
-                      <span className="race-time">{race.startTime}</span>
-                    )}
-                  </div>
-                  <div className="race-card-body">
-                    <div className="prediction-info">
-                      <span className="prediction-label">予測:</span>
-                      <span className="prediction-value">
-                        {race.prediction.top3.join("-")}
-                      </span>
-                    </div>
-                    <div className="rules-info">
-                      {race.rules.map((rule) => (
-                        <span
-                          key={rule.id}
-                          className={`rule-tag ${rule.betType}`}
-                        >
-                          {rule.id} ({getBetTypeName(rule.betType)})
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {race.result && (
-                    <div
-                      className={`race-card-result ${race.hitInfo?.hit ? "hit" : "miss"}`}
-                    >
-                      <span className="result-label">結果:</span>
-                      <span className="result-value">
-                        {race.result.rank1}-{race.result.rank2}-
-                        {race.result.rank3}
-                      </span>
-                      {race.hitInfo?.hit && (
-                        <span className="payout">
-                          +{race.hitInfo.payout.toLocaleString()}円
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <TodayVenueGroup key={venue.venueCode} venue={venue} />
         ))}
       </div>
+    </div>
+  );
+}
+
+// 本日の成績
+function TodaySummary({ races, todaySummary }) {
+  return (
+    <div className="today-summary">
+      <h3>本日の成績</h3>
+      <div className="summary-stats">
+        <div className="stat-item">
+          <span className="stat-label">適用レース</span>
+          <span className="stat-value">{races.length}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">結果確定</span>
+          <span className="stat-value">{todaySummary.total}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">的中</span>
+          <span className="stat-value">{todaySummary.hits}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">投資</span>
+          <span className="stat-value">
+            {todaySummary.investment.toLocaleString()}円
+          </span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">回収</span>
+          <span className="stat-value">
+            {todaySummary.payout.toLocaleString()}円
+          </span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">回収率</span>
+          <span
+            className={`stat-value recovery ${todaySummary.recovery >= 100 ? "positive" : "negative"}`}
+          >
+            {todaySummary.recovery}%
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 会場ごとのレース一覧
+function TodayVenueGroup({ venue }) {
+  return (
+    <div className="venue-group">
+      <h4 className="venue-group-header">{venue.venueName}</h4>
+      <div className="race-cards">
+        {venue.races.map((race) => (
+          <TodayRaceCard key={race.raceId} race={race} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// レースカード
+function TodayRaceCard({ race }) {
+  return (
+    <div
+      className={`race-card ${race.hitInfo?.hit ? "hit" : ""} ${race.result ? "finished" : ""}`}
+    >
+      <div className="race-card-header">
+        <span className="race-no">{race.raceNo}R</span>
+        {race.startTime && <span className="race-time">{race.startTime}</span>}
+      </div>
+      <div className="race-card-body">
+        <div className="prediction-info">
+          <span className="prediction-label">予測:</span>
+          <span className="prediction-value">
+            {race.prediction.top3.join("-")}
+          </span>
+        </div>
+        <div className="rules-info">
+          {race.rules.map((rule) => (
+            <span key={rule.id} className={`rule-tag ${rule.betType}`}>
+              {rule.id} ({getBetTypeName(rule.betType)})
+            </span>
+          ))}
+        </div>
+      </div>
+      {race.result && (
+        <div
+          className={`race-card-result ${race.hitInfo?.hit ? "hit" : "miss"}`}
+        >
+          <span className="result-label">結果:</span>
+          <span className="result-value">
+            {race.result.rank1}-{race.result.rank2}-{race.result.rank3}
+          </span>
+          {race.hitInfo?.hit && (
+            <span className="payout">
+              +{race.hitInfo.payout.toLocaleString()}円
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
