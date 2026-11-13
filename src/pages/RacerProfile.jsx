@@ -210,7 +210,7 @@ export default function RacerProfile() {
     .filter(Boolean)
     .join("・");
   const description = data?.profile
-    ? `${displayName}選手（${who}）の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別・枠番別成績、決まり手、直近のレース一覧とプロフィール。`
+    ? `${displayName}選手（${who}）の競艇（ボートレース）成績データ。公式の期別成績、今節のモーター状況、全国勝率・当地勝率の推移、平均ST、会場別・枠番別成績、決まり手、直近のレース一覧とプロフィール。`
     : `登録番号${racerId}の選手のページ | 龍神レーダー`;
   const canonicalUrl = `${SITE_URL}/racer/${racerId}`;
   useSocialMeta({
