@@ -96,84 +96,116 @@ function buildPayoutRows(rows) {
     );
 }
 
-export function buildRaceResult(r) {
-  if (!r || !r.rank1) return null;
+const sortAsc = (nums) => [...nums].sort((a, b) => a - b);
 
-  const sortAsc = (nums) => [...nums].sort((a, b) => a - b);
-  const wideEntry = (amount, popularity, boats) =>
-    amount
-      ? { boats: sortAsc(boats), amount, popularity: popularity ?? null }
-      : null;
+// 払戻が無ければ null、あれば boats・amount・popularity の形にする
+function payoutEntry(amount, popularity, boats) {
+  return amount ? { boats, amount, popularity: popularity ?? null } : null;
+}
 
+const wideEntry = (amount, popularity, boats) =>
+  payoutEntry(amount, popularity, sortAsc(boats));
+
+// 単勝・複勝の払戻
+function buildWinPlacePayouts(r) {
   return {
-    finished: true,
-    isCancelled: r.isCancelled || false,
+    win: r.payoutWin ? { boats: [r.rank1], amount: r.payoutWin } : null,
+    place: [
+      r.payoutPlace1 ? { boat: r.rank1, amount: r.payoutPlace1 } : null,
+      r.payoutPlace2 ? { boat: r.rank2, amount: r.payoutPlace2 } : null,
+    ].filter(Boolean),
+  };
+}
+
+// 3連複・3連単・2連単・2連複の払戻
+function buildComboPayouts(r) {
+  return {
+    // DB列名はpayout_trifectaだが実態は3連複（順不同）
+    sanrenpuku: payoutEntry(
+      r.payoutTrifecta,
+      r.popularityTrifecta,
+      sortAsc([r.rank1, r.rank2, r.rank3]),
+    ),
+    // DB列名はpayout_trioだが実態は3連単（着順通り）
+    sanrentan: payoutEntry(r.payoutTrio, r.popularityTrio, [
+      r.rank1,
+      r.rank2,
+      r.rank3,
+    ]),
+    exacta: payoutEntry(r.payoutExacta, r.popularityExacta, [r.rank1, r.rank2]),
+    quinella: payoutEntry(
+      r.payoutQuinella,
+      r.popularityQuinella,
+      sortAsc([r.rank1, r.rank2]),
+    ),
+  };
+}
+
+// ワイドの払戻
+function buildWidePayouts(r) {
+  return [
+    wideEntry(r.payoutWide1, r.popularityWide1, [r.rank1, r.rank2]),
+    wideEntry(r.payoutWide2, r.popularityWide2, [r.rank1, r.rank3]),
+    wideEntry(r.payoutWide3, r.popularityWide3, [r.rank2, r.rank3]),
+  ].filter(Boolean);
+}
+
+function buildPayouts(r) {
+  return {
+    ...buildWinPlacePayouts(r),
+    ...buildComboPayouts(r),
+    wide: buildWidePayouts(r),
+  };
+}
+
+// レースの成立状態・返還艇・備考
+function buildRaceStatusFields(r) {
+  return {
     // レースの成立状態と返還艇（078。109でRPCに追加）。判定は src/utils/raceOutcome.js を通す。
     // 旧フラグ isNoRace（is_no_race）は全行 false で機能していないため持たない（BOA-543）。
     // RPC未適用・078以前の行は null（＝未判定。今までどおり通常のレースとして扱う）
     raceStatus: r.raceStatus ?? null,
     refundBoats: Array.isArray(r.refundBoats) ? r.refundBoats : null,
     remark: r.remark ?? null,
-    // 払戻明細（race_payouts、109でRPCに追加）。無ければ null で、結果タブは旧 payout_* 列の
-    // payouts にフォールバックする（RPC未適用・過去データ・直接クエリのフォールバック経路）
-    payoutRows: buildPayoutRows(r.payoutRows),
+  };
+}
+
+function buildRankFields(r) {
+  return {
     rank1: r.rank1,
     rank2: r.rank2,
     rank3: r.rank3,
     rank4: r.rank4 ?? null,
     rank5: r.rank5 ?? null,
     rank6: r.rank6 ?? null,
-    raceTimes: [
-      r.raceTime1,
-      r.raceTime2,
-      r.raceTime3,
-      r.raceTime4,
-      r.raceTime5,
-      r.raceTime6,
-    ].map((t) => t || null),
+  };
+}
+
+function buildRaceTimes(r) {
+  return [
+    r.raceTime1,
+    r.raceTime2,
+    r.raceTime3,
+    r.raceTime4,
+    r.raceTime5,
+    r.raceTime6,
+  ].map((t) => t || null);
+}
+
+export function buildRaceResult(r) {
+  if (!r || !r.rank1) return null;
+
+  return {
+    finished: true,
+    isCancelled: r.isCancelled || false,
+    ...buildRaceStatusFields(r),
+    // 払戻明細（race_payouts、109でRPCに追加）。無ければ null で、結果タブは旧 payout_* 列の
+    // payouts にフォールバックする（RPC未適用・過去データ・直接クエリのフォールバック経路）
+    payoutRows: buildPayoutRows(r.payoutRows),
+    ...buildRankFields(r),
+    raceTimes: buildRaceTimes(r),
     winningTechnique: r.winningTechnique || null,
-    payouts: {
-      win: r.payoutWin ? { boats: [r.rank1], amount: r.payoutWin } : null,
-      place: [
-        r.payoutPlace1 ? { boat: r.rank1, amount: r.payoutPlace1 } : null,
-        r.payoutPlace2 ? { boat: r.rank2, amount: r.payoutPlace2 } : null,
-      ].filter(Boolean),
-      // DB列名はpayout_trifectaだが実態は3連複（順不同）
-      sanrenpuku: r.payoutTrifecta
-        ? {
-            boats: sortAsc([r.rank1, r.rank2, r.rank3]),
-            amount: r.payoutTrifecta,
-            popularity: r.popularityTrifecta ?? null,
-          }
-        : null,
-      // DB列名はpayout_trioだが実態は3連単（着順通り）
-      sanrentan: r.payoutTrio
-        ? {
-            boats: [r.rank1, r.rank2, r.rank3],
-            amount: r.payoutTrio,
-            popularity: r.popularityTrio ?? null,
-          }
-        : null,
-      exacta: r.payoutExacta
-        ? {
-            boats: [r.rank1, r.rank2],
-            amount: r.payoutExacta,
-            popularity: r.popularityExacta ?? null,
-          }
-        : null,
-      quinella: r.payoutQuinella
-        ? {
-            boats: sortAsc([r.rank1, r.rank2]),
-            amount: r.payoutQuinella,
-            popularity: r.popularityQuinella ?? null,
-          }
-        : null,
-      wide: [
-        wideEntry(r.payoutWide1, r.popularityWide1, [r.rank1, r.rank2]),
-        wideEntry(r.payoutWide2, r.popularityWide2, [r.rank1, r.rank3]),
-        wideEntry(r.payoutWide3, r.popularityWide3, [r.rank2, r.rank3]),
-      ].filter(Boolean),
-    },
+    payouts: buildPayouts(r),
   };
 }
 
