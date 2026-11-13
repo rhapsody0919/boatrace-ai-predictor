@@ -153,6 +153,58 @@ function noRaceReason(t, rows) {
   return t("result.noRace.reason", { list });
 }
 
+function PayoutCombo({ note, boats, separator }) {
+  return (
+    <span className="rr-combo">
+      {note ? (
+        <span className="rr-payout-note">{note}</span>
+      ) : (
+        boats.map((boat, index) => (
+          <span className="rr-combo-item" key={`${boat}-${index}`}>
+            {index > 0 && <span className="sep">{separator}</span>}
+            <BoatChip number={boat} />
+          </span>
+        ))
+      )}
+    </span>
+  );
+}
+
+function PayoutAmount({ amount, noAmount, t }) {
+  return (
+    <span
+      className="rr-amount num"
+      title={noAmount ? t("result.payoutNoAmount") : undefined}
+    >
+      {typeof amount === "number"
+        ? `¥${amount.toLocaleString()}`
+        : noAmount
+          ? "—"
+          : ""}
+    </span>
+  );
+}
+
+function PayoutPopularity({ popularity, popularityTo, popularityMarked, t }) {
+  return (
+    <span className="rr-pop">
+      {popularity
+        ? popularityTo
+          ? t("result.popularityRange", {
+              from: popularity,
+              to: popularityTo,
+            })
+          : t("result.popularity", { rank: popularity })
+        : ""}
+      {popularity && popularityMarked && (
+        <span className="rr-pop-mark" aria-hidden="true">
+          ※
+        </span>
+      )}
+    </span>
+  );
+}
+
 function PayoutRow({
   typeLabel,
   boats,
@@ -172,43 +224,14 @@ function PayoutRow({
       className={`rr-payout-row${isBest ? " is-best" : ""}${isVoid ? " is-void" : ""}`}
     >
       <span className="rr-payout-type">{typeLabel}</span>
-      <span className="rr-combo">
-        {note ? (
-          <span className="rr-payout-note">{note}</span>
-        ) : (
-          boats.map((boat, index) => (
-            <span className="rr-combo-item" key={`${boat}-${index}`}>
-              {index > 0 && <span className="sep">{separator}</span>}
-              <BoatChip number={boat} />
-            </span>
-          ))
-        )}
-      </span>
-      <span
-        className="rr-amount num"
-        title={noAmount ? t("result.payoutNoAmount") : undefined}
-      >
-        {typeof amount === "number"
-          ? `¥${amount.toLocaleString()}`
-          : noAmount
-            ? "—"
-            : ""}
-      </span>
-      <span className="rr-pop">
-        {popularity
-          ? popularityTo
-            ? t("result.popularityRange", {
-                from: popularity,
-                to: popularityTo,
-              })
-            : t("result.popularity", { rank: popularity })
-          : ""}
-        {popularity && popularityMarked && (
-          <span className="rr-pop-mark" aria-hidden="true">
-            ※
-          </span>
-        )}
-      </span>
+      <PayoutCombo note={note} boats={boats} separator={separator} />
+      <PayoutAmount amount={amount} noAmount={noAmount} t={t} />
+      <PayoutPopularity
+        popularity={popularity}
+        popularityTo={popularityTo}
+        popularityMarked={popularityMarked}
+        t={t}
+      />
     </div>
   );
 }
