@@ -39,13 +39,8 @@ import { useState, useEffect, useRef } from "react";
 import { trackEvent } from "../../utils/analytics";
 import "./RaceTabs.css";
 
-function RaceTabs({
-  tabs,
-  defaultTabId,
-  initialTabId,
-  onActiveTabChange,
-  requestedTab,
-}) {
+// 選択中のタブIDの状態と、その初回計測・defaultTabId 変化時のリセット
+function useActiveTabId(tabs, defaultTabId, initialTabId) {
   const [activeId, setActiveId] = useState(() =>
     tabs.some((tab) => tab.id === initialTabId)
       ? initialTabId
@@ -73,17 +68,29 @@ function RaceTabs({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultTabId]);
+  return [activeId, setActiveId];
+}
 
-  const activeTab = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
+// アクティブなタブをバーの中へ水平スクロールする（現在地を見せる）。
+// `scrollIntoView` はページ全体も動かしてしまうので、バーのscrollLeftだけ動かす
+function scrollActiveIntoBar(bar, btn) {
+  const left = btn.offsetLeft;
+  const right = left + btn.offsetWidth;
+  // behavior は指定しない（＝即時）。動きを減らす設定の環境では
+  // smooth 指定のスクロールが実行されないことがある
+  if (left < bar.scrollLeft) {
+    bar.scrollLeft = Math.max(0, left - 12);
+  } else if (right > bar.scrollLeft + bar.clientWidth) {
+    bar.scrollLeft = right - bar.clientWidth + 12;
+  }
+}
+
+// タブバーの横スクロール（右端の「›」の出し分け・アクティブタブを見せる・「›」で送る）
+function useTabBarScroll(tabCount, activeTabId) {
   const barRef = useRef(null);
   const btnRefs = useRef({});
   // 右端の「›」（まだ右にタブがあることを示す）。スクロールしきったら消す
   const [hasMore, setHasMore] = useState(false);
-
-  useEffect(() => {
-    onActiveTabChange?.(activeTab?.id ?? null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab?.id]);
 
   const updateHasMore = () => {
     const bar = barRef.current;
@@ -102,25 +109,15 @@ function RaceTabs({
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", updateHasMore);
     };
-  }, [tabs.length]);
+  }, [tabCount]);
 
-  // アクティブなタブをバーの中へ水平スクロールする（現在地を見せる）。
-  // `scrollIntoView` はページ全体も動かしてしまうので、バーのscrollLeftだけ動かす
   useEffect(() => {
     const bar = barRef.current;
-    const btn = btnRefs.current[activeTab?.id];
+    const btn = btnRefs.current[activeTabId];
     if (!bar || !btn) return;
-    const left = btn.offsetLeft;
-    const right = left + btn.offsetWidth;
-    // behavior は指定しない（＝即時）。動きを減らす設定の環境では
-    // smooth 指定のスクロールが実行されないことがある
-    if (left < bar.scrollLeft) {
-      bar.scrollLeft = Math.max(0, left - 12);
-    } else if (right > bar.scrollLeft + bar.clientWidth) {
-      bar.scrollLeft = right - bar.clientWidth + 12;
-    }
+    scrollActiveIntoBar(bar, btn);
     updateHasMore();
-  }, [activeTab?.id]);
+  }, [activeTabId]);
 
   // 「›」を押したら1画面分ぶん右へ送る（指でスワイプできると気づかない人向け）
   const scrollRight = () => {
@@ -129,6 +126,86 @@ function RaceTabs({
     bar.scrollLeft += Math.round(bar.clientWidth * 0.8);
     updateHasMore();
   };
+
+  return { barRef, btnRefs, hasMore, updateHasMore, scrollRight };
+}
+
+function TabBar({ tabs, activeTab, bar, onSelect }) {
+  const { barRef, btnRefs, hasMore, updateHasMore, scrollRight } = bar;
+  return (
+    <div className={`race-tabs-bar-wrap${hasMore ? " has-more" : ""}`}>
+      <div
+        className="race-tabs-bar"
+        role="tablist"
+        ref={barRef}
+        onScroll={updateHasMore}
+      >
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={tab.id === activeTab?.id}
+            ref={(el) => {
+              btnRefs.current[tab.id] = el;
+            }}
+            className={`race-tabs-btn${tab.id === activeTab?.id ? " is-active" : ""}`}
+            onClick={() => onSelect(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          className="race-tabs-more"
+          onClick={scrollRight}
+          /* 装飾兼ショートカット。タブ自体はキーボードのTabで辿れて
+               ブラウザが勝手に可視域へ送るため、支援技術には出さない */
+          aria-hidden="true"
+          tabIndex={-1}
+        >
+          ›
+        </button>
+      )}
+    </div>
+  );
+}
+
+// タブの中からの切り替えの依頼（{ id, seq }）。押したときと同じ扱いにする（計測・縦の位置合わせも同じ）
+// マウント時点で既にある依頼は前のレースのもの（RaceTabs はレースごとに作り直す）なので使わない
+function useRequestedTab(tabs, requestedTab, handleSelect) {
+  const seenRequest = useRef(requestedTab?.seq ?? null);
+  useEffect(() => {
+    if (!requestedTab || requestedTab.seq === seenRequest.current) return;
+    seenRequest.current = requestedTab.seq;
+    if (!tabs.some((tab) => tab.id === requestedTab.id)) return;
+    handleSelect(requestedTab.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedTab?.seq]);
+}
+
+function RaceTabs({
+  tabs,
+  defaultTabId,
+  initialTabId,
+  onActiveTabChange,
+  requestedTab,
+}) {
+  const [activeId, setActiveId] = useActiveTabId(
+    tabs,
+    defaultTabId,
+    initialTabId,
+  );
+  const activeTab = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
+
+  useEffect(() => {
+    onActiveTabChange?.(activeTab?.id ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab?.id]);
+
+  const bar = useTabBarScroll(tabs.length, activeTab?.id);
 
   const handleSelect = (id) => {
     // どのタブが実際に押されているかを残す（BOA-454）。並び順を決めた根拠は
@@ -145,64 +222,24 @@ function RaceTabs({
     // タブバーはページ上から600px超の位置にあり、切り替えても縦位置が
     // 変わらないため「押した先が画面外」になる。**ユーザーの操作のときだけ**
     // バーの位置まで上げる（初回マウント・レース遷移では動かさない）
-    const bar = barRef.current;
-    if (bar && bar.getBoundingClientRect().top < 0) {
+    const barEl = bar.barRef.current;
+    if (barEl && barEl.getBoundingClientRect().top < 0) {
       window.scrollTo({
-        top: bar.getBoundingClientRect().top + window.scrollY - 8,
+        top: barEl.getBoundingClientRect().top + window.scrollY - 8,
       });
     }
   };
 
-  // タブの中からの切り替えの依頼（{ id, seq }）。押したときと同じ扱いにする（計測・縦の位置合わせも同じ）
-  // マウント時点で既にある依頼は前のレースのもの（RaceTabs はレースごとに作り直す）なので使わない
-  const seenRequest = useRef(requestedTab?.seq ?? null);
-  useEffect(() => {
-    if (!requestedTab || requestedTab.seq === seenRequest.current) return;
-    seenRequest.current = requestedTab.seq;
-    if (!tabs.some((tab) => tab.id === requestedTab.id)) return;
-    handleSelect(requestedTab.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestedTab?.seq]);
+  useRequestedTab(tabs, requestedTab, handleSelect);
 
   return (
     <div className="race-tabs">
-      <div className={`race-tabs-bar-wrap${hasMore ? " has-more" : ""}`}>
-        <div
-          className="race-tabs-bar"
-          role="tablist"
-          ref={barRef}
-          onScroll={updateHasMore}
-        >
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={tab.id === activeTab?.id}
-              ref={(el) => {
-                btnRefs.current[tab.id] = el;
-              }}
-              className={`race-tabs-btn${tab.id === activeTab?.id ? " is-active" : ""}`}
-              onClick={() => handleSelect(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        {hasMore && (
-          <button
-            type="button"
-            className="race-tabs-more"
-            onClick={scrollRight}
-            /* 装飾兼ショートカット。タブ自体はキーボードのTabで辿れて
-               ブラウザが勝手に可視域へ送るため、支援技術には出さない */
-            aria-hidden="true"
-            tabIndex={-1}
-          >
-            ›
-          </button>
-        )}
-      </div>
+      <TabBar
+        tabs={tabs}
+        activeTab={activeTab}
+        bar={bar}
+        onSelect={handleSelect}
+      />
       <div className="race-tabs-panel" role="tabpanel">
         {activeTab?.content}
       </div>
