@@ -807,6 +807,215 @@ function AssistVenueSheet({
   );
 }
 
+function AssistMain(p) {
+  if (p.data.racecard.status === "loading") {
+    return <p className="ta-status">{ASSIST_COPY.loading}</p>;
+  }
+  if (p.data.racecard.status === "error") {
+    return <p className="ta-status">{ASSIST_COPY.fetchFailed}</p>;
+  }
+  if (!p.race) {
+    // 次に行ける所を1つ置く（ファン評価 3周目 指摘11）
+    return (
+      <div className="ta-status">
+        <p>{ASSIST_COPY.raceNotFound}</p>
+        <Link className="ta-link" to="/">
+          {ASSIST_COPY.backToRaces}
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <>
+      <AssistHeaderSection {...p} />
+      <LensBar
+        lens={p.state.lens}
+        onLens={(lens) => p.act({ type: "lens", lens })}
+        guideOn={p.state.guide !== null}
+        onGuide={() => p.onGuideStep(p.state.guide === null ? 0 : null)}
+      />
+      {/* PC（1024px 以上）は図を左・押して変わる結果を右に（BOA-801 5・BOA-820、龍神ソナーの PC 表示 BOA-813 と同じ決まり）。
+          狭い画面では囲みが無いのと同じ（display: contents） */}
+      <div className="ta-split">
+        <AssistFigColumn {...p} />
+        <div className="ta-split-side">
+          {p.deepBoat && <AssistDeepDive {...p} />}
+          {!(p.cancelled && p.state.lens === "bet") && (
+            <LensSummary
+              lens={p.state.lens}
+              axis={p.summary.axis}
+              flow={p.summary.flow}
+              power={p.summary.power}
+              place={p.summary.place}
+              bet={p.summary.bet}
+            />
+          )}
+        </div>
+      </div>
+      <p className="ta-disclaimer">{ASSIST_COPY.disclaimer}</p>
+      {!p.cancelled && <AssistFoot {...p} />}
+    </>
+  );
+}
+
+function AssistFoot({
+  state,
+  act,
+  betType,
+  bets,
+  betOdds,
+  tickets,
+  composite,
+  oddsNote,
+  removedNote,
+  steps,
+}) {
+  return (
+    <BetFooter
+      bets={bets}
+      betType={betType.id}
+      priced={
+        betOdds
+          ? tickets.filter((t) => betOdds[t] != null && betOdds[t] > 0).length
+          : tickets.length
+      }
+      points={tickets.length}
+      composite={composite}
+      oddsNote={oddsNote}
+      removedNote={removedNote}
+      onOpen={() => act({ type: "sheet", sheet: "mark" })}
+      hidden={state.guide !== null && steps[state.guide].target !== "foot"}
+    />
+  );
+}
+
+function AssistGlossarySheet({
+  state,
+  lineup,
+  today,
+  restCounts,
+  finalRound,
+  closeSheet,
+}) {
+  return (
+    <GlossarySheet
+      term={state.sheet.term}
+      lineup={lineup}
+      classNote={
+        restCounts && today?.classes
+          ? ASSIST_COPY.classNote(1, today.classes[0], restCounts)
+          : null
+      }
+      finalRound={finalRound}
+      onClose={closeSheet}
+    />
+  );
+}
+
+function AssistSheets(p) {
+  const { state, closeSheet, sheetCard, sheetOpen } = p;
+  return (
+    <>
+      {state.sheet === "mark" && (
+        <AssistMarkSheet {...p} absentBoats={p.data.absentBoats} />
+      )}
+      {state.sheet === "rough" && p.scope && p.national && (
+        <AssistRoughSheet {...p} />
+      )}
+      {sheetCard && <TheorySheet card={sheetCard} onClose={closeSheet} />}
+      {state.sheet?.type === "term" && <AssistGlossarySheet {...p} />}
+      {state.sheet === "venue" && p.venueName && p.data.parsed && (
+        <AssistVenueSheet {...p} />
+      )}
+      {state.guide !== null && p.race && !sheetOpen && (
+        <GuideOverlay
+          steps={p.steps}
+          index={state.guide}
+          onStep={p.onGuideStep}
+          topOffset={p.headerHeight}
+        />
+      )}
+    </>
+  );
+}
+
+// 最初に選ばれている軸の艇と、自動で決めたか（spec D-48 (6)）
+function placeAxisOf(state, absentBoats) {
+  const firstPicks = [...state.bets[1]].filter((b) => !absentBoats.includes(b));
+  const placeAuto = state.placeAxis == null && firstPicks.length === 1;
+  const placeAxis = state.placeAxis ?? (placeAuto ? firstPicks[0] : 1);
+  return { placeAuto, placeAxis };
+}
+
+// 欠場で外した組の知らせ・オッズが無いときの文・取得に失敗した部分の知らせ
+function betNotes(state, data, betType, tickets) {
+  // 欠場の艇は候補から外して数える（D-38）。欠場が分かる前に組んだ組は外したことを1行で知らせる
+  const removedBoats = data.absentBoats.filter((b) =>
+    [1, 2, 3].slice(0, betType.legs).some((k) => state.bets[k].has(b)),
+  );
+  const removedNote = removedBoats.length
+    ? ASSIST_COPY.absentRemoved(
+        removedBoats,
+        expandTickets(state.bets, [], betType.legs, betType.ordered).length -
+          tickets.length,
+      )
+    : null;
+  // オッズが無い: 取得の失敗と、発売前（取得が成功して空）を分ける（FR-11・screens「オッズが無い」、Codex 依頼27 F01）
+  const oddsNote =
+    data.odds.status === "error"
+      ? ASSIST_COPY.partFailed(ASSIST_COPY.partOdds)
+      : data.odds.data?.byType &&
+          Object.keys(data.odds.data.byType).length > 0 &&
+          !data.odds.data.byType[betType.id]
+        ? ASSIST_COPY.oddsTypeMissing(ASSIST_COPY.betTypeLabels[betType.id])
+        : ASSIST_COPY.oddsNone;
+  const partNotes = [
+    data.exhibition.status === "error" && ASSIST_COPY.partExhibition,
+    data.rates.status === "error" && ASSIST_COPY.partRates,
+  ].filter(Boolean);
+  return { removedNote, oddsNote, partNotes };
+}
+
+// 艇ごとの展示コース（整備の行が無ければ null）
+function courseByBoatOf(maintenanceRows) {
+  return maintenanceRows
+    ? [1, 2, 3, 4, 5, 6].map(
+        (b) =>
+          maintenanceRows.find((r) => r.boat_number === b)?.exhibition_course ??
+          null,
+      )
+    : null;
+}
+
+function buildBetSummary({
+  tickets,
+  betOdds,
+  typeOdds,
+  betType,
+  data,
+  state,
+  betOddsAt,
+  oddsNote,
+  race,
+  dispatch,
+}) {
+  return {
+    tickets,
+    odds: betOdds ?? {},
+    oddsRange: typeOdds?.range ?? null,
+    betType: betType.id,
+    oddsFinal: typeOdds?.final === true,
+    oddsFinalFailed: data.odds.data?.finalFailed === true,
+    budget: state.budget,
+    mode: state.mode,
+    oddsAt: betOddsAt,
+    oddsNote,
+    finished: Boolean(race?.result?.finished),
+    onBudget: (budget) => dispatch({ type: "budget", budget }),
+    onMode: (mode) => dispatch({ type: "mode", mode }),
+  };
+}
+
 function ThinkingAssistBody() {
   const { raceId } = useParams();
   const parsedRaceId = parseRaceId(raceId);
@@ -1007,11 +1216,7 @@ function ThinkingAssistBody() {
   const national = anyCell(data.scenario.na.data);
   const vaScenario = data.scenario.va.data?.scenario ?? null;
   // 最初に選ばれている軸の艇（spec D-48 (6)）: 前に選んだ艇（同じタブ・同じレースの保存）→ 1着の候補が1艇だけならその艇 → 1号艇
-  const firstPicks = [...state.bets[1]].filter(
-    (b) => !data.absentBoats.includes(b),
-  );
-  const placeAuto = state.placeAxis == null && firstPicks.length === 1;
-  const placeAxis = state.placeAxis ?? (placeAuto ? firstPicks[0] : 1);
+  const { placeAuto, placeAxis } = placeAxisOf(state, data.absentBoats);
   const placeF = winFollowers(vaScenario, placeAxis);
   const venueAll = anyCell(data.scenario.va.data);
   // BOA-822（機能フラグの側）: 1着のバーはイン崩れ注意度の裏返し。案内（guideSteps）・カード・シートで同じ値を使う
@@ -1040,29 +1245,12 @@ function ThinkingAssistBody() {
       ),
     [state.bets, data.absentBoats, betType.legs, betType.ordered],
   );
-  const removedBoats = data.absentBoats.filter((b) =>
-    [1, 2, 3].slice(0, betType.legs).some((k) => state.bets[k].has(b)),
+  const { removedNote, oddsNote, partNotes } = betNotes(
+    state,
+    data,
+    betType,
+    tickets,
   );
-  const removedNote = removedBoats.length
-    ? ASSIST_COPY.absentRemoved(
-        removedBoats,
-        expandTickets(state.bets, [], betType.legs, betType.ordered).length -
-          tickets.length,
-      )
-    : null;
-  // オッズが無い: 取得の失敗と、発売前（取得が成功して空）を分ける（FR-11・screens「オッズが無い」、Codex 依頼27 F01）
-  const oddsNote =
-    data.odds.status === "error"
-      ? ASSIST_COPY.partFailed(ASSIST_COPY.partOdds)
-      : data.odds.data?.byType &&
-          Object.keys(data.odds.data.byType).length > 0 &&
-          !data.odds.data.byType[betType.id]
-        ? ASSIST_COPY.oddsTypeMissing(ASSIST_COPY.betTypeLabels[betType.id])
-        : ASSIST_COPY.oddsNone;
-  const partNotes = [
-    data.exhibition.status === "error" && ASSIST_COPY.partExhibition,
-    data.rates.status === "error" && ASSIST_COPY.partRates,
-  ].filter(Boolean);
   // 選んでいる券種のオッズ（締切時オッズがあればその値。BOA-990）。図・ヘッダー・よく出た3連単は3連単のまま
   const typeOdds = data.odds.data?.byType?.[betType.id] ?? null;
   const betOdds = typeOdds?.odds ?? null;
@@ -1090,33 +1278,24 @@ function ThinkingAssistBody() {
   });
 
   const venueName = race?.venue ?? null;
-  const courseByBoat = maintenanceRows
-    ? [1, 2, 3, 4, 5, 6].map(
-        (b) =>
-          maintenanceRows.find((r) => r.boat_number === b)?.exhibition_course ??
-          null,
-      )
-    : null;
+  const courseByBoat = courseByBoatOf(maintenanceRows);
   const vaKey = today?.scope_keys?.["1"]?.VA;
   const motorFact = winFacts[0].chips.find(
     (c) => c.key === "motor_2" && c.hit && c.level === "large",
   );
   const b1u = b1Usual(winFacts[0].scope);
-  const betSummary = {
+  const betSummary = buildBetSummary({
     tickets,
-    odds: betOdds ?? {},
-    oddsRange: typeOdds?.range ?? null,
-    betType: betType.id,
-    oddsFinal: typeOdds?.final === true,
-    oddsFinalFailed: data.odds.data?.finalFailed === true,
-    budget: state.budget,
-    mode: state.mode,
-    oddsAt: betOddsAt,
+    betOdds,
+    typeOdds,
+    betType,
+    data,
+    state,
+    betOddsAt,
     oddsNote,
-    finished: Boolean(race?.result?.finished),
-    onBudget: (budget) => dispatch({ type: "budget", budget }),
-    onMode: (mode) => dispatch({ type: "mode", mode }),
-  };
+    race,
+    dispatch,
+  });
   const summary = buildSummary({
     factsAll,
     boatFacts,
@@ -1204,129 +1383,64 @@ function ThinkingAssistBody() {
   );
   const restCounts = restClassCounts(today?.classes, 1);
 
-  let body;
-  if (data.racecard.status === "loading") {
-    body = <p className="ta-status">{ASSIST_COPY.loading}</p>;
-  } else if (data.racecard.status === "error") {
-    body = <p className="ta-status">{ASSIST_COPY.fetchFailed}</p>;
-  } else if (!race) {
-    // 次に行ける所を1つ置く（ファン評価 3周目 指摘11）
-    body = (
-      <div className="ta-status">
-        <p>{ASSIST_COPY.raceNotFound}</p>
-        <Link className="ta-link" to="/">
-          {ASSIST_COPY.backToRaces}
-        </Link>
-      </div>
-    );
-  } else {
-    body = (
-      <>
-        <AssistHeaderSection
-          race={race}
-          data={data}
-          raceId={raceId}
-          oddsAt={oddsAt}
-          dispatch={dispatch}
-          act={act}
-          post={post}
-          v16Status={v16Status}
-          partNotes={partNotes}
-          v16Off={v16Off}
-          absentKnown={absentKnown}
-          rough={rough}
-          scope={scope}
-          lineup={lineup}
-          today={today}
-          roughStatus={roughStatus}
-          inCautionMode={inCautionMode}
-        />
-        <LensBar
-          lens={state.lens}
-          onLens={(lens) => act({ type: "lens", lens })}
-          guideOn={state.guide !== null}
-          onGuide={() => onGuideStep(state.guide === null ? 0 : null)}
-        />
-        {/* PC（1024px 以上）は図を左・押して変わる結果を右に（BOA-801 5・BOA-820、龍神ソナーの PC 表示 BOA-813 と同じ決まり）。
-            狭い画面では囲みが無いのと同じ（display: contents） */}
-        <div className="ta-split">
-          <AssistFigColumn
-            state={state}
-            summary={summary}
-            cancelled={cancelled}
-            betType={betType}
-            onBetType={onBetType}
-            model={model}
-            racers={racers}
-            bets={bets}
-            oddsNote={oddsNote}
-            act={act}
-            dispatch={dispatch}
-            toggleBet={toggleBet}
-            marks={marks}
-            onTarget={onTarget}
-            raceId={raceId}
-            deepBoat={deepBoat}
-          />
-          <div className="ta-split-side">
-            {deepBoat && (
-              <AssistDeepDive
-                state={state}
-                deepBoat={deepBoat}
-                racers={racers}
-                venueName={venueName}
-                raceId={raceId}
-                v16Off={v16Off}
-                today={today}
-                post={post}
-                finalRound={finalRound}
-                data={data}
-                boatFacts={boatFacts}
-                deepRunsReady={deepRunsReady}
-                maintenanceRows={maintenanceRows}
-                courseByBoat={courseByBoat}
-                act={act}
-                dispatch={dispatch}
-              />
-            )}
-            {!(cancelled && state.lens === "bet") && (
-              <LensSummary
-                lens={state.lens}
-                axis={summary.axis}
-                flow={summary.flow}
-                power={summary.power}
-                place={summary.place}
-                bet={summary.bet}
-              />
-            )}
-          </div>
-        </div>
-        <p className="ta-disclaimer">{ASSIST_COPY.disclaimer}</p>
-        {!cancelled && (
-          <BetFooter
-            bets={bets}
-            betType={betType.id}
-            priced={
-              betOdds
-                ? tickets.filter((t) => betOdds[t] != null && betOdds[t] > 0)
-                    .length
-                : tickets.length
-            }
-            points={tickets.length}
-            composite={composite}
-            oddsNote={oddsNote}
-            removedNote={removedNote}
-            onOpen={() => act({ type: "sheet", sheet: "mark" })}
-            hidden={
-              state.guide !== null && steps[state.guide].target !== "foot"
-            }
-          />
-        )}
-      </>
-    );
-  }
-
   const sheetOpen = state.sheet !== null;
+  const view = {
+    state,
+    data,
+    race,
+    raceId,
+    oddsAt,
+    dispatch,
+    act,
+    post,
+    v16Status,
+    partNotes,
+    v16Off,
+    absentKnown,
+    rough,
+    scope,
+    lineup,
+    today,
+    roughStatus,
+    inCautionMode,
+    onGuideStep,
+    summary,
+    cancelled,
+    betType,
+    onBetType,
+    model,
+    racers,
+    bets,
+    oddsNote,
+    toggleBet,
+    marks,
+    onTarget,
+    deepBoat,
+    venueName,
+    finalRound,
+    boatFacts,
+    deepRunsReady,
+    maintenanceRows,
+    courseByBoat,
+    betOdds,
+    tickets,
+    composite,
+    removedNote,
+    steps,
+    betSummary,
+    closeSheet,
+    similar,
+    similarFailed,
+    national,
+    venueAll,
+    inCaution,
+    sheetCard,
+    restCounts,
+    theoryCtx,
+    headerHeight,
+    sheetOpen,
+  };
+
   return (
     <AssistSheetContext.Provider value={sheetApi}>
       <title>{`${ASSIST_COPY.title}（${raceId}）`}</title>
@@ -1354,71 +1468,9 @@ function ThinkingAssistBody() {
         aria-hidden={sheetOpen ? "true" : undefined}
         inert={sheetOpen ? true : undefined}
       >
-        {body}
+        <AssistMain {...view} />
       </main>
-      {state.sheet === "mark" && (
-        <AssistMarkSheet
-          betSummary={betSummary}
-          bets={bets}
-          removedNote={removedNote}
-          absentBoats={data.absentBoats}
-          toggleBet={toggleBet}
-          closeSheet={closeSheet}
-          tickets={tickets}
-          onBetType={onBetType}
-          act={act}
-          dispatch={dispatch}
-          state={state}
-          similar={similar}
-        />
-      )}
-      {state.sheet === "rough" && scope && national && (
-        <AssistRoughSheet
-          scope={scope}
-          national={national}
-          similar={similar}
-          similarFailed={similarFailed}
-          venueAll={venueAll}
-          race={race}
-          data={data}
-          lineup={lineup}
-          today={today}
-          inCaution={inCaution}
-          closeSheet={closeSheet}
-        />
-      )}
-      {sheetCard && <TheorySheet card={sheetCard} onClose={closeSheet} />}
-      {state.sheet?.type === "term" && (
-        <GlossarySheet
-          term={state.sheet.term}
-          lineup={lineup}
-          classNote={
-            restCounts && today?.classes
-              ? ASSIST_COPY.classNote(1, today.classes[0], restCounts)
-              : null
-          }
-          finalRound={finalRound}
-          onClose={closeSheet}
-        />
-      )}
-      {state.sheet === "venue" && venueName && data.parsed && (
-        <AssistVenueSheet
-          venueName={venueName}
-          data={data}
-          theoryCtx={theoryCtx}
-          venueAll={venueAll}
-          national={national}
-          closeSheet={closeSheet}
-        />
-      )}
-      {state.guide !== null && race && !sheetOpen && (
-        <GuideOverlay
-          steps={steps}
-          index={state.guide}
-          onStep={onGuideStep}
-          topOffset={headerHeight}
-        />
-      )}
+      <AssistSheets {...view} />
     </AssistSheetContext.Provider>
   );
 }
