@@ -11,6 +11,8 @@ export function useFirstBoat(prediction, selectedModel) {
 
   useEffect(() => {
     if (!prediction) {
+      // 元の部品の挙動（初回描画は null、effect で確定）を保つため同期 setState のまま
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFirstBoat(null);
       return;
     }

@@ -5,9 +5,7 @@ import { trackEvent } from "../../utils/analytics";
 // この艇が1着だった場合の確率に補正する。分母データが取得できない場合のみ
 // 元の値（会場全体のレース数が分母、実際より過小な数値）にフォールバックする
 const displayRate = (pattern, boatTotalRaces) =>
-  boatTotalRaces
-    ? (pattern.count / boatTotalRaces) * 100
-    : pattern.probability;
+  boatTotalRaces ? (pattern.count / boatTotalRaces) * 100 : pattern.probability;
 
 function OutcomePatternPreviewTable({
   topPatterns,
