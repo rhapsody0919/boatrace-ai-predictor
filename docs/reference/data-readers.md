@@ -178,7 +178,7 @@
 | get_race_exhibition_trend | anon 可 |  | scripts/lib/raceIndicatorData.js:47, src/services/raceQueries2.js:22 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:333, scripts/maintenance/check-anon-access.js:105 |  | exhibition_data, race_entries |  |  |
 | get_race_history_summary | service だけ |  | なし |  | predictions, races |  |  |
 | get_race_return_rate | anon 可 |  | scripts/lib/raceIndicatorData.js:37, src/services/raceQueries3.js:149 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:358, scripts/maintenance/check-anon-access.js:106 |  | race_entries, race_results |  |  |
-| get_race_st_predictability | anon 可 |  | scripts/lib/raceIndicatorData.js:32, src/services/raceQueries.js:232 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:324, scripts/maintenance/check-anon-access.js:107 |  | exhibition_data, race_entries, race_start_timings |  |  |
+| get_race_st_predictability | anon 可 |  | scripts/lib/raceIndicatorData.js:32, src/services/raceQueries.js:345 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:324, scripts/maintenance/check-anon-access.js:107 |  | exhibition_data, race_entries, race_start_timings |  |  |
 | get_race_technique_profile | anon 可 |  | scripts/lib/raceIndicatorData.js:42, src/services/raceQueries3.js:282 / 名前の文字列: scripts/analysis/verify-race-analysis-rpc.js:342, scripts/maintenance/check-anon-access.js:108 |  | race_entries, race_results |  |  |
 | get_racer_accident_records | anon 可 |  | src/services/racerQueries4.js:129 / 名前の文字列: scripts/maintenance/check-anon-access.js:112, sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:683 |  | race_conditions, race_entries, race_start_timings |  |  |
 | get_today_races | anon 可 |  | api/races/today.js:30, scripts/maintenance/verify-display-coverage.js:175, src/services/scheduleQueries.js:52 / 名前の文字列: scripts/maintenance/check-anon-access.js:113, scripts/maintenance/check-anon-access.js:176 |  | predictions, race_conditions, race_entries, race_results, races |  |  |
@@ -419,8 +419,8 @@
   - `src/services/motorQueries6.js:120` select [adjustment_weight, boat_number, exhibition_course, exhibition_time, is_absent, parts_changed, prev_entry_course, prev_finish_mark, prev_finish_rank, prev_race_no, prev_start_timing, propeller_change, race_id, tilt, today_weight, updated_at]
   - `src/services/motorQueries6.js:136` select [adjustment_weight, boat_number, exhibition_time, parts_changed, propeller_change, race_id, tilt]
   - `src/services/raceQueries.js:34` select [boat_number, race_id, start_flag]
-  - `src/services/raceQueries.js:251` select [boat_number, race_id, start_timing]
-  - `src/services/raceQueries.js:307` select(helper:fetchAllByIn)
+  - `src/services/raceQueries.js:236` select(helper:fetchAllByIn)
+  - `src/services/raceQueries.js:285` select [boat_number, race_id, start_timing]
   - `src/services/raceQueries2.js:41` select [boat_number, exhibition_time, race_id]
   - `src/services/raceQueries2.js:84` select(helper:fetchAllByIn)
   - `src/services/raceQueries2.js:174` select [boat_number, exhibition_time, is_absent, race_id, start_flag, start_timing, tilt]
@@ -935,8 +935,8 @@
   - `src/services/raceQueries.js:143` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]
   - `src/services/raceQueries.js:166` select [boat_number, local_win_rate, player_name, race_id, racer_id, win_rate]
   - `src/services/raceQueries.js:189` select [race_id, racer_id, win_rate]
-  - `src/services/raceQueries.js:241` select [boat_number, player_name, race_id, racer_id]
-  - `src/services/raceQueries.js:279` select [boat_number, race_id, racer_id]
+  - `src/services/raceQueries.js:275` select [boat_number, player_name, race_id, racer_id]
+  - `src/services/raceQueries.js:305` select [boat_number, race_id, racer_id]
   - `src/services/raceQueries2.js:31` select [boat_number, player_name, race_id, racer_id]
   - `src/services/raceQueries2.js:65` select [boat_number, race_id, racer_id]
   - `src/services/raceQueries2.js:144` select [boat_number, race_id, weight_kg]
@@ -1316,7 +1316,7 @@
   - `src/services/meetQueries.js:179` select [boat_number, entry_course, finish_mark, race_id]
   - `src/services/meetQueries2.js:176` select [boat_number, finish_mark, is_flying, race_id, start_timing]
   - `src/services/raceQueries.js:96` select(helper:fetchAllByIn)
-  - `src/services/raceQueries.js:301` select(helper:fetchAllByIn)
+  - `src/services/raceQueries.js:230` select(helper:fetchAllByIn)
   - `src/services/raceQueries4.js:22` select [boat_number, entry_course, finish_mark, finish_rank, is_flying, is_late_start, race_id, start_timing]
   - `src/services/racerQueries2.js:199` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:308` select(helper:fetchAllByIn)

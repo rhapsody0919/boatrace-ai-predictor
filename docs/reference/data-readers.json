@@ -1706,7 +1706,13 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries.js:251",
+          "ref": "src/services/raceQueries.js:236",
+          "op": "select",
+          "via": "helper:fetchAllByIn",
+          "columns": []
+        },
+        {
+          "ref": "src/services/raceQueries.js:285",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1714,12 +1720,6 @@
             "race_id",
             "start_timing"
           ]
-        },
-        {
-          "ref": "src/services/raceQueries.js:307",
-          "op": "select",
-          "via": "helper:fetchAllByIn",
-          "columns": []
         },
         {
           "ref": "src/services/raceQueries2.js:41",
@@ -1873,7 +1873,7 @@
             "src/services/meetQueries2.js:166",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
-            "src/services/raceQueries.js:251",
+            "src/services/raceQueries.js:285",
             "src/services/raceQueries.js:34",
             "src/services/raceQueries2.js:174",
             "src/services/raceQueries2.js:41",
@@ -1906,7 +1906,7 @@
             "src/services/meetQueries2.js:166",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
-            "src/services/raceQueries.js:251",
+            "src/services/raceQueries.js:285",
             "src/services/raceQueries.js:34",
             "src/services/raceQueries2.js:174",
             "src/services/raceQueries2.js:41",
@@ -1954,7 +1954,7 @@
             "scripts/analysis/verify-race-analysis-rpc.js:35",
             "scripts/daily/scrape-exhibition-data.js:536",
             "scripts/lib/analogyV16Exhibition.js:208",
-            "src/services/raceQueries.js:251",
+            "src/services/raceQueries.js:285",
             "src/services/raceQueries2.js:174",
             "src/services/raceQueries3.js:90",
             "src/services/sherlockService.js:83"
@@ -7995,7 +7995,7 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries.js:241",
+          "ref": "src/services/raceQueries.js:275",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8006,7 +8006,7 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries.js:279",
+          "ref": "src/services/raceQueries.js:305",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8451,8 +8451,8 @@
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:189",
-            "src/services/raceQueries.js:241",
-            "src/services/raceQueries.js:279",
+            "src/services/raceQueries.js:275",
+            "src/services/raceQueries.js:305",
             "src/services/raceQueries2.js:144",
             "src/services/raceQueries2.js:250",
             "src/services/raceQueries2.js:31",
@@ -8558,8 +8558,8 @@
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
-            "src/services/raceQueries.js:241",
-            "src/services/raceQueries.js:279",
+            "src/services/raceQueries.js:275",
+            "src/services/raceQueries.js:305",
             "src/services/raceQueries2.js:144",
             "src/services/raceQueries2.js:250",
             "src/services/raceQueries2.js:31",
@@ -8618,7 +8618,7 @@
             "src/services/motorQueries5.js:268",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:166",
-            "src/services/raceQueries.js:241",
+            "src/services/raceQueries.js:275",
             "src/services/raceQueries2.js:31",
             "src/services/raceQueries3.js:157",
             "src/services/raceQueries3.js:291",
@@ -8937,8 +8937,8 @@
             "src/services/motorQueries5.js:268",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:189",
-            "src/services/raceQueries.js:241",
-            "src/services/raceQueries.js:279",
+            "src/services/raceQueries.js:275",
+            "src/services/raceQueries.js:305",
             "src/services/raceQueries2.js:250",
             "src/services/raceQueries2.js:31",
             "src/services/raceQueries2.js:65",
@@ -13155,7 +13155,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/raceQueries.js:301",
+          "ref": "src/services/raceQueries.js:230",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -27890,7 +27890,7 @@
           "via": "helper:callRpc"
         },
         {
-          "ref": "src/services/raceQueries.js:232",
+          "ref": "src/services/raceQueries.js:345",
           "via": "client"
         }
       ],
