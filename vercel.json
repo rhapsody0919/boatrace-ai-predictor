@@ -235,6 +235,14 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/outcome-distribution-update",
+      "schedule": "30 22 * * *"
+    },
+    {
+      "path": "/api/cron/outcome-distribution-update",
+      "schedule": "30 3 * * *"
+    },
+    {
       "path": "/api/cron/racer-career-main",
       "schedule": "30 14 * * *"
     },
