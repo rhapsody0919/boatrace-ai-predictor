@@ -1764,13 +1764,13 @@
           ]
         },
         {
-          "ref": "src/services/racerQueries2.js:207",
+          "ref": "src/services/racerQueries2.js:233",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:294",
+          "ref": "src/services/racerQueries2.js:302",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -6575,13 +6575,13 @@
           ]
         },
         {
-          "ref": "src/services/racerQueries2.js:217",
+          "ref": "src/services/racerQueries2.js:114",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:300",
+          "ref": "src/services/racerQueries2.js:308",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -11567,13 +11567,13 @@
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:193",
+          "ref": "src/services/racerQueries2.js:219",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:287",
+          "ref": "src/services/racerQueries2.js:295",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -13176,13 +13176,13 @@
           ]
         },
         {
-          "ref": "src/services/racerQueries2.js:199",
+          "ref": "src/services/racerQueries2.js:225",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:308",
+          "ref": "src/services/racerQueries2.js:316",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -17148,13 +17148,13 @@
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:187",
+          "ref": "src/services/racerQueries2.js:213",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:281",
+          "ref": "src/services/racerQueries2.js:289",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
