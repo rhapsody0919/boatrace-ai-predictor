@@ -722,6 +722,19 @@ test.describe("レース詳細の表示の細部", () => {
     expect(note).toBeLessThanOrEqual(cardRight + 1);
   });
 
+  // 今節タブの日別表は、選手の走（records）と節の全体（board）を別々に取る。board が後から届くと
+  // ST の欄に「（n位）」が足されて列の幅が変わり、先に送った位置が列の途中になる（HR22: CI で
+  // 「›」の後に固定の列の右へ 54px 切れた列が残る赤が 11/10〜11/12 に14回）。表が出て、board の
+  // 読み込み中の表示（.rmt-loading）が消えてから送る
+  const waitMeetHistorySettled = async (page) => {
+    await expect(
+      page.locator(".race-history-hscroll .race-history-table-row").first(),
+    ).toBeVisible({ timeout: 90000 });
+    await expect(page.locator(".rmt-loading")).toHaveCount(0, {
+      timeout: 90000,
+    });
+  };
+
   // 固定した列の右端と、その右で最初に見える列の左端の差（切れて隠れている幅）
   const cutAtSticky = (hint) =>
     hint.evaluate((el) => {
@@ -751,6 +764,7 @@ test.describe("レース詳細の表示の細部", () => {
     {
       name: "今節の日別表",
       path: `${RACE}?tab=meet`,
+      open: waitMeetHistorySettled,
       hint: ".race-history-hscroll",
       sticky: ".race-history-table tbody tr:first-child td:first-child",
       table: ".race-history-table",
@@ -984,6 +998,7 @@ test.describe("レース詳細の表示の細部", () => {
     await expect(hint.locator(".race-history-table-row").first()).toBeVisible({
       timeout: 90000,
     });
+    await waitMeetHistorySettled(page);
     // 線は送る前は引かない（表が収まる幅で空きの端を強調しない）
     const lineOf = () =>
       hint.evaluate(
