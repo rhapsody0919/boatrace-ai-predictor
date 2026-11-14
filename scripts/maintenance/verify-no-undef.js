@@ -387,10 +387,8 @@ const EMPTY_CATCH =
   "export function a() {\n  try {\n    JSON.parse('1');\n  } catch (e) {}\n}\n";
 
 /** 自己テスト。rule は対象の規則（null は常に実行）。検査中の規則のものだけを実行する */
-function unitCases() {
-  const found = (code, file) => async () =>
-    (await findingsIn(code, file)).found;
-  const both = (code, file) => () => findingsIn(code, file);
+// 走査の対象の区切り（変異検証の一時ファイルを外す）の自己テスト
+function ignoreCases() {
   return [
     {
       rule: null,
@@ -405,6 +403,14 @@ function unitCases() {
       ],
       want: [true, true, false, false],
     },
+  ];
+}
+
+function unitCases() {
+  const found = (code, file) => async () =>
+    (await findingsIn(code, file)).found;
+  const both = (code, file) => () => findingsIn(code, file);
+  return [
     {
       rule: "no-undef",
       name: "#1020 直前の master の supabaseDataService.js → groupIntoCurrentMeet を検出する",
@@ -677,7 +683,7 @@ async function runCases(cases) {
 }
 
 async function main() {
-  const selfCases = [...unitCases(), ...compareCases()].filter(
+  const selfCases = [...ignoreCases(), ...unitCases(), ...compareCases()].filter(
     (c) => c.rule === null || ACTIVE.has(c.rule),
   );
   if (!(await runCases(selfCases))) {
