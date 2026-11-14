@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures.js";
+import { settled } from "./settled.js";
 
 // レース詳細の表示の細部（BOA-613・618・619）
 const RACE = "/race/2026-09-29-16-12"; // 児島12R（ピットレポートあり）
@@ -816,9 +817,11 @@ test.describe("レース詳細の表示の細部", () => {
       const less = hint.locator(":scope > .hscroll-less");
       await expect(less).toBeVisible();
       // 送った先は列の境目。固定の列のすぐ右に、切れた列の破片を残さない（PR #1202 ファン評価2周目。
-      // 375px のコース別成績で「1コース 2%」（実際は 87.2%）と読めた）
+      // 375px のコース別成績で「1コース 2%」（実際は 87.2%）と読めた）。
+      // 境目に止める測り直し（ResizeObserver・フォントの読み込み後）が済む前は 54px 残って見えるので、
+      // 位置が落ち着いてから測る（上限 1px は変えない）
       expect(
-        await cutAtSticky(hint),
+        await settled(() => cutAtSticky(hint)),
         "固定の列の右に切れた列が残らない",
       ).toBeLessThanOrEqual(1);
       // 送ったあとも、左端の列は同じ位置に残る
@@ -968,10 +971,13 @@ test.describe("レース詳細の表示の細部", () => {
     const row = page.locator(".race-history-table-row").first();
     await expect(row).toBeVisible({ timeout: 90000 });
     await row.hover();
-    const [rowBg, cellBg] = await row.evaluate((r) => [
-      getComputedStyle(r).backgroundColor,
-      getComputedStyle(r.querySelector("td")).backgroundColor,
-    ]);
+    // 行の色の変化（hover の遷移）が終わってから測る。行と日付の列の色が同じかの判定はそのまま
+    const [rowBg, cellBg] = await settled(() =>
+      row.evaluate((r) => [
+        getComputedStyle(r).backgroundColor,
+        getComputedStyle(r.querySelector("td")).backgroundColor,
+      ]),
+    );
     expect(cellBg).toBe(rowBg);
   });
   test("320px: 今節の日別表は日付とRの列を固定し、1日2走の日もどの走か分かる（PR #1202 ファン評価1周目）", async ({

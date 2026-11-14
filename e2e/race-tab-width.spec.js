@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures.js";
+import { settled } from "./settled.js";
 
 // BOA-881: PC のレース詳細の列の決まり（2026-10-16 オーナー承認の案A、docs/design/race-detail-pc-width）。
 // 見出し・ヘッダー・タブ・本文・下の案内・思考アシストを、最大1200の1本の列にして画面の中央に置く。
@@ -71,12 +72,19 @@ for (const width of [1280, 1440, 1920, 2560]) {
     // どのタブでも、中身の一番外の箱は列の左右の端と同じ
     for (const tab of TABS) {
       await page.locator(".race-tabs-btn", { hasText: tab }).first().click();
-      const panel = page.locator(".race-tabs-panel > *").first();
-      await expect(panel).toBeVisible({ timeout: 30000 });
-      const r = await panel.evaluate((el) => {
-        const b = el.getBoundingClientRect();
-        return { left: b.left, right: b.right };
+      await expect(page.locator(".race-tabs-panel > *").first()).toBeVisible({
+        timeout: 30000,
       });
+      // 読み込み中の箱から本体に差し替わる間（オッズ一覧で左端 0 が測れた）は測らず、落ち着いてから測る
+      const r = await settled(() =>
+        page.evaluate(() => {
+          const el = document.querySelector(".race-tabs-panel > *");
+          if (!el) return null;
+          const b = el.getBoundingClientRect();
+          return b.width > 0 ? { left: b.left, right: b.right } : null;
+        }),
+      );
+      expect(r, `${tab} の中身がある`).not.toBeNull();
       near(r.left, col.left, `${tab} の中身の左端`);
       near(r.right, col.right, `${tab} の中身の右端`);
     }
@@ -164,14 +172,21 @@ test("1280px: 6艇を列に並べる表は、1艇の列が150px以上（BOA-881�
   await page.locator(".race-tabs-btn", { hasText: "基本情報" }).first().click();
   const heads = page.locator(".drt-table .drt-boat-th");
   await expect(heads).toHaveCount(6, { timeout: 30000 });
-  const widths = await heads.evaluateAll((els) =>
-    els.map((el) => el.getBoundingClientRect().width),
+  // 読み込みで表が作り直される間は測らず、落ち着いてから測る（判定の 150px・はみ出し 1px はそのまま）
+  const m = await settled(() =>
+    page.evaluate(() => {
+      const ths = [...document.querySelectorAll(".drt-table .drt-boat-th")];
+      const wrapper = document.querySelector(".drt-table-wrapper");
+      if (ths.length !== 6 || !wrapper) return null;
+      return {
+        widths: ths.map((el) => el.getBoundingClientRect().width),
+        overflow: wrapper.scrollWidth - wrapper.clientWidth,
+      };
+    }),
   );
-  for (const w of widths) expect(w).toBeGreaterThanOrEqual(150);
-  const wrapper = page.locator(".drt-table-wrapper").first();
-  expect(
-    await wrapper.evaluate((el) => el.scrollWidth - el.clientWidth),
-  ).toBeLessThanOrEqual(1);
+  expect(m, "6艇の表がある").not.toBeNull();
+  for (const w of m.widths) expect(w).toBeGreaterThanOrEqual(150);
+  expect(m.overflow).toBeLessThanOrEqual(1);
 });
 
 for (const width of [1440, 1920]) {
@@ -209,8 +224,12 @@ for (const width of [375, 1024, 1440, 1920]) {
       .click();
     const table = page.locator(".rwit-today-table").first();
     await expect(table).toBeVisible({ timeout: 30000 });
-    const geometry = await table.evaluate((el) => {
-      const card = el.closest(".rwit-card");
+    // 表は読み込みの再描画で作り直されることがある。要素を握らず、毎回引き直して落ち着いてから測る
+    const geometry = await settled(() =>
+      page.evaluate(() => {
+      const el = document.querySelector(".rwit-today-table");
+      const card = el?.closest(".rwit-card");
+      if (!el || !card) return null;
       const style = getComputedStyle(card);
       const box = card.getBoundingClientRect();
       const tableBox = el.getBoundingClientRect();
@@ -236,7 +255,9 @@ for (const width of [375, 1024, 1440, 1920]) {
             ? main.getBoundingClientRect().width
             : null,
       };
-    });
+    }),
+    );
+    expect(geometry, "枠別情報の表がカードの中にある").not.toBeNull();
     near(geometry.left, geometry.contentLeft, "表の左端");
     const room = geometry.mainWidth ?? geometry.contentWidth;
     const expectedWidth = width >= 1025 ? Math.min(720, room) : room;
