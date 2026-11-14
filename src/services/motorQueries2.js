@@ -260,11 +260,7 @@ async function fetchMotorEntries(races, motorNumber) {
         .eq("motor_number", motorNumber),
     ),
   );
-  let entries = [];
-  entryResults.forEach(({ data }) => {
-    entries = entries.concat(data ?? []);
-  });
-  return entries;
+  return entryResults.flatMap(({ data }) => data ?? []);
 }
 
 /**
