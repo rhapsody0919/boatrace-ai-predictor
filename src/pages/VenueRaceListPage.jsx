@@ -7,7 +7,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   useParams,
   Link,
-  Navigate,
   useLocation,
   useNavigationType,
 } from "react-router-dom";
@@ -27,6 +26,7 @@ import VenueSummaryLines from "../components/venue/VenueSummaryLines";
 import VenueMeetBanner from "../components/venue/VenueMeetBanner";
 import VenueDaySummaryCard from "../components/race/VenueDaySummaryCard";
 import DataFetchError from "../components/DataFetchError";
+import NotFoundPage from "./NotFoundPage";
 import {
   useDatePredictions,
   FETCH_FAILED_ERROR,
@@ -124,7 +124,7 @@ function VenueRaceListPage() {
       if (ev) trackEvent(ev.name, ev.params);
     },
   );
-  // Hooksはearly returnより前で無条件に呼ぶ必要があるため、venueCode不正時のNavigateより前に置く
+  // Hooksはearly returnより前で無条件に呼ぶ必要があるため、venueCode不正時のNotFoundPageより前に置く
   const nowHHMM = useNowHHMM(isToday);
   // 次の発走レースの位置は、開いた時点の時刻で決めて固定する（読んでいる途中でカードが動いたり
   // 再スクロールしたりしないように。開き直すと新しい位置になる。BOA-546）
@@ -303,7 +303,7 @@ function VenueRaceListPage() {
   });
 
   if (!Number.isInteger(venueCode) || venueCode < 1 || venueCode > 24) {
-    return <Navigate to={isToday ? "/" : `/races/${date}`} replace />;
+    return <NotFoundPage venueOutOfRange />;
   }
 
   const noRacesMessage = isToday

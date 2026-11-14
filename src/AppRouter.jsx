@@ -19,6 +19,7 @@ import App from "./App";
 import VenueGridPage from "./pages/VenueGridPage";
 import VenueRaceListPage from "./pages/VenueRaceListPage";
 import MeetPage from "./pages/MeetPage";
+import NotFoundPage from "./pages/NotFoundPage";
 import RaceDetailPage from "./pages/RaceDetailPage";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
@@ -292,8 +293,8 @@ function LocalizedRoutes({ lng = "ja" }) {
       <Route path="holmes" element={<Holmes />} />
       <Route path="poirot" element={<Poirot />} />
 
-      {/* Fallback: 不明なパスはトップへ */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Fallback: 不明なパスは noindex の「見つかりません」 */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
