@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures.js";
+import { settled } from "./settled.js";
 
 // BOA-881: PC のレース詳細の列の決まり（2026-10-16 オーナー承認の案A、docs/design/race-detail-pc-width）。
 // 見出し・ヘッダー・タブ・本文・下の案内・思考アシストを、最大1200の1本の列にして画面の中央に置く。
@@ -34,24 +35,6 @@ const rectOf = (page, selector) =>
     return { left: r.left, right: r.right, top: r.top, width: r.width };
   }, selector);
 
-// 測る前に、位置と大きさが2回続けて同じになる（再描画・読み込み中の箱の差し替えが終わった）まで待つ。
-// 判定の値（列の端・720 の上限）は変えず、測る時機だけを揃える。
-// 計測の関数は毎回 document から引き直す（読み込みで差し替わった古い要素を握らない）。
-// 取れない（null）間と、前回と違う間は待ち、timeout まで落ち着かなければ最後の値で判定に進む
-const settled = async (measure, { timeout = 15000, interval = 150 } = {}) => {
-  const deadline = Date.now() + timeout;
-  let prev = null;
-  let last = null;
-  for (;;) {
-    last = await measure();
-    const key = last === null ? null : JSON.stringify(last);
-    if (key !== null && key === prev) return last;
-    prev = key;
-    if (Date.now() > deadline) return last;
-    await new Promise((resolve) => setTimeout(resolve, interval));
-  }
-};
-
 const near = (actual, expected, label) =>
   expect(
     Math.abs(actual - expected),
@@ -71,16 +54,8 @@ for (const width of [1280, 1440, 1920, 2560]) {
     const col = column(width);
 
     // ヘッダー（ロゴ・メニュー）、パンくず、タブの並び、攻略ガイド、その他のレース
-    near(
-      (await rectOf(page, ".app-header .logo")).left,
-      col.left,
-      "ロゴの左端",
-    );
-    near(
-      (await rectOf(page, ".app-header .nav")).right,
-      col.right,
-      "メニューの右端",
-    );
+    near((await rectOf(page, ".app-header .logo")).left, col.left, "ロゴの左端");
+    near((await rectOf(page, ".app-header .nav")).right, col.right, "メニューの右端");
     for (const sel of [
       ".breadcrumb",
       ".race-tabs-bar",
@@ -173,9 +148,7 @@ for (const width of [1440, 1920]) {
         near(c.main.left, c.left, `${label}: 左のセルの左端`);
         near(c.side.right, c.right, `${label}: 右のセルの右端`);
         near(c.main.top, c.side.top, `${label}: 左右のセルの上端`);
-        expect(c.side.width, `${label}: 右のセルの幅`).toBeGreaterThanOrEqual(
-          300,
-        );
+        expect(c.side.width, `${label}: 右のセルの幅`).toBeGreaterThanOrEqual(300);
       }
     }
   });
@@ -234,16 +207,8 @@ for (const width of [1440, 1920]) {
       col.left,
       "切り替えの帯の左端",
     );
-    near(
-      (await rectOf(page, ".app-header .logo")).left,
-      col.left,
-      "ロゴの左端",
-    );
-    near(
-      (await rectOf(page, ".app-header .nav")).right,
-      col.right,
-      "メニューの右端",
-    );
+    near((await rectOf(page, ".app-header .logo")).left, col.left, "ロゴの左端");
+    near((await rectOf(page, ".app-header .nav")).right, col.right, "メニューの右端");
   });
 }
 
@@ -262,35 +227,35 @@ for (const width of [375, 1024, 1440, 1920]) {
     // 表は読み込みの再描画で作り直されることがある。要素を握らず、毎回引き直して落ち着いてから測る
     const geometry = await settled(() =>
       page.evaluate(() => {
-        const el = document.querySelector(".rwit-today-table");
-        const card = el?.closest(".rwit-card");
-        if (!el || !card) return null;
-        const style = getComputedStyle(card);
-        const box = card.getBoundingClientRect();
-        const tableBox = el.getBoundingClientRect();
-        // 767px以下は既存の規則で表をカードの枠の内側まで広げる。
-        const mobile = window.innerWidth <= 767;
-        const insetLeft =
-          parseFloat(style.borderLeftWidth) +
-          (mobile ? 0 : parseFloat(style.paddingLeft));
-        const insetRight =
-          parseFloat(style.borderRightWidth) +
-          (mobile ? 0 : parseFloat(style.paddingRight));
-        const main = el.closest(".race-split__main");
-        return {
-          left: tableBox.left,
-          width: tableBox.width,
-          cardLeft: box.left,
-          cardWidth: box.width,
-          contentLeft: box.left + insetLeft,
-          contentWidth: box.width - insetLeft - insetRight,
-          // 1200px 以上は2段の左のセルの中
-          mainWidth:
-            main && getComputedStyle(main).display !== "contents"
-              ? main.getBoundingClientRect().width
-              : null,
-        };
-      }),
+      const el = document.querySelector(".rwit-today-table");
+      const card = el?.closest(".rwit-card");
+      if (!el || !card) return null;
+      const style = getComputedStyle(card);
+      const box = card.getBoundingClientRect();
+      const tableBox = el.getBoundingClientRect();
+      // 767px以下は既存の規則で表をカードの枠の内側まで広げる。
+      const mobile = window.innerWidth <= 767;
+      const insetLeft =
+        parseFloat(style.borderLeftWidth) +
+        (mobile ? 0 : parseFloat(style.paddingLeft));
+      const insetRight =
+        parseFloat(style.borderRightWidth) +
+        (mobile ? 0 : parseFloat(style.paddingRight));
+      const main = el.closest(".race-split__main");
+      return {
+        left: tableBox.left,
+        width: tableBox.width,
+        cardLeft: box.left,
+        cardWidth: box.width,
+        contentLeft: box.left + insetLeft,
+        contentWidth: box.width - insetLeft - insetRight,
+        // 1200px 以上は2段の左のセルの中
+        mainWidth:
+          main && getComputedStyle(main).display !== "contents"
+            ? main.getBoundingClientRect().width
+            : null,
+      };
+    }),
     );
     expect(geometry, "枠別情報の表がカードの中にある").not.toBeNull();
     near(geometry.left, geometry.contentLeft, "表の左端");
