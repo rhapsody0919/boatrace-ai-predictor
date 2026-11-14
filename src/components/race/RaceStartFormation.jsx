@@ -19,7 +19,7 @@ const LABEL_W = 44;
 const K = "result.startFormation";
 
 /** 艇番の札（欠場は薄く） */
-function BoatBadge({ r, y }) {
+function FormationBadge({ r, y }) {
   const color = BOAT_COLORS[r.boat] || BOAT_COLORS[1];
   return (
     <>
@@ -54,7 +54,7 @@ function AbsentRow({ r, y, t }) {
       <text x="4" y={y + 4} className="rr-fm-label rr-fm-dim">
         {t(`${K}.absentLabel`)}
       </text>
-      <BoatBadge r={r} y={y} />
+      <FormationBadge r={r} y={y} />
       <text x="74" y={y + 4} className="rr-fm-label rr-fm-dim">
         {t(`${K}.absent`, { boat: r.boat })}
       </text>
@@ -133,7 +133,7 @@ function BoatRow({ r, y, t }) {
       <text x="4" y={y + 4} className="rr-fm-label">
         {t(`${K}.course`, { course: r.course })}
       </text>
-      <BoatBadge r={r} y={y} />
+      <FormationBadge r={r} y={y} />
       {r.mae && <MaeTag y={y} t={t} />}
       {r.late || r.st == null ? (
         <LateHull y={y} t={t} />
