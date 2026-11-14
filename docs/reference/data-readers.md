@@ -925,7 +925,7 @@
   - `src/services/motorQueries.js:234` select [motor_2rate, race_id]
   - `src/services/motorQueries.js:310` select [boat_number, motor_2rate, motor_3rate, motor_number, race_id]
   - `src/services/motorQueries2.js:106` select [boat_number, global_2rate, motor_number, race_id]
-  - `src/services/motorQueries2.js:297` select [boat_number, grade, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries2.js:257` select [boat_number, grade, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries3.js:173` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries3.js:296` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
@@ -1220,7 +1220,7 @@
   - `src/services/meetQueries2.js:128` select(helper:fetchAllByIn)
   - `src/services/meetQueries3.js:67` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/motorQueries2.js:125` select [race_id, rank1, rank2, rank3]
-  - `src/services/motorQueries2.js:316` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
+  - `src/services/motorQueries2.js:353` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/motorQueries3.js:305` select [race_id, rank1]
   - `src/services/motorQueries5.js:50` select(helper:fetchAllByIn)
   - `src/services/motorQueries5.js:280` select(helper:fetchAllByIn)

@@ -7872,7 +7872,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries2.js:297",
+          "ref": "src/services/motorQueries2.js:257",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8441,7 +8441,7 @@
             "src/services/motorQueries.js:234",
             "src/services/motorQueries.js:310",
             "src/services/motorQueries2.js:106",
-            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
             "src/services/motorQueries4.js:160",
@@ -8550,7 +8550,7 @@
             "src/services/meetQueries3.js:72",
             "src/services/motorQueries.js:310",
             "src/services/motorQueries2.js:106",
-            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
             "src/services/motorQueries5.js:268",
@@ -8611,7 +8611,7 @@
             "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/meetQueries2.js:105",
             "src/services/meetQueries3.js:72",
-            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
             "src/services/motorQueries4.js:160",
@@ -8650,7 +8650,7 @@
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/check-morning-init-shadow.js:152",
-            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries2.js:257",
             "src/services/raceQueries3.js:83",
             "src/services/racerService.js:46",
             "src/services/sherlockService.js:77"
@@ -8742,7 +8742,7 @@
             "src/services/meetQueries2.js:105",
             "src/services/motorQueries.js:310",
             "src/services/motorQueries2.js:106",
-            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
             "src/services/motorQueries4.js:160",
@@ -8930,7 +8930,7 @@
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
             "src/services/meetQueries3.js:72",
-            "src/services/motorQueries2.js:297",
+            "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
             "src/services/motorQueries4.js:160",
@@ -11474,7 +11474,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries2.js:316",
+          "ref": "src/services/motorQueries2.js:353",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11788,7 +11788,7 @@
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
-            "src/services/motorQueries2.js:316",
+            "src/services/motorQueries2.js:353",
             "src/services/motorQueries3.js:305",
             "src/services/raceQueries3.js:125",
             "src/services/raceQueries4.js:29",
@@ -11853,7 +11853,7 @@
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
-            "src/services/motorQueries2.js:316",
+            "src/services/motorQueries2.js:353",
             "src/services/motorQueries3.js:305",
             "src/services/raceQueries3.js:125",
             "src/services/ruleMatchService.js:146"
@@ -11902,7 +11902,7 @@
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
-            "src/services/motorQueries2.js:316",
+            "src/services/motorQueries2.js:353",
             "src/services/raceQueries3.js:125",
             "src/services/ruleMatchService.js:146"
           ],
@@ -11940,7 +11940,7 @@
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
-            "src/services/motorQueries2.js:316",
+            "src/services/motorQueries2.js:353",
             "src/services/raceQueries3.js:125",
             "src/services/ruleMatchService.js:146"
           ],
@@ -12184,7 +12184,7 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
-            "src/services/motorQueries2.js:316"
+            "src/services/motorQueries2.js:353"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:588",
@@ -12203,7 +12203,7 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
-            "src/services/motorQueries2.js:316"
+            "src/services/motorQueries2.js:353"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:588",
@@ -12222,7 +12222,7 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/meetQueries.js:173",
             "src/services/meetQueries3.js:67",
-            "src/services/motorQueries2.js:316"
+            "src/services/motorQueries2.js:353"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:588",
@@ -12500,7 +12500,7 @@
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/maintenance/update-venue-stats.js:32",
-            "src/services/motorQueries2.js:316",
+            "src/services/motorQueries2.js:353",
             "src/services/raceQueries3.js:125"
           ],
           "writers": [],
