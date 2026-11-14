@@ -1,33 +1,11 @@
 import { useId } from "react";
-import ClassLineup from "./ClassLineup";
-import BaselineBar from "../BaselineBar";
+import RoughCardButton from "./RoughCardButton";
+import RoughCardNotes from "./RoughCardNotes";
 import { ROUND_LABEL, restClassCounts } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 import { trackEvent } from "../../../utils/analytics";
 import { useVisibleOnce } from "../../../hooks/useVisibleOnce";
 import { cautionVisibleEvent } from "../../../utils/cautionEvents";
-
-/** 小さいバー1本（値・全国の全レースの線・矢印） */
-function MiniBar({ label, row }) {
-  if (!row) return null;
-  const pct = Math.round(row.rate * 100);
-  return (
-    <BaselineBar label={label} rate={row.rate} base={row.base}>
-      <b>{pct}%</b> {row.verdict ? ASSIST_COPY.verdictArrow[row.verdict] : ""}{" "}
-      {ASSIST_COPY.roughBase(Math.round(row.base * 100))}
-    </BaselineBar>
-  );
-}
-
-/** 行の名前の下に、数えた範囲の名前と件数（BOA-822 FR-4） */
-function RowLabel({ name, scopeText }) {
-  return (
-    <>
-      {name}
-      <span className="ta-rough-scope ta-num">{scopeText}</span>
-    </>
-  );
-}
 
 /**
  * 「このレースは堅い？荒れる？」の枠（FW-22、screens S-1 A）。2本の小さいバー（1号艇の1着・万舟）と
@@ -80,92 +58,26 @@ export default function RoughCard({
         {ASSIST_COPY.roughTitle}
       </h2>
       {rough && (
-        <button
-          type="button"
-          className={
-            inCautionMode ? "ta-rough-btn ta-rough-btn--scoped" : "ta-rough-btn"
-          }
-          aria-label={ASSIST_COPY.roughButton}
-          onClick={onOpen}
-        >
-          <MiniBar
-            label={
-              inCautionMode ? (
-                <RowLabel name={ASSIST_COPY.roughB1} scopeText={b1Scope} />
-              ) : (
-                ASSIST_COPY.roughB1
-              )
-            }
-            row={rough.b1}
-          />
-          <MiniBar
-            label={
-              inCautionMode ? (
-                <RowLabel
-                  name={ASSIST_COPY.roughManshu}
-                  scopeText={classScope}
-                />
-              ) : (
-                ASSIST_COPY.roughManshu
-              )
-            }
-            row={rough.manshu}
-          />
-          {/* 矢印を単独で読めるようにする（BOA-808 の4） */}
-          <span className="ta-note">{ASSIST_COPY.roughLegend}</span>
-          <span className="ta-rough-foot">
-            {/* 級の並びの絵は万舟の範囲。1着の根拠に見えないよう名前を付ける（#1604 ファン評価1周目 P2） */}
-            {inCautionMode ? (
-              <span className="ta-rough-lineup">
-                <span className="ta-rough-scope">
-                  {ASSIST_COPY.roughManshuScope}
-                </span>
-                <ClassLineup lineup={lineup} />
-              </span>
-            ) : (
-              <ClassLineup lineup={lineup} />
-            )}
-            <span className="ta-note ta-num">
-              {inCautionMode ? (
-                ASSIST_COPY.roughOpen
-              ) : (
-                <>
-                  {ASSIST_COPY.roughCount(scope.cell.n, round)}
-                </>
-              )}
-            </span>
-          </span>
-        </button>
+        <RoughCardButton
+          rough={rough}
+          scope={scope}
+          lineup={lineup}
+          round={round}
+          onOpen={onOpen}
+          inCautionMode={inCautionMode}
+          b1Scope={b1Scope}
+          classScope={classScope}
+        />
       )}
-      {rough?.few && (
-        <p className="ta-note" data-testid="rough-round-fallback">
-          {ASSIST_COPY.roughRoundFallback(ROUND_LABEL[scope.round])}
-        </p>
-      )}
-      {inCautionMode && ic && (
-        <p className="ta-note ta-num" data-testid="rough-in-caution-flip">
-          {ASSIST_COPY.roughFlip(100 - ic.pct, ic.pct)}
-        </p>
-      )}
-      {inCautionMode && ic?.round && (
-        <p className="ta-note" data-testid="rough-in-caution-round">
-          {ASSIST_COPY.roughRoundBaseNote(ic.round)}
-        </p>
-      )}
-      {rough && counts && (
-        <p className="ta-note">
-          {ASSIST_COPY.classNote(1, classes[0], counts)}
-        </p>
-      )}
-      {!rough && (
-        <p className="ta-note">
-          {status === "error"
-            ? ASSIST_COPY.fetchFailed
-            : status === "empty"
-              ? ASSIST_COPY.stateNotSaved
-              : ASSIST_COPY.loading}
-        </p>
-      )}
+      <RoughCardNotes
+        rough={rough}
+        scope={scope}
+        classes={classes}
+        counts={counts}
+        status={status}
+        inCautionMode={inCautionMode}
+        ic={ic}
+      />
     </section>
   );
 }
