@@ -247,6 +247,61 @@ export async function getRaceMotorFreshness(raceId, venueCode, rows) {
     };
   }
 
+/** 指定モーター番号の出走を、対象レース群からまとめて引く（getMotorUsageHistory 用）。 */
+async function fetchMotorEntries(races, motorNumber) {
+  const raceIds = races.map((r) => r.race_id);
+  const chunks = chunkArray(raceIds, 500);
+  const entryResults = await Promise.all(
+    chunks.map((chunk) =>
+      supabase
+        .from("race_entries")
+        .select("race_id, boat_number, racer_id, player_name, grade")
+        .in("race_id", chunk)
+        .eq("motor_number", motorNumber),
+    ),
+  );
+  let entries = [];
+  entryResults.forEach(({ data }) => {
+    entries = entries.concat(data ?? []);
+  });
+  return entries;
+}
+
+/**
+ * race_id昇順に並べ、同一選手が2日以内の間隔で乗り続けている限り同じ節とみなす
+ * （getMotorUsageHistory 用）。
+ */
+function groupEntriesIntoMeets(entries) {
+  const sorted = [...entries].sort((a, b) =>
+    a.race_id.localeCompare(b.race_id),
+  );
+  const meets = [];
+  let current = null;
+  sorted.forEach((e) => {
+    const date = e.race_id.slice(0, 10);
+    if (current && current.racerId === e.racer_id) {
+      const gapDays =
+        (new Date(date) - new Date(current.lastDate)) / 86400000;
+      if (gapDays <= 2) {
+        current.entries.push(e);
+        current.lastDate = date;
+        return;
+      }
+    }
+    if (current) meets.push(current);
+    current = {
+      racerId: e.racer_id,
+      playerName: e.player_name,
+      grade: e.grade,
+      entries: [e],
+      firstDate: date,
+      lastDate: date,
+    };
+  });
+  if (current) meets.push(current);
+  return meets;
+}
+
 /**
  * 指定会場・モーター番号を過去に使用した選手の履歴を、節ごとにグループ化して
  * 取得する（BOA-283）。「誰がこのモーターに乗っていたか」を辿れるようにする。
@@ -289,21 +344,7 @@ export function getMotorUsageHistory(
         );
         if (races.length === 0) return [];
 
-        const raceIds = races.map((r) => r.race_id);
-        const chunks = chunkArray(raceIds, 500);
-        const entryResults = await Promise.all(
-          chunks.map((chunk) =>
-            supabase
-              .from("race_entries")
-              .select("race_id, boat_number, racer_id, player_name, grade")
-              .in("race_id", chunk)
-              .eq("motor_number", motorNumber),
-          ),
-        );
-        let entries = [];
-        entryResults.forEach(({ data }) => {
-          entries = entries.concat(data ?? []);
-        });
+        const entries = await fetchMotorEntries(races, motorNumber);
         if (entries.length === 0) return [];
 
         const resultChunks = chunkArray(
@@ -328,34 +369,7 @@ export function getMotorUsageHistory(
         const rankOf = (result, boatNumber) =>
           findBoatColumnIndex(result, "rank", boatNumber);
 
-        // race_id昇順に並べ、同一選手が2日以内の間隔で乗り続けている限り同じ節とみなす
-        const sorted = [...entries].sort((a, b) =>
-          a.race_id.localeCompare(b.race_id),
-        );
-        const meets = [];
-        let current = null;
-        sorted.forEach((e) => {
-          const date = e.race_id.slice(0, 10);
-          if (current && current.racerId === e.racer_id) {
-            const gapDays =
-              (new Date(date) - new Date(current.lastDate)) / 86400000;
-            if (gapDays <= 2) {
-              current.entries.push(e);
-              current.lastDate = date;
-              return;
-            }
-          }
-          if (current) meets.push(current);
-          current = {
-            racerId: e.racer_id,
-            playerName: e.player_name,
-            grade: e.grade,
-            entries: [e],
-            firstDate: date,
-            lastDate: date,
-          };
-        });
-        if (current) meets.push(current);
+        const meets = groupEntriesIntoMeets(entries);
 
         return meets
           .map((meet) => {
