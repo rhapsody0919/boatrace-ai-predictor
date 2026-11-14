@@ -113,9 +113,14 @@ const JS_FILES = ["**/*.{js,jsx,mjs,cjs}"];
 const BROKEN_REV = "3c0894ba9a09594270f2f99d47858c31668091f6";
 const BROKEN_FILE = "src/services/supabaseDataService.js";
 
+const MUTANT_GLOB = "**/*.__mutant-*";
+
 const eslint = new ESLint({
   cwd: ROOT,
   overrideConfig: [
+    // 他の検証が変異検証のために一時的に書くファイル（*.__mutant-*.js）は走査しない。並行して実行すると、
+    // 一覧の後・読む前に消えて ENOENT で落ちる（BOA-1583、11/13 の release）。本物のファイルの検査は変えない
+    { ignores: [MUTANT_GLOB] },
     { linterOptions: { noInlineConfig: true } },
     {
       files: JS_FILES,
@@ -387,6 +392,19 @@ function unitCases() {
     (await findingsIn(code, file)).found;
   const both = (code, file) => () => findingsIn(code, file);
   return [
+    {
+      rule: null,
+      name: "変異検証の一時ファイル（*.__mutant-*.js）は走査から外し、元のファイルは外さない（BOA-1583）",
+      run: async () => [
+        await eslint.isPathIgnored(
+          path.join(ROOT, "scripts/maintenance/verify-x.__mutant-1-1.js"),
+        ),
+        await eslint.isPathIgnored(path.join(ROOT, "src/x.__mutant-2-3.js")),
+        await eslint.isPathIgnored(path.join(ROOT, "scripts/maintenance/verify-x.js")),
+        await eslint.isPathIgnored(path.join(ROOT, "src/x.jsx")),
+      ],
+      want: [true, true, false, false],
+    },
     {
       rule: "no-undef",
       name: "#1020 直前の master の supabaseDataService.js → groupIntoCurrentMeet を検出する",
