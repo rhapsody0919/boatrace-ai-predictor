@@ -40,20 +40,66 @@ function NumButton({ num, boat, onMetric }) {
   );
 }
 
-function Track({ model, row, onMetric }) {
-  if (row.x == null)
-    return (
-      <div className="ta-track" aria-hidden="true">
-        <span className="ta-track-rail" style={{ opacity: 0.4 }} />
-        {model.kind !== "bet" && !row.pending && (
-          <span className="ta-track-empty">{ASSIST_COPY.noRecord}</span>
-        )}
-      </div>
-    );
-  const x = scale(model, row.x);
-  const color = BOAT_LINE_COLORS[row.boat];
+function TrackEmpty({ model, row }) {
+  return (
+    <div className="ta-track" aria-hidden="true">
+      <span className="ta-track-rail" style={{ opacity: 0.4 }} />
+      {model.kind !== "bet" && !row.pending && (
+        <span className="ta-track-empty">{ASSIST_COPY.noRecord}</span>
+      )}
+    </div>
+  );
+}
+
+/** 相手レンズ（spec D-46）: ○3着以内を2つ目の点で置き、●2着以内との間を線でつなぐ */
+function TrackSecondDot({ model, row, x, color }) {
+  return (
+    <>
+      <span
+        className="ta-track-span"
+        aria-hidden="true"
+        style={{
+          left: `${x}%`,
+          width: `${Math.max(0, scale(model, row.x2) - x)}%`,
+          background: color,
+        }}
+      />
+      <span
+        className="ta-track-dot ta-track-dot-o"
+        aria-hidden="true"
+        style={{ left: `${scale(model, row.x2)}%`, borderColor: color }}
+      />
+    </>
+  );
+}
+
+function TrackValue({ row, x, def, onMetric }) {
   // 端の値（目盛りの外に詰めた値を含む）は文字を内側へ寄せ、右の印や図の外にはみ出させない（ファン評価 3周目 指摘12）
   const valClass = `ta-track-val ta-num${row.dotBest ? " ind-best" : ""}${row.flying ? " ta-track-val-f" : ""}${x > 85 ? " ta-track-val-end" : x < 15 ? " ta-track-val-start" : ""}`;
+  return def ? (
+    // 点の値は押すと6艇比較（ファン評価で PR4 に回した「スタートの値の数字ボタン」）
+    <button
+      type="button"
+      className={`${valClass} ta-track-val-btn`}
+      style={{ left: `${x}%` }}
+      aria-label={
+        row.dotLabel ?? ASSIST_COPY.compareAria(def.label, row.dotAria)
+      }
+      onClick={() => onMetric(row.dotMetric, row.boat)}
+    >
+      {row.dotText}
+    </button>
+  ) : (
+    <span className={valClass} style={{ left: `${x}%` }} aria-hidden="true">
+      {row.dotText}
+    </span>
+  );
+}
+
+function Track({ model, row, onMetric }) {
+  if (row.x == null) return <TrackEmpty model={model} row={row} />;
+  const x = scale(model, row.x);
+  const color = BOAT_LINE_COLORS[row.boat];
   const def = row.dotMetric ? METRICS[row.dotMetric] : null;
   return (
     <div
@@ -74,48 +120,12 @@ function Track({ model, row, onMetric }) {
         aria-hidden="true"
         style={{ left: `${x}%`, background: row.flying ? undefined : color }}
       />
-      {/* 相手レンズ（spec D-46）: ○3着以内を2つ目の点で置き、●2着以内との間を線でつなぐ */}
       {row.x2 != null && (
-        <>
-          <span
-            className="ta-track-span"
-            aria-hidden="true"
-            style={{
-              left: `${x}%`,
-              width: `${Math.max(0, scale(model, row.x2) - x)}%`,
-              background: color,
-            }}
-          />
-          <span
-            className="ta-track-dot ta-track-dot-o"
-            aria-hidden="true"
-            style={{ left: `${scale(model, row.x2)}%`, borderColor: color }}
-          />
-        </>
+        <TrackSecondDot model={model} row={row} x={x} color={color} />
       )}
-      {row.dotText &&
-        (def ? (
-          // 点の値は押すと6艇比較（ファン評価で PR4 に回した「スタートの値の数字ボタン」）
-          <button
-            type="button"
-            className={`${valClass} ta-track-val-btn`}
-            style={{ left: `${x}%` }}
-            aria-label={
-              row.dotLabel ?? ASSIST_COPY.compareAria(def.label, row.dotAria)
-            }
-            onClick={() => onMetric(row.dotMetric, row.boat)}
-          >
-            {row.dotText}
-          </button>
-        ) : (
-          <span
-            className={valClass}
-            style={{ left: `${x}%` }}
-            aria-hidden="true"
-          >
-            {row.dotText}
-          </span>
-        ))}
+      {row.dotText && (
+        <TrackValue row={row} x={x} def={def} onMetric={onMetric} />
+      )}
     </div>
   );
 }
