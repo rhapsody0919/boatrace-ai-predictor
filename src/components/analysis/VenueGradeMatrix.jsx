@@ -83,6 +83,107 @@ function formatMetric(metricKey, row) {
   }
 }
 
+function VenueGradeControls({
+  t,
+  selectedVenue,
+  setSelectedVenue,
+  selectedMetric,
+  setSelectedMetric,
+  availableVenues,
+}) {
+  return (
+    <div className="controls-section">
+      <label htmlFor="venue-grade-venue-select">
+        {t("analysis.venueSelectLabel")}
+      </label>
+      <select
+        id="venue-grade-venue-select"
+        value={selectedVenue}
+        onChange={(e) => setSelectedVenue(e.target.value)}
+        className="venue-select"
+      >
+        {availableVenues.map((venue) => (
+          <option key={venue.code} value={venue.code}>
+            {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="venue-grade-metric-select">
+        {t("analysis.venueGrade.metricSelectLabel")}
+      </label>
+      <select
+        id="venue-grade-metric-select"
+        value={selectedMetric}
+        onChange={(e) => setSelectedMetric(e.target.value)}
+        className="venue-select"
+      >
+        {METRICS.map((m) => (
+          <option key={m.key} value={m.key}>
+            {t(`analysis.venueGrade.metric.${m.key}`)}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function VenueGradeTable({
+  t,
+  metric,
+  selectedMetric,
+  gradesPresent,
+  byGradeAndBoat,
+  boatRows,
+}) {
+  return (
+    <>
+      <div className="table-wrapper">
+        <table className="motor-ranking-table">
+          <thead>
+            <tr>
+              <th>
+                {metric.boatSpecific
+                  ? t("analysis.laneHeader")
+                  : t("analysis.venueGrade.raceWideHeader")}
+              </th>
+              {gradesPresent.map((grade) => (
+                <th key={grade}>
+                  {grade === "ippan"
+                    ? t("volatilityAccuracy.gradeIppan")
+                    : grade}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {boatRows.map((boat) => (
+              <tr key={boat}>
+                <td className="rank">
+                  {metric.boatSpecific
+                    ? t("analysis.boatN", { n: boat })
+                    : t("analysis.venueGrade.raceWideHeader")}
+                </td>
+                {gradesPresent.map((grade) => {
+                  const row = byGradeAndBoat.get(`${grade}-${boat}`);
+                  return (
+                    <td key={grade} className="rate">
+                      {formatMetric(selectedMetric, row)}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="table-note">
+        {t("analysis.venueGrade.note", { minRaceCount: MIN_RACE_COUNT })}
+      </p>
+    </>
+  );
+}
+
 function VenueGradeMatrix() {
   const { t } = useTranslation();
   const [selectedVenue, setSelectedVenue] = useState("14");
@@ -111,8 +212,7 @@ function VenueGradeMatrix() {
         setLoading(true);
         setError(null);
         const venueCode = parseInt(selectedVenue, 10);
-        const data =
-          await getVenueGradeBoatStats(venueCode);
+        const data = await getVenueGradeBoatStats(venueCode);
         setRows(data);
       } catch (err) {
         setError(err.message || t("analysis.dataLoadError"));
@@ -144,39 +244,14 @@ function VenueGradeMatrix() {
         {t("analysis.venueGrade.description")}
       </p>
 
-      <div className="controls-section">
-        <label htmlFor="venue-grade-venue-select">
-          {t("analysis.venueSelectLabel")}
-        </label>
-        <select
-          id="venue-grade-venue-select"
-          value={selectedVenue}
-          onChange={(e) => setSelectedVenue(e.target.value)}
-          className="venue-select"
-        >
-          {availableVenues.map((venue) => (
-            <option key={venue.code} value={venue.code}>
-              {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
-            </option>
-          ))}
-        </select>
-
-        <label htmlFor="venue-grade-metric-select">
-          {t("analysis.venueGrade.metricSelectLabel")}
-        </label>
-        <select
-          id="venue-grade-metric-select"
-          value={selectedMetric}
-          onChange={(e) => setSelectedMetric(e.target.value)}
-          className="venue-select"
-        >
-          {METRICS.map((m) => (
-            <option key={m.key} value={m.key}>
-              {t(`analysis.venueGrade.metric.${m.key}`)}
-            </option>
-          ))}
-        </select>
-      </div>
+      <VenueGradeControls
+        t={t}
+        selectedVenue={selectedVenue}
+        setSelectedVenue={setSelectedVenue}
+        selectedMetric={selectedMetric}
+        setSelectedMetric={setSelectedMetric}
+        availableVenues={availableVenues}
+      />
 
       <p className="section-description">
         {t(`analysis.venueGrade.metricDescription.${selectedMetric}`)}
@@ -194,50 +269,14 @@ function VenueGradeMatrix() {
       )}
 
       {!loading && !error && rows.length > 0 && (
-        <>
-          <div className="table-wrapper">
-            <table className="motor-ranking-table">
-              <thead>
-                <tr>
-                  <th>
-                    {metric.boatSpecific
-                      ? t("analysis.laneHeader")
-                      : t("analysis.venueGrade.raceWideHeader")}
-                  </th>
-                  {gradesPresent.map((grade) => (
-                    <th key={grade}>
-                      {grade === "ippan"
-                        ? t("volatilityAccuracy.gradeIppan")
-                        : grade}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {boatRows.map((boat) => (
-                  <tr key={boat}>
-                    <td className="rank">
-                      {metric.boatSpecific
-                        ? t("analysis.boatN", { n: boat })
-                        : t("analysis.venueGrade.raceWideHeader")}
-                    </td>
-                    {gradesPresent.map((grade) => {
-                      const row = byGradeAndBoat.get(`${grade}-${boat}`);
-                      return (
-                        <td key={grade} className="rate">
-                          {formatMetric(selectedMetric, row)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="table-note">
-            {t("analysis.venueGrade.note", { minRaceCount: MIN_RACE_COUNT })}
-          </p>
-        </>
+        <VenueGradeTable
+          t={t}
+          metric={metric}
+          selectedMetric={selectedMetric}
+          gradesPresent={gradesPresent}
+          byGradeAndBoat={byGradeAndBoat}
+          boatRows={boatRows}
+        />
       )}
     </div>
   );
