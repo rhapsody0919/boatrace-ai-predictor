@@ -77,6 +77,106 @@ function LevelRow({ row, baseRate, t }) {
   );
 }
 
+function StatusNote({ status, t }) {
+  return (
+    <>
+      {status === "loading" && (
+        <p className="ica-note">{t("accuracy.inCaution.loading")}</p>
+      )}
+      {status === "error" && (
+        <p className="ica-note">{t("accuracy.inCaution.error")}</p>
+      )}
+      {status === "empty" && (
+        <p className="ica-note">{t("accuracy.inCaution.empty")}</p>
+      )}
+    </>
+  );
+}
+
+function TabSwitch({ tab, post, pre, setChosen, t }) {
+  return (
+    <div className="ica-switch" role="group">
+      <button
+        type="button"
+        className="ica-switch-btn"
+        aria-pressed={tab === "post"}
+        disabled={!post}
+        onClick={() => setChosen("post")}
+      >
+        {post
+          ? t("accuracy.inCaution.tabPost", { from: ymd(post.from) })
+          : t("accuracy.inCaution.tabPostNone")}
+      </button>
+      <button
+        type="button"
+        className="ica-switch-btn"
+        aria-pressed={tab === "pre"}
+        disabled={!pre}
+        onClick={() => setChosen("pre")}
+      >
+        {pre
+          ? t("accuracy.inCaution.tabPre", {
+              from: ymd(pre.from),
+              to: ymd(pre.to),
+            })
+          : t("accuracy.inCaution.tabPreNone")}
+      </button>
+    </div>
+  );
+}
+
+function BarsCard({ view, section, tab, t }) {
+  return (
+    <div className="ica-card">
+      <h3 className="ica-card-title">{t("accuracy.inCaution.barsTitle")}</h3>
+      {view.base.rate !== null && (
+        <div className="ica-base-label-row">
+          <span
+            className="ica-base-label"
+            style={{ left: `${view.base.rate * 100}%` }}
+          >
+            {t("inCaution.base", { p: pct1(view.base.rate) })}
+          </span>
+        </div>
+      )}
+      <ul className="ica-rows">
+        {view.rows.map((row) => (
+          <LevelRow key={row.level} row={row} baseRate={view.base.rate} t={t} />
+        ))}
+      </ul>
+      <p className="ica-note">{t("accuracy.inCaution.legend")}</p>
+      {/* 段の件数の合計が全体と合わない理由（#1606 ファン評価2周目 P2、1周目 P3 の再発） */}
+      {section.sparse?.n > 0 && (
+        <p className="ica-note" data-testid="ica-sparse">
+          {t("accuracy.inCaution.sparseNote", {
+            n: section.sparse.n.toLocaleString(),
+          })}
+        </p>
+      )}
+      {tab === "post" && view.rows.some((r) => r.rate === null) && (
+        <p className="ica-note">
+          {t("accuracy.inCaution.fewNote", {
+            days: daysBetween(section.from, section.through),
+          })}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AboutCard({ t }) {
+  return (
+    <div className="ica-card ica-about">
+      <h3 className="ica-card-title">{t("accuracy.inCaution.aboutTitle")}</h3>
+      <p>{t("accuracy.inCaution.about1")}</p>
+      <p>{t("accuracy.inCaution.about2")}</p>
+      {/* 注意度が画面のどこに出るか（#1606 ファン評価1周目 P2） */}
+      <p>{t("accuracy.inCaution.where")}</p>
+      <p className="ica-note">{t("inCaution.disclaimer")}</p>
+    </div>
+  );
+}
+
 function InCautionAccuracyChart() {
   const { t } = useTranslation();
   const [data, setData] = useState(null);
@@ -121,44 +221,16 @@ function InCautionAccuracyChart() {
         {t("accuracy.inCaution.title")}
       </h2>
       <p className="ica-lead">{t("accuracy.inCaution.lead")}</p>
-      {status === "loading" && (
-        <p className="ica-note">{t("accuracy.inCaution.loading")}</p>
-      )}
-      {status === "error" && (
-        <p className="ica-note">{t("accuracy.inCaution.error")}</p>
-      )}
-      {status === "empty" && (
-        <p className="ica-note">{t("accuracy.inCaution.empty")}</p>
-      )}
+      <StatusNote status={status} t={t} />
       {status === "ready" && (
         <>
-          <div className="ica-switch" role="group">
-            <button
-              type="button"
-              className="ica-switch-btn"
-              aria-pressed={tab === "post"}
-              disabled={!post}
-              onClick={() => setChosen("post")}
-            >
-              {post
-                ? t("accuracy.inCaution.tabPost", { from: ymd(post.from) })
-                : t("accuracy.inCaution.tabPostNone")}
-            </button>
-            <button
-              type="button"
-              className="ica-switch-btn"
-              aria-pressed={tab === "pre"}
-              disabled={!pre}
-              onClick={() => setChosen("pre")}
-            >
-              {pre
-                ? t("accuracy.inCaution.tabPre", {
-                    from: ymd(pre.from),
-                    to: ymd(pre.to),
-                  })
-                : t("accuracy.inCaution.tabPreNone")}
-            </button>
-          </div>
+          <TabSwitch
+            tab={tab}
+            post={post}
+            pre={pre}
+            setChosen={setChosen}
+            t={t}
+          />
           {!post && (
             <p className="ica-note">{t("accuracy.inCaution.postNone")}</p>
           )}
@@ -175,59 +247,10 @@ function InCautionAccuracyChart() {
                       n: view.base.n.toLocaleString(),
                     })}
               </p>
-              <div className="ica-card">
-                <h3 className="ica-card-title">
-                  {t("accuracy.inCaution.barsTitle")}
-                </h3>
-                {view.base.rate !== null && (
-                  <div className="ica-base-label-row">
-                    <span
-                      className="ica-base-label"
-                      style={{ left: `${view.base.rate * 100}%` }}
-                    >
-                      {t("inCaution.base", { p: pct1(view.base.rate) })}
-                    </span>
-                  </div>
-                )}
-                <ul className="ica-rows">
-                  {view.rows.map((row) => (
-                    <LevelRow
-                      key={row.level}
-                      row={row}
-                      baseRate={view.base.rate}
-                      t={t}
-                    />
-                  ))}
-                </ul>
-                <p className="ica-note">{t("accuracy.inCaution.legend")}</p>
-                {/* 段の件数の合計が全体と合わない理由（#1606 ファン評価2周目 P2、1周目 P3 の再発） */}
-                {section.sparse?.n > 0 && (
-                  <p className="ica-note" data-testid="ica-sparse">
-                    {t("accuracy.inCaution.sparseNote", {
-                      n: section.sparse.n.toLocaleString(),
-                    })}
-                  </p>
-                )}
-                {tab === "post" && view.rows.some((r) => r.rate === null) && (
-                  <p className="ica-note">
-                    {t("accuracy.inCaution.fewNote", {
-                      days: daysBetween(section.from, section.through),
-                    })}
-                  </p>
-                )}
-              </div>
+              <BarsCard view={view} section={section} tab={tab} t={t} />
             </>
           )}
-          <div className="ica-card ica-about">
-            <h3 className="ica-card-title">
-              {t("accuracy.inCaution.aboutTitle")}
-            </h3>
-            <p>{t("accuracy.inCaution.about1")}</p>
-            <p>{t("accuracy.inCaution.about2")}</p>
-            {/* 注意度が画面のどこに出るか（#1606 ファン評価1周目 P2） */}
-            <p>{t("accuracy.inCaution.where")}</p>
-            <p className="ica-note">{t("inCaution.disclaimer")}</p>
-          </div>
+          <AboutCard t={t} />
         </>
       )}
     </section>
