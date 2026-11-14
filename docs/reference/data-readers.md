@@ -648,7 +648,7 @@
   - `scripts/analysis/verify-outcome-distribution-coverage.js:26` select(helper:fetchAll)
   - `scripts/maintenance/verify-full-picture-scene2.js:2849` rest(rest) （検査）
   - `src/services/venueQueries.js:94` select [count_90days, first_boat]
-  - `src/services/venueQueries.js:147` select [*, count_90days, first_boat, venue_code]
+  - `src/services/venueQueries.js:220` select [*, count_90days, first_boat, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-outcome-distribution.js:114` delete
   - `scripts/daily/update-outcome-distribution.js:125` insert [?]
@@ -2290,7 +2290,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `scripts/maintenance/verify-full-picture-scene2.js:2871` rest(rest) （検査）
-  - `src/services/venueQueries.js:243` select [*, boat_number, percentage, venue_code]
+  - `src/services/venueQueries.js:251` select [*, boat_number, percentage, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-winning-technique-stats.js:161` delete
   - `scripts/daily/update-winning-technique-stats.js:171` insert [?]
@@ -2300,7 +2300,7 @@
 
 写しの取得より後のマイグレーションで足したもの、消したもの、別のスキーマ、誤りのどれか。
 
-- rpc `get_course_win_rate_baseline`: `src/services/venueQueries.js:343`
+- rpc `get_course_win_rate_baseline`: `src/services/venueQueries.js:351`
 - table `eve_race_deadlines`: `scripts/lib/eveDeadlinesJob.js:77`, `scripts/lib/eveDeadlinesJob.js:274`, `scripts/lib/eveDeadlinesJob.js:422`
 - table `racer_career_meta`: `scripts/lib/racerCareerJob.js:621`, `scripts/lib/racerCareerJob.js:846`, `scripts/lib/racerCareerJob.js:908`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:646`
