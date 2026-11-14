@@ -1,14 +1,48 @@
 import { useTranslation } from "react-i18next";
-import BoatBadge from "./BoatBadge";
+import SixBoatCourseTableRow from "./SixBoatCourseTableRow";
 import { buildSixBoatLocalRows } from "./sixBoatCourseStats.js";
 import "./SixBoatCourseTable.css";
 
-const rate = (value) => (value == null ? "—" : value.toFixed(1));
 const slash = (date) => date.replaceAll("-", "/");
-// 10走未満（reliability "none"）は率を出さない（spec §1.2）。直近3期は純関数が null にしているが、
-// 当地の行は1艇ずつの表と同じ率を持つので、ここで外す
-const shown = (row, key) => (row.reliability === "none" ? null : row[key]);
 const SIX_BOAT_PERIODS = ["recent3", "local"];
+
+const periodRange = (isLocal, baseline) => {
+  if (isLocal) {
+    const { from, to } = baseline?.venue ?? {};
+    return from && to ? { from: slash(from), to: slash(to) } : null;
+  }
+  const terms = baseline?.terms ?? [];
+  return terms.length > 0
+    ? { from: slash(terms[0].calc_from), to: slash(terms.at(-1).calc_to) }
+    : null;
+};
+
+function PeriodSwitch({ period, onPeriodChange, range, text }) {
+  return (
+    <div
+      className="six-boat-course-period"
+      role="group"
+      aria-label={text("periodLabel")}
+    >
+      {SIX_BOAT_PERIODS.map((key) => (
+        <button
+          key={key}
+          type="button"
+          aria-pressed={period === key}
+          className={`rwit-chip${period === key ? " is-active" : ""}`}
+          onClick={() => onPeriodChange(key)}
+        >
+          {text(key === "local" ? "periodLocal" : "periodRecent3")}
+        </button>
+      ))}
+      {range && (
+        <span className="six-boat-course-range">
+          {text("periodRange", range)}
+        </span>
+      )}
+    </div>
+  );
+}
 
 /**
  * stats: useSixBoatCourseStats の戻り値（直近3期の行と平均。親の RaceWakuInfoTab が1艇ずつの表と共有する）。
@@ -35,21 +69,14 @@ export default function SixBoatCourseTable({
   const status = isLocal ? "ready" : recentStatus;
   const rows = isLocal
     ? buildSixBoatLocalRows({
-          players,
-          scopedByRacer: scopedBefore,
-          venueCode,
-          now: periodAnchor,
-          baseline,
-        })
-      : recentRows;
-  const terms = baseline?.terms ?? [];
-  const range = isLocal
-    ? baseline?.venue?.from && baseline?.venue?.to
-      ? { from: slash(baseline.venue.from), to: slash(baseline.venue.to) }
-      : null
-    : terms.length > 0
-      ? { from: slash(terms[0].calc_from), to: slash(terms.at(-1).calc_to) }
-      : null;
+        players,
+        scopedByRacer: scopedBefore,
+        venueCode,
+        now: periodAnchor,
+        baseline,
+      })
+    : recentRows;
+  const range = periodRange(isLocal, baseline);
   const diffTitle = text(isLocal ? "colDiffLocal" : "colDiff");
   const notes = isLocal
     ? ["noteLocal", "noteSample"]
@@ -58,28 +85,12 @@ export default function SixBoatCourseTable({
     <section className="six-boat-course">
       <h3>{text("title")}</h3>
       <p>{text("sub")}</p>
-      <div
-        className="six-boat-course-period"
-        role="group"
-        aria-label={text("periodLabel")}
-      >
-        {SIX_BOAT_PERIODS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={period === key}
-            className={`rwit-chip${period === key ? " is-active" : ""}`}
-            onClick={() => onPeriodChange(key)}
-          >
-            {text(key === "local" ? "periodLocal" : "periodRecent3")}
-          </button>
-        ))}
-        {range && (
-          <span className="six-boat-course-range">
-            {text("periodRange", range)}
-          </span>
-        )}
-      </div>
+      <PeriodSwitch
+        period={period}
+        onPeriodChange={onPeriodChange}
+        range={range}
+        text={text}
+      />
       {status === "loading" ? (
         <p className="rwit-loading">{t("wakuInfo.loading")}</p>
       ) : status === "error" ? (
@@ -104,83 +115,17 @@ export default function SixBoatCourseTable({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
-                const player = players.find(
-                  (p) => Number(p.number) === row.boat,
-                );
-                const pending =
-                  row.reliability === "loading" || row.reliability === "error";
-                return (
-                  <tr
-                    key={row.boat}
-                    tabIndex={0}
-                    aria-selected={focusedBoat === row.boat}
-                    className={`${row.reliability !== "ok" ? "is-muted" : ""}${focusedBoat === row.boat ? " is-focused" : ""}`}
-                    onClick={() => onFocusBoat(row.boat)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onFocusBoat(row.boat);
-                      }
-                    }}
-                  >
-                    <th scope="row">
-                      <BoatBadge n={row.boat} size="xs" />{" "}
-                      <span translate="no">
-                        {player?.name?.replace(/\s+/g, "")}
-                      </span>
-                      <small>{player?.grade}</small>
-                    </th>
-                    {row.reliability === "loading" ? (
-                      <td
-                        colSpan={4}
-                        className="six-boat-course-pending rwit-loading"
-                      >
-                        {t("wakuInfo.loading")}
-                      </td>
-                    ) : row.reliability === "error" ? (
-                      <td colSpan={4} className="six-boat-course-pending">
-                        — <small>{text("localFetchError")}</small>
-                      </td>
-                    ) : null}
-                    {!pending && (
-                      <>
-                        <td>
-                          <span className="six-boat-course-rate">
-                            {rate(shown(row, "winRate"))}
-                          </span>
-                          <small
-                            className="six-boat-course-diff"
-                            title={diffTitle}
-                          >
-                            {row.diff == null
-                              ? "—"
-                              : text("diff", {
-                                  value: `${row.diff >= 0 ? "+" : ""}${row.diff.toFixed(1)}`,
-                                })}
-                          </small>
-                          <small>{text("avg", { value: rate(row.avg) })}</small>
-                        </td>
-                        <td className="six-boat-course-rate">
-                          {rate(shown(row, "top2Rate"))}
-                        </td>
-                        <td className="six-boat-course-rate">
-                          {rate(shown(row, "top3Rate"))}
-                        </td>
-                        <td>
-                          {row.entries}
-                          {row.reliability !== "ok" && (
-                            <span title={text("smallSampleTitle")}> ⚠</span>
-                          )}
-                          {!row.contiguous && (
-                            <small>{text("skippedPeriod")}</small>
-                          )}
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
+              {rows.map((row) => (
+                <SixBoatCourseTableRow
+                  key={row.boat}
+                  row={row}
+                  player={players.find((p) => Number(p.number) === row.boat)}
+                  text={text}
+                  diffTitle={diffTitle}
+                  focusedBoat={focusedBoat}
+                  onFocusBoat={onFocusBoat}
+                />
+              ))}
             </tbody>
           </table>
           <div className="six-boat-course-notes">
