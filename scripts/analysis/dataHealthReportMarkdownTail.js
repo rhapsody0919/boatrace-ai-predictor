@@ -1,7 +1,6 @@
 // データ健全性レポートのMarkdown描画。data-health-report.js から移しただけ（出力は1字も変えない）。
 
 import { ODDS_FULL_GRID_SINCE } from "../lib/dataHealth/coverageSpec.js";
-import { DETECTION_LAG } from "../lib/scrapeJobs/expectedUnpublished.js";
 import {
   OVERWRITTEN_ON_UPSERT,
   formatBytes,
