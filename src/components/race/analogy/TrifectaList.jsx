@@ -1,61 +1,11 @@
 import { useTranslation } from "react-i18next";
 import ScenarioFold from "./ScenarioFold";
-import BoatBadge from "../BoatBadge";
-import { fmtCount, fmtPct } from "../../../utils/analogyFormat";
+import { Row, TrifectaBandBreakdown } from "./TrifectaListParts";
 import {
   TOP_TRIFECTA,
   bandBreakdown,
   trifectaList,
 } from "../../../utils/analogyAggregate";
-import { SCOPE_FLOW } from "./analogyColors";
-
-function Row({ combo, count, total, max, onPick, picked = false, minPct = 0 }) {
-  const { t } = useTranslation();
-  const body = (
-    <>
-      <span className="af-tri">
-        {combo.map((b, i) => (
-          <span key={i}>
-            {i > 0 && <span className="af-tri-sep">-</span>}
-            <BoatBadge n={b} size="xs" />
-          </span>
-        ))}
-      </span>
-      <span className="af-trk">
-        <span
-          className="af-trk-f"
-          style={{ width: `${Math.max((count / max) * 100, minPct)}%` }}
-        />
-      </span>
-      <span className="af-bar-v">
-        {fmtPct(count / total, 1)}{" "}
-        {onPick ? (
-          // 件数の札: 押すとこの出目の元のレースが下に開く（BOA-823）
-          <span className="af-cnt-chip">
-            {t("aiPredictionTab.analogy.count", { n: fmtCount(count) })} ›
-          </span>
-        ) : (
-          <small>
-            {t("aiPredictionTab.analogy.count", { n: fmtCount(count) })}
-          </small>
-        )}
-      </span>
-    </>
-  );
-  return onPick ? (
-    <button
-      type="button"
-      className={`af-bar${picked ? " is-selected" : ""}`}
-      aria-pressed={picked}
-      data-af-control="scenario_races_tri"
-      onClick={() => onPick(combo)}
-    >
-      {body}
-    </button>
-  ) : (
-    <div className="af-bar">{body}</div>
-  );
-}
 
 /**
  * よく出た3連単（上位3つ＋残りは畳む。spec B-8・C-5）
@@ -82,54 +32,16 @@ export default function TrifectaList({
   const all = trifectaList(tri, { first, not1 });
   const total = all.reduce((s, [, c]) => s + c, 0);
   if (bd) {
-    // 各行は帯を押す前の一覧と同じ「全体の割合・件数」。帯の中の大きさは棒の長さで見せ、
-    // 帯が全体のどれくらいかは見出しに1回だけ（2026-10-10 ファンパネル案C、ユーザー決定）
-    const max = bd.rows[0][1];
     return (
-      <div className="af-tri-band" data-testid="analogy-band-breakdown">
-        <p className="af-tri-band-h">
-          <i
-            className="af-tri-band-sw"
-            style={{ background: SCOPE_FLOW[band.a] }}
-            aria-hidden="true"
-          />
-          {t("aiPredictionTab.analogy.flow.breakdown", {
-            from: band.p + 1,
-            a: band.a,
-            to: band.p + 2,
-            b: band.b,
-            n: fmtCount(bd.total),
-            p: fmtPct(bd.total / total),
-          })}
-        </p>
-        <p className="af-foot">
-          {t("aiPredictionTab.analogy.flow.breakdownBack")}
-        </p>
-        <div className="af-bars">
-          {bd.rows.map(([combo, c]) => (
-            <Row
-              key={combo.join("-")}
-              combo={combo}
-              count={c}
-              total={total}
-              max={max}
-              onPick={onPick}
-              picked={picked === combo.join("-")}
-            />
-          ))}
-        </div>
-        {onBandRaces && (
-          <button
-            type="button"
-            className="af-rl-band"
-            aria-pressed={bandPicked}
-            data-af-control="scenario_races_band"
-            onClick={onBandRaces}
-          >
-            {t("aiPredictionTab.analogy.scenario.races.bandLink")}
-          </button>
-        )}
-      </div>
+      <TrifectaBandBreakdown
+        bd={bd}
+        band={band}
+        total={total}
+        onPick={onPick}
+        picked={picked}
+        onBandRaces={onBandRaces}
+        bandPicked={bandPicked}
+      />
     );
   }
   if (!all.length)

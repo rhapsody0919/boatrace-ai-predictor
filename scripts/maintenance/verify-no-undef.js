@@ -117,6 +117,9 @@ const eslint = new ESLint({
   cwd: ROOT,
   overrideConfig: [
     { linterOptions: { noInlineConfig: true } },
+    // 変異検査（他の verify-*.js の withMutant）が作っては消す一時ファイル。走査の後・読む前に消えて
+    // ENOENT になる揺れ（BOA-1583）を、走査の対象から外して防ぐ。本物のファイルは外れない
+    { ignores: ["**/*.__mutant-*.js"] },
     {
       files: JS_FILES,
       rules: Object.fromEntries(RULES.map((r) => [r, "error"])),
@@ -387,6 +390,16 @@ function unitCases() {
     (await findingsIn(code, file)).found;
   const both = (code, file) => () => findingsIn(code, file);
   return [
+    {
+      rule: null,
+      name: "変異検査の一時ファイル（*.__mutant-*.js）だけを走査から外し、本物の scripts のファイルは外さない（BOA-1583）",
+      run: async () => [
+        await eslint.isPathIgnored(path.join(ROOT, "scripts/maintenance/verify-x.__mutant-1-1.js")),
+        await eslint.isPathIgnored(path.join(ROOT, "scripts/maintenance/verify-x.js")),
+        await eslint.isPathIgnored(path.join(ROOT, "src/mutant-notes.js")),
+      ],
+      want: [true, false, false],
+    },
     {
       rule: "no-undef",
       name: "#1020 直前の master の supabaseDataService.js → groupIntoCurrentMeet を検出する",
