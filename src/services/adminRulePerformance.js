@@ -18,17 +18,7 @@ export const RULE_PERFORMANCE_START_DATE = "2026-01-16";
 const percent = (numerator, denominator) =>
   denominator > 0 ? Math.round((numerator / denominator) * 100) : 0;
 
-/**
- * RPC の生の値を画面の形に整える（純粋関数）
- * @param {{ total: {samples, hits, payout}, by_rule: Array<{rule_id, samples, hits, payout}>, by_week: Array<{week_start, samples, hits, payout}> }} raw
- * @returns {{ overall: Object, rules: Array, weekly: Array, byVenue: Object }}
- */
-export function shapeRulePerformance(
-  raw,
-  startDate = RULE_PERFORMANCE_START_DATE,
-) {
-  const byRuleId = new Map((raw.by_rule || []).map((r) => [r.rule_id, r]));
-
+function shapeRules(byRuleId) {
   // 旧 getTopPerformingRules と同じ: 会場（VENUE_RULES_BY_VENUE のキー順）・定義順に並べてから
   // 回収率の降順（安定ソート。同率の並びもこの順で決まる）
   const rules = Object.values(VENUE_RULES_BY_VENUE)
@@ -51,10 +41,13 @@ export function shapeRulePerformance(
       };
     });
   rules.sort((a, b) => b.recovery - a.recovery);
+  return rules;
+}
 
+function shapeByVenue(byRuleId) {
   // 会場別の合計（BOA-574）: ルールは1つの会場にだけ属するので、会場のルールの合計がそのまま会場の合計になる。
   // 丸めは rules・overall と同じ式。ルールの無い会場はキーを持たない
-  const byVenue = Object.fromEntries(
+  return Object.fromEntries(
     Object.entries(VENUE_RULES_BY_VENUE).map(([venueCode, venueRules]) => {
       const sum = venueRules.reduce(
         (acc, rule) => {
@@ -83,7 +76,9 @@ export function shapeRulePerformance(
       ];
     }),
   );
+}
 
+function shapeOverall(raw, startDate) {
   const total = raw.total || { samples: 0, hits: 0, payout: 0 };
   const totalInvestment = total.samples * 100;
   const overall = {
@@ -98,7 +93,10 @@ export function shapeRulePerformance(
         ? Math.round((total.payout / totalInvestment) * 100)
         : 0,
   };
+  return overall;
+}
 
+function shapeWeekly(raw) {
   // 旧 getWeeklyPerformance と同じ: 週（月曜始まり）の昇順で累積する
   const weeks = [...(raw.by_week || [])].sort((a, b) =>
     a.week_start.localeCompare(b.week_start),
@@ -123,8 +121,25 @@ export function shapeRulePerformance(
         investment > 0 ? Math.round((cumulativePayout / investment) * 100) : 0,
     };
   });
+  return weekly;
+}
 
-  return { overall, rules, weekly, byVenue };
+/**
+ * RPC の生の値を画面の形に整える（純粋関数）
+ * @param { total: {samples, hits, payout}, by_rule: Array<{rule_id, samples, hits, payout}>, by_week: Array<{week_start, samples, hits, payout}> } raw
+ * @returns {{ overall: Object, rules: Array, weekly: Array, byVenue: Object }}
+ */
+export function shapeRulePerformance(
+  raw,
+  startDate = RULE_PERFORMANCE_START_DATE,
+) {
+  const byRuleId = new Map((raw.by_rule || []).map((r) => [r.rule_id, r]));
+  return {
+    overall: shapeOverall(raw, startDate),
+    rules: shapeRules(byRuleId),
+    weekly: shapeWeekly(raw),
+    byVenue: shapeByVenue(byRuleId),
+  };
 }
 
 /**
