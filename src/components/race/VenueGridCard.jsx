@@ -43,32 +43,69 @@ function findHighlightedStageRace(races) {
   );
 }
 
-function VenueGridCard({
-  venueCode,
-  venueData,
-  linkTo,
-  nowHHMM,
-  nextOpenDate,
-}) {
-  const { t } = useTranslation();
-  const venueName = venueNameOf(t, venueCode);
-
-  const races = venueData?.races || [];
-  const isOpen = races.length > 0;
-
-  if (!isOpen) {
-    return (
-      <div className="venue-grid-card venue-grid-card--closed">
-        <div className="venue-grid-card__name">{venueName}</div>
-        <div className="venue-grid-card__closed-label">
-          {nextOpenDate
-            ? t("venueGrid.nextOpen", { date: formatMonthDay(nextOpenDate) })
-            : t("venueGrid.noRacesToday")}
-        </div>
+function ClosedVenueCard({ t, venueName, nextOpenDate }) {
+  return (
+    <div className="venue-grid-card venue-grid-card--closed">
+      <div className="venue-grid-card__name">{venueName}</div>
+      <div className="venue-grid-card__closed-label">
+        {nextOpenDate
+          ? t("venueGrid.nextOpen", { date: formatMonthDay(nextOpenDate) })
+          : t("venueGrid.noRacesToday")}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
+function StageBadge({ t, stageConfig, highlightedStageRace }) {
+  if (!stageConfig) return null;
+  return (
+    <span
+      className="venue-grid-card__stage"
+      style={{ background: stageConfig.color }}
+    >
+      {stageConfig.emoji} {t(stageConfig.i18nKey)}{" "}
+      {raceNumberLabel(highlightedStageRace.raceNo)}
+    </span>
+  );
+}
+
+function TimeIcon({ timeIcon, timeLabel }) {
+  if (!timeIcon) return null;
+  return (
+    <span
+      className="venue-grid-card__time-icon"
+      title={timeLabel ?? undefined}
+      aria-label={timeLabel ?? undefined}
+    >
+      {timeIcon}
+    </span>
+  );
+}
+
+function VenueStatus({ t, nextRace }) {
+  return (
+    <div className="venue-grid-card__status">
+      {nextRace ? (
+        <>
+          <span className="venue-grid-card__next-race">
+            {t("venueGrid.nextRace", { race: nextRace.raceNo })}
+          </span>
+          {nextRace.startTime && (
+            <span className="venue-grid-card__next-time">
+              {nextRace.startTime}
+            </span>
+          )}
+        </>
+      ) : (
+        <span className="venue-grid-card__finished">
+          {t("venueGrid.allFinished")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function OpenVenueCard({ t, venueName, races, linkTo, nowHHMM }) {
   const timeOfDay = getVenueTimeOfDay(races);
   const timeIcon = TIME_OF_DAY_ICON[timeOfDay];
   const timeLabel =
@@ -98,26 +135,14 @@ function VenueGridCard({
           )}
           {/* 承認したモック（A案）どおり、優勝戦・準優勝戦のバッジは日目の札と同じ行に並べる。
               入らない幅（375px の3列）ではバッジごと次の行へ送る（バッジの中では折り返さない） */}
-          {stageConfig && (
-            <span
-              className="venue-grid-card__stage"
-              style={{ background: stageConfig.color }}
-            >
-              {stageConfig.emoji} {t(stageConfig.i18nKey)}{" "}
-              {raceNumberLabel(highlightedStageRace.raceNo)}
-            </span>
-          )}
+          <StageBadge
+            t={t}
+            stageConfig={stageConfig}
+            highlightedStageRace={highlightedStageRace}
+          />
           {/* 時間帯のアイコンも同じ行に入れ、右端へ寄せる。行の外に置くと、アイコンのある会場だけ
               札・バッジに使える幅が狭くなり、英語の「Semifinal 9R」がバッジの中で割れた（ファン評価1周目） */}
-          {timeIcon && (
-            <span
-              className="venue-grid-card__time-icon"
-              title={timeLabel ?? undefined}
-              aria-label={timeLabel ?? undefined}
-            >
-              {timeIcon}
-            </span>
-          )}
+          <TimeIcon timeIcon={timeIcon} timeLabel={timeLabel} />
         </span>
       </div>
 
@@ -142,25 +167,42 @@ function VenueGridCard({
         </div>
       )}
 
-      <div className="venue-grid-card__status">
-        {nextRace ? (
-          <>
-            <span className="venue-grid-card__next-race">
-              {t("venueGrid.nextRace", { race: nextRace.raceNo })}
-            </span>
-            {nextRace.startTime && (
-              <span className="venue-grid-card__next-time">
-                {nextRace.startTime}
-              </span>
-            )}
-          </>
-        ) : (
-          <span className="venue-grid-card__finished">
-            {t("venueGrid.allFinished")}
-          </span>
-        )}
-      </div>
+      <VenueStatus t={t} nextRace={nextRace} />
     </Link>
+  );
+}
+
+function VenueGridCard({
+  venueCode,
+  venueData,
+  linkTo,
+  nowHHMM,
+  nextOpenDate,
+}) {
+  const { t } = useTranslation();
+  const venueName = venueNameOf(t, venueCode);
+
+  const races = venueData?.races || [];
+  const isOpen = races.length > 0;
+
+  if (!isOpen) {
+    return (
+      <ClosedVenueCard
+        t={t}
+        venueName={venueName}
+        nextOpenDate={nextOpenDate}
+      />
+    );
+  }
+
+  return (
+    <OpenVenueCard
+      t={t}
+      venueName={venueName}
+      races={races}
+      linkTo={linkTo}
+      nowHHMM={nowHHMM}
+    />
   );
 }
 

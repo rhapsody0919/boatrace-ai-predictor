@@ -212,149 +212,152 @@ export function getRaceRacerFormBreakdown(raceId) {
     });
   }
 
+// 当日の展示STだけを付け、過去のズレは無い形（出走履歴が無いときの返り値）
+function withoutDeviation(entries, exhibitionByBoat) {
+  return entries.map((row) => ({
+    ...row,
+    exhibition_st: exhibitionByBoat.get(row.boat_number) ?? null,
+    avg_deviation: null,
+    sample_count: 0,
+  }));
+}
+
+// 過去の出走ごとに |本番ST - 展示ST| を選手別に集める
+async function collectDeviationsByRacer(pastEntries, pastRaceIds) {
+  // race_id 1件につき最大6艇分の行があるため、in()のキー数だけでなく取得行数も
+  // 1000行を超えうる。chunkArrayだけでは不十分なため.range()ページネーションで全件取得する
+  const [actualRows, exhibitionRows] = await Promise.all([
+    fetchAllByIn(
+      "race_start_timings",
+      "race_id, boat_number, start_timing, is_flying",
+      "race_id",
+      pastRaceIds,
+    ),
+    fetchAllByIn(
+      "exhibition_data",
+      "race_id, boat_number, start_timing",
+      "race_id",
+      pastRaceIds,
+    ),
+  ]);
+
+  const actualByKey = new Map();
+  actualRows.forEach((r) => {
+    if (r.is_flying) return; // フライングは異常値のためズレ計算から除外
+    actualByKey.set(`${r.race_id}-${r.boat_number}`, r.start_timing);
+  });
+
+  const exhibitionByKey = new Map();
+  exhibitionRows.forEach((e) => {
+    exhibitionByKey.set(`${e.race_id}-${e.boat_number}`, e.start_timing);
+  });
+
+  // 選手ごとに過去の |本番ST - 展示ST| を集計
+  const deviationsByRacer = new Map();
+  (pastEntries ?? []).forEach((e) => {
+    const key = `${e.race_id}-${e.boat_number}`;
+    const actual = actualByKey.get(key);
+    const exhibition = exhibitionByKey.get(key);
+    // 欠場艇の行（ST が NULL）・展示STの無い走は比べない（stDeviation が null）
+    const deviation = stDeviation(actual, exhibition);
+    if (deviation === null) return;
+    if (!deviationsByRacer.has(e.racer_id)) {
+      deviationsByRacer.set(e.racer_id, []);
+    }
+    deviationsByRacer.get(e.racer_id).push(deviation);
+  });
+  return deviationsByRacer;
+}
+
+// 旧クライアント集計（RPC 未適用環境のフォールバック）
+async function computeStPredictabilityClientSide(raceId) {
+  const { data: entries } = await supabase
+    .from("race_entries")
+    .select("boat_number, player_name, racer_id")
+    .eq("race_id", raceId)
+    .order("boat_number");
+
+  if (!entries || entries.length === 0) {
+    return [];
+  }
+
+  const { data: todaysExhibition } = await supabase
+    .from("exhibition_data")
+    .select("boat_number, start_timing")
+    .eq("race_id", raceId);
+  const exhibitionByBoat = new Map(
+    (todaysExhibition ?? []).map((e) => [e.boat_number, e.start_timing]),
+  );
+
+  const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
+    (id) => id !== null,
+  );
+  if (racerIds.length === 0) {
+    return withoutDeviation(entries, exhibitionByBoat);
+  }
+
+  // 過去90日、当該レースより前の出走を選手ごとに収集
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
+
+  const { data: pastEntries } = await supabase
+    .from("race_entries")
+    .select("race_id, boat_number, racer_id")
+    .in("racer_id", racerIds)
+    .gte("race_id", cutoffStr)
+    .lt("race_id", raceId);
+
+  const pastRaceIds = [...new Set((pastEntries ?? []).map((e) => e.race_id))];
+
+  if (pastRaceIds.length === 0) {
+    return withoutDeviation(entries, exhibitionByBoat);
+  }
+
+  const deviationsByRacer = await collectDeviationsByRacer(
+    pastEntries,
+    pastRaceIds,
+  );
+
+  return entries.map((row) => {
+    const deviations = deviationsByRacer.get(row.racer_id) ?? [];
+    const avgDeviation =
+      deviations.length > 0
+        ? deviations.reduce((sum, d) => sum + d, 0) / deviations.length
+        : null;
+    return {
+      ...row,
+      exhibition_st: exhibitionByBoat.get(row.boat_number) ?? null,
+      avg_deviation: avgDeviation,
+      sample_count: deviations.length,
+    };
+  });
+}
+
+async function fetchStPredictabilityRows(raceId) {
+  if (!supabase) {
+    console.error("Supabase client not initialized");
+    return [];
+  }
+
+  // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
+  // 未適用環境では旧クライアント集計にフォールバックする
+  const { data: rpcData } = await supabase.rpc("get_race_st_predictability", {
+    p_race_id: raceId,
+  });
+  if (Array.isArray(rpcData)) {
+    return rpcData;
+  }
+  return computeStPredictabilityClientSide(raceId);
+}
+
 /**
  * 指定レースの枠番別・展示ST/本番STのズレ（安定度）を取得する（BOA-153）
  * 展示STが本番の参考になるか（ズレが小さいほど安定）を選手ごとの過去実績から示す
  */
 export function getRaceStPredictabilityBreakdown(raceId) {
-    // 印を足した形をキャッシュする（印の無い旧い形と混ざらないよう、キーを変えた）
-    return withCache(`race-st-predictability-v2-${raceId}`, async () =>
-      attachExhibitionStartFlags(
-        raceId,
-        await (async () => {
-          if (!supabase) {
-            console.error("Supabase client not initialized");
-            return [];
-          }
-
-          // RPC優先（サーバー側集計でegressを約1/25に削減、029マイグレーション）。
-          // 未適用環境では旧クライアント集計にフォールバックする
-          const { data: rpcData } = await supabase.rpc(
-            "get_race_st_predictability",
-            { p_race_id: raceId },
-          );
-          if (Array.isArray(rpcData)) {
-            return rpcData;
-          }
-
-          const { data: entries } = await supabase
-            .from("race_entries")
-            .select("boat_number, player_name, racer_id")
-            .eq("race_id", raceId)
-            .order("boat_number");
-
-          if (!entries || entries.length === 0) {
-            return [];
-          }
-
-          const { data: todaysExhibition } = await supabase
-            .from("exhibition_data")
-            .select("boat_number, start_timing")
-            .eq("race_id", raceId);
-          const exhibitionByBoat = new Map(
-            (todaysExhibition ?? []).map((e) => [
-              e.boat_number,
-              e.start_timing,
-            ]),
-          );
-
-          const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
-            (id) => id !== null,
-          );
-          if (racerIds.length === 0) {
-            return entries.map((row) => ({
-              ...row,
-              exhibition_st: exhibitionByBoat.get(row.boat_number) ?? null,
-              avg_deviation: null,
-              sample_count: 0,
-            }));
-          }
-
-          // 過去90日、当該レースより前の出走を選手ごとに収集
-          const ninetyDaysAgo = new Date();
-          ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-          const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
-
-          const { data: pastEntries } = await supabase
-            .from("race_entries")
-            .select("race_id, boat_number, racer_id")
-            .in("racer_id", racerIds)
-            .gte("race_id", cutoffStr)
-            .lt("race_id", raceId);
-
-          const pastRaceIds = [
-            ...new Set((pastEntries ?? []).map((e) => e.race_id)),
-          ];
-
-          if (pastRaceIds.length === 0) {
-            return entries.map((row) => ({
-              ...row,
-              exhibition_st: exhibitionByBoat.get(row.boat_number) ?? null,
-              avg_deviation: null,
-              sample_count: 0,
-            }));
-          }
-
-          // race_id 1件につき最大6艇分の行があるため、in()のキー数だけでなく取得行数も
-          // 1000行を超えうる。chunkArrayだけでは不十分なため.range()ページネーションで全件取得する
-          const [actualRows, exhibitionRows] = await Promise.all([
-            fetchAllByIn(
-              "race_start_timings",
-              "race_id, boat_number, start_timing, is_flying",
-              "race_id",
-              pastRaceIds,
-            ),
-            fetchAllByIn(
-              "exhibition_data",
-              "race_id, boat_number, start_timing",
-              "race_id",
-              pastRaceIds,
-            ),
-          ]);
-
-          const actualByKey = new Map();
-          actualRows.forEach((r) => {
-            if (r.is_flying) return; // フライングは異常値のためズレ計算から除外
-            actualByKey.set(`${r.race_id}-${r.boat_number}`, r.start_timing);
-          });
-
-          const exhibitionByKey = new Map();
-          exhibitionRows.forEach((e) => {
-            exhibitionByKey.set(
-              `${e.race_id}-${e.boat_number}`,
-              e.start_timing,
-            );
-          });
-
-          // 選手ごとに過去の |本番ST - 展示ST| を集計
-          const deviationsByRacer = new Map();
-          (pastEntries ?? []).forEach((e) => {
-            const key = `${e.race_id}-${e.boat_number}`;
-            const actual = actualByKey.get(key);
-            const exhibition = exhibitionByKey.get(key);
-            // 欠場艇の行（ST が NULL）・展示STの無い走は比べない（stDeviation が null）
-            const deviation = stDeviation(actual, exhibition);
-            if (deviation === null) return;
-            if (!deviationsByRacer.has(e.racer_id)) {
-              deviationsByRacer.set(e.racer_id, []);
-            }
-            deviationsByRacer.get(e.racer_id).push(deviation);
-          });
-
-          return entries.map((row) => {
-            const deviations = deviationsByRacer.get(row.racer_id) ?? [];
-            const avgDeviation =
-              deviations.length > 0
-                ? deviations.reduce((sum, d) => sum + d, 0) / deviations.length
-                : null;
-            return {
-              ...row,
-              exhibition_st: exhibitionByBoat.get(row.boat_number) ?? null,
-              avg_deviation: avgDeviation,
-              sample_count: deviations.length,
-            };
-          });
-        })(),
-      ),
-    );
-  }
+  // 印を足した形をキャッシュする（印の無い旧い形と混ざらないよう、キーを変えた）
+  return withCache(`race-st-predictability-v2-${raceId}`, async () =>
+    attachExhibitionStartFlags(raceId, await fetchStPredictabilityRows(raceId)),
+  );
+}
