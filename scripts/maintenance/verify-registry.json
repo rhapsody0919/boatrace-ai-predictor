@@ -361,7 +361,7 @@
     {
       "script": "verify-dependency-rules.js",
       "tier": "ci",
-      "guards": "依存の向きの関所の部品（dependency-rules.cjs の規則10個、lintBaselines.js の純関数: データ層の和の中で関数が移っても緑・基準に無い辺は赤・基準の行が増えたら赤・src/utils の新規ファイルは赤・facade-frozen を error にする条件、BOA-1428）"
+      "guards": "依存の向きの関所の部品（dependency-rules.cjs の規則11個、lintBaselines.js の純関数: データ層の和の中で関数が移っても緑・基準に無い辺は赤・基準の行が増えたら赤・src/utils の新規ファイルは赤・facade-frozen を error にする条件、BOA-1428）"
     },
     {
       "script": "verify-deploy-hook-policy.js",

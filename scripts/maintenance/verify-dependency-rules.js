@@ -89,7 +89,7 @@ test("facade-frozen を error にする条件は関数の本体0", () => {
   assert.equal(facadeShouldBeError(3), false);
 });
 
-test("dependency-rules.cjs が読めて規則の名前が10個", () => {
+test("dependency-rules.cjs が読めて規則の名前が11個", () => {
   const { forbidden, DEPENDENCY_CRUISER } = require("./dependency-rules.cjs");
   assert.match(DEPENDENCY_CRUISER, /^dependency-cruiser@\d+\.\d+\.\d+$/);
   assert.deepEqual(
@@ -100,6 +100,7 @@ test("dependency-rules.cjs が読めて規則の名前が10個", () => {
       "hooks-no-ui",
       "components-no-pages",
       "src-no-node",
+      "ui-no-supabase-client",
       "api-no-ui-data",
       "lib-no-entry",
       "domain-direct",

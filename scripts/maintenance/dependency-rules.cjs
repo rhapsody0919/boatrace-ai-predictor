@@ -40,6 +40,14 @@ const forbidden = [
     to: { path: "^(scripts|api)/", pathNot: "^scripts/lib/pure/" },
   },
   {
+    // 画面は DB クライアントを直に読まない（データ層 src/services/<領域>Queries*.js 経由。DM00、設計図 §10）。
+    // supabaseClient.js と、同等の @supabase/supabase-js の直 import の両方
+    name: "ui-no-supabase-client",
+    severity: "error",
+    from: { path: `^src/(${UI_DIRS})/` },
+    to: { path: "^src/services/supabaseClient\\.js$|(^|/)node_modules/@supabase/" },
+  },
+  {
     name: "api-no-ui-data",
     severity: "error",
     from: { path: "^(api/|middleware\\.js$)" },
