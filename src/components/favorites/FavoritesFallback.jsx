@@ -72,6 +72,96 @@ export function FavoriteVenueChips({ favVenues, nextOpenDates }) {
   );
 }
 
+function FavVenueAlt({ venue, favState, stateText }) {
+  const { t } = useTranslation();
+  const localize = useLocalizedPath();
+  return (
+    <li className="favorite-runs__alt">
+      <span className="favorite-runs__alt-label favorite-runs__alt-label--fav">
+        {t("favorites.venues.badge")}
+      </span>
+      <span className="favorite-runs__alt-body">
+        <span className="favorite-runs__alt-venue">
+          {t(`venues.${venue.venueCode}`)}
+        </span>
+        <span className="favorite-runs__alt-text">{stateText(venue)}</span>
+      </span>
+      <Link
+        to={localize(`/venue/${venue.venueCode}`)}
+        className="favorite-runs__link favorite-runs__alt-link"
+        onClick={() => track("fav_venue", "venue_page", favState)}
+      >
+        {t("favorites.fallback.venuePage")}
+      </Link>
+    </li>
+  );
+}
+
+function GradeVenueAlt({ venue, favState }) {
+  const { t } = useTranslation();
+  const localize = useLocalizedPath();
+  return (
+    <li className="favorite-runs__alt">
+      <span
+        className="favorite-runs__alt-label"
+        style={{ backgroundColor: GRADE_CONFIG[venue.grade].color }}
+      >
+        {GRADE_CONFIG[venue.grade].label}
+      </span>
+      <span className="favorite-runs__alt-body">
+        <span className="favorite-runs__alt-venue">
+          {t(`venues.${venue.venueCode}`)}
+        </span>
+        {venue.seriesDay != null && venue.finalStartTime && (
+          <span className="favorite-runs__alt-text">
+            {t("favorites.fallback.gradeLine", {
+              day: venue.seriesDay,
+              time: `${venue.finalStartTime}${t("home.jstNote")}`,
+            })}
+          </span>
+        )}
+      </span>
+      <Link
+        to={localize(`/venue/${venue.venueCode}`)}
+        className="favorite-runs__link favorite-runs__alt-link"
+        onClick={() => track("grade_venue", "venue_page", favState)}
+      >
+        {t("favorites.fallback.venuePage")}
+      </Link>
+    </li>
+  );
+}
+
+function VenueCountLink({ openVenueCount, favState }) {
+  const { t } = useTranslation();
+  return (
+    <a
+      href="#today-venues"
+      className="favorite-runs__toggle favorite-runs__venue-count"
+      onClick={(event) => {
+        track("grade_venue", "venue_list", favState);
+        // #today-venues はこの区画を含む外側の枠なので、飛ぶと上の見出しに戻る。会場の一覧へ送る
+        const grid = document.querySelector(".venue-grid");
+        if (grid) {
+          event.preventDefault();
+          // 固定のヘッダーの下に隠れないよう、その高さだけ上に余白を取る
+          const header = document.querySelector(".app-header");
+          window.scrollTo({
+            top:
+              grid.getBoundingClientRect().top +
+              window.scrollY -
+              (header?.offsetHeight ?? 0) -
+              8,
+            behavior: "smooth",
+          });
+        }
+      }}
+    >
+      {t("favorites.fallback.venueCount", { count: openVenueCount })}
+    </a>
+  );
+}
+
 /** 出走が無いとき（☆0件・今日の出走なし）の中身 */
 export default function FavoritesFallback({
   fallback,
@@ -80,7 +170,6 @@ export default function FavoritesFallback({
   nextOpenDates,
 }) {
   const { t } = useTranslation();
-  const localize = useLocalizedPath();
   const stateText = useVenueStateText(nextOpenDates);
   const { favVenues, gradeVenues, openVenueCount } = fallback;
   const hasGrades = gradeVenues.length > 0;
@@ -99,84 +188,24 @@ export default function FavoritesFallback({
       {(favVenues.length > 0 || hasGrades) && (
         <ul className="favorite-runs__alt-list">
           {favVenues.map((venue) => (
-            <li key={`fav-${venue.venueCode}`} className="favorite-runs__alt">
-              <span className="favorite-runs__alt-label favorite-runs__alt-label--fav">
-                {t("favorites.venues.badge")}
-              </span>
-              <span className="favorite-runs__alt-body">
-                <span className="favorite-runs__alt-venue">
-                  {t(`venues.${venue.venueCode}`)}
-                </span>
-                <span className="favorite-runs__alt-text">
-                  {stateText(venue)}
-                </span>
-              </span>
-              <Link
-                to={localize(`/venue/${venue.venueCode}`)}
-                className="favorite-runs__link favorite-runs__alt-link"
-                onClick={() => track("fav_venue", "venue_page", favState)}
-              >
-                {t("favorites.fallback.venuePage")}
-              </Link>
-            </li>
+            <FavVenueAlt
+              key={`fav-${venue.venueCode}`}
+              venue={venue}
+              favState={favState}
+              stateText={stateText}
+            />
           ))}
           {gradeVenues.map((venue) => (
-            <li key={`grade-${venue.venueCode}`} className="favorite-runs__alt">
-              <span
-                className="favorite-runs__alt-label"
-                style={{ backgroundColor: GRADE_CONFIG[venue.grade].color }}
-              >
-                {GRADE_CONFIG[venue.grade].label}
-              </span>
-              <span className="favorite-runs__alt-body">
-                <span className="favorite-runs__alt-venue">
-                  {t(`venues.${venue.venueCode}`)}
-                </span>
-                {venue.seriesDay != null && venue.finalStartTime && (
-                  <span className="favorite-runs__alt-text">
-                    {t("favorites.fallback.gradeLine", {
-                      day: venue.seriesDay,
-                      time: `${venue.finalStartTime}${t("home.jstNote")}`,
-                    })}
-                  </span>
-                )}
-              </span>
-              <Link
-                to={localize(`/venue/${venue.venueCode}`)}
-                className="favorite-runs__link favorite-runs__alt-link"
-                onClick={() => track("grade_venue", "venue_page", favState)}
-              >
-                {t("favorites.fallback.venuePage")}
-              </Link>
-            </li>
+            <GradeVenueAlt
+              key={`grade-${venue.venueCode}`}
+              venue={venue}
+              favState={favState}
+            />
           ))}
         </ul>
       )}
       {!hasGrades && openVenueCount > 0 && (
-        <a
-          href="#today-venues"
-          className="favorite-runs__toggle favorite-runs__venue-count"
-          onClick={(event) => {
-            track("grade_venue", "venue_list", favState);
-            // #today-venues はこの区画を含む外側の枠なので、飛ぶと上の見出しに戻る。会場の一覧へ送る
-            const grid = document.querySelector(".venue-grid");
-            if (grid) {
-              event.preventDefault();
-              // 固定のヘッダーの下に隠れないよう、その高さだけ上に余白を取る
-              const header = document.querySelector(".app-header");
-              window.scrollTo({
-                top:
-                  grid.getBoundingClientRect().top +
-                  window.scrollY -
-                  (header?.offsetHeight ?? 0) -
-                  8,
-                behavior: "smooth",
-              });
-            }
-          }}
-        >
-          {t("favorites.fallback.venueCount", { count: openVenueCount })}
-        </a>
+        <VenueCountLink openVenueCount={openVenueCount} favState={favState} />
       )}
       {favState === "no_favorites" && (
         <p className="favorite-runs__howto">
