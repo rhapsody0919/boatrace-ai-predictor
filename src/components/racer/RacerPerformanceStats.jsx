@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { formatPercent, slashDate } from "../../utils/formatters";
 import RacerConditionStats from "./RacerConditionStats";
 import { aggregateRacerCrossStats } from "../../services/core.js";
@@ -12,11 +22,7 @@ import { GRADE_LABELS } from "../race/raceGradeLabels";
 import "./RacerPerformanceStats.css";
 import { techniqueColor } from "../../utils/techniqueColors";
 import { ST_TREND_ID } from "../../utils/racerPagePath";
-import {
-  WinRateTrendChart,
-  ExhibitionTrendChart,
-  StTrendChart,
-} from "./RacerPerformanceTrendCharts";
+import StTrendChart from "./RacerStTrendChart";
 
 // 会場別/枠番別の一覧テーブル。行クリックでフィルタに反映する形が4箇所
 // （会場別・枠番別の全体一覧、会場/枠番固定時のクロス集計2種）で共通のため
@@ -135,10 +141,23 @@ export default function RacerPerformanceStats({
   onHistoryStateChange,
 }) {
   const { t } = useTranslation();
-  // スマホ幅かどうか（推移グラフを直近の走に絞る。RacerPerformanceTrendCharts.jsx）
+  // 推移グラフのツールチップの見出し。日付だけだと同じ日の2走を見分けられない（BOA-583）
+  const raceLabelOf = (label, payload) => {
+    const d = payload?.[0]?.payload;
+    if (!d?.venueCode) return label;
+    return `${d.date} ${t(`venues.${d.venueCode}`, String(d.venueCode))} ${d.raceNo}R`;
+  };
+  // スマホ幅では推移グラフを直近50走に絞る。200走を幅約250pxに描くと1走あたり約1.2pxで、
+  // 線と点が帯に潰れて読めなかった（BOA-583 ファン評価2周目）
+  const NARROW_CHART_RUNS = 50;
   const isNarrow =
     typeof window !== "undefined" &&
     (window.matchMedia?.("(max-width: 600px)").matches ?? false);
+  const chartRuns = (rows) =>
+    isNarrow ? rows.slice(-NARROW_CHART_RUNS) : rows;
+  // 横軸はレースごとの値（raceKey＝race_id）で、目盛りには日付だけを出す
+  const raceTick = (key) =>
+    typeof key === "string" && key.length > 10 ? key.slice(2, 10) : key;
   // 会場×枠番フィルタ。「全会場」「全枠番」がそれぞれ絞り込みなしを表す。
   // 表示は「枠番」。実際の進入コースはBOA-257の制約により取得できないため、
   // 発走前に決まる枠番（艇番）基準で集計・表示する
@@ -669,7 +688,37 @@ export default function RacerPerformanceStats({
       </div>
 
       {chartData.length > 0 && (
-        <WinRateTrendChart chartData={chartData} />
+        <div className="racer-stat-chart">
+          <h3>全国勝率・当地勝率の推移</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart
+              data={chartData}
+              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip formatter={(value) => value?.toFixed(2)} />
+              <Legend />
+              <Line
+                type="stepAfter"
+                dataKey="national_win_rate"
+                name="全国勝率"
+                stroke="var(--brand-accent-primary)"
+                strokeWidth={2}
+                dot={{ r: 2 }}
+              />
+              <Line
+                type="stepAfter"
+                dataKey="local_win_rate"
+                name="当地勝率"
+                stroke="var(--brand-accent-secondary)"
+                strokeWidth={2}
+                dot={{ r: 2 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       )}
 
       {/* 成績ブロック（会場・枠番の固定状況で4分岐、ADR-0063） */}
@@ -933,19 +982,68 @@ export default function RacerPerformanceStats({
       {(hasVcData
         ? vcData.series.some((d) => d.avg_exhibition_time != null)
         : exhibitionChartData.length > 0) && (
-        <ExhibitionTrendChart
-          vcData={vcData}
-          exhibitionChartData={exhibitionChartData}
-          isNarrow={isNarrow}
-          vcActive={vcActive}
-          vcLabel={vcLabel}
-        />
+        <div className="racer-stat-chart">
+          <h3>
+            展示タイムの推移（
+            {hasVcData ? "2025年12月以降・最大過去2年" : "過去90日"}）
+            {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
+          </h3>
+          <p className="racer-stat-note">
+            1走ごとの展示タイム。下ほど速い。会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません
+            {isNarrow && `（この画面幅では直近${NARROW_CHART_RUNS}走）`}
+          </p>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart
+              data={
+                hasVcData
+                  ? chartRuns(
+                      vcData.series.filter(
+                        (d) => d.avg_exhibition_time != null,
+                      ),
+                    )
+                  : exhibitionChartData
+              }
+              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey={hasVcData ? "raceKey" : "date"}
+                tickFormatter={raceTick}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                domain={["auto", "auto"]}
+                tickFormatter={(v) => v.toFixed(2)}
+                unit="秒"
+                width={56}
+              />
+              <Tooltip
+                formatter={(value) => [`${value?.toFixed(2)}秒`, "展示タイム"]}
+                labelFormatter={raceLabelOf}
+              />
+              {/* 階段線（stepAfter）だと1走ごとの値が縦線に埋もれて傾向が読めなかった（BOA-583） */}
+              <Line
+                type="linear"
+                dataKey="avg_exhibition_time"
+                name="展示タイム"
+                stroke="var(--brand-accent-primary)"
+                strokeWidth={1.5}
+                dot={{ r: 1.5 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       )}
 
       {showStTrend && (
         <StTrendChart
           vcData={vcData}
           isNarrow={isNarrow}
+          narrowRuns={NARROW_CHART_RUNS}
+          chartRuns={chartRuns}
+          raceTick={raceTick}
+          raceLabelOf={raceLabelOf}
           vcActive={vcActive}
           vcLabel={vcLabel}
         />
