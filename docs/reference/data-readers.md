@@ -12,7 +12,7 @@
 | RPC（写しの関数） | 68 |
 | 読んだファイル | 1875 |
 | 読み書きのあるファイル | 280 |
-| 表の読み手（箇所） | 950 |
+| 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 189 |
 | RPC の呼び手（箇所） | 51 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 232 |
@@ -63,7 +63,7 @@
 | [prediction_odds](#t-prediction_odds) | table | anon 可 | 4 | 2 | get_predictions_by_date, get_predictions_by_date_light |  | odds |  |
 | [predictions](#t-predictions) | table | anon 可 | 44 | 10 | get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date ほか6 | update_prediction_results | exhibition, kfile_sync, race_info ほか4 | hq:platform/finals_sheet.py |
 | [race_conditions](#t-race_conditions) | table | anon 可 | 44 | 6 | data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields ほか5 |  | exhibition, kfile_sync, race_info ほか4 |  |
-| [race_entries](#t-race_entries) | table | anon 可 | 142 | 10 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
+| [race_entries](#t-race_entries) | table | anon 可 | 141 | 10 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
 | [race_history_cache](#t-race_history_cache) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
 | [race_notices_health](#t-race_notices_health) | table | service だけ | 2 | 1 |  |  | race_notices |  |
 | [race_odds](#t-race_odds) | table | anon 可 | 15 | 3 | data_health_coverage, data_health_table_rows |  | odds, odds_final |  |
@@ -74,7 +74,7 @@
 | [race_payouts](#t-race_payouts) | table | anon 可 | 3 | 2 | data_health_table_rows, get_predictions_by_date, get_predictions_by_date_light |  | kfile_sync, race_status, result ほか1 |  |
 | [race_pit_comments](#t-race_pit_comments) | table | anon 可 | 2 | 2 |  |  | pit_reports |  |
 | [race_pit_reports](#t-race_pit_reports) | table | anon 可 | 4 | 1 | data_health_pit_reports, data_health_table_rows |  | pit_reports |  |
-| [race_results](#t-race_results) | table | anon 可 | 113 | 10 | compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline ほか17 |  | kfile_sync, race_status, result ほか1 |  |
+| [race_results](#t-race_results) | table | anon 可 | 112 | 10 | compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline ほか17 |  | kfile_sync, race_status, result ほか1 |  |
 | [race_series](#t-race_series) | table | anon 可 | 15 | 0 | data_health_race_series, data_health_table_rows |  |  |  |
 | [race_special_notes](#t-race_special_notes) | table | service だけ | 1 | 1 | data_health_table_rows |  | race_notices |  |
 | [race_start_timings](#t-race_start_timings) | table | anon 可 | 29 | 6 | compute_st_course_baseline, data_health_coverage, data_health_table_rows ほか2 |  | kfile_sync, race_status, result ほか1 |  |
@@ -415,7 +415,7 @@
   - `src/services/meetQueries.js:257` select(helper:fetchAllByIn)
   - `src/services/meetQueries2.js:166` select [boat_number, exhibition_time, race_id]
   - `src/services/motorQueries.js:323` select(helper:fetchAllByIn)
-  - `src/services/motorQueries5.js:56` select(helper:fetchAllByIn)
+  - `src/services/motorQueries5.js:65` select(helper:fetchAllByIn)
   - `src/services/motorQueries6.js:120` select [adjustment_weight, boat_number, exhibition_course, exhibition_time, is_absent, parts_changed, prev_entry_course, prev_finish_mark, prev_finish_rank, prev_race_no, prev_start_timing, propeller_change, race_id, tilt, today_weight, updated_at]
   - `src/services/motorQueries6.js:136` select [adjustment_weight, boat_number, exhibition_time, parts_changed, propeller_change, race_id, tilt]
   - `src/services/raceQueries.js:34` select [boat_number, race_id, start_flag]
@@ -817,7 +817,7 @@
 - 取得のジョブ: exhibition, race_info, races_init
 - 写しに無い列の名前（埋め込みの別名・JSON のキー・誤りのどれか）: name
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:77`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:7`, `scripts/maintenance/backfill-kb-gaps.js:81`, `scripts/maintenance/delete-phantom-races.js:88`, `scripts/maintenance/fix-opening-day-race-id-date.js:66`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:39`, `scripts/ml/analogy/v16_morning.py:292`
-- 読み手（142）: 
+- 読み手（141）: 
   - `api/_lib/analogyV16.js:105` rest(rest) [boat_number, is_absent, race_id]
   - `api/_lib/racerEntryExhibition.js:171` rest(rest) [boat_number, race_id, racer_id]
   - `api/_lib/snsClaimCheck.js:228` rest(rest) [is_absent, race_id]
@@ -929,8 +929,7 @@
   - `src/services/motorQueries3.js:173` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries3.js:296` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
-  - `src/services/motorQueries5.js:34` select [boat_number, motor_number, race_id]
-  - `src/services/motorQueries5.js:268` select [boat_number, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries5.js:38` select [?, motor_number, race_id]
   - `src/services/mycroftService.js:82` select [boat_number, player_name, race_id]
   - `src/services/raceQueries.js:143` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]
   - `src/services/raceQueries.js:166` select [boat_number, local_win_rate, player_name, race_id, racer_id, win_rate]
@@ -1123,7 +1122,7 @@
 - 本体で読む RPC: compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats, compute_venue_course_entry_baseline, compute_venue_course_technique_baseline, data_health_cancellation_with_result, data_health_coverage, data_health_entries_duplicates, data_health_monthly_result, data_health_nightly_freshness, data_health_table_rows, get_admin_rule_performance, get_predictions_by_date, get_predictions_by_date_light, get_race_return_rate, get_race_technique_profile, get_today_races, update_venue_stats
 - 取得のジョブ: kfile_sync, race_status, result, result_catchup
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:76`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:10`, `scripts/lib/raceResultSchema.js:25`, `scripts/maintenance/delete-phantom-races.js:74`, `scripts/maintenance/fix-opening-day-race-id-date.js:69`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:42`
-- 読み手（113）: 
+- 読み手（112）: 
   - `api/_lib/snsClaimCheck.js:473` rest(rest) [race_id, rank1]
   - `scripts/analysis/aggregate-racer-stats.js:70` select(helper:fetchAll)
   - `scripts/analysis/analogy-finder-md6/export-actual-course.js:20` select(helper:fetchAll)
@@ -1222,8 +1221,7 @@
   - `src/services/motorQueries2.js:125` select [race_id, rank1, rank2, rank3]
   - `src/services/motorQueries2.js:353` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/motorQueries3.js:305` select [race_id, rank1]
-  - `src/services/motorQueries5.js:50` select(helper:fetchAllByIn)
-  - `src/services/motorQueries5.js:280` select(helper:fetchAllByIn)
+  - `src/services/motorQueries5.js:53` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:83` select(helper:fetchAllByIn)
   - `src/services/raceQueries3.js:125` select [race_id, race_status, rank1, rank2, rank3, winning_technique]
   - `src/services/raceQueries3.js:211` select(helper:fetchAllByIn)

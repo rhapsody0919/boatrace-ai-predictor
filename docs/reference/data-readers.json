@@ -7,7 +7,7 @@
     "rpcs": 68,
     "sourceFiles": 1875,
     "filesWithAccess": 280,
-    "tableReaders": 950,
+    "tableReaders": 948,
     "tableWriters": 189,
     "rpcCallers": 51,
     "nameMentions": 232,
@@ -1653,7 +1653,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/motorQueries5.js:56",
+          "ref": "src/services/motorQueries5.js:65",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -7923,25 +7923,13 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries5.js:34",
+          "ref": "src/services/motorQueries5.js:38",
           "op": "select",
           "via": "client",
           "columns": [
-            "boat_number",
+            "?",
             "motor_number",
             "race_id"
-          ]
-        },
-        {
-          "ref": "src/services/motorQueries5.js:268",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "motor_number",
-            "player_name",
-            "race_id",
-            "racer_id"
           ]
         },
         {
@@ -8445,8 +8433,7 @@
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
             "src/services/motorQueries4.js:160",
-            "src/services/motorQueries5.js:268",
-            "src/services/motorQueries5.js:34",
+            "src/services/motorQueries5.js:38",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
@@ -8553,8 +8540,6 @@
             "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
-            "src/services/motorQueries5.js:268",
-            "src/services/motorQueries5.js:34",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
@@ -8615,7 +8600,6 @@
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
             "src/services/motorQueries4.js:160",
-            "src/services/motorQueries5.js:268",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:275",
@@ -8746,8 +8730,7 @@
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
             "src/services/motorQueries4.js:160",
-            "src/services/motorQueries5.js:268",
-            "src/services/motorQueries5.js:34",
+            "src/services/motorQueries5.js:38",
             "src/services/raceQueries3.js:83",
             "src/services/racerService.js:127"
           ],
@@ -8934,7 +8917,6 @@
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries3.js:296",
             "src/services/motorQueries4.js:160",
-            "src/services/motorQueries5.js:268",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:189",
             "src/services/raceQueries.js:275",
@@ -11498,13 +11480,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries5.js:50",
-          "op": "select",
-          "via": "helper:fetchAllByIn",
-          "columns": []
-        },
-        {
-          "ref": "src/services/motorQueries5.js:280",
+          "ref": "src/services/motorQueries5.js:53",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
