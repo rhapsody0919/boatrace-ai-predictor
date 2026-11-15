@@ -131,6 +131,19 @@ export function getRaceResultSummary(raceId) {
     });
   }
 
+// 指定レースの出走行（艇番順）と、その選手IDの重複なし・null なしの一覧を返す
+async function fetchEntriesWithRacerIds(raceId) {
+  const { data: entries } = await supabase
+    .from("race_entries")
+    .select("boat_number, player_name, racer_id")
+    .eq("race_id", raceId)
+    .order("boat_number");
+  const racerIds = [...new Set((entries ?? []).map((r) => r.racer_id))].filter(
+    (id) => id !== null,
+  );
+  return { entries, racerIds };
+}
+
 // 集計の対象が無い出走行に、サンプル0・率なしの列を足す（getRaceRacerBoatReturnRate 用）
 function withEmptyReturnRate(entries) {
   return entries.map((row) => ({
@@ -212,19 +225,12 @@ export function getRaceRacerBoatReturnRate(raceId) {
         return rpcData;
       }
 
-      const { data: entries } = await supabase
-        .from("race_entries")
-        .select("boat_number, player_name, racer_id")
-        .eq("race_id", raceId)
-        .order("boat_number");
+      const { entries, racerIds } = await fetchEntriesWithRacerIds(raceId);
 
       if (!entries || entries.length === 0) {
         return [];
       }
 
-      const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
-        (id) => id !== null,
-      );
       if (racerIds.length === 0) {
         return withEmptyReturnRate(entries);
       }
@@ -300,19 +306,12 @@ export function getRaceTechniqueProfileBreakdown(raceId) {
         return rpcData;
       }
 
-      const { data: entries } = await supabase
-        .from("race_entries")
-        .select("boat_number, player_name, racer_id")
-        .eq("race_id", raceId)
-        .order("boat_number");
+      const { entries, racerIds } = await fetchEntriesWithRacerIds(raceId);
 
       if (!entries || entries.length === 0) {
         return [];
       }
 
-      const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
-        (id) => id !== null,
-      );
       if (racerIds.length === 0) {
         return entries.map((row) => ({
           ...row,
