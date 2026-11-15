@@ -813,6 +813,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-meet-grouping.js"
     },
     {
+      "script": "verify-meet-model.js",
+      "tier": "ci",
+      "guards": "meet（節 = race_series の行）の型 makeMeet（src/pure/meetModel.js、設計図 §10 DM1x）。会場1〜24・start_date と end_date が実在する日で end が後・total_days が日数と一致・class_code 9値・kind 9値・grade 5値か null（race_series の CHECK 6本と同じ）を検査して凍結すること。title などの null は落とさないこと。既存の節の計算（groupIntoCurrentMeet・meetExclusionsOf）が meetModel から同じ関数で読めること"
+    },
+    {
       "script": "verify-meet-page-model.js",
       "tier": "ci",
       "guards": "節ページ（BOA-682）の日程・段階・基準のレース・勝ち上がり・勝負駆けの判定。崩れると前後の節を混ぜる、夜に予選の最後のレースの結果を落とす、予選最終日の夜に公式の得点率を使わない、勝負駆けを誤る"
@@ -1234,6 +1239,11 @@
       "script": "verify-racer-index-policy.js",
       "tier": "ci",
       "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
+    },
+    {
+      "script": "verify-racer-model.js",
+      "tier": "ci",
+      "guards": "racer の型 makeRacer・makeRacerSeriesPoint（src/pure/racerModel.js、設計図 §10 DM1x）。racer_id は1以上の整数・name は文字列・birth_date は実在する日、racer_series_points は会場1〜24・meet_start_date が実在する日・next_race_1/2 は1〜12・next_series_day は1〜9（DB の CHECK と同じ）を検査して凍結すること。sex・rank・score_rate・next_* などの null は落とさないこと。既存の選手の集計（careerWinRate 等）が racerModel から同じ関数で読めること"
     },
     {
       "script": "verify-racer-news-templates.js",
@@ -1880,6 +1890,11 @@
       "script": "verify-venue-first-win-rate.js",
       "tier": "ci",
       "guards": "会場別1号艇勝率の母数の数え方（scripts/lib/venueFirstWinRate.js、BOA-303）。不成立・rank1 NULL・結果なしを除き、返還は数える。分析ツールのランキングは日次バッチの保存値（venues.avg_first_win_rate / avg_first_win_rate_race_count）を読む"
+    },
+    {
+      "script": "verify-venue-model.js",
+      "tier": "ci",
+      "guards": "venue の型 makeVenue（src/pure/venueModel.js、設計図 §10 DM1x）。会場コード1〜24・name は文字列・cluster は in_strong・out_strong・balanced か null・avg_first_win_rate は0〜1か null を検査して凍結すること。water_type は初期データが公式と食い違うので検査しないこと（null も未知の値も通す）"
     },
     {
       "script": "verify-venue-motor-parser-utils.js",
