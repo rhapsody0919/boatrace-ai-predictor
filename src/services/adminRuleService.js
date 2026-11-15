@@ -90,7 +90,7 @@ const BET_JUDGES = {
 };
 
 function judgeBet(rule, prediction, result) {
-  const judge = result ? BET_JUDGES[rule.betType] : undefined;
+  const judge = result && Object.hasOwn(BET_JUDGES, rule.betType) ? BET_JUDGES[rule.betType] : undefined;
   return judge ? judge(prediction, result) : { isHit: false, payout: 0 };
 }
 
