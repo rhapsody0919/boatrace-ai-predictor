@@ -1647,7 +1647,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries.js:323",
+          "ref": "src/services/motorQueries.js:385",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -7849,7 +7849,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries.js:310",
+          "ref": "src/services/motorQueries.js:274",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8427,7 +8427,7 @@
             "src/services/meetQueries2.js:105",
             "src/services/meetQueries3.js:72",
             "src/services/motorQueries.js:234",
-            "src/services/motorQueries.js:310",
+            "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
             "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:173",
@@ -8535,7 +8535,7 @@
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
             "src/services/meetQueries3.js:72",
-            "src/services/motorQueries.js:310",
+            "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
             "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:173",
@@ -8724,7 +8724,7 @@
             "src/services/currentMeetEntries.js:26",
             "src/services/meetQueries.js:240",
             "src/services/meetQueries2.js:105",
-            "src/services/motorQueries.js:310",
+            "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
             "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:173",
@@ -8752,7 +8752,7 @@
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "src/services/motorQueries.js:234",
-            "src/services/motorQueries.js:310",
+            "src/services/motorQueries.js:274",
             "src/services/motorQueries3.js:173",
             "src/services/motorQueries4.js:160",
             "src/services/raceQueries3.js:83",
@@ -8855,7 +8855,7 @@
         "motor_3rate": {
           "readers": [
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "src/services/motorQueries.js:310",
+            "src/services/motorQueries.js:274",
             "src/services/motorQueries3.js:173"
           ],
           "writers": [],

@@ -414,7 +414,7 @@
   - `scripts/sns/rank-data.js:514` select(helper:readAllIn)
   - `src/services/meetQueries.js:257` select(helper:fetchAllByIn)
   - `src/services/meetQueries2.js:166` select [boat_number, exhibition_time, race_id]
-  - `src/services/motorQueries.js:323` select(helper:fetchAllByIn)
+  - `src/services/motorQueries.js:385` select(helper:fetchAllByIn)
   - `src/services/motorQueries5.js:65` select(helper:fetchAllByIn)
   - `src/services/motorQueries6.js:120` select [adjustment_weight, boat_number, exhibition_course, exhibition_time, is_absent, parts_changed, prev_entry_course, prev_finish_mark, prev_finish_rank, prev_race_no, prev_start_timing, propeller_change, race_id, tilt, today_weight, updated_at]
   - `src/services/motorQueries6.js:136` select [adjustment_weight, boat_number, exhibition_time, parts_changed, propeller_change, race_id, tilt]
@@ -923,7 +923,7 @@
   - `src/services/meetQueries2.js:105` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/meetQueries3.js:72` select [boat_number, player_name, race_id, racer_id]
   - `src/services/motorQueries.js:234` select [motor_2rate, race_id]
-  - `src/services/motorQueries.js:310` select [boat_number, motor_2rate, motor_3rate, motor_number, race_id]
+  - `src/services/motorQueries.js:274` select [boat_number, motor_2rate, motor_3rate, motor_number, race_id]
   - `src/services/motorQueries2.js:106` select [boat_number, global_2rate, motor_number, race_id]
   - `src/services/motorQueries2.js:257` select [boat_number, grade, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries3.js:173` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id, racer_id]
