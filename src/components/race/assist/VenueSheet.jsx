@@ -55,29 +55,13 @@ function Techniques({ trend }) {
   );
 }
 
-/**
- * 会場の特徴のシート（D-14・D-18・D-35・D-37）。ヘッダーの会場名から開く。
- * 水質（venues の water_type）・型（この会場の1号艇の1着を全国の全レースと比べる）、1号艇の1着（v16 facts の VA）、決まり手（直近1年＋直近90日と「最近↑／↓」）、
- * 潮の傾向（干満差のある会場だけ）、会場ページへのリンク。取得の失敗と空を分ける（D-36 (5)）
- * @param {{venue: string, venueCode: number, info: {status: string, data: {waterType: string, tidal: boolean}|null}, typeVerdict: ReturnType<import("../../../utils/assistModel").baseVerdict>|null,
- *   tech: {status: string, data: object[]|null}, vaB1: {k: number, n: number}|null, onClose: () => void}} props
- */
-export default function VenueSheet({
-  venue,
-  venueCode,
-  info,
-  tech,
-  vaB1,
-  typeVerdict,
-  onClose,
-}) {
+/** 水質・型の行（取得失敗は注記。水質も型も無ければ何も出さない） */
+function VenueFacts({ info, typeVerdict }) {
   const water = info.data?.waterType ?? null;
-  const trend =
-    tech.status === "ready" ? venueTechniqueTrend(tech.data ?? []) : null;
   // 干満差は公式の場データの値（海水・汽水でも干満差なしの会場がある。蒲郡・常滑・津）
   const tidal = info.data?.tidal === true;
   return (
-    <BottomSheet title={C.venueTitle(venue)} onClose={onClose}>
+    <>
       {info.status === "error" ? (
         <p className="ta-note">{C.partFailed(C.venueWater)}</p>
       ) : (
@@ -115,15 +99,49 @@ export default function VenueSheet({
           </dl>
         )
       )}
+    </>
+  );
+}
+
+/** 決まり手の取得の状態（失敗・読み込み中の注記） */
+function TechStatus({ status }) {
+  return (
+    <>
+      {status === "error" && (
+        <p className="ta-note">{C.partFailed(C.venueTech)}</p>
+      )}
+      {(status === "loading" || status === "idle") && (
+        <p className="ta-note">{C.loading}</p>
+      )}
+    </>
+  );
+}
+
+/**
+ * 会場の特徴のシート（D-14・D-18・D-35・D-37）。ヘッダーの会場名から開く。
+ * 水質（venues の water_type）・型（この会場の1号艇の1着を全国の全レースと比べる）、1号艇の1着（v16 facts の VA）、決まり手（直近1年＋直近90日と「最近↑／↓」）、
+ * 潮の傾向（干満差のある会場だけ）、会場ページへのリンク。取得の失敗と空を分ける（D-36 (5)）
+ * @param {{venue: string, venueCode: number, info: {status: string, data: {waterType: string, tidal: boolean}|null}, typeVerdict: ReturnType<import("../../../utils/assistModel").baseVerdict>|null,
+ *   tech: {status: string, data: object[]|null}, vaB1: {k: number, n: number}|null, onClose: () => void}} props
+ */
+export default function VenueSheet({
+  venue,
+  venueCode,
+  info,
+  tech,
+  vaB1,
+  typeVerdict,
+  onClose,
+}) {
+  const trend =
+    tech.status === "ready" ? venueTechniqueTrend(tech.data ?? []) : null;
+  return (
+    <BottomSheet title={C.venueTitle(venue)} onClose={onClose}>
+      <VenueFacts info={info} typeVerdict={typeVerdict} />
       {vaB1 && (
         <BaseBar label={C.venueB1(venue, vaB1.n)} k={vaB1.k} n={vaB1.n} />
       )}
-      {tech.status === "error" && (
-        <p className="ta-note">{C.partFailed(C.venueTech)}</p>
-      )}
-      {(tech.status === "loading" || tech.status === "idle") && (
-        <p className="ta-note">{C.loading}</p>
-      )}
+      <TechStatus status={tech.status} />
       {/* 空（0行）は節を出さない（D-36 (5)） */}
       {trend && <Techniques trend={trend} />}
       <p className="ta-note">{C.venueNote}</p>

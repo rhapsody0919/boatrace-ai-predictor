@@ -16,6 +16,70 @@ const no = "—";
  * @param {{scope: object|null, similarN: number|null, similarConditions?: {grade_g1plus?: boolean}|null, classes: string[]|null, lineup: object[]|null, hideB1?: boolean}} props
  *   scope は assistModel.sameClassScope の戻り値
  */
+function buildRows({ scope, similarConditions, classes }) {
+  const round = scope?.round ?? null;
+  const ncr = scope?.kind === "NCR";
+  const counts = restClassCounts(classes, 1);
+  return [
+    [`1号艇の級（${classes?.[0] ?? "—"}）`, ok, ok],
+    [ASSIST_COPY.scopeRowRest(counts ?? "—"), ok, no, true],
+    round ? [`ラウンド（${ROUND_LABEL[round]}）`, ncr ? ok : no, ok] : null,
+    similarConditions?.grade_g1plus ? [ASSIST_COPY.scopeGrade, no, ok] : null,
+    ["勝率トップの艇・勝率差の段階", no, ok],
+  ].filter(Boolean);
+}
+
+function ScopeTableGrid({ rows, lineup, scope, similarN }) {
+  return (
+    <table>
+      <thead>
+        <tr>
+          {ASSIST_COPY.scopeHead.map((h) => (
+            <th key={h} scope="col">
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(([label, a, b, pic]) => (
+          <tr key={label}>
+            <td>
+              {label}
+              {pic && <ClassLineup lineup={lineup} small />}
+            </td>
+            <td className="ta-c">{a}</td>
+            <td className="ta-c">{b}</td>
+          </tr>
+        ))}
+        <tr>
+          <td>{ASSIST_COPY.scopeRefund[0]}</td>
+          <td className="ta-c">{ASSIST_COPY.scopeRefund[1]}</td>
+          <td className="ta-c">{ASSIST_COPY.scopeRefund[2]}</td>
+        </tr>
+        <tr>
+          <td>{ASSIST_COPY.scopeCount}</td>
+          <td className="ta-c ta-num">
+            {scope ? scope.cell.n.toLocaleString("ja-JP") : "—"}
+          </td>
+          <td className="ta-c ta-num">{similarN ?? "—"}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+function WithoutRoundNote({ scope }) {
+  return (
+    <p className="ta-note ta-num">
+      {ASSIST_COPY.withoutRound(
+        Math.round((scope.withoutRound.b1_win / scope.withoutRound.n) * 100),
+        scope.withoutRound.n.toLocaleString("ja-JP"),
+      )}
+    </p>
+  );
+}
+
 export default function ScopeTable({
   scope,
   similarN,
@@ -25,16 +89,8 @@ export default function ScopeTable({
   hideB1 = false,
 }) {
   const [open, setOpen] = useState(false);
-  const round = scope?.round ?? null;
   const ncr = scope?.kind === "NCR";
-  const counts = restClassCounts(classes, 1);
-  const rows = [
-    [`1号艇の級（${classes?.[0] ?? "—"}）`, ok, ok],
-    [ASSIST_COPY.scopeRowRest(counts ?? "—"), ok, no, true],
-    round ? [`ラウンド（${ROUND_LABEL[round]}）`, ncr ? ok : no, ok] : null,
-    similarConditions?.grade_g1plus ? [ASSIST_COPY.scopeGrade, no, ok] : null,
-    ["勝率トップの艇・勝率差の段階", no, ok],
-  ].filter(Boolean);
+  const rows = buildRows({ scope, similarConditions, classes });
   return (
     <div className="ta-scope">
       <button
@@ -47,50 +103,14 @@ export default function ScopeTable({
       </button>
       {open && (
         <>
-          <table>
-            <thead>
-              <tr>
-                {ASSIST_COPY.scopeHead.map((h) => (
-                  <th key={h} scope="col">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(([label, a, b, pic]) => (
-                <tr key={label}>
-                  <td>
-                    {label}
-                    {pic && <ClassLineup lineup={lineup} small />}
-                  </td>
-                  <td className="ta-c">{a}</td>
-                  <td className="ta-c">{b}</td>
-                </tr>
-              ))}
-              <tr>
-                <td>{ASSIST_COPY.scopeRefund[0]}</td>
-                <td className="ta-c">{ASSIST_COPY.scopeRefund[1]}</td>
-                <td className="ta-c">{ASSIST_COPY.scopeRefund[2]}</td>
-              </tr>
-              <tr>
-                <td>{ASSIST_COPY.scopeCount}</td>
-                <td className="ta-c ta-num">
-                  {scope ? scope.cell.n.toLocaleString("ja-JP") : "—"}
-                </td>
-                <td className="ta-c ta-num">{similarN ?? "—"}</td>
-              </tr>
-            </tbody>
-          </table>
+          <ScopeTableGrid
+            rows={rows}
+            lineup={lineup}
+            scope={scope}
+            similarN={similarN}
+          />
           {ncr && scope.withoutRound && !hideB1 && (
-            <p className="ta-note ta-num">
-              {ASSIST_COPY.withoutRound(
-                Math.round(
-                  (scope.withoutRound.b1_win / scope.withoutRound.n) * 100,
-                ),
-                scope.withoutRound.n.toLocaleString("ja-JP"),
-              )}
-            </p>
+            <WithoutRoundNote scope={scope} />
           )}
           <ul>
             {ASSIST_COPY.scopeNotes.map((t) => (
