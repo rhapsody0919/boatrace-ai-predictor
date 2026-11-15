@@ -126,7 +126,7 @@ function shapeWeekly(raw) {
 
 /**
  * RPC の生の値を画面の形に整える（純粋関数）
- * @param { total: {samples, hits, payout}, by_rule: Array<{rule_id, samples, hits, payout}>, by_week: Array<{week_start, samples, hits, payout}> } raw
+ * @param {{ total: {samples, hits, payout}, by_rule: Array<{rule_id, samples, hits, payout}>, by_week: Array<{week_start, samples, hits, payout}> }} raw
  * @returns {{ overall: Object, rules: Array, weekly: Array, byVenue: Object }}
  */
 export function shapeRulePerformance(
