@@ -245,13 +245,21 @@ def judge(changes: Mapping[str, str], base_text: Callable[[str], Optional[str]],
             sample = "・".join(f"{k}「{t[:50]}」" for (k, t) in sorted(mine)[:3])
             v.errors.append(f"SPEC {p}: {how}（{sum(mine.values())} 件: {sample}）")
             gone -= mine
-    b_exp, h_exp = sum(f.expects for f in base.values()), sum(f.expects for f in head.values())
+    # 新しく足した spec で試験名が base と重ならない物（fresh）は、skip を数えないので expect の合計にも入れない
+    # （今ある spec の expect を消し、skip した新しい spec で数を埋める抜け道を塞ぐ、ops 審査 11/12 P0-3）
+    fresh = {p for p in head if changes[p] == "A" and head[p].titles and not (head[p].titles & b_titles)}  # 試験名の無い補助は外す（補助の skip は今ある試験に効きうる）
+    b_exp, h_exp = sum(f.expects for f in base.values()), sum(f.expects for p, f in head.items() if p not in fresh)
     if h_exp < b_exp:
         per = "・".join(f"{p} {base[p].expects if p in base else 0}→{head[p].expects if p in head else 0}" for p in specs
                         if (base[p].expects if p in base else 0) != (head[p].expects if p in head else 0))
         v.errors.append(f"SPEC expect が減った（変えた spec の合計 {b_exp} → {h_exp}: {per[:300]}）")
+    # 新しく足した spec で、試験名が base のどれとも重ならない物（中身が全部新しい試験）の skip・fixme・fail は、今ある試験を弱めないので数えない
+    # （HR34 #2508: 新しい e2e-release の spec の test.skip(鍵が無い手元)）。試験を移して skip を付けた物は名前が重なるので数える。only は全体を絞るので常に数える
     for mk in MARKERS:
-        b_n, h_n = sum(f.markers[mk] for f in base.values()), sum(f.markers[mk] for f in head.values())
+        b_n = sum(f.markers[mk] for f in base.values())
+        h_n = sum(f.markers[mk] for p, f in head.items() if mk == "only" or p not in fresh)
+        if mk != "only" and any(head[p].markers[mk] for p in fresh):
+            v.warnings.append(f"SPEC {'・'.join(p for p in sorted(fresh) if head[p].markers[mk])[:200]}: 新しい spec に {mk} がある（今ある試験は弱めないので赤にしない）")
         if h_n > b_n:
             where = "・".join(p for p in specs if (head[p].markers[mk] if p in head else 0) > (base[p].markers[mk] if p in base else 0))
             v.errors.append(f"SPEC {where[:200]}: {mk} が増えた（変えた spec の合計 {b_n} → {h_n}）")

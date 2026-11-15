@@ -47,13 +47,7 @@ const VENUES = [
   { code: "24", name: "大村" },
 ];
 
-function WinningTechniqueChart({ initialVenueCode = null }) {
-  const { t } = useTranslation();
-  const [selectedVenue, setSelectedVenue] = useState(
-    initialVenueCode !== null
-      ? String(initialVenueCode).padStart(2, "0")
-      : "03",
-  );
+function useWinningTechniqueStats(selectedVenue, t) {
   const [statsData, setStatsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -78,54 +72,32 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
     loadData();
   }, [selectedVenue]);
 
-  if (loading) {
-    return (
-      <div className="winning-technique-container">
-        <div className="loading-state">{t("analysis.loading")}</div>
-      </div>
-    );
-  }
+  return { statsData, loading, error };
+}
 
-  if (error) {
-    return (
-      <div className="winning-technique-container">
-        <div className="error-state">
-          {t("analysis.error", { message: error })}
-        </div>
-      </div>
-    );
-  }
+function StateMessage({ className, children }) {
+  return (
+    <div className="winning-technique-container">
+      <div className={className}>{children}</div>
+    </div>
+  );
+}
 
-  if (
-    !statsData ||
-    !statsData.data ||
-    Object.keys(statsData.data).length === 0
-  ) {
-    return (
-      <div className="winning-technique-container">
-        <div className="empty-state">{t("analysis.wt.empty")}</div>
-      </div>
-    );
-  }
-
-  const { venue_name, last_updated, data } = statsData;
-  const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venue_name);
-
-  // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
-  const techniqueLabel = (name) => translateTechnique(t, name);
-
-  // 全枠番に登場する決まり手の種類を集める（凡例・積み上げバーの構成要素として使う）
-  const allTechniques = sortTechniquesOfficial([
+// 全枠番に登場する決まり手の種類を集める（凡例・積み上げバーの構成要素として使う）
+function collectTechniques(data) {
+  return sortTechniquesOfficial([
     ...new Set(
       Object.values(data).flatMap((boat) =>
         boat.techniques.map((tech) => tech.technique),
       ),
     ),
   ]);
+}
 
-  // recharts用データ: 枠番ごとに { boat_number, 逃げ: 62.3, 差し: 20.1, ... }
-  // dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
-  const chartData = [1, 2, 3, 4, 5, 6]
+// recharts用データ: 枠番ごとに { boat_number, 逃げ: 62.3, 差し: 20.1, ... }
+// dataKeyはDB値（日本語）のまま保つ。凡例・ツールチップの翻訳表示はBar側のname propで行う
+function buildChartData(data, allTechniques, t) {
+  return [1, 2, 3, 4, 5, 6]
     .filter((boatNumber) => data[boatNumber])
     .map((boatNumber) => {
       const row = { boat_number: t("analysis.boatN", { n: boatNumber }) };
@@ -137,118 +109,204 @@ function WinningTechniqueChart({ initialVenueCode = null }) {
       });
       return row;
     });
+}
+
+function VenueSelect({ selectedVenue, onChange, t }) {
+  return (
+    <div className="controls-section">
+      <label htmlFor="venue-select">{t("analysis.venueSelectLabel")}</label>
+      <select
+        id="venue-select"
+        value={selectedVenue}
+        onChange={(e) => onChange(e.target.value)}
+        className="venue-select"
+      >
+        {VENUES.map((venue) => (
+          <option key={venue.code} value={venue.code}>
+            {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function SummaryInfo({ venueLabel, last_updated, t }) {
+  return (
+    <div className="summary-info">
+      <p>
+        <strong>{venueLabel}</strong> - {t("analysis.wt.summary")}
+        {last_updated && (
+          <span className="update-date">
+            {t("analysis.lastUpdated", { date: last_updated })}
+          </span>
+        )}
+      </p>
+    </div>
+  );
+}
+
+function TechniqueBarChart({ chartData, allTechniques, techniqueLabel, t }) {
+  return (
+    <ResponsiveContainer width="100%" height={360}>
+      <BarChart
+        data={chartData}
+        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis
+          dataKey="boat_number"
+          interval={0}
+          tick={(props) => <BandWrapAxisTick {...props} fontSize={11} />}
+        />
+        <YAxis
+          label={{
+            value: t("analysis.sharePctHeader"),
+            angle: -90,
+            position: "insideLeft",
+          }}
+          domain={[0, 100]}
+          ticks={[0, 20, 40, 60, 80, 100]}
+        />
+        <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+        <Legend
+          // Recharts の文字順ソートを止め、棒と同じ公式順を保つ。
+          itemSorter={null}
+          // 凡例の文字は本文色にし、色は横の四角で示す。系列の色（橙・灰）の文字は
+          // ライトで約2〜2.5:1 と読みにくかった（BOA-711）
+          formatter={(value) => (
+            <span style={{ color: "var(--text-primary)" }}>{value}</span>
+          )}
+        />
+        {allTechniques.map((technique, idx) => (
+          <Bar
+            key={technique}
+            dataKey={technique}
+            name={techniqueLabel(technique)}
+            stackId="technique"
+            fill={techniqueColor(technique, idx)}
+          />
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+function TechniqueTable({ data, techniqueLabel, t }) {
+  return (
+    <div className="table-wrapper">
+      <table className="winning-technique-table">
+        <thead>
+          <tr>
+            <th>{t("analysis.laneHeader")}</th>
+            <th>{t("analysis.techniqueHeader")}</th>
+            <th>{t("analysis.countHeader")}</th>
+            <th>{t("analysis.sharePctHeader")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[1, 2, 3, 4, 5, 6]
+            .filter((boatNumber) => data[boatNumber])
+            .flatMap((boatNumber) =>
+              data[boatNumber].techniques.map((tech, idx) => (
+                <tr key={`${boatNumber}-${tech.technique}`}>
+                  {idx === 0 && (
+                    <td
+                      rowSpan={data[boatNumber].techniques.length}
+                      className="boat-num"
+                    >
+                      {t("analysis.boatN", { n: boatNumber })}
+                    </td>
+                  )}
+                  <td>{techniqueLabel(tech.technique)}</td>
+                  <td className="count">{tech.count}</td>
+                  <td className="percentage">
+                    {tech.percentage.toFixed(2)}%
+                  </td>
+                </tr>
+              )),
+            )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function WinningTechniqueChart({ initialVenueCode = null }) {
+  const { t } = useTranslation();
+  const [selectedVenue, setSelectedVenue] = useState(
+    initialVenueCode !== null
+      ? String(initialVenueCode).padStart(2, "0")
+      : "03",
+  );
+  const { statsData, loading, error } = useWinningTechniqueStats(
+    selectedVenue,
+    t,
+  );
+
+  if (loading) {
+    return (
+      <StateMessage className="loading-state">
+        {t("analysis.loading")}
+      </StateMessage>
+    );
+  }
+
+  if (error) {
+    return (
+      <StateMessage className="error-state">
+        {t("analysis.error", { message: error })}
+      </StateMessage>
+    );
+  }
+
+  if (
+    !statsData ||
+    !statsData.data ||
+    Object.keys(statsData.data).length === 0
+  ) {
+    return (
+      <StateMessage className="empty-state">
+        {t("analysis.wt.empty")}
+      </StateMessage>
+    );
+  }
+
+  const { venue_name, last_updated, data } = statsData;
+  const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venue_name);
+
+  // 決まり手はDB値（日本語）のまま集計し、表示時のみ翻訳する
+  const techniqueLabel = (name) => translateTechnique(t, name);
+  const allTechniques = collectTechniques(data);
+  const chartData = buildChartData(data, allTechniques, t);
 
   return (
     <div className="winning-technique-container">
       <h2>{t("analysis.wt.title")}</h2>
       <p className="section-description">{t("analysis.wt.description")}</p>
 
-      <div className="controls-section">
-        <label htmlFor="venue-select">{t("analysis.venueSelectLabel")}</label>
-        <select
-          id="venue-select"
-          value={selectedVenue}
-          onChange={(e) => setSelectedVenue(e.target.value)}
-          className="venue-select"
-        >
-          {VENUES.map((venue) => (
-            <option key={venue.code} value={venue.code}>
-              {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
-            </option>
-          ))}
-        </select>
-      </div>
+      <VenueSelect
+        selectedVenue={selectedVenue}
+        onChange={setSelectedVenue}
+        t={t}
+      />
 
       {venue_name && (
-        <div className="summary-info">
-          <p>
-            <strong>{venueLabel}</strong> - {t("analysis.wt.summary")}
-            {last_updated && (
-              <span className="update-date">
-                {t("analysis.lastUpdated", { date: last_updated })}
-              </span>
-            )}
-          </p>
-        </div>
+        <SummaryInfo
+          venueLabel={venueLabel}
+          last_updated={last_updated}
+          t={t}
+        />
       )}
 
-      <ResponsiveContainer width="100%" height={360}>
-        <BarChart
-          data={chartData}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="boat_number"
-            interval={0}
-            tick={(props) => <BandWrapAxisTick {...props} fontSize={11} />}
-          />
-          <YAxis
-            label={{
-              value: t("analysis.sharePctHeader"),
-              angle: -90,
-              position: "insideLeft",
-            }}
-            domain={[0, 100]}
-            ticks={[0, 20, 40, 60, 80, 100]}
-          />
-          <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
-          <Legend
-            // Recharts の文字順ソートを止め、棒と同じ公式順を保つ。
-            itemSorter={null}
-            // 凡例の文字は本文色にし、色は横の四角で示す。系列の色（橙・灰）の文字は
-            // ライトで約2〜2.5:1 と読みにくかった（BOA-711）
-            formatter={(value) => (
-              <span style={{ color: "var(--text-primary)" }}>{value}</span>
-            )}
-          />
-          {allTechniques.map((technique, idx) => (
-            <Bar
-              key={technique}
-              dataKey={technique}
-              name={techniqueLabel(technique)}
-              stackId="technique"
-              fill={techniqueColor(technique, idx)}
-            />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
+      <TechniqueBarChart
+        chartData={chartData}
+        allTechniques={allTechniques}
+        techniqueLabel={techniqueLabel}
+        t={t}
+      />
 
-      <div className="table-wrapper">
-        <table className="winning-technique-table">
-          <thead>
-            <tr>
-              <th>{t("analysis.laneHeader")}</th>
-              <th>{t("analysis.techniqueHeader")}</th>
-              <th>{t("analysis.countHeader")}</th>
-              <th>{t("analysis.sharePctHeader")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[1, 2, 3, 4, 5, 6]
-              .filter((boatNumber) => data[boatNumber])
-              .flatMap((boatNumber) =>
-                data[boatNumber].techniques.map((tech, idx) => (
-                  <tr key={`${boatNumber}-${tech.technique}`}>
-                    {idx === 0 && (
-                      <td
-                        rowSpan={data[boatNumber].techniques.length}
-                        className="boat-num"
-                      >
-                        {t("analysis.boatN", { n: boatNumber })}
-                      </td>
-                    )}
-                    <td>{techniqueLabel(tech.technique)}</td>
-                    <td className="count">{tech.count}</td>
-                    <td className="percentage">
-                      {tech.percentage.toFixed(2)}%
-                    </td>
-                  </tr>
-                )),
-              )}
-          </tbody>
-        </table>
-      </div>
+      <TechniqueTable data={data} techniqueLabel={techniqueLabel} t={t} />
 
       <p className="table-note">{t("analysis.wt.note")}</p>
     </div>

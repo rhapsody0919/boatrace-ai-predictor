@@ -26,13 +26,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
-import { SMALL_SAMPLE_THRESHOLD, finishPositionOf } from "./basicInfoStats";
-import {
-  computeStConsideration,
-  computeStHistogram,
-  getStHistory,
-  ST_HISTOGRAM_BINS,
-} from "../../utils/stConsideration";
+import { SMALL_SAMPLE_THRESHOLD } from "./basicInfoStats";
+import { computeStConsideration } from "../../utils/stConsideration";
 import {
   METRIC_DIRECTION,
   indexBaseline,
@@ -43,6 +38,7 @@ import {
 } from "../../utils/courseBaseline";
 import TermHintButton from "./TermHintButton";
 import FlyingBadge from "./FlyingBadge";
+import RaceStConsiderationCardFolds from "./RaceStConsiderationCardFolds";
 import "./RaceStConsiderationCard.css";
 
 /** 差の表示（+12.1 / −10.6）。符号は全角マイナスにせずCSSで色を分ける */
@@ -67,36 +63,12 @@ function diffClass(tone) {
   return tone === "better" ? " is-better" : tone === "worse" ? " is-worse" : "";
 }
 
-function RaceStConsiderationCard({
-  players,
-  scopedByRacer,
-  baseline,
-  entryCourseOf,
-  flyingRowByBoat,
-  currentMeetFlyingBoats,
-}) {
-  const { t } = useTranslation();
-  // 折りたたみ（ST分布・ST履歴）。どちらも1艇ずつしか描けないため、
-  // カード上部のグリッド（6艇横並び）とは別に「どの艇を見るか」を持つ
-  const [openSection, setOpenSection] = useState(null);
-  const [detailBoat, setDetailBoat] = useState(null);
+const isSmallSample = (stats) =>
+  (stats?.n ?? 0) > 0 && (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
 
-  const sorted = [...(players ?? [])].sort((a, b) => a.number - b.number);
-  if (sorted.length === 0) return null;
-
-  // 094未適用（権限なし）ならセクションごと出さない（ピットレポートと同じ扱い）
-  if (baseline && !Array.isArray(baseline) && baseline.state === "forbidden") {
-    return null;
-  }
-  const baselineRows = Array.isArray(baseline) ? baseline : null;
-  if (!baselineRows || baselineRows.length === 0) return null;
-
-  const baselineIndex = indexBaseline(baselineRows);
-  const windowStart = baselineRows[0]?.window_start ?? null;
-  const windowEnd = baselineRows[0]?.window_end ?? null;
-
-  // 艇ごとに「想定コース × 級別」で指標とベースラインとの差を組み立てる
-  const columns = sorted.map((p) => {
+/** 艇ごとに「想定コース × 級別」で指標とベースラインとの差を組み立てる */
+function buildColumns(sorted, scopedByRacer, baselineIndex, entryCourseOf) {
+  return sorted.map((p) => {
     const records = p.racerId ? scopedByRacer[p.racerId] : null;
     const course = entryCourseOf(p);
     // 級別は表示中のレースの出走表の値を使う。選手の記録の最後の1件（＝今日に最も近い走）
@@ -114,51 +86,320 @@ function RaceStConsiderationCard({
     const cell = getBaselineCell(baselineIndex, course, grade);
     return { player: p, course, grade, stats, cell };
   });
+}
 
+function GridHead({ columns }) {
+  return (
+    <thead>
+      <tr>
+        <th className="rsc-label-th" scope="col"></th>
+        {columns.map(({ player }) => {
+          const color = BOAT_COLORS[player.number] || {};
+          return (
+            <th
+              key={player.number}
+              className="rsc-boat-th"
+              scope="col"
+              style={{ background: color.bg, color: color.text }}
+            >
+              {player.number}
+            </th>
+          );
+        })}
+      </tr>
+    </thead>
+  );
+}
+
+/** 級別（＋Fバッジ）。どのベースラインと比べているかを読めるようにする */
+function GradeRow({ columns, flyingRowByBoat, currentMeetFlyingBoats }) {
+  const { t } = useTranslation();
+  return (
+    <tr>
+      <th className="rsc-label-th rsc-label-sub" scope="row">
+        {t("stConsideration.gradeRow")}
+        {/* Fバッジはこの行にしか出ない。6セルに「?」を並べると
+            うるさいので行ラベル側に1つだけ置く */}
+        <TermHintButton termKey="flyingCount" />
+      </th>
+      {columns.map(({ player, grade }) => (
+        <td key={player.number} className="rsc-cell rsc-cell-meta">
+          <span className="rsc-grade">{grade ?? "—"}</span>
+          {/* 出所は race_entries.f_count。以前は stats.flyingCount
+              （is_flying を窓×コースで数えた回数）を出しており、
+              「今期のF」という説明と数字が食い違っていた（T5-3） */}
+          <FlyingBadge
+            count={flyingRowByBoat?.get(player.number)?.f_count}
+            currentMeet={currentMeetFlyingBoats?.has(player.number)}
+            lateCount={flyingRowByBoat?.get(player.number)?.l_count}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+/** 走数（母数。Fの走は入っていない） */
+function RunsRow({ columns }) {
+  const { t } = useTranslation();
+  return (
+    <tr>
+      <th className="rsc-label-th rsc-label-sub" scope="row">
+        {t("stConsideration.runsRow")}
+      </th>
+      {columns.map(({ player, stats }) => (
+        <td key={player.number} className="rsc-cell rsc-cell-meta">
+          <span
+            className={`rsc-runs${
+              (stats?.n ?? 0) > 0 && stats.n < SMALL_SAMPLE_THRESHOLD
+                ? " is-small-sample"
+                : ""
+            }`}
+          >
+            {/* 走数が少ない艇は平均との差に色を付けない（diffTone）。凡例の
+                「⚠の艇」が表のどこか分かるよう、走数に⚠を付ける
+                （PR #1187 ファン評価3周目。コース別成績の走数と同じ印） */}
+            {(stats?.n ?? 0) > 0 && stats.n < SMALL_SAMPLE_THRESHOLD && (
+              <span title={t("wakuInfo.smallSampleTitle")}>⚠</span>
+            )}
+            {stats?.n ?? "—"}
+          </span>
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function StableCell({ stats, cell }) {
+  const { t } = useTranslation();
+  const value = stats?.stableRate ?? null;
+  const { diff, isBetter } = diffFromBaseline(
+    round1(value),
+    round1(cell?.stable_rate),
+    METRIC_DIRECTION.stableRate,
+  );
+  const small = isSmallSample(stats);
+  return (
+    <td className="rsc-cell">
+      <span className={`rsc-value${small ? " is-small-sample" : ""}`}>
+        {value === null ? "—" : value.toFixed(1)}
+      </span>
+      {diff !== null && (
+        <span
+          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small, threshold: RATE_TONE_THRESHOLD }))}`}
+        >
+          {formatDiff(diff)}
+        </span>
+      )}
+      {/* 選手側の値が「—」のとき（その条件での走が無い）は平均も
+          出さない。「— 平均5.2」だけが並ぶと比較対象の無い数字が
+          独り歩きする（レビュー指摘、2026-09-24） */}
+      {value !== null &&
+        cell?.stable_rate !== null &&
+        cell?.stable_rate !== undefined && (
+          <span className="rsc-baseline">
+            {t("stConsideration.average", {
+              value: Number(cell.stable_rate).toFixed(1),
+            })}
+          </span>
+        )}
+    </td>
+  );
+}
+
+/** 安定率（高いほど良い） */
+function StableRow({ columns }) {
+  const { t } = useTranslation();
+  return (
+    <tr>
+      <th className="rsc-label-th" scope="row">
+        <span>{t("stConsideration.stable")}</span>
+        <TermHintButton termKey="stStable" />
+        <span className="rsc-dir">{t("stConsideration.dirHigher")}</span>
+      </th>
+      {columns.map(({ player, stats, cell }) => (
+        <StableCell key={player.number} stats={stats} cell={cell} />
+      ))}
+    </tr>
+  );
+}
+
+function InnerBoatBreakoutCell() {
+  const { t } = useTranslation();
+  return (
+    <td className="rsc-cell">
+      <span className="rsc-value rsc-muted">—</span>
+      <span className="rsc-note-small">{t("stConsideration.noInnerBoat")}</span>
+    </td>
+  );
+}
+
+/** 抜出の回数・期待回数・差と、差の良し悪し（色の判定の入力） */
+function breakoutMetrics(stats, cell) {
+  const count = stats?.breakoutCount ?? null;
+  const expected = expectedBreakoutCount(
+    cell?.breakout_rate ?? null,
+    stats?.n ?? 0,
+  );
+  // 平均（期待回数）との差。多いほど良い。期待回数が1回未満で0回の
+  // ときは色を付けない（外のコースは平均0.2〜0.4回で、0回が普通。
+  // 赤くすると「抜け出せない選手」と誤読される）
+  const breakoutDiff =
+    count === null || expected === null ? null : count - round1(expected);
+  const breakoutBetter =
+    breakoutDiff === null || (count === 0 && expected < 1)
+      ? null
+      : breakoutDiff > 0;
+  return { count, expected, breakoutDiff, breakoutBetter };
+}
+
+function BreakoutCell({ course, stats, cell }) {
+  const { t } = useTranslation();
+  if (course === 1) return <InnerBoatBreakoutCell />;
+  const { count, expected, breakoutDiff, breakoutBetter } = breakoutMetrics(
+    stats,
+    cell,
+  );
+  const breakoutSmall = isSmallSample(stats);
+  return (
+    <td className="rsc-cell">
+      <span className="rsc-value">
+        {count === null ? "—" : t("stConsideration.times", { n: count })}
+      </span>
+      {breakoutDiff !== null && (
+        <span
+          className={`rsc-diff${diffClass(diffTone({ isBetter: breakoutBetter, diff: breakoutDiff, small: breakoutSmall }))}`}
+        >
+          {formatDiff(breakoutDiff)}
+        </span>
+      )}
+      {expected !== null && (
+        <span className="rsc-note-small">
+          {t("stConsideration.expectedTimes", { n: expected.toFixed(1) })}
+        </span>
+      )}
+    </td>
+  );
+}
+
+/** 抜出（実回数。率は出さない） */
+function BreakoutRow({ columns }) {
+  const { t } = useTranslation();
+  return (
+    <tr>
+      <th className="rsc-label-th" scope="row">
+        <span>{t("stConsideration.breakout")}</span>
+        <TermHintButton termKey="stBreakout" />
+        <span className="rsc-dir">{t("stConsideration.dirMore")}</span>
+      </th>
+      {columns.map(({ player, course, stats, cell }) => (
+        <BreakoutCell
+          key={player.number}
+          course={course}
+          stats={stats}
+          cell={cell}
+        />
+      ))}
+    </tr>
+  );
+}
+
+function LateCell({ stats, cell }) {
+  const { t } = useTranslation();
+  const value = stats?.lateRate ?? null;
+  const { diff, isBetter } = diffFromBaseline(
+    round1(value),
+    round1(cell?.late_rate),
+    METRIC_DIRECTION.lateRate,
+  );
+  const small = isSmallSample(stats);
+  return (
+    <td className="rsc-cell">
+      <span className={`rsc-value${small ? " is-small-sample" : ""}`}>
+        {value === null ? "—" : value.toFixed(1)}
+      </span>
+      {diff !== null && (
+        <span
+          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small, threshold: RATE_TONE_THRESHOLD }))}`}
+        >
+          {formatDiff(diff)}
+        </span>
+      )}
+      {/* 選手側の値が「—」のとき（その条件での走が無い）は平均も
+          出さない。「— 平均5.2」だけが並ぶと比較対象の無い数字が
+          独り歩きする（レビュー指摘、2026-09-24） */}
+      {value !== null &&
+        cell?.late_rate !== null &&
+        cell?.late_rate !== undefined && (
+          <span className="rsc-baseline">
+            {t("stConsideration.average", {
+              value: Number(cell.late_rate).toFixed(1),
+            })}
+          </span>
+        )}
+    </td>
+  );
+}
+
+/** 出遅率（低いほど良い） */
+function LateRow({ columns }) {
+  const { t } = useTranslation();
+  return (
+    <tr>
+      <th className="rsc-label-th" scope="row">
+        <span>{t("stConsideration.late")}</span>
+        <TermHintButton termKey="stLate" />
+        <span className="rsc-dir">{t("stConsideration.dirLower")}</span>
+      </th>
+      {columns.map(({ player, stats, cell }) => (
+        <LateCell key={player.number} stats={stats} cell={cell} />
+      ))}
+    </tr>
+  );
+}
+
+/** 094未適用（権限なし）・空ならセクションごと出さない（ピットレポートと同じ扱い）ため null */
+function usableBaselineRows(baseline) {
+  if (baseline && !Array.isArray(baseline) && baseline.state === "forbidden") {
+    return null;
+  }
+  const rows = Array.isArray(baseline) ? baseline : null;
+  return !rows || rows.length === 0 ? null : rows;
+}
+
+function RaceStConsiderationCard({
+  players,
+  scopedByRacer,
+  baseline,
+  entryCourseOf,
+  flyingRowByBoat,
+  currentMeetFlyingBoats,
+}) {
+  const { t } = useTranslation();
+  // 折りたたみ（ST分布・ST履歴）。どちらも1艇ずつしか描けないため、
+  // カード上部のグリッド（6艇横並び）とは別に「どの艇を見るか」を持つ
+  const [openSection, setOpenSection] = useState(null);
+  const [detailBoat, setDetailBoat] = useState(null);
+
+  const sorted = [...(players ?? [])].sort((a, b) => a.number - b.number);
+  const baselineRows = usableBaselineRows(baseline);
+  if (sorted.length === 0 || baselineRows === null) return null;
+
+  const baselineIndex = indexBaseline(baselineRows);
+  const windowStart = baselineRows[0]?.window_start ?? null;
+  const windowEnd = baselineRows[0]?.window_end ?? null;
+  const columns = buildColumns(
+    sorted,
+    scopedByRacer,
+    baselineIndex,
+    entryCourseOf,
+  );
   const loading = columns.every((c) => c.stats === null);
 
   // このカードには6艇の最良の金枠を付けない（race-detail-ui-unify plan §6）。
   // 安定率・出遅率・抜出はコースで水準が大きく違い（内ほど安定率が高く出遅率が低い）、
   // 生の値の最良はほぼ毎回内側の艇に付く。カードの見方は「同じコース・同じ級別の
   // 平均との差」なので、良し悪しは差の緑・赤で示す（PR #1187 ファン評価1周目 P1）
-
-  // --- 折りたたみ（ST分布 / ST履歴）用の派生値 ---
-  const detailColumn =
-    columns.find((c) => c.player.number === detailBoat) ?? columns[0];
-  const detailRecords = detailColumn.player.racerId
-    ? scopedByRacer[detailColumn.player.racerId]
-    : null;
-  const histogram = Array.isArray(detailRecords)
-    ? computeStHistogram(detailRecords, { course: detailColumn.course })
-    : null;
-  const history = Array.isArray(detailRecords)
-    ? getStHistory(detailRecords, { course: detailColumn.course })
-    : [];
-
-  // ベースラインの分布を割合(%)に直す。母数が桁違い（例: 44走 vs 16,640走）なので
-  // 件数では比べられず、割合に正規化してから重ねる
-  const baselineBins = detailColumn.cell?.st_histogram ?? null;
-  const baselineTotal = baselineBins
-    ? Object.values(baselineBins).reduce((a, b) => a + Number(b), 0)
-    : 0;
-  const baselinePctByBin = Object.fromEntries(
-    ST_HISTOGRAM_BINS.map((bin) => [
-      bin,
-      baselineTotal > 0
-        ? (Number(baselineBins[bin] ?? 0) / baselineTotal) * 100
-        : 0,
-    ]),
-  );
-  const ownPctOf = (bin) =>
-    histogram && histogram.total > 0
-      ? ((histogram.bins[bin] ?? 0) / histogram.total) * 100
-      : 0;
-  const maxBinPct = Math.max(
-    ...ST_HISTOGRAM_BINS.map((bin) =>
-      Math.max(ownPctOf(bin), baselinePctByBin[bin] ?? 0),
-    ),
-    1,
-  );
 
   return (
     <div className="rsc-card">
@@ -184,239 +425,17 @@ function RaceStConsiderationCard({
       ) : (
         <div className="rsc-grid-wrapper">
           <table className="rsc-grid">
-            <thead>
-              <tr>
-                <th className="rsc-label-th" scope="col"></th>
-                {columns.map(({ player }) => {
-                  const color = BOAT_COLORS[player.number] || {};
-                  return (
-                    <th
-                      key={player.number}
-                      className="rsc-boat-th"
-                      scope="col"
-                      style={{ background: color.bg, color: color.text }}
-                    >
-                      {player.number}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
+            <GridHead columns={columns} />
             <tbody>
-              {/* 級別（＋Fバッジ）。どのベースラインと比べているかを読めるようにする */}
-              <tr>
-                <th className="rsc-label-th rsc-label-sub" scope="row">
-                  {t("stConsideration.gradeRow")}
-                  {/* Fバッジはこの行にしか出ない。6セルに「?」を並べると
-                      うるさいので行ラベル側に1つだけ置く */}
-                  <TermHintButton termKey="flyingCount" />
-                </th>
-                {columns.map(({ player, grade }) => (
-                  <td key={player.number} className="rsc-cell rsc-cell-meta">
-                    <span className="rsc-grade">{grade ?? "—"}</span>
-                    {/* 出所は race_entries.f_count。以前は stats.flyingCount
-                        （is_flying を窓×コースで数えた回数）を出しており、
-                        「今期のF」という説明と数字が食い違っていた（T5-3） */}
-                    <FlyingBadge
-                      count={flyingRowByBoat?.get(player.number)?.f_count}
-                      currentMeet={currentMeetFlyingBoats?.has(player.number)}
-                      lateCount={flyingRowByBoat?.get(player.number)?.l_count}
-                    />
-                  </td>
-                ))}
-              </tr>
-
-              {/* 走数（母数。Fの走は入っていない） */}
-              <tr>
-                <th className="rsc-label-th rsc-label-sub" scope="row">
-                  {t("stConsideration.runsRow")}
-                </th>
-                {columns.map(({ player, stats }) => (
-                  <td key={player.number} className="rsc-cell rsc-cell-meta">
-                    <span
-                      className={`rsc-runs${
-                        (stats?.n ?? 0) > 0 && stats.n < SMALL_SAMPLE_THRESHOLD
-                          ? " is-small-sample"
-                          : ""
-                      }`}
-                    >
-                      {/* 走数が少ない艇は平均との差に色を付けない（diffTone）。凡例の
-                          「⚠の艇」が表のどこか分かるよう、走数に⚠を付ける
-                          （PR #1187 ファン評価3周目。コース別成績の走数と同じ印） */}
-                      {(stats?.n ?? 0) > 0 &&
-                        stats.n < SMALL_SAMPLE_THRESHOLD && (
-                          <span title={t("wakuInfo.smallSampleTitle")}>⚠</span>
-                        )}
-                      {stats?.n ?? "—"}
-                    </span>
-                  </td>
-                ))}
-              </tr>
-
-              {/* 安定率（高いほど良い） */}
-              <tr>
-                <th className="rsc-label-th" scope="row">
-                  <span>{t("stConsideration.stable")}</span>
-                  <TermHintButton termKey="stStable" />
-                  <span className="rsc-dir">
-                    {t("stConsideration.dirHigher")}
-                  </span>
-                </th>
-                {columns.map(({ player, stats, cell }) => {
-                  const value = stats?.stableRate ?? null;
-                  const { diff, isBetter } = diffFromBaseline(
-                    round1(value),
-                    round1(cell?.stable_rate),
-                    METRIC_DIRECTION.stableRate,
-                  );
-                  const small =
-                    (stats?.n ?? 0) > 0 &&
-                    (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
-                  return (
-                    <td key={player.number} className="rsc-cell">
-                      <span
-                        className={`rsc-value${small ? " is-small-sample" : ""}`}
-                      >
-                        {value === null ? "—" : value.toFixed(1)}
-                      </span>
-                      {diff !== null && (
-                        <span
-                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small, threshold: RATE_TONE_THRESHOLD }))}`}
-                        >
-                          {formatDiff(diff)}
-                        </span>
-                      )}
-                      {/* 選手側の値が「—」のとき（その条件での走が無い）は平均も
-                          出さない。「— 平均5.2」だけが並ぶと比較対象の無い数字が
-                          独り歩きする（レビュー指摘、2026-09-24） */}
-                      {value !== null &&
-                        cell?.stable_rate !== null &&
-                        cell?.stable_rate !== undefined && (
-                          <span className="rsc-baseline">
-                            {t("stConsideration.average", {
-                              value: Number(cell.stable_rate).toFixed(1),
-                            })}
-                          </span>
-                        )}
-                    </td>
-                  );
-                })}
-              </tr>
-
-              {/* 抜出（実回数。率は出さない） */}
-              <tr>
-                <th className="rsc-label-th" scope="row">
-                  <span>{t("stConsideration.breakout")}</span>
-                  <TermHintButton termKey="stBreakout" />
-                  <span className="rsc-dir">
-                    {t("stConsideration.dirMore")}
-                  </span>
-                </th>
-                {columns.map(({ player, course, stats, cell }) => {
-                  if (course === 1) {
-                    return (
-                      <td key={player.number} className="rsc-cell">
-                        <span className="rsc-value rsc-muted">—</span>
-                        <span className="rsc-note-small">
-                          {t("stConsideration.noInnerBoat")}
-                        </span>
-                      </td>
-                    );
-                  }
-                  const count = stats?.breakoutCount ?? null;
-                  const expected = expectedBreakoutCount(
-                    cell?.breakout_rate ?? null,
-                    stats?.n ?? 0,
-                  );
-                  // 平均（期待回数）との差。多いほど良い。期待回数が1回未満で0回の
-                  // ときは色を付けない（外のコースは平均0.2〜0.4回で、0回が普通。
-                  // 赤くすると「抜け出せない選手」と誤読される）
-                  const breakoutDiff =
-                    count === null || expected === null
-                      ? null
-                      : count - round1(expected);
-                  const breakoutSmall =
-                    (stats?.n ?? 0) > 0 &&
-                    (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
-                  const breakoutBetter =
-                    breakoutDiff === null || (count === 0 && expected < 1)
-                      ? null
-                      : breakoutDiff > 0;
-                  return (
-                    <td key={player.number} className="rsc-cell">
-                      <span className="rsc-value">
-                        {count === null
-                          ? "—"
-                          : t("stConsideration.times", { n: count })}
-                      </span>
-                      {breakoutDiff !== null && (
-                        <span
-                          className={`rsc-diff${diffClass(diffTone({ isBetter: breakoutBetter, diff: breakoutDiff, small: breakoutSmall }))}`}
-                        >
-                          {formatDiff(breakoutDiff)}
-                        </span>
-                      )}
-                      {expected !== null && (
-                        <span className="rsc-note-small">
-                          {t("stConsideration.expectedTimes", {
-                            n: expected.toFixed(1),
-                          })}
-                        </span>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-
-              {/* 出遅率（低いほど良い） */}
-              <tr>
-                <th className="rsc-label-th" scope="row">
-                  <span>{t("stConsideration.late")}</span>
-                  <TermHintButton termKey="stLate" />
-                  <span className="rsc-dir">
-                    {t("stConsideration.dirLower")}
-                  </span>
-                </th>
-                {columns.map(({ player, stats, cell }) => {
-                  const value = stats?.lateRate ?? null;
-                  const { diff, isBetter } = diffFromBaseline(
-                    round1(value),
-                    round1(cell?.late_rate),
-                    METRIC_DIRECTION.lateRate,
-                  );
-                  const small =
-                    (stats?.n ?? 0) > 0 &&
-                    (stats?.n ?? 0) < SMALL_SAMPLE_THRESHOLD;
-                  return (
-                    <td key={player.number} className="rsc-cell">
-                      <span
-                        className={`rsc-value${small ? " is-small-sample" : ""}`}
-                      >
-                        {value === null ? "—" : value.toFixed(1)}
-                      </span>
-                      {diff !== null && (
-                        <span
-                          className={`rsc-diff${diffClass(diffTone({ isBetter, diff, small, threshold: RATE_TONE_THRESHOLD }))}`}
-                        >
-                          {formatDiff(diff)}
-                        </span>
-                      )}
-                      {/* 選手側の値が「—」のとき（その条件での走が無い）は平均も
-                          出さない。「— 平均5.2」だけが並ぶと比較対象の無い数字が
-                          独り歩きする（レビュー指摘、2026-09-24） */}
-                      {value !== null &&
-                        cell?.late_rate !== null &&
-                        cell?.late_rate !== undefined && (
-                          <span className="rsc-baseline">
-                            {t("stConsideration.average", {
-                              value: Number(cell.late_rate).toFixed(1),
-                            })}
-                          </span>
-                        )}
-                    </td>
-                  );
-                })}
-              </tr>
+              <GradeRow
+                columns={columns}
+                flyingRowByBoat={flyingRowByBoat}
+                currentMeetFlyingBoats={currentMeetFlyingBoats}
+              />
+              <RunsRow columns={columns} />
+              <StableRow columns={columns} />
+              <BreakoutRow columns={columns} />
+              <LateRow columns={columns} />
             </tbody>
           </table>
         </div>
@@ -426,171 +445,14 @@ function RaceStConsiderationCard({
           どちらも1艇ずつしか描けないため、上のグリッド（6艇横並び）とは別に
           「どの艇を見るか」のチップを持つ。既定は1号艇 */}
       {!loading && (
-        <div className="rsc-folds">
-          <div className="rsc-fold-buttons">
-            <button
-              type="button"
-              className={`rsc-fold-toggle${openSection === "histogram" ? " is-open" : ""}`}
-              onClick={() =>
-                setOpenSection((v) => (v === "histogram" ? null : "histogram"))
-              }
-              aria-expanded={openSection === "histogram"}
-            >
-              {openSection === "histogram" ? "\u25be " : "\u25b8 "}
-              {t("stConsideration.histogramTitle")}
-            </button>
-            <button
-              type="button"
-              className={`rsc-fold-toggle${openSection === "history" ? " is-open" : ""}`}
-              onClick={() =>
-                setOpenSection((v) => (v === "history" ? null : "history"))
-              }
-              aria-expanded={openSection === "history"}
-            >
-              {openSection === "history" ? "\u25be " : "\u25b8 "}
-              {t("stConsideration.historyTitle")}
-            </button>
-          </div>
-
-          {openSection && (
-            <div className="rsc-fold-body">
-              <div className="rsc-detail-chips" role="group">
-                {columns.map(({ player }) => {
-                  const active = detailColumn.player.number === player.number;
-                  const color = BOAT_COLORS[player.number] || {};
-                  return (
-                    <button
-                      key={player.number}
-                      type="button"
-                      className={`rsc-detail-chip${active ? " is-active" : ""}`}
-                      style={
-                        active
-                          ? { background: color.bg, color: color.text }
-                          : undefined
-                      }
-                      onClick={() => setDetailBoat(player.number)}
-                      aria-pressed={active}
-                    >
-                      {player.number}
-                    </button>
-                  );
-                })}
-                <span className="rsc-detail-name" translate="no">
-                  {detailColumn.player.name?.replace(/\s+/g, "")}
-                </span>
-              </div>
-
-              {openSection === "histogram" &&
-                (histogram === null || histogram.total === 0 ? (
-                  <p className="rsc-fold-empty">{t("wakuInfo.noData")}</p>
-                ) : (
-                  <>
-                    <p className="rsc-fold-note">
-                      {t("stConsideration.histogramNote", {
-                        course: detailColumn.course,
-                        grade: detailColumn.grade ?? "\u2014",
-                        n: histogram.total,
-                        baselineN: Number(
-                          detailColumn.cell?.runs ?? 0,
-                        ).toLocaleString(),
-                      })}
-                    </p>
-                    <div className="rsc-histogram">
-                      {ST_HISTOGRAM_BINS.map((bin) => (
-                        <div key={bin} className="rsc-hist-col">
-                          <span className="rsc-hist-bars">
-                            <span
-                              className="rsc-hist-own"
-                              style={{
-                                height: `${(ownPctOf(bin) / maxBinPct) * 100}%`,
-                              }}
-                              title={t("stConsideration.histogramOwnTitle", {
-                                pct: ownPctOf(bin).toFixed(1),
-                                n: histogram.bins[bin] ?? 0,
-                              })}
-                            />
-                            <span
-                              className="rsc-hist-base"
-                              style={{
-                                height: `${((baselinePctByBin[bin] ?? 0) / maxBinPct) * 100}%`,
-                              }}
-                              title={t("stConsideration.histogramBaseTitle", {
-                                pct: (baselinePctByBin[bin] ?? 0).toFixed(1),
-                              })}
-                            />
-                          </span>
-                          <span className="rsc-hist-label">{bin}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="rsc-fold-legend">
-                      {t("stConsideration.histogramLegend")}
-                    </p>
-                  </>
-                ))}
-
-              {openSection === "history" &&
-                (history.length === 0 ? (
-                  <p className="rsc-fold-empty">{t("wakuInfo.noData")}</p>
-                ) : (
-                  <>
-                    <p className="rsc-fold-note">
-                      {t("stConsideration.historyNote", {
-                        course: detailColumn.course,
-                        n: history.length,
-                      })}
-                    </p>
-                    <div className="rsc-history-wrapper">
-                      <table className="rsc-history">
-                        <thead>
-                          <tr>
-                            <th scope="col">{t("stConsideration.histDate")}</th>
-                            <th scope="col">
-                              {t("stConsideration.histVenue")}
-                            </th>
-                            <th scope="col">{t("stConsideration.histSt")}</th>
-                            <th scope="col">
-                              {t("stConsideration.histStRank")}
-                            </th>
-                            <th scope="col">{t("stConsideration.histRank")}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {history.map((r) => (
-                            <tr key={r.raceId}>
-                              <td>{r.date}</td>
-                              <td>{t(`venues.${r.venueCode}`)}</td>
-                              <td>
-                                {r.isFlying
-                                  ? t("recentRuns.flying")
-                                  : r.stForRank === null ||
-                                      r.stForRank === undefined
-                                    ? "\u2014"
-                                    : Number(r.stForRank)
-                                        .toFixed(2)
-                                        .replace(/^0/, "")}
-                              </td>
-                              <td>
-                                {r.isFlying ||
-                                r.stRank === null ||
-                                r.stRank === undefined
-                                  ? "\u2014"
-                                  : t("recentRuns.stRank", { n: r.stRank })}
-                              </td>
-                              <td>
-                                {finishPositionOf(r) ??
-                                  t("wakuInfo.outOfPlace")}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                ))}
-            </div>
-          )}
-        </div>
+        <RaceStConsiderationCardFolds
+          columns={columns}
+          scopedByRacer={scopedByRacer}
+          openSection={openSection}
+          setOpenSection={setOpenSection}
+          detailBoat={detailBoat}
+          setDetailBoat={setDetailBoat}
+        />
       )}
 
       <p className="rsc-caveat">{t("stConsideration.caveat")}</p>

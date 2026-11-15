@@ -3,9 +3,10 @@ name: Slack PR Notification
 # PR が作られたときだけ通知する。マージの通知は出さない（BOA-652 でユーザーが判断）。
 # 以前は types に merged を並べていたが、merged は pull_request の activity type に無く、
 # マージ時には一度も起動していなかった（マージは closed + merged == true で表す）
+# 2026-11-13: PR 増による Actions の待ち行列（247 run）を減らすため pull_request の起動を外した。手で起こすときだけ動く
+# （PR の値が空なので、通知の内容は空欄になる。復活させるなら pull_request: types: [opened] を戻す）
 on:
-  pull_request:
-    types: [opened]
+  workflow_dispatch:
 
 # 最小の権限（CodeQL actions/missing-workflow-permissions）。GITHUB_TOKEN で書く手順は無い
 permissions:

@@ -56,38 +56,56 @@ import "./RaceDetailPage.css";
 
 // rawData（getPredictionsのrace）からPredictionSection用のprediction objectを構築
 // （RaceDetail.jsxのprocessRacePredictionと同じロジック）
-function buildPrediction(racePrediction, notFoundMessage) {
-  const players =
-    racePrediction?.players || racePrediction?.unified?.players || [];
-
-  if (players.length === 0) {
-    return {
-      error: true,
-      errorMessage: notFoundMessage,
-      // 中止・順延（BOA-254）で選手情報が存在しないレースも、この分岐に入る。
-      // PredictionPanel側でcancellationStatusを見て専用メッセージに出し分ける
-      cancellationStatus: racePrediction?.cancellationStatus ?? null,
-      // 結果があれば中止扱いしない（isRaceCancelled、BOA-525）ため、こちらにも渡す
-      result: racePrediction?.result ?? null,
-    };
-  }
-
-  const unified = racePrediction?.unified || null;
-  const topPickPlayer = unified
-    ? players.find((p) => p.number === unified.topPick)
-    : null;
-
+function buildNoPlayersPrediction(racePrediction, notFoundMessage) {
   return {
-    topPick: topPickPlayer,
-    allPlayers: players,
-    top3: unified ? [unified.topPick, unified.top2nd].filter(Boolean) : [],
-    result: racePrediction.result,
+    error: true,
+    errorMessage: notFoundMessage,
+    // 中止・順延（BOA-254）で選手情報が存在しないレースも、この分岐に入る。
+    // PredictionPanel側でcancellationStatusを見て専用メッセージに出し分ける
     cancellationStatus: racePrediction?.cancellationStatus ?? null,
+    // 結果があれば中止扱いしない（isRaceCancelled、BOA-525）ため、こちらにも渡す
+    result: racePrediction?.result ?? null,
+  };
+}
+
+// unified（統合予想）に由来する項目
+function buildUnifiedFields(unified) {
+  return {
     turnPrediction: unified?.turnPrediction ?? null,
     volatilityPercentile: unified?.volatilityPercentile ?? null,
     volatilityPercentileIsFallback:
       unified?.volatilityPercentileIsFallback ?? null,
     volatilityReasons: unified?.volatilityReasons ?? [],
+  };
+}
+
+// 本命の選手と上位2艇
+function buildPickFields(unified, players) {
+  const topPickPlayer = unified
+    ? players.find((p) => p.number === unified.topPick)
+    : null;
+  return {
+    topPick: topPickPlayer,
+    allPlayers: players,
+    top3: unified ? [unified.topPick, unified.top2nd].filter(Boolean) : [],
+  };
+}
+
+function buildPrediction(racePrediction, notFoundMessage) {
+  const players =
+    racePrediction?.players || racePrediction?.unified?.players || [];
+
+  if (players.length === 0) {
+    return buildNoPlayersPrediction(racePrediction, notFoundMessage);
+  }
+
+  const unified = racePrediction?.unified || null;
+
+  return {
+    ...buildPickFields(unified, players),
+    result: racePrediction.result,
+    cancellationStatus: racePrediction?.cancellationStatus ?? null,
+    ...buildUnifiedFields(unified),
     // BOA-822 イン崩れ注意度（transformEdgeResponse がレース直下に通した値）
     inCaution: racePrediction.inCaution ?? null,
     racerStats: racePrediction.racerStats || null,
@@ -97,11 +115,395 @@ function buildPrediction(racePrediction, notFoundMessage) {
   };
 }
 
-function RaceDetailPage({ showViewSwitch = false }) {
-  const { raceId } = useParams();
-  const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
-  const localize = useLocalizedPath();
+function buildVenueRaces(allRaces, parsed) {
+  if (!parsed) return [];
+  return allRaces
+    .filter((r) => r.venueCode === parsed.venueCode)
+    .sort((a, b) => a.raceNumber - b.raceNumber)
+    .map((race) => ({
+      id: race.raceId,
+      venue: race.venue,
+      venueCode: race.venueCode,
+      raceNumber: race.raceNumber,
+      startTime: race.startTime,
+      rawData: race,
+    }));
+}
+
+function buildVenues(allRaces) {
+  const codes = [...new Set(allRaces.map((r) => r.venueCode))].sort(
+    (a, b) => a - b,
+  );
+  return codes.map((code) => ({
+    placeCd: code,
+    placeName: allRaces.find((r) => r.venueCode === code)?.venue || "",
+  }));
+}
+
+function buildSelectedRace(racePrediction, venueName, heading) {
+  const { seriesDayLabel, seriesTitle } = heading;
+  return racePrediction
+    ? {
+        id: racePrediction.raceId,
+        venue: venueName,
+        venueCode: racePrediction.venueCode,
+        raceNumber: racePrediction.raceNumber,
+        startTime: racePrediction.startTime,
+        // 「AI用にコピー」の前提の行に、見出しと同じ日目・節タイトルを入れる（BOA-770）
+        seriesDayLabel,
+        seriesTitle,
+        rawData: racePrediction,
+      }
+    : null;
+}
+
+function buildPageMeta(t, raceKey, lang, racePrediction) {
+  return raceKey
+    ? getRaceDetailMeta(t, raceKey, lang, {
+        cancelled: isRaceCancelled(racePrediction),
+        finished: !!racePrediction?.result,
+      })
+    : {};
+}
+
+function shouldNoindex(parsed, loading, error, racePrediction) {
+  return (
+    !parsed ||
+    (!loading && error !== FETCH_FAILED_ERROR && !!(error || !racePrediction))
+  );
+}
+
+function getStatusOf(racePrediction, nowHHMM) {
+  return getRaceStatus(
+    { startTime: racePrediction?.startTime, result: racePrediction?.result },
+    nowHHMM,
+  );
+}
+
+function InvalidUrlView({ t, localize }) {
+  return (
+    <>
+      <title>{t("meta.title")}</title>
+      <Header />
+      <div className="race-detail-page-v2">
+        <div className="race-detail-page-v2__container">
+          <div className="race-detail-page-v2__empty">
+            <p>{t("raceDetailPage.invalidUrl")}</p>
+            <Link to={localize("/")} className="back-link">
+              {t("raceDetailPage.backToHome")}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function RaceKicker({ gradeConfig, seriesTitle }) {
+  return gradeConfig || seriesTitle ? (
+    <p className="race-detail-kicker">
+      {gradeConfig && (
+        <span
+          className="race-detail-grade"
+          style={{ backgroundColor: gradeConfig.color }}
+          translate="no"
+        >
+          {gradeConfig.label}
+        </span>
+      )}
+      {seriesTitle && (
+        <span
+          className="race-detail-kicker__title"
+          title={seriesTitle}
+          translate="no"
+        >
+          {seriesTitle}
+        </span>
+      )}
+    </p>
+  ) : null;
+}
+
+function StageChipView({ stageChip }) {
+  return stageChip ? (
+    <>
+      {" "}
+      <span
+        className={`race-detail-stage race-detail-stage--${stageChip.variant}`}
+        title={stageChip.title}
+        translate={stageChip.isOfficial ? "no" : undefined}
+      >
+        {stageChip.emoji && <span aria-hidden="true">{stageChip.emoji} </span>}
+        {stageChip.label}
+      </span>
+    </>
+  ) : null;
+}
+
+function RaceDetailHeader({
+  t,
+  i18n,
+  venueName,
+  parsed,
+  stageChip,
+  seriesDayLabel,
+  isToday,
+  status,
+  racePrediction,
+  date,
+  raceListLink,
+}) {
+  return (
+    <header className="page-header">
+      <h1>
+        🚤 {venueName} {parsed.raceNo}R
+        <StageChipView stageChip={stageChip} />
+        {seriesDayLabel && (
+          <>
+            {" "}
+            <span className="race-detail-series-day">{seriesDayLabel}</span>
+          </>
+        )}
+        {/* 本日の締切前は締切時刻を見出しにも出す。タブの上に帯と要約を置いたので、下の
+            「データ分析結果（締切 …）」が375pxの最初の画面から外れた（BOA-1189 ファン評価2周目 指摘2） */}
+        {isToday &&
+          status === RACE_STATUS.UPCOMING &&
+          racePrediction?.startTime && (
+            <>
+              {" "}
+              <span
+                className="race-detail-deadline"
+                data-testid="race-detail-deadline"
+              >
+                {t("section.resultTitleDeadline", {
+                  time: racePrediction.startTime,
+                })}
+              </span>
+            </>
+          )}
+        {!isToday && ` (${formatDateLocalized(date, i18n.resolvedLanguage)})`}
+      </h1>
+      <Link to={raceListLink} className="back-link">
+        {t("raceDetailPage.backToList")}
+      </Link>
+    </header>
+  );
+}
+
+function EmptyNotice({ message, raceListLink, t }) {
+  return (
+    <div className="race-detail-page-v2__empty">
+      <p>{message}</p>
+      <Link to={raceListLink} className="back-link">
+        {t("raceDetailPage.backToList")}
+      </Link>
+    </div>
+  );
+}
+
+function RaceDetailLoaded({
+  t,
+  raceId,
+  parsed,
+  date,
+  isToday,
+  status,
+  racePrediction,
+  prediction,
+  selectedRace,
+  venueRaces,
+  venues,
+  isAnalyzing,
+  loading,
+  onNavigate,
+  onVenueChange,
+}) {
+  return (
+    <>
+      {/* 1R〜12R の帯と出走6艇の1〜2行（BOA-1189 GS01-c、2026-10-31 オーナー決定、11-01 A案で要約を縮めた）。タブの上に置く */}
+      <RaceNumberStrip
+        races={venueRaces}
+        currentRaceId={raceId}
+        venueCode={parsed.venueCode}
+        date={date}
+        raceGrade={racePrediction.raceGrade ?? null}
+        raceTitle={racePrediction.raceTitle ?? null}
+      />
+      {/* 中止のレースは出走6艇を出さない。中止の知らせを最初の画面に残す（ファン評価1周目 指摘1） */}
+      {!prediction?.error && !isRaceCancelled(prediction) && (
+        <RaceEntrantsSummary players={prediction?.allPlayers} raceId={raceId} />
+      )}
+      <PredictionSection
+        prediction={prediction}
+        selectedRace={selectedRace}
+        isAnalyzing={isAnalyzing || loading}
+        date={isToday ? undefined : date}
+        status={status}
+      />
+
+      {isToday && (
+        <div className="analysis-tools-link-section">
+          <Link
+            to={`/winning-technique?venue_code=${parsed.venueCode}&race_id=${raceId}&tab=motor`}
+            className="analysis-tools-link"
+          >
+            📊 {t("panel.analysisToolsLink")}
+          </Link>
+        </div>
+      )}
+
+      <RaceNavCard
+        races={venueRaces}
+        selectedRace={selectedRace}
+        onNavigate={onNavigate}
+        venues={venues}
+        selectedVenueId={parsed.venueCode}
+        onVenueChange={onVenueChange}
+      />
+    </>
+  );
+}
+
+function RaceDetailBody({
+  loading,
+  error,
+  racePrediction,
+  raceListLink,
+  t,
+  ...rest
+}) {
+  if (loading) {
+    return (
+      <LoadingScreen
+        title={t("home.loadingTitle")}
+        description={t("home.loadingDesc")}
+      />
+    );
+  }
+  if (error === FETCH_FAILED_ERROR) return <DataFetchError />;
+  if (error === NO_DATA_ERROR) {
+    return (
+      <EmptyNotice
+        message={t("raceDetailPage.noDataForDate")}
+        raceListLink={raceListLink}
+        t={t}
+      />
+    );
+  }
+  if (error || !racePrediction) {
+    return (
+      <EmptyNotice
+        message={t("raceDetailPage.notFound")}
+        raceListLink={raceListLink}
+        t={t}
+      />
+    );
+  }
+  return (
+    <RaceDetailLoaded
+      t={t}
+      loading={loading}
+      racePrediction={racePrediction}
+      {...rest}
+    />
+  );
+}
+
+function RaceDetailView({
+  showViewSwitch,
+  raceId,
+  pageMeta,
+  breadcrumbItems,
+  heading,
+  t,
+  i18n,
+  venueName,
+  parsed,
+  isToday,
+  status,
+  racePrediction,
+  date,
+  raceListLink,
+  loading,
+  error,
+  prediction,
+  selectedRace,
+  venueRaces,
+  venues,
+  isAnalyzing,
+  navigateToRace,
+  navigateToVenue,
+}) {
+  const { gradeConfig, seriesTitle, stageChip, seriesDayLabel } = heading;
+  return (
+    <>
+      {/* 開催日を入れる。無いと同じ会場・同じR番号の全日付で title・description が同じになり、
+          検索結果で重複扱いになる（集客レーン、2026-10-02） */}
+      <title>{pageMeta.title}</title>
+      <meta name="description" content={pageMeta.description} />
+      {/* 4言語で出すページなので、canonical は表示中の言語の URL（hreflang と合わせる） */}
+      <link rel="canonical" href={pageMeta.canonical} />
+      <Header />
+      {/* 上部の切り替え（BOA-430 PR6、D-22）。サイトのヘッダーの直下、パンくずの上（承認モック pr6-switch） */}
+      {showViewSwitch && <AssistViewSwitch current="race" raceId={raceId} />}
+
+      <div className="race-detail-page-v2">
+        <Breadcrumb items={breadcrumbItems} />
+
+        <div className="race-detail-page-v2__container">
+          <RaceKicker gradeConfig={gradeConfig} seriesTitle={seriesTitle} />
+          <RaceDetailHeader
+            t={t}
+            i18n={i18n}
+            venueName={venueName}
+            parsed={parsed}
+            stageChip={stageChip}
+            seriesDayLabel={seriesDayLabel}
+            isToday={isToday}
+            status={status}
+            racePrediction={racePrediction}
+            date={date}
+            raceListLink={raceListLink}
+          />
+
+          <RaceDetailBody
+            loading={loading}
+            error={error}
+            racePrediction={racePrediction}
+            raceListLink={raceListLink}
+            t={t}
+            raceId={raceId}
+            parsed={parsed}
+            date={date}
+            isToday={isToday}
+            status={status}
+            prediction={prediction}
+            selectedRace={selectedRace}
+            venueRaces={venueRaces}
+            venues={venues}
+            isAnalyzing={isAnalyzing}
+            onNavigate={navigateToRace}
+            onVenueChange={navigateToVenue}
+          />
+        </div>
+      </div>
+
+      {selectedRace && (
+        <RaceBottomNav
+          races={venueRaces}
+          selectedRace={selectedRace}
+          onNavigate={navigateToRace}
+          venues={venues}
+          selectedVenueId={parsed.venueCode}
+          onVenueChange={navigateToVenue}
+        />
+      )}
+    </>
+  );
+}
+
+// データの取得・選択中レース・会場の一覧（hooks の呼ぶ順は元のまま）
+function useRaceDetailData(raceId) {
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   // raceIdが変わった瞬間、レンダー中に即座にisAnalyzingをtrueへ戻す
   // （Reactの「レンダー中に前回値と比較して状態を調整する」公式パターン。
@@ -130,70 +532,60 @@ function RaceDetailPage({ showViewSwitch = false }) {
     [allRaces, raceId],
   );
 
-  const venueRaces = useMemo(() => {
-    if (!parsed) return [];
-    return allRaces
-      .filter((r) => r.venueCode === parsed.venueCode)
-      .sort((a, b) => a.raceNumber - b.raceNumber)
-      .map((race) => ({
-        id: race.raceId,
-        venue: race.venue,
-        venueCode: race.venueCode,
-        raceNumber: race.raceNumber,
-        startTime: race.startTime,
-        rawData: race,
-      }));
-  }, [allRaces, parsed]);
+  const venueRaces = useMemo(
+    () => buildVenueRaces(allRaces, parsed),
+    [allRaces, parsed],
+  );
 
-  const venues = useMemo(() => {
-    const codes = [...new Set(allRaces.map((r) => r.venueCode))].sort(
-      (a, b) => a - b,
-    );
-    return codes.map((code) => ({
-      placeCd: code,
-      placeName: allRaces.find((r) => r.venueCode === code)?.venue || "",
-    }));
-  }, [allRaces]);
+  const venues = useMemo(() => buildVenues(allRaces), [allRaces]);
+
+  return {
+    parsed,
+    date,
+    isToday,
+    loading,
+    error,
+    nowHHMM,
+    isAnalyzing,
+    racePrediction,
+    venueRaces,
+    venues,
+  };
+}
+
+function RaceDetailPage({ showViewSwitch = false }) {
+  const { raceId } = useParams();
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const localize = useLocalizedPath();
+  const {
+    parsed,
+    date,
+    isToday,
+    loading,
+    error,
+    nowHHMM,
+    isAnalyzing,
+    racePrediction,
+    venueRaces,
+    venues,
+  } = useRaceDetailData(raceId);
 
   const lang = i18n.resolvedLanguage;
   const raceKey = parsed
     ? { raceId, venueCode: parsed.venueCode, raceNo: parsed.raceNo, date }
     : null;
-  const pageMeta = raceKey
-    ? getRaceDetailMeta(t, raceKey, lang, {
-        cancelled: isRaceCancelled(racePrediction),
-        finished: !!racePrediction?.result,
-      })
-    : {};
+  const pageMeta = buildPageMeta(t, raceKey, lang, racePrediction);
   // 中身の無い枝（URLの形が不正・NO_DATA・見つからない）だけ noindex。
   // 読み込み中と取得の失敗は一時的な状態なので noindex にしない（枝の並びは下の描画と同じ）
-  useRobotsMeta(
-    !parsed || (!loading && error !== FETCH_FAILED_ERROR && !!(error || !racePrediction)),
-  );
+  useRobotsMeta(shouldNoindex(parsed, loading, error, racePrediction));
   useSocialMeta({
     title: pageMeta.title,
     description: pageMeta.description,
     url: pageMeta.canonical,
   });
 
-  if (!parsed) {
-    return (
-      <>
-        <title>{t("meta.title")}</title>
-        <Header />
-        <div className="race-detail-page-v2">
-          <div className="race-detail-page-v2__container">
-            <div className="race-detail-page-v2__empty">
-              <p>{t("raceDetailPage.invalidUrl")}</p>
-              <Link to={localize("/")} className="back-link">
-                {t("raceDetailPage.backToHome")}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
+  if (!parsed) return <InvalidUrlView t={t} localize={localize} />;
 
   const venueName = t(`venues.${parsed.venueCode}`);
   const raceListLink = getRaceListLink(raceKey, isToday, lang);
@@ -203,29 +595,13 @@ function RaceDetailPage({ showViewSwitch = false }) {
     : null;
   // 取得失敗時は racePrediction が null になり、ページ全体が DataFetchError を出す。
   // ここでの null は「取得できたが値が無い」だけなので、何も出さない
-  const { gradeConfig, seriesTitle, stageChip, seriesDayLabel } =
-    getRaceDetailHeading(
-      racePrediction,
-      venueRaces.map((r) => r.rawData),
-      t,
-    );
-  const selectedRace = racePrediction
-    ? {
-        id: racePrediction.raceId,
-        venue: venueName,
-        venueCode: racePrediction.venueCode,
-        raceNumber: racePrediction.raceNumber,
-        startTime: racePrediction.startTime,
-        // 「AI用にコピー」の前提の行に、見出しと同じ日目・節タイトルを入れる（BOA-770）
-        seriesDayLabel,
-        seriesTitle,
-        rawData: racePrediction,
-      }
-    : null;
-  const status = getRaceStatus(
-    { startTime: racePrediction?.startTime, result: racePrediction?.result },
-    nowHHMM,
+  const heading = getRaceDetailHeading(
+    racePrediction,
+    venueRaces.map((r) => r.rawData),
+    t,
   );
+  const selectedRace = buildSelectedRace(racePrediction, venueName, heading);
+  const status = getStatusOf(racePrediction, nowHHMM);
 
   const navigateToRace = (race) => {
     navigate(localize(`/race/${race.id}`));
@@ -246,176 +622,31 @@ function RaceDetailPage({ showViewSwitch = false }) {
   );
 
   return (
-    <>
-      {/* 開催日を入れる。無いと同じ会場・同じR番号の全日付で title・description が同じになり、
-          検索結果で重複扱いになる（集客レーン、2026-10-02） */}
-      <title>{pageMeta.title}</title>
-      <meta name="description" content={pageMeta.description} />
-      {/* 4言語で出すページなので、canonical は表示中の言語の URL（hreflang と合わせる） */}
-      <link rel="canonical" href={pageMeta.canonical} />
-      <Header />
-      {/* 上部の切り替え（BOA-430 PR6、D-22）。サイトのヘッダーの直下、パンくずの上（承認モック pr6-switch） */}
-      {showViewSwitch && <AssistViewSwitch current="race" raceId={raceId} />}
-
-      <div className="race-detail-page-v2">
-        <Breadcrumb items={breadcrumbItems} />
-
-        <div className="race-detail-page-v2__container">
-          {(gradeConfig || seriesTitle) && (
-            <p className="race-detail-kicker">
-              {gradeConfig && (
-                <span
-                  className="race-detail-grade"
-                  style={{ backgroundColor: gradeConfig.color }}
-                  translate="no"
-                >
-                  {gradeConfig.label}
-                </span>
-              )}
-              {seriesTitle && (
-                <span
-                  className="race-detail-kicker__title"
-                  title={seriesTitle}
-                  translate="no"
-                >
-                  {seriesTitle}
-                </span>
-              )}
-            </p>
-          )}
-          <header className="page-header">
-            <h1>
-              🚤 {venueName} {parsed.raceNo}R
-              {stageChip && (
-                <>
-                  {" "}
-                  <span
-                    className={`race-detail-stage race-detail-stage--${stageChip.variant}`}
-                    title={stageChip.title}
-                    translate={stageChip.isOfficial ? "no" : undefined}
-                  >
-                    {stageChip.emoji && (
-                      <span aria-hidden="true">{stageChip.emoji} </span>
-                    )}
-                    {stageChip.label}
-                  </span>
-                </>
-              )}
-              {seriesDayLabel && (
-                <>
-                  {" "}
-                  <span className="race-detail-series-day">
-                    {seriesDayLabel}
-                  </span>
-                </>
-              )}
-              {/* 本日の締切前は締切時刻を見出しにも出す。タブの上に帯と要約を置いたので、下の
-                  「データ分析結果（締切 …）」が375pxの最初の画面から外れた（BOA-1189 ファン評価2周目 指摘2） */}
-              {isToday &&
-                status === RACE_STATUS.UPCOMING &&
-                racePrediction?.startTime && (
-                  <>
-                    {" "}
-                    <span
-                      className="race-detail-deadline"
-                      data-testid="race-detail-deadline"
-                    >
-                      {t("section.resultTitleDeadline", {
-                        time: racePrediction.startTime,
-                      })}
-                    </span>
-                  </>
-                )}
-              {!isToday &&
-                ` (${formatDateLocalized(date, i18n.resolvedLanguage)})`}
-            </h1>
-            <Link to={raceListLink} className="back-link">
-              {t("raceDetailPage.backToList")}
-            </Link>
-          </header>
-
-          {loading ? (
-            <LoadingScreen
-              title={t("home.loadingTitle")}
-              description={t("home.loadingDesc")}
-            />
-          ) : error === FETCH_FAILED_ERROR ? (
-            <DataFetchError />
-          ) : error === NO_DATA_ERROR ? (
-            <div className="race-detail-page-v2__empty">
-              <p>{t("raceDetailPage.noDataForDate")}</p>
-              <Link to={raceListLink} className="back-link">
-                {t("raceDetailPage.backToList")}
-              </Link>
-            </div>
-          ) : error || !racePrediction ? (
-            <div className="race-detail-page-v2__empty">
-              <p>{t("raceDetailPage.notFound")}</p>
-              <Link to={raceListLink} className="back-link">
-                {t("raceDetailPage.backToList")}
-              </Link>
-            </div>
-          ) : (
-            <>
-              {/* 1R〜12R の帯と出走6艇の1〜2行（BOA-1189 GS01-c、2026-10-31 オーナー決定、11-01 A案で要約を縮めた）。タブの上に置く */}
-              <RaceNumberStrip
-                races={venueRaces}
-                currentRaceId={raceId}
-                venueCode={parsed.venueCode}
-                date={date}
-                raceGrade={racePrediction.raceGrade ?? null}
-                raceTitle={racePrediction.raceTitle ?? null}
-              />
-              {/* 中止のレースは出走6艇を出さない。中止の知らせを最初の画面に残す（ファン評価1周目 指摘1） */}
-              {!prediction?.error && !isRaceCancelled(prediction) && (
-                <RaceEntrantsSummary
-                  players={prediction?.allPlayers}
-                  raceId={raceId}
-                />
-              )}
-              <PredictionSection
-                prediction={prediction}
-                selectedRace={selectedRace}
-                isAnalyzing={isAnalyzing || loading}
-                date={isToday ? undefined : date}
-                status={status}
-              />
-
-              {isToday && (
-                <div className="analysis-tools-link-section">
-                  <Link
-                    to={`/winning-technique?venue_code=${parsed.venueCode}&race_id=${raceId}&tab=motor`}
-                    className="analysis-tools-link"
-                  >
-                    📊 {t("panel.analysisToolsLink")}
-                  </Link>
-                </div>
-              )}
-
-              <RaceNavCard
-                races={venueRaces}
-                selectedRace={selectedRace}
-                onNavigate={navigateToRace}
-                venues={venues}
-                selectedVenueId={parsed.venueCode}
-                onVenueChange={navigateToVenue}
-              />
-            </>
-          )}
-        </div>
-      </div>
-
-      {selectedRace && (
-        <RaceBottomNav
-          races={venueRaces}
-          selectedRace={selectedRace}
-          onNavigate={navigateToRace}
-          venues={venues}
-          selectedVenueId={parsed.venueCode}
-          onVenueChange={navigateToVenue}
-        />
-      )}
-    </>
+    <RaceDetailView
+      showViewSwitch={showViewSwitch}
+      raceId={raceId}
+      pageMeta={pageMeta}
+      breadcrumbItems={breadcrumbItems}
+      heading={heading}
+      t={t}
+      i18n={i18n}
+      venueName={venueName}
+      parsed={parsed}
+      isToday={isToday}
+      status={status}
+      racePrediction={racePrediction}
+      date={date}
+      raceListLink={raceListLink}
+      loading={loading}
+      error={error}
+      prediction={prediction}
+      selectedRace={selectedRace}
+      venueRaces={venueRaces}
+      venues={venues}
+      isAnalyzing={isAnalyzing}
+      navigateToRace={navigateToRace}
+      navigateToVenue={navigateToVenue}
+    />
   );
 }
 

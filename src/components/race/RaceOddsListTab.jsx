@@ -35,28 +35,17 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import InlineFetchError from "../InlineFetchError";
 import { getDeadlineDate } from "../../utils/raceDeadlineStatus";
 import { parseRaceId } from "../../utils/raceId";
-import { latestSnapshotWith } from "../../utils/oddsMath";
 import "./RaceOddsListTab.css";
-import {
-  BET_TYPES,
-  LIVE_WINDOW_MS,
-  buildTrend,
-  comboLabel,
-  isNoVotes,
-  liveFreshnessOf,
-  snapshotLabel,
-  todayJst,
-} from "./odds-list/oddsListHelpers";
-import { boatsOf, officialOddsNotesOf } from "./odds-list/oddsDerived";
-import { OddsButton } from "./odds-list/OddsCells";
-import { TrendPanel } from "./odds-list/TrendPanel";
-import { FinalStatus, LiveStatus } from "./odds-list/LiveStatus";
-import { OddsEmptyState } from "./odds-list/OddsEmptyState";
-import { OddsBody } from "./odds-list/OddsBody";
+import { BET_TYPES, LIVE_WINDOW_MS, todayJst } from "./odds-list/oddsListHelpers";
 import { useOddsListState } from "./odds-list/useOddsListState";
+import {
+  deriveOddsView,
+  pickSnapshotView,
+  snapshotGate,
+} from "./RaceOddsListTabDerived";
+import { OddsListView } from "./RaceOddsListTabView";
 
 function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
   const { t } = useTranslation();
@@ -90,63 +79,20 @@ function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
   const toggleSelected = (key) =>
     setSelectedKey((prev) => (prev === key ? null : key));
 
-  const snapshots =
-    snapshotState?.raceId === raceId && !snapshotState.failed
-      ? snapshotState.data
-      : null;
-  const snapshotsFailed =
-    snapshotState?.raceId === raceId && snapshotState.failed;
-  const snapshotsLoading = !snapshots && !snapshotsFailed;
-  const finalOdds =
-    snapshotState?.raceId === raceId && !snapshotState.failed
-      ? (snapshotState.final ?? null)
-      : null;
-  const absentBoats = new Set(
-    absentState?.raceId === raceId ? absentState.absent : [],
-  );
-
-  const liveEntry = liveEnabled ? (livePages[betType.page] ?? null) : null;
-  // 締切時オッズ（公式）がこの券種にあれば、表・推移をその値で出す（ライブ取得・スナップショットより優先）
-  const finalMap = finalOdds?.[betType.dataKey] ?? null;
-  const useFinal = !!finalMap;
-  const liveResult = useFinal ? null : (liveEntry?.result ?? null);
-  const deadline = getDeadlineDate(raceId, raceStartTime);
-  const isRange = !!betType.isRange;
-
-  const latestSnapshot = snapshots
-    ? latestSnapshotWith(snapshots, betType.dataKey)
-    : null;
-  const fallbackLabel = latestSnapshot
-    ? snapshotLabel(t, latestSnapshot, deadline)
-    : null;
-
-  // 表示する値: 締切時オッズ（公式）があればそれ、無ければライブ値、無ければ最新スナップショット
-  const latestMap = useFinal
-    ? finalMap
-    : liveResult
-      ? (liveResult.data?.[betType.dataKey] ?? null)
-      : (latestSnapshot?.[betType.dataKey] ?? null);
-  const placeMap =
-    betType.id === "winPlace"
-      ? useFinal
-        ? (finalOdds.place ?? null)
-        : liveResult
-          ? (liveResult.data?.place ?? null)
-          : (latestSnapshot?.place ?? null)
-      : null;
-
-  // 出走艇（全券種の最新値＋ライブ値のキーから、欠場の記録が無い過去レースの欠場艇を除く）
-  const boats = boatsOf({ players, absentBoats, snapshots, livePages, finalOdds });
-
-  const { openedAfterDeadline, officialOddsUrl, finalNote, finalPendingUntil } =
-    officialOddsNotesOf({
+  const v = {
+    liveEnabled,
+    ...deriveOddsView({
+      t,
       raceId,
+      raceStartTime,
+      players,
+      betType,
       liveEnabled,
-      deadline,
+      livePages,
       openedAtMs,
-      finalOdds,
-      snapshots,
-    });
+      snap: pickSnapshotView(snapshotState, absentState, raceId),
+    }),
+  };
 
   const retrySnapshots = () => {
     setSnapshotState(null);
@@ -170,172 +116,25 @@ function RaceOddsListTabBody({ raceId, raceStartTime, players }) {
     </>
   );
 
-  // ライブ取得しないレース: 従来どおりスナップショットだけで出す
-  if (!liveEnabled) {
-    if (snapshotsLoading) {
-      return (
-        <div className="race-odds-list-tab">
-          <p className="rol-subtitle">{subtitle}</p>
-          <p className="rol-no-data">{t("oddsList.loading")}</p>
-        </div>
-      );
-    }
-    if (snapshotsFailed) {
-      return (
-        <div className="race-odds-list-tab">
-          {header}
-          <InlineFetchError
-            message={t("oddsList.fetchFailed")}
-            onRetry={retrySnapshots}
-          />
-        </div>
-      );
-    }
-    if (snapshots.length === 0 && !finalOdds) {
-      return (
-        <OddsEmptyState
-          openedAfterDeadline={openedAfterDeadline}
-          finalNote={finalNote}
-          officialOddsUrl={officialOddsUrl}
-          deadline={deadline}
-          finalPendingUntil={finalPendingUntil}
-        />
-      );
-    }
-  }
-
-  const nameByBoat = new Map(
-    (players ?? []).map((p) => [p.number, p.name?.replace(/\s+/g, "")]),
-  );
-
-  // スナップショットは保存時に票0（公式の0.0）を捨てている（cron の解析）。券種の表がある以上、出走艇の
-  // 組み合わせでキーが無いのは票0なので、ライブ値と同じく「票なし」として出す（ファン評価1周目）
-  // レンジ型（拡連複）は {low:0, high:0} で表す（数値の 0 を渡すと formatValue が落ちる。ファン評価2周目 P0）
-  // 締切時オッズ（公式）は票0を 0 のまま保存しているため、キーが無いのは欠場・未発売（「-」）
-  const valueOf = (key) =>
-    latestMap?.[key] ??
-    (latestMap && !liveResult && !useFinal
-      ? isRange
-        ? { low: 0, high: 0 }
-        : 0
-      : null);
-
-  const oddsButton = (comboKey, badges, value = valueOf(comboKey)) => (
-    <OddsButton
-      key={comboKey}
-      comboKey={comboKey}
-      label={comboLabel(comboKey, betType.ordered)}
-      value={value}
-      isRange={isRange}
-      selected={comboKey === selectedKey}
-      onSelect={toggleSelected}
-      badges={badges}
-    />
-  );
-
-  const trendPanel = () =>
-    selectedKey ? (
-      <TrendPanel
-        key="trend"
-        combo={comboLabel(selectedKey, betType.ordered)}
-        trend={buildTrend(
-          snapshots ?? [],
-          betType,
-          selectedKey,
-          deadline,
-          liveResult,
-          useFinal ? finalMap : null,
-          liveResult ? liveFreshnessOf(liveResult, nowMs, deadline) : null,
-        )}
-        isRange={isRange}
-      />
-    ) : null;
-
-  // 表示中の値が全て票0か（締切前の早い時間に起きる）
-  const allNoVotes =
-    latestMap &&
-    Object.keys(latestMap).length > 0 &&
-    Object.values(latestMap).every((v) => isNoVotes(v, isRange));
-
-  const liveFailedWithoutData =
-    liveEnabled && liveEntry?.status === "error" && !liveResult && !latestMap;
-
-  // 最新を取得中で、表はいったん前回の値（スナップショット・前回のライブ値）を出しているとき。値を薄くし、
-  // 取得後に変わる値だと分かるようにする（3連複・拡連複は切り替えてから8〜11秒かかる。BOA-532）
-  const refreshing =
-    !useFinal && liveEntry?.status === "loading" && !!latestMap;
+  const gate = liveEnabled
+    ? null
+    : snapshotGate(t, v, header, subtitle, retrySnapshots);
+  if (gate) return gate;
 
   return (
-    <div
-      className={`race-odds-list-tab${refreshing ? " is-refreshing" : ""}`}
-      aria-busy={refreshing}
-    >
-      {header}
-
-      <div className="rol-bet-type-tabs" role="tablist">
-        {BET_TYPES.map((bt) => (
-          <button
-            key={bt.id}
-            type="button"
-            role="tab"
-            aria-selected={bt.id === betTypeId}
-            className={`rol-chip${bt.id === betTypeId ? " is-active" : ""}`}
-            onClick={() => selectBetType(bt.id)}
-          >
-            {bt.id === "winPlace"
-              ? t("oddsList.winPlaceChip")
-              : t(`result.payoutType.${bt.id}`)}
-          </button>
-        ))}
-      </div>
-
-      {useFinal ? (
-        <FinalStatus deadline={deadline} />
-      ) : (
-        !liveFailedWithoutData && (
-          <LiveStatus
-            entry={liveEntry}
-            fallbackLabel={fallbackLabel}
-            onRefresh={refreshLive}
-            nowMs={nowMs}
-            deadline={deadline}
-            finalNote={finalNote}
-            finalPendingUntil={finalPendingUntil}
-          />
-        )
-      )}
-      <OddsBody
-        liveFailedWithoutData={liveFailedWithoutData}
-        refreshLive={refreshLive}
-        latestMap={latestMap}
-        liveEntry={liveEntry}
-        snapshotsLoading={snapshotsLoading}
-        snapshotsFailed={snapshotsFailed}
-        liveEnabled={liveEnabled}
-        openedAfterDeadline={openedAfterDeadline}
-        finalNote={finalNote}
-        useFinal={useFinal}
-        betType={betType}
-        refreshing={refreshing}
-        finalOdds={finalOdds}
-        allNoVotes={allNoVotes}
-        tableProps={{
-          boats,
-          nameByBoat,
-          valueOf,
-          oddsButton,
-          trendPanel,
-          selectedKey,
-          liveResult,
-          livePages,
-          latestSnapshot,
-          latestMap,
-          placeMap,
-          useFinal,
-          finalOdds,
-        }}
-      />
-    </div>
+    <OddsListView
+      v={v}
+      header={header}
+      betType={betType}
+      betTypeId={betTypeId}
+      selectBetType={selectBetType}
+      refreshLive={refreshLive}
+      nowMs={nowMs}
+      selectedKey={selectedKey}
+      toggleSelected={toggleSelected}
+      livePages={livePages}
+      players={players}
+    />
   );
 }
 

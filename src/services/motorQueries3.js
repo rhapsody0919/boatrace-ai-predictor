@@ -169,15 +169,7 @@ export function getRaceMotorBreakdown(raceId, venueCode = null, days = 90) {
           return { rows: [] };
         }
 
-        const { data } = await supabase
-          .from("race_entries")
-          .select(
-            "boat_number, player_name, racer_id, motor_number, motor_2rate, motor_3rate",
-          )
-          .eq("race_id", raceId)
-          .order("boat_number");
-
-        const rows = data ?? [];
+        const rows = await fetchMotorEntryRows(raceId);
         if (venueCode === null) return { rows };
         // 新しいモーターの最初の開催で、公式の2連率が 0 の艇に出す自前の値（BOA-830）。
         // 過去レース・当日のレースで同じ値を足す
@@ -238,6 +230,18 @@ export function getRaceMotorBreakdown(raceId, venueCode = null, days = 90) {
       },
     );
   }
+
+// 出走表（race_entries）の艇ごとの行。getRaceMotorBreakdown の入口。無ければ空配列
+async function fetchMotorEntryRows(raceId) {
+  const { data } = await supabase
+    .from("race_entries")
+    .select(
+      "boat_number, player_name, racer_id, motor_number, motor_2rate, motor_3rate",
+    )
+    .eq("race_id", raceId)
+    .order("boat_number");
+  return data ?? [];
+}
 
 /**
  * 指定会場・モーター番号が「優勝戦」で実際に1着になった日付・選手を

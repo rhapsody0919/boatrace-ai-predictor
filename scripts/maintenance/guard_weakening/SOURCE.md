@@ -5,9 +5,9 @@ guard_direction.py・verify_guard.py と、その試験（tests/test_guard_direc
 | この写し | hq の元 | hq の commit |
 |---|---|---|
 | guard_direction.py | scripts/guard_direction.py | 12b36749 |
-| verify_guard.py | scripts/verify_guard.py | 1f3c6f64 |
+| verify_guard.py | scripts/verify_guard.py | 0893e34b |
 | tests/test_guard_direction.py | tests/test_guard_direction.py | 12b36749 |
-| tests/test_verify_guard.py | tests/test_verify_guard.py | a47e8128 |
+| tests/test_verify_guard.py | tests/test_verify_guard.py | 0893e34b |
 
 写すときに変えたのは試験の読み込みの場所だけ（判定器の本文は1字も変えない）:
 - 両方の試験: `W / "scripts" / "<名>.py"` → `W / "<名>.py"`、`sys.path.insert(0, str(W / "scripts"))` → `sys.path.insert(0, str(W))`

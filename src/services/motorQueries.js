@@ -266,6 +266,81 @@ export async function motorWindowStart(venueCode, days, beforeRaceId = null) {
 export const NEUTRAL_EXHIBITION_DIFF_SEC = 0.02; // これ未満は展示タイムの日次ブレの範囲内とみなす
 export const INTERPRETATION_WINDOW_DAYS = 3; // 前後何日分の平均で比較するか
 
+/** 指定モーター番号の race_entries を、レースIDを500件ずつに分けて取得する（fetchMotorDailySeries 用） */
+async function fetchMotorEntries(motorNumber, raceIds) {
+  const results = await Promise.all(
+    chunkArray(raceIds, 500).map((chunk) =>
+      supabase
+        .from("race_entries")
+        .select("race_id, boat_number, motor_2rate, motor_3rate")
+        .in("race_id", chunk)
+        .eq("motor_number", motorNumber)
+        .order("race_id"),
+    ),
+  );
+  let entries = [];
+  results.forEach(({ data }) => {
+    entries = entries.concat(data);
+  });
+  return entries;
+}
+
+// 交換が記録されたレース番号。同じ日に何Rの前の交換かを画面で示す
+// （展示は各レースの前に行うので、そのレースの前に交換したことになる。BOA-513）
+function motorEventRaceNo(e, propellerChanged, parts) {
+  return propellerChanged || (parts && parts.length > 0)
+    ? Number(e.race_id.slice(-2))
+    : null;
+}
+
+/** 1行（1レース分）を日付ごとの系列 byDate へ畳む（fetchMotorDailySeries 用） */
+function mergeMotorDailyRow(byDate, e) {
+  const propellerChanged = !!e.exhibition?.propeller_change;
+  const parts = e.exhibition?.parts_changed ?? null;
+  const eventRaceNo = motorEventRaceNo(e, propellerChanged, parts);
+  const existing = byDate.get(e.race_date);
+  if (!existing) {
+    byDate.set(e.race_date, {
+      date: e.race_date,
+      motor_2rate: e.motor_2rate,
+      motor_3rate: e.motor_3rate,
+      exhibitionTime: e.exhibition?.exhibition_time ?? null,
+      propellerChanged,
+      parts,
+      eventRaceNos: eventRaceNo === null ? [] : [eventRaceNo],
+    });
+    return;
+  }
+  if (eventRaceNo !== null) existing.eventRaceNos.push(eventRaceNo);
+  existing.propellerChanged = existing.propellerChanged || propellerChanged;
+  if (parts && parts.length > 0) {
+    existing.parts = [...new Set([...(existing.parts ?? []), ...parts])];
+  }
+}
+
+// 日付単位でdedupe。motor_2rate/motor_3rate/exhibitionTimeは節単位でほぼ
+// 一定のためrace_idで安定ソート済みの先頭を採用するが、部品交換・プロペラ
+// 交換は「同日の特定の1レースだけに記録されるイベント」のため先頭決め打ちでは
+// 取りこぼす（例: 同日中の途中交換で、交換後のレースにしか記録されない）。
+// 同日の全レース分をOR/合算してdedupeする
+function dedupeMotorDaily(entries, raceDateById, exhibitionByKey) {
+  const byDate = new Map();
+  entries
+    .map((e) => ({
+      ...e,
+      race_date: raceDateById.get(e.race_id),
+      exhibition: exhibitionByKey.get(`${e.race_id}-${e.boat_number}`),
+    }))
+    .filter((e) => e.race_date)
+    .sort(
+      (a, b) =>
+        a.race_date.localeCompare(b.race_date) ||
+        a.race_id.localeCompare(b.race_id),
+    )
+    .forEach((e) => mergeMotorDailyRow(byDate, e));
+  return [...byDate.values()];
+}
+
 /**
  * 指定会場・モーター番号の日次系列（race_entries+exhibition_data結合、日付単位
  * dedupe済み）を取得する内部共通ヘルパー。getMotorConditionTrend/
@@ -301,23 +376,10 @@ export function fetchMotorDailySeries(
       if (races.length === 0) return { window, series: [] };
 
       const raceDateById = new Map(races.map((r) => [r.race_id, r.race_date]));
-      const raceIds = races.map((r) => r.race_id);
-      const chunks = chunkArray(raceIds, 500);
-
-      const results = await Promise.all(
-        chunks.map((chunk) =>
-          supabase
-            .from("race_entries")
-            .select("race_id, boat_number, motor_2rate, motor_3rate")
-            .in("race_id", chunk)
-            .eq("motor_number", motorNumber)
-            .order("race_id"),
-        ),
+      const entries = await fetchMotorEntries(
+        motorNumber,
+        races.map((r) => r.race_id),
       );
-      let entries = [];
-      results.forEach(({ data }) => {
-        entries = entries.concat(data);
-      });
       if (entries.length === 0) return { window, series: [] };
 
       const exhibitionRows = await fetchAllByIn(
@@ -330,57 +392,10 @@ export function fetchMotorDailySeries(
         exhibitionRows.map((e) => [`${e.race_id}-${e.boat_number}`, e]),
       );
 
-      // 日付単位でdedupe。motor_2rate/motor_3rate/exhibitionTimeは節単位でほぼ
-      // 一定のためrace_idで安定ソート済みの先頭を採用するが、部品交換・プロペラ
-      // 交換は「同日の特定の1レースだけに記録されるイベント」のため先頭決め打ちでは
-      // 取りこぼす（例: 同日中の途中交換で、交換後のレースにしか記録されない）。
-      // 同日の全レース分をOR/合算してdedupeする
-      const byDate = new Map();
-      entries
-        .map((e) => ({
-          ...e,
-          race_date: raceDateById.get(e.race_id),
-          exhibition: exhibitionByKey.get(`${e.race_id}-${e.boat_number}`),
-        }))
-        .filter((e) => e.race_date)
-        .sort(
-          (a, b) =>
-            a.race_date.localeCompare(b.race_date) ||
-            a.race_id.localeCompare(b.race_id),
-        )
-        .forEach((e) => {
-          const propellerChanged = !!e.exhibition?.propeller_change;
-          const parts = e.exhibition?.parts_changed ?? null;
-          // 交換が記録されたレース番号。同じ日に何Rの前の交換かを画面で示す
-          // （展示は各レースの前に行うので、そのレースの前に交換したことになる。BOA-513）
-          const eventRaceNo =
-            propellerChanged || (parts && parts.length > 0)
-              ? Number(e.race_id.slice(-2))
-              : null;
-          const existing = byDate.get(e.race_date);
-          if (!existing) {
-            byDate.set(e.race_date, {
-              date: e.race_date,
-              motor_2rate: e.motor_2rate,
-              motor_3rate: e.motor_3rate,
-              exhibitionTime: e.exhibition?.exhibition_time ?? null,
-              propellerChanged,
-              parts,
-              eventRaceNos: eventRaceNo === null ? [] : [eventRaceNo],
-            });
-            return;
-          }
-          if (eventRaceNo !== null) existing.eventRaceNos.push(eventRaceNo);
-          existing.propellerChanged =
-            existing.propellerChanged || propellerChanged;
-          if (parts && parts.length > 0) {
-            existing.parts = [
-              ...new Set([...(existing.parts ?? []), ...parts]),
-            ];
-          }
-        });
-
-      return { window, series: [...byDate.values()] };
+      return {
+        window,
+        series: dedupeMotorDaily(entries, raceDateById, exhibitionByKey),
+      };
     },
   );
 }

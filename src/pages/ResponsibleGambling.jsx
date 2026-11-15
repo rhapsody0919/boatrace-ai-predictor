@@ -3,7 +3,8 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import "./About.css";
 
-export default function ResponsibleGambling() {
+
+function ResponsibleGamblingHead() {
   return (
     <>
       <title>責任あるギャンブル | 龍神レーダー</title>
@@ -37,73 +38,12 @@ export default function ResponsibleGambling() {
           ],
         })}
       </script>
+    </>
+  );
+}
 
-      <Header />
-
-      <div className="about-container">
-        <div className="about-header">
-          <h1>責任あるギャンブル</h1>
-          <p>ボートレースを楽しく続けるために</p>
-        </div>
-
-        <section className="about-section">
-          <h2>龍神レーダーの基本方針</h2>
-          <p>
-            龍神レーダーは、ボートレースの予測情報を提供するサービスです。
-            私たちは、ユーザーの皆様が健全にボートレースを楽しめるよう、
-            以下の方針を掲げています。
-          </p>
-          <ul style={{ marginTop: "1rem", paddingLeft: "1.5rem" }}>
-            <li>舟券の購入を推奨・勧誘するものではありません</li>
-            <li>予測情報は参考としてご利用ください</li>
-            <li>的中を保証するものではありません</li>
-            <li>余裕資金の範囲内でお楽しみください</li>
-          </ul>
-        </section>
-
-        <section
-          className="about-section"
-          style={{
-            /* var(--color-warning-dark)(#f57c00)は白文字で2.7:1しかなくAA未達のため、
-               UpdateStatus.cssのstaleバッジと同じアンバー系濃色(#b45309, 5.02:1)を使用 */
-            background: "#b45309",
-            color: "white",
-            padding: "1.5rem",
-            borderRadius: "8px",
-          }}
-        >
-          <h2 style={{ color: "white" }}>ギャンブル依存症について</h2>
-          <p style={{ color: "white" }}>
-            ギャンブル依存症は、自分の意志だけではギャンブルをやめられない状態です。
-            以下のような症状がある場合は、専門家への相談をお勧めします。
-          </p>
-          <ul style={{ marginTop: "1rem", paddingLeft: "1.5rem" }}>
-            <li>ギャンブルのことが頭から離れない</li>
-            <li>負けを取り戻そうとして、さらに賭けてしまう</li>
-            <li>ギャンブルのために嘘をついたことがある</li>
-            <li>生活費や借金をしてまでギャンブルをしてしまう</li>
-            <li>ギャンブルが原因で人間関係に問題が生じている</li>
-            <li>やめようと思っても、やめられない</li>
-          </ul>
-        </section>
-
-        <section
-          className="about-section"
-          style={{
-            /* var(--color-info)(#2196f3)は白文字で3.12:1しかなくAA未達のため、
-               このセクション内の他要素で既に使われている#1565c0（5.75:1）を採用 */
-            background: "#1565c0",
-            color: "white",
-            padding: "1.5rem",
-            borderRadius: "8px",
-          }}
-        >
-          <h2 style={{ color: "white" }}>相談窓口</h2>
-          <p style={{ marginBottom: "1.5rem", color: "white" }}>
-            ギャンブルに関する悩みは、一人で抱え込まずに専門家に相談しましょう。
-          </p>
-
-          <div style={{ display: "grid", gap: "1rem" }}>
+function ConsumerHotlineCard() {
+  return (
             <div
               style={{
                 background: "var(--surface-card)",
@@ -138,7 +78,11 @@ export default function ResponsibleGambling() {
                 最寄りの消費生活センターにつながります
               </p>
             </div>
+  );
+}
 
+function AddictionCenterCard() {
+  return (
             <div
               style={{
                 background: "var(--surface-card)",
@@ -179,7 +123,11 @@ export default function ResponsibleGambling() {
                 全国の相談窓口を検索できます
               </p>
             </div>
+  );
+}
 
+function ProblemGamblingSocietyCard() {
+  return (
             <div
               style={{
                 background: "var(--surface-card)",
@@ -220,7 +168,11 @@ export default function ResponsibleGambling() {
                 相談ダイヤル: 070-4501-9625（毎日10時〜22時）
               </p>
             </div>
+  );
+}
 
+function YorisoiHotlineCard() {
+  return (
             <div
               style={{
                 background: "var(--surface-card)",
@@ -255,9 +207,88 @@ export default function ResponsibleGambling() {
                 24時間対応・通話無料
               </p>
             </div>
+  );
+}
+
+function ConsultationSection() {
+  return (
+        <section
+          className="about-section"
+          style={{
+            /* var(--color-info)(#2196f3)は白文字で3.12:1しかなくAA未達のため、
+               このセクション内の他要素で既に使われている#1565c0（5.75:1）を採用 */
+            background: "#1565c0",
+            color: "white",
+            padding: "1.5rem",
+            borderRadius: "8px",
+          }}
+        >
+          <h2 style={{ color: "white" }}>相談窓口</h2>
+          <p style={{ marginBottom: "1.5rem", color: "white" }}>
+            ギャンブルに関する悩みは、一人で抱え込まずに専門家に相談しましょう。
+          </p>
+
+          <div style={{ display: "grid", gap: "1rem" }}>
+            <ConsumerHotlineCard />
+            <AddictionCenterCard />
+            <ProblemGamblingSocietyCard />
+            <YorisoiHotlineCard />
           </div>
         </section>
+  );
+}
 
+function BasicPolicySection() {
+  return (
+        <section className="about-section">
+          <h2>龍神レーダーの基本方針</h2>
+          <p>
+            龍神レーダーは、ボートレースの予測情報を提供するサービスです。
+            私たちは、ユーザーの皆様が健全にボートレースを楽しめるよう、
+            以下の方針を掲げています。
+          </p>
+          <ul style={{ marginTop: "1rem", paddingLeft: "1.5rem" }}>
+            <li>舟券の購入を推奨・勧誘するものではありません</li>
+            <li>予測情報は参考としてご利用ください</li>
+            <li>的中を保証するものではありません</li>
+            <li>余裕資金の範囲内でお楽しみください</li>
+          </ul>
+        </section>
+  );
+}
+
+function GamblingAddictionSection() {
+  return (
+        <section
+          className="about-section"
+          style={{
+            /* var(--color-warning-dark)(#f57c00)は白文字で2.7:1しかなくAA未達のため、
+               UpdateStatus.cssのstaleバッジと同じアンバー系濃色(#b45309, 5.02:1)を使用 */
+            background: "#b45309",
+            color: "white",
+            padding: "1.5rem",
+            borderRadius: "8px",
+          }}
+        >
+          <h2 style={{ color: "white" }}>ギャンブル依存症について</h2>
+          <p style={{ color: "white" }}>
+            ギャンブル依存症は、自分の意志だけではギャンブルをやめられない状態です。
+            以下のような症状がある場合は、専門家への相談をお勧めします。
+          </p>
+          <ul style={{ marginTop: "1rem", paddingLeft: "1.5rem" }}>
+            <li>ギャンブルのことが頭から離れない</li>
+            <li>負けを取り戻そうとして、さらに賭けてしまう</li>
+            <li>ギャンブルのために嘘をついたことがある</li>
+            <li>生活費や借金をしてまでギャンブルをしてしまう</li>
+            <li>ギャンブルが原因で人間関係に問題が生じている</li>
+            <li>やめようと思っても、やめられない</li>
+          </ul>
+        </section>
+  );
+}
+
+function HealthyRulesSection() {
+  return (
         <section className="about-section">
           <h2>健全に楽しむための3つのルール</h2>
           <div style={{ display: "grid", gap: "1rem", marginTop: "1rem" }}>
@@ -314,7 +345,11 @@ export default function ResponsibleGambling() {
             </div>
           </div>
         </section>
+  );
+}
 
+function UnderageSection() {
+  return (
         <section className="about-section">
           <h2>20歳未満の方へ</h2>
           <p
@@ -331,7 +366,11 @@ export default function ResponsibleGambling() {
             法律により禁止されています。本サービスも20歳以上の方を対象としています。
           </p>
         </section>
+  );
+}
 
+function BackToTopLink() {
+  return (
         <div style={{ textAlign: "center", marginTop: "2rem" }}>
           <Link
             to="/"
@@ -350,6 +389,33 @@ export default function ResponsibleGambling() {
             トップページに戻る
           </Link>
         </div>
+  );
+}
+
+export default function ResponsibleGambling() {
+  return (
+    <>
+      <ResponsibleGamblingHead />
+
+      <Header />
+
+      <div className="about-container">
+        <div className="about-header">
+          <h1>責任あるギャンブル</h1>
+          <p>ボートレースを楽しく続けるために</p>
+        </div>
+
+        <BasicPolicySection />
+
+        <GamblingAddictionSection />
+
+        <ConsultationSection />
+
+        <HealthyRulesSection />
+
+        <UnderageSection />
+
+        <BackToTopLink />
       </div>
 
       <Footer />

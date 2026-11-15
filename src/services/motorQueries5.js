@@ -13,6 +13,151 @@ import {
   getRacesForVenueSince,
 } from "./motorQueries.js";
 
+// 出走が無いコースも含めた1〜6コース分の空の行（返り値の rows と同じ形）
+function emptyWakuRows() {
+  return Array.from({ length: 6 }, (_, i) => ({
+    course: i + 1,
+    raceCount: 0,
+    winRate: null,
+    top2Rate: null,
+    top3Rate: null,
+    avgExhibitionTime: null,
+    exhibitionTrend: [],
+  }));
+}
+
+// レースIDの塊ごとに、このモーターの出走（既定は race_id・boat_number）を並列で取る
+async function fetchMotorEntries(
+  chunks,
+  motorNumber,
+  columns = "race_id, boat_number",
+) {
+  const entryResults = await Promise.all(
+    chunks.map((chunk) =>
+      supabase
+        .from("race_entries")
+        .select(columns)
+        .in("race_id", chunk)
+        .eq("motor_number", motorNumber),
+    ),
+  );
+  let entries = [];
+  entryResults.forEach(({ data }) => {
+    entries = entries.concat(data ?? []);
+  });
+  return entries;
+}
+
+// 出走のレースの結果（着順・進入コース）を取る
+function fetchRaceResults(entries) {
+  return fetchAllByIn(
+    "race_results",
+    "race_id, rank1, rank2, rank3, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+    "race_id",
+    entries.map((e) => e.race_id),
+  );
+}
+
+// 出走のレースの結果と展示タイムを並列で取る
+function fetchResultsAndExhibitions(entries) {
+  return Promise.all([
+    fetchRaceResults(entries),
+    fetchAllByIn(
+      "exhibition_data",
+      "race_id, boat_number, exhibition_time",
+      "race_id",
+      entries.map((e) => e.race_id),
+    ),
+  ]);
+}
+
+// 1〜6コースの集計の入れ物（コース番号の昇順）
+function newCourseStatMap() {
+  return new Map(
+    Array.from({ length: 6 }, (_, i) => [
+      i + 1,
+      {
+        course: i + 1,
+        raceCount: 0,
+        firstPlaceCount: 0,
+        top2Count: 0,
+        top3Count: 0,
+        exhibitionTimes: [],
+      },
+    ]),
+  );
+}
+
+// 1出走分の着順を集計の入れ物へ足す
+function tallyPlacing(stat, entry, result) {
+  stat.raceCount += 1;
+  if (result.rank1 === entry.boat_number) stat.firstPlaceCount += 1;
+  if (isPlaceHit(entry.boat_number, result.rank1, result.rank2)) {
+    stat.top2Count += 1;
+  }
+  if (
+    isShowHit(entry.boat_number, result.rank1, result.rank2, result.rank3)
+  ) {
+    stat.top3Count += 1;
+  }
+}
+
+// 1出走分の展示タイムがあれば集計の入れ物へ足す
+function tallyExhibition(stat, entry, exhibitionByKey) {
+  const exhibition = exhibitionByKey.get(
+    `${entry.race_id}-${entry.boat_number}`,
+  );
+  if (
+    exhibition?.exhibition_time !== null &&
+    exhibition?.exhibition_time !== undefined
+  ) {
+    stat.exhibitionTimes.push({
+      raceId: entry.race_id,
+      time: exhibition.exhibition_time,
+    });
+  }
+}
+
+// 出走をコース別に集計する
+function tallyByCourse(entries, resultByRaceId, exhibitionByKey) {
+  const byCourse = newCourseStatMap();
+  entries.forEach((entry) => {
+    const result = resultByRaceId.get(entry.race_id);
+    if (!isUsableRaceResult(result)) return;
+    const course = courseOfBoat(result, entry.boat_number);
+    const stat = byCourse.get(course);
+    // courseOfBoat()がnullを返す(欠場等で進入コース無し)場合や、
+    // 進入コース値が1-6の範囲外(データ異常)の場合は集計対象外にする
+    if (!stat) return;
+
+    tallyPlacing(stat, entry, result);
+    tallyExhibition(stat, entry, exhibitionByKey);
+  });
+  return byCourse;
+}
+
+// コース別の集計から返り値の1行（率はパーセント）を作る
+function toWakuRow(stat) {
+  const trend = stat.exhibitionTimes.sort((a, b) =>
+    a.raceId.localeCompare(b.raceId),
+  );
+  return {
+    course: stat.course,
+    raceCount: stat.raceCount,
+    winRate:
+      stat.raceCount > 0 ? (stat.firstPlaceCount / stat.raceCount) * 100 : null,
+    top2Rate:
+      stat.raceCount > 0 ? (stat.top2Count / stat.raceCount) * 100 : null,
+    top3Rate:
+      stat.raceCount > 0 ? (stat.top3Count / stat.raceCount) * 100 : null,
+    avgExhibitionTime:
+      trend.length > 0
+        ? trend.reduce((sum, t) => sum + t.time, 0) / trend.length
+        : null,
+    exhibitionTrend: trend,
+  };
+}
+
 /**
  * 指定会場・モーター番号の枠番（進入コース）別成績・展示タイム推移を、
  * 自社race_entries×race_results×exhibition_dataからライブ集計する
@@ -37,22 +182,11 @@ export function getMotorWakuStats(venueCode, motorNumber, beforeRaceId = null) {
       // localStorageに残る旧形式（配列）を読まない
       `motor-waku-stats-generation-v2-${venueCode}-${motorNumber}${beforeKey(beforeRaceId)}`,
       async () => {
-        const emptyRows = () =>
-          Array.from({ length: 6 }, (_, i) => ({
-            course: i + 1,
-            raceCount: 0,
-            winRate: null,
-            top2Rate: null,
-            top3Rate: null,
-            avgExhibitionTime: null,
-            exhibitionTrend: [],
-          }));
-
         if (!supabase) {
           console.error("Supabase client not initialized");
           return {
             generationStart: null,
-            rows: emptyRows(),
+            rows: emptyWakuRows(),
             fetchFailed: true,
           };
         }
@@ -64,12 +198,12 @@ export function getMotorWakuStats(venueCode, motorNumber, beforeRaceId = null) {
           console.error("モーター使用開始日取得エラー:", err.message);
           return {
             generationStart: null,
-            rows: emptyRows(),
+            rows: emptyWakuRows(),
             fetchFailed: true,
           };
         }
         if (generationStart === null) {
-          return { generationStart, rows: emptyRows() };
+          return { generationStart, rows: emptyWakuRows() };
         }
 
         const races = await getRacesForVenueSince(
@@ -77,126 +211,78 @@ export function getMotorWakuStats(venueCode, motorNumber, beforeRaceId = null) {
           generationStart,
           beforeRaceId,
         );
-        if (races.length === 0) return { generationStart, rows: emptyRows() };
+        if (races.length === 0) return { generationStart, rows: emptyWakuRows() };
 
         const raceIds = races.map((r) => r.race_id);
         const chunks = chunkArray(raceIds, 500);
-        const entryResults = await Promise.all(
-          chunks.map((chunk) =>
-            supabase
-              .from("race_entries")
-              .select("race_id, boat_number")
-              .in("race_id", chunk)
-              .eq("motor_number", motorNumber),
-          ),
-        );
-        let entries = [];
-        entryResults.forEach(({ data }) => {
-          entries = entries.concat(data ?? []);
-        });
-        if (entries.length === 0) return { generationStart, rows: emptyRows() };
+        const entries = await fetchMotorEntries(chunks, motorNumber);
+        if (entries.length === 0) return { generationStart, rows: emptyWakuRows() };
 
-        const [resultRows, exhibitionRows] = await Promise.all([
-          fetchAllByIn(
-            "race_results",
-            "race_id, rank1, rank2, rank3, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
-            "race_id",
-            entries.map((e) => e.race_id),
-          ),
-          fetchAllByIn(
-            "exhibition_data",
-            "race_id, boat_number, exhibition_time",
-            "race_id",
-            entries.map((e) => e.race_id),
-          ),
-        ]);
+        const [resultRows, exhibitionRows] =
+          await fetchResultsAndExhibitions(entries);
         const resultByRaceId = new Map(resultRows.map((r) => [r.race_id, r]));
         const exhibitionByKey = new Map(
           exhibitionRows.map((e) => [`${e.race_id}-${e.boat_number}`, e]),
         );
 
-        const byCourse = new Map(
-          Array.from({ length: 6 }, (_, i) => [
-            i + 1,
-            {
-              course: i + 1,
-              raceCount: 0,
-              firstPlaceCount: 0,
-              top2Count: 0,
-              top3Count: 0,
-              exhibitionTimes: [],
-            },
-          ]),
-        );
-
-        entries.forEach((entry) => {
-          const result = resultByRaceId.get(entry.race_id);
-          if (!isUsableRaceResult(result)) return;
-          const course = courseOfBoat(result, entry.boat_number);
-          const stat = byCourse.get(course);
-          // courseOfBoat()がnullを返す(欠場等で進入コース無し)場合や、
-          // 進入コース値が1-6の範囲外(データ異常)の場合は集計対象外にする
-          if (!stat) return;
-
-          stat.raceCount += 1;
-          if (result.rank1 === entry.boat_number) stat.firstPlaceCount += 1;
-          if (isPlaceHit(entry.boat_number, result.rank1, result.rank2)) {
-            stat.top2Count += 1;
-          }
-          if (
-            isShowHit(
-              entry.boat_number,
-              result.rank1,
-              result.rank2,
-              result.rank3,
-            )
-          ) {
-            stat.top3Count += 1;
-          }
-          const exhibition = exhibitionByKey.get(
-            `${entry.race_id}-${entry.boat_number}`,
-          );
-          if (
-            exhibition?.exhibition_time !== null &&
-            exhibition?.exhibition_time !== undefined
-          ) {
-            stat.exhibitionTimes.push({
-              raceId: entry.race_id,
-              time: exhibition.exhibition_time,
-            });
-          }
-        });
-
-        const rows = [...byCourse.values()].map((stat) => {
-          const trend = stat.exhibitionTimes.sort((a, b) =>
-            a.raceId.localeCompare(b.raceId),
-          );
-          return {
-            course: stat.course,
-            raceCount: stat.raceCount,
-            winRate:
-              stat.raceCount > 0
-                ? (stat.firstPlaceCount / stat.raceCount) * 100
-                : null,
-            top2Rate:
-              stat.raceCount > 0
-                ? (stat.top2Count / stat.raceCount) * 100
-                : null,
-            top3Rate:
-              stat.raceCount > 0
-                ? (stat.top3Count / stat.raceCount) * 100
-                : null,
-            avgExhibitionTime:
-              trend.length > 0
-                ? trend.reduce((sum, t) => sum + t.time, 0) / trend.length
-                : null,
-            exhibitionTrend: trend,
-          };
-        });
+        const byCourse = tallyByCourse(entries, resultByRaceId, exhibitionByKey);
+        const rows = [...byCourse.values()].map(toWakuRow);
         return { generationStart, rows };
       },
     );
   }
+
+// 選手×コースの集計の入れ物（初出のとき作る）
+function racerCourseStat(byKey, entry, course) {
+  const key = `${entry.racer_id}-${course}`;
+  if (!byKey.has(key)) {
+    byKey.set(key, {
+      racerId: entry.racer_id,
+      playerName: entry.player_name,
+      course,
+      raceCount: 0,
+      firstPlaceCount: 0,
+      top2Count: 0,
+      top3Count: 0,
+    });
+  }
+  return byKey.get(key);
+}
+
+// 出走を選手×コース別に集計する
+function tallyByRacerCourse(entries, resultByRaceId) {
+  const byKey = new Map();
+  entries.forEach((entry) => {
+    if (entry.racer_id === null || entry.racer_id === undefined) return;
+    const result = resultByRaceId.get(entry.race_id);
+    if (!isUsableRaceResult(result)) return;
+    const course = courseOfBoat(result, entry.boat_number);
+    // courseOfBoat()がnullを返す(欠場等で進入コース無し)場合はnull<1が
+    // trueになりここで除外される。範囲外(データ異常)の場合も同様に除外
+    if (course < 1 || course > 6) return;
+
+    tallyPlacing(racerCourseStat(byKey, entry, course), entry, result);
+  });
+  return byKey;
+}
+
+// 選手×コース別の集計から返り値の行（率はパーセント）を作る（コース昇順・出走数降順）
+function toRacerWakuRows(byKey) {
+  return [...byKey.values()]
+    .map((stat) => ({
+      racerId: stat.racerId,
+      playerName: stat.playerName,
+      course: stat.course,
+      raceCount: stat.raceCount,
+      winRate:
+        stat.raceCount > 0 ? (stat.firstPlaceCount / stat.raceCount) * 100 : null,
+      top2Rate:
+        stat.raceCount > 0 ? (stat.top2Count / stat.raceCount) * 100 : null,
+      top3Rate:
+        stat.raceCount > 0 ? (stat.top3Count / stat.raceCount) * 100 : null,
+    }))
+    .sort((a, b) => a.course - b.course || b.raceCount - a.raceCount);
+}
 
 /**
  * 指定会場・モーター番号を使用した選手ごとの枠番（進入コース）別成績を
@@ -237,89 +323,19 @@ export function getMotorRacerWakuStats(venueCode, motorNumber, beforeRaceId = nu
 
         const raceIds = races.map((r) => r.race_id);
         const chunks = chunkArray(raceIds, 500);
-        const entryResults = await Promise.all(
-          chunks.map((chunk) =>
-            supabase
-              .from("race_entries")
-              .select("race_id, boat_number, racer_id, player_name")
-              .in("race_id", chunk)
-              .eq("motor_number", motorNumber),
-          ),
+        const entries = await fetchMotorEntries(
+          chunks,
+          motorNumber,
+          "race_id, boat_number, racer_id, player_name",
         );
-        let entries = [];
-        entryResults.forEach(({ data }) => {
-          entries = entries.concat(data ?? []);
-        });
         if (entries.length === 0) return { generationStart, rows: [] };
 
-        const resultRows = await fetchAllByIn(
-          "race_results",
-          "race_id, rank1, rank2, rank3, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
-          "race_id",
-          entries.map((e) => e.race_id),
-        );
+        const resultRows = await fetchRaceResults(entries);
         const resultByRaceId = new Map(resultRows.map((r) => [r.race_id, r]));
 
-        const byKey = new Map();
-        entries.forEach((entry) => {
-          if (entry.racer_id === null || entry.racer_id === undefined) return;
-          const result = resultByRaceId.get(entry.race_id);
-          if (!isUsableRaceResult(result)) return;
-          const course = courseOfBoat(result, entry.boat_number);
-          // courseOfBoat()がnullを返す(欠場等で進入コース無し)場合はnull<1が
-          // trueになりここで除外される。範囲外(データ異常)の場合も同様に除外
-          if (course < 1 || course > 6) return;
-
-          const key = `${entry.racer_id}-${course}`;
-          if (!byKey.has(key)) {
-            byKey.set(key, {
-              racerId: entry.racer_id,
-              playerName: entry.player_name,
-              course,
-              raceCount: 0,
-              firstPlaceCount: 0,
-              top2Count: 0,
-              top3Count: 0,
-            });
-          }
-          const stat = byKey.get(key);
-          stat.raceCount += 1;
-          if (result.rank1 === entry.boat_number) stat.firstPlaceCount += 1;
-          if (isPlaceHit(entry.boat_number, result.rank1, result.rank2)) {
-            stat.top2Count += 1;
-          }
-          if (
-            isShowHit(
-              entry.boat_number,
-              result.rank1,
-              result.rank2,
-              result.rank3,
-            )
-          ) {
-            stat.top3Count += 1;
-          }
-        });
-
-        const rows = [...byKey.values()]
-          .map((stat) => ({
-            racerId: stat.racerId,
-            playerName: stat.playerName,
-            course: stat.course,
-            raceCount: stat.raceCount,
-            winRate:
-              stat.raceCount > 0
-                ? (stat.firstPlaceCount / stat.raceCount) * 100
-                : null,
-            top2Rate:
-              stat.raceCount > 0
-                ? (stat.top2Count / stat.raceCount) * 100
-                : null,
-            top3Rate:
-              stat.raceCount > 0
-                ? (stat.top3Count / stat.raceCount) * 100
-                : null,
-          }))
-          .sort((a, b) => a.course - b.course || b.raceCount - a.raceCount);
+        const rows = toRacerWakuRows(
+          tallyByRacerCourse(entries, resultByRaceId),
+        );
         return { generationStart, rows };
       },
     );

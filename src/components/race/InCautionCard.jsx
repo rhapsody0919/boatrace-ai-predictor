@@ -1,14 +1,8 @@
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
-import InCautionBadge from "./InCautionBadge";
-import { IN_CAUTION_CONFIG } from "../../constants/inCautionConfig";
-import {
-  bandRange,
-  boat1Rank,
-  signedText as signed,
-  slashDate,
-} from "../../utils/inCautionLevel";
+import InCautionCardMain from "./InCautionCardMain";
+import InCautionCardSide from "./InCautionCardSide";
+import { boat1Rank } from "../../utils/inCautionLevel";
 import { getRaceExhibitionBasics } from "../../services/raceQueries2.js";
 import { trackEvent } from "../../utils/analytics";
 import { useVisibleOnce } from "../../hooks/useVisibleOnce";
@@ -17,9 +11,6 @@ import {
   cautionVisibleEvent,
 } from "../../utils/cautionEvents";
 import "./InCautionCard.css";
-
-/** 姓だけ（承認モックの「1号艇 澤崎（B1）」の形。全角・半角の空白の前） */
-const surnameOf = (name) => (name ?? "").trim().split(/\s+/)[0] ?? "";
 
 /**
  * 直前情報で1号艇が欠場になったか（朝の生成の後の欠場。一覧・ホームは朝の値のまま、詳細だけカードを隠す。plan §1）。
@@ -65,7 +56,7 @@ export default function InCautionCard({
   raceId,
   onOpenSonar,
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const titleId = useId();
   const boat1Absent = useBoat1Absent(inCaution ? raceId : null);
   const shown = inCaution && !boat1Absent ? inCaution : null;
@@ -100,31 +91,8 @@ export default function InCautionCard({
     );
   }
 
-  const ic = inCaution;
-  const range = bandRange(ic.band);
-  const bandText =
-    range.from === null
-      ? t("inCaution.bandBelow", { v: signed(range.to, 1) })
-      : range.to === null
-        ? t("inCaution.bandAbove", { v: signed(range.from, 1) })
-        : t("inCaution.bandRange", {
-            from: signed(range.from, 1),
-            to: signed(range.to, 1),
-          });
-  const byNumber = (n) => players?.find((p) => p.number === n) ?? null;
-  const boat1 = byNumber(1);
-  const top = byNumber(ic.topOtherBoat);
-  const [lowEdge, highEdge] = IN_CAUTION_CONFIG.thresholds;
   const finished = Boolean(result?.finished);
   const rank = finished ? boat1Rank(result) : null;
-  const notes = [
-    ic.round === "junyu" && t("inCaution.noteJunyu"),
-    ic.round === "yusho" && t("inCaution.noteYusho"),
-    ic.absentBoats?.length > 0 &&
-      t("inCaution.noteAbsent", { boats: 6 - ic.absentBoats.length }),
-    ic.lowSample &&
-      t("inCaution.noteLowSample", { n: ic.n.toLocaleString("ja-JP") }),
-  ].filter(Boolean);
 
   return (
     <section
@@ -133,153 +101,20 @@ export default function InCautionCard({
       ref={visibleRef}
     >
       {/* 左（数字・棒・範囲）と右（理由・導線・免責）。1200px 以上で左右に並べる（承認モック 1-ai-tab-1440.png） */}
-      <div className="in-caution-card-main">
-        <div className="in-caution-card-head">
-          <h3 className="in-caution-card-title" id={titleId}>
-            {t("inCaution.title")}
-          </h3>
-          <InCautionBadge level={ic.level} />
-        </div>
-        <p className="in-caution-card-figure">
-          <span className="in-caution-card-lead">{t("inCaution.lead")}</span>
-          <span className="in-caution-card-pct">
-            <span>{ic.pct}</span>%
-          </span>
-        </p>
-
-        <div className="in-caution-card-bar">
-          <span
-            className="in-caution-card-base-label"
-            style={{ left: `${ic.basePct}%` }}
-          >
-            {t("inCaution.base", { p: ic.basePct })}
-          </span>
-          <span className="in-caution-card-track" aria-hidden="true">
-            <span
-              className={`in-caution-card-fill in-caution-card-fill--${ic.level}`}
-              style={{ width: `${ic.pct}%` }}
-            />
-            <span
-              className="in-caution-card-base"
-              style={{ left: `${ic.basePct}%` }}
-            />
-          </span>
-          <span className="in-caution-card-zones" aria-hidden="true">
-            <span
-              className="in-caution-card-zone--low"
-              style={{ width: `${lowEdge}%` }}
-            />
-            <span
-              className="in-caution-card-zone--high"
-              style={{ left: `${highEdge}%` }}
-            />
-          </span>
-          <span className="in-caution-card-edges">
-            <span>{t("inCaution.edgeLow", { p: lowEdge })}</span>
-            <span>{t("inCaution.edgeHigh", { p: highEdge })}</span>
-          </span>
-        </div>
-
-        <p className="in-caution-card-range">
-          {t("inCaution.range", {
-            band: bandText,
-            n: ic.n.toLocaleString("ja-JP"),
-            from: slashDate(IN_CAUTION_CONFIG.from),
-            through: slashDate(ic.through),
-          })}
-        </p>
-
-        {notes.length > 0 && (
-          <ul className="in-caution-card-notes">
-            {notes.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        )}
-
-        {finished && rank !== null && (
-          <p className="in-caution-card-result">
-            {t("inCaution.result", { rank })}
-            {rank !== 1 && result.rank1 != null && (
-              <span>{t("inCaution.resultWinner", { boat: result.rank1 })}</span>
-            )}
-          </p>
-        )}
-      </div>
-
-      <div className="in-caution-card-side">
-        <div className="in-caution-card-reason">
-          <h4>{t("inCaution.reasonHeading")}</h4>
-          <dl>
-            <div>
-              <dt>
-                {t("inCaution.reasonBoat1")}{" "}
-                <span translate="no">{surnameOf(boat1?.name)}</span>
-                {boat1?.grade ? `（${boat1.grade}）` : ""}
-              </dt>
-              <dd>{ic.boat1WinRate.toFixed(2)}</dd>
-            </div>
-            <div>
-              <dt>
-                {t("inCaution.reasonTop", { boat: ic.topOtherBoat })}{" "}
-                <span translate="no">{surnameOf(top?.name)}</span>
-                {top?.grade ? `（${top.grade}）` : ""}
-              </dt>
-              <dd>{ic.topOtherWinRate.toFixed(2)}</dd>
-            </div>
-            <div>
-              <dt>{t("inCaution.reasonDiff")}</dt>
-              <dd>{signed(ic.gapCents / 100, 2)}</dd>
-            </div>
-          </dl>
-          <p className="in-caution-card-note">{t("inCaution.otherMaterial")}</p>
-        </div>
-
-        <p className="in-caution-card-note in-caution-card-disclaimer">
-          {t("inCaution.disclaimer")}
-        </p>
-
-        <div className="in-caution-card-links">
-          {onOpenSonar && (
-            // 行き先を URL で表せる導線なのでリンクにする（新しいタブでも開ける）。ふつうに押したときは同じ画面の中で切り替える
-            <a
-              className="in-caution-card-link"
-              href={`/race/${raceId}?tab=sonar&sonar=similar`}
-              onClick={(e) => {
-                sendClick("sonar");
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0)
-                  return;
-                e.preventDefault();
-                onOpenSonar();
-              }}
-            >
-              <span>{t("inCaution.sonarButton")}</span>
-              <span className="in-caution-card-link-go">
-                {t("inCaution.sonarGo")} ›
-              </span>
-            </a>
-          )}
-          {i18n.language === "ja" && (
-            <Link
-              className="in-caution-card-link"
-              to={`/race/${raceId}/assist`}
-              onClick={() => sendClick("assist")}
-            >
-              <span>{t("inCaution.assistButton")}</span>
-              <span className="in-caution-card-link-go">
-                {t("inCaution.assistGo")} ›
-              </span>
-            </Link>
-          )}
-        </div>
-        <Link
-          className="in-caution-card-accuracy"
-          to="/accuracy"
-          onClick={() => sendClick("accuracy")}
-        >
-          {t("inCaution.accuracyLink")} ›
-        </Link>
-      </div>
+      <InCautionCardMain
+        ic={inCaution}
+        titleId={titleId}
+        result={result}
+        finished={finished}
+        rank={rank}
+      />
+      <InCautionCardSide
+        ic={inCaution}
+        players={players}
+        raceId={raceId}
+        onOpenSonar={onOpenSonar}
+        sendClick={sendClick}
+      />
     </section>
   );
 }

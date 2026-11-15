@@ -104,6 +104,32 @@ export function getRacerVenueStats(racerId) {
   }
 
 /**
+ * race_conditions を取る。失敗しても null で返す（呼び元の Promise.all を巻き込まない）
+ */
+function fetchRaceConditionsOrNull(raceIds) {
+  // レース名・レース種別（「直近5走」表示用、BOA-333レビュー指摘）。
+  // 勝率/2連対率/3連対率/平均ST/得意会場等の既存機能はこのクエリに依存
+  // していないため、ここだけ失敗してもPromise.all全体を巻き込んで
+  // 既存機能まで空にしないよう、個別にcatchしてフォールバックする
+  return fetchAllByIn(
+    "race_conditions",
+    "race_id, race_stage, race_title, wave_height, series_day, is_final_day",
+    "race_id",
+    raceIds,
+  ).catch((err) => {
+    console.error(
+      "race_conditions取得エラー（レース名・種別は「-」表示にフォールバック）:",
+      err?.message ?? String(err),
+    );
+    // [] ではなく null を返す。[] だと「取得できなかった」と「その期間は
+    // race_conditions の行が無い」が区別できず、条件別タブ（FR-2）が
+    // 波・初日・最終日の行に誤った n=0 を出してしまう（.claude/rules/
+    // frontend-data-fetch.md §2）。null のときは該当行ごと出さない
+    return null;
+  });
+}
+
+/**
  * 指定選手の過去2年分の出走履歴を、レース詳細ページ「基本情報」タブ
  * （BOA-306）の会場/グレード/期間フィルタ用にフラットな形で1回だけ取得する。
  * getRacerVenueStats/getRacerRaceHistoryと同じ「対象は1選手のみなのでその場で
@@ -210,26 +236,8 @@ export function getRacerScopedRaceStats(racerId) {
           "race_id",
           raceIds,
         ),
-        // レース名・レース種別（「直近5走」表示用、BOA-333レビュー指摘）。
-        // 勝率/2連対率/3連対率/平均ST/得意会場等の既存機能はこのクエリに依存
-        // していないため、ここだけ失敗してもPromise.all全体を巻き込んで
-        // 既存機能まで空にしないよう、個別にcatchしてフォールバックする
-        fetchAllByIn(
-          "race_conditions",
-          "race_id, race_stage, race_title, wave_height, series_day, is_final_day",
-          "race_id",
-          raceIds,
-        ).catch((err) => {
-          console.error(
-            "race_conditions取得エラー（レース名・種別は「-」表示にフォールバック）:",
-            err?.message ?? String(err),
-          );
-          // [] ではなく null を返す。[] だと「取得できなかった」と「その期間は
-          // race_conditions の行が無い」が区別できず、条件別タブ（FR-2）が
-          // 波・初日・最終日の行に誤った n=0 を出してしまう（.claude/rules/
-          // frontend-data-fetch.md §2）。null のときは該当行ごと出さない
-          return null;
-        }),
+        // レース名・種別・波・初日・最終日。失敗は null（理由は fetchRaceConditionsOrNull）
+        fetchRaceConditionsOrNull(raceIds),
       ]);
 
       // 整形は src/services/racerScopedRaceRows.js（BOA-1022、手を加えずに移した）

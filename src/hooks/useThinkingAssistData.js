@@ -42,6 +42,195 @@ import {
 import { parseRaceId } from "../utils/raceId";
 import { getDeadlineDate } from "../utils/raceDeadlineStatus";
 
+// 出走表の状態: 取得の失敗と「その日のデータに無い」を分ける（純関数）
+function racecardState(race, enabled, loading, error) {
+  let status = "ready";
+  if (!race && enabled) {
+    if (loading) status = "loading";
+    else if (error === FETCH_FAILED_ERROR) status = "error";
+  }
+  return { status, data: race };
+}
+
+// 券種ごとのオッズの取得（スナップショットの失敗は投げ、締切時オッズだけの失敗は finalFailed の印にする）
+async function fetchAssistOdds(raceId, fresh = false) {
+  const [snaps, final] = await Promise.allSettled([
+    getRaceOddsSnapshots(raceId, { fresh }),
+    getRaceFinalOdds(raceId, { fresh }),
+  ]);
+  if (snaps.status === "rejected") throw snaps.reason;
+  const out = oddsByBetType(
+    snaps.value,
+    final.status === "fulfilled" ? final.value : null,
+  );
+  return final.status === "rejected"
+    ? {
+        ...(out ?? { byType: {}, trifecta: null, capturedAt: null }),
+        finalFailed: true,
+      }
+    : out;
+}
+
+// 出走する艇の番号（欠場を除く）
+function activeBoats(race, absentBoats) {
+  return (race?.players ?? [])
+    .map((p) => Number(p.number))
+    .filter((b) => b && !absentBoats.includes(b));
+}
+
+// 時点: 展示がそろえば展示後。展示後のときだけ選択を採る
+function resolveStage(exhibition, boats, chosenStage) {
+  const defaultStage =
+    exhibition.status === "ready"
+      ? stageFromExhibition(exhibition.data, boats)
+      : "pre";
+  const stage = defaultStage === "post" ? (chosenStage ?? "post") : "pre";
+  return { defaultStage, stage };
+}
+
+// 類似レース: 展示後の段が無い（neighbors が無い）ときは出走表の時点の値。失敗は失敗のまま
+function pickSimilar(stage, similarRacecard, similarExhibition) {
+  const post = stage === "post";
+  if (post && similarExhibition.status === "error")
+    return { ...similarExhibition, racecardStage: false };
+  if (post && similarExhibition.data?.similar?.neighbors)
+    return { ...similarExhibition, racecardStage: false };
+  return { ...similarRacecard, racecardStage: post };
+}
+
+// scenario を範囲キー → 応答の形にまとめる（assistModel.sameClassScope が読む形）
+function buildScenarios(keys, ncData, ncrData, naData) {
+  const out = {};
+  if (keys?.NC && ncData) out[keys.NC] = ncData;
+  if (keys?.NCR && ncrData) out[keys.NCR] = ncrData;
+  if (keys?.NA && naData) out[keys.NA] = naData;
+  return out;
+}
+
+// facts の today と範囲キー（scope_keys の "1"）
+function factsToday(facts) {
+  const today = facts.data?.today ?? null;
+  return { today, keys: today?.scope_keys?.["1"] ?? null };
+}
+
+// 深掘りの艇の選手ID
+function findDeepRacerId(race, deep) {
+  return (
+    (race?.players ?? []).find((p) => Number(p.number) === deep)?.racerId ??
+    null
+  );
+}
+
+// 券種ごとのオッズ（BOA-990）。DB のスナップショット（race_odds）と締切時オッズ（race_odds_final）を読むだけで、
+// 公式への取得は増やさない。開いたままのページは、DB に次の窓の値・締切時オッズが入る時刻に読み直す
+// （BOA-1180。読み直しはキャッシュを通さない）
+function useAssistOdds(raceId, race, enabled) {
+  const deadlineMs = getDeadlineDate(raceId, race?.startTime)?.getTime() ?? null;
+  const oddsRefresh = useCallback(
+    (data, refresh) =>
+      nextOddsRefreshDelay(deadlineMs, Date.now(), data, refresh),
+    [deadlineMs],
+  );
+  return useAnalogyResource(
+    `assist-odds|${raceId}`,
+    (fresh = false) => fetchAssistOdds(raceId, fresh),
+    enabled,
+    false,
+    oddsRefresh,
+  );
+}
+
+// 会場・展示・率（1段目）。getVenueCharacteristics は無いとき null を返す（失敗は投げる。D-36 (5)）
+function useAssistBasics(raceId, parsed, enabled, venueOpen) {
+  const venueInfo = useAnalogyResource(
+    `assist-venue|${parsed?.venueCode}`,
+    () => getVenueCharacteristics(parsed.venueCode),
+    enabled,
+  );
+  const venueTech = useAnalogyResource(
+    `assist-venue-tech|${parsed?.venueCode}`,
+    () => getVenueTechniquePeriodStats(parsed.venueCode),
+    enabled && venueOpen,
+  );
+  const exhibition = useAnalogyResource(
+    `assist-exhibition|${raceId}`,
+    () => getRaceExhibitionBasics(raceId),
+    enabled,
+  );
+  const rates = useAnalogyResource(
+    `assist-rates|${raceId}`,
+    () => getRaceEntryOfficialRatesBreakdown(raceId),
+    enabled,
+  );
+  return { venueInfo, venueTech, exhibition, rates };
+}
+
+// 時点: DB の展示が出走する艇の全部にそろえば展示後（D-36 (1)）。欠場の艇は数えない（D-38）
+function useAssistStage(exhibition, race, chosenStage) {
+  const absentBoats = useMemo(
+    () => (exhibition.data ?? []).filter((e) => e.absent).map((e) => e.boat),
+    [exhibition.data],
+  );
+  const boats = useMemo(
+    () => activeBoats(race, absentBoats),
+    [race, absentBoats],
+  );
+  const { defaultStage, stage } = resolveStage(exhibition, boats, chosenStage);
+  return { absentBoats, defaultStage, stage };
+}
+
+// 1.5段目: v16 facts と、そのキーで取る scenario（NC・NCR・NA と会場の全レース VA。FR-2・D-21）
+function useAssistFactsScenarios(raceId, race, v16Stage, enabled) {
+  const facts = useAnalogyFacts(raceId, v16Stage, enabled);
+  const { today, keys } = factsToday(facts);
+  const round = raceRound(today, race?.raceStage ?? null);
+  const nc = useAnalogyScenario(raceId, keys?.NC, v16Stage, Boolean(keys?.NC));
+  const ncr = useAnalogyScenario(
+    raceId,
+    keys?.NCR,
+    v16Stage,
+    Boolean(round && keys?.NCR),
+  );
+  const na = useAnalogyScenario(raceId, keys?.NA, v16Stage, Boolean(keys?.NA));
+  const va = useAnalogyScenario(raceId, keys?.VA, v16Stage, Boolean(keys?.VA));
+  return { facts, keys, round, nc, ncr, na, va };
+}
+
+// 2段目（展示後だけ）: 体重・チルト・部品交換・展示の進入と、会場のオリジナル展示
+function useAssistPost(raceId, enabled, post) {
+  const maintenance = useAnalogyResource(
+    `assist-maintenance|${raceId}`,
+    () => getRaceMotorMaintenanceBreakdown(raceId),
+    enabled && post,
+  );
+  const original = useAnalogyResource(
+    `assist-original|${raceId}`,
+    () => getRaceOriginalExhibition(raceId),
+    enabled && post,
+  );
+  return { maintenance, original };
+}
+
+// 3段目: 深掘りを開いた艇の走（FR-5）と、6艇分の勝ち決まり手・前検タイム（初めて開いたとき1回）
+function useAssistDeep(raceId, parsed, deepRacerId, enabled, deepOpened) {
+  const runs = useAnalogyResource(
+    `assist-runs|${deepRacerId}`,
+    () => getRacerScopedRaceStats(deepRacerId),
+    Boolean(deepRacerId),
+  );
+  const technique = useAnalogyResource(
+    `assist-technique|${raceId}`,
+    () => getRaceTechniqueProfileBreakdown(raceId),
+    enabled && deepOpened,
+  );
+  const motor = useAnalogyResource(
+    `assist-motor|${raceId}`,
+    () => getRaceMotorBreakdown(raceId, parsed?.venueCode ?? null),
+    enabled && deepOpened,
+  );
+  return { runs, technique, motor };
+}
+
 /**
  * @param {string} raceId
  * @param {{stage?: "pre"|"post"|null, deep?: number|null, venueOpen?: boolean}} [options] 時点（null なら展示から決める既定。D-36 (1)）・深掘りの艇・会場の特徴のシートを開いたか
@@ -59,112 +248,26 @@ export function useThinkingAssistData(
   );
   // 出走表: 取得の失敗と「その日のデータに無い」を分ける。
   // 形の正しくない raceId（13R・会場99 等）は日付が無く取得が始まらないので、読み込み中に残さず「無い」にする
-  const racecard = {
-    status:
-      race || !enabled
-        ? "ready"
-        : loading
-          ? "loading"
-          : error === FETCH_FAILED_ERROR
-            ? "error"
-            : "ready",
-    data: race,
-  };
-
-  // 券種ごとのオッズ（BOA-990）。DB のスナップショット（race_odds）と締切時オッズ（race_odds_final）を読むだけで、
-  // 公式への取得は増やさない。締切時オッズのある券種はその値、無ければ最新のスナップショット（券種ごとに選ぶ）。
-  // スナップショットの取得の失敗は投げる（部分の失敗として出す。FR-11）。締切時オッズだけの失敗では図・買い目を
-  // 消さず、スナップショットで出して finalFailed の印を持つ（買い目に「締切時オッズを取れなかった」を出す）
-  // 開いたままのページは、DB に次の窓の値・締切時オッズが入る時刻に読み直す（BOA-1180。読み直しはキャッシュを通さない）。
-  // 読み直しは DB を読むだけで、公式への取得は増えない
-  const deadlineMs = getDeadlineDate(raceId, race?.startTime)?.getTime() ?? null;
-  const oddsRefresh = useCallback(
-    (data, refresh) =>
-      nextOddsRefreshDelay(deadlineMs, Date.now(), data, refresh),
-    [deadlineMs],
-  );
-  const odds = useAnalogyResource(
-    `assist-odds|${raceId}`,
-    async (fresh = false) => {
-      const [snaps, final] = await Promise.allSettled([
-        getRaceOddsSnapshots(raceId, { fresh }),
-        getRaceFinalOdds(raceId, { fresh }),
-      ]);
-      if (snaps.status === "rejected") throw snaps.reason;
-      const out = oddsByBetType(
-        snaps.value,
-        final.status === "fulfilled" ? final.value : null,
-      );
-      return final.status === "rejected"
-        ? {
-            ...(out ?? { byType: {}, trifecta: null, capturedAt: null }),
-            finalFailed: true,
-          }
-        : out;
-    },
-    enabled,
-    false,
-    oddsRefresh,
-  );
-
-  // 既存の getVenueCharacteristics は無いときに null を返す（失敗は投げる）。画面は「無い」を断定しない（D-36 (5)）
-  const venueInfo = useAnalogyResource(
-    `assist-venue|${parsed?.venueCode}`,
-    () => getVenueCharacteristics(parsed.venueCode),
-    enabled,
-  );
-  const venueTech = useAnalogyResource(
-    `assist-venue-tech|${parsed?.venueCode}`,
-    () => getVenueTechniquePeriodStats(parsed.venueCode),
-    enabled && venueOpen,
-  );
-
-  const exhibition = useAnalogyResource(
-    `assist-exhibition|${raceId}`,
-    () => getRaceExhibitionBasics(raceId),
-    enabled,
-  );
-
-  const rates = useAnalogyResource(
-    `assist-rates|${raceId}`,
-    () => getRaceEntryOfficialRatesBreakdown(raceId),
-    enabled,
-  );
-
-  // 時点: DB の展示が出走する艇の全部にそろえば展示後（v16 の展示後の段の有無では決めない。D-36 (1)）。
-  // 欠場の艇は数えない（D-38）
-  const absentBoats = useMemo(
-    () => (exhibition.data ?? []).filter((e) => e.absent).map((e) => e.boat),
-    [exhibition.data],
-  );
-  const boats = useMemo(
-    () =>
-      (race?.players ?? [])
-        .map((p) => Number(p.number))
-        .filter((b) => b && !absentBoats.includes(b)),
-    [race, absentBoats],
-  );
-  const defaultStage =
-    exhibition.status === "ready"
-      ? stageFromExhibition(exhibition.data, boats)
-      : "pre";
-  const stage = defaultStage === "post" ? (chosenStage ?? "post") : "pre";
-  const v16Stage = stage === "post" ? "exhibition" : "racecard";
-
-  const facts = useAnalogyFacts(raceId, v16Stage, enabled);
-  const today = facts.data?.today ?? null;
-  const keys = today?.scope_keys?.["1"] ?? null;
-  const round = raceRound(today, race?.raceStage ?? null);
-  const nc = useAnalogyScenario(raceId, keys?.NC, v16Stage, Boolean(keys?.NC));
-  const ncr = useAnalogyScenario(
+  const racecard = racecardState(race, enabled, loading, error);
+  const odds = useAssistOdds(raceId, race, enabled);
+  const { venueInfo, venueTech, exhibition, rates } = useAssistBasics(
     raceId,
-    keys?.NCR,
-    v16Stage,
-    Boolean(round && keys?.NCR),
+    parsed,
+    enabled,
+    venueOpen,
   );
-  const na = useAnalogyScenario(raceId, keys?.NA, v16Stage, Boolean(keys?.NA));
-  // 会場の全レース（堅い？荒れる？の材料の細い点線、参考。FR-2・D-21）
-  const va = useAnalogyScenario(raceId, keys?.VA, v16Stage, Boolean(keys?.VA));
+  const { absentBoats, defaultStage, stage } = useAssistStage(
+    exhibition,
+    race,
+    chosenStage,
+  );
+  const v16Stage = stage === "post" ? "exhibition" : "racecard";
+  const { facts, keys, round, nc, ncr, na, va } = useAssistFactsScenarios(
+    raceId,
+    race,
+    v16Stage,
+    enabled,
+  );
   // 類似レース: 展示後で v16 の展示後の段が無い（neighbors が無い）ときは、出走表の時点の値で描く（screens「状態」）。
   // 展示後の段の取得の失敗は「段が無い」と分けて失敗のまま返す（FR-11、Codex 依頼27 F02）
   const similarRacecard = useAnalogySimilar(raceId, "racecard", enabled);
@@ -173,60 +276,25 @@ export function useThinkingAssistData(
     "exhibition",
     enabled && stage === "post",
   );
-  const similar =
-    stage === "post" && similarExhibition.status === "error"
-      ? { ...similarExhibition, racecardStage: false }
-      : stage === "post" && similarExhibition.data?.similar?.neighbors
-        ? { ...similarExhibition, racecardStage: false }
-        : { ...similarRacecard, racecardStage: stage === "post" };
-
-  // 2段目（展示後だけ）: 体重・チルト・部品交換・展示の進入と、会場のオリジナル展示（機力・展開の要約）
-  const post = stage === "post";
-  const maintenance = useAnalogyResource(
-    `assist-maintenance|${raceId}`,
-    () => getRaceMotorMaintenanceBreakdown(raceId),
-    enabled && post,
+  const similar = pickSimilar(stage, similarRacecard, similarExhibition);
+  const { maintenance, original } = useAssistPost(
+    raceId,
+    enabled,
+    stage === "post",
   );
-  const original = useAnalogyResource(
-    `assist-original|${raceId}`,
-    () => getRaceOriginalExhibition(raceId),
-    enabled && post,
+  const deepRacerId = findDeepRacerId(race, deep);
+  const { runs, technique, motor } = useAssistDeep(
+    raceId,
+    parsed,
+    deepRacerId,
+    enabled,
+    deep != null,
   );
-
-  // 3段目: 深掘りを開いた艇の走（今節・今節より前の5走・コースの1着、FR-5）。開いたときに取る
-  const deepRacerId =
-    (race?.players ?? []).find((p) => Number(p.number) === deep)?.racerId ??
-    null;
-  const runs = useAnalogyResource(
-    `assist-runs|${deepRacerId}`,
-    () => getRacerScopedRaceStats(deepRacerId),
-    Boolean(deepRacerId),
-  );
-  // 6艇分を1回で取る（深掘りを初めて開いたとき）。勝ち決まり手は失敗を空で返す既存関数（D-36 (5)）
-  const deepOpened = deep != null;
-  const technique = useAnalogyResource(
-    `assist-technique|${raceId}`,
-    () => getRaceTechniqueProfileBreakdown(raceId),
-    enabled && deepOpened,
-  );
-  const motor = useAnalogyResource(
-    `assist-motor|${raceId}`,
-    () =>
-      getRaceMotorBreakdown(
-        raceId,
-        parsed?.venueCode ?? null,
-      ),
-    enabled && deepOpened,
-  );
-
   // scenario を範囲キー → 応答の形にまとめる（assistModel.sameClassScope が読む形）
-  const scenarios = useMemo(() => {
-    const out = {};
-    if (keys?.NC && nc.data) out[keys.NC] = nc.data;
-    if (keys?.NCR && ncr.data) out[keys.NCR] = ncr.data;
-    if (keys?.NA && na.data) out[keys.NA] = na.data;
-    return out;
-  }, [keys, nc.data, ncr.data, na.data]);
+  const scenarios = useMemo(
+    () => buildScenarios(keys, nc.data, ncr.data, na.data),
+    [keys, nc.data, ncr.data, na.data],
+  );
 
   return {
     parsed,

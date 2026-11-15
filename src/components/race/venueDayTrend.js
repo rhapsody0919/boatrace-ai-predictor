@@ -79,6 +79,37 @@ export function techniqueOrdinal(byRace, raceId) {
 }
 
 /**
+ * 「このレース」の節を組み立てる。決まり手が取れなければ null。
+ *
+ * @param {Object} summary `getVenueDaySummary` の戻り値
+ * @param {string|null} raceId 当該レース
+ * @returns {{technique: string, course: number|null, ordinal: number}|null}
+ */
+function buildThisRace(summary, raceId) {
+  if (!raceId) return null;
+  const row = summary?.byRace?.[raceId];
+  const ordinal = techniqueOrdinal(summary?.byRace, raceId);
+  if (!row?.winningTechnique || ordinal === null) return null;
+  return {
+    technique: row.winningTechnique,
+    // 当日・未バックフィル日はnull。呼び出し側はコースを省いた文にする
+    course: row.winnerCourse ?? null,
+    ordinal,
+  };
+}
+
+/**
+ * 決まり手が判明しているレース数。確定レース数と一致しないことがある
+ * （当日は結果が入った直後に決まり手だけ遅れて埋まる。2026-09-24実測で
+ * 当日の充足率91.2%、前日以前は約100%）。一致しないまま
+ * 「確定3Rの決まり手は まくり1・逃げ1」と出すと合計が合わず読み手が混乱するため、
+ * 呼び出し側が文を出し分けられるように両方返す
+ */
+function sumTechniqueCounts(techniqueCounts) {
+  return Object.values(techniqueCounts ?? {}).reduce((acc, n) => acc + n, 0);
+}
+
+/**
  * 1行要約に必要な素材を組み立てる（文字列の組み立ては i18n 側で行う）。
  *
  * @param {Object} summary `getVenueDaySummary` の戻り値
@@ -91,38 +122,12 @@ export function techniqueOrdinal(byRace, raceId) {
  * }}
  */
 export function buildDayTrend(summary, raceId = null) {
-  const raceCount = summary?.raceCount ?? 0;
   const techniques = sortTechniqueCounts(summary?.techniqueCounts);
-
-  let thisRace = null;
-  if (raceId) {
-    const row = summary?.byRace?.[raceId];
-    const ordinal = techniqueOrdinal(summary?.byRace, raceId);
-    if (row?.winningTechnique && ordinal !== null) {
-      thisRace = {
-        technique: row.winningTechnique,
-        // 当日・未バックフィル日はnull。呼び出し側はコースを省いた文にする
-        course: row.winnerCourse ?? null,
-        ordinal,
-      };
-    }
-  }
-
-  // 決まり手が判明しているレース数。確定レース数と一致しないことがある
-  // （当日は結果が入った直後に決まり手だけ遅れて埋まる。2026-09-24実測で
-  // 当日の充足率91.2%、前日以前は約100%）。一致しないまま
-  // 「確定3Rの決まり手は まくり1・逃げ1」と出すと合計が合わず読み手が混乱するため、
-  // 呼び出し側が文を出し分けられるように両方返す
-  const techniqueTotal = Object.values(summary?.techniqueCounts ?? {}).reduce(
-    (acc, n) => acc + n,
-    0,
-  );
-
   return {
-    raceCount,
-    techniqueTotal,
+    raceCount: summary?.raceCount ?? 0,
+    techniqueTotal: sumTechniqueCounts(summary?.techniqueCounts),
     nigeRate: summary?.nigeRate ?? null,
     techniques,
-    thisRace,
+    thisRace: buildThisRace(summary, raceId),
   };
 }
