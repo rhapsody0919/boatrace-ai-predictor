@@ -165,7 +165,7 @@ const K_DAY_LINE_RE =
 const K_SUMMARY_ROW_RE = /^\s+\d{1,2}R\s+\S+/;
 // 同着で払戻が複数ある場合の、レース番号なしの継続行（例: "               1-2-5     520    1-2-5     200"）
 const K_SUMMARY_CONT_RE = /^\s{10,}\d(?:-\d){1,2}\s+\d+/;
-/** 払戻金の要約に出る中止の行（例: "           1R  中　止"。全角スペースの有無は問わない。BOA-412） */
+/** 払戻金の要約に出る中止の行（例: "           1R  中[U+3000]止"。全角スペースの有無は問わない。BOA-412） */
 const K_SUMMARY_CANCELLED_RE = /^\s+(\d{1,2})R\s+中[\s\u3000]*止\s*$/;
 const K_RACE_HDR_RE =
   /^\s{0,4}(\d{1,2})R\s+(.*?)\s+H(\d+)m\s+(\S+)\s+風\s+(\S+?)\s+(\d+)m\s+波\s+(\d+)cm\s*$/;
@@ -332,7 +332,7 @@ function newKVenue(venueCode) {
     is_final_day: false,
     date_in_body: null,
     payout_summary_lines: [],
-    // 払戻金の要約に「NR 中　止」と書かれたレース番号（昇順）。成績の本体には中止のレースの記録が無いため、
+    // 払戻金の要約に「NR 中[U+3000]止」と書かれたレース番号（昇順）。成績の本体には中止のレースの記録が無いため、
     // 全日中止（races が空）と途中打ち切り（前半は成績あり）を、ここで区別できる（BOA-412）
     cancelled_race_numbers: [],
     races: [],
