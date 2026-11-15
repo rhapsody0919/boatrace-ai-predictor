@@ -50,6 +50,67 @@ function RankingTable({ title, rows, emptyMessage, valueHeader, formatValue }) {
   );
 }
 
+function TodayGroup({ ranking }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <h3 className="venue-ranking-scope-heading">
+        {t("analysis.venueRanking.todayGroupHeading")}
+      </h3>
+      <RankingTable
+        title={t("analysis.venueRanking.stableTitle")}
+        rows={ranking.stable}
+        emptyMessage={t("analysis.venueRanking.notEnoughData")}
+        valueHeader={t("analysis.venueRanking.avgPayoutHeader")}
+        formatValue={(row) => `¥${Math.round(row.avg_payout).toLocaleString()}`}
+      />
+      <RankingTable
+        title={t("analysis.venueRanking.roughTitle")}
+        rows={ranking.rough}
+        emptyMessage={t("analysis.venueRanking.notEnoughData")}
+        valueHeader={t("analysis.venueRanking.avgPayoutHeader")}
+        formatValue={(row) => `¥${Math.round(row.avg_payout).toLocaleString()}`}
+      />
+      <RankingTable
+        title={t("analysis.venueRanking.nigeRateTitle")}
+        rows={ranking.nigeRate}
+        emptyMessage={t("analysis.venueRanking.notEnoughData")}
+        valueHeader={t("analysis.venueRanking.nigeRateHeader")}
+        formatValue={(row) => `${row.nige_rate.toFixed(1)}%`}
+      />
+      <RankingTable
+        title={t("analysis.venueRanking.manshuTitle")}
+        rows={ranking.manshu}
+        emptyMessage={t("analysis.venueRanking.notEnoughData")}
+        valueHeader={t("analysis.venueRanking.manshuRateHeader")}
+        formatValue={(row) => `${row.manshu_rate.toFixed(1)}%`}
+      />
+      <p className="table-note">{t("analysis.venueRanking.note")}</p>
+    </>
+  );
+}
+
+function NinetyDayGroup({ firstWinRate }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <h3 className="venue-ranking-scope-heading">
+        {t("analysis.venueRanking.ninetyDayGroupHeading")}
+      </h3>
+      <RankingTable
+        title={t("analysis.venueRanking.firstWinRateTitle")}
+        rows={firstWinRate}
+        emptyMessage={t("analysis.venueRanking.notEnoughData")}
+        valueHeader={t("analysis.venueRanking.firstWinRateHeader")}
+        formatValue={(row) => `${row.first_win_rate.toFixed(1)}%`}
+      />
+      <p className="table-note">
+        {t("analysis.venueRanking.firstWinRateNote")}
+      </p>
+    </>
+  );
+}
+
 function VenueRankingChart() {
   const { t } = useTranslation();
   const [ranking, setRanking] = useState({
@@ -126,56 +187,9 @@ function VenueRankingChart() {
 
       {!loading && !error && !isEmpty && (
         <>
-          <h3 className="venue-ranking-scope-heading">
-            {t("analysis.venueRanking.todayGroupHeading")}
-          </h3>
-          <RankingTable
-            title={t("analysis.venueRanking.stableTitle")}
-            rows={ranking.stable}
-            emptyMessage={t("analysis.venueRanking.notEnoughData")}
-            valueHeader={t("analysis.venueRanking.avgPayoutHeader")}
-            formatValue={(row) =>
-              `¥${Math.round(row.avg_payout).toLocaleString()}`
-            }
-          />
-          <RankingTable
-            title={t("analysis.venueRanking.roughTitle")}
-            rows={ranking.rough}
-            emptyMessage={t("analysis.venueRanking.notEnoughData")}
-            valueHeader={t("analysis.venueRanking.avgPayoutHeader")}
-            formatValue={(row) =>
-              `¥${Math.round(row.avg_payout).toLocaleString()}`
-            }
-          />
-          <RankingTable
-            title={t("analysis.venueRanking.nigeRateTitle")}
-            rows={ranking.nigeRate}
-            emptyMessage={t("analysis.venueRanking.notEnoughData")}
-            valueHeader={t("analysis.venueRanking.nigeRateHeader")}
-            formatValue={(row) => `${row.nige_rate.toFixed(1)}%`}
-          />
-          <RankingTable
-            title={t("analysis.venueRanking.manshuTitle")}
-            rows={ranking.manshu}
-            emptyMessage={t("analysis.venueRanking.notEnoughData")}
-            valueHeader={t("analysis.venueRanking.manshuRateHeader")}
-            formatValue={(row) => `${row.manshu_rate.toFixed(1)}%`}
-          />
-          <p className="table-note">{t("analysis.venueRanking.note")}</p>
+          <TodayGroup ranking={ranking} />
 
-          <h3 className="venue-ranking-scope-heading">
-            {t("analysis.venueRanking.ninetyDayGroupHeading")}
-          </h3>
-          <RankingTable
-            title={t("analysis.venueRanking.firstWinRateTitle")}
-            rows={firstWinRate}
-            emptyMessage={t("analysis.venueRanking.notEnoughData")}
-            valueHeader={t("analysis.venueRanking.firstWinRateHeader")}
-            formatValue={(row) => `${row.first_win_rate.toFixed(1)}%`}
-          />
-          <p className="table-note">
-            {t("analysis.venueRanking.firstWinRateNote")}
-          </p>
+          <NinetyDayGroup firstWinRate={firstWinRate} />
         </>
       )}
 
