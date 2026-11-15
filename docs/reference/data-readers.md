@@ -430,7 +430,7 @@
   - `src/services/racerQueries3.js:119` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:194` select(helper:fetchAllByIn)
   - `src/services/racerService.js:158` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
-  - `src/services/sherlockService.js:83` select [boat_number, exhibition_time, race_id, start_timing]
+  - `src/services/sherlockService.js:75` select [boat_number, exhibition_time, race_id, start_timing]
 - 書き手（3）: 
   - `scripts/daily/generate-predictions.js:1070` upsert(helper:upsertChangedRows) [?]
   - `scripts/daily/scrape-exhibition-data.js:265` upsert(helper:upsertChangedRows) [?]
@@ -956,7 +956,7 @@
   - `src/services/racerQueries3.js:309` select [race_id, racer_id, win_rate]
   - `src/services/racerService.js:46` select [grade, race_id, racer_id]
   - `src/services/racerService.js:127` select [motor_number, race_id, racer_id]
-  - `src/services/sherlockService.js:77` select [boat_2rate, boat_number, grade, local_win_rate, motor_2rate, player_name, race_id, win_rate]
+  - `src/services/sherlockService.js:69` select [boat_2rate, boat_number, grade, local_win_rate, motor_2rate, player_name, race_id, win_rate]
   - `src/services/watsonService.js:75` select [boat_number, player_name, race_id]
 - 書き手（10）: 
   - `scripts/daily/generate-predictions.js:1035` upsert(helper:upsertChangedRows) [?]
@@ -1013,7 +1013,7 @@
   - `scripts/maintenance/check-odds-shadow.js:200` select [?, race_id, source]
   - `scripts/ml/export-training-data.js:224` select(helper:fetchAll)
   - `src/services/raceQueries2.js:320` select [?, captured_at, race_id]
-  - `src/services/sherlockService.js:87` select [captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6, race_id]
+  - `src/services/sherlockService.js:79` select [captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6, race_id]
 - 書き手（3）: 
   - `scripts/daily/scrape-odds.js:746` upsert [?]
   - `scripts/daily/scrape-odds.js:769` upsert [?]
@@ -1617,7 +1617,7 @@
   - `src/services/scheduleQueries.js:125` select [race_date]
   - `src/services/scheduleQueries.js:205` select [race_date, venue_code]
   - `src/services/scheduleQueries.js:229` select [race_date, race_id, race_number, start_time, venue_code]
-  - `src/services/sherlockService.js:73` select [race_date, race_id, race_number, start_time, venue_code]
+  - `src/services/sherlockService.js:65` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/venueQueries2.js:43` select [race_date, race_id, venue_code]
   - `src/services/venueQueries2.js:134` select [race_date, race_id, venue_code]
   - `src/services/watsonService.js:71` select [race_date, race_id, race_number, start_time, venue_code]
