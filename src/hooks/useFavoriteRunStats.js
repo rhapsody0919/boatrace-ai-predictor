@@ -13,6 +13,72 @@ import { finishedRuns, meetAnchorOf, statLineOf } from "../pure/favoriteRuns";
 /** 同時に成績・今節を取る選手の数 */
 const CONCURRENCY = 3;
 
+const LOADING_INFO = { loading: true, error: false, stat: null, meet: null };
+
+/** 同時に取るのは CONCURRENCY 人まで（1人で2本の2年分の読み。☆は30人まで入るので、
+ * トップを開いた瞬間に数十本を並べて DB に負荷をかけない） */
+function startWorkers(targets, setByRacer) {
+  const queue = [...targets];
+  const worker = async () => {
+    while (queue.length > 0) {
+      const id = queue.shift();
+      try {
+        const [history, records] = await Promise.all([
+          getRacerRaceHistory(id),
+          getRacerScopedRaceStats(id),
+        ]);
+        setByRacer((prev) => ({
+          ...prev,
+          [id]: { status: "ready", history, records },
+        }));
+      } catch (error) {
+        console.error(
+          `お気に入り選手の出走: 選手 ${id} の成績・今節の取得に失敗した`,
+          error,
+        );
+        setByRacer((prev) => ({ ...prev, [id]: { status: "failed" } }));
+      }
+    }
+  };
+  for (let i = 0; i < Math.min(CONCURRENCY, targets.length); i += 1) worker();
+}
+
+/** 号艇別の行（選手ごとに1回だけ数える） */
+function buildStatsByRacer(byRacer) {
+  const result = {};
+  for (const [id, state] of Object.entries(byRacer)) {
+    if (state.status !== "ready") continue;
+    result[id] = new Map(
+      aggregateRacerCrossStats(
+        state.history ?? [],
+        {},
+        "boat",
+        null,
+        null,
+      ).map((row) => [row.key, row]),
+    );
+  }
+  return result;
+}
+
+/** 1行の欄 */
+function buildRowInfo(row, state, statsByRacer) {
+  if (!state || state.status === "loading") return { ...LOADING_INFO };
+  if (state.status === "failed")
+    return { loading: false, error: true, stat: null, meet: null };
+  // 目印はその日のその会場の最後より後ろ。締切後の行もそのレースの着を含める
+  const meet = buildMeetResults(state.records ?? [], {
+    raceId: meetAnchorOf(row.raceId),
+    venueCode: row.venueCode,
+  });
+  return {
+    loading: false,
+    error: false,
+    stat: statLineOf(statsByRacer[row.racerId]?.get(row.boat)),
+    meet: finishedRuns(getRecentRaces(meet, meet.length)),
+  };
+}
+
 /**
  * トップの区画「お気に入り選手の出走」の各行の、成績の一言と今節の着順（GS04-7、BOA-1273）。
  *
@@ -52,84 +118,23 @@ export function useFavoriteRunStats(rows, visible) {
       for (const id of targets) next[id] = { status: "loading" };
       return next;
     });
-    // 同時に取るのは CONCURRENCY 人まで（1人で2本の2年分の読み。☆は30人まで入るので、
-    // トップを開いた瞬間に数十本を並べて DB に負荷をかけない）
-    const queue = [...targets];
-    const worker = async () => {
-      while (queue.length > 0) {
-        const id = queue.shift();
-        try {
-          const [history, records] = await Promise.all([
-            getRacerRaceHistory(id),
-            getRacerScopedRaceStats(id),
-          ]);
-          setByRacer((prev) => ({
-            ...prev,
-            [id]: { status: "ready", history, records },
-          }));
-        } catch (error) {
-          console.error(
-            `お気に入り選手の出走: 選手 ${id} の成績・今節の取得に失敗した`,
-            error,
-          );
-          setByRacer((prev) => ({ ...prev, [id]: { status: "failed" } }));
-        }
-      }
-    };
-    for (let i = 0; i < Math.min(CONCURRENCY, targets.length); i += 1) worker();
+    startWorkers(targets, setByRacer);
   }, [visible, racerKey]);
 
-  // 号艇別の行（選手ごとに1回だけ数える）
-  const statsByRacer = useMemo(() => {
-    const result = {};
-    for (const [id, state] of Object.entries(byRacer)) {
-      if (state.status !== "ready") continue;
-      result[id] = new Map(
-        aggregateRacerCrossStats(
-          state.history ?? [],
-          {},
-          "boat",
-          null,
-          null,
-        ).map((row) => [row.key, row]),
-      );
-    }
-    return result;
-  }, [byRacer]);
+  const statsByRacer = useMemo(() => buildStatsByRacer(byRacer), [byRacer]);
 
   // 行ごとの欄（分の時計で描き直すたびに今節を切り直さない）
   const infoByRow = useMemo(() => {
     const result = new Map();
     for (const row of rows) {
-      const state = byRacer[row.racerId];
-      let info;
-      if (!state || state.status === "loading")
-        info = { loading: true, error: false, stat: null, meet: null };
-      else if (state.status === "failed")
-        info = { loading: false, error: true, stat: null, meet: null };
-      else {
-        // 目印はその日のその会場の最後より後ろ。締切後の行もそのレースの着を含める
-        const meet = buildMeetResults(state.records ?? [], {
-          raceId: meetAnchorOf(row.raceId),
-          venueCode: row.venueCode,
-        });
-        info = {
-          loading: false,
-          error: false,
-          stat: statLineOf(statsByRacer[row.racerId]?.get(row.boat)),
-          meet: finishedRuns(getRecentRaces(meet, meet.length)),
-        };
-      }
-      result.set(`${row.raceId}|${row.racerId}`, info);
+      result.set(
+        `${row.raceId}|${row.racerId}`,
+        buildRowInfo(row, byRacer[row.racerId], statsByRacer),
+      );
     }
     return result;
   }, [rows, byRacer, statsByRacer]);
 
   return (row) =>
-    infoByRow.get(`${row.raceId}|${row.racerId}`) ?? {
-      loading: true,
-      error: false,
-      stat: null,
-      meet: null,
-    };
+    infoByRow.get(`${row.raceId}|${row.racerId}`) ?? { ...LOADING_INFO };
 }
