@@ -5652,7 +5652,7 @@
           "test": true
         },
         {
-          "ref": "src/services/adminRuleService.js:69",
+          "ref": "src/services/adminRuleService.js:26",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5853,7 +5853,7 @@
             "scripts/maintenance/delete-phantom-races.js:138",
             "scripts/maintenance/migrate-to-supabase.js:270",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/predictionQueries3.js:132",
             "src/services/raceQueries2.js:226",
             "src/services/ruleMatchService.js:124"
@@ -5892,7 +5892,7 @@
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/migrate-to-supabase.js:270",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/predictionQueries3.js:132",
             "src/services/raceQueries2.js:226",
             "src/services/ruleMatchService.js:124"
@@ -5921,7 +5921,7 @@
             "scripts/maintenance/backfill-place-hits.js:14",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
@@ -5944,7 +5944,7 @@
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
@@ -5965,7 +5965,7 @@
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
@@ -5980,7 +5980,7 @@
           "readers": [
             "scripts/analysis/collect-venue-stats.js:215",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
@@ -6153,7 +6153,7 @@
             "scripts/analysis/campaign-backtest-fetch-races.js:49",
             "scripts/analysis/find-video-worthy-race.js:80",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/raceQueries2.js:226",
             "src/services/ruleMatchService.js:124"
           ],
@@ -11374,7 +11374,7 @@
           ]
         },
         {
-          "ref": "src/services/adminRuleService.js:87",
+          "ref": "src/services/adminRuleService.js:42",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11745,7 +11745,7 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
@@ -11810,7 +11810,7 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
@@ -11859,7 +11859,7 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
@@ -11897,7 +11897,7 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
@@ -11925,7 +11925,7 @@
             "scripts/daily/scrape-results.js:1344",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
@@ -11941,7 +11941,7 @@
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/maintenance/backfill-place-hits.js:31",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
@@ -11957,7 +11957,7 @@
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/maintenance/backfill-place-hits.js:31",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
@@ -11975,7 +11975,7 @@
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
@@ -11994,7 +11994,7 @@
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/daily/update-outcome-frequencies.js:19",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
