@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { baseVerdict } from "../../../utils/assistModel";
 import { wilsonInterval } from "../../../utils/wilson";
-import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
-
-const pct0 = (v) => Math.round(v * 100);
-const pct1 = (v) => (v * 100).toFixed(1);
-const comma = (n) => n.toLocaleString("ja-JP");
+import {
+  BaseBarLabel,
+  BaseBarTrack,
+  BaseBarValue,
+  BaseBarMore,
+} from "./BaseBarParts";
 
 /**
  * 基準つきバー（spec D-21）と普通のバー（base を渡さない）。値・ぶれ幅・全国の全レースの太い点線・
@@ -38,57 +39,35 @@ export default function BaseBar({
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="ta-bar-label">
-          {label} {labelRate && <b className="ta-num">{pct1(rate)}%</b>}
-          {showBase && base != null && (
-            <span className="ta-num">{ASSIST_COPY.baseInline(pct0(base))}</span>
-          )}{" "}
-          {verdict && (
-            <span
-              className={`ta-tag${verdict === "unclear" ? "" : " ta-tag-hit"}`}
-            >
-              {ASSIST_COPY.verdict[verdict]}
-            </span>
-          )}
-          {v && few && <span className="ta-tag">{ASSIST_COPY.roughFew}</span>}
-        </span>
-        <span className="ta-bar-track" aria-hidden="true">
-          <span className="ta-bar-fill" style={{ width: `${rate * 100}%` }} />
-          <span
-            className="ta-bar-ci"
-            style={{ left: `${lo * 100}%`, width: `${(hi - lo) * 100}%` }}
-          />
-          {base != null && (
-            <span className="ta-baseline" style={{ left: `${base * 100}%` }} />
-          )}
-          {refRate != null && (
-            <span
-              className="ta-bar-ref"
-              style={{ left: `${refRate * 100}%` }}
-            />
-          )}
-        </span>
-        <span className="ta-num" style={{ textAlign: "right" }}>
-          {pct0(rate)}%
-          {/* 押すと件数とぶれ幅が開くことの手がかり（PR4 の UI/UX デザイナーのレビュー P2-6） */}
-          <span className="ta-bar-more-mark" aria-hidden="true">
-            {open ? "▾" : "›"}
-          </span>
-        </span>
+        <BaseBarLabel
+          label={label}
+          rate={rate}
+          base={base}
+          v={v}
+          few={few}
+          verdict={verdict}
+          labelRate={labelRate}
+          showBase={showBase}
+        />
+        <BaseBarTrack
+          rate={rate}
+          lo={lo}
+          hi={hi}
+          base={base}
+          refRate={refRate}
+        />
+        <BaseBarValue rate={rate} open={open} />
       </button>
       {open && (
-        <p className="ta-bar-more ta-num">
-          {v
-            ? ASSIST_COPY.baseMore(
-                pct1(base),
-                Number(((rate - base) * 100).toFixed(1)),
-                comma(k),
-                comma(n),
-                pct0(lo),
-                pct0(hi),
-              )
-            : `${comma(k)}/${comma(n)}件・ぶれ幅${pct0(lo)}〜${pct0(hi)}%`}
-        </p>
+        <BaseBarMore
+          v={v}
+          k={k}
+          n={n}
+          rate={rate}
+          base={base}
+          lo={lo}
+          hi={hi}
+        />
       )}
     </div>
   );

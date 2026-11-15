@@ -16,89 +16,17 @@
  * （マイグレーション086が未適用）は、セクションごと描画しない（nullを返す）。
  * 取得エラーは「対象外」「未公開」に化けさせず、再読み込みボタンを出す（BOA-359）。
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { BOAT_COLORS } from "../../utils/colors";
-import { getRacePitReport } from "../../services/raceQueries4.js";
 import { parseRaceId } from "../../utils/raceId";
 import {
   buildPitReportUrl,
   isPitReportCandidate,
 } from "../../utils/pitReportUrl";
 import { trackEvent } from "../../utils/analytics";
-import TermHintButton from "./TermHintButton";
+import { PitReportPublished } from "./RacePitReportSectionParts";
+import { usePitReportFetch } from "./RacePitReportSectionFetch";
 import "./RacePitReportSection.css";
-import { formatCapturedAtJst } from "../../utils/formatters";
-
-const CONFIDENCE_MAX = 3;
-
-function ConfidenceStars({ stars, t }) {
-  if (!Number.isInteger(stars) || stars < 0 || stars > CONFIDENCE_MAX) {
-    return null;
-  }
-  const filled = "★".repeat(stars);
-  const empty = "☆".repeat(CONFIDENCE_MAX - stars);
-  return (
-    <div className="rpr-confidence">
-      <span className="rpr-confidence-label">{t("pitReport.confidence")}</span>
-      <TermHintButton termKey="pitConfidence" />
-      <span
-        className="rpr-stars"
-        role="img"
-        aria-label={t("pitReport.confidenceAria", {
-          n: stars,
-          max: CONFIDENCE_MAX,
-        })}
-      >
-        <span className="rpr-stars-filled" aria-hidden="true">
-          {filled}
-        </span>
-        <span className="rpr-stars-empty" aria-hidden="true">
-          {empty}
-        </span>
-      </span>
-    </div>
-  );
-}
-
-function PitCommentCard({ comment, player, t }) {
-  const color = BOAT_COLORS[comment.boatNumber] || {};
-  return (
-    <li className="rpr-comment">
-      <div className="rpr-comment-head">
-        <span
-          className="rpr-boat-chip"
-          style={{ background: color.bg, color: color.text }}
-        >
-          {comment.boatNumber}
-        </span>
-        {player?.name ? (
-          <span className="rpr-racer-name" translate="no">
-            {/* 出走表の名前は姓と名の間を全角スペースで詰めてある。結果タブと同じく
-                空白を1つにまとめる（「峰\u3000竜太」→「峰 竜太」。BOA-618） */}
-            {player.name.replace(/\s+/g, " ").trim()}
-          </span>
-        ) : (
-          <span className="rpr-racer-name" translate="no">
-            {comment.racerId ?? "-"}
-          </span>
-        )}
-        {player?.grade && (
-          <span className="rpr-racer-rank">{player.grade}</span>
-        )}
-        {comment.previousRaceNumber != null && (
-          <span className="rpr-prev-race">
-            {t("pitReport.previousRace", { n: comment.previousRaceNumber })}
-          </span>
-        )}
-      </div>
-      <p className="rpr-comment-text" lang="ja">
-        {comment.text}
-      </p>
-      <ConfidenceStars stars={comment.stars} t={t} />
-    </li>
-  );
-}
 
 function RacePitReportSection({ raceId, raceGrade, players }) {
   const { t, i18n } = useTranslation();
@@ -106,38 +34,10 @@ function RacePitReportSection({ raceId, raceGrade, players }) {
   const isCandidate =
     Boolean(parsed) &&
     isPitReportCandidate({ raceGrade, raceNumber: parsed.raceNo });
-
-  // レース間ナビゲーション（BOA-118のボトムバー等）ではこのコンポーネントが
-  // アンマウントされずraceIdだけが変わるため、取得結果はraceIdとセットで持つ。
-  // そうしないと、effectが走るまでの1描画で「前のレースのコメント＋今のレースの
-  // 公式リンク」という食い違った表示が出る
-  const [fetched, setFetched] = useState(null);
-  const [failedRaceId, setFailedRaceId] = useState(null);
-  const [reloadKey, setReloadKey] = useState(0);
-
-  useEffect(() => {
-    if (!isCandidate) return undefined;
-    let cancelled = false;
-    getRacePitReport(raceId)
-      .then((data) => {
-        if (cancelled) return;
-        // 直前に失敗したレースへ戻ってきて今度は成功した場合に、エラー表示が残らないようにする
-        setFailedRaceId((prev) => (prev === raceId ? null : prev));
-        setFetched({ raceId, data });
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        console.error("ピットレポート取得エラー:", error);
-        setFailedRaceId(raceId);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [raceId, isCandidate, reloadKey]);
-
-  const report = fetched?.raceId === raceId ? fetched.data : null;
-  const failed = failedRaceId === raceId;
-  const loading = !report && !failed;
+  const { report, failed, loading, retry } = usePitReportFetch(
+    raceId,
+    isCandidate,
+  );
 
   const officialUrl = buildPitReportUrl(raceId);
   const handleSourceClick = useCallback(() => {
@@ -179,14 +79,7 @@ function RacePitReportSection({ raceId, raceGrade, players }) {
       <section className="rbi-card rpr-card">
         {heading}
         <p className="rpr-error">{t("pitReport.error")}</p>
-        <button
-          type="button"
-          className="rpr-retry"
-          onClick={() => {
-            setFailedRaceId(null);
-            setReloadKey((n) => n + 1);
-          }}
-        >
+        <button type="button" className="rpr-retry" onClick={retry}>
           {t("pitReport.retry")}
         </button>
       </section>
@@ -207,40 +100,15 @@ function RacePitReportSection({ raceId, raceGrade, players }) {
     return null;
   }
 
-  const playerByBoat = new Map((players ?? []).map((p) => [p.number, p]));
-  const capturedAt = formatCapturedAtJst(report.capturedAt);
-
   return (
-    <section className="rbi-card rpr-card">
-      {heading}
-
-      <div className="rpr-source">
-        <p className="rpr-source-text">{t("pitReport.source")}</p>
-        {capturedAt && (
-          <p className="rpr-source-text">
-            {t("pitReport.capturedAt", { time: capturedAt })}
-            {t("home.jstNote")}
-          </p>
-        )}
-        {officialLink}
-      </div>
-
-      <ul className="rpr-comment-list">
-        {report.comments.map((comment) => (
-          <PitCommentCard
-            key={comment.boatNumber}
-            comment={comment}
-            player={playerByBoat.get(comment.boatNumber)}
-            t={t}
-          />
-        ))}
-      </ul>
-
-      <p className="rbi-note">{t("pitReport.note")}</p>
-      {i18n.language !== "ja" && (
-        <p className="rbi-note">{t("pitReport.originalLanguageNote")}</p>
-      )}
-    </section>
+    <PitReportPublished
+      report={report}
+      players={players}
+      heading={heading}
+      officialLink={officialLink}
+      t={t}
+      i18n={i18n}
+    />
   );
 }
 

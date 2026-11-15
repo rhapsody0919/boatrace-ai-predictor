@@ -24,39 +24,11 @@
  */
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BOAT_COLORS } from "../../utils/colors";
-import { finishPositionOf } from "./basicInfoStats";
-import { finishMarkKeyOf } from "../../utils/prevResult";
-import { GRADE_LABELS } from "./raceGradeLabels";
+import { RecentRunsTile, RecentRunsDetail } from "./RecentRunsBarParts";
 import "./RecentRunsBar.css";
-
-function rankClass(rank) {
-  if (rank === null) return "rrb-rank-bad";
-  if (rank === 1) return "rrb-rank-first";
-  if (rank <= 3) return "rrb-rank-good";
-  if (rank <= 4) return "rrb-rank-mid";
-  return "rrb-rank-bad";
-}
-
-const formatSt = (r) =>
-  r.isFlying
-    ? null
-    : r.stForRank === null || r.stForRank === undefined
-      ? null
-      : Number(r.stForRank).toFixed(2).replace(/^0/, "");
 
 function RecentRunsBar({ runs }) {
   const { t } = useTranslation();
-  // 着順の付かない走は公式の記号（F・沈・転など）で出す。以前は一律「外」で、F（本人の
-  // 事故）と沈・転覆を区別できなかった（BOA-604 ファン評価1周目）。データ出走表・
-  // 直近10走と同じ表記（finishMarkKeyOf）
-  const finishLabel = (r) => {
-    const rank = finishPositionOf(r);
-    if (rank !== null) return null;
-    if (r.absent) return t("basicInfo.finishAbsent");
-    const key = finishMarkKeyOf(r.finishMark ?? (r.isFlying ? "F" : null));
-    return key ? t(`dataTable.prevMark.${key}`) : t("wakuInfo.outOfPlace");
-  };
   const list = Array.isArray(runs) ? runs : [];
   // 選んでいる走（帯の下に会場・R・種別を出す）。既定は最新（右端）
   const [selectedId, setSelectedId] = useState(null);
@@ -100,93 +72,16 @@ function RecentRunsBar({ runs }) {
         <span>{t("recentRuns.newer")}</span>
       </div>
       <div className="rrb-strip" ref={stripRef} onScroll={measureHidden}>
-        {list.map((r) => {
-          const rank = finishPositionOf(r);
-          const course = r.actualCourse ?? null;
-          const color = course ? BOAT_COLORS[course] || {} : {};
-          return (
-            <button
-              type="button"
-              key={r.raceId}
-              data-race-id={r.raceId}
-              className={`rrb-item${r.raceId === selected?.raceId ? " is-selected" : ""}`}
-              aria-pressed={r.raceId === selected?.raceId}
-              onClick={() => setSelectedId(r.raceId)}
-            >
-              <span className="rrb-date">
-                {`${Number(r.raceId.slice(5, 7))}/${Number(r.raceId.slice(8, 10))}`}
-              </span>
-              <span
-                className="rrb-course"
-                style={
-                  course
-                    ? { background: color.bg, color: color.text }
-                    : undefined
-                }
-              >
-                {course ?? "—"}
-              </span>
-              <span className={`rrb-rank ${rankClass(rank)}`}>
-                {rank ?? finishLabel(r)}
-              </span>
-              <span className="rrb-st">
-                {r.isFlying ? t("recentRuns.flying") : (formatSt(r) ?? "—")}
-              </span>
-              <span className="rrb-st-rank">
-                {r.isFlying || r.stRank === null || r.stRank === undefined
-                  ? ""
-                  : t("recentRuns.stRank", { n: r.stRank })}
-              </span>
-            </button>
-          );
-        })}
+        {list.map((r) => (
+          <RecentRunsTile
+            key={r.raceId}
+            r={r}
+            isSelected={r.raceId === selected?.raceId}
+            onSelect={setSelectedId}
+          />
+        ))}
       </div>
-      {selected && (
-        <p className="rrb-detail" aria-live="polite">
-          {t("recentRuns.detail", {
-            date: `${Number(selected.raceId.slice(5, 7))}/${Number(selected.raceId.slice(8, 10))}`,
-            venue: t(
-              `venues.${selected.venueCode}`,
-              String(selected.venueCode),
-            ),
-            race: Number(selected.raceId.slice(14, 16)),
-            // 括弧の中はグレードとレース名。「SG・G1」の行で「（一般戦）」とだけ出ると、
-            // 表の「一般戦」行と同じ言葉で集計が混ざったように読まれた（ファン評価1周目）
-            // 一般戦の節は「一般戦」が名前と重なるので、グレードを付けるのは SG・G1・G2・G3 だけ
-            stage: !selected.raceStage
-              ? ""
-              : selected.raceGrade && selected.raceGrade !== "ippan"
-                ? t("recentRuns.stageWithGrade", {
-                    grade: t(
-                      `raceHistoryTable.grades.${selected.raceGrade}`,
-                      GRADE_LABELS[selected.raceGrade] ?? selected.raceGrade,
-                    ),
-                    stage: selected.raceStage,
-                  })
-                : t("recentRuns.stageOnly", { stage: selected.raceStage }),
-            course: selected.actualCourse
-              ? t("dataTable.prevResultCourse", {
-                  course: selected.actualCourse,
-                })
-              : "—",
-            finish:
-              finishPositionOf(selected) !== null
-                ? t("review.finishPosition", {
-                    position: finishPositionOf(selected),
-                  })
-                : finishLabel(selected),
-            st: selected.isFlying
-              ? t("recentRuns.flying")
-              : formatSt(selected) === null
-                ? "—"
-                : `${formatSt(selected)}${
-                    selected.stRank
-                      ? t("recentRuns.stRank", { n: selected.stRank })
-                      : ""
-                  }`,
-          })}
-        </p>
-      )}
+      {selected && <RecentRunsDetail selected={selected} />}
       <p className="rrb-legend">{t("recentRuns.legend")}</p>
     </div>
   );
