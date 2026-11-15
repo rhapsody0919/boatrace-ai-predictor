@@ -110,6 +110,89 @@ function HBarRows({ chart, view, lang, ui }) {
 
 const BODIES = { hbar: HBarRows };
 
+function ChartControl({ chart, view, lang, controlId, onSelect }) {
+  const useButtons =
+    chart.views.length <= MAX_BUTTONS &&
+    chart.views.reduce((n, v) => n + [...localize(v.label, lang)].length, 0) <=
+      MAX_BUTTON_CHARS;
+  return (
+    <div className="blog-chart__control">
+      {useButtons ? (
+        <span
+          className="blog-chart__buttons"
+          role="group"
+          aria-label={localize(chart.switch.label, lang)}
+        >
+          {chart.views.map((v) => (
+            <button
+              type="button"
+              key={v.key}
+              aria-pressed={v.key === view.key}
+              onClick={() => onSelect(v.key)}
+            >
+              {localize(v.label, lang)}
+            </button>
+          ))}
+        </span>
+      ) : (
+        <>
+          <label htmlFor={controlId}>
+            {localize(chart.switch.label, lang)}
+          </label>
+          <select
+            id={controlId}
+            value={view.key}
+            onChange={(e) => onSelect(e.target.value)}
+          >
+            {chart.views.map((v) => (
+              <option value={v.key} key={v.key}>
+                {localize(v.label, lang)}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ChartBadges({ chart, badge, lang, ui }) {
+  return (
+    <div className="blog-chart__badges" aria-live="polite" aria-atomic="true">
+      <span
+        data-chart-switch={
+          chart.switch ? localize(chart.switch.label, lang) : undefined
+        }
+      >
+        {localize(badge.scope, lang)}
+      </span>
+      <span>
+        {formatDate(badge.period.from)}〜{formatDate(badge.period.to)}
+      </span>
+      <span>
+        {ui.sample(
+          badge.sample.value.toLocaleString("ja-JP"),
+          localize(badge.sample.unit, lang),
+        )}
+      </span>
+    </div>
+  );
+}
+
+function ChartCaption({ chart, lang, ui }) {
+  return (
+    <figcaption className="blog-chart__caption">
+      {chart.note && <p>{localize(chart.note, lang)}</p>}
+      <p>
+        {ui.source(
+          localize(chart.source.name, lang),
+          formatDate(chart.source.dataVersion),
+        )}
+      </p>
+    </figcaption>
+  );
+}
+
 /**
  * @param {{ src?: string, result?: { chart: object } | { error: Error }, lang?: string }} props
  *   result は記事の本文と一緒に取った結果（blogChartLoader.js）。無いときは src が許可リストで落ちたか取れていない
@@ -145,10 +228,6 @@ function BlogChart({ src, result, lang = "ja" }) {
   const answer = localize(view.description ?? chart.description, lang);
   const { badge } = view;
   // 同じ図を1記事に2回置いても id が重ならないよう useId を使う
-  const useButtons =
-    chart.views.length <= MAX_BUTTONS &&
-    chart.views.reduce((n, v) => n + [...localize(v.label, lang)].length, 0) <=
-      MAX_BUTTON_CHARS;
   const controlId = `blog-chart-${baseId.replaceAll(":", "")}`;
 
   return (
@@ -166,72 +245,17 @@ function BlogChart({ src, result, lang = "ja" }) {
         {answer}
       </p>
       {chart.switch && (
-        <div className="blog-chart__control">
-          {useButtons ? (
-            <span
-              className="blog-chart__buttons"
-              role="group"
-              aria-label={localize(chart.switch.label, lang)}
-            >
-              {chart.views.map((v) => (
-                <button
-                  type="button"
-                  key={v.key}
-                  aria-pressed={v.key === view.key}
-                  onClick={() => setSelected(v.key)}
-                >
-                  {localize(v.label, lang)}
-                </button>
-              ))}
-            </span>
-          ) : (
-            <>
-              <label htmlFor={controlId}>
-                {localize(chart.switch.label, lang)}
-              </label>
-              <select
-                id={controlId}
-                value={view.key}
-                onChange={(e) => setSelected(e.target.value)}
-              >
-                {chart.views.map((v) => (
-                  <option value={v.key} key={v.key}>
-                    {localize(v.label, lang)}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
-        </div>
+        <ChartControl
+          chart={chart}
+          view={view}
+          lang={lang}
+          controlId={controlId}
+          onSelect={setSelected}
+        />
       )}
-      <div className="blog-chart__badges" aria-live="polite" aria-atomic="true">
-        <span
-          data-chart-switch={
-            chart.switch ? localize(chart.switch.label, lang) : undefined
-          }
-        >
-          {localize(badge.scope, lang)}
-        </span>
-        <span>
-          {formatDate(badge.period.from)}〜{formatDate(badge.period.to)}
-        </span>
-        <span>
-          {ui.sample(
-            badge.sample.value.toLocaleString("ja-JP"),
-            localize(badge.sample.unit, lang),
-          )}
-        </span>
-      </div>
+      <ChartBadges chart={chart} badge={badge} lang={lang} ui={ui} />
       <Body chart={chart} view={view} lang={lang} ui={ui} />
-      <figcaption className="blog-chart__caption">
-        {chart.note && <p>{localize(chart.note, lang)}</p>}
-        <p>
-          {ui.source(
-            localize(chart.source.name, lang),
-            formatDate(chart.source.dataVersion),
-          )}
-        </p>
-      </figcaption>
+      <ChartCaption chart={chart} lang={lang} ui={ui} />
     </figure>
   );
 }
