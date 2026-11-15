@@ -763,30 +763,8 @@ function OfficialSourceNote({ breakdown, officialMode, listPowerIndex, venueCols
   );
 }
 
-function MotorConditionChart({
-  initialVenueCode = null,
-  initialRaceId = null,
-  initialMotorNumber = null,
-  embedded = false,
-  // レース詳細で「今どの艇を見ているか」をタブ間で共有する（BOA-492/BOA-494）。
-  // /winning-technique は渡さないので、そちらの挙動は変わらない
-  focusedBoat = null,
-  onFocusBoat = null,
-}) {
-  const { t } = useTranslation();
-  const {
-    venues,
-    selectedVenue,
-    setSelectedVenue,
-    races,
-    selectedRace,
-    setSelectedRace,
-    loading,
-    setLoading,
-    error,
-    setError,
-  } = useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
-
+// 画面の state と ref（呼ぶ順は元の MotorConditionChart の本体と同じ）
+function useMotorStates(initialMotorNumber) {
   const [breakdown, setBreakdown] = useState([]);
   const [meetParts, setMeetParts] = useState(null);
   const [partsBoat, setPartsBoat] = useState(null);
@@ -836,236 +814,294 @@ function MotorConditionChart({
   // レース/会場が変わった時だけドリルダウンをリセットする（期間トグルだけの
   // 変更でドリルダウン中の画面が一覧に戻されてしまわないようにするため）
   const lastRaceVenueRef = useRef(null);
+  return {
+    breakdown, setBreakdown, meetParts, setMeetParts, partsBoat, setPartsBoat,
+    freshness, setFreshness, explainBoat, setExplainBoat,
+    drillDownMotor, setDrillDownMotor, trendData, setTrendData,
+    powerIndex, setPowerIndex, usageHistory, setUsageHistory,
+    partsHistory, setPartsHistory, venueMotorStats, setVenueMotorStats,
+    championshipHistory, setChampionshipHistory,
+    venueMotorRanking, setVenueMotorRanking, motorWakuStats, setMotorWakuStats,
+    motorRacerWakuStats, setMotorRacerWakuStats,
+    selectedWakuCourse, setSelectedWakuCourse,
+    drillPreGeneration, setDrillPreGeneration,
+    racePreGeneration, setRacePreGeneration, venueRanks, setVenueRanks,
+    generationStart, setGenerationStart, periodDays, setPeriodDays,
+    pendingInitialMotorNumber, lastRaceVenueRef,
+  };
+}
 
-  // レース選択時: 枠番別モーター調子を取得（機力指数はvenue確定後に別途取得）
+// 節の使用履歴にこの選手がいれば、その節の部品交換数を数える（embedded の札）
+async function loadRowMeetParts(selectedVenue, selectedRace, raceDate, row) {
+  try {
+    const history = await getMotorUsageHistory(
+      selectedVenue, row.motor_number, selectedRace, { includeTarget: true },
+    );
+    const meet = history.find((item) => String(item.racerId) === String(row.racer_id));
+    if (!meet) return { boat: row.boat_number, unavailable: true };
+    const parts = await getMotorPartsHistory(
+      selectedVenue, row.motor_number, 90, selectedRace, { includeTarget: true },
+    );
+    return { boat: row.boat_number, ...countMeetPartsChanges(parts.events, {
+      from: meet.firstDate, to: raceDate,
+    }) };
+  } catch (err) {
+    console.error("Failed to load meet motor parts:", err);
+    return { boat: row.boat_number, failed: true };
+  }
+}
+
+// 表は待たせず、失敗した基だけ札を隠す。履歴は直近90日と同じ窓。
+function startMeetPartsLoad(m, run, data, raceDate) {
+  const { selectedVenue, selectedRace, setMeetParts } = m;
+  Promise.all(data.map((row) => loadRowMeetParts(selectedVenue, selectedRace, raceDate, row)))
+    .then((rows) => {
+      if (!run.cancelled) setMeetParts({ raceId: selectedRace, rows });
+    });
+}
+
+// 会場内順位は一覧表のあとから足す（表の表示を待たせない）。当日のレースは最新の
+// スナップショット、過去のレースはレース日以前で最新（BOA-521 と同じ）
+function startVenueRanksLoad(m, run, raceDate) {
+  m.setVenueRanks(null);
+  getVenueMotorRanks(
+    m.selectedVenue,
+    raceDate !== null && raceDate < getTodayJST() ? raceDate : null,
+  )
+    .then((ranks) => {
+      if (!run.cancelled) m.setVenueRanks(ranks);
+    });
+}
+
+// 一覧表の取得結果を state に入れる
+function applyBreakdown(m, data, dataFreshness, raceDate, venueGenerationStart) {
+  const preGeneration =
+    raceDate !== null &&
+    raceDate < getTodayJST() &&
+    venueGenerationStart !== null &&
+    raceDate < venueGenerationStart;
+  m.setGenerationStart(venueGenerationStart);
+  m.setRacePreGeneration(preGeneration);
+  m.setBreakdown(data);
+  m.setFreshness(dataFreshness ?? null);
+  m.setExplainBoat(null);
+}
+
+// 機力バッジ等からのディープリンク（?motor=）で指定されたモーターが
+// 今回のレースに実在すれば、そのままドリルダウン画面を開く。
+// マッチしなかった場合もpendingは消費する（消費せず残すと、後で
+// ユーザーが手動で選んだ別レースがたまたま同じモーター番号を含んでいた際に
+// 意図せず自動ドリルダウンしてしまうため）
+function consumePendingMotor(m, data, pendingSnapshot) {
+  const pendingExists =
+    pendingSnapshot !== null &&
+    data.some((r) => r.motor_number === pendingSnapshot);
+  if (pendingExists) {
+    m.setDrillDownMotor(pendingSnapshot);
+  }
+  m.pendingInitialMotorNumber.current = null;
+}
+
+async function loadBreakdown(m, run, pendingSnapshot, isNewRaceOrVenue) {
+  const { selectedRace, selectedVenue, periodDays, embedded, t } = m;
+  try {
+    m.setLoading(true);
+    m.setError(null);
+    m.setMeetParts(null);
+    m.setPartsBoat(null);
+    if (isNewRaceOrVenue) m.setDrillDownMotor(null);
+    // { rows, fetchFailed? }。会場公式のモーター成績が取れなかった行は venue_stats_failed（BOA-740）
+    const { rows: data, freshness: dataFreshness } =
+      await getRaceMotorBreakdown(
+      selectedRace,
+      selectedVenue,
+      periodDays,
+    );
+    if (run.cancelled) return;
+    const raceDate = selectedRace?.slice(0, 10) ?? null;
+    // 使用開始日は、表示（1行・注記の日付）と入れ替え前の判定にだけ使う。取得が
+    // 一時的に失敗しても一覧表そのものは出す（日付の行を出さず、入れ替え前とも
+    // 判定しない）。以前は過去レースでしか呼んでいなかったので、当日のレースでは
+    // この取得の失敗が一覧表のエラーにつながらなかった
+    let venueGenerationStart = null;
+    try {
+      venueGenerationStart =
+        await getMotorGenerationStart(selectedVenue);
+    } catch (err) {
+      console.error("モーター使用開始日取得エラー:", err.message);
+    }
+    if (run.cancelled) return;
+    applyBreakdown(m, data, dataFreshness, raceDate, venueGenerationStart);
+    if (embedded) startMeetPartsLoad(m, run, data, raceDate);
+    startVenueRanksLoad(m, run, raceDate);
+    consumePendingMotor(m, data, pendingSnapshot);
+    run.applied = true;
+  } catch (err) {
+    if (run.cancelled) return;
+    m.setError(err.message || t("analysis.dataLoadError"));
+    console.error("Failed to load race motor breakdown:", err);
+  } finally {
+    if (!run.cancelled) m.setLoading(false);
+  }
+}
+
+// レース選択時: 枠番別モーター調子を取得（機力指数はvenue確定後に別途取得）
+function useBreakdownLoad(m) {
+  const { selectedRace, selectedVenue, periodDays } = m;
   useEffect(() => {
     if (selectedRace === null) return;
     const raceVenueKey = `${selectedRace}-${selectedVenue}`;
-    const isNewRaceOrVenue = lastRaceVenueRef.current !== raceVenueKey;
-    lastRaceVenueRef.current = raceVenueKey;
+    const isNewRaceOrVenue = m.lastRaceVenueRef.current !== raceVenueKey;
+    m.lastRaceVenueRef.current = raceVenueKey;
     // StrictMode（開発時）の2回実行対策: 使い捨ての1回目でpendingを消費しきって
     // しまわないよう、cleanup側で未適用（cancelled）なら元に戻す
-    const pendingSnapshot = pendingInitialMotorNumber.current;
-    let cancelled = false;
-    let applied = false;
-    const loadBreakdown = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setMeetParts(null);
-        setPartsBoat(null);
-        if (isNewRaceOrVenue) setDrillDownMotor(null);
-        // { rows, fetchFailed? }。会場公式のモーター成績が取れなかった行は venue_stats_failed（BOA-740）
-        const { rows: data, freshness: dataFreshness } =
-          await getRaceMotorBreakdown(
-          selectedRace,
-          selectedVenue,
-          periodDays,
-        );
-        if (cancelled) return;
-        const raceDate = selectedRace?.slice(0, 10) ?? null;
-        // 使用開始日は、表示（1行・注記の日付）と入れ替え前の判定にだけ使う。取得が
-        // 一時的に失敗しても一覧表そのものは出す（日付の行を出さず、入れ替え前とも
-        // 判定しない）。以前は過去レースでしか呼んでいなかったので、当日のレースでは
-        // この取得の失敗が一覧表のエラーにつながらなかった
-        let venueGenerationStart = null;
-        try {
-          venueGenerationStart =
-            await getMotorGenerationStart(selectedVenue);
-        } catch (err) {
-          console.error("モーター使用開始日取得エラー:", err.message);
-        }
-        if (cancelled) return;
-        const preGeneration =
-          raceDate !== null &&
-          raceDate < getTodayJST() &&
-          venueGenerationStart !== null &&
-          raceDate < venueGenerationStart;
-        setGenerationStart(venueGenerationStart);
-        setRacePreGeneration(preGeneration);
-        setBreakdown(data);
-        setFreshness(dataFreshness ?? null);
-        setExplainBoat(null);
-        if (embedded) {
-          // 表は待たせず、失敗した基だけ札を隠す。履歴は直近90日と同じ窓。
-          Promise.all(data.map(async (row) => {
-            try {
-              const history = await getMotorUsageHistory(
-                selectedVenue, row.motor_number, selectedRace, { includeTarget: true },
-              );
-              const meet = history.find((item) => String(item.racerId) === String(row.racer_id));
-              if (!meet) return { boat: row.boat_number, unavailable: true };
-              const parts = await getMotorPartsHistory(
-                selectedVenue, row.motor_number, 90, selectedRace, { includeTarget: true },
-              );
-              return { boat: row.boat_number, ...countMeetPartsChanges(parts.events, {
-                from: meet.firstDate, to: raceDate,
-              }) };
-            } catch (err) {
-              console.error("Failed to load meet motor parts:", err);
-              return { boat: row.boat_number, failed: true };
-            }
-          })).then((rows) => {
-            if (!cancelled) setMeetParts({ raceId: selectedRace, rows });
-          });
-        }
-        // 会場内順位は一覧表のあとから足す（表の表示を待たせない）。当日のレースは最新の
-        // スナップショット、過去のレースはレース日以前で最新（BOA-521 と同じ）
-        setVenueRanks(null);
-        getVenueMotorRanks(
-          selectedVenue,
-          raceDate !== null && raceDate < getTodayJST() ? raceDate : null,
-        )
-          .then((ranks) => {
-            if (!cancelled) setVenueRanks(ranks);
-          });
-        // 機力バッジ等からのディープリンク（?motor=）で指定されたモーターが
-        // 今回のレースに実在すれば、そのままドリルダウン画面を開く。
-        // マッチしなかった場合もpendingは消費する（消費せず残すと、後で
-        // ユーザーが手動で選んだ別レースがたまたま同じモーター番号を含んでいた際に
-        // 意図せず自動ドリルダウンしてしまうため）
-        const pendingExists =
-          pendingSnapshot !== null &&
-          data.some((r) => r.motor_number === pendingSnapshot);
-        if (pendingExists) {
-          setDrillDownMotor(pendingSnapshot);
-        }
-        pendingInitialMotorNumber.current = null;
-        applied = true;
-      } catch (err) {
-        if (cancelled) return;
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load race motor breakdown:", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    loadBreakdown();
+    const pendingSnapshot = m.pendingInitialMotorNumber.current;
+    const run = { cancelled: false, applied: false };
+    loadBreakdown(m, run, pendingSnapshot, isNewRaceOrVenue);
     return () => {
-      cancelled = true;
-      if (!applied) pendingInitialMotorNumber.current = pendingSnapshot;
+      run.cancelled = true;
+      if (!run.applied) m.pendingInitialMotorNumber.current = pendingSnapshot;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRace, selectedVenue, periodDays]);
+}
 
-  const currentParts = meetParts?.raceId === selectedRace ? meetParts.rows : [];
-  const expandedParts = currentParts.find((row) => row.boat === partsBoat);
+// ドリルダウンの9つの取得を同時に始める（Promise の配列を返す）
+function startDrillFetches(m, beforeRaceId, isPast, raceDate) {
+  const { selectedVenue, drillDownMotor, periodDays } = m;
+  return [
+    getMotorConditionTrend(
+      selectedVenue,
+      drillDownMotor,
+      periodDays,
+      beforeRaceId,
+    ),
+    getMotorPowerIndex(
+      selectedVenue,
+      drillDownMotor,
+      periodDays,
+      beforeRaceId,
+    ),
+    getMotorUsageHistory(
+      selectedVenue,
+      drillDownMotor,
+      beforeRaceId,
+    ),
+    getMotorPartsHistory(
+      selectedVenue,
+      drillDownMotor,
+      periodDays,
+      beforeRaceId,
+    ),
+    // 公式サイトのスナップショット（鮮度・優出等）は、過去レースならレース日以前の最新
+    getVenueMotorStats(
+      selectedVenue,
+      drillDownMotor,
+      isPast ? raceDate : null,
+    ),
+    getVenueMotorChampionshipHistory(
+      selectedVenue,
+      drillDownMotor,
+      beforeRaceId,
+    ),
+    // BOA-301 FR-1〜4: 会場内順位（公式の最新スナップショット）・
+    // 枠番別成績・選手×枠成績（現行モーターの世代）は、periodDays
+    // （既存の2連率/3連率推移トグル）とは独立した集計窓のため渡さない
+    getVenueMotorRanking(
+      selectedVenue,
+      drillDownMotor,
+      undefined,
+      isPast ? raceDate : null,
+    ),
+    getMotorWakuStats(
+      selectedVenue,
+      drillDownMotor,
+      beforeRaceId,
+    ),
+    getMotorRacerWakuStats(
+      selectedVenue,
+      drillDownMotor,
+      beforeRaceId,
+    ),
+  ];
+}
 
-  // モーター選択時: 節ごとの推移と機力指数を取得
+function applyDrillData(m, drill) {
+  const [
+    trend,
+    power,
+    history,
+    parts,
+    venueStats,
+    championships,
+    ranking,
+    wakuStats,
+    racerWakuStats,
+  ] = drill;
+  m.setTrendData(trend);
+  m.setPowerIndex(power);
+  m.setUsageHistory(history);
+  m.setPartsHistory(parts.events ?? []);
+  m.setVenueMotorStats(venueStats);
+  m.setChampionshipHistory(championships);
+  m.setVenueMotorRanking(ranking);
+  m.setMotorWakuStats(wakuStats);
+  m.setMotorRacerWakuStats(racerWakuStats);
+}
+
+async function loadTrend(m) {
+  const { selectedVenue, selectedRace, t } = m;
+  try {
+    m.setLoading(true);
+    m.setError(null);
+    m.setDrillPreGeneration(false);
+    const raceDate = selectedRace?.slice(0, 10) ?? null;
+    const isPast = raceDate !== null && raceDate < getTodayJST();
+    if (isPast) {
+      const generationStart =
+        await getMotorGenerationStart(selectedVenue);
+      if (generationStart !== null && raceDate < generationStart) {
+        m.setDrillPreGeneration(true);
+        return;
+      }
+    }
+    // 「このレースの直前まで」で集計する。過去レース（BOA-521）は今日から遡ると
+    // レース後の走りまで入り、「このときモーターはどうだったか」を振り返れない。
+    // 当日のレースも同じにする（BOA-557）。終了後に開くとそのレース自身の結果が
+    // 入り、翌日（過去レース扱い）に開いたときと数字が変わっていた。発走前は
+    // 直前までの結果＝今までの結果なので、見える数字は変わらない
+    const beforeRaceId = selectedRace ?? null;
+    const drill = await Promise.all(
+      startDrillFetches(m, beforeRaceId, isPast, raceDate),
+    );
+    applyDrillData(m, drill);
+  } catch (err) {
+    m.setError(err.message || t("analysis.dataLoadError"));
+    console.error("Failed to load motor condition trend:", err);
+  } finally {
+    m.setLoading(false);
+  }
+}
+
+// モーター選択時: 節ごとの推移と機力指数を取得
+function useDrillLoad(m) {
+  const { selectedVenue, selectedRace, drillDownMotor, periodDays } = m;
   useEffect(() => {
     if (drillDownMotor === null || selectedVenue === null) return;
-    const loadTrend = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setDrillPreGeneration(false);
-        const raceDate = selectedRace?.slice(0, 10) ?? null;
-        const isPast = raceDate !== null && raceDate < getTodayJST();
-        if (isPast) {
-          const generationStart =
-            await getMotorGenerationStart(selectedVenue);
-          if (generationStart !== null && raceDate < generationStart) {
-            setDrillPreGeneration(true);
-            return;
-          }
-        }
-        // 「このレースの直前まで」で集計する。過去レース（BOA-521）は今日から遡ると
-        // レース後の走りまで入り、「このときモーターはどうだったか」を振り返れない。
-        // 当日のレースも同じにする（BOA-557）。終了後に開くとそのレース自身の結果が
-        // 入り、翌日（過去レース扱い）に開いたときと数字が変わっていた。発走前は
-        // 直前までの結果＝今までの結果なので、見える数字は変わらない
-        const beforeRaceId = selectedRace ?? null;
-        const [
-          trend,
-          power,
-          history,
-          parts,
-          venueStats,
-          championships,
-          ranking,
-          wakuStats,
-          racerWakuStats,
-        ] = await Promise.all([
-          getMotorConditionTrend(
-            selectedVenue,
-            drillDownMotor,
-            periodDays,
-            beforeRaceId,
-          ),
-          getMotorPowerIndex(
-            selectedVenue,
-            drillDownMotor,
-            periodDays,
-            beforeRaceId,
-          ),
-          getMotorUsageHistory(
-            selectedVenue,
-            drillDownMotor,
-            beforeRaceId,
-          ),
-          getMotorPartsHistory(
-            selectedVenue,
-            drillDownMotor,
-            periodDays,
-            beforeRaceId,
-          ),
-          // 公式サイトのスナップショット（鮮度・優出等）は、過去レースならレース日以前の最新
-          getVenueMotorStats(
-            selectedVenue,
-            drillDownMotor,
-            isPast ? raceDate : null,
-          ),
-          getVenueMotorChampionshipHistory(
-            selectedVenue,
-            drillDownMotor,
-            beforeRaceId,
-          ),
-          // BOA-301 FR-1〜4: 会場内順位（公式の最新スナップショット）・
-          // 枠番別成績・選手×枠成績（現行モーターの世代）は、periodDays
-          // （既存の2連率/3連率推移トグル）とは独立した集計窓のため渡さない
-          getVenueMotorRanking(
-            selectedVenue,
-            drillDownMotor,
-            undefined,
-            isPast ? raceDate : null,
-          ),
-          getMotorWakuStats(
-            selectedVenue,
-            drillDownMotor,
-            beforeRaceId,
-          ),
-          getMotorRacerWakuStats(
-            selectedVenue,
-            drillDownMotor,
-            beforeRaceId,
-          ),
-        ]);
-        setTrendData(trend);
-        setPowerIndex(power);
-        setUsageHistory(history);
-        setPartsHistory(parts.events ?? []);
-        setVenueMotorStats(venueStats);
-        setChampionshipHistory(championships);
-        setVenueMotorRanking(ranking);
-        setMotorWakuStats(wakuStats);
-        setMotorRacerWakuStats(racerWakuStats);
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load motor condition trend:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadTrend();
+    loadTrend(m);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVenue, selectedRace, drillDownMotor, periodDays]);
+}
 
+function usePeriodAndWakuReset(m) {
+  const { selectedRace, selectedVenue, drillDownMotor, setPeriodDays, setSelectedWakuCourse } = m;
   // 過去レースでは期間を選ばせないので、90日に戻す（当日のレースで「直近1ヶ月」を
   // 選んだまま過去レースに移ったとき、見えない切り替えの値で集計しないように）
   useEffect(() => {
     if (selectedRace && selectedRace.slice(0, 10) < getTodayJST()) {
       setPeriodDays(90);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRace]);
 
   // モーター・会場が変わったらFR-4ドリルダウン（枠タップで開く選手一覧）を閉じる
@@ -1073,8 +1109,45 @@ function MotorConditionChart({
   // 集計窓とは無関係なため）
   useEffect(() => {
     setSelectedWakuCourse(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVenue, drillDownMotor]);
+}
 
+// 2連率・3連率の推移グラフの元データ
+function rateChartData(trendData, firstRatedIndex, drillTallyState) {
+  return (
+    firstRatedIndex === -1
+      ? drillTallyState === "tallied"
+        ? (trendData?.trend ?? [])
+        : []
+      : (trendData?.trend ?? []).slice(firstRatedIndex)
+  ).map((row) => ({
+    date: row.date.slice(5),
+    motor_2rate: row.motor_2rate,
+    motor_3rate: row.motor_3rate,
+  }));
+}
+
+// 使用履歴は新しい順の一覧だが、グラフは推移グラフと同じく左が古く右が新しい
+// 向きにそろえる（逆向きだと「右肩下がり＝最近悪化」と読み違える。BOA-513）
+function usageChartData(usageHistory) {
+  const usageHistoryChartData = [...usageHistory]
+    .reverse()
+    .filter((meet) => meet.rate2 !== null)
+    .map((meet) => ({
+      date: meet.playerName?.replace(/\s+/g, "") ?? "",
+      rate2: meet.rate2,
+      rate3: meet.rate3,
+    }));
+  return usageHistoryChartData;
+}
+
+function emptyKeyOf(drillFirstRun, key) {
+  return drillFirstRun ? "analysis.motor.drillFirstRunEmpty" : key;
+}
+
+// 推移グラフ・展示タイム・使用履歴グラフの元データ
+function computeTrendView({ trendData, breakdown, venueMotorStats, powerIndex, usageHistory }) {
   // 入れ替え直後は、公式の累計がまだ付かず 2連率・3連率とも 0 の日が続く。この先頭の
   // 0 の点は「1回も連に絡まなかった」と読めるので描かない（BOA-513、ファン4人のパネル）
   const firstRatedIndex = (trendData?.trend ?? []).findIndex(
@@ -1092,17 +1165,7 @@ function MotorConditionChart({
     venueHasOfficialStats && !venueMotorStats?.fetchFailed,
     venueMotorStats?.raceCount,
   );
-  const chartData = (
-    firstRatedIndex === -1
-      ? drillTallyState === "tallied"
-        ? (trendData?.trend ?? [])
-        : []
-      : (trendData?.trend ?? []).slice(firstRatedIndex)
-  ).map((row) => ({
-    date: row.date.slice(5),
-    motor_2rate: row.motor_2rate,
-    motor_3rate: row.motor_3rate,
-  }));
+  const chartData = rateChartData(trendData, firstRatedIndex, drillTallyState);
 
   const exhibitionChartData = (trendData?.trend ?? [])
     .filter((row) => row.exhibition_time !== null)
@@ -1114,23 +1177,37 @@ function MotorConditionChart({
   // だと取得失敗と区別できないので、理由を書く（BOA-557 ファン評価2周目）
   const drillFirstRun =
     powerIndex?.sample_count === 0 && usageHistory.length === 0;
-  const emptyKey = (key) =>
-    drillFirstRun ? "analysis.motor.drillFirstRunEmpty" : key;
+  const emptyKey = (key) => emptyKeyOf(drillFirstRun, key);
   const exhibitionAxis = exhibitionTimeAxis(
     exhibitionChartData.map((row) => row.exhibition_time),
   );
 
-  // 使用履歴は新しい順の一覧だが、グラフは推移グラフと同じく左が古く右が新しい
-  // 向きにそろえる（逆向きだと「右肩下がり＝最近悪化」と読み違える。BOA-513）
-  const usageHistoryChartData = [...usageHistory]
-    .reverse()
-    .filter((meet) => meet.rate2 !== null)
-    .map((meet) => ({
-      date: meet.playerName?.replace(/\s+/g, "") ?? "",
-      rate2: meet.rate2,
-      rate3: meet.rate3,
-    }));
+  const usageHistoryChartData = usageChartData(usageHistory);
+  return {
+    firstRatedIndex, drillTallyState, chartData, exhibitionChartData,
+    emptyKey, exhibitionAxis, usageHistoryChartData,
+  };
+}
 
+// 2連率の列の値ラベル（BOA-830）
+function rateLabelOf(t, officialRates, view, i) {
+  if (view.kind === "notRun") return t("analysis.motor.freshNotRun");
+  if (view.kind === "zero")
+    return t("analysis.motor.freshZeroRuns", { n: view.runs });
+  return officialRates[i] !== null ? `${officialRates[i].toFixed(1)}%` : "-";
+}
+
+function listPowerIndexOf(row) {
+  return row.rate_source === "official"
+    ? {
+        value: row.generation_power_index ?? null,
+        n: row.generation_runs ?? null,
+      }
+    : { value: row.power_index ?? null, n: row.sample_count };
+}
+
+// 棒にする2連率と、その値ラベル・最良の印・一覧の機力指数
+function computeRateView(breakdown, freshness, explainBoat, t) {
   // 棒にする2連率。公式（節時点。過去レースは2連率の列そのものが公式値、BOA-329）が 0 の艇は、
   // 現世代でこのレースより前の自前の値（BOA-830、2026-10-11 ユーザー決定）。まだ走っていない艇は棒なし
   const rateViews = breakdown.map(motorRateView);
@@ -1158,79 +1235,63 @@ function MotorConditionChart({
     "max",
     { digits: 1 },
   );
-  // 2連率の列の値ラベル（BOA-830）
-  const rateLabel = (view, i) => {
-    if (view.kind === "notRun") return t("analysis.motor.freshNotRun");
-    if (view.kind === "zero")
-      return t("analysis.motor.freshZeroRuns", { n: view.runs });
-    return officialRates[i] !== null ? `${officialRates[i].toFixed(1)}%` : "-";
-  };
+  const rateLabel = (view, i) => rateLabelOf(t, officialRates, view, i);
   // 新しいモーターの最初の節（その日の公式2連率が全行 0）。優出・優勝はまだ機会が無いので「-」
   const firstMeet = freshness?.firstMeet === true;
   // 一覧の機力指数。過去レースは公式に相当する値が無く「-」だったが、新しいモーターの
   // 入れ替えから間もない間は自前の値を出す（BOA-830「機力指数はこの間も自前」）
-  const listPowerIndex = (row) =>
-    row.rate_source === "official"
-      ? {
-          value: row.generation_power_index ?? null,
-          n: row.generation_runs ?? null,
-        }
-      : { value: row.power_index ?? null, n: row.sample_count };
   const explainRow =
     explainBoat !== null
       ? breakdown.find((r) => r.boat_number === explainBoat)
       : null;
   const explainView = explainRow ? motorRateView(explainRow) : null;
-  // 会場内順位の列（BOA-428）。会場サイトの値を出さない会場（戸田・平和島・浜名湖・宮島）と、
-  // その日以前のスナップショットが無いときは列ごと畳む。取得の失敗は列を残して印を出す
-  // （列が黙って消えると、データが無い会場と区別できない）
-  const showVenueRank =
-    venueRanks?.state === "ok" || venueRanks?.state === "error";
-  const venueRankCell = (motorNumber) => {
-    if (venueRanks?.state === "error") {
-      return t("analysis.motor.venueRankError");
-    }
-    if (
-      isVenueRankSnapshotBeforeGeneration({
-        raceDate: selectedRace?.slice(0, 10) ?? null,
-        scrapedDate: venueRanks?.scrapedDate ?? null,
-        generationStart,
-      })
-    ) {
-      return "—";
-    }
-    const hit = venueRanks?.ranks.get(motorNumber);
-    // スナップショットに載っていないモーター（入れ替え直後の会場で欠けることがある）
-    if (!hit) return "-";
-    // 母数（/60）は小さく添える。375px で列幅を詰めるため（BOA-428）
-    return (
-      <>
-        <span className="motor-venue-rank-main">
-          {t(
-            hit.tied > 1
-              ? "analysis.motor.venueRankCellTied"
-              : "analysis.motor.venueRankCell",
-            { rank: hit.rank },
-          )}
-        </span>
-        {/* 母数の前で折り返せるようにする（「タイ」と「/」の間は、そのままでは折れない） */}
-        <wbr />
-        <span className="motor-venue-rank-total">
-          {t("analysis.motor.venueRankTotal", { total: venueRanks.total })}
-        </span>
-      </>
-    );
+  return {
+    rateViews, officialRates, officialRateMax, officialRateBestBoats, rateLabel,
+    firstMeet, listPowerIndex: listPowerIndexOf, explainRow, explainView,
   };
+}
 
-  // BOA-301: embedded時のFR-2/3枠番グリッドで強調表示する「今日の艇番」。
-  // 今日のレースはまだ実施前のため実進入コース(actual_course)は存在せず、
-  // このレースへの割り当て艇番をそのまま暫定的な枠として使う
-  const todayHighlightCourse =
-    drillDownMotor !== null
-      ? (breakdown.find((r) => r.motor_number === drillDownMotor)
-          ?.boat_number ?? null)
-      : null;
+// 会場内順位の1セル（BOA-428）。会場サイトの値を出さない会場（戸田・平和島・浜名湖・宮島）と、
+// その日以前のスナップショットが無いときは列ごと畳む。取得の失敗は列を残して印を出す
+// （列が黙って消えると、データが無い会場と区別できない）
+function venueRankCellOf({ t, venueRanks, selectedRace, generationStart }, motorNumber) {
+  if (venueRanks?.state === "error") {
+    return t("analysis.motor.venueRankError");
+  }
+  if (
+    isVenueRankSnapshotBeforeGeneration({
+      raceDate: selectedRace?.slice(0, 10) ?? null,
+      scrapedDate: venueRanks?.scrapedDate ?? null,
+      generationStart,
+    })
+  ) {
+    return "—";
+  }
+  const hit = venueRanks?.ranks.get(motorNumber);
+  // スナップショットに載っていないモーター（入れ替え直後の会場で欠けることがある）
+  if (!hit) return "-";
+  // 母数（/60）は小さく添える。375px で列幅を詰めるため（BOA-428）
+  return (
+    <>
+      <span className="motor-venue-rank-main">
+        {t(
+          hit.tied > 1
+            ? "analysis.motor.venueRankCellTied"
+            : "analysis.motor.venueRankCell",
+          { rank: hit.rank },
+        )}
+      </span>
+      {/* 母数の前で折り返せるようにする（「タイ」と「/」の間は、そのままでは折れない） */}
+      <wbr />
+      <span className="motor-venue-rank-total">
+        {t("analysis.motor.venueRankTotal", { total: venueRanks.total })}
+      </span>
+    </>
+  );
+}
 
+// 一覧の列を出すか（優出数・優勝数・1着率・前検タイム）と、失敗の札
+function computeStatColumns(breakdown, t) {
   // kyoteibiyori等の会場出走表に倣い、優出数・優勝数・1着率は艇ごとの
   // 単一バッジではなく、同じレースの全艇を横並びで比較できる列として表示する
   // （1位・2位を色分けするのも合わせて模倣。BOA-264追加調査）
@@ -1239,19 +1300,6 @@ function MotorConditionChart({
       ? (r.first_place_count / r.race_count) * 100
       : null,
   );
-  // 1位だけを金で示す（同値は全部、全艇同値なら無し）。以前は2位も薄い金で示していたが、
-  // レース詳細の色分けのルール（最良だけ金。docs/design/race-detail-ui-unify R1）にそろえた。
-  // 引数は breakdown の行番号
-  const highlightBestSets = [];
-  const rankClassFor = (values, digits) => {
-    const best = bestOf(
-      values.map((value, i) => ({ boat: i, value })),
-      "max",
-      { digits },
-    );
-    highlightBestSets.push(best);
-    return (i) => (best.has(i) ? "motor-stat-rank1" : "");
-  };
   // 全艇が null（その会場・その節で1着率が取れていない）の列は出さない。
   // 「-」だけが6行並んで横幅を50px食い、肝心の2連率・機力指数を画面外へ
   // 押し出していた（2026-09-27、ファン視点のレビュー。条件別タブで
@@ -1284,28 +1332,48 @@ function MotorConditionChart({
   const hasPretest = breakdown.some(
     (r) => r.pretest_time !== null && r.pretest_time !== undefined,
   );
-  // 9列の表は390pxでは右が切れる。切れていることに気づけるようにする
-  // 会場内順位の列は一覧の後から足される（BOA-428）。足されたときに測り直す
-  const rankingScroll = useHorizontalScrollHint([
-    breakdown.length,
-    venueRanks?.state,
-  ]);
+  return {
+    firstPlaceRates, venueStatsFailed, showFirstPlaceRate, showFinalCount,
+    showChampionshipCount, venueStatsFailedCell, hasPretest,
+  };
+}
+
+// 1位だけを金で示す（同値は全部、全艇同値なら無し）。以前は2位も薄い金で示していたが、
+// レース詳細の色分けのルール（最良だけ金。docs/design/race-detail-ui-unify R1）にそろえた。
+// 引数は breakdown の行番号
+function rankClassFor(highlightBestSets, values, digits) {
+  const best = bestOf(
+    values.map((value, i) => ({ boat: i, value })),
+    "max",
+    { digits },
+  );
+  highlightBestSets.push(best);
+  return (i) => (best.has(i) ? "motor-stat-rank1" : "");
+}
+
+function computeRankClasses(breakdown, firstPlaceRates) {
+  const highlightBestSets = [];
   const finalCountRankClass = rankClassFor(
+    highlightBestSets,
     breakdown.map((r) => r.final_count),
     0,
   );
   const championshipCountRankClass = rankClassFor(
+    highlightBestSets,
     breakdown.map((r) => r.championship_count),
     0,
   );
-  const firstPlaceRateRankClass = rankClassFor(firstPlaceRates, 1);
+  const firstPlaceRateRankClass = rankClassFor(highlightBestSets, firstPlaceRates, 1);
   const hasHighlightedCell = highlightBestSets.some((best) => best.size > 0);
-  const drillPowerIndexTone = powerIndexTone(
-    powerIndex?.power_index,
-    powerIndex?.sample_count,
-    SMALL_SAMPLE_THRESHOLD,
-  );
-  // 会場公式サイト由来で、表に出ている列の名前（出典の注記に挙げる）
+  return {
+    finalCountRankClass, championshipCountRankClass, firstPlaceRateRankClass,
+    hasHighlightedCell,
+  };
+}
+
+// 会場公式サイト由来で、表に出ている列の名前（出典の注記に挙げる）
+function makeVenueColsLabel(t, cols) {
+  const { showFirstPlaceRate, showFinalCount, showChampionshipCount } = cols;
   const venueColsLabel = [
     showFirstPlaceRate && "analysis.motor.firstPlaceRateHeader",
     showFinalCount && "analysis.motor.finalCountHeader",
@@ -1314,6 +1382,15 @@ function MotorConditionChart({
     .filter(Boolean)
     .map((key) => t("analysis.motor.quotedLabel", { label: t(key) }))
     .join(t("analysis.motor.quotedLabelSeparator"));
+  return venueColsLabel;
+}
+
+// 期間トグルを出すか・期間を切り詰めたか
+function computePeriodView(m) {
+  const {
+    breakdown, selectedRace, drillDownMotor, drillPreGeneration,
+    generationStart, powerIndex, trendData,
+  } = m;
   // 過去レースの一覧表は出走表時点の公式値（BOA-329、2026-09-29 ユーザー判断(c)）。
   // 期間の切り替えは効かないので出さず、1行の注記に置き換える
   const officialMode = breakdown.some((r) => r.rate_source === "official");
@@ -1341,154 +1418,536 @@ function MotorConditionChart({
       : Boolean(
           powerIndex?.clipped_by_generation || trendData?.clippedByGeneration,
         );
-
-  const rowView = {
-    officialRates, officialRateMax, officialRateBestBoats, rateViews, rateLabel,
-    venueRankCell, listPowerIndex, venueStatsFailedCell, firstMeet, officialMode,
-    showVenueRank, hasPretest, showFirstPlaceRate, showFinalCount,
-    showChampionshipCount, firstPlaceRates, firstPlaceRateRankClass,
-    finalCountRankClass, championshipCountRankClass,
+  return {
+    officialMode, showPeriodToggle, periodChoiceHasEffect, clippedByGeneration,
   };
+}
 
-  // ディープリンク先の会場が「本日開催中」の一覧に無い（過去レースへ飛んだとき）。
-  // 選択肢に足し、見出しから「本日開催中」を外す（BOA-428・BOA-719）
-  const venueOffToday =
-    selectedVenue !== null && !venues.includes(selectedVenue);
+// 画面に出す値を state から導く
+function useMotorView(m) {
+  const {
+    t, breakdown, venueRanks, selectedRace, generationStart, venues,
+    selectedVenue, drillDownMotor, meetParts, partsBoat, powerIndex,
+  } = m;
+  const currentParts = meetParts?.raceId === selectedRace ? meetParts.rows : [];
+  const expandedParts = currentParts.find((row) => row.boat === partsBoat);
+  const trend = computeTrendView(m);
+  const rate = computeRateView(breakdown, m.freshness, m.explainBoat, t);
+  // 会場内順位の列（BOA-428）。取得の失敗は列を残して印を出す
+  const showVenueRank =
+    venueRanks?.state === "ok" || venueRanks?.state === "error";
+  const venueRankCell = (motorNumber) =>
+    venueRankCellOf({ t, venueRanks, selectedRace, generationStart }, motorNumber);
+  // BOA-301: embedded時のFR-2/3枠番グリッドで強調表示する「今日の艇番」。
+  // 今日のレースはまだ実施前のため実進入コース(actual_course)は存在せず、
+  // このレースへの割り当て艇番をそのまま暫定的な枠として使う
+  const todayHighlightCourse =
+    drillDownMotor !== null
+      ? (breakdown.find((r) => r.motor_number === drillDownMotor)
+          ?.boat_number ?? null)
+      : null;
+  const cols = computeStatColumns(breakdown, t);
+  const drillPowerIndexTone = powerIndexTone(
+    powerIndex?.power_index,
+    powerIndex?.sample_count,
+    SMALL_SAMPLE_THRESHOLD,
+  );
+  return {
+    currentParts, expandedParts, ...trend, ...rate, showVenueRank, venueRankCell,
+    todayHighlightCourse, ...cols, ...computeRankClasses(breakdown, cols.firstPlaceRates),
+    drillPowerIndexTone, venueColsLabel: makeVenueColsLabel(t, cols),
+    ...computePeriodView(m),
+    // ディープリンク先の会場が「本日開催中」の一覧に無い（過去レースへ飛んだとき）。
+    // 選択肢に足し、見出しから「本日開催中」を外す（BOA-428・BOA-719）
+    venueOffToday: selectedVenue !== null && !venues.includes(selectedVenue),
+  };
+}
 
+function MotorTitle() {
+  const { t } = useTranslation();
   return (
-    <div className="motor-condition-container">
-      {!embedded && (
-        <>
-          <h2>{t("analysis.motor.title")}</h2>
-          <p className="section-description">
-            {t("analysis.motor.description")}
-          </p>
-        </>
-      )}
+    <>
+      <h2>{t("analysis.motor.title")}</h2>
+      <p className="section-description">
+        {t("analysis.motor.description")}
+      </p>
+    </>
+  );
+}
 
-      {!embedded &&
-        (venues.length === 0 && !loading ? (
-          <div className="empty-state">{t("analysis.noRacesToday")}</div>
-        ) : (
-          <div className="controls-section">
-            <label htmlFor="motor-venue-select">
-              {t(
-                venueOffToday
-                  ? "analysis.venueSelectLabel"
-                  : "analysis.venueSelectTodayLabel",
-              )}
-            </label>
-            <select
-              id="motor-venue-select"
-              value={selectedVenue ?? ""}
-              onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
-              className="venue-select"
-            >
-              {/* ディープリンク先の会場が「本日開催中」の一覧に無いとき（ランキングの機番・
-                  機力バッジから過去レースへ飛んだとき）も、選択肢に足す。無いとブラウザが
-                  先頭の会場を表示し、別会場の同じ番号のモーターと読み違える（BOA-428 ファン評価） */}
-              {(venueOffToday
-                ? [selectedVenue, ...venues]
-                : venues
-              ).map((v) => (
-                <option key={v} value={v}>
-                  {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-                </option>
-              ))}
-            </select>
-
-            {(races.length > 0 || selectedRace !== null) && (
-              <>
-                <label htmlFor="motor-race-select">
-                  {t("analysis.raceSelectLabel")}
-                </label>
-                <select
-                  id="motor-race-select"
-                  value={selectedRace ?? ""}
-                  onChange={(e) => setSelectedRace(e.target.value)}
-                  className="venue-select"
-                >
-                  {/* 選択中のレースが今日の一覧に無い（過去レースへのディープリンク）ときも足す */}
-                  {selectedRace !== null &&
-                    !races.some((r) => r.race_id === selectedRace) && (
-                      <option value={selectedRace}>
-                        {t("analysis.raceOptionPast", {
-                          date: selectedRace
-                            .slice(5, 10)
-                            .replace("-", "/")
-                            .replace(/^0/, "")
-                            .replace(/\/0/, "/"),
-                          number: Number(selectedRace.slice(-2)),
-                        })}
-                      </option>
-                    )}
-                  {races.map((r) => (
-                    <option key={r.race_id} value={r.race_id}>
-                      {t("analysis.raceOption", {
-                        number: r.race_number,
-                        time: r.start_time?.slice(0, 5),
-                      })}
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-          </div>
+function VenueSelect({ venues, selectedVenue, setSelectedVenue, venueOffToday }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <label htmlFor="motor-venue-select">
+        {t(
+          venueOffToday
+            ? "analysis.venueSelectLabel"
+            : "analysis.venueSelectTodayLabel",
+        )}
+      </label>
+      <select
+        id="motor-venue-select"
+        value={selectedVenue ?? ""}
+        onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
+        className="venue-select"
+      >
+        {/* ディープリンク先の会場が「本日開催中」の一覧に無いとき（ランキングの機番・
+            機力バッジから過去レースへ飛んだとき）も、選択肢に足す。無いとブラウザが
+            先頭の会場を表示し、別会場の同じ番号のモーターと読み違える（BOA-428 ファン評価） */}
+        {(venueOffToday
+          ? [selectedVenue, ...venues]
+          : venues
+        ).map((v) => (
+          <option key={v} value={v}>
+            {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
+          </option>
         ))}
+      </select>
+    </>
+  );
+}
 
-      {showPeriodToggle ? (
-        <>
-          {/* 現行モーターの使用開始日。いつからのモーターかが分からないと、「入れ替え後の
-              ため期間を限っています」を「最近入れ替えた」と読み違える（2026-09-29 ユーザー指摘）。
-              当日のレースだけに出す（過去レースは出走表時点の公式値で、取れるのは最新の
-              使用開始日1つだけのため、当時の日付を出せない） */}
-          {generationStart !== null && (
-            <p className="motor-generation-start">
-              {t("analysis.motor.generationStartLabel", {
-                date: formatGenerationDate(generationStart),
+function RaceSelect({ races, selectedRace, setSelectedRace }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <label htmlFor="motor-race-select">
+        {t("analysis.raceSelectLabel")}
+      </label>
+      <select
+        id="motor-race-select"
+        value={selectedRace ?? ""}
+        onChange={(e) => setSelectedRace(e.target.value)}
+        className="venue-select"
+      >
+        {/* 選択中のレースが今日の一覧に無い（過去レースへのディープリンク）ときも足す */}
+        {selectedRace !== null &&
+          !races.some((r) => r.race_id === selectedRace) && (
+            <option value={selectedRace}>
+              {t("analysis.raceOptionPast", {
+                date: selectedRace
+                  .slice(5, 10)
+                  .replace("-", "/")
+                  .replace(/^0/, "")
+                  .replace(/\/0/, "/"),
+                number: Number(selectedRace.slice(-2)),
               })}
-              <span className="motor-generation-start-source">
-                {t("analysis.motor.generationStartSource")}
-              </span>
-            </p>
+            </option>
           )}
-          {periodChoiceHasEffect && (
-            <div className="period-toggle" role="group">
-              <button
-                type="button"
-                className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
-                onClick={() => setPeriodDays(90)}
-              >
-                {t("analysis.motor.period90")}
-              </button>
-              <button
-                type="button"
-                className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
-                onClick={() => setPeriodDays(30)}
-              >
-                {t("analysis.motor.period30")}
-              </button>
-            </div>
-          )}
-          {clippedByGeneration && (
-            <p className="table-note">
-              {t("analysis.motor.periodClippedNote", {
-                date: formatGenerationDate(generationStart, { short: true }),
-              })}
-            </p>
-          )}
-        </>
-      ) : (
-        officialMode &&
-        drillDownMotor === null && (
-          <p className="table-note">
-            {t("analysis.motor.periodOfficialNote")}
-            {racePreGeneration &&
-              ` ${t("analysis.motor.racePreGenerationNote")}`}
-          </p>
-        )
+        {races.map((r) => (
+          <option key={r.race_id} value={r.race_id}>
+            {t("analysis.raceOption", {
+              number: r.race_number,
+              time: r.start_time?.slice(0, 5),
+            })}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+}
+
+function MotorSelectors({ m, venueOffToday }) {
+  const { t } = useTranslation();
+  const { venues, loading, selectedVenue, setSelectedVenue, races, selectedRace, setSelectedRace } = m;
+  return venues.length === 0 && !loading ? (
+    <div className="empty-state">{t("analysis.noRacesToday")}</div>
+  ) : (
+    <div className="controls-section">
+      <VenueSelect venues={venues} selectedVenue={selectedVenue} setSelectedVenue={setSelectedVenue} venueOffToday={venueOffToday} />
+      {(races.length > 0 || selectedRace !== null) && (
+        <RaceSelect races={races} selectedRace={selectedRace} setSelectedRace={setSelectedRace} />
+      )}
+    </div>
+  );
+}
+
+function PeriodControls({ m, v }) {
+  const { t } = useTranslation();
+  const { generationStart, periodDays, setPeriodDays, drillDownMotor, racePreGeneration } = m;
+  const { showPeriodToggle, periodChoiceHasEffect, clippedByGeneration, officialMode } = v;
+  return showPeriodToggle ? (
+    <>
+      {/* 現行モーターの使用開始日。いつからのモーターかが分からないと、「入れ替え後の
+          ため期間を限っています」を「最近入れ替えた」と読み違える（2026-09-29 ユーザー指摘）。
+          当日のレースだけに出す（過去レースは出走表時点の公式値で、取れるのは最新の
+          使用開始日1つだけのため、当時の日付を出せない） */}
+      {generationStart !== null && (
+        <p className="motor-generation-start">
+          {t("analysis.motor.generationStartLabel", {
+            date: formatGenerationDate(generationStart),
+          })}
+          <span className="motor-generation-start-source">
+            {t("analysis.motor.generationStartSource")}
+          </span>
+        </p>
+      )}
+      {periodChoiceHasEffect && (
+        <div className="period-toggle" role="group">
+          <button
+            type="button"
+            className={`period-toggle-btn ${periodDays === 90 ? "active" : ""}`}
+            onClick={() => setPeriodDays(90)}
+          >
+            {t("analysis.motor.period90")}
+          </button>
+          <button
+            type="button"
+            className={`period-toggle-btn ${periodDays === 30 ? "active" : ""}`}
+            onClick={() => setPeriodDays(30)}
+          >
+            {t("analysis.motor.period30")}
+          </button>
+        </div>
+      )}
+      {clippedByGeneration && (
+        <p className="table-note">
+          {t("analysis.motor.periodClippedNote", {
+            date: formatGenerationDate(generationStart, { short: true }),
+          })}
+        </p>
+      )}
+    </>
+  ) : (
+    officialMode &&
+    drillDownMotor === null && (
+      <p className="table-note">
+        {t("analysis.motor.periodOfficialNote")}
+        {racePreGeneration &&
+          ` ${t("analysis.motor.racePreGenerationNote")}`}
+      </p>
+    )
+  );
+}
+
+// 新しいモーターの最初の節（BOA-830、2026-10-11 ユーザー決定の文言）
+function FreshMeetBanner({ freshness, selectedVenue }) {
+  const { t } = useTranslation();
+  return (
+    <p className="motor-fresh-banner">
+      {t("analysis.motor.freshFirstMeetBanner", {
+        venue: t(
+          `venues.${selectedVenue}`,
+          VENUE_NAMES[selectedVenue] || String(selectedVenue),
+        ),
+        month: Number(freshness.generationStart.slice(5, 7)),
+        day: Number(freshness.generationStart.slice(8, 10)),
+      })}
+    </p>
+  );
+}
+
+function MotorListTable({ m, v, scroll, scrollRef }) {
+  const {
+    breakdown, periodDays, focusedBoat, onFocusBoat, setDrillDownMotor,
+    partsBoat, setPartsBoat, explainBoat, setExplainBoat,
+  } = m;
+  return (
+    <div
+      className={`table-wrapper hscroll-hint mcc-list-hint${scroll.hasMore ? " has-more" : ""}`}
+    >
+      <HorizontalScrollButtons
+        hasMore={scroll.hasMore}
+        hasLess={scroll.hasLess}
+        onMore={scroll.scrollRight}
+        onLess={scroll.scrollLeft}
+      />
+      <div
+        className="table-scroll"
+        ref={scrollRef}
+        onScroll={scroll.update}
+      >
+        <table className="motor-ranking-table mcc-list-table">
+          <MotorListHead firstMeet={v.firstMeet} showVenueRank={v.showVenueRank} officialMode={v.officialMode} periodDays={periodDays} hasPretest={v.hasPretest} showFirstPlaceRate={v.showFirstPlaceRate} showFinalCount={v.showFinalCount} showChampionshipCount={v.showChampionshipCount} />
+          <tbody>
+            {breakdown.map((row, i) => (
+              <MotorListRow key={row.boat_number} row={row} i={i} view={v} focusedBoat={focusedBoat} setDrillDownMotor={setDrillDownMotor} onFocusBoat={onFocusBoat} currentParts={v.currentParts} partsBoat={partsBoat} setPartsBoat={setPartsBoat} explainBoat={explainBoat} setExplainBoat={setExplainBoat} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function MotorListView({ m, v, scroll, scrollRef }) {
+  const { t } = useTranslation();
+  const { freshness, selectedVenue, embedded, breakdown, venueRanks } = m;
+  return (
+    <>
+      {v.firstMeet && freshness?.generationStart && (
+        <FreshMeetBanner freshness={freshness} selectedVenue={selectedVenue} />
+      )}
+      <MotorListTable m={m} v={v} scroll={scroll} scrollRef={scrollRef} />
+      {embedded && (
+        <MotorPartsNotes expandedParts={v.expandedParts} currentParts={v.currentParts} />
+      )}
+      <OwnRateNote rateViews={v.rateViews} explainView={v.explainView} explainRow={v.explainRow} />
+      <VenueRankNote breakdown={breakdown} venueRanks={venueRanks} selectedVenue={selectedVenue} />
+      {v.venueStatsFailed && (
+        <p className="table-note motor-venue-stats-failed-note">
+          {t("analysis.motor.venueStatsFailedNote")}
+        </p>
+      )}
+      <p className="table-note motor-official-source-note">
+        <OfficialSourceNote breakdown={breakdown} officialMode={v.officialMode} listPowerIndex={v.listPowerIndex} venueColsLabel={v.venueColsLabel} />
+      </p>
+    </>
+  );
+}
+
+function DrillPreGenerationView({ drillDownMotor, setDrillDownMotor }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <DrillDownHeader
+        onBack={() => setDrillDownMotor(null)}
+        backLabel={t("analysis.backToList")}
+        heading={t("analysis.motor.trendHeading", { n: drillDownMotor })}
+      />
+      <div className="empty-state">
+        {t("analysis.motor.drillPreGeneration", { n: drillDownMotor })}
+      </div>
+    </>
+  );
+}
+
+// 走数が少ないときは評価の言葉を出さず、参考値と書く（BOA-549）
+function powerIndexVerdict(t, tone) {
+  return tone === "small"
+    ? t("analysis.motor.powerIndexSmallSample")
+    : tone === "good"
+      ? ` — ${t("analysis.motor.powerIndexGood")}`
+      : tone === "bad"
+        ? ` — ${t("analysis.motor.powerIndexBad")}`
+        : "";
+}
+
+function PowerIndexSummary({ powerIndex, tone, generationStart, periodDays }) {
+  const { t } = useTranslation();
+  if (powerIndex?.power_index === null || powerIndex?.power_index === undefined) {
+    return null;
+  }
+  return (
+    <p
+      className={`power-index-summary ${
+        POWER_INDEX_TONE_CLASS[tone] ?? ""
+      }`}
+    >
+      {t("analysis.motor.powerIndexSummary", {
+        index: formatPowerIndex(powerIndex.power_index),
+        count: powerIndex.sample_count,
+        // 入れ替え後で期間を切り詰めたときは「過去90日」と書かない
+        // （37走が本当に90日分に見えてしまう）
+        period: powerIndex.clipped_by_generation
+          ? t("analysis.motor.periodSinceGeneration", {
+              date: formatGenerationDate(generationStart, {
+                short: true,
+              }),
+            })
+          : t(`analysis.motor.period${periodDays}`),
+      })}
+      {powerIndexVerdict(t, tone)}
+    </p>
+  );
+}
+
+function FreshnessBadgeRow({ venueMotorStats }) {
+  const { t } = useTranslation();
+  return (
+    <MotorStatBadgeRow
+      icon="🔧"
+      label={t("analysis.motor.freshnessLabel")}
+      badges={[
+        venueMotorStats?.raceCount !== null &&
+          venueMotorStats?.raceCount !== undefined && {
+            key: "raceCount",
+            text: t("analysis.motor.freshnessRaceBadge", {
+              raceCount: venueMotorStats.raceCount,
+            }),
+          },
+        venueMotorStats?.meetCount !== null &&
+          venueMotorStats?.meetCount !== undefined && {
+            key: "meetCount",
+            text: t("analysis.motor.freshnessMeetBadge", {
+              meetCount: venueMotorStats.meetCount,
+            }),
+          },
+      ].filter(Boolean)}
+    />
+  );
+}
+
+// BOA-301 FR-1: 会場内ランキング（venue_motor_stats最新スナップショット、
+// 自社race_resultsからの再計算はしない）
+function VenueRankBadgeRow({ venueMotorRanking }) {
+  const { t } = useTranslation();
+  return (
+    <MotorStatBadgeRow
+      icon="🏆"
+      label={t("analysis.motor.venueRankLabel")}
+      badges={[
+        venueMotorRanking && {
+          key: "venueRank",
+          // 同じ値のモーターがあれば「◯位タイ」（BOA-529。今節タブの順位と同じ）
+          text: t(
+            venueMotorRanking.tied > 1
+              ? "analysis.motor.venueRankBadgeTied"
+              : "analysis.motor.venueRankBadge",
+            {
+              rank: venueMotorRanking.rank,
+              total: venueMotorRanking.total,
+              // 何の値の順位かを数字で示す。当日のレースは一覧に「2連率（期間の
+              // 再計算）」と「公式2連率」の2列があり、どちらの順位か読めなかった
+              // （BOA-529 ファン評価2周目）
+              value: Number(venueMotorRanking.value).toFixed(1),
+            },
+          ),
+        },
+      ].filter(Boolean)}
+    />
+  );
+}
+
+const isPresent = (value) => value !== null && value !== undefined;
+
+function venueRecordCards(t, venueMotorStats) {
+  return [
+    isPresent(venueMotorStats?.finalCount) && {
+      key: "finalCount",
+      value: venueMotorStats.finalCount,
+      label: t("analysis.motor.finalCountHeader"),
+    },
+    isPresent(venueMotorStats?.championshipCount) && {
+      key: "championshipCount",
+      value: venueMotorStats.championshipCount,
+      label: t("analysis.motor.championshipCountHeader"),
+    },
+    isPresent(venueMotorStats?.firstPlaceCount) &&
+      venueMotorStats?.raceCount && {
+        key: "firstPlaceRate",
+        value: `${(
+          (venueMotorStats.firstPlaceCount /
+            venueMotorStats.raceCount) *
+          100
+        ).toFixed(1)}%`,
+        label: t("analysis.motor.firstPlaceRateHeader"),
+      },
+  ].filter(Boolean);
+}
+
+function DrillRecordCards({ venueMotorStats }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {venueMotorStats?.fetchFailed && (
+        <p className="table-note motor-venue-stats-failed-note">
+          {t("analysis.motor.venueStatsFailedNote")}
+        </p>
+      )}
+      <MotorRecordStatCards cards={venueRecordCards(t, venueMotorStats)} />
+    </>
+  );
+}
+
+// 鮮度・会場内順位・1着率・優出・優勝は会場公式サイトのスナップショットで、
+// 節の終わりにしか更新されない。下の機力指数・使用履歴（当サイトの集計）と
+// 走数が合わないことを先に断る（BOA-513、2026-09-28 ファン評価）
+function OfficialSnapshotNote({ venueMotorStats, venueMotorRanking }) {
+  const { t } = useTranslation();
+  if (!((venueMotorStats && !venueMotorStats.fetchFailed) || venueMotorRanking)) {
+    return null;
+  }
+  return (
+    <p className="table-note">
+      {t("analysis.motor.officialSnapshotNote")}
+      {/* 会場内順位に添えた値は会場公式サイトの2連率で、小数2桁目を切り捨てる。
+          一覧（BOAT RACE公式、四捨五入）と0.1違うことがある（BOA-529 ファン評価3周目。
+          大村32号機: 一覧26.1／会場公式26.0） */}
+      {venueMotorRanking &&
+        ` ${t("analysis.motor.venueRankRoundingNote")}`}
+    </p>
+  );
+}
+
+// BOA-301 FR-2/3/4: 枠番別成績・展示タイム推移・選手×枠成績
+function WakuSection({ m, v }) {
+  const { selectedWakuCourse, setSelectedWakuCourse, motorRacerWakuStats, motorWakuStats, embedded } = m;
+  return selectedWakuCourse !== null ? (
+    <MotorRacerWakuDrillDown
+      course={selectedWakuCourse}
+      rows={motorRacerWakuStats.rows.filter(
+        (r) => r.course === selectedWakuCourse,
+      )}
+      onBack={() => setSelectedWakuCourse(null)}
+    />
+  ) : (
+    <MotorWakuStatsGrid
+      rows={motorWakuStats.rows}
+      generationStart={motorWakuStats.generationStart}
+      fetchFailed={motorWakuStats.fetchFailed}
+      embedded={embedded}
+      highlightCourse={v.todayHighlightCourse}
+      onSelectCourse={setSelectedWakuCourse}
+    />
+  );
+}
+
+function DrillView({ m, v }) {
+  const { t } = useTranslation();
+  const {
+    drillDownMotor, setDrillDownMotor, selectedRace, powerIndex, generationStart,
+    periodDays, venueMotorStats, venueMotorRanking, championshipHistory,
+    trendData, usageHistory, partsHistory,
+  } = m;
+  return (
+    <>
+      <DrillDownHeader
+        onBack={() => setDrillDownMotor(null)}
+        backLabel={t("analysis.backToList")}
+        heading={t("analysis.motor.trendHeading", { n: drillDownMotor })}
+      />
+      {/* 過去レースのドリルダウンは「このレースの直前まで」で集計する（BOA-521）。
+          期間の切り替えは出さないので、どこまでの集計かをここで示す */}
+      {/* 当日のレースも「このレースの直前まで」（BOA-557）。終了後に開いて、
+          そのレースの結果が無いことを「データの遅れ」と読まれないように */}
+      {selectedRace && (
+        <p className="table-note">
+          {t("analysis.motor.drillAsOfRaceNote")}
+        </p>
       )}
 
+      <PowerIndexSummary powerIndex={powerIndex} tone={v.drillPowerIndexTone} generationStart={generationStart} periodDays={periodDays} />
+
+      <FreshnessBadgeRow venueMotorStats={venueMotorStats} />
+
+      <VenueRankBadgeRow venueMotorRanking={venueMotorRanking} />
+
+      <DrillRecordCards venueMotorStats={venueMotorStats} />
+      <OfficialSnapshotNote venueMotorStats={venueMotorStats} venueMotorRanking={venueMotorRanking} />
+
+      <WakuSection m={m} v={v} />
+
+      <ChampionshipHistorySection championshipHistory={championshipHistory} />
+
+      <RateTrendSection chartData={v.chartData} trendData={trendData} drillTallyState={v.drillTallyState} firstRatedIndex={v.firstRatedIndex} emptyKey={v.emptyKey} />
+
+      <ExhibitionTrendSection exhibitionChartData={v.exhibitionChartData} exhibitionAxis={v.exhibitionAxis} emptyKey={v.emptyKey} />
+
+      <UsageHistorySection usageHistory={usageHistory} usageHistoryChartData={v.usageHistoryChartData} emptyKey={v.emptyKey} />
+
+      <PartsHistorySection partsHistory={partsHistory} />
+    </>
+  );
+}
+
+function MotorMain({ m, v, scroll, scrollRef }) {
+  const { t } = useTranslation();
+  const { loading, error, drillDownMotor, drillPreGeneration, breakdown, setDrillDownMotor } = m;
+  const ready = !loading && !error;
+  return (
+    <>
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
         <div className="error-state">
@@ -1496,251 +1955,26 @@ function MotorConditionChart({
         </div>
       )}
 
-      {!loading &&
-        !error &&
-        drillDownMotor === null &&
-        breakdown.length > 0 && (
-          <>
-            {/* 新しいモーターの最初の節（BOA-830、2026-10-11 ユーザー決定の文言） */}
-            {firstMeet && freshness?.generationStart && (
-              <p className="motor-fresh-banner">
-                {t("analysis.motor.freshFirstMeetBanner", {
-                  venue: t(
-                    `venues.${selectedVenue}`,
-                    VENUE_NAMES[selectedVenue] || String(selectedVenue),
-                  ),
-                  month: Number(freshness.generationStart.slice(5, 7)),
-                  day: Number(freshness.generationStart.slice(8, 10)),
-                })}
-              </p>
-            )}
-            <div
-              className={`table-wrapper hscroll-hint mcc-list-hint${rankingScroll.hasMore ? " has-more" : ""}`}
-            >
-              <HorizontalScrollButtons
-                hasMore={rankingScroll.hasMore}
-                hasLess={rankingScroll.hasLess}
-                onMore={rankingScroll.scrollRight}
-                onLess={rankingScroll.scrollLeft}
-              />
-              <div
-                className="table-scroll"
-                ref={rankingScroll.ref}
-                onScroll={rankingScroll.update}
-              >
-                <table className="motor-ranking-table mcc-list-table">
-                  <MotorListHead firstMeet={firstMeet} showVenueRank={showVenueRank} officialMode={officialMode} periodDays={periodDays} hasPretest={hasPretest} showFirstPlaceRate={showFirstPlaceRate} showFinalCount={showFinalCount} showChampionshipCount={showChampionshipCount} />
-                  <tbody>
-                    {breakdown.map((row, i) => (
-                      <MotorListRow key={row.boat_number} row={row} i={i} view={rowView} focusedBoat={focusedBoat} setDrillDownMotor={setDrillDownMotor} onFocusBoat={onFocusBoat} currentParts={currentParts} partsBoat={partsBoat} setPartsBoat={setPartsBoat} explainBoat={explainBoat} setExplainBoat={setExplainBoat} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            {embedded && (
-              <MotorPartsNotes expandedParts={expandedParts} currentParts={currentParts} />
-            )}
-            <OwnRateNote rateViews={rateViews} explainView={explainView} explainRow={explainRow} />
-            <VenueRankNote breakdown={breakdown} venueRanks={venueRanks} selectedVenue={selectedVenue} />
-            {venueStatsFailed && (
-              <p className="table-note motor-venue-stats-failed-note">
-                {t("analysis.motor.venueStatsFailedNote")}
-              </p>
-            )}
-            <p className="table-note motor-official-source-note">
-              <OfficialSourceNote breakdown={breakdown} officialMode={officialMode} listPowerIndex={listPowerIndex} venueColsLabel={venueColsLabel} />
-            </p>
-          </>
-        )}
-
-      {!loading && !error && drillDownMotor !== null && drillPreGeneration && (
-        <>
-          <DrillDownHeader
-            onBack={() => setDrillDownMotor(null)}
-            backLabel={t("analysis.backToList")}
-            heading={t("analysis.motor.trendHeading", { n: drillDownMotor })}
-          />
-          <div className="empty-state">
-            {t("analysis.motor.drillPreGeneration", { n: drillDownMotor })}
-          </div>
-        </>
+      {ready && drillDownMotor === null && breakdown.length > 0 && (
+        <MotorListView m={m} v={v} scroll={scroll} scrollRef={scrollRef} />
       )}
 
-      {!loading && !error && drillDownMotor !== null && !drillPreGeneration && (
-        <>
-          <DrillDownHeader
-            onBack={() => setDrillDownMotor(null)}
-            backLabel={t("analysis.backToList")}
-            heading={t("analysis.motor.trendHeading", { n: drillDownMotor })}
-          />
-          {/* 過去レースのドリルダウンは「このレースの直前まで」で集計する（BOA-521）。
-              期間の切り替えは出さないので、どこまでの集計かをここで示す */}
-          {/* 当日のレースも「このレースの直前まで」（BOA-557）。終了後に開いて、
-              そのレースの結果が無いことを「データの遅れ」と読まれないように */}
-          {selectedRace && (
-            <p className="table-note">
-              {t("analysis.motor.drillAsOfRaceNote")}
-            </p>
-          )}
-
-          {powerIndex?.power_index !== null &&
-            powerIndex?.power_index !== undefined && (
-              <p
-                className={`power-index-summary ${
-                  POWER_INDEX_TONE_CLASS[drillPowerIndexTone] ?? ""
-                }`}
-              >
-                {t("analysis.motor.powerIndexSummary", {
-                  index: formatPowerIndex(powerIndex.power_index),
-                  count: powerIndex.sample_count,
-                  // 入れ替え後で期間を切り詰めたときは「過去90日」と書かない
-                  // （37走が本当に90日分に見えてしまう）
-                  period: powerIndex.clipped_by_generation
-                    ? t("analysis.motor.periodSinceGeneration", {
-                        date: formatGenerationDate(generationStart, {
-                          short: true,
-                        }),
-                      })
-                    : t(`analysis.motor.period${periodDays}`),
-                })}
-                {/* 走数が少ないときは評価の言葉を出さず、参考値と書く（BOA-549） */}
-                {drillPowerIndexTone === "small"
-                  ? t("analysis.motor.powerIndexSmallSample")
-                  : drillPowerIndexTone === "good"
-                    ? ` — ${t("analysis.motor.powerIndexGood")}`
-                    : drillPowerIndexTone === "bad"
-                      ? ` — ${t("analysis.motor.powerIndexBad")}`
-                      : ""}
-              </p>
-            )}
-
-          <MotorStatBadgeRow
-            icon="🔧"
-            label={t("analysis.motor.freshnessLabel")}
-            badges={[
-              venueMotorStats?.raceCount !== null &&
-                venueMotorStats?.raceCount !== undefined && {
-                  key: "raceCount",
-                  text: t("analysis.motor.freshnessRaceBadge", {
-                    raceCount: venueMotorStats.raceCount,
-                  }),
-                },
-              venueMotorStats?.meetCount !== null &&
-                venueMotorStats?.meetCount !== undefined && {
-                  key: "meetCount",
-                  text: t("analysis.motor.freshnessMeetBadge", {
-                    meetCount: venueMotorStats.meetCount,
-                  }),
-                },
-            ].filter(Boolean)}
-          />
-
-          {/* BOA-301 FR-1: 会場内ランキング（venue_motor_stats最新スナップショット、
-              自社race_resultsからの再計算はしない） */}
-          <MotorStatBadgeRow
-            icon="🏆"
-            label={t("analysis.motor.venueRankLabel")}
-            badges={[
-              venueMotorRanking && {
-                key: "venueRank",
-                // 同じ値のモーターがあれば「◯位タイ」（BOA-529。今節タブの順位と同じ）
-                text: t(
-                  venueMotorRanking.tied > 1
-                    ? "analysis.motor.venueRankBadgeTied"
-                    : "analysis.motor.venueRankBadge",
-                  {
-                    rank: venueMotorRanking.rank,
-                    total: venueMotorRanking.total,
-                    // 何の値の順位かを数字で示す。当日のレースは一覧に「2連率（期間の
-                    // 再計算）」と「公式2連率」の2列があり、どちらの順位か読めなかった
-                    // （BOA-529 ファン評価2周目）
-                    value: Number(venueMotorRanking.value).toFixed(1),
-                  },
-                ),
-              },
-            ].filter(Boolean)}
-          />
-
-          {venueMotorStats?.fetchFailed && (
-            <p className="table-note motor-venue-stats-failed-note">
-              {t("analysis.motor.venueStatsFailedNote")}
-            </p>
-          )}
-          <MotorRecordStatCards
-            cards={[
-              venueMotorStats?.finalCount !== null &&
-                venueMotorStats?.finalCount !== undefined && {
-                  key: "finalCount",
-                  value: venueMotorStats.finalCount,
-                  label: t("analysis.motor.finalCountHeader"),
-                },
-              venueMotorStats?.championshipCount !== null &&
-                venueMotorStats?.championshipCount !== undefined && {
-                  key: "championshipCount",
-                  value: venueMotorStats.championshipCount,
-                  label: t("analysis.motor.championshipCountHeader"),
-                },
-              venueMotorStats?.firstPlaceCount !== null &&
-                venueMotorStats?.firstPlaceCount !== undefined &&
-                venueMotorStats?.raceCount && {
-                  key: "firstPlaceRate",
-                  value: `${(
-                    (venueMotorStats.firstPlaceCount /
-                      venueMotorStats.raceCount) *
-                    100
-                  ).toFixed(1)}%`,
-                  label: t("analysis.motor.firstPlaceRateHeader"),
-                },
-            ].filter(Boolean)}
-          />
-          {/* 鮮度・会場内順位・1着率・優出・優勝は会場公式サイトのスナップショットで、
-              節の終わりにしか更新されない。下の機力指数・使用履歴（当サイトの集計）と
-              走数が合わないことを先に断る（BOA-513、2026-09-28 ファン評価） */}
-          {((venueMotorStats && !venueMotorStats.fetchFailed) ||
-            venueMotorRanking) && (
-            <p className="table-note">
-              {t("analysis.motor.officialSnapshotNote")}
-              {/* 会場内順位に添えた値は会場公式サイトの2連率で、小数2桁目を切り捨てる。
-                  一覧（BOAT RACE公式、四捨五入）と0.1違うことがある（BOA-529 ファン評価3周目。
-                  大村32号機: 一覧26.1／会場公式26.0） */}
-              {venueMotorRanking &&
-                ` ${t("analysis.motor.venueRankRoundingNote")}`}
-            </p>
-          )}
-
-          {/* BOA-301 FR-2/3/4: 枠番別成績・展示タイム推移・選手×枠成績 */}
-          {selectedWakuCourse !== null ? (
-            <MotorRacerWakuDrillDown
-              course={selectedWakuCourse}
-              rows={motorRacerWakuStats.rows.filter(
-                (r) => r.course === selectedWakuCourse,
-              )}
-              onBack={() => setSelectedWakuCourse(null)}
-            />
-          ) : (
-            <MotorWakuStatsGrid
-              rows={motorWakuStats.rows}
-              generationStart={motorWakuStats.generationStart}
-              fetchFailed={motorWakuStats.fetchFailed}
-              embedded={embedded}
-              highlightCourse={todayHighlightCourse}
-              onSelectCourse={setSelectedWakuCourse}
-            />
-          )}
-
-          <ChampionshipHistorySection championshipHistory={championshipHistory} />
-
-          <RateTrendSection chartData={chartData} trendData={trendData} drillTallyState={drillTallyState} firstRatedIndex={firstRatedIndex} emptyKey={emptyKey} />
-
-          <ExhibitionTrendSection exhibitionChartData={exhibitionChartData} exhibitionAxis={exhibitionAxis} emptyKey={emptyKey} />
-
-          <UsageHistorySection usageHistory={usageHistory} usageHistoryChartData={usageHistoryChartData} emptyKey={emptyKey} />
-
-          <PartsHistorySection partsHistory={partsHistory} />
-        </>
+      {ready && drillDownMotor !== null && drillPreGeneration && (
+        <DrillPreGenerationView drillDownMotor={drillDownMotor} setDrillDownMotor={setDrillDownMotor} />
       )}
 
+      {ready && drillDownMotor !== null && !drillPreGeneration && (
+        <DrillView m={m} v={v} />
+      )}
+    </>
+  );
+}
+
+function MotorFooterNotes({ m, v }) {
+  const { t } = useTranslation();
+  const { drillDownMotor, racePreGeneration, focusedBoat, drillPreGeneration } = m;
+  return (
+    <>
       {/* 「行を押すと推移」は一覧でだけ、入れ替え前のレースでは出さない
           （押しても推移が出ないため） */}
       {drillDownMotor === null &&
@@ -1749,7 +1983,7 @@ function MotorConditionChart({
         ) : (
           <p className="table-note">{t("analysis.motor.note")}</p>
         ))}
-      {drillDownMotor === null && hasHighlightedCell && (
+      {drillDownMotor === null && v.hasHighlightedCell && (
         <p className="table-note">{t("analysis.motor.bestCellNote")}</p>
       )}
       {/* 線の意味（BOA-494 ファン評価）。一覧で、他のタブで艇を選んでいるときだけ */}
@@ -1759,6 +1993,49 @@ function MotorConditionChart({
       {!drillPreGeneration && (
         <p className="table-note">{t("analysis.motor.powerIndexNote")}</p>
       )}
+    </>
+  );
+}
+
+function MotorConditionChart({
+  initialVenueCode = null,
+  initialRaceId = null,
+  initialMotorNumber = null,
+  embedded = false,
+  // レース詳細で「今どの艇を見ているか」をタブ間で共有する（BOA-492/BOA-494）。
+  // /winning-technique は渡さないので、そちらの挙動は変わらない
+  focusedBoat = null,
+  onFocusBoat = null,
+}) {
+  const { t } = useTranslation();
+  const selector = useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
+  const states = useMotorStates(initialMotorNumber);
+  const m = { ...selector, ...states, t, embedded, focusedBoat, onFocusBoat };
+  useBreakdownLoad(m);
+  useDrillLoad(m);
+  usePeriodAndWakuReset(m);
+  const v = useMotorView(m);
+  // 9列の表は390pxでは右が切れる。切れていることに気づけるようにする
+  // 会場内順位の列は一覧の後から足される（BOA-428）。足されたときに測り直す
+  const rankingScroll = useHorizontalScrollHint([
+    m.breakdown.length,
+    m.venueRanks?.state,
+  ]);
+  const scroll = {
+    hasMore: rankingScroll.hasMore,
+    hasLess: rankingScroll.hasLess,
+    scrollRight: rankingScroll.scrollRight,
+    scrollLeft: rankingScroll.scrollLeft,
+    update: rankingScroll.update,
+  };
+
+  return (
+    <div className="motor-condition-container">
+      {!embedded && <MotorTitle />}
+      {!embedded && <MotorSelectors m={m} venueOffToday={v.venueOffToday} />}
+      <PeriodControls m={m} v={v} />
+      <MotorMain m={m} v={v} scroll={scroll} scrollRef={rankingScroll.ref} />
+      <MotorFooterNotes m={m} v={v} />
     </div>
   );
 }
