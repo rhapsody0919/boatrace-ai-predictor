@@ -26,14 +26,18 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
 | `src/pure/meetExclusion.js` | 今節の順位の対象から外す選手と、その理由（途中帰郷・賞典除外）の判定（純関数）。 | meetExclusionsOf |
 | `src/pure/meetGrouping.js` | race_id昇順ソート済みの配列を受け取り、末尾（最新）から遡って日付の間隔が | groupIntoCurrentMeet, groupIntoMeetBeforeRace |
+| `src/pure/meetModel.js` | — | makeMeet |
+| `src/pure/modelAssert.js` | — | assertObject, assertInt, assertIntOrNull, assertText, parseIsoDate ほか1件 |
 | `src/pure/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
 | `src/pure/raceModel.js` | — | makeRaceEntry, makeRace |
 | `src/pure/raceMotorBreakdown.js` | モータ情報タブの一覧表（getRaceMotorBreakdown の返り値）の行の組み立て。 | pastMotorRows, recalcMotorRows, settleMotorBreakdown |
 | `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
 | `src/pure/racerCareerStats.js` | — | isCareerFinalStage, isCareerStart, careerFinishPoints, careerWinRate, isCareerFinalAppearance ほか2件 |
+| `src/pure/racerModel.js` | — | makeRacer, makeRacerSeriesPoint |
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
 | `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか35件 |
 | `src/pure/snsPostText.js` | — | buildPostText |
+| `src/pure/venueModel.js` | — | makeVenue |
 
 ## scripts/lib — バッチ・取得・集計の共通ロジック
 
@@ -456,4 +460,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 414 ファイル / export 2396 件。
+対象 418 ファイル / export 2406 件。
