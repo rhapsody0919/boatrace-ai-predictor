@@ -1631,7 +1631,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/meetQueries.js:257",
+          "ref": "src/services/meetQueries.js:269",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -7786,7 +7786,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:125",
+          "ref": "src/services/meetQueries.js:184",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7796,7 +7796,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:136",
+          "ref": "src/services/meetQueries.js:195",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7806,7 +7806,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:240",
+          "ref": "src/services/meetQueries.js:252",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8419,9 +8419,9 @@
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/currentMeetEntries.js:26",
-            "src/services/meetQueries.js:125",
-            "src/services/meetQueries.js:136",
-            "src/services/meetQueries.js:240",
+            "src/services/meetQueries.js:184",
+            "src/services/meetQueries.js:195",
+            "src/services/meetQueries.js:252",
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
@@ -8528,9 +8528,9 @@
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/currentMeetEntries.js:26",
-            "src/services/meetQueries.js:125",
-            "src/services/meetQueries.js:136",
-            "src/services/meetQueries.js:240",
+            "src/services/meetQueries.js:184",
+            "src/services/meetQueries.js:195",
+            "src/services/meetQueries.js:252",
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
@@ -8722,7 +8722,7 @@
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/maintenance/check-morning-init-shadow.js:152",
             "src/services/currentMeetEntries.js:26",
-            "src/services/meetQueries.js:240",
+            "src/services/meetQueries.js:252",
             "src/services/meetQueries2.js:105",
             "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
@@ -8906,9 +8906,9 @@
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/currentMeetEntries.js:26",
-            "src/services/meetQueries.js:125",
-            "src/services/meetQueries.js:136",
-            "src/services/meetQueries.js:240",
+            "src/services/meetQueries.js:184",
+            "src/services/meetQueries.js:195",
+            "src/services/meetQueries.js:252",
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
@@ -9958,7 +9958,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:321",
+          "ref": "src/services/meetQueries.js:333",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -11405,7 +11405,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:173",
+          "ref": "src/services/meetQueries.js:105",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11761,7 +11761,7 @@
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
@@ -11826,7 +11826,7 @@
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
@@ -11875,7 +11875,7 @@
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
@@ -11913,7 +11913,7 @@
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:87",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
@@ -12158,7 +12158,7 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:353"
           ],
@@ -12177,7 +12177,7 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:353"
           ],
@@ -12196,7 +12196,7 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:353"
           ],
@@ -12358,7 +12358,7 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12378,7 +12378,7 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12397,7 +12397,7 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12416,7 +12416,7 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12435,7 +12435,7 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12454,7 +12454,7 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -13102,7 +13102,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:179",
+          "ref": "src/services/meetQueries.js:111",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13245,7 +13245,7 @@
             "scripts/maintenance/verify-race-result-parser.js:2047",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
-            "src/services/meetQueries.js:179",
+            "src/services/meetQueries.js:111",
             "src/services/meetQueries.js:79",
             "src/services/meetQueries2.js:176",
             "src/services/raceQueries4.js:22"
@@ -13271,7 +13271,7 @@
             "scripts/maintenance/verify-race-result-parser.js:2047",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
-            "src/services/meetQueries.js:179",
+            "src/services/meetQueries.js:111",
             "src/services/meetQueries.js:79",
             "src/services/meetQueries2.js:176",
             "src/services/raceQueries4.js:22"
@@ -13337,7 +13337,7 @@
             "scripts/daily/generate-morning-digest.js:699",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
-            "src/services/meetQueries.js:179",
+            "src/services/meetQueries.js:111",
             "src/services/meetQueries2.js:176",
             "src/services/raceQueries4.js:22"
           ],
@@ -13359,7 +13359,7 @@
         "entry_course": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "src/services/meetQueries.js:179",
+            "src/services/meetQueries.js:111",
             "src/services/raceQueries4.js:22"
           ],
           "writers": [],
@@ -17051,7 +17051,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:183",
+          "ref": "src/services/meetQueries.js:115",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17522,7 +17522,7 @@
             "scripts/sns/push-setsu-kiryoku-short.js:1081",
             "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
-            "src/services/meetQueries.js:183",
+            "src/services/meetQueries.js:115",
             "src/services/meetQueries3.js:62",
             "src/services/motorQueries.js:112",
             "src/services/mycroftService.js:78",
@@ -18006,7 +18006,7 @@
             "scripts/sns/push-full-picture.js:839",
             "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
-            "src/services/meetQueries.js:183",
+            "src/services/meetQueries.js:115",
             "src/services/meetQueries3.js:62"
           ],
           "writers": [

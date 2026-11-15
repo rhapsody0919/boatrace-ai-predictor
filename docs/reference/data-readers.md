@@ -412,7 +412,7 @@
   - `scripts/ml/export-training-data.js:79` select(helper:fetchAll)
   - `scripts/sns/push-setsu-kiryoku-short.js:1101` rest(rest) [is_absent, race_id]
   - `scripts/sns/rank-data.js:514` select(helper:readAllIn)
-  - `src/services/meetQueries.js:257` select(helper:fetchAllByIn)
+  - `src/services/meetQueries.js:269` select(helper:fetchAllByIn)
   - `src/services/meetQueries2.js:166` select [boat_number, exhibition_time, race_id]
   - `src/services/motorQueries.js:385` select(helper:fetchAllByIn)
   - `src/services/motorQueries5.js:65` select(helper:fetchAllByIn)
@@ -917,9 +917,9 @@
   - `src/services/currentMeetEntries.js:26` select [boat_number, motor_number, race_id, racer_id]
   - `src/services/meetQueries.js:37` select [boat_number, f_count, race_id, racer_id]
   - `src/services/meetQueries.js:49` select [boat_number, race_id, racer_id]
-  - `src/services/meetQueries.js:125` select [boat_number, race_id, racer_id]
-  - `src/services/meetQueries.js:136` select [boat_number, race_id, racer_id]
-  - `src/services/meetQueries.js:240` select [boat_number, motor_number, race_id, racer_id]
+  - `src/services/meetQueries.js:184` select [boat_number, race_id, racer_id]
+  - `src/services/meetQueries.js:195` select [boat_number, race_id, racer_id]
+  - `src/services/meetQueries.js:252` select [boat_number, motor_number, race_id, racer_id]
   - `src/services/meetQueries2.js:105` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/meetQueries3.js:72` select [boat_number, player_name, race_id, racer_id]
   - `src/services/motorQueries.js:234` select [motor_2rate, race_id]
@@ -1057,7 +1057,7 @@
   - `scripts/analysis/original-exhibition/fetch.mjs:49` select(helper:all)
   - `scripts/lib/boatcast/oritenJob.js:201` select(helper:upsertChangedRows)
   - `scripts/lib/boatcast/oritenJob.js:240` select [boat_number, kind, race_id]
-  - `src/services/meetQueries.js:321` select(helper:fetchAllByIn)
+  - `src/services/meetQueries.js:333` select(helper:fetchAllByIn)
   - `src/services/raceQueries4.js:170` select [boat_number, kind, race_id, value]
 - 書き手（2）: 
   - `scripts/lib/boatcast/oritenJob.js:201` upsert(helper:upsertChangedRows) [?]
@@ -1215,7 +1215,7 @@
   - `scripts/verification/verify-series-points-needed.mjs:50` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `scripts/verification/verify-series-points-official.mjs:164` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/adminRuleService.js:87` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
-  - `src/services/meetQueries.js:173` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id, rank1, rank2, rank3, rank4, rank5, rank6]
+  - `src/services/meetQueries.js:105` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/meetQueries2.js:128` select(helper:fetchAllByIn)
   - `src/services/meetQueries3.js:67` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/motorQueries2.js:125` select [race_id, rank1, rank2, rank3]
@@ -1311,7 +1311,7 @@
   - `scripts/verification/verify-series-points-border.mjs:64` select [boat_number, finish_mark, race_id]
   - `scripts/verification/verify-series-points-needed.mjs:58` select [boat_number, finish_mark, race_id]
   - `src/services/meetQueries.js:79` select [boat_number, is_flying, race_id]
-  - `src/services/meetQueries.js:179` select [boat_number, entry_course, finish_mark, race_id]
+  - `src/services/meetQueries.js:111` select [boat_number, entry_course, finish_mark, race_id]
   - `src/services/meetQueries2.js:176` select [boat_number, finish_mark, is_flying, race_id, start_timing]
   - `src/services/raceQueries.js:96` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:230` select(helper:fetchAllByIn)
@@ -1603,7 +1603,7 @@
   - `scripts/sns/rank-data.js:352` select(helper:readAll)
   - `scripts/sns/rank-data.js:500` select(helper:readAllIn)
   - `scripts/sns/today-picks.js:101` rest(rest) [cancellation_status, race_date, race_id, start_time]
-  - `src/services/meetQueries.js:183` select [cancellation_status, race_id]
+  - `src/services/meetQueries.js:115` select [cancellation_status, race_id]
   - `src/services/meetQueries2.js:137` select(helper:fetchAllByIn)
   - `src/services/meetQueries3.js:62` select [cancellation_status, race_grade, race_id]
   - `src/services/motorQueries.js:112` select [race_date, race_id, venue_code]
