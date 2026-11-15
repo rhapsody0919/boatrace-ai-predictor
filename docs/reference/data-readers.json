@@ -8181,7 +8181,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries3.js:295",
+          "ref": "src/services/racerQueries3.js:309",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8444,7 +8444,7 @@
             "src/services/racerQueries.js:82",
             "src/services/racerQueries3.js:182",
             "src/services/racerQueries3.js:27",
-            "src/services/racerQueries3.js:295",
+            "src/services/racerQueries3.js:309",
             "src/services/racerQueries3.js:99",
             "src/services/racerService.js:127",
             "src/services/racerService.js:46",
@@ -8669,7 +8669,7 @@
             "src/services/racerQueries.js:102",
             "src/services/racerQueries.js:46",
             "src/services/racerQueries.js:82",
-            "src/services/racerQueries3.js:295",
+            "src/services/racerQueries3.js:309",
             "src/services/sherlockService.js:77"
           ],
           "writers": [],
@@ -8920,7 +8920,7 @@
             "src/services/racerQueries.js:82",
             "src/services/racerQueries3.js:182",
             "src/services/racerQueries3.js:27",
-            "src/services/racerQueries3.js:295",
+            "src/services/racerQueries3.js:309",
             "src/services/racerQueries3.js:99",
             "src/services/racerService.js:127",
             "src/services/racerService.js:46"

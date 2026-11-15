@@ -953,7 +953,7 @@
   - `src/services/racerQueries3.js:99` select [boat_number, race_id, racer_id]
   - `src/services/racerQueries3.js:182` select [boat_number, race_id, racer_id]
   - `src/services/racerQueries3.js:263` select(helper:fetchAllByIn)
-  - `src/services/racerQueries3.js:295` select [race_id, racer_id, win_rate]
+  - `src/services/racerQueries3.js:309` select [race_id, racer_id, win_rate]
   - `src/services/racerService.js:46` select [grade, race_id, racer_id]
   - `src/services/racerService.js:127` select [motor_number, race_id, racer_id]
   - `src/services/sherlockService.js:77` select [boat_2rate, boat_number, grade, local_win_rate, motor_2rate, player_name, race_id, win_rate]
