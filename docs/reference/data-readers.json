@@ -7,7 +7,7 @@
     "rpcs": 68,
     "sourceFiles": 1875,
     "filesWithAccess": 280,
-    "tableReaders": 948,
+    "tableReaders": 947,
     "tableWriters": 189,
     "rpcCallers": 51,
     "nameMentions": 232,
@@ -8062,7 +8062,7 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries3.js:157",
+          "ref": "src/services/raceQueries3.js:137",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8073,7 +8073,7 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries3.js:187",
+          "ref": "src/services/raceQueries3.js:164",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8083,18 +8083,7 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries3.js:291",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "player_name",
-            "race_id",
-            "racer_id"
-          ]
-        },
-        {
-          "ref": "src/services/raceQueries3.js:316",
+          "ref": "src/services/raceQueries3.js:328",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8444,10 +8433,9 @@
             "src/services/raceQueries2.js:25",
             "src/services/raceQueries2.js:264",
             "src/services/raceQueries2.js:56",
-            "src/services/raceQueries3.js:157",
-            "src/services/raceQueries3.js:187",
-            "src/services/raceQueries3.js:291",
-            "src/services/raceQueries3.js:316",
+            "src/services/raceQueries3.js:137",
+            "src/services/raceQueries3.js:164",
+            "src/services/raceQueries3.js:328",
             "src/services/raceQueries3.js:83",
             "src/services/racerQueries.js:102",
             "src/services/racerQueries.js:139",
@@ -8549,10 +8537,9 @@
             "src/services/raceQueries2.js:25",
             "src/services/raceQueries2.js:264",
             "src/services/raceQueries2.js:56",
-            "src/services/raceQueries3.js:157",
-            "src/services/raceQueries3.js:187",
-            "src/services/raceQueries3.js:291",
-            "src/services/raceQueries3.js:316",
+            "src/services/raceQueries3.js:137",
+            "src/services/raceQueries3.js:164",
+            "src/services/raceQueries3.js:328",
             "src/services/raceQueries3.js:83",
             "src/services/racerQueries.js:139",
             "src/services/racerQueries3.js:182",
@@ -8604,8 +8591,7 @@
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:275",
             "src/services/raceQueries2.js:56",
-            "src/services/raceQueries3.js:157",
-            "src/services/raceQueries3.js:291",
+            "src/services/raceQueries3.js:137",
             "src/services/raceQueries3.js:83",
             "src/services/sherlockService.js:77",
             "src/services/watsonService.js:75"
@@ -8924,10 +8910,9 @@
             "src/services/raceQueries2.js:25",
             "src/services/raceQueries2.js:264",
             "src/services/raceQueries2.js:56",
-            "src/services/raceQueries3.js:157",
-            "src/services/raceQueries3.js:187",
-            "src/services/raceQueries3.js:291",
-            "src/services/raceQueries3.js:316",
+            "src/services/raceQueries3.js:137",
+            "src/services/raceQueries3.js:164",
+            "src/services/raceQueries3.js:328",
             "src/services/racerQueries.js:102",
             "src/services/racerQueries.js:139",
             "src/services/racerQueries.js:18",
@@ -11505,13 +11490,13 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries3.js:211",
+          "ref": "src/services/raceQueries3.js:255",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/raceQueries3.js:334",
+          "ref": "src/services/raceQueries3.js:346",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -27834,7 +27819,7 @@
           "via": "helper:callRpc"
         },
         {
-          "ref": "src/services/raceQueries3.js:149",
+          "ref": "src/services/raceQueries3.js:221",
           "via": "client"
         }
       ],
@@ -27899,7 +27884,7 @@
           "via": "helper:callRpc"
         },
         {
-          "ref": "src/services/raceQueries3.js:282",
+          "ref": "src/services/raceQueries3.js:301",
           "via": "client"
         }
       ],
