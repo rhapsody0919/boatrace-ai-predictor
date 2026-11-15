@@ -47,73 +47,44 @@ import {
 } from "../lib/dateUtils.js";
 // 存在充足率の指標・分母の定義・集計SQLは、汎用の日次監視（scripts/lib/dataHealth/）と共有する（二重実装しない）
 import {
-  ALL_ODDS_COLUMNS,
   COVERAGE_METRICS,
   ODDS_FULL_GRID_SINCE,
-  buildCoverageSql,
-  buildMonthlySql,
-  literalCoverageSlots,
 } from "../lib/dataHealth/coverageSpec.js";
 // 想定内の未公開（朝の最初のレースの、発走60分前のオッズ）の定義は、監視（scripts/lib/scrapeJobs/monitor.js）と共有する（BOA-386）
 import {
   DETECTION_LAG,
-  EXPECTED_UNPUBLISHED,
   classifyExpectedUnpublished,
   summarizeDetectionLags,
-  firstRaceSql,
-  laterOffsetsOf,
-  laterWindowHitSql,
 } from "../lib/scrapeJobs/expectedUnpublished.js";
-import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
+import { collectAlerts } from "./dataHealthReportAlerts.js";
+import {
+  COVERAGE_DAYS,
+  COVERAGE_THRESHOLD,
+  EXPECTED_UNPUBLISHED_MINUTES,
+  KNOWN_INCIDENTS,
+  LATER_WINDOW_MINUTES,
+  TIMING_TABLES,
+  WINDOW_DAYS,
+  WINDOW_MINUTES,
+  WINDOW_THRESHOLD,
+  isApplicableDay,
+  metricDenominator,
+  rate,
+  weekdayOf,
+} from "./dataHealthReportConfig.js";
+import { renderMarkdown } from "./dataHealthReportMarkdown.js";
+import { buildQueries } from "./dataHealthReportQueries.js";
+
+// 公開の名前は変えない（verify-data-health-report.js・verify-data-health-job.js が読む）
+export { buildQueries };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.join(__dirname, "../..");
 dotenv.config({ path: path.join(REPO_ROOT, ".env.local"), quiet: true });
 
-// 完了の定義（.claude/rules/data-acquisition.md）に基づく閾値
-const COVERAGE_THRESHOLD = 0.99;
-const WINDOW_THRESHOLD = 0.98;
-const COVERAGE_DAYS = 14;
-const WINDOW_DAYS = 7;
-const WINDOW_MINUTES = [60, 30, 15, 10, 5, 0];
-// 窓の中心±この分数に取得が入れば、窓内（窓内取得率の定義）
-const WINDOW_TOLERANCE_MIN = 3;
-// 想定内の未公開の対象の窓（発走の何分前か）と、その後続の窓（発走に近い窓）
-const EXPECTED_UNPUBLISHED_MINUTES = -EXPECTED_UNPUBLISHED.offsetMin;
-const LATER_WINDOW_MINUTES = laterOffsetsOf(SCRAPE_JOBS.odds).map((o) => -o);
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
-// 窓内取得率の「除外した値」に使う既知の障害期間（除外しない値も常に併記する）。
-// 障害が発生したら追記する。集計期間外の障害は結果に影響しない。ISO 8601（オフセット付き）で書く
-const KNOWN_INCIDENTS = [
-  {
-    label:
-      "BOA-352 Supabase障害（statement timeout。オーケストレーターが早期終了）",
-    start: "2026-09-16T18:04:00+09:00",
-    end: "2026-09-16T21:58:00+09:00",
-  },
-];
-
-// 取得時刻列の有無を確認する主要テーブル
-const TIMING_TABLES = [
-  "races",
-  "race_entries",
-  "race_conditions",
-  "race_results",
-  "race_start_timings",
-  "exhibition_data",
-  "race_odds",
-  "predictions",
-  "prediction_odds",
-  "race_special_notes",
-  "racer_series_points",
-  "racer_profiles",
-  "venue_entry_course_stats",
-  "venue_motor_stats",
-  "race_notices_health",
-];
 // 行が「最初に」保存された時刻を created_at が表すテーブル（マイグレーション071、WS2）。
 // created_at は INSERT 時の DEFAULT now() で、UPSERTの更新では触られないため、初回の取得時刻になる。
 // 他のテーブルの created_at は、この保証が無い（または別の意味の列）ため、従来どおり「弱い」列として扱う
@@ -134,8 +105,6 @@ const SCRAPED_TIMESTAMP_TABLES = [
 // 実際の取得（スクレイピング・予測生成・確定）時刻を表す列
 const STRONG_TIMING_COLUMN =
   /^(scraped_at|scraped_date|captured_at|predicted_at|result_at|last_checked_at|fetched_at)$/;
-// 取得のたびに上書きされる列（初回の取得時刻ではなく、最終書き込み時刻を表す）
-const OVERWRITTEN_ON_UPSERT = new Set(["result_at", "predicted_at"]);
 // 行の作成・更新時刻。upsertで上書きされうる/初回挿入時刻のみのため、取得時刻としては弱い
 const WEAK_TIMING_COLUMN = /^(created_at|updated_at)$/;
 
@@ -233,125 +202,6 @@ async function runSqlWithRetry(query) {
 // ---------------------------------------------------------------------------
 // SQL（日付はDATE_PATTERN検証済みの文字列のみ埋め込む）
 // ---------------------------------------------------------------------------
-
-export function buildQueries({ coverageStart, windowStart, endDate }) {
-  const incidentRanges =
-    KNOWN_INCIDENTS.length === 0
-      ? "select null::tstzrange as r where false"
-      : `values ${KNOWN_INCIDENTS.map((i) => `(tstzrange('${i.start}'::timestamptz, '${i.end}'::timestamptz))`).join(",")}`;
-  return {
-    // 指標1: 存在充足率（日別）。分母は開催中止(confirmed)を除いたレース。定義・SQLは coverageSpec.js
-    // （汎用の日次監視 data_health のマイグレーション089の関数 data_health_coverage と同じテンプレート）
-    coverage: buildCoverageSql(literalCoverageSlots(coverageStart, endDate)),
-
-    // 指標2: 窓内取得率（日別×窓）。締切=発走時刻(JST)。窓=中心±3分
-    windows: `
-with base as (
-  select r.race_id, r.race_date,
-      (r.race_date::timestamp + r.start_time) at time zone 'Asia/Tokyo' as dl,
-      ${firstRaceSql("r")} as is_first
-  from races r
-  where r.race_date between '${windowStart}' and '${endDate}'
-    and r.start_time is not null
-    and r.cancellation_status is distinct from 'confirmed'
-    and exists (select 1 from race_results rr where rr.race_id = r.race_id and rr.rank1 is not null)
-), w(m) as (values ${WINDOW_MINUTES.map((m) => `(${m})`).join(",")}),
-inc(r) as (${incidentRanges})
-select b.race_date::text as d, w.m,
-    count(*) as races,
-    count(*) filter (where c.hit) as in_window,
-    count(*) filter (where c.clean) as races_clean,
-    count(*) filter (where c.clean and c.hit) as in_window_clean,
-    -- 第1レースの対象の窓（${EXPECTED_UNPUBLISHED_MINUTES}分前）の件数と、窓内の件数（第1レースだけの率を別に出す）
-    count(*) filter (where w.m = ${EXPECTED_UNPUBLISHED_MINUTES} and b.is_first) as first_race,
-    count(*) filter (where w.m = ${EXPECTED_UNPUBLISHED_MINUTES} and b.is_first and c.hit) as first_race_in_window,
-    -- 想定内の未公開: 第1レースの対象の窓が窓内に取れておらず、後続の窓のどれかには取れている（後で公開された）
-    count(*) filter (where w.m = ${EXPECTED_UNPUBLISHED_MINUTES} and b.is_first and not c.hit and c.later_hit) as structural
-from base b cross join w
-cross join lateral (
-  select exists (
-      select 1 from race_odds o
-      where o.race_id = b.race_id
-        and o.captured_at between b.dl - make_interval(mins => w.m + ${WINDOW_TOLERANCE_MIN})
-                              and b.dl - make_interval(mins => w.m - ${WINDOW_TOLERANCE_MIN})
-    ) as hit,
-    (w.m = ${EXPECTED_UNPUBLISHED_MINUTES} and b.is_first and ${laterWindowHitSql(
-      {
-        raceIdExpr: "b.race_id",
-        deadlineExpr: "b.dl",
-        laterMinutesBefore: LATER_WINDOW_MINUTES,
-        toleranceMin: WINDOW_TOLERANCE_MIN,
-      },
-    )}) as later_hit,
-    -- 窓の時間帯が既知の障害期間と重なる(レース,窓)は除外した集計に含めない
-    not exists (
-      select 1 from inc
-      where inc.r && tstzrange(b.dl - make_interval(mins => w.m + 3),
-                               b.dl - make_interval(mins => w.m - 3))
-    ) as clean
-) c
-group by b.race_date, w.m order by b.race_date, w.m desc`,
-
-    // 指標2補足: 監視と同じ予定表の行から、confirmed の検知の遅れを共通関数で計測する。
-    // races は classifyExpectedUnpublished が期限・確定中止を判定するために必要。
-    detectionLag: `
-select s.job, s.race_id, s.offset_min, s.race_date, s.status, s.attempts,
-    s.first_attempt_at, s.last_attempt_at, s.done_at, s.outcome, s.run_mode,
-    json_build_object('start_time', r.start_time, 'cancellation_status', r.cancellation_status) as races
-from scrape_slots s
-join races r on r.race_id = s.race_id
-where s.job = 'odds'
-  and s.race_date between '${windowStart}' and '${endDate}'
-  and s.offset_min in (${[EXPECTED_UNPUBLISHED.offsetMin, ...laterOffsetsOf(SCRAPE_JOBS.odds)].join(",")})`,
-
-    // 指標3: 取得時刻列の有無
-    timingColumns: `
-select table_name, column_name, data_type
-from information_schema.columns
-where table_schema = 'public'
-  and table_name in (${TIMING_TABLES.map((t) => `'${t}'`).join(",")})
-  and (data_type like 'timestamp%' or data_type = 'date')
-  and column_name ~ '(scraped|captured|created|updated|predicted|result_at|checked|fetched)'
-order by table_name, ordinal_position`,
-
-    tableExistence: `
-select table_name from information_schema.tables
-where table_schema = 'public' and table_name in (${TIMING_TABLES.map((t) => `'${t}'`).join(",")})`,
-
-    // 指標4: 月別の結果充足率（全期間、当日以降は結果未確定のため除く）。日単位の集計を経由して月に丸める。
-    // 定義・SQLは coverageSpec.js（汎用の日次監視 data_health の関数 data_health_monthly_result と同じテンプレート）
-    monthly: buildMonthlySql({ toDate: `'${endDate}'` }),
-
-    // 指標5: 取得系の小規模テーブルの件数と鮮度
-    freshness: `
-select 'race_special_notes' as t, count(*)::int as n, max(scraped_at)::text as latest_time, max(race_date)::text as latest_date from race_special_notes
-union all select 'racer_series_points', count(*)::int, max(scraped_at)::text, max(meet_start_date)::text from racer_series_points
-union all select 'venue_entry_course_stats', count(*)::int, max(scraped_at)::text, max(stats_period_end)::text from venue_entry_course_stats
-union all select 'venue_motor_stats', count(*)::int, max(scraped_date)::text, max(stats_period_end)::text from venue_motor_stats
-union all select 'racer_profiles', count(*)::int, max(scraped_at)::text, max(official_updated_at)::text from racer_profiles
-union all select 'racer_profiles.ability_index(非NULL)', count(ability_index)::int, null, null from racer_profiles
-union all select 'race_notices_health', count(*)::int, max(last_checked_at)::text, max(check_date)::text from race_notices_health
-union all select 'race_notices_health(had_success)', (count(*) filter (where had_success))::int, null, null from race_notices_health`,
-
-    // 指標5補足: 主要テーブルの最新データ位置（PKのbtree末尾のみを読む軽量クエリ）
-    latest: `
-select 'races.race_date' as k, max(race_date)::text as v from races
-union all select 'race_results.race_id', max(race_id) from race_results
-union all select 'race_conditions.race_id', max(race_id) from race_conditions
-union all select 'exhibition_data.race_id', max(race_id) from exhibition_data
-union all select 'race_start_timings.race_id', max(race_id) from race_start_timings
-union all select 'race_odds.race_id', max(race_id) from race_odds
-union all select 'race_odds.captured_at(${endDate}以降)', max(captured_at)::text from race_odds where race_id >= '${endDate}'`,
-
-    // 指標7: DBサイズ
-    dbSize: `select pg_database_size(current_database())::bigint as bytes`,
-    tableSizes: `
-select c.relname as table_name, pg_total_relation_size(c.oid)::bigint as bytes
-from pg_class c join pg_namespace n on n.oid = c.relnamespace
-where n.nspname = 'public' and c.relkind in ('r', 'p')
-order by 2 desc limit 10`,
-  };
-}
 
 /**
  * 取得時刻（created_at）の分布のクエリ（テーブルごとに1本、サーバー側集計）。
@@ -472,15 +322,6 @@ async function fetchRaw(queries, cacheFile) {
 // 集計（純粋関数）
 // ---------------------------------------------------------------------------
 
-const rate = (numerator, denominator) =>
-  denominator === 0 ? null : numerator / denominator;
-
-const formatPct = (value) =>
-  value === null ? "n/a" : `${(value * 100).toFixed(1)}%`;
-
-const weekdayOf = (dateStr) =>
-  WEEKDAY_LABELS[new Date(`${dateStr}T00:00:00Z`).getUTCDay()];
-
 const isWeekend = (dateStr) => ["土", "日"].includes(weekdayOf(dateStr));
 
 const datesFrom = (start, days) =>
@@ -490,16 +331,6 @@ const sum = (rows, key) => rows.reduce((acc, r) => acc + Number(r[key]), 0);
 // 列が無い行（--cache-file の、この列を追加する前のキャッシュ）は0として数える
 const sumOrZero = (rows, key) =>
   rows.reduce((acc, r) => acc + Number(r[key] ?? 0), 0);
-
-/** その日が、指標の期待件数の対象か（sinceより前は、取得開始前で対象外） */
-const isApplicableDay = (metric, dateStr) =>
-  metric.since === undefined || dateStr >= metric.since;
-
-/** 指標ごとの、その日の分母。対象外の日は0 */
-const metricDenominator = (metric, dayRow) =>
-  isApplicableDay(metric, dayRow.d)
-    ? Number(dayRow[metric.denomKey ?? "denom"])
-    : 0;
 
 export function summarizeCoverage(perDay) {
   const excluded = sum(perDay, "excluded");
@@ -627,7 +458,9 @@ export function summarizeWindows(
 
 /** 監視と同じ confirmed のスロットを計測し、既存の集計行の形式へ変換する。 */
 function summarizeDetectionLagSlots(slots) {
-  const classified = classifyExpectedUnpublished(slots, { siblingSlots: slots });
+  const classified = classifyExpectedUnpublished(slots, {
+    siblingSlots: slots,
+  });
   const lag = summarizeDetectionLags(slots, classified, slots);
   if (lag.total === 0) return null;
   return summarizeDetectionLagRow({
@@ -942,857 +775,66 @@ function collectWorkflowFreshness(now) {
 }
 
 // ---------------------------------------------------------------------------
-// 閾値アラート・Markdown
-// ---------------------------------------------------------------------------
-
-/** 分母に入れなかったレースの内訳（分母外を、欠損に混ぜずに明示する）。無ければ空文字 */
-function describeOutOfDenominator(m, rankDetail) {
-  const parts = [];
-  if (m.since !== null && m.notApplicableRaces > 0) {
-    parts.push(
-      `対象外(取得開始前。${m.since}より前の${m.notApplicableDays}日) ${m.notApplicableRaces}レース`,
-    );
-  }
-  if (m.metric === "rank4_6") {
-    parts.push(
-      `判定不能 ${rankDetail.undeterminedRaces}レース・完走3艇以下 ${rankDetail.finishersAtMost3Races}レース・結果なし ${rankDetail.noResultRaces}レース`,
-    );
-  }
-  return parts.length === 0 ? "" : `、分母外: ${parts.join("・")}`;
-}
-
-function collectAlerts(report) {
-  const alerts = [];
-  const rankDetail = report.coverage.rankDetail;
-  for (const m of report.coverage.aggregate) {
-    if (m.belowThreshold) {
-      alerts.push({
-        kind: "coverage",
-        item: `存在充足率 ${m.label}`,
-        value: m.rate,
-        threshold: COVERAGE_THRESHOLD,
-        detail: `${m.numerator}/${m.denominator}、閾値未満の日 ${m.daysBelowThreshold}日${describeOutOfDenominator(m, rankDetail)}`,
-      });
-    }
-  }
-  // 判定不能（完走艇数を確定できず、欠損か非完走かを区別できない）を全て欠損とみなしても閾値を割らないかを見る
-  if (
-    rankDetail.undeterminedRaces > 0 &&
-    (rankDetail.lowerBoundRate === null ||
-      rankDetail.lowerBoundRate < COVERAGE_THRESHOLD)
-  ) {
-    alerts.push({
-      kind: "rank_undetermined",
-      item: "着順4位以降: 判定不能を全て欠損とした場合(下限)",
-      value: rankDetail.lowerBoundRate,
-      threshold: COVERAGE_THRESHOLD,
-      detail: `判定不能 ${rankDetail.undeterminedRaces}レース（分母外。艇別の着欄が未保存で、欠損か非完走か区別できない。うちST・展示が5艇分以下=欠場の可能性が高い ${rankDetail.undeterminedAbsentHintRaces}レース）`,
-    });
-  }
-  for (const w of report.windows.aggregate) {
-    if (w.belowThreshold) {
-      alerts.push({
-        kind: "window",
-        item: `窓内取得率 ${w.minutesBefore}分前`,
-        value: w.rateAdjusted,
-        threshold: WINDOW_THRESHOLD,
-        detail: `${w.inWindow}/${w.racesAdjusted}${w.structural > 0 ? `（想定内の未公開 ${w.structural}件を分母から除外。除外なしは${w.inWindow}/${w.races}）` : ""}`,
-      });
-    }
-  }
-  if (report.detectionLag?.belowThreshold) {
-    const lag = report.detectionLag;
-    alerts.push({
-      kind: "detection_lag",
-      item: "発売開始の検知の遅れ",
-      value: lag.rate,
-      threshold: DETECTION_LAG.rate,
-      detail: `${DETECTION_LAG.thresholdMin}分以内 ${lag.within}/${lag.measured}（p95 ${lag.p95Min ?? "-"}分・最大 ${lag.maxMin ?? "-"}分、計測不能 ${lag.unmeasured}件）`,
-    });
-  }
-  for (const m of report.monthlyResults) {
-    if (m.belowThreshold) {
-      alerts.push({
-        kind: "monthly_result",
-        item: `月別結果充足率 ${m.month}`,
-        value: m.rateExcludingCancelled,
-        threshold: COVERAGE_THRESHOLD,
-        detail: `${m.withResult}/${m.denominator}（中止除外${m.excluded}件）`,
-      });
-    }
-  }
-  for (const f of report.freshness) {
-    if (f.empty) {
-      alerts.push({
-        kind: "empty_table",
-        item: `空: ${f.table}`,
-        value: 0,
-        threshold: null,
-        detail: "0件",
-      });
-    }
-  }
-  for (const w of report.workflows.items) {
-    const alert = (kind, item, detail) =>
-      alerts.push({ kind, item, value: null, threshold: null, detail });
-    if (w.error) {
-      alert("workflow_check_failed", `取得失敗: ${w.workflow}`, w.error);
-    } else if (w.noRunHistory) {
-      alert("workflow_never_ran", `実行履歴0件: ${w.workflow}`, "");
-    } else {
-      if (
-        ["failure", "cancelled", "timed_out", "startup_failure"].includes(
-          w.lastRunConclusion,
-        )
-      ) {
-        alert(
-          "workflow_last_run_failed",
-          `最終実行が失敗: ${w.workflow}`,
-          `${w.lastRunConclusion}（${w.lastRunAt}）`,
-        );
-      }
-      if (w.lastSuccessAt === null) {
-        alert(
-          "workflow_never_succeeded",
-          `successの履歴なし: ${w.workflow}`,
-          "",
-        );
-      } else if (
-        w.expectedMaxSuccessHours !== null &&
-        w.hoursSinceLastSuccess > w.expectedMaxSuccessHours
-      ) {
-        alert(
-          "workflow_stale",
-          `最終successが古い: ${w.workflow}`,
-          `${w.hoursSinceLastSuccess}時間前（許容${w.expectedMaxSuccessHours}時間、cron式からの推定）`,
-        );
-      }
-    }
-  }
-  const noDataDays = [
-    ...report.coverage.missingDates.map((d) => `存在充足率: ${d}`),
-    ...report.windows.missingDates.map((d) => `窓内取得率: ${d}`),
-  ];
-  if (noDataDays.length > 0) {
-    alerts.push({
-      kind: "no_data_days",
-      item: "対象レースが0件の日",
-      value: null,
-      threshold: null,
-      detail: noDataDays.join(", "),
-    });
-  }
-  for (const t of report.timingColumns) {
-    if (t.unmeasurable) {
-      alerts.push({
-        kind: "timing_unmeasurable",
-        item: `タイミング計測不能: ${t.table}`,
-        value: null,
-        threshold: null,
-        detail:
-          t.quality === "table_missing"
-            ? "テーブル不在"
-            : t.quality === "weak"
-              ? `取得時刻列なし（${t.columns.join("/")}のみ）`
-              : "時刻列なし",
-      });
-    }
-  }
-  return alerts;
-}
-
-const tableRow = (cells) => `| ${cells.join(" | ")} |`;
-const tableHeader = (cells) =>
-  `${tableRow(cells)}\n${tableRow(cells.map(() => "---"))}`;
-
-const formatBytes = (bytes) =>
-  bytes >= 1024 ** 3
-    ? `${(bytes / 1024 ** 3).toFixed(2)} GB`
-    : `${(bytes / 1024 ** 2).toFixed(1)} MB`;
-
-function renderMarkdown(report) {
-  const { params } = report;
-  const lines = [];
-  lines.push(`# データ健全性レポート ${params.reportDate}`);
-  lines.push("");
-  lines.push(
-    `- 存在充足率の期間: ${params.coverage.start}〜${params.coverage.end}（${COVERAGE_DAYS}日。当日は結果未確定のため含めない）`,
-  );
-  lines.push(
-    `- 窓内取得率の期間: ${params.windows.start}〜${params.windows.end}（${WINDOW_DAYS}日、土日${params.windows.weekendDays}日を含む）`,
-  );
-  if (params.windows.weekendDays === 0) {
-    lines.push(
-      "- 警告: 窓内取得率の期間に土日が含まれていない。完了の定義Bの根拠にならない",
-    );
-  }
-  lines.push(
-    `- 分母: 開催中止(cancellation_status='confirmed')を除外。閾値: 存在充足率${COVERAGE_THRESHOLD * 100}%、窓内取得率${WINDOW_THRESHOLD * 100}%`,
-  );
-  lines.push("");
-
-  lines.push("## 閾値未達・要注意項目");
-  lines.push("");
-  if (report.alerts.length === 0) {
-    lines.push("なし");
-  } else {
-    lines.push(tableHeader(["区分", "項目", "値", "閾値", "詳細"]));
-    for (const a of report.alerts) {
-      lines.push(
-        tableRow([
-          a.kind,
-          a.item,
-          a.value === null ? "-" : formatPct(a.value),
-          a.threshold === null ? "-" : formatPct(a.threshold),
-          a.detail,
-        ]),
-      );
-    }
-  }
-  lines.push("");
-
-  lines.push(`## 1. 存在充足率（直近${COVERAGE_DAYS}日の合計）`);
-  lines.push("");
-  const agg = report.coverage.aggregate;
-  const rankDetail = report.coverage.rankDetail;
-  lines.push(
-    `分母（中止除外後）${agg[0].denominator}レース、除外（開催中止）${agg[0].excluded}レース。` +
-      "指標ごとに分母が異なるものは、「分母」列にその指標の分母を出し、「分母外」列に外したレースの内訳を出す",
-  );
-  lines.push("");
-  lines.push(
-    tableHeader([
-      "指標",
-      "充足",
-      "分母",
-      "充足率",
-      "閾値未満の日数",
-      "最低の日",
-      "分母外",
-    ]),
-  );
-  const outOfDenominator = (m) =>
-    describeOutOfDenominator(m, rankDetail).replace(/^、分母外: /, "") || "-";
-  for (const m of agg) {
-    lines.push(
-      tableRow([
-        m.label,
-        m.numerator,
-        m.denominator,
-        m.rate === null && !m.belowThreshold
-          ? "対象外"
-          : `${formatPct(m.rate)}${m.belowThreshold ? " (未達)" : ""}`,
-        m.daysBelowThreshold,
-        m.worstDay ? `${m.worstDay.date} ${formatPct(m.worstDay.rate)}` : "-",
-        outOfDenominator(m),
-      ]),
-    );
-  }
-  lines.push("");
-  lines.push("### 1-2. 着順4位以降の判定の内訳（BOA-381）");
-  lines.push("");
-  lines.push(
-    "失格・欠場・転覆などで6艇が完走しないレースは、公式が最後の順位を付けない（rank6・rank5・rank4がNULLで正しい）ため、" +
-      "完走艇数から「順位が付くべき最大順位」を決めて判定する。完走艇数は艇別の着欄（race_start_timings.finish_mark、マイグレーション077）が6艇分そろったレースだけ確定できる。",
-  );
-  lines.push("");
-  lines.push(tableHeader(["区分", "レース数", "扱い"]));
-  for (const row of [
-    [
-      "完走艇数を確定（着欄あり、完走4艇以上）",
-      rankDetail.determinedRaces,
-      "分母。完走艇数まで順位が付いていれば充足",
-    ],
-    [
-      "着欄は未確定・rank4〜6がそろっている",
-      rankDetail.fullRaces,
-      "分母・充足（そろっていれば欠損ではない）",
-    ],
-    [
-      "判定不能（着欄は未確定・rank4〜6に欠けあり）",
-      rankDetail.undeterminedRaces,
-      "分母外。欠損か非完走かを区別できない。着欄の取得（結果ページの再取得・K/Bの取り込み）で確定する",
-    ],
-    [
-      "　└ うちST・展示が5艇分以下",
-      rankDetail.undeterminedAbsentHintRaces,
-      "欠場艇がいる可能性が高い（目安。確定ではない）",
-    ],
-    [
-      "完走3艇以下（着欄あり）",
-      rankDetail.finishersAtMost3Races,
-      "分母外（rank4以降は付かない）",
-    ],
-    [
-      "結果なし（rank1が無い）",
-      rankDetail.noResultRaces,
-      "分母外（「結果(rank1)」の指標で計上）",
-    ],
-  ]) {
-    lines.push(tableRow(row));
-  }
-  lines.push("");
-  lines.push(
-    `- 充足率: ${rankDetail.numerator}/${rankDetail.denominator} = ${formatPct(rate(rankDetail.numerator, rankDetail.denominator))}。判定不能を全て欠損とみなした場合の下限: ${formatPct(rankDetail.lowerBoundRate)}（分母に判定不能${rankDetail.undeterminedRaces}レースを加えて算出）`,
-  );
-  lines.push(
-    `- 変更前の定義（中止除外後の全レースを分母に、rank4・5・6がすべてある）: ${rankDetail.legacyDefinition.numerator}/${rankDetail.legacyDefinition.denominator} = ${formatPct(rankDetail.legacyDefinition.rate)}`,
-  );
-  lines.push(
-    `- 参考（BOA-362。順位に非完走艇が入っているレース）: 確定（着欄で、完走艇数より多くの順位が付いている）${rankDetail.pollutedConfirmedRaces}レース、疑い（着欄が未確定で6着まで付いているが展示タイムが5艇分以下。展示の欠損も含む上限値）${rankDetail.absentSuspectRaces}レース`,
-  );
-  lines.push("");
-  lines.push("### 日別の存在充足率");
-  lines.push("");
-  const dayMetrics = [
-    "result",
-    "rank4_6",
-    "actual_course",
-    "winning_technique",
-    "race_stage",
-    "st_row",
-    "st_value",
-    "exhibition_row",
-    "exhibition_time",
-    "odds",
-    "odds_all",
-  ];
-  lines.push(
-    tableHeader([
-      "日付",
-      "総数",
-      "除外",
-      "分母",
-      ...dayMetrics.map((k) => COVERAGE_METRICS.find((m) => m.key === k).label),
-    ]),
-  );
-  for (const d of report.coverage.perDay) {
-    lines.push(
-      tableRow([
-        `${d.d}(${weekdayOf(d.d)})`,
-        d.total,
-        d.excluded,
-        d.denom,
-        ...dayMetrics.map((k) => {
-          const metric = COVERAGE_METRICS.find((m) => m.key === k);
-          if (!isApplicableDay(metric, d.d)) return "対象外(取得開始前)";
-          return formatPct(rate(Number(d[k]), metricDenominator(metric, d)));
-        }),
-      ]),
-    );
-  }
-  lines.push("");
-
-  lines.push(
-    `## 2. 窓内取得率（締切=発走時刻、窓の中心±3分、直近${WINDOW_DAYS}日）`,
-  );
-  lines.push("");
-  lines.push(
-    "障害期間の除外: " +
-      (KNOWN_INCIDENTS.length === 0
-        ? "なし"
-        : KNOWN_INCIDENTS.map(
-            (i) =>
-              `${i.label} ${i.start}〜${i.end}（窓が重なる(レース,窓)を除外）`,
-          ).join(" / ")),
-  );
-  lines.push("");
-  lines.push(
-    "想定内の未公開の除外（BOA-386）: 各会場・日の第1レースの" +
-      `${EXPECTED_UNPUBLISHED_MINUTES}分前の窓が窓内に取れておらず、後続の窓（${LATER_WINDOW_MINUTES.join("・")}分前）のどれかに取れているもの（後で公開された）を、分母から外した値を「全体(想定内の未公開を除外)」に出す。閾値の判定はこの値で行う。外した件数は「想定内の未公開」に別に出す。後続の窓にも取れていない第1レースは、除外しない（本当に取れていない）`,
-  );
-  lines.push("");
-  lines.push(
-    tableHeader([
-      "窓",
-      "全体(除外なし)",
-      "全体(想定内の未公開を除外)",
-      "想定内の未公開",
-      "全体(障害期間を除外)",
-      "障害期間の除外件数",
-      "平日(除外なし)",
-      "土日(除外なし)",
-    ]),
-  );
-  for (const w of report.windows.aggregate) {
-    const wd = report.windows.weekday.find(
-      (x) => x.minutesBefore === w.minutesBefore,
-    );
-    const we = report.windows.weekend.find(
-      (x) => x.minutesBefore === w.minutesBefore,
-    );
-    const cell = (x) => `${formatPct(x.rate)} (${x.inWindow}/${x.races})`;
-    lines.push(
-      tableRow([
-        `${w.minutesBefore}分前`,
-        cell(w),
-        `${formatPct(w.rateAdjusted)} (${w.inWindow}/${w.racesAdjusted})${w.belowThreshold ? " (未達)" : ""}`,
-        w.structural,
-        `${formatPct(w.rateClean)} (${w.inWindowClean}/${w.racesClean})`,
-        w.excludedRaces,
-        cell(wd),
-        cell(we),
-      ]),
-    );
-  }
-  lines.push("");
-  const m60 = report.windows.aggregate.find(
-    (w) => w.minutesBefore === EXPECTED_UNPUBLISHED_MINUTES,
-  );
-  lines.push(
-    `### 第1レースの${EXPECTED_UNPUBLISHED_MINUTES}分前の窓（想定内の未公開）`,
-  );
-  lines.push("");
-  lines.push(
-    tableHeader([
-      "日付",
-      "第1レース(件)",
-      "窓内",
-      "窓内取得率",
-      "想定内の未公開",
-      "取れていない(後続の窓にも無い)",
-    ]),
-  );
-  for (const date of [...new Set(report.windows.perDay.map((r) => r.d))]) {
-    const row = report.windows.perDay.find(
-      (r) => r.d === date && Number(r.m) === EXPECTED_UNPUBLISHED_MINUTES,
-    );
-    if (!row) continue;
-    const first = Number(row.first_race ?? 0);
-    const inWin = Number(row.first_race_in_window ?? 0);
-    const structural = Number(row.structural ?? 0);
-    lines.push(
-      tableRow([
-        `${date}(${weekdayOf(date)})`,
-        first,
-        inWin,
-        formatPct(rate(inWin, first)),
-        structural,
-        first - inWin - structural,
-      ]),
-    );
-  }
-  if (m60) {
-    lines.push(
-      tableRow([
-        "合計",
-        m60.firstRace,
-        m60.firstRaceInWindow,
-        formatPct(rate(m60.firstRaceInWindow, m60.firstRace)),
-        m60.structural,
-        m60.firstRace - m60.firstRaceInWindow - m60.structural,
-      ]),
-    );
-  }
-  lines.push("");
-  const lag = report.detectionLag;
-  lines.push(
-    `### 発売開始の検知の遅れ（想定内の未公開のレース。基準: ${DETECTION_LAG.thresholdMin}分以内の割合${DETECTION_LAG.rate * 100}%以上）`,
-  );
-  lines.push("");
-  lines.push(
-    "監視と同じ定義で予定表(scrape_slots)から計測（延長で取得した場合は平均の試行間隔、後続の窓で取得した場合は直前の未公開の試行から成功までの差）",
-  );
-  lines.push("");
-  if (lag && lag.total > 0) {
-    lines.push(
-      tableHeader([
-        `${DETECTION_LAG.thresholdMin}分以内`,
-        "対象",
-        "割合",
-        "p50",
-        "p95",
-        "最大",
-        "計測不能",
-      ]),
-    );
-    lines.push(
-      tableRow([
-        lag.within,
-        lag.measured,
-        formatPct(lag.rate),
-        lag.p50Min !== null ? `${lag.p50Min}分` : "-",
-        lag.p95Min !== null ? `${lag.p95Min}分` : "-",
-        lag.maxMin !== null ? `${lag.maxMin}分` : "-",
-        lag.unmeasured,
-      ]),
-    );
-    if (lag.belowThreshold) {
-      lines.push("");
-      lines.push(
-        `(未達: ${formatPct(lag.rate)} < ${DETECTION_LAG.rate * 100}%)`,
-      );
-    }
-  } else {
-    lines.push("（対象レース0件）");
-  }
-  lines.push("");
-  lines.push("### 日別の窓内取得率");
-  lines.push("");
-  lines.push(
-    tableHeader([
-      "日付",
-      ...WINDOW_MINUTES.map((m) => `${m}分前`),
-      "対象レース",
-    ]),
-  );
-  for (const date of [...new Set(report.windows.perDay.map((r) => r.d))]) {
-    const ofDay = report.windows.perDay.filter((r) => r.d === date);
-    const cells = WINDOW_MINUTES.map((m) => {
-      const row = ofDay.find((r) => Number(r.m) === m);
-      return formatPct(
-        row ? rate(Number(row.in_window), Number(row.races)) : null,
-      );
-    });
-    lines.push(
-      tableRow([`${date}(${weekdayOf(date)})`, ...cells, ofDay[0].races]),
-    );
-  }
-  const excludedDays = [
-    ...new Set(
-      report.windows.perDay
-        .filter((r) => Number(r.races) !== Number(r.races_clean))
-        .map((r) => r.d),
-    ),
-  ];
-  if (excludedDays.length > 0) {
-    lines.push("");
-    lines.push(
-      "### 日別の窓内取得率（障害期間を除外した値。除外があった日のみ）",
-    );
-    lines.push("");
-    lines.push(
-      tableHeader([
-        "日付",
-        ...WINDOW_MINUTES.map((m) => `${m}分前`),
-        "除外件数(窓別)",
-      ]),
-    );
-    for (const date of excludedDays) {
-      const ofDay = report.windows.perDay.filter((r) => r.d === date);
-      const rowOf = (m) => ofDay.find((r) => Number(r.m) === m);
-      lines.push(
-        tableRow([
-          `${date}(${weekdayOf(date)})`,
-          ...WINDOW_MINUTES.map((m) =>
-            formatPct(
-              rate(
-                Number(rowOf(m).in_window_clean),
-                Number(rowOf(m).races_clean),
-              ),
-            ),
-          ),
-          WINDOW_MINUTES.map(
-            (m) => Number(rowOf(m).races) - Number(rowOf(m).races_clean),
-          ).join("/"),
-        ]),
-      );
-    }
-  }
-  if (report.windows.compare) {
-    lines.push("");
-    lines.push(
-      `参考（${report.windows.compare.dates.join("・")}のみで再集計）`,
-    );
-    lines.push("");
-    lines.push(tableHeader(["窓", "取得率", "件数"]));
-    for (const w of report.windows.compare.aggregate) {
-      lines.push(
-        tableRow([
-          `${w.minutesBefore}分前`,
-          formatPct(w.rate),
-          `${w.inWindow}/${w.races}`,
-        ]),
-      );
-    }
-  }
-  lines.push("");
-
-  lines.push("## 3. 取得時刻列の有無");
-  lines.push("");
-  lines.push(tableHeader(["テーブル", "時刻系の列", "タイミング計測"]));
-  for (const t of report.timingColumns) {
-    const label =
-      t.quality === "measurable"
-        ? `可（${t.strongColumns
-            .map((c) =>
-              OVERWRITTEN_ON_UPSERT.has(c)
-                ? `${c}=最終書き込み時刻`
-                : c === "created_at"
-                  ? "created_at=初回保存時刻。追加前の行はNULL"
-                  : c,
-            )
-            .join("/")}）`
-        : t.quality === "weak"
-          ? "不能（作成/更新時刻のみ。取得時刻ではない）"
-          : t.quality === "none"
-            ? "不能（時刻列なし）"
-            : "テーブル不在";
-    lines.push(tableRow([t.table, t.columns.join(", ") || "-", label]));
-  }
-  lines.push("");
-
-  lines.push(
-    `### 3-2. 取得時刻（created_at）の分布（${report.scrapedTimestamps.period.start}〜${report.scrapedTimestamps.period.end}、created_at が非NULLのレースのみ）`,
-  );
-  lines.push("");
-  if (report.scrapedTimestamps.error) {
-    lines.push(`**${report.scrapedTimestamps.error}**`);
-    lines.push("");
-  }
-  const scrapedTables = report.scrapedTimestamps.tables;
-  if (scrapedTables.every((t) => !t.applied)) {
-    lines.push(
-      "未適用のため計測不能: created_at・updated_at 列が無い（マイグレーション071が未適用）。適用後、新規に保存された行から計測できる（既存の行はNULLで、分母に含めない）。",
-    );
-  } else {
-    lines.push(
-      "「発走の何分前に保存されたか」は、レースごとに最も早い created_at で測る（正=発走前、負=発走後）。" +
-        "分母は created_at が非NULLのレース数（マイグレーション071より前の行はNULLで含めない）。累積割合は「発走m分前までに保存されていたレース」の割合。",
-    );
-    lines.push("");
-    lines.push(
-      tableHeader([
-        "テーブル",
-        "期間内のレース",
-        "行あり",
-        "created_at非NULL(分母)",
-        "発走の何分前に保存 p10/p50/p90",
-        "発走後に保存",
-        "発走m分前までに保存(累積)",
-      ]),
-    );
-    const fmtDist = (d) =>
-      d.p50 === null ? "-" : `${d.p10} / ${d.p50} / ${d.p90}`;
-    for (const t of scrapedTables) {
-      if (!t.applied) {
-        lines.push(
-          tableRow([t.table, "-", "-", "-", "未適用のため計測不能", "-", "-"]),
-        );
-        continue;
-      }
-      lines.push(
-        tableRow([
-          t.table,
-          t.racesInPeriod,
-          t.racesWithRows,
-          t.racesWithCreatedAt,
-          fmtDist(t.leadMinutes),
-          t.savedAfterStart,
-          t.savedBy.length === 0
-            ? "-"
-            : t.savedBy
-                .map(
-                  (w) =>
-                    `${w.minutesBefore}分前: ${formatPct(w.rate)} (${w.hit}/${w.denominator})`,
-                )
-                .join(" / "),
-        ]),
-      );
-    }
-    for (const t of scrapedTables.filter((x) => x.applied && x.valueFilled)) {
-      lines.push("");
-      lines.push(
-        `${t.table} の値が揃った時刻（展示タイムが入っている行の updated_at の最大値。値が変わった最後の時刻）: 対象${t.valueFilled.races}レース、発走の何分前 p10/p50/p90 = ${fmtDist(t.valueFilled.leadMinutes)}`,
-      );
-    }
-  }
-  lines.push("");
-
-  lines.push("## 4. 月別の結果充足率（races全期間）");
-  lines.push("");
-  lines.push(
-    tableHeader([
-      "月",
-      "日数",
-      "総数",
-      "中止除外",
-      "分母",
-      "結果あり",
-      "充足率(全体)",
-      "充足率(中止除外)",
-      "resultsに行なし",
-      "行あり・rank1なし",
-      "全滅日",
-      "一部欠落日",
-    ]),
-  );
-  for (const m of report.monthlyResults) {
-    lines.push(
-      tableRow([
-        m.month,
-        m.days,
-        m.total,
-        m.excluded,
-        m.denominator,
-        m.withResult,
-        formatPct(m.rateAll),
-        `${formatPct(m.rateExcludingCancelled)}${m.belowThreshold ? " (未達)" : ""}`,
-        m.noResultRow,
-        m.rowWithoutRank1,
-        m.zeroResultDays,
-        m.partialDays,
-      ]),
-    );
-  }
-  lines.push("");
-
-  lines.push("## 5. 取得系テーブルの件数と鮮度");
-  lines.push("");
-  lines.push(tableHeader(["テーブル", "件数", "最新の取得時刻", "最新の日付"]));
-  for (const f of report.freshness) {
-    lines.push(
-      tableRow([
-        f.empty ? `**【空】${f.table}**` : f.table,
-        f.count,
-        f.latestTime ?? "-",
-        f.latestDate ?? "-",
-      ]),
-    );
-  }
-  lines.push("");
-  lines.push(tableHeader(["主要テーブルの最新位置", "値"]));
-  for (const l of report.latest) lines.push(tableRow([l.key, l.value ?? "-"]));
-  lines.push("");
-
-  lines.push("## 6. 取得ジョブの鮮度（scrape-*ワークフロー）");
-  lines.push("");
-  if (report.workflows.skipped) {
-    lines.push(`スキップ: ${report.workflows.reason}`);
-  } else {
-    lines.push(
-      tableHeader([
-        "ワークフロー",
-        "最終実行",
-        "最終実行の結果",
-        "最終success",
-        "successからの経過(時間)",
-        "許容(時間)",
-      ]),
-    );
-    for (const w of report.workflows.items) {
-      if (w.error) {
-        lines.push(
-          tableRow([
-            `**【取得失敗】${w.workflow}**`,
-            w.error,
-            "-",
-            "-",
-            "-",
-            "-",
-          ]),
-        );
-        continue;
-      }
-      lines.push(
-        tableRow([
-          w.noRunHistory ? `**【実行履歴0件】${w.workflow}**` : w.workflow,
-          w.lastRunAt ?? "-",
-          w.lastRunConclusion ?? "-",
-          w.lastSuccessAt ?? "なし",
-          w.hoursSinceLastSuccess ?? "-",
-          w.expectedMaxSuccessHours ?? "-",
-        ]),
-      );
-    }
-  }
-  lines.push("");
-
-  lines.push("## 7. DBサイズ");
-  lines.push("");
-  lines.push(`データベース全体: ${formatBytes(report.dbSize.databaseBytes)}`);
-  lines.push("");
-  lines.push(tableHeader(["テーブル（総サイズ上位10）", "サイズ"]));
-  for (const t of report.dbSize.topTables)
-    lines.push(tableRow([t.table, formatBytes(t.bytes)]));
-  lines.push("");
-  lines.push("## 注記（解釈上の注意）");
-  lines.push("");
-  for (const note of [
-    "着順4位以降（rank4〜6）は、欠場・失格・転覆等で6艇が完走しないレースでは、公式が最後の順位を付けないため、欠損ではない。完走艇数を艇別の着欄（finish_mark）で確定できるレースは、完走艇数まで順位が付いているかで判定する。確定できずrank4〜6に欠けがあるレースは「判定不能」として分母外に件数を別に出す（欠損に混ぜない）。判定不能は、着欄の取得（結果ページの再取得・K/Bの取り込み）が進むほど減る。「判定不能を全て欠損とした場合」の下限も併記する（1-2節）。",
-    `全券種オッズ（trio・exacta・quinella・wideと、5種すべて）は、全通り取得の開始日（${ODDS_FULL_GRID_SINCE}）以降のレースのみを期待件数の対象とする（ユーザー承認済み、2026-09-21。それ以前は時系列で取り直せない）。それ以前の日は「対象外(取得開始前)」として分母から外す。trifecta_all は、2026-07-12以降に保存があり、対象外を設けない。`,
-    "開催中止の除外は races.cancellation_status='confirmed' のみ。中止検知の導入前の期間は除外できず、月別の未充足に中止レースが含まれうる。",
-    "全券種オッズ・窓内取得率は、取得方式の変更（ADR-0057の窓構成・全券種の保存）の前後で値が大きく変わりうる。日別表で変化点を確認する。",
-    "race_results.result_at は scrape-results の実行（upsert）ごとに更新される最終書き込み時刻。predictions.predicted_at も買い目オッズ更新で更新される。",
-    "窓は隣り合うものが重なる（例: 10分前=7〜13分前、5分前=2〜8分前）ため、1回の取得が複数の窓を満たしうる。窓別の取得率は過大評価側に出る。",
-    "取りこぼしの一因はGitHub Actionsのキャンセル起因（BOA-342/344の実測では、取りこぼしの81〜94%が、キャンセルされた実行が前後5分以内にあった）。この指標自体は原因を区別しない。",
-    "展示・STは「行の有無」と「値の有無」を分けて出す。展示タイムより先にSTだけの行が書かれる会場があり、行の有無だけでは欠落を過小評価する（BOA-356）。展示の判定基準は check-exhibition-gap-rate.js に合わせ、1艇でも展示タイムが入っていれば取得済みとする。",
-    "窓内取得率の分母は結果確定済み（rank1あり）・中止除外のレース。土日を含まない期間は完了の定義Bの根拠にならない。第1レースの60分前の窓は、公式の発売・公開が窓の後に始まることがあるため、後の窓で公開が確認できたもの（想定内の未公開）だけを閾値判定の分母から外す（件数は別に出す。BOA-386）。",
-    "取得時刻の分布（3-2）は exhibition_data・race_entries・race_start_timings の created_at（行が最初に保存された時刻、マイグレーション071）を使う。追加前の行はNULLで分母に含まれないため、適用直後は対象レースが少ない（適用から数日で、土日を含む7日分が溜まるまで完了の定義Bの根拠にならない）。過去日のバックフィル（手動スクリプト）で作られた行は、バックフィル時刻が created_at になり「発走後に保存」に数えられる。 3-2は「最初に保存された時刻」で測るため、公式の窓（中心±3分）に取得が入ったかどうか（2の窓内取得率の定義）とは別の指標で、変更の無い取得は行に痕跡を残さない（WS8(b)）。分母は created_at が非NULLのレースで、行が1件も無いレース（取得できなかったレース）は含まれない（「行あり」との差で確認する）。3-2の「値が揃った時刻」は、展示タイム以外の列の変更でも遅く出る上限の近似。exhibition_data は、発走60分前の体重だけの窓（BOA-500）が当日体重・調整重量だけの行を先に作るため、最初の保存時刻は体重の取得時刻を表す。展示の取得時刻は「値が揃った時刻」で見る。",
-  ]) {
-    lines.push(`- ${note}`);
-  }
-  lines.push("");
-  return lines.join("\n");
-}
-
-// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
-export async function main(argv = process.argv.slice(2)) {
-  const opts = parseArgs(argv);
-  const coverageStart = addDaysToDateString(opts.endDate, -(COVERAGE_DAYS - 1));
-  const windowStart = addDaysToDateString(opts.endDate, -(WINDOW_DAYS - 1));
-  const windowDates = datesFrom(windowStart, WINDOW_DAYS);
-  // 窓内取得率の対象期間外の日付を黙って無視しない（比較したつもりで比較されない事故を防ぐ）
-  const outOfWindow = opts.compareDates.filter((d) => !windowDates.includes(d));
-  if (outOfWindow.length > 0) {
-    throw new Error(
-      `--compare-dates は窓内取得率の期間(${windowStart}〜${opts.endDate})内で指定してください: ${outOfWindow.join(", ")}`,
-    );
-  }
-  // 日付の決定は1回だけ行う（JST日付をまたぐ実行でrunDateがずれるのを防ぐ）
-  const runDate = getTodayDateJST();
+function buildReportParams({
+  runDate,
+  coverageStart,
+  windowStart,
+  endDate,
+  windowDates,
+}) {
+  return {
+    reportDate: runDate,
+    thresholds: { coverage: COVERAGE_THRESHOLD, window: WINDOW_THRESHOLD },
+    coverage: {
+      start: coverageStart,
+      end: endDate,
+      days: COVERAGE_DAYS,
+    },
+    windows: {
+      start: windowStart,
+      end: endDate,
+      days: WINDOW_DAYS,
+      weekendDays: windowDates.filter(isWeekend).length,
+      minutesBefore: WINDOW_MINUTES,
+    },
+    denominatorRule: "races.cancellation_status='confirmed' を除外",
+    // 指標ごとの分母の定義（BOA-381）
+    metricDenominators: {
+      rank4_6:
+        "艇別の着欄(race_start_timings.finish_mark)が6艇分そろい、完走艇数が4以上のレース＋着欄を確定できないがrank4〜6がそろっているレース。着欄を確定できずrank4〜6に欠けがあるレースは判定不能（分母外）、完走3艇以下・結果なしも分母外",
+      windowExpectedUnpublished: `窓内取得率（発走${EXPECTED_UNPUBLISHED_MINUTES}分前）は、各会場・日の第1レース（races の最小のレース番号）が窓内に取れておらず、後続の窓（${LATER_WINDOW_MINUTES.join("・")}分前）のどれかに取れているもの（後で公開された。想定内の未公開）を、閾値判定の分母から外す。外した件数と、除外なしの値も併記する`,
+      oddsFullGrid: `trio_all・exacta_all・quinella_all・wide_all と、5種すべて(odds_all)は、${ODDS_FULL_GRID_SINCE}以降のレースのみを分母にする（全通り取得の開始日。それ以前は対象外）。trifecta_all は取得開始前の対象外を設けない（2026-07-12以降に保存がある）`,
+    },
+    oddsFullGridSince: ODDS_FULL_GRID_SINCE,
+    knownIncidents: KNOWN_INCIDENTS,
+  };
+}
 
-  const queries = buildQueries({
-    coverageStart,
-    windowStart,
-    endDate: opts.endDate,
-  });
-  const raw = await fetchRaw(queries, opts.cacheFile);
-
-  // 取得時刻（created_at）の分布。列が無い（マイグレーション071が未適用の）テーブルはクエリを発行しない
-  const scrapedTimestamps = await collectScrapedTimestamps({
-    timingColumns: raw.timingColumns,
-    windowStart,
-    endDate: opts.endDate,
-    fetch: (queries) => fetchRaw(queries, opts.cacheFile),
-  });
-
+function buildReport({
+  opts,
+  raw,
+  scrapedTimestamps,
+  runDate,
+  coverageStart,
+  windowStart,
+  windowDates,
+}) {
   const coverageDates = datesFrom(coverageStart, COVERAGE_DAYS);
   const compareRows = raw.windows.filter((r) =>
     opts.compareDates.includes(r.d),
   );
-
-  const report = {
+  return {
     generatedAt: new Date().toISOString(),
-    params: {
-      reportDate: runDate,
-      thresholds: { coverage: COVERAGE_THRESHOLD, window: WINDOW_THRESHOLD },
-      coverage: {
-        start: coverageStart,
-        end: opts.endDate,
-        days: COVERAGE_DAYS,
-      },
-      windows: {
-        start: windowStart,
-        end: opts.endDate,
-        days: WINDOW_DAYS,
-        weekendDays: windowDates.filter(isWeekend).length,
-        minutesBefore: WINDOW_MINUTES,
-      },
-      denominatorRule: "races.cancellation_status='confirmed' を除外",
-      // 指標ごとの分母の定義（BOA-381）
-      metricDenominators: {
-        rank4_6:
-          "艇別の着欄(race_start_timings.finish_mark)が6艇分そろい、完走艇数が4以上のレース＋着欄を確定できないがrank4〜6がそろっているレース。着欄を確定できずrank4〜6に欠けがあるレースは判定不能（分母外）、完走3艇以下・結果なしも分母外",
-        windowExpectedUnpublished: `窓内取得率（発走${EXPECTED_UNPUBLISHED_MINUTES}分前）は、各会場・日の第1レース（races の最小のレース番号）が窓内に取れておらず、後続の窓（${LATER_WINDOW_MINUTES.join("・")}分前）のどれかに取れているもの（後で公開された。想定内の未公開）を、閾値判定の分母から外す。外した件数と、除外なしの値も併記する`,
-        oddsFullGrid: `trio_all・exacta_all・quinella_all・wide_all と、5種すべて(odds_all)は、${ODDS_FULL_GRID_SINCE}以降のレースのみを分母にする（全通り取得の開始日。それ以前は対象外）。trifecta_all は取得開始前の対象外を設けない（2026-07-12以降に保存がある）`,
-      },
-      oddsFullGridSince: ODDS_FULL_GRID_SINCE,
-      knownIncidents: KNOWN_INCIDENTS,
-    },
+    params: buildReportParams({
+      runDate,
+      coverageStart,
+      windowStart,
+      endDate: opts.endDate,
+      windowDates,
+    }),
     coverage: {
       perDay: raw.coverage,
       aggregate: summarizeCoverage(raw.coverage),
@@ -1837,8 +879,10 @@ export async function main(argv = process.argv.slice(2)) {
       })),
     },
   };
-  report.alerts = collectAlerts(report);
+}
 
+/** レポートのJSONを保存し、そのパスを返す */
+function writeReportJson(report, opts, runDate) {
   fs.mkdirSync(opts.outDir, { recursive: true });
   // 既定の集計期間（昨日まで）以外、またはGitHub Actions確認を省略した実行は、
   // 当日のベースラインJSONを上書きしない（内容が欠けた/別期間のJSONで置き換わるのを防ぐ）
@@ -1848,6 +892,51 @@ export async function main(argv = process.argv.slice(2)) {
   ].join("");
   const jsonPath = path.join(opts.outDir, `${runDate}${fileSuffix}.json`);
   fs.writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`);
+  return jsonPath;
+}
+
+export async function main(argv = process.argv.slice(2)) {
+  const opts = parseArgs(argv);
+  const coverageStart = addDaysToDateString(opts.endDate, -(COVERAGE_DAYS - 1));
+  const windowStart = addDaysToDateString(opts.endDate, -(WINDOW_DAYS - 1));
+  const windowDates = datesFrom(windowStart, WINDOW_DAYS);
+  // 窓内取得率の対象期間外の日付を黙って無視しない（比較したつもりで比較されない事故を防ぐ）
+  const outOfWindow = opts.compareDates.filter((d) => !windowDates.includes(d));
+  if (outOfWindow.length > 0) {
+    throw new Error(
+      `--compare-dates は窓内取得率の期間(${windowStart}〜${opts.endDate})内で指定してください: ${outOfWindow.join(", ")}`,
+    );
+  }
+  // 日付の決定は1回だけ行う（JST日付をまたぐ実行でrunDateがずれるのを防ぐ）
+  const runDate = getTodayDateJST();
+
+  const queries = buildQueries({
+    coverageStart,
+    windowStart,
+    endDate: opts.endDate,
+  });
+  const raw = await fetchRaw(queries, opts.cacheFile);
+
+  // 取得時刻（created_at）の分布。列が無い（マイグレーション071が未適用の）テーブルはクエリを発行しない
+  const scrapedTimestamps = await collectScrapedTimestamps({
+    timingColumns: raw.timingColumns,
+    windowStart,
+    endDate: opts.endDate,
+    fetch: (queries) => fetchRaw(queries, opts.cacheFile),
+  });
+
+  const report = buildReport({
+    opts,
+    raw,
+    scrapedTimestamps,
+    runDate,
+    coverageStart,
+    windowStart,
+    windowDates,
+  });
+  report.alerts = collectAlerts(report);
+
+  const jsonPath = writeReportJson(report, opts, runDate);
 
   console.log(renderMarkdown(report));
   console.error(`JSONを保存: ${path.relative(REPO_ROOT, jsonPath)}`);
