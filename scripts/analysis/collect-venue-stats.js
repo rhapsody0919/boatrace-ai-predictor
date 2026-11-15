@@ -206,10 +206,26 @@ function categorizeConfidence(confidence) {
 
 // ===== メイン分析関数 =====
 
-async function collectVenueStats(venueCode) {
-  const venueName = VENUE_NAMES[venueCode];
-  const venueCodeStr = String(venueCode).padStart(2, "0");
+function createBetTypeStats() {
+  return {
+    total: 0,
+    hits: 0,
+    hit_rate: 0,
+    hit_rate_ci95: { lower: 0, upper: 0 },
+    payout_sum: 0,
+    recovery_rate: 0,
+    avg_payout: 0,
+    expected_value: 0,
+    kelly_fraction: 0,
+    p_value: 0,
+    is_significant: false,
+  };
+}
 
+/**
+ * 予測・結果・選手情報を取得（エラー時は null）
+ */
+async function fetchVenueData(venueCode, venueCodeStr) {
   // 1. 予測データ取得（全モデル）
   const { data: predictions, error } = await supabase
     .from("predictions")
@@ -254,24 +270,28 @@ async function collectVenueStats(venueCode) {
     return null;
   }
 
-  // マップ化
+  return { predictions, results, entries };
+}
+
+function buildResultsMap(results) {
   const resultsMap = {};
   results?.forEach((r) => {
     resultsMap[r.race_id] = r;
   });
+  return resultsMap;
+}
 
+function buildEntriesMap(entries) {
   const entriesMap = {};
   entries?.forEach((e) => {
     if (!entriesMap[e.race_id]) entriesMap[e.race_id] = {};
     entriesMap[e.race_id][e.boat_number] = e;
   });
+  return entriesMap;
+}
 
-  // standardモデルのみで分析
-  const standardPreds = predictions.filter((p) => p.model_id === "standard");
-
-  // ===== 統計計算 =====
-
-  const stats = {
+function createVenueStats(venueCode, venueName) {
+  return {
     venue_code: venueCode,
     venue_name: venueName,
     data_period: { start: null, end: null },
@@ -334,290 +354,310 @@ async function collectVenueStats(venueCode) {
       reasons: [],
     },
   };
+}
 
-  function createBetTypeStats() {
-    return {
-      total: 0,
-      hits: 0,
-      hit_rate: 0,
-      hit_rate_ci95: { lower: 0, upper: 0 },
-      payout_sum: 0,
-      recovery_rate: 0,
-      avg_payout: 0,
-      expected_value: 0,
-      kelly_fraction: 0,
-      p_value: 0,
-      is_significant: false,
+function createAccumulator() {
+  return {
+    sampleSize: 0,
+    firstBoatWins: 0,
+    winHits: [],
+    winPayouts: [],
+    winReturns: [],
+    placeHits: [],
+    placePayouts: [],
+    trioHits: [],
+    trioPayouts: [],
+    trifectaHits: [],
+    trifectaPayouts: [],
+
+    // 条件別データ
+    byFirstBoatGrade: {},
+    byFirstBoatMotor: { high: [], mid: [], low: [] },
+    byConfidence: { high: [], mid: [], low: [] },
+
+    // 組み合わせ分析用データ
+    combPickGradeMotor: {}, // 予測1着 × 級別 × モーター
+    combPickGrade: {}, // 予測1着 × 級別
+    combPickWinrate: {}, // 予測1着 × 勝率帯
+    combPickConfidence: {}, // 予測1着 × 信頼度
+    combPick12: {}, // 予測1-2着
+
+    // 日付追跡
+    dates: [],
+  };
+}
+
+/**
+ * 組み合わせ1件分の集計（該当キーの total・hits・payouts を更新）
+ */
+function addCombination(combData, key, winHit, result) {
+  if (!combData[key]) {
+    combData[key] = { total: 0, hits: 0, payouts: [] };
+  }
+  combData[key].total++;
+  if (winHit) {
+    combData[key].hits++;
+    if (result.payout_win) combData[key].payouts.push(result.payout_win);
+  }
+}
+
+function collectBetResults(acc, pred, result) {
+  // ----- 単勝 -----
+  const winHit = pred.top_pick === result.rank1;
+  acc.winHits.push(winHit);
+  if (winHit && result.payout_win) {
+    acc.winPayouts.push(result.payout_win);
+    acc.winReturns.push(result.payout_win); // 回収額
+  } else {
+    acc.winReturns.push(0);
+  }
+
+  // ----- 複勝 -----
+  const placeHit =
+    pred.top_pick === result.rank1 || pred.top_pick === result.rank2;
+  acc.placeHits.push(placeHit);
+  if (placeHit) {
+    const payout =
+      pred.top_pick === result.rank1
+        ? result.payout_place_1
+        : result.payout_place_2;
+    if (payout) acc.placePayouts.push(payout);
+  }
+
+  // ----- 3連複 -----
+  const predTop3 = [pred.top_pick, pred.top_2nd, pred.top_3rd]
+    .filter(Boolean)
+    .sort()
+    .join("-");
+  const resultTop3 = [result.rank1, result.rank2, result.rank3]
+    .sort()
+    .join("-");
+  const trioHit = predTop3 === resultTop3;
+  acc.trioHits.push(trioHit);
+  // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
+  if (trioHit && result.payout_trifecta) {
+    acc.trioPayouts.push(result.payout_trifecta);
+  }
+
+  // ----- 3連単 -----
+  const predTrifecta = [pred.top_pick, pred.top_2nd, pred.top_3rd]
+    .filter(Boolean)
+    .join("-");
+  const resultTrifecta = [result.rank1, result.rank2, result.rank3].join("-");
+  const trifectaHit = predTrifecta === resultTrifecta;
+  acc.trifectaHits.push(trifectaHit);
+  if (trifectaHit && result.payout_trio) {
+    acc.trifectaPayouts.push(result.payout_trio);
+  }
+
+  return winHit;
+}
+
+function collectConditionData(acc, pred, result, winHit, firstBoat) {
+  const firstBoatGrade = firstBoat?.grade || "Unknown";
+  const firstBoatMotor = firstBoat?.motor_2rate || 0;
+  const byFirstBoatGrade = acc.byFirstBoatGrade;
+
+  // ----- 条件別集計 -----
+  // 1号艇級別
+  if (!byFirstBoatGrade[firstBoatGrade]) {
+    byFirstBoatGrade[firstBoatGrade] = { total: 0, winHits: 0, payouts: [] };
+  }
+  byFirstBoatGrade[firstBoatGrade].total++;
+  if (winHit) {
+    byFirstBoatGrade[firstBoatGrade].winHits++;
+    if (result.payout_win)
+      byFirstBoatGrade[firstBoatGrade].payouts.push(result.payout_win);
+  }
+
+  // 1号艇モーター性能
+  const motorCategory =
+    firstBoatMotor >= 40 ? "high" : firstBoatMotor >= 30 ? "mid" : "low";
+  acc.byFirstBoatMotor[motorCategory].push({
+    hit: winHit,
+    payout: winHit ? result.payout_win : 0,
+  });
+
+  // AI信頼度
+  const conf = pred.confidence || 50;
+  const confCategory = conf >= 70 ? "high" : conf >= 50 ? "mid" : "low";
+  acc.byConfidence[confCategory].push({
+    hit: winHit,
+    payout: winHit ? result.payout_win : 0,
+  });
+
+  return conf;
+}
+
+function collectCombinationData(acc, pred, result, winHit, conf, pickBoat) {
+  // ===== 組み合わせ分析用データ収集 =====
+  const pickGrade = pickBoat?.grade || "Unknown";
+  const pickMotor = pickBoat?.motor_2rate || 0;
+  const pickWinRate = pickBoat?.win_rate || 0;
+
+  // 1. 予測1着 × 級別 × モーター
+  const keyGradeMotor = `${pred.top_pick}号艇_${pickGrade}_M${categorizeMotor(pickMotor)}`;
+  addCombination(acc.combPickGradeMotor, keyGradeMotor, winHit, result);
+
+  // 2. 予測1着 × 級別
+  const keyGrade = `${pred.top_pick}号艇_${pickGrade}`;
+  addCombination(acc.combPickGrade, keyGrade, winHit, result);
+
+  // 3. 予測1着 × 勝率帯
+  const keyWinrate = `${pred.top_pick}号艇_勝率${categorizeWinRate(pickWinRate)}`;
+  addCombination(acc.combPickWinrate, keyWinrate, winHit, result);
+
+  // 4. 予測1着 × 信頼度
+  const keyConfidence = `${pred.top_pick}号艇_信頼度${categorizeConfidence(conf)}`;
+  addCombination(acc.combPickConfidence, keyConfidence, winHit, result);
+
+  // 5. 予測1-2着の組み合わせ
+  const key12 = `${pred.top_pick}-${pred.top_2nd}`;
+  addCombination(acc.combPick12, key12, winHit, result);
+}
+
+/**
+ * 予測1件分を集計（結果が無ければ何もしない）
+ */
+function collectPrediction(acc, pred, resultsMap, entriesMap) {
+  const result = resultsMap[pred.race_id];
+  if (!result) return;
+
+  acc.sampleSize++;
+
+  // 日付
+  const date = pred.race_id.substring(0, 10);
+  acc.dates.push(date);
+
+  // 1号艇勝率
+  if (result.rank1 === 1) acc.firstBoatWins++;
+
+  // 1号艇情報
+  const firstBoat = entriesMap[pred.race_id]?.[1];
+
+  const winHit = collectBetResults(acc, pred, result);
+  const conf = collectConditionData(acc, pred, result, winHit, firstBoat);
+  const pickBoat = entriesMap[pred.race_id]?.[pred.top_pick];
+  collectCombinationData(acc, pred, result, winHit, conf, pickBoat);
+}
+
+// ベット種別統計
+function calcBetTypeStats(hits, payouts, expectedHitRate = null) {
+  const total = hits.length;
+  const hitCount = hits.filter((h) => h).length;
+  const hitRate = total > 0 ? hitCount / total : 0;
+  const payoutSum = payouts.reduce((a, b) => a + b, 0);
+  const recoveryRate = total > 0 ? (payoutSum / (total * 100)) * 100 : 0;
+  const avgPayout = hitCount > 0 ? payoutSum / hitCount : 0;
+  const avgOdds = avgPayout / 100;
+  const ev = expectedValue(hitRate, avgPayout);
+  const kelly = kellyFraction(hitRate, avgOdds);
+  const ci = confidenceInterval95(hitRate, total);
+
+  // 統計的有意性（期待的中率との比較）
+  const expected = expectedHitRate || 1 / 6; // 6艇なのでランダムなら16.7%
+  const pValue = binomialPValue(hitCount, total, expected);
+
+  return {
+    total,
+    hits: hitCount,
+    hit_rate: (hitRate * 100).toFixed(1),
+    hit_rate_ci95: {
+      lower: (ci.lower * 100).toFixed(1),
+      upper: (ci.upper * 100).toFixed(1),
+    },
+    payout_sum: payoutSum,
+    recovery_rate: recoveryRate.toFixed(1),
+    avg_payout: avgPayout.toFixed(0),
+    expected_value: ev.toFixed(1),
+    kelly_fraction: (kelly * 100).toFixed(2),
+    p_value: pValue.toFixed(4),
+    is_significant: pValue < 0.05,
+  };
+}
+
+// ===== 組み合わせ分析の統計値計算 =====
+function calcCombinationStats(combData) {
+  const result = {};
+  for (const [key, data] of Object.entries(combData)) {
+    if (data.total < 5) continue; // サンプル数5未満は除外
+    const hitRate = data.total > 0 ? data.hits / data.total : 0;
+    const payoutSum = data.payouts.reduce((a, b) => a + b, 0);
+    const recoveryRate =
+      data.total > 0 ? (payoutSum / (data.total * 100)) * 100 : 0;
+    result[key] = {
+      total: data.total,
+      hits: data.hits,
+      hit_rate: (hitRate * 100).toFixed(1),
+      recovery_rate: recoveryRate.toFixed(1),
     };
   }
+  return result;
+}
 
-  // データ収集
-  let firstBoatWins = 0;
-  const winHits = [],
-    winPayouts = [],
-    winReturns = [];
-  const placeHits = [],
-    placePayouts = [];
-  const trioHits = [],
-    trioPayouts = [];
-  const trifectaHits = [],
-    trifectaPayouts = [];
-
-  // 条件別データ
-  const byFirstBoatGrade = {};
-  const byFirstBoatMotor = { high: [], mid: [], low: [] };
-  const byConfidence = { high: [], mid: [], low: [] };
-
-  // 組み合わせ分析用データ
-  const combPickGradeMotor = {}; // 予測1着 × 級別 × モーター
-  const combPickGrade = {}; // 予測1着 × 級別
-  const combPickWinrate = {}; // 予測1着 × 勝率帯
-  const combPickConfidence = {}; // 予測1着 × 信頼度
-  const combPick12 = {}; // 予測1-2着
-
-  // 日付追跡
-  const dates = [];
-
-  for (const pred of standardPreds) {
-    const result = resultsMap[pred.race_id];
-    if (!result) continue;
-
-    stats.sample_size++;
-
-    // 日付
-    const date = pred.race_id.substring(0, 10);
-    dates.push(date);
-
-    // 1号艇勝率
-    if (result.rank1 === 1) firstBoatWins++;
-
-    // 1号艇情報
-    const firstBoat = entriesMap[pred.race_id]?.[1];
-    const firstBoatGrade = firstBoat?.grade || "Unknown";
-    const firstBoatMotor = firstBoat?.motor_2rate || 0;
-
-    // ----- 単勝 -----
-    const winHit = pred.top_pick === result.rank1;
-    winHits.push(winHit);
-    if (winHit && result.payout_win) {
-      winPayouts.push(result.payout_win);
-      winReturns.push(result.payout_win); // 回収額
-    } else {
-      winReturns.push(0);
-    }
-
-    // ----- 複勝 -----
-    const placeHit =
-      pred.top_pick === result.rank1 || pred.top_pick === result.rank2;
-    placeHits.push(placeHit);
-    if (placeHit) {
-      const payout =
-        pred.top_pick === result.rank1
-          ? result.payout_place_1
-          : result.payout_place_2;
-      if (payout) placePayouts.push(payout);
-    }
-
-    // ----- 3連複 -----
-    const predTop3 = [pred.top_pick, pred.top_2nd, pred.top_3rd]
-      .filter(Boolean)
-      .sort()
-      .join("-");
-    const resultTop3 = [result.rank1, result.rank2, result.rank3]
-      .sort()
-      .join("-");
-    const trioHit = predTop3 === resultTop3;
-    trioHits.push(trioHit);
-    // payout_trio=3連単・payout_trifecta=3連複（is_hit_* も同じ。列名と中身が逆。079、BOA-536）
-    if (trioHit && result.payout_trifecta) {
-      trioPayouts.push(result.payout_trifecta);
-    }
-
-    // ----- 3連単 -----
-    const predTrifecta = [pred.top_pick, pred.top_2nd, pred.top_3rd]
-      .filter(Boolean)
-      .join("-");
-    const resultTrifecta = [result.rank1, result.rank2, result.rank3].join("-");
-    const trifectaHit = predTrifecta === resultTrifecta;
-    trifectaHits.push(trifectaHit);
-    if (trifectaHit && result.payout_trio) {
-      trifectaPayouts.push(result.payout_trio);
-    }
-
-    // ----- 条件別集計 -----
-    // 1号艇級別
-    if (!byFirstBoatGrade[firstBoatGrade]) {
-      byFirstBoatGrade[firstBoatGrade] = { total: 0, winHits: 0, payouts: [] };
-    }
-    byFirstBoatGrade[firstBoatGrade].total++;
-    if (winHit) {
-      byFirstBoatGrade[firstBoatGrade].winHits++;
-      if (result.payout_win)
-        byFirstBoatGrade[firstBoatGrade].payouts.push(result.payout_win);
-    }
-
-    // 1号艇モーター性能
-    const motorCategory =
-      firstBoatMotor >= 40 ? "high" : firstBoatMotor >= 30 ? "mid" : "low";
-    byFirstBoatMotor[motorCategory].push({
-      hit: winHit,
-      payout: winHit ? result.payout_win : 0,
-    });
-
-    // AI信頼度
-    const conf = pred.confidence || 50;
-    const confCategory = conf >= 70 ? "high" : conf >= 50 ? "mid" : "low";
-    byConfidence[confCategory].push({
-      hit: winHit,
-      payout: winHit ? result.payout_win : 0,
-    });
-
-    // ===== 組み合わせ分析用データ収集 =====
-    const pickBoat = entriesMap[pred.race_id]?.[pred.top_pick];
-    const pickGrade = pickBoat?.grade || "Unknown";
-    const pickMotor = pickBoat?.motor_2rate || 0;
-    const pickWinRate = pickBoat?.win_rate || 0;
-
-    // 1. 予測1着 × 級別 × モーター
-    const keyGradeMotor = `${pred.top_pick}号艇_${pickGrade}_M${categorizeMotor(pickMotor)}`;
-    if (!combPickGradeMotor[keyGradeMotor]) {
-      combPickGradeMotor[keyGradeMotor] = { total: 0, hits: 0, payouts: [] };
-    }
-    combPickGradeMotor[keyGradeMotor].total++;
-    if (winHit) {
-      combPickGradeMotor[keyGradeMotor].hits++;
-      if (result.payout_win)
-        combPickGradeMotor[keyGradeMotor].payouts.push(result.payout_win);
-    }
-
-    // 2. 予測1着 × 級別
-    const keyGrade = `${pred.top_pick}号艇_${pickGrade}`;
-    if (!combPickGrade[keyGrade]) {
-      combPickGrade[keyGrade] = { total: 0, hits: 0, payouts: [] };
-    }
-    combPickGrade[keyGrade].total++;
-    if (winHit) {
-      combPickGrade[keyGrade].hits++;
-      if (result.payout_win)
-        combPickGrade[keyGrade].payouts.push(result.payout_win);
-    }
-
-    // 3. 予測1着 × 勝率帯
-    const keyWinrate = `${pred.top_pick}号艇_勝率${categorizeWinRate(pickWinRate)}`;
-    if (!combPickWinrate[keyWinrate]) {
-      combPickWinrate[keyWinrate] = { total: 0, hits: 0, payouts: [] };
-    }
-    combPickWinrate[keyWinrate].total++;
-    if (winHit) {
-      combPickWinrate[keyWinrate].hits++;
-      if (result.payout_win)
-        combPickWinrate[keyWinrate].payouts.push(result.payout_win);
-    }
-
-    // 4. 予測1着 × 信頼度
-    const keyConfidence = `${pred.top_pick}号艇_信頼度${categorizeConfidence(conf)}`;
-    if (!combPickConfidence[keyConfidence]) {
-      combPickConfidence[keyConfidence] = { total: 0, hits: 0, payouts: [] };
-    }
-    combPickConfidence[keyConfidence].total++;
-    if (winHit) {
-      combPickConfidence[keyConfidence].hits++;
-      if (result.payout_win)
-        combPickConfidence[keyConfidence].payouts.push(result.payout_win);
-    }
-
-    // 5. 予測1-2着の組み合わせ
-    const key12 = `${pred.top_pick}-${pred.top_2nd}`;
-    if (!combPick12[key12]) {
-      combPick12[key12] = { total: 0, hits: 0, payouts: [] };
-    }
-    combPick12[key12].total++;
-    if (winHit) {
-      combPick12[key12].hits++;
-      if (result.payout_win) combPick12[key12].payouts.push(result.payout_win);
-    }
-  }
-
-  if (stats.sample_size === 0) return null;
-
-  // 日付範囲
-  dates.sort();
-  stats.data_period.start = dates[0];
-  stats.data_period.end = dates[dates.length - 1];
-
-  // ===== 統計値計算 =====
-
+function fillBasicAndBetStats(stats, acc) {
   // 基本統計
   stats.basic.first_boat_win_rate = (
-    (firstBoatWins / stats.sample_size) *
+    (acc.firstBoatWins / stats.sample_size) *
     100
   ).toFixed(1);
   stats.basic.upset_rate = (
-    ((stats.sample_size - firstBoatWins) / stats.sample_size) *
+    ((stats.sample_size - acc.firstBoatWins) / stats.sample_size) *
     100
   ).toFixed(1);
 
-  // ベット種別統計
-  function calcBetTypeStats(hits, payouts, expectedHitRate = null) {
-    const total = hits.length;
-    const hitCount = hits.filter((h) => h).length;
-    const hitRate = total > 0 ? hitCount / total : 0;
-    const payoutSum = payouts.reduce((a, b) => a + b, 0);
-    const recoveryRate = total > 0 ? (payoutSum / (total * 100)) * 100 : 0;
-    const avgPayout = hitCount > 0 ? payoutSum / hitCount : 0;
-    const avgOdds = avgPayout / 100;
-    const ev = expectedValue(hitRate, avgPayout);
-    const kelly = kellyFraction(hitRate, avgOdds);
-    const ci = confidenceInterval95(hitRate, total);
-
-    // 統計的有意性（期待的中率との比較）
-    const expected = expectedHitRate || 1 / 6; // 6艇なのでランダムなら16.7%
-    const pValue = binomialPValue(hitCount, total, expected);
-
-    return {
-      total,
-      hits: hitCount,
-      hit_rate: (hitRate * 100).toFixed(1),
-      hit_rate_ci95: {
-        lower: (ci.lower * 100).toFixed(1),
-        upper: (ci.upper * 100).toFixed(1),
-      },
-      payout_sum: payoutSum,
-      recovery_rate: recoveryRate.toFixed(1),
-      avg_payout: avgPayout.toFixed(0),
-      expected_value: ev.toFixed(1),
-      kelly_fraction: (kelly * 100).toFixed(2),
-      p_value: pValue.toFixed(4),
-      is_significant: pValue < 0.05,
-    };
-  }
-
-  stats.bet_types.win = calcBetTypeStats(winHits, winPayouts, 1 / 6);
-  stats.bet_types.place = calcBetTypeStats(placeHits, placePayouts, 2 / 6);
-  stats.bet_types.trio = calcBetTypeStats(trioHits, trioPayouts, 1 / 20);
+  stats.bet_types.win = calcBetTypeStats(acc.winHits, acc.winPayouts, 1 / 6);
+  stats.bet_types.place = calcBetTypeStats(
+    acc.placeHits,
+    acc.placePayouts,
+    2 / 6,
+  );
+  stats.bet_types.trio = calcBetTypeStats(
+    acc.trioHits,
+    acc.trioPayouts,
+    1 / 20,
+  );
   stats.bet_types.trifecta = calcBetTypeStats(
-    trifectaHits,
-    trifectaPayouts,
+    acc.trifectaHits,
+    acc.trifectaPayouts,
     1 / 120,
   );
+}
 
+function fillRiskAndStreaks(stats, acc) {
   // リスク指標
-  const returns = winReturns.map((r) => (r > 0 ? r : 0)); // 100円ベットに対する回収額
+  const returns = acc.winReturns.map((r) => (r > 0 ? r : 0)); // 100円ベットに対する回収額
   const returnRates = returns.map((r) => r); // 回収率として計算
   stats.risk.sharpe_ratio = sharpeRatio(returnRates).toFixed(3);
   stats.risk.max_drawdown = maxDrawdown(returnRates).toFixed(0);
   stats.risk.volatility = stdDev(returnRates).toFixed(1);
 
   // 連勝/連敗
-  const streakResult = streakAnalysis(winHits);
+  const streakResult = streakAnalysis(acc.winHits);
   stats.streaks.win = {
     max_win: streakResult.maxWin,
     max_lose: streakResult.maxLose,
     current: streakResult.currentStreak,
   };
+}
 
+function summarizeConditionList(target, byCategory) {
+  for (const [category, data] of Object.entries(byCategory)) {
+    if (data.length === 0) continue;
+    const hitRate = data.filter((d) => d.hit).length / data.length;
+    const recoveryRate =
+      (data.reduce((a, d) => a + d.payout, 0) / (data.length * 100)) * 100;
+    target[category] = {
+      total: data.length,
+      hit_rate: (hitRate * 100).toFixed(1),
+      recovery_rate: recoveryRate.toFixed(1),
+    };
+  }
+}
+
+function fillConditionStats(stats, acc) {
   // 条件別分析
-  for (const [grade, data] of Object.entries(byFirstBoatGrade)) {
+  for (const [grade, data] of Object.entries(acc.byFirstBoatGrade)) {
     const hitRate = data.total > 0 ? data.winHits / data.total : 0;
     const recoveryRate =
       data.total > 0
@@ -630,58 +670,29 @@ async function collectVenueStats(venueCode) {
     };
   }
 
-  for (const [category, data] of Object.entries(byFirstBoatMotor)) {
-    if (data.length === 0) continue;
-    const hitRate = data.filter((d) => d.hit).length / data.length;
-    const recoveryRate =
-      (data.reduce((a, d) => a + d.payout, 0) / (data.length * 100)) * 100;
-    stats.conditions.by_first_boat_motor[category] = {
-      total: data.length,
-      hit_rate: (hitRate * 100).toFixed(1),
-      recovery_rate: recoveryRate.toFixed(1),
-    };
-  }
+  summarizeConditionList(
+    stats.conditions.by_first_boat_motor,
+    acc.byFirstBoatMotor,
+  );
+  summarizeConditionList(stats.conditions.by_confidence, acc.byConfidence);
+}
 
-  for (const [category, data] of Object.entries(byConfidence)) {
-    if (data.length === 0) continue;
-    const hitRate = data.filter((d) => d.hit).length / data.length;
-    const recoveryRate =
-      (data.reduce((a, d) => a + d.payout, 0) / (data.length * 100)) * 100;
-    stats.conditions.by_confidence[category] = {
-      total: data.length,
-      hit_rate: (hitRate * 100).toFixed(1),
-      recovery_rate: recoveryRate.toFixed(1),
-    };
-  }
+function fillCombinationStats(stats, acc) {
+  stats.combinations.by_pick_grade_motor = calcCombinationStats(
+    acc.combPickGradeMotor,
+  );
+  stats.combinations.by_pick_grade = calcCombinationStats(acc.combPickGrade);
+  stats.combinations.by_pick_winrate = calcCombinationStats(
+    acc.combPickWinrate,
+  );
+  stats.combinations.by_pick_confidence = calcCombinationStats(
+    acc.combPickConfidence,
+  );
+  stats.combinations.by_pick_1_2 = calcCombinationStats(acc.combPick12);
+}
 
-  // ===== 組み合わせ分析の統計値計算 =====
-  function calcCombinationStats(combData) {
-    const result = {};
-    for (const [key, data] of Object.entries(combData)) {
-      if (data.total < 5) continue; // サンプル数5未満は除外
-      const hitRate = data.total > 0 ? data.hits / data.total : 0;
-      const payoutSum = data.payouts.reduce((a, b) => a + b, 0);
-      const recoveryRate =
-        data.total > 0 ? (payoutSum / (data.total * 100)) * 100 : 0;
-      result[key] = {
-        total: data.total,
-        hits: data.hits,
-        hit_rate: (hitRate * 100).toFixed(1),
-        recovery_rate: recoveryRate.toFixed(1),
-      };
-    }
-    return result;
-  }
-
-  stats.combinations.by_pick_grade_motor =
-    calcCombinationStats(combPickGradeMotor);
-  stats.combinations.by_pick_grade = calcCombinationStats(combPickGrade);
-  stats.combinations.by_pick_winrate = calcCombinationStats(combPickWinrate);
-  stats.combinations.by_pick_confidence =
-    calcCombinationStats(combPickConfidence);
-  stats.combinations.by_pick_1_2 = calcCombinationStats(combPick12);
-
-  // ===== 回収率100%超えの有望条件を抽出 =====
+// ===== 回収率100%超えの有望条件を抽出 =====
+function extractProfitableRules(combinations) {
   const MIN_SAMPLE = 10; // 最低サンプル数
   const profitableRules = [];
 
@@ -689,12 +700,12 @@ async function collectVenueStats(venueCode) {
   const allCombinations = [
     {
       type: "艇番×級別×モーター",
-      data: stats.combinations.by_pick_grade_motor,
+      data: combinations.by_pick_grade_motor,
     },
-    { type: "艇番×級別", data: stats.combinations.by_pick_grade },
-    { type: "艇番×勝率帯", data: stats.combinations.by_pick_winrate },
-    { type: "艇番×信頼度", data: stats.combinations.by_pick_confidence },
-    { type: "1-2着予測", data: stats.combinations.by_pick_1_2 },
+    { type: "艇番×級別", data: combinations.by_pick_grade },
+    { type: "艇番×勝率帯", data: combinations.by_pick_winrate },
+    { type: "艇番×信頼度", data: combinations.by_pick_confidence },
+    { type: "1-2着予測", data: combinations.by_pick_1_2 },
   ];
 
   for (const { type, data } of allCombinations) {
@@ -718,9 +729,11 @@ async function collectVenueStats(venueCode) {
   profitableRules.sort(
     (a, b) => parseFloat(b.recovery_rate) - parseFloat(a.recovery_rate),
   );
-  stats.profitable_rules = profitableRules;
+  return profitableRules;
+}
 
-  // ===== 推奨度スコア計算 =====
+// ===== 推奨度スコア計算 =====
+function fillRecommendation(stats) {
   const reasons = [];
   let score = 50; // 基準点
 
@@ -780,86 +793,118 @@ async function collectVenueStats(venueCode) {
             ? "D"
             : "E";
   stats.recommendation.reasons = reasons;
+}
+
+async function collectVenueStats(venueCode) {
+  const venueName = VENUE_NAMES[venueCode];
+  const venueCodeStr = String(venueCode).padStart(2, "0");
+
+  const fetched = await fetchVenueData(venueCode, venueCodeStr);
+  if (!fetched) return null;
+  const { predictions, results, entries } = fetched;
+
+  // マップ化
+  const resultsMap = buildResultsMap(results);
+  const entriesMap = buildEntriesMap(entries);
+
+  // standardモデルのみで分析
+  const standardPreds = predictions.filter((p) => p.model_id === "standard");
+
+  // ===== 統計計算 =====
+
+  const stats = createVenueStats(venueCode, venueName);
+
+  // データ収集
+  const acc = createAccumulator();
+  for (const pred of standardPreds) {
+    collectPrediction(acc, pred, resultsMap, entriesMap);
+  }
+  stats.sample_size = acc.sampleSize;
+
+  if (stats.sample_size === 0) return null;
+
+  // 日付範囲
+  const dates = acc.dates;
+  dates.sort();
+  stats.data_period.start = dates[0];
+  stats.data_period.end = dates[dates.length - 1];
+
+  // ===== 統計値計算 =====
+  fillBasicAndBetStats(stats, acc);
+  fillRiskAndStreaks(stats, acc);
+  fillConditionStats(stats, acc);
+  fillCombinationStats(stats, acc);
+  stats.profitable_rules = extractProfitableRules(stats.combinations);
+  fillRecommendation(stats);
 
   return stats;
 }
 
 // ===== メイン処理 =====
 
-async function main() {
-  if (!isSupabaseEnabled()) {
-    console.error("❌ Supabase環境変数が未設定です");
-    process.exit(1);
+function printVenueStats(stats) {
+  console.log(`\n【${stats.venue_name}】 (${stats.sample_size}レース)`);
+  console.log(`  期間: ${stats.data_period.start} 〜 ${stats.data_period.end}`);
+  console.log(`  1号艇勝率: ${stats.basic.first_boat_win_rate}%`);
+  console.log(`  ─────────────────────────────────────`);
+  console.log(
+    `  単勝: 的中率 ${stats.bet_types.win.hit_rate}% [CI: ${stats.bet_types.win.hit_rate_ci95.lower}-${stats.bet_types.win.hit_rate_ci95.upper}%], 回収率 ${stats.bet_types.win.recovery_rate}%`,
+  );
+  console.log(
+    `  複勝: 的中率 ${stats.bet_types.place.hit_rate}%, 回収率 ${stats.bet_types.place.recovery_rate}%`,
+  );
+  console.log(
+    `  3連複: 的中率 ${stats.bet_types.trio.hit_rate}%, 回収率 ${stats.bet_types.trio.recovery_rate}%`,
+  );
+  console.log(
+    `  3連単: 的中率 ${stats.bet_types.trifecta.hit_rate}%, 回収率 ${stats.bet_types.trifecta.recovery_rate}%`,
+  );
+  console.log(`  ─────────────────────────────────────`);
+  console.log(`  シャープレシオ: ${stats.risk.sharpe_ratio}`);
+  console.log(`  最大DD: ${stats.risk.max_drawdown}円`);
+  console.log(
+    `  連勝/連敗: ${stats.streaks.win.max_win}連勝 / ${stats.streaks.win.max_lose}連敗`,
+  );
+  console.log(`  ─────────────────────────────────────`);
+  console.log(
+    `  推奨度: ${stats.recommendation.grade} (${stats.recommendation.score}点)`,
+  );
+  if (stats.recommendation.reasons.length > 0) {
+    console.log(`  理由: ${stats.recommendation.reasons.join(", ")}`);
   }
 
-  console.log("📊 24会場の詳細統計分析を実行中...\n");
-  console.log("=".repeat(70));
+  // 有望条件（回収率100%超え）を表示
+  if (stats.profitable_rules.length > 0) {
+    console.log(`  ─────────────────────────────────────`);
+    console.log(`  🎯 有望条件 (回収率100%↑, n≥10):`);
+    for (const rule of stats.profitable_rules.slice(0, 5)) {
+      console.log(
+        `     ${rule.condition}: ${rule.recovery_rate}% (${rule.total}レース, 的中${rule.hit_rate}%)`,
+      );
+    }
+    if (stats.profitable_rules.length > 5) {
+      console.log(`     ...他${stats.profitable_rules.length - 5}件`);
+    }
+  }
+}
 
+async function analyzeAllVenues(venuesToAnalyze) {
   const allStats = [];
-  const venueArg = process.argv.find((arg) => arg.startsWith("--venue="));
-  const targetVenue = venueArg ? parseInt(venueArg.split("=")[1]) : null;
-
-  const venuesToAnalyze = targetVenue
-    ? [targetVenue]
-    : Array.from({ length: 24 }, (_, i) => i + 1);
-
   for (const venueCode of venuesToAnalyze) {
     const stats = await collectVenueStats(venueCode);
 
     if (stats && stats.sample_size > 0) {
       allStats.push(stats);
-
-      console.log(`\n【${stats.venue_name}】 (${stats.sample_size}レース)`);
-      console.log(
-        `  期間: ${stats.data_period.start} 〜 ${stats.data_period.end}`,
-      );
-      console.log(`  1号艇勝率: ${stats.basic.first_boat_win_rate}%`);
-      console.log(`  ─────────────────────────────────────`);
-      console.log(
-        `  単勝: 的中率 ${stats.bet_types.win.hit_rate}% [CI: ${stats.bet_types.win.hit_rate_ci95.lower}-${stats.bet_types.win.hit_rate_ci95.upper}%], 回収率 ${stats.bet_types.win.recovery_rate}%`,
-      );
-      console.log(
-        `  複勝: 的中率 ${stats.bet_types.place.hit_rate}%, 回収率 ${stats.bet_types.place.recovery_rate}%`,
-      );
-      console.log(
-        `  3連複: 的中率 ${stats.bet_types.trio.hit_rate}%, 回収率 ${stats.bet_types.trio.recovery_rate}%`,
-      );
-      console.log(
-        `  3連単: 的中率 ${stats.bet_types.trifecta.hit_rate}%, 回収率 ${stats.bet_types.trifecta.recovery_rate}%`,
-      );
-      console.log(`  ─────────────────────────────────────`);
-      console.log(`  シャープレシオ: ${stats.risk.sharpe_ratio}`);
-      console.log(`  最大DD: ${stats.risk.max_drawdown}円`);
-      console.log(
-        `  連勝/連敗: ${stats.streaks.win.max_win}連勝 / ${stats.streaks.win.max_lose}連敗`,
-      );
-      console.log(`  ─────────────────────────────────────`);
-      console.log(
-        `  推奨度: ${stats.recommendation.grade} (${stats.recommendation.score}点)`,
-      );
-      if (stats.recommendation.reasons.length > 0) {
-        console.log(`  理由: ${stats.recommendation.reasons.join(", ")}`);
-      }
-
-      // 有望条件（回収率100%超え）を表示
-      if (stats.profitable_rules.length > 0) {
-        console.log(`  ─────────────────────────────────────`);
-        console.log(`  🎯 有望条件 (回収率100%↑, n≥10):`);
-        for (const rule of stats.profitable_rules.slice(0, 5)) {
-          console.log(
-            `     ${rule.condition}: ${rule.recovery_rate}% (${rule.total}レース, 的中${rule.hit_rate}%)`,
-          );
-        }
-        if (stats.profitable_rules.length > 5) {
-          console.log(`     ...他${stats.profitable_rules.length - 5}件`);
-        }
-      }
+      printVenueStats(stats);
     } else {
       console.log(`\n【${VENUE_NAMES[venueCode]}】 データなし`);
     }
   }
+  return allStats;
+}
 
-  // ===== ランキング =====
+// ===== ランキング =====
+function printRankings(allStats) {
   console.log("\n" + "=".repeat(70));
   console.log("\n📈 ランキング（単勝回収率順）");
   console.log("─".repeat(50));
@@ -893,7 +938,11 @@ async function main() {
     );
   });
 
-  // ===== 全会場の有望条件（組み合わせ分析） =====
+  return { sortedByRecovery, sortedByScore };
+}
+
+// ===== 全会場の有望条件（組み合わせ分析） =====
+function printAllProfitableRules(allStats) {
   console.log("\n🎯 全会場の有望条件（回収率100%↑, n≥10）");
   console.log("─".repeat(70));
 
@@ -936,7 +985,13 @@ async function main() {
     console.log(`     ${venue}: ${count}件`);
   }
 
-  // ===== 結果を保存 =====
+  return { allProfitableRules, sortedVenues };
+}
+
+// ===== 結果を保存 =====
+async function saveOutput(allStats, rankings, profitable) {
+  const { sortedByRecovery, sortedByScore } = rankings;
+  const { allProfitableRules, sortedVenues } = profitable;
   const outputPath = path.join(
     __dirname,
     "../../data/analysis/summary/venue-stats.json",
@@ -972,6 +1027,34 @@ async function main() {
 
   await fs.writeFile(outputPath, JSON.stringify(output, null, 2));
   console.log(`\n✅ 結果を保存しました: ${outputPath}`);
+}
+
+async function main() {
+  if (!isSupabaseEnabled()) {
+    console.error("❌ Supabase環境変数が未設定です");
+    process.exit(1);
+  }
+
+  console.log("📊 24会場の詳細統計分析を実行中...\n");
+  console.log("=".repeat(70));
+
+  const venueArg = process.argv.find((arg) => arg.startsWith("--venue="));
+  const targetVenue = venueArg ? parseInt(venueArg.split("=")[1]) : null;
+
+  const venuesToAnalyze = targetVenue
+    ? [targetVenue]
+    : Array.from({ length: 24 }, (_, i) => i + 1);
+
+  const allStats = await analyzeAllVenues(venuesToAnalyze);
+
+  // ===== ランキング =====
+  const rankings = printRankings(allStats);
+
+  // ===== 全会場の有望条件（組み合わせ分析） =====
+  const profitable = printAllProfitableRules(allStats);
+
+  // ===== 結果を保存 =====
+  await saveOutput(allStats, rankings, profitable);
 }
 
 main().catch(console.error);
