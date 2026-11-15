@@ -5327,7 +5327,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/collect-venue-stats.js:215",
+          "ref": "scripts/analysis/collect-venue-stats.js:231",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5829,7 +5829,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:133",
             "scripts/analysis/campaign-backtest-fetch-races.js:49",
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/find-missing-dates.js:32",
             "scripts/analysis/find-video-worthy-race.js:80",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
@@ -5874,7 +5874,7 @@
         "model_id": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:133",
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/find-video-worthy-race.js:80",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
             "scripts/analysis/verify-calculations.js:23",
@@ -5912,7 +5912,7 @@
         },
         "top_pick": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/verify-calculations.js:23",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -5936,7 +5936,7 @@
         },
         "top_2nd": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/verify-calculations.js:23",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -5957,7 +5957,7 @@
         },
         "top_3rd": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/verify-calculations.js:23",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -5978,7 +5978,7 @@
         },
         "confidence": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:26",
             "src/services/ruleMatchService.js:124"
@@ -7066,7 +7066,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/collect-venue-stats.js:245",
+          "ref": "scripts/analysis/collect-venue-stats.js:261",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8358,7 +8358,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:245",
+            "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/find-missing-dates.js:31",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:87",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
@@ -8483,7 +8483,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:245",
+            "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
             "scripts/analysis/verify-race-analysis-rpc.js:120",
@@ -8613,7 +8613,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:245",
+            "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
             "scripts/daily/generate-morning-digest.js:155",
@@ -8655,7 +8655,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:245",
+            "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
             "scripts/analysis/verify-volatility-predictive-power.js:69",
@@ -8733,7 +8733,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:245",
+            "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
@@ -10659,7 +10659,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/collect-venue-stats.js:231",
+          "ref": "scripts/analysis/collect-venue-stats.js:247",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11696,7 +11696,7 @@
             "api/_lib/snsClaimCheck.js:473",
             "scripts/analysis/analyze-upset-factors.js:120",
             "scripts/analysis/campaign-backtest-score.js:59",
-            "scripts/analysis/collect-venue-stats.js:231",
+            "scripts/analysis/collect-venue-stats.js:247",
             "scripts/analysis/find-missing-dates.js:33",
             "scripts/analysis/find-video-worthy-race.js:101",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",

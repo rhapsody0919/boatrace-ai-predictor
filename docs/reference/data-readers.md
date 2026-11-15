@@ -696,7 +696,7 @@
   - `scripts/analysis/analyze-upset-factors.js:133` select [feature_contributions, model_id, race_id]
   - `scripts/analysis/calibration-report.js:95` select(helper:fetchAll)
   - `scripts/analysis/campaign-backtest-fetch-races.js:49` select [feature_contributions, predicted_at, race_id]
-  - `scripts/analysis/collect-venue-stats.js:215` select [confidence, model_id, race_id, top_2nd, top_3rd, top_pick]
+  - `scripts/analysis/collect-venue-stats.js:231` select [confidence, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/analysis/find-missing-dates.js:32` select [*, race_id]
   - `scripts/analysis/find-video-worthy-race.js:80` select [feature_contributions, model_id, predicted_at, race_id]
   - `scripts/analysis/simulate-nige-calibration.js:37` select(helper:fetchAll)
@@ -833,7 +833,7 @@
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:39` select(helper:all)
   - `scripts/analysis/calibrate-unified-model.js:151` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/analysis/campaign-backtest-fetch-races.js:96` select [boat_2rate, boat_3rate, boat_number, grade, local_win_rate, motor_2rate, motor_3rate, player_name, race_id, win_rate]
-  - `scripts/analysis/collect-venue-stats.js:245` select [boat_number, grade, motor_2rate, race_id, win_rate]
+  - `scripts/analysis/collect-venue-stats.js:261` select [boat_number, grade, motor_2rate, race_id, win_rate]
   - `scripts/analysis/compare-course-rate-sources.js:59` select(helper:fetchAll)
   - `scripts/analysis/find-missing-dates.js:31` select [*, race_id]
   - `scripts/analysis/original-exhibition/fetch.mjs:74` select(helper:all)
@@ -1134,7 +1134,7 @@
   - `scripts/analysis/calibrate-unified-model.js:127` select(helper:fetchAll)
   - `scripts/analysis/calibration-report.js:102` select(helper:fetchAll)
   - `scripts/analysis/campaign-backtest-score.js:59` select [payout_trifecta, payout_trio, race_id, rank1, rank2, rank3]
-  - `scripts/analysis/collect-venue-stats.js:231` select [*, race_id]
+  - `scripts/analysis/collect-venue-stats.js:247` select [*, race_id]
   - `scripts/analysis/compare-course-rate-sources.js:52` select(helper:fetchAll)
   - `scripts/analysis/find-missing-dates.js:33` select [*, race_id]
   - `scripts/analysis/find-video-worthy-race.js:101` select [payout_trifecta, payout_win, race_id, rank1, rank2, rank3, winning_technique]
