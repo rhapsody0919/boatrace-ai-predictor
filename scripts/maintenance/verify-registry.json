@@ -1243,7 +1243,7 @@
     {
       "script": "verify-racer-model.js",
       "tier": "ci",
-      "guards": "racer の型 makeRacer・makeRacerSeriesPoint（src/pure/racerModel.js、設計図 §10 DM1x）。racer_id は1以上の整数・name は文字列・birth_date は実在する日、racer_series_points は会場1〜24・meet_start_date が実在する日・next_race_1/2 は1〜12・next_series_day は1〜9（DB の CHECK と同じ）を検査して凍結すること。sex・rank・score_rate・next_* などの null は落とさないこと。既存の選手の集計（careerWinRate 等）が racerModel から同じ関数で読めること"
+      "guards": "racer の型 makeRacer・makeRacerSeriesPoint（src/pure/racerModel.js、設計図 §10 DM1x）。racer_id は int4 の整数・name は文字列・birth_date は実在する日、racer_series_points は会場1〜24・meet_start_date が実在する日・next_race_1/2 は1〜12・next_series_day は1〜9（DB の CHECK と同じ）を検査して凍結すること。sex・rank・score_rate・next_* などの null は落とさないこと。既存の選手の集計（careerWinRate 等）が racerModel から同じ関数で読めること"
     },
     {
       "script": "verify-racer-news-templates.js",

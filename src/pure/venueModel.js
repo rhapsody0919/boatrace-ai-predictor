@@ -8,7 +8,7 @@ import { assertInt, assertObject, assertOneOf, assertText } from "./modelAssert.
  * @property {string} name
  * @property {(string|null)} [water_type] 検査しない。初期データが7会場で公式と食い違っていて画面に出さない（services/venueQueries.js）
  * @property {(null|"in_strong"|"out_strong"|"balanced")} [cluster] update_venue_stats が直近90日の1号艇1着率で決める
- * @property {(number|null)} [avg_first_win_rate] 0〜1（AVG(rank1=1) の割合、numeric(5,4)）
+ * @property {(number|null)} [avg_first_win_rate] 0〜1（AVG(rank1=1) の割合という意味上の範囲。DB の CHECK ではなく numeric(5,4) は9.9999まで入る）
  */
 
 // update_venue_stats（docs/db-migration/001_schema.sql）が書く3値。列に CHECK は無いので、行が無い・null も許す

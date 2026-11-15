@@ -45,9 +45,9 @@ test("会場コード0・25・小数は RangeError（値と節の主キーを含
 
 test("日付の形の誤り・実在しない日は RangeError", () => {
   throwsRange(() => makeMeet(meet({ start_date: "2026-11-1" })), /start_date が YYYY-MM-DD/);
-  throwsRange(() => makeMeet(meet({ start_date: "2026-02-30", end_date: "2026-03-03", total_days: 2 })), /start_date/);
-  throwsRange(() => makeMeet(meet({ end_date: null })), /end_date/);
-  throwsRange(() => makeMeet(meet({ end_date: "2026-13-01" })), /end_date/);
+  throwsRange(() => makeMeet(meet({ start_date: "2026-02-30", end_date: "2026-03-03", total_days: 2 })), /start_date が YYYY-MM-DD/);
+  throwsRange(() => makeMeet(meet({ end_date: null })), /end_date が YYYY-MM-DD/);
+  throwsRange(() => makeMeet(meet({ end_date: "2026-13-01" })), /end_date が YYYY-MM-DD/);
 });
 
 test("end_date が start_date より前は RangeError", () => {
@@ -80,7 +80,7 @@ test("grade は null・未取得も通り、5値以外は RangeError（kind と�
   const { grade, ...noGrade } = meet();
   assert.ok(grade);
   assert.equal(makeMeet(noGrade).grade, undefined);
-  assert.equal(makeMeet(meet({ grade: "ippan" })).grade, "ippan");
+  for (const g of ["SG", "G1", "G2", "G3", "ippan"]) assert.equal(makeMeet(meet({ grade: g })).grade, g);
   throwsRange(() => makeMeet(meet({ grade: "Ippan" })), /grade が不明な値: Ippan/);
   throwsRange(() => makeMeet(meet({ grade: "g1" })), /grade/);
 });

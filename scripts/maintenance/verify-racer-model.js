@@ -35,9 +35,10 @@ test("racer: sex・grade_at_scrape・身長などの null や未取得でも投�
   assert.equal(makeRacer({ racer_id: 3000, name: "選手", birth_date: "1980-01-01" }).sex, undefined);
 });
 
-test("racer: racer_id が0・負・小数・文字列・null は RangeError（値を含む）", () => {
-  throwsRange(() => makeRacer(racer({ racer_id: 0 })), /racer_id が1〜\d+でない: 0（racer_id=0）/);
-  throwsRange(() => makeRacer(racer({ racer_id: -5 })), /racer_id/);
+test("racer: racer_id が int4 の外・小数・文字列・null は RangeError（値を含む）。0 以下は DB に根拠が無いので通す", () => {
+  assert.equal(makeRacer(racer({ racer_id: 0 })).racer_id, 0);
+  throwsRange(() => makeRacer(racer({ racer_id: 2147483648 })), /racer_id が-2147483648〜2147483647でない: 2147483648（racer_id=2147483648）/);
+  throwsRange(() => makeRacer(racer({ racer_id: -2147483649 })), /racer_id/);
   throwsRange(() => makeRacer(racer({ racer_id: 4561.5 })), /racer_id/);
   throwsRange(() => makeRacer(racer({ racer_id: "4561" })), /racer_id/);
   throwsRange(() => makeRacer(racer({ racer_id: null })), /racer_id/);
@@ -57,6 +58,7 @@ test("racer: birth_date の形の誤り・実在しない日・null は RangeErr
 test("racer: sex が整数でない値は RangeError", () => {
   throwsRange(() => makeRacer(racer({ sex: "1" })), /sex/);
   throwsRange(() => makeRacer(racer({ sex: 1.5 })), /sex/);
+  throwsRange(() => makeRacer(racer({ sex: 40000 })), /sex が-32768〜32767でない: 40000/);
 });
 
 test("racer: null・配列・非オブジェクトは TypeError", () => {
@@ -93,7 +95,7 @@ test("series_point: next_race_1・2 は1〜12、next_series_day は1〜9（DB �
 test("series_point: 会場コード・日付・racer_id の誤りは RangeError", () => {
   throwsRange(() => makeRacerSeriesPoint(point({ venue_code: 25 })), /会場コードが1〜24でない: 25/);
   throwsRange(() => makeRacerSeriesPoint(point({ meet_start_date: "2026-11-31" })), /meet_start_date/);
-  throwsRange(() => makeRacerSeriesPoint(point({ racer_id: 0 })), /racer_id/);
+  throwsRange(() => makeRacerSeriesPoint(point({ racer_id: 2147483648 })), /racer_id/);
 });
 
 test("series_point: null・非オブジェクトは TypeError", () => {
