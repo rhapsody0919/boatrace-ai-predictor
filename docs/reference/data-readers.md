@@ -328,9 +328,9 @@
   - `scripts/analysis/analogy-v16-rebuild/inspect.mjs:4` select [computed_at, model_version, n_layer, pool_cutoff, race_id, run_id, stage, status]
   - `scripts/analysis/analogy-v16-rebuild/snaps.mjs:4` select [computed_at, n_layer, race_id, racecard_hash, run_id, stage, status]
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:87` select [race_id, stage, status]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:133` select [computed_at, race_id, run_id, stage]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:190` select [computed_at, race_id, run_id, stage]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:372` select [n_layer, race_id, stage, status]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:144` select [computed_at, race_id, run_id, stage]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:216` select [computed_at, race_id, run_id, stage]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:485` select [n_layer, race_id, stage, status]
   - `scripts/lib/analogyDispatch.js:80` select [race_id, stage]
   - `scripts/lib/analogyV16Exhibition.js:289` rest(rest) [model_version, n_layer, pool_cutoff, race_id, run_id, stage, status]
   - `scripts/maintenance/verify-analogy-v16.js:269` rest(rest) [stage] （検査）
@@ -488,7 +488,7 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:72`
 - 読み手（2）: 
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:241` select [boat_number, course, finish_raw, is_flying, is_late_start, race_id, start_timing]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:298` select [boat_number, course, finish_raw, is_flying, is_late_start, race_id, start_timing]
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:66` select(helper:fetchAll)
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -498,7 +498,7 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:70`
 - 読み手（5）: 
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:237` select [has_result, payout_3fuku, payout_3tan, race_id]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:290` select [has_result, payout_3fuku, payout_3tan, race_id]
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:64` select(helper:fetchAll)
   - `scripts/daily/update-winning-technique-stats.js:212` select(helper:fetchAll)
   - `scripts/lib/racerCareerJob.js:651` select(helper:count)
@@ -1139,7 +1139,7 @@
   - `scripts/analysis/find-missing-dates.js:33` select [*, race_id]
   - `scripts/analysis/find-video-worthy-race.js:101` select [payout_trifecta, payout_win, race_id, rank1, rank2, rank3, winning_technique]
   - `scripts/analysis/original-exhibition/fetch.mjs:69` select(helper:all)
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:224` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, is_cancelled, is_no_race, payout_trifecta, payout_trio, race_id, race_status, rank1, rank2, rank3, refund_boats]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:274` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, is_cancelled, is_no_race, payout_trifecta, payout_trio, race_id, race_status, rank1, rank2, rank3, refund_boats]
   - `scripts/analysis/redesign-volatility-by-venue.js:146` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:190` select(helper:fetchAllByRaceId)
   - `scripts/analysis/simulate-nige-calibration.js:43` select(helper:fetchAll)
@@ -1291,7 +1291,7 @@
 - 読み手（29）: 
   - `scripts/analysis/full-picture-answer-stage/actual.cjs:10` select [boat_number, entry_course, finish_rank, is_flying, is_late_start, race_id, start_timing]
   - `scripts/analysis/original-exhibition/fetch.mjs:64` select(helper:all)
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:229` select [boat_number, finish_mark, is_flying, is_late_start, race_id, start_timing]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:280` select [boat_number, finish_mark, is_flying, is_late_start, race_id, start_timing]
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:197` select(helper:fetchAllByRaceId)
   - `scripts/analysis/verify-race-analysis-rpc.js:74` select(helper:fetchAll)
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:169` select(helper:fetchInChunks)
@@ -1478,8 +1478,8 @@
   - `scripts/analysis/calibrate-unified-model.js:160` select [race_id, venue_code]
   - `scripts/analysis/original-exhibition/fetch.mjs:54` select(helper:all)
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:78` select [cancellation_status, race_date, race_id, start_time]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:131` select [race_date, race_id, start_time]
-  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:232` select [cancellation_status, race_id]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:142` select [race_date, race_id, start_time]
+  - `scripts/analysis/past-rate-check/pool-contract-check.mjs:284` select [cancellation_status, race_id]
   - `scripts/analysis/race-stage-inventory.mjs:36` select(helper:fetchAllByRaceId)
   - `scripts/analysis/redesign-volatility-by-venue.js:133` select [first_boat_avg_st, first_boat_motor_2rate, first_boat_win_rate, race_date, race_id, venue_code, volatility_score, win_rate_stddev]
   - `scripts/analysis/turn-prediction-venue-deep-analysis.js:109` select [first_boat_grade, first_boat_win_rate, race_date, race_grade, race_id, race_number, venue_code, volatility_level, volatility_score]
