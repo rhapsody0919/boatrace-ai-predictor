@@ -7,7 +7,7 @@
  * 2. 差分が無い・サイトに関係ないものだけ（scripts/lib/vercelIgnoreBuild.js の isSiteIrrelevant）なら何もしない
  * 3. master の検査（Post-merge Checks・Quality Gates）を、出す範囲（本番の版の次〜master の先）のコミットの run で見る。
  *    範囲の中で走っている run（skipped を除く）が1本でもある・master の先が10分以内のコミットなら「待つ」
- *    （20分後の拾い直しでもう一度見る）。範囲の中に落ちた run が1本でもあれば出さずに失敗（Slack）。
+ *    （20分後の拾い直しでもう一度見る。先の新しさは自動 docs 再生成の commit を除いた最後の commit の時刻で見る）。範囲の中に落ちた run が1本でもあれば出さずに失敗（Slack）。
  *    後の run の成功では解かない（summarizeGates の説明）
  * 4. それ以外なら Deploy Hook（Vercel の環境変数 RELEASE_DEPLOY_HOOK_URL、master に結び付けたもの）を叩く
  *
@@ -32,6 +32,31 @@ export const RELEASE_GATE_WORKFLOWS = Object.freeze([
 export const COMPARE_FILES_CAP = 300;
 // master の先がこれより新しいと、検査の run がまだ作られていないことがある
 export const FRESH_HEAD_MS = 10 * 60 * 1000;
+// 自動 docs 再生成などの機械の commit の印（ADR-0078）。regenerate-generated-docs.yml は author・committer を
+// action@github.com にして題を「… [automated]」で終える。題だけ・メールだけでは除かない（両方そろったものだけ）。
+// 人の merge は committer が GitHub（noreply@github.com）になるので、題だけ偽っても当たらない
+export const AUTOMATED_COMMIT_EMAIL = "action@github.com";
+export const isAutomatedCommit = (c) =>
+  c?.authorEmail === AUTOMATED_COMMIT_EMAIL &&
+  c?.committerEmail === AUTOMATED_COMMIT_EMAIL &&
+  /\[automated\]\s*$/.test((c?.message ?? "").split("\n")[0]);
+
+/**
+ * 先の新しさの判定に使う時刻。先から自動 commit を除いた、最後の人・作り手の commit の時刻。
+ * 範囲（compare の commits、古い順）が読めない・全部が自動のときは先の時刻（今までどおり）。
+ * FRESH_HEAD_MS の目的（検査の run がまだ無い版を出さない）は、人の commit が新しければ今までどおり働く。
+ * 自動 commit の run は quality-gates・post-merge-checks で skipped になる（ADR-0106）ので待つ理由にならない
+ */
+export function freshnessBasis(head, commits) {
+  const list = Array.isArray(commits) ? commits : [];
+  if (list.length === 0 || list[list.length - 1]?.sha !== head.sha) {
+    return head.committedAt;
+  }
+  for (let i = list.length - 1; i >= 0; i--) {
+    if (!isAutomatedCommit(list[i])) return list[i].committedAt;
+  }
+  return head.committedAt;
+}
 // 検査の run を読む本数（1ページ）とページの上限。1日約59本の push で、止まっていても約5日分を覆う
 export const GATE_RUNS_PER_PAGE = 100;
 export const GATE_RUNS_MAX_PAGES = 3;
@@ -177,10 +202,13 @@ export function decideRelease({
         : `サイトに関係ない差分だけ（${paths.length}件）`,
     );
   }
-  if (now.getTime() - Date.parse(head.committedAt) < FRESH_HEAD_MS) {
+  if (
+    now.getTime() - Date.parse(freshnessBasis(head, compare.commits)) <
+    FRESH_HEAD_MS
+  ) {
     return result(
       "deferred",
-      `master の先 ${head.sha.slice(0, 9)} が10分以内のコミット（検査の run がまだ無いことがある）`,
+      `master の先 ${head.sha.slice(0, 9)}（自動 commit を除く）が10分以内のコミット（検査の run がまだ無いことがある）`,
     );
   }
   const red = gates.filter((g) => g.state === "red");
@@ -238,6 +266,13 @@ export async function fetchCompare({ fetchImpl, token, deployedSha, headSha }) {
     status: body.status,
     files: body.files ?? [],
     commitShas: commits.map((c) => c.sha),
+    commits: commits.map((c) => ({
+      sha: c.sha,
+      committedAt: c.commit?.committer?.date ?? c.commit?.author?.date,
+      authorEmail: c.commit?.author?.email,
+      committerEmail: c.commit?.committer?.email,
+      message: c.commit?.message ?? "",
+    })),
     // compare は commits を250件までしか返さない。足りなければ範囲の全部を見ていない（検査を red に倒す）
     complete: !(body.ahead_by > commits.length),
     oldestCommittedAt: commits[0]?.commit?.committer?.date ?? null,
