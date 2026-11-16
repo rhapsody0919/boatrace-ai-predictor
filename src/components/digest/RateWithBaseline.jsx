@@ -87,6 +87,43 @@ const BASELINE_GRADE_LABEL = {
   G3: "G3",
 };
 
+/** その選手が走ってきた会場・級別の平均。差分ではなく水準そのものを出す */
+function calcOwnVenueMix(rate, skillDelta) {
+  return skillDelta === null || skillDelta === undefined
+    ? null
+    : Number(rate) - Number(skillDelta);
+}
+
+/** 直近90日の表示。母数が無ければ出さず、率が無ければ母数だけ出す */
+function Recent90d({ rate90d, sampleSize90d }) {
+  if (sampleSize90d === null) return null;
+  return rate90d !== null ? (
+    <span>
+      直近90日 <strong>{Number(rate90d).toFixed(1)}%</strong>（{sampleSize90d}
+      走）
+    </span>
+  ) : (
+    <span>直近90日 {sampleSize90d}走（母数が少なく率は出しません）</span>
+  );
+}
+
+/** 展開時だけ出すメタ行 */
+function RateMeta({ ownVenueMix, rate90d, sampleSize90d }) {
+  return (
+    <div className="rate-baseline__meta">
+      {ownVenueMix !== null && (
+        <span
+          title="この選手が実際に走った会場・レースグレードの構成で、全選手を平均した割合。この選手の割合と見比べると、走ってきた条件が楽だったかどうかが分かる"
+          className="rate-baseline__hint"
+        >
+          この選手が走ってきた会場の平均 {ownVenueMix.toFixed(1)}%
+        </span>
+      )}
+      <Recent90d rate90d={rate90d} sampleSize90d={sampleSize90d} />
+    </div>
+  );
+}
+
 function RateWithBaseline({
   label,
   rate,
@@ -102,11 +139,7 @@ function RateWithBaseline({
 }) {
   // 過去に書き込んだ行には detail.baselineGrade が無い。その場合はグレードを書かない
   const gradeLabel = BASELINE_GRADE_LABEL[baselineGrade] ?? null;
-  // その選手が走ってきた会場・級別の平均。差分ではなく水準そのものを出す
-  const ownVenueMix =
-    skillDelta === null || skillDelta === undefined
-      ? null
-      : Number(rate) - Number(skillDelta);
+  const ownVenueMix = calcOwnVenueMix(rate, skillDelta);
 
   return (
     <div className="rate-baseline">
@@ -136,27 +169,11 @@ function RateWithBaseline({
       )}
 
       {expanded && (
-        <div className="rate-baseline__meta">
-          {ownVenueMix !== null && (
-            <span
-              title="この選手が実際に走った会場・レースグレードの構成で、全選手を平均した割合。この選手の割合と見比べると、走ってきた条件が楽だったかどうかが分かる"
-              className="rate-baseline__hint"
-            >
-              この選手が走ってきた会場の平均 {ownVenueMix.toFixed(1)}%
-            </span>
-          )}
-          {sampleSize90d !== null &&
-            (rate90d !== null ? (
-              <span>
-                直近90日 <strong>{Number(rate90d).toFixed(1)}%</strong>（
-                {sampleSize90d}走）
-              </span>
-            ) : (
-              <span>
-                直近90日 {sampleSize90d}走（母数が少なく率は出しません）
-              </span>
-            ))}
-        </div>
+        <RateMeta
+          ownVenueMix={ownVenueMix}
+          rate90d={rate90d}
+          sampleSize90d={sampleSize90d}
+        />
       )}
     </div>
   );
