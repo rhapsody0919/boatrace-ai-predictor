@@ -228,6 +228,26 @@ export function attackTech(scenario, form) {
 const BANDS = ["top", "mid", "low"];
 const rateOfPair = (p) => (p?.[1] ? p[0] / p[1] : null);
 
+// 6艇そろった展示タイムの順位だけ返す（欠けがあれば null）
+const completeExhRanks = (exhRanks) =>
+  exhRanks?.length === 6 && exhRanks.every((r) => r != null) ? exhRanks : null;
+
+// exhBands の1艇分（攻める艇・1号艇）。by は今日のレースの形の区分表、natBy は全国の同じ表
+const exhSide = (ok, by, natBy, key, boat) => {
+  const rank = ok ? ok[boat - 1] : null;
+  return {
+    boat,
+    rank,
+    today: rankBand(rank),
+    rows: BANDS.map((band) => ({
+      band,
+      k: by?.[band]?.[key]?.[0] ?? 0,
+      n: by?.[band]?.[key]?.[1] ?? 0,
+    })),
+    nat: natBy ? BANDS.map((b) => rateOfPair(natBy[b]?.[key])) : null,
+  };
+};
+
 /**
  * 今日の展示を入れると（spec D-47 (5)）: 攻める艇の1着・1号艇の逃げを、その艇の展示タイムの順位の区分（1〜2位・3〜4位・5〜6位）ごとに。
  * 範囲は形の見立てと同じ scenario、nat は全国（NA）の同じ形の値。today は今日の区分（6艇の展示タイムがそろわなければ null。exhToday と同じ）
@@ -241,30 +261,24 @@ export function exhBands(scenario, national, form, exhRanks) {
   // 攻める艇の無い形（横一線・内3艇そろう）は by_exh が無く、1号艇の区分（b1_by_exh）だけある
   const a = scenario?.attack?.[form];
   if (!a?.by_exh && !a?.b1_by_exh) return null;
-  const na = national?.attack?.[form] ?? null;
-  const ok =
-    exhRanks?.length === 6 && exhRanks.every((r) => r != null) ? exhRanks : null;
-  const side = (by, natBy, key, boat) => {
-    const rank = ok ? ok[boat - 1] : null;
-    return {
-      boat,
-      rank,
-      today: rankBand(rank),
-      rows: BANDS.map((band) => ({
-        band,
-        k: by?.[band]?.[key]?.[0] ?? 0,
-        n: by?.[band]?.[key]?.[1] ?? 0,
-      })),
-      nat: natBy ? BANDS.map((b) => rateOfPair(natBy[b]?.[key])) : null,
-    };
-  };
+  return exhBandsOf(
+    a,
+    national?.attack?.[form] ?? null,
+    completeExhRanks(exhRanks),
+  );
+}
+
+// exhBands の本体。a は今日のレースの形の attack、na は全国の同じ形、ok は6艇そろった順位（無ければ null）
+function exhBandsOf(a, na, ok) {
   return {
     n: a.all?.n ?? 0,
     att:
       a.attacker && a.by_exh
-        ? side(a.by_exh, na?.by_exh, "att_win", a.attacker)
+        ? exhSide(ok, a.by_exh, na?.by_exh, "att_win", a.attacker)
         : null,
-    b1: a.b1_by_exh ? side(a.b1_by_exh, na?.b1_by_exh, "b1_nige", 1) : null,
+    b1: a.b1_by_exh
+      ? exhSide(ok, a.b1_by_exh, na?.b1_by_exh, "b1_nige", 1)
+      : null,
   };
 }
 
@@ -313,8 +327,7 @@ export function originalBest(original, racers) {
 export function exhToday(scenario, form, exhRanks) {
   // 区分の表（v16 の by_exh）は6艇の展示タイムがそろったレースだけで作る。欠けた日は5艇の順位になり母集団がずれるので出さない
   // （data-accuracy-verifier の指摘。10月の 1,692R 中 14R）
-  if (!exhRanks || exhRanks.length !== 6 || exhRanks.some((r) => r == null))
-    return null;
+  if (!completeExhRanks(exhRanks)) return null;
   const a = scenario?.attack?.[form];
   const att = a?.attacker ?? null;
   const rank = att ? (exhRanks?.[att - 1] ?? null) : null;
@@ -679,6 +692,38 @@ export function courseWins(records, raceId, course) {
   return { k: runs.filter((r) => finishOf(r) === 1).length, n: runs.length };
 }
 
+// 札の材料 key の6艇の中で boat が一番（同値を含む）か。会場の成績（loc_win）は 0 を「無し」として外す
+const isFirstOfSix = (today, key, hib, boat) => {
+  const v = today?.items?.[key]?.values;
+  if (!Array.isArray(v)) return false;
+  const vals = key === "loc_win" ? v.map((x) => (x === 0 ? null : x)) : v;
+  return todayPosition(vals, hib, boat)?.bucket === 1;
+};
+
+// 会場の成績が無い（0 件、または値が欠けている）艇か
+const hasNoLocWin = (today, boat) => {
+  const loc = today?.items?.loc_win?.values?.[boat - 1];
+  return loc === 0 || (today?.items?.loc_win && loc == null);
+};
+
+// 得意の決まり手の札（逃げ以外の最多が、勝ち8回以上のうち3割以上のとき）
+const techChip = (technique) => {
+  const top = technique?.techniques?.[0];
+  if (
+    top &&
+    top.technique !== "逃げ" &&
+    technique.win_count >= 8 &&
+    top.count / technique.win_count >= 0.3
+  )
+    return {
+      id: "tech",
+      technique: top.technique,
+      wins: technique.win_count,
+      count: top.count,
+    };
+  return null;
+};
+
 /**
  * 成績から付けた札（D-41。承認モック v7 の featChips）。6艇の中の一番（同値を含む）だけ。
  * 優勝戦・準優勝戦の日は「今節好調」を出さない（FR-5）
@@ -687,33 +732,15 @@ export function courseWins(records, raceId, course) {
  */
 export function featChips({ boat, today, finalRound, technique = null }) {
   const out = [];
-  const first = (key, hib) => {
-    const v = today?.items?.[key]?.values;
-    if (!Array.isArray(v)) return false;
-    const vals = key === "loc_win" ? v.map((x) => (x === 0 ? null : x)) : v;
-    return todayPosition(vals, hib, boat)?.bucket === 1;
-  };
+  const first = (key, hib) => isFirstOfSix(today, key, hib, boat);
   if (first("st_mean30", false)) out.push({ id: "stFast" });
   if (!finalRound && first("series_score", true))
     out.push({ id: "seriesGood" });
   if (first("recent_win30", true)) out.push({ id: "recentWin" });
   if (first("nat_win", true)) out.push({ id: "natTop" });
   if (first("loc_win", true)) out.push({ id: "locTop" });
-  const loc = today?.items?.loc_win?.values?.[boat - 1];
-  if (loc === 0 || (today?.items?.loc_win && loc == null))
-    out.push({ id: "locNone" });
-  const top = technique?.techniques?.[0];
-  if (
-    top &&
-    top.technique !== "逃げ" &&
-    technique.win_count >= 8 &&
-    top.count / technique.win_count >= 0.3
-  )
-    out.push({
-      id: "tech",
-      technique: top.technique,
-      wins: technique.win_count,
-      count: top.count,
-    });
+  if (hasNoLocWin(today, boat)) out.push({ id: "locNone" });
+  const tech = techChip(technique);
+  if (tech) out.push(tech);
   return out;
 }
