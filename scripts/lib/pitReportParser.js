@@ -116,13 +116,7 @@ function parseDeadlines($) {
   return times;
 }
 
-function parseBoatRow($, tr) {
-  const tds = $(tr).children("td");
-  if (tds.length < 5) return null;
-  const boatNumber = Number(nfkc($(tds[0]).text()).trim());
-  if (!(boatNumber >= 1 && boatNumber <= 6)) return null;
-
-  const info = $(tds[2]);
+function parseBoatIdentity($, info) {
   const fs11 = info.find(".is-fs11");
   const idLine = squash(nfkc($(fs11[0]).text())); // 「4371 / A1」
   const idMatch = idLine.match(/^(\d{4})\s*\/\s*([A-Za-z0-9]+)$/);
@@ -130,19 +124,7 @@ function parseBoatRow($, tr) {
     nfkc(textWithBreaks($, fs11[1] ?? "")).replace(/\n/g, " "),
   ); // 「福岡/福岡 39歳/52.0kg」
   const attrMatch = attrLine.match(/^(.*?)\/(.*?)\s+(\d+)歳\/([\d.]+)kg$/);
-
-  const rawComment = textWithBreaks($, tds[3]);
-  const { text, stars, starsMax } = splitConfidence(rawComment);
-  // 本文が空（コメント無しの艇）は null。自信度だけが残る場合は本文を空文字ではなく null にする
-  const commentText = text.trim() === "" ? null : text;
-
-  const prevLink = $(tds[4]).find("a").first();
-  const prevHref = prevLink.attr("href") ?? "";
-  const prevMatch = prevHref.match(/raceresult\?rno=(\d+)/);
-  const prevText = squash(nfkc($(tds[4]).text()));
-
   return {
-    boatNumber,
     racerNumber: idMatch ? Number(idMatch[1]) : null,
     racerClass: idMatch ? idMatch[2] : null,
     name: squash($(info).find(".is-fs18").first().text()) || null,
@@ -150,11 +132,43 @@ function parseBoatRow($, tr) {
     hometown: attrMatch ? attrMatch[2].trim() : null,
     age: attrMatch ? Number(attrMatch[3]) : null,
     weightKg: attrMatch ? Number(attrMatch[4]) : null,
+  };
+}
+
+function parseBoatComment($, td) {
+  const rawComment = textWithBreaks($, td);
+  const { text, stars, starsMax } = splitConfidence(rawComment);
+  // 本文が空（コメント無しの艇）は null。自信度だけが残る場合は本文を空文字ではなく null にする
+  const commentText = text.trim() === "" ? null : text;
+  return {
     commentText,
     confidenceStars: commentText === null ? null : stars,
     confidenceMax: commentText === null ? null : starsMax,
+  };
+}
+
+function parsePreviousRace($, td) {
+  const prevLink = $(td).find("a").first();
+  const prevHref = prevLink.attr("href") ?? "";
+  const prevMatch = prevHref.match(/raceresult\?rno=(\d+)/);
+  const prevText = squash(nfkc($(td).text()));
+  return {
     previousRaceNumber: prevMatch ? Number(prevMatch[1]) : null,
     previousRaceText: prevText || null,
+  };
+}
+
+function parseBoatRow($, tr) {
+  const tds = $(tr).children("td");
+  if (tds.length < 5) return null;
+  const boatNumber = Number(nfkc($(tds[0]).text()).trim());
+  if (!(boatNumber >= 1 && boatNumber <= 6)) return null;
+
+  return {
+    boatNumber,
+    ...parseBoatIdentity($, $(tds[2])),
+    ...parseBoatComment($, tds[3]),
+    ...parsePreviousRace($, tds[4]),
   };
 }
 
@@ -179,6 +193,25 @@ function parseBoatRow($, tr) {
 export function parsePitReportHtml(html) {
   const $ = cheerio.load(html ?? "");
   const anomalies = [];
+  const base = buildReportBase($, anomalies);
+
+  const rows = collectBoatRows($, anomalies);
+  if (rows.length > 0) {
+    checkBoatRows(rows, anomalies);
+    const hasComment = rows.some((r) => r.commentText !== null);
+    return {
+      ...base,
+      status: hasComment
+        ? PIT_REPORT_STATUSES.comments
+        : PIT_REPORT_STATUSES.targetPending,
+      boats: rows,
+    };
+  }
+  return parseWithoutTable($, base, anomalies);
+}
+
+/** ページ単位の項目（見出し・開催名・日付・締切・レポーター・メッセージ）を、艇の行を除いて組み立てる */
+function buildReportBase($, anomalies) {
   const grade = parseGrade($);
   const raceNumber = parseRaceNumber($);
   const deadlines = parseDeadlines($);
@@ -195,7 +228,7 @@ export function parsePitReportHtml(html) {
   );
   const message = squash($(".title12_title").first().text()) || null;
 
-  const base = {
+  return {
     parserVersion: PIT_REPORT_PARSER_VERSION,
     message,
     targetRange: null,
@@ -212,8 +245,10 @@ export function parsePitReportHtml(html) {
     boats: [],
     anomalies,
   };
+}
 
-  // 艇ごとの行
+/** 艇ごとの行を集める（解析できない行は anomalies へ） */
+function collectBoatRows($, anomalies) {
   const rows = [];
   $("tbody tr").each((_, tr) => {
     if ($(tr).children("td").first().is("[class*='is-boatColor']")) {
@@ -222,32 +257,29 @@ export function parsePitReportHtml(html) {
       else anomalies.push("艇の行を解析できませんでした");
     }
   });
+  return rows;
+}
 
-  if (rows.length > 0) {
-    if (rows.length !== 6)
-      anomalies.push(`艇の行が${rows.length}件です（6件のはず）`);
-    const numbers = rows.map((r) => r.boatNumber);
-    if (new Set(numbers).size !== numbers.length)
-      anomalies.push("枠番が重複しています");
-    for (const r of rows) {
-      if (r.racerNumber === null)
-        anomalies.push(`${r.boatNumber}号艇の登録番号を解析できません`);
-      // コメント自信度は、「【取材者寸評】」のコメントには付かない（null で正常）。前走は、その日まだ走っていない選手では
-      // リンクの中身が空（`<a href="/owpc/pc/race/raceresult"></a>`）で、null が正常。リンクに rno があるのに読めないときだけ異常
-      if (r.previousRaceText !== null && r.previousRaceNumber === null)
-        anomalies.push(`${r.boatNumber}号艇の前走を解析できません: ${r.previousRaceText}`);
-    }
-    const hasComment = rows.some((r) => r.commentText !== null);
-    return {
-      ...base,
-      status: hasComment
-        ? PIT_REPORT_STATUSES.comments
-        : PIT_REPORT_STATUSES.targetPending,
-      boats: rows,
-    };
+/** 艇の行の件数・枠番の重複・登録番号・前走の異常を anomalies へ足す */
+function checkBoatRows(rows, anomalies) {
+  if (rows.length !== 6)
+    anomalies.push(`艇の行が${rows.length}件です（6件のはず）`);
+  const numbers = rows.map((r) => r.boatNumber);
+  if (new Set(numbers).size !== numbers.length)
+    anomalies.push("枠番が重複しています");
+  for (const r of rows) {
+    if (r.racerNumber === null)
+      anomalies.push(`${r.boatNumber}号艇の登録番号を解析できません`);
+    // コメント自信度は、「【取材者寸評】」のコメントには付かない（null で正常）。前走は、その日まだ走っていない選手では
+    // リンクの中身が空（`<a href="/owpc/pc/race/raceresult"></a>`）で、null が正常。リンクに rno があるのに読めないときだけ異常
+    if (r.previousRaceText !== null && r.previousRaceNumber === null)
+      anomalies.push(`${r.boatNumber}号艇の前走を解析できません: ${r.previousRaceText}`);
   }
+}
 
-  // 表が無い: メッセージで区別する
+/** 艇の表が無いページ: メッセージで区別する */
+function parseWithoutTable($, base, anomalies) {
+  const { message, grade, raceNumber } = base;
   if (message) {
     const text = nfkc(message);
     // 「7Rから12Rまでが表示対象レースになります」「12Rが表示対象レースになります」（最終日）の両方がある

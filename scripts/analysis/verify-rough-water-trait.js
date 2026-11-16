@@ -99,23 +99,26 @@ const pt = (x) =>
 const dateInt = (s) => Number(s.replaceAll("-", ""));
 
 // ---------- 読み込み ----------
-function loadRuns() {
-  const parsedDir = path.join(ARCHIVE_DIR, "parsed");
-  const R = {
-    racer: [],
-    date: [],
-    venue: [],
-    course: [],
-    win: [],
-    top3: [],
-    wind: [],
-    wave: [],
-    band: [],
-    natWin: [],
-  };
-  const hash = crypto.createHash("sha256");
-  let nRaces = 0;
-  let days = 0;
+const emptyRuns = () => ({
+  racer: [],
+  date: [],
+  venue: [],
+  course: [],
+  win: [],
+  top3: [],
+  wind: [],
+  wave: [],
+  band: [],
+  natWin: [],
+});
+
+// 全国勝率の帯（0.5刻み、2.0未満と8.0以上は端にまとめる）。不明は 99
+const bandOf = (nw) =>
+  nw == null || nw <= 0 ? 99 : Math.min(16, Math.max(4, Math.floor(nw * 2)));
+
+// 対象期間の日ファイルを月・日付の順に並べる
+function listDayFiles(parsedDir) {
+  const out = [];
   for (const month of fs.readdirSync(parsedDir).sort()) {
     const dir = path.join(parsedDir, month);
     if (!fs.statSync(dir).isDirectory()) continue;
@@ -123,50 +126,61 @@ function loadRuns() {
       if (!file.endsWith(".json.gz")) continue;
       const date = file.slice(3, 13);
       if (date < FROM || date > TO) continue;
-      const buf = fs.readFileSync(path.join(dir, file));
-      hash.update(file).update(buf);
-      const day = JSON.parse(zlib.gunzipSync(buf));
-      days += 1;
-      const di = dateInt(day.date);
-      for (const venue of day.k?.venues ?? []) {
-        const vc = venue.venue_code;
-        const bVenue = day.b?.venues?.find((v) => v.venue_code === vc);
-        for (const race of venue.races ?? []) {
-          const rows = (race.rows ?? []).filter(
-            (x) => x.course != null && x.racer_id,
-          );
-          if (rows.length === 0) continue;
-          nRaces += 1;
-          const bRace = bVenue?.races?.find(
-            (r) => r.race_number === race.race_number,
-          );
-          const byRank = new Map();
-          for (const x of race.rows ?? [])
-            if (x.rank != null) byRank.set(x.rank, x.boat_number);
-          for (const x of rows) {
-            const e = bRace?.entries?.find(
-              (b) => b.boat_number === x.boat_number,
-            );
-            const nw = e?.national_win_rate;
-            R.racer.push(x.racer_id);
-            R.date.push(di);
-            R.venue.push(vc);
-            R.course.push(x.course);
-            R.win.push(x.rank === 1 ? 1 : 0);
-            R.top3.push(x.rank != null && x.rank <= 3 ? 1 : 0);
-            R.wind.push(race.wind_speed ?? -1);
-            R.wave.push(race.wave_height ?? -1);
-            R.natWin.push(nw ?? -1);
-            // 全国勝率の帯（0.5刻み、2.0未満と8.0以上は端にまとめる）。不明は 99
-            R.band.push(
-              nw == null || nw <= 0
-                ? 99
-                : Math.min(16, Math.max(4, Math.floor(nw * 2))),
-            );
-          }
-        }
-      }
+      out.push({ file, full: path.join(dir, file) });
     }
+  }
+  return out;
+}
+
+function pushRun(R, di, vc, race, bRace, x) {
+  const e = bRace?.entries?.find((b) => b.boat_number === x.boat_number);
+  const nw = e?.national_win_rate;
+  R.racer.push(x.racer_id);
+  R.date.push(di);
+  R.venue.push(vc);
+  R.course.push(x.course);
+  R.win.push(x.rank === 1 ? 1 : 0);
+  R.top3.push(x.rank != null && x.rank <= 3 ? 1 : 0);
+  R.wind.push(race.wind_speed ?? -1);
+  R.wave.push(race.wave_height ?? -1);
+  R.natWin.push(nw ?? -1);
+  R.band.push(bandOf(nw));
+}
+
+// 1レース分の走を足す。数えたレースなら 1、走が無ければ 0
+function pushRaceRuns(R, di, vc, race, bVenue) {
+  const rows = (race.rows ?? []).filter((x) => x.course != null && x.racer_id);
+  if (rows.length === 0) return 0;
+  const bRace = bVenue?.races?.find((r) => r.race_number === race.race_number);
+  for (const x of rows) pushRun(R, di, vc, race, bRace, x);
+  return 1;
+}
+
+// 1日分の走を足す。数えたレース数を返す
+function pushDayRuns(R, day) {
+  const di = dateInt(day.date);
+  let nRaces = 0;
+  for (const venue of day.k?.venues ?? []) {
+    const vc = venue.venue_code;
+    const bVenue = day.b?.venues?.find((v) => v.venue_code === vc);
+    for (const race of venue.races ?? [])
+      nRaces += pushRaceRuns(R, di, vc, race, bVenue);
+  }
+  return nRaces;
+}
+
+function loadRuns() {
+  const parsedDir = path.join(ARCHIVE_DIR, "parsed");
+  const R = emptyRuns();
+  const hash = crypto.createHash("sha256");
+  let nRaces = 0;
+  let days = 0;
+  for (const { file, full } of listDayFiles(parsedDir)) {
+    const buf = fs.readFileSync(full);
+    hash.update(file).update(buf);
+    const day = JSON.parse(zlib.gunzipSync(buf));
+    days += 1;
+    nRaces += pushDayRuns(R, day);
   }
   return { R, nRaces, days, inputHash: hash.digest("hex") };
 }
@@ -406,9 +420,8 @@ function meanCI(a) {
   return { mean: m, lo: m - 1.96 * se, hi: m + 1.96 * se, n: a.length };
 }
 
-// 前後のペア（選手ごと）。pairs は [{A: d, B: d}]（d は racerRuns の値）
-function analysePairs(pairs, popA, popB, minRuns, seed) {
-  const rand = mulberry32(seed);
+// 前後の両方で差が出せる選手の行（走数が minRuns に満たない選手は外す）
+function pairedRows(pairs, minRuns) {
   const rows = [];
   for (const p of pairs) {
     const tA = trait(p.A, p.A.f, p.popA);
@@ -424,63 +437,69 @@ function analysePairs(pairs, popA, popB, minRuns, seed) {
     if (tA.adjv == null || tB.adjv == null) continue;
     rows.push({ p, tA, tB });
   }
-  const n = rows.length;
-  if (n < 30) return { nRacers: n };
-  const res = {
-    nRacers: n,
-    nRoughA: medianOf(rows.map((r) => r.tA.nR)),
-    nRoughB: medianOf(rows.map((r) => r.tB.nR)),
-  };
-  for (const def of DEFS) {
-    const x = rows.map((r) => r.tA[def]);
-    const y = rows.map((r) => r.tB[def]);
-    const rObs = pearson(x, y);
-    const boot = [];
-    for (let b = 0; b < BOOT_REPS; b++) {
-      const bx = [],
-        by = [];
-      for (let k = 0; k < n; k++) {
-        const j = Math.floor(rand() * n);
-        bx.push(x[j]);
-        by.push(y[j]);
-      }
-      boot.push(pearson(bx, by));
-    }
-    boot.sort((a, b) => a - b);
-    // 前の五分位ごとの後の差
-    const order = x.map((v, i) => [v, i]).sort((a, b) => a[0] - b[0]);
-    const quint = [];
-    for (let q = 0; q < 5; q++) {
-      const part = order
-        .slice(Math.floor((q * n) / 5), Math.floor(((q + 1) * n) / 5))
-        .map(([, i]) => i);
-      const ci = meanCI(part.map((i) => y[i]));
-      quint.push({
-        q: q + 1,
-        meanA_pt: pt(mean(part.map((i) => x[i]))),
-        meanB_pt: pt(ci.mean),
-        lo_pt: pt(ci.lo),
-        hi_pt: pt(ci.hi),
-        n: part.length,
-      });
-    }
-    const sdA = Math.sqrt(cov(x, x));
-    const cAB = cov(x, y);
-    res[def] = {
-      pearson: r4(rObs),
-      ci95: [r4(quantile(boot, 0.025)), r4(quantile(boot, 0.975))],
-      spearman: r4(spearman(x, y)),
-      sdA_pt: pt(sdA),
-      // 前後の共分散＝期間をまたいで残るばらつき（誤差が独立なら）。負なら 0
-      persistentSd_pt: pt(Math.sqrt(Math.max(0, cAB))),
-      covAB: r4(cAB * 1e4),
-      // 前の差 1pt が後の期間に何pt 残るか（後の差を前の差に回帰した傾き）
-      slopeBA: r4(cAB / (sdA * sdA)),
-      quintiles: quint,
-      q5MinusQ1B_pt: r4(quint[4].meanB_pt - quint[0].meanB_pt),
-    };
+  return rows;
+}
+
+// 前の五分位ごとの後の差
+function quintilesOf(x, y) {
+  const n = x.length;
+  const order = x.map((v, i) => [v, i]).sort((a, b) => a[0] - b[0]);
+  const quint = [];
+  for (let q = 0; q < 5; q++) {
+    const part = order
+      .slice(Math.floor((q * n) / 5), Math.floor(((q + 1) * n) / 5))
+      .map(([, i]) => i);
+    const ci = meanCI(part.map((i) => y[i]));
+    quint.push({
+      q: q + 1,
+      meanA_pt: pt(mean(part.map((i) => x[i]))),
+      meanB_pt: pt(ci.mean),
+      lo_pt: pt(ci.lo),
+      hi_pt: pt(ci.hi),
+      n: part.length,
+    });
   }
-  // 並べ替え（荒れの札を、選手・期間ごとに同じ走数のまま入れ替える）。1回の入れ替えで self と adj を両方出す
+  return quint;
+}
+
+// 1つの差の定義について、前後の相関・ブートストラップ区間・五分位
+function persistence(rows, def, rand) {
+  const n = rows.length;
+  const x = rows.map((r) => r.tA[def]);
+  const y = rows.map((r) => r.tB[def]);
+  const rObs = pearson(x, y);
+  const boot = [];
+  for (let b = 0; b < BOOT_REPS; b++) {
+    const bx = [],
+      by = [];
+    for (let k = 0; k < n; k++) {
+      const j = Math.floor(rand() * n);
+      bx.push(x[j]);
+      by.push(y[j]);
+    }
+    boot.push(pearson(bx, by));
+  }
+  boot.sort((a, b) => a - b);
+  const quint = quintilesOf(x, y);
+  const sdA = Math.sqrt(cov(x, x));
+  const cAB = cov(x, y);
+  return {
+    pearson: r4(rObs),
+    ci95: [r4(quantile(boot, 0.025)), r4(quantile(boot, 0.975))],
+    spearman: r4(spearman(x, y)),
+    sdA_pt: pt(sdA),
+    // 前後の共分散＝期間をまたいで残るばらつき（誤差が独立なら）。負なら 0
+    persistentSd_pt: pt(Math.sqrt(Math.max(0, cAB))),
+    covAB: r4(cAB * 1e4),
+    // 前の差 1pt が後の期間に何pt 残るか（後の差を前の差に回帰した傾き）
+    slopeBA: r4(cAB / (sdA * sdA)),
+    quintiles: quint,
+    q5MinusQ1B_pt: r4(quint[4].meanB_pt - quint[0].meanB_pt),
+  };
+}
+
+// 並べ替え（荒れの札を、選手・期間ごとに同じ走数のまま入れ替える）。1回の入れ替えで self と adj を両方出す
+function permutationNull(rows, rand) {
   const permDefs = ["self", "adj", "adjv"];
   const nullR = { self: [], adj: [], adjv: [] };
   const nullSd = { self: [], adj: [], adjv: [] };
@@ -500,6 +519,12 @@ function analysePairs(pairs, popA, popB, minRuns, seed) {
       nullSd[def].push(Math.sqrt(cov(x[def], x[def])));
     }
   }
+  return { permDefs, nullR, nullSd };
+}
+
+// 実際の相関を並べ替えの結果と比べて res[def].perm に書く
+function attachPermutation(res, rows, rand) {
+  const { permDefs, nullR, nullSd } = permutationNull(rows, rand);
   for (const def of permDefs) {
     const null_ = nullR[def].sort((a, b) => a - b);
     const sdNull = nullSd[def].sort((a, b) => a - b);
@@ -517,33 +542,57 @@ function analysePairs(pairs, popA, popB, minRuns, seed) {
       sdNullA95_pt: [pt(quantile(sdNull, 0.025)), pt(quantile(sdNull, 0.975))],
     };
   }
-  // 組ごとの相関（year の5組。同じ年の組み合わせで結果が揺れないか）
+}
+
+// 組ごとの相関（year の5組。同じ年の組み合わせで結果が揺れないか）
+function byPairOf(rows) {
   const tags = [...new Set(rows.map((r) => r.p.tag).filter((t) => t != null))];
-  if (tags.length > 1) {
-    res.byPair = tags.map((tag) => {
-      const sub = rows.filter((r) => r.p.tag === tag);
-      const o = { pair: tag, nRacers: sub.length };
-      for (const def of ["self", "adj", "adjv"])
-        o[def] = r4(
-          pearson(
-            sub.map((r) => r.tA[def]),
-            sub.map((r) => r.tB[def]),
-          ),
-        );
-      return o;
-    });
-  }
-  // 力量・コースとの相関（前の期間）
-  res.confound = {};
+  if (tags.length <= 1) return undefined;
+  return tags.map((tag) => {
+    const sub = rows.filter((r) => r.p.tag === tag);
+    const o = { pair: tag, nRacers: sub.length };
+    for (const def of ["self", "adj", "adjv"])
+      o[def] = r4(
+        pearson(
+          sub.map((r) => r.tA[def]),
+          sub.map((r) => r.tB[def]),
+        ),
+      );
+    return o;
+  });
+}
+
+// 力量・コースとの相関（前の期間）
+function confoundOf(rows) {
+  const out = {};
   const nat = rows.map((r) => (r.p.A.natN ? r.p.A.nat / r.p.A.natN : 0));
   const c1 = rows.map((r) => r.p.A.c1 / r.p.A.y.length);
   for (const def of DEFS) {
     const x = rows.map((r) => r.tA[def]);
-    res.confound[def] = {
+    out[def] = {
       vsNationalWinRate: r4(pearson(x, nat)),
       vsCourse1Share: r4(pearson(x, c1)),
     };
   }
+  return out;
+}
+
+// 前後のペア（選手ごと）。pairs は [{A: d, B: d}]（d は racerRuns の値）
+function analysePairs(pairs, popA, popB, minRuns, seed) {
+  const rand = mulberry32(seed);
+  const rows = pairedRows(pairs, minRuns);
+  const n = rows.length;
+  if (n < 30) return { nRacers: n };
+  const res = {
+    nRacers: n,
+    nRoughA: medianOf(rows.map((r) => r.tA.nR)),
+    nRoughB: medianOf(rows.map((r) => r.tB.nR)),
+  };
+  for (const def of DEFS) res[def] = persistence(rows, def, rand);
+  attachPermutation(res, rows, rand);
+  const byPair = byPairOf(rows);
+  if (byPair) res.byPair = byPair;
+  res.confound = confoundOf(rows);
   // 印の候補ルール（前の期間で決め、後の期間で確かめる）
   res.marks = markRules(rows);
   res.meanSeAdjA_pt = pt(Math.sqrt(mean(rows.map((r) => r.tA.seAdj2))));
@@ -713,42 +762,117 @@ function roughRunsPerRacerYear(P) {
   return out;
 }
 
+const secondsSince = (t0) => ((Date.now() - t0) / 1000).toFixed(0);
+
+function buildMeta(R, nRaces, days, inputHash) {
+  return {
+    ticket: "BOA-716",
+    generatedAt: new Date().toISOString(),
+    source:
+      "公式K・Bファイルの解析済み（kb-day/v1、~/boatrace-archive-backup/kb-archive/parsed）",
+    inputSha256: inputHash,
+    period: [FROM, TO],
+    days,
+    races: nRaces,
+    runs: R.racer.length,
+    racers: new Set(R.racer).size,
+    definitions: {
+      wind: `風速 ${STRONG_WIND_MS}m 以上が荒れ`,
+      wave: `波高 ${ROUGH_WAVE_CM}cm 以上が荒れ（江戸川を除く）`,
+      rough:
+        "風5m以上 または 波5cm以上が荒れ。静水は両方とも未満（江戸川は風だけ）",
+      self: "荒れの率 − 本人の全体の率（今の画面）",
+      calm: "荒れの率 − 本人の静水の率",
+      pop: "荒れの率 − 全選手の荒れの率",
+      adj: "荒れの(実績−期待)平均 − 静水の(実績−期待)平均。期待は同期間の全選手、進入コース×全国勝率0.5刻み×荒れか×会場",
+      adjv: "adj を同じ会場の中で比べ、会場ごとの差を nR·nC/(nR+nC) で重み付けた平均（地元・得意会場の偏りを除く）",
+    },
+    split: { long: LONG, year: YEARS },
+    bootReps: BOOT_REPS,
+    permReps: PERM_REPS,
+  };
+}
+
+// long: 前後2期間。seed は並べ替え・ブートストラップの種（呼ぶたびに1つ進む）
+function analyseLong(PA, PB, nextSeed, t0) {
+  const out = {};
+  for (const cond of CONDS) {
+    out[cond] = {};
+    for (const outcome of OUTCOMES) {
+      out[cond][outcome] = {};
+      for (const m of MIN_RUNS_LIST) {
+        out[cond][outcome][`min${m}`] = analysePairs(
+          pairsOf(PA, PB, cond, outcome),
+          null,
+          null,
+          m,
+          nextSeed(),
+        );
+      }
+      console.error(`long ${cond} ${outcome} done ${secondsSince(t0)}s`);
+    }
+  }
+  out.windWave = {
+    win: windWaveRelation(PA.data, PB.data, "win", 50),
+    top3: windWaveRelation(PA.data, PB.data, "top3", 50),
+  };
+  return out;
+}
+
+// year: 隣り合う1年の5組を合わせる。同じ選手が複数の組に入る
+function yearPairs(Ps, cond, outcome) {
+  const pairs = [];
+  for (let k = 0; k + 1 < Ps.length; k++)
+    pairs.push(
+      ...pairsOf(
+        Ps[k],
+        Ps[k + 1],
+        cond,
+        outcome,
+        `${YEARS[k][0]}→${YEARS[k + 1][0]}`,
+      ),
+    );
+  return pairs;
+}
+
+function analyseYear(Ps, nextSeed, t0) {
+  const out = {};
+  for (const cond of CONDS) {
+    out[cond] = {};
+    for (const outcome of OUTCOMES) {
+      out[cond][outcome] = {};
+      for (const m of [10, 20, 30]) {
+        out[cond][outcome][`min${m}`] = analysePairs(
+          yearPairs(Ps, cond, outcome),
+          null,
+          null,
+          m,
+          nextSeed(),
+        );
+      }
+      console.error(`year ${cond} ${outcome} done ${secondsSince(t0)}s`);
+    }
+  }
+  const ww = { win: [], top3: [] };
+  for (let k = 0; k + 1 < Ps.length; k++) {
+    for (const o of OUTCOMES)
+      ww[o].push(windWaveRelation(Ps[k].data, Ps[k + 1].data, o, 20));
+  }
+  out.windWave = ww;
+  return out;
+}
+
 function main() {
   const t0 = Date.now();
   const { R, nRaces, days, inputHash } = loadRuns();
   console.error(
-    `loaded ${R.racer.length} runs / ${nRaces} races / ${days} days in ${((Date.now() - t0) / 1000).toFixed(0)}s`,
+    `loaded ${R.racer.length} runs / ${nRaces} races / ${days} days in ${secondsSince(t0)}s`,
   );
   const flags = condFlags(R);
+  let seed = 716;
+  const nextSeed = () => seed++;
 
-  const result = {
-    meta: {
-      ticket: "BOA-716",
-      generatedAt: new Date().toISOString(),
-      source:
-        "公式K・Bファイルの解析済み（kb-day/v1、~/boatrace-archive-backup/kb-archive/parsed）",
-      inputSha256: inputHash,
-      period: [FROM, TO],
-      days,
-      races: nRaces,
-      runs: R.racer.length,
-      racers: new Set(R.racer).size,
-      definitions: {
-        wind: `風速 ${STRONG_WIND_MS}m 以上が荒れ`,
-        wave: `波高 ${ROUGH_WAVE_CM}cm 以上が荒れ（江戸川を除く）`,
-        rough:
-          "風5m以上 または 波5cm以上が荒れ。静水は両方とも未満（江戸川は風だけ）",
-        self: "荒れの率 − 本人の全体の率（今の画面）",
-        calm: "荒れの率 − 本人の静水の率",
-        pop: "荒れの率 − 全選手の荒れの率",
-        adj: "荒れの(実績−期待)平均 − 静水の(実績−期待)平均。期待は同期間の全選手、進入コース×全国勝率0.5刻み×荒れか×会場",
-        adjv: "adj を同じ会場の中で比べ、会場ごとの差を nR·nC/(nR+nC) で重み付けた平均（地元・得意会場の偏りを除く）",
-      },
-      split: { long: LONG, year: YEARS },
-      bootReps: BOOT_REPS,
-      permReps: PERM_REPS,
-    },
-  };
+  const result = { meta: buildMeta(R, nRaces, days, inputHash) };
 
   // long
   const PA = buildPeriod(R, flags, [LONG.A[0], LONG.A[1]]);
@@ -757,76 +881,16 @@ function main() {
     A: populationContext(R, flags, PA.idx),
     B: populationContext(R, flags, PB.idx),
   };
-  result.long = {};
-  let seed = 716;
-  for (const cond of CONDS) {
-    result.long[cond] = {};
-    for (const outcome of OUTCOMES) {
-      result.long[cond][outcome] = {};
-      for (const m of MIN_RUNS_LIST) {
-        result.long[cond][outcome][`min${m}`] = analysePairs(
-          pairsOf(PA, PB, cond, outcome),
-          null,
-          null,
-          m,
-          seed++,
-        );
-      }
-      console.error(
-        `long ${cond} ${outcome} done ${((Date.now() - t0) / 1000).toFixed(0)}s`,
-      );
-    }
-  }
-  result.long.windWave = {
-    win: windWaveRelation(PA.data, PB.data, "win", 50),
-    top3: windWaveRelation(PA.data, PB.data, "top3", 50),
-  };
+  result.long = analyseLong(PA, PB, nextSeed, t0);
 
-  // year（隣り合う1年の5組を合わせる。同じ選手が複数の組に入る）
+  // year
   const Ps = YEARS.map((r) => buildPeriod(R, flags, r));
   result.roughRunsPerRacerYear = roughRunsPerRacerYear(Ps[Ps.length - 1]);
-  result.year = {};
-  for (const cond of CONDS) {
-    result.year[cond] = {};
-    for (const outcome of OUTCOMES) {
-      result.year[cond][outcome] = {};
-      for (const m of [10, 20, 30]) {
-        const pairs = [];
-        for (let k = 0; k + 1 < Ps.length; k++)
-          pairs.push(
-            ...pairsOf(
-              Ps[k],
-              Ps[k + 1],
-              cond,
-              outcome,
-              `${YEARS[k][0]}→${YEARS[k + 1][0]}`,
-            ),
-          );
-        result.year[cond][outcome][`min${m}`] = analysePairs(
-          pairs,
-          null,
-          null,
-          m,
-          seed++,
-        );
-      }
-      console.error(
-        `year ${cond} ${outcome} done ${((Date.now() - t0) / 1000).toFixed(0)}s`,
-      );
-    }
-  }
-  const ww = { win: [], top3: [] };
-  for (let k = 0; k + 1 < Ps.length; k++) {
-    for (const o of OUTCOMES)
-      ww[o].push(windWaveRelation(Ps[k].data, Ps[k + 1].data, o, 20));
-  }
-  result.year.windWave = ww;
+  result.year = analyseYear(Ps, nextSeed, t0);
 
   fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
   fs.writeFileSync(OUT_PATH, JSON.stringify(result, null, 1) + "\n");
-  console.error(
-    `wrote ${OUT_PATH} in ${((Date.now() - t0) / 1000).toFixed(0)}s`,
-  );
+  console.error(`wrote ${OUT_PATH} in ${secondsSince(t0)}s`);
 }
 
 main();
