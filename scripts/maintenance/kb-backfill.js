@@ -172,9 +172,33 @@ export function estimatePlan({
 // 引数
 // ---------------------------------------------------------------------------
 
-function parseArgs(argv) {
-  const [command, ...rest] = argv;
-  const opts = {
+/** 値を取る文字列のオプション（--名=値 → opts のキー） */
+const STRING_OPTIONS = new Map([
+  ["from", "from"],
+  ["to", "to"],
+  ["window", "window"],
+]);
+/** 値を Number() にかける数値のオプション */
+const NUMBER_OPTIONS = new Map([
+  ["daily-limit", "dailyLimit"],
+  ["interval-min-ms", "intervalMinMs"],
+  ["interval-max-ms", "intervalMaxMs"],
+  ["assumed-latency-ms", "latencyMs"],
+  ["max-requests", "maxRequests"],
+  ["batch-size", "batchSize"],
+  ["sleep-ms", "sleepMs"],
+]);
+/** 値を取らない旗のオプション（付けると true） */
+const FLAG_OPTIONS = new Map([
+  ["dry-run", "dryRun"],
+  ["apply", "apply"],
+  ["force", "force"],
+  ["plain", "plain"],
+  ["allow-overlap", "allowOverlap"],
+]);
+
+function defaultOptions(command) {
+  return {
     command,
     from: null,
     to: null,
@@ -194,65 +218,27 @@ function parseArgs(argv) {
     batchSize: 200,
     sleepMs: 1000,
   };
+}
+
+/** 1つの引数（キー k・値 v）を opts へ反映する。不明なキーは例外 */
+function applyOption(opts, k, v, arg) {
+  if (STRING_OPTIONS.has(k)) opts[STRING_OPTIONS.get(k)] = v;
+  else if (NUMBER_OPTIONS.has(k)) opts[NUMBER_OPTIONS.get(k)] = Number(v);
+  else if (FLAG_OPTIONS.has(k)) opts[FLAG_OPTIONS.get(k)] = true;
+  else if (k === "archive-dir") opts.archiveDir = path.resolve(v);
+  else if (k === "kinds")
+    opts.kinds = v.split(",").map((s) => s.trim().toUpperCase());
+  else throw new Error(`不明なオプション: ${arg}`);
+}
+
+function parseArgs(argv) {
+  const [command, ...rest] = argv;
+  const opts = defaultOptions(command);
   for (const arg of rest) {
     const [k, v] = arg.startsWith("--")
       ? arg.slice(2).split("=")
       : [arg, undefined];
-    switch (k) {
-      case "from":
-        opts.from = v;
-        break;
-      case "to":
-        opts.to = v;
-        break;
-      case "archive-dir":
-        opts.archiveDir = path.resolve(v);
-        break;
-      case "kinds":
-        opts.kinds = v.split(",").map((s) => s.trim().toUpperCase());
-        break;
-      case "daily-limit":
-        opts.dailyLimit = Number(v);
-        break;
-      case "window":
-        opts.window = v;
-        break;
-      case "interval-min-ms":
-        opts.intervalMinMs = Number(v);
-        break;
-      case "interval-max-ms":
-        opts.intervalMaxMs = Number(v);
-        break;
-      case "assumed-latency-ms":
-        opts.latencyMs = Number(v);
-        break;
-      case "max-requests":
-        opts.maxRequests = Number(v);
-        break;
-      case "batch-size":
-        opts.batchSize = Number(v);
-        break;
-      case "sleep-ms":
-        opts.sleepMs = Number(v);
-        break;
-      case "dry-run":
-        opts.dryRun = true;
-        break;
-      case "apply":
-        opts.apply = true;
-        break;
-      case "force":
-        opts.force = true;
-        break;
-      case "plain":
-        opts.plain = true;
-        break;
-      case "allow-overlap":
-        opts.allowOverlap = true;
-        break;
-      default:
-        throw new Error(`不明なオプション: ${arg}`);
-    }
+    applyOption(opts, k, v, arg);
   }
   return opts;
 }
@@ -352,24 +338,8 @@ async function fetchOnce(url) {
   }
 }
 
-/**
- * @param {object} opts
- * @param {{sleep?: Function, fetchOnce?: Function, now?: () => Date, backoffBaseMs?: number}} [deps] テスト用の差し替え
- */
-export async function cmdDownload(opts, deps = {}) {
-  const sleepFn = deps.sleep ?? sleep;
-  const fetchFn = deps.fetchOnce ?? fetchOnce;
-  const nowFn = deps.now ?? (() => new Date());
-  const backoffBaseMs = deps.backoffBaseMs ?? 30000;
-  const manifestFile = manifestPath(opts.archiveDir);
-  const manifest = latestManifest(readJsonl(manifestFile));
-  let todo = planDownload({
-    from: opts.from,
-    to: opts.to,
-    kinds: opts.kinds,
-    manifest,
-  });
-  const win = parseWindow(opts.window);
+/** 取得の見積りを表示する（実行前の1行） */
+function logDownloadPlan(opts, todo) {
   const meanInterval = (opts.intervalMinMs + opts.intervalMaxMs) / 2;
   const est = estimatePlan({
     requests: todo.length,
@@ -383,6 +353,287 @@ export async function cmdDownload(opts, deps = {}) {
       ` / 日次上限 ${opts.dailyLimit} → 最短 ${est.nights} 夜、合計約 ${est.totalHours} 時間` +
       `（間隔 ${opts.intervalMinMs}〜${opts.intervalMaxMs}ms + 応答 ${opts.latencyMs}ms を仮定）`,
   );
+}
+
+/** リクエスト間の最小間隔（ジッター付き）。全ての経路（成功・失敗・再試行）で必ず空ける */
+const pace = (c) =>
+  c.sleepFn(
+    c.opts.intervalMinMs +
+      Math.random() * (c.opts.intervalMaxMs - c.opts.intervalMinMs),
+  );
+
+/** 今夜（実行窓の日付）に出したリクエスト数 */
+const nightCount = (c) => {
+  const key = windowDayKey(c.win, c.nowFn());
+  return [...readJsonl(c.manifestFile)].filter(
+    (e) => e.requested && windowDayKey(c.win, e.fetchedAt) === key,
+  ).length;
+};
+
+/** 実行を止めて記録する。終了コードを返す */
+const stopRun = (c, code, reason, resumeFrom) => {
+  console.log(`\n停止: ${reason}`);
+  if (resumeFrom)
+    console.log(
+      `再開: 同じコマンドを再実行（次の対象 ${resumeFrom.date} ${resumeFrom.kind}）`,
+    );
+  console.log(`集計: ${JSON.stringify(c.stats)}`);
+  appendJsonl(path.join(c.opts.archiveDir, "runs.jsonl"), {
+    runId: c.runId,
+    stopped: reason,
+    stats: c.stats,
+  });
+  return code;
+};
+
+/** Kが404の日（開催なし）のBは取得しない。飛ばしたら true */
+function skipAbsentKDay(c, date, kind) {
+  if (!(
+    kind === "B" &&
+    (c.skipB.has(date) || c.manifest.get(`${date}|K`)?.status === "absent")
+  ))
+    return false;
+  appendJsonl(c.manifestFile, {
+    date,
+    kind,
+    status: "skipped",
+    reason: "K-absent",
+    fetchedAt: new Date().toISOString(),
+  });
+  c.stats.skipped++;
+  return true;
+}
+
+/** 実行窓・日次上限・最大件数の確認。止めるなら終了コード、続けるなら null */
+function limitStop(c, target) {
+  const { opts } = c;
+  if (!inWindow(c.win, c.nowFn()))
+    return stopRun(c, 2, `実行窓（JST ${opts.window}）の外です`, target);
+  if (c.usedTonight >= opts.dailyLimit)
+    return stopRun(
+      c,
+      2,
+      `日次上限 ${opts.dailyLimit} リクエストに到達しました`,
+      target,
+    );
+  if (c.stats.requests >= opts.maxRequests)
+    return stopRun(
+      c,
+      2,
+      `--max-requests=${opts.maxRequests} に到達しました`,
+      target,
+    );
+  return null;
+}
+
+/** 失敗応答（ネットワーク・403等）の記録・サーキットブレーカー・待ち。止めるなら終了コード、やり直すなら null */
+async function handleBadResponse(c, i, entry, cls, res, netError) {
+  const { stats, todo } = c;
+  const { date, kind } = todo[i];
+  c.consecutiveBad = c.badKind === cls.kind ? c.consecutiveBad + 1 : 1;
+  c.badKind = cls.kind;
+  const failed = {
+    ...entry,
+    status: "error",
+    reason: netError
+      ? String(netError.message ?? netError)
+      : `HTTP ${res.status}`,
+  };
+  appendJsonl(c.manifestFile, failed);
+  stats.error++;
+  console.log(
+    `[${i + 1}/${todo.length}] ${date} ${kind} ${failed.reason}（連続 ${c.consecutiveBad}/${cls.threshold}）`,
+  );
+  if (c.consecutiveBad >= cls.threshold)
+    return stopRun(
+      c,
+      4,
+      `サーキットブレーカー: ${cls.kind} が ${c.consecutiveBad} 回連続しました。時間を置き、間隔を広げてから再開してください`,
+      todo[i],
+    );
+  if (cls.backoff) {
+    const wait = Math.min(
+      300000,
+      c.backoffBaseMs * 2 ** (c.consecutiveBad - 1),
+    );
+    console.log(`  バックオフ ${Math.round(wait / 1000)} 秒`);
+    await c.sleepFn(wait);
+  } else {
+    await pace(c); // バックオフ無しの失敗（403等）でも、最小間隔を空けて再試行する
+  }
+  return null;
+}
+
+/** 404（開催なし）の記録。404が続けば止める。止めるなら終了コード、続けるなら null */
+function handleAbsent(c, i, entry) {
+  const { stats, todo } = c;
+  const { date, kind } = todo[i];
+  appendJsonl(c.manifestFile, { ...entry, status: "absent" });
+  stats.absent++;
+  c.consecutiveAbsent++;
+  if (kind === "K") c.skipB.add(date);
+  console.log(`[${i + 1}/${todo.length}] ${date} ${kind} 404（開催なし）`);
+  if (c.consecutiveAbsent >= 3)
+    return stopRun(
+      c,
+      4,
+      `404が${c.consecutiveAbsent}回連続しました（URL構造の変更またはアクセス制限の疑い。開催のない日が3日続くことは通常ありません）`,
+      todo[i + 1] ?? null,
+    );
+  return null;
+}
+
+/** LZHとして展開できない応答の記録。3回続けば止める。止めるなら終了コード、続けるなら null */
+function handleNotLzh(c, i, entry, res, e) {
+  const { stats, todo } = c;
+  const { date, kind } = todo[i];
+  const failed = {
+    ...entry,
+    status: "error",
+    reason: `LZH展開失敗: ${e.message}`,
+    bytes: res.bytes.length,
+  };
+  appendJsonl(c.manifestFile, failed);
+  stats.error++;
+  console.log(`[${i + 1}/${todo.length}] ${date} ${kind} ${failed.reason}`);
+  c.consecutiveNotLzh++;
+  if (c.consecutiveNotLzh >= 3)
+    return stopRun(
+      c,
+      4,
+      "LZHとして展開できない応答が3回連続しました（応答の形式変更またはブロックの疑い）",
+      todo[i],
+    );
+  return null;
+}
+
+/** 確定済みの応答を生ファイルとして保存し、マニフェストへ記録する */
+function saveFetched(c, i, entry, res, kVenues) {
+  const { opts, stats, todo } = c;
+  const { date, kind } = todo[i];
+  const file = rawPath(opts.archiveDir, kind, date);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, res.bytes);
+  appendJsonl(c.manifestFile, {
+    ...entry,
+    status: "ok",
+    ...(kVenues && kVenues.pendingVenues.length > 0
+      ? { pendingVenues: kVenues.pendingVenues }
+      : {}),
+    bytes: res.bytes.length,
+    sha256: sha256(res.bytes),
+    file: kbArchiveRelPath(kind, date),
+  });
+  stats.ok++;
+  console.log(
+    `[${i + 1}/${todo.length}] ${date} ${kind} ok ${res.bytes.length}B ${res.ms}ms（今夜 ${c.usedTonight}/${opts.dailyLimit}）`,
+  );
+}
+
+/** 200応答: LZHとして展開できること、Kは確定済み（プレースホルダでない）ことを確認して保存する。止めるなら終了コード、続けるなら null */
+async function handleFetched(c, i, entry, res) {
+  const { date, kind } = c.todo[i];
+  c.consecutiveAbsent = 0;
+  let text = null;
+  try {
+    text = await decodeLzhText(res.bytes);
+  } catch (e) {
+    return handleNotLzh(c, i, entry, res, e);
+  }
+  c.consecutiveNotLzh = 0;
+  // 日全体が未確定なのは、確定した会場が1つも無い場合だけ（会場ごとに判定。中止・順延の会場があるだけの日を、
+  // 捨てない。ブロックが読み取れない想定外の形式は、従来どおり、ファイル全体のマーカーで判定する）
+  const kVenues = kind === "K" ? classifyKFileVenues(text) : null;
+  if (
+    kind === "K" &&
+    (kVenues.allPending ||
+      (kVenues.total === 0 && text.includes(PENDING_MARKER)))
+  ) {
+    appendJsonl(c.manifestFile, {
+      ...entry,
+      status: "pending",
+      bytes: res.bytes.length,
+    });
+    c.stats.pending++;
+    console.log(
+      `[${i + 1}/${c.todo.length}] ${date} ${kind} 未確定（プレースホルダ）。保存しません`,
+    );
+  } else {
+    saveFetched(c, i, entry, res, kVenues);
+  }
+  return null;
+}
+
+/** 1件を取りに行く。失敗は netError に入れて返す */
+async function fetchTarget(c, url) {
+  try {
+    return { res: await c.fetchFn(url), netError: null };
+  } catch (e) {
+    return { res: undefined, netError: e };
+  }
+}
+
+/** 1件ぶんの処理。止めるなら終了コード、次へ進むなら null、同じ対象をやり直すなら "retry" */
+async function downloadOne(c, i) {
+  const { date, kind } = c.todo[i];
+  if (skipAbsentKDay(c, date, kind)) return null;
+  const limited = limitStop(c, c.todo[i]);
+  if (limited !== null) return limited;
+
+  const url = buildKbUrl(kind, date);
+  const { res, netError } = await fetchTarget(c, url);
+  c.stats.requests++;
+  c.usedTonight++;
+  const fetchedAt = c.nowFn().toISOString();
+
+  const cls = netError
+    ? { kind: "network", bad: true, threshold: 3, backoff: true }
+    : classifyResponse(res.status);
+  const entry = {
+    date,
+    kind,
+    url,
+    requested: true,
+    fetchedAt,
+    http: res?.status ?? null,
+    ms: res?.ms ?? null,
+  };
+
+  if (cls.bad) {
+    const code = await handleBadResponse(c, i, entry, cls, res, netError);
+    return code ?? "retry"; // 同じ対象をやり直す（連続失敗の上限で必ず止まる）
+  }
+  c.consecutiveBad = 0;
+  c.badKind = null;
+
+  const code =
+    cls.kind === "absent"
+      ? handleAbsent(c, i, entry)
+      : await handleFetched(c, i, entry, res);
+  if (code !== null) return code;
+  await pace(c);
+  return null;
+}
+
+/**
+ * @param {object} opts
+ * @param {{sleep?: Function, fetchOnce?: Function, now?: () => Date, backoffBaseMs?: number}} [deps] テスト用の差し替え
+ */
+export async function cmdDownload(opts, deps = {}) {
+  const sleepFn = deps.sleep ?? sleep;
+  const fetchFn = deps.fetchOnce ?? fetchOnce;
+  const nowFn = deps.now ?? (() => new Date());
+  const backoffBaseMs = deps.backoffBaseMs ?? 30000;
+  const manifestFile = manifestPath(opts.archiveDir);
+  const manifest = latestManifest(readJsonl(manifestFile));
+  const todo = planDownload({
+    from: opts.from,
+    to: opts.to,
+    kinds: opts.kinds,
+    manifest,
+  });
+  const win = parseWindow(opts.window);
+  logDownloadPlan(opts, todo);
   if (opts.dryRun) {
     console.log(
       "[DRY-RUN] ネットワーク・書き込みなし。先頭5件:",
@@ -395,226 +646,42 @@ export async function cmdDownload(opts, deps = {}) {
     return 0;
   }
 
-  const runId = new Date().toISOString().replace(/[:.]/g, "-");
-  const stats = {
-    requests: 0,
-    ok: 0,
-    absent: 0,
-    pending: 0,
-    error: 0,
-    skipped: 0,
+  // 実行中の状態（取得ループの各段が読み書きする）
+  const c = {
+    opts,
+    sleepFn,
+    fetchFn,
+    nowFn,
+    backoffBaseMs,
+    manifestFile,
+    manifest,
+    todo,
+    win,
+    runId: new Date().toISOString().replace(/[:.]/g, "-"),
+    stats: { requests: 0, ok: 0, absent: 0, pending: 0, error: 0, skipped: 0 },
+    consecutiveBad: 0,
+    badKind: null,
+    consecutiveNotLzh: 0,
+    consecutiveAbsent: 0, // 404が続くのは、URL構造の変更やアクセス制限の疑い（ボートレースは毎日どこかで開催）
+    skipB: new Set(), // Kが404の日（開催なし）はBを取得しない
+    usedTonight: 0,
   };
-  let consecutiveBad = 0;
-  let badKind = null;
-  // リクエスト間の最小間隔（ジッター付き）。全ての経路（成功・失敗・再試行）で必ず空ける
-  const pace = () =>
-    sleepFn(
-      opts.intervalMinMs +
-        Math.random() * (opts.intervalMaxMs - opts.intervalMinMs),
-    );
-  let consecutiveNotLzh = 0;
-  let consecutiveAbsent = 0; // 404が続くのは、URL構造の変更やアクセス制限の疑い（ボートレースは毎日どこかで開催）
-  const skipB = new Set(); // Kが404の日（開催なし）はBを取得しない
-
-  const nightCount = () => {
-    const key = windowDayKey(win, nowFn());
-    return [...readJsonl(manifestFile)].filter(
-      (e) => e.requested && windowDayKey(win, e.fetchedAt) === key,
-    ).length;
-  };
-  let usedTonight = nightCount();
-
-  const stop = (code, reason, resumeFrom) => {
-    console.log(`\n停止: ${reason}`);
-    if (resumeFrom)
-      console.log(
-        `再開: 同じコマンドを再実行（次の対象 ${resumeFrom.date} ${resumeFrom.kind}）`,
-      );
-    console.log(`集計: ${JSON.stringify(stats)}`);
-    appendJsonl(path.join(opts.archiveDir, "runs.jsonl"), {
-      runId,
-      stopped: reason,
-      stats,
-    });
-    return code;
-  };
+  c.usedTonight = nightCount(c);
 
   for (let i = 0; i < todo.length; i++) {
-    const { date, kind } = todo[i];
-    if (
-      kind === "B" &&
-      (skipB.has(date) || manifest.get(`${date}|K`)?.status === "absent")
-    ) {
-      appendJsonl(manifestFile, {
-        date,
-        kind,
-        status: "skipped",
-        reason: "K-absent",
-        fetchedAt: new Date().toISOString(),
-      });
-      stats.skipped++;
-      continue;
-    }
-    if (!inWindow(win, nowFn()))
-      return stop(2, `実行窓（JST ${opts.window}）の外です`, todo[i]);
-    if (usedTonight >= opts.dailyLimit)
-      return stop(
-        2,
-        `日次上限 ${opts.dailyLimit} リクエストに到達しました`,
-        todo[i],
-      );
-    if (stats.requests >= opts.maxRequests)
-      return stop(
-        2,
-        `--max-requests=${opts.maxRequests} に到達しました`,
-        todo[i],
-      );
-
-    const url = buildKbUrl(kind, date);
-    let res;
-    let netError = null;
-    try {
-      res = await fetchFn(url);
-    } catch (e) {
-      netError = e;
-    }
-    stats.requests++;
-    usedTonight++;
-    const fetchedAt = nowFn().toISOString();
-
-    const cls = netError
-      ? { kind: "network", bad: true, threshold: 3, backoff: true }
-      : classifyResponse(res.status);
-    let entry = {
-      date,
-      kind,
-      url,
-      requested: true,
-      fetchedAt,
-      http: res?.status ?? null,
-      ms: res?.ms ?? null,
-    };
-
-    if (cls.bad) {
-      consecutiveBad = badKind === cls.kind ? consecutiveBad + 1 : 1;
-      badKind = cls.kind;
-      entry = {
-        ...entry,
-        status: "error",
-        reason: netError
-          ? String(netError.message ?? netError)
-          : `HTTP ${res.status}`,
-      };
-      appendJsonl(manifestFile, entry);
-      stats.error++;
-      console.log(
-        `[${i + 1}/${todo.length}] ${date} ${kind} ${entry.reason}（連続 ${consecutiveBad}/${cls.threshold}）`,
-      );
-      if (consecutiveBad >= cls.threshold)
-        return stop(
-          4,
-          `サーキットブレーカー: ${cls.kind} が ${consecutiveBad} 回連続しました。時間を置き、間隔を広げてから再開してください`,
-          todo[i],
-        );
-      if (cls.backoff) {
-        const wait = Math.min(
-          300000,
-          backoffBaseMs * 2 ** (consecutiveBad - 1),
-        );
-        console.log(`  バックオフ ${Math.round(wait / 1000)} 秒`);
-        await sleepFn(wait);
-      } else {
-        await pace(); // バックオフ無しの失敗（403等）でも、最小間隔を空けて再試行する
-      }
-      i--; // 同じ対象をやり直す（連続失敗の上限で必ず止まる）
-      continue;
-    }
-    consecutiveBad = 0;
-    badKind = null;
-
-    if (cls.kind === "absent") {
-      appendJsonl(manifestFile, { ...entry, status: "absent" });
-      stats.absent++;
-      consecutiveAbsent++;
-      if (kind === "K") skipB.add(date);
-      console.log(`[${i + 1}/${todo.length}] ${date} ${kind} 404（開催なし）`);
-      if (consecutiveAbsent >= 3)
-        return stop(
-          4,
-          `404が${consecutiveAbsent}回連続しました（URL構造の変更またはアクセス制限の疑い。開催のない日が3日続くことは通常ありません）`,
-          todo[i + 1] ?? null,
-        );
-    } else {
-      consecutiveAbsent = 0;
-      // 200: LZHとして展開できること、Kは確定済み（プレースホルダでない）ことを確認して保存する
-      let text = null;
-      try {
-        text = await decodeLzhText(res.bytes);
-      } catch (e) {
-        entry = {
-          ...entry,
-          status: "error",
-          reason: `LZH展開失敗: ${e.message}`,
-          bytes: res.bytes.length,
-        };
-        appendJsonl(manifestFile, entry);
-        stats.error++;
-        console.log(
-          `[${i + 1}/${todo.length}] ${date} ${kind} ${entry.reason}`,
-        );
-        consecutiveNotLzh++;
-        if (consecutiveNotLzh >= 3)
-          return stop(
-            4,
-            "LZHとして展開できない応答が3回連続しました（応答の形式変更またはブロックの疑い）",
-            todo[i],
-          );
-        await pace();
-        continue;
-      }
-      consecutiveNotLzh = 0;
-      // 日全体が未確定なのは、確定した会場が1つも無い場合だけ（会場ごとに判定。中止・順延の会場があるだけの日を、
-      // 捨てない。ブロックが読み取れない想定外の形式は、従来どおり、ファイル全体のマーカーで判定する）
-      const kVenues = kind === "K" ? classifyKFileVenues(text) : null;
-      if (
-        kind === "K" &&
-        (kVenues.allPending ||
-          (kVenues.total === 0 && text.includes(PENDING_MARKER)))
-      ) {
-        appendJsonl(manifestFile, {
-          ...entry,
-          status: "pending",
-          bytes: res.bytes.length,
-        });
-        stats.pending++;
-        console.log(
-          `[${i + 1}/${todo.length}] ${date} ${kind} 未確定（プレースホルダ）。保存しません`,
-        );
-      } else {
-        const file = rawPath(opts.archiveDir, kind, date);
-        fs.mkdirSync(path.dirname(file), { recursive: true });
-        fs.writeFileSync(file, res.bytes);
-        appendJsonl(manifestFile, {
-          ...entry,
-          status: "ok",
-          ...(kVenues && kVenues.pendingVenues.length > 0
-            ? { pendingVenues: kVenues.pendingVenues }
-            : {}),
-          bytes: res.bytes.length,
-          sha256: sha256(res.bytes),
-          file: kbArchiveRelPath(kind, date),
-        });
-        stats.ok++;
-        console.log(
-          `[${i + 1}/${todo.length}] ${date} ${kind} ok ${res.bytes.length}B ${res.ms}ms（今夜 ${usedTonight}/${opts.dailyLimit}）`,
-        );
-      }
-    }
-    await pace();
+    const code = await downloadOne(c, i);
+    if (code === "retry") i--;
+    else if (code !== null) return code;
   }
+  return finishDownload(c);
+}
+
+/** 全件の処理後: 完了を記録して終了コードを返す */
+function finishDownload(c) {
+  const { stats } = c;
   console.log(`\n完了: ${JSON.stringify(stats)}`);
-  appendJsonl(path.join(opts.archiveDir, "runs.jsonl"), {
-    runId,
+  appendJsonl(path.join(c.opts.archiveDir, "runs.jsonl"), {
+    runId: c.runId,
     completed: true,
     stats,
   });
@@ -628,76 +695,76 @@ export async function cmdDownload(opts, deps = {}) {
 // parse
 // ---------------------------------------------------------------------------
 
-async function cmdParse(opts) {
-  const manifest = latestManifest(readJsonl(manifestPath(opts.archiveDir)));
-  let targets = 0;
-  let written = 0;
-  let skipped = 0;
-  const anomalies = [];
-  for (const date of dateRange(opts.from, opts.to)) {
-    const k = manifest.get(`${date}|K`);
-    const b = manifest.get(`${date}|B`);
-    if (k?.status !== "ok" && b?.status !== "ok") continue;
-    targets++;
-    const out = parsedPath(opts.archiveDir, date, opts.plain);
-    if (!opts.force && fs.existsSync(out)) {
-      skipped++;
-      continue;
-    }
-    const read = async (kind, m) => {
-      if (m?.status !== "ok") return null;
-      const bytes = new Uint8Array(
-        fs.readFileSync(rawPath(opts.archiveDir, kind, date)),
-      );
-      // 生ファイルの破損・差し替えを、マニフェストのsha256で検知する
-      if (m.sha256 && sha256(bytes) !== m.sha256)
-        throw new Error(
-          `${date} ${kind}: 生ファイルのsha256がマニフェストと一致しません`,
-        );
-      return {
-        text: await decodeLzhText(bytes),
-        source: {
-          file: m.file,
-          sha256: m.sha256,
-          bytes: m.bytes,
-          fetchedAt: m.fetchedAt,
-        },
-      };
-    };
-    const [kr, br] = [await read("K", k), await read("B", b)];
-    const day = buildKbDay({
-      date,
-      kText: kr?.text ?? null,
-      bText: br?.text ?? null,
-      source: { K: kr?.source ?? null, B: br?.source ?? null },
-    });
-    const s = summarizeKbDay(day);
-    const problems = [];
-    if (s.k_unparsed_lines > 0) problems.push(`K未解析行${s.k_unparsed_lines}`);
-    if (s.k_extra_lines > 0) problems.push(`K付随行${s.k_extra_lines}`);
-    if (s.b_extra_lines > 0) problems.push(`B付随行${s.b_extra_lines}`);
-    if (day.k && day.b && s.k_races !== s.b_races)
-      problems.push(`レース数不一致 K${s.k_races}/B${s.b_races}`);
-    if (day.b && s.b_entries !== s.b_races * 6)
-      problems.push(`B艇数 ${s.b_entries} != レース数×6`);
-    if (day.k && s.k_boat_rows !== s.k_races * 6)
-      problems.push(`K艇数 ${s.k_boat_rows} != レース数×6`);
-    if (problems.length) {
-      anomalies.push({ date, problems });
-      appendJsonl(path.join(opts.archiveDir, "parsed", "anomalies.jsonl"), {
-        date,
-        problems,
-        at: new Date().toISOString(),
-      });
-    }
-    const json = JSON.stringify(day);
-    fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, opts.plain ? json : zlib.gzipSync(json));
-    written++;
-    console.log(
-      `${date} K${s.k_races}R/B${s.b_races}R ${problems.length ? `⚠ ${problems.join(" / ")}` : "ok"}`,
+/** 生ファイル1つ（K か B）を読んで展開する。マニフェストが ok でなければ null */
+async function readRawSource(opts, date, kind, m) {
+  if (m?.status !== "ok") return null;
+  const bytes = new Uint8Array(
+    fs.readFileSync(rawPath(opts.archiveDir, kind, date)),
+  );
+  // 生ファイルの破損・差し替えを、マニフェストのsha256で検知する
+  if (m.sha256 && sha256(bytes) !== m.sha256)
+    throw new Error(
+      `${date} ${kind}: 生ファイルのsha256がマニフェストと一致しません`,
     );
+  return {
+    text: await decodeLzhText(bytes),
+    source: {
+      file: m.file,
+      sha256: m.sha256,
+      bytes: m.bytes,
+      fetchedAt: m.fetchedAt,
+    },
+  };
+}
+
+/** 解析結果の要約から、要確認の点を文にして返す */
+function findDayProblems(day, s) {
+  const problems = [];
+  if (s.k_unparsed_lines > 0) problems.push(`K未解析行${s.k_unparsed_lines}`);
+  if (s.k_extra_lines > 0) problems.push(`K付随行${s.k_extra_lines}`);
+  if (s.b_extra_lines > 0) problems.push(`B付随行${s.b_extra_lines}`);
+  if (day.k && day.b && s.k_races !== s.b_races)
+    problems.push(`レース数不一致 K${s.k_races}/B${s.b_races}`);
+  if (day.b && s.b_entries !== s.b_races * 6)
+    problems.push(`B艇数 ${s.b_entries} != レース数×6`);
+  if (day.k && s.k_boat_rows !== s.k_races * 6)
+    problems.push(`K艇数 ${s.k_boat_rows} != レース数×6`);
+  return problems;
+}
+
+/** 1日ぶんを解析して中間JSONへ書く。tally（written・anomalies）を更新する */
+async function parseOneDay(opts, date, k, b, out, tally) {
+  const [kr, br] = [
+    await readRawSource(opts, date, "K", k),
+    await readRawSource(opts, date, "B", b),
+  ];
+  const day = buildKbDay({
+    date,
+    kText: kr?.text ?? null,
+    bText: br?.text ?? null,
+    source: { K: kr?.source ?? null, B: br?.source ?? null },
+  });
+  const s = summarizeKbDay(day);
+  const problems = findDayProblems(day, s);
+  if (problems.length) {
+    tally.anomalies.push({ date, problems });
+    appendJsonl(path.join(opts.archiveDir, "parsed", "anomalies.jsonl"), {
+      date,
+      problems,
+      at: new Date().toISOString(),
+    });
   }
+  const json = JSON.stringify(day);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, opts.plain ? json : zlib.gzipSync(json));
+  tally.written++;
+  console.log(
+    `${date} K${s.k_races}R/B${s.b_races}R ${problems.length ? `⚠ ${problems.join(" / ")}` : "ok"}`,
+  );
+}
+
+/** parse の集計行を出し、終了コードを返す */
+function reportParse({ targets, written, skipped, anomalies }) {
   console.log(
     `\nparse: 対象 ${targets}日 / 出力 ${written} / 既存スキップ ${skipped} / 要確認 ${anomalies.length}`,
   );
@@ -709,6 +776,24 @@ async function cmdParse(opts) {
     return 1;
   }
   return 0;
+}
+
+async function cmdParse(opts) {
+  const manifest = latestManifest(readJsonl(manifestPath(opts.archiveDir)));
+  const tally = { targets: 0, written: 0, skipped: 0, anomalies: [] };
+  for (const date of dateRange(opts.from, opts.to)) {
+    const k = manifest.get(`${date}|K`);
+    const b = manifest.get(`${date}|B`);
+    if (k?.status !== "ok" && b?.status !== "ok") continue;
+    tally.targets++;
+    const out = parsedPath(opts.archiveDir, date, opts.plain);
+    if (!opts.force && fs.existsSync(out)) {
+      tally.skipped++;
+      continue;
+    }
+    await parseOneDay(opts, date, k, b, out, tally);
+  }
+  return reportParse(tally);
 }
 
 function readParsedDay(dir, date) {
@@ -728,15 +813,8 @@ function readParsedDay(dir, date) {
 // load
 // ---------------------------------------------------------------------------
 
-async function cmdLoad(opts) {
-  if (!opts.allowOverlap && opts.to >= MAIN_TABLES_START) {
-    console.error(
-      `--to=${opts.to} は本体テーブルの範囲（${MAIN_TABLES_START}以降）と重なります。アーカイブ表へは ${MAIN_TABLES_START} より前だけを投入します（検証用に重ねる場合のみ --allow-overlap）`,
-    );
-    return 1;
-  }
-  const loadedFile = path.join(opts.archiveDir, "loaded.jsonl");
-  const loaded = new Set(readJsonl(loadedFile).map((e) => e.date));
+/** 中間JSONを全期間なめて、投入対象の日と件数の集計を返す。警告は都度出す */
+function scanParsedDays(opts) {
   const totals = { days: 0, venueDays: 0, races: 0, boats: 0, warnings: 0 };
   // 全期間の行をメモリに溜めない（約200万艇になる）。集計は行を捨てて数えるだけにし、書き込み時に日ごとに再構築する
   const dates = [];
@@ -754,76 +832,76 @@ async function cmdLoad(opts) {
     for (const w of rows.warnings) console.warn(`  ⚠ ${w}`);
     dates.push(date);
   }
-  console.log(
-    `投入対象: ${totals.days}日 / 開催 ${totals.venueDays} / レース ${totals.races} / 艇 ${totals.boats} / 警告 ${totals.warnings}`,
-  );
-  if (totals.days === 0) {
-    console.error(
-      "投入対象の中間JSONがありません（先に download → parse を実行してください）",
-    );
-    return 1;
-  }
-  if (!opts.apply) {
-    console.log(
-      "[DRY-RUN] DBには書き込みません。書き込むには --apply を付けます（DDL 074 の適用と、ユーザーの実行承認が前提）",
-    );
-    return 0;
-  }
+  return { totals, dates };
+}
 
-  const { supabase } = await import("../lib/supabaseClient.js");
-  const { upsertChangedRows } = await import("../lib/unchangedRows.js");
-  const probe = await supabase
-    .from(KB_ARCHIVE_TABLES.races.table)
-    .select("race_id")
-    .limit(1);
-  if (probe.error) {
-    console.error(
-      `アーカイブ表を読めません（DDL 074 が未適用の可能性）: ${probe.error.message}`,
-    );
-    return 1;
-  }
-  const chunk = (arr, n) =>
-    Array.from({ length: Math.ceil(arr.length / n) }, (_, i) =>
-      arr.slice(i * n, i * n + n),
-    );
-  const summary = { written: 0, unchanged: 0, failedDays: 0 };
-  let processedDays = 0;
-  for (const date of dates) {
-    if (loaded.has(date) && !opts.force) continue;
-    processedDays++;
-    const rows = buildArchiveRows(readParsedDay(opts.archiveDir, date));
-    let dayFailed = false;
-    const put = async (spec, list, perStmt) => {
-      for (const part of chunk(list, perStmt)) {
-        const r = await upsertChangedRows(supabase, spec.table, part, {
-          onConflict: spec.onConflict,
-          keyColumns: spec.keyColumns,
-          chunkColumn: spec.chunkColumn,
-          batchSize: opts.batchSize,
-        });
-        summary.written += r.written;
-        summary.unchanged += r.skipped;
-        if (r.error) dayFailed = true;
-        await sleep(opts.sleepMs); // 文の間隔（Disk IO Budgetへの配慮）
-      }
-    };
-    await put(KB_ARCHIVE_TABLES.venueDays, rows.venueDays, opts.batchSize);
-    await put(KB_ARCHIVE_TABLES.races, rows.races, opts.batchSize);
-    await put(KB_ARCHIVE_TABLES.boats, rows.boats, opts.batchSize); // 200行/文（1レース6行のため33レースずつ）
-    if (dayFailed) {
-      summary.failedDays++;
-      console.error(
-        `${date}: 書き込みに失敗した文があります。loaded に記録しません（再実行で再試行されます）`,
-      );
-      continue;
-    }
-    appendJsonl(loadedFile, {
-      date,
-      at: new Date().toISOString(),
-      races: rows.races.length,
-      boats: rows.boats.length,
+const chunk = (arr, n) =>
+  Array.from({ length: Math.ceil(arr.length / n) }, (_, i) =>
+    arr.slice(i * n, i * n + n),
+  );
+
+/** 1表ぶんの行を perStmt 行ずつの文で書く。失敗した文があれば true */
+async function putRows(opts, db, summary, spec, list, perStmt) {
+  let failed = false;
+  for (const part of chunk(list, perStmt)) {
+    const r = await db.upsertChangedRows(db.supabase, spec.table, part, {
+      onConflict: spec.onConflict,
+      keyColumns: spec.keyColumns,
+      chunkColumn: spec.chunkColumn,
+      batchSize: opts.batchSize,
     });
+    summary.written += r.written;
+    summary.unchanged += r.skipped;
+    if (r.error) failed = true;
+    await sleep(opts.sleepMs); // 文の間隔（Disk IO Budgetへの配慮）
   }
+  return failed;
+}
+
+/** 1日ぶんを3表へ書く。全部成功したら loaded に記録する */
+async function loadOneDay(opts, db, summary, date, loadedFile) {
+  const rows = buildArchiveRows(readParsedDay(opts.archiveDir, date));
+  const venueFailed = await putRows(
+    opts,
+    db,
+    summary,
+    KB_ARCHIVE_TABLES.venueDays,
+    rows.venueDays,
+    opts.batchSize,
+  );
+  const raceFailed = await putRows(
+    opts,
+    db,
+    summary,
+    KB_ARCHIVE_TABLES.races,
+    rows.races,
+    opts.batchSize,
+  );
+  const boatFailed = await putRows(
+    opts,
+    db,
+    summary,
+    KB_ARCHIVE_TABLES.boats,
+    rows.boats,
+    opts.batchSize,
+  ); // 200行/文（1レース6行のため33レースずつ）
+  if (venueFailed || raceFailed || boatFailed) {
+    summary.failedDays++;
+    console.error(
+      `${date}: 書き込みに失敗した文があります。loaded に記録しません（再実行で再試行されます）`,
+    );
+    return;
+  }
+  appendJsonl(loadedFile, {
+    date,
+    at: new Date().toISOString(),
+    races: rows.races.length,
+    boats: rows.boats.length,
+  });
+}
+
+/** load の集計行と注意を出し、終了コードを返す */
+function reportLoad(summary, processedDays, dates, totals) {
   console.log(
     `\nload: ${JSON.stringify(summary)}（処理 ${processedDays}日 / 投入済みスキップ ${dates.length - processedDays}日）`,
   );
@@ -844,6 +922,55 @@ async function cmdLoad(opts) {
     return 1;
   }
   return 0;
+}
+
+async function cmdLoad(opts) {
+  if (!opts.allowOverlap && opts.to >= MAIN_TABLES_START) {
+    console.error(
+      `--to=${opts.to} は本体テーブルの範囲（${MAIN_TABLES_START}以降）と重なります。アーカイブ表へは ${MAIN_TABLES_START} より前だけを投入します（検証用に重ねる場合のみ --allow-overlap）`,
+    );
+    return 1;
+  }
+  const loadedFile = path.join(opts.archiveDir, "loaded.jsonl");
+  const loaded = new Set(readJsonl(loadedFile).map((e) => e.date));
+  const { totals, dates } = scanParsedDays(opts);
+  console.log(
+    `投入対象: ${totals.days}日 / 開催 ${totals.venueDays} / レース ${totals.races} / 艇 ${totals.boats} / 警告 ${totals.warnings}`,
+  );
+  if (totals.days === 0) {
+    console.error(
+      "投入対象の中間JSONがありません（先に download → parse を実行してください）",
+    );
+    return 1;
+  }
+  if (!opts.apply) {
+    console.log(
+      "[DRY-RUN] DBには書き込みません。書き込むには --apply を付けます（DDL 074 の適用と、ユーザーの実行承認が前提）",
+    );
+    return 0;
+  }
+
+  const { supabase } = await import("../lib/supabaseClient.js");
+  const { upsertChangedRows } = await import("../lib/unchangedRows.js");
+  const db = { supabase, upsertChangedRows };
+  const probe = await supabase
+    .from(KB_ARCHIVE_TABLES.races.table)
+    .select("race_id")
+    .limit(1);
+  if (probe.error) {
+    console.error(
+      `アーカイブ表を読めません（DDL 074 が未適用の可能性）: ${probe.error.message}`,
+    );
+    return 1;
+  }
+  const summary = { written: 0, unchanged: 0, failedDays: 0 };
+  let processedDays = 0;
+  for (const date of dates) {
+    if (loaded.has(date) && !opts.force) continue;
+    processedDays++;
+    await loadOneDay(opts, db, summary, date, loadedFile);
+  }
+  return reportLoad(summary, processedDays, dates, totals);
 }
 
 // ---------------------------------------------------------------------------
