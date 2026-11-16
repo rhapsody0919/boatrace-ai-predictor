@@ -15206,7 +15206,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/fan-backfill.js:494",
+          "ref": "scripts/maintenance/fan-backfill.js:488",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15216,7 +15216,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fan-backfill.js:512",
+          "ref": "scripts/maintenance/fan-backfill.js:587",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -15330,7 +15330,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fan-backfill.js:544",
+          "ref": "scripts/maintenance/fan-backfill.js:508",
           "op": "update",
           "via": "client",
           "columns": [
@@ -15349,8 +15349,8 @@
             "scripts/analysis/verify-racer-season-stats-accuracy.js:95",
             "scripts/lib/racerNews/officialGradeAnnouncements.js:174",
             "scripts/lib/racerProfileSync.js:265",
-            "scripts/maintenance/fan-backfill.js:494",
-            "scripts/maintenance/fan-backfill.js:544",
+            "scripts/maintenance/fan-backfill.js:488",
+            "scripts/maintenance/fan-backfill.js:508",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "scripts/sns/delete-x-post.js:124",
             "src/services/motorQueries4.js:176",
@@ -15501,14 +15501,14 @@
         },
         "sex": {
           "readers": [
-            "scripts/maintenance/fan-backfill.js:494"
+            "scripts/maintenance/fan-backfill.js:488"
           ],
           "writers": [],
           "sql": []
         },
         "training_term": {
           "readers": [
-            "scripts/maintenance/fan-backfill.js:494"
+            "scripts/maintenance/fan-backfill.js:488"
           ],
           "writers": [],
           "sql": []
@@ -30195,12 +30195,12 @@
     },
     {
       "file": "scripts/maintenance/fan-backfill.js",
-      "line": 382,
+      "line": 360,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/maintenance/fan-backfill.js",
-      "line": 406,
+      "line": 444,
       "reason": "表の名前が変数（.from(式)）"
     },
     {

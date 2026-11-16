@@ -1426,8 +1426,8 @@
   - `scripts/lib/racerNews/officialGradeAnnouncements.js:174` select [branch, name, racer_id]
   - `scripts/lib/racerProfileSync.js:321` select [?]
   - `scripts/maintenance/backfill-race-entries-racer-id.js:60` select(helper:fetchAllPaged)
-  - `scripts/maintenance/fan-backfill.js:494` select [racer_id, sex, training_term]
-  - `scripts/maintenance/fan-backfill.js:512` select(helper:fetchAll)
+  - `scripts/maintenance/fan-backfill.js:488` select [racer_id, sex, training_term]
+  - `scripts/maintenance/fan-backfill.js:587` select(helper:fetchAll)
   - `scripts/maintenance/fix-opening-day-entries-from-b.js:312` select [hometown, name, racer_id]
   - `scripts/maintenance/restore-contaminated-race-entries.js:101` select(helper:fetchAll)
   - `scripts/maintenance/restore-entries-branch-hometown.js:62` select(helper:fetchAll)
@@ -1439,7 +1439,7 @@
 - 書き手（3）: 
   - `scripts/lib/racerProfileSync.js:265` update [?]
   - `scripts/lib/racerProfileSync.js:283` upsert [birth_date, blood_type, branch, grade_at_scrape, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
-  - `scripts/maintenance/fan-backfill.js:544` update [?]
+  - `scripts/maintenance/fan-backfill.js:508` update [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-racer_series_points"></a>racer_series_points
@@ -2330,8 +2330,8 @@
   - `scripts/maintenance/backfill-kb-gaps.js:239` 表の名前が変数（.from(式)）
   - `scripts/maintenance/delete-phantom-races.js:195` 表の名前が変数（.from(式)）
   - `scripts/maintenance/delete-phantom-races.js:273` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/fan-backfill.js:382` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/fan-backfill.js:406` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/fan-backfill.js:360` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/fan-backfill.js:444` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fix-opening-day-race-id-date.js:153` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fix-opening-day-race-id-date.js:204` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fix-opening-day-race-id-date.js:285` 表の名前が変数（.from(式)）
