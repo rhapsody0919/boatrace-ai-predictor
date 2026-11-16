@@ -10,10 +10,6 @@
     "no-undef": {},
     "no-empty": {},
     "no-irregular-whitespace": {
-      "scripts/lib/kbFileParser.js": {
-        "count": 2,
-        "reason": "コメントに公式の払戻金の要約の表記「中（全角空白）止」をそのまま書いている（BOA-412）。動きに関係しない"
-      },
       "scripts/maintenance/verify-kb-file-parser.js": {
         "count": 1,
         "reason": "コメントに公式の表記「中（全角空白）止」をそのまま書いている（BOA-412）。動きに関係しない"
