@@ -67,9 +67,33 @@ const REPO_ROOT = path.join(__dirname, "../..");
 // 引数
 // ---------------------------------------------------------------------------
 
-export function parseArgs(argv, now = new Date()) {
-  const [command, ...rest] = argv;
-  const opts = {
+/** 値を取る文字列のオプション（--名=値 → opts のキー） */
+const STRING_OPTIONS = new Map([
+  ["from", "from"],
+  ["to", "to"],
+  ["id", "id"],
+  ["window", "window"],
+]);
+/** 値を Number() にかける数値のオプション */
+const NUMBER_OPTIONS = new Map([
+  ["daily-limit", "dailyLimit"],
+  ["interval-min-ms", "intervalMinMs"],
+  ["interval-max-ms", "intervalMaxMs"],
+  ["assumed-latency-ms", "latencyMs"],
+  ["max-requests", "maxRequests"],
+  ["batch-size", "batchSize"],
+  ["sleep-ms", "sleepMs"],
+]);
+/** 値を取らない旗のオプション（付けると true） */
+const FLAG_OPTIONS = new Map([
+  ["dry-run", "dryRun"],
+  ["apply", "apply"],
+  ["force", "force"],
+  ["plain", "plain"],
+]);
+
+function defaultOptions(command, now) {
+  return {
     command,
     from: FAN_EARLIEST_ID,
     to: latestExpectedFanId(now),
@@ -89,63 +113,23 @@ export function parseArgs(argv, now = new Date()) {
     sleepMs: 500,
     minRecords: 500, // 実ファイルは1,500人以上。これ未満は形式の変更とみなす
   };
-  for (const arg of rest) {
-    const [k, v] = arg.startsWith("--")
-      ? arg.slice(2).split("=")
-      : [arg, undefined];
-    switch (k) {
-      case "from":
-        opts.from = v;
-        break;
-      case "to":
-        opts.to = v;
-        break;
-      case "id":
-        opts.id = v;
-        break;
-      case "archive-dir":
-        opts.archiveDir = path.resolve(v);
-        break;
-      case "daily-limit":
-        opts.dailyLimit = Number(v);
-        break;
-      case "window":
-        opts.window = v;
-        break;
-      case "interval-min-ms":
-        opts.intervalMinMs = Number(v);
-        break;
-      case "interval-max-ms":
-        opts.intervalMaxMs = Number(v);
-        break;
-      case "assumed-latency-ms":
-        opts.latencyMs = Number(v);
-        break;
-      case "max-requests":
-        opts.maxRequests = Number(v);
-        break;
-      case "batch-size":
-        opts.batchSize = Number(v);
-        break;
-      case "sleep-ms":
-        opts.sleepMs = Number(v);
-        break;
-      case "dry-run":
-        opts.dryRun = true;
-        break;
-      case "apply":
-        opts.apply = true;
-        break;
-      case "force":
-        opts.force = true;
-        break;
-      case "plain":
-        opts.plain = true;
-        break;
-      default:
-        throw new Error(`不明なオプション: ${arg}`);
-    }
-  }
+}
+
+function applyOption(opts, arg) {
+  const [k, v] = arg.startsWith("--")
+    ? arg.slice(2).split("=")
+    : [arg, undefined];
+  if (STRING_OPTIONS.has(k)) opts[STRING_OPTIONS.get(k)] = v;
+  else if (NUMBER_OPTIONS.has(k)) opts[NUMBER_OPTIONS.get(k)] = Number(v);
+  else if (FLAG_OPTIONS.has(k)) opts[FLAG_OPTIONS.get(k)] = true;
+  else if (k === "archive-dir") opts.archiveDir = path.resolve(v);
+  else throw new Error(`不明なオプション: ${arg}`);
+}
+
+export function parseArgs(argv, now = new Date()) {
+  const [command, ...rest] = argv;
+  const opts = defaultOptions(command, now);
+  for (const arg of rest) applyOption(opts, arg);
   return opts;
 }
 
@@ -243,6 +227,52 @@ export async function cmdDownload(opts, deps = {}) {
 // parse
 // ---------------------------------------------------------------------------
 
+/** 1ファイルを解析して parsed/ へ書き、解析の要約を返す（異常は anomalies.jsonl へ追記する） */
+async function parseOneFan(opts, id, m, out) {
+  const raw = new Uint8Array(fs.readFileSync(rawPath(opts.archiveDir, id)));
+  // 生ファイルの破損・差し替えを、マニフェストのsha256で検知する
+  if (m.sha256 && sha256(raw) !== m.sha256)
+    throw new Error(`${id}: 生ファイルのsha256がマニフェストと一致しません`);
+  const fan = parseFanFile(await decodeLzhBytes(raw), {
+    id,
+    source: {
+      file: m.file,
+      sha256: m.sha256,
+      bytes: m.bytes,
+      fetchedAt: m.fetchedAt,
+      lastModified: m.lastModified ?? null,
+    },
+  });
+  const s = summarizeFan(fan);
+  if (fan.anomalies.length > 0) {
+    appendJsonl(path.join(opts.archiveDir, "parsed", "anomalies.jsonl"), {
+      id,
+      anomalies: fan.anomalies.slice(0, 50),
+      total: fan.anomalies.length,
+      at: new Date().toISOString(),
+    });
+  }
+  const json = JSON.stringify(fan);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, opts.plain ? json : zlib.gzipSync(json));
+  return { s, anomalous: fan.anomalies.length > 0 };
+}
+
+function parseLogLine(id, s) {
+  return `${id} ${s.records}人 ${s.period ? `${s.period.year}年${s.period.no}期 ${s.period.calc_from}〜${s.period.calc_to}` : "期不明"} レコード長${s.layout_bytes.join("/")} ${s.anomalies ? `⚠ 要確認${s.anomalies}` : "ok"}`;
+}
+
+function parseExitCode(targets, written, skipped) {
+  if (targets === 0) {
+    console.error(
+      "解析対象の生ファイルがありません（先に download を実行してください）",
+    );
+    return 1;
+  }
+  if (written + skipped === 0) return 1;
+  return 0;
+}
+
 export async function cmdParse(opts, deps = {}) {
   const log = deps.log ?? console.log;
   const manifest = latestManifestByKey(opts.archiveDir);
@@ -259,49 +289,15 @@ export async function cmdParse(opts, deps = {}) {
       skipped++;
       continue;
     }
-    const raw = new Uint8Array(fs.readFileSync(rawPath(opts.archiveDir, id)));
-    // 生ファイルの破損・差し替えを、マニフェストのsha256で検知する
-    if (m.sha256 && sha256(raw) !== m.sha256)
-      throw new Error(`${id}: 生ファイルのsha256がマニフェストと一致しません`);
-    const fan = parseFanFile(await decodeLzhBytes(raw), {
-      id,
-      source: {
-        file: m.file,
-        sha256: m.sha256,
-        bytes: m.bytes,
-        fetchedAt: m.fetchedAt,
-        lastModified: m.lastModified ?? null,
-      },
-    });
-    const s = summarizeFan(fan);
-    if (fan.anomalies.length > 0) {
-      withAnomalies++;
-      appendJsonl(path.join(opts.archiveDir, "parsed", "anomalies.jsonl"), {
-        id,
-        anomalies: fan.anomalies.slice(0, 50),
-        total: fan.anomalies.length,
-        at: new Date().toISOString(),
-      });
-    }
-    const json = JSON.stringify(fan);
-    fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, opts.plain ? json : zlib.gzipSync(json));
+    const { s, anomalous } = await parseOneFan(opts, id, m, out);
+    if (anomalous) withAnomalies++;
     written++;
-    log(
-      `${id} ${s.records}人 ${s.period ? `${s.period.year}年${s.period.no}期 ${s.period.calc_from}〜${s.period.calc_to}` : "期不明"} レコード長${s.layout_bytes.join("/")} ${s.anomalies ? `⚠ 要確認${s.anomalies}` : "ok"}`,
-    );
+    log(parseLogLine(id, s));
   }
   log(
     `\nparse: 対象 ${targets}ファイル / 出力 ${written} / 既存スキップ ${skipped} / 要確認あり ${withAnomalies}`,
   );
-  if (targets === 0) {
-    console.error(
-      "解析対象の生ファイルがありません（先に download を実行してください）",
-    );
-    return 1;
-  }
-  if (written + skipped === 0) return 1;
-  return 0;
+  return parseExitCode(targets, written, skipped);
 }
 
 // ---------------------------------------------------------------------------
@@ -331,15 +327,8 @@ async function fetchAll(client, table, columns, filters = []) {
   return rows;
 }
 
-/**
- * @param {ReturnType<typeof parseArgs>} opts
- * @param {{client?: object, sleep?: Function, log?: Function}} [deps]
- */
-export async function cmdLoad(opts, deps = {}) {
-  const log = deps.log ?? console.log;
-  const sleepFn = deps.sleep ?? sleepDefault;
-  const loadedFile = path.join(opts.archiveDir, "loaded.jsonl");
-  const loaded = new Set(readJsonl(loadedFile).map((e) => e.id));
+/** 中間JSONを読み、検証して投入計画（ファイルごとの行）を作る。DBには触れない */
+function buildLoadPlan(opts) {
   const plan = [];
   const totals = { files: 0, rows: 0, warnings: 0 };
   for (const id of listFanIds(opts.from, opts.to)) {
@@ -360,6 +349,79 @@ export async function cmdLoad(opts, deps = {}) {
     for (const w of warnings) console.warn(`  ⚠ ${w}`);
     plan.push({ id, rows, period: fan.period });
   }
+  return { plan, totals };
+}
+
+/** 差分の行をバッチで upsert する。失敗したら true を返して止める */
+async function upsertBatches(client, spec, toWrite, ctx) {
+  const { opts, id, sleepFn, summary } = ctx;
+  for (const part of chunk(toWrite, opts.batchSize)) {
+    const { error } = await client
+      .from(spec.table)
+      .upsert(part, { onConflict: spec.onConflict });
+    if (error) {
+      console.error(`${id}: 書き込みに失敗: ${error.message}`);
+      return true;
+    }
+    summary.written += part.length;
+    await sleepFn(opts.sleepMs); // 文の間隔（Disk IO Budgetへの配慮）
+  }
+  return false;
+}
+
+/** 1ファイル分を投入する。書き込みに失敗したら true を返す（loaded に記録しない） */
+async function loadOneFile(client, spec, entry, ctx) {
+  const { loadedFile, log, summary } = ctx;
+  const { id, rows, period } = entry;
+  // 変更の無い行は書かない（WAL・Disk IO対策）。期ごとに既存行を全件読み、差分のある行だけを書く
+  const existing = await fetchAll(client, spec.table, Object.keys(rows[0]), [
+    ["period_year", period.year],
+    ["period_no", period.no],
+  ]);
+  const { toWrite, stats } = diffRows(existing, rows, {
+    keyColumns: spec.keyColumns,
+    scales: NUMERIC_SCALES[spec.table],
+  });
+  const failed = await upsertBatches(client, spec, toWrite, ctx);
+  summary.unchanged += stats.unchanged;
+  if (failed) return true;
+  appendJsonl(loadedFile, {
+    id,
+    at: new Date().toISOString(),
+    rows: rows.length,
+    written: toWrite.length,
+    unchanged: stats.unchanged,
+  });
+  log(
+    `${id}: ${rows.length}行（書き込み ${toWrite.length} / 変更なし ${stats.unchanged}）`,
+  );
+  return false;
+}
+
+function loadExitCode(summary, processed, log) {
+  if (summary.failedFiles > 0) return 1;
+  if (processed === 0) {
+    log("対象は全て投入済みです（再投入は --force）");
+    return 0;
+  }
+  // 0件書き込みを成功扱いにしない（全て変更なしの再実行は unchanged>0 で成功）
+  if (summary.written + summary.unchanged === 0) {
+    console.error("書き込みも変更なしの判定も0件でした。異常として扱います");
+    return 1;
+  }
+  return 0;
+}
+
+/**
+ * @param {ReturnType<typeof parseArgs>} opts
+ * @param {{client?: object, sleep?: Function, log?: Function}} [deps]
+ */
+export async function cmdLoad(opts, deps = {}) {
+  const log = deps.log ?? console.log;
+  const sleepFn = deps.sleep ?? sleepDefault;
+  const loadedFile = path.join(opts.archiveDir, "loaded.jsonl");
+  const loaded = new Set(readJsonl(loadedFile).map((e) => e.id));
+  const { plan, totals } = buildLoadPlan(opts);
   log(
     `投入対象: ${totals.files}ファイル / ${totals.rows}行 / 警告 ${totals.warnings}`,
   );
@@ -388,61 +450,16 @@ export async function cmdLoad(opts, deps = {}) {
   }
   const summary = { written: 0, unchanged: 0, failedFiles: 0 };
   let processed = 0;
-  for (const { id, rows, period } of plan) {
-    if (loaded.has(id) && !opts.force) continue;
+  for (const entry of plan) {
+    if (loaded.has(entry.id) && !opts.force) continue;
     processed++;
-    // 変更の無い行は書かない（WAL・Disk IO対策）。期ごとに既存行を全件読み、差分のある行だけを書く
-    const existing = await fetchAll(client, spec.table, Object.keys(rows[0]), [
-      ["period_year", period.year],
-      ["period_no", period.no],
-    ]);
-    const { toWrite, stats } = diffRows(existing, rows, {
-      keyColumns: spec.keyColumns,
-      scales: NUMERIC_SCALES[spec.table],
-    });
-    let failed = false;
-    for (const part of chunk(toWrite, opts.batchSize)) {
-      const { error } = await client
-        .from(spec.table)
-        .upsert(part, { onConflict: spec.onConflict });
-      if (error) {
-        failed = true;
-        console.error(`${id}: 書き込みに失敗: ${error.message}`);
-        break;
-      }
-      summary.written += part.length;
-      await sleepFn(opts.sleepMs); // 文の間隔（Disk IO Budgetへの配慮）
-    }
-    summary.unchanged += stats.unchanged;
-    if (failed) {
-      summary.failedFiles++;
-      continue; // loaded に記録しない（再実行で再試行される）
-    }
-    appendJsonl(loadedFile, {
-      id,
-      at: new Date().toISOString(),
-      rows: rows.length,
-      written: toWrite.length,
-      unchanged: stats.unchanged,
-    });
-    log(
-      `${id}: ${rows.length}行（書き込み ${toWrite.length} / 変更なし ${stats.unchanged}）`,
-    );
+    const ctx = { opts, id: entry.id, loadedFile, log, sleepFn, summary };
+    if (await loadOneFile(client, spec, entry, ctx)) summary.failedFiles++;
   }
   log(
     `\nload: ${JSON.stringify(summary)}（処理 ${processed} / 投入済みスキップ ${plan.length - processed}）`,
   );
-  if (summary.failedFiles > 0) return 1;
-  if (processed === 0) {
-    log("対象は全て投入済みです（再投入は --force）");
-    return 0;
-  }
-  // 0件書き込みを成功扱いにしない（全て変更なしの再実行は unchanged>0 で成功）
-  if (summary.written + summary.unchanged === 0) {
-    console.error("書き込みも変更なしの判定も0件でした。異常として扱います");
-    return 1;
-  }
-  return 0;
+  return loadExitCode(summary, processed, log);
 }
 
 const SEASON_COLUMNS = [
@@ -455,6 +472,77 @@ const SEASON_COLUMNS = [
 const PROFILE_BASE_COLUMNS = ["height_cm", "weight_kg", "branch"];
 const PROFILE_NEW_COLUMNS = ["sex", "training_term"];
 
+/** --id が無ければ、解析済みの最新の期の id を探す */
+function resolveSyncId(opts) {
+  return (
+    opts.id ??
+    listFanIds(opts.from, opts.to)
+      .reverse()
+      .find((x) => readParsedFan(opts.archiveDir, x))
+  );
+}
+
+/** 083（sex・training_term）が未適用でも壊れないよう、列の有無を先に確認する */
+async function probeNewColumns(client) {
+  const probe = await client
+    .from("racer_profiles")
+    .select("racer_id,sex,training_term")
+    .limit(1);
+  const hasNewColumns = !probe.error;
+  if (!hasNewColumns)
+    console.warn(
+      `  ⚠ racer_profiles.sex・training_term を読めません（DDL 083 が未適用）。この2列を除いて更新します`,
+    );
+  return hasNewColumns;
+}
+
+/** 1行を update で書く。失敗したら（ログを出して）false */
+async function updateProfileRow(client, row, e, stamp) {
+  const seasonChanged = SEASON_COLUMNS.some(
+    (c) => e[c] === undefined || String(e[c] ?? "") !== String(row[c] ?? ""),
+  );
+  const { racer_id, ...values } = row;
+  if (seasonChanged) values.official_updated_at = stamp;
+  // upsert は INSERT 側の NOT NULL 検査（name・birth_date）が先に走り既存行でも失敗するため、update で書く
+  const { data, error } = await client
+    .from("racer_profiles")
+    .update(values)
+    .eq("racer_id", racer_id)
+    .select("racer_id");
+  if (error || !data || data.length === 0) {
+    console.error(
+      `racer_id=${racer_id}: 更新に失敗（${error?.message ?? "対象行なし"}）`,
+    );
+    return false;
+  }
+  return true;
+}
+
+async function updateProfileRows(client, toWrite, existingById, ctx) {
+  const { stamp, sleepFn, sleepMs } = ctx;
+  let written = 0;
+  let failed = 0;
+  for (const row of toWrite) {
+    const e = existingById.get(row.racer_id);
+    if (!(await updateProfileRow(client, row, e, stamp))) {
+      failed++;
+      continue;
+    }
+    written++;
+    await sleepFn(sleepMs);
+  }
+  return { written, failed };
+}
+
+function syncExitCode(failed, toWrite, stats) {
+  if (failed > 0) return 1;
+  if (toWrite.length === 0 && stats.unchanged === 0) {
+    console.error("更新対象も変更なしの判定も0件でした。異常として扱います");
+    return 1;
+  }
+  return 0;
+}
+
 /**
  * 最新期の値を racer_profiles へ反映する（B6の期別成績・プロフィール項目の置き換え）。
  * 既存の行の更新のみ（新規作成しない）。より新しい期の値が入っている行は、書き戻さない。
@@ -464,11 +552,7 @@ const PROFILE_NEW_COLUMNS = ["sex", "training_term"];
 export async function cmdSyncProfiles(opts, deps = {}) {
   const log = deps.log ?? console.log;
   const sleepFn = deps.sleep ?? sleepDefault;
-  const id =
-    opts.id ??
-    listFanIds(opts.from, opts.to)
-      .reverse()
-      .find((x) => readParsedFan(opts.archiveDir, x));
+  const id = resolveSyncId(opts);
   if (!id) {
     console.error("解析済みの中間JSONがありません（先に download → parse）");
     return 1;
@@ -489,16 +573,7 @@ export async function cmdSyncProfiles(opts, deps = {}) {
     );
     return 0;
   }
-  // 083（sex・training_term）が未適用でも壊れないよう、列の有無を先に確認する
-  const probe = await client
-    .from("racer_profiles")
-    .select("racer_id,sex,training_term")
-    .limit(1);
-  const hasNewColumns = !probe.error;
-  if (!hasNewColumns)
-    console.warn(
-      `  ⚠ racer_profiles.sex・training_term を読めません（DDL 083 が未適用）。この2列を除いて更新します`,
-    );
+  const hasNewColumns = await probeNewColumns(client);
   const { rows, warnings } = buildProfileSyncRows(fan, {
     includeNewColumns: hasNewColumns,
   });
@@ -530,38 +605,15 @@ export async function cmdSyncProfiles(opts, deps = {}) {
     return 0;
   }
   const stamp = (deps.now ?? (() => new Date()))().toISOString();
-  let written = 0;
-  let failed = 0;
-  for (const row of toWrite) {
-    const e = existingById.get(row.racer_id);
-    const seasonChanged = SEASON_COLUMNS.some(
-      (c) => e[c] === undefined || String(e[c] ?? "") !== String(row[c] ?? ""),
-    );
-    const { racer_id, ...values } = row;
-    if (seasonChanged) values.official_updated_at = stamp;
-    // upsert は INSERT 側の NOT NULL 検査（name・birth_date）が先に走り既存行でも失敗するため、update で書く
-    const { data, error } = await client
-      .from("racer_profiles")
-      .update(values)
-      .eq("racer_id", racer_id)
-      .select("racer_id");
-    if (error || !data || data.length === 0) {
-      failed++;
-      console.error(
-        `racer_id=${racer_id}: 更新に失敗（${error?.message ?? "対象行なし"}）`,
-      );
-      continue;
-    }
-    written++;
-    await sleepFn(opts.sleepMs);
-  }
+  const ctx = { stamp, sleepFn, sleepMs: opts.sleepMs };
+  const { written, failed } = await updateProfileRows(
+    client,
+    toWrite,
+    existingById,
+    ctx,
+  );
   log(`sync-profiles: 更新 ${written} / 失敗 ${failed}`);
-  if (failed > 0) return 1;
-  if (toWrite.length === 0 && stats.unchanged === 0) {
-    console.error("更新対象も変更なしの判定も0件でした。異常として扱います");
-    return 1;
-  }
-  return 0;
+  return syncExitCode(failed, toWrite, stats);
 }
 
 // ---------------------------------------------------------------------------
