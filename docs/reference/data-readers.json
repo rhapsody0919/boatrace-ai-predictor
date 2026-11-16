@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1888,
+    "sourceFiles": 1889,
     "filesWithAccess": 280,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -704,7 +704,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:289",
+          "ref": "scripts/lib/analogyV16Exhibition.js:251",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -752,7 +752,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:367",
+          "ref": "scripts/lib/analogyV16Exhibition.js:307",
           "op": "upsert",
           "via": "rest",
           "columns": [
@@ -776,8 +776,8 @@
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:485",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
             "scripts/lib/analogyDispatch.js:80",
-            "scripts/lib/analogyV16Exhibition.js:289",
-            "scripts/lib/analogyV16Exhibition.js:367",
+            "scripts/lib/analogyV16Exhibition.js:251",
+            "scripts/lib/analogyV16Exhibition.js:307",
             "scripts/maintenance/verify-analogy-v16.js:279",
             "scripts/maintenance/verify-analogy-v16.js:281"
           ],
@@ -796,8 +796,8 @@
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:485",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
             "scripts/lib/analogyDispatch.js:80",
-            "scripts/lib/analogyV16Exhibition.js:289",
-            "scripts/lib/analogyV16Exhibition.js:367",
+            "scripts/lib/analogyV16Exhibition.js:251",
+            "scripts/lib/analogyV16Exhibition.js:307",
             "scripts/maintenance/verify-analogy-v16.js:269",
             "scripts/maintenance/verify-analogy-v16.js:279",
             "scripts/maintenance/verify-analogy-v16.js:281"
@@ -814,7 +814,7 @@
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:144",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:216",
-            "scripts/lib/analogyV16Exhibition.js:289"
+            "scripts/lib/analogyV16Exhibition.js:251"
           ],
           "writers": [],
           "sql": []
@@ -835,7 +835,7 @@
           "readers": [
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
-            "scripts/lib/analogyV16Exhibition.js:289"
+            "scripts/lib/analogyV16Exhibition.js:251"
           ],
           "writers": [],
           "sql": []
@@ -844,7 +844,7 @@
           "readers": [
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
-            "scripts/lib/analogyV16Exhibition.js:289"
+            "scripts/lib/analogyV16Exhibition.js:251"
           ],
           "writers": [],
           "sql": []
@@ -855,7 +855,7 @@
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:485",
-            "scripts/lib/analogyV16Exhibition.js:289"
+            "scripts/lib/analogyV16Exhibition.js:251"
           ],
           "writers": [],
           "sql": []
@@ -867,7 +867,7 @@
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:485",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
-            "scripts/lib/analogyV16Exhibition.js:289",
+            "scripts/lib/analogyV16Exhibition.js:251",
             "scripts/maintenance/verify-analogy-v16.js:279"
           ],
           "writers": [],
@@ -1531,7 +1531,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:208",
+          "ref": "scripts/lib/analogyV16Exhibition.js:156",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1545,7 +1545,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:296",
+          "ref": "scripts/lib/analogyV16Exhibition.js:258",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1863,8 +1863,8 @@
             "scripts/analysis/verify-race-analysis-rpc.js:151",
             "scripts/analysis/verify-race-analysis-rpc.js:35",
             "scripts/daily/scrape-exhibition-data.js:536",
-            "scripts/lib/analogyV16Exhibition.js:208",
-            "scripts/lib/analogyV16Exhibition.js:296",
+            "scripts/lib/analogyV16Exhibition.js:156",
+            "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/lib/snsTodayDigestV3.js:112",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:48",
             "scripts/maintenance/verify-analogy-v16.js:286",
@@ -1898,8 +1898,8 @@
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
             "scripts/analysis/verify-race-analysis-rpc.js:35",
-            "scripts/lib/analogyV16Exhibition.js:208",
-            "scripts/lib/analogyV16Exhibition.js:296",
+            "scripts/lib/analogyV16Exhibition.js:156",
+            "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/lib/snsTodayDigestV3.js:112",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/maintenance/verify-pre-race-parsers.js:1868",
@@ -1929,8 +1929,8 @@
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
             "scripts/daily/scrape-exhibition-data.js:536",
-            "scripts/lib/analogyV16Exhibition.js:208",
-            "scripts/lib/analogyV16Exhibition.js:296",
+            "scripts/lib/analogyV16Exhibition.js:156",
+            "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "src/services/meetQueries2.js:166",
             "src/services/motorQueries6.js:120",
@@ -1953,7 +1953,7 @@
           "readers": [
             "scripts/analysis/verify-race-analysis-rpc.js:35",
             "scripts/daily/scrape-exhibition-data.js:536",
-            "scripts/lib/analogyV16Exhibition.js:208",
+            "scripts/lib/analogyV16Exhibition.js:156",
             "src/services/raceQueries.js:285",
             "src/services/raceQueries2.js:188",
             "src/services/raceQueries3.js:90",
@@ -2053,7 +2053,7 @@
         },
         "exhibition_course": {
           "readers": [
-            "scripts/lib/analogyV16Exhibition.js:208",
+            "scripts/lib/analogyV16Exhibition.js:156",
             "src/services/motorQueries6.js:120"
           ],
           "writers": [],
@@ -2061,7 +2061,7 @@
         },
         "start_flag": {
           "readers": [
-            "scripts/lib/analogyV16Exhibition.js:208",
+            "scripts/lib/analogyV16Exhibition.js:156",
             "src/services/raceQueries.js:34",
             "src/services/raceQueries2.js:188",
             "src/services/raceQueries3.js:90"
@@ -2086,8 +2086,8 @@
             "api/_lib/snsClaimCheck.js:435",
             "api/_lib/snsClaimCheck.js:501",
             "api/_lib/snsTodayDigest.js:54",
-            "scripts/lib/analogyV16Exhibition.js:208",
-            "scripts/lib/analogyV16Exhibition.js:296",
+            "scripts/lib/analogyV16Exhibition.js:156",
+            "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/lib/snsTodayDigestV3.js:112",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/sns/push-setsu-kiryoku-short.js:1101",
@@ -6345,7 +6345,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:184",
+          "ref": "scripts/lib/analogyV16Exhibition.js:191",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6662,7 +6662,7 @@
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:98",
             "scripts/analysis/verify-volatility-predictive-power.js:83",
             "scripts/daily/scrape-point-rank.js:368",
-            "scripts/lib/analogyV16Exhibition.js:184",
+            "scripts/lib/analogyV16Exhibition.js:191",
             "scripts/lib/snsAutoPlanRunner.js:744",
             "scripts/lib/snsTodayDigestV3.js:104",
             "scripts/maintenance/backfill-race-conditions.js:185",
@@ -6699,7 +6699,7 @@
         "weather": {
           "readers": [
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
-            "scripts/lib/analogyV16Exhibition.js:184"
+            "scripts/lib/analogyV16Exhibition.js:191"
           ],
           "writers": [],
           "sql": [
@@ -6710,7 +6710,7 @@
         "wind_direction": {
           "readers": [
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
-            "scripts/lib/analogyV16Exhibition.js:184",
+            "scripts/lib/analogyV16Exhibition.js:191",
             "scripts/ml/analogy/build-wind-basis.js:95"
           ],
           "writers": [],
@@ -6726,7 +6726,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:98",
             "scripts/analysis/verify-volatility-predictive-power.js:83",
-            "scripts/lib/analogyV16Exhibition.js:184",
+            "scripts/lib/analogyV16Exhibition.js:191",
             "scripts/ml/analogy/build-wind-basis.js:95"
           ],
           "writers": [],
@@ -6742,7 +6742,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:98",
             "scripts/analysis/verify-volatility-predictive-power.js:83",
-            "scripts/lib/analogyV16Exhibition.js:184"
+            "scripts/lib/analogyV16Exhibition.js:191"
           ],
           "writers": [],
           "sql": [
@@ -6853,7 +6853,7 @@
         },
         "weather_observed_at": {
           "readers": [
-            "scripts/lib/analogyV16Exhibition.js:184"
+            "scripts/lib/analogyV16Exhibition.js:191"
           ],
           "writers": [],
           "sql": [
@@ -7349,7 +7349,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:299",
+          "ref": "scripts/lib/analogyV16Exhibition.js:261",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -8377,7 +8377,7 @@
             "scripts/daily/generate-moriarty-recommendations.js:122",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
-            "scripts/lib/analogyV16Exhibition.js:299",
+            "scripts/lib/analogyV16Exhibition.js:261",
             "scripts/lib/motorPretestRows.js:134",
             "scripts/lib/pitReportJob.js:188",
             "scripts/lib/raceIndicatorData.js:72",
@@ -9012,7 +9012,7 @@
             "api/_lib/snsClaimCheck.js:500",
             "api/_lib/snsTodayDigest.js:52",
             "scripts/daily/generate-morning-digest.js:155",
-            "scripts/lib/analogyV16Exhibition.js:299",
+            "scripts/lib/analogyV16Exhibition.js:261",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/verify-analogy-v16.js:289",
             "scripts/sns/push-setsu-kiryoku-short.js:1100"
@@ -16259,7 +16259,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:291",
+          "ref": "scripts/lib/analogyV16Exhibition.js:253",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -17453,7 +17453,7 @@
             "scripts/daily/update-race-info.js:400",
             "scripts/daily/update-race-info.js:513",
             "scripts/lib/analogyDispatch.js:75",
-            "scripts/lib/analogyV16Exhibition.js:291",
+            "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
             "scripts/lib/eveDeadlinesJob.js:410",
@@ -17575,7 +17575,7 @@
             "scripts/generate-sitemap.js:379",
             "scripts/generate-sitemap.js:662",
             "scripts/lib/analogyDispatch.js:75",
-            "scripts/lib/analogyV16Exhibition.js:291",
+            "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
             "scripts/lib/eveDeadlinesJob.js:410",
@@ -17772,7 +17772,7 @@
             "scripts/daily/generate-morning-digest.js:133",
             "scripts/daily/scrape-results.js:1501",
             "scripts/lib/analogyDispatch.js:75",
-            "scripts/lib/analogyV16Exhibition.js:291",
+            "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
             "scripts/lib/eveDeadlinesJob.js:410",
@@ -28706,10 +28706,10 @@
     {
       "job": "analogy_v16_exhibition",
       "entry": "api/cron/analogy-exhibition.js",
-      "reachableFiles": 20,
+      "reachableFiles": 21,
       "writes": {
         "analogy_v16_snapshots": [
-          "scripts/lib/analogyV16Exhibition.js:367"
+          "scripts/lib/analogyV16Exhibition.js:307"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",

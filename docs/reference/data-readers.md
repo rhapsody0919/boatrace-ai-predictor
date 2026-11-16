@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1888 |
+| 読んだファイル | 1889 |
 | 読み書きのあるファイル | 280 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -219,7 +219,7 @@
 |---|---|---|---|
 | analogy_dispatch_morning | api/cron/analogy-dispatch-morning.js | 16 | scrape_job_state, scrape_slots |
 | analogy_dispatch_train | api/cron/analogy-dispatch-train.js | 16 | scrape_job_state, scrape_slots |
-| analogy_v16_exhibition | api/cron/analogy-exhibition.js | 20 | analogy_v16_snapshots, scrape_job_state, scrape_slots |
+| analogy_v16_exhibition | api/cron/analogy-exhibition.js | 21 | analogy_v16_snapshots, scrape_job_state, scrape_slots |
 | boatcast_motor_start | api/cron/boatcast-motor-start.js | 22 | scrape_job_state, scrape_slots, venue_motor_start_dates |
 | boatcast_oriten | api/cron/boatcast-oriten.js | 23 | race_original_exhibition, race_original_exhibition_values, scrape_job_state, scrape_slots |
 | daily_reconcile | api/cron/daily-reconcile.js | 21 | scrape_job_state, scrape_slots |
@@ -332,12 +332,12 @@
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:216` select [computed_at, race_id, run_id, stage]
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:485` select [n_layer, race_id, stage, status]
   - `scripts/lib/analogyDispatch.js:80` select [race_id, stage]
-  - `scripts/lib/analogyV16Exhibition.js:289` rest(rest) [model_version, n_layer, pool_cutoff, race_id, run_id, stage, status]
+  - `scripts/lib/analogyV16Exhibition.js:251` rest(rest) [model_version, n_layer, pool_cutoff, race_id, run_id, stage, status]
   - `scripts/maintenance/verify-analogy-v16.js:269` rest(rest) [stage] （検査）
   - `scripts/maintenance/verify-analogy-v16.js:279` rest(rest) [computed_at, exact, race_id, stage, status] （検査）
   - `scripts/maintenance/verify-analogy-v16.js:281` rest(rest) [race_id, stage] （検査）
 - 書き手（1）: 
-  - `scripts/lib/analogyV16Exhibition.js:367` upsert(rest) [?]
+  - `scripts/lib/analogyV16Exhibition.js:307` upsert(rest) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-bet_filters"></a>bet_filters
@@ -400,8 +400,8 @@
   - `scripts/daily/scrape-exhibition-data.js:265` select(helper:upsertChangedRows)
   - `scripts/daily/scrape-exhibition-data.js:536` select [exhibition_time, race_id, start_timing]
   - `scripts/daily/update-exhibition-time-top-stats.js:173` select(helper:fetchAll)
-  - `scripts/lib/analogyV16Exhibition.js:208` rest(rest) [boat_number, exhibition_course, exhibition_time, is_absent, race_id, start_flag, start_timing]
-  - `scripts/lib/analogyV16Exhibition.js:296` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
+  - `scripts/lib/analogyV16Exhibition.js:156` rest(rest) [boat_number, exhibition_course, exhibition_time, is_absent, race_id, start_flag, start_timing]
+  - `scripts/lib/analogyV16Exhibition.js:258` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
   - `scripts/lib/snsTodayDigestV3.js:112` rest(rest) [boat_number, is_absent, race_id]
   - `scripts/maintenance/backfill-exhibition-by-race-id.js:48` select [race_id]
   - `scripts/maintenance/backfill-opening-day-races.js:97` select(helper:count)
@@ -771,7 +771,7 @@
   - `scripts/daily/generate-predictions.js:1300` select(helper:selectByRaceIds)
   - `scripts/daily/generate-unified-predictions.js:70` select(helper:fetchAll)
   - `scripts/daily/scrape-point-rank.js:368` select [race_id, series_day]
-  - `scripts/lib/analogyV16Exhibition.js:184` rest(rest) [race_id, wave_height, weather, weather_observed_at, wind_direction, wind_speed]
+  - `scripts/lib/analogyV16Exhibition.js:191` rest(rest) [race_id, wave_height, weather, weather_observed_at, wind_direction, wind_speed]
   - `scripts/lib/raceConditionsWriter.js:44` select(helper:upsertChangedRows)
   - `scripts/lib/snsAutoPlanRunner.js:744` rest(rest) [race_id, race_stage]
   - `scripts/lib/snsTodayDigestV3.js:104` rest(rest) [is_final_day, race_id, race_stage, race_title, series_day]
@@ -864,7 +864,7 @@
   - `scripts/daily/morning-init.js:298` select(helper:fetchAll)
   - `scripts/daily/scrape-venue-entry-course-stats.js:91` select(helper:fetchAll)
   - `scripts/daily/update-race-info.js:443` select(helper:upsertChangedRows)
-  - `scripts/lib/analogyV16Exhibition.js:299` rest(rest) [is_absent, race_id]
+  - `scripts/lib/analogyV16Exhibition.js:261` rest(rest) [is_absent, race_id]
   - `scripts/lib/motorPretestRows.js:134` select [race_id, racer_id]
   - `scripts/lib/pitReportJob.js:188` select [boat_number, race_id, racer_id]
   - `scripts/lib/raceIndicatorData.js:72` select [boat_number, race_id, racer_id, win_rate]
@@ -1513,7 +1513,7 @@
   - `scripts/generate-sitemap.js:379` select [race_date, venue_code]
   - `scripts/generate-sitemap.js:662` select [race_date, venue_code]
   - `scripts/lib/analogyDispatch.js:75` select [cancellation_status, race_date, race_id, start_time]
-  - `scripts/lib/analogyV16Exhibition.js:291` rest(rest) [race_date, race_id, start_time]
+  - `scripts/lib/analogyV16Exhibition.js:253` rest(rest) [race_date, race_id, start_time]
   - `scripts/lib/boatcast/oritenJob.js:401` select [race_date, race_id, start_time]
   - `scripts/lib/boatcast/oritenJob.js:522` select [race_date, race_id, start_time]
   - `scripts/lib/dailyReconcileJob.js:91` select(helper:fetchAll)
