@@ -2338,7 +2338,7 @@
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:84` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:133` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:209` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/kb-backfill.js:776` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/kb-backfill.js:957` 表の名前が変数（.from(式)）
   - `scripts/maintenance/motor-pretest-backfill.js:454` 表の名前が変数（.from(式)）
 - 構文木にできなかったファイル: 0
 - 対象外の言語で DB を読み書きしうるファイル（Python。拾っていない）: 55

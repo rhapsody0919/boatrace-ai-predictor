@@ -30235,7 +30235,7 @@
     },
     {
       "file": "scripts/maintenance/kb-backfill.js",
-      "line": 776,
+      "line": 957,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
