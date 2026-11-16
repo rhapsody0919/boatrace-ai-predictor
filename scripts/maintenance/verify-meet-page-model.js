@@ -366,7 +366,7 @@ let effects = [];
 let robots;
 const renderPage = new Function(
   "useState", "useEffect", "useParams", "useTranslation", "useLocalizedPath",
-  "supabaseDataService", "getTodayJST", "normalizeTitle", "md", "useRobotsMeta",
+  "getMeetPage", "getTodayJST", "normalizeTitle", "md", "useRobotsMeta",
   "element", "Link", "DataFetchError", "LoadingScreen", "MeetBody", "console",
   component + "\nreturn MeetPage();",
 );
@@ -378,7 +378,9 @@ const render = (service) => {
     (effect) => effects.push(effect),
     () => ({ venueCode: "16", startDate: START }),
     () => ({ t: (key) => key }), () => (path) => path,
-    service, () => "2026-09-27", (title) => title ?? null, () => "9/28",
+    // 名前つき import（getMeetPage）を同じ偽の取得へ通す（殻 supabaseDataService は RA40 で消えた）
+    (...args) => service.getMeetPage(...args),
+    () => "2026-09-27", (title) => title ?? null, () => "9/28",
     (value) => { robots = value; },
     (type, props, ...children) => ({ type, props, children }),
     "Link", "DataFetchError", "LoadingScreen", "MeetBody", { error() {} },

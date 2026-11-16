@@ -4,7 +4,18 @@
  * Supabaseからデータを取得します。
  */
 
-import { supabaseDataService, clearCache } from "./supabaseDataService";
+import { clearCache } from "./core.js";
+import { getPredictions } from "./predictionQueries2.js";
+import { getAccuracy } from "./predictionQueries3.js";
+import { getUnifiedTrifectaReference } from "./predictionQueries4.js";
+import { getRaceWinnerCourses } from "./raceQueries.js";
+import {
+  getAvailableDates,
+  getMorningDigest,
+  getRaceHistorySummary,
+  getRaces,
+  getUpcomingSeries,
+} from "./scheduleQueries.js";
 
 // 起動時にログ出力
 console.log("📊 データソース: Supabase (30分キャッシュ有効)");
@@ -17,11 +28,11 @@ export const dataService = {
    * レースデータを取得
    */
   async getRaces() {
-    return supabaseDataService.getRaces();
+    return getRaces();
   },
 
   async getUpcomingSeries(today) {
-    return supabaseDataService.getUpcomingSeries(today);
+    return getUpcomingSeries(today);
   },
 
   /**
@@ -31,7 +42,7 @@ export const dataService = {
    * @param {boolean} options.light - turnPrediction/racerStats を除外して軽量版を取得
    */
   async getPredictions(date, options = {}) {
-    return supabaseDataService.getPredictions(date, options);
+    return getPredictions(date, options);
   },
 
   /**
@@ -39,14 +50,14 @@ export const dataService = {
    * @param {string[]} raceIds
    */
   async getRaceWinnerCourses(raceIds) {
-    return supabaseDataService.getRaceWinnerCourses(raceIds);
+    return getRaceWinnerCourses(raceIds);
   },
 
   /**
    * 精度統計データを取得
    */
   async getAccuracy() {
-    return supabaseDataService.getAccuracy();
+    return getAccuracy();
   },
 
   /**
@@ -54,7 +65,7 @@ export const dataService = {
    * @param {number} days - 過去何日分を取得するか
    */
   async getAvailableDates(days = 90) {
-    return supabaseDataService.getAvailableDates(days);
+    return getAvailableDates(days);
   },
 
   /**
@@ -62,7 +73,7 @@ export const dataService = {
    * @param {number} days - 過去何日分を取得するか
    */
   async getRaceHistorySummary(days = 90) {
-    return supabaseDataService.getRaceHistorySummary(days);
+    return getRaceHistorySummary(days);
   },
 
   /**
@@ -70,7 +81,7 @@ export const dataService = {
    * @param {string} raceId - レースID
    */
   async getUnifiedTrifectaReference(raceId) {
-    return supabaseDataService.getUnifiedTrifectaReference(raceId);
+    return getUnifiedTrifectaReference(raceId);
   },
 
   /**
@@ -78,7 +89,7 @@ export const dataService = {
    * @param {string} date - YYYY-MM-DD（JST）
    */
   async getMorningDigest(date) {
-    return supabaseDataService.getMorningDigest(date);
+    return getMorningDigest(date);
   },
 
   /**

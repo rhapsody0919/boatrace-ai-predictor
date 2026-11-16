@@ -11,7 +11,7 @@ argument-hint: "<機能slug（kebab-case）>"
 
 ## 完了後の次アクション（`/step4`の事前条件）
 
-tasks.md を書き終えたら、`/step4`に進む前に次を行う（`.claude/rules/sdd-workflow.md`）。
+tasks.md を書き終えたら、`/step4`に進む前に次を行う（観点は `.claude/agents/design-reviewer.md`）。
 
 1. `design-reviewer` に設計レビューを依頼する（全機能）
 2. UI機能（screens.md がある）なら、`acceptance-test-writer` に **spec.md と screens.md のパスだけ**を渡して `e2e/acceptance/{slug}.spec.js` を書かせる。plan.md・tasks.md は渡さない。1と並行でよい

@@ -13,10 +13,8 @@ import {
 } from "recharts";
 import { formatPercent, slashDate } from "../../utils/formatters";
 import RacerConditionStats from "./RacerConditionStats";
-import {
-  supabaseDataService,
-  aggregateRacerCrossStats,
-} from "../../services/supabaseDataService";
+import { aggregateRacerCrossStats } from "../../services/core.js";
+import { getRacerRaceHistory } from "../../services/racerQueries2.js";
 import { aggregateRacerVenueBoatStats } from "../../utils/racerVenueBoatStats.js";
 import { ALL_VENUE_CODES } from "../../constants";
 import RecentRunsTable from "../race/RecentRunsTable";
@@ -226,7 +224,7 @@ export default function RacerPerformanceStats({
     const loadHistory = async () => {
       setVcHistoryState({ racerId, fetching: true, data: null, error: false });
       try {
-        const result = await supabaseDataService.getRacerRaceHistory(racerId);
+        const result = await getRacerRaceHistory(racerId);
         if (!cancelled) {
           setVcHistoryState({
             racerId,

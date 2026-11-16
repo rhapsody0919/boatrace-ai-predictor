@@ -2,7 +2,7 @@
  * verify-actual-course-kfile-parser.js - BOA-257の進入コース(Kファイル方式)
  * パーサー（scripts/lib/kfileParser.js）のデータ精度検証。
  *
- * .claude/rules/analysis.md「データ精度の検証」に従い、コードレビューとは別に
+ * データ精度の検証（.claude/agents/data-accuracy-verifier.md）に従い、コードレビューとは別に
  * 「集計結果が実データと一致しているか」だけを見る独立した検証として実施する。
  *
  * フィクスチャ: scripts/lib/__fixtures__/kfile/k260911.txt
@@ -12,7 +12,7 @@
  * 検証観点:
  *   1. 既知の個別レース（若松12R）の回帰確認: 4号艇が競走成績表で欠場（"K0"行）に
  *      なっており、K_RESULT_REが正しく除外してactual_course_4=nullになること
- *   2. 物理的整合性チェック（.claude/rules/analysis.md準拠）: 1号艇はほぼ進入変化が
+ *   2. 物理的整合性チェック（データ精度の検証に準拠）: 1号艇はほぼ進入変化が
  *      起きない（不一致率が極端に低いはず）のに対し、6号艇は前づけ等で進入変化が
  *      起きやすい（不一致率が明確に高いはず）。全艇が艇番=コース固定（不一致率0%）に
  *      戻っていたら旧バグ（race_results.course_1〜6と同じ問題）の再発を意味するため、
@@ -85,7 +85,7 @@ if (wakamatsuR12) {
   );
 }
 
-// --- 3. 物理的整合性チェック（.claude/rules/analysis.md準拠） ---
+// --- 3. 物理的整合性チェック（データ精度の検証に準拠） ---
 const byBoat = {
   1: [0, 0],
   2: [0, 0],

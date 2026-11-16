@@ -50,6 +50,11 @@
       "file": "e2e/route-after-test-end.spec.js",
       "code": "await route.fetch();",
       "reason": "テストの終わりで途中の route.fetch が投げる失敗（Test ended）を fixtures.js の guardRoutes が捨てることの再現。宛先はテスト内で立てた応答を返さない 127.0.0.1 のサーバーで、録画・本番を通らない。fetchRecorded は strict 再生で録画に無い要求を route.fetch の前に投げるので、CI で落ちた最後の一歩の route.fetch を直接呼ぶ"
+    },
+    {
+      "file": "e2e/release-check/site.release.js",
+      "code": "import { test, expect } from \"@playwright/test\";",
+      "reason": "配備先（本番の URL）を相手にする読むだけの確かめ（e2e/release-check/playwright.release.config.js、ZB02・BOA-1497）。録画の再生でなく配備済みの本番そのものを見るのが目的なので、fixtures.js の再生を通さず本物の test を使う。GET と画面の表示だけで、page.route・書き込み・送信はしない"
     }
   ]
 }

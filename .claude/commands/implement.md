@@ -46,7 +46,7 @@ Linear MCP を使って、チケット `$ARGUMENTS` の詳細情報を取得し�
 
 ### 5. 実装
 承認された計画をもとに実装を行ってください：
-- 既存のコーディング規約（`.claude/rules/code-style.md`）に従う
+- 既存のコーディング規約（`AGENTS.md`）に従う
 - モバイルファーストで実装
 - デザイントークン（`src/styles/design-tokens.css`）を使用
 

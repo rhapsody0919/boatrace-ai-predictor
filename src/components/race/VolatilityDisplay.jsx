@@ -137,6 +137,62 @@ function ReasonsList({ reasons, language, t }) {
   );
 }
 
+// 会場内パーセンタイル分布のサンプル数が不足している場合、フォールバック値0.5を
+// そのまま「標準」として表示すると実データのように見えてしまうため、
+// 「データ収集中」であることを誠実に伝える表示に切り替える（2026-08-14ユーザー指摘）
+function FallbackVolatilityView({ reasons, language, t }) {
+  return (
+    <div
+      className="volatility-display volatility-display-fallback"
+      style={{
+        padding: "1rem 1.5rem",
+        background:
+          "color-mix(in srgb, var(--text-secondary) 8%, var(--surface-card))",
+        borderRadius: "8px",
+        marginBottom: "1.5rem",
+        borderLeft: "4px solid var(--text-secondary)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          marginBottom: "0.5rem",
+        }}
+      >
+        <span style={{ fontSize: "1.2rem" }}>📊</span>
+        <span style={{ fontWeight: "600", color: "var(--text-primary)" }}>
+          {t("volatility.attentionTitle")}
+        </span>
+        <TermHintButton termKey="inKuzureIndex" />
+        <span
+          style={{
+            padding: "0.25rem 0.75rem",
+            borderRadius: "12px",
+            fontSize: "0.85rem",
+            fontWeight: "500",
+            background: "var(--text-secondary)",
+            color: "var(--surface-card)",
+          }}
+        >
+          {t("volatility.collectingData")}
+        </span>
+      </div>
+      <div
+        style={{
+          fontSize: "0.8rem",
+          color: "var(--text-secondary)",
+          paddingLeft: "1.7rem",
+        }}
+      >
+        {t("volatility.collectingDataDesc")}
+      </div>
+      <ReasonsList reasons={reasons} language={language} t={t} />
+    </div>
+  );
+}
+
 function VolatilityDisplay({
   percentile,
   reasons,
@@ -150,62 +206,94 @@ function VolatilityDisplay({
     return null;
   }
 
-  // 会場内パーセンタイル分布のサンプル数が不足している場合、フォールバック値0.5を
-  // そのまま「標準」として表示すると実データのように見えてしまうため、
-  // 「データ収集中」であることを誠実に伝える表示に切り替える（2026-08-14ユーザー指摘）
   if (isFallback) {
     return (
-      <div
-        className="volatility-display volatility-display-fallback"
-        style={{
-          padding: "1rem 1.5rem",
-          background:
-            "color-mix(in srgb, var(--text-secondary) 8%, var(--surface-card))",
-          borderRadius: "8px",
-          marginBottom: "1.5rem",
-          borderLeft: "4px solid var(--text-secondary)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            marginBottom: "0.5rem",
-          }}
-        >
-          <span style={{ fontSize: "1.2rem" }}>📊</span>
-          <span style={{ fontWeight: "600", color: "var(--text-primary)" }}>
-            {t("volatility.attentionTitle")}
-          </span>
-          <TermHintButton termKey="inKuzureIndex" />
-          <span
-            style={{
-              padding: "0.25rem 0.75rem",
-              borderRadius: "12px",
-              fontSize: "0.85rem",
-              fontWeight: "500",
-              background: "var(--text-secondary)",
-              color: "var(--surface-card)",
-            }}
-          >
-            {t("volatility.collectingData")}
-          </span>
-        </div>
-        <div
-          style={{
-            fontSize: "0.8rem",
-            color: "var(--text-secondary)",
-            paddingLeft: "1.7rem",
-          }}
-        >
-          {t("volatility.collectingDataDesc")}
-        </div>
-        <ReasonsList reasons={reasons} language={i18n.language} t={t} />
-      </div>
+      <FallbackVolatilityView
+        reasons={reasons}
+        language={i18n.language}
+        t={t}
+      />
     );
   }
 
+  return (
+    <VolatilityLevelView
+      percentile={percentile}
+      reasons={reasons}
+      venueCode={venueCode}
+      raceId={raceId}
+      language={i18n.language}
+      t={t}
+    />
+  );
+}
+
+function VolatilityHeaderRow({ level, icon, tone, attentionLabel, t }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        // 375px で見出しが「イン崩れ注意／度」と1文字だけ折れたので、見出しとラベルは
+        // 折らずに、入らないときはラベルを次の行へ送る（race-detail-ui-unify PR5）
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: "0.5rem",
+        marginBottom: "0.5rem",
+      }}
+    >
+      {/* イン崩れレベルに応じた波紋ムード演出（BOA-195）。艇番・決まり手等の
+          具体的な予測内容は表現しない純粋な装飾のため、アイコンの背後に重ねる */}
+      <span
+        style={{
+          position: "relative",
+          display: "inline-flex",
+          fontSize: "1.2rem",
+        }}
+      >
+        <RaceMoodEffect level={level} />
+        <span style={{ position: "relative", zIndex: 1 }}>{icon}</span>
+      </span>
+      <span
+        style={{
+          fontWeight: "600",
+          color: "var(--text-primary)",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {t("volatility.attentionTitle")}
+      </span>
+      <TermHintButton termKey="inKuzureIndex" />
+      <span
+        style={{
+          padding: "0.25rem 0.75rem",
+          borderRadius: "12px",
+          fontSize: "0.85rem",
+          fontWeight: "700",
+          // 地はカード色そのもの（不透明）＋段階の色の枠。薄い色を重ねると文字が
+          // 3.5〜3.8:1 に落ちた。不透明の地を前面に置き、狭い幅で次の行に回ったときも
+          // アイコンの波紋（RaceMoodEffect）が重ならないようにする（PR #1209 ファン評価1周目）
+          background: "var(--surface-card)",
+          border: `1px solid ${tone}`,
+          color: tone,
+          whiteSpace: "nowrap",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        {attentionLabel}
+      </span>
+    </div>
+  );
+}
+
+function VolatilityLevelView({
+  percentile,
+  reasons,
+  venueCode,
+  raceId,
+  language,
+  t,
+}) {
   const level = getVolatilityLevel(percentile);
   const icon = level === "high" ? "🌪️" : level === "low" ? "🎯" : "⚖️";
   // 色はテーマのトークンから作る（race-detail-ui-unify FR-6・R6）。以前は明るい固定色の
@@ -239,59 +327,13 @@ function VolatilityDisplay({
         borderLeft: `4px solid ${border}`,
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          // 375px で見出しが「イン崩れ注意／度」と1文字だけ折れたので、見出しとラベルは
-          // 折らずに、入らないときはラベルを次の行へ送る（race-detail-ui-unify PR5）
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: "0.5rem",
-          marginBottom: "0.5rem",
-        }}
-      >
-        {/* イン崩れレベルに応じた波紋ムード演出（BOA-195）。艇番・決まり手等の
-            具体的な予測内容は表現しない純粋な装飾のため、アイコンの背後に重ねる */}
-        <span
-          style={{
-            position: "relative",
-            display: "inline-flex",
-            fontSize: "1.2rem",
-          }}
-        >
-          <RaceMoodEffect level={level} />
-          <span style={{ position: "relative", zIndex: 1 }}>{icon}</span>
-        </span>
-        <span
-          style={{
-            fontWeight: "600",
-            color: "var(--text-primary)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {t("volatility.attentionTitle")}
-        </span>
-        <TermHintButton termKey="inKuzureIndex" />
-        <span
-          style={{
-            padding: "0.25rem 0.75rem",
-            borderRadius: "12px",
-            fontSize: "0.85rem",
-            fontWeight: "700",
-            // 地はカード色そのもの（不透明）＋段階の色の枠。薄い色を重ねると文字が
-            // 3.5〜3.8:1 に落ちた。不透明の地を前面に置き、狭い幅で次の行に回ったときも
-            // アイコンの波紋（RaceMoodEffect）が重ならないようにする（PR #1209 ファン評価1周目）
-            background: "var(--surface-card)",
-            border: `1px solid ${tone}`,
-            color: tone,
-            whiteSpace: "nowrap",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          {attentionLabel}
-        </span>
-      </div>
+      <VolatilityHeaderRow
+        level={level}
+        icon={icon}
+        tone={tone}
+        attentionLabel={attentionLabel}
+        t={t}
+      />
 
       <div
         style={{
@@ -308,7 +350,7 @@ function VolatilityDisplay({
 
       <VolatilityPercentileBar percentile={percentile} />
 
-      <ReasonsList reasons={reasons} language={i18n.language} t={t} />
+      <ReasonsList reasons={reasons} language={language} t={t} />
     </div>
   );
 }

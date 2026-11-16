@@ -1,0 +1,96 @@
+name: Guard Weakening
+
+# 守りのファイルを弱める変更を、誰の PR でも同じ判定で機械が止める（BOA-1477。CODEOWNERS の縮小の前提）。
+# 判定は scripts/maintenance/guard_weakening/run.py（標準ライブラリの python だけ）。base（merge commit の1つ目の親）との差に3つを当てる:
+#   1. e2e の spec の比較: 試験名が消える・expect が減る・skip/fixme/only が増えると赤。削除行が多いのは警告だけ
+#   2. 許可リスト（scripts/maintenance/*-allowlist.json）の向き: 行が減る・1対1 の付け替えだけ緑。行が増える・形の表に無いと赤
+#   3. verify の変異検査: verify-*.js・verify-registry.json の変更があるときだけ（npm ci をしてから）
+# 判定器が読めない・例外のときは赤。理由は1行ずつ注記に出る。
+# 最初は影: ruleset の必須の check に入れない（落ちてもマージを止めない）。数日 false 赤を見てから必須に上げる（オーナーの設定）。
+# 権限は contents: read だけ。secrets を使わず、checkout の資格も残さない（PR の枝のコードを回すため）。
+# 比べる base は merge commit の1つ目の親（HEAD^1 = 今の base の先端）。event の base.sha は古くなりうるので使わない。
+# 判定器は base の版（HEAD^1 の scripts/maintenance/guard_weakening）を回す。PR の枝が判定器を書き換えても判定は変わらない。
+# base に判定器が無い間（この job を足す PR だけ）は PR の版を回す。この workflow の yml 自体は .github の CODEOWNERS が守る。
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  guard-weakening:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # base（HEAD^1）の判定器と、spec・許可リストの base 版を git で読むため
+          fetch-depth: 0
+          persist-credentials: false
+
+      # verify の変異検査（@babel/parser）と判定器の自分の試験は node_modules が要る。要るときだけ入れる
+      - name: Detect what needs node
+        id: need
+        run: |
+          changed=$(git diff --name-only HEAD^1 HEAD)
+          if grep -qE '^scripts/maintenance/(verify-[^/]+\.js|verify-registry\.json|guard_weakening/)' <<<"$changed"; then
+            echo "node=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "node=false" >> "$GITHUB_OUTPUT"
+          fi
+          if grep -qE '^scripts/maintenance/guard_weakening/' <<<"$changed"; then
+            echo "selftest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "selftest=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js
+        if: steps.need.outputs.node == 'true'
+        uses: actions/setup-node@v4
+        with:
+          # verify_guard.py（hq の写し）は変異を作るとき node --permission を使う。Node 20 には無い印（20 は --experimental-permission）で、
+          # 空の出力になり JSONDecodeError で全部赤になった（#2497 の初回）。手元で通している Mac の node と同じ 24 にそろえる
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: steps.need.outputs.node == 'true'
+        run: npm ci
+
+      # 判定器を変える PR では、判定器の試験（ケース表）を先に回す
+      - name: Self-test the judges
+        if: steps.need.outputs.selftest == 'true'
+        run: |
+          for t in scripts/maintenance/guard_weakening/tests/test_*.py; do
+            # test_verify_guard.py（hq の写し）は macOS の sandbox-exec を前提にした試験。Linux の runner には無いので飛ばし、理由を注記に出す。
+            # Linux の上の verify の判定（検査を空にすると赤・新しい verify なしの registry の行は赤・強めると緑）は test_run.py が回す
+            if [ "$(basename "$t")" = test_verify_guard.py ] && [ ! -x /usr/bin/sandbox-exec ]; then
+              echo "::notice::SKIP $t（macOS の sandbox-exec 前提の試験。Linux では test_run.py の verify の場合で確かめる）"
+              continue
+            fi
+            echo "== $t"
+            python3 "$t"
+          done
+
+      - name: Take the judge from base
+        id: judge
+        run: |
+          dir="$RUNNER_TEMP/guard-base"
+          mkdir -p "$dir"
+          if git cat-file -e HEAD^1:scripts/maintenance/guard_weakening/run.py 2>/dev/null; then
+            git archive HEAD^1 scripts/maintenance/guard_weakening | tar -x -C "$dir"
+            echo "run=$dir/scripts/maintenance/guard_weakening/run.py" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::base に判定器が無いので PR の版を回す（判定器を足す PR だけのはず）"
+            echo "run=scripts/maintenance/guard_weakening/run.py" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Judge guard weakening
+        env:
+          JUDGE: ${{ steps.judge.outputs.run }}
+        run: python3 "$JUDGE" --repo . --base HEAD^1

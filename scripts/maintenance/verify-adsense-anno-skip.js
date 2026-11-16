@@ -3,7 +3,7 @@
  *
  * AdSense の自動広告は、本文の語句をリンクにする「広告インテント」（ad intent links・アンカー・チップ）を
  * 差し込む。本文に「競艇AI予想」等の語句リンクが出ていた。画面内に「競艇」を出さない規則
- * （.claude/rules/code-style.md）と、AI予想と誤解させない方針に反する。管理画面では設定を外せなかった。
+ * （verify-kyotei-wording.js の頭の注釈）と、AI予想と誤解させない方針に反する。管理画面では設定を外せなかった。
  * Google のヘルプ（https://support.google.com/adsense/answer/13844047）では、body に
  * google-anno-skip を付けるとそのページ全体で広告インテントを出さない。
  *

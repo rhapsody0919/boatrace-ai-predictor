@@ -14,15 +14,20 @@
  * 以前は `.catch(() => applyResult(name, null))` で失敗を握りつぶしていた。
  */
 import { useState, useEffect, useCallback } from "react";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getWinningTechniqueStats } from "../services/venueQueries.js";
+import {
+  getLosingTechniqueStats,
+  getTopStartStats,
+} from "../services/venueQueries2.js";
+import { getExhibitionTimeTopStats } from "../services/venueQueries3.js";
 
 const SOURCES = {
   technique: (venueCode) =>
-    supabaseDataService.getWinningTechniqueStats(venueCode),
-  topStart: (venueCode) => supabaseDataService.getTopStartStats(venueCode),
-  losing: (venueCode) => supabaseDataService.getLosingTechniqueStats(venueCode),
+    getWinningTechniqueStats(venueCode),
+  topStart: (venueCode) => getTopStartStats(venueCode),
+  losing: (venueCode) => getLosingTechniqueStats(venueCode),
   exhibitionTop: (venueCode) =>
-    supabaseDataService.getExhibitionTimeTopStats(venueCode),
+    getExhibitionTimeTopStats(venueCode),
 };
 
 const EMPTY = Object.fromEntries(

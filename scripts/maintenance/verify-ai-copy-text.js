@@ -172,7 +172,7 @@ const bundled = await bundle({
       b.onLoad({ filter: /.*/, namespace: "copy-text" }, () => ({
         contents: "export const aiCopyPageUrl = () => {}; export const buildAiCopyText = ({ rows }) => rows;",
       }));
-      b.onResolve({ filter: /(?:useRaceAnalysisData|useRaceEntryFlyingRows|useCurrentMeetFlyingBoats|useSixBoatCourseStats|supabaseDataService|(?:^|\/)(?:core|[A-Za-z0-9_]*Queries)[A-Za-z0-9_]*)$/ },
+      b.onResolve({ filter: /(?:useRaceAnalysisData|useRaceEntryFlyingRows|useCurrentMeetFlyingBoats|useSixBoatCourseStats|(?:^|\/)(?:core|[A-Za-z0-9_]*Queries)[A-Za-z0-9_]*)(?:\.js)?$/ },
         (args) => ({ path: args.path, namespace: "offline" }));
       b.onLoad({ filter: /.*/, namespace: "offline" }, (args) => ({
         contents: args.path === "translation"
@@ -185,7 +185,9 @@ const bundled = await bundle({
                 ? 'export const useSixBoatCourseStats = () => ({ status: "ready", rows: [] });'
               : args.path.endsWith("useCurrentMeetFlyingBoats")
                 ? 'export const useCurrentMeetFlyingBoats = () => new Set();'
-                : 'export const supabaseDataService = { getRaceOriginalExhibition: () => { throw new Error("DB access forbidden"); } };',
+                // 名前つき import（../services/raceQueries4.js）で DB を読ませない（BOA-1499。殻 supabaseDataService は RA40 で消えた）
+                : 'const forbidden = () => { throw new Error("DB access forbidden"); };'
+                  + " export const getRaceOriginalExhibition = forbidden;",
       }));
     },
   }],

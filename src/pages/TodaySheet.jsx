@@ -42,15 +42,112 @@ function formatJaDate(dateStr) {
   return `${m}/${d}（${weekday}）`;
 }
 
-export default function TodaySheet() {
-  const { t } = useTranslation();
-  const [params] = useSearchParams();
-  useRobotsMeta(true);
+function SheetRow({ row, axisMax, t }) {
+  return (
+    <div className="today-sheet__row">
+      <div className="today-sheet__row-top">
+        <div className="today-sheet__row-left">
+          <span className="today-sheet__rank">{row.rank}</span>
+          <span className="today-sheet__time">{row.start_time}締切</span>
+          <span
+            className={`today-sheet__badge today-sheet__badge--${row.boat_number}`}
+          >
+            {row.boat_number}
+          </span>
+          <span className="today-sheet__name" translate="no">
+            {row.racer_name}
+          </span>
+          <span className="today-sheet__grade">{row.grade}</span>
+        </div>
+        <div className="today-sheet__value">{row.pct}%</div>
+      </div>
+      <div className="today-sheet__track">
+        <div
+          className="today-sheet__fill"
+          style={{
+            width: `${Math.min(100, (row.pct / axisMax) * 100)}%`,
+          }}
+        />
+        <div
+          className="today-sheet__tick"
+          style={{
+            left: `${Math.min(100, (row.baseline_pct / axisMax) * 100)}%`,
+          }}
+        />
+      </div>
+      <div className="today-sheet__sub">
+        {t(`venues.${row.venue_code}`)}
+        {`${row.race_number}R・${row.runs}回中${row.wins}回・${row.grade}平均 ${row.baseline_pct}%`}
+      </div>
+    </div>
+  );
+}
+
+function SheetSection({ section, t }) {
+  return (
+    <section
+      className="today-sheet__section"
+      style={{ flexGrow: section.rows.length }}
+    >
+      <div className="today-sheet__section-head">
+        <span>{SECTION_TITLE[section.key]}</span>
+        <span className="today-sheet__axis">
+          軸 0〜{AXIS_MAX[section.key]}%
+        </span>
+      </div>
+      {section.rows.map((row) => (
+        <SheetRow
+          key={`${row.race_id}:${row.boat_number}`}
+          row={row}
+          axisMax={AXIS_MAX[section.key]}
+          t={t}
+        />
+      ))}
+    </section>
+  );
+}
+
+function SheetFoot({ sheet }) {
+  const minRuns = sheet.sections.some((s) => s.key === "c4")
+    ? `30回以上（4コースは A1 ${sheet.minRunsC4.A1}・A2 ${sheet.minRunsC4.A2}回以上）`
+    : "30回以上";
+  return (
+    <>
+      {/* 注は文の区切りで2行に分ける（自動の折り返しだと熟語の中で切れる。visual-designer P2-2） */}
+      <div className="today-sheet__foot">
+        <span className="today-sheet__nowrap">
+          {`全国・${ymd(sheet.window.start)}〜${ymd(sheet.window.end)}。`}
+        </span>
+        <span className="today-sheet__nowrap">{`${minRuns}。`}</span>
+      </div>
+      <div className="today-sheet__foot">
+        展示前で進入は変わり得ます。結果を保証しません
+      </div>
+      <div className="today-sheet__brand">
+        <span className="today-sheet__brand-name">
+          <img src="/logo-light.png" alt="" aria-hidden="true" />
+          龍神レーダー
+        </span>
+        <span>全レースの一覧 boat-ai.jp/today</span>
+      </div>
+    </>
+  );
+}
+
+function parseSheetParams(params) {
   const date = params.get("date") ?? "";
   const from = params.get("from") ?? "";
   const skip = (params.get("skip") ?? "").split(",").filter(Boolean);
   const valid =
     DATE.test(date) && TIME.test(from) && skip.every((s) => SKIP.test(s));
+  return { date, from, skip, valid };
+}
+
+export default function TodaySheet() {
+  const { t } = useTranslation();
+  const [params] = useSearchParams();
+  useRobotsMeta(true);
+  const { date, from, skip, valid } = parseSheetParams(params);
   const [state, setState] = useState({
     date: null,
     digest: null,
@@ -99,10 +196,6 @@ export default function TodaySheet() {
         型 b を作れない日（{sheet.reason}）
       </p>
     );
-  const minRuns = sheet.sections.some((s) => s.key === "c4")
-    ? `30回以上（4コースは A1 ${sheet.minRunsC4.A1}・A2 ${sheet.minRunsC4.A2}回以上）`
-    : "30回以上";
-
   const rowCount = sheet.sections.reduce((n, s) => n + s.rows.length, 0);
 
   return (
@@ -121,79 +214,9 @@ export default function TodaySheet() {
         ＝級の全国平均。並びは上回る幅の順（回数が少ない人は平均に寄せた）
       </div>
       {sheet.sections.map((section) => (
-        <section
-          className="today-sheet__section"
-          key={section.key}
-          style={{ flexGrow: section.rows.length }}
-        >
-          <div className="today-sheet__section-head">
-            <span>{SECTION_TITLE[section.key]}</span>
-            <span className="today-sheet__axis">
-              軸 0〜{AXIS_MAX[section.key]}%
-            </span>
-          </div>
-          {section.rows.map((row) => (
-            <div
-              className="today-sheet__row"
-              key={`${row.race_id}:${row.boat_number}`}
-            >
-              <div className="today-sheet__row-top">
-                <div className="today-sheet__row-left">
-                  <span className="today-sheet__rank">{row.rank}</span>
-                  <span className="today-sheet__time">
-                    {row.start_time}締切
-                  </span>
-                  <span
-                    className={`today-sheet__badge today-sheet__badge--${row.boat_number}`}
-                  >
-                    {row.boat_number}
-                  </span>
-                  <span className="today-sheet__name" translate="no">
-                    {row.racer_name}
-                  </span>
-                  <span className="today-sheet__grade">{row.grade}</span>
-                </div>
-                <div className="today-sheet__value">{row.pct}%</div>
-              </div>
-              <div className="today-sheet__track">
-                <div
-                  className="today-sheet__fill"
-                  style={{
-                    width: `${Math.min(100, (row.pct / AXIS_MAX[section.key]) * 100)}%`,
-                  }}
-                />
-                <div
-                  className="today-sheet__tick"
-                  style={{
-                    left: `${Math.min(100, (row.baseline_pct / AXIS_MAX[section.key]) * 100)}%`,
-                  }}
-                />
-              </div>
-              <div className="today-sheet__sub">
-                {t(`venues.${row.venue_code}`)}
-                {`${row.race_number}R・${row.runs}回中${row.wins}回・${row.grade}平均 ${row.baseline_pct}%`}
-              </div>
-            </div>
-          ))}
-        </section>
+        <SheetSection key={section.key} section={section} t={t} />
       ))}
-      {/* 注は文の区切りで2行に分ける（自動の折り返しだと熟語の中で切れる。visual-designer P2-2） */}
-      <div className="today-sheet__foot">
-        <span className="today-sheet__nowrap">
-          {`全国・${ymd(sheet.window.start)}〜${ymd(sheet.window.end)}。`}
-        </span>
-        <span className="today-sheet__nowrap">{`${minRuns}。`}</span>
-      </div>
-      <div className="today-sheet__foot">
-        展示前で進入は変わり得ます。結果を保証しません
-      </div>
-      <div className="today-sheet__brand">
-        <span className="today-sheet__brand-name">
-          <img src="/logo-light.png" alt="" aria-hidden="true" />
-          龍神レーダー
-        </span>
-        <span>全レースの一覧 boat-ai.jp/today</span>
-      </div>
+      <SheetFoot sheet={sheet} />
     </div>
   );
 }

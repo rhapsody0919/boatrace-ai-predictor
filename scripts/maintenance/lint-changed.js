@@ -3,7 +3,7 @@
  * lint-changed.js - 差分のファイルだけに eslint（と大きさ・複雑さの線）を掛け、CI では循環の import と重複のコードも見る。
  * `npm run verify`（＝verify:ci＋これ）と、Quality Gates の verify の job から呼ぶ。
  * 設計: hq の drafts/harness-redesign-20261107.md の T3（verify＝verify:ci＋差分の eslint。編集ごとの hook の代わり）・
- *       T5（max-lines・complexity は差分のファイルだけ、no-cycle は CI の madge、jscpd も差分だけ、試験の差分の警告）
+ *       T5（max-lines・complexity は差分のファイルだけ、no-cycle は CI の dependency-cruiser、jscpd も差分だけ、試験の差分の警告）
  *
  * 差分: --base（既定 origin/master）と HEAD の merge-base から、作業ツリーまで（コミット前の変更と未追跡のファイルを含む）。
  *       master への push（GITHUB_EVENT_NAME=push）は HEAD^1 から。
@@ -13,7 +13,7 @@
  *   - 差分の JS（.js・.jsx・.mjs・.cjs）の eslint のエラー（eslint.config.js の設定のまま）
  *   - 新しいファイルが max-lines・complexity の線を越える
  *   - 既にあるファイルが、この差分で max-lines の線を越えた（base で線の内だった）
- *   - --ci: src・scripts・api に循環の import がある（madge。2026-11-07 時点で0件なので、全体で0件を保つ）
+ *   - --ci: src・scripts・api に循環の import がある（dependency-cruiser の no-circular、lintDepTree.js。全体で0件を保つ）
  *   - --ci: 新しいファイルが、ほかのコードと15行以上重なる（jscpd）。split-data-layer.mjs の出力そのままの PR で、
  *     差分の側が全部移しただけのファイルの重なりは警告（base の殻の字そのまま。lintDuplicates.js）
  * 警告だけ（失敗にしない）:
@@ -23,7 +23,7 @@
  *
  * 使い方:
  *   node scripts/maintenance/lint-changed.js                       # 手元（eslint と試験の差分の警告）
- *   node scripts/maintenance/lint-changed.js --ci                  # CI（加えて madge・jscpd。npx で取るのでネットワークが要る）
+ *   node scripts/maintenance/lint-changed.js --ci                  # CI（加えて dependency-cruiser・jscpd。npx で取るのでネットワークが要る）
  *   node scripts/maintenance/lint-changed.js --base=origin/master
  */
 import { execFileSync, spawnSync } from "node:child_process";
@@ -51,8 +51,8 @@ const ROOT = path.resolve(
 const MAX_LINES = 400;
 const MAX_COMPLEXITY = 15;
 const DUP_MIN_LINES = 15; // jscpd の重なりの最小の行数（目安・根拠なし）
-// npx で取る版を固定する（devDependency に無いため）
-const MADGE = "madge@8.0.0";
+// 版は package.json の devDependencies と同じに固定する。npx は --no で手元の node_modules（無ければ npm の
+// キャッシュ）の同じ版だけを使い、ネットワークから取らない（CI03・BOA-1492。版が無ければ止まる）
 const JSCPD = "jscpd@4.3.0";
 const GRAPH_DIRS = ["src", "scripts", "api"];
 
@@ -162,21 +162,6 @@ if (srcChanged.length > 0 && !changed.some((c) => isTest(c.file))) {
   );
 }
 
-// npx の出力を一時のファイルへ書かせる（パイプだと madge の --json が 64KB で切れることがあった）
-const runToFile = (cmd, cmdArgs) => {
-  const out = path.join(
-    fs.mkdtempSync(path.join(os.tmpdir(), "lint-changed-")),
-    "out.json",
-  );
-  const fd = fs.openSync(out, "w");
-  const res = spawnSync(cmd, cmdArgs, {
-    cwd: ROOT,
-    stdio: ["ignore", fd, "inherit"],
-  });
-  fs.closeSync(fd);
-  return { status: res.status, out };
-};
-
 if (ci) {
   // --- 大きさ（関数の単位の AST hash を base と比べる）
   const size = runSizeGate({ cwd: ROOT, base: mergeBase, changed });
@@ -190,28 +175,6 @@ if (ci) {
   errors.push(...dep.errors);
   warnings.push(...dep.warnings);
 
-  // --- 循環の import（madge）
-  const madge = runToFile("npx", [
-    "--yes",
-    MADGE,
-    "--circular",
-    "--extensions",
-    "js,jsx,mjs",
-    "--json",
-    ...GRAPH_DIRS,
-  ]);
-  const cycles = (() => {
-    try {
-      return JSON.parse(fs.readFileSync(madge.out, "utf8"));
-    } catch (e) {
-      errors.push(
-        `madge の結果が読めない（終了コード ${madge.status}）: ${e.message}`,
-      );
-      return [];
-    }
-  })();
-  cycles.forEach((c) => errors.push(`循環の import: ${c.join(" → ")}`));
-
   // --- 重複のコード（jscpd。全体を見て、差分のファイルが片側にある重なりだけを出す）
   if (changed.some((c) => isJs(c.file))) {
     const outDir = fs.mkdtempSync(
@@ -220,7 +183,8 @@ if (ci) {
     const res = spawnSync(
       "npx",
       [
-        "--yes",
+        "--no",
+        "--",
         JSCPD,
         ...GRAPH_DIRS,
         "--format",
@@ -271,5 +235,5 @@ if (errors.length > 0) {
   process.exit(1);
 }
 console.log(
-  `lint-changed: OK（差分 ${changed.length} ファイル・eslint ${jsFiles.length} ファイル・警告 ${warnings.length} 件${ci ? "・madge と jscpd も見た" : ""}）`,
+  `lint-changed: OK（差分 ${changed.length} ファイル・eslint ${jsFiles.length} ファイル・警告 ${warnings.length} 件${ci ? "・依存の向きと jscpd も見た" : ""}）`,
 );

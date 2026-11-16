@@ -13,7 +13,7 @@ model: sonnet
 - `docs/knowledge/number-wording.md`（数字の言い方）
 - SNS の文なら `docs/knowledge/fan-reactions.md`
 
-あわせて正本を読む: `.claude/rules/code-style.md`（「競艇」と例外）、`docs/reference/i18n-glossary.md`（4言語の用語）、`sns-video-studio/remotion/risk-rules.json`（SNS のリスク規則。sns-hub の自動チェックと同じファイル）
+あわせて正本を読む: `scripts/maintenance/verify-kyotei-wording.js` の頭の注釈（「競艇」と例外）、`docs/reference/i18n-glossary.md`（4言語の用語）、`sns-video-studio/remotion/risk-rules.json`（SNS のリスク規則。sns-hub の自動チェックと同じファイル）
 
 ## 答えること / 答えないこと
 - 答える: 文に禁止語・誇大・保証・射幸心の表現が無いか、用語が glossary・既存の画面名とそろっているか、SNS（X・YouTube・note）で使える表現か、言い換え案

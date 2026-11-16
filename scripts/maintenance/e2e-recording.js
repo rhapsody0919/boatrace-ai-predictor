@@ -81,6 +81,54 @@ function repoSlug() {
   return m[1];
 }
 
+/** 一時の失敗とみなす HTTP の状態（再試行する）。404 等の恒久の失敗は再試行せずそのまま返す */
+export const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+/** 再試行の前の待ち（ms）。回数は長さ+1。最小でよい（BOA-1397: releases の 504 で shard が試験の前に落ちた） */
+export const RETRY_DELAYS_MS = [2000, 5000];
+
+const RETRY_DEFAULTS = {
+  fetchImpl: (url) => fetch(url),
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  delays: RETRY_DELAYS_MS,
+  log: (message) => console.warn(message),
+};
+
+/** 1回取る。例外は投げずに { error } で返す */
+async function attemptFetch(fetchImpl, url) {
+  try {
+    return { response: await fetchImpl(url) };
+  } catch (error) {
+    return { error };
+  }
+}
+
+const isRetryableResponse = (response) =>
+  !response.ok && RETRYABLE_STATUS.has(response.status);
+
+const failureLabel = ({ response, error }) =>
+  response ? `${response.status}` : `例外（${error?.message ?? error}）`;
+
+/**
+ * fetch を、一時の失敗（RETRYABLE_STATUS・ネットワークの例外）のときだけ待って再試行する。
+ * 最後の試行の応答を返す（恒久の失敗や、再試行しても直らない一時の失敗は呼び出し側が !ok で落とす）。
+ * 最後の試行がネットワークの例外なら、その例外を投げる
+ */
+export async function fetchWithRetry(url, options = {}) {
+  const { fetchImpl, sleep, delays, log } = { ...RETRY_DEFAULTS, ...options };
+  for (let attempt = 0; ; attempt++) {
+    const outcome = await attemptFetch(fetchImpl, url);
+    const last = attempt >= delays.length;
+    if (outcome.response && (last || !isRetryableResponse(outcome.response)))
+      return outcome.response;
+    if (outcome.error && last) throw outcome.error;
+    await outcome.response?.body?.cancel?.(); // 捨てる応答の本文を読まずに閉じる（接続を早く返す）
+    log(
+      `[e2e recording] 取得が ${failureLabel(outcome)}。${delays[attempt]}ms 待って再試行（${attempt + 1}/${delays.length}）: ${url}`,
+    );
+    await sleep(delays[attempt]);
+  }
+}
+
 /** 手元で撮った（まだ Release に上げていない）録画の目印。global-teardown が書く */
 export const LOCAL_MARK = "local";
 
@@ -120,7 +168,7 @@ export async function ensureRecording({ quiet = false, force = false } = {}) {
   if (!existsSync(cached)) {
     const url = `https://github.com/${repoSlug()}/releases/download/${pointer.tag}/${pointer.asset ?? ASSET_NAME}`;
     if (!quiet) console.log(`[e2e recording] 取得: ${url}`);
-    const response = await fetch(url);
+    const response = await fetchWithRetry(url);
     if (!response.ok) {
       throw new Error(
         `録画を取得できません（${response.status} ${response.statusText}）: ${url}`,

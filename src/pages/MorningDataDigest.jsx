@@ -21,7 +21,7 @@
  *
  * **ja専用（ja-only）**。TRANSLATED_PATHS に登録しない。
  */
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
@@ -88,6 +88,276 @@ function formatJaDate(dateStr) {
   return `${m}月${d}日（${weekday}）`;
 }
 
+function renderRateCard(row, keyPrefix, label, t) {
+  return (
+    <DigestRaceCard key={`${keyPrefix}-${row.rank}`} row={row} collapsible>
+      {(expanded) => (
+        <RateWithBaseline
+          expanded={expanded}
+          label={label}
+          rate={row.metric_value}
+          skillDelta={row.metric_skill_delta}
+          baselineGrade={row.detail?.baselineGrade ?? null}
+          venueName={t(`venues.${row.venue_code}`)}
+          venueBaseline={row.metric_venue_baseline}
+          sampleSize={row.sample_size}
+          isSmallSample={row.is_small_sample}
+          rate90d={row.rate_90d}
+          sampleSize90d={row.sample_size_90d}
+        />
+      )}
+    </DigestRaceCard>
+  );
+}
+
+function deriveDigestView(digest) {
+  const sections = digest?.sections ?? {};
+  const day = digest?.day ?? null;
+  const featured = sections.featured?.[0] ?? null;
+  const nigashiList = (sections.nigashi ?? []).filter(
+    (r) => r.course === NIGASHI_LIST_COURSE,
+  );
+  const nigashiCourse3 = (sections.nigashi ?? []).filter(
+    (r) => r.course === NIGASHI_LIST_COURSE + 1,
+  );
+  return { sections, day, featured, nigashiList, nigashiCourse3 };
+}
+
+function DigestHeader({ date, day, isToday }) {
+  return (
+    <header className="morning-digest__header">
+      <h1 className="morning-digest__title" data-testid="morning-digest-title">
+        {H1}
+      </h1>
+      <p className="morning-digest__date">
+        {formatJaDate(date)}
+        {day && (
+          <>
+            {"　"}
+            {day.venue_count}会場 {day.race_count}レース
+          </>
+        )}
+        {!isToday && (
+          <span className="morning-digest__past-badge">過去日</span>
+        )}
+      </p>
+      {day?.window_start && (
+        <p className="morning-digest__window">
+          <strong>集計期間</strong> {day.window_start} 〜 {day.window_end}（
+          {day.window_days}日）／ 調子は直近90日
+        </p>
+      )}
+    </header>
+  );
+}
+
+function DigestStateNotice({ loading, hasFailed, digest, isToday, onRetry }) {
+  return (
+    <>
+        {loading && <LoadingScreen />}
+
+        {hasFailed && (
+          <InlineFetchError
+            message="本日のデータ一覧を読み込めませんでした"
+            onRetry={onRetry}
+          />
+        )}
+
+        {digest?.state === "not_generated" && (
+          <p className="morning-digest__not-generated">
+            {isToday
+              ? "本日ぶんはまだ公開されていません（毎朝更新しています。しばらくしてからお試しください）。"
+              : "この日のデータは生成されていません。"}
+          </p>
+        )}
+    </>
+  );
+}
+
+function NigeSection({ sections, day, t }) {
+  return (
+    <DigestSection
+      title={MORNING_DIGEST_SECTION_BY_KEY.nige.title}
+      description={MORNING_DIGEST_SECTION_BY_KEY.nige.description}
+      count={sections.nige?.length ?? 0}
+      total={day?.notes?.sectionCounts?.nigeCandidates ?? null}
+    >
+      <DigestCardGrid rows={sections.nige ?? []}>
+        {(row) =>
+          renderRateCard(row, "nige", "1コースに入ったときに逃げ切った割合", t)
+        }
+      </DigestCardGrid>
+    </DigestSection>
+  );
+}
+
+function MakuriSection({ sections, t }) {
+  return (
+    <DigestSection
+      title={MORNING_DIGEST_SECTION_BY_KEY.makuri.title}
+      description={MORNING_DIGEST_SECTION_BY_KEY.makuri.description}
+      count={sections.makuri?.length ?? 0}
+      notice={MORNING_DIGEST_SECTION_BY_KEY.makuri.notice}
+    >
+      <DigestCardGrid rows={sections.makuri ?? []}>
+        {(row) =>
+          renderRateCard(row, "makuri", `${row.course}コースに入ったときにまくりで1着になった割合`, t)
+        }
+      </DigestCardGrid>
+    </DigestSection>
+  );
+}
+
+function NigashiSection({ nigashiList, nigashiCourse3, t }) {
+  const renderNigashiCard = (row) =>
+    renderRateCard(
+      row,
+      "nigashi",
+      `${row.course}コースに入ったときに1号艇に逃げ切られた割合`,
+      t,
+    );
+  return (
+    <>
+            {/* 逃がしは当日の2号艇を一覧に、3号艇は折りたたみの中に出す。4〜6号艇は出さない（過去日の保存に
+                残っていても出さない。2026-10-15 オーナー承認） */}
+            <DigestSection
+              title={MORNING_DIGEST_SECTION_BY_KEY.nigashi.title}
+              description={MORNING_DIGEST_SECTION_BY_KEY.nigashi.description}
+              count={nigashiList.length}
+              emptyMessage={MORNING_DIGEST_SECTION_BY_KEY.nigashi.emptyMessage}
+              after={
+                nigashiCourse3.length > 0 && (
+                  <details className="digest-fold" data-testid="nigashi-course3">
+                    <summary className="digest-fold__summary">
+                      {MORNING_DIGEST_SECTION_BY_KEY.nigashi.course3Title}（
+                      {nigashiCourse3.length}件）
+                    </summary>
+                    <DigestCardGrid rows={nigashiCourse3}>
+                      {renderNigashiCard}
+                    </DigestCardGrid>
+                  </details>
+                )
+              }
+            >
+              <DigestCardGrid rows={nigashiList}>
+                {renderNigashiCard}
+              </DigestCardGrid>
+            </DigestSection>
+    </>
+  );
+}
+
+function FlyingSection({ sections, day }) {
+  return (
+    <DigestSection
+      title={MORNING_DIGEST_SECTION_BY_KEY.flying.title}
+      description={MORNING_DIGEST_SECTION_BY_KEY.flying.description}
+      count={sections.flying?.length ?? 0}
+      emptyMessage={MORNING_DIGEST_SECTION_BY_KEY.flying.emptyMessage}
+    >
+      <FlyingRacerList
+        rows={sections.flying ?? []}
+        dataComplete={day?.flying_data_complete ?? true}
+      />
+    </DigestSection>
+  );
+}
+
+function ReturnedSection({ sections, day }) {
+  return (
+    <DigestSection
+      title={MORNING_DIGEST_SECTION_BY_KEY.returned.title}
+      description={MORNING_DIGEST_SECTION_BY_KEY.returned.description}
+      count={sections.returned?.length ?? 0}
+      emptyMessage={
+        MORNING_DIGEST_SECTION_BY_KEY.returned.emptyMessage
+      }
+    >
+      <ReturnedRacerList
+        rows={sections.returned ?? []}
+        suppressedVenues={day?.suppressed_venues ?? []}
+      />
+    </DigestSection>
+  );
+}
+
+function GlossaryEntry({ entry, day }) {
+  return (
+    <>
+      <dt>{entry.term}</dt>
+      <dd>
+        <GlossaryBody body={entry.body} />
+        {/* イン崩れ指数だけは、算出時刻（日替わり）を足す。
+            スナップショットには入らない静的でない情報。
+            表示文言（term）ではなく安定した key で分岐する */}
+        {entry.key === GLOSSARY_KEY_VOLATILITY &&
+          day?.generated_at && (
+          <>
+            {"この数値は "}
+            {new Date(day.generated_at).toLocaleString("ja-JP", {
+              timeZone: "Asia/Tokyo",
+              month: "numeric",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            {" 時点のものです。"}
+          </>
+        )}
+      </dd>
+    </>
+  );
+}
+
+function NotesSection({ day }) {
+  return (
+    <section
+      className="morning-digest__notes"
+      data-testid="morning-digest-notes"
+    >
+      <h2 className="morning-digest__notes-title">
+        {MORNING_DIGEST_GLOSSARY_TITLE}
+      </h2>
+      <dl className="morning-digest__notes-list">
+        {MORNING_DIGEST_GLOSSARY.map((entry) => (
+          <GlossaryEntry key={entry.key} entry={entry} day={day} />
+        ))}
+      </dl>
+      <p className="morning-digest__disclaimer">
+        {MORNING_DIGEST_DISCLAIMER}
+      </p>
+      <p className="morning-digest__back">
+        <Link to="/">ホームに戻る</Link>
+      </p>
+    </section>
+  );
+}
+
+function GeneratedDigest({ view, t }) {
+  const { sections, day, featured, nigashiList, nigashiCourse3 } = view;
+  return (
+    <>
+      {featured && <FeaturedRaceCard row={featured} />}
+
+      <NigeSection sections={sections} day={day} t={t} />
+
+      <MakuriSection sections={sections} t={t} />
+
+      <NigashiSection
+        nigashiList={nigashiList}
+        nigashiCourse3={nigashiCourse3}
+        t={t}
+      />
+
+      <FlyingSection sections={sections} day={day} />
+
+      <ReturnedSection sections={sections} day={day} />
+
+      <NotesSection day={day} />
+    </>
+  );
+}
+
 function MorningDataDigest() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
@@ -135,34 +405,8 @@ function MorningDataDigest() {
   const digest = loaded?.key === requestKey ? loaded.data : null;
   const hasFailed = failed?.key === requestKey;
   const loading = !digest && !hasFailed;
-  const sections = digest?.sections ?? {};
-  const day = digest?.day ?? null;
-  const featured = sections.featured?.[0] ?? null;
-  const nigashiList = (sections.nigashi ?? []).filter(
-    (r) => r.course === NIGASHI_LIST_COURSE,
-  );
-  const nigashiCourse3 = (sections.nigashi ?? []).filter(
-    (r) => r.course === NIGASHI_LIST_COURSE + 1,
-  );
-  const renderNigashiCard = (row) => (
-    <DigestRaceCard key={`nigashi-${row.rank}`} row={row} collapsible>
-      {(expanded) => (
-        <RateWithBaseline
-          expanded={expanded}
-          label={`${row.course}コースに入ったときに1号艇に逃げ切られた割合`}
-          rate={row.metric_value}
-          skillDelta={row.metric_skill_delta}
-          baselineGrade={row.detail?.baselineGrade ?? null}
-          venueName={t(`venues.${row.venue_code}`)}
-          venueBaseline={row.metric_venue_baseline}
-          sampleSize={row.sample_size}
-          isSmallSample={row.is_small_sample}
-          rate90d={row.rate_90d}
-          sampleSize90d={row.sample_size_90d}
-        />
-      )}
-    </DigestRaceCard>
-  );
+  const view = deriveDigestView(digest);
+  const { day } = view;
 
   return (
     <>
@@ -178,213 +422,17 @@ function MorningDataDigest() {
             { name: "本日のデータ一覧", url: "/today" },
           ]}
         />
+        <DigestHeader date={date} day={day} isToday={isToday} />
 
-        <header className="morning-digest__header">
-          <h1 className="morning-digest__title" data-testid="morning-digest-title">
-            {H1}
-          </h1>
-          <p className="morning-digest__date">
-            {formatJaDate(date)}
-            {day && (
-              <>
-                {"　"}
-                {day.venue_count}会場 {day.race_count}レース
-              </>
-            )}
-            {!isToday && (
-              <span className="morning-digest__past-badge">過去日</span>
-            )}
-          </p>
-          {day?.window_start && (
-            <p className="morning-digest__window">
-              <strong>集計期間</strong> {day.window_start} 〜 {day.window_end}（
-              {day.window_days}日）／ 調子は直近90日
-            </p>
-          )}
-        </header>
+        <DigestStateNotice
+          loading={loading}
+          hasFailed={hasFailed}
+          digest={digest}
+          isToday={isToday}
+          onRetry={() => setReloadKey((k) => k + 1)}
+        />
 
-        {loading && <LoadingScreen />}
-
-        {hasFailed && (
-          <InlineFetchError
-            message="本日のデータ一覧を読み込めませんでした"
-            onRetry={() => setReloadKey((k) => k + 1)}
-          />
-        )}
-
-        {digest?.state === "not_generated" && (
-          <p className="morning-digest__not-generated">
-            {isToday
-              ? "本日ぶんはまだ公開されていません（毎朝更新しています。しばらくしてからお試しください）。"
-              : "この日のデータは生成されていません。"}
-          </p>
-        )}
-
-        {digest?.state === "generated" && (
-          <>
-            {featured && <FeaturedRaceCard row={featured} />}
-
-            <DigestSection
-              title={MORNING_DIGEST_SECTION_BY_KEY.nige.title}
-              description={MORNING_DIGEST_SECTION_BY_KEY.nige.description}
-              count={sections.nige?.length ?? 0}
-              total={day?.notes?.sectionCounts?.nigeCandidates ?? null}
-            >
-              <DigestCardGrid rows={sections.nige ?? []}>
-                {(row) => (
-                  <DigestRaceCard
-                    key={`nige-${row.rank}`}
-                    row={row}
-                    collapsible
-                  >
-                    {(expanded) => (
-                      <RateWithBaseline
-                        expanded={expanded}
-                        label="1コースに入ったときに逃げ切った割合"
-                        rate={row.metric_value}
-                        skillDelta={row.metric_skill_delta}
-                        baselineGrade={row.detail?.baselineGrade ?? null}
-                        venueName={t(`venues.${row.venue_code}`)}
-                        venueBaseline={row.metric_venue_baseline}
-                        sampleSize={row.sample_size}
-                        isSmallSample={row.is_small_sample}
-                        rate90d={row.rate_90d}
-                        sampleSize90d={row.sample_size_90d}
-                      />
-                    )}
-                  </DigestRaceCard>
-                )}
-              </DigestCardGrid>
-            </DigestSection>
-
-            <DigestSection
-              title={MORNING_DIGEST_SECTION_BY_KEY.makuri.title}
-              description={MORNING_DIGEST_SECTION_BY_KEY.makuri.description}
-              count={sections.makuri?.length ?? 0}
-              notice={MORNING_DIGEST_SECTION_BY_KEY.makuri.notice}
-            >
-              <DigestCardGrid rows={sections.makuri ?? []}>
-                {(row) => (
-                  <DigestRaceCard
-                    key={`makuri-${row.rank}`}
-                    row={row}
-                    collapsible
-                  >
-                    {(expanded) => (
-                      <RateWithBaseline
-                        expanded={expanded}
-                        label={`${row.course}コースに入ったときにまくりで1着になった割合`}
-                        rate={row.metric_value}
-                        skillDelta={row.metric_skill_delta}
-                        baselineGrade={row.detail?.baselineGrade ?? null}
-                        venueName={t(`venues.${row.venue_code}`)}
-                        venueBaseline={row.metric_venue_baseline}
-                        sampleSize={row.sample_size}
-                        isSmallSample={row.is_small_sample}
-                        rate90d={row.rate_90d}
-                        sampleSize90d={row.sample_size_90d}
-                      />
-                    )}
-                  </DigestRaceCard>
-                )}
-              </DigestCardGrid>
-            </DigestSection>
-
-            {/* 逃がしは当日の2号艇を一覧に、3号艇は折りたたみの中に出す。4〜6号艇は出さない（過去日の保存に
-                残っていても出さない。2026-10-15 オーナー承認） */}
-            <DigestSection
-              title={MORNING_DIGEST_SECTION_BY_KEY.nigashi.title}
-              description={MORNING_DIGEST_SECTION_BY_KEY.nigashi.description}
-              count={nigashiList.length}
-              emptyMessage={MORNING_DIGEST_SECTION_BY_KEY.nigashi.emptyMessage}
-              after={
-                nigashiCourse3.length > 0 && (
-                  <details className="digest-fold" data-testid="nigashi-course3">
-                    <summary className="digest-fold__summary">
-                      {MORNING_DIGEST_SECTION_BY_KEY.nigashi.course3Title}（
-                      {nigashiCourse3.length}件）
-                    </summary>
-                    <DigestCardGrid rows={nigashiCourse3}>
-                      {renderNigashiCard}
-                    </DigestCardGrid>
-                  </details>
-                )
-              }
-            >
-              <DigestCardGrid rows={nigashiList}>
-                {renderNigashiCard}
-              </DigestCardGrid>
-            </DigestSection>
-
-            <DigestSection
-              title={MORNING_DIGEST_SECTION_BY_KEY.flying.title}
-              description={MORNING_DIGEST_SECTION_BY_KEY.flying.description}
-              count={sections.flying?.length ?? 0}
-              emptyMessage={MORNING_DIGEST_SECTION_BY_KEY.flying.emptyMessage}
-            >
-              <FlyingRacerList
-                rows={sections.flying ?? []}
-                dataComplete={day?.flying_data_complete ?? true}
-              />
-            </DigestSection>
-
-            <DigestSection
-              title={MORNING_DIGEST_SECTION_BY_KEY.returned.title}
-              description={MORNING_DIGEST_SECTION_BY_KEY.returned.description}
-              count={sections.returned?.length ?? 0}
-              emptyMessage={
-                MORNING_DIGEST_SECTION_BY_KEY.returned.emptyMessage
-              }
-            >
-              <ReturnedRacerList
-                rows={sections.returned ?? []}
-                suppressedVenues={day?.suppressed_venues ?? []}
-              />
-            </DigestSection>
-
-            <section
-              className="morning-digest__notes"
-              data-testid="morning-digest-notes"
-            >
-              <h2 className="morning-digest__notes-title">
-                {MORNING_DIGEST_GLOSSARY_TITLE}
-              </h2>
-              <dl className="morning-digest__notes-list">
-                {MORNING_DIGEST_GLOSSARY.map((entry) => (
-                  <Fragment key={entry.key}>
-                    <dt>{entry.term}</dt>
-                    <dd>
-                      <GlossaryBody body={entry.body} />
-                      {/* イン崩れ指数だけは、算出時刻（日替わり）を足す。
-                          スナップショットには入らない静的でない情報。
-                          表示文言（term）ではなく安定した key で分岐する */}
-                      {entry.key === GLOSSARY_KEY_VOLATILITY &&
-                        day?.generated_at && (
-                        <>
-                          {"この数値は "}
-                          {new Date(day.generated_at).toLocaleString("ja-JP", {
-                            timeZone: "Asia/Tokyo",
-                            month: "numeric",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                          {" 時点のものです。"}
-                        </>
-                      )}
-                    </dd>
-                  </Fragment>
-                ))}
-              </dl>
-              <p className="morning-digest__disclaimer">
-                {MORNING_DIGEST_DISCLAIMER}
-              </p>
-              <p className="morning-digest__back">
-                <Link to="/">ホームに戻る</Link>
-              </p>
-            </section>
-          </>
-        )}
+        {digest?.state === "generated" && <GeneratedDigest view={view} t={t} />}
       </div>
     </>
   );

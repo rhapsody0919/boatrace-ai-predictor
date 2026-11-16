@@ -191,7 +191,7 @@ if (errors.length > 0) {
   console.error("NG: Supabaseクエリのエラー処理に問題があります\n");
   for (const e of errors) console.error("  - " + e);
   console.error(
-    "\n詳細: .claude/rules/frontend-data-fetch.md / docs/adr/0069-query-error-propagation.md",
+    "\n詳細: AGENTS.md「落とし穴」/ docs/adr/0069-query-error-propagation.md",
   );
   process.exit(1);
 }

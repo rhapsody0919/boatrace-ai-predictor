@@ -35,6 +35,310 @@ const NEUTRAL_FILL =
 
 const dash = "-";
 
+function deriveMotorHeaders(result, venue, t) {
+  const venueName =
+    venue === null
+      ? ""
+      : t(`venues.${venue}`, VENUE_NAMES[venue] || String(venue));
+  const fromPretest = result?.state === "ok" && result.source === "pretest";
+  const pretestDate = result?.state === "ok" ? result.pretestDate : null;
+  const seriesRange = result?.state === "ok" ? result.seriesRange : null;
+  const recentDate = seriesRange
+    ? t("meetPage.period", {
+        start: formatMonthDay(seriesRange.start),
+        end: formatMonthDay(seriesRange.end),
+      })
+    : pretestDate === null
+      ? null
+      : formatSlashDate(pretestDate);
+  const userHeader =
+    pretestDate === null || pretestDate === getTodayJST()
+      ? t("analysis.motorRanking.userHeader")
+      : t("analysis.motorRanking.userHeaderRecent", {
+          date: recentDate,
+        });
+  return { venueName, fromPretest, userHeader };
+}
+
+function MotorSortHeader({ sortKey, columnKey, label, setSortKey }) {
+  return (
+    <th
+      aria-sort={
+        sortKey === columnKey
+          ? MOTOR_SORT_KEYS[columnKey].ascending
+            ? "ascending"
+            : "descending"
+          : undefined
+      }
+    >
+      <button
+        type="button"
+        className={`vmr-sort-btn${sortKey === columnKey ? " is-active" : ""}`}
+        onClick={() => setSortKey(columnKey)}
+      >
+        {label}
+        <span className="vmr-sort-mark" aria-hidden="true">
+          {
+            (MOTOR_SORT_KEYS[columnKey].ascending ? "▲△" : "▼▽")[
+              sortKey === columnKey ? 0 : 1
+            ]
+          }
+        </span>
+      </button>
+    </th>
+  );
+}
+
+function MotorTableHead({ t, sortKey, setSortKey, fromPretest, userHeader }) {
+  const sortHeader = (key, label) => (
+    <MotorSortHeader
+      sortKey={sortKey}
+      columnKey={key}
+      label={label}
+      setSortKey={setSortKey}
+    />
+  );
+  return (
+    <thead>
+      <tr>
+        <th>{t("analysis.motorRanking.rankHeader")}</th>
+        {sortHeader("motorNumber", t("analysis.motor.motorNumberShortHeader"))}
+        {sortHeader(
+          "top2Rate",
+          fromPretest
+            ? t("analysis.motorRanking.officialRateHeader")
+            : t("analysis.motorRanking.rateHeader"),
+        )}
+        <th>{t("analysis.motorRanking.finalHeader")}</th>
+        {/* 会場サイトの値を出さない会場は優勝が全部「-」なので、並べ替えを出さない
+            （押すと全行の順位が「-」になり、壊れて見える。ファン評価 2周目） */}
+        {fromPretest ? (
+          <th>{t("analysis.motorRanking.championshipHeader")}</th>
+        ) : (
+          sortHeader(
+            "championshipCount",
+            t("analysis.motorRanking.championshipHeader"),
+          )
+        )}
+        {sortHeader("pretestTime", t("analysis.motor.pretestTimeHeader"))}
+        <th className="vmr-user-head">{userHeader}</th>
+      </tr>
+    </thead>
+  );
+}
+
+function MotorRateCell({ r, t, maxRate, best }) {
+  return (
+    <td className="vmr-rate">
+      {r.top2Rate === null ? (
+        dash
+      ) : (
+        <RateBar
+          value={r.top2Rate}
+          max={maxRate}
+          fill={NEUTRAL_FILL}
+          best={best.has(r.motorNumber)}
+          label={formatMotorRate(r.top2Rate)}
+        />
+      )}
+      {r.top2Rate !== null && r.raceCount !== null && (
+        <span className="vmr-race-count">
+          {t("analysis.motorRanking.raceCount", {
+            n: r.raceCount,
+          })}
+        </span>
+      )}
+    </td>
+  );
+}
+
+function MotorRow({ r, t, localize, venue, maxRate, best }) {
+  return (
+    <tr>
+      <td className="vmr-rank">{r.rank ?? dash}</td>
+      <td className="vmr-no">
+        {r.raceId ? (
+          <Link
+            to={localize(
+              `/winning-technique?tab=motor&venue_code=${venue}&race_id=${r.raceId}&motor=${r.motorNumber}`,
+            )}
+          >
+            {r.motorNumber}
+          </Link>
+        ) : (
+          r.motorNumber
+        )}
+      </td>
+      <MotorRateCell r={r} t={t} maxRate={maxRate} best={best} />
+      <td>{r.finalCount ?? dash}</td>
+      <td>{r.championshipCount ?? dash}</td>
+      <td>{r.pretestTime === null ? dash : r.pretestTime.toFixed(2)}</td>
+      <td className="vmr-user">
+        {r.racerId !== null ? (
+          <Link to={localize(`/racer/${r.racerId}`)} translate="no">
+            {r.racerName ?? r.racerId}
+          </Link>
+        ) : (
+          dash
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function MotorTableWrapper({
+  t,
+  localize,
+  venue,
+  rows,
+  maxRate,
+  best,
+  scroll,
+  sortKey,
+  setSortKey,
+  fromPretest,
+  userHeader,
+}) {
+  const { scrollRef, hasMore, updateScroll, scrollRight } = scroll;
+  return (
+    <div
+      className={`vmr-table-wrapper hscroll-hint${hasMore ? " has-more" : ""}`}
+    >
+      {hasMore && (
+        <button
+          type="button"
+          className="hscroll-more"
+          onClick={scrollRight}
+          aria-hidden="true"
+          tabIndex={-1}
+        >
+          ›
+        </button>
+      )}
+      <div className="vmr-table-scroll" ref={scrollRef} onScroll={updateScroll}>
+        <table className="vmr-table">
+          <MotorTableHead
+            t={t}
+            sortKey={sortKey}
+            setSortKey={setSortKey}
+            fromPretest={fromPretest}
+            userHeader={userHeader}
+          />
+          <tbody>
+            {rows.map((r) => (
+              <MotorRow
+                key={r.motorNumber}
+                r={r}
+                t={t}
+                localize={localize}
+                venue={venue}
+                maxRate={maxRate}
+                best={best}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function MotorRankingResult({
+  t,
+  localize,
+  venue,
+  result,
+  venueName,
+  fromPretest,
+  userHeader,
+  rows,
+  tableProps,
+}) {
+  return (
+    <>
+      <p className="vmr-source">
+        {fromPretest
+          ? t("analysis.motorRanking.sourcePretest")
+          : t("analysis.motorRanking.sourceVenueSite", {
+              venue: venueName,
+              date: formatSlashDate(result.scrapedDate),
+            })}
+      </p>
+
+      {rows.length === 0 ? (
+        <div className="vmr-state">{t("analysis.motorRanking.empty")}</div>
+      ) : (
+        <MotorTableWrapper
+          t={t}
+          localize={localize}
+          venue={venue}
+          rows={rows}
+          fromPretest={fromPretest}
+          userHeader={userHeader}
+          {...tableProps}
+        />
+      )}
+
+      <p className="vmr-note">
+        {t(
+          fromPretest
+            ? "analysis.motorRanking.sortNotePretest"
+            : "analysis.motorRanking.sortNote",
+        )}
+        <br />
+        {t("analysis.motorRanking.linkNote")}
+        <br />
+        {t("analysis.motor.motorRiderMixNote")}
+      </p>
+    </>
+  );
+}
+
+function MotorRankingStates({ t, venue, result, ...resultProps }) {
+  return (
+    <>
+      {(venue === null || result === null) && (
+        <div className="vmr-state">{t("analysis.loading")}</div>
+      )}
+
+      {result?.state === "error" && (
+        <div className="vmr-state vmr-error" role="alert">
+          {t("analysis.motorRanking.fetchError")}
+        </div>
+      )}
+
+      {result?.state === "ok" && (
+        <MotorRankingResult
+          t={t}
+          venue={venue}
+          result={result}
+          {...resultProps}
+        />
+      )}
+    </>
+  );
+}
+
+function MotorVenueSelect({ t, venue, selectVenue }) {
+  return (
+    <div className="vmr-controls">
+      <label htmlFor="vmr-venue-select">{t("analysis.venueSelectLabel")}</label>
+      <select
+        id="vmr-venue-select"
+        className="vmr-venue-select"
+        value={venue ?? ""}
+        onChange={(e) => selectVenue(parseInt(e.target.value, 10))}
+      >
+        {ALL_VENUE_CODES.map((v) => (
+          <option key={v} value={v}>
+            {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function VenueMotorRanking({ initialVenueCode = null }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
@@ -106,54 +410,7 @@ function VenueMotorRanking({ initialVenueCode = null }) {
     scrollRight,
   } = useHorizontalScrollHint([rows.length]);
 
-  const venueName =
-    venue === null
-      ? ""
-      : t(`venues.${venue}`, VENUE_NAMES[venue] || String(venue));
-  const fromPretest = result?.state === "ok" && result.source === "pretest";
-  const pretestDate = result?.state === "ok" ? result.pretestDate : null;
-  const seriesRange = result?.state === "ok" ? result.seriesRange : null;
-  const recentDate = seriesRange
-    ? t("meetPage.period", {
-        start: formatMonthDay(seriesRange.start),
-        end: formatMonthDay(seriesRange.end),
-      })
-    : pretestDate === null
-      ? null
-      : formatSlashDate(pretestDate);
-  const userHeader =
-    pretestDate === null || pretestDate === getTodayJST()
-      ? t("analysis.motorRanking.userHeader")
-      : t("analysis.motorRanking.userHeaderRecent", {
-          date: recentDate,
-        });
-
-  const sortHeader = (key, label) => (
-    <th
-      aria-sort={
-        sortKey === key
-          ? MOTOR_SORT_KEYS[key].ascending
-            ? "ascending"
-            : "descending"
-          : undefined
-      }
-    >
-      <button
-        type="button"
-        className={`vmr-sort-btn${sortKey === key ? " is-active" : ""}`}
-        onClick={() => setSortKey(key)}
-      >
-        {label}
-        <span className="vmr-sort-mark" aria-hidden="true">
-          {
-            (MOTOR_SORT_KEYS[key].ascending ? "▲△" : "▼▽")[
-              sortKey === key ? 0 : 1
-            ]
-          }
-        </span>
-      </button>
-    </th>
-  );
+  const headers = deriveMotorHeaders(result, venue, t);
 
   return (
     <div className="vmr-container">
@@ -162,176 +419,23 @@ function VenueMotorRanking({ initialVenueCode = null }) {
         {t("analysis.motorRanking.description")}
       </p>
 
-      <div className="vmr-controls">
-        <label htmlFor="vmr-venue-select">
-          {t("analysis.venueSelectLabel")}
-        </label>
-        <select
-          id="vmr-venue-select"
-          className="vmr-venue-select"
-          value={venue ?? ""}
-          onChange={(e) => selectVenue(parseInt(e.target.value, 10))}
-        >
-          {ALL_VENUE_CODES.map((v) => (
-            <option key={v} value={v}>
-              {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-            </option>
-          ))}
-        </select>
-      </div>
+      <MotorVenueSelect t={t} venue={venue} selectVenue={selectVenue} />
 
-      {(venue === null || result === null) && (
-        <div className="vmr-state">{t("analysis.loading")}</div>
-      )}
-
-      {result?.state === "error" && (
-        <div className="vmr-state vmr-error" role="alert">
-          {t("analysis.motorRanking.fetchError")}
-        </div>
-      )}
-
-      {result?.state === "ok" && (
-        <>
-          <p className="vmr-source">
-            {fromPretest
-              ? t("analysis.motorRanking.sourcePretest")
-              : t("analysis.motorRanking.sourceVenueSite", {
-                  venue: venueName,
-                  date: formatSlashDate(result.scrapedDate),
-                })}
-          </p>
-
-          {rows.length === 0 ? (
-            <div className="vmr-state">{t("analysis.motorRanking.empty")}</div>
-          ) : (
-            <div
-              className={`vmr-table-wrapper hscroll-hint${hasMore ? " has-more" : ""}`}
-            >
-              {hasMore && (
-                <button
-                  type="button"
-                  className="hscroll-more"
-                  onClick={scrollRight}
-                  aria-hidden="true"
-                  tabIndex={-1}
-                >
-                  ›
-                </button>
-              )}
-              <div
-                className="vmr-table-scroll"
-                ref={scrollRef}
-                onScroll={updateScroll}
-              >
-                <table className="vmr-table">
-                  <thead>
-                    <tr>
-                      <th>{t("analysis.motorRanking.rankHeader")}</th>
-                      {sortHeader(
-                        "motorNumber",
-                        t("analysis.motor.motorNumberShortHeader"),
-                      )}
-                      {sortHeader(
-                        "top2Rate",
-                        fromPretest
-                          ? t("analysis.motorRanking.officialRateHeader")
-                          : t("analysis.motorRanking.rateHeader"),
-                      )}
-                      <th>{t("analysis.motorRanking.finalHeader")}</th>
-                      {/* 会場サイトの値を出さない会場は優勝が全部「-」なので、並べ替えを出さない
-                          （押すと全行の順位が「-」になり、壊れて見える。ファン評価 2周目） */}
-                      {fromPretest ? (
-                        <th>{t("analysis.motorRanking.championshipHeader")}</th>
-                      ) : (
-                        sortHeader(
-                          "championshipCount",
-                          t("analysis.motorRanking.championshipHeader"),
-                        )
-                      )}
-                      {sortHeader(
-                        "pretestTime",
-                        t("analysis.motor.pretestTimeHeader"),
-                      )}
-                      <th className="vmr-user-head">{userHeader}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r) => (
-                      <tr key={r.motorNumber}>
-                        <td className="vmr-rank">{r.rank ?? dash}</td>
-                        <td className="vmr-no">
-                          {r.raceId ? (
-                            <Link
-                              to={localize(
-                                `/winning-technique?tab=motor&venue_code=${venue}&race_id=${r.raceId}&motor=${r.motorNumber}`,
-                              )}
-                            >
-                              {r.motorNumber}
-                            </Link>
-                          ) : (
-                            r.motorNumber
-                          )}
-                        </td>
-                        <td className="vmr-rate">
-                          {r.top2Rate === null ? (
-                            dash
-                          ) : (
-                            <RateBar
-                              value={r.top2Rate}
-                              max={maxRate}
-                              fill={NEUTRAL_FILL}
-                              best={best.has(r.motorNumber)}
-                              label={formatMotorRate(r.top2Rate)}
-                            />
-                          )}
-                          {r.top2Rate !== null && r.raceCount !== null && (
-                            <span className="vmr-race-count">
-                              {t("analysis.motorRanking.raceCount", {
-                                n: r.raceCount,
-                              })}
-                            </span>
-                          )}
-                        </td>
-                        <td>{r.finalCount ?? dash}</td>
-                        <td>{r.championshipCount ?? dash}</td>
-                        <td>
-                          {r.pretestTime === null
-                            ? dash
-                            : r.pretestTime.toFixed(2)}
-                        </td>
-                        <td className="vmr-user">
-                          {r.racerId !== null ? (
-                            <Link
-                              to={localize(`/racer/${r.racerId}`)}
-                              translate="no"
-                            >
-                              {r.racerName ?? r.racerId}
-                            </Link>
-                          ) : (
-                            dash
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          <p className="vmr-note">
-            {t(
-              fromPretest
-                ? "analysis.motorRanking.sortNotePretest"
-                : "analysis.motorRanking.sortNote",
-            )}
-            <br />
-            {t("analysis.motorRanking.linkNote")}
-            <br />
-            {t("analysis.motor.motorRiderMixNote")}
-          </p>
-        </>
-      )}
+      <MotorRankingStates
+        t={t}
+        localize={localize}
+        venue={venue}
+        result={result}
+        {...headers}
+        rows={rows}
+        tableProps={{
+          maxRate,
+          best,
+          scroll: { scrollRef, hasMore, updateScroll, scrollRight },
+          sortKey,
+          setSortKey,
+        }}
+      />
     </div>
   );
 }

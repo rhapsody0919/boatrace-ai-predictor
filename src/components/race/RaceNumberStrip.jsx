@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getSeriesOfDate } from "../../services/scheduleQueries.js";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import {
   meetLinkStartDateOf,
@@ -40,8 +40,7 @@ export default function RaceNumberStrip({
   useEffect(() => {
     if (!needsSeries) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getSeriesOfDate(venueCode, date)
+    getSeriesOfDate(venueCode, date)
       .then((series) => {
         if (cancelled) return;
         setLoaded({ key, series });

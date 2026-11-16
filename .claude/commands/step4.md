@@ -13,7 +13,7 @@ argument-hint: "<機能slug（kebab-case）>"
 
 `docs/design/{slug}/spec.md`・`plan.md`・`screens.md`（あれば）から逸脱しない。
 
-**受け入れE2E（`e2e/acceptance/{slug}.spec.js`、UI機能のみ）は書き換えない**。仕様だけを読んだ別エージェントが書いたもので、実装者が直すと独立性が失われる。テストが仕様の誤読だと判断したら実装を止め、spec.md・screens.md の該当箇所とテストの該当行を添えてユーザーに報告する。ユーザー承認後の修正は可。UI機能なのに受け入れE2Eが無い場合は、`/step3`の完了後アクションが済んでいないので先にそれを行う（`.claude/rules/sdd-workflow.md`）。プロジェクト CLAUDE.md・`.claude/rules/` のルールを厳守する。
+**受け入れE2E（`e2e/acceptance/{slug}.spec.js`、UI機能のみ）は書き換えない**。仕様だけを読んだ別エージェントが書いたもので、実装者が直すと独立性が失われる。テストが仕様の誤読だと判断したら実装を止め、spec.md・screens.md の該当箇所とテストの該当行を添えてユーザーに報告する。ユーザー承認後の修正は可。UI機能なのに受け入れE2Eが無い場合は、`/step3`の完了後アクションが済んでいないので先にそれを行う。`.claude/CLAUDE.md`・`AGENTS.md` の決まりを厳守する。
 
 タスク完了後は、`/implement` と同様に並列エージェントでビルド検証・品質チェックを行ってから `docs/design/{slug}/tasks.md` の該当チェックボックスにチェックを入れる（`.claude/commands/implement.md` の並列検証パターンに揃える）。
 

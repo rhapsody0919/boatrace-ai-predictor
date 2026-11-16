@@ -8,7 +8,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getSeriesOfDate } from "../../services/scheduleQueries.js";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { meetBannerSeriesOf } from "../../utils/meetPageModel";
 import InlineFetchError from "../InlineFetchError";
@@ -27,8 +27,7 @@ export default function VenueMeetBanner({ venueCode, races, today }) {
   useEffect(() => {
     if (!key) return undefined;
     let cancelled = false;
-    supabaseDataService
-      .getSeriesOfDate(venueCode, today)
+    getSeriesOfDate(venueCode, today)
       .then((meet) => {
         const startDate = meet?.start_date ?? null;
         if (cancelled) return;

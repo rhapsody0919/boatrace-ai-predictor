@@ -12,7 +12,7 @@
  */
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getUnifiedVolatilityAccuracy } from "../../services/predictionQueries4.js";
 import { VolatilityAccuracySection } from "../accuracy";
 import "./MotorConditionChart.css";
 import { errorMessageOf } from "../../utils/errorMessage.js";
@@ -25,8 +25,7 @@ function VolatilityAccuracyChart() {
 
   useEffect(() => {
     let cancelled = false;
-    supabaseDataService
-      .getUnifiedVolatilityAccuracy()
+    getUnifiedVolatilityAccuracy()
       .then((data) => {
         if (!cancelled) setStats(data);
       })

@@ -5,7 +5,7 @@ argument-hint: "<記事slug>（例: new-feature-analysis）"
 
 # ブログ記事公開パイプライン
 
-ブログ記事（`public/blog/{slug}.md`）の公開前品質チェックを1コマンドで実行します。`.claude/rules/content-ops.md` の「新機能リリース時のブログ記事ルール」「ブログ記事の公開前品質チェック」の実務手順で、下の2（7観点）は `content-qa` が読む正本です。note/Xチャネルへの展開はsns-hubパイプラインが別途担うため、このコマンドの対象外。各ステップは省略せず全て実行してください。
+ブログ記事（`public/blog/{slug}.md`）の公開前品質チェックを1コマンドで実行します。`docs/operation/content-pr-contract.md`（記事の決まり）の実務手順で、下の2（7観点）は `content-qa` が読む正本です。note/Xチャネルへの展開はsns-hubパイプラインが別途担うため、このコマンドの対象外。各ステップは省略せず全て実行してください。
 
 ## 引数
 - `$ARGUMENTS`: 記事slug（例: `new-feature-analysis`）。`public/blog/{slug}.md` が存在すること
@@ -23,7 +23,7 @@ cat src/data/blog-posts/$ARGUMENTS.json
 
 ### 2. 公開前品質チェック（7項目、パス/フェイルを明示）
 
-`.claude/rules/content-ops.md` の基準に従い、以下を実際に検証する。チェックリストで済ませず、フェイルがあれば必ず修正してから次に進む。
+`docs/operation/content-pr-contract.md` の基準に従い、以下を実際に検証する。チェックリストで済ませず、フェイルがあれば必ず修正してから次に進む。
 
 1. **数値・データ整合性**: 本文中の数値と表・図解の数値が一致するか、期待値計算式等を再計算する。他記事で言及済みの数値（控除率25%等）と矛盾しないか横断確認する
 2. **現行仕様との整合性**: 言及する機能・UI要素・モデル名が現在も実在するか
@@ -36,7 +36,7 @@ cat src/data/blog-posts/$ARGUMENTS.json
    ```bash
    grep -n "競艇" public/blog/$ARGUMENTS.md
    ```
-   ヒットしたら`.claude/rules/code-style.md`に従い「ボートレース」に置換する
+   ヒットしたら`scripts/maintenance/verify-kyotei-wording.js` の頭の注釈に従い「ボートレース」に置換する
 5. **多言語間の一貫性**: `en`/`zh-TW`/`ko`版がある場合、見出し数・主張・数値がja版と一致するか
 6. **構造要件**: 文字数（2,000〜3,500字目安。既存の長文記事の改稿で超える場合は、理由を明示する）・画像1枚以上・FAQセクション有無。**データ・数値を扱う記事は、比較対象が3件以上ある場合や複数の指標を並べる場合、文章だけで羅列せず表や図解で構造化する**
    ```bash

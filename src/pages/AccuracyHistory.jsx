@@ -9,6 +9,230 @@ import Footer from "../components/Footer";
 import "./AccuracyHistory.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
 
+function PageHeader() {
+  return (
+    <div className="page-header">
+      <Link to="/accuracy" className="back-link">
+        ← 成績ページへ戻る
+      </Link>
+      <h1>月別成績アーカイブ</h1>
+    </div>
+  );
+}
+
+function LoadingView() {
+  return (
+    <>
+      <Header />
+      <div className="accuracy-history-page">
+        <PageHeader />
+        <div className="loading">データを読み込み中...</div>
+      </div>
+      <Footer />
+    </>
+  );
+}
+
+function ErrorView() {
+  return (
+    <>
+      <Header />
+      <div className="accuracy-history-page">
+        <PageHeader />
+        <div className="error-message">
+          <p>データの読み込みに失敗しました。</p>
+        </div>
+      </div>
+      <Footer />
+    </>
+  );
+}
+
+// 月別データを収集
+function getMonthlyData(summary) {
+  const monthsMap = {};
+  const models = ["standard", "safeBet", "upsetFocus"];
+
+  // lastMonth データを追加
+  models.forEach((model) => {
+    if (summary.models && summary.models[model]?.lastMonth) {
+      const lastMonth = summary.models[model].lastMonth;
+      if (lastMonth.totalRaces > 0) {
+        const key = `${lastMonth.year}-${String(lastMonth.month).padStart(2, "0")}`;
+        if (!monthsMap[key]) {
+          monthsMap[key] = {
+            key,
+            year: lastMonth.year,
+            month: lastMonth.month,
+            models: {},
+          };
+        }
+        monthsMap[key].models[model] = lastMonth;
+      }
+    }
+  });
+
+  // monthlyHistory データを追加（将来用）
+  models.forEach((model) => {
+    if (summary.models && summary.models[model]?.monthlyHistory) {
+      summary.models[model].monthlyHistory.forEach((monthData) => {
+        if (monthData.totalRaces > 0) {
+          const key = `${monthData.year}-${String(monthData.month).padStart(2, "0")}`;
+          if (!monthsMap[key]) {
+            monthsMap[key] = {
+              key,
+              year: monthData.year,
+              month: monthData.month,
+              models: {},
+            };
+          }
+          monthsMap[key].models[model] = monthData;
+        }
+      });
+    }
+  });
+
+  // 新しい月順にソート
+  return Object.values(monthsMap).sort((a, b) => {
+    if (a.year !== b.year) return b.year - a.year;
+    return b.month - a.month;
+  });
+}
+
+// 月ごとのモデル比較データを生成
+function getModelComparisonForMonth(monthInfo) {
+  const modelIds = ["standard", "safeBet", "upsetFocus"];
+  return modelIds.map((key) => {
+    const name = MODEL_NAMES[key] || key;
+    const data = monthInfo.models[key];
+    if (!data) {
+      return {
+        key,
+        name,
+        races: 0,
+      };
+    }
+    return {
+      key,
+      name,
+      races: data.totalRaces || 0,
+      winHitRate: data.topPickHitRate || 0,
+      winRecoveryRate: data.actualRecovery?.win?.recoveryRate || 0,
+      placeHitRate: data.topPickPlaceRate || 0,
+      placeRecoveryRate: data.actualRecovery?.place?.recoveryRate || 0,
+      trifectaHitRate: data.top3HitRate || 0,
+      trifectaRecoveryRate: data.actualRecovery?.trifecta?.recoveryRate || 0,
+      trioHitRate: data.top3IncludedRate || 0,
+      trioRecoveryRate: data.actualRecovery?.trio?.recoveryRate || 0,
+    };
+  });
+}
+
+function HitRecoveryCells({ model, hitRate, recoveryRate }) {
+  return (
+    <>
+      <td className="mct-hit">
+        {model.races > 0 ? formatPercent(hitRate) : "-"}
+      </td>
+      <td
+        className={`mct-recovery ${
+          model.races > 0 ? getRecoveryColorClass(recoveryRate) : ""
+        }`}
+      >
+        {model.races > 0 ? formatPercent(recoveryRate) : "-"}
+      </td>
+    </>
+  );
+}
+
+function ModelRow({ model }) {
+  return (
+    <tr>
+      <th scope="row" className="mct-model-name">
+        {model.name}
+      </th>
+      <td className="mct-races">{model.races > 0 ? `${model.races}` : "-"}</td>
+      <HitRecoveryCells
+        model={model}
+        hitRate={model.winHitRate}
+        recoveryRate={model.winRecoveryRate}
+      />
+      <HitRecoveryCells
+        model={model}
+        hitRate={model.placeHitRate}
+        recoveryRate={model.placeRecoveryRate}
+      />
+      <HitRecoveryCells
+        model={model}
+        hitRate={model.trifectaHitRate}
+        recoveryRate={model.trifectaRecoveryRate}
+      />
+      <HitRecoveryCells
+        model={model}
+        hitRate={model.trioHitRate}
+        recoveryRate={model.trioRecoveryRate}
+      />
+    </tr>
+  );
+}
+
+function ComparisonTableHead() {
+  return (
+    <thead>
+      <tr>
+        <th scope="col">モデル</th>
+        <th scope="col">レース数</th>
+        <th scope="colgroup" colSpan="2">
+          単勝
+        </th>
+        <th scope="colgroup" colSpan="2">
+          複勝
+        </th>
+        <th scope="colgroup" colSpan="2">
+          3連複
+        </th>
+        <th scope="colgroup" colSpan="2">
+          3連単
+        </th>
+      </tr>
+      <tr className="mct-sub-header">
+        <th scope="col"></th>
+        <th scope="col"></th>
+        <th scope="col">的中</th>
+        <th scope="col">回収</th>
+        <th scope="col">的中</th>
+        <th scope="col">回収</th>
+        <th scope="col">的中</th>
+        <th scope="col">回収</th>
+        <th scope="col">的中</th>
+        <th scope="col">回収</th>
+      </tr>
+    </thead>
+  );
+}
+
+function MonthComparisonSection({ monthInfo, modelComparison }) {
+  return (
+    <div className="model-comparison-section">
+      <h3 className="mct-title">
+        📊 {monthInfo.year}年{monthInfo.month}月
+        モデル間パフォーマンス比較
+      </h3>
+      <div className="mct-scroll-container">
+        <table className="mct-table" aria-label="モデル別パフォーマンス比較">
+          <ComparisonTableHead />
+          <tbody>
+            {modelComparison.map((model) => (
+              <ModelRow key={model.key} model={model} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+
 function AccuracyHistory() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,124 +257,14 @@ function AccuracyHistory() {
   }, []);
 
   if (loading) {
-    return (
-      <>
-        <Header />
-        <div className="accuracy-history-page">
-          <div className="page-header">
-            <Link to="/accuracy" className="back-link">
-              ← 成績ページへ戻る
-            </Link>
-            <h1>月別成績アーカイブ</h1>
-          </div>
-          <div className="loading">データを読み込み中...</div>
-        </div>
-        <Footer />
-      </>
-    );
+    return <LoadingView />;
   }
 
   if (error || !summary) {
-    return (
-      <>
-        <Header />
-        <div className="accuracy-history-page">
-          <div className="page-header">
-            <Link to="/accuracy" className="back-link">
-              ← 成績ページへ戻る
-            </Link>
-            <h1>月別成績アーカイブ</h1>
-          </div>
-          <div className="error-message">
-            <p>データの読み込みに失敗しました。</p>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
+    return <ErrorView />;
   }
 
-  // 月別データを収集
-  const getMonthlyData = () => {
-    const monthsMap = {};
-    const models = ["standard", "safeBet", "upsetFocus"];
-
-    // lastMonth データを追加
-    models.forEach((model) => {
-      if (summary.models && summary.models[model]?.lastMonth) {
-        const lastMonth = summary.models[model].lastMonth;
-        if (lastMonth.totalRaces > 0) {
-          const key = `${lastMonth.year}-${String(lastMonth.month).padStart(2, "0")}`;
-          if (!monthsMap[key]) {
-            monthsMap[key] = {
-              key,
-              year: lastMonth.year,
-              month: lastMonth.month,
-              models: {},
-            };
-          }
-          monthsMap[key].models[model] = lastMonth;
-        }
-      }
-    });
-
-    // monthlyHistory データを追加（将来用）
-    models.forEach((model) => {
-      if (summary.models && summary.models[model]?.monthlyHistory) {
-        summary.models[model].monthlyHistory.forEach((monthData) => {
-          if (monthData.totalRaces > 0) {
-            const key = `${monthData.year}-${String(monthData.month).padStart(2, "0")}`;
-            if (!monthsMap[key]) {
-              monthsMap[key] = {
-                key,
-                year: monthData.year,
-                month: monthData.month,
-                models: {},
-              };
-            }
-            monthsMap[key].models[model] = monthData;
-          }
-        });
-      }
-    });
-
-    // 新しい月順にソート
-    return Object.values(monthsMap).sort((a, b) => {
-      if (a.year !== b.year) return b.year - a.year;
-      return b.month - a.month;
-    });
-  };
-
-  const monthlyData = getMonthlyData();
-
-  // 月ごとのモデル比較データを生成
-  const getModelComparisonForMonth = (monthInfo) => {
-    const modelIds = ["standard", "safeBet", "upsetFocus"];
-    return modelIds.map((key) => {
-      const name = MODEL_NAMES[key] || key;
-      const data = monthInfo.models[key];
-      if (!data) {
-        return {
-          key,
-          name,
-          races: 0,
-        };
-      }
-      return {
-        key,
-        name,
-        races: data.totalRaces || 0,
-        winHitRate: data.topPickHitRate || 0,
-        winRecoveryRate: data.actualRecovery?.win?.recoveryRate || 0,
-        placeHitRate: data.topPickPlaceRate || 0,
-        placeRecoveryRate: data.actualRecovery?.place?.recoveryRate || 0,
-        trifectaHitRate: data.top3HitRate || 0,
-        trifectaRecoveryRate: data.actualRecovery?.trifecta?.recoveryRate || 0,
-        trioHitRate: data.top3IncludedRate || 0,
-        trioRecoveryRate: data.actualRecovery?.trio?.recoveryRate || 0,
-      };
-    });
-  };
+  const monthlyData = getMonthlyData(summary);
 
   return (
     <>
@@ -162,12 +276,7 @@ function AccuracyHistory() {
       <link rel="canonical" href="https://www.boat-ai.jp/accuracy/history" />
       <Header />
       <div className="accuracy-history-page">
-        <div className="page-header">
-          <Link to="/accuracy" className="back-link">
-            ← 成績ページへ戻る
-          </Link>
-          <h1>月別成績アーカイブ</h1>
-        </div>
+        <PageHeader />
         <p className="archive-note">
           以下はスタンダード・本命狙い・穴狙いの3モデル（2026年8月運用終了）の実績アーカイブです。
           現在提供中の新AI予想モデルの実績は「成績」ページをご確認ください。
@@ -179,122 +288,13 @@ function AccuracyHistory() {
             <p>月が終わるとここに成績が記録されます。</p>
           </div>
         ) : (
-          monthlyData.map((monthInfo) => {
-            const modelComparison = getModelComparisonForMonth(monthInfo);
-            return (
-              <div key={monthInfo.key} className="model-comparison-section">
-                <h3 className="mct-title">
-                  📊 {monthInfo.year}年{monthInfo.month}月
-                  モデル間パフォーマンス比較
-                </h3>
-                <div className="mct-scroll-container">
-                  <table
-                    className="mct-table"
-                    aria-label="モデル別パフォーマンス比較"
-                  >
-                    <thead>
-                      <tr>
-                        <th scope="col">モデル</th>
-                        <th scope="col">レース数</th>
-                        <th scope="colgroup" colSpan="2">
-                          単勝
-                        </th>
-                        <th scope="colgroup" colSpan="2">
-                          複勝
-                        </th>
-                        <th scope="colgroup" colSpan="2">
-                          3連複
-                        </th>
-                        <th scope="colgroup" colSpan="2">
-                          3連単
-                        </th>
-                      </tr>
-                      <tr className="mct-sub-header">
-                        <th scope="col"></th>
-                        <th scope="col"></th>
-                        <th scope="col">的中</th>
-                        <th scope="col">回収</th>
-                        <th scope="col">的中</th>
-                        <th scope="col">回収</th>
-                        <th scope="col">的中</th>
-                        <th scope="col">回収</th>
-                        <th scope="col">的中</th>
-                        <th scope="col">回収</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {modelComparison.map((model) => (
-                        <tr key={model.key}>
-                          <th scope="row" className="mct-model-name">
-                            {model.name}
-                          </th>
-                          <td className="mct-races">
-                            {model.races > 0 ? `${model.races}` : "-"}
-                          </td>
-                          <td className="mct-hit">
-                            {model.races > 0
-                              ? formatPercent(model.winHitRate)
-                              : "-"}
-                          </td>
-                          <td
-                            className={`mct-recovery ${
-                              model.races > 0 ? getRecoveryColorClass(model.winRecoveryRate) : ""
-                            }`}
-                          >
-                            {model.races > 0
-                              ? formatPercent(model.winRecoveryRate)
-                              : "-"}
-                          </td>
-                          <td className="mct-hit">
-                            {model.races > 0
-                              ? formatPercent(model.placeHitRate)
-                              : "-"}
-                          </td>
-                          <td
-                            className={`mct-recovery ${
-                              model.races > 0 ? getRecoveryColorClass(model.placeRecoveryRate) : ""
-                            }`}
-                          >
-                            {model.races > 0
-                              ? formatPercent(model.placeRecoveryRate)
-                              : "-"}
-                          </td>
-                          <td className="mct-hit">
-                            {model.races > 0
-                              ? formatPercent(model.trifectaHitRate)
-                              : "-"}
-                          </td>
-                          <td
-                            className={`mct-recovery ${
-                              model.races > 0 ? getRecoveryColorClass(model.trifectaRecoveryRate) : ""
-                            }`}
-                          >
-                            {model.races > 0
-                              ? formatPercent(model.trifectaRecoveryRate)
-                              : "-"}
-                          </td>
-                          <td className="mct-hit">
-                            {model.races > 0
-                              ? formatPercent(model.trioHitRate)
-                              : "-"}
-                          </td>
-                          <td
-                            className={`mct-recovery ${
-                              model.races > 0 ? getRecoveryColorClass(model.trioRecoveryRate) : ""
-                            }`}
-                          >
-                            {model.races > 0
-                              ? formatPercent(model.trioRecoveryRate)
-                              : "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            );
-          })
+          monthlyData.map((monthInfo) => (
+            <MonthComparisonSection
+              key={monthInfo.key}
+              monthInfo={monthInfo}
+              modelComparison={getModelComparisonForMonth(monthInfo)}
+            />
+          ))
         )}
       </div>
       <Footer />

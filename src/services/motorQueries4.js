@@ -127,6 +127,126 @@ export async function getVenueMotorRanks(venueCode, asOfDate = null) {
     };
   }
 
+const toNumber = (v) => (v === null || v === undefined ? null : Number(v));
+
+// 会場サイトの値（スナップショット）と、会場の最新の前検日を並列で引く
+function fetchSnapshotAndLatestPretest(venue, hidden) {
+  return Promise.all([
+    hidden
+      ? Promise.resolve({ state: "empty" })
+      : getVenueMotorSnapshot(venue, null),
+    supabase
+      .from("motor_pretest_stats")
+      .select("race_date")
+      .eq("venue_code", venue)
+      .order("race_date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+}
+
+// 前検日の前検データと、節を含む出走表を並列で引く
+function fetchPretestAndEntries(venue, pretestDate) {
+  // 出走表は、節（最長7日）を含む前検日の8日前から今日まで。会場で絞る（race_id は
+  // YYYY-MM-DD-VV-RR）。1日最大72行なので、9日分でも1000行の上限に届かない
+  const venuePart = String(venue).padStart(2, "0");
+  return Promise.all([
+    supabase
+      .from("motor_pretest_stats")
+      .select("racer_id, motor_number, motor_2rate, pretest_time")
+      .eq("venue_code", venue)
+      .eq("race_date", pretestDate),
+    supabase
+      .from("race_entries")
+      .select("race_id, racer_id, motor_number, motor_2rate, player_name")
+      .like("race_id", `____-__-__-${venuePart}-%`)
+      .gte("race_id", addDaysToDateString(pretestDate, -8))
+      .lte("race_id", `${getTodayJST()}-99`),
+  ]);
+}
+
+// 出走表に名前が無い選手の名前（racer_id → name）。該当が無ければ空の Map
+async function fetchNamesWithoutEntry(pretestRows, riders) {
+  // 出走表に名前が無い選手（まだ走っていない）だけ racer_profiles から引く
+  const withoutName = [...new Set(pretestRows.map((r) => r.racer_id))].filter(
+    (id) => ![...riders.values()].some((e) => e.racer_id === id),
+  );
+  if (withoutName.length === 0) return new Map();
+  const { data: profiles } = await supabase
+    .from("racer_profiles")
+    .select("racer_id, name")
+    .in("racer_id", withoutName);
+  return new Map((profiles ?? []).map((p) => [p.racer_id, p.name]));
+}
+
+// 前検日があるときの、前検の行・節の使用者・節の範囲・名前の引き当て
+async function fetchSeriesData(venue, pretestDate) {
+  const [pretest, entries] = await fetchPretestAndEntries(venue, pretestDate);
+  const pretestRows = pretest.data ?? [];
+  const riders = currentSeriesRiders(entries.data ?? [], pretestDate);
+  const seriesRange = currentSeriesRange(entries.data ?? [], pretestDate);
+  const nameByRacer = await fetchNamesWithoutEntry(pretestRows, riders);
+  return { pretestRows, riders, seriesRange, nameByRacer };
+}
+
+// 使用者は、今の節の出走表で直近に乗った選手（節の途中の入れ替えを反映する）。
+// まだ走っていなければ前検データの選手。前検タイムはモーターの前検の値
+function makeUserOf(pretestByMotor, riders, nameByRacer) {
+  return (motorNumber) => {
+    const p = pretestByMotor.get(motorNumber);
+    const e = riders.get(motorNumber);
+    const racerId = e?.racer_id ?? p?.racer_id ?? null;
+    const name = e?.player_name ?? nameByRacer.get(racerId) ?? null;
+    return {
+      pretestTime: toNumber(p?.pretest_time),
+      racerId,
+      racerName: name?.replace(/\s+/g, "") ?? null,
+      raceId: e?.race_id ?? null,
+    };
+  };
+}
+
+// 会場サイトの値があるとき（source: "venueSite"）の一覧
+function buildVenueSiteList(snapshot, usedMotors, userOf) {
+  // スナップショットに無いモーター（丸亀は入れ替え後の一部が欠ける）も、今節使われて
+  // いれば一覧に出す（2連率は「-」）
+  const motorNumbers = new Set([
+    ...snapshot.rows.map((r) => r.motor_number),
+    ...usedMotors,
+  ]);
+  const statsByMotor = new Map(snapshot.rows.map((r) => [r.motor_number, r]));
+  return [...motorNumbers].map((motorNumber) => {
+    const s = statsByMotor.get(motorNumber);
+    return {
+      motorNumber,
+      // 出走数 0（入れ替え直後で集計前）の 0% は値として扱わない。順位・最良にも入れない
+      // （6基の会場内順位・ドリルダウンと同じ扱い。BOA-428）
+      top2Rate: s?.race_count === 0 ? null : toNumber(s?.top2_rate),
+      finalCount: toNumber(s?.final_count),
+      championshipCount: toNumber(s?.championship_count),
+      // 会場サイトの出走数。入れ替え直後の数走の値が上位に並ぶので、2連率に添える
+      // （ファン評価 2026-10-06 P1、ユーザー決定: 新しい列は足さない）
+      raceCount: toNumber(s?.race_count),
+      ...userOf(motorNumber),
+    };
+  });
+}
+
+// 会場サイトの値を出さない会場の一覧（source: "pretest"）
+function buildPretestList(usedMotors, pretestByMotor, riders, userOf) {
+  return usedMotors.map((motorNumber) => ({
+    motorNumber,
+    top2Rate: toNumber(
+      pretestByMotor.get(motorNumber)?.motor_2rate ??
+        riders.get(motorNumber)?.motor_2rate,
+    ),
+    finalCount: null,
+    championshipCount: null,
+    raceCount: null,
+    ...userOf(motorNumber),
+  }));
+}
+
 /**
  * 会場の全モーターの一覧（分析ツール「モーターランキング」、BOA-428 子3）。
  *
@@ -153,120 +273,41 @@ export function getVenueMotorList(venueCode) {
       }
       const hidden = VENUE_SITE_STATS_HIDDEN.includes(venue);
       try {
-        const [snapshot, latestPretest] = await Promise.all([
-          hidden
-            ? Promise.resolve({ state: "empty" })
-            : getVenueMotorSnapshot(venue, null),
-          supabase
-            .from("motor_pretest_stats")
-            .select("race_date")
-            .eq("venue_code", venue)
-            .order("race_date", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ]);
+        const [snapshot, latestPretest] = await fetchSnapshotAndLatestPretest(
+          venue,
+          hidden,
+        );
         if (snapshot.state === "error") return failed;
         const pretestDate = latestPretest.data?.race_date ?? null;
 
-        let pretestRows = [];
-        let riders = new Map();
-        let seriesRange = null;
-        let nameByRacer = new Map();
+        let series = {
+          pretestRows: [],
+          riders: new Map(),
+          seriesRange: null,
+          nameByRacer: new Map(),
+        };
         if (pretestDate !== null) {
-          // 出走表は、節（最長7日）を含む前検日の8日前から今日まで。会場で絞る（race_id は
-          // YYYY-MM-DD-VV-RR）。1日最大72行なので、9日分でも1000行の上限に届かない
-          const venuePart = String(venue).padStart(2, "0");
-          const [pretest, entries] = await Promise.all([
-            supabase
-              .from("motor_pretest_stats")
-              .select("racer_id, motor_number, motor_2rate, pretest_time")
-              .eq("venue_code", venue)
-              .eq("race_date", pretestDate),
-            supabase
-              .from("race_entries")
-              .select(
-                "race_id, racer_id, motor_number, motor_2rate, player_name",
-              )
-              .like("race_id", `____-__-__-${venuePart}-%`)
-              .gte("race_id", addDaysToDateString(pretestDate, -8))
-              .lte("race_id", `${getTodayJST()}-99`),
-          ]);
-          pretestRows = pretest.data ?? [];
-          riders = currentSeriesRiders(entries.data ?? [], pretestDate);
-          seriesRange = currentSeriesRange(entries.data ?? [], pretestDate);
-          // 出走表に名前が無い選手（まだ走っていない）だけ racer_profiles から引く
-          const withoutName = [
-            ...new Set(pretestRows.map((r) => r.racer_id)),
-          ].filter(
-            (id) => ![...riders.values()].some((e) => e.racer_id === id),
-          );
-          if (withoutName.length > 0) {
-            const { data: profiles } = await supabase
-              .from("racer_profiles")
-              .select("racer_id, name")
-              .in("racer_id", withoutName);
-            nameByRacer = new Map(
-              (profiles ?? []).map((p) => [p.racer_id, p.name]),
-            );
-          }
+          series = await fetchSeriesData(venue, pretestDate);
         }
+        const { pretestRows, riders, seriesRange, nameByRacer } = series;
 
         const pretestByMotor = new Map(
           pretestRows.map((r) => [r.motor_number, r]),
         );
-        const toNumber = (v) =>
-          v === null || v === undefined ? null : Number(v);
-        // 使用者は、今の節の出走表で直近に乗った選手（節の途中の入れ替えを反映する）。
-        // まだ走っていなければ前検データの選手。前検タイムはモーターの前検の値
-        const userOf = (motorNumber) => {
-          const p = pretestByMotor.get(motorNumber);
-          const e = riders.get(motorNumber);
-          const racerId = e?.racer_id ?? p?.racer_id ?? null;
-          const name = e?.player_name ?? nameByRacer.get(racerId) ?? null;
-          return {
-            pretestTime: toNumber(p?.pretest_time),
-            racerId,
-            racerName: name?.replace(/\s+/g, "") ?? null,
-            raceId: e?.race_id ?? null,
-          };
-        };
+        const userOf = makeUserOf(pretestByMotor, riders, nameByRacer);
         // 今の節で使われたモーター（前検データ ∪ その節の出走表）
         const usedMotors = [
           ...new Set([...pretestByMotor.keys(), ...riders.keys()]),
         ];
 
         if (snapshot.state === "ok") {
-          // スナップショットに無いモーター（丸亀は入れ替え後の一部が欠ける）も、今節使われて
-          // いれば一覧に出す（2連率は「-」）
-          const motorNumbers = new Set([
-            ...snapshot.rows.map((r) => r.motor_number),
-            ...usedMotors,
-          ]);
-          const statsByMotor = new Map(
-            snapshot.rows.map((r) => [r.motor_number, r]),
-          );
-          const rows = [...motorNumbers].map((motorNumber) => {
-            const s = statsByMotor.get(motorNumber);
-            return {
-              motorNumber,
-              // 出走数 0（入れ替え直後で集計前）の 0% は値として扱わない。順位・最良にも入れない
-              // （6基の会場内順位・ドリルダウンと同じ扱い。BOA-428）
-              top2Rate: s?.race_count === 0 ? null : toNumber(s?.top2_rate),
-              finalCount: toNumber(s?.final_count),
-              championshipCount: toNumber(s?.championship_count),
-              // 会場サイトの出走数。入れ替え直後の数走の値が上位に並ぶので、2連率に添える
-              // （ファン評価 2026-10-06 P1、ユーザー決定: 新しい列は足さない）
-              raceCount: toNumber(s?.race_count),
-              ...userOf(motorNumber),
-            };
-          });
           return {
             state: "ok",
             source: "venueSite",
             scrapedDate: snapshot.scrapedDate,
             pretestDate,
             seriesRange,
-            rows,
+            rows: buildVenueSiteList(snapshot, usedMotors, userOf),
           };
         }
 
@@ -278,17 +319,7 @@ export function getVenueMotorList(venueCode) {
           scrapedDate: null,
           pretestDate,
           seriesRange,
-          rows: usedMotors.map((motorNumber) => ({
-            motorNumber,
-            top2Rate: toNumber(
-              pretestByMotor.get(motorNumber)?.motor_2rate ??
-                riders.get(motorNumber)?.motor_2rate,
-            ),
-            finalCount: null,
-            championshipCount: null,
-            raceCount: null,
-            ...userOf(motorNumber),
-          })),
+          rows: buildPretestList(usedMotors, pretestByMotor, riders, userOf),
         };
       } catch (err) {
         console.error("会場のモーター一覧の取得エラー(例外):", err.message);

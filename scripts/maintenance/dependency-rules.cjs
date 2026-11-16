@@ -2,7 +2,7 @@
  * 依存の向きの規則（dependency-cruiser の forbidden。相対 import の辺、BOA-1428）。
  * 判定の純関数は lintBaselines.js。ここは規則の宣言だけ。
  */
-// npx で固定の版を取る（madge・jscpd と同じ。lint-changed.js）。版の確認は PR 本文に書く
+// 固定の版（package.json の devDependencies と同じ。lintDepTree.js が node_modules の bin を直に起こし版を照らす、CI03・BOA-1492）
 const DEPENDENCY_CRUISER = "dependency-cruiser@16.10.4";
 
 const UI_DIRS = "components|pages|hooks";
@@ -40,6 +40,14 @@ const forbidden = [
     to: { path: "^(scripts|api)/", pathNot: "^scripts/lib/pure/" },
   },
   {
+    // 画面は DB クライアントを直に読まない（データ層 src/services/<領域>Queries*.js 経由。DM00、設計図 §10）。
+    // supabaseClient.js と、同等の @supabase/supabase-js の直 import の両方
+    name: "ui-no-supabase-client",
+    severity: "error",
+    from: { path: `^src/(${UI_DIRS})/` },
+    to: { path: "^src/services/supabaseClient\\.js$|(^|/)node_modules/@supabase/" },
+  },
+  {
     name: "api-no-ui-data",
     severity: "error",
     from: { path: "^(api/|middleware\\.js$)" },
@@ -63,13 +71,6 @@ const forbidden = [
         "^src/services/(prediction|meet)Queries[0-9]*\\.js$",
       ],
     },
-  },
-  {
-    // 殻だけになったら lintBaselines.js の facadeShouldBeError で error に切り替える
-    name: "facade-frozen",
-    severity: "warn",
-    from: { pathNot: "^src/services/supabaseDataService\\.js$" },
-    to: { path: "^src/services/supabaseDataService\\.js$" },
   },
   {
     name: "no-circular",

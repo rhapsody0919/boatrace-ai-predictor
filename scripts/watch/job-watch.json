@@ -31,6 +31,7 @@
     ".github/workflows/content-ops-nightly-check.yml",
     ".github/workflows/db-apply.yml",
     ".github/workflows/e2e-live.yml",
+    ".github/workflows/e2e-release.yml",
     ".github/workflows/e2e-nightly.yml",
     ".github/workflows/e2e-rerecord.yml",
     ".github/workflows/exhibition-gap-monitor.yml",

@@ -12,7 +12,7 @@ model: opus
 - `docs/knowledge/db-operations.md`（ADR と番号・本番 DB の運用・Supabase の読み方）
 - 公式データの列を扱うときは `docs/knowledge/data-definitions.md`
 
-あわせて関係する ADR（`docs/adr/`）・ルール（`.claude/rules/frontend-data-fetch.md`・`.claude/rules/data-acquisition.md`・`.claude/rules/sdd-workflow.md`）・マイグレーション（`docs/db-migration/`）を読む
+あわせて関係する ADR（`docs/adr/`）・`AGENTS.md` の「構造と依存の向き」「落とし穴」・マイグレーション（`docs/db-migration/`）を読む
 
 ## 答えること / 答えないこと
 - 答える: 設計が ADR と矛盾しないか（矛盾するなら ADR の追加・追記が要るか）、本番 DB の変更の手順と事前・事後の確認、壊れ方（キーの欠落・NULL 上書き・制約・上限1000行）と防ぎ方

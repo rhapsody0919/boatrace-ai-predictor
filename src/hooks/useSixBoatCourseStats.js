@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabaseDataService } from "../services/supabaseDataService.js";
+import { getRacerAllPeriodStats } from "../services/racerQueries.js";
+import { getCourseWinRateBaseline } from "../services/venueQueries.js";
 import { buildSixBoatCourseRows } from "../components/race/sixBoatCourseStats.js";
 
 /** 公式の期別成績と平均を共有キャッシュ経由で読み、想定コースの6行を返す。 */
@@ -24,10 +25,10 @@ export function useSixBoatCourseStats({ raceDate, venueCode, players }) {
             racerIds.map((id) =>
               id == null
                 ? Promise.resolve([])
-                : supabaseDataService.getRacerAllPeriodStats(id),
+                : getRacerAllPeriodStats(id),
             ),
           ),
-          supabaseDataService.getCourseWinRateBaseline(raceDate, venueCode),
+          getCourseWinRateBaseline(raceDate, venueCode),
         ]);
         if (!cancelled) {
           setResult({

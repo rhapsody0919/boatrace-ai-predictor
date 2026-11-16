@@ -290,7 +290,8 @@ const racer = read("src/services/racerService.js");
 check(
   "選手ページ: 直近出走が入れ替え前なら機力指数・公式成績を出さない",
   racer.includes("date < generationStart") &&
-    /preGeneration\s*\?\s*null\s*:\s*supabaseDataService\.getMotorPowerIndex/.test(
+    // 領域の Queries の名前つき import（殻 supabaseDataService は RA40 で消えた）
+    /preGeneration\s*\?\s*null\s*:\s*getMotorPowerIndex\(/.test(
       racer,
     ),
 );
@@ -464,7 +465,8 @@ check(
 );
 check(
   "画面: 使用開始日の取得に失敗しても一覧表は出す（try/catch で null に倒す）",
-  /let venueGenerationStart = null;\s*try \{\s*venueGenerationStart =\s*await supabaseDataService\.getMotorGenerationStart/.test(
+  // 領域の Queries の名前つき import（殻 supabaseDataService は RA40 で消えた）
+  /let venueGenerationStart = null;\s*try \{\s*venueGenerationStart =\s*await getMotorGenerationStart\(/.test(
     chart,
   ),
 );

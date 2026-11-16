@@ -398,7 +398,7 @@ if (failures.length > 0) {
   for (const f of failures) console.error(`  - ${f}`);
   console.error("");
   console.error(
-    "  新しい文言は4言語すべてに同じキーで追加してください（.claude/rules/i18n-new-pages.md）。",
+    "  新しい文言は4言語すべてに同じキーで追加してください（AGENTS.md「落とし穴」の i18n）。",
   );
   console.error(
     "  単位や語尾は文言側に書き込まず、値がNULLのときに `—%` のような表示にならないようにしてください。",

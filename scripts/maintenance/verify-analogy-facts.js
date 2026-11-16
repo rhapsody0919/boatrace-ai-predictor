@@ -3,7 +3,7 @@
  *
  * 1. 優勝戦・準優勝戦の判定 v2（tasks T1-1）: 固定の82件（scripts/ml/analogy/testdata/stage-rule-v2-cases.json）で、
  *    src/constants/raceStageConfig.js の getRaceStageCategory が expected_category と一致すること。
- *    バッジ（getRaceStageKey）と今節の得点の除外（seriesPoints.js の classifyStage）が同じ判定に従うこと。
+ *    バッジ（getRaceStageKey）と今節の得点の除外（src/pure/seriesPoints.js の classifyStage）が同じ判定に従うこと。
  *    Python 側（features.py の round_from_stage）は scripts/ml/analogy/tests/test_features.py が同じ82件で検査する
  * 2. 展示後の類似レースの並べ直し（tasks T4-1）: src/utils/analogySimilarRerank.js が、Python（v16_similar）の展示後の
  *    表し方での厳密な並び（scripts/ml/analogy/testdata/v16-rerank.json、例のレース）と、順位が完全に一致し、
@@ -25,7 +25,7 @@ import {
   getRaceStageCategory,
   getRaceStageKey,
 } from "../../src/constants/raceStageConfig.js";
-import { classifyStage } from "../../src/components/race/seriesPoints.js";
+import { classifyStage } from "../../src/pure/seriesPoints.js";
 import {
   EXHIBITION_ITEMS,
   exhibitionBoats,

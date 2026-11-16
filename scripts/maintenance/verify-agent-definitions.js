@@ -272,8 +272,7 @@ for (const dir of SCAN_DIRS) {
 
 // ---- 5. 定義ファイルが指すリポジトリ内パスが実在するか ----
 // 複数の定義が「手順の正本は別ファイルにある」と書いて外出ししている
-// （design-reviewer → .claude/rules/sdd-workflow.md、
-//   content-qa → .claude/commands/publish-blog.md）。その正本が
+// （content-qa → .claude/commands/publish-blog.md）。その正本が
 // リネーム・移動されると、エージェントは読むべきものを読めないまま
 // レビューを始めるが、名前の検査だけでは検知できない。
 const allowedMissing = new Set(

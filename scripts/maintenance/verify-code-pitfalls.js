@@ -2,7 +2,7 @@
  * verify-code-pitfalls.js - 文で書かれていただけの落とし穴のうち、CSS の値で機械に見られる物を試験にする（ZB03 ①、BOA-1454）。
  * ファイルを読むだけで、ネットワークにも DB にも接続しない。読むのは src/ の *.css だけ（JS・JSX の本文は読まない）。
  *
- * 決まり（正本 .claude/rules/component-reuse.md「CSS」、ADR-0073 追記。BOA-460・527・528 で3回再発）:
+ * 決まり（正本はこの verify、ADR-0073 追記。旧 rules の component-reuse.md「CSS」。BOA-460・527・528 で3回再発）:
  *   件数がデータで変わるグリッドに `repeat(auto-fill, ...)` や固定列数 `repeat(N, ...)` を使わない。
  *   件数が少ない日にだけ崩れ、本番のその日の件数しか見ない検査では見つからないため。
  *
@@ -22,7 +22,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const FROZEN = 53;
 const PATTERN = /repeat\(\s*(?:auto-fill|\d+)\s*,/g;
 const HOW_TO_FIX =
-  "件数がデータで変わるグリッドは auto-fit にし、列数の上限は DigestCardGrid.css の calc() 方式にする。件数を差し替える再現テストを e2e/layout/ の *-layout.spec.js に足す（.claude/rules/component-reuse.md「CSS」）";
+  "件数がデータで変わるグリッドは auto-fit にし、列数の上限は DigestCardGrid.css の calc() 方式にする。件数を差し替える再現テストを e2e/layout/ の *-layout.spec.js に足す（AGENTS.md「PR の決まり」）";
 
 const walk = (dir, ext) =>
   fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => {

@@ -42,6 +42,10 @@ export const WORKFLOW_EXCLUSIONS = Object.freeze({
     kind: "no_table",
     reason: "本番データでの E2E（失敗は Slack）。表を書かない",
   },
+  "e2e-release.yml": {
+    kind: "no_table",
+    reason: "配備先（本番の URL）での読むだけの E2E（ZB02、BOA-1497。prod-jobs は /api の合言葉だけ。失敗は Slack）。表を書かない",
+  },
   "e2e-rerecord.yml": {
     kind: "no_table",
     reason:

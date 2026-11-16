@@ -38,6 +38,74 @@ import { getDeadlineDate } from "../../utils/raceDeadlineStatus";
 import InCautionCard from "./InCautionCard";
 import { isInCautionEnabled } from "../../config/featureFlags";
 
+// 過去に発生した割合を見る（BOA-635）。予想の有無と切り離し、PredictionBlocks の早期 return の外の
+// タブの末尾に置く（spec FR-4。BOA-822 のイン崩れ注意度のカード・出現パターンの後）
+function renderPastRate(raceId, raceStartTime, prediction) {
+  return raceId ? (
+    <PastRateLayerGate raceId={raceId}>
+      {(layer) => (
+        <PastRateChecker
+          key={raceId}
+          layer={layer}
+          raceId={raceId}
+          deadline={getDeadlineDate(raceId, raceStartTime)}
+          finished={Boolean(prediction?.result?.finished)}
+        />
+      )}
+    </PastRateLayerGate>
+  ) : null;
+}
+
+// 既存の .race-ai-prediction-tab の2段（BOA-881）に入れない。カードは列いっぱいで中を左右に分け、
+// 出現パターンはその下（承認モック 1-ai-tab-1440.png）
+function renderInCautionTab({
+  prediction,
+  venueCode,
+  venueName,
+  raceId,
+  onOpenSonarSimilar,
+  pastRate,
+}) {
+  return (
+    <div className="in-caution-tab">
+      <InCautionCard
+        inCaution={prediction?.inCaution ?? null}
+        players={prediction?.allPlayers ?? []}
+        result={prediction?.result ?? null}
+        raceId={raceId}
+        onOpenSonar={onOpenSonarSimilar}
+      />
+      {venueCode && venueName && (
+        <OutcomePatternPreview
+          venueCode={venueCode}
+          venueName={venueName}
+          prediction={prediction}
+        />
+      )}
+      {pastRate}
+    </div>
+  );
+}
+
+// 龍神ソナーは独立したタブに移した（2026-10-08）。ここに置いていた頃に見ていた人向けの案内
+function renderSonarLink(onOpenSonar, t) {
+  return (
+    onOpenSonar && (
+      <button
+        type="button"
+        className="ai-tab-sonar-link"
+        onClick={onOpenSonar}
+        data-testid="ai-tab-sonar-link"
+      >
+        <span>{t("aiPredictionTab.sonarLink")}</span>
+        <span className="ai-tab-sonar-link-go" aria-hidden="true">
+          {t("aiPredictionTab.sonarLinkGo")} ›
+        </span>
+      </button>
+    )
+  );
+}
+
 function RaceAiPredictionTab({
   prediction,
   venueCode,
@@ -61,44 +129,17 @@ function RaceAiPredictionTab({
     );
   }
 
-  // 過去に発生した割合を見る（BOA-635）。予想の有無と切り離し、PredictionBlocks の早期 return の外の
-  // タブの末尾に置く（spec FR-4。BOA-822 のイン崩れ注意度のカード・出現パターンの後）
-  const pastRate = raceId ? (
-    <PastRateLayerGate raceId={raceId}>
-      {(layer) => (
-        <PastRateChecker
-          key={raceId}
-          layer={layer}
-          raceId={raceId}
-          deadline={getDeadlineDate(raceId, raceStartTime)}
-          finished={Boolean(prediction?.result?.finished)}
-        />
-      )}
-    </PastRateLayerGate>
-  ) : null;
+  const pastRate = renderPastRate(raceId, raceStartTime, prediction);
 
   if (isInCautionEnabled()) {
-    // 既存の .race-ai-prediction-tab の2段（BOA-881）に入れない。カードは列いっぱいで中を左右に分け、
-    // 出現パターンはその下（承認モック 1-ai-tab-1440.png）
-    return (
-      <div className="in-caution-tab">
-        <InCautionCard
-          inCaution={prediction?.inCaution ?? null}
-          players={prediction?.allPlayers ?? []}
-          result={prediction?.result ?? null}
-          raceId={raceId}
-          onOpenSonar={onOpenSonarSimilar}
-        />
-        {venueCode && venueName && (
-          <OutcomePatternPreview
-            venueCode={venueCode}
-            venueName={venueName}
-            prediction={prediction}
-          />
-        )}
-        {pastRate}
-      </div>
-    );
+    return renderInCautionTab({
+      prediction,
+      venueCode,
+      venueName,
+      raceId,
+      onOpenSonarSimilar,
+      pastRate,
+    });
   }
 
   return (
@@ -109,20 +150,7 @@ function RaceAiPredictionTab({
         venueName={venueName}
         raceId={raceId}
       />
-      {/* 龍神ソナーは独立したタブに移した（2026-10-08）。ここに置いていた頃に見ていた人向けの案内 */}
-      {onOpenSonar && (
-        <button
-          type="button"
-          className="ai-tab-sonar-link"
-          onClick={onOpenSonar}
-          data-testid="ai-tab-sonar-link"
-        >
-          <span>{t("aiPredictionTab.sonarLink")}</span>
-          <span className="ai-tab-sonar-link-go" aria-hidden="true">
-            {t("aiPredictionTab.sonarLinkGo")} ›
-          </span>
-        </button>
-      )}
+      {renderSonarLink(onOpenSonar, t)}
       {pastRate}
     </>
   );
@@ -148,27 +176,68 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
     Array.isArray(turnPatterns) && turnPatterns.length > 0;
 
   if (finished) {
-    // イン崩れ指数は確率的な傾向予測のため二値的中判定は行わない（下記コメント参照）。
-    // 予測レベルと実際の結果を判定なしで併記するのみに留める
-    const volatilityLevel = prediction.volatilityPercentileIsFallback
-      ? null
-      : getVolatilityLevel(prediction.volatilityPercentile);
-    const showVolatilityOutcome =
-      volatilityLevel === "high" || volatilityLevel === "low";
-    // 不成立のレースは1着が決まっていないので、振り返りも「判定対象外」にする（BOA-543）
-    const canJudge = isJudgeable(result);
-    const isUpset = result.rank1 !== 1;
-
-    if (!showVolatilityOutcome && !hasTurnPrediction) {
-      return (
-        <div className="race-tabs-empty">
-          <p>{t("aiPredictionTab.unavailableTitle")}</p>
-        </div>
-      );
-    }
-
     return (
-      <div className="race-ai-prediction-tab">
+      <FinishedBlocks
+        prediction={prediction}
+        result={result}
+        winner={winner}
+        showWinnerCourse={showWinnerCourse}
+        turnPatterns={turnPatterns}
+        hasTurnPrediction={hasTurnPrediction}
+      />
+    );
+  }
+
+  // 未確定レース: 「これから何が起きそうか」を示す未来志向の3ブロック
+  if (!hasTurnPrediction && prediction?.volatilityPercentile == null) {
+    return (
+      <div className="race-tabs-empty">
+        <p>{t("aiPredictionTab.unavailableTitle")}</p>
+        <p className="race-tabs-empty-body">
+          {t("aiPredictionTab.unavailableBody")}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <UpcomingBlocks
+      prediction={prediction}
+      venueCode={venueCode}
+      venueName={venueName}
+      raceId={raceId}
+    />
+  );
+}
+
+// 確定済みレース: 答え合わせ（イン崩れ指数の予測レベルと結果の併記、展開予測の実測）
+function FinishedBlocks({
+  prediction,
+  result,
+  winner,
+  showWinnerCourse,
+  turnPatterns,
+  hasTurnPrediction,
+}) {
+  const { t } = useTranslation();
+  // イン崩れ指数は確率的な傾向予測のため二値的中判定は行わない（下記コメント参照）。
+  // 予測レベルと実際の結果を判定なしで併記するのみに留める
+  const volatilityLevel = prediction.volatilityPercentileIsFallback
+    ? null
+    : getVolatilityLevel(prediction.volatilityPercentile);
+  const showVolatilityOutcome =
+    volatilityLevel === "high" || volatilityLevel === "low";
+
+  if (!showVolatilityOutcome && !hasTurnPrediction) {
+    return (
+      <div className="race-tabs-empty">
+        <p>{t("aiPredictionTab.unavailableTitle")}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="race-ai-prediction-tab">
         {/* イン崩れ指数は「このレースは荒れやすい/堅い」という確率的な傾向予測であり、
             複勝予想・展開予測のような単発レースの二値的中判定にはなじまない
             （1レースが堅く決まっても「高リスク」判定が誤りだったとは言えない）。
@@ -181,52 +250,11 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
             考え方）。単発レースの正誤は判断できない旨の注記と精度分析ページへの導線を追加
             （2026-09-16、BOA-346でRaceResult.jsxから本タブへ移設） */}
         {showVolatilityOutcome && (
-          <div className="result-verify-section">
-            <h5 className="result-verify-title">
-              {t("result.volatilitySectionTitle")}
-            </h5>
-            {/* 指数はレース前と同じ 0〜100 のバーで見せる。以前は「会場内パーセンタイル0」と
-                文字で出していて、専門用語のうえ「0」が確率0%に見えた（BOA-706） */}
-            <p className="result-volatility-line">
-              {t("result.volatilityPredicted", {
-                label: t(
-                  `volatility.level${volatilityLevel === "high" ? "High" : "Low"}`,
-                ),
-              })}
-            </p>
-            <VolatilityPercentileBar
-              percentile={prediction.volatilityPercentile ?? 0}
-            />
-            {/* 何と比べた 0〜100 かを、レース前のカードと同じ一文で書く。無いと「イン崩れ注意（高）」の
-                真下の「99」が「崩れる確率99%」に読めた（PR #1186 ファン評価1・3周目） */}
-            <p className="result-volatility-caveat">
-              {t("volatility.description")}
-            </p>
-            <p className="result-volatility-line">
-              {t("result.volatilityOutcomeLabel")}
-              {": "}
-              {canJudge ? (
-                <>
-                  <strong>
-                    {isUpset
-                      ? t("result.volatilityOutcomeCollapsed")
-                      : t("result.volatilityOutcomeSolid")}
-                  </strong>
-                  {isUpset
-                    ? t("result.volatilityOutcomeDetailUpset", {
-                        winner: result.rank1,
-                      })
-                    : t("result.volatilityOutcomeDetailFavorite")}
-                </>
-              ) : (
-                <strong>{t("result.volatilityOutcomeNotJudgeable")}</strong>
-              )}
-            </p>
-            <p className="result-volatility-caveat">
-              {t("result.volatilityCaveat")}{" "}
-              <Link to="/accuracy">{t("result.volatilityCaveatLink")}</Link>
-            </p>
-          </div>
+          <VolatilityVerifySection
+            prediction={prediction}
+            result={result}
+            volatilityLevel={volatilityLevel}
+          />
         )}
 
         {/* 展開予測: 実測的中率（約80%）は「上位予想のいずれかが的中すれば的中」という
@@ -251,22 +279,68 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
             )}
           </div>
         )}
-      </div>
-    );
-  }
+    </div>
+  );
+}
 
-  // 未確定レース: 「これから何が起きそうか」を示す未来志向の3ブロック
-  if (!hasTurnPrediction && prediction?.volatilityPercentile == null) {
-    return (
-      <div className="race-tabs-empty">
-        <p>{t("aiPredictionTab.unavailableTitle")}</p>
-        <p className="race-tabs-empty-body">
-          {t("aiPredictionTab.unavailableBody")}
-        </p>
-      </div>
-    );
-  }
+// 確定後のイン崩れ指数: 予測レベルと実際の結果を判定なしで併記する節
+function VolatilityVerifySection({ prediction, result, volatilityLevel }) {
+  const { t } = useTranslation();
+  // 不成立のレースは1着が決まっていないので、振り返りも「判定対象外」にする（BOA-543）
+  const canJudge = isJudgeable(result);
+  const isUpset = result.rank1 !== 1;
 
+  return (
+    <div className="result-verify-section">
+      <h5 className="result-verify-title">
+        {t("result.volatilitySectionTitle")}
+      </h5>
+      {/* 指数はレース前と同じ 0〜100 のバーで見せる。以前は「会場内パーセンタイル0」と
+          文字で出していて、専門用語のうえ「0」が確率0%に見えた（BOA-706） */}
+      <p className="result-volatility-line">
+        {t("result.volatilityPredicted", {
+          label: t(
+            `volatility.level${volatilityLevel === "high" ? "High" : "Low"}`,
+          ),
+        })}
+      </p>
+      <VolatilityPercentileBar
+        percentile={prediction.volatilityPercentile ?? 0}
+      />
+      {/* 何と比べた 0〜100 かを、レース前のカードと同じ一文で書く。無いと「イン崩れ注意（高）」の
+          真下の「99」が「崩れる確率99%」に読めた（PR #1186 ファン評価1・3周目） */}
+      <p className="result-volatility-caveat">{t("volatility.description")}</p>
+      <p className="result-volatility-line">
+        {t("result.volatilityOutcomeLabel")}
+        {": "}
+        {canJudge ? (
+          <>
+            <strong>
+              {isUpset
+                ? t("result.volatilityOutcomeCollapsed")
+                : t("result.volatilityOutcomeSolid")}
+            </strong>
+            {isUpset
+              ? t("result.volatilityOutcomeDetailUpset", {
+                  winner: result.rank1,
+                })
+              : t("result.volatilityOutcomeDetailFavorite")}
+          </>
+        ) : (
+          <strong>{t("result.volatilityOutcomeNotJudgeable")}</strong>
+        )}
+      </p>
+      <p className="result-volatility-caveat">
+        {t("result.volatilityCaveat")}{" "}
+        <Link to="/accuracy">{t("result.volatilityCaveatLink")}</Link>
+      </p>
+    </div>
+  );
+}
+
+// 未確定レース: 展開予測カード・イン崩れ指数バッジ・出現パターン
+function UpcomingBlocks({ prediction, venueCode, venueName, raceId }) {
+  const { t } = useTranslation();
   return (
     <AnimatePresence mode="wait">
       <motion.div

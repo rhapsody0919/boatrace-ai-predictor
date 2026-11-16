@@ -14,39 +14,52 @@
  * 失敗があった場合は消費側で InlineFetchError を出し、`reload()` で取り直す。
  */
 import { useState, useEffect, useCallback } from "react";
-import { supabaseDataService } from "../services/supabaseDataService";
+import { getRaceMeetPrevRuns } from "../services/meetQueries.js";
+import { getRaceMotorBreakdown } from "../services/motorQueries3.js";
+import { getRaceMotorMaintenanceBreakdown } from "../services/motorQueries6.js";
+import {
+  getRaceRacerFormBreakdown,
+  getRaceStPredictabilityBreakdown,
+} from "../services/raceQueries.js";
+import {
+  getRaceExhibitionTimeBreakdown,
+  getRaceOfficialAvgSt,
+  getRaceRacerStats,
+} from "../services/raceQueries2.js";
+import {
+  getRaceRacerBoatReturnRate,
+  getRaceResultSummary,
+  getRaceTechniqueProfileBreakdown,
+} from "../services/raceQueries3.js";
 import { getRaceSt30 } from "../services/analogyService";
 
 const SOURCES = {
   // サービス層は { rows, fetchFailed? } を返す（会場公式のモーター成績の取得失敗をキャッシュさせないため、
   // BOA-740）。失敗した行は venue_stats_failed を持つ。画面は行だけを使う
   motor: (raceId, venueCode) =>
-    supabaseDataService
-      .getRaceMotorBreakdown(raceId, venueCode ?? null)
+    getRaceMotorBreakdown(raceId, venueCode ?? null)
       .then((result) => result.rows),
-  racerForm: (raceId) => supabaseDataService.getRaceRacerFormBreakdown(raceId),
+  racerForm: (raceId) => getRaceRacerFormBreakdown(raceId),
   stPredictability: (raceId) =>
-    supabaseDataService.getRaceStPredictabilityBreakdown(raceId),
+    getRaceStPredictabilityBreakdown(raceId),
   exhibitionTime: (raceId) =>
-    supabaseDataService.getRaceExhibitionTimeBreakdown(raceId),
+    getRaceExhibitionTimeBreakdown(raceId),
   // サービス層は { state, rows } を返す（state は展示前の結果をキャッシュさせないための
   // 区別、BOA-497）。画面は行だけを使うので、ここで配列に戻す
   motorMaintenance: (raceId) =>
-    supabaseDataService
-      .getRaceMotorMaintenanceBreakdown(raceId)
+    getRaceMotorMaintenanceBreakdown(raceId)
       .then((result) => result.rows),
   techniqueProfile: (raceId) =>
-    supabaseDataService.getRaceTechniqueProfileBreakdown(raceId),
+    getRaceTechniqueProfileBreakdown(raceId),
   returnRate: (raceId) =>
-    supabaseDataService.getRaceRacerBoatReturnRate(raceId),
-  racerStats: (raceId) => supabaseDataService.getRaceRacerStats(raceId),
+    getRaceRacerBoatReturnRate(raceId),
+  racerStats: (raceId) => getRaceRacerStats(raceId),
   // 平均ST の2行（BOA-815）: 公式の出走表と同じ期の値と、v16 の直近30走
-  officialAvgSt: (raceId) => supabaseDataService.getRaceOfficialAvgSt(raceId),
+  officialAvgSt: (raceId) => getRaceOfficialAvgSt(raceId),
   st30: (raceId) => getRaceSt30(raceId),
   // 今節の前走（BOA-610）。サービス層は { rows } を返す（結果待ちをキャッシュさせないため）
   meetPrevRun: (raceId) =>
-    supabaseDataService
-      .getRaceMeetPrevRuns(raceId)
+    getRaceMeetPrevRuns(raceId)
       .then((result) => result.rows),
 };
 
@@ -126,8 +139,7 @@ export function useRaceAnalysisData(
     });
 
     if (includeResult) {
-      supabaseDataService
-        .getRaceResultSummary(raceId)
+      getRaceResultSummary(raceId)
         .then((value) => applyResult("resultSummary", value))
         .catch(applyError("resultSummary"));
     }

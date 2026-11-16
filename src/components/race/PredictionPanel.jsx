@@ -63,66 +63,50 @@
  * 冒頭コメント参照）。選手名表示のためplayersを渡す
  */
 import { useState } from "react";
-import {
-  Link,
-  useLocation,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useRaceData } from "../../hooks/useRaceData";
-import {
-  RACE_TAB_PARAM,
-  RACE_BOAT_PARAM,
-  RACE_SONAR_PARAM,
-  SONAR_RACE_TAB,
-  parseBoatParam,
-  resolveInitialRaceTab,
-} from "../../utils/raceUrlState";
-import {
-  isAnalogyFinderEnabled,
-  isInCautionEnabled,
-  isThinkingAssistEnabled,
-} from "../../config/featureFlags";
-import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
-import { SocialShareButtons } from "../SocialShareButtons";
-import {
-  generateInCautionShareText,
-  generatePredictionShareText,
-  generateResultShareText,
-  shareUrlFor,
-} from "../../utils/share";
+import { SONAR_RACE_TAB } from "../../utils/raceUrlState";
+import { isInCautionEnabled } from "../../config/featureFlags";
 import { useRaceWinnerCourse } from "../../hooks/useRaceWinnerCourse";
-import { getVenueGuidePath } from "../../utils/venueUtils";
-import { isRaceCancelled } from "../../utils/raceCancellation";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
-import DataRaceTable from "./DataRaceTable";
-import AssistEntryRow from "./assist/AssistEntryRow";
-import VenueTendencyPanel from "./VenueTendencyPanel";
-import EmbeddedAnalysisSection from "./EmbeddedAnalysisSection";
-import RacerFormChart from "../analysis/RacerFormChart";
-import StPredictabilityChart from "../analysis/StPredictabilityChart";
-import ExhibitionTimeTrendChart from "../analysis/ExhibitionTimeTrendChart";
-import RacerTechniqueProfileChart from "../analysis/RacerTechniqueProfileChart";
-import RacerBoatReturnRateChart from "../analysis/RacerBoatReturnRateChart";
-import AttackDefenseAnalysis from "../analysis/AttackDefenseAnalysis";
-import MotorConditionChart from "../analysis/MotorConditionChart";
-import AiCopyBanner from "./AiCopyBanner";
-import AiCopyButton from "./AiCopyButton";
-import Toast, { useToast } from "../Toast";
-import { trackEvent } from "../../utils/analytics";
-import RaceTabs from "./RaceTabs";
-import RaceBasicInfoTab from "./RaceBasicInfoTab";
-import RaceWakuInfoTab from "./RaceWakuInfoTab";
-import RaceMeetTab from "./RaceMeetTab";
-import RaceBeforeInfoTab from "./RaceBeforeInfoTab";
-import { MEET_FORM_ANCHOR } from "./meetFormTrend";
-import RaceAiPredictionTab from "./RaceAiPredictionTab";
-import RaceOddsListTab from "./RaceOddsListTab";
-import RaceResult from "./RaceResult";
 import { getRaceId } from "../../utils/raceId";
 import { AI_COPY_PROMPT_TYPES } from "../../utils/aiCopyPrompts";
-import { RACE_STATUS } from "../../utils/raceStatus";
+import { PredictionErrorView } from "./PredictionPanelBanners";
+import { buildShareTitle } from "./PredictionPanelShareTitle";
+import {
+  buildOfficialUrl,
+  deriveRaceFlags,
+  resolveRaceDate,
+} from "./PredictionPanelDerive";
+import {
+  useRaceUrlState,
+  useSixBoatPeriod,
+  useAiCopyToast,
+  useTabRequests,
+} from "./PredictionPanelState";
+import { buildMainTabs } from "./PredictionPanelTabs";
+import PredictionPanelBody from "./PredictionPanelBody";
+
+// データ出走表・枠番傾向・分析ツール群（レース前の予想材料）を隠すタブ。
+// 結果/直前情報/モータ情報/AI予想の各タブは、それぞれのタブ内で同種の情報を
+// 独立して表示しているため二重表示を避けて隠す（BOA-305〜312フィードバック#7、
+// 2026-09-16のユーザーフィードバックでモータ情報タブも対象に追加。同日、
+// BOA-346でAI予想タブも同じ扱いに追加）。
+// 今節タブも同じ扱い（2026-09-27ユーザー指摘）。6艇の得点率・着順・前検と
+// 選んだ1艇の走りを出しており、下にデータ出走表・枠番傾向が続くと
+// 同じ6艇の数字が二重に並ぶ。
+// 名前付きの一覧にすることで、今後タブが増えても1行の追加で済む
+const PRE_RACE_TOOLS_HIDDEN_TABS = [
+  "result",
+  "beforeInfo",
+  "motor",
+  "waku",
+  "aiPrediction",
+  SONAR_RACE_TAB,
+  "oddsList",
+  "meet",
+];
 
 function PredictionPanel({
   prediction,
@@ -148,103 +132,10 @@ function PredictionPanel({
   const [activeMainTab, setActiveMainTab] = useState(() =>
     prediction?.result?.finished ? "result" : "basic",
   );
-  // 「今どの艇を見ているか」を基本情報・枠別情報・今節・モータ情報の4タブで共有する（BOA-492、モータ情報は BOA-494）。
-  // 各タブが自前で持っていた頃は、基本情報で4号艇を開いてから枠別へ移ると1号艇に
-  // 戻って選び直しが要った。RaceTabsは非アクティブタブをアンマウントするため、
-  // 枠別→今節→枠別と戻っただけでも消えていた。
-  // null は「まだどの艇も選んでいない」。基本情報タブは null なら何も展開せず、
-  // 枠別・今節は null なら従来どおり1号艇にフォールバックする（初回表示は3タブとも
-  // 現状のまま変わらない）。モータ情報は一覧のまま選んだ艇の行を示し、ドリルダウンは
-  // 自動で開かない（BOA-494 案A。一覧が主役）
-  //
-  // 選択は URL の ?boat=（タブは ?tab=）に置く（BOA-493）。選ぶたびに history.replace で
-  // 書き戻すので、アドレスバーのコピーや共有シートで送ったリンクが同じ艇・タブで開く。
-  // レースが変われば選択は無効（次のレースの4号艇は別人）だが、前後のレースへのリンクは
-  // クエリの無い /race/:raceId なので、移動すれば自然に消える
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { pathname, search } = useLocation();
-  const focusedBoat = parseBoatParam(searchParams.get(RACE_BOAT_PARAM));
-  // 値が変わるときだけ書き戻す（同じ値で navigate しない）。push ではなく replace にして、
-  // 戻るボタンが艇・タブの選択を1つずつ巻き戻さないようにする
-  //
-  // 土台は描画時点の searchParams ではなく、その時点の実際の URL（window.location.search）。
-  // react-router の setSearchParams は関数形式でも描画時点の値を渡すため、艇を押した直後
-  // （書き戻しが画面に反映される前）にタブを押すと、古い値を土台にして boat を消していた
-  const setRaceParam = (key, value) => {
-    const next = value == null ? null : String(value);
-    const params = new URLSearchParams(window.location.search);
-    if (params.get(key) === next) return;
-    if (next == null) params.delete(key);
-    else params.set(key, next);
-    setSearchParams(params, { replace: true });
-  };
-  const handleFocusBoat = (boat) => setRaceParam(RACE_BOAT_PARAM, boat);
-  // 龍神ソナーの展開シナリオから、攻める艇の今節の足（直前情報タブのカード）へ（BOA-885）。
-  // 艇・タブ・カードの位置（#meet-form-trend）を1回の書き換えで URL に置き、タブを切り替える。
-  // setSearchParams は # を落とすので navigate で書く。カードは出たときに # を見て下がる
-  const openMeetForm = (boat) => {
-    const params = new URLSearchParams(window.location.search);
-    params.set(RACE_TAB_PARAM, "beforeInfo");
-    params.set(RACE_BOAT_PARAM, String(boat));
-    navigate(
-      { search: `?${params.toString()}`, hash: MEET_FORM_ANCHOR },
-      { replace: true },
-    );
-    setTabRequest((r) => ({ id: "beforeInfo", seq: (r?.seq ?? 0) + 1 }));
-  };
-  // ほかのタブの中からタブを切り替える依頼（AI予想タブの「龍神ソナーのタブへ」）。
-  // RaceTabs は選択を自分で持つので、seq を増やして同じタブへの依頼も届くようにする
-  const [tabRequest, setTabRequest] = useState(null);
-  // イン崩れ注意度のカードから龍神ソナーの類似レースへ（BOA-822）。ソナーの節は ?sonar= を最初の描画で読むが、
-  // URL の更新はタブの切り替えより遅れて届くので、最初に開く副タブは prop で渡す（ファン評価1周目）
-  const [sonarInitialTab, setSonarInitialTab] = useState(null);
-  // 枠別情報タブの6艇の表の期間（直近3期／当地、BOA-1294）。RaceTabs は非アクティブなタブを
-  // アンマウントするので、タブを移っても選んだ期間が残るようここで持つ。URL・保存には置かない
-  // レースが変われば既定（直近3期）に戻す（選んだレースとセットで持つ）
-  const [sixBoatPeriodState, setSixBoatPeriodState] = useState(null);
-  const sixBoatPeriod =
-    sixBoatPeriodState?.raceId === analysisRaceId
-      ? sixBoatPeriodState.period
-      : "recent3";
-  const setSixBoatPeriod = (period) =>
-    setSixBoatPeriodState({ raceId: analysisRaceId, period });
-  const {
-    toast: aiCopyToast,
-    showToast: showAiCopyToast,
-    hide: hideAiCopyToast,
-    hold: holdAiCopyToast,
-    release: releaseAiCopyToast,
-  } = useToast();
-  // AI用にコピーした直後のトーストに、思考アシストへの1行を足す（BOA-832、2026-10-11 ユーザー選択）。
-  // 6秒出し、マウスを重ねている間・フォーカスがある間は消さない。ja・フラグありのとき。
-  // 移っても表示の選択は残さない（上部の切り替えとは違う）。履歴に積むので戻るでレース詳細へ
-  const handleAiCopy = (message, type) => {
-    const raceIdForAssist = analysisRaceId;
-    if (
-      type !== "success" ||
-      !raceIdForAssist ||
-      !isThinkingAssistEnabled() ||
-      i18n.resolvedLanguage !== "ja"
-    ) {
-      showAiCopyToast(message, type);
-      return;
-    }
-    showAiCopyToast(message, type, {
-      duration: 6000,
-      action: {
-        label: t("aiCopy.toastAssist"),
-        onClick: () => {
-          hideAiCopyToast();
-          trackEvent("assist_view_switch", {
-            race_id: raceIdForAssist,
-            assist_view: "assist",
-            assist_entry: "copy_toast",
-          });
-          navigate(`/race/${raceIdForAssist}/assist`);
-        },
-      },
-    });
-  };
+  const urlState = useRaceUrlState();
+  const tabRequests = useTabRequests(navigate);
+  const { sixBoatPeriod, setSixBoatPeriod } = useSixBoatPeriod(analysisRaceId);
+  const aiCopy = useAiCopyToast({ analysisRaceId, t, i18n, navigate });
   // 結果確定後の共有文に使う、1着の艇の進入コース（早期 return より前に呼ぶ。フックの順序の規則）
   const winnerCourse = useRaceWinnerCourse(
     selectedRace?.id,
@@ -257,100 +148,20 @@ function PredictionPanel({
   // 以降のコードでは selectedRace が null でないことを前提とする
   if (!selectedRace) return null;
 
-  // 日付（明示的に渡されるか、raceIdから抽出）
-  const raceDate =
-    date ||
-    (() => {
-      const raceId = selectedRace?.id || "";
-      const parts = raceId.split("-").slice(0, 3);
-      return parts.length === 3 ? parts.join("-") : "";
-    })();
-
-  // 公式サイトリンクURL
-  const officialUrl =
-    venueCode && raceDate
-      ? `https://www.boatrace.jp/owpc/pc/race/racelist?rno=${selectedRace.raceNumber}&jcd=${String(venueCode).padStart(2, "0")}&hd=${raceDate.replace(/-/g, "")}`
-      : null;
-
-  // 結果確定済みレースでは未来志向のAIデータ分析（展開予測/イン崩れ）を表示しない。
-  // 過去レースの検証は「結果」タブ（RaceResult）が担う
-  const isFinished = Boolean(prediction?.result?.finished);
-  // 確定前は基本情報、確定後は結果で開く（URL の ?tab= が無いとき）
-  const defaultMainTab = isFinished ? "result" : "basic";
-  // 締切は過ぎたが結果はまだ反映されていない状態（1時間おきのスクレイピングバッチのラグ）。
-  // AI分析パネル自体は表示を維持しつつ、案内バナーのみ追加する
-  const isAwaitingResult = status === RACE_STATUS.AWAITING_RESULT;
-  // 中止・順延の確定検知（BOA-254）。暫定検知（"tentative"）はまだ誤検出の
-  // 可能性があるため、既存の受付中/結果反映待ち表示のまま変更しない
-  const isCancelled = isRaceCancelled(prediction);
-  // AI用にコピー（BOA-194）はこれから走るレースを外部AIで分析するためのもの。
-  // 結果確定済みと中止確定（BOA-424）では出さない
-  const showAiCopy = !isFinished && !isCancelled;
-
-  // 共有文（BOA-754）。結果確定後は、発走前の予想の文面（推奨の買い目・「的中率が上がって嬉しい」）を
-  // 共有させない。展開予測の候補のどれかが1着なら的中の文面、どれも1着でなければボタンを出さない
+  const raceDate = resolveRaceDate(date, selectedRace);
+  const flags = deriveRaceFlags(prediction, status);
   const inCautionShare = isInCautionEnabled();
-  // BOA-822（機能フラグの側、task 26）: 確定後の共有文は展開予測の的中の文面だけなので、展開予測を外す側では出さない
-  const shareTitle = isFinished
-    ? inCautionShare
-      ? null
-      : generateResultShareText(
-          {
-            venue: venueName || t("panel.unknownVenue"),
-            raceNo: selectedRace?.raceNumber || "?",
-            date: raceDate,
-            patterns: prediction?.turnPrediction?.patterns,
-            result: prediction?.result,
-            winnerEntryCourse: winnerCourse?.course ?? null,
-          },
-          t,
-        )
-    : // BOA-822（機能フラグの側）: 発走前は注意度の文面（AI予想タブに本命・推奨・展開予測が出ないため）
-      inCautionShare
-      ? generateInCautionShareText(
-          {
-            venue: venueName || t("panel.unknownVenue"),
-            raceNo: selectedRace?.raceNumber || "?",
-            date: raceDate,
-            isCancelled,
-            inCaution: prediction?.inCaution ?? null,
-          },
-          t,
-        )
-      : generatePredictionShareText(
-          {
-            venue: venueName || t("panel.unknownVenue"),
-            raceNo: selectedRace?.raceNumber || "?",
-            date: raceDate,
-            isCancelled,
-            prediction: {
-              topPick: prediction.topPick?.number,
-              top3: prediction.top3 || [],
-            },
-          },
-          "unified",
-          t,
-        );
-
-  // データ出走表・枠番傾向・分析ツール群（レース前の予想材料）を表示するか。
-  // 結果/直前情報/モータ情報/AI予想の各タブは、それぞれのタブ内で同種の情報を
-  // 独立して表示しているため二重表示を避けて隠す（BOA-305〜312フィードバック#7、
-  // 2026-09-16のユーザーフィードバックでモータ情報タブも対象に追加。同日、
-  // BOA-346でAI予想タブも同じ扱いに追加）。
-  // activeMainTab未確定時（初回レンダー等）は従来通り表示する。名前付き変数に
-  // 切り出すことで、今後タブが増えても1行の追加で済むようにしている
-  const showPreRaceAnalysisTools =
-    activeMainTab !== "result" &&
-    activeMainTab !== "beforeInfo" &&
-    activeMainTab !== "motor" &&
-    activeMainTab !== "waku" &&
-    activeMainTab !== "aiPrediction" &&
-    activeMainTab !== SONAR_RACE_TAB &&
-    activeMainTab !== "oddsList" &&
-    // 今節タブも同じ扱い（2026-09-27ユーザー指摘）。6艇の得点率・着順・前検と
-    // 選んだ1艇の走りを出しており、下にデータ出走表・枠番傾向が続くと
-    // 同じ6艇の数字が二重に並ぶ
-    activeMainTab !== "meet";
+  const shareTitle = buildShareTitle({
+    isFinished: flags.isFinished,
+    inCautionShare,
+    venueName,
+    selectedRace,
+    raceDate,
+    isCancelled: flags.isCancelled,
+    prediction,
+    winnerCourse,
+    t,
+  });
 
   // ローディング中
   if (isAnalyzing) {
@@ -359,517 +170,39 @@ function PredictionPanel({
 
   // エラー
   if (prediction.error) {
-    // 中止・順延（BOA-254）で選手情報が無く出走表自体が組めないレースは、
-    // 汎用の「予想データが利用できません」ではなく専用メッセージを出す
-    if (isCancelled) {
-      return (
-        <div
-          className="prediction-cancelled"
-          style={{
-            padding: "2rem",
-            background: "var(--color-gray-100)",
-            borderRadius: "12px",
-            border: "2px solid var(--color-gray-600)",
-            textAlign: "center",
-          }}
-        >
-          <h3 style={{ color: "var(--color-gray-700)" }}>
-            {t("panel.cancelledBanner")}
-          </h3>
-        </div>
-      );
-    }
     return (
-      <div
-        className="prediction-error"
-        style={{
-          padding: "2rem",
-          background: "#fff3cd",
-          borderRadius: "12px",
-          border: "2px solid #ffc107",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
-          &#x26A0;&#xFE0F;
-        </div>
-        <h3 style={{ color: "#856404", marginBottom: "1rem" }}>
-          {t("panel.noData")}
-        </h3>
-        <p style={{ color: "#856404" }}>{prediction.errorMessage}</p>
-      </div>
+      <PredictionErrorView
+        prediction={prediction}
+        isCancelled={flags.isCancelled}
+        t={t}
+      />
     );
   }
 
-  return (
-    <>
-      {/* 公式サイトリンク */}
-      {officialUrl && (
-        <div
-          style={{
-            marginTop: "1rem",
-            marginBottom: "1.5rem",
-            padding: "0.75rem 1rem",
-            background: "#e3f2fd",
-            borderRadius: "8px",
-            borderLeft: "4px solid #2196f3",
-          }}
-        >
-          <span style={{ marginRight: "0.5rem" }}>&#x1F517;</span>
-          <a
-            href={officialUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: "#0ea5e9",
-              textDecoration: "none",
-              fontWeight: "500",
-            }}
-          >
-            {t("panel.officialLink")}
-          </a>
-          <span
-            style={{
-              marginLeft: "0.5rem",
-              fontSize: "0.9rem",
-              color: "#475569",
-            }}
-          >
-            {t("panel.newTab")}
-          </span>
-        </div>
-      )}
-
-      {isCancelled ? (
-        <div
-          style={{
-            marginTop: "1rem",
-            marginBottom: "1.5rem",
-            padding: "0.75rem 1rem",
-            background: "var(--color-gray-100)",
-            borderRadius: "8px",
-            borderLeft: "4px solid var(--color-gray-600)",
-            color: "var(--color-gray-700)",
-          }}
-        >
-          {t("panel.cancelledBanner")}
-        </div>
-      ) : (
-        isAwaitingResult && (
-          <div
-            style={{
-              marginTop: "1rem",
-              marginBottom: "1.5rem",
-              padding: "0.75rem 1rem",
-              background: "var(--color-gray-100)",
-              borderRadius: "8px",
-              borderLeft: "4px solid var(--color-gray-600)",
-              color: "var(--color-gray-700)",
-            }}
-          >
-            {t("panel.awaitingResultBanner")}
-          </div>
-        )
-      )}
-
-      {/* AI用にコピー（BOA-194）: 結果未確定・中止でないレースのみ、外部AIツールで独自分析したいユーザー向け */}
-      {showAiCopy && (
-        <AiCopyBanner
-          raceId={analysisRaceId}
-          prediction={prediction}
-          race={selectedRace}
-          venueCode={venueCode}
-          promptType={aiCopyPromptType}
-          onPromptTypeChange={setAiCopyPromptType}
-          onCopy={handleAiCopy}
-        />
-      )}
-
-      {/* レース詳細ページのタブ構成（BOA-305〜307/312、並び順はBOA-454）。
-
-          並びは「粒度」で揃える。**6艇を横断して見るタブを前に → 選手1人を掘る
-          タブを後ろに → 買い目・結果を最後に**。390pxでは完全に見えるタブが4つ
-          しか無い（実測: 可視334px / 全体613px）ため、先頭4枠に何を置くかが
-          そのまま「開いて最初に何を見るか」になる。以前は
-          基本情報→AI予想→枠別情報→モータ情報の順で、先頭4つが全部「過去の集計」
-          になっており、当日の情報（今節・直前情報）が両方とも画面外にあった。
-
-          狭い「今節」(51px)を3番目に置いたことで、5番目の枠別情報が
-          288〜366pxと半分見える位置に来る（実測、可視334px）。半分見えているタブ自体が
-          「右に続く」の手がかりになる（フェードや「›」より強い）。
-
-          タブの統合（枠別情報＋モータ情報など）はしない。8→6にしても334pxに
-          入るのは4つのままで、可視数が1つも増えないのに、統合後のタブが縦に
-          長くなる（タブを跨ぐのは1タップだが、縦スクロールは何回もスワイプする）。 */}
-      {/* タブ列のすぐ上の思考アシストの入口（BOA-832） */}
-      {venueCode && analysisRaceId && (
-        <AssistEntryRow raceId={analysisRaceId} />
-      )}
-      {venueCode && analysisRaceId && (
-        <RaceTabs
-          key={analysisRaceId}
-          defaultTabId={defaultMainTab}
-          initialTabId={resolveInitialRaceTab(
-            searchParams.get(RACE_TAB_PARAM),
-            searchParams.get(RACE_SONAR_PARAM),
-            isAnalogyFinderEnabled(),
-          )}
-          requestedTab={tabRequest}
-          onActiveTabChange={(tabId) => {
-            setActiveMainTab(tabId);
-            // 既定のタブではクエリを付けない（素の /race/:raceId を保つ）
-            setRaceParam(
-              RACE_TAB_PARAM,
-              tabId === defaultMainTab ? null : tabId,
-            );
-          }}
-          tabs={[
-            {
-              id: "basic",
-              label: t("raceTabs.basic"),
-              content: (
-                <RaceBasicInfoTab
-                  focusedBoat={focusedBoat}
-                  onFocusBoat={handleFocusBoat}
-                  raceId={analysisRaceId}
-                  venueCode={venueCode}
-                  players={prediction.allPlayers}
-                />
-              ),
-            },
-            // 龍神ソナー（BOA-271）。AI予想タブの下から独立したタブにした（2026-10-08 ユーザー決定、
-            // 承認モック docs/design/analogy-finder/mock/APPROVED.md）。位置は基本情報と AI予想の間。
-            // 公開は機能フラグで切り替える（隠している間はタブごと出さないので API も呼ばない）
-            ...(isAnalogyFinderEnabled()
-              ? [
-                  {
-                    id: SONAR_RACE_TAB,
-                    label: t("raceTabs.sonar"),
-                    content: (
-                      <AnalogyFinderSection
-                        key={analysisRaceId}
-                        raceId={analysisRaceId}
-                        players={prediction.allPlayers}
-                        onOpenMeetForm={openMeetForm}
-                        initialTab={sonarInitialTab}
-                      />
-                    ),
-                  },
-                ]
-              : []),
-            {
-              // 日和には無い龍神レーダー独自の差別化要素。6艇横断で読むものでも
-              // あるため前半に置く
-              id: "aiPrediction",
-              label: t("raceTabs.aiPrediction"),
-              content: (
-                <RaceAiPredictionTab
-                  prediction={prediction}
-                  venueCode={venueCode}
-                  venueName={venueName}
-                  raceId={analysisRaceId}
-                  raceStartTime={selectedRace?.startTime}
-                  raceGrade={
-                    prediction?.raceGrade ??
-                    selectedRace?.rawData?.raceGrade ??
-                    selectedRace?.raceGrade ??
-                    null
-                  }
-                  raceStage={
-                    prediction?.raceStage ??
-                    selectedRace?.rawData?.raceStage ??
-                    null
-                  }
-                  isCancelled={isCancelled}
-                  onOpenSonar={
-                    isAnalogyFinderEnabled()
-                      ? () =>
-                          setTabRequest((r) => ({
-                            id: SONAR_RACE_TAB,
-                            seq: (r?.seq ?? 0) + 1,
-                          }))
-                      : null
-                  }
-                  // イン崩れ注意度のカード（BOA-822）の「類似レース400件で見ると？」は類似レースの副タブで開く。
-                  // ソナーの節は開いたときに ?sonar= を1回だけ読む（非表示のタブはアンマウントされる）
-                  onOpenSonarSimilar={
-                    isAnalogyFinderEnabled()
-                      ? () => {
-                          setSonarInitialTab("similar");
-                          setRaceParam(RACE_SONAR_PARAM, "similar");
-                          setTabRequest((r) => ({
-                            id: SONAR_RACE_TAB,
-                            seq: (r?.seq ?? 0) + 1,
-                          }));
-                        }
-                      : null
-                  }
-                />
-              ),
-            },
-            {
-              // 勝負駆けは「この6人の中で誰が一番欲しがっているか」でしか読めない。
-              // レースを開いたら最初に見るものなので前半に置く（日和はモータ情報の
-              // 隣に置いているが、日和に位置を合わせるより粒度で揃える方を採った）
-              id: "meet",
-              label: t("raceTabs.meet"),
-              content: (
-                <RaceMeetTab
-                  focusedBoat={focusedBoat}
-                  onFocusBoat={handleFocusBoat}
-                  raceId={analysisRaceId}
-                  venueCode={venueCode}
-                  players={prediction.allPlayers}
-                  isCancelled={isCancelled}
-                />
-              ),
-            },
-            {
-              // 展示タイムは締切前に最も判断へ効く。レースの状況（朝は未確定、
-              // 直前で埋まる）で並びを動かすと位置が覚えられなくなるため、
-              // 順番は固定したまま4番目に置く
-              id: "beforeInfo",
-              label: t("raceTabs.beforeInfo"),
-              content: (
-                <RaceBeforeInfoTab
-                  focusedBoat={focusedBoat}
-                  onFocusBoat={handleFocusBoat}
-                  raceId={analysisRaceId}
-                  venueCode={venueCode}
-                  players={prediction.allPlayers}
-                  weather={prediction.weather}
-                  raceGrade={
-                    selectedRace?.rawData?.raceGrade ??
-                    selectedRace?.raceGrade ??
-                    null
-                  }
-                  isFinished={isFinished}
-                />
-              ),
-            },
-            {
-              // ここから下は「艇を1つ選んで掘る」タブ
-              id: "waku",
-              label: t("raceTabs.waku"),
-              content: (
-                <RaceWakuInfoTab
-                  focusedBoat={focusedBoat}
-                  onFocusBoat={handleFocusBoat}
-                  venueCode={venueCode}
-                  players={prediction.allPlayers}
-                  raceId={analysisRaceId}
-                  sixBoatPeriod={sixBoatPeriod}
-                  onSixBoatPeriodChange={setSixBoatPeriod}
-                />
-              ),
-            },
-            {
-              id: "motor",
-              label: t("raceTabs.motor"),
-              content: (
-                <MotorConditionChart
-                  embedded
-                  initialVenueCode={venueCode}
-                  initialRaceId={analysisRaceId}
-                  focusedBoat={focusedBoat}
-                  onFocusBoat={handleFocusBoat}
-                />
-              ),
-            },
-            {
-              id: "oddsList",
-              label: t("raceTabs.oddsList"),
-              content: (
-                <RaceOddsListTab
-                  raceId={analysisRaceId}
-                  raceStartTime={selectedRace?.startTime}
-                  players={prediction.allPlayers}
-                />
-              ),
-            },
-            // 結果タブは決着後にしか中身が無い。未確定レースでは
-            // 「まだ確定していません」という空タブを出すだけで、押した人にとっては
-            // 何も得るものが無いうえ、狭いタブバーの枠を1つ占める。確定したら
-            // 現れ、そのまま既定タブになる（defaultTabId）
-            ...(isFinished
-              ? [
-                  {
-                    id: "result",
-                    label: t("raceTabs.result"),
-                    content: (
-                      <RaceResult
-                        prediction={prediction}
-                        raceId={analysisRaceId}
-                        raceStartTime={selectedRace?.startTime}
-                      />
-                    ),
-                  },
-                ]
-              : []),
-          ]}
-        />
-      )}
-
-      {showPreRaceAnalysisTools && (
-        <>
-          {/* データ出走表（主役）: 出走6選手×客観的な生データの一覧マトリクス */}
-          <DataRaceTable
-            raceId={analysisRaceId}
-            prediction={prediction}
-            venueCode={venueCode}
-          />
-
-          {/* この会場の枠番別傾向（FR-2）: 会場×枠番の過去傾向。選手個人のデータ出走表とは
-              主語が異なるため別コンポーネントとして分離する */}
-          <VenueTendencyPanel venueCode={venueCode} raceId={analysisRaceId} />
-
-          {/* 分析ツールコンポーネントの埋め込み（FR-3〜9）: デフォルト閉、開いた時だけ
-              データ取得する。モーター調子（BOA-308）はモータ情報タブへ昇格したため、
-              重複表示を避けるためここでは表示しない */}
-          {venueCode && analysisRaceId && (
-            <EmbeddedAnalysisSection
-              title={t("analysisPage.tabs.racer")}
-              hintKey="racerForm"
-            >
-              <RacerFormChart
-                embedded
-                initialVenueCode={venueCode}
-                initialRaceId={analysisRaceId}
-              />
-            </EmbeddedAnalysisSection>
-          )}
-          {venueCode && analysisRaceId && (
-            <EmbeddedAnalysisSection
-              title={t("analysisPage.tabs.st")}
-              hintKey="stDeviation"
-            >
-              <StPredictabilityChart
-                embedded
-                initialVenueCode={venueCode}
-                initialRaceId={analysisRaceId}
-              />
-            </EmbeddedAnalysisSection>
-          )}
-          {venueCode && analysisRaceId && (
-            <EmbeddedAnalysisSection
-              title={t("analysisPage.tabs.extrend")}
-              hintKey="exhibitionTimeTrend"
-            >
-              <ExhibitionTimeTrendChart
-                embedded
-                initialVenueCode={venueCode}
-                initialRaceId={analysisRaceId}
-              />
-            </EmbeddedAnalysisSection>
-          )}
-          {venueCode && analysisRaceId && (
-            <EmbeddedAnalysisSection
-              title={t("analysisPage.tabs.techprofile")}
-              hintKey="racerTechniqueProfile"
-            >
-              <RacerTechniqueProfileChart
-                embedded
-                initialVenueCode={venueCode}
-                initialRaceId={analysisRaceId}
-              />
-            </EmbeddedAnalysisSection>
-          )}
-          {venueCode && analysisRaceId && (
-            <EmbeddedAnalysisSection
-              title={t("analysisPage.tabs.returnrate")}
-              hintKey="returnRateAnalysis"
-            >
-              <RacerBoatReturnRateChart
-                embedded
-                initialVenueCode={venueCode}
-                initialRaceId={analysisRaceId}
-              />
-            </EmbeddedAnalysisSection>
-          )}
-          {venueCode && analysisRaceId && (
-            <EmbeddedAnalysisSection
-              title={t("analysisPage.tabs.attackdefense")}
-              hintKey="attackDefense"
-            >
-              <AttackDefenseAnalysis
-                embedded
-                initialVenueCode={venueCode}
-                initialRaceId={analysisRaceId}
-              />
-            </EmbeddedAnalysisSection>
-          )}
-        </>
-      )}
-
-      {showAiCopy && (
-        <AiCopyButton
-          variant="inline"
-          raceId={analysisRaceId}
-          prediction={prediction}
-          race={selectedRace}
-          venueCode={venueCode}
-          promptType={aiCopyPromptType}
-          onCopy={handleAiCopy}
-        />
-      )}
-      {showAiCopy && (
-        <Toast
-          message={aiCopyToast.message}
-          type={aiCopyToast.type}
-          visible={aiCopyToast.visible}
-          action={aiCopyToast.action}
-          onClose={hideAiCopyToast}
-          onHold={holdAiCopyToast}
-          onRelease={releaseAiCopyToast}
-          closeLabel={t("aiCopy.toastClose")}
-        />
-      )}
-
-      {/* SNSシェアボタン（結果確定後で、展開予測の候補がどれも1着でなければ出さない。BOA-754） */}
-      {shareTitle && (
-        <div className="social-share-wrapper">
-          <SocialShareButtons
-            // 今見ているレース（言語・選んだタブ・艇込み）を共有する（BOA-691）
-            shareUrl={shareUrlFor(`${pathname}${search}`)}
-            title={shareTitle}
-            raceId={analysisRaceId}
-            shareKind={isFinished ? "result" : "prediction"}
-            hashtags={
-              isFinished
-                ? ["ボートレース", "展開予測", "龍神レーダー"]
-                : // 中止のレースは予想を出さないので「AI予想」のタグを外す。注意度の文面も本命・推奨を書かないので外す
-                  isCancelled || inCautionShare
-                  ? ["ボートレース", "龍神レーダー"]
-                  : ["ボートレース", "AI予想", "龍神レーダー"]
-            }
-            size={40}
-          />
-        </div>
-      )}
-
-      {/* 会場攻略ガイドリンク */}
-      {venueCode && getVenueGuidePath(venueCode) && (
-        <div className="venue-guide-link">
-          <Link to={getVenueGuidePath(venueCode)}>
-            <span className="venue-guide-icon">&#x1F4D6;</span>
-            <div className="venue-guide-content">
-              <span className="venue-guide-title">
-                {t("panel.venueGuideLink", {
-                  venue: venueCode
-                    ? t(`venues.${venueCode}`, venueName)
-                    : venueName,
-                })}
-              </span>
-              <span className="venue-guide-desc">
-                {t("panel.venueGuideDesc")}
-              </span>
-            </div>
-            <span className="venue-guide-arrow">&rarr;</span>
-          </Link>
-        </div>
-      )}
-    </>
-  );
+  const ctx = {
+    ...urlState,
+    ...tabRequests,
+    ...aiCopy,
+    ...flags,
+    t,
+    prediction,
+    selectedRace,
+    venueCode,
+    venueName,
+    analysisRaceId,
+    sixBoatPeriod,
+    setSixBoatPeriod,
+    officialUrl: buildOfficialUrl(venueCode, raceDate, selectedRace),
+    aiCopyPromptType,
+    setAiCopyPromptType,
+    setActiveMainTab,
+    // activeMainTab未確定時（初回レンダー等）は従来通り表示する
+    showPreRaceAnalysisTools:
+      !PRE_RACE_TOOLS_HIDDEN_TABS.includes(activeMainTab),
+    shareTitle,
+    inCautionShare,
+  };
+  return <PredictionPanelBody c={{ ...ctx, tabs: buildMainTabs(ctx) }} />;
 }
 
 export default PredictionPanel;

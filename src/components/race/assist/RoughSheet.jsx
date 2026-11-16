@@ -1,12 +1,7 @@
 import BottomSheet from "./BottomSheet";
-import BaseBar from "./BaseBar";
-import ScopeTable from "./ScopeTable";
-import ClassLineup from "./ClassLineup";
-import {
-  ROUND_LABEL,
-  restClassCounts,
-  sameClassLabel,
-} from "../../../utils/assistModel";
+import RoughSheetIntro from "./RoughSheetIntro";
+import { RoughSheetB1Section, RoughSheetManshuSection } from "./RoughSheetBars";
+import { sameClassLabel } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
 /**
@@ -47,117 +42,36 @@ export default function RoughSheet({
     : null;
   return (
     <BottomSheet title={ASSIST_COPY.roughTitle} onClose={onClose}>
-      <p className="ta-sheet-sub">{ASSIST_COPY.roughSheetLead}</p>
-      <p className="ta-note">
-        {venue ? ASSIST_COPY.baseLegendRef(venue) : ASSIST_COPY.baseLegend}
-        {/* 棒の中の2本の細い縦線（ぶれ幅）の説明（BOA-801 4。セオリーカードと同じ文） */}
-        、{ASSIST_COPY.theoryBarLegend}
-      </p>
-      {/* BOA-822: 級の並びの絵は万舟の範囲（1着は勝率差で集める）。枠と同じ名前を付ける（#1604 ファン評価3周目 P2） */}
-      {ic && (
-        <span className="ta-rough-scope">{ASSIST_COPY.roughManshuScope}</span>
-      )}
-      <ClassLineup lineup={lineup} />
-      {restClassCounts(classes) && (
-        <p className="ta-note">
-          {ASSIST_COPY.classNote(1, classes[0], restClassCounts(classes))}
-        </p>
-      )}
-      {ic && (
-        <p
-          className="ta-note ta-num"
-          data-testid="rough-sheet-in-caution-scope"
-        >
-          {ASSIST_COPY.roughInCautionScopeNote(
-            ic.n,
-            ROUND_LABEL[ic.round] ?? null,
-          )}
-        </p>
-      )}
-      <ScopeTable
+      <RoughSheetIntro
         scope={scope}
-        hideB1={Boolean(ic)}
-        similarN={similar?.n ?? null}
-        similarConditions={similarConditions}
-        classes={classes}
+        similar={similar}
+        venue={venue}
         lineup={lineup}
+        classes={classes}
+        similarConditions={similarConditions}
+        ic={ic}
       />
-      <h3 className="ta-sheet-sub">{ASSIST_COPY.roughB1}</h3>
-      {ic ? (
-        <BaseBar
-          label={`${ASSIST_COPY.roughScopeInCaution(ic.n, ROUND_LABEL[ic.round] ?? null)}${ic.lowSample ? `・${ASSIST_COPY.roughFew}` : ""}`}
-          k={ic.n - ic.nonWin}
-          n={ic.n}
-          base={baseB1}
-          refRate={refB1}
-          showBase
-          few={Boolean(ic.lowSample)}
-        />
-      ) : (
-        <BaseBar
-          label={scopeLabel}
-          k={c.b1_win}
-          n={c.n}
-          base={baseB1}
-          refRate={refB1}
-          showBase
-          few={scope.few}
-        />
-      )}
-      {ic?.round && ROUND_LABEL[ic.round] && (
-        <p className="ta-note" data-testid="rough-sheet-in-caution-round">
-          {ASSIST_COPY.roughRoundBaseNote(ROUND_LABEL[ic.round])}
-        </p>
-      )}
-      {similar && (
-        <BaseBar
-          label={simLabel}
-          k={similar.win[0]}
-          n={similar.n}
-          base={baseB1}
-          refRate={refB1}
-          showBase
-        />
-      )}
-      {similarFailed && (
-        <p className="ta-note">
-          {ASSIST_COPY.partFailed(ASSIST_COPY.partSimilar)}
-        </p>
-      )}
-      <h3 className="ta-sheet-sub">
-        {ASSIST_COPY.roughManshu}（3連単1万円以上）
-      </h3>
-      <BaseBar
-        label={scopeLabel}
-        k={c.manshu}
-        n={c.payout_known}
-        base={baseM}
-        refRate={refM}
-        showBase
-        few={scope.few}
+      <RoughSheetB1Section
+        scope={scope}
+        similar={similar}
+        similarFailed={similarFailed}
+        ic={ic}
+        scopeLabel={scopeLabel}
+        simLabel={simLabel}
+        baseB1={baseB1}
+        refB1={refB1}
       />
-      {similar && (
-        <BaseBar
-          label={simLabel}
-          k={similar.manshu.k}
-          n={similar.manshu.n}
-          base={baseM}
-          refRate={refM}
-          showBase
-        />
-      )}
-      {similar && racecardStage && (
-        <p className="ta-note">{ASSIST_COPY.similarRacecardStage}</p>
-      )}
-      {venue && (
-        <p className="ta-note ta-num">
-          {ASSIST_COPY.venueAll(
-            venue,
-            Math.round(refB1 * 100),
-            Math.round(refM * 100),
-          )}
-        </p>
-      )}
+      <RoughSheetManshuSection
+        scope={scope}
+        similar={similar}
+        racecardStage={racecardStage}
+        venue={venue}
+        scopeLabel={scopeLabel}
+        simLabel={simLabel}
+        baseM={baseM}
+        refB1={refB1}
+        refM={refM}
+      />
       <p className="ta-note">{ASSIST_COPY.roughNoPick}</p>
     </BottomSheet>
   );

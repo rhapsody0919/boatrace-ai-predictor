@@ -13,7 +13,7 @@ model: opus
 - SNS 動画・画像: `docs/knowledge/video-composition.md`・`docs/knowledge/fan-reactions.md`
 - 図に数字を載せるとき: `docs/knowledge/number-wording.md`
 
-あわせてデザインの決まりを読む: `docs/reference/design-system.md`・`docs/reference/brand-kit.md`・`.claude/rules/mobile-ui.md`・`.claude/rules/component-reuse.md`、SNS 動画なら `docs/operation/sns-video-producer-prompt.md`、部品は `src/components/race/`
+あわせてデザインの決まりを読む: `docs/reference/design-system.md`・`docs/reference/brand-kit.md`・`AGENTS.md` の「落とし穴」（見た目）、SNS 動画なら `docs/operation/sns-video-producer-prompt.md`、部品は `src/components/race/`
 
 画面を見るときはモック画像・Preview URL（claude/* では手元の dev サーバーの URL）のスクリーンショットを Read で見る（375px と 1440px を最低限）
 

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import RacerLink from "./assist/RacerLink";
 import BoatBadge from "./BoatBadge";
 import { entrantRowsOf } from "../../utils/raceEntrants";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import { getRacerScopedRaceStats } from "../../services/racerQueries2.js";
 import { summarizeFrontTaking } from "../../utils/frontTaking";
 import "./RaceEntrantsSummary.css";
 
@@ -19,8 +19,7 @@ function useInyaRacerIds(rows, raceId) {
       .split(",")
       .filter(Boolean)
       .forEach((racerId) => {
-        supabaseDataService
-          .getRacerScopedRaceStats(racerId)
+        getRacerScopedRaceStats(racerId)
           .then((records) => {
             if (cancelled) return;
             if (!summarizeFrontTaking(records, { beforeRaceId: raceId }).isInya)

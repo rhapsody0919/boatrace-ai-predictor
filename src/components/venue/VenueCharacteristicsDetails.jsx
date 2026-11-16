@@ -13,7 +13,10 @@ import { translateTechnique } from "../race/raceIndicators";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
 import { BOAT_COLORS } from "../../utils/colors";
 import { localizePath } from "../../config/languages";
-import { supabaseDataService } from "../../services/supabaseDataService";
+import {
+  getOutcomeDistribution,
+  getWinningTechniqueStats,
+} from "../../services/venueQueries.js";
 import InlineFetchError from "../InlineFetchError";
 import {
   placeRatesByBoat,
@@ -55,8 +58,8 @@ export default function VenueCharacteristicsDetails({ venueCode }) {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      supabaseDataService.getOutcomeDistribution(venueCode),
-      supabaseDataService.getWinningTechniqueStats(venueCode),
+      getOutcomeDistribution(venueCode),
+      getWinningTechniqueStats(venueCode),
     ])
       .then(([outcomeData, techniqueData]) => {
         if (cancelled) return;

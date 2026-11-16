@@ -1,0 +1,136 @@
+name: E2E Release (配備先)
+
+# 配備先（本番の URL）を相手にする読むだけの確かめ（ZB02、BOA-1497）。
+# e2e-live.yml は master を runner で手元ビルドして localhost で開く（/api だけ本番へプロキシ）ので、
+# Vercel の本番の設定（vercel.json の headers・redirects・rewrites）・middleware.js・api/ の今の版は見えない。
+# 本番は ADR-0106 で JST 05:45・11:45・17:45 の release-dispatch にまとめて出るので、その後に
+# 1) GitHub の Deployments（environment=Production の最新の success）の sha を読み、入力の sha があれば一致まで待つ
+# 2) e2e/release-check/ の読むだけの spec（GET と画面の表示だけ。書き込み・送信・page.route なし）を本番の URL で流す
+#
+# e2e-live.yml とは concurrency・job 名・ワークフロー名を分ける。hq の deploy-guard は e2e-live.yml の
+# workflow_dispatch の run と job 名「e2e-live (」で読むので、ここの run を取り違えない。
+# schedule は release の30分後に置くが、GitHub の schedule は遅れることがある（ADR-0106）。schedule の起動は sha を持たないので
+# 「配備先が生きているか・いちばん新しい配備が落ちていないか」の確かめに留まり、どの release が出たかは照らさない。
+# 正確な時刻は hq が release の後に workflow_dispatch（inputs.sha）で起動する（BOA-1496 の sha の取り方と合わせる）。
+
+on:
+  schedule:
+    # JST 06:15・12:15・18:15（release-dispatch の定時 05:45・11:45・17:45 の30分後、拾い直し 06:05 等の後）
+    - cron: '15 21,3,9 * * *'
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: '本番に出たはずの commit の sha（40桁か先頭7桁以上）。空なら最新の本番の配備の sha を記録するだけ'
+        required: false
+        default: ''
+
+concurrency:
+  group: e2e-release
+  # 確かめの途中で次の起動が来ても取り消さない（取り消しの赤を作らない）。次は前が終わってから走る
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  release-check:
+    environment: prod-jobs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      # 入力の sha があれば、本番の配備の最新の success がその sha になるまで最大20分待つ。
+      # Deployments は Vercel が作る（creator vercel[bot]）。本番の URL から版を読む口は無いので、これを正とする
+      - name: 本番の配備の sha を確かめる
+        id: deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WANT: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          # 新しい順の直近10件のうち、最初に success の状態を持つ配備の sha（無ければ空）
+          latest_ok() {
+            local rows id sha state
+            mapfile -t rows < <(gh api "repos/${GITHUB_REPOSITORY}/deployments?environment=Production&per_page=10" \
+              --jq '.[] | "\(.id) \(.sha)"')
+            for row in "${rows[@]}"; do
+              id=${row%% *}; sha=${row#* }
+              state=$(gh api "repos/${GITHUB_REPOSITORY}/deployments/${id}/statuses?per_page=1" --jq '.[0].state // ""')
+              if [ "$state" = "success" ]; then echo "$sha"; return 0; fi
+            done
+          }
+          if [ -n "$WANT" ] && ! [[ "$WANT" =~ ^[0-9a-f]{7,40}$ ]]; then
+            echo "::error::inputs.sha が sha の形でない: ${WANT}"; exit 1
+          fi
+          got=""
+          for i in $(seq 1 40); do
+            got=$(latest_ok || true)
+            if [ -z "$WANT" ] || [[ "$got" == "$WANT"* ]]; then break; fi
+            echo "待つ（${i}/40）: 本番の最新の success は ${got:-なし}、期待は ${WANT}"
+            sleep 30
+          done
+          if [ -z "${got}" ]; then echo "::error::本番の配備（Production）の success が直近10件に無い"; exit 1; fi
+          # sha の指定が無い起動（schedule）は「配備先が生きているか」の確かめに留まる（どの release かは照らさない）。
+          # それでも、いちばん新しい配備が失敗のまま（failure・error）なら、古い版のまま緑にせず赤にする
+          newest=$(gh api "repos/${GITHUB_REPOSITORY}/deployments?environment=Production&per_page=1" --jq '.[0].id // ""')
+          newest_state=$(gh api "repos/${GITHUB_REPOSITORY}/deployments/${newest}/statuses?per_page=1" --jq '.[0].state // ""')
+          if [ "$newest_state" = "failure" ] || [ "$newest_state" = "error" ]; then
+            echo "::error::いちばん新しい本番の配備（id ${newest}）が ${newest_state}。本番は前の版（${got}）のまま"
+            exit 1
+          fi
+          if [ -n "$WANT" ] && [[ "$got" != "$WANT"* ]]; then
+            echo "::error::20分待っても本番の配備が ${WANT} にならない（最新の success は ${got}）。release が出ていないか、配備が落ちている"
+            exit 1
+          fi
+          echo "sha=${got}" >> "$GITHUB_OUTPUT"
+          echo "本番の配備の sha: \`${got}\`（期待: \`${WANT:-指定なし}\`）" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: 配備先で読むだけの e2e
+        env:
+          CI: true
+          RELEASE_BASE_URL: https://www.boat-ai.jp
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+        run: npx playwright test --config=e2e/release-check/playwright.release.config.js
+
+      - name: Upload Playwright trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-release-trace
+          path: test-results/
+          retention-days: 7
+
+      - name: Notify Slack (失敗時のみ)
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SHA: ${{ steps.deploy.outputs.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          PAYLOAD=$(jq -n --arg sha "${SHA:-不明}" --arg url "$RUN_URL" '
+            {
+              attachments: [{
+                color: "#c0392b",
+                blocks: [{
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: (":rotating_light: *配備先（本番の URL）の確かめが失敗しました*\n本番の配備の sha: `" + $sha + "`\ne2e-live は手元ビルドを相手にするので、vercel.json・middleware・api/ の配備の誤りはここでしか見えません。\n<" + $url + "|実行ログ>")
+                  }
+                }]
+              }]
+            }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"

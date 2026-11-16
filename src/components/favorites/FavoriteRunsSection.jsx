@@ -197,22 +197,17 @@ function RunInfo({ row, info, seriesDay }) {
   );
 }
 
-function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
-  const { t, i18n } = useTranslation();
-  const localize = useLocalizedPath();
-  const isJa = i18n.resolvedLanguage === "ja";
-  const grade = ["SG", "G1"].includes(row.raceGrade)
-    ? GRADE_CONFIG[row.raceGrade]
-    : null;
-  // 優勝戦・準優勝戦だけ札を出す（レース詳細の見出しと同じ getStageChip）
+/** 優勝戦・準優勝戦だけ札を出す（レース詳細の見出しと同じ getStageChip） */
+function pickStage(raceStage, t) {
   const stageChip = getStageChip(raceStage, t);
-  const stage =
-    stageChip && (stageChip.variant === "final" || stageChip.variant === "semifinal")
-      ? stageChip
-      : null;
-  // 締切後の行は結果を見る段階なので、予測に誘導するソナー・アシストは出さない
-  const isPast = state === "past";
-  const links = [
+  return stageChip &&
+    (stageChip.variant === "final" || stageChip.variant === "semifinal")
+    ? stageChip
+    : null;
+}
+
+function buildRunLinks(row, isPast, isJa, localize) {
+  return [
     { kind: "racer_page", to: racerPagePath(row.racerId), label: "linkRacer" },
     ...(isAnalogyFinderEnabled() && !isPast
       ? [
@@ -234,6 +229,68 @@ function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
         ]
       : []),
   ];
+}
+
+function RunRaceCell({ row, grade, stage, t }) {
+  return (
+    <div className="favorite-runs__race">
+      {grade && (
+        <span
+          className="favorite-runs__grade"
+          style={{ backgroundColor: grade.color }}
+        >
+          {grade.label}
+        </span>
+      )}
+      {stage && (
+        <span
+          className="favorite-runs__stage"
+          data-stage={stage.variant}
+          title={stage.title}
+        >
+          {stage.emoji} {stage.label}
+        </span>
+      )}
+      {t(`venues.${row.venueCode}`)} {row.raceNumber}R
+    </div>
+  );
+}
+
+function RunLinks({ links, state, t }) {
+  return (
+    <div className="favorite-runs__links">
+      {links.map((link) => (
+        <Link
+          key={link.kind}
+          to={link.to}
+          className="favorite-runs__link"
+          onClick={() =>
+            trackEvent("today_row_click", {
+              row_kind: "run",
+              row_link: link.kind,
+              row_state: state,
+              fav_state: "runs",
+            })
+          }
+        >
+          {t(`favorites.section.${link.label}`)}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
+  const { t, i18n } = useTranslation();
+  const localize = useLocalizedPath();
+  const isJa = i18n.resolvedLanguage === "ja";
+  const grade = ["SG", "G1"].includes(row.raceGrade)
+    ? GRADE_CONFIG[row.raceGrade]
+    : null;
+  const stage = pickStage(raceStage, t);
+  // 締切後の行は結果を見る段階なので、予測に誘導するソナー・アシストは出さない
+  const isPast = state === "past";
+  const links = buildRunLinks(row, isPast, isJa, localize);
   const className = [
     "favorite-runs__row",
     state === "past" && "favorite-runs__row--past",
@@ -248,26 +305,7 @@ function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
         {t("home.jstNote")}
         <small>{t("favorites.section.deadline")}</small>
       </div>
-      <div className="favorite-runs__race">
-        {grade && (
-          <span
-            className="favorite-runs__grade"
-            style={{ backgroundColor: grade.color }}
-          >
-            {grade.label}
-          </span>
-        )}
-        {stage && (
-          <span
-            className="favorite-runs__stage"
-            data-stage={stage.variant}
-            title={stage.title}
-          >
-            {stage.emoji} {stage.label}
-          </span>
-        )}
-        {t(`venues.${row.venueCode}`)} {row.raceNumber}R
-      </div>
+      <RunRaceCell row={row} grade={grade} stage={stage} t={t} />
       <div className="favorite-runs__who">
         <BoatBadge n={row.boat} />
         <span className="favorite-runs__name" translate="no">
@@ -276,42 +314,13 @@ function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
         {row.grade && <span className="favorite-runs__class">{row.grade}</span>}
       </div>
       <RunInfo row={row} info={info} seriesDay={seriesDay} />
-      <div className="favorite-runs__links">
-        {links.map((link) => (
-          <Link
-            key={link.kind}
-            to={link.to}
-            className="favorite-runs__link"
-            onClick={() =>
-              trackEvent("today_row_click", {
-                row_kind: "run",
-                row_link: link.kind,
-                row_state: state,
-                fav_state: "runs",
-              })
-            }
-          >
-            {t(`favorites.section.${link.label}`)}
-          </Link>
-        ))}
-      </div>
+      <RunLinks links={links} state={state} t={t} />
     </li>
   );
 }
 
-export default function FavoriteRunsSection({ venuesData, nowHHMM, nextOpenDates }) {
-  const { t } = useTranslation();
-  const { racers, venues: favVenueCodes } = useFavorites();
-  const { status, venues } = useTodayEntries(racers.length > 0);
-  const [showMore, setShowMore] = useState(false);
-  const [showPast, setShowPast] = useState(false);
-  // IntersectionObserver が無い環境では useVisibleOnce が呼ばれないので、最初から見えている扱い
-  const [visible, setVisible] = useState(
-    () => typeof IntersectionObserver === "undefined",
-  );
-  const [visibleKey] = useState(() => `favorite_runs|${(mountSeq += 1)}`);
-  const sectionRef = useVisibleOnce(visibleKey, () => setVisible(true));
-
+/** 出走の行の組み立て（runs・締切後の並び・行の一覧・節の日目と段） */
+function useSectionRuns(status, venues, racers, nowHHMM) {
   const runs = useMemo(
     () =>
       status === "ready"
@@ -342,6 +351,148 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM, nextOpenDates
       }
     return { seriesDayOf: days, raceStageOf: stages };
   }, [venues]);
+  return { runs, pastNewestFirst, rows, seriesDayOf, raceStageOf };
+}
+
+/** 締切前の行の一覧 */
+function UpcomingList({ upcoming, showMore, infoOf, seriesDayOf, raceStageOf }) {
+  return (
+    <ul className="favorite-runs__list">
+      {upcoming.map((row, index) => (
+        <RunRow
+          key={`${row.raceId}-${row.racerId}`}
+          row={row}
+          state="upcoming"
+          extra={!showMore && index >= NARROW_VISIBLE}
+          info={infoOf(row)}
+          seriesDay={seriesDayOf.get(row.raceId)}
+          raceStage={raceStageOf.get(row.raceId)}
+        />
+      ))}
+    </ul>
+  );
+}
+
+/** 締切後の行（開閉のボタンと一覧） */
+function PastRuns({
+  past,
+  pastNewestFirst,
+  showPast,
+  setShowPast,
+  infoOf,
+  seriesDayOf,
+  raceStageOf,
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <button
+        type="button"
+        className="favorite-runs__toggle"
+        aria-expanded={showPast}
+        onClick={() => setShowPast((open) => !open)}
+      >
+        {t("favorites.section.pastRuns", { count: past.length })}
+      </button>
+      {showPast && (
+        <ul className="favorite-runs__list">
+          {pastNewestFirst.map((row) => (
+            <RunRow
+              key={`${row.raceId}-${row.racerId}`}
+              row={row}
+              state="past"
+              info={infoOf(row)}
+              seriesDay={seriesDayOf.get(row.raceId)}
+              raceStage={raceStageOf.get(row.raceId)}
+            />
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+/** 出走がある（favState が runs）ときの本文 */
+function RunsBody({
+  runs,
+  racerCount,
+  pastNewestFirst,
+  showMore,
+  setShowMore,
+  showPast,
+  setShowPast,
+  infoOf,
+  seriesDayOf,
+  raceStageOf,
+  fallback,
+  nextOpenDates,
+}) {
+  const { t } = useTranslation();
+  const { upcoming, past, runningRacerCount, raceCount } = runs;
+  const hidden = upcoming.length - NARROW_VISIBLE;
+  return (
+    <>
+      <p className="favorite-runs__lead">
+        {t("favorites.section.lead", {
+          racers: racerCount,
+          running: runningRacerCount,
+          races: raceCount,
+        })}
+      </p>
+      {upcoming.length > 0 && (
+        <UpcomingList
+          upcoming={upcoming}
+          showMore={showMore}
+          infoOf={infoOf}
+          seriesDayOf={seriesDayOf}
+          raceStageOf={raceStageOf}
+        />
+      )}
+      {hidden > 0 && !showMore && (
+        <button
+          type="button"
+          className="favorite-runs__toggle favorite-runs__toggle--more"
+          aria-expanded={false}
+          onClick={() => setShowMore(true)}
+        >
+          {t("favorites.section.showMore", { count: hidden })}
+        </button>
+      )}
+      {past.length > 0 && (
+        <PastRuns
+          past={past}
+          pastNewestFirst={pastNewestFirst}
+          showPast={showPast}
+          setShowPast={setShowPast}
+          infoOf={infoOf}
+          seriesDayOf={seriesDayOf}
+          raceStageOf={raceStageOf}
+        />
+      )}
+      <FavoriteVenueChips
+        favVenues={fallback.favVenues}
+        nextOpenDates={nextOpenDates}
+      />
+      <p className="favorite-runs__note">{t("favorites.section.note")}</p>
+    </>
+  );
+}
+
+export default function FavoriteRunsSection({ venuesData, nowHHMM, nextOpenDates }) {
+  const { t } = useTranslation();
+  const { racers, venues: favVenueCodes } = useFavorites();
+  const { status, venues } = useTodayEntries(racers.length > 0);
+  const [showMore, setShowMore] = useState(false);
+  const [showPast, setShowPast] = useState(false);
+  // IntersectionObserver が無い環境では useVisibleOnce が呼ばれないので、最初から見えている扱い
+  const [visible, setVisible] = useState(
+    () => typeof IntersectionObserver === "undefined",
+  );
+  const [visibleKey] = useState(() => `favorite_runs|${(mountSeq += 1)}`);
+  const sectionRef = useVisibleOnce(visibleKey, () => setVisible(true));
+
+  const { runs, pastNewestFirst, rows, seriesDayOf, raceStageOf } =
+    useSectionRuns(status, venues, racers, nowHHMM);
   const infoOf = useFavoriteRunStats(rows, visible);
   const fallback = useMemo(
     () =>
@@ -361,8 +512,6 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM, nextOpenDates
       : rows.length === 0
         ? "no_runs"
         : "runs";
-  const { upcoming, past, runningRacerCount, raceCount } = runs;
-  const hidden = upcoming.length - NARROW_VISIBLE;
 
   return (
     <section
@@ -383,71 +532,20 @@ export default function FavoriteRunsSection({ venuesData, nowHHMM, nextOpenDates
           racerCount={racers.length}
         />
       ) : (
-        <>
-          <p className="favorite-runs__lead">
-            {t("favorites.section.lead", {
-              racers: racers.length,
-              running: runningRacerCount,
-              races: raceCount,
-            })}
-          </p>
-          {upcoming.length > 0 && (
-            <ul className="favorite-runs__list">
-              {upcoming.map((row, index) => (
-                <RunRow
-                  key={`${row.raceId}-${row.racerId}`}
-                  row={row}
-                  state="upcoming"
-                  extra={!showMore && index >= NARROW_VISIBLE}
-                  info={infoOf(row)}
-                  seriesDay={seriesDayOf.get(row.raceId)}
-                  raceStage={raceStageOf.get(row.raceId)}
-                />
-              ))}
-            </ul>
-          )}
-          {hidden > 0 && !showMore && (
-            <button
-              type="button"
-              className="favorite-runs__toggle favorite-runs__toggle--more"
-              aria-expanded={false}
-              onClick={() => setShowMore(true)}
-            >
-              {t("favorites.section.showMore", { count: hidden })}
-            </button>
-          )}
-          {past.length > 0 && (
-            <>
-              <button
-                type="button"
-                className="favorite-runs__toggle"
-                aria-expanded={showPast}
-                onClick={() => setShowPast((open) => !open)}
-              >
-                {t("favorites.section.pastRuns", { count: past.length })}
-              </button>
-              {showPast && (
-                <ul className="favorite-runs__list">
-                  {pastNewestFirst.map((row) => (
-                    <RunRow
-                      key={`${row.raceId}-${row.racerId}`}
-                      row={row}
-                      state="past"
-                      info={infoOf(row)}
-                      seriesDay={seriesDayOf.get(row.raceId)}
-                      raceStage={raceStageOf.get(row.raceId)}
-                    />
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
-          <FavoriteVenueChips
-            favVenues={fallback.favVenues}
-            nextOpenDates={nextOpenDates}
-          />
-          <p className="favorite-runs__note">{t("favorites.section.note")}</p>
-        </>
+        <RunsBody
+          runs={runs}
+          racerCount={racers.length}
+          pastNewestFirst={pastNewestFirst}
+          showMore={showMore}
+          setShowMore={setShowMore}
+          showPast={showPast}
+          setShowPast={setShowPast}
+          infoOf={infoOf}
+          seriesDayOf={seriesDayOf}
+          raceStageOf={raceStageOf}
+          fallback={fallback}
+          nextOpenDates={nextOpenDates}
+        />
       )}
     </section>
   );

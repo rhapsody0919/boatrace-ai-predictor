@@ -102,7 +102,131 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
     );
   }
 
-  const { data } = statsData;
+  return (
+    <ExTopContent
+      data={statsData.data}
+      selectedVenue={selectedVenue}
+      setSelectedVenue={setSelectedVenue}
+      t={t}
+    />
+  );
+}
+
+function ExTopControls({ selectedVenue, setSelectedVenue, t }) {
+  return (
+    <div className="controls-section">
+      <label htmlFor="exhibition-time-venue-select">
+        {t("analysis.venueSelectLabel")}
+      </label>
+      <select
+        id="exhibition-time-venue-select"
+        value={selectedVenue}
+        onChange={(e) => setSelectedVenue(e.target.value)}
+        className="venue-select"
+      >
+        {VENUES.map((venue) => (
+          <option key={venue.code} value={venue.code}>
+            {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function ExTopSummary({ venueLabel, data, t }) {
+  return (
+    <div className="summary-info">
+      <p>
+        <strong>{venueLabel}</strong> - {t("analysis.exTop.summary")}
+        {data[0]?.last_updated && (
+          <span className="update-date">
+            {t("analysis.lastUpdated", { date: data[0].last_updated })}
+          </span>
+        )}
+      </p>
+    </div>
+  );
+}
+
+function ExTopBarChart({ chartData, t }) {
+  return (
+    <ResponsiveContainer width="100%" height={360}>
+      <BarChart
+        data={chartData}
+        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis
+          dataKey="boat_number"
+          interval={0}
+          tick={(props) => <BandWrapAxisTick {...props} fontSize={11} />}
+        />
+        <YAxis
+          label={{
+            value: t("analysis.probabilityYAxis"),
+            angle: -90,
+            position: "insideLeft",
+          }}
+          domain={[0, 100]}
+          ticks={[0, 20, 40, 60, 80, 100]}
+        />
+        <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+        <Legend />
+        <Bar
+          dataKey="fastest_rate"
+          name={t("analysis.exTop.fastestRate")}
+          fill="var(--brand-accent-primary)"
+        />
+        <Bar
+          dataKey="win_when_fastest"
+          name={t("analysis.exTop.winWhenFastest")}
+          fill="var(--brand-accent-secondary)"
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+function ExTopTable({ data, t }) {
+  return (
+    <div className="table-wrapper">
+      <table className="winning-technique-table">
+        <thead>
+          <tr>
+            <th>{t("analysis.laneHeader")}</th>
+            <th>{t("analysis.exTop.participationsHeader")}</th>
+            <th>{t("analysis.exTop.fastestCountHeader")}</th>
+            <th>{t("analysis.exTop.fastestRateHeader")}</th>
+            <th>{t("analysis.exTop.winWhenFastestHeader")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[1, 2, 3, 4, 5, 6]
+            .map((boatNumber) =>
+              data.find((row) => row.boat_number === boatNumber),
+            )
+            .filter(Boolean)
+            .map((row) => (
+              <tr key={row.boat_number}>
+                <td className="boat-num">
+                  {t("analysis.boatN", { n: row.boat_number })}
+                </td>
+                <td className="count">{row.race_count}</td>
+                <td className="count">{row.fastest_count}</td>
+                <td className="percentage">{row.fastest_rate.toFixed(2)}%</td>
+                <td className="percentage">
+                  {row.win_rate_when_fastest.toFixed(2)}%
+                </td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ExTopContent({ data, selectedVenue, setSelectedVenue, t }) {
   const venueName = VENUES.find((v) => v.code === selectedVenue)?.name;
   const venueLabel = t(`venues.${parseInt(selectedVenue, 10)}`, venueName);
 
@@ -120,105 +244,17 @@ function ExhibitionTimeTopChart({ initialVenueCode = null }) {
       <h2>{t("analysis.exTop.title")}</h2>
       <p className="section-description">{t("analysis.exTop.description")}</p>
 
-      <div className="controls-section">
-        <label htmlFor="exhibition-time-venue-select">
-          {t("analysis.venueSelectLabel")}
-        </label>
-        <select
-          id="exhibition-time-venue-select"
-          value={selectedVenue}
-          onChange={(e) => setSelectedVenue(e.target.value)}
-          className="venue-select"
-        >
-          {VENUES.map((venue) => (
-            <option key={venue.code} value={venue.code}>
-              {t(`venues.${parseInt(venue.code, 10)}`, venue.name)}
-            </option>
-          ))}
-        </select>
-      </div>
+      <ExTopControls
+        selectedVenue={selectedVenue}
+        setSelectedVenue={setSelectedVenue}
+        t={t}
+      />
 
-      {venueName && (
-        <div className="summary-info">
-          <p>
-            <strong>{venueLabel}</strong> - {t("analysis.exTop.summary")}
-            {data[0]?.last_updated && (
-              <span className="update-date">
-                {t("analysis.lastUpdated", { date: data[0].last_updated })}
-              </span>
-            )}
-          </p>
-        </div>
-      )}
+      {venueName && <ExTopSummary venueLabel={venueLabel} data={data} t={t} />}
 
-      <ResponsiveContainer width="100%" height={360}>
-        <BarChart
-          data={chartData}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="boat_number"
-            interval={0}
-            tick={(props) => <BandWrapAxisTick {...props} fontSize={11} />}
-          />
-          <YAxis
-            label={{
-              value: t("analysis.probabilityYAxis"),
-              angle: -90,
-              position: "insideLeft",
-            }}
-            domain={[0, 100]}
-            ticks={[0, 20, 40, 60, 80, 100]}
-          />
-          <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
-          <Legend />
-          <Bar
-            dataKey="fastest_rate"
-            name={t("analysis.exTop.fastestRate")}
-            fill="var(--brand-accent-primary)"
-          />
-          <Bar
-            dataKey="win_when_fastest"
-            name={t("analysis.exTop.winWhenFastest")}
-            fill="var(--brand-accent-secondary)"
-          />
-        </BarChart>
-      </ResponsiveContainer>
+      <ExTopBarChart chartData={chartData} t={t} />
 
-      <div className="table-wrapper">
-        <table className="winning-technique-table">
-          <thead>
-            <tr>
-              <th>{t("analysis.laneHeader")}</th>
-              <th>{t("analysis.exTop.participationsHeader")}</th>
-              <th>{t("analysis.exTop.fastestCountHeader")}</th>
-              <th>{t("analysis.exTop.fastestRateHeader")}</th>
-              <th>{t("analysis.exTop.winWhenFastestHeader")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[1, 2, 3, 4, 5, 6]
-              .map((boatNumber) =>
-                data.find((row) => row.boat_number === boatNumber),
-              )
-              .filter(Boolean)
-              .map((row) => (
-                <tr key={row.boat_number}>
-                  <td className="boat-num">
-                    {t("analysis.boatN", { n: row.boat_number })}
-                  </td>
-                  <td className="count">{row.race_count}</td>
-                  <td className="count">{row.fastest_count}</td>
-                  <td className="percentage">{row.fastest_rate.toFixed(2)}%</td>
-                  <td className="percentage">
-                    {row.win_rate_when_fastest.toFixed(2)}%
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
+      <ExTopTable data={data} t={t} />
 
       <p className="table-note">{t("analysis.exTop.note")}</p>
     </div>
