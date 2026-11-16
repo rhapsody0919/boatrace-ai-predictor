@@ -826,7 +826,7 @@
   - `api/_lib/snsClaimCheck.js:434` rest(rest) [is_absent, race_id]
   - `api/_lib/snsClaimCheck.js:500` rest(rest) [is_absent, race_id]
   - `api/_lib/snsTodayDigest.js:52` rest(rest) [boat_number, is_absent, race_id]
-  - `scripts/analysis/aggregate-racer-stats.js:569` select [racer_id]
+  - `scripts/analysis/aggregate-racer-stats.js:627` select [racer_id]
   - `scripts/analysis/analyze-indicator-predictive-power.js:148` select [boat_number, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/analysis/backtest-course-rate-only.js:81` select [boat_number, race_id, racer_id]
   - `scripts/analysis/backtest-unified-model.js:100` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
@@ -1333,7 +1333,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（12）: 
   - `api/_lib/racerEntryExhibition.js:188` rest(rest) [calculated_at, course_entry_tendency, racer_id, venue_code]
-  - `scripts/analysis/aggregate-racer-stats.js:453` select(helper:upsertChangedRows)
+  - `scripts/analysis/aggregate-racer-stats.js:504` select(helper:upsertChangedRows)
   - `scripts/analysis/analyze-indicator-predictive-power.js:159` select [avg_st, course_race_counts, racer_id, venue_code]
   - `scripts/analysis/backtest-course-rate-only.js:92` select [course_race_counts, racer_id, venue_code]
   - `scripts/analysis/backtest-unified-model.js:126` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
@@ -1345,7 +1345,7 @@
   - `scripts/daily/generate-unified-trifecta-reference.js:117` select [avg_st, course_race_counts, racer_id, venue_code]
   - `src/services/racerQueries.js:198` select [avg_st, avg_st_last_30, course_race_counts, flying_rate, racer_id, st_stddev, total_races, venue_code]
 - 書き手（1）: 
-  - `scripts/analysis/aggregate-racer-stats.js:453` upsert(helper:upsertChangedRows) [?]
+  - `scripts/analysis/aggregate-racer-stats.js:504` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-racer_course_technique_stats"></a>racer_course_technique_stats

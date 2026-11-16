@@ -6984,7 +6984,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:569",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:627",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8857,7 +8857,7 @@
         "racer_id": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:171",
-            "scripts/analysis/aggregate-racer-stats.js:569",
+            "scripts/analysis/aggregate-racer-stats.js:627",
             "scripts/analysis/analyze-indicator-predictive-power.js:148",
             "scripts/analysis/backtest-course-rate-only.js:81",
             "scripts/analysis/backtest-unified-model.js:100",
@@ -13411,7 +13411,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:453",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:504",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
@@ -13550,7 +13550,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:453",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:504",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
