@@ -44,23 +44,30 @@ const VENUE_NAMES_JP = {
   '24': '大村'
 };
 
-// ルール名からcheck関数を生成
-function generateCheckFunction(rule) {
-  const conditions = rule.conditions || {};
-  const checks = [];
+// 艇番の条件（1号艇は has1 を使う）
+function boatCheck(boat) {
+  return boat === 1 ? 'has1' : `pred.top3.includes(${boat})`;
+}
 
-  // top_pick条件
-  if (conditions.top_pick) {
-    checks.push(`pred.topPick === ${conditions.top_pick}`);
+// 最小・最大の範囲条件（min → max の順）
+function rangeChecks(range, variable) {
+  const checks = [];
+  if (range.min) {
+    checks.push(`${variable} >= ${range.min}`);
   }
+  if (range.max) {
+    checks.push(`${variable} <= ${range.max}`);
+  }
+  return checks;
+}
+
+// 艇に関する条件（includes_boat → includes_boat_1 → includes_boats の順）
+function boatChecks(conditions) {
+  const checks = [];
 
   // includes_boat条件（単一）
   if (conditions.includes_boat) {
-    if (conditions.includes_boat === 1) {
-      checks.push('has1');
-    } else {
-      checks.push(`pred.top3.includes(${conditions.includes_boat})`);
-    }
+    checks.push(boatCheck(conditions.includes_boat));
   }
 
   // includes_boat_1条件
@@ -71,13 +78,24 @@ function generateCheckFunction(rule) {
   // includes_boats条件（複数）
   if (conditions.includes_boats) {
     for (const boat of conditions.includes_boats) {
-      if (boat === 1) {
-        checks.push('has1');
-      } else {
-        checks.push(`pred.top3.includes(${boat})`);
-      }
+      checks.push(boatCheck(boat));
     }
   }
+
+  return checks;
+}
+
+// ルール名からcheck関数を生成
+function generateCheckFunction(rule) {
+  const conditions = rule.conditions || {};
+  const checks = [];
+
+  // top_pick条件
+  if (conditions.top_pick) {
+    checks.push(`pred.topPick === ${conditions.top_pick}`);
+  }
+
+  checks.push(...boatChecks(conditions));
 
   // prediction_sorted条件（3連複の組み合わせ）
   if (conditions.prediction_sorted) {
@@ -86,22 +104,12 @@ function generateCheckFunction(rule) {
 
   // confidence条件
   if (conditions.confidence) {
-    if (conditions.confidence.min) {
-      checks.push(`conf >= ${conditions.confidence.min}`);
-    }
-    if (conditions.confidence.max) {
-      checks.push(`conf <= ${conditions.confidence.max}`);
-    }
+    checks.push(...rangeChecks(conditions.confidence, 'conf'));
   }
 
   // race_number条件
   if (conditions.race_number) {
-    if (conditions.race_number.min) {
-      checks.push(`raceNo >= ${conditions.race_number.min}`);
-    }
-    if (conditions.race_number.max) {
-      checks.push(`raceNo <= ${conditions.race_number.max}`);
-    }
+    checks.push(...rangeChecks(conditions.race_number, 'raceNo'));
   }
 
   // excludes_boat_1条件
