@@ -10,7 +10,6 @@ import {
   compareEdgesToBaseline,
   compareBaselines,
   newUtilsFileProblems,
-  facadeShouldBeError,
 } from "./lintBaselines.js";
 import { baselineOfEdges } from "./lintDepTree.js";
 
@@ -26,7 +25,7 @@ const baseline = {
 };
 
 test("データ層の和に当たるファイル", () => {
-  assert.ok(isDataLayer("src/services/supabaseDataService.js"));
+  assert.ok(!isDataLayer("src/services/supabaseDataService.js"), "殻は RA40 で消えた");
   assert.ok(isDataLayer("src/services/coreHelpers.js"));
   assert.ok(isDataLayer("src/services/raceQueries2.js"));
   assert.ok(!isDataLayer("src/services/other.js"));
@@ -84,12 +83,7 @@ test("基準の行を足すと赤、減ると better", () => {
   assert.equal(compareBaselines(baseline, baseline).better.length, 0);
 });
 
-test("facade-frozen を error にする条件は関数の本体0", () => {
-  assert.equal(facadeShouldBeError(0), true);
-  assert.equal(facadeShouldBeError(3), false);
-});
-
-test("dependency-rules.cjs が読めて規則の名前が11個", () => {
+test("dependency-rules.cjs が読めて規則の名前が10個", () => {
   const { forbidden, DEPENDENCY_CRUISER } = require("./dependency-rules.cjs");
   assert.match(DEPENDENCY_CRUISER, /^dependency-cruiser@\d+\.\d+\.\d+$/);
   assert.deepEqual(
@@ -104,17 +98,15 @@ test("dependency-rules.cjs が読めて規則の名前が11個", () => {
       "api-no-ui-data",
       "lib-no-entry",
       "domain-direct",
-      "facade-frozen",
       "no-circular",
     ],
   );
-  assert.equal(forbidden.find((r) => r.name === "facade-frozen").severity, "warn");
 });
 
 test("baselineOfEdges は和の中の from を <data-layer> にまとめ、和の外はそのまま残す", () => {
   const to = "src/components/race/basicInfoStats.js";
   const base = baselineOfEdges([
-    edge("src/services/supabaseDataService.js", to),
+    edge("src/services/raceQueries.js", to),
     edge("src/services/raceService.js", to),
   ]);
   assert.deepEqual(Object.keys(base["services-no-ui"]).sort(), [
@@ -126,7 +118,7 @@ test("baselineOfEdges は和の中の from を <data-layer> にまとめ、和�
 
 test("和の中で移しただけの辺は緑、base に無い to は赤", () => {
   const to = "src/components/race/basicInfoStats.js";
-  const base = baselineOfEdges([edge("src/services/supabaseDataService.js", to)]);
+  const base = baselineOfEdges([edge("src/services/raceQueries.js", to)]);
   assert.equal(
     compareEdgesToBaseline([edge("src/services/raceQueries2.js", to)], base).ok,
     true,

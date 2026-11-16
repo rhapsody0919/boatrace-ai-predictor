@@ -73,13 +73,6 @@ const forbidden = [
     },
   },
   {
-    // 殻だけになったら lintBaselines.js の facadeShouldBeError で error に切り替える
-    name: "facade-frozen",
-    severity: "warn",
-    from: { pathNot: "^src/services/supabaseDataService\\.js$" },
-    to: { path: "^src/services/supabaseDataService\\.js$" },
-  },
-  {
     name: "no-circular",
     severity: "error",
     from: {},
