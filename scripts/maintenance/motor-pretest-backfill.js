@@ -72,9 +72,33 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const jstToday = (now = new Date()) =>
   new Date(now.getTime() + JST_OFFSET_MS).toISOString().slice(0, 10);
 
-export function parseArgs(argv, now = new Date()) {
-  const [command, ...rest] = argv;
-  const opts = {
+/** 値を取る文字列のオプション（--名前=値 → opts のキー） */
+const STRING_OPTIONS = new Map([
+  ["from", "from"],
+  ["to", "to"],
+  ["scope", "scope"],
+  ["window", "window"],
+]);
+/** 値を Number に変えて取るオプション */
+const NUMBER_OPTIONS = new Map([
+  ["daily-limit", "dailyLimit"],
+  ["interval-min-ms", "intervalMinMs"],
+  ["interval-max-ms", "intervalMaxMs"],
+  ["assumed-latency-ms", "latencyMs"],
+  ["max-requests", "maxRequests"],
+  ["sleep-ms", "sleepMs"],
+]);
+/** 値を取らない旗のオプション（付ければ true） */
+const FLAG_OPTIONS = new Map([
+  ["dry-run", "dryRun"],
+  ["apply", "apply"],
+  ["force", "force"],
+  ["refresh", "refresh"],
+  ["plain", "plain"],
+]);
+
+function defaultOptions(command, now) {
+  return {
     command,
     from: BACKFILL_DEFAULT_FROM,
     to: addDays(jstToday(now), -1),
@@ -93,62 +117,24 @@ export function parseArgs(argv, now = new Date()) {
     plain: false,
     sleepMs: 500,
   };
+}
+
+function applyOption(opts, arg, k, v) {
+  if (STRING_OPTIONS.has(k)) opts[STRING_OPTIONS.get(k)] = v;
+  else if (k === "archive-dir") opts.archiveDir = path.resolve(v);
+  else if (NUMBER_OPTIONS.has(k)) opts[NUMBER_OPTIONS.get(k)] = Number(v);
+  else if (FLAG_OPTIONS.has(k)) opts[FLAG_OPTIONS.get(k)] = true;
+  else throw new Error(`不明なオプション: ${arg}`);
+}
+
+export function parseArgs(argv, now = new Date()) {
+  const [command, ...rest] = argv;
+  const opts = defaultOptions(command, now);
   for (const arg of rest) {
     const [k, v] = arg.startsWith("--")
       ? arg.slice(2).split("=")
       : [arg, undefined];
-    switch (k) {
-      case "from":
-        opts.from = v;
-        break;
-      case "to":
-        opts.to = v;
-        break;
-      case "scope":
-        opts.scope = v;
-        break;
-      case "archive-dir":
-        opts.archiveDir = path.resolve(v);
-        break;
-      case "daily-limit":
-        opts.dailyLimit = Number(v);
-        break;
-      case "window":
-        opts.window = v;
-        break;
-      case "interval-min-ms":
-        opts.intervalMinMs = Number(v);
-        break;
-      case "interval-max-ms":
-        opts.intervalMaxMs = Number(v);
-        break;
-      case "assumed-latency-ms":
-        opts.latencyMs = Number(v);
-        break;
-      case "max-requests":
-        opts.maxRequests = Number(v);
-        break;
-      case "sleep-ms":
-        opts.sleepMs = Number(v);
-        break;
-      case "dry-run":
-        opts.dryRun = true;
-        break;
-      case "apply":
-        opts.apply = true;
-        break;
-      case "force":
-        opts.force = true;
-        break;
-      case "refresh":
-        opts.refresh = true;
-        break;
-      case "plain":
-        opts.plain = true;
-        break;
-      default:
-        throw new Error(`不明なオプション: ${arg}`);
-    }
+    applyOption(opts, arg, k, v);
   }
   return opts;
 }
@@ -331,6 +317,55 @@ export async function cmdDownload(opts, deps = {}) {
 // parse
 // ---------------------------------------------------------------------------
 
+/** 保存した生ファイルを読む（マニフェストの sha256 と合わなければ例外） */
+function readVerifiedRaw(opts, key, m) {
+  const raw = zlib.gunzipSync(fs.readFileSync(rawPath(opts.archiveDir, key)));
+  if (m.sha256 && sha256(new Uint8Array(raw)) !== m.sha256)
+    throw new Error(`${key}: 生ファイルのsha256がマニフェストと一致しません`);
+  return raw;
+}
+
+/** 解析できなかったページを anomalies.jsonl とログへ残す */
+function recordAnomaly(opts, key, parsed, log) {
+  appendJsonl(path.join(opts.archiveDir, "parsed", "anomalies.jsonl"), {
+    key,
+    status: parsed.status,
+    anomalies: parsed.anomalies,
+    at: new Date().toISOString(),
+  });
+  log(`${key} ⚠ ${parsed.status} ${parsed.anomalies.join(" | ")}`);
+}
+
+/** 解析結果を中間JSONとして書く */
+function writeParsed(opts, out, key, date, parsed) {
+  const venueCode = Number(key.slice(0, 2));
+  const json = JSON.stringify({
+    parserVersion: MOTOR_PRETEST_PARSER_VERSION,
+    venueCode,
+    date,
+    seriesTitle: parsed.seriesTitle,
+    rows: parsed.rows,
+  });
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, opts.plain ? json : zlib.gzipSync(json));
+}
+
+/** 1ページを解析する。戻り値は "skipped"（既存）・"anomaly"（解析不能）・"written" */
+function parseOneTarget(opts, key, m, date, log) {
+  const out = parsedPath(opts.archiveDir, key, opts.plain);
+  const stale =
+    fs.existsSync(out) && fs.statSync(out).mtimeMs < Date.parse(m.fetchedAt);
+  if (!opts.force && !stale && fs.existsSync(out)) return "skipped";
+  const raw = readVerifiedRaw(opts, key, m);
+  const parsed = parseMotorPretestHtml(raw.toString("utf8"));
+  if (parsed.status !== MOTOR_PRETEST_STATUSES.ok) {
+    recordAnomaly(opts, key, parsed, log);
+    return "anomaly";
+  }
+  writeParsed(opts, out, key, date, parsed);
+  return "written";
+}
+
 export async function cmdParse(opts, deps = {}) {
   const log = deps.log ?? console.log;
   const manifest = latestManifestByKey(opts.archiveDir);
@@ -338,41 +373,12 @@ export async function cmdParse(opts, deps = {}) {
   let written = 0;
   let skipped = 0;
   for (const [key, m] of manifest) {
-    const venueCode = Number(key.slice(0, 2));
     const date = `${key.slice(3, 7)}-${key.slice(7, 9)}-${key.slice(9, 11)}`;
     if (m.status !== "ok" || date < opts.from || date > opts.to) continue;
     targets++;
-    const out = parsedPath(opts.archiveDir, key, opts.plain);
-    const stale =
-      fs.existsSync(out) && fs.statSync(out).mtimeMs < Date.parse(m.fetchedAt);
-    if (!opts.force && !stale && fs.existsSync(out)) {
-      skipped++;
-      continue;
-    }
-    const raw = zlib.gunzipSync(fs.readFileSync(rawPath(opts.archiveDir, key)));
-    if (m.sha256 && sha256(new Uint8Array(raw)) !== m.sha256)
-      throw new Error(`${key}: 生ファイルのsha256がマニフェストと一致しません`);
-    const parsed = parseMotorPretestHtml(raw.toString("utf8"));
-    if (parsed.status !== MOTOR_PRETEST_STATUSES.ok) {
-      appendJsonl(path.join(opts.archiveDir, "parsed", "anomalies.jsonl"), {
-        key,
-        status: parsed.status,
-        anomalies: parsed.anomalies,
-        at: new Date().toISOString(),
-      });
-      log(`${key} ⚠ ${parsed.status} ${parsed.anomalies.join(" | ")}`);
-      continue;
-    }
-    const json = JSON.stringify({
-      parserVersion: MOTOR_PRETEST_PARSER_VERSION,
-      venueCode,
-      date,
-      seriesTitle: parsed.seriesTitle,
-      rows: parsed.rows,
-    });
-    fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, opts.plain ? json : zlib.gzipSync(json));
-    written++;
+    const result = parseOneTarget(opts, key, m, date, log);
+    if (result === "written") written++;
+    if (result === "skipped") skipped++;
   }
   log(`parse: 対象 ${targets} / 出力 ${written} / 既存スキップ ${skipped}`);
   if (targets === 0) {
@@ -418,10 +424,10 @@ export function buildLoadPlan(opts) {
   return { rows, pages, missingParsed };
 }
 
-export async function cmdLoad(opts, deps = {}) {
-  const log = deps.log ?? console.log;
-  const sleepFn = deps.sleep ?? sleepDefault;
-  const plan = buildLoadPlan(opts);
+/**
+ * 投入計画の検査とログ。続行できないとき（未解析・0行）は終了コード 1、続行するなら null
+ */
+function checkLoadPlan(plan, log) {
   if (plan.missingParsed.length > 0) {
     console.error(
       `解析済みでないページがあります（${plan.missingParsed.length}件。先に parse を実行してください）: ${plan.missingParsed.slice(0, 3).join(", ")}…`,
@@ -436,6 +442,54 @@ export async function cmdLoad(opts, deps = {}) {
     console.error("投入対象の行が0件です");
     return 1;
   }
+  return null;
+}
+
+/** 書き込み先のテーブルを読めるか確かめる。読めなければ終了コード 1、読めれば null */
+async function probeLoadTable(client) {
+  const probe = await client
+    .from(MOTOR_PRETEST_TABLE.table)
+    .select("race_date")
+    .limit(1);
+  if (!probe.error) return null;
+  console.error(
+    `${MOTOR_PRETEST_TABLE.table} を読めません（マイグレーション090が未適用の可能性）: ${probe.error.message}`,
+  );
+  return 1;
+}
+
+/** 日付ごとに書く（既存行の取得を、日付単位で行うため）。変更の無い行は書かない */
+function groupRowsByDate(rows) {
+  const byDate = new Map();
+  for (const row of rows) {
+    if (!byDate.has(row.race_date)) byDate.set(row.race_date, []);
+    byDate.get(row.race_date).push(row);
+  }
+  return byDate;
+}
+
+/** 日付ごとに書き、書いた行数と失敗した日数を返す（1日の失敗は止めない） */
+async function writeByDate(client, byDate, write, sleepFn, sleepMs) {
+  let written = 0;
+  let failedDates = 0;
+  for (const [date, rows] of [...byDate.entries()].sort()) {
+    try {
+      written += await write(client, rows);
+    } catch (error) {
+      failedDates++;
+      console.error(`${date}: 書き込みに失敗: ${error.message}`);
+    }
+    await sleepFn(sleepMs);
+  }
+  return { written, failedDates };
+}
+
+export async function cmdLoad(opts, deps = {}) {
+  const log = deps.log ?? console.log;
+  const sleepFn = deps.sleep ?? sleepDefault;
+  const plan = buildLoadPlan(opts);
+  const planCode = checkLoadPlan(plan, log);
+  if (planCode !== null) return planCode;
   if (!opts.apply) {
     log(
       "[DRY-RUN] DBには書き込みません。書き込むには --apply を付けます（マイグレーション090の適用と、ユーザーの実行承認が前提）",
@@ -450,34 +504,17 @@ export async function cmdLoad(opts, deps = {}) {
     );
     return 1;
   }
-  const probe = await client
-    .from(MOTOR_PRETEST_TABLE.table)
-    .select("race_date")
-    .limit(1);
-  if (probe.error) {
-    console.error(
-      `${MOTOR_PRETEST_TABLE.table} を読めません（マイグレーション090が未適用の可能性）: ${probe.error.message}`,
-    );
-    return 1;
-  }
-  // 日付ごとに書く（既存行の取得を、日付単位で行うため）。変更の無い行は書かない
-  const byDate = new Map();
-  for (const row of plan.rows) {
-    if (!byDate.has(row.race_date)) byDate.set(row.race_date, []);
-    byDate.get(row.race_date).push(row);
-  }
-  let written = 0;
-  let failedDates = 0;
+  const probeCode = await probeLoadTable(client);
+  if (probeCode !== null) return probeCode;
+  const byDate = groupRowsByDate(plan.rows);
   const write = deps.write ?? writeMotorPretestRows;
-  for (const [date, rows] of [...byDate.entries()].sort()) {
-    try {
-      written += await write(client, rows);
-    } catch (error) {
-      failedDates++;
-      console.error(`${date}: 書き込みに失敗: ${error.message}`);
-    }
-    await sleepFn(opts.sleepMs);
-  }
+  const { written, failedDates } = await writeByDate(
+    client,
+    byDate,
+    write,
+    sleepFn,
+    opts.sleepMs,
+  );
   log(
     `\nload: ${JSON.stringify({ dates: byDate.size, written, failedDates })}`,
   );
