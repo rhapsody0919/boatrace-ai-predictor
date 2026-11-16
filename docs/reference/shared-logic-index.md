@@ -453,7 +453,6 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
 | `src/services/snsHubService.js` | — | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか16件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
-| `src/services/supabaseDataService.js` | Supabase データサービス | supabaseDataService |
 | `src/services/venueQueries.js` | — | getVenueTechniquePeriodStats, getVenueCharacteristics, getNationalAverageOutcomeDistribution, getOutcomeDistribution, getWinningTechniqueStats ほか1件 |
 | `src/services/venueQueries2.js` | — | getTodaysVenueRanking, getVenueDaySummary, getVenueFirstWinRateRanking, getTopStartStats, getLosingTechniqueStats ほか1件 |
 | `src/services/venueQueries3.js` | — | getNigeSimulation, getNigeOutcomeDistribution, getExhibitionTimeTopStats, getVenueGradeBoatStats, getVenuesWithGradeStats |
@@ -461,4 +460,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 419 ファイル / export 2407 件。
+対象 418 ファイル / export 2406 件。
