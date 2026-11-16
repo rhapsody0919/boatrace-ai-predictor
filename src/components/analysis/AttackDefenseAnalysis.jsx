@@ -41,6 +41,78 @@ const VENUE_NAMES = {
   24: "大村",
 };
 
+function AttackDefenseControls({
+  t,
+  venues,
+  loading,
+  selectedVenue,
+  setSelectedVenue,
+  races,
+  selectedRace,
+  setSelectedRace,
+}) {
+  return (
+    venues.length === 0 && !loading ? (
+      <div className="empty-state">{t("analysis.noRacesToday")}</div>
+    ) : (
+      <div className="controls-section">
+        <label htmlFor="attack-defense-venue-select">
+          {t("analysis.venueSelectTodayLabel")}
+        </label>
+        <select
+          id="attack-defense-venue-select"
+          value={selectedVenue ?? ""}
+          onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
+          className="venue-select"
+        >
+          {venues.map((v) => (
+            <option key={v} value={v}>
+              {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
+            </option>
+          ))}
+        </select>
+
+        {races.length > 0 && (
+          <>
+            <label htmlFor="attack-defense-race-select">
+              {t("analysis.raceSelectLabel")}
+            </label>
+            <select
+              id="attack-defense-race-select"
+              value={selectedRace ?? ""}
+              onChange={(e) => setSelectedRace(e.target.value)}
+              className="venue-select"
+            >
+              {races.map((r) => (
+                <option key={r.race_id} value={r.race_id}>
+                  {t("analysis.raceOption", {
+                    number: r.race_number,
+                    time: r.start_time?.slice(0, 5),
+                  })}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+      </div>
+    )
+  );
+}
+
+function AttackDefenseResult({ t, loading, error, racerStats, players }) {
+  return (
+    <>
+      {!loading && !error && racerStats && racerStats.length >= 6 && (
+        <AttackDefenseTable racerStats={racerStats} players={players} />
+      )}
+
+      {!loading && !error && (!racerStats || racerStats.length < 6) && (
+        <div className="empty-state">{t("analysis.ad.empty")}</div>
+      )}
+    </>
+  );
+}
+
 function AttackDefenseAnalysis({
   initialVenueCode = null,
   initialRaceId = null,
@@ -97,51 +169,18 @@ function AttackDefenseAnalysis({
         </>
       )}
 
-      {!embedded &&
-        (venues.length === 0 && !loading ? (
-          <div className="empty-state">{t("analysis.noRacesToday")}</div>
-        ) : (
-          <div className="controls-section">
-            <label htmlFor="attack-defense-venue-select">
-              {t("analysis.venueSelectTodayLabel")}
-            </label>
-            <select
-              id="attack-defense-venue-select"
-              value={selectedVenue ?? ""}
-              onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
-              className="venue-select"
-            >
-              {venues.map((v) => (
-                <option key={v} value={v}>
-                  {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-                </option>
-              ))}
-            </select>
-
-            {races.length > 0 && (
-              <>
-                <label htmlFor="attack-defense-race-select">
-                  {t("analysis.raceSelectLabel")}
-                </label>
-                <select
-                  id="attack-defense-race-select"
-                  value={selectedRace ?? ""}
-                  onChange={(e) => setSelectedRace(e.target.value)}
-                  className="venue-select"
-                >
-                  {races.map((r) => (
-                    <option key={r.race_id} value={r.race_id}>
-                      {t("analysis.raceOption", {
-                        number: r.race_number,
-                        time: r.start_time?.slice(0, 5),
-                      })}
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-          </div>
-        ))}
+      {!embedded && (
+        <AttackDefenseControls
+          t={t}
+          venues={venues}
+          loading={loading}
+          selectedVenue={selectedVenue}
+          setSelectedVenue={setSelectedVenue}
+          races={races}
+          selectedRace={selectedRace}
+          setSelectedRace={setSelectedRace}
+        />
+      )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
@@ -150,13 +189,13 @@ function AttackDefenseAnalysis({
         </div>
       )}
 
-      {!loading && !error && racerStats && racerStats.length >= 6 && (
-        <AttackDefenseTable racerStats={racerStats} players={players} />
-      )}
-
-      {!loading && !error && (!racerStats || racerStats.length < 6) && (
-        <div className="empty-state">{t("analysis.ad.empty")}</div>
-      )}
+      <AttackDefenseResult
+        t={t}
+        loading={loading}
+        error={error}
+        racerStats={racerStats}
+        players={players}
+      />
     </div>
   );
 }

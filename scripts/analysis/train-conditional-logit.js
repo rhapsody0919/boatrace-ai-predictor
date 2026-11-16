@@ -73,15 +73,15 @@ function parseArgs(argv = process.argv.slice(2)) {
 // データ取得・結合
 // ---------------------------------------------------------------------------
 
-export async function loadDataset({ from, to }) {
+// 4表を取得（race_id の範囲で絞る）
+async function fetchRaceTables({ from, to }) {
   const rangeFilter = (col) => (q) => {
     if (from) q = q.gte(col, from);
     if (to) q = q.lte(col, `${to}~`); // race_id は日付プレフィックスで辞書順
     return q;
   };
 
-  console.log("データ取得中...");
-  const [entries, exhibitions, results, oddsRows] = await Promise.all([
+  return Promise.all([
     fetchAll(
       "race_entries",
       "race_id, boat_number, grade, win_rate, local_win_rate, motor_2rate, boat_2rate",
@@ -106,10 +106,10 @@ export async function loadDataset({ from, to }) {
       (q) => rangeFilter("race_id")(q).order("race_id").order("captured_at"),
     ),
   ]);
-  console.log(
-    `  entries=${entries.length}, exhibitions=${exhibitions.length}, results=${results.length}, odds_snapshots=${oddsRows.length}`,
-  );
+}
 
+// 4表を race_id で引ける形に整える
+function indexRaceTables({ entries, exhibitions, results, oddsRows }) {
   // 最終スナップショット（締切に最も近いオッズ）を race_id ごとに選ぶ
   const latestOdds = {};
   for (const row of oddsRows) {
@@ -133,10 +133,23 @@ export async function loadDataset({ from, to }) {
   for (const e of entries) {
     (entriesByRace[e.race_id] ??= []).push(e);
   }
+  return { latestOdds, exhibitionByRace, resultByRace, entriesByRace };
+}
 
-  // レース単位に組み立て（6艇そろい・結果ありが必須）
-  // オッズ欠損レースは基礎モデルの学習には使い（hasOdds=false）、
-  // オッズ結合・評価・回収率シミュレーションからは除外する。
+// 最終オッズ行 → 6艇の単勝オッズ（欠損・1以下を含めば null）
+function oddsOfRow(oddsRow) {
+  let odds = oddsRow
+    ? [1, 2, 3, 4, 5, 6].map((b) => oddsRow[`odds_win_${b}`] ?? null)
+    : null;
+  if (odds && odds.some((o) => !(o > 1))) odds = null;
+  return odds;
+}
+
+// レース単位に組み立て（6艇そろい・結果ありが必須）
+// オッズ欠損レースは基礎モデルの学習には使い（hasOdds=false）、
+// オッズ結合・評価・回収率シミュレーションからは除外する。
+function assembleRaces(index) {
+  const { latestOdds, exhibitionByRace, resultByRace, entriesByRace } = index;
   const races = [];
   let noEntries = 0;
   let noResult = 0;
@@ -152,11 +165,7 @@ export async function loadDataset({ from, to }) {
       noResult++;
       continue;
     }
-    const oddsRow = latestOdds[raceId];
-    let odds = oddsRow
-      ? [1, 2, 3, 4, 5, 6].map((b) => oddsRow[`odds_win_${b}`] ?? null)
-      : null;
-    if (odds && odds.some((o) => !(o > 1))) odds = null;
+    const odds = oddsOfRow(latestOdds[raceId]);
     if (!odds) noOdds++;
 
     // race_id 形式: YYYY-MM-DD-VV-RR
@@ -175,6 +184,22 @@ export async function loadDataset({ from, to }) {
       hasOdds: !!odds,
     });
   }
+  return { races, noEntries, noResult, noOdds };
+}
+
+export async function loadDataset({ from, to }) {
+  console.log("データ取得中...");
+  const [entries, exhibitions, results, oddsRows] = await fetchRaceTables({
+    from,
+    to,
+  });
+  console.log(
+    `  entries=${entries.length}, exhibitions=${exhibitions.length}, results=${results.length}, odds_snapshots=${oddsRows.length}`,
+  );
+
+  const { races, noEntries, noResult, noOdds } = assembleRaces(
+    indexRaceTables({ entries, exhibitions, results, oddsRows }),
+  );
 
   races.sort((a, b) => (a.raceId < b.raceId ? -1 : 1));
   console.log(
@@ -215,6 +240,30 @@ export function estimateVenueIn1Adv(races) {
 // 条件付きロジット（Newton-Raphson MLE）
 // ---------------------------------------------------------------------------
 
+// 1レース分の勾配・ヘッセ行列（上三角）を grad・hess へ足し込む
+function accumulateRace(grad, hess, feats, target, w) {
+  const d = w.length;
+  const probs = softmax(
+    feats.map((f) => f.reduce((s, x, j) => s + x * w[j], 0)),
+  );
+
+  const mu = new Array(d).fill(0);
+  for (let i = 0; i < feats.length; i++) {
+    for (let j = 0; j < d; j++) mu[j] += probs[i] * feats[i][j];
+  }
+  for (let j = 0; j < d; j++) grad[j] += mu[j] - feats[target][j];
+
+  for (let i = 0; i < feats.length; i++) {
+    for (let j = 0; j < d; j++) {
+      const pj = probs[i] * feats[i][j];
+      for (let k = j; k < d; k++) hess[j][k] += pj * feats[i][k];
+    }
+  }
+  for (let j = 0; j < d; j++) {
+    for (let k = j; k < d; k++) hess[j][k] -= mu[j] * mu[k];
+  }
+}
+
 /**
  * 条件付きロジットのMLE学習
  * @param {number[][][]} X - [レース][艇][特徴量]
@@ -230,26 +279,7 @@ export function fitConditionalLogit(X, y) {
     const hess = Array.from({ length: d }, () => new Array(d).fill(0));
 
     for (let r = 0; r < X.length; r++) {
-      const feats = X[r];
-      const probs = softmax(
-        feats.map((f) => f.reduce((s, x, j) => s + x * w[j], 0)),
-      );
-
-      const mu = new Array(d).fill(0);
-      for (let i = 0; i < feats.length; i++) {
-        for (let j = 0; j < d; j++) mu[j] += probs[i] * feats[i][j];
-      }
-      for (let j = 0; j < d; j++) grad[j] += mu[j] - feats[y[r]][j];
-
-      for (let i = 0; i < feats.length; i++) {
-        for (let j = 0; j < d; j++) {
-          const pj = probs[i] * feats[i][j];
-          for (let k = j; k < d; k++) hess[j][k] += pj * feats[i][k];
-        }
-      }
-      for (let j = 0; j < d; j++) {
-        for (let k = j; k < d; k++) hess[j][k] -= mu[j] * mu[k];
-      }
+      accumulateRace(grad, hess, X[r], y[r], w);
     }
 
     // 対称化 + ridge
@@ -342,22 +372,8 @@ function evaluate(probsList, winners) {
 // メイン: walk-forward 評価
 // ---------------------------------------------------------------------------
 
-async function main() {
-  if (!isSupabaseEnabled()) {
-    console.error("Supabase not configured.");
-    process.exit(1);
-  }
-  const args = parseArgs();
-  const races = await loadDataset(args);
-  if (races.length < 1000) {
-    console.error(`レース数が不足しています (${races.length})`);
-    process.exit(1);
-  }
-
-  const months = [...new Set(races.map((r) => r.month))].sort();
-  console.log(`\n対象月: ${months.join(", ")}`);
-
-  // 前計算
+// 前計算（勝者の位置・implied 確率）をして、月別の束ねを返す
+function prepareRaces(races) {
   for (const race of races) {
     race.winnerIdx = race.entries.findIndex(
       (e) => e.boat_number === race.winner,
@@ -374,7 +390,58 @@ async function main() {
   const byMonthOdds = {}; // 結合・評価用（オッズありのみ）
   for (const r of valid) (byMonth[r.month] ??= []).push(r);
   for (const r of validOdds) (byMonthOdds[r.month] ??= []).push(r);
+  return { valid, byMonth, byMonthOdds };
+}
 
+// 1フォールドのテスト月で3モデルの確率を作る
+function predictTestMonth(testRaces, venueAdv, weights, combW) {
+  const fundProbs = [];
+  const oddsProbs = [];
+  const combProbs = [];
+  for (const r of testRaces) {
+    const f = predictConditionalLogit(buildFeatures(r, venueAdv), weights);
+    const q = r.implied;
+    const x = r.entries.map((_, i) => [
+      Math.log(clampP(f[i])),
+      Math.log(clampP(q[i])),
+    ]);
+    fundProbs.push(f);
+    oddsProbs.push(q);
+    combProbs.push(predictConditionalLogit(x, combW));
+  }
+  return { fundProbs, oddsProbs, combProbs };
+}
+
+// 回収率シミュレーション（combined の確率 × スナップショットオッズ）
+function simulateRoi(roi, testRaces, combProbs) {
+  for (let t = 0; t < testRaces.length; t++) {
+    const r = testRaces[t];
+    const p = combProbs[t];
+    let bestEv = 0;
+    let bestBoat = -1;
+    for (let i = 0; i < 6; i++) {
+      const ev = p[i] * r.odds[i] * ODDS_HAIRCUT;
+      if (ev > bestEv) {
+        bestEv = ev;
+        bestBoat = i;
+      }
+    }
+    for (const th of EV_THRESHOLDS) {
+      if (bestEv >= th && bestBoat >= 0) {
+        roi[th].bets++;
+        roi[th].invested += 100;
+        if (bestBoat === r.winnerIdx) {
+          roi[th].hits++;
+          roi[th].returned += r.payoutWin; // 実際の最終払戻（100円あたり）
+        }
+      }
+    }
+  }
+}
+
+// walk-forward: 学習 = 月[0..m-1]（全先行月）、テスト = 月[m]（オッズあり）
+// 結合係数はOOF方式（学習月内 leave-one-month-out）
+function walkForward(months, byMonth, byMonthOdds) {
   const foldResults = [];
   const roi = {};
   for (const th of EV_THRESHOLDS)
@@ -382,8 +449,6 @@ async function main() {
   let lastWeights = null;
   let lastCombiner = null;
 
-  // walk-forward: 学習 = 月[0..m-1]（全先行月）、テスト = 月[m]（オッズあり）
-  // 結合係数はOOF方式（学習月内 leave-one-month-out）
   for (let m = 2; m < months.length; m++) {
     const trainMonths = months.slice(0, m);
     const trainRaces = trainMonths.flatMap((mo) => byMonth[mo] ?? []);
@@ -398,20 +463,12 @@ async function main() {
     lastCombiner = combW;
 
     // 3. テスト月で3モデルを評価
-    const fundProbs = [];
-    const oddsProbs = [];
-    const combProbs = [];
-    for (const r of testRaces) {
-      const f = predictConditionalLogit(buildFeatures(r, venueAdv), weights);
-      const q = r.implied;
-      const x = r.entries.map((_, i) => [
-        Math.log(clampP(f[i])),
-        Math.log(clampP(q[i])),
-      ]);
-      fundProbs.push(f);
-      oddsProbs.push(q);
-      combProbs.push(predictConditionalLogit(x, combW));
-    }
+    const { fundProbs, oddsProbs, combProbs } = predictTestMonth(
+      testRaces,
+      venueAdv,
+      weights,
+      combW,
+    );
     const winners = testRaces.map((r) => r.winnerIdx);
 
     const fund = evaluate(fundProbs, winners);
@@ -430,36 +487,17 @@ async function main() {
       deltaR2: comb.mcFaddenR2 - odds.mcFaddenR2,
     });
 
-    // 4. 回収率シミュレーション（combined の確率 × スナップショットオッズ）
-    for (let t = 0; t < testRaces.length; t++) {
-      const r = testRaces[t];
-      const p = combProbs[t];
-      let bestEv = 0;
-      let bestBoat = -1;
-      for (let i = 0; i < 6; i++) {
-        const ev = p[i] * r.odds[i] * ODDS_HAIRCUT;
-        if (ev > bestEv) {
-          bestEv = ev;
-          bestBoat = i;
-        }
-      }
-      for (const th of EV_THRESHOLDS) {
-        if (bestEv >= th && bestBoat >= 0) {
-          roi[th].bets++;
-          roi[th].invested += 100;
-          if (bestBoat === r.winnerIdx) {
-            roi[th].hits++;
-            roi[th].returned += r.payoutWin; // 実際の最終払戻（100円あたり）
-          }
-        }
-      }
-    }
+    // 4. 回収率シミュレーション
+    simulateRoi(roi, testRaces, combProbs);
   }
+  return { foldResults, roi, lastWeights, lastCombiner };
+}
 
-  // ---------------------------------------------------------------------------
-  // レポート出力
-  // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// レポート出力
+// ---------------------------------------------------------------------------
 
+function printFoldTable(foldResults) {
   console.log("\n===== walk-forward 評価（月次フォールド）=====");
   console.log(
     "month      | n     | logloss fund/odds/comb | acc fund/odds/comb | R² fund/odds/comb | ΔR²    | α/β",
@@ -474,12 +512,18 @@ async function main() {
         `${f.alpha.toFixed(2)}/${f.beta.toFixed(2)}`,
     );
   }
+}
 
-  const agg = (key, metric) => {
-    const tot = foldResults.reduce((s, f) => s + f[key][metric] * f[key].n, 0);
-    const n = foldResults.reduce((s, f) => s + f[key].n, 0);
-    return tot / n;
-  };
+// フォールド結果のレース数加重平均
+function aggOf(foldResults, key, metric) {
+  const tot = foldResults.reduce((s, f) => s + f[key][metric] * f[key].n, 0);
+  const n = foldResults.reduce((s, f) => s + f[key].n, 0);
+  return tot / n;
+}
+
+// 集計を出力し、ΔR²（combined − odds）を返す
+function printAggregate(foldResults) {
+  const agg = (key, metric) => aggOf(foldResults, key, metric);
   console.log("\n===== 集計（テスト全期間・レース数加重平均）=====");
   for (const key of ["fund", "odds", "combined"]) {
     console.log(
@@ -491,7 +535,10 @@ async function main() {
   console.log(
     `ΔR² (combined − odds) = ${totalDeltaR2 >= 0 ? "+" : ""}${totalDeltaR2.toFixed(4)}  ${totalDeltaR2 > 0 ? "→ 市場への上乗せ情報あり" : "→ 市場に対する優位なし"}`,
   );
+  return totalDeltaR2;
+}
 
+function printRoiTable(roi) {
   console.log("\n===== EV閾値別 単勝回収率シミュレーション（combined）=====");
   console.log(
     "threshold | bets  | hits | hit%  | invested | returned | recovery",
@@ -503,100 +550,128 @@ async function main() {
       `EV>=${th.toFixed(1)}   | ${String(x.bets).padStart(5)} | ${String(x.hits).padStart(4)} | ${x.bets > 0 ? ((x.hits / x.bets) * 100).toFixed(1) : "0.0"}% | ${String(x.invested).padStart(8)} | ${String(x.returned).padStart(8)} | ${(rec * 100).toFixed(1)}%`,
     );
   }
+}
 
-  if (lastWeights) {
-    console.log("\n===== 基礎モデル係数（最終フォールド）=====");
-    FEATURE_NAMES.forEach((name, j) =>
-      console.log(`  ${name.padEnd(16)}: ${lastWeights[j].toFixed(4)}`),
+function printLastWeights(lastWeights, lastCombiner) {
+  if (!lastWeights) return;
+  console.log("\n===== 基礎モデル係数（最終フォールド）=====");
+  FEATURE_NAMES.forEach((name, j) =>
+    console.log(`  ${name.padEnd(16)}: ${lastWeights[j].toFixed(4)}`),
+  );
+  if (lastCombiner)
+    console.log(
+      `  結合係数: α(fund)=${lastCombiner[0].toFixed(3)}, β(odds)=${lastCombiner[1].toFixed(3)}`,
     );
-    if (lastCombiner)
-      console.log(
-        `  結合係数: α(fund)=${lastCombiner[0].toFixed(3)}, β(odds)=${lastCombiner[1].toFixed(3)}`,
-      );
-  }
+}
 
-  const aggSummary = {
-    fund: {
-      logLoss: agg("fund", "logLoss"),
-      accuracy: agg("fund", "accuracy"),
-      mcFaddenR2: agg("fund", "mcFaddenR2"),
-    },
-    odds: {
-      logLoss: agg("odds", "logLoss"),
-      accuracy: agg("odds", "accuracy"),
-      mcFaddenR2: agg("odds", "mcFaddenR2"),
-    },
-    combined: {
-      logLoss: agg("combined", "logLoss"),
-      accuracy: agg("combined", "accuracy"),
-      mcFaddenR2: agg("combined", "mcFaddenR2"),
-    },
+// 本番モデルの walk_forward_eval に載せる集計
+function summarizeFolds(foldResults, totalDeltaR2) {
+  const metricsOf = (key) => ({
+    logLoss: aggOf(foldResults, key, "logLoss"),
+    accuracy: aggOf(foldResults, key, "accuracy"),
+    mcFaddenR2: aggOf(foldResults, key, "mcFaddenR2"),
+  });
+  return {
+    fund: metricsOf("fund"),
+    odds: metricsOf("odds"),
+    combined: metricsOf("combined"),
     deltaR2: totalDeltaR2,
     nTest: foldResults.reduce((s, f) => s + f.nTest, 0),
   };
+}
 
-  if (args.save) {
-    const outDir = path.join(
-      __dirname,
-      "../../data/analysis/model-experiments",
-    );
-    await fs.mkdir(outDir, { recursive: true });
-    const outPath = path.join(outDir, "conditional-logit-eval.json");
-    await fs.writeFile(
-      outPath,
-      JSON.stringify(
-        {
-          evaluated_at: new Date().toISOString(),
-          range: { from: args.from, to: args.to },
-          folds: foldResults,
-          roi,
-          feature_names: FEATURE_NAMES,
-          last_weights: lastWeights,
-          last_combiner: lastCombiner,
-        },
-        null,
-        2,
-      ),
-      "utf-8",
-    );
-    console.log(`\n結果を保存: ${outPath}`);
+// --save: 評価結果を data/analysis/model-experiments/ へ書く
+async function saveEvaluation(args, wf) {
+  const outDir = path.join(__dirname, "../../data/analysis/model-experiments");
+  await fs.mkdir(outDir, { recursive: true });
+  const outPath = path.join(outDir, "conditional-logit-eval.json");
+  await fs.writeFile(
+    outPath,
+    JSON.stringify(
+      {
+        evaluated_at: new Date().toISOString(),
+        range: { from: args.from, to: args.to },
+        folds: wf.foldResults,
+        roi: wf.roi,
+        feature_names: FEATURE_NAMES,
+        last_weights: wf.lastWeights,
+        last_combiner: wf.lastCombiner,
+      },
+      null,
+      2,
+    ),
+    "utf-8",
+  );
+  console.log(`\n結果を保存: ${outPath}`);
+}
+
+// ---------------------------------------------------------------------------
+// 本番モデルの出力（全期間で学習、フロントエンドが import する）
+// ---------------------------------------------------------------------------
+async function fitProductionModel(prep, months, aggSummary) {
+  const { valid, byMonth, byMonthOdds } = prep;
+  console.log("\n===== 本番モデル学習（全期間）=====");
+  const { venueAdv, weights } = fitFundModel(valid);
+  const combW = fitCombinerOOF(byMonth, byMonthOdds, months);
+  if (!combW) {
+    console.error("OOFデータ不足で結合係数を学習できませんでした");
+    process.exit(1);
+  }
+  console.log(
+    `  基礎モデル: ${valid.length}レースで学習、結合係数 α=${combW[0].toFixed(3)}, β=${combW[1].toFixed(3)}`,
+  );
+
+  const model = {
+    model_id: "sherlock",
+    version: 1,
+    trained_at: new Date().toISOString(),
+    training_races: valid.length,
+    training_from: valid[0].raceId.slice(0, 10),
+    training_to: valid[valid.length - 1].raceId.slice(0, 10),
+    feature_names: FEATURE_NAMES,
+    weights,
+    combiner: combW,
+    venue_in1_adv: venueAdv,
+    odds_haircut: ODDS_HAIRCUT,
+    walk_forward_eval: aggSummary,
+  };
+  const outDir = path.join(__dirname, "../../data/sherlock");
+  await fs.mkdir(outDir, { recursive: true });
+  const outPath = path.join(outDir, "model.json");
+  await fs.writeFile(outPath, JSON.stringify(model, null, 2), "utf-8");
+  console.log(`  本番モデルを保存: ${outPath}`);
+}
+
+// ---------------------------------------------------------------------------
+// メイン: walk-forward 評価
+// ---------------------------------------------------------------------------
+
+async function main() {
+  if (!isSupabaseEnabled()) {
+    console.error("Supabase not configured.");
+    process.exit(1);
+  }
+  const args = parseArgs();
+  const races = await loadDataset(args);
+  if (races.length < 1000) {
+    console.error(`レース数が不足しています (${races.length})`);
+    process.exit(1);
   }
 
-  // ---------------------------------------------------------------------------
-  // 本番モデルの出力（全期間で学習、フロントエンドが import する）
-  // ---------------------------------------------------------------------------
-  if (args.fitProduction) {
-    console.log("\n===== 本番モデル学習（全期間）=====");
-    const { venueAdv, weights } = fitFundModel(valid);
-    const combW = fitCombinerOOF(byMonth, byMonthOdds, months);
-    if (!combW) {
-      console.error("OOFデータ不足で結合係数を学習できませんでした");
-      process.exit(1);
-    }
-    console.log(
-      `  基礎モデル: ${valid.length}レースで学習、結合係数 α=${combW[0].toFixed(3)}, β=${combW[1].toFixed(3)}`,
-    );
+  const months = [...new Set(races.map((r) => r.month))].sort();
+  console.log(`\n対象月: ${months.join(", ")}`);
 
-    const model = {
-      model_id: "sherlock",
-      version: 1,
-      trained_at: new Date().toISOString(),
-      training_races: valid.length,
-      training_from: valid[0].raceId.slice(0, 10),
-      training_to: valid[valid.length - 1].raceId.slice(0, 10),
-      feature_names: FEATURE_NAMES,
-      weights,
-      combiner: combW,
-      venue_in1_adv: venueAdv,
-      odds_haircut: ODDS_HAIRCUT,
-      walk_forward_eval: aggSummary,
-    };
-    const outDir = path.join(__dirname, "../../data/sherlock");
-    await fs.mkdir(outDir, { recursive: true });
-    const outPath = path.join(outDir, "model.json");
-    await fs.writeFile(outPath, JSON.stringify(model, null, 2), "utf-8");
-    console.log(`  本番モデルを保存: ${outPath}`);
-  }
+  const prep = prepareRaces(races);
+  const wf = walkForward(months, prep.byMonth, prep.byMonthOdds);
+
+  printFoldTable(wf.foldResults);
+  const totalDeltaR2 = printAggregate(wf.foldResults);
+  printRoiTable(wf.roi);
+  printLastWeights(wf.lastWeights, wf.lastCombiner);
+  const aggSummary = summarizeFolds(wf.foldResults, totalDeltaR2);
+
+  if (args.save) await saveEvaluation(args, wf);
+  if (args.fitProduction) await fitProductionModel(prep, months, aggSummary);
 }
 
 const isCli =
