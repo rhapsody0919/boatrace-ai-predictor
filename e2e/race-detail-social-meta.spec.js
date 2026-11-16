@@ -13,8 +13,16 @@ const socialSelectors = [
   'meta[name="twitter:description"]',
 ];
 
+// BOA-1584: 今日のトップの開催中の会場の数。0（0:00〜7:00 JST 前後）なら今日の開催を前提とする en は skip する
+async function openVenueCount(page) {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle");
+  return page.locator(".venue-grid-card--open").count();
+}
+
 for (const lang of ["ja", "en"]) {
   test(`レース詳細 ${lang}: OGP・Xカードとcanonical、離脱時の復元`, async ({ page }) => {
+    test.skip(lang === "en" && (await openVenueCount(page)) === 0, "開催場なし");
     const homePath = localizePath("/", lang);
     await page.goto(homePath);
     const defaults = await Promise.all(
