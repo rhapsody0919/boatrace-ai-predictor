@@ -52,12 +52,7 @@ async function inspectUrl(url) {
   return res.data.inspectionResult?.indexStatusResult;
 }
 
-async function main() {
-  const urls = [
-    "https://www.boat-ai.jp/en/venues",
-    ...VENUE_GUIDES_EN.map((v) => `https://www.boat-ai.jp/en/venues/${v.slug}`),
-  ];
-
+async function inspectAll(urls) {
   const results = [];
   for (const url of urls) {
     try {
@@ -77,15 +72,17 @@ async function main() {
     // 念のため間隔を空ける
     await new Promise((r) => setTimeout(r, 300));
   }
+  return results;
+}
 
-  const indexed = results.filter((r) => r.verdict === "PASS");
-  const notIndexed = results.filter((r) => r.verdict && r.verdict !== "PASS");
-
+function printIndexed(indexed, urls) {
   console.log(`\n## インデックス済み (${indexed.length}/${urls.length})`);
   for (const r of indexed) {
     console.log(`  ✅ ${r.url}  (最終クロール: ${r.lastCrawlTime})`);
   }
+}
 
+function printNotIndexed(notIndexed, urls) {
   console.log(
     `\n## 未インデックス・要確認 (${notIndexed.length}/${urls.length})`,
   );
@@ -98,6 +95,21 @@ async function main() {
       );
     }
   }
+}
+
+async function main() {
+  const urls = [
+    "https://www.boat-ai.jp/en/venues",
+    ...VENUE_GUIDES_EN.map((v) => `https://www.boat-ai.jp/en/venues/${v.slug}`),
+  ];
+
+  const results = await inspectAll(urls);
+
+  const indexed = results.filter((r) => r.verdict === "PASS");
+  const notIndexed = results.filter((r) => r.verdict && r.verdict !== "PASS");
+
+  printIndexed(indexed, urls);
+  printNotIndexed(notIndexed, urls);
 
   console.log(
     `\n注意: 未インデックスのページを早めたい場合、Search ConsoleのUIから手動で` +
