@@ -16789,7 +16789,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/motor-pretest-backfill.js:231",
+          "ref": "scripts/maintenance/motor-pretest-backfill.js:217",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17601,7 +17601,7 @@
             "scripts/maintenance/backfill-start-timings.js:223",
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
-            "scripts/maintenance/motor-pretest-backfill.js:231",
+            "scripts/maintenance/motor-pretest-backfill.js:217",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
@@ -17690,7 +17690,7 @@
             "scripts/maintenance/backfill-start-timings.js:223",
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
-            "scripts/maintenance/motor-pretest-backfill.js:231",
+            "scripts/maintenance/motor-pretest-backfill.js:217",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
@@ -17738,7 +17738,7 @@
             "scripts/maintenance/backfill-results-by-race-id.js:37",
             "scripts/maintenance/backfill-start-timings.js:223",
             "scripts/maintenance/delete-phantom-race-days.js:103",
-            "scripts/maintenance/motor-pretest-backfill.js:231",
+            "scripts/maintenance/motor-pretest-backfill.js:217",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
             "src/services/mycroftService.js:78",
@@ -30240,7 +30240,7 @@
     },
     {
       "file": "scripts/maintenance/motor-pretest-backfill.js",
-      "line": 454,
+      "line": 451,
       "reason": "表の名前が変数（.from(式)）"
     }
   ],

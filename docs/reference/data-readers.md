@@ -1578,7 +1578,7 @@
   - `scripts/maintenance/fix-opening-day-race-id-date.js:226` select [race_id]
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:71` select [*, race_date, race_id, venue_code]
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:155` select [race_id]
-  - `scripts/maintenance/motor-pretest-backfill.js:231` select [race_date, race_number, venue_code]
+  - `scripts/maintenance/motor-pretest-backfill.js:217` select [race_date, race_number, venue_code]
   - `scripts/maintenance/update-venue-stats.js:32` select [race_date, race_id, venue_code]
   - `scripts/maintenance/verify-analogy-v16.js:276` rest(rest) [cancellation_status, race_date, race_id, start_time] （検査）
   - `scripts/maintenance/verify-data-readers.js:557` rest(rest) [race_id] （検査）
@@ -2339,7 +2339,7 @@
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:133` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:209` 表の名前が変数（.from(式)）
   - `scripts/maintenance/kb-backfill.js:957` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/motor-pretest-backfill.js:454` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/motor-pretest-backfill.js:451` 表の名前が変数（.from(式)）
 - 構文木にできなかったファイル: 0
 - 対象外の言語で DB を読み書きしうるファイル（Python。拾っていない）: 55
   - `scripts/analysis/analogy-finder-fr2-holdout.py`
