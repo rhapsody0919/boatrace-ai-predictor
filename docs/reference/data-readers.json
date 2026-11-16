@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1888,
+    "sourceFiles": 1889,
     "filesWithAccess": 280,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -4565,13 +4565,13 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/update-nige-outcome-distribution.js:119",
+          "ref": "scripts/daily/update-nige-outcome-distribution.js:120",
           "op": "delete",
           "via": "client",
           "columns": []
         },
         {
-          "ref": "scripts/daily/update-nige-outcome-distribution.js:129",
+          "ref": "scripts/daily/update-nige-outcome-distribution.js:130",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -4592,7 +4592,7 @@
         },
         "venue_code": {
           "readers": [
-            "scripts/daily/update-nige-outcome-distribution.js:119",
+            "scripts/daily/update-nige-outcome-distribution.js:120",
             "src/services/venueQueries3.js:55"
           ],
           "writers": [],
@@ -4655,7 +4655,9 @@
       "columnsNotInSnapshot": [],
       "mentions": [],
       "external": [],
-      "scrapeJobs": []
+      "scrapeJobs": [
+        "outcome_distribution_update"
+      ]
     },
     "nige_second_by_course": {
       "kind": "table",
@@ -4868,13 +4870,13 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/update-outcome-distribution.js:114",
+          "ref": "scripts/daily/update-outcome-distribution.js:115",
           "op": "delete",
           "via": "client",
           "columns": []
         },
         {
-          "ref": "scripts/daily/update-outcome-distribution.js:125",
+          "ref": "scripts/daily/update-outcome-distribution.js:126",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -4896,7 +4898,7 @@
         "venue_code": {
           "readers": [
             "api/outcome-distribution/index.js:66",
-            "scripts/daily/update-outcome-distribution.js:114",
+            "scripts/daily/update-outcome-distribution.js:115",
             "src/services/venueQueries.js:220"
           ],
           "writers": [],
@@ -4963,7 +4965,9 @@
       "columnsNotInSnapshot": [],
       "mentions": [],
       "external": [],
-      "scrapeJobs": []
+      "scrapeJobs": [
+        "outcome_distribution_update"
+      ]
     },
     "poirot_predictions": {
       "kind": "table",
@@ -11045,7 +11049,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-nige-outcome-distribution.js:62",
+          "ref": "scripts/daily/update-nige-outcome-distribution.js:63",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11059,7 +11063,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-outcome-distribution.js:59",
+          "ref": "scripts/daily/update-outcome-distribution.js:60",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11721,8 +11725,8 @@
             "scripts/daily/scrape-results.js:901",
             "scripts/daily/update-losing-technique-stats.js:55",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
-            "scripts/daily/update-outcome-distribution.js:59",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
+            "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/daily/update-winning-technique-stats.js:62",
             "scripts/lib/inCautionHealth.js:142",
@@ -11798,8 +11802,8 @@
             "scripts/daily/scrape-results.js:486",
             "scripts/daily/update-losing-technique-stats.js:55",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
-            "scripts/daily/update-outcome-distribution.js:59",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
+            "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/daily/update-winning-technique-stats.js:62",
             "scripts/lib/inCautionHealth.js:142",
@@ -11851,8 +11855,8 @@
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/scrape-results.js:486",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
-            "scripts/daily/update-outcome-distribution.js:59",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
+            "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/maintenance/backfill-place-hits.js:31",
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
@@ -11889,8 +11893,8 @@
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/scrape-results.js:486",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
-            "scripts/daily/update-outcome-distribution.js:59",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
+            "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/maintenance/backfill-place-hits.js:31",
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
@@ -12014,8 +12018,8 @@
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-losing-technique-stats.js:55",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
-            "scripts/daily/update-outcome-distribution.js:59",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
+            "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/daily/update-winning-technique-stats.js:62"
           ],
@@ -12100,7 +12104,7 @@
             "scripts/daily/scrape-results.js:1193",
             "scripts/daily/scrape-results.js:1344",
             "scripts/daily/update-losing-technique-stats.js:55",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
             "scripts/daily/update-winning-technique-stats.js:62",
             "scripts/maintenance/backfill-race-data.js:279",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
@@ -18790,6 +18794,7 @@
         "motor_pretest",
         "odds",
         "odds_final",
+        "outcome_distribution_update",
         "pcexpect",
         "pit_reports",
         "point_rank",
@@ -19341,6 +19346,7 @@
         "motor_pretest",
         "odds",
         "odds_final",
+        "outcome_distribution_update",
         "pcexpect",
         "pit_reports",
         "point_rank",
@@ -29267,6 +29273,36 @@
         ],
         "race_odds_final": [
           "scripts/lib/scrapeJobs/finalOddsHandlers.js:144"
+        ],
+        "scrape_job_state": [
+          "scripts/lib/scrapeJobs/store.js:102",
+          "scripts/lib/scrapeJobs/store.js:110",
+          "scripts/lib/scrapeJobs/store.js:129",
+          "scripts/lib/scrapeJobs/store.js:135",
+          "scripts/lib/scrapeJobs/store.js:147",
+          "scripts/lib/scrapeJobs/store.js:161",
+          "scripts/lib/scrapeJobs/store.js:318",
+          "scripts/lib/scrapeJobs/store.js:368",
+          "scripts/lib/scrapeJobs/store.js:398"
+        ],
+        "scrape_slots": [
+          "scripts/lib/scrapeJobs/store.js:233",
+          "scripts/lib/scrapeJobs/store.js:269"
+        ]
+      }
+    },
+    {
+      "job": "outcome_distribution_update",
+      "entry": "api/cron/outcome-distribution-update.js",
+      "reachableFiles": 21,
+      "writes": {
+        "nige_outcome_distribution": [
+          "scripts/daily/update-nige-outcome-distribution.js:120",
+          "scripts/daily/update-nige-outcome-distribution.js:130"
+        ],
+        "outcome_distribution": [
+          "scripts/daily/update-outcome-distribution.js:115",
+          "scripts/daily/update-outcome-distribution.js:126"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
