@@ -14,6 +14,48 @@ const isCode = (path) =>
   path === "middleware.js" || /^(src|scripts|api)\/.*\.(js|jsx|mjs)$/.test(path);
 const comparePaths = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
+// Git の core.quotePath は日本語・制御文字を C 形式のバイト列にする。
+function decodeQuotedPath(path) {
+  const bytes = [];
+  const escapes = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13 };
+  for (let i = 1; i < path.length - 1; i++) {
+    if (path[i] !== "\\") bytes.push(...Buffer.from(path[i]));
+    else {
+      const octal = /^[0-7]{3}/.exec(path.slice(i + 1));
+      if (octal) { bytes.push(parseInt(octal[0], 8)); i += 3; }
+      else { i++; bytes.push(escapes[path[i]] ?? path.charCodeAt(i)); }
+    }
+  }
+  return Buffer.from(bytes).toString("utf8");
+}
+
+function startCommit(line) {
+  const tab = line.indexOf("\t");
+  const subject = line.slice(tab + 1);
+  return subject.includes("[automated]")
+    ? null
+    : { hash: line.slice(MARKER.length, tab), fix: FIX.test(subject), seen: new Set() };
+}
+
+function addNumstat(entries, current, match, path) {
+  const entry = entries.get(path) ?? { path, commits: 0, lines: 0, fixCommits: 0 };
+  entry.lines += Number(match[1]) + Number(match[2]);
+  if (!current.seen.has(path)) {
+    entry.commits++;
+    if (current.fix) entry.fixCommits++;
+    current.seen.add(path);
+  }
+  entries.set(path, entry);
+}
+
+function rankEntries(entries) {
+  return [...entries.values()].map((entry) => ({
+    ...entry,
+    score: entry.commits * entry.lines * entry.fixCommits,
+    planScore: entry.lines * entry.fixCommits,
+  })).sort((a, b) => b.score - a.score || comparePaths(a.path, b.path));
+}
+
 /** 純粋な集計。totals は top で切る前、対象コードを変更したコミットの件数。 */
 export function aggregateNumstat(input) {
   const entries = new Map();
@@ -22,48 +64,20 @@ export function aggregateNumstat(input) {
   let current = null;
   for (const line of input.split("\n")) {
     if (line.startsWith(MARKER)) {
-      const tab = line.indexOf("\t");
-      const subject = line.slice(tab + 1);
-      current = subject.includes("[automated]")
-        ? null
-        : { hash: line.slice(MARKER.length, tab), fix: FIX.test(subject), seen: new Set() };
+      current = startCommit(line);
       continue;
     }
     if (!current || !line) continue;
     const match = /^(\d+)\t(\d+)\t(.+)$/.exec(line);
     if (!match) continue; // バイナリの numstat（-）も除外する。
     let path = match[3];
-    // Git の core.quotePath は日本語・制御文字を C 形式のバイト列にする。
-    if (path.startsWith('"')) {
-      const bytes = [];
-      const escapes = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13 };
-      for (let i = 1; i < path.length - 1; i++) {
-        if (path[i] !== "\\") bytes.push(...Buffer.from(path[i]));
-        else {
-          const octal = /^[0-7]{3}/.exec(path.slice(i + 1));
-          if (octal) { bytes.push(parseInt(octal[0], 8)); i += 3; }
-          else { i++; bytes.push(escapes[path[i]] ?? path.charCodeAt(i)); }
-        }
-      }
-      path = Buffer.from(bytes).toString("utf8");
-    }
+    if (path.startsWith('"')) path = decodeQuotedPath(path);
     if (!isCode(path)) continue;
-    const entry = entries.get(path) ?? { path, commits: 0, lines: 0, fixCommits: 0 };
-    entry.lines += Number(match[1]) + Number(match[2]);
-    if (!current.seen.has(path)) {
-      entry.commits++;
-      if (current.fix) entry.fixCommits++;
-      current.seen.add(path);
-    }
-    entries.set(path, entry);
+    addNumstat(entries, current, match, path);
     commits.add(current.hash);
     if (current.fix) fixes.add(current.hash);
   }
-  const files = [...entries.values()].map((entry) => ({
-    ...entry,
-    score: entry.commits * entry.lines * entry.fixCommits,
-    planScore: entry.lines * entry.fixCommits,
-  })).sort((a, b) => b.score - a.score || comparePaths(a.path, b.path));
+  const files = rankEntries(entries);
   return { totals: { commits: commits.size, fixCommits: fixes.size, files: files.length }, files };
 }
 
