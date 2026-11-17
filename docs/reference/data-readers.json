@@ -4983,7 +4983,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/analysis/verify-poirot.js:61",
+          "ref": "scripts/analysis/verify-poirot.js:56",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -6996,7 +6996,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/analyze-indicator-predictive-power.js:148",
+          "ref": "scripts/analysis/analyze-indicator-predictive-power.js:131",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8357,7 +8357,7 @@
             "api/_lib/snsClaimCheck.js:434",
             "api/_lib/snsClaimCheck.js:500",
             "api/_lib/snsTodayDigest.js:52",
-            "scripts/analysis/analyze-indicator-predictive-power.js:148",
+            "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-course-rate-only.js:81",
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
@@ -8482,7 +8482,7 @@
             "api/_lib/analogyV16.js:105",
             "api/_lib/racerEntryExhibition.js:171",
             "api/_lib/snsTodayDigest.js:52",
-            "scripts/analysis/analyze-indicator-predictive-power.js:148",
+            "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-course-rate-only.js:81",
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
@@ -8655,7 +8655,7 @@
         },
         "win_rate": {
           "readers": [
-            "scripts/analysis/analyze-indicator-predictive-power.js:148",
+            "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
@@ -8687,7 +8687,7 @@
         },
         "local_win_rate": {
           "readers": [
-            "scripts/analysis/analyze-indicator-predictive-power.js:148",
+            "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
@@ -8733,7 +8733,7 @@
         },
         "motor_2rate": {
           "readers": [
-            "scripts/analysis/analyze-indicator-predictive-power.js:148",
+            "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
@@ -8862,7 +8862,7 @@
           "readers": [
             "api/_lib/racerEntryExhibition.js:171",
             "scripts/analysis/aggregate-racer-stats.js:627",
-            "scripts/analysis/analyze-indicator-predictive-power.js:148",
+            "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-course-rate-only.js:81",
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
@@ -10595,7 +10595,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/analyze-indicator-predictive-power.js:122",
+          "ref": "scripts/analysis/analyze-indicator-predictive-power.js:116",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -10833,7 +10833,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/verify-poirot.js:81",
+          "ref": "scripts/analysis/verify-poirot.js:73",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11710,7 +11710,7 @@
             "scripts/analysis/verify-all-venues-label-accuracy.js:106",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-label-accuracy.js:90",
-            "scripts/analysis/verify-poirot.js:81",
+            "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily-rule-tracking.js:149",
@@ -11794,7 +11794,7 @@
             "scripts/analysis/verify-all-venues-label-accuracy.js:106",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-label-accuracy.js:90",
-            "scripts/analysis/verify-poirot.js:81",
+            "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily/calculate-venue-grade-stats.js:73",
@@ -11850,7 +11850,7 @@
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-calculations.js:20",
-            "scripts/analysis/verify-poirot.js:81",
+            "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/scrape-results.js:486",
@@ -11889,7 +11889,7 @@
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-calculations.js:20",
-            "scripts/analysis/verify-poirot.js:81",
+            "scripts/analysis/verify-poirot.js:73",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/scrape-results.js:486",
             "scripts/daily/update-moriarty-outcomes.js:45",
@@ -11994,7 +11994,7 @@
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/verify-calculations.js:20",
-            "scripts/analysis/verify-poirot.js:81",
+            "scripts/analysis/verify-poirot.js:73",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/daily/update-outcome-frequencies.js:19",
@@ -12013,7 +12013,7 @@
             "scripts/analysis/analyze-upset-factors.js:120",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
-            "scripts/analysis/verify-poirot.js:81",
+            "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-losing-technique-stats.js:55",
@@ -12038,7 +12038,7 @@
             "scripts/analysis/analyze-upset-factors.js:120",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
-            "scripts/analysis/verify-poirot.js:81",
+            "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:285"
           ],
           "writers": [],
@@ -13421,7 +13421,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/analyze-indicator-predictive-power.js:159",
+          "ref": "scripts/analysis/analyze-indicator-predictive-power.js:145",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13571,7 +13571,7 @@
         "racer_id": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:188",
-            "scripts/analysis/analyze-indicator-predictive-power.js:159",
+            "scripts/analysis/analyze-indicator-predictive-power.js:145",
             "scripts/analysis/backtest-course-rate-only.js:92",
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:177",
@@ -13588,7 +13588,7 @@
         "venue_code": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:188",
-            "scripts/analysis/analyze-indicator-predictive-power.js:159",
+            "scripts/analysis/analyze-indicator-predictive-power.js:145",
             "scripts/analysis/backtest-course-rate-only.js:92",
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:177",
@@ -13604,7 +13604,7 @@
         },
         "avg_st": {
           "readers": [
-            "scripts/analysis/analyze-indicator-predictive-power.js:159",
+            "scripts/analysis/analyze-indicator-predictive-power.js:145",
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:177",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
@@ -13698,7 +13698,7 @@
         },
         "course_race_counts": {
           "readers": [
-            "scripts/analysis/analyze-indicator-predictive-power.js:159",
+            "scripts/analysis/analyze-indicator-predictive-power.js:145",
             "scripts/analysis/backtest-course-rate-only.js:92",
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:177",

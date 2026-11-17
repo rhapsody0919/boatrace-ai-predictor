@@ -663,7 +663,7 @@
 - 本体で読む RPC: data_health_morning_freshness
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/maintenance/fix-opening-day-race-id-date.js:78`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:51`
 - 読み手（2）: 
-  - `scripts/analysis/verify-poirot.js:61` select(helper:fetchAll)
+  - `scripts/analysis/verify-poirot.js:56` select(helper:fetchAll)
   - `src/services/poirotService.js:59` select [model_version, predicted_at, race_id, top_2nd, top_3rd, top_pick, trifecta_prob, win_probs]
 - 書き手（1）: 
   - `scripts/daily/generate-poirot-predictions.js:78` upsert [?]
@@ -830,7 +830,7 @@
   - `api/_lib/snsClaimCheck.js:500` rest(rest) [is_absent, race_id]
   - `api/_lib/snsTodayDigest.js:52` rest(rest) [boat_number, is_absent, race_id]
   - `scripts/analysis/aggregate-racer-stats.js:627` select [racer_id]
-  - `scripts/analysis/analyze-indicator-predictive-power.js:148` select [boat_number, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
+  - `scripts/analysis/analyze-indicator-predictive-power.js:131` select [boat_number, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/analysis/backtest-course-rate-only.js:81` select [boat_number, race_id, racer_id]
   - `scripts/analysis/backtest-unified-model.js:100` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:39` select(helper:all)
@@ -1128,7 +1128,7 @@
   - `api/_lib/snsClaimCheck.js:473` rest(rest) [race_id, rank1]
   - `scripts/analysis/aggregate-racer-stats.js:70` select(helper:fetchAll)
   - `scripts/analysis/analogy-finder-md6/export-actual-course.js:20` select(helper:fetchAll)
-  - `scripts/analysis/analyze-indicator-predictive-power.js:122` select(helper:fetchAll)
+  - `scripts/analysis/analyze-indicator-predictive-power.js:116` select(helper:fetchAll)
   - `scripts/analysis/analyze-upset-factors.js:120` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
   - `scripts/analysis/backtest-course-rate-only.js:60` select(helper:fetchAll)
   - `scripts/analysis/backtest-unified-model.js:207` select(helper:fetchAll)
@@ -1154,7 +1154,7 @@
   - `scripts/analysis/verify-calculations.js:20` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
   - `scripts/analysis/verify-label-accuracy.js:90` select [race_id, rank1]
   - `scripts/analysis/verify-outcome-distribution-coverage.js:45` select(helper:fetchAll)
-  - `scripts/analysis/verify-poirot.js:81` select [is_cancelled, is_no_race, payout_trio, race_id, rank1, rank2, rank3]
+  - `scripts/analysis/verify-poirot.js:73` select [is_cancelled, is_no_race, payout_trio, race_id, rank1, rank2, rank3]
   - `scripts/analysis/verify-race-analysis-rpc.js:211` select [race_id, rank1, winning_technique]
   - `scripts/analysis/verify-race-analysis-rpc.js:285` select [is_cancelled, is_no_race, payout_place_1, payout_place_2, payout_win, race_id, rank1, rank2]
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:151` select(helper:fetchInChunks)
@@ -1337,7 +1337,7 @@
 - 読み手（12）: 
   - `api/_lib/racerEntryExhibition.js:188` rest(rest) [calculated_at, course_entry_tendency, racer_id, venue_code]
   - `scripts/analysis/aggregate-racer-stats.js:504` select(helper:upsertChangedRows)
-  - `scripts/analysis/analyze-indicator-predictive-power.js:159` select [avg_st, course_race_counts, racer_id, venue_code]
+  - `scripts/analysis/analyze-indicator-predictive-power.js:145` select [avg_st, course_race_counts, racer_id, venue_code]
   - `scripts/analysis/backtest-course-rate-only.js:92` select [course_race_counts, racer_id, venue_code]
   - `scripts/analysis/backtest-unified-model.js:126` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/analysis/calibrate-unified-model.js:177` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
