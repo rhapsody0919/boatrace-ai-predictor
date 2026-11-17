@@ -53,24 +53,23 @@ export const OWN_CALLER_GROUPS = [
 
 const MARKER = '{"api_gate"';
 
-/** 1行から関門のログの JSON を取り出す。無ければ null */
-export function extractGateRecord(line) {
-  if (typeof line !== "string") return null;
-  let text = line;
-  // Vercel の JSON の行（message に元の行）。message の中の JSON は文字列なので先に取り出す
+// Vercel の JSON の行（message に元の行）。message の中の JSON は文字列なので先に取り出す
+function unwrapMessage(line) {
   const trimmed = line.trim();
   if (trimmed.startsWith("{") && !trimmed.startsWith(MARKER)) {
     try {
       const outer = JSON.parse(trimmed);
       const message = outer?.message ?? outer?.text ?? outer?.log;
-      if (typeof message === "string") text = message;
+      if (typeof message === "string") return message;
     } catch {
       // JSON でない行はそのまま探す
     }
   }
-  const start = text.indexOf(MARKER);
-  if (start < 0) return null;
-  // 1行の JSON は入れ子を持たないので、最初の "}" までで閉じる（値に "}" が入りうるので後ろから順に試す）
+  return line;
+}
+
+// 1行の JSON は入れ子を持たないので、最初の "}" までで閉じる（値に "}" が入りうるので後ろから順に試す）
+function parseRecordFrom(text, start) {
   for (
     let end = text.lastIndexOf("}");
     end > start;
@@ -84,6 +83,15 @@ export function extractGateRecord(line) {
     }
   }
   return null;
+}
+
+/** 1行から関門のログの JSON を取り出す。無ければ null */
+export function extractGateRecord(line) {
+  if (typeof line !== "string") return null;
+  const text = unwrapMessage(line);
+  const start = text.indexOf(MARKER);
+  if (start < 0) return null;
+  return parseRecordFrom(text, start);
 }
 
 // path の先頭2段（/api/predictions/2026-11-04 → /api/predictions。日付・レースの id で割れないように）
@@ -101,55 +109,42 @@ const ownGroupOf = (caller) =>
       ) ?? null)
     : null;
 
-/**
- * @param {string[]} lines
- */
-export function countApiGateLines(lines) {
-  const byReasonGroup = new Map();
-  const denyDetail = new Map();
-  const internalByCaller = new Map();
-  let parsed = 0;
-  let skipped = 0;
-  let botVerified = 0;
-  let botVerifiedDenied = 0;
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    const r = extractGateRecord(line);
-    if (!r) {
-      skipped++;
-      continue;
-    }
-    parsed++;
-    const weight = Number.isInteger(r.sample) && r.sample > 0 ? r.sample : 1;
-    bump(byReasonGroup, `${r.api_gate}\t${r.group ?? "?"}`, weight);
-    // browser_no_sfs は通すが内訳に出す（後で絞る材料。自分の群が名乗っていれば配り漏れとして ownDenied に数える）
-    if (
-      r.api_gate === "would_deny" ||
-      r.api_gate === "deny" ||
-      r.api_gate === "bad_key" ||
-      r.api_gate === "browser_no_sfs"
-    ) {
-      bump(
-        denyDetail,
-        [
-          r.api_gate,
-          r.group ?? "?",
-          r.ua_class ?? "?",
-          pathHead(r.path),
-          r.caller_claimed ?? "-",
-        ].join("\t"),
-        weight,
-      );
-    }
-    if (r.api_gate === "internal")
-      bump(internalByCaller, r.caller ?? "(名前なし)", weight);
-    if (r.bot_verified === true) {
-      botVerified += weight;
-      if (r.api_gate === "would_deny" || r.api_gate === "deny")
-        botVerifiedDenied += weight;
-    }
-  }
+const DENY_DETAIL_REASONS = ["would_deny", "deny", "bad_key", "browser_no_sfs"];
 
+// 1件の記録を集計の Map・カウンタへ足す（tally は変更される）
+function tallyRecord(tally, r) {
+  const weight = Number.isInteger(r.sample) && r.sample > 0 ? r.sample : 1;
+  bump(tally.byReasonGroup, `${r.api_gate}\t${r.group ?? "?"}`, weight);
+  // browser_no_sfs は通すが内訳に出す（後で絞る材料。自分の群が名乗っていれば配り漏れとして ownDenied に数える）
+  if (DENY_DETAIL_REASONS.includes(r.api_gate)) {
+    bump(
+      tally.denyDetail,
+      [
+        r.api_gate,
+        r.group ?? "?",
+        r.ua_class ?? "?",
+        pathHead(r.path),
+        r.caller_claimed ?? "-",
+      ].join("\t"),
+      weight,
+    );
+  }
+  if (r.api_gate === "internal")
+    bump(tally.internalByCaller, r.caller ?? "(名前なし)", weight);
+  if (r.bot_verified === true) {
+    tally.botVerified += weight;
+    if (r.api_gate === "would_deny" || r.api_gate === "deny")
+      tally.botVerifiedDenied += weight;
+  }
+}
+
+// 集計から段階4へ進む条件を作る
+function buildConditions({
+  denyDetail,
+  internalByCaller,
+  botVerified,
+  botVerifiedDenied,
+}) {
   const ownDenied = [...denyDetail]
     .filter(([key]) => {
       const [, group] = key.split("\t");
@@ -163,6 +158,45 @@ export function countApiGateLines(lines) {
       .filter(([caller]) => ownGroupOf(caller)?.id === g.id)
       .reduce((sum, [, n]) => sum + n, 0),
   }));
+  return {
+    groups,
+    conditions: {
+      ownDeniedZero: ownDenied === 0,
+      ownDenied,
+      everyGroupHasInternal: groups.every((g) => g.internal > 0),
+      missingGroups: groups.filter((g) => g.internal === 0).map((g) => g.id),
+      botVerifiedSeen: botVerified > 0,
+      botVerifiedNeverDenied: botVerifiedDenied === 0,
+    },
+  };
+}
+
+/**
+ * @param {string[]} lines
+ */
+export function countApiGateLines(lines) {
+  const tally = {
+    byReasonGroup: new Map(),
+    denyDetail: new Map(),
+    internalByCaller: new Map(),
+    botVerified: 0,
+    botVerifiedDenied: 0,
+  };
+  let parsed = 0;
+  let skipped = 0;
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const r = extractGateRecord(line);
+    if (!r) {
+      skipped++;
+      continue;
+    }
+    parsed++;
+    tallyRecord(tally, r);
+  }
+
+  const { byReasonGroup, denyDetail, internalByCaller } = tally;
+  const { groups, conditions } = buildConditions(tally);
   const unknownCallers = [...internalByCaller].filter(
     ([caller]) => !ownGroupOf(caller),
   );
@@ -185,16 +219,9 @@ export function countApiGateLines(lines) {
     internalByCaller: Object.fromEntries(internalByCaller),
     unknownCallers: Object.fromEntries(unknownCallers),
     groups,
-    botVerified,
-    botVerifiedDenied,
-    conditions: {
-      ownDeniedZero: ownDenied === 0,
-      ownDenied,
-      everyGroupHasInternal: groups.every((g) => g.internal > 0),
-      missingGroups: groups.filter((g) => g.internal === 0).map((g) => g.id),
-      botVerifiedSeen: botVerified > 0,
-      botVerifiedNeverDenied: botVerifiedDenied === 0,
-    },
+    botVerified: tally.botVerified,
+    botVerifiedDenied: tally.botVerifiedDenied,
+    conditions,
   };
 }
 
