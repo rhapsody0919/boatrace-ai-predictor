@@ -361,7 +361,7 @@
     {
       "script": "verify-dependency-rules.js",
       "tier": "ci",
-      "guards": "依存の向きの関所の部品（dependency-rules.cjs の規則10個、lintBaselines.js の純関数: データ層の和の中で関数が移っても緑・基準に無い辺は赤・基準の行が増えたら赤・src/utils の新規ファイルは赤・facade-frozen を error にする条件、BOA-1428）"
+      "guards": "依存の向きの関所の部品（dependency-rules.cjs の規則11個、lintBaselines.js の純関数: データ層の和の中で関数が移っても緑・基準に無い辺は赤・基準の行が増えたら赤・src/utils の新規ファイルは赤・facade-frozen を error にする条件、BOA-1428）"
     },
     {
       "script": "verify-deploy-hook-policy.js",
@@ -813,6 +813,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-meet-grouping.js"
     },
     {
+      "script": "verify-meet-model.js",
+      "tier": "ci",
+      "guards": "meet（節 = race_series の行）の型 makeMeet（src/pure/meetModel.js、設計図 §10 DM1x）。会場1〜24・start_date と end_date が実在する日で end が後・total_days が日数と一致・class_code 9値・kind 9値・grade 5値か null（race_series の CHECK 6本と同じ）を検査して凍結すること。title などの null は落とさないこと。既存の節の計算（groupIntoCurrentMeet・meetExclusionsOf）が meetModel から同じ関数で読めること"
+    },
+    {
       "script": "verify-meet-page-model.js",
       "tier": "ci",
       "guards": "節ページ（BOA-682）の日程・段階・基準のレース・勝ち上がり・勝負駆けの判定。崩れると前後の節を混ぜる、夜に予選の最後のレースの結果を落とす、予選最終日の夜に公式の得点率を使わない、勝負駆けを誤る"
@@ -885,6 +890,11 @@
       "script": "verify-motor-fresh-rate.js",
       "tier": "ci",
       "guards": "新しいモーターの最初の開催で、モータ情報の一覧が全艇0.0%にならない決まり（公式が0の艇だけ自前の値、まだ走っていません／0%（N走）／※、最初の節の帯、前の節までの走数）（BOA-830）"
+    },
+    {
+      "script": "verify-motor-model.js",
+      "tier": "ci",
+      "guards": "motor の型 makeMotorStat（venue_motor_stats の行）・makeMotorPretest（motor_pretest_stats の行）（src/pure/motorModel.js、設計図 §10 DM13）。主キー（会場1〜24・motor_number の整数・取得日の実在する日／前検日・会場・racer_id）と、取った列だけ source_template の文字列・回数7列の整数・集計期間の日付・racer_class 4値・pretest_rank は null か1以上・pretest_time と pretest_rank の両方 null か両方あり（motor_pretest_stats の CHECK 4本と同じ）を検査して凍結すること。select で取らない列は落とさないこと"
     },
     {
       "script": "verify-motor-power-shared.js",
@@ -1041,6 +1051,11 @@
       "tier": "ci",
       "timeoutSec": 300,
       "guards": "不成立のレースと返還艇を含む勝式を、的中判定（buildPredictionHitUpdate・DBトリガー117・欠落の補完）と成績の集計（券種ごとの母数）から外すこと。トリガーとアプリの判定が同じ値を書くこと（PGlite で112を適用して突き合わせる）。BOA-544: 不成立のレースに的中が付き、返還艇の本命が「外れ」として成績に入っていた"
+    },
+    {
+      "script": "verify-prediction-model.js",
+      "tier": "ci",
+      "guards": "prediction の型 makePrediction（predictions の行、src/pure/predictionModel.js、設計図 §10 DM14）。race_id が YYYY-MM-DD-VV-RR（raceId.js の parseRaceId）・model_id が文字列（NOT NULL の組）と、取った列だけ prediction_id・top_pick の整数、top_2nd・top_3rd・払戻4列は null か整数、真偽6列は真偽か null を検査して凍結すること。CHECK の無い艇番の範囲・confidence・jsonb の列は見ないこと。select で取らない列は落とさないこと"
     },
     {
       "script": "verify-prediction-odds-derive.js",
@@ -1236,6 +1251,11 @@
       "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
     },
     {
+      "script": "verify-racer-model.js",
+      "tier": "ci",
+      "guards": "racer の型 makeRacer・makeRacerSeriesPoint（src/pure/racerModel.js、設計図 §10 DM1x）。racer_id は int4 の整数・name は文字列・birth_date は実在する日、racer_series_points は会場1〜24・meet_start_date が実在する日・next_race_1/2 は1〜12・next_series_day は1〜9（DB の CHECK と同じ）を検査して凍結すること。sex・rank・score_rate・next_* などの null は落とさないこと。既存の選手の集計（careerWinRate 等）が racerModel から同じ関数で読めること"
+    },
+    {
       "script": "verify-racer-news-templates.js",
       "tier": "ci",
       "guards": "選手ニュースFR2の題・要約の定型文、返却キー2つ、入力表記の保持と禁止語の非追加。空・undefinedは仕様未定としてKNOWN_GAPSに出力"
@@ -1383,6 +1403,11 @@
       "script": "verify-ryujin-maker-token.js",
       "tier": "ci",
       "guards": "scripts/maintenance/ryujin-maker-token.js（Claude の push・PR・マージを作成の App ryujin-maker の名義にするトークンの道具、2026-11-06）。使い捨ての鍵と偽の fetch で、JWT の形と署名・権限の広い鍵を読まないこと・失敗の文に鍵の中身と JWT が出ないこと・トークンをこのリポジトリだけに絞ること・引数なしでトークンを出さないことを固定する。本物の鍵は読まない"
+    },
+    {
+      "script": "verify-schedule-model.js",
+      "tier": "ci",
+      "guards": "schedule の型 makeDigestDay（morning_digest_days の行）・makeDigestRow（morning_digest_rows の行）（src/pure/scheduleModel.js、設計図 §10 DM15）。主キー（digest_date の実在する日・section 6値・rank 1以上）と、取った列だけ回数は0以上・window_end が window_start 以後・真偽の列・suppressed_venues の整数の配列・会場1〜24・艇番とコースは null か1〜6・レースの3列は returned だけ null・数値の7列は flying・returned 以外で null を許さない（2つの表の CHECK 9本と同じ）を検査して凍結すること。select で取らない列は落とさないこと"
     },
     {
       "script": "verify-schema-detect.js",
@@ -1880,6 +1905,11 @@
       "script": "verify-venue-first-win-rate.js",
       "tier": "ci",
       "guards": "会場別1号艇勝率の母数の数え方（scripts/lib/venueFirstWinRate.js、BOA-303）。不成立・rank1 NULL・結果なしを除き、返還は数える。分析ツールのランキングは日次バッチの保存値（venues.avg_first_win_rate / avg_first_win_rate_race_count）を読む"
+    },
+    {
+      "script": "verify-venue-model.js",
+      "tier": "ci",
+      "guards": "venue の型 makeVenue（src/pure/venueModel.js、設計図 §10 DM1x）。会場コード1〜24・name は文字列・cluster は in_strong・out_strong・balanced か null・avg_first_win_rate は0〜1か null を検査して凍結すること。water_type は初期データが公式と食い違うので検査しないこと（null も未知の値も通す）"
     },
     {
       "script": "verify-venue-motor-parser-utils.js",

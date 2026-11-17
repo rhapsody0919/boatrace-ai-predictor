@@ -1,5 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import "./Toast.css";
+import ToastViewContent from "./ToastViewContent.jsx";
+import { buildContainerStyle, buildToastStyle } from "./ToastViewLogic.js";
 
 /**
  * @param {{message: string, type?: "success"|"error", visible: boolean,
@@ -19,22 +21,7 @@ export default function Toast({
   const isError = type === "error";
 
   return (
-    // 水平中央寄せ（translateX(-50%)）はframer-motionが管理しないstyleのdivで
-    // 静的に行う。motion.div自身にanimate/exitでyを動かすと、framer-motionが
-    // transformプロパティを自前生成の値で丸ごと上書きするため、同じstyleに
-    // 書いたtranslateXは反映されない（実機検証で中央からズレる現象を確認）
-    <div
-      style={{
-        position: "fixed",
-        bottom: action ? "92px" : "24px",
-        left: "50%",
-        transform: "translateX(-50%)",
-        // レース詳細の下部ナビ（RaceBottomNav、z-index 1500）より上に出す。
-        // tooltip（70）のままだと 375px でナビに隠れ、コピーできたか分からなかった（BOA-770）
-        zIndex: 1600,
-        ...(action && { width: "max-content", maxWidth: "calc(100vw - 32px)" }),
-      }}
-    >
+    <div style={buildContainerStyle(action)}>
       <AnimatePresence>
         {visible && (
           <motion.div
@@ -48,51 +35,14 @@ export default function Toast({
             onPointerLeave={action ? onRelease : undefined}
             onFocus={action ? onHold : undefined}
             onBlur={action ? onRelease : undefined}
-            style={{
-              background: isError
-                ? "var(--color-error-dark)"
-                : action
-                  ? // 白い文字が小さめでも読める濃い緑（グラデーションの明るい側だと 4.5:1 に届かない）
-                    "var(--color-success-dark-text)"
-                  : "var(--gradient-success)",
-              color: "#ffffff",
-              padding: action ? "8px 8px 8px 16px" : "10px 20px",
-              borderRadius: action ? "14px" : "9999px",
-              fontSize: "14px",
-              fontWeight: 600,
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-              whiteSpace: action ? "normal" : "nowrap",
-              ...(action && {
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                minHeight: "44px",
-                lineHeight: 1.45,
-              }),
-            }}
+            style={buildToastStyle(isError, action)}
           >
-            {action ? (
-              <>
-                <button
-                  type="button"
-                  className="app-toast-action"
-                  onClick={action.onClick}
-                >
-                  <span className="app-toast-action__message">{message}</span>
-                  <span className="app-toast-action__label">{action.label}</span>
-                </button>
-                <button
-                  type="button"
-                  className="app-toast-close"
-                  aria-label={closeLabel}
-                  onClick={onClose}
-                >
-                  ×
-                </button>
-              </>
-            ) : (
-              message
-            )}
+            <ToastViewContent
+              message={message}
+              action={action}
+              onClose={onClose}
+              closeLabel={closeLabel}
+            />
           </motion.div>
         )}
       </AnimatePresence>

@@ -163,108 +163,18 @@ export function buildCourseWinNotes({ races, entries, rpcRows, until }) {
       status: "unavailable",
       reason: "no_grade_rows",
     };
-  const windows = new Set(
-    rpcRows.map((r) => `${r.window_start}|${r.window_end}`),
-  );
-  if (windows.size !== 1)
-    throw new Error(
-      `コース別1着率の RPC の窓がそろっていない: ${[...windows].join(", ")}`,
-    );
-  const [windowStart, windowEnd] = [...windows][0].split("|");
-
-  const baselines = {};
-  for (const row of gradeRows) {
-    if (!GRADES.includes(row.grade)) continue;
-    baselines[`${row.grade}|${row.course}`] = {
-      runs: Number(row.runs),
-      wins: Number(row.wins),
-    };
-  }
-  const stat = new Map(
-    racerRows.map((r) => [
-      `${r.racer_id}|${r.course}`,
-      {
-        runs: Number(r.runs),
-        wins: Number(r.wins),
-        offFrame: Number(r.off_frame_runs),
-      },
-    ]),
-  );
+  const [windowStart, windowEnd] = courseWinWindow(rpcRows);
+  const baselines = courseWinBaselines(gradeRows);
+  const stat = courseWinRacerStats(racerRows);
   const raceById = new Map(races.map((r) => [r.race_id, r]));
-
-  // 前付けの選手（2〜6号艇で、窓の中に枠2以上から1コースに入った回数が FRONT_ENTRY_MIN 以上）がいるレースは外す
-  const frontRaces = [
-    ...new Set(
-      entries
-        .filter(
-          (e) =>
-            e.boat_number >= 2 &&
-            (stat.get(`${e.racer_id}|1`)?.offFrame ?? 0) >= FRONT_ENTRY_MIN,
-        )
-        .map((e) => e.race_id),
-    ),
-  ].sort();
-  const front = new Set(frontRaces);
-
-  const excludedCounts = {};
-  const skip = (reason) => {
-    excludedCounts[reason] = (excludedCounts[reason] ?? 0) + 1;
-  };
-  const candidates = [];
-  for (const section of COURSE_WIN_SECTIONS) {
-    for (const entry of entries) {
-      if (entry.boat_number !== section.boat) continue;
-      const race = raceById.get(entry.race_id);
-      if (!race) continue;
-      const tag = `${section.key}:`;
-      if (section.grades && !section.grades.includes(entry.grade)) {
-        skip(`${tag}grade_out`);
-        continue;
-      }
-      const base = baselines[`${entry.grade}|${section.course}`];
-      if (!base || base.runs < COURSE_WIN_MIN_RUNS) {
-        skip(`${tag}no_baseline`);
-        continue;
-      }
-      const p0 = base.wins / base.runs;
-      // 全国の群にも期待度数の条件をかける（どちらかの群が足りなければ差を言わない、BOA-1157 と同じ）
-      if (base.runs < minRunsFor(p0)) {
-        skip(`${tag}baseline_small`);
-        continue;
-      }
-      const s = stat.get(`${entry.racer_id}|${section.course}`);
-      if (!s || s.runs < minRunsFor(p0)) {
-        skip(`${tag}too_few_runs`);
-        continue;
-      }
-      if (front.has(entry.race_id)) {
-        skip(`${tag}front_race`);
-        continue;
-      }
-      const shrunk = shrinkRate(s.wins, s.runs, p0);
-      candidates.push({
-        section: section.key,
-        race_id: entry.race_id,
-        venue_code: race.venue_code,
-        race_number: race.race_number,
-        start_time: race.start_time,
-        boat_number: entry.boat_number,
-        course: section.course,
-        racer_id: entry.racer_id,
-        // \s は全角の空白（U+3000）も含む
-        racer_name: String(entry.player_name ?? "")
-          .replace(/\s+/g, " ")
-          .trim(),
-        grade: entry.grade,
-        runs: s.runs,
-        wins: s.wins,
-        baseline_pct: round(p0 * 100, 2),
-        shrunk_pct: round(shrunk * 100, 2),
-        gap_pt: round((shrunk - p0) * 100, 2),
-        z: round(zScore(s.wins, s.runs, p0), 3),
-      });
-    }
-  }
+  const frontRaces = courseWinFrontRaces(entries, stat);
+  const { candidates, excludedCounts } = collectCourseWinCandidates({
+    entries,
+    raceById,
+    baselines,
+    stat,
+    front: new Set(frontRaces),
+  });
   return {
     v: COURSE_WIN_VERSION,
     status: "ok",
@@ -281,6 +191,133 @@ export function buildCourseWinNotes({ races, entries, rpcRows, until }) {
       ]),
     ),
     candidates,
+  };
+}
+
+/** RPC の行の窓（全行で1つにそろっていなければ投げる）。[start, end] */
+function courseWinWindow(rpcRows) {
+  const windows = new Set(
+    rpcRows.map((r) => `${r.window_start}|${r.window_end}`),
+  );
+  if (windows.size !== 1)
+    throw new Error(
+      `コース別1着率の RPC の窓がそろっていない: ${[...windows].join(", ")}`,
+    );
+  return [...windows][0].split("|");
+}
+
+/** 級×コースの全国の走数・1着数（"A1|1" の形のキー） */
+function courseWinBaselines(gradeRows) {
+  const baselines = {};
+  for (const row of gradeRows) {
+    if (!GRADES.includes(row.grade)) continue;
+    baselines[`${row.grade}|${row.course}`] = {
+      runs: Number(row.runs),
+      wins: Number(row.wins),
+    };
+  }
+  return baselines;
+}
+
+/** 選手×コースの走数・1着数・枠2以上から入った回数（"racer_id|コース" の形のキー） */
+function courseWinRacerStats(racerRows) {
+  return new Map(
+    racerRows.map((r) => [
+      `${r.racer_id}|${r.course}`,
+      {
+        runs: Number(r.runs),
+        wins: Number(r.wins),
+        offFrame: Number(r.off_frame_runs),
+      },
+    ]),
+  );
+}
+
+/** 前付けの選手（2〜6号艇で、窓の中に枠2以上から1コースに入った回数が FRONT_ENTRY_MIN 以上）がいるレースの ID（並べ済み） */
+function courseWinFrontRaces(entries, stat) {
+  return [
+    ...new Set(
+      entries
+        .filter(
+          (e) =>
+            e.boat_number >= 2 &&
+            (stat.get(`${e.racer_id}|1`)?.offFrame ?? 0) >= FRONT_ENTRY_MIN,
+        )
+        .map((e) => e.race_id),
+    ),
+  ].sort();
+}
+
+/** 段ごとに、載せる条件を満たす全員を候補にする。外した理由は excludedCounts に数える */
+function collectCourseWinCandidates({
+  entries,
+  raceById,
+  baselines,
+  stat,
+  front,
+}) {
+  const excludedCounts = {};
+  const candidates = [];
+  for (const section of COURSE_WIN_SECTIONS) {
+    for (const entry of entries) {
+      if (entry.boat_number !== section.boat) continue;
+      const race = raceById.get(entry.race_id);
+      if (!race) continue;
+      const verdict = judgeCourseWinEntry({
+        section,
+        entry,
+        race,
+        baselines,
+        stat,
+        front,
+      });
+      if (verdict.skip) {
+        excludedCounts[verdict.skip] = (excludedCounts[verdict.skip] ?? 0) + 1;
+        continue;
+      }
+      candidates.push(verdict.candidate);
+    }
+  }
+  return { candidates, excludedCounts };
+}
+
+/** 1人の出走を、載せる条件で見る。外すなら { skip: 理由 }、残すなら { candidate } */
+function judgeCourseWinEntry({ section, entry, race, baselines, stat, front }) {
+  const tag = `${section.key}:`;
+  if (section.grades && !section.grades.includes(entry.grade))
+    return { skip: `${tag}grade_out` };
+  const base = baselines[`${entry.grade}|${section.course}`];
+  if (!base || base.runs < COURSE_WIN_MIN_RUNS)
+    return { skip: `${tag}no_baseline` };
+  const p0 = base.wins / base.runs;
+  // 全国の群にも期待度数の条件をかける（どちらかの群が足りなければ差を言わない、BOA-1157 と同じ）
+  if (base.runs < minRunsFor(p0)) return { skip: `${tag}baseline_small` };
+  const s = stat.get(`${entry.racer_id}|${section.course}`);
+  if (!s || s.runs < minRunsFor(p0)) return { skip: `${tag}too_few_runs` };
+  if (front.has(entry.race_id)) return { skip: `${tag}front_race` };
+  const shrunk = shrinkRate(s.wins, s.runs, p0);
+  return {
+    candidate: {
+      section: section.key,
+      race_id: entry.race_id,
+      venue_code: race.venue_code,
+      race_number: race.race_number,
+      start_time: race.start_time,
+      boat_number: entry.boat_number,
+      course: section.course,
+      racer_id: entry.racer_id,
+      // \s は全角の空白（U+3000）も含む
+      racer_name: String(entry.player_name ?? "")
+        .replace(/\s+/g, " ")
+        .trim(),
+      grade: entry.grade,
+      runs: s.runs,
+      wins: s.wins,
+      baseline_pct: round(p0 * 100, 2),
+      shrunk_pct: round(shrunk * 100, 2),
+      gap_pt: round((shrunk - p0) * 100, 2),
+      z: round(zScore(s.wins, s.runs, p0), 3),
+    },
   };
 }
 
@@ -329,40 +366,15 @@ export function buildCourseWinSheet(
       c.start_time.slice(0, 5) > sendAt &&
       !excluded.has(`${c.race_id}:${c.boat_number}`),
   );
-  const order = (a, b) =>
-    b.gap_pt - a.gap_pt ||
-    b.runs - a.runs ||
-    a.race_id.localeCompare(b.race_id);
   const sections = [];
   const k = {};
   for (const def of COURSE_WIN_SECTIONS) {
-    const list = live.filter((c) => c.section === def.key).sort(order);
+    const list = live
+      .filter((c) => c.section === def.key)
+      .sort(compareCourseWin);
     k[def.key] = list.length;
     if (!list.length) continue;
-    sections.push({
-      key: def.key,
-      boat: def.boat,
-      course: def.course,
-      rows: list.slice(0, def.limit).map((c, i) => {
-        const base = courseWin.baselines[`${c.grade}|${c.course}`];
-        return {
-          rank: i + 1,
-          race_id: c.race_id,
-          venue_code: c.venue_code,
-          race_number: c.race_number,
-          start_time: c.start_time.slice(0, 5),
-          boat_number: c.boat_number,
-          racer_id: c.racer_id,
-          racer_name: courseWinDisplayName(c.racer_name),
-          grade: c.grade,
-          runs: c.runs,
-          wins: c.wins,
-          pct: courseWinPct(c.wins, c.runs),
-          baseline_pct: courseWinPct(base.wins, base.runs),
-          z: c.z,
-        };
-      }),
-    });
+    sections.push(courseWinSheetSection(def, list, courseWin.baselines));
   }
   const c1 = sections.find((s) => s.key === "c1");
   if (!c1) return { ok: false, reason: "no_c1_rows" };
@@ -377,26 +389,9 @@ export function buildCourseWinSheet(
     featured.runs,
     featuredBase.wins / featuredBase.runs,
   );
-  const key = fingerprint(
-    JSON.stringify({
-      w: courseWin.window,
-      s: sendAt,
-      k,
-      r: sections.map((s) =>
-        s.rows.map((r) => [
-          r.race_id,
-          r.boat_number,
-          r.racer_id,
-          r.runs,
-          r.wins,
-          r.grade,
-        ]),
-      ),
-    }),
-  );
   return {
     ok: true,
-    key,
+    key: courseWinSheetKey(courseWin.window, sendAt, k, sections),
     sections,
     featured,
     k,
@@ -415,3 +410,55 @@ export function buildCourseWinSheet(
     sendAt,
   };
 }
+
+/** 候補の並べ: 縮めた値−級の全国平均の大きい順、同率は件数の多い方、さらに同じならレース ID */
+const compareCourseWin = (a, b) =>
+  b.gap_pt - a.gap_pt || b.runs - a.runs || a.race_id.localeCompare(b.race_id);
+
+/** 画像の1段（並べ済みの候補 list から上限までの行） */
+function courseWinSheetSection(def, list, baselines) {
+  return {
+    key: def.key,
+    boat: def.boat,
+    course: def.course,
+    rows: list.slice(0, def.limit).map((c, i) => {
+      const base = baselines[`${c.grade}|${c.course}`];
+      return {
+        rank: i + 1,
+        race_id: c.race_id,
+        venue_code: c.venue_code,
+        race_number: c.race_number,
+        start_time: c.start_time.slice(0, 5),
+        boat_number: c.boat_number,
+        racer_id: c.racer_id,
+        racer_name: courseWinDisplayName(c.racer_name),
+        grade: c.grade,
+        runs: c.runs,
+        wins: c.wins,
+        pct: courseWinPct(c.wins, c.runs),
+        baseline_pct: courseWinPct(base.wins, base.runs),
+        z: c.z,
+      };
+    }),
+  };
+}
+
+/** 画像の撮影用のページと計画で同じになる指紋（行・窓・K・送る時刻から作る） */
+const courseWinSheetKey = (window, sendAt, k, sections) =>
+  fingerprint(
+    JSON.stringify({
+      w: window,
+      s: sendAt,
+      k,
+      r: sections.map((s) =>
+        s.rows.map((r) => [
+          r.race_id,
+          r.boat_number,
+          r.racer_id,
+          r.runs,
+          r.wins,
+          r.grade,
+        ]),
+      ),
+    }),
+  );

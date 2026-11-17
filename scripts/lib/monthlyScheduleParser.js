@@ -83,17 +83,8 @@ export const addDays = (iso, n) => isoOf(msOf(iso) + n * DAY_MS);
 export const daysBetween = (fromIso, toIso) =>
   Math.round((msOf(toIso) - msOf(fromIso)) / DAY_MS);
 
-/**
- * 月間スケジュールのHTMLを解析する。
- * @param {string} html
- * @param {string} ym 取得した月（YYYYMM）。ページの選択中の年月と突き合わせる
- */
-export function parseMonthlySchedule(html, ym) {
-  const { year, month } = parseYm(ym);
-  const $ = cheerio.load(html);
-  const anomalies = [];
-
-  // ページ自身が示す年月（選択中の option。年→月の順に2つ）と、要求した ym の一致
+/** ページ自身が示す年月（選択中の option。年→月の順に2つ）と、要求した ym の一致を検証する */
+function checkSelectedYm($, ym, anomalies) {
   const selected = $("select option[selected]")
     .map((_, e) => $(e).attr("value"))
     .get()
@@ -105,12 +96,10 @@ export function parseMonthlySchedule(html, ym) {
     anomalies.push({
       problem: `ページの年月 ${selected[0]}-${selected[1]} が要求（${ym}）と一致しません`,
     });
+}
 
-  const tables = $("table.is-spritedNone1");
-  if (tables.length === 0)
-    throw new Error("月間スケジュールの表が見つかりません（構造の変更の疑い）");
-
-  // 列の日付。見出しの日の数字から、対象月の1日の列を特定し、他の列は日数の差で決める
+/** 列の日付。見出しの日の数字から、対象月の1日の列を特定し、他の列は日数の差で決める */
+function readColumnDates($, tables, year, month, anomalies) {
   const heads = tables
     .first()
     .find("thead th")
@@ -134,68 +123,110 @@ export function parseMonthlySchedule(html, ym) {
         problem: `見出しの日 ${heads[i]} が計算した日付 ${d} と一致しません（列 ${i + 1}）`,
       });
   });
-  const totalCols = heads.length;
+  return columnDates;
+}
+
+/** 節の異常（未知の色分け・端以外でリンクが無い・見出しの範囲外）を anomalies へ足す */
+function checkSegment(seg, jcd, hasLink, anomalies) {
+  const { class_code: cls, col_start: col } = seg;
+  if (!CLASS_CODES[cls])
+    anomalies.push({
+      venue_code: Number(jcd),
+      problem: `未知の色分け ${cls}（列 ${col}）`,
+    });
+  if (!hasLink && !seg.edge_left && !seg.edge_right)
+    anomalies.push({
+      venue_code: Number(jcd),
+      problem: `端以外の節に節名のリンクがありません（列 ${col}〜${seg.col_end}）`,
+    });
+  if (seg.start_date === null || seg.end_date === null)
+    anomalies.push({
+      venue_code: Number(jcd),
+      problem: `列 ${col}〜${seg.col_end} が見出しの範囲外です`,
+    });
+}
+
+/** 1つの td（1日、または colspan 日間の節）を節として読む。色分けの無い td は null */
+function parseSegmentCell($, td, col, jcd, columnDates, anomalies) {
+  const span = Number($(td).attr("colspan") ?? 1);
+  const cls = ($(td).attr("class") ?? "").match(/is-gradeColor(\w+)/)?.[1];
+  if (!cls) return { span, seg: null };
+  const totalCols = columnDates.length;
+  const a = $(td).find("a").first();
+  const href = a.attr("href") ?? "";
+  const seg = {
+    col_start: col,
+    col_end: col + span - 1,
+    start_date: columnDates[col - 1] ?? null,
+    end_date: columnDates[col + span - 2] ?? null,
+    class_code: cls,
+    title: a.length ? a.text().trim() : null,
+    link_kind: /race\/(\w+)\?/.exec(href)?.[1] ?? null,
+    edge_left: col === 1,
+    edge_right: col + span - 1 === totalCols,
+  };
+  checkSegment(seg, jcd, a.length > 0, anomalies);
+  return { span, seg };
+}
+
+/** 会場ごとの tbody を読む。会場コードが読めなければ anomalies に残して null */
+function parseVenueBody($, tb, columnDates, anomalies) {
+  const totalCols = columnDates.length;
+  const jcd = /jcd=(\d+)/.exec($(tb).find("th a").attr("href") ?? "")?.[1];
+  if (!jcd) {
+    anomalies.push({ problem: "会場コードを読めない行があります" });
+    return null;
+  }
+  const segments = [];
+  let col = 1;
+  $(tb)
+    .find("td")
+    .each((___, td) => {
+      const { span, seg } = parseSegmentCell(
+        $,
+        td,
+        col,
+        jcd,
+        columnDates,
+        anomalies,
+      );
+      if (seg) segments.push(seg);
+      col += span;
+    });
+  if (col - 1 !== totalCols)
+    anomalies.push({
+      venue_code: Number(jcd),
+      problem: `列数 ${col - 1} が見出しの列数 ${totalCols} と一致しません`,
+    });
+  return { venue_code: Number(jcd), segments };
+}
+
+/**
+ * 月間スケジュールのHTMLを解析する。
+ * @param {string} html
+ * @param {string} ym 取得した月（YYYYMM）。ページの選択中の年月と突き合わせる
+ */
+export function parseMonthlySchedule(html, ym) {
+  const { year, month } = parseYm(ym);
+  const $ = cheerio.load(html);
+  const anomalies = [];
+
+  checkSelectedYm($, ym, anomalies);
+
+  const tables = $("table.is-spritedNone1");
+  if (tables.length === 0)
+    throw new Error("月間スケジュールの表が見つかりません（構造の変更の疑い）");
+
+  const columnDates = readColumnDates($, tables, year, month, anomalies);
+  const totalCols = columnDates.length;
 
   const venues = [];
   tables.each((_, table) => {
     $(table)
       .find("tbody")
       .each((__, tb) => {
-        const jcd = /jcd=(\d+)/.exec(
-          $(tb).find("th a").attr("href") ?? "",
-        )?.[1];
-        if (!jcd) {
-          anomalies.push({ problem: "会場コードを読めない行があります" });
-          return;
-        }
-        const segments = [];
-        let col = 1;
-        $(tb)
-          .find("td")
-          .each((___, td) => {
-            const span = Number($(td).attr("colspan") ?? 1);
-            const cls = ($(td).attr("class") ?? "").match(
-              /is-gradeColor(\w+)/,
-            )?.[1];
-            if (cls) {
-              const a = $(td).find("a").first();
-              const href = a.attr("href") ?? "";
-              const seg = {
-                col_start: col,
-                col_end: col + span - 1,
-                start_date: columnDates[col - 1] ?? null,
-                end_date: columnDates[col + span - 2] ?? null,
-                class_code: cls,
-                title: a.length ? a.text().trim() : null,
-                link_kind: /race\/(\w+)\?/.exec(href)?.[1] ?? null,
-                edge_left: col === 1,
-                edge_right: col + span - 1 === totalCols,
-              };
-              if (!CLASS_CODES[cls])
-                anomalies.push({
-                  venue_code: Number(jcd),
-                  problem: `未知の色分け ${cls}（列 ${col}）`,
-                });
-              if (!a.length && !seg.edge_left && !seg.edge_right)
-                anomalies.push({
-                  venue_code: Number(jcd),
-                  problem: `端以外の節に節名のリンクがありません（列 ${col}〜${seg.col_end}）`,
-                });
-              if (seg.start_date === null || seg.end_date === null)
-                anomalies.push({
-                  venue_code: Number(jcd),
-                  problem: `列 ${col}〜${seg.col_end} が見出しの範囲外です`,
-                });
-              segments.push(seg);
-            }
-            col += span;
-          });
-        if (col - 1 !== totalCols)
-          anomalies.push({
-            venue_code: Number(jcd),
-            problem: `列数 ${col - 1} が見出しの列数 ${totalCols} と一致しません`,
-          });
-        venues.push({ venue_code: Number(jcd), segments });
+        const venue = parseVenueBody($, tb, columnDates, anomalies);
+        if (venue) venues.push(venue);
       });
   });
 
@@ -205,6 +236,106 @@ export function parseMonthlySchedule(html, ym) {
     window: { from: columnDates[0], to: columnDates[totalCols - 1] },
     venues,
     anomalies,
+  };
+}
+
+/** 各ページの節を、会場コードごとに集める（ページの年月・窓を付ける） */
+function groupSegmentsByVenue(pages) {
+  const perVenue = new Map();
+  for (const page of pages) {
+    for (const v of page.venues) {
+      for (const s of v.segments) {
+        const list = perVenue.get(v.venue_code) ?? [];
+        list.push({ ...s, ym: page.ym, window: page.window });
+        perVenue.set(v.venue_code, list);
+      }
+    }
+  }
+  return perVenue;
+}
+
+/** 開始日順の節を、日付が重なるものごとに束ねる（同じ会場の別の節は、日付が重ならない） */
+function bundleOverlapping(segs) {
+  const groups = [];
+  for (const s of segs) {
+    const g = groups.at(-1);
+    if (g && s.start_date <= g.maxEnd) {
+      g.items.push(s);
+      if (s.end_date > g.maxEnd) g.maxEnd = s.end_date;
+    } else groups.push({ items: [s], maxEnd: s.end_date });
+  }
+  return groups;
+}
+
+/**
+ * 束ねた節1つを確定する。戻りは { unresolved } か { series }（確定できず異常で捨てるときは両方なし）。
+ * 異常は anomalies へ足す
+ */
+function resolveGroup(venue_code, g, anomalies) {
+  // 確定した端: 左端に接していない節の開始日、右端に接していない節の終了日
+  const starts = g.items.filter((i) => !i.edge_left).map((i) => i.start_date);
+  const ends = g.items.filter((i) => !i.edge_right).map((i) => i.end_date);
+  const titles = [...new Set(g.items.map((i) => i.title).filter(Boolean))];
+  const classes = [...new Set(g.items.map((i) => i.class_code))];
+  const dates = {
+    min: g.items.map((i) => i.start_date).sort()[0],
+    max: g.maxEnd,
+  };
+  if (titles.length > 1)
+    anomalies.push({
+      venue_code,
+      problem: `同じ節に複数の節名: ${JSON.stringify(titles)}（${dates.min}〜${dates.max}）`,
+    });
+  if (classes.length > 1)
+    anomalies.push({
+      venue_code,
+      problem: `同じ節に複数の色分け: ${JSON.stringify(classes)}（${dates.min}〜${dates.max}）`,
+    });
+  if (starts.length === 0 || ends.length === 0) {
+    return {
+      unresolved: {
+        venue_code,
+        seen_from: dates.min,
+        seen_to: dates.max,
+        class_code: classes[0],
+        title: titles[0] ?? null,
+        reason:
+          starts.length === 0
+            ? "開始日が窓の外（隣の月のページが必要）"
+            : "終了日が窓の外（隣の月のページが必要）",
+      },
+    };
+  }
+  const start_date = starts.sort()[0];
+  const end_date = ends.sort().at(-1);
+  if (start_date > end_date) {
+    anomalies.push({
+      venue_code,
+      problem: `開始日 ${start_date} が終了日 ${end_date} より後です`,
+    });
+    return {};
+  }
+  // 端の節が、確定した節の範囲を超えていないこと（束ねた節の整合）
+  if (dates.min < start_date || dates.max > end_date) {
+    // 端に接した断片は確定した節の範囲内に収まるはず。超えるなら別の節が重なっている
+    anomalies.push({
+      venue_code,
+      problem: `束ねた節の範囲（${dates.min}〜${dates.max}）が確定した範囲（${start_date}〜${end_date}）を超えています`,
+    });
+  }
+  const cls = classes[0];
+  return {
+    series: {
+      venue_code,
+      start_date,
+      end_date,
+      total_days: daysBetween(start_date, end_date) + 1,
+      title: titles[0] ?? null,
+      class_code: cls,
+      grade: CLASS_CODES[cls]?.grade ?? null,
+      kind: CLASS_CODES[cls]?.kind ?? null,
+      source_yms: [...new Set(g.items.map((i) => i.ym))].sort(),
+    },
   };
 }
 
@@ -219,96 +350,17 @@ export function parseMonthlySchedule(html, ym) {
  */
 export function mergeMonthlySchedules(pages) {
   const anomalies = [];
-  const perVenue = new Map();
-  for (const page of pages) {
-    for (const v of page.venues) {
-      for (const s of v.segments) {
-        const list = perVenue.get(v.venue_code) ?? [];
-        list.push({ ...s, ym: page.ym, window: page.window });
-        perVenue.set(v.venue_code, list);
-      }
-    }
-  }
+  const perVenue = groupSegmentsByVenue(pages);
   const series = [];
   const unresolved = [];
   for (const [venue_code, segs] of [...perVenue.entries()].sort(
     (a, b) => a[0] - b[0],
   )) {
     segs.sort((a, b) => a.start_date.localeCompare(b.start_date));
-    // 日付が重なる節を束ねる（同じ会場の別の節は、日付が重ならない）
-    const groups = [];
-    for (const s of segs) {
-      const g = groups.at(-1);
-      if (g && s.start_date <= g.maxEnd) {
-        g.items.push(s);
-        if (s.end_date > g.maxEnd) g.maxEnd = s.end_date;
-      } else groups.push({ items: [s], maxEnd: s.end_date });
-    }
-    for (const g of groups) {
-      // 確定した端: 左端に接していない節の開始日、右端に接していない節の終了日
-      const starts = g.items
-        .filter((i) => !i.edge_left)
-        .map((i) => i.start_date);
-      const ends = g.items.filter((i) => !i.edge_right).map((i) => i.end_date);
-      const titles = [...new Set(g.items.map((i) => i.title).filter(Boolean))];
-      const classes = [...new Set(g.items.map((i) => i.class_code))];
-      const dates = {
-        min: g.items.map((i) => i.start_date).sort()[0],
-        max: g.maxEnd,
-      };
-      if (titles.length > 1)
-        anomalies.push({
-          venue_code,
-          problem: `同じ節に複数の節名: ${JSON.stringify(titles)}（${dates.min}〜${dates.max}）`,
-        });
-      if (classes.length > 1)
-        anomalies.push({
-          venue_code,
-          problem: `同じ節に複数の色分け: ${JSON.stringify(classes)}（${dates.min}〜${dates.max}）`,
-        });
-      if (starts.length === 0 || ends.length === 0) {
-        unresolved.push({
-          venue_code,
-          seen_from: dates.min,
-          seen_to: dates.max,
-          class_code: classes[0],
-          title: titles[0] ?? null,
-          reason:
-            starts.length === 0
-              ? "開始日が窓の外（隣の月のページが必要）"
-              : "終了日が窓の外（隣の月のページが必要）",
-        });
-        continue;
-      }
-      const start_date = starts.sort()[0];
-      const end_date = ends.sort().at(-1);
-      if (start_date > end_date) {
-        anomalies.push({
-          venue_code,
-          problem: `開始日 ${start_date} が終了日 ${end_date} より後です`,
-        });
-        continue;
-      }
-      // 端の節が、確定した節の範囲を超えていないこと（束ねた節の整合）
-      if (dates.min < start_date || dates.max > end_date) {
-        // 端に接した断片は確定した節の範囲内に収まるはず。超えるなら別の節が重なっている
-        anomalies.push({
-          venue_code,
-          problem: `束ねた節の範囲（${dates.min}〜${dates.max}）が確定した範囲（${start_date}〜${end_date}）を超えています`,
-        });
-      }
-      const cls = classes[0];
-      series.push({
-        venue_code,
-        start_date,
-        end_date,
-        total_days: daysBetween(start_date, end_date) + 1,
-        title: titles[0] ?? null,
-        class_code: cls,
-        grade: CLASS_CODES[cls]?.grade ?? null,
-        kind: CLASS_CODES[cls]?.kind ?? null,
-        source_yms: [...new Set(g.items.map((i) => i.ym))].sort(),
-      });
+    for (const g of bundleOverlapping(segs)) {
+      const r = resolveGroup(venue_code, g, anomalies);
+      if (r.unresolved) unresolved.push(r.unresolved);
+      else if (r.series) series.push(r.series);
     }
   }
   series.sort(

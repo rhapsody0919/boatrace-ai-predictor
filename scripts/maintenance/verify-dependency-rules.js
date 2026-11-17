@@ -9,8 +9,8 @@ import {
   isDataLayer,
   compareEdgesToBaseline,
   compareBaselines,
+  newServicesFileProblems,
   newUtilsFileProblems,
-  facadeShouldBeError,
 } from "./lintBaselines.js";
 import { baselineOfEdges } from "./lintDepTree.js";
 
@@ -26,7 +26,7 @@ const baseline = {
 };
 
 test("データ層の和に当たるファイル", () => {
-  assert.ok(isDataLayer("src/services/supabaseDataService.js"));
+  assert.ok(!isDataLayer("src/services/supabaseDataService.js"), "殻は RA40 で消えた");
   assert.ok(isDataLayer("src/services/coreHelpers.js"));
   assert.ok(isDataLayer("src/services/raceQueries2.js"));
   assert.ok(!isDataLayer("src/services/other.js"));
@@ -70,6 +70,40 @@ test("src/utils の新しいファイルは赤", () => {
   assert.deepEqual(newUtilsFileProblems([]), []);
 });
 
+test("src/services の新しいファイルは <領域>Queries*.js だけ通す", () => {
+  for (const ok of [
+    "src/services/racerQueries5.js",
+    "src/services/motorQueries.js",
+    "src/services/venueQueries12.js",
+    "src/services/venueQueries10.js",
+    "src/utils/x.js",
+    "src/pure/racerService.js",
+  ]) {
+    assert.deepEqual(newServicesFileProblems([ok]), [], ok);
+  }
+  for (const ng of [
+    "src/services/dataService.js",
+    "src/services/racerService.js",
+    "src/services/core2.js",
+    "src/services/RacerQueries.js",
+    "src/services/racerQueries.ts",
+    "src/services/racerQueriesX.js",
+    "src/services/xracerQueries.js.bak",
+    "src/services/racer/racerQueries.js",
+    "src/services/Queries.js",
+    "src/services/racer-queries.js",
+    "src/services/racerQueries5.jsx",
+  ]) {
+    assert.equal(newServicesFileProblems([ng]).length, 1, ng);
+  }
+  assert.equal(
+    newServicesFileProblems(["src/services/a.js", "src/services/aQueries.js", "src/services/b.js"]).length,
+    2,
+  );
+  assert.deepEqual(newServicesFileProblems([]), []);
+  assert.deepEqual(newServicesFileProblems(undefined), []);
+});
+
 test("基準の行を足すと赤、減ると better", () => {
   const more = structuredClone(baseline);
   more["services-no-ui"]["<data-layer>"].push("src/pages/New.jsx");
@@ -84,11 +118,6 @@ test("基準の行を足すと赤、減ると better", () => {
   assert.equal(compareBaselines(baseline, baseline).better.length, 0);
 });
 
-test("facade-frozen を error にする条件は関数の本体0", () => {
-  assert.equal(facadeShouldBeError(0), true);
-  assert.equal(facadeShouldBeError(3), false);
-});
-
 test("dependency-rules.cjs が読めて規則の名前が10個", () => {
   const { forbidden, DEPENDENCY_CRUISER } = require("./dependency-rules.cjs");
   assert.match(DEPENDENCY_CRUISER, /^dependency-cruiser@\d+\.\d+\.\d+$/);
@@ -100,20 +129,19 @@ test("dependency-rules.cjs が読めて規則の名前が10個", () => {
       "hooks-no-ui",
       "components-no-pages",
       "src-no-node",
+      "ui-no-supabase-client",
       "api-no-ui-data",
       "lib-no-entry",
       "domain-direct",
-      "facade-frozen",
       "no-circular",
     ],
   );
-  assert.equal(forbidden.find((r) => r.name === "facade-frozen").severity, "warn");
 });
 
 test("baselineOfEdges は和の中の from を <data-layer> にまとめ、和の外はそのまま残す", () => {
   const to = "src/components/race/basicInfoStats.js";
   const base = baselineOfEdges([
-    edge("src/services/supabaseDataService.js", to),
+    edge("src/services/raceQueries.js", to),
     edge("src/services/raceService.js", to),
   ]);
   assert.deepEqual(Object.keys(base["services-no-ui"]).sort(), [
@@ -125,7 +153,7 @@ test("baselineOfEdges は和の中の from を <data-layer> にまとめ、和�
 
 test("和の中で移しただけの辺は緑、base に無い to は赤", () => {
   const to = "src/components/race/basicInfoStats.js";
-  const base = baselineOfEdges([edge("src/services/supabaseDataService.js", to)]);
+  const base = baselineOfEdges([edge("src/services/raceQueries.js", to)]);
   assert.equal(
     compareEdgesToBaseline([edge("src/services/raceQueries2.js", to)], base).ok,
     true,

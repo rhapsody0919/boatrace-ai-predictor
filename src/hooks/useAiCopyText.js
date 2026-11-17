@@ -18,45 +18,40 @@ import {
   ORIGINAL_EXHIBITION_ROW_META,
   buildOriginalExhibitionRows,
   originalExhibitionKindLabels,
+  isExhibitionCourseOutOfRange,
   toNumber,
   translateTechnique,
   translatePartName,
-  isExhibitionCourseOutOfRange,
   expectedCourseWinRateText,
 } from "../components/race/raceIndicators";
-import { formatExhibitionSt } from "../utils/formatters";
+import {
+  byBoat,
+  buildNameRow,
+  buildWinRateRow,
+  buildLocalWinRateRow,
+  buildTwoRateRow,
+  buildMotorRow,
+  buildFormRow,
+  buildAvgStOfficialRow,
+  buildAvgSt30Row,
+  buildStRow,
+  buildExhibitionStRow,
+  buildExhibitionTimeRow,
+  buildExhibitionCourseRow,
+  buildTodayWeightRow,
+  buildTiltRow,
+  buildAdjustmentWeightRow,
+  buildPartsChangedRow,
+  buildPrevResultRow,
+  buildExpectedCourseWinRateRow,
+  buildTechniqueRow,
+  buildReturnRateRow,
+} from "./useAiCopyTextRows";
 import { getAiCopyPromptText } from "../utils/aiCopyPrompts";
 import { isInCautionEnabled } from "../config/featureFlags";
 import { aiCopyPageUrl, buildAiCopyText } from "../utils/aiCopyText";
 import { isRaceCancelled } from "../utils/raceCancellation";
-import { meetPrevRunState, meetPrevRunWhenParams } from "../utils/prevResult";
 import { splitRacerName } from "../utils/racerName";
-
-const DASH = "—";
-
-function byBoat(rows, key = "boat_number") {
-  const map = new Map();
-  (rows ?? []).forEach((row) => map.set(row[key], row));
-  return map;
-}
-
-// モーター交換直後は全艇motor_2rateが0になり「0.0%」が誤解を招くため、
-// raceIndicators.jsxのrowMotorと同じくその場合は全艇「—」にする
-function buildMotorRow(t, players, motorByBoat) {
-  const values = players.map((p) =>
-    toNumber(motorByBoat.get(p.number)?.motor_2rate ?? p.motor2Rate),
-  );
-  const allZero = values.length > 0 && values.every((v) => v === 0);
-
-  return {
-    key: "motor",
-    label: t("dataTable.rowMotor"),
-    values: values.map((v) => {
-      if (allZero || v === null) return DASH;
-      return `${v.toFixed(1)}%`;
-    }),
-  };
-}
 
 // courseStats: useSixBoatCourseStats の戻り値。想定コース1着率の行に使う（データ出走表と同じ値、BOA-1296）
 function buildRows(
@@ -96,115 +91,25 @@ function buildRows(
     (analysis.st30 ?? []).map((r) => [r.boatNumber, r.st30]),
   );
 
+  const ui = {
+    toNumber,
+    translateTechnique,
+    translatePartName,
+    expectedCourseWinRateText,
+  };
+
   return [
-    {
-      key: "name",
-      label: t("aiCopy.playerNameLabel"),
-      values: players.map((p) => p.name ?? DASH),
-    },
-    {
-      key: "winRate",
-      label: t("dataTable.rowWinRate"),
-      values: players.map((p) => {
-        // データ出走表の F・L バッジ（FlyingBadge）と同じ値を級別の後ろに書く。
-        // F持ちはスタートを控えるので、AI に渡す文面から落とさない（BOA-770 ファン評価）
-        const v = toNumber(p.winRate);
-        const row = flying.rows?.get(p.number);
-        const fCount = row?.f_count > 0 ? row.f_count : 0;
-        const lCount = row?.l_count > 0 ? row.l_count : 0;
-        const head = [
-          p.grade,
-          fCount
-            ? `F${fCount}${flying.currentMeet.has(p.number) ? `(${t("flyingBadge.currentMeet")})` : ""}`
-            : null,
-          lCount ? `L${lCount}` : null,
-          v !== null ? v.toFixed(2) : null,
-        ].filter(Boolean);
-        return head.length > 0 ? head.join(" ") : DASH;
-      }),
-    },
-    {
-      key: "localWinRate",
-      label: t("dataTable.rowLocalWinRate"),
-      values: players.map((p) => {
-        const v = toNumber(p.localWinRate);
-        return v !== null ? v.toFixed(2) : DASH;
-      }),
-    },
-    {
-      key: "twoRate",
-      label: t("dataTable.rowTwoRate"),
-      values: players.map((p) => {
-        const v = toNumber(p.global2Rate);
-        return v !== null ? `${v.toFixed(1)}%` : DASH;
-      }),
-    },
-    buildMotorRow(t, players, motorByBoat),
-    {
-      key: "form",
-      label: t("dataTable.rowForm"),
-      values: players.map((p) => {
-        const row = formByBoat.get(p.number);
-        if (!row || row.delta === null || row.delta === undefined) return DASH;
-        const sign = row.delta > 0 ? "↑" : row.delta < 0 ? "↓" : "→";
-        return `${sign}${Math.abs(row.delta).toFixed(2)}`;
-      }),
-    },
-    // データ出走表と同じ2行（raceIndicators.jsx、BOA-815）: 公式は2桁、30走は3桁
-    {
-      key: "avgSt",
-      label: t("dataTable.rowAvgStOfficial"),
-      values: players.map((p) => {
-        const v = toNumber(officialStByBoat.get(p.number));
-        return v !== null ? v.toFixed(2) : DASH;
-      }),
-    },
-    {
-      key: "avgSt30",
-      label: t("dataTable.rowAvgSt30"),
-      values: players.map((p) => {
-        const v = toNumber(st30ByBoat.get(p.number));
-        return v !== null ? v.toFixed(3) : DASH;
-      }),
-    },
-    {
-      key: "st",
-      label: t("dataTable.rowSt"),
-      values: players.map((p) => {
-        const row = stByBoat.get(p.number);
-        return row && row.sample_count
-          ? `±${row.avg_deviation.toFixed(2)}`
-          : DASH;
-      }),
-    },
-    {
-      key: "exSt",
-      label: t("dataTable.rowExSt"),
-      values: players.map((p) => {
-        // 展示のフライング・出遅れは公式の表記（F.01 等）で書く（BOA-759）
-        const row = stByBoat.get(p.number);
-        return (
-          formatExhibitionSt(row?.exhibition_st, row?.exhibition_start_flag) ??
-          DASH
-        );
-      }),
-    },
-    {
-      key: "exhibition",
-      label: t("dataTable.rowExhibition"),
-      values: players.map((p) => {
-        const row = exByBoat.get(p.number);
-        if (!row) return DASH;
-        if (row.exhibition_time !== null && row.exhibition_time !== undefined)
-          return row.exhibition_time.toFixed(2);
-        if (
-          row.avg_exhibition_time !== null &&
-          row.avg_exhibition_time !== undefined
-        )
-          return `(${row.avg_exhibition_time.toFixed(2)})`;
-        return DASH;
-      }),
-    },
+    buildNameRow(t, players),
+    buildWinRateRow(t, players, flying, ui),
+    buildLocalWinRateRow(t, players, ui),
+    buildTwoRateRow(t, players, ui),
+    buildMotorRow(t, players, motorByBoat, ui),
+    buildFormRow(t, players, formByBoat),
+    buildAvgStOfficialRow(t, players, officialStByBoat, ui),
+    buildAvgSt30Row(t, players, st30ByBoat, ui),
+    buildStRow(t, players, stByBoat),
+    buildExhibitionStRow(t, players, stByBoat),
+    buildExhibitionTimeRow(t, players, exByBoat),
     // 直前情報表と同じ位置・行生成・値の整形を使う。
     ...originalRows.map((r, i) => ({
       key: r.key,
@@ -212,137 +117,17 @@ function buildRows(
       originalExhibitionLabel: originalLabels[i],
       values: players.map((p) => r.formatValue(p)),
     })),
-    // 展示進入（スタート展示のコース、直前情報タブの行と同じ値）。前づけで進入が変わると
-    // 1マークの展開の前提が変わるため入れる。取得開始前のレースでは行ごと出さない（BOA-770 ファン評価）
     ...(isExhibitionCourseOutOfRange(raceId, analysis.motorMaintenance)
       ? []
-      : [
-          {
-            key: "exhibitionCourse",
-            label: t("beforeInfo.rowExhibitionCourse"),
-            values: players.map((p) => {
-              const row = maintenanceByBoat.get(p.number);
-              if (!row) return DASH;
-              if (row.is_absent === true)
-                return t("beforeInfo.exhibitionAbsent");
-              const course = toNumber(row.exhibition_course);
-              if (course === null) return DASH;
-              const moved =
-                course < p.number
-                  ? t("beforeInfo.exhibitionCourseMovedIn")
-                  : course > p.number
-                    ? t("beforeInfo.exhibitionCourseMovedOut")
-                    : null;
-              const head = t("dataTable.prevResultCourse", { course });
-              return moved ? `${head}(${moved})` : head;
-            }),
-          },
-        ]),
-    {
-      key: "todayWeight",
-      label: t("dataTable.rowTodayWeight"),
-      values: players.map((p) => {
-        const weight = toNumber(maintenanceByBoat.get(p.number)?.today_weight);
-        return weight !== null ? `${weight.toFixed(1)}kg` : DASH;
-      }),
-    },
-    {
-      key: "tilt",
-      label: t("dataTable.rowTilt"),
-      values: players.map((p) => {
-        const tilt = toNumber(maintenanceByBoat.get(p.number)?.tilt);
-        if (tilt === null) return DASH;
-        return tilt > 0 ? `+${tilt.toFixed(1)}` : tilt.toFixed(1);
-      }),
-    },
-    {
-      key: "adjustmentWeight",
-      label: t("dataTable.rowAdjustmentWeight"),
-      values: players.map((p) => {
-        const weight = toNumber(
-          maintenanceByBoat.get(p.number)?.adjustment_weight,
-        );
-        return weight !== null ? `${weight.toFixed(1)}kg` : DASH;
-      }),
-    },
-    {
-      // 部品交換・プロペラ交換（データ出走表の「部品交換」と同じ値、BOA-770 推奨7）
-      key: "partsChanged",
-      label: t("dataTable.rowPartsChanged"),
-      values: players.map((p) => {
-        const row = maintenanceByBoat.get(p.number);
-        if (!row) return DASH;
-        const items = [
-          ...(row.parts_changed ?? []).map((part) =>
-            translatePartName(t, part),
-          ),
-          ...(row.propeller_change
-            ? [t("analysis.motor.propellerChanged")]
-            : []),
-        ];
-        return items.length > 0 ? items.join(t("listSeparator")) : DASH;
-      }),
-    },
-    {
-      key: "prevResult",
-      label: t("dataTable.rowPrevResult"),
-      values: players.map((p) => {
-        // データ出走表と同じ読み方にそろえる（prevResult.js、BOA-569 / BOA-610）
-        const row = meetPrevByBoat.get(p.number);
-        if (!row) return DASH;
-        const state = meetPrevRunState(row);
-        if (state.kind === "firstOfMeet") return t("dataTable.meetFirstRace");
-        if (state.kind === "unknown") return DASH;
-        const when = meetPrevRunWhenParams(state.raceId);
-        if (state.kind === "pending") {
-          return when
-            ? `${t("dataTable.prevResultPending")} (${t("dataTable.prevResultWhen", when)})`
-            : t("dataTable.prevResultPending");
-        }
-        const head =
-          state.kind === "rank"
-            ? t("review.finishPosition", { position: state.rank })
-            : state.markKey
-              ? t(`dataTable.prevMark.${state.markKey}`)
-              : state.mark;
-        const parts = [head];
-        if (state.course !== null)
-          parts.push(t("dataTable.prevResultCourse", { course: state.course }));
-        if (when) parts.push(`(${t("dataTable.prevResultWhen", when)})`);
-        return parts.join(" ");
-      }),
-    },
-    {
-      key: "expectedCourseWinRate",
-      label: t("dataTable.rowExpectedCourseWinRate"),
-      values: players.map((p) => {
-        const cell = expectedCourseWinRateText(t, courseByBoat.get(p.number));
-        if (!cell) return DASH;
-        return `${cell.rate} (${cell.sub})${cell.warn ? " ⚠" : ""}`;
-      }),
-    },
-    {
-      key: "technique",
-      label: t("dataTable.rowTechnique"),
-      values: players.map((p) => {
-        const row = techByBoat.get(p.number);
-        if (!row) return DASH;
-        if (!row.win_count || row.techniques.length === 0)
-          return t("dataTable.noWins");
-        const top = row.techniques[0];
-        return `${translateTechnique(t, top.technique)}（${t("dataTable.winCount", { n: row.win_count })}）`;
-      }),
-    },
-    {
-      key: "returnRate",
-      label: t("dataTable.rowReturnRate"),
-      values: players.map((p) => {
-        const row = rateByBoat.get(p.number);
-        return row && row.sample_count
-          ? `${row.win_return_rate.toFixed(0)}%`
-          : DASH;
-      }),
-    },
+      : [buildExhibitionCourseRow(t, players, maintenanceByBoat, ui)]),
+    buildTodayWeightRow(t, players, maintenanceByBoat, ui),
+    buildTiltRow(t, players, maintenanceByBoat, ui),
+    buildAdjustmentWeightRow(t, players, maintenanceByBoat, ui),
+    buildPartsChangedRow(t, players, maintenanceByBoat, ui),
+    buildPrevResultRow(t, players, meetPrevByBoat),
+    buildExpectedCourseWinRateRow(t, players, courseByBoat, ui),
+    buildTechniqueRow(t, players, techByBoat, ui),
+    buildReturnRateRow(t, players, rateByBoat),
   ];
 }
 
@@ -360,16 +145,8 @@ function isExhibitionPublished(analysis) {
   return false;
 }
 
-export function useAiCopyText({ raceId, prediction, race, venueCode }) {
-  const { t, i18n } = useTranslation();
-  // venueCodeを渡さないとDataRaceTable側のuseRaceAnalysisData呼び出しと
-  // キャッシュキー・in-flightデデュープが分岐し、同じレースのモーター内訳を
-  // 二重に取得してしまう（BOA-265でDataRaceTable側にvenueCodeを追加した際に発覚）
-  const analysis = useRaceAnalysisData(raceId, { venueCode });
-  const flyingRows = useRaceEntryFlyingRows(raceId);
-  const currentMeetFlying = useCurrentMeetFlyingBoats(raceId);
-
-  // レース切替時に前レースの値をコピーしない。取得失敗はこの行だけ省き、理由を記録する。
+// レース切替時に前レースの値をコピーしない。取得失敗はこの行だけ省き、理由を記録する。
+function useOriginalExhibition(raceId) {
   const [fetchedExhibition, setFetchedExhibition] = useState(null);
   useEffect(() => {
     if (!raceId) return undefined;
@@ -384,16 +161,57 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
       });
     return () => { cancelled = true; };
   }, [raceId]);
-  const originalExhibition = fetchedExhibition?.raceId === raceId
+  return fetchedExhibition?.raceId === raceId
     ? fetchedExhibition.data : null;
+}
 
-  // 公式の全角空白の桁揃え（全角空白の連続）は外し、姓と名を半角空白1つで区切る。
-  // 表と展開予測の両方で同じ名前にするため、ここで1回だけ整える
-  const players = [...(prediction?.allPlayers ?? [])]
+// 公式の全角空白の桁揃え（全角空白の連続）は外し、姓と名を半角空白1つで区切る。
+// 表と展開予測の両方で同じ名前にするため、ここで1回だけ整える
+function sortedPlayers(prediction) {
+  return [...(prediction?.allPlayers ?? [])]
     .sort((a, b) => a.number - b.number)
     .map((p) =>
       p.name ? { ...p, name: splitRacerName(p.name).join(" ") } : p,
     );
+}
+
+// 会場名はvenues.*i18nキー経由で翻訳する（他箇所と同じ既存パターン。
+// race?.venueは日本語の生値のため、非ja言語では直接使えない）
+function venueLabelOf(t, race, venueCode) {
+  return venueCode
+    ? t(`venues.${venueCode}`, race?.venue ?? "")
+    : (race?.venue ?? "");
+}
+
+// 予測側の値を優先し、無ければ race.rawData の値、どちらも無ければ null
+function predictionOrRaw(prediction, raw, key) {
+  return prediction?.[key] ?? raw[key] ?? null;
+}
+
+function buildContext({ raceId, race, prediction, venueCode }) {
+  const raw = race?.rawData ?? {};
+  return {
+    date: (raceId ?? "").slice(0, 10),
+    startTime: race?.startTime || null,
+    raceGrade: predictionOrRaw(prediction, raw, "raceGrade"),
+    seriesTitle: race?.seriesTitle ?? null,
+    seriesDayLabel: race?.seriesDayLabel ?? null,
+    raceStage: predictionOrRaw(prediction, raw, "raceStage"),
+    weather: predictionOrRaw(prediction, raw, "weather"),
+    venueCode: venueCode ?? null,
+  };
+}
+
+export function useAiCopyText({ raceId, prediction, race, venueCode }) {
+  const { t, i18n } = useTranslation();
+  // venueCodeを渡さないとDataRaceTable側のuseRaceAnalysisData呼び出しと
+  // キャッシュキー・in-flightデデュープが分岐し、同じレースのモーター内訳を
+  // 二重に取得してしまう（BOA-265でDataRaceTable側にvenueCodeを追加した際に発覚）
+  const analysis = useRaceAnalysisData(raceId, { venueCode });
+  const flyingRows = useRaceEntryFlyingRows(raceId);
+  const currentMeetFlying = useCurrentMeetFlyingBoats(raceId);
+  const originalExhibition = useOriginalExhibition(raceId);
+  const players = sortedPlayers(prediction);
 
   const courseStats = useSixBoatCourseStats({
     raceDate: raceId?.slice(0, 10),
@@ -404,30 +222,14 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
   const buildText = (promptType) => {
     if (players.length === 0) return "";
     const lang = i18n.resolvedLanguage;
-    const raw = race?.rawData ?? {};
-    // 会場名はvenues.*i18nキー経由で翻訳する（他箇所と同じ既存パターン。
-    // race?.venueは日本語の生値のため、非ja言語では直接使えない）
-    const venueLabel = venueCode
-      ? t(`venues.${venueCode}`, race?.venue ?? "")
-      : (race?.venue ?? "");
-
     const inCautionEnabled = isInCautionEnabled();
     return buildAiCopyText({
       t,
       heading: t("aiCopy.markdownHeading", {
-        venue: venueLabel,
+        venue: venueLabelOf(t, race, venueCode),
         race: race?.raceNumber ?? "",
       }),
-      context: {
-        date: (raceId ?? "").slice(0, 10),
-        startTime: race?.startTime || null,
-        raceGrade: prediction?.raceGrade ?? raw.raceGrade ?? null,
-        seriesTitle: race?.seriesTitle ?? null,
-        seriesDayLabel: race?.seriesDayLabel ?? null,
-        raceStage: prediction?.raceStage ?? raw.raceStage ?? null,
-        weather: prediction?.weather ?? raw.weather ?? null,
-        venueCode: venueCode ?? null,
-      },
+      context: buildContext({ raceId, race, prediction, venueCode }),
       players,
       rows: buildRows(
         t,

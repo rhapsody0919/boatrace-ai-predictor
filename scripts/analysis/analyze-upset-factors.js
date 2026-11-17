@@ -28,21 +28,21 @@ const VENUE_1COURSE_WIN_RATE = {
   "07": 0.52,
   "08": 0.56,
   "09": 0.54,
-  "10": 0.52,
-  "11": 0.5,
-  "12": 0.54,
-  "13": 0.55,
-  "14": 0.56,
-  "15": 0.56,
-  "16": 0.55,
-  "17": 0.52,
-  "18": 0.57,
-  "19": 0.55,
-  "20": 0.54,
-  "21": 0.57,
-  "22": 0.56,
-  "23": 0.56,
-  "24": 0.62,
+  10: 0.52,
+  11: 0.5,
+  12: 0.54,
+  13: 0.55,
+  14: 0.56,
+  15: 0.56,
+  16: 0.55,
+  17: 0.52,
+  18: 0.57,
+  19: 0.55,
+  20: 0.54,
+  21: 0.57,
+  22: 0.56,
+  23: 0.56,
+  24: 0.62,
 };
 const VENUE_AVG = 0.53;
 
@@ -94,16 +94,14 @@ async function fetchAll(table, query) {
   return all;
 }
 
-async function main() {
+function sinceDateString() {
   const since = new Date();
   since.setDate(since.getDate() - DAYS);
-  const sinceStr = since.toISOString().split("T")[0];
+  return since.toISOString().split("T")[0];
+}
 
-  console.log("🔍 1コース飛び予測 — 複合因子分析\n");
-  console.log(`📅 期間: 過去${DAYS}日 (${sinceStr} 〜)\n`);
-
-  // races
-  const races = await fetchAll("races", (from, to) =>
+async function fetchRaces(sinceStr) {
+  return fetchAll("races", (from, to) =>
     supabase
       .from("races")
       .select(
@@ -113,9 +111,10 @@ async function main() {
       .gte("race_date", sinceStr)
       .range(from, to),
   );
+}
 
-  // race_results
-  const results = await fetchAll("race_results", (from, to) =>
+async function fetchResults(sinceStr) {
+  return fetchAll("race_results", (from, to) =>
     supabase
       .from("race_results")
       .select(
@@ -126,9 +125,11 @@ async function main() {
       .eq("is_no_race", false)
       .range(from, to),
   );
+}
 
-  // predictions (standard model) — avgST と nige確率を取得
-  const preds = await fetchAll("predictions", (from, to) =>
+// predictions (standard model) — avgST と nige確率を取得
+async function fetchPreds(sinceStr) {
+  return fetchAll("predictions", (from, to) =>
     supabase
       .from("predictions")
       .select("race_id, feature_contributions")
@@ -137,16 +138,10 @@ async function main() {
       .gte("race_id", sinceStr)
       .range(from, to),
   );
+}
 
-  console.log(
-    `races: ${races.length.toLocaleString()} / results: ${results.length.toLocaleString()} / preds: ${preds.length.toLocaleString()}`,
-  );
-
-  // マップ化
-  const resultMap = new Map(results.map((r) => [r.race_id, r]));
-  const predMap = new Map(preds.map((p) => [p.race_id, p]));
-
-  // JOIN & 特徴量抽出
+// JOIN & 特徴量抽出
+function buildRows(races, resultMap, predMap) {
   const rows = [];
   for (const race of races) {
     const res = resultMap.get(race.race_id);
@@ -180,50 +175,48 @@ async function main() {
       technique: res.winning_technique,
     });
   }
+  return rows;
+}
 
-  console.log(`結合済み: ${rows.length.toLocaleString()} 件\n`);
-
-  const baseline = rows.filter((r) => r.isUpset).length / rows.length;
-  console.log(`ベースライン（1コース飛び率）: ${pct(baseline)}\n`);
-
-  // ---- 個別因子分析（四分位） ----
-  function analyzeQuartile(label, getter, rows) {
-    const valid = rows.filter((r) => getter(r) != null);
-    if (valid.length < 50) {
-      console.log(`  ${label}: データ不足`);
-      return null;
-    }
-    const sorted = [...valid].sort((a, b) => getter(a) - getter(b));
-    const q = Math.floor(sorted.length / 4);
-    const quartiles = [
-      sorted.slice(0, q),
-      sorted.slice(q, q * 2),
-      sorted.slice(q * 2, q * 3),
-      sorted.slice(q * 3),
-    ];
-    const rates = quartiles.map(
-      (g) => g.filter((r) => r.isUpset).length / g.length,
-    );
-    const range_ = (g) => {
-      const v = getter;
-      return `${v(g[0]).toFixed(2)}〜${v(g[g.length - 1]).toFixed(2)}`;
-    };
-    const spread = Math.max(...rates) - Math.min(...rates);
-    const label2 = spread > 0.15 ? "🟢 強" : spread > 0.08 ? "🟡 中" : "🔴 弱";
-    console.log(
-      `  ${label2} ${label} (有効n=${valid.length}, 予測力: ${(spread * 100).toFixed(1)}pt差)`,
-    );
-    for (let i = 0; i < 4; i++) {
-      const diff = rates[i] - baseline;
-      const bar = "█".repeat(Math.round(rates[i] * 20));
-      console.log(
-        `    Q${i + 1} (${range_(quartiles[i])}, n=${quartiles[i].length}): ${pct(rates[i])} (${diff >= 0 ? "+" : ""}${(diff * 100).toFixed(1)}pt) ${bar}`,
-      );
-    }
-    console.log();
-    return { spread, rates, quartiles, getter };
+// ---- 個別因子分析（四分位） ----
+function analyzeQuartile(label, getter, rows, baseline) {
+  const valid = rows.filter((r) => getter(r) != null);
+  if (valid.length < 50) {
+    console.log(`  ${label}: データ不足`);
+    return null;
   }
+  const sorted = [...valid].sort((a, b) => getter(a) - getter(b));
+  const q = Math.floor(sorted.length / 4);
+  const quartiles = [
+    sorted.slice(0, q),
+    sorted.slice(q, q * 2),
+    sorted.slice(q * 2, q * 3),
+    sorted.slice(q * 3),
+  ];
+  const rates = quartiles.map(
+    (g) => g.filter((r) => r.isUpset).length / g.length,
+  );
+  const range_ = (g) => {
+    const v = getter;
+    return `${v(g[0]).toFixed(2)}〜${v(g[g.length - 1]).toFixed(2)}`;
+  };
+  const spread = Math.max(...rates) - Math.min(...rates);
+  const label2 = spread > 0.15 ? "🟢 強" : spread > 0.08 ? "🟡 中" : "🔴 弱";
+  console.log(
+    `  ${label2} ${label} (有効n=${valid.length}, 予測力: ${(spread * 100).toFixed(1)}pt差)`,
+  );
+  for (let i = 0; i < 4; i++) {
+    const diff = rates[i] - baseline;
+    const bar = "█".repeat(Math.round(rates[i] * 20));
+    console.log(
+      `    Q${i + 1} (${range_(quartiles[i])}, n=${quartiles[i].length}): ${pct(rates[i])} (${diff >= 0 ? "+" : ""}${(diff * 100).toFixed(1)}pt) ${bar}`,
+    );
+  }
+  console.log();
+  return { spread, rates, quartiles, getter };
+}
 
+function analyzeIndividualFactors(rows, baseline) {
   console.log("=".repeat(65));
   console.log("【1】個別因子の予測力（四分位別 1コース飛び率）");
   console.log("=".repeat(65));
@@ -235,6 +228,7 @@ async function main() {
     "1号艇 全国勝率",
     (r) => r.boat1WinRate,
     rows,
+    baseline,
   );
 
   console.log("\n■ B. 会場の1コース勝率ベース（荒れやすい→安定）");
@@ -242,6 +236,7 @@ async function main() {
     "会場1コース勝率",
     (r) => r.venue1Rate,
     rows,
+    baseline,
   );
 
   console.log("\n■ C. 1号艇のモーター2連率（低い→高い）");
@@ -249,6 +244,7 @@ async function main() {
     "1号艇 モーター2連率",
     (r) => r.boat1MotorRate,
     rows,
+    baseline,
   );
 
   console.log("\n■ D. 選手間の勝率標準偏差（接戦→実力差大）");
@@ -256,6 +252,7 @@ async function main() {
     "選手間 勝率σ",
     (r) => r.winRateStddev,
     rows,
+    baseline,
   );
 
   console.log("\n■ E. モーター間の2連率標準偏差（均等→バラつき大）");
@@ -263,6 +260,7 @@ async function main() {
     "モーター間 2連率σ",
     (r) => r.motorStddev,
     rows,
+    baseline,
   );
 
   console.log("\n■ F. 1号艇の今節avgST（速い→遅い）");
@@ -270,6 +268,7 @@ async function main() {
     "1号艇 今節avgST",
     (r) => r.boat1AvgST,
     rows,
+    baseline,
   );
 
   console.log("\n■ G. AIの展開予測逃げ確率（低い→高い）");
@@ -277,6 +276,7 @@ async function main() {
     "AI逃げ確率",
     (r) => r.nigeProbAI,
     rows,
+    baseline,
   );
 
   console.log("\n■ H. 現在の荒れ度スコア（低い→高い）");
@@ -284,49 +284,32 @@ async function main() {
     "荒れ度スコア",
     (r) => r.volatilityScore,
     rows.filter((r) => r.volatilityScore != null),
+    baseline,
   );
 
-  // ---- 複合指標の構築 ----
-  console.log("=".repeat(65));
-  console.log("【2】複合スコア — 各因子を0-1に正規化して合成");
-  console.log("=".repeat(65));
+  return factorResults;
+}
 
-  // 各因子の正規化（有効範囲で0-1スケール）
-  // 「高いほど飛びやすい」方向に揃える
-  function normalize(val, min, max, invert = false) {
-    if (val == null) return null;
-    const n = Math.max(0, Math.min(1, (val - min) / (max - min)));
-    return invert ? 1 - n : n;
-  }
+// 各因子の正規化（有効範囲で0-1スケール）
+// 「高いほど飛びやすい」方向に揃える
+function normalize(val, min, max, invert = false) {
+  if (val == null) return null;
+  const n = Math.max(0, Math.min(1, (val - min) / (max - min)));
+  return invert ? 1 - n : n;
+}
 
-  // 統計から境界値を導出
-  const boat1WinRates = rows
-    .map((r) => r.boat1WinRate)
-    .filter((v) => v != null);
-  const minBW = Math.min(...boat1WinRates),
-    maxBW = Math.max(...boat1WinRates);
+// 統計から境界値を導出
+function minMaxOf(rows, key) {
+  const values = rows.map((r) => r[key]).filter((v) => v != null);
+  return [Math.min(...values), Math.max(...values)];
+}
 
-  const motorRates = rows.map((r) => r.boat1MotorRate).filter((v) => v != null);
-  const minMR = Math.min(...motorRates),
-    maxMR = Math.max(...motorRates);
-
-  const stddevs = rows.map((r) => r.winRateStddev).filter((v) => v != null);
-  const minSD = Math.min(...stddevs),
-    maxSD = Math.max(...stddevs);
-
-  const avgSTs = rows.map((r) => r.boat1AvgST).filter((v) => v != null);
-  const minST = Math.min(...avgSTs),
-    maxST = Math.max(...avgSTs);
-
-  const nigePbs = rows.map((r) => r.nigeProbAI).filter((v) => v != null);
-  const minNP = Math.min(...nigePbs),
-    maxNP = Math.max(...nigePbs);
-
-  // シンプルな重み付き複合スコア（各因子の予測力（spread）を重みに）
-  // 「飛びやすい = スコア高い」方向
+// シンプルな重み付き複合スコア（各因子の予測力（spread）を重みに）
+// 「飛びやすい = スコア高い」方向
+function buildWeights(factorResults) {
   const spreadOf = (key) => factorResults[key]?.spread ?? 0;
 
-  const WEIGHTS = {
+  return {
     boat1WinRate: spreadOf("boat1WinRate"), // 低い勝率 → 飛びやすい (invert=true)
     venue1Rate: spreadOf("venue1Rate"), // 低い1コース率 → 飛びやすい (invert=true)
     boat1MotorRate: spreadOf("boat1MotorRate"), // 低いモーター → 飛びやすい (invert=true)
@@ -334,7 +317,9 @@ async function main() {
     boat1AvgST: spreadOf("boat1AvgST"), // 遅いST → 飛びやすい (invert=false, STが高い=遅い)
     nigeProbAI: spreadOf("nigeProbAI"), // 低い逃げ確率 → 飛びやすい (invert=true)
   };
+}
 
+function printWeights(WEIGHTS) {
   const totalW = Object.values(WEIGHTS).reduce((s, v) => s + v, 0);
   console.log("\n  各因子の重み（予測力のspread比例）:");
   for (const [key, w] of Object.entries(WEIGHTS).sort((a, b) => b[1] - a[1])) {
@@ -342,8 +327,16 @@ async function main() {
       `    ${key.padEnd(16)}: ${(w * 100).toFixed(1)}pt → 重み${((w / totalW) * 100).toFixed(1)}%`,
     );
   }
+}
 
-  // スコア計算
+// スコア計算
+function scoreRows(rows, WEIGHTS) {
+  const [minBW, maxBW] = minMaxOf(rows, "boat1WinRate");
+  const [minMR, maxMR] = minMaxOf(rows, "boat1MotorRate");
+  const [minSD, maxSD] = minMaxOf(rows, "winRateStddev");
+  const [minST, maxST] = minMaxOf(rows, "boat1AvgST");
+  const [minNP, maxNP] = minMaxOf(rows, "nigeProbAI");
+
   const rowsWithScore = [];
   for (const r of rows) {
     const feats = {
@@ -371,20 +364,19 @@ async function main() {
     if (usedW === 0) continue;
     rowsWithScore.push({ ...r, compositeScore: score / usedW });
   }
+  return rowsWithScore;
+}
 
-  console.log(
-    `\n  複合スコア計算済み: ${rowsWithScore.length.toLocaleString()} 件`,
-  );
-
-  // 複合スコア四分位分析
+// 複合スコア四分位分析
+function splitQuintiles(rowsWithScore) {
   const sortedByComp = [...rowsWithScore].sort(
     (a, b) => a.compositeScore - b.compositeScore,
   );
   const qn = Math.floor(sortedByComp.length / 5);
-  const quintiles = [0, 1, 2, 3, 4].map((i) =>
-    sortedByComp.slice(i * qn, (i + 1) * qn),
-  );
+  return [0, 1, 2, 3, 4].map((i) => sortedByComp.slice(i * qn, (i + 1) * qn));
+}
 
+function printQuintiles(quintiles, baseline) {
   console.log("\n  【複合スコア 五分位別 1コース飛び率】");
   for (let i = 0; i < 5; i++) {
     const g = quintiles[i];
@@ -397,8 +389,10 @@ async function main() {
       `    Q${i + 1} (score ${minS}〜${maxS}, n=${g.length}): ${pct(upsetRate)} (${diff >= 0 ? "+" : ""}${(diff * 100).toFixed(1)}pt) ${bar}`,
     );
   }
+}
 
-  // 複合スコア最高五分位の平均払戻
+// 複合スコア最高五分位の平均払戻
+function printTopPayout(quintiles, rows) {
   const topQ = quintiles[4]; // 最も飛びやすいとされるグループ
   const topUpsets = topQ.filter((r) => r.isUpset && r.payout);
   const topAvgPayout =
@@ -409,8 +403,31 @@ async function main() {
   console.log(
     `  （全体平均払戻: ¥${Math.round(rows.filter((r) => r.isUpset && r.payout).reduce((s, r) => s + r.payout, 0) / rows.filter((r) => r.isUpset && r.payout).length).toLocaleString()}）`,
   );
+}
 
-  // ---- 会場別ブレークダウン ----
+// ---- 複合指標の構築 ----
+function analyzeComposite(rows, factorResults, baseline) {
+  console.log("=".repeat(65));
+  console.log("【2】複合スコア — 各因子を0-1に正規化して合成");
+  console.log("=".repeat(65));
+
+  const WEIGHTS = buildWeights(factorResults);
+  printWeights(WEIGHTS);
+
+  const rowsWithScore = scoreRows(rows, WEIGHTS);
+
+  console.log(
+    `\n  複合スコア計算済み: ${rowsWithScore.length.toLocaleString()} 件`,
+  );
+
+  const quintiles = splitQuintiles(rowsWithScore);
+  printQuintiles(quintiles, baseline);
+  printTopPayout(quintiles, rows);
+  return quintiles;
+}
+
+// ---- 会場別ブレークダウン ----
+function printVenueBreakdown(rows) {
   console.log("\n=".repeat(65));
   console.log("【3】会場別 1コース飛び率（荒れやすい会場の実測）");
   console.log("=".repeat(65));
@@ -443,11 +460,15 @@ async function main() {
       `  ${name.padEnd(4)} ${pad(s.n, 5)} ${pct(s.flyRate).padStart(9)} ${pct(s.theoretical).padStart(7)} ${(s.diff >= 0 ? "+" : "") + (s.diff * 100).toFixed(1)}pt ${bar}`,
     );
   }
+}
 
-  // ---- サマリーと設計提言 ----
+// ---- サマリーと設計提言 ----
+function printSummary(factorResults, quintiles, baseline) {
   console.log("\n=".repeat(65));
   console.log("【まとめ】各因子の予測力ランキング");
   console.log("=".repeat(65));
+
+  const spreadOf = (key) => factorResults[key]?.spread ?? 0;
 
   const factorSummary = [
     {
@@ -493,6 +514,37 @@ async function main() {
     `\n  🔵 複合スコア（全因子合成）                spread=${(compSpread * 100).toFixed(1)}pt`,
   );
   console.log(`  （ベースライン: ${pct(baseline)}）`);
+}
+
+async function main() {
+  const sinceStr = sinceDateString();
+
+  console.log("🔍 1コース飛び予測 — 複合因子分析\n");
+  console.log(`📅 期間: 過去${DAYS}日 (${sinceStr} 〜)\n`);
+
+  const races = await fetchRaces(sinceStr);
+  const results = await fetchResults(sinceStr);
+  const preds = await fetchPreds(sinceStr);
+
+  console.log(
+    `races: ${races.length.toLocaleString()} / results: ${results.length.toLocaleString()} / preds: ${preds.length.toLocaleString()}`,
+  );
+
+  // マップ化
+  const resultMap = new Map(results.map((r) => [r.race_id, r]));
+  const predMap = new Map(preds.map((p) => [p.race_id, p]));
+
+  const rows = buildRows(races, resultMap, predMap);
+
+  console.log(`結合済み: ${rows.length.toLocaleString()} 件\n`);
+
+  const baseline = rows.filter((r) => r.isUpset).length / rows.length;
+  console.log(`ベースライン（1コース飛び率）: ${pct(baseline)}\n`);
+
+  const factorResults = analyzeIndividualFactors(rows, baseline);
+  const quintiles = analyzeComposite(rows, factorResults, baseline);
+  printVenueBreakdown(rows);
+  printSummary(factorResults, quintiles, baseline);
 }
 
 main().catch((e) => {

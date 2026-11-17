@@ -51,14 +51,9 @@ function fmt(acc) {
   return `${String(acc.bets).padStart(5)}件 | 的中 ${hitRate.padStart(5)}% | 回収 ${recovery.padStart(6)}%`;
 }
 
-async function main() {
-  if (!supabase) {
-    console.error("❌ Supabase 環境変数が未設定です");
-    process.exit(1);
-  }
-  const opts = parseArgs();
-
-  const preds = await fetchAll(
+// 予想を取得する（--from/--to で race_id の範囲を絞る）
+function fetchPredictions(opts) {
+  return fetchAll(
     "poirot_predictions",
     "race_id, model_version, top_pick, top_2nd, top_3rd, trifecta_prob",
     (q) => {
@@ -68,13 +63,10 @@ async function main() {
       return query.order("race_id").order("model_version");
     },
   );
-  if (preds.length === 0) {
-    console.log("📭 poirot_predictions にデータがありません");
-    return;
-  }
+}
 
-  // 結果をチャンク取得
-  const raceIds = [...new Set(preds.map((p) => p.race_id))];
+// 結果をチャンク取得（中止・不成立・着順欠けのレースは含めない）
+async function fetchResultsByRaceId(raceIds) {
   const results = new Map();
   for (let i = 0; i < raceIds.length; i += 100) {
     const { data, error } = await supabase
@@ -93,8 +85,20 @@ async function main() {
       }
     }
   }
+  return results;
+}
 
-  // モデル別 × 確信度バケット別に集計
+// 信頼度バケットのうち該当するものへ加算する
+function addToBuckets(buckets, prob, hit, payout) {
+  CONF_BUCKETS.forEach((b, i) => {
+    if (prob >= b.min && (b.max == null || prob < b.max)) {
+      add(buckets[i], hit, payout);
+    }
+  });
+}
+
+// モデル別 × 確信度バケット別に集計
+function tallyPredictions(preds, results) {
   const stats = new Map(); // model -> { total, buckets: [acc...] }
   let unresolved = 0;
   for (const p of preds) {
@@ -117,14 +121,12 @@ async function main() {
     }
     const s = stats.get(p.model_version);
     add(s.total, hit, payout);
-    const prob = p.trifecta_prob ?? 0;
-    CONF_BUCKETS.forEach((b, i) => {
-      if (prob >= b.min && (b.max == null || prob < b.max)) {
-        add(s.buckets[i], hit, payout);
-      }
-    });
+    addToBuckets(s.buckets, p.trifecta_prob ?? 0, hit, payout);
   }
+  return { stats, unresolved };
+}
 
+function printReport(opts, stats, unresolved) {
   const scope =
     opts.from || opts.to
       ? `${opts.from || "最初"} 〜 ${opts.to || "最新"}`
@@ -147,6 +149,26 @@ async function main() {
     "\n判定基準: 信頼度「高」バケットの回収率がバックテスト（V1 106%/V2 101%）に" +
       "\n近い水準を維持できているかを確認する。乖離が大きければ再学習・閾値見直し。\n",
   );
+}
+
+async function main() {
+  if (!supabase) {
+    console.error("❌ Supabase 環境変数が未設定です");
+    process.exit(1);
+  }
+  const opts = parseArgs();
+
+  const preds = await fetchPredictions(opts);
+  if (preds.length === 0) {
+    console.log("📭 poirot_predictions にデータがありません");
+    return;
+  }
+
+  const raceIds = [...new Set(preds.map((p) => p.race_id))];
+  const results = await fetchResultsByRaceId(raceIds);
+
+  const { stats, unresolved } = tallyPredictions(preds, results);
+  printReport(opts, stats, unresolved);
 }
 
 main().catch((err) => {

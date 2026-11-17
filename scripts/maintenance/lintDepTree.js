@@ -1,7 +1,7 @@
 /**
  * lintDepTree.js - lint-changed --ci の依存の向きの関所（BOA-1435、BOA-1425 を割った 2/2）。
  * dependency-cruiser を base と HEAD に回し、違反(HEAD) − 違反(base) が空かを見る。
- * 加えて no-circular の全体 0・facade-frozen の warn→error の切り替え・src/utils の新しいファイルの禁止。
+ * 加えて no-circular の全体 0・src/utils の新しいファイルの禁止。
  *
  * base の worktree には node_modules が無い。外の包み（npm の名前の import）は解けないが、
  * 規則は相対 import の辺（src・scripts・api の中）だけを見るので比べる辺には影響しない。
@@ -13,13 +13,11 @@ import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { parse } from "acorn";
 import {
   DATA_LAYER_KEY,
-  FACADE,
   compareEdgesToBaseline,
-  facadeShouldBeError,
   isDataLayer,
+  newServicesFileProblems,
   newUtilsFileProblems,
 } from "./lintBaselines.js";
 
@@ -30,7 +28,6 @@ const DIRS = ["src", "scripts", "api"];
 const JS_EXT = /\.(js|jsx|mjs|cjs)$/;
 const SKIP = /(^|\/)(node_modules|dist|sns-video-studio)(\/|$)/;
 const CIRCULAR = "no-circular";
-const FROZEN = "facade-frozen";
 
 const git = (cwd, ...a) =>
   execFileSync("git", a, { cwd, encoding: "utf8", maxBuffer: 1 << 28 }).trimEnd();
@@ -76,30 +73,6 @@ export function baselineOfEdges(edges) {
     if (!out[rule][from].includes(to)) out[rule][from].push(to);
   }
   return out;
-}
-
-const countFunctions = (node) => {
-  if (!node || typeof node.type !== "string") return 0;
-  let n = /^(FunctionDeclaration|FunctionExpression|ArrowFunctionExpression)$/.test(node.type)
-    ? 1
-    : 0;
-  for (const value of Object.values(node)) {
-    if (Array.isArray(value)) n += value.reduce((s, c) => s + countFunctions(c), 0);
-    else if (value && typeof value === "object") n += countFunctions(value);
-  }
-  return n;
-};
-
-/** facade の関数の本体の数。読めなければ Infinity（殻とは見なさない） */
-export function facadeFunctionCount(cwd) {
-  try {
-    const src = fs.readFileSync(path.join(cwd, FACADE), "utf8");
-    return countFunctions(
-      parse(src, { ecmaVersion: "latest", sourceType: "module" }),
-    );
-  } catch {
-    return Infinity;
-  }
 }
 
 const jsFileCount = (cwd) =>
@@ -205,6 +178,7 @@ export function runDepTreeGate({ cwd, base, changed }) {
 
   const addedPaths = changed.filter((c) => c.added).map((c) => c.file);
   errors.push(...newUtilsFileProblems(addedPaths));
+  errors.push(...newServicesFileProblems(addedPaths));
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "lint-deptree-"));
   try {
@@ -221,9 +195,6 @@ export function runDepTreeGate({ cwd, base, changed }) {
     const cycles = head.edges.filter((e) => e.rule === CIRCULAR);
     cycles.forEach((e) => errors.push(`循環の import(no-circular): ${e.from} → ${e.to}`));
 
-    const frozenIsError = facadeShouldBeError(facadeFunctionCount(cwd));
-    log.push(`facade-frozen: ${frozenIsError ? "error（殻だけ）" : "warn（関数の本体が残る）"}`);
-
     const diff = (rule) =>
       subtractEdges(
         head.edges.filter((e) => e.rule === rule),
@@ -235,11 +206,10 @@ export function runDepTreeGate({ cwd, base, changed }) {
     for (const rule of rules) {
       const extra = diff(rule);
       if (extra.length === 0) continue;
-      const target = rule === FROZEN && !frozenIsError ? warnings : errors;
       // データ層の和は from を1つにまとめ、base の違反の to の集合を越えた分だけ見る
       const baseline = baselineOfEdges(baseRes.edges.filter((e) => e.rule === rule));
       compareEdgesToBaseline(extra, baseline).problems.forEach((p) =>
-        target.push(`依存の向き ${p}`),
+        errors.push(`依存の向き ${p}`),
       );
     }
   } catch (e) {

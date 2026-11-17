@@ -131,6 +131,78 @@ export function getRaceResultSummary(raceId) {
     });
   }
 
+// 指定レースの出走行（艇番順）と、その選手IDの重複なし・null なしの一覧を返す
+async function fetchEntriesWithRacerIds(raceId) {
+  const { data: entries } = await supabase
+    .from("race_entries")
+    .select("boat_number, player_name, racer_id")
+    .eq("race_id", raceId)
+    .order("boat_number");
+  const racerIds = [...new Set((entries ?? []).map((r) => r.racer_id))].filter(
+    (id) => id !== null,
+  );
+  return { entries, racerIds };
+}
+
+// 集計の対象が無い出走行に、サンプル0・率なしの列を足す（getRaceRacerBoatReturnRate 用）
+function withEmptyReturnRate(entries) {
+  return entries.map((row) => ({
+    ...row,
+    sample_count: 0,
+    win_return_rate: null,
+    place_return_rate: null,
+  }));
+}
+
+// 指定選手の cutoffStr 以降・raceId より前の出走行を1000件ずつ全部読む（getRaceRacerBoatReturnRate 用）
+async function fetchPastEntriesByRacer(racerIds, cutoffStr, raceId) {
+  const rows = [];
+  const pageSize = 1000;
+  let from = 0;
+  while (true) {
+    const { data } = await supabase
+      .from("race_entries")
+      .select("race_id, boat_number, racer_id")
+      .in("racer_id", racerIds)
+      .gte("race_id", cutoffStr)
+      .lt("race_id", raceId)
+      .range(from, from + pageSize - 1);
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return rows;
+}
+
+// racer_id + boat_number ごとに集計（同じ選手でも艇番が違えば別集計）（getRaceRacerBoatReturnRate 用）
+function sumPayoutsByRacerBoat(pastEntries, resultByRaceId) {
+  const statsByRacerBoat = new Map();
+  pastEntries.forEach((e) => {
+    const result = resultByRaceId.get(e.race_id);
+    if (!result || isNoRaceResult(result)) return;
+
+    const key = `${e.racer_id}-${e.boat_number}`;
+    if (!statsByRacerBoat.has(key)) {
+      statsByRacerBoat.set(key, {
+        sampleCount: 0,
+        winPayoutSum: 0,
+        placePayoutSum: 0,
+      });
+    }
+    const stats = statsByRacerBoat.get(key);
+    stats.sampleCount += 1;
+
+    if (result.rank1 === e.boat_number) {
+      stats.winPayoutSum += result.payout_win ?? 0;
+      stats.placePayoutSum += result.payout_place_1 ?? 0;
+    } else if (result.rank2 === e.boat_number) {
+      stats.placePayoutSum += result.payout_place_2 ?? 0;
+    }
+  });
+  return statsByRacerBoat;
+}
+
 /**
  * 本日開催中のレースの出走選手について、過去180日間・同じ艇番で出走した
  * レースでの単勝回収率・複勝回収率を取得する（BOA-167）
@@ -153,56 +225,28 @@ export function getRaceRacerBoatReturnRate(raceId) {
         return rpcData;
       }
 
-      const { data: entries } = await supabase
-        .from("race_entries")
-        .select("boat_number, player_name, racer_id")
-        .eq("race_id", raceId)
-        .order("boat_number");
+      const { entries, racerIds } = await fetchEntriesWithRacerIds(raceId);
 
       if (!entries || entries.length === 0) {
         return [];
       }
 
-      const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
-        (id) => id !== null,
-      );
       if (racerIds.length === 0) {
-        return entries.map((row) => ({
-          ...row,
-          sample_count: 0,
-          win_return_rate: null,
-          place_return_rate: null,
-        }));
+        return withEmptyReturnRate(entries);
       }
 
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - 180);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-      const relevantPastEntries = [];
-      const pageSize = 1000;
-      let from = 0;
-      while (true) {
-        const { data } = await supabase
-          .from("race_entries")
-          .select("race_id, boat_number, racer_id")
-          .in("racer_id", racerIds)
-          .gte("race_id", cutoffStr)
-          .lt("race_id", raceId)
-          .range(from, from + pageSize - 1);
-        if (!data || data.length === 0) break;
-        relevantPastEntries.push(...data);
-        if (data.length < pageSize) break;
-        from += pageSize;
-      }
+      const relevantPastEntries = await fetchPastEntriesByRacer(
+        racerIds,
+        cutoffStr,
+        raceId,
+      );
 
       if (relevantPastEntries.length === 0) {
-        return entries.map((row) => ({
-          ...row,
-          sample_count: 0,
-          win_return_rate: null,
-          place_return_rate: null,
-        }));
+        return withEmptyReturnRate(entries);
       }
 
       const pastRaceIds = [
@@ -216,42 +260,17 @@ export function getRaceRacerBoatReturnRate(raceId) {
       );
       const resultByRaceId = new Map(resultRows.map((r) => [r.race_id, r]));
 
-      // racer_id + boat_number ごとに集計（同じ選手でも艇番が違えば別集計）
-      const statsByRacerBoat = new Map();
-      relevantPastEntries.forEach((e) => {
-        const result = resultByRaceId.get(e.race_id);
-        if (!result || isNoRaceResult(result)) return;
-
-        const key = `${e.racer_id}-${e.boat_number}`;
-        if (!statsByRacerBoat.has(key)) {
-          statsByRacerBoat.set(key, {
-            sampleCount: 0,
-            winPayoutSum: 0,
-            placePayoutSum: 0,
-          });
-        }
-        const stats = statsByRacerBoat.get(key);
-        stats.sampleCount += 1;
-
-        if (result.rank1 === e.boat_number) {
-          stats.winPayoutSum += result.payout_win ?? 0;
-          stats.placePayoutSum += result.payout_place_1 ?? 0;
-        } else if (result.rank2 === e.boat_number) {
-          stats.placePayoutSum += result.payout_place_2 ?? 0;
-        }
-      });
+      const statsByRacerBoat = sumPayoutsByRacerBoat(
+        relevantPastEntries,
+        resultByRaceId,
+      );
 
       return entries.map((row) => {
         const stats = statsByRacerBoat.get(
           `${row.racer_id}-${row.boat_number}`,
         );
         if (!stats || stats.sampleCount === 0) {
-          return {
-            ...row,
-            sample_count: 0,
-            win_return_rate: null,
-            place_return_rate: null,
-          };
+          return withEmptyReturnRate([row])[0];
         }
         return {
           ...row,
@@ -287,19 +306,12 @@ export function getRaceTechniqueProfileBreakdown(raceId) {
         return rpcData;
       }
 
-      const { data: entries } = await supabase
-        .from("race_entries")
-        .select("boat_number, player_name, racer_id")
-        .eq("race_id", raceId)
-        .order("boat_number");
+      const { entries, racerIds } = await fetchEntriesWithRacerIds(raceId);
 
       if (!entries || entries.length === 0) {
         return [];
       }
 
-      const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
-        (id) => id !== null,
-      );
       if (racerIds.length === 0) {
         return entries.map((row) => ({
           ...row,

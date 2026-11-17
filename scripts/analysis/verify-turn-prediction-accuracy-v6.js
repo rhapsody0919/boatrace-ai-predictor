@@ -49,13 +49,8 @@ function parseArgs(argv = process.argv.slice(2)) {
   return { from: get("from"), to: get("to") };
 }
 
-async function main() {
-  const { from, to } = parseArgs();
-  if (!supabase) {
-    console.error("Supabase未設定");
-    process.exit(1);
-  }
-
+// 結果の確定した対象レースを取得する
+async function fetchValidResults(from, to) {
   console.log("対象レース取得中...");
   // ⚠️ Supabaseのデフォルトlimitは1000行。fetchAllで.range()ページネーションする
   const results = await fetchAll(
@@ -70,92 +65,91 @@ async function main() {
   );
   const validResults = results.filter((r) => !r.is_cancelled && !r.is_no_race);
   console.log(`  ${validResults.length}件\n`);
+  return validResults;
+}
 
-  const racerStatsCache = new Map();
-  const overall = { total: 0, hits: 0 };
-  const byVenue = new Map();
+// 1レースの出走・会場・気象を取得する。6艇に満たない・会場が無いレースは null
+async function fetchRaceInputs(raceId) {
+  const { data: entries } = await supabase
+    .from("race_entries")
+    .select(
+      "boat_number, racer_id, win_rate, local_win_rate, motor_2rate, grade",
+    )
+    .eq("race_id", raceId)
+    .order("boat_number");
+  if (!entries || entries.length < 6) return null;
 
-  let processed = 0;
-  for (const result of validResults) {
-    const raceId = result.race_id;
-    const { data: entries } = await supabase
-      .from("race_entries")
+  const { data: raceRow } = await supabase
+    .from("races")
+    .select("venue_code")
+    .eq("race_id", raceId)
+    .single();
+  if (!raceRow) return null;
+
+  const { data: conditions } = await supabase
+    .from("race_conditions")
+    .select("wind_speed, wave_height")
+    .eq("race_id", raceId)
+    .maybeSingle();
+
+  return { entries, raceRow, conditions };
+}
+
+// 未取得の選手の集計を取得してキャッシュへ足す
+async function loadRacerStats(entries, racerStatsCache) {
+  const racerIdsToFetch = entries
+    .map((e) => e.racer_id)
+    .filter((id) => id != null && !racerStatsCache.has(id));
+  if (racerIdsToFetch.length > 0) {
+    const { data: statsRows } = await supabase
+      .from("racer_aggregated_stats")
       .select(
-        "boat_number, racer_id, win_rate, local_win_rate, motor_2rate, grade",
+        "racer_id, avg_st, st_stddev, attack_distribution, defense_distribution, course_race_counts",
       )
-      .eq("race_id", raceId)
-      .order("boat_number");
-    if (!entries || entries.length < 6) continue;
+      .in("racer_id", racerIdsToFetch)
+      .eq("venue_code", 0);
+    for (const s of statsRows ?? []) racerStatsCache.set(s.racer_id, s);
+  }
+}
 
-    const { data: raceRow } = await supabase
-      .from("races")
-      .select("venue_code")
-      .eq("race_id", raceId)
-      .single();
-    if (!raceRow) continue;
+function toTurnPredictionPlayers(entries, racerStatsCache) {
+  return entries.map((e) => {
+    const stats = racerStatsCache.get(e.racer_id);
+    return {
+      boatNumber: e.boat_number,
+      course: e.boat_number,
+      avgST: stats?.avg_st ?? null,
+      stStddev: stats?.st_stddev ?? null,
+      attackDistribution: stats?.attack_distribution || null,
+      defenseDistribution: stats?.defense_distribution || null,
+      courseRaceCounts: stats?.course_race_counts || null,
+      motor2Rate: e.motor_2rate,
+      grade: e.grade,
+      globalWinRate: e.win_rate,
+      localWinRate: e.local_win_rate,
+    };
+  });
+}
 
-    const { data: conditions } = await supabase
-      .from("race_conditions")
-      .select("wind_speed, wave_height")
-      .eq("race_id", raceId)
-      .maybeSingle();
-
-    const racerIdsToFetch = entries
-      .map((e) => e.racer_id)
-      .filter((id) => id != null && !racerStatsCache.has(id));
-    if (racerIdsToFetch.length > 0) {
-      const { data: statsRows } = await supabase
-        .from("racer_aggregated_stats")
-        .select(
-          "racer_id, avg_st, st_stddev, attack_distribution, defense_distribution, course_race_counts",
-        )
-        .in("racer_id", racerIdsToFetch)
-        .eq("venue_code", 0);
-      for (const s of statsRows ?? []) racerStatsCache.set(s.racer_id, s);
-    }
-
-    const turnPredictionPlayers = entries.map((e) => {
-      const stats = racerStatsCache.get(e.racer_id);
-      return {
-        boatNumber: e.boat_number,
-        course: e.boat_number,
-        avgST: stats?.avg_st ?? null,
-        stStddev: stats?.st_stddev ?? null,
-        attackDistribution: stats?.attack_distribution || null,
-        defenseDistribution: stats?.defense_distribution || null,
-        courseRaceCounts: stats?.course_race_counts || null,
-        motor2Rate: e.motor_2rate,
-        grade: e.grade,
-        globalWinRate: e.win_rate,
-        localWinRate: e.local_win_rate,
-      };
-    });
-
-    const turnPrediction = predictFirstMark(turnPredictionPlayers, {
+// 展開予測の上位パターンの中に実績1着コースがあるか
+function isTurnPredictionHit(inputs, result, racerStatsCache) {
+  const { entries, raceRow, conditions } = inputs;
+  const turnPrediction = predictFirstMark(
+    toTurnPredictionPlayers(entries, racerStatsCache),
+    {
       venueCode: raceRow.venue_code,
       windSpeed: conditions?.wind_speed ?? null,
       waveHeight: conditions?.wave_height ?? null,
-    });
+    },
+  );
 
-    const top3Courses = (turnPrediction.patterns ?? []).map(
-      (p) => p.winnerCourse,
-    );
-    const hit = top3Courses.includes(result.rank1);
+  const top3Courses = (turnPrediction.patterns ?? []).map(
+    (p) => p.winnerCourse,
+  );
+  return top3Courses.includes(result.rank1);
+}
 
-    overall.total += 1;
-    if (hit) overall.hits += 1;
-
-    if (!byVenue.has(raceRow.venue_code))
-      byVenue.set(raceRow.venue_code, { total: 0, hits: 0 });
-    const v = byVenue.get(raceRow.venue_code);
-    v.total += 1;
-    if (hit) v.hits += 1;
-
-    processed += 1;
-    if (processed % 100 === 0)
-      console.log(`  ${processed}/${validResults.length}件処理...`);
-  }
-
+function printSummary(overall, byVenue) {
   console.log("\n=== 全体（Phase1/2改善後） ===");
   console.log(
     `的中率: ${((overall.hits / overall.total) * 100).toFixed(1)}% (${overall.hits}/${overall.total})`,
@@ -173,6 +167,46 @@ async function main() {
   }
 
   console.log("\n完了");
+}
+
+async function main() {
+  const { from, to } = parseArgs();
+  if (!supabase) {
+    console.error("Supabase未設定");
+    process.exit(1);
+  }
+
+  const validResults = await fetchValidResults(from, to);
+
+  const racerStatsCache = new Map();
+  const overall = { total: 0, hits: 0 };
+  const byVenue = new Map();
+
+  let processed = 0;
+  for (const result of validResults) {
+    const inputs = await fetchRaceInputs(result.race_id);
+    if (!inputs) continue;
+    const { entries, raceRow } = inputs;
+
+    await loadRacerStats(entries, racerStatsCache);
+
+    const hit = isTurnPredictionHit(inputs, result, racerStatsCache);
+
+    overall.total += 1;
+    if (hit) overall.hits += 1;
+
+    if (!byVenue.has(raceRow.venue_code))
+      byVenue.set(raceRow.venue_code, { total: 0, hits: 0 });
+    const v = byVenue.get(raceRow.venue_code);
+    v.total += 1;
+    if (hit) v.hits += 1;
+
+    processed += 1;
+    if (processed % 100 === 0)
+      console.log(`  ${processed}/${validResults.length}件処理...`);
+  }
+
+  printSummary(overall, byVenue);
 }
 
 main().catch((error) => {

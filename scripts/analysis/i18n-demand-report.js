@@ -204,11 +204,8 @@ async function reportDefaultLangBySource() {
   }));
 }
 
-async function main() {
-  console.log(
-    `\n📊 i18n 需要計測レポート（直近${DAYS}日間）\n${"=".repeat(50)}`,
-  );
-
+// 全レポートを並列に取得する
+async function fetchAllReports() {
   const [byLang, switches, byCountryList, bySourceList, defaultLangSource] =
     await Promise.all([
       reportByLanguagePath(),
@@ -227,32 +224,39 @@ async function main() {
   const bySource = Object.fromEntries(
     PREFIXED_LANGUAGES.map(({ code }, i) => [code, bySourceList[i]]),
   );
+  return { byLang, switches, byCountry, bySource, defaultLangSource };
+}
 
+function shareOfPv(byLang, code) {
   const totalPv = Object.values(byLang).reduce((sum, v) => sum + v.pv, 0);
-  const shareOf = (code) =>
-    totalPv > 0 ? ((byLang[code].pv / totalPv) * 100).toFixed(2) : "0.00";
+  return totalPv > 0 ? ((byLang[code].pv / totalPv) * 100).toFixed(2) : "0.00";
+}
 
+function printLanguageTraffic(byLang, switches) {
   console.log(`\n## 言語別トラフィック`);
   for (const { code, label } of SUPPORTED_LANGUAGES) {
     const share =
-      code === DEFAULT_LANGUAGE ? "" : `（全体の ${shareOf(code)}%）`;
+      code === DEFAULT_LANGUAGE ? "" : `（全体の ${shareOfPv(byLang, code)}%）`;
     console.log(
       `  ${label.padEnd(8)}: ${byLang[code].pv.toLocaleString()} PV${share}`,
     );
   }
   console.log(`  言語切替イベント: ${switches.toLocaleString()} 回`);
+}
 
-  console.log(`\n## 日本語ページの流入チャネル`);
-  if (defaultLangSource.length === 0) {
+function printChannelRows(rows) {
+  if (rows.length === 0) {
     console.log("  （データなし）");
   } else {
-    for (const s of defaultLangSource) {
+    for (const s of rows) {
       console.log(
         `  ${s.channel.padEnd(20)} ${String(s.sessions).padStart(6)} sessions`,
       );
     }
   }
+}
 
+function printPrefixedLanguageSections(byCountry, bySource) {
   for (const { code, label } of PREFIXED_LANGUAGES) {
     console.log(`\n## ${label}ページの国別ユーザー（上位）`);
     if (byCountry[code].length === 0) {
@@ -266,23 +270,12 @@ async function main() {
     }
 
     console.log(`\n## ${label}ページの流入チャネル`);
-    if (bySource[code].length === 0) {
-      console.log("  （データなし）");
-    } else {
-      for (const s of bySource[code]) {
-        console.log(
-          `  ${s.channel.padEnd(20)} ${String(s.sessions).padStart(6)} sessions`,
-        );
-      }
-    }
+    printChannelRows(bySource[code]);
   }
+}
 
-  // 前回レポートとの比較（日割りPV・シェア%の推移）
-  const outDir = path.join(process.cwd(), "data", "analysis", "i18n-demand");
-  const today = new Date().toISOString().split("T")[0];
-  const previous = findPreviousReport(outDir, today);
-
-  // 集計期間と、前回レポートの期間の頭からの比較が、GA4 の計測の切れ目をまたぐかどうか（scripts/lib/ga4MeasurementBreaks.js）
+// 集計期間と、前回レポートの期間の頭からの比較が、GA4 の計測の切れ目をまたぐかどうか（scripts/lib/ga4MeasurementBreaks.js）
+function ga4BreaksForWindow(previous, today) {
   const daysBefore = (dateStr, days) => {
     const d = new Date(`${dateStr}T00:00:00Z`);
     d.setUTCDate(d.getUTCDate() - days);
@@ -291,57 +284,62 @@ async function main() {
   const windowStart = previous
     ? daysBefore(previous.date, previous.data.days ?? DAYS)
     : daysBefore(today, DAYS);
-  const pvBreaks = ga4PvBreaksWithin(windowStart, today);
-  if (pvBreaks.length > 0) {
-    console.log(`\n${formatGa4PvBreakNotice(pvBreaks)}`);
-  }
+  return ga4PvBreaksWithin(windowStart, today);
+}
 
-  if (previous) {
-    const prevDays = previous.data.days ?? 1;
+function printDefaultSourceComparison(prevDefaultSource, defaultLangSource) {
+  console.log(`\n  日本語ページの流入チャネル比較:`);
+  const prevMap = new Map(
+    prevDefaultSource.map((s) => [s.channel, s.sessions]),
+  );
+  const currMap = new Map(
+    defaultLangSource.map((s) => [s.channel, s.sessions]),
+  );
+  const channels = new Set([...prevMap.keys(), ...currMap.keys()]);
+  for (const channel of channels) {
+    const curr = currMap.get(channel) ?? 0;
+    const prev = prevMap.get(channel) ?? 0;
     console.log(
-      `\n## 前回レポート（${previous.date}、${prevDays}日間）との比較`,
+      `    ${channel.padEnd(20)} ${String(curr).padStart(6)} sessions (前回 ${prev}、${formatDelta(curr - prev, 0)})`,
     );
-    for (const { code, label } of SUPPORTED_LANGUAGES) {
-      const prevLang = previous.data.byLanguage?.[code];
-      if (!prevLang) {
-        console.log(`  ${label.padEnd(8)}: （前回データなし）`);
-        continue;
-      }
-      const currPerDay = perDay(byLang[code].pv, DAYS);
-      const prevPerDay = perDay(prevLang.pv, prevDays);
-      const pctDelta =
-        prevPerDay > 0
-          ? formatDelta(((currPerDay - prevPerDay) / prevPerDay) * 100)
-          : "N/A";
-      console.log(
-        `  ${label.padEnd(8)}: PV/日 ${currPerDay.toFixed(1)} (前回 ${prevPerDay.toFixed(1)}、${pctDelta}%)`,
-      );
-    }
-    const prevDefaultSource = previous.data.defaultLangSource;
-    if (prevDefaultSource) {
-      console.log(`\n  日本語ページの流入チャネル比較:`);
-      const prevMap = new Map(
-        prevDefaultSource.map((s) => [s.channel, s.sessions]),
-      );
-      const currMap = new Map(
-        defaultLangSource.map((s) => [s.channel, s.sessions]),
-      );
-      const channels = new Set([...prevMap.keys(), ...currMap.keys()]);
-      for (const channel of channels) {
-        const curr = currMap.get(channel) ?? 0;
-        const prev = prevMap.get(channel) ?? 0;
-        console.log(
-          `    ${channel.padEnd(20)} ${String(curr).padStart(6)} sessions (前回 ${prev}、${formatDelta(curr - prev, 0)})`,
-        );
-      }
-    }
-  } else {
+  }
+}
+
+function printPreviousComparison(previous, byLang, defaultLangSource) {
+  if (!previous) {
     console.log(
       `\n## 前回レポートとの比較\n  （比較対象となる過去レポートが見つかりません。次回実行時から比較が有効になります）`,
     );
+    return;
   }
+  const prevDays = previous.data.days ?? 1;
+  console.log(`\n## 前回レポート（${previous.date}、${prevDays}日間）との比較`);
+  for (const { code, label } of SUPPORTED_LANGUAGES) {
+    const prevLang = previous.data.byLanguage?.[code];
+    if (!prevLang) {
+      console.log(`  ${label.padEnd(8)}: （前回データなし）`);
+      continue;
+    }
+    const currPerDay = perDay(byLang[code].pv, DAYS);
+    const prevPerDay = perDay(prevLang.pv, prevDays);
+    const pctDelta =
+      prevPerDay > 0
+        ? formatDelta(((currPerDay - prevPerDay) / prevPerDay) * 100)
+        : "N/A";
+    console.log(
+      `  ${label.padEnd(8)}: PV/日 ${currPerDay.toFixed(1)} (前回 ${prevPerDay.toFixed(1)}、${pctDelta}%)`,
+    );
+  }
+  const prevDefaultSource = previous.data.defaultLangSource;
+  if (prevDefaultSource) {
+    printDefaultSourceComparison(prevDefaultSource, defaultLangSource);
+  }
+}
 
-  // JSON 保存（推移比較用）
+// JSON 保存（推移比較用）
+function saveReport(outDir, today, report) {
+  const { pvBreaks, byLang, switches, byCountry, bySource, defaultLangSource } =
+    report;
   fs.mkdirSync(outDir, { recursive: true });
   const outPath = path.join(outDir, `report-${today}.json`);
   fs.writeFileSync(
@@ -355,7 +353,7 @@ async function main() {
         shareOfPv: Object.fromEntries(
           PREFIXED_LANGUAGES.map(({ code }) => [
             code,
-            parseFloat(shareOf(code)),
+            parseFloat(shareOfPv(byLang, code)),
           ]),
         ),
         languageSwitches: switches,
@@ -367,6 +365,44 @@ async function main() {
       2,
     ),
   );
+  return outPath;
+}
+
+async function main() {
+  console.log(
+    `\n📊 i18n 需要計測レポート（直近${DAYS}日間）\n${"=".repeat(50)}`,
+  );
+
+  const { byLang, switches, byCountry, bySource, defaultLangSource } =
+    await fetchAllReports();
+
+  printLanguageTraffic(byLang, switches);
+
+  console.log(`\n## 日本語ページの流入チャネル`);
+  printChannelRows(defaultLangSource);
+
+  printPrefixedLanguageSections(byCountry, bySource);
+
+  // 前回レポートとの比較（日割りPV・シェア%の推移）
+  const outDir = path.join(process.cwd(), "data", "analysis", "i18n-demand");
+  const today = new Date().toISOString().split("T")[0];
+  const previous = findPreviousReport(outDir, today);
+
+  const pvBreaks = ga4BreaksForWindow(previous, today);
+  if (pvBreaks.length > 0) {
+    console.log(`\n${formatGa4PvBreakNotice(pvBreaks)}`);
+  }
+
+  printPreviousComparison(previous, byLang, defaultLangSource);
+
+  const outPath = saveReport(outDir, today, {
+    pvBreaks,
+    byLang,
+    switches,
+    byCountry,
+    bySource,
+    defaultLangSource,
+  });
 
   console.log(`\n💾 保存: ${outPath}`);
   console.log(

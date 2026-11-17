@@ -95,7 +95,7 @@
 - ruleset の bypass の Integration 5220661 は App が非公開で、API では名前を確かめられない。オーナーが画面で ryujin-bot と確認した（2026-10-23、design.md §10.1 Q8）
 
 ## 検査と試験の土台
-- DAL（src/services/supabaseDataService.js）は Node で import できない。supabaseClient.js:44-45 が import.meta.env を読み、拡張子なしの import（./supabaseClient・../utils/stConsideration 等）を Node の ESM が解決しない。中の純粋な計算を試験するには、手を加えずに別ファイルへ移して旧の export から呼ぶ（2026-10-24、system-architect の審査、docs/design/dev-efficiency/plan.md 3+2）
+- DAL（src/services/*Queries*.js・core.js。旧 supabaseDataService.js は RA40 で消えた）は Node で import できない。supabaseClient.js:44-45 が import.meta.env を読み、拡張子なしの import（./supabaseClient・../utils/stConsideration 等）を Node の ESM が解決しない。中の純粋な計算を試験するには、手を加えずに別ファイルへ移して旧の export から呼ぶ（2026-10-24、system-architect の審査、docs/design/dev-efficiency/plan.md 3+2）
 - PGlite を使う verify（scripts/maintenance/ に34本）は、それぞれ必要なマイグレーションだけを読む。全スキーマの共通の土台は無く、マイグレーションの積み上げでは DROP・RENAME を追えない。土台を作るなら claude_ro でカタログを読んだ本番のスナップショットを正本にする（2026-10-24、system-architect の審査、plan.md 5）
 - ESLint の error は 345（system-architect の実測）。範囲で数が変わり、e2d194f35 の再測は eslint . 全体で 699、docs・sns-video-studio を除くと 352（no-unused-vars 316）。lint 全体を必須にせず、違反を 0 にした規則から verify:ci に足す（2026-10-24、ADR-0079 追記、plan.md 1a）
 - E2E で録画に無いリクエストの素通しが0件なら、その E2E が通る経路の SQL（PostgREST のクエリ）を変えていない証拠になる。録画は URL で照合するので、クエリが変われば素通しに出る。E2E が通らない関数のクエリは証拠にならない（2026-10-24、system-architect の審査、e2e/fixtures.js:35・426、scripts/maintenance/report-e2e-passthrough.js）

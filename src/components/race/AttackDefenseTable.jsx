@@ -5,6 +5,7 @@ import {
   TECHNIQUE_ROWS,
   getCellValue,
 } from "../../utils/attackDefenseCells";
+import { buildExamples } from "./AttackDefenseTableLogic";
 
 // セルの値の計算は src/utils/attackDefenseCells.js（全貌動画の材料と同じ値を出すため）
 
@@ -26,100 +27,6 @@ function renderCellValue(val) {
   return val;
 }
 
-const TECH_LABEL_KEYS = {
-  sashi: {
-    defense: "attackDefense.sashiDefense",
-    attack: "attackDefense.sashiAttack",
-  },
-  makuri: {
-    defense: "attackDefense.makuriDefense",
-    attack: "attackDefense.makuriAttack",
-  },
-  makurizashi: {
-    defense: "attackDefense.makurizashiDefense",
-    attack: "attackDefense.makurizashiAttack",
-  },
-};
-
-// 実データから凡例の例文を生成
-function buildExamples(sorted, t) {
-  const examples = [];
-
-  // 1コースの防御例（差され/まくられ/捲差されで回数>0のもの）
-  const c1 = sorted[0];
-  if (c1) {
-    const counts = c1.wakuRaceCounts?.["1"];
-    const total = counts?.total || 0;
-    const wins = counts?.wins || 0;
-    const losses = total - wins;
-    const defDist = c1.defenseDistribution?.["1"];
-    if (defDist && losses > 0 && total > 0) {
-      for (const tech of ["sashi", "makuri", "makurizashi"]) {
-        const rate = defDist[tech];
-        if (rate && rate > 0) {
-          const count = Math.round(rate * losses);
-          if (count > 0) {
-            const label = t(TECH_LABEL_KEYS[tech].defense);
-            examples.push({
-              title: t("attackDefense.exampleDefenseTitle", {
-                label,
-                count,
-                total,
-              }),
-              desc: t("attackDefense.exampleDefenseDesc", {
-                count,
-                total,
-                attackLabel: t(TECH_LABEL_KEYS[tech].attack),
-              }),
-            });
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  // 2-6コースの攻撃例（差し/まくり/まくり差しで回数>0のもの）
-  for (let i = 1; i < sorted.length; i++) {
-    const s = sorted[i];
-    const waku = s.boatNumber;
-    const wakuStr = String(waku);
-    const counts = s.wakuRaceCounts?.[wakuStr];
-    const wins = counts?.wins || 0;
-    const total = counts?.total || 0;
-    const atkDist = s.attackDistribution?.[wakuStr];
-    if (!atkDist || !wins || !total) continue;
-
-    for (const tech of ["sashi", "makuri", "makurizashi"]) {
-      const rate = atkDist[tech];
-      if (rate && rate > 0) {
-        const count = Math.round(rate * wins);
-        if (count > 0) {
-          const label = t(TECH_LABEL_KEYS[tech].attack);
-          examples.push({
-            title: t("attackDefense.exampleAttackTitle", {
-              waku,
-              label,
-              count,
-              total,
-            }),
-            desc: t("attackDefense.exampleAttackDesc", {
-              waku,
-              label,
-              count,
-              total,
-            }),
-          });
-          break;
-        }
-      }
-    }
-    if (examples.length >= 2) break;
-  }
-
-  return examples;
-}
-
 function RowLabel({ row }) {
   const { t } = useTranslation();
 
@@ -132,6 +39,140 @@ function RowLabel({ row }) {
       <span className="ad-tech-sep">/</span>
       <span className="ad-tech-attack">{t(row.labelOtherKey)}</span>
     </>
+  );
+}
+
+function HeaderCell({ waku, showRole }) {
+  const { t } = useTranslation();
+  const color = BOAT_COLORS[waku] || {};
+  return (
+    <th
+      className={waku === 1 ? "ad-course1-th" : ""}
+      // 1号艇（守り）の見出しの色は .ad-course1-th（トークン）で付ける
+      style={
+        waku === 1 ? undefined : { background: color.bg, color: color.text }
+      }
+    >
+      {showRole ? (
+        <>
+          <div>{t("analysis.boatN", { n: waku })}</div>
+          <div className="ad-role-sub">
+            {waku === 1
+              ? t("attackDefense.defense")
+              : t("attackDefense.attack")}
+          </div>
+        </>
+      ) : (
+        t("analysis.boatN", { n: waku })
+      )}
+    </th>
+  );
+}
+
+function HeaderRow({ sorted, showRole, stickyClass }) {
+  return (
+    <tr>
+      <th className={stickyClass}></th>
+      {sorted.map((s) => (
+        <HeaderCell
+          key={s.boatNumber}
+          waku={s.boatNumber}
+          showRole={showRole}
+        />
+      ))}
+    </tr>
+  );
+}
+
+function PlayerRow({ sorted, getPlayerName, labelClass }) {
+  const { t } = useTranslation();
+  return (
+    <tr>
+      <td className={labelClass}>{t("attackDefense.racer")}</td>
+      {sorted.map((s) => (
+        <td key={s.boatNumber} translate="no">
+          {getPlayerName(s.boatNumber)}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function WinsRow({ sorted, labelClass }) {
+  const { t } = useTranslation();
+  return (
+    <tr>
+      <td className={labelClass}>{t("attackDefense.winsPerStarts")}</td>
+      {sorted.map((s) => {
+        const waku = String(s.boatNumber);
+        const counts = s.wakuRaceCounts?.[waku];
+        return (
+          <td key={s.boatNumber}>
+            {counts ? `${counts.wins || 0}/${counts.total || 0}` : "-"}
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
+function TechniqueRow({ row, sorted, labelClass }) {
+  return (
+    <tr>
+      <td className={labelClass}>
+        <RowLabel row={row} />
+      </td>
+      {sorted.map((s) => {
+        const waku = s.boatNumber;
+        const wakuStr = String(waku);
+        const counts = s.wakuRaceCounts?.[wakuStr];
+        const wins = counts?.wins || 0;
+        const total = counts?.total || 0;
+
+        return (
+          <td key={s.boatNumber}>
+            {renderCellValue(getCellValue(row, waku, s, wakuStr, wins, total))}
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
+// デスクトップ・モバイルで同じ表。違いは見出しの役割行と固定列のクラスだけ
+function AttackDefenseGrid({
+  sorted,
+  getPlayerName,
+  showRole,
+  stickyClass,
+  labelClass,
+}) {
+  return (
+    <table className="ad-table">
+      <thead>
+        <HeaderRow
+          sorted={sorted}
+          showRole={showRole}
+          stickyClass={stickyClass}
+        />
+      </thead>
+      <tbody>
+        <PlayerRow
+          sorted={sorted}
+          getPlayerName={getPlayerName}
+          labelClass={labelClass}
+        />
+        <WinsRow sorted={sorted} labelClass={labelClass} />
+        {TECHNIQUE_ROWS.map((row) => (
+          <TechniqueRow
+            key={row.key}
+            row={row}
+            sorted={sorted}
+            labelClass={labelClass}
+          />
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -156,161 +197,24 @@ export default function AttackDefenseTable({ racerStats, players }) {
 
       {/* Desktop table */}
       <div className="ad-table-desktop">
-        <table className="ad-table">
-          <thead>
-            <tr>
-              <th></th>
-              {sorted.map((s) => {
-                const waku = s.boatNumber;
-                const color = BOAT_COLORS[waku] || {};
-                return (
-                  <th
-                    key={waku}
-                    className={waku === 1 ? "ad-course1-th" : ""}
-                    // 1号艇（守り）の見出しの色は .ad-course1-th（トークン）で付ける
-                    style={
-                      waku === 1
-                        ? undefined
-                        : { background: color.bg, color: color.text }
-                    }
-                  >
-                    <div>{t("analysis.boatN", { n: waku })}</div>
-                    <div className="ad-role-sub">
-                      {waku === 1
-                        ? t("attackDefense.defense")
-                        : t("attackDefense.attack")}
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="ad-label-cell">{t("attackDefense.racer")}</td>
-              {sorted.map((s) => (
-                <td key={s.boatNumber} translate="no">
-                  {getPlayerName(s.boatNumber)}
-                </td>
-              ))}
-            </tr>
-
-            <tr>
-              <td className="ad-label-cell">
-                {t("attackDefense.winsPerStarts")}
-              </td>
-              {sorted.map((s) => {
-                const waku = String(s.boatNumber);
-                const counts = s.wakuRaceCounts?.[waku];
-                return (
-                  <td key={s.boatNumber}>
-                    {counts ? `${counts.wins || 0}/${counts.total || 0}` : "-"}
-                  </td>
-                );
-              })}
-            </tr>
-
-            {TECHNIQUE_ROWS.map((row) => (
-              <tr key={row.key}>
-                <td className="ad-label-cell">
-                  <RowLabel row={row} />
-                </td>
-                {sorted.map((s) => {
-                  const waku = s.boatNumber;
-                  const wakuStr = String(waku);
-                  const counts = s.wakuRaceCounts?.[wakuStr];
-                  const wins = counts?.wins || 0;
-                  const total = counts?.total || 0;
-
-                  return (
-                    <td key={s.boatNumber}>
-                      {renderCellValue(
-                        getCellValue(row, waku, s, wakuStr, wins, total),
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <AttackDefenseGrid
+          sorted={sorted}
+          getPlayerName={getPlayerName}
+          showRole
+          stickyClass={undefined}
+          labelClass="ad-label-cell"
+        />
       </div>
 
       {/* Mobile: scrollable table (same as desktop) */}
       <div className="ad-table-mobile">
-        <table className="ad-table">
-          <thead>
-            <tr>
-              <th className="ad-sticky-col"></th>
-              {sorted.map((s) => {
-                const waku = s.boatNumber;
-                const color = BOAT_COLORS[waku] || {};
-                return (
-                  <th
-                    key={waku}
-                    className={waku === 1 ? "ad-course1-th" : ""}
-                    // 1号艇（守り）の見出しの色は .ad-course1-th（トークン）で付ける
-                    style={
-                      waku === 1
-                        ? undefined
-                        : { background: color.bg, color: color.text }
-                    }
-                  >
-                    {t("analysis.boatN", { n: waku })}
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="ad-label-cell ad-sticky-col">
-                {t("attackDefense.racer")}
-              </td>
-              {sorted.map((s) => (
-                <td key={s.boatNumber} translate="no">
-                  {getPlayerName(s.boatNumber)}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <td className="ad-label-cell ad-sticky-col">
-                {t("attackDefense.winsPerStarts")}
-              </td>
-              {sorted.map((s) => {
-                const waku = String(s.boatNumber);
-                const counts = s.wakuRaceCounts?.[waku];
-                return (
-                  <td key={s.boatNumber}>
-                    {counts ? `${counts.wins || 0}/${counts.total || 0}` : "-"}
-                  </td>
-                );
-              })}
-            </tr>
-            {TECHNIQUE_ROWS.map((row) => (
-              <tr key={row.key}>
-                <td className="ad-label-cell ad-sticky-col">
-                  <RowLabel row={row} />
-                </td>
-                {sorted.map((s) => {
-                  const waku = s.boatNumber;
-                  const wakuStr = String(waku);
-                  const counts = s.wakuRaceCounts?.[wakuStr];
-                  const wins = counts?.wins || 0;
-                  const total = counts?.total || 0;
-
-                  return (
-                    <td key={s.boatNumber}>
-                      {renderCellValue(
-                        getCellValue(row, waku, s, wakuStr, wins, total),
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <AttackDefenseGrid
+          sorted={sorted}
+          getPlayerName={getPlayerName}
+          showRole={false}
+          stickyClass="ad-sticky-col"
+          labelClass="ad-label-cell ad-sticky-col"
+        />
       </div>
 
       <Legend sorted={sorted} />

@@ -26,14 +26,21 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
 | `src/pure/meetExclusion.js` | 今節の順位の対象から外す選手と、その理由（途中帰郷・賞典除外）の判定（純関数）。 | meetExclusionsOf |
 | `src/pure/meetGrouping.js` | race_id昇順ソート済みの配列を受け取り、末尾（最新）から遡って日付の間隔が | groupIntoCurrentMeet, groupIntoMeetBeforeRace |
+| `src/pure/meetModel.js` | — | makeMeet |
+| `src/pure/modelAssert.js` | — | assertObject, assertInt, assertIntOrNull, assertText, parseIsoDate ほか1件 |
+| `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
+| `src/pure/predictionModel.js` | — | makePrediction |
 | `src/pure/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
 | `src/pure/raceModel.js` | — | makeRaceEntry, makeRace |
 | `src/pure/raceMotorBreakdown.js` | モータ情報タブの一覧表（getRaceMotorBreakdown の返り値）の行の組み立て。 | pastMotorRows, recalcMotorRows, settleMotorBreakdown |
 | `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
 | `src/pure/racerCareerStats.js` | — | isCareerFinalStage, isCareerStart, careerFinishPoints, careerWinRate, isCareerFinalAppearance ほか2件 |
+| `src/pure/racerModel.js` | — | makeRacer, makeRacerSeriesPoint |
+| `src/pure/scheduleModel.js` | — | makeDigestDay, makeDigestRow |
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
 | `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか35件 |
 | `src/pure/snsPostText.js` | — | buildPostText |
+| `src/pure/venueModel.js` | — | makeVenue |
 
 ## scripts/lib — バッチ・取得・集計の共通ロジック
 
@@ -42,7 +49,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
 | `scripts/lib/analogyDispatch.js` | BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習… | morningRetryNeeded, morningShouldDispatch, dispatchWorkflow, createAnalogyDispatchRun, GITHUB_REPO ほか2件 |
-| `scripts/lib/analogyV16Exhibition.js` | アナロジー・ファインダー v16 の展示後の段（BOA-271 tasks T4-2・T4-3。plan「展示後の段」）。 | selectExhibitionTargets, todayExhibition, exhibitionNeighbors, displayRow, runAnalogyV16Exhibition ほか1件 |
+| `scripts/lib/analogyV16Exhibition.js` | アナロジー・ファインダー v16 の展示後の段（BOA-271 tasks T4-2・T4-3。plan「展示後の段」）。 | selectExhibitionTargets, exhibitionNeighbors, displayRow, runAnalogyV16Exhibition, MAX_RACES |
+| `scripts/lib/analogyV16ExhibitionToday.js` | アナロジー・ファインダー v16 の展示後の段の「今日の展示の値」（today-exhibition。BOA-271 T4-2）。 | todayExhibition, BOATS |
 | `scripts/lib/archiveDownloader.js` | 公式サイトの静的ファイル・ページを、生のまま保管する取得ループ（fan・月間スケジュールのCLI共通） | readJsonl, fetchOnce, planItems, runArchiveDownload, HARD_MIN_INTERVAL_MS ほか4件 |
 | `scripts/lib/beforeInfoParser.js` | 公式の直前情報ページ（boatrace.jp beforeinfo）の全項目パーサー（純関数。DB・取得先に接続しない） | parseStartExhibitionCell, parseBeforeInfoDocument, parseBeforeInfoPage, BEFOREINFO_PARSER_VERSION |
 | `scripts/lib/beforeinfoWeather.js` | 公式ページの「水面気象情報」の解析（BOA-358） | convertWindDirection, scrapeObservedPoint, scrapeConditions, hasAnyWeather, resolveObservedAt ほか5件 |
@@ -188,7 +196,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racesInit/predictCodeCheck.js` | 予測ロジックの変更検知による再生成（WS4b T4b-07-5、plan.md §4.2(d)・設計判断(g)）。 | hashFiles, computePredictCodeHash, checkPredictCodeChange, PREDICT_CODE_HASH_JOB, PREDICT_LOGIC_FILES |
 | `scripts/lib/rawHtmlArchive.js` | 取得した生HTMLの保管（optimal-scraping-design.md §2.2・承認済みQ1）の最小実装。 | rawHtmlPath, archiveRawHtml, RAW_HTML_BUCKET |
 | `scripts/lib/relativeImportGraph.js` | 相対 import を辿って、入口から届くファイルを集める（node 標準だけを使う）。 | codeFiles, relativeSpecs, resolveSpec, reach, CODE ほか2件 |
-| `scripts/lib/releaseDispatch.js` | 本番のデプロイをまとめて出す（ADR-0106、オーナー 2026-11-06 決定）。Vercel Cron（api/cron/release-dispatc… | staleReleaseAlerts, summarizeGates, decideRelease, fetchMasterHead, fetchCompare ほか11件 |
+| `scripts/lib/releaseDispatch.js` | 本番のデプロイをまとめて出す（ADR-0106、オーナー 2026-11-06 決定）。Vercel Cron（api/cron/release-dispatc… | freshnessBasis, staleReleaseAlerts, summarizeGates, decideRelease, fetchMasterHead ほか14件 |
 | `scripts/lib/renderJsx.js` | verify から React の部品（.jsx）を jsdom に描き、DOM を返す（hq のオーナー決定 2026-11-09）。 | resolve, load, renderJsx |
 | `scripts/lib/renderWithFreshPage.js` | 新しいページを開く関数を作る。ブラウザが落ちていたら起動し直してから開く。 | createPageOpener, renderWithFreshPage |
 | `scripts/lib/reportComparison.js` | 定点観測レポート（search-console-report.js / i18n-demand-report.js）の | findPreviousReport, findRecentReports, detectTrend, perDay, formatDelta |
@@ -296,7 +304,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analogyTips.js` | アナロジー・ファインダー v16 の吹き出しの文（spec B-8）。純粋関数 | boatTip |
 | `src/utils/analogyTreeShap.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: LightGBM の | compileModel, predictRaw, contributions |
 | `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか10件 |
-| `src/utils/assistEvents.js` | 思考アシスト（BOA-430）の GA4 のイベント。画面の操作（reducer の action）と押す前の状態から、送るイベントを決める純関数。 | assistEventOf |
+| `src/utils/assistEvents.js` | — | assistEventOf |
 | `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, sameClassLabel, baseVerdict, roughCard ほか37件 |
 | `src/utils/assistSession.js` | 思考アシストの買い目などを、同じタブの中でレースごとに残す（sessionStorage）。 | parseAssistSession, loadAssistSession, saveAssistSession, ASSIST_SESSION_PREFIX, ASSIST_SESSION_MAX ほか1件 |
 | `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, factsEntry, axisWhyKinds, b1Usual ほか30件 |
@@ -411,7 +419,6 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getRaceSt30, getAnalogyFacts, getAnalogyLayer, getAnalogySimilar ほか2件 |
 | `src/services/core.js` | — | withCache, clearCache, chunkArray, fetchAllByIn, isPastRace ほか7件 |
 | `src/services/currentMeetEntries.js` | 選手の今節の走（同じ会場・同じモーター）を特定する取得（BOA-861）。 | fetchCurrentMeetRaceEntries |
-| `src/services/dataService.js` | データ取得サービス | dataService |
 | `src/services/fetchAllPages.js` | .range() のページを、短いページが返るまで読み続けて全件を返す（BOA-1051）。 | fetchAllPages, fetchAllInChunks |
 | `src/services/liveOddsService.js` | オッズのライブ取得（BOA-487）。/api/odds/live を呼ぶ。 | fetchLiveOdds, LIVE_PAGE_OF_BET_TYPE, LiveOddsError |
 | `src/services/meetExclusion.js` | 再 export だけのファイル。本体は `src/pure/meetExclusion.js`（開発効率の計画 段3、pure の根へ移した）。 | — |
@@ -425,6 +432,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/motorQueries4.js` | — | getVenueMotorRanking, getVenueMotorRanks, getVenueMotorList |
 | `src/services/motorQueries5.js` | — | getMotorWakuStats, getMotorRacerWakuStats, getMotorConditionTrend |
 | `src/services/motorQueries6.js` | — | getMotorPartsHistory, getRaceMotorMaintenanceBreakdown |
+| `src/services/motorQueries7.js` | — | getRacerCurrentMotorStatus |
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
 | `src/services/predictionQueries.js` | — | buildFetchFailedPredictions, buildRaceResult, generateReasoning, VENUE_NAMES |
@@ -439,16 +447,15 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/racerQueries2.js` | — | getRacerVenueStats, getRacerScopedRaceStats, getRacerRaceHistory |
 | `src/services/racerQueries3.js` | — | getRacerBoatReturnRate, getStDeviationTrend, getExhibitionTimeTrend, getTodaysRacerFormRanking |
 | `src/services/racerQueries4.js` | — | getRacerPeriodStats, getRacerAccidentRecords |
+| `src/services/racerQueries5.js` | — | getRacerPageData, getRacerAllPeriodStats, getRacerStats |
 | `src/services/racerRaceHistoryRows.js` | 選手の出走履歴の行（getRacerRaceHistory の返り値）の整形（純関数）。 | isUnrankedFinishMark, buildRacerRaceHistoryRows |
 | `src/services/racerScopedRaceRows.js` | 選手の走ごとの行（getRacerScopedRaceStats の返り値）の整形（純関数）。 | buildRacerScopedRaceRows |
-| `src/services/racerService.js` | 選手個別ページ用データ取得サービス | getRacerPageData, getRacerCurrentMotorStatus, getRacerAllPeriodStats, getRacerStats |
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, getVenueName, getTodaysMatchingRaces ほか1件 |
 | `src/services/scheduleQueries.js` | — | getRaces, getUpcomingSeries, getSeriesOfDate, getAvailableDates, getRaceHistorySummary ほか3件 |
 | `src/services/sherlockModel.js` | シャーロック予想 共有モデルロジック（純粋関数のみ） | mean, buildFeatures, softmax, predictConditionalLogit, impliedProbs ほか5件 |
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
 | `src/services/snsHubService.js` | — | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか16件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
-| `src/services/supabaseDataService.js` | Supabase データサービス | supabaseDataService |
 | `src/services/venueQueries.js` | — | getVenueTechniquePeriodStats, getVenueCharacteristics, getNationalAverageOutcomeDistribution, getOutcomeDistribution, getWinningTechniqueStats ほか1件 |
 | `src/services/venueQueries2.js` | — | getTodaysVenueRanking, getVenueDaySummary, getVenueFirstWinRateRanking, getTopStartStats, getLosingTechniqueStats ほか1件 |
 | `src/services/venueQueries3.js` | — | getNigeSimulation, getNigeOutcomeDistribution, getExhibitionTimeTopStats, getVenueGradeBoatStats, getVenuesWithGradeStats |
@@ -456,4 +463,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 414 ファイル / export 2393 件。
+対象 421 ファイル / export 2410 件。

@@ -112,11 +112,16 @@ const JS_FILES = ["**/*.{js,jsx,mjs,cjs}"];
 // groupIntoCurrentMeet を import せずに呼んでいる
 const BROKEN_REV = "3c0894ba9a09594270f2f99d47858c31668091f6";
 const BROKEN_FILE = "src/services/supabaseDataService.js";
+// 変異検査で違反を足す src の実在のファイル（殻 supabaseDataService.js は RA40 で消えた。rules-of-hooks が src だけなので src にする）
+const MUTANT_FILE = "src/services/scheduleQueries.js";
 
 const eslint = new ESLint({
   cwd: ROOT,
   overrideConfig: [
     { linterOptions: { noInlineConfig: true } },
+    // 変異検査（他の verify-*.js の withMutant）が作っては消す一時ファイル。走査の後・読む前に消えて
+    // ENOENT になる揺れ（BOA-1583）を、走査の対象から外して防ぐ。本物のファイルは外れない
+    { ignores: ["**/*.__mutant-*.js"] },
     {
       files: JS_FILES,
       rules: Object.fromEntries(RULES.map((r) => [r, "error"])),
@@ -388,6 +393,16 @@ function unitCases() {
   const both = (code, file) => () => findingsIn(code, file);
   return [
     {
+      rule: null,
+      name: "変異検査の一時ファイル（*.__mutant-*.js）だけを走査から外し、本物の scripts のファイルは外さない（BOA-1583）",
+      run: async () => [
+        await eslint.isPathIgnored(path.join(ROOT, "scripts/maintenance/verify-x.__mutant-1-1.js")),
+        await eslint.isPathIgnored(path.join(ROOT, "scripts/maintenance/verify-x.js")),
+        await eslint.isPathIgnored(path.join(ROOT, "src/mutant-notes.js")),
+      ],
+      want: [true, false, false],
+    },
+    {
       rule: "no-undef",
       name: "#1020 直前の master の supabaseDataService.js → groupIntoCurrentMeet を検出する",
       run: async () =>
@@ -600,11 +615,10 @@ function mutationCases(results, allowRules) {
   };
   const cases = [];
   for (const rule of RULES) {
-    // src の実在のファイル（自己テストでも使う BROKEN_FILE）。rules-of-hooks が src だけなので src にする
     cases.push({
-      name: `変異: ${BROKEN_FILE} に ${rule} の違反を1つ足すと失敗する`,
+      name: `変異: ${MUTANT_FILE} に ${rule} の違反を1つ足すと失敗する`,
       run: async () =>
-        failsWith(await replaceFile(BROKEN_FILE, ADD[rule]), rule, BROKEN_FILE),
+        failsWith(await replaceFile(MUTANT_FILE, ADD[rule]), rule, MUTANT_FILE),
       want: true,
     });
     const firstFile = Object.keys(allowRules[rule] ?? {})[0];

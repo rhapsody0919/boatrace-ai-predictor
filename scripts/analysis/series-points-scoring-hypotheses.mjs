@@ -315,6 +315,25 @@ const CUTS = [
   },
 ];
 
+/** 1レース分の出走表を、選手別の得点・走数の集計（byRacer）へ足す */
+function addRaceScores(byRacer, raceId, result, table) {
+  for (const e of entriesByRace.get(raceId) ?? []) {
+    const cur = byRacer.get(e.racer_id) ?? {
+      racerId: e.racer_id,
+      playerName: e.player_name,
+      points: 0,
+      runs: 0,
+    };
+    const rank = rankOf(result, e.boat_number);
+    // 欠場（着順に載らず、本番STの記録も無い）は走数にも入れない。
+    // 失格・落水（走ったが着順が付かない）は0点だが分母には入れる
+    if (rank === null && !didStart(raceId, e.boat_number)) continue;
+    cur.runs += 1;
+    if (rank !== null) cur.points += table[rank] ?? 0;
+    byRacer.set(e.racer_id, cur);
+  }
+}
+
 /** 候補ごとに節内の選手別の得点・走数を出す */
 function scoreMeet(meet, hypothesis, cut = SHIPPED_CUT) {
   const byRacer = new Map();
@@ -327,21 +346,7 @@ function scoreMeet(meet, hypothesis, cut = SHIPPED_CUT) {
     // 結果がまだ無いレースは分母に入れない（`computeSeriesScore` と同じ）
     if (!result || result.rank1 === null || result.rank1 === undefined) continue;
     const table = hypothesis.table(normalizeStage(stage));
-    for (const e of entriesByRace.get(row.race_id) ?? []) {
-      const cur = byRacer.get(e.racer_id) ?? {
-        racerId: e.racer_id,
-        playerName: e.player_name,
-        points: 0,
-        runs: 0,
-      };
-      const rank = rankOf(result, e.boat_number);
-      // 欠場（着順に載らず、本番STの記録も無い）は走数にも入れない。
-      // 失格・落水（走ったが着順が付かない）は0点だが分母には入れる
-      if (rank === null && !didStart(row.race_id, e.boat_number)) continue;
-      cur.runs += 1;
-      if (rank !== null) cur.points += table[rank] ?? 0;
-      byRacer.set(e.racer_id, cur);
-    }
+    addRaceScores(byRacer, row.race_id, result, table);
   }
   return [...byRacer.values()]
     .filter((r) => r.runs > 0)

@@ -11,7 +11,7 @@
  * @returns {{boat: number|null, course: number|null}|null} 表示中のレースの値。未取得・失敗は null
  */
 import { useEffect, useState } from "react";
-import { dataService } from "../services/dataService";
+import { getRaceWinnerCourses } from "../services/raceQueries.js";
 
 export function useRaceWinnerCourse(raceId, enabled) {
   const [winner, setWinner] = useState({
@@ -22,8 +22,7 @@ export function useRaceWinnerCourse(raceId, enabled) {
   useEffect(() => {
     if (!enabled || !raceId) return undefined;
     let cancelled = false;
-    dataService
-      .getRaceWinnerCourses([raceId])
+    getRaceWinnerCourses([raceId])
       .then((byRace) => {
         const w = byRace[raceId];
         if (!cancelled && w) setWinner({ raceId, ...w });

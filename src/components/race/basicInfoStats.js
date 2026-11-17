@@ -422,6 +422,122 @@ function isUnavailable(records, field) {
   return rows.every((r) => r[field] === undefined);
 }
 
+// 平均STはフライング・未計測の走を除いた avgStN が母数（computeRatesの
+// コメント参照）。他の指標の n と混ぜると、上のバーが n=158 で出している
+// 同じ値をこの表が n=171 と書くことになる（会場ランキング側は既に出し分け済み）
+function conditionSampleOf(rates, metric) {
+  return metric === "avgSt" ? rates.avgStN : rates.n;
+}
+
+// 母数が取れなかった行（呼び出し側は描画しない）
+function unavailableConditionRow(row) {
+  return {
+    key: row.key,
+    value: null,
+    n: 0,
+    unavailable: true,
+    baseN: null,
+  };
+}
+
+function filterConditionRow(row, all, venueCode, metric) {
+  const rates = computeRates(
+    filterRecords(all, {
+      venueCode,
+      scope: row.scope,
+      grade: row.grade,
+      period: "current",
+    }),
+  );
+  return {
+    key: row.key,
+    value: conditionSampleOf(rates, metric) > 0 ? rates[metric] : null,
+    n: conditionSampleOf(rates, metric),
+    unavailable: false,
+    baseN: null,
+  };
+}
+
+// 初日・最終日。**他行と母数が違う**点に注意（2026-09-28実測）。
+// 走数の中央値は初日24走・最終日25走に対し、他行（全国）は176走。
+// 差の主因は**初日が節の1日だけ**であること（節の長さは実測で4〜6日が大半・
+// 中央6日なので、初日はその1/6前後にあたる）。加えて期間の差もある:
+// `race_conditions` は2025-12が12行・2026-01が0行（BOA-498）なので、この2行は
+// 実質2026-02以降しか母数に入らない。同じ2026-02以降だけで比べると比率17.8%
+// （全走数の中央135走に対し初日24走）で、期間差の寄与は0.76倍ぶん。
+// 値そのものは読める母数がある（SMALL_SAMPLE_THRESHOLD=6 を割るのは初日0.6%・
+// 最終日0.4%）。「全国176走」と「初日24走」を同じ表に並べるので、波・F行と
+// 同じく baseN（日目を判定できた走数）を返し、画面が「他行と比べない」と
+// 読ませる（BOA-499）
+function seriesDayConditionRow(row, all, metric) {
+  const field = row.kind === "seriesDay" ? "seriesDay" : "isFinalDay";
+  if (isUnavailable(all, field)) return unavailableConditionRow(row);
+  // 日目を判定できた走（race_conditions の値がある走）だけが母数
+  const known = all.filter((r) =>
+    field === "seriesDay"
+      ? typeof r.seriesDay === "number"
+      : typeof r.isFinalDay === "boolean",
+  );
+  const hit = known.filter((r) =>
+    field === "seriesDay" ? r.seriesDay === 1 : r.isFinalDay === true,
+  );
+  const rates = computeRates(hit);
+  return {
+    key: row.key,
+    value: conditionSampleOf(rates, metric) > 0 ? rates[metric] : null,
+    n: conditionSampleOf(rates, metric),
+    unavailable: false,
+    baseN: known.length,
+  };
+}
+
+function fCountConditionRow(row, all, metric) {
+  // F数が取れている走だけを母集団にする。取れていない走（null）は
+  // 「F0だった」とは限らないので、F無し時に混ぜてはいけない
+  const known = all.filter((r) => typeof r.fCount === "number");
+  const hit = known.filter((r) =>
+    row.holding ? r.fCount > 0 : r.fCount === 0,
+  );
+  const rates = computeRates(hit);
+  return {
+    key: row.key,
+    value: conditionSampleOf(rates, metric) > 0 ? rates[metric] : null,
+    n: conditionSampleOf(rates, metric),
+    unavailable: false,
+    baseN: known.length,
+    // Fの2行だけは平均STも返す。Fを持っている選手を見る目的は
+    // 「スタートを踏めなくなるか」で、勝率ではそれが読めない
+    // （screens.md §3.7 の元の設計も「F持ち時の平均ST vs 通常時」）。
+    // 実例: 勝率だけだと F持ち時27.3% vs F無し時11.1% となり
+    // 「Fを持っている方が走る」という逆のメッセージになる
+    avgSt: rates.avgSt,
+    avgStN: rates.avgStN,
+  };
+}
+
+// 波高。母数が他行と違う（波高が取れていない走がある）ので baseN を返す
+function waveConditionRow(row, all, metric) {
+  if (isUnavailable(all, "waveHeight")) return unavailableConditionRow(row);
+  const measured = all.filter(
+    (r) => typeof r.waveHeight === "number" && Number.isFinite(r.waveHeight),
+  );
+  // 5cm刻みで記録する会場の走は、母数からも外す（WAVE_EXCLUDED_VENUE_CODES）
+  const known = measured.filter(
+    (r) => !WAVE_EXCLUDED_VENUE_CODES.has(Number(r.venueCode)),
+  );
+  const rough = known.filter((r) => r.waveHeight >= ROUGH_WAVE_CM);
+  const rates = computeRates(rough);
+  return {
+    key: row.key,
+    value: conditionSampleOf(rates, metric) > 0 ? rates[metric] : null,
+    n: conditionSampleOf(rates, metric),
+    unavailable: false,
+    baseN: known.length,
+    // 除いた走の数。1以上なら画面がその旨を注記する
+    excludedN: measured.length - known.length,
+  };
+}
+
 /**
  * 条件別タブの各行を組み立てる（純関数）。
  *
@@ -446,123 +562,15 @@ function isUnavailable(records, field) {
 export function buildConditionRows(records, { venueCode, metric }) {
   const all = Array.isArray(records) ? records : [];
 
-  // 平均STはフライング・未計測の走を除いた avgStN が母数（computeRatesの
-  // コメント参照）。他の指標の n と混ぜると、上のバーが n=158 で出している
-  // 同じ値をこの表が n=171 と書くことになる（会場ランキング側は既に出し分け済み）
-  const sampleOf = (rates) => (metric === "avgSt" ? rates.avgStN : rates.n);
-
   return CONDITION_ROWS.map((row) => {
     if (row.kind === "filter") {
-      const rates = computeRates(
-        filterRecords(all, {
-          venueCode,
-          scope: row.scope,
-          grade: row.grade,
-          period: "current",
-        }),
-      );
-      return {
-        key: row.key,
-        value: sampleOf(rates) > 0 ? rates[metric] : null,
-        n: sampleOf(rates),
-        unavailable: false,
-        baseN: null,
-      };
+      return filterConditionRow(row, all, venueCode, metric);
     }
-
-    // 初日・最終日。**他行と母数が違う**点に注意（2026-09-28実測）。
-    // 走数の中央値は初日24走・最終日25走に対し、他行（全国）は176走。
-    // 差の主因は**初日が節の1日だけ**であること（節の長さは実測で4〜6日が大半・
-    // 中央6日なので、初日はその1/6前後にあたる）。加えて期間の差もある:
-    // `race_conditions` は2025-12が12行・2026-01が0行（BOA-498）なので、この2行は
-    // 実質2026-02以降しか母数に入らない。同じ2026-02以降だけで比べると比率17.8%
-    // （全走数の中央135走に対し初日24走）で、期間差の寄与は0.76倍ぶん。
-    // 値そのものは読める母数がある（SMALL_SAMPLE_THRESHOLD=6 を割るのは初日0.6%・
-    // 最終日0.4%）。「全国176走」と「初日24走」を同じ表に並べるので、波・F行と
-    // 同じく baseN（日目を判定できた走数）を返し、画面が「他行と比べない」と
-    // 読ませる（BOA-499）
     if (row.kind === "seriesDay" || row.kind === "isFinalDay") {
-      const field = row.kind === "seriesDay" ? "seriesDay" : "isFinalDay";
-      if (isUnavailable(all, field)) {
-        return {
-          key: row.key,
-          value: null,
-          n: 0,
-          unavailable: true,
-          baseN: null,
-        };
-      }
-      // 日目を判定できた走（race_conditions の値がある走）だけが母数
-      const known = all.filter((r) =>
-        field === "seriesDay"
-          ? typeof r.seriesDay === "number"
-          : typeof r.isFinalDay === "boolean",
-      );
-      const hit = known.filter((r) =>
-        field === "seriesDay" ? r.seriesDay === 1 : r.isFinalDay === true,
-      );
-      const rates = computeRates(hit);
-      return {
-        key: row.key,
-        value: sampleOf(rates) > 0 ? rates[metric] : null,
-        n: sampleOf(rates),
-        unavailable: false,
-        baseN: known.length,
-      };
+      return seriesDayConditionRow(row, all, metric);
     }
-
-    if (row.kind === "fCount") {
-      // F数が取れている走だけを母集団にする。取れていない走（null）は
-      // 「F0だった」とは限らないので、F無し時に混ぜてはいけない
-      const known = all.filter((r) => typeof r.fCount === "number");
-      const hit = known.filter((r) =>
-        row.holding ? r.fCount > 0 : r.fCount === 0,
-      );
-      const rates = computeRates(hit);
-      return {
-        key: row.key,
-        value: sampleOf(rates) > 0 ? rates[metric] : null,
-        n: sampleOf(rates),
-        unavailable: false,
-        baseN: known.length,
-        // Fの2行だけは平均STも返す。Fを持っている選手を見る目的は
-        // 「スタートを踏めなくなるか」で、勝率ではそれが読めない
-        // （screens.md §3.7 の元の設計も「F持ち時の平均ST vs 通常時」）。
-        // 実例: 勝率だけだと F持ち時27.3% vs F無し時11.1% となり
-        // 「Fを持っている方が走る」という逆のメッセージになる
-        avgSt: rates.avgSt,
-        avgStN: rates.avgStN,
-      };
-    }
-
-    // 波高。母数が他行と違う（波高が取れていない走がある）ので baseN を返す
-    if (isUnavailable(all, "waveHeight")) {
-      return {
-        key: row.key,
-        value: null,
-        n: 0,
-        unavailable: true,
-        baseN: null,
-      };
-    }
-    const measured = all.filter(
-      (r) => typeof r.waveHeight === "number" && Number.isFinite(r.waveHeight),
-    );
-    // 5cm刻みで記録する会場の走は、母数からも外す（WAVE_EXCLUDED_VENUE_CODES）
-    const known = measured.filter(
-      (r) => !WAVE_EXCLUDED_VENUE_CODES.has(Number(r.venueCode)),
-    );
-    const rough = known.filter((r) => r.waveHeight >= ROUGH_WAVE_CM);
-    const rates = computeRates(rough);
-    return {
-      key: row.key,
-      value: sampleOf(rates) > 0 ? rates[metric] : null,
-      n: sampleOf(rates),
-      unavailable: false,
-      baseN: known.length,
-      // 除いた走の数。1以上なら画面がその旨を注記する
-      excludedN: measured.length - known.length,
-    };
+    if (row.kind === "fCount") return fCountConditionRow(row, all, metric);
+    return waveConditionRow(row, all, metric);
   });
 }
 
@@ -690,6 +698,26 @@ export function officialPeriodOf(seriesStartDate) {
   };
 }
 
+// 表示する期（新しい順）。出す期が無ければ null。fallback は前期未取り込み
+function periodsToShow(result, raceDate) {
+  const all = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT + 1);
+  if (all.length === 0) return null;
+  const fallback = result.latestImported === false;
+  const periods = fallback ? all.slice(1) : all.slice(0, RECENT_PERIOD_COUNT);
+  return { all, fallback, periods };
+}
+
+// 直近の期（periods）に含まれる行だけの finals / wins の合計
+function recentPeriodTotals(own, periods) {
+  const inRecent = own.filter((r) =>
+    periods.some(
+      (p) => r.period_year === p.periodYear && r.period_no === p.periodNo,
+    ),
+  );
+  const total = (key) => inRecent.reduce((s, r) => s + (r[key] ?? 0), 0);
+  return { finals: total("finals"), wins: total("wins") };
+}
+
 /**
  * 「前期」（`racer_period_stats`）の1選手分を表示用に整える（純関数）。
  *
@@ -726,10 +754,9 @@ export function officialPeriodOf(seriesStartDate) {
 export function pickPeriodStats(result, racerId, raceDate) {
   const rows = result?.rows;
   if (!Array.isArray(rows) || !racerId) return null;
-  const all = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT + 1);
-  if (all.length === 0) return null;
-  const fallback = result.latestImported === false;
-  const periods = fallback ? all.slice(1) : all.slice(0, RECENT_PERIOD_COUNT);
+  const shown = periodsToShow(result, raceDate);
+  if (!shown) return null;
+  const { all, fallback, periods } = shown;
   const [latest] = periods;
   const own = rows.filter((r) => r.racer_id === racerId);
   const row = own.find(
@@ -737,12 +764,7 @@ export function pickPeriodStats(result, racerId, raceDate) {
       r.period_year === latest.periodYear && r.period_no === latest.periodNo,
   );
   if (!row) return null;
-  const inRecent = own.filter((r) =>
-    periods.some(
-      (p) => r.period_year === p.periodYear && r.period_no === p.periodNo,
-    ),
-  );
-  const total = (key) => inRecent.reduce((s, r) => s + (r[key] ?? 0), 0);
+  const totals = recentPeriodTotals(own, periods);
   const oldest = periods[periods.length - 1];
   return {
     // 出走0の新人は win_rate が NULL（実測2.6%）。呼び出し側は「—」を出す
@@ -755,8 +777,8 @@ export function pickPeriodStats(result, racerId, raceDate) {
     finals: row.finals ?? null,
     wins: row.wins ?? null,
     recent: {
-      finals: total("finals"),
-      wins: total("wins"),
+      finals: totals.finals,
+      wins: totals.wins,
       from: oldest.calcFrom,
       to: latest.calcTo,
     },
@@ -937,6 +959,35 @@ export function buildMeetTrend(meet, allRecords) {
   };
 }
 
+const MEET_DAY_MS = 86400000;
+const dateOfRaceId = (raceId) => raceId.slice(0, 10);
+const dayOfRaceId = (raceId) =>
+  Date.parse(`${dateOfRaceId(raceId)}T00:00:00Z`);
+
+// row が last の節の続きか（同じ会場・同じレース名・直前の行と2日以内）
+function continuesMeet(last, row) {
+  const prevRow = last?.rows.at(-1);
+  return (
+    last &&
+    String(last.venueCode) === String(row.venueCode) &&
+    (last.raceTitle ?? null) === (row.raceTitle ?? null) &&
+    Math.abs(dayOfRaceId(row.raceId) - dayOfRaceId(prevRow.raceId)) <=
+      2 * MEET_DAY_MS
+  );
+}
+
+function newMeetGroup(row) {
+  const date = dateOfRaceId(row.raceId);
+  return {
+    venueCode: row.venueCode,
+    raceTitle: row.raceTitle ?? null,
+    raceGrade: row.raceGrade ?? null,
+    firstDate: date,
+    lastDate: date,
+    rows: [row],
+  };
+}
+
 /**
  * 直近N走・レース一覧の行を、節ごとのまとまりに分ける（BOA-623）。
  * 表は会場・グレード・レース名を節の見出し行に1回だけ出す（同じ節の10行で
@@ -952,30 +1003,15 @@ export function buildMeetTrend(meet, allRecords) {
  */
 export function groupRunsByMeet(rows) {
   const groups = [];
-  const dayOf = (raceId) => Date.parse(`${raceId.slice(0, 10)}T00:00:00Z`);
   for (const row of rows ?? []) {
     const last = groups.at(-1);
-    const prevRow = last?.rows.at(-1);
-    const sameMeet =
-      last &&
-      String(last.venueCode) === String(row.venueCode) &&
-      (last.raceTitle ?? null) === (row.raceTitle ?? null) &&
-      Math.abs(dayOf(row.raceId) - dayOf(prevRow.raceId)) <= 2 * 86400000;
-    if (sameMeet) {
+    if (continuesMeet(last, row)) {
       last.rows.push(row);
-      const date = row.raceId.slice(0, 10);
+      const date = dateOfRaceId(row.raceId);
       if (date < last.firstDate) last.firstDate = date;
       if (date > last.lastDate) last.lastDate = date;
     } else {
-      const date = row.raceId.slice(0, 10);
-      groups.push({
-        venueCode: row.venueCode,
-        raceTitle: row.raceTitle ?? null,
-        raceGrade: row.raceGrade ?? null,
-        firstDate: date,
-        lastDate: date,
-        rows: [row],
-      });
+      groups.push(newMeetGroup(row));
     }
   }
   return groups;

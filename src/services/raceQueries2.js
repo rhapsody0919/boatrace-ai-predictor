@@ -7,6 +7,110 @@ import { toWakuRacerStats } from "../utils/racerStats.js";
 import { fetchAllByIn, withCache } from "./core.js";
 import { raceOddsCacheTtl } from "./raceQueries.js";
 
+function withoutPastAverage(entries, exhibitionByBoat) {
+  return entries.map((row) => ({
+    ...row,
+    exhibition_time: exhibitionByBoat.get(row.boat_number) ?? null,
+    avg_exhibition_time: null,
+    sample_count: 0,
+  }));
+}
+
+async function fetchPastEntries(racerIds, raceId) {
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
+
+  const { data: pastEntries } = await supabase
+    .from("race_entries")
+    .select("race_id, boat_number, racer_id")
+    .in("racer_id", racerIds)
+    .gte("race_id", cutoffStr)
+    .lt("race_id", raceId);
+  return pastEntries;
+}
+
+function groupTimesByRacer(pastEntries, exhibitionRows) {
+  const exhibitionByKey = new Map();
+  exhibitionRows.forEach((e) => {
+    exhibitionByKey.set(`${e.race_id}-${e.boat_number}`, e.exhibition_time);
+  });
+
+  const timesByRacer = new Map();
+  (pastEntries ?? []).forEach((e) => {
+    const key = `${e.race_id}-${e.boat_number}`;
+    const time = exhibitionByKey.get(key);
+    if (time === undefined || time === null) return;
+
+    if (!timesByRacer.has(e.racer_id)) {
+      timesByRacer.set(e.racer_id, []);
+    }
+    timesByRacer.get(e.racer_id).push(time);
+  });
+  return timesByRacer;
+}
+
+// RPC 未適用環境用の旧クライアント集計
+async function aggregateExhibitionTrendOnClient(raceId) {
+  const { data: entries } = await supabase
+    .from("race_entries")
+    .select("boat_number, player_name, racer_id")
+    .eq("race_id", raceId)
+    .order("boat_number");
+
+  if (!entries || entries.length === 0) {
+    return [];
+  }
+
+  const { data: todaysExhibition } = await supabase
+    .from("exhibition_data")
+    .select("boat_number, exhibition_time")
+    .eq("race_id", raceId);
+  const exhibitionByBoat = new Map(
+    (todaysExhibition ?? []).map((e) => [e.boat_number, e.exhibition_time]),
+  );
+
+  const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
+    (id) => id !== null,
+  );
+  if (racerIds.length === 0) {
+    return withoutPastAverage(entries, exhibitionByBoat);
+  }
+
+  const pastEntries = await fetchPastEntries(racerIds, raceId);
+
+  const pastRaceIds = [
+    ...new Set((pastEntries ?? []).map((e) => e.race_id)),
+  ];
+
+  if (pastRaceIds.length === 0) {
+    return withoutPastAverage(entries, exhibitionByBoat);
+  }
+
+  const exhibitionRows = await fetchAllByIn(
+    "exhibition_data",
+    "race_id, boat_number, exhibition_time",
+    "race_id",
+    pastRaceIds,
+  );
+
+  const timesByRacer = groupTimesByRacer(pastEntries, exhibitionRows);
+
+  return entries.map((row) => {
+    const times = timesByRacer.get(row.racer_id) ?? [];
+    const avgTime =
+      times.length > 0
+        ? times.reduce((sum, t) => sum + t, 0) / times.length
+        : null;
+    return {
+      ...row,
+      exhibition_time: exhibitionByBoat.get(row.boat_number) ?? null,
+      avg_exhibition_time: avgTime,
+      sample_count: times.length,
+    };
+  });
+}
+
 /**
  * 本日開催中のレースの出走選手について、直近90日間の平均展示タイム（周回展示の2周目の150mのタイム）を取得する（BOA-164）
  */
@@ -27,97 +131,7 @@ export function getRaceExhibitionTimeBreakdown(raceId) {
         return rpcData;
       }
 
-      const { data: entries } = await supabase
-        .from("race_entries")
-        .select("boat_number, player_name, racer_id")
-        .eq("race_id", raceId)
-        .order("boat_number");
-
-      if (!entries || entries.length === 0) {
-        return [];
-      }
-
-      const { data: todaysExhibition } = await supabase
-        .from("exhibition_data")
-        .select("boat_number, exhibition_time")
-        .eq("race_id", raceId);
-      const exhibitionByBoat = new Map(
-        (todaysExhibition ?? []).map((e) => [e.boat_number, e.exhibition_time]),
-      );
-
-      const racerIds = [...new Set(entries.map((r) => r.racer_id))].filter(
-        (id) => id !== null,
-      );
-      if (racerIds.length === 0) {
-        return entries.map((row) => ({
-          ...row,
-          exhibition_time: exhibitionByBoat.get(row.boat_number) ?? null,
-          avg_exhibition_time: null,
-          sample_count: 0,
-        }));
-      }
-
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-      const cutoffStr = ninetyDaysAgo.toISOString().split("T")[0];
-
-      const { data: pastEntries } = await supabase
-        .from("race_entries")
-        .select("race_id, boat_number, racer_id")
-        .in("racer_id", racerIds)
-        .gte("race_id", cutoffStr)
-        .lt("race_id", raceId);
-
-      const pastRaceIds = [
-        ...new Set((pastEntries ?? []).map((e) => e.race_id)),
-      ];
-
-      if (pastRaceIds.length === 0) {
-        return entries.map((row) => ({
-          ...row,
-          exhibition_time: exhibitionByBoat.get(row.boat_number) ?? null,
-          avg_exhibition_time: null,
-          sample_count: 0,
-        }));
-      }
-
-      const exhibitionRows = await fetchAllByIn(
-        "exhibition_data",
-        "race_id, boat_number, exhibition_time",
-        "race_id",
-        pastRaceIds,
-      );
-
-      const exhibitionByKey = new Map();
-      exhibitionRows.forEach((e) => {
-        exhibitionByKey.set(`${e.race_id}-${e.boat_number}`, e.exhibition_time);
-      });
-
-      const timesByRacer = new Map();
-      (pastEntries ?? []).forEach((e) => {
-        const key = `${e.race_id}-${e.boat_number}`;
-        const time = exhibitionByKey.get(key);
-        if (time === undefined || time === null) return;
-
-        if (!timesByRacer.has(e.racer_id)) {
-          timesByRacer.set(e.racer_id, []);
-        }
-        timesByRacer.get(e.racer_id).push(time);
-      });
-
-      return entries.map((row) => {
-        const times = timesByRacer.get(row.racer_id) ?? [];
-        const avgTime =
-          times.length > 0
-            ? times.reduce((sum, t) => sum + t, 0) / times.length
-            : null;
-        return {
-          ...row,
-          exhibition_time: exhibitionByBoat.get(row.boat_number) ?? null,
-          avg_exhibition_time: avgTime,
-          sample_count: times.length,
-        };
-      });
+      return aggregateExhibitionTrendOnClient(raceId);
     });
   }
 

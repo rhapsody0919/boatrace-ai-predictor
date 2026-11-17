@@ -9,7 +9,7 @@
  * 開催なし・データ未投入で、利用者に見せるべき内容が異なるため混同しない
  */
 import { useState, useEffect } from "react";
-import { dataService } from "../services/dataService";
+import { getPredictions } from "../services/predictionQueries2.js";
 
 export const NO_DATA_ERROR = "no-data";
 export const FETCH_FAILED_ERROR = "fetch-failed";
@@ -31,7 +31,7 @@ export function useDatePredictions(date) {
         setIsFullData(false);
 
         // Phase 1: 軽量版で即座に一覧表示
-        const lightData = await dataService.getPredictions(date, {
+        const lightData = await getPredictions(date, {
           light: true,
         });
         if (cancelled) return;
@@ -51,7 +51,7 @@ export function useDatePredictions(date) {
         }
 
         // Phase 2: バックグラウンドでフル版を取得（turnPrediction/racerStats含む）
-        const fullData = await dataService.getPredictions(date);
+        const fullData = await getPredictions(date);
         if (cancelled) return;
 
         if (fullData.races && fullData.races.length > 0) {

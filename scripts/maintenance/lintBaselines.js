@@ -5,7 +5,6 @@
 
 // データ層の和。後で dataLayerSource.js を読む形にできるよう、一覧はここ1か所の関数に分ける
 const DATA_LAYER_PATTERNS = [
-  /^src\/services\/supabaseDataService\.js$/,
   /^src\/services\/core[^/]*\.js$/,
   /^src\/services\/[^/]*Queries[^/]*\.js$/,
 ];
@@ -14,7 +13,6 @@ export const dataLayerPatterns = () => DATA_LAYER_PATTERNS;
 export const isDataLayer = (file) =>
   dataLayerPatterns().some((re) => re.test(file));
 
-export const FACADE = "src/services/supabaseDataService.js";
 export const DATA_LAYER_KEY = "<data-layer>";
 
 /** 基準の key。和の中の from は1つにまとめる（関数が別ファイルへ移っても変わらない） */
@@ -94,7 +92,16 @@ export function newUtilsFileProblems(addedPaths) {
     .map((p) => `src/utils/ に新しいファイル: ${p}`);
 }
 
-/** facade-frozen を error にしてよいか: supabaseDataService.js が殻だけ（関数の本体0） */
-export function facadeShouldBeError(functionBodyCount) {
-  return functionBodyCount === 0;
+// 新しい問い合わせの置き場は領域の <領域>Queries*.js だけ（HR62・設計図 §5。殻や別名のサービスを増やさない）
+const SERVICES_NEW_FILE_OK = /^[a-z]+Queries[0-9]*\.js$/;
+
+/** src/services/ の直下への新しいファイルは <領域>Queries*.js のほか赤。下のフォルダも赤 */
+export function newServicesFileProblems(addedPaths) {
+  return (addedPaths ?? [])
+    .filter((p) => p.startsWith("src/services/"))
+    .filter((p) => !SERVICES_NEW_FILE_OK.test(p.slice("src/services/".length)))
+    .map(
+      (p) =>
+        `src/services/ に <領域>Queries*.js でない新しいファイル: ${p}（新しい問い合わせは領域の Queries へ）`,
+    );
 }

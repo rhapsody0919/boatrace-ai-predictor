@@ -16,7 +16,7 @@ Linear の無料枠の上限は**アーカイブしていないチケットの�
 
 - `update` で状態を変え、変更後の**状態の種類（`state.type`）が `completed`・`canceled`** なら、コメントを付けた後に続けて `issueArchive` を呼ぶ。Done・Canceled・Duplicate（Duplicate の種類は canceled）が当たる
 - 状態の**名前では判定しない**（名前はチームで変えられる）
-- アーカイブ済みのチケットも `get` で引ける。`list` は既定でアーカイブ済みを含めない
+- `get`・`comment`・`update` はアーカイブ済みの票も引く（hq は閉じた票を即アーカイブするため。`issues(...)` に `includeArchived: true` を付けている）。`list` は引かない
 
 ## 起票は未アーカイブ200件で止まる（2026-10-20〜）
 

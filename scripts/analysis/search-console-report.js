@@ -342,29 +342,13 @@ async function buildSeoKpi() {
   };
 }
 
-async function main() {
-  // rowLimit=1000: Search Console APIの実測上限（過去30日で数百件程度になることが多い）を
-  // 十分にカバーする値。上位20件だけでは「ブランド名系クエリしか見えていない」状態になり、
-  // 網羅性を欠くため全件取得する（2026-08-16、ユーザー指摘）
-  const allQueries = await queryDimensions(["query"], 1000);
-  const topQueries = allQueries.slice(0, 20);
-  const topPages = await queryDimensions(["page"], 100);
-  const venuePages = topPages.filter((r) => r.keys[0].includes("/venues"));
-  const featurePages = topPages.filter((r) =>
-    isFeatureOrArticlePage(r.keys[0]),
-  );
-
-  // ページ×クエリのクロス集計はrowLimit=2000（クエリ×ページの組み合わせは
-  // クエリ単体・ページ単体よりずっと多くなるため大きめに取る）
-  const pageQueryRows = await queryPageQueryCross(2000);
-  const pageQueriesMap = buildPageQueriesMap(pageQueryRows);
-
-  const today = formatDate(new Date());
-  const outDir = path.join(process.cwd(), "data", "analysis", "search-console");
-
-  // 前回レポートを今回の書き込み前に探す（比較対象に自分自身を含めないため）
-  const previous = findPreviousReport(outDir, today);
-
+function printQuerySections(
+  allQueries,
+  topQueries,
+  topPages,
+  venuePages,
+  featurePages,
+) {
   const queriesWithClicks = allQueries.filter((r) => r.clicks > 0).length;
   console.log(
     `\n## 検索クエリ（過去${DAYS}日、直近3日を除く） 全${allQueries.length}件中クリック実績あり${queriesWithClicks}件`,
@@ -387,92 +371,100 @@ async function main() {
       "  ※ 上位100ページ圏外の可能性あり。表示回数1桁でも公開直後は正常（SEO効果は2〜4週間のタイムラグ）",
     );
   }
+}
 
-  // 前回レポートとの比較（日割り正規化 + クエリ順位変動）
-  // 全クエリ（allQueries）を対象にする。前回レポートが旧形式（上位20件のみ保存）の
-  // 場合は、その20件としか照合できないため「新規ランクイン」表記が過渡的に増える
-  if (previous) {
-    const prevQueries = previous.data.allQueries ?? previous.data.topQueries;
-    const prevDays = previous.data.days ?? 1;
-    const prevClicksTotal = prevQueries.reduce((sum, r) => sum + r.clicks, 0);
-    const prevImpressionsTotal = prevQueries.reduce(
-      (sum, r) => sum + r.impressions,
-      0,
-    );
-    const currClicksTotal = allQueries.reduce((sum, r) => sum + r.clicks, 0);
-    const currImpressionsTotal = allQueries.reduce(
-      (sum, r) => sum + r.impressions,
-      0,
-    );
-
-    const prevClicksPerDay = perDay(prevClicksTotal, prevDays);
-    const currClicksPerDay = perDay(currClicksTotal, DAYS);
-    const prevImpressionsPerDay = perDay(prevImpressionsTotal, prevDays);
-    const currImpressionsPerDay = perDay(currImpressionsTotal, DAYS);
-
-    console.log(
-      `\n## 前回レポート（${previous.date}、${prevDays}日間）との比較（全クエリ合計）`,
-    );
-    console.log(
-      `  クリック/日: ${currClicksPerDay.toFixed(1)} (前回 ${prevClicksPerDay.toFixed(1)}、${formatDelta(((currClicksPerDay - prevClicksPerDay) / (prevClicksPerDay || 1)) * 100)}%)`,
-    );
-    console.log(
-      `  表示回数/日: ${currImpressionsPerDay.toFixed(1)} (前回 ${prevImpressionsPerDay.toFixed(1)}、${formatDelta(((currImpressionsPerDay - prevImpressionsPerDay) / (prevImpressionsPerDay || 1)) * 100)}%)`,
-    );
-
-    // 全クエリを対象に順位変動を計算し、動きが大きい順にソートして表示する
-    // （毎回同じ上位20件のブランドクエリだけでなく、実際に動いたクエリを網羅的に拾う）
-    const prevQueryMap = new Map(prevQueries.map((r) => [r.keys[0], r]));
-    const movers = [];
-    const newEntries = [];
-    for (const r of allQueries) {
-      if (r.clicks === 0 && r.impressions < 10) continue; // ノイズ除外（実績がほぼ無いクエリ）
-      const prevRow = prevQueryMap.get(r.keys[0]);
-      if (!prevRow) {
-        newEntries.push(r);
-        continue;
-      }
-      movers.push({
-        query: r.keys[0],
-        position: r.position,
-        delta: r.position - prevRow.position,
-      });
-    }
-    movers.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
-
-    console.log(
-      `\n  順位変動が大きいクエリ 上位15件（+は下落、-は上昇。実績のあるクエリ${movers.length}件中）:`,
-    );
-    if (movers.length === 0) {
-      console.log("  （比較可能なクエリがありません）");
-    }
-    for (const m of movers.slice(0, 15)) {
-      console.log(
-        `    ${m.query.padEnd(40)} position:${m.position.toFixed(1)} (${formatDelta(m.delta)}pt)`,
-      );
-    }
-
-    if (newEntries.length > 0) {
-      console.log(
-        `\n  新規ランクイン（実績のあるクエリのみ、上位10件、全${newEntries.length}件中）:`,
-      );
-      newEntries
-        .sort((a, b) => b.clicks - a.clicks)
-        .slice(0, 10)
-        .forEach((r) => {
-          console.log(
-            `    ${r.keys[0].padEnd(40)} position:${r.position.toFixed(1)} clicks:${r.clicks}`,
-          );
-        });
-    }
-  } else {
+// 前回レポートとの比較（日割り正規化 + クエリ順位変動）
+// 全クエリ（allQueries）を対象にする。前回レポートが旧形式（上位20件のみ保存）の
+// 場合は、その20件としか照合できないため「新規ランクイン」表記が過渡的に増える
+function printPreviousComparison(previous, allQueries) {
+  if (!previous) {
     console.log(
       `\n## 前回レポートとの比較\n  （比較対象となる過去レポートが見つかりません。次回実行時から比較が有効になります）`,
     );
+    return;
+  }
+  const prevQueries = previous.data.allQueries ?? previous.data.topQueries;
+  const prevDays = previous.data.days ?? 1;
+  const prevClicksTotal = prevQueries.reduce((sum, r) => sum + r.clicks, 0);
+  const prevImpressionsTotal = prevQueries.reduce(
+    (sum, r) => sum + r.impressions,
+    0,
+  );
+  const currClicksTotal = allQueries.reduce((sum, r) => sum + r.clicks, 0);
+  const currImpressionsTotal = allQueries.reduce(
+    (sum, r) => sum + r.impressions,
+    0,
+  );
+
+  const prevClicksPerDay = perDay(prevClicksTotal, prevDays);
+  const currClicksPerDay = perDay(currClicksTotal, DAYS);
+  const prevImpressionsPerDay = perDay(prevImpressionsTotal, prevDays);
+  const currImpressionsPerDay = perDay(currImpressionsTotal, DAYS);
+
+  console.log(
+    `\n## 前回レポート（${previous.date}、${prevDays}日間）との比較（全クエリ合計）`,
+  );
+  console.log(
+    `  クリック/日: ${currClicksPerDay.toFixed(1)} (前回 ${prevClicksPerDay.toFixed(1)}、${formatDelta(((currClicksPerDay - prevClicksPerDay) / (prevClicksPerDay || 1)) * 100)}%)`,
+  );
+  console.log(
+    `  表示回数/日: ${currImpressionsPerDay.toFixed(1)} (前回 ${prevImpressionsPerDay.toFixed(1)}、${formatDelta(((currImpressionsPerDay - prevImpressionsPerDay) / (prevImpressionsPerDay || 1)) * 100)}%)`,
+  );
+
+  printQueryMovers(prevQueries, allQueries);
+}
+
+// 全クエリを対象に順位変動を計算し、動きが大きい順にソートして表示する
+// （毎回同じ上位20件のブランドクエリだけでなく、実際に動いたクエリを網羅的に拾う）
+function printQueryMovers(prevQueries, allQueries) {
+  const prevQueryMap = new Map(prevQueries.map((r) => [r.keys[0], r]));
+  const movers = [];
+  const newEntries = [];
+  for (const r of allQueries) {
+    if (r.clicks === 0 && r.impressions < 10) continue; // ノイズ除外（実績がほぼ無いクエリ）
+    const prevRow = prevQueryMap.get(r.keys[0]);
+    if (!prevRow) {
+      newEntries.push(r);
+      continue;
+    }
+    movers.push({
+      query: r.keys[0],
+      position: r.position,
+      delta: r.position - prevRow.position,
+    });
+  }
+  movers.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+
+  console.log(
+    `\n  順位変動が大きいクエリ 上位15件（+は下落、-は上昇。実績のあるクエリ${movers.length}件中）:`,
+  );
+  if (movers.length === 0) {
+    console.log("  （比較可能なクエリがありません）");
+  }
+  for (const m of movers.slice(0, 15)) {
+    console.log(
+      `    ${m.query.padEnd(40)} position:${m.position.toFixed(1)} (${formatDelta(m.delta)}pt)`,
+    );
   }
 
-  // 指名検索（ブランド名クエリ）比率トラッキング（2026-08-20追加、BoatAI→龍神レーダーのリブランド監視用）
-  // 「ボートレースai」等の一般語+AI検索は含めない（classifyBrandQuery参照）
+  if (newEntries.length > 0) {
+    console.log(
+      `\n  新規ランクイン（実績のあるクエリのみ、上位10件、全${newEntries.length}件中）:`,
+    );
+    newEntries
+      .sort((a, b) => b.clicks - a.clicks)
+      .slice(0, 10)
+      .forEach((r) => {
+        console.log(
+          `    ${r.keys[0].padEnd(40)} position:${r.position.toFixed(1)} clicks:${r.clicks}`,
+        );
+      });
+  }
+}
+
+// 指名検索（ブランド名クエリ）比率トラッキング（2026-08-20追加、BoatAI→龍神レーダーのリブランド監視用）
+// 「ボートレースai」等の一般語+AI検索は含めない（classifyBrandQuery参照）
+function printBrandShare(allQueries, previous) {
   let oldBrandClicks = 0;
   let newBrandClicks = 0;
   let oldBrandImpressions = 0;
@@ -515,8 +507,10 @@ async function main() {
       `  前回比: 旧ブランド ${formatDelta(oldBrandClicks - prevOldBrandClicks, 0)}件、新ブランド ${formatDelta(newBrandClicks - prevNewBrandClicks, 0)}件`,
     );
   }
+}
 
-  // CTR-vs-掲載順位ギャップ分析（2026-08-20追加）
+// CTR-vs-掲載順位ギャップ分析（2026-08-20追加）。改善候補（titleCandidates）を返す
+function printCtrGaps(topPages) {
   const { titleCandidates, authorityCandidates } = findCtrGaps(topPages);
   console.log(
     `\n## CTR-vs-掲載順位ギャップ（表示回数${CTR_GAP_MIN_IMPRESSIONS}以上のページが対象）`,
@@ -543,6 +537,61 @@ async function main() {
       `    ${c.keys[0].padEnd(60)} position:${c.position.toFixed(1)} ctr:${(c.ctr * 100).toFixed(2)}% (目安${(c.expected * 100).toFixed(1)}%)`,
     );
   }
+  return titleCandidates;
+}
+
+// JSON 保存（推移比較用）
+function saveReport(outDir, today, report) {
+  fs.mkdirSync(outDir, { recursive: true });
+  const outPath = path.join(outDir, `report-${today}.json`);
+  fs.writeFileSync(
+    outPath,
+    JSON.stringify(
+      { generatedAt: new Date().toISOString(), days: DAYS, ...report },
+      null,
+      2,
+    ),
+  );
+
+  console.log(`\n💾 保存: ${outPath}`);
+  console.log(
+    `\n判断の目安: /venues配下ページのOrganic Search掲載順位・CTRの推移から、会場ガイド拡充の効果を確認する`,
+  );
+}
+
+async function main() {
+  // rowLimit=1000: Search Console APIの実測上限（過去30日で数百件程度になることが多い）を
+  // 十分にカバーする値。上位20件だけでは「ブランド名系クエリしか見えていない」状態になり、
+  // 網羅性を欠くため全件取得する（2026-08-16、ユーザー指摘）
+  const allQueries = await queryDimensions(["query"], 1000);
+  const topQueries = allQueries.slice(0, 20);
+  const topPages = await queryDimensions(["page"], 100);
+  const venuePages = topPages.filter((r) => r.keys[0].includes("/venues"));
+  const featurePages = topPages.filter((r) =>
+    isFeatureOrArticlePage(r.keys[0]),
+  );
+
+  // ページ×クエリのクロス集計はrowLimit=2000（クエリ×ページの組み合わせは
+  // クエリ単体・ページ単体よりずっと多くなるため大きめに取る）
+  const pageQueryRows = await queryPageQueryCross(2000);
+  const pageQueriesMap = buildPageQueriesMap(pageQueryRows);
+
+  const today = formatDate(new Date());
+  const outDir = path.join(process.cwd(), "data", "analysis", "search-console");
+
+  // 前回レポートを今回の書き込み前に探す（比較対象に自分自身を含めないため）
+  const previous = findPreviousReport(outDir, today);
+
+  printQuerySections(
+    allQueries,
+    topQueries,
+    topPages,
+    venuePages,
+    featurePages,
+  );
+  printPreviousComparison(previous, allQueries);
+  printBrandShare(allQueries, previous);
+  const titleCandidates = printCtrGaps(topPages);
 
   // タイトル/メタ改善候補ページの実際の検索クエリを紐付ける（当てずっぽうでの
   // title書き換えを防ぐ。上位5件のみ、CTR改善作業で直接使う想定）
@@ -554,31 +603,14 @@ async function main() {
 
   const seoKpi = await buildSeoKpi();
 
-  // JSON 保存（推移比較用）
-  fs.mkdirSync(outDir, { recursive: true });
-  const outPath = path.join(outDir, `report-${today}.json`);
-  fs.writeFileSync(
-    outPath,
-    JSON.stringify(
-      {
-        generatedAt: new Date().toISOString(),
-        days: DAYS,
-        allQueries,
-        topQueries,
-        topPages,
-        venuePages,
-        featurePages,
-        seoKpi,
-      },
-      null,
-      2,
-    ),
-  );
-
-  console.log(`\n💾 保存: ${outPath}`);
-  console.log(
-    `\n判断の目安: /venues配下ページのOrganic Search掲載順位・CTRの推移から、会場ガイド拡充の効果を確認する`,
-  );
+  saveReport(outDir, today, {
+    allQueries,
+    topQueries,
+    topPages,
+    venuePages,
+    featurePages,
+    seoKpi,
+  });
 }
 
 main().catch((err) => {

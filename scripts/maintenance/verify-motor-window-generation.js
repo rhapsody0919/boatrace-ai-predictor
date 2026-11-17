@@ -286,12 +286,13 @@ check(
   chart.includes("period: powerIndex.clipped_by_generation") &&
     chart.includes("analysis.motor.periodSinceGeneration"),
 );
-const racer = read("src/services/racerService.js");
+// 選手ページの今節のモーター（RA40 BOA-1673 で racerService.js から移した）
+const racer = read("src/services/motorQueries7.js");
 check(
   "選手ページ: 直近出走が入れ替え前なら機力指数・公式成績を出さない",
   racer.includes("date < generationStart") &&
-    // 殻 supabaseDataService 経由と、領域の Queries の名前つき import の両方を受ける（BOA-1502 で後者へ移す）
-    /preGeneration\s*\?\s*null\s*:\s*(?:supabaseDataService\.)?getMotorPowerIndex\(/.test(
+    // 領域の Queries の名前つき import（殻 supabaseDataService は RA40 で消えた）
+    /preGeneration\s*\?\s*null\s*:\s*getMotorPowerIndex\(/.test(
       racer,
     ),
 );
@@ -465,8 +466,8 @@ check(
 );
 check(
   "画面: 使用開始日の取得に失敗しても一覧表は出す（try/catch で null に倒す）",
-  // 殻 supabaseDataService 経由と、領域の Queries の名前つき import の両方を受ける（BOA-1466 で後者へ移す）
-  /let venueGenerationStart = null;\s*try \{\s*venueGenerationStart =\s*await (?:supabaseDataService\.)?getMotorGenerationStart\(/.test(
+  // 領域の Queries の名前つき import（殻 supabaseDataService は RA40 で消えた）
+  /let venueGenerationStart = null;\s*try \{\s*venueGenerationStart =\s*await getMotorGenerationStart\(/.test(
     chart,
   ),
 );

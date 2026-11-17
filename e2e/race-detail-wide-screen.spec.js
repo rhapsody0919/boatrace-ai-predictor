@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures.js";
+import { settled } from "./settled.js";
 
 // BOA-612: 広い画面で6艇の表の文字を大きくし、1行に1艇を並べるリスト・グラフは読みやすい幅（1200px）で止める。
 // BOA-881（2026-10-16 オーナー承認）で、ページは 1600px から最大1200の列（画面の中央）に変えた。
@@ -66,16 +67,21 @@ test.describe("レース詳細の広い画面（BOA-612）", () => {
     await expect(page.locator(".race-odds-list-tab").first()).toBeVisible({
       timeout: 30000,
     });
-    const smallest = await page
-      .locator(".race-odds-list-tab")
-      .first()
-      .evaluate((root) =>
-        Math.min(
+    // 読み込み中の箱から本体に差し替わる間は、握った要素が外れて文字の大きさが空（NaN）になる。
+    // 毎回 document から引き直し、値が落ち着いてから測る（12.5px の下限は変えない）
+    const smallest = await settled(() =>
+      page.evaluate(() => {
+        const root = document.querySelector(".race-odds-list-tab");
+        if (!root) return null;
+        const min = Math.min(
           ...[...root.querySelectorAll("*")]
             .filter((el) => el.children.length === 0 && el.textContent.trim())
             .map((el) => parseFloat(getComputedStyle(el).fontSize)),
-        ),
-      );
+        );
+        return Number.isFinite(min) ? min : null;
+      }),
+    );
+    expect(smallest, "オッズ一覧の文字の大きさが測れる").not.toBeNull();
     expect(smallest).toBeGreaterThanOrEqual(12.5);
 
     // ページ全体は横スクロールしない

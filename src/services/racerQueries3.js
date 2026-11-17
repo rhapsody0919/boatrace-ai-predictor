@@ -277,64 +277,80 @@ export function getTodaysRacerFormRanking(limit = 10) {
 
         if (currentByRacer.size === 0) return { rising: [], falling: [] };
 
-        // 約90日前時点の直近の記録を探す（cutoff以前・探索窓2週間で最新のもの）
-        const ninetyDaysAgo = new Date();
-        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-        const cutoff = ninetyDaysAgo.toISOString().split("T")[0];
-        const windowStart = new Date(ninetyDaysAgo);
-        windowStart.setDate(windowStart.getDate() - 14);
-        const windowStartStr = windowStart.toISOString().split("T")[0];
+        const pastByRacer = await fetchPastWinRateByRacer(currentByRacer);
 
-        // racer_idのIN句が大きくなりうるため、race_id範囲（全会場横断・2週間分）で
-        // まとめて取得しracer_idでフィルタする
-        const pastRows = [];
-        const pageSize = 1000;
-        let from = 0;
-        while (true) {
-          const { data } = await supabase
-            .from("race_entries")
-            .select("race_id, racer_id, win_rate")
-            .gte("race_id", windowStartStr)
-            .lte("race_id", cutoff)
-            .order("race_id", { ascending: false })
-            .range(from, from + pageSize - 1);
-          if (!data || data.length === 0) break;
-          pastRows.push(...data);
-          if (data.length < pageSize) break;
-          from += pageSize;
-        }
-
-        // race_id降順のため、各racer_idごとに最初に出てくるものが cutoff に最も近い記録
-        const pastByRacer = new Map();
-        pastRows.forEach((row) => {
-          if (!currentByRacer.has(row.racer_id)) return;
-          if (!pastByRacer.has(row.racer_id)) {
-            pastByRacer.set(row.racer_id, row.win_rate);
-          }
-        });
-
-        const withDelta = [...currentByRacer.values()]
-          .map((entry) => {
-            const pastWinRate = pastByRacer.get(entry.racer_id) ?? null;
-            const meta = raceMetaByRaceId.get(entry.race_id);
-            return {
-              ...entry,
-              venue_code: meta?.venue_code ?? null,
-              race_number: meta?.race_number ?? null,
-              past_win_rate: pastWinRate,
-              delta: pastWinRate !== null ? entry.win_rate - pastWinRate : null,
-            };
-          })
-          .filter((row) => row.delta !== null);
-
-        const rising = [...withDelta]
-          .sort((a, b) => b.delta - a.delta)
-          .slice(0, limit);
-        const falling = [...withDelta]
-          .sort((a, b) => a.delta - b.delta)
-          .slice(0, limit);
-
-        return { rising, falling };
+        return buildFormRanking(
+          currentByRacer,
+          pastByRacer,
+          raceMetaByRaceId,
+          limit,
+        );
       },
     );
   }
+
+// getTodaysRacerFormRanking の部品: 選手ごとの過去の全国勝率を取得する
+async function fetchPastWinRateByRacer(currentByRacer) {
+  // 約90日前時点の直近の記録を探す（cutoff以前・探索窓2週間で最新のもの）
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const cutoff = ninetyDaysAgo.toISOString().split("T")[0];
+  const windowStart = new Date(ninetyDaysAgo);
+  windowStart.setDate(windowStart.getDate() - 14);
+  const windowStartStr = windowStart.toISOString().split("T")[0];
+
+  // racer_idのIN句が大きくなりうるため、race_id範囲（全会場横断・2週間分）で
+  // まとめて取得しracer_idでフィルタする
+  const pastRows = [];
+  const pageSize = 1000;
+  let from = 0;
+  while (true) {
+    const { data } = await supabase
+      .from("race_entries")
+      .select("race_id, racer_id, win_rate")
+      .gte("race_id", windowStartStr)
+      .lte("race_id", cutoff)
+      .order("race_id", { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (!data || data.length === 0) break;
+    pastRows.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  // race_id降順のため、各racer_idごとに最初に出てくるものが cutoff に最も近い記録
+  const pastByRacer = new Map();
+  pastRows.forEach((row) => {
+    if (!currentByRacer.has(row.racer_id)) return;
+    if (!pastByRacer.has(row.racer_id)) {
+      pastByRacer.set(row.racer_id, row.win_rate);
+    }
+  });
+  return pastByRacer;
+}
+
+// getTodaysRacerFormRanking の部品: 勝率の差でランキングを作る
+function buildFormRanking(currentByRacer, pastByRacer, raceMetaByRaceId, limit) {
+  const withDelta = [...currentByRacer.values()]
+    .map((entry) => {
+      const pastWinRate = pastByRacer.get(entry.racer_id) ?? null;
+      const meta = raceMetaByRaceId.get(entry.race_id);
+      return {
+        ...entry,
+        venue_code: meta?.venue_code ?? null,
+        race_number: meta?.race_number ?? null,
+        past_win_rate: pastWinRate,
+        delta: pastWinRate !== null ? entry.win_rate - pastWinRate : null,
+      };
+    })
+    .filter((row) => row.delta !== null);
+
+  const rising = [...withDelta]
+    .sort((a, b) => b.delta - a.delta)
+    .slice(0, limit);
+  const falling = [...withDelta]
+    .sort((a, b) => a.delta - b.delta)
+    .slice(0, limit);
+
+  return { rising, falling };
+}

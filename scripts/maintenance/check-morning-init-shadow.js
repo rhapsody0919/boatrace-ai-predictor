@@ -83,6 +83,226 @@ const rateOf = (matched, denominator) =>
   denominator === 0 ? null : matched / denominator;
 const pct = (r) => (r === null ? "算出不能" : `${(r * 100).toFixed(2)}%`);
 
+/** races-init の cursor の要約（会場・レース・艇数・所要時間・再試行）を出す。完了していなければ true（失敗）を返す。 */
+function printCursorSummary(state, cursor) {
+  const elapsedMin =
+    cursor.startedAt && state.last_success_at
+      ? (new Date(state.last_success_at) - new Date(cursor.startedAt)) / 60000
+      : null;
+  console.log(
+    `  mode=${state.mode}（cursorのmode=${cursor.mode}） done=${cursor.done} 会場 ${cursor.settled.length}/${cursor.targets.length}（一覧 ${cursor.venues.length}・初期化済み ${cursor.existing.length}） レース ${cursor.races} 艇 ${cursor.entries}`,
+  );
+  console.log(
+    `  開始 ${cursor.startedAt} 最終成功 ${state.last_success_at} 所要 ${elapsedMin === null ? "-" : elapsedMin.toFixed(1)}分 連続失敗 ${state.consecutive_failures} 直近エラー ${state.last_error ?? "なし"}`,
+  );
+  const attemptCounts = Object.entries(cursor.attempts ?? {}).filter(
+    ([, n]) => n > 1,
+  );
+  if (attemptCounts.length > 0) {
+    console.log(
+      `  再試行した会場: ${attemptCounts.map(([v, n]) => `${v}(${n}回)`).join(", ")}`,
+    );
+  }
+  return !cursor.done;
+}
+
+/** 対象日の races と race_entries を全件取る。 */
+async function fetchRaceAndEntryRows(client, date) {
+  const raceRows = await fetchAll(() =>
+    client
+      .from("races")
+      .select("race_id,start_time,cancellation_status")
+      .gte("race_id", date)
+      .lt("race_id", `${date}~`)
+      .order("race_id"),
+  );
+  const entryRows = await fetchAll(() =>
+    client
+      .from("race_entries")
+      .select(
+        "race_id,boat_number,racer_id,grade,age,motor_number,boat_number_id",
+      )
+      .gte("race_id", date)
+      .lt("race_id", `${date}~`)
+      .order("race_id")
+      .order("boat_number"),
+  );
+  return { raceRows, entryRows };
+}
+
+/** races-init のダイジェスト比較の結果を出す。 */
+function printRaceDigestComparison(
+  cmp,
+  raceRows,
+  entryRows,
+  denominator,
+  rate,
+) {
+  console.log(
+    `\n  DB: races ${raceRows.length}件・race_entries ${entryRows.length}行`,
+  );
+  console.log(
+    `  ダイジェスト: 一致 ${cmp.matched} / 不一致 ${cmp.mismatched.length} / DBに行なし ${cmp.missingInDb.length} / shadowに無い ${cmp.extraInDb.length}`,
+  );
+  console.log(`  一致率: ${pct(rate)}（${cmp.matched}/${denominator}）`);
+  if (cmp.excluded > 0) {
+    console.log(
+      `  中止・順延が確定したため比較対象外: ${cmp.excluded}件（発走時刻が仮の値のため）`,
+    );
+  }
+  for (const m of cmp.mismatched.slice(0, 20)) {
+    console.log(`    不一致 ${m.race_id}: shadow=${m.shadow} db=${m.db}`);
+  }
+  if (cmp.missingInDb.length > 0) {
+    console.log(
+      `    DBに行なし（既存基盤がまだ初期化していない・書けなかった）: ${cmp.missingInDb.slice(0, 10).join(", ")}${cmp.missingInDb.length > 10 ? " …" : ""}`,
+    );
+  }
+  if (cmp.extraInDb.length > 0) {
+    console.log(
+      `    shadowに無い（shadowが取りこぼした会場・レース）: ${cmp.extraInDb.slice(0, 10).join(", ")}${cmp.extraInDb.length > 10 ? " …" : ""}`,
+    );
+  }
+}
+
+/** shadow が記録したレースごとのダイジェストと DB の値を比べて出す。基準を満たさなければ true（失敗）を返す。 */
+async function reportRaceDigests(client, date, state, cursor) {
+  const { raceRows, entryRows } = await fetchRaceAndEntryRows(client, date);
+  // 中止・順延が確定したレースは、公式の発走予定時刻が仮の値に置き換わるため、比較しない
+  const cmp = compareRaceDigests(cursor.digests ?? {}, raceRows, entryRows, {
+    excludeRaceIds: raceRows
+      .filter((r) => isCancellationConfirmed(r.cancellation_status))
+      .map((r) => r.race_id),
+  });
+  const denominator = cmp.matched + cmp.mismatched.length;
+  const rate = rateOf(cmp.matched, denominator);
+  printRaceDigestComparison(cmp, raceRows, entryRows, denominator, rate);
+  let failed = false;
+  if (
+    cmp.mismatched.length > 0 ||
+    cmp.extraInDb.length > 0 ||
+    (rate !== null && rate < 0.99) ||
+    (state.mode === "shadow" && !cursor.done)
+  ) {
+    failed = true;
+  }
+  if (denominator === 0) failed = true;
+  return failed;
+}
+
+/** races-init（scrape_job_state.cursor）の節を出す。基準を満たさなければ true（失敗）を返す。 */
+async function reportRacesInit(client, date) {
+  console.log(`■ races-init（朝の初期化） 対象日 ${date}\n`);
+  const { data: state, error: stateError } = await client
+    .from("scrape_job_state")
+    .select("mode,cursor,last_success_at,last_error,consecutive_failures")
+    .eq("job", "races_init")
+    .maybeSingle();
+  if (stateError) throw new Error(`scrape_job_state: ${stateError.message}`);
+  const cursor = state?.cursor;
+  if (!state) {
+    console.log("  races_init の行がありません（未起動）");
+    return true;
+  }
+  if (!cursor || cursor.targetDate !== date) {
+    console.log(
+      `  cursor の対象日が ${date} ではありません（cursor: ${cursor?.targetDate ?? "なし"}、mode=${state.mode}）。翌日の最初の起動で上書きされた可能性`,
+    );
+    return true;
+  }
+  const incomplete = printCursorSummary(state, cursor);
+  const digestFailed = await reportRaceDigests(client, date, state, cursor);
+  return incomplete || digestFailed;
+}
+
+/** スロットの run_mode・status・outcome の件数と expired を出す。expired があれば true（失敗）を返す。 */
+function printSlotTally(slots) {
+  console.log(`  スロット ${slots.length}件`);
+  const tally = new Map();
+  for (const s of slots) {
+    const k = `${(s.run_mode ?? "未着手").padEnd(6)} ${s.status.padEnd(8)} ${s.outcome ?? "-"}`;
+    tally.set(k, (tally.get(k) ?? 0) + 1);
+  }
+  for (const [k, v] of [...tally].sort()) console.log(`    ${k}: ${v}`);
+  const expired = slots.filter((s) => s.status === "expired");
+  console.log(
+    `  expired: ${expired.length}件（うち未実行 attempts=0: ${expired.filter((s) => (s.attempts ?? 0) === 0).length}件）`,
+  );
+  return expired.length > 0;
+}
+
+/** 完了時刻の、発走30分前（許容幅の終わり）までの余裕を出す。 */
+function printDoneMargins(shadowOk) {
+  const margins = [];
+  for (const s of shadowOk) {
+    if (s.races?.start_time && s.done_at) {
+      const start = slotDeadline(s.race_date, s.races.start_time, 0);
+      margins.push((start - new Date(s.done_at)) / 60000);
+    }
+  }
+  margins.sort((a, b) => a - b);
+  const fmt = (v) => (v === null ? "-" : v.toFixed(0));
+  console.log(
+    `  完了時刻の発走前の余裕: 最小 ${fmt(margins[0] ?? null)}分 / p5 ${fmt(percentile(margins, 5))}分 / p50 ${fmt(percentile(margins, 50))}分（n=${margins.length}）。期限は発走30分前`,
+  );
+}
+
+/** shadow で完了（ok）したスロットのダイジェストを external_predictions と比べて出す。基準を満たさなければ true（失敗）を返す。 */
+async function reportShadowDigests(client, date, shadowOk) {
+  const rows = await fetchAll(() =>
+    client
+      .from("external_predictions")
+      .select("race_date,venue_code,race_no,payload,scraped_at")
+      .eq("source", "pcexpect_official")
+      .eq("race_date", date),
+  );
+  const cmp = comparePcexpectDigests(shadowOk, rows);
+  const denominator = cmp.matched + cmp.mismatched.length;
+  const rate = rateOf(cmp.matched, denominator);
+  console.log(
+    `\n  shadow の完了（ok）: ${shadowOk.length}件 → ダイジェスト 一致 ${cmp.matched} / 不一致 ${cmp.mismatched.length} / DBに行なし ${cmp.missing.length} / digest未記録 ${cmp.noDigest.length}`,
+  );
+  console.log(`  一致率: ${pct(rate)}（${cmp.matched}/${denominator}）`);
+  for (const m of cmp.mismatched.slice(0, 20)) {
+    console.log(`    不一致 ${m.race_id}: shadow=${m.shadow} db=${m.db}`);
+  }
+  const failed = cmp.mismatched.length > 0 || (rate !== null && rate < 0.99);
+  printDoneMargins(shadowOk);
+  return failed;
+}
+
+/** pcexpect（scrape_slots）の節を出す。基準を満たさなければ true（失敗）を返す。 */
+async function reportPcexpect(client, date) {
+  console.log(`\n■ pcexpect（公式コンピュータ予想） 対象日 ${date}\n`);
+  const slots = await fetchAll(() =>
+    client
+      .from("scrape_slots")
+      .select(
+        "race_id,race_date,offset_min,status,attempts,outcome,run_mode,done_at,result_digest,last_error,races(start_time,cancellation_status)",
+      )
+      .eq("job", "pcexpect")
+      .eq("race_date", date)
+      .order("race_id"),
+  );
+  const hasExpired = printSlotTally(slots);
+
+  const shadowOk = slots.filter(
+    (s) => s.run_mode === "shadow" && s.status === "done" && s.outcome === "ok",
+  );
+  if (shadowOk.length > 0) {
+    const digestFailed = await reportShadowDigests(client, date, shadowOk);
+    return hasExpired || digestFailed;
+  }
+  console.log("\n  shadow で完了（ok）したスロットがありません");
+  if (slots.some((s) => s.run_mode === "live")) {
+    console.log(
+      "  （live のスロットのみ。live のデータは、別途 external_predictions の件数で確認）",
+    );
+    return hasExpired;
+  }
+  return true;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const arg = (name) =>
@@ -97,185 +317,10 @@ async function main() {
     process.exit(1);
   }
   const client = createClient(url, key);
-  let failed = false;
 
-  // -------------------------------------------------------------------------
-  // races-init
-  // -------------------------------------------------------------------------
-  console.log(`■ races-init（朝の初期化） 対象日 ${date}\n`);
-  const { data: state, error: stateError } = await client
-    .from("scrape_job_state")
-    .select("mode,cursor,last_success_at,last_error,consecutive_failures")
-    .eq("job", "races_init")
-    .maybeSingle();
-  if (stateError) throw new Error(`scrape_job_state: ${stateError.message}`);
-  const cursor = state?.cursor;
-  if (!state) {
-    console.log("  races_init の行がありません（未起動）");
-    failed = true;
-  } else if (!cursor || cursor.targetDate !== date) {
-    console.log(
-      `  cursor の対象日が ${date} ではありません（cursor: ${cursor?.targetDate ?? "なし"}、mode=${state.mode}）。翌日の最初の起動で上書きされた可能性`,
-    );
-    failed = true;
-  } else {
-    const elapsedMin =
-      cursor.startedAt && state.last_success_at
-        ? (new Date(state.last_success_at) - new Date(cursor.startedAt)) / 60000
-        : null;
-    console.log(
-      `  mode=${state.mode}（cursorのmode=${cursor.mode}） done=${cursor.done} 会場 ${cursor.settled.length}/${cursor.targets.length}（一覧 ${cursor.venues.length}・初期化済み ${cursor.existing.length}） レース ${cursor.races} 艇 ${cursor.entries}`,
-    );
-    console.log(
-      `  開始 ${cursor.startedAt} 最終成功 ${state.last_success_at} 所要 ${elapsedMin === null ? "-" : elapsedMin.toFixed(1)}分 連続失敗 ${state.consecutive_failures} 直近エラー ${state.last_error ?? "なし"}`,
-    );
-    const attemptCounts = Object.entries(cursor.attempts ?? {}).filter(
-      ([, n]) => n > 1,
-    );
-    if (attemptCounts.length > 0) {
-      console.log(
-        `  再試行した会場: ${attemptCounts.map(([v, n]) => `${v}(${n}回)`).join(", ")}`,
-      );
-    }
-    if (!cursor.done) failed = true;
-
-    const raceRows = await fetchAll(() =>
-      client
-        .from("races")
-        .select("race_id,start_time,cancellation_status")
-        .gte("race_id", date)
-        .lt("race_id", `${date}~`)
-        .order("race_id"),
-    );
-    const entryRows = await fetchAll(() =>
-      client
-        .from("race_entries")
-        .select(
-          "race_id,boat_number,racer_id,grade,age,motor_number,boat_number_id",
-        )
-        .gte("race_id", date)
-        .lt("race_id", `${date}~`)
-        .order("race_id")
-        .order("boat_number"),
-    );
-    // 中止・順延が確定したレースは、公式の発走予定時刻が仮の値に置き換わるため、比較しない
-    const cmp = compareRaceDigests(cursor.digests ?? {}, raceRows, entryRows, {
-      excludeRaceIds: raceRows
-        .filter((r) => isCancellationConfirmed(r.cancellation_status))
-        .map((r) => r.race_id),
-    });
-    const denominator = cmp.matched + cmp.mismatched.length;
-    const rate = rateOf(cmp.matched, denominator);
-    console.log(
-      `\n  DB: races ${raceRows.length}件・race_entries ${entryRows.length}行`,
-    );
-    console.log(
-      `  ダイジェスト: 一致 ${cmp.matched} / 不一致 ${cmp.mismatched.length} / DBに行なし ${cmp.missingInDb.length} / shadowに無い ${cmp.extraInDb.length}`,
-    );
-    console.log(`  一致率: ${pct(rate)}（${cmp.matched}/${denominator}）`);
-    if (cmp.excluded > 0) {
-      console.log(
-        `  中止・順延が確定したため比較対象外: ${cmp.excluded}件（発走時刻が仮の値のため）`,
-      );
-    }
-    for (const m of cmp.mismatched.slice(0, 20)) {
-      console.log(`    不一致 ${m.race_id}: shadow=${m.shadow} db=${m.db}`);
-    }
-    if (cmp.missingInDb.length > 0) {
-      console.log(
-        `    DBに行なし（既存基盤がまだ初期化していない・書けなかった）: ${cmp.missingInDb.slice(0, 10).join(", ")}${cmp.missingInDb.length > 10 ? " …" : ""}`,
-      );
-    }
-    if (cmp.extraInDb.length > 0) {
-      console.log(
-        `    shadowに無い（shadowが取りこぼした会場・レース）: ${cmp.extraInDb.slice(0, 10).join(", ")}${cmp.extraInDb.length > 10 ? " …" : ""}`,
-      );
-    }
-    if (
-      cmp.mismatched.length > 0 ||
-      cmp.extraInDb.length > 0 ||
-      (rate !== null && rate < 0.99) ||
-      (state.mode === "shadow" && !cursor.done)
-    ) {
-      failed = true;
-    }
-    if (denominator === 0) failed = true;
-  }
-
-  // -------------------------------------------------------------------------
-  // pcexpect
-  // -------------------------------------------------------------------------
-  console.log(`\n■ pcexpect（公式コンピュータ予想） 対象日 ${date}\n`);
-  const slots = await fetchAll(() =>
-    client
-      .from("scrape_slots")
-      .select(
-        "race_id,race_date,offset_min,status,attempts,outcome,run_mode,done_at,result_digest,last_error,races(start_time,cancellation_status)",
-      )
-      .eq("job", "pcexpect")
-      .eq("race_date", date)
-      .order("race_id"),
-  );
-  console.log(`  スロット ${slots.length}件`);
-  const tally = new Map();
-  for (const s of slots) {
-    const k = `${(s.run_mode ?? "未着手").padEnd(6)} ${s.status.padEnd(8)} ${s.outcome ?? "-"}`;
-    tally.set(k, (tally.get(k) ?? 0) + 1);
-  }
-  for (const [k, v] of [...tally].sort()) console.log(`    ${k}: ${v}`);
-  const expired = slots.filter((s) => s.status === "expired");
-  console.log(
-    `  expired: ${expired.length}件（うち未実行 attempts=0: ${expired.filter((s) => (s.attempts ?? 0) === 0).length}件）`,
-  );
-  if (expired.length > 0) failed = true;
-
-  const shadowOk = slots.filter(
-    (s) => s.run_mode === "shadow" && s.status === "done" && s.outcome === "ok",
-  );
-  if (shadowOk.length > 0) {
-    const rows = await fetchAll(() =>
-      client
-        .from("external_predictions")
-        .select("race_date,venue_code,race_no,payload,scraped_at")
-        .eq("source", "pcexpect_official")
-        .eq("race_date", date),
-    );
-    const cmp = comparePcexpectDigests(shadowOk, rows);
-    const denominator = cmp.matched + cmp.mismatched.length;
-    const rate = rateOf(cmp.matched, denominator);
-    console.log(
-      `\n  shadow の完了（ok）: ${shadowOk.length}件 → ダイジェスト 一致 ${cmp.matched} / 不一致 ${cmp.mismatched.length} / DBに行なし ${cmp.missing.length} / digest未記録 ${cmp.noDigest.length}`,
-    );
-    console.log(`  一致率: ${pct(rate)}（${cmp.matched}/${denominator}）`);
-    for (const m of cmp.mismatched.slice(0, 20)) {
-      console.log(`    不一致 ${m.race_id}: shadow=${m.shadow} db=${m.db}`);
-    }
-    if (cmp.mismatched.length > 0 || (rate !== null && rate < 0.99)) {
-      failed = true;
-    }
-    // 完了時刻の、発走30分前（許容幅の終わり）までの余裕
-    const margins = [];
-    for (const s of shadowOk) {
-      if (s.races?.start_time && s.done_at) {
-        const start = slotDeadline(s.race_date, s.races.start_time, 0);
-        margins.push((start - new Date(s.done_at)) / 60000);
-      }
-    }
-    margins.sort((a, b) => a - b);
-    const fmt = (v) => (v === null ? "-" : v.toFixed(0));
-    console.log(
-      `  完了時刻の発走前の余裕: 最小 ${fmt(margins[0] ?? null)}分 / p5 ${fmt(percentile(margins, 5))}分 / p50 ${fmt(percentile(margins, 50))}分（n=${margins.length}）。期限は発走30分前`,
-    );
-  } else {
-    console.log("\n  shadow で完了（ok）したスロットがありません");
-    if (slots.some((s) => s.run_mode === "live")) {
-      console.log(
-        "  （live のスロットのみ。live のデータは、別途 external_predictions の件数で確認）",
-      );
-    } else {
-      failed = true;
-    }
-  }
+  const racesInitFailed = await reportRacesInit(client, date);
+  const pcexpectFailed = await reportPcexpect(client, date);
+  const failed = racesInitFailed || pcexpectFailed;
 
   if (strict && failed) {
     console.error("\n❌ --strict: 基準を満たしていません（上の出力を確認）");

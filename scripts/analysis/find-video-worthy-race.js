@@ -70,12 +70,8 @@ function scoreCandidate(c) {
   return Math.round(score);
 }
 
-async function main() {
-  const since = new Date();
-  since.setDate(since.getDate() - DAYS);
-  const sinceIso = since.toISOString();
-
-  const predictions = await fetchAll("predictions", (from, to) =>
+async function fetchUnifiedPredictions(sinceIso) {
+  return fetchAll("predictions", (from, to) =>
     supabase
       .from("predictions")
       .select("race_id, feature_contributions, predicted_at")
@@ -84,13 +80,9 @@ async function main() {
       .not("feature_contributions", "is", null)
       .range(from, to),
   );
+}
 
-  if (predictions.length === 0) {
-    console.log(`直近${DAYS}日以内のunified予想データが見つかりませんでした。`);
-    return;
-  }
-
-  const raceIds = predictions.map((p) => p.race_id);
+async function fetchResultMap(raceIds) {
   const chunks = [];
   for (let i = 0; i < raceIds.length; i += 500) {
     chunks.push(raceIds.slice(i, i + 500));
@@ -106,83 +98,105 @@ async function main() {
     if (error) throw new Error(`race_results: ${error.message}`);
     results = results.concat(data);
   }
-  const resultMap = Object.fromEntries(results.map((r) => [r.race_id, r]));
+  return Object.fromEntries(results.map((r) => [r.race_id, r]));
+}
 
-  const candidates = predictions
+function buildCandidate(p, result) {
+  const patterns = p.feature_contributions?.turnPrediction?.patterns || [];
+  const matchedPattern = patterns.find(
+    (pt) => pt.winnerCourse === result.rank1,
+  );
+  const volatilityPercentile = p.feature_contributions?.volatilityPercentile;
+  const volatilityCorrect =
+    typeof volatilityPercentile === "number" &&
+    volatilityPercentile >= HIGH_VOLATILITY_THRESHOLD &&
+    result.rank1 !== 1;
+
+  const { date, venueCode, raceNumber } = parseRaceId(p.race_id);
+
+  const candidate = {
+    raceId: p.race_id,
+    date,
+    venue: VENUE_NAMES[venueCode] || `${venueCode}番`,
+    raceNumber,
+    actualRank1: result.rank1,
+    winningTechnique: result.winning_technique,
+    payoutWin: result.payout_win || 0,
+    turnHit: Boolean(matchedPattern),
+    matchedPattern: matchedPattern
+      ? {
+          technique: matchedPattern.technique,
+          probability: matchedPattern.probability,
+        }
+      : null,
+    volatilityPercentile: volatilityPercentile ?? null,
+    volatilityCorrect,
+    volatilityReasons: p.feature_contributions?.volatilityReasons || [],
+  };
+  candidate.score = scoreCandidate(candidate);
+  return candidate;
+}
+
+function selectCandidates(predictions, resultMap) {
+  return predictions
     .map((p) => {
       const result = resultMap[p.race_id];
       if (!result) return null;
-
-      const patterns = p.feature_contributions?.turnPrediction?.patterns || [];
-      const matchedPattern = patterns.find(
-        (pt) => pt.winnerCourse === result.rank1,
-      );
-      const volatilityPercentile =
-        p.feature_contributions?.volatilityPercentile;
-      const volatilityCorrect =
-        typeof volatilityPercentile === "number" &&
-        volatilityPercentile >= HIGH_VOLATILITY_THRESHOLD &&
-        result.rank1 !== 1;
-
-      const { date, venueCode, raceNumber } = parseRaceId(p.race_id);
-
-      const candidate = {
-        raceId: p.race_id,
-        date,
-        venue: VENUE_NAMES[venueCode] || `${venueCode}番`,
-        raceNumber,
-        actualRank1: result.rank1,
-        winningTechnique: result.winning_technique,
-        payoutWin: result.payout_win || 0,
-        turnHit: Boolean(matchedPattern),
-        matchedPattern: matchedPattern
-          ? {
-              technique: matchedPattern.technique,
-              probability: matchedPattern.probability,
-            }
-          : null,
-        volatilityPercentile: volatilityPercentile ?? null,
-        volatilityCorrect,
-        volatilityReasons: p.feature_contributions?.volatilityReasons || [],
-      };
-      candidate.score = scoreCandidate(candidate);
-      return candidate;
+      return buildCandidate(p, result);
     })
     .filter(Boolean)
     .filter((c) => c.turnHit || c.volatilityCorrect) // どちらも満たさないレースは動画のフックにならない
     .sort((a, b) => b.score - a.score);
+}
+
+function printCandidate(c, i) {
+  const tags = [
+    c.turnHit && c.volatilityCorrect ? "ダブル的中" : null,
+    c.turnHit && !c.volatilityCorrect ? "展開予測的中" : null,
+    !c.turnHit && c.volatilityCorrect ? "イン崩れ警告的中" : null,
+    c.actualRank1 !== 1 ? "アップセット" : null,
+  ].filter(Boolean);
+
+  console.log(
+    `${i + 1}. [score ${c.score}] ${c.raceId}（${c.venue}${c.raceNumber}R、${c.date}） ${tags.join("・")}`,
+  );
+  console.log(
+    `   結果: ${c.actualRank1}号艇が${c.winningTechnique}で1着、払戻${c.payoutWin}円`,
+  );
+  if (c.matchedPattern) {
+    console.log(
+      `   展開予測: ${c.matchedPattern.technique}パターン（確率${Math.round(c.matchedPattern.probability * 100)}%）が的中`,
+    );
+  }
+  if (c.volatilityPercentile !== null) {
+    console.log(
+      `   イン崩れ指数: ${Math.round(c.volatilityPercentile * 100)}%${c.volatilityCorrect ? "（警告的中）" : ""}`,
+    );
+    c.volatilityReasons.forEach((r) => console.log(`     - ${r}`));
+  }
+  console.log("");
+}
+
+async function main() {
+  const since = new Date();
+  since.setDate(since.getDate() - DAYS);
+  const sinceIso = since.toISOString();
+
+  const predictions = await fetchUnifiedPredictions(sinceIso);
+
+  if (predictions.length === 0) {
+    console.log(`直近${DAYS}日以内のunified予想データが見つかりませんでした。`);
+    return;
+  }
+
+  const resultMap = await fetchResultMap(predictions.map((p) => p.race_id));
+  const candidates = selectCandidates(predictions, resultMap);
 
   console.log(
     `\n直近${DAYS}日・候補 ${candidates.length}件中、スコア上位${TOP_N}件:\n`,
   );
 
-  candidates.slice(0, TOP_N).forEach((c, i) => {
-    const tags = [
-      c.turnHit && c.volatilityCorrect ? "ダブル的中" : null,
-      c.turnHit && !c.volatilityCorrect ? "展開予測的中" : null,
-      !c.turnHit && c.volatilityCorrect ? "イン崩れ警告的中" : null,
-      c.actualRank1 !== 1 ? "アップセット" : null,
-    ].filter(Boolean);
-
-    console.log(
-      `${i + 1}. [score ${c.score}] ${c.raceId}（${c.venue}${c.raceNumber}R、${c.date}） ${tags.join("・")}`,
-    );
-    console.log(
-      `   結果: ${c.actualRank1}号艇が${c.winningTechnique}で1着、払戻${c.payoutWin}円`,
-    );
-    if (c.matchedPattern) {
-      console.log(
-        `   展開予測: ${c.matchedPattern.technique}パターン（確率${Math.round(c.matchedPattern.probability * 100)}%）が的中`,
-      );
-    }
-    if (c.volatilityPercentile !== null) {
-      console.log(
-        `   イン崩れ指数: ${Math.round(c.volatilityPercentile * 100)}%${c.volatilityCorrect ? "（警告的中）" : ""}`,
-      );
-      c.volatilityReasons.forEach((r) => console.log(`     - ${r}`));
-    }
-    console.log("");
-  });
+  candidates.slice(0, TOP_N).forEach(printCandidate);
 
   console.log(
     "※ 採用前に必ずPlaywrightで実画面を確認すること（video-producer-prompt.mdステップ2）。\n" +

@@ -123,8 +123,8 @@ const addDays = (date, n) => {
   return d.toISOString().slice(0, 10);
 };
 
-async function main() {
-  const args = process.argv.slice(2);
+/** コマンドライン引数から、集計する日付の範囲と --strict を読む */
+function parseOptions(args) {
   const arg = (name) =>
     args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
   const strict = args.includes("--strict");
@@ -132,16 +132,12 @@ async function main() {
   const days = Number(arg("days") ?? 3);
   const to = date ?? jstToday();
   const from = date ?? addDays(to, -(days - 1));
+  return { strict, from, to };
+}
 
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !key) {
-    console.error("❌ SUPABASE_URL・SUPABASE_SERVICE_KEY が必要です");
-    process.exit(1);
-  }
-  const client = createClient(url, key);
-
-  const slots = await fetchAll(() =>
+/** 予定表の job='odds' のスロットを日付範囲で全件取る */
+function fetchOddsSlots(client, from, to) {
+  return fetchAll(() =>
     client
       .from("scrape_slots")
       .select(
@@ -153,23 +149,29 @@ async function main() {
       .order("race_date")
       .order("race_id"),
   );
-  console.log(`オッズのスロット ${from}〜${to}: ${slots.length}件\n`);
+}
 
-  // 日付×run_mode×状態・outcome
+/** 日付×run_mode×状態・outcome の件数を出す */
+function printTally(slots) {
   const tally = new Map();
   for (const s of slots) {
     const k = `${s.race_date}  ${(s.run_mode ?? "未着手").padEnd(6)} ${s.status.padEnd(8)} ${s.outcome ?? "-"}`;
     tally.set(k, (tally.get(k) ?? 0) + 1);
   }
   for (const [k, v] of [...tally].sort()) console.log(`  ${k}: ${v}`);
+}
 
+/** expired と、うち未実行（attempts=0）の件数を出す */
+function printExpired(slots) {
   const expired = slots.filter((s) => s.status === "expired");
   const unexecuted = expired.filter((s) => (s.attempts ?? 0) === 0);
   console.log(
     `\nexpired: ${expired.length}件（うち未実行 attempts=0: ${unexecuted.length}件）`,
   );
+}
 
-  // 窓別の shadow の完了率
+/** 窓別の shadow の完了率を出す */
+function printWindowCompletion(slots) {
   const shadowSlots = slots.filter(
     (s) =>
       s.run_mode === "shadow" &&
@@ -188,11 +190,10 @@ async function main() {
       `  ${String(w).padStart(4)}分: ${ok}/${inWindow.length} (${((ok / inWindow.length) * 100).toFixed(1)}%)`,
     );
   }
+}
 
-  // shadow のダイジェストの一致率
-  const shadowOk = slots.filter(
-    (s) => s.run_mode === "shadow" && s.status === "done" && s.outcome === "ok",
-  );
+/** shadow で完了したスロットのレースについて、既存基盤（source='gha'）の race_odds の行を取る */
+async function fetchGhaRows(client, shadowOk) {
   const ids = [...new Set(shadowOk.map((s) => s.race_id))];
   const ghaRows = [];
   for (let i = 0; i < ids.length; i += CHUNK) {
@@ -204,6 +205,11 @@ async function main() {
     if (error) throw new Error(`race_odds: ${error.message}`);
     ghaRows.push(...(data ?? []));
   }
+  return ghaRows;
+}
+
+/** ダイジェストの一致率を出し、比較の結果と一致率を返す */
+function printDigestMatch(shadowOk, ghaRows) {
   const cmp = compareOddsShadowDigests(shadowOk, ghaRows);
   const denominator = cmp.matched + cmp.mismatched.length;
   const rate = denominator === 0 ? null : cmp.matched / denominator;
@@ -218,8 +224,11 @@ async function main() {
       `  不一致 ${m.race_id} 窓${m.offset_min}: shadow=${m.shadow} db=${m.db}`,
     );
   }
+  return { cmp, rate };
+}
 
-  // shadow の遅延（完了時刻−期限）と試行回数
+/** shadow の遅延（完了時刻−期限）と試行回数の分布を出す */
+function printDelayAndAttempts(shadowOk) {
   const delays = [];
   const attempts = new Map();
   for (const s of shadowOk) {
@@ -246,6 +255,34 @@ async function main() {
         .join(", ") || "-"
     }`,
   );
+}
+
+async function main() {
+  const { strict, from, to } = parseOptions(process.argv.slice(2));
+
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) {
+    console.error("❌ SUPABASE_URL・SUPABASE_SERVICE_KEY が必要です");
+    process.exit(1);
+  }
+  const client = createClient(url, key);
+
+  const slots = await fetchOddsSlots(client, from, to);
+  console.log(`オッズのスロット ${from}〜${to}: ${slots.length}件\n`);
+
+  printTally(slots);
+  printExpired(slots);
+  printWindowCompletion(slots);
+
+  // shadow のダイジェストの一致率
+  const shadowOk = slots.filter(
+    (s) => s.run_mode === "shadow" && s.status === "done" && s.outcome === "ok",
+  );
+  const ghaRows = await fetchGhaRows(client, shadowOk);
+  const { cmp, rate } = printDigestMatch(shadowOk, ghaRows);
+
+  printDelayAndAttempts(shadowOk);
 
   if (strict && (cmp.mismatched.length > 0 || (rate !== null && rate < 0.99))) {
     console.error("\n❌ --strict: 一致率が99%未満、または不一致があります");

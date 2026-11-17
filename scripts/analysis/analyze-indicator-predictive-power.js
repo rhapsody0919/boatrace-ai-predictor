@@ -110,14 +110,8 @@ function rankValues(values, higherIsBetter) {
   return rankMap; // number -> rank(1-5)、値なしはmapに含まれない
 }
 
-async function main() {
-  const { from, to } = parseArgs();
-  if (!supabase) {
-    console.error("Supabase未設定");
-    process.exit(1);
-  }
-
-  console.log("対象レース取得中...");
+// 着順の揃った有効レースを取得する
+async function fetchValidResults(from, to) {
   // ⚠️ Supabaseのデフォルトlimitは1000行。fetchAllで.range()ページネーションする
   const results = await fetchAll(
     "race_results",
@@ -129,78 +123,71 @@ async function main() {
       return query.order("race_id");
     },
   );
-  const validResults = results.filter((r) => !r.is_cancelled && !r.is_no_race);
-  console.log(`  ${validResults.length}件\n`);
+  return results.filter((r) => !r.is_cancelled && !r.is_no_race);
+}
 
-  const racerStatsCache = new Map();
-  // key -> rank(1-5) -> count
-  const rankCounts = Object.fromEntries(
-    INDICATORS.map((ind) => [
-      ind.key,
-      { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, total: 0 },
-    ]),
-  );
+async function fetchEntries(raceId) {
+  const { data: entries } = await supabase
+    .from("race_entries")
+    .select("boat_number, racer_id, win_rate, local_win_rate, motor_2rate")
+    .eq("race_id", raceId)
+    .order("boat_number");
+  return entries;
+}
 
-  let processed = 0;
-  for (const result of validResults) {
-    const raceId = result.race_id;
-    const { data: entries } = await supabase
-      .from("race_entries")
-      .select("boat_number, racer_id, win_rate, local_win_rate, motor_2rate")
-      .eq("race_id", raceId)
-      .order("boat_number");
-    if (!entries || entries.length < 6) continue;
-
-    const racerIdsToFetch = entries
-      .map((e) => e.racer_id)
-      .filter((id) => id != null && !racerStatsCache.has(id));
-    if (racerIdsToFetch.length > 0) {
-      const { data: statsRows } = await supabase
-        .from("racer_aggregated_stats")
-        .select("racer_id, avg_st, course_race_counts")
-        .in("racer_id", racerIdsToFetch)
-        .eq("venue_code", 0);
-      for (const s of statsRows ?? []) racerStatsCache.set(s.racer_id, s);
-    }
-
-    const players = entries.map((e) => ({
-      number: e.boat_number,
-      course: e.boat_number,
-      racerId: e.racer_id,
-      winRate: e.win_rate,
-      localWinRate: e.local_win_rate,
-      motor2Rate: e.motor_2rate,
-    }));
-
-    const remaining = players.filter((p) => p.number !== result.rank1);
-    if (remaining.length !== 5) continue;
-
-    const indicatorData = await fetchRaceIndicatorData(
-      raceId,
-      entries.map((e) => ({ boatNumber: e.boat_number, racerId: e.racer_id })),
-    );
-    const ctx = {
-      racerFormByBoat: byBoat(indicatorData?.racerForm, "boatNumber"),
-      stPredictabilityByBoat: byBoat(indicatorData?.stPredictability),
-      exhibitionByBoat: byBoat(indicatorData?.exhibitionTrend),
-      returnRateByBoat: byBoat(indicatorData?.returnRate),
-      racerStatsMap: racerStatsCache,
-    };
-
-    for (const ind of INDICATORS) {
-      const values = extractIndicatorValues(ind.key, remaining, ctx);
-      const rankMap = rankValues(values, ind.higherIsBetter);
-      const rank = rankMap.get(result.rank2);
-      if (rank == null) continue; // 2着艇の値が欠損 or ランク付け対象外
-      rankCounts[ind.key][rank] += 1;
-      rankCounts[ind.key].total += 1;
-    }
-
-    processed += 1;
-    if (processed % 100 === 0)
-      console.log(`  ${processed}/${validResults.length}件処理...`);
+// まだキャッシュに無い選手の集計を取得してキャッシュへ足す
+async function fillRacerStatsCache(entries, racerStatsCache) {
+  const racerIdsToFetch = entries
+    .map((e) => e.racer_id)
+    .filter((id) => id != null && !racerStatsCache.has(id));
+  if (racerIdsToFetch.length > 0) {
+    const { data: statsRows } = await supabase
+      .from("racer_aggregated_stats")
+      .select("racer_id, avg_st, course_race_counts")
+      .in("racer_id", racerIdsToFetch)
+      .eq("venue_code", 0);
+    for (const s of statsRows ?? []) racerStatsCache.set(s.racer_id, s);
   }
+}
 
+function toPlayers(entries) {
+  return entries.map((e) => ({
+    number: e.boat_number,
+    course: e.boat_number,
+    racerId: e.racer_id,
+    winRate: e.win_rate,
+    localWinRate: e.local_win_rate,
+    motor2Rate: e.motor_2rate,
+  }));
+}
+
+async function buildIndicatorContext(raceId, entries, racerStatsCache) {
+  const indicatorData = await fetchRaceIndicatorData(
+    raceId,
+    entries.map((e) => ({ boatNumber: e.boat_number, racerId: e.racer_id })),
+  );
+  return {
+    racerFormByBoat: byBoat(indicatorData?.racerForm, "boatNumber"),
+    stPredictabilityByBoat: byBoat(indicatorData?.stPredictability),
+    exhibitionByBoat: byBoat(indicatorData?.exhibitionTrend),
+    returnRateByBoat: byBoat(indicatorData?.returnRate),
+    racerStatsMap: racerStatsCache,
+  };
+}
+
+// 2着艇のレース内順位を指標ごとに集計へ足す
+function tallyRanks(rankCounts, remaining, result, ctx) {
+  for (const ind of INDICATORS) {
+    const values = extractIndicatorValues(ind.key, remaining, ctx);
+    const rankMap = rankValues(values, ind.higherIsBetter);
+    const rank = rankMap.get(result.rank2);
+    if (rank == null) continue; // 2着艇の値が欠損 or ランク付け対象外
+    rankCounts[ind.key][rank] += 1;
+    rankCounts[ind.key].total += 1;
+  }
+}
+
+function printRankReport(rankCounts) {
   console.log("\n=== 指標別 予測力（2着艇のレース内順位分布） ===");
   console.log(
     "ランダムなら各順位20%均等。1位（最良値）への偏りが大きいほど予測力が高い\n",
@@ -217,6 +204,50 @@ async function main() {
       `${ind.label.padEnd(12)}: N=${String(c.total).padStart(4)}  1位=${pct(1).padStart(5)}% 2位=${pct(2).padStart(5)}% 3位=${pct(3).padStart(5)}% 4位=${pct(4).padStart(5)}% 5位=${pct(5).padStart(5)}%  [上位2位計=${top2}%]`,
     );
   }
+}
+
+async function main() {
+  const { from, to } = parseArgs();
+  if (!supabase) {
+    console.error("Supabase未設定");
+    process.exit(1);
+  }
+
+  console.log("対象レース取得中...");
+  const validResults = await fetchValidResults(from, to);
+  console.log(`  ${validResults.length}件\n`);
+
+  const racerStatsCache = new Map();
+  // key -> rank(1-5) -> count
+  const rankCounts = Object.fromEntries(
+    INDICATORS.map((ind) => [
+      ind.key,
+      { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, total: 0 },
+    ]),
+  );
+
+  let processed = 0;
+  for (const result of validResults) {
+    const raceId = result.race_id;
+    const entries = await fetchEntries(raceId);
+    if (!entries || entries.length < 6) continue;
+
+    await fillRacerStatsCache(entries, racerStatsCache);
+
+    const remaining = toPlayers(entries).filter(
+      (p) => p.number !== result.rank1,
+    );
+    if (remaining.length !== 5) continue;
+
+    const ctx = await buildIndicatorContext(raceId, entries, racerStatsCache);
+    tallyRanks(rankCounts, remaining, result, ctx);
+
+    processed += 1;
+    if (processed % 100 === 0)
+      console.log(`  ${processed}/${validResults.length}件処理...`);
+  }
+
+  printRankReport(rankCounts);
 
   console.log("\n完了");
 }

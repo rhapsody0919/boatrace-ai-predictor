@@ -51,7 +51,8 @@ const check = (label, ok) => {
 const chart = read("src/components/analysis/MotorConditionChart.jsx");
 const grid = read("src/components/analysis/MotorWakuStatsGrid.jsx");
 const card = read("src/components/racer/RacerMotorStatusCard.jsx");
-const racerService = read("src/services/racerService.js");
+// 選手ページの今節のモーター（RA40 BOA-1673 で racerService.js から移した）
+const racerMotor = read("src/services/motorQueries7.js");
 
 check(
   "枠番別成績の表に、横スクロールの目印（hscroll-hint・›）を付ける",
@@ -89,7 +90,7 @@ check(
 );
 check(
   "選手ページ: 同じ日に2回走った日は、横軸にレース番号を添える",
-  racerService.includes("raceNo: Number(e.race_id.slice(-2))") &&
+  racerMotor.includes("raceNo: Number(e.race_id.slice(-2))") &&
     // 2回走った日が1日でもあれば全部の点に付ける（BOA-557。付く点と付かない点が混ざらない）
     card.includes("runsOnDate.values()].some((n) => n > 1)"),
 );

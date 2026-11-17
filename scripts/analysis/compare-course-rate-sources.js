@@ -256,14 +256,8 @@ function pairedDiff(pickA, pickB) {
 
 const f = (x, d = 1) => (x === null || x === undefined ? "-" : x.toFixed(d));
 
-async function main() {
-  const { fromTest, cache, out } = parseArgs();
-  if (!supabase) {
-    console.error("Supabase未設定");
-    process.exit(1);
-  }
-  const { results, entries } = await loadData(cache);
-
+/** 結果と出走を突き合わせて、評価対象のレース（出走6以上・中止なし）を作る */
+function buildRaces(results, entries) {
   const entriesByRace = new Map();
   for (const e of entries) {
     if (!entriesByRace.has(e.race_id)) entriesByRace.set(e.race_id, []);
@@ -290,9 +284,11 @@ async function main() {
     });
   }
   races.sort((a, b) => (a.raceId < b.raceId ? -1 : 1));
-  console.log(`対象レース: ${races.length}件（評価開始 ${fromTest}）\n`);
+  return races;
+}
 
-  // 日ごとに、その日より前の集計で評価してから、その日のレースで集計を更新する
+// 日ごとに、その日より前の集計で評価してから、その日のレースで集計を更新する
+function walkForward(races, fromTest) {
   const store = makeStore();
   const evaluated = [];
   let i = 0;
@@ -308,98 +304,125 @@ async function main() {
     for (const race of day) update(store, race);
     i = j;
   }
+  return evaluated;
+}
+
+function printCoverage(evaluated, min) {
+  // カバー率
+  console.log(
+    "\n[カバー率] courseRateが算出できた艇の割合 / 複勝予想の対象レース(有効艇2以上)",
+  );
+  const coverage = {};
+  for (const v of VARIANTS) {
+    let boatsValid = 0;
+    let boatsAll = 0;
+    let racesOk = 0;
+    for (const race of evaluated) {
+      const valid = race.snap.filter((b) => rateOf(b[v], min) !== null).length;
+      boatsValid += valid;
+      boatsAll += race.snap.length;
+      if (valid >= 2) racesOk += 1;
+    }
+    coverage[v] = {
+      boatPct: (boatsValid / boatsAll) * 100,
+      racePct: (racesOk / evaluated.length) * 100,
+    };
+    console.log(
+      `  ${v.padEnd(8)} 艇 ${f(coverage[v].boatPct)}% / レース ${f(coverage[v].racePct)}%`,
+    );
+  }
+  return coverage;
+}
+
+// 予測力（各方式の有効データ）
+function printPredictive(evaluated, min) {
+  console.log(
+    "\n[予測力] 1着艇を除く5艇のうち、2着艇が上位2位に入る割合（ランダムは有効艇数から算出）",
+  );
+  const pred = {};
+  for (const v of VARIANTS) {
+    pred[v] = predictive(evaluated, v, min);
+    console.log(
+      `  ${v.padEnd(8)} n=${String(pred[v].n).padStart(6)}  上位2位計 ${f(pred[v].top2)}%  (ランダム ${f(pred[v].chance)}%、差 ${f(pred[v].top2 - pred[v].chance)}pt)`,
+    );
+  }
+  return pred;
+}
+
+// 複勝予想（各方式の有効データ）
+function printPlacePicks(evaluated, min) {
+  console.log("\n[複勝予想] 上位2艇、各100円（各方式で有効なレースのみ）");
+  const picks = {};
+  const pickSummary = {};
+  for (const v of VARIANTS) {
+    picks[v] = placePick(evaluated, v, min);
+    pickSummary[v] = summarizePick(picks[v]);
+    console.log(
+      `  ${v.padEnd(8)} ${String(pickSummary[v].n).padStart(6)}件 | 的中 ${f(pickSummary[v].hitRate)}% | 回収 ${f(pickSummary[v].recovery)}%`,
+    );
+  }
+  return { picks, pickSummary };
+}
+
+// 共通レース上の対応のある差（old, newWaku, newExpの全てで有効なレース）
+function printCommonComparison(picks) {
+  const common = new Set(
+    [...picks.old.keys()].filter(
+      (id) => picks.newWaku.has(id) && picks.newExp.has(id),
+    ),
+  );
+  const restrict = (m) => new Map([...m].filter(([id]) => common.has(id)));
+  console.log(
+    `\n[共通レース ${common.size}件での比較] 3方式すべてで有効なレースに絞った複勝予想と、oldとの差（±は標準誤差）`,
+  );
+  const commonRes = {};
+  for (const v of ["old", "newWaku", "newExp"]) {
+    const s = summarizePick(restrict(picks[v]));
+    commonRes[v] = s;
+    const d =
+      v === "old" ? null : pairedDiff(restrict(picks[v]), restrict(picks.old));
+    commonRes[v].diff = d;
+    console.log(
+      `  ${v.padEnd(8)} 的中 ${f(s.hitRate)}% | 回収 ${f(s.recovery)}%` +
+        (d
+          ? ` | 対old 的中 ${f(d.hitDiff, 2)}±${f(d.hitSe, 2)}pt 回収 ${f(d.recDiff, 2)}±${f(d.recSe, 2)}pt`
+          : ""),
+    );
+  }
+  return { n: common.size, ...commonRes };
+}
+
+/** 走数の下限ごとの比較を表示し、レポート用の値を返す */
+function reportForMin(evaluated, min) {
+  console.log(
+    `==================== 走数の下限 ${min}走以上 ====================`,
+  );
+  const coverage = printCoverage(evaluated, min);
+  const pred = printPredictive(evaluated, min);
+  const { picks, pickSummary } = printPlacePicks(evaluated, min);
+  const common = printCommonComparison(picks);
+  console.log("");
+  return { coverage, pred, pickSummary, common };
+}
+
+async function main() {
+  const { fromTest, cache, out } = parseArgs();
+  if (!supabase) {
+    console.error("Supabase未設定");
+    process.exit(1);
+  }
+  const { results, entries } = await loadData(cache);
+
+  const races = buildRaces(results, entries);
+  console.log(`対象レース: ${races.length}件（評価開始 ${fromTest}）\n`);
+
+  const evaluated = walkForward(races, fromTest);
   console.log(`評価対象: ${evaluated.length}レース\n`);
 
   const report = { fromTest, races: evaluated.length, byMin: {} };
 
   for (const min of MIN_SAMPLES_LIST) {
-    console.log(
-      `==================== 走数の下限 ${min}走以上 ====================`,
-    );
-
-    // カバー率
-    console.log(
-      "\n[カバー率] courseRateが算出できた艇の割合 / 複勝予想の対象レース(有効艇2以上)",
-    );
-    const coverage = {};
-    for (const v of VARIANTS) {
-      let boatsValid = 0;
-      let boatsAll = 0;
-      let racesOk = 0;
-      for (const race of evaluated) {
-        const valid = race.snap.filter(
-          (b) => rateOf(b[v], min) !== null,
-        ).length;
-        boatsValid += valid;
-        boatsAll += race.snap.length;
-        if (valid >= 2) racesOk += 1;
-      }
-      coverage[v] = {
-        boatPct: (boatsValid / boatsAll) * 100,
-        racePct: (racesOk / evaluated.length) * 100,
-      };
-      console.log(
-        `  ${v.padEnd(8)} 艇 ${f(coverage[v].boatPct)}% / レース ${f(coverage[v].racePct)}%`,
-      );
-    }
-
-    // 予測力（各方式の有効データ）
-    console.log(
-      "\n[予測力] 1着艇を除く5艇のうち、2着艇が上位2位に入る割合（ランダムは有効艇数から算出）",
-    );
-    const pred = {};
-    for (const v of VARIANTS) {
-      pred[v] = predictive(evaluated, v, min);
-      console.log(
-        `  ${v.padEnd(8)} n=${String(pred[v].n).padStart(6)}  上位2位計 ${f(pred[v].top2)}%  (ランダム ${f(pred[v].chance)}%、差 ${f(pred[v].top2 - pred[v].chance)}pt)`,
-      );
-    }
-
-    // 複勝予想（各方式の有効データ）
-    console.log("\n[複勝予想] 上位2艇、各100円（各方式で有効なレースのみ）");
-    const picks = {};
-    const pickSummary = {};
-    for (const v of VARIANTS) {
-      picks[v] = placePick(evaluated, v, min);
-      pickSummary[v] = summarizePick(picks[v]);
-      console.log(
-        `  ${v.padEnd(8)} ${String(pickSummary[v].n).padStart(6)}件 | 的中 ${f(pickSummary[v].hitRate)}% | 回収 ${f(pickSummary[v].recovery)}%`,
-      );
-    }
-
-    // 共通レース上の対応のある差（old, newWaku, newExpの全てで有効なレース）
-    const common = new Set(
-      [...picks.old.keys()].filter(
-        (id) => picks.newWaku.has(id) && picks.newExp.has(id),
-      ),
-    );
-    const restrict = (m) => new Map([...m].filter(([id]) => common.has(id)));
-    console.log(
-      `\n[共通レース ${common.size}件での比較] 3方式すべてで有効なレースに絞った複勝予想と、oldとの差（±は標準誤差）`,
-    );
-    const commonRes = {};
-    for (const v of ["old", "newWaku", "newExp"]) {
-      const s = summarizePick(restrict(picks[v]));
-      commonRes[v] = s;
-      const d =
-        v === "old"
-          ? null
-          : pairedDiff(restrict(picks[v]), restrict(picks.old));
-      commonRes[v].diff = d;
-      console.log(
-        `  ${v.padEnd(8)} 的中 ${f(s.hitRate)}% | 回収 ${f(s.recovery)}%` +
-          (d
-            ? ` | 対old 的中 ${f(d.hitDiff, 2)}±${f(d.hitSe, 2)}pt 回収 ${f(d.recDiff, 2)}±${f(d.recSe, 2)}pt`
-            : ""),
-      );
-    }
-    report.byMin[min] = {
-      coverage,
-      pred,
-      pickSummary,
-      common: { n: common.size, ...commonRes },
-    };
-    console.log("");
+    report.byMin[min] = reportForMin(evaluated, min);
   }
 
   if (out) {

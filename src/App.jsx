@@ -10,7 +10,8 @@ import Terms from "./components/Terms";
 import Contact from "./components/Contact";
 import HitRaces from "./components/HitRaces";
 import { getLatestPosts } from "./data/blogPosts";
-import { dataService } from "./services/dataService";
+import { clearCache } from "./services/core.js";
+import { getRaces } from "./services/scheduleQueries.js";
 import { formatDateLongLocalized } from "./utils/formatters";
 
 // タブページ（/hit-races・/accuracy・/privacy・/terms・/contact）のシェル。
@@ -54,7 +55,7 @@ function App({ tab }) {
   // データ更新時刻の取得（HitRacesのUpdateStatus表示用）
   useEffect(() => {
     if (activeTab !== "hit-races") return;
-    dataService.getRaces().then((result) => {
+    getRaces().then((result) => {
       if (result?.scrapedAt) setLastUpdated(result.scrapedAt);
     });
   }, [activeTab]);
@@ -62,8 +63,8 @@ function App({ tab }) {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      dataService.clearCache();
-      const result = await dataService.getRaces();
+      clearCache();
+      const result = await getRaces();
       if (result?.scrapedAt) setLastUpdated(result.scrapedAt);
     } finally {
       setIsRefreshing(false);

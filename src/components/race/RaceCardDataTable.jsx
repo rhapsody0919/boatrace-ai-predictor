@@ -6,24 +6,13 @@
  * 行定義はDataRaceTableと同じraceIndicators.jsxのbuildIndicatorRowsを共有する。
  */
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { racerPagePath } from "../../utils/racerPagePath";
 import { useTranslation } from "react-i18next";
-import { BOAT_COLORS } from "../../utils/colors";
 import { useRaceAnalysisData } from "../../hooks/useRaceAnalysisData";
 import { buildIndicatorRows } from "./raceIndicators";
 import InlineFetchError from "../InlineFetchError";
-import { splitRacerName } from "../../utils/racerName";
+import { sortPlayers, partitionRows } from "./RaceCardDataTableLogic";
+import { RcdtHead, RcdtRows } from "./RaceCardDataTableParts";
 import "./RaceCardDataTable.css";
-
-const ALWAYS_VISIBLE_KEYS = ["winRate", "localWinRate", "motor"];
-
-const nameParts = (name) =>
-  splitRacerName(name).map((part, i) => (
-    <span key={i} className="rcdt-name-part">
-      {part}
-    </span>
-  ));
 
 function RaceCardDataTable({ raceId, players, linkRacerNames = false }) {
   const { t } = useTranslation();
@@ -33,9 +22,7 @@ function RaceCardDataTable({ raceId, players, linkRacerNames = false }) {
   // 内部のuseEffectが何もしないため、フェッチが発生しない）
   const analysis = useRaceAnalysisData(expanded ? raceId : null);
 
-  const sortedPlayers = [...(players ?? [])].sort(
-    (a, b) => a.number - b.number,
-  );
+  const sortedPlayers = sortPlayers(players);
   if (sortedPlayers.length === 0) return null;
 
   const rows = buildIndicatorRows({
@@ -44,25 +31,7 @@ function RaceCardDataTable({ raceId, players, linkRacerNames = false }) {
     analysis,
     pending: analysis.pending,
   });
-  const alwaysRows = rows.filter((r) => ALWAYS_VISIBLE_KEYS.includes(r.key));
-  const collapsedRows = rows.filter(
-    (r) => !ALWAYS_VISIBLE_KEYS.includes(r.key),
-  );
-
-  const cellClass = (boat, best) =>
-    `rcdt-cell ${best?.has(boat) ? "rcdt-best" : ""}`;
-
-  const renderRows = (list) =>
-    list.map((row) => (
-      <tr key={row.key}>
-        <td className="rcdt-label-cell">{row.shortLabel}</td>
-        {sortedPlayers.map((p) => (
-          <td key={p.number} className={cellClass(p.number, row.best)}>
-            {row.render(p)}
-          </td>
-        ))}
-      </tr>
-    ));
+  const { alwaysRows, collapsedRows } = partitionRows(rows);
 
   return (
     <div className="rcdt" onClick={(e) => e.stopPropagation()}>
@@ -70,41 +39,13 @@ function RaceCardDataTable({ raceId, players, linkRacerNames = false }) {
       {analysis.hasFailure && <InlineFetchError onRetry={analysis.reload} />}
       <div className="rcdt-table-wrapper">
         <table className="rcdt-table">
-          <thead>
-            <tr>
-              <th className="rcdt-label-th"></th>
-              {sortedPlayers.map((p) => {
-                const color = BOAT_COLORS[p.number] || {};
-                return (
-                  <th
-                    key={p.number}
-                    className="rcdt-boat-th"
-                    style={{ background: color.bg, color: color.text }}
-                  >
-                    {p.number}
-                  </th>
-                );
-              })}
-            </tr>
-            <tr>
-              <th className="rcdt-label-th"></th>
-              {sortedPlayers.map((p) => (
-                <th key={p.number} className="rcdt-name-th" translate="no">
-                  {/* 姓と名を別の塊にして、折り返すなら境目で折る。1つの文字列だと
-                      「小森信/雄」のように名前の途中で折れ、姓名の区切りを読み違える
-                      （出走表の名前は姓と名の間を全角スペースで詰めてある。BOA-559） */}
-                  {linkRacerNames && p.racerId ? (
-                    <Link to={racerPagePath(p.racerId)} translate="no">
-                      {nameParts(p.name)}
-                    </Link>
-                  ) : (
-                    nameParts(p.name)
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>{renderRows(alwaysRows)}</tbody>
+          <RcdtHead
+            sortedPlayers={sortedPlayers}
+            linkRacerNames={linkRacerNames}
+          />
+          <tbody>
+            <RcdtRows list={alwaysRows} sortedPlayers={sortedPlayers} />
+          </tbody>
         </table>
       </div>
 
@@ -123,7 +64,9 @@ function RaceCardDataTable({ raceId, players, linkRacerNames = false }) {
       {expanded && (
         <div className="rcdt-table-wrapper">
           <table className="rcdt-table">
-            <tbody>{renderRows(collapsedRows)}</tbody>
+            <tbody>
+              <RcdtRows list={collapsedRows} sortedPlayers={sortedPlayers} />
+            </tbody>
           </table>
         </div>
       )}

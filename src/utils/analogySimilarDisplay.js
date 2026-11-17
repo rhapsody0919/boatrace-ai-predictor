@@ -69,6 +69,97 @@ export function topBoat(nat) {
   return best + 1;
 }
 
+const K = "aiPredictionTab.analogy.similar.values";
+const six = (arr, f) => (Array.isArray(arr) ? arr.map(f).join("/") : "—");
+const pct = (v) => (isNum(v) ? `${Math.round(v * 100)}%` : "—");
+const rankText = (r, t) => (r ? t(`${K}.rank`, { n: r }) : "—");
+
+function raceNumberBand(d, t) {
+  return isNum(d.rn)
+    ? t(`${K}.rnBand`, {
+        band: t(`${K}.bands.${Math.floor((d.rn - 1) / 4)}`),
+        rn: d.rn,
+      })
+    : "—";
+}
+
+function classAll6(d) {
+  const c = (d.cls ?? []).map((v) => CLASS[v] ?? "—");
+  return c.length && c.every((x) => x === c[0])
+    ? `${c[0]}×6`
+    : c.join("/") || "—";
+}
+
+function winGapBand(d, t) {
+  const g = gapOf(d.nat);
+  return g
+    ? minus(t(`${K}.gap`, { gap: g.gap.toFixed(2), band: g.band + 1 }))
+    : "—";
+}
+
+function topBoatText(d, t) {
+  const b = topBoat(d.nat);
+  return b ? t("aiPredictionTab.analogy.boat", { n: b }) : "—";
+}
+
+function exhTimeDiff6(d) {
+  return minus(
+    six(d.exh_diff, (v) =>
+      isNum(v) ? `${v > 0 ? "+" : ""}${v.toFixed(2)}` : "—",
+    ),
+  );
+}
+
+/** 項目のキー → (表示用の値, i18n) の整形。ここに無いキーは "—" */
+const ITEM_FORMATTERS = {
+  venue: (d, t) => (isNum(d.venue) ? venueLabel(d.venue, t) : "—"),
+  race_number_band: raceNumberBand,
+  race_number: (d) => (isNum(d.rn) ? `${d.rn}R` : "—"),
+  grade: (d, t) =>
+    d.grade ? t(`aiPredictionTab.analogy.grades.${d.grade}`, d.grade) : "—",
+  grade_bin: (d, t) =>
+    d.grade ? t(`${K}.${d.grade === "ippan" ? "ippan" : "notIppan"}`) : "—",
+  round: (d, t) =>
+    d.round
+      ? t(`aiPredictionTab.analogy.outlook.roundNames.${d.round}`, d.round)
+      : "—",
+  series_day: (d, t) => (isNum(d.sday) ? t(`${K}.day`, { n: d.sday }) : "—"),
+  is_final_day: (d, t) =>
+    isNum(d.final) ? t(`${K}.${d.final ? "final" : "notFinal"}`) : "—",
+  class_all6: classAll6,
+  n_A1: (d, t) =>
+    t(`${K}.nA1`, { n: (d.cls ?? []).filter((v) => v === 4).length }),
+  b1_class: (d) => CLASS[d.cls?.[0]] ?? "—",
+  win_gap_band: winGapBand,
+  top_boat: topBoatText,
+  nat_win_6: (d) => six(d.nat, (v) => fx(v, 2)),
+  nat_win_rank_4: (d) => six(d.nat_rank, (v) => fx(v, 0)),
+  b1_nat_win: (d) => fx(d.nat?.[0], 2),
+  loc_win_6: (d) => six(d.loc, (v) => fx(v, 2)),
+  recent_win30_6: (d) => six(d.rw, pct),
+  recent_top3_30_6: (d) => six(d.rt3, pct),
+  st_mean30_6: (d) => six(d.st, (v) => fx(v, 2)),
+  b1_st_rank_band: (d, t) => rankText(b1Rank(d.st, false), t),
+  motor_2_6: (d) => six(d.motor, (v) => fx(v, 1)),
+  b1_motor_rank_band: (d, t) => rankText(b1Rank(d.motor), t),
+  boat_2_6: (d) => six(d.boat, (v) => fx(v, 1)),
+  b1_boat_rank_band: (d, t) => rankText(b1Rank(d.boat), t),
+  age_6: (d) => six(d.age, (v) => fx(v, 0)),
+  weight_6: (d) => six(d.weight, (v) => fx(v, 1)),
+  n_local: (d, t) =>
+    Array.isArray(d.local)
+      ? t(`${K}.local`, { n: d.local.filter((v) => v === 1).length })
+      : "—",
+  weather: (d, t) =>
+    isNum(d.weather) && WEATHER[d.weather]
+      ? t(`${K}.weather.${WEATHER[d.weather]}`)
+      : "—",
+  wind_bin: (d) => (isNum(d.ws) ? `${d.ws}m` : "—"),
+  wind_vector: (d) => (isNum(d.ws) ? `${d.ws}m` : "—"),
+  wave_bin: (d) => (isNum(d.wave) ? `${d.wave}cm` : "—"),
+  exh_time_diff_6: exhTimeDiff6,
+};
+
 /**
  * 1項目の表示（今日の値・各件の値）
  * @param {string} key 33項目のキー
@@ -77,113 +168,7 @@ export function topBoat(nat) {
  */
 export function itemValue(key, d, t) {
   if (!d) return "—";
-  const k = "aiPredictionTab.analogy.similar.values";
-  const six = (arr, f) => (Array.isArray(arr) ? arr.map(f).join("/") : "—");
-  const pct = (v) => (isNum(v) ? `${Math.round(v * 100)}%` : "—");
-  switch (key) {
-    case "venue":
-      return isNum(d.venue) ? venueLabel(d.venue, t) : "—";
-    case "race_number_band":
-      return isNum(d.rn)
-        ? t(`${k}.rnBand`, {
-            band: t(`${k}.bands.${Math.floor((d.rn - 1) / 4)}`),
-            rn: d.rn,
-          })
-        : "—";
-    case "race_number":
-      return isNum(d.rn) ? `${d.rn}R` : "—";
-    case "grade":
-      return d.grade
-        ? t(`aiPredictionTab.analogy.grades.${d.grade}`, d.grade)
-        : "—";
-    case "grade_bin":
-      return d.grade
-        ? t(`${k}.${d.grade === "ippan" ? "ippan" : "notIppan"}`)
-        : "—";
-    case "round":
-      return d.round
-        ? t(`aiPredictionTab.analogy.outlook.roundNames.${d.round}`, d.round)
-        : "—";
-    case "series_day":
-      return isNum(d.sday) ? t(`${k}.day`, { n: d.sday }) : "—";
-    case "is_final_day":
-      return isNum(d.final) ? t(`${k}.${d.final ? "final" : "notFinal"}`) : "—";
-    case "class_all6": {
-      const c = (d.cls ?? []).map((v) => CLASS[v] ?? "—");
-      return c.length && c.every((x) => x === c[0])
-        ? `${c[0]}×6`
-        : c.join("/") || "—";
-    }
-    case "n_A1":
-      return t(`${k}.nA1`, { n: (d.cls ?? []).filter((v) => v === 4).length });
-    case "b1_class":
-      return CLASS[d.cls?.[0]] ?? "—";
-    case "win_gap_band": {
-      const g = gapOf(d.nat);
-      return g
-        ? minus(t(`${k}.gap`, { gap: g.gap.toFixed(2), band: g.band + 1 }))
-        : "—";
-    }
-    case "top_boat": {
-      const b = topBoat(d.nat);
-      return b ? t("aiPredictionTab.analogy.boat", { n: b }) : "—";
-    }
-    case "nat_win_6":
-      return six(d.nat, (v) => fx(v, 2));
-    case "nat_win_rank_4":
-      return six(d.nat_rank, (v) => fx(v, 0));
-    case "b1_nat_win":
-      return fx(d.nat?.[0], 2);
-    case "loc_win_6":
-      return six(d.loc, (v) => fx(v, 2));
-    case "recent_win30_6":
-      return six(d.rw, pct);
-    case "recent_top3_30_6":
-      return six(d.rt3, pct);
-    case "st_mean30_6":
-      return six(d.st, (v) => fx(v, 2));
-    case "b1_st_rank_band": {
-      const r = b1Rank(d.st, false);
-      return r ? t(`${k}.rank`, { n: r }) : "—";
-    }
-    case "motor_2_6":
-      return six(d.motor, (v) => fx(v, 1));
-    case "b1_motor_rank_band": {
-      const r = b1Rank(d.motor);
-      return r ? t(`${k}.rank`, { n: r }) : "—";
-    }
-    case "boat_2_6":
-      return six(d.boat, (v) => fx(v, 1));
-    case "b1_boat_rank_band": {
-      const r = b1Rank(d.boat);
-      return r ? t(`${k}.rank`, { n: r }) : "—";
-    }
-    case "age_6":
-      return six(d.age, (v) => fx(v, 0));
-    case "weight_6":
-      return six(d.weight, (v) => fx(v, 1));
-    case "n_local":
-      return Array.isArray(d.local)
-        ? t(`${k}.local`, { n: d.local.filter((v) => v === 1).length })
-        : "—";
-    case "weather":
-      return isNum(d.weather) && WEATHER[d.weather]
-        ? t(`${k}.weather.${WEATHER[d.weather]}`)
-        : "—";
-    case "wind_bin":
-    case "wind_vector":
-      return isNum(d.ws) ? `${d.ws}m` : "—";
-    case "wave_bin":
-      return isNum(d.wave) ? `${d.wave}cm` : "—";
-    case "exh_time_diff_6":
-      return minus(
-        six(d.exh_diff, (v) =>
-          isNum(v) ? `${v > 0 ? "+" : ""}${v.toFixed(2)}` : "—",
-        ),
-      );
-    default:
-      return "—";
-  }
+  return Object.hasOwn(ITEM_FORMATTERS, key) ? ITEM_FORMATTERS[key](d, t) : "—";
 }
 
 /**

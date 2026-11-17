@@ -40,6 +40,51 @@ export function currentPeriodRange(raceDate) {
   return { from: end.toISOString().slice(0, 10), to: raceDate };
 }
 
+/** 事故の走を並び順どおりに数え、点数を足す（computeAccidentStats の内側） */
+function tallyIncidents(incidents, secondFlyingRule) {
+  const counts = { F: 0, L1: 0, K1: 0, S1: 0, S2: 0 };
+  let points = 0;
+  for (const inc of incidents) {
+    if (!(inc.code in counts)) continue;
+    counts[inc.code] += 1;
+    const final = isFinalStage(inc.stage);
+    if (inc.code === "F") {
+      points += final ? 30 : 20;
+      if (secondFlyingRule && counts.F >= 2) points += final ? 20 : 10;
+    } else if (inc.code === "L1") points += final ? 30 : 20;
+    else if (inc.code === "S2") points += 15;
+    else points += 10; // S1・K1
+  }
+  return { counts, points };
+}
+
+/** 小数第2位で切り捨てた値と、0.70 を超えるまでの点数（computeAccidentStats の内側） */
+function rateAndNeed(points, starts) {
+  // 浮動小数の誤差（0.70 が 0.69999… になる等）を避けるため、百分率の整数で比べる
+  const rate = starts > 0 ? Math.floor((points * 100) / starts) / 100 : null;
+  const need =
+    starts > 0 ? Math.max(0, Math.ceil((71 * starts) / 100) - points) : 0;
+  return { rate, need };
+}
+
+/** over・near・null の判定（computeAccidentStats の内側） */
+function lineStatus(points, starts, rate, flyingCount, secondFlyingRule) {
+  const over = rate !== null && rate > ACCIDENT_RATE_LINE;
+  if (over) return "over";
+  // 「ライン付近」は、次の F・出遅れ1本で超える選手。今期すでにFを切っている選手は、次のFが
+  // 2本目以降の加点込みで30点になる（PR #1219 ファン評価2周目: F1の選手が「あと24点」で目印から外れていた）
+  const nextFlyingPoints =
+    ACCIDENT_NEAR_POINTS + (secondFlyingRule && flyingCount >= 1 ? 10 : 0);
+  // 次の1走でFを切ると、その走も出走に数える（出走回数は F を含む）。分母を1増やして判定する
+  // （ファン評価3周目: 20÷70 の選手は、次のF 30点でも 50÷71=0.704 で超えないのに目印が出ていた）。
+  // 表示する「あと◯点」は承認時の定義（今の出走数のまま 0.70 を超えるまで）のまま
+  const near =
+    points > 0 &&
+    starts > 0 &&
+    Math.floor(((points + nextFlyingPoints) * 100) / (starts + 1)) > 70;
+  return near ? "near" : null;
+}
+
 /**
  * 1選手の今期の事故率（純関数）。
  * @param {{starts: number, incidents: Array<{race_id: string, code: string, stage: string|null}>}|null|undefined} row
@@ -59,38 +104,10 @@ export function computeAccidentStats(row, range) {
   const incidents = [...(row?.incidents ?? [])].sort((a, b) =>
     String(a.race_id).localeCompare(String(b.race_id)),
   );
-  const counts = { F: 0, L1: 0, K1: 0, S1: 0, S2: 0 };
   const secondFlyingRule = (range?.from ?? "") >= SECOND_FLYING_RULE_FROM;
-  let points = 0;
-  for (const inc of incidents) {
-    if (!(inc.code in counts)) continue;
-    counts[inc.code] += 1;
-    const final = isFinalStage(inc.stage);
-    if (inc.code === "F") {
-      points += final ? 30 : 20;
-      if (secondFlyingRule && counts.F >= 2) points += final ? 20 : 10;
-    } else if (inc.code === "L1") points += final ? 30 : 20;
-    else if (inc.code === "S2") points += 15;
-    else points += 10; // S1・K1
-  }
-  // 浮動小数の誤差（0.70 が 0.69999… になる等）を避けるため、百分率の整数で比べる
-  const rate = starts > 0 ? Math.floor((points * 100) / starts) / 100 : null;
-  const need =
-    starts > 0 ? Math.max(0, Math.ceil((71 * starts) / 100) - points) : 0;
-  const over = rate !== null && rate > ACCIDENT_RATE_LINE;
-  // 「ライン付近」は、次の F・出遅れ1本で超える選手。今期すでにFを切っている選手は、次のFが
-  // 2本目以降の加点込みで30点になる（PR #1219 ファン評価2周目: F1の選手が「あと24点」で目印から外れていた）
-  const nextFlyingPoints =
-    ACCIDENT_NEAR_POINTS + (secondFlyingRule && counts.F >= 1 ? 10 : 0);
-  // 次の1走でFを切ると、その走も出走に数える（出走回数は F を含む）。分母を1増やして判定する
-  // （ファン評価3周目: 20÷70 の選手は、次のF 30点でも 50÷71=0.704 で超えないのに目印が出ていた）。
-  // 表示する「あと◯点」は承認時の定義（今の出走数のまま 0.70 を超えるまで）のまま
-  const near =
-    !over &&
-    points > 0 &&
-    starts > 0 &&
-    Math.floor(((points + nextFlyingPoints) * 100) / (starts + 1)) > 70;
-  const status = over ? "over" : near ? "near" : null;
+  const { counts, points } = tallyIncidents(incidents, secondFlyingRule);
+  const { rate, need } = rateAndNeed(points, starts);
+  const status = lineStatus(points, starts, rate, counts.F, secondFlyingRule);
   return {
     starts,
     points,
