@@ -9,6 +9,7 @@ import {
   isDataLayer,
   compareEdgesToBaseline,
   compareBaselines,
+  newServicesFileProblems,
   newUtilsFileProblems,
 } from "./lintBaselines.js";
 import { baselineOfEdges } from "./lintDepTree.js";
@@ -67,6 +68,40 @@ test("src/utils の新しいファイルは赤", () => {
   assert.equal(newUtilsFileProblems(["src/utils/new.js"]).length, 1);
   assert.deepEqual(newUtilsFileProblems(["src/lib/new.js"]), []);
   assert.deepEqual(newUtilsFileProblems([]), []);
+});
+
+test("src/services の新しいファイルは <領域>Queries*.js だけ通す", () => {
+  for (const ok of [
+    "src/services/racerQueries5.js",
+    "src/services/motorQueries.js",
+    "src/services/venueQueries12.js",
+    "src/services/venueQueries10.js",
+    "src/utils/x.js",
+    "src/pure/racerService.js",
+  ]) {
+    assert.deepEqual(newServicesFileProblems([ok]), [], ok);
+  }
+  for (const ng of [
+    "src/services/dataService.js",
+    "src/services/racerService.js",
+    "src/services/core2.js",
+    "src/services/RacerQueries.js",
+    "src/services/racerQueries.ts",
+    "src/services/racerQueriesX.js",
+    "src/services/xracerQueries.js.bak",
+    "src/services/racer/racerQueries.js",
+    "src/services/Queries.js",
+    "src/services/racer-queries.js",
+    "src/services/racerQueries5.jsx",
+  ]) {
+    assert.equal(newServicesFileProblems([ng]).length, 1, ng);
+  }
+  assert.equal(
+    newServicesFileProblems(["src/services/a.js", "src/services/aQueries.js", "src/services/b.js"]).length,
+    2,
+  );
+  assert.deepEqual(newServicesFileProblems([]), []);
+  assert.deepEqual(newServicesFileProblems(undefined), []);
 });
 
 test("基準の行を足すと赤、減ると better", () => {
