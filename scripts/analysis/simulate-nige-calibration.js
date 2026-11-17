@@ -32,8 +32,7 @@ function bucketOf(p) {
   return "60%+";
 }
 
-async function main() {
-  console.log("データ取得中...");
+async function fetchPredictionsAndResults() {
   const predictions = await fetchAll(
     "predictions",
     "race_id, feature_contributions",
@@ -45,6 +44,10 @@ async function main() {
     "race_id, winning_technique",
     (q) => q.not("winning_technique", "is", null).order("race_id"),
   );
+  return { predictions, results };
+}
+
+function buildSamples(predictions, results) {
   const resultMap = new Map(
     results.map((r) => [r.race_id, r.winning_technique]),
   );
@@ -57,6 +60,55 @@ async function main() {
     if (!technique) continue;
     samples.push({ p: nigeP, hit: technique === "逃げ" });
   }
+  return samples;
+}
+
+function bucketSamples(samples, k) {
+  const buckets = {};
+  for (const s of samples) {
+    const newP = k === 1.0 ? s.p : calibrate(s.p, k);
+    const b = bucketOf(newP);
+    if (!b) continue;
+    if (!buckets[b]) buckets[b] = { sumP: 0, hit: 0, n: 0 };
+    buckets[b].sumP += newP;
+    buckets[b].hit += s.hit ? 1 : 0;
+    buckets[b].n += 1;
+  }
+  return buckets;
+}
+
+function summarizeBuckets(buckets) {
+  let totalGap = 0;
+  let bucketCount = 0;
+  const lines = [];
+  for (const [b, v] of Object.entries(buckets)) {
+    if (v.n < 20) continue;
+    const avgP = v.sumP / v.n;
+    const actual = v.hit / v.n;
+    const gap = Math.abs(avgP - actual) * 100;
+    totalGap += gap;
+    bucketCount += 1;
+    lines.push(
+      `    ${b.padEnd(8)} N=${String(v.n).padStart(5)}  予測=${(avgP * 100).toFixed(1)}%  実現=${(actual * 100).toFixed(1)}%  乖離=${gap.toFixed(1)}pt`,
+    );
+  }
+  const avgGap = bucketCount > 0 ? totalGap / bucketCount : NaN;
+  return { avgGap, lines };
+}
+
+function printFactorReport(samples, k) {
+  const { avgGap, lines } = summarizeBuckets(bucketSamples(samples, k));
+  console.log(`k=${k.toFixed(1)}  平均乖離=${avgGap.toFixed(2)}pt`);
+  if (k === 1.0 || CANDIDATE_FACTORS.includes(k)) {
+    lines.forEach((l) => console.log(l));
+  }
+  console.log("");
+}
+
+async function main() {
+  console.log("データ取得中...");
+  const { predictions, results } = await fetchPredictionsAndResults();
+  const samples = buildSamples(predictions, results);
   console.log(`${samples.length}件のサンプルを取得\n`);
 
   console.log(
@@ -64,36 +116,7 @@ async function main() {
   );
 
   for (const k of [1.0, ...CANDIDATE_FACTORS]) {
-    const buckets = {};
-    for (const s of samples) {
-      const newP = k === 1.0 ? s.p : calibrate(s.p, k);
-      const b = bucketOf(newP);
-      if (!b) continue;
-      if (!buckets[b]) buckets[b] = { sumP: 0, hit: 0, n: 0 };
-      buckets[b].sumP += newP;
-      buckets[b].hit += s.hit ? 1 : 0;
-      buckets[b].n += 1;
-    }
-    let totalGap = 0;
-    let bucketCount = 0;
-    const lines = [];
-    for (const [b, v] of Object.entries(buckets)) {
-      if (v.n < 20) continue;
-      const avgP = v.sumP / v.n;
-      const actual = v.hit / v.n;
-      const gap = Math.abs(avgP - actual) * 100;
-      totalGap += gap;
-      bucketCount += 1;
-      lines.push(
-        `    ${b.padEnd(8)} N=${String(v.n).padStart(5)}  予測=${(avgP * 100).toFixed(1)}%  実現=${(actual * 100).toFixed(1)}%  乖離=${gap.toFixed(1)}pt`,
-      );
-    }
-    const avgGap = bucketCount > 0 ? totalGap / bucketCount : NaN;
-    console.log(`k=${k.toFixed(1)}  平均乖離=${avgGap.toFixed(2)}pt`);
-    if (k === 1.0 || CANDIDATE_FACTORS.includes(k)) {
-      lines.forEach((l) => console.log(l));
-    }
-    console.log("");
+    printFactorReport(samples, k);
   }
 }
 
