@@ -1,74 +1,14 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { isInCautionEnabled } from "../config/featureFlags";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
 import LoadingScreen from "../components/LoadingScreen";
-import { dataService } from "../services/dataService";
-import { formatDateObject } from "../utils/formatters";
+import { useRaceHistoryData } from "./RaceHistoryData";
+import { MonthGroup } from "./RaceHistoryMonthGroup";
 import "./RaceHistory.css";
 
 function RaceHistory() {
-  const [groupedDates, setGroupedDates] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [expandedMonths, setExpandedMonths] = useState({});
-
-  // 月の切り替え
-  const toggleMonth = (yearMonth) => {
-    setExpandedMonths((prev) => ({
-      ...prev,
-      [yearMonth]: !prev[yearMonth],
-    }));
-  };
-
-  // 利用可能な日付を取得し、月別にグループ化（サマリーRPCで1回のクエリ）
-  useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        setLoading(true);
-
-        // サマリーRPCで全日付分の統計を1回のクエリで取得
-        const summary = await dataService.getRaceHistorySummary(90);
-        const dates = (summary.days || []).map((day) => ({
-          date: day.date,
-          totalRaces: day.totalRaces || 0,
-          finishedRaces: day.finishedRaces || 0,
-          turnRaces: day.turnRaces || 0,
-          turnHitRate: day.turnHitRate,
-        }));
-
-        // 月別にグループ化。キーは並べ替えられる「YYYY-MM」にする（見出しの「2026年10月」を文字列で並べると
-        // 「10月」が「9月」より後ろに来る）
-        const grouped = {};
-        dates.forEach((dateInfo) => {
-          const yearMonth = dateInfo.date.slice(0, 7);
-          if (!grouped[yearMonth]) {
-            grouped[yearMonth] = [];
-          }
-          grouped[yearMonth].push(dateInfo);
-        });
-
-        // 各月をソート（日付の新しい順）
-        Object.keys(grouped).forEach((month) => {
-          grouped[month].sort((a, b) => b.date.localeCompare(a.date));
-        });
-
-        setGroupedDates(grouped);
-
-        // 最新月のみ展開
-        const latestMonth = Object.keys(grouped).sort().reverse()[0];
-        if (latestMonth) {
-          setExpandedMonths({ [latestMonth]: true });
-        }
-      } catch (error) {
-        console.error("日付データの取得エラー:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSummary();
-  }, []);
+  const { groupedDates, loading, expandedMonths, toggleMonth } =
+    useRaceHistoryData();
 
   // Breadcrumb は {name, url} を読む。以前は {label, path} で渡していて、画面のパンくずが空になり、
   // BreadcrumbList の JSON-LD も item が ".../undefined" になっていた（集客レーン、2026-10-02）
@@ -76,20 +16,6 @@ function RaceHistory() {
     { name: "ホーム", url: "/" },
     { name: "過去の予想", url: "/races" },
   ];
-
-  // 月のサマリーを計算（展開予測的中率の月内平均）
-  const getMonthSummary = (dates) => {
-    const totalRaces = dates.reduce((sum, d) => sum + d.turnRaces, 0);
-    let totalTurnHits = 0;
-    dates.forEach((d) => {
-      if (d.turnHitRate != null) {
-        totalTurnHits += (d.turnHitRate / 100) * d.turnRaces;
-      }
-    });
-    const avgTurnHitRate =
-      totalRaces > 0 ? ((totalTurnHits / totalRaces) * 100).toFixed(1) : null;
-    return { totalRaces, avgTurnHitRate, days: dates.length };
-  };
 
   // BOA-822（機能フラグの側、task 25・screens S-6）: 展開予測の的中率を外し、開催日ごとのレース一覧への入口にする
   const inCaution = isInCautionEnabled();
@@ -138,82 +64,15 @@ function RaceHistory() {
                 {Object.keys(groupedDates)
                   .sort()
                   .reverse()
-                  .map((yearMonth) => {
-                    const dates = groupedDates[yearMonth];
-                    const summary = getMonthSummary(dates);
-                    const isExpanded = expandedMonths[yearMonth];
-
-                    return (
-                      <div key={yearMonth} className="month-group">
-                        <div
-                          className="month-header"
-                          onClick={() => toggleMonth(yearMonth)}
-                        >
-                          <div className="month-title">
-                            <span className="expand-icon">
-                              {isExpanded ? "▼" : "▶"}
-                            </span>
-                            <h2>
-                              📅 {formatDateObject(dates[0].date).yearMonth}
-                            </h2>
-                          </div>
-                          <div className="month-summary">
-                            {summary.days}日分
-                            {!inCaution && summary.avgTurnHitRate != null
-                              ? ` | 展開予測的中率 ${summary.avgTurnHitRate}%`
-                              : ""}
-                          </div>
-                        </div>
-
-                        {isExpanded && (
-                          <div className="dates-list">
-                            {dates.map((dateInfo) => (
-                              <Link
-                                key={dateInfo.date}
-                                to={`/races/${dateInfo.date}`}
-                                className="date-card"
-                              >
-                                <div className="date-card-header">
-                                  <h3>
-                                    {formatDateObject(dateInfo.date).short}
-                                  </h3>
-                                  <span className="race-count">
-                                    {dateInfo.finishedRaces}/
-                                    {dateInfo.totalRaces} レース完了
-                                  </span>
-                                </div>
-
-                                {!inCaution &&
-                                  (dateInfo.turnHitRate != null ? (
-                                    <div className="date-card-turn-stat">
-                                      <span className="date-card-turn-stat-label">
-                                        🌊 展開予測的中率
-                                      </span>
-                                      <span className="date-card-turn-stat-value">
-                                        {dateInfo.turnHitRate}%
-                                      </span>
-                                      <span className="date-card-turn-stat-count">
-                                        （{dateInfo.turnRaces}レース）
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    <div className="date-card-turn-stat date-card-turn-stat-empty">
-                                      この日のデータはまだありません
-                                    </div>
-                                  ))}
-
-                                <div className="date-card-footer">
-                                  <span className="view-detail">
-                                    詳細を見る →
-                                  </span>
-                                </div>
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  .map((yearMonth) => (
+                    <MonthGroup
+                      key={yearMonth}
+                      dates={groupedDates[yearMonth]}
+                      isExpanded={expandedMonths[yearMonth]}
+                      inCaution={inCaution}
+                      onToggle={() => toggleMonth(yearMonth)}
+                    />
+                  ))}
               </div>
             )}
           </div>
