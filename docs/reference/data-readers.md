@@ -1204,7 +1204,7 @@
   - `scripts/maintenance/backfill-trifecta-trio.js:19` select [*, race_id]
   - `scripts/maintenance/build-races-derived-backfill-sql.js:114` select(helper:fetchAll)
   - `scripts/maintenance/check-exhibition-gap-rate.js:40` select(helper:fetchAll)
-  - `scripts/maintenance/check-result-shadow.js:157` select(helper:fetchByRaceIds)
+  - `scripts/maintenance/check-result-shadow.js:160` select(helper:fetchByRaceIds)
   - `scripts/maintenance/delete-cancelled-race-predictions.js:55` select [race_id]
   - `scripts/maintenance/delete-phantom-race-days.js:62` select(helper:fetchAll)
   - `scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:45` select(helper:fetchAll)
@@ -1307,7 +1307,7 @@
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:48` select(helper:fetchAll)
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:71` select(helper:fetchAll)
   - `scripts/maintenance/backfill-start-timings.js:261` select [race_id]
-  - `scripts/maintenance/check-result-shadow.js:163` select(helper:fetchByRaceIds)
+  - `scripts/maintenance/check-result-shadow.js:166` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:91` select(helper:fetchAll)
   - `scripts/sns/rank-data.js:528` select(helper:readAllIn)
   - `scripts/verification/verify-series-points-border.mjs:64` select [boat_number, finish_mark, race_id]
@@ -1568,7 +1568,7 @@
   - `scripts/maintenance/check-odds-shadow.js:142` select(embed) [cancellation_status, start_time]
   - `scripts/maintenance/check-pre-race-shadow.js:255` select(embed) [cancellation_status, start_time]
   - `scripts/maintenance/check-pre-race-shadow.js:293` select(helper:fetchByRaceIds)
-  - `scripts/maintenance/check-result-shadow.js:125` select(embed) [cancellation_status, start_time]
+  - `scripts/maintenance/check-result-shadow.js:129` select(embed) [cancellation_status, start_time]
   - `scripts/maintenance/delete-cancelled-race-predictions.js:40` select(helper:fetchAll)
   - `scripts/maintenance/delete-phantom-race-days.js:56` select(helper:fetchAll)
   - `scripts/maintenance/delete-phantom-race-days.js:103` select [race_date, race_id, race_number, venue_code]
@@ -1717,7 +1717,7 @@
   - `scripts/maintenance/check-morning-init-shadow.js:279` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
   - `scripts/maintenance/check-odds-shadow.js:142` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
   - `scripts/maintenance/check-pre-race-shadow.js:255` select [attempts, done_at, first_attempt_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, rows_written, run_mode, status]
-  - `scripts/maintenance/check-result-shadow.js:125` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
+  - `scripts/maintenance/check-result-shadow.js:129` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
   - `scripts/maintenance/verify-scrape-slots-on-db.js:198` select [attempts, job, status] （検査）
 - 書き手（9）: 
   - `scripts/lib/boatcast/oritenJob.js:568` upsert [?]

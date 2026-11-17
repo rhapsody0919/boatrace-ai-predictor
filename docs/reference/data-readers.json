@@ -11277,7 +11277,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/check-result-shadow.js:157",
+          "ref": "scripts/maintenance/check-result-shadow.js:160",
           "op": "select",
           "via": "helper:fetchByRaceIds",
           "columns": []
@@ -13043,7 +13043,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/check-result-shadow.js:163",
+          "ref": "scripts/maintenance/check-result-shadow.js:166",
           "op": "select",
           "via": "helper:fetchByRaceIds",
           "columns": []
@@ -16709,7 +16709,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/check-result-shadow.js:125",
+          "ref": "scripts/maintenance/check-result-shadow.js:129",
           "op": "select",
           "via": "embed",
           "columns": [
@@ -17792,7 +17792,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
             "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
@@ -17986,7 +17986,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:114",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
@@ -18937,7 +18937,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/check-result-shadow.js:125",
+          "ref": "scripts/maintenance/check-result-shadow.js:129",
           "op": "select",
           "via": "client",
           "columns": [
@@ -19070,7 +19070,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-scrape-slots-on-db.js:124",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174",
             "scripts/maintenance/verify-scrape-slots-on-db.js:198",
@@ -19096,7 +19096,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174"
           ],
           "writers": [],
@@ -19113,7 +19113,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174"
           ],
           "writers": [],
@@ -19134,7 +19134,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [],
           "sql": [
@@ -19153,7 +19153,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174",
             "scripts/maintenance/verify-scrape-slots-on-db.js:198"
           ],
@@ -19172,7 +19172,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-scrape-slots-on-db.js:198"
           ],
           "writers": [],
@@ -19219,7 +19219,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [],
           "sql": [
@@ -19250,7 +19250,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
             "scripts/lib/scrapeJobs/store.js:233",
@@ -19267,7 +19267,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
             "scripts/lib/scrapeJobs/store.js:233",
@@ -19292,7 +19292,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
             "scripts/lib/scrapeJobs/store.js:233"
@@ -19304,7 +19304,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
             "scripts/lib/scrapeJobs/cleanup.js:33",
