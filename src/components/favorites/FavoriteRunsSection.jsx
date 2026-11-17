@@ -25,7 +25,7 @@ import {
   venuesFromPredictions,
   venuesFromTodayRaces,
 } from "../../pure/favoriteRuns";
-import { dataService } from "../../services/dataService";
+import { getPredictions } from "../../services/predictionQueries2.js";
 import { getTodayJST } from "../../utils/dateUtils";
 import { racerPagePath } from "../../utils/racerPagePath";
 import { getStageChip } from "../../utils/raceDetailHeading";
@@ -65,8 +65,7 @@ function useTodayEntries(enabled) {
     let cancelled = false;
     // 読み込み中は status が "idle" のまま（ready でない間は区画を出さないので、見た目は同じ）
     const date = getTodayJST();
-    dataService
-      .getPredictions(date, { light: true })
+    getPredictions(date, { light: true })
       .then((data) => {
         if (cancelled) return;
         if (data?.fetchFailed) {

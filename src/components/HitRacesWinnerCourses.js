@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { dataService } from "../services/dataService";
+import { getRaceWinnerCourses } from "../services/raceQueries.js";
 
 // 表示中のカードの、1着の艇が実際に入ったコース（BOA-708）。前付けで艇番とコースが
 // 違うレースだけ「N号艇（Mコース）」と添える補足なので、取れなければ艇番だけを出す
@@ -9,8 +9,7 @@ export function useWinnerCourses(displayRaceIds) {
   useEffect(() => {
     if (!displayRaceIds) return undefined;
     let cancelled = false;
-    dataService
-      .getRaceWinnerCourses(displayRaceIds.split(","))
+    getRaceWinnerCourses(displayRaceIds.split(","))
       .then((courses) => {
         if (!cancelled) setWinnerCourses(courses);
       })

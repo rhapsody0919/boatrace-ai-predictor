@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { dataService } from "../services/dataService";
+import { getPredictions } from "../services/predictionQueries2.js";
 import { getDateListJST } from "../utils/dateUtils";
 
 async function loadDayPredictions(dateStr) {
   try {
-    const data = await dataService.getPredictions(dateStr);
+    const data = await getPredictions(dateStr);
     return data.races || [];
   } catch (error) {
     console.warn(`予想データ読み込みエラー (${dateStr}):`, error);

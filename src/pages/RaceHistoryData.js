@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { dataService } from "../services/dataService";
+import { getRaceHistorySummary } from "../services/scheduleQueries.js";
 import { toDateInfos, groupByMonth, latestMonthOf } from "./RaceHistoryLogic";
 
 // 利用可能な日付を取得し、月別にグループ化（サマリーRPCで1回のクエリ）と、月の開閉
@@ -22,7 +22,7 @@ export function useRaceHistoryData() {
         setLoading(true);
 
         // サマリーRPCで全日付分の統計を1回のクエリで取得
-        const summary = await dataService.getRaceHistorySummary(90);
+        const summary = await getRaceHistorySummary(90);
         const grouped = groupByMonth(toDateInfos(summary));
 
         setGroupedDates(grouped);
