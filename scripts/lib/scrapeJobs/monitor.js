@@ -892,18 +892,12 @@ export async function runMonitor(
   }
 
   const { activeJobs, activeJobNames, liveJobs } = selectJobs(input.jobStates);
-  // 発売開始の遅れ（想定内の未公開）。警告・窓内取得率・日次サマリーで同じ判定を共有する
-  const targetPool = [
-    ...input.expiredSlots,
-    ...(input.openSlots ?? []),
-    ...input.todaySlots,
-    ...(input.weekSlots ?? []),
-  ];
   const oddsSiblings = input.oddsSlots ?? [];
-  const expectedUnpublished = classifyExpectedUnpublished(targetPool, {
-    siblingSlots: oddsSiblings,
+  const expectedUnpublished = classifyInputUnpublished(
+    input,
+    oddsSiblings,
     now,
-  });
+  );
   const alerts = collectMonitorAlerts(input, {
     now,
     activeJobNames,
@@ -973,6 +967,20 @@ function selectJobs(jobStates) {
     jobStates.filter((r) => r.mode === "live").map((r) => r.job),
   );
   return { activeJobs, activeJobNames, liveJobs };
+}
+
+/** 発売開始の遅れ（想定内の未公開）。警告・窓内取得率・日次サマリーで同じ判定を共有する */
+function classifyInputUnpublished(input, oddsSiblings, now) {
+  const targetPool = [
+    ...input.expiredSlots,
+    ...(input.openSlots ?? []),
+    ...input.todaySlots,
+    ...(input.weekSlots ?? []),
+  ];
+  return classifyExpectedUnpublished(targetPool, {
+    siblingSlots: oddsSiblings,
+    now,
+  });
 }
 
 /**
