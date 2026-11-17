@@ -70,6 +70,17 @@ export const RACER_SNAPSHOT_MAX_AGE_HOURS = 20;
 /** 時計のずれとして許す「未来の renderedAt」 */
 const CLOCK_SKEW_MS = 10 * 60 * 1000;
 
+/** 今の本番の racer が「取れない・途中で止まった・版が違う」なら描く理由。写せる形なら null */
+function racerStatusRejection(racer, templateVersion) {
+  if (!racer || typeof racer !== "object")
+    return "今の本番の status.json に racer が無い（取れない・古い形）";
+  if (racer.fatalError)
+    return `今の本番の選手ページは途中で止まっていた: ${racer.fatalError}`;
+  if (racer.templateVersion !== templateVersion)
+    return `見た目の版が違う（本番 ${racer.templateVersion ?? "なし"}、このビルド ${templateVersion}）`;
+  return null;
+}
+
 /**
  * 選手ページを今の本番から写すか、全員を描くかを決める（Vercel の費用、2026-11-05、ADR 0032 追記）。
  *
@@ -95,16 +106,8 @@ export function decideRacerSnapshotSource({
     sourceStatus && typeof sourceStatus === "object"
       ? sourceStatus.racer
       : null;
-  if (!racer || typeof racer !== "object")
-    return render("今の本番の status.json に racer が無い（取れない・古い形）");
-  if (racer.fatalError)
-    return render(
-      `今の本番の選手ページは途中で止まっていた: ${racer.fatalError}`,
-    );
-  if (racer.templateVersion !== templateVersion)
-    return render(
-      `見た目の版が違う（本番 ${racer.templateVersion ?? "なし"}、このビルド ${templateVersion}）`,
-    );
+  const rejection = racerStatusRejection(racer, templateVersion);
+  if (rejection) return render(rejection);
   const renderedMs = Date.parse(racer.renderedAt ?? "");
   if (!Number.isFinite(renderedMs))
     return render("今の本番の status.json に描いた時刻（renderedAt）が無い");

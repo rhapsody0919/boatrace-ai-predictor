@@ -123,6 +123,56 @@ export const GLOBAL_PLACEMENT_AVERAGE = {
   sampleSize: 7642,
 };
 
+/** 勝者コースを0にして、残りの合計が1になるよう再正規化する（dist を直接書き換える） */
+function zeroWinnerAndRenormalize(dist, winnerCourse) {
+  dist[winnerCourse] = 0;
+  const sum = Object.values(dist).reduce((a, b) => a + b, 0);
+  if (sum > 0)
+    for (let c = 1; c <= 6; c++)
+      dist[c] = Math.round((dist[c] / sum) * 1000) / 1000;
+}
+
+/** 同techniqueの全コース平均（sampleSize で重み付け）。勝者コースは0にして再正規化する */
+function techniqueAverageBaseline(techEntries, winnerCourse) {
+  const avgSecond = {};
+  const avgThird = {};
+  let totalSamples = 0;
+
+  for (let c = 1; c <= 6; c++) {
+    avgSecond[c] = 0;
+    avgThird[c] = 0;
+  }
+
+  for (const [, v] of techEntries) {
+    for (let c = 1; c <= 6; c++) {
+      avgSecond[c] += v.second[c] * v.sampleSize;
+      avgThird[c] += v.third[c] * v.sampleSize;
+    }
+    totalSamples += v.sampleSize;
+  }
+
+  for (let c = 1; c <= 6; c++) {
+    avgSecond[c] = Math.round((avgSecond[c] / totalSamples) * 1000) / 1000;
+    avgThird[c] = Math.round((avgThird[c] / totalSamples) * 1000) / 1000;
+  }
+
+  // 勝者コースを0にして再正規化
+  zeroWinnerAndRenormalize(avgSecond, winnerCourse);
+  zeroWinnerAndRenormalize(avgThird, winnerCourse);
+
+  return { second: avgSecond, third: avgThird, sampleSize: totalSamples };
+}
+
+/** グローバル平均（勝者コースを除外して再正規化） */
+function globalAverageBaseline(winnerCourse) {
+  const fallback = { ...GLOBAL_PLACEMENT_AVERAGE };
+  const fs = { ...fallback.second };
+  const ft = { ...fallback.third };
+  zeroWinnerAndRenormalize(fs, winnerCourse);
+  zeroWinnerAndRenormalize(ft, winnerCourse);
+  return { second: fs, third: ft, sampleSize: fallback.sampleSize };
+}
+
 /**
  * フォールバック付きルックアップ
  * 1. 完全一致キー（sampleSize >= 30）
@@ -144,57 +194,8 @@ export function getPlacementBaseline(technique, winnerCourse) {
   );
 
   if (techEntries.length > 0) {
-    const avgSecond = {};
-    const avgThird = {};
-    let totalSamples = 0;
-
-    for (let c = 1; c <= 6; c++) {
-      avgSecond[c] = 0;
-      avgThird[c] = 0;
-    }
-
-    for (const [, v] of techEntries) {
-      for (let c = 1; c <= 6; c++) {
-        avgSecond[c] += v.second[c] * v.sampleSize;
-        avgThird[c] += v.third[c] * v.sampleSize;
-      }
-      totalSamples += v.sampleSize;
-    }
-
-    for (let c = 1; c <= 6; c++) {
-      avgSecond[c] = Math.round((avgSecond[c] / totalSamples) * 1000) / 1000;
-      avgThird[c] = Math.round((avgThird[c] / totalSamples) * 1000) / 1000;
-    }
-
-    // 勝者コースを0にして再正規化
-    avgSecond[winnerCourse] = 0;
-    avgThird[winnerCourse] = 0;
-    const sumS = Object.values(avgSecond).reduce((a, b) => a + b, 0);
-    const sumT = Object.values(avgThird).reduce((a, b) => a + b, 0);
-    if (sumS > 0)
-      for (let c = 1; c <= 6; c++)
-        avgSecond[c] = Math.round((avgSecond[c] / sumS) * 1000) / 1000;
-    if (sumT > 0)
-      for (let c = 1; c <= 6; c++)
-        avgThird[c] = Math.round((avgThird[c] / sumT) * 1000) / 1000;
-
-    return { second: avgSecond, third: avgThird, sampleSize: totalSamples };
+    return techniqueAverageBaseline(techEntries, winnerCourse);
   }
 
-  // グローバル平均（勝者コースを除外して再正規化）
-  const fallback = { ...GLOBAL_PLACEMENT_AVERAGE };
-  const fs = { ...fallback.second };
-  const ft = { ...fallback.third };
-  fs[winnerCourse] = 0;
-  ft[winnerCourse] = 0;
-  const sumFs = Object.values(fs).reduce((a, b) => a + b, 0);
-  const sumFt = Object.values(ft).reduce((a, b) => a + b, 0);
-  if (sumFs > 0)
-    for (let c = 1; c <= 6; c++)
-      fs[c] = Math.round((fs[c] / sumFs) * 1000) / 1000;
-  if (sumFt > 0)
-    for (let c = 1; c <= 6; c++)
-      ft[c] = Math.round((ft[c] / sumFt) * 1000) / 1000;
-
-  return { second: fs, third: ft, sampleSize: fallback.sampleSize };
+  return globalAverageBaseline(winnerCourse);
 }

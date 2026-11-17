@@ -149,6 +149,64 @@ export function validateSources({ today, archiveCount, liveCount }) {
   return problems;
 }
 
+/** 会場×期間ごとの { sum: 決まり手の件数の合計, totals: total_races の集合 } */
+function groupByVenuePeriod(rows) {
+  const groups = new Map();
+  for (const r of rows) {
+    const key = `${r.venue_code}:${r.period_days}`;
+    const g = groups.get(key) ?? { sum: 0, totals: new Set() };
+    g.sum += r.race_count;
+    g.totals.add(r.total_races);
+    groups.set(key, g);
+  }
+  return groups;
+}
+
+/** 会場×期間で total_races が決まり手の件数の合計と合わない物 */
+function totalMismatchProblems(groups) {
+  const problems = [];
+  for (const [key, g] of groups) {
+    if (g.totals.size !== 1 || [...g.totals][0] !== g.sum)
+      problems.push(
+        `${key}: total_races（${[...g.totals].join("/")}）が決まり手の件数の合計（${g.sum}）と合わない`,
+      );
+  }
+  return problems;
+}
+
+/** 会場で 90日の総数が365日の総数を超える物 */
+function venueSubsetProblems(groups) {
+  const problems = [];
+  for (const v of VENUE_CODES) {
+    const t90 = groups.get(`${v}:90`)?.sum ?? 0;
+    const t365 = groups.get(`${v}:365`)?.sum ?? 0;
+    if (t90 > t365)
+      problems.push(
+        `会場${v}: 90日の総数 ${t90} が365日の総数 ${t365} を超える`,
+      );
+  }
+  return problems;
+}
+
+/** 決まり手ごと（総数の包含だけでは、決まり手の間で増減が打ち消し合うと見逃す。Codex ④ F01） */
+function techniqueSubsetProblems(rows) {
+  const problems = [];
+  const byTechnique = new Map(); // "venue:technique" → { 90: 件数, 365: 件数 }
+  for (const r of rows) {
+    const key = `${r.venue_code}:${r.winning_technique}`;
+    const t = byTechnique.get(key) ?? { 90: 0, 365: 0 };
+    t[r.period_days] += r.race_count;
+    byTechnique.set(key, t);
+  }
+  for (const [key, t] of byTechnique) {
+    if (t[90] > t[365])
+      problems.push(
+        `${key}: 90日の件数 ${t[90]} が365日の件数 ${t[365]} を超える`,
+      );
+  }
+  return problems;
+}
+
 /**
  * 書かれた行の鮮度・形の検査（本番の表を読んだ行に使う）。問題があれば理由の配列。
  * - last_updated が today から2日より古い行がある
@@ -163,41 +221,9 @@ export function checkStoredRows(rows, today) {
     problems.push(
       `last_updated が ${oldest} より古い行が ${stale.length}件ある（最古 ${stale.map((r) => r.last_updated).sort()[0]}）。update-winning-technique-stats が止まっている`,
     );
-  const groups = new Map();
-  for (const r of rows) {
-    const key = `${r.venue_code}:${r.period_days}`;
-    const g = groups.get(key) ?? { sum: 0, totals: new Set() };
-    g.sum += r.race_count;
-    g.totals.add(r.total_races);
-    groups.set(key, g);
-  }
-  for (const [key, g] of groups) {
-    if (g.totals.size !== 1 || [...g.totals][0] !== g.sum)
-      problems.push(
-        `${key}: total_races（${[...g.totals].join("/")}）が決まり手の件数の合計（${g.sum}）と合わない`,
-      );
-  }
-  for (const v of VENUE_CODES) {
-    const t90 = groups.get(`${v}:90`)?.sum ?? 0;
-    const t365 = groups.get(`${v}:365`)?.sum ?? 0;
-    if (t90 > t365)
-      problems.push(
-        `会場${v}: 90日の総数 ${t90} が365日の総数 ${t365} を超える`,
-      );
-  }
-  // 決まり手ごと（総数の包含だけでは、決まり手の間で増減が打ち消し合うと見逃す。Codex ④ F01）
-  const byTechnique = new Map(); // "venue:technique" → { 90: 件数, 365: 件数 }
-  for (const r of rows) {
-    const key = `${r.venue_code}:${r.winning_technique}`;
-    const t = byTechnique.get(key) ?? { 90: 0, 365: 0 };
-    t[r.period_days] += r.race_count;
-    byTechnique.set(key, t);
-  }
-  for (const [key, t] of byTechnique) {
-    if (t[90] > t[365])
-      problems.push(
-        `${key}: 90日の件数 ${t[90]} が365日の件数 ${t[365]} を超える`,
-      );
-  }
+  const groups = groupByVenuePeriod(rows);
+  problems.push(...totalMismatchProblems(groups));
+  problems.push(...venueSubsetProblems(groups));
+  problems.push(...techniqueSubsetProblems(rows));
   return problems;
 }
