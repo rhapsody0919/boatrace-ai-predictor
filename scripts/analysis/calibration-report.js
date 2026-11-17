@@ -77,19 +77,16 @@ function linearRegression(x, y) {
   return { slope, intercept, r2 };
 }
 
-async function main() {
-  if (!isSupabaseEnabled()) {
-    console.error("❌ Supabase環境変数が未設定です。");
-    process.exit(1);
-  }
+const RULE_LINE = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
-  const opts = parseArgs();
-
+function printBanner() {
   console.log("╔══════════════════════════════════════════════════════════╗");
   console.log("║     展開予測キャリブレーション分析レポート              ║");
   console.log("╚══════════════════════════════════════════════════════════╝\n");
+}
 
-  // --- データ取得 ---
+// --- データ取得 ---
+async function fetchData(opts) {
   console.log("データ取得中...");
 
   const predictions = await fetchAll(
@@ -107,8 +104,11 @@ async function main() {
 
   const resultMap = new Map();
   for (const r of results) resultMap.set(r.race_id, r);
+  return { predictions, resultMap };
+}
 
-  // --- 突き合わせ ---
+// --- 突き合わせ ---
+function matchRaces(predictions, resultMap, opts) {
   const matched = [];
   let noDistribution = 0;
   let noResult = 0;
@@ -145,22 +145,24 @@ async function main() {
       actualTech: actualTechKey,
     });
   }
+  return { matched, noDistribution, noResult, unmappedTechnique };
+}
 
-  // 週数フィルタ
-  if (opts.weeks) {
-    const allWeeks = [...new Set(matched.map((m) => m.week))].sort();
-    const recentWeeks = new Set(allWeeks.slice(-opts.weeks));
-    const before = matched.length;
-    matched.splice(
-      0,
-      matched.length,
-      ...matched.filter((m) => recentWeeks.has(m.week)),
-    );
-    console.log(
-      `最新${opts.weeks}週に絞り込み: ${before} → ${matched.length}件`,
-    );
-  }
+// 週数フィルタ
+function filterRecentWeeks(matched, weeks) {
+  if (!weeks) return;
+  const allWeeks = [...new Set(matched.map((m) => m.week))].sort();
+  const recentWeeks = new Set(allWeeks.slice(-weeks));
+  const before = matched.length;
+  matched.splice(
+    0,
+    matched.length,
+    ...matched.filter((m) => recentWeeks.has(m.week)),
+  );
+  console.log(`最新${weeks}週に絞り込み: ${before} → ${matched.length}件`);
+}
 
+function printScope(opts, matched, counts) {
   const dateRange =
     matched.length > 0
       ? `${matched[0].date} ~ ${matched[matched.length - 1].date}`
@@ -170,21 +172,16 @@ async function main() {
   console.log(`期間: ${dateRange}`);
   console.log(`分析対象: ${matched.length}レース`);
   console.log(
-    `(distribution無し: ${noDistribution}, 結果無し: ${noResult}, 未対応決まり手: ${unmappedTechnique})\n`,
+    `(distribution無し: ${counts.noDistribution}, 結果無し: ${counts.noResult}, 未対応決まり手: ${counts.unmappedTechnique})\n`,
   );
+}
 
-  if (matched.length === 0) {
-    console.log("分析対象データがありません。");
-    return;
-  }
-
-  // ============================
-  // 1. 多クラスブライアスコア（週次）
-  // ============================
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+// 1. 多クラスブライアスコア（週次）
+function printWeeklyBrier(matched) {
+  console.log(RULE_LINE);
   console.log("1. 多クラスブライアスコア（週次推移）");
   console.log("   ※ 低いほど確率予測が正確。完璧=0、ランダム≈0.83");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+  console.log(RULE_LINE + "\n");
 
   const weeklyData = {};
   for (const m of matched) {
@@ -231,14 +228,15 @@ async function main() {
       `  初週→最終週: ${weeklyScores[0].brier.toFixed(4)} → ${weeklyScores[weeklyScores.length - 1].brier.toFixed(4)} (${pctChange > 0 ? "+" : ""}${pctChange.toFixed(1)}%)`,
     );
   }
+  return { weekKeys, weeklyScores };
+}
 
-  // ============================
-  // 2. 確率帯別キャリブレーション
-  // ============================
-  console.log("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+// 2. 確率帯別キャリブレーション
+function printBinCalibration(matched) {
+  console.log("\n\n" + RULE_LINE);
   console.log("2. 確率帯別キャリブレーション（全決まり手統合）");
   console.log("   ※ 予測確率X%のとき実際にX%的中していれば完璧");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+  console.log(RULE_LINE + "\n");
 
   const bins = {};
   for (const race of matched) {
@@ -268,13 +266,14 @@ async function main() {
       `  ${label.padEnd(10)} ${String(data.count).padStart(7)}  ${avgPred.padStart(6)}%  ${actualRate.padStart(6)}%  ${gap.padStart(5)}pt  ${judge}`,
     );
   }
+  return bins;
+}
 
-  // ============================
-  // 3. 決まり手ごとのキャリブレーション
-  // ============================
-  console.log("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+// 3. 決まり手ごとのキャリブレーション
+function printTechniqueCalibration(matched) {
+  console.log("\n\n" + RULE_LINE);
   console.log("3. 決まり手ごとのキャリブレーション（N≥30のみ）");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+  console.log(RULE_LINE + "\n");
 
   for (const tech of TECHNIQUES) {
     const techBins = {};
@@ -308,14 +307,14 @@ async function main() {
     }
     console.log("");
   }
+}
 
-  // ============================
-  // 4. 逃げ予測の週次キャリブレーション推移
-  // ============================
-  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+// 4. 逃げ予測の週次キャリブレーション推移
+function printNigeWeekly(matched, weekKeys) {
+  console.log("\n" + RULE_LINE);
   console.log("4. 逃げ予測: 週次キャリブレーション推移");
   console.log("   ※ 各確率帯で (予測確率−実現率) を表示。0に近いほど良い");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+  console.log(RULE_LINE + "\n");
 
   const bands = ["0-40%", "40-55%", "55-70%", "70-100%"];
   const bandRanges = [
@@ -358,13 +357,25 @@ async function main() {
     console.log(line);
   }
   console.log("  正=過信, 負=過小評価");
+}
 
-  // ============================
-  // 5. サマリー
-  // ============================
-  console.log("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+// 確率帯のうち、件数50以上で乖離が条件を満たす物の名前
+function binLabelsWhere(bins, gapOk) {
+  return Object.entries(bins)
+    .filter(([, d]) => d.count >= 50)
+    .filter(([, d]) => {
+      const avgPred = (d.predSum / d.count) * 100;
+      const actualRate = (d.sum / d.count) * 100;
+      return gapOk(Math.abs(avgPred - actualRate));
+    })
+    .map(([label]) => label);
+}
+
+// 5. サマリー
+function printSummary(matched, bins, weeklyScores) {
+  console.log("\n\n" + RULE_LINE);
   console.log("5. サマリー");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+  console.log(RULE_LINE + "\n");
 
   // 全体ブライアスコア
   let totalBrier = 0;
@@ -379,23 +390,8 @@ async function main() {
   console.log(`  全体ブライアスコア: ${totalBrier.toFixed(4)}`);
 
   // 信頼できる確率帯
-  const reliableBins = Object.entries(bins)
-    .filter(([, d]) => d.count >= 50)
-    .filter(([, d]) => {
-      const avgPred = (d.predSum / d.count) * 100;
-      const actualRate = (d.sum / d.count) * 100;
-      return Math.abs(avgPred - actualRate) < 5;
-    })
-    .map(([label]) => label);
-
-  const unreliableBins = Object.entries(bins)
-    .filter(([, d]) => d.count >= 50)
-    .filter(([, d]) => {
-      const avgPred = (d.predSum / d.count) * 100;
-      const actualRate = (d.sum / d.count) * 100;
-      return Math.abs(avgPred - actualRate) >= 10;
-    })
-    .map(([label]) => label);
+  const reliableBins = binLabelsWhere(bins, (gap) => gap < 5);
+  const unreliableBins = binLabelsWhere(bins, (gap) => gap >= 10);
 
   console.log(
     `  信頼できる確率帯 (乖離<5pt): ${reliableBins.join(", ") || "なし"}`,
@@ -422,6 +418,33 @@ async function main() {
   }
 
   console.log("\n完了");
+}
+
+async function main() {
+  if (!isSupabaseEnabled()) {
+    console.error("❌ Supabase環境変数が未設定です。");
+    process.exit(1);
+  }
+
+  const opts = parseArgs();
+
+  printBanner();
+
+  const { predictions, resultMap } = await fetchData(opts);
+  const { matched, ...counts } = matchRaces(predictions, resultMap, opts);
+  filterRecentWeeks(matched, opts.weeks);
+  printScope(opts, matched, counts);
+
+  if (matched.length === 0) {
+    console.log("分析対象データがありません。");
+    return;
+  }
+
+  const { weekKeys, weeklyScores } = printWeeklyBrier(matched);
+  const bins = printBinCalibration(matched);
+  printTechniqueCalibration(matched);
+  printNigeWeekly(matched, weekKeys);
+  printSummary(matched, bins, weeklyScores);
 }
 
 main().catch((e) => {
