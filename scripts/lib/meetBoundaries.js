@@ -8,7 +8,7 @@
  *
  * scripts/ 側の分析・検証でだけ使う。画面側は `getMeetScoreboard` が表示中レースの
  * 節だけを引くので、節の切り出し自体が要らない。予選の締めの判定は
- * `src/components/race/seriesPoints.js` の `prelimEndRaceIdOf` を共有する
+ * `src/pure/seriesPoints.js` の `prelimEndRaceIdOf` を共有する
  * （同じ判定を2つ持たない。BOA-457）。
  *
  * 節内のグルーピングは `src/utils/meetGrouping.js` の `groupIntoCurrentMeet`
@@ -16,7 +16,7 @@
  * **全期間の全節を列挙する**ためのもの。
  */
 import { parseRaceId } from "../../src/utils/raceId.js";
-import { prelimEndRaceIdOf } from "../../src/components/race/seriesPoints.js";
+import { prelimEndRaceIdOf } from "../../src/pure/seriesPoints.js";
 
 /**
  * `race_conditions` の行を節ごとにまとめる。

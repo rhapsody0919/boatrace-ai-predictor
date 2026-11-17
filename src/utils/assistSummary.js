@@ -28,7 +28,7 @@ import {
   finishPositionOf,
   recordsBeforeRace,
 } from "../components/race/basicInfoStats.js";
-import { SCORE_POINTS } from "../components/race/seriesPoints.js";
+import { SCORE_POINTS } from "../pure/seriesPoints.js";
 
 // ---- 差がつく材料の範囲（D-37）----
 
