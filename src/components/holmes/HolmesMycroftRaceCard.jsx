@@ -76,35 +76,47 @@ function MemoryBox({ boat, items }) {
   );
 }
 
+function RaceSummary({ race, topBoat, topProb }) {
+  return (
+    <summary>
+      <span className="mycroft-race-title">
+        {race.venueName} {race.raceNumber}R
+      </span>
+      <span className="mycroft-race-time">
+        {race.startTime ? race.startTime.slice(0, 5) : ""}
+      </span>
+      <span className="mycroft-race-pick">
+        本命 <strong>{topBoat}号艇</strong>
+      </span>
+      <span className="mycroft-prob-badge">{formatPercent(topProb)}</span>
+    </summary>
+  );
+}
+
+function RankList({ race, maxProb }) {
+  return (
+    <div className="mycroft-rank-list">
+      {race.rankOrder.map((boat, i) => (
+        <RankRow
+          key={boat}
+          rank={i + 1}
+          boat={boat}
+          name={race.playerNames[boat]}
+          prob={race.winProbs[String(boat)] ?? 0}
+          maxProb={maxProb}
+        />
+      ))}
+    </div>
+  );
+}
+
 function HolmesMycroftRaceCard({ race }) {
   const { topBoat, topProb, maxProb } = raceTopInfo(race);
   return (
     <details className="mycroft-race-card">
-      <summary>
-        <span className="mycroft-race-title">
-          {race.venueName} {race.raceNumber}R
-        </span>
-        <span className="mycroft-race-time">
-          {race.startTime ? race.startTime.slice(0, 5) : ""}
-        </span>
-        <span className="mycroft-race-pick">
-          本命 <strong>{topBoat}号艇</strong>
-        </span>
-        <span className="mycroft-prob-badge">{formatPercent(topProb)}</span>
-      </summary>
+      <RaceSummary race={race} topBoat={topBoat} topProb={topProb} />
       <div className="mycroft-race-body">
-        <div className="mycroft-rank-list">
-          {race.rankOrder.map((boat, i) => (
-            <RankRow
-              key={boat}
-              rank={i + 1}
-              boat={boat}
-              name={race.playerNames[boat]}
-              prob={race.winProbs[String(boat)] ?? 0}
-              maxProb={maxProb}
-            />
-          ))}
-        </div>
+        <RankList race={race} maxProb={maxProb} />
         <MemoryBox
           boat={topBoat}
           items={race.attentionEvidence?.[String(topBoat)]}
