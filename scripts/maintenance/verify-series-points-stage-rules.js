@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { register } from "node:module";
 /**
  * verify-series-points-stage-rules.js — 得点率の「種別判定」の回帰テスト
  * （BOA-457 / BOA-458）。
@@ -83,37 +83,115 @@ function check(label, actual, expected) {
 }
 
 // BOA-1053: 賞典除外の印と減点を分け、行を保持する。
-for (const [penalty, excluded, deduct] of [[0, false, 0], [10, false, 10], [99, true, 0], [109, true, 10]]) {
-  check(`減点の読み方 ${penalty}`, readOfficialPenalty(penalty), { awardExcluded: excluded, deduct });
+for (const [penalty, excluded, deduct] of [
+  [0, false, 0],
+  [10, false, 10],
+  [99, true, 0],
+  [109, true, 10],
+]) {
+  check(`減点の読み方 ${penalty}`, readOfficialPenalty(penalty), {
+    awardExcluded: excluded,
+    deduct,
+  });
 }
 {
-  const row = { placements: "１２３４５６", total_points: 31, penalty_points: 109 };
+  const row = {
+    placements: "１２３４５６",
+    total_points: 31,
+    penalty_points: 109,
+  };
   check("109は10点だけ引く", officialSeriesScore(row), {
-    points: 21, runs: 6, rate: 3.5, finishes: [1, 2, 3, 4, 5, 6], awardExcluded: true,
+    points: 21,
+    runs: 6,
+    rate: 3.5,
+    finishes: [1, 2, 3, 4, 5, 6],
+    awardExcluded: true,
   });
   for (const p of [5, 7, 10, 15, 99]) {
-    const score = officialSeriesScore({ ...row, total_points: 40, penalty_points: p });
-    check(`既存減点 ${p}`, [score.points, score.rate, score.awardExcluded],
-      [40 - (p === 99 ? 0 : p), (40 - (p === 99 ? 0 : p)) / 6, p === 99]);
+    const score = officialSeriesScore({
+      ...row,
+      total_points: 40,
+      penalty_points: p,
+    });
+    check(
+      `既存減点 ${p}`,
+      [score.points, score.rate, score.awardExcluded],
+      [40 - (p === 99 ? 0 : p), (40 - (p === 99 ? 0 : p)) / 6, p === 99],
+    );
   }
-  const entries = [1, 2, 3].map((racerId) => ({ racerId, playerName: String(racerId) }));
-  const officialByRacer = Object.fromEntries(entries.map(({ racerId }) => [racerId,
-    { ...row, total_points: racerId === 1 ? 40 : racerId === 2 ? 31 : 12, penalty_points: 0 }]));
+  const entries = [1, 2, 3].map((racerId) => ({
+    racerId,
+    playerName: String(racerId),
+  }));
+  const officialByRacer = Object.fromEntries(
+    entries.map(({ racerId }) => [
+      racerId,
+      {
+        ...row,
+        total_points: racerId === 1 ? 40 : racerId === 2 ? 31 : 12,
+        penalty_points: 0,
+      },
+    ]),
+  );
   const baseline = buildMeetRanking({ entries, officialByRacer });
   officialByRacer[2].penalty_points = 109;
   for (const withdrawnRacerIds of [[], [2]]) {
-    const ranked = buildMeetRanking({ entries, officialByRacer, withdrawnRacerIds });
+    const ranked = buildMeetRanking({
+      entries,
+      officialByRacer,
+      withdrawnRacerIds,
+    });
     const excluded = ranked.find((r) => r.racerId === 2);
-    check("賞典除外の行・着順・走数を保持", [ranked.length, excluded.rank, excluded.withdrawn, excluded.excludedReason, excluded.finishes, excluded.runs],
-      [3, null, true, "awardExcluded", [1, 2, 3, 4, 5, 6], 6]);
-    check("下位の順位を詰める", ranked.find((r) => r.racerId === 3).rank,
-      baseline.find((r) => r.racerId === 3).rank - 1);
+    check(
+      "賞典除外の行・着順・走数を保持",
+      [
+        ranked.length,
+        excluded.rank,
+        excluded.withdrawn,
+        excluded.excludedReason,
+        excluded.finishes,
+        excluded.runs,
+      ],
+      [3, null, true, "awardExcluded", [1, 2, 3, 4, 5, 6], 6],
+    );
+    check(
+      "下位の順位を詰める",
+      ranked.find((r) => r.racerId === 3).rank,
+      baseline.find((r) => r.racerId === 3).rank - 1,
+    );
   }
-  check("前夜の減点も印を除く", prelimOfficialAdjustments([109, 99, 10].map((penalty_points, racer_id) => ({ racer_id, penalty_points })), "2026-10-18", "2026-10-19").penaltyByRacer, { 0: 10, 2: 10 });
-  for (const excludedReason of ["officialWithdrawn", "awardExcluded", "flying", "withdrawn", null]) {
-    check(`得点率を隠す ${excludedReason}`, meetRateHidden({ excludedReason }), ["officialWithdrawn", "awardExcluded"].includes(excludedReason));
+  check(
+    "前夜の減点も印を除く",
+    prelimOfficialAdjustments(
+      [109, 99, 10].map((penalty_points, racer_id) => ({
+        racer_id,
+        penalty_points,
+      })),
+      "2026-10-18",
+      "2026-10-19",
+    ).penaltyByRacer,
+    { 0: 10, 2: 10 },
+  );
+  for (const excludedReason of [
+    "officialWithdrawn",
+    "awardExcluded",
+    "flying",
+    "withdrawn",
+    null,
+  ]) {
+    check(
+      `得点率を隠す ${excludedReason}`,
+      meetRateHidden({ excludedReason }),
+      ["officialWithdrawn", "awardExcluded"].includes(excludedReason),
+    );
   }
-  check("賞典除外は金枠の候補外", meetRateBestCandidates([{ boat: 2, row: { rate: 3.5, runs: 6, excludedReason: "awardExcluded" } }])[0].value, null);
+  check(
+    "賞典除外は金枠の候補外",
+    meetRateBestCandidates([
+      { boat: 2, row: { rate: 3.5, runs: 6, excludedReason: "awardExcluded" } },
+    ])[0].value,
+    null,
+  );
 }
 
 // ---- 1. 配点区分 -----------------------------------------------------------
@@ -569,16 +647,161 @@ check(
     [true, false, false, false],
   );
   {
-    const service = readDataLayerSource();
+    // 今節の出走判定（getMeetScoreboard の entries の started）を、偽の supabase（メモリ上の表）の上で見る
+    const FAKE_KEY = "__verifySeriesPointsStageRulesSupabase";
+    const SWAP_CLIENT = `
+export async function resolve(specifier, context, nextResolve) {
+  const resolved = await nextResolve(specifier, context);
+  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
+    return {
+      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
+      shortCircuit: true,
+    };
+  }
+  return resolved;
+}
+`;
+    register(new URL("../lib/renderJsx.js", import.meta.url));
+    register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
+    globalThis.localStorage ??= {
+      getItem: () => null,
+      setItem() {},
+      removeItem() {},
+      key: () => null,
+      length: 0,
+    };
+    const makeFakeSupabase = (tables) => {
+      const calls = [];
+      return {
+        calls,
+        from(table) {
+          const q = { table, select: null, filters: [], range: null };
+          calls.push(q);
+          const run = () => {
+            const rows = (tables[table] ?? []).filter((row) =>
+              q.filters.every(([op, col, val]) => {
+                const v = row[col];
+                if (op === "eq") return v === val;
+                if (op === "gte") return v >= val;
+                if (op === "lt") return v < val;
+                if (op === "lte") return v <= val;
+                if (op === "in") return val.includes(v);
+                if (op === "like")
+                  return new RegExp(`^${val.replace(/_/g, ".")}$`).test(v);
+                throw new Error(`偽のクライアントに無い絞り: ${op}`);
+              }),
+            );
+            const [x, y] = q.range ?? [0, rows.length - 1];
+            return Promise.resolve({
+              data: rows.slice(x, y + 1).map((r) => ({ ...r })),
+              error: null,
+            });
+          };
+          const filter = (op) => (col, val) => {
+            q.filters.push([op, col, val]);
+            return chain;
+          };
+          const chain = {
+            select(cols) {
+              q.select = cols;
+              return chain;
+            },
+            eq: filter("eq"),
+            gte: filter("gte"),
+            lt: filter("lt"),
+            lte: filter("lte"),
+            like: filter("like"),
+            in: filter("in"),
+            order: () => chain,
+            range(x, y) {
+              q.range = [x, y];
+              return run();
+            },
+            then: (res, rej) => run().then(res, rej),
+          };
+          return chain;
+        },
+      };
+    };
+    let currentFake = null;
+    globalThis[FAKE_KEY] = { from: (table) => currentFake.from(table) };
+    const { getMeetScoreboard } =
+      await import("../../src/services/meetQueries2.js");
+    const { clearCache } = await import("../../src/services/core.js");
+    const RA = "2026-10-01-04-01"; // 本番ST の行がある。3号艇だけ「欠」
+    const RB = "2026-10-01-04-02"; // 本番ST の行が1つも無い（取得漏れの疑い）
+    const DISPLAY = "2026-10-02-04-01";
+    const ents = [RA, RB, DISPLAY].flatMap((race_id) =>
+      [1, 2, 3].map((boat_number) => ({
+        race_id,
+        boat_number,
+        racer_id: 7000 + boat_number,
+        player_name: `選手${boat_number}`,
+        motor_number: boat_number,
+      })),
+    );
+    clearCache();
+    currentFake = makeFakeSupabase({
+      race_entries: ents,
+      race_conditions: [RA, RB, DISPLAY].map((race_id, i) => ({
+        race_id,
+        race_stage: "予選",
+        series_day: i < 2 ? 1 : 2,
+        is_final_day: false,
+      })),
+      race_start_timings: [
+        {
+          race_id: RA,
+          boat_number: 1,
+          start_timing: 0.12,
+          is_flying: false,
+          finish_mark: null,
+        },
+        {
+          race_id: RA,
+          boat_number: 2,
+          start_timing: 0.15,
+          is_flying: false,
+          finish_mark: null,
+        },
+        {
+          race_id: RA,
+          boat_number: 3,
+          start_timing: null,
+          is_flying: false,
+          finish_mark: "欠",
+        },
+      ],
+    });
+    const board = await getMeetScoreboard(DISPLAY, 4);
     check(
-      "今節の出走判定は、本番STの「欠」の行を出走に数えない",
-      /\.filter\(\(r\) => !isAbsentStartRow\(r\)\)\s*\.map\(\(r\) => `\$\{r\.race_id\}\|\$\{r\.boat_number\}`\)/.test(
-        service,
-      ) &&
-        /select\("race_id, boat_number, start_timing, is_flying, finish_mark"\)/.test(
-          service,
-        ),
-      true,
+      "今節の出走判定は、本番STの「欠」の行を出走に数えない（行が1つも無いレースは取得漏れとして全艇を出走扱い）",
+      board.entries.map((e) => [
+        e.raceId,
+        e.boatNumber,
+        e.started,
+        e.finishMark,
+      ]),
+      [
+        [RA, 1, true, null],
+        [RA, 2, true, null],
+        [RA, 3, false, "欠"],
+        [RB, 1, true, null],
+        [RB, 2, true, null],
+        [RB, 3, true, null],
+      ],
+    );
+    const stq = currentFake.calls.find((q) => q.table === "race_start_timings");
+    check(
+      "今節の本番STは節の頭から表示中のレースの直前まで、finish_mark を含む列で取る",
+      [stq.select, stq.filters.filter(([op]) => op !== "like")],
+      [
+        "race_id, boat_number, start_timing, is_flying, finish_mark",
+        [
+          ["gte", "race_id", RA.slice(0, 10)],
+          ["lt", "race_id", DISPLAY],
+        ],
+      ],
     );
     // 本番STの行そのものが無い欠場（他艇の行はある）も、履歴で「欠場」と出す
     // （2026-06-13 浜名湖5R・12R の中岡正彦が「着外(順位不明)」になっていた）。
@@ -828,23 +1051,54 @@ check(
 check("バッジ: 予選", getRaceStageKey("予選"), null);
 
 // BOA-1120: バッジの全フィールド・優勝戦判定・表の種別表示を固定する。
-const FINAL_BADGE = { emoji: "🏆", i18nKey: "raceStage.final", color: "#b91c1c" };
-const SEMIFINAL_BADGE = { emoji: "🥈", i18nKey: "raceStage.semifinal", color: "#c2410c" };
+const FINAL_BADGE = {
+  emoji: "🏆",
+  i18nKey: "raceStage.final",
+  color: "#b91c1c",
+};
+const SEMIFINAL_BADGE = {
+  emoji: "🥈",
+  i18nKey: "raceStage.semifinal",
+  color: "#c2410c",
+};
 const BADGE_CASES = [
-  ...["優勝戦", "ツッキー優勝戦", "ＭＤ優勝戦", "決勝戦", "王将位決定戦",
-    "ファイナル", "県内選手権優", "ゴールド優勝"].map((stage) => [stage, true, FINAL_BADGE]),
-  ...["準優勝戦", "Ｗ準優戦前半", "準決勝戦", "セミファイナル"].map(
-    (stage) => [stage, false, SEMIFINAL_BADGE],
-  ),
-  ...["準々優勝戦", "準優進出戦", "ファイナル進出戦", "ファイナル選抜",
-    "予選", "一般", "", null, undefined].map((stage) => [stage, false, undefined]),
+  ...[
+    "優勝戦",
+    "ツッキー優勝戦",
+    "ＭＤ優勝戦",
+    "決勝戦",
+    "王将位決定戦",
+    "ファイナル",
+    "県内選手権優",
+    "ゴールド優勝",
+  ].map((stage) => [stage, true, FINAL_BADGE]),
+  ...["準優勝戦", "Ｗ準優戦前半", "準決勝戦", "セミファイナル"].map((stage) => [
+    stage,
+    false,
+    SEMIFINAL_BADGE,
+  ]),
+  ...[
+    "準々優勝戦",
+    "準優進出戦",
+    "ファイナル進出戦",
+    "ファイナル選抜",
+    "予選",
+    "一般",
+    "",
+    null,
+    undefined,
+  ].map((stage) => [stage, false, undefined]),
 ];
 for (const [stage, final, badge] of BADGE_CASES) {
   const input = String(JSON.stringify(stage));
   const key = getRaceStageKey(stage);
   check(`isFinalStage(${input})`, isFinalStage(stage), final);
   check(`getRaceStageBadge(${input})`, getRaceStageBadge(stage), badge);
-  check(`isFinalStage とキーの一致(${input})`, isFinalStage(stage), key === "final");
+  check(
+    `isFinalStage とキーの一致(${input})`,
+    isFinalStage(stage),
+    key === "final",
+  );
   check(
     `バッジとキーの一致(${input})`,
     getRaceStageBadge(stage)?.i18nKey,
@@ -855,11 +1109,23 @@ for (const [stage, final, badge] of BADGE_CASES) {
 const t = (key) => `T(${key})`;
 const LABEL_CASES = [
   ["予選特賞", "ja", { text: "予選特賞", isOfficial: true }],
-  ["予選特賞", "en", { text: "T(raceStage.qualifierSpecial)", isOfficial: false }],
-  ["予選特賞", "zh", { text: "T(raceStage.qualifierSpecial)", isOfficial: false }],
+  [
+    "予選特賞",
+    "en",
+    { text: "T(raceStage.qualifierSpecial)", isOfficial: false },
+  ],
+  [
+    "予選特賞",
+    "zh",
+    { text: "T(raceStage.qualifierSpecial)", isOfficial: false },
+  ],
   ["一般", "ko", { text: "T(raceStage.general)", isOfficial: false }],
   ["優勝戦", "en", { text: "T(raceStage.final)", isOfficial: false }],
-  ["準優進出戦", "en", { text: "T(raceStage.semifinalQualifier)", isOfficial: false }],
+  [
+    "準優進出戦",
+    "en",
+    { text: "T(raceStage.semifinalQualifier)", isOfficial: false },
+  ],
   ["ＤＲ", "en", { text: "T(raceStage.dream)", isOfficial: false }],
   ["朝からセンプル", "en", { text: "朝からセンプル", isOfficial: true }],
   ["朝からセンプル", "ja", { text: "朝からセンプル", isOfficial: true }],
@@ -977,7 +1243,13 @@ for (const gap of KNOWN_GAPS) console.log(JSON.stringify(gap));
       total_points: 38,
       penalty_points: 10,
     }),
-    { points: 28, runs: 6, rate: 28 / 6, finishes: [3, 2, 1, 4, 5, 2], awardExcluded: false },
+    {
+      points: 28,
+      runs: 6,
+      rate: 28 / 6,
+      finishes: [3, 2, 1, 4, 5, 2],
+      awardExcluded: false,
+    },
   );
   // 若松G1の吉田裕平。減点99は賞典除外の印で、引くと得点が負になる
   check(
@@ -1846,10 +2118,30 @@ check(
 // 変わらないので 9/23 の行でよい。同じ選手が次の節で別のモーターに乗った行は使わない
 {
   const rows = [
-    { racer_id: 1, race_date: "2026-09-23", motor_number: 33, pretest_time: 6.68 },
-    { racer_id: 1, race_date: "2026-09-24", motor_number: 33, pretest_time: 6.68 },
-    { racer_id: 2, race_date: "2026-09-26", motor_number: 70, pretest_time: 6.90 }, // 別の節
-    { racer_id: 2, race_date: "2026-09-23", motor_number: 12, pretest_time: 6.72 },
+    {
+      racer_id: 1,
+      race_date: "2026-09-23",
+      motor_number: 33,
+      pretest_time: 6.68,
+    },
+    {
+      racer_id: 1,
+      race_date: "2026-09-24",
+      motor_number: 33,
+      pretest_time: 6.68,
+    },
+    {
+      racer_id: 2,
+      race_date: "2026-09-26",
+      motor_number: 70,
+      pretest_time: 6.9,
+    }, // 別の節
+    {
+      racer_id: 2,
+      race_date: "2026-09-23",
+      motor_number: 12,
+      pretest_time: 6.72,
+    },
   ];
   const picked = pickMeetPretestByRacer(
     rows,
@@ -1877,7 +2169,11 @@ check(
     ["undefined", undefined],
     ["空配列", []],
   ]) {
-    check(`最新の前検: ${label} は空`, [...pickLatestPretestByRacer(rows).entries()], []);
+    check(
+      `最新の前検: ${label} は空`,
+      [...pickLatestPretestByRacer(rows).entries()],
+      [],
+    );
   }
   const rows = [
     { racer_id: 1, race_date: "2026-10-20", t: 6.8 },
@@ -1902,19 +2198,23 @@ check(
   );
   check(
     "最新の前検: 同じ日付は入力の先の行を採る",
-    [...pickLatestPretestByRacer([
-      { racer_id: 1, race_date: "2026-10-23", t: "a" },
-      { racer_id: 1, race_date: "2026-10-23", t: "b" },
-    ]).entries()],
+    [
+      ...pickLatestPretestByRacer([
+        { racer_id: 1, race_date: "2026-10-23", t: "a" },
+        { racer_id: 1, race_date: "2026-10-23", t: "b" },
+      ]).entries(),
+    ],
     [[1, { racer_id: 1, race_date: "2026-10-23", t: "a" }]],
   );
   check(
     "最新の前検: Map のキーは日付の新しい順",
-    [...pickLatestPretestByRacer([
-      { racer_id: 2, race_date: "2026-10-20" },
-      { racer_id: 1, race_date: "2026-10-23" },
-      { racer_id: 3, race_date: "2026-10-22" },
-    ]).keys()],
+    [
+      ...pickLatestPretestByRacer([
+        { racer_id: 2, race_date: "2026-10-20" },
+        { racer_id: 1, race_date: "2026-10-23" },
+        { racer_id: 3, race_date: "2026-10-22" },
+      ]).keys(),
+    ],
     [1, 3, 2],
   );
   const input = [
@@ -1943,7 +2243,8 @@ const PRETEST_KNOWN_GAPS = [
       { racer_id: 1, t: "u" },
       { racer_id: 1, race_date: "2026-10-20", t: "d" },
     ],
-    specification: "日付が undefined の扱いは未定（現在は欠けた行が最新になる）",
+    specification:
+      "日付が undefined の扱いは未定（現在は欠けた行が最新になる）",
   },
   {
     input: [
@@ -1964,24 +2265,45 @@ for (const gap of PRETEST_KNOWN_GAPS) console.log(JSON.stringify(gap));
 {
   const groups = groupExcludedRacers(
     [
-      { racerId: 1, playerName: "山田　太郎", withdrawn: false, excludedReason: null },
-      { racerId: 2, playerName: "鈴木一郎", withdrawn: true, excludedReason: "withdrawn" },
-      { racerId: 3, playerName: "佐藤花子", withdrawn: true, excludedReason: "flying" },
-      { racerId: 4, playerName: "高橋", withdrawn: true, excludedReason: "officialWithdrawn" },
-      { racerId: 5, playerName: "田中", withdrawn: true, excludedReason: "awardExcluded" },
+      {
+        racerId: 1,
+        playerName: "山田　太郎",
+        withdrawn: false,
+        excludedReason: null,
+      },
+      {
+        racerId: 2,
+        playerName: "鈴木一郎",
+        withdrawn: true,
+        excludedReason: "withdrawn",
+      },
+      {
+        racerId: 3,
+        playerName: "佐藤花子",
+        withdrawn: true,
+        excludedReason: "flying",
+      },
+      {
+        racerId: 4,
+        playerName: "高橋",
+        withdrawn: true,
+        excludedReason: "officialWithdrawn",
+      },
+      {
+        racerId: 5,
+        playerName: "田中",
+        withdrawn: true,
+        excludedReason: "awardExcluded",
+      },
     ],
     [{ racerId: 6, playerName: "伊藤" }],
   );
-  check(
-    "理由ごとにまとめ、順位の付いた選手を入れない",
-    groups,
-    [
-      { reason: "flying", names: ["佐藤花子"] },
-      { reason: "awardExcluded", names: ["田中"] },
-      { reason: "withdrawn", names: ["鈴木一郎", "高橋"] },
-      { reason: "absent", names: ["伊藤"] },
-    ],
-  );
+  check("理由ごとにまとめ、順位の付いた選手を入れない", groups, [
+    { reason: "flying", names: ["佐藤花子"] },
+    { reason: "awardExcluded", names: ["田中"] },
+    { reason: "withdrawn", names: ["鈴木一郎", "高橋"] },
+    { reason: "absent", names: ["伊藤"] },
+  ]);
   check("対象外が居なければ空", groupExcludedRacers([], []), []);
 }
 
@@ -2046,7 +2368,14 @@ for (const gap of PRETEST_KNOWN_GAPS) console.log(JSON.stringify(gap));
   const ranked = buildMeetRanking(board);
   check(
     "当社計算から公式の前夜の減点を引いて並べる（当日の走は当社計算のまま）",
-    ranked.map((r) => [r.racerId, r.rank, r.points, r.runs, r.fromOfficial, r.penaltyFromOfficial]),
+    ranked.map((r) => [
+      r.racerId,
+      r.rank,
+      r.points,
+      r.runs,
+      r.fromOfficial,
+      r.penaltyFromOfficial,
+    ]),
     [
       [1, 1, 16, 2, false, 0],
       [2, 2, 8, 2, false, 10],

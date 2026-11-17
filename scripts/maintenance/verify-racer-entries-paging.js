@@ -11,17 +11,35 @@
  *   A2. 続く fetchAllByIn の in() は、race_id が約850件を超えると URL が長すぎて落ちる（2026-10-25 の本番の実測:
  *      800件・約15.4KB は通り、850件・約16.3KB で fetch failed）。1000行の上限より先にここで落ちるので、
  *      fetchAllInChunks が値を分けて読み、つないだ結果が分けずに読んだときと同じ行・同じ並びになることを見る
- *   B. 静的な検査: 上の3関数が race_entries を fetchRacerEntriesSince で取り、その中が主キーで並べて
- *      fetchAllPages の .range() でページを読む
+ *   B. 振る舞いの試験: 上の3関数を偽の supabase の上で呼び、race_entries を窓の始点・主キー順・.range() のページで
+ *      取り切る（1500走が1000行で切れない）。出走数が同じ会場は会場コード順
  *
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
+import { register } from "node:module";
 import {
   fetchAllInChunks,
   fetchAllPages,
 } from "../../src/services/fetchAllPages.js";
+
+// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
+// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
+const FAKE_KEY = "__verifyRacerEntriesPagingSupabase";
+const SWAP_CLIENT = `
+export async function resolve(specifier, context, nextResolve) {
+  const resolved = await nextResolve(specifier, context);
+  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
+    return {
+      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
+      shortCircuit: true,
+    };
+  }
+  return resolved;
+}
+`;
+register(new URL("../lib/renderJsx.js", import.meta.url));
+register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
 
 const MAX_ROWS = 1000; // PostgREST の既定の上限
 
@@ -201,56 +219,237 @@ await check("値が無い: 要求を送らず空配列", async () => {
   assert.equal(calls, 0);
 });
 
-// --- B. 静的な検査 ---
-const source = readDataLayerSource();
+// --- B. 振る舞いの試験（サービス層を偽の supabase の上で呼ぶ。本文の正規表現から置き換え） ---
+// supabaseClient.js の supabase は import の時に決まるので、先に中継役を置き、試験ごとに中の偽を替える
+let currentFake = null;
+globalThis[FAKE_KEY] = { from: (table) => currentFake.from(table) };
+const racerQueries = await import("../../src/services/racerQueries.js");
+const racerQueries2 = await import("../../src/services/racerQueries2.js");
+const { clearCache } = await import("../../src/services/core.js");
+const { racerHistoryCutoff } =
+  await import("../../src/utils/racerVenueBoatStats.js");
+const { fetchRacerEntriesSince } = racerQueries;
+const { getRacerScopedRaceStats, getRacerVenueStats, getRacerRaceHistory } =
+  racerQueries2;
 
-// 殻のメソッドの形では、旧と同じく次の1行の頭のメソッドの前まで（頭の改行も旧のまま付ける）
-function methodBody(name) {
-  const body = dataLayerMethod(name, { until: /\n {2}[a-zA-Z]+\([^)]*\) \{/ });
-  assert.ok(body, `${name} が見つからない`);
-  return `\n${body}`;
+const RACER = 5001;
+const addDays = (ymd, days) => {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+const today = new Date().toISOString().slice(0, 10);
+const rid = (date, venue, no) =>
+  `${date}-${String(venue).padStart(2, "0")}-${String(no).padStart(2, "0")}`;
+
+// 1選手の走を count 本（全部 boat 1 が1着の確定した走。会場は venueOf(i)）
+function buildTables(count, venueOf = () => 10) {
+  const raceIds = Array.from({ length: count }, (_, i) =>
+    rid(addDays(today, -1 - Math.floor(i / 12)), venueOf(i), (i % 12) + 1),
+  );
+  assert.equal(new Set(raceIds).size, count);
+  return {
+    race_entries: raceIds.map((race_id) => ({
+      racer_id: RACER,
+      race_id,
+      boat_number: 1,
+      grade: "A1",
+      f_count: 0,
+    })),
+    races: raceIds.map((race_id) => ({
+      race_id,
+      race_date: race_id.slice(0, 10),
+      venue_code: Number(race_id.slice(11, 13)),
+      race_grade: "ippan",
+    })),
+    race_results: raceIds.map((race_id) => ({
+      race_id,
+      rank1: 1,
+      rank2: 2,
+      rank3: 3,
+      rank4: 4,
+      rank5: 5,
+      rank6: 6,
+      race_status: null,
+    })),
+  };
 }
 
-for (const name of [
-  "getRacerScopedRaceStats",
-  "getRacerVenueStats",
-  "getRacerRaceHistory",
+/**
+ * 偽の supabase クライアント（メモリ上の表）。PostgREST と同じく、.range() の無い問い合わせは先頭から1000行で、
+ * .range() があっても1回に1000行で切る。呼ばれた問い合わせを calls に残す。order() は記録だけで並べ替えない
+ * （返す順は表の順。取り方の順に依らない並びを見るため）
+ */
+function makeFakeSupabase(tables) {
+  const calls = [];
+  return {
+    calls,
+    from(table) {
+      const q = { table, select: null, filters: [], orders: [], range: null };
+      calls.push(q);
+      const run = () => {
+        const rows = (tables[table] ?? []).filter((row) =>
+          q.filters.every(([op, col, val]) => {
+            const v = row[col];
+            if (op === "eq") return v === val;
+            if (op === "gte") return v >= val;
+            if (op === "in") return val.includes(v);
+            throw new Error(`偽のクライアントに無い絞り: ${op}`);
+          }),
+        );
+        const [a, b] = q.range ?? [0, MAX_ROWS - 1];
+        return Promise.resolve({
+          data: rows
+            .slice(a, Math.min(b + 1, a + MAX_ROWS))
+            .map((r) => ({ ...r })),
+          error: null,
+        });
+      };
+      const filter = (op) => (col, val) => {
+        q.filters.push([op, col, val]);
+        return chain;
+      };
+      const chain = {
+        select(cols) {
+          q.select = cols;
+          return chain;
+        },
+        eq: filter("eq"),
+        gte: filter("gte"),
+        in: filter("in"),
+        order(col) {
+          q.orders.push(col);
+          return chain;
+        },
+        range(a, b) {
+          q.range = [a, b];
+          return run();
+        },
+        then(res, rej) {
+          return run().then(res, rej);
+        },
+      };
+      return chain;
+    },
+  };
+}
+
+// サービス層のキャッシュは localStorage にも書く。Node には無いので、何も残さない物を置く
+globalThis.localStorage ??= {
+  getItem: () => null,
+  setItem() {},
+  removeItem() {},
+  key: () => null,
+  length: 0,
+};
+const install = (tables) => {
+  clearCache();
+  currentFake = makeFakeSupabase(tables);
+  return currentFake;
+};
+const entryQueries = (fake) =>
+  fake.calls.filter((q) => q.table === "race_entries");
+
+await check(
+  "fetchRacerEntriesSince: その選手・since 以降の race_entries を、主キー（race_id, boat_number）で並べ .range() のページで1500行全部取る",
+  async () => {
+    const tables = buildTables(1500);
+    const fake = install(tables);
+    const since = rid(addDays(today, -200), 1, 1);
+    const rows = await fetchRacerEntriesSince(
+      RACER,
+      "race_id, boat_number",
+      since,
+    );
+    assert.deepEqual(
+      rows.map((r) => r.race_id),
+      tables.race_entries.map((r) => r.race_id),
+    );
+    const qs = entryQueries(fake);
+    assert.deepEqual(
+      qs.map((q) => q.range),
+      [
+        [0, 999],
+        [1000, 1999],
+      ],
+    );
+    for (const q of qs) {
+      assert.equal(q.select, "race_id, boat_number");
+      assert.deepEqual(q.orders, ["race_id", "boat_number"]);
+      assert.deepEqual(q.filters, [
+        ["eq", "racer_id", RACER],
+        ["gte", "race_id", since],
+      ]);
+    }
+  },
+);
+
+const EXPECTED_SELECT = {
+  getRacerScopedRaceStats: "race_id, boat_number, grade, f_count",
+  getRacerVenueStats: "race_id, boat_number",
+  getRacerRaceHistory: "race_id, boat_number",
+};
+const lengthOf = {
+  getRacerScopedRaceStats: (r) => r.length,
+  getRacerVenueStats: (r) => r[0]?.total_races,
+  getRacerRaceHistory: (r) => r.length,
+};
+for (const [name, fn] of [
+  ["getRacerScopedRaceStats", getRacerScopedRaceStats],
+  ["getRacerVenueStats", getRacerVenueStats],
+  ["getRacerRaceHistory", getRacerRaceHistory],
 ]) {
   await check(
-    `${name}: race_entries を fetchRacerEntriesSince で取り切る（直の .from("race_entries") が無い）`,
-    () => {
-      const body = methodBody(name);
-      assert.match(body, /await fetchRacerEntriesSince\(/);
-      assert.doesNotMatch(body, /\.from\("race_entries"\)/);
+    `${name}: 1500走の選手を、race_entries を直の1回でなく窓の始点（racerHistoryCutoff）・主キー順・.range() のページで取り切る`,
+    async () => {
+      const fake = install(buildTables(1500));
+      const result = await fn(RACER);
+      assert.equal(lengthOf[name](result), 1500); // 1000行で切れていない
+      const qs = entryQueries(fake);
+      assert.deepEqual(
+        qs.map((q) => q.range),
+        [
+          [0, 999],
+          [1000, 1999],
+        ],
+      );
+      for (const q of qs) {
+        assert.equal(q.select, EXPECTED_SELECT[name]);
+        assert.deepEqual(q.orders, ["race_id", "boat_number"]);
+        assert.deepEqual(q.filters, [
+          ["eq", "racer_id", RACER],
+          ["gte", "race_id", racerHistoryCutoff()],
+        ]);
+      }
     },
   );
 }
 
 await check(
-  "fetchRacerEntriesSince: 主キーで並べ、fetchAllPages の .range() でページを読む",
-  () => {
-    const m = /function fetchRacerEntriesSince\([^)]*\) \{([\s\S]*?)\n\}/.exec(
-      source,
-    );
-    assert.ok(m, "fetchRacerEntriesSince が見つからない");
-    assert.match(m[1], /return fetchAllPages\(\(from, to\) =>/);
-    assert.match(m[1], /\.from\("race_entries"\)/);
-    assert.match(
-      m[1],
-      /for \(const key of FETCH_ALL_BY_IN_ORDER\.race_entries\) \{\s*query = query\.order\(key\);/,
-    );
-    assert.match(m[1], /return query\.range\(from, to\);/);
-  },
-);
-
-// 新の取り方は主キー順なので、同じ出走数の会場の並びが旧（並びなし）と入れ替わる（2026-10-25 の本番の実測で
-// 上位7人中3人）。取り方の順に依らないよう、同数は会場コードで決める
-await check(
-  "getRacerVenueStats: 出走数が同じ会場は会場コードの順（取得の順に依らない）",
-  () => {
-    assert.match(
-      methodBody("getRacerVenueStats"),
-      /b\.total_races - a\.total_races \|\|\s*Number\(a\.venue_code\) - Number\(b\.venue_code\)/,
+  "getRacerVenueStats: 出走数が同じ会場は会場コードの順（表の並びが逆でも同じ）",
+  async () => {
+    // 会場 9 と 3 が6走ずつ、会場 10 が7走。表の先頭は会場 9 → DB の返す順で決めると 9 が先になる
+    const venueOf = (i) => (i < 7 ? 10 : i < 13 ? 9 : 3);
+    const tables = buildTables(19, venueOf);
+    const venues = async (t) => {
+      install(t);
+      return (await getRacerVenueStats(RACER)).map((r) => [
+        r.venue_code,
+        r.total_races,
+      ]);
+    };
+    const expected = [
+      [10, 7],
+      [3, 6],
+      [9, 6],
+    ];
+    assert.deepEqual(await venues(tables), expected);
+    assert.deepEqual(
+      await venues({
+        ...tables,
+        race_entries: [...tables.race_entries].reverse(),
+      }),
+      expected,
     );
   },
 );

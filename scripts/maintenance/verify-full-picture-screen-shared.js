@@ -6,7 +6,8 @@
  * 材料（sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs）からも使う（画面と投稿の数字が食い違わないため）。
  * 移す前の関数と 3,000 通りの乱数の入力で値が一致することを確かめてから移した。ここでは移した後の形を固定する。
  *
- *   1. サービス層が3つの純関数を import し、整形の写しを持たない（二重の実装に戻らない）
+ *   1. 材料が3つの純関数を import する。サービス層は同じ純関数と同じ値を返し、整形の写しを持たない（二重の実装に戻らない。
+ *      RA42: 本文の正規表現から、偽の supabase クライアントの上でサービスの公開の入口を呼ぶ試験へ置き換えた。末尾の 5）
  *   2. buildRacerRaceHistoryRows（getRacerRaceHistory）: 使えない結果・会場の無い走を除く、raceId の昇順、
  *      着欄の記号の走は unranked、進入は本番STの進入→Kファイルの順、ST順位は F を除く
  *   3. groupLosingTechniqueRows（getLosingTechniqueStats）: 枠ごとにまとめ、last_updated は先頭の行
@@ -17,7 +18,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { register } from "node:module";
 import {
   buildRacerRaceHistoryRows,
   isUnrankedFinishMark,
@@ -29,7 +30,25 @@ import {
 } from "../../src/utils/originalExhibition.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const service = readDataLayerSource();
+
+// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
+// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
+const FAKE_KEY = "__verifyFullPictureScreenSharedSupabase";
+const SWAP_CLIENT = `
+export async function resolve(specifier, context, nextResolve) {
+  const resolved = await nextResolve(specifier, context);
+  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
+    return {
+      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
+      shortCircuit: true,
+    };
+  }
+  return resolved;
+}
+`;
+register(new URL("../lib/renderJsx.js", import.meta.url));
+register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
+
 const materials = fs.readFileSync(
   path.join(
     __dirname,
@@ -45,13 +64,6 @@ for (const [name, from] of [
   ["shapeOriginalExhibition", "originalExhibition.js"],
 ]) {
   assert.match(
-    service,
-    new RegExp(
-      `import \\{ ${name} \\} from "[./]+(utils/)?${from.replace(".", "\\.")}"`,
-    ),
-    `サービス層が ${name} を import する`,
-  );
-  assert.match(
     materials,
     new RegExp(
       `import \\{ ${name}[ ,][^}]*\\} from "[./]+src/(services|utils)/${from.replace(".", "\\.")}"`,
@@ -59,22 +71,6 @@ for (const [name, from] of [
     `材料が ${name} を import する`,
   );
 }
-assert.doesNotMatch(
-  service,
-  /payoutPlace1: result\.payout_place_1/,
-  "サービス層に出走履歴の整形の写しが無い",
-);
-assert.doesNotMatch(
-  service,
-  /technique: row\.losing_technique/,
-  "サービス層に負けの決まり手のまとめの写しが無い",
-);
-assert.doesNotMatch(
-  service,
-  /const ORIGINAL_EXHIBITION_KINDS|const measured = values\.filter/,
-  "サービス層にオリジナル展示の整形の写しが無い",
-);
-
 // 2. 出走履歴の行
 const result = (race_id, over = {}) => ({
   race_id,
@@ -103,7 +99,7 @@ const R = [
   "2026-10-03-02-01",
   "2026-10-04-02-01",
 ];
-const rows = buildRacerRaceHistoryRows({
+const historyInput = {
   entries: [
     { race_id: R[0], boat_number: 2 },
     { race_id: R[1], boat_number: 1 },
@@ -168,7 +164,8 @@ const rows = buildRacerRaceHistoryRows({
       entry_course: 1,
     },
   ],
-});
+};
+const rows = buildRacerRaceHistoryRows(historyInput);
 assert.deepEqual(
   rows.map((r) => r.raceId),
   [R[1], R[0]],
@@ -322,5 +319,197 @@ assert.deepEqual(ORIGINAL_EXHIBITION_KINDS, [
   "まわり足",
   "直線",
 ]);
+
+// 5. サービス層（領域の Queries の公開の入口）を偽の supabase クライアントの上で呼ぶ。画面は材料と同じ純関数の値を返し、
+//    整形の写しを持たない（写しが別の値を作れば、上の 2〜4 で固定した純関数の値と食い違って落ちる）
+/** 偽の supabase クライアント（メモリ上の表）。select・eq・gte・in・order・range・maybeSingle と await を扱う */
+function makeFakeSupabase(tables) {
+  return {
+    from(table) {
+      const filters = [];
+      let rangeArgs = null;
+      const run = () => {
+        const found = (tables[table] ?? []).filter((row) =>
+          filters.every(([op, col, val]) => {
+            if (op === "eq") return row[col] === val;
+            if (op === "gte") return row[col] >= val;
+            if (op === "in") return val.includes(row[col]);
+            throw new Error(`偽のクライアントに無い絞り: ${op}`);
+          }),
+        );
+        const [a, b] = rangeArgs ?? [0, found.length - 1];
+        return found.slice(a, b + 1).map((r) => ({ ...r }));
+      };
+      const filter = (op) => (col, val) => {
+        filters.push([op, col, val]);
+        return chain;
+      };
+      const chain = {
+        select: () => chain,
+        eq: filter("eq"),
+        gte: filter("gte"),
+        in: filter("in"),
+        order: () => chain,
+        range(a, b) {
+          rangeArgs = [a, b];
+          return Promise.resolve({ data: run(), error: null });
+        },
+        maybeSingle: () =>
+          Promise.resolve({ data: run()[0] ?? null, error: null }),
+        then(res, rej) {
+          return Promise.resolve({ data: run(), error: null }).then(res, rej);
+        },
+      };
+      return chain;
+    },
+  };
+}
+
+// 出走履歴: 2 の入力を、選手の窓（730日）の中の日付へ付け替えて表に置く（窓は今日から数えるので、固定の日付だと期限が来る）
+const today = new Date().toISOString().slice(0, 10);
+const addDays = (ymd, days) => {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+// R の日付の昇順に、今日の3〜6日前を割り当てる（並びを保つ）
+const sortedDates = [...new Set(R.map((id) => id.slice(0, 10)))].sort();
+let remapped = JSON.stringify(historyInput);
+for (const id of R) {
+  const newDate = addDays(today, -6 + sortedDates.indexOf(id.slice(0, 10)));
+  remapped = remapped.replaceAll(id, `${newDate}${id.slice(10)}`);
+}
+const serviceInput = JSON.parse(remapped);
+const LOSING_ROWS = [
+  {
+    venue_code: 1,
+    boat_number: 1,
+    losing_technique: "差し",
+    count_90days: 30,
+    total_losses_90days: 80,
+    percentage: 37.5,
+    last_updated: "2026-10-25",
+  },
+  {
+    venue_code: 1,
+    boat_number: 1,
+    losing_technique: "まくり",
+    count_90days: 20,
+    total_losses_90days: 80,
+    percentage: 25,
+    last_updated: "2026-10-24",
+  },
+  // 別の会場の行は混ざらない
+  {
+    venue_code: 2,
+    boat_number: 3,
+    losing_technique: "逃げ",
+    count_90days: 5,
+    total_losses_90days: 200,
+    percentage: 2.5,
+    last_updated: "2026-10-24",
+  },
+];
+const SERVICE_RACER = 4201;
+const FAKE = makeFakeSupabase({
+  race_entries: [
+    ...serviceInput.entries.map((e) => ({ ...e, racer_id: SERVICE_RACER })),
+    // 別の選手の走は返さない
+    {
+      race_id: serviceInput.entries[0].race_id,
+      boat_number: 5,
+      racer_id: SERVICE_RACER + 1,
+    },
+  ],
+  races: serviceInput.raceRows,
+  race_results: serviceInput.resultRows,
+  exhibition_data: serviceInput.exhibitionRows,
+  race_conditions: serviceInput.conditionRows,
+  race_start_timings: serviceInput.stRows,
+  losing_technique_stats: LOSING_ROWS,
+  race_original_exhibition: [
+    {
+      race_id: "ox-1",
+      item_labels: " 直線 | 一周 ",
+      updated_at: "2026-10-25T05:00:00Z",
+    },
+  ],
+  race_original_exhibition_values: [
+    { race_id: "ox-1", boat_number: 1, kind: "一周", value: "37.21" },
+    { race_id: "ox-1", boat_number: 1, kind: "直線", value: 7.01 },
+    { race_id: "ox-1", boat_number: 2, kind: "一周", value: null },
+    { race_id: "ox-1", boat_number: 2, kind: "まわり足", value: "5.5" },
+    { race_id: "ox-2", boat_number: 1, kind: "直線", value: "9" },
+  ],
+});
+globalThis[FAKE_KEY] = FAKE;
+// サービス層のキャッシュは localStorage にも書く。Node には無いので、何も残さない物を置く
+globalThis.localStorage ??= {
+  getItem: () => null,
+  setItem() {},
+  removeItem() {},
+  key: () => null,
+  length: 0,
+};
+const { clearCache } = await import("../../src/services/core.js");
+const { getRacerRaceHistory } =
+  await import("../../src/services/racerQueries2.js");
+const { getLosingTechniqueStats } =
+  await import("../../src/services/venueQueries2.js");
+const { getRaceOriginalExhibition } =
+  await import("../../src/services/raceQueries4.js");
+
+clearCache();
+const screenRows = await getRacerRaceHistory(SERVICE_RACER);
+assert.deepEqual(
+  screenRows,
+  buildRacerRaceHistoryRows(serviceInput),
+  "getRacerRaceHistory は buildRacerRaceHistoryRows と同じ値（別の選手の走・使えない結果・会場の無い走を含めて）",
+);
+assert.equal(screenRows.length, 2, "使えない結果・会場の無い走を除いた2走");
+assert.equal(screenRows[1].entryCourse, 3, "進入は本番STの進入→Kファイルの順");
+
+clearCache();
+const screenLosing = await getLosingTechniqueStats(1);
+const sharedLosing = groupLosingTechniqueRows(
+  LOSING_ROWS.filter((r) => r.venue_code === 1),
+);
+assert.equal(screenLosing.venue_code, 1);
+assert.equal(screenLosing.venue_name, "桐生");
+assert.equal(screenLosing.last_updated, sharedLosing.last_updated);
+assert.deepEqual(
+  screenLosing.data,
+  sharedLosing.data,
+  "getLosingTechniqueStats は groupLosingTechniqueRows と同じ値（別の会場の行を含めない）",
+);
+assert.deepEqual(screenLosing.data[1].techniques, [
+  { technique: "差し", count: 30, percentage: 37.5 },
+  { technique: "まくり", count: 20, percentage: 25 },
+]);
+assert.equal(screenLosing.data[3], undefined, "別の会場の枠は無い");
+
+clearCache();
+assert.deepEqual(
+  await getRaceOriginalExhibition("ox-1"),
+  {
+    state: "published",
+    capturedAt: "2026-10-25T05:00:00Z",
+    kinds: ["直線", "一周"],
+    byBoat: { 1: { 一周: 37.21, 直線: 7.01 }, 2: { まわり足: 5.5 } },
+  },
+  "getRaceOriginalExhibition は shapeOriginalExhibition と同じ値（別のレースの値を含めない）",
+);
+clearCache();
+assert.deepEqual(
+  await getRaceOriginalExhibition("ox-3"),
+  {
+    state: "empty",
+    capturedAt: null,
+    kinds: [],
+    byBoat: {},
+    fetchFailed: true,
+  },
+  "ヘッダも値も無いレースは empty",
+);
 
 console.log("verify-full-picture-screen-shared: OK");

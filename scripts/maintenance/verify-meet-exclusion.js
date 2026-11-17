@@ -17,10 +17,26 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { register } from "node:module";
 import { meetExclusionsOf } from "../../src/pure/meetExclusion.js";
 import * as seriesPoints from "../../src/pure/seriesPoints.js";
 import * as meetExclusionShim from "../../src/services/meetExclusion.js";
+
+// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
+// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
+const FAKE_KEY = "__verifyMeetExclusionSupabase";
+const SWAP_CLIENT = `
+export async function resolve(specifier, context, nextResolve) {
+  const resolved = await nextResolve(specifier, context);
+  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
+    return {
+      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
+      shortCircuit: true,
+    };
+  }
+  return resolved;
+}
+`;
 
 // 節: 10/1〜10/2 が予選、10/3 が準優（1R）・優勝戦（2R）
 const conditions = [
@@ -411,15 +427,21 @@ check(
 // BOA-1072: L1 のみ賞典除外。旧の試験の入力・期待値は維持する。
 check("B6 L1 は lateStart、L0・責任不明のL・他の成績コードは外さない", () => {
   const codes = ["L1", "L0", null, undefined, "01", "K1"];
-  const meetRows = codes.map((_, i) => entry("2026-10-02-04-01", i + 1, 5500 + i));
+  const meetRows = codes.map((_, i) =>
+    entry("2026-10-02-04-01", i + 1, 5500 + i),
+  );
   const out = run({
     meetRows,
-    meetStarts: codes.map((code, i) => st("2026-10-02-04-01", i + 1, {
-      finish_mark: "L", official_finish_code: code,
-    })),
+    meetStarts: codes.map((code, i) =>
+      st("2026-10-02-04-01", i + 1, {
+        finish_mark: "L",
+        official_finish_code: code,
+      }),
+    ),
   });
   assert.deepEqual(out, {
-    withdrawnRacerIds: [5500], exclusionReasonByRacer: { 5500: "lateStart" },
+    withdrawnRacerIds: [5500],
+    exclusionReasonByRacer: { 5500: "lateStart" },
   });
 });
 
@@ -447,17 +469,27 @@ check("B8 公式の備考があればL1の推定も使わない", () => {
     meetStarts: [st("2026-10-02-04-01", 1, { official_finish_code: "L1" })],
   });
   assert.deepEqual(out, {
-    withdrawnRacerIds: [5520], exclusionReasonByRacer: { 5520: "officialWithdrawn" },
+    withdrawnRacerIds: [5520],
+    exclusionReasonByRacer: { 5520: "officialWithdrawn" },
   });
 });
 
 check("B9 FとL1の両方なら、発生順にかかわらずflyingを優先", () => {
-  for (const codes of [["F", "L1"], ["L1", "F"]]) {
+  for (const codes of [
+    ["F", "L1"],
+    ["L1", "F"],
+  ]) {
     const out = run({
-      meetRows: [entry("2026-10-02-04-01", 1, 5530), entry("2026-10-02-04-02", 2, 5530)],
-      meetStarts: codes.map((code, i) => st(`2026-10-02-04-0${i + 1}`, i + 1, {
-        finish_mark: code === "F" ? "F" : "L", official_finish_code: code,
-      })),
+      meetRows: [
+        entry("2026-10-02-04-01", 1, 5530),
+        entry("2026-10-02-04-02", 2, 5530),
+      ],
+      meetStarts: codes.map((code, i) =>
+        st(`2026-10-02-04-0${i + 1}`, i + 1, {
+          finish_mark: code === "F" ? "F" : "L",
+          official_finish_code: code,
+        }),
+      ),
     });
     assert.deepEqual(out.exclusionReasonByRacer, { 5530: "flying" });
   }
@@ -465,7 +497,10 @@ check("B9 FとL1の両方なら、発生順にかかわらずflyingを優先", (
 
 check("B10 L1の理由は不在・前夜の途中帰郷で上書きしない", () => {
   const out = run({
-    meetRows: [entry("2026-10-01-04-01", 1, 5540), entry("2026-10-02-04-01", 2, 5541)],
+    meetRows: [
+      entry("2026-10-01-04-01", 1, 5540),
+      entry("2026-10-02-04-01", 2, 5541),
+    ],
     meetStarts: [st("2026-10-01-04-01", 1, { official_finish_code: "L1" })],
     prelimOfficial: { withdrawnRacerIds: [5540] },
   });
@@ -483,25 +518,203 @@ check("B11 予選の締めが不明でも、入力されたL1は対象", () => {
 
 check("B12 L1の純関数はレースと艇番で結合し、重複・不明な選手を除く", () => {
   const race = "2026-10-02-04-01";
-  const starts = [1, 1, 2, 3, 4].map((boat) => st(race, boat, { official_finish_code: "L1" }));
-  const entries = [entry(race, 1, 5560), entry("2026-10-01-04-01", 2, 5561),
-    entry(race, 3, null), entry(race, 4, undefined)];
+  const starts = [1, 1, 2, 3, 4].map((boat) =>
+    st(race, boat, { official_finish_code: "L1" }),
+  );
+  const entries = [
+    entry(race, 1, 5560),
+    entry("2026-10-01-04-01", 2, 5561),
+    entry(race, 3, null),
+    entry(race, 4, undefined),
+  ];
   const before = JSON.stringify({ starts, entries });
-  assert.deepEqual(seriesPoints.lateStartL1RacerIdsInMeet(starts, entries), [5560]);
+  assert.deepEqual(
+    seriesPoints.lateStartL1RacerIdsInMeet(starts, entries),
+    [5560],
+  );
   assert.equal(JSON.stringify({ starts, entries }), before);
   assert.deepEqual(seriesPoints.lateStartL1RacerIdsInMeet(null, null), []);
   assert.deepEqual(seriesPoints.lateStartL1RacerIdsInMeet([], []), []);
 });
 
-// 旧の場所（getMeetScoreboard）が新しい関数を呼んでいること。即時関数が戻っていないこと
-const service = readDataLayerSource();
-check("C1 getMeetScoreboard は meetExclusionsOf を呼ぶ", () => {
-  // 書き方（import の改行・展開の形）には縛られないよう、名前と行き先だけを見る
-  assert.match(service, /from\s*["']\.\/meetExclusion\.js["']/);
-  assert.match(service, /\bmeetExclusionsOf\(/);
-  // 旧の即時関数の本文（目印のコメント）が DAL に戻っていない
-  assert.doesNotMatch(service, /公式の備考が取れていればそれが正/);
-});
+// getMeetScoreboard（サービス層）を偽の supabase の上で呼び、返り値の除外が meetExclusionsOf の判定どおりであること。
+// 即時関数の判定が DAL に戻っていても、使う入力（予選の締め・出走表・本番ST・公式の備考）を取り違えても、ここで落ちる
+register(new URL("../lib/renderJsx.js", import.meta.url));
+register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
+let currentFake = null;
+globalThis[FAKE_KEY] = { from: (table) => currentFake.from(table) };
+globalThis.localStorage ??= {
+  getItem: () => null,
+  setItem() {},
+  removeItem() {},
+  key: () => null,
+  length: 0,
+};
+const { getMeetScoreboard } =
+  await import("../../src/services/meetQueries2.js");
+const { clearCache } = await import("../../src/services/core.js");
+
+/**
+ * 偽の supabase クライアント（メモリ上の表）。select・eq・gte・lt・lte・like・in・order・range と await を扱う
+ */
+function makeFakeSupabase(tables) {
+  const calls = [];
+  return {
+    calls,
+    from(table) {
+      const q = { table, filters: [], range: null };
+      calls.push(q);
+      const run = () => {
+        const rows = (tables[table] ?? []).filter((row) =>
+          q.filters.every(([op, col, val]) => {
+            const v = row[col];
+            if (op === "eq") return v === val;
+            if (op === "gte") return v >= val;
+            if (op === "lt") return v < val;
+            if (op === "lte") return v <= val;
+            if (op === "in") return val.includes(v);
+            if (op === "like")
+              return new RegExp(`^${val.replace(/_/g, ".")}$`).test(v);
+            throw new Error(`偽のクライアントに無い絞り: ${op}`);
+          }),
+        );
+        const [a, b] = q.range ?? [0, rows.length - 1];
+        return Promise.resolve({
+          data: rows.slice(a, b + 1).map((r) => ({ ...r })),
+          error: null,
+        });
+      };
+      const filter = (op) => (col, val) => {
+        q.filters.push([op, col, val]);
+        return chain;
+      };
+      const chain = {
+        select: () => chain,
+        eq: filter("eq"),
+        gte: filter("gte"),
+        lt: filter("lt"),
+        lte: filter("lte"),
+        like: filter("like"),
+        in: filter("in"),
+        order: () => chain,
+        range(a, b) {
+          q.range = [a, b];
+          return run();
+        },
+        then: (res, rej) => run().then(res, rej),
+      };
+      return chain;
+    },
+  };
+}
+
+// 節（会場 04）: 10/1・10/2 が予選、10/3 が準優（1R）・優勝戦（2R）。表示中のレースは 10/3 の1R
+const SB_DISPLAY = "2026-10-03-04-01";
+const sbConditions = conditions.map((c, i) => ({
+  ...c,
+  series_day: Math.floor(i / 2) + 1,
+  is_final_day: false,
+}));
+const SB_RACERS = [5601, 5602, 5603, 5604, 5605, 5606];
+const sbEntries = conditions.flatMap((c) =>
+  SB_RACERS.map((racer_id, i) => ({
+    race_id: c.race_id,
+    boat_number: i + 1,
+    racer_id,
+    player_name: `選手${racer_id}`,
+    motor_number: 10 + i,
+  })),
+);
+const scoreboardOf = async ({
+  meetStarts = [],
+  officialSeries = [],
+  useOfficial,
+  display = SB_DISPLAY,
+}) => {
+  clearCache();
+  currentFake = makeFakeSupabase({
+    race_entries: sbEntries,
+    race_conditions: sbConditions,
+    race_start_timings: meetStarts,
+    racer_series_points: officialSeries.map((r) => ({
+      venue_code: 4,
+      meet_start_date: "2026-10-01",
+      ...r,
+    })),
+  });
+  return getMeetScoreboard(display, 4, { useOfficial });
+};
+
+const scoreboardCheck = async (name, fn) => {
+  await fn();
+  count += 1;
+  console.log(`  ok ${name}`);
+};
+
+await scoreboardCheck(
+  "C1a getMeetScoreboard: 予選中の今節F（表示中のレースより前）は賞典除外（flying）で順位の対象から外す",
+  async () => {
+    const board = await scoreboardOf({
+      meetStarts: [st("2026-10-01-04-01", 3, { is_flying: true })],
+    });
+    assert.deepEqual(board.withdrawnRacerIds, [5603]);
+    assert.deepEqual(board.exclusionReasonByRacer, { 5603: "flying" });
+  },
+);
+
+await scoreboardCheck(
+  "C1b getMeetScoreboard: 予選終了より後のFは見ない（予選の締めを種別から取る）",
+  async () => {
+    // 優勝戦（2R）を表示。準優（1R）のFは予選終了より後なので外さない
+    const board = await scoreboardOf({
+      display: "2026-10-03-04-02",
+      meetStarts: [st("2026-10-03-04-01", 3, { is_flying: true })],
+    });
+    assert.deepEqual(board.exclusionReasonByRacer, {});
+    assert.deepEqual(board.withdrawnRacerIds, []);
+  },
+);
+
+await scoreboardCheck(
+  "C1c getMeetScoreboard: 公式の備考は予選の後（表示中が準優）に使い、賞典除外・途中帰郷を分ける",
+  async () => {
+    const board = await scoreboardOf({
+      // 備考があれば推定のFは見ない
+      meetStarts: [st("2026-10-01-04-01", 3, { is_flying: true })],
+      officialSeries: [
+        {
+          racer_id: 5601,
+          remarks: "賞典除外",
+          placements: "",
+          total_points: 0,
+          penalty_points: 0,
+          scraped_at: "2026-10-02T12:00:00Z",
+        },
+        {
+          racer_id: 5602,
+          remarks: "途中帰郷",
+          placements: "",
+          total_points: 0,
+          penalty_points: 0,
+          scraped_at: "2026-10-02T12:00:00Z",
+        },
+        {
+          racer_id: 5604,
+          remarks: null,
+          placements: "",
+          total_points: 0,
+          penalty_points: 0,
+          scraped_at: "2026-10-02T12:00:00Z",
+        },
+      ],
+    });
+    assert.deepEqual(board.withdrawnRacerIds, [5601, 5602]);
+    assert.deepEqual(board.exclusionReasonByRacer, {
+      5601: "awardExcluded",
+      5602: "officialWithdrawn",
+    });
+  },
+);
 
 // DAL が読む旧の置き場（再 export）が、pure の根の同じ関数を指していること
 check(

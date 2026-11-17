@@ -16,11 +16,31 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import { register } from "node:module";
 import { existsSync } from "node:fs";
+
+// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
+// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
+const FAKE_KEY = "__verifyRacerScopedRaceRowsSupabase";
+const SWAP_CLIENT = `
+export async function resolve(specifier, context, nextResolve) {
+  const resolved = await nextResolve(specifier, context);
+  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
+    return {
+      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
+      shortCircuit: true,
+    };
+  }
+  return resolved;
+}
+`;
+register(new URL("../lib/renderJsx.js", import.meta.url));
+register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
 import { buildRacerScopedRaceRows } from "../../src/services/racerScopedRaceRows.js";
 // BOA-1501 で src/pure へ移す。移す前後のどちらでも本体を読む（移した後に元の場所の分岐は外す）
-const BASIC_INFO_STATS = existsSync(new URL("../../src/pure/basicInfoStats.js", import.meta.url))
+const BASIC_INFO_STATS = existsSync(
+  new URL("../../src/pure/basicInfoStats.js", import.meta.url),
+)
   ? "../../src/pure/basicInfoStats.js"
   : "../../src/components/race/basicInfoStats.js";
 const { computeRates, getRecentRaces } = await import(BASIC_INFO_STATS);
@@ -350,45 +370,48 @@ check(
   },
 );
 
-check("A14 出力の行のキー（BOA-1052 の表示用キーを追加、35個、順を含む）", () => {
-  assert.deepEqual(Object.keys(only({})), [
-    "raceId",
-    "date",
-    "venueCode",
-    "boatNumber",
-    "raceGrade",
-    "raceTitle",
-    "raceStage",
-    "waveHeight",
-    "seriesDay",
-    "isFinalDay",
-    "rank1",
-    "rank2",
-    "rank3",
-    "rank4",
-    "rank5",
-    "rank6",
-    "winningTechnique",
-    "payoutWin",
-    "finishMark",
-    "absent",
-    "startTiming",
-    "flyingStartTiming",
-    "lateStartTiming",
-    "actualCourse",
-    "entryCourse",
-    "grade",
-    "exhibitionTime",
-    "exhibitionRank",
-    "fCount",
-    "isFlying",
-    "stForRank",
-    "raceBestSt",
-    "innerMinSt",
-    "stRank",
-    "isFastestExhibition",
-  ]);
-});
+check(
+  "A14 出力の行のキー（BOA-1052 の表示用キーを追加、35個、順を含む）",
+  () => {
+    assert.deepEqual(Object.keys(only({})), [
+      "raceId",
+      "date",
+      "venueCode",
+      "boatNumber",
+      "raceGrade",
+      "raceTitle",
+      "raceStage",
+      "waveHeight",
+      "seriesDay",
+      "isFinalDay",
+      "rank1",
+      "rank2",
+      "rank3",
+      "rank4",
+      "rank5",
+      "rank6",
+      "winningTechnique",
+      "payoutWin",
+      "finishMark",
+      "absent",
+      "startTiming",
+      "flyingStartTiming",
+      "lateStartTiming",
+      "actualCourse",
+      "entryCourse",
+      "grade",
+      "exhibitionTime",
+      "exhibitionRank",
+      "fCount",
+      "isFlying",
+      "stForRank",
+      "raceBestSt",
+      "innerMinSt",
+      "stRank",
+      "isFastestExhibition",
+    ]);
+  },
+);
 
 check("A15 entries が空なら空配列", () => {
   assert.deepEqual(run({ entries: [] }), []);
@@ -476,26 +499,217 @@ check("B6 出遅れの ST 欠落・false・フラグ未取得は従来の扱い"
   assert.equal(getRecentRaces([fly])[0].startTiming, 0.01);
 });
 
-console.log("C. 呼び出し");
+console.log("C. 呼び出し（サービス層を偽の supabase の上で呼ぶ）");
 
-const service = readDataLayerSource();
-check("C1 getRacerScopedRaceStats は buildRacerScopedRaceRows を呼ぶ", () => {
-  // 書き方（import の改行・引数の並び）には縛られないよう、名前と行き先だけを見る
-  assert.match(service, /from\s*["']\.\/racerScopedRaceRows\.js["']/);
-  // getRacerScopedRaceStats の本文（次のメソッドの JSDoc の手前まで）が、組み立てた行を返す
-  const start = service.indexOf("getRacerScopedRaceStats(racerId) {");
-  assert.ok(start >= 0, "getRacerScopedRaceStats が DAL に無い");
-  const body = service.slice(start, service.indexOf("\n  /**", start));
-  assert.match(body, /return\s+buildRacerScopedRaceRows\(/);
-  // 旧の整形の本文（目印の変数）が戻っていない
-  assert.doesNotMatch(body, /soleFastestBoatByRace|exhibitionRowsByRace/);
-});
+// supabaseClient.js の supabase は import の時に決まるので、先に中継役を置き、試験ごとに中の偽を替える
+let currentFake = null;
+globalThis[FAKE_KEY] = { from: (table) => currentFake.from(table) };
+// サービス層のキャッシュは localStorage にも書く。Node には無いので、何も残さない物を置く
+globalThis.localStorage ??= {
+  getItem: () => null,
+  setItem() {},
+  removeItem() {},
+  key: () => null,
+  length: 0,
+};
+const { getRacerScopedRaceStats } =
+  await import("../../src/services/racerQueries2.js");
+const { clearCache, withCache } = await import("../../src/services/core.js");
+const { racerHistoryCutoff } =
+  await import("../../src/utils/racerVenueBoatStats.js");
 
-check("C2 出遅れフラグを取得し、旧キャッシュを使わない（BOA-1052）", () => {
-  const start = service.indexOf("getRacerScopedRaceStats(racerId) {");
-  const body = service.slice(start, service.indexOf("\n  /**", start));
-  assert.match(body, /racer-scoped-race-stats-v12-/);
-  assert.match(body, /"race_id, boat_number, start_timing, is_flying, is_late_start, finish_mark, entry_course"/);
-});
+/**
+ * 偽の supabase クライアント（メモリ上の表）。select・eq・gte・in・order・range と await を扱い、
+ * 呼ばれた問い合わせを calls に残す。failTables の表は error を返す（.throwOnError() 相当で例外にする）
+ */
+function makeFakeSupabase(tables, failTables = new Set()) {
+  const calls = [];
+  return {
+    calls,
+    from(table) {
+      const q = { table, select: null, filters: [], orders: [], range: null };
+      calls.push(q);
+      const run = () => {
+        if (failTables.has(table))
+          return Promise.reject(new Error(`${table} 失敗`));
+        const rows = (tables[table] ?? []).filter((row) =>
+          q.filters.every(([op, col, val]) => {
+            const v = row[col];
+            if (op === "eq") return v === val;
+            if (op === "gte") return v >= val;
+            if (op === "in") return val.includes(v);
+            throw new Error(`偽のクライアントに無い絞り: ${op}`);
+          }),
+        );
+        const [a, b] = q.range ?? [0, rows.length - 1];
+        return Promise.resolve({
+          data: rows.slice(a, b + 1).map((r) => ({ ...r })),
+          error: null,
+        });
+      };
+      const filter = (op) => (col, val) => {
+        q.filters.push([op, col, val]);
+        return chain;
+      };
+      const chain = {
+        select(cols) {
+          q.select = cols;
+          return chain;
+        },
+        eq: filter("eq"),
+        gte: filter("gte"),
+        in: filter("in"),
+        order(col) {
+          q.orders.push(col);
+          return chain;
+        },
+        range(a, b) {
+          q.range = [a, b];
+          return run();
+        },
+        then(res, rej) {
+          return run().then(res, rej);
+        },
+      };
+      return chain;
+    },
+  };
+}
+
+const addDays = (ymd, days) => {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+const today = new Date().toISOString().slice(0, 10);
+const RACER = 6001;
+const S1 = `${addDays(today, -4)}-04-03`;
+const S2 = `${addDays(today, -3)}-04-01`;
+const SERVICE_TABLES = {
+  race_entries: [
+    entry(S1),
+    entry(S2, 3, { grade: "B1", f_count: 1 }),
+    { ...entry(S1, 2), racer_id: 6002 }, // 別の選手
+  ].map((e) => ({ racer_id: RACER, ...e })),
+  races: [race(S1), race(S2)],
+  race_results: [result(S1), result(S2, { rank1: 3, rank2: 1, rank3: 2 })],
+  race_start_timings: [
+    ...sixSt(S1),
+    ...sixSt(S2, { 3: { is_late_start: true, start_timing: 1.99 } }),
+  ],
+  exhibition_data: [ex(S1, 1, 6.7), ex(S1, 2, 6.8), ex(S2, 3, 6.9)],
+  race_conditions: [
+    {
+      race_id: S1,
+      race_stage: "予選",
+      race_title: "A杯",
+      wave_height: 3,
+      series_day: 1,
+      is_final_day: false,
+    },
+    {
+      race_id: S2,
+      race_stage: "優勝戦",
+      race_title: "A杯",
+      wave_height: 5,
+      series_day: 2,
+      is_final_day: true,
+    },
+  ],
+};
+const entriesFor = (tables) =>
+  tables.race_entries.filter((e) => e.racer_id === RACER);
+const install = (tables = SERVICE_TABLES, failTables) => {
+  clearCache();
+  currentFake = makeFakeSupabase(tables, failTables);
+  return currentFake;
+};
+const checkAsync = async (name, fn) => {
+  await fn();
+  count += 1;
+  console.log(`  ok ${name}`);
+};
+
+await checkAsync(
+  "C1 getRacerScopedRaceStats は取った表を buildRacerScopedRaceRows で組んだ行をそのまま返す",
+  async () => {
+    const fake = install();
+    const rows = await getRacerScopedRaceStats(RACER);
+    const expected = buildRacerScopedRaceRows({
+      entries: entriesFor(SERVICE_TABLES).map(({ racer_id, ...e }) => e),
+      raceRows: SERVICE_TABLES.races,
+      resultRows: SERVICE_TABLES.race_results,
+      startTimingRows: SERVICE_TABLES.race_start_timings,
+      exhibitionRows: SERVICE_TABLES.exhibition_data,
+      conditionRows: SERVICE_TABLES.race_conditions,
+    });
+    assert.equal(expected.length, 2);
+    assert.deepEqual(rows, expected);
+    // 取る表: race_entries は選手・窓の始点で、他の5表は選手の走の race_id だけで
+    const entryQ = fake.calls.find((q) => q.table === "race_entries");
+    assert.deepEqual(entryQ.filters, [
+      ["eq", "racer_id", RACER],
+      ["gte", "race_id", racerHistoryCutoff()],
+    ]);
+    for (const table of [
+      "races",
+      "race_results",
+      "race_start_timings",
+      "exhibition_data",
+      "race_conditions",
+    ]) {
+      const q = fake.calls.find((c) => c.table === table);
+      assert.ok(q, `${table} を取っていない`);
+      assert.deepEqual(q.filters, [["in", "race_id", [S1, S2]]]);
+    }
+  },
+);
+
+await checkAsync(
+  "C1b race_conditions の取得に失敗しても例外にせず、conditionRows を null で整形する",
+  async () => {
+    install(SERVICE_TABLES, new Set(["race_conditions"]));
+    const origError = console.error;
+    console.error = () => {};
+    let rows;
+    try {
+      rows = await getRacerScopedRaceStats(RACER);
+    } finally {
+      console.error = origError;
+    }
+    const expected = buildRacerScopedRaceRows({
+      entries: entriesFor(SERVICE_TABLES).map(({ racer_id, ...e }) => e),
+      raceRows: SERVICE_TABLES.races,
+      resultRows: SERVICE_TABLES.race_results,
+      startTimingRows: SERVICE_TABLES.race_start_timings,
+      exhibitionRows: SERVICE_TABLES.exhibition_data,
+      conditionRows: null,
+    });
+    assert.deepEqual(rows, expected);
+  },
+);
+
+await checkAsync(
+  "C2 出遅れフラグ（is_late_start）を含む列で race_start_timings を取り、結果は racer-scoped-race-stats-v12 のキャッシュに入る（旧版のキャッシュは使わない）",
+  async () => {
+    const fake = install();
+    // 旧版（v11）のキャッシュに入っていた古い形の値は返さない
+    const stale = [{ stale: true }];
+    await withCache(`racer-scoped-race-stats-v11-${RACER}`, async () => stale);
+    const rows = await getRacerScopedRaceStats(RACER);
+    assert.notDeepEqual(rows, stale);
+    const stq = fake.calls.find((q) => q.table === "race_start_timings");
+    assert.equal(
+      stq.select,
+      "race_id, boat_number, start_timing, is_flying, is_late_start, finish_mark, entry_course",
+    );
+    assert.equal(rows.find((r) => r.raceId === S2).lateStartTiming, 1.99);
+    // 結果は v12 のキーに入っている（取り直さずに同じ値が返る）
+    const cached = await withCache(`racer-scoped-race-stats-v12-${RACER}`, () =>
+      Promise.reject(new Error("v12 のキャッシュに無い")),
+    );
+    assert.deepEqual(cached, rows);
+  },
+);
 
 console.log(`✅ racerScopedRaceRows: ${count} 件の例を確認`);
