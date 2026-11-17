@@ -697,7 +697,7 @@
 - 読み手（44）: 
   - `scripts/analysis/analyze-prediction-ensemble.js:66` select(helper:fetchAll)
   - `scripts/analysis/analyze-upset-factors.js:133` select [feature_contributions, model_id, race_id]
-  - `scripts/analysis/calibration-report.js:95` select(helper:fetchAll)
+  - `scripts/analysis/calibration-report.js:92` select(helper:fetchAll)
   - `scripts/analysis/campaign-backtest-fetch-races.js:49` select [feature_contributions, predicted_at, race_id]
   - `scripts/analysis/collect-venue-stats.js:231` select [confidence, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/analysis/find-missing-dates.js:32` select [*, race_id]
@@ -1135,7 +1135,7 @@
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:42` select(helper:all)
   - `scripts/analysis/calculate-placement-distribution.js:29` select(helper:fetchAll)
   - `scripts/analysis/calibrate-unified-model.js:120` select(helper:fetchAll)
-  - `scripts/analysis/calibration-report.js:102` select(helper:fetchAll)
+  - `scripts/analysis/calibration-report.js:99` select(helper:fetchAll)
   - `scripts/analysis/campaign-backtest-score.js:59` select [payout_trifecta, payout_trio, race_id, rank1, rank2, rank3]
   - `scripts/analysis/collect-venue-stats.js:247` select [*, race_id]
   - `scripts/analysis/compare-course-rate-sources.js:52` select(helper:fetchAll)
