@@ -94,6 +94,33 @@ export function buildPredictionHitUpdate(pred, result) {
   };
 }
 
+/** isHitTrifecta → 実態: 3連複的中（順不同で3艇一致） */
+function isSortedTop3Match(prediction, result) {
+  const predTop3 = [
+    prediction.top_pick,
+    prediction.top_2nd,
+    prediction.top_3rd,
+  ].sort((a, b) => a - b);
+  const resultTop3 = [result.rank1, result.rank2, result.rank3].sort(
+    (a, b) => a - b,
+  );
+  return (
+    predTop3[0] === resultTop3[0] &&
+    predTop3[1] === resultTop3[1] &&
+    predTop3[2] === resultTop3[2]
+  );
+}
+
+/** 複勝配当（的中の艇が1着なら payout_place_1、2着なら payout_place_2、どちらでもなければ 0） */
+function placePayoutOf(prediction, result) {
+  if (prediction.top_pick === result.rank1) {
+    return result.payout_place_1 || 0;
+  } else if (prediction.top_pick === result.rank2) {
+    return result.payout_place_2 || 0;
+  }
+  return 0;
+}
+
 /**
  * 全買い方の的中判定と配当計算
  * @param {Object} prediction - { top_pick, top_2nd, top_3rd }
@@ -109,19 +136,7 @@ export function calculateHits(prediction, result) {
     prediction.top_pick === result.rank1 ||
     prediction.top_pick === result.rank2;
 
-  // isHitTrifecta → 実態: 3連複的中（順不同で3艇一致）
-  const predTop3 = [
-    prediction.top_pick,
-    prediction.top_2nd,
-    prediction.top_3rd,
-  ].sort((a, b) => a - b);
-  const resultTop3 = [result.rank1, result.rank2, result.rank3].sort(
-    (a, b) => a - b,
-  );
-  const isHitTrifecta =
-    predTop3[0] === resultTop3[0] &&
-    predTop3[1] === resultTop3[1] &&
-    predTop3[2] === resultTop3[2];
+  const isHitTrifecta = isSortedTop3Match(prediction, result);
 
   // isHitTrio → 実態: 3連単的中（完全順序一致）
   const isHitTrio =
@@ -131,15 +146,7 @@ export function calculateHits(prediction, result) {
 
   // 配当計算
   const payoutWin = isHitWin ? result.payout_win || 0 : 0;
-
-  let payoutPlace = 0;
-  if (isHitPlace) {
-    if (prediction.top_pick === result.rank1) {
-      payoutPlace = result.payout_place_1 || 0;
-    } else if (prediction.top_pick === result.rank2) {
-      payoutPlace = result.payout_place_2 || 0;
-    }
-  }
+  const payoutPlace = isHitPlace ? placePayoutOf(prediction, result) : 0;
 
   const payoutTrifecta = isHitTrifecta ? result.payout_trifecta || 0 : 0;
   const payoutTrio = isHitTrio ? result.payout_trio || 0 : 0;
