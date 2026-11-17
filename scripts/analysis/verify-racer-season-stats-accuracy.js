@@ -210,12 +210,108 @@ function withinTolerance(a, b, tolerance) {
   return Math.abs(a - b) <= tolerance;
 }
 
-async function verifyRacer(racerId, options) {
-  const official = await scrapeSeasonStats(racerId).catch((err) => {
+// 公式ページの期別成績を取得する。失敗は null（--verbose のときだけ理由を出す）
+function fetchOfficialStats(racerId, options) {
+  return scrapeSeasonStats(racerId).catch((err) => {
     if (options.verbose)
       console.log(`racer_id=${racerId} 取得エラー: ${err.message}`);
     return null;
   });
+}
+
+// 自社再計算値（着順件数）から2連対率・3連対率・勝率の近似を求める。出走0なら全て null
+function deriveOwnRates(own) {
+  const ownRentai2 =
+    own.starts > 0
+      ? ((own.placeCounts[1] + own.placeCounts[2]) / own.starts) * 100
+      : null;
+  const ownRentai3 =
+    own.starts > 0
+      ? ((own.placeCounts[1] + own.placeCounts[2] + own.placeCounts[3]) /
+          own.starts) *
+        100
+      : null;
+  const ownWinRateApprox =
+    own.starts > 0
+      ? (own.placeCounts[1] * 10 +
+          own.placeCounts[2] * 8 +
+          own.placeCounts[3] * 6 +
+          own.placeCounts[4] * 4 +
+          own.placeCounts[5] * 2 +
+          own.placeCounts[6] * 1) /
+        own.starts
+      : null;
+  return { ownRentai2, ownRentai3, ownWinRateApprox };
+}
+
+function roundOrNull(value) {
+  return value !== null ? Number(value.toFixed(2)) : null;
+}
+
+// 公式値と自社値を突き合わせた1選手分の結果オブジェクトを組み立てる
+function buildComparison(
+  racerId,
+  official,
+  own,
+  truncatedWindow,
+  effectivePeriodStart,
+) {
+  const { ownRentai2, ownRentai3, ownWinRateApprox } = deriveOwnRates(own);
+
+  // truncatedWindow時はofficialとownで対象期間の長さが異なるため、
+  // 一致判定（match/withinTolerance）はnull（判定不能）にして参考値として報告する。
+  const skipJudgement = truncatedWindow;
+
+  return {
+    racerId,
+    status: "compared",
+    periodLabel: official.periodLabel,
+    periodStart: official.periodStart,
+    periodEnd: official.periodEnd,
+    truncatedWindow,
+    effectivePeriodStart,
+    starts: {
+      official: official.starts,
+      own: own.starts,
+      match: skipJudgement ? null : official.starts === own.starts,
+    },
+    rentai2Rate: {
+      official: official.rentai2Rate,
+      own: roundOrNull(ownRentai2),
+      withinTolerance: skipJudgement
+        ? null
+        : withinTolerance(official.rentai2Rate, ownRentai2, RATE_TOLERANCE),
+    },
+    rentai3Rate: {
+      official: official.rentai3Rate,
+      own: roundOrNull(ownRentai3),
+      withinTolerance: skipJudgement
+        ? null
+        : withinTolerance(official.rentai3Rate, ownRentai3, RATE_TOLERANCE),
+    },
+    flyingCount: {
+      official: official.flyingCount,
+      own: own.flyingCount,
+      match: skipJudgement ? null : official.flyingCount === own.flyingCount,
+    },
+    falseStartCount: {
+      official: official.falseStartCount,
+      own: own.falseStartCount,
+      match: skipJudgement
+        ? null
+        : official.falseStartCount === own.falseStartCount,
+      note: "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）",
+    },
+    winRateApprox: {
+      official: official.winRate,
+      ownApprox: roundOrNull(ownWinRateApprox),
+      note: "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）",
+    },
+  };
+}
+
+async function verifyRacer(racerId, options) {
+  const official = await fetchOfficialStats(racerId, options);
 
   if (!official) {
     return { racerId, status: "fetch_failed" };
@@ -241,78 +337,13 @@ async function verifyRacer(racerId, options) {
     official.periodEnd,
   );
 
-  const ownRentai2 =
-    own.starts > 0
-      ? ((own.placeCounts[1] + own.placeCounts[2]) / own.starts) * 100
-      : null;
-  const ownRentai3 =
-    own.starts > 0
-      ? ((own.placeCounts[1] + own.placeCounts[2] + own.placeCounts[3]) /
-          own.starts) *
-        100
-      : null;
-  const ownWinRateApprox =
-    own.starts > 0
-      ? (own.placeCounts[1] * 10 +
-          own.placeCounts[2] * 8 +
-          own.placeCounts[3] * 6 +
-          own.placeCounts[4] * 4 +
-          own.placeCounts[5] * 2 +
-          own.placeCounts[6] * 1) /
-        own.starts
-      : null;
-
-  // truncatedWindow時はofficialとownで対象期間の長さが異なるため、
-  // 一致判定（match/withinTolerance）はnull（判定不能）にして参考値として報告する。
-  const skipJudgement = truncatedWindow;
-
-  return {
+  return buildComparison(
     racerId,
-    status: "compared",
-    periodLabel: official.periodLabel,
-    periodStart: official.periodStart,
-    periodEnd: official.periodEnd,
+    official,
+    own,
     truncatedWindow,
     effectivePeriodStart,
-    starts: {
-      official: official.starts,
-      own: own.starts,
-      match: skipJudgement ? null : official.starts === own.starts,
-    },
-    rentai2Rate: {
-      official: official.rentai2Rate,
-      own: ownRentai2 !== null ? Number(ownRentai2.toFixed(2)) : null,
-      withinTolerance: skipJudgement
-        ? null
-        : withinTolerance(official.rentai2Rate, ownRentai2, RATE_TOLERANCE),
-    },
-    rentai3Rate: {
-      official: official.rentai3Rate,
-      own: ownRentai3 !== null ? Number(ownRentai3.toFixed(2)) : null,
-      withinTolerance: skipJudgement
-        ? null
-        : withinTolerance(official.rentai3Rate, ownRentai3, RATE_TOLERANCE),
-    },
-    flyingCount: {
-      official: official.flyingCount,
-      own: own.flyingCount,
-      match: skipJudgement ? null : official.flyingCount === own.flyingCount,
-    },
-    falseStartCount: {
-      official: official.falseStartCount,
-      own: own.falseStartCount,
-      match: skipJudgement
-        ? null
-        : official.falseStartCount === own.falseStartCount,
-      note: "is_late_startは選手責任の区別をしないため参考値（乖離は自社バグと断定しない）",
-    },
-    winRateApprox: {
-      official: official.winRate,
-      ownApprox:
-        ownWinRateApprox !== null ? Number(ownWinRateApprox.toFixed(2)) : null,
-      note: "配点10/8/6/4/2/1点は一般的に知られる値からの近似。公式の得点配分ルールは未確認のため参考値のみ（合否判定はしない）",
-    },
-  };
+  );
 }
 
 async function main() {
