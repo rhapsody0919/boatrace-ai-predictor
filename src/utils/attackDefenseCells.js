@@ -84,23 +84,20 @@ export function getTotalWins(stats) {
   return sum;
 }
 
+/** 分布 dist の keys の割合の合計（無ければ 0） */
+function sumRates(dist, keys) {
+  let sum = 0;
+  for (const k of keys) sum += dist?.[k] || 0;
+  return sum;
+}
+
 // 全国平均値のデフォルト率を取得
 function getDefaultRate(row, waku) {
-  if (waku === 1) {
-    if (row.key === "nige") return DEFAULT_ATTACK[1]?.nige || 0;
-    if (row.composite) {
-      let sum = 0;
-      for (const k of row.composite) sum += DEFAULT_DEFENSE[1]?.[k] || 0;
-      return sum;
-    }
-    return DEFAULT_DEFENSE[1]?.[row.key] || 0;
-  }
-  if (row.composite) {
-    let sum = 0;
-    for (const k of row.composite) sum += DEFAULT_ATTACK[waku]?.[k] || 0;
-    return sum;
-  }
-  return DEFAULT_ATTACK[waku]?.[row.key] || 0;
+  if (waku === 1 && row.key === "nige") return DEFAULT_ATTACK[1]?.nige || 0;
+  // 1号艇の守りは防御の分布、それ以外は攻撃の分布
+  const dist = waku === 1 ? DEFAULT_DEFENSE[1] : DEFAULT_ATTACK[waku];
+  if (row.composite) return sumRates(dist, row.composite);
+  return dist?.[row.key] || 0;
 }
 
 /**
@@ -120,6 +117,28 @@ export function isDefaultAttackDistribution(dist) {
       ak.length === Object.keys(b).length && ak.every((k) => a[k] === b[k])
     );
   });
+}
+
+const toFraction = (count, total) =>
+  count != null ? `${count}/${total}` : "-";
+
+/** 通常のセルの「回数/分母」。1号艇の逃げは攻め、1号艇のそれ以外は負け数が分母の守り、他の艇は攻め */
+function cellFraction(row, waku, stats, wakuStr, wins, total) {
+  if (waku === 1 && row.key === "nige") {
+    const dist = stats.attackDistribution?.[wakuStr];
+    return toFraction(calcCount(dist, "nige", wins), total);
+  }
+  // 防御: 負けた回数が分母
+  const defense = waku === 1;
+  const base = defense ? total - wins : wins;
+  const dist = (
+    defense ? stats.defenseDistribution : stats.attackDistribution
+  )?.[wakuStr];
+  if (!dist || !base) return `0/${total}`;
+  const count = row.composite
+    ? calcCompositeCount(dist, row.composite, base)
+    : calcCount(dist, row.key, base);
+  return toFraction(count, total);
 }
 
 /**
@@ -142,37 +161,8 @@ export function getCellValue(row, waku, stats, wakuStr, wins, total) {
     return { type: "default", value: `${Math.round(rate * 100)}%` };
   }
 
-  if (waku === 1) {
-    if (row.key === "nige") {
-      const dist = stats.attackDistribution?.[wakuStr];
-      const count = calcCount(dist, "nige", wins);
-      const val = count != null ? `${count}/${total}` : "-";
-      return isReference ? { type: "reference", value: val } : val;
-    }
-    // 防御: 負けた回数が分母
-    const losses = total - wins;
-    const dist = stats.defenseDistribution?.[wakuStr];
-    if (!dist || !losses) {
-      const val = `0/${total}`;
-      return isReference ? { type: "reference", value: val } : val;
-    }
-    const count = row.composite
-      ? calcCompositeCount(dist, row.composite, losses)
-      : calcCount(dist, row.key, losses);
-    const val = count != null ? `${count}/${total}` : "-";
-    return isReference ? { type: "reference", value: val } : val;
-  } else {
-    const dist = stats.attackDistribution?.[wakuStr];
-    if (!dist || !wins) {
-      const val = `0/${total}`;
-      return isReference ? { type: "reference", value: val } : val;
-    }
-    const count = row.composite
-      ? calcCompositeCount(dist, row.composite, wins)
-      : calcCount(dist, row.key, wins);
-    const val = count != null ? `${count}/${total}` : "-";
-    return isReference ? { type: "reference", value: val } : val;
-  }
+  const val = cellFraction(row, waku, stats, wakuStr, wins, total);
+  return isReference ? { type: "reference", value: val } : val;
 }
 
 /**

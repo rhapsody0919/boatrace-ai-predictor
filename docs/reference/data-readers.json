@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1874,
+    "sourceFiles": 1906,
     "filesWithAccess": 280,
-    "tableReaders": 950,
+    "tableReaders": 947,
     "tableWriters": 189,
     "rpcCallers": 51,
     "nameMentions": 232,
@@ -662,7 +662,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:133",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:144",
           "op": "select",
           "via": "client",
           "columns": [
@@ -673,7 +673,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:216",
           "op": "select",
           "via": "client",
           "columns": [
@@ -684,7 +684,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:485",
           "op": "select",
           "via": "client",
           "columns": [
@@ -704,7 +704,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:289",
+          "ref": "scripts/lib/analogyV16Exhibition.js:251",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -752,7 +752,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:367",
+          "ref": "scripts/lib/analogyV16Exhibition.js:307",
           "op": "upsert",
           "via": "rest",
           "columns": [
@@ -771,13 +771,13 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:133",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:144",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:216",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:485",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
             "scripts/lib/analogyDispatch.js:80",
-            "scripts/lib/analogyV16Exhibition.js:289",
-            "scripts/lib/analogyV16Exhibition.js:367",
+            "scripts/lib/analogyV16Exhibition.js:251",
+            "scripts/lib/analogyV16Exhibition.js:307",
             "scripts/maintenance/verify-analogy-v16.js:279",
             "scripts/maintenance/verify-analogy-v16.js:281"
           ],
@@ -791,13 +791,13 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:133",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:144",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:216",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:485",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
             "scripts/lib/analogyDispatch.js:80",
-            "scripts/lib/analogyV16Exhibition.js:289",
-            "scripts/lib/analogyV16Exhibition.js:367",
+            "scripts/lib/analogyV16Exhibition.js:251",
+            "scripts/lib/analogyV16Exhibition.js:307",
             "scripts/maintenance/verify-analogy-v16.js:269",
             "scripts/maintenance/verify-analogy-v16.js:279",
             "scripts/maintenance/verify-analogy-v16.js:281"
@@ -812,9 +812,9 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:133",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
-            "scripts/lib/analogyV16Exhibition.js:289"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:144",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:216",
+            "scripts/lib/analogyV16Exhibition.js:251"
           ],
           "writers": [],
           "sql": []
@@ -824,8 +824,8 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:133",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:190",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:144",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:216",
             "scripts/maintenance/verify-analogy-v16.js:279"
           ],
           "writers": [],
@@ -835,7 +835,7 @@
           "readers": [
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
-            "scripts/lib/analogyV16Exhibition.js:289"
+            "scripts/lib/analogyV16Exhibition.js:251"
           ],
           "writers": [],
           "sql": []
@@ -844,7 +844,7 @@
           "readers": [
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
-            "scripts/lib/analogyV16Exhibition.js:289"
+            "scripts/lib/analogyV16Exhibition.js:251"
           ],
           "writers": [],
           "sql": []
@@ -854,8 +854,8 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
-            "scripts/lib/analogyV16Exhibition.js:289"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:485",
+            "scripts/lib/analogyV16Exhibition.js:251"
           ],
           "writers": [],
           "sql": []
@@ -865,9 +865,9 @@
             "api/_lib/analogyV16.js:99",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:372",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:485",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:87",
-            "scripts/lib/analogyV16Exhibition.js:289",
+            "scripts/lib/analogyV16Exhibition.js:251",
             "scripts/maintenance/verify-analogy-v16.js:279"
           ],
           "writers": [],
@@ -1531,7 +1531,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:208",
+          "ref": "scripts/lib/analogyV16Exhibition.js:156",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1545,7 +1545,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:296",
+          "ref": "scripts/lib/analogyV16Exhibition.js:258",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1631,7 +1631,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/meetQueries.js:257",
+          "ref": "src/services/meetQueries.js:269",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -1647,13 +1647,13 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries.js:323",
+          "ref": "src/services/motorQueries.js:385",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/motorQueries5.js:56",
+          "ref": "src/services/motorQueries5.js:65",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -1800,7 +1800,7 @@
           ]
         },
         {
-          "ref": "src/services/sherlockService.js:83",
+          "ref": "src/services/sherlockService.js:75",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1863,8 +1863,8 @@
             "scripts/analysis/verify-race-analysis-rpc.js:151",
             "scripts/analysis/verify-race-analysis-rpc.js:35",
             "scripts/daily/scrape-exhibition-data.js:536",
-            "scripts/lib/analogyV16Exhibition.js:208",
-            "scripts/lib/analogyV16Exhibition.js:296",
+            "scripts/lib/analogyV16Exhibition.js:156",
+            "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/lib/snsTodayDigestV3.js:112",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:48",
             "scripts/maintenance/verify-analogy-v16.js:286",
@@ -1879,7 +1879,7 @@
             "src/services/raceQueries2.js:66",
             "src/services/raceQueries3.js:90",
             "src/services/racerService.js:158",
-            "src/services/sherlockService.js:83"
+            "src/services/sherlockService.js:75"
           ],
           "writers": [],
           "sql": [
@@ -1898,8 +1898,8 @@
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
             "scripts/analysis/verify-race-analysis-rpc.js:35",
-            "scripts/lib/analogyV16Exhibition.js:208",
-            "scripts/lib/analogyV16Exhibition.js:296",
+            "scripts/lib/analogyV16Exhibition.js:156",
+            "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/lib/snsTodayDigestV3.js:112",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/maintenance/verify-pre-race-parsers.js:1868",
@@ -1912,7 +1912,7 @@
             "src/services/raceQueries2.js:66",
             "src/services/raceQueries3.js:90",
             "src/services/racerService.js:158",
-            "src/services/sherlockService.js:83"
+            "src/services/sherlockService.js:75"
           ],
           "writers": [],
           "sql": [
@@ -1929,8 +1929,8 @@
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
             "scripts/daily/scrape-exhibition-data.js:536",
-            "scripts/lib/analogyV16Exhibition.js:208",
-            "scripts/lib/analogyV16Exhibition.js:296",
+            "scripts/lib/analogyV16Exhibition.js:156",
+            "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "src/services/meetQueries2.js:166",
             "src/services/motorQueries6.js:120",
@@ -1939,7 +1939,7 @@
             "src/services/raceQueries2.js:66",
             "src/services/raceQueries3.js:90",
             "src/services/racerService.js:158",
-            "src/services/sherlockService.js:83"
+            "src/services/sherlockService.js:75"
           ],
           "writers": [],
           "sql": [
@@ -1953,11 +1953,11 @@
           "readers": [
             "scripts/analysis/verify-race-analysis-rpc.js:35",
             "scripts/daily/scrape-exhibition-data.js:536",
-            "scripts/lib/analogyV16Exhibition.js:208",
+            "scripts/lib/analogyV16Exhibition.js:156",
             "src/services/raceQueries.js:285",
             "src/services/raceQueries2.js:188",
             "src/services/raceQueries3.js:90",
-            "src/services/sherlockService.js:83"
+            "src/services/sherlockService.js:75"
           ],
           "writers": [],
           "sql": [
@@ -2053,7 +2053,7 @@
         },
         "exhibition_course": {
           "readers": [
-            "scripts/lib/analogyV16Exhibition.js:208",
+            "scripts/lib/analogyV16Exhibition.js:156",
             "src/services/motorQueries6.js:120"
           ],
           "writers": [],
@@ -2061,7 +2061,7 @@
         },
         "start_flag": {
           "readers": [
-            "scripts/lib/analogyV16Exhibition.js:208",
+            "scripts/lib/analogyV16Exhibition.js:156",
             "src/services/raceQueries.js:34",
             "src/services/raceQueries2.js:188",
             "src/services/raceQueries3.js:90"
@@ -2086,8 +2086,8 @@
             "api/_lib/snsClaimCheck.js:435",
             "api/_lib/snsClaimCheck.js:501",
             "api/_lib/snsTodayDigest.js:54",
-            "scripts/lib/analogyV16Exhibition.js:208",
-            "scripts/lib/analogyV16Exhibition.js:296",
+            "scripts/lib/analogyV16Exhibition.js:156",
+            "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/lib/snsTodayDigestV3.js:112",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/sns/push-setsu-kiryoku-short.js:1101",
@@ -2566,7 +2566,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:241",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:298",
           "op": "select",
           "via": "client",
           "columns": [
@@ -2593,14 +2593,14 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:298"
           ],
           "writers": [],
           "sql": []
         },
         "boat_number": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:298"
           ],
           "writers": [],
           "sql": []
@@ -2677,35 +2677,35 @@
         },
         "course": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:298"
           ],
           "writers": [],
           "sql": []
         },
         "start_timing": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:298"
           ],
           "writers": [],
           "sql": []
         },
         "is_flying": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:298"
           ],
           "writers": [],
           "sql": []
         },
         "is_late_start": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:298"
           ],
           "writers": [],
           "sql": []
         },
         "finish_raw": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:241"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:298"
           ],
           "writers": [],
           "sql": []
@@ -2743,7 +2743,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:237",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:290",
           "op": "select",
           "via": "client",
           "columns": [
@@ -2786,7 +2786,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:290"
           ],
           "writers": [],
           "sql": []
@@ -2858,7 +2858,7 @@
         },
         "has_result": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:290"
           ],
           "writers": [],
           "sql": []
@@ -2885,14 +2885,14 @@
         },
         "payout_3tan": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:290"
           ],
           "writers": [],
           "sql": []
         },
         "payout_3fuku": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:237"
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:290"
           ],
           "writers": [],
           "sql": []
@@ -4565,13 +4565,13 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/update-nige-outcome-distribution.js:119",
+          "ref": "scripts/daily/update-nige-outcome-distribution.js:120",
           "op": "delete",
           "via": "client",
           "columns": []
         },
         {
-          "ref": "scripts/daily/update-nige-outcome-distribution.js:129",
+          "ref": "scripts/daily/update-nige-outcome-distribution.js:130",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -4592,7 +4592,7 @@
         },
         "venue_code": {
           "readers": [
-            "scripts/daily/update-nige-outcome-distribution.js:119",
+            "scripts/daily/update-nige-outcome-distribution.js:120",
             "src/services/venueQueries3.js:55"
           ],
           "writers": [],
@@ -4655,7 +4655,9 @@
       "columnsNotInSnapshot": [],
       "mentions": [],
       "external": [],
-      "scrapeJobs": []
+      "scrapeJobs": [
+        "outcome_distribution_update"
+      ]
     },
     "nige_second_by_course": {
       "kind": "table",
@@ -4868,13 +4870,13 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/update-outcome-distribution.js:114",
+          "ref": "scripts/daily/update-outcome-distribution.js:115",
           "op": "delete",
           "via": "client",
           "columns": []
         },
         {
-          "ref": "scripts/daily/update-outcome-distribution.js:125",
+          "ref": "scripts/daily/update-outcome-distribution.js:126",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -4896,7 +4898,7 @@
         "venue_code": {
           "readers": [
             "api/outcome-distribution/index.js:66",
-            "scripts/daily/update-outcome-distribution.js:114",
+            "scripts/daily/update-outcome-distribution.js:115",
             "src/services/venueQueries.js:220"
           ],
           "writers": [],
@@ -4963,7 +4965,9 @@
       "columnsNotInSnapshot": [],
       "mentions": [],
       "external": [],
-      "scrapeJobs": []
+      "scrapeJobs": [
+        "outcome_distribution_update"
+      ]
     },
     "poirot_predictions": {
       "kind": "table",
@@ -5327,7 +5331,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/collect-venue-stats.js:215",
+          "ref": "scripts/analysis/collect-venue-stats.js:231",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5652,7 +5656,7 @@
           "test": true
         },
         {
-          "ref": "src/services/adminRuleService.js:69",
+          "ref": "src/services/adminRuleService.js:26",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5829,7 +5833,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:133",
             "scripts/analysis/campaign-backtest-fetch-races.js:49",
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/find-missing-dates.js:32",
             "scripts/analysis/find-video-worthy-race.js:80",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
@@ -5853,7 +5857,7 @@
             "scripts/maintenance/delete-phantom-races.js:138",
             "scripts/maintenance/migrate-to-supabase.js:270",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/predictionQueries3.js:132",
             "src/services/raceQueries2.js:226",
             "src/services/ruleMatchService.js:124"
@@ -5874,7 +5878,7 @@
         "model_id": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:133",
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/find-video-worthy-race.js:80",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
             "scripts/analysis/verify-calculations.js:23",
@@ -5892,7 +5896,7 @@
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/migrate-to-supabase.js:270",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/predictionQueries3.js:132",
             "src/services/raceQueries2.js:226",
             "src/services/ruleMatchService.js:124"
@@ -5912,7 +5916,7 @@
         },
         "top_pick": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/verify-calculations.js:23",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -5921,7 +5925,7 @@
             "scripts/maintenance/backfill-place-hits.js:14",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
@@ -5936,7 +5940,7 @@
         },
         "top_2nd": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/verify-calculations.js:23",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -5944,7 +5948,7 @@
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
@@ -5957,7 +5961,7 @@
         },
         "top_3rd": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/verify-calculations.js:23",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -5965,7 +5969,7 @@
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
@@ -5978,9 +5982,9 @@
         },
         "confidence": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:215",
+            "scripts/analysis/collect-venue-stats.js:231",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/ruleMatchService.js:124"
           ],
           "writers": [],
@@ -6153,7 +6157,7 @@
             "scripts/analysis/campaign-backtest-fetch-races.js:49",
             "scripts/analysis/find-video-worthy-race.js:80",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
-            "src/services/adminRuleService.js:69",
+            "src/services/adminRuleService.js:26",
             "src/services/raceQueries2.js:226",
             "src/services/ruleMatchService.js:124"
           ],
@@ -6345,7 +6349,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:184",
+          "ref": "scripts/lib/analogyV16Exhibition.js:191",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6566,7 +6570,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:278",
+          "ref": "src/services/motorQueries3.js:282",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6662,7 +6666,7 @@
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:98",
             "scripts/analysis/verify-volatility-predictive-power.js:83",
             "scripts/daily/scrape-point-rank.js:368",
-            "scripts/lib/analogyV16Exhibition.js:184",
+            "scripts/lib/analogyV16Exhibition.js:191",
             "scripts/lib/snsAutoPlanRunner.js:744",
             "scripts/lib/snsTodayDigestV3.js:104",
             "scripts/maintenance/backfill-race-conditions.js:185",
@@ -6683,7 +6687,7 @@
             "src/services/meetQueries2.js:115",
             "src/services/meetQueries3.js:55",
             "src/services/motorQueries.js:205",
-            "src/services/motorQueries3.js:278"
+            "src/services/motorQueries3.js:282"
           ],
           "writers": [],
           "sql": [
@@ -6699,7 +6703,7 @@
         "weather": {
           "readers": [
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
-            "scripts/lib/analogyV16Exhibition.js:184"
+            "scripts/lib/analogyV16Exhibition.js:191"
           ],
           "writers": [],
           "sql": [
@@ -6710,7 +6714,7 @@
         "wind_direction": {
           "readers": [
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
-            "scripts/lib/analogyV16Exhibition.js:184",
+            "scripts/lib/analogyV16Exhibition.js:191",
             "scripts/ml/analogy/build-wind-basis.js:95"
           ],
           "writers": [],
@@ -6726,7 +6730,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:98",
             "scripts/analysis/verify-volatility-predictive-power.js:83",
-            "scripts/lib/analogyV16Exhibition.js:184",
+            "scripts/lib/analogyV16Exhibition.js:191",
             "scripts/ml/analogy/build-wind-basis.js:95"
           ],
           "writers": [],
@@ -6742,7 +6746,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:98",
             "scripts/analysis/verify-volatility-predictive-power.js:83",
-            "scripts/lib/analogyV16Exhibition.js:184"
+            "scripts/lib/analogyV16Exhibition.js:191"
           ],
           "writers": [],
           "sql": [
@@ -6840,7 +6844,7 @@
             "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/meetQueries2.js:115",
             "src/services/meetQueries3.js:55",
-            "src/services/motorQueries3.js:278"
+            "src/services/motorQueries3.js:282"
           ],
           "writers": [],
           "sql": [
@@ -6853,7 +6857,7 @@
         },
         "weather_observed_at": {
           "readers": [
-            "scripts/lib/analogyV16Exhibition.js:184"
+            "scripts/lib/analogyV16Exhibition.js:191"
           ],
           "writers": [],
           "sql": [
@@ -6984,7 +6988,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:569",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:627",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7066,7 +7070,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/collect-venue-stats.js:245",
+          "ref": "scripts/analysis/collect-venue-stats.js:261",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7349,7 +7353,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:299",
+          "ref": "scripts/lib/analogyV16Exhibition.js:261",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7786,7 +7790,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:125",
+          "ref": "src/services/meetQueries.js:184",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7796,7 +7800,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:136",
+          "ref": "src/services/meetQueries.js:195",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7806,7 +7810,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:240",
+          "ref": "src/services/meetQueries.js:252",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7849,7 +7853,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries.js:310",
+          "ref": "src/services/motorQueries.js:274",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7885,7 +7889,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:173",
+          "ref": "src/services/motorQueries3.js:237",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7899,7 +7903,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:296",
+          "ref": "src/services/motorQueries3.js:300",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7923,25 +7927,13 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries5.js:34",
+          "ref": "src/services/motorQueries5.js:38",
           "op": "select",
           "via": "client",
           "columns": [
-            "boat_number",
+            "?",
             "motor_number",
             "race_id"
-          ]
-        },
-        {
-          "ref": "src/services/motorQueries5.js:268",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "motor_number",
-            "player_name",
-            "race_id",
-            "racer_id"
           ]
         },
         {
@@ -8074,7 +8066,7 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries3.js:157",
+          "ref": "src/services/raceQueries3.js:137",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8085,7 +8077,7 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries3.js:187",
+          "ref": "src/services/raceQueries3.js:164",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8095,18 +8087,7 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries3.js:291",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "boat_number",
-            "player_name",
-            "race_id",
-            "racer_id"
-          ]
-        },
-        {
-          "ref": "src/services/raceQueries3.js:316",
+          "ref": "src/services/raceQueries3.js:328",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8204,7 +8185,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries3.js:295",
+          "ref": "src/services/racerQueries3.js:309",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8234,7 +8215,7 @@
           ]
         },
         {
-          "ref": "src/services/sherlockService.js:77",
+          "ref": "src/services/sherlockService.js:69",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8381,7 +8362,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:245",
+            "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/find-missing-dates.js:31",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:87",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
@@ -8400,7 +8381,7 @@
             "scripts/daily/generate-moriarty-recommendations.js:122",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
-            "scripts/lib/analogyV16Exhibition.js:299",
+            "scripts/lib/analogyV16Exhibition.js:261",
             "scripts/lib/motorPretestRows.js:134",
             "scripts/lib/pitReportJob.js:188",
             "scripts/lib/raceIndicatorData.js:72",
@@ -8431,22 +8412,21 @@
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/currentMeetEntries.js:26",
-            "src/services/meetQueries.js:125",
-            "src/services/meetQueries.js:136",
-            "src/services/meetQueries.js:240",
+            "src/services/meetQueries.js:184",
+            "src/services/meetQueries.js:195",
+            "src/services/meetQueries.js:252",
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
             "src/services/meetQueries3.js:72",
             "src/services/motorQueries.js:234",
-            "src/services/motorQueries.js:310",
+            "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
             "src/services/motorQueries2.js:257",
-            "src/services/motorQueries3.js:173",
-            "src/services/motorQueries3.js:296",
+            "src/services/motorQueries3.js:237",
+            "src/services/motorQueries3.js:300",
             "src/services/motorQueries4.js:160",
-            "src/services/motorQueries5.js:268",
-            "src/services/motorQueries5.js:34",
+            "src/services/motorQueries5.js:38",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
@@ -8457,10 +8437,9 @@
             "src/services/raceQueries2.js:25",
             "src/services/raceQueries2.js:264",
             "src/services/raceQueries2.js:56",
-            "src/services/raceQueries3.js:157",
-            "src/services/raceQueries3.js:187",
-            "src/services/raceQueries3.js:291",
-            "src/services/raceQueries3.js:316",
+            "src/services/raceQueries3.js:137",
+            "src/services/raceQueries3.js:164",
+            "src/services/raceQueries3.js:328",
             "src/services/raceQueries3.js:83",
             "src/services/racerQueries.js:102",
             "src/services/racerQueries.js:139",
@@ -8469,11 +8448,11 @@
             "src/services/racerQueries.js:82",
             "src/services/racerQueries3.js:182",
             "src/services/racerQueries3.js:27",
-            "src/services/racerQueries3.js:295",
+            "src/services/racerQueries3.js:309",
             "src/services/racerQueries3.js:99",
             "src/services/racerService.js:127",
             "src/services/racerService.js:46",
-            "src/services/sherlockService.js:77",
+            "src/services/sherlockService.js:69",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8508,7 +8487,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:245",
+            "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
             "scripts/analysis/verify-race-analysis-rpc.js:120",
@@ -8541,20 +8520,18 @@
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/currentMeetEntries.js:26",
-            "src/services/meetQueries.js:125",
-            "src/services/meetQueries.js:136",
-            "src/services/meetQueries.js:240",
+            "src/services/meetQueries.js:184",
+            "src/services/meetQueries.js:195",
+            "src/services/meetQueries.js:252",
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
             "src/services/meetQueries3.js:72",
-            "src/services/motorQueries.js:310",
+            "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
             "src/services/motorQueries2.js:257",
-            "src/services/motorQueries3.js:173",
-            "src/services/motorQueries3.js:296",
-            "src/services/motorQueries5.js:268",
-            "src/services/motorQueries5.js:34",
+            "src/services/motorQueries3.js:237",
+            "src/services/motorQueries3.js:300",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
@@ -8564,16 +8541,15 @@
             "src/services/raceQueries2.js:25",
             "src/services/raceQueries2.js:264",
             "src/services/raceQueries2.js:56",
-            "src/services/raceQueries3.js:157",
-            "src/services/raceQueries3.js:187",
-            "src/services/raceQueries3.js:291",
-            "src/services/raceQueries3.js:316",
+            "src/services/raceQueries3.js:137",
+            "src/services/raceQueries3.js:164",
+            "src/services/raceQueries3.js:328",
             "src/services/raceQueries3.js:83",
             "src/services/racerQueries.js:139",
             "src/services/racerQueries3.js:182",
             "src/services/racerQueries3.js:27",
             "src/services/racerQueries3.js:99",
-            "src/services/sherlockService.js:77",
+            "src/services/sherlockService.js:69",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8612,18 +8588,16 @@
             "src/services/meetQueries2.js:105",
             "src/services/meetQueries3.js:72",
             "src/services/motorQueries2.js:257",
-            "src/services/motorQueries3.js:173",
-            "src/services/motorQueries3.js:296",
+            "src/services/motorQueries3.js:237",
+            "src/services/motorQueries3.js:300",
             "src/services/motorQueries4.js:160",
-            "src/services/motorQueries5.js:268",
             "src/services/mycroftService.js:82",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:275",
             "src/services/raceQueries2.js:56",
-            "src/services/raceQueries3.js:157",
-            "src/services/raceQueries3.js:291",
+            "src/services/raceQueries3.js:137",
             "src/services/raceQueries3.js:83",
-            "src/services/sherlockService.js:77",
+            "src/services/sherlockService.js:69",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8643,7 +8617,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:245",
+            "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
             "scripts/daily/generate-morning-digest.js:155",
@@ -8653,7 +8627,7 @@
             "src/services/motorQueries2.js:257",
             "src/services/raceQueries3.js:83",
             "src/services/racerService.js:46",
-            "src/services/sherlockService.js:77"
+            "src/services/sherlockService.js:69"
           ],
           "writers": [],
           "sql": [
@@ -8685,7 +8659,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:245",
+            "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
             "scripts/analysis/verify-volatility-predictive-power.js:69",
@@ -8699,8 +8673,8 @@
             "src/services/racerQueries.js:102",
             "src/services/racerQueries.js:46",
             "src/services/racerQueries.js:82",
-            "src/services/racerQueries3.js:295",
-            "src/services/sherlockService.js:77"
+            "src/services/racerQueries3.js:309",
+            "src/services/sherlockService.js:69"
           ],
           "writers": [],
           "sql": [
@@ -8724,7 +8698,7 @@
             "src/services/raceQueries3.js:83",
             "src/services/racerQueries.js:46",
             "src/services/racerQueries.js:82",
-            "src/services/sherlockService.js:77"
+            "src/services/sherlockService.js:69"
           ],
           "writers": [],
           "sql": [
@@ -8738,16 +8712,15 @@
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/maintenance/check-morning-init-shadow.js:152",
             "src/services/currentMeetEntries.js:26",
-            "src/services/meetQueries.js:240",
+            "src/services/meetQueries.js:252",
             "src/services/meetQueries2.js:105",
-            "src/services/motorQueries.js:310",
+            "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
             "src/services/motorQueries2.js:257",
-            "src/services/motorQueries3.js:173",
-            "src/services/motorQueries3.js:296",
+            "src/services/motorQueries3.js:237",
+            "src/services/motorQueries3.js:300",
             "src/services/motorQueries4.js:160",
-            "src/services/motorQueries5.js:268",
-            "src/services/motorQueries5.js:34",
+            "src/services/motorQueries5.js:38",
             "src/services/raceQueries3.js:83",
             "src/services/racerService.js:127"
           ],
@@ -8764,16 +8737,16 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:151",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:245",
+            "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "src/services/motorQueries.js:234",
-            "src/services/motorQueries.js:310",
-            "src/services/motorQueries3.js:173",
+            "src/services/motorQueries.js:274",
+            "src/services/motorQueries3.js:237",
             "src/services/motorQueries4.js:160",
             "src/services/raceQueries3.js:83",
-            "src/services/sherlockService.js:77"
+            "src/services/sherlockService.js:69"
           ],
           "writers": [],
           "sql": [
@@ -8797,7 +8770,7 @@
         "boat_2rate": {
           "readers": [
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "src/services/sherlockService.js:77"
+            "src/services/sherlockService.js:69"
           ],
           "writers": [],
           "sql": [
@@ -8872,8 +8845,8 @@
         "motor_3rate": {
           "readers": [
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "src/services/motorQueries.js:310",
-            "src/services/motorQueries3.js:173"
+            "src/services/motorQueries.js:274",
+            "src/services/motorQueries3.js:237"
           ],
           "writers": [],
           "sql": []
@@ -8888,7 +8861,7 @@
         "racer_id": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:171",
-            "scripts/analysis/aggregate-racer-stats.js:569",
+            "scripts/analysis/aggregate-racer-stats.js:627",
             "scripts/analysis/analyze-indicator-predictive-power.js:148",
             "scripts/analysis/backtest-course-rate-only.js:81",
             "scripts/analysis/backtest-unified-model.js:100",
@@ -8923,18 +8896,17 @@
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/currentMeetEntries.js:26",
-            "src/services/meetQueries.js:125",
-            "src/services/meetQueries.js:136",
-            "src/services/meetQueries.js:240",
+            "src/services/meetQueries.js:184",
+            "src/services/meetQueries.js:195",
+            "src/services/meetQueries.js:252",
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
             "src/services/meetQueries3.js:72",
             "src/services/motorQueries2.js:257",
-            "src/services/motorQueries3.js:173",
-            "src/services/motorQueries3.js:296",
+            "src/services/motorQueries3.js:237",
+            "src/services/motorQueries3.js:300",
             "src/services/motorQueries4.js:160",
-            "src/services/motorQueries5.js:268",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:189",
             "src/services/raceQueries.js:275",
@@ -8942,10 +8914,9 @@
             "src/services/raceQueries2.js:25",
             "src/services/raceQueries2.js:264",
             "src/services/raceQueries2.js:56",
-            "src/services/raceQueries3.js:157",
-            "src/services/raceQueries3.js:187",
-            "src/services/raceQueries3.js:291",
-            "src/services/raceQueries3.js:316",
+            "src/services/raceQueries3.js:137",
+            "src/services/raceQueries3.js:164",
+            "src/services/raceQueries3.js:328",
             "src/services/racerQueries.js:102",
             "src/services/racerQueries.js:139",
             "src/services/racerQueries.js:18",
@@ -8953,7 +8924,7 @@
             "src/services/racerQueries.js:82",
             "src/services/racerQueries3.js:182",
             "src/services/racerQueries3.js:27",
-            "src/services/racerQueries3.js:295",
+            "src/services/racerQueries3.js:309",
             "src/services/racerQueries3.js:99",
             "src/services/racerService.js:127",
             "src/services/racerService.js:46"
@@ -9045,7 +9016,7 @@
             "api/_lib/snsClaimCheck.js:500",
             "api/_lib/snsTodayDigest.js:52",
             "scripts/daily/generate-morning-digest.js:155",
-            "scripts/lib/analogyV16Exhibition.js:299",
+            "scripts/lib/analogyV16Exhibition.js:261",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/verify-analogy-v16.js:289",
             "scripts/sns/push-setsu-kiryoku-short.js:1100"
@@ -9390,7 +9361,7 @@
           ]
         },
         {
-          "ref": "src/services/sherlockService.js:87",
+          "ref": "src/services/sherlockService.js:79",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9449,7 +9420,7 @@
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:81",
             "scripts/maintenance/check-odds-shadow.js:200",
             "src/services/raceQueries2.js:320",
-            "src/services/sherlockService.js:87"
+            "src/services/sherlockService.js:79"
           ],
           "writers": [],
           "sql": [
@@ -9465,7 +9436,7 @@
             "scripts/daily/scrape-odds.js:975",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:81",
             "src/services/raceQueries2.js:320",
-            "src/services/sherlockService.js:87"
+            "src/services/sherlockService.js:79"
           ],
           "writers": [],
           "sql": []
@@ -9473,7 +9444,7 @@
         "odds_win_1": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:87"
+            "src/services/sherlockService.js:79"
           ],
           "writers": [],
           "sql": []
@@ -9481,7 +9452,7 @@
         "odds_win_2": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:87"
+            "src/services/sherlockService.js:79"
           ],
           "writers": [],
           "sql": []
@@ -9489,7 +9460,7 @@
         "odds_win_3": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:87"
+            "src/services/sherlockService.js:79"
           ],
           "writers": [],
           "sql": []
@@ -9497,7 +9468,7 @@
         "odds_win_4": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:87"
+            "src/services/sherlockService.js:79"
           ],
           "writers": [],
           "sql": []
@@ -9505,7 +9476,7 @@
         "odds_win_5": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:87"
+            "src/services/sherlockService.js:79"
           ],
           "writers": [],
           "sql": []
@@ -9513,7 +9484,7 @@
         "odds_win_6": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:87"
+            "src/services/sherlockService.js:79"
           ],
           "writers": [],
           "sql": []
@@ -9976,7 +9947,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:321",
+          "ref": "src/services/meetQueries.js:333",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -10692,7 +10663,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/collect-venue-stats.js:231",
+          "ref": "scripts/analysis/collect-venue-stats.js:247",
           "op": "select",
           "via": "client",
           "columns": [
@@ -10736,7 +10707,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11078,7 +11049,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-nige-outcome-distribution.js:62",
+          "ref": "scripts/daily/update-nige-outcome-distribution.js:63",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11092,7 +11063,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-outcome-distribution.js:59",
+          "ref": "scripts/daily/update-outcome-distribution.js:60",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11407,7 +11378,7 @@
           ]
         },
         {
-          "ref": "src/services/adminRuleService.js:87",
+          "ref": "src/services/adminRuleService.js:42",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11423,7 +11394,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:173",
+          "ref": "src/services/meetQueries.js:105",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11489,7 +11460,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:305",
+          "ref": "src/services/motorQueries3.js:309",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11498,13 +11469,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries5.js:50",
-          "op": "select",
-          "via": "helper:fetchAllByIn",
-          "columns": []
-        },
-        {
-          "ref": "src/services/motorQueries5.js:280",
+          "ref": "src/services/motorQueries5.js:53",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -11529,13 +11494,13 @@
           ]
         },
         {
-          "ref": "src/services/raceQueries3.js:211",
+          "ref": "src/services/raceQueries3.js:255",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/raceQueries3.js:334",
+          "ref": "src/services/raceQueries3.js:346",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -11735,10 +11700,10 @@
             "api/_lib/snsClaimCheck.js:473",
             "scripts/analysis/analyze-upset-factors.js:120",
             "scripts/analysis/campaign-backtest-score.js:59",
-            "scripts/analysis/collect-venue-stats.js:231",
+            "scripts/analysis/collect-venue-stats.js:247",
             "scripts/analysis/find-missing-dates.js:33",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:70",
@@ -11760,8 +11725,8 @@
             "scripts/daily/scrape-results.js:901",
             "scripts/daily/update-losing-technique-stats.js:55",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
-            "scripts/daily/update-outcome-distribution.js:59",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
+            "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/daily/update-winning-technique-stats.js:62",
             "scripts/lib/inCautionHealth.js:142",
@@ -11784,12 +11749,12 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/adminRuleService.js:87",
-            "src/services/meetQueries.js:173",
+            "src/services/adminRuleService.js:42",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
-            "src/services/motorQueries3.js:305",
+            "src/services/motorQueries3.js:309",
             "src/services/raceQueries3.js:125",
             "src/services/raceQueries4.js:29",
             "src/services/ruleMatchService.js:146"
@@ -11823,7 +11788,7 @@
             "scripts/analysis/analyze-upset-factors.js:120",
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-all-venues-label-accuracy.js:106",
@@ -11837,8 +11802,8 @@
             "scripts/daily/scrape-results.js:486",
             "scripts/daily/update-losing-technique-stats.js:55",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
-            "scripts/daily/update-outcome-distribution.js:59",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
+            "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/daily/update-winning-technique-stats.js:62",
             "scripts/lib/inCautionHealth.js:142",
@@ -11849,12 +11814,12 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/adminRuleService.js:87",
-            "src/services/meetQueries.js:173",
+            "src/services/adminRuleService.js:42",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
-            "src/services/motorQueries3.js:305",
+            "src/services/motorQueries3.js:309",
             "src/services/raceQueries3.js:125",
             "src/services/ruleMatchService.js:146"
           ],
@@ -11882,7 +11847,7 @@
           "readers": [
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-poirot.js:81",
@@ -11890,16 +11855,16 @@
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/scrape-results.js:486",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
-            "scripts/daily/update-outcome-distribution.js:59",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
+            "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/maintenance/backfill-place-hits.js:31",
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/adminRuleService.js:87",
-            "src/services/meetQueries.js:173",
+            "src/services/adminRuleService.js:42",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
@@ -11921,23 +11886,23 @@
           "readers": [
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/scrape-results.js:486",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
-            "scripts/daily/update-outcome-distribution.js:59",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
+            "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/maintenance/backfill-place-hits.js:31",
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/adminRuleService.js:87",
-            "src/services/meetQueries.js:173",
+            "src/services/adminRuleService.js:42",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
@@ -11964,7 +11929,7 @@
             "scripts/daily/scrape-results.js:1344",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
@@ -11980,7 +11945,7 @@
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/maintenance/backfill-place-hits.js:31",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
@@ -11996,7 +11961,7 @@
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/maintenance/backfill-place-hits.js:31",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
@@ -12011,10 +11976,10 @@
           "readers": [
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/find-video-worthy-race.js:101",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
@@ -12027,13 +11992,13 @@
         "payout_trio": {
           "readers": [
             "scripts/analysis/campaign-backtest-score.js:59",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/verify-calculations.js:28",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/daily/update-outcome-frequencies.js:19",
-            "src/services/adminRuleService.js:87",
+            "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
           "writers": [],
@@ -12046,15 +12011,15 @@
         "is_cancelled": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:120",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-losing-technique-stats.js:55",
             "scripts/daily/update-moriarty-outcomes.js:45",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
-            "scripts/daily/update-outcome-distribution.js:59",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
+            "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/daily/update-winning-technique-stats.js:62"
           ],
@@ -12071,7 +12036,7 @@
         "is_no_race": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:120",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/analysis/verify-race-analysis-rpc.js:285"
@@ -12139,7 +12104,7 @@
             "scripts/daily/scrape-results.js:1193",
             "scripts/daily/scrape-results.js:1344",
             "scripts/daily/update-losing-technique-stats.js:55",
-            "scripts/daily/update-nige-outcome-distribution.js:62",
+            "scripts/daily/update-nige-outcome-distribution.js:63",
             "scripts/daily/update-winning-technique-stats.js:62",
             "scripts/maintenance/backfill-race-data.js:279",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
@@ -12182,7 +12147,7 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:353"
           ],
@@ -12201,7 +12166,7 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:353"
           ],
@@ -12220,7 +12185,7 @@
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:353"
           ],
@@ -12380,9 +12345,9 @@
         },
         "actual_course_1": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12400,9 +12365,9 @@
         },
         "actual_course_2": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12419,9 +12384,9 @@
         },
         "actual_course_3": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12438,9 +12403,9 @@
         },
         "actual_course_4": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12457,9 +12422,9 @@
         },
         "actual_course_5": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12476,9 +12441,9 @@
         },
         "actual_course_6": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "src/services/meetQueries.js:173",
+            "src/services/meetQueries.js:105",
             "src/services/raceQueries4.js:29"
           ],
           "writers": [
@@ -12495,7 +12460,7 @@
         },
         "race_status": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "scripts/daily/update-outcome-frequencies.js:19",
@@ -12511,7 +12476,7 @@
         },
         "refund_boats": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:224",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/daily/calculate-venue-grade-stats.js:73"
           ],
           "writers": [],
@@ -12982,7 +12947,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:280",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13126,7 +13091,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:179",
+          "ref": "src/services/meetQueries.js:111",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13258,7 +13223,7 @@
         "race_id": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:280",
             "scripts/daily/generate-morning-digest.js:699",
             "scripts/daily/scrape-results.js:639",
             "scripts/daily/scrape-results.js:709",
@@ -13269,7 +13234,7 @@
             "scripts/maintenance/verify-race-result-parser.js:2047",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
-            "src/services/meetQueries.js:179",
+            "src/services/meetQueries.js:111",
             "src/services/meetQueries.js:79",
             "src/services/meetQueries2.js:176",
             "src/services/raceQueries4.js:22"
@@ -13285,7 +13250,7 @@
         "boat_number": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:280",
             "scripts/daily/generate-morning-digest.js:699",
             "scripts/daily/scrape-results.js:639",
             "scripts/daily/scrape-results.js:709",
@@ -13295,7 +13260,7 @@
             "scripts/maintenance/verify-race-result-parser.js:2047",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
-            "src/services/meetQueries.js:179",
+            "src/services/meetQueries.js:111",
             "src/services/meetQueries.js:79",
             "src/services/meetQueries2.js:176",
             "src/services/raceQueries4.js:22"
@@ -13310,7 +13275,7 @@
         "start_timing": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:280",
             "scripts/daily/generate-morning-digest.js:699",
             "src/services/meetQueries2.js:176",
             "src/services/raceQueries4.js:22"
@@ -13325,7 +13290,7 @@
         "is_flying": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:280",
             "src/services/meetQueries.js:79",
             "src/services/meetQueries2.js:176",
             "src/services/raceQueries4.js:22"
@@ -13339,7 +13304,7 @@
         "is_late_start": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:280",
             "src/services/raceQueries4.js:22"
           ],
           "writers": [],
@@ -13357,11 +13322,11 @@
         },
         "finish_mark": {
           "readers": [
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:229",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:280",
             "scripts/daily/generate-morning-digest.js:699",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
-            "src/services/meetQueries.js:179",
+            "src/services/meetQueries.js:111",
             "src/services/meetQueries2.js:176",
             "src/services/raceQueries4.js:22"
           ],
@@ -13383,7 +13348,7 @@
         "entry_course": {
           "readers": [
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
-            "src/services/meetQueries.js:179",
+            "src/services/meetQueries.js:111",
             "src/services/raceQueries4.js:22"
           ],
           "writers": [],
@@ -13450,7 +13415,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:453",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:504",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
@@ -13589,7 +13554,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:453",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:504",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -15241,7 +15206,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/fan-backfill.js:494",
+          "ref": "scripts/maintenance/fan-backfill.js:488",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15251,7 +15216,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fan-backfill.js:512",
+          "ref": "scripts/maintenance/fan-backfill.js:587",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -15365,7 +15330,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fan-backfill.js:544",
+          "ref": "scripts/maintenance/fan-backfill.js:508",
           "op": "update",
           "via": "client",
           "columns": [
@@ -15384,8 +15349,8 @@
             "scripts/analysis/verify-racer-season-stats-accuracy.js:95",
             "scripts/lib/racerNews/officialGradeAnnouncements.js:174",
             "scripts/lib/racerProfileSync.js:265",
-            "scripts/maintenance/fan-backfill.js:494",
-            "scripts/maintenance/fan-backfill.js:544",
+            "scripts/maintenance/fan-backfill.js:488",
+            "scripts/maintenance/fan-backfill.js:508",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "scripts/sns/delete-x-post.js:124",
             "src/services/motorQueries4.js:176",
@@ -15536,14 +15501,14 @@
         },
         "sex": {
           "readers": [
-            "scripts/maintenance/fan-backfill.js:494"
+            "scripts/maintenance/fan-backfill.js:488"
           ],
           "writers": [],
           "sql": []
         },
         "training_term": {
           "readers": [
-            "scripts/maintenance/fan-backfill.js:494"
+            "scripts/maintenance/fan-backfill.js:488"
           ],
           "writers": [],
           "sql": []
@@ -15969,7 +15934,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:131",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:142",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15979,7 +15944,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
+          "ref": "scripts/analysis/past-rate-check/pool-contract-check.mjs:284",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16298,7 +16263,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/analogyV16Exhibition.js:291",
+          "ref": "scripts/lib/analogyV16Exhibition.js:253",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -16824,7 +16789,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/motor-pretest-backfill.js:231",
+          "ref": "scripts/maintenance/motor-pretest-backfill.js:217",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17075,7 +17040,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries.js:183",
+          "ref": "src/services/meetQueries.js:115",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17110,7 +17075,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:278",
+          "ref": "src/services/motorQueries3.js:282",
           "op": "select",
           "via": "embed",
           "columns": [
@@ -17209,7 +17174,7 @@
           ]
         },
         {
-          "ref": "src/services/sherlockService.js:73",
+          "ref": "src/services/sherlockService.js:65",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17459,8 +17424,8 @@
             "scripts/analysis/analyze-upset-factors.js:108",
             "scripts/analysis/backtest-unified-model.js:109",
             "scripts/analysis/calibrate-unified-model.js:160",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:131",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:142",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:284",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
@@ -17492,7 +17457,7 @@
             "scripts/daily/update-race-info.js:400",
             "scripts/daily/update-race-info.js:513",
             "scripts/lib/analogyDispatch.js:75",
-            "scripts/lib/analogyV16Exhibition.js:291",
+            "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
             "scripts/lib/eveDeadlinesJob.js:410",
@@ -17546,7 +17511,7 @@
             "scripts/sns/push-setsu-kiryoku-short.js:1081",
             "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
-            "src/services/meetQueries.js:183",
+            "src/services/meetQueries.js:115",
             "src/services/meetQueries3.js:62",
             "src/services/motorQueries.js:112",
             "src/services/mycroftService.js:78",
@@ -17554,7 +17519,7 @@
             "src/services/racerQueries3.js:252",
             "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
-            "src/services/sherlockService.js:73",
+            "src/services/sherlockService.js:65",
             "src/services/venueQueries2.js:134",
             "src/services/venueQueries2.js:43",
             "src/services/watsonService.js:71"
@@ -17598,7 +17563,7 @@
             "api/_lib/snsClaimCheck.js:498",
             "api/odds/live.js:72",
             "scripts/analysis/analyze-upset-factors.js:108",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:131",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:142",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
@@ -17614,7 +17579,7 @@
             "scripts/generate-sitemap.js:379",
             "scripts/generate-sitemap.js:662",
             "scripts/lib/analogyDispatch.js:75",
-            "scripts/lib/analogyV16Exhibition.js:291",
+            "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
             "scripts/lib/eveDeadlinesJob.js:410",
@@ -17636,7 +17601,7 @@
             "scripts/maintenance/backfill-start-timings.js:223",
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
-            "scripts/maintenance/motor-pretest-backfill.js:231",
+            "scripts/maintenance/motor-pretest-backfill.js:217",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
@@ -17656,7 +17621,7 @@
             "src/services/scheduleQueries.js:125",
             "src/services/scheduleQueries.js:205",
             "src/services/scheduleQueries.js:229",
-            "src/services/sherlockService.js:73",
+            "src/services/sherlockService.js:65",
             "src/services/venueQueries2.js:134",
             "src/services/venueQueries2.js:43",
             "src/services/watsonService.js:71"
@@ -17725,19 +17690,19 @@
             "scripts/maintenance/backfill-start-timings.js:223",
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
-            "scripts/maintenance/motor-pretest-backfill.js:231",
+            "scripts/maintenance/motor-pretest-backfill.js:217",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
             "scripts/maintenance/verify-rpc-output-keys.js:321",
             "src/services/motorQueries.js:112",
-            "src/services/motorQueries3.js:278",
+            "src/services/motorQueries3.js:282",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:205",
             "src/services/scheduleQueries.js:229",
-            "src/services/sherlockService.js:73",
+            "src/services/sherlockService.js:65",
             "src/services/venueQueries2.js:134",
             "src/services/venueQueries2.js:43",
             "src/services/watsonService.js:71"
@@ -17773,14 +17738,14 @@
             "scripts/maintenance/backfill-results-by-race-id.js:37",
             "scripts/maintenance/backfill-start-timings.js:223",
             "scripts/maintenance/delete-phantom-race-days.js:103",
-            "scripts/maintenance/motor-pretest-backfill.js:231",
+            "scripts/maintenance/motor-pretest-backfill.js:217",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:229",
-            "src/services/sherlockService.js:73",
+            "src/services/sherlockService.js:65",
             "src/services/watsonService.js:71"
           ],
           "writers": [
@@ -17806,12 +17771,12 @@
             "api/_lib/snsClaimCheck.js:498",
             "api/_lib/snsTodayDigest.js:50",
             "api/odds/live.js:72",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:131",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:142",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/daily/generate-morning-digest.js:133",
             "scripts/daily/scrape-results.js:1501",
             "scripts/lib/analogyDispatch.js:75",
-            "scripts/lib/analogyV16Exhibition.js:291",
+            "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
             "scripts/lib/eveDeadlinesJob.js:410",
@@ -17841,7 +17806,7 @@
             "src/services/poirotService.js:48",
             "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
-            "src/services/sherlockService.js:73",
+            "src/services/sherlockService.js:65",
             "src/services/watsonService.js:71"
           ],
           "writers": [
@@ -17994,7 +17959,7 @@
             "api/_lib/snsClaimCheck.js:472",
             "api/_lib/snsClaimCheck.js:498",
             "api/_lib/snsTodayDigest.js:50",
-            "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
+            "scripts/analysis/past-rate-check/pool-contract-check.mjs:284",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/daily/scrape-point-rank.js:349",
             "scripts/daily/scrape-results.js:839",
@@ -18030,7 +17995,7 @@
             "scripts/sns/push-full-picture.js:839",
             "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
-            "src/services/meetQueries.js:183",
+            "src/services/meetQueries.js:115",
             "src/services/meetQueries3.js:62"
           ],
           "writers": [
@@ -18829,6 +18794,7 @@
         "motor_pretest",
         "odds",
         "odds_final",
+        "outcome_distribution_update",
         "pcexpect",
         "pit_reports",
         "point_rank",
@@ -19380,6 +19346,7 @@
         "motor_pretest",
         "odds",
         "odds_final",
+        "outcome_distribution_update",
         "pcexpect",
         "pit_reports",
         "point_rank",
@@ -26085,7 +26052,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:361",
+          "ref": "src/services/motorQueries3.js:365",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26094,7 +26061,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:371",
+          "ref": "src/services/motorQueries3.js:375",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26132,8 +26099,8 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/motorQueries3.js:361",
-            "src/services/motorQueries3.js:371",
+            "src/services/motorQueries3.js:365",
+            "src/services/motorQueries3.js:375",
             "src/services/motorQueries3.js:54"
           ],
           "writers": [],
@@ -26143,7 +26110,7 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/motorQueries3.js:371",
+            "src/services/motorQueries3.js:375",
             "src/services/motorQueries3.js:54"
           ],
           "writers": [],
@@ -26153,8 +26120,8 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/motorQueries3.js:361",
-            "src/services/motorQueries3.js:371",
+            "src/services/motorQueries3.js:365",
+            "src/services/motorQueries3.js:375",
             "src/services/motorQueries3.js:54"
           ],
           "writers": [],
@@ -26168,21 +26135,21 @@
         "race_count": {
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
-            "src/services/motorQueries3.js:371"
+            "src/services/motorQueries3.js:375"
           ],
           "writers": [],
           "sql": []
         },
         "final_count": {
           "readers": [
-            "src/services/motorQueries3.js:371"
+            "src/services/motorQueries3.js:375"
           ],
           "writers": [],
           "sql": []
         },
         "championship_count": {
           "readers": [
-            "src/services/motorQueries3.js:371"
+            "src/services/motorQueries3.js:375"
           ],
           "writers": [],
           "sql": []
@@ -26204,28 +26171,28 @@
         },
         "win_rate": {
           "readers": [
-            "src/services/motorQueries3.js:371"
+            "src/services/motorQueries3.js:375"
           ],
           "writers": [],
           "sql": []
         },
         "top2_rate": {
           "readers": [
-            "src/services/motorQueries3.js:371"
+            "src/services/motorQueries3.js:375"
           ],
           "writers": [],
           "sql": []
         },
         "top3_rate": {
           "readers": [
-            "src/services/motorQueries3.js:371"
+            "src/services/motorQueries3.js:375"
           ],
           "writers": [],
           "sql": []
         },
         "accident_rate": {
           "readers": [
-            "src/services/motorQueries3.js:371"
+            "src/services/motorQueries3.js:375"
           ],
           "writers": [],
           "sql": []
@@ -26247,7 +26214,7 @@
         },
         "stats_period_end": {
           "readers": [
-            "src/services/motorQueries3.js:371"
+            "src/services/motorQueries3.js:375"
           ],
           "writers": [],
           "sql": []
@@ -27858,7 +27825,7 @@
           "via": "helper:callRpc"
         },
         {
-          "ref": "src/services/raceQueries3.js:149",
+          "ref": "src/services/raceQueries3.js:221",
           "via": "client"
         }
       ],
@@ -27923,7 +27890,7 @@
           "via": "helper:callRpc"
         },
         {
-          "ref": "src/services/raceQueries3.js:282",
+          "ref": "src/services/raceQueries3.js:301",
           "via": "client"
         }
       ],
@@ -28745,10 +28712,10 @@
     {
       "job": "analogy_v16_exhibition",
       "entry": "api/cron/analogy-exhibition.js",
-      "reachableFiles": 20,
+      "reachableFiles": 21,
       "writes": {
         "analogy_v16_snapshots": [
-          "scripts/lib/analogyV16Exhibition.js:367"
+          "scripts/lib/analogyV16Exhibition.js:307"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29306,6 +29273,36 @@
         ],
         "race_odds_final": [
           "scripts/lib/scrapeJobs/finalOddsHandlers.js:144"
+        ],
+        "scrape_job_state": [
+          "scripts/lib/scrapeJobs/store.js:102",
+          "scripts/lib/scrapeJobs/store.js:110",
+          "scripts/lib/scrapeJobs/store.js:129",
+          "scripts/lib/scrapeJobs/store.js:135",
+          "scripts/lib/scrapeJobs/store.js:147",
+          "scripts/lib/scrapeJobs/store.js:161",
+          "scripts/lib/scrapeJobs/store.js:318",
+          "scripts/lib/scrapeJobs/store.js:368",
+          "scripts/lib/scrapeJobs/store.js:398"
+        ],
+        "scrape_slots": [
+          "scripts/lib/scrapeJobs/store.js:233",
+          "scripts/lib/scrapeJobs/store.js:269"
+        ]
+      }
+    },
+    {
+      "job": "outcome_distribution_update",
+      "entry": "api/cron/outcome-distribution-update.js",
+      "reachableFiles": 21,
+      "writes": {
+        "nige_outcome_distribution": [
+          "scripts/daily/update-nige-outcome-distribution.js:120",
+          "scripts/daily/update-nige-outcome-distribution.js:130"
+        ],
+        "outcome_distribution": [
+          "scripts/daily/update-outcome-distribution.js:115",
+          "scripts/daily/update-outcome-distribution.js:126"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -30198,12 +30195,12 @@
     },
     {
       "file": "scripts/maintenance/fan-backfill.js",
-      "line": 382,
+      "line": 360,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/maintenance/fan-backfill.js",
-      "line": 406,
+      "line": 444,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
@@ -30238,12 +30235,12 @@
     },
     {
       "file": "scripts/maintenance/kb-backfill.js",
-      "line": 776,
+      "line": 957,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/maintenance/motor-pretest-backfill.js",
-      "line": 454,
+      "line": 451,
       "reason": "表の名前が変数（.from(式)）"
     }
   ],

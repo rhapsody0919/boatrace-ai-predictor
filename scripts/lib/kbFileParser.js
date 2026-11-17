@@ -165,7 +165,7 @@ const K_DAY_LINE_RE =
 const K_SUMMARY_ROW_RE = /^\s+\d{1,2}R\s+\S+/;
 // 同着で払戻が複数ある場合の、レース番号なしの継続行（例: "               1-2-5     520    1-2-5     200"）
 const K_SUMMARY_CONT_RE = /^\s{10,}\d(?:-\d){1,2}\s+\d+/;
-/** 払戻金の要約に出る中止の行（例: "           1R  中　止"。全角スペースの有無は問わない。BOA-412） */
+/** 払戻金の要約に出る中止の行（例: "           1R  中[U+3000]止"。全角スペースの有無は問わない。BOA-412） */
 const K_SUMMARY_CANCELLED_RE = /^\s+(\d{1,2})R\s+中[\s\u3000]*止\s*$/;
 const K_RACE_HDR_RE =
   /^\s{0,4}(\d{1,2})R\s+(.*?)\s+H(\d+)m\s+(\S+)\s+風\s+(\S+?)\s+(\d+)m\s+波\s+(\d+)cm\s*$/;
@@ -308,12 +308,19 @@ function parsePayoutLine(line, state) {
   return true;
 }
 
-/**
- * @param {string[]} lines 会場ブロックの行
- * @param {number} venueCode
- */
-function parseKVenue(lines, venueCode) {
-  const out = {
+/** 節の日目の解釈（K・B 共通）。out.day_label から series_day・is_final_day を決める */
+function applyDayLabel(out) {
+  if (out.day_label) {
+    const dm = /第(\d+)日/.exec(out.day_label);
+    if (dm) out.series_day = Number.parseInt(dm[1], 10);
+    // 実際の K/B は最終日も「第N日」と書き、「最終日」とは書かない（2019-04〜2026-09 の全ファイルで「最終日」0件。
+    // BOA-696）。is_final_day は K/B からは決まらないので、使う側は race_series の終了日で判定する
+    if (out.day_label === "最終日") out.is_final_day = true;
+  }
+}
+
+function newKVenue(venueCode) {
+  return {
     venue_code: venueCode,
     venue_name: null,
     status: "complete",
@@ -325,12 +332,143 @@ function parseKVenue(lines, venueCode) {
     is_final_day: false,
     date_in_body: null,
     payout_summary_lines: [],
-    // 払戻金の要約に「NR 中　止」と書かれたレース番号（昇順）。成績の本体には中止のレースの記録が無いため、
+    // 払戻金の要約に「NR 中[U+3000]止」と書かれたレース番号（昇順）。成績の本体には中止のレースの記録が無いため、
     // 全日中止（races が空）と途中打ち切り（前半は成績あり）を、ここで区別できる（BOA-412）
     cancelled_race_numbers: [],
     races: [],
     unparsed: [],
   };
+}
+
+// 以下の parseK*Line は、行を処理したら true を返す（呼び出し側はその行を次の処理へ渡さない）。
+// ctx = { out, race, payoutState, seenTitleBanner }（行をまたぐ状態）
+
+function parseKVenueHeaderLine(ctx, line) {
+  const vh = K_VENUE_HDR_RE.exec(line);
+  if (!(vh && !ctx.race)) return false;
+  const { out } = ctx;
+  out.venue_name = squash(vh[1]);
+  out.header = line.trim();
+  out.title_short = squash(vh[4]);
+  if (vh[5]) out.day_label = squash(vh[5]);
+  return true;
+}
+
+function parseKTitleLine(ctx, line) {
+  const { out } = ctx;
+  if (/＊＊＊\s*競走成績\s*＊＊＊/.test(line)) {
+    ctx.seenTitleBanner = true;
+    return true;
+  }
+  if (
+    ctx.seenTitleBanner &&
+    out.title === null &&
+    !ctx.race &&
+    /^\s{4,}\S/.test(line) &&
+    !K_DAY_LINE_RE.test(line)
+  ) {
+    out.title = squash(line.trim());
+    return true;
+  }
+  return false;
+}
+
+function parseKDayLine(ctx, line) {
+  const dl = K_DAY_LINE_RE.exec(line);
+  if (!(dl && !ctx.race)) return false;
+  ctx.out.day_label = squash(dl[1]);
+  ctx.out.date_in_body = `${dl[2]}-${String(dl[3]).padStart(2, "0")}-${String(dl[4]).padStart(2, "0")}`;
+  return true;
+}
+
+/** 払戻金の要約・注記の行（レースの前にある） */
+function parseKSummaryLine(ctx, line) {
+  const { out } = ctx;
+  if (
+    /内容については主催者発行のもの/.test(line) ||
+    /\[払戻金\]/.test(line)
+  ) {
+    if (/\[払戻金\]/.test(line))
+      out.payout_summary_lines.push(line.trimEnd());
+    return true;
+  }
+  if (
+    !ctx.race &&
+    (K_SUMMARY_ROW_RE.test(line) || K_SUMMARY_CONT_RE.test(line)) &&
+    !K_RACE_HDR_RE.test(line)
+  ) {
+    const cancelled = K_SUMMARY_CANCELLED_RE.exec(line);
+    if (cancelled) out.cancelled_race_numbers.push(toInt(cancelled[1]));
+    out.payout_summary_lines.push(line.trimEnd());
+    return true;
+  }
+  return false;
+}
+
+function parseKRaceHeaderLine(ctx, line) {
+  const rh = K_RACE_HDR_RE.exec(line);
+  if (!rh) return false;
+  const race = {
+    race_number: toInt(rh[1]),
+    stage_raw: rh[2].trim(),
+    stage: squash(rh[2]),
+    distance_m: toInt(rh[3]),
+    weather: squash(rh[4]),
+    wind_direction: squash(rh[5]),
+    wind_speed: toInt(rh[6]),
+    wave_height: toInt(rh[7]),
+    technique: null,
+    rows: [],
+    payouts: [],
+    extra_lines: [],
+  };
+  ctx.race = race;
+  ctx.out.races.push(race);
+  ctx.payoutState = { lastKind: null, payouts: race.payouts };
+  return true;
+}
+
+/** レースの中の行（結果の見出し・区切り・艇の行・払戻・未知の行） */
+function parseKRaceBodyLine(ctx, line) {
+  const { race } = ctx;
+  if (K_RESULT_HDR_RE.test(line)) {
+    const t = line.split("ﾚｰｽﾀｲﾑ")[1];
+    race.technique = t !== undefined && squash(t) !== "" ? squash(t) : null;
+    return;
+  }
+  if (/^-{10,}\s*$/.test(line)) return;
+
+  const row = parseKResultRow(line);
+  if (row) {
+    race.rows.push(row);
+    return;
+  }
+  if (parsePayoutLine(line, ctx.payoutState)) return;
+  race.extra_lines.push(line.trimEnd()); // 返還・レース不成立等の未知の行（捨てない）
+}
+
+function parseKLine(ctx, line) {
+  if (
+    parseKVenueHeaderLine(ctx, line) ||
+    parseKTitleLine(ctx, line) ||
+    parseKDayLine(ctx, line) ||
+    parseKSummaryLine(ctx, line) ||
+    parseKRaceHeaderLine(ctx, line)
+  )
+    return;
+  if (!ctx.race) {
+    ctx.out.unparsed.push(line.trimEnd());
+    return;
+  }
+  parseKRaceBodyLine(ctx, line);
+}
+
+/**
+ * @param {string[]} lines 会場ブロックの行
+ * @param {number} venueCode
+ */
+function parseKVenue(lines, venueCode) {
+  const out = newKVenue(venueCode);
   const joined = lines.join("\n");
   if (joined.includes(PENDING_MARKER)) {
     out.status = "pending";
@@ -338,106 +476,13 @@ function parseKVenue(lines, venueCode) {
     return out;
   }
 
-  let race = null;
-  let payoutState = null;
-  let seenTitleBanner = false;
+  const ctx = { out, race: null, payoutState: null, seenTitleBanner: false };
   for (const line of lines) {
     if (line.trim() === "") continue;
-
-    const vh = K_VENUE_HDR_RE.exec(line);
-    if (vh && !race) {
-      out.venue_name = squash(vh[1]);
-      out.header = line.trim();
-      out.title_short = squash(vh[4]);
-      if (vh[5]) out.day_label = squash(vh[5]);
-      continue;
-    }
-    if (/＊＊＊\s*競走成績\s*＊＊＊/.test(line)) {
-      seenTitleBanner = true;
-      continue;
-    }
-    if (
-      seenTitleBanner &&
-      out.title === null &&
-      !race &&
-      /^\s{4,}\S/.test(line) &&
-      !K_DAY_LINE_RE.test(line)
-    ) {
-      out.title = squash(line.trim());
-      continue;
-    }
-    const dl = K_DAY_LINE_RE.exec(line);
-    if (dl && !race) {
-      out.day_label = squash(dl[1]);
-      out.date_in_body = `${dl[2]}-${String(dl[3]).padStart(2, "0")}-${String(dl[4]).padStart(2, "0")}`;
-      continue;
-    }
-    if (
-      /内容については主催者発行のもの/.test(line) ||
-      /\[払戻金\]/.test(line)
-    ) {
-      if (/\[払戻金\]/.test(line))
-        out.payout_summary_lines.push(line.trimEnd());
-      continue;
-    }
-    if (
-      !race &&
-      (K_SUMMARY_ROW_RE.test(line) || K_SUMMARY_CONT_RE.test(line)) &&
-      !K_RACE_HDR_RE.test(line)
-    ) {
-      const cancelled = K_SUMMARY_CANCELLED_RE.exec(line);
-      if (cancelled) out.cancelled_race_numbers.push(toInt(cancelled[1]));
-      out.payout_summary_lines.push(line.trimEnd());
-      continue;
-    }
-
-    const rh = K_RACE_HDR_RE.exec(line);
-    if (rh) {
-      race = {
-        race_number: toInt(rh[1]),
-        stage_raw: rh[2].trim(),
-        stage: squash(rh[2]),
-        distance_m: toInt(rh[3]),
-        weather: squash(rh[4]),
-        wind_direction: squash(rh[5]),
-        wind_speed: toInt(rh[6]),
-        wave_height: toInt(rh[7]),
-        technique: null,
-        rows: [],
-        payouts: [],
-        extra_lines: [],
-      };
-      out.races.push(race);
-      payoutState = { lastKind: null, payouts: race.payouts };
-      continue;
-    }
-    if (!race) {
-      out.unparsed.push(line.trimEnd());
-      continue;
-    }
-    if (K_RESULT_HDR_RE.test(line)) {
-      const t = line.split("ﾚｰｽﾀｲﾑ")[1];
-      race.technique = t !== undefined && squash(t) !== "" ? squash(t) : null;
-      continue;
-    }
-    if (/^-{10,}\s*$/.test(line)) continue;
-
-    const row = parseKResultRow(line);
-    if (row) {
-      race.rows.push(row);
-      continue;
-    }
-    if (parsePayoutLine(line, payoutState)) continue;
-    race.extra_lines.push(line.trimEnd()); // 返還・レース不成立等の未知の行（捨てない）
+    parseKLine(ctx, line);
   }
 
-  if (out.day_label) {
-    const dm = /第(\d+)日/.exec(out.day_label);
-    if (dm) out.series_day = Number.parseInt(dm[1], 10);
-    // 実際の K/B は最終日も「第N日」と書き、「最終日」とは書かない（2019-04〜2026-09 の全ファイルで「最終日」0件。
-    // BOA-696）。is_final_day は K/B からは決まらないので、使う側は race_series の終了日で判定する
-    if (out.day_label === "最終日") out.is_final_day = true;
-  }
+  applyDayLabel(out);
   out.cancelled_race_numbers = [...new Set(out.cancelled_race_numbers)].sort(
     (a, b) => a - b,
   );
@@ -472,8 +517,8 @@ const B_RACE_HDR_RE =
 const B_ENTRY_RE =
   /^([1-6])\s?(\d{4})(.{4})(\d{2})(\D{2,3}?)(\d{2})(A1|A2|B1|B2)\s*(\d+\.\d{2})\s*(\d+\.\d{2})\s*(\d+\.\d{2})\s*(\d+\.\d{2})\s*(\d{1,3})\s*(\d+\.\d{2})\s*(\d{1,3})\s*(\d+\.\d{2})(.*)$/;
 
-function parseBVenue(lines, venueCode) {
-  const out = {
+function newBVenue(venueCode) {
+  return {
     venue_code: venueCode,
     venue_name: null,
     header: null,
@@ -486,92 +531,117 @@ function parseBVenue(lines, venueCode) {
     races: [],
     unparsed: [],
   };
-  let race = null;
-  let seenBanner = false;
+}
+
+// parseB*Line は、行を処理したら true を返す。ctx = { out, race, seenBanner }（行をまたぐ状態）
+
+function parseBHeaderLine(ctx, line) {
+  const { out } = ctx;
+  const vh = B_VENUE_HDR_RE.exec(line);
+  if (vh && !ctx.race) {
+    out.venue_name = squash(vh[1] ?? vh[2]);
+    out.header = line.trim();
+    out.title_short = squash(vh[5]);
+    out.day_label = squash(vh[6]);
+    return true;
+  }
+  if (/＊＊＊\s*番組表\s*＊＊＊/.test(line)) {
+    ctx.seenBanner = true;
+    return true;
+  }
+  if (
+    ctx.seenBanner &&
+    out.title === null &&
+    !ctx.race &&
+    /^\s{4,}\S/.test(line)
+  ) {
+    out.title = squash(line.trim());
+    return true;
+  }
+  const dl = B_DAY_LINE_RE.exec(line);
+  if (dl && !ctx.race) {
+    const p2 = (x) => half(x).padStart(2, "0");
+    out.date_in_body = `${half(dl[2])}-${p2(dl[3])}-${p2(dl[4])}`;
+    return true;
+  }
+  return /内容については主催者発行のもの/.test(line);
+}
+
+function parseBRaceHeaderLine(ctx, line) {
+  const rh = B_RACE_HDR_RE.exec(line);
+  if (!rh) return false;
+  const race = {
+    race_number: toInt(half(rh[1])),
+    stage_raw: rh[2].trim(),
+    stage: squash(rh[2]),
+    distance_m: toInt(half(rh[3])),
+    deadline_time: `${half(rh[4]).padStart(2, "0")}:${half(rh[5])}`,
+    entries: [],
+    extra_lines: [],
+  };
+  ctx.race = race;
+  ctx.out.races.push(race);
+  return true;
+}
+
+function toBEntry(e) {
+  const tail = e[16];
+  return {
+    boat_number: toInt(e[1]),
+    racer_id: toInt(e[2]),
+    name: squash(e[3]),
+    name_raw: e[3],
+    age: toInt(e[4]),
+    branch: squash(e[5]),
+    weight: toInt(e[6]),
+    class: e[7],
+    national_win_rate: toNum(e[8]),
+    national_2rate: toNum(e[9]),
+    local_win_rate: toNum(e[10]),
+    local_2rate: toNum(e[11]),
+    motor_number: toInt(e[12]),
+    motor_2rate: toNum(e[13]),
+    boat_id: toInt(e[14]),
+    boat_2rate: toNum(e[15]),
+    series_results_raw: tail.slice(0, tail.length).trimEnd(), // 今節成績（日別着順）と早見欄。列位置が意味を持つため原文を保持
+  };
+}
+
+/** レースの中の行（区切り・見出しは捨て、出走表の行は艇として、それ以外は extra_lines へ） */
+function parseBRaceBodyLine(ctx, line) {
+  const { race } = ctx;
+  if (
+    /^-{10,}\s*$/.test(line) ||
+    /^艇\s+選手\s+選手/.test(line) ||
+    /^番\s+登番\s+名/.test(line)
+  )
+    return;
+
+  const e = B_ENTRY_RE.exec(line.trim());
+  if (e) {
+    race.entries.push(toBEntry(e));
+    return;
+  }
+  race.extra_lines.push(line.trimEnd());
+}
+
+function parseBLine(ctx, line) {
+  if (parseBHeaderLine(ctx, line) || parseBRaceHeaderLine(ctx, line)) return;
+  if (!ctx.race) {
+    ctx.out.unparsed.push(line.trimEnd());
+    return;
+  }
+  parseBRaceBodyLine(ctx, line);
+}
+
+function parseBVenue(lines, venueCode) {
+  const out = newBVenue(venueCode);
+  const ctx = { out, race: null, seenBanner: false };
   for (const line of lines) {
     if (line.trim() === "") continue;
-    const vh = B_VENUE_HDR_RE.exec(line);
-    if (vh && !race) {
-      out.venue_name = squash(vh[1] ?? vh[2]);
-      out.header = line.trim();
-      out.title_short = squash(vh[5]);
-      out.day_label = squash(vh[6]);
-      continue;
-    }
-    if (/＊＊＊\s*番組表\s*＊＊＊/.test(line)) {
-      seenBanner = true;
-      continue;
-    }
-    if (seenBanner && out.title === null && !race && /^\s{4,}\S/.test(line)) {
-      out.title = squash(line.trim());
-      continue;
-    }
-    const dl = B_DAY_LINE_RE.exec(line);
-    if (dl && !race) {
-      const p2 = (x) => half(x).padStart(2, "0");
-      out.date_in_body = `${half(dl[2])}-${p2(dl[3])}-${p2(dl[4])}`;
-      continue;
-    }
-    if (/内容については主催者発行のもの/.test(line)) continue;
-
-    const rh = B_RACE_HDR_RE.exec(line);
-    if (rh) {
-      race = {
-        race_number: toInt(half(rh[1])),
-        stage_raw: rh[2].trim(),
-        stage: squash(rh[2]),
-        distance_m: toInt(half(rh[3])),
-        deadline_time: `${half(rh[4]).padStart(2, "0")}:${half(rh[5])}`,
-        entries: [],
-        extra_lines: [],
-      };
-      out.races.push(race);
-      continue;
-    }
-    if (!race) {
-      out.unparsed.push(line.trimEnd());
-      continue;
-    }
-    if (
-      /^-{10,}\s*$/.test(line) ||
-      /^艇\s+選手\s+選手/.test(line) ||
-      /^番\s+登番\s+名/.test(line)
-    )
-      continue;
-
-    const e = B_ENTRY_RE.exec(line.trim());
-    if (e) {
-      const tail = e[16];
-      race.entries.push({
-        boat_number: toInt(e[1]),
-        racer_id: toInt(e[2]),
-        name: squash(e[3]),
-        name_raw: e[3],
-        age: toInt(e[4]),
-        branch: squash(e[5]),
-        weight: toInt(e[6]),
-        class: e[7],
-        national_win_rate: toNum(e[8]),
-        national_2rate: toNum(e[9]),
-        local_win_rate: toNum(e[10]),
-        local_2rate: toNum(e[11]),
-        motor_number: toInt(e[12]),
-        motor_2rate: toNum(e[13]),
-        boat_id: toInt(e[14]),
-        boat_2rate: toNum(e[15]),
-        series_results_raw: tail.slice(0, tail.length).trimEnd(), // 今節成績（日別着順）と早見欄。列位置が意味を持つため原文を保持
-      });
-      continue;
-    }
-    race.extra_lines.push(line.trimEnd());
+    parseBLine(ctx, line);
   }
-  if (out.day_label) {
-    const dm = /第(\d+)日/.exec(out.day_label);
-    if (dm) out.series_day = Number.parseInt(dm[1], 10);
-    // 実際の K/B は最終日も「第N日」と書き、「最終日」とは書かない（2019-04〜2026-09 の全ファイルで「最終日」0件。
-    // BOA-696）。is_final_day は K/B からは決まらないので、使う側は race_series の終了日で判定する
-    if (out.day_label === "最終日") out.is_final_day = true;
-  }
+  applyDayLabel(out);
   return out;
 }
 

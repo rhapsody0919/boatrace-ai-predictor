@@ -20,6 +20,10 @@
   },
   "reservedPatterns": [
     {
+      "pattern": "^src/services/supabaseDataService\\.js$",
+      "reason": "moveOnly の移し元だった殻は RA40 で消えた。移す道の道具（split-data-layer.mjs・prLaneMoveOnly*.js）と判定の試験は残すので、型だけ予約する。道具を消す票で moveOnly ごと外す"
+    },
+    {
       "pattern": "^supabase/",
       "reason": "今の master に supabase/ は無い（マイグレーションは docs/db-migration/）。将来置かれても重い道にするための予約"
     }

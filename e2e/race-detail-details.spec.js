@@ -153,9 +153,9 @@ test.describe("レース詳細の表示の細部", () => {
   }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto("/race/2026-10-02-12-12?tab=beforeInfo");
-    await expect(
-      page.getByTestId("rbi-turn-time-venue-note"),
-    ).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("rbi-turn-time-venue-note")).toBeVisible({
+      timeout: 30000,
+    });
     const cells = page
       .locator(".race-before-info-tab .drt-label-cell")
       .filter({ hasText: "まわり足" });
@@ -812,6 +812,26 @@ test.describe("レース詳細の表示の細部", () => {
           const box = el.getBoundingClientRect();
           return Math.round(cell.left - box.left);
         }, screen.sticky);
+      // 送る先は、押した瞬間の列の幅・固定の列の幅から決まる。読み込み・文字の読み込みで列の幅が
+      // 動いている間に押すと、送り先が古い幅の境目になり、のちに幅が決まると境目から外れる。
+      // 幅が落ち着いてから押す（CI のトレースでは、固定の列の幅 scroll-padding-left が
+      // 86px→107px と読み込み中に変わっていた）
+      await page.evaluate(() => document.fonts.ready);
+      await settled(() =>
+        hint.evaluate((el) => {
+          const row = el.querySelector("tr");
+          if (!row) return null;
+          const snap = el.matches("[data-hscroll-snap]")
+            ? el
+            : el.querySelector("[data-hscroll-snap]");
+          return {
+            padding: snap?.style.scrollPaddingLeft ?? null,
+            widths: [...row.children].map(
+              (c) => Math.round(c.getBoundingClientRect().width * 10) / 10,
+            ),
+          };
+        }),
+      );
       const before = await stickyLeft();
       await more.click();
       const less = hint.locator(":scope > .hscroll-less");
@@ -820,9 +840,28 @@ test.describe("レース詳細の表示の細部", () => {
       // 375px のコース別成績で「1コース 2%」（実際は 87.2%）と読めた）。
       // 境目に止める測り直し（ResizeObserver・フォントの読み込み後）が済む前は 54px 残って見えるので、
       // 位置が落ち着いてから測る（上限 1px は変えない）
+      const cut = await settled(() => cutAtSticky(hint));
+      // 落ちたとき原因を絞れるよう、送った位置と固定の列の幅・列の位置を文に残す（CI で 54.34 が出て
+      // 再現できなかったため）。判定の値（1px）は変えない
+      const state = await hint.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        const row = el.querySelector("tr");
+        const snap = el.matches("[data-hscroll-snap]")
+          ? el
+          : el.querySelector("[data-hscroll-snap]");
+        return JSON.stringify({
+          scrollLeft: snap?.scrollLeft,
+          padding: snap?.style.scrollPaddingLeft,
+          margin: snap?.firstElementChild?.style.marginRight,
+          lefts: [...(row?.children ?? [])].map(
+            (c) =>
+              Math.round((c.getBoundingClientRect().left - box.left) * 10) / 10,
+          ),
+        });
+      });
       expect(
-        await settled(() => cutAtSticky(hint)),
-        "固定の列の右に切れた列が残らない",
+        cut,
+        `固定の列の右に切れた列が残らない ${state}`,
       ).toBeLessThanOrEqual(1);
       // 送ったあとも、左端の列は同じ位置に残る
       expect(Math.abs((await stickyLeft()) - before)).toBeLessThanOrEqual(1);

@@ -116,6 +116,79 @@ const ahead = (files, commitShas = [MID, HEAD]) => ({
     }).action === "deferred",
     "(a) master の先が10分以内のコミットなら待つ（検査の run がまだ無いことがある）",
   );
+  {
+    // 自動 docs 再生成が先。判定は、その下の最後の人の commit の時刻
+    const bot = (sha, at, over = {}) => ({
+      sha,
+      committedAt: at,
+      authorEmail: "action@github.com",
+      committerEmail: "action@github.com",
+      message: "chore: 機械生成の文書を再生成 [automated]",
+      ...over,
+    });
+    const human = (sha, at, over = {}) => ({
+      sha,
+      committedAt: at,
+      authorEmail: "x@example.com",
+      committerEmail: "noreply@github.com",
+      message: "fix: 何か (#1)",
+      ...over,
+    });
+    const AUTO = "d".repeat(40);
+    const withCommits = (commits, headAt) => ({
+      compare: { ...ahead(["src/App.jsx"], commits.map((c) => c.sha)), commits },
+      head: { sha: commits[commits.length - 1].sha, committedAt: headAt },
+    });
+    const FRESH_AT = "2026-11-06T11:44:00+09:00";
+    const OLD_AT = "2026-11-06T11:30:00+09:00";
+    check(
+      d(withCommits([human(MID, OLD_AT), bot(AUTO, FRESH_AT)], FRESH_AT))
+        .action === "release",
+      "(a) 先が自動 commit で新しくても、下の人の commit が10分以上前なら出す",
+    );
+    check(
+      d(withCommits([human(MID, FRESH_AT), bot(AUTO, FRESH_AT)], FRESH_AT))
+        .action === "deferred",
+      "(a) 先が自動 commit でも、下の人の commit が10分未満なら待つ（FRESH の目的は弱めない）",
+    );
+    check(
+      d(withCommits([bot(MID, OLD_AT), human(AUTO, FRESH_AT)], FRESH_AT))
+        .action === "deferred",
+      "(a) 自動でない commit が先で新しければ待つ",
+    );
+    check(
+      d(
+        withCommits(
+          [
+            human(MID, OLD_AT),
+            human(AUTO, FRESH_AT, { message: "fix: 偽 [automated]" }),
+          ],
+          FRESH_AT,
+        ),
+      ).action === "deferred",
+      "(a) 題だけ [automated] の人の commit（committer・author が違う）は除かない",
+    );
+    check(
+      d(
+        withCommits(
+          [
+            human(MID, OLD_AT),
+            human(AUTO, FRESH_AT, {
+              authorEmail: "action@github.com",
+              message: "fix: 偽 [automated]",
+            }),
+          ],
+          FRESH_AT,
+        ),
+      ).action === "deferred",
+      "(a) author だけ偽っても（committer が違う）除かない",
+    );
+    check(
+      d(withCommits([bot(MID, FRESH_AT), bot(AUTO, FRESH_AT)], FRESH_AT))
+        .action === "deferred",
+      "(a) 範囲が全部自動なら先の時刻で判定する（今までどおり）",
+    );
+  }
   const blocked = d({
     compare: ahead(["src/App.jsx"]),
     gates: [
