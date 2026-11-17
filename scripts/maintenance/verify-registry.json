@@ -892,6 +892,11 @@
       "guards": "新しいモーターの最初の開催で、モータ情報の一覧が全艇0.0%にならない決まり（公式が0の艇だけ自前の値、まだ走っていません／0%（N走）／※、最初の節の帯、前の節までの走数）（BOA-830）"
     },
     {
+      "script": "verify-motor-model.js",
+      "tier": "ci",
+      "guards": "motor の型 makeMotorStat（venue_motor_stats の行）・makeMotorPretest（motor_pretest_stats の行）（src/pure/motorModel.js、設計図 §10 DM13）。主キー（会場1〜24・motor_number の整数・取得日の実在する日／前検日・会場・racer_id）と、取った列だけ source_template の文字列・回数7列の整数・集計期間の日付・racer_class 4値・pretest_rank は null か1以上・pretest_time と pretest_rank の両方 null か両方あり（motor_pretest_stats の CHECK 4本と同じ）を検査して凍結すること。select で取らない列は落とさないこと"
+    },
+    {
       "script": "verify-motor-power-shared.js",
       "tier": "ci",
       "guards": "BOA-1245: 画面の機力指数（getMotorPowerIndex・motorWindowStart）と番付の motor_power が同じ純関数 src/utils/motorPowerIndex.js で数える（サービス層に計算の写しが無い、移す前の画面の計算と乱数3,000通りで一致（指数・期間）、会場の全機は1機ずつの計算と同じ、載せる最少の走数は画面の SMALL_SAMPLE_THRESHOLD）、rank-data.js が motor_power の引数の誤りを DB の前に拒否する（DB・通信なし）"
