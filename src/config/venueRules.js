@@ -464,6 +464,34 @@ export const VENUE_RULES_BY_VENUE = VENUE_RULES.reduce((acc, rule) => {
   return acc;
 }, {});
 
+/** 1着予想の艇番の条件（未指定は通す） */
+function matchesTopPick(rule, prediction) {
+  return rule.topPick == null || prediction.topPick === rule.topPick;
+}
+
+/** confidence の下限・上限の条件（未指定は通す） */
+function matchesConfidence(rule, conf) {
+  return (
+    (rule.confMin == null || conf >= rule.confMin) &&
+    (rule.confLt == null || conf < rule.confLt)
+  );
+}
+
+/** レース番号の範囲の条件（未指定は通す） */
+function matchesRaceRange(rule, raceNo) {
+  return (
+    (rule.raceMin == null || raceNo >= rule.raceMin) &&
+    (rule.raceMax == null || raceNo <= rule.raceMax)
+  );
+}
+
+/** 予想の上位3艇に1号艇・2号艇を含む条件（未指定は通す） */
+function matchesNeedHas(rule, top3) {
+  return (
+    (!rule.needHas1 || top3.includes(1)) && (!rule.needHas2 || top3.includes(2))
+  );
+}
+
 /**
  * ルールが予想にマッチするか（旧 check クロージャと同じ判定）
  * @param {Object} rule - VENUE_RULES の要素
@@ -475,14 +503,12 @@ export function ruleMatches(rule, prediction, venueCode, raceNo) {
   if (rule.venueCode !== venueCode) return false;
   const conf = prediction.confidence || 0;
   const top3 = prediction.top3 || [];
-  if (rule.topPick != null && prediction.topPick !== rule.topPick) return false;
-  if (rule.confMin != null && !(conf >= rule.confMin)) return false;
-  if (rule.confLt != null && !(conf < rule.confLt)) return false;
-  if (rule.raceMin != null && !(raceNo >= rule.raceMin)) return false;
-  if (rule.raceMax != null && !(raceNo <= rule.raceMax)) return false;
-  if (rule.needHas1 && !top3.includes(1)) return false;
-  if (rule.needHas2 && !top3.includes(2)) return false;
-  return true;
+  return (
+    matchesTopPick(rule, prediction) &&
+    matchesConfidence(rule, conf) &&
+    matchesRaceRange(rule, raceNo) &&
+    matchesNeedHas(rule, top3)
+  );
 }
 
 /** RPC get_admin_rule_performance の p_rules に渡す形（snake_case・未指定は null） */
