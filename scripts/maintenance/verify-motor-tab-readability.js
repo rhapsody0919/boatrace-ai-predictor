@@ -56,6 +56,7 @@ import {
   section3,
   section4,
   section5,
+  section5b,
 } from "./verifyData/motor-tab-readability-sections1.js";
 import {
   section6,
@@ -177,6 +178,7 @@ await section2(ctx);
 await section3(ctx);
 await section4(ctx);
 await section5(ctx);
+await section5b(ctx);
 await section6(ctx);
 await section7(ctx);
 await section8(ctx);

@@ -312,6 +312,10 @@ export async function section5(ctx) {
       !/出現率|Occurrence|出現率|출현율/.test(motor.yAxis),
     );
   }
+}
+
+export async function section5b(ctx) {
+  const { check, read } = ctx;
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
       .motor;
