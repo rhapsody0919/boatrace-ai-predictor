@@ -5,7 +5,8 @@ import { parseRaceId } from "./raceId.js";
  * predictions（1レース1モデルの予想の1行）。キーは Supabase の snake_case のまま。
  * 根拠: docs/reference/schema-snapshot.json の relations predictions（race_id・model_id は NOT NULL で UNIQUE の組、
  * race_id は races の外部キーで races の race_id は raceModel.js と同じ YYYY-MM-DD-VV-RR、top_pick は NOT NULL の smallint。
- * CHECK は無いので艇番の範囲は見ない）。select で取っていない列（undefined）は検査しない
+ * CHECK は無いので艇番の範囲は見ない）。select で取っていない列（undefined）は検査しない。
+ * race_id・model_id は必須なので、つなぐ票では select に足す（今の raceQueries2.js の predictions の読みは race_id を取らない）
  * @typedef {object} Prediction
  * @property {string} race_id YYYY-MM-DD-VV-RR
  * @property {string} model_id

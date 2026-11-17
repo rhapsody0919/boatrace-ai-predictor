@@ -52,14 +52,18 @@ test("正の例は凍結した写しで、引数を変えない", () => {
 
 test("race_id は YYYY-MM-DD-VV-RR。欠け・会場25・13R・形違いは RangeError（どの行か含む）", () => {
   throwsRange(() => makePrediction(prediction({ race_id: undefined })), /race_id が YYYY-MM-DD-VV-RR の形でない: undefined（prediction race_id=undefined model_id=unified）/);
+  for (const id of ["2026-11-01-24-01", "2026-11-01-01-12"]) assert.equal(makePrediction(prediction({ race_id: id })).race_id, id);
   throwsRange(() => makePrediction(prediction({ race_id: "2026-11-01-25-01" })), /race_id/);
+  throwsRange(() => makePrediction(prediction({ race_id: "2026-11-01-00-01" })), /race_id/);
+  throwsRange(() => makePrediction(prediction({ race_id: "2026-11-01-02-00" })), /race_id/);
   throwsRange(() => makePrediction(prediction({ race_id: "2026-11-01-02-13" })), /race_id/);
   throwsRange(() => makePrediction(prediction({ race_id: "20261101-02-12" })), /race_id/);
 });
 
-test("model_id は文字列。null・数は RangeError", () => {
+test("model_id は文字列（空も DB が許すので通す）。null・数は RangeError", () => {
   throwsRange(() => makePrediction(prediction({ model_id: null })), /model_id が文字列でない: null（prediction race_id=2026-11-01-02-12 model_id=null）/);
   throwsRange(() => makePrediction(prediction({ model_id: 1 })), /model_id/);
+  assert.equal(makePrediction(prediction({ model_id: "" })).model_id, "");
 });
 
 test("select で一部の列だけ取った行（race_id・model_id と真偽・払戻）も通す", () => {
