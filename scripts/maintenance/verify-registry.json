@@ -1053,6 +1053,11 @@
       "guards": "不成立のレースと返還艇を含む勝式を、的中判定（buildPredictionHitUpdate・DBトリガー117・欠落の補完）と成績の集計（券種ごとの母数）から外すこと。トリガーとアプリの判定が同じ値を書くこと（PGlite で112を適用して突き合わせる）。BOA-544: 不成立のレースに的中が付き、返還艇の本命が「外れ」として成績に入っていた"
     },
     {
+      "script": "verify-prediction-model.js",
+      "tier": "ci",
+      "guards": "prediction の型 makePrediction（predictions の行、src/pure/predictionModel.js、設計図 §10 DM14）。race_id が YYYY-MM-DD-VV-RR（raceId.js の parseRaceId）・model_id が文字列（NOT NULL の組）と、取った列だけ prediction_id・top_pick の整数、top_2nd・top_3rd・払戻4列は null か整数、真偽6列は真偽か null を検査して凍結すること。CHECK の無い艇番の範囲・confidence・jsonb の列は見ないこと。select で取らない列は落とさないこと"
+    },
+    {
       "script": "verify-prediction-odds-derive.js",
       "tier": "ci",
       "guards": "買い目オッズの導出（BOA-404）"
