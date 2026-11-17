@@ -36,14 +36,8 @@ function bucketOf(percentile) {
   return `${idx * 10}-${idx * 10 + 10}%`;
 }
 
-async function main() {
-  const { from, to } = parseArgs();
-  if (!supabase) {
-    console.error("Supabase未設定");
-    process.exit(1);
-  }
-
-  console.log("対象レース取得中...");
+/** 対象レースの結果を取得（イン崩れ判定に使う列のみ） */
+async function fetchValidResults(from, to) {
   // ⚠️ Supabaseのデフォルトlimitは1000行。fetchAllで.range()ページネーションする
   const results = await fetchAll(
     "race_results",
@@ -55,78 +49,110 @@ async function main() {
       return query.order("race_id");
     },
   );
-  const validResults = results.filter((r) => !r.is_cancelled && !r.is_no_race);
-  console.log(`  ${validResults.length}件\n`);
+  return results.filter((r) => !r.is_cancelled && !r.is_no_race);
+}
 
+/** 1レース分の出走・会場・気象を取得。出走6未満・会場なしは null（スキップ） */
+async function fetchRaceInputs(raceId) {
+  const { data: entries } = await supabase
+    .from("race_entries")
+    .select("boat_number, racer_id, win_rate")
+    .eq("race_id", raceId)
+    .order("boat_number");
+  if (!entries || entries.length < 6) return null;
+
+  const { data: raceRow } = await supabase
+    .from("races")
+    .select("venue_code")
+    .eq("race_id", raceId)
+    .single();
+  if (!raceRow) return null;
+
+  const { data: conditions } = await supabase
+    .from("race_conditions")
+    .select("wind_speed, wave_height")
+    .eq("race_id", raceId)
+    .maybeSingle();
+
+  return { entries, raceRow, conditions };
+}
+
+/** 未取得の選手の集計をキャッシュへ読み込む */
+async function loadRacerStats(entries, racerStatsCache) {
+  const racerIdsToFetch = entries
+    .map((e) => e.racer_id)
+    .filter((id) => id != null && !racerStatsCache.has(id));
+  if (racerIdsToFetch.length > 0) {
+    const { data: statsRows } = await supabase
+      .from("racer_aggregated_stats")
+      .select(
+        "racer_id, avg_st, st_stddev, attack_distribution, defense_distribution, course_race_counts",
+      )
+      .in("racer_id", racerIdsToFetch)
+      .eq("venue_code", 0);
+    for (const s of statsRows ?? []) racerStatsCache.set(s.racer_id, s);
+  }
+}
+
+function predictTurn(entries, raceRow, conditions, racerStatsCache) {
+  const turnPredictionPlayers = entries.map((e) => {
+    const stats = racerStatsCache.get(e.racer_id);
+    return {
+      boatNumber: e.boat_number,
+      course: e.boat_number,
+      avgST: stats?.avg_st ?? null,
+      stStddev: stats?.st_stddev ?? null,
+      attackDistribution: stats?.attack_distribution || null,
+      defenseDistribution: stats?.defense_distribution || null,
+      courseRaceCounts: stats?.course_race_counts || null,
+      globalWinRate: e.win_rate,
+    };
+  });
+
+  return predictFirstMark(turnPredictionPlayers, {
+    venueCode: raceRow.venue_code,
+    windSpeed: conditions?.wind_speed ?? null,
+    waveHeight: conditions?.wave_height ?? null,
+  });
+}
+
+function volatilityOf(entries, raceRow, turnPrediction, racerStatsCache) {
+  return calculateVolatilityComposite(
+    entries.map((e) => ({ number: e.boat_number, winRate: e.win_rate })),
+    raceRow.venue_code,
+    turnPrediction,
+    entries.map((e) => ({
+      boatNumber: e.boat_number,
+      avgST: racerStatsCache.get(e.racer_id)?.avg_st ?? null,
+    })),
+  );
+}
+
+/** 各レースの複合スコアと実際のイン崩れを集める（会場別の分布も同時に作る） */
+async function collectComputations(validResults) {
   const racerStatsCache = new Map();
   const computations = [];
   const compositeByVenue = new Map();
 
   let processed = 0;
   for (const result of validResults) {
-    const raceId = result.race_id;
-    const { data: entries } = await supabase
-      .from("race_entries")
-      .select("boat_number, racer_id, win_rate")
-      .eq("race_id", raceId)
-      .order("boat_number");
-    if (!entries || entries.length < 6) continue;
+    const inputs = await fetchRaceInputs(result.race_id);
+    if (!inputs) continue;
+    const { entries, raceRow, conditions } = inputs;
 
-    const { data: raceRow } = await supabase
-      .from("races")
-      .select("venue_code")
-      .eq("race_id", raceId)
-      .single();
-    if (!raceRow) continue;
+    await loadRacerStats(entries, racerStatsCache);
 
-    const { data: conditions } = await supabase
-      .from("race_conditions")
-      .select("wind_speed, wave_height")
-      .eq("race_id", raceId)
-      .maybeSingle();
-
-    const racerIdsToFetch = entries
-      .map((e) => e.racer_id)
-      .filter((id) => id != null && !racerStatsCache.has(id));
-    if (racerIdsToFetch.length > 0) {
-      const { data: statsRows } = await supabase
-        .from("racer_aggregated_stats")
-        .select(
-          "racer_id, avg_st, st_stddev, attack_distribution, defense_distribution, course_race_counts",
-        )
-        .in("racer_id", racerIdsToFetch)
-        .eq("venue_code", 0);
-      for (const s of statsRows ?? []) racerStatsCache.set(s.racer_id, s);
-    }
-
-    const turnPredictionPlayers = entries.map((e) => {
-      const stats = racerStatsCache.get(e.racer_id);
-      return {
-        boatNumber: e.boat_number,
-        course: e.boat_number,
-        avgST: stats?.avg_st ?? null,
-        stStddev: stats?.st_stddev ?? null,
-        attackDistribution: stats?.attack_distribution || null,
-        defenseDistribution: stats?.defense_distribution || null,
-        courseRaceCounts: stats?.course_race_counts || null,
-        globalWinRate: e.win_rate,
-      };
-    });
-
-    const turnPrediction = predictFirstMark(turnPredictionPlayers, {
-      venueCode: raceRow.venue_code,
-      windSpeed: conditions?.wind_speed ?? null,
-      waveHeight: conditions?.wave_height ?? null,
-    });
-
-    const volatility = calculateVolatilityComposite(
-      entries.map((e) => ({ number: e.boat_number, winRate: e.win_rate })),
-      raceRow.venue_code,
+    const turnPrediction = predictTurn(
+      entries,
+      raceRow,
+      conditions,
+      racerStatsCache,
+    );
+    const volatility = volatilityOf(
+      entries,
+      raceRow,
       turnPrediction,
-      entries.map((e) => ({
-        boatNumber: e.boat_number,
-        avgST: racerStatsCache.get(e.racer_id)?.avg_st ?? null,
-      })),
+      racerStatsCache,
     );
 
     if (!compositeByVenue.has(raceRow.venue_code))
@@ -144,6 +170,10 @@ async function main() {
       console.log(`  ${processed}/${validResults.length}件処理...`);
   }
 
+  return { computations, compositeByVenue };
+}
+
+function printBucketReport(computations, compositeByVenue) {
   console.log("\n=== イン崩れ指数 パーセンタイル帯別 実際のイン崩れ率 ===");
   console.log(
     "ランダムなら各帯で全体平均と同水準。パーセンタイルが高いほどイン崩れ率も高ければ機能している\n",
@@ -176,6 +206,23 @@ async function main() {
       `${key.padEnd(8)} N=${String(v.total).padStart(5)}  イン崩れ率=${rate.toFixed(1)}%`,
     );
   }
+}
+
+async function main() {
+  const { from, to } = parseArgs();
+  if (!supabase) {
+    console.error("Supabase未設定");
+    process.exit(1);
+  }
+
+  console.log("対象レース取得中...");
+  const validResults = await fetchValidResults(from, to);
+  console.log(`  ${validResults.length}件\n`);
+
+  const { computations, compositeByVenue } =
+    await collectComputations(validResults);
+
+  printBucketReport(computations, compositeByVenue);
 
   console.log("\n完了");
 }

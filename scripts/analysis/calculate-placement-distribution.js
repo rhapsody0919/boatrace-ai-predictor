@@ -24,16 +24,9 @@ function findCourse(result, boatNumber) {
   return null;
 }
 
-async function main() {
-  if (!isSupabaseEnabled()) {
-    console.error("Supabase が未設定です");
-    process.exit(1);
-  }
-
-  console.log("race_results から2着・3着の統計分布を算出中...\n");
-
-  // 全件取得（1000件ずつページネーション）
-  const allResults = await fetchAll(
+/** race_results を全件取得（1000件ずつページネーション） */
+function fetchPlacementResults() {
+  return fetchAll(
     "race_results",
     "rank1, rank2, rank3, winning_technique, course_1, course_2, course_3, course_4, course_5, course_6",
     (q) =>
@@ -45,10 +38,10 @@ async function main() {
         .not("course_1", "is", null)
         .order("race_id"),
   );
+}
 
-  console.log(`\n合計 ${allResults.length} 件のレース結果を取得\n`);
-
-  // 集計用マップ: key → { second: {course: count}, third: {course: count}, total: number }
+// 集計用マップ: key → { second: {course: count}, third: {course: count}, total: number }
+function tallyPlacements(allResults) {
   const stats = {};
   let skipped = 0;
 
@@ -83,11 +76,11 @@ async function main() {
     stats[key].total++;
   }
 
-  if (skipped > 0) {
-    console.log(`${skipped} 件スキップ（技法不明 or コース特定不能）\n`);
-  }
+  return { stats, skipped };
+}
 
-  // 正規化して確率分布に変換
+// 正規化して確率分布に変換
+function toDistribution(stats) {
   const distribution = {};
 
   for (const [key, data] of Object.entries(stats)) {
@@ -106,14 +99,20 @@ async function main() {
     };
   }
 
-  // ソートして表示
-  const sortedKeys = Object.keys(distribution).sort((a, b) => {
+  return distribution;
+}
+
+// ソートして表示
+function sortDistributionKeys(distribution) {
+  return Object.keys(distribution).sort((a, b) => {
     const [tA, cA] = a.split("_");
     const [tB, cB] = b.split("_");
     if (cA !== cB) return Number(cA) - Number(cB);
     return tA.localeCompare(tB);
   });
+}
 
+function printDistribution(distribution, sortedKeys) {
   console.log("=== 2着・3着コース分布 ===\n");
 
   for (const key of sortedKeys) {
@@ -133,8 +132,10 @@ async function main() {
     );
     console.log();
   }
+}
 
-  // placementDistribution.js 用の出力
+// placementDistribution.js 用の出力
+function printPlacementCode(distribution, sortedKeys) {
   console.log("\n=== placementDistribution.js 用コード ===\n");
   console.log("export const PLACEMENT_DISTRIBUTION = {");
   for (const key of sortedKeys) {
@@ -154,8 +155,10 @@ async function main() {
     console.log(`  },`);
   }
   console.log("};");
+}
 
-  // グローバル平均（フォールバック用）
+// グローバル平均（フォールバック用）
+function printGlobalAverage(stats) {
   console.log("\n// フォールバック用グローバル平均");
   const globalSecond = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
   const globalThird = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
@@ -182,6 +185,32 @@ async function main() {
   );
   console.log(`  sampleSize: ${globalTotal},`);
   console.log("};");
+}
+
+async function main() {
+  if (!isSupabaseEnabled()) {
+    console.error("Supabase が未設定です");
+    process.exit(1);
+  }
+
+  console.log("race_results から2着・3着の統計分布を算出中...\n");
+
+  const allResults = await fetchPlacementResults();
+
+  console.log(`\n合計 ${allResults.length} 件のレース結果を取得\n`);
+
+  const { stats, skipped } = tallyPlacements(allResults);
+
+  if (skipped > 0) {
+    console.log(`${skipped} 件スキップ（技法不明 or コース特定不能）\n`);
+  }
+
+  const distribution = toDistribution(stats);
+  const sortedKeys = sortDistributionKeys(distribution);
+
+  printDistribution(distribution, sortedKeys);
+  printPlacementCode(distribution, sortedKeys);
+  printGlobalAverage(stats);
 }
 
 main().catch(console.error);
