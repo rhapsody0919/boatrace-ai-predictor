@@ -419,7 +419,6 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getRaceSt30, getAnalogyFacts, getAnalogyLayer, getAnalogySimilar ほか2件 |
 | `src/services/core.js` | — | withCache, clearCache, chunkArray, fetchAllByIn, isPastRace ほか7件 |
 | `src/services/currentMeetEntries.js` | 選手の今節の走（同じ会場・同じモーター）を特定する取得（BOA-861）。 | fetchCurrentMeetRaceEntries |
-| `src/services/dataService.js` | データ取得サービス | dataService |
 | `src/services/fetchAllPages.js` | .range() のページを、短いページが返るまで読み続けて全件を返す（BOA-1051）。 | fetchAllPages, fetchAllInChunks |
 | `src/services/liveOddsService.js` | オッズのライブ取得（BOA-487）。/api/odds/live を呼ぶ。 | fetchLiveOdds, LIVE_PAGE_OF_BET_TYPE, LiveOddsError |
 | `src/services/meetExclusion.js` | 再 export だけのファイル。本体は `src/pure/meetExclusion.js`（開発効率の計画 段3、pure の根へ移した）。 | — |
@@ -464,4 +463,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 422 ファイル / export 2411 件。
+対象 421 ファイル / export 2410 件。
