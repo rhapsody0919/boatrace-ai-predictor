@@ -60,12 +60,7 @@ export function MoriartyStageGathering({
   );
 }
 
-export function MoriartyStageGrowing({
-  stats,
-  roiHistory,
-  venueBreakdown,
-  recommendations,
-}) {
+function MoriartyStageBase({ stats, roiHistory, venueBreakdown }) {
   return (
     <>
       <section className="holmes-section">
@@ -79,6 +74,23 @@ export function MoriartyStageGrowing({
         <h3>会場別回収率</h3>
         <MoriartyVenueBreakdown data={venueBreakdown} />
       </section>
+    </>
+  );
+}
+
+export function MoriartyStageGrowing({
+  stats,
+  roiHistory,
+  venueBreakdown,
+  recommendations,
+}) {
+  return (
+    <>
+      <MoriartyStageBase
+        stats={stats}
+        roiHistory={roiHistory}
+        venueBreakdown={venueBreakdown}
+      />
       <section className="holmes-section">
         <h3>本日の推奨レース</h3>
         <MoriartyRecommendationList recommendations={recommendations} />
@@ -96,17 +108,11 @@ export function MoriartyStageMature({
 }) {
   return (
     <>
-      <section className="holmes-section">
-        <MoriartyStatsHeader stats={stats} />
-      </section>
-      <section className="holmes-section">
-        <h3>累積回収率推移</h3>
-        <MoriartyROIChart data={roiHistory} />
-      </section>
-      <section className="holmes-section">
-        <h3>会場別回収率</h3>
-        <MoriartyVenueBreakdown data={venueBreakdown} />
-      </section>
+      <MoriartyStageBase
+        stats={stats}
+        roiHistory={roiHistory}
+        venueBreakdown={venueBreakdown}
+      />
       <section className="holmes-section">
         <h3>予測キャリブレーション</h3>
         <MoriartyCalibrationDiagram data={calibrationData} />
