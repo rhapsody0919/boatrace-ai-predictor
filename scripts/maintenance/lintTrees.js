@@ -95,7 +95,8 @@ export function runSizeGate({ cwd, base, changed }) {
   try {
     assertAncestor(cwd, base);
     const freeze = baselineOf(cwd, FREEZE_SHA).baseline;
-    const baseB = baselineOf(cwd, base).baseline;
+    const baseTree = baselineOf(cwd, base);
+    const baseB = baseTree.baseline;
     const head = baselineOf(cwd, "HEAD");
     const initial = freeze.initial_count;
     const strictExisting = head.baseline.initial_count <= initial / 2;
@@ -105,6 +106,8 @@ export function runSizeGate({ cwd, base, changed }) {
         file: c.file,
         source: head.files[c.file],
         isNew: c.added,
+        // base の同じファイル（名前を変えたら oldFile）。無ければ null（増えたとみなす）
+        baseSource: c.added ? null : (baseTree.files[c.oldFile ?? c.file] ?? null),
       }));
     const r = checkAgainstBaseline({
       baseline: baseB,
