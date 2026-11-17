@@ -8,7 +8,7 @@ import {
   translateWeather,
   translateWindDirection,
   weatherIcon,
-} from "./weatherInfo";
+} from "../../utils/weatherInfo";
 
 function windValue(t, weather, venueCode) {
   return [

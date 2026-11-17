@@ -11,7 +11,7 @@ import {
   formatObservedTime,
   translateWeather,
   translateWindDirection,
-} from "../components/race/weatherInfo.js";
+} from "./weatherInfo.js";
 import { getRaceStageCategory } from "../constants/raceStageConfig.js";
 import { localizePath } from "../pure/localizePath.js";
 

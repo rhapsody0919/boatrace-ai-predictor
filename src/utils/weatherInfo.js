@@ -6,7 +6,7 @@
  * と同じパターン: 未知の値は変換せずそのまま返す
  */
 
-import { trueWindDirection } from "../../utils/windDirection.js";
+import { trueWindDirection } from "./windDirection.js";
 
 const WEATHER_KEY_BY_LABEL = {
   晴: "sunny",

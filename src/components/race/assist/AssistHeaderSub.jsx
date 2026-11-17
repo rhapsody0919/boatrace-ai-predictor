@@ -1,4 +1,4 @@
-import { formatObservedTime } from "../weatherInfo";
+import { formatObservedTime } from "../../../utils/weatherInfo";
 import { trueWindDirection } from "../../../utils/windDirection.js";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 import { TheoryButton } from "./SheetButtons";

@@ -80,7 +80,7 @@ import { guideSteps, theoryCard } from "../utils/assistTheory";
 import { assistEventOf } from "../utils/assistEvents";
 import { trackEvent } from "../utils/analytics";
 import { expandTickets, popularityRanks } from "../utils/oddsMath";
-import { formatObservedTime } from "../components/race/weatherInfo";
+import { formatObservedTime } from "../utils/weatherInfo";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy";
 import { meetFormSearch } from "../components/race/meetFormTrend";
