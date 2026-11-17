@@ -3,7 +3,7 @@
  * 辺は { from, to, rule }。基準は { "<rule>": { "<from>": ["<to>", ...] } }。
  */
 
-// データ層の和。後で dataLayerSource.js を読む形にできるよう、一覧はここ1か所の関数に分ける
+// データ層の和（src/services の core*.js・*Queries*.js）。一覧はここ1か所の関数に分ける
 const DATA_LAYER_PATTERNS = [
   /^src\/services\/core[^/]*\.js$/,
   /^src\/services\/[^/]*Queries[^/]*\.js$/,
