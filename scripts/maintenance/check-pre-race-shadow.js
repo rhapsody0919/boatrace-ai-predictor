@@ -178,12 +178,7 @@ const fmt = (v) => (v === null ? "-" : v.toFixed(1));
  */
 function printCatchupSection(catchupSlots) {
   console.log("\n--- 窓の外の補完（発走の後のスロット）---");
-  const tally = new Map();
-  for (const s of catchupSlots) {
-    const k = `${s.race_date}  ${(s.run_mode ?? "未着手").padEnd(6)} ${s.status.padEnd(8)} ${s.outcome ?? "-"}`;
-    tally.set(k, (tally.get(k) ?? 0) + 1);
-  }
-  for (const [k, v] of [...tally].sort()) console.log(`  ${k}: ${v}`);
+  printSlotTally(catchupSlots);
   for (const mode of ["shadow", "live"]) {
     const filled = catchupSlots.filter(
       (s) =>
@@ -225,8 +220,8 @@ function printCatchupSection(catchupSlots) {
   }
 }
 
-async function main() {
-  const args = process.argv.slice(2);
+/** 引数を読む。--job が不正なら標準エラーに出して終了する */
+function parseOptions(args) {
   const arg = (name) =>
     args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
   const strict = args.includes("--strict");
@@ -241,16 +236,21 @@ async function main() {
   const days = Number(arg("days") ?? 3);
   const to = date ?? jstToday();
   const from = date ?? addDays(to, -(days - 1));
+  return { strict, job, from, to };
+}
 
+function createDbClient() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) {
     console.error("❌ SUPABASE_URL・SUPABASE_SERVICE_KEY が必要です");
     process.exit(1);
   }
-  const client = createClient(url, key);
+  return createClient(url, key);
+}
 
-  const allSlots = await fetchAll(() =>
+function fetchSlots(client, job, from, to) {
+  return fetchAll(() =>
     client
       .from("scrape_slots")
       .select(
@@ -262,38 +262,20 @@ async function main() {
       .order("race_date")
       .order("race_id"),
   );
-  const {
-    primary: slots,
-    catchup: catchupSlots,
-    weightOnly: weightOnlySlots,
-  } = splitCatchupSlots(allSlots, SCRAPE_JOBS[job]);
-  console.log(
-    `${job} のスロット ${from}〜${to}: ${slots.length}件${catchupSlots.length > 0 ? `（別に、窓の外の補完 ${catchupSlots.length}件）` : ""}${weightOnlySlots.length > 0 ? `（別に、体重だけの窓 ${weightOnlySlots.length}件。一致率の比較の対象外）` : ""}\n`,
-  );
+}
 
-  // 日付×run_mode×状態・outcome
+// 日付×run_mode×状態・outcome
+function printSlotTally(slots) {
   const tally = new Map();
   for (const s of slots) {
     const k = `${s.race_date}  ${(s.run_mode ?? "未着手").padEnd(6)} ${s.status.padEnd(8)} ${s.outcome ?? "-"}`;
     tally.set(k, (tally.get(k) ?? 0) + 1);
   }
   for (const [k, v] of [...tally].sort()) console.log(`  ${k}: ${v}`);
+}
 
-  const expired = slots.filter((s) => s.status === "expired");
-  const unexecuted = expired.filter((s) => (s.attempts ?? 0) === 0);
-  console.log(
-    `\nexpired: ${expired.length}件（うち未実行 attempts=0: ${unexecuted.length}件）`,
-  );
-
-  // shadow のダイジェストの一致率
-  const shadowOk = slots.filter(
-    (s) =>
-      s.run_mode === "shadow" &&
-      s.status === "done" &&
-      ["ok", "skipped_have_data"].includes(s.outcome),
-  );
-  const ids = [...new Set(shadowOk.map((s) => s.race_id))];
-  let cmp;
+// shadow で完了した ids の、DBの行から計算したダイジェストとの比較
+async function compareWithDb(client, job, shadowOk, ids) {
   if (job === "race_info") {
     const [entries, conditions, races] = await Promise.all([
       fetchByRaceIds(
@@ -310,20 +292,31 @@ async function main() {
       ),
       fetchByRaceIds(client, "races", ["race_id", "race_grade"], ids),
     ]);
-    cmp = compareRaceInfoShadowDigests(shadowOk, {
+    return compareRaceInfoShadowDigests(shadowOk, {
       entries,
       conditions,
       races,
     });
-  } else {
-    const rows = await fetchByRaceIds(
-      client,
-      "exhibition_data",
-      EXHIBITION_DIGEST_COLUMNS.concat("race_id"),
-      ids,
-    );
-    cmp = compareExhibitionShadowDigests(shadowOk, rows);
   }
+  const rows = await fetchByRaceIds(
+    client,
+    "exhibition_data",
+    EXHIBITION_DIGEST_COLUMNS.concat("race_id"),
+    ids,
+  );
+  return compareExhibitionShadowDigests(shadowOk, rows);
+}
+
+// shadow のダイジェストの一致率。一致率（比べる行が0件なら null）を返す
+async function printShadowDigestRate(client, job, slots) {
+  const shadowOk = slots.filter(
+    (s) =>
+      s.run_mode === "shadow" &&
+      s.status === "done" &&
+      ["ok", "skipped_have_data"].includes(s.outcome),
+  );
+  const ids = [...new Set(shadowOk.map((s) => s.race_id))];
+  const cmp = await compareWithDb(client, job, shadowOk, ids);
   const denominator = cmp.matched + cmp.mismatched.length;
   const rate = denominator === 0 ? null : cmp.matched / denominator;
   console.log(
@@ -335,8 +328,11 @@ async function main() {
   for (const m of cmp.mismatched.slice(0, 20)) {
     console.log(`  不一致 ${m.race_id}: shadow=${m.shadow} db=${m.db}`);
   }
+  return { rate, mismatched: cmp.mismatched.length };
+}
 
-  // 完了時刻の、期限からの遅延と、発走前の分数（shadow・live それぞれ）
+// 完了時刻の、期限からの遅延と、発走前の分数（shadow・live それぞれ）
+function printCompletionTimings(slots) {
   for (const mode of ["shadow", "live"]) {
     const doneSlots = slots.filter(
       (s) =>
@@ -379,10 +375,36 @@ async function main() {
       }`,
     );
   }
+}
+
+async function main() {
+  const { strict, job, from, to } = parseOptions(process.argv.slice(2));
+  const client = createDbClient();
+
+  const allSlots = await fetchSlots(client, job, from, to);
+  const {
+    primary: slots,
+    catchup: catchupSlots,
+    weightOnly: weightOnlySlots,
+  } = splitCatchupSlots(allSlots, SCRAPE_JOBS[job]);
+  console.log(
+    `${job} のスロット ${from}〜${to}: ${slots.length}件${catchupSlots.length > 0 ? `（別に、窓の外の補完 ${catchupSlots.length}件）` : ""}${weightOnlySlots.length > 0 ? `（別に、体重だけの窓 ${weightOnlySlots.length}件。一致率の比較の対象外）` : ""}\n`,
+  );
+
+  printSlotTally(slots);
+
+  const expired = slots.filter((s) => s.status === "expired");
+  const unexecuted = expired.filter((s) => (s.attempts ?? 0) === 0);
+  console.log(
+    `\nexpired: ${expired.length}件（うち未実行 attempts=0: ${unexecuted.length}件）`,
+  );
+
+  const { rate, mismatched } = await printShadowDigestRate(client, job, slots);
+  printCompletionTimings(slots);
 
   if (catchupSlots.length > 0) printCatchupSection(catchupSlots);
 
-  if (strict && (cmp.mismatched.length > 0 || (rate !== null && rate < 0.99))) {
+  if (strict && (mismatched > 0 || (rate !== null && rate < 0.99))) {
     console.error("\n❌ --strict: 一致率が99%未満、または不一致があります");
     process.exit(1);
   }
