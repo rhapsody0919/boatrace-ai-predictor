@@ -98,31 +98,13 @@ export function getTodaysVenueRanking(limit = 5, minRaceCount = 3) {
  */
 export function getVenueDaySummary(venueCode, date) {
     if (!venueCode || !date) {
-      return Promise.resolve({
-        raceCount: 0,
-        payoutCount: 0,
-        avgPayout: null,
-        manshuRate: null,
-        nigeRate: null,
-        techniqueCounts: {},
-        entryCourseWinCounts: {},
-        byRace: {},
-      });
+      return Promise.resolve(emptyDaySummary());
     }
 
     return withCache(
       `venue-day-summary-v2-${venueCode}-${date}`,
       async () => {
-        const empty = {
-          raceCount: 0,
-          payoutCount: 0,
-          avgPayout: null,
-          manshuRate: null,
-          nigeRate: null,
-          techniqueCounts: {},
-          entryCourseWinCounts: {},
-          byRace: {},
-        };
+        const empty = emptyDaySummary();
         if (!supabase) {
           console.error("Supabase client not initialized");
           // 環境変数の未設定は「その日は0レース」ではないため、キャッシュに
@@ -148,61 +130,80 @@ export function getVenueDaySummary(venueCode, date) {
           raceIds,
         );
 
-        let raceCount = 0;
-        let payoutCount = 0;
-        let payoutSum = 0;
-        let manshuCount = 0;
-        let nigeCount = 0;
-        const techniqueCounts = {};
-        const entryCourseWinCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
-        const byRace = {};
-
-        results.forEach((r) => {
-          if (!isUsableRaceResult(r)) return;
-          raceCount += 1;
-          byRace[r.race_id] = {
-            rank1: r.rank1,
-            winningTechnique: r.winning_technique ?? null,
-            // 1着艇が実際に進入したコース。当日・未バックフィル日はnull
-            winnerCourse: r[`actual_course_${r.rank1}`] ?? null,
-          };
-          if (r.payout_trio !== null) {
-            payoutCount += 1;
-            payoutSum += r.payout_trio;
-            if (r.payout_trio >= 10000) manshuCount += 1;
-          }
-          if (r.rank1 === 1 && r.winning_technique === "逃げ") nigeCount += 1;
-          if (r.winning_technique) {
-            techniqueCounts[r.winning_technique] =
-              (techniqueCounts[r.winning_technique] ?? 0) + 1;
-          }
-          // 進入コース別1着回数（BOA-257の実進入コース列を使う。バックフィル対象外の
-          // 古いレース・欠場艇はactual_course_Nがnullのため、そのレースは対象外になる）
-          for (let boat = 1; boat <= 6; boat++) {
-            const course = r[`actual_course_${boat}`];
-            if (course !== null && course !== undefined && boat === r.rank1) {
-              entryCourseWinCounts[course] =
-                (entryCourseWinCounts[course] ?? 0) + 1;
-              break;
-            }
-          }
-        });
-
-        return {
-          raceCount,
-          payoutCount,
-          avgPayout: payoutCount > 0 ? payoutSum / payoutCount : null,
-          manshuRate:
-            payoutCount > 0 ? (manshuCount / payoutCount) * 100 : null,
-          nigeRate: raceCount > 0 ? (nigeCount / raceCount) * 100 : null,
-          techniqueCounts,
-          entryCourseWinCounts,
-          byRace,
-        };
+        return tallyDayResults(results);
       },
       5 * 60 * 1000, // 当日分は結果反映のたびに変わりうるため短めのTTL
     );
   }
+
+function emptyDaySummary() {
+  return {
+    raceCount: 0,
+    payoutCount: 0,
+    avgPayout: null,
+    manshuRate: null,
+    nigeRate: null,
+    techniqueCounts: {},
+    entryCourseWinCounts: {},
+    byRace: {},
+  };
+}
+
+// 1着艇が実際に進入したコースの回数を足す（BOA-257の実進入コース列を使う。
+// バックフィル対象外の古いレース・欠場艇はactual_course_Nがnullのため、そのレースは対象外になる）
+function addEntryCourseWin(entryCourseWinCounts, r) {
+  for (let boat = 1; boat <= 6; boat++) {
+    const course = r[`actual_course_${boat}`];
+    if (course !== null && course !== undefined && boat === r.rank1) {
+      entryCourseWinCounts[course] = (entryCourseWinCounts[course] ?? 0) + 1;
+      break;
+    }
+  }
+}
+
+function tallyDayResults(results) {
+  let raceCount = 0;
+  let payoutCount = 0;
+  let payoutSum = 0;
+  let manshuCount = 0;
+  let nigeCount = 0;
+  const techniqueCounts = {};
+  const entryCourseWinCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  const byRace = {};
+
+  results.forEach((r) => {
+    if (!isUsableRaceResult(r)) return;
+    raceCount += 1;
+    byRace[r.race_id] = {
+      rank1: r.rank1,
+      winningTechnique: r.winning_technique ?? null,
+      // 1着艇が実際に進入したコース。当日・未バックフィル日はnull
+      winnerCourse: r[`actual_course_${r.rank1}`] ?? null,
+    };
+    if (r.payout_trio !== null) {
+      payoutCount += 1;
+      payoutSum += r.payout_trio;
+      if (r.payout_trio >= 10000) manshuCount += 1;
+    }
+    if (r.rank1 === 1 && r.winning_technique === "逃げ") nigeCount += 1;
+    if (r.winning_technique) {
+      techniqueCounts[r.winning_technique] =
+        (techniqueCounts[r.winning_technique] ?? 0) + 1;
+    }
+    addEntryCourseWin(entryCourseWinCounts, r);
+  });
+
+  return {
+    raceCount,
+    payoutCount,
+    avgPayout: payoutCount > 0 ? payoutSum / payoutCount : null,
+    manshuRate: payoutCount > 0 ? (manshuCount / payoutCount) * 100 : null,
+    nigeRate: raceCount > 0 ? (nigeCount / raceCount) * 100 : null,
+    techniqueCounts,
+    entryCourseWinCounts,
+    byRace,
+  };
+}
 
 /**
  * 全24会場の1号艇勝率ランキングを取得する（BOA-267、venuerankingタブの追加指標）
