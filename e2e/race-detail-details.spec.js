@@ -756,6 +756,9 @@ test.describe("レース詳細の表示の細部", () => {
       sticky: ".race-history-table tbody tr:first-child td:first-child",
       table: ".race-history-table",
       pinned: 2,
+      // 文字の読み込みで固定した列の幅だけが後から変わる状態を作る（表自身の幅は min-width で
+      // 変わらないので、表の大きさの変化だけを見ていると固定の列の幅が古いまま残る）
+      lateWiden: ".race-history-table tr:first-child > :nth-child(2)",
     },
     {
       name: "モーターのコース別成績",
@@ -832,6 +835,11 @@ test.describe("レース詳細の表示の細部", () => {
           };
         }),
       );
+      if (screen.lateWiden) {
+        await hint.evaluate((el, sel) => {
+          el.querySelector(sel).style.minWidth = "170px";
+        }, screen.lateWiden);
+      }
       const before = await stickyLeft();
       await more.click();
       const less = hint.locator(":scope > .hscroll-less");
