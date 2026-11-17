@@ -4,7 +4,8 @@ import { assertInt, assertIntOrNull, assertObject, assertOneOf, assertText, pars
  * venue_motor_stats（会場公式のモーター成績、取得日ごとの1行）。キーは Supabase の snake_case のまま。
  * 根拠: docs/reference/schema-snapshot.json の relations venue_motor_stats（主キー venue_code・motor_number・scraped_date、
  * source_template は NOT NULL。CHECK は無い）。会場コード1〜24 は races.venue_code と同じ前提（raceId.js の parseRaceId）。
- * select で取っていない列（undefined）は検査しない
+ * select で取っていない列（undefined）は検査しない。主キーは必須なので、つなぐ票では select に主キーの列を足す
+ * （今の motorQueries2.js・motorQueries4.js の motor_pretest_stats の読みは venue_code・race_date を取らない）
  * @typedef {object} MotorStat
  * @property {number} venue_code 1〜24（主キー）
  * @property {number} motor_number 整数（主キー、smallint）

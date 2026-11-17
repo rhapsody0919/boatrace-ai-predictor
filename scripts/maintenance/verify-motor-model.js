@@ -94,6 +94,8 @@ test("makeMotorStat: 回数の7列は null か smallint の整数。小数・文
   for (const key of ["meet_count", "race_count", "final_count", "championship_count", "first_place_count", "second_place_count", "third_place_count"]) {
     assert.equal(makeMotorStat(stat({ [key]: null }))[key], null);
     assert.equal(makeMotorStat(stat({ [key]: 0 }))[key], 0);
+    assert.equal(makeMotorStat(stat({ [key]: -32768 }))[key], -32768);
+    throwsRange(() => makeMotorStat(stat({ [key]: -32769 })), new RegExp(key));
     throwsRange(() => makeMotorStat(stat({ [key]: 1.5 })), new RegExp(`motor の ${key} が-32768〜32767でない: 1.5`));
     throwsRange(() => makeMotorStat(stat({ [key]: "3" })), new RegExp(key));
     throwsRange(() => makeMotorStat(stat({ [key]: 32768 })), new RegExp(key));
