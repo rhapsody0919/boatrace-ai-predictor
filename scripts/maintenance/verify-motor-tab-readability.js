@@ -32,6 +32,14 @@ import {
   setFakeSupabase,
 } from "./verifyData/fakeServiceSupabase.js";
 import {
+  M,
+  V,
+  partsScene,
+  rankingTables,
+  todayScene,
+  usageTables,
+} from "./verifyData/motor-tab-readability.js";
+import {
   formatPowerIndex,
   formatRateOrCount,
   powerIndexTone,
@@ -99,39 +107,8 @@ const addDays = (ymd, n) =>
     .slice(0, 10);
 const T = getTodayJST();
 const day = (n) => addDays(T, n); // 今日から n 日後（負は前）
-const V = 15;
-const M = 24;
 const rid = (n, no, venue = V) =>
   `${day(n)}-${String(venue).padStart(2, "0")}-${String(no).padStart(2, "0")}`;
-const race = (race_id) => ({
-  race_id,
-  race_date: race_id.slice(0, 10),
-  venue_code: Number(race_id.slice(11, 13)),
-});
-// レースの艇（出走表）の行。列は本体が読む名前
-const ent = (race_id, boat_number, racer_id, extra = {}) => ({
-  race_id,
-  boat_number,
-  racer_id,
-  player_name: `選手${racer_id}`,
-  grade: "A1",
-  motor_number: M,
-  global_2rate: 50,
-  motor_2rate: 40,
-  motor_3rate: 60,
-  ...extra,
-});
-// order に並べた艇番が 1着, 2着, ...（rank1〜rank6）
-const resultOf = (race_id, order, extra = {}) => ({
-  race_id,
-  ...Object.fromEntries(
-    [1, 2, 3, 4, 5, 6].map((n) => [`rank${n}`, order[n - 1] ?? null]),
-  ),
-  race_status: null,
-  ...extra,
-});
-const startRows = (venue, ...dates) =>
-  dates.map((start_date) => ({ venue_code: venue, start_date }));
 const run = async (tables, fn) => {
   clearCache();
   Object.keys(store).forEach((k) => delete store[k]);
@@ -243,62 +220,7 @@ check(
 );
 {
   // 偽の DB: 使用開始日は40日前。a2 に部品交換、c にプロペラ交換が記録される（同じ日の2レースは a・a2）
-  const G = day(-40);
-  const ID = {
-    g0: rid(-40, 1),
-    a: rid(-20, 1),
-    a2: rid(-20, 5),
-    b: rid(-5, 1),
-    c: rid(-3, 1),
-  };
-  const tables = () => ({
-    venue_motor_start_dates: startRows(V, G),
-    races: Object.values(ID).map(race),
-    race_entries: [
-      ent(ID.g0, 1, 11),
-      ent(ID.a, 2, 12),
-      ent(ID.a2, 4, 12),
-      ent(ID.b, 3, 13),
-      ent(ID.c, 5, 13),
-    ],
-    exhibition_data: [
-      {
-        race_id: ID.g0,
-        boat_number: 1,
-        exhibition_time: 6.8,
-        propeller_change: false,
-        parts_changed: null,
-      },
-      {
-        race_id: ID.a,
-        boat_number: 2,
-        exhibition_time: 6.7,
-        propeller_change: false,
-        parts_changed: null,
-      },
-      {
-        race_id: ID.a2,
-        boat_number: 4,
-        exhibition_time: 6.65,
-        propeller_change: false,
-        parts_changed: ["ピストン"],
-      },
-      {
-        race_id: ID.b,
-        boat_number: 3,
-        exhibition_time: 6.6,
-        propeller_change: false,
-        parts_changed: null,
-      },
-      {
-        race_id: ID.c,
-        boat_number: 5,
-        exhibition_time: null,
-        propeller_change: true,
-        parts_changed: null,
-      },
-    ],
-  });
+  const { G, tables } = partsScene(day, rid);
   const { series } = await run(tables(), async () => {
     // 交換のレース番号が無かった頃（v2）のキャッシュ。読むとレース番号が出ない
     seed(`motor-daily-series-v2-${V}-${M}-90`, {
@@ -406,29 +328,7 @@ check(
 {
   // 使用履歴の節ごとの2連率も、着順の付かなかった走を分母に数える（機力指数・枠番別と
   // そろえる。BOA-549、戸田14号機で 4/6 と 22/38 が食い違っていた）
-  const G = day(-40);
-  const g0 = rid(-40, 1); // 艇1が1着
-  const g1 = rid(-39, 2); // 艇3が着順なし（失格等）。結果は成立している
-  const g1b = rid(-39, 3); // 不成立（no_race）。艇6は着順なし
-  const g2 = rid(-38, 1); // 結果がまだ無い（未確定）
-  const g3 = rid(-38, 2); // 艇4が1着
-  const tables = {
-    venue_motor_start_dates: startRows(V, G),
-    races: [g0, g1, g1b, g2, g3].map(race),
-    race_entries: [
-      ent(g0, 1, 11),
-      ent(g1, 3, 11),
-      ent(g1b, 6, 11),
-      ent(g2, 2, 11),
-      ent(g3, 4, 11),
-    ],
-    race_results: [
-      resultOf(g0, [1, 2, 3, 4, 5, 6]),
-      resultOf(g1, [4, 2, 1, 5, 6]),
-      resultOf(g1b, [1, 2, 3, 4, 5], { race_status: "no_race" }),
-      resultOf(g3, [4, 1, 2, 3, 5, 6]),
-    ],
-  };
+  const tables = usageTables(day, rid);
   const usage = await run(tables, async () => {
     // 着順の付かない走を分母に数えなかった頃（v3）のキャッシュ。読むと節の走数が1になる
     seed(`motor-usage-history-v3-${V}-${M}`, [{ racerId: 11, sampleCount: 1 }]);
@@ -515,32 +415,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   check(
     "一覧の機力指数も当日のレースは「このレースの直前まで」（同日の後のレース・このレース自身を入れず、公式の2連率・3連率を直前までの値に差し替える）",
     await (async () => {
-      const tt = rid(0, 3); // 表示する当日のレース
-      const before = rid(0, 2); // 同日の前のレース（入る）
-      const after = rid(0, 5); // 同日の後のレース（入れない）
-      const past = rid(-5, 1);
-      const tables = {
-        venue_motor_start_dates: startRows(V, day(-400)),
-        races: [past, before, tt, after].map(race),
-        race_entries: [
-          ent(past, 3, 13, { global_2rate: 40 }),
-          ent(before, 1, 11, { global_2rate: 50 }),
-          ent(tt, 1, 11, {
-            motor_2rate: 41.2,
-            motor_3rate: 61.5,
-            global_2rate: 50,
-          }),
-          ent(after, 1, 11, { global_2rate: 50 }),
-        ],
-        race_results: [
-          resultOf(past, [1, 2, 3, 4, 5, 6]), // 艇3が3着: 2着以内でない
-          resultOf(before, [1, 2, 3, 4, 5, 6]), // 艇1が1着
-          resultOf(after, [1, 2, 3, 4, 5, 6]),
-          resultOf(tt, [1, 2, 3, 4, 5, 6]),
-        ],
-        venue_motor_stats: [],
-        motor_pretest_stats: [],
-      };
+      const { tt, tables } = todayScene(day, rid);
       const got = await run(tables, () => getRaceMotorBreakdown(tt, V, 90));
       const [row] = got.rows;
       return (
@@ -684,29 +559,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const chart = read("src/components/analysis/MotorConditionChart.jsx");
   {
     // 会場内順位は competitionRank で出す: 同じ値は同じ順位（1, 2, 2, 4）・値なしと出走数 0 は母数に入れない
-    const row = (motor_number, top2_rate, race_count = 10) => ({
-      venue_code: V,
-      motor_number,
-      scraped_date: day(-10),
-      top2_rate,
-      win_rate: top2_rate,
-      top3_rate: top2_rate,
-      accident_rate: 0.1,
-      final_count: 0,
-      championship_count: 0,
-      race_count,
-      stats_period_end: null,
-    });
-    const tables = {
-      venue_motor_stats: [
-        row(24, 50),
-        row(25, 60),
-        row(26, 50),
-        row(27, null),
-        row(28, 99, 0),
-        row(29, 40),
-      ],
-    };
+    const tables = rankingTables(day);
     const own = await run(tables, async () => {
       // 同じ値の順位を付ける前（v1）の形・出走数 0 を外す前（v2）のキャッシュ。読むと順位がずれる
       seed(`venue-motor-ranking-v2-${V}-24-top2Rate`, { rank: 3, total: 5 });
