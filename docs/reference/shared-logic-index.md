@@ -433,6 +433,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/motorQueries4.js` | — | getVenueMotorRanking, getVenueMotorRanks, getVenueMotorList |
 | `src/services/motorQueries5.js` | — | getMotorWakuStats, getMotorRacerWakuStats, getMotorConditionTrend |
 | `src/services/motorQueries6.js` | — | getMotorPartsHistory, getRaceMotorMaintenanceBreakdown |
+| `src/services/motorQueries7.js` | — | getRacerCurrentMotorStatus |
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
 | `src/services/predictionQueries.js` | — | buildFetchFailedPredictions, buildRaceResult, generateReasoning, VENUE_NAMES |
@@ -447,9 +448,9 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/racerQueries2.js` | — | getRacerVenueStats, getRacerScopedRaceStats, getRacerRaceHistory |
 | `src/services/racerQueries3.js` | — | getRacerBoatReturnRate, getStDeviationTrend, getExhibitionTimeTrend, getTodaysRacerFormRanking |
 | `src/services/racerQueries4.js` | — | getRacerPeriodStats, getRacerAccidentRecords |
+| `src/services/racerQueries5.js` | — | getRacerPageData, getRacerAllPeriodStats, getRacerStats |
 | `src/services/racerRaceHistoryRows.js` | 選手の出走履歴の行（getRacerRaceHistory の返り値）の整形（純関数）。 | isUnrankedFinishMark, buildRacerRaceHistoryRows |
 | `src/services/racerScopedRaceRows.js` | 選手の走ごとの行（getRacerScopedRaceStats の返り値）の整形（純関数）。 | buildRacerScopedRaceRows |
-| `src/services/racerService.js` | 選手個別ページ用データ取得サービス | getRacerPageData, getRacerCurrentMotorStatus, getRacerAllPeriodStats, getRacerStats |
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, getVenueName, getTodaysMatchingRaces ほか1件 |
 | `src/services/scheduleQueries.js` | — | getRaces, getUpcomingSeries, getSeriesOfDate, getAvailableDates, getRaceHistorySummary ほか3件 |
 | `src/services/sherlockModel.js` | シャーロック予想 共有モデルロジック（純粋関数のみ） | mean, buildFeatures, softmax, predictConditionalLogit, impliedProbs ほか5件 |
@@ -463,4 +464,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 421 ファイル / export 2411 件。
+対象 422 ファイル / export 2411 件。

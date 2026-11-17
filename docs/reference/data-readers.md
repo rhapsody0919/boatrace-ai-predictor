@@ -10,8 +10,8 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1969 |
-| 読み書きのあるファイル | 280 |
+| 読んだファイル | 1970 |
+| 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
 | RPC の呼び手（箇所） | 51 |
@@ -419,6 +419,7 @@
   - `src/services/motorQueries5.js:65` select(helper:fetchAllByIn)
   - `src/services/motorQueries6.js:120` select [adjustment_weight, boat_number, exhibition_course, exhibition_time, is_absent, parts_changed, prev_entry_course, prev_finish_mark, prev_finish_rank, prev_race_no, prev_start_timing, propeller_change, race_id, tilt, today_weight, updated_at]
   - `src/services/motorQueries6.js:136` select [adjustment_weight, boat_number, exhibition_time, parts_changed, propeller_change, race_id, tilt]
+  - `src/services/motorQueries7.js:78` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
   - `src/services/raceQueries.js:34` select [boat_number, race_id, start_flag]
   - `src/services/raceQueries.js:236` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:285` select [boat_number, race_id, start_timing]
@@ -430,7 +431,6 @@
   - `src/services/racerQueries2.js:302` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:119` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:194` select(helper:fetchAllByIn)
-  - `src/services/racerService.js:158` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
   - `src/services/sherlockService.js:75` select [boat_number, exhibition_time, race_id, start_timing]
 - 書き手（3）: 
   - `scripts/daily/generate-predictions.js:1070` upsert(helper:upsertChangedRows) [?]
@@ -933,6 +933,7 @@
   - `src/services/motorQueries3.js:300` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries5.js:38` select [?, motor_number, race_id]
+  - `src/services/motorQueries7.js:47` select [motor_number, race_id, racer_id]
   - `src/services/mycroftService.js:82` select [boat_number, player_name, race_id]
   - `src/services/raceQueries.js:143` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]
   - `src/services/raceQueries.js:166` select [boat_number, local_win_rate, player_name, race_id, racer_id, win_rate]
@@ -957,8 +958,7 @@
   - `src/services/racerQueries3.js:182` select [boat_number, race_id, racer_id]
   - `src/services/racerQueries3.js:263` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:309` select [race_id, racer_id, win_rate]
-  - `src/services/racerService.js:46` select [grade, race_id, racer_id]
-  - `src/services/racerService.js:127` select [motor_number, race_id, racer_id]
+  - `src/services/racerQueries5.js:43` select [grade, race_id, racer_id]
   - `src/services/sherlockService.js:69` select [boat_2rate, boat_number, grade, local_win_rate, motor_2rate, player_name, race_id, win_rate]
   - `src/services/watsonService.js:75` select [boat_number, player_name, race_id]
 - 書き手（10）: 
@@ -1267,8 +1267,8 @@
   - `scripts/maintenance/backfill-series-day.js:64` select(helper:fetchAll)
   - `scripts/maintenance/verify-bot-race-function.js:857` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
   - `src/services/meetQueries3.js:48` select [end_date, grade, start_date, title, venue_code]
+  - `src/services/motorQueries7.js:21` select [end_date, start_date, venue_code]
   - `src/services/raceQueries2.js:254` select [end_date, start_date, venue_code]
-  - `src/services/racerService.js:101` select [end_date, start_date, venue_code]
   - `src/services/scheduleQueries.js:68` select [end_date, start_date, venue_code]
   - `src/services/scheduleQueries.js:94` select [end_date, grade, start_date, title, venue_code]
 - 書き手（0）: なし
@@ -1382,7 +1382,7 @@
 - 読み手（3）: 
   - `scripts/generate-sitemap.js:465` select [created_at, racer_id]
   - `scripts/lib/racerNews/dedup.js:34` select [id, source_url]
-  - `src/services/racerService.js:61` select [created_at, id, published_at, racer_id, source_name, source_url, summary, title]
+  - `src/services/racerQueries5.js:58` select [created_at, id, published_at, racer_id, source_name, source_url, summary, title]
 - 書き手（2）: 
   - `scripts/lib/racerNews/officialGradeAnnouncements.js:214` insert [published_at, racer_id, source_name, source_url, summary, title]
   - `scripts/maintenance/add-racer-news.js:49` insert [published_at, racer_id, source_name, source_url, summary, title]
@@ -1435,7 +1435,7 @@
   - `scripts/sns/delete-x-post.js:124` rest(rest) [name, racer_id]
   - `src/services/motorQueries4.js:176` select [name, racer_id]
   - `src/services/racerQueries.js:310` select [birth_date, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
-  - `src/services/racerService.js:33` select [birth_date, blood_type, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
+  - `src/services/racerQueries5.js:30` select [birth_date, blood_type, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
 - 書き手（3）: 
   - `scripts/lib/racerProfileSync.js:265` update [?]
   - `scripts/lib/racerProfileSync.js:283` upsert [birth_date, blood_type, branch, grade_at_scrape, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
