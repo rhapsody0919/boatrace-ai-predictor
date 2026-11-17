@@ -891,16 +891,7 @@ export async function runMonitor(
     return { rowsWritten: 0, body: { skipped: "scrape_schema_not_applied" } };
   }
 
-  const activeJobs = input.jobStates.filter(
-    (r) =>
-      !isHostRow(r) &&
-      SCRAPE_JOBS[r.job]?.kind !== "monitor" &&
-      isActiveMode(r.mode),
-  );
-  const activeJobNames = new Set(activeJobs.map((r) => r.job));
-  const liveJobs = new Set(
-    input.jobStates.filter((r) => r.mode === "live").map((r) => r.job),
-  );
+  const { activeJobs, activeJobNames, liveJobs } = selectJobs(input.jobStates);
   // 発売開始の遅れ（想定内の未公開）。警告・窓内取得率・日次サマリーで同じ判定を共有する
   const targetPool = [
     ...input.expiredSlots,
@@ -967,6 +958,21 @@ export async function runMonitor(
       slackConfigured: Boolean(webhook),
     },
   };
+}
+
+/** 有効なジョブ（監視自身・ホスト行を除く shadow・live）とその名前、live のジョブの名前 */
+function selectJobs(jobStates) {
+  const activeJobs = jobStates.filter(
+    (r) =>
+      !isHostRow(r) &&
+      SCRAPE_JOBS[r.job]?.kind !== "monitor" &&
+      isActiveMode(r.mode),
+  );
+  const activeJobNames = new Set(activeJobs.map((r) => r.job));
+  const liveJobs = new Set(
+    jobStates.filter((r) => r.mode === "live").map((r) => r.job),
+  );
+  return { activeJobs, activeJobNames, liveJobs };
 }
 
 /**
