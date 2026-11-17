@@ -314,6 +314,24 @@ export async function section5(ctx) {
   }
 }
 
+// 出典注記の文言のうち、{{venueCols}} などの差し込みの口と見出しの有無（前半）
+const sourceNoteSlots = (motor) =>
+  !motor.officialModeSourceNote.includes("{{venueCols}}") &&
+  motor.venueColsPastNote?.includes("{{venueCols}}") &&
+  motor.venueColsTodayNote?.includes("{{venueCols}}") &&
+  typeof motor.rateTrendHeading === "string" &&
+  motor.quotedLabel?.includes("{{label}}");
+
+// 出典注記の文言のうち、区切り・更新遅れの注記・使用履歴・展示タイムの見出し（後半）
+const sourceNoteTexts = (motor) =>
+  typeof motor.quotedLabelSeparator === "string" &&
+  typeof motor.officialSnapshotNote === "string" &&
+  /90/.test(motor.usageHistoryNote) &&
+  // 使用履歴の「-」（着順の付かない走）と「未」の意味・数え方を書く（BOA-549）
+  /「-」|"-"/.test(motor.usageHistoryNote) &&
+  // 枠番別成績の展示タイムの列が、平均の値と推移の図だと分かる見出し（BOA-549）
+  /平均|avg|平均|평균/i.test(motor.exhibitionTrendHeader);
+
 export async function section5b(ctx) {
   const { check, read } = ctx;
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {
@@ -321,18 +339,7 @@ export async function section5b(ctx) {
       .motor;
     check(
       `${lang}: 出典注記が {{venueCols}} を受け取り、見出し・区切り・更新遅れの注記・使用履歴の期間がある`,
-      !motor.officialModeSourceNote.includes("{{venueCols}}") &&
-        motor.venueColsPastNote?.includes("{{venueCols}}") &&
-        motor.venueColsTodayNote?.includes("{{venueCols}}") &&
-        typeof motor.rateTrendHeading === "string" &&
-        motor.quotedLabel?.includes("{{label}}") &&
-        typeof motor.quotedLabelSeparator === "string" &&
-        typeof motor.officialSnapshotNote === "string" &&
-        /90/.test(motor.usageHistoryNote) &&
-        // 使用履歴の「-」（着順の付かない走）と「未」の意味・数え方を書く（BOA-549）
-        /「-」|"-"/.test(motor.usageHistoryNote) &&
-        // 枠番別成績の展示タイムの列が、平均の値と推移の図だと分かる見出し（BOA-549）
-        /平均|avg|平均|평균/i.test(motor.exhibitionTrendHeader),
+      sourceNoteSlots(motor) && sourceNoteTexts(motor),
     );
   }
 }
