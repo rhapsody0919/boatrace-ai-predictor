@@ -91,25 +91,23 @@ const bump = (k) => (drop[k] = (drop[k] ?? 0) + 1);
 function groupBy(rows) { const m = new Map(); for (const r of rows) { if (!m.has(r.race_id)) m.set(r.race_id, []); m.get(r.race_id).push(r); } return m; }
 
 const races = [];
-function finishRace({ race_id, d, stage, boats, src }) {
-  // boats: [{bn, w, et, course, finish (1..6 or null), returned(bool)}]
-  if (boats.length !== 6 || new Set(boats.map((b) => b.bn)).size !== 6) return bump(`${src}:6艇でない`);
-  if (boats.some((b) => b.returned)) return bump(`${src}:返還艇あり`);
+// 除外の理由（6艇・返還艇・1着・展示タイムの検査）。除外しないなら null
+function boatsDropReason(boats, src) {
+  if (boats.length !== 6 || new Set(boats.map((b) => b.bn)).size !== 6) return `${src}:6艇でない`;
+  if (boats.some((b) => b.returned)) return `${src}:返還艇あり`;
   // 1着の艇が1艇に決まれば足りる（本体は 2025-12〜2026-03 に rank4〜6 が空のレースがある。1着かどうかだけを使う）
-  if (boats.filter((b) => b.finish === 1).length !== 1) return bump(`${src}:1着が1艇に決まらない`);
+  if (boats.filter((b) => b.finish === 1).length !== 1) return `${src}:1着が1艇に決まらない`;
   const ets = boats.map((b) => (b.et == null ? null : Number(b.et)));
-  if (ets.some((t) => t == null || !(t > 0))) return bump(`${src}:展示タイムが6艇そろわない`);
-  const b1 = boats.find((b) => b.bn === 1);
-  const others = boats.filter((b) => b.bn !== 1 && b.w != null).map((b) => cents(b.w));
-  if (b1.w == null || others.length === 0) return bump(`${src}:勝率差が出せない`);
-  const gap = cents(b1.w) - Math.max(...others);
-  const r = roundOf(stage);
-  const bnd = band(gap);
-  const c = cumBefore(r, bnd, d);
+  if (ets.some((t) => t == null || !(t > 0))) return `${src}:展示タイムが6艇そろわない`;
+  return null;
+}
+
+// 1レース分の集計行（boats は検査済み、b1 は1号艇）
+function buildRaceRow({ race_id, d, boats, src, b1, gap, r, bnd, c }) {
   const rank = (b) => 1 + boats.filter((o) => Number(o.et) < Number(b.et)).length; // method=min
   const c1 = boats.filter((b) => b.course === 1);
   const coursesOk = new Set(boats.map((b) => b.course)).size === 6 && boats.every((b) => b.course >= 1 && b.course <= 6);
-  races.push({
+  return {
     race_id, d, round: r, src, gap, band: bnd, cumN: c.n, cumK: c.k,
     pct: c.n >= CFG.minCellN ? pctOf(c.k, c.n) : null,
     level: c.n >= CFG.minCellN ? levelOf(pctOf(c.k, c.n)) : "sparse",
@@ -118,7 +116,21 @@ function finishRace({ race_id, d, stage, boats, src }) {
     boatTieMax: { rank: boats.filter((o) => Number(o.et) <= Number(b1.et)).length, nonWin: b1.finish !== 1 ? 1 : 0 },
     course: coursesOk && c1.length === 1 ? { bn: c1[0].bn, rank: rank(c1[0]), nonWin: c1[0].finish !== 1 ? 1 : 0 } : null,
     tie1: boats.filter((o) => Number(o.et) === Number(b1.et)).length > 1,
-  });
+  };
+}
+
+function finishRace({ race_id, d, stage, boats, src }) {
+  // boats: [{bn, w, et, course, finish (1..6 or null), returned(bool)}]
+  const reason = boatsDropReason(boats, src);
+  if (reason) return bump(reason);
+  const b1 = boats.find((b) => b.bn === 1);
+  const others = boats.filter((b) => b.bn !== 1 && b.w != null).map((b) => cents(b.w));
+  if (b1.w == null || others.length === 0) return bump(`${src}:勝率差が出せない`);
+  const gap = cents(b1.w) - Math.max(...others);
+  const r = roundOf(stage);
+  const bnd = band(gap);
+  const c = cumBefore(r, bnd, d);
+  races.push(buildRaceRow({ race_id, d, boats, src, b1, gap, r, bnd, c }));
 }
 
 for (const [race_id, rows] of groupBy(kbRows)) {
