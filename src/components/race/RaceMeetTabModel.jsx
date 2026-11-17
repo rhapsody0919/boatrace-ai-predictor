@@ -21,7 +21,7 @@ import {
   SEMIFINAL_SPLIT_DEFAULT_SLOTS,
   MEET_SMALL_SAMPLE_RUNS,
   meetRateBestCandidates,
-} from "./seriesPoints";
+} from "../../pure/seriesPoints.js";
 
 // 順位の対象外の理由 → 画面の文言キー（meetTab.<key> と meetTab.<key>Title）。BOA-587
 export const EXCLUDED_LABEL_KEY = {

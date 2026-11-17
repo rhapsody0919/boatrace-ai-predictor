@@ -28,7 +28,7 @@ import { getMeetScoreboard } from "../../services/meetQueries2.js";
 import { getRacerScopedRaceStats } from "../../services/racerQueries2.js";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
-import { FINISH_ABSENT } from "./seriesPoints";
+import { FINISH_ABSENT } from "../../pure/seriesPoints.js";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { buildMeetModel } from "./RaceMeetTabModel";
 import RaceMeetTabCompare from "./RaceMeetTabCompare";
