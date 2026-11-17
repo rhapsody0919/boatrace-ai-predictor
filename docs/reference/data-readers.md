@@ -696,7 +696,7 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/maintenance/delete-phantom-races.js:83`, `scripts/maintenance/fix-opening-day-race-id-date.js:68`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:41`, `scripts/ml/analogy/in_caution_bands.py:204`, `scripts/ml/analogy/tests/test_in_caution_bands.py:286`, `scripts/ml/analogy/tests/test_in_caution_bands.py:318`
 - 読み手（44）: 
   - `scripts/analysis/analyze-prediction-ensemble.js:66` select(helper:fetchAll)
-  - `scripts/analysis/analyze-upset-factors.js:133` select [feature_contributions, model_id, race_id]
+  - `scripts/analysis/analyze-upset-factors.js:134` select [feature_contributions, model_id, race_id]
   - `scripts/analysis/calibration-report.js:92` select(helper:fetchAll)
   - `scripts/analysis/campaign-backtest-fetch-races.js:49` select [feature_contributions, predicted_at, race_id]
   - `scripts/analysis/collect-venue-stats.js:231` select [confidence, model_id, race_id, top_2nd, top_3rd, top_pick]
@@ -1129,7 +1129,7 @@
   - `scripts/analysis/aggregate-racer-stats.js:70` select(helper:fetchAll)
   - `scripts/analysis/analogy-finder-md6/export-actual-course.js:20` select(helper:fetchAll)
   - `scripts/analysis/analyze-indicator-predictive-power.js:116` select(helper:fetchAll)
-  - `scripts/analysis/analyze-upset-factors.js:120` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
+  - `scripts/analysis/analyze-upset-factors.js:119` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
   - `scripts/analysis/backtest-course-rate-only.js:60` select(helper:fetchAll)
   - `scripts/analysis/backtest-unified-model.js:196` select(helper:fetchAll)
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:42` select(helper:all)
@@ -1475,7 +1475,7 @@
   - `api/_lib/snsClaimCheck.js:498` rest(rest) [cancellation_status, race_date, race_id, start_time]
   - `api/_lib/snsTodayDigest.js:50` rest(rest) [cancellation_status, race_id, start_time]
   - `api/odds/live.js:72` select [race_date, race_id, start_time]
-  - `scripts/analysis/analyze-upset-factors.js:108` select [first_boat_motor_2rate, first_boat_win_rate, motor_2rate_stddev, race_date, race_id, venue_code, volatility_level, volatility_score, win_rate_stddev]
+  - `scripts/analysis/analyze-upset-factors.js:106` select [first_boat_motor_2rate, first_boat_win_rate, motor_2rate_stddev, race_date, race_id, venue_code, volatility_level, volatility_score, win_rate_stddev]
   - `scripts/analysis/backtest-unified-model.js:109` select [race_id, venue_code]
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:32` select(helper:all)
   - `scripts/analysis/calibrate-unified-model.js:145` select [race_id, venue_code]
