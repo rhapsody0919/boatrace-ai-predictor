@@ -7,7 +7,7 @@
  * キャッシュは持たない。
  *
  * `src/pure/` に置かないのは、依存の `officialMarkOf`・`isAbsentStartRow`
- * （src/components/race/seriesPoints.js）・`deriveRaceStContext`（src/utils/stConsideration.js）・
+ * （src/pure/seriesPoints.js）・`deriveRaceStContext`（src/utils/stConsideration.js）・
  * `isUsableRaceResult`（src/utils/raceResultUsable.js）が共有の根の外にあり、根の中から
  * 読めないため（scripts/maintenance/verify-pure-imports.js）。依存が根に入った後に移し直す。
  *
@@ -18,7 +18,7 @@ import { deriveRaceStContext } from "../utils/stConsideration.js";
 import {
   isAbsentStartRow,
   officialMarkOf,
-} from "../components/race/seriesPoints.js";
+} from "../pure/seriesPoints.js";
 import { isUsableRaceResult } from "../utils/raceResultUsable.js";
 
 // ST考察用: レース単位で全艇分のSTをまとめる（Fの除外は deriveRaceStContext 側）

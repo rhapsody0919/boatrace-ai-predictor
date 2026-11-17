@@ -7,7 +7,7 @@ import {
 import {
   buildMeetResults,
   getRecentRaces,
-} from "../components/race/basicInfoStats";
+} from "../pure/basicInfoStats.js";
 import { finishedRuns, meetAnchorOf, statLineOf } from "../pure/favoriteRuns";
 
 /** 同時に成績・今節を取る選手の数 */

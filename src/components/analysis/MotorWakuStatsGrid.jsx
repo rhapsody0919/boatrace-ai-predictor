@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { exhibitionSparklineY } from "../../utils/chartDomain";
 import { useTranslation } from "react-i18next";
-import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
+import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
 import InlineFetchError from "../InlineFetchError";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import { formatGenerationDate } from "../../utils/motorGeneration";

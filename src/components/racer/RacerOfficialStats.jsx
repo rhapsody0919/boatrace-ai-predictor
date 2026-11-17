@@ -4,7 +4,7 @@ import {
   buildPeriodRows,
   buildCourseRows,
   COURSE_SUM_PERIODS,
-} from "../../utils/racerOfficialPeriodStats";
+} from "../../pure/racerOfficialPeriodStats.js";
 import { buildChartData, chartRates } from "./RacerOfficialStatsLogic";
 import RacerOfficialStatsChart from "./RacerOfficialStatsChart";
 import "./RacerOfficialStats.css";

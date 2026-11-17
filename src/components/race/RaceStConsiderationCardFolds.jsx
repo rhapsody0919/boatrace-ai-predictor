@@ -5,7 +5,7 @@
  */
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
-import { finishPositionOf } from "./basicInfoStats";
+import { finishPositionOf } from "../../pure/basicInfoStats.js";
 import {
   computeStHistogram,
   getStHistory,
