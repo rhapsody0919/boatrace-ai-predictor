@@ -1586,7 +1586,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/check-pre-race-shadow.js:319",
+          "ref": "scripts/maintenance/check-pre-race-shadow.js:301",
           "op": "select",
           "via": "helper:fetchByRaceIds",
           "columns": []
@@ -6427,7 +6427,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/check-pre-race-shadow.js:305",
+          "ref": "scripts/maintenance/check-pre-race-shadow.js:287",
           "op": "select",
           "via": "helper:fetchByRaceIds",
           "columns": []
@@ -7511,7 +7511,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/check-pre-race-shadow.js:299",
+          "ref": "scripts/maintenance/check-pre-race-shadow.js:281",
           "op": "select",
           "via": "helper:fetchByRaceIds",
           "columns": []
@@ -16703,7 +16703,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/check-pre-race-shadow.js:311",
+          "ref": "scripts/maintenance/check-pre-race-shadow.js:293",
           "op": "select",
           "via": "helper:fetchByRaceIds",
           "columns": []
