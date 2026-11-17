@@ -3,7 +3,7 @@
  *
  * クライアントを引数で受け取るのは、検証（scripts/maintenance/verify-meet-start-date.js）が
  * 本番のクライアントを読まずに偽のクライアントで本体をそのまま実行するため。画面からは
- * racerService が `supabaseClient.js` の `supabase`（throwOnError が既定）を渡す。
+ * motorQueries7（getRacerCurrentMotorStatus）が `supabaseClient.js` の `supabase`（throwOnError が既定）を渡す。
  * 取得の失敗は例外のまま上に流す（.claude/rules/frontend-data-fetch.md）。
  */
 import { groupCurrentMeetFromRows } from "../utils/meetGrouping.js";
