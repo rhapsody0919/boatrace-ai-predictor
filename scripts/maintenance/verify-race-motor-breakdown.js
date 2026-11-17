@@ -24,15 +24,12 @@ import {
   rows,
   statsAsOf,
 } from "./verifyData/race-motor-breakdown.js";
-import { EXPECTED_A } from "./verifyData/race-motor-breakdown-expected.js";
-import { EXPECTED_B } from "./verifyData/race-motor-breakdown-expected2.js";
+import { EXPECTED } from "./verifyData/race-motor-breakdown-expected.js";
 import {
   pastMotorRows,
   recalcMotorRows,
   settleMotorBreakdown,
 } from "../../src/pure/raceMotorBreakdown.js";
-
-const EXPECTED = { ...EXPECTED_A, ...EXPECTED_B };
 
 let count = 0;
 const check = (name, fn) => {

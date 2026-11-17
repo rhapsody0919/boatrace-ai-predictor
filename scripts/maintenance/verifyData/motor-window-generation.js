@@ -2,38 +2,16 @@
  * verify-motor-window-generation.js の場面のデータ（偽の DB の表）。verify ではない。
  * day(n) は今日から n 日後の日付、rid(n, no) はそのレース ID。期待値は verify 側に置く。
  */
-export const V = 15;
-export const M = 24;
-export const race = (race_id) => ({
-  race_id,
-  race_date: race_id.slice(0, 10),
-  venue_code: Number(race_id.slice(11, 13)),
-});
-// レースの艇（出走表）の行。列は本体が読む名前
-export const ent = (race_id, boat_number, racer_id, extra = {}) => ({
-  race_id,
-  boat_number,
-  racer_id,
-  player_name: `選手${racer_id}`,
-  grade: "A1",
-  motor_number: M,
-  global_2rate: 50,
-  motor_2rate: 40,
-  motor_3rate: 60,
-  ...extra,
-});
-// order に並べた艇番が 1着, 2着, ...（rank1〜rank6）
-export const resultOf = (race_id, order, extra = {}) => ({
-  race_id,
-  ...Object.fromEntries(
-    [1, 2, 3, 4, 5, 6].map((n) => [`rank${n}`, order[n - 1] ?? null]),
-  ),
-  race_status: null,
-  ...extra,
-});
-export const startRows = (venue, ...dates) =>
-  dates.map((start_date) => ({ venue_code: venue, start_date }));
-
+import {
+  M,
+  V,
+  ent,
+  exhibitionRows,
+  race,
+  resultOf,
+  startRows,
+} from "./motorWorldRows.js";
+export { M, V, ent, race, resultOf, startRows };
 /** 使用開始日は今日の40日前。90日の窓は使用開始日で切り詰められ、30日の窓は切られない */
 export const makeWorld = (day, rid) => {
   const G = day(-40);
@@ -84,43 +62,7 @@ export const makeWorld = (day, rid) => {
       resultOf(ID.b, [1, 2, 3, 4, 5, 6]), // 艇3が3着
       resultOf(ID.other, [1, 2, 3, 4, 5, 6]),
     ],
-    exhibition_data: [
-      {
-        race_id: ID.g0,
-        boat_number: 1,
-        exhibition_time: 6.8,
-        propeller_change: false,
-        parts_changed: null,
-      },
-      {
-        race_id: ID.a,
-        boat_number: 2,
-        exhibition_time: 6.7,
-        propeller_change: false,
-        parts_changed: null,
-      },
-      {
-        race_id: ID.a2,
-        boat_number: 4,
-        exhibition_time: 6.65,
-        propeller_change: false,
-        parts_changed: ["ピストン"],
-      },
-      {
-        race_id: ID.b,
-        boat_number: 3,
-        exhibition_time: 6.6,
-        propeller_change: false,
-        parts_changed: null,
-      },
-      {
-        race_id: ID.c,
-        boat_number: 5,
-        exhibition_time: null,
-        propeller_change: true,
-        parts_changed: null,
-      },
-    ],
+    exhibition_data: exhibitionRows(ID),
   });
   const noStart = () => ({
     ...world(),
