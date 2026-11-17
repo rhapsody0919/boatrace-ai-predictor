@@ -119,16 +119,18 @@ function featureCorrelations(rows) {
   });
 }
 
-async function main() {
+const THRESHOLDS = [45, 50, 55, 60, 65, 70, 75, 80];
+const TARGET_LIFT = 0.1; // +10pt
+const MIN_SAMPLES = 20;
+
+function calcSinceStr() {
   const since = new Date();
   since.setDate(since.getDate() - DAYS);
-  const sinceStr = since.toISOString().split("T")[0];
+  return since.toISOString().split("T")[0];
+}
 
-  console.log(`\n🔬 イン崩れ指数 — 会場別閾値・特徴量再設計`);
-  console.log(`📅 期間: 過去${DAYS}日 (${sinceStr} 〜)\n`);
-
-  // データ取得
-  const races = await fetchAll("races", (from, to) =>
+function fetchRaces(sinceStr) {
+  return fetchAll("races", (from, to) =>
     supabase
       .from("races")
       .select(
@@ -140,8 +142,10 @@ async function main() {
       .gte("race_date", sinceStr)
       .range(from, to),
   );
+}
 
-  const results = await fetchAll("race_results", (from, to) =>
+function fetchResults(sinceStr) {
+  return fetchAll("race_results", (from, to) =>
     supabase
       .from("race_results")
       .select(
@@ -152,46 +156,48 @@ async function main() {
       .eq("is_no_race", false)
       .range(from, to),
   );
+}
 
+function joinRaceResults(races, results) {
   const resultMap = new Map(results.map((r) => [r.race_id, r]));
-  const joined = races
+  return races
     .map((r) => ({ ...r, ...resultMap.get(r.race_id) }))
     .filter((r) => r.winning_technique);
+}
 
-  const globalBaseline =
-    1 -
-    joined.filter((r) => r.winning_technique === "逃げ").length / joined.length;
+function calcFlipBaseline(rows) {
+  return (
+    1 - rows.filter((r) => r.winning_technique === "逃げ").length / rows.length
+  );
+}
 
-  console.log(`総レース数: ${joined.length.toLocaleString()} 件`);
-  console.log(`全体ベースライン: ${pct(globalBaseline)}\n`);
-
-  // 会場別データ分割
+function groupByVenue(joined) {
   const byVenue = {};
   for (const r of joined) {
     if (!byVenue[r.venue_code]) byVenue[r.venue_code] = [];
     byVenue[r.venue_code].push(r);
   }
+  return byVenue;
+}
 
-  // ─────────────────────────────────────────
-  // 1. 会場別ベースライン（フライト率の地図）
-  // ─────────────────────────────────────────
+function buildVenueStats(byVenue) {
+  return Object.entries(byVenue)
+    .map(([code, rows]) => ({
+      code,
+      name: VENUE_NAMES[code] ?? code,
+      baseline: calcFlipBaseline(rows),
+      n: rows.length,
+    }))
+    .sort((a, b) => b.baseline - a.baseline);
+}
+
+// ─────────────────────────────────────────
+// 1. 会場別ベースライン（フライト率の地図）
+// ─────────────────────────────────────────
+function printVenueBaselines(venueStats, globalBaseline) {
   console.log("=".repeat(72));
   console.log("【1】会場別ベースライン — 1コース飛び率（逃げ以外率）");
   console.log("=".repeat(72));
-
-  const venueStats = Object.entries(byVenue)
-    .map(([code, rows]) => {
-      const baseline =
-        1 -
-        rows.filter((r) => r.winning_technique === "逃げ").length / rows.length;
-      return {
-        code,
-        name: VENUE_NAMES[code] ?? code,
-        baseline,
-        n: rows.length,
-      };
-    })
-    .sort((a, b) => b.baseline - a.baseline);
 
   for (const { code, name, baseline, n } of venueStats) {
     const diff = baseline - globalBaseline;
@@ -206,19 +212,42 @@ async function main() {
     );
   }
   console.log();
+}
 
-  // ─────────────────────────────────────────
-  // 2. 会場別 閾値最適化
-  //    → ベースラインから+10pt以上を目安に、最も低い閾値を探す
-  // ─────────────────────────────────────────
+// +10pt以上かつサンプル20件以上で最初に達する閾値、無ければ最大liftの閾値
+function pickRecommendedThreshold(stats) {
+  const hit = stats.find(
+    (s) => s.lift !== null && s.lift >= TARGET_LIFT && s.n >= MIN_SAMPLES,
+  );
+  const best = stats.reduce((prev, cur) => {
+    if (cur.lift === null || cur.n < MIN_SAMPLES) return prev;
+    if (prev === null) return cur;
+    return cur.lift > prev.lift ? cur : prev;
+  }, null);
+  return hit?.thr ?? best?.thr ?? null;
+}
+
+function printThresholdRow({ thr, n: gn, flipRate, lift }, n) {
+  const liftStr =
+    lift !== null
+      ? `${lift >= 0 ? "+" : ""}${(lift * 100).toFixed(1)}pt`
+      : "---";
+  const star = lift !== null && lift >= TARGET_LIFT ? " ✅" : "";
+  const coverage = `${((gn / n) * 100).toFixed(0)}%`;
+  console.log(
+    `    score≥${pad(thr, 2)}: n=${pad(gn, 4)} (${coverage.padStart(4)}), 飛び率=${flipRate !== null ? pct(flipRate).padStart(6) : "   ---"}, lift=${liftStr.padStart(7)}${star}`,
+  );
+}
+
+// ─────────────────────────────────────────
+// 2. 会場別 閾値最適化
+//    → ベースラインから+10pt以上を目安に、最も低い閾値を探す
+// ─────────────────────────────────────────
+function printThresholdOptimization(venueStats, byVenue) {
   console.log("=".repeat(72));
   console.log("【2】会場別 閾値最適化");
   console.log("  目標: ベースライン差+10pt以上を達成できる最低スコア閾値");
   console.log("=".repeat(72));
-
-  const THRESHOLDS = [45, 50, 55, 60, 65, 70, 75, 80];
-  const TARGET_LIFT = 0.1; // +10pt
-  const MIN_SAMPLES = 20;
 
   const recommendedThresholds = {};
 
@@ -230,30 +259,12 @@ async function main() {
     const rows = byVenue[code];
     const stats = calcThresholdStats(rows, baseline, THRESHOLDS);
 
-    // +10pt以上かつサンプル20件以上で最初に達する閾値
-    const hit = stats.find(
-      (s) => s.lift !== null && s.lift >= TARGET_LIFT && s.n >= MIN_SAMPLES,
-    );
-    const best = stats.reduce((prev, cur) => {
-      if (cur.lift === null || cur.n < MIN_SAMPLES) return prev;
-      if (prev === null) return cur;
-      return cur.lift > prev.lift ? cur : prev;
-    }, null);
-
-    recommendedThresholds[code] = hit?.thr ?? best?.thr ?? null;
+    recommendedThresholds[code] = pickRecommendedThreshold(stats);
 
     console.log(`\n  [${code}:${name}] baseline=${pct(baseline)} (n=${n})`);
-    for (const { thr, n: gn, flipRate, lift } of stats) {
-      if (gn < MIN_SAMPLES) continue;
-      const liftStr =
-        lift !== null
-          ? `${lift >= 0 ? "+" : ""}${(lift * 100).toFixed(1)}pt`
-          : "---";
-      const star = lift !== null && lift >= TARGET_LIFT ? " ✅" : "";
-      const coverage = `${((gn / n) * 100).toFixed(0)}%`;
-      console.log(
-        `    score≥${pad(thr, 2)}: n=${pad(gn, 4)} (${coverage.padStart(4)}), 飛び率=${flipRate !== null ? pct(flipRate).padStart(6) : "   ---"}, lift=${liftStr.padStart(7)}${star}`,
-      );
+    for (const stat of stats) {
+      if (stat.n < MIN_SAMPLES) continue;
+      printThresholdRow(stat, n);
     }
     if (recommendedThresholds[code]) {
       console.log(`    → 推奨閾値: score≥${recommendedThresholds[code]}`);
@@ -262,10 +273,19 @@ async function main() {
     }
   }
   console.log();
+  return recommendedThresholds;
+}
 
-  // ─────────────────────────────────────────
-  // 3. 会場別 特徴量有効性
-  // ─────────────────────────────────────────
+function fmtCorr(c) {
+  if (c === null) return "  ---";
+  const str = c.toFixed(3);
+  return c >= 0.2 ? `★${str}` : c >= 0.1 ? ` ${str}` : ` ${str}`;
+}
+
+// ─────────────────────────────────────────
+// 3. 会場別 特徴量有効性
+// ─────────────────────────────────────────
+function printFeatureEffectiveness(venueStats, byVenue) {
   console.log("=".repeat(72));
   console.log("【3】会場別 特徴量有効性（スピアマン相関）");
   console.log("  凡例: ρ≥0.20=強 / 0.10-0.20=中 / <0.10=弱");
@@ -280,11 +300,6 @@ async function main() {
     if (n < 100) continue;
     const rows = byVenue[code];
     const corrs = featureCorrelations(rows);
-    const fmtCorr = (c) => {
-      if (c === null) return "  ---";
-      const str = c.toFixed(3);
-      return c >= 0.2 ? `★${str}` : c >= 0.1 ? ` ${str}` : ` ${str}`;
-    };
     const strongest = corrs
       .filter((f) => f.corr !== null)
       .sort((a, b) => b.corr - a.corr)[0];
@@ -296,10 +311,13 @@ async function main() {
     );
   }
   console.log();
+  return featureSummary;
+}
 
-  // ─────────────────────────────────────────
-  // 4. 会場グルーピング（特性別）
-  // ─────────────────────────────────────────
+// ─────────────────────────────────────────
+// 4. 会場グルーピング（特性別）
+// ─────────────────────────────────────────
+function printVenueGroups(venueStats, recommendedThresholds, featureSummary) {
   console.log("=".repeat(72));
   console.log("【4】会場グルーピング — 計算方法を変えるべき特性グループ");
   console.log("=".repeat(72));
@@ -333,10 +351,12 @@ async function main() {
     }
   }
   console.log();
+}
 
-  // ─────────────────────────────────────────
-  // 5. 推奨: 会場別閾値テーブル（実装用）
-  // ─────────────────────────────────────────
+// ─────────────────────────────────────────
+// 5. 推奨: 会場別閾値テーブル（実装用）
+// ─────────────────────────────────────────
+function printThresholdTable(venueStats, recommendedThresholds) {
   console.log("=".repeat(72));
   console.log("【5】実装用 — 会場別推奨閾値テーブル");
   console.log("=".repeat(72));
@@ -353,10 +373,59 @@ async function main() {
     }
   }
   console.log(`  };\n`);
+}
 
-  // ─────────────────────────────────────────
-  // 6. 現行共通閾値55 vs 会場別閾値 — 精度比較
-  // ─────────────────────────────────────────
+// 閾値以上の行の飛び率（件数が足りなければ null）
+function flipRateOf(group) {
+  return group.length >= MIN_SAMPLES
+    ? 1 -
+        group.filter((r) => r.winning_technique === "逃げ").length /
+          group.length
+    : null;
+}
+
+function printComparisonRow({ code, name, baseline }, rows, rec, totals) {
+  const gCommon = rows.filter((r) => r.volatility_score >= 55);
+  const commonFlip = flipRateOf(gCommon);
+
+  const gVenue = rec ? rows.filter((r) => r.volatility_score >= rec) : [];
+  const venueFlip = flipRateOf(gVenue);
+
+  const diff =
+    venueFlip !== null && commonFlip !== null ? venueFlip - commonFlip : null;
+  const diffStr =
+    diff !== null
+      ? `${diff >= 0 ? "+" : ""}${(diff * 100).toFixed(1)}pt`
+      : "  ---";
+  const improvement =
+    diff !== null && diff >= 0.02
+      ? " ⬆"
+      : diff !== null && diff <= -0.02
+        ? " ⬇"
+        : "";
+
+  if (commonFlip !== null) {
+    totals.totalCommon += gCommon.length;
+    totals.commonHit += gCommon.filter(
+      (r) => r.winning_technique !== "逃げ",
+    ).length;
+  }
+  if (venueFlip !== null) {
+    totals.totalVenue += gVenue.length;
+    totals.venueHit += gVenue.filter(
+      (r) => r.winning_technique !== "逃げ",
+    ).length;
+  }
+
+  console.log(
+    `  ${code}:${name.padEnd(4)} ${pct(baseline).padStart(6)} | ${commonFlip !== null ? pct(commonFlip).padStart(8) : "     ---"} ${pad(gCommon.length, 5)} | ${venueFlip !== null ? pct(venueFlip).padStart(8) : "     ---"} ${pad(gVenue.length, 5)} | ${diffStr.padStart(7)}${improvement}`,
+  );
+}
+
+// ─────────────────────────────────────────
+// 6. 現行共通閾値55 vs 会場別閾値 — 精度比較
+// ─────────────────────────────────────────
+function printAccuracyComparison(venueStats, byVenue, recommendedThresholds) {
   console.log("=".repeat(72));
   console.log("【6】共通閾値55 vs 会場別推奨閾値 — 精度比較");
   console.log("=".repeat(72));
@@ -365,66 +434,49 @@ async function main() {
   );
   console.log("  " + "-".repeat(68));
 
-  let totalCommon = 0,
-    commonHit = 0,
-    totalVenue = 0,
-    venueHit = 0;
+  const totals = { totalCommon: 0, commonHit: 0, totalVenue: 0, venueHit: 0 };
 
-  for (const { code, name, baseline } of venueStats) {
-    const rows = byVenue[code];
+  for (const venue of venueStats) {
+    const rows = byVenue[venue.code];
     if (!rows || rows.length < 100) continue;
-
-    const rec = recommendedThresholds[code];
-
-    const gCommon = rows.filter((r) => r.volatility_score >= 55);
-    const commonFlip =
-      gCommon.length >= MIN_SAMPLES
-        ? 1 -
-          gCommon.filter((r) => r.winning_technique === "逃げ").length /
-            gCommon.length
-        : null;
-
-    const gVenue = rec ? rows.filter((r) => r.volatility_score >= rec) : [];
-    const venueFlip =
-      gVenue.length >= MIN_SAMPLES
-        ? 1 -
-          gVenue.filter((r) => r.winning_technique === "逃げ").length /
-            gVenue.length
-        : null;
-
-    const diff =
-      venueFlip !== null && commonFlip !== null ? venueFlip - commonFlip : null;
-    const diffStr =
-      diff !== null
-        ? `${diff >= 0 ? "+" : ""}${(diff * 100).toFixed(1)}pt`
-        : "  ---";
-    const improvement =
-      diff !== null && diff >= 0.02
-        ? " ⬆"
-        : diff !== null && diff <= -0.02
-          ? " ⬇"
-          : "";
-
-    if (commonFlip !== null) {
-      totalCommon += gCommon.length;
-      commonHit += gCommon.filter((r) => r.winning_technique !== "逃げ").length;
-    }
-    if (venueFlip !== null) {
-      totalVenue += gVenue.length;
-      venueHit += gVenue.filter((r) => r.winning_technique !== "逃げ").length;
-    }
-
-    console.log(
-      `  ${code}:${name.padEnd(4)} ${pct(baseline).padStart(6)} | ${commonFlip !== null ? pct(commonFlip).padStart(8) : "     ---"} ${pad(gCommon.length, 5)} | ${venueFlip !== null ? pct(venueFlip).padStart(8) : "     ---"} ${pad(gVenue.length, 5)} | ${diffStr.padStart(7)}${improvement}`,
-    );
+    printComparisonRow(venue, rows, recommendedThresholds[venue.code], totals);
   }
 
+  const { totalCommon, commonHit, totalVenue, venueHit } = totals;
   const overallCommon = totalCommon > 0 ? commonHit / totalCommon : 0;
   const overallVenue = totalVenue > 0 ? venueHit / totalVenue : 0;
   console.log("  " + "-".repeat(68));
   console.log(
     `  ${"合計/平均".padEnd(8)} ${"".padStart(6)} | ${pct(overallCommon).padStart(8)} ${pad(totalCommon, 5)} | ${pct(overallVenue).padStart(8)} ${pad(totalVenue, 5)} | ${(overallVenue - overallCommon >= 0 ? "+" : "") + ((overallVenue - overallCommon) * 100).toFixed(1)}pt`,
   );
+}
+
+async function main() {
+  const sinceStr = calcSinceStr();
+
+  console.log(`\n🔬 イン崩れ指数 — 会場別閾値・特徴量再設計`);
+  console.log(`📅 期間: 過去${DAYS}日 (${sinceStr} 〜)\n`);
+
+  // データ取得
+  const races = await fetchRaces(sinceStr);
+  const results = await fetchResults(sinceStr);
+  const joined = joinRaceResults(races, results);
+
+  const globalBaseline = calcFlipBaseline(joined);
+
+  console.log(`総レース数: ${joined.length.toLocaleString()} 件`);
+  console.log(`全体ベースライン: ${pct(globalBaseline)}\n`);
+
+  // 会場別データ分割
+  const byVenue = groupByVenue(joined);
+  const venueStats = buildVenueStats(byVenue);
+
+  printVenueBaselines(venueStats, globalBaseline);
+  const recommendedThresholds = printThresholdOptimization(venueStats, byVenue);
+  const featureSummary = printFeatureEffectiveness(venueStats, byVenue);
+  printVenueGroups(venueStats, recommendedThresholds, featureSummary);
+  printThresholdTable(venueStats, recommendedThresholds);
+  printAccuracyComparison(venueStats, byVenue, recommendedThresholds);
 }
 
 main().catch((e) => {
