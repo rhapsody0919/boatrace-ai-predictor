@@ -35,7 +35,7 @@
  *    入れ替え前なら機力指数を出さない
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dataLayerCall, dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
@@ -286,13 +286,8 @@ check(
   chart.includes("period: powerIndex.clipped_by_generation") &&
     chart.includes("analysis.motor.periodSinceGeneration"),
 );
-// 選手ページの今節のモーター。RA40（BOA-1673）で racerService.js から motorQueries7.js へ移すので、
-// 移す前後のどちらでも本体のある方を読む（移した後に元の場所の分岐は外す）
-const racer = read(
-  existsSync(path.join(root, "src/services/motorQueries7.js"))
-    ? "src/services/motorQueries7.js"
-    : "src/services/racerService.js",
-);
+// 選手ページの今節のモーター（RA40 BOA-1673 で racerService.js から移した）
+const racer = read("src/services/motorQueries7.js");
 check(
   "選手ページ: 直近出走が入れ替え前なら機力指数・公式成績を出さない",
   racer.includes("date < generationStart") &&
