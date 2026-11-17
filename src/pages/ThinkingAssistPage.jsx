@@ -133,88 +133,106 @@ function useAppHeaderHeight() {
   return height;
 }
 
+const withMetricReset = (state, patch) => ({
+  ...state,
+  ...patch,
+  metric: null,
+});
+const withBoxUndoReset = (state, patch) => ({
+  ...state,
+  ...patch,
+  boxUndo: null,
+});
+
+function reduceDeep(state, action) {
+  return withMetricReset(state, {
+    deep: state.deep === action.boat ? null : action.boat,
+    deepAll: false,
+  });
+}
+
+// 軸の要約の入口1行。押し直しでも閉じない（艇の丸と違い、いつも開く）
+function reduceOpenFacts(state, action) {
+  return withMetricReset(state, {
+    deep: action.boat,
+    deepAll: action.all,
+    deepNonce: state.deepNonce + 1,
+  });
+}
+
+// 値を押したら図を6艇比較に変えるだけ。深掘りは開かない（開くと深掘りへ送られて比べた図が見えない。BOA-808 1）
+function reduceMetric(state, action) {
+  return {
+    ...state,
+    metric: state.metric === action.metric ? null : action.metric,
+  };
+}
+
+function reduceToggleBet(state, action) {
+  const next = new Set(state.bets[action.pos]);
+  if (next.has(action.boat)) next.delete(action.boat);
+  else next.add(action.boat);
+  return {
+    ...state,
+    bets: { ...state.bets, [action.pos]: next },
+    boxUndo: null,
+  };
+}
+
+function reduceBox(state) {
+  return {
+    ...state,
+    bets: boxBets(state.bets, assistBetType(state.betType).legs),
+    boxUndo: state.bets,
+  };
+}
+
+function reduceUndoBox(state) {
+  return state.boxUndo
+    ? { ...state, bets: state.boxUndo, boxUndo: null }
+    : state;
+}
+
+// ガイドの段に合わせてレンズを切り替え、深掘りを閉じる。閉じても買い目・レンズは残す（FR-10）
+function reduceGuide(state, action) {
+  return action.step == null
+    ? { ...state, guide: null }
+    : {
+        ...state,
+        guide: action.step,
+        lens: action.lens,
+        deep: null,
+        metric: null,
+      };
+}
+
+const REDUCERS = {
+  lens: (state, action) => withMetricReset(state, { lens: action.lens }),
+  stage: (state, action) => withMetricReset(state, { stage: action.stage }),
+  target: (state, action) => ({ ...state, target: action.target }),
+  deep: reduceDeep,
+  openFacts: reduceOpenFacts,
+  metric: reduceMetric,
+  back: (state) => withMetricReset(state, {}),
+  stBasis: (state, action) => withMetricReset(state, { stBasis: action.basis }),
+  flowForm: (state, action) => ({ ...state, flowForm: action.form }),
+  placeAxis: (state, action) => ({ ...state, placeAxis: action.boat }),
+  closeDeep: (state) => withMetricReset(state, { deep: null }),
+  toggleBet: reduceToggleBet,
+  betType: (state, action) =>
+    withBoxUndoReset(state, { betType: action.betType }),
+  box: reduceBox,
+  undoBox: reduceUndoBox,
+  budget: (state, action) => withBoxUndoReset(state, { budget: action.budget }),
+  mode: (state, action) => withBoxUndoReset(state, { mode: action.mode }),
+  sheet: (state, action) => withBoxUndoReset(state, { sheet: action.sheet }),
+  guide: reduceGuide,
+};
+
 function reducer(state, action) {
-  switch (action.type) {
-    case "lens":
-      return { ...state, lens: action.lens, metric: null };
-    case "stage":
-      return { ...state, stage: action.stage, metric: null };
-    case "target":
-      return { ...state, target: action.target };
-    case "deep":
-      return {
-        ...state,
-        deep: state.deep === action.boat ? null : action.boat,
-        deepAll: false,
-        metric: null,
-      };
-    case "openFacts":
-      // 軸の要約の入口1行。押し直しでも閉じない（艇の丸と違い、いつも開く）
-      return {
-        ...state,
-        deep: action.boat,
-        deepAll: action.all,
-        deepNonce: state.deepNonce + 1,
-        metric: null,
-      };
-    case "metric":
-      // 値を押したら図を6艇比較に変えるだけ。深掘りは開かない（開くと深掘りへ送られて比べた図が見えない。BOA-808 1）
-      return {
-        ...state,
-        metric: state.metric === action.metric ? null : action.metric,
-      };
-    case "back":
-      return { ...state, metric: null };
-    case "stBasis":
-      return { ...state, stBasis: action.basis, metric: null };
-    case "flowForm":
-      return { ...state, flowForm: action.form };
-    case "placeAxis":
-      return { ...state, placeAxis: action.boat };
-    case "closeDeep":
-      return { ...state, deep: null, metric: null };
-    case "toggleBet": {
-      const next = new Set(state.bets[action.pos]);
-      if (next.has(action.boat)) next.delete(action.boat);
-      else next.add(action.boat);
-      return {
-        ...state,
-        bets: { ...state.bets, [action.pos]: next },
-        boxUndo: null,
-      };
-    }
-    case "betType":
-      return { ...state, betType: action.betType, boxUndo: null };
-    case "box":
-      return {
-        ...state,
-        bets: boxBets(state.bets, assistBetType(state.betType).legs),
-        boxUndo: state.bets,
-      };
-    case "undoBox":
-      return state.boxUndo
-        ? { ...state, bets: state.boxUndo, boxUndo: null }
-        : state;
-    case "budget":
-      return { ...state, budget: action.budget, boxUndo: null };
-    case "mode":
-      return { ...state, mode: action.mode, boxUndo: null };
-    case "sheet":
-      return { ...state, sheet: action.sheet, boxUndo: null };
-    case "guide":
-      // ガイドの段に合わせてレンズを切り替え、深掘りを閉じる。閉じても買い目・レンズは残す（FR-10）
-      return action.step == null
-        ? { ...state, guide: null }
-        : {
-            ...state,
-            guide: action.step,
-            lens: action.lens,
-            deep: null,
-            metric: null,
-          };
-    default:
-      throw new Error(`思考アシスト: 知らない操作 ${action.type}`);
-  }
+  if (!Object.hasOwn(REDUCERS, action.type))
+    throw new Error(`思考アシスト: 知らない操作 ${action.type}`);
+  return REDUCERS[action.type](state, action);
 }
 
 /** 候補から欠場の艇を外す（表示と点数用。状態の候補は残し、外したことを知らせる。D-38） */
@@ -1016,12 +1034,8 @@ function buildBetSummary({
   };
 }
 
-function ThinkingAssistBody() {
-  const { raceId } = useParams();
-  const parsedRaceId = parseRaceId(raceId);
-  useRobotsMeta(!THINKING_ASSIST_PUBLIC);
-  const [state, dispatch] = useReducer(reducer, raceId, initState);
-  // 買い目・予算・配分の方式・着順・レンズを同じタブの中に残す（2026-10-11 ユーザーの不具合報告）
+// 買い目・予算・配分の方式・着順・レンズを同じタブの中に残す（2026-10-11 ユーザーの不具合報告）
+function useAssistSessionSave(raceId, state) {
   useEffect(() => {
     saveAssistSession(raceId, state);
     // 残す項目が変わったときだけ書く（深掘り・シートの開閉では書かない）
@@ -1036,8 +1050,11 @@ function ThinkingAssistBody() {
     state.lens,
     state.placeAxis,
   ]);
-  // 操作を GA4 に送ってから状態を変える。送るかどうかは押す前の状態で決める（docs/design/thinking-assist/events.md）。
-  // シート・ガイドの memo の中からも呼ぶので、状態は描画のたびに ref へ移して act 自体は作り直さない
+}
+
+// 操作を GA4 に送ってから状態を変える。送るかどうかは押す前の状態で決める（docs/design/thinking-assist/events.md）。
+// シート・ガイドの memo の中からも呼ぶので、状態は描画のたびに ref へ移して act 自体は作り直さない
+function useAssistAct(raceId, state, dispatch) {
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
@@ -1048,38 +1065,57 @@ function ThinkingAssistBody() {
       if (ev) trackEvent(ev.name, { race_id: raceId, ...ev.params });
       dispatch(action);
     },
-    [raceId],
+    [raceId, dispatch],
   );
   const onTarget = useCallback(
     (target) => act({ type: "target", target }),
     [act],
   );
-  const [showViewSwitch] = useState(isThinkingAssistEnabled);
-  const data = useThinkingAssistData(raceId, {
-    stage: state.stage,
-    deep: state.deep,
-    venueOpen: state.sheet === "venue",
-  });
-  const race = data.racecard.data;
+  return { act, onTarget };
+}
+
+// v16 の状態から見た値（hooks なし）
+function assistV16Of(data) {
   const today = data.facts.data?.today ?? null;
   const v16Status = data.facts.data?.status ?? null;
   // 欠場は v16 の状態と DB の展示の両方で見る（どちらかで分かれば v16 の部分を出さない。screens「欠場があった」、Codex 依頼27 F03）
   const absentKnown = v16Status === "absent" || data.absentBoats.length > 0;
   const v16Off = absentKnown || v16Status === "not_saved";
-  const cancelled = isRaceCancelled(race);
-  const headerHeight = useAppHeaderHeight();
-  const finalRound = Boolean(data.round);
-  const trifecta = data.odds.data?.trifecta ?? null;
-  const post = data.stage === "post";
   const factsAll = v16Off ? null : (data.facts.data?.facts ?? null);
   const v16Exhibition = data.facts.data?.exhibition ?? null;
   const ncScenario = v16Off ? null : (data.scenario.nc.data?.scenario ?? null);
+  return {
+    today,
+    v16Status,
+    absentKnown,
+    v16Off,
+    factsAll,
+    v16Exhibition,
+    ncScenario,
+  };
+}
+
+// データから素直に取り出せる値（hooks なし）
+function assistBase(data) {
+  const race = data.racecard.data;
+  const post = data.stage === "post";
   const maintenanceRows =
     post && data.maintenance.status === "ready"
       ? (data.maintenance.data?.rows ?? null)
       : null;
+  return {
+    ...assistV16Of(data),
+    race,
+    cancelled: isRaceCancelled(race),
+    finalRound: Boolean(data.round),
+    trifecta: data.odds.data?.trifecta ?? null,
+    post,
+    maintenanceRows,
+  };
+}
 
-  const racers = useMemo(
+function useAssistRacers(data, race, today) {
+  return useMemo(
     () =>
       buildRacers({
         players: race?.players ?? [],
@@ -1089,10 +1125,13 @@ function ThinkingAssistBody() {
       }),
     [race, today, data.exhibition.data, data.rates.data],
   );
+}
 
-  // 艇ごとの差がつく材料（範囲は v16 の既定、優勝戦・準優勝戦の日は同じラウンド。D-37）。1着だけ
-  // （軸は1着の問い。2着以内・3着以内は相手レンズ、買い目の「過去の〇〇」は pastWin。spec D-46）
-  const winFacts = useMemo(
+// 艇ごとの差がつく材料（範囲は v16 の既定、優勝戦・準優勝戦の日は同じラウンド。D-37）。1着だけ
+// （軸は1着の問い。2着以内・3着以内は相手レンズ、買い目の「過去の〇〇」は pastWin。spec D-46）
+function useAssistWinFacts(data, b) {
+  const { factsAll, today, v16Exhibition, post, finalRound } = b;
+  return useMemo(
     () =>
       [1, 2, 3, 4, 5, 6].map((boat) => {
         const scope = factsScope(factsAll, today, boat, data.round);
@@ -1111,19 +1150,24 @@ function ThinkingAssistBody() {
       }),
     [factsAll, today, data.round, v16Exhibition, post, finalRound],
   );
-  const boatFacts = winFacts;
-  // 買い目レンズの「過去の{着順}」（艇ごとの範囲。6艇で比べない。着順の切り替えは買い目だけ）
-  const pastWin = useMemo(
+}
+
+// 買い目レンズの「過去の{着順}」（艇ごとの範囲。6艇で比べない。着順の切り替えは買い目だけ）
+function usePastWin(boatFacts, target) {
+  return useMemo(
     () =>
       new Map(
         boatFacts
-          .map((f, i) => [i + 1, b1Usual(f.scope, i + 1, state.target)])
+          .map((f, i) => [i + 1, b1Usual(f.scope, i + 1, target)])
           .filter(([, u]) => u),
       ),
-    [boatFacts, state.target],
+    [boatFacts, target],
   );
-  // 相手レンズの各艇の2着以内・3着以内（艇ごとの範囲。軸・買い目の切り替えに関わらない。spec D-46）
-  const placeRates = useMemo(
+}
+
+// 相手レンズの各艇の2着以内・3着以内（艇ごとの範囲。軸・買い目の切り替えに関わらない。spec D-46）
+function usePlaceRates(winFacts) {
+  return useMemo(
     () =>
       new Map(
         winFacts
@@ -1138,6 +1182,18 @@ function ThinkingAssistBody() {
       ),
     [winFacts],
   );
+}
+
+function useAssistFacts(state, data, b) {
+  const racers = useAssistRacers(data, b.race, b.today);
+  const winFacts = useAssistWinFacts(data, b);
+  const boatFacts = winFacts;
+  const pastWin = usePastWin(boatFacts, state.target);
+  const placeRates = usePlaceRates(winFacts);
+  return { racers, winFacts, boatFacts, pastWin, placeRates };
+}
+
+function useAssistFlow(state, ncScenario, today) {
   const hints = useMemo(
     () => (ncScenario ? hintSummary(ncScenario, today) : null),
     [ncScenario, today],
@@ -1149,7 +1205,12 @@ function ThinkingAssistBody() {
   );
   const flowHint =
     flowForms.find((f) => f.form === state.flowForm) ?? flowForms[0] ?? null;
+  return { hints, flowForms, flowHint };
+}
 
+function useAssistBoard(state, data, c) {
+  const { boatFacts, flowHint, post, racers, maintenanceRows } = c;
+  const { trifecta, finalRound, today, pastWin, placeRates, v16Status } = c;
   // 図の印（screens「レンズごとの図 C」の印）
   const marks = useMemo(
     () =>
@@ -1201,8 +1262,12 @@ function ThinkingAssistBody() {
       v16Status,
     ],
   );
+  return { marks, model };
+}
 
-  const scope = useMemo(
+function useAssistScope(data, b) {
+  const { v16Off, today, race } = b;
+  return useMemo(
     () =>
       v16Off
         ? null
@@ -1213,22 +1278,9 @@ function ThinkingAssistBody() {
           }),
     [v16Off, today, race, data.scenario.byKey],
   );
-  const national = anyCell(data.scenario.na.data);
-  const vaScenario = data.scenario.va.data?.scenario ?? null;
-  // 最初に選ばれている軸の艇（spec D-48 (6)）: 前に選んだ艇（同じタブ・同じレースの保存）→ 1着の候補が1艇だけならその艇 → 1号艇
-  const { placeAuto, placeAxis } = placeAxisOf(state, data.absentBoats);
-  const placeF = winFollowers(vaScenario, placeAxis);
-  const venueAll = anyCell(data.scenario.va.data);
-  // BOA-822（機能フラグの側）: 1着のバーはイン崩れ注意度の裏返し。案内（guideSteps）・カード・シートで同じ値を使う
-  const inCautionMode = isInCautionEnabled();
-  const inCaution = inCautionMode ? (race?.inCaution ?? null) : null;
-  const rough = inCautionMode
-    ? roughWithInCaution(roughCard(scope, national), inCaution)
-    : roughCard(scope, national);
-  const lineup = classLineup(today?.classes, 1);
-  const similar = v16Off ? null : similarSummary(data.similar.data?.similar);
-  const similarFailed = !v16Off && data.similar.status === "error";
+}
 
+function useAssistBets(state, data) {
   // 欠場の艇は候補から外して数える（D-38）。欠場が分かる前に組んだ組は外したことを1行で知らせる
   const bets = useMemo(
     () => withoutBoats(state.bets, data.absentBoats),
@@ -1245,123 +1297,22 @@ function ThinkingAssistBody() {
       ),
     [state.bets, data.absentBoats, betType.legs, betType.ordered],
   );
-  const { removedNote, oddsNote, partNotes } = betNotes(
-    state,
-    data,
-    betType,
-    tickets,
-  );
-  // 選んでいる券種のオッズ（締切時オッズがあればその値。BOA-990）。図・ヘッダー・よく出た3連単は3連単のまま
-  const typeOdds = data.odds.data?.byType?.[betType.id] ?? null;
-  const betOdds = typeOdds?.odds ?? null;
-  // 拡連複は合成オッズを出さない（betTypeComposite。BOA-990 ③）
-  const composite = betTypeComposite(betType, betOdds, tickets);
-  const oddsAt = formatObservedTime(data.odds.data?.capturedAt);
-  const betOddsAt = formatObservedTime(typeOdds?.capturedAt);
-  const compareRows = buildCompareRows(state, data, bets);
-  const onBetType = (id, from) => act({ type: "betType", betType: id, from });
+  return { bets, betType, tickets };
+}
 
+function useAssistSheetActs(dispatch) {
   const toggleBet = useCallback(
     (pos, boat) => dispatch({ type: "toggleBet", pos, boat }),
-    [],
+    [dispatch],
   );
   const closeSheet = useCallback(
     () => dispatch({ type: "sheet", sheet: null }),
-    [],
+    [dispatch],
   );
+  return { toggleBet, closeSheet };
+}
 
-  const roughStatus = roughState({
-    factsStatus: data.facts.status,
-    today,
-    ncStatus: data.scenario.nc.status,
-    naStatus: data.scenario.na.status,
-  });
-
-  const venueName = race?.venue ?? null;
-  const courseByBoat = courseByBoatOf(maintenanceRows);
-  const vaKey = today?.scope_keys?.["1"]?.VA;
-  const motorFact = winFacts[0].chips.find(
-    (c) => c.key === "motor_2" && c.hit && c.level === "large",
-  );
-  const b1u = b1Usual(winFacts[0].scope);
-  const betSummary = buildBetSummary({
-    tickets,
-    betOdds,
-    typeOdds,
-    betType,
-    data,
-    state,
-    betOddsAt,
-    oddsNote,
-    race,
-    dispatch,
-  });
-  const summary = buildSummary({
-    factsAll,
-    boatFacts,
-    winFacts,
-    venueName,
-    scope,
-    rough,
-    vaKey,
-    venueAll,
-    today,
-    act,
-    ncScenario,
-    post,
-    v16Exhibition,
-    courseByBoat,
-    similar,
-    data,
-    v16Status,
-    racers,
-    flowHint,
-    flowForms,
-    v16Off,
-    state,
-    maintenanceRows,
-    motorFact,
-    b1u,
-    placeF,
-    vaScenario,
-    placeAxis,
-    placeAuto,
-    raceId,
-    tickets,
-    betSummary,
-    compareRows,
-    onBetType,
-    trifecta,
-    oddsAt,
-    race,
-    national,
-  });
-  const deepBoat = state.deep;
-  const deepRunsReady =
-    data.runs.racerId != null &&
-    data.runs.racerId === racers[(deepBoat ?? 1) - 1]?.racerId;
-
-  const theoryCtx = buildTheoryCtx({
-    post,
-    venueName,
-    data,
-    ncScenario,
-    v16Off,
-    today,
-    v16Exhibition,
-    courseByBoat,
-    boatFacts,
-    racers,
-    vaKey,
-    factsAll,
-    race,
-    maintenanceRows,
-  });
-  const sheetCard =
-    state.sheet?.type === "theory"
-      ? theoryCard(state.sheet.id, { ...theoryCtx, boat: state.sheet.boat })
-      : null;
-  const steps = guideSteps({ post, rough, hintTop: hints?.top ?? null });
+function useAssistGuide(act, steps) {
   const sheetApi = useMemo(
     () => ({
       openTerm: (term) => act({ type: "sheet", sheet: { type: "term", term } }),
@@ -1381,66 +1332,146 @@ function ThinkingAssistBody() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [act],
   );
-  const restCounts = restClassCounts(today?.classes, 1);
+  return { sheetApi, onGuideStep };
+}
 
-  const sheetOpen = state.sheet !== null;
-  const view = {
-    state,
-    data,
-    race,
-    raceId,
-    oddsAt,
-    dispatch,
-    act,
-    post,
-    v16Status,
-    partNotes,
-    v16Off,
-    absentKnown,
-    rough,
-    scope,
-    lineup,
-    today,
-    roughStatus,
+// 札・案内・ラフ度まわりの値（hooks なし）
+function assistRoughOf(c) {
+  const { state, data, race, today, v16Off, scope } = c;
+  const national = anyCell(data.scenario.na.data);
+  const vaScenario = data.scenario.va.data?.scenario ?? null;
+  // 最初に選ばれている軸の艇（spec D-48 (6)）: 前に選んだ艇（同じタブ・同じレースの保存）→ 1着の候補が1艇だけならその艇 → 1号艇
+  const { placeAuto, placeAxis } = placeAxisOf(state, data.absentBoats);
+  const placeF = winFollowers(vaScenario, placeAxis);
+  const venueAll = anyCell(data.scenario.va.data);
+  // BOA-822（機能フラグの側）: 1着のバーはイン崩れ注意度の裏返し。案内（guideSteps）・カード・シートで同じ値を使う
+  const inCautionMode = isInCautionEnabled();
+  const inCaution = inCautionMode ? (race?.inCaution ?? null) : null;
+  const rough = inCautionMode
+    ? roughWithInCaution(roughCard(scope, national), inCaution)
+    : roughCard(scope, national);
+  const lineup = classLineup(today?.classes, 1);
+  const similar = v16Off ? null : similarSummary(data.similar.data?.similar);
+  const similarFailed = !v16Off && data.similar.status === "error";
+  return {
+    national,
+    vaScenario,
+    placeAuto,
+    placeAxis,
+    placeF,
+    venueAll,
     inCautionMode,
-    onGuideStep,
-    summary,
-    cancelled,
-    betType,
-    onBetType,
-    model,
-    racers,
-    bets,
-    oddsNote,
-    toggleBet,
-    marks,
-    onTarget,
-    deepBoat,
-    venueName,
-    finalRound,
-    boatFacts,
-    deepRunsReady,
-    maintenanceRows,
-    courseByBoat,
-    betOdds,
-    tickets,
-    composite,
-    removedNote,
-    steps,
-    betSummary,
-    closeSheet,
+    inCaution,
+    rough,
+    lineup,
     similar,
     similarFailed,
-    national,
-    venueAll,
-    inCaution,
-    sheetCard,
-    restCounts,
+  };
+}
+
+// 買い目・オッズまわりの値（hooks なし）
+function assistOddsOf(c) {
+  const { state, data, betType, tickets, bets, act } = c;
+  const { removedNote, oddsNote, partNotes } = betNotes(
+    state,
+    data,
+    betType,
+    tickets,
+  );
+  // 選んでいる券種のオッズ（締切時オッズがあればその値。BOA-990）。図・ヘッダー・よく出た3連単は3連単のまま
+  const typeOdds = data.odds.data?.byType?.[betType.id] ?? null;
+  const betOdds = typeOdds?.odds ?? null;
+  // 拡連複は合成オッズを出さない（betTypeComposite。BOA-990 ③）
+  const composite = betTypeComposite(betType, betOdds, tickets);
+  const oddsAt = formatObservedTime(data.odds.data?.capturedAt);
+  const betOddsAt = formatObservedTime(typeOdds?.capturedAt);
+  const compareRows = buildCompareRows(state, data, bets);
+  const onBetType = (id, from) => act({ type: "betType", betType: id, from });
+  return {
+    removedNote,
+    oddsNote,
+    partNotes,
+    typeOdds,
+    betOdds,
+    composite,
+    oddsAt,
+    betOddsAt,
+    compareRows,
+    onBetType,
+  };
+}
+
+// 場名・コース・買い目の要約など（hooks なし）
+function assistLabelsOf(c) {
+  const { data, state, race, today, maintenanceRows, winFacts } = c;
+  const roughStatus = roughState({
+    factsStatus: data.facts.status,
+    today,
+    ncStatus: data.scenario.nc.status,
+    naStatus: data.scenario.na.status,
+  });
+  const venueName = race?.venue ?? null;
+  const courseByBoat = courseByBoatOf(maintenanceRows);
+  const vaKey = today?.scope_keys?.["1"]?.VA;
+  const motorFact = winFacts[0].chips.find(
+    (f) => f.key === "motor_2" && f.hit && f.level === "large",
+  );
+  const b1u = b1Usual(winFacts[0].scope);
+  const betSummary = buildBetSummary({
+    tickets: c.tickets,
+    betOdds: c.betOdds,
+    typeOdds: c.typeOdds,
+    betType: c.betType,
+    data,
+    state,
+    betOddsAt: c.betOddsAt,
+    oddsNote: c.oddsNote,
+    race,
+    dispatch: c.dispatch,
+  });
+  return {
+    roughStatus,
+    venueName,
+    courseByBoat,
+    vaKey,
+    motorFact,
+    b1u,
+    betSummary,
+  };
+}
+
+// シート・深掘り・案内の段まわりの値（hooks なし）
+function assistSheetOf(c) {
+  const { state, data, racers, today } = c;
+  const deepBoat = state.deep;
+  const deepRunsReady =
+    data.runs.racerId != null &&
+    data.runs.racerId === racers[(deepBoat ?? 1) - 1]?.racerId;
+  const theoryCtx = buildTheoryCtx(c);
+  const sheetCard =
+    state.sheet?.type === "theory"
+      ? theoryCard(state.sheet.id, { ...theoryCtx, boat: state.sheet.boat })
+      : null;
+  const steps = guideSteps({
+    post: c.post,
+    rough: c.rough,
+    hintTop: c.hints?.top ?? null,
+  });
+  const restCounts = restClassCounts(today?.classes, 1);
+  const sheetOpen = state.sheet !== null;
+  return {
+    deepBoat,
+    deepRunsReady,
     theoryCtx,
-    headerHeight,
+    sheetCard,
+    steps,
+    restCounts,
     sheetOpen,
   };
+}
 
+function AssistPageShell({ view, sheetApi, showViewSwitch, parsedRaceId }) {
+  const { raceId, venueName, headerHeight, sheetOpen } = view;
   return (
     <AssistSheetContext.Provider value={sheetApi}>
       <title>{`${ASSIST_COPY.title}（${raceId}）`}</title>
@@ -1472,5 +1503,44 @@ function ThinkingAssistBody() {
       </main>
       <AssistSheets {...view} />
     </AssistSheetContext.Provider>
+  );
+}
+
+function ThinkingAssistBody() {
+  const { raceId } = useParams();
+  const parsedRaceId = parseRaceId(raceId);
+  useRobotsMeta(!THINKING_ASSIST_PUBLIC);
+  const [state, dispatch] = useReducer(reducer, raceId, initState);
+  useAssistSessionSave(raceId, state);
+  const { act, onTarget } = useAssistAct(raceId, state, dispatch);
+  const [showViewSwitch] = useState(isThinkingAssistEnabled);
+  const data = useThinkingAssistData(raceId, {
+    stage: state.stage,
+    deep: state.deep,
+    venueOpen: state.sheet === "venue",
+  });
+  const b = assistBase(data);
+  const headerHeight = useAppHeaderHeight();
+  const facts = useAssistFacts(state, data, b);
+  const flow = useAssistFlow(state, b.ncScenario, b.today);
+  const base = { raceId, state, dispatch, act, onTarget, data, headerHeight };
+  const c0 = { ...base, ...b, ...facts, ...flow };
+  const board = useAssistBoard(state, data, c0);
+  const scope = useAssistScope(data, b);
+  const bet = useAssistBets(state, data);
+  const { toggleBet, closeSheet } = useAssistSheetActs(dispatch);
+  const c1 = { ...c0, ...board, scope, ...bet, toggleBet, closeSheet };
+  const c2 = { ...c1, ...assistRoughOf(c1), ...assistOddsOf(c1) };
+  const c3 = { ...c2, ...assistLabelsOf(c2) };
+  const c4 = { ...c3, summary: buildSummary(c3), ...assistSheetOf(c3) };
+  const { sheetApi, onGuideStep } = useAssistGuide(act, c4.steps);
+  const view = { ...c4, onGuideStep };
+  return (
+    <AssistPageShell
+      view={view}
+      sheetApi={sheetApi}
+      showViewSwitch={showViewSwitch}
+      parsedRaceId={parsedRaceId}
+    />
   );
 }

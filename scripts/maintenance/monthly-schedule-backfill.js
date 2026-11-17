@@ -59,84 +59,66 @@ const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const jstMonth = (now = new Date()) =>
   ymOf(new Date(now.getTime() + JST_OFFSET_MS).toISOString().slice(0, 10));
 
+// 文字列・数値・旗のオプション名 → opts のキー（Map なので "constructor" 等の名前は不明扱いになる）
+const STRING_OPTIONS = new Map([
+  ["from", "from"],
+  ["to", "to"],
+  ["window", "window"],
+]);
+const NUMBER_OPTIONS = new Map([
+  ["daily-limit", "dailyLimit"],
+  ["interval-min-ms", "intervalMinMs"],
+  ["interval-max-ms", "intervalMaxMs"],
+  ["assumed-latency-ms", "latencyMs"],
+  ["max-requests", "maxRequests"],
+  ["batch-size", "batchSize"],
+  ["sleep-ms", "sleepMs"],
+]);
+const FLAG_OPTIONS = new Map([
+  ["dry-run", "dryRun"],
+  ["apply", "apply"],
+  ["force", "force"],
+  ["refresh", "refresh"],
+  ["plain", "plain"],
+]);
+
+const defaultOptions = (command, now) => ({
+  command,
+  from: MS_EARLIEST_YM,
+  to: shiftYm(jstMonth(now), 1),
+  archiveDir: path.join(REPO_ROOT, "data/monthly-schedule-archive"),
+  dailyLimit: 200,
+  window: "22-06",
+  intervalMinMs: 3000,
+  intervalMaxMs: 5000,
+  latencyMs: 10000,
+  maxRequests: Infinity,
+  dryRun: false,
+  apply: false,
+  force: false,
+  refresh: false,
+  plain: false,
+  batchSize: 200,
+  sleepMs: 500,
+  expectedVenues: 24, // 月間スケジュールの会場数（全24会場）。これと異なれば構造の変更とみなす
+});
+
+function applyOption(opts, arg, k, v) {
+  if (STRING_OPTIONS.has(k)) opts[STRING_OPTIONS.get(k)] = v;
+  else if (k === "archive-dir") opts.archiveDir = path.resolve(v);
+  else if (NUMBER_OPTIONS.has(k)) opts[NUMBER_OPTIONS.get(k)] = Number(v);
+  else if (FLAG_OPTIONS.has(k)) opts[FLAG_OPTIONS.get(k)] = true;
+  else throw new Error(`不明なオプション: ${arg}`);
+}
+
 export function parseArgs(argv, now = new Date()) {
   const [command, ...rest] = argv;
-  const opts = {
-    command,
-    from: MS_EARLIEST_YM,
-    to: shiftYm(jstMonth(now), 1),
-    archiveDir: path.join(REPO_ROOT, "data/monthly-schedule-archive"),
-    dailyLimit: 200,
-    window: "22-06",
-    intervalMinMs: 3000,
-    intervalMaxMs: 5000,
-    latencyMs: 10000,
-    maxRequests: Infinity,
-    dryRun: false,
-    apply: false,
-    force: false,
-    refresh: false,
-    plain: false,
-    batchSize: 200,
-    sleepMs: 500,
-    expectedVenues: 24, // 月間スケジュールの会場数（全24会場）。これと異なれば構造の変更とみなす
-  };
+  const opts = defaultOptions(command, now);
   for (const arg of rest) {
     const [k, v] = arg.startsWith("--")
       ? arg.slice(2).split("=")
       : [arg, undefined];
-    switch (k) {
-      case "from":
-        opts.from = v;
-        break;
-      case "to":
-        opts.to = v;
-        break;
-      case "archive-dir":
-        opts.archiveDir = path.resolve(v);
-        break;
-      case "daily-limit":
-        opts.dailyLimit = Number(v);
-        break;
-      case "window":
-        opts.window = v;
-        break;
-      case "interval-min-ms":
-        opts.intervalMinMs = Number(v);
-        break;
-      case "interval-max-ms":
-        opts.intervalMaxMs = Number(v);
-        break;
-      case "assumed-latency-ms":
-        opts.latencyMs = Number(v);
-        break;
-      case "max-requests":
-        opts.maxRequests = Number(v);
-        break;
-      case "batch-size":
-        opts.batchSize = Number(v);
-        break;
-      case "sleep-ms":
-        opts.sleepMs = Number(v);
-        break;
-      case "dry-run":
-        opts.dryRun = true;
-        break;
-      case "apply":
-        opts.apply = true;
-        break;
-      case "force":
-        opts.force = true;
-        break;
-      case "refresh":
-        opts.refresh = true;
-        break;
-      case "plain":
-        opts.plain = true;
-        break;
-      default:
-        throw new Error(`不明なオプション: ${arg}`);
-    }
+    applyOption(opts, arg, k, v);
   }
   return opts;
 }
@@ -232,6 +214,36 @@ export async function cmdDownload(opts, deps = {}) {
 // parse
 // ---------------------------------------------------------------------------
 
+/**
+ * 1か月分の生ファイルを解析して書く。既存の解析結果が新しければ何もしない。
+ * @returns {boolean} 書いたら true、既存スキップなら false
+ */
+function parseOneMonth(opts, ym, m, log) {
+  const out = parsedPath(opts.archiveDir, ym, opts.plain);
+  // refresh で取り直した月は、マニフェストの取得時刻が解析結果より新しい
+  const stale =
+    fs.existsSync(out) && fs.statSync(out).mtimeMs < Date.parse(m.fetchedAt);
+  if (!opts.force && !stale && fs.existsSync(out)) return false;
+  const gz = fs.readFileSync(rawPath(opts.archiveDir, ym));
+  if (m.sha256 && sha256(new Uint8Array(zlib.gunzipSync(gz))) !== m.sha256)
+    throw new Error(`${ym}: 生ファイルのsha256がマニフェストと一致しません`);
+  const page = parseMonthlySchedule(zlib.gunzipSync(gz).toString("utf8"), ym);
+  const s = summarizeMonthlySchedule(page);
+  if (page.anomalies.length > 0)
+    appendJsonl(path.join(opts.archiveDir, "parsed", "anomalies.jsonl"), {
+      ym,
+      anomalies: page.anomalies,
+      at: new Date().toISOString(),
+    });
+  const json = JSON.stringify(page);
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  fs.writeFileSync(out, opts.plain ? json : zlib.gzipSync(json));
+  log(
+    `${ym} 会場${s.venues} 節の断片${s.segments} 窓${s.window.from}〜${s.window.to} ${s.anomalies ? `⚠ 要確認${s.anomalies}` : "ok"}`,
+  );
+  return true;
+}
+
 export async function cmdParse(opts, deps = {}) {
   const log = deps.log ?? console.log;
   const manifest = latestManifestByKey(opts.archiveDir);
@@ -242,32 +254,8 @@ export async function cmdParse(opts, deps = {}) {
     const m = manifest.get(ym);
     if (m?.status !== "ok") continue;
     targets++;
-    const out = parsedPath(opts.archiveDir, ym, opts.plain);
-    // refresh で取り直した月は、マニフェストの取得時刻が解析結果より新しい
-    const stale =
-      fs.existsSync(out) && fs.statSync(out).mtimeMs < Date.parse(m.fetchedAt);
-    if (!opts.force && !stale && fs.existsSync(out)) {
-      skipped++;
-      continue;
-    }
-    const gz = fs.readFileSync(rawPath(opts.archiveDir, ym));
-    if (m.sha256 && sha256(new Uint8Array(zlib.gunzipSync(gz))) !== m.sha256)
-      throw new Error(`${ym}: 生ファイルのsha256がマニフェストと一致しません`);
-    const page = parseMonthlySchedule(zlib.gunzipSync(gz).toString("utf8"), ym);
-    const s = summarizeMonthlySchedule(page);
-    if (page.anomalies.length > 0)
-      appendJsonl(path.join(opts.archiveDir, "parsed", "anomalies.jsonl"), {
-        ym,
-        anomalies: page.anomalies,
-        at: new Date().toISOString(),
-      });
-    const json = JSON.stringify(page);
-    fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, opts.plain ? json : zlib.gzipSync(json));
-    written++;
-    log(
-      `${ym} 会場${s.venues} 節の断片${s.segments} 窓${s.window.from}〜${s.window.to} ${s.anomalies ? `⚠ 要確認${s.anomalies}` : "ok"}`,
-    );
+    if (parseOneMonth(opts, ym, m, log)) written++;
+    else skipped++;
   }
   log(
     `\nparse: 対象 ${targets}か月 / 出力 ${written} / 既存スキップ ${skipped}`,
@@ -305,10 +293,11 @@ export function buildLoadPlan(opts) {
   return { ...planRaceSeriesRows(pages, opts.from, opts.to), missingMonths };
 }
 
-export async function cmdLoad(opts, deps = {}) {
-  const log = deps.log ?? console.log;
-  const sleepFn = deps.sleep ?? sleepDefault;
-  const plan = buildLoadPlan(opts);
+/**
+ * 投入前の確認。問題があれば理由を出して終了コード 1 を、無ければ null を返す。
+ * @returns {number|null}
+ */
+function checkLoadPlan(plan, log) {
   if (plan.missingMonths.length > 0) {
     console.error(
       `節を確定するには前後1か月のページが必要です。解析済みでない月: ${plan.missingMonths.join(", ")}（download → parse を先に実行してください）`,
@@ -334,12 +323,11 @@ export async function cmdLoad(opts, deps = {}) {
     );
     return 1;
   }
-  if (!opts.apply) {
-    log(
-      "[DRY-RUN] DBには書き込みません。書き込むには --apply を付けます（DDL 084 の適用と、ユーザーの実行承認が前提）",
-    );
-    return 0;
-  }
+  return null;
+}
+
+async function applyLoadPlan(opts, deps, plan, log) {
+  const sleepFn = deps.sleep ?? sleepDefault;
   const client =
     deps.client ?? (await import("../lib/supabaseClient.js")).supabase;
   let summary;
@@ -361,6 +349,20 @@ export async function cmdLoad(opts, deps = {}) {
     return 1;
   }
   return 0;
+}
+
+export async function cmdLoad(opts, deps = {}) {
+  const log = deps.log ?? console.log;
+  const plan = buildLoadPlan(opts);
+  const problem = checkLoadPlan(plan, log);
+  if (problem !== null) return problem;
+  if (!opts.apply) {
+    log(
+      "[DRY-RUN] DBには書き込みません。書き込むには --apply を付けます（DDL 084 の適用と、ユーザーの実行承認が前提）",
+    );
+    return 0;
+  }
+  return applyLoadPlan(opts, deps, plan, log);
 }
 
 export function cmdStatus(opts) {

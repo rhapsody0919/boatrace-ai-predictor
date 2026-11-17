@@ -1,0 +1,114 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "mikuni-water-wind-guide",
+ "kind": "new",
+ "ticket": "OC-20261114T100221-seo-human-1",
+ "paths": [
+  "public/blog/mikuni-water-wind-guide.md",
+  "src/data/blog-posts/mikuni-water-wind-guide.json"
+ ],
+ "files": {
+  "public/blog/mikuni-water-wind-guide.md": "5eae288d6efabae9c90f3c301ef6c97b2abf9ecd2d0a11bea29f8ec9efb3843a",
+  "src/data/blog-posts/mikuni-water-wind-guide.json": "ef0ad19b074d0e829b3799f6a9c7dd8197c9154dc266f4d95654725aedfc2790"
+ },
+ "content_sha256": "1338c18288a82743ff664cc0dccb4c85c752e0f73c9efb06fb6b92e5ea7e10ec",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "1338c18288a82743ff664cc0dccb4c85c752e0f73c9efb06fb6b92e5ea7e10ec",
+   "model": "opus",
+   "at": "2026-11-14T10:08:53+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "1338c18288a82743ff664cc0dccb4c85c752e0f73c9efb06fb6b92e5ea7e10ec",
+   "model": "opus",
+   "at": "2026-11-14T10:08:53+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "1338c18288a82743ff664cc0dccb4c85c752e0f73c9efb06fb6b92e5ea7e10ec",
+   "model": "opus",
+   "at": "2026-11-14T10:08:53+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "1338c18288a82743ff664cc0dccb4c85c752e0f73c9efb06fb6b92e5ea7e10ec",
+   "model": "opus",
+   "at": "2026-11-14T10:08:53+09:00"
+  }
+ ],
+ "evidence": [
+  {
+   "h2": "三国の1コースは直近1年で2,266レース中1,185回",
+   "evidence": [
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json"
+   ]
+  },
+  {
+   "h2": "風別の逃げ：追い風・向かい風とも4m以上で減った",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "scripts/analysis/analyze-weather-in-escape.js"
+   ]
+  },
+  {
+   "h2": "追い風4m以上で増えたのはまくりと抜き",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "public/blog/tailwind-strength-sashi-by-venue.md",
+    "src/locales/ja/common.json"
+   ]
+  },
+  {
+   "h2": "向かい風4m以上で増えたのはまくり差し",
+   "evidence": [
+    "data/analysis/weather-in-escape.json"
+   ]
+  },
+  {
+   "h2": "画面の「イン逃げ率」は、進入1コースの1着率",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "src/locales/ja/common.json"
+   ]
+  },
+  {
+   "h2": "今日の三国では、風の行から展示の進入へ進む",
+   "evidence": [
+    "src/data/venueWaterProfiles.js",
+    "scripts/analysis/analyze-weather-in-escape.js",
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json"
+   ]
+  },
+  {
+   "h2": "数字の範囲と注意",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "docs/design/weather-in-escape/results.md"
+   ]
+  }
+ ],
+ "sources": "表2〜表5: data/analysis/weather-in-escape.json#wind.venues.10（scripts/analysis/analyze-weather-in-escape.js、2020-02-01〜2026-09-30、公式K/Bファイルの解析）。分母は1コース艇・1着艇があり風を区分できた三国のレースを5区分に分けた各 n（計15,187、all.n と一致）、分子は techniques の各決まり手（各区分の6決まり手の和が n と一致）。割合は件数÷n×100 を小数1桁に1回だけ丸めた。方位の対応は同スクリプトの VENUE_WIND_OFFSET（三国 5）と windBin。検定: 弱い・横風を基準に4つの風×6決まり手の24組を1つの問い（線 約3.08）。抜き（指標の一覧に無い）は追い風4m以上 3,160中283 と弱い・横風 5,382中323 で z≈5.13。\n表1と枠なり: data/analysis/venue-course-win-rate/venue-course-win-rate.json#periods.12m（2025-10-20〜2026-10-19）。三国 2,266中1,185、枠なりでない 523、全国 55,414中30,732。",
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-14T10:10:25+09:00",
+ "run": "20261114T100221-seo-human",
+ "engine": "claude"
+}

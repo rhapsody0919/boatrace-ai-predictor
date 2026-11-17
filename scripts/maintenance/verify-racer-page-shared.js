@@ -3,7 +3,7 @@
  * BOA-1244: 選手ページの会場×枠番の絞り込み（aggregateRacerVenueBoatStats）と龍神ボート番付（rank-data.js の racer_page）が、
  * 同じ純関数（src/utils/racerVenueBoatStats.js）と同じ期間（racerHistoryCutoff）で数えていることを固定する。DB・通信なし。
  *
- *   1. サービス層（supabaseDataService の公開の入口）を偽の supabase クライアントの上で呼ぶ（BOA-1406。本文の正規表現から置き換え）。
+ *   1. サービス層（領域の Queries の公開の入口）を偽の supabase クライアントの上で呼ぶ（BOA-1406。本文の正規表現から置き換え）。
  *      getRacerRaceHistory が race_entries を列 "race_id, boat_number"・その選手・racerHistoryCutoff() 以降で取り、
  *      返した履歴を純関数で数えると手で数えた値になる。getRacerBoatReturnRate の回収率は toReturnRate と同じ
  *   1b. 振る舞いへ移せない物は文字で見る（緩めない）: 選手ページの import、rank-data.js の呼び方・asOf の式・期間の絞り
@@ -187,18 +187,25 @@ globalThis.localStorage ??= {
   key: () => null,
   length: 0,
 };
-const service = await import("../../src/services/supabaseDataService.js");
-const { supabaseDataService, clearCache } = service;
+// 殻 supabaseDataService.js は RA40 で消えた。領域の Queries（と core.js）を直に呼ぶ
+const core = await import("../../src/services/core.js");
+const racerQueries2 = await import("../../src/services/racerQueries2.js");
+const racerQueries3 = await import("../../src/services/racerQueries3.js");
+const { clearCache } = core;
+const { getRacerRaceHistory } = racerQueries2;
+const { getRacerBoatReturnRate } = racerQueries3;
 // 集計の写しをサービス層に戻していない（公開するなら純関数そのもの）
-assert.ok(
-  !("aggregateRacerVenueBoatStats" in service) ||
-    service.aggregateRacerVenueBoatStats === aggregateRacerVenueBoatStats,
-  "サービス層に集計の写しが残っていない",
-);
+for (const service of [core, racerQueries2, racerQueries3]) {
+  assert.ok(
+    !("aggregateRacerVenueBoatStats" in service) ||
+      service.aggregateRacerVenueBoatStats === aggregateRacerVenueBoatStats,
+    "サービス層に集計の写しが残っていない",
+  );
+}
 
 clearCache();
 fake.calls.length = 0;
-const history = await supabaseDataService.getRacerRaceHistory(RACER);
+const history = await getRacerRaceHistory(RACER);
 // 呼ぶ間に racerHistoryCutoff の日が変わると、窓の端の走（R.edge）の期待が崩れる（数ミリ秒の境だけ）。揺れでなく分かる文で止める
 assert.equal(
   racerHistoryCutoff(),
@@ -248,7 +255,7 @@ assert.deepEqual(
 
 // 枠番別の回収率（getRacerBoatReturnRate）は toReturnRate で出す。180日の窓には old・edge は入らない
 clearCache();
-const boatRates = await supabaseDataService.getRacerBoatReturnRate(RACER);
+const boatRates = await getRacerBoatReturnRate(RACER);
 assert.deepEqual(boatRates, [
   {
     boat_number: 1,

@@ -53,7 +53,7 @@ const SPIED = {
     "seriesCoveringDate",
   ],
   "/src/utils/raceEntrants.js": ["entrantRowsOf"],
-  // 節の取得の公開の入口。殻（supabaseDataService）を経ても名前つき import でも、同じ包みを通る（殻を外す付け替え RA35・RA40）
+  // 節の取得の公開の入口。名前つき import が同じ包みを通る（殻 supabaseDataService は RA40 で消えた）
   "/src/services/scheduleQueries.js": ["getSeriesOfDate"],
 };
 const HOOKS = `

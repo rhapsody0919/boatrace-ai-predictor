@@ -69,7 +69,7 @@ Node 側  api → api/_lib → scripts/lib → scripts/lib/pure → src/pure
 ```
 
 - 領域は schedule・race・racer・motor・meet・venue・prediction。データ層の領域の間の import は core と2辺（getRaces → fetchVenueWinRateMap、getRaceMotorFreshness → getVenueMeetStart）だけ
-- `src/services/supabaseDataService.js` に関数を足さない（移す間の殻。新しい取得は `<領域>Queries*.js` へ）
+- 殻 `supabaseDataService.js` は RA40 で消えた。新しい取得は `<領域>Queries*.js` に書き、画面・hooks は名前つき import で呼ぶ
 - 向き・大きさは CI の関所（`lint-changed.js --ci`）が見る。既存の違反は基準に凍結され、増えたら赤。下の向きを逆にしない
 - scripts・api から src を import するのは src/pure 等の許可の先だけ（Vite の構文 `import.meta.glob`・`import.meta.env` は Node で落ちる）
 

@@ -109,6 +109,84 @@ function MotorWakuRow({ row, onSelectCourse, isHighlighted }) {
   );
 }
 
+function MotorWakuStatsFallback({ fetchFailed }) {
+  const { t } = useTranslation();
+  return (
+    <div className="motor-waku-stats-grid">
+      <h3 className="selected-motor-heading">
+        {t("analysis.motor.wakuStatsHeading")}
+      </h3>
+      {fetchFailed ? (
+        <InlineFetchError />
+      ) : (
+        <div className="empty-state">
+          {t("analysis.motor.wakuStatsUnknownGeneration")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function pickVisibleRows(rows, highlightCourse, embedded, expanded) {
+  const highlightedRow = rows.find((r) => r.course === highlightCourse);
+  return embedded && !expanded && highlightedRow ? [highlightedRow] : rows;
+}
+
+function MotorWakuTableBlock({
+  visibleRows,
+  highlightCourse,
+  onSelectCourse,
+  scroll,
+}) {
+  const { t } = useTranslation();
+  const {
+    ref: scrollRef,
+    hasMore: scrollHasMore,
+    hasLess: scrollHasLess,
+    update: updateScroll,
+    scrollRight,
+    scrollLeft,
+  } = scroll;
+  return (
+    <div
+      className={`table-wrapper mwsg-hint hscroll-hint${scrollHasMore ? " has-more" : ""}`}
+    >
+      {/* 右へ送るとコースの列が消えて、ボタンでは戻れなかった。コースの列を固定し、
+          「‹」も出す（BOA-699・BOA-704） */}
+      <HorizontalScrollButtons
+        hasMore={scrollHasMore}
+        hasLess={scrollHasLess}
+        onMore={scrollRight}
+        onLess={scrollLeft}
+      />
+      <div className="table-scroll" ref={scrollRef} onScroll={updateScroll}>
+        <table className="motor-ranking-table motor-waku-table mwsg-table">
+          <thead>
+            <tr>
+              <th>{t("analysis.motor.courseHeader")}</th>
+              <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
+              {/* セルに「%」が付くので、見出しは1着率と同じく (%) を付けない（BOA-513） */}
+              <th>{t("analysis.motor.legend2")}</th>
+              <th>{t("analysis.motor.legend3")}</th>
+              <th>{t("analysis.motor.exhibitionTrendHeader")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleRows.map((row) => (
+              <MotorWakuRow
+                key={row.course}
+                row={row}
+                onSelectCourse={onSelectCourse}
+                isHighlighted={row.course === highlightCourse}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function MotorWakuStatsGrid({
   rows,
   generationStart,
@@ -121,37 +199,20 @@ function MotorWakuStatsGrid({
   const [expanded, setExpanded] = useState(!embedded);
   // 375px では3連率・展示タイム推移の列が右に切れる。切れていることに気づけるよう、
   // モータ情報の一覧表と同じ横スクロールの目印を付ける（BOA-513）
-  const {
-    ref: scrollRef,
-    hasMore: scrollHasMore,
-    hasLess: scrollHasLess,
-    update: updateScroll,
-    scrollRight,
-    scrollLeft,
-  } = useHorizontalScrollHint([rows?.length, expanded]);
+  const scroll = useHorizontalScrollHint([rows?.length, expanded]);
 
   if (!rows || rows.length === 0) return null;
 
   if (fetchFailed || generationStart === null) {
-    return (
-      <div className="motor-waku-stats-grid">
-        <h3 className="selected-motor-heading">
-          {t("analysis.motor.wakuStatsHeading")}
-        </h3>
-        {fetchFailed ? (
-          <InlineFetchError />
-        ) : (
-          <div className="empty-state">
-            {t("analysis.motor.wakuStatsUnknownGeneration")}
-          </div>
-        )}
-      </div>
-    );
+    return <MotorWakuStatsFallback fetchFailed={fetchFailed} />;
   }
 
-  const highlightedRow = rows.find((r) => r.course === highlightCourse);
-  const visibleRows =
-    embedded && !expanded && highlightedRow ? [highlightedRow] : rows;
+  const visibleRows = pickVisibleRows(
+    rows,
+    highlightCourse,
+    embedded,
+    expanded,
+  );
 
   return (
     <div className="motor-waku-stats-grid">
@@ -164,42 +225,12 @@ function MotorWakuStatsGrid({
           date: formatGenerationDate(generationStart, { short: true }),
         })}
       </p>
-      <div
-        className={`table-wrapper mwsg-hint hscroll-hint${scrollHasMore ? " has-more" : ""}`}
-      >
-        {/* 右へ送るとコースの列が消えて、ボタンでは戻れなかった。コースの列を固定し、
-            「‹」も出す（BOA-699・BOA-704） */}
-        <HorizontalScrollButtons
-          hasMore={scrollHasMore}
-          hasLess={scrollHasLess}
-          onMore={scrollRight}
-          onLess={scrollLeft}
-        />
-        <div className="table-scroll" ref={scrollRef} onScroll={updateScroll}>
-          <table className="motor-ranking-table motor-waku-table mwsg-table">
-            <thead>
-              <tr>
-                <th>{t("analysis.motor.courseHeader")}</th>
-                <th>{t("analysis.motor.firstPlaceRateHeader")}</th>
-                {/* セルに「%」が付くので、見出しは1着率と同じく (%) を付けない（BOA-513） */}
-                <th>{t("analysis.motor.legend2")}</th>
-                <th>{t("analysis.motor.legend3")}</th>
-                <th>{t("analysis.motor.exhibitionTrendHeader")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleRows.map((row) => (
-                <MotorWakuRow
-                  key={row.course}
-                  row={row}
-                  onSelectCourse={onSelectCourse}
-                  isHighlighted={row.course === highlightCourse}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <MotorWakuTableBlock
+        visibleRows={visibleRows}
+        highlightCourse={highlightCourse}
+        onSelectCourse={onSelectCourse}
+        scroll={scroll}
+      />
       {embedded && !expanded && (
         <button
           type="button"

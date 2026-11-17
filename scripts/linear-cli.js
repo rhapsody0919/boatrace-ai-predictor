@@ -130,7 +130,7 @@ async function resolveIssueId(identifier) {
 
   const query = `
     query GetIssue($teamKey: String!, $number: Float!) {
-      issues(filter: { team: { key: { eq: $teamKey } }, number: { eq: $number } }) {
+      issues(filter: { team: { key: { eq: $teamKey } }, number: { eq: $number } }, includeArchived: true) {
         nodes {
           id
           identifier
@@ -416,7 +416,7 @@ async function getIssue(identifier) {
 
   const query = `
     query GetIssue($teamKey: String!, $number: Float!) {
-      issues(filter: { team: { key: { eq: $teamKey } }, number: { eq: $number } }) {
+      issues(filter: { team: { key: { eq: $teamKey } }, number: { eq: $number } }, includeArchived: true) {
         nodes {
           id
           identifier

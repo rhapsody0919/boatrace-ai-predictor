@@ -186,6 +186,29 @@ function toRace(date, venue, race, bRace) {
   };
 }
 
+/** 1会場の1日分のレース（前のレースの風つき）。集計に使えないレースは含めない */
+function venueRaces(day, venue) {
+  const races = [];
+  const bVenue = day.b?.venues?.find((v) => v.venue_code === venue.venue_code);
+  // 前のレースの風（事前登録 5「時点」）。中止等で前のレースが無ければ null
+  const windByRn = new Map(
+    (venue.races ?? []).map((r) => [
+      r.race_number,
+      windBin(venue.venue_code, r.wind_direction, r.wind_speed),
+    ]),
+  );
+  for (const race of venue.races ?? []) {
+    const bRace = bVenue?.races?.find(
+      (r) => r.race_number === race.race_number,
+    );
+    const r = toRace(day.date, venue, race, bRace);
+    if (!r) continue;
+    r.prevWind = windByRn.get(race.race_number - 1) ?? null;
+    races.push(r);
+  }
+  return races;
+}
+
 function loadRaces() {
   const races = [];
   const hash = crypto.createHash("sha256");
@@ -194,23 +217,7 @@ function loadRaces() {
     if (day.date < FROM || day.date > TO) continue;
     hash.update(file).update(buf);
     for (const venue of day.k?.venues ?? []) {
-      const bVenue = day.b?.venues?.find(
-        (v) => v.venue_code === venue.venue_code,
-      );
-      // 前のレースの風（事前登録 5「時点」）。中止等で前のレースが無ければ null
-      const windByRn = new Map(
-        (venue.races ?? []).map((r) => [
-          r.race_number,
-          windBin(venue.venue_code, r.wind_direction, r.wind_speed),
-        ]),
-      );
-      for (const race of venue.races ?? []) {
-        const bRace = bVenue?.races?.find(
-          (r) => r.race_number === race.race_number,
-        );
-        const r = toRace(day.date, venue, race, bRace);
-        if (!r) continue;
-        r.prevWind = windByRn.get(race.race_number - 1) ?? null;
+      for (const r of venueRaces(day, venue)) {
         races.push(r);
         if (!maxDate || r.date > maxDate) maxDate = r.date;
       }
@@ -271,16 +278,15 @@ function pooledDiff(venueAgg, binKey) {
   return n ? num / n : null;
 }
 
-/**
- * 区分ごとの会場内比較。binOf(race) が区分キー（対象外は null）を返す
- */
-function compare(
-  races,
-  bins,
-  binOf,
-  { bootstrap = false, expected = null } = {},
-) {
-  const target = races.filter((r) => binOf(r) != null);
+/** 区分ごとの件数 {n, w} に1レース分を足す */
+function addToBin(agg, key, inWin) {
+  agg.bins[key] ??= { n: 0, w: 0 };
+  agg.bins[key].n += 1;
+  agg.bins[key].w += inWin;
+}
+
+/** 対象レースを 会場×日（クラスタ）・会場・会場×区分の技・補正用の残差に集める */
+function accumulateRaces(target, binOf, expected) {
   // 会場 → 会場×日（クラスタ）→ 区分ごとの件数
   const clustersByVenue = new Map();
   const venueAgg = new Map();
@@ -294,17 +300,13 @@ function compare(
     const c = cl.get(cKey) ?? { N: 0, W: 0, bins: {} };
     c.N += 1;
     c.W += r.inWin;
-    c.bins[key] ??= { n: 0, w: 0 };
-    c.bins[key].n += 1;
-    c.bins[key].w += r.inWin;
+    addToBin(c, key, r.inWin);
     cl.set(cKey, c);
 
     const v = venueAgg.get(r.venue) ?? { N: 0, W: 0, bins: {} };
     v.N += 1;
     v.W += r.inWin;
-    v.bins[key] ??= { n: 0, w: 0 };
-    v.bins[key].n += 1;
-    v.bins[key].w += r.inWin;
+    addToBin(v, key, r.inWin);
     venueAgg.set(r.venue, v);
 
     const tk = `${r.venue}|${key}`;
@@ -319,85 +321,114 @@ function compare(
       adj.set(key, a);
     }
   }
+  return { clustersByVenue, venueAgg, tech, adj };
+}
 
-  let boot = null;
-  if (bootstrap) {
-    const rand = mulberry32(211);
-    const clusterLists = [...clustersByVenue].map(([venue, m]) => [
-      venue,
-      [...m.values()],
-    ]);
-    boot = Object.fromEntries(bins.map((b) => [b.key, []]));
-    for (let i = 0; i < BOOT_REPS; i++) {
-      const agg = new Map();
-      for (const [venue, list] of clusterLists) {
-        const v = { N: 0, W: 0, bins: {} };
-        for (let j = 0; j < list.length; j++) {
-          const c = list[Math.floor(rand() * list.length)];
-          v.N += c.N;
-          v.W += c.W;
-          for (const [k, b] of Object.entries(c.bins)) {
-            v.bins[k] ??= { n: 0, w: 0 };
-            v.bins[k].n += b.n;
-            v.bins[k].w += b.w;
-          }
+/** 会場ごとにクラスタ（日）を復元抽出して、区分ごとの全会場の差 D̄ を BOOT_REPS 回出す */
+function bootstrapDiffs(clustersByVenue, bins) {
+  const rand = mulberry32(211);
+  const clusterLists = [...clustersByVenue].map(([venue, m]) => [
+    venue,
+    [...m.values()],
+  ]);
+  const boot = Object.fromEntries(bins.map((b) => [b.key, []]));
+  for (let i = 0; i < BOOT_REPS; i++) {
+    const agg = new Map();
+    for (const [venue, list] of clusterLists) {
+      const v = { N: 0, W: 0, bins: {} };
+      for (let j = 0; j < list.length; j++) {
+        const c = list[Math.floor(rand() * list.length)];
+        v.N += c.N;
+        v.W += c.W;
+        for (const [k, b] of Object.entries(c.bins)) {
+          v.bins[k] ??= { n: 0, w: 0 };
+          v.bins[k].n += b.n;
+          v.bins[k].w += b.w;
         }
-        agg.set(venue, v);
       }
-      for (const b of bins) boot[b.key].push(pooledDiff(agg, b.key));
+      agg.set(venue, v);
+    }
+    for (const b of bins) boot[b.key].push(pooledDiff(agg, b.key));
+  }
+  return boot;
+}
+
+function quantile(arr, q) {
+  const s = arr.filter((x) => x != null).sort((a, b) => a - b);
+  return s.length ? s[Math.min(s.length - 1, Math.floor(q * s.length))] : null;
+}
+
+/** 会場×区分の結果を venues へ書く */
+function recordVenueBin(venues, venue, v, b, key, d, tech) {
+  venues[venue] ??= {
+    all: { n: v.N, inWinRate: pt(v.W / v.N) },
+    bins: {},
+  };
+  venues[venue].bins[key] = {
+    n: b.n,
+    inWinRate: pt(b.w / b.n),
+    diffVsVenue: pt(d),
+    techniques: Object.fromEntries(
+      TECHNIQUES.map((t) => [t, tech.get(`${venue}|${key}`)?.[t] ?? 0]),
+    ),
+  };
+}
+
+/** 1区分の全体の結果。会場ごとの結果は venues へ書く */
+function summarizeBin(bin, { venueAgg, tech, boot, adj }, venues) {
+  const dBar = pooledDiff(venueAgg, bin.key);
+  let sameSign = 0;
+  let eligible = 0;
+  let n = 0;
+  for (const [venue, v] of venueAgg) {
+    const b = v.bins[bin.key];
+    if (!b) continue;
+    n += b.n;
+    const d = b.w / b.n - v.W / v.N;
+    recordVenueBin(venues, venue, v, b, bin.key, d, tech);
+    if (b.n >= VENUE_SIGN_MIN_N && dBar != null) {
+      eligible += 1;
+      if (Math.sign(d) === Math.sign(dBar)) sameSign += 1;
     }
   }
-  const quantile = (arr, q) => {
-    const s = arr.filter((x) => x != null).sort((a, b) => a - b);
-    return s.length
-      ? s[Math.min(s.length - 1, Math.floor(q * s.length))]
-      : null;
+  const a = adj.get(bin.key);
+  const alpha = (1 - CI_LEVEL) / 2;
+  return {
+    label: bin.label,
+    n,
+    diffVsVenue: pt(dBar),
+    ci: boot
+      ? [
+          pt(quantile(boot[bin.key], alpha)),
+          pt(quantile(boot[bin.key], 1 - alpha)),
+        ]
+      : null,
+    adjustedDiff: a ? pt(a.resid / a.n) : null,
+    venueSign: { eligible, sameSign },
   };
+}
+
+/**
+ * 区分ごとの会場内比較。binOf(race) が区分キー（対象外は null）を返す
+ */
+function compare(
+  races,
+  bins,
+  binOf,
+  { bootstrap = false, expected = null } = {},
+) {
+  const target = races.filter((r) => binOf(r) != null);
+  const { clustersByVenue, venueAgg, tech, adj } = accumulateRaces(
+    target,
+    binOf,
+    expected,
+  );
+  const boot = bootstrap ? bootstrapDiffs(clustersByVenue, bins) : null;
 
   const venues = {};
   const pooled = {};
   for (const bin of bins) {
-    const dBar = pooledDiff(venueAgg, bin.key);
-    let sameSign = 0;
-    let eligible = 0;
-    let n = 0;
-    for (const [venue, v] of venueAgg) {
-      const b = v.bins[bin.key];
-      if (!b) continue;
-      n += b.n;
-      const d = b.w / b.n - v.W / v.N;
-      venues[venue] ??= {
-        all: { n: v.N, inWinRate: pt(v.W / v.N) },
-        bins: {},
-      };
-      venues[venue].bins[bin.key] = {
-        n: b.n,
-        inWinRate: pt(b.w / b.n),
-        diffVsVenue: pt(d),
-        techniques: Object.fromEntries(
-          TECHNIQUES.map((t) => [t, tech.get(`${venue}|${bin.key}`)?.[t] ?? 0]),
-        ),
-      };
-      if (b.n >= VENUE_SIGN_MIN_N && dBar != null) {
-        eligible += 1;
-        if (Math.sign(d) === Math.sign(dBar)) sameSign += 1;
-      }
-    }
-    const a = adj.get(bin.key);
-    const alpha = (1 - CI_LEVEL) / 2;
-    pooled[bin.key] = {
-      label: bin.label,
-      n,
-      diffVsVenue: pt(dBar),
-      ci: boot
-        ? [
-            pt(quantile(boot[bin.key], alpha)),
-            pt(quantile(boot[bin.key], 1 - alpha)),
-          ]
-        : null,
-      adjustedDiff: a ? pt(a.resid / a.n) : null,
-      venueSign: { eligible, sameSign },
-    };
+    pooled[bin.key] = summarizeBin(bin, { venueAgg, tech, boot, adj }, venues);
   }
   return { pooled, venues };
 }

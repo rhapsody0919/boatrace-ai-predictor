@@ -117,32 +117,59 @@ async function calculateRacerSTStats(racerId, venueCode = null) {
 
 // ===== 決まり手分布算出 =====
 
+/** 艇番 boatNumber が1〜6コースのどこに入ったか（course_1..6 から特定）。見つからなければ null */
+function findCourseOfBoat(result, boatNumber) {
+  for (let c = 1; c <= 6; c++) {
+    if (result[`course_${c}`] === boatNumber) return c;
+  }
+  return null;
+}
+
+/** 選手の出走（race_id -> boat_number） */
+function buildEntryBoatMap(entries) {
+  const entryBoatMap = new Map();
+  for (const entry of entries) {
+    entryBoatMap.set(entry.race_id, entry.boat_number);
+  }
+  return entryBoatMap;
+}
+
 /**
- * 選手の決まり手分布をコース別に算出
- * @param {number} racerId - 選手登録番号
- * @param {number|null} venueCode - 会場コード（nullの場合は全会場）
- * @returns {Object} { "1": { "nige": 0.95, ... }, "2": { ... }, ... }
+ * 決まり手・被攻撃の集計（{ course: { technique_key: count } }）を、コースごとの割合
+ * （小数3桁）にする
  */
-async function calculateAttackDistribution(racerId, venueCode = null) {
-  const filteredEntries = await fetchFilteredEntries(racerId, venueCode, null);
+function toCourseRatios(courseCounts) {
+  const distribution = {};
+  for (const [course, techniques] of Object.entries(courseCounts)) {
+    const courseTotal = Object.values(techniques).reduce((a, b) => a + b, 0);
+    distribution[course] = {};
+    for (const [tech, count] of Object.entries(techniques)) {
+      distribution[course][tech] = Number((count / courseTotal).toFixed(3));
+    }
+  }
+  return distribution;
+}
+
+/**
+ * 選手の出走と、その race_results（selectの列）を取る。出走が無ければ null
+ * @param {string|null} since YYYY-MM-DD。指定すればそれ以降の race_id だけ
+ */
+async function fetchEntriesAndResults(racerId, venueCode, since, select) {
+  const filteredEntries = await fetchFilteredEntries(racerId, venueCode, since);
 
   if (filteredEntries.length === 0) {
     return null;
   }
 
-  // 2. race_results を取得
-  const allResults = await fetchResultsForEntries(
-    filteredEntries,
-    "race_id, rank1, winning_technique, course_1, course_2, course_3, course_4, course_5, course_6",
-  );
+  const allResults = await fetchResultsForEntries(filteredEntries, select);
+  return { filteredEntries, allResults };
+}
 
-  // entryのマップ: race_id -> boat_number
-  const entryBoatMap = new Map();
-  for (const entry of filteredEntries) {
-    entryBoatMap.set(entry.race_id, entry.boat_number);
-  }
+const DECISIVE_RESULT_SELECT =
+  "race_id, rank1, winning_technique, course_1, course_2, course_3, course_4, course_5, course_6";
 
-  // 3. 選手が1着になったレースのみ抽出し、コース別に決まり手を集計
+/** 選手が1着になったレースのみ抽出し、コース別に決まり手を集計 */
+function tallyWinTechniques(allResults, entryBoatMap) {
   const courseWins = {}; // { course: { technique_key: count } }
   let totalWins = 0;
 
@@ -154,13 +181,7 @@ async function calculateAttackDistribution(racerId, venueCode = null) {
     if (result.rank1 !== boatNumber) continue;
 
     // course_1..course_6 から選手の枠番が何コースだったか特定
-    let winCourse = null;
-    for (let c = 1; c <= 6; c++) {
-      if (result[`course_${c}`] === boatNumber) {
-        winCourse = c;
-        break;
-      }
-    }
+    const winCourse = findCourseOfBoat(result, boatNumber);
 
     if (!winCourse) continue;
 
@@ -175,51 +196,46 @@ async function calculateAttackDistribution(racerId, venueCode = null) {
     totalWins++;
   }
 
-  // 4. データ不足の場合はデフォルト分布をフォールバック
+  return { courseWins, totalWins };
+}
+
+/**
+ * 選手の決まり手分布をコース別に算出
+ * @param {number} racerId - 選手登録番号
+ * @param {number|null} venueCode - 会場コード（nullの場合は全会場）
+ * @returns {Object} { "1": { "nige": 0.95, ... }, "2": { ... }, ... }
+ */
+async function calculateAttackDistribution(racerId, venueCode = null) {
+  // 1. 出走と race_results を取得
+  const fetched = await fetchEntriesAndResults(
+    racerId,
+    venueCode,
+    null,
+    DECISIVE_RESULT_SELECT,
+  );
+  if (!fetched) {
+    return null;
+  }
+
+  // 2. 選手が1着になったレースのみ抽出し、コース別に決まり手を集計
+  const { courseWins, totalWins } = tallyWinTechniques(
+    fetched.allResults,
+    buildEntryBoatMap(fetched.filteredEntries),
+  );
+
+  // 3. データ不足の場合はデフォルト分布をフォールバック
   if (totalWins < 5) {
     return { ...COURSE_DEFAULT_DISTRIBUTION };
   }
 
-  // 5. 各コースの割合を計算
-  const distribution = {};
-  for (const [course, techniques] of Object.entries(courseWins)) {
-    const courseTotal = Object.values(techniques).reduce((a, b) => a + b, 0);
-    distribution[course] = {};
-    for (const [tech, count] of Object.entries(techniques)) {
-      distribution[course][tech] = Number((count / courseTotal).toFixed(3));
-    }
-  }
-
-  return distribution;
+  // 4. 各コースの割合を計算
+  return toCourseRatios(courseWins);
 }
 
 // ===== 被攻撃分布算出 =====
 
-/**
- * 選手の被攻撃分布をコース別に算出
- * 「この選手がNコースにいた時、他の選手にどの決まり手で負けたか」
- * @param {number} racerId - 選手登録番号
- * @param {number|null} venueCode - 会場コード（nullの場合は全会場）
- * @returns {Object} { "1": { "sashi": 0.30, "makuri": 0.25, ... }, "2": { ... } }
- */
-async function calculateDefenseDistribution(racerId, venueCode = null) {
-  const filteredEntries = await fetchFilteredEntries(racerId, venueCode, null);
-
-  if (filteredEntries.length === 0) {
-    return null;
-  }
-
-  const allResults = await fetchResultsForEntries(
-    filteredEntries,
-    "race_id, rank1, winning_technique, course_1, course_2, course_3, course_4, course_5, course_6",
-  );
-
-  const entryBoatMap = new Map();
-  for (const entry of filteredEntries) {
-    entryBoatMap.set(entry.race_id, entry.boat_number);
-  }
-
-  // 選手が1着でないレースを対象に、勝者の決まり手をコース別に集計
+/** 選手が1着でないレースを対象に、勝者の決まり手をコース別に集計 */
+function tallyLossTechniques(allResults, entryBoatMap) {
   const courseLosses = {}; // { course: { technique_key: count } }
 
   for (const result of allResults) {
@@ -234,13 +250,7 @@ async function calculateDefenseDistribution(racerId, venueCode = null) {
     if (!techKey) continue;
 
     // この選手が何コースにいたか特定
-    let myCourse = null;
-    for (let c = 1; c <= 6; c++) {
-      if (result[`course_${c}`] === boatNumber) {
-        myCourse = c;
-        break;
-      }
-    }
+    const myCourse = findCourseOfBoat(result, boatNumber);
 
     if (!myCourse) continue;
 
@@ -250,6 +260,33 @@ async function calculateDefenseDistribution(racerId, venueCode = null) {
     courseLosses[myCourse][techKey] =
       (courseLosses[myCourse][techKey] || 0) + 1;
   }
+
+  return courseLosses;
+}
+
+/**
+ * 選手の被攻撃分布をコース別に算出
+ * 「この選手がNコースにいた時、他の選手にどの決まり手で負けたか」
+ * @param {number} racerId - 選手登録番号
+ * @param {number|null} venueCode - 会場コード（nullの場合は全会場）
+ * @returns {Object} { "1": { "sashi": 0.30, "makuri": 0.25, ... }, "2": { ... } }
+ */
+async function calculateDefenseDistribution(racerId, venueCode = null) {
+  const fetched = await fetchEntriesAndResults(
+    racerId,
+    venueCode,
+    null,
+    DECISIVE_RESULT_SELECT,
+  );
+  if (!fetched) {
+    return null;
+  }
+
+  // 選手が1着でないレースを対象に、勝者の決まり手をコース別に集計
+  const courseLosses = tallyLossTechniques(
+    fetched.allResults,
+    buildEntryBoatMap(fetched.filteredEntries),
+  );
 
   // データ不足の場合はnullを返す（デフォルト分布はcaller側で処理）
   const totalLosses = Object.values(courseLosses).reduce(
@@ -262,16 +299,7 @@ async function calculateDefenseDistribution(racerId, venueCode = null) {
   }
 
   // 各コースの割合を計算
-  const distribution = {};
-  for (const [course, techniques] of Object.entries(courseLosses)) {
-    const courseTotal = Object.values(techniques).reduce((a, b) => a + b, 0);
-    distribution[course] = {};
-    for (const [tech, count] of Object.entries(techniques)) {
-      distribution[course][tech] = Number((count / courseTotal).toFixed(3));
-    }
-  }
-
-  return distribution;
+  return toCourseRatios(courseLosses);
 }
 
 // ===== コース別出走数算出 =====
@@ -282,35 +310,11 @@ async function calculateDefenseDistribution(racerId, venueCode = null) {
 // DB が1年分たまる 2026-12-02 までは値が変わらない
 const COURSE_RACE_COUNTS_WINDOW_DAYS = 365;
 
-/**
- * 選手のコース別出走数・勝数を算出（直近 COURSE_RACE_COUNTS_WINDOW_DAYS 日）
- * @param {number} racerId - 選手登録番号
- * @param {number|null} venueCode - 会場コード（nullの場合は全会場）
- * @returns {Object} { "1": { "total": 50, "wins": 28, "top2": 35, "top3": 40 }, "2": { ... } }
- */
-async function calculateCourseRaceCounts(racerId, venueCode = null) {
-  const since = getDateDaysAgo(COURSE_RACE_COUNTS_WINDOW_DAYS);
-  const filteredEntries = await fetchFilteredEntries(racerId, venueCode, since);
+const COURSE_RACE_COUNTS_SELECT =
+  "race_id, rank1, rank2, rank3, is_cancelled, race_status, refund_boats, course_1, course_2, course_3, course_4, course_5, course_6";
 
-  if (filteredEntries.length === 0) {
-    return null;
-  }
-
-  const allResults = await fetchResultsForEntries(
-    filteredEntries,
-    "race_id, rank1, rank2, rank3, is_cancelled, race_status, refund_boats, course_1, course_2, course_3, course_4, course_5, course_6",
-  );
-
-  const entryBoatMap = new Map();
-  for (const entry of filteredEntries) {
-    entryBoatMap.set(entry.race_id, entry.boat_number);
-  }
-
-  const resultsMap = new Map();
-  for (const r of allResults) {
-    resultsMap.set(r.race_id, r);
-  }
-
+/** 出走ごとに、実際に入ったコース別の出走数・勝数・2連対・3連対を数える */
+function tallyCourseRaceCounts(filteredEntries, resultsMap) {
   const courseCounts = {}; // { course: { total: N, wins: N } }
 
   for (const entry of filteredEntries) {
@@ -326,13 +330,7 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
 
     const boatNumber = entry.boat_number;
 
-    let actualCourse = null;
-    for (let c = 1; c <= 6; c++) {
-      if (result[`course_${c}`] === boatNumber) {
-        actualCourse = c;
-        break;
-      }
-    }
+    const actualCourse = findCourseOfBoat(result, boatNumber);
 
     if (!actualCourse) continue;
 
@@ -354,6 +352,37 @@ async function calculateCourseRaceCounts(racerId, venueCode = null) {
       courseCounts[courseKey].top3++;
     }
   }
+
+  return courseCounts;
+}
+
+/**
+ * 選手のコース別出走数・勝数を算出（直近 COURSE_RACE_COUNTS_WINDOW_DAYS 日）
+ * @param {number} racerId - 選手登録番号
+ * @param {number|null} venueCode - 会場コード（nullの場合は全会場）
+ * @returns {Object} { "1": { "total": 50, "wins": 28, "top2": 35, "top3": 40 }, "2": { ... } }
+ */
+async function calculateCourseRaceCounts(racerId, venueCode = null) {
+  const since = getDateDaysAgo(COURSE_RACE_COUNTS_WINDOW_DAYS);
+  const fetched = await fetchEntriesAndResults(
+    racerId,
+    venueCode,
+    since,
+    COURSE_RACE_COUNTS_SELECT,
+  );
+  if (!fetched) {
+    return null;
+  }
+
+  const resultsMap = new Map();
+  for (const r of fetched.allResults) {
+    resultsMap.set(r.race_id, r);
+  }
+
+  const courseCounts = tallyCourseRaceCounts(
+    fetched.filteredEntries,
+    resultsMap,
+  );
 
   return Object.keys(courseCounts).length > 0 ? courseCounts : null;
 }
@@ -428,13 +457,35 @@ async function aggregateRacer(racerId, venueCode = 0) {
     return null;
   }
 
+  return buildRacerRecord(racerId, venueCode, {
+    stStats,
+    attackDist,
+    defenseDist,
+    courseTendency,
+    courseRaceCounts,
+  });
+}
+
+/** ST統計（無ければ null 埋め）の列 */
+function stColumns(stStats) {
   return {
-    racer_id: racerId,
-    venue_code: venueCode,
     avg_st: stStats?.avg_st ?? null,
     avg_st_last_30: stStats?.avg_st_last_30 ?? null,
     st_stddev: stStats?.st_stddev ?? null,
     flying_rate: stStats?.flying_rate ?? null,
+  };
+}
+
+/** upsert用の1行（列の順を変えない） */
+function buildRacerRecord(
+  racerId,
+  venueCode,
+  { stStats, attackDist, defenseDist, courseTendency, courseRaceCounts },
+) {
+  return {
+    racer_id: racerId,
+    venue_code: venueCode,
+    ...stColumns(stStats),
     attack_distribution: attackDist || { ...COURSE_DEFAULT_DISTRIBUTION },
     defense_distribution: defenseDist || {},
     course_entry_tendency: courseTendency || null,
@@ -482,7 +533,45 @@ const writeCounts = { changed: 0, unchanged: 0 };
 
 // ===== 結果表示 =====
 
-function printRacerStats(record) {
+/** コースごとの決まり手の割合を、割合の大きい順に1コース1行で出す */
+function printTechDistribution(heading, distribution) {
+  console.log(heading);
+  for (const [course, techs] of Object.entries(distribution)) {
+    const techStr = Object.entries(techs)
+      .sort((a, b) => b[1] - a[1])
+      .map(([t, v]) => `${t}:${(v * 100).toFixed(1)}%`)
+      .join(", ");
+    console.log(`    ${course}コース: ${techStr}`);
+  }
+}
+
+function printCourseRaceCounts(courseRaceCounts) {
+  console.log(`  コース別出走数:`);
+  for (const [course, counts] of Object.entries(courseRaceCounts)) {
+    const rate = (n) =>
+      counts.total > 0 ? ((n / counts.total) * 100).toFixed(1) : "0.0";
+    console.log(
+      `    ${course}コース: ${counts.total}走 ${counts.wins}勝 (勝率${rate(counts.wins)}% 2連率${rate(counts.top2 ?? 0)}% 3連率${rate(counts.top3 ?? 0)}%)`,
+    );
+  }
+}
+
+function printCourseEntryTendency(tendency) {
+  const line = (boat, { n, courses }) => {
+    const courseStr = Object.entries(courses)
+      .sort((a, b) => b[1] - a[1])
+      .map(([c, count]) => `${c}コース:${count}走`)
+      .join(", ");
+    return `${boat}号艇 (${n}走): ${courseStr}`;
+  };
+  console.log(`  進入コース傾向（${tendency.since}以降）:`);
+  for (const [boat, entry] of Object.entries(tendency.all)) {
+    console.log(`    ${line(boat, entry)}`);
+  }
+  console.log(`    会場別: ${Object.keys(tendency.venues).length}会場分を保存`);
+}
+
+function printRacerHeader(record) {
   console.log(
     `\n  選手: ${record.racer_id} (会場: ${record.venue_code === 0 ? "全会場" : record.venue_code})`,
   );
@@ -493,62 +582,31 @@ function printRacerStats(record) {
   console.log(
     `  フライング率: ${record.flying_rate !== null ? (record.flying_rate * 100).toFixed(2) + "%" : "-"}`,
   );
+}
+
+function printRacerStats(record) {
+  printRacerHeader(record);
 
   if (record.attack_distribution) {
-    console.log(`  決まり手分布:`);
-    for (const [course, techs] of Object.entries(record.attack_distribution)) {
-      const techStr = Object.entries(techs)
-        .sort((a, b) => b[1] - a[1])
-        .map(([t, v]) => `${t}:${(v * 100).toFixed(1)}%`)
-        .join(", ");
-      console.log(`    ${course}コース: ${techStr}`);
-    }
+    printTechDistribution(`  決まり手分布:`, record.attack_distribution);
   }
 
   if (
     record.defense_distribution &&
     Object.keys(record.defense_distribution).length > 0
   ) {
-    console.log(`  被攻撃分布:`);
-    for (const [course, techs] of Object.entries(record.defense_distribution)) {
-      const techStr = Object.entries(techs)
-        .sort((a, b) => b[1] - a[1])
-        .map(([t, v]) => `${t}:${(v * 100).toFixed(1)}%`)
-        .join(", ");
-      console.log(`    ${course}コース: ${techStr}`);
-    }
+    printTechDistribution(`  被攻撃分布:`, record.defense_distribution);
   }
 
   if (
     record.course_race_counts &&
     Object.keys(record.course_race_counts).length > 0
   ) {
-    console.log(`  コース別出走数:`);
-    for (const [course, counts] of Object.entries(record.course_race_counts)) {
-      const rate = (n) =>
-        counts.total > 0 ? ((n / counts.total) * 100).toFixed(1) : "0.0";
-      console.log(
-        `    ${course}コース: ${counts.total}走 ${counts.wins}勝 (勝率${rate(counts.wins)}% 2連率${rate(counts.top2 ?? 0)}% 3連率${rate(counts.top3 ?? 0)}%)`,
-      );
-    }
+    printCourseRaceCounts(record.course_race_counts);
   }
 
   if (record.course_entry_tendency) {
-    const tendency = record.course_entry_tendency;
-    const line = (boat, { n, courses }) => {
-      const courseStr = Object.entries(courses)
-        .sort((a, b) => b[1] - a[1])
-        .map(([c, count]) => `${c}コース:${count}走`)
-        .join(", ");
-      return `${boat}号艇 (${n}走): ${courseStr}`;
-    };
-    console.log(`  進入コース傾向（${tendency.since}以降）:`);
-    for (const [boat, entry] of Object.entries(tendency.all)) {
-      console.log(`    ${line(boat, entry)}`);
-    }
-    console.log(
-      `    会場別: ${Object.keys(tendency.venues).length}会場分を保存`,
-    );
+    printCourseEntryTendency(record.course_entry_tendency);
   }
 }
 
@@ -592,6 +650,138 @@ async function getAllRacerIds() {
 
 // ===== メイン処理 =====
 
+function printUsage() {
+  console.log("使い方:");
+  console.log("  node scripts/analysis/aggregate-racer-stats.js --racer=4203");
+  console.log(
+    "  node scripts/analysis/aggregate-racer-stats.js --racer=4203 --venue=12",
+  );
+  console.log("  node scripts/analysis/aggregate-racer-stats.js --all");
+  console.log(
+    "  node scripts/analysis/aggregate-racer-stats.js --all --venue=12",
+  );
+  console.log(
+    "  node scripts/analysis/aggregate-racer-stats.js --all --dry-run",
+  );
+}
+
+/** 単一選手モード: 集計した1行を表示して保存する */
+async function saveSingleRecord(record, dryRun) {
+  printRacerStats(record);
+  const ok = await upsertRacerStats(record, dryRun);
+  if (ok && !dryRun) console.log("  -> racer_aggregated_stats に保存しました");
+}
+
+/** --- 単一選手モード --- */
+async function runSingleRacer(racerId, venueCode, dryRun) {
+  console.log(`選手 ${racerId} の統計を集計中...`);
+
+  // 全会場の統計
+  const record = await aggregateRacer(racerId, 0);
+  if (record) {
+    await saveSingleRecord(record, dryRun);
+  } else {
+    console.log(`  選手 ${racerId} のデータが見つかりません`);
+  }
+
+  // 会場指定がある場合は会場別統計も算出
+  if (venueCode) {
+    const venueRecord = await aggregateRacer(racerId, venueCode);
+    if (venueRecord) {
+      await saveSingleRecord(venueRecord, dryRun);
+    } else {
+      console.log(`  選手 ${racerId} の会場${venueCode}データが見つかりません`);
+    }
+  }
+
+  console.log(
+    `  racer_aggregated_stats: 値が変わった ${writeCounts.changed}行、変更なし ${writeCounts.unchanged}行`,
+  );
+}
+
+/** 全選手モード: 進捗表示（50人ごと） */
+function printProgress(processed, total, startTime) {
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  const rate = ((processed / (Date.now() - startTime)) * 1000).toFixed(1);
+  console.log(
+    `  進捗: ${processed}/${total} (${((processed / total) * 100).toFixed(1)}%) - ${elapsed}秒経過 - ${rate}人/秒`,
+  );
+}
+
+/**
+ * 全選手モードの1人分: 全会場と、会場指定があれば会場別も集計して保存する
+ * 1人の取得エラーで全体を止めず、失敗として数えて最後に非0で終わる（BOA-581）
+ * @returns {Promise<"skipped"|"succeeded"|"failed">}
+ */
+async function aggregateAndUpsertRacer(id, venueCode, dryRun) {
+  try {
+    // 全会場統計
+    const record = await aggregateRacer(id, 0);
+    if (!record) {
+      return "skipped";
+    }
+
+    let ok = await upsertRacerStats(record, dryRun);
+
+    // 会場指定がある場合は会場別統計も算出（失敗は全会場と同じく失敗に数える）
+    if (venueCode) {
+      const venueRecord = await aggregateRacer(id, venueCode);
+      if (venueRecord && !(await upsertRacerStats(venueRecord, dryRun))) {
+        ok = false;
+      }
+    }
+
+    return ok ? "succeeded" : "failed";
+  } catch (err) {
+    console.error(`  集計エラー (racer=${id}): ${err.message}`);
+    return "failed";
+  }
+}
+
+function printAllSummary(counts, startTime, dryRun) {
+  const { processed, succeeded, skipped, failedIds } = counts;
+  const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+  console.log(`\n集計完了:`);
+  console.log(`  処理: ${processed}人`);
+  console.log(`  成功: ${succeeded}人`);
+  console.log(`  スキップ: ${skipped}人 (データ不足)`);
+  console.log(
+    `  失敗: ${failedIds.length}人${failedIds.length > 0 ? ` (${failedIds.slice(0, 20).join(", ")}${failedIds.length > 20 ? " ほか" : ""})` : ""}`,
+  );
+  console.log(`  所要時間: ${totalTime}秒`);
+  console.log(
+    `  racer_aggregated_stats: 値が変わった ${writeCounts.changed}行${dryRun ? "（書く予定）" : "を書き込み"}、変更なし ${writeCounts.unchanged}行は書かない`,
+  );
+  if (dryRun) {
+    console.log("  [dry-run] DB書き込みはスキップされました");
+  }
+}
+
+/** --- 全選手モード --- */
+async function runAllRacers(venueCode, dryRun) {
+  console.log("全選手の統計集計を開始します...\n");
+
+  const racerIds = await getAllRacerIds();
+  const counts = { processed: 0, succeeded: 0, skipped: 0, failedIds: [] };
+  const startTime = Date.now();
+
+  for (const id of racerIds) {
+    counts.processed++;
+
+    if (counts.processed % 50 === 0) {
+      printProgress(counts.processed, racerIds.length, startTime);
+    }
+
+    const outcome = await aggregateAndUpsertRacer(id, venueCode, dryRun);
+    if (outcome === "skipped") counts.skipped++;
+    else if (outcome === "succeeded") counts.succeeded++;
+    else counts.failedIds.push(id);
+  }
+
+  printAllSummary(counts, startTime, dryRun);
+  if (counts.failedIds.length > 0) process.exitCode = 1;
+}
+
 async function main() {
   if (!isSupabaseEnabled()) {
     console.error("Supabase環境変数が未設定です");
@@ -601,20 +791,7 @@ async function main() {
   const { racerId, venueCode, all, dryRun } = parseArgs();
 
   if (!racerId && !all) {
-    console.log("使い方:");
-    console.log(
-      "  node scripts/analysis/aggregate-racer-stats.js --racer=4203",
-    );
-    console.log(
-      "  node scripts/analysis/aggregate-racer-stats.js --racer=4203 --venue=12",
-    );
-    console.log("  node scripts/analysis/aggregate-racer-stats.js --all");
-    console.log(
-      "  node scripts/analysis/aggregate-racer-stats.js --all --venue=12",
-    );
-    console.log(
-      "  node scripts/analysis/aggregate-racer-stats.js --all --dry-run",
-    );
+    printUsage();
     process.exit(0);
   }
 
@@ -622,108 +799,13 @@ async function main() {
     console.log("[dry-run] DBへの書き込みはスキップされます\n");
   }
 
-  // --- 単一選手モード ---
   if (racerId && !all) {
-    console.log(`選手 ${racerId} の統計を集計中...`);
-
-    // 全会場の統計
-    const record = await aggregateRacer(racerId, 0);
-    if (record) {
-      printRacerStats(record);
-      const ok = await upsertRacerStats(record, dryRun);
-      if (ok && !dryRun)
-        console.log("  -> racer_aggregated_stats に保存しました");
-    } else {
-      console.log(`  選手 ${racerId} のデータが見つかりません`);
-    }
-
-    // 会場指定がある場合は会場別統計も算出
-    if (venueCode) {
-      const venueRecord = await aggregateRacer(racerId, venueCode);
-      if (venueRecord) {
-        printRacerStats(venueRecord);
-        const ok = await upsertRacerStats(venueRecord, dryRun);
-        if (ok && !dryRun)
-          console.log("  -> racer_aggregated_stats に保存しました");
-      } else {
-        console.log(
-          `  選手 ${racerId} の会場${venueCode}データが見つかりません`,
-        );
-      }
-    }
-
-    console.log(
-      `  racer_aggregated_stats: 値が変わった ${writeCounts.changed}行、変更なし ${writeCounts.unchanged}行`,
-    );
+    await runSingleRacer(racerId, venueCode, dryRun);
     return;
   }
 
-  // --- 全選手モード ---
   if (all) {
-    console.log("全選手の統計集計を開始します...\n");
-
-    const racerIds = await getAllRacerIds();
-    let processed = 0;
-    let succeeded = 0;
-    let skipped = 0;
-    const failedIds = [];
-    const startTime = Date.now();
-
-    for (const id of racerIds) {
-      processed++;
-
-      // 進捗表示（50人ごと）
-      if (processed % 50 === 0) {
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-        const rate = ((processed / (Date.now() - startTime)) * 1000).toFixed(1);
-        console.log(
-          `  進捗: ${processed}/${racerIds.length} (${((processed / racerIds.length) * 100).toFixed(1)}%) - ${elapsed}秒経過 - ${rate}人/秒`,
-        );
-      }
-
-      // 1人の取得エラーで全体を止めず、失敗として数えて最後に非0で終わる（BOA-581）
-      try {
-        // 全会場統計
-        const record = await aggregateRacer(id, 0);
-        if (!record) {
-          skipped++;
-          continue;
-        }
-
-        let ok = await upsertRacerStats(record, dryRun);
-
-        // 会場指定がある場合は会場別統計も算出（失敗は全会場と同じく失敗に数える）
-        if (venueCode) {
-          const venueRecord = await aggregateRacer(id, venueCode);
-          if (venueRecord && !(await upsertRacerStats(venueRecord, dryRun))) {
-            ok = false;
-          }
-        }
-
-        if (ok) succeeded++;
-        else failedIds.push(id);
-      } catch (err) {
-        console.error(`  集計エラー (racer=${id}): ${err.message}`);
-        failedIds.push(id);
-      }
-    }
-
-    const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`\n集計完了:`);
-    console.log(`  処理: ${processed}人`);
-    console.log(`  成功: ${succeeded}人`);
-    console.log(`  スキップ: ${skipped}人 (データ不足)`);
-    console.log(
-      `  失敗: ${failedIds.length}人${failedIds.length > 0 ? ` (${failedIds.slice(0, 20).join(", ")}${failedIds.length > 20 ? " ほか" : ""})` : ""}`,
-    );
-    console.log(`  所要時間: ${totalTime}秒`);
-    console.log(
-      `  racer_aggregated_stats: 値が変わった ${writeCounts.changed}行${dryRun ? "（書く予定）" : "を書き込み"}、変更なし ${writeCounts.unchanged}行は書かない`,
-    );
-    if (dryRun) {
-      console.log("  [dry-run] DB書き込みはスキップされました");
-    }
-    if (failedIds.length > 0) process.exitCode = 1;
+    await runAllRacers(venueCode, dryRun);
   }
 }
 

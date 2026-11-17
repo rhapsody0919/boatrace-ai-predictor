@@ -310,6 +310,38 @@ const REST_RESERVED_PARAMS = new Set([
   "columns",
 ]);
 
+/** REST の1つの絞り込み（select・on_conflict・order・列の絞り込み）を acc に足す。値が式（\u0000）なら足さない */
+function applyRestParam(acc, key, value) {
+  const fixed = !value.includes("\u0000");
+  if (key === "select" && fixed) {
+    const parsed = parseSelect(decodeURIComponentSafe(value));
+    parsed.columns.forEach((c) => acc.columns.add(c));
+    acc.embeds.push(...parsed.embeds);
+  } else if (key === "on_conflict" && fixed) {
+    acc.onConflict = value.split(",").filter((c) => IDENT.test(c));
+  } else if (key === "order" && fixed) {
+    value
+      .split(",")
+      .map((c) => c.split(".")[0])
+      .filter((c) => IDENT.test(c))
+      .forEach((c) => acc.columns.add(c));
+  } else if (!REST_RESERVED_PARAMS.has(key) && IDENT.test(key)) {
+    acc.columns.add(key);
+  }
+}
+
+/** `?select=…&order=…&列=…` の絞り込みから、触る列・埋め込み・衝突の列を読む */
+function parseRestQuery(query) {
+  const acc = { columns: new Set(), embeds: [], onConflict: [] };
+  for (const part of query.slice(1).split("&")) {
+    if (!part) continue;
+    const [key, value = ""] = part.split("=");
+    if (!key || key.includes("\u0000")) continue;
+    applyRestParam(acc, key, value);
+  }
+  return acc;
+}
+
 /** `/rest/v1/…` の文字列（テンプレートは式を `\u0000` に置いた形）から表・RPC と列を読む */
 export function parseRestPath(text) {
   const m = text.match(/\/rest\/v1\/(rpc\/)?([^?\s"'`]*)(\?[^\s"'`]*)?/);
@@ -322,29 +354,7 @@ export function parseRestPath(text) {
   const nameMatch = m[2].match(/^[A-Za-z_][A-Za-z0-9_]*/);
   if (!nameMatch) return null;
   if (m[2].length !== nameMatch[0].length) return { dynamic: true, isRpc };
-  const columns = new Set();
-  const embeds = [];
-  let onConflict = [];
-  for (const part of (m[3] ?? "").slice(1).split("&")) {
-    if (!part) continue;
-    const [key, value = ""] = part.split("=");
-    if (!key || key.includes("\u0000")) continue;
-    if (key === "select" && !value.includes("\u0000")) {
-      const parsed = parseSelect(decodeURIComponentSafe(value));
-      parsed.columns.forEach((c) => columns.add(c));
-      embeds.push(...parsed.embeds);
-    } else if (key === "on_conflict" && !value.includes("\u0000")) {
-      onConflict = value.split(",").filter((c) => IDENT.test(c));
-    } else if (key === "order" && !value.includes("\u0000")) {
-      value
-        .split(",")
-        .map((c) => c.split(".")[0])
-        .filter((c) => IDENT.test(c))
-        .forEach((c) => columns.add(c));
-    } else if (!REST_RESERVED_PARAMS.has(key) && IDENT.test(key)) {
-      columns.add(key);
-    }
-  }
+  const { columns, embeds, onConflict } = parseRestQuery(m[3] ?? "");
   return {
     dynamic: false,
     isRpc,
@@ -480,6 +490,411 @@ function enclosingFunction(node, parents) {
   return { name, params, node: cur };
 }
 
+/** 名前が引数（部品の中）なら部品として記録して true */
+function noteHelper(ctx, argNode, parents, at, kind, op) {
+  if (argNode?.type !== "Identifier") return false;
+  // 内側の無名の関数（chunks.map((c) => client.from(table)…)）を越えて、名前を引数に持つ関数まで上がる
+  let fn = enclosingFunction(at, parents);
+  while (fn && !fn.params.includes(argNode.name))
+    fn = enclosingFunction(fn.node, parents);
+  if (!fn?.name) return false;
+  ctx.helperDefs.push({
+    fn: fn.name,
+    paramIndex: fn.params.indexOf(argNode.name),
+    kind,
+    op,
+  });
+  return true;
+}
+
+/** `${x}` の式に使う識別子の名前（const の値は、宣言の行ではなく使う行で数える） */
+function collectTemplateIdents(program) {
+  const templateIdents = new Set();
+  walk(program, (node) => {
+    if (node.type === "TemplateLiteral")
+      node.expressions.forEach((e) => {
+        if (e.type === "Identifier") templateIdents.add(e.name);
+      });
+  });
+  return templateIdents;
+}
+
+/** import・export … from の相対パスと、名前つき import の対応を記録する。拾ったら true */
+function noteStaticImport(ctx, node) {
+  if (
+    !(
+      node.type === "ImportDeclaration" ||
+      node.type === "ExportNamedDeclaration" ||
+      node.type === "ExportAllDeclaration"
+    ) ||
+    !node.source
+  )
+    return false;
+  ctx.imports.push(node.source.value);
+  if (node.type === "ImportDeclaration")
+    for (const sp of node.specifiers) {
+      if (sp.type === "ImportSpecifier")
+        ctx.importBindings[sp.local.name] = {
+          source: node.source.value,
+          imported:
+            sp.imported.type === "Identifier"
+              ? sp.imported.name
+              : sp.imported.value,
+        };
+    }
+  return true;
+}
+
+/** `import("…")` の相対パスを記録する。拾ったら true */
+function noteDynamicImport(ctx, node) {
+  if (!(
+    node.type === "ImportExpression" ||
+    (isCall(node) && node.callee.type === "Import")
+  ))
+    return false;
+  const spec = literalString(node.source ?? node.arguments?.[0]);
+  if (spec) ctx.imports.push(spec);
+  return true;
+}
+
+/** 識別子の関数の呼び出しで、引数が文字列の定数か、囲む関数の引数なら記録する（部品の呼び出しの解決用） */
+function noteCallSite(ctx, node, parents) {
+  const fn = enclosingFunction(node, parents);
+  const args = node.arguments.map((a) => {
+    const lits = staticStrings(a, ctx.consts);
+    const param =
+      a.type === "Identifier" && fn ? fn.params.indexOf(a.name) : -1;
+    return { lits, param: param >= 0 ? param : null };
+  });
+  if (args.some((a) => a.lits || a.param !== null))
+    ctx.callSites.push({
+      callee: node.callee.name,
+      line: ctx.line(node),
+      encl: fn?.name ?? null,
+      args,
+    });
+}
+
+/** `.from(…)` の後ろの連鎖の1つ（select・絞り込み・match・書き込み）の列を acc に足す */
+function applySelectLink(acc, link) {
+  const sel = literalString(link.args[0]);
+  if (sel === null && link.args.length > 0) {
+    acc.columns.add("?");
+    return;
+  }
+  const parsed = parseSelect(sel ?? "*");
+  parsed.columns.forEach((c) => acc.columns.add(c));
+  acc.embeds.push(...parsed.embeds);
+}
+
+function applyFilterLink(acc, link) {
+  const col = literalString(link.args[0]);
+  if (col === null) return;
+  const base = col.split("->")[0].trim();
+  if (IDENT.test(base)) acc.columns.add(base);
+}
+
+function applyWriteLink(acc, link) {
+  const keys = objectKeys(link.args[0]);
+  if (keys) keys.forEach((k) => acc.writeColumns.add(k));
+  else acc.writeColumns.add("?");
+  const oc = literalString(propertyValue(link.args[1], "onConflict"));
+  if (oc)
+    oc.split(",")
+      .map((c) => c.trim())
+      .filter((c) => IDENT.test(c))
+      .forEach((c) => acc.columns.add(c));
+}
+
+function applyChainLink(acc, link) {
+  if (link.name === "select") applySelectLink(acc, link);
+  else if (COLUMN_FILTERS.has(link.name)) applyFilterLink(acc, link);
+  else if (link.name === "match")
+    (objectKeys(link.args[0]) ?? []).forEach((k) => acc.columns.add(k));
+  else if (WRITE_OPS.has(link.name) && link.name !== "delete")
+    applyWriteLink(acc, link);
+}
+
+function chainColumns(chain) {
+  const acc = { columns: new Set(), writeColumns: new Set(), embeds: [] };
+  for (const link of chain) applyChainLink(acc, link);
+  return acc;
+}
+
+/** 埋め込み（別の表）の読みを、入れ子の分まで記録する。accept は写しにある名前かの判定 */
+function pushEmbedAccesses(ctx, list, line, accept) {
+  for (const e of list) {
+    if (accept(e.name))
+      ctx.accesses.push({
+        kind: "table",
+        name: e.name,
+        op: "select",
+        via: "embed",
+        file: ctx.file,
+        line,
+        columns: [...new Set(e.columns)].sort(),
+        writeColumns: [],
+      });
+    pushEmbedAccesses(ctx, e.embeds, line, accept);
+  }
+}
+
+const clientEmbedKnown = (ctx, name) =>
+  ctx.keepTable(name) && (ctx.known.knownTables?.has(name) ?? true);
+const restEmbedKnown = (ctx, name) =>
+  ctx.known.knownTables?.has(name) && ctx.keepTable(name);
+
+/** `.from("表")` 1つ分の読み書きと、埋め込みの読みを記録する */
+function pushClientTable(ctx, table, chain, opLink, callee) {
+  if (!IDENT.test(table)) return;
+  if (!opLink && !ctx.known.knownTables?.has(table)) return; // Supabase と言えない
+  if (!ctx.keepTable(table)) return;
+  const op = opLink ? opLink.name : "from";
+  const { columns, writeColumns, embeds } = chainColumns(chain);
+  const isWrite = WRITE_OPS.has(op);
+  const line = ctx.line(callee.property);
+  ctx.accesses.push({
+    kind: "table",
+    name: table,
+    op,
+    via: "client",
+    file: ctx.file,
+    line,
+    // 書き込みの連鎖の select（返り値）・絞り込みの列は「読む」に入れる
+    columns: [...columns].sort(),
+    writeColumns: isWrite ? [...writeColumns].sort() : [],
+  });
+  pushEmbedAccesses(ctx, embeds, line, (n) => clientEmbedKnown(ctx, n));
+}
+
+function visitFromCall(ctx, node, parents) {
+  const callee = node.callee;
+  const obj = callee.object;
+  if (obj.type === "Identifier" && NON_DB_FROM_OBJECTS.has(obj.name)) return;
+  if (memberName(obj) === "storage") return; // supabase.storage.from("bucket")
+  const chain = chainAfter(node, parents);
+  const opLink = chain.find((c) => DB_OPS.has(c.name));
+  const tableNames = staticStrings(node.arguments[0], ctx.consts);
+  if (tableNames === null) {
+    if (
+      opLink &&
+      !noteHelper(ctx, node.arguments[0], parents, node, "table", opLink.name)
+    )
+      ctx.unresolved.push({
+        file: ctx.file,
+        line: ctx.line(callee.property),
+        reason: "表の名前が変数（.from(式)）",
+      });
+    return;
+  }
+  for (const table of tableNames)
+    pushClientTable(ctx, table, chain, opLink, callee);
+}
+
+function visitRpcCall(ctx, node, parents) {
+  const callee = node.callee;
+  const fnNames = staticStrings(node.arguments[0], ctx.consts);
+  if (fnNames === null) {
+    if (!noteHelper(ctx, node.arguments[0], parents, node, "rpc", "call"))
+      ctx.unresolved.push({
+        file: ctx.file,
+        line: ctx.line(callee.property),
+        reason: "RPC の名前が変数（.rpc(式)）",
+      });
+    return;
+  }
+  for (const fn of fnNames) {
+    if (!IDENT.test(fn) || !ctx.keepFn(fn)) continue;
+    ctx.accesses.push({
+      kind: "rpc",
+      name: fn,
+      op: "call",
+      via: "client",
+      file: ctx.file,
+      line: ctx.line(callee.property),
+      columns: [],
+      writeColumns: [],
+    });
+  }
+}
+
+function visitCall(ctx, node, parents) {
+  const callee = node.callee;
+  if (callee.type === "Identifier" && node.arguments.length > 0)
+    noteCallSite(ctx, node, parents);
+  const name = memberName(callee);
+  if (name === "from" && node.arguments.length === 1)
+    visitFromCall(ctx, node, parents);
+  else if (name === "rpc" && node.arguments.length >= 1)
+    visitRpcCall(ctx, node, parents);
+}
+
+/** 写しにある表・RPC の名前だけの文字列を mentions に記録する（固定入力のファイルは除く） */
+function noteMention(ctx, node, value) {
+  if (ctx.known.knownFunctions?.has(value))
+    ctx.mentions.push({
+      kind: "rpc",
+      name: value,
+      file: ctx.file,
+      line: ctx.line(node),
+    });
+  else if (ctx.known.knownTables?.has(value))
+    ctx.mentions.push({
+      kind: "table",
+      name: value,
+      file: ctx.file,
+      line: ctx.line(node),
+    });
+}
+
+/** `const base = "/rest/v1/…"` のように、`${base}` で使う所で数える定数の宣言（ここでは数えない） */
+function isTemplateOnlyConstDecl(ctx, node, decl) {
+  return (
+    decl?.type === "VariableDeclarator" &&
+    decl.init === node &&
+    decl.id.type === "Identifier" &&
+    ctx.consts.has(decl.id.name) &&
+    ctx.templateIdents.has(decl.id.name)
+  );
+}
+
+/** REST の包みの中（`/rest/v1/${path}` の path が引数）か */
+function hasWrapperParam(node, fnCtx) {
+  return (
+    node.type === "TemplateLiteral" &&
+    node.expressions.some(
+      (e) =>
+        e.type === "Identifier" && fnCtx?.name && fnCtx.params.includes(e.name),
+    )
+  );
+}
+
+/** REST の包み（db("rpc/f", …)・db(`表?…`)）に渡す、/rest/v1/ を省いた相対のパスが写しにある名前か */
+function isKnownBarePath(text, known) {
+  const bare = text.match(/^(rpc\/)?([A-Za-z_][A-Za-z0-9_]*)(\?|$)/);
+  return (
+    bare &&
+    (bare[1]
+      ? known.knownFunctions?.has(bare[2])
+      : bare[3] === "?" && known.knownTables?.has(bare[2]))
+  );
+}
+
+/** REST の表（`/rest/v1/表?…`）の読み書きと、埋め込みの読みを記録する */
+function pushRestTable(ctx, node, rest, method, fnCtx) {
+  let op = method ? (REST_METHOD_OP[method] ?? "rest") : "rest";
+  if (op === "insert" && rest.onConflict.length) op = "upsert";
+  const columns = new Set([...rest.columns, ...rest.onConflict]);
+  const embeds = [...rest.embeds];
+  if (op === "select" || op === "rest") {
+    for (const sel of selectLiteralsIn(fnCtx?.node, ctx.consts)) {
+      const parsed = parseSelect(sel);
+      parsed.columns.forEach((c) => columns.add(c));
+      embeds.push(...parsed.embeds);
+    }
+  }
+  pushEmbedAccesses(ctx, embeds, ctx.line(node), (n) => restEmbedKnown(ctx, n));
+  ctx.accesses.push({
+    kind: "table",
+    name: rest.name,
+    op,
+    via: "rest",
+    file: ctx.file,
+    line: ctx.line(node),
+    columns: [...columns].sort(),
+    writeColumns: WRITE_OPS.has(op) && op !== "delete" ? ["?"] : [],
+  });
+}
+
+/** 文字列の文面 1つ分の REST の読み書き（`/rest/v1/…`・REST の包みの相対のパス）を記録する */
+function pushRestAccess(ctx, node, text, { method, fnCtx, wrapperParam }) {
+  if (!text.includes("/rest/v1/") && !isKnownBarePath(text, ctx.known)) return;
+  const rest = parseRestPath(
+    text.includes("/rest/v1/") ? text : `/rest/v1/${text}`,
+  );
+  if (!rest) return;
+  if (rest.dynamic) {
+    if (wrapperParam) return;
+    ctx.unresolved.push({
+      file: ctx.file,
+      line: ctx.line(node),
+      reason: rest.isRpc
+        ? "REST の RPC の名前が式"
+        : "REST の表の名前が式（/rest/v1/${…}）",
+    });
+    return;
+  }
+  if (rest.isRpc) {
+    if (!ctx.keepFn(rest.name)) return;
+    ctx.accesses.push({
+      kind: "rpc",
+      name: rest.name,
+      op: "call",
+      via: "rest",
+      file: ctx.file,
+      line: ctx.line(node),
+      columns: [],
+      writeColumns: [],
+    });
+    return;
+  }
+  if (!ctx.keepTable(rest.name)) return;
+  pushRestTable(ctx, node, rest, method, fnCtx);
+}
+
+function visitString(ctx, node, parents) {
+  const value = literalString(node);
+  if (value !== null && !ctx.fixture) noteMention(ctx, node, value);
+  // テンプレートの中の文字列は TemplateElement（別の型）なので二重には拾わない
+  if (isTemplateOnlyConstDecl(ctx, node, parents.get(node))) return; // `${base}` で使う所で数える
+  const method = enclosingFetchMethod(node, parents);
+  const fnCtx = enclosingFunction(node, parents);
+  // 呼び手が渡す相対のパスで拾う
+  const wrapperParam = hasWrapperParam(node, fnCtx);
+  for (const text of templateTexts(node, ctx.consts))
+    pushRestAccess(ctx, node, text, { method, fnCtx, wrapperParam });
+}
+
+function visitNode(ctx, node, parents) {
+  if (noteStaticImport(ctx, node) || noteDynamicImport(ctx, node)) return;
+  if (isCall(node)) visitCall(ctx, node, parents);
+  else if (node.type === "StringLiteral" || node.type === "TemplateLiteral")
+    visitString(ctx, node, parents);
+}
+
+/**
+ * 名前の文字列だけがあるもの（`.rpc(fn.name)`・`/rest/v1/rpc/${rpcName}` の先の定数・一覧）。
+ * 直接の呼び出しで拾った箇所は除く。表の名前は一般の語と重なるので、名前が式の箇所があるファイルだけ
+ */
+function keepMentions(accesses, mentions, unresolved) {
+  const nearDirect = (m) =>
+    accesses.some(
+      (a) =>
+        a.kind === m.kind &&
+        a.name === m.name &&
+        Math.abs(a.line - m.line) <= 3,
+    );
+  const seen = new Set();
+  return mentions.filter((m) => {
+    const key = `${m.kind}:${m.name}:${m.line}`;
+    if (nearDirect(m) || seen.has(key)) return false;
+    seen.add(key);
+    return m.kind === "rpc" || unresolved.length > 0;
+  });
+}
+
+function parseSource(source, file) {
+  return parse(source, {
+    sourceType: "unambiguous",
+    plugins: parserPlugins(file),
+    errorRecovery: true,
+    allowReturnOutsideFunction: true,
+    allowAwaitOutsideFunction: true,
+    allowImportExportEverywhere: true,
+    allowUndeclaredExports: true,
+  });
+}
+
 /**
  * 1つのファイルから、表・RPC への読み書きと、拾えなかった箇所と、相対 import を集める。
  * @param {string} source
@@ -497,15 +912,7 @@ export function extractAccesses(source, file, known = {}) {
   const importBindings = {};
   let ast;
   try {
-    ast = parse(source, {
-      sourceType: "unambiguous",
-      plugins: parserPlugins(file),
-      errorRecovery: true,
-      allowReturnOutsideFunction: true,
-      allowAwaitOutsideFunction: true,
-      allowImportExportEverywhere: true,
-      allowUndeclaredExports: true,
-    });
+    ast = parseSource(source, file);
   } catch (e) {
     return {
       accesses,
@@ -519,332 +926,30 @@ export function extractAccesses(source, file, known = {}) {
     };
   }
   const fixture = isFixtureLike(file);
-  const keepTable = (name) => !fixture || known.knownTables?.has(name);
-  const keepFn = (name) => !fixture || known.knownFunctions?.has(name);
-  const line = (n) => n.loc?.start.line ?? 0;
-  const consts = collectConstStrings(ast.program);
-  // `${x}` の式に使う const は、宣言の行ではなく使う行で数える
-  const templateIdents = new Set();
-  walk(ast.program, (node) => {
-    if (node.type === "TemplateLiteral")
-      node.expressions.forEach((e) => {
-        if (e.type === "Identifier") templateIdents.add(e.name);
-      });
-  });
-  /** 名前が引数（部品の中）なら部品として記録して true */
-  const noteHelper = (argNode, parents, at, kind, op) => {
-    if (argNode?.type !== "Identifier") return false;
-    // 内側の無名の関数（chunks.map((c) => client.from(table)…)）を越えて、名前を引数に持つ関数まで上がる
-    let fn = enclosingFunction(at, parents);
-    while (fn && !fn.params.includes(argNode.name))
-      fn = enclosingFunction(fn.node, parents);
-    if (!fn?.name) return false;
-    helperDefs.push({
-      fn: fn.name,
-      paramIndex: fn.params.indexOf(argNode.name),
-      kind,
-      op,
-    });
-    return true;
+  const ctx = {
+    file,
+    known,
+    fixture,
+    accesses,
+    unresolved,
+    imports,
+    mentions,
+    helperDefs,
+    callSites,
+    importBindings,
+    keepTable: (name) => !fixture || known.knownTables?.has(name),
+    keepFn: (name) => !fixture || known.knownFunctions?.has(name),
+    line: (n) => n.loc?.start.line ?? 0,
+    consts: collectConstStrings(ast.program),
+    templateIdents: collectTemplateIdents(ast.program),
   };
-
-  walk(ast.program, (node, parents) => {
-    if (
-      (node.type === "ImportDeclaration" ||
-        node.type === "ExportNamedDeclaration" ||
-        node.type === "ExportAllDeclaration") &&
-      node.source
-    ) {
-      imports.push(node.source.value);
-      if (node.type === "ImportDeclaration")
-        for (const sp of node.specifiers) {
-          if (sp.type === "ImportSpecifier")
-            importBindings[sp.local.name] = {
-              source: node.source.value,
-              imported:
-                sp.imported.type === "Identifier"
-                  ? sp.imported.name
-                  : sp.imported.value,
-            };
-        }
-      return;
-    }
-    if (
-      node.type === "ImportExpression" ||
-      (isCall(node) && node.callee.type === "Import")
-    ) {
-      const spec = literalString(node.source ?? node.arguments?.[0]);
-      if (spec) imports.push(spec);
-      return;
-    }
-    if (isCall(node)) {
-      const callee = node.callee;
-      if (callee.type === "Identifier" && node.arguments.length > 0) {
-        const fn = enclosingFunction(node, parents);
-        const args = node.arguments.map((a) => {
-          const lits = staticStrings(a, consts);
-          const param =
-            a.type === "Identifier" && fn ? fn.params.indexOf(a.name) : -1;
-          return { lits, param: param >= 0 ? param : null };
-        });
-        if (args.some((a) => a.lits || a.param !== null))
-          callSites.push({
-            callee: callee.name,
-            line: line(node),
-            encl: fn?.name ?? null,
-            args,
-          });
-      }
-      const name = memberName(callee);
-      if (name === "from" && node.arguments.length === 1) {
-        const obj = callee.object;
-        if (obj.type === "Identifier" && NON_DB_FROM_OBJECTS.has(obj.name))
-          return;
-        if (memberName(obj) === "storage") return; // supabase.storage.from("bucket")
-        const chain = chainAfter(node, parents);
-        const opLink = chain.find((c) => DB_OPS.has(c.name));
-        const tableNames = staticStrings(node.arguments[0], consts);
-        if (tableNames === null) {
-          if (
-            opLink &&
-            !noteHelper(node.arguments[0], parents, node, "table", opLink.name)
-          )
-            unresolved.push({
-              file,
-              line: line(callee.property),
-              reason: "表の名前が変数（.from(式)）",
-            });
-          return;
-        }
-        for (const table of tableNames) {
-          if (!IDENT.test(table)) continue;
-          if (!opLink && !known.knownTables?.has(table)) continue; // Supabase と言えない
-          if (!keepTable(table)) continue;
-          const op = opLink ? opLink.name : "from";
-          const columns = new Set();
-          const writeColumns = new Set();
-          const embeds = [];
-          for (const link of chain) {
-            if (link.name === "select") {
-              const sel = literalString(link.args[0]);
-              if (sel === null && link.args.length > 0) columns.add("?");
-              else {
-                const parsed = parseSelect(sel ?? "*");
-                parsed.columns.forEach((c) => columns.add(c));
-                embeds.push(...parsed.embeds);
-              }
-            } else if (COLUMN_FILTERS.has(link.name)) {
-              const col = literalString(link.args[0]);
-              if (col !== null) {
-                const base = col.split("->")[0].trim();
-                if (IDENT.test(base)) columns.add(base);
-              }
-            } else if (link.name === "match") {
-              (objectKeys(link.args[0]) ?? []).forEach((k) => columns.add(k));
-            } else if (WRITE_OPS.has(link.name) && link.name !== "delete") {
-              const keys = objectKeys(link.args[0]);
-              if (keys) keys.forEach((k) => writeColumns.add(k));
-              else writeColumns.add("?");
-              const oc = literalString(
-                propertyValue(link.args[1], "onConflict"),
-              );
-              if (oc)
-                oc.split(",")
-                  .map((c) => c.trim())
-                  .filter((c) => IDENT.test(c))
-                  .forEach((c) => columns.add(c));
-            }
-          }
-          const isWrite = WRITE_OPS.has(op);
-          accesses.push({
-            kind: "table",
-            name: table,
-            op,
-            via: "client",
-            file,
-            line: line(callee.property),
-            // 書き込みの連鎖の select（返り値）・絞り込みの列は「読む」に入れる
-            columns: [...columns].sort(),
-            writeColumns: isWrite ? [...writeColumns].sort() : [],
-          });
-          const pushEmbeds = (list) => {
-            for (const e of list) {
-              if (keepTable(e.name) && (known.knownTables?.has(e.name) ?? true))
-                accesses.push({
-                  kind: "table",
-                  name: e.name,
-                  op: "select",
-                  via: "embed",
-                  file,
-                  line: line(callee.property),
-                  columns: [...new Set(e.columns)].sort(),
-                  writeColumns: [],
-                });
-              pushEmbeds(e.embeds);
-            }
-          };
-          pushEmbeds(embeds);
-        }
-        return;
-      }
-      if (name === "rpc" && node.arguments.length >= 1) {
-        const fnNames = staticStrings(node.arguments[0], consts);
-        if (fnNames === null) {
-          if (!noteHelper(node.arguments[0], parents, node, "rpc", "call"))
-            unresolved.push({
-              file,
-              line: line(callee.property),
-              reason: "RPC の名前が変数（.rpc(式)）",
-            });
-          return;
-        }
-        for (const fn of fnNames) {
-          if (!IDENT.test(fn) || !keepFn(fn)) continue;
-          accesses.push({
-            kind: "rpc",
-            name: fn,
-            op: "call",
-            via: "client",
-            file,
-            line: line(callee.property),
-            columns: [],
-            writeColumns: [],
-          });
-        }
-        return;
-      }
-    }
-    if (node.type === "StringLiteral" || node.type === "TemplateLiteral") {
-      const value = literalString(node);
-      if (value !== null && !fixture) {
-        if (known.knownFunctions?.has(value))
-          mentions.push({ kind: "rpc", name: value, file, line: line(node) });
-        else if (known.knownTables?.has(value))
-          mentions.push({ kind: "table", name: value, file, line: line(node) });
-      }
-      // テンプレートの中の文字列は TemplateElement（別の型）なので二重には拾わない
-      const decl = parents.get(node);
-      if (
-        decl?.type === "VariableDeclarator" &&
-        decl.init === node &&
-        decl.id.type === "Identifier" &&
-        consts.has(decl.id.name) &&
-        templateIdents.has(decl.id.name)
-      )
-        return; // `${base}` で使う所で数える
-      const method = enclosingFetchMethod(node, parents);
-      const fnCtx = enclosingFunction(node, parents);
-      // REST の包みの中（`/rest/v1/${path}` の path が引数）。呼び手が渡す相対のパスで拾う
-      const wrapperParam =
-        node.type === "TemplateLiteral" &&
-        node.expressions.some(
-          (e) =>
-            e.type === "Identifier" &&
-            fnCtx?.name &&
-            fnCtx.params.includes(e.name),
-        );
-      for (const text of templateTexts(node, consts)) {
-        // REST の包み（db("rpc/f", …)・db(`表?…`)）に渡す、/rest/v1/ を省いた相対のパス
-        const bare = text.match(/^(rpc\/)?([A-Za-z_][A-Za-z0-9_]*)(\?|$)/);
-        const bareKnown =
-          bare &&
-          (bare[1]
-            ? known.knownFunctions?.has(bare[2])
-            : bare[3] === "?" && known.knownTables?.has(bare[2]));
-        if (!text.includes("/rest/v1/") && !bareKnown) continue;
-        const rest = parseRestPath(
-          text.includes("/rest/v1/") ? text : `/rest/v1/${text}`,
-        );
-        if (!rest) continue;
-        if (rest.dynamic) {
-          if (wrapperParam) continue;
-          unresolved.push({
-            file,
-            line: line(node),
-            reason: rest.isRpc
-              ? "REST の RPC の名前が式"
-              : "REST の表の名前が式（/rest/v1/${…}）",
-          });
-          continue;
-        }
-        if (rest.isRpc) {
-          if (!keepFn(rest.name)) continue;
-          accesses.push({
-            kind: "rpc",
-            name: rest.name,
-            op: "call",
-            via: "rest",
-            file,
-            line: line(node),
-            columns: [],
-            writeColumns: [],
-          });
-          continue;
-        }
-        if (!keepTable(rest.name)) continue;
-        let op = method ? (REST_METHOD_OP[method] ?? "rest") : "rest";
-        if (op === "insert" && rest.onConflict.length) op = "upsert";
-        const columns = new Set([...rest.columns, ...rest.onConflict]);
-        const embeds = [...rest.embeds];
-        if (op === "select" || op === "rest") {
-          for (const sel of selectLiteralsIn(fnCtx?.node, consts)) {
-            const parsed = parseSelect(sel);
-            parsed.columns.forEach((c) => columns.add(c));
-            embeds.push(...parsed.embeds);
-          }
-        }
-        const pushRestEmbeds = (list) => {
-          for (const e of list) {
-            if (known.knownTables?.has(e.name) && keepTable(e.name))
-              accesses.push({
-                kind: "table",
-                name: e.name,
-                op: "select",
-                via: "embed",
-                file,
-                line: line(node),
-                columns: [...new Set(e.columns)].sort(),
-                writeColumns: [],
-              });
-            pushRestEmbeds(e.embeds);
-          }
-        };
-        pushRestEmbeds(embeds);
-        accesses.push({
-          kind: "table",
-          name: rest.name,
-          op,
-          via: "rest",
-          file,
-          line: line(node),
-          columns: [...columns].sort(),
-          writeColumns: WRITE_OPS.has(op) && op !== "delete" ? ["?"] : [],
-        });
-      }
-    }
-  });
-  // 名前の文字列だけがあるもの（`.rpc(fn.name)`・`/rest/v1/rpc/${rpcName}` の先の定数・一覧）。
-  // 直接の呼び出しで拾った箇所は除く。表の名前は一般の語と重なるので、名前が式の箇所があるファイルだけ
-  const nearDirect = (m) =>
-    accesses.some(
-      (a) =>
-        a.kind === m.kind &&
-        a.name === m.name &&
-        Math.abs(a.line - m.line) <= 3,
-    );
-  const seen = new Set();
-  const keptMentions = mentions.filter((m) => {
-    const key = `${m.kind}:${m.name}:${m.line}`;
-    if (nearDirect(m) || seen.has(key)) return false;
-    seen.add(key);
-    return m.kind === "rpc" || unresolved.length > 0;
-  });
+  walk(ast.program, (node, parents) => visitNode(ctx, node, parents));
   return {
     accesses,
     // 検査の固定入力のファイルの「名前が式」は偽の呼び出しが多いので出さない
     unresolved: fixture ? [] : unresolved,
     imports: [...new Set(imports)].sort(),
-    mentions: keptMentions,
+    mentions: keepMentions(accesses, mentions, unresolved),
     helperDefs,
     callSites: fixture ? [] : callSites,
     importBindings,
@@ -1026,6 +1131,48 @@ export function resolveImport(from, spec, files) {
   return null;
 }
 
+/** ジョブの入口の api/cron のファイル。名前で決まらなければ、ジョブの名前の文字列を持つファイルが1つだけのとき。決まらなければ null */
+function findJobEntry(job, files, cronFiles, perFile) {
+  const byName = `api/cron/${job.replace(/_/g, "-")}.js`;
+  if (files.has(byName)) return byName;
+  const cands = cronFiles.filter((f) => perFile.get(f).strings?.has(job));
+  return cands.length === 1 ? cands[0] : null;
+}
+
+/** 入口から相対 import でたどれるファイル（入口を含む。固定入力のファイルは辿らない） */
+function reachableFiles(entry, perFile, files) {
+  const seen = new Set([entry]);
+  const queue = [entry];
+  while (queue.length) {
+    const cur = queue.shift();
+    for (const spec of perFile.get(cur)?.imports ?? []) {
+      const next = resolveImport(cur, spec, files);
+      if (next && !seen.has(next) && !isFixtureLike(next)) {
+        seen.add(next);
+        queue.push(next);
+      }
+    }
+  }
+  return seen;
+}
+
+/** たどったファイルの表への書き込み（表の名前 → 箇所の一覧） */
+function jobWrites(seen, perFile, extraAccesses) {
+  const writes = new Map();
+  for (const f of seen) {
+    for (const a of [
+      ...(perFile.get(f)?.accesses ?? []),
+      ...extraAccesses.filter((x) => x.file === f),
+    ]) {
+      if (a.kind === "table" && WRITE_OPS.has(a.op)) {
+        if (!writes.has(a.name)) writes.set(a.name, []);
+        writes.get(a.name).push(ref(a));
+      }
+    }
+  }
+  return writes;
+}
+
 /**
  * 取得のジョブ（scrape の registry）ごとに、入口の api/cron のファイルと、そこから import でたどれる書き込みを返す。
  * 入口: api/cron/{job の _ を - にした名前}.js。無ければ、ジョブの名前の文字列を持つ api/cron のファイルが1つだけのとき。
@@ -1038,12 +1185,7 @@ export function scrapeJobWriters(jobNames, perFile, extraAccesses = []) {
   const jobs = [];
   const unresolved = [];
   for (const job of [...jobNames].sort()) {
-    const byName = `api/cron/${job.replace(/_/g, "-")}.js`;
-    let entry = files.has(byName) ? byName : null;
-    if (!entry) {
-      const cands = cronFiles.filter((f) => perFile.get(f).strings?.has(job));
-      if (cands.length === 1) entry = cands[0];
-    }
+    const entry = findJobEntry(job, files, cronFiles, perFile);
     if (!entry) {
       unresolved.push({
         job,
@@ -1051,30 +1193,8 @@ export function scrapeJobWriters(jobNames, perFile, extraAccesses = []) {
       });
       continue;
     }
-    const seen = new Set([entry]);
-    const queue = [entry];
-    while (queue.length) {
-      const cur = queue.shift();
-      for (const spec of perFile.get(cur)?.imports ?? []) {
-        const next = resolveImport(cur, spec, files);
-        if (next && !seen.has(next) && !isFixtureLike(next)) {
-          seen.add(next);
-          queue.push(next);
-        }
-      }
-    }
-    const writes = new Map();
-    for (const f of seen) {
-      for (const a of [
-        ...(perFile.get(f)?.accesses ?? []),
-        ...extraAccesses.filter((x) => x.file === f),
-      ]) {
-        if (a.kind === "table" && WRITE_OPS.has(a.op)) {
-          if (!writes.has(a.name)) writes.set(a.name, []);
-          writes.get(a.name).push(ref(a));
-        }
-      }
-    }
+    const seen = reachableFiles(entry, perFile, files);
+    const writes = jobWrites(seen, perFile, extraAccesses);
     jobs.push({
       job,
       entry,
@@ -1087,16 +1207,8 @@ export function scrapeJobWriters(jobNames, perFile, extraAccesses = []) {
   return { jobs, unresolved };
 }
 
-/**
- * 表・RPC の名前を引数で受け取る部品（`upsertChangedRows(client, "表", …)`・`fetchAll(client, "表")` 等）の
- * 呼び出しを、呼び手のファイル:行の読み書きにする。部品を包む部品（引数をそのまま渡す関数）もたどる。
- * 呼ぶ関数は、同じファイルの関数か、相対 import の名前つき import で解決する。
- * @param {Map<string, { helperDefs?: Array<{ fn: string, paramIndex: number, kind: string, op: string }>, callSites?: Array<{ callee: string, line: number, encl: string | null, args: Array<{ lits: string[] | null, param: number | null }> }>, importBindings?: Record<string, { source: string, imported: string }> }>} perFile
- * @param {{ knownTables: Set<string>, knownFunctions: Set<string> }} known
- */
-export function resolveHelperAccesses(perFile, known) {
-  const files = new Set(perFile.keys());
-  /** `${file}#${fn}` → Map<`${paramIndex}:${kind}:${op}`, def> */
+/** 部品の表。`${file}#${fn}` → Map<`${paramIndex}:${kind}:${op}`, def>。足せたら true（既にあれば false） */
+function createHelperTable(perFile) {
   const helpers = new Map();
   const addHelper = (key, def) => {
     if (!helpers.has(key)) helpers.set(key, new Map());
@@ -1107,7 +1219,12 @@ export function resolveHelperAccesses(perFile, known) {
   };
   for (const [file, p] of perFile)
     for (const d of p.helperDefs ?? []) addHelper(`${file}#${d.fn}`, d);
-  const calleeKey = (file, name) => {
+  return { helpers, addHelper };
+}
+
+/** 呼ぶ関数の部品の表の鍵。同じファイルの関数か、相対 import の名前つき import で解決する */
+function createCalleeKey(perFile, files, helpers) {
+  return (file, name) => {
     const local = `${file}#${name}`;
     if (helpers.has(local)) return local;
     const bindings = perFile.get(file)?.importBindings ?? {};
@@ -1116,54 +1233,62 @@ export function resolveHelperAccesses(perFile, known) {
     const target = resolveImport(file, b.source, files);
     return target ? `${target}#${b.imported}` : null;
   };
-  // 包む部品を不動点までたどる
+}
+
+/** 1つの呼び出しが部品の引数をそのまま渡すなら、呼んでいる関数も部品として足す。足せたら true */
+function propagateCall(file, c, { helpers, addHelper }, calleeKey) {
+  if (!c.encl) return false;
+  const key = calleeKey(file, c.callee);
+  if (!key) return false;
+  let changed = false;
+  for (const d of helpers.get(key)?.values() ?? []) {
+    const param = c.args[d.paramIndex]?.param;
+    if (param !== null && param !== undefined)
+      changed =
+        addHelper(`${file}#${c.encl}`, {
+          ...d,
+          fn: c.encl,
+          paramIndex: param,
+        }) || changed;
+  }
+  return changed;
+}
+
+/** 包む部品（引数をそのまま渡す関数）を不動点までたどる */
+function propagateWrappers(perFile, table, calleeKey) {
   for (let changed = true, round = 0; changed && round < 10; round += 1) {
     changed = false;
-    for (const [file, p] of perFile) {
-      for (const c of p.callSites ?? []) {
-        if (!c.encl) continue;
-        const key = calleeKey(file, c.callee);
-        if (!key) continue;
-        for (const d of helpers.get(key)?.values() ?? []) {
-          const param = c.args[d.paramIndex]?.param;
-          if (param !== null && param !== undefined)
-            changed =
-              addHelper(`${file}#${c.encl}`, {
-                ...d,
-                fn: c.encl,
-                paramIndex: param,
-              }) || changed;
-        }
-      }
-    }
+    for (const [file, p] of perFile)
+      for (const c of p.callSites ?? [])
+        changed = propagateCall(file, c, table, calleeKey) || changed;
   }
+}
+
+/** 部品 d の呼び出し c が渡す文字列の名前を、写しにあるものだけ読み書きにする */
+function helperCallAccesses(file, c, d, known) {
   const out = [];
-  for (const [file, p] of perFile) {
-    for (const c of p.callSites ?? []) {
-      const key = calleeKey(file, c.callee);
-      if (!key) continue;
-      for (const d of helpers.get(key)?.values() ?? []) {
-        for (const name of c.args[d.paramIndex]?.lits ?? []) {
-          const ok =
-            d.kind === "table"
-              ? known.knownTables.has(name)
-              : known.knownFunctions.has(name);
-          if (!ok) continue;
-          out.push({
-            kind: d.kind,
-            name,
-            op: d.op,
-            via: `helper:${c.callee}`,
-            file,
-            line: c.line,
-            columns: [],
-            writeColumns: WRITE_OPS.has(d.op) && d.op !== "delete" ? ["?"] : [],
-          });
-        }
-      }
-    }
+  for (const name of c.args[d.paramIndex]?.lits ?? []) {
+    const ok =
+      d.kind === "table"
+        ? known.knownTables.has(name)
+        : known.knownFunctions.has(name);
+    if (!ok) continue;
+    out.push({
+      kind: d.kind,
+      name,
+      op: d.op,
+      via: `helper:${c.callee}`,
+      file,
+      line: c.line,
+      columns: [],
+      writeColumns: WRITE_OPS.has(d.op) && d.op !== "delete" ? ["?"] : [],
+    });
   }
-  // 同じ呼び出しで同じ表・操作は1つに
+  return out;
+}
+
+/** 同じ呼び出しで同じ表・操作は1つに */
+function dedupeHelperAccesses(out) {
   const seen = new Set();
   return out.filter((a) => {
     const k = `${a.file}:${a.line}:${a.kind}:${a.name}:${a.op}`;
@@ -1171,6 +1296,30 @@ export function resolveHelperAccesses(perFile, known) {
     seen.add(k);
     return true;
   });
+}
+
+/**
+ * 表・RPC の名前を引数で受け取る部品（`upsertChangedRows(client, "表", …)`・`fetchAll(client, "表")` 等）の
+ * 呼び出しを、呼び手のファイル:行の読み書きにする。部品を包む部品（引数をそのまま渡す関数）もたどる。
+ * 呼ぶ関数は、同じファイルの関数か、相対 import の名前つき import で解決する。
+ * @param {Map<string, { helperDefs?: Array<{ fn: string, paramIndex: number, kind: string, op: string }>, callSites?: Array<{ callee: string, line: number, encl: string | null, args: Array<{ lits: string[] | null, param: number | null }> }>, importBindings?: Record<string, { source: string, imported: string }> }>} perFile
+ * @param {{ knownTables: Set<string>, knownFunctions: Set<string> }} known
+ */
+export function resolveHelperAccesses(perFile, known) {
+  const files = new Set(perFile.keys());
+  const table = createHelperTable(perFile);
+  const calleeKey = createCalleeKey(perFile, files, table.helpers);
+  propagateWrappers(perFile, table, calleeKey);
+  const out = [];
+  for (const [file, p] of perFile) {
+    for (const c of p.callSites ?? []) {
+      const key = calleeKey(file, c.callee);
+      if (!key) continue;
+      for (const d of table.helpers.get(key)?.values() ?? [])
+        out.push(...helperCallAccesses(file, c, d, known));
+    }
+  }
+  return dedupeHelperAccesses(out);
 }
 
 /** 手で足す外の読み手（data-readers.extra.json）の形を確かめる。誤りの文の一覧を返す */
@@ -1218,6 +1367,293 @@ export function validateExtra(extra, snapshot) {
   return errors;
 }
 
+/** 名前の文字列の箇所（読み込んだファイルの分と他の言語の分）。部品の呼び出しで拾った行の近くは、読み書きとして数えたので外す */
+function collectMentions(perFile, otherMentions, helperAccesses) {
+  return [
+    ...[...perFile.values()].flatMap((p) => p.mentions ?? []),
+    ...(otherMentions ?? []),
+  ]
+    .filter(
+      (m) =>
+        !helperAccesses.some(
+          (a) =>
+            a.file === m.file &&
+            a.kind === m.kind &&
+            a.name === m.name &&
+            Math.abs(a.line - m.line) <= 3,
+        ),
+    )
+    .sort(byRef);
+}
+
+const mentionRefs = (mentions, kind, name) =>
+  mentions.filter((m) => m.kind === kind && m.name === name).map(ref);
+
+/** トリガーの関数（public.f() の f）→ その表 */
+function buildTriggerTables(snapshot) {
+  const triggerTables = new Map();
+  for (const rel of snapshot.relations) {
+    for (const t of rel.triggers ?? []) {
+      const fn = String(t.function)
+        .replace(/^public\./, "")
+        .replace(/\(.*$/, "");
+      if (!triggerTables.has(fn)) triggerTables.set(fn, new Set());
+      triggerTables.get(fn).add(rel.name);
+    }
+  }
+  return triggerTables;
+}
+
+/** 関数の本体が読む・書く表と呼ぶ関数（名前 → 本体）。同じ名前の多重定義は合わせる */
+function buildFnBody(snapshot, relationNames, functionNames) {
+  const fnBody = new Map();
+  for (const fn of snapshot.functions) {
+    const refs = sqlTableRefs(
+      fn.definition.join("\n"),
+      relationNames,
+      functionNames,
+      fn.name,
+    );
+    const prev = fnBody.get(fn.name);
+    // 同じ名前の多重定義は合わせる
+    fnBody.set(
+      fn.name,
+      prev
+        ? {
+            reads: sortStr([...prev.reads, ...refs.reads]),
+            writes: sortStr([...prev.writes, ...refs.writes]),
+            calls: sortStr([...prev.calls, ...refs.calls]),
+          }
+        : refs,
+    );
+  }
+  return fnBody;
+}
+
+/** ビューの定義が読む表（DROP は依存で止まるか、CASCADE でビューごと消える） */
+function buildViewBody(snapshot, relationNames, functionNames) {
+  const viewBody = new Map();
+  for (const rel of snapshot.relations) {
+    if (!Array.isArray(rel.viewDefinition)) continue;
+    viewBody.set(
+      rel.name,
+      sqlTableRefs(
+        rel.viewDefinition.join("\n"),
+        relationNames,
+        functionNames,
+        rel.name,
+      ),
+    );
+  }
+  return viewBody;
+}
+
+/** 列の名前が RPC・ビューの本文に出るかを見る本文（コメントと文字列を外した本文で語として） */
+function buildSqlText(snapshot) {
+  const sqlText = new Map();
+  for (const fn of snapshot.functions)
+    sqlText.set(
+      `rpc:${fn.name}`,
+      `${sqlText.get(`rpc:${fn.name}`) ?? ""}\n${stripSqlNoise(fn.definition.join("\n"))}`,
+    );
+  for (const rel of snapshot.relations)
+    if (Array.isArray(rel.viewDefinition))
+      sqlText.set(
+        `view:${rel.name}`,
+        stripSqlNoise(rel.viewDefinition.join("\n")),
+      );
+  return sqlText;
+}
+
+/** 検査の固定入力のファイル（verify-*.js 等）の箇所には test を付ける。写しにある名前だけを拾っている */
+const ledgerEntry = (a, columns) => ({
+  ref: ref(a),
+  op: a.op,
+  via: a.via,
+  columns,
+  ...(isFixtureLike(a.file) ? { test: true } : {}),
+});
+
+/** 本体（bodies の key 側）が name を含む名前の一覧 */
+const namesWhere = (bodies, key, name) =>
+  [...bodies.entries()]
+    .filter(([, b]) => b[key].includes(name))
+    .map(([n]) => n)
+    .sort();
+
+/** 表の列ごとの読み手・書き手の箇所と、写しに無い列の名前 */
+function collectColumnRefs(rel, mine) {
+  const columns = {};
+  const colNames = new Set(rel.columns.map((c) => c.name));
+  for (const c of rel.columns) columns[c.name] = { readers: [], writers: [] };
+  const unknownColumns = new Set();
+  for (const a of mine) {
+    for (const c of a.columns) {
+      if (c === "*" || c === "?") continue;
+      if (colNames.has(c)) columns[c].readers.push(ref(a));
+      else unknownColumns.add(c);
+    }
+    for (const c of a.writeColumns) {
+      if (c === "?") continue;
+      if (colNames.has(c)) columns[c].writers.push(ref(a));
+      else unknownColumns.add(c);
+    }
+  }
+  for (const c of Object.keys(columns)) {
+    columns[c].readers = sortStr(columns[c].readers);
+    columns[c].writers = sortStr(columns[c].writers);
+  }
+  return { columns, unknownColumns };
+}
+
+function buildTableEntry(rel, src) {
+  const { all, fnBody, viewBody, sqlText, mentions, extraReaders } = src;
+  const mine = all.filter((a) => a.kind === "table" && a.name === rel.name);
+  const readers = mine.filter((a) => !WRITE_OPS.has(a.op));
+  const writers = mine.filter((a) => WRITE_OPS.has(a.op));
+  const { columns, unknownColumns } = collectColumnRefs(rel, mine);
+  const viaRpc = namesWhere(fnBody, "reads", rel.name);
+  const writtenByRpc = namesWhere(fnBody, "writes", rel.name);
+  const readByView = namesWhere(viewBody, "reads", rel.name);
+  const sqlReaders = [
+    ...viaRpc.map((n) => `rpc:${n}`),
+    ...writtenByRpc.map((n) => `rpc:${n}`),
+    ...readByView.map((n) => `view:${n}`),
+  ];
+  for (const c of Object.keys(columns)) {
+    const re = new RegExp(`\\b${c}\\b`, "i");
+    columns[c].sql = sortStr(
+      sqlReaders.filter((k) => re.test(sqlText.get(k) ?? "")),
+    );
+  }
+  return {
+    kind: rel.kind,
+    rlsEnabled: rel.rlsEnabled,
+    access: relationAccess(rel),
+    readers: readers.map((a) => ledgerEntry(a, a.columns)),
+    writers: writers.map((a) => ledgerEntry(a, a.writeColumns)),
+    readByRpc: viaRpc,
+    writtenByRpc,
+    readByView,
+    columns,
+    columnsNotInSnapshot: [...unknownColumns].sort(),
+    mentions: mentionRefs(mentions, "table", rel.name),
+    external: extraReaders.filter(
+      (e) => e.kind === "table" && e.name === rel.name,
+    ),
+  };
+}
+
+function buildTables(snapshot, src) {
+  const tables = {};
+  for (const rel of [...snapshot.relations].sort((a, b) =>
+    a.name < b.name ? -1 : 1,
+  ))
+    tables[rel.name] = buildTableEntry(rel, src);
+  return tables;
+}
+
+function buildRpcs(snapshot, src, triggerTables) {
+  const { all, fnBody, mentions, extraReaders } = src;
+  const rpcs = {};
+  const fnByName = new Map();
+  for (const fn of snapshot.functions)
+    if (!fnByName.has(fn.name)) fnByName.set(fn.name, fn);
+  for (const name of [...fnByName.keys()].sort()) {
+    const fn = fnByName.get(name);
+    const callers = all.filter((a) => a.kind === "rpc" && a.name === name);
+    const body = fnBody.get(name);
+    rpcs[name] = {
+      kind: fn.kind,
+      securityDefiner: fn.securityDefiner,
+      access: functionAccess(fn),
+      callers: callers.map((a) => ({ ref: ref(a), via: a.via })),
+      mentions: mentionRefs(mentions, "rpc", name),
+      triggerOn: [...(triggerTables.get(name) ?? [])].sort(),
+      calledByRpc: namesWhere(fnBody, "calls", name),
+      reads: body.reads,
+      writes: body.writes,
+      calls: body.calls,
+      external: extraReaders.filter((e) => e.kind === "rpc" && e.name === name),
+    };
+  }
+  return rpcs;
+}
+
+/** コードが使うのに写しに無い名前（種類:名前 → 箇所） */
+function buildNotInSnapshot(all, relationNames, functionNames) {
+  const notInSnapshot = {};
+  for (const a of all) {
+    const known =
+      a.kind === "table"
+        ? relationNames.has(a.name)
+        : functionNames.has(a.name);
+    if (known) continue;
+    const key = `${a.kind}:${a.name}`;
+    if (!notInSnapshot[key])
+      notInSnapshot[key] = { kind: a.kind, name: a.name, refs: [] };
+    notInSnapshot[key].refs.push(ref(a));
+  }
+  return notInSnapshot;
+}
+
+/** 取得のジョブが書く表に、そのジョブの名前を付ける（どの表にも scrapeJobs を持たせる） */
+function attachScrapeJobs(tables, scrapeJobs) {
+  for (const j of scrapeJobs) {
+    for (const t of Object.keys(j.writes)) {
+      if (tables[t]) {
+        tables[t].scrapeJobs ??= [];
+        tables[t].scrapeJobs.push(j.job);
+      }
+    }
+  }
+  for (const t of Object.values(tables)) t.scrapeJobs ??= [];
+}
+
+const countTablesWithoutReaders = (tables) =>
+  Object.values(tables).filter(
+    (t) =>
+      t.readers.length === 0 &&
+      // data_health_* は件数・鮮度の監視で、使う読み手ではない
+      t.readByRpc.filter((n) => !n.startsWith("data_health_")).length === 0 &&
+      t.readByView.length === 0 &&
+      t.mentions.length === 0 &&
+      t.external.length === 0,
+  ).length;
+
+const countRpcsWithoutCallers = (rpcs) =>
+  Object.values(rpcs).filter(
+    (r) =>
+      r.callers.length === 0 &&
+      r.calledByRpc.length === 0 &&
+      r.mentions.length === 0 &&
+      r.triggerOn.length === 0 &&
+      r.external.length === 0,
+  ).length;
+
+function buildCounts(l) {
+  const { all, tables, rpcs, mentions } = l;
+  return {
+    tables: Object.keys(tables).length,
+    rpcs: Object.keys(rpcs).length,
+    sourceFiles: l.perFile.size,
+    filesWithAccess: new Set(all.map((a) => a.file)).size,
+    tableReaders: all.filter((a) => a.kind === "table" && !WRITE_OPS.has(a.op))
+      .length,
+    tableWriters: all.filter((a) => a.kind === "table" && WRITE_OPS.has(a.op))
+      .length,
+    rpcCallers: all.filter((a) => a.kind === "rpc").length,
+    nameMentions: mentions.length,
+    tablesWithoutReaders: countTablesWithoutReaders(tables),
+    rpcsWithoutCallers: countRpcsWithoutCallers(rpcs),
+    external: l.extraReaders.length,
+    notInSnapshot: Object.keys(l.notInSnapshot).length,
+    unresolved: l.unresolved.length,
+    parseErrors: l.parseErrors.length,
+    uncoveredFiles: l.uncoveredFiles.length,
+  };
+}
+
 /**
  * 台帳を組み立てる。
  * @param {{ perFile: Map<string, { accesses: Array<Record<string, unknown>>, unresolved: unknown[], imports: string[], parseError?: string }>, snapshot: any, extra: any, scrapeJobNames: string[], uncoveredFiles: string[], otherMentions?: Array<{ kind: string, name: string, file: string, line: number }> }} input
@@ -1240,212 +1676,20 @@ export function buildLedger({
     ...[...perFile.values()].flatMap((p) => p.accesses),
     ...helperAccesses,
   ].sort(byRef);
-  // 部品の呼び出しで拾った行の近くの名前の文字列は、読み書きとして数えたので外す
-  const mentions = [
-    ...[...perFile.values()].flatMap((p) => p.mentions ?? []),
-    ...(otherMentions ?? []),
-  ]
-    .filter(
-      (m) =>
-        !helperAccesses.some(
-          (a) =>
-            a.file === m.file &&
-            a.kind === m.kind &&
-            a.name === m.name &&
-            Math.abs(a.line - m.line) <= 3,
-        ),
-    )
-    .sort(byRef);
-  const mentionRefs = (kind, name) =>
-    mentions.filter((m) => m.kind === kind && m.name === name).map(ref);
-  // トリガーの関数（public.f() の f）→ その表
-  const triggerTables = new Map();
-  for (const rel of snapshot.relations) {
-    for (const t of rel.triggers ?? []) {
-      const fn = String(t.function)
-        .replace(/^public\./, "")
-        .replace(/\(.*$/, "");
-      if (!triggerTables.has(fn)) triggerTables.set(fn, new Set());
-      triggerTables.get(fn).add(rel.name);
-    }
-  }
-
-  const fnBody = new Map();
-  for (const fn of snapshot.functions) {
-    const refs = sqlTableRefs(
-      fn.definition.join("\n"),
-      relationNames,
-      functionNames,
-      fn.name,
-    );
-    const prev = fnBody.get(fn.name);
-    // 同じ名前の多重定義は合わせる
-    fnBody.set(
-      fn.name,
-      prev
-        ? {
-            reads: sortStr([...prev.reads, ...refs.reads]),
-            writes: sortStr([...prev.writes, ...refs.writes]),
-            calls: sortStr([...prev.calls, ...refs.calls]),
-          }
-        : refs,
-    );
-  }
-  // ビューの定義が読む表（DROP は依存で止まるか、CASCADE でビューごと消える）
-  const viewBody = new Map();
-  for (const rel of snapshot.relations) {
-    if (!Array.isArray(rel.viewDefinition)) continue;
-    viewBody.set(
-      rel.name,
-      sqlTableRefs(
-        rel.viewDefinition.join("\n"),
-        relationNames,
-        functionNames,
-        rel.name,
-      ),
-    );
-  }
-  // 列の名前が RPC・ビューの本文に出るか（コメントと文字列を外した本文で語として）
-  const sqlText = new Map();
-  for (const fn of snapshot.functions)
-    sqlText.set(
-      `rpc:${fn.name}`,
-      `${sqlText.get(`rpc:${fn.name}`) ?? ""}\n${stripSqlNoise(fn.definition.join("\n"))}`,
-    );
-  for (const rel of snapshot.relations)
-    if (Array.isArray(rel.viewDefinition))
-      sqlText.set(
-        `view:${rel.name}`,
-        stripSqlNoise(rel.viewDefinition.join("\n")),
-      );
-  const extraReaders = extra?.readers ?? [];
-
-  // 検査の固定入力のファイル（verify-*.js 等）の箇所には test を付ける。写しにある名前だけを拾っている
-  const entry = (a, columns) => ({
-    ref: ref(a),
-    op: a.op,
-    via: a.via,
-    columns,
-    ...(isFixtureLike(a.file) ? { test: true } : {}),
-  });
-  const tables = {};
-  for (const rel of [...snapshot.relations].sort((a, b) =>
-    a.name < b.name ? -1 : 1,
-  )) {
-    const mine = all.filter((a) => a.kind === "table" && a.name === rel.name);
-    const readers = mine.filter((a) => !WRITE_OPS.has(a.op));
-    const writers = mine.filter((a) => WRITE_OPS.has(a.op));
-    const columns = {};
-    const colNames = new Set(rel.columns.map((c) => c.name));
-    for (const c of rel.columns) columns[c.name] = { readers: [], writers: [] };
-    const unknownColumns = new Set();
-    for (const a of mine) {
-      for (const c of a.columns) {
-        if (c === "*" || c === "?") continue;
-        if (colNames.has(c)) columns[c].readers.push(ref(a));
-        else unknownColumns.add(c);
-      }
-      for (const c of a.writeColumns) {
-        if (c === "?") continue;
-        if (colNames.has(c)) columns[c].writers.push(ref(a));
-        else unknownColumns.add(c);
-      }
-    }
-    for (const c of Object.keys(columns)) {
-      columns[c].readers = sortStr(columns[c].readers);
-      columns[c].writers = sortStr(columns[c].writers);
-    }
-    const viaRpc = [...fnBody.entries()]
-      .filter(([, b]) => b.reads.includes(rel.name))
-      .map(([n]) => n)
-      .sort();
-    const writtenByRpc = [...fnBody.entries()]
-      .filter(([, b]) => b.writes.includes(rel.name))
-      .map(([n]) => n)
-      .sort();
-    const readByView = [...viewBody.entries()]
-      .filter(([, b]) => b.reads.includes(rel.name))
-      .map(([n]) => n)
-      .sort();
-    const sqlReaders = [
-      ...viaRpc.map((n) => `rpc:${n}`),
-      ...writtenByRpc.map((n) => `rpc:${n}`),
-      ...readByView.map((n) => `view:${n}`),
-    ];
-    for (const c of Object.keys(columns)) {
-      const re = new RegExp(`\\b${c}\\b`, "i");
-      columns[c].sql = sortStr(
-        sqlReaders.filter((k) => re.test(sqlText.get(k) ?? "")),
-      );
-    }
-    tables[rel.name] = {
-      kind: rel.kind,
-      rlsEnabled: rel.rlsEnabled,
-      access: relationAccess(rel),
-      readers: readers.map((a) => entry(a, a.columns)),
-      writers: writers.map((a) => entry(a, a.writeColumns)),
-      readByRpc: viaRpc,
-      writtenByRpc,
-      readByView,
-      columns,
-      columnsNotInSnapshot: [...unknownColumns].sort(),
-      mentions: mentionRefs("table", rel.name),
-      external: extraReaders.filter(
-        (e) => e.kind === "table" && e.name === rel.name,
-      ),
-    };
-  }
-
-  const rpcs = {};
-  const fnByName = new Map();
-  for (const fn of snapshot.functions)
-    if (!fnByName.has(fn.name)) fnByName.set(fn.name, fn);
-  for (const name of [...fnByName.keys()].sort()) {
-    const fn = fnByName.get(name);
-    const callers = all.filter((a) => a.kind === "rpc" && a.name === name);
-    const body = fnBody.get(name);
-    rpcs[name] = {
-      kind: fn.kind,
-      securityDefiner: fn.securityDefiner,
-      access: functionAccess(fn),
-      callers: callers.map((a) => ({ ref: ref(a), via: a.via })),
-      mentions: mentionRefs("rpc", name),
-      triggerOn: [...(triggerTables.get(name) ?? [])].sort(),
-      calledByRpc: [...fnBody.entries()]
-        .filter(([, b]) => b.calls.includes(name))
-        .map(([n]) => n)
-        .sort(),
-      reads: body.reads,
-      writes: body.writes,
-      calls: body.calls,
-      external: extraReaders.filter((e) => e.kind === "rpc" && e.name === name),
-    };
-  }
-
-  const notInSnapshot = {};
-  for (const a of all) {
-    const known =
-      a.kind === "table"
-        ? relationNames.has(a.name)
-        : functionNames.has(a.name);
-    if (known) continue;
-    const key = `${a.kind}:${a.name}`;
-    if (!notInSnapshot[key])
-      notInSnapshot[key] = { kind: a.kind, name: a.name, refs: [] };
-    notInSnapshot[key].refs.push(ref(a));
-  }
-
+  const mentions = collectMentions(perFile, otherMentions, helperAccesses);
+  const src = {
+    all,
+    mentions,
+    fnBody: buildFnBody(snapshot, relationNames, functionNames),
+    viewBody: buildViewBody(snapshot, relationNames, functionNames),
+    sqlText: buildSqlText(snapshot),
+    extraReaders: extra?.readers ?? [],
+  };
+  const tables = buildTables(snapshot, src);
+  const rpcs = buildRpcs(snapshot, src, buildTriggerTables(snapshot));
+  const notInSnapshot = buildNotInSnapshot(all, relationNames, functionNames);
   const scrape = scrapeJobWriters(scrapeJobNames, perFile, helperAccesses);
-  for (const j of scrape.jobs) {
-    for (const t of Object.keys(j.writes)) {
-      if (tables[t]) {
-        tables[t].scrapeJobs ??= [];
-        tables[t].scrapeJobs.push(j.job);
-      }
-    }
-  }
-  for (const t of Object.values(tables)) t.scrapeJobs ??= [];
-
+  attachScrapeJobs(tables, scrape.jobs);
   const unresolved = [...perFile.values()]
     .flatMap((p) => p.unresolved)
     .sort(byRef);
@@ -1458,42 +1702,16 @@ export function buildLedger({
       "機械生成（scripts/maintenance/generate-data-readers.js）。手で書き換えない。外の読み手は docs/reference/data-readers.extra.json に足す",
     format: FORMAT,
     snapshotCapturedAt: snapshot.capturedAt,
-    counts: {
-      tables: Object.keys(tables).length,
-      rpcs: Object.keys(rpcs).length,
-      sourceFiles: perFile.size,
-      filesWithAccess: new Set(all.map((a) => a.file)).size,
-      tableReaders: all.filter(
-        (a) => a.kind === "table" && !WRITE_OPS.has(a.op),
-      ).length,
-      tableWriters: all.filter((a) => a.kind === "table" && WRITE_OPS.has(a.op))
-        .length,
-      rpcCallers: all.filter((a) => a.kind === "rpc").length,
-      nameMentions: mentions.length,
-      tablesWithoutReaders: Object.values(tables).filter(
-        (t) =>
-          t.readers.length === 0 &&
-          // data_health_* は件数・鮮度の監視で、使う読み手ではない
-          t.readByRpc.filter((n) => !n.startsWith("data_health_")).length ===
-            0 &&
-          t.readByView.length === 0 &&
-          t.mentions.length === 0 &&
-          t.external.length === 0,
-      ).length,
-      rpcsWithoutCallers: Object.values(rpcs).filter(
-        (r) =>
-          r.callers.length === 0 &&
-          r.calledByRpc.length === 0 &&
-          r.mentions.length === 0 &&
-          r.triggerOn.length === 0 &&
-          r.external.length === 0,
-      ).length,
-      external: extraReaders.length,
-      notInSnapshot: Object.keys(notInSnapshot).length,
-      unresolved: unresolved.length,
-      parseErrors: parseErrors.length,
-      uncoveredFiles: uncoveredFiles.length,
-    },
+    counts: buildCounts({
+      ...src,
+      perFile,
+      tables,
+      rpcs,
+      notInSnapshot,
+      unresolved,
+      parseErrors,
+      uncoveredFiles,
+    }),
     tables,
     rpcs,
     scrapeJobs: scrape.jobs,
@@ -1532,10 +1750,8 @@ function rpcCallerText(r) {
   return parts.join(" / ") || "なし";
 }
 
-/** 台帳の Markdown。JSON と同じ中身を、人と AI が先に読む形にする */
-export function renderMarkdown(ledger) {
-  const L = [];
-  const c = ledger.counts;
+/** 見出しと、機械生成の注記 */
+function renderHeader(L, ledger) {
   L.push("# データの読み手の台帳");
   L.push("");
   L.push(
@@ -1546,6 +1762,10 @@ export function renderMarkdown(ledger) {
     `> 入力: \`src/\`・\`api/\`・\`scripts/\`・\`sns-video-studio/\` の JS/TS（構文木で \`.from()\`・\`.select()\`・\`.rpc()\` 等と \`/rest/v1/\` を拾う）と、本番スキーマの写し（\`docs/reference/schema-snapshot.json\`、取得 ${ledger.snapshotCapturedAt}）。権限・RPC の本体はこの写しの時点のもの。`,
   );
   L.push("");
+}
+
+/** 件数の表 */
+function renderCounts(L, ledger) {
   L.push("## 件数");
   L.push("");
   L.push("| 項目 | 件数 |");
@@ -1569,9 +1789,13 @@ export function renderMarkdown(ledger) {
     parseErrors: "構文木にできなかったファイル",
     uncoveredFiles: "対象外の言語のファイル（Python 等）",
   };
-  for (const [k, v] of Object.entries(c))
+  for (const [k, v] of Object.entries(ledger.counts))
     L.push(`| ${labels[k] ?? k} | ${v} |`);
   L.push("");
+}
+
+/** 表の一覧の表 */
+function renderTableSummary(L, ledger) {
   L.push("## 表");
   L.push("");
   L.push(
@@ -1588,6 +1812,10 @@ export function renderMarkdown(ledger) {
     );
   }
   L.push("");
+}
+
+/** RPC の一覧の表 */
+function renderRpcSummary(L, ledger) {
   L.push("## RPC");
   L.push("");
   L.push(
@@ -1600,6 +1828,10 @@ export function renderMarkdown(ledger) {
     );
   }
   L.push("");
+}
+
+/** 取得のジョブの表 */
+function renderScrapeSummary(L, ledger) {
   L.push("## 取得のジョブ（scrape の registry）");
   L.push("");
   L.push(
@@ -1616,73 +1848,10 @@ export function renderMarkdown(ledger) {
   for (const u of ledger.unresolvedJobs)
     L.push(`| ${u.job} | （${u.reason}） | | |`);
   L.push("");
-  L.push("## 表ごとの読み手・書き手");
-  L.push("");
-  for (const [name, t] of Object.entries(ledger.tables)) {
-    L.push(`### <a id="t-${name}"></a>${name}`);
-    L.push("");
-    L.push(
-      `- 権限: ${t.access.summary}（anon: ${t.access.anon.join("・") || "なし"} / authenticated: ${t.access.authenticated.join("・") || "なし"}、RLS ${t.rlsEnabled ? "有効" : "無効"}）`,
-    );
-    if (t.readByView.length)
-      L.push(`- 定義で読むビュー: ${t.readByView.join(", ")}`);
-    if (t.readByRpc.length)
-      L.push(`- 本体で読む RPC: ${t.readByRpc.join(", ")}`);
-    if (t.writtenByRpc.length)
-      L.push(`- 本体で書く RPC: ${t.writtenByRpc.join(", ")}`);
-    if (t.scrapeJobs.length)
-      L.push(`- 取得のジョブ: ${t.scrapeJobs.join(", ")}`);
-    for (const e of t.external)
-      L.push(
-        `- 外の読み手: ${e.repo} \`${e.reader}\`（${e.access}${e.columns ? `、列 ${e.columns.join(", ")}` : ""}）${e.detail ? ` ${e.detail}` : ""}（${e.source}、${e.addedAt}）`,
-      );
-    if (t.columnsNotInSnapshot.length)
-      L.push(
-        `- 写しに無い列の名前（埋め込みの別名・JSON のキー・誤りのどれか）: ${t.columnsNotInSnapshot.join(", ")}`,
-      );
-    const fmt = (a) =>
-      `\`${a.ref}\` ${a.op}${a.via !== "client" ? `(${a.via})` : ""}${a.columns.length ? ` [${a.columns.join(", ")}]` : ""}${a.test ? " （検査）" : ""}`;
-    if (t.mentions.length)
-      L.push(
-        `- 名前の文字列（\`.from(式)\` 等の先で読む・書く見込み）: ${t.mentions.map((m) => `\`${m}\``).join(", ")}`,
-      );
-    L.push(
-      `- 読み手（${t.readers.length}）: ${t.readers.length ? "" : "なし"}`,
-    );
-    for (const a of t.readers) L.push(`  - ${fmt(a)}`);
-    L.push(
-      `- 書き手（${t.writers.length}）: ${t.writers.length ? "" : "なし"}`,
-    );
-    for (const a of t.writers) L.push(`  - ${fmt(a)}`);
-    const externalColumns = new Set(t.external.flatMap((e) => e.columns ?? []));
-    const unread = Object.entries(t.columns)
-      .filter(
-        ([k, v]) =>
-          v.readers.length === 0 &&
-          v.sql.length === 0 &&
-          !externalColumns.has(k),
-      )
-      .map(([k]) => k);
-    const unknownReader =
-      t.readers.some(
-        (a) =>
-          a.columns.includes("*") ||
-          a.columns.includes("?") ||
-          a.columns.length === 0,
-      ) ||
-      t.mentions.length > 0 ||
-      t.external.some((e) => !e.columns);
-    if (unknownReader) {
-      L.push(
-        '- 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる',
-      );
-    } else if (unread.length) {
-      L.push(
-        `- コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: ${unread.join(", ")}`,
-      );
-    }
-    L.push("");
-  }
+}
+
+/** コードが使うのに写しに無い名前 */
+function renderNotInSnapshot(L, ledger) {
   L.push("## コードが使うのに写しに無い名前");
   L.push("");
   L.push(
@@ -1698,6 +1867,10 @@ export function renderMarkdown(ledger) {
       )}`,
     );
   L.push("");
+}
+
+/** 拾えなかったもの */
+function renderUnresolved(L, ledger) {
   L.push("## 拾えなかったもの");
   L.push("");
   L.push(
@@ -1719,5 +1892,102 @@ export function renderMarkdown(ledger) {
     '- 読み手の変数に入れてから後で足した連鎖（`let q = …from("t"); q = q.eq("c", …)`）の列、`.select()` の文字列が式の列',
   );
   L.push("");
+}
+
+/** 表1つ分の詳細の頭（権限・RPC・ジョブ・外の読み手・名前の文字列） */
+function renderTableFacts(L, t) {
+  L.push(
+    `- 権限: ${t.access.summary}（anon: ${t.access.anon.join("・") || "なし"} / authenticated: ${t.access.authenticated.join("・") || "なし"}、RLS ${t.rlsEnabled ? "有効" : "無効"}）`,
+  );
+  if (t.readByView.length)
+    L.push(`- 定義で読むビュー: ${t.readByView.join(", ")}`);
+  if (t.readByRpc.length) L.push(`- 本体で読む RPC: ${t.readByRpc.join(", ")}`);
+  if (t.writtenByRpc.length)
+    L.push(`- 本体で書く RPC: ${t.writtenByRpc.join(", ")}`);
+  if (t.scrapeJobs.length) L.push(`- 取得のジョブ: ${t.scrapeJobs.join(", ")}`);
+  for (const e of t.external)
+    L.push(
+      `- 外の読み手: ${e.repo} \`${e.reader}\`（${e.access}${e.columns ? `、列 ${e.columns.join(", ")}` : ""}）${e.detail ? ` ${e.detail}` : ""}（${e.source}、${e.addedAt}）`,
+    );
+  if (t.columnsNotInSnapshot.length)
+    L.push(
+      `- 写しに無い列の名前（埋め込みの別名・JSON のキー・誤りのどれか）: ${t.columnsNotInSnapshot.join(", ")}`,
+    );
+  if (t.mentions.length)
+    L.push(
+      `- 名前の文字列（\`.from(式)\` 等の先で読む・書く見込み）: ${t.mentions.map((m) => `\`${m}\``).join(", ")}`,
+    );
+}
+
+/** 箇所の1行 */
+const fmtAccess = (a) =>
+  `\`${a.ref}\` ${a.op}${a.via !== "client" ? `(${a.via})` : ""}${a.columns.length ? ` [${a.columns.join(", ")}]` : ""}${a.test ? " （検査）" : ""}`;
+
+/** 表1つ分の読み手・書き手の箇所 */
+function renderTableAccesses(L, t) {
+  L.push(`- 読み手（${t.readers.length}）: ${t.readers.length ? "" : "なし"}`);
+  for (const a of t.readers) L.push(`  - ${fmtAccess(a)}`);
+  L.push(`- 書き手（${t.writers.length}）: ${t.writers.length ? "" : "なし"}`);
+  for (const a of t.writers) L.push(`  - ${fmtAccess(a)}`);
+}
+
+/** 列の読まれ方の注記 */
+function renderColumnNote(L, t) {
+  const externalColumns = new Set(t.external.flatMap((e) => e.columns ?? []));
+  const unread = Object.entries(t.columns)
+    .filter(
+      ([k, v]) =>
+        v.readers.length === 0 && v.sql.length === 0 && !externalColumns.has(k),
+    )
+    .map(([k]) => k);
+  const unknownReader =
+    t.readers.some(
+      (a) =>
+        a.columns.includes("*") ||
+        a.columns.includes("?") ||
+        a.columns.length === 0,
+    ) ||
+    t.mentions.length > 0 ||
+    t.external.some((e) => !e.columns);
+  if (unknownReader) {
+    L.push(
+      '- 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる',
+    );
+  } else if (unread.length) {
+    L.push(
+      `- コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: ${unread.join(", ")}`,
+    );
+  }
+}
+
+/** 表1つ分の詳細 */
+function renderTableDetail(L, name, t) {
+  L.push(`### <a id="t-${name}"></a>${name}`);
+  L.push("");
+  renderTableFacts(L, t);
+  renderTableAccesses(L, t);
+  renderColumnNote(L, t);
+  L.push("");
+}
+
+/** 表ごとの読み手・書き手 */
+function renderTableDetails(L, ledger) {
+  L.push("## 表ごとの読み手・書き手");
+  L.push("");
+  for (const [name, t] of Object.entries(ledger.tables))
+    renderTableDetail(L, name, t);
+}
+
+/** 台帳の Markdown。JSON と同じ中身を、人と AI が先に読む形にする */
+export function renderMarkdown(ledger) {
+  const L = [];
+  renderHeader(L, ledger);
+  renderCounts(L, ledger);
+  renderTableSummary(L, ledger);
+  renderRpcSummary(L, ledger);
+  renderScrapeSummary(L, ledger);
+  renderTableDetails(L, ledger);
+  renderNotInSnapshot(L, ledger);
+  renderUnresolved(L, ledger);
   return L.join("\n");
 }

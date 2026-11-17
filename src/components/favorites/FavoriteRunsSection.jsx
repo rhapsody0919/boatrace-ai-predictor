@@ -197,22 +197,17 @@ function RunInfo({ row, info, seriesDay }) {
   );
 }
 
-function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
-  const { t, i18n } = useTranslation();
-  const localize = useLocalizedPath();
-  const isJa = i18n.resolvedLanguage === "ja";
-  const grade = ["SG", "G1"].includes(row.raceGrade)
-    ? GRADE_CONFIG[row.raceGrade]
-    : null;
-  // 優勝戦・準優勝戦だけ札を出す（レース詳細の見出しと同じ getStageChip）
+/** 優勝戦・準優勝戦だけ札を出す（レース詳細の見出しと同じ getStageChip） */
+function pickStage(raceStage, t) {
   const stageChip = getStageChip(raceStage, t);
-  const stage =
-    stageChip && (stageChip.variant === "final" || stageChip.variant === "semifinal")
-      ? stageChip
-      : null;
-  // 締切後の行は結果を見る段階なので、予測に誘導するソナー・アシストは出さない
-  const isPast = state === "past";
-  const links = [
+  return stageChip &&
+    (stageChip.variant === "final" || stageChip.variant === "semifinal")
+    ? stageChip
+    : null;
+}
+
+function buildRunLinks(row, isPast, isJa, localize) {
+  return [
     { kind: "racer_page", to: racerPagePath(row.racerId), label: "linkRacer" },
     ...(isAnalogyFinderEnabled() && !isPast
       ? [
@@ -234,6 +229,68 @@ function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
         ]
       : []),
   ];
+}
+
+function RunRaceCell({ row, grade, stage, t }) {
+  return (
+    <div className="favorite-runs__race">
+      {grade && (
+        <span
+          className="favorite-runs__grade"
+          style={{ backgroundColor: grade.color }}
+        >
+          {grade.label}
+        </span>
+      )}
+      {stage && (
+        <span
+          className="favorite-runs__stage"
+          data-stage={stage.variant}
+          title={stage.title}
+        >
+          {stage.emoji} {stage.label}
+        </span>
+      )}
+      {t(`venues.${row.venueCode}`)} {row.raceNumber}R
+    </div>
+  );
+}
+
+function RunLinks({ links, state, t }) {
+  return (
+    <div className="favorite-runs__links">
+      {links.map((link) => (
+        <Link
+          key={link.kind}
+          to={link.to}
+          className="favorite-runs__link"
+          onClick={() =>
+            trackEvent("today_row_click", {
+              row_kind: "run",
+              row_link: link.kind,
+              row_state: state,
+              fav_state: "runs",
+            })
+          }
+        >
+          {t(`favorites.section.${link.label}`)}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
+  const { t, i18n } = useTranslation();
+  const localize = useLocalizedPath();
+  const isJa = i18n.resolvedLanguage === "ja";
+  const grade = ["SG", "G1"].includes(row.raceGrade)
+    ? GRADE_CONFIG[row.raceGrade]
+    : null;
+  const stage = pickStage(raceStage, t);
+  // 締切後の行は結果を見る段階なので、予測に誘導するソナー・アシストは出さない
+  const isPast = state === "past";
+  const links = buildRunLinks(row, isPast, isJa, localize);
   const className = [
     "favorite-runs__row",
     state === "past" && "favorite-runs__row--past",
@@ -248,26 +305,7 @@ function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
         {t("home.jstNote")}
         <small>{t("favorites.section.deadline")}</small>
       </div>
-      <div className="favorite-runs__race">
-        {grade && (
-          <span
-            className="favorite-runs__grade"
-            style={{ backgroundColor: grade.color }}
-          >
-            {grade.label}
-          </span>
-        )}
-        {stage && (
-          <span
-            className="favorite-runs__stage"
-            data-stage={stage.variant}
-            title={stage.title}
-          >
-            {stage.emoji} {stage.label}
-          </span>
-        )}
-        {t(`venues.${row.venueCode}`)} {row.raceNumber}R
-      </div>
+      <RunRaceCell row={row} grade={grade} stage={stage} t={t} />
       <div className="favorite-runs__who">
         <BoatBadge n={row.boat} />
         <span className="favorite-runs__name" translate="no">
@@ -276,25 +314,7 @@ function RunRow({ row, state, extra, info, seriesDay, raceStage }) {
         {row.grade && <span className="favorite-runs__class">{row.grade}</span>}
       </div>
       <RunInfo row={row} info={info} seriesDay={seriesDay} />
-      <div className="favorite-runs__links">
-        {links.map((link) => (
-          <Link
-            key={link.kind}
-            to={link.to}
-            className="favorite-runs__link"
-            onClick={() =>
-              trackEvent("today_row_click", {
-                row_kind: "run",
-                row_link: link.kind,
-                row_state: state,
-                fav_state: "runs",
-              })
-            }
-          >
-            {t(`favorites.section.${link.label}`)}
-          </Link>
-        ))}
-      </div>
+      <RunLinks links={links} state={state} t={t} />
     </li>
   );
 }

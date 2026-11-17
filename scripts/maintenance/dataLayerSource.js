@@ -1,10 +1,10 @@
 /**
  * dataLayerSource.js — verify が「データ層（画面のサービス層）の本文」を読むときの読み先。
  *
- * データ層は src/services/supabaseDataService.js と、そこから分けた core*.js・*Queries*.js の和。
+ * データ層は src/services の core*.js・*Queries*.js の和（殻 supabaseDataService.js は RA40 で消えた）。
  * 分けた後も verify が同じ字を照らせるよう、名前の順に `\n` で連結して返す。
  * メソッドの切り出し（dataLayerMethod）と呼び出しの字（dataLayerCall）は構文木で形（殻のメソッドか
- * scripts/maintenance/split-data-layer.mjs が移した関数か）を見分ける。
+ * split-data-layer.mjs が移した関数か）を見分ける。
  */
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -16,16 +16,12 @@ const repoRoot = path.resolve(
   "../..",
 );
 const servicesDir = path.join(repoRoot, "src/services");
-const MAIN = "supabaseDataService.js";
 
 /** データ層のファイルの相対パス（repo 根から）を名前の順に返す。 */
 export function dataLayerPaths() {
   const names = readdirSync(servicesDir)
     .filter(
-      (n) =>
-        n === MAIN ||
-        /^core\d*\.js$/.test(n) ||
-        /^[A-Za-z]+Queries\d*\.js$/.test(n),
+      (n) => /^core\d*\.js$/.test(n) || /^[A-Za-z]+Queries\d*\.js$/.test(n),
     )
     .sort();
   return names.map((n) => `src/services/${n}`);

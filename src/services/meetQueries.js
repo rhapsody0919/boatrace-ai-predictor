@@ -95,6 +95,65 @@ export function getCurrentMeetFlyingBoats(raceId) {
     });
   }
 
+/** 今節の走（節の race_id 一覧）の結果・タイミング・中止状態を引く（getRaceMeetPrevRuns 用） */
+async function fetchMeetRunDetails(meetRaceIds) {
+  // 中止になったレースにも出走表の行は残る（結果の行は無い）。節の走を全部引いて、
+  // 中止を飛ばした最後の走を前走にする（中止を拾うと結果が来ないまま「—」が残る）
+  const [{ data: results }, { data: timings }, { data: races }] =
+    await Promise.all([
+      supabase
+        .from("race_results")
+        .select(
+          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+        )
+        .in("race_id", meetRaceIds),
+      supabase
+        .from("race_start_timings")
+        .select("race_id, boat_number, finish_mark, entry_course")
+        .in("race_id", meetRaceIds),
+      supabase
+        .from("races")
+        .select("race_id, cancellation_status")
+        .in("race_id", meetRaceIds),
+    ]);
+  return {
+    resultById: new Map((results ?? []).map((r) => [r.race_id, r])),
+    statusById: new Map(
+      (races ?? []).map((r) => [r.race_id, r.cancellation_status]),
+    ),
+    timingByKey: new Map(
+      (timings ?? []).map((r) => [`${r.race_id}#${r.boat_number}`, r]),
+    ),
+  };
+}
+
+/** 艇ごとに、中止を飛ばした最後の走を前走の行にする（getRaceMeetPrevRuns 用） */
+function buildPrevRunRows(targets, meetByBoat, details) {
+  const { resultById, statusById, timingByKey } = details;
+  return targets.map((e) => {
+    const prev = meetByBoat.get(e.boat_number).findLast(
+      (r) =>
+        !isRaceCancelled({
+          cancellationStatus: statusById.get(r.race_id) ?? null,
+          result: resultById.get(r.race_id) ?? null,
+        }),
+    );
+    if (!prev) return { boat_number: e.boat_number, firstOfMeet: true };
+    return {
+      boat_number: e.boat_number,
+      raceId: prev.race_id,
+      boatNumber: prev.boat_number,
+      result: resultById.get(prev.race_id) ?? null,
+      finishMark:
+        timingByKey.get(`${prev.race_id}#${prev.boat_number}`)?.finish_mark ??
+        null,
+      entryCourse:
+        timingByKey.get(`${prev.race_id}#${prev.boat_number}`)?.entry_course ??
+        null,
+    };
+  });
+}
+
 /**
  * 各艇の**今節の前走**（同じ会場・同じ節で、表示中のレースより前の最後の走）を返す
  * （BOA-610、データ出走表の「今節の前走」行）。
@@ -165,55 +224,8 @@ export function getRaceMeetPrevRuns(raceId) {
         };
       }
 
-      // 中止になったレースにも出走表の行は残る（結果の行は無い）。節の走を全部引いて、
-      // 中止を飛ばした最後の走を前走にする（中止を拾うと結果が来ないまま「—」が残る）
-      const [{ data: results }, { data: timings }, { data: races }] =
-        await Promise.all([
-          supabase
-            .from("race_results")
-            .select(
-              "race_id, rank1, rank2, rank3, rank4, rank5, rank6, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
-            )
-            .in("race_id", meetRaceIds),
-          supabase
-            .from("race_start_timings")
-            .select("race_id, boat_number, finish_mark, entry_course")
-            .in("race_id", meetRaceIds),
-          supabase
-            .from("races")
-            .select("race_id, cancellation_status")
-            .in("race_id", meetRaceIds),
-        ]);
-      const resultById = new Map((results ?? []).map((r) => [r.race_id, r]));
-      const statusById = new Map(
-        (races ?? []).map((r) => [r.race_id, r.cancellation_status]),
-      );
-      const timingByKey = new Map(
-        (timings ?? []).map((r) => [`${r.race_id}#${r.boat_number}`, r]),
-      );
-
-      const rows = targets.map((e) => {
-        const prev = meetByBoat.get(e.boat_number).findLast(
-          (r) =>
-            !isRaceCancelled({
-              cancellationStatus: statusById.get(r.race_id) ?? null,
-              result: resultById.get(r.race_id) ?? null,
-            }),
-        );
-        if (!prev) return { boat_number: e.boat_number, firstOfMeet: true };
-        return {
-          boat_number: e.boat_number,
-          raceId: prev.race_id,
-          boatNumber: prev.boat_number,
-          result: resultById.get(prev.race_id) ?? null,
-          finishMark:
-            timingByKey.get(`${prev.race_id}#${prev.boat_number}`)
-              ?.finish_mark ?? null,
-          entryCourse:
-            timingByKey.get(`${prev.race_id}#${prev.boat_number}`)
-              ?.entry_course ?? null,
-        };
-      });
+      const details = await fetchMeetRunDetails(meetRaceIds);
+      const rows = buildPrevRunRows(targets, meetByBoat, details);
       const pending = rows.some((r) => !r.firstOfMeet && !r.result);
       return pending ? { rows, fetchFailed: true } : { rows };
     });

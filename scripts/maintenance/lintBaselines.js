@@ -5,7 +5,6 @@
 
 // データ層の和。後で dataLayerSource.js を読む形にできるよう、一覧はここ1か所の関数に分ける
 const DATA_LAYER_PATTERNS = [
-  /^src\/services\/supabaseDataService\.js$/,
   /^src\/services\/core[^/]*\.js$/,
   /^src\/services\/[^/]*Queries[^/]*\.js$/,
 ];
@@ -14,7 +13,6 @@ export const dataLayerPatterns = () => DATA_LAYER_PATTERNS;
 export const isDataLayer = (file) =>
   dataLayerPatterns().some((re) => re.test(file));
 
-export const FACADE = "src/services/supabaseDataService.js";
 export const DATA_LAYER_KEY = "<data-layer>";
 
 /** 基準の key。和の中の from は1つにまとめる（関数が別ファイルへ移っても変わらない） */
@@ -92,9 +90,4 @@ export function newUtilsFileProblems(addedPaths) {
   return (addedPaths ?? [])
     .filter((p) => p.startsWith("src/utils/"))
     .map((p) => `src/utils/ に新しいファイル: ${p}`);
-}
-
-/** facade-frozen を error にしてよいか: supabaseDataService.js が殻だけ（関数の本体0） */
-export function facadeShouldBeError(functionBodyCount) {
-  return functionBodyCount === 0;
 }
