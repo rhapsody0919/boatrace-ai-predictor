@@ -102,8 +102,7 @@ const addDays = (date, n) => {
   return d.toISOString().slice(0, 10);
 };
 
-async function main() {
-  const args = process.argv.slice(2);
+function parseOptions(args) {
   const arg = (name) =>
     args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
   const strict = args.includes("--strict");
@@ -111,16 +110,21 @@ async function main() {
   const days = Number(arg("days") ?? 3);
   const to = date ?? jstToday();
   const from = date ?? addDays(to, -(days - 1));
+  return { strict, from, to };
+}
 
+function createDbClient() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) {
     console.error("❌ SUPABASE_URL・SUPABASE_SERVICE_KEY が必要です");
     process.exit(1);
   }
-  const client = createClient(url, key);
+  return createClient(url, key);
+}
 
-  const slots = await fetchAll(() =>
+function fetchSlots(client, from, to) {
+  return fetchAll(() =>
     client
       .from("scrape_slots")
       .select(
@@ -132,9 +136,10 @@ async function main() {
       .order("race_date")
       .order("race_id"),
   );
-  console.log(`結果のスロット ${from}〜${to}: ${slots.length}件\n`);
+}
 
-  // 日付×run_mode×状態・outcome
+// 日付×run_mode×状態・outcome
+function printSlotTally(slots) {
   const tally = new Map();
   for (const s of slots) {
     const key = `${s.race_date}  ${(s.run_mode ?? "未着手").padEnd(6)} ${s.status.padEnd(8)} ${s.outcome ?? "-"}`;
@@ -147,11 +152,9 @@ async function main() {
   console.log(
     `\nexpired: ${expired.length}件（うち未実行 attempts=0: ${unexecuted.length}件）`,
   );
+}
 
-  // shadow のダイジェストの一致率
-  const shadowOk = slots.filter(
-    (s) => s.run_mode === "shadow" && s.status === "done" && s.outcome === "ok",
-  );
+async function compareWithDb(client, shadowOk) {
   const ids = [...new Set(shadowOk.map((s) => s.race_id))];
   const [resultRows, timingRows] = await Promise.all([
     fetchByRaceIds(
@@ -167,7 +170,11 @@ async function main() {
       ids,
     ),
   ]);
-  const cmp = compareShadowDigests(shadowOk, resultRows, timingRows);
+  return compareShadowDigests(shadowOk, resultRows, timingRows);
+}
+
+// 一致率を出力して返す（比較できる行が0件なら null）
+function printDigestRate(shadowOk, cmp) {
   const denominator = cmp.matched + cmp.mismatched.length;
   const rate = denominator === 0 ? null : cmp.matched / denominator;
   console.log(
@@ -184,8 +191,11 @@ async function main() {
       `  DBに行なし（既存基盤がまだ書いていない・確定中止）: ${cmp.missing.slice(0, 10).join(", ")}${cmp.missing.length > 10 ? " …" : ""}`,
     );
   }
+  return rate;
+}
 
-  // shadow の遅延（完了時刻−期限）と試行回数
+// shadow の遅延（完了時刻−期限）と試行回数
+function printDelays(shadowOk) {
   const delays = [];
   const attempts = new Map();
   for (const s of shadowOk) {
@@ -212,6 +222,23 @@ async function main() {
         .join(", ") || "-"
     }`,
   );
+}
+
+async function main() {
+  const { strict, from, to } = parseOptions(process.argv.slice(2));
+  const client = createDbClient();
+
+  const slots = await fetchSlots(client, from, to);
+  console.log(`結果のスロット ${from}〜${to}: ${slots.length}件\n`);
+  printSlotTally(slots);
+
+  // shadow のダイジェストの一致率
+  const shadowOk = slots.filter(
+    (s) => s.run_mode === "shadow" && s.status === "done" && s.outcome === "ok",
+  );
+  const cmp = await compareWithDb(client, shadowOk);
+  const rate = printDigestRate(shadowOk, cmp);
+  printDelays(shadowOk);
 
   if (strict && (cmp.mismatched.length > 0 || (rate !== null && rate < 0.99))) {
     console.error("\n❌ --strict: 一致率が99%未満、または不一致があります");
