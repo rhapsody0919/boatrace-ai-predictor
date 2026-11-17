@@ -1,6 +1,6 @@
 /**
- * verify-motor-tab-readability.js の検査の続き（大きさの関所のため、同じ検査を場面ごとの関数に分けた。verify ではない）。
- * 共通の道具・場面は ctx で受け取る。前の場面で作った物は ctx に足されて次へ渡る。
+ * verify-motor-tab-readability.js の検査の続き（motor-tab-readability-sections1.js）。大きさの関所のため、同じ検査を場面ごとの関数に分けた。verify ではない。
+ * 共通の道具・場面は ctx で受け取り、前の場面で作った物は ctx に足されて次へ渡る。
  */
 
 export async function section1(ctx) {
@@ -73,6 +73,25 @@ export async function section1(ctx) {
     "展示タイムのスパークラインは3点未満なら出さない",
     grid.includes("trend.length < 3) return null"),
   );
+}
+
+export async function section2(ctx) {
+  const {
+    M,
+    V,
+    chart,
+    check,
+    day,
+    fetchMotorDailySeries,
+    getMotorPartsHistory,
+    officialTallyState,
+    partsScene,
+    read,
+    rid,
+    run,
+    same,
+    seed,
+  } = ctx;
   check(
     "優出数・優勝数は、会場の全モーターで値が無いとき列ごと畳む（見出し・セル・出典注記）",
     chart.includes("showFinalCount && (") &&
@@ -96,26 +115,6 @@ export async function section1(ctx) {
       chart,
     ),
   );
-}
-
-export async function section2(ctx) {
-  const {
-    M,
-    V,
-    chart,
-    check,
-    day,
-    fetchMotorDailySeries,
-    getMotorPartsHistory,
-    officialTallyState,
-    partsScene,
-    powerIndexTone,
-    read,
-    rid,
-    run,
-    same,
-    seed,
-  } = ctx;
   {
     // 偽の DB: 使用開始日は40日前。a2 に部品交換、c にプロペラ交換が記録される（同じ日の2レースは a・a2）
     const { G, tables } = partsScene(day, rid);
@@ -171,6 +170,10 @@ export async function section2(ctx) {
       chart.includes('t("analysis.motor.trendNotYetOfficial")') &&
       chart.includes('t("analysis.motor.trendOfficialZeroUnknown")'),
   );
+}
+
+export async function section3(ctx) {
+  const { chart, check, powerIndexTone, read } = ctx;
   check(
     "推移グラフ: 先頭の 0 を落としたときは、展示タイムと始まりがずれる理由を書く",
     chart.includes("firstRatedIndex > 0 && (") &&
@@ -212,7 +215,7 @@ export async function section2(ctx) {
   );
 }
 
-export async function section3(ctx) {
+export async function section4(ctx) {
   const {
     M,
     V,
@@ -289,6 +292,10 @@ export async function section3(ctx) {
     "選手ページ: 参考値の文言をレースページと同じ「— 走数が少ないため参考値」にそろえる",
     card.includes('" — 走数が少ないため参考値"'),
   );
+}
+
+export async function section5(ctx) {
+  const { check, read } = ctx;
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
       .motor;
@@ -318,97 +325,6 @@ export async function section3(ctx) {
         /「-」|"-"/.test(motor.usageHistoryNote) &&
         // 枠番別成績の展示タイムの列が、平均の値と推移の図だと分かる見出し（BOA-549）
         /平均|avg|平均|평균/i.test(motor.exhibitionTrendHeader),
-    );
-  }
-}
-
-export async function section4(ctx) {
-  const {
-    V,
-    check,
-    day,
-    exhibitionSparklineY,
-    exhibitionTimeAxis,
-    getRaceMotorBreakdown,
-    grid,
-    near,
-    read,
-    rid,
-    run,
-    todayScene,
-  } = ctx;
-  // ---- BOA-557（BOA-549 ファン評価の残り） ----
-  {
-    const chart = read("src/components/analysis/MotorConditionChart.jsx");
-    const racerCard = read("src/components/racer/RacerMotorStatusCard.jsx");
-    const trendChart = read("src/components/analysis/TrendLineChart.jsx");
-    // 当日のレースも「このレースの直前まで」。終了後に開くとそのレース自身の結果が入り、
-    // 翌日（過去レース扱い）に開いたときと数字が変わっていた
-    check(
-      "ドリルダウンは当日のレースも「このレースの直前まで」で集計する",
-      /const beforeRaceId = selectedRace \?\? null;/.test(chart),
-    );
-    check(
-      "一覧の機力指数も当日のレースは「このレースの直前まで」（同日の後のレース・このレース自身を入れず、公式の2連率・3連率を直前までの値に差し替える）",
-      await (async () => {
-        const { tt, tables } = todayScene(day, rid);
-        const got = await run(tables, () => getRaceMotorBreakdown(tt, V, 90));
-        const [row] = got.rows;
-        return (
-          got.rows.length === 1 &&
-          row.rate_source === "recalc" &&
-          row.sample_count === 2 &&
-          near(row.power_index, 5) &&
-          near(row.motor_2rate, 50) &&
-          near(row.motor_3rate, 100) &&
-          row.official_2rate === 41.2
-        );
-      })(),
-    );
-    // 展示タイムは速い（小さい）ほど上。枠番別成績の小さな線が逆（遅いほど上）で、
-    // 下の推移グラフを「上ほど速い」にしたとき同じタブで向きが食い違った（PR #1193 ファン評価1周目）
-    check(
-      "展示タイムの小さな推移線は速いほど上（最小が上端 y=0、最大が下端 y=height）",
-      exhibitionSparklineY(6.7, 6.7, 6.9, 24) === 0 &&
-        exhibitionSparklineY(6.9, 6.7, 6.9, 24) === 24 &&
-        exhibitionSparklineY(6.8, 6.8, 6.8, 24) === 0 &&
-        grid.includes("exhibitionSparklineY(t, min, max, height)"),
-    );
-    check(
-      "モータ情報の展示タイムの推移は縦軸を反転し（速いほど上）、渡した目盛りを全部出す",
-      /dataKey: "exhibition_time"/.test(chart) &&
-        /yTicks=\{exhibitionAxis\?\.ticks\}[\s\S]{0,300}yReversed/.test(
-          chart,
-        ) &&
-        read("src/components/analysis/TrendLineChart.jsx").includes(
-          "interval={yTicks ? 0 : undefined}",
-        ) &&
-        read("src/components/analysis/TrendLineChart.jsx").includes(
-          "reversed={yReversed}",
-        ),
-    );
-    // 展示タイムの縦軸の端は0.2秒の倍数（6.43 / 6.63 … や上端だけ7.10にしない）
-    // 範囲だけ渡すと recharts が5本に等分し、幅0.6秒で 6.80/6.95/7.10… になった（ファン評価）
-    const axisA = exhibitionTimeAxis([6.86, 7.31]);
-    const axisB = exhibitionTimeAxis([6.53, 7.04, null]);
-    check(
-      "展示タイムの縦軸は端も目盛りも0.2秒刻み（幅0.6秒でも0.15刻みにしない）",
-      JSON.stringify(axisA) ===
-        JSON.stringify({ domain: [6.8, 7.4], ticks: [6.8, 7, 7.2, 7.4] }) &&
-        JSON.stringify(axisB.ticks) ===
-          JSON.stringify([6.4, 6.6, 6.8, 7, 7.2]) &&
-        exhibitionTimeAxis([null]) === null,
-    );
-    check(
-      "展示タイムのグラフ（モータ情報・選手ページ）が0.2秒刻みの範囲と目盛りを使い、直線でつなぐ",
-      [chart, racerCard].every(
-        (src) =>
-          src.includes("yAxisDomain={exhibitionAxis?.domain}") &&
-          src.includes("yTicks={exhibitionAxis?.ticks}") &&
-          /dataKey: "exhibition_time",[\s\S]{0,200}type: "linear"/.test(src),
-      ) &&
-        !/dataMin - 0\.1/.test(chart + racerCard) &&
-        /ticks=\{yTicks\}/.test(trendChart),
     );
   }
 }

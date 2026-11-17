@@ -55,10 +55,12 @@ import {
   section2,
   section3,
   section4,
+  section5,
 } from "./verifyData/motor-tab-readability-sections1.js";
 import {
-  section5,
   section6,
+  section7,
+  section8,
 } from "./verifyData/motor-tab-readability-sections2.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -176,6 +178,8 @@ await section3(ctx);
 await section4(ctx);
 await section5(ctx);
 await section6(ctx);
+await section7(ctx);
+await section8(ctx);
 
 if (failures.length > 0) {
   sayErr(`\n${failures.length}件失敗`);

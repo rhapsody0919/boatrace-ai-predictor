@@ -1,6 +1,6 @@
 /**
- * verify-motor-fresh-rate.js の検査の続き（大きさの関所のため、同じ検査を場面ごとの関数に分けた。verify ではない）。
- * 共通の道具・場面は ctx で受け取る。前の場面で作った物は ctx に足されて次へ渡る。
+ * verify-motor-fresh-rate.js の検査の続き（motor-fresh-rate-sections.js）。大きさの関所のため、同じ検査を場面ごとの関数に分けた。verify ではない。
+ * 共通の道具・場面は ctx で受け取り、前の場面で作った物は ctx に足されて次へ渡る。
  */
 
 export async function section1(ctx) {
@@ -96,11 +96,9 @@ export async function section2(ctx) {
     RACE,
     VENUE,
     assert,
-    breakdownTables,
     failTables,
     freshTables,
     getRaceMotorFreshness,
-    localStore,
     queriesOn,
     quiet,
     rows3,
@@ -184,17 +182,6 @@ export async function section2(ctx) {
       firstMeet: false,
     });
   }
-  // 3b-8. 一覧（getRaceMotorBreakdown）: 過去レースは出走表の公式値の行に自前の値を足し、材料が取れなければ保存しない。
-  //   キャッシュの版を上げた: 自前の値の列が無い v10 の保存は読まない
-  const staleKey = `boatai:race-motor-breakdown-v10-official-${VENUE}-90-${RACE}`;
-  setTables(breakdownTables());
-  localStore.set(
-    staleKey,
-    JSON.stringify({
-      data: { rows: [{ stale: true }] },
-      timestamp: Date.now(),
-    }),
-  );
 }
 
 export async function section3(ctx) {
@@ -208,9 +195,19 @@ export async function section3(ctx) {
     getRaceMotorBreakdown,
     localStore,
     quiet,
-    read,
     setTables,
   } = ctx;
+  // 3b-8. 一覧（getRaceMotorBreakdown）: 過去レースは出走表の公式値の行に自前の値を足し、材料が取れなければ保存しない。
+  //   キャッシュの版を上げた: 自前の値の列が無い v10 の保存は読まない
+  const staleKey = `boatai:race-motor-breakdown-v10-official-${VENUE}-90-${RACE}`;
+  setTables(breakdownTables());
+  localStore.set(
+    staleKey,
+    JSON.stringify({
+      data: { rows: [{ stale: true }] },
+      timestamp: Date.now(),
+    }),
+  );
   {
     const got = await getRaceMotorBreakdown(RACE, VENUE, 90);
     assert.deepStrictEqual(
@@ -272,6 +269,11 @@ export async function section3(ctx) {
     "freshRate2Header",
   ];
   const BANNED = /数える|似た|似ている|ふつう|いつも|競艇|tally|tallied/i;
+  Object.assign(ctx, { BANNED, KEYS });
+}
+
+export async function section4(ctx) {
+  const { BANNED, KEYS, check, read } = ctx;
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
       .motor;

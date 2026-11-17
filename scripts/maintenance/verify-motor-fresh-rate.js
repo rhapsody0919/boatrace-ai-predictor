@@ -50,6 +50,7 @@ import {
   section1,
   section2,
   section3,
+  section4,
 } from "./verifyData/motor-fresh-rate-sections.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -291,6 +292,7 @@ const ctx = {
 await section1(ctx);
 await section2(ctx);
 await section3(ctx);
+await section4(ctx);
 
 if (failures.length > 0) {
   console.error(`\n${failures.length}件失敗`);

@@ -68,20 +68,27 @@ import {
   section3,
   section4,
   section5,
-  section6,
 } from "./verifyData/motor-window-generation-sections1.js";
 import {
+  section6,
   section7,
   section8,
   section9,
   section10,
   section11,
+  section12,
 } from "./verifyData/motor-window-generation-sections2.js";
 import {
-  section12,
   section13,
   section14,
+  section15,
+  section16,
 } from "./verifyData/motor-window-generation-sections3.js";
+import {
+  section17,
+  section18,
+  section19,
+} from "./verifyData/motor-window-generation-sections4.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -235,6 +242,11 @@ await section11(ctx);
 await section12(ctx);
 await section13(ctx);
 await section14(ctx);
+await section15(ctx);
+await section16(ctx);
+await section17(ctx);
+await section18(ctx);
+await section19(ctx);
 
 if (failures.length > 0) {
   sayErr(`\n${failures.length}件失敗`);
