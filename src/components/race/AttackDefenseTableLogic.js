@@ -1,4 +1,4 @@
-export const TECH_LABEL_KEYS = {
+const TECH_LABEL_KEYS = {
   sashi: {
     defense: "attackDefense.sashiDefense",
     attack: "attackDefense.sashiAttack",
