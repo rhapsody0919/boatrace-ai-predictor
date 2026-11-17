@@ -79,4 +79,10 @@ await test("races が0件なら予想を引かずに空の一覧（console.error
   assert.deepEqual(errors, []);
 });
 
+await test("races が null（取れなかった）なら空の一覧（console.error なし）", async () => {
+  const { out, errors } = await call({});
+  assert.deepEqual(out.races, []);
+  assert.deepEqual(errors, []);
+});
+
 console.log(`verify-poirot-race-make: ${count} 件 OK`);
