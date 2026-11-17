@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { getRaceRacerBoatReturnRate } from "../../services/raceQueries3.js";
 
-/** 選択中のレースの選手×艇番別 回収率を取得する（取得のたびに loading・error を親の state へ反映） */
+/** 選択中のレースの選手×艇番別の成績を取得する（取得のたびに loading・error を親の state へ反映） */
 export function useRacerBoatReturnRateBreakdown({
   selectedRace,
   setLoading,
