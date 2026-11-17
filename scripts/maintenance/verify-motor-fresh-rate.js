@@ -24,7 +24,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { register } from "node:module";
+import {
+  createFakeSupabase,
+  registerFakeServiceSupabase,
+  setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
 import {
   motorRateView,
   motorRate3View,
@@ -202,129 +206,8 @@ check(
   ),
 );
 
-// ---- サービス層を偽の supabase クライアントの上で呼ぶ土台（BOA-1675。本文の正規表現から置き換え） ----
-// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
-// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
-const FAKE_KEY = "__verifyMotorFreshRateSupabase";
-const SWAP_CLIENT = `
-export async function resolve(specifier, context, nextResolve) {
-  const resolved = await nextResolve(specifier, context);
-  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
-    return {
-      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
-      shortCircuit: true,
-    };
-  }
-  return resolved;
-}
-`;
-register(new URL("../lib/renderJsx.js", import.meta.url));
-register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
-
-/**
- * 偽の supabase クライアント（メモリ上の表）。select・eq・gt・gte・lt・lte・in・like・order（ascending）・limit・range・
- * maybeSingle と await を扱い、呼ばれた問い合わせを calls に残す。failTables（表 → 例外へ足す項目）の表は例外で失敗する
- */
-function makeFakeSupabase(tables, { failTables = new Map() } = {}) {
-  const calls = [];
-  const likeToRe = (pat) =>
-    new RegExp(
-      `^${pat
-        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-        .replace(/_/g, ".")
-        .replace(/%/g, ".*")}$`,
-    );
-  const client = {
-    calls,
-    from(table) {
-      const q = {
-        table,
-        select: null,
-        filters: [],
-        orders: [],
-        desc: new Set(),
-        range: null,
-        limit: null,
-      };
-      calls.push(q);
-      const run = (single = false) => {
-        // 本物のクライアントは throwOnError を既定で付ける（supabaseClient.js）ので、失敗は例外で来る
-        if (failTables.has(table))
-          return Promise.reject(
-            Object.assign(
-              new Error(`fake failure: ${table}`),
-              failTables.get(table),
-            ),
-          );
-        let rows = (tables[table] ?? []).filter((row) =>
-          q.filters.every(([op, col, val]) => {
-            const v = row[col];
-            if (op === "eq") return v === val;
-            if (op === "gt") return v > val;
-            if (op === "gte") return v >= val;
-            if (op === "lt") return v < val;
-            if (op === "lte") return v <= val;
-            if (op === "in") return val.includes(v);
-            if (op === "like") return likeToRe(val).test(v);
-            throw new Error(`偽のクライアントに無い絞り: ${op}`);
-          }),
-        );
-        if (q.orders.length > 0)
-          rows = [...rows].sort((a, b) => {
-            for (const col of q.orders) {
-              const dir = q.desc.has(col) ? -1 : 1;
-              if (a[col] < b[col]) return -dir;
-              if (a[col] > b[col]) return dir;
-            }
-            return 0;
-          });
-        if (q.range) rows = rows.slice(q.range[0], q.range[1] + 1);
-        if (q.limit !== null) rows = rows.slice(0, q.limit);
-        const copy = rows.map((r) => ({ ...r }));
-        return Promise.resolve({
-          data: single ? (copy[0] ?? null) : copy,
-          error: null,
-        });
-      };
-      const filter = (op) => (col, val) => {
-        q.filters.push([op, col, val]);
-        return chain;
-      };
-      const chain = {
-        select(cols) {
-          q.select = cols;
-          return chain;
-        },
-        eq: filter("eq"),
-        gt: filter("gt"),
-        gte: filter("gte"),
-        lt: filter("lt"),
-        lte: filter("lte"),
-        in: filter("in"),
-        like: filter("like"),
-        order(col, { ascending = true } = {}) {
-          q.orders.push(col);
-          if (!ascending) q.desc.add(col);
-          return chain;
-        },
-        limit(n) {
-          q.limit = n;
-          return chain;
-        },
-        range(a, b) {
-          q.range = [a, b];
-          return chain;
-        },
-        maybeSingle: () => run(true),
-        then(res, rej) {
-          return run().then(res, rej);
-        },
-      };
-      return chain;
-    },
-  };
-  return client;
-}
+// ---- サービス層を偽の supabase クライアントの上で呼ぶ（BOA-1675。共通の部品 verifyData/fakeServiceSupabase.js） ----
+registerFakeServiceSupabase();
 // サービス層のキャッシュは localStorage にも書く。Node には無いので、メモリの Map で代える（setTables で空にする）
 const localStore = new Map();
 globalThis.localStorage = {
@@ -340,8 +223,7 @@ globalThis.localStorage = {
 // ---- 3b. サービス（getRaceMotorFreshness・getRaceMotorBreakdown を偽の supabase の上で呼ぶ） ----
 const fakeTables = {};
 const failTables = new Map();
-const fake = makeFakeSupabase(fakeTables, { failTables });
-globalThis[FAKE_KEY] = fake;
+const fake = setFakeSupabase(createFakeSupabase(fakeTables, { failTables }));
 const { clearCache } = await import("../../src/services/core.js");
 const { getRaceMotorFreshness } =
   await import("../../src/services/motorQueries2.js");

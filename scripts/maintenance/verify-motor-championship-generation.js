@@ -23,29 +23,19 @@
  *    （BOA-1406。以前は本文の正規表現で見ていた）
  */
 
-import { register } from "node:module";
+import {
+  createFakeSupabase,
+  installLocalStorage,
+  registerFakeServiceSupabase,
+  setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
 import {
   currentMotorGenerationStart,
   isInMotorGeneration,
 } from "../../src/utils/motorGeneration.js";
 
-// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
-// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
-const FAKE_KEY = "__verifyMotorChampionshipSupabase";
-const SWAP_CLIENT = `
-export async function resolve(specifier, context, nextResolve) {
-  const resolved = await nextResolve(specifier, context);
-  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
-    return {
-      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
-      shortCircuit: true,
-    };
-  }
-  return resolved;
-}
-`;
-register(new URL("../lib/renderJsx.js", import.meta.url));
-register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
+// サービス層を偽の supabase クライアントの上で呼ぶ（BOA-1675。共通の部品 verifyData/fakeServiceSupabase.js）
+registerFakeServiceSupabase();
 
 const say = console.log.bind(console);
 const sayErr = console.error.bind(console);
@@ -57,109 +47,9 @@ const check = (label, ok) => {
 // サービス層の [Cache ...] ・エラーの通知は出さない（結果は check で見る）
 console.log = console.error = console.warn = () => {};
 
-/**
- * 偽の supabase クライアント（メモリ上の表）。select・eq・gte・lt・lte・like・in・order・range・limit・
- * maybeSingle と await を扱い、呼ばれた問い合わせを calls に残す。列名の "a.b" は入れ子の行（races!inner の結合）。
- * errors[表] が有れば、実クライアントの throwOnError と同じく await が例外になる。
- * 並びの決まらない行（order が無い・同値）は、実 DB のように安定しない順で返す（ページ境界の検査のため）
- */
-const fake = {
-  tables: {},
-  errors: {},
-  calls: [],
-  reset(tables, errors = {}) {
-    this.tables = tables;
-    this.errors = errors;
-    this.calls = [];
-  },
-  from(table) {
-    const q = {
-      table,
-      select: null,
-      filters: [],
-      orders: [],
-      range: null,
-      limit: null,
-      single: false,
-    };
-    fake.calls.push(q);
-    const at = (row, col) => col.split(".").reduce((v, k) => v?.[k], row);
-    const matches = (row, [op, col, val]) => {
-      const v = at(row, col);
-      if (op === "eq") return v === val;
-      if (op === "gte") return v >= val;
-      if (op === "lt") return v < val;
-      if (op === "lte") return v <= val;
-      if (op === "in") return val.includes(v);
-      if (op === "like")
-        return new RegExp(
-          `^${val.replace(/%/g, ".*").replace(/_/g, ".")}$`,
-        ).test(v);
-      throw new Error(`偽のクライアントに無い絞り: ${op}`);
-    };
-    // 並びの決まらない行の順は問い合わせごとに変わる（実 DB は同じ並びを約束しない。ページ境界で欠落・重複が出る）
-    const salt = fake.calls.length;
-    const scramble = (row) =>
-      [...JSON.stringify(row)].reduce(
-        (h, c) => (h * 31 + c.charCodeAt(0) + salt) | 0,
-        salt,
-      );
-    const run = () => {
-      const err = fake.errors[table];
-      if (err) return Promise.reject(err);
-      let rows = (fake.tables[table] ?? []).filter((row) =>
-        q.filters.every((f) => matches(row, f)),
-      );
-      rows = [...rows].sort((a, b) => {
-        for (const { col, asc } of q.orders) {
-          if (at(a, col) !== at(b, col))
-            return (at(a, col) < at(b, col) ? -1 : 1) * (asc ? 1 : -1);
-        }
-        return scramble(a) - scramble(b);
-      });
-      if (q.range) rows = rows.slice(q.range[0], q.range[1] + 1);
-      if (q.limit !== null) rows = rows.slice(0, q.limit);
-      const out = rows.map((r) => ({ ...r }));
-      return Promise.resolve({
-        data: q.single ? (out[0] ?? null) : out,
-        error: null,
-      });
-    };
-    const filter = (op) => (col, val) => (
-      q.filters.push([op, col, val]),
-      chain
-    );
-    const chain = {
-      select: (cols) => ((q.select = cols), chain),
-      eq: filter("eq"),
-      gte: filter("gte"),
-      lt: filter("lt"),
-      lte: filter("lte"),
-      like: filter("like"),
-      in: filter("in"),
-      order: (col, opts) => (
-        q.orders.push({ col, asc: opts?.ascending !== false }),
-        chain
-      ),
-      range: (a, b) => ((q.range = [a, b]), chain),
-      limit: (n) => ((q.limit = n), chain),
-      maybeSingle: () => ((q.single = true), chain),
-      then: (res, rej) => run().then(res, rej),
-    };
-    return chain;
-  },
-};
-globalThis[FAKE_KEY] = fake;
+const fake = setFakeSupabase(createFakeSupabase({}, { scramble: true }));
 // サービス層のキャッシュは localStorage にも書く。Node には無いので、中身を見られる物を置く（メモリのキャッシュは clearCache で消す）
-const store = {};
-Object.defineProperties(store, {
-  getItem: { value: (k) => (k in store ? store[k] : null) },
-  setItem: { value: (k, v) => void (store[k] = String(v)) },
-  removeItem: { value: (k) => void delete store[k] },
-  key: { value: (i) => Object.keys(store)[i] ?? null },
-  length: { get: () => Object.keys(store).length },
-});
-globalThis.localStorage = store;
+const store = installLocalStorage({ inspectable: true });
 
 const { clearCache } = await import("../../src/services/core.js");
 const { getMotorGenerationStart } =
