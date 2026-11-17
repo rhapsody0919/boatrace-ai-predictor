@@ -1405,6 +1405,11 @@
       "guards": "scripts/maintenance/ryujin-maker-token.js（Claude の push・PR・マージを作成の App ryujin-maker の名義にするトークンの道具、2026-11-06）。使い捨ての鍵と偽の fetch で、JWT の形と署名・権限の広い鍵を読まないこと・失敗の文に鍵の中身と JWT が出ないこと・トークンをこのリポジトリだけに絞ること・引数なしでトークンを出さないことを固定する。本物の鍵は読まない"
     },
     {
+      "script": "verify-schedule-model.js",
+      "tier": "ci",
+      "guards": "schedule の型 makeDigestDay（morning_digest_days の行）・makeDigestRow（morning_digest_rows の行）（src/pure/scheduleModel.js、設計図 §10 DM15）。主キー（digest_date の実在する日・section 6値・rank 1以上）と、取った列だけ回数は0以上・window_end が window_start 以後・真偽の列・suppressed_venues の整数の配列・会場1〜24・艇番とコースは null か1〜6・レースの3列は returned だけ null・数値の7列は flying・returned 以外で null を許さない（2つの表の CHECK 9本と同じ）を検査して凍結すること。select で取らない列は落とさないこと"
+    },
+    {
       "script": "verify-schema-detect.js",
       "tier": "ci",
       "guards": "マイグレーション適用判定・確認不能時の再試行・client別TTLキャッシュとclear（BOA-1075）"
