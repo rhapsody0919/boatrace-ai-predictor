@@ -16,27 +16,35 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { register } from "node:module";
+import {
+  createFakeSupabase,
+  installLocalStorage,
+  registerFakeServiceSupabase,
+  useFakeSupabase as setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
+import {
+  R1,
+  R2,
+  R9,
+  RACER,
+  ROW_KEYS,
+  check,
+  checkAsync,
+  checked,
+  expectedServiceRows,
+  only,
+  run,
+  S1,
+  S2,
+  SERVICE_TABLES,
+  entry,
+  ex,
+  race,
+  result,
+  sixSt,
+} from "./verifyData/racer-scoped-race-rows.js";
 import { existsSync } from "node:fs";
 
-// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
-// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
-const FAKE_KEY = "__verifyRacerScopedRaceRowsSupabase";
-const SWAP_CLIENT = `
-export async function resolve(specifier, context, nextResolve) {
-  const resolved = await nextResolve(specifier, context);
-  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
-    return {
-      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
-      shortCircuit: true,
-    };
-  }
-  return resolved;
-}
-`;
-register(new URL("../lib/renderJsx.js", import.meta.url));
-register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
-import { buildRacerScopedRaceRows } from "../../src/services/racerScopedRaceRows.js";
 // BOA-1501 で src/pure へ移す。移す前後のどちらでも本体を読む（移した後に元の場所の分岐は外す）
 const BASIC_INFO_STATS = existsSync(
   new URL("../../src/pure/basicInfoStats.js", import.meta.url),
@@ -44,85 +52,6 @@ const BASIC_INFO_STATS = existsSync(
   ? "../../src/pure/basicInfoStats.js"
   : "../../src/components/race/basicInfoStats.js";
 const { computeRates, getRecentRaces } = await import(BASIC_INFO_STATS);
-
-const R1 = "2026-10-01-04-01";
-const R9 = "2026-10-01-04-09";
-const R2 = "2026-10-02-04-03";
-
-const entry = (race_id, boat_number = 1, extra = {}) => ({
-  race_id,
-  boat_number,
-  grade: "A1",
-  f_count: 0,
-  ...extra,
-});
-const race = (race_id) => ({
-  race_id,
-  race_date: race_id.slice(0, 10),
-  venue_code: race_id.slice(11, 13),
-  race_grade: "一般",
-});
-const result = (race_id, extra = {}) => ({
-  race_id,
-  rank1: 1,
-  rank2: 2,
-  rank3: 3,
-  rank4: 4,
-  rank5: 5,
-  rank6: 6,
-  race_status: "normal",
-  actual_course_1: 1,
-  actual_course_2: 2,
-  actual_course_3: 3,
-  actual_course_4: 4,
-  actual_course_5: 5,
-  actual_course_6: 6,
-  winning_technique: "逃げ",
-  payout_win: 150,
-  ...extra,
-});
-const st = (race_id, boat_number, start_timing, extra = {}) => ({
-  race_id,
-  boat_number,
-  start_timing,
-  is_flying: false,
-  finish_mark: null,
-  entry_course: null,
-  ...extra,
-});
-const ex = (race_id, boat_number, exhibition_time) => ({
-  race_id,
-  boat_number,
-  exhibition_time,
-});
-const sixSt = (race_id, overrides = {}) =>
-  [1, 2, 3, 4, 5, 6].map((b) =>
-    st(race_id, b, 0.1 + b / 100, overrides[b] ?? {}),
-  );
-
-/** 1レース・自艇1号艇の入力。over で配列ごと差し替える */
-const input = (over = {}) => ({
-  entries: [entry(R1)],
-  raceRows: [race(R1)],
-  resultRows: [result(R1)],
-  startTimingRows: sixSt(R1),
-  exhibitionRows: [],
-  conditionRows: [],
-  ...over,
-});
-const run = (over) => buildRacerScopedRaceRows(input(over));
-const only = (over) => {
-  const rows = run(over);
-  assert.equal(rows.length, 1);
-  return rows[0];
-};
-
-let count = 0;
-const check = (name, fn) => {
-  fn();
-  count += 1;
-  console.log(`  ok ${name}`);
-};
 
 console.log("A. 旧の実装から取った値");
 
@@ -373,43 +302,7 @@ check(
 check(
   "A14 出力の行のキー（BOA-1052 の表示用キーを追加、35個、順を含む）",
   () => {
-    assert.deepEqual(Object.keys(only({})), [
-      "raceId",
-      "date",
-      "venueCode",
-      "boatNumber",
-      "raceGrade",
-      "raceTitle",
-      "raceStage",
-      "waveHeight",
-      "seriesDay",
-      "isFinalDay",
-      "rank1",
-      "rank2",
-      "rank3",
-      "rank4",
-      "rank5",
-      "rank6",
-      "winningTechnique",
-      "payoutWin",
-      "finishMark",
-      "absent",
-      "startTiming",
-      "flyingStartTiming",
-      "lateStartTiming",
-      "actualCourse",
-      "entryCourse",
-      "grade",
-      "exhibitionTime",
-      "exhibitionRank",
-      "fCount",
-      "isFlying",
-      "stForRank",
-      "raceBestSt",
-      "innerMinSt",
-      "stRank",
-      "isFastestExhibition",
-    ]);
+    assert.deepEqual(Object.keys(only({})), ROW_KEYS);
   },
 );
 
@@ -501,148 +394,32 @@ check("B6 出遅れの ST 欠落・false・フラグ未取得は従来の扱い"
 
 console.log("C. 呼び出し（サービス層を偽の supabase の上で呼ぶ）");
 
-// supabaseClient.js の supabase は import の時に決まるので、先に中継役を置き、試験ごとに中の偽を替える
-let currentFake = null;
-globalThis[FAKE_KEY] = { from: (table) => currentFake.from(table) };
-// サービス層のキャッシュは localStorage にも書く。Node には無いので、何も残さない物を置く
-globalThis.localStorage ??= {
-  getItem: () => null,
-  setItem() {},
-  removeItem() {},
-  key: () => null,
-  length: 0,
-};
+registerFakeServiceSupabase();
+installLocalStorage();
 const { getRacerScopedRaceStats } =
   await import("../../src/services/racerQueries2.js");
 const { clearCache, withCache } = await import("../../src/services/core.js");
 const { racerHistoryCutoff } =
   await import("../../src/utils/racerVenueBoatStats.js");
 
-/**
- * 偽の supabase クライアント（メモリ上の表）。select・eq・gte・in・order・range と await を扱い、
- * 呼ばれた問い合わせを calls に残す。failTables の表は error を返す（.throwOnError() 相当で例外にする）
- */
-function makeFakeSupabase(tables, failTables = new Set()) {
-  const calls = [];
-  return {
-    calls,
-    from(table) {
-      const q = { table, select: null, filters: [], orders: [], range: null };
-      calls.push(q);
-      const run = () => {
-        if (failTables.has(table))
-          return Promise.reject(new Error(`${table} 失敗`));
-        const rows = (tables[table] ?? []).filter((row) =>
-          q.filters.every(([op, col, val]) => {
-            const v = row[col];
-            if (op === "eq") return v === val;
-            if (op === "gte") return v >= val;
-            if (op === "in") return val.includes(v);
-            throw new Error(`偽のクライアントに無い絞り: ${op}`);
-          }),
-        );
-        const [a, b] = q.range ?? [0, rows.length - 1];
-        return Promise.resolve({
-          data: rows.slice(a, b + 1).map((r) => ({ ...r })),
-          error: null,
-        });
-      };
-      const filter = (op) => (col, val) => {
-        q.filters.push([op, col, val]);
-        return chain;
-      };
-      const chain = {
-        select(cols) {
-          q.select = cols;
-          return chain;
-        },
-        eq: filter("eq"),
-        gte: filter("gte"),
-        in: filter("in"),
-        order(col) {
-          q.orders.push(col);
-          return chain;
-        },
-        range(a, b) {
-          q.range = [a, b];
-          return run();
-        },
-        then(res, rej) {
-          return run().then(res, rej);
-        },
-      };
-      return chain;
-    },
-  };
-}
-
-const addDays = (ymd, days) => {
-  const d = new Date(`${ymd}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-};
-const today = new Date().toISOString().slice(0, 10);
-const RACER = 6001;
-const S1 = `${addDays(today, -4)}-04-03`;
-const S2 = `${addDays(today, -3)}-04-01`;
-const SERVICE_TABLES = {
-  race_entries: [
-    entry(S1),
-    entry(S2, 3, { grade: "B1", f_count: 1 }),
-    { ...entry(S1, 2), racer_id: 6002 }, // 別の選手
-  ].map((e) => ({ racer_id: RACER, ...e })),
-  races: [race(S1), race(S2)],
-  race_results: [result(S1), result(S2, { rank1: 3, rank2: 1, rank3: 2 })],
-  race_start_timings: [
-    ...sixSt(S1),
-    ...sixSt(S2, { 3: { is_late_start: true, start_timing: 1.99 } }),
-  ],
-  exhibition_data: [ex(S1, 1, 6.7), ex(S1, 2, 6.8), ex(S2, 3, 6.9)],
-  race_conditions: [
-    {
-      race_id: S1,
-      race_stage: "予選",
-      race_title: "A杯",
-      wave_height: 3,
-      series_day: 1,
-      is_final_day: false,
-    },
-    {
-      race_id: S2,
-      race_stage: "優勝戦",
-      race_title: "A杯",
-      wave_height: 5,
-      series_day: 2,
-      is_final_day: true,
-    },
-  ],
-};
-const entriesFor = (tables) =>
-  tables.race_entries.filter((e) => e.racer_id === RACER);
 const install = (tables = SERVICE_TABLES, failTables) => {
   clearCache();
-  currentFake = makeFakeSupabase(tables, failTables);
-  return currentFake;
+  // order は記録だけで並べ替えない。失敗の表は await で例外になる
+  return setFakeSupabase(
+    createFakeSupabase(tables, {
+      sortByOrder: false,
+      failTables: new Map(
+        [...(failTables ?? [])].map((t) => [t, new Error(`${t} 失敗`)]),
+      ),
+    }),
+  );
 };
-const checkAsync = async (name, fn) => {
-  await fn();
-  count += 1;
-  console.log(`  ok ${name}`);
-};
-
 await checkAsync(
   "C1 getRacerScopedRaceStats は取った表を buildRacerScopedRaceRows で組んだ行をそのまま返す",
   async () => {
     const fake = install();
     const rows = await getRacerScopedRaceStats(RACER);
-    const expected = buildRacerScopedRaceRows({
-      entries: entriesFor(SERVICE_TABLES).map(({ racer_id, ...e }) => e),
-      raceRows: SERVICE_TABLES.races,
-      resultRows: SERVICE_TABLES.race_results,
-      startTimingRows: SERVICE_TABLES.race_start_timings,
-      exhibitionRows: SERVICE_TABLES.exhibition_data,
-      conditionRows: SERVICE_TABLES.race_conditions,
-    });
+    const expected = expectedServiceRows();
     assert.equal(expected.length, 2);
     assert.deepEqual(rows, expected);
     // 取る表: race_entries は選手・窓の始点で、他の5表は選手の走の race_id だけで
@@ -677,14 +454,7 @@ await checkAsync(
     } finally {
       console.error = origError;
     }
-    const expected = buildRacerScopedRaceRows({
-      entries: entriesFor(SERVICE_TABLES).map(({ racer_id, ...e }) => e),
-      raceRows: SERVICE_TABLES.races,
-      resultRows: SERVICE_TABLES.race_results,
-      startTimingRows: SERVICE_TABLES.race_start_timings,
-      exhibitionRows: SERVICE_TABLES.exhibition_data,
-      conditionRows: null,
-    });
+    const expected = expectedServiceRows(null);
     assert.deepEqual(rows, expected);
   },
 );
@@ -712,4 +482,4 @@ await checkAsync(
   },
 );
 
-console.log(`✅ racerScopedRaceRows: ${count} 件の例を確認`);
+console.log(`✅ racerScopedRaceRows: ${checked()} 件の例を確認`);

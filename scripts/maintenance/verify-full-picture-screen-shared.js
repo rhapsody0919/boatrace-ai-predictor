@@ -18,7 +18,18 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { register } from "node:module";
+import {
+  createFakeSupabase,
+  installLocalStorage,
+  registerFakeServiceSupabase,
+  useFakeSupabase as setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
+import {
+  LOSING_ROWS,
+  ORIGINAL_EXHIBITION_TABLES,
+  R,
+  historyInput,
+} from "./verifyData/full-picture-screen-shared.js";
 import {
   buildRacerRaceHistoryRows,
   isUnrankedFinishMark,
@@ -31,23 +42,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
-// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
-const FAKE_KEY = "__verifyFullPictureScreenSharedSupabase";
-const SWAP_CLIENT = `
-export async function resolve(specifier, context, nextResolve) {
-  const resolved = await nextResolve(specifier, context);
-  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
-    return {
-      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
-      shortCircuit: true,
-    };
-  }
-  return resolved;
-}
-`;
-register(new URL("../lib/renderJsx.js", import.meta.url));
-register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
+registerFakeServiceSupabase();
 
 const materials = fs.readFileSync(
   path.join(
@@ -72,99 +67,6 @@ for (const [name, from] of [
   );
 }
 // 2. 出走履歴の行
-const result = (race_id, over = {}) => ({
-  race_id,
-  rank1: 1,
-  rank2: 2,
-  rank3: 3,
-  rank4: 4,
-  rank5: 5,
-  rank6: 6,
-  race_status: null,
-  winning_technique: "逃げ",
-  payout_win: 150,
-  payout_place_1: 110,
-  payout_place_2: 130,
-  actual_course_1: 1,
-  actual_course_2: 3,
-  actual_course_3: 2,
-  actual_course_4: 4,
-  actual_course_5: 5,
-  actual_course_6: 6,
-  ...over,
-});
-const R = [
-  "2026-10-02-01-01",
-  "2026-10-01-01-01",
-  "2026-10-03-02-01",
-  "2026-10-04-02-01",
-];
-const historyInput = {
-  entries: [
-    { race_id: R[0], boat_number: 2 },
-    { race_id: R[1], boat_number: 1 },
-    { race_id: R[2], boat_number: 3 },
-    { race_id: R[3], boat_number: 1 },
-  ],
-  raceRows: [
-    { race_id: R[0], venue_code: 1, race_grade: "ippan" },
-    { race_id: R[1], venue_code: 1, race_grade: null },
-    { race_id: R[2], venue_code: null },
-    { race_id: R[3], venue_code: 2, race_grade: "G1" },
-  ],
-  // R[3] は不成立（race_status=no_race、使えない結果）
-  resultRows: [
-    result(R[0]),
-    result(R[1], { rank1: 3, rank2: 2, rank3: 4 }),
-    result(R[2]),
-    result(R[3], { race_status: "no_race" }),
-  ],
-  exhibitionRows: [{ race_id: R[0], boat_number: 2, exhibition_time: 6.71 }],
-  conditionRows: [
-    {
-      race_id: R[0],
-      race_stage: "予選",
-      race_title: "x杯",
-      weather: "晴",
-      wind_speed: 5,
-      wave_height: 3,
-    },
-  ],
-  stRows: [
-    {
-      race_id: R[0],
-      boat_number: 1,
-      start_timing: 0.1,
-      is_flying: false,
-      finish_mark: "1",
-      entry_course: 1,
-    },
-    {
-      race_id: R[0],
-      boat_number: 2,
-      start_timing: 0.15,
-      is_flying: false,
-      finish_mark: "2",
-      entry_course: null,
-    },
-    {
-      race_id: R[0],
-      boat_number: 3,
-      start_timing: 0.02,
-      is_flying: true,
-      finish_mark: "F",
-      entry_course: 3,
-    },
-    {
-      race_id: R[1],
-      boat_number: 1,
-      start_timing: null,
-      is_flying: false,
-      finish_mark: "転",
-      entry_course: 1,
-    },
-  ],
-};
 const rows = buildRacerRaceHistoryRows(historyInput);
 assert.deepEqual(
   rows.map((r) => r.raceId),
@@ -322,49 +224,6 @@ assert.deepEqual(ORIGINAL_EXHIBITION_KINDS, [
 
 // 5. サービス層（領域の Queries の公開の入口）を偽の supabase クライアントの上で呼ぶ。画面は材料と同じ純関数の値を返し、
 //    整形の写しを持たない（写しが別の値を作れば、上の 2〜4 で固定した純関数の値と食い違って落ちる）
-/** 偽の supabase クライアント（メモリ上の表）。select・eq・gte・in・order・range・maybeSingle と await を扱う */
-function makeFakeSupabase(tables) {
-  return {
-    from(table) {
-      const filters = [];
-      let rangeArgs = null;
-      const run = () => {
-        const found = (tables[table] ?? []).filter((row) =>
-          filters.every(([op, col, val]) => {
-            if (op === "eq") return row[col] === val;
-            if (op === "gte") return row[col] >= val;
-            if (op === "in") return val.includes(row[col]);
-            throw new Error(`偽のクライアントに無い絞り: ${op}`);
-          }),
-        );
-        const [a, b] = rangeArgs ?? [0, found.length - 1];
-        return found.slice(a, b + 1).map((r) => ({ ...r }));
-      };
-      const filter = (op) => (col, val) => {
-        filters.push([op, col, val]);
-        return chain;
-      };
-      const chain = {
-        select: () => chain,
-        eq: filter("eq"),
-        gte: filter("gte"),
-        in: filter("in"),
-        order: () => chain,
-        range(a, b) {
-          rangeArgs = [a, b];
-          return Promise.resolve({ data: run(), error: null });
-        },
-        maybeSingle: () =>
-          Promise.resolve({ data: run()[0] ?? null, error: null }),
-        then(res, rej) {
-          return Promise.resolve({ data: run(), error: null }).then(res, rej);
-        },
-      };
-      return chain;
-    },
-  };
-}
-
 // 出走履歴: 2 の入力を、選手の窓（730日）の中の日付へ付け替えて表に置く（窓は今日から数えるので、固定の日付だと期限が来る）
 const today = new Date().toISOString().slice(0, 10);
 const addDays = (ymd, days) => {
@@ -380,77 +239,29 @@ for (const id of R) {
   remapped = remapped.replaceAll(id, `${newDate}${id.slice(10)}`);
 }
 const serviceInput = JSON.parse(remapped);
-const LOSING_ROWS = [
-  {
-    venue_code: 1,
-    boat_number: 1,
-    losing_technique: "差し",
-    count_90days: 30,
-    total_losses_90days: 80,
-    percentage: 37.5,
-    last_updated: "2026-10-25",
-  },
-  {
-    venue_code: 1,
-    boat_number: 1,
-    losing_technique: "まくり",
-    count_90days: 20,
-    total_losses_90days: 80,
-    percentage: 25,
-    last_updated: "2026-10-24",
-  },
-  // 別の会場の行は混ざらない
-  {
-    venue_code: 2,
-    boat_number: 3,
-    losing_technique: "逃げ",
-    count_90days: 5,
-    total_losses_90days: 200,
-    percentage: 2.5,
-    last_updated: "2026-10-24",
-  },
-];
 const SERVICE_RACER = 4201;
-const FAKE = makeFakeSupabase({
-  race_entries: [
-    ...serviceInput.entries.map((e) => ({ ...e, racer_id: SERVICE_RACER })),
-    // 別の選手の走は返さない
-    {
-      race_id: serviceInput.entries[0].race_id,
-      boat_number: 5,
-      racer_id: SERVICE_RACER + 1,
-    },
-  ],
-  races: serviceInput.raceRows,
-  race_results: serviceInput.resultRows,
-  exhibition_data: serviceInput.exhibitionRows,
-  race_conditions: serviceInput.conditionRows,
-  race_start_timings: serviceInput.stRows,
-  losing_technique_stats: LOSING_ROWS,
-  race_original_exhibition: [
-    {
-      race_id: "ox-1",
-      item_labels: " 直線 | 一周 ",
-      updated_at: "2026-10-25T05:00:00Z",
-    },
-  ],
-  race_original_exhibition_values: [
-    { race_id: "ox-1", boat_number: 1, kind: "一周", value: "37.21" },
-    { race_id: "ox-1", boat_number: 1, kind: "直線", value: 7.01 },
-    { race_id: "ox-1", boat_number: 2, kind: "一周", value: null },
-    { race_id: "ox-1", boat_number: 2, kind: "まわり足", value: "5.5" },
-    { race_id: "ox-2", boat_number: 1, kind: "直線", value: "9" },
-  ],
-});
-globalThis[FAKE_KEY] = FAKE;
+setFakeSupabase(
+  createFakeSupabase({
+    race_entries: [
+      ...serviceInput.entries.map((e) => ({ ...e, racer_id: SERVICE_RACER })),
+      // 別の選手の走は返さない
+      {
+        race_id: serviceInput.entries[0].race_id,
+        boat_number: 5,
+        racer_id: SERVICE_RACER + 1,
+      },
+    ],
+    races: serviceInput.raceRows,
+    race_results: serviceInput.resultRows,
+    exhibition_data: serviceInput.exhibitionRows,
+    race_conditions: serviceInput.conditionRows,
+    race_start_timings: serviceInput.stRows,
+    losing_technique_stats: LOSING_ROWS,
+    ...ORIGINAL_EXHIBITION_TABLES,
+  }),
+);
 // サービス層のキャッシュは localStorage にも書く。Node には無いので、何も残さない物を置く
-globalThis.localStorage ??= {
-  getItem: () => null,
-  setItem() {},
-  removeItem() {},
-  key: () => null,
-  length: 0,
-};
+installLocalStorage();
 const { clearCache } = await import("../../src/services/core.js");
 const { getRacerRaceHistory } =
   await import("../../src/services/racerQueries2.js");

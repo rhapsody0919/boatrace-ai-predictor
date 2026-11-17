@@ -16,26 +16,14 @@
  */
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { register } from "node:module";
 import { fileURLToPath } from "node:url";
+import {
+  createFakeSupabase,
+  registerFakeServiceSupabase,
+  useFakeSupabase as setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
 
-// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
-// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
-const FAKE_KEY = "__verifyFetchAllByInOrderSupabase";
-const SWAP_CLIENT = `
-export async function resolve(specifier, context, nextResolve) {
-  const resolved = await nextResolve(specifier, context);
-  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
-    return {
-      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
-      shortCircuit: true,
-    };
-  }
-  return resolved;
-}
-`;
-register(new URL("../lib/renderJsx.js", import.meta.url));
-register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
+registerFakeServiceSupabase();
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -45,80 +33,6 @@ function check(label, pass, detail = "") {
     failures++;
     console.error(`❌ ${label}${detail ? ` (${detail})` : ""}`);
   }
-}
-
-/**
- * 偽の PostgREST（メモリ上の表）。select・in・order・range と await を扱い、問い合わせを queries に残す。
- * PostgreSQL と同じに、order() で決まらない同じ値の行の並びは保証しない: 問い合わせごとに違う並びで返す
- */
-function makeFakeSupabase() {
-  const queries = [];
-  let tables = {};
-  let seed = 0;
-  const client = {
-    queries,
-    // 表を差し替えて、残した問い合わせを消す（supabase は import の時点で固定されるので、同じ偽を使い回す）
-    reset(newTables) {
-      tables = newTables;
-      queries.length = 0;
-    },
-    from(table) {
-      const q = { table, select: null, filters: [], orders: [], range: null };
-      queries.push(q);
-      const run = () => {
-        const salt = ++seed;
-        const rows = (tables[table] ?? [])
-          .filter((row) =>
-            q.filters.every(([op, col, val]) => {
-              if (op === "in") return val.includes(row[col]);
-              throw new Error(`偽のクライアントに無い絞り: ${op}`);
-            }),
-          )
-          // 並びの決まらない行を、問い合わせごとに違う順にする（決定的な疑似乱数）
-          .map((row, i) => ({
-            row,
-            tie: (i * 2654435761 + salt * 40503) % 1009,
-          }))
-          .sort((a, b) => {
-            for (const col of q.orders) {
-              if (a.row[col] < b.row[col]) return -1;
-              if (a.row[col] > b.row[col]) return 1;
-            }
-            return a.tie - b.tie;
-          })
-          .map((x) => x.row);
-        const [from, to] = q.range ?? [0, rows.length - 1];
-        // PostgREST の既定の上限（1000行）
-        return Promise.resolve({
-          data: rows.slice(from, Math.min(to + 1, from + 1000)),
-          error: null,
-        });
-      };
-      const chain = {
-        select(cols) {
-          q.select = cols;
-          return chain;
-        },
-        in(col, val) {
-          q.filters.push(["in", col, val]);
-          return chain;
-        },
-        order(col) {
-          q.orders.push(col);
-          return chain;
-        },
-        range(a, b) {
-          q.range = [a, b];
-          return run();
-        },
-        then(res, rej) {
-          return run().then(res, rej);
-        },
-      };
-      return chain;
-    },
-  };
-  return client;
 }
 
 // race_id（YYYY-MM-DD-VV-RR）の昇順に N 個。行は主キーの昇順に作る（期待の並び）
@@ -146,8 +60,10 @@ const shuffled = (rows) =>
     (a, b) => ((a.payload * 7919) % 1013) - ((b.payload * 7919) % 1013),
   );
 
-const fake = makeFakeSupabase();
-globalThis[FAKE_KEY] = fake;
+// 同じ値の行の並びは問い合わせごとに変え、1回の返す行は 1000 行まで（PostgREST の既定の上限）
+const fake = setFakeSupabase(
+  createFakeSupabase({}, { scramble: true, maxRows: 1000 }),
+);
 const { FETCH_ALL_BY_IN_ORDER, fetchAllByIn } =
   await import("../../src/services/core.js");
 const orderedTables = Object.keys(FETCH_ALL_BY_IN_ORDER);
@@ -170,8 +86,8 @@ check(
     "fetchAllByIn が並びの無いテーブルを例外にする（問い合わせは送らない）",
     message !== null &&
       message.includes("no_such_table") &&
-      fake.queries.length === 0,
-    `message=${message} queries=${fake.queries.length}`,
+      fake.calls.length === 0,
+    `message=${message} queries=${fake.calls.length}`,
   );
 }
 
@@ -191,7 +107,7 @@ for (const table of orderedTables) {
     `rows=${rows.length}/${expectedRows.length}`,
   );
 
-  const queries = fake.queries;
+  const queries = fake.calls;
   check(
     `fetchAllByIn(${table}): どの問い合わせも ${table} を、主キーの各列の順で .order() して .range() で読む`,
     queries.length > 0 &&
@@ -238,7 +154,7 @@ for (const table of orderedTables) {
   const rows = await fetchAllByIn("races", "race_id", "race_id", []);
   check(
     "fetchAllByIn: 値が無ければ要求を送らず空配列",
-    Array.isArray(rows) && rows.length === 0 && fake.queries.length === 0,
+    Array.isArray(rows) && rows.length === 0 && fake.calls.length === 0,
   );
 }
 

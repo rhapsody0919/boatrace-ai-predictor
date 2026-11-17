@@ -10,78 +10,18 @@
  *      motorQueries2・motorQueries5・raceQueries3 の使い所は、偽に載せる表が大きく、この verify では呼ばない
  */
 import assert from "node:assert/strict";
-import { register } from "node:module";
+import {
+  createFakeSupabase,
+  installLocalStorage,
+  registerFakeServiceSupabase,
+  useFakeSupabase as setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
 import {
   isUsableRaceResult,
   isNoRaceResult,
 } from "../../src/utils/raceResultUsable.js";
 
-// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
-// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
-const FAKE_KEY = "__verifyRaceResultUsableSupabase";
-const SWAP_CLIENT = `
-export async function resolve(specifier, context, nextResolve) {
-  const resolved = await nextResolve(specifier, context);
-  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
-    return {
-      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
-      shortCircuit: true,
-    };
-  }
-  return resolved;
-}
-`;
-register(new URL("../lib/renderJsx.js", import.meta.url));
-register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
-
-/** 偽の supabase クライアント（メモリ上の表）。select・eq・gte・lt・lte・in・order・range と await を扱う */
-function makeFakeSupabase(tables) {
-  return {
-    from(table) {
-      const filters = [];
-      let rangeArgs = null;
-      const run = () => {
-        const rows = (tables[table] ?? []).filter((row) =>
-          filters.every(([op, col, val]) => {
-            const v = row[col];
-            if (op === "eq") return v === val;
-            if (op === "gte") return v >= val;
-            if (op === "lt") return v < val;
-            if (op === "lte") return v <= val;
-            if (op === "in") return val.includes(v);
-            throw new Error(`偽のクライアントに無い絞り: ${op}`);
-          }),
-        );
-        const [a, b] = rangeArgs ?? [0, rows.length - 1];
-        return Promise.resolve({
-          data: rows.slice(a, b + 1).map((r) => ({ ...r })),
-          error: null,
-        });
-      };
-      const filter = (op) => (col, val) => {
-        filters.push([op, col, val]);
-        return chain;
-      };
-      const chain = {
-        select: () => chain,
-        eq: filter("eq"),
-        gte: filter("gte"),
-        lt: filter("lt"),
-        lte: filter("lte"),
-        in: filter("in"),
-        order: () => chain,
-        range(a, b) {
-          rangeArgs = [a, b];
-          return run();
-        },
-        then(res, rej) {
-          return run().then(res, rej);
-        },
-      };
-      return chain;
-    },
-  };
-}
+registerFakeServiceSupabase();
 
 // 1. 判定そのもの
 const cases = [
@@ -173,15 +113,10 @@ const tables = {
   ],
   race_results: [...racerResults, ...dayResults],
 };
-globalThis[FAKE_KEY] = makeFakeSupabase(tables);
+// order は見ない（表の順のまま返す）
+setFakeSupabase(createFakeSupabase(tables, { sortByOrder: false }));
 // サービス層のキャッシュは localStorage にも書く。Node には無いので、何も残さない物を置く
-globalThis.localStorage ??= {
-  getItem: () => null,
-  setItem() {},
-  removeItem() {},
-  key: () => null,
-  length: 0,
-};
+installLocalStorage();
 const { clearCache } = await import("../../src/services/core.js");
 const { getRacerVenueStats } =
   await import("../../src/services/racerQueries2.js");

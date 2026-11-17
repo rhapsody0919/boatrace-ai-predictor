@@ -3,25 +3,14 @@
 import assert from "node:assert/strict";
 import * as B from "../lib/dateUtils.js";
 import * as F from "../../src/utils/dateUtils.js";
-import { register } from "node:module";
+import {
+  createFakeSupabase,
+  installLocalStorage,
+  registerFakeServiceSupabase,
+  useFakeSupabase as setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
 
-// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
-// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
-const FAKE_KEY = "__verifyJstDateUtilsSupabase";
-const SWAP_CLIENT = `
-export async function resolve(specifier, context, nextResolve) {
-  const resolved = await nextResolve(specifier, context);
-  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
-    return {
-      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
-      shortCircuit: true,
-    };
-  }
-  return resolved;
-}
-`;
-register(new URL("../lib/renderJsx.js", import.meta.url));
-register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
+registerFakeServiceSupabase();
 
 const RealDate = globalThis.Date;
 let passed = 0;
@@ -236,66 +225,10 @@ for (const gap of KNOWN_GAPS) {
 
 // 同値の式への回帰は出力比較では検出できないため、サービス層が日付の共通関数（getDaysAgoJST・getTodayJST）で
 // 動くことも、時計を固定して偽の supabase クライアントの上で確かめる（BOA-1352。RA42: 本文の正規表現から置き換え）。
-/** 偽の supabase クライアント（メモリ上の表）。select・eq・gte・order・limit・range・maybeSingle と await を扱い、問い合わせを残す */
-function makeFakeSupabase() {
-  const queries = [];
-  let tables = {};
-  return {
-    queries,
-    reset(newTables) {
-      tables = newTables;
-      queries.length = 0;
-    },
-    from(table) {
-      const q = { table, filters: [], range: null };
-      queries.push(q);
-      const run = () => {
-        const rows = (tables[table] ?? []).filter((row) =>
-          q.filters.every(([op, col, val]) => {
-            if (op === "eq") return row[col] === val;
-            if (op === "gte") return row[col] >= val;
-            throw new Error(`偽のクライアントに無い絞り: ${op}`);
-          }),
-        );
-        const [a, b] = q.range ?? [0, rows.length - 1];
-        return rows.slice(a, b + 1).map((r) => ({ ...r }));
-      };
-      const chain = {
-        select: () => chain,
-        eq(col, val) {
-          q.filters.push(["eq", col, val]);
-          return chain;
-        },
-        gte(col, val) {
-          q.filters.push(["gte", col, val]);
-          return chain;
-        },
-        order: () => chain,
-        limit: () => chain,
-        range(a, b) {
-          q.range = [a, b];
-          return chain;
-        },
-        maybeSingle: () =>
-          Promise.resolve({ data: run()[0] ?? null, error: null }),
-        then(res, rej) {
-          return Promise.resolve({ data: run(), error: null }).then(res, rej);
-        },
-      };
-      return chain;
-    },
-  };
-}
-const fake = makeFakeSupabase();
-globalThis[FAKE_KEY] = fake;
+// order は記録だけで、表の順（RACE_DATES の昇順）のまま返す
+const fake = setFakeSupabase(createFakeSupabase({}, { sortByOrder: false }));
 // サービス層のキャッシュは localStorage にも書く。Node には無いので、何も残さない物を置く
-globalThis.localStorage ??= {
-  getItem: () => null,
-  setItem() {},
-  removeItem() {},
-  key: () => null,
-  length: 0,
-};
+installLocalStorage();
 const { clearCache } = await import("../../src/services/core.js");
 const { getAvailableDates, getMorningDigest } =
   await import("../../src/services/scheduleQueries.js");
@@ -344,9 +277,9 @@ for (const c of CLOCK_CASES) {
       [0, c.today],
     ]) {
       clearCache();
-      fake.queries.length = 0;
+      fake.calls.length = 0;
       const dates = await getAvailableDates(days);
-      const gte = fake.queries
+      const gte = fake.calls
         .flatMap((q) => q.filters)
         .filter(([op]) => op === "gte");
       check(
@@ -398,7 +331,7 @@ for (const { instant, date, refetched } of DIGEST_CASES) {
   clearCache();
   await withClock(instant, async (advance) => {
     const dayQueries = () =>
-      fake.queries.filter((q) => q.table === "morning_digest_days").length;
+      fake.calls.filter((q) => q.table === "morning_digest_days").length;
     await getMorningDigest(date);
     check(
       `getMorningDigest(${date}) 1回目は取る @ ${instant}`,

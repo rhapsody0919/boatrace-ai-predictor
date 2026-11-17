@@ -17,29 +17,18 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { register } from "node:module";
+import {
+  createFakeSupabase,
+  installLocalStorage,
+  registerFakeServiceSupabase,
+  useFakeSupabase as setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
 import {
   fetchAllInChunks,
   fetchAllPages,
 } from "../../src/services/fetchAllPages.js";
 
-// src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
-// その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
-const FAKE_KEY = "__verifyRacerEntriesPagingSupabase";
-const SWAP_CLIENT = `
-export async function resolve(specifier, context, nextResolve) {
-  const resolved = await nextResolve(specifier, context);
-  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
-    return {
-      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
-      shortCircuit: true,
-    };
-  }
-  return resolved;
-}
-`;
-register(new URL("../lib/renderJsx.js", import.meta.url));
-register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
+registerFakeServiceSupabase();
 
 const MAX_ROWS = 1000; // PostgREST の既定の上限
 
@@ -221,8 +210,6 @@ await check("値が無い: 要求を送らず空配列", async () => {
 
 // --- B. 振る舞いの試験（サービス層を偽の supabase の上で呼ぶ。本文の正規表現から置き換え） ---
 // supabaseClient.js の supabase は import の時に決まるので、先に中継役を置き、試験ごとに中の偽を替える
-let currentFake = null;
-globalThis[FAKE_KEY] = { from: (table) => currentFake.from(table) };
 const racerQueries = await import("../../src/services/racerQueries.js");
 const racerQueries2 = await import("../../src/services/racerQueries2.js");
 const { clearCache } = await import("../../src/services/core.js");
@@ -275,77 +262,14 @@ function buildTables(count, venueOf = () => 10) {
   };
 }
 
-/**
- * 偽の supabase クライアント（メモリ上の表）。PostgREST と同じく、.range() の無い問い合わせは先頭から1000行で、
- * .range() があっても1回に1000行で切る。呼ばれた問い合わせを calls に残す。order() は記録だけで並べ替えない
- * （返す順は表の順。取り方の順に依らない並びを見るため）
- */
-function makeFakeSupabase(tables) {
-  const calls = [];
-  return {
-    calls,
-    from(table) {
-      const q = { table, select: null, filters: [], orders: [], range: null };
-      calls.push(q);
-      const run = () => {
-        const rows = (tables[table] ?? []).filter((row) =>
-          q.filters.every(([op, col, val]) => {
-            const v = row[col];
-            if (op === "eq") return v === val;
-            if (op === "gte") return v >= val;
-            if (op === "in") return val.includes(v);
-            throw new Error(`偽のクライアントに無い絞り: ${op}`);
-          }),
-        );
-        const [a, b] = q.range ?? [0, MAX_ROWS - 1];
-        return Promise.resolve({
-          data: rows
-            .slice(a, Math.min(b + 1, a + MAX_ROWS))
-            .map((r) => ({ ...r })),
-          error: null,
-        });
-      };
-      const filter = (op) => (col, val) => {
-        q.filters.push([op, col, val]);
-        return chain;
-      };
-      const chain = {
-        select(cols) {
-          q.select = cols;
-          return chain;
-        },
-        eq: filter("eq"),
-        gte: filter("gte"),
-        in: filter("in"),
-        order(col) {
-          q.orders.push(col);
-          return chain;
-        },
-        range(a, b) {
-          q.range = [a, b];
-          return run();
-        },
-        then(res, rej) {
-          return run().then(res, rej);
-        },
-      };
-      return chain;
-    },
-  };
-}
-
-// サービス層のキャッシュは localStorage にも書く。Node には無いので、何も残さない物を置く
-globalThis.localStorage ??= {
-  getItem: () => null,
-  setItem() {},
-  removeItem() {},
-  key: () => null,
-  length: 0,
-};
+installLocalStorage();
 const install = (tables) => {
   clearCache();
-  currentFake = makeFakeSupabase(tables);
-  return currentFake;
+  // .range() の無い問い合わせも、あっても 1 回に 1000 行で切る。order() は記録だけで並べ替えない
+  // （返す順は表の順。取り方の順に依らない並びを見るため）
+  return setFakeSupabase(
+    createFakeSupabase(tables, { maxRows: MAX_ROWS, sortByOrder: false }),
+  );
 };
 const entryQueries = (fake) =>
   fake.calls.filter((q) => q.table === "race_entries");

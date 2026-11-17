@@ -20,9 +20,12 @@ import {
   borderTieOf,
 } from "../../src/utils/meetPageModel.js";
 
-import { readFileSync } from "node:fs";
-import { register } from "node:module";
-import { transformSync } from "esbuild";
+import {
+  createFakeSupabase,
+  registerFakeServiceSupabase,
+  useFakeSupabase as setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
+import { createMeetPageHarness } from "./verifyData/meet-page-model.js";
 
 const failures = [];
 let checked = 0;
@@ -285,79 +288,9 @@ check(
 
 // 取得関数（src/services/meetQueries3.js の getMeetPage）を、偽の supabase（メモリ上の表）の上で呼ぶ。
 // 指定日のグレードの受け渡し（状態の決まり方）と、並列取得の失敗の伝わり方を見る。
-const FAKE_KEY = "__verifyMeetPageModelSupabase";
-const SWAP_CLIENT = `
-export async function resolve(specifier, context, nextResolve) {
-  const resolved = await nextResolve(specifier, context);
-  if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
-    return {
-      url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"),
-      shortCircuit: true,
-    };
-  }
-  return resolved;
-}
-`;
-register(new URL("../lib/renderJsx.js", import.meta.url));
-register(`data:text/javascript,${encodeURIComponent(SWAP_CLIENT)}`);
-
-/**
- * 偽の supabase クライアント。select・eq・gte・lt・lte・like・in・order・limit・maybeSingle と await を扱い、
- * failTable の表への問い合わせは、await でも maybeSingle でも error を reject する
- */
-function makeFakeSupabase(tables, failTable = null, failure = null) {
-  const calls = [];
-  return {
-    calls,
-    from(table) {
-      const q = { table, filters: [] };
-      calls.push(q);
-      const rows = () =>
-        (tables[table] ?? []).filter((row) =>
-          q.filters.every(([op, col, val]) => {
-            const v = row[col];
-            if (op === "eq") return v === val;
-            if (op === "gte") return v >= val;
-            if (op === "lt") return v < val;
-            if (op === "lte") return v <= val;
-            if (op === "in") return val.includes(v);
-            if (op === "like")
-              return new RegExp(`^${val.replace(/_/g, ".")}$`).test(v);
-            throw new Error(`偽のクライアントに無い絞り: ${op}`);
-          }),
-        );
-      const run = (single) =>
-        table === failTable
-          ? Promise.reject(failure)
-          : Promise.resolve({
-              data: single
-                ? (rows()[0] ?? null)
-                : rows().map((r) => ({ ...r })),
-              error: null,
-            });
-      const filter = (op) => (col, val) => {
-        q.filters.push([op, col, val]);
-        return chain;
-      };
-      const chain = {
-        select: () => chain,
-        eq: filter("eq"),
-        gte: filter("gte"),
-        lt: filter("lt"),
-        lte: filter("lte"),
-        like: filter("like"),
-        in: filter("in"),
-        order: () => chain,
-        limit: () => chain,
-        maybeSingle: () => run(true),
-        then: (res, rej) => run(false).then(res, rej),
-      };
-      return chain;
-    },
-  };
-}
-let currentFake = null;
-globalThis[FAKE_KEY] = { from: (table) => currentFake.from(table) };
+registerFakeServiceSupabase();
+// 失敗は fake.fail(表, 例外) で入れる（await でも maybeSingle でも reject）
+const fake = setFakeSupabase(createFakeSupabase());
 const { getMeetPage } = await import("../../src/services/meetQueries3.js");
 
 for (const [label, races, expected] of [
@@ -377,7 +310,7 @@ for (const [label, races, expected] of [
     "notFound",
   ],
 ]) {
-  currentFake = makeFakeSupabase({
+  fake.reset({
     race_conditions: day(middleStart, 2, () => "予選"),
     races,
   });
@@ -400,7 +333,7 @@ for (const table of [
   "racer_series_points",
 ]) {
   const error = new Error(`local failure: ${table}`);
-  currentFake = makeFakeSupabase({}, table, error);
+  fake.reset({}, { [table]: error });
   let caught;
   try {
     await getMeetPage(16, START, "2026-09-27");
@@ -412,88 +345,27 @@ for (const table of [
 
 // 実ページの取得 effect・状態導出・本文分岐を実行する。依存はローカルの hook/JSX
 // スタブに置換する（DOM 描画は E2E の担当）。本番への取得はしない。
-const pageSource = readFileSync(
-  new URL("../../src/pages/MeetPage.jsx", import.meta.url),
-  "utf8",
-);
-const componentStart = pageSource.indexOf("function MeetPage() {");
-const componentEnd = pageSource.indexOf("\n  return (", componentStart);
-const component = transformSync(
-  pageSource.slice(componentStart, componentEnd) +
-    "\n return { body, page, failed };\n}",
-  { loader: "jsx", jsxFactory: "element" },
-).code;
+const ui = createMeetPageHarness(START);
 const pageKey = `16-${START}`;
-let stored = [{ key: null, page: null }, null];
-let effects = [];
-let robots;
-const renderPage = new Function(
-  "useState",
-  "useEffect",
-  "useParams",
-  "useTranslation",
-  "useLocalizedPath",
-  "getMeetPage",
-  "getTodayJST",
-  "normalizeTitle",
-  "md",
-  "useRobotsMeta",
-  "element",
-  "Link",
-  "DataFetchError",
-  "LoadingScreen",
-  "MeetBody",
-  "console",
-  component + "\nreturn MeetPage();",
-);
-const render = (service) => {
-  let slot = 0;
-  effects = [];
-  return renderPage(
-    () => {
-      const i = slot++;
-      return [
-        stored[i],
-        (value) => {
-          stored[i] = value;
-        },
-      ];
-    },
-    (effect) => effects.push(effect),
-    () => ({ venueCode: "16", startDate: START }),
-    () => ({ t: (key) => key }),
-    () => (path) => path,
-    // 名前つき import（getMeetPage）を同じ偽の取得へ通す（殻 supabaseDataService は RA40 で消えた）
-    (...args) => service.getMeetPage(...args),
-    () => "2026-09-27",
-    (title) => title ?? null,
-    () => "9/28",
-    (value) => {
-      robots = value;
-    },
-    (type, props, ...children) => ({ type, props, children }),
-    "Link",
-    "DataFetchError",
-    "LoadingScreen",
-    "MeetBody",
-    { error() {} },
-  );
-};
 const rejected = {
   getMeetPage: () => Promise.reject(new Error("local fetch failure")),
 };
-check("取得待ちは LoadingScreen", render(rejected).body.type, "LoadingScreen");
-check("取得待ちは noindex にしない", robots, false);
-effects[0]();
+check(
+  "取得待ちは LoadingScreen",
+  ui.render(rejected).body.type,
+  "LoadingScreen",
+);
+check("取得待ちは noindex にしない", ui.robots, false);
+ui.effects[0]();
 // effect の then→catch と state 更新を完了させる。
 await new Promise((resolve) => setImmediate(resolve));
-check("例外で failedKey が対象の節になる", stored[1], pageKey);
+check("例外で failedKey が対象の節になる", ui.stored[1], pageKey);
 check(
   "取得失敗は DataFetchError",
-  render(rejected).body.type,
+  ui.render(rejected).body.type,
   "DataFetchError",
 );
-check("取得失敗は noindex にしない", robots, false);
+check("取得失敗は noindex にしない", ui.robots, false);
 for (const [state, knownMeet, expected] of [
   ["preOpen", true, true],
   ["preOpen", false, true],
@@ -502,11 +374,11 @@ for (const [state, knownMeet, expected] of [
   ["prelim", true, false],
   ["finished", true, false],
 ]) {
-  stored = [{ key: pageKey, page: { state, knownMeet } }, null];
-  render(rejected);
+  ui.stored = [{ key: pageKey, page: { state, knownMeet } }, null];
+  ui.render(rejected);
   check(
     `MeetPage・${state}・knownMeet=${knownMeet} の noindex`,
-    robots,
+    ui.robots,
     expected,
   );
 }
