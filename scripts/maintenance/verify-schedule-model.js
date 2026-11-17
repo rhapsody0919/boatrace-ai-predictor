@@ -86,6 +86,8 @@ test("makeDigestDay: window_end は window_start 以後（mdd_window_order）、
   throwsRange(() => makeDigestDay(day({ window_end: "2026-11-31" })), /window_end が YYYY-MM-DD/);
   const { window_start: _s, ...noStart } = day({ window_end: "2000-01-01" });
   assert.equal(makeDigestDay(noStart).window_end, "2000-01-01");
+  const { window_start: _s2, ...noStartOld } = day({ window_end: "1969-12-31" });
+  assert.equal(makeDigestDay(noStartOld).window_end, "1969-12-31");
   const { window_end: _e, ...noEnd } = day({ window_start: "2099-01-01" });
   assert.equal(makeDigestDay(noEnd).window_start, "2099-01-01");
 });
@@ -100,10 +102,11 @@ test("makeDigestDay: window_days は smallint の整数、flying_data_complete �
   throwsRange(() => makeDigestDay(day({ flying_data_complete: "true" })), /flying_data_complete/);
 });
 
-test("makeDigestDay: suppressed_venues は整数の配列（空も可）", () => {
+test("makeDigestDay: suppressed_venues は整数か null の配列（空も可）", () => {
   assert.deepEqual(makeDigestDay(day({ suppressed_venues: [] })).suppressed_venues, []);
   throwsRange(() => makeDigestDay(day({ suppressed_venues: null })), /suppressed_venues が配列でない: null/);
   throwsRange(() => makeDigestDay(day({ suppressed_venues: "3" })), /suppressed_venues が配列でない/);
+  assert.deepEqual(makeDigestDay(day({ suppressed_venues: [3, null] })).suppressed_venues, [3, null]);
   throwsRange(() => makeDigestDay(day({ suppressed_venues: [3, 1.5] })), /suppressed_venues の要素が-32768〜32767でない: 1.5/);
   throwsRange(() => makeDigestDay(day({ suppressed_venues: [32768] })), /suppressed_venues の要素/);
   throwsRange(() => makeDigestDay(day({ suppressed_venues: [-32769] })), /suppressed_venues の要素/);

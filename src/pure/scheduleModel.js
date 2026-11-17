@@ -3,7 +3,8 @@ import { assertInt, assertIntOrNull, assertObject, assertOneOf, assertText, pars
 /**
  * morning_digest_days（朝のまとめの1日1行、scheduleQueries.js の getMorningDigest が読む）。キーは Supabase の snake_case のまま。
  * 根拠: docs/reference/schema-snapshot.json の relations morning_digest_days（主キー digest_date、NOT NULL の列、
- * CHECK mdd_counts_nonneg・mdd_window_order）。select で取っていない列（undefined）は検査しない
+ * CHECK mdd_counts_nonneg・mdd_window_order）。select で取っていない列（undefined）は検査しない。
+ * 主キーは必須なので、つなぐ票では select に主キーの列を足す
  * @typedef {object} DigestDay
  * @property {string} digest_date YYYY-MM-DD（主キー）
  * @property {(string|null)} [generated_at] null は生成の途中
@@ -69,7 +70,8 @@ export function makeDigestDay(row) {
     if (!Array.isArray(row.suppressed_venues)) {
       throw new RangeError(`digest_day の suppressed_venues が配列でない: ${String(row.suppressed_venues)}（${ctx}）`);
     }
-    for (const v of row.suppressed_venues) assertInt(v, SMALLINT_MIN, SMALLINT_MAX, "digest_day の suppressed_venues の要素", ctx);
+    // Postgres の配列は要素の NULL を許す（要素の NOT NULL は無い）ので null の要素は通す
+    for (const v of row.suppressed_venues) assertIntOrNull(v, SMALLINT_MIN, SMALLINT_MAX, "digest_day の suppressed_venues の要素", ctx);
   }
   return Object.freeze({ ...row });
 }
