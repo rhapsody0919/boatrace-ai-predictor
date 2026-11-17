@@ -36,7 +36,7 @@ import {
   FlyingRacerList,
   ReturnedRacerList,
 } from "../components/digest";
-import { dataService } from "../services/dataService";
+import { getMorningDigest } from "../services/scheduleQueries.js";
 import { getTodayJST } from "../utils/dateUtils";
 import { NIGASHI_LIST_COURSE } from "../utils/digestMetrics";
 import { useSocialMeta } from "../hooks/useSocialMeta";
@@ -377,8 +377,7 @@ function MorningDataDigest() {
   useEffect(() => {
     let cancelled = false;
 
-    dataService
-      .getMorningDigest(date)
+    getMorningDigest(date)
       .then((result) => {
         if (!cancelled) setLoaded({ key: requestKey, data: result });
       })

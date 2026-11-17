@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { dataService } from "../services/dataService";
+import { getMorningDigest } from "../services/scheduleQueries.js";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { buildCourseWinSheet } from "../utils/todayCourseWin";
 import "./TodaySheet.css";
@@ -157,8 +157,7 @@ export default function TodaySheet() {
   useEffect(() => {
     if (!valid) return undefined;
     let alive = true;
-    dataService
-      .getMorningDigest(date)
+    getMorningDigest(date)
       .then((digest) => alive && setState({ date, digest, failed: false }))
       .catch(() => alive && setState({ date, digest: null, failed: true }));
     return () => {

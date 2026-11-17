@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { dataService } from "../services/dataService";
+import { getAccuracy } from "../services/predictionQueries3.js";
 import { MODEL_NAMES } from "../constants";
 import { formatPercent } from "../utils/formatters";
 import { getRecoveryColorClass } from "../utils/colors";
@@ -243,7 +243,7 @@ function AccuracyHistory() {
       try {
         setLoading(true);
         // Supabaseから精度データを取得
-        const data = await dataService.getAccuracy();
+        const data = await getAccuracy();
         setSummary(data);
       } catch (err) {
         console.error("Failed to load accuracy summary:", err);

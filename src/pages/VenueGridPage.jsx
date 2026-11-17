@@ -21,7 +21,8 @@ import {
   TodaysVolatilityHighlights,
   SgNowBanner,
 } from "../components/race";
-import { dataService } from "../services/dataService";
+import { clearCache } from "../services/core.js";
+import { getRaces, getUpcomingSeries } from "../services/scheduleQueries.js";
 import DataFetchError from "../components/DataFetchError";
 import {
   useDatePredictions,
@@ -70,7 +71,7 @@ function groupRacesByVenue(races) {
   return venues.sort((a, b) => a.placeCd - b.placeCd);
 }
 
-// 本日用: dataService.getRaces() で会場別データを取得
+// 本日用: getRaces() で会場別データを取得
 function useTodayVenues() {
   const [venuesData, setVenuesData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +83,7 @@ function useTodayVenues() {
     try {
       setLoading(true);
       setError(null);
-      const result = await dataService.getRaces();
+      const result = await getRaces();
       if (!result.success || !result.data) {
         throw new Error("有効なデータが取得できませんでした");
       }
@@ -107,7 +108,7 @@ function useTodayVenues() {
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      dataService.clearCache();
+      clearCache();
       await fetchData();
     } finally {
       setIsRefreshing(false);
@@ -131,8 +132,7 @@ function useNextOpenDates() {
   useEffect(() => {
     let cancelled = false;
     const today = getTodayJST();
-    dataService
-      .getUpcomingSeries(today)
+    getUpcomingSeries(today)
       .then((rows) => {
         if (!cancelled) setNextOpenDates(computeNextOpenDates(rows, today));
       })
