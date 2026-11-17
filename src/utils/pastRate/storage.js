@@ -51,24 +51,36 @@ const INPUT_OK = {
   payout: (i) => ["low", "mid", "high"].includes(i.band),
 };
 
+const hasHead = (e) =>
+  e !== null &&
+  typeof e === "object" &&
+  typeof e.raceId === "string" &&
+  TYPES.includes(e.type);
+
+const hasInputObject = (e) => e.input !== null && typeof e.input === "object";
+
+const hasSavedAt = (e) =>
+  typeof e.savedAt === "string" && !Number.isNaN(Date.parse(e.savedAt));
+
+const hasSnapshot = (e) =>
+  typeof e.snapshot?.runId === "string" &&
+  typeof e.snapshot.layerKey === "string";
+
+const hasResult = (e) =>
+  typeof e.result?.truncated === "boolean" &&
+  Number.isInteger(e.result.n) &&
+  Number.isInteger(e.result.count) &&
+  Array.isArray(e.result.excluded);
+
 /** Entry の形が spec FR-5 の表どおりか */
 export function isValidEntry(e) {
   return (
-    e !== null &&
-    typeof e === "object" &&
-    typeof e.raceId === "string" &&
-    TYPES.includes(e.type) &&
-    e.input !== null &&
-    typeof e.input === "object" &&
+    hasHead(e) &&
+    hasInputObject(e) &&
     INPUT_OK[e.type](e.input) &&
-    typeof e.savedAt === "string" &&
-    !Number.isNaN(Date.parse(e.savedAt)) &&
-    typeof e.snapshot?.runId === "string" &&
-    typeof e.snapshot.layerKey === "string" &&
-    typeof e.result?.truncated === "boolean" &&
-    Number.isInteger(e.result.n) &&
-    Number.isInteger(e.result.count) &&
-    Array.isArray(e.result.excluded)
+    hasSavedAt(e) &&
+    hasSnapshot(e) &&
+    hasResult(e)
   );
 }
 
