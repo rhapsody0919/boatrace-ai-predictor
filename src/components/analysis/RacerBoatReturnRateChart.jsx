@@ -4,40 +4,13 @@
  * 過去180日間・同じ艇番で出走したレースでの単勝回収率・複勝回収率を表示する。
  * AI予想モデルの確率は使わず、過去の実績払戻金のみを集計する。
  */
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
-import { getRaceRacerBoatReturnRate } from "../../services/raceQueries3.js";
 import { bestOf } from "../../utils/bestOf";
+import RacerBoatReturnRateChartControls from "./RacerBoatReturnRateChartControls";
+import RacerBoatReturnRateChartTable from "./RacerBoatReturnRateChartTable";
+import { useRacerBoatReturnRateBreakdown } from "./RacerBoatReturnRateChartData";
 import "./MotorConditionChart.css";
-
-const VENUE_NAMES = {
-  1: "桐生",
-  2: "戸田",
-  3: "江戸川",
-  4: "平和島",
-  5: "多摩川",
-  6: "浜名湖",
-  7: "蒲郡",
-  8: "常滑",
-  9: "津",
-  10: "三国",
-  11: "びわこ",
-  12: "住之江",
-  13: "尼崎",
-  14: "鳴門",
-  15: "丸亀",
-  16: "児島",
-  17: "宮島",
-  18: "徳山",
-  19: "下関",
-  20: "若松",
-  21: "芦屋",
-  22: "福岡",
-  23: "唐津",
-  24: "大村",
-};
 
 function RacerBoatReturnRateChart({
   initialVenueCode = null,
@@ -57,26 +30,12 @@ function RacerBoatReturnRateChart({
     error,
     setError,
   } = useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
-  const [breakdown, setBreakdown] = useState([]);
-
-  useEffect(() => {
-    if (selectedRace === null) return;
-    const loadBreakdown = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data =
-          await getRaceRacerBoatReturnRate(selectedRace);
-        setBreakdown(data);
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load race racer boat return rate:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadBreakdown();
-  }, [selectedRace]);
+  const breakdown = useRacerBoatReturnRateBreakdown({
+    selectedRace,
+    setLoading,
+    setError,
+    t,
+  });
 
   // 単勝回収率が最も高い艇（同値は全部）。表示と同じ整数で比べる（R1）。
   // 0% しかいないときは強調しない（> 0 の条件は以前から）
@@ -97,51 +56,18 @@ function RacerBoatReturnRateChart({
         </>
       )}
 
-      {!embedded &&
-        (venues.length === 0 && !loading ? (
-          <div className="empty-state">{t("analysis.noRacesToday")}</div>
-        ) : (
-          <div className="controls-section">
-            <label htmlFor="return-rate-venue-select">
-              {t("analysis.venueSelectTodayLabel")}
-            </label>
-            <select
-              id="return-rate-venue-select"
-              value={selectedVenue ?? ""}
-              onChange={(e) => setSelectedVenue(parseInt(e.target.value, 10))}
-              className="venue-select"
-            >
-              {venues.map((v) => (
-                <option key={v} value={v}>
-                  {t(`venues.${v}`, VENUE_NAMES[v] || String(v))}
-                </option>
-              ))}
-            </select>
-
-            {races.length > 0 && (
-              <>
-                <label htmlFor="return-rate-race-select">
-                  {t("analysis.raceSelectLabel")}
-                </label>
-                <select
-                  id="return-rate-race-select"
-                  value={selectedRace ?? ""}
-                  onChange={(e) => setSelectedRace(e.target.value)}
-                  className="venue-select"
-                >
-                  {races.map((r) => (
-                    <option key={r.race_id} value={r.race_id}>
-                      {t("analysis.raceOption", {
-                        number: r.race_number,
-                        time: r.start_time?.slice(0, 5),
-                      })}
-                    </option>
-                  ))}
-                </select>
-              </>
-            )}
-          </div>
-        ))}
+      {!embedded && (
+        <RacerBoatReturnRateChartControls
+          venues={venues}
+          loading={loading}
+          selectedVenue={selectedVenue}
+          setSelectedVenue={setSelectedVenue}
+          races={races}
+          selectedRace={selectedRace}
+          setSelectedRace={setSelectedRace}
+          t={t}
+        />
+      )}
 
       {loading && <div className="loading-state">{t("analysis.loading")}</div>}
       {error && (
@@ -151,54 +77,11 @@ function RacerBoatReturnRateChart({
       )}
 
       {!loading && !error && breakdown.length > 0 && (
-        <div className="table-wrapper">
-          <table className="motor-ranking-table">
-            <thead>
-              <tr>
-                <th>{t("analysis.laneHeader")}</th>
-                <th>{t("table.playerName")}</th>
-                <th>{t("analysis.returnRate.sample180Header")}</th>
-                <th>{t("analysis.returnRate.winReturnHeader")}</th>
-                <th>{t("analysis.returnRate.placeReturnHeader")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {breakdown.map((row) => (
-                <tr
-                  key={row.boat_number}
-                  className="motor-ranking-row non-clickable-row"
-                >
-                  <td className="rank">{row.boat_number}</td>
-                  <td>
-                    <Link to={`/racer/${row.racer_id}`} translate="no">
-                      {row.player_name?.replace(/\s+/g, "")}
-                    </Link>
-                  </td>
-                  <td className="rate">{row.sample_count}</td>
-                  {/* 最良は行全体ではなく単勝回収率のセルに金枠（R1）。100%以上（買い続けて
-                      プラス）は緑（R2。データ出走表の .drt-plus と同じ基準） */}
-                  <td
-                    className={`rate${
-                      bestWinReturnBoats.has(row.boat_number) &&
-                      row.win_return_rate > 0
-                        ? " ind-best"
-                        : ""
-                    }${row.win_return_rate >= 100 ? " ind-good" : ""}`}
-                  >
-                    {row.win_return_rate !== null
-                      ? `${row.win_return_rate.toFixed(0)}%`
-                      : t("analysis.noData")}
-                  </td>
-                  <td className="rate">
-                    {row.place_return_rate !== null
-                      ? `${row.place_return_rate.toFixed(0)}%`
-                      : t("analysis.noData")}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <RacerBoatReturnRateChartTable
+          breakdown={breakdown}
+          bestWinReturnBoats={bestWinReturnBoats}
+          t={t}
+        />
       )}
 
       <p className="table-note">{t("analysis.returnRate.note")}</p>
