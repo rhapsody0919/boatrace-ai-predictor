@@ -148,65 +148,81 @@ export function computeWindowStats(
 ) {
   const groups = new Map();
   for (const slot of slots) {
-    if (slot.status !== "done" && slot.status !== "expired") continue;
-    if (isCancelledRace(slot)) continue;
-    // 取得の対象外で終端したスロット（ピットレポートの最終日のG1 R7〜R11 等）は、窓内取得率の分母に入れない
-    if (slot.outcome === "skipped_not_target") continue;
-    if (slot.run_mode === "shadow") continue;
-    // 一度も claim されず expired になったスロット（run_mode が無い）は、そのジョブが live のときだけ数える
-    // （off・shadow のジョブの予定表の残りを、live の欠落として数えない）
-    if (
-      liveJobs &&
-      slot.status === "expired" &&
-      !slot.run_mode &&
-      !liveJobs.has(slot.job)
-    ) {
-      continue;
-    }
+    if (!isWindowStatsSlot(slot, liveJobs)) continue;
     const def = registry[slot.job];
     if (!def || def.kind !== "window") continue;
     const deadline = deadlineOf(slot);
     if (!deadline) continue;
     const key = `${slot.job}|${slot.offset_min}`;
-    if (!groups.has(key)) {
-      groups.set(key, {
-        job: slot.job,
-        offset_min: slot.offset_min,
-        total: 0,
-        hitTolerance: 0,
-        hitGrace: 0,
-        expired: 0,
-        unexecuted: 0,
-        expectedUnpublished: 0,
-        deferred: 0,
-        delays: [],
-        graceMin: def.graceMin,
-      });
-    }
+    if (!groups.has(key)) groups.set(key, newWindowGroup(slot, def));
     const g = groups.get(key);
-    const unpublished = expectedUnpublished?.get(slotKey(slot));
-    if (unpublished === "confirmed") {
-      g.expectedUnpublished++;
-      continue;
-    }
-    if (unpublished === "deferred") {
-      g.deferred++;
-      continue;
-    }
-    g.total++;
-    if (slot.status === "expired") {
-      g.expired++;
-      if ((slot.attempts ?? 0) === 0) g.unexecuted++;
-      continue;
-    }
-    if (!slot.done_at) continue;
-    const doneAt = new Date(slot.done_at);
-    const delayMin = minutesBetween(doneAt, deadline);
-    g.delays.push(delayMin);
-    if (delayMin >= 0 && delayMin <= 3) g.hitTolerance++;
-    if (delayMin >= 0 && doneAt <= slotWindowEnd(deadline, g.graceMin))
-      g.hitGrace++;
+    tallyWindowSlot(g, slot, deadline, expectedUnpublished?.get(slotKey(slot)));
   }
+  return summarizeWindowGroups(groups);
+}
+
+/** 窓内取得率の集計に入れるスロットか（ジョブの種別・期限の有無の前の、スロット自身の条件） */
+function isWindowStatsSlot(slot, liveJobs) {
+  if (slot.status !== "done" && slot.status !== "expired") return false;
+  if (isCancelledRace(slot)) return false;
+  // 取得の対象外で終端したスロット（ピットレポートの最終日のG1 R7〜R11 等）は、窓内取得率の分母に入れない
+  if (slot.outcome === "skipped_not_target") return false;
+  if (slot.run_mode === "shadow") return false;
+  // 一度も claim されず expired になったスロット（run_mode が無い）は、そのジョブが live のときだけ数える
+  // （off・shadow のジョブの予定表の残りを、live の欠落として数えない）
+  if (
+    liveJobs &&
+    slot.status === "expired" &&
+    !slot.run_mode &&
+    !liveJobs.has(slot.job)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function newWindowGroup(slot, def) {
+  return {
+    job: slot.job,
+    offset_min: slot.offset_min,
+    total: 0,
+    hitTolerance: 0,
+    hitGrace: 0,
+    expired: 0,
+    unexecuted: 0,
+    expectedUnpublished: 0,
+    deferred: 0,
+    delays: [],
+    graceMin: def.graceMin,
+  };
+}
+
+/** 1スロットを、窓の集計（g）へ数える */
+function tallyWindowSlot(g, slot, deadline, unpublished) {
+  if (unpublished === "confirmed") {
+    g.expectedUnpublished++;
+    return;
+  }
+  if (unpublished === "deferred") {
+    g.deferred++;
+    return;
+  }
+  g.total++;
+  if (slot.status === "expired") {
+    g.expired++;
+    if ((slot.attempts ?? 0) === 0) g.unexecuted++;
+    return;
+  }
+  if (!slot.done_at) return;
+  const doneAt = new Date(slot.done_at);
+  const delayMin = minutesBetween(doneAt, deadline);
+  g.delays.push(delayMin);
+  if (delayMin >= 0 && delayMin <= 3) g.hitTolerance++;
+  if (delayMin >= 0 && doneAt <= slotWindowEnd(deadline, g.graceMin))
+    g.hitGrace++;
+}
+
+function summarizeWindowGroups(groups) {
   return [...groups.values()]
     .map(({ delays, graceMin, ...g }) => {
       const sorted = [...delays].sort((a, b) => a - b);
@@ -276,49 +292,56 @@ export function evaluateExpired(
   /** @type {Alert[]} */
   const alerts = [];
   for (const slot of slots) {
-    if (isCancelledRace(slot)) continue;
-    if (slot.run_mode === "shadow") continue;
-    if (activeJobs && !activeJobs.has(slot.job)) continue;
-    // 窓の外の補完（発走の後）は、中止・順延の疑い（tentative。確定はここまでで除いた）のレースを通知しない。
-    // 中止・順延のレースは、展示が公開されないため、補完が最後まで取れないのが正常
-    if (
-      isCatchupOffset(registry[slot.job], slot.offset_min) &&
-      slot.races?.cancellation_status
-    ) {
-      continue;
-    }
-    // 体重だけの窓（発走60分前）の期限切れは通知しない。体重の公開が窓より遅くても、-33 の窓が同じ行を埋める
-    // （ファイル冒頭の説明）。未実行（attempts=0）は、公開の遅れでは起きないため通知する
-    if (
-      isWeightOnlyOffset(registry[slot.job], slot.offset_min) &&
-      (slot.attempts ?? 0) > 0
-    ) {
-      continue;
-    }
+    if (isExpiredAlertExempt(slot, activeJobs, registry)) continue;
     const deadline = deadlineOf(slot);
     if (!isPastWindow(slot, now, registry)) continue;
     // 想定内の未公開（後続の窓で公開が確認できた・確認待ち）は通知しない。後続の窓も取れなかったものは、ここに来る
     if (expectedUnpublished?.has(slotKey(slot))) continue;
-    const id = slotKey(slot);
-    const when = deadline ? `期限 ${toJstTimeString(deadline)}` : "期限不明";
-    const detail = slot.last_error ? ` / 最終エラー: ${slot.last_error}` : "";
-    const pendingNote =
-      slot.status === "expired" ? "" : "（まだexpired化されていない）";
-    if ((slot.attempts ?? 0) === 0) {
-      alerts.push({
-        key: `unexecuted:${id}`,
-        kind: "unexecuted",
-        text: `未実行（attempts=0のまま期限+許容幅を超過${pendingNote}。Cronの未配信・tickの死活・claimの不具合・ブレーカーの兆候） ${id}（${when}）`,
-      });
-    } else {
-      alerts.push({
-        key: `expired:${id}`,
-        kind: "expired",
-        text: `expired（許容幅を超えて未完了${pendingNote}） ${id}（${when}、試行${slot.attempts}回、outcome=${slot.outcome ?? "なし"}）${detail}`,
-      });
-    }
+    alerts.push(expiredAlertOf(slot, deadline));
   }
   return alerts;
+}
+
+/** expired・未実行の通知の対象外のスロットか（確定中止・shadow・対象外のジョブ・補完・体重だけの窓） */
+function isExpiredAlertExempt(slot, activeJobs, registry) {
+  if (isCancelledRace(slot)) return true;
+  if (slot.run_mode === "shadow") return true;
+  if (activeJobs && !activeJobs.has(slot.job)) return true;
+  // 窓の外の補完（発走の後）は、中止・順延の疑い（tentative。確定はここまでで除いた）のレースを通知しない。
+  // 中止・順延のレースは、展示が公開されないため、補完が最後まで取れないのが正常
+  if (
+    isCatchupOffset(registry[slot.job], slot.offset_min) &&
+    slot.races?.cancellation_status
+  ) {
+    return true;
+  }
+  // 体重だけの窓（発走60分前）の期限切れは通知しない。体重の公開が窓より遅くても、-33 の窓が同じ行を埋める
+  // （ファイル冒頭の説明）。未実行（attempts=0）は、公開の遅れでは起きないため通知する
+  return (
+    isWeightOnlyOffset(registry[slot.job], slot.offset_min) &&
+    (slot.attempts ?? 0) > 0
+  );
+}
+
+/** 1スロットの未実行・expired の通知 */
+function expiredAlertOf(slot, deadline) {
+  const id = slotKey(slot);
+  const when = deadline ? `期限 ${toJstTimeString(deadline)}` : "期限不明";
+  const detail = slot.last_error ? ` / 最終エラー: ${slot.last_error}` : "";
+  const pendingNote =
+    slot.status === "expired" ? "" : "（まだexpired化されていない）";
+  if ((slot.attempts ?? 0) === 0) {
+    return {
+      key: `unexecuted:${id}`,
+      kind: "unexecuted",
+      text: `未実行（attempts=0のまま期限+許容幅を超過${pendingNote}。Cronの未配信・tickの死活・claimの不具合・ブレーカーの兆候） ${id}（${when}）`,
+    };
+  }
+  return {
+    key: `expired:${id}`,
+    kind: "expired",
+    text: `expired（許容幅を超えて未完了${pendingNote}） ${id}（${when}、試行${slot.attempts}回、outcome=${slot.outcome ?? "なし"}）${detail}`,
+  };
 }
 
 /**
@@ -418,21 +441,7 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
   const alerts = [];
   for (const row of jobStates) {
     if (isHostRow(row)) {
-      // 非常停止（fetch_stop、178）は人が下ろすまで止まり続ける。下ろし忘れで黙って取得が止まらないよう、立っている間は知らせる
-      if (row.fetch_stop === true) {
-        alerts.push({
-          key: `fetch_stop:${row.job}`,
-          kind: "breaker",
-          text: `取得の非常停止が立っています ${row.job}（fetch_stop=true。人が下ろすまで、このホストへの取得は止まったまま）`,
-        });
-      }
-      if (row.breaker_open_until && new Date(row.breaker_open_until) > now) {
-        alerts.push({
-          key: `breaker:${row.job}`,
-          kind: "breaker",
-          text: `サーキットブレーカーが開いています ${row.job}（${toJstTimeString(new Date(row.breaker_open_until))}まで。直近: ${row.last_error ?? "不明"}）`,
-        });
-      }
+      alerts.push(...hostRowAlerts(row, now));
       continue;
     }
     const def = registry[row.job] ?? HOOK_JOBS[row.job];
@@ -440,96 +449,145 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
     // 監視・保守のジョブは mode のゲートを掛けない（常に有効）。それ以外は shadow・live のみ
     const active = def.kind === "monitor" || isActiveMode(row.mode);
     if (!active) continue;
-
-    // failureAlertAfter: 起動が週1回のジョブは、既定の3回を待つと通知が数週遅れる（registry.js）
-    if (
-      (row.consecutive_failures ?? 0) >=
-      (def.failureAlertAfter ?? THRESHOLDS.consecutiveFailures)
-    ) {
-      alerts.push({
-        key: `failures:${row.job}`,
-        kind: "failures",
-        text: `連続失敗 ${row.job}: ${row.consecutive_failures}回（最終エラー: ${row.last_error ?? "不明"}）`,
-      });
-    }
-    if (
-      row.last_error &&
-      /(?<![0-9])0件/.test(row.last_error) &&
-      (row.consecutive_failures ?? 0) >= 1
-    ) {
-      alerts.push({
-        key: `zero_rows:${row.job}`,
-        kind: "zero_rows",
-        text: `0件エラー ${row.job}: ${row.last_error}`,
-      });
-    }
-
-    // 死活: 毎分起動する窓型と、10分ごとの常駐型（自分自身の鮮度は、メタ監視が見る）。
-    // 監視・保守のジョブは、レジストリに livenessStaleMin を書いたものだけ、mode が shadow・live の間に見る
-    // （1日数回の起動の未配信・古い版への巻き戻しで cron が消えたことを拾う。ADR-0106 の release_dispatch）
-    const staleMin =
-      def.kind === "window"
-        ? THRESHOLDS.livenessStaleMin
-        : def.kind === "continuous"
-          ? THRESHOLDS.continuousLivenessStaleMin
-          : def.livenessStaleMin && isActiveMode(row.mode)
-            ? def.livenessStaleMin
-            : null;
-    const graceMin =
-      def.kind === "continuous"
-        ? THRESHOLDS.continuousLivenessStaleMin
-        : THRESHOLDS.livenessStartGraceMin;
-    if (
-      staleMin !== null &&
-      livenessCheckable(now, graceMin, activeMinutesOf(def))
-    ) {
-      const last = row.last_tick_at ? new Date(row.last_tick_at) : null;
-      if (!last || minutesBetween(now, last) >= staleMin) {
-        alerts.push({
-          key: `liveness:${row.job}`,
-          kind: "liveness",
-          text: `起動の死活 ${row.job}: last_tick_at が${last ? `${Math.floor(minutesBetween(now, last))}分前（${toJstTimeString(last)}）` : "未記録"}。Cronの未配信か関数の障害の可能性`,
-        });
-      }
-    }
-
-    // ジョブ自身が通知したい事項（last_report.alerts: [{key, text, until?}]。会場サイトの構造変化の疑い、期別成績の失敗率など）。
-    // 状態が続く間は、同じ key で renotifyHours ごとに再通知される
-    if (Array.isArray(row.last_report?.alerts)) {
-      for (const a of row.last_report.alerts) {
-        if (typeof a?.key !== "string" || typeof a?.text !== "string") continue;
-        // until（ISO）を過ぎた通知は出さない（月次の1回きりの事象が、last_report が残る間、再通知され続けないため）
-        if (a.until && new Date(a.until) < now) continue;
-        alerts.push({
-          key: `report:${row.job}:${a.key}`,
-          kind: "job_report",
-          text: `${row.job}: ${a.text}`,
-        });
-      }
-    }
-
-    // 日次ジョブ: 指定時刻から一定時間を過ぎても、その対象日を処理していない（liveのみ。shadowは記録しない）。
-    // 起動する日が決まっているジョブ（月次: runDaysOfMonth）は、起動しない日の対象日を判定しない
-    if (def.kind === "daily" && row.mode === "live") {
-      const targetDate = resolveTargetDate(now, def.targetTimeJst);
-      const targetInstant = new Date(
-        `${targetDate}T${def.targetTimeJst}:00+09:00`,
-      );
-      if (
-        isScheduledDate(def, targetDate) &&
-        minutesBetween(now, targetInstant) >=
-          THRESHOLDS.dailyOverdueHours * 60 &&
-        row.last_target_date !== targetDate
-      ) {
-        alerts.push({
-          key: `daily_overdue:${row.job}:${targetDate}`,
-          kind: "daily_overdue",
-          text: `日次ジョブが未処理 ${row.job}: 対象日 ${targetDate}（指定 ${def.targetTimeJst} JST から${THRESHOLDS.dailyOverdueHours}時間以上）。最終成功の対象日: ${row.last_target_date ?? "なし"}`,
-        });
-      }
-    }
+    alerts.push(
+      ...failureAlerts(row, def),
+      ...livenessAlerts(row, def, now),
+      ...jobReportAlerts(row, now),
+      ...dailyOverdueAlerts(row, def, now),
+    );
   }
   return alerts;
+}
+
+/** ホスト行（host:*）の非常停止・ブレーカー */
+function hostRowAlerts(row, now) {
+  /** @type {Alert[]} */
+  const alerts = [];
+  // 非常停止（fetch_stop、178）は人が下ろすまで止まり続ける。下ろし忘れで黙って取得が止まらないよう、立っている間は知らせる
+  if (row.fetch_stop === true) {
+    alerts.push({
+      key: `fetch_stop:${row.job}`,
+      kind: "breaker",
+      text: `取得の非常停止が立っています ${row.job}（fetch_stop=true。人が下ろすまで、このホストへの取得は止まったまま）`,
+    });
+  }
+  if (row.breaker_open_until && new Date(row.breaker_open_until) > now) {
+    alerts.push({
+      key: `breaker:${row.job}`,
+      kind: "breaker",
+      text: `サーキットブレーカーが開いています ${row.job}（${toJstTimeString(new Date(row.breaker_open_until))}まで。直近: ${row.last_error ?? "不明"}）`,
+    });
+  }
+  return alerts;
+}
+
+/** 連続失敗・0件エラー */
+function failureAlerts(row, def) {
+  /** @type {Alert[]} */
+  const alerts = [];
+  // failureAlertAfter: 起動が週1回のジョブは、既定の3回を待つと通知が数週遅れる（registry.js）
+  if (
+    (row.consecutive_failures ?? 0) >=
+    (def.failureAlertAfter ?? THRESHOLDS.consecutiveFailures)
+  ) {
+    alerts.push({
+      key: `failures:${row.job}`,
+      kind: "failures",
+      text: `連続失敗 ${row.job}: ${row.consecutive_failures}回（最終エラー: ${row.last_error ?? "不明"}）`,
+    });
+  }
+  if (
+    row.last_error &&
+    /(?<![0-9])0件/.test(row.last_error) &&
+    (row.consecutive_failures ?? 0) >= 1
+  ) {
+    alerts.push({
+      key: `zero_rows:${row.job}`,
+      kind: "zero_rows",
+      text: `0件エラー ${row.job}: ${row.last_error}`,
+    });
+  }
+  return alerts;
+}
+
+/**
+ * 死活: 毎分起動する窓型と、10分ごとの常駐型（自分自身の鮮度は、メタ監視が見る）。
+ * 監視・保守のジョブは、レジストリに livenessStaleMin を書いたものだけ、mode が shadow・live の間に見る
+ * （1日数回の起動の未配信・古い版への巻き戻しで cron が消えたことを拾う。ADR-0106 の release_dispatch）
+ */
+function livenessAlerts(row, def, now) {
+  const staleMin =
+    def.kind === "window"
+      ? THRESHOLDS.livenessStaleMin
+      : def.kind === "continuous"
+        ? THRESHOLDS.continuousLivenessStaleMin
+        : def.livenessStaleMin && isActiveMode(row.mode)
+          ? def.livenessStaleMin
+          : null;
+  const graceMin =
+    def.kind === "continuous"
+      ? THRESHOLDS.continuousLivenessStaleMin
+      : THRESHOLDS.livenessStartGraceMin;
+  if (
+    staleMin === null ||
+    !livenessCheckable(now, graceMin, activeMinutesOf(def))
+  ) {
+    return [];
+  }
+  const last = row.last_tick_at ? new Date(row.last_tick_at) : null;
+  if (last && minutesBetween(now, last) < staleMin) return [];
+  return [
+    {
+      key: `liveness:${row.job}`,
+      kind: "liveness",
+      text: `起動の死活 ${row.job}: last_tick_at が${last ? `${Math.floor(minutesBetween(now, last))}分前（${toJstTimeString(last)}）` : "未記録"}。Cronの未配信か関数の障害の可能性`,
+    },
+  ];
+}
+
+/**
+ * ジョブ自身が通知したい事項（last_report.alerts: [{key, text, until?}]。会場サイトの構造変化の疑い、期別成績の失敗率など）。
+ * 状態が続く間は、同じ key で renotifyHours ごとに再通知される
+ */
+function jobReportAlerts(row, now) {
+  /** @type {Alert[]} */
+  const alerts = [];
+  if (!Array.isArray(row.last_report?.alerts)) return alerts;
+  for (const a of row.last_report.alerts) {
+    if (typeof a?.key !== "string" || typeof a?.text !== "string") continue;
+    // until（ISO）を過ぎた通知は出さない（月次の1回きりの事象が、last_report が残る間、再通知され続けないため）
+    if (a.until && new Date(a.until) < now) continue;
+    alerts.push({
+      key: `report:${row.job}:${a.key}`,
+      kind: "job_report",
+      text: `${row.job}: ${a.text}`,
+    });
+  }
+  return alerts;
+}
+
+/**
+ * 日次ジョブ: 指定時刻から一定時間を過ぎても、その対象日を処理していない（liveのみ。shadowは記録しない）。
+ * 起動する日が決まっているジョブ（月次: runDaysOfMonth）は、起動しない日の対象日を判定しない
+ */
+function dailyOverdueAlerts(row, def, now) {
+  if (def.kind !== "daily" || row.mode !== "live") return [];
+  const targetDate = resolveTargetDate(now, def.targetTimeJst);
+  const targetInstant = new Date(`${targetDate}T${def.targetTimeJst}:00+09:00`);
+  if (
+    isScheduledDate(def, targetDate) &&
+    minutesBetween(now, targetInstant) >= THRESHOLDS.dailyOverdueHours * 60 &&
+    row.last_target_date !== targetDate
+  ) {
+    return [
+      {
+        key: `daily_overdue:${row.job}:${targetDate}`,
+        kind: "daily_overdue",
+        text: `日次ジョブが未処理 ${row.job}: 対象日 ${targetDate}（指定 ${def.targetTimeJst} JST から${THRESHOLDS.dailyOverdueHours}時間以上）。最終成功の対象日: ${row.last_target_date ?? "なし"}`,
+      },
+    ];
+  }
+  return [];
 }
 
 /**
@@ -855,33 +913,13 @@ export async function runMonitor(
     siblingSlots: oddsSiblings,
     now,
   });
-  const todayStats = computeWindowStats(input.todaySlots, SCRAPE_JOBS, {
+  const alerts = collectMonitorAlerts(input, {
+    now,
+    activeJobNames,
     liveJobs,
     expectedUnpublished,
-  });
-  const today = toJstDateString(now);
-  const detectionLagToday = summarizeDetectionLags(
-    input.todaySlots,
-    expectedUnpublished,
     oddsSiblings,
-  );
-  const alerts = [
-    ...evaluateExpired([...input.expiredSlots, ...(input.openSlots ?? [])], {
-      activeJobs: activeJobNames,
-      now,
-      expectedUnpublished,
-    }),
-    ...evaluateWindowRates(todayStats, today),
-    ...evaluateDetectionLag(detectionLagToday, today),
-    ...evaluateJobStates(input.jobStates, now),
-    ...(input.todayRaceCount === undefined
-      ? []
-      : evaluateRacesPresent({
-          jobStates: input.jobStates,
-          todayRaceCount: input.todayRaceCount,
-          now,
-        })),
-  ];
+  });
 
   const previous = ctx.state?.last_report?.notified ?? {};
   const { toSend, notified } = applyDedupe(alerts, previous, now);
@@ -903,50 +941,23 @@ export async function runMonitor(
   }
   // 日次サマリー: 取得ジョブが1つも有効でない間（移行前）は、投稿しない
   if (isDaily && activeJobs.length > 0) {
-    const summaryDate = toJstDateString(new Date(now.getTime() - 3600 * 1000));
-    const weekSlots = input.weekSlots ?? [];
-    const oddsActive = activeJobNames.has(EXPECTED_UNPUBLISHED.job);
     messages.push(
-      formatDailySummary({
-        date: summaryDate,
-        detectionLagDay: oddsActive
-          ? summarizeDetectionLags(
-              weekSlots.filter((s) => s.race_date === summaryDate),
-              expectedUnpublished,
-              oddsSiblings,
-            )
-          : undefined,
-        detectionLag7d: oddsActive
-          ? summarizeDetectionLags(weekSlots, expectedUnpublished, oddsSiblings)
-          : undefined,
-        stats7d: computeWindowStats(input.weekSlots ?? [], SCRAPE_JOBS, {
-          liveJobs,
-          expectedUnpublished,
-        }),
-        statsDay: computeWindowStats(
-          (input.weekSlots ?? []).filter((s) => s.race_date === summaryDate),
-          SCRAPE_JOBS,
-          { liveJobs, expectedUnpublished },
-        ),
-        jobStates: input.jobStates,
+      buildDailySummaryMessage(input, {
         now,
+        activeJobNames,
+        liveJobs,
+        expectedUnpublished,
+        oddsSiblings,
       }),
     );
   }
 
-  let sent = 0;
-  if (messages.length > 0) {
-    if (!webhook) {
-      // 通知先が無いことを、成功に見せない（異常があるのに通知できない）。通知済みの記録は更新しない
-      throw new Error(
-        `SLACK_WEBHOOK_URL が設定されていないため、${toSend.length}件の異常を通知できません（Vercelの環境変数に設定してください）`,
-      );
-    }
-    for (const message of messages) {
-      await postSlack(webhook, message, fetchImpl);
-      sent++;
-    }
-  }
+  const sent = await sendSlackMessages(
+    webhook,
+    messages,
+    toSend.length,
+    fetchImpl,
+  );
 
   return {
     rowsWritten: 0,
@@ -964,4 +975,90 @@ export async function runMonitor(
       slackConfigured: Boolean(webhook),
     },
   };
+}
+
+/** 今回の入力から出す異常の一覧（期限切れ・窓内取得率・検知の遅れ・ジョブ状態・当日のレース） */
+function collectMonitorAlerts(
+  input,
+  { now, activeJobNames, liveJobs, expectedUnpublished, oddsSiblings },
+) {
+  const todayStats = computeWindowStats(input.todaySlots, SCRAPE_JOBS, {
+    liveJobs,
+    expectedUnpublished,
+  });
+  const today = toJstDateString(now);
+  const detectionLagToday = summarizeDetectionLags(
+    input.todaySlots,
+    expectedUnpublished,
+    oddsSiblings,
+  );
+  return [
+    ...evaluateExpired([...input.expiredSlots, ...(input.openSlots ?? [])], {
+      activeJobs: activeJobNames,
+      now,
+      expectedUnpublished,
+    }),
+    ...evaluateWindowRates(todayStats, today),
+    ...evaluateDetectionLag(detectionLagToday, today),
+    ...evaluateJobStates(input.jobStates, now),
+    ...(input.todayRaceCount === undefined
+      ? []
+      : evaluateRacesPresent({
+          jobStates: input.jobStates,
+          todayRaceCount: input.todayRaceCount,
+          now,
+        })),
+  ];
+}
+
+/** 日次サマリーの本文（前の1時間が属する日の分と直近7日） */
+function buildDailySummaryMessage(
+  input,
+  { now, activeJobNames, liveJobs, expectedUnpublished, oddsSiblings },
+) {
+  const summaryDate = toJstDateString(new Date(now.getTime() - 3600 * 1000));
+  const weekSlots = input.weekSlots ?? [];
+  const oddsActive = activeJobNames.has(EXPECTED_UNPUBLISHED.job);
+  return formatDailySummary({
+    date: summaryDate,
+    detectionLagDay: oddsActive
+      ? summarizeDetectionLags(
+          weekSlots.filter((s) => s.race_date === summaryDate),
+          expectedUnpublished,
+          oddsSiblings,
+        )
+      : undefined,
+    detectionLag7d: oddsActive
+      ? summarizeDetectionLags(weekSlots, expectedUnpublished, oddsSiblings)
+      : undefined,
+    stats7d: computeWindowStats(input.weekSlots ?? [], SCRAPE_JOBS, {
+      liveJobs,
+      expectedUnpublished,
+    }),
+    statsDay: computeWindowStats(
+      (input.weekSlots ?? []).filter((s) => s.race_date === summaryDate),
+      SCRAPE_JOBS,
+      { liveJobs, expectedUnpublished },
+    ),
+    jobStates: input.jobStates,
+    now,
+  });
+}
+
+/** 本文を順に Slack へ送り、送れた件数を返す。通知先が無いのに送る物があるなら投げる */
+async function sendSlackMessages(webhook, messages, alertCount, fetchImpl) {
+  let sent = 0;
+  if (messages.length > 0) {
+    if (!webhook) {
+      // 通知先が無いことを、成功に見せない（異常があるのに通知できない）。通知済みの記録は更新しない
+      throw new Error(
+        `SLACK_WEBHOOK_URL が設定されていないため、${alertCount}件の異常を通知できません（Vercelの環境変数に設定してください）`,
+      );
+    }
+    for (const message of messages) {
+      await postSlack(webhook, message, fetchImpl);
+      sent++;
+    }
+  }
+  return sent;
 }
