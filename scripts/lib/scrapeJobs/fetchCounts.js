@@ -25,25 +25,43 @@ export function dailyFetchCounts(rows, registry, targetDate) {
   const totals = new Map();
   for (const row of rows) {
     if (row.target_date !== targetDate) continue;
-    if (!Object.hasOwn(registry, row.job) || registry[row.job].kind !== "window") {
-      throw new Error(`窓型ジョブが未定義です: ${row.job}`);
-    }
-    if (!Array.isArray(registry[row.job].fetchPaths)) throw new Error(`ページ数が未定義です: ${row.job}`);
-    const n = typeof row.attempts === "string" && /^\d+$/.test(row.attempts)
-      ? Number(row.attempts) : row.attempts;
-    if (!Number.isSafeInteger(n) || n < 0) throw new Error("attempts は非負の安全な整数が必要です");
-    if (n === 0 || row.outcome?.startsWith("skipped_") ||
-        ["cancelled_race", "breaker_open", "budget_exhausted", "not_due"].includes(row.outcome)) continue;
-    const host = row.job === "boatcast_oriten" ? "race.boatcast.jp" : "www.boatrace.jp";
-    for (const path of registry[row.job].fetchPaths) {
-      const key = `${host}${path}`;
-      const total = totals.get(key) ?? { host, path, attempts: 0, pages: 0 };
-      total.attempts += n;
-      total.pages += n;
-      if (!Number.isSafeInteger(total.pages)) throw new Error("集計値が安全な整数の範囲を超えました");
-      totals.set(key, total);
-    }
+    const n = validateRowAttempts(row, registry);
+    if (n === 0 || isNoFetchOutcome(row)) continue;
+    addRowTotals(totals, row.job, registry[row.job].fetchPaths, n);
   }
-  return [...totals.values()].sort((a, b) =>
+  return sortTotals([...totals.values()]);
+}
+
+// 行のジョブが窓型で fetchPaths を持つことと attempts の妥当性を確かめ、attempts の数値を返す
+function validateRowAttempts(row, registry) {
+  if (!Object.hasOwn(registry, row.job) || registry[row.job].kind !== "window") {
+    throw new Error(`窓型ジョブが未定義です: ${row.job}`);
+  }
+  if (!Array.isArray(registry[row.job].fetchPaths)) throw new Error(`ページ数が未定義です: ${row.job}`);
+  const n = typeof row.attempts === "string" && /^\d+$/.test(row.attempts)
+    ? Number(row.attempts) : row.attempts;
+  if (!Number.isSafeInteger(n) || n < 0) throw new Error("attempts は非負の安全な整数が必要です");
+  return n;
+}
+
+function isNoFetchOutcome(row) {
+  return row.outcome?.startsWith("skipped_") ||
+    ["cancelled_race", "breaker_open", "budget_exhausted", "not_due"].includes(row.outcome);
+}
+
+function addRowTotals(totals, job, fetchPaths, n) {
+  const host = job === "boatcast_oriten" ? "race.boatcast.jp" : "www.boatrace.jp";
+  for (const path of fetchPaths) {
+    const key = `${host}${path}`;
+    const total = totals.get(key) ?? { host, path, attempts: 0, pages: 0 };
+    total.attempts += n;
+    total.pages += n;
+    if (!Number.isSafeInteger(total.pages)) throw new Error("集計値が安全な整数の範囲を超えました");
+    totals.set(key, total);
+  }
+}
+
+function sortTotals(list) {
+  return list.sort((a, b) =>
     a.host < b.host ? -1 : a.host > b.host ? 1 : a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
 }
