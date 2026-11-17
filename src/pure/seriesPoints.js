@@ -989,21 +989,11 @@ export function parseOfficialPlacements(placements) {
 }
 
 /**
- * 節の全選手の得点率を計算して順位を付ける（純関数）。
- *
- * 得点率は**単独では読めない**（「3.67」だけでは準優に乗るか分からない）。
- * 節の中での位置と、準優の枠に対する距離を出して初めて判断材料になる。
- *
- * @param {{entries: Array<Object>, seriesRacerIds?: Array<number>|null}|null}
- *   scoreboard `getMeetScoreboard` の戻り値。`seriesRacerIds` があれば
- *   その選手だけを母集団にする（男女Ｗ優勝戦の節）
- * @returns {Array<{racerId: number, playerName: string, points: number,
- *   runs: number, rate: number, rank: number|null, withdrawn: boolean,
- *   excludedReason: "withdrawn"|"awardExcluded"|"flying"|null}>}
- *   得点率の降順。同率は同順位。途中で節を離脱した選手・賞典除外の選手は
- *   `rank: null`（理由は `excludedReason`。無ければ途中帰郷の扱い）
+ * 順位の母集団の出走表。男女Ｗ優勝戦の節では同じシリーズの選手だけにする。
+ * @param {Object|null|undefined} scoreboard
+ * @returns {Array<Object>}
  */
-export function buildMeetRanking(scoreboard) {
+function seriesEntriesOf(scoreboard) {
   const all = scoreboard?.entries;
   if (!Array.isArray(all) || all.length === 0) return [];
   // **男女Ｗ優勝戦の節では、同じシリーズの選手だけを母集団にする**（BOA-511）。
@@ -1012,72 +1002,73 @@ export function buildMeetRanking(scoreboard) {
   // どのシリーズを見せるかはサービス層が決める（表示中の6艇が属するほう）
   const seriesRacerIds = scoreboard?.seriesRacerIds ?? null;
   const inSeries = seriesRacerIds ? new Set(seriesRacerIds) : null;
-  const entries = inSeries ? all.filter((e) => inSeries.has(e.racerId)) : all;
-  if (entries.length === 0) return [];
-  const prelimEndRaceId = scoreboard?.prelimEndRaceId ?? null;
-  // 途中で節を離脱した選手（途中帰郷）は順位の対象から外す。公式の順位表と
-  // 同じ扱い。内部の得点率は数で残し、行は消さない（rank が null になる）
-  const withdrawn = new Set(scoreboard?.withdrawnRacerIds ?? []);
-  // 順位から外す理由（BOA-587）。賞典除外と途中帰郷で画面の説明が違う
-  const reasons = scoreboard?.exclusionReasonByRacer ?? {};
+  return inSeries ? all.filter((e) => inSeries.has(e.racerId)) : all;
+}
 
+/** 出走表を選手ごとにまとめる（初出の順を保つ）。 */
+function groupEntriesByRacer(entries) {
   const byRacer = new Map();
   entries.forEach((e) => {
     if (!byRacer.has(e.racerId))
       byRacer.set(e.racerId, { playerName: e.playerName, rows: [] });
     byRacer.get(e.racerId).rows.push(e);
   });
+  return byRacer;
+}
 
-  // 公式の得点率一覧がある開催では、当社計算ではなく公式の値を使う（BOA-475）。
-  // **いつ使うかはサービス層が決める**（`officialByRacer` を渡すかどうか）。
-  // 公式の行は「予選終了時点」のスナップショットなので、予選中のレースを
-  // 開いているときに使うと**まだ走っていない走を含む値**になってしまう
-  const officialByRacer = scoreboard?.officialByRacer ?? null;
-  // 予選中に当社計算へ足す公式の前夜の減点（BOA-782、prelimOfficialAdjustments）
-  const penaltyByRacer = scoreboard?.officialPenaltyByRacer ?? {};
-  const withPenalty = (score, penalty) =>
-    penalty > 0 && score.runs > 0
-      ? {
-          ...score,
-          points: score.points - penalty,
-          rate: (score.points - penalty) / score.runs,
-        }
-      : score;
+/** 予選中に当社計算へ公式の前夜の減点を足す（BOA-782）。 */
+function withPenalty(score, penalty) {
+  return penalty > 0 && score.runs > 0
+    ? {
+        ...score,
+        points: score.points - penalty,
+        rate: (score.points - penalty) / score.runs,
+      }
+    : score;
+}
 
-  const rows = [...byRacer.entries()]
-    .map(([racerId, { playerName, rows: runs }]) => {
-      const official = officialByRacer
-        ? officialSeriesScore(officialByRacer[racerId])
-        : null;
-      // 公式に行が無い選手（予選終了後に乗り込んだ選手等）は当社計算に戻す。
-      // 予選を走っていなければ走数0で `rate` が null になり、順位から外れる
-      const own = official
-        ? null
-        : withPenalty(
-            computeSeriesScore(runs, { prelimEndRaceId }),
-            penaltyByRacer[racerId] ?? 0,
-          );
-      return {
-        racerId,
-        playerName,
-        points: official ? official.points : own.points,
-        runs: official ? official.runs : own.runs,
-        rate: official ? official.rate : own.rate,
-        // 当社計算に公式の前夜の減点を足したか（BOA-782）
-        penaltyFromOfficial: own ? (penaltyByRacer[racerId] ?? 0) : 0,
-        finishes: official
-          ? official.finishes
-          : listSeriesFinishes(runs, { prelimEndRaceId }),
-        // この行が公式の値か（画面が出典の注記を出し分ける）
-        fromOfficial: Boolean(official),
-        awardExcluded: official?.awardExcluded ?? false,
-      };
-    })
-    .filter((r) => r.rate !== null)
-    .sort((a, b) => b.rate - a.rate);
+/**
+ * 1人ぶんの行（公式の値か当社計算か）。
+ * @param {number} racerId
+ * @param {{playerName: string, rows: Array<Object>}} racer
+ * @param {{officialByRacer: Object|null, penaltyByRacer: Object,
+ *   prelimEndRaceId: string|null}} ctx
+ */
+function meetRankingRow(racerId, { playerName, rows: runs }, ctx) {
+  const { officialByRacer, penaltyByRacer, prelimEndRaceId } = ctx;
+  const official = officialByRacer
+    ? officialSeriesScore(officialByRacer[racerId])
+    : null;
+  // 公式に行が無い選手（予選終了後に乗り込んだ選手等）は当社計算に戻す。
+  // 予選を走っていなければ走数0で `rate` が null になり、順位から外れる
+  const own = official
+    ? null
+    : withPenalty(
+        computeSeriesScore(runs, { prelimEndRaceId }),
+        penaltyByRacer[racerId] ?? 0,
+      );
+  return {
+    racerId,
+    playerName,
+    points: official ? official.points : own.points,
+    runs: official ? official.runs : own.runs,
+    rate: official ? official.rate : own.rate,
+    // 当社計算に公式の前夜の減点を足したか（BOA-782）
+    penaltyFromOfficial: own ? (penaltyByRacer[racerId] ?? 0) : 0,
+    finishes: official
+      ? official.finishes
+      : listSeriesFinishes(runs, { prelimEndRaceId }),
+    // この行が公式の値か（画面が出典の注記を出し分ける）
+    fromOfficial: Boolean(official),
+    awardExcluded: official?.awardExcluded ?? false,
+  };
+}
 
-  // 同率は同順位（1,2,2,4…）。公式の得点率一覧と同じ付け方。
-  // 離脱者は順位を飛ばさず（母集団から外して）詰める
+/**
+ * 得点率の降順の行に順位を付ける。同率は同順位（1,2,2,4…）。公式の得点率一覧と
+ * 同じ付け方。離脱者は順位を飛ばさず（母集団から外して）詰める
+ */
+function assignMeetRanks(rows, withdrawn, reasons) {
   let rank = 0;
   let prev = null;
   let counted = 0;
@@ -1095,6 +1086,46 @@ export function buildMeetRanking(scoreboard) {
     prev = r.rate;
     return { ...r, rank, withdrawn: false, excludedReason: null };
   });
+}
+
+/**
+ * 節の全選手の得点率を計算して順位を付ける（純関数）。
+ *
+ * 得点率は**単独では読めない**（「3.67」だけでは準優に乗るか分からない）。
+ * 節の中での位置と、準優の枠に対する距離を出して初めて判断材料になる。
+ *
+ * @param {{entries: Array<Object>, seriesRacerIds?: Array<number>|null}|null}
+ *   scoreboard `getMeetScoreboard` の戻り値。`seriesRacerIds` があれば
+ *   その選手だけを母集団にする（男女Ｗ優勝戦の節）
+ * @returns {Array<{racerId: number, playerName: string, points: number,
+ *   runs: number, rate: number, rank: number|null, withdrawn: boolean,
+ *   excludedReason: "withdrawn"|"awardExcluded"|"flying"|null}>}
+ *   得点率の降順。同率は同順位。途中で節を離脱した選手・賞典除外の選手は
+ *   `rank: null`（理由は `excludedReason`。無ければ途中帰郷の扱い）
+ */
+export function buildMeetRanking(scoreboard) {
+  const entries = seriesEntriesOf(scoreboard);
+  if (entries.length === 0) return [];
+  // 途中で節を離脱した選手（途中帰郷）は順位の対象から外す。公式の順位表と
+  // 同じ扱い。内部の得点率は数で残し、行は消さない（rank が null になる）
+  const withdrawn = new Set(scoreboard?.withdrawnRacerIds ?? []);
+  // 順位から外す理由（BOA-587）。賞典除外と途中帰郷で画面の説明が違う
+  const reasons = scoreboard?.exclusionReasonByRacer ?? {};
+  // 公式の得点率一覧がある開催では、当社計算ではなく公式の値を使う（BOA-475）。
+  // **いつ使うかはサービス層が決める**（`officialByRacer` を渡すかどうか）。
+  // 公式の行は「予選終了時点」のスナップショットなので、予選中のレースを
+  // 開いているときに使うと**まだ走っていない走を含む値**になってしまう
+  const ctx = {
+    prelimEndRaceId: scoreboard?.prelimEndRaceId ?? null,
+    officialByRacer: scoreboard?.officialByRacer ?? null,
+    // 予選中に当社計算へ足す公式の前夜の減点（BOA-782、prelimOfficialAdjustments）
+    penaltyByRacer: scoreboard?.officialPenaltyByRacer ?? {},
+  };
+  const rows = [...groupEntriesByRacer(entries).entries()]
+    .map(([racerId, racer]) => meetRankingRow(racerId, racer, ctx))
+    .filter((r) => r.rate !== null)
+    .sort((a, b) => b.rate - a.rate);
+  return assignMeetRanks(rows, withdrawn, reasons);
 }
 
 /**
