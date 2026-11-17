@@ -701,11 +701,11 @@
   - `scripts/analysis/campaign-backtest-fetch-races.js:49` select [feature_contributions, predicted_at, race_id]
   - `scripts/analysis/collect-venue-stats.js:231` select [confidence, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/analysis/find-missing-dates.js:32` select [*, race_id]
-  - `scripts/analysis/find-video-worthy-race.js:80` select [feature_contributions, model_id, predicted_at, race_id]
-  - `scripts/analysis/simulate-nige-calibration.js:37` select(helper:fetchAll)
+  - `scripts/analysis/find-video-worthy-race.js:76` select [feature_contributions, model_id, predicted_at, race_id]
+  - `scripts/analysis/simulate-nige-calibration.js:36` select(helper:fetchAll)
   - `scripts/analysis/train-moriarty-calibration.js:67` select(helper:fetchAll)
   - `scripts/analysis/turn-prediction-venue-deep-analysis.js:84` select [feature_contributions, model_id, prediction_id, race_id]
-  - `scripts/analysis/verify-calculations.js:23` select [model_id, race_id, top_2nd, top_3rd, top_pick]
+  - `scripts/analysis/verify-calculations.js:15` select [model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/daily-rule-tracking.js:129` select [*, model_id, race_id]
   - `scripts/daily/calculate-accuracy.js:45` select(helper:fetchAll)
   - `scripts/daily/calculate-accuracy.js:119` select(helper:fetchAll)
@@ -1140,18 +1140,18 @@
   - `scripts/analysis/collect-venue-stats.js:247` select [*, race_id]
   - `scripts/analysis/compare-course-rate-sources.js:52` select(helper:fetchAll)
   - `scripts/analysis/find-missing-dates.js:33` select [*, race_id]
-  - `scripts/analysis/find-video-worthy-race.js:101` select [payout_trifecta, payout_win, race_id, rank1, rank2, rank3, winning_technique]
+  - `scripts/analysis/find-video-worthy-race.js:93` select [payout_trifecta, payout_win, race_id, rank1, rank2, rank3, winning_technique]
   - `scripts/analysis/original-exhibition/fetch.mjs:69` select(helper:all)
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:274` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, is_cancelled, is_no_race, payout_trifecta, payout_trio, race_id, race_status, rank1, rank2, rank3, refund_boats]
   - `scripts/analysis/redesign-volatility-by-venue.js:146` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:190` select(helper:fetchAllByRaceId)
-  - `scripts/analysis/simulate-nige-calibration.js:43` select(helper:fetchAll)
+  - `scripts/analysis/simulate-nige-calibration.js:42` select(helper:fetchAll)
   - `scripts/analysis/train-conditional-logit.js:95` select(helper:fetchAll)
   - `scripts/analysis/turn-prediction-venue-deep-analysis.js:70` select [race_id]
   - `scripts/analysis/turn-prediction-venue-deep-analysis.js:117` select [course_1, course_2, course_3, course_4, course_5, course_6, race_id, rank1, rank2, rank3, winning_technique]
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:78` select(helper:fetchAll)
   - `scripts/analysis/verify-all-venues-label-accuracy.js:106` select [race_id, rank1]
-  - `scripts/analysis/verify-calculations.js:28` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
+  - `scripts/analysis/verify-calculations.js:20` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
   - `scripts/analysis/verify-label-accuracy.js:90` select [race_id, rank1]
   - `scripts/analysis/verify-outcome-distribution-coverage.js:45` select(helper:fetchAll)
   - `scripts/analysis/verify-poirot.js:81` select [is_cancelled, is_no_race, payout_trio, race_id, rank1, rank2, rank3]
@@ -1487,7 +1487,7 @@
   - `scripts/analysis/redesign-volatility-by-venue.js:133` select [first_boat_avg_st, first_boat_motor_2rate, first_boat_win_rate, race_date, race_id, venue_code, volatility_score, win_rate_stddev]
   - `scripts/analysis/turn-prediction-venue-deep-analysis.js:109` select [first_boat_grade, first_boat_win_rate, race_date, race_grade, race_id, race_number, venue_code, volatility_level, volatility_score]
   - `scripts/analysis/verify-all-venues-label-accuracy.js:76` select [race_date, race_id, venue_code, volatility_score]
-  - `scripts/analysis/verify-calculations.js:15` select [race_date, race_id]
+  - `scripts/analysis/verify-calculations.js:7` select [race_date, race_id]
   - `scripts/analysis/verify-label-accuracy.js:72` select [race_date, race_id, venue_code, volatility_score]
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:79` select [race_date]
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:91` select [race_id, venue_code]

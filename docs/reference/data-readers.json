@@ -5353,7 +5353,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/find-video-worthy-race.js:80",
+          "ref": "scripts/analysis/find-video-worthy-race.js:76",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5364,7 +5364,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/simulate-nige-calibration.js:37",
+          "ref": "scripts/analysis/simulate-nige-calibration.js:36",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -5387,7 +5387,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/verify-calculations.js:23",
+          "ref": "scripts/analysis/verify-calculations.js:15",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5835,9 +5835,9 @@
             "scripts/analysis/campaign-backtest-fetch-races.js:49",
             "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/find-missing-dates.js:32",
-            "scripts/analysis/find-video-worthy-race.js:80",
+            "scripts/analysis/find-video-worthy-race.js:76",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
-            "scripts/analysis/verify-calculations.js:23",
+            "scripts/analysis/verify-calculations.js:15",
             "scripts/daily-rule-tracking.js:129",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/generate-morning-digest.js:326",
@@ -5879,9 +5879,9 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:133",
             "scripts/analysis/collect-venue-stats.js:231",
-            "scripts/analysis/find-video-worthy-race.js:80",
+            "scripts/analysis/find-video-worthy-race.js:76",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
-            "scripts/analysis/verify-calculations.js:23",
+            "scripts/analysis/verify-calculations.js:15",
             "scripts/daily-rule-tracking.js:129",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/generate-morning-digest.js:326",
@@ -5917,7 +5917,7 @@
         "top_pick": {
           "readers": [
             "scripts/analysis/collect-venue-stats.js:231",
-            "scripts/analysis/verify-calculations.js:23",
+            "scripts/analysis/verify-calculations.js:15",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
             "scripts/daily/scrape-results.js:1004",
@@ -5941,7 +5941,7 @@
         "top_2nd": {
           "readers": [
             "scripts/analysis/collect-venue-stats.js:231",
-            "scripts/analysis/verify-calculations.js:23",
+            "scripts/analysis/verify-calculations.js:15",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
             "scripts/daily/scrape-results.js:1004",
@@ -5962,7 +5962,7 @@
         "top_3rd": {
           "readers": [
             "scripts/analysis/collect-venue-stats.js:231",
-            "scripts/analysis/verify-calculations.js:23",
+            "scripts/analysis/verify-calculations.js:15",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
             "scripts/daily/scrape-results.js:1004",
@@ -6005,7 +6005,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:133",
             "scripts/analysis/campaign-backtest-fetch-races.js:49",
-            "scripts/analysis/find-video-worthy-race.js:80",
+            "scripts/analysis/find-video-worthy-race.js:76",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
             "scripts/daily/generate-morning-digest.js:326",
             "scripts/daily/generate-unified-trifecta-reference.js:44",
@@ -6155,7 +6155,7 @@
         "predicted_at": {
           "readers": [
             "scripts/analysis/campaign-backtest-fetch-races.js:49",
-            "scripts/analysis/find-video-worthy-race.js:80",
+            "scripts/analysis/find-video-worthy-race.js:76",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:26",
             "src/services/raceQueries2.js:226",
@@ -10687,7 +10687,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/find-video-worthy-race.js:101",
+          "ref": "scripts/analysis/find-video-worthy-race.js:93",
           "op": "select",
           "via": "client",
           "columns": [
@@ -10749,7 +10749,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/simulate-nige-calibration.js:43",
+          "ref": "scripts/analysis/simulate-nige-calibration.js:42",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -10802,7 +10802,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/verify-calculations.js:28",
+          "ref": "scripts/analysis/verify-calculations.js:20",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11702,13 +11702,13 @@
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/collect-venue-stats.js:247",
             "scripts/analysis/find-missing-dates.js:33",
-            "scripts/analysis/find-video-worthy-race.js:101",
+            "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:70",
             "scripts/analysis/verify-all-venues-label-accuracy.js:106",
-            "scripts/analysis/verify-calculations.js:28",
+            "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-label-accuracy.js:90",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
@@ -11787,12 +11787,12 @@
             "api/_lib/snsClaimCheck.js:473",
             "scripts/analysis/analyze-upset-factors.js:120",
             "scripts/analysis/campaign-backtest-score.js:59",
-            "scripts/analysis/find-video-worthy-race.js:101",
+            "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-all-venues-label-accuracy.js:106",
-            "scripts/analysis/verify-calculations.js:28",
+            "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-label-accuracy.js:90",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
@@ -11846,10 +11846,10 @@
         "rank2": {
           "readers": [
             "scripts/analysis/campaign-backtest-score.js:59",
-            "scripts/analysis/find-video-worthy-race.js:101",
+            "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
-            "scripts/analysis/verify-calculations.js:28",
+            "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily/calculate-venue-grade-stats.js:73",
@@ -11885,10 +11885,10 @@
         "rank3": {
           "readers": [
             "scripts/analysis/campaign-backtest-score.js:59",
-            "scripts/analysis/find-video-worthy-race.js:101",
+            "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
-            "scripts/analysis/verify-calculations.js:28",
+            "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/scrape-results.js:486",
@@ -11920,9 +11920,9 @@
         "payout_win": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:120",
-            "scripts/analysis/find-video-worthy-race.js:101",
+            "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
-            "scripts/analysis/verify-calculations.js:28",
+            "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily/scrape-odds.js:70",
             "scripts/daily/scrape-results.js:1193",
@@ -11942,7 +11942,7 @@
         },
         "payout_place_1": {
           "readers": [
-            "scripts/analysis/verify-calculations.js:28",
+            "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/maintenance/backfill-place-hits.js:31",
             "src/services/adminRuleService.js:42",
@@ -11958,7 +11958,7 @@
         },
         "payout_place_2": {
           "readers": [
-            "scripts/analysis/verify-calculations.js:28",
+            "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/maintenance/backfill-place-hits.js:31",
             "src/services/adminRuleService.js:42",
@@ -11975,9 +11975,9 @@
         "payout_trifecta": {
           "readers": [
             "scripts/analysis/campaign-backtest-score.js:59",
-            "scripts/analysis/find-video-worthy-race.js:101",
+            "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
-            "scripts/analysis/verify-calculations.js:28",
+            "scripts/analysis/verify-calculations.js:20",
             "scripts/daily/update-moriarty-outcomes.js:45",
             "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
@@ -11993,7 +11993,7 @@
           "readers": [
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
-            "scripts/analysis/verify-calculations.js:28",
+            "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-poirot.js:81",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-moriarty-outcomes.js:45",
@@ -12096,7 +12096,7 @@
         "winning_technique": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:120",
-            "scripts/analysis/find-video-worthy-race.js:101",
+            "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/redesign-volatility-by-venue.js:146",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
@@ -16001,7 +16001,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/verify-calculations.js:15",
+          "ref": "scripts/analysis/verify-calculations.js:7",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17430,7 +17430,7 @@
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:76",
-            "scripts/analysis/verify-calculations.js:15",
+            "scripts/analysis/verify-calculations.js:7",
             "scripts/analysis/verify-label-accuracy.js:72",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:91",
             "scripts/analysis/verify-volatility-predictive-power.js:76",
@@ -17568,7 +17568,7 @@
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:76",
-            "scripts/analysis/verify-calculations.js:15",
+            "scripts/analysis/verify-calculations.js:7",
             "scripts/analysis/verify-label-accuracy.js:72",
             "scripts/analysis/verify-racer-season-stats-accuracy.js:79",
             "scripts/daily/calculate-venue-grade-stats.js:73",
