@@ -15,7 +15,7 @@ import {
   prelimEndRaceIdOf,
   semifinalRaceIdsOf,
   SEMIFINAL_DEFAULT_SLOTS,
-} from "../../src/components/race/seriesPoints.js";
+} from "../../src/pure/seriesPoints.js";
 // 取得失敗を「データなし」に化けさせない。`scripts/lib/supabaseClient.js` は
 // 15秒でfetchを中断する（undiciが無期限にハングする既知の不具合への対策）ため、
 // エラーを見ないと**空の結果で検証が緑になる**（2026-09-28、若松の出走表が

@@ -6,7 +6,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import RacerPageLink from "./RacerPageLink";
 import RaceHistoryTable from "./RaceHistoryTable";
 import { raceStageLabel } from "../../constants/raceStageConfig";
-import { meetRateHidden } from "./seriesPoints";
+import { meetRateHidden } from "../../pure/seriesPoints.js";
 import { EXCLUDED_LABEL_KEY, rankInBorder } from "./RaceMeetTabModel";
 import RaceMeetTabSparks from "./RaceMeetTabSparks";
 

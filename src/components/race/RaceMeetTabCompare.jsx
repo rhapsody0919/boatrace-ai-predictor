@@ -2,7 +2,7 @@
  * RaceMeetTab の「6艇の今節」比較表（行＝艇、列＝得点率・節内順位・前検）。
  * 値は RaceMeetTabModel の `buildMeetModel` の結果（m）で受け取る。
  */
-import { FINISH_ABSENT, MEET_SMALL_SAMPLE_RUNS, meetRateHidden } from "./seriesPoints";
+import { FINISH_ABSENT, MEET_SMALL_SAMPLE_RUNS, meetRateHidden } from "../../pure/seriesPoints.js";
 import { rankInBorder, EXCLUDED_LABEL_KEY } from "./RaceMeetTabModel";
 import RaceMeetTabCompareSide from "./RaceMeetTabCompareSide";
 import { BoatRowSelectButton } from "./RaceMeetTabForecast";

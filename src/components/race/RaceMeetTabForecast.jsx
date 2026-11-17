@@ -6,7 +6,7 @@
  */
 import { BOAT_COLORS, getBoatChipBackground } from "../../utils/colors";
 import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
-import { MEET_SMALL_SAMPLE_RUNS, meetRateHidden } from "./seriesPoints";
+import { MEET_SMALL_SAMPLE_RUNS, meetRateHidden } from "../../pure/seriesPoints.js";
 import { EXCLUDED_LABEL_KEY } from "./RaceMeetTabModel";
 
 function ForecastHead({ m }) {
