@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { makeRace } from "../pure/raceModel.js";
 
 const VENUE_NAMES = {
   1: "桐生",
@@ -44,13 +45,15 @@ export async function getPoirotPredictions() {
   if (!supabase) return { date, races: [] };
 
   try {
-    const { data: races } = await supabase
+    const { data: raceRows } = await supabase
       .from("races")
       .select("race_id, venue_code, race_number, start_time")
       .eq("race_date", date)
       .order("venue_code")
       .order("race_number");
-    if (!races || races.length === 0) return { date, races: [] };
+    if (!raceRows || raceRows.length === 0) return { date, races: [] };
+    // 不変条件の破れ（RangeError）は下の catch で取得失敗と同じ扱い（空の一覧）
+    const races = raceRows.map(makeRace);
 
     const raceIds = races.map((r) => r.race_id);
     const preds = [];

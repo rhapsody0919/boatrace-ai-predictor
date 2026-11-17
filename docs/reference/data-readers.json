@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1969,
+    "sourceFiles": 1970,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -4989,7 +4989,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/poirotService.js:59",
+          "ref": "src/services/poirotService.js:62",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5023,7 +5023,7 @@
         "race_id": {
           "readers": [
             "scripts/daily/generate-poirot-predictions.js:78",
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": [
@@ -5033,49 +5033,49 @@
         "model_version": {
           "readers": [
             "scripts/daily/generate-poirot-predictions.js:78",
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "win_probs": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "top_pick": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "top_2nd": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "top_3rd": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "trifecta_prob": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "predicted_at": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
@@ -17095,7 +17095,7 @@
           ]
         },
         {
-          "ref": "src/services/poirotService.js:48",
+          "ref": "src/services/poirotService.js:49",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17515,7 +17515,7 @@
             "src/services/meetQueries3.js:62",
             "src/services/motorQueries.js:112",
             "src/services/mycroftService.js:78",
-            "src/services/poirotService.js:48",
+            "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
@@ -17616,7 +17616,7 @@
             "scripts/sns/today-picks.js:101",
             "src/services/motorQueries.js:112",
             "src/services/mycroftService.js:78",
-            "src/services/poirotService.js:48",
+            "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:125",
             "src/services/scheduleQueries.js:205",
@@ -17698,7 +17698,7 @@
             "src/services/motorQueries.js:112",
             "src/services/motorQueries3.js:282",
             "src/services/mycroftService.js:78",
-            "src/services/poirotService.js:48",
+            "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:205",
             "src/services/scheduleQueries.js:229",
@@ -17742,7 +17742,7 @@
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
             "src/services/mycroftService.js:78",
-            "src/services/poirotService.js:48",
+            "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:65",
@@ -17803,7 +17803,7 @@
             "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
             "src/services/mycroftService.js:78",
-            "src/services/poirotService.js:48",
+            "src/services/poirotService.js:49",
             "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:65",
