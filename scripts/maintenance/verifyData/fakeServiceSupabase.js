@@ -2,11 +2,11 @@
  * サービス層（src/services）を偽の supabase クライアントの上で呼ぶ verify の共通の部品（BOA-1675）。verify ではない。
  *
  * 使い方（verify 側）:
- *   import { registerFakeServiceSupabase, createFakeSupabase, useFakeSupabase, installLocalStorage }
+ *   import { registerFakeServiceSupabase, createFakeSupabase, setFakeSupabase, installLocalStorage }
  *     from "./verifyData/fakeServiceSupabase.js";
  *   registerFakeServiceSupabase();           // サービス層を import する前に1回
  *   installLocalStorage();                   // サービス層のキャッシュは localStorage にも書く（Node には無い）
- *   const fake = useFakeSupabase(createFakeSupabase(tables, { scramble: true }));
+ *   const fake = setFakeSupabase(createFakeSupabase(tables, { scramble: true }));
  *   const { getXxx } = await import("../../src/services/xxxQueries.js");
  *
  * 記録（fake.calls）の 1 件: { table, select, filters: [[op, col, val]], orders: [col], desc: Set, range, limit, single }
@@ -40,14 +40,14 @@ export function registerFakeServiceSupabase() {
   globalThis[HOLDER_KEY] = {
     from: (table) => {
       if (!current)
-        throw new Error("useFakeSupabase(fake) を先に呼ぶこと（偽が未設定）");
+        throw new Error("setFakeSupabase(fake) を先に呼ぶこと（偽が未設定）");
       return current.from(table);
     },
   };
 }
 
 /** 差し替え先の偽を設定する（何度でも替えられる。サービス層の supabase は import の時点で固定のため、中継を通す） */
-export function useFakeSupabase(fake) {
+export function setFakeSupabase(fake) {
   current = fake;
   return fake;
 }

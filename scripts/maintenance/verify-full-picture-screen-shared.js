@@ -22,7 +22,7 @@ import {
   createFakeSupabase,
   installLocalStorage,
   registerFakeServiceSupabase,
-  useFakeSupabase as setFakeSupabase,
+  setFakeSupabase,
 } from "./verifyData/fakeServiceSupabase.js";
 import {
   LOSING_ROWS,

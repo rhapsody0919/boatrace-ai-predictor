@@ -23,7 +23,7 @@ import {
 import {
   createFakeSupabase,
   registerFakeServiceSupabase,
-  useFakeSupabase as setFakeSupabase,
+  setFakeSupabase,
 } from "./verifyData/fakeServiceSupabase.js";
 import { createMeetPageHarness } from "./verifyData/meet-page-model.js";
 

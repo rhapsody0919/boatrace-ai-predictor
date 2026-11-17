@@ -6,7 +6,7 @@ import {
   createFakeSupabase,
   installLocalStorage,
   registerFakeServiceSupabase,
-  useFakeSupabase as setFakeSupabase,
+  setFakeSupabase,
 } from "./fakeServiceSupabase.js";
 
 // 節: 10/1〜10/2 が予選、10/3 が準優（1R）・優勝戦（2R）

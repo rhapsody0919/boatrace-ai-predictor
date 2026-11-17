@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 import {
   createFakeSupabase,
   registerFakeServiceSupabase,
-  useFakeSupabase as setFakeSupabase,
+  setFakeSupabase,
 } from "./verifyData/fakeServiceSupabase.js";
 
 registerFakeServiceSupabase();
