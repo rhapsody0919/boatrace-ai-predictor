@@ -159,6 +159,19 @@ function topTurnCourses(turnPred) {
     .slice(0, 3);
 }
 
+// 風・波・天候・荒れ度・勝者の級別/勝率（欠測は null）
+function conditionFields(raceInfo, cond, winnerEntry) {
+  return {
+    wind_speed: cond.wind_speed != null ? cond.wind_speed : null,
+    wave_height: cond.wave_height != null ? cond.wave_height : null,
+    weather: cond.weather || null,
+    volatility_score:
+      raceInfo.volatility_score != null ? raceInfo.volatility_score : null,
+    winner_grade: winnerEntry.grade || null,
+    winner_win_rate: winnerEntry.win_rate != null ? winnerEntry.win_rate : null,
+  };
+}
+
 // レース単位で判定 + 特徴抽出（判定できないレースは null）
 function buildRecord(pred, idx) {
   const raceResult = idx.resultsByRaceId[pred.race_id];
@@ -191,13 +204,7 @@ function buildRecord(pred, idx) {
     predicted_top_technique: topPattern.technique || null,
     predicted_top_probability: topPattern.probability || null,
     predicted_courses: topCourses,
-    wind_speed: cond.wind_speed != null ? cond.wind_speed : null,
-    wave_height: cond.wave_height != null ? cond.wave_height : null,
-    weather: cond.weather || null,
-    volatility_score:
-      raceInfo.volatility_score != null ? raceInfo.volatility_score : null,
-    winner_grade: winnerEntry.grade || null,
-    winner_win_rate: winnerEntry.win_rate != null ? winnerEntry.win_rate : null,
+    ...conditionFields(raceInfo, cond, winnerEntry),
   };
 }
 
