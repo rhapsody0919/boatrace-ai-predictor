@@ -56,26 +56,19 @@ function pct(n, d) {
   return d > 0 ? Math.round((n / d) * 1000) / 10 : 0;
 }
 
-async function main() {
-  console.log("🚀 展開予測 会場別深掘り分析\n");
-
-  const endDate = new Date();
-  let startDate = new Date("2026-03-10");
-  const startDateStr = formatDate(startDate);
-  const endDateStr = formatDate(endDate);
-  console.log(`📅 分析期間: ${startDateStr} ～ ${endDateStr}\n`);
-
-  // 1. 期間内の結果が存在するレースID
+// 期間内の結果が存在するレースID
+async function fetchTargetRaceIds(startDateStr, endDateStr) {
   const { data: resultRaceIds } = await supabase
     .from("race_results")
     .select("race_id")
     .gte("race_id", startDateStr + "-00-00")
     .lte("race_id", endDateStr + "-99-99");
 
-  const targetRaceIds = resultRaceIds?.map((r) => r.race_id) || [];
-  console.log(`✅ 対象レース: ${targetRaceIds.length}\n`);
+  return resultRaceIds?.map((r) => r.race_id) || [];
+}
 
-  // 2. predictions（standard モデル）
+// predictions（standard モデル）
+async function fetchPredictions(targetRaceIds) {
   const batchSize = 100;
   let predictions = [];
   for (let i = 0; i < targetRaceIds.length; i += batchSize) {
@@ -87,18 +80,11 @@ async function main() {
       .eq("model_id", "standard");
     predictions = predictions.concat(batchPreds || []);
   }
+  return predictions;
+}
 
-  const withTurnPred = predictions
-    .map((p) => ({
-      ...p,
-      turnPrediction: p.feature_contributions?.turnPrediction,
-    }))
-    .filter((p) => p.turnPrediction && p.turnPrediction.distribution);
-  console.log(`✅ turnPrediction あり: ${withTurnPred.length}\n`);
-
-  const raceIds = [...new Set(withTurnPred.map((p) => p.race_id))];
-
-  // 3. races / race_results / race_entries / race_conditions をページネーション取得
+// races / race_results / race_entries / race_conditions をページネーション取得
+async function fetchRaceTables(raceIds) {
   let races = [],
     raceResults = [],
     raceEntries = [],
@@ -133,7 +119,10 @@ async function main() {
       .in("race_id", batch);
     raceConditions = raceConditions.concat(rc || []);
   }
+  return { races, raceResults, raceEntries, raceConditions };
+}
 
+function indexByRaceId({ races, raceResults, raceEntries, raceConditions }) {
   const racesById = {};
   for (const r of races) racesById[r.race_id] = r;
   const resultsByRaceId = {};
@@ -145,298 +134,312 @@ async function main() {
     if (!entriesByRaceId[e.race_id]) entriesByRaceId[e.race_id] = {};
     entriesByRaceId[e.race_id][e.boat_number] = e;
   }
+  return { racesById, resultsByRaceId, conditionsByRaceId, entriesByRaceId };
+}
 
-  // 4. レース単位で判定 + 特徴抽出
-  const records = [];
-  for (const pred of withTurnPred) {
-    const raceResult = resultsByRaceId[pred.race_id];
-    const raceInfo = racesById[pred.race_id];
-    if (!raceResult || !raceInfo) continue;
+// UI表示順の上位3技術の winnerCourse と、その一覧
+function topTurnCourses(turnPred) {
+  const distribution = turnPred.distribution;
+  const patterns = turnPred.patterns || [];
 
-    const firstBoat = raceResult.rank1;
-    if (!firstBoat) continue;
-    const firstBoatCourse = raceResult[`course_${firstBoat}`];
-    if (!firstBoatCourse) continue;
-
-    const turnPred = pred.turnPrediction;
-    const distribution = turnPred.distribution;
-    const patterns = turnPred.patterns || [];
-
-    const sortedTechs = Object.entries(distribution)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3);
-    const topTechs = sortedTechs.map(([tech, prob]) => {
-      const pattern = patterns.find((p) => p.technique === tech);
-      return {
-        technique: tech,
-        probability: prob,
-        winnerCourse: pattern?.winnerCourse || null,
-      };
-    });
-    const topCourses = topTechs
-      .filter((t) => t.winnerCourse)
-      .map((t) => t.winnerCourse)
-      .slice(0, 3);
-    const isHit = topCourses.includes(firstBoatCourse);
-
-    const topPattern = patterns[0] || {};
-    const entries = entriesByRaceId[pred.race_id] || {};
-    const winnerEntry = entries[firstBoat] || {};
-    const cond = conditionsByRaceId[pred.race_id] || {};
-
-    records.push({
-      race_id: pred.race_id,
-      venue_code: String(raceInfo.venue_code),
-      race_number: raceInfo.race_number,
-      hit: isHit,
-      actual_course: firstBoatCourse,
-      actual_technique: raceResult.winning_technique || null,
-      predicted_top_course: topPattern.winnerCourse || null,
-      predicted_top_technique: topPattern.technique || null,
-      predicted_top_probability: topPattern.probability || null,
-      predicted_courses: topCourses,
-      wind_speed: cond.wind_speed != null ? cond.wind_speed : null,
-      wave_height: cond.wave_height != null ? cond.wave_height : null,
-      weather: cond.weather || null,
-      volatility_score: raceInfo.volatility_score != null ? raceInfo.volatility_score : null,
-      winner_grade: winnerEntry.grade || null,
-      winner_win_rate: winnerEntry.win_rate != null ? winnerEntry.win_rate : null,
-    });
-  }
-  console.log(`✅ 判定済みレコード: ${records.length}\n`);
-
-  // 5. 会場別プロファイル生成
-  function buildProfile(venueCode) {
-    const recs = records.filter((r) => r.venue_code === venueCode);
-    const hits = recs.filter((r) => r.hit);
-    const misses = recs.filter((r) => !r.hit);
-    const venueKey = venueCode.padStart(2, "0");
-
-    // 不的中の実際の決まり手分布
-    const missTech = {};
-    for (const r of misses) {
-      const t = r.actual_technique || "unknown";
-      missTech[t] = (missTech[t] || 0) + 1;
-    }
-    const hitTech = {};
-    for (const r of hits) {
-      const t = r.actual_technique || "unknown";
-      hitTech[t] = (hitTech[t] || 0) + 1;
-    }
-
-    // 実際の1着コース分布（全体・不的中）
-    const actualCourseAll = {};
-    const actualCourseMiss = {};
-    for (const r of recs)
-      actualCourseAll[r.actual_course] =
-        (actualCourseAll[r.actual_course] || 0) + 1;
-    for (const r of misses)
-      actualCourseMiss[r.actual_course] =
-        (actualCourseMiss[r.actual_course] || 0) + 1;
-
-    // 予測トップ vs 実績の比較（不的中時にモデルが何を予測したか）
-    const predTopCourseMiss = {};
-    const predTopTechMiss = {};
-    for (const r of misses) {
-      predTopCourseMiss[r.predicted_top_course] =
-        (predTopCourseMiss[r.predicted_top_course] || 0) + 1;
-      predTopTechMiss[r.predicted_top_technique] =
-        (predTopTechMiss[r.predicted_top_technique] || 0) + 1;
-    }
-
-    // 決まり手別 的中率
-    const techHitRate = {};
-    for (const r of recs) {
-      const t = r.actual_technique || "unknown";
-      if (!techHitRate[t]) techHitRate[t] = { total: 0, hits: 0 };
-      techHitRate[t].total++;
-      if (r.hit) techHitRate[t].hits++;
-    }
-    const techHitRatePct = {};
-    for (const [t, v] of Object.entries(techHitRate)) {
-      techHitRatePct[t] = {
-        total: v.total,
-        hits: v.hits,
-        rate: pct(v.hits, v.total),
-      };
-    }
-
-    // 1コース実績勝率（このデータ期間内）
-    const course1Wins = recs.filter((r) => r.actual_course === 1).length;
-    const course1Rate = pct(course1Wins, recs.length);
-
-    // 1コース予測時の的中率（モデルが逃げ＝1コースをトップに予測したレース）
-    const predIn = recs.filter((r) => r.predicted_top_course === 1);
-    const predInHits = predIn.filter((r) => r.hit).length;
-
-    // 風・波の的中率影響
-    const windBuckets = {
-      calm: { t: 0, h: 0 },
-      moderate: { t: 0, h: 0 },
-      strong: { t: 0, h: 0 },
-    };
-    for (const r of recs) {
-      const ws = r.wind_speed;
-      let b = "calm";
-      if (ws != null && ws >= 5) b = "strong";
-      else if (ws != null && ws >= 3) b = "moderate";
-      windBuckets[b].t++;
-      if (r.hit) windBuckets[b].h++;
-    }
-    const windHitRate = {};
-    for (const [k, v] of Object.entries(windBuckets)) {
-      windHitRate[k] = { total: v.t, hits: v.h, rate: pct(v.h, v.t) };
-    }
-
+  const sortedTechs = Object.entries(distribution)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3);
+  const topTechs = sortedTechs.map(([tech, prob]) => {
+    const pattern = patterns.find((p) => p.technique === tech);
     return {
-      name: VENUE_NAMES[Number(venueCode)],
-      accuracy: pct(hits.length, recs.length) / 100,
-      total_races: recs.length,
-      hits: hits.length,
-      venue_1course_param: VENUE_1COURSE_WIN_RATE[venueKey],
-      venue_1course_actual_rate: course1Rate / 100,
-      actual_winning_course_distribution: actualCourseAll,
-      missed_race_actual_course_distribution: actualCourseMiss,
-      missed_race_actual_technique_distribution: missTech,
-      hit_race_actual_technique_distribution: hitTech,
-      missed_race_model_predicted_top_course: predTopCourseMiss,
-      missed_race_model_predicted_top_technique: predTopTechMiss,
-      hit_rate_by_actual_technique: techHitRatePct,
-      hit_rate_by_wind: windHitRate,
-      model_in_prediction: {
-        races_model_predicted_course1_top: predIn.length,
-        hits: predInHits,
-        rate: pct(predInHits, predIn.length) / 100,
-      },
+      technique: tech,
+      probability: prob,
+      winnerCourse: pattern?.winnerCourse || null,
+    };
+  });
+  return topTechs
+    .filter((t) => t.winnerCourse)
+    .map((t) => t.winnerCourse)
+    .slice(0, 3);
+}
+
+// 風・波・天候・荒れ度・勝者の級別/勝率（欠測は null）
+function conditionFields(raceInfo, cond, winnerEntry) {
+  return {
+    wind_speed: cond.wind_speed != null ? cond.wind_speed : null,
+    wave_height: cond.wave_height != null ? cond.wave_height : null,
+    weather: cond.weather || null,
+    volatility_score:
+      raceInfo.volatility_score != null ? raceInfo.volatility_score : null,
+    winner_grade: winnerEntry.grade || null,
+    winner_win_rate: winnerEntry.win_rate != null ? winnerEntry.win_rate : null,
+  };
+}
+
+// レース単位で判定 + 特徴抽出（判定できないレースは null）
+function buildRecord(pred, idx) {
+  const raceResult = idx.resultsByRaceId[pred.race_id];
+  const raceInfo = idx.racesById[pred.race_id];
+  if (!raceResult || !raceInfo) return null;
+
+  const firstBoat = raceResult.rank1;
+  if (!firstBoat) return null;
+  const firstBoatCourse = raceResult[`course_${firstBoat}`];
+  if (!firstBoatCourse) return null;
+
+  const turnPred = pred.turnPrediction;
+  const patterns = turnPred.patterns || [];
+  const topCourses = topTurnCourses(turnPred);
+  const isHit = topCourses.includes(firstBoatCourse);
+
+  const topPattern = patterns[0] || {};
+  const entries = idx.entriesByRaceId[pred.race_id] || {};
+  const winnerEntry = entries[firstBoat] || {};
+  const cond = idx.conditionsByRaceId[pred.race_id] || {};
+
+  return {
+    race_id: pred.race_id,
+    venue_code: String(raceInfo.venue_code),
+    race_number: raceInfo.race_number,
+    hit: isHit,
+    actual_course: firstBoatCourse,
+    actual_technique: raceResult.winning_technique || null,
+    predicted_top_course: topPattern.winnerCourse || null,
+    predicted_top_technique: topPattern.technique || null,
+    predicted_top_probability: topPattern.probability || null,
+    predicted_courses: topCourses,
+    ...conditionFields(raceInfo, cond, winnerEntry),
+  };
+}
+
+// 決まり手別 的中率
+function buildTechHitRate(recs) {
+  const techHitRate = {};
+  for (const r of recs) {
+    const t = r.actual_technique || "unknown";
+    if (!techHitRate[t]) techHitRate[t] = { total: 0, hits: 0 };
+    techHitRate[t].total++;
+    if (r.hit) techHitRate[t].hits++;
+  }
+  const techHitRatePct = {};
+  for (const [t, v] of Object.entries(techHitRate)) {
+    techHitRatePct[t] = {
+      total: v.total,
+      hits: v.hits,
+      rate: pct(v.hits, v.total),
     };
   }
+  return techHitRatePct;
+}
 
-  // 6. 低精度会場：共通の外れパターンを言語化
-  function failurePatterns(p) {
-    const patterns = [];
-    const misses = p.total_races - p.hits;
+// 風・波の的中率影響
+function buildWindHitRate(recs) {
+  const windBuckets = {
+    calm: { t: 0, h: 0 },
+    moderate: { t: 0, h: 0 },
+    strong: { t: 0, h: 0 },
+  };
+  for (const r of recs) {
+    const ws = r.wind_speed;
+    let b = "calm";
+    if (ws != null && ws >= 5) b = "strong";
+    else if (ws != null && ws >= 3) b = "moderate";
+    windBuckets[b].t++;
+    if (r.hit) windBuckets[b].h++;
+  }
+  const windHitRate = {};
+  for (const [k, v] of Object.entries(windBuckets)) {
+    windHitRate[k] = { total: v.t, hits: v.h, rate: pct(v.h, v.t) };
+  }
+  return windHitRate;
+}
 
-    // 1コース実績が param より大きく低い場合は荒れ会場
-    if (p.venue_1course_actual_rate < p.venue_1course_param - 0.03) {
-      patterns.push(
-        `1コース実績勝率(${(p.venue_1course_actual_rate * 100).toFixed(0)}%)がパラメータ値(${(p.venue_1course_param * 100).toFixed(0)}%)を下回り、想定以上に荒れている`,
-      );
-    }
+// 会場別プロファイル生成
+function buildProfile(records, venueCode) {
+  const recs = records.filter((r) => r.venue_code === venueCode);
+  const hits = recs.filter((r) => r.hit);
+  const misses = recs.filter((r) => !r.hit);
+  const venueKey = venueCode.padStart(2, "0");
 
-    // 不的中レースで実際の決まり手の偏り
-    const missTechSorted = Object.entries(
-      p.missed_race_actual_technique_distribution,
-    ).sort((a, b) => b[1] - a[1]);
-    if (missTechSorted.length > 0) {
-      const [topT, topC] = missTechSorted[0];
-      patterns.push(
-        `不的中${misses}レース中、実際の決まり手で最多は「${topT}」(${topC}件, ${pct(topC, misses)}%)`,
-      );
-    }
-
-    // 決まり手別 的中率の最低
-    const techRates = Object.entries(p.hit_rate_by_actual_technique)
-      .filter(([, v]) => v.total >= 3)
-      .sort((a, b) => a[1].rate - b[1].rate);
-    if (techRates.length > 0) {
-      const [worstT, worstV] = techRates[0];
-      patterns.push(
-        `決まり手「${worstT}」の的中率が最低(${worstV.rate}%, n=${worstV.total}) — このパターンの予測が苦手`,
-      );
-    }
-
-    // 非1コース決着の取りこぼし
-    const nonInWins = Object.entries(p.actual_winning_course_distribution)
-      .filter(([c]) => Number(c) !== 1)
-      .reduce((s, [, n]) => s + n, 0);
-    const nonInMiss = Object.entries(p.missed_race_actual_course_distribution)
-      .filter(([c]) => Number(c) !== 1)
-      .reduce((s, [, n]) => s + n, 0);
-    if (nonInWins > 0) {
-      patterns.push(
-        `非1コース決着${nonInWins}レース中${nonInMiss}件が不的中(${pct(nonInMiss, nonInWins)}%) — アウトコースの台頭を捉えられていない`,
-      );
-    }
-
-    // モデルが1コーストップ予測した不的中の割合
-    const predInMiss = p.missed_race_model_predicted_top_course["1"] || 0;
-    if (predInMiss > 0) {
-      patterns.push(
-        `不的中レースのうち${predInMiss}件(${pct(predInMiss, misses)}%)でモデルは1コース(逃げ)をトップ予測 — イン信頼が過剰`,
-      );
-    }
-
-    // 風の影響
-    const strongWind = p.hit_rate_by_wind.strong;
-    if (
-      strongWind &&
-      strongWind.total >= 3 &&
-      strongWind.rate < p.accuracy * 100 - 5
-    ) {
-      patterns.push(
-        `強風時(5m以上)の的中率(${strongWind.rate}%, n=${strongWind.total})が会場平均を下回る`,
-      );
-    }
-
-    return patterns;
+  // 不的中の実際の決まり手分布
+  const missTech = {};
+  for (const r of misses) {
+    const t = r.actual_technique || "unknown";
+    missTech[t] = (missTech[t] || 0) + 1;
+  }
+  const hitTech = {};
+  for (const r of hits) {
+    const t = r.actual_technique || "unknown";
+    hitTech[t] = (hitTech[t] || 0) + 1;
   }
 
-  // 7. 高精度会場：成功要因を言語化
-  function successFactors(p) {
-    const factors = [];
+  // 実際の1着コース分布（全体・不的中）
+  const actualCourseAll = {};
+  const actualCourseMiss = {};
+  for (const r of recs)
+    actualCourseAll[r.actual_course] =
+      (actualCourseAll[r.actual_course] || 0) + 1;
+  for (const r of misses)
+    actualCourseMiss[r.actual_course] =
+      (actualCourseMiss[r.actual_course] || 0) + 1;
 
-    if (p.venue_1course_actual_rate >= 0.55) {
-      factors.push(
-        `1コース実績勝率が高い(${(p.venue_1course_actual_rate * 100).toFixed(0)}%) — イン有利でモデルの逃げ予測が機能しやすい`,
-      );
-    }
-
-    const inPred = p.model_in_prediction;
-    if (inPred.races_model_predicted_course1_top > 0) {
-      factors.push(
-        `モデルが1コーストップ予測したレースの的中率(${(inPred.rate * 100).toFixed(0)}%, n=${inPred.races_model_predicted_course1_top}) — 逃げ判定の精度が高い`,
-      );
-    }
-
-    const techRates = Object.entries(p.hit_rate_by_actual_technique)
-      .filter(([, v]) => v.total >= 3)
-      .sort((a, b) => b[1].rate - a[1].rate);
-    if (techRates.length > 0) {
-      const [bestT, bestV] = techRates[0];
-      factors.push(
-        `決まり手「${bestT}」の的中率が最高(${bestV.rate}%, n=${bestV.total})`,
-      );
-    }
-
-    const nigeRate = p.hit_rate_by_actual_technique["逃げ"];
-    if (nigeRate && nigeRate.total >= 5) {
-      factors.push(
-        `逃げ決着レースの的中率(${nigeRate.rate}%, n=${nigeRate.total}) — 決着が読みやすい`,
-      );
-    }
-
-    const calmWind = p.hit_rate_by_wind.calm;
-    if (calmWind && calmWind.total >= 5) {
-      factors.push(
-        `無風〜弱風(3m未満)のレース比率が高く的中率も安定(${calmWind.rate}%, n=${calmWind.total})`,
-      );
-    }
-
-    return factors;
+  // 予測トップ vs 実績の比較（不的中時にモデルが何を予測したか）
+  const predTopCourseMiss = {};
+  const predTopTechMiss = {};
+  for (const r of misses) {
+    predTopCourseMiss[r.predicted_top_course] =
+      (predTopCourseMiss[r.predicted_top_course] || 0) + 1;
+    predTopTechMiss[r.predicted_top_technique] =
+      (predTopTechMiss[r.predicted_top_technique] || 0) + 1;
   }
 
-  const lowAcc = {};
-  for (const vc of LOW_VENUES) {
-    const p = buildProfile(vc);
-    lowAcc[vc] = { ...p, common_failure_patterns: failurePatterns(p) };
-  }
-  const highAcc = {};
-  for (const vc of HIGH_VENUES) {
-    const p = buildProfile(vc);
-    highAcc[vc] = { ...p, success_factors: successFactors(p) };
+  const techHitRatePct = buildTechHitRate(recs);
+
+  // 1コース実績勝率（このデータ期間内）
+  const course1Wins = recs.filter((r) => r.actual_course === 1).length;
+  const course1Rate = pct(course1Wins, recs.length);
+
+  // 1コース予測時の的中率（モデルが逃げ＝1コースをトップに予測したレース）
+  const predIn = recs.filter((r) => r.predicted_top_course === 1);
+  const predInHits = predIn.filter((r) => r.hit).length;
+
+  const windHitRate = buildWindHitRate(recs);
+
+  return {
+    name: VENUE_NAMES[Number(venueCode)],
+    accuracy: pct(hits.length, recs.length) / 100,
+    total_races: recs.length,
+    hits: hits.length,
+    venue_1course_param: VENUE_1COURSE_WIN_RATE[venueKey],
+    venue_1course_actual_rate: course1Rate / 100,
+    actual_winning_course_distribution: actualCourseAll,
+    missed_race_actual_course_distribution: actualCourseMiss,
+    missed_race_actual_technique_distribution: missTech,
+    hit_race_actual_technique_distribution: hitTech,
+    missed_race_model_predicted_top_course: predTopCourseMiss,
+    missed_race_model_predicted_top_technique: predTopTechMiss,
+    hit_rate_by_actual_technique: techHitRatePct,
+    hit_rate_by_wind: windHitRate,
+    model_in_prediction: {
+      races_model_predicted_course1_top: predIn.length,
+      hits: predInHits,
+      rate: pct(predInHits, predIn.length) / 100,
+    },
+  };
+}
+
+// 低精度会場：共通の外れパターンを言語化
+function failurePatterns(p) {
+  const patterns = [];
+  const misses = p.total_races - p.hits;
+
+  // 1コース実績が param より大きく低い場合は荒れ会場
+  if (p.venue_1course_actual_rate < p.venue_1course_param - 0.03) {
+    patterns.push(
+      `1コース実績勝率(${(p.venue_1course_actual_rate * 100).toFixed(0)}%)がパラメータ値(${(p.venue_1course_param * 100).toFixed(0)}%)を下回り、想定以上に荒れている`,
+    );
   }
 
-  // 8. 全会場サマリ（参考）
+  // 不的中レースで実際の決まり手の偏り
+  const missTechSorted = Object.entries(
+    p.missed_race_actual_technique_distribution,
+  ).sort((a, b) => b[1] - a[1]);
+  if (missTechSorted.length > 0) {
+    const [topT, topC] = missTechSorted[0];
+    patterns.push(
+      `不的中${misses}レース中、実際の決まり手で最多は「${topT}」(${topC}件, ${pct(topC, misses)}%)`,
+    );
+  }
+
+  // 決まり手別 的中率の最低
+  const techRates = Object.entries(p.hit_rate_by_actual_technique)
+    .filter(([, v]) => v.total >= 3)
+    .sort((a, b) => a[1].rate - b[1].rate);
+  if (techRates.length > 0) {
+    const [worstT, worstV] = techRates[0];
+    patterns.push(
+      `決まり手「${worstT}」の的中率が最低(${worstV.rate}%, n=${worstV.total}) — このパターンの予測が苦手`,
+    );
+  }
+
+  // 非1コース決着の取りこぼし
+  const nonInWins = Object.entries(p.actual_winning_course_distribution)
+    .filter(([c]) => Number(c) !== 1)
+    .reduce((s, [, n]) => s + n, 0);
+  const nonInMiss = Object.entries(p.missed_race_actual_course_distribution)
+    .filter(([c]) => Number(c) !== 1)
+    .reduce((s, [, n]) => s + n, 0);
+  if (nonInWins > 0) {
+    patterns.push(
+      `非1コース決着${nonInWins}レース中${nonInMiss}件が不的中(${pct(nonInMiss, nonInWins)}%) — アウトコースの台頭を捉えられていない`,
+    );
+  }
+
+  // モデルが1コーストップ予測した不的中の割合
+  const predInMiss = p.missed_race_model_predicted_top_course["1"] || 0;
+  if (predInMiss > 0) {
+    patterns.push(
+      `不的中レースのうち${predInMiss}件(${pct(predInMiss, misses)}%)でモデルは1コース(逃げ)をトップ予測 — イン信頼が過剰`,
+    );
+  }
+
+  // 風の影響
+  const strongWind = p.hit_rate_by_wind.strong;
+  if (
+    strongWind &&
+    strongWind.total >= 3 &&
+    strongWind.rate < p.accuracy * 100 - 5
+  ) {
+    patterns.push(
+      `強風時(5m以上)の的中率(${strongWind.rate}%, n=${strongWind.total})が会場平均を下回る`,
+    );
+  }
+
+  return patterns;
+}
+
+// 高精度会場：成功要因を言語化
+function successFactors(p) {
+  const factors = [];
+
+  if (p.venue_1course_actual_rate >= 0.55) {
+    factors.push(
+      `1コース実績勝率が高い(${(p.venue_1course_actual_rate * 100).toFixed(0)}%) — イン有利でモデルの逃げ予測が機能しやすい`,
+    );
+  }
+
+  const inPred = p.model_in_prediction;
+  if (inPred.races_model_predicted_course1_top > 0) {
+    factors.push(
+      `モデルが1コーストップ予測したレースの的中率(${(inPred.rate * 100).toFixed(0)}%, n=${inPred.races_model_predicted_course1_top}) — 逃げ判定の精度が高い`,
+    );
+  }
+
+  const techRates = Object.entries(p.hit_rate_by_actual_technique)
+    .filter(([, v]) => v.total >= 3)
+    .sort((a, b) => b[1].rate - a[1].rate);
+  if (techRates.length > 0) {
+    const [bestT, bestV] = techRates[0];
+    factors.push(
+      `決まり手「${bestT}」の的中率が最高(${bestV.rate}%, n=${bestV.total})`,
+    );
+  }
+
+  const nigeRate = p.hit_rate_by_actual_technique["逃げ"];
+  if (nigeRate && nigeRate.total >= 5) {
+    factors.push(
+      `逃げ決着レースの的中率(${nigeRate.rate}%, n=${nigeRate.total}) — 決着が読みやすい`,
+    );
+  }
+
+  const calmWind = p.hit_rate_by_wind.calm;
+  if (calmWind && calmWind.total >= 5) {
+    factors.push(
+      `無風〜弱風(3m未満)のレース比率が高く的中率も安定(${calmWind.rate}%, n=${calmWind.total})`,
+    );
+  }
+
+  return factors;
+}
+
+// 全会場サマリ（参考）
+function buildAllVenues(records) {
   const allVenues = {};
   for (const vc of [...new Set(records.map((r) => r.venue_code))]) {
     const recs = records.filter((r) => r.venue_code === vc);
@@ -448,6 +451,71 @@ async function main() {
       accuracy: pct(hits, recs.length) / 100,
     };
   }
+  return allVenues;
+}
+
+// コンソールサマリ
+function printVenueSummary(heading, accByVenue, linesKey) {
+  console.log(heading);
+  for (const [vc, p] of Object.entries(accByVenue)) {
+    console.log(
+      `\n${vc}:${p.name} 精度${(p.accuracy * 100).toFixed(0)}% (${p.hits}/${p.total_races})`,
+    );
+    p[linesKey].forEach((x) => console.log(`  - ${x}`));
+  }
+}
+
+async function main() {
+  console.log("🚀 展開予測 会場別深掘り分析\n");
+
+  const endDate = new Date();
+  let startDate = new Date("2026-03-10");
+  const startDateStr = formatDate(startDate);
+  const endDateStr = formatDate(endDate);
+  console.log(`📅 分析期間: ${startDateStr} ～ ${endDateStr}\n`);
+
+  // 1. 期間内の結果が存在するレースID
+  const targetRaceIds = await fetchTargetRaceIds(startDateStr, endDateStr);
+  console.log(`✅ 対象レース: ${targetRaceIds.length}\n`);
+
+  // 2. predictions（standard モデル）
+  const predictions = await fetchPredictions(targetRaceIds);
+
+  const withTurnPred = predictions
+    .map((p) => ({
+      ...p,
+      turnPrediction: p.feature_contributions?.turnPrediction,
+    }))
+    .filter((p) => p.turnPrediction && p.turnPrediction.distribution);
+  console.log(`✅ turnPrediction あり: ${withTurnPred.length}\n`);
+
+  const raceIds = [...new Set(withTurnPred.map((p) => p.race_id))];
+
+  // 3. races / race_results / race_entries / race_conditions をページネーション取得
+  const idx = indexByRaceId(await fetchRaceTables(raceIds));
+
+  // 4. レース単位で判定 + 特徴抽出
+  const records = [];
+  for (const pred of withTurnPred) {
+    const record = buildRecord(pred, idx);
+    if (record) records.push(record);
+  }
+  console.log(`✅ 判定済みレコード: ${records.length}\n`);
+
+  // 5-7. 会場別プロファイル生成・外れパターン・成功要因
+  const lowAcc = {};
+  for (const vc of LOW_VENUES) {
+    const p = buildProfile(records, vc);
+    lowAcc[vc] = { ...p, common_failure_patterns: failurePatterns(p) };
+  }
+  const highAcc = {};
+  for (const vc of HIGH_VENUES) {
+    const p = buildProfile(records, vc);
+    highAcc[vc] = { ...p, success_factors: successFactors(p) };
+  }
+
+  // 8. 全会場サマリ（参考）
+  const allVenues = buildAllVenues(records);
 
   const output = {
     analysis_date: formatDate(new Date()),
@@ -467,21 +535,12 @@ async function main() {
   await fs.writeFile(outputPath, JSON.stringify(output, null, 2));
   console.log(`\n💾 保存: ${outputPath}`);
 
-  // コンソールサマリ
-  console.log("\n📉 === 低精度会場 ===");
-  for (const [vc, p] of Object.entries(lowAcc)) {
-    console.log(
-      `\n${vc}:${p.name} 精度${(p.accuracy * 100).toFixed(0)}% (${p.hits}/${p.total_races})`,
-    );
-    p.common_failure_patterns.forEach((x) => console.log(`  - ${x}`));
-  }
-  console.log("\n📈 === 高精度会場 ===");
-  for (const [vc, p] of Object.entries(highAcc)) {
-    console.log(
-      `\n${vc}:${p.name} 精度${(p.accuracy * 100).toFixed(0)}% (${p.hits}/${p.total_races})`,
-    );
-    p.success_factors.forEach((x) => console.log(`  - ${x}`));
-  }
+  printVenueSummary(
+    "\n📉 === 低精度会場 ===",
+    lowAcc,
+    "common_failure_patterns",
+  );
+  printVenueSummary("\n📈 === 高精度会場 ===", highAcc, "success_factors");
 }
 
 main().catch((e) => {
