@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1944,
+    "sourceFiles": 1947,
     "filesWithAccess": 280,
     "tableReaders": 947,
     "tableWriters": 189,
