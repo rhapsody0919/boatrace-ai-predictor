@@ -16390,7 +16390,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:749",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:809",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17467,7 +17467,7 @@
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSchedule.js:44",
             "scripts/lib/raceStatusJob.js:109",
-            "scripts/lib/scrapeJobs/monitor.js:749",
+            "scripts/lib/scrapeJobs/monitor.js:809",
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
             "scripts/lib/scrapeJobs/resultHandlers.js:153",
             "scripts/lib/scrapeJobs/resultHandlers.js:275",
@@ -17588,7 +17588,7 @@
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSeriesLookup.js:174",
             "scripts/lib/raceStatusJob.js:109",
-            "scripts/lib/scrapeJobs/monitor.js:749",
+            "scripts/lib/scrapeJobs/monitor.js:809",
             "scripts/lib/scrapeJobs/resultHandlers.js:153",
             "scripts/lib/scrapeJobs/resultHandlers.js:275",
             "scripts/lib/snsAutoPlanRunner.js:741",
@@ -18377,7 +18377,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:717",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:777",
           "op": "select",
           "via": "client",
           "columns": [
@@ -18852,7 +18852,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:727",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:787",
           "op": "select",
           "via": "client",
           "columns": [

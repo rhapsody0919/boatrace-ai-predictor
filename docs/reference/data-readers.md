@@ -1529,7 +1529,7 @@
   - `scripts/lib/raceSeriesLookup.js:174` select [cancellation_status, race_date, venue_code]
   - `scripts/lib/raceStatusJob.js:109` select [cancellation_status, race_date, race_id, race_number, venue_code]
   - `scripts/lib/racesInit/job.js:122` select(helper:fetchAll)
-  - `scripts/lib/scrapeJobs/monitor.js:749` select [race_date, race_id]
+  - `scripts/lib/scrapeJobs/monitor.js:809` select [race_date, race_id]
   - `scripts/lib/scrapeJobs/pcexpectHandlers.js:33` select [race_id, start_time]
   - `scripts/lib/scrapeJobs/resultHandlers.js:153` select [race_date, race_id, start_time]
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select(embed) [cancellation_status]
@@ -1678,7 +1678,7 @@
   - `scripts/lib/motorPretestJob.js:197` select [job, last_target_date, mode]
   - `scripts/lib/racesInit/job.js:148` select [job, mode]
   - `scripts/lib/racesInit/predictCodeCheck.js:104` select [job, last_report]
-  - `scripts/lib/scrapeJobs/monitor.js:717` select [*]
+  - `scripts/lib/scrapeJobs/monitor.js:777` select [*]
   - `scripts/lib/scrapeJobs/store.js:86` select [*, job]
   - `scripts/lib/scrapeJobs/store.js:286` select [?, job]
   - `scripts/maintenance/check-morning-init-shadow.js:197` select [consecutive_failures, cursor, job, last_error, last_success_at, mode]
@@ -1711,7 +1711,7 @@
 - 読み手（10）: 
   - `scripts/lib/boatcast/oritenJob.js:374` select [job, outcome, race_date, race_id, status]
   - `scripts/lib/boatcast/oritenJob.js:534` select [job, race_date, race_id]
-  - `scripts/lib/scrapeJobs/monitor.js:727` select [?]
+  - `scripts/lib/scrapeJobs/monitor.js:787` select [?]
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select [job, race_date, race_id]
   - `scripts/lib/scrapeJobs/resultHandlers.js:316` select [job, race_date, race_id, status]
   - `scripts/maintenance/check-morning-init-shadow.js:279` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
