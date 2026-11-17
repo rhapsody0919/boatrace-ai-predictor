@@ -765,7 +765,7 @@
   - `api/admin/sns-hub/send-probe.js:66` rest(rest) [race_id, race_stage]
   - `scripts/analysis/backtest-unified-model.js:116` select [race_id, wave_height, wind_speed]
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:40` select(helper:all)
-  - `scripts/analysis/calibrate-unified-model.js:167` select [race_id, wave_height, wind_speed]
+  - `scripts/analysis/calibrate-unified-model.js:152` select [race_id, wave_height, wind_speed]
   - `scripts/analysis/race-stage-inventory.mjs:31` select(helper:fetchAllByRaceId)
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:180` select(helper:fetchAllByRaceId)
   - `scripts/analysis/turn-prediction-venue-deep-analysis.js:131` select [race_id, wave_height, weather, wind_direction, wind_speed]
@@ -834,7 +834,7 @@
   - `scripts/analysis/backtest-course-rate-only.js:81` select [boat_number, race_id, racer_id]
   - `scripts/analysis/backtest-unified-model.js:100` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:39` select(helper:all)
-  - `scripts/analysis/calibrate-unified-model.js:151` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
+  - `scripts/analysis/calibrate-unified-model.js:136` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/analysis/campaign-backtest-fetch-races.js:96` select [boat_2rate, boat_3rate, boat_number, grade, local_win_rate, motor_2rate, motor_3rate, player_name, race_id, win_rate]
   - `scripts/analysis/collect-venue-stats.js:261` select [boat_number, grade, motor_2rate, race_id, win_rate]
   - `scripts/analysis/compare-course-rate-sources.js:59` select(helper:fetchAll)
@@ -1131,10 +1131,10 @@
   - `scripts/analysis/analyze-indicator-predictive-power.js:116` select(helper:fetchAll)
   - `scripts/analysis/analyze-upset-factors.js:120` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
   - `scripts/analysis/backtest-course-rate-only.js:60` select(helper:fetchAll)
-  - `scripts/analysis/backtest-unified-model.js:207` select(helper:fetchAll)
+  - `scripts/analysis/backtest-unified-model.js:196` select(helper:fetchAll)
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:42` select(helper:all)
   - `scripts/analysis/calculate-placement-distribution.js:29` select(helper:fetchAll)
-  - `scripts/analysis/calibrate-unified-model.js:127` select(helper:fetchAll)
+  - `scripts/analysis/calibrate-unified-model.js:120` select(helper:fetchAll)
   - `scripts/analysis/calibration-report.js:102` select(helper:fetchAll)
   - `scripts/analysis/campaign-backtest-score.js:59` select [payout_trifecta, payout_trio, race_id, rank1, rank2, rank3]
   - `scripts/analysis/collect-venue-stats.js:247` select [*, race_id]
@@ -1340,7 +1340,7 @@
   - `scripts/analysis/analyze-indicator-predictive-power.js:145` select [avg_st, course_race_counts, racer_id, venue_code]
   - `scripts/analysis/backtest-course-rate-only.js:92` select [course_race_counts, racer_id, venue_code]
   - `scripts/analysis/backtest-unified-model.js:126` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
-  - `scripts/analysis/calibrate-unified-model.js:177` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
+  - `scripts/analysis/calibrate-unified-model.js:162` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:108` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/analysis/verify-volatility-predictive-power.js:87` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-predictions.js:553` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
@@ -1478,7 +1478,7 @@
   - `scripts/analysis/analyze-upset-factors.js:108` select [first_boat_motor_2rate, first_boat_win_rate, motor_2rate_stddev, race_date, race_id, venue_code, volatility_level, volatility_score, win_rate_stddev]
   - `scripts/analysis/backtest-unified-model.js:109` select [race_id, venue_code]
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:32` select(helper:all)
-  - `scripts/analysis/calibrate-unified-model.js:160` select [race_id, venue_code]
+  - `scripts/analysis/calibrate-unified-model.js:145` select [race_id, venue_code]
   - `scripts/analysis/original-exhibition/fetch.mjs:54` select(helper:all)
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:78` select [cancellation_status, race_date, race_id, start_time]
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:142` select [race_date, race_id, start_time]
