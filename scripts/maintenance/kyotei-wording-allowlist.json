@@ -134,15 +134,15 @@
       "line": "// h1・一覧カードは title・description のまま（「競艇」は画面に出さない。code-style.md 例外1）"
     },
     {
-      "file": "src/pages/RacerProfileMeta.js",
+      "file": "src/pages/RacerProfile.jsx",
       "line": "// title・description は画面に表示されないメタ情報なので「競艇」を含めてよい（code-style.md 例外1の暫定措置。"
     },
     {
-      "file": "src/pages/RacerProfileMeta.js",
+      "file": "src/pages/RacerProfile.jsx",
       "line": "? `${displayName}（競艇）選手の成績・勝率・決まり手 | 龍神レーダー`"
     },
     {
-      "file": "src/pages/RacerProfileMeta.js",
+      "file": "src/pages/RacerProfile.jsx",
       "line": "? `${displayName}選手（${who}）の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別・枠番別成績、決まり手、直近のレース一覧とプロフィール。`"
     },
     {
