@@ -17,7 +17,7 @@ import {
   normalizeStage,
   pointsNeededForBorder,
   SCORE_POINTS,
-} from "../components/race/seriesPoints.js";
+} from "../pure/seriesPoints.js";
 import { finishPositionOf } from "../pure/basicInfoStats.js";
 
 /** 節ページの対象グレード */
