@@ -947,11 +947,11 @@ const headMeta = (document) => ({
 const texts = (root, selector) =>
   [...root.querySelectorAll(selector)].map((el) => el.textContent);
 
-// 5a. データ層: 公開の入口（dataService.getRaces）が todayRaces.js の transformTodayRaces を呼び、同じ値を返す
+// 5a. データ層: 公開の入口（scheduleQueries の getRaces。殻 dataService.js は RA40 BOA-1673 で消す）が todayRaces.js の transformTodayRaces を呼び、同じ値を返す
 {
   globalThis[SPY_KEY] = [];
-  const { dataService } = await import(srcUrl("services/dataService.js"));
-  const out = await dataService.getRaces();
+  const { getRaces } = await import(srcUrl("services/scheduleQueries.js"));
+  const out = await getRaces();
   check(
     "データ層: getRaces は transformTodayRaces と同じ値（会場の1コース勝率は偽の DB で空）",
     out,
