@@ -28,6 +28,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/meetGrouping.js` | race_id昇順ソート済みの配列を受け取り、末尾（最新）から遡って日付の間隔が | groupIntoCurrentMeet, groupIntoMeetBeforeRace |
 | `src/pure/meetModel.js` | — | makeMeet |
 | `src/pure/modelAssert.js` | — | assertObject, assertInt, assertIntOrNull, assertText, parseIsoDate ほか1件 |
+| `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
 | `src/pure/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
 | `src/pure/raceModel.js` | — | makeRaceEntry, makeRace |
 | `src/pure/raceMotorBreakdown.js` | モータ情報タブの一覧表（getRaceMotorBreakdown の返り値）の行の組み立て。 | pastMotorRows, recalcMotorRows, settleMotorBreakdown |
@@ -460,4 +461,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 418 ファイル / export 2406 件。
+対象 419 ファイル / export 2408 件。
