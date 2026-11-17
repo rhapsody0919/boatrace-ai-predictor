@@ -311,6 +311,10 @@ export async function section5(ctx) {
       `${lang}: 縦軸の名前が「出現率」でない（2連率・3連率を指す）`,
       !/出現率|Occurrence|出現率|출현율/.test(motor.yAxis),
     );
+  }
+  for (const lang of ["ja", "en", "zh-TW", "ko"]) {
+    const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
+      .motor;
     check(
       `${lang}: 出典注記が {{venueCols}} を受け取り、見出し・区切り・更新遅れの注記・使用履歴の期間がある`,
       !motor.officialModeSourceNote.includes("{{venueCols}}") &&
