@@ -5,7 +5,7 @@ import { supabase } from "./supabaseClient";
 import {
   periodsEndedBefore,
   RECENT_PERIOD_COUNT,
-} from "../components/race/basicInfoStats.js";
+} from "../pure/basicInfoStats.js";
 import { currentPeriodRange } from "../utils/accidentRate.js";
 import { isPermissionDeniedError, withCache } from "./core.js";
 

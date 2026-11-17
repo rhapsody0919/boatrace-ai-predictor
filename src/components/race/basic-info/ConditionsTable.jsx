@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { SMALL_SAMPLE_THRESHOLD } from "../basicInfoStats";
+import { SMALL_SAMPLE_THRESHOLD } from "../../../pure/basicInfoStats.js";
 import { formatMetricValue } from "./format";
 
 export default function ConditionsTable({ condRows, metric }) {

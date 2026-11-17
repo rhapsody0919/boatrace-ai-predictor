@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { computeVenueRanking } from "../basicInfoStats";
+import { computeVenueRanking } from "../../../pure/basicInfoStats.js";
 import { formatMetricValue, ownMetricLabel } from "./format";
 
 export default function VenueRankingView({ records, metric, venueCode }) {

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import InlineFetchError from "../../InlineFetchError";
-import { buildConditionRows } from "../basicInfoStats";
+import { buildConditionRows } from "../../../pure/basicInfoStats.js";
 import { ownMetricLabel } from "./format";
 import ConditionsTable from "./ConditionsTable";
 import ConditionsHowToRead from "./ConditionsHowToRead";

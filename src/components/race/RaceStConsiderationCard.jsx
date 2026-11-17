@@ -26,7 +26,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
-import { SMALL_SAMPLE_THRESHOLD } from "./basicInfoStats";
+import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
 import { computeStConsideration } from "../../utils/stConsideration";
 import {
   METRIC_DIRECTION,

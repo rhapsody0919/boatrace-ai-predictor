@@ -131,7 +131,7 @@ export function deriveRaceStContext(stRows, result) {
  * 選手の出走履歴（getRacerScopedRaceStatsの戻り値）から、指定コースのST考察を算出する（純関数）。
  *
  * 小標本の判定はここでは行わない。呼び出し側が `SMALL_SAMPLE_THRESHOLD`（=6、
- * src/components/race/basicInfoStats.js）で判断する（ST考察だけ別の閾値を持たせない）。
+ * src/pure/basicInfoStats.js）で判断する（ST考察だけ別の閾値を持たせない）。
  *
  * @param {Array<Object>} rows getRacerScopedRaceStats の戻り値
  * @param {{course: number}} options 対象の実進入コース（1〜6）

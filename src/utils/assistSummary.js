@@ -27,7 +27,7 @@ import {
   buildMeetResults,
   finishPositionOf,
   recordsBeforeRace,
-} from "../components/race/basicInfoStats.js";
+} from "../pure/basicInfoStats.js";
 import { SCORE_POINTS } from "../components/race/seriesPoints.js";
 
 // ---- 差がつく材料の範囲（D-37）----

@@ -8,7 +8,7 @@
 //
 // 入力は RPC get_racer_accident_records（マイグレーション126）の1行: 出走回数と、事故の走（F・L1・K1・S1・S2）の一覧。
 import { isFinalStage } from "../constants/raceStageConfig.js";
-import { periodsEndedBefore } from "../components/race/basicInfoStats.js";
+import { periodsEndedBefore } from "../pure/basicInfoStats.js";
 
 /** B2 級になる事故率の上限（これを超えると B2） */
 export const ACCIDENT_RATE_LINE = 0.7;
