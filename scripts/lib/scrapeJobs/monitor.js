@@ -926,19 +926,11 @@ export async function runMonitor(
 
   const webhook = env.SLACK_WEBHOOK_URL;
   const messages = [];
-  // 載せきれなかったアラートは、通知済みとして記録しない（次の実行で通知する）
-  let notifiedFinal = notified;
-  if (toSend.length > 0) {
-    const { message, includedCount } = formatAlertMessage(toSend, now);
-    messages.push(message);
-    if (includedCount < toSend.length) {
-      notifiedFinal = { ...notified };
-      for (const alert of toSend.slice(includedCount)) {
-        if (previous[alert.key] === undefined) delete notifiedFinal[alert.key];
-        else notifiedFinal[alert.key] = previous[alert.key];
-      }
-    }
-  }
+  const notifiedFinal = addAlertMessage(messages, toSend, {
+    notified,
+    previous,
+    now,
+  });
   // 日次サマリー: 取得ジョブが1つも有効でない間（移行前）は、投稿しない
   if (isDaily && activeJobs.length > 0) {
     messages.push(
@@ -975,6 +967,23 @@ export async function runMonitor(
       slackConfigured: Boolean(webhook),
     },
   };
+}
+
+/**
+ * 異常の本文を messages へ足し、通知済みの記録（載せきれなかったアラートは、通知済みとして記録しない。
+ * 次の実行で通知する）を返す
+ */
+function addAlertMessage(messages, toSend, { notified, previous, now }) {
+  if (toSend.length === 0) return notified;
+  const { message, includedCount } = formatAlertMessage(toSend, now);
+  messages.push(message);
+  if (includedCount >= toSend.length) return notified;
+  const notifiedFinal = { ...notified };
+  for (const alert of toSend.slice(includedCount)) {
+    if (previous[alert.key] === undefined) delete notifiedFinal[alert.key];
+    else notifiedFinal[alert.key] = previous[alert.key];
+  }
+  return notifiedFinal;
 }
 
 /** 今回の入力から出す異常の一覧（期限切れ・窓内取得率・検知の遅れ・ジョブ状態・当日のレース） */
