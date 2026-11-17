@@ -120,18 +120,20 @@ export function compileModel(dump) {
   };
 }
 
-// tree.h の NumericalDecision・CategoricalDecision と同じ向き
-function decision(t, x, node) {
-  let f = x[t.feat[node]];
-  const nan = f === null || f === undefined || Number.isNaN(f);
-  if (t.cats[node]) {
-    if (nan) return t.right[node];
-    const iv = Math.trunc(f);
-    if (iv < 0) return t.right[node];
-    return t.cats[node].has(iv) ? t.left[node] : t.right[node];
-  }
+const isMissingValue = (f) => f === null || f === undefined || Number.isNaN(f);
+
+// tree.h の CategoricalDecision と同じ向き
+function categoricalDecision(t, node, f, nan) {
+  if (nan) return t.right[node];
+  const iv = Math.trunc(f);
+  if (iv < 0) return t.right[node];
+  return t.cats[node].has(iv) ? t.left[node] : t.right[node];
+}
+
+// tree.h の NumericalDecision と同じ向き
+function numericalDecision(t, node, f0, nan) {
   const miss = t.missing[node];
-  if (nan && miss !== "NaN") f = 0;
+  const f = nan && miss !== "NaN" ? 0 : f0;
   if (
     (miss === "Zero" && f >= -ZERO_THRESHOLD && f <= ZERO_THRESHOLD) ||
     (miss === "NaN" && nan)
@@ -139,6 +141,14 @@ function decision(t, x, node) {
     return t.defaultLeft[node] ? t.left[node] : t.right[node];
   }
   return f <= t.thr[node] ? t.left[node] : t.right[node];
+}
+
+function decision(t, x, node) {
+  const f = x[t.feat[node]];
+  const nan = isMissingValue(f);
+  return t.cats[node]
+    ? categoricalDecision(t, node, f, nan)
+    : numericalDecision(t, node, f, nan);
 }
 
 const nodeCount = (t, n) => (n >= 0 ? t.count[n] : t.leafCount[~n]);
