@@ -8,6 +8,7 @@
  */
 
 import { supabase } from "./supabaseClient";
+import { makeRace } from "../pure/raceModel.js";
 import model from "../../data/watson/model.json";
 
 const VENUE_NAMES = {
@@ -78,7 +79,8 @@ export async function getWatsonPredictions(date) {
         .lt("race_id", `${targetDate}~`),
     ]);
 
-    const races = racesRes.data || [];
+    // 不変条件の破れ（RangeError）は下の catch で取得失敗と同じ扱い（空の一覧）
+    const races = (racesRes.data || []).map(makeRace);
     if (races.length === 0) return [];
 
     const raceIds = races.map((r) => r.race_id);
