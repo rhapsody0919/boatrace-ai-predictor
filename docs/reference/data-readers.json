@@ -6308,7 +6308,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/verify-turn-prediction-accuracy-v6.js:98",
+          "ref": "scripts/analysis/verify-turn-prediction-accuracy-v6.js:90",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6663,7 +6663,7 @@
             "scripts/analysis/backtest-unified-model.js:116",
             "scripts/analysis/calibrate-unified-model.js:152",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:98",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:90",
             "scripts/analysis/verify-volatility-predictive-power.js:72",
             "scripts/daily/scrape-point-rank.js:368",
             "scripts/lib/analogyV16Exhibition.js:191",
@@ -6728,7 +6728,7 @@
             "scripts/analysis/backtest-unified-model.js:116",
             "scripts/analysis/calibrate-unified-model.js:152",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:98",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:90",
             "scripts/analysis/verify-volatility-predictive-power.js:72",
             "scripts/lib/analogyV16Exhibition.js:191",
             "scripts/ml/analogy/build-wind-basis.js:95"
@@ -6744,7 +6744,7 @@
             "scripts/analysis/backtest-unified-model.js:116",
             "scripts/analysis/calibrate-unified-model.js:152",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:98",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:90",
             "scripts/analysis/verify-volatility-predictive-power.js:72",
             "scripts/lib/analogyV16Exhibition.js:191"
           ],
@@ -7245,7 +7245,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
+          "ref": "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8376,7 +8376,7 @@
             "scripts/analysis/verify-race-analysis-rpc.js:28",
             "scripts/analysis/verify-race-analysis-rpc.js:49",
             "scripts/analysis/verify-racer-season-stats-accuracy.js:134",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/analysis/verify-volatility-predictive-power.js:58",
             "scripts/daily/generate-moriarty-recommendations.js:122",
             "scripts/daily/generate-morning-digest.js:155",
@@ -8499,7 +8499,7 @@
             "scripts/analysis/verify-race-analysis-rpc.js:28",
             "scripts/analysis/verify-race-analysis-rpc.js:49",
             "scripts/analysis/verify-racer-season-stats-accuracy.js:134",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/analysis/verify-volatility-predictive-power.js:58",
             "scripts/daily/generate-moriarty-recommendations.js:122",
             "scripts/daily/generate-morning-digest.js:155",
@@ -8619,7 +8619,7 @@
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "scripts/lib/snsTodayDigestV3.js:108",
@@ -8661,7 +8661,7 @@
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/analysis/verify-volatility-predictive-power.js:58",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "scripts/lib/raceIndicatorData.js:72",
@@ -8691,7 +8691,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
@@ -8738,7 +8738,7 @@
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "scripts/analysis/collect-venue-stats.js:261",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "src/services/motorQueries.js:234",
@@ -8875,7 +8875,7 @@
             "scripts/analysis/verify-race-analysis-rpc.js:28",
             "scripts/analysis/verify-race-analysis-rpc.js:49",
             "scripts/analysis/verify-racer-season-stats-accuracy.js:134",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:82",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/analysis/verify-volatility-predictive-power.js:58",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
@@ -10818,7 +10818,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/verify-label-accuracy.js:90",
+          "ref": "scripts/analysis/verify-label-accuracy.js:94",
           "op": "select",
           "via": "client",
           "columns": [
@@ -10878,7 +10878,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/verify-turn-prediction-accuracy-v6.js:61",
+          "ref": "scripts/analysis/verify-turn-prediction-accuracy-v6.js:56",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -11709,7 +11709,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:70",
             "scripts/analysis/verify-all-venues-label-accuracy.js:93",
             "scripts/analysis/verify-calculations.js:20",
-            "scripts/analysis/verify-label-accuracy.js:90",
+            "scripts/analysis/verify-label-accuracy.js:94",
             "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
@@ -11793,7 +11793,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-all-venues-label-accuracy.js:93",
             "scripts/analysis/verify-calculations.js:20",
-            "scripts/analysis/verify-label-accuracy.js:90",
+            "scripts/analysis/verify-label-accuracy.js:94",
             "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
@@ -13470,7 +13470,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
+          "ref": "scripts/analysis/verify-turn-prediction-accuracy-v6.js:105",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13575,7 +13575,7 @@
             "scripts/analysis/backtest-course-rate-only.js:92",
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:162",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:105",
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
@@ -13592,7 +13592,7 @@
             "scripts/analysis/backtest-course-rate-only.js:92",
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:162",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:105",
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
@@ -13607,7 +13607,7 @@
             "scripts/analysis/analyze-indicator-predictive-power.js:145",
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:162",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:105",
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
@@ -13628,7 +13628,7 @@
           "readers": [
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:162",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:105",
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
@@ -13653,7 +13653,7 @@
           "readers": [
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:162",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:105",
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118"
@@ -13688,7 +13688,7 @@
           "readers": [
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:162",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:105",
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118"
@@ -13702,7 +13702,7 @@
             "scripts/analysis/backtest-course-rate-only.js:92",
             "scripts/analysis/backtest-unified-model.js:126",
             "scripts/analysis/calibrate-unified-model.js:162",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:108",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:105",
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
@@ -16010,7 +16010,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/verify-label-accuracy.js:72",
+          "ref": "scripts/analysis/verify-label-accuracy.js:76",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16029,7 +16029,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/verify-turn-prediction-accuracy-v6.js:91",
+          "ref": "scripts/analysis/verify-turn-prediction-accuracy-v6.js:83",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17431,8 +17431,8 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
             "scripts/analysis/verify-calculations.js:7",
-            "scripts/analysis/verify-label-accuracy.js:72",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:91",
+            "scripts/analysis/verify-label-accuracy.js:76",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:83",
             "scripts/analysis/verify-volatility-predictive-power.js:65",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/generate-morning-digest.js:133",
@@ -17569,7 +17569,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
             "scripts/analysis/verify-calculations.js:7",
-            "scripts/analysis/verify-label-accuracy.js:72",
+            "scripts/analysis/verify-label-accuracy.js:76",
             "scripts/analysis/verify-racer-season-stats-accuracy.js:79",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/generate-morning-digest.js:133",
@@ -17665,8 +17665,8 @@
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
-            "scripts/analysis/verify-label-accuracy.js:72",
-            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:91",
+            "scripts/analysis/verify-label-accuracy.js:76",
+            "scripts/analysis/verify-turn-prediction-accuracy-v6.js:83",
             "scripts/analysis/verify-volatility-predictive-power.js:65",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/generate-morning-digest.js:133",
@@ -17828,7 +17828,7 @@
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
-            "scripts/analysis/verify-label-accuracy.js:72"
+            "scripts/analysis/verify-label-accuracy.js:76"
           ],
           "writers": [],
           "sql": [
