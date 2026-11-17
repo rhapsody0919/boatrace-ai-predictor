@@ -121,6 +121,55 @@ async function report({ dimensions, metrics, filter }) {
 
 const one = (rows, key) => rows[0]?.[key] ?? 0;
 
+/** カスタムディメンションごとの内訳（イベント名・値・回数）を取る */
+async function fetchBreakdowns() {
+  const breakdowns = {};
+  for (const [d, names] of Object.entries(DIMENSIONS)) {
+    breakdowns[d] = (
+      await report({
+        dimensions: ["eventName", `customEvent:${d}`],
+        metrics: ["eventCount"],
+        filter: and(
+          {
+            filter: {
+              fieldName: "eventName",
+              inListFilter: { values: names },
+            },
+          },
+          hostIs,
+        ),
+      })
+    ).map((r) => ({
+      eventName: r.eventName,
+      value: r[`customEvent:${d}`],
+      eventCount: r.eventCount,
+    }));
+  }
+  return breakdowns;
+}
+
+/** 結果を data/analysis/assist-ga4 に書き、書いたファイルのパスを返す */
+function writeOut(out) {
+  const dir = path.join(__dirname, "../../../data/analysis/assist-ga4");
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(
+    dir,
+    FROM === TO ? `${FROM}.json` : `${FROM}_${TO}.json`,
+  );
+  fs.writeFileSync(file, `${JSON.stringify(out, null, 2)}\n`);
+  return file;
+}
+
+/** 書き出し先・概要・イベントごとの回数を標準出力に出す */
+function printSummary(out, file, { assistPv, assistUsers, racePv, raceUsers }) {
+  console.log(`書き出し: ${path.relative(process.cwd(), file)}`);
+  console.log(
+    `/assist ${assistPv} PV・${assistUsers}人、レース詳細 ${racePv} PV・${raceUsers}人（PV ${out.assistShareOfRaceDetail.pageViewsPct}%）`,
+  );
+  for (const e of out.events)
+    console.log(`  ${e.eventName}: ${e.eventCount}回・${e.totalUsers}人`);
+}
+
 async function main() {
   const assist = await report({
     dimensions: [],
@@ -163,28 +212,7 @@ async function main() {
     metrics: ["eventCount", "totalUsers"],
     filter: and(assistEvents, hostIs),
   });
-  const breakdowns = {};
-  for (const [d, names] of Object.entries(DIMENSIONS)) {
-    breakdowns[d] = (
-      await report({
-        dimensions: ["eventName", `customEvent:${d}`],
-        metrics: ["eventCount"],
-        filter: and(
-          {
-            filter: {
-              fieldName: "eventName",
-              inListFilter: { values: names },
-            },
-          },
-          hostIs,
-        ),
-      })
-    ).map((r) => ({
-      eventName: r.eventName,
-      value: r[`customEvent:${d}`],
-      eventCount: r.eventCount,
-    }));
-  }
+  const breakdowns = await fetchBreakdowns();
 
   const out = {
     from: FROM,
@@ -213,19 +241,8 @@ async function main() {
     events: events.sort((a, b) => b.eventCount - a.eventCount),
     breakdowns,
   };
-  const dir = path.join(__dirname, "../../../data/analysis/assist-ga4");
-  fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(
-    dir,
-    FROM === TO ? `${FROM}.json` : `${FROM}_${TO}.json`,
-  );
-  fs.writeFileSync(file, `${JSON.stringify(out, null, 2)}\n`);
-  console.log(`書き出し: ${path.relative(process.cwd(), file)}`);
-  console.log(
-    `/assist ${assistPv} PV・${assistUsers}人、レース詳細 ${racePv} PV・${raceUsers}人（PV ${out.assistShareOfRaceDetail.pageViewsPct}%）`,
-  );
-  for (const e of out.events)
-    console.log(`  ${e.eventName}: ${e.eventCount}回・${e.totalUsers}人`);
+  const file = writeOut(out);
+  printSummary(out, file, { assistPv, assistUsers, racePv, raceUsers });
 }
 
 main().catch((e) => {
