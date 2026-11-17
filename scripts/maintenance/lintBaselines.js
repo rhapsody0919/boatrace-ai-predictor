@@ -91,3 +91,17 @@ export function newUtilsFileProblems(addedPaths) {
     .filter((p) => p.startsWith("src/utils/"))
     .map((p) => `src/utils/ に新しいファイル: ${p}`);
 }
+
+// 新しい問い合わせの置き場は領域の <領域>Queries*.js だけ（HR62・設計図 §5。殻や別名のサービスを増やさない）
+const SERVICES_NEW_FILE_OK = /^[a-z]+Queries[0-9]*\.js$/;
+
+/** src/services/ の直下への新しいファイルは <領域>Queries*.js のほか赤。下のフォルダも赤 */
+export function newServicesFileProblems(addedPaths) {
+  return (addedPaths ?? [])
+    .filter((p) => p.startsWith("src/services/"))
+    .filter((p) => !SERVICES_NEW_FILE_OK.test(p.slice("src/services/".length)))
+    .map(
+      (p) =>
+        `src/services/ に <領域>Queries*.js でない新しいファイル: ${p}（新しい問い合わせは領域の Queries へ）`,
+    );
+}

@@ -17,6 +17,7 @@ import {
   DATA_LAYER_KEY,
   compareEdgesToBaseline,
   isDataLayer,
+  newServicesFileProblems,
   newUtilsFileProblems,
 } from "./lintBaselines.js";
 
@@ -177,6 +178,7 @@ export function runDepTreeGate({ cwd, base, changed }) {
 
   const addedPaths = changed.filter((c) => c.added).map((c) => c.file);
   errors.push(...newUtilsFileProblems(addedPaths));
+  errors.push(...newServicesFileProblems(addedPaths));
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "lint-deptree-"));
   try {
