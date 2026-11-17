@@ -106,7 +106,9 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
   // 以前はブラウザで dataService を読み、録画の応答で確かめていた。build した束では /src を読めないので形を変えた。
   // 500件の .in() の URL を本番が受け付けること（400 にならない）は、本番データの実行（E2E_LIVE）でだけ本番に当てて確かめる
   test("的中レース一覧の全期間（1500件超）でも、1着の艇の進入コースを取れる", async () => {
-    const { dataService } = await loadSrc("/src/services/dataService.js");
+    const { getRaceWinnerCourses } = await loadSrc(
+      "/src/services/raceQueries.js",
+    );
     // 全期間（14日）を開いたときと同じ規模。1本の .in() では URL が長すぎて 400 になっていた
     const ids = ["2026-08-13-01-02"];
     for (let day = 1; day <= 14; day += 1) {
@@ -149,7 +151,7 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
     };
     let courses;
     try {
-      courses = await dataService.getRaceWinnerCourses(ids.slice(0, 1600));
+      courses = await getRaceWinnerCourses(ids.slice(0, 1600));
     } finally {
       globalThis.fetch = realFetch;
     }

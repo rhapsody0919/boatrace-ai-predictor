@@ -22,7 +22,7 @@
  * （verify-motor-window-generation.js と同じ方式）。
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dataLayerCall, dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
@@ -51,13 +51,8 @@ const check = (label, ok) => {
 const chart = read("src/components/analysis/MotorConditionChart.jsx");
 const grid = read("src/components/analysis/MotorWakuStatsGrid.jsx");
 const card = read("src/components/racer/RacerMotorStatusCard.jsx");
-// 選手ページの今節のモーター。RA40（BOA-1673）で racerService.js から motorQueries7.js へ移すので、
-// 移す前後のどちらでも本体のある方を読む（移した後に元の場所の分岐は外す）
-const racerMotor = read(
-  existsSync(path.join(root, "src/services/motorQueries7.js"))
-    ? "src/services/motorQueries7.js"
-    : "src/services/racerService.js",
-);
+// 選手ページの今節のモーター（RA40 BOA-1673 で racerService.js から移した）
+const racerMotor = read("src/services/motorQueries7.js");
 
 check(
   "枠番別成績の表に、横スクロールの目印（hscroll-hint・›）を付ける",
