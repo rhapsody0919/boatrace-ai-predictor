@@ -1,4 +1,4 @@
-/** 展開予測の会場別の的中率の表（byVenue が空なら呼び出し側で出さない） */
+/** 展開予測の会場別の表（byVenue が空なら呼び出し側で出さない） */
 export default function AccuracyDashboardVenueDetails({ byVenue }) {
   return (
     <details className="turn-accuracy-venue-details">

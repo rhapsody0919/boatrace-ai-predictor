@@ -1,7 +1,7 @@
 import { formatPercent } from "../utils/formatters";
 import AccuracyDashboardVenueDetails from "./AccuracyDashboardVenueDetails";
 
-/** 展開予測の実測的中率（大きい数字と会場別の表） */
+/** 展開予測の実測の大きい数字と会場別の表 */
 export default function AccuracyDashboardHero({ turn }) {
   return (
     <div className="turn-accuracy-hero">
