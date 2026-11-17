@@ -10730,7 +10730,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/redesign-volatility-by-venue.js:146",
+          "ref": "scripts/analysis/redesign-volatility-by-venue.js:150",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11704,7 +11704,7 @@
             "scripts/analysis/find-missing-dates.js:33",
             "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
-            "scripts/analysis/redesign-volatility-by-venue.js:146",
+            "scripts/analysis/redesign-volatility-by-venue.js:150",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:70",
             "scripts/analysis/verify-all-venues-label-accuracy.js:93",
@@ -11789,7 +11789,7 @@
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
-            "scripts/analysis/redesign-volatility-by-venue.js:146",
+            "scripts/analysis/redesign-volatility-by-venue.js:150",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-all-venues-label-accuracy.js:93",
             "scripts/analysis/verify-calculations.js:20",
@@ -11921,7 +11921,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:119",
             "scripts/analysis/find-video-worthy-race.js:93",
-            "scripts/analysis/redesign-volatility-by-venue.js:146",
+            "scripts/analysis/redesign-volatility-by-venue.js:150",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily/scrape-odds.js:70",
@@ -12012,7 +12012,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:119",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
-            "scripts/analysis/redesign-volatility-by-venue.js:146",
+            "scripts/analysis/redesign-volatility-by-venue.js:150",
             "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily/calculate-venue-grade-stats.js:73",
@@ -12037,7 +12037,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:119",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
-            "scripts/analysis/redesign-volatility-by-venue.js:146",
+            "scripts/analysis/redesign-volatility-by-venue.js:150",
             "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:285"
           ],
@@ -12097,7 +12097,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:119",
             "scripts/analysis/find-video-worthy-race.js:93",
-            "scripts/analysis/redesign-volatility-by-venue.js:146",
+            "scripts/analysis/redesign-volatility-by-venue.js:150",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
             "scripts/daily/calculate-venue-grade-stats.js:73",
@@ -15959,7 +15959,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/redesign-volatility-by-venue.js:133",
+          "ref": "scripts/analysis/redesign-volatility-by-venue.js:135",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17427,7 +17427,7 @@
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:142",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:284",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
-            "scripts/analysis/redesign-volatility-by-venue.js:133",
+            "scripts/analysis/redesign-volatility-by-venue.js:135",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
             "scripts/analysis/verify-calculations.js:7",
@@ -17565,7 +17565,7 @@
             "scripts/analysis/analyze-upset-factors.js:106",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:142",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
-            "scripts/analysis/redesign-volatility-by-venue.js:133",
+            "scripts/analysis/redesign-volatility-by-venue.js:135",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
             "scripts/analysis/verify-calculations.js:7",
@@ -17662,7 +17662,7 @@
             "scripts/analysis/analyze-upset-factors.js:106",
             "scripts/analysis/backtest-unified-model.js:109",
             "scripts/analysis/calibrate-unified-model.js:145",
-            "scripts/analysis/redesign-volatility-by-venue.js:133",
+            "scripts/analysis/redesign-volatility-by-venue.js:135",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
             "scripts/analysis/verify-label-accuracy.js:76",
@@ -17825,7 +17825,7 @@
         "volatility_score": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:106",
-            "scripts/analysis/redesign-volatility-by-venue.js:133",
+            "scripts/analysis/redesign-volatility-by-venue.js:135",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
             "scripts/analysis/verify-label-accuracy.js:76"
@@ -17863,7 +17863,7 @@
         "first_boat_win_rate": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:106",
-            "scripts/analysis/redesign-volatility-by-venue.js:133",
+            "scripts/analysis/redesign-volatility-by-venue.js:135",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109"
           ],
           "writers": [],
@@ -17872,7 +17872,7 @@
         "first_boat_motor_2rate": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:106",
-            "scripts/analysis/redesign-volatility-by-venue.js:133"
+            "scripts/analysis/redesign-volatility-by-venue.js:135"
           ],
           "writers": [],
           "sql": []
@@ -17880,7 +17880,7 @@
         "win_rate_stddev": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:106",
-            "scripts/analysis/redesign-volatility-by-venue.js:133"
+            "scripts/analysis/redesign-volatility-by-venue.js:135"
           ],
           "writers": [],
           "sql": []
@@ -17917,7 +17917,7 @@
         },
         "first_boat_avg_st": {
           "readers": [
-            "scripts/analysis/redesign-volatility-by-venue.js:133"
+            "scripts/analysis/redesign-volatility-by-venue.js:135"
           ],
           "writers": [],
           "sql": []

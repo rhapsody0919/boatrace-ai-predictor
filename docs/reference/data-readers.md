@@ -1143,7 +1143,7 @@
   - `scripts/analysis/find-video-worthy-race.js:93` select [payout_trifecta, payout_win, race_id, rank1, rank2, rank3, winning_technique]
   - `scripts/analysis/original-exhibition/fetch.mjs:69` select(helper:all)
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:274` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, is_cancelled, is_no_race, payout_trifecta, payout_trio, race_id, race_status, rank1, rank2, rank3, refund_boats]
-  - `scripts/analysis/redesign-volatility-by-venue.js:146` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
+  - `scripts/analysis/redesign-volatility-by-venue.js:150` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:190` select(helper:fetchAllByRaceId)
   - `scripts/analysis/simulate-nige-calibration.js:42` select(helper:fetchAll)
   - `scripts/analysis/train-conditional-logit.js:95` select(helper:fetchAll)
@@ -1484,7 +1484,7 @@
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:142` select [race_date, race_id, start_time]
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:284` select [cancellation_status, race_id]
   - `scripts/analysis/race-stage-inventory.mjs:36` select(helper:fetchAllByRaceId)
-  - `scripts/analysis/redesign-volatility-by-venue.js:133` select [first_boat_avg_st, first_boat_motor_2rate, first_boat_win_rate, race_date, race_id, venue_code, volatility_score, win_rate_stddev]
+  - `scripts/analysis/redesign-volatility-by-venue.js:135` select [first_boat_avg_st, first_boat_motor_2rate, first_boat_win_rate, race_date, race_id, venue_code, volatility_score, win_rate_stddev]
   - `scripts/analysis/turn-prediction-venue-deep-analysis.js:109` select [first_boat_grade, first_boat_win_rate, race_date, race_grade, race_id, race_number, venue_code, volatility_level, volatility_score]
   - `scripts/analysis/verify-all-venues-label-accuracy.js:67` select [race_date, race_id, venue_code, volatility_score]
   - `scripts/analysis/verify-calculations.js:7` select [race_date, race_id]
