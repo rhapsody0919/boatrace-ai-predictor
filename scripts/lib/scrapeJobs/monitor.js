@@ -535,14 +535,16 @@ function livenessAlerts(row, def, now) {
     return [];
   }
   const last = row.last_tick_at ? new Date(row.last_tick_at) : null;
-  if (last && minutesBetween(now, last) < staleMin) return [];
-  return [
-    {
-      key: `liveness:${row.job}`,
-      kind: "liveness",
-      text: `起動の死活 ${row.job}: last_tick_at が${last ? `${Math.floor(minutesBetween(now, last))}分前（${toJstTimeString(last)}）` : "未記録"}。Cronの未配信か関数の障害の可能性`,
-    },
-  ];
+  if (!last || minutesBetween(now, last) >= staleMin) {
+    return [
+      {
+        key: `liveness:${row.job}`,
+        kind: "liveness",
+        text: `起動の死活 ${row.job}: last_tick_at が${last ? `${Math.floor(minutesBetween(now, last))}分前（${toJstTimeString(last)}）` : "未記録"}。Cronの未配信か関数の障害の可能性`,
+      },
+    ];
+  }
+  return [];
 }
 
 /**
