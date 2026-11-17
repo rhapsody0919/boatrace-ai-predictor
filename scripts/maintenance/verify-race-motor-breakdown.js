@@ -1008,7 +1008,7 @@ for (const table of ["venue_motor_stats", "race_conditions"]) {
   assert.equal(got90.rows[1].rate_source, "recalc");
   assert.equal(got90.rows[1].power_index !== null, true);
 }
-// 会場が分からなければ出走表の行だけ（材料を足さない）
+// 会場が分からなければ出走表の行だけ（材料を足さない）。C1（pure の3関数を通した行）は上の各場面の same で見る
 {
   const raceId = "2026-10-20-03-07";
   setTables(breakdownTables(raceId, { generationStart: "2026-10-06" }));
@@ -1016,9 +1016,5 @@ for (const table of ["venue_motor_stats", "race_conditions"]) {
     rows: entriesOf(raceId),
   });
 }
-check(
-  "C1 getRaceMotorBreakdown は pure の3関数を通した行を返す（偽の supabase の上で呼ぶ）",
-  () => {},
-);
 
 console.log(`✅ raceMotorBreakdown: ${count} 件の例を確認`);
