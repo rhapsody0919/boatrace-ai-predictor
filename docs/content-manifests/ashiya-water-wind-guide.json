@@ -1,0 +1,116 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "ashiya-water-wind-guide",
+ "kind": "new",
+ "ticket": "OC-20261117T100045-seo-human-1",
+ "paths": [
+  "public/blog/ashiya-water-wind-guide.md",
+  "src/data/blog-posts/ashiya-water-wind-guide.json"
+ ],
+ "files": {
+  "public/blog/ashiya-water-wind-guide.md": "b1deb793fc5ca581ca9fbfc67a1a4a1119d6f7a1f0ec616dba103347df2d7d90",
+  "src/data/blog-posts/ashiya-water-wind-guide.json": "d658cde7d85ec05cab8599c57ef8697bff5078e5ea650f9169be089e21260ea1"
+ },
+ "content_sha256": "68c900219f7d56756637eb1fe97e96b9c4f915b2b142ae5b3cef6bf8a7dc99d8",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "68c900219f7d56756637eb1fe97e96b9c4f915b2b142ae5b3cef6bf8a7dc99d8",
+   "model": "opus",
+   "at": "2026-11-17T10:08:21+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "68c900219f7d56756637eb1fe97e96b9c4f915b2b142ae5b3cef6bf8a7dc99d8",
+   "model": "opus",
+   "at": "2026-11-17T10:08:21+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 2,
+   "reviewed_sha256": "68c900219f7d56756637eb1fe97e96b9c4f915b2b142ae5b3cef6bf8a7dc99d8",
+   "model": "opus",
+   "at": "2026-11-17T10:08:21+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "68c900219f7d56756637eb1fe97e96b9c4f915b2b142ae5b3cef6bf8a7dc99d8",
+   "model": "opus",
+   "at": "2026-11-17T10:08:21+09:00"
+  }
+ ],
+ "evidence": [
+  {
+   "h2": "芦屋の1コースは直近1年で2,316レース中1,401回",
+   "evidence": [
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json",
+    "public/blog/venue-course1-win-rate-ranking.md"
+   ]
+  },
+  {
+   "h2": "風別の逃げ：追い風でも向かい風でも減った",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "scripts/analysis/analyze-weather-in-escape.js"
+   ]
+  },
+  {
+   "h2": "追い風で増えたのは差し",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "public/blog/tailwind-strength-sashi-by-venue.md"
+   ]
+  },
+  {
+   "h2": "向かい風で増えたのはまくりとまくり差し",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "public/blog/headwind-strength-makuri-by-venue.md",
+    "src/locales/ja/common.json"
+   ]
+  },
+  {
+   "h2": "画面の「イン逃げ率」は、進入1コースの1着率",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "src/locales/ja/common.json"
+   ]
+  },
+  {
+   "h2": "今日の芦屋では、風の行から展示の進入へ進む",
+   "evidence": [
+    "src/data/venueWaterProfiles.js",
+    "scripts/analysis/analyze-weather-in-escape.js",
+    "data/analysis/venue-course-win-rate/venue-course-win-rate.json"
+   ]
+  },
+  {
+   "h2": "数字の範囲と注意",
+   "evidence": [
+    "data/analysis/weather-in-escape.json",
+    "docs/design/weather-in-escape/results.md"
+   ]
+  }
+ ],
+ "sources": "表2〜表5: data/analysis/weather-in-escape.json#wind.venues.21（scripts/analysis/analyze-weather-in-escape.js、2020-02-01〜2026-09-30、公式K/Bファイルの解析）。分母は1コース艇・1着艇があり風を区分できた芦屋のレースを5区分に分けた各 n（計15,573、all.n と一致）、分子は techniques の各決まり手（各区分の6決まり手の和が n と一致）。割合は件数÷n×100 を小数1桁に1回だけ丸めた。方位の対応は同スクリプトの VENUE_WIND_OFFSET（芦屋 8）と windBin・tailwindAngle。検定: 弱い・横風を基準に4つの風×6決まり手の24組を1つの問い（線 約3.08、pooled の二標本比率検定。差ありとした比べは unpooled でも線を超える）。\n表1と枠なり: data/analysis/venue-course-win-rate/venue-course-win-rate.json#periods.12m（2025-10-20〜2026-10-19）。芦屋 2,316中 1コース1,401・2コース234、枠なりでない493、全国 55,414中 1コース30,732・2コース7,373。水質・干満差は src/data/venueWaterProfiles.js:35（公式の場データ 2026/06/30 現在）。",
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-11-17T10:09:58+09:00",
+ "run": "20261117T100045-seo-human",
+ "engine": "claude"
+}
