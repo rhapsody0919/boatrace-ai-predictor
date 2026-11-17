@@ -5376,7 +5376,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
+          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:77",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5812,7 +5812,7 @@
       "columns": {
         "prediction_id": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:77",
             "scripts/daily/scrape-results.js:1004",
             "scripts/daily/scrape-results.js:1026",
             "scripts/daily/scrape-results.js:1634",
@@ -5836,7 +5836,7 @@
             "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/find-missing-dates.js:32",
             "scripts/analysis/find-video-worthy-race.js:76",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:77",
             "scripts/analysis/verify-calculations.js:15",
             "scripts/daily-rule-tracking.js:129",
             "scripts/daily/generate-moriarty-recommendations.js:81",
@@ -5880,7 +5880,7 @@
             "scripts/analysis/analyze-upset-factors.js:134",
             "scripts/analysis/collect-venue-stats.js:231",
             "scripts/analysis/find-video-worthy-race.js:76",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:77",
             "scripts/analysis/verify-calculations.js:15",
             "scripts/daily-rule-tracking.js:129",
             "scripts/daily/generate-moriarty-recommendations.js:81",
@@ -6006,7 +6006,7 @@
             "scripts/analysis/analyze-upset-factors.js:134",
             "scripts/analysis/campaign-backtest-fetch-races.js:49",
             "scripts/analysis/find-video-worthy-race.js:76",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:84",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:77",
             "scripts/daily/generate-morning-digest.js:326",
             "scripts/daily/generate-unified-trifecta-reference.js:44",
             "scripts/daily/scrape-results.js:1004",
@@ -6296,7 +6296,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
+          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6662,7 +6662,7 @@
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/analysis/backtest-unified-model.js:116",
             "scripts/analysis/calibrate-unified-model.js:152",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:90",
             "scripts/analysis/verify-volatility-predictive-power.js:72",
             "scripts/daily/scrape-point-rank.js:368",
@@ -6702,7 +6702,7 @@
         },
         "weather": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/lib/analogyV16Exhibition.js:191"
           ],
           "writers": [],
@@ -6713,7 +6713,7 @@
         },
         "wind_direction": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/lib/analogyV16Exhibition.js:191",
             "scripts/ml/analogy/build-wind-basis.js:95"
           ],
@@ -6727,7 +6727,7 @@
           "readers": [
             "scripts/analysis/backtest-unified-model.js:116",
             "scripts/analysis/calibrate-unified-model.js:152",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:90",
             "scripts/analysis/verify-volatility-predictive-power.js:72",
             "scripts/lib/analogyV16Exhibition.js:191",
@@ -6743,7 +6743,7 @@
           "readers": [
             "scripts/analysis/backtest-unified-model.js:116",
             "scripts/analysis/calibrate-unified-model.js:152",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:131",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:90",
             "scripts/analysis/verify-volatility-predictive-power.js:72",
             "scripts/lib/analogyV16Exhibition.js:191"
@@ -7140,7 +7140,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
+          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:111",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8366,7 +8366,7 @@
             "scripts/analysis/find-missing-dates.js:31",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:87",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:111",
             "scripts/analysis/verify-race-analysis-rpc.js:120",
             "scripts/analysis/verify-race-analysis-rpc.js:141",
             "scripts/analysis/verify-race-analysis-rpc.js:188",
@@ -8489,7 +8489,7 @@
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:111",
             "scripts/analysis/verify-race-analysis-rpc.js:120",
             "scripts/analysis/verify-race-analysis-rpc.js:141",
             "scripts/analysis/verify-race-analysis-rpc.js:188",
@@ -8618,7 +8618,7 @@
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "scripts/analysis/collect-venue-stats.js:261",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:111",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
@@ -8660,7 +8660,7 @@
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "scripts/analysis/collect-venue-stats.js:261",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:125",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:111",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/analysis/verify-volatility-predictive-power.js:58",
             "scripts/daily/generate-unified-trifecta-reference.js:104",
@@ -10761,7 +10761,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:70",
+          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:62",
           "op": "select",
           "via": "client",
           "columns": [
@@ -10769,7 +10769,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
+          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:103",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11705,8 +11705,8 @@
             "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/redesign-volatility-by-venue.js:150",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:70",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:62",
             "scripts/analysis/verify-all-venues-label-accuracy.js:93",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-label-accuracy.js:94",
@@ -11790,7 +11790,7 @@
             "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/redesign-volatility-by-venue.js:150",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103",
             "scripts/analysis/verify-all-venues-label-accuracy.js:93",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-label-accuracy.js:94",
@@ -11848,7 +11848,7 @@
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
@@ -11887,7 +11887,7 @@
             "scripts/analysis/campaign-backtest-score.js:59",
             "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-poirot.js:73",
             "scripts/daily/calculate-venue-grade-stats.js:73",
@@ -12053,42 +12053,42 @@
         },
         "course_1": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117"
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103"
           ],
           "writers": [],
           "sql": []
         },
         "course_2": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117"
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103"
           ],
           "writers": [],
           "sql": []
         },
         "course_3": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117"
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103"
           ],
           "writers": [],
           "sql": []
         },
         "course_4": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117"
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103"
           ],
           "writers": [],
           "sql": []
         },
         "course_5": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117"
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103"
           ],
           "writers": [],
           "sql": []
         },
         "course_6": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117"
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103"
           ],
           "writers": [],
           "sql": []
@@ -12098,7 +12098,7 @@
             "scripts/analysis/analyze-upset-factors.js:119",
             "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/redesign-volatility-by-venue.js:150",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:117",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:103",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/scrape-results.js:1193",
@@ -15974,7 +15974,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
+          "ref": "scripts/analysis/turn-prediction-venue-deep-analysis.js:95",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17428,7 +17428,7 @@
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:284",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/analysis/redesign-volatility-by-venue.js:135",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:95",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
             "scripts/analysis/verify-calculations.js:7",
             "scripts/analysis/verify-label-accuracy.js:76",
@@ -17566,7 +17566,7 @@
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:142",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:78",
             "scripts/analysis/redesign-volatility-by-venue.js:135",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:95",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
             "scripts/analysis/verify-calculations.js:7",
             "scripts/analysis/verify-label-accuracy.js:76",
@@ -17663,7 +17663,7 @@
             "scripts/analysis/backtest-unified-model.js:109",
             "scripts/analysis/calibrate-unified-model.js:145",
             "scripts/analysis/redesign-volatility-by-venue.js:135",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:95",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
             "scripts/analysis/verify-label-accuracy.js:76",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:83",
@@ -17724,7 +17724,7 @@
         },
         "race_number": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:95",
             "scripts/daily/generate-morning-digest.js:133",
             "scripts/daily/scrape-results.js:1550",
             "scripts/lib/pitReportJob.js:290",
@@ -17826,7 +17826,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:106",
             "scripts/analysis/redesign-volatility-by-venue.js:135",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:95",
             "scripts/analysis/verify-all-venues-label-accuracy.js:67",
             "scripts/analysis/verify-label-accuracy.js:76"
           ],
@@ -17838,7 +17838,7 @@
         "volatility_level": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:106",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109"
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:95"
           ],
           "writers": [],
           "sql": []
@@ -17855,7 +17855,7 @@
         },
         "first_boat_grade": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109"
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:95"
           ],
           "writers": [],
           "sql": []
@@ -17864,7 +17864,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:106",
             "scripts/analysis/redesign-volatility-by-venue.js:135",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109"
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:95"
           ],
           "writers": [],
           "sql": []
@@ -17924,7 +17924,7 @@
         },
         "race_grade": {
           "readers": [
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:95",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/generate-morning-digest.js:133",
             "scripts/daily/scrape-point-rank.js:349",
