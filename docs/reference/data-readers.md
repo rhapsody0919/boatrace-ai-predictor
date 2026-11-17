@@ -770,7 +770,7 @@
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:180` select(helper:fetchAllByRaceId)
   - `scripts/analysis/turn-prediction-venue-deep-analysis.js:131` select [race_id, wave_height, weather, wind_direction, wind_speed]
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:98` select [race_id, wave_height, wind_speed]
-  - `scripts/analysis/verify-volatility-predictive-power.js:83` select [race_id, wave_height, wind_speed]
+  - `scripts/analysis/verify-volatility-predictive-power.js:72` select [race_id, wave_height, wind_speed]
   - `scripts/daily/generate-predictions.js:1300` select(helper:selectByRaceIds)
   - `scripts/daily/generate-unified-predictions.js:70` select(helper:fetchAll)
   - `scripts/daily/scrape-point-rank.js:368` select [race_id, series_day]
@@ -856,7 +856,7 @@
   - `scripts/analysis/verify-race-analysis-rpc.js:268` select [boat_number, race_id, racer_id]
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:134` select [boat_number, race_id, racer_id]
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:82` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
-  - `scripts/analysis/verify-volatility-predictive-power.js:69` select [boat_number, race_id, racer_id, win_rate]
+  - `scripts/analysis/verify-volatility-predictive-power.js:58` select [boat_number, race_id, racer_id, win_rate]
   - `scripts/daily/generate-moriarty-recommendations.js:122` select [ai_score_safe_bet, ai_score_standard, ai_score_upset_focus, boat_number, race_id]
   - `scripts/daily/generate-morning-digest.js:155` select [boat_number, grade, is_absent, motor_2rate, motor_number, player_name, race_id, racer_id]
   - `scripts/daily/generate-predictions.js:1035` select(helper:upsertChangedRows)
@@ -1133,7 +1133,7 @@
   - `scripts/analysis/backtest-course-rate-only.js:60` select(helper:fetchAll)
   - `scripts/analysis/backtest-unified-model.js:207` select(helper:fetchAll)
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:42` select(helper:all)
-  - `scripts/analysis/calculate-placement-distribution.js:36` select(helper:fetchAll)
+  - `scripts/analysis/calculate-placement-distribution.js:29` select(helper:fetchAll)
   - `scripts/analysis/calibrate-unified-model.js:127` select(helper:fetchAll)
   - `scripts/analysis/calibration-report.js:102` select(helper:fetchAll)
   - `scripts/analysis/campaign-backtest-score.js:59` select [payout_trifecta, payout_trio, race_id, rank1, rank2, rank3]
@@ -1159,7 +1159,7 @@
   - `scripts/analysis/verify-race-analysis-rpc.js:285` select [is_cancelled, is_no_race, payout_place_1, payout_place_2, payout_win, race_id, rank1, rank2]
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:151` select(helper:fetchInChunks)
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:61` select(helper:fetchAll)
-  - `scripts/analysis/verify-volatility-predictive-power.js:48` select(helper:fetchAll)
+  - `scripts/analysis/verify-volatility-predictive-power.js:42` select(helper:fetchAll)
   - `scripts/daily-rule-tracking.js:149` select [*, race_id]
   - `scripts/daily/calculate-accuracy.js:187` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-model-accuracy.js:74` select(helper:fetchAll)
@@ -1342,7 +1342,7 @@
   - `scripts/analysis/backtest-unified-model.js:126` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/analysis/calibrate-unified-model.js:177` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:108` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
-  - `scripts/analysis/verify-volatility-predictive-power.js:93` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
+  - `scripts/analysis/verify-volatility-predictive-power.js:87` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-predictions.js:553` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-unified-predictions.js:118` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-unified-trifecta-reference.js:117` select [avg_st, course_race_counts, racer_id, venue_code]
@@ -1491,7 +1491,7 @@
   - `scripts/analysis/verify-label-accuracy.js:72` select [race_date, race_id, venue_code, volatility_score]
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:79` select [race_date]
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:91` select [race_id, venue_code]
-  - `scripts/analysis/verify-volatility-predictive-power.js:76` select [race_id, venue_code]
+  - `scripts/analysis/verify-volatility-predictive-power.js:65` select [race_id, venue_code]
   - `scripts/daily/calculate-accuracy.js:178` select(helper:fetchAll)
   - `scripts/daily/calculate-venue-grade-stats.js:73` select [race_date, race_grade, race_id, venue_code]
   - `scripts/daily/generate-morning-digest.js:133` select [race_date, race_grade, race_id, race_number, start_time, venue_code]
