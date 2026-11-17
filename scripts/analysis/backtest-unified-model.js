@@ -181,24 +181,13 @@ function volatilityBucket(percentile) {
   return "高（穴）";
 }
 
-async function main() {
-  const { from, to, ev: EV_THRESHOLD } = parseArgs();
-  if (!supabase) {
-    console.error("Supabase未設定");
-    process.exit(1);
-  }
-
+function printBanner() {
   console.log("╔══════════════════════════════════════════════════════════╗");
   console.log("║   新AI予想モデル(unified) バックテスト                    ║");
   console.log("╚══════════════════════════════════════════════════════════╝\n");
+}
 
-  console.log("対象レース取得中...");
-  const oddsMap = await fetchTargetRaces(from, to);
-  const raceIds = [...oddsMap.keys()].sort();
-  console.log(
-    `  ${raceIds.length}件（trifecta_allが存在する期間: 2026-07-12〜）\n`,
-  );
-
+async function fetchResultMap(raceIds) {
   // race_idを大量にin()へ渡すとURLが長大化しfetchが失敗するためチャンク分割する
   const RACE_ID_CHUNK = 300;
   const resultRows = [];
@@ -211,15 +200,17 @@ async function main() {
     );
     resultRows.push(...rows);
   }
-  const resultMap = new Map(resultRows.map((r) => [r.race_id, r]));
+  return new Map(resultRows.map((r) => [r.race_id, r]));
+}
 
-  const racerStatsCache = new Map();
-
-  // 会場別に複合スコアの分布を作るため2パス構成: 1パス目でcomposite値を集める
-  const compositeByVenue = new Map();
+// 1パス目: 展開予測と荒れ度の複合値を、会場別の分布用に集める
+async function computeRaceComputations(
+  raceIds,
+  resultMap,
+  racerStatsCache,
+  compositeByVenue,
+) {
   const raceComputations = [];
-
-  console.log("展開予測・AIスコア算出中...");
   let processed = 0;
   for (const raceId of raceIds) {
     const result = resultMap.get(raceId);
@@ -252,80 +243,102 @@ async function main() {
     if (processed % 100 === 0)
       console.log(`  ${processed}/${raceIds.length}件処理...`);
   }
-  console.log(`  ${raceComputations.length}件を対象に集計\n`);
+  return raceComputations;
+}
 
-  console.log("11指標データ取得・AIスコア算出中...");
-  // v3（2026-08-12 EV閾値グリッドサーチ対応）: レース単位の計算結果を保存しておき、
-  // 複数のEV閾値・会場・荒れ度帯で1回のモデル計算から集計し直せるようにする
-  const raceResults = [];
+// v2（2026-08-12根本修正）: EVは combinedProbability（1着×2着×3着の同時確率）で算出する。
+// 旧実装は pattern.probability（1着確率のみ）を使っており、2着・3着の確からしさを
+// 無視していたため「EV最大1点」が「全パターン参考」より悪化する逆転結果を生んでいた
+function oddsCandidates(patterns, trifectaAll) {
+  return patterns
+    .filter((p) => p.first && p.second && p.third)
+    .map((p) => {
+      const combo = `${p.first}-${p.second}-${p.third}`;
+      const odds = trifectaAll[combo] ?? null;
+      return {
+        combo,
+        odds,
+        ev: odds != null ? odds * (p.combinedProbability ?? 0) : null,
+      };
+    })
+    .filter((c) => c.odds != null);
+}
 
-  let done = 0;
-  for (const {
+// 候補が無いレースは null（集計に含めない）
+async function buildRaceResult(
+  { raceId, result, ctx, turnPrediction, volatility },
+  oddsMap,
+  compositeByVenue,
+  racerStatsCache,
+) {
+  const indicatorData = await fetchRaceIndicatorData(
     raceId,
-    result,
-    ctx,
+    ctx.entriesForIndicator,
+  );
+  const { patterns } = calculateUnifiedScores(
+    ctx.players,
     turnPrediction,
-    volatility,
-  } of raceComputations) {
-    const indicatorData = await fetchRaceIndicatorData(
-      raceId,
-      ctx.entriesForIndicator,
-    );
-    const { patterns } = calculateUnifiedScores(
-      ctx.players,
-      turnPrediction,
-      indicatorData,
+    indicatorData,
+    racerStatsCache,
+  );
+
+  const trifectaAll = oddsMap.get(raceId) || {};
+  const candidates = oddsCandidates(patterns, trifectaAll);
+  if (candidates.length === 0) return null;
+
+  const actualTrio = `${result.rank1}-${result.rank2}-${result.rank3}`;
+  const best = candidates.reduce((a, b) => (b.ev > a.ev ? b : a));
+  const hit = best.combo === actualTrio;
+  const payout = hit ? result.payout_trio || 0 : 0;
+
+  const venueDist = compositeByVenue.get(ctx.venueCode) || [];
+  const percentile = toVolatilityPercentile(volatility.composite, venueDist);
+  const bucket = volatilityBucket(percentile);
+
+  return {
+    venueCode: ctx.venueCode,
+    bucket,
+    best,
+    hit,
+    payout,
+    candidates,
+    actualTrio,
+    allPayout: result.payout_trio || 0,
+  };
+}
+
+// v3（2026-08-12 EV閾値グリッドサーチ対応）: レース単位の計算結果を保存しておき、
+// 複数のEV閾値・会場・荒れ度帯で1回のモデル計算から集計し直せるようにする
+async function buildRaceResults(
+  raceComputations,
+  oddsMap,
+  compositeByVenue,
+  racerStatsCache,
+) {
+  const raceResults = [];
+  let done = 0;
+  for (const comp of raceComputations) {
+    const raceResult = await buildRaceResult(
+      comp,
+      oddsMap,
+      compositeByVenue,
       racerStatsCache,
     );
-
-    const trifectaAll = oddsMap.get(raceId) || {};
-    // v2（2026-08-12根本修正）: EVは combinedProbability（1着×2着×3着の同時確率）で算出する。
-    // 旧実装は pattern.probability（1着確率のみ）を使っており、2着・3着の確からしさを
-    // 無視していたため「EV最大1点」が「全パターン参考」より悪化する逆転結果を生んでいた
-    const candidates = patterns
-      .filter((p) => p.first && p.second && p.third)
-      .map((p) => {
-        const combo = `${p.first}-${p.second}-${p.third}`;
-        const odds = trifectaAll[combo] ?? null;
-        return {
-          combo,
-          odds,
-          ev: odds != null ? odds * (p.combinedProbability ?? 0) : null,
-        };
-      })
-      .filter((c) => c.odds != null);
-
-    if (candidates.length === 0) {
+    if (raceResult === null) {
       done += 1;
       continue;
     }
-
-    const actualTrio = `${result.rank1}-${result.rank2}-${result.rank3}`;
-    const best = candidates.reduce((a, b) => (b.ev > a.ev ? b : a));
-    const hit = best.combo === actualTrio;
-    const payout = hit ? result.payout_trio || 0 : 0;
-
-    const venueDist = compositeByVenue.get(ctx.venueCode) || [];
-    const percentile = toVolatilityPercentile(volatility.composite, venueDist);
-    const bucket = volatilityBucket(percentile);
-
-    raceResults.push({
-      venueCode: ctx.venueCode,
-      bucket,
-      best,
-      hit,
-      payout,
-      candidates,
-      actualTrio,
-      allPayout: result.payout_trio || 0,
-    });
+    raceResults.push(raceResult);
 
     done += 1;
     if (done % 100 === 0)
       console.log(`  ${done}/${raceComputations.length}件処理...`);
   }
+  return raceResults;
+}
 
-  // === EV閾値グリッドサーチ（全体） ===
+// === EV閾値グリッドサーチ（全体） ===
+function printEvGrid(raceResults) {
   const EV_GRID = [0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0];
   console.log("\n=== EV閾値別 全体集計 ===");
   for (const threshold of EV_GRID) {
@@ -335,8 +348,10 @@ async function main() {
     }
     console.log(`EV>=${String(threshold).padStart(4)}: ${fmt(acc)}`);
   }
+}
 
-  // 以降の会場別・荒れ度帯別・全体サマリーは --ev で指定した閾値（デフォルト1.0）を使う
+// 以降の会場別・荒れ度帯別・全体サマリーは --ev で指定した閾値（デフォルト1.0）を使う
+function summarizeByThreshold(raceResults, EV_THRESHOLD) {
   const overall = { best: newAcc(), filtered: newAcc(), allPatterns: newAcc() };
   const byVenue = new Map();
   const byBucket = new Map();
@@ -358,7 +373,10 @@ async function main() {
     if (!byBucket.has(r.bucket)) byBucket.set(r.bucket, newAcc());
     if (r.best.ev >= EV_THRESHOLD) add(byBucket.get(r.bucket), r.hit, r.payout);
   }
+  return { overall, byVenue, byBucket };
+}
 
+function printSummary({ overall, byVenue, byBucket }, EV_THRESHOLD) {
   console.log("\n=== 全体 ===");
   console.log(`EV最大1点（フィルタなし、常に何か買う）: ${fmt(overall.best)}`);
   console.log(
@@ -380,6 +398,52 @@ async function main() {
     const acc = byBucket.get(bucket) || newAcc();
     console.log(`${bucket}: ${fmt(acc)}`);
   }
+}
+
+async function main() {
+  const { from, to, ev: EV_THRESHOLD } = parseArgs();
+  if (!supabase) {
+    console.error("Supabase未設定");
+    process.exit(1);
+  }
+
+  printBanner();
+
+  console.log("対象レース取得中...");
+  const oddsMap = await fetchTargetRaces(from, to);
+  const raceIds = [...oddsMap.keys()].sort();
+  console.log(
+    `  ${raceIds.length}件（trifecta_allが存在する期間: 2026-07-12〜）\n`,
+  );
+
+  const resultMap = await fetchResultMap(raceIds);
+
+  const racerStatsCache = new Map();
+
+  // 会場別に複合スコアの分布を作るため2パス構成: 1パス目でcomposite値を集める
+  const compositeByVenue = new Map();
+
+  console.log("展開予測・AIスコア算出中...");
+  const raceComputations = await computeRaceComputations(
+    raceIds,
+    resultMap,
+    racerStatsCache,
+    compositeByVenue,
+  );
+  console.log(`  ${raceComputations.length}件を対象に集計\n`);
+
+  console.log("11指標データ取得・AIスコア算出中...");
+  const raceResults = await buildRaceResults(
+    raceComputations,
+    oddsMap,
+    compositeByVenue,
+    racerStatsCache,
+  );
+
+  printEvGrid(raceResults);
+
+  const summary = summarizeByThreshold(raceResults, EV_THRESHOLD);
+  printSummary(summary, EV_THRESHOLD);
 
   console.log("\n完了");
 }
