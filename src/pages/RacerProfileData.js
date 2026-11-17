@@ -4,9 +4,9 @@ import { getRacerScopedRaceStats } from "../services/racerQueries2.js";
 import {
   getRacerPageData,
   getRacerStats,
-  getRacerCurrentMotorStatus,
   getRacerAllPeriodStats,
-} from "../services/racerService";
+} from "../services/racerQueries5.js";
+import { getRacerCurrentMotorStatus } from "../services/motorQueries7.js";
 import { errorMessageOf } from "../utils/errorMessage.js";
 import { NOT_FOUND_PAGE_DATA } from "./RacerProfileMeta.js";
 
