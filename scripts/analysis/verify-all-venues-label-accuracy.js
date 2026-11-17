@@ -55,6 +55,157 @@ function getVolatilityLevelNew(score, venueCode) {
   return "high";
 }
 
+// ページネーション対応でデータ取得
+async function fetchAllRaces(formattedDate) {
+  const allRaces = [];
+  let offset = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data: pageRaces, error: racesError } = await supabase
+      .from("races")
+      .select("race_id, race_date, venue_code, volatility_score")
+      .gte("race_date", formattedDate)
+      .not("volatility_score", "is", null)
+      .order("race_date", { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    if (racesError) throw racesError;
+    if (!pageRaces || pageRaces.length === 0) {
+      hasMore = false;
+    } else {
+      allRaces.push(...pageRaces);
+      offset += pageSize;
+      hasMore = pageRaces.length === pageSize;
+    }
+  }
+  return allRaces;
+}
+
+// race_resultsを小分けにして取得（URIが大きくなりすぎないようにする）
+async function fetchResultMap(raceIds) {
+  const allResults = [];
+  const chunkSize = 200;
+  for (let i = 0; i < raceIds.length; i += chunkSize) {
+    const chunk = raceIds.slice(i, i + chunkSize);
+    const { data: pageResults, error: resultsError } = await supabase
+      .from("race_results")
+      .select("race_id, rank1")
+      .in("race_id", chunk);
+
+    if (resultsError) throw resultsError;
+    if (pageResults) {
+      allResults.push(...pageResults);
+    }
+  }
+
+  const resultMap = {};
+  if (allResults) {
+    allResults.forEach((r) => {
+      resultMap[r.race_id] = r.rank1;
+    });
+  }
+  return resultMap;
+}
+
+function tallyLabel(buckets, label, isWin) {
+  const bucket =
+    label === "low"
+      ? buckets.low
+      : label === "medium"
+        ? buckets.medium
+        : buckets.high;
+  bucket.count++;
+  if (isWin) bucket.wins++;
+}
+
+function winRate(bucket) {
+  return bucket.count > 0 ? bucket.wins / bucket.count : 0;
+}
+
+function analyzeVenue(venueCode, venueRaces, resultMap) {
+  const oldBuckets = {
+    low: { count: 0, wins: 0 },
+    medium: { count: 0, wins: 0 },
+    high: { count: 0, wins: 0 },
+  };
+  const newBuckets = {
+    low: { count: 0, wins: 0 },
+    medium: { count: 0, wins: 0 },
+    high: { count: 0, wins: 0 },
+  };
+
+  for (const race of venueRaces) {
+    const score = race.volatility_score;
+    const rank1 = resultMap[race.race_id];
+    const isWin = rank1 === 1;
+
+    const oldLabel = getVolatilityLevelOld(score, venueCode);
+    const newLabel = getVolatilityLevelNew(score, venueCode);
+
+    tallyLabel(oldBuckets, oldLabel, isWin);
+    tallyLabel(newBuckets, newLabel, isWin);
+  }
+
+  const oldLowRate = winRate(oldBuckets.low);
+  const newLowRate = winRate(newBuckets.low);
+  const oldMedRate = winRate(oldBuckets.medium);
+  const newMedRate = winRate(newBuckets.medium);
+  const oldHighRate = winRate(oldBuckets.high);
+  const newHighRate = winRate(newBuckets.high);
+
+  const improvement = newLowRate - oldLowRate;
+  const oldTrend =
+    oldLowRate > oldMedRate && oldMedRate > oldHighRate ? "✅" : "⚠️";
+  const newTrend =
+    newLowRate > newMedRate && newMedRate > newHighRate ? "✅" : "⚠️";
+
+  return {
+    oldLow: oldBuckets.low,
+    newLow: newBuckets.low,
+    row: {
+      code: venueCode,
+      name: VENUE_NAMES[venueCode],
+      rate: VENUE_1COURSE_WIN_RATE[venueCode],
+      oldLowRate,
+      newLowRate,
+      improvement,
+      oldTrend,
+      newTrend,
+    },
+  };
+}
+
+function printVenueRow(v) {
+  const improvementMark =
+    v.improvement > 0.03 ? "🟢" : v.improvement > 0 ? "🟡" : "🔴";
+  console.log(
+    `| ${v.code}:${v.name} | ${v.rate.toFixed(2)} | ${(v.oldLowRate * 100).toFixed(1)}% | ${(v.newLowRate * 100).toFixed(1)}% | ${improvementMark}${(v.improvement * 100).toFixed(1)}pt | ${v.oldTrend}→${v.newTrend} |`,
+  );
+}
+
+function printTotals(totals) {
+  console.log();
+  const totalOldRate = winRate({
+    wins: totals.oldLowWins,
+    count: totals.oldLowCount,
+  });
+  const totalNewRate = winRate({
+    wins: totals.newLowWins,
+    count: totals.newLowCount,
+  });
+
+  console.log(`\n📊 全体:
+
+旧計算 Low: ${(totalOldRate * 100).toFixed(1)}% (${totals.oldLowWins}勝 / ${totals.oldLowCount}レース)
+新計算 Low: ${(totalNewRate * 100).toFixed(1)}% (${totals.newLowWins}勝 / ${totals.newLowCount}レース)
+
+✅ 動的閾値により、ラベルの信頼性が向上しました
+
+${"=".repeat(120)}\n`);
+}
+
 async function verifyAllVenues(daysBack = 90) {
   try {
     console.log(`\n${"=".repeat(120)}`);
@@ -65,30 +216,7 @@ async function verifyAllVenues(daysBack = 90) {
     startDate.setDate(startDate.getDate() - daysBack);
     const formattedDate = startDate.toISOString().split("T")[0];
 
-    // ページネーション対応でデータ取得
-    const allRaces = [];
-    let offset = 0;
-    const pageSize = 1000;
-    let hasMore = true;
-
-    while (hasMore) {
-      const { data: pageRaces, error: racesError } = await supabase
-        .from("races")
-        .select("race_id, race_date, venue_code, volatility_score")
-        .gte("race_date", formattedDate)
-        .not("volatility_score", "is", null)
-        .order("race_date", { ascending: false })
-        .range(offset, offset + pageSize - 1);
-
-      if (racesError) throw racesError;
-      if (!pageRaces || pageRaces.length === 0) {
-        hasMore = false;
-      } else {
-        allRaces.push(...pageRaces);
-        offset += pageSize;
-        hasMore = pageRaces.length === pageSize;
-      }
-    }
+    const allRaces = await fetchAllRaces(formattedDate);
 
     if (allRaces.length === 0) {
       console.log(`❌ データなし`);
@@ -96,29 +224,7 @@ async function verifyAllVenues(daysBack = 90) {
     }
 
     const raceIds = allRaces.map((r) => r.race_id);
-
-    // race_resultsを小分けにして取得（URIが大きくなりすぎないようにする）
-    const allResults = [];
-    const chunkSize = 200;
-    for (let i = 0; i < raceIds.length; i += chunkSize) {
-      const chunk = raceIds.slice(i, i + chunkSize);
-      const { data: pageResults, error: resultsError } = await supabase
-        .from("race_results")
-        .select("race_id, rank1")
-        .in("race_id", chunk);
-
-      if (resultsError) throw resultsError;
-      if (pageResults) {
-        allResults.push(...pageResults);
-      }
-    }
-
-    const resultMap = {};
-    if (allResults) {
-      allResults.forEach((r) => {
-        resultMap[r.race_id] = r.rank1;
-      });
-    }
+    const resultMap = await fetchResultMap(raceIds);
 
     const completedRaces = allRaces.filter((r) => r.race_id in resultMap);
 
@@ -129,10 +235,12 @@ async function verifyAllVenues(daysBack = 90) {
     console.log(`| 会場 | 勝率 | 旧: Low着率 | 新: Low着率 | 改善 | 傾向 |`);
     console.log(`|------|------|-----------|-----------|--------|------|`);
 
-    let totalOldLowWins = 0;
-    let totalOldLowCount = 0;
-    let totalNewLowWins = 0;
-    let totalNewLowCount = 0;
+    const totals = {
+      oldLowWins: 0,
+      oldLowCount: 0,
+      newLowWins: 0,
+      newLowCount: 0,
+    };
 
     const venueResults = [];
 
@@ -143,111 +251,26 @@ async function verifyAllVenues(daysBack = 90) {
 
       if (venueRaces.length === 0) continue;
 
-      const oldLowResults = { count: 0, wins: 0 };
-      const newLowResults = { count: 0, wins: 0 };
-      const oldMedResults = { count: 0, wins: 0 };
-      const newMedResults = { count: 0, wins: 0 };
-      const oldHighResults = { count: 0, wins: 0 };
-      const newHighResults = { count: 0, wins: 0 };
+      const { oldLow, newLow, row } = analyzeVenue(
+        venueCode,
+        venueRaces,
+        resultMap,
+      );
 
-      for (const race of venueRaces) {
-        const score = race.volatility_score;
-        const rank1 = resultMap[race.race_id];
-        const isWin = rank1 === 1;
+      totals.oldLowWins += oldLow.wins;
+      totals.oldLowCount += oldLow.count;
+      totals.newLowWins += newLow.wins;
+      totals.newLowCount += newLow.count;
 
-        const oldLabel = getVolatilityLevelOld(score, venueCode);
-        const newLabel = getVolatilityLevelNew(score, venueCode);
-
-        if (oldLabel === "low") {
-          oldLowResults.count++;
-          if (isWin) oldLowResults.wins++;
-        } else if (oldLabel === "medium") {
-          oldMedResults.count++;
-          if (isWin) oldMedResults.wins++;
-        } else {
-          oldHighResults.count++;
-          if (isWin) oldHighResults.wins++;
-        }
-
-        if (newLabel === "low") {
-          newLowResults.count++;
-          if (isWin) newLowResults.wins++;
-        } else if (newLabel === "medium") {
-          newMedResults.count++;
-          if (isWin) newMedResults.wins++;
-        } else {
-          newHighResults.count++;
-          if (isWin) newHighResults.wins++;
-        }
-      }
-
-      const oldLowRate =
-        oldLowResults.count > 0 ? oldLowResults.wins / oldLowResults.count : 0;
-      const newLowRate =
-        newLowResults.count > 0 ? newLowResults.wins / newLowResults.count : 0;
-
-      const oldMedRate =
-        oldMedResults.count > 0 ? oldMedResults.wins / oldMedResults.count : 0;
-      const newMedRate =
-        newMedResults.count > 0 ? newMedResults.wins / newMedResults.count : 0;
-
-      const oldHighRate =
-        oldHighResults.count > 0
-          ? oldHighResults.wins / oldHighResults.count
-          : 0;
-      const newHighRate =
-        newHighResults.count > 0
-          ? newHighResults.wins / newHighResults.count
-          : 0;
-
-      const improvement = newLowRate - oldLowRate;
-      const oldTrend =
-        oldLowRate > oldMedRate && oldMedRate > oldHighRate ? "✅" : "⚠️";
-      const newTrend =
-        newLowRate > newMedRate && newMedRate > newHighRate ? "✅" : "⚠️";
-
-      totalOldLowWins += oldLowResults.wins;
-      totalOldLowCount += oldLowResults.count;
-      totalNewLowWins += newLowResults.wins;
-      totalNewLowCount += newLowResults.count;
-
-      venueResults.push({
-        code: venueCode,
-        name: VENUE_NAMES[venueCode],
-        rate: VENUE_1COURSE_WIN_RATE[venueCode],
-        oldLowRate,
-        newLowRate,
-        improvement,
-        oldTrend,
-        newTrend,
-      });
+      venueResults.push(row);
     }
 
     // 会場コード順でソート
     venueResults.sort((a, b) => parseInt(a.code) - parseInt(b.code));
 
-    venueResults.forEach((v) => {
-      const improvementMark =
-        v.improvement > 0.03 ? "🟢" : v.improvement > 0 ? "🟡" : "🔴";
-      console.log(
-        `| ${v.code}:${v.name} | ${v.rate.toFixed(2)} | ${(v.oldLowRate * 100).toFixed(1)}% | ${(v.newLowRate * 100).toFixed(1)}% | ${improvementMark}${(v.improvement * 100).toFixed(1)}pt | ${v.oldTrend}→${v.newTrend} |`,
-      );
-    });
+    venueResults.forEach(printVenueRow);
 
-    console.log();
-    const totalOldRate =
-      totalOldLowCount > 0 ? totalOldLowWins / totalOldLowCount : 0;
-    const totalNewRate =
-      totalNewLowCount > 0 ? totalNewLowWins / totalNewLowCount : 0;
-
-    console.log(`\n📊 全体:
-
-旧計算 Low: ${(totalOldRate * 100).toFixed(1)}% (${totalOldLowWins}勝 / ${totalOldLowCount}レース)
-新計算 Low: ${(totalNewRate * 100).toFixed(1)}% (${totalNewLowWins}勝 / ${totalNewLowCount}レース)
-
-✅ 動的閾値により、ラベルの信頼性が向上しました
-
-${"=".repeat(120)}\n`);
+    printTotals(totals);
   } catch (err) {
     console.error(`❌ エラー: ${err.message}`);
     process.exit(1);
