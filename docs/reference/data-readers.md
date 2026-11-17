@@ -455,7 +455,7 @@
 - 本体で読む RPC: data_health_table_rows
 - 取得のジョブ: pcexpect
 - 読み手（1）: 
-  - `scripts/maintenance/check-morning-init-shadow.js:238` select [payload, race_date, race_no, scraped_at, source, venue_code]
+  - `scripts/maintenance/check-morning-init-shadow.js:254` select [payload, race_date, race_no, scraped_at, source, venue_code]
 - 書き手（1）: 
   - `scripts/daily/scrape-pcexpect.js:176` upsert [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: id, race_start_at, created_at, updated_at
@@ -885,7 +885,7 @@
   - `scripts/maintenance/backfill-race-entries-racer-id.js:101` select(helper:fetchAllPaged)
   - `scripts/maintenance/backfill-racer-ids.js:128` select [boat_number, race_id, racer_id]
   - `scripts/maintenance/build-races-derived-backfill-sql.js:157` select(helper:fetchAll)
-  - `scripts/maintenance/check-morning-init-shadow.js:152` select [age, boat_number, boat_number_id, grade, motor_number, race_id, racer_id]
+  - `scripts/maintenance/check-morning-init-shadow.js:121` select [age, boat_number, boat_number_id, grade, motor_number, race_id, racer_id]
   - `scripts/maintenance/check-pre-race-shadow.js:299` select(helper:fetchByRaceIds)
   - `scripts/maintenance/delete-phantom-race-days.js:112` select [boat_number, race_id, racer_id]
   - `scripts/maintenance/fix-opening-day-entries-from-b.js:290` select(helper:fetchAll)
@@ -1563,8 +1563,8 @@
   - `scripts/maintenance/backfill-start-timings.js:223` select [race_date, race_id, race_number, venue_code]
   - `scripts/maintenance/build-races-derived-backfill-sql.js:106` select(helper:fetchAll)
   - `scripts/maintenance/check-exhibition-gap-rate.js:39` select(helper:fetchAll)
-  - `scripts/maintenance/check-morning-init-shadow.js:144` select [cancellation_status, race_id, start_time]
-  - `scripts/maintenance/check-morning-init-shadow.js:211` select(embed) [cancellation_status, start_time]
+  - `scripts/maintenance/check-morning-init-shadow.js:113` select [cancellation_status, race_id, start_time]
+  - `scripts/maintenance/check-morning-init-shadow.js:279` select(embed) [cancellation_status, start_time]
   - `scripts/maintenance/check-odds-shadow.js:142` select(embed) [cancellation_status, start_time]
   - `scripts/maintenance/check-pre-race-shadow.js:255` select(embed) [cancellation_status, start_time]
   - `scripts/maintenance/check-pre-race-shadow.js:311` select(helper:fetchByRaceIds)
@@ -1681,7 +1681,7 @@
   - `scripts/lib/scrapeJobs/monitor.js:717` select [*]
   - `scripts/lib/scrapeJobs/store.js:86` select [*, job]
   - `scripts/lib/scrapeJobs/store.js:286` select [?, job]
-  - `scripts/maintenance/check-morning-init-shadow.js:107` select [consecutive_failures, cursor, job, last_error, last_success_at, mode]
+  - `scripts/maintenance/check-morning-init-shadow.js:197` select [consecutive_failures, cursor, job, last_error, last_success_at, mode]
   - `scripts/maintenance/check-scrape-monitor-liveness.js:139` select [consecutive_failures, job, last_error, last_success_at, last_target_date, last_tick_at, mode]
   - `scripts/maintenance/verify-gha-skip-gate.js:1354` rest(rest) （検査）
   - `scripts/sns/push-research-image.js:717` rest(rest) [job, last_report]
@@ -1714,7 +1714,7 @@
   - `scripts/lib/scrapeJobs/monitor.js:727` select [?]
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select [job, race_date, race_id]
   - `scripts/lib/scrapeJobs/resultHandlers.js:316` select [job, race_date, race_id, status]
-  - `scripts/maintenance/check-morning-init-shadow.js:211` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
+  - `scripts/maintenance/check-morning-init-shadow.js:279` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
   - `scripts/maintenance/check-odds-shadow.js:142` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
   - `scripts/maintenance/check-pre-race-shadow.js:255` select [attempts, done_at, first_attempt_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, rows_written, run_mode, status]
   - `scripts/maintenance/check-result-shadow.js:125` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
