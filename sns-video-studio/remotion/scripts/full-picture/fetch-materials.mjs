@@ -21,8 +21,8 @@ import {
   buildMeetResults,
   getRecentRaces,
   computeFrameEntryDistribution,
-} from "../../../../src/components/race/basicInfoStats.js";
-import { computeWakuNariRate } from "../../../../src/components/race/courseGridStats.js";
+} from "../../../../src/pure/basicInfoStats.js";
+import { computeWakuNariRate } from "../../../../src/pure/courseGridStats.js";
 import { buildRacerRaceHistoryRows } from "../../../../src/services/racerRaceHistoryRows.js";
 import { aggregateRacerConditionStats, RACER_CONDITION_MIN_RUNS } from "../../../../src/utils/racerConditionStats.js";
 import { computeAccidentStats, currentPeriodRange } from "../../../../src/utils/accidentRate.js";

@@ -17,8 +17,8 @@ import {
   normalizeStage,
   pointsNeededForBorder,
   SCORE_POINTS,
-} from "../components/race/seriesPoints.js";
-import { finishPositionOf } from "../components/race/basicInfoStats.js";
+} from "../pure/seriesPoints.js";
+import { finishPositionOf } from "../pure/basicInfoStats.js";
 
 /** 節ページの対象グレード */
 export const MEET_PAGE_GRADES = ["SG", "G1", "G2"];

@@ -8,7 +8,7 @@
  *
  * scripts/ 側の分析・検証でだけ使う。画面側は `getMeetScoreboard` が表示中レースの
  * 節だけを引くので、節の切り出し自体が要らない。予選の締めの判定は
- * `src/components/race/seriesPoints.js` の `prelimEndRaceIdOf` を共有する
+ * `src/pure/seriesPoints.js` の `prelimEndRaceIdOf` を共有する
  * （同じ判定を2つ持たない。BOA-457）。
  *
  * 節内のグルーピングは `src/utils/meetGrouping.js` の `groupIntoCurrentMeet`
@@ -16,7 +16,7 @@
  * **全期間の全節を列挙する**ためのもの。
  */
 import { parseRaceId } from "../../src/utils/raceId.js";
-import { prelimEndRaceIdOf } from "../../src/components/race/seriesPoints.js";
+import { prelimEndRaceIdOf } from "../../src/pure/seriesPoints.js";
 
 /**
  * `race_conditions` の行を節ごとにまとめる。
@@ -27,51 +27,12 @@ import { prelimEndRaceIdOf } from "../../src/components/race/seriesPoints.js";
  *   prelimEndRaceId: string|null}>}
  */
 export function buildMeets(conds) {
-  const byVenue = new Map();
-  for (const row of conds) {
-    const parsed = parseRaceId(row.race_id);
-    if (!parsed) continue;
-    if (!byVenue.has(parsed.venueCode)) byVenue.set(parsed.venueCode, []);
-    byVenue.get(parsed.venueCode).push(row);
-  }
+  const byVenue = groupByVenue(conds);
 
   const meets = [];
   for (const [venueCode, rows] of byVenue) {
     rows.sort((a, b) => a.race_id.localeCompare(b.race_id));
-    // 日ごとに畳んでから、series_day が増えていない日を節の始まりとする
-    const days = new Map();
-    for (const row of rows) {
-      const d = row.race_id.slice(0, 10);
-      if (!days.has(d)) days.set(d, []);
-      days.get(d).push(row);
-    }
-    let current = null;
-    let prevDay = null;
-    for (const [d, dayRows] of [...days.entries()].sort()) {
-      const seriesDay = dayRows.find((r) => r.series_day != null)?.series_day;
-      const prevFinal = prevDay?.some((r) => r.is_final_day) ?? false;
-      // series_day が無い日（実データで0.4%）は日付の連続で判定する。
-      // **同じ日目が翌日に続くのは順延で、節の続き**（BOA-506）。公式は丸一日中止の
-      // 翌日に同じ日目を振り直す（江戸川・戸田 9/21→22 が 4→4、津 9/22→23 が 2→2）。
-      // 以前は `<=` で新しい節にしていて、中止の日で節を2つに割り、前半の予選の締めを
-      // 早い日で確定させていた。日付が空いた同値は、従来どおり別の節とする
-      const last = current?.lastSeriesDay ?? 0;
-      const isNewMeet =
-        current === null ||
-        prevFinal ||
-        (seriesDay != null &&
-          (seriesDay < last ||
-            (seriesDay === last && !isNextDay(current.dates.at(-1), d)))) ||
-        (seriesDay == null && !isNextDay(current.dates.at(-1), d));
-      if (isNewMeet) {
-        current = { venueCode, dates: [], rows: [], lastSeriesDay: null };
-        meets.push(current);
-      }
-      current.dates.push(d);
-      current.rows.push(...dayRows);
-      if (seriesDay != null) current.lastSeriesDay = seriesDay;
-      prevDay = dayRows;
-    }
+    splitVenueIntoMeets(venueCode, rows, meets);
   }
 
   for (const m of meets) {
@@ -79,6 +40,71 @@ export function buildMeets(conds) {
     m.prelimEndRaceId = prelimEndRaceIdOf(m.rows);
   }
   return meets;
+}
+
+/** 会場コードごとに行をまとめる（race_id を解釈できない行は捨てる） */
+function groupByVenue(conds) {
+  const byVenue = new Map();
+  for (const row of conds) {
+    const parsed = parseRaceId(row.race_id);
+    if (!parsed) continue;
+    if (!byVenue.has(parsed.venueCode)) byVenue.set(parsed.venueCode, []);
+    byVenue.get(parsed.venueCode).push(row);
+  }
+  return byVenue;
+}
+
+/** 日（race_id の先頭10字）ごとに行をまとめる */
+function groupByDay(rows) {
+  const days = new Map();
+  for (const row of rows) {
+    const d = row.race_id.slice(0, 10);
+    if (!days.has(d)) days.set(d, []);
+    days.get(d).push(row);
+  }
+  return days;
+}
+
+/**
+ * 1会場の行（race_id 昇順）を節に切り、`meets` へ足す。
+ * 日ごとに畳んでから、series_day が増えていない日を節の始まりとする
+ */
+function splitVenueIntoMeets(venueCode, rows, meets) {
+  const days = groupByDay(rows);
+  let current = null;
+  let prevDay = null;
+  for (const [d, dayRows] of [...days.entries()].sort()) {
+    const seriesDay = dayRows.find((r) => r.series_day != null)?.series_day;
+    const prevFinal = prevDay?.some((r) => r.is_final_day) ?? false;
+    if (isNewMeetStart(current, prevFinal, seriesDay, d)) {
+      current = { venueCode, dates: [], rows: [], lastSeriesDay: null };
+      meets.push(current);
+    }
+    current.dates.push(d);
+    current.rows.push(...dayRows);
+    if (seriesDay != null) current.lastSeriesDay = seriesDay;
+    prevDay = dayRows;
+  }
+}
+
+/**
+ * この日が新しい節の始まりか。
+ * series_day が無い日（実データで0.4%）は日付の連続で判定する。
+ * **同じ日目が翌日に続くのは順延で、節の続き**（BOA-506）。公式は丸一日中止の
+ * 翌日に同じ日目を振り直す（江戸川・戸田 9/21→22 が 4→4、津 9/22→23 が 2→2）。
+ * 以前は `<=` で新しい節にしていて、中止の日で節を2つに割り、前半の予選の締めを
+ * 早い日で確定させていた。日付が空いた同値は、従来どおり別の節とする
+ */
+function isNewMeetStart(current, prevFinal, seriesDay, d) {
+  const last = current?.lastSeriesDay ?? 0;
+  return (
+    current === null ||
+    prevFinal ||
+    (seriesDay != null &&
+      (seriesDay < last ||
+        (seriesDay === last && !isNextDay(current.dates.at(-1), d)))) ||
+    (seriesDay == null && !isNextDay(current.dates.at(-1), d))
+  );
 }
 
 /**

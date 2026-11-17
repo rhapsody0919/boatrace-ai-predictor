@@ -7,6 +7,7 @@ import {
   buildBaseline,
   checkAgainstBaseline,
   checkBaselineShrink,
+  substantiveLineNumbers,
   unitsOfSource,
 } from "./sizeBaselines.js";
 
@@ -112,6 +113,49 @@ r = check(baseline, [
   { file: "src/b.js", source: `${BIG}${filler(401)}\n`, isNew: true },
 ]);
 ok(r.errors.length === 1, "基準の単位の行を除いても 400 を越える新しいファイル→赤");
+
+// 旗の後の既存ファイル（案A）: 実質の行が 400 を越え、base から増えたときだけ赤
+const HUGE = `import { a } from "./a.js";\n${filler(450)}\n`;
+const gate = (source, baseSource) =>
+  check(baseline, [{ file: "src/h.js", source, isNew: false, baseSource }], true);
+r = gate(HUGE.replace('"./a.js"', '"./b.js"'), HUGE);
+ok(r.errors.length === 0, `旗の後 import 1行の差し替え→緑（${verdict(r)}）`);
+r = gate(`${HUGE}export const more = 1;\n`, HUGE);
+ok(r.errors.length === 1, `旗の後 1行足す→赤（${verdict(r)}）`);
+r = gate(
+  `${HUGE.replace("export const k0 = 0;", "export const k0 = 0; // 長い説明")}export const more = 1;\n`,
+  `${HUGE.replace("export const k0 = 0;", "// 説明1\n// 説明2\nexport const k0 = 0;")}`,
+);
+ok(r.errors.length === 1, `旗の後 コメントを削って処理を足す→赤（${verdict(r)}）`);
+r = gate(`${HUGE}\n\n// コメントだけ足す\n`, HUGE);
+ok(r.errors.length === 0, `旗の後 空行・コメントだけ足す→緑（${verdict(r)}）`);
+r = gate(HUGE, filler(100));
+ok(r.errors.length === 1, `小さいファイルが 400 を越える→赤（${verdict(r)}）`);
+r = gate(HUGE, null);
+ok(r.errors.length === 1, `base に無い（oldFile も無い）ファイルが 400 超→赤（${verdict(r)}）`);
+
+// 基準を持つ単位（BIG の 120 行）は数えない。境界は 400 行ちょうどが緑・401 が赤
+const withBig = (n) => `${BIG}${filler(n)}\n`;
+r = gate(withBig(400), filler(100));
+ok(r.errors.length === 0, `基準の単位を除いて 400 行ちょうど→緑（${verdict(r)}）`);
+r = gate(withBig(401), filler(100));
+ok(r.errors.length === 1, `基準の単位を除いて 401 行→赤（${verdict(r)}）`);
+r = gate(withBig(391), withBig(390));
+ok(r.errors.length === 0, `基準の単位を除くと 400 以内（生の行なら越える）→緑（${verdict(r)}）`);
+r = gate(HUGE, null);
+ok(r.errors[0]?.includes("base の なし から"), "base に無いときの文に「なし」が出る");
+r = gate(`${HUGE}export const more = 1;\n`, HUGE);
+ok(r.errors[0]?.includes("base の 451 から"), "赤の文に base の実質の行（451）が出る");
+
+r = gate(`${filler(400)}\n${BIG}`, filler(100));
+ok(r.errors.length === 0, `基準の単位がファイルの末尾にあっても 400 行ちょうど→緑（${verdict(r)}）`);
+r = gate(HUGE, "// コメントだけ\n");
+ok(r.errors[0]?.includes("base の 0 から"), "base の実質が 0 行でも「0」と出る（なし と区別）");
+
+ok(
+  substantiveLineNumbers("/* c */x\n\n// d\ny;\n").join() === "1,4",
+  "実質の行: コメントの直後の1字も数える・空行とコメントだけの行は除く",
+);
 
 const spaced = BIG.replace(/\n {2}/g, "\n\n    /* コメント */\n      ");
 ok(

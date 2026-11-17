@@ -3,7 +3,7 @@ import {
   pickPeriodStats,
   periodDiff,
   periodDiffShownFrom,
-} from "../basicInfoStats";
+} from "../../../pure/basicInfoStats.js";
 import { slashDatePadded } from "./format";
 
 // 差の色: 勝率・2連対率とも高いほど良い。上がった＝緑、下がった＝赤

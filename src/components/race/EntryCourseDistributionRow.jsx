@@ -3,7 +3,7 @@ import { BOAT_COLORS } from "../../utils/colors";
 import {
   computeFrameEntryDistribution,
   SMALL_SAMPLE_THRESHOLD,
-} from "./basicInfoStats";
+} from "../../pure/basicInfoStats.js";
 
 // 前づけ%を目立たせる下限。これ未満は「たまに動く」程度として通常表示にする
 const MOVED_IN_EMPHASIS_RATE = 10;

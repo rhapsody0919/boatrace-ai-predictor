@@ -2,7 +2,7 @@
 import {
   buildCourseRows,
   COURSE_RATE_MIN_ENTRIES,
-} from "../../utils/racerOfficialPeriodStats.js";
+} from "./racerOfficialPeriodStats.js";
 
 import { buildTodayCourseRows } from "./courseGridStats.js";
 

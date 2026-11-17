@@ -14,7 +14,7 @@ import { compositeOdds, latestSnapshotWith } from "./oddsMath.js";
 import { wilsonInterval } from "./wilson.js";
 import { getRaceStageKey } from "../constants/raceStageConfig.js";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy.js";
-import { SMALL_SAMPLE_THRESHOLD } from "../components/race/basicInfoStats.js";
+import { SMALL_SAMPLE_THRESHOLD } from "../pure/basicInfoStats.js";
 
 // ---- 優勝戦・準優勝戦（D-36 (4)・D-37）----
 

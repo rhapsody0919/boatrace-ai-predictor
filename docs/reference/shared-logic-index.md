@@ -18,6 +18,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
+| `src/pure/basicInfoStats.js` | basicInfoStats - 「基本情報」タブ（BOA-306）のクライアント側集計ユーティリティ | currentTermStart, recordsBeforeRace, filterRecords, computeRates, getRecentRaces ほか28件 |
+| `src/pure/courseGridStats.js` | — | buildCourseGrid, getCourseRecentRuns, buildTodayCourseRows, computeWakuNariRate, buildCourse1LossBreakdown ほか3件 |
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
 | `src/pure/favorites.js` | キャッシュの全削除で消さない端末内のユーザー保存。 | parseFavorites, serializeFavorites, toggleRacer, toggleVenue, FAVORITES_KEY ほか1件 |
 | `src/pure/finishPosition.js` | レース内順位の判定（純関数）。 | finishPositionOf |
@@ -36,9 +38,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
 | `src/pure/racerCareerStats.js` | — | isCareerFinalStage, isCareerStart, careerFinishPoints, careerWinRate, isCareerFinalAppearance ほか2件 |
 | `src/pure/racerModel.js` | — | makeRacer, makeRacerSeriesPoint |
+| `src/pure/racerOfficialPeriodStats.js` | — | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか3件 |
 | `src/pure/scheduleModel.js` | — | makeDigestDay, makeDigestRow |
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
 | `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか35件 |
+| `src/pure/sixBoatCourseStats.js` | 6艇の想定コース別成績（公式の直近3期、BOA-1291）。取得・表示は呼び出し側で行う。 | periodsBefore, buildSixBoatCourseRows, buildSixBoatLocalRows, SIX_BOAT_WARN_ENTRIES |
 | `src/pure/snsPostText.js` | — | buildPostText |
 | `src/pure/venueModel.js` | — | makeVenue |
 
@@ -370,7 +374,6 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/racerConditionStats.js` | — | tallyWinPlaceShow, aggregateRacerConditionStats, STRONG_WIND_MS, RACER_CONDITION_MIN_RUNS |
 | `src/utils/racerIndexPolicy.js` | 選手ページ（/racer/:racerId）を検索エンジンにインデックスさせるかの判定（集客レーン、2026-10-02）。 | isRacerIndexable, RACER_INDEX_GRADES, RACER_INDEX_ACTIVE_DAYS |
 | `src/utils/racerName.js` | 出走表の選手名（「丹下」「将」の間を全角スペース3つで詰めた表記）を姓と名に分ける。 | splitRacerName, formatRacerKana |
-| `src/utils/racerOfficialPeriodStats.js` | 選手ページの「公式の期別成績」と「進入コース別成績（公式）」の表示用の値を作る（純関数、GS00）。 | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか3件 |
 | `src/utils/racerPagePath.js` | 選手ページの「STの推移」のアンカー（BOA-879） | ST_TREND_ID, racerPagePath |
 | `src/utils/racerStats.js` | 予想バッチが保存する racerStats（predictions.feature_contributions.racerStats）を、 | toWakuRacerStats |
 | `src/utils/racerVenueBoatStats.js` | 選手ページの会場×枠番×グレード×レース種別の絞り込み集計（純関数、BOA-1244）。 | toReturnRate, racerHistoryCutoff, aggregateRacerVenueBoatStats |
@@ -463,4 +466,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 421 ファイル / export 2410 件。
+対象 424 ファイル / export 2455 件。

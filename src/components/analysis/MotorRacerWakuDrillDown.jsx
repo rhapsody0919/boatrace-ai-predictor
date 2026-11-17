@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import DrillDownHeader from "./DrillDownHeader";
-import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
+import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
 import { formatRateOrCount } from "../../utils/smallSampleRate";
 import "./MotorConditionChart.css";
 

@@ -40,7 +40,7 @@ import DrillDownHeader from "./DrillDownHeader";
 import MotorWakuStatsGrid from "./MotorWakuStatsGrid";
 import MotorRacerWakuDrillDown from "./MotorRacerWakuDrillDown";
 import InlineFetchError from "../InlineFetchError";
-import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
+import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
 import { formatPowerIndex, powerIndexTone } from "../../utils/smallSampleRate";
 import { getTodayJST } from "../../utils/dateUtils";
 import {

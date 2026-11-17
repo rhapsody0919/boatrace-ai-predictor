@@ -20,15 +20,38 @@
  * 4. 4言語の文言キーと、禁止語を使っていないこと
  */
 
+import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dataLayerCall, readDataLayerSource } from "./dataLayerSource.js";
+import {
+  createFakeSupabase,
+  registerFakeServiceSupabase,
+  setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
+import {
+  NONE,
+  OFFICIAL_POSITIVE_DAY,
+  OFFICIAL_ZERO_DAY,
+  OWN12,
+  RACE,
+  VENUE,
+  breakdownTables,
+  freshTables,
+  oldGenerationTables,
+  rows3,
+} from "./verifyData/motor-fresh-rate.js";
 import {
   motorRateView,
   motorRate3View,
   isWithinFreshMotorWindow,
 } from "../../src/utils/motorFreshRate.js";
+import {
+  section1,
+  section2,
+  section3,
+  section4,
+} from "./verifyData/motor-fresh-rate-sections.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -165,7 +188,6 @@ check(
 
 // ---- 3. ソース ----
 const chart = read("src/components/analysis/MotorConditionChart.jsx");
-const service = readDataLayerSource();
 check(
   "一覧の2連率の列は motorRateView、過去レースの3連率は motorRate3View で決める",
   chart.includes("breakdown.map(motorRateView)") &&
@@ -196,71 +218,81 @@ check(
   chart.includes("row.generation_power_index"),
 );
 check(
-  "サービス: 自前の値は「このレースより前」、前の節までの走数は節の初日より前で数える",
-  new RegExp(
-    String.raw`${dataLayerCall("getMotorPowerIndex")}venueCode, r\.motor_number, 90, raceId\)`,
-  ).test(service) &&
-    /getMotorPowerIndex\(\s*venueCode,\s*r\.motor_number,\s*90,\s*meetStart,?\s*\)/.test(
-      service,
-    ),
-);
-check(
-  "サービス: 最初の節の確認は、入れ替えから90日以内でこのレースに公式0の艇があるときだけ（セルフレビュー）",
-  /fresh && official\.some\(\(v\) => v === 0\)\s*\?\s*isAllOfficialMotorRateZero\(/.test(
-    service,
-  ),
-);
-check(
-  "サービス: 一覧のキャッシュの版を上げた（v10 には自前の値の列が無い）",
-  service.includes("`race-motor-breakdown-v11-") &&
-    !service.includes("`race-motor-breakdown-v10-"),
-);
-check(
   "サービス: 材料が取れなかったら保存しない（fetchFailed）",
   /fresh\.failed\s*\n?\s*\?\s*\{ rows: merged, freshness: fresh\.freshness, fetchFailed: true \}/.test(
     read("src/pure/raceMotorBreakdown.js"),
   ),
 );
 
-// ---- 4. 文言 ----
-const KEYS = [
-  "freshNotRun",
-  "freshZeroRuns",
-  "freshOwnMark",
-  "freshOwnExplain",
-  "freshOwnExplainBoat",
-  "freshOwnHint",
-  "freshPriorRuns",
-  "freshFirstMeetBanner",
-  "officialModeSourceNoteFresh",
-  "freshRate2Header",
-];
-const BANNED = /数える|似た|似ている|ふつう|いつも|競艇|tally|tallied/i;
-for (const lang of ["ja", "en", "zh-TW", "ko"]) {
-  const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
-    .motor;
-  check(
-    `${lang}: BOA-830 の文言キーが揃い、禁止語を使っていない`,
-    KEYS.every((k) => typeof motor[k] === "string" && !BANNED.test(motor[k])),
-  );
-  check(
-    `${lang}: 「集計前」の印のキーを消した`,
-    motor.officialPendingBadge === undefined &&
-      motor.officialPendingNote === undefined,
-  );
-}
-const ja = JSON.parse(read("src/locales/ja/common.json")).analysis.motor;
-check(
-  "ja: ユーザー決定の文言のまま",
-  ja.freshNotRun === "まだ走っていません" &&
-    ja.freshZeroRuns === "0%（{{n}}走）" &&
-    ja.freshOwnExplain ===
-      "公式の2連率がまだ出ていないモーターです。このレースより前の、この場での走り（{{n}}走）から出した2連率です" &&
-    ja.freshPriorRuns === "前の節までの走り（{{n}}走）で出た数字" &&
-    ja.freshRate2Header === "2連率（節時点）" &&
-    ja.freshFirstMeetBanner ===
-      "{{venue}}は{{month}}月{{day}}日にモーターが新しくなりました。公式の2連率は次の節から入ります。それまでは、龍神レーダーがこの場での走りから出した数字を出します",
-);
+// ---- サービス層を偽の supabase クライアントの上で呼ぶ（BOA-1675。共通の部品 verifyData/fakeServiceSupabase.js） ----
+registerFakeServiceSupabase();
+// サービス層のキャッシュは localStorage にも書く。Node には無いので、メモリの Map で代える（setTables で空にする）
+const localStore = new Map();
+globalThis.localStorage = {
+  getItem: (k) => localStore.get(k) ?? null,
+  setItem: (k, v) => void localStore.set(k, String(v)),
+  removeItem: (k) => void localStore.delete(k),
+  key: (i) => [...localStore.keys()][i] ?? null,
+  get length() {
+    return localStore.size;
+  },
+};
+
+// ---- 3b. サービス（getRaceMotorFreshness・getRaceMotorBreakdown を偽の supabase の上で呼ぶ） ----
+const fakeTables = {};
+const failTables = new Map();
+const fake = setFakeSupabase(createFakeSupabase(fakeTables, { failTables }));
+const { clearCache } = await import("../../src/services/core.js");
+const { getRaceMotorFreshness } =
+  await import("../../src/services/motorQueries2.js");
+const { getRaceMotorBreakdown } =
+  await import("../../src/services/motorQueries3.js");
+const setTables = (next) => {
+  for (const k of Object.keys(fakeTables)) delete fakeTables[k];
+  Object.assign(fakeTables, next);
+  failTables.clear();
+  localStore.clear();
+  clearCache();
+  fake.calls.length = 0;
+};
+const queriesOn = (table) => fake.calls.filter((c) => c.table === table);
+const quiet = async (fn) => {
+  // 失敗の再現中の console.error を静かにする
+  const orig = console.error;
+  console.error = () => {};
+  try {
+    return await fn();
+  } finally {
+    console.error = orig;
+  }
+};
+
+const ctx = {
+  NONE,
+  OFFICIAL_POSITIVE_DAY,
+  OFFICIAL_ZERO_DAY,
+  OWN12,
+  RACE,
+  VENUE,
+  assert,
+  breakdownTables,
+  check,
+  failTables,
+  freshTables,
+  getRaceMotorBreakdown,
+  getRaceMotorFreshness,
+  localStore,
+  oldGenerationTables,
+  queriesOn,
+  quiet,
+  read,
+  rows3,
+  setTables,
+};
+await section1(ctx);
+await section2(ctx);
+await section3(ctx);
+await section4(ctx);
 
 if (failures.length > 0) {
   console.error(`\n${failures.length}件失敗`);

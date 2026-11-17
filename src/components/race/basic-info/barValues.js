@@ -2,7 +2,7 @@ import {
   filterRecords,
   computeRates,
   SMALL_SAMPLE_THRESHOLD,
-} from "../basicInfoStats";
+} from "../../../pure/basicInfoStats.js";
 import { bestOf } from "../../../utils/bestOf";
 
 export const findOfficialRow = (officialRates, boatNumber) =>

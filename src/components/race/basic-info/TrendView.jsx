@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../../../hooks/useLocalizedPath";
 import RecentRunsTable from "../RecentRunsTable";
-import { getRecentRaces, recordsBeforeRace } from "../basicInfoStats";
+import { getRecentRaces, recordsBeforeRace } from "../../../pure/basicInfoStats.js";
 
 // 「直近◯走」の件数。今節タブ（FR-3）と内容が重なりすぎたため5→10にした
 // （2026-09-26ユーザーフィードバック。今節は節の区切りで、こちらは節をまたぐ流れを見る）

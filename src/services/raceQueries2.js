@@ -2,7 +2,7 @@
 // 本体の字下げは元のまま。手で直すときは普通の関数として直してよい
 
 import { supabase } from "./supabaseClient";
-import { officialPeriodOf } from "../components/race/basicInfoStats.js";
+import { officialPeriodOf } from "../pure/basicInfoStats.js";
 import { toWakuRacerStats } from "../utils/racerStats.js";
 import { fetchAllByIn, withCache } from "./core.js";
 import { raceOddsCacheTtl } from "./raceQueries.js";

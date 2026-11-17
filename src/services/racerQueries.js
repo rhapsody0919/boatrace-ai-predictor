@@ -2,7 +2,7 @@
 // 本体の字下げは元のまま。手で直すときは普通の関数として直してよい
 
 import { supabase } from "./supabaseClient";
-import { officialPeriodOf } from "../components/race/basicInfoStats.js";
+import { officialPeriodOf } from "../pure/basicInfoStats.js";
 import { fetchAllPages } from "./fetchAllPages.js";
 import { FETCH_ALL_BY_IN_ORDER, fetchAllByIn, withCache } from "./core.js";
 
@@ -239,7 +239,7 @@ export function getRacerOfficialAvgSt(racerId, date) {
 
 /**
  * 選手ページの公式の期別成績・進入コース別成績（GS00）用に、racer_period_stats の全期を取る。
- * 1選手あたり最大15行（2019年後期〜）。表示用の整形は src/utils/racerOfficialPeriodStats.js
+ * 1選手あたり最大15行（2019年後期〜）。表示用の整形は src/pure/racerOfficialPeriodStats.js
  */
 export function getRacerAllPeriodStats(racerId) {
     const courseCols = [1, 2, 3, 4, 5, 6]

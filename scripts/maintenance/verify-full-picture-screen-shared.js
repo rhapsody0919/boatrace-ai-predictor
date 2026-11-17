@@ -6,7 +6,8 @@
  * 材料（sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs）からも使う（画面と投稿の数字が食い違わないため）。
  * 移す前の関数と 3,000 通りの乱数の入力で値が一致することを確かめてから移した。ここでは移した後の形を固定する。
  *
- *   1. サービス層が3つの純関数を import し、整形の写しを持たない（二重の実装に戻らない）
+ *   1. 材料が3つの純関数を import する。サービス層は同じ純関数と同じ値を返し、整形の写しを持たない（二重の実装に戻らない。
+ *      RA42: 本文の正規表現から、偽の supabase クライアントの上でサービスの公開の入口を呼ぶ試験へ置き換えた。末尾の 5）
  *   2. buildRacerRaceHistoryRows（getRacerRaceHistory）: 使えない結果・会場の無い走を除く、raceId の昇順、
  *      着欄の記号の走は unranked、進入は本番STの進入→Kファイルの順、ST順位は F を除く
  *   3. groupLosingTechniqueRows（getLosingTechniqueStats）: 枠ごとにまとめ、last_updated は先頭の行
@@ -17,7 +18,18 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import {
+  createFakeSupabase,
+  installLocalStorage,
+  registerFakeServiceSupabase,
+  setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
+import {
+  LOSING_ROWS,
+  ORIGINAL_EXHIBITION_TABLES,
+  R,
+  historyInput,
+} from "./verifyData/full-picture-screen-shared.js";
 import {
   buildRacerRaceHistoryRows,
   isUnrankedFinishMark,
@@ -29,7 +41,9 @@ import {
 } from "../../src/utils/originalExhibition.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const service = readDataLayerSource();
+
+registerFakeServiceSupabase();
+
 const materials = fs.readFileSync(
   path.join(
     __dirname,
@@ -45,13 +59,6 @@ for (const [name, from] of [
   ["shapeOriginalExhibition", "originalExhibition.js"],
 ]) {
   assert.match(
-    service,
-    new RegExp(
-      `import \\{ ${name} \\} from "[./]+(utils/)?${from.replace(".", "\\.")}"`,
-    ),
-    `サービス層が ${name} を import する`,
-  );
-  assert.match(
     materials,
     new RegExp(
       `import \\{ ${name}[ ,][^}]*\\} from "[./]+src/(services|utils)/${from.replace(".", "\\.")}"`,
@@ -59,116 +66,8 @@ for (const [name, from] of [
     `材料が ${name} を import する`,
   );
 }
-assert.doesNotMatch(
-  service,
-  /payoutPlace1: result\.payout_place_1/,
-  "サービス層に出走履歴の整形の写しが無い",
-);
-assert.doesNotMatch(
-  service,
-  /technique: row\.losing_technique/,
-  "サービス層に負けの決まり手のまとめの写しが無い",
-);
-assert.doesNotMatch(
-  service,
-  /const ORIGINAL_EXHIBITION_KINDS|const measured = values\.filter/,
-  "サービス層にオリジナル展示の整形の写しが無い",
-);
-
 // 2. 出走履歴の行
-const result = (race_id, over = {}) => ({
-  race_id,
-  rank1: 1,
-  rank2: 2,
-  rank3: 3,
-  rank4: 4,
-  rank5: 5,
-  rank6: 6,
-  race_status: null,
-  winning_technique: "逃げ",
-  payout_win: 150,
-  payout_place_1: 110,
-  payout_place_2: 130,
-  actual_course_1: 1,
-  actual_course_2: 3,
-  actual_course_3: 2,
-  actual_course_4: 4,
-  actual_course_5: 5,
-  actual_course_6: 6,
-  ...over,
-});
-const R = [
-  "2026-10-02-01-01",
-  "2026-10-01-01-01",
-  "2026-10-03-02-01",
-  "2026-10-04-02-01",
-];
-const rows = buildRacerRaceHistoryRows({
-  entries: [
-    { race_id: R[0], boat_number: 2 },
-    { race_id: R[1], boat_number: 1 },
-    { race_id: R[2], boat_number: 3 },
-    { race_id: R[3], boat_number: 1 },
-  ],
-  raceRows: [
-    { race_id: R[0], venue_code: 1, race_grade: "ippan" },
-    { race_id: R[1], venue_code: 1, race_grade: null },
-    { race_id: R[2], venue_code: null },
-    { race_id: R[3], venue_code: 2, race_grade: "G1" },
-  ],
-  // R[3] は不成立（race_status=no_race、使えない結果）
-  resultRows: [
-    result(R[0]),
-    result(R[1], { rank1: 3, rank2: 2, rank3: 4 }),
-    result(R[2]),
-    result(R[3], { race_status: "no_race" }),
-  ],
-  exhibitionRows: [{ race_id: R[0], boat_number: 2, exhibition_time: 6.71 }],
-  conditionRows: [
-    {
-      race_id: R[0],
-      race_stage: "予選",
-      race_title: "x杯",
-      weather: "晴",
-      wind_speed: 5,
-      wave_height: 3,
-    },
-  ],
-  stRows: [
-    {
-      race_id: R[0],
-      boat_number: 1,
-      start_timing: 0.1,
-      is_flying: false,
-      finish_mark: "1",
-      entry_course: 1,
-    },
-    {
-      race_id: R[0],
-      boat_number: 2,
-      start_timing: 0.15,
-      is_flying: false,
-      finish_mark: "2",
-      entry_course: null,
-    },
-    {
-      race_id: R[0],
-      boat_number: 3,
-      start_timing: 0.02,
-      is_flying: true,
-      finish_mark: "F",
-      entry_course: 3,
-    },
-    {
-      race_id: R[1],
-      boat_number: 1,
-      start_timing: null,
-      is_flying: false,
-      finish_mark: "転",
-      entry_course: 1,
-    },
-  ],
-});
+const rows = buildRacerRaceHistoryRows(historyInput);
 assert.deepEqual(
   rows.map((r) => r.raceId),
   [R[1], R[0]],
@@ -322,5 +221,106 @@ assert.deepEqual(ORIGINAL_EXHIBITION_KINDS, [
   "まわり足",
   "直線",
 ]);
+
+// 5. サービス層（領域の Queries の公開の入口）を偽の supabase クライアントの上で呼ぶ。画面は材料と同じ純関数の値を返し、
+//    整形の写しを持たない（写しが別の値を作れば、上の 2〜4 で固定した純関数の値と食い違って落ちる）
+// 出走履歴: 2 の入力を、選手の窓（730日）の中の日付へ付け替えて表に置く（窓は今日から数えるので、固定の日付だと期限が来る）
+const today = new Date().toISOString().slice(0, 10);
+const addDays = (ymd, days) => {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+// R の日付の昇順に、今日の3〜6日前を割り当てる（並びを保つ）
+const sortedDates = [...new Set(R.map((id) => id.slice(0, 10)))].sort();
+let remapped = JSON.stringify(historyInput);
+for (const id of R) {
+  const newDate = addDays(today, -6 + sortedDates.indexOf(id.slice(0, 10)));
+  remapped = remapped.replaceAll(id, `${newDate}${id.slice(10)}`);
+}
+const serviceInput = JSON.parse(remapped);
+const SERVICE_RACER = 4201;
+setFakeSupabase(
+  createFakeSupabase({
+    race_entries: [
+      ...serviceInput.entries.map((e) => ({ ...e, racer_id: SERVICE_RACER })),
+      // 別の選手の走は返さない
+      {
+        race_id: serviceInput.entries[0].race_id,
+        boat_number: 5,
+        racer_id: SERVICE_RACER + 1,
+      },
+    ],
+    races: serviceInput.raceRows,
+    race_results: serviceInput.resultRows,
+    exhibition_data: serviceInput.exhibitionRows,
+    race_conditions: serviceInput.conditionRows,
+    race_start_timings: serviceInput.stRows,
+    losing_technique_stats: LOSING_ROWS,
+    ...ORIGINAL_EXHIBITION_TABLES,
+  }),
+);
+// サービス層のキャッシュは localStorage にも書く。Node には無いので、何も残さない物を置く
+installLocalStorage();
+const { clearCache } = await import("../../src/services/core.js");
+const { getRacerRaceHistory } =
+  await import("../../src/services/racerQueries2.js");
+const { getLosingTechniqueStats } =
+  await import("../../src/services/venueQueries2.js");
+const { getRaceOriginalExhibition } =
+  await import("../../src/services/raceQueries4.js");
+
+clearCache();
+const screenRows = await getRacerRaceHistory(SERVICE_RACER);
+assert.deepEqual(
+  screenRows,
+  buildRacerRaceHistoryRows(serviceInput),
+  "getRacerRaceHistory は buildRacerRaceHistoryRows と同じ値（別の選手の走・使えない結果・会場の無い走を含めて）",
+);
+assert.equal(screenRows.length, 2, "使えない結果・会場の無い走を除いた2走");
+assert.equal(screenRows[1].entryCourse, 3, "進入は本番STの進入→Kファイルの順");
+
+clearCache();
+const screenLosing = await getLosingTechniqueStats(1);
+const sharedLosing = groupLosingTechniqueRows(
+  LOSING_ROWS.filter((r) => r.venue_code === 1),
+);
+assert.equal(screenLosing.venue_code, 1);
+assert.equal(screenLosing.venue_name, "桐生");
+assert.equal(screenLosing.last_updated, sharedLosing.last_updated);
+assert.deepEqual(
+  screenLosing.data,
+  sharedLosing.data,
+  "getLosingTechniqueStats は groupLosingTechniqueRows と同じ値（別の会場の行を含めない）",
+);
+assert.deepEqual(screenLosing.data[1].techniques, [
+  { technique: "差し", count: 30, percentage: 37.5 },
+  { technique: "まくり", count: 20, percentage: 25 },
+]);
+assert.equal(screenLosing.data[3], undefined, "別の会場の枠は無い");
+
+clearCache();
+assert.deepEqual(
+  await getRaceOriginalExhibition("ox-1"),
+  {
+    state: "published",
+    capturedAt: "2026-10-25T05:00:00Z",
+    kinds: ["直線", "一周"],
+    byBoat: { 1: { 一周: 37.21, 直線: 7.01 }, 2: { まわり足: 5.5 } },
+  },
+  "getRaceOriginalExhibition は shapeOriginalExhibition と同じ値（別のレースの値を含めない）",
+);
+clearCache();
+assert.deepEqual(
+  await getRaceOriginalExhibition("ox-3"),
+  {
+    state: "empty",
+    capturedAt: null,
+    kinds: [],
+    byBoat: {},
+    fetchFailed: true,
+  },
+  "ヘッダも値も無いレースは empty",
+);
 
 console.log("verify-full-picture-screen-shared: OK");
