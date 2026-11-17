@@ -5,6 +5,7 @@ import {
   TECHNIQUE_ROWS,
   getCellValue,
 } from "../../utils/attackDefenseCells";
+import { buildExamples } from "./AttackDefenseTableLogic";
 
 // セルの値の計算は src/utils/attackDefenseCells.js（全貌動画の材料と同じ値を出すため）
 
@@ -24,100 +25,6 @@ function renderCellValue(val) {
     }
   }
   return val;
-}
-
-const TECH_LABEL_KEYS = {
-  sashi: {
-    defense: "attackDefense.sashiDefense",
-    attack: "attackDefense.sashiAttack",
-  },
-  makuri: {
-    defense: "attackDefense.makuriDefense",
-    attack: "attackDefense.makuriAttack",
-  },
-  makurizashi: {
-    defense: "attackDefense.makurizashiDefense",
-    attack: "attackDefense.makurizashiAttack",
-  },
-};
-
-// 実データから凡例の例文を生成
-function buildExamples(sorted, t) {
-  const examples = [];
-
-  // 1コースの防御例（差され/まくられ/捲差されで回数>0のもの）
-  const c1 = sorted[0];
-  if (c1) {
-    const counts = c1.wakuRaceCounts?.["1"];
-    const total = counts?.total || 0;
-    const wins = counts?.wins || 0;
-    const losses = total - wins;
-    const defDist = c1.defenseDistribution?.["1"];
-    if (defDist && losses > 0 && total > 0) {
-      for (const tech of ["sashi", "makuri", "makurizashi"]) {
-        const rate = defDist[tech];
-        if (rate && rate > 0) {
-          const count = Math.round(rate * losses);
-          if (count > 0) {
-            const label = t(TECH_LABEL_KEYS[tech].defense);
-            examples.push({
-              title: t("attackDefense.exampleDefenseTitle", {
-                label,
-                count,
-                total,
-              }),
-              desc: t("attackDefense.exampleDefenseDesc", {
-                count,
-                total,
-                attackLabel: t(TECH_LABEL_KEYS[tech].attack),
-              }),
-            });
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  // 2-6コースの攻撃例（差し/まくり/まくり差しで回数>0のもの）
-  for (let i = 1; i < sorted.length; i++) {
-    const s = sorted[i];
-    const waku = s.boatNumber;
-    const wakuStr = String(waku);
-    const counts = s.wakuRaceCounts?.[wakuStr];
-    const wins = counts?.wins || 0;
-    const total = counts?.total || 0;
-    const atkDist = s.attackDistribution?.[wakuStr];
-    if (!atkDist || !wins || !total) continue;
-
-    for (const tech of ["sashi", "makuri", "makurizashi"]) {
-      const rate = atkDist[tech];
-      if (rate && rate > 0) {
-        const count = Math.round(rate * wins);
-        if (count > 0) {
-          const label = t(TECH_LABEL_KEYS[tech].attack);
-          examples.push({
-            title: t("attackDefense.exampleAttackTitle", {
-              waku,
-              label,
-              count,
-              total,
-            }),
-            desc: t("attackDefense.exampleAttackDesc", {
-              waku,
-              label,
-              count,
-              total,
-            }),
-          });
-          break;
-        }
-      }
-    }
-    if (examples.length >= 2) break;
-  }
-
-  return examples;
 }
 
 function RowLabel({ row }) {
