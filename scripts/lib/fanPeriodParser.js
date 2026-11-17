@@ -324,13 +324,8 @@ function splitRecords(bytes) {
   return recs.filter((r) => r.length > 0);
 }
 
-/**
- * fanファイル（LZH展開後のバイト列）を全項目の中間形式にする。
- * @param {Uint8Array} bytes
- * @param {{id: string, source?: object}} opts id は fan{YYMM}
- */
-export function parseFanFile(bytes, { id, source = null }) {
-  const hint = parseFanId(id);
+/** レコードを順に読む。読めない・登番重複は anomalies に残す */
+function readFanRecords(bytes) {
   const anomalies = [];
   const records = [];
   const seen = new Set();
@@ -356,7 +351,11 @@ export function parseFanFile(bytes, { id, source = null }) {
     seen.add(record.racer_id);
     records.push(record);
   }
+  return { records, anomalies, layouts };
+}
 
+/** 最多の期を返す。期が混在すれば anomalies に足す（1ファイル=1期） */
+function detectPeriod(records, anomalies) {
   // 全レコードで年・期・算出期間が一致すること（1ファイル=1期）
   const keyOf = (r) =>
     `${r.period_year}|${r.period_no}|${r.calc_from}|${r.calc_to}`;
@@ -371,7 +370,7 @@ export function parseFanFile(bytes, { id, source = null }) {
       problem: `期の異なるレコードが混在しています: ${JSON.stringify([...counts])}`,
     });
   const main = records.find((r) => keyOf(r) === mainKey) ?? null;
-  const period = main
+  return main
     ? {
         year: main.period_year,
         no: main.period_no,
@@ -379,6 +378,10 @@ export function parseFanFile(bytes, { id, source = null }) {
         calc_to: main.calc_to,
       }
     : null;
+}
+
+/** ファイル名（公開年月）と期の対応を確かめる。食い違えば anomalies に足す */
+function checkPeriodAgainstFileName(period, hint, id, anomalies) {
   // ファイル名（公開年月）と期の対応: 04月分=その年の2期（算出 11/1〜4/30）、10月分=翌年の1期（算出 5/1〜10/31）
   if (period) {
     const expectYear = hint.month === 4 ? hint.year : hint.year + 1;
@@ -388,6 +391,18 @@ export function parseFanFile(bytes, { id, source = null }) {
         problem: `ファイル名 ${id} と期が一致しません（期待 ${expectYear}年${expectNo}期、実際 ${period.year}年${period.no}期）`,
       });
   }
+}
+
+/**
+ * fanファイル（LZH展開後のバイト列）を全項目の中間形式にする。
+ * @param {Uint8Array} bytes
+ * @param {{id: string, source?: object}} opts id は fan{YYMM}
+ */
+export function parseFanFile(bytes, { id, source = null }) {
+  const hint = parseFanId(id);
+  const { records, anomalies, layouts } = readFanRecords(bytes);
+  const period = detectPeriod(records, anomalies);
+  checkPeriodAgainstFileName(period, hint, id, anomalies);
 
   return {
     schema: FAN_SCHEMA,
