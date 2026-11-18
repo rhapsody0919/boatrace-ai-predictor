@@ -109,36 +109,39 @@ const { getVenueCharacteristics } =
   await import("../../src/services/venueQueries.js");
 const WRONG = { fresh: "sea", brackish: "fresh", sea: "brackish" };
 // 行は本番の venues の形に合わせる（name は NOT NULL、cluster は update_venue_stats の3値。src/pure/venueModel.js）。
-// cluster は会場ごとに散らして取り違えを見る
+// cluster は3値しか無いので、会場コードの3進の桁（1の位・3の位・9の位）を3回に分けて入れる。
+// 3回の組は24会場で全部違うので、別の会場の行を取り違えるとどれかの回で食い違う
 const CLUSTERS = ["in_strong", "out_strong", "balanced"];
-const clusterOf = (code) => CLUSTERS[code % 3];
-fakeTables.venues = [
-  ...Array.from({ length: 24 }, (_, i) => ({
-    code: i + 1,
-    name: OFFICIAL[i + 1][0],
-    cluster: clusterOf(i + 1),
-    water_type: WRONG[TYPE_KEY[OFFICIAL[i + 1][1]]],
-  })),
-  {
-    code: 99,
-    name: "公式の表に無い会場",
-    cluster: "balanced",
-    water_type: "sea",
-  },
-];
-clearCache();
-for (let code = 1; code <= 24; code++) {
-  const [name, type, tide] = OFFICIAL[code];
-  const got = await getVenueCharacteristics(code);
-  const want = {
-    waterType: TYPE_KEY[type],
-    tidal: tide === "あり",
-    cluster: clusterOf(code),
-  };
-  if (JSON.stringify(got) !== JSON.stringify(want)) {
-    errors.push(
-      `getVenueCharacteristics(${code}) ${name}: 期待 ${JSON.stringify(want)}／実際 ${JSON.stringify(got)}（venues.water_type は公式と食い違うので使わない）`,
-    );
+const clusterOf = (code, digit) => CLUSTERS[Math.floor(code / 3 ** digit) % 3];
+for (let digit = 0; digit < 3; digit++) {
+  fakeTables.venues = [
+    ...Array.from({ length: 24 }, (_, i) => ({
+      code: i + 1,
+      name: OFFICIAL[i + 1][0],
+      cluster: clusterOf(i + 1, digit),
+      water_type: WRONG[TYPE_KEY[OFFICIAL[i + 1][1]]],
+    })),
+    {
+      code: 99,
+      name: "公式の表に無い会場",
+      cluster: "balanced",
+      water_type: "sea",
+    },
+  ];
+  clearCache();
+  for (let code = 1; code <= 24; code++) {
+    const [name, type, tide] = OFFICIAL[code];
+    const got = await getVenueCharacteristics(code);
+    const want = {
+      waterType: TYPE_KEY[type],
+      tidal: tide === "あり",
+      cluster: clusterOf(code, digit),
+    };
+    if (JSON.stringify(got) !== JSON.stringify(want)) {
+      errors.push(
+        `getVenueCharacteristics(${code}) ${name}: 期待 ${JSON.stringify(want)}／実際 ${JSON.stringify(got)}（venues.water_type は公式と食い違うので使わない）`,
+      );
+    }
   }
 }
 {
