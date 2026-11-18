@@ -3,6 +3,7 @@
 
 import { supabase } from "./supabaseClient";
 import { EDGE_API_BASE, withCache } from "./core.js";
+import { makePrediction } from "../pure/predictionModel.js";
 
 /**
  * 精度統計データを取得（summary.json形式で返す）
@@ -144,7 +145,8 @@ const fetchAllPredictions = async (startDate, endDate) => {
     const { data: page } = await query;
 
     if (!page || page.length === 0) break;
-    allData = allData.concat(page);
+    // 不変条件の破れ（makePrediction の RangeError）は getAccuracy の reject になり、呼び手（AccuracyHistory.jsx）の catch で取得失敗の画面
+    allData = allData.concat(page.map(makePrediction));
     if (page.length < pageSize) break;
     from += pageSize;
   }
