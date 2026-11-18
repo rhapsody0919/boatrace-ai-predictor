@@ -8,6 +8,7 @@
  */
 
 import { supabase } from "./supabaseClient";
+import { makeRace } from "../pure/raceModel.js";
 import { predictRace } from "./sherlockModel";
 import model from "../../data/sherlock/model.json";
 
@@ -172,7 +173,8 @@ export async function getSherlockPredictions(date) {
     const [racesRes, entriesRes, exhibitionRes, oddsRes] =
       await fetchDayTables(targetDate);
 
-    const races = racesRes.data || [];
+    // 不変条件の破れ（RangeError）は下の catch で取得失敗と同じ扱い（空の一覧）
+    const races = (racesRes.data || []).map(makeRace);
     if (races.length === 0) return [];
 
     const { entriesByRace, exhibitionByRace, latestOdds } = indexByRace(

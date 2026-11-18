@@ -1570,6 +1570,11 @@
       "guards": "AI用にコピー・SNS シェアの GA4 のイベント（ai_copy・race_share、BOA-822 の計測）の名前とパラメータ、レースが分からない・種類の無いシェアは送らないこと、GA4 の予約語を使わないこと"
     },
     {
+      "script": "verify-sherlock-race-make.js",
+      "tier": "ci",
+      "guards": "src/services/sherlockService.js が races の行を makeRace に通す（DM02、BOA-1678）"
+    },
+    {
       "script": "verify-sitemap-coverage.js",
       "tier": "ci",
       "guards": "AppRouter.jsx の静的ルートと generate-sitemap.js の staticPages の突き合わせ（sitemap登録漏れ）"
