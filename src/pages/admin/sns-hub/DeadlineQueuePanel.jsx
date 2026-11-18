@@ -212,20 +212,10 @@ export function SendControlBand({ control, busy, onStop }) {
   );
 }
 
-// onAttentionCount: 要対応の件数を親（ページのナビ）へ知らせる。10秒ごとの読み直しに追従させる
-export default function DeadlineQueuePanel({ onAttentionCount }) {
+function useQueuePolling() {
   const [rows, setRows] = useState([]);
   const [control, setControl] = useState(null);
   const [error, setError] = useState("");
-  const [stopError, setStopError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const dayRef = useRef(null);
-  const [selection, setSelection] = useState({
-    month: "",
-    day: "",
-    format: "",
-    venue: "",
-  });
   const [loaded, setLoaded] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const refreshRef = useRef(async () => {});
@@ -254,12 +244,29 @@ export default function DeadlineQueuePanel({ onAttentionCount }) {
       clearInterval(timer);
     };
   }, []);
+  return { rows, control, error, loaded, now, refreshRef };
+}
+
+function useDaySelection() {
+  const dayRef = useRef(null);
+  const [selection, setSelection] = useState({
+    month: "",
+    day: "",
+    format: "",
+    venue: "",
+  });
   useEffect(() => {
     if (selection.day) {
       dayRef.current?.focus();
       dayRef.current?.scrollIntoView({ block: "start" });
     }
   }, [selection.day]);
+  return { dayRef, selection, setSelection };
+}
+
+function useStopSend(refreshRef) {
+  const [stopError, setStopError] = useState("");
+  const [busy, setBusy] = useState(false);
   async function stop() {
     setBusy(true);
     setStopError("");
@@ -274,56 +281,102 @@ export default function DeadlineQueuePanel({ onAttentionCount }) {
       setBusy(false);
     }
   }
-  const attention = attentionRows(rows, now);
-  const attentionCount = loaded ? attention.length : null;
-  useEffect(() => {
-    if (attentionCount !== null) onAttentionCount?.(attentionCount);
-  }, [attentionCount, onAttentionCount]);
-  const today = todayDay(now);
+  return { stopError, busy, stop };
+}
+
+function DeadlineQueueCalendar({ rows, now, dayRef, selection, setSelection }) {
   const dayRows = selection.day
     ? calendarMonth(rows, selection.month, selection).filter(
         (row) => calendarRowDay(row) === selection.day,
       )
     : [];
   return (
+    <details className="sns-auto-calendar">
+      <summary>全月カレンダー（JST）を開く</summary>
+      <MonthCalendar
+        rows={rows}
+        now={now}
+        selection={selection}
+        onSelection={setSelection}
+      />
+      {selection.day && (
+        <div ref={dayRef} tabIndex={-1}>
+          <DeadlineQueueList
+            title={`${selection.day} の一覧`}
+            rows={dayRows}
+            now={now}
+          />
+        </div>
+      )}
+    </details>
+  );
+}
+
+function DeadlineQueueLoaded({
+  rows,
+  control,
+  now,
+  attention,
+  today,
+  busy,
+  stop,
+  stopError,
+  calendar,
+}) {
+  return (
+    <>
+      <SendControlBand control={control} busy={busy} onStop={stop} />
+      {stopError && <p role="alert">{stopError}</p>}
+      <DeadlineQueueList
+        title="要対応"
+        rows={attention}
+        now={now}
+        emptyText="要対応の投稿はありません（失敗・保留・失効は直近3日、要照合は日付に関係なく出します）。"
+      />
+      <DeadlineQueueList
+        title={`今日 ${today.slice(5).replace("-", "/")}（JST）`}
+        rows={rowsOfDay(rows, today)}
+        now={now}
+        emptyText="今日の投稿はありません。"
+      />
+      <DeadlineQueueCalendar
+        rows={rows}
+        now={now}
+        dayRef={calendar.dayRef}
+        selection={calendar.selection}
+        setSelection={calendar.setSelection}
+      />
+    </>
+  );
+}
+
+// onAttentionCount: 要対応の件数を親（ページのナビ）へ知らせる。10秒ごとの読み直しに追従させる
+export default function DeadlineQueuePanel({ onAttentionCount }) {
+  const { rows, control, error, loaded, now, refreshRef } = useQueuePolling();
+  const calendar = useDaySelection();
+  const { stopError, busy, stop } = useStopSend(refreshRef);
+  const attention = attentionRows(rows, now);
+  const attentionCount = loaded ? attention.length : null;
+  useEffect(() => {
+    if (attentionCount !== null) onAttentionCount?.(attentionCount);
+  }, [attentionCount, onAttentionCount]);
+  const today = todayDay(now);
+  return (
     <div className="sns-auto-send">
       {error && <p role="alert">{error}</p>}
       {!loaded && !error && <p role="status">読み込み中…</p>}
       {loaded && (
-        <>
-          <SendControlBand control={control} busy={busy} onStop={stop} />
-          {stopError && <p role="alert">{stopError}</p>}
-          <DeadlineQueueList
-            title="要対応"
-            rows={attention}
-            now={now}
-            emptyText="要対応の投稿はありません（失敗・保留・失効は直近3日、要照合は日付に関係なく出します）。"
-          />
-          <DeadlineQueueList
-            title={`今日 ${today.slice(5).replace("-", "/")}（JST）`}
-            rows={rowsOfDay(rows, today)}
-            now={now}
-            emptyText="今日の投稿はありません。"
-          />
-          <details className="sns-auto-calendar">
-            <summary>全月カレンダー（JST）を開く</summary>
-            <MonthCalendar
-              rows={rows}
-              now={now}
-              selection={selection}
-              onSelection={setSelection}
-            />
-            {selection.day && (
-              <div ref={dayRef} tabIndex={-1}>
-                <DeadlineQueueList
-                  title={`${selection.day} の一覧`}
-                  rows={dayRows}
-                  now={now}
-                />
-              </div>
-            )}
-          </details>
-        </>
+        <DeadlineQueueLoaded
+          rows={rows}
+          control={control}
+          now={now}
+          attention={attention}
+          today={today}
+          busy={busy}
+          stop={stop}
+          stopError={stopError}
+          calendar={calendar}
+        />
       )}
     </div>
   );
