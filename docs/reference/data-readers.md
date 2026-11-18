@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1999 |
+| 読んだファイル | 2000 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -800,7 +800,7 @@
   - `src/services/meetQueries2.js:115` select [is_final_day, race_id, race_stage, race_title, series_day]
   - `src/services/meetQueries3.js:55` select [is_final_day, race_id, race_stage, race_title, series_day]
   - `src/services/motorQueries.js:205` select [is_final_day, race_id, series_day]
-  - `src/services/motorQueries3.js:282` select [race_id, race_stage]
+  - `src/services/motorQueries3.js:285` select [race_id, race_stage]
   - `src/services/racerQueries2.js:114` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:308` select(helper:fetchAllByIn)
 - 書き手（6）: 
@@ -929,8 +929,8 @@
   - `src/services/motorQueries.js:274` select [boat_number, motor_2rate, motor_3rate, motor_number, race_id]
   - `src/services/motorQueries2.js:106` select [boat_number, global_2rate, motor_number, race_id]
   - `src/services/motorQueries2.js:257` select [boat_number, grade, motor_number, player_name, race_id, racer_id]
-  - `src/services/motorQueries3.js:237` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id, racer_id]
-  - `src/services/motorQueries3.js:300` select [boat_number, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries3.js:240` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries3.js:303` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries5.js:38` select [?, motor_number, race_id]
   - `src/services/motorQueries7.js:47` select [motor_number, race_id, racer_id]
@@ -1222,7 +1222,7 @@
   - `src/services/meetQueries3.js:67` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/motorQueries2.js:125` select [race_id, rank1, rank2, rank3]
   - `src/services/motorQueries2.js:353` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
-  - `src/services/motorQueries3.js:309` select [race_id, rank1]
+  - `src/services/motorQueries3.js:312` select [race_id, rank1]
   - `src/services/motorQueries5.js:53` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:83` select(helper:fetchAllByIn)
   - `src/services/raceQueries3.js:125` select [race_id, race_status, rank1, rank2, rank3, winning_technique]
@@ -1609,7 +1609,7 @@
   - `src/services/meetQueries2.js:137` select(helper:fetchAllByIn)
   - `src/services/meetQueries3.js:62` select [cancellation_status, race_grade, race_id]
   - `src/services/motorQueries.js:112` select [race_date, race_id, venue_code]
-  - `src/services/motorQueries3.js:282` select(embed) [venue_code]
+  - `src/services/motorQueries3.js:285` select(embed) [venue_code]
   - `src/services/mycroftService.js:79` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/poirotService.js:49` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/racerQueries2.js:51` select(helper:fetchAllByIn)
@@ -2233,9 +2233,9 @@
 - 取得のジョブ: venue_motor_stats
 - 読み手（4）: 
   - `scripts/daily/generate-morning-digest.js:196` select [motor_number, race_count, scraped_date, venue_code]
-  - `src/services/motorQueries3.js:54` select [*, motor_number, scraped_date, venue_code]
-  - `src/services/motorQueries3.js:365` select [scraped_date, venue_code]
-  - `src/services/motorQueries3.js:375` select [accident_rate, championship_count, final_count, motor_number, race_count, scraped_date, stats_period_end, top2_rate, top3_rate, venue_code, win_rate]
+  - `src/services/motorQueries3.js:55` select [*, motor_number, scraped_date, venue_code]
+  - `src/services/motorQueries3.js:368` select [scraped_date, venue_code]
+  - `src/services/motorQueries3.js:378` select [accident_rate, championship_count, final_count, motor_number, race_count, scraped_date, stats_period_end, top2_rate, top3_rate, venue_code, win_rate]
 - 書き手（1）: 
   - `scripts/daily/scrape-venue-motor-stats.js:134` upsert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる

@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1999,
+    "sourceFiles": 2000,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -6570,7 +6570,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:282",
+          "ref": "src/services/motorQueries3.js:285",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6687,7 +6687,7 @@
             "src/services/meetQueries2.js:115",
             "src/services/meetQueries3.js:55",
             "src/services/motorQueries.js:205",
-            "src/services/motorQueries3.js:282"
+            "src/services/motorQueries3.js:285"
           ],
           "writers": [],
           "sql": [
@@ -6844,7 +6844,7 @@
             "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/meetQueries2.js:115",
             "src/services/meetQueries3.js:55",
-            "src/services/motorQueries3.js:282"
+            "src/services/motorQueries3.js:285"
           ],
           "writers": [],
           "sql": [
@@ -7889,7 +7889,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:237",
+          "ref": "src/services/motorQueries3.js:240",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7903,7 +7903,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:300",
+          "ref": "src/services/motorQueries3.js:303",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8423,8 +8423,8 @@
             "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
             "src/services/motorQueries2.js:257",
-            "src/services/motorQueries3.js:237",
-            "src/services/motorQueries3.js:300",
+            "src/services/motorQueries3.js:240",
+            "src/services/motorQueries3.js:303",
             "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:38",
             "src/services/motorQueries7.js:47",
@@ -8530,8 +8530,8 @@
             "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
             "src/services/motorQueries2.js:257",
-            "src/services/motorQueries3.js:237",
-            "src/services/motorQueries3.js:300",
+            "src/services/motorQueries3.js:240",
+            "src/services/motorQueries3.js:303",
             "src/services/mycroftService.js:83",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
@@ -8588,8 +8588,8 @@
             "src/services/meetQueries2.js:105",
             "src/services/meetQueries3.js:72",
             "src/services/motorQueries2.js:257",
-            "src/services/motorQueries3.js:237",
-            "src/services/motorQueries3.js:300",
+            "src/services/motorQueries3.js:240",
+            "src/services/motorQueries3.js:303",
             "src/services/motorQueries4.js:160",
             "src/services/mycroftService.js:83",
             "src/services/raceQueries.js:166",
@@ -8717,8 +8717,8 @@
             "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
             "src/services/motorQueries2.js:257",
-            "src/services/motorQueries3.js:237",
-            "src/services/motorQueries3.js:300",
+            "src/services/motorQueries3.js:240",
+            "src/services/motorQueries3.js:303",
             "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:38",
             "src/services/motorQueries7.js:47",
@@ -8743,7 +8743,7 @@
             "scripts/daily/generate-unified-trifecta-reference.js:104",
             "src/services/motorQueries.js:234",
             "src/services/motorQueries.js:274",
-            "src/services/motorQueries3.js:237",
+            "src/services/motorQueries3.js:240",
             "src/services/motorQueries4.js:160",
             "src/services/raceQueries3.js:83",
             "src/services/sherlockService.js:70"
@@ -8846,7 +8846,7 @@
           "readers": [
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "src/services/motorQueries.js:274",
-            "src/services/motorQueries3.js:237"
+            "src/services/motorQueries3.js:240"
           ],
           "writers": [],
           "sql": []
@@ -8904,8 +8904,8 @@
             "src/services/meetQueries2.js:105",
             "src/services/meetQueries3.js:72",
             "src/services/motorQueries2.js:257",
-            "src/services/motorQueries3.js:237",
-            "src/services/motorQueries3.js:300",
+            "src/services/motorQueries3.js:240",
+            "src/services/motorQueries3.js:303",
             "src/services/motorQueries4.js:160",
             "src/services/motorQueries7.js:47",
             "src/services/raceQueries.js:166",
@@ -11460,7 +11460,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:309",
+          "ref": "src/services/motorQueries3.js:312",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11754,7 +11754,7 @@
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
-            "src/services/motorQueries3.js:309",
+            "src/services/motorQueries3.js:312",
             "src/services/raceQueries3.js:125",
             "src/services/raceQueries4.js:29",
             "src/services/ruleMatchService.js:146"
@@ -11819,7 +11819,7 @@
             "src/services/meetQueries3.js:67",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
-            "src/services/motorQueries3.js:309",
+            "src/services/motorQueries3.js:312",
             "src/services/raceQueries3.js:125",
             "src/services/ruleMatchService.js:146"
           ],
@@ -17075,7 +17075,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:282",
+          "ref": "src/services/motorQueries3.js:285",
           "op": "select",
           "via": "embed",
           "columns": [
@@ -17696,7 +17696,7 @@
             "scripts/maintenance/verify-pretest-row-pick.js:93",
             "scripts/maintenance/verify-rpc-output-keys.js:321",
             "src/services/motorQueries.js:112",
-            "src/services/motorQueries3.js:282",
+            "src/services/motorQueries3.js:285",
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
@@ -26041,7 +26041,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:54",
+          "ref": "src/services/motorQueries3.js:55",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26052,7 +26052,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:365",
+          "ref": "src/services/motorQueries3.js:368",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26061,7 +26061,7 @@
           ]
         },
         {
-          "ref": "src/services/motorQueries3.js:375",
+          "ref": "src/services/motorQueries3.js:378",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26099,9 +26099,9 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/motorQueries3.js:365",
-            "src/services/motorQueries3.js:375",
-            "src/services/motorQueries3.js:54"
+            "src/services/motorQueries3.js:368",
+            "src/services/motorQueries3.js:378",
+            "src/services/motorQueries3.js:55"
           ],
           "writers": [],
           "sql": []
@@ -26110,8 +26110,8 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/motorQueries3.js:375",
-            "src/services/motorQueries3.js:54"
+            "src/services/motorQueries3.js:378",
+            "src/services/motorQueries3.js:55"
           ],
           "writers": [],
           "sql": []
@@ -26120,9 +26120,9 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
             "scripts/daily/scrape-venue-motor-stats.js:134",
-            "src/services/motorQueries3.js:365",
-            "src/services/motorQueries3.js:375",
-            "src/services/motorQueries3.js:54"
+            "src/services/motorQueries3.js:368",
+            "src/services/motorQueries3.js:378",
+            "src/services/motorQueries3.js:55"
           ],
           "writers": [],
           "sql": []
@@ -26135,21 +26135,21 @@
         "race_count": {
           "readers": [
             "scripts/daily/generate-morning-digest.js:196",
-            "src/services/motorQueries3.js:375"
+            "src/services/motorQueries3.js:378"
           ],
           "writers": [],
           "sql": []
         },
         "final_count": {
           "readers": [
-            "src/services/motorQueries3.js:375"
+            "src/services/motorQueries3.js:378"
           ],
           "writers": [],
           "sql": []
         },
         "championship_count": {
           "readers": [
-            "src/services/motorQueries3.js:375"
+            "src/services/motorQueries3.js:378"
           ],
           "writers": [],
           "sql": []
@@ -26171,28 +26171,28 @@
         },
         "win_rate": {
           "readers": [
-            "src/services/motorQueries3.js:375"
+            "src/services/motorQueries3.js:378"
           ],
           "writers": [],
           "sql": []
         },
         "top2_rate": {
           "readers": [
-            "src/services/motorQueries3.js:375"
+            "src/services/motorQueries3.js:378"
           ],
           "writers": [],
           "sql": []
         },
         "top3_rate": {
           "readers": [
-            "src/services/motorQueries3.js:375"
+            "src/services/motorQueries3.js:378"
           ],
           "writers": [],
           "sql": []
         },
         "accident_rate": {
           "readers": [
-            "src/services/motorQueries3.js:375"
+            "src/services/motorQueries3.js:378"
           ],
           "writers": [],
           "sql": []
@@ -26214,7 +26214,7 @@
         },
         "stats_period_end": {
           "readers": [
-            "src/services/motorQueries3.js:375"
+            "src/services/motorQueries3.js:378"
           ],
           "writers": [],
           "sql": []
