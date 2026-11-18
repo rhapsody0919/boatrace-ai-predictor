@@ -58,47 +58,75 @@ function toCsv(rows, columns) {
   return lines.join("\n") + "\n";
 }
 
-async function main() {
-  if (!supabase) {
-    console.error("❌ Supabase 環境変数が未設定です（.env.local を確認）");
-    process.exit(1);
-  }
-  await fs.mkdir(OUT_DIR, { recursive: true });
+/** 1艇×1レースの学習用の行（キー・特徴量・ラベル）。列の順は dataset.csv の列の順 */
+function datasetRow({ e, race, result, cond, exh, actualCourse, finishPos }) {
+  return {
+    // キー
+    race_id: e.race_id,
+    race_date: race.race_date,
+    venue_code: race.venue_code,
+    race_number: race.race_number,
+    race_grade: race.race_grade,
+    boat_number: e.boat_number,
+    racer_id: e.racer_id,
+    // 選手特徴量
+    grade: e.grade,
+    age: e.age,
+    win_rate: e.win_rate,
+    local_win_rate: e.local_win_rate,
+    global_2rate: e.global_2rate,
+    global_3rate: e.global_3rate,
+    local_2rate: e.local_2rate,
+    local_3rate: e.local_3rate,
+    // 機材特徴量
+    motor_2rate: e.motor_2rate,
+    motor_3rate: e.motor_3rate,
+    boat_2rate: e.boat_2rate,
+    boat_3rate: e.boat_3rate,
+    // 直前情報
+    exhibition_time: exh.exhibition_time,
+    exhibition_st: exh.start_timing,
+    // レース条件
+    weather: cond.weather,
+    wind_direction: cond.wind_direction,
+    wind_speed: cond.wind_speed,
+    wave_height: cond.wave_height,
+    temperature: cond.temperature,
+    water_temperature: cond.water_temperature,
+    series_day: cond.series_day,
+    is_final_day: cond.is_final_day,
+    // ラベル・結果情報（学習/バックテスト用。予測時には使わないこと）
+    finish_pos: finishPos,
+    actual_course: actualCourse,
+    winning_technique: result.winning_technique,
+    payout_win: result.payout_win,
+    payout_place_1: result.payout_place_1,
+    payout_place_2: result.payout_place_2,
+    payout_trifecta: result.payout_trifecta,
+    payout_trio: result.payout_trio,
+    rank1: result.rank1,
+    rank2: result.rank2,
+    rank3: result.rank3,
+  };
+}
 
-  console.log("📥 テーブル取得中（数分かかります）...");
-  const [races, entries, exhibitions, conditions, results, timings] =
-    await Promise.all([
-      fetchAll(
-        "races",
-        "race_id, race_date, venue_code, race_number, race_grade", (q) => q.order("race_id"),
-      ),
-      fetchAll(
-        "race_entries",
-        "race_id, boat_number, racer_id, player_name, grade, age, win_rate, local_win_rate, global_2rate, global_3rate, local_2rate, local_3rate, motor_number, motor_2rate, motor_3rate, boat_2rate, boat_3rate", (q) => q.order("race_id").order("boat_number"),
-      ),
-      fetchAll(
-        "exhibition_data",
-        "race_id, boat_number, exhibition_time, start_timing", (q) => q.order("race_id").order("boat_number"),
-      ),
-      fetchAll(
-        "race_conditions",
-        "race_id, weather, wind_direction, wind_speed, wave_height, temperature, water_temperature, series_day, is_final_day", (q) => q.order("race_id"),
-      ),
-      fetchAll(
-        "race_results",
-        "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique", (q) => q.order("race_id"),
-      ),
-      fetchAll(
-        "race_start_timings",
-        "race_id, boat_number, start_timing, is_flying, is_late_start, entry_course", (q) => q.order("race_id").order("boat_number"),
-      ),
-    ]);
+/** ラベル: 着順（1/2/3、それ以外は0） */
+function finishPosOf(result, boatNumber) {
+  if (result.rank1 === boatNumber) return 1;
+  if (result.rank2 === boatNumber) return 2;
+  if (result.rank3 === boatNumber) return 3;
+  return 0;
+}
 
-  console.log(
-    `  races=${races.length} entries=${entries.length} exhibitions=${exhibitions.length}` +
-      ` conditions=${conditions.length} results=${results.length} timings=${timings.length}`,
-  );
-
+/** 結果あり・非中止レースの艇を学習用の行にする。返す: 行・スキップの数・race_id → races の行 */
+function buildDatasetRows({
+  races,
+  entries,
+  exhibitions,
+  conditions,
+  results,
+  timings,
+}) {
   // インデックス化
   const raceById = new Map(races.map((r) => [r.race_id, r]));
   const condById = new Map(conditions.map((c) => [c.race_id, c]));
@@ -135,74 +163,72 @@ async function main() {
       boatNumber: e.boat_number,
     });
 
-    // ラベル: 着順（1/2/3、それ以外は0）
-    let finishPos = 0;
-    if (result.rank1 === e.boat_number) finishPos = 1;
-    else if (result.rank2 === e.boat_number) finishPos = 2;
-    else if (result.rank3 === e.boat_number) finishPos = 3;
-
-    rows.push({
-      // キー
-      race_id: e.race_id,
-      race_date: race.race_date,
-      venue_code: race.venue_code,
-      race_number: race.race_number,
-      race_grade: race.race_grade,
-      boat_number: e.boat_number,
-      racer_id: e.racer_id,
-      // 選手特徴量
-      grade: e.grade,
-      age: e.age,
-      win_rate: e.win_rate,
-      local_win_rate: e.local_win_rate,
-      global_2rate: e.global_2rate,
-      global_3rate: e.global_3rate,
-      local_2rate: e.local_2rate,
-      local_3rate: e.local_3rate,
-      // 機材特徴量
-      motor_2rate: e.motor_2rate,
-      motor_3rate: e.motor_3rate,
-      boat_2rate: e.boat_2rate,
-      boat_3rate: e.boat_3rate,
-      // 直前情報
-      exhibition_time: exh.exhibition_time,
-      exhibition_st: exh.start_timing,
-      // レース条件
-      weather: cond.weather,
-      wind_direction: cond.wind_direction,
-      wind_speed: cond.wind_speed,
-      wave_height: cond.wave_height,
-      temperature: cond.temperature,
-      water_temperature: cond.water_temperature,
-      series_day: cond.series_day,
-      is_final_day: cond.is_final_day,
-      // ラベル・結果情報（学習/バックテスト用。予測時には使わないこと）
-      finish_pos: finishPos,
-      actual_course: actualCourse,
-      winning_technique: result.winning_technique,
-      payout_win: result.payout_win,
-      payout_place_1: result.payout_place_1,
-      payout_place_2: result.payout_place_2,
-      payout_trifecta: result.payout_trifecta,
-      payout_trio: result.payout_trio,
-      rank1: result.rank1,
-      rank2: result.rank2,
-      rank3: result.rank3,
-    });
+    rows.push(
+      datasetRow({
+        e,
+        race,
+        result,
+        cond,
+        exh,
+        actualCourse,
+        finishPos: finishPosOf(result, e.boat_number),
+      }),
+    );
   }
+  return { rows, skippedNoResult, skippedCancelled, raceById };
+}
 
-  const columns = Object.keys(rows[0]);
-  await fs.writeFile(path.join(OUT_DIR, "dataset.csv"), toCsv(rows, columns));
+/** 学習に使う6つのテーブルを読む（読むだけ） */
+async function fetchTables() {
+  console.log("📥 テーブル取得中（数分かかります）...");
+  const [races, entries, exhibitions, conditions, results, timings] =
+    await Promise.all([
+      fetchAll(
+        "races",
+        "race_id, race_date, venue_code, race_number, race_grade",
+        (q) => q.order("race_id"),
+      ),
+      fetchAll(
+        "race_entries",
+        "race_id, boat_number, racer_id, player_name, grade, age, win_rate, local_win_rate, global_2rate, global_3rate, local_2rate, local_3rate, motor_number, motor_2rate, motor_3rate, boat_2rate, boat_3rate",
+        (q) => q.order("race_id").order("boat_number"),
+      ),
+      fetchAll(
+        "exhibition_data",
+        "race_id, boat_number, exhibition_time, start_timing",
+        (q) => q.order("race_id").order("boat_number"),
+      ),
+      fetchAll(
+        "race_conditions",
+        "race_id, weather, wind_direction, wind_speed, wave_height, temperature, water_temperature, series_day, is_final_day",
+        (q) => q.order("race_id"),
+      ),
+      fetchAll(
+        "race_results",
+        "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique",
+        (q) => q.order("race_id"),
+      ),
+      fetchAll(
+        "race_start_timings",
+        "race_id, boat_number, start_timing, is_flying, is_late_start, entry_course",
+        (q) => q.order("race_id").order("boat_number"),
+      ),
+    ]);
+
   console.log(
-    `✅ dataset.csv: ${rows.length.toLocaleString()}行 ` +
-      `(結果なしスキップ=${skippedNoResult}, 中止スキップ=${skippedCancelled})`,
+    `  races=${races.length} entries=${entries.length} exhibitions=${exhibitions.length}` +
+      ` conditions=${conditions.length} results=${results.length} timings=${timings.length}`,
   );
 
-  // 本番ST履歴（選手ごとのローリング特徴量の材料。racer_id を付与して出力）
+  return { races, entries, exhibitions, conditions, results, timings };
+}
+
+/** 本番ST履歴の行（race_date の無いものは除く） */
+function startTimingRows(timings, entries, raceById) {
   const racerByKey = new Map(
     entries.map((e) => [`${e.race_id}:${e.boat_number}`, e.racer_id]),
   );
-  const stRows = timings
+  return timings
     .map((t) => ({
       race_id: t.race_id,
       race_date: raceById.get(t.race_id)?.race_date ?? null,
@@ -213,6 +239,41 @@ async function main() {
       is_late_start: t.is_late_start,
     }))
     .filter((t) => t.race_date != null);
+}
+
+/** 各レースの最新の単勝オッズのうち、6艇とも 1 を越えるもの */
+function latestOddsRows(oddsSnapshots) {
+  const latestOdds = new Map();
+  for (const o of oddsSnapshots) {
+    const prev = latestOdds.get(o.race_id);
+    if (!prev || o.captured_at > prev.captured_at) latestOdds.set(o.race_id, o);
+  }
+  return [...latestOdds.values()].filter((o) =>
+    [1, 2, 3, 4, 5, 6].every((b) => o[`odds_win_${b}`] > 1),
+  );
+}
+
+async function main() {
+  if (!supabase) {
+    console.error("❌ Supabase 環境変数が未設定です（.env.local を確認）");
+    process.exit(1);
+  }
+  await fs.mkdir(OUT_DIR, { recursive: true });
+
+  const tables = await fetchTables();
+  const { rows, skippedNoResult, skippedCancelled, raceById } =
+    buildDatasetRows(tables);
+  const { entries, timings } = tables;
+
+  const columns = Object.keys(rows[0]);
+  await fs.writeFile(path.join(OUT_DIR, "dataset.csv"), toCsv(rows, columns));
+  console.log(
+    `✅ dataset.csv: ${rows.length.toLocaleString()}行 ` +
+      `(結果なしスキップ=${skippedNoResult}, 中止スキップ=${skippedCancelled})`,
+  );
+
+  // 本番ST履歴（選手ごとのローリング特徴量の材料。racer_id を付与して出力）
+  const stRows = startTimingRows(timings, entries, raceById);
   await fs.writeFile(
     path.join(OUT_DIR, "start_timings.csv"),
     toCsv(stRows, Object.keys(stRows[0])),
@@ -226,14 +287,7 @@ async function main() {
     "race_id, captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6",
     (q) => q.order("race_id").order("captured_at"),
   );
-  const latestOdds = new Map();
-  for (const o of oddsSnapshots) {
-    const prev = latestOdds.get(o.race_id);
-    if (!prev || o.captured_at > prev.captured_at) latestOdds.set(o.race_id, o);
-  }
-  const oddsRows = [...latestOdds.values()].filter((o) =>
-    [1, 2, 3, 4, 5, 6].every((b) => o[`odds_win_${b}`] > 1),
-  );
+  const oddsRows = latestOddsRows(oddsSnapshots);
   if (oddsRows.length > 0) {
     await fs.writeFile(
       path.join(OUT_DIR, "odds.csv"),
