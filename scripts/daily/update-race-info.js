@@ -202,6 +202,95 @@ function createAccumulator() {
 }
 
 /**
+ * 中止・順延の暫定検知（BOA-254 FR1）: data有無に関わらず全レース分計算する。
+ * 現在の状態の取得自体に失敗している場合、全レースがcancellationMapに
+ * 存在しない=デフォルト値（null/0）にフォールバックしてしまい、既に
+ * tentativeへ昇格済みのレースのstreakを誤ってリセットする恐れがあるため、
+ * その回はまるごと計算をスキップする（cancellationFetchErrorのログ通り）
+ */
+function accumulateCancellation(
+  acc,
+  r,
+  { cancellationCheck, cancellationMap, cancellationFetchError },
+) {
+  if (!cancellationFetchError && cancellationCheck !== "skip") {
+    const cancellationCurrent = cancellationMap.get(r.race_id) || {
+      cancellation_status: null,
+      cancellation_check_streak: 0,
+    };
+    const cancellationNext = computeCancellationTransition({
+      currentStatus: cancellationCurrent.cancellation_status,
+      currentStreak: cancellationCurrent.cancellation_check_streak,
+      racersFound: cancellationCheck === "found",
+    });
+    if (cancellationNext.changed) {
+      acc.cancellationUpdates.push({
+        race_id: r.race_id,
+        cancellation_status: cancellationNext.nextStatus,
+        cancellation_check_streak: cancellationNext.nextStreak,
+      });
+    }
+  }
+}
+
+/** 欠場検出: 出走表で欠場の表示（tbody の is-miss）の艇、または登録番号を読めない艇と、出走表の異常をログに出す */
+function warnEntryAnomalies(page, r, venueName) {
+  const absentBoats = page.entries
+    .filter((e) => e.is_absent || e.racer_id === null)
+    .map((e) => e.boat_number);
+  if (absentBoats.length > 0) {
+    console.warn(
+      `  ⚠️ ${venueName} ${r.race_no}R 欠場/代替の可能性: ${absentBoats.map((b) => `${b}号艇`).join(", ")}`,
+    );
+  }
+  for (const anomaly of page.anomalies) {
+    console.warn(`  ⚠️ ${venueName} ${r.race_no}R 出走表: ${anomaly}`);
+  }
+}
+
+/**
+ * race_conditions の行を足す（気象・節・レース名のどれかが取れたレース）。
+ * 気象の列（と観測時刻）は、書き込みの直前にまとめて作る（flushRaceInfo の buildWeatherRows。展示取得と
+ * 同じ規則）。気象を取得できなかったレースは、気象の列を含めず、既存の良い値を消さない
+ *
+ * 日目（series_day）は、ページの日別タブから読めなかったときだけ、節（race_series）から導いた値で補う
+ * （BOA-501）。両方あって食い違うときは、ページ側を採り、食い違いを記録する: 節の途中に中止日があると
+ * 公式は同じ日目を振り直すため、導出が1日ぶん進みすぎる（実測 3,064 会場×日で8件。raceSeriesLookup.js）
+ */
+function accumulateCondition(
+  acc,
+  perRace,
+  r,
+  { page, conditions },
+  { conditionsExtended, includeWeather, seriesDayByVenue, venueName },
+) {
+  const fallbackSeriesDay = seriesDayByVenue?.get(r.venue_code) ?? null;
+  if (
+    page.meta.seriesDay != null &&
+    fallbackSeriesDay != null &&
+    page.meta.seriesDay !== fallbackSeriesDay
+  ) {
+    console.warn(
+      `  ⚠️ ${venueName} ${r.race_no}R 日目: ページ=${page.meta.seriesDay}日目 / 節からの導出=${fallbackSeriesDay}日目。ページの値を採ります（順延・中止で節の日程がずれた可能性）`,
+    );
+  }
+  const conditionRow = buildRaceConditionRow(r.race_id, page.meta, {
+    extended: conditionsExtended,
+    fallbackSeriesDay,
+  });
+  acc.conditionsRows.push(conditionRow);
+  perRace.condition = conditionRow;
+  if (includeWeather) {
+    acc.weatherFetched.push({
+      raceId: r.race_id,
+      venueCode: r.venue_code,
+      startTime: r.start_time,
+      conditions,
+    });
+  }
+}
+
+/**
  * 1レース分の取得結果を、書き込む行・更新に変える（DBへは書かない）。
  *
  * @param {ReturnType<typeof createAccumulator>} acc
@@ -229,47 +318,18 @@ function accumulateRaceInfo(
     seriesDayByVenue = null,
   },
 ) {
-  // 中止・順延の暫定検知（BOA-254 FR1）: data有無に関わらず全レース分計算する。
-  // 現在の状態の取得自体に失敗している場合、全レースがcancellationMapに
-  // 存在しない=デフォルト値（null/0）にフォールバックしてしまい、既に
-  // tentativeへ昇格済みのレースのstreakを誤ってリセットする恐れがあるため、
-  // その回はまるごと計算をスキップする（cancellationFetchErrorのログ通り）
-  if (!cancellationFetchError && cancellationCheck !== "skip") {
-    const cancellationCurrent = cancellationMap.get(r.race_id) || {
-      cancellation_status: null,
-      cancellation_check_streak: 0,
-    };
-    const cancellationNext = computeCancellationTransition({
-      currentStatus: cancellationCurrent.cancellation_status,
-      currentStreak: cancellationCurrent.cancellation_check_streak,
-      racersFound: cancellationCheck === "found",
-    });
-    if (cancellationNext.changed) {
-      acc.cancellationUpdates.push({
-        race_id: r.race_id,
-        cancellation_status: cancellationNext.nextStatus,
-        cancellation_check_streak: cancellationNext.nextStreak,
-      });
-    }
-  }
+  accumulateCancellation(acc, r, {
+    cancellationCheck,
+    cancellationMap,
+    cancellationFetchError,
+  });
 
   if (!data) return;
   const { page, conditions } = data;
   const { raceGrade, raceTitle, raceStage } = page.meta;
   const venueName = VENUE_NAMES[r.venue_code];
 
-  // 欠場検出: 出走表で欠場の表示（tbody の is-miss）の艇、または登録番号を読めない艇
-  const absentBoats = page.entries
-    .filter((e) => e.is_absent || e.racer_id === null)
-    .map((e) => e.boat_number);
-  if (absentBoats.length > 0) {
-    console.warn(
-      `  ⚠️ ${venueName} ${r.race_no}R 欠場/代替の可能性: ${absentBoats.map((b) => `${b}号艇`).join(", ")}`,
-    );
-  }
-  for (const anomaly of page.anomalies) {
-    console.warn(`  ⚠️ ${venueName} ${r.race_no}R 出走表: ${anomaly}`);
-  }
+  warnEntryAnomalies(page, r, venueName);
 
   // race_entries 行を構築（ai_score系は更新しない）
   const raceEntryRows = buildRaceEntryRows(r.race_id, page.entries, {
@@ -294,41 +354,192 @@ function accumulateRaceInfo(
   // （conditions取得はほぼ常に成功するため、seriesDay単独成功のレアケースを
   // 拾えなくても実害は小さい）
   if (conditions || raceTitle || raceStage) {
-    // 気象の列（と観測時刻）は、書き込みの直前にまとめて作る（flushRaceInfo の buildWeatherRows。展示取得と
-    // 同じ規則）。気象を取得できなかったレースは、気象の列を含めず、既存の良い値を消さない
-    //
-    // 日目（series_day）は、ページの日別タブから読めなかったときだけ、節（race_series）から導いた値で補う
-    // （BOA-501）。両方あって食い違うときは、ページ側を採り、食い違いを記録する: 節の途中に中止日があると
-    // 公式は同じ日目を振り直すため、導出が1日ぶん進みすぎる（実測 3,064 会場×日で8件。raceSeriesLookup.js）
-    const fallbackSeriesDay = seriesDayByVenue?.get(r.venue_code) ?? null;
-    if (
-      page.meta.seriesDay != null &&
-      fallbackSeriesDay != null &&
-      page.meta.seriesDay !== fallbackSeriesDay
-    ) {
-      console.warn(
-        `  ⚠️ ${venueName} ${r.race_no}R 日目: ページ=${page.meta.seriesDay}日目 / 節からの導出=${fallbackSeriesDay}日目。ページの値を採ります（順延・中止で節の日程がずれた可能性）`,
-      );
-    }
-    const conditionRow = buildRaceConditionRow(r.race_id, page.meta, {
-      extended: conditionsExtended,
-      fallbackSeriesDay,
+    accumulateCondition(acc, perRace, r, data, {
+      conditionsExtended,
+      includeWeather,
+      seriesDayByVenue,
+      venueName,
     });
-    acc.conditionsRows.push(conditionRow);
-    perRace.condition = conditionRow;
-    if (includeWeather) {
-      acc.weatherFetched.push({
-        raceId: r.race_id,
-        venueCode: r.venue_code,
-        startTime: r.start_time,
-        conditions,
-      });
-    }
   }
 
   // race_grade を races テーブルに記録（発走60分前の更新用）
   if (raceGrade) {
     acc.racesGradeUpdates.push({ race_id: r.race_id, race_grade: raceGrade });
+  }
+}
+
+/**
+ * races.cancellation_status / cancellation_check_streak を更新（BOA-254 FR1）。flushRaceInfo の書き込みの段（元のまま移した）。
+ * dry-run では書き込まない（状態が変化するレースのみが対象で、既に変更時のみの更新）
+ */
+async function writeCancellationUpdates(
+  acc,
+  { client, dryRun },
+  { countWritten, errors },
+) {
+  let cancellationUpdateCount = 0;
+  for (const {
+    race_id,
+    cancellation_status,
+    cancellation_check_streak,
+  } of dryRun ? [] : acc.cancellationUpdates) {
+    const { error } = await client
+      .from("races")
+      .update({ cancellation_status, cancellation_check_streak })
+      .eq("race_id", race_id);
+    if (!error) {
+      cancellationUpdateCount++;
+      countWritten(race_id);
+    } else {
+      errors.push(error.message);
+      console.error(
+        `❌ races (cancellation_status) 更新エラー [${race_id}]:`,
+        error.message,
+      );
+    }
+  }
+  if (cancellationUpdateCount > 0) {
+    console.log(
+      `  ⚠️ races (cancellation_status): ${cancellationUpdateCount}件`,
+    );
+  }
+}
+
+/** races.start_time を、出走表の締切予定時刻に追従させる（N15）。flushRaceInfo の書き込みの段（元のまま移した）。更新した件数を返す */
+async function writeDeadlineUpdates(
+  acc,
+  { client, dryRun },
+  { countWritten, errors },
+) {
+  let deadlineUpdateCount = 0;
+  for (const update of dryRun ? [] : acc.deadlineUpdates.values()) {
+    const { error } = await client
+      .from("races")
+      .update({ start_time: update.start_time })
+      .eq("race_id", update.race_id);
+    if (!error) {
+      deadlineUpdateCount++;
+      countWritten(update.race_id);
+    } else {
+      errors.push(error.message);
+      console.error(
+        `❌ races (start_time) 更新エラー [${update.race_id}]:`,
+        error.message,
+      );
+    }
+  }
+  if (acc.deadlineUpdates.size > 0) {
+    console.log(
+      `  ${dryRun ? "[DRY-RUN] " : ""}🕒 races.start_time: ${[...acc.deadlineUpdates.values()].map((u) => `${u.race_id} ${u.previous}→${u.start_time.slice(0, 5)}`).join(", ")}` +
+        (dryRun ? "" : `（更新${deadlineUpdateCount}件）`),
+    );
+  }
+  return deadlineUpdateCount;
+}
+
+/**
+ * race_conditions の行を、列の組み合わせ（気象の有無・日目の有無。順延・中止のタブの日は日目の列を含めない。BOA-501）
+ * ごとに分ける（書かない）。同じ組み合わせの行だけをまとめれば、無い列は触られない。キーは "w"/"-" と "d"/"-"
+ */
+function groupConditionRows(acc, { includeWeather, date, startTimeLookup }) {
+  let weatherByRaceId = new Map();
+  if (includeWeather) {
+    const { rows: weatherRows, stats: weatherStats } = buildWeatherRows(
+      acc.weatherFetched,
+      date,
+      { startTimeLookup },
+    );
+    console.log(`  🌤️ 気象: ${formatWeatherStats(weatherStats)}`);
+    weatherByRaceId = new Map(weatherRows.map((row) => [row.race_id, row]));
+  }
+  const groups = new Map();
+  for (const row of acc.conditionsRows) {
+    const weatherRow = weatherByRaceId.get(row.race_id);
+    const merged = weatherRow ? { ...row, ...weatherRow } : row;
+    const key = `${weatherRow ? "w" : "-"}${"series_day" in row ? "d" : "-"}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(merged);
+  }
+  return groups;
+}
+
+/**
+ * races.race_grade を更新（Source of Truth = races テーブル）。flushRaceInfo の書き込みの段（元のまま移した）。
+ * 既存値の取得に失敗している場合（cancellationFetchError）は全件を従来どおり更新する
+ */
+async function writeRacesGrade(
+  acc,
+  { client, dryRun, cancellationRows, cancellationFetchError },
+  { countWritten, errors },
+) {
+  const { toWrite: racesGradeToWrite, stats: racesGradeStats } =
+    cancellationFetchError
+      ? planWriteAll(acc.racesGradeUpdates)
+      : diffRows(cancellationRows || [], acc.racesGradeUpdates, {
+          keyColumns: ["race_id"],
+          writeMissing: false, // racesに行が無ければUPDATEしても0件
+        });
+  let racesGradeUpdateCount = 0;
+  if (!dryRun) {
+    for (const { race_id, race_grade } of racesGradeToWrite) {
+      const { error } = await client
+        .from("races")
+        .update({ race_grade })
+        .eq("race_id", race_id);
+      if (!error) {
+        racesGradeUpdateCount++;
+        countWritten(race_id);
+      } else {
+        errors.push(error.message);
+      }
+    }
+  }
+  console.log(
+    `  ${dryRun ? "[DRY-RUN] " : ""}${formatSkipSummary("races.race_grade", racesGradeStats)}` +
+      (dryRun ? "" : ` / 更新${racesGradeUpdateCount}件`),
+  );
+}
+
+/**
+ * race_conditions を upsert する。flushRaceInfo の書き込みの段（元のまま移した）。
+ * 気象の列（観測時刻を含む）は、展示取得と同じ規則で作る（BOA-358）。気象を書ける行と、
+ * 書けない行（取得失敗・気象ブロックなし・発走後の観測）は、キーの組み合わせが違うため
+ * 別々にupsertする（PostgRESTの一括upsertは、キーの無い行に明示的にNULLを書くため）
+ * includeWeather=false（Vercel。気象は展示側）は、全行を「気象なし」の行として書く
+ */
+async function writeConditionRows(
+  acc,
+  { client, dryRun, date, startTimeLookup, includeWeather },
+  countRows,
+) {
+  if (acc.conditionsRows.length > 0) {
+    // 気象の列（観測時刻を含む）は、展示取得と同じ規則で作る（BOA-358）。気象を書ける行と、
+    // 書けない行（取得失敗・気象ブロックなし・発走後の観測）は、キーの組み合わせが違うため
+    // 別々にupsertする（PostgRESTの一括upsertは、キーの無い行に明示的にNULLを書くため）
+    // includeWeather=false（Vercel。気象は展示側）は、全行を「気象なし」の行として書く
+    const groups = groupConditionRows(acc, {
+      includeWeather,
+      date,
+      startTimeLookup,
+    });
+    const labelOf = (key) =>
+      `race_conditions${key[0] === "w" ? "" : "（気象なし）"}${key[1] === "d" ? "" : "（日目を残す）"}`;
+    // weather_observed_at 列（マイグレーション069）が未適用でも書き込めるよう、共通の書き込み関数を使う
+    for (const [group, label] of [...groups].map(([key, rows]) => [
+      rows,
+      labelOf(key),
+    ])) {
+      if (group.length > 0) {
+        countRows(
+          await upsertRaceConditions(client, group, {
+            label,
+            dryRun,
+            optionalColumnGroups:
+              PRE_RACE_OPTIONAL_COLUMN_GROUPS.raceConditions,
+          }),
+        );
+      }
+    }
   }
 }
 
@@ -365,58 +576,15 @@ async function flushRaceInfo(
 
   // races.cancellation_status / cancellation_check_streak を更新（BOA-254 FR1）
   // entriesRowsが空（対象レース全てが中止疑い等）でも早期returnより前に書き込む
-  let cancellationUpdateCount = 0;
-  // dry-run では書き込まない（状態が変化するレースのみが対象で、既に変更時のみの更新）
-  for (const {
-    race_id,
-    cancellation_status,
-    cancellation_check_streak,
-  } of dryRun ? [] : acc.cancellationUpdates) {
-    const { error } = await client
-      .from("races")
-      .update({ cancellation_status, cancellation_check_streak })
-      .eq("race_id", race_id);
-    if (!error) {
-      cancellationUpdateCount++;
-      countWritten(race_id);
-    } else {
-      errors.push(error.message);
-      console.error(
-        `❌ races (cancellation_status) 更新エラー [${race_id}]:`,
-        error.message,
-      );
-    }
-  }
-  if (cancellationUpdateCount > 0) {
-    console.log(
-      `  ⚠️ races (cancellation_status): ${cancellationUpdateCount}件`,
-    );
-  }
+  const sink = { countWritten, errors };
+  await writeCancellationUpdates(acc, { client, dryRun }, sink);
 
   // races.start_time を、出走表の締切予定時刻に追従させる（N15）。書き込みデータが無くても、時刻の変更は反映する
-  let deadlineUpdateCount = 0;
-  for (const update of dryRun ? [] : acc.deadlineUpdates.values()) {
-    const { error } = await client
-      .from("races")
-      .update({ start_time: update.start_time })
-      .eq("race_id", update.race_id);
-    if (!error) {
-      deadlineUpdateCount++;
-      countWritten(update.race_id);
-    } else {
-      errors.push(error.message);
-      console.error(
-        `❌ races (start_time) 更新エラー [${update.race_id}]:`,
-        error.message,
-      );
-    }
-  }
-  if (acc.deadlineUpdates.size > 0) {
-    console.log(
-      `  ${dryRun ? "[DRY-RUN] " : ""}🕒 races.start_time: ${[...acc.deadlineUpdates.values()].map((u) => `${u.race_id} ${u.previous}→${u.start_time.slice(0, 5)}`).join(", ")}` +
-        (dryRun ? "" : `（更新${deadlineUpdateCount}件）`),
-    );
-  }
+  const deadlineUpdateCount = await writeDeadlineUpdates(
+    acc,
+    { client, dryRun },
+    sink,
+  );
 
   const result = (updated) => ({
     updated,
@@ -452,78 +620,17 @@ async function flushRaceInfo(
   );
 
   // race_conditions upsert
-  if (acc.conditionsRows.length > 0) {
-    // 気象の列（観測時刻を含む）は、展示取得と同じ規則で作る（BOA-358）。気象を書ける行と、
-    // 書けない行（取得失敗・気象ブロックなし・発走後の観測）は、キーの組み合わせが違うため
-    // 別々にupsertする（PostgRESTの一括upsertは、キーの無い行に明示的にNULLを書くため）
-    // includeWeather=false（Vercel。気象は展示側）は、全行を「気象なし」の行として書く
-    let weatherByRaceId = new Map();
-    if (includeWeather) {
-      const { rows: weatherRows, stats: weatherStats } = buildWeatherRows(
-        acc.weatherFetched,
-        date,
-        { startTimeLookup },
-      );
-      console.log(`  🌤️ 気象: ${formatWeatherStats(weatherStats)}`);
-      weatherByRaceId = new Map(weatherRows.map((row) => [row.race_id, row]));
-    }
-    // 列の組み合わせ（気象の有無・日目の有無。順延・中止のタブの日は日目の列を含めない。BOA-501）ごとに
-    // 分けて upsert する。同じ組み合わせの行だけをまとめれば、無い列は触られない
-    const groups = new Map();
-    for (const row of acc.conditionsRows) {
-      const weatherRow = weatherByRaceId.get(row.race_id);
-      const merged = weatherRow ? { ...row, ...weatherRow } : row;
-      const key = `${weatherRow ? "w" : "-"}${"series_day" in row ? "d" : "-"}`;
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(merged);
-    }
-    const labelOf = (key) =>
-      `race_conditions${key[0] === "w" ? "" : "（気象なし）"}${key[1] === "d" ? "" : "（日目を残す）"}`;
-    // weather_observed_at 列（マイグレーション069）が未適用でも書き込めるよう、共通の書き込み関数を使う
-    for (const [group, label] of [...groups].map(([key, rows]) => [
-      rows,
-      labelOf(key),
-    ])) {
-      if (group.length > 0) {
-        countRows(
-          await upsertRaceConditions(client, group, {
-            label,
-            dryRun,
-            optionalColumnGroups:
-              PRE_RACE_OPTIONAL_COLUMN_GROUPS.raceConditions,
-          }),
-        );
-      }
-    }
-  }
+  await writeConditionRows(
+    acc,
+    { client, dryRun, date, startTimeLookup, includeWeather },
+    countRows,
+  );
 
   // races.race_grade を更新（Source of Truth = races テーブル）
-  // 既存値の取得に失敗している場合（cancellationFetchError）は全件を従来どおり更新する
-  const { toWrite: racesGradeToWrite, stats: racesGradeStats } =
-    cancellationFetchError
-      ? planWriteAll(acc.racesGradeUpdates)
-      : diffRows(cancellationRows || [], acc.racesGradeUpdates, {
-          keyColumns: ["race_id"],
-          writeMissing: false, // racesに行が無ければUPDATEしても0件
-        });
-  let racesGradeUpdateCount = 0;
-  if (!dryRun) {
-    for (const { race_id, race_grade } of racesGradeToWrite) {
-      const { error } = await client
-        .from("races")
-        .update({ race_grade })
-        .eq("race_id", race_id);
-      if (!error) {
-        racesGradeUpdateCount++;
-        countWritten(race_id);
-      } else {
-        errors.push(error.message);
-      }
-    }
-  }
-  console.log(
-    `  ${dryRun ? "[DRY-RUN] " : ""}${formatSkipSummary("races.race_grade", racesGradeStats)}` +
-      (dryRun ? "" : ` / 更新${racesGradeUpdateCount}件`),
+  await writeRacesGrade(
+    acc,
+    { client, dryRun, cancellationRows, cancellationFetchError },
+    sink,
   );
 
   return result(true);
@@ -640,6 +747,105 @@ export async function run(
   return { updated, count, deadlineUpdates };
 }
 
+/** 締切予定時刻との照合・気象の観測時刻に使う予定表。渡されていなければ、要るときだけ読む */
+async function resolveFullSchedule(
+  schedule,
+  { date, client, syncDeadlines, includeWeather },
+) {
+  return (
+    schedule ??
+    (syncDeadlines || includeWeather
+      ? await getRaceSchedule(date, { client, throwOnError: true })
+      : [])
+  );
+}
+
+/** 節から導いた日目（BOA-501）。渡されていなければ読む */
+async function resolveSeriesDays(seriesDayByVenue, date, client) {
+  return seriesDayByVenue ?? (await loadSeriesDayByVenue(date, { client }));
+}
+
+/** runForRaces の取得・解析（1つの失敗で他のレースを止めない）。{race, detail} の配列 */
+function fetchRaceInfos(races, { date, concurrency, fetchFn, includeWeather }) {
+  return mapWithConcurrency(races, concurrency, async (race) => ({
+    race,
+    detail: await fetchRaceInfoDetailed(
+      date,
+      race.venue_code,
+      race.race_number,
+      { fetchFn, includeWeather },
+    ),
+  }));
+}
+
+/** runForRaces の引数の検査（mode・date） */
+function assertRaceInfoRunArgs(mode, date) {
+  if (mode !== "live" && mode !== "shadow") {
+    throw new Error(`mode は live か shadow にしてください: ${mode}`);
+  }
+  if (!date) throw new Error("date（YYYY-MM-DD）が必要です");
+}
+
+/** runForRaces の取得の結果1件を、accumulateRaceInfo に渡すか、outcomes に失敗を入れる（DBへは書かない） */
+function applyFetchedRaceInfo(
+  { race, detail },
+  { acc, accOptions, startOf, outcomes, base, parsedRaceIds },
+) {
+  const r = {
+    race_id: race.race_id,
+    venue_code: race.venue_code,
+    race_no: race.race_number,
+    start_time: startOf.get(race.race_id) ?? null,
+  };
+  const accumulate = (data, cancellationCheck) =>
+    accumulateRaceInfo(acc, { r, data, cancellationCheck, ...accOptions });
+  if (detail.status === "ok") {
+    accumulate(detail, "found");
+    parsedRaceIds.push(race.race_id);
+  } else if (detail.status === "no_entries") {
+    // ページは取れたが選手が0人。中止・順延の暫定検知の連続回数を進める（run と同じ規則）
+    accumulate(null, "not_found");
+    outcomes.set(race.race_id, {
+      ...base,
+      outcome: "no_values",
+      error: "出走表に選手がいません（中止・未公開の可能性）",
+    });
+  } else if (detail.status === "breaker_open") {
+    outcomes.set(race.race_id, {
+      ...base,
+      outcome: "breaker_open",
+      retryAt: detail.retryAt,
+      error: detail.error,
+    });
+  } else {
+    // 通信・HTTPエラー: 中止・順延の暫定検知には数えない（取得先の一時的な失敗を、中止と取り違えない）
+    outcomes.set(race.race_id, {
+      ...base,
+      outcome: "error",
+      error: `出走表を取得できませんでした: ${detail.error}`,
+    });
+  }
+}
+
+/** 解析できたレースの outcome（書き込みの失敗があれば error、他は ok） */
+function parsedRaceOutcome(perRace, raceId, { flushed, dryRun, base }) {
+  const rowsWritten = dryRun ? 0 : (flushed.written.get(raceId) ?? 0);
+  const common = {
+    ...base,
+    rowsParsed: perRace.entries.length,
+    rowsWritten,
+    changed: rowsWritten > 0,
+    resultDigest: computeRaceInfoDigest(perRace),
+  };
+  return flushed.errors.length > 0
+    ? {
+        ...common,
+        outcome: "error",
+        error: `レース情報の書き込みに失敗しました: ${flushed.errors.join(" / ")}`,
+      }
+    : { ...common, outcome: "ok" };
+}
+
 /**
  * レース単位のレース情報更新（Vercel Cron の予定表スロット `race_info` から呼ぶ。tasks.md T4b-09-1）。
  * 出走表（racelist）だけを取得し（beforeinfo は展示 A2 が全項目を取るため取らない。D2）、race_entries・
@@ -685,24 +891,21 @@ export async function runForRaces(
     seriesDayByVenue = null,
   } = {},
 ) {
-  if (mode !== "live" && mode !== "shadow") {
-    throw new Error(`mode は live か shadow にしてください: ${mode}`);
-  }
-  if (!date) throw new Error("date（YYYY-MM-DD）が必要です");
+  assertRaceInfoRunArgs(mode, date);
   if (races.length === 0) return [];
   const dryRun = mode === "shadow";
 
-  const fullSchedule =
-    schedule ??
-    (syncDeadlines || includeWeather
-      ? await getRaceSchedule(date, { client, throwOnError: true })
-      : []);
+  const fullSchedule = await resolveFullSchedule(schedule, {
+    date,
+    client,
+    syncDeadlines,
+    includeWeather,
+  });
   const startOf = new Map(fullSchedule.map((r) => [r.race_id, r.start_time]));
   const startTimeLookup = buildStartTimeLookup(fullSchedule);
 
   const preRaceSchema = await detectPreRaceSchema(client);
-  const seriesDays =
-    seriesDayByVenue ?? (await loadSeriesDayByVenue(date, { client }));
+  const seriesDays = await resolveSeriesDays(seriesDayByVenue, date, client);
   const { rows: cancellationRows, error: cancellationFetchError } =
     await loadCancellationRows(
       client,
@@ -716,67 +919,32 @@ export async function runForRaces(
   const base = { rowsWritten: 0, rowsParsed: 0, rowsExpected: 6 };
 
   // 取得・解析（1つの失敗で他のレースを止めない）
-  const fetched = await mapWithConcurrency(
-    races,
+  const fetched = await fetchRaceInfos(races, {
+    date,
     concurrency,
-    async (race) => ({
-      race,
-      detail: await fetchRaceInfoDetailed(
-        date,
-        race.venue_code,
-        race.race_number,
-        { fetchFn, includeWeather },
-      ),
-    }),
-  );
+    fetchFn,
+    includeWeather,
+  });
   const parsedRaceIds = [];
-  for (const { race, detail } of fetched) {
-    const r = {
-      race_id: race.race_id,
-      venue_code: race.venue_code,
-      race_no: race.race_number,
-      start_time: startOf.get(race.race_id) ?? null,
-    };
-    const accumulate = (data, cancellationCheck) =>
-      accumulateRaceInfo(acc, {
-        r,
-        data,
-        cancellationCheck,
-        schedule: fullSchedule,
-        syncDeadlines,
-        cancellationMap,
-        cancellationFetchError,
-        entriesExtended: preRaceSchema.raceEntries,
-        conditionsExtended: preRaceSchema.raceConditions,
-        includeWeather,
-        seriesDayByVenue: seriesDays,
-      });
-    if (detail.status === "ok") {
-      accumulate(detail, "found");
-      parsedRaceIds.push(race.race_id);
-    } else if (detail.status === "no_entries") {
-      // ページは取れたが選手が0人。中止・順延の暫定検知の連続回数を進める（run と同じ規則）
-      accumulate(null, "not_found");
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "no_values",
-        error: "出走表に選手がいません（中止・未公開の可能性）",
-      });
-    } else if (detail.status === "breaker_open") {
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "breaker_open",
-        retryAt: detail.retryAt,
-        error: detail.error,
-      });
-    } else {
-      // 通信・HTTPエラー: 中止・順延の暫定検知には数えない（取得先の一時的な失敗を、中止と取り違えない）
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "error",
-        error: `出走表を取得できませんでした: ${detail.error}`,
-      });
-    }
+  const accOptions = {
+    schedule: fullSchedule,
+    syncDeadlines,
+    cancellationMap,
+    cancellationFetchError,
+    entriesExtended: preRaceSchema.raceEntries,
+    conditionsExtended: preRaceSchema.raceConditions,
+    includeWeather,
+    seriesDayByVenue: seriesDays,
+  };
+  for (const f of fetched) {
+    applyFetchedRaceInfo(f, {
+      acc,
+      accOptions,
+      startOf,
+      outcomes,
+      base,
+      parsedRaceIds,
+    });
   }
 
   // 書き込み（shadow は書かない）
@@ -791,24 +959,13 @@ export async function runForRaces(
   });
 
   for (const raceId of parsedRaceIds) {
-    const perRace = acc.perRace.get(raceId);
-    const rowsWritten = dryRun ? 0 : (flushed.written.get(raceId) ?? 0);
-    const common = {
-      ...base,
-      rowsParsed: perRace.entries.length,
-      rowsWritten,
-      changed: rowsWritten > 0,
-      resultDigest: computeRaceInfoDigest(perRace),
-    };
     outcomes.set(
       raceId,
-      flushed.errors.length > 0
-        ? {
-            ...common,
-            outcome: "error",
-            error: `レース情報の書き込みに失敗しました: ${flushed.errors.join(" / ")}`,
-          }
-        : { ...common, outcome: "ok" },
+      parsedRaceOutcome(acc.perRace.get(raceId), raceId, {
+        flushed,
+        dryRun,
+        base,
+      }),
     );
   }
 
