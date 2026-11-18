@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2002,
+    "sourceFiles": 2003,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -3906,7 +3906,7 @@
           "test": true
         },
         {
-          "ref": "src/services/scheduleQueries.js:267",
+          "ref": "src/services/scheduleQueries.js:268",
           "op": "select",
           "via": "client",
           "columns": [
@@ -3942,7 +3942,7 @@
             "scripts/daily/generate-morning-digest.js:890",
             "scripts/daily/generate-morning-digest.js:919",
             "scripts/maintenance/verify-morning-digest.js:40",
-            "src/services/scheduleQueries.js:267"
+            "src/services/scheduleQueries.js:268"
           ],
           "writers": [],
           "sql": []
@@ -4039,7 +4039,7 @@
           "test": true
         },
         {
-          "ref": "src/services/scheduleQueries.js:272",
+          "ref": "src/services/scheduleQueries.js:273",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4082,21 +4082,21 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:895",
             "scripts/maintenance/verify-morning-digest.js:58",
-            "src/services/scheduleQueries.js:272"
+            "src/services/scheduleQueries.js:273"
           ],
           "writers": [],
           "sql": []
         },
         "section": {
           "readers": [
-            "src/services/scheduleQueries.js:272"
+            "src/services/scheduleQueries.js:273"
           ],
           "writers": [],
           "sql": []
         },
         "rank": {
           "readers": [
-            "src/services/scheduleQueries.js:272"
+            "src/services/scheduleQueries.js:273"
           ],
           "writers": [],
           "sql": []
@@ -9072,7 +9072,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:178",
+          "ref": "src/services/scheduleQueries.js:179",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9102,7 +9102,7 @@
         "key": {
           "readers": [
             "api/race-history/summary.js:37",
-            "src/services/scheduleQueries.js:178"
+            "src/services/scheduleQueries.js:179"
           ],
           "writers": [
             "scripts/daily/update-race-history-cache.js:121"
@@ -9114,7 +9114,7 @@
         "data": {
           "readers": [
             "api/race-history/summary.js:37",
-            "src/services/scheduleQueries.js:178"
+            "src/services/scheduleQueries.js:179"
           ],
           "writers": [
             "scripts/daily/update-race-history-cache.js:121"
@@ -12649,7 +12649,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:68",
+          "ref": "src/services/scheduleQueries.js:69",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12659,7 +12659,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:94",
+          "ref": "src/services/scheduleQueries.js:95",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12690,8 +12690,8 @@
             "src/services/meetQueries3.js:48",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
-            "src/services/scheduleQueries.js:68",
-            "src/services/scheduleQueries.js:94"
+            "src/services/scheduleQueries.js:69",
+            "src/services/scheduleQueries.js:95"
           ],
           "writers": [],
           "sql": [
@@ -12709,8 +12709,8 @@
             "src/services/meetQueries3.js:48",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
-            "src/services/scheduleQueries.js:68",
-            "src/services/scheduleQueries.js:94"
+            "src/services/scheduleQueries.js:69",
+            "src/services/scheduleQueries.js:95"
           ],
           "writers": [],
           "sql": [
@@ -12728,8 +12728,8 @@
             "src/services/meetQueries3.js:48",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
-            "src/services/scheduleQueries.js:68",
-            "src/services/scheduleQueries.js:94"
+            "src/services/scheduleQueries.js:69",
+            "src/services/scheduleQueries.js:95"
           ],
           "writers": [],
           "sql": [
@@ -12747,7 +12747,7 @@
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
-            "src/services/scheduleQueries.js:94"
+            "src/services/scheduleQueries.js:95"
           ],
           "writers": [],
           "sql": []
@@ -12763,7 +12763,7 @@
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:48",
-            "src/services/scheduleQueries.js:94"
+            "src/services/scheduleQueries.js:95"
           ],
           "writers": [],
           "sql": []
@@ -17145,7 +17145,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:125",
+          "ref": "src/services/scheduleQueries.js:126",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17153,7 +17153,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:205",
+          "ref": "src/services/scheduleQueries.js:206",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17162,7 +17162,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:229",
+          "ref": "src/services/scheduleQueries.js:230",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17518,7 +17518,7 @@
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/ruleMatchService.js:158",
-            "src/services/scheduleQueries.js:229",
+            "src/services/scheduleQueries.js:230",
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:116",
             "src/services/venueQueries2.js:43",
@@ -17618,9 +17618,9 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
-            "src/services/scheduleQueries.js:125",
-            "src/services/scheduleQueries.js:205",
-            "src/services/scheduleQueries.js:229",
+            "src/services/scheduleQueries.js:126",
+            "src/services/scheduleQueries.js:206",
+            "src/services/scheduleQueries.js:230",
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:116",
             "src/services/venueQueries2.js:43",
@@ -17700,8 +17700,8 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
-            "src/services/scheduleQueries.js:205",
-            "src/services/scheduleQueries.js:229",
+            "src/services/scheduleQueries.js:206",
+            "src/services/scheduleQueries.js:230",
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:116",
             "src/services/venueQueries2.js:43",
@@ -17744,7 +17744,7 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
-            "src/services/scheduleQueries.js:229",
+            "src/services/scheduleQueries.js:230",
             "src/services/sherlockService.js:66",
             "src/services/watsonService.js:72"
           ],
@@ -17805,7 +17805,7 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/ruleMatchService.js:158",
-            "src/services/scheduleQueries.js:229",
+            "src/services/scheduleQueries.js:230",
             "src/services/sherlockService.js:66",
             "src/services/watsonService.js:72"
           ],
@@ -27955,7 +27955,7 @@
           "via": "rest"
         },
         {
-          "ref": "src/services/scheduleQueries.js:52",
+          "ref": "src/services/scheduleQueries.js:53",
           "via": "client"
         }
       ],
