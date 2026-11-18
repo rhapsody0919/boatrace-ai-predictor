@@ -23,6 +23,14 @@ import {
   SEASON_STATS_REQUEST_HEADERS,
 } from "./racerSeasonStats.js";
 import { getDateDaysAgo } from "./dateUtils.js";
+import {
+  buildSyncSummary,
+  createSyncCounters,
+  createSyncState,
+  logSyncCompletion,
+  populationLogLine,
+  runSyncWorkers,
+} from "./racerProfileSyncSteps.js";
 
 export const REQUEST_DELAY_MS = 500;
 export const FETCH_TIMEOUT_MS = 30_000;
@@ -451,7 +459,7 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
   const recentIds = options.racerIds
     ? new Set()
     : await loadRecentRacerIds(client, options.recentDays);
-  const population = buildPopulation({
+  const populationArgs = {
     registered,
     recentIds,
     racerIds: options.racerIds,
@@ -459,267 +467,51 @@ export async function runRacerProfileSync({ client, options, deps = {} }) {
     offset: options.offset,
     afterRacerId: options.afterRacerId,
     newProfilesOnly: options.newProfilesOnly,
-  });
+  };
+  const population = buildPopulation(populationArgs);
   // このチャンクの後に残る選手数（limit・offset を外した、対象全体）を、チャンク処理の完了判定に使う
   const eligibleCount = buildPopulation({
-    registered,
-    recentIds,
-    racerIds: options.racerIds,
+    ...populationArgs,
     limit: null,
-    offset: options.offset,
-    afterRacerId: options.afterRacerId,
-    newProfilesOnly: options.newProfilesOnly,
   }).length;
   const newProfileCount = population.filter((id) => !registered.has(id)).length;
-  log(
-    `対象racer_id数: ${population.length}件` +
-      `（登録済み${registered.size}件・直近${options.recentDays}日の出走${recentIds.size}件` +
-      `${options.racerIds ? "・racer-ids指定" : ""}${options.limit ? `・limit=${options.limit}` : ""}` +
-      `${options.offset ? `・offset=${options.offset}` : ""}）`,
-  );
+  log(populationLogLine(options, population, registered, recentIds));
   log(`うち新規プロフィール登録対象（FR-5）: ${newProfileCount}件`);
   log("");
 
-  const profile = {
-    successCount: 0,
-    failCount: 0,
-    saveErrorCount: 0, // 取得・解析はできたがDBへの保存に失敗した件数（常に異常として扱う）
-    failedRacerIds: [],
-  };
-  const season = {
-    successCount: 0, // 書き込んだ件数（dry-runでは書く予定の件数）
-    unchangedCount: 0, // 既存値と同じため書かなかった件数
-    noDataCount: 0, // ページはあるが集計期間内データが無い（新人選手等）
-    notFoundCount: 0, // 公式サイトがこの登録番号のページ自体が存在しないと返した（引退・登録抹消等と推定。BOA-376）
-    failCount: 0,
-    failedRacerIds: [],
-  };
-  let consecutiveSeasonFailures = 0;
-  let stoppedEarly = false;
-  let aborted = false;
-  let nextOffset = null;
-  const maxMs = options.maxMinutes ? options.maxMinutes * 60_000 : null;
-
-  const recordSeasonFailure = (racerId, progress, message) => {
-    season.failCount++;
-    season.failedRacerIds.push(racerId);
-    logError(`${progress} racer_id=${racerId} [season] 失敗: ${message}`);
-  };
-
-  // 選手1人分の処理。同時数（options.concurrency）が1なら、従来の逐次の処理と同じ順序・同じ待機
-  const processOne = async (i) => {
-    const racerId = population[i];
-    const progress = `[${i + 1}/${population.length}]`;
-    const isNewProfile = !registered.has(racerId);
-    let hasProfile = !isNewProfile;
-
-    // 1. 新規選手のみ: 基本プロフィール取得（FR-5）
-    if (isNewProfile) {
-      let scraped = null;
-      let failureMessage =
-        "プロフィールページが存在しない、または生年月日が取得できない";
-      try {
-        scraped = await scrapeProfile(racerId, fetchOptions);
-      } catch (err) {
-        failureMessage = err.message;
-      }
-
-      if (!scraped) {
-        profile.failCount++;
-        profile.failedRacerIds.push(racerId);
-        log(
-          `${progress} racer_id=${racerId} [profile] 取得失敗（スキップ）: ${failureMessage}`,
-        );
-      } else if (options.dryRun) {
-        profile.successCount++;
-        hasProfile = true;
-        log(
-          `${progress} racer_id=${racerId} [profile] → ${scraped.name} 生年月日=${scraped.birthDate} (dry-run)`,
-        );
-      } else {
-        const { error } = await saveNewProfile(client, scraped);
-        if (error) {
-          profile.failCount++;
-          profile.saveErrorCount++;
-          profile.failedRacerIds.push(racerId);
-          logError(
-            `${progress} racer_id=${racerId} [profile] 保存エラー: ${error.message}`,
-          );
-        } else {
-          profile.successCount++;
-          hasProfile = true;
-          log(
-            `${progress} racer_id=${racerId} [profile] → ${scraped.name} 生年月日=${scraped.birthDate}`,
-          );
-        }
-      }
-      await sleep(options.delayMs);
-    }
-
-    // 2. 全選手（プロフィールが存在する場合のみ）: 期別成績取得（FR-2）
-    //    無効なracer_idへの無駄なリクエストを避けるため、プロフィール未確認の選手はスキップする
-    if (hasProfile) {
-      const failuresBefore = season.failCount;
-      let seasonStats = null;
-      let failureMessage = "期別成績ページを取得・解析できない";
-      try {
-        seasonStats = await scrapeSeasonStatsWithRetry(racerId, fetchOptions);
-      } catch (err) {
-        failureMessage = err.message;
-      }
-
-      if (!seasonStats) {
-        recordSeasonFailure(racerId, progress, failureMessage);
-      } else if (seasonStats === RACER_PAGE_NOT_FOUND) {
-        // 公式サイトが「この登録番号は存在しない」ページを返した（引退・登録抹消等と推定。
-        // BOA-376）。取得・解析の失敗ではないため recordSeasonFailure は呼ばない
-        season.notFoundCount++;
-        if (options.verbose)
-          log(
-            `${progress} racer_id=${racerId} [season] 公式サイトにページが存在しない（引退・登録抹消等と推定）`,
-          );
-      } else if (
-        seasonStats.abilityIndex === null &&
-        seasonStats.starts === null
-      ) {
-        season.noDataCount++;
-        if (options.verbose)
-          log(
-            `${progress} racer_id=${racerId} [season] 集計期間内データ無し（新人選手等）`,
-          );
-      } else {
-        const row = toSeasonStatsRow(
-          seasonStats,
-          new Date(now()).toISOString(),
-        );
-        if (isSeasonRowUnchanged(registered.get(racerId), row)) {
-          season.unchangedCount++;
-          if (options.verbose)
-            log(
-              `${progress} racer_id=${racerId} [season] 変更なし（書き込みスキップ）`,
-            );
-        } else if (options.dryRun) {
-          season.successCount++;
-          log(
-            `${progress} racer_id=${racerId} [season] 能力指数=${seasonStats.abilityIndex} F=${seasonStats.flyingCount} 期=${seasonStats.periodLabel} (dry-run、書き込みなし)`,
-          );
-        } else {
-          const { error } = await saveSeasonStats(client, racerId, row);
-          if (error) {
-            recordSeasonFailure(
-              racerId,
-              progress,
-              `保存エラー: ${error.message}`,
-            );
-          } else {
-            season.successCount++;
-            if (options.verbose)
-              log(
-                `${progress} racer_id=${racerId} [season] 能力指数=${seasonStats.abilityIndex} F=${seasonStats.flyingCount}`,
-              );
-          }
-        }
-      }
-
-      await sleep(options.delayMs);
-
-      // 成功・変更なし・データ無しのいずれかで連続失敗はリセットする
-      consecutiveSeasonFailures =
-        season.failCount > failuresBefore ? consecutiveSeasonFailures + 1 : 0;
-      if (consecutiveSeasonFailures >= ABORT_AFTER_CONSECUTIVE_FAILURES) {
-        aborted = true;
-        nextOffset = options.offset + i + 1;
-        return;
-      }
-    }
-
-    if ((i + 1) % 50 === 0 || i === population.length - 1) {
-      log(
-        `${progress} profile成功: ${profile.successCount}件/失敗: ${profile.failCount}件, ` +
-          `season書込: ${season.successCount}件/変更なし: ${season.unchangedCount}件/データ無し: ${season.noDataCount}件/ページ不在: ${season.notFoundCount}件/失敗: ${season.failCount}件`,
-      );
-    }
-  };
-
-  // 対象を、登録番号の昇順に、同時 options.concurrency で処理する。次の1人に着手する前に、中断の条件
-  // （時間予算・ソフトデッドライン・連続失敗）を確認する。着手は昇順で、着手した選手は、中断の後も最後まで処理する
-  // （途中で捨てない）ため、処理した選手は、常に「先頭から nextIndex 人」の欠けのない範囲になる。
-  // これを、チャンクの再開位置（processedPrefix・lastProcessedRacerId）にする
-  let nextIndex = 0;
-  let stopped = false;
-  let deadlineStopped = false;
-  const worker = async () => {
-    for (;;) {
-      if (stopped || aborted) return;
-      const i = nextIndex;
-      if (i >= population.length) return;
-      if (maxMs !== null && now() - startedAt > maxMs) {
-        stoppedEarly = true;
-        nextOffset = options.offset + i;
-        stopped = true;
-        log(`時間予算（${options.maxMinutes}分）に達したため中断します。`);
-        return;
-      }
-      if (shouldStop()) {
-        deadlineStopped = true;
-        stopped = true;
-        return;
-      }
-      nextIndex++;
-      await processOne(i);
-    }
-  };
-  await Promise.all(
-    Array.from(
-      { length: Math.min(Math.max(1, options.concurrency), population.length) },
-      () => worker(),
-    ),
-  );
-  const processedPrefix = nextIndex;
-
-  const summary = {
-    executedAt: new Date(now()).toISOString(),
-    durationSeconds: Math.round((now() - startedAt) / 1000),
-    mode: options.racerIds ? "racer_ids" : "all",
-    options: {
-      racerIds: options.racerIds,
-      limit: options.limit,
-      offset: options.offset,
-      recentDays: options.recentDays,
+  const run = {
+    client,
+    options,
+    log,
+    logError,
+    sleep,
+    now,
+    shouldStop,
+    startedAt,
+    fetchOptions,
+    maxMs: options.maxMinutes ? options.maxMinutes * 60_000 : null,
+    population,
+    registered,
+    ...createSyncCounters(),
+    state: createSyncState(),
+    io: {
+      scrapeProfile,
+      saveNewProfile,
+      scrapeSeasonStatsWithRetry,
+      saveSeasonStats,
+      toSeasonStatsRow,
+      isSeasonRowUnchanged,
+      notFound: RACER_PAGE_NOT_FOUND,
+      abortAfter: ABORT_AFTER_CONSECUTIVE_FAILURES,
     },
-    targetCount: population.length,
-    registeredCount: registered.size,
-    resumed: options.afterRacerId !== null,
-    stoppedEarly,
-    deadlineStopped,
-    aborted,
-    nextOffset,
-    // チャンク処理の再開位置: 先頭から連続して処理を終えた選手数と、その最後の登録番号。
-    // remaining は、このチャンクの後にまだ処理していない選手数（0なら最後まで処理済み）
-    processedPrefix,
-    lastProcessedRacerId:
-      processedPrefix > 0 ? population[processedPrefix - 1] : null,
-    remaining: Math.max(0, eligibleCount - processedPrefix),
-    profile,
-    season,
   };
+  await runSyncWorkers(run);
+
+  const summary = buildSyncSummary(run, eligibleCount);
   const verdict = evaluateRun(summary, {
     allowEmpty: options.newProfilesOnly && registered.size > 0,
   });
-
-  log("");
-  log("=== 完了 ===");
-  log(
-    `[profile] 成功: ${profile.successCount}件, 失敗（除外）: ${profile.failCount}件`,
-  );
-  log(
-    `[season] 書き込み: ${season.successCount}件, 変更なし: ${season.unchangedCount}件, データ無し: ${season.noDataCount}件, ページ不在: ${season.notFoundCount}件, 失敗: ${season.failCount}件`,
-  );
-  if (season.failedRacerIds.length > 0)
-    log(`[season] 失敗した登録番号: ${season.failedRacerIds.join(",")}`);
-  if (!verdict.ok) {
-    logError(`実行を失敗として扱います: ${verdict.reasons.join(" / ")}`);
-  }
+  logSyncCompletion(run, verdict);
 
   return { summary, verdict };
 }
