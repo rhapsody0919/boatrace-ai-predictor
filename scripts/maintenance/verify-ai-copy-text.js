@@ -139,8 +139,8 @@ const build = (lang, overrides = {}) => {
 const bundled = await bundle({
   stdin: {
     contents: fs.readFileSync(path.join(ROOT, "src/hooks/useAiCopyText.js"), "utf8") +
-      "\nexport { buildRows, buildOriginalExhibitionRows };" +
-      '\nexport { buildBasicIndicatorRows, buildIndicatorRows } from "../components/race/raceIndicators";',
+      "\nexport { buildRows };" +
+      '\nexport { buildBasicIndicatorRows, buildIndicatorRows, buildOriginalExhibitionRows } from "../components/race/raceIndicators";',
     resolveDir: path.join(ROOT, "src/hooks"),
     loader: "js",
   },
