@@ -6,37 +6,17 @@ import {
   isSupabaseEnabled,
   fetchAll,
 } from "../lib/supabaseClient.js";
-import { isJudgeable } from "../../src/utils/raceOutcome.js";
+import {
+  summarizeHits,
+  computeStats,
+  jstDateStr,
+  buildVolatilityStats,
+  accuracyPeriods,
+  predsInMonth,
+  buildModelCache,
+} from "../lib/accuracyCacheStats.js";
 
-/**
- * 券種ごとの的中数・母数・払戻の合計（純関数。BOA-544）。
- * 母数は、その券種の is_hit_* が NULL でない予想の数。不成立のレースと、返還艇を含む券種は判定対象外（NULL）で、
- * 母数から外す（公式の回収率と同じ扱い。返還は「投資100円・戻り0円」ではない）。top_3rd を予想しないモデルの
- * 3連系も NULL なので母数に入らない。
- *
- * @param {Array<Object>} predictions is_hit_win/place/trifecta/trio・payout_* を持つ行
- * @returns {{win: Bet, place: Bet, trifecta: Bet, trio: Bet}} Bet = {n, hits, hitRate, recoveryRate}
- */
-export function summarizeHits(predictions) {
-  const bet = (key) => {
-    const judged = predictions.filter((p) => p[`is_hit_${key}`] != null);
-    const n = judged.length;
-    const hits = judged.filter((p) => p[`is_hit_${key}`]).length;
-    const payout = judged.reduce((s, p) => s + (p[`payout_${key}`] || 0), 0);
-    return {
-      n,
-      hits,
-      hitRate: n > 0 ? hits / n : 0,
-      recoveryRate: n > 0 ? payout / (n * 100) : 0,
-    };
-  };
-  return {
-    win: bet("win"),
-    place: bet("place"),
-    trifecta: bet("trifecta"),
-    trio: bet("trio"),
-  };
-}
+export { summarizeHits, computeStats };
 
 // Calculate statistics for a model (4券種: win/place/trifecta/trio) — overall のみ
 async function calculateModelStats(modelId) {
@@ -77,40 +57,6 @@ async function calculateModelStats(modelId) {
   };
 }
 
-// 統計を計算するヘルパー（predictions 配列 → フロントが期待する形式）
-export function computeStats(predictions) {
-  if (!predictions || predictions.length === 0) {
-    return {
-      totalRaces: 0,
-      topPickHitRate: 0,
-      topPickPlaceRate: 0,
-      top3HitRate: 0,
-      top3IncludedRate: 0,
-      actualRecovery: {
-        win: { recoveryRate: 0 },
-        place: { recoveryRate: 0 },
-        trifecta: { recoveryRate: 0 },
-        trio: { recoveryRate: 0 },
-      },
-    };
-  }
-
-  const h = summarizeHits(predictions);
-  return {
-    totalRaces: predictions.length,
-    topPickHitRate: h.win.hitRate,
-    topPickPlaceRate: h.place.hitRate,
-    top3HitRate: h.trifecta.hitRate,
-    top3IncludedRate: h.trio.hitRate,
-    actualRecovery: {
-      win: { recoveryRate: h.win.recoveryRate },
-      place: { recoveryRate: h.place.recoveryRate },
-      trifecta: { recoveryRate: h.trifecta.recoveryRate },
-      trio: { recoveryRate: h.trio.recoveryRate },
-    },
-  };
-}
-
 // predictions テーブルから指定範囲を全件取得（ページネーション付き）
 async function fetchPredictionsRange(startDate, endDate) {
   const adjustedEnd = endDate ? `${endDate}-99-99` : null;
@@ -127,51 +73,12 @@ async function fetchPredictionsRange(startDate, endDate) {
   );
 }
 
-// JST 日付文字列を生成するヘルパー
-function jstDateStr(date) {
-  const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-  return jst.toISOString().split("T")[0];
-}
-
-function addMonths(date, n) {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + n);
-  return d;
-}
-
 // イン崩れ予測精度を集計（直近90日の races × race_results）
 async function calculateVolatilityStats() {
   const now = new Date();
   const ninetyDaysAgoStr = jstDateStr(
     new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000),
   );
-
-  const VENUE_NAMES = {
-    1: "桐生",
-    2: "戸田",
-    3: "江戸川",
-    4: "平和島",
-    5: "多摩川",
-    6: "浜名湖",
-    7: "蒲郡",
-    8: "常滑",
-    9: "津",
-    10: "三国",
-    11: "びわこ",
-    12: "住之江",
-    13: "尼崎",
-    14: "鳴門",
-    15: "丸亀",
-    16: "児島",
-    17: "宮島",
-    18: "徳山",
-    19: "下関",
-    20: "若松",
-    21: "芦屋",
-    22: "福岡",
-    23: "唐津",
-    24: "大村",
-  };
 
   // races・race_results を取得。失敗は例外にする（以前は null を返し、その null が volatilityStats として
   // そのままキャッシュに書かれていた。BOA-391）
@@ -190,157 +97,21 @@ async function calculateVolatilityStats() {
     (q) => q.gte("race_id", ninetyDaysAgoStr).order("race_id"),
   );
 
-  // アプリ側 JOIN・フィルタ
-  const resultMap = new Map(results.map((r) => [r.race_id, r]));
-  const joined = races
-    .map((race) => {
-      const result = resultMap.get(race.race_id);
-      // 不成立は race_status で判定する（is_no_race は全行 false で機能していない。078・BOA-544）
-      if (!result || result.is_cancelled || !isJudgeable(result)) return null;
-      return {
-        venueCode: race.venue_code,
-        level: race.volatility_level,
-        grade: race.race_grade,
-        upset: result.rank1 !== 1,
-      };
-    })
-    .filter(Boolean);
-
-  if (joined.length === 0) return null;
-
-  // ベースライン（全体）
-  const totalUpset = joined.filter((r) => r.upset).length;
-  const baseline = {
-    raceCount: joined.length,
-    upsetRate: parseFloat(((totalUpset / joined.length) * 100).toFixed(1)),
-  };
-
-  // レベル別集計
-  const byLevel = {};
-  for (const level of ["low", "medium", "high"]) {
-    const rows = joined.filter((r) => r.level === level);
-    if (rows.length === 0) continue;
-    const upsetCount = rows.filter((r) => r.upset).length;
-    const upsetRate = parseFloat(((upsetCount / rows.length) * 100).toFixed(1));
-    byLevel[level] = {
-      raceCount: rows.length,
-      upsetRate,
-      lift: parseFloat((upsetRate - baseline.upsetRate).toFixed(1)),
-    };
-  }
-
-  // グレード別集計
-  const GRADE_KEYS = ["SG", "G1", "G2", "G3", "ippan"];
-  const byGrade = {};
-  for (const grade of GRADE_KEYS) {
-    const rows = joined.filter((r) => r.grade === grade);
-    if (rows.length < 5) continue; // 5件未満はスキップ
-    const upsetCount = rows.filter((r) => r.upset).length;
-    const upsetRate = parseFloat(((upsetCount / rows.length) * 100).toFixed(1));
-    const highRows = rows.filter((r) => r.level === "high");
-    const highUpsetCount = highRows.filter((r) => r.upset).length;
-    byGrade[grade] = {
-      raceCount: rows.length,
-      upsetRate,
-      highRaceCount: highRows.length,
-      highUpsetRate:
-        highRows.length > 0
-          ? parseFloat(((highUpsetCount / highRows.length) * 100).toFixed(1))
-          : null,
-    };
-  }
-
-  // 会場別ベースライン（全レベル合計）
-  const venueAllMap = new Map();
-  for (const row of joined) {
-    const vc = row.venueCode;
-    if (!venueAllMap.has(vc)) venueAllMap.set(vc, { total: 0, upset: 0 });
-    const v = venueAllMap.get(vc);
-    v.total++;
-    if (row.upset) v.upset++;
-  }
-
-  // 会場別 high 集計
-  const venueHighMap = new Map();
-  for (const row of joined) {
-    if (row.level !== "high") continue;
-    const vc = row.venueCode;
-    if (!venueHighMap.has(vc)) venueHighMap.set(vc, { total: 0, upset: 0 });
-    const v = venueHighMap.get(vc);
-    v.total++;
-    if (row.upset) v.upset++;
-  }
-
-  const byVenue = Array.from(venueAllMap.entries())
-    .map(([venueCode, all]) => {
-      const high = venueHighMap.get(venueCode) || { total: 0, upset: 0 };
-      return {
-        venueCode: String(venueCode).padStart(2, "0"),
-        venueName: VENUE_NAMES[venueCode] || `会場${venueCode}`,
-        highRaceCount: high.total,
-        highUpsetRate:
-          high.total > 0
-            ? parseFloat(((high.upset / high.total) * 100).toFixed(1))
-            : 0,
-        baselineUpsetRate: parseFloat(
-          ((all.upset / all.total) * 100).toFixed(1),
-        ),
-        isReliable: high.total >= 5,
-      };
-    })
-    .sort((a, b) => b.highUpsetRate - a.highUpsetRate);
+  const built = buildVolatilityStats(races, results);
+  if (!built) return null;
 
   console.log(
-    `  volatilityStats: ${joined.length}件集計完了 (high=${byLevel.high?.raceCount ?? 0}件)`,
+    `  volatilityStats: ${built.joinedCount}件集計完了 (high=${built.stats.byLevel.high?.raceCount ?? 0}件)`,
   );
 
-  return {
-    baseline,
-    byLevel,
-    byVenue,
-    byGrade: Object.keys(byGrade).length > 0 ? byGrade : undefined,
-    period: "90days",
-    lastUpdated: new Date().toISOString(),
-  };
+  return { ...built.stats, lastUpdated: new Date().toISOString() };
 }
 
 // accuracy_cache テーブルに全統計を書き込む
 async function buildAndStoreAccuracyCache() {
   const now = new Date();
-  const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-
-  const thisYear = jstNow.getUTCFullYear();
-  const thisMonth = jstNow.getUTCMonth() + 1;
-  const pad = (n) => String(n).padStart(2, "0");
-
-  const thisMonthStart = `${thisYear}-${pad(thisMonth)}-01`;
-
-  // 先月
-  const lastMonthDate = addMonths(new Date(thisYear, thisMonth - 1, 1), -1);
-  const lastYear = lastMonthDate.getFullYear();
-  const lastMonth = lastMonthDate.getMonth() + 1;
-
-  // 過去6ヶ月
-  const monthsToFetch = [];
-  for (let i = 1; i <= 6; i++) {
-    const d = addMonths(new Date(thisYear, thisMonth - 1, 1), -i);
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
-    monthsToFetch.push({
-      year: y,
-      month: m,
-      start: `${y}-${pad(m)}-01`,
-      end: `${y}-${pad(m)}-31`,
-    });
-  }
-
-  // 7日前 / 90日前
-  const sevenDaysAgoStr = jstDateStr(
-    new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-  );
-  const ninetyDaysAgoStr = jstDateStr(
-    new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000),
-  );
+  const periods = accuracyPeriods(now);
+  const { thisYear, thisMonth, ninetyDaysAgoStr } = periods;
 
   console.log("\n📊 accuracy_cache 用データ取得中...");
 
@@ -349,21 +120,16 @@ async function buildAndStoreAccuracyCache() {
     ninetyDaysAgoStr,
     null,
   );
-  const thisMonthEnd = `${thisYear}-${pad(thisMonth)}-31`;
-  const thisMonthPredictions = allRecentPredictions.filter(
-    (p) => p.race_id >= thisMonthStart && p.race_id <= `${thisMonthEnd}-99-99`,
+  const thisMonthPredictions = predsInMonth(
+    allRecentPredictions,
+    thisYear,
+    thisMonth,
   );
-
-  // 各月の predictions をメモリでフィルタ
-  const getPredsByMonth = (year, month) => {
-    const start = `${year}-${pad(month)}-01`;
-    const end = `${year}-${pad(month)}-31`;
-    return allRecentPredictions.filter(
-      (p) => p.race_id >= start && p.race_id <= `${end}-99-99`,
-    );
-  };
-
-  const lastMonthPredictions = getPredsByMonth(lastYear, lastMonth);
+  const lastMonthPredictions = predsInMonth(
+    allRecentPredictions,
+    periods.lastYear,
+    periods.lastMonth,
+  );
 
   // models テーブルから全モデルの overall 統計を取得
   const { data: modelsRows, error: modelsError } = await supabase
@@ -381,92 +147,17 @@ async function buildAndStoreAccuracyCache() {
   const cacheModels = {};
 
   for (const modelId of modelIds) {
-    const modelRow = modelsRows?.find((m) => m.model_id === modelId);
-
-    // 今月統計
-    const thisMonthPreds = thisMonthPredictions.filter(
-      (p) => p.model_id === modelId,
-    );
-    // 先月統計
-    const lastMonthPreds = lastMonthPredictions.filter(
-      (p) => p.model_id === modelId,
-    );
-
-    // 月別履歴（過去6ヶ月）
-    const monthlyHistory = monthsToFetch
-      .map(({ year, month }) => {
-        const preds = getPredsByMonth(year, month).filter(
-          (p) => p.model_id === modelId,
-        );
-        const stats = computeStats(preds);
-        if (stats.totalRaces === 0) return null;
-        return { year, month, ...stats };
-      })
-      .filter(Boolean)
-      .sort((a, b) =>
-        b.year !== a.year ? b.year - a.year : b.month - a.month,
-      );
-
-    // 日別履歴（過去7日）
-    const recentPreds = allRecentPredictions.filter(
-      (p) => p.model_id === modelId && p.race_id >= sevenDaysAgoStr,
-    );
-    const dateMap = new Map();
-    for (const pred of recentPreds) {
-      const date = pred.race_id.substring(0, 10);
-      if (!dateMap.has(date)) dateMap.set(date, []);
-      dateMap.get(date).push(pred);
-    }
-    const dailyHistory = Array.from(dateMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, preds]) => ({ date, ...computeStats(preds) }));
-
-    // 会場別統計（過去90日）
-    const venueMap = new Map();
-    for (const pred of allRecentPredictions.filter(
-      (p) => p.model_id === modelId,
-    )) {
-      const venueCode = parseInt(pred.race_id.substring(11, 13), 10);
-      if (!venueMap.has(venueCode)) venueMap.set(venueCode, []);
-      venueMap.get(venueCode).push(pred);
-    }
-    const byVenue = {};
-    for (const [venueCode, preds] of venueMap) {
-      byVenue[venueCode] = { overall: computeStats(preds) };
-    }
-
-    cacheModels[modelId] = {
-      overall: {
-        totalRaces: modelRow?.total_predictions || 0,
-        finishedRaces: modelRow?.total_predictions || 0,
-        topPickHitRate: modelRow?.hit_rate_win || 0,
-        topPickPlaceRate: modelRow?.hit_rate_place || 0,
-        top3HitRate: modelRow?.hit_rate_trifecta || 0,
-        top3ExactHitRate: modelRow?.hit_rate_trio || 0,
-        actualRecovery: {
-          win: { recoveryRate: modelRow?.recovery_rate_win || 0 },
-          place: { recoveryRate: modelRow?.recovery_rate_place || 0 },
-          trifecta: { recoveryRate: modelRow?.recovery_rate_trifecta || 0 },
-          trio: { recoveryRate: modelRow?.recovery_rate_trio || 0 },
-        },
-      },
-      thisMonth: {
-        year: thisYear,
-        month: thisMonth,
-        ...computeStats(thisMonthPreds),
-      },
-      lastMonth: {
-        year: lastYear,
-        month: lastMonth,
-        ...computeStats(lastMonthPreds),
-      },
-      monthlyHistory,
-      dailyHistory,
-      byVenue,
-    };
+    const built = buildModelCache(modelId, {
+      periods,
+      modelRow: modelsRows?.find((m) => m.model_id === modelId),
+      allRecentPredictions,
+      thisMonthPredictions,
+      lastMonthPredictions,
+    });
+    cacheModels[modelId] = built.entry;
 
     console.log(
-      `  ${modelId}: 今月=${thisMonthPreds.length}件, 先月=${lastMonthPreds.length}件, 90日=${allRecentPredictions.filter((p) => p.model_id === modelId).length}件`,
+      `  ${modelId}: 今月=${built.thisMonthCount}件, 先月=${built.lastMonthCount}件, 90日=${allRecentPredictions.filter((p) => p.model_id === modelId).length}件`,
     );
   }
 
