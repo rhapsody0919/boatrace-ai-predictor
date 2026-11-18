@@ -2,7 +2,7 @@
  * RaceTabs - レース詳細ページのタブ切り替え基盤（BOA-305）
  * 「ボートレース日和」風のタブ構成に、日和には無い龍神レーダー独自の
  * 「AI予想」タブ（BOA-346）を乗せる土台。どのタブをどの順で出すかは
- * 呼び出し側（`PredictionPanel.jsx`）が決める。並び順の根拠はそちらに書いてある。
+ * 呼び出し側（`PredictionPanelTabs.jsx` の buildMainTabs）が決める。並び順の根拠はそちらに書いてある。
  *
  * 非アクティブなタブのcontentはアンマウントする（EmbeddedAnalysisSectionと同じ
  * 遅延マウント方針）。裏側のデータ取得はwithCache（30分TTL）済みのため、

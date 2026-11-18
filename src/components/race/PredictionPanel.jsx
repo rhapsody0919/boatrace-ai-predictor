@@ -1,66 +1,12 @@
 /**
- * PredictionPanel - AI予想結果セクション
- * App.jsx と RaceDetail.jsx で共通利用
+ * PredictionPanel - レース詳細のAI予想・タブの区画（App.jsx と RaceDetail.jsx で共通利用）
  *
- * AI予想モデル大規模改修（2026-08-13）: 3モデル切替（standard/safeBet/upsetFocus）を廃止し、
- * unifiedモデル1本に統合。AiAnalysisSectionは展開予測パネル/イン崩れ指数バッジの2ブロック構成
- * （FR2/FR3）。
- * 3連単参考情報（FR4、TrifectaReferenceCard）はUX上のフィードバックにより2026-08-14に表示を廃止。
- * バックエンド生成（generate-unified-trifecta-reference.js/bet_recommendations）自体は
- * 将来のモデル評価用途で残置している
- *
- * 2026-08-14追記: AiAnalysisSection（展開予測パネル/イン崩れバッジ）は
- * 「これから何が起きそうか」を示す未来志向のUIのため、結果確定済みレースには表示しない
- * （結果と矛盾する見え方になるため）。過去レースの検証はレース結果パネル（RaceResult、
- * 複勝的中/展開予測的中の検証）が担う。unifiedモデルのデータが無い日付でAIデータ分析欄が
- * 空白のまま表示される問題も、未確定レースに限定することで実質的に解消される
- *
- * 2026-08-14再追記(複勝予想パネル撤去): 複勝予想の「実測回収率」バッジが、1レース1点分の
- * 投資額(100円)で2点(◎○)ぶんの的中を数える実行不可能な計算方式により約1.5倍に水増しされて
- * いたことが判明（実際に両方100円ずつ買った場合の真の回収率は92.4%、BOA-180）。的中率90%
- * 自体は正しい実測値だったが、ユーザー判断により複勝予想UI（本コンポーネント内のパネル・
- * ホームページのレースカード一覧プレビュー）を一式撤去した。データ取得基盤（複勝オッズ
- * スクレイピング等）は将来の再設計に備えて残置している
- *
- * 2026-09-15追記(日和スタイルのタブ構成、BOA-305〜312): レース詳細ページに
- * 「基本情報/モータ情報/結果」の3タブ（RaceTabs）を追加した。
- * - 基本情報タブ（RaceBasicInfoTab、BOA-306）はDataRaceTableとは別の切り口
- *   （会場/グレード/期間フィルタ×棒グラフ）のため重複ではなく併存する
- * - モータ情報タブ（BOA-308）は既存のEmbeddedAnalysisSection「モーター調子」を
- *   タブへ昇格したため、重複表示を避けるためアコーディオン版は撤去した
- * - 結果タブ（BOA-312）は従来PredictionSection側で常時表示していたRaceResultを
- *   タブへ移設した。「データで振り返る」（RaceReview）はユーザー判断により
- *   BOA-312で撤去済み（docs/reference/deprecated-terms.json参照）
- * 残り4タブ（枠別情報/今節成績/オッズ検索/オッズ一覧）はデータ未整備の
- * ため未実装（`docs/design/scraping-full-coverage/`待ち）
- *
- * 2026-09-16追記(直前情報タブ分離、BOA-304): DataRaceTable（基本情報、過去実績系）に
- * 混在していた「当日更新・レース前は未確定」の4指標（展示ST/展示タイム/チルト/
- * 調整重量）を「直前情報」タブへ分離した（RaceBeforeInfoTab、モータ情報と結果の間）。
- * レース前の長い時間帯にDataRaceTable全体が「未完成」に見える問題への対応。
- * あわせて表示欠落だった気象情報（race_conditions）も同タブに追加した
- *
- * 2026-09-16追記(「AI予想」独立タブ新設、BOA-346): 日和には無い龍神レーダー独自の
- * AI予想機能（展開予測カード/イン崩れ指数バッジ/出現パターン）を、常時表示エリアの
- * 折りたたみ（旧AiAnalysisSection）から「AI予想」タブ（基本情報の次）へ格上げした。
- * 確定済みレースの答え合わせロジック（旧RaceResult.jsxの
- * showVolatilityOutcome/isUpset）も同タブに統合したため、結果タブは着順・配当・
- * 決まり手のみのシンプルな内容になった。詳細はRaceAiPredictionTab.jsx参照
- *
- * 2026-09-16再追記(枠別情報タブ追加、BOA-307): 基本情報とモータ情報の間に
- * 「枠別情報」タブ（RaceWakuInfoTab）を追加した。選手を選んで枠番別
- * （1〜6）成績を見る棒グラフ＋直近10走ドリルダウン、決まり手傾向（全艇合算）
- * の2カード構成。既存のVenueTendencyPanel・AttackDefenseAnalysisとは
- * 見せ方の主語が異なるため併存させ、このタブがアクティブな間は他のタブと
- * 同様にshowPreRaceAnalysisTools側で非表示にする（詳細はRaceWakuInfoTab.jsx
- * 冒頭のコメント参照）
- *
- * 2026-09-16追記(オッズ一覧タブ追加、BOA-311): FR-4（オッズ全券種対応、
- * race_odds.trifecta_all/trio_all/exacta_all/quinella_all/wide_all）が
- * 本番稼働済みになったため、「直前情報」と「結果」の間に「オッズ一覧」タブ
- * （RaceOddsListTab）を追加した。券種タブ×全組み合わせの常時表示×オッズ
- * タップでの推移表示（日和のオッズ一覧に寄せた構成。詳細はコンポーネント
- * 冒頭コメント参照）。選手名表示のためplayersを渡す
+ * ここは状態のフックを呼び、表示用の値を束ね、描画を子へ渡すだけ。
+ * - 状態のフック: PredictionPanelState.jsx（URL の艇・タブ、枠別情報の期間、AI用コピーのトースト）
+ * - 表示用の値: PredictionPanelDerive.js（日付・公式URL・状態の旗）、PredictionPanelShareTitle.js（共有文）
+ * - タブの定義と並び順の根拠: PredictionPanelTabs.jsx の buildMainTabs
+ * - 描画: PredictionPanelBody.jsx（バナー・タブ・分析ツール・AI用コピー・共有・ガイドリンク）
+ * 変更の経緯は git の履歴にある
  */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";

@@ -57,7 +57,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await openFixedRaceBasicTab(page);
 
     // 「モーター調子」はBOA-308でアコーディオンからモータ情報タブへ昇格し、
-    // 重複表示を避けてアコーディオン版が撤去された（PredictionPanel.jsx冒頭の
+    // 重複表示を避けてアコーディオン版が撤去された（PredictionPanelAnalysisTools.jsx冒頭の
     // コメント参照）。テストが7個のまま取り残されていたが、当日の未終了レースを
     // 探すヘルパーが常にfalseを返して無言でskipしていたため検知できていなかった
     const sections = page.locator(".embedded-analysis-section");

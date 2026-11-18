@@ -77,7 +77,7 @@ function flattenRaces(venuesData, nowHHMM) {
   for (const venue of venuesData || []) {
     for (const race of venue.races || []) {
       // 開催中止・打ち切り確定のレースは注目レースとして提示しない
-      // （BOA-411調査中に発見。isCancelledの判定基準はPredictionPanel.jsx/
+      // （BOA-411調査中に発見。isCancelledの判定基準はPredictionPanelDerive.js/
       // RaceCard.jsxと同じくconfirmedのみ。tentativeは暫定検知でまだ確定していないため対象外）。
       // 結果（result.rank1）があれば confirmed が残っていても中止扱いしない（BOA-525）。
       // result は get_today_races（110）と直接クエリの代替経路の両方が返す（BOA-542）。
