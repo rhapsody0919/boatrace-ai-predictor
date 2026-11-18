@@ -95,31 +95,8 @@ async function scrapeRacerIds(date, placeCd, raceNo) {
   }
 }
 
-// メイン処理
-async function main() {
-  const options = parseArgs();
-
-  if (!options.from || !options.to) {
-    console.log("使用方法:");
-    console.log(
-      "  node scripts/maintenance/backfill-racer-ids.js --from=2025-12-01 --to=2025-12-31",
-    );
-    console.log("");
-    console.log("オプション:");
-    console.log("  --dry-run       実際には更新しない（テスト実行）");
-    console.log("  --limit=N       最初のN件のレースのみ処理");
-    console.log("  --verbose, -v   詳細ログを出力");
-    process.exit(1);
-  }
-
-  console.log("=== 選手ID補完スクリプト ===");
-  console.log(`期間: ${options.from} 〜 ${options.to}`);
-  console.log(
-    `モード: ${options.dryRun ? "ドライラン（テスト）" : "本番実行"}`,
-  );
-  console.log("");
-
-  // racer_idがNULLのエントリを取得（Supabaseのデフォルトlimit 1000を回避）
+// racer_idがNULLのエントリを取得（Supabaseのデフォルトlimit 1000を回避）
+async function fetchNullEntries(options) {
   let entries = [];
   const pageSize = 1000;
   let offset = 0;
@@ -144,15 +121,11 @@ async function main() {
     if (data.length < pageSize) break;
     offset += pageSize;
   }
+  return entries;
+}
 
-  if (!entries || entries.length === 0) {
-    console.log("racer_idが欠損しているエントリはありません。");
-    process.exit(0);
-  }
-
-  console.log(`racer_id欠損エントリ: ${entries.length}件`);
-
-  // レースごとにグループ化
+// レースごとにグループ化
+function groupByRace(entries) {
   const raceMap = new Map();
   for (const entry of entries) {
     if (!raceMap.has(entry.race_id)) {
@@ -166,6 +139,90 @@ async function main() {
     }
     raceMap.get(entry.race_id).boatNumbers.push(entry.boat_number);
   }
+  return raceMap;
+}
+
+// 1レースの欠損している艇の racer_id を書く。書き込みの失敗が無ければ true
+async function updateRaceBoats(race, racers, progress, options, counts) {
+  const targetBoats = race.boatNumbers;
+  let raceSuccess = true;
+
+  for (const boatNum of targetBoats) {
+    const racer = racers.find((r) => r.boatNumber === boatNum);
+    if (!racer || !racer.racerId) {
+      if (options.verbose)
+        console.log(`${progress} ${race.raceId} 艇${boatNum} - 選手ID取得失敗`);
+      continue;
+    }
+
+    if (options.dryRun) {
+      counts.entriesUpdated++;
+      if (options.verbose)
+        console.log(
+          `${progress} ${race.raceId} 艇${boatNum} → ${racer.racerId} (dry-run)`,
+        );
+      continue;
+    }
+
+    const { error: updateError } = await supabase
+      .from("race_entries")
+      .update({ racer_id: racer.racerId })
+      .eq("race_id", race.raceId)
+      .eq("boat_number", boatNum);
+
+    if (updateError) {
+      counts.errors++;
+      raceSuccess = false;
+      console.error(
+        `${progress} ${race.raceId} 艇${boatNum} 更新エラー:`,
+        updateError.message,
+      );
+    } else {
+      counts.entriesUpdated++;
+      if (options.verbose)
+        console.log(
+          `${progress} ${race.raceId} 艇${boatNum} → ${racer.racerId}`,
+        );
+    }
+  }
+  return raceSuccess;
+}
+
+// メイン処理
+async function main() {
+  const options = parseArgs();
+
+  if (!options.from || !options.to) {
+    console.log("使用方法:");
+    console.log(
+      "  node scripts/maintenance/backfill-racer-ids.js --from=2025-12-01 --to=2025-12-31",
+    );
+    console.log("");
+    console.log("オプション:");
+    console.log("  --dry-run       実際には更新しない（テスト実行）");
+    console.log("  --limit=N       最初のN件のレースのみ処理");
+    console.log("  --verbose, -v   詳細ログを出力");
+    process.exit(1);
+  }
+
+  console.log("=== 選手ID補完スクリプト ===");
+  console.log(`期間: ${options.from} 〜 ${options.to}`);
+  console.log(
+    `モード: ${options.dryRun ? "ドライラン（テスト）" : "本番実行"}`,
+  );
+  console.log("");
+
+  const entries = await fetchNullEntries(options);
+
+  if (!entries || entries.length === 0) {
+    console.log("racer_idが欠損しているエントリはありません。");
+    process.exit(0);
+  }
+
+  console.log(`racer_id欠損エントリ: ${entries.length}件`);
+
+  // レースごとにグループ化
+  const raceMap = groupByRace(entries);
 
   let targetRaces = Array.from(raceMap.values());
 
@@ -178,10 +235,12 @@ async function main() {
   );
   console.log("");
 
-  let racesUpdated = 0;
-  let entriesUpdated = 0;
-  let racesSkipped = 0;
-  let errors = 0;
+  const counts = {
+    racesUpdated: 0,
+    entriesUpdated: 0,
+    racesSkipped: 0,
+    errors: 0,
+  };
 
   for (let i = 0; i < targetRaces.length; i++) {
     const race = targetRaces[i];
@@ -197,64 +256,20 @@ async function main() {
     );
 
     if (!racers) {
-      racesSkipped++;
+      counts.racesSkipped++;
       if (options.verbose)
         console.log(`${progress} ${race.raceId} - スキップ（取得失敗）`);
     } else {
       // 欠損している艇番のみ更新
-      const targetBoats = race.boatNumbers;
-      let raceSuccess = true;
-
-      for (const boatNum of targetBoats) {
-        const racer = racers.find((r) => r.boatNumber === boatNum);
-        if (!racer || !racer.racerId) {
-          if (options.verbose)
-            console.log(
-              `${progress} ${race.raceId} 艇${boatNum} - 選手ID取得失敗`,
-            );
-          continue;
-        }
-
-        if (options.dryRun) {
-          entriesUpdated++;
-          if (options.verbose)
-            console.log(
-              `${progress} ${race.raceId} 艇${boatNum} → ${racer.racerId} (dry-run)`,
-            );
-          continue;
-        }
-
-        const { error: updateError } = await supabase
-          .from("race_entries")
-          .update({ racer_id: racer.racerId })
-          .eq("race_id", race.raceId)
-          .eq("boat_number", boatNum);
-
-        if (updateError) {
-          errors++;
-          raceSuccess = false;
-          console.error(
-            `${progress} ${race.raceId} 艇${boatNum} 更新エラー:`,
-            updateError.message,
-          );
-        } else {
-          entriesUpdated++;
-          if (options.verbose)
-            console.log(
-              `${progress} ${race.raceId} 艇${boatNum} → ${racer.racerId}`,
-            );
-        }
-      }
-
-      if (raceSuccess) {
-        racesUpdated++;
+      if (await updateRaceBoats(race, racers, progress, options, counts)) {
+        counts.racesUpdated++;
       }
     }
 
     // 進捗表示（10件ごと）
     if ((i + 1) % 10 === 0 || i === targetRaces.length - 1) {
       console.log(
-        `${progress} レース: ${racesUpdated}件処理, エントリ: ${entriesUpdated}件更新`,
+        `${progress} レース: ${counts.racesUpdated}件処理, エントリ: ${counts.entriesUpdated}件更新`,
       );
     }
 
@@ -264,10 +279,10 @@ async function main() {
 
   console.log("");
   console.log("=== 完了 ===");
-  console.log(`レース処理: ${racesUpdated}件`);
-  console.log(`エントリ更新: ${entriesUpdated}件`);
-  console.log(`レーススキップ: ${racesSkipped}件`);
-  console.log(`エラー: ${errors}件`);
+  console.log(`レース処理: ${counts.racesUpdated}件`);
+  console.log(`エントリ更新: ${counts.entriesUpdated}件`);
+  console.log(`レーススキップ: ${counts.racesSkipped}件`);
+  console.log(`エラー: ${counts.errors}件`);
 }
 
 main().catch(console.error);
