@@ -865,6 +865,11 @@
       "guards": "月間スケジュール（節メタ N16）のパーサー・節の確定・行変換・CLI"
     },
     {
+      "script": "verify-morning-digest-day-make.js",
+      "tier": "ci",
+      "guards": "src/services/scheduleQueries.js の getMorningDigest が morning_digest_days の行を makeDigestDay に通す（DM1x schedule のつなぎ）。正の行は凍結した day、行なしは null、破れは RangeError で reject（キャッシュしない）すること"
+    },
+    {
       "script": "verify-morning-digest.js",
       "tier": "manual",
       "guards": "「本日のデータ一覧」（BOA-402）の集計",

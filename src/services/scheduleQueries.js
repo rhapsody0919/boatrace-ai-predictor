@@ -5,6 +5,7 @@ import { getTodayJST, getDaysAgoJST } from "../utils/dateUtils.js";
 import { supabase } from "./supabaseClient";
 import { seriesCoveringDate } from "../utils/meetPageModel.js";
 import { transformTodayRaces } from "../utils/todayRaces.js";
+import { makeDigestDay } from "../pure/scheduleModel.js";
 import {
   CACHE_TTL,
   EDGE_API_BASE,
@@ -262,7 +263,7 @@ export function getMorningDigest(date) {
     return withCache(
       `morning-digest-${date}`,
       async () => {
-        const [{ data: day }, { data: rows }] = await Promise.all([
+        const [{ data: dayRow }, { data: rows }] = await Promise.all([
           supabase
             .from("morning_digest_days")
             .select("*")
@@ -275,6 +276,8 @@ export function getMorningDigest(date) {
             .order("section")
             .order("rank"),
         ]);
+        // 不変条件の破れ（makeDigestDay の RangeError）は reject になり、呼び手（MorningDataDigest.jsx・TodaySheet.jsx）の catch で取得失敗の表示
+        const day = dayRow ? makeDigestDay(dayRow) : null;
 
         // generated_at は書き込み完了のマーク（ADR-0070）。NULLなら生成途中で
         // 落ちた状態なので「未生成」として扱い、「該当0件」と混同しない
