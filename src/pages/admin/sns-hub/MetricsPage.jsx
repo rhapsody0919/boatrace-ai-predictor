@@ -18,15 +18,8 @@ const TABS = [
   { id: "insights", label: "戦略メモ" },
 ];
 
-export default function MetricsPage() {
-  const [activeTab, setActiveTab] = useState("metrics");
-  const [insights, setInsights] = useState([]);
-  const [revisions, setRevisions] = useState([]);
-  const [error, setError] = useState("");
-  const [actionMessages, setActionMessages] = useState([]);
-  const { toast, showToast } = useToast();
-  // 操作のあとに読み直すときは reload を進める
-  const [reload, setReload] = useState(0);
+// 戦略メモ・直近の改訂を読む。reload が進むたびに読み直す
+function useInsightsLoader(reload, setInsights, setRevisions, setError) {
   useEffect(() => {
     let active = true;
     Promise.all([getInsights(), getRecentRevisions()])
@@ -44,71 +37,121 @@ export default function MetricsPage() {
     return () => {
       active = false;
     };
-  }, [reload]);
-  const load = () => setReload((n) => n + 1);
-  async function act(actionFn, args) {
-    // 採用の応答にはリスク警告（riskWarnings）が載る。トーストは2秒で消えるので、消えない通知に残す
-    try {
-      const messages = actionFeedback(await actionFn(...args));
-      setActionMessages((previous) => [...previous, ...messages]);
-      showToast(
-        messages.length ? "操作結果に警告があります" : "操作を反映しました",
-        messages.length ? "error" : "success",
-      );
-    } catch (err) {
-      console.error("戦略メモの操作エラー:", err);
-      setActionMessages((previous) => [
-        ...previous,
-        "操作に失敗しました。最新状態を確認してください。",
-      ]);
-      showToast("操作に失敗しました。最新状態を確認してください。", "error");
-    }
-    load();
+  }, [reload, setInsights, setRevisions, setError]);
+}
+
+async function runInsightAction(
+  actionFn,
+  args,
+  { setActionMessages, showToast, load },
+) {
+  // 採用の応答にはリスク警告（riskWarnings）が載る。トーストは2秒で消えるので、消えない通知に残す
+  try {
+    const messages = actionFeedback(await actionFn(...args));
+    setActionMessages((previous) => [...previous, ...messages]);
+    showToast(
+      messages.length ? "操作結果に警告があります" : "操作を反映しました",
+      messages.length ? "error" : "success",
+    );
+  } catch (err) {
+    console.error("戦略メモの操作エラー:", err);
+    setActionMessages((previous) => [
+      ...previous,
+      "操作に失敗しました。最新状態を確認してください。",
+    ]);
+    showToast("操作に失敗しました。最新状態を確認してください。", "error");
   }
+  load();
+}
+
+function ActionMessages({ actionMessages, onClose }) {
+  if (actionMessages.length === 0) return null;
+  return (
+    <div className="sns-hub-error-state" role="alert">
+      {actionMessages.map((message, index) => (
+        <p key={index}>{message}</p>
+      ))}
+      <button onClick={onClose}>通知を閉じる</button>
+    </div>
+  );
+}
+
+function TabNavigation({ activeTab, setActiveTab, proposedCount }) {
+  return (
+    <div className="tab-navigation-row">
+      <div className="sns-hub-tab-navigation">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            className={`sns-hub-tab-btn ${activeTab === tab.id ? "active" : ""}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+            {tab.id === "insights" && ` (${proposedCount})`}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function InsightsPane({ error, load, insights, revisions, act }) {
+  if (error) {
+    return (
+      <div className="sns-hub-error-state" role="alert">
+        <p>{error}</p>
+        <button onClick={load}>再読み込み</button>
+      </div>
+    );
+  }
+  return (
+    <InsightTab
+      insights={insights}
+      revisions={revisions}
+      onApprove={(insightId) => act(approveInsight, [insightId])}
+      onReject={(insightId, reason) => act(rejectInsight, [insightId, reason])}
+    />
+  );
+}
+
+export default function MetricsPage() {
+  const [activeTab, setActiveTab] = useState("metrics");
+  const [insights, setInsights] = useState([]);
+  const [revisions, setRevisions] = useState([]);
+  const [error, setError] = useState("");
+  const [actionMessages, setActionMessages] = useState([]);
+  const { toast, showToast } = useToast();
+  // 操作のあとに読み直すときは reload を進める
+  const [reload, setReload] = useState(0);
+  useInsightsLoader(reload, setInsights, setRevisions, setError);
+  const load = () => setReload((n) => n + 1);
+  const act = (actionFn, args) =>
+    runInsightAction(actionFn, args, { setActionMessages, showToast, load });
   const proposedCount = insights.filter((i) => i.status === "proposed").length;
   return (
     <SnsHubLayout>
-      {actionMessages.length > 0 && (
-        <div className="sns-hub-error-state" role="alert">
-          {actionMessages.map((message, index) => (
-            <p key={index}>{message}</p>
-          ))}
-          <button onClick={() => setActionMessages([])}>通知を閉じる</button>
-        </div>
-      )}
-      <div className="tab-navigation-row">
-        <div className="sns-hub-tab-navigation">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              className={`sns-hub-tab-btn ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-              {tab.id === "insights" && ` (${proposedCount})`}
-            </button>
-          ))}
-        </div>
-      </div>
+      <ActionMessages
+        actionMessages={actionMessages}
+        onClose={() => setActionMessages([])}
+      />
+      <TabNavigation
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        proposedCount={proposedCount}
+      />
       <div className="sns-hub-tab-content">
         {activeTab === "metrics" ? (
           <>
             <MetricsTab />
             <PostObservationList />
           </>
-        ) : error ? (
-          <div className="sns-hub-error-state" role="alert">
-            <p>{error}</p>
-            <button onClick={load}>再読み込み</button>
-          </div>
         ) : (
-          <InsightTab
+          <InsightsPane
+            error={error}
+            load={load}
             insights={insights}
             revisions={revisions}
-            onApprove={(insightId) => act(approveInsight, [insightId])}
-            onReject={(insightId, reason) =>
-              act(rejectInsight, [insightId, reason])
-            }
+            act={act}
           />
         )}
       </div>
