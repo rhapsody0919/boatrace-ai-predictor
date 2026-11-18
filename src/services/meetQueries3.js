@@ -12,6 +12,7 @@ import {
   officialAsOfDate,
 } from "../utils/meetPageModel.js";
 import { getMeetScoreboard } from "./meetQueries2.js";
+import { makeMeet } from "../pure/meetModel.js";
 
 /**
  * 節ページ（`/venue/:venueCode/meet/:startDate`、BOA-682）のデータ。
@@ -46,7 +47,8 @@ export async function getMeetPage(venueCode, startDate, today) {
       await Promise.all([
         supabase
           .from("race_series")
-          .select("start_date, end_date, title, grade")
+          // makeMeet の必須（主キー・total_days・class_code・kind）も取る
+          .select("venue_code, start_date, end_date, total_days, class_code, kind, title, grade")
           .eq("venue_code", venueCode)
           .eq("start_date", startDate)
           .maybeSingle(),
@@ -81,7 +83,8 @@ export async function getMeetPage(venueCode, startDate, today) {
           .order("scraped_at", { ascending: false })
           .limit(1),
       ]);
-    const series = seriesRes.data ?? null;
+    // 不変条件の破れ（RangeError）は呼び手（MeetPage）の catch で取得失敗と同じ扱い
+    const series = seriesRes.data ? makeMeet(seriesRes.data) : null;
     const windowConditions = condRes.data ?? [];
     const windowEntries = entriesRes.data ?? [];
     const meetDays = meetDaysOf(startDate, windowConditions, windowEntries);
