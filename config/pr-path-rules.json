@@ -11,7 +11,7 @@
     "terms: 差分で足した行に新しく入った語（足した行の数が消した行の数より多い語）で当たる。scan に当たり except に当たらないファイルだけを見る。riskRules の platforms が all の patterns も足す。",
     "moveOnly: from（1つ、変更）から to（from の隣の新しいファイル）へ split-data-layer.mjs が字のまま移しただけの PR なら（scripts/maintenance/prLaneMoveOnly.js、BOA-1433）、exceptMoveOnly の規則を from と to に当てない。単位（上の宣言・object のメンバー）を名前で対応させ、決まった正規化の後の行の列が順まで同じこと、import・export の名前（元・as）が base と同じかこの PR の to からだけであること等を確かめる。1字・1行の順でも変えた PR・関数を足した PR は当たる。src/pure・新しい .jsx（H4）・scripts（H1）は外さない。",
     "human: heavy の hits のファイルに、人にしか判断できない理由（kind ごと）を付ける。パスの型は大小を問わない。sns・terms は fromRule の hits を写す。db の writerFiles の中身（base か head）が writerContent に当たる、または読めないと当てる。weaken は deleted（削除）・changedScripts（追加以外）・addedRows（行を足す）・registryRows（既存の行の変更・削除）・removedRows（行の削除・書き換え）。",
-    "needs: 規則の needs（kind の名。H5 は kind → パスの型）。機械の確かめで人が要らなくなる物。needsUnlessHuman の kind の human に入る物は除く。",
+    "needs: 規則の needs（kind の名。H5 は kind → パスの型）。機械の確かめで人が要らなくなる物。needsUnlessHuman の kind の human に入る物は除く。H1 は judge だけ除く（DB の書き手 db にも line-mutation を課す。hq docs/decisions/guarded-except-pure-lib.md 2026-11-18 17時前のオーナーの決定）。",
     "reservedPatterns: 今の木に当たらなくても残す型（verify-pr-lane.js の死んだ型の検査から除く）。"
   ],
   "moveOnly": {
@@ -112,7 +112,7 @@
       "exceptAdded": ["^scripts/maintenance/verify-[^/]+\\.(js|mjs|cjs|sh)$"],
       "except": ["^scripts/maintenance/verify-registry\\.json$"],
       "needs": "line-mutation",
-      "needsUnlessHuman": ["db", "judge"]
+      "needsUnlessHuman": ["judge"]
     },
     {
       "id": "H2",
