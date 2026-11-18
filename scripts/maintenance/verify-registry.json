@@ -1057,6 +1057,11 @@
       "guards": "出走表・直前情報の全項目パーサー・行の組み立て・書き込み経路"
     },
     {
+      "script": "verify-prediction-accuracy-make.js",
+      "tier": "ci",
+      "guards": "src/services/predictionQueries3.js の getAccuracy（Edge API が取れないときの直の問い合わせ）が predictions の行を makePrediction に通す（DM1x prediction のつなぎ）。破れは RangeError で reject（キャッシュしない）、正の行は1000行のページを越えて今までどおり集計されること"
+    },
+    {
       "script": "verify-prediction-hit-judgement.js",
       "tier": "ci",
       "timeoutSec": 300,
