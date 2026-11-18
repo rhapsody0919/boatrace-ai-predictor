@@ -5,12 +5,12 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2023,
+    "sourceFiles": 2026,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
     "rpcCallers": 51,
-    "nameMentions": 232,
+    "nameMentions": 237,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
@@ -27250,7 +27250,10 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/checks.js:66",
-        "scripts/lib/dataHealth/functions.js:452"
+        "scripts/lib/dataHealth/functions.js:452",
+        "scripts/maintenance/verifyData/data-health-job-fixtures.js:76",
+        "scripts/maintenance/verifyData/data-health-job-for-job.js:38",
+        "scripts/maintenance/verifyData/data-health-job-for-job.js:40"
       ],
       "triggerOn": [],
       "calledByRpc": [],
@@ -27301,7 +27304,8 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/checks.js:370",
-        "scripts/lib/dataHealth/functions.js:497"
+        "scripts/lib/dataHealth/functions.js:497",
+        "scripts/maintenance/verifyData/data-health-job-for-job.js:42"
       ],
       "triggerOn": [],
       "calledByRpc": [],
@@ -27488,7 +27492,8 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/functions.js:546",
-        "scripts/lib/dataHealth/job.js:51"
+        "scripts/lib/dataHealth/job.js:51",
+        "scripts/maintenance/verifyData/data-health-job-fixtures.js:77"
       ],
       "triggerOn": [],
       "calledByRpc": [],
