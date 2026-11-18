@@ -41,41 +41,9 @@ function material({
   const series = [];
   for (const [codeText, v] of Object.entries(venues)) {
     const code = Number(codeText);
-    series.push({
-      venue_code: code,
-      start_date: v.start ?? "2037-11-02",
-      end_date: v.end ?? "2037-11-07",
-      title: v.title ?? `一般戦${code}`,
-      grade: v.grade === "ippan" || !v.grade ? "ippan" : v.grade,
-      kind: v.kind ?? "ippan",
-    });
-    for (let r = 1; r <= 12; r += 1) {
-      const raceId = id(code, r);
-      races.push({
-        race_id: raceId,
-        venue_code: code,
-        race_number: r,
-        start_time: `${v.times?.[r] ?? `${String(8 + r).padStart(2, "0")}:${String(code).padStart(2, "0")}`}:00`,
-        race_grade: v.grade ?? "ippan",
-        cancellation_status: v.cancelled ? "confirmed" : null,
-      });
-      conditions.push({
-        race_id: raceId,
-        race_stage: v.stage?.[r] ?? "予選",
-        series_day: v.day?.[r] ?? null,
-        is_final_day: v.final?.[r] ?? null,
-        race_title: v.title ?? null,
-      });
-      for (let b = 1; b <= 6; b += 1)
-        entries.push({
-          race_id: raceId,
-          boat_number: b,
-          racer_id: code * 1000 + r * 10 + b,
-          player_name: `選手\u3000${code}-${r}-${b}`,
-          grade: b === 1 ? "A1" : "B1",
-          is_absent: absent.includes(`${raceId}:${b}`),
-        });
-    }
+    series.push(materialSeries(code, v));
+    for (let r = 1; r <= 12; r += 1)
+      materialRace(code, v, r, absent, { races, conditions, entries });
   }
   return {
     date: DATE,
@@ -90,6 +58,44 @@ function material({
     stats,
     cancelledBefore,
   };
+}
+function materialSeries(code, v) {
+  return {
+    venue_code: code,
+    start_date: v.start ?? "2037-11-02",
+    end_date: v.end ?? "2037-11-07",
+    title: v.title ?? `一般戦${code}`,
+    grade: v.grade === "ippan" || !v.grade ? "ippan" : v.grade,
+    kind: v.kind ?? "ippan",
+  };
+}
+
+function materialRace(code, v, r, absent, { races, conditions, entries }) {
+  const raceId = id(code, r);
+  races.push({
+    race_id: raceId,
+    venue_code: code,
+    race_number: r,
+    start_time: `${v.times?.[r] ?? `${String(8 + r).padStart(2, "0")}:${String(code).padStart(2, "0")}`}:00`,
+    race_grade: v.grade ?? "ippan",
+    cancellation_status: v.cancelled ? "confirmed" : null,
+  });
+  conditions.push({
+    race_id: raceId,
+    race_stage: v.stage?.[r] ?? "予選",
+    series_day: v.day?.[r] ?? null,
+    is_final_day: v.final?.[r] ?? null,
+    race_title: v.title ?? null,
+  });
+  for (let b = 1; b <= 6; b += 1)
+    entries.push({
+      race_id: raceId,
+      boat_number: b,
+      racer_id: code * 1000 + r * 10 + b,
+      player_name: `選手\u3000${code}-${r}-${b}`,
+      grade: b === 1 ? "A1" : "B1",
+      is_absent: absent.includes(`${raceId}:${b}`),
+    });
 }
 const stat = (venue, r, boat, values) => ({
   racer_id: venue * 1000 + r * 10 + boat,
