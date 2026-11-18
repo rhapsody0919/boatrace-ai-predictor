@@ -22,10 +22,11 @@ import {
   classifyResponse,
   estimatePlan,
 } from "../maintenance/kb-backfill.js";
-import { appendJsonl, readJsonl } from "./archiveFiles.js";
+import { appendJsonl } from "./archiveFiles.js";
 import {
   baseEntry,
   classifyFetched,
+  createRunContext,
   fetchItem,
   handleAbsentResponse,
   planRun,
@@ -146,75 +147,45 @@ export async function runArchiveDownload({
   isAbsentExpected = () => false,
   deps = {},
 }) {
-  const { sleepFn, fetchFn, nowFn, backoffBaseMs, log } = resolveRunDeps(
-    deps,
-    userAgent,
-    fetchOnce,
-  );
+  const d = resolveRunDeps(deps, userAgent, fetchOnce);
   const win = parseWindow(opts.window);
-  const plan = planRun({ items, manifestFile, opts, log, planItems });
-  if (plan.done) return 0;
-  const todo = plan.todo;
-
-  const runId = new Date().toISOString().replace(/[:.]/g, "-");
-  const stats = { requests: 0, ok: 0, absent: 0, pending: 0, error: 0 };
-  let consecutiveInvalid = 0;
-  const pace = () =>
-    sleepFn(
-      opts.intervalMinMs +
-        Math.random() * (opts.intervalMaxMs - opts.intervalMinMs),
-    );
-  const nightCount = () => {
-    const k = windowDayKey(win, nowFn());
-    return readJsonl(manifestFile).filter(
-      (e) => e.requested && windowDayKey(win, e.fetchedAt) === k,
-    ).length;
-  };
-  const stop = (code, reason, resumeFrom) => {
-    log(`\n停止: ${reason}`);
-    if (resumeFrom)
-      log(`再開: 同じコマンドを再実行（次の対象 ${resumeFrom.key}）`);
-    log(`集計: ${JSON.stringify(stats)}`);
-    appendJsonl(runsFile, { runId, stopped: reason, stats });
-    return code;
-  };
-  // 取得ループの状態（連続した失敗・404の数と、今夜の使用数）。ハンドラーと共有する
-  const r = {
-    items: todo,
+  const plan = planRun({
+    items,
     manifestFile,
     opts,
-    stats,
-    log,
-    stop,
-    sleepFn,
-    backoffBaseMs,
+    log: d.log,
+    planItems,
+    estimatePlan,
+  });
+  if (plan.done) return 0;
+  const r = createRunContext({
+    todo: plan.todo,
+    manifestFile,
+    runsFile,
+    opts,
+    dayKeyOf: (at) => windowDayKey(win, at),
+    d,
     isAbsentExpected,
-    pace,
-    counters: {
-      consecutiveBad: 0,
-      badKind: null,
-      consecutiveAbsent: 0,
-      usedTonight: nightCount(),
-    },
-  };
+  });
+  const { stats, pace, stop, runId } = r;
+  let consecutiveInvalid = 0;
   const c = r.counters;
-
-  for (let i = 0; i < todo.length; i++) {
-    const item = todo[i];
+  for (let i = 0; i < r.items.length; i++) {
+    const item = r.items[i];
     const reason = preFetchStopReason({
       win,
-      now: nowFn(),
+      now: d.nowFn(),
       opts,
       usedTonight: c.usedTonight,
       requests: stats.requests,
     });
     if (reason) return stop(2, reason, item);
 
-    const { res, netError } = await fetchItem(fetchFn, item.url);
+    const { res, netError } = await fetchItem(d.fetchFn, item.url);
     stats.requests++;
     c.usedTonight++;
-    const entry = baseEntry(item, nowFn().toISOString(), res);
-    const cls = classifyFetched(netError, res);
+    const entry = baseEntry(item, d.nowFn().toISOString(), res);
+    const cls = classifyFetched(netError, res, classifyResponse);
 
     if (cls.bad) {
       const code = await handleBadResponse(r, {
@@ -257,7 +228,7 @@ export async function runArchiveDownload({
     }
     await pace();
   }
-  log(`\n完了: ${JSON.stringify(stats)}`);
+  d.log(`\n完了: ${JSON.stringify(stats)}`);
   appendJsonl(runsFile, { runId, completed: true, stats });
   // 0件取得のまま「成功」にしない（想定内の404だけの実行は成功）
   if (stats.requests > 0 && stats.ok + stats.absent === 0) return 1;

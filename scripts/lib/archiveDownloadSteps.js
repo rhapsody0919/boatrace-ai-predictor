@@ -1,8 +1,8 @@
 /**
  * 取得ループ（archiveDownloader.js の runArchiveDownload）から分けた部品（リファクタ。振る舞いは変えない）。
  * 既定の解決・計画・取得・分類・記録。archiveDownloader.js を import しない（循環させない）。
+ * kb-backfill.js の関数は lib から maintenance への新しい依存の辺を作らないよう、呼び出し側から受け取る。
  */
-import { classifyResponse, estimatePlan } from "../maintenance/kb-backfill.js";
 import { appendJsonl, readJsonl, sha256 } from "./archiveFiles.js";
 
 const sleepDefault = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -22,7 +22,14 @@ export function resolveRunDeps(deps, userAgent, fetchOnce) {
  * 取得する項目を決め、計画を出す。dry-run・未取得なしなら { done: true }、取得するなら { todo }。
  * マニフェスト（追記のみ）の項目ごとの最新が、状態
  */
-export function planRun({ items, manifestFile, opts, log, planItems }) {
+export function planRun({
+  items,
+  manifestFile,
+  opts,
+  log,
+  planItems,
+  estimatePlan,
+}) {
   const byKey = new Map();
   for (const e of readJsonl(manifestFile)) byKey.set(e.key, e);
   // refresh: 完了済みも取り直す（更新される項目。例: 当月・翌月の月間スケジュール）
@@ -52,6 +59,61 @@ export function planRun({ items, manifestFile, opts, log, planItems }) {
   return { todo };
 }
 
+/**
+ * 取得ループの文脈（集計・間隔・停止・状態）を作る。counters（連続した失敗・404の数と、今夜の使用数）は
+ * ハンドラーと共有する。
+ */
+export function createRunContext({
+  todo,
+  manifestFile,
+  runsFile,
+  opts,
+  dayKeyOf,
+  d: { log, sleepFn, nowFn, backoffBaseMs },
+  isAbsentExpected,
+}) {
+  const runId = new Date().toISOString().replace(/[:.]/g, "-");
+  const stats = { requests: 0, ok: 0, absent: 0, pending: 0, error: 0 };
+  const pace = () =>
+    sleepFn(
+      opts.intervalMinMs +
+        Math.random() * (opts.intervalMaxMs - opts.intervalMinMs),
+    );
+  const nightCount = () => {
+    const k = dayKeyOf(nowFn());
+    return readJsonl(manifestFile).filter(
+      (e) => e.requested && dayKeyOf(e.fetchedAt) === k,
+    ).length;
+  };
+  const stop = (code, reason, resumeFrom) => {
+    log(`\n停止: ${reason}`);
+    if (resumeFrom)
+      log(`再開: 同じコマンドを再実行（次の対象 ${resumeFrom.key}）`);
+    log(`集計: ${JSON.stringify(stats)}`);
+    appendJsonl(runsFile, { runId, stopped: reason, stats });
+    return code;
+  };
+  return {
+    runId,
+    items: todo,
+    manifestFile,
+    opts,
+    stats,
+    log,
+    stop,
+    sleepFn,
+    backoffBaseMs,
+    isAbsentExpected,
+    pace,
+    counters: {
+      consecutiveBad: 0,
+      badKind: null,
+      consecutiveAbsent: 0,
+      usedTonight: nightCount(),
+    },
+  };
+}
+
 /** 1回の取得。接続の失敗は例外にせず netError で返す */
 export async function fetchItem(fetchFn, url) {
   let res;
@@ -65,7 +127,7 @@ export async function fetchItem(fetchFn, url) {
 }
 
 /** 応答（または接続の失敗）の分類（純関数） */
-export function classifyFetched(netError, res) {
+export function classifyFetched(netError, res, classifyResponse) {
   return netError
     ? { kind: "network", bad: true, threshold: 3, backoff: true }
     : classifyResponse(res.status);
