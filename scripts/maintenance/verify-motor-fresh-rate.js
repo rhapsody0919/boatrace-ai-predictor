@@ -24,6 +24,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { withMotorChartPure } from "./verifyData/motorChartSource.js";
 import {
   createFakeSupabase,
   registerFakeServiceSupabase,
@@ -187,7 +188,9 @@ check(
 );
 
 // ---- 3. ソース ----
-const chart = read("src/components/analysis/MotorConditionChart.jsx");
+const chart = withMotorChartPure(
+  read("src/components/analysis/MotorConditionChart.jsx"),
+);
 check(
   "一覧の2連率の列は motorRateView、過去レースの3連率は motorRate3View で決める",
   chart.includes("breakdown.map(motorRateView)") &&

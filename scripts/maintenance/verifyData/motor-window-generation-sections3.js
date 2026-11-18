@@ -3,6 +3,8 @@
  * 共通の道具・場面は ctx で受け取り、前の場面で作った物は ctx に足されて次へ渡る。
  */
 
+import { withMotorChartPure } from "./motorChartSource.js";
+
 export async function section13(ctx) {
   const {
     M,
@@ -295,7 +297,9 @@ export async function section16(ctx) {
       !pastRowsFn.includes("actual_rate"),
   );
   // 5. 画面
-  const chart = read("src/components/analysis/MotorConditionChart.jsx");
+  const chart = withMotorChartPure(
+    read("src/components/analysis/MotorConditionChart.jsx"),
+  );
   check(
     "画面: 過去レース（rate_source: official）では期間の切り替えを出さず注記に置き換える",
     chart.includes('breakdown.some((r) => r.rate_source === "official")') &&

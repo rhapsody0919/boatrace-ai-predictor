@@ -3,6 +3,8 @@
  * 共通の道具・場面は ctx で受け取り、前の場面で作った物は ctx に足されて次へ渡る。
  */
 
+import { withMotorChartPure } from "./motorChartSource.js";
+
 export async function section6(ctx) {
   const {
     V,
@@ -20,7 +22,9 @@ export async function section6(ctx) {
   } = ctx;
   // ---- BOA-557（BOA-549 ファン評価の残り） ----
   {
-    const chart = read("src/components/analysis/MotorConditionChart.jsx");
+    const chart = withMotorChartPure(
+      read("src/components/analysis/MotorConditionChart.jsx"),
+    );
     const racerCard = read("src/components/racer/RacerMotorStatusCard.jsx");
     const trendChart = read("src/components/analysis/TrendLineChart.jsx");
     // 当日のレースも「このレースの直前まで」。終了後に開くとそのレース自身の結果が入り、
@@ -97,7 +101,9 @@ export async function section6(ctx) {
 export async function section7(ctx) {
   const { check, competitionRank, read } = ctx;
   {
-    const chart = read("src/components/analysis/MotorConditionChart.jsx");
+    const chart = withMotorChartPure(
+      read("src/components/analysis/MotorConditionChart.jsx"),
+    );
     const racerCard = read("src/components/racer/RacerMotorStatusCard.jsx");
     const trendChart = read("src/components/analysis/TrendLineChart.jsx");
     check(
@@ -185,7 +191,9 @@ export async function section7(ctx) {
     "competitionRank: 小さいほど良い指標（事故率）は昇順",
     competitionRank([0.1, 0.2, 0.2, 0.5], 0.5, { ascending: true }).rank === 4,
   );
-  const chart = read("src/components/analysis/MotorConditionChart.jsx");
+  const chart = withMotorChartPure(
+    read("src/components/analysis/MotorConditionChart.jsx"),
+  );
   Object.assign(ctx, { chart });
 }
 

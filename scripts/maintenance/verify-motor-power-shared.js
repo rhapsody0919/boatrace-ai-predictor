@@ -14,6 +14,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { withMotorChartPure } from "./verifyData/motorChartSource.js";
 import {
   computeMotorPowerIndex,
   computeVenueMotorPowerIndexes,
@@ -257,12 +258,14 @@ assert.match(
   /import \{ SMALL_SAMPLE_THRESHOLD \} from "\.\.\/\.\.\/src\/(?:pure|components\/race)\/basicInfoStats\.js";/,
 );
 assert.match(rankData, /m\.sample_count >= SMALL_SAMPLE_THRESHOLD/);
-const chart = readFileSync(
-  new URL(
-    "../../src/components/analysis/MotorConditionChart.jsx",
-    import.meta.url,
+const chart = withMotorChartPure(
+  readFileSync(
+    new URL(
+      "../../src/components/analysis/MotorConditionChart.jsx",
+      import.meta.url,
+    ),
+    "utf8",
   ),
-  "utf8",
 );
 assert.match(
   chart,
