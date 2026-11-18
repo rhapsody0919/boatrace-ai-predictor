@@ -1942,6 +1942,11 @@
       "guards": "進入コース別選手成績パーサー（BOA-293）と、若松（20）を取得の対象・drift の知らせから外していること（BOA-1165）"
     },
     {
+      "script": "verify-venue-first-win-rate-make.js",
+      "tier": "ci",
+      "guards": "src/services/venueQueries2.js の getVenueFirstWinRateRanking が venues の行を makeVenue に通す（DM1x venue のつなぎ）。select が make の必須列（code・name）を取り、正の行は率の高い順の百分率で返り、破れは RangeError で reject してキャッシュに残らないこと"
+    },
+    {
       "script": "verify-venue-first-win-rate.js",
       "tier": "ci",
       "guards": "会場別1号艇勝率の母数の数え方（scripts/lib/venueFirstWinRate.js、BOA-303）。不成立・rank1 NULL・結果なしを除き、返還は数える。分析ツールのランキングは日次バッチの保存値（venues.avg_first_win_rate / avg_first_win_rate_race_count）を読む"

@@ -9,6 +9,7 @@ import {
   rankVenuesByPayout,
 } from "../utils/venuePayoutStats.js";
 import { fetchAllByIn, isPermissionDeniedError, withCache } from "./core.js";
+import { makeVenue } from "../pure/venueModel.js";
 
 /**
  * 本日の結果確定済みレースを会場別に横断集計し、4指標（固い場/荒れている場/
@@ -221,10 +222,13 @@ export function getVenueFirstWinRateRanking(minRaceCount = 3) {
         }
         const { data } = await supabase
           .from("venues")
-          .select("code, avg_first_win_rate, avg_first_win_rate_race_count")
+          // makeVenue の必須（code・name）も取る
+          .select("code, name, avg_first_win_rate, avg_first_win_rate_race_count")
           .not("avg_first_win_rate", "is", null)
           .gte("avg_first_win_rate_race_count", minRaceCount);
+        // 不変条件の破れ（RangeError）は呼び手（VenueRankingChart の allSettled）で取得失敗と同じ扱い（キャッシュに残さない）
         return (data ?? [])
+          .map(makeVenue)
           .map((v) => ({
             venue_code: v.code,
             race_count: v.avg_first_win_rate_race_count,
