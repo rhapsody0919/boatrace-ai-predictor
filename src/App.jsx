@@ -9,16 +9,12 @@ import PrivacyPolicy from "./components/PrivacyPolicy";
 import Terms from "./components/Terms";
 import Contact from "./components/Contact";
 import HitRaces from "./components/HitRaces";
-import { getLatestPosts } from "./data/blogPosts";
 import { clearCache } from "./services/core.js";
 import { getRaces } from "./services/scheduleQueries.js";
-import { formatDateLongLocalized } from "./utils/formatters";
+import { fetchWithRetry, renderFooterExtra } from "./AppParts.jsx";
 
-// タブページ（/hit-races・/accuracy・/privacy・/terms・/contact）のシェル。
-// トップ（/）の開催場一覧はVenueGridPage、レース詳細は/race/:raceIdに分離済み
-// （docs/design/venue-list-redesign/参照）
-function App({ tab }) {
-  const { t, i18n } = useTranslation();
+// タブ・データ更新時刻・再読込の状態
+function useAppTabState(tab) {
   const [activeTab, setActiveTab] = useState(tab);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -27,30 +23,6 @@ function App({ tab }) {
   useEffect(() => {
     setActiveTab(tab);
   }, [tab]);
-
-  // リトライ機能付きfetch関数（HitRacesが使用）
-  const fetchWithRetry = async (url, maxRetries = 3, retryDelay = 2000) => {
-    let lastError;
-
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        return response;
-      } catch (error) {
-        lastError = error;
-        console.warn(`取得失敗 (${i + 1}/${maxRetries}):`, error.message);
-
-        if (i < maxRetries - 1) {
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
-        }
-      }
-    }
-
-    throw lastError;
-  };
 
   // データ更新時刻の取得（HitRacesのUpdateStatus表示用）
   useEffect(() => {
@@ -71,54 +43,61 @@ function App({ tab }) {
     }
   };
 
+  return { activeTab, lastUpdated, isRefreshing, handleRefresh };
+}
+
+function renderTabContent(
+  activeTab,
+  { lastUpdated, isRefreshing, handleRefresh },
+) {
+  switch (activeTab) {
+    case "privacy":
+      return <PrivacyPolicy />;
+    case "terms":
+      return <Terms />;
+    case "contact":
+      return <Contact />;
+    case "accuracy":
+      return (
+        <AccuracyDashboard
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+        />
+      );
+    case "hit-races":
+      return (
+        <HitRaces
+          fetchWithRetry={fetchWithRetry}
+          lastUpdated={lastUpdated}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
+        />
+      );
+    default:
+      return null;
+  }
+}
+
+// タブページ（/hit-races・/accuracy・/privacy・/terms・/contact）のシェル。
+// トップ（/）の開催場一覧はVenueGridPage、レース詳細は/race/:raceIdに分離済み
+// （docs/design/venue-list-redesign/参照）
+function App({ tab }) {
+  const { t, i18n } = useTranslation();
+  const state = useAppTabState(tab);
+
   return (
     <div className="app">
       <Header />
 
       <div className="container">
         <main className="main-content">
-          {activeTab === "privacy" ? (
-            <PrivacyPolicy />
-          ) : activeTab === "terms" ? (
-            <Terms />
-          ) : activeTab === "contact" ? (
-            <Contact />
-          ) : activeTab === "accuracy" ? (
-            <AccuracyDashboard
-              onRefresh={handleRefresh}
-              isRefreshing={isRefreshing}
-            />
-          ) : activeTab === "hit-races" ? (
-            <HitRaces
-              fetchWithRetry={fetchWithRetry}
-              lastUpdated={lastUpdated}
-              onRefresh={handleRefresh}
-              isRefreshing={isRefreshing}
-            />
-          ) : null}
+          {renderTabContent(state.activeTab, state)}
         </main>
       </div>
 
       <Footer
         links={getSiteFooterLinks(t)}
-        extra={
-          <>
-            <p>{t("home.disclaimer")}</p>
-            <p className="site-footer-updated">
-              {(() => {
-                const latestPost = getLatestPosts(1, i18n.resolvedLanguage)[0];
-                return latestPost
-                  ? t("home.blogLastUpdated", {
-                      date: formatDateLongLocalized(
-                        latestPost.date,
-                        i18n.resolvedLanguage,
-                      ),
-                    })
-                  : "";
-              })()}
-            </p>
-          </>
-        }
+        extra={renderFooterExtra(t, i18n)}
       />
     </div>
   );
