@@ -324,6 +324,11 @@ for (const files of [
     "scripts/maintenance/verify-registry.json",
   ],
   ["scripts/sns/push-x.js", "scripts/analysis/a.mjs", "docs/a.md"],
+  // verify を分けた補助（verify-* だけが import する。閉包の検査が下で確かめる）
+  [
+    "scripts/maintenance/verify-foo.js",
+    "scripts/maintenance/verifyData/foo-fixtures.js",
+  ],
 ]) {
   check(`${files.join("・")} だけは0件`, scopeOf(files), "none");
 }
@@ -332,6 +337,10 @@ for (const file of [
   "scripts/maintenance/e2e-shards.js",
   "scripts/maintenance/guard-pr-merge.js",
   "scripts/maintenance/verify/x.js",
+  // verifyData は直下の .js だけ。下の階層・.js 以外・verify-e2e-scope の補助になりうる名前は全部
+  "scripts/maintenance/verifyData/sub/x.js",
+  "scripts/maintenance/verifyData/x.json",
+  "scripts/maintenance/verifyData/e2e-scope-cases.js",
   "scripts/lib/hitCalculator.js",
   "scripts/daily/scrape-odds.js",
   "scripts/maintenance/verify-e2e-scope.js",
