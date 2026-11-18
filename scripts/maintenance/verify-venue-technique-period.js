@@ -32,6 +32,23 @@ const todayJST = () =>
     new Date(),
   );
 
+const live = (id, extra = {}) => ({
+  race_id: id,
+  race_status: "normal",
+  is_cancelled: false,
+  rank1: 1,
+  winning_technique: "逃げ",
+  ...extra,
+});
+const arch = (date, venue, extra = {}) => ({
+  race_id: `${date}-${String(venue).padStart(2, "0")}-01`,
+  race_date: date,
+  venue_code: venue,
+  has_result: true,
+  technique: "逃げ",
+  ...extra,
+});
+
 function selfTest() {
   let failures = 0;
   const check = (label, pass, detail = "") => {
@@ -42,6 +59,15 @@ function selfTest() {
     }
   };
 
+  selfTestRanges(check);
+  selfTestRows(check);
+  selfTestAggregate(check);
+  selfTestSources(check);
+  selfTestStored(check);
+  return failures;
+}
+
+function selfTestRanges(check) {
   // 期間
   const r365 = periodRange("2026-10-06", 365);
   const r90 = periodRange("2026-10-06", 90);
@@ -68,24 +94,10 @@ function selfTest() {
       sourceRanges("2026-12-02").archive?.to === "2025-12-02",
     JSON.stringify(sourceRanges("2026-12-03")),
   );
+}
 
+function selfTestRows(check) {
   // 行の変換（除外）
-  const live = (id, extra = {}) => ({
-    race_id: id,
-    race_status: "normal",
-    is_cancelled: false,
-    rank1: 1,
-    winning_technique: "逃げ",
-    ...extra,
-  });
-  const arch = (date, venue, extra = {}) => ({
-    race_id: `${date}-${String(venue).padStart(2, "0")}-01`,
-    race_date: date,
-    venue_code: venue,
-    has_result: true,
-    technique: "逃げ",
-    ...extra,
-  });
   const excluded = [
     fromLiveRow(live("2026-10-01-18-01", { is_cancelled: true })),
     fromLiveRow(live("2026-10-01-18-02", { race_status: "no_race" })),
@@ -115,7 +127,9 @@ function selfTest() {
       kept[2].date === "2025-12-02",
     JSON.stringify(kept),
   );
+}
 
+function selfTestAggregate(check) {
   // 集計（徳山18・平和島4。新しい表の 2025-12-02 の重複行を含む固定データ）
   const liveRows = [
     live("2026-10-05-18-01"), // 90日・365日
@@ -194,7 +208,9 @@ function selfTest() {
     checkStoredRows(all, "2026-10-06").length === 0,
     checkStoredRows(all, "2026-10-06").join(" / "),
   );
+}
 
+function selfTestSources(check) {
   // 書き込み前の検査
   check(
     "(a) 期間に長期の表の日付が入るのに長期の表が0件なら失敗",
@@ -224,7 +240,9 @@ function selfTest() {
       liveCount: allExcluded.liveCount,
     }),
   );
+}
 
+function selfTestStored(check) {
   // 保存後の検査
   const stored = [
     {
@@ -296,7 +314,6 @@ function selfTest() {
     ps.length === 1 && ps[0].includes("18:逃げ"),
     ps.join(" / "),
   );
-  return failures;
 }
 
 async function checkProduction() {
