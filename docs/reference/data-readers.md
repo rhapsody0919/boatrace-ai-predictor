@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1994 |
+| 読んだファイル | 1995 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -948,11 +948,11 @@
   - `src/services/raceQueries3.js:137` select [boat_number, player_name, race_id, racer_id]
   - `src/services/raceQueries3.js:164` select [boat_number, race_id, racer_id]
   - `src/services/raceQueries3.js:328` select [boat_number, race_id, racer_id]
-  - `src/services/racerQueries.js:18` select [?, race_id, racer_id]
-  - `src/services/racerQueries.js:46` select [local_win_rate, race_id, racer_id, win_rate]
-  - `src/services/racerQueries.js:82` select [local_win_rate, race_id, racer_id, win_rate]
-  - `src/services/racerQueries.js:102` select [race_id, racer_id, win_rate]
-  - `src/services/racerQueries.js:139` select [boat_number, race_id, racer_id]
+  - `src/services/racerQueries.js:19` select [?, race_id, racer_id]
+  - `src/services/racerQueries.js:47` select [local_win_rate, race_id, racer_id, win_rate]
+  - `src/services/racerQueries.js:83` select [local_win_rate, race_id, racer_id, win_rate]
+  - `src/services/racerQueries.js:103` select [race_id, racer_id, win_rate]
+  - `src/services/racerQueries.js:140` select [boat_number, race_id, racer_id]
   - `src/services/racerQueries3.js:27` select [boat_number, race_id, racer_id]
   - `src/services/racerQueries3.js:99` select [boat_number, race_id, racer_id]
   - `src/services/racerQueries3.js:182` select [boat_number, race_id, racer_id]
@@ -1229,7 +1229,7 @@
   - `src/services/raceQueries3.js:255` select(helper:fetchAllByIn)
   - `src/services/raceQueries3.js:346` select(helper:fetchAllByIn)
   - `src/services/raceQueries4.js:29` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id]
-  - `src/services/racerQueries.js:149` select(helper:fetchAllByIn)
+  - `src/services/racerQueries.js:150` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:52` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:219` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:295` select(helper:fetchAllByIn)
@@ -1346,7 +1346,7 @@
   - `scripts/daily/generate-predictions.js:553` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-unified-predictions.js:118` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-unified-trifecta-reference.js:117` select [avg_st, course_race_counts, racer_id, venue_code]
-  - `src/services/racerQueries.js:198` select [avg_st, avg_st_last_30, course_race_counts, flying_rate, racer_id, st_stddev, total_races, venue_code]
+  - `src/services/racerQueries.js:199` select [avg_st, avg_st_last_30, course_race_counts, flying_rate, racer_id, st_stddev, total_races, venue_code]
 - 書き手（1）: 
   - `scripts/analysis/aggregate-racer-stats.js:504` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -1370,7 +1370,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `scripts/sns/rank-data.js:477` select(helper:readAll)
-  - `src/services/racerQueries.js:342` select [data, key]
+  - `src/services/racerQueries.js:344` select [data, key]
 - 書き手（1）: 
   - `scripts/daily/update-racer-grade-cache.js:46` upsert [data, key, updated_at]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -1408,8 +1408,8 @@
   - `scripts/maintenance/verify-full-picture-scene2.js:2601` rest(rest) （検査）
   - `scripts/maintenance/verify-full-picture-scene2.js:3683` rest(rest) （検査）
   - `src/services/raceQueries2.js:270` select [avg_st, period_no, period_year, racer_id]
-  - `src/services/racerQueries.js:226` select [avg_st, period_no, period_year, racer_id]
-  - `src/services/racerQueries.js:265` select [?, period_no, period_year, racer_id]
+  - `src/services/racerQueries.js:227` select [avg_st, period_no, period_year, racer_id]
+  - `src/services/racerQueries.js:266` select [?, period_no, period_year, racer_id]
   - `src/services/racerQueries4.js:70` select [avg_st, calc_from, calc_to, finals, period_no, period_year, racer_id, starts, top2_rate, win_rate, wins]
   - `src/services/racerQueries4.js:79` select [period_no, period_year, racer_id]
 - 書き手（0）: なし
@@ -1434,7 +1434,7 @@
   - `scripts/maintenance/verify-sns-x-delete.js:418` rest(rest) （検査）
   - `scripts/sns/delete-x-post.js:124` rest(rest) [name, racer_id]
   - `src/services/motorQueries4.js:176` select [name, racer_id]
-  - `src/services/racerQueries.js:310` select [birth_date, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
+  - `src/services/racerQueries.js:311` select [birth_date, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
   - `src/services/racerQueries5.js:31` select [birth_date, blood_type, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
 - 書き手（3）: 
   - `scripts/lib/racerProfileSync.js:265` update [?]
