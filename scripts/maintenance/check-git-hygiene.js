@@ -129,9 +129,8 @@ export function shouldAutoFastForward({ branch, trackedDirty, ahead, behind }) {
   );
 }
 
-function main() {
-  const lines = [];
-
+// origin の最新を取りに行き、master と origin/master の差（ahead・behind）を数える
+function readDivergence() {
   // origin の最新を取りに行く。ネットワークが遅い・繋がらない場合は諦めて続ける。
   git(["fetch", "origin", DEFAULT_BRANCH, "--quiet"], {
     timeout: FETCH_TIMEOUT_MS,
@@ -143,70 +142,82 @@ function main() {
     "--count",
     `${DEFAULT_BRANCH}...origin/${DEFAULT_BRANCH}`,
   ]);
-  let behind = parseBehindCount(counts);
-  const ahead = parseAheadCount(counts);
+  return { behind: parseBehindCount(counts), ahead: parseAheadCount(counts) };
+}
+
+// 条件が揃えばメインの作業ツリーを fast-forward する。取り込めたら行を足して true
+function tryAutoFastForward(mainPath, { ahead, behind }, lines) {
+  const mainGit = (args, opts) => git(["-C", mainPath, ...args], opts);
+  const tracked = mainGit(["status", "--porcelain", "--untracked-files=no"]);
+  const decision = shouldAutoFastForward({
+    branch: mainGit(["branch", "--show-current"]),
+    trackedDirty: tracked === null ? null : tracked !== "",
+    ahead,
+    behind,
+  });
+  if (
+    decision &&
+    mainGit(["merge", "--ff-only", "--quiet", `origin/${DEFAULT_BRANCH}`], {
+      timeout: MERGE_TIMEOUT_MS,
+    }) !== null
+  ) {
+    lines.push(
+      `メインの作業ツリー（${mainPath}）の ${DEFAULT_BRANCH} を origin/${DEFAULT_BRANCH} へ自動で取り込みました（${behind} コミット、fast-forward）。`,
+    );
+    return true;
+  }
+  return false;
+}
+
+function behindLines(behind) {
+  if (!(behind && behind > 0)) return [];
+  return [
+    `${DEFAULT_BRANCH} が origin/${DEFAULT_BRANCH} より ${behind} コミット遅れています。`,
+    `  この作業ディレクトリで起動したセッションは、古い .claude/CLAUDE.md・.claude/rules/*.md を読み、` +
+      `古い ${DEFAULT_BRANCH} からブランチを切ります。新規タスクの前に取り込んでください:`,
+    `  git fetch origin ${DEFAULT_BRANCH} && git merge --ff-only origin/${DEFAULT_BRANCH}`,
+  ];
+}
+
+// worktree の本数と、worktree の中の取り直しの効かないデータ
+function worktreeLines(porcelain) {
+  const lines = [];
+  const extra = selectManagedWorktrees(parseWorktrees(porcelain), repoRoot);
+  if (extra.length > WORKTREE_WARN_THRESHOLD) {
+    lines.push(
+      `worktree が ${extra.length} 本あります（閾値 ${WORKTREE_WARN_THRESHOLD}）。` +
+        `マージ済みの残骸が溜まっている可能性があります: npm run check:worktrees`,
+    );
+  }
+  const atRisk = [];
+  for (const w of extra) {
+    const found = PRECIOUS_PATHS.filter((p) =>
+      existsSync(path.join(w.path, p)),
+    );
+    if (found.length > 0) atRisk.push(`${w.path} (${found.join(", ")})`);
+  }
+  if (atRisk.length > 0) {
+    lines.push(
+      `worktree の中に、gitに入らない取り直しの効かないデータがあります。` +
+        `worktree ごと消えると復元できません（リポジトリ外へ退避してください）:`,
+    );
+    for (const a of atRisk) lines.push(`  - ${a}`);
+  }
+  return lines;
+}
+
+function main() {
+  const lines = [];
+  const divergence = readDivergence();
+  let { behind } = divergence;
 
   // worktree から起動しても、取り込む対象はメインの作業ツリー（一覧の先頭）。
   const porcelain = git(["worktree", "list", "--porcelain"]);
   const mainPath = porcelain ? parseWorktrees(porcelain)[0]?.path : null;
-  if (mainPath) {
-    const mainGit = (args, opts) => git(["-C", mainPath, ...args], opts);
-    const tracked = mainGit(["status", "--porcelain", "--untracked-files=no"]);
-    const decision = shouldAutoFastForward({
-      branch: mainGit(["branch", "--show-current"]),
-      trackedDirty: tracked === null ? null : tracked !== "",
-      ahead,
-      behind,
-    });
-    if (
-      decision &&
-      mainGit(["merge", "--ff-only", "--quiet", `origin/${DEFAULT_BRANCH}`], {
-        timeout: MERGE_TIMEOUT_MS,
-      }) !== null
-    ) {
-      lines.push(
-        `メインの作業ツリー（${mainPath}）の ${DEFAULT_BRANCH} を origin/${DEFAULT_BRANCH} へ自動で取り込みました（${behind} コミット、fast-forward）。`,
-      );
-      behind = 0;
-    }
-  }
+  if (mainPath && tryAutoFastForward(mainPath, divergence, lines)) behind = 0;
 
-  if (behind && behind > 0) {
-    lines.push(
-      `${DEFAULT_BRANCH} が origin/${DEFAULT_BRANCH} より ${behind} コミット遅れています。`,
-    );
-    lines.push(
-      `  この作業ディレクトリで起動したセッションは、古い .claude/CLAUDE.md・.claude/rules/*.md を読み、` +
-        `古い ${DEFAULT_BRANCH} からブランチを切ります。新規タスクの前に取り込んでください:`,
-    );
-    lines.push(
-      `  git fetch origin ${DEFAULT_BRANCH} && git merge --ff-only origin/${DEFAULT_BRANCH}`,
-    );
-  }
-
-  if (porcelain) {
-    const extra = selectManagedWorktrees(parseWorktrees(porcelain), repoRoot);
-    if (extra.length > WORKTREE_WARN_THRESHOLD) {
-      lines.push(
-        `worktree が ${extra.length} 本あります（閾値 ${WORKTREE_WARN_THRESHOLD}）。` +
-          `マージ済みの残骸が溜まっている可能性があります: npm run check:worktrees`,
-      );
-    }
-    const atRisk = [];
-    for (const w of extra) {
-      const found = PRECIOUS_PATHS.filter((p) =>
-        existsSync(path.join(w.path, p)),
-      );
-      if (found.length > 0) atRisk.push(`${w.path} (${found.join(", ")})`);
-    }
-    if (atRisk.length > 0) {
-      lines.push(
-        `worktree の中に、gitに入らない取り直しの効かないデータがあります。` +
-          `worktree ごと消えると復元できません（リポジトリ外へ退避してください）:`,
-      );
-      for (const a of atRisk) lines.push(`  - ${a}`);
-    }
-  }
+  lines.push(...behindLines(behind));
+  if (porcelain) lines.push(...worktreeLines(porcelain));
 
   if (lines.length === 0) return;
   console.log("");
