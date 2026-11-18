@@ -85,6 +85,124 @@ function getPreviousMonth(year, month) {
   return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 };
 }
 
+// 見出しから支部/達成内容を取れなかった記事の要確認の行（純関数）
+function unparsedPendingItem(article, parsed, date) {
+  return {
+    id: `grade-announcement-${article.url}`,
+    source: "grade-announcement",
+    reason:
+      "見出しから支部/達成内容を抽出できませんでした（見出しフォーマットが変化した可能性）",
+    candidate: { racerId: parsed.racerId, title: article.title },
+    sourceUrl: article.url,
+    sourceName: SOURCE_NAME,
+    detectedAt: date,
+  };
+}
+
+// racer_profiles に無い・支部が合わない記事の要確認の行（純関数）
+function mismatchPendingItem(article, parsed, profile, date) {
+  return {
+    id: `grade-announcement-${article.url}`,
+    source: "grade-announcement",
+    reason: !profile
+      ? `racer_profilesにracer_id=${parsed.racerId}が見つかりません`
+      : `支部が一致しません（記事: ${parsed.branch} / DB: ${profile.branch}）`,
+    candidate: {
+      racerId: parsed.racerId,
+      branch: parsed.branch,
+      achievement: parsed.achievement,
+      title: article.title,
+    },
+    sourceUrl: article.url,
+    sourceName: SOURCE_NAME,
+    detectedAt: date,
+  };
+}
+
+// 当月と前月の一覧を取る。取れなかった月は summary.errors に数える
+async function fetchRecentArticles(date, fetchImpl, summary) {
+  const [year, month] = date.split("-").map(Number);
+  const { year: prevYear, month: prevMonth } = getPreviousMonth(year, month);
+
+  const articles = [];
+  for (const [y, m] of [
+    [year, month],
+    [prevYear, prevMonth],
+  ]) {
+    try {
+      articles.push(...(await fetchCategoryArticles(y, m, fetchImpl)));
+    } catch (err) {
+      console.error(
+        `⚠️ ${y}年${m}月のレーサーデータ一覧取得に失敗しました:`,
+        err.message,
+      );
+      summary.errors++;
+    }
+  }
+  return articles;
+}
+
+// 記事1本を処理し、数える欄（skipped・pending・generated）を返す。失敗は例外
+async function processArticle(article, { client, pendingStore, dryRun, date }) {
+  if (await isAlreadyProcessed(article.url, { client, pendingStore })) {
+    return "skipped";
+  }
+
+  const parsed = parseTitle(article.title);
+  if (!parsed) return "skipped";
+
+  if (!parsed.branch || !parsed.achievement) {
+    if (!dryRun) {
+      await pendingStore.addPendingItem(
+        unparsedPendingItem(article, parsed, date),
+      );
+    }
+    return "pending";
+  }
+
+  const { data: profile, error: profileError } = await client
+    .from("racer_profiles")
+    .select("racer_id, name, branch")
+    .eq("racer_id", parsed.racerId)
+    .maybeSingle();
+  if (profileError) {
+    throw new Error(
+      `racer_profiles取得に失敗しました: ${profileError.message}`,
+    );
+  }
+
+  if (!profile || profile.branch !== parsed.branch) {
+    if (!dryRun) {
+      await pendingStore.addPendingItem(
+        mismatchPendingItem(article, parsed, profile, date),
+      );
+    }
+    return "pending";
+  }
+
+  const { title, summary: newsSummary } = generateGradeAnnouncementNews({
+    racerName: profile.name.replace(/\s+/g, ""),
+    branch: profile.branch,
+    achievement: parsed.achievement,
+  });
+
+  if (!dryRun) {
+    const { error: insertError } = await client.from("racer_news").insert({
+      racer_id: profile.racer_id,
+      title,
+      summary: newsSummary,
+      source_url: article.url,
+      source_name: SOURCE_NAME,
+      published_at: article.date,
+    });
+    if (insertError) {
+      throw new Error(`racer_news投入に失敗しました: ${insertError.message}`);
+    }
+  }
+
+  return "generated";
+}
+
 /**
  * boatrace.jpの「レーサーデータ」カテゴリから節目記録ニュースを取り込む
  * @param {Object} [options] 省略時は従来どおり（GitHub Actions・CLI。global fetch・pending.json・モジュールの supabase）
@@ -119,114 +237,18 @@ export async function collectGradeAnnouncementNews({
     return summary;
   }
 
-  const [year, month] = date.split("-").map(Number);
-  const { year: prevYear, month: prevMonth } = getPreviousMonth(year, month);
-
-  const articles = [];
-  for (const [y, m] of [
-    [year, month],
-    [prevYear, prevMonth],
-  ]) {
-    try {
-      articles.push(...(await fetchCategoryArticles(y, m, fetchImpl)));
-    } catch (err) {
-      console.error(
-        `⚠️ ${y}年${m}月のレーサーデータ一覧取得に失敗しました:`,
-        err.message,
-      );
-      summary.errors++;
-    }
-  }
-
+  const articles = await fetchRecentArticles(date, fetchImpl, summary);
   summary.articles = articles.length;
 
   for (const article of articles) {
     try {
-      if (await isAlreadyProcessed(article.url, { client, pendingStore })) {
-        summary.skipped++;
-        continue;
-      }
-
-      const parsed = parseTitle(article.title);
-      if (!parsed) {
-        summary.skipped++;
-        continue;
-      }
-
-      if (!parsed.branch || !parsed.achievement) {
-        if (!dryRun) {
-          await pendingStore.addPendingItem({
-            id: `grade-announcement-${article.url}`,
-            source: "grade-announcement",
-            reason:
-              "見出しから支部/達成内容を抽出できませんでした（見出しフォーマットが変化した可能性）",
-            candidate: { racerId: parsed.racerId, title: article.title },
-            sourceUrl: article.url,
-            sourceName: SOURCE_NAME,
-            detectedAt: date,
-          });
-        }
-        summary.pending++;
-        continue;
-      }
-
-      const { data: profile, error: profileError } = await client
-        .from("racer_profiles")
-        .select("racer_id, name, branch")
-        .eq("racer_id", parsed.racerId)
-        .maybeSingle();
-      if (profileError) {
-        throw new Error(
-          `racer_profiles取得に失敗しました: ${profileError.message}`,
-        );
-      }
-
-      if (!profile || profile.branch !== parsed.branch) {
-        if (!dryRun) {
-          await pendingStore.addPendingItem({
-            id: `grade-announcement-${article.url}`,
-            source: "grade-announcement",
-            reason: !profile
-              ? `racer_profilesにracer_id=${parsed.racerId}が見つかりません`
-              : `支部が一致しません（記事: ${parsed.branch} / DB: ${profile.branch}）`,
-            candidate: {
-              racerId: parsed.racerId,
-              branch: parsed.branch,
-              achievement: parsed.achievement,
-              title: article.title,
-            },
-            sourceUrl: article.url,
-            sourceName: SOURCE_NAME,
-            detectedAt: date,
-          });
-        }
-        summary.pending++;
-        continue;
-      }
-
-      const { title, summary: newsSummary } = generateGradeAnnouncementNews({
-        racerName: profile.name.replace(/\s+/g, ""),
-        branch: profile.branch,
-        achievement: parsed.achievement,
+      const counted = await processArticle(article, {
+        client,
+        pendingStore,
+        dryRun,
+        date,
       });
-
-      if (!dryRun) {
-        const { error: insertError } = await client.from("racer_news").insert({
-          racer_id: profile.racer_id,
-          title,
-          summary: newsSummary,
-          source_url: article.url,
-          source_name: SOURCE_NAME,
-          published_at: article.date,
-        });
-        if (insertError) {
-          throw new Error(
-            `racer_news投入に失敗しました: ${insertError.message}`,
-          );
-        }
-      }
-
-      summary.generated++;
+      summary[counted]++;
     } catch (err) {
       console.error(
         `⚠️ ${article.url} のレーサーデータニュース生成に失敗しました:`,
