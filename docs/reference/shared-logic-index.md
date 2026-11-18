@@ -48,6 +48,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか35件 |
 | `src/pure/sixBoatCourseStats.js` | 6艇の想定コース別成績（公式の直近3期、BOA-1291）。取得・表示は呼び出し側で行う。 | periodsBefore, buildSixBoatCourseRows, buildSixBoatLocalRows, SIX_BOAT_WARN_ENTRIES |
 | `src/pure/snsPostText.js` | — | buildPostText |
+| `src/pure/techniqueNames.js` | 決まり手の英語キー → 日本語の名前。展開予測（src/utils/turnPrediction.js）をやめた後も、データ出走表などの | TECHNIQUE_NAMES |
 | `src/pure/venueModel.js` | — | makeVenue |
 
 ## scripts/lib — バッチ・取得・集計の共通ロジック
@@ -471,4 +472,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 429 ファイル / export 2472 件。
+対象 430 ファイル / export 2473 件。
