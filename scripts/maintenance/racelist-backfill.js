@@ -74,9 +74,54 @@ const RACELIST_SCHEMA = "racelist-backfill/v1";
 // 引数
 // ---------------------------------------------------------------------------
 
-function parseArgs(argv) {
-  const [command, ...rest] = argv;
-  const opts = {
+// 値つきのオプション（--key=value）。値の無い旗は FLAG_OPTIONS
+const VALUE_OPTIONS = {
+  from: (opts, v) => {
+    opts.from = v;
+  },
+  to: (opts, v) => {
+    opts.to = v;
+  },
+  "archive-dir": (opts, v) => {
+    opts.archiveDir = path.resolve(v);
+  },
+  "daily-limit": (opts, v) => {
+    opts.dailyLimit = Number(v);
+  },
+  window: (opts, v) => {
+    opts.window = v;
+  },
+  "interval-min-ms": (opts, v) => {
+    opts.intervalMinMs = Number(v);
+  },
+  "interval-max-ms": (opts, v) => {
+    opts.intervalMaxMs = Number(v);
+  },
+  "assumed-latency-ms": (opts, v) => {
+    opts.latencyMs = Number(v);
+  },
+  "max-requests": (opts, v) => {
+    opts.maxRequests = Number(v);
+  },
+  "race-chunk-size": (opts, v) => {
+    opts.raceChunkSize = Number(v);
+  },
+  "batch-size": (opts, v) => {
+    opts.batchSize = Number(v);
+  },
+  "sleep-ms": (opts, v) => {
+    opts.sleepMs = Number(v);
+  },
+};
+
+const FLAG_OPTIONS = {
+  "dry-run": "dryRun",
+  apply: "apply",
+  force: "force",
+};
+
+function defaultOptions(command) {
+  return {
     command,
     from: null, // race_id の下限（YYYY-MM-DD）。未指定なら対象の全期間
     to: null, // race_id の上限（YYYY-MM-DD）。未指定なら前日（JST）
@@ -94,59 +139,18 @@ function parseArgs(argv) {
     batchSize: 500, // load: upsertの1文あたりの行数
     sleepMs: 500, // load: バッチ間隔（Disk IO Budgetへの配慮）
   };
+}
+
+function parseArgs(argv) {
+  const [command, ...rest] = argv;
+  const opts = defaultOptions(command);
   for (const arg of rest) {
     const [k, v] = arg.startsWith("--")
       ? arg.slice(2).split("=")
       : [arg, undefined];
-    switch (k) {
-      case "from":
-        opts.from = v;
-        break;
-      case "to":
-        opts.to = v;
-        break;
-      case "archive-dir":
-        opts.archiveDir = path.resolve(v);
-        break;
-      case "daily-limit":
-        opts.dailyLimit = Number(v);
-        break;
-      case "window":
-        opts.window = v;
-        break;
-      case "interval-min-ms":
-        opts.intervalMinMs = Number(v);
-        break;
-      case "interval-max-ms":
-        opts.intervalMaxMs = Number(v);
-        break;
-      case "assumed-latency-ms":
-        opts.latencyMs = Number(v);
-        break;
-      case "max-requests":
-        opts.maxRequests = Number(v);
-        break;
-      case "race-chunk-size":
-        opts.raceChunkSize = Number(v);
-        break;
-      case "batch-size":
-        opts.batchSize = Number(v);
-        break;
-      case "sleep-ms":
-        opts.sleepMs = Number(v);
-        break;
-      case "dry-run":
-        opts.dryRun = true;
-        break;
-      case "apply":
-        opts.apply = true;
-        break;
-      case "force":
-        opts.force = true;
-        break;
-      default:
-        throw new Error(`不明なオプション: ${arg}`);
-    }
+    if (Object.hasOwn(VALUE_OPTIONS, k)) VALUE_OPTIONS[k](opts, v);
+    else if (Object.hasOwn(FLAG_OPTIONS, k)) opts[FLAG_OPTIONS[k]] = true;
+    else throw new Error(`不明なオプション: ${arg}`);
   }
   return opts;
 }
@@ -424,18 +428,14 @@ async function loadBatch(client, raceIds, opts) {
   return { races, noFill, unmatchedRaces, written, error: writeError };
 }
 
-export async function cmdLoad(opts, deps = {}) {
-  const log = deps.log ?? console.log;
-  const sleepFn = deps.sleep ?? sleepDefault;
-  const manifest = latestManifestByKey(opts.archiveDir);
-  const loadedFile = loadedPath(opts.archiveDir);
-  const loadedSet = new Set(readJsonl(loadedFile).map((e) => e.race_id));
+// 投入の候補（解析済み・未投入。--force なら投入済みも）。候補が無ければ終了コードを返す
+function selectLoadCandidates(opts, manifest, loadedSet, log) {
   const downloadedIds = [...manifest.values()]
     .filter((e) => e.status === "ok")
     .map((e) => e.key);
   if (downloadedIds.length === 0) {
     console.error("投入対象がありません（先に download を実行してください）");
-    return 1;
+    return { code: 1 };
   }
   const parsedIds = downloadedIds.filter(
     (raceId) => readParsedRace(opts.archiveDir, raceId) !== null,
@@ -444,23 +444,20 @@ export async function cmdLoad(opts, deps = {}) {
     console.error(
       "解析済みの中間JSONがありません（先に parse を実行してください）",
     );
-    return 1;
+    return { code: 1 };
   }
   const candidates = parsedIds
     .filter((raceId) => opts.force || !loadedSet.has(raceId))
     .sort();
   if (candidates.length === 0) {
     log("対象は全て投入済みです（再投入は --force）");
-    return 0;
+    return { code: 0 };
   }
-  const client =
-    deps.client ?? (await import("../lib/supabaseClient.js")).supabase;
-  const probe = await client.from("race_entries").select("race_id").limit(1);
-  if (probe.error) {
-    console.error(`race_entries を読めません: ${probe.error.message}`);
-    return 1;
-  }
+  return { candidates };
+}
 
+// 候補を raceChunkSize ずつ loadBatch に渡し、合計を返す（--apply なら成功したバッチを loaded に記録）
+async function runLoadBatches(client, candidates, opts, loadedFile, sleepFn) {
   const totals = {
     races: 0,
     noFill: 0,
@@ -487,11 +484,10 @@ export async function cmdLoad(opts, deps = {}) {
       await sleepFn(opts.sleepMs);
     }
   }
-  log(
-    `\nload: 対象${candidates.length}レース / 処理${totals.races} / 埋める列なし${totals.noFill} / ` +
-      `艇の対応なし${totals.unmatchedRaces}レース / 書き込み${totals.written}列 / 失敗バッチ${totals.failedBatches}` +
-      (opts.apply ? "" : "（DRY-RUN。書き込むには --apply）"),
-  );
+  return totals;
+}
+
+function loadExitCode(totals, opts) {
   if (totals.failedBatches > 0) return 1;
   if (totals.written === 0 && totals.noFill < totals.races) {
     // 埋められる列があったはずなのに1件も書けていない（DRY-RUNでは常に0。判定には使わない）
@@ -501,6 +497,42 @@ export async function cmdLoad(opts, deps = {}) {
     }
   }
   return 0;
+}
+
+export async function cmdLoad(opts, deps = {}) {
+  const log = deps.log ?? console.log;
+  const sleepFn = deps.sleep ?? sleepDefault;
+  const manifest = latestManifestByKey(opts.archiveDir);
+  const loadedFile = loadedPath(opts.archiveDir);
+  const loadedSet = new Set(readJsonl(loadedFile).map((e) => e.race_id));
+  const { code, candidates } = selectLoadCandidates(
+    opts,
+    manifest,
+    loadedSet,
+    log,
+  );
+  if (!candidates) return code;
+  const client =
+    deps.client ?? (await import("../lib/supabaseClient.js")).supabase;
+  const probe = await client.from("race_entries").select("race_id").limit(1);
+  if (probe.error) {
+    console.error(`race_entries を読めません: ${probe.error.message}`);
+    return 1;
+  }
+
+  const totals = await runLoadBatches(
+    client,
+    candidates,
+    opts,
+    loadedFile,
+    sleepFn,
+  );
+  log(
+    `\nload: 対象${candidates.length}レース / 処理${totals.races} / 埋める列なし${totals.noFill} / ` +
+      `艇の対応なし${totals.unmatchedRaces}レース / 書き込み${totals.written}列 / 失敗バッチ${totals.failedBatches}` +
+      (opts.apply ? "" : "（DRY-RUN。書き込むには --apply）"),
+  );
+  return loadExitCode(totals, opts);
 }
 
 // ---------------------------------------------------------------------------
