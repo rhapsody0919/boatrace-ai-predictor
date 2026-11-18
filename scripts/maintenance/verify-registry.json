@@ -2002,6 +2002,11 @@
       "guards": "イン崩れ指数の理由文の1号艇の平均ST（scripts/lib/volatilityFactors.js の boat1StReason、BOA-818）: 値（当サイトに蓄積した全期間）を「今節」と書かない。予想バッチが同じ関数を使う"
     },
     {
+      "script": "verify-watson-race-make.js",
+      "tier": "ci",
+      "guards": "src/services/watsonService.js が races の行を makeRace に通す（DM02、BOA-1679）"
+    },
+    {
       "script": "verify-weather-parsing.js",
       "tier": "ci",
       "guards": "水面気象情報の解析と race_conditions への反映（BOA-358）"
