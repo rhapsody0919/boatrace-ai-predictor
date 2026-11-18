@@ -29,6 +29,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/meetExclusion.js` | 今節の順位の対象から外す選手と、その理由（途中帰郷・賞典除外）の判定（純関数）。 | meetExclusionsOf |
 | `src/pure/meetGrouping.js` | race_id昇順ソート済みの配列を受け取り、末尾（最新）から遡って日付の間隔が | groupIntoCurrentMeet, groupIntoMeetBeforeRace |
 | `src/pure/meetModel.js` | — | makeMeet |
+| `src/pure/meetRows.js` | 今節タブ（RaceMeetTab）の表の行の組み立て（純関数、副作用なし）。 | buildRankingModel, buildForecastRows, buildForecastModel |
 | `src/pure/modelAssert.js` | — | assertObject, assertInt, assertIntOrNull, assertText, parseIsoDate ほか1件 |
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
 | `src/pure/predictionModel.js` | — | makePrediction |
@@ -466,4 +467,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 424 ファイル / export 2455 件。
+対象 425 ファイル / export 2458 件。
