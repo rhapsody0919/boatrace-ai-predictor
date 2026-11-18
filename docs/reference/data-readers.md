@@ -647,7 +647,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 取得のジョブ: outcome_distribution_update
 - 読み手（5）: 
-  - `api/outcome-distribution/index.js:66` select(rest) [count_90days, first_boat, venue_code]
+  - `api/outcome-distribution/index.js:47` select(rest) [count_90days, first_boat, venue_code]
   - `scripts/analysis/verify-outcome-distribution-coverage.js:26` select(helper:fetchAll)
   - `scripts/maintenance/verify-full-picture-scene2.js:2849` rest(rest) （検査）
   - `src/services/venueQueries.js:98` select [count_90days, first_boat]

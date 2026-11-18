@@ -4825,7 +4825,7 @@
       },
       "readers": [
         {
-          "ref": "api/outcome-distribution/index.js:66",
+          "ref": "api/outcome-distribution/index.js:47",
           "op": "select",
           "via": "rest",
           "columns": [
@@ -4897,7 +4897,7 @@
         },
         "venue_code": {
           "readers": [
-            "api/outcome-distribution/index.js:66",
+            "api/outcome-distribution/index.js:47",
             "scripts/daily/update-outcome-distribution.js:115",
             "src/services/venueQueries.js:224"
           ],
@@ -4906,7 +4906,7 @@
         },
         "first_boat": {
           "readers": [
-            "api/outcome-distribution/index.js:66",
+            "api/outcome-distribution/index.js:47",
             "src/services/venueQueries.js:224",
             "src/services/venueQueries.js:98"
           ],
@@ -4925,7 +4925,7 @@
         },
         "count_90days": {
           "readers": [
-            "api/outcome-distribution/index.js:66",
+            "api/outcome-distribution/index.js:47",
             "src/services/venueQueries.js:224",
             "src/services/venueQueries.js:98"
           ],
