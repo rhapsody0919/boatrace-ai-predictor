@@ -52,6 +52,12 @@ async function evaluate(cli) {
   const expect = (label, pass, detail) => {
     if (!pass) failed.push(`${label}${detail ? ` ${detail}` : ""}`);
   };
+  const s = evaluateDerive(cli, expect);
+  await evaluateSql(cli, expect, s);
+  return failed;
+}
+
+function evaluateDerive(cli, expect) {
   const s = cli.deriveRaceStats([...ENTRIES].reverse());
   expect(
     "(a) 1号艇の級別・勝率・モーター2連率、勝率の平均・母標準偏差、モーター2連率の母標準偏差",
@@ -71,7 +77,10 @@ async function evaluate(cli) {
       { ...ENTRIES[0], win_rate: null },
     ]) === null && cli.deriveRaceStats([]) === null,
   );
+  return s;
+}
 
+async function evaluateSql(cli, expect, s) {
   const db = new PGlite();
   await db.exec(`CREATE TABLE races (race_id varchar(20) primary key, volatility_score smallint, recommended_model varchar(50),
     first_boat_grade varchar(5), first_boat_win_rate decimal(5,3), first_boat_motor_2rate decimal(5,2),
@@ -110,7 +119,6 @@ async function evaluate(cli) {
       again.affectedRows === 0,
     show({ b, again: again.affectedRows }),
   );
-  return failed;
 }
 
 const cli = await import("./build-races-derived-backfill-sql.js");
