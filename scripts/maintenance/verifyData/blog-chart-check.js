@@ -1,23 +1,12 @@
 /**
  * verify-blog-charts.js の JSON 1本の検査（参照元の記事との突き合わせ）。verify ではない。
- * エラーは `{ファイル}: {JSONのパス}: {期待} / 実際: {値}` の形で全件を返す。
+ * エラーは `{ファイル}: {JSONのパス}: {期待} / 実際: {値}` の形で全件を返す。ファイルは読まない（材料は verify 側から渡す）。
  */
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import {
   validateBlogChart,
   localize,
 } from "../../../src/utils/blogChartContract.js";
 import { checkRiskRules } from "../../lib/riskRules.js";
-
-const ROOT = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../..",
-);
-const deprecatedPatterns = JSON.parse(
-  readFileSync(path.join(ROOT, "docs/reference/deprecated-terms.json"), "utf8"),
-).terms.flatMap((t) => t.patterns.map((p) => ({ id: t.id, pattern: p })));
 
 /** 文字の項目を全部集める（禁止語の検査用） */
 function texts(value, out = []) {
@@ -87,7 +76,7 @@ function percentErrors(chart, r, markdownOf) {
 }
 
 /** 文字に risk-rules.json の語・廃止語が無い */
-function wordErrors(file, chart) {
+function wordErrors(file, chart, deprecatedPatterns) {
   const errors = [];
   for (const t of texts(chart)) {
     for (const v of checkRiskRules(t, "blog"))
@@ -101,13 +90,18 @@ function wordErrors(file, chart) {
   return errors;
 }
 
-/** JSON 1本を、参照元の記事と突き合わせて検査する */
-export function checkChart(name, chart, referrers, { postExists, markdownOf }) {
-  const file = `public/blog-charts/${name}.json`;
-  return [
-    ...shapeErrors(file, name, chart, referrers),
-    ...articleErrors(file, chart, referrers, postExists),
-    ...referrerErrors(chart, referrers, markdownOf),
-    ...wordErrors(file, chart),
-  ];
-}
+/**
+ * JSON 1本を、参照元の記事と突き合わせて検査する関数を作る。
+ * deprecatedPatterns は廃止語（docs/reference/deprecated-terms.json）の {id, pattern} の配列（読むのは verify 側）
+ */
+export const makeCheckChart =
+  (deprecatedPatterns) =>
+  (name, chart, referrers, { postExists, markdownOf }) => {
+    const file = `public/blog-charts/${name}.json`;
+    return [
+      ...shapeErrors(file, name, chart, referrers),
+      ...articleErrors(file, chart, referrers, postExists),
+      ...referrerErrors(chart, referrers, markdownOf),
+      ...wordErrors(file, chart, deprecatedPatterns),
+    ];
+  };

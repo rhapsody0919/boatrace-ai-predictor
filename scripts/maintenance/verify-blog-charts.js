@@ -18,7 +18,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { validateBlogChart } from "../../src/utils/blogChartContract.js";
-import { checkChart } from "./verifyData/blog-chart-check.js";
+import { makeCheckChart } from "./verifyData/blog-chart-check.js";
 import { parseBlogChartLine } from "../../src/utils/blogChartTag.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -31,6 +31,11 @@ const EXAMPLE = path.join(
 );
 
 const LANG_SUFFIX = { "-en": "en", "-zh-tw": "zh-TW", "-ko": "ko" };
+const deprecatedPatterns = JSON.parse(
+  readFileSync(path.join(ROOT, "docs/reference/deprecated-terms.json"), "utf8"),
+).terms.flatMap((t) => t.patterns.map((p) => ({ id: t.id, pattern: p })));
+/** JSON 1本を、参照元の記事と突き合わせて検査する（中身は verifyData/blog-chart-check.js） */
+const checkChart = makeCheckChart(deprecatedPatterns);
 
 /** 記事のファイル名から記事 id と言語を出す（10000-races-analysis-en.md → 10000-races-analysis・en） */
 function articleOf(file) {
