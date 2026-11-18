@@ -53,17 +53,9 @@ function check(label, pass, detail = "") {
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 /** パーサー（P）に対する評価（期待値と中身は verifyData/monthly-schedule-evaluate.js）。変異検証で、壊した版にも同じ評価をかける */
-const evaluate = (P) =>
-  evaluateWith(P, {
-    html,
-    readK: () =>
-      parseKText(
-        fs.readFileSync(
-          path.join(LIB, "__fixtures__/kbfile/k190415.txt"),
-          "utf8",
-        ),
-      ),
-  });
+const K190415 = path.join(LIB, "__fixtures__/kbfile/k190415.txt");
+const readK = () => parseKText(fs.readFileSync(K190415, "utf8"));
+const evaluate = (P) => evaluateWith(P, { html, readK });
 
 {
   for (const r of evaluate(parserMod)) check(r.label, r.pass, r.detail);
