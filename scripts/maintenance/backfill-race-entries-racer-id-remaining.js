@@ -89,41 +89,13 @@ async function buildNameToRacerIdMapFromRaceEntries() {
   return { map, ambiguousNames };
 }
 
-async function main() {
-  const { dryRun } = parseArgs();
-
-  console.log("=== race_entries.racer_id 追加バックフィル（BOA-324残件） ===");
-  console.log(dryRun ? "モード: dry-run" : "モード: 実行");
-  console.log("");
-
-  const { map: selfRefMap, ambiguousNames } =
-    await buildNameToRacerIdMapFromRaceEntries();
-  console.log(
-    `race_entries自己参照マップ: ${selfRefMap.size}件の名前をロード（同名で複数racer_idに割れているため除外: ${ambiguousNames.length}件）`,
-  );
-  if (ambiguousNames.length > 0) {
-    console.log("除外した曖昧な名前:", JSON.stringify(ambiguousNames));
-  }
-
-  const nullEntries = await fetchAllPaged(
-    "race_entries",
-    "player_name",
-    ["race_id", "boat_number"],
-    (q) => q.is("racer_id", null),
-  );
-  console.log(`racer_id NULLの行: ${nullEntries.length}件`);
-
-  const nullCountByName = new Map();
-  for (const e of nullEntries) {
-    nullCountByName.set(
-      e.player_name,
-      (nullCountByName.get(e.player_name) || 0) + 1,
-    );
-  }
-  const distinctNames = [...nullCountByName.keys()];
-  console.log(`distinct player_name: ${distinctNames.length}件`);
-  console.log("");
-
+// 名前ごとに racer_id を決めて書く（自己参照→手動の対応の順。dry-run は件数だけ数える）
+async function applyRacerIds(
+  distinctNames,
+  selfRefMap,
+  nullCountByName,
+  dryRun,
+) {
   let updatedRows = 0;
   const updateErrors = [];
   const unresolvedNames = [];
@@ -177,6 +149,51 @@ async function main() {
       );
     }
   }
+
+  return { updatedRows, updateErrors, unresolvedNames };
+}
+
+async function main() {
+  const { dryRun } = parseArgs();
+
+  console.log("=== race_entries.racer_id 追加バックフィル（BOA-324残件） ===");
+  console.log(dryRun ? "モード: dry-run" : "モード: 実行");
+  console.log("");
+
+  const { map: selfRefMap, ambiguousNames } =
+    await buildNameToRacerIdMapFromRaceEntries();
+  console.log(
+    `race_entries自己参照マップ: ${selfRefMap.size}件の名前をロード（同名で複数racer_idに割れているため除外: ${ambiguousNames.length}件）`,
+  );
+  if (ambiguousNames.length > 0) {
+    console.log("除外した曖昧な名前:", JSON.stringify(ambiguousNames));
+  }
+
+  const nullEntries = await fetchAllPaged(
+    "race_entries",
+    "player_name",
+    ["race_id", "boat_number"],
+    (q) => q.is("racer_id", null),
+  );
+  console.log(`racer_id NULLの行: ${nullEntries.length}件`);
+
+  const nullCountByName = new Map();
+  for (const e of nullEntries) {
+    nullCountByName.set(
+      e.player_name,
+      (nullCountByName.get(e.player_name) || 0) + 1,
+    );
+  }
+  const distinctNames = [...nullCountByName.keys()];
+  console.log(`distinct player_name: ${distinctNames.length}件`);
+  console.log("");
+
+  const { updatedRows, updateErrors, unresolvedNames } = await applyRacerIds(
+    distinctNames,
+    selfRefMap,
+    nullCountByName,
+    dryRun,
+  );
 
   console.log("");
   console.log("=== 結果サマリー ===");
