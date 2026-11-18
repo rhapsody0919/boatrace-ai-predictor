@@ -26,26 +26,16 @@ import {
   SUCCESS_HEADERS,
   UNAVAILABLE_HEADERS,
   MATERIAL_TTL_MS,
-  BOT_PAGE_PREFIXED_LANGS,
-  documentHtml,
-  escapeHtml,
   getLocaleT,
   getSiteJsonLd,
-  originOf,
 } from "./botPage.js";
-import { DEFAULT_LANGUAGE, localizePath } from "../../src/config/languages.js";
-import { getJSTNow } from "../../src/utils/dateUtils.js";
-import { parseRaceId } from "../../src/utils/raceId.js";
+import { localizePath } from "../../src/config/languages.js";
 import {
   getRaceDetailHeading,
   getRaceDetailMeta,
   getRaceDetailBreadcrumbItems,
   getRaceListLink,
 } from "../../src/utils/raceDetailHeading.js";
-import {
-  isValidCrumbs,
-  toBreadcrumbListLd,
-} from "../../src/utils/breadcrumbLd.js";
 import { isRaceCancelled } from "../../src/utils/raceCancellation.js";
 import { entrantRowsOf } from "../../src/utils/raceEntrants.js";
 import { racerPagePath } from "../../src/utils/racerPagePath.js";
@@ -55,6 +45,15 @@ import {
   seriesCoveringDate,
 } from "../../src/utils/meetPageModel.js";
 import { internalApiHeaders } from "./internalApiHeaders.js";
+import { gateRaceRequest, plain } from "./botRaceRequest.js";
+import { renderRaceHtml } from "./botRaceHtml.js";
+
+export {
+  jstToday,
+  parseBotRaceUrl,
+  gateRaceRequest,
+} from "./botRaceRequest.js";
+export { renderRaceHtml } from "./botRaceHtml.js";
 
 const FETCH_TIMEOUT_MS = 8_000;
 // 節（race_series の1行）は材料の後に引くので、2つ合わせて関数の maxDuration（15秒）に収まる短さにする
@@ -63,49 +62,12 @@ const SERIES_FETCH_TIMEOUT_MS = 3_000;
 // 節が引けずに節のリンクを外したページは CDN に残さない（次のリクエストで引き直す）
 const DEGRADED_HEADERS = { ...SUCCESS_HEADERS, "Cache-Control": "no-store" };
 
-const LANG_ALT = BOT_PAGE_PREFIXED_LANGS.join("|");
-// 関数を直接呼ぶ形（/api/bot-page/race/{id}・/api/bot-page/{lang}/race/{id}）と、
-// middleware の rewrite 経由で元のパスのまま届く形（/race/{id}・/{lang}/race/{id}）
-const RACE_PATH = new RegExp(
-  `^(?:/api/bot-page)?(?:/(${LANG_ALT}))?/race/([^/]+)$`,
-);
-
 /** 材料（/api/predictions）が取れない・形が違う・0件 */
 export class PredictionsFetchError extends Error {
   constructor(message) {
     super(message);
     this.name = "PredictionsFetchError";
   }
-}
-
-export const jstToday = (nowMs) =>
-  getJSTNow(new Date(nowMs)).toISOString().slice(0, 10);
-
-/**
- * パスから言語と race id を読む。langMode が "ja" なら接頭辞なしだけ、"prefixed" なら en・zh-TW・ko の接頭辞付きだけを受ける
- *
- * @returns {{lang: string, raceId: string, venueCode: number, raceNo: number, date: string}|null}
- */
-export function parseBotRaceUrl(url, langMode = "ja") {
-  let pathname;
-  try {
-    pathname = new URL(url ?? "", "http://localhost").pathname;
-  } catch {
-    return null;
-  }
-  const m = RACE_PATH.exec(pathname);
-  if (!m) return null;
-  const lang = m[1] ?? DEFAULT_LANGUAGE;
-  if ((langMode === "prefixed") !== (lang !== DEFAULT_LANGUAGE)) return null;
-  const parsed = parseRaceId(m[2]);
-  if (!parsed) return null;
-  return {
-    lang,
-    raceId: m[2],
-    venueCode: parsed.venueCode,
-    raceNo: parsed.raceNo,
-    date: parsed.date,
-  };
 }
 
 /** 形を確かめる。races が1件以上あり、各レースの id・会場・レース番号が揃っていること */
@@ -392,108 +354,6 @@ export function buildRaceModel(races, key, t, series = null) {
           })),
     },
   };
-}
-
-const span = (text) => (text ? `<span>${escapeHtml(text)}</span>` : "");
-
-function renderRaceStrip(strip) {
-  const items = strip.races
-    .map(
-      (r) =>
-        `<li><a href="${escapeHtml(r.href)}"${r.current ? ' aria-current="page"' : ""}>${escapeHtml(r.label)}</a></li>`,
-    )
-    .join("");
-  const meet = strip.meetLink
-    ? `\n<a href="${escapeHtml(strip.meetLink.href)}">${escapeHtml(strip.meetLink.label)}</a>`
-    : "";
-  return `<nav aria-label="${escapeHtml(strip.label)}"><ul>${items}</ul>${meet}</nav>`;
-}
-
-function renderEntrants(entrants) {
-  if (entrants.rows.length === 0) return "";
-  const items = entrants.rows
-    .map((e) => {
-      const name = e.href
-        ? `<a href="${escapeHtml(e.href)}" translate="no">${escapeHtml(e.name)}</a>`
-        : `<span translate="no">${escapeHtml(e.name)}</span>`;
-      const grade = e.grade
-        ? ` <span translate="no">${escapeHtml(e.grade)}</span>`
-        : "";
-      return `<li><span>${escapeHtml(String(e.number))}</span> ${name}${grade}</li>`;
-    })
-    .join("\n");
-  return `<ul aria-label="${escapeHtml(entrants.label)}">\n${items}\n</ul>`;
-}
-
-/**
- * @param {NonNullable<ReturnType<typeof buildRaceModel>>} model
- * @param {{siteJsonLd?: object[]}} [options]
- */
-export function renderRaceHtml(model, { siteJsonLd = [] } = {}) {
-  const crumbs = model.breadcrumbItems
-    .map((c, i) =>
-      i < model.breadcrumbItems.length - 1
-        ? `<li><a href="${escapeHtml(c.url)}">${escapeHtml(c.name)}</a></li>`
-        : `<li>${escapeHtml(c.name)}</li>`,
-    )
-    .join("\n");
-  const chip = model.stageChip
-    ? ` <span>${model.stageChip.emoji ? `${escapeHtml(model.stageChip.emoji)} ` : ""}${escapeHtml(model.stageChip.label)}</span>`
-    : "";
-  const body = [
-    `<nav><ol>\n${crumbs}\n</ol></nav>`,
-    model.gradeLabel || model.seriesTitle
-      ? `<p>${[span(model.gradeLabel), span(model.seriesTitle)].filter(Boolean).join(" ")}</p>`
-      : "",
-    `<h1>${escapeHtml(model.h1)}${chip}${model.seriesDayLabel ? ` ${span(model.seriesDayLabel)}` : ""}</h1>`,
-    `<a href="${escapeHtml(model.backLink.href)}">${escapeHtml(model.backLink.label)}</a>`,
-    renderRaceStrip(model.raceStrip),
-    renderEntrants(model.entrants),
-    `<h2>${escapeHtml(model.sectionTitle)}${span(model.sectionDeadline)}</h2>`,
-  ]
-    .filter(Boolean)
-    .join("\n");
-  return documentHtml(model.meta, body, {
-    path: model.path,
-    lang: model.lang,
-    // 人のレース詳細は index.html の共通の JSON-LD と、Breadcrumb の BreadcrumbList
-    jsonLd: [
-      ...siteJsonLd,
-      ...(isValidCrumbs(model.breadcrumbItems)
-        ? [toBreadcrumbListLd(model.breadcrumbItems)]
-        : []),
-    ],
-  });
-}
-
-const plain = (status, headers, body) => ({ status, headers, body });
-
-/**
- * 材料を引く前の門（純関数）。通さないときは {response}、通すときは {key, origin}
- *
- * @param {{langMode: "ja"|"prefixed", method?: string, url?: string, headers?: Record<string, string>}} req
- * @param {number} nowMs
- */
-export function gateRaceRequest({ langMode, method, url, headers }, nowMs) {
-  if (method !== "GET" && method !== "HEAD") {
-    return {
-      response: plain(
-        405,
-        { ...CLIENT_ERROR_HEADERS, Allow: "GET, HEAD" },
-        "405 Method Not Allowed\n",
-      ),
-    };
-  }
-  const key = parseBotRaceUrl(url, langMode);
-  // 本日（JST）の id だけ。過去・未来は人と同じ SPA に任せる（CDN のキーも本日分に限る）
-  if (!key || key.date !== jstToday(nowMs)) {
-    return { response: plain(404, CLIENT_ERROR_HEADERS, "404 Not Found\n") };
-  }
-  const origin = originOf(headers);
-  if (!origin) {
-    return { response: plain(400, CLIENT_ERROR_HEADERS, "400 Bad Request\n") };
-  }
-  return { key, origin };
 }
 
 /**
