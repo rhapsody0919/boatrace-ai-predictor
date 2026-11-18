@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2042 |
+| 読んだファイル | 2044 |
 | 読み書きのあるファイル | 282 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -1327,7 +1327,7 @@
   - `scripts/lib/raceResultFix.js:125` upsert [?]
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:191` update [?]
   - `scripts/maintenance/backfill-start-timings.js:173` upsert [?]
-  - `scripts/maintenance/verify-race-result-parser.js:2047` upsert [?] （検査）
+  - `scripts/maintenance/verify-race-result-parser.js:1675` upsert [?] （検査）
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-racer_aggregated_stats"></a>racer_aggregated_stats

@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2042,
+    "sourceFiles": 2044,
     "filesWithAccess": 282,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -13206,7 +13206,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-race-result-parser.js:2047",
+          "ref": "scripts/maintenance/verify-race-result-parser.js:1675",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -13236,7 +13236,7 @@
             "scripts/maintenance/backfill-disqualified-finish-marks.js:191",
             "scripts/maintenance/backfill-start-timings.js:173",
             "scripts/maintenance/backfill-start-timings.js:261",
-            "scripts/maintenance/verify-race-result-parser.js:2047",
+            "scripts/maintenance/verify-race-result-parser.js:1675",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
             "src/services/meetQueries.js:111",
@@ -13262,7 +13262,7 @@
             "scripts/lib/raceResultFix.js:125",
             "scripts/maintenance/backfill-disqualified-finish-marks.js:191",
             "scripts/maintenance/backfill-start-timings.js:173",
-            "scripts/maintenance/verify-race-result-parser.js:2047",
+            "scripts/maintenance/verify-race-result-parser.js:1675",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
             "src/services/meetQueries.js:111",
