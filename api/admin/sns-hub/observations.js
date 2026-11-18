@@ -101,6 +101,118 @@ export async function readObservationCsv(
   );
 }
 
+// GET ?export=csv: 公開日・チャネルの CSV を返す
+async function respondObservationCsv(url) {
+  const start = url.searchParams.get("start");
+  const end = url.searchParams.get("end");
+  const platform = url.searchParams.get("platform") || "all";
+  try {
+    csvPublicationRange(start, end, platform);
+  } catch {
+    return jsonResponse({ error: "公開日・チャネルが不正です" }, 400);
+  }
+  const csv = await readObservationCsv(start, end, platform);
+  return new Response(csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="posts-${start}-${end}-${platform}.csv"`,
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+// GET: 観測窓・指標の下書きと観測を返す
+async function respondObservationList(url) {
+  const window = url.searchParams.get("window") || "48h";
+  const metric = url.searchParams.get("metric") || "views";
+  if (
+    !Object.hasOwn(OBSERVATION_WINDOWS, window) ||
+    !OBSERVATION_METRICS.includes(metric)
+  )
+    return jsonResponse({ error: "観測窓・指標名が不正です" }, 400);
+  const cutoff = new Date().toISOString();
+  const [drafts, observations] = await Promise.all([
+    readObservationPages(
+      "sns_drafts",
+      {
+        select: "id,platform,language,format,template_variant_id,posted_at",
+        posted_at: `lte.${cutoff}`,
+        platform: `in.(${OBSERVED_PLATFORMS.join(",")})`,
+      },
+      cutoff,
+    ),
+    readObservationPages(
+      "sns_metric_observations",
+      {
+        select: "*",
+        // 既定の 48h で開いたときは、全貌の当日（day_end）の値も読む（下書きごとの窓は compareObservations が選ぶ）
+        window: window === "48h" ? "in.(48h,day_end)" : `eq.${window}`,
+        metric_name: `eq.${metric}`,
+      },
+      cutoff,
+    ),
+  ]);
+  return jsonResponse({ data: { drafts, observations } });
+}
+
+function respondGet(req) {
+  const url = new URL(req.url);
+  if (url.searchParams.get("export") === "csv") return respondObservationCsv(url);
+  return respondObservationList(url);
+}
+
+// POST の body と下書きを確かめ、観測を作る。弾くときは { denied }、通れば { draft, observation }
+async function readObservationInput(req) {
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return { denied: jsonResponse({ error: "JSONが不正です" }, 400) };
+  }
+  if (!body || !isValidDraftId(body.draft_id))
+    return { denied: jsonResponse({ error: "投稿IDが不正です" }, 400) };
+  const draft = await getDraftById(body.draft_id);
+  if (!draft) return { denied: jsonResponse({ error: "下書きが見つかりません" }, 404) };
+  if (draft.status !== "posted")
+    return { denied: jsonResponse({ error: "投稿済みのみ観測できます" }, 409) };
+  let observation;
+  try {
+    observation = validateObservation(body, draft);
+    if (Date.parse(observation.observed_at) > Date.now())
+      throw new Error("未来の観測日時は保存できません");
+    if (observation.source === "mock")
+      throw new Error("モックは本番の保存対象外です");
+  } catch (error) {
+    console.error("SNS観測入力検査失敗", error);
+    return { denied: jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, 400) };
+  }
+  return { draft, observation };
+}
+
+// POST: 観測を1件追記する
+async function appendObservation(req) {
+  const input = await readObservationInput(req);
+  if (input.denied) return input.denied;
+  const { draft, observation } = input;
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/rpc/append_sns_metric_observation`,
+    {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        p_draft_id: draft.id,
+        p_observation: observation,
+      }),
+    },
+  );
+  if (!response.ok) throw new Error(`観測追記エラー: ${response.status}`);
+  return jsonResponse({ data: await response.json() }, 201);
+}
+
 export default async function handler(req) {
   const denied = await requireAdminAuth(req);
   if (denied) return denied;
@@ -109,97 +221,8 @@ export default async function handler(req) {
   if (!isConfigured())
     return jsonResponse({ error: "Supabase環境変数が未設定です" }, 500);
   try {
-    if (req.method === "GET") {
-      const url = new URL(req.url);
-      if (url.searchParams.get("export") === "csv") {
-        const start = url.searchParams.get("start");
-        const end = url.searchParams.get("end");
-        const platform = url.searchParams.get("platform") || "all";
-        try {
-          csvPublicationRange(start, end, platform);
-        } catch {
-          return jsonResponse({ error: "公開日・チャネルが不正です" }, 400);
-        }
-        const csv = await readObservationCsv(start, end, platform);
-        return new Response(csv, {
-          headers: {
-            "Content-Type": "text/csv; charset=utf-8",
-            "Content-Disposition": `attachment; filename="posts-${start}-${end}-${platform}.csv"`,
-            "Cache-Control": "no-store",
-          },
-        });
-      }
-      const window = url.searchParams.get("window") || "48h";
-      const metric = url.searchParams.get("metric") || "views";
-      if (
-        !Object.hasOwn(OBSERVATION_WINDOWS, window) ||
-        !OBSERVATION_METRICS.includes(metric)
-      )
-        return jsonResponse({ error: "観測窓・指標名が不正です" }, 400);
-      const cutoff = new Date().toISOString();
-      const [drafts, observations] = await Promise.all([
-        readObservationPages(
-          "sns_drafts",
-          {
-            select: "id,platform,language,format,template_variant_id,posted_at",
-            posted_at: `lte.${cutoff}`,
-            platform: `in.(${OBSERVED_PLATFORMS.join(",")})`,
-          },
-          cutoff,
-        ),
-        readObservationPages(
-          "sns_metric_observations",
-          {
-            select: "*",
-            // 既定の 48h で開いたときは、全貌の当日（day_end）の値も読む（下書きごとの窓は compareObservations が選ぶ）
-            window: window === "48h" ? "in.(48h,day_end)" : `eq.${window}`,
-            metric_name: `eq.${metric}`,
-          },
-          cutoff,
-        ),
-      ]);
-      return jsonResponse({ data: { drafts, observations } });
-    }
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return jsonResponse({ error: "JSONが不正です" }, 400);
-    }
-    if (!body || !isValidDraftId(body.draft_id))
-      return jsonResponse({ error: "投稿IDが不正です" }, 400);
-    const draft = await getDraftById(body.draft_id);
-    if (!draft) return jsonResponse({ error: "下書きが見つかりません" }, 404);
-    if (draft.status !== "posted")
-      return jsonResponse({ error: "投稿済みのみ観測できます" }, 409);
-    let observation;
-    try {
-      observation = validateObservation(body, draft);
-      if (Date.parse(observation.observed_at) > Date.now())
-        throw new Error("未来の観測日時は保存できません");
-      if (observation.source === "mock")
-        throw new Error("モックは本番の保存対象外です");
-    } catch (error) {
-      console.error("SNS観測入力検査失敗", error);
-      return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, 400);
-    }
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/rpc/append_sns_metric_observation`,
-      {
-        method: "POST",
-        headers: {
-          apikey: SUPABASE_SERVICE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          p_draft_id: draft.id,
-          p_observation: observation,
-        }),
-      },
-    );
-    if (!response.ok) throw new Error(`観測追記エラー: ${response.status}`);
-    return jsonResponse({ data: await response.json() }, 201);
+    if (req.method === "GET") return await respondGet(req);
+    return await appendObservation(req);
   } catch (error) {
     console.error("SNS観測取得・保存失敗", error.message);
     return jsonResponse({ error: "観測データの処理に失敗しました" }, 500);
