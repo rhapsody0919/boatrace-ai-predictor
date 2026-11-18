@@ -187,6 +187,111 @@ export async function createEscalationIssue(
   return data.issueCreate.issue;
 }
 
+/** 起票の本文（直近の該当下書きを最大5件） */
+function escalationDescription(
+  { revisions, windowDays, threshold },
+  platform,
+  reasonCode,
+  count,
+) {
+  const examples = revisions
+    .filter(
+      (r) =>
+        r.platform === platform && r.revisionReasonCodes.includes(reasonCode),
+    )
+    .slice(0, 5)
+    .map(
+      (r) =>
+        `- ${r.title ?? "(無題)"}: ${r.revisionReasonFreetext ?? "(自由記述なし)"}`,
+    )
+    .join("\n");
+  return `content-multi-channel-pipelineの却下フィードバック閾値エスカレーション（自動起票、check-revision-escalation.js）。\n\n直近${windowDays}日で同一理由による修正依頼が**${count}件**溜まりました（閾値${threshold}件）。生成プロンプト・品質採点基準の見直しを検討してください。\n\n件数はこの本文にのみ書いています。タイトルに入れると件数が変わるたびに別タイトルになり、重複起票の判定をすり抜けるためです。\n\n直近の該当下書き（最大5件）:\n${examples}`;
+}
+
+/**
+ * 閾値を越えた1つの組み合わせ（platform:reasonCode）を起票する。開いた Issue があれば記録だけ直す。
+ * 関所が止めたら { held }、それ以外は { entry }（history.escalated も更新する）
+ */
+async function escalateKey(ctx, key, count) {
+  const { apiKey, history } = ctx;
+  const [platform, reasonCode] = key.split(":");
+  const teamId = await resolveTeamId(apiKey);
+
+  // ローカルの記録より先にLinearを見る（上記 findOpenEscalation のコメント参照）
+  const existing = await findOpenEscalation(
+    apiKey,
+    teamId,
+    platform,
+    reasonCode,
+  );
+  if (existing) {
+    // 記録が消えていただけの場合に備え、ファイル側も復元しておく
+    history.escalated[key] = {
+      escalatedAt:
+        history.escalated[key]?.escalatedAt ?? new Date().toISOString(),
+      issueUrl: existing.url,
+      count,
+    };
+    return {
+      entry: {
+        key,
+        count,
+        issueUrl: existing.url,
+        alreadyOpen: existing.identifier,
+      },
+    };
+  }
+
+  const labelId = await getLabelId(apiKey, teamId, CONTENT_QUALITY_LABEL);
+  const description = escalationDescription(ctx, platform, reasonCode, count);
+
+  let issue;
+  try {
+    issue = await createEscalationIssue(apiKey, {
+      teamId,
+      labelId,
+      title: escalationTitle(platform, reasonCode),
+      description,
+    });
+  } catch (error) {
+    if (!(error instanceof LinearIssueGateError)) throw error;
+    return { held: { key, count, reason: error.message } };
+  }
+
+  history.escalated[key] = {
+    escalatedAt: new Date().toISOString(),
+    issueUrl: issue.url,
+    count,
+  };
+  return { entry: { key, count, issueUrl: issue.url } };
+}
+
+/** 閾値以上で未起票の組み合わせを順に起票する。関所が止めたらその晩の残りは数えない */
+async function escalateAll(ctx, counts, dryRun) {
+  const newlyEscalated = [];
+  let held = null;
+
+  for (const [key, count] of Object.entries(counts)) {
+    if (count < ctx.threshold) continue;
+    if (ctx.history.escalated[key]) continue; // 既に起票済み
+
+    if (dryRun || !ctx.apiKey) {
+      newlyEscalated.push({ key, count, issueUrl: null, skipped: !ctx.apiKey });
+      continue;
+    }
+
+    const r = await escalateKey(ctx, key, count);
+    if (r.held) {
+      // 関所が止めた（Slack には関所が件数と閾値を送った）。記録に残さず、次の晩にもう一度数える。
+      // 同じ晩の残りの組み合わせも同じ理由で止まるので、ここで打ち切る（通知を1晩1回にする）
+      held = r.held;
+      break;
+    }
+    newlyEscalated.push(r.entry);
+  }
+  return { newlyEscalated, held };
+}
+
 /**
  * @returns {Promise<{escalated: Array<{key: string, count: number, issueUrl: string}>, checked: number}>}
  */
@@ -204,82 +309,9 @@ export async function checkRevisionEscalation({
   const history = await loadHistory();
   history.escalated = history.escalated ?? {};
 
-  const newlyEscalated = [];
-  let held = null;
   const apiKey = process.env.LINEAR_API_KEY;
-
-  for (const [key, count] of Object.entries(counts)) {
-    if (count < threshold) continue;
-    if (history.escalated[key]) continue; // 既に起票済み
-
-    if (dryRun || !apiKey) {
-      newlyEscalated.push({ key, count, issueUrl: null, skipped: !apiKey });
-      continue;
-    }
-
-    const [platform, reasonCode] = key.split(":");
-    const teamId = await resolveTeamId(apiKey);
-
-    // ローカルの記録より先にLinearを見る（上記 findOpenEscalation のコメント参照）
-    const existing = await findOpenEscalation(
-      apiKey,
-      teamId,
-      platform,
-      reasonCode,
-    );
-    if (existing) {
-      // 記録が消えていただけの場合に備え、ファイル側も復元しておく
-      history.escalated[key] = {
-        escalatedAt:
-          history.escalated[key]?.escalatedAt ?? new Date().toISOString(),
-        issueUrl: existing.url,
-        count,
-      };
-      newlyEscalated.push({
-        key,
-        count,
-        issueUrl: existing.url,
-        alreadyOpen: existing.identifier,
-      });
-      continue;
-    }
-
-    const labelId = await getLabelId(apiKey, teamId, CONTENT_QUALITY_LABEL);
-    const examples = revisions
-      .filter(
-        (r) =>
-          r.platform === platform && r.revisionReasonCodes.includes(reasonCode),
-      )
-      .slice(0, 5)
-      .map(
-        (r) =>
-          `- ${r.title ?? "(無題)"}: ${r.revisionReasonFreetext ?? "(自由記述なし)"}`,
-      )
-      .join("\n");
-
-    let issue;
-    try {
-      issue = await createEscalationIssue(apiKey, {
-        teamId,
-        labelId,
-        title: escalationTitle(platform, reasonCode),
-        description: `content-multi-channel-pipelineの却下フィードバック閾値エスカレーション（自動起票、check-revision-escalation.js）。\n\n直近${windowDays}日で同一理由による修正依頼が**${count}件**溜まりました（閾値${threshold}件）。生成プロンプト・品質採点基準の見直しを検討してください。\n\n件数はこの本文にのみ書いています。タイトルに入れると件数が変わるたびに別タイトルになり、重複起票の判定をすり抜けるためです。\n\n直近の該当下書き（最大5件）:\n${examples}`,
-      });
-    } catch (error) {
-      if (!(error instanceof LinearIssueGateError)) throw error;
-      // 関所が止めた（Slack には関所が件数と閾値を送った）。記録に残さず、次の晩にもう一度数える。
-      // 同じ晩の残りの組み合わせも同じ理由で止まるので、ここで打ち切る（通知を1晩1回にする）
-      held = { key, count, reason: error.message };
-      break;
-    }
-
-    history.escalated[key] = {
-      escalatedAt: new Date().toISOString(),
-      issueUrl: issue.url,
-      count,
-    };
-    newlyEscalated.push({ key, count, issueUrl: issue.url });
-  }
+  const ctx = { apiKey, revisions, history, windowDays, threshold };
+  const { newlyEscalated, held } = await escalateAll(ctx, counts, dryRun);
 
   if (!dryRun) {
     await saveHistory(history);
