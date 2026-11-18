@@ -26,6 +26,41 @@ function daysSince(isoDateString) {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
+// content-index.json を読む（{ data }）。読めない・JSON でないときは null（その題材は飛ばす）
+async function readContentIndex(entry) {
+  const filePath = path.join(DESIGN_DIR, entry.name, "content-index.json");
+  try {
+    return { data: JSON.parse(await fs.readFile(filePath, "utf-8")) };
+  } catch {
+    return null;
+  }
+}
+
+function hasPromotableMaterial(content) {
+  return (
+    (content?.blog_posts?.length ?? 0) > 0 ||
+    (content?.youtube_videos?.length ?? 0) > 0 ||
+    (content?.note_articles?.length ?? 0) > 0
+  );
+}
+
+// 素材候補の1件。対象外（not_applicable・窓の外・素材なし）なら null
+function toRecentItem(entry, data, windowDays) {
+  if (data.not_applicable) return null;
+  const age = daysSince(data.released);
+  if (age > windowDays) return null;
+  if (!hasPromotableMaterial(data.content)) return null;
+  return {
+    slug: entry.name,
+    feature: data.feature,
+    released: data.released,
+    ageDays: age,
+    blogPosts: data.content.blog_posts,
+    youtubeVideos: data.content.youtube_videos,
+    noteArticles: data.content.note_articles,
+  };
+}
+
 export async function checkRecentFlowAContent({
   windowDays = RECENT_WINDOW_DAYS,
 } = {}) {
@@ -39,32 +74,10 @@ export async function checkRecentFlowAContent({
   const items = [];
   for (const entry of entries) {
     if (!entry.isDirectory() || EXCLUDED_DIR_NAMES.has(entry.name)) continue;
-    const filePath = path.join(DESIGN_DIR, entry.name, "content-index.json");
-    let data;
-    try {
-      data = JSON.parse(await fs.readFile(filePath, "utf-8"));
-    } catch {
-      continue;
-    }
-    if (data.not_applicable) continue;
-    const age = daysSince(data.released);
-    if (age > windowDays) continue;
-
-    const hasPromotableMaterial =
-      (data.content?.blog_posts?.length ?? 0) > 0 ||
-      (data.content?.youtube_videos?.length ?? 0) > 0 ||
-      (data.content?.note_articles?.length ?? 0) > 0;
-    if (!hasPromotableMaterial) continue;
-
-    items.push({
-      slug: entry.name,
-      feature: data.feature,
-      released: data.released,
-      ageDays: age,
-      blogPosts: data.content.blog_posts,
-      youtubeVideos: data.content.youtube_videos,
-      noteArticles: data.content.note_articles,
-    });
+    const read = await readContentIndex(entry);
+    if (read === null) continue;
+    const item = toRecentItem(entry, read.data, windowDays);
+    if (item) items.push(item);
   }
 
   items.sort((a, b) => a.ageDays - b.ageDays);
