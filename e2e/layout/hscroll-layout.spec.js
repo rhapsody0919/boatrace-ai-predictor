@@ -99,10 +99,12 @@ async function checkHscrollHints(page, label) {
       .toBe("");
     const { maxScroll } = await readHint(hint);
     if (maxScroll <= 30) continue;
-    // 右端の手前 20px まで送る: まだ「›」を出す
-    await readHint(hint, 20);
+    // 右端の手前 20px まで送る: まだ「›」を出す。
+    // 送るのは読むたびに行う。送った後に文字の読み込み等で表が 1px 広がると、1回だけ送った位置では
+    // 残りが 19px のまま戻らず 5秒落ち続けた（HR22: CI の layout-mobile で 11/17 に3回、モーター一覧）。
+    // 期待値（残り・フェードの幅・「›」）は変えない
     await expect
-      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り20px` })
+      .poll(() => readHint(hint, 20), { timeout: 5000, message: `${at}: 残り20px` })
       .toMatchObject({
         remaining: 20,
         fadeWidth: 20,
@@ -110,9 +112,8 @@ async function checkHscrollHints(page, label) {
         moreButton: true,
       });
     // 右端の手前 10px まで送る: 少しだけでも残っていれば「›」を出す（BOA-735）
-    await readHint(hint, 10);
     await expect
-      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り10px` })
+      .poll(() => readHint(hint, 10), { timeout: 5000, message: `${at}: 残り10px` })
       .toMatchObject({
         remaining: 10,
         fadeWidth: 10,
@@ -120,9 +121,8 @@ async function checkHscrollHints(page, label) {
         moreButton: true,
       });
     // 右端まで送る: 何も出さない
-    await readHint(hint, 0);
     await expect
-      .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 右端` })
+      .poll(() => readHint(hint, 0), { timeout: 5000, message: `${at}: 右端` })
       .toMatchObject({ remaining: 0, hasMore: false, moreButton: false });
     await expectGlyphDisc(hint, ".hscroll-less", at);
     // 左端へ戻すと「›」が出る。押せる幅は 44px 以上（以前は 28px で押し損ねやすかった）
