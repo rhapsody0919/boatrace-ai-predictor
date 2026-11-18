@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2019 |
+| 読んだファイル | 2020 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -650,8 +650,8 @@
   - `api/outcome-distribution/index.js:66` select(rest) [count_90days, first_boat, venue_code]
   - `scripts/analysis/verify-outcome-distribution-coverage.js:26` select(helper:fetchAll)
   - `scripts/maintenance/verify-full-picture-scene2.js:2849` rest(rest) （検査）
-  - `src/services/venueQueries.js:94` select [count_90days, first_boat]
-  - `src/services/venueQueries.js:220` select [*, count_90days, first_boat, venue_code]
+  - `src/services/venueQueries.js:98` select [count_90days, first_boat]
+  - `src/services/venueQueries.js:224` select [*, count_90days, first_boat, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-outcome-distribution.js:115` delete
   - `scripts/daily/update-outcome-distribution.js:126` insert [?]
@@ -2252,7 +2252,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（1）: 
-  - `src/services/venueQueries.js:24` select [last_updated, period_days, period_from, period_to, race_count, total_races, venue_code, winning_technique]
+  - `src/services/venueQueries.js:25` select [last_updated, period_days, period_from, period_to, race_count, total_races, venue_code, winning_technique]
 - 書き手（2）: 
   - `scripts/daily/update-winning-technique-stats.js:236` delete
   - `scripts/daily/update-winning-technique-stats.js:245` insert [?]
@@ -2267,7 +2267,7 @@
   - `scripts/daily/generate-predictions.js:42` select [avg_first_win_rate, code]
   - `scripts/maintenance/update-venue-stats.js:74` select [avg_first_win_rate, avg_first_win_rate_race_count, code, name]
   - `src/services/core.js:324` select [avg_first_win_rate, code]
-  - `src/services/venueQueries.js:56` select [cluster, code]
+  - `src/services/venueQueries.js:57` select [cluster, code, name]
   - `src/services/venueQueries2.js:224` select [avg_first_win_rate, avg_first_win_rate_race_count, code, name]
 - 書き手（2）: 
   - `scripts/maintenance/update-venue-stats.js:46` update [avg_first_win_rate, avg_first_win_rate_race_count, updated_at]
@@ -2290,7 +2290,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `scripts/maintenance/verify-full-picture-scene2.js:2871` rest(rest) （検査）
-  - `src/services/venueQueries.js:251` select [*, boat_number, percentage, venue_code]
+  - `src/services/venueQueries.js:255` select [*, boat_number, percentage, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-winning-technique-stats.js:161` delete
   - `scripts/daily/update-winning-technique-stats.js:171` insert [?]
@@ -2300,7 +2300,7 @@
 
 写しの取得より後のマイグレーションで足したもの、消したもの、別のスキーマ、誤りのどれか。
 
-- rpc `get_course_win_rate_baseline`: `src/services/venueQueries.js:351`
+- rpc `get_course_win_rate_baseline`: `src/services/venueQueries.js:355`
 - table `eve_race_deadlines`: `scripts/lib/eveDeadlinesJob.js:77`, `scripts/lib/eveDeadlinesJob.js:274`, `scripts/lib/eveDeadlinesJob.js:422`
 - table `racer_career_meta`: `scripts/lib/racerCareerJob.js:621`, `scripts/lib/racerCareerJob.js:846`, `scripts/lib/racerCareerJob.js:908`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:646`

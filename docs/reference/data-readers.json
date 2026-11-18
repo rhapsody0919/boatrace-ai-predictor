@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2019,
+    "sourceFiles": 2020,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -4848,7 +4848,7 @@
           "test": true
         },
         {
-          "ref": "src/services/venueQueries.js:94",
+          "ref": "src/services/venueQueries.js:98",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4857,7 +4857,7 @@
           ]
         },
         {
-          "ref": "src/services/venueQueries.js:220",
+          "ref": "src/services/venueQueries.js:224",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4899,7 +4899,7 @@
           "readers": [
             "api/outcome-distribution/index.js:66",
             "scripts/daily/update-outcome-distribution.js:115",
-            "src/services/venueQueries.js:220"
+            "src/services/venueQueries.js:224"
           ],
           "writers": [],
           "sql": []
@@ -4907,8 +4907,8 @@
         "first_boat": {
           "readers": [
             "api/outcome-distribution/index.js:66",
-            "src/services/venueQueries.js:220",
-            "src/services/venueQueries.js:94"
+            "src/services/venueQueries.js:224",
+            "src/services/venueQueries.js:98"
           ],
           "writers": [],
           "sql": []
@@ -4926,8 +4926,8 @@
         "count_90days": {
           "readers": [
             "api/outcome-distribution/index.js:66",
-            "src/services/venueQueries.js:220",
-            "src/services/venueQueries.js:94"
+            "src/services/venueQueries.js:224",
+            "src/services/venueQueries.js:98"
           ],
           "writers": [],
           "sql": []
@@ -26334,7 +26334,7 @@
       },
       "readers": [
         {
-          "ref": "src/services/venueQueries.js:24",
+          "ref": "src/services/venueQueries.js:25",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26374,56 +26374,56 @@
         "venue_code": {
           "readers": [
             "scripts/daily/update-winning-technique-stats.js:236",
-            "src/services/venueQueries.js:24"
+            "src/services/venueQueries.js:25"
           ],
           "writers": [],
           "sql": []
         },
         "period_days": {
           "readers": [
-            "src/services/venueQueries.js:24"
+            "src/services/venueQueries.js:25"
           ],
           "writers": [],
           "sql": []
         },
         "winning_technique": {
           "readers": [
-            "src/services/venueQueries.js:24"
+            "src/services/venueQueries.js:25"
           ],
           "writers": [],
           "sql": []
         },
         "race_count": {
           "readers": [
-            "src/services/venueQueries.js:24"
+            "src/services/venueQueries.js:25"
           ],
           "writers": [],
           "sql": []
         },
         "total_races": {
           "readers": [
-            "src/services/venueQueries.js:24"
+            "src/services/venueQueries.js:25"
           ],
           "writers": [],
           "sql": []
         },
         "period_from": {
           "readers": [
-            "src/services/venueQueries.js:24"
+            "src/services/venueQueries.js:25"
           ],
           "writers": [],
           "sql": []
         },
         "period_to": {
           "readers": [
-            "src/services/venueQueries.js:24"
+            "src/services/venueQueries.js:25"
           ],
           "writers": [],
           "sql": []
         },
         "last_updated": {
           "readers": [
-            "src/services/venueQueries.js:24"
+            "src/services/venueQueries.js:25"
           ],
           "writers": [],
           "sql": [
@@ -26488,12 +26488,13 @@
           ]
         },
         {
-          "ref": "src/services/venueQueries.js:56",
+          "ref": "src/services/venueQueries.js:57",
           "op": "select",
           "via": "client",
           "columns": [
             "cluster",
-            "code"
+            "code",
+            "name"
           ]
         },
         {
@@ -26546,7 +26547,7 @@
             "scripts/maintenance/update-venue-stats.js:58",
             "scripts/maintenance/update-venue-stats.js:74",
             "src/services/core.js:324",
-            "src/services/venueQueries.js:56",
+            "src/services/venueQueries.js:57",
             "src/services/venueQueries2.js:224"
           ],
           "writers": [],
@@ -26557,6 +26558,7 @@
         "name": {
           "readers": [
             "scripts/maintenance/update-venue-stats.js:74",
+            "src/services/venueQueries.js:57",
             "src/services/venueQueries2.js:224"
           ],
           "writers": [],
@@ -26570,7 +26572,7 @@
         "cluster": {
           "readers": [
             "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:89",
-            "src/services/venueQueries.js:56"
+            "src/services/venueQueries.js:57"
           ],
           "writers": [],
           "sql": [
@@ -26749,7 +26751,7 @@
           "test": true
         },
         {
-          "ref": "src/services/venueQueries.js:251",
+          "ref": "src/services/venueQueries.js:255",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26790,14 +26792,14 @@
         "venue_code": {
           "readers": [
             "scripts/daily/update-winning-technique-stats.js:161",
-            "src/services/venueQueries.js:251"
+            "src/services/venueQueries.js:255"
           ],
           "writers": [],
           "sql": []
         },
         "boat_number": {
           "readers": [
-            "src/services/venueQueries.js:251"
+            "src/services/venueQueries.js:255"
           ],
           "writers": [],
           "sql": []
@@ -26819,7 +26821,7 @@
         },
         "percentage": {
           "readers": [
-            "src/services/venueQueries.js:251"
+            "src/services/venueQueries.js:255"
           ],
           "writers": [],
           "sql": []
@@ -30063,7 +30065,7 @@
       "kind": "rpc",
       "name": "get_course_win_rate_baseline",
       "refs": [
-        "src/services/venueQueries.js:351"
+        "src/services/venueQueries.js:355"
       ]
     },
     {
