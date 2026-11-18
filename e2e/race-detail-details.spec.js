@@ -1017,6 +1017,22 @@ test.describe("レース詳細の表示の細部", () => {
     await page.goto(`${RACE}?tab=meet`);
     const row = page.locator(".race-history-table-row").first();
     await expect(row).toBeVisible({ timeout: 90000 });
+    // 表は records（日別の行）と board（ST の順位）が別々に届き、board が後から列を足して行の幅・位置が
+    // 変わる。先に乗せると、動いた後の行の上にポインタが無いまま「乗せていない行」を測った
+    // （HR22: CI で 11/17・11/18 に2回、行 rgba(0,0,0,0)・日付の列 rgb(251,249,243)。trace では
+    // hover の後に meet-scoreboard が届いていた）。読み込み中の表示が消え、行の位置が落ち着いてから乗せる
+    await expect(page.locator(".race-meet-tab .rmt-loading")).toHaveCount(0, {
+      timeout: 90000,
+    });
+    await page.evaluate(() => document.fonts.ready);
+    await settled(() =>
+      page.evaluate(() => {
+        const r = document.querySelector(".race-history-table-row");
+        if (!r) return null;
+        const b = r.getBoundingClientRect();
+        return [b.x, b.y, b.width, b.height].map(Math.round);
+      }),
+    );
     await row.hover();
     // 行の色の変化（hover の遷移）が終わってから測る。行と日付の列の色が同じかの判定はそのまま
     const [rowBg, cellBg] = await settled(() =>
