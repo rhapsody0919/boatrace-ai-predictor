@@ -408,6 +408,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/venueUtils.js` | — | VENUE_CODE_TO_BLOG_ID, getVenueBlogId, getVenueGuidePath |
 | `src/utils/volatilityHighlights.js` | ホームの「本日のイン崩れ注意度ハイライト」で、「イン崩れ注意（高）」と「本命有利」に出すレースを選ぶ | pickVolatilityHighlights |
 | `src/utils/volatilityLevel.js` | getVolatilityLevel - イン崩れ指数（percentile）からレベルを判定する共通ヘルパー | getVolatilityLevel, volatilityDisplayValue |
+| `src/utils/weatherInfo.js` | weatherInfo - 直前情報タブの気象カード向けラベル変換（BOA-304） | translateWeather, weatherIcon, translateWindDirection, formatObservedTime |
 | `src/utils/webShare.js` | Web Share API 対応判定ヘルパー | canShareVideo, shareVideoFile, downloadFileBlob |
 | `src/utils/wilson.js` | wilson - 二項比率のWilson信頼区間（純関数） | wilsonLowerBound, wilsonInterval, wilsonLowerBoundFromRate, isSmallSample |
 | `src/utils/windDirection.js` | 風向の表示（BOA-819）。 | trueWindDirection, windRelation, WIND_DIRECTIONS, VENUE_WIND_OFFSET_DEG |
@@ -470,4 +471,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 428 ファイル / export 2468 件。
+対象 429 ファイル / export 2472 件。
