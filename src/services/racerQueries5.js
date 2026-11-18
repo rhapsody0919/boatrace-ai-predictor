@@ -22,6 +22,7 @@ import {
   getRacerBoatReturnRate,
 } from "./racerQueries3.js";
 import { parseRaceId } from "../utils/raceId";
+import { makeRacer } from "../pure/racerModel.js";
 import { getTodayJST } from "../utils/dateUtils";
 
 async function getRacerProfile(racerId) {
@@ -33,7 +34,8 @@ async function getRacerProfile(racerId) {
     )
     .eq("racer_id", racerId)
     .maybeSingle();
-  return data;
+  // 不変条件の破れ（RangeError）は呼び手（RacerProfileData.js）の catch で取得失敗と同じ扱い（1回取り直して失敗の画面）
+  return data ? makeRacer(data) : null;
 }
 
 // 最新の出走の級と開催日。開催日はインデックス判定（src/utils/racerIndexPolicy.js）に使う
