@@ -129,11 +129,8 @@ function readK() {
   return { k, missingDays };
 }
 
-async function main() {
-  const { k, missingDays } = readK();
-  if (k.size === 0)
-    throw new Error(`${archiveDir} に K の解析済みデータがありません`);
-  const db = await readDb();
+/** K と DB の同じレースの風向を組にする（回転の検証用）。DB の風向が空・風速>0 で K に風向がある行は埋める行に */
+function pairWinds(db, k) {
   const pairs = [];
   const fill = [];
   for (const c of db) {
@@ -153,35 +150,48 @@ async function main() {
       db: ANG[c.wind_direction],
     });
   }
+  return { pairs, fill };
+}
+
+/** 1会場の統計。δ = (DB − K) mod 360 の最頻値と、回転を引く前後の一致率 */
+function venueStats(pairs, v) {
+  const off = offsetFromMark(DIRECTION_MARKS[v]);
+  const g = pairs.filter((p) => p.v === v);
+  const counts = new Map();
+  for (const p of g) {
+    const d = (p.db - p.k + 360) % 360;
+    counts.set(d, (counts.get(d) ?? 0) + 1);
+  }
+  const mode = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const problem =
+    mode !== off
+      ? `会場 ${v}: 最頻の回転 ${mode}° が方位マークの回転 ${off}° と違う`
+      : null;
+  const share = (pred) => round3(g.filter(pred).length / g.length);
+  const stats = {
+    direction_mark: DIRECTION_MARKS[v],
+    n: g.length,
+    mode_deg: mode,
+    exact_after: share((p) => angleDiff(p.db - off, p.k) === 0),
+    within45_after: share((p) => angleDiff(p.db - off, p.k) <= 45),
+    exact_before: share((p) => angleDiff(p.db, p.k) === 0),
+  };
+  return { off, problem, stats };
+}
+
+/** 24会場の表。どこかの会場で最頻の回転が方位マークと違えば、何も書かずに失敗する */
+function buildBasis(pairs, missingDays) {
   const venues = {};
   const offsets = {};
   const problems = [];
   for (let v = 1; v <= 24; v++) {
-    const off = offsetFromMark(DIRECTION_MARKS[v]);
-    const g = pairs.filter((p) => p.v === v);
-    const counts = new Map();
-    for (const p of g) {
-      const d = (p.db - p.k + 360) % 360;
-      counts.set(d, (counts.get(d) ?? 0) + 1);
-    }
-    const mode = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-    if (mode !== off)
-      problems.push(
-        `会場 ${v}: 最頻の回転 ${mode}° が方位マークの回転 ${off}° と違う`,
-      );
-    const share = (pred) => round3(g.filter(pred).length / g.length);
-    venues[v] = {
-      direction_mark: DIRECTION_MARKS[v],
-      n: g.length,
-      mode_deg: mode,
-      exact_after: share((p) => angleDiff(p.db - off, p.k) === 0),
-      within45_after: share((p) => angleDiff(p.db - off, p.k) <= 45),
-      exact_before: share((p) => angleDiff(p.db, p.k) === 0),
-    };
+    const { off, problem, stats } = venueStats(pairs, v);
+    if (problem) problems.push(problem);
+    venues[v] = stats;
     offsets[v] = off;
   }
   if (problems.length) throw new Error(problems.join("\n"));
-  const basis = {
+  return {
     offsets_deg: offsets,
     method: {
       definition:
@@ -194,6 +204,15 @@ async function main() {
     },
     venues,
   };
+}
+
+async function main() {
+  const { k, missingDays } = readK();
+  if (k.size === 0)
+    throw new Error(`${archiveDir} に K の解析済みデータがありません`);
+  const db = await readDb();
+  const { pairs, fill } = pairWinds(db, k);
+  const basis = buildBasis(pairs, missingDays);
   fs.writeFileSync(
     path.join(HERE, "wind_basis.json"),
     `${JSON.stringify(basis, null, 1)}\n`,
