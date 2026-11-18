@@ -37,7 +37,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
 | `src/pure/predictionModel.js` | — | makePrediction |
 | `src/pure/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
-| `src/pure/raceIndicatorText.js` | レース分析指標の字の小さな部品（決まり手・部品名の訳、数値化）。画面の部品 | TECHNIQUE_KEY_BY_NAME, translateTechnique, translateTechniqueShort, translatePartName, toNumber |
+| `src/pure/raceIndicatorText.js` | レース分析指標の字の小さな部品（決まり手・部品名の訳、数値化、オリジナル展示の行の素、展示進入・想定コース1着率の字）。画面の部品 | originalExhibitionKindLabels, buildOriginalExhibitionRowBases, isExhibitionCourseOutOfRange, expectedCourseWinRateText, TECHNIQUE_KEY_BY_NAME ほか7件 |
 | `src/pure/raceModel.js` | — | makeRaceEntry, makeRace |
 | `src/pure/raceMotorBreakdown.js` | モータ情報タブの一覧表（getRaceMotorBreakdown の返り値）の行の組み立て。 | pastMotorRows, recalcMotorRows, settleMotorBreakdown |
 | `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
@@ -473,4 +473,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 431 ファイル / export 2482 件。
+対象 431 ファイル / export 2489 件。
