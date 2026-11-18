@@ -32,7 +32,7 @@ import {
   RACE_ID_CHUNK_SIZE,
 } from "../daily/generate-predictions.js";
 import { scrapeAndUpsertRaces } from "../daily/scrape-exhibition-data.js";
-import { createFakeClient } from "./verifyData/prediction-refresh-fake-client.js";
+import { createFakeClient, raceIdsOf } from "./verifyData/prediction-refresh-fake-client.js";
 
 // 対象日を指定しない呼び出しは、実行日（JSTの今日）が対象になり、フィクスチャ（2026-09-20）と、日付が変わると食い違って
 // 失敗していた（2026-09-21以降、master で11件失敗）。フィクスチャの日付を、既定の対象日として固定する
@@ -52,16 +52,8 @@ function check(label, pass, detail = "") {
 const show = (v) => JSON.stringify(v);
 
 // ---------------------------------------------------------------------------
-// インメモリの偽クライアント createFakeClient は verifyData/prediction-refresh-fake-client.js
+// インメモリの偽クライアント createFakeClient と レースIDの作り手 raceIdsOf は verifyData/prediction-refresh-fake-client.js
 // ---------------------------------------------------------------------------
-
-// 会場コード1〜24 × レース1〜12 = 288通りのレースID（1日の最大規模を超える）
-const raceIdsOf = (count, date = "2026-09-20") =>
-  Array.from({ length: count }, (_, i) => {
-    const venue = String(Math.floor(i / 12) + 1).padStart(2, "0");
-    const race = String((i % 12) + 1).padStart(2, "0");
-    return `${date}-${venue}-${race}`;
-  });
 
 function raceTables(raceIds, { withExhibition = true } = {}) {
   const grades = ["A1", "A2", "B1", "B1", "B2", "B1"];

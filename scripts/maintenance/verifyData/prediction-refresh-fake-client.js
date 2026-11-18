@@ -121,3 +121,11 @@ function makeBuilder(table, execute) {
   };
   return builder;
 }
+
+// 会場コード1〜24 × レース1〜12 = 288通りのレースID（1日の最大規模を超える）
+export const raceIdsOf = (count, date = "2026-09-20") =>
+  Array.from({ length: count }, (_, i) => {
+    const venue = String(Math.floor(i / 12) + 1).padStart(2, "0");
+    const race = String((i % 12) + 1).padStart(2, "0");
+    return `${date}-${venue}-${race}`;
+  });
