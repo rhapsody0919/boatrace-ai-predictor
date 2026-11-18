@@ -30,9 +30,7 @@ export function resultPayoutEntries(result) {
     String(result.rank2),
   ]);
   const trio = payouts.trio ? Object.values(payouts.trio)[0] : null;
-  const trifecta = payouts.trifecta
-    ? Object.values(payouts.trifecta)[0]
-    : null;
+  const trifecta = payouts.trifecta ? Object.values(payouts.trifecta)[0] : null;
   const [exacta] = entriesByCombo("exacta", [
     `${result.rank1}-${result.rank2}`,
   ]);
@@ -44,7 +42,18 @@ export function resultPayoutEntries(result) {
     sortedPairKey(result.rank1, result.rank3),
     sortedPairKey(result.rank2, result.rank3),
   ]);
-  return { win, place1, place2, trio, trifecta, exacta, quinella, wide1, wide2, wide3 };
+  return {
+    win,
+    place1,
+    place2,
+    trio,
+    trifecta,
+    exacta,
+    quinella,
+    wide1,
+    wide2,
+    wide3,
+  };
 }
 
 /** race_results の払戻の列（payout_*） */
@@ -86,48 +95,4 @@ export function courseColumns(courseInfo) {
     course_5: courseInfo?.course_5 || null,
     course_6: courseInfo?.course_6 || null,
   };
-}
-
-/**
- * rank4〜6 の同期で、Kファイルの行 k を使えない理由（使えるなら null）。
- * 使うのは、Kファイルに有り・重複艇番が無く・1〜3着が既存の rank1〜3 と完全一致するときだけ
- */
-export function rank456SkipReason(race, k) {
-  if (
-    !k ||
-    !k.valid ||
-    k.rank1 !== race.rank1 ||
-    k.rank2 !== race.rank2 ||
-    k.rank3 !== race.rank3
-  ) {
-    return !k
-      ? "not_in_kfile"
-      : !k.valid
-        ? "duplicate_boat_in_kfile"
-        : "rank1_3_mismatch";
-  }
-  return null;
-}
-
-/** rank4〜6 のスキップのログの行（race_id・理由・両側の値） */
-export function rank456SkipLine(race, k, reason) {
-  return (
-    `  ⚠️ rank456スキップ(${race.race_id}): ${reason}` +
-    (k
-      ? ` db=[${race.rank1},${race.rank2},${race.rank3}] kfile=[${k.rank1},${k.rank2},${k.rank3}]`
-      : "")
-  );
-}
-
-/** Kファイルにも4〜6着が無いか */
-export const hasNoRank456 = (k) =>
-  k.rank4 == null && k.rank5 == null && k.rank6 == null;
-
-/** 成績コードの今の値（race_id|艇番 → 値）と、値の無い行の数 */
-export function startTimingCodeState(timings, column) {
-  const current = new Map(
-    timings.map((t) => [`${t.race_id}|${t.boat_number}`, t[column] ?? null]),
-  );
-  const pending = timings.filter((t) => (t[column] ?? null) === null).length;
-  return { current, pending };
 }

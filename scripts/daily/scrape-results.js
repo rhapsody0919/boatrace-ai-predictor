@@ -10,7 +10,6 @@ import {
 import {
   getTodayDateJST,
   getDateDaysAgo,
-  formatDateForUrl,
   parseDateArg,
 } from "../lib/dateUtils.js";
 import {
@@ -39,158 +38,39 @@ import {
   buildOfficialFinishCodeRows,
 } from "../lib/officialFinishCode.js";
 import { isColumnMissingError } from "../lib/optionalColumns.js";
-import { parseRaceResultPage } from "../lib/raceResultParser.js";
 import {
   buildPayoutRows,
   buildResultExtras,
   buildTimingRows,
-  toLegacyResult,
 } from "../lib/raceResultRows.js";
 import { detectResultSchema } from "../lib/raceResultSchema.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
-import { computeResultDigest } from "../lib/scrapeJobs/resultDigest.js";
 import { raceStartInstant } from "../lib/scrapeJobs/time.js";
+// 結果ページの取得・解析・行の組み立ては raceResultPage.js に置く（呼び出し元はこれまでどおりここから import できる）
 import {
-  courseColumns,
-  hasNoRank456,
-  payoutColumns,
-  popularityColumns,
-  rank456SkipLine,
-  rank456SkipReason,
-  resultPayoutEntries,
-  startTimingCodeState,
-} from "../lib/raceResultRowParts.js";
+  ResultHttpError,
+  buildRaceResultRow,
+  fetchOneResult,
+  fetchRaceResultHtml,
+  isResultComplete,
+  parseRaceResultHtml,
+  scrapeRaceResult,
+  settleFetchedOutcomes,
+} from "../lib/raceResultPage.js";
 
-// Generate race result page URL
-function getRaceResultUrl(venueCode, raceNo, dateStr) {
-  const ymd = formatDateForUrl(dateStr);
-  const jcd = String(venueCode).padStart(2, "0");
-  return `https://www.boatrace.jp/owpc/pc/race/raceresult?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
-}
-
-const RESULT_FETCH_HEADERS = {
-  "User-Agent":
-    "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)",
-  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-  "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
+export {
+  ResultHttpError,
+  buildRaceResultRow,
+  fetchRaceResultHtml,
+  isResultComplete,
+  parseRaceResultHtml,
 };
 
-/** 結果ページの取得が、HTTPステータスのエラー（200以外）で失敗した */
-export class ResultHttpError extends Error {
-  constructor(url, status) {
-    super(`結果ページの取得に失敗しました: HTTP ${status} (${url})`);
-    this.name = "ResultHttpError";
-    this.status = status;
-  }
-}
-
-/**
- * 結果ページのHTMLを取得する。200以外は ResultHttpError を投げる。
- * fetchImpl を差し替えると、Vercel Cron からは politeFetch（タイムアウト・バックオフ・ブレーカー）を通せる
- * （既定はグローバルの fetch。GitHub Actions・CLI の従来の動作）。
- *
- * @param {string} url
- * @param {typeof fetch} [fetchImpl]
- * @returns {Promise<string>}
- */
-export async function fetchRaceResultHtml(url, fetchImpl = fetch) {
-  const response = await fetchImpl(url, { headers: RESULT_FETCH_HEADERS });
-  if (!response.ok) throw new ResultHttpError(url, response.status);
-  return response.text();
-}
-
-/**
- * 結果ページのHTMLを解析する（純粋関数）。着順・払戻が取れない（未公開・構造の違い）場合は null。
- * 解析は scripts/lib/raceResultParser.js（全項目）で行い、ここでは旧形式（rank1〜6・払戻・進入・ST）に
- * 変換して返す。旧形式に無い項目（着欄の生表記・返還・払戻明細・進入の実順等）は、戻り値の full にある。
- * 解析中の例外は、握りつぶさずに投げる（呼び出し側が「未公開」と「解析の失敗」を区別できるように）。
- */
-export function parseRaceResultHtml(html) {
-  const full = parseRaceResultPage(html);
-  for (const anomaly of full.anomalies) {
-    console.warn(`  ⚠️ 結果ページの想定外の表記: ${anomaly}`);
-  }
-  return toLegacyResult(full, { log: (message) => console.log(message) });
-}
+// Generate race result page URL
 
 // Scrape race result（GitHub Actions・CLIの従来の入口。失敗は null に丸める）
-async function scrapeRaceResult(venueCode, raceNo, dateStr) {
-  const url = getRaceResultUrl(venueCode, raceNo, dateStr);
-
-  try {
-    let html;
-    try {
-      html = await fetchRaceResultHtml(url);
-    } catch (error) {
-      if (error instanceof ResultHttpError) {
-        console.log(`  [HTTP ${error.status}]`);
-        return null;
-      }
-      throw error;
-    }
-    return parseRaceResultHtml(html);
-  } catch (error) {
-    console.error(`  Scraping error: ${error.message}`);
-    return null;
-  }
-}
-
-/**
- * 解析結果から race_results に書く行を組み立てる（純粋関数。scrapeAndSaveResults と runForRaces で共有）。
- *
- * @param {string} raceId
- * @param {NonNullable<ReturnType<typeof parseRaceResultHtml>>} result
- * @param {{resultAt?: string}} [options] result_at（取得時刻）。既定は現在時刻
- */
-export function buildRaceResultRow(
-  raceId,
-  result,
-  { resultAt = new Date().toISOString() } = {},
-) {
-  // 払戻・人気の引き当て（特払の扱いを含む）は raceResultRowParts.js の resultPayoutEntries
-  const entries = resultPayoutEntries(result);
-
-  return {
-    race_id: raceId,
-    rank1: result.rank1,
-    rank2: result.rank2,
-    rank3: result.rank3,
-    rank4: result.rank4,
-    rank5: result.rank5,
-    rank6: result.rank6,
-    race_time_1: result.raceTime1,
-    race_time_2: result.raceTime2,
-    race_time_3: result.raceTime3,
-    race_time_4: result.raceTime4,
-    race_time_5: result.raceTime5,
-    race_time_6: result.raceTime6,
-    ...payoutColumns(entries),
-    ...popularityColumns(entries),
-    winning_technique: result.winningTechnique,
-    ...courseColumns(result.courseInfo),
-    result_at: resultAt,
-  };
-}
-
-/**
- * 結果が「完了」か。配当データに加え決まり手（winning_technique）も揃っていること。
- * 決まり手・進入コース・スタートタイミング（race_start_timings）は公式サイト側で
- * 着順・払戻金より掲載が遅く（発走20〜30分後以降）、payout_winだけで判定すると
- * 3連単払戻からの着順復元フォールバック（PR#612）で早期に確定してしまい、以降
- * 再取得されないまま決まり手・STが永久にnullで残ってしまう（BOA-323）
- */
-export function isResultComplete(row) {
-  return (
-    row !== null &&
-    row !== undefined &&
-    row.payout_win !== null &&
-    row.payout_win !== undefined &&
-    row.winning_technique !== null &&
-    row.winning_technique !== undefined
-  );
-}
 
 /**
  * オーケストレーターから呼び出し可能な結果取得処理
@@ -279,25 +159,6 @@ const ACTUAL_COURSE_COLUMNS = [1, 2, 3, 4, 5, 6].map(
 );
 
 /**
- * Kファイル同期の3本で共通の、Kファイルのテキストの取得。取れれば {text}、取れなければ {status, error?}
- * （kfile_error: 取得の失敗、kfile_unavailable: 未公開・開催なし）。label はログの見出し
- */
-async function loadKFileForSync(loadText, dateStr, label) {
-  let text;
-  try {
-    text = await loadText();
-  } catch (e) {
-    console.error(`  ⚠️ Kファイル取得エラー(${dateStr}): ${e.message}`);
-    return { status: "kfile_error", error: e.message };
-  }
-  if (!text) {
-    console.log(`  ${label}: Kファイル未公開/開催なし (${dateStr})`);
-    return { status: "kfile_unavailable" };
-  }
-  return { text };
-}
-
-/**
  * 指定日について、公式成績ファイル（Kファイル）から実進入コースを取得し
  * race_results.actual_course_1〜6にマージする（BOA-257）。
  *
@@ -367,10 +228,25 @@ export async function syncActualCourseFromKFile(
     return { updated: 0, skipped: 0, parsed: 0, status: "nothing_pending" };
   }
 
-  const loaded = await loadKFileForSync(loadText, dateStr, "進入コース");
-  if (loaded.status) return { updated: 0, skipped: 0, parsed: 0, ...loaded };
+  let text;
+  try {
+    text = await loadText();
+  } catch (e) {
+    console.error(`  ⚠️ Kファイル取得エラー(${dateStr}): ${e.message}`);
+    return {
+      updated: 0,
+      skipped: 0,
+      parsed: 0,
+      status: "kfile_error",
+      error: e.message,
+    };
+  }
+  if (!text) {
+    console.log(`  進入コース: Kファイル未公開/開催なし (${dateStr})`);
+    return { updated: 0, skipped: 0, parsed: 0, status: "kfile_unavailable" };
+  }
 
-  const parsed = parseKFileText(loaded.text, dateStr);
+  const parsed = parseKFileText(text, dateStr);
   if (parsed.length === 0) {
     console.log(`  進入コース: Kファイルからレースを抽出できず (${dateStr})`);
     return { updated: 0, skipped: 0, parsed: 0, status: "no_races_parsed" };
@@ -421,44 +297,6 @@ export async function syncActualCourseFromKFile(
 }
 
 /**
- * rank4〜6 の同期の対象（rank1 はある＝結果確定済みだが rank4 が未取得のレース）を読む（読むだけ）。
- * 対象が無い・読めないときは done（syncRank456FromKFile の戻り値）を返す
- */
-async function readRank456Pending(client, dateStr) {
-  // rank1はある（結果確定済み）がrank4が未取得のレースが無ければ
-  // Kファイルのダウンロード自体をスキップする（無駄な外部アクセスを避ける）
-  const { data: pending, error: pendingError } = await client
-    .from("race_results")
-    .select("race_id, rank1, rank2, rank3")
-    .gte("race_id", dateStr)
-    .lt("race_id", `${dateStr}~`)
-    .not("rank1", "is", null)
-    .is("rank4", null);
-
-  if (pendingError) {
-    console.error(
-      `  ⚠️ rank456対象確認エラー(${dateStr}): ${pendingError.message}`,
-    );
-    return {
-      done: {
-        updated: 0,
-        parsed: 0,
-        pending: 0,
-        status: "pending_check_failed",
-        error: pendingError.message,
-      },
-    };
-  }
-  if (!pending || pending.length === 0) {
-    // 同期済み、または対象レース無し
-    return {
-      done: { updated: 0, parsed: 0, pending: 0, status: "nothing_pending" },
-    };
-  }
-  return { pending };
-}
-
-/**
  * 指定日について、公式成績ファイル（Kファイル）からrank4/5/6を取得し
  * race_results.rank4〜6にマージする（BOA-340）。
  *
@@ -479,15 +317,57 @@ export async function syncRank456FromKFile(
     loadText = () => fetchKFileText(dateStr),
   } = {},
 ) {
-  const { pending, done } = await readRank456Pending(client, dateStr);
-  if (done) return done;
+  // rank1はある（結果確定済み）がrank4が未取得のレースが無ければ
+  // Kファイルのダウンロード自体をスキップする（無駄な外部アクセスを避ける）
+  const { data: pending, error: pendingError } = await client
+    .from("race_results")
+    .select("race_id, rank1, rank2, rank3")
+    .gte("race_id", dateStr)
+    .lt("race_id", `${dateStr}~`)
+    .not("rank1", "is", null)
+    .is("rank4", null);
 
-  const loaded = await loadKFileForSync(loadText, dateStr, "rank456");
-  if (loaded.status) {
-    return { updated: 0, parsed: 0, pending: pending.length, ...loaded };
+  if (pendingError) {
+    console.error(
+      `  ⚠️ rank456対象確認エラー(${dateStr}): ${pendingError.message}`,
+    );
+    return {
+      updated: 0,
+      parsed: 0,
+      pending: 0,
+      status: "pending_check_failed",
+      error: pendingError.message,
+    };
+  }
+  if (!pending || pending.length === 0) {
+    // 同期済み、または対象レース無し
+    return { updated: 0, parsed: 0, pending: 0, status: "nothing_pending" };
   }
 
-  const rows = parseKFileRankings(loaded.text, dateStr);
+  let text;
+  try {
+    text = await loadText();
+  } catch (e) {
+    console.error(`  ⚠️ Kファイル取得エラー(${dateStr}): ${e.message}`);
+    return {
+      updated: 0,
+      parsed: 0,
+      pending: pending.length,
+      status: "kfile_error",
+      error: e.message,
+    };
+  }
+  if (!text) {
+    console.log(`  rank456: Kファイル未公開/開催なし (${dateStr})`);
+    return {
+      updated: 0,
+      parsed: 0,
+      pending: pending.length,
+      status: "kfile_unavailable",
+    };
+  }
+
+  const rows = parseKFileRankings(text, dateStr);
   if (rows.length === 0) {
     console.log(`  rank456: Kファイルからレースを抽出できず (${dateStr})`);
     return {
@@ -504,20 +384,35 @@ export async function syncRank456FromKFile(
   let unchanged = 0;
   for (const race of pending) {
     const k = kfileByRaceId.get(race.race_id);
-    const reason = rank456SkipReason(race, k);
-    if (reason) {
+    if (
+      !k ||
+      !k.valid ||
+      k.rank1 !== race.rank1 ||
+      k.rank2 !== race.rank2 ||
+      k.rank3 !== race.rank3
+    ) {
       skipped++;
       // BOA-338のbackfill-rank456-from-kfile.jsのmismatchDetailsと同様、
       // race_id・理由・両側の値を残す。集計件数だけでは恒常的な不一致
       // レースがあっても気づけないため（毎日スキップされ続けるだけになる）
-      console.log(rank456SkipLine(race, k, reason));
+      const reason = !k
+        ? "not_in_kfile"
+        : !k.valid
+          ? "duplicate_boat_in_kfile"
+          : "rank1_3_mismatch";
+      console.log(
+        `  ⚠️ rank456スキップ(${race.race_id}): ${reason}` +
+          (k
+            ? ` db=[${race.rank1},${race.rank2},${race.rank3}] kfile=[${k.rank1},${k.rank2},${k.rank3}]`
+            : ""),
+      );
       continue;
     }
 
     // Kファイルにも4〜6着が無いレース（3着以内しか完走していない等）は、pendingの条件
     // （rank4がnull）を永久に満たし続けるため、null→nullの空UPDATEを毎回発行してしまう
     // （BOA-349と同種）。既存値（null）と同じなら書かない
-    if (hasNoRank456(k)) {
+    if (k.rank4 == null && k.rank5 == null && k.rank6 == null) {
       unchanged++;
       continue;
     }
@@ -551,52 +446,6 @@ export async function syncRank456FromKFile(
 }
 
 /**
- * 指定日の race_start_timings の成績コードを読む（読むだけ）。1日で1000行（約166レース）を超える日がある
- * （2026-01-02 は192レース）ので、ページングして全部読む。失敗したら、そこまでの行と readError を返す
- */
-async function readStartTimingCodes(client, dateStr, column) {
-  const timings = [];
-  let readError = null;
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await client
-      .from("race_start_timings")
-      .select(`race_id, boat_number, ${column}`)
-      .gte("race_id", dateStr)
-      .lt("race_id", `${dateStr}~`)
-      .order("race_id")
-      .order("boat_number")
-      .range(from, from + 999);
-    if (error) {
-      readError = error;
-      break;
-    }
-    timings.push(...(data ?? []));
-    if ((data ?? []).length < 1000) break;
-  }
-  return { timings, readError };
-}
-
-/** 成績コードを読めなかったときの syncOfficialFinishCodeFromKFile の戻り値（列が未適用か、その他の失敗か） */
-function startTimingReadFailure(readError, column, dateStr) {
-  if (isColumnMissingError(readError, [column])) {
-    console.warn(
-      `  ⚠️ 成績コード: race_start_timings.${column} が未適用のため、同期しません（マイグレーション116）`,
-    );
-    return { updated: 0, parsed: 0, pending: 0, status: "column_missing" };
-  }
-  console.error(
-    `  ⚠️ 成績コード対象確認エラー(${dateStr}): ${readError.message}`,
-  );
-  return {
-    updated: 0,
-    parsed: 0,
-    pending: 0,
-    status: "pending_check_failed",
-    error: readError.message,
-  };
-}
-
-/**
  * 指定日について、公式成績ファイル（Kファイル）の艇ごとの成績コード（01〜06・F・L0・L1・K0・K1・S0・S1・S2 等）を
  * race_start_timings.official_finish_code に書く（BOA-553。マイグレーション116）。
  *
@@ -619,21 +468,70 @@ export async function syncOfficialFinishCodeFromKFile(
   } = {},
 ) {
   const column = OFFICIAL_FINISH_CODE_COLUMN;
-  const { timings, readError } = await readStartTimingCodes(
-    client,
-    dateStr,
-    column,
+  // 1日で1000行（約166レース）を超える日がある（2026-01-02 は192レース）ので、ページングして全部読む
+  const timings = [];
+  let readError = null;
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await client
+      .from("race_start_timings")
+      .select(`race_id, boat_number, ${column}`)
+      .gte("race_id", dateStr)
+      .lt("race_id", `${dateStr}~`)
+      .order("race_id")
+      .order("boat_number")
+      .range(from, from + 999);
+    if (error) {
+      readError = error;
+      break;
+    }
+    timings.push(...(data ?? []));
+    if ((data ?? []).length < 1000) break;
+  }
+  if (readError && isColumnMissingError(readError, [column])) {
+    console.warn(
+      `  ⚠️ 成績コード: race_start_timings.${column} が未適用のため、同期しません（マイグレーション116）`,
+    );
+    return { updated: 0, parsed: 0, pending: 0, status: "column_missing" };
+  }
+  if (readError) {
+    console.error(
+      `  ⚠️ 成績コード対象確認エラー(${dateStr}): ${readError.message}`,
+    );
+    return {
+      updated: 0,
+      parsed: 0,
+      pending: 0,
+      status: "pending_check_failed",
+      error: readError.message,
+    };
+  }
+  const current = new Map(
+    timings.map((t) => [`${t.race_id}|${t.boat_number}`, t[column] ?? null]),
   );
-  if (readError) return startTimingReadFailure(readError, column, dateStr);
-  const { current, pending } = startTimingCodeState(timings, column);
+  const pending = timings.filter((t) => (t[column] ?? null) === null).length;
   if (pending === 0) {
     return { updated: 0, parsed: 0, pending: 0, status: "nothing_pending" };
   }
 
-  const loaded = await loadKFileForSync(loadText, dateStr, "成績コード");
-  if (loaded.status) return { updated: 0, parsed: 0, pending, ...loaded };
+  let text;
+  try {
+    text = await loadText();
+  } catch (e) {
+    console.error(`  ⚠️ Kファイル取得エラー(${dateStr}): ${e.message}`);
+    return {
+      updated: 0,
+      parsed: 0,
+      pending,
+      status: "kfile_error",
+      error: e.message,
+    };
+  }
+  if (!text) {
+    console.log(`  成績コード: Kファイル未公開/開催なし (${dateStr})`);
+    return { updated: 0, parsed: 0, pending, status: "kfile_unavailable" };
+  }
 
-  const parsed = buildOfficialFinishCodeRows(loaded.text, dateStr);
+  const parsed = buildOfficialFinishCodeRows(text, dateStr);
   const at = now().toISOString();
   // 既存の行で、値が変わるものだけ（行の無い艇は書かない）
   const toWrite = parsed
@@ -980,41 +878,6 @@ async function judgeAndUpdateHits(client, resultsToJudge) {
 }
 
 /**
- * persistRaceResults の気象の段。書き込みは upsertRaceConditions（元の persistRaceResults の中のまま移した）
- */
-async function refreshResultWeather(client, scrapeCache, startTimeByRaceId) {
-  // レース時点の気象（結果ページの水面気象情報）を race_conditions へ反映する（BOA-358）。
-  // 発走前に取得した値（beforeinfo）より新しい確定値のため上書きする。変更のある行だけ書く。
-  // 失敗しても、以降の的中判定を止めない
-  try {
-    const { rows: weatherRows, stats: weatherStats } = buildResultWeatherRows(
-      [...scrapeCache].map(([raceId, scraped]) => ({
-        raceId,
-        startTime: startTimeByRaceId.get(raceId) ?? null,
-        conditions: scraped.weather,
-      })),
-    );
-    console.log(
-      `🌤️ 結果ページの気象: 取得${weatherStats.fetched}レース / 解析${weatherStats.parsed}レース`,
-    );
-    if (weatherStats.fetched > 0 && weatherRows.length === 0) {
-      console.warn(
-        "⚠️ 結果ページの気象: 結果を取得したが、気象が1件も解析できなかった（公式ページの構造変更の可能性）",
-      );
-    }
-    if (weatherRows.length > 0) {
-      await upsertRaceConditions(client, weatherRows, {
-        label: "race_conditions(結果ページの気象)",
-      });
-    }
-  } catch (weatherError) {
-    console.error(
-      `❌ 結果ページの気象の更新エラー（結果は保存済み）: ${weatherError.message}`,
-    );
-  }
-}
-
-/**
  * 取得した結果をDBへ書き込む（race_results・race_start_timings・気象・的中判定）。
  * scrapeAndSaveResults（GitHub Actions・CLI）と runForRaces（Vercel Cron）で共有する。
  *
@@ -1114,7 +977,35 @@ async function persistRaceResults({
     }
   }
 
-  await refreshResultWeather(client, scrapeCache, startTimeByRaceId);
+  // レース時点の気象（結果ページの水面気象情報）を race_conditions へ反映する（BOA-358）。
+  // 発走前に取得した値（beforeinfo）より新しい確定値のため上書きする。変更のある行だけ書く。
+  // 失敗しても、以降の的中判定を止めない
+  try {
+    const { rows: weatherRows, stats: weatherStats } = buildResultWeatherRows(
+      [...scrapeCache].map(([raceId, scraped]) => ({
+        raceId,
+        startTime: startTimeByRaceId.get(raceId) ?? null,
+        conditions: scraped.weather,
+      })),
+    );
+    console.log(
+      `🌤️ 結果ページの気象: 取得${weatherStats.fetched}レース / 解析${weatherStats.parsed}レース`,
+    );
+    if (weatherStats.fetched > 0 && weatherRows.length === 0) {
+      console.warn(
+        "⚠️ 結果ページの気象: 結果を取得したが、気象が1件も解析できなかった（公式ページの構造変更の可能性）",
+      );
+    }
+    if (weatherRows.length > 0) {
+      await upsertRaceConditions(client, weatherRows, {
+        label: "race_conditions(結果ページの気象)",
+      });
+    }
+  } catch (weatherError) {
+    console.error(
+      `❌ 結果ページの気象の更新エラー（結果は保存済み）: ${weatherError.message}`,
+    );
+  }
 
   // 的中判定は、race_resultsが新規・変更のレースだけ行う（judgeAndUpdateHits の説明を参照）
   const changedResultIds = new Set(changedResults.map((r) => r.race_id));
@@ -1257,44 +1148,6 @@ async function loadFinishedRaceIds(client, races, outcomes, base) {
   return finished;
 }
 
-/** runForRaces の 2) の1レースぶん: 取得・解析して fetched に足すか、outcomes に失敗を入れる（1つの失敗で他を止めない） */
-async function fetchOneResult(race, { date, fetchHtml, now, outcomes, base, fetched }) {
-  try {
-    const html = await fetchHtml(
-      getRaceResultUrl(race.venue_code, race.race_number, date),
-    );
-    const parsed = parseRaceResultHtml(html);
-    if (!parsed) {
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "no_values",
-        error:
-          "結果ページから着順・払戻を解析できませんでした（未公開・中止・順延の可能性）",
-      });
-      return;
-    }
-    const row = buildRaceResultRow(race.race_id, parsed, {
-      resultAt: now().toISOString(),
-    });
-    fetched.push({ race, parsed, row });
-  } catch (error) {
-    if (error instanceof BreakerOpenError) {
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "breaker_open",
-        retryAt: new Date(error.until),
-        error: error.message,
-      });
-    } else {
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "error",
-        error: error.message,
-      });
-    }
-  }
-}
-
 /** runForRaces の 3) live の書き込み。書き込みは persistRaceResults（元のまま）。想定外の失敗は全レースを error にして {failed: true} */
 async function persistFetchedResults(client, date, fetched, outcomes, base) {
   try {
@@ -1316,72 +1169,6 @@ async function persistFetchedResults(client, date, fetched, outcomes, base) {
       });
     }
     return { failed: true };
-  }
-}
-
-/** 書いた race_start_timings の行の数（race_id ごと） */
-function countTimingsByRace(rows) {
-  const timingsWrittenByRace = new Map();
-  for (const row of rows) {
-    timingsWrittenByRace.set(
-      row.race_id,
-      (timingsWrittenByRace.get(row.race_id) ?? 0) + 1,
-    );
-  }
-  return timingsWrittenByRace;
-}
-
-/** 取得できた1レースの outcome（ok / partial） */
-function fetchedOutcome({ race, parsed, row }, base, changedIds, timingsWrittenByRace) {
-  // 不成立（全勝式が不成立）のレースは、決まり手が出ない・単勝の払戻が無いため、待っても揃わない。
-  // 「決まり手が未公開」として毎分再取得し続けないよう、着順・払戻の表が読めた時点で完了とする
-  const complete =
-    isResultComplete(row) || parsed.full?.race_status === "no_race";
-  return {
-    ...base,
-    rowsParsed: 1,
-    rowsWritten:
-      (changedIds.has(race.race_id) ? 1 : 0) +
-      (timingsWrittenByRace.get(race.race_id) ?? 0),
-    outcome: complete ? "ok" : "partial",
-    resultDigest: complete
-      ? computeResultDigest(
-          row,
-          (parsed.startTimings ?? []).map((st) => ({
-            race_id: race.race_id,
-            ...st,
-          })),
-        )
-      : undefined,
-    error: complete
-      ? undefined
-      : "決まり手が未公開です（着順・払戻のみ取得。再試行します）",
-  };
-}
-
-/** runForRaces の 3) の後: 取得できたレースの outcome を、書き込みの結果から決める */
-function settleFetchedOutcomes(fetched, persisted, outcomes, base) {
-  const changedIds = new Set(
-    (persisted?.changedResults ?? []).map((r) => r.race_id),
-  );
-  const timingsWrittenByRace = countTimingsByRace(
-    persisted?.startTimingRowsWritten ?? [],
-  );
-  for (const f of fetched) {
-    if (persisted?.failed) continue; // 上で error を設定済み
-    if (persisted?.errors?.length > 0) {
-      outcomes.set(f.race.race_id, {
-        ...base,
-        rowsParsed: 1,
-        outcome: "error",
-        error: persisted.errors.map((e) => e.message).join(" / "),
-      });
-      continue;
-    }
-    outcomes.set(
-      f.race.race_id,
-      fetchedOutcome(f, base, changedIds, timingsWrittenByRace),
-    );
   }
 }
 
