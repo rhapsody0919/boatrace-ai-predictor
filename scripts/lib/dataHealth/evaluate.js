@@ -10,10 +10,15 @@
  */
 import { addDaysToDateString } from "../dateUtils.js";
 import {
-  DEFAULT_DAYS,
-  DEFAULT_MIN_DENOMINATOR,
-  DEFAULT_THRESHOLD,
-} from "./checks.js";
+  alertReason,
+  carryOverState,
+  countParams,
+  decideCountStatus,
+  notIntroducedResult,
+  rowStats,
+  scopeRows,
+  sum,
+} from "./evaluateParts.js";
 
 /** 同じ未達が続くとき、この日数ごとに再通知する（悪化したときは、日数によらず通知する） */
 export const REMIND_DAYS = 7;
@@ -22,8 +27,6 @@ export const ALERT_VALID_HOURS = 4;
 /** この件数以上の項目が同時に未達なら、共通原因（障害・順延・取得の停止）の要約を先頭に付ける */
 export const COMMON_CAUSE_MIN_BREACHES = 4;
 
-const sum = (rows, col) =>
-  rows.reduce((acc, r) => acc + Number(r[col] ?? 0), 0);
 const pct = (v) => `${(v * 100).toFixed(1)}%`;
 const shortDate = (d) => d.slice(5);
 
@@ -80,43 +83,14 @@ export function evaluateCountCheck(check, rows, { end, tableRows = null }) {
     label: check.label,
     severity: check.severity,
   };
-  const threshold = check.threshold ?? DEFAULT_THRESHOLD;
-  const minDenominator = check.minDenominator ?? DEFAULT_MIN_DENOMINATOR;
-  const days = check.days ?? DEFAULT_DAYS;
-  const keyColumn = check.keyColumn ?? "d";
+  const { threshold, minDenominator, days, keyColumn } = countParams(check);
 
-  if (check.requiresTable) {
-    if (!tableRows || tableRows[check.requiresTable] !== true) {
-      return {
-        ...base,
-        status: "not_introduced",
-        detail: `${check.requiresTable} が空（取り込み前）のため、未導入として評価しない`,
-      };
-    }
-  }
+  const notIntroduced = notIntroducedResult(check, tableRows, base);
+  if (notIntroduced) return notIntroduced;
 
-  let scoped;
-  let from;
-  let to;
-  if (keyColumn === "d") {
-    to = addDaysToDateString(end, -(check.lagDays ?? 0));
-    from = addDaysToDateString(end, -(days - 1));
-    if (check.since && check.since > from) from = check.since;
-    if (from > to) {
-      return {
-        ...base,
-        status: "not_applicable",
-        detail: check.since
-          ? `取得開始前（${check.since}以降が対象。評価の終端 ${to}）`
-          : `評価の対象期間がありません（${from}〜${to}）`,
-      };
-    }
-    scoped = rows.filter((r) => String(r.d) >= from && String(r.d) <= to);
-  } else {
-    scoped = rows;
-    from = scoped.length ? String(scoped[0][keyColumn]) : "";
-    to = scoped.length ? String(scoped[scoped.length - 1][keyColumn]) : "";
-  }
+  const scope = scopeRows(check, rows, base, { end, days, keyColumn });
+  if (scope.early) return scope.early;
+  const { scoped, from, to } = scope;
 
   const numerator = sum(scoped, check.numerator);
   const denominator = sum(scoped, check.denominator);
@@ -132,22 +106,7 @@ export function evaluateCountCheck(check, rows, { end, tableRows = null }) {
     };
   }
 
-  const rowRate = (r) => {
-    const d = Number(r[check.denominator]);
-    return d === 0 ? null : Number(r[check.numerator]) / d;
-  };
-  const perRow = scoped
-    .map((r) => ({
-      key: String(r[keyColumn]),
-      rate: rowRate(r),
-      missing: Number(r[check.denominator]) - Number(r[check.numerator]),
-    }))
-    .filter((r) => r.rate !== null);
-  const worst = perRow.reduce(
-    (min, cur) => (min === null || cur.rate < min.rate ? cur : min),
-    null,
-  );
-  const belowRows = perRow.filter((r) => r.rate < threshold);
+  const { worst, belowRows } = rowStats(scoped, check, keyColumn, threshold);
   const rate = numerator / denominator;
   const common = {
     ...base,
@@ -160,22 +119,7 @@ export function evaluateCountCheck(check, rows, { end, tableRows = null }) {
     to,
     worst,
   };
-
-  if (check.aggregate === "perRow") {
-    return {
-      ...common,
-      status: belowRows.length > 0 ? "breach" : "ok",
-      belowRows,
-    };
-  }
-  if (denominator < minDenominator) {
-    return {
-      ...common,
-      status: "insufficient",
-      detail: `期待件数が${denominator}件で、母数の下限（${minDenominator}件）未満のため判定しない`,
-    };
-  }
-  return { ...common, status: rate < threshold ? "breach" : "ok" };
+  return decideCountStatus(check, common, belowRows, minDenominator);
 }
 
 /** 観測値（更新時刻の ISO 文字列・日付・件数）を通知の文にする。時刻は JST の MM-DD HH:MM */
@@ -296,12 +240,6 @@ export function formatBreach(result) {
   return `${result.label}: 充足率 ${pct(result.rate)}（${result.numerator}/${result.denominator}、欠${result.missing}件、閾値${pct(result.threshold)}、${shortDate(result.from)}〜${shortDate(result.to)}）${worstText}`;
 }
 
-const daysBetween = (fromDate, toDate) =>
-  Math.round(
-    (Date.parse(`${toDate}T00:00:00Z`) - Date.parse(`${fromDate}T00:00:00Z`)) /
-      86400000,
-  );
-
 /**
  * 通知する項目を決める（状態機械）。同じ未達を、毎日通知しない。
  *
@@ -338,37 +276,16 @@ export function reconcileAlerts({
   const until = new Date(
     now.getTime() + ALERT_VALID_HOURS * 3600 * 1000,
   ).toISOString();
-  const emitted = {};
-  for (const [key, state] of Object.entries(previous ?? {})) {
-    // 今回の実行で「未達でない」と確認できた項目は、状態を消す。それ以外（今回実行していない・実行できなかった）は残す
-    if (!okKeys.has(key)) emitted[key] = state;
-  }
+  const emitted = carryOverState(previous, okKeys);
   const alerts = [];
   for (const b of breaches) {
     const prev = previous?.[b.key];
-    const worsened = prev !== undefined && b.missing > prev.missing;
-    const remind =
-      prev !== undefined && daysBetween(prev.lastAt, targetDate) >= REMIND_DAYS;
-    // 前日に出した通知が、scrape-monitor に届いていない（通知済みの記録に無い）。前日の分だけ確認する
-    // （通知済みの記録の保持は72時間で、それより古い通知は、届いていても記録から消える）
-    const undelivered =
-      prev !== undefined &&
-      prev.alertKey !== undefined &&
-      deliveredKeys instanceof Set &&
-      daysBetween(prev.lastAt, targetDate) === 1 &&
-      !deliveredKeys.has(prev.alertKey);
-    // 毎日通知する未達（鮮度）: 前回の通知が別の対象日なら、欠損数が同じでも通知する
-    const nextDay =
-      b.everyDay === true && prev !== undefined && prev.lastAt !== targetDate;
-    if (prev === undefined || worsened || remind || undelivered || nextDay) {
-      const reason =
-        prev === undefined
-          ? ""
-          : worsened
-            ? "（悪化）"
-            : undelivered
-              ? "（前回の通知が届いていないため再通知）"
-              : "（継続中）";
+    const reason = alertReason(b, prev, {
+      targetDate,
+      deliveredKeys,
+      remindDays: REMIND_DAYS,
+    });
+    if (reason !== null) {
       const alertKey = `dh:${b.key}:${targetDate}`;
       alerts.push({ key: alertKey, text: `${b.text}${reason}`, until });
       emitted[b.key] = {
