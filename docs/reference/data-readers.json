@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2003,
+    "sourceFiles": 2004,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -6548,7 +6548,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries3.js:55",
+          "ref": "src/services/meetQueries3.js:43",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6685,7 +6685,7 @@
             "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/currentMeetEntries.js:44",
             "src/services/meetQueries2.js:115",
-            "src/services/meetQueries3.js:55",
+            "src/services/meetQueries3.js:43",
             "src/services/motorQueries.js:205",
             "src/services/motorQueries3.js:285"
           ],
@@ -6774,7 +6774,7 @@
           "readers": [
             "scripts/lib/snsTodayDigestV3.js:104",
             "src/services/meetQueries2.js:115",
-            "src/services/meetQueries3.js:55"
+            "src/services/meetQueries3.js:43"
           ],
           "writers": [],
           "sql": [
@@ -6791,7 +6791,7 @@
             "scripts/maintenance/backfill-series-day.js:175",
             "src/services/currentMeetEntries.js:44",
             "src/services/meetQueries2.js:115",
-            "src/services/meetQueries3.js:55",
+            "src/services/meetQueries3.js:43",
             "src/services/motorQueries.js:205"
           ],
           "writers": [
@@ -6811,7 +6811,7 @@
             "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/currentMeetEntries.js:44",
             "src/services/meetQueries2.js:115",
-            "src/services/meetQueries3.js:55",
+            "src/services/meetQueries3.js:43",
             "src/services/motorQueries.js:205"
           ],
           "writers": [],
@@ -6843,7 +6843,7 @@
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/meetQueries2.js:115",
-            "src/services/meetQueries3.js:55",
+            "src/services/meetQueries3.js:43",
             "src/services/motorQueries3.js:285"
           ],
           "writers": [],
@@ -7833,7 +7833,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries3.js:72",
+          "ref": "src/services/meetQueries3.js:60",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8418,7 +8418,7 @@
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
-            "src/services/meetQueries3.js:72",
+            "src/services/meetQueries3.js:60",
             "src/services/motorQueries.js:234",
             "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
@@ -8526,7 +8526,7 @@
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
-            "src/services/meetQueries3.js:72",
+            "src/services/meetQueries3.js:60",
             "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:106",
             "src/services/motorQueries2.js:257",
@@ -8586,7 +8586,7 @@
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
             "src/services/meetQueries2.js:105",
-            "src/services/meetQueries3.js:72",
+            "src/services/meetQueries3.js:60",
             "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:240",
             "src/services/motorQueries3.js:303",
@@ -8902,7 +8902,7 @@
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
             "src/services/meetQueries2.js:105",
-            "src/services/meetQueries3.js:72",
+            "src/services/meetQueries3.js:60",
             "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:240",
             "src/services/motorQueries3.js:303",
@@ -11420,7 +11420,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/meetQueries3.js:67",
+          "ref": "src/services/meetQueries3.js:55",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11751,7 +11751,7 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:42",
             "src/services/meetQueries.js:105",
-            "src/services/meetQueries3.js:67",
+            "src/services/meetQueries3.js:55",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
             "src/services/motorQueries3.js:312",
@@ -11816,7 +11816,7 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:42",
             "src/services/meetQueries.js:105",
-            "src/services/meetQueries3.js:67",
+            "src/services/meetQueries3.js:55",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
             "src/services/motorQueries3.js:312",
@@ -11865,7 +11865,7 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:42",
             "src/services/meetQueries.js:105",
-            "src/services/meetQueries3.js:67",
+            "src/services/meetQueries3.js:55",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
             "src/services/raceQueries3.js:125",
@@ -11903,7 +11903,7 @@
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/adminRuleService.js:42",
             "src/services/meetQueries.js:105",
-            "src/services/meetQueries3.js:67",
+            "src/services/meetQueries3.js:55",
             "src/services/motorQueries2.js:125",
             "src/services/motorQueries2.js:353",
             "src/services/raceQueries3.js:125",
@@ -12148,7 +12148,7 @@
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/meetQueries.js:105",
-            "src/services/meetQueries3.js:67",
+            "src/services/meetQueries3.js:55",
             "src/services/motorQueries2.js:353"
           ],
           "writers": [
@@ -12167,7 +12167,7 @@
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/meetQueries.js:105",
-            "src/services/meetQueries3.js:67",
+            "src/services/meetQueries3.js:55",
             "src/services/motorQueries2.js:353"
           ],
           "writers": [
@@ -12186,7 +12186,7 @@
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
             "src/services/meetQueries.js:105",
-            "src/services/meetQueries3.js:67",
+            "src/services/meetQueries3.js:55",
             "src/services/motorQueries2.js:353"
           ],
           "writers": [
@@ -12617,14 +12617,17 @@
           "test": true
         },
         {
-          "ref": "src/services/meetQueries3.js:48",
+          "ref": "src/services/meetQueries3.js:35",
           "op": "select",
           "via": "client",
           "columns": [
+            "class_code",
             "end_date",
             "grade",
+            "kind",
             "start_date",
             "title",
+            "total_days",
             "venue_code"
           ]
         },
@@ -12687,7 +12690,7 @@
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:857",
-            "src/services/meetQueries3.js:48",
+            "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
             "src/services/scheduleQueries.js:69",
@@ -12706,7 +12709,7 @@
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:857",
-            "src/services/meetQueries3.js:48",
+            "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
             "src/services/scheduleQueries.js:69",
@@ -12725,7 +12728,7 @@
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:857",
-            "src/services/meetQueries3.js:48",
+            "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
             "src/services/scheduleQueries.js:69",
@@ -12737,7 +12740,9 @@
           ]
         },
         "total_days": {
-          "readers": [],
+          "readers": [
+            "src/services/meetQueries3.js:35"
+          ],
           "writers": [],
           "sql": []
         },
@@ -12746,14 +12751,16 @@
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:857",
-            "src/services/meetQueries3.js:48",
+            "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:95"
           ],
           "writers": [],
           "sql": []
         },
         "class_code": {
-          "readers": [],
+          "readers": [
+            "src/services/meetQueries3.js:35"
+          ],
           "writers": [],
           "sql": []
         },
@@ -12762,7 +12769,7 @@
             "api/_lib/botPage.js:277",
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:857",
-            "src/services/meetQueries3.js:48",
+            "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:95"
           ],
           "writers": [],
@@ -12770,7 +12777,8 @@
         },
         "kind": {
           "readers": [
-            "scripts/lib/snsTodayDigestV3.js:115"
+            "scripts/lib/snsTodayDigestV3.js:115",
+            "src/services/meetQueries3.js:35"
           ],
           "writers": [],
           "sql": []
@@ -15592,7 +15600,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries3.js:77",
+          "ref": "src/services/meetQueries3.js:65",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15630,7 +15638,7 @@
             "scripts/verification/verify-series-points-official.mjs:135",
             "scripts/verification/verify-series-points-official.mjs:46",
             "src/services/meetQueries2.js:193",
-            "src/services/meetQueries3.js:77"
+            "src/services/meetQueries3.js:65"
           ],
           "writers": [],
           "sql": []
@@ -15641,7 +15649,7 @@
             "scripts/verification/verify-series-points-official.mjs:135",
             "scripts/verification/verify-series-points-official.mjs:46",
             "src/services/meetQueries2.js:193",
-            "src/services/meetQueries3.js:77"
+            "src/services/meetQueries3.js:65"
           ],
           "writers": [],
           "sql": []
@@ -15729,7 +15737,7 @@
         "scraped_at": {
           "readers": [
             "src/services/meetQueries2.js:193",
-            "src/services/meetQueries3.js:77"
+            "src/services/meetQueries3.js:65"
           ],
           "writers": [],
           "sql": [
@@ -17055,7 +17063,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/meetQueries3.js:62",
+          "ref": "src/services/meetQueries3.js:50",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17512,7 +17520,7 @@
             "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
             "src/services/meetQueries.js:115",
-            "src/services/meetQueries3.js:62",
+            "src/services/meetQueries3.js:50",
             "src/services/motorQueries.js:112",
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
@@ -17934,7 +17942,7 @@
             "scripts/lib/snsTodayDigestV3.js:100",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
-            "src/services/meetQueries3.js:62"
+            "src/services/meetQueries3.js:50"
           ],
           "writers": [
             "scripts/daily/update-race-info.js:513"
@@ -17996,7 +18004,7 @@
             "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
             "src/services/meetQueries.js:115",
-            "src/services/meetQueries3.js:62"
+            "src/services/meetQueries3.js:50"
           ],
           "writers": [
             "scripts/daily/scrape-results.js:869",

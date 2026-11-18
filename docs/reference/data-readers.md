@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2003 |
+| 読んだファイル | 2004 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -798,7 +798,7 @@
   - `scripts/verification/verify-series-points-official.mjs:158` select [is_final_day, race_id, race_stage]
   - `src/services/currentMeetEntries.js:44` select [is_final_day, race_id, series_day]
   - `src/services/meetQueries2.js:115` select [is_final_day, race_id, race_stage, race_title, series_day]
-  - `src/services/meetQueries3.js:55` select [is_final_day, race_id, race_stage, race_title, series_day]
+  - `src/services/meetQueries3.js:43` select [is_final_day, race_id, race_stage, race_title, series_day]
   - `src/services/motorQueries.js:205` select [is_final_day, race_id, series_day]
   - `src/services/motorQueries3.js:285` select [race_id, race_stage]
   - `src/services/racerQueries2.js:114` select(helper:fetchAllByIn)
@@ -924,7 +924,7 @@
   - `src/services/meetQueries.js:195` select [boat_number, race_id, racer_id]
   - `src/services/meetQueries.js:252` select [boat_number, motor_number, race_id, racer_id]
   - `src/services/meetQueries2.js:105` select [boat_number, motor_number, player_name, race_id, racer_id]
-  - `src/services/meetQueries3.js:72` select [boat_number, player_name, race_id, racer_id]
+  - `src/services/meetQueries3.js:60` select [boat_number, player_name, race_id, racer_id]
   - `src/services/motorQueries.js:234` select [motor_2rate, race_id]
   - `src/services/motorQueries.js:274` select [boat_number, motor_2rate, motor_3rate, motor_number, race_id]
   - `src/services/motorQueries2.js:106` select [boat_number, global_2rate, motor_number, race_id]
@@ -1219,7 +1219,7 @@
   - `src/services/adminRuleService.js:42` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
   - `src/services/meetQueries.js:105` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/meetQueries2.js:128` select(helper:fetchAllByIn)
-  - `src/services/meetQueries3.js:67` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
+  - `src/services/meetQueries3.js:55` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/motorQueries2.js:125` select [race_id, rank1, rank2, rank3]
   - `src/services/motorQueries2.js:353` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/motorQueries3.js:312` select [race_id, rank1]
@@ -1266,7 +1266,7 @@
   - `scripts/maintenance/backfill-race-series-meta.js:358` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:64` select(helper:fetchAll)
   - `scripts/maintenance/verify-bot-race-function.js:857` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
-  - `src/services/meetQueries3.js:48` select [end_date, grade, start_date, title, venue_code]
+  - `src/services/meetQueries3.js:35` select [class_code, end_date, grade, kind, start_date, title, total_days, venue_code]
   - `src/services/motorQueries7.js:21` select [end_date, start_date, venue_code]
   - `src/services/raceQueries2.js:254` select [end_date, start_date, venue_code]
   - `src/services/scheduleQueries.js:69` select [end_date, start_date, venue_code]
@@ -1452,7 +1452,7 @@
   - `scripts/verification/verify-series-points-official.mjs:46` select [meet_start_date, penalty_points, placements, player_name, racer_id, rank, remarks, score_rate, total_points, venue_code]
   - `scripts/verification/verify-series-points-official.mjs:135` select [meet_start_date, racer_id, venue_code]
   - `src/services/meetQueries2.js:193` select [meet_start_date, penalty_points, placements, racer_id, remarks, scraped_at, total_points, venue_code]
-  - `src/services/meetQueries3.js:77` select [meet_start_date, scraped_at, venue_code]
+  - `src/services/meetQueries3.js:65` select [meet_start_date, scraped_at, venue_code]
 - 書き手（1）: 
   - `scripts/daily/scrape-point-rank.js:624` upsert(helper:upsertWithOptionalColumns) [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: id, grade, next_race_1, next_race_2, next_series_day
@@ -1607,7 +1607,7 @@
   - `scripts/sns/today-picks.js:101` rest(rest) [cancellation_status, race_date, race_id, start_time]
   - `src/services/meetQueries.js:115` select [cancellation_status, race_id]
   - `src/services/meetQueries2.js:137` select(helper:fetchAllByIn)
-  - `src/services/meetQueries3.js:62` select [cancellation_status, race_grade, race_id]
+  - `src/services/meetQueries3.js:50` select [cancellation_status, race_grade, race_id]
   - `src/services/motorQueries.js:112` select [race_date, race_id, venue_code]
   - `src/services/motorQueries3.js:285` select(embed) [venue_code]
   - `src/services/mycroftService.js:79` select [race_date, race_id, race_number, start_time, venue_code]
