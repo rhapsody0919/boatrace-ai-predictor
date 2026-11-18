@@ -26,6 +26,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/hitJudge.js` | 複勝的中判定（2着以内） | isPlaceHit, isShowHit |
 | `src/pure/jstDate.js` | — | getJSTNow, getDaysAgoJST |
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
+| `src/pure/meetCompareSideRows.js` | RaceMeetTab 比較表の注記（RaceMeetTabCompareSide.jsx）の人数の行の文言を作る純関数（副作用なし）。 | countLineText |
 | `src/pure/meetExclusion.js` | 今節の順位の対象から外す選手と、その理由（途中帰郷・賞典除外）の判定（純関数）。 | meetExclusionsOf |
 | `src/pure/meetGrouping.js` | race_id昇順ソート済みの配列を受け取り、末尾（最新）から遡って日付の間隔が | groupIntoCurrentMeet, groupIntoMeetBeforeRace |
 | `src/pure/meetModel.js` | — | makeMeet |
@@ -469,4 +470,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 427 ファイル / export 2467 件。
+対象 428 ファイル / export 2468 件。
