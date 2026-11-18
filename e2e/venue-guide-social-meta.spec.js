@@ -12,6 +12,14 @@ const socialSelectors = [...titleSelectors, ...descriptionSelectors];
 
 async function assertSocialMeta(page, path) {
   await expect(page).toHaveURL(path);
+  // URL は押した直後に変わるが、新しいページの描画はその後に来る（React Router の遷移）。.eg-hero h1 は
+  // 一覧・詳細の両方にあり、古いページのままでも通る。そこで新しいページだけが置く canonical を先に待ち、
+  // 描画が済んでから <title> を読む。待たずに読むと前のページの題を期待値に取り、正しい og:title を
+  // 15秒「違う」と言い続けた（HR22: CI で 11/17〜11/18 に12回。trace で og:title は新しいページの値、
+  // 期待値が前のページの題だった）
+  const canonical = page.locator('link[rel="canonical"]');
+  await expect(canonical).toHaveCount(1);
+  await expect(canonical).toHaveAttribute("href", `https://www.boat-ai.jp${path}`);
   await expect(page.locator(".eg-hero h1")).toBeVisible();
   await expect(page).toHaveTitle(/Boat Race.*Ryujin Radar/);
   const title = await page.title();
@@ -29,9 +37,6 @@ async function assertSocialMeta(page, path) {
       await description.getAttribute("content"),
     );
   }
-  const canonical = page.locator('link[rel="canonical"]');
-  await expect(canonical).toHaveCount(1);
-  await expect(canonical).toHaveAttribute("href", `https://www.boat-ai.jp${path}`);
   const ogUrl = page.locator('meta[property="og:url"]');
   await expect(ogUrl).toHaveCount(1);
   await expect(ogUrl).toHaveAttribute("content", await canonical.getAttribute("href"));
