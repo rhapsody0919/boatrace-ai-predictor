@@ -49,43 +49,40 @@ function check(label, actual, expected) {
 const scopeOf = (files, cfg = config, opts) =>
   classifyE2eScope(files, cfg, opts).scope;
 
-// --- 軽い組（記事の中身だけ） ---
-check(
-  "記事の .md と JSON だけは軽い組",
-  scopeOf([
-    "public/blog/foo.md",
-    "src/data/blog-posts/foo.json",
-    "public/images/blog/foo.jpg",
-  ]),
-  "light",
-);
-check(
-  "翻訳の記事 JSON も軽い組",
-  scopeOf(["src/data/blog-posts/en/foo.json"]),
-  "light",
-);
-check(
-  "図の JSON・content-manifests も軽い組",
-  scopeOf(["public/blog-charts/a.json", "docs/content-manifests/a.json"]),
-  "light",
-);
-check(
-  "記事と docs の混在は軽い組",
-  scopeOf(["public/blog/foo.md", "docs/knowledge/x.md"]),
-  "light",
-);
-
-// --- 0件（docs だけ） ---
-check(
-  "docs だけは0件",
-  scopeOf(["docs/adr/0100-e2e-scope-by-diff.md", "docs/knowledge/a.md"]),
-  "none",
-);
-check(
-  "docs/content-manifests だけは0件にしない（記事の一部）",
-  scopeOf(["docs/content-manifests/a.json"]),
-  "light",
-);
+// --- 軽い組（記事の中身だけ）と0件（docs だけ） ---
+for (const [label, files, expected] of [
+  [
+    "記事の .md と JSON だけは軽い組",
+    [
+      "public/blog/foo.md",
+      "src/data/blog-posts/foo.json",
+      "public/images/blog/foo.jpg",
+    ],
+    "light",
+  ],
+  ["翻訳の記事 JSON も軽い組", ["src/data/blog-posts/en/foo.json"], "light"],
+  [
+    "図の JSON・content-manifests も軽い組",
+    ["public/blog-charts/a.json", "docs/content-manifests/a.json"],
+    "light",
+  ],
+  [
+    "記事と docs の混在は軽い組",
+    ["public/blog/foo.md", "docs/knowledge/x.md"],
+    "light",
+  ],
+  [
+    "docs だけは0件",
+    ["docs/adr/0100-e2e-scope-by-diff.md", "docs/knowledge/a.md"],
+    "none",
+  ],
+  [
+    "docs/content-manifests だけは0件にしない（記事の一部）",
+    ["docs/content-manifests/a.json"],
+    "light",
+  ],
+])
+  check(label, scopeOf(files), expected);
 
 // --- 全部 ---
 for (const file of [
@@ -131,55 +128,37 @@ check(
     grandfatherRemovals(config, removed),
     [list[0]],
   );
-  check(
-    "行を足すと null",
-    grandfatherRemovals(config, {
-      ...config,
-      internalLinkGrandfathered: [...list, "public/blog/x.md"],
-    }),
-    null,
+  const others = Object.fromEntries(
+    Object.entries(config).filter(([k]) => k !== "internalLinkGrandfathered"),
   );
-  check(
-    "外して足すと null",
-    grandfatherRemovals(config, {
-      ...config,
-      internalLinkGrandfathered: [...list.slice(1), "public/blog/x.md"],
-    }),
-    null,
-  );
-  check(
-    "残った行の並べ替えは null",
-    grandfatherRemovals(config, {
-      ...config,
-      internalLinkGrandfathered: [...list.slice(2), list[1]],
-    }),
-    null,
-  );
-  check(
-    "他のキーの変更が混ざると null",
-    grandfatherRemovals(config, {
-      ...removed,
-      allowedPathPatterns: [...config.allowedPathPatterns, "^src/"],
-    }),
-    null,
-  );
-  check(
-    "キーの順の変更は null",
-    grandfatherRemovals(config, {
-      internalLinkGrandfathered: removed.internalLinkGrandfathered,
-      ...Object.fromEntries(
-        Object.entries(config).filter(
-          ([k]) => k !== "internalLinkGrandfathered",
-        ),
-      ),
-    }),
-    null,
-  );
-  check(
-    "変更なし（整形だけ）は null",
-    grandfatherRemovals(config, config),
-    null,
-  );
+  const x = "public/blog/x.md";
+  for (const [label, next] of [
+    ["行を足すと null", { ...config, internalLinkGrandfathered: [...list, x] }],
+    [
+      "外して足すと null",
+      { ...config, internalLinkGrandfathered: [...list.slice(1), x] },
+    ],
+    [
+      "残った行の並べ替えは null",
+      { ...config, internalLinkGrandfathered: [...list.slice(2), list[1]] },
+    ],
+    [
+      "他のキーの変更が混ざると null",
+      {
+        ...removed,
+        allowedPathPatterns: [...config.allowedPathPatterns, "^src/"],
+      },
+    ],
+    [
+      "キーの順の変更は null",
+      {
+        internalLinkGrandfathered: removed.internalLinkGrandfathered,
+        ...others,
+      },
+    ],
+    ["変更なし（整形だけ）は null", config],
+  ])
+    check(label, grandfatherRemovals(config, next), null);
   const articlePr = [
     "public/blog/foo.md",
     "src/data/blog-posts/foo.json",
