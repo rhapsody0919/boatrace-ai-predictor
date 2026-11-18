@@ -2,7 +2,7 @@ import { test, expect } from "./fixtures.js";
 
 // 3ページ分を固定し、録画日の選手数・支部の人数に依存させない。
 const racers = Array.from({ length: 151 }, (_, i) => ({
-  racer_id: String(4000 + i), name: `試験選手${i}`, branch: "東京",
+  racer_id: 4000 + i, name: `試験選手${i}`, branch: "東京",
   birth_date: "1990-01-01", registration_period: "100期", hometown: "東京都",
   height_cm: 170, weight_kg: 52,
 }));
