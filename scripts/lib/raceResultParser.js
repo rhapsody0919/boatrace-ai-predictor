@@ -343,6 +343,47 @@ export function classifyRaceStatus(payoutRows, refundBoats) {
 }
 
 /**
+ * 着順表の艇の異常（未知の着欄の表記・艇番の重複・スタート情報に行が無い艇）。parseRaceResultPage の一部
+ * @returns {string[]}
+ */
+function boatAnomalies(boats, startRows) {
+  const anomalies = [];
+  for (const boat of boats) {
+    const mark = boat.finish_mark;
+    if (mark !== null && boat.finish_rank === null && !(mark in FINISH_MARKS)) {
+      anomalies.push(`未知の着欄の表記: 枠${boat.boat_number} 「${mark}」`);
+    }
+  }
+  if (boats.length === 0) return anomalies;
+  const names = new Set(boats.map((b) => b.boat_number));
+  if (names.size !== boats.length) {
+    anomalies.push(
+      `着順表に艇番の重複がある: ${boats.map((b) => b.boat_number).join(",")}`,
+    );
+  }
+  const stBoats = new Set(startRows.map((r) => r.boatNumber));
+  for (const boat of boats) {
+    // 欠場艇以外でスタート情報に行が無い艇は、進入コースが取れない（構造の変化の疑い）
+    if (boat.finish_mark !== "欠" && !stBoats.has(boat.boat_number) && startRows.length > 0) {
+      anomalies.push(`スタート情報に行が無い艇: 枠${boat.boat_number}`);
+    }
+  }
+  return anomalies;
+}
+
+/** 返還の表の艇番（1〜6・重複なし・昇順）。表が無ければ [] */
+function parseRefundBoats($, refundTable) {
+  const refundBoats = [];
+  if (!refundTable) return refundBoats;
+  refundTable.find(".numberSet1_number").each((_, el) => {
+    const n = parseInt($(el).text().trim(), 10);
+    if (n >= 1 && n <= 6 && !refundBoats.includes(n)) refundBoats.push(n);
+  });
+  refundBoats.sort((a, b) => a - b);
+  return refundBoats;
+}
+
+/**
  * 結果ページのHTMLを、全項目つきで解析する（純関数）。
  * 着順表・払戻表のどちらも無い（未公開・構造の違い）ページでも、例外にせず、空の項目を返す
  * （公開済みかの判断は、呼び出し側が boats・payouts の有無で行う）。解析中の想定外は握りつぶさず、
@@ -363,38 +404,8 @@ export function parseRaceResultPage(html) {
 
   const startInfo = parseStartInfo($, startTable);
   const boats = parseBoats($, resultTable, startInfo);
-  for (const boat of boats) {
-    const mark = boat.finish_mark;
-    if (mark !== null && boat.finish_rank === null && !(mark in FINISH_MARKS)) {
-      anomalies.push(`未知の着欄の表記: 枠${boat.boat_number} 「${mark}」`);
-    }
-  }
-  if (boats.length > 0) {
-    const names = new Set(boats.map((b) => b.boat_number));
-    if (names.size !== boats.length) {
-      anomalies.push(
-        `着順表に艇番の重複がある: ${boats.map((b) => b.boat_number).join(",")}`,
-      );
-    }
-    const stBoats = new Set(startInfo.rows.map((r) => r.boatNumber));
-    for (const boat of boats) {
-      if (boat.finish_mark !== "欠" && !stBoats.has(boat.boat_number)) {
-        // 欠場艇以外でスタート情報に行が無い艇は、進入コースが取れない（構造の変化の疑い）
-        if (startInfo.rows.length > 0) {
-          anomalies.push(`スタート情報に行が無い艇: 枠${boat.boat_number}`);
-        }
-      }
-    }
-  }
-
-  const refundBoats = [];
-  if (refundTable) {
-    refundTable.find(".numberSet1_number").each((_, el) => {
-      const n = parseInt($(el).text().trim(), 10);
-      if (n >= 1 && n <= 6 && !refundBoats.includes(n)) refundBoats.push(n);
-    });
-    refundBoats.sort((a, b) => a - b);
-  }
+  anomalies.push(...boatAnomalies(boats, startInfo.rows));
+  const refundBoats = parseRefundBoats($, refundTable);
 
   const { rows: payoutRows, anomalies: payoutAnomalies } = parsePayouts(
     $,
