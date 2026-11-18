@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1990,
+    "sourceFiles": 1991,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -4454,7 +4454,7 @@
       },
       "readers": [
         {
-          "ref": "src/services/mycroftService.js:95",
+          "ref": "src/services/mycroftService.js:97",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4484,21 +4484,21 @@
         "race_id": {
           "readers": [
             "scripts/daily/generate-mycroft-predictions.js:97",
-            "src/services/mycroftService.js:95"
+            "src/services/mycroftService.js:97"
           ],
           "writers": [],
           "sql": []
         },
         "rank_order": {
           "readers": [
-            "src/services/mycroftService.js:95"
+            "src/services/mycroftService.js:97"
           ],
           "writers": [],
           "sql": []
         },
         "win_probs": {
           "readers": [
-            "src/services/mycroftService.js:95"
+            "src/services/mycroftService.js:97"
           ],
           "writers": [],
           "sql": []
@@ -4510,21 +4510,21 @@
         },
         "attention_evidence": {
           "readers": [
-            "src/services/mycroftService.js:95"
+            "src/services/mycroftService.js:97"
           ],
           "writers": [],
           "sql": []
         },
         "model_trained_at": {
           "readers": [
-            "src/services/mycroftService.js:95"
+            "src/services/mycroftService.js:97"
           ],
           "writers": [],
           "sql": []
         },
         "predicted_at": {
           "readers": [
-            "src/services/mycroftService.js:95"
+            "src/services/mycroftService.js:97"
           ],
           "writers": [],
           "sql": []
@@ -7947,7 +7947,7 @@
           ]
         },
         {
-          "ref": "src/services/mycroftService.js:82",
+          "ref": "src/services/mycroftService.js:83",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8428,7 +8428,7 @@
             "src/services/motorQueries4.js:160",
             "src/services/motorQueries5.js:38",
             "src/services/motorQueries7.js:47",
-            "src/services/mycroftService.js:82",
+            "src/services/mycroftService.js:83",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:189",
@@ -8532,7 +8532,7 @@
             "src/services/motorQueries2.js:257",
             "src/services/motorQueries3.js:237",
             "src/services/motorQueries3.js:300",
-            "src/services/mycroftService.js:82",
+            "src/services/mycroftService.js:83",
             "src/services/raceQueries.js:143",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:275",
@@ -8591,7 +8591,7 @@
             "src/services/motorQueries3.js:237",
             "src/services/motorQueries3.js:300",
             "src/services/motorQueries4.js:160",
-            "src/services/mycroftService.js:82",
+            "src/services/mycroftService.js:83",
             "src/services/raceQueries.js:166",
             "src/services/raceQueries.js:275",
             "src/services/raceQueries2.js:56",
@@ -17083,7 +17083,7 @@
           ]
         },
         {
-          "ref": "src/services/mycroftService.js:78",
+          "ref": "src/services/mycroftService.js:79",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17514,7 +17514,7 @@
             "src/services/meetQueries.js:115",
             "src/services/meetQueries3.js:62",
             "src/services/motorQueries.js:112",
-            "src/services/mycroftService.js:78",
+            "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/ruleMatchService.js:158",
@@ -17615,7 +17615,7 @@
             "scripts/sns/push-full-picture.js:839",
             "scripts/sns/today-picks.js:101",
             "src/services/motorQueries.js:112",
-            "src/services/mycroftService.js:78",
+            "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:125",
@@ -17697,7 +17697,7 @@
             "scripts/maintenance/verify-rpc-output-keys.js:321",
             "src/services/motorQueries.js:112",
             "src/services/motorQueries3.js:282",
-            "src/services/mycroftService.js:78",
+            "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:205",
@@ -17741,7 +17741,7 @@
             "scripts/maintenance/motor-pretest-backfill.js:217",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
-            "src/services/mycroftService.js:78",
+            "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:229",
@@ -17802,7 +17802,7 @@
             "scripts/sns/push-setsu-kiryoku-short.js:1081",
             "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
-            "src/services/mycroftService.js:78",
+            "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",

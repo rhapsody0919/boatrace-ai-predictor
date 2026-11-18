@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1990 |
+| 読んだファイル | 1991 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -613,7 +613,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/maintenance/fix-opening-day-race-id-date.js:77`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:50`
 - 読み手（1）: 
-  - `src/services/mycroftService.js:95` select [attention_evidence, model_trained_at, predicted_at, race_id, rank_order, win_probs]
+  - `src/services/mycroftService.js:97` select [attention_evidence, model_trained_at, predicted_at, race_id, rank_order, win_probs]
 - 書き手（1）: 
   - `scripts/daily/generate-mycroft-predictions.js:97` upsert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -934,7 +934,7 @@
   - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries5.js:38` select [?, motor_number, race_id]
   - `src/services/motorQueries7.js:47` select [motor_number, race_id, racer_id]
-  - `src/services/mycroftService.js:82` select [boat_number, player_name, race_id]
+  - `src/services/mycroftService.js:83` select [boat_number, player_name, race_id]
   - `src/services/raceQueries.js:143` select [boat_number, f_count, global_2rate, global_3rate, l_count, local_2rate, local_3rate, local_win_rate, race_id, win_rate]
   - `src/services/raceQueries.js:166` select [boat_number, local_win_rate, player_name, race_id, racer_id, win_rate]
   - `src/services/raceQueries.js:189` select [race_id, racer_id, win_rate]
@@ -1610,7 +1610,7 @@
   - `src/services/meetQueries3.js:62` select [cancellation_status, race_grade, race_id]
   - `src/services/motorQueries.js:112` select [race_date, race_id, venue_code]
   - `src/services/motorQueries3.js:282` select(embed) [venue_code]
-  - `src/services/mycroftService.js:78` select [race_date, race_id, race_number, start_time, venue_code]
+  - `src/services/mycroftService.js:79` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/poirotService.js:49` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/racerQueries2.js:51` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:213` select(helper:fetchAllByIn)
