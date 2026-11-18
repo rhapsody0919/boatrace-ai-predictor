@@ -191,60 +191,49 @@ function lastHeadActivityMs(worktreePath) {
   return times.length > 0 ? Math.max(...times) : null;
 }
 
-function main() {
-  const porcelain = git(["worktree", "list", "--porcelain"]);
-  if (!porcelain) {
-    console.error("worktree の一覧を取得できませんでした");
-    process.exit(1);
-  }
-
-  const entries = selectManagedWorktrees(parseWorktrees(porcelain), repoRoot);
-  const mergedPrs = listMergedPrs();
-  const cwds = listProcessCwds();
-  const now = Date.now();
-
-  const rows = entries.map((e) => {
-    // git status より先に読む
-    const recent = isRecentlyActive(lastHeadActivityMs(e.path), now);
-    const dirty = git(["status", "--short"], e.path);
-    const dirtyCount = dirty ? dirty.split("\n").filter(Boolean).length : 0;
-    const precious = PRECIOUS_PATHS.filter((p) =>
-      existsSync(path.join(e.path, p)),
-    );
-    const tip = e.branch ? git(["rev-parse", e.branch]) : null;
-    const merged = isMergedByPr({ branch: e.branch, tip, mergedPrs });
-    // cwd を取れなかったときは使用中の可能性を否定できないので使用中扱い
-    const inUse = cwds === null || hasProcessInside(e.path, cwds);
-    // gitが追跡しないもの（node_modules 等）が残っていると
-    // `git worktree remove` は "Directory not empty" で失敗する。
-    // 消してよいものではあるので削除対象からは外さず、--force が要ると示す。
-    const needsForce = UNTRACKED_LEFTOVERS.some((d) =>
-      existsSync(path.join(e.path, d)),
-    );
-    return {
-      ...e,
+// worktree 1本の状態を読んで分類する（git status より先に HEAD の時刻を読む）
+function inspectWorktree(e, { mergedPrs, cwds, now }) {
+  // git status より先に読む
+  const recent = isRecentlyActive(lastHeadActivityMs(e.path), now);
+  const dirty = git(["status", "--short"], e.path);
+  const dirtyCount = dirty ? dirty.split("\n").filter(Boolean).length : 0;
+  const precious = PRECIOUS_PATHS.filter((p) =>
+    existsSync(path.join(e.path, p)),
+  );
+  const tip = e.branch ? git(["rev-parse", e.branch]) : null;
+  const merged = isMergedByPr({ branch: e.branch, tip, mergedPrs });
+  // cwd を取れなかったときは使用中の可能性を否定できないので使用中扱い
+  const inUse = cwds === null || hasProcessInside(e.path, cwds);
+  // gitが追跡しないもの（node_modules 等）が残っていると
+  // `git worktree remove` は "Directory not empty" で失敗する。
+  // 消してよいものではあるので削除対象からは外さず、--force が要ると示す。
+  const needsForce = UNTRACKED_LEFTOVERS.some((d) =>
+    existsSync(path.join(e.path, d)),
+  );
+  return {
+    ...e,
+    dirtyCount,
+    precious,
+    merged,
+    inUse,
+    needsForce,
+    kind: classify({
+      merged,
       dirtyCount,
       precious,
-      merged,
+      locked: e.locked,
       inUse,
-      needsForce,
-      kind: classify({
-        merged,
-        dirtyCount,
-        precious,
-        locked: e.locked,
-        inUse,
-        recent,
-      }),
-    };
-  });
+      recent,
+    }),
+  };
+}
 
-  const removable = rows.filter((r) => r.kind === "removable");
-  const blocked = rows.filter((r) => r.kind === "blocked");
-  const active = rows.filter((r) => r.kind === "active");
-  const locked = rows.filter((r) => r.kind === "locked");
-  const recent = rows.filter((r) => r.kind === "recent");
-
+function printSummary(
+  rows,
+  { removable, locked, blocked, active, recent },
+  mergedPrs,
+  cwds,
+) {
   console.log(`worktree ${rows.length}本（メインの作業ツリーを除く）`);
   console.log(
     `  片付けてよい: ${removable.length} / 使用中: ${locked.length} / 触らない: ${blocked.length} / 作業中: ${active.length} / 直近に操作あり: ${recent.length}`,
@@ -261,7 +250,9 @@ function main() {
       "  lsof でプロセスの作業ディレクトリを取得できなかったため、全件を使用中として扱っています。",
     );
   }
+}
 
+function printLocked(locked) {
   if (locked.length > 0) {
     console.log("");
     console.log("## 使用中（他のセッションが使っている。触らない）");
@@ -276,7 +267,9 @@ function main() {
       "  そのセッションが終わるまで待つ。ロックは git 側の安全装置なので -f で外さない。",
     );
   }
+}
 
+function printBlocked(blocked) {
   if (blocked.length > 0) {
     console.log("");
     console.log(
@@ -301,7 +294,9 @@ function main() {
       );
     }
   }
+}
 
+function printActiveAndRecent(active, recent) {
   if (active.length > 0) {
     console.log("");
     console.log(
@@ -321,7 +316,9 @@ function main() {
       console.log(`  ${path.basename(r.path)}  [${r.branch ?? "detached"}]`);
     }
   }
+}
 
+function printRemovable(removable) {
   if (removable.length > 0) {
     console.log("");
     console.log(
@@ -339,6 +336,35 @@ function main() {
       "  上のコマンドは自動実行しません。内容を確認してから実行してください。",
     );
   }
+}
+
+function main() {
+  const porcelain = git(["worktree", "list", "--porcelain"]);
+  if (!porcelain) {
+    console.error("worktree の一覧を取得できませんでした");
+    process.exit(1);
+  }
+
+  const entries = selectManagedWorktrees(parseWorktrees(porcelain), repoRoot);
+  const mergedPrs = listMergedPrs();
+  const cwds = listProcessCwds();
+  const now = Date.now();
+
+  const rows = entries.map((e) => inspectWorktree(e, { mergedPrs, cwds, now }));
+
+  const groups = {
+    removable: rows.filter((r) => r.kind === "removable"),
+    blocked: rows.filter((r) => r.kind === "blocked"),
+    active: rows.filter((r) => r.kind === "active"),
+    locked: rows.filter((r) => r.kind === "locked"),
+    recent: rows.filter((r) => r.kind === "recent"),
+  };
+
+  printSummary(rows, groups, mergedPrs, cwds);
+  printLocked(groups.locked);
+  printBlocked(groups.blocked);
+  printActiveAndRecent(groups.active, groups.recent);
+  printRemovable(groups.removable);
 }
 
 const invokedDirectly =
