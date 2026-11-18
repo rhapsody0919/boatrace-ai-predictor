@@ -5,12 +5,12 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2040,
+    "sourceFiles": 2041,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
     "rpcCallers": 51,
-    "nameMentions": 237,
+    "nameMentions": 239,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
@@ -21224,13 +21224,6 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-existing-fixes.js:142",
-          "op": "rest",
-          "via": "rest",
-          "columns": [],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verify-sns-metrics-runner.js:642",
           "op": "rest",
           "via": "rest",
@@ -21270,6 +21263,12 @@
           "via": "rest",
           "columns": [],
           "test": true
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:67",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
         },
         {
           "ref": "scripts/sns/delete-x-post.js:118",
@@ -28302,7 +28301,9 @@
       "callers": [],
       "mentions": [
         "api/_lib/snsExternalOperations.js:15",
-        "api/_lib/snsExternalOperations.js:24"
+        "api/_lib/snsExternalOperations.js:24",
+        "scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:95",
+        "scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:99"
       ],
       "triggerOn": [],
       "calledByRpc": [],

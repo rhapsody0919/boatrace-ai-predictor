@@ -10,12 +10,12 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2040 |
+| 読んだファイル | 2041 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
 | RPC の呼び手（箇所） | 51 |
-| 名前の文字列だけの箇所（呼ぶ経路は式） | 237 |
+| 名前の文字列だけの箇所（呼ぶ経路は式） | 239 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
@@ -194,7 +194,7 @@
 | save_sns_draft_diff | service だけ |  | api/_lib/snsXSendStore.js:49 | read_sns_draft_diff, sns_diff_content, sns_mobile_revision | sns_drafts | sns_drafts |  |
 | scrape_breaker_open | service だけ |  | scripts/lib/scrapeJobs/store.js:335 / 名前の文字列: scripts/lib/scrapeJobs/store.js:356 |  |  | scrape_job_state |  |
 | sns_bundle_send_allowed | service だけ |  | RPC から: approve_sns_x_send, guard_sns_preview_bundle_draft, transition_sns_send_139, transition_sns_x_send |  | sns_auto_send_items, sns_bundle_imports |  |  |
-| sns_claim_external | service だけ | yes | 名前の文字列: api/_lib/snsExternalOperations.js:15, api/_lib/snsExternalOperations.js:24 |  | sns_drafts | sns_drafts |  |
+| sns_claim_external | service だけ | yes | 名前の文字列: api/_lib/snsExternalOperations.js:15, api/_lib/snsExternalOperations.js:24, scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:95 ほか1 |  | sns_drafts | sns_drafts |  |
 | sns_diff_content | service だけ |  | RPC から: guard_sns_diff_approval, read_sns_draft_diff, save_sns_draft_diff |  |  |  |  |
 | sns_finish_external | service だけ | yes | 名前の文字列: api/_lib/snsExternalOperations.js:35 |  | sns_drafts | sns_drafts |  |
 | sns_guard_external | service だけ |  | トリガー: sns_drafts |  |  |  |  |
@@ -1889,12 +1889,12 @@
   - `scripts/maintenance/verify-sns-auto-plan.js:617` rest(rest) [bundle_import_id] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:625` rest(rest) [id, status] （検査）
   - `scripts/maintenance/verify-sns-daily-runner.js:965` rest(rest) [caption_text, format, id, platform, posted_at] （検査）
-  - `scripts/maintenance/verify-sns-existing-fixes.js:142` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-metrics-runner.js:642` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-month-calendar.js:47` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:738` rest(rest) [format, send_lane] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:762` rest(rest) [id, status] （検査）
   - `scripts/maintenance/verify-sns-x-delete.js:417` rest(rest) （検査）
+  - `scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:67` rest(rest)
   - `scripts/sns/delete-x-post.js:118` rest(rest) [format, id, source_data, status, title]
   - `scripts/sns/push-finals-image.js:1344` select(embed) [bundle_import_id]
   - `scripts/sns/push-full-picture.js:895` rest(rest) [id, source_data]
