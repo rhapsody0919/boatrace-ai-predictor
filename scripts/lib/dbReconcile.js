@@ -53,6 +53,69 @@ export const byMigrationNumber = (a, b) =>
     numeric: true,
   }) || a.localeCompare(b);
 
+// evaluateCandidate の5点の検査（1〜4）。通らなければ reasons に理由を足す（この順）
+
+/** 1: 切り替えより後に足したコミットが1つで、squash のマージ */
+function checkAddCommit(facts, commit, reasons) {
+  if (facts.addCommits.length !== 1) {
+    reasons.push(
+      `切り替えより後に足したコミットが1つでない（${facts.addCommits.length}件）`,
+    );
+  }
+  if (commit && facts.commitParents !== 1) {
+    reasons.push(
+      `足したコミット ${commit.slice(0, 9)} が squash のマージでない（親が ${facts.commitParents}）`,
+    );
+  }
+}
+
+/** 2: そのコミットを merge_commit_sha に持つマージ済みの PR があり、ファイルの中身が PR の head と今の master で同じ */
+function checkMergedPr(facts, commit, pr, reasons) {
+  if (!pr) {
+    reasons.push(
+      `コミット ${commit?.slice(0, 9) ?? "?"} を merge_commit_sha に持つ、master へマージ済みの PR が無い`,
+    );
+  }
+  if (
+    !facts.masterBlob ||
+    !facts.headBlob ||
+    facts.masterBlob !== facts.headBlob
+  ) {
+    reasons.push(
+      `ファイルの中身が PR の head と今の master で違う（head ${facts.headBlob?.slice(0, 9) ?? "なし"} / master ${facts.masterBlob?.slice(0, 9) ?? "なし"}）`,
+    );
+  }
+}
+
+/** 3: PR の head に審査の App の承認がある */
+function checkApproval(facts, pr, reasons) {
+  if (!pr) return;
+  const approved = facts.reviews.some(
+    (r) =>
+      r.userId === facts.reviewerUserId &&
+      r.state === "APPROVED" &&
+      r.commitId === pr.headSha,
+  );
+  if (!approved)
+    reasons.push(
+      `PR #${pr.number} の head ${pr.headSha.slice(0, 9)} に審査の App の承認が無い`,
+    );
+}
+
+/** 4: 台帳が「未適用」で、その行がファイルと同じコミットで足された */
+function checkLedger(facts, name, reasons) {
+  if (facts.ledgerState !== "未適用") {
+    reasons.push(
+      `台帳の状態が「未適用」でない（${facts.ledgerState ?? "行が無いか、決まった語で始まらない"}）`,
+    );
+  }
+  if (!facts.ledgerRowAddedInCommit) {
+    reasons.push(
+      `台帳の ${name} の「未適用」の行が、ファイルと同じコミットで足されていない`,
+    );
+  }
+}
+
 /**
  * 1本のファイルが5点の検査を通るか
  *
@@ -74,65 +137,14 @@ export const byMigrationNumber = (a, b) =>
 export function evaluateCandidate(facts) {
   const reasons = [];
   const name = facts.file.split("/").pop();
-
-  // 1
-  if (facts.addCommits.length !== 1) {
-    reasons.push(
-      `切り替えより後に足したコミットが1つでない（${facts.addCommits.length}件）`,
-    );
-  }
   const commit = facts.addCommits[0] ?? null;
-  if (commit && facts.commitParents !== 1) {
-    reasons.push(
-      `足したコミット ${commit.slice(0, 9)} が squash のマージでない（親が ${facts.commitParents}）`,
-    );
-  }
-
-  // 2
+  checkAddCommit(facts, commit, reasons); // 1
   const pr = facts.prs.find(
     (p) => p.merged && p.baseRef === "master" && p.mergeCommitSha === commit,
   );
-  if (!pr) {
-    reasons.push(
-      `コミット ${commit?.slice(0, 9) ?? "?"} を merge_commit_sha に持つ、master へマージ済みの PR が無い`,
-    );
-  }
-  if (
-    !facts.masterBlob ||
-    !facts.headBlob ||
-    facts.masterBlob !== facts.headBlob
-  ) {
-    reasons.push(
-      `ファイルの中身が PR の head と今の master で違う（head ${facts.headBlob?.slice(0, 9) ?? "なし"} / master ${facts.masterBlob?.slice(0, 9) ?? "なし"}）`,
-    );
-  }
-
-  // 3
-  if (pr) {
-    const approved = facts.reviews.some(
-      (r) =>
-        r.userId === facts.reviewerUserId &&
-        r.state === "APPROVED" &&
-        r.commitId === pr.headSha,
-    );
-    if (!approved)
-      reasons.push(
-        `PR #${pr.number} の head ${pr.headSha.slice(0, 9)} に審査の App の承認が無い`,
-      );
-  }
-
-  // 4
-  if (facts.ledgerState !== "未適用") {
-    reasons.push(
-      `台帳の状態が「未適用」でない（${facts.ledgerState ?? "行が無いか、決まった語で始まらない"}）`,
-    );
-  }
-  if (!facts.ledgerRowAddedInCommit) {
-    reasons.push(
-      `台帳の ${name} の「未適用」の行が、ファイルと同じコミットで足されていない`,
-    );
-  }
-
+  checkMergedPr(facts, commit, pr, reasons); // 2
+  checkApproval(facts, pr, reasons); // 3
+  checkLedger(facts, name, reasons); // 4
   // 5
   if (facts.runbookExists) {
     reasons.push(
@@ -245,6 +257,79 @@ export function pendingCandidates(candidates) {
     }));
 }
 
+const nameOf = (f) => (f ? f.split("/").pop() : "");
+const prRef = (n) => (n ? `（PR #${n}）` : "");
+const reasonList = (rs) => rs.map((r) => `\n- ${r}`).join("");
+
+/** buildNotifications の試運転（dry-run）の項目: 未処理のファイルごとに、検査を通らない・判定の結果 */
+function pushDryRunItems(items, { pending, judged }) {
+  for (const p of pending) {
+    if (!p.ok) {
+      items.push({
+        key: `db-apply:dry-run:blocked:${p.file}`,
+        pr: p.pr,
+        text: `本番 SQL の自動の適用（試運転、当てていない）: ${nameOf(p.file)}${prRef(p.pr)} は自動では当てない（5点の検査を通らない）${reasonList(p.reasons)}`,
+      });
+      continue;
+    }
+    const j = judged.find((x) => x.file === p.file);
+    if (!j) continue;
+    items.push({
+      key: `db-apply:dry-run:${p.file}:${j.sha256}`,
+      pr: p.pr,
+      text: `本番 SQL の自動の適用（試運転、当てていない）: ${nameOf(p.file)}${prRef(p.pr)} は「${LABEL_JA[j.label] ?? j.label}」。本番なら${LABEL_OUTCOME[j.label] ?? "当てずに止めた"}${reasonList(j.reasons)}`,
+    });
+  }
+}
+
+/** buildNotifications の本番の項目: 止まった・止める・当てた（と台帳の記録の失敗） */
+function pushLiveItems(items, { status, file, pr, label, sha256, reasons, results, runUrl, today }) {
+  if (status === "blocked") {
+    // 以後の番号も止めるので、毎日1回念を押す（印に日付を入れる）
+    items.push({
+      key: `db-apply:blocked:${file}:${today}`,
+      pr,
+      text: `本番 SQL の自動の適用: ${nameOf(file)}${prRef(pr)} は自動では当てない（5点の検査を通らない）。以後の番号も止まっている${reasonList(reasons)}`,
+    });
+  }
+  if (status === "selected" && label === "stop") {
+    items.push({
+      key: `db-apply:stop:${file}:${sha256}:${today}`,
+      pr,
+      text: `本番 SQL の自動の適用: ${nameOf(file)}${prRef(pr)} は「止める」。当てていない。以後の番号も止まっている${reasonList(reasons)}`,
+    });
+  }
+  const applied = results.applyAuto === "success" || results.applyGated === "success";
+  if (status === "selected" && applied) {
+    pushAppliedItems(items, { file, pr, label, sha256, results, runUrl });
+  }
+  for (const [job, result] of [["apply-auto", results.applyAuto], ["apply-gated", results.applyGated]]) {
+    if (status === "selected" && (result === "failure" || result === "cancelled")) {
+      items.push({
+        key: null,
+        pr: null,
+        text: `本番 SQL の自動の適用: ${nameOf(file)} の ${job} が ${result}（却下を含む）。次の起動でまた選ばれる: ${runUrl}`,
+      });
+    }
+  }
+}
+
+/** 当てたときの項目（台帳の記録が成功していなければ、その知らせも） */
+function pushAppliedItems(items, { file, pr, label, sha256, results, runUrl }) {
+  items.push({
+    key: `db-apply:applied:${file}:${sha256}`,
+    pr,
+    text: `本番 SQL の自動の適用: ${nameOf(file)}${prRef(pr)} を当てた（${LABEL_JA[label] ?? label}）`,
+  });
+  if (results.record !== "success") {
+    items.push({
+      key: null,
+      pr: null,
+      text: `本番 SQL の自動の適用: ${nameOf(file)} は当てたが、台帳（APPLIED.md）の記録が ${results.record}。台帳を直すまで、次の起動が同じ SQL を当て直すおそれがある: ${runUrl}`,
+    });
+  }
+}
+
 /**
  * 定期の起動の結果を、知らせる項目の一覧にする。key のある項目は、元の PR のコメントに <!-- key --> の印を入れ、
  * 同じ印が既にあれば出さない（状態を持たない時刻の窓は、schedule の遅れで重複・取りこぼしが起きるためやめた）。
@@ -268,69 +353,12 @@ export function buildNotifications({
   now,
 }) {
   const items = [];
-  const name = (f) => (f ? f.split("/").pop() : "");
-  const prRef = (n) => (n ? `（PR #${n}）` : "");
-  const list = (rs) => rs.map((r) => `\n- ${r}`).join("");
   const today = now.toISOString().slice(0, 10);
 
   if (dryRun) {
-    for (const p of pending) {
-      if (!p.ok) {
-        items.push({
-          key: `db-apply:dry-run:blocked:${p.file}`,
-          pr: p.pr,
-          text: `本番 SQL の自動の適用（試運転、当てていない）: ${name(p.file)}${prRef(p.pr)} は自動では当てない（5点の検査を通らない）${list(p.reasons)}`,
-        });
-        continue;
-      }
-      const j = judged.find((x) => x.file === p.file);
-      if (!j) continue;
-      items.push({
-        key: `db-apply:dry-run:${p.file}:${j.sha256}`,
-        pr: p.pr,
-        text: `本番 SQL の自動の適用（試運転、当てていない）: ${name(p.file)}${prRef(p.pr)} は「${LABEL_JA[j.label] ?? j.label}」。本番なら${LABEL_OUTCOME[j.label] ?? "当てずに止めた"}${list(j.reasons)}`,
-      });
-    }
+    pushDryRunItems(items, { pending, judged });
   } else {
-    if (status === "blocked") {
-      // 以後の番号も止めるので、毎日1回念を押す（印に日付を入れる）
-      items.push({
-        key: `db-apply:blocked:${file}:${today}`,
-        pr,
-        text: `本番 SQL の自動の適用: ${name(file)}${prRef(pr)} は自動では当てない（5点の検査を通らない）。以後の番号も止まっている${list(reasons)}`,
-      });
-    }
-    if (status === "selected" && label === "stop") {
-      items.push({
-        key: `db-apply:stop:${file}:${sha256}:${today}`,
-        pr,
-        text: `本番 SQL の自動の適用: ${name(file)}${prRef(pr)} は「止める」。当てていない。以後の番号も止まっている${list(reasons)}`,
-      });
-    }
-    const applied = results.applyAuto === "success" || results.applyGated === "success";
-    if (status === "selected" && applied) {
-      items.push({
-        key: `db-apply:applied:${file}:${sha256}`,
-        pr,
-        text: `本番 SQL の自動の適用: ${name(file)}${prRef(pr)} を当てた（${LABEL_JA[label] ?? label}）`,
-      });
-      if (results.record !== "success") {
-        items.push({
-          key: null,
-          pr: null,
-          text: `本番 SQL の自動の適用: ${name(file)} は当てたが、台帳（APPLIED.md）の記録が ${results.record}。台帳を直すまで、次の起動が同じ SQL を当て直すおそれがある: ${runUrl}`,
-        });
-      }
-    }
-    for (const [job, result] of [["apply-auto", results.applyAuto], ["apply-gated", results.applyGated]]) {
-      if (status === "selected" && (result === "failure" || result === "cancelled")) {
-        items.push({
-          key: null,
-          pr: null,
-          text: `本番 SQL の自動の適用: ${name(file)} の ${job} が ${result}（却下を含む）。次の起動でまた選ばれる: ${runUrl}`,
-        });
-      }
-    }
+    pushLiveItems(items, { status, file, pr, label, sha256, reasons, results, runUrl, today });
   }
   for (const [job, result] of [["reconcile", results.reconcile], ["judge", results.judge]]) {
     if (result === "failure" || result === "cancelled") {
