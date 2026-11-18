@@ -2,6 +2,8 @@ import { jsonResponse, isConfigured, isValidDraftId, getDraftById } from '../../
 import { requireAdminAuth } from '../../../../_lib/adminAuth.js';
 import { GITHUB_REPO, extractPrNumber, getBlogPr } from '../../../../_lib/snsBlogPr.js';
 export const config = { runtime: 'edge' };
+// 開いていて未マージで、head の sha が 40 桁の16進の PR だけ確かめられる
+const isPreviewablePr = (pr) => pr.state === 'open' && !pr.merged && /^[a-f0-9]{40}$/.test(pr.head?.sha || '');
 export default async function handler(req) {
   const denied = await requireAdminAuth(req);
   if (denied) return denied;
@@ -14,7 +16,7 @@ export default async function handler(req) {
     const number = draft?.platform === 'blog' && extractPrNumber(draft.pr_url);
     if (!number) return jsonResponse({ error: 'ブログPRが見つかりません' }, 409);
     const pr = await getBlogPr(process.env.GITHUB_MERGE_TOKEN, number);
-    if (pr.state !== 'open' || pr.merged || !/^[a-f0-9]{40}$/.test(pr.head?.sha || '')) return jsonResponse({ error: '確認可能なPRではありません' }, 409);
+    if (!isPreviewablePr(pr)) return jsonResponse({ error: '確認可能なPRではありません' }, 409);
     return new Response(JSON.stringify({ headSha: pr.head.sha,
       previewUrl: `https://github.com/${GITHUB_REPO}/tree/${pr.head.sha}`,
     }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
