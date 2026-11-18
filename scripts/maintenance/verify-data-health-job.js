@@ -67,9 +67,18 @@ import {
 } from "../lib/scrapeJobs/monitor.js";
 import { evaluateDataHealthLiveness } from "./check-scrape-monitor-liveness.js";
 import { selectFunctions } from "./render-data-health-functions.js";
-import { show, TARGET, NOW, coverageRow, dates, allFresh, makeCaller } from "./verifyData/data-health-job-fixtures.js";
+import {
+  show,
+  TARGET,
+  NOW,
+  coverageRow,
+  dates,
+  allFresh,
+  makeCaller,
+} from "./verifyData/data-health-job-fixtures.js";
 import { evaluateScenarios } from "./verifyData/data-health-job-scenarios.js";
 import { scenariosForJob } from "./verifyData/data-health-job-for-job.js";
+import { makeWithMutant } from "./verifyData/data-health-job-mutant.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
@@ -1393,32 +1402,7 @@ async function wrapperRun({ rows, at = NOW, caller, worker = "verify" }) {
 // ---------------------------------------------------------------------------
 // (j) 変異検証: 壊した版で、上の検証が失敗する
 // ---------------------------------------------------------------------------
-/**
- * 変異ごとに別モジュールとして読み込むための通し番号。以前は import の URL を `?t=${Date.now()}` で区別していたが、
- * 同じファイルの変異が同じミリ秒に続くと URL が一致し、ESM のキャッシュから直前の変異が返る（BOA-648/BOA-671と同種）。
- * 時刻ではなく通し番号で区別する
- */
-let mutantSeq = 0;
-async function withMutant(fileName, replacements, run) {
-  let mutated = fs.readFileSync(path.join(LIB, fileName), "utf8");
-  for (const [from, to] of replacements) {
-    if (!mutated.includes(from))
-      throw new Error(
-        `変異の対象が見つかりません（${fileName}）: ${from.slice(0, 70)}`,
-      );
-    mutated = mutated.replace(from, to);
-  }
-  const tmpFile = path.join(
-    LIB,
-    `${fileName.replace(/\.js$/, "")}.mutant-${process.pid}-${++mutantSeq}.tmp.mjs`,
-  );
-  fs.writeFileSync(tmpFile, mutated);
-  try {
-    return await run(await import(tmpFile));
-  } finally {
-    fs.rmSync(tmpFile, { force: true });
-  }
-}
+const withMutant = makeWithMutant(LIB);
 
 const evalMutants = [
   [

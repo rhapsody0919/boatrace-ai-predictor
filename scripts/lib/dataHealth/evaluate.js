@@ -20,8 +20,7 @@ import {
   sum,
 } from "./evaluateParts.js";
 
-/** 同じ未達が続くとき、この日数ごとに再通知する（悪化したときは、日数によらず通知する） */
-export const REMIND_DAYS = 7;
+export { REMIND_DAYS } from "./evaluateParts.js";
 /** 通知（last_report.alerts）の有効期限（時間）。scrape-monitor の起動（JST 07:00〜）が拾うのに十分で、6時間の再通知より短い */
 export const ALERT_VALID_HOURS = 4;
 /** この件数以上の項目が同時に未達なら、共通原因（障害・順延・取得の停止）の要約を先頭に付ける */
@@ -280,11 +279,7 @@ export function reconcileAlerts({
   const alerts = [];
   for (const b of breaches) {
     const prev = previous?.[b.key];
-    const reason = alertReason(b, prev, {
-      targetDate,
-      deliveredKeys,
-      remindDays: REMIND_DAYS,
-    });
+    const reason = alertReason(b, prev, { targetDate, deliveredKeys });
     if (reason !== null) {
       const alertKey = `dh:${b.key}:${targetDate}`;
       alerts.push({ key: alertKey, text: `${b.text}${reason}`, until });

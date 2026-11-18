@@ -9,6 +9,9 @@ import {
   DEFAULT_THRESHOLD,
 } from "./checks.js";
 
+/** 同じ未達が続くとき、この日数ごとに再通知する（悪化したときは、日数によらず通知する） */
+export const REMIND_DAYS = 7;
+
 export const sum = (rows, col) =>
   rows.reduce((acc, r) => acc + Number(r[col] ?? 0), 0);
 
@@ -25,12 +28,14 @@ export function countParams(check) {
 /** requiresTable のテーブルが空なら「未導入」の結果、そうでなければ null */
 export function notIntroducedResult(check, tableRows, base) {
   if (!check.requiresTable) return null;
-  if (tableRows && tableRows[check.requiresTable] === true) return null;
-  return {
-    ...base,
-    status: "not_introduced",
-    detail: `${check.requiresTable} が空（取り込み前）のため、未導入として評価しない`,
-  };
+  if (!tableRows || tableRows[check.requiresTable] !== true) {
+    return {
+      ...base,
+      status: "not_introduced",
+      detail: `${check.requiresTable} が空（取り込み前）のため、未導入として評価しない`,
+    };
+  }
+  return null;
 }
 
 /** 日付の列で見る項目の対象期間。対象が無ければ not_applicable の結果を early に持つ */
@@ -138,21 +143,18 @@ const reasonOf = (prev, worsened, undelivered) => {
  * 1つの未達を通知するか。通知するなら理由の文（初回は ""）、しないなら null。
  * @param {{key: string, missing: number, everyDay?: boolean}} b
  */
-export function alertReason(
-  b,
-  prev,
-  { targetDate, deliveredKeys, remindDays },
-) {
+export function alertReason(b, prev, { targetDate, deliveredKeys }) {
   const worsened = prev !== undefined && b.missing > prev.missing;
   const remind =
-    prev !== undefined && daysBetween(prev.lastAt, targetDate) >= remindDays;
+    prev !== undefined && daysBetween(prev.lastAt, targetDate) >= REMIND_DAYS;
   const undelivered = isUndelivered(prev, targetDate, deliveredKeys);
   // 毎日通知する未達（鮮度）: 前回の通知が別の対象日なら、欠損数が同じでも通知する
   const nextDay =
     b.everyDay === true && prev !== undefined && prev.lastAt !== targetDate;
-  if (!(prev === undefined || worsened || remind || undelivered || nextDay))
-    return null;
-  return reasonOf(prev, worsened, undelivered);
+  if (prev === undefined || worsened || remind || undelivered || nextDay) {
+    return reasonOf(prev, worsened, undelivered);
+  }
+  return null;
 }
 
 /** 今回「未達でない」と確認できた項目の状態を消し、それ以外（実行していない・できなかった）は残す */
