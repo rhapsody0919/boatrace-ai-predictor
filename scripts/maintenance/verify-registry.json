@@ -691,6 +691,11 @@
       "guards": "index.html の JSON-LD に、実在しない評価（aggregateRating・review）と受け口の無い SearchAction を書かないこと、各ブロックが JSON として読めること。2025-12-20 に架空の評価（4.5・100件）が入り、AIクローラー向けスナップショットにも出ていた（Google の構造化データ方針違反。docs/proposal/ai-agent-era-strategy.md Phase 0）"
     },
     {
+      "script": "verify-install-actionlint.js",
+      "tier": "ci",
+      "guards": "actionlint・shellcheck の取得（install-actionlint.js）の取り直し。GitHub Releases の一時的な失敗（HTTP 403・429・5xx、ECONNRESET・ETIMEDOUT）だけ間隔を広げて上限の回数まで取り直し、404 のような取り直しても変わらない失敗は1回で失敗にすること。偽の fetch と sleep で確かめ、ネットワークには繋がない。2026-11-18 に master の Quality Gates が HTTP 403 の1回で落ち、定時の release が止まった"
+    },
+    {
       "script": "verify-internal-api-callers.js",
       "tier": "ci",
       "guards": "/api の合言葉の付け忘れ（BOA-1110 段階1、ADR-0103）: internalApiHeaders が鍵のあるときだけ x-ryujin-internal-key を付け、x-ryujin-caller は常に付ける（名前は英数字とハイフン32字まで）、付けたヘッダが関門の判定で reason=internal・caller として通る、botPage・botRace・snsClaimCheck が実際に送るヘッダに合言葉と caller が入る、api・scripts・sns-video-studio のうち自分の /api（相対のパスか boat-ai.jp、cron・admin・bot-page を除く。外部の host の /api は拾わない）を取るファイルが internalApiHeaders を使う（ファイル単位。例外は理由つきの EXEMPT だけ）。段階4（enforce）の後に自分の呼び出しが 403 になるのを防ぐ"
