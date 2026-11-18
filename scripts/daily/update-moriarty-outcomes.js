@@ -17,6 +17,7 @@
 import { supabase, isSupabaseEnabled } from "../lib/supabaseClient.js";
 import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
+import { judgeThreeBoatBet } from "../lib/moriartyBetJudge.js";
 
 const MODEL_ID = "moriarty";
 // Virtual bankroll for ROI calculation
@@ -84,37 +85,7 @@ export function judgeBet(reasons, result) {
   }
 
   if (betType === "trifecta" || betType === "trio") {
-    const combo = String(reasons.combo ?? "")
-      .split("-")
-      .map((s) => parseInt(s, 10));
-    if (combo.length !== 3 || combo.some((n) => !(n >= 1 && n <= 6))) {
-      return { isHit: false, payoutPer100: 0 };
-    }
-    const actual = [result.rank1, result.rank2, result.rank3];
-    if (actual.some((r) => r == null)) {
-      return { isHit: false, payoutPer100: 0 };
-    }
-
-    if (betType === "trifecta") {
-      const isHit =
-        combo[0] === actual[0] &&
-        combo[1] === actual[1] &&
-        combo[2] === actual[2];
-      return {
-        isHit,
-        // 命名スワップ: payout_trio が3連単の払戻を保持している
-        payoutPer100: isHit ? (result.payout_trio ?? 0) : 0,
-      };
-    }
-
-    // trio: 順不同の集合一致
-    const comboSet = new Set(combo);
-    const isHit = actual.every((r) => comboSet.has(r));
-    return {
-      isHit,
-      // 命名スワップ: payout_trifecta が3連複の払戻を保持している
-      payoutPer100: isHit ? (result.payout_trifecta ?? 0) : 0,
-    };
+    return judgeThreeBoatBet(betType, reasons, result);
   }
 
   // 不明な bet_type は外れ扱い
@@ -181,59 +152,68 @@ async function updateRecommendations(pending, resultsMap) {
   return updates.length;
 }
 
-async function upsertDailyPerformance(date, recs, resultsMap, venueMap) {
-  const resolved = recs.filter((r) => resultsMap[r.race_id]);
-  if (resolved.length === 0) return;
-
-  // total_predictions は「実際に賭けたレース数」を表す。skip や中止は含めない
-  // ため、ここではカウントせずループ内で bet ごとに加算する（的中率の分母が
-  // 賭けたレース数になり、フロントの表示と一致する）。
-  let betsPlaced = 0;
-  let totalInvestment = 0;
-  let totalPayoutWin = 0;
-  let totalPayoutTrifecta = 0;
-  let investmentWin = 0;
-  let investmentTrifecta = 0;
-  let winHits = 0;
-  let trifectaHits = 0;
-  const byVenue = {};
+/**
+ * 決着したレースの推奨を、賭けごとに集計する（DBへは書かない）。
+ * total_predictions は「実際に賭けたレース数」を表す。skip や中止は含めない
+ * ため、ここではカウントせずループ内で bet ごとに加算する（的中率の分母が
+ * 賭けたレース数になり、フロントの表示と一致する）。
+ */
+function tallyDailyBets(resolved, resultsMap, venueMap) {
+  const t = {
+    betsPlaced: 0,
+    totalInvestment: 0,
+    totalPayoutWin: 0,
+    totalPayoutTrifecta: 0,
+    investmentWin: 0,
+    investmentTrifecta: 0,
+    winHits: 0,
+    trifectaHits: 0,
+    byVenue: {},
+  };
 
   for (const rec of resolved) {
     const result = resultsMap[rec.race_id];
     if (!result || result.is_cancelled || isNoRaceResult(result)) continue;
     if (rec.recommendation === "skip") continue;
+    tallyOneBet(t, rec, result, venueMap[rec.race_id]);
+  }
+  return t;
+}
 
-    betsPlaced++;
-    const venueCode = venueMap[rec.race_id];
-    const betAmount = betAmountFor(rec);
-    const { isHit, payoutPer100 } = judgeBet(rec.reasons, result);
-    const payout = isHit ? Math.round((payoutPer100 * betAmount) / 100) : 0;
-    const betType = rec.reasons?.bet_type;
+/** 1件の賭けを集計に足す */
+function tallyOneBet(t, rec, result, venueCode) {
+  t.betsPlaced++;
+  const betAmount = betAmountFor(rec);
+  const { isHit, payoutPer100 } = judgeBet(rec.reasons, result);
+  const payout = isHit ? Math.round((payoutPer100 * betAmount) / 100) : 0;
+  const betType = rec.reasons?.bet_type;
 
-    totalInvestment += betAmount;
+  t.totalInvestment += betAmount;
 
-    if (betType === "win") {
-      investmentWin += betAmount;
-      totalPayoutWin += payout;
-      if (isHit) winHits++;
-    } else if (betType === "trifecta" || betType === "trio") {
-      // trio は少数のため trifecta 側に合算して集計する
-      investmentTrifecta += betAmount;
-      totalPayoutTrifecta += payout;
-      if (isHit) trifectaHits++;
-    }
-
-    if (venueCode != null) {
-      if (!byVenue[venueCode])
-        byVenue[venueCode] = { investment: 0, payout: 0, count: 0 };
-      byVenue[venueCode].investment += betAmount;
-      byVenue[venueCode].payout += payout;
-      byVenue[venueCode].count++;
-    }
+  if (betType === "win") {
+    t.investmentWin += betAmount;
+    t.totalPayoutWin += payout;
+    if (isHit) t.winHits++;
+  } else if (betType === "trifecta" || betType === "trio") {
+    // trio は少数のため trifecta 側に合算して集計する
+    t.investmentTrifecta += betAmount;
+    t.totalPayoutTrifecta += payout;
+    if (isHit) t.trifectaHits++;
   }
 
+  if (venueCode != null) {
+    if (!t.byVenue[venueCode])
+      t.byVenue[venueCode] = { investment: 0, payout: 0, count: 0 };
+    t.byVenue[venueCode].investment += betAmount;
+    t.byVenue[venueCode].payout += payout;
+    t.byVenue[venueCode].count++;
+  }
+}
+
+/** model_performance_daily の1行（集計から） */
+function dailyPerformanceRow(date, t) {
   const byVenueRoi = Object.fromEntries(
-    Object.entries(byVenue).map(([code, v]) => [
+    Object.entries(t.byVenue).map(([code, v]) => [
       code,
       {
         investment: v.investment,
@@ -243,31 +223,42 @@ async function upsertDailyPerformance(date, recs, resultsMap, venueMap) {
       },
     ]),
   );
+  return {
+    model_id: MODEL_ID,
+    date,
+    total_predictions: t.betsPlaced,
+    win_hits: t.winHits,
+    place_hits: null,
+    trifecta_hits: t.trifectaHits,
+    investment: t.totalInvestment,
+    payout_win: t.totalPayoutWin,
+    payout_trifecta: t.totalPayoutTrifecta,
+    recovery_rate_win:
+      t.investmentWin > 0 ? t.totalPayoutWin / t.investmentWin : null,
+    recovery_rate_trifecta:
+      t.investmentTrifecta > 0
+        ? t.totalPayoutTrifecta / t.investmentTrifecta
+        : null,
+    by_venue: byVenueRoi,
+    by_volatility: null,
+  };
+}
+
+async function upsertDailyPerformance(date, recs, resultsMap, venueMap) {
+  const resolved = recs.filter((r) => resultsMap[r.race_id]);
+  if (resolved.length === 0) return;
+
+  const t = tallyDailyBets(resolved, resultsMap, venueMap);
 
   // 賭けが1件も無かった日は「運用日」ではないため行を作らない
   // （運用日数・的中率の分母が実際に賭けた日だけになる）
-  if (betsPlaced === 0) {
+  if (t.betsPlaced === 0) {
     console.log(`  No bets placed on ${date}; skipping daily performance row`);
     return;
   }
 
-  const row = {
-    model_id: MODEL_ID,
-    date,
-    total_predictions: betsPlaced,
-    win_hits: winHits,
-    place_hits: null,
-    trifecta_hits: trifectaHits,
-    investment: totalInvestment,
-    payout_win: totalPayoutWin,
-    payout_trifecta: totalPayoutTrifecta,
-    recovery_rate_win:
-      investmentWin > 0 ? totalPayoutWin / investmentWin : null,
-    recovery_rate_trifecta:
-      investmentTrifecta > 0 ? totalPayoutTrifecta / investmentTrifecta : null,
-    by_venue: byVenueRoi,
-    by_volatility: null,
-  };
+  const row = dailyPerformanceRow(date, t);
+  const { totalInvestment, totalPayoutWin, totalPayoutTrifecta } = t;
 
   const { error } = await supabase
     .from("model_performance_daily")
