@@ -112,15 +112,8 @@ export async function runRacerProfilesJob(
 
   // 前回までの進捗。対象日・モードが一致するときだけ引き継ぐ
   const resume = resumableCursor(ctx.state, date, ctx.mode);
-  if (resume?.done) {
-    // shadow の完了後の起動（live は、共通ラッパが last_target_date で、ここへ来ない）
-    return {
-      rowsWritten: 0,
-      cursor: resume,
-      report: ctx.state?.last_report ?? undefined,
-      body: { skipped: "cycle_done", date },
-    };
-  }
+  // shadow の完了後の起動（live は、共通ラッパが last_target_date で、ここへ来ない）
+  if (resume?.done) return cycleDoneResult(ctx.state, resume, date);
   const afterRacerId = resume?.afterRacerId ?? null;
 
   // 起動時の月ではなく、再開中も固定された対象日の月で決める。
@@ -149,20 +142,17 @@ export async function runRacerProfilesJob(
   // 系統的な失敗は、cursor を進めずに、実行の失敗にする（次の起動が、同じチャンクをやり直す）
   const systemic = systemicFailures(summary);
   if (systemic.length > 0) {
-    return {
-      outcome: "error",
-      error: `選手プロフィール・期別成績の取得に失敗（再開位置: ${afterRacerId ?? "先頭"}）: ${systemic.join(" / ")}`,
-      rowsWritten: 0,
-      report: { date, mode: ctx.mode, afterRacerId, summary: brief(summary) },
-    };
+    return systemicErrorResult({
+      systemic,
+      date,
+      mode: ctx.mode,
+      afterRacerId,
+      summary,
+    });
   }
 
   // 新人だけの回で、登録済み選手がいるときの対象0人は正常。それ以外の空はエラー。
-  if (
-    !resume &&
-    summary.targetCount === 0 &&
-    !(newProfilesOnly && summary.registeredCount > 0)
-  ) {
+  if (isUnexpectedEmpty(resume, summary, newProfilesOnly)) {
     return {
       outcome: "error",
       error:
@@ -177,9 +167,38 @@ export async function runRacerProfilesJob(
     nowMs: () => ctx.now().getTime(),
     size,
     summary,
-    stats: resume?.stats ?? zeroStats(),
+    resume,
     afterRacerId,
   });
+}
+
+/** shadow の完了後の起動の結果（前回の report を残す） */
+function cycleDoneResult(state, resume, date) {
+  return {
+    rowsWritten: 0,
+    cursor: resume,
+    report: state?.last_report ?? undefined,
+    body: { skipped: "cycle_done", date },
+  };
+}
+
+/** 系統的な失敗の結果（cursor を進めない） */
+function systemicErrorResult({ systemic, date, mode, afterRacerId, summary }) {
+  return {
+    outcome: "error",
+    error: `選手プロフィール・期別成績の取得に失敗（再開位置: ${afterRacerId ?? "先頭"}）: ${systemic.join(" / ")}`,
+    rowsWritten: 0,
+    report: { date, mode, afterRacerId, summary: brief(summary) },
+  };
+}
+
+/** 再開でない回の対象0人のうち、新人だけの回で登録済み選手がいる（正常）を除いたもの */
+function isUnexpectedEmpty(resume, summary, newProfilesOnly) {
+  return (
+    !resume &&
+    summary.targetCount === 0 &&
+    !(newProfilesOnly && summary.registeredCount > 0)
+  );
 }
 
 /** 前回までの進捗のうち、対象日・モードが一致するもの（無ければ null） */
@@ -236,9 +255,10 @@ function chunkResult({
   nowMs,
   size,
   summary,
-  stats,
+  resume,
   afterRacerId,
 }) {
+  const stats = resume?.stats ?? zeroStats();
   const parsed =
     summary.season.successCount +
     summary.season.unchangedCount +
