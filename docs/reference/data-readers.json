@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1988,
+    "sourceFiles": 1989,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -1800,7 +1800,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/sherlockService.js:75",
+          "ref": "src/services/sherlockService.js:76",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1879,7 +1879,7 @@
             "src/services/raceQueries2.js:188",
             "src/services/raceQueries2.js:66",
             "src/services/raceQueries3.js:90",
-            "src/services/sherlockService.js:75"
+            "src/services/sherlockService.js:76"
           ],
           "writers": [],
           "sql": [
@@ -1912,7 +1912,7 @@
             "src/services/raceQueries2.js:188",
             "src/services/raceQueries2.js:66",
             "src/services/raceQueries3.js:90",
-            "src/services/sherlockService.js:75"
+            "src/services/sherlockService.js:76"
           ],
           "writers": [],
           "sql": [
@@ -1939,7 +1939,7 @@
             "src/services/raceQueries2.js:188",
             "src/services/raceQueries2.js:66",
             "src/services/raceQueries3.js:90",
-            "src/services/sherlockService.js:75"
+            "src/services/sherlockService.js:76"
           ],
           "writers": [],
           "sql": [
@@ -1957,7 +1957,7 @@
             "src/services/raceQueries.js:285",
             "src/services/raceQueries2.js:188",
             "src/services/raceQueries3.js:90",
-            "src/services/sherlockService.js:75"
+            "src/services/sherlockService.js:76"
           ],
           "writers": [],
           "sql": [
@@ -8215,7 +8215,7 @@
           ]
         },
         {
-          "ref": "src/services/sherlockService.js:69",
+          "ref": "src/services/sherlockService.js:70",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8452,7 +8452,7 @@
             "src/services/racerQueries3.js:309",
             "src/services/racerQueries3.js:99",
             "src/services/racerQueries5.js:43",
-            "src/services/sherlockService.js:69",
+            "src/services/sherlockService.js:70",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8549,7 +8549,7 @@
             "src/services/racerQueries3.js:182",
             "src/services/racerQueries3.js:27",
             "src/services/racerQueries3.js:99",
-            "src/services/sherlockService.js:69",
+            "src/services/sherlockService.js:70",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8597,7 +8597,7 @@
             "src/services/raceQueries2.js:56",
             "src/services/raceQueries3.js:137",
             "src/services/raceQueries3.js:83",
-            "src/services/sherlockService.js:69",
+            "src/services/sherlockService.js:70",
             "src/services/watsonService.js:75"
           ],
           "writers": [],
@@ -8627,7 +8627,7 @@
             "src/services/motorQueries2.js:257",
             "src/services/raceQueries3.js:83",
             "src/services/racerQueries5.js:43",
-            "src/services/sherlockService.js:69"
+            "src/services/sherlockService.js:70"
           ],
           "writers": [],
           "sql": [
@@ -8674,7 +8674,7 @@
             "src/services/racerQueries.js:46",
             "src/services/racerQueries.js:82",
             "src/services/racerQueries3.js:309",
-            "src/services/sherlockService.js:69"
+            "src/services/sherlockService.js:70"
           ],
           "writers": [],
           "sql": [
@@ -8698,7 +8698,7 @@
             "src/services/raceQueries3.js:83",
             "src/services/racerQueries.js:46",
             "src/services/racerQueries.js:82",
-            "src/services/sherlockService.js:69"
+            "src/services/sherlockService.js:70"
           ],
           "writers": [],
           "sql": [
@@ -8746,7 +8746,7 @@
             "src/services/motorQueries3.js:237",
             "src/services/motorQueries4.js:160",
             "src/services/raceQueries3.js:83",
-            "src/services/sherlockService.js:69"
+            "src/services/sherlockService.js:70"
           ],
           "writers": [],
           "sql": [
@@ -8770,7 +8770,7 @@
         "boat_2rate": {
           "readers": [
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "src/services/sherlockService.js:69"
+            "src/services/sherlockService.js:70"
           ],
           "writers": [],
           "sql": [
@@ -9361,7 +9361,7 @@
           ]
         },
         {
-          "ref": "src/services/sherlockService.js:79",
+          "ref": "src/services/sherlockService.js:80",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9420,7 +9420,7 @@
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:81",
             "scripts/maintenance/check-odds-shadow.js:201",
             "src/services/raceQueries2.js:320",
-            "src/services/sherlockService.js:79"
+            "src/services/sherlockService.js:80"
           ],
           "writers": [],
           "sql": [
@@ -9436,7 +9436,7 @@
             "scripts/daily/scrape-odds.js:975",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:81",
             "src/services/raceQueries2.js:320",
-            "src/services/sherlockService.js:79"
+            "src/services/sherlockService.js:80"
           ],
           "writers": [],
           "sql": []
@@ -9444,7 +9444,7 @@
         "odds_win_1": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:79"
+            "src/services/sherlockService.js:80"
           ],
           "writers": [],
           "sql": []
@@ -9452,7 +9452,7 @@
         "odds_win_2": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:79"
+            "src/services/sherlockService.js:80"
           ],
           "writers": [],
           "sql": []
@@ -9460,7 +9460,7 @@
         "odds_win_3": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:79"
+            "src/services/sherlockService.js:80"
           ],
           "writers": [],
           "sql": []
@@ -9468,7 +9468,7 @@
         "odds_win_4": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:79"
+            "src/services/sherlockService.js:80"
           ],
           "writers": [],
           "sql": []
@@ -9476,7 +9476,7 @@
         "odds_win_5": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:79"
+            "src/services/sherlockService.js:80"
           ],
           "writers": [],
           "sql": []
@@ -9484,7 +9484,7 @@
         "odds_win_6": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "src/services/sherlockService.js:79"
+            "src/services/sherlockService.js:80"
           ],
           "writers": [],
           "sql": []
@@ -17174,7 +17174,7 @@
           ]
         },
         {
-          "ref": "src/services/sherlockService.js:65",
+          "ref": "src/services/sherlockService.js:66",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17519,7 +17519,7 @@
             "src/services/racerQueries3.js:252",
             "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
-            "src/services/sherlockService.js:65",
+            "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:116",
             "src/services/venueQueries2.js:43",
             "src/services/watsonService.js:71"
@@ -17621,7 +17621,7 @@
             "src/services/scheduleQueries.js:125",
             "src/services/scheduleQueries.js:205",
             "src/services/scheduleQueries.js:229",
-            "src/services/sherlockService.js:65",
+            "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:116",
             "src/services/venueQueries2.js:43",
             "src/services/watsonService.js:71"
@@ -17702,7 +17702,7 @@
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:205",
             "src/services/scheduleQueries.js:229",
-            "src/services/sherlockService.js:65",
+            "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:116",
             "src/services/venueQueries2.js:43",
             "src/services/watsonService.js:71"
@@ -17745,7 +17745,7 @@
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:229",
-            "src/services/sherlockService.js:65",
+            "src/services/sherlockService.js:66",
             "src/services/watsonService.js:71"
           ],
           "writers": [
@@ -17806,7 +17806,7 @@
             "src/services/poirotService.js:49",
             "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
-            "src/services/sherlockService.js:65",
+            "src/services/sherlockService.js:66",
             "src/services/watsonService.js:71"
           ],
           "writers": [
