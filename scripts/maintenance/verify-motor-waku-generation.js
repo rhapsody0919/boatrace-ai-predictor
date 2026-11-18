@@ -37,6 +37,7 @@ import {
 } from "./verifyData/fakeServiceSupabase.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { withMotorChartPure } from "./verifyData/motorChartSource.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -379,7 +380,9 @@ check(
   grid.includes("generationStart === null") &&
     grid.includes("analysis.motor.wakuStatsUnknownGeneration"),
 );
-const chart = read("src/components/analysis/MotorConditionChart.jsx");
+const chart = withMotorChartPure(
+  read("src/components/analysis/MotorConditionChart.jsx"),
+);
 check(
   "モータ情報: 新しい形（.rows / generationStart）で受け取る",
   chart.includes("motorWakuStats.rows") &&

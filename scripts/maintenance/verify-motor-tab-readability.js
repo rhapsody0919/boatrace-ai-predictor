@@ -25,6 +25,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { withMotorChartPure } from "./verifyData/motorChartSource.js";
 import {
   createFakeSupabase,
   installLocalStorage,
@@ -135,7 +136,9 @@ const seed = (key, data) =>
     JSON.stringify({ data, timestamp: Date.now() }),
   );
 
-const chart = read("src/components/analysis/MotorConditionChart.jsx");
+const chart = withMotorChartPure(
+  read("src/components/analysis/MotorConditionChart.jsx"),
+);
 const grid = read("src/components/analysis/MotorWakuStatsGrid.jsx");
 const card = read("src/components/racer/RacerMotorStatusCard.jsx");
 // 選手ページの今節のモーター（RA40 BOA-1673 で racerService.js から移した）
