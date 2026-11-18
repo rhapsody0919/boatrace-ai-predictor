@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2044 |
+| 読んだファイル | 2046 |
 | 読み書きのあるファイル | 282 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -889,9 +889,9 @@
   - `scripts/maintenance/check-pre-race-shadow.js:281` select(helper:fetchByRaceIds)
   - `scripts/maintenance/delete-phantom-race-days.js:112` select [boat_number, race_id, racer_id]
   - `scripts/maintenance/fix-opening-day-entries-from-b.js:290` select(helper:fetchAll)
-  - `scripts/maintenance/racelist-backfill.js:366` select(helper:fetchExistingRows)
-  - `scripts/maintenance/racelist-backfill.js:411` select(helper:upsertChangedRows)
-  - `scripts/maintenance/racelist-backfill.js:458` select [race_id]
+  - `scripts/maintenance/racelist-backfill-load.js:52` select(helper:fetchExistingRows)
+  - `scripts/maintenance/racelist-backfill-load.js:97` select(helper:upsertChangedRows)
+  - `scripts/maintenance/racelist-backfill-load.js:199` select [race_id]
   - `scripts/maintenance/restore-contaminated-race-entries.js:81` select(helper:fetchAll)
   - `scripts/maintenance/restore-contaminated-race-entries.js:206` select(helper:upsertChangedRows)
   - `scripts/maintenance/restore-entries-branch-hometown.js:39` select(helper:fetchAll)
@@ -969,7 +969,7 @@
   - `scripts/maintenance/backfill-race-entries-racer-id.js:155` update [racer_id]
   - `scripts/maintenance/backfill-racer-ids.js:228` update [racer_id]
   - `scripts/maintenance/migrate-to-supabase.js:259` upsert [?]
-  - `scripts/maintenance/racelist-backfill.js:411` upsert(helper:upsertChangedRows) [?]
+  - `scripts/maintenance/racelist-backfill-load.js:97` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/restore-contaminated-race-entries.js:206` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/restore-entries-branch-hometown.js:119` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる

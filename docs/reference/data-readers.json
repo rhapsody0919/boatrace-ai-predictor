@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2044,
+    "sourceFiles": 2046,
     "filesWithAccess": 282,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -7533,19 +7533,19 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/racelist-backfill.js:366",
+          "ref": "scripts/maintenance/racelist-backfill-load.js:52",
           "op": "select",
           "via": "helper:fetchExistingRows",
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/racelist-backfill.js:411",
+          "ref": "scripts/maintenance/racelist-backfill-load.js:97",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/racelist-backfill.js:458",
+          "ref": "scripts/maintenance/racelist-backfill-load.js:199",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8296,7 +8296,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/racelist-backfill.js:411",
+          "ref": "scripts/maintenance/racelist-backfill-load.js:97",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -8395,7 +8395,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:121",
             "scripts/maintenance/delete-phantom-race-days.js:112",
             "scripts/maintenance/migrate-to-supabase.js:259",
-            "scripts/maintenance/racelist-backfill.js:458",
+            "scripts/maintenance/racelist-backfill-load.js:199",
             "scripts/maintenance/verify-analogy-v16.js:289",
             "scripts/maintenance/verify-e2e-har-merge.js:48",
             "scripts/maintenance/verify-e2e-har-merge.js:49",
