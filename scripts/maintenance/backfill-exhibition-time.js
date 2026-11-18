@@ -58,8 +58,7 @@ async function findMissingRaces(date) {
   return schedule.filter((r) => r.start_time < now && !withTime.has(r.race_id));
 }
 
-async function main() {
-  const { from, to, dryRun, limit } = parseArgs();
+function validateArgs({ from, to, limit }) {
   if (!DATE_PATTERN.test(from ?? "") || !DATE_PATTERN.test(to ?? "")) {
     throw new Error("--from=YYYY-MM-DD と --to=YYYY-MM-DD を指定してください");
   }
@@ -70,41 +69,57 @@ async function main() {
   if (!isSupabaseEnabled()) {
     throw new Error("Supabase環境変数が未設定です");
   }
+}
+
+const countByVenue = (races) =>
+  races.reduce((acc, r) => {
+    const name = VENUE_NAMES[r.venue_code];
+    acc[name] = (acc[name] ?? 0) + 1;
+    return acc;
+  }, {});
+
+/**
+ * 1日分の補完。remaining は --limit の残り（null は上限なし）。
+ * 残りを使い切ったら stop: true（呼び出し側が打ち切る）
+ */
+async function backfillDate(date, remaining, dryRun) {
+  let missing = await findMissingRaces(date);
+  if (missing === null) {
+    console.warn(
+      `⚠️ ${date}: レーススケジュールを取得できませんでした（未登録または一時エラー）。この日は未確認のため、必要なら再実行してください`,
+    );
+    return { remaining, stop: false };
+  }
+  if (remaining !== null) missing = missing.slice(0, remaining);
+
+  console.log(
+    `📅 ${date}: 展示タイム未取得（発走済み）${missing.length}レース ${JSON.stringify(countByVenue(missing))}`,
+  );
+
+  if (missing.length === 0 || dryRun) return { remaining, stop: false };
+
+  await scrapeAndUpsertRaces(missing, date);
+  const stillMissing = await findMissingRaces(date);
+  console.log(
+    stillMissing === null
+      ? "   → 補完後の確認ができませんでした（スケジュール取得不可）。dry-runで再確認してください"
+      : `   → 補完後の未取得: ${stillMissing.length}レース（中止・順延等で公式ページに展示タイムが無いものを含む）`,
+  );
+
+  if (remaining === null) return { remaining, stop: false };
+  const left = remaining - missing.length;
+  return { remaining: left, stop: left <= 0 };
+}
+
+async function main() {
+  const { from, to, dryRun, limit } = parseArgs();
+  validateArgs({ from, to, limit });
 
   let remaining = limit;
   for (const date of listDates(from, to)) {
-    let missing = await findMissingRaces(date);
-    if (missing === null) {
-      console.warn(
-        `⚠️ ${date}: レーススケジュールを取得できませんでした（未登録または一時エラー）。この日は未確認のため、必要なら再実行してください`,
-      );
-      continue;
-    }
-    if (remaining !== null) missing = missing.slice(0, remaining);
-
-    const byVenue = missing.reduce((acc, r) => {
-      const name = VENUE_NAMES[r.venue_code];
-      acc[name] = (acc[name] ?? 0) + 1;
-      return acc;
-    }, {});
-    console.log(
-      `📅 ${date}: 展示タイム未取得（発走済み）${missing.length}レース ${JSON.stringify(byVenue)}`,
-    );
-
-    if (missing.length === 0 || dryRun) continue;
-
-    await scrapeAndUpsertRaces(missing, date);
-    const stillMissing = await findMissingRaces(date);
-    console.log(
-      stillMissing === null
-        ? "   → 補完後の確認ができませんでした（スケジュール取得不可）。dry-runで再確認してください"
-        : `   → 補完後の未取得: ${stillMissing.length}レース（中止・順延等で公式ページに展示タイムが無いものを含む）`,
-    );
-
-    if (remaining !== null) {
-      remaining -= missing.length;
-      if (remaining <= 0) break;
-    }
+    const r = await backfillDate(date, remaining, dryRun);
+    remaining = r.remaining;
+    if (r.stop) break;
   }
   if (dryRun) console.log("🔍 dry-run のため書き込みは行っていません");
 }
