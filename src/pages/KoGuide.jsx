@@ -158,7 +158,7 @@ const DATA_POINTS = [
   { icon: "⏱️", name: "스타트 안정도", desc: "스타트 타이밍의 일관성." },
 ];
 
-// レース詳細のタブ（並び順は PredictionPanel.jsx の tabs 配列が正本。結果は確定後だけ出る）
+// レース詳細のタブ（並び順は PredictionPanelTabs.jsx の buildMainTabs が正本。結果は確定後だけ出る）
 const RACE_TABS = [
   {
     key: "basic",

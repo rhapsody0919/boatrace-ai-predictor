@@ -60,7 +60,7 @@ test.describe("静的ガイドがレース詳細のタブ構成に追随して�
   // レース詳細がタブ構成になったあと、/how-to-use だけが追随し /about・/faq は
   // 「結果」タブにしか触れていなかった。同じ取りこぼしを繰り返さないよう、
   // タブの名前と**並び順**が両ページに載っていることを機械的に固定する。
-  // 正本は PredictionPanel.jsx の tabs 配列（粒度順。結果は isFinished のときだけ）
+  // 正本は PredictionPanelTabs.jsx の buildMainTabs（粒度順。結果は isFinished のときだけ）
   const TABS = [
     "基本情報",
     "AI予想",
