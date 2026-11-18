@@ -1952,6 +1952,11 @@
       "guards": "会場別モーター成績の構造変化検知（scripts/lib/venueMotorStats/driftHealth.js、BOA-285）"
     },
     {
+      "script": "verify-venue-motor-stats-make.js",
+      "tier": "ci",
+      "guards": "src/services/motorQueries3.js の getVenueMotorStats が venue_motor_stats の行を makeMotorStat に通す（DM1x motor のつなぎ）。正の行は今までどおりの値、行なしは null、破れは fetchFailed（キャッシュしない）で返すこと"
+    },
+    {
       "script": "verify-venue-motor-stats-parsers.js",
       "tier": "ci",
       "guards": "会場別モーター成績パーサー（BOA-264）"
