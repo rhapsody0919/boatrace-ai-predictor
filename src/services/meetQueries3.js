@@ -12,26 +12,13 @@ import {
   officialAsOfDate,
 } from "../utils/meetPageModel.js";
 import { getMeetScoreboard } from "./meetQueries2.js";
+import { makeMeet } from "../pure/meetModel.js";
 
 /**
- * 節ページ（`/venue/:venueCode/meet/:startDate`、BOA-682）のデータ。
- *
- * 節の日程・段階・基準のレースは `meetPageModel.js` の純関数で決め、得点率・順位・
- * ボーダー・残り走数は今節タブと同じ `getMeetScoreboard` に任せる（計算を書き直さない）。
- *
- * 窓（初日〜+7日）の種別・グレード・結果・出走表は**キャッシュしない**。結果と出走表は
- * 1日の中で増えるので、キャッシュすると基準のレースや勝ち上がりの着順が古いまま残る
- * （design-reviewer 指摘3）。各96行以下で、既定の1000行上限に当たらない。
- * `getMeetScoreboard` は基準のレース単位でキャッシュされる。
- *
- * 設計: docs/design/meet-page/plan.md §2
- *
- * @param {number} venueCode
- * @param {string} startDate 節の初日 YYYY-MM-DD（URL の値）
- * @param {string} today JST の今日 YYYY-MM-DD
+ * 節の窓（初日〜+7日）の6つの取得を並べて待つ（どれかの失敗は同じ例外で投げる）。
+ * race_series の行は makeMeet を通す。不変条件の破れ（RangeError）は呼び手（MeetPage）の catch で取得失敗と同じ扱い
  */
-export async function getMeetPage(venueCode, startDate, today) {
-    if (!supabase) throw new Error("Supabase client not initialized");
+async function fetchMeetWindow(venueCode, startDate) {
     const vv = String(venueCode).padStart(2, "0");
     const end = new Date(`${startDate}T00:00:00Z`);
     end.setUTCDate(end.getUTCDate() + 7);
@@ -46,7 +33,8 @@ export async function getMeetPage(venueCode, startDate, today) {
       await Promise.all([
         supabase
           .from("race_series")
-          .select("start_date, end_date, title, grade")
+          // makeMeet の必須（主キー・total_days・class_code・kind）も取る
+          .select("venue_code, start_date, end_date, total_days, class_code, kind, title, grade")
           .eq("venue_code", venueCode)
           .eq("start_date", startDate)
           .maybeSingle(),
@@ -81,25 +69,20 @@ export async function getMeetPage(venueCode, startDate, today) {
           .order("scraped_at", { ascending: false })
           .limit(1),
       ]);
-    const series = seriesRes.data ?? null;
-    const windowConditions = condRes.data ?? [];
-    const windowEntries = entriesRes.data ?? [];
-    const meetDays = meetDaysOf(startDate, windowConditions, windowEntries);
-    const inMeet = (r) => meetDays.includes(r.race_id.slice(0, 10));
-    const conditions = windowConditions.filter(inMeet);
-    const entries = windowEntries.filter(inMeet);
-    const races = (racesRes.data ?? []).filter(inMeet);
-    const results = (resultsRes.data ?? []).filter(inMeet);
-    const resultById = new Map(results.map((r) => [r.race_id, r]));
+    return {
+      series: seriesRes.data ? makeMeet(seriesRes.data) : null,
+      windowConditions: condRes.data ?? [],
+      windowEntries: entriesRes.data ?? [],
+      windowRaces: racesRes.data ?? [],
+      windowResults: resultsRes.data ?? [],
+      officialScrapedAt: officialRes.data?.[0]?.scraped_at ?? null,
+    };
+}
 
-    const raceIds = [
-      ...new Set([
-        ...conditions.map((c) => c.race_id),
-        ...entries.map((e) => e.race_id),
-      ]),
-    ].sort();
-    // 済んだレース: 結果がある、または中止が確定した（判定は isRaceCancelled に集めてある）
-    const doneRaceIds = new Set([
+// 済んだレース: 結果がある、または中止が確定した（判定は isRaceCancelled に集めてある）
+function doneRaceIdsOf(results, races) {
+    const resultById = new Map(results.map((r) => [r.race_id, r]));
+    return new Set([
       ...results.map((r) => r.race_id),
       ...races
         .filter((r) =>
@@ -110,15 +93,68 @@ export async function getMeetPage(venueCode, startDate, today) {
         )
         .map((r) => r.race_id),
     ]);
+}
+
+// 見出しのグレード・題・最終日。race_series に無ければ番組・種別・節の日から
+function meetHeadOf(series, races, conditions, meetDays) {
     const grade =
       series?.grade ?? races.find((r) => r.race_grade)?.race_grade ?? null;
     const title =
       series?.title ?? conditions.find((c) => c.race_title)?.race_title ?? null;
-    const endDate =
+    return { grade, title, endDate: endDateOf(series, conditions, meetDays) };
+}
+
+function endDateOf(series, conditions, meetDays) {
+    return (
       series?.end_date ??
       conditions.find((c) => c.is_final_day)?.race_id.slice(0, 10) ??
       meetDays[meetDays.length - 1] ??
-      null;
+      null
+    );
+}
+
+/**
+ * 節ページ（`/venue/:venueCode/meet/:startDate`、BOA-682）のデータ。
+ *
+ * 節の日程・段階・基準のレースは `meetPageModel.js` の純関数で決め、得点率・順位・
+ * ボーダー・残り走数は今節タブと同じ `getMeetScoreboard` に任せる（計算を書き直さない）。
+ *
+ * 窓（初日〜+7日）の種別・グレード・結果・出走表は**キャッシュしない**。結果と出走表は
+ * 1日の中で増えるので、キャッシュすると基準のレースや勝ち上がりの着順が古いまま残る
+ * （design-reviewer 指摘3）。各96行以下で、既定の1000行上限に当たらない。
+ * `getMeetScoreboard` は基準のレース単位でキャッシュされる。
+ *
+ * 設計: docs/design/meet-page/plan.md §2
+ *
+ * @param {number} venueCode
+ * @param {string} startDate 節の初日 YYYY-MM-DD（URL の値）
+ * @param {string} today JST の今日 YYYY-MM-DD
+ */
+export async function getMeetPage(venueCode, startDate, today) {
+    if (!supabase) throw new Error("Supabase client not initialized");
+    const {
+      series,
+      windowConditions,
+      windowEntries,
+      windowRaces,
+      windowResults,
+      officialScrapedAt,
+    } = await fetchMeetWindow(venueCode, startDate);
+    const meetDays = meetDaysOf(startDate, windowConditions, windowEntries);
+    const inMeet = (r) => meetDays.includes(r.race_id.slice(0, 10));
+    const conditions = windowConditions.filter(inMeet);
+    const entries = windowEntries.filter(inMeet);
+    const races = windowRaces.filter(inMeet);
+    const results = windowResults.filter(inMeet);
+
+    const raceIds = [
+      ...new Set([
+        ...conditions.map((c) => c.race_id),
+        ...entries.map((e) => e.race_id),
+      ]),
+    ].sort();
+    const doneRaceIds = doneRaceIdsOf(results, races);
+    const { grade, title, endDate } = meetHeadOf(series, races, conditions, meetDays);
 
     const state = meetPageState({
       today,
@@ -127,7 +163,7 @@ export async function getMeetPage(venueCode, startDate, today) {
       hasEntries: entries.length > 0,
       // 節の日が空でも指定日のグレードは失わない。翌日以降の別の節は使わない。
       startDateGrade:
-        (racesRes.data ?? []).find(
+        windowRaces.find(
           (r) => r.race_id.startsWith(`${startDate}-`) && r.race_grade,
         )?.race_grade ?? null,
       grade,
@@ -157,10 +193,39 @@ export async function getMeetPage(venueCode, startDate, today) {
       return { ...base, board: null, qualifiers: null };
     }
 
+    return boardPageOf(base, {
+      today,
+      startDate,
+      venueCode,
+      meetDays,
+      raceIds,
+      doneRaceIds,
+      conditions,
+      entries,
+      results,
+      officialScrapedAt,
+    });
+  }
+
+// 開いている節（予選〜優勝戦の後）: 基準のレースの得点率の表と勝ち上がりを足す
+async function boardPageOf(base, ctx) {
+    const { state } = base;
+    const {
+      today,
+      startDate,
+      venueCode,
+      meetDays,
+      raceIds,
+      doneRaceIds,
+      conditions,
+      entries,
+      results,
+      officialScrapedAt,
+    } = ctx;
     // 予選中で公式の表があれば、その時点（前夜）の表をそのまま出す（ユーザー決定
     // 2026-10-06）。自社計算は減点・途中帰郷の備考を持たない（ファン評価1周目 P0・P1）
     const officialAsOf = ["prelim", "prelimFinalDay"].includes(state)
-      ? officialAsOfDate(officialRes.data?.[0]?.scraped_at ?? null)
+      ? officialAsOfDate(officialScrapedAt)
       : null;
     const anchor = pickMeetAnchor({
       today,
@@ -198,4 +263,4 @@ export async function getMeetPage(venueCode, startDate, today) {
         meetDays.filter((d) => d <= officialAsOf).pop() === today,
       qualifiers: buildQualifiers(conditions, entries, results),
     };
-  }
+}

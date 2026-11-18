@@ -818,6 +818,11 @@
       "guards": "meet（節 = race_series の行）の型 makeMeet（src/pure/meetModel.js、設計図 §10 DM1x）。会場1〜24・start_date と end_date が実在する日で end が後・total_days が日数と一致・class_code 9値・kind 9値・grade 5値か null（race_series の CHECK 6本と同じ）を検査して凍結すること。title などの null は落とさないこと。既存の節の計算（groupIntoCurrentMeet・meetExclusionsOf）が meetModel から同じ関数で読めること"
     },
     {
+      "script": "verify-meet-page-make.js",
+      "tier": "ci",
+      "guards": "src/services/meetQueries3.js の getMeetPage が race_series の行を makeMeet に通す（DM1x meet のつなぎ）。select が make の必須列（主キー・total_days・class_code・kind）を取り、正の行は題・グレード・最終日に使われ、破れは RangeError で reject すること"
+    },
+    {
       "script": "verify-meet-page-model.js",
       "tier": "ci",
       "guards": "節ページ（BOA-682）の日程・段階・基準のレース・勝ち上がり・勝負駆けの判定。崩れると前後の節を混ぜる、夜に予選の最後のレースの結果を落とす、予選最終日の夜に公式の得点率を使わない、勝負駆けを誤る"
