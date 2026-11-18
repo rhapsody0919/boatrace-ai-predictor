@@ -9,6 +9,17 @@ export const TODAY_RACES =
   /\/api\/races\/today|\/rest\/v1\/rpc\/get_today_races/;
 
 export async function rewriteTodayRaces(page, mutate) {
+  // トップは本日のレースを localStorage（boatai:races-<日付>、TTL 30分）にも置く。前の goto（開催場の数え等）が
+  // 置いた分が残ると、次の goto はそれを読んで要求を出さず、書き換えが走らない。setJstNoon で時計を戻すと
+  // 11:30 JST 以降に置いた分は期限内に見える（E2E_LIVE の夕方に会場コードが null のまま落ちた）。読み込みのたびに消す
+  await page.addInitScript(() => {
+    try {
+      for (const key of Object.keys(localStorage))
+        if (key.startsWith("boatai:races-")) localStorage.removeItem(key);
+    } catch {
+      // about:blank 等の opaque origin では localStorage に触れると例外になる
+    }
+  });
   await page.route(TODAY_RACES, async (route) => {
     try {
       const response = await fetchRecorded(route);

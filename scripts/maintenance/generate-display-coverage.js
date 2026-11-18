@@ -427,61 +427,72 @@ function renderMarkdown({ rows, exceptions, counts, rpcNames }) {
   return lines.join("\n") + "\n";
 }
 
+/** 画面・API からの参照の表示（直接・RPC経由） */
+function refLabelOf(direct, viaRpc, rpcs) {
+  const parts = [];
+  if (direct) parts.push(`${[...direct].sort().join("・")}が直接`);
+  if (viaRpc) {
+    const byRpc = [...viaRpc]
+      .sort()
+      .map((rpc) => `${rpc}(${[...(rpcs.get(rpc) ?? [])].sort().join("・")})`);
+    parts.push(`RPC経由: ${byRpc.join(", ")}`);
+  }
+  return parts.length > 0 ? parts.join(" / ") : "なし";
+}
+
+function grantNoteOf(r, direct) {
+  // 匿名SELECT権限が要るのは「画面（src/）が匿名キーで直接読む」場合だけ。
+  // api/ のEdge Functionsはservice_role等で読むため対象外、RPCも SECURITY DEFINER が
+  // ありうるため対象外。また076（BOA-370）が新規テーブルの既定権限を剥奪する前に
+  // 作られたテーブルは既定権限のままなので、076以降の定義に限って見る。
+  // 連番は3桁が基本だが `013b_…` のような枝番や `add-defense-distribution.sql` の
+  // ような連番なしも実在する。番号が読めないときは検査する側に倒す（見逃しを作らない）。
+  const definedNumber = Number(r.definedIn.match(/^(\d+)/)?.[1] ?? NaN);
+  const needsExplicitGrant =
+    Boolean(direct?.has("画面")) &&
+    (!Number.isFinite(definedNumber) || definedNumber >= 76);
+  return needsExplicitGrant && !r.grantAnon && !r.selectPolicy
+    ? "画面が匿名キーで直接読むが GRANT SELECT … TO anon もSELECTポリシーも無い（076以降は明示が必要）"
+    : "";
+}
+
+/** 1テーブル・ビューの行（参照の表示・権限の表示・状態・権限の注意） */
+function buildRow(r, { codeTables, rpcReads, rpcs, exceptions }) {
+  const direct = codeTables.get(r.name);
+  const viaRpc = rpcReads.get(r.name);
+  const refLabel = refLabelOf(direct, viaRpc, rpcs);
+  const grantLabel = r.grantAnon
+    ? `GRANT（${r.grantAnon}）`
+    : r.selectPolicy
+      ? `ポリシー（${r.selectPolicy}）`
+      : "記述なし";
+  const isRead = Boolean(direct || viaRpc);
+  const status = isRead
+    ? "read"
+    : Object.hasOwn(exceptions, r.name)
+      ? "excepted"
+      : "unread";
+  const grantNote = grantNoteOf(r, direct);
+  return { ...r, refLabel, grantLabel, status, grantNote, isRead };
+}
+
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
 
   const migrations = await readMigrations();
   const relations = collectRelations(migrations);
   const relationNames = new Set(relations.map((r) => r.name));
-  const { tables: codeTables, rpcs } = await collectCodeReferences(relationNames);
+  const { tables: codeTables, rpcs } =
+    await collectCodeReferences(relationNames);
   const rpcNames = [...rpcs.keys()].sort();
   const rpcReads = collectRpcTableReads(migrations, rpcNames, relationNames);
   const exceptions = JSON.parse(
     await fs.readFile(EXCEPTIONS_PATH, "utf8"),
   ).tables;
 
+  const ctx = { codeTables, rpcReads, rpcs, exceptions };
   const rows = relations
-    .map((r) => {
-      const direct = codeTables.get(r.name);
-      const viaRpc = rpcReads.get(r.name);
-      const parts = [];
-      if (direct) parts.push(`${[...direct].sort().join("・")}が直接`);
-      if (viaRpc) {
-        const byRpc = [...viaRpc]
-          .sort()
-          .map(
-            (rpc) => `${rpc}(${[...(rpcs.get(rpc) ?? [])].sort().join("・")})`,
-          );
-        parts.push(`RPC経由: ${byRpc.join(", ")}`);
-      }
-      const refLabel = parts.length > 0 ? parts.join(" / ") : "なし";
-      const grantLabel = r.grantAnon
-        ? `GRANT（${r.grantAnon}）`
-        : r.selectPolicy
-          ? `ポリシー（${r.selectPolicy}）`
-          : "記述なし";
-      const isRead = Boolean(direct || viaRpc);
-      const status = isRead
-        ? "read"
-        : Object.hasOwn(exceptions, r.name)
-          ? "excepted"
-          : "unread";
-      // 匿名SELECT権限が要るのは「画面（src/）が匿名キーで直接読む」場合だけ。
-      // api/ のEdge Functionsはservice_role等で読むため対象外、RPCも SECURITY DEFINER が
-      // ありうるため対象外。また076（BOA-370）が新規テーブルの既定権限を剥奪する前に
-      // 作られたテーブルは既定権限のままなので、076以降の定義に限って見る。
-      // 連番は3桁が基本だが `013b_…` のような枝番や `add-defense-distribution.sql` の
-      // ような連番なしも実在する。番号が読めないときは検査する側に倒す（見逃しを作らない）。
-      const definedNumber = Number(r.definedIn.match(/^(\d+)/)?.[1] ?? NaN);
-      const needsExplicitGrant =
-        Boolean(direct?.has("画面")) &&
-        (!Number.isFinite(definedNumber) || definedNumber >= 76);
-      const grantNote =
-        needsExplicitGrant && !r.grantAnon && !r.selectPolicy
-          ? "画面が匿名キーで直接読むが GRANT SELECT … TO anon もSELECTポリシーも無い（076以降は明示が必要）"
-          : "";
-      return { ...r, refLabel, grantLabel, status, grantNote, isRead };
-    })
+    .map((r) => buildRow(r, ctx))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const counts = {

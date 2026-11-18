@@ -138,6 +138,13 @@ test("全レース終了の会場・丸一日中止の会場・次開催の会�
     }
   });
   await page.goto("/", { waitUntil: "domcontentloaded" });
+  // 書き換えが走っていないと会場コードが null のまま（/venue/null を探して落ちる）。原因が分かる形で先に止める
+  await expect
+    .poll(() => codes.finished, {
+      message: "本日のレースの書き換えが走っていない",
+      timeout: 30000,
+    })
+    .not.toBeNull();
   await expect(
     page.locator(".venue-grid-card--open, .venue-grid-card--closed").first(),
   ).toBeVisible({ timeout: 30000 });

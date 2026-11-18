@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2049,
+    "sourceFiles": 2089,
     "filesWithAccess": 282,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -1610,7 +1610,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/ml/export-training-data.js:79",
+          "ref": "scripts/ml/export-training-data.js:196",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -4825,7 +4825,7 @@
       },
       "readers": [
         {
-          "ref": "api/outcome-distribution/index.js:66",
+          "ref": "api/outcome-distribution/index.js:47",
           "op": "select",
           "via": "rest",
           "columns": [
@@ -4897,7 +4897,7 @@
         },
         "venue_code": {
           "readers": [
-            "api/outcome-distribution/index.js:66",
+            "api/outcome-distribution/index.js:47",
             "scripts/daily/update-outcome-distribution.js:115",
             "src/services/venueQueries.js:224"
           ],
@@ -4906,7 +4906,7 @@
         },
         "first_boat": {
           "readers": [
-            "api/outcome-distribution/index.js:66",
+            "api/outcome-distribution/index.js:47",
             "src/services/venueQueries.js:224",
             "src/services/venueQueries.js:98"
           ],
@@ -4925,7 +4925,7 @@
         },
         "count_90days": {
           "readers": [
-            "api/outcome-distribution/index.js:66",
+            "api/outcome-distribution/index.js:47",
             "src/services/venueQueries.js:224",
             "src/services/venueQueries.js:98"
           ],
@@ -6459,7 +6459,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/ml/export-training-data.js:83",
+          "ref": "scripts/ml/export-training-data.js:201",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -7690,7 +7690,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/ml/export-training-data.js:75",
+          "ref": "scripts/ml/export-training-data.js:191",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -9343,7 +9343,7 @@
           ]
         },
         {
-          "ref": "scripts/ml/export-training-data.js:224",
+          "ref": "scripts/ml/export-training-data.js:285",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -11309,7 +11309,7 @@
           ]
         },
         {
-          "ref": "scripts/ml/export-training-data.js:87",
+          "ref": "scripts/ml/export-training-data.js:206",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -12534,7 +12534,7 @@
           ]
         },
         {
-          "ref": "api/_lib/botRace.js:249",
+          "ref": "api/_lib/botRace.js:211",
           "op": "rest",
           "via": "rest",
           "columns": []
@@ -13054,7 +13054,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/ml/export-training-data.js:91",
+          "ref": "scripts/ml/export-training-data.js:211",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -16952,7 +16952,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/ml/export-training-data.js:71",
+          "ref": "scripts/ml/export-training-data.js:186",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
