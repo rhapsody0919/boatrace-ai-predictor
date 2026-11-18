@@ -160,26 +160,19 @@ function getArg(name) {
   return arg ? arg.slice(name.length + 3) : null;
 }
 
-async function main() {
-  if (!isSupabaseEnabled()) throw new Error("Supabaseが設定されていません");
+// --from・--to（既定は --from と同じ日）・--apply。形式の不正は例外
+function readPeriodArgs() {
   const from = getArg("from");
   const to = getArg("to") ?? from;
   const apply = process.argv.includes("--apply");
   if (!DATE_RE.test(from ?? "") || !DATE_RE.test(to ?? "") || from > to) {
     throw new Error("--from=YYYY-MM-DD [--to=YYYY-MM-DD] を指定してください");
   }
+  return { from, to, apply };
+}
 
-  const { races, reports, entryCounts } = await loadBackfillInputs(
-    supabase,
-    from,
-    to,
-  );
-
-  const targets = planPitReportBackfill(races, reports, entryCounts);
-  console.log(
-    `${apply ? "[APPLY]" : "[DRY-RUN]"} ${from}〜${to}: 対象レース ${races.filter((r) => isPitReportCandidate({ raceGrade: r.race_grade, raceNumber: r.race_number })).length}件のうち、取り直す ${targets.length}件（未取得 ${targets.filter((t) => t.reason === "missing").length}・コメント不足 ${targets.filter((t) => t.reason === "incomplete").length}）`,
-  );
-
+// 1レースずつ間を空けて取り直す（間隔は REQUEST_INTERVAL_MS）
+async function runBackfillTargets(targets, apply) {
   const polite = createPoliteFetch();
   const runs = [];
   for (const [i, target] of targets.entries()) {
@@ -203,6 +196,25 @@ async function main() {
       `  ${target.race_id} ${target.reason} ${target.before}→${result.rowsParsed ?? "-"}件 outcome=${result.outcome}${result.rowsWritten ? ` 書き込み${result.rowsWritten}行` : ""}${result.error ? ` (${result.error})` : ""}`,
     );
   }
+  return runs;
+}
+
+async function main() {
+  if (!isSupabaseEnabled()) throw new Error("Supabaseが設定されていません");
+  const { from, to, apply } = readPeriodArgs();
+
+  const { races, reports, entryCounts } = await loadBackfillInputs(
+    supabase,
+    from,
+    to,
+  );
+
+  const targets = planPitReportBackfill(races, reports, entryCounts);
+  console.log(
+    `${apply ? "[APPLY]" : "[DRY-RUN]"} ${from}〜${to}: 対象レース ${races.filter((r) => isPitReportCandidate({ raceGrade: r.race_grade, raceNumber: r.race_number })).length}件のうち、取り直す ${targets.length}件（未取得 ${targets.filter((t) => t.reason === "missing").length}・コメント不足 ${targets.filter((t) => t.reason === "incomplete").length}）`,
+  );
+
+  const runs = await runBackfillTargets(targets, apply);
 
   const summary = summarizePitReportBackfill(runs);
   console.log(
