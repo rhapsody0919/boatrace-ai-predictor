@@ -145,19 +145,14 @@ for (let digit = 0; digit < 3; digit++) {
   }
 }
 {
-  // 公式の表に無い会場（1〜24 の外）の行は、水質・干満差を推して返さない。今は null で返す。
-  // DM1x venue のつなぎ（行を makeVenue に通す）の後は RangeError で拒む。つなぎの PR でこの期待を RangeError だけに締める
+  // 公式の表に無い会場（1〜24 の外）の行は makeVenue が拒む（DM1x venue のつなぎ）。水質・干満差を推して返さない
   const got = await getVenueCharacteristics(99).then(
     (v) => v,
     (err) => err,
   );
-  if (
-    !(got instanceof RangeError) &&
-    JSON.stringify(got) !==
-      JSON.stringify({ waterType: null, tidal: null, cluster: "balanced" })
-  ) {
+  if (!(got instanceof RangeError)) {
     errors.push(
-      `公式の表に無い会場は水質・干満差を null で返すか RangeError で拒む: 実際 ${got instanceof Error ? String(got) : JSON.stringify(got)}`,
+      `公式の表に無い会場（code 99）の行は RangeError で拒む: 実際 ${got instanceof Error ? String(got) : JSON.stringify(got)}`,
     );
   }
   const none = await getVenueCharacteristics(50);

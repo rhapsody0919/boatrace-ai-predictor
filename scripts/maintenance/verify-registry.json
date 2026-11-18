@@ -1937,6 +1937,11 @@
       "guards": "会場カードの時間帯境界・最小レース番号と人・ボット共通の表示値（BOA-1036）"
     },
     {
+      "script": "verify-venue-characteristics-make.js",
+      "tier": "ci",
+      "guards": "src/services/venueQueries.js の getVenueCharacteristics が venues の行を makeVenue に通す（DM1x venue のつなぎ）。select が make の必須列（code・name）を取り、正の行は cluster を返し、破れは RangeError で reject してキャッシュに残らないこと"
+    },
+    {
       "script": "verify-venue-entry-course-stats-parser.js",
       "tier": "ci",
       "guards": "進入コース別選手成績パーサー（BOA-293）と、若松（20）を取得の対象・drift の知らせから外していること（BOA-1165）"
