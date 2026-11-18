@@ -109,62 +109,54 @@ async function loadProfiles(racerIds) {
   return profiles;
 }
 
-async function main() {
-  const perDate = [];
-  const allRows = [];
-  const allRaces = [];
-  const allNearMisses = [];
-  const allMissingProfiles = new Set();
-
-  for (const date of DATES) {
-    const day = kbBackfillInternal.readParsedDay(ARCHIVE, date);
-    if (!day?.b?.venues?.length) {
-      perDate.push({ date, skipped: "Bファイルが無い（未取得）" });
-      continue;
-    }
-    // アーカイブの中身が、本当にその日のものか確かめる（取り違えたまま書くと、
-    // 別の日の出走表で「復元」してしまう）
-    if (day.date !== date)
-      throw new Error(
-        `アーカイブの日付が一致しません（要求 ${date} / 中身 ${day.date}）: ${ARCHIVE}`,
-      );
-    const bIndex = indexBEntriesByRace(day);
-    const dbIndex = await loadDbIndex(date);
-    if (dbIndex.size === 0) {
-      perDate.push({ date, skipped: "DBに出走表が無い" });
-      continue;
-    }
-    // 汚染レースを先に特定し、その分の racer_profiles だけを引く
-    const { races: dryRaces } = buildRestorePlan({
-      bIndex,
-      dbIndex,
-      profiles: new Map(),
-      maxMatch: MAX_MATCH,
-    });
-    const racerIds = new Set();
-    for (const { race_id } of dryRaces)
-      for (const e of bIndex.get(race_id).values()) racerIds.add(e.racer_id);
-    const profiles = await loadProfiles(racerIds);
-
-    const { rows, races, nearMisses, missingProfiles } = buildRestorePlan({
-      bIndex,
-      dbIndex,
-      profiles,
-      maxMatch: MAX_MATCH,
-    });
-    for (const id of missingProfiles) allMissingProfiles.add(id);
-    allRows.push(...rows);
-    allRaces.push(...races);
-    allNearMisses.push(...nearMisses);
-    perDate.push({
-      date,
-      races: races.length,
-      rows: rows.length,
-      nearMisses: nearMisses.length,
-    });
+/**
+ * 1日分の復元の計画。B ファイル・DB の出走表が無ければ { skipped }、あれば buildRestorePlan の結果
+ * （rows・races・nearMisses・missingProfiles）
+ */
+async function planDate(date) {
+  const day = kbBackfillInternal.readParsedDay(ARCHIVE, date);
+  if (!day?.b?.venues?.length) {
+    return { skipped: "Bファイルが無い（未取得）" };
   }
+  // アーカイブの中身が、本当にその日のものか確かめる（取り違えたまま書くと、
+  // 別の日の出走表で「復元」してしまう）
+  if (day.date !== date)
+    throw new Error(
+      `アーカイブの日付が一致しません（要求 ${date} / 中身 ${day.date}）: ${ARCHIVE}`,
+    );
+  const bIndex = indexBEntriesByRace(day);
+  const dbIndex = await loadDbIndex(date);
+  if (dbIndex.size === 0) {
+    return { skipped: "DBに出走表が無い" };
+  }
+  // 汚染レースを先に特定し、その分の racer_profiles だけを引く
+  const { races: dryRaces } = buildRestorePlan({
+    bIndex,
+    dbIndex,
+    profiles: new Map(),
+    maxMatch: MAX_MATCH,
+  });
+  const racerIds = new Set();
+  for (const { race_id } of dryRaces)
+    for (const e of bIndex.get(race_id).values()) racerIds.add(e.racer_id);
+  const profiles = await loadProfiles(racerIds);
 
-  const summary = {
+  return buildRestorePlan({
+    bIndex,
+    dbIndex,
+    profiles,
+    maxMatch: MAX_MATCH,
+  });
+}
+
+function buildSummary({
+  allRaces,
+  allRows,
+  allNearMisses,
+  allMissingProfiles,
+  perDate,
+}) {
+  return {
     dates: DATES,
     archive: ARCHIVE,
     maxMatchForContaminated: MAX_MATCH,
@@ -178,26 +170,10 @@ async function main() {
     racersMissingInProfiles: [...allMissingProfiles],
     perDate,
   };
-  console.log(JSON.stringify(summary, null, 2));
+}
 
-  if (JSON_OUT) {
-    fs.writeFileSync(
-      path.resolve(JSON_OUT),
-      JSON.stringify(
-        { summary, races: allRaces, nearMisses: allNearMisses, rows: allRows },
-        null,
-        2,
-      ),
-    );
-    console.log(`計画をJSONで書き出しました: ${path.resolve(JSON_OUT)}`);
-  }
-
-  if (command === "plan") return 0;
-  if (allRows.length === 0) {
-    console.log("\n対象の行がありません。");
-    return 1;
-  }
-
+// 計画の行を書く（APPLY でなければ DRY-RUN）。終了コードを返す
+async function writeRestore(allRows) {
   console.log(
     APPLY
       ? `\n書き込みます（${allRows.length}行）…`
@@ -228,6 +204,62 @@ async function main() {
       "\n実際に書き込むには --apply を付けて再実行してください（要承認）。",
     );
   return 0;
+}
+
+async function main() {
+  const perDate = [];
+  const allRows = [];
+  const allRaces = [];
+  const allNearMisses = [];
+  const allMissingProfiles = new Set();
+
+  for (const date of DATES) {
+    const plan = await planDate(date);
+    if (plan.skipped) {
+      perDate.push({ date, skipped: plan.skipped });
+      continue;
+    }
+    const { rows, races, nearMisses, missingProfiles } = plan;
+    for (const id of missingProfiles) allMissingProfiles.add(id);
+    allRows.push(...rows);
+    allRaces.push(...races);
+    allNearMisses.push(...nearMisses);
+    perDate.push({
+      date,
+      races: races.length,
+      rows: rows.length,
+      nearMisses: nearMisses.length,
+    });
+  }
+
+  const summary = buildSummary({
+    allRaces,
+    allRows,
+    allNearMisses,
+    allMissingProfiles,
+    perDate,
+  });
+  console.log(JSON.stringify(summary, null, 2));
+
+  if (JSON_OUT) {
+    fs.writeFileSync(
+      path.resolve(JSON_OUT),
+      JSON.stringify(
+        { summary, races: allRaces, nearMisses: allNearMisses, rows: allRows },
+        null,
+        2,
+      ),
+    );
+    console.log(`計画をJSONで書き出しました: ${path.resolve(JSON_OUT)}`);
+  }
+
+  if (command === "plan") return 0;
+  if (allRows.length === 0) {
+    console.log("\n対象の行がありません。");
+    return 1;
+  }
+
+  return writeRestore(allRows);
 }
 
 process.exit(await main());
