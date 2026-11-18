@@ -108,13 +108,23 @@ const { clearCache } = await import("../../src/services/core.js");
 const { getVenueCharacteristics } =
   await import("../../src/services/venueQueries.js");
 const WRONG = { fresh: "sea", brackish: "fresh", sea: "brackish" };
+// 行は本番の venues の形に合わせる（name は NOT NULL、cluster は update_venue_stats の3値。src/pure/venueModel.js）。
+// cluster は会場ごとに散らして取り違えを見る
+const CLUSTERS = ["in_strong", "out_strong", "balanced"];
+const clusterOf = (code) => CLUSTERS[code % 3];
 fakeTables.venues = [
   ...Array.from({ length: 24 }, (_, i) => ({
     code: i + 1,
-    cluster: `cluster-${i + 1}`,
+    name: OFFICIAL[i + 1][0],
+    cluster: clusterOf(i + 1),
     water_type: WRONG[TYPE_KEY[OFFICIAL[i + 1][1]]],
   })),
-  { code: 99, cluster: "cluster-99", water_type: "sea" }, // 公式の表に無い会場
+  {
+    code: 99,
+    name: "公式の表に無い会場",
+    cluster: "balanced",
+    water_type: "sea",
+  },
 ];
 clearCache();
 for (let code = 1; code <= 24; code++) {
@@ -123,7 +133,7 @@ for (let code = 1; code <= 24; code++) {
   const want = {
     waterType: TYPE_KEY[type],
     tidal: tide === "あり",
-    cluster: `cluster-${code}`,
+    cluster: clusterOf(code),
   };
   if (JSON.stringify(got) !== JSON.stringify(want)) {
     errors.push(
@@ -132,13 +142,19 @@ for (let code = 1; code <= 24; code++) {
   }
 }
 {
-  const got = await getVenueCharacteristics(99);
+  // 公式の表に無い会場（1〜24 の外）の行は、水質・干満差を推して返さない。今は null で返す。
+  // DM1x venue のつなぎ（行を makeVenue に通す）の後は RangeError で拒む。つなぎの PR でこの期待を RangeError だけに締める
+  const got = await getVenueCharacteristics(99).then(
+    (v) => v,
+    (err) => err,
+  );
   if (
+    !(got instanceof RangeError) &&
     JSON.stringify(got) !==
-    JSON.stringify({ waterType: null, tidal: null, cluster: "cluster-99" })
+      JSON.stringify({ waterType: null, tidal: null, cluster: "balanced" })
   ) {
     errors.push(
-      `公式の表に無い会場は水質・干満差を null で返す: 実際 ${JSON.stringify(got)}`,
+      `公式の表に無い会場は水質・干満差を null で返すか RangeError で拒む: 実際 ${got instanceof Error ? String(got) : JSON.stringify(got)}`,
     );
   }
   const none = await getVenueCharacteristics(50);
