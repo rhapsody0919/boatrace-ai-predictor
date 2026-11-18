@@ -17,6 +17,156 @@ function curvePolyline(points) {
     .join(" ");
 }
 
+function MetricsControls({ window, metric, onChangeWindow, onChangeMetric }) {
+  return (
+    <>
+      <label>
+        観測窓{" "}
+        <select
+          value={window}
+          onChange={(e) => onChangeWindow(e.target.value)}
+        >
+          <option value="48h">48h（全貌は当日23時）</option>
+          <option value="7d">7d（全貌は出さない）</option>
+          <option value="day_end">当日23時（全貌だけ）</option>
+          <option value="24h">24h（全貌だけ）</option>
+        </select>
+      </label>
+      <label>
+        指標{" "}
+        <select
+          value={metric}
+          onChange={(e) => onChangeMetric(e.target.value)}
+        >
+          {OBSERVATION_METRICS.map((name) => (
+            <option key={name}>{name}</option>
+          ))}
+        </select>
+      </label>
+    </>
+  );
+}
+
+function RetentionCurve({ curve }) {
+  return (
+    <div>
+      <p>
+        {curve.draft_id} の維持曲線（経過割合 / audienceWatchRatio）
+      </p>
+      <svg
+        className="sns-observation-curve"
+        viewBox="0 0 300 120"
+        role="img"
+        aria-label={`${curve.draft_id}の維持曲線`}
+      >
+        <polyline
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          points={curvePolyline(curve.points)}
+        />
+      </svg>
+      <ul>
+        {curve.points.map((point) => (
+          <li key={point.elapsed_ratio}>
+            {point.elapsed_ratio} / {point.value}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ObservationDetails({ group }) {
+  return (
+    <details>
+      <summary>分布・取得時点・維持曲線</summary>
+      <p>値の分布: {group.values.join(" / ") || "欠測"}</p>
+      {group.posts.map((post) => (
+        <p key={post.draft_id}>
+          {post.draft_id} / 取得: {post.observed_at || "未収集"} /
+          データ最終: {post.data_through || "不明"} / 値:{" "}
+          {post.value ?? "欠測"} / revision: {post.revision ?? "なし"}
+        </p>
+      ))}
+      {group.curves.map((curve) => (
+        <RetentionCurve key={curve.draft_id} curve={curve} />
+      ))}
+    </details>
+  );
+}
+
+function ObservationCard({ group, platform }) {
+  return (
+    <article className="sns-observation-card">
+      <h4>
+        {group.platform} / {group.language} / {group.format} / 窓:{" "}
+        {WINDOW_LABELS[group.window] ?? group.window}
+      </h4>
+      <p>
+        版:{" "}
+        {group.variant ||
+          (group.format === FULL_PICTURE_FORMAT ? "版なし（全貌）" : "未確認")}
+        {platform !== "x" && (
+          <> / 尺: {group.duration ?? "未確認"}秒</>
+        )}
+        {" "}/ {group.source} / {group.kind}
+      </p>
+      <p>
+        定義: {group.definition} / 分母:{" "}
+        {group.denominator ?? "未提供・該当なし"}
+      </p>
+      <p>
+        投稿 {group.count}本・有効 {group.values.length}本{" "}
+        {group.provisional && "（10本未満・暫定）"} / 中央値:{" "}
+        {group.median ?? "欠測"}
+      </p>
+      <p>
+        欠測理由:{" "}
+        {Object.entries(group.missing)
+          .map(([reason, count]) => `${reason}: ${count}本`)
+          .join("、") || "なし"}
+      </p>
+      <ObservationDetails group={group} />
+    </article>
+  );
+}
+
+function platformHeading(platform, metric) {
+  if (platform !== "x") return "YouTube（動画）";
+  return ["url_link_clicks", "impressions"].includes(metric)
+    ? "X（リンククリック／impressions）"
+    : `X（${metric}）`;
+}
+
+function PlatformSection({ platform, groups, metric }) {
+  return (
+    <section>
+      <h3>{platformHeading(platform, metric)}</h3>
+      {groups.map((group) => (
+        <ObservationCard key={group.key} group={group} platform={platform} />
+      ))}
+    </section>
+  );
+}
+
+function MetricsResult({ state, metric }) {
+  if (state.loading) return <p role="status">読み込み中…</p>;
+  if (state.error) return <p role="alert">{state.error}</p>;
+  if (!state.groups.length) return <p>観測窓を終えた投稿はありません。</p>;
+  return ["x", "youtube"].map((platform) => {
+    const groups = state.groups.filter((group) => group.platform === platform);
+    if (!groups.length) return null;
+    return (
+      <PlatformSection
+        key={platform}
+        platform={platform}
+        groups={groups}
+        metric={metric}
+      />
+    );
+  });
+}
 
 export default function MetricsTab() {
   const [window, setWindow] = useState("48h");
@@ -62,127 +212,16 @@ export default function MetricsTab() {
       <p>
         全貌動画は、当日の全レース終了後（23時）と投稿の24時間後で測ります（48h・7dでは測りません）。48hで開くと、全貌は当日23時の値（23時を過ぎて投稿したものは24hの値）を出します。
       </p>
-      <label>
-        観測窓{" "}
-        <select
-          value={window}
-          onChange={(e) => change(setWindow, e.target.value)}
-        >
-          <option value="48h">48h（全貌は当日23時）</option>
-          <option value="7d">7d（全貌は出さない）</option>
-          <option value="day_end">当日23時（全貌だけ）</option>
-          <option value="24h">24h（全貌だけ）</option>
-        </select>
-      </label>
-      <label>
-        指標{" "}
-        <select
-          value={metric}
-          onChange={(e) => change(setMetric, e.target.value)}
-        >
-          {OBSERVATION_METRICS.map((name) => (
-            <option key={name}>{name}</option>
-          ))}
-        </select>
-      </label>
+      <MetricsControls
+        window={window}
+        metric={metric}
+        onChangeWindow={(value) => change(setWindow, value)}
+        onChangeMetric={(value) => change(setMetric, value)}
+      />
       <p>
         API反映が対象期間に届かない値と、遅れて取得した累積値は欠測です。engagedViews/viewsを「視聴を継続した割合」として算出しません。
       </p>
-      {state.loading ? (
-        <p role="status">読み込み中…</p>
-      ) : state.error ? (
-        <p role="alert">{state.error}</p>
-      ) : !state.groups.length ? (
-        <p>観測窓を終えた投稿はありません。</p>
-      ) : (
-        ["x", "youtube"].map((platform) => {
-          const groups = state.groups.filter(
-            (group) => group.platform === platform,
-          );
-          if (!groups.length) return null;
-          return (
-            <section key={platform}>
-              <h3>
-                {platform === "x"
-                  ? ["url_link_clicks", "impressions"].includes(metric)
-                    ? "X（リンククリック／impressions）"
-                    : `X（${metric}）`
-                  : "YouTube（動画）"}
-              </h3>
-              {groups.map((group) => (
-                <article className="sns-observation-card" key={group.key}>
-                  <h4>
-                    {group.platform} / {group.language} / {group.format} / 窓:{" "}
-                    {WINDOW_LABELS[group.window] ?? group.window}
-                  </h4>
-                  <p>
-                    版:{" "}
-                    {group.variant ||
-                      (group.format === FULL_PICTURE_FORMAT ? "版なし（全貌）" : "未確認")}
-                    {platform !== "x" && (
-                      <> / 尺: {group.duration ?? "未確認"}秒</>
-                    )}
-                    {" "}/ {group.source} / {group.kind}
-                  </p>
-                  <p>
-                    定義: {group.definition} / 分母:{" "}
-                    {group.denominator ?? "未提供・該当なし"}
-                  </p>
-                  <p>
-                    投稿 {group.count}本・有効 {group.values.length}本{" "}
-                    {group.provisional && "（10本未満・暫定）"} / 中央値:{" "}
-                    {group.median ?? "欠測"}
-                  </p>
-                  <p>
-                    欠測理由:{" "}
-                    {Object.entries(group.missing)
-                      .map(([reason, count]) => `${reason}: ${count}本`)
-                      .join("、") || "なし"}
-                  </p>
-                  <details>
-                    <summary>分布・取得時点・維持曲線</summary>
-                    <p>値の分布: {group.values.join(" / ") || "欠測"}</p>
-                    {group.posts.map((post) => (
-                      <p key={post.draft_id}>
-                        {post.draft_id} / 取得: {post.observed_at || "未収集"} /
-                        データ最終: {post.data_through || "不明"} / 値:{" "}
-                        {post.value ?? "欠測"} / revision: {post.revision ?? "なし"}
-                      </p>
-                    ))}
-                    {group.curves.map((curve) => (
-                      <div key={curve.draft_id}>
-                        <p>
-                          {curve.draft_id} の維持曲線（経過割合 / audienceWatchRatio）
-                        </p>
-                        <svg
-                          className="sns-observation-curve"
-                          viewBox="0 0 300 120"
-                          role="img"
-                          aria-label={`${curve.draft_id}の維持曲線`}
-                        >
-                          <polyline
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            points={curvePolyline(curve.points)}
-                          />
-                        </svg>
-                        <ul>
-                          {curve.points.map((point) => (
-                            <li key={point.elapsed_ratio}>
-                              {point.elapsed_ratio} / {point.value}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </details>
-                </article>
-              ))}
-            </section>
-          );
-        })
-      )}
+      <MetricsResult state={state} metric={metric} />
     </section>
   );
 }
