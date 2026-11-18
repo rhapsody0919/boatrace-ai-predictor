@@ -15,7 +15,8 @@
  *   - 既にあるファイルが、この差分で max-lines の線を越えた（base で線の内だった）
  *   - --ci: src・scripts・api に循環の import がある（dependency-cruiser の no-circular、lintDepTree.js。全体で0件を保つ）
  *   - --ci: 新しいファイルが、ほかのコードと15行以上重なる（jscpd）。split-data-layer.mjs の出力そのままの PR で、
- *     差分の側が全部移しただけのファイルの重なりは警告（base の殻の字そのまま。lintDuplicates.js）
+ *     差分の側が全部移しただけのファイルの重なりは警告（base の殻の字そのまま。lintDuplicates.js）。
+ *     master への push の run では赤にせず [dup-on-push] の注記にする（hq が直しの票にする。jscpd の結果が無いのは赤のまま）
  * 警告だけ（失敗にしない）:
  *   - 既にあるファイルの complexity の越え・既に線を越えていたファイルの max-lines
  *   - --ci: 既にあるファイルの重なり
@@ -33,7 +34,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
 import {
-  classifyDuplicates,
+  judgeDuplicates,
   loadMoveOnly,
   movedFiles,
   notMovedReason,
@@ -68,10 +69,11 @@ const isJs = (f) => /\.(js|jsx|mjs|cjs)$/.test(f);
 const lineCount = (text) =>
   text.split("\n").length - (text.endsWith("\n") ? 1 : 0);
 
+const isPush = process.env.GITHUB_EVENT_NAME === "push";
 const mergeBase = (() => {
   try {
     // master への push は squash だけなので親が base（merge-base だと HEAD になり差分が空）
-    if (process.env.GITHUB_EVENT_NAME === "push") return git("rev-parse", "HEAD^1");
+    if (isPush) return git("rev-parse", "HEAD^1");
     return git("merge-base", baseRef, "HEAD");
   } catch (e) {
     console.error(
@@ -102,6 +104,7 @@ const baseLineCount = ({ oldFile, added }) =>
 
 const errors = [];
 const warnings = [];
+const notes = []; // 赤にしない印つきの注記（push の run の重なり。lintDuplicates.js の judgeDuplicates）
 
 // --- eslint（差分の JS だけ）
 const eslint = new ESLint({
@@ -201,11 +204,14 @@ if (ci) {
       ],
       { cwd: ROOT, stdio: ["ignore", "ignore", "inherit"] },
     );
-    const report = path.join(outDir, "jscpd-report.json");
-    if (!fs.existsSync(report)) {
-      errors.push(`jscpd の結果が無い（終了コード ${res.status}）`);
+    const reportPath = path.join(outDir, "jscpd-report.json");
+    if (!fs.existsSync(reportPath)) {
+      errors.push(
+        ...judgeDuplicates({ report: null, status: res.status, push: isPush })
+          .errors,
+      );
     } else {
-      const { duplicates } = JSON.parse(fs.readFileSync(report, "utf8"));
+      const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
       // split-data-layer.mjs の出力そのままの PR は、移したファイルの側の重なりを警告に下げる（lintDuplicates.js）
       const moveOnly = loadMoveOnly(ROOT);
       const readText = treeReader(ROOT, mergeBase);
@@ -217,15 +223,22 @@ if (ci) {
       const why =
         moved.size > 0 ? null : notMovedReason(moveOnly, changed, readText);
       if (why)
-        console.log(`jscpd: 移しただけと見なさない（重なりは下げない）: ${why}`);
-      const dup = classifyDuplicates(duplicates, byFile, moved);
+        console.log(
+          `jscpd: 移しただけと見なさない（重なりは下げない）: ${why}`,
+        );
+      const dup = judgeDuplicates({ report, byFile, moved, push: isPush });
       errors.push(...dup.errors);
       warnings.push(...dup.warnings);
+      notes.push(...dup.notes);
     }
   }
 }
 
 const inActions = process.env.GITHUB_ACTIONS === "true";
+// 注記は警告より先に出す（GitHub の注記は step ごとに数の上限があり、後ろが落ちるため）
+notes.forEach((n) =>
+  console.warn(inActions ? `::warning::${n}` : `注記: ${n}`),
+);
 warnings.forEach((w) =>
   console.warn(inActions ? `::warning::${w}` : `警告: ${w}`),
 );
@@ -235,5 +248,5 @@ if (errors.length > 0) {
   process.exit(1);
 }
 console.log(
-  `lint-changed: OK（差分 ${changed.length} ファイル・eslint ${jsFiles.length} ファイル・警告 ${warnings.length} 件${ci ? "・依存の向きと jscpd も見た" : ""}）`,
+  `lint-changed: OK（差分 ${changed.length} ファイル・eslint ${jsFiles.length} ファイル・警告 ${warnings.length} 件${notes.length ? `・注記 ${notes.length} 件` : ""}${ci ? "・依存の向きと jscpd も見た" : ""}）`,
 );
