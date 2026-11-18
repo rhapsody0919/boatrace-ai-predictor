@@ -8,6 +8,7 @@ import {
   groupWinningTechniqueRows,
 } from "../utils/venuePlaceRates.js";
 import { EDGE_API_BASE, withCache } from "./core.js";
+import { makeVenue } from "../pure/venueModel.js";
 
 /**
  * 会場の決まり手の直近90日・365日の件数（BOA-430 思考アシスト、ADR 0088、表 venue_technique_period_stats）。
@@ -54,17 +55,20 @@ export function getVenueCharacteristics(venueCode) {
 
       const { data } = await supabase
         .from("venues")
-        .select("cluster")
+        // makeVenue の必須（code・name）も取る
+        .select("code, name, cluster")
         .eq("code", venueCode)
         .maybeSingle();
 
       if (!data) return null;
+      // 不変条件の破れ（RangeError）は呼び手（思考アシストの取得）の失敗と同じ扱い（キャッシュに残さない）
+      const venue = makeVenue(data);
 
       const water = venueWaterProfile(venueCode);
       return {
         waterType: water?.waterType ?? null,
         tidal: water?.tidal ?? null,
-        cluster: data.cluster,
+        cluster: venue.cluster,
       };
     });
   }
