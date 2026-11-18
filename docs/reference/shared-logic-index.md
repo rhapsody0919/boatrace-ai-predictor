@@ -31,6 +31,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/meetModel.js` | — | makeMeet |
 | `src/pure/meetRows.js` | 今節タブ（RaceMeetTab）の表の行の組み立て（純関数、副作用なし）。 | buildRankingModel, buildForecastRows, buildForecastModel |
 | `src/pure/modelAssert.js` | — | assertObject, assertInt, assertIntOrNull, assertText, parseIsoDate ほか1件 |
+| `src/pure/motorChartView.js` | モーター調子（MotorConditionChart）の系列・列の整形（RA21、画面の部品から移した。振る舞いは変えない）。 | exhibitionChartDataOf, computeRateView, computeStatColumns, computeRankClasses, computePeriodClip |
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
 | `src/pure/predictionModel.js` | — | makePrediction |
 | `src/pure/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
@@ -467,4 +468,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 425 ファイル / export 2458 件。
+対象 426 ファイル / export 2463 件。
