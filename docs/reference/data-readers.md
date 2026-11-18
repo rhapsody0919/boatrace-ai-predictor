@@ -200,7 +200,7 @@
 | sns_guard_external | service だけ |  | トリガー: sns_drafts |  |  |  |  |
 | sns_mobile_revision | service だけ |  | RPC から: read_sns_draft_diff, save_sns_draft_diff |  |  |  |  |
 | sns_record_external | service だけ | yes | 名前の文字列: api/_lib/snsExternalOperations.js:31 |  |  | sns_drafts |  |
-| sns_update_external_warning | service だけ | yes | 名前の文字列: api/admin/sns-hub/drafts/[id]/publish-youtube.js:210 |  |  | sns_drafts |  |
+| sns_update_external_warning | service だけ | yes | 名前の文字列: api/admin/sns-hub/drafts/[id]/publish-youtube.js:219 |  |  | sns_drafts |  |
 | sns_x_slot_room | service だけ |  | scripts/lib/snsXSlots.js:69 / RPC から: transition_sns_send_139 |  | sns_auto_send_items, sns_drafts, sns_x_kind_reserves, sns_x_send_control, sns_x_send_jobs |  |  |
 | stop_sns_auto_item | service だけ |  | なし |  | sns_auto_send_items, sns_drafts, sns_x_send_jobs | sns_auto_send_items, sns_drafts |  |
 | sweep_sns_deadline_queue | service だけ |  | api/_lib/snsXSendStore.js:66 |  |  | sns_x_send_jobs |  |
