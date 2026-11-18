@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1993 |
+| 読んだファイル | 1994 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -958,7 +958,7 @@
   - `src/services/racerQueries3.js:182` select [boat_number, race_id, racer_id]
   - `src/services/racerQueries3.js:263` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:309` select [race_id, racer_id, win_rate]
-  - `src/services/racerQueries5.js:43` select [grade, race_id, racer_id]
+  - `src/services/racerQueries5.js:45` select [grade, race_id, racer_id]
   - `src/services/sherlockService.js:70` select [boat_2rate, boat_number, grade, local_win_rate, motor_2rate, player_name, race_id, win_rate]
   - `src/services/watsonService.js:76` select [boat_number, player_name, race_id]
 - 書き手（10）: 
@@ -1382,7 +1382,7 @@
 - 読み手（3）: 
   - `scripts/generate-sitemap.js:465` select [created_at, racer_id]
   - `scripts/lib/racerNews/dedup.js:34` select [id, source_url]
-  - `src/services/racerQueries5.js:58` select [created_at, id, published_at, racer_id, source_name, source_url, summary, title]
+  - `src/services/racerQueries5.js:60` select [created_at, id, published_at, racer_id, source_name, source_url, summary, title]
 - 書き手（2）: 
   - `scripts/lib/racerNews/officialGradeAnnouncements.js:214` insert [published_at, racer_id, source_name, source_url, summary, title]
   - `scripts/maintenance/add-racer-news.js:49` insert [published_at, racer_id, source_name, source_url, summary, title]
@@ -1435,7 +1435,7 @@
   - `scripts/sns/delete-x-post.js:124` rest(rest) [name, racer_id]
   - `src/services/motorQueries4.js:176` select [name, racer_id]
   - `src/services/racerQueries.js:310` select [birth_date, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
-  - `src/services/racerQueries5.js:30` select [birth_date, blood_type, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
+  - `src/services/racerQueries5.js:31` select [birth_date, blood_type, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
 - 書き手（3）: 
   - `scripts/lib/racerProfileSync.js:265` update [?]
   - `scripts/lib/racerProfileSync.js:283` upsert [birth_date, blood_type, branch, grade_at_scrape, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
