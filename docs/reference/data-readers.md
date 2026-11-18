@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1989 |
+| 読んだファイル | 1990 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -960,7 +960,7 @@
   - `src/services/racerQueries3.js:309` select [race_id, racer_id, win_rate]
   - `src/services/racerQueries5.js:43` select [grade, race_id, racer_id]
   - `src/services/sherlockService.js:70` select [boat_2rate, boat_number, grade, local_win_rate, motor_2rate, player_name, race_id, win_rate]
-  - `src/services/watsonService.js:75` select [boat_number, player_name, race_id]
+  - `src/services/watsonService.js:76` select [boat_number, player_name, race_id]
 - 書き手（10）: 
   - `scripts/daily/generate-predictions.js:1035` upsert(helper:upsertChangedRows) [?]
   - `scripts/daily/update-race-info.js:443` upsert(helper:upsertChangedRows) [?]
@@ -1623,7 +1623,7 @@
   - `src/services/sherlockService.js:66` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/venueQueries2.js:43` select [race_date, race_id, venue_code]
   - `src/services/venueQueries2.js:116` select [race_date, race_id, venue_code]
-  - `src/services/watsonService.js:71` select [race_date, race_id, race_number, start_time, venue_code]
+  - `src/services/watsonService.js:72` select [race_date, race_id, race_number, start_time, venue_code]
 - 書き手（20）: 
   - `scripts/daily/generate-predictions.js:971` upsert(helper:upsertChangedRows) [?]
   - `scripts/daily/generate-predictions.js:1652` update [?]
@@ -2279,7 +2279,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/maintenance/fix-opening-day-race-id-date.js:79`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:52`
 - 読み手（1）: 
-  - `src/services/watsonService.js:88` select [explanations, model_trained_at, predicted_at, race_id, rank_order, win_probs]
+  - `src/services/watsonService.js:90` select [explanations, model_trained_at, predicted_at, race_id, rank_order, win_probs]
 - 書き手（1）: 
   - `scripts/daily/generate-watson-predictions.js:93` upsert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる

@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1989,
+    "sourceFiles": 1990,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -8230,7 +8230,7 @@
           ]
         },
         {
-          "ref": "src/services/watsonService.js:75",
+          "ref": "src/services/watsonService.js:76",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8453,7 +8453,7 @@
             "src/services/racerQueries3.js:99",
             "src/services/racerQueries5.js:43",
             "src/services/sherlockService.js:70",
-            "src/services/watsonService.js:75"
+            "src/services/watsonService.js:76"
           ],
           "writers": [],
           "sql": [
@@ -8550,7 +8550,7 @@
             "src/services/racerQueries3.js:27",
             "src/services/racerQueries3.js:99",
             "src/services/sherlockService.js:70",
-            "src/services/watsonService.js:75"
+            "src/services/watsonService.js:76"
           ],
           "writers": [],
           "sql": [
@@ -8598,7 +8598,7 @@
             "src/services/raceQueries3.js:137",
             "src/services/raceQueries3.js:83",
             "src/services/sherlockService.js:70",
-            "src/services/watsonService.js:75"
+            "src/services/watsonService.js:76"
           ],
           "writers": [],
           "sql": [
@@ -17206,7 +17206,7 @@
           ]
         },
         {
-          "ref": "src/services/watsonService.js:71",
+          "ref": "src/services/watsonService.js:72",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17522,7 +17522,7 @@
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:116",
             "src/services/venueQueries2.js:43",
-            "src/services/watsonService.js:71"
+            "src/services/watsonService.js:72"
           ],
           "writers": [],
           "sql": [
@@ -17624,7 +17624,7 @@
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:116",
             "src/services/venueQueries2.js:43",
-            "src/services/watsonService.js:71"
+            "src/services/watsonService.js:72"
           ],
           "writers": [],
           "sql": [
@@ -17705,7 +17705,7 @@
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:116",
             "src/services/venueQueries2.js:43",
-            "src/services/watsonService.js:71"
+            "src/services/watsonService.js:72"
           ],
           "writers": [],
           "sql": [
@@ -17746,7 +17746,7 @@
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:66",
-            "src/services/watsonService.js:71"
+            "src/services/watsonService.js:72"
           ],
           "writers": [
             "scripts/maintenance/fix-opening-day-race-id-date.js:237",
@@ -17807,7 +17807,7 @@
             "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:66",
-            "src/services/watsonService.js:71"
+            "src/services/watsonService.js:72"
           ],
           "writers": [
             "scripts/daily/update-race-info.js:400"
@@ -26634,7 +26634,7 @@
       },
       "readers": [
         {
-          "ref": "src/services/watsonService.js:88",
+          "ref": "src/services/watsonService.js:90",
           "op": "select",
           "via": "client",
           "columns": [
@@ -26664,21 +26664,21 @@
         "race_id": {
           "readers": [
             "scripts/daily/generate-watson-predictions.js:93",
-            "src/services/watsonService.js:88"
+            "src/services/watsonService.js:90"
           ],
           "writers": [],
           "sql": []
         },
         "rank_order": {
           "readers": [
-            "src/services/watsonService.js:88"
+            "src/services/watsonService.js:90"
           ],
           "writers": [],
           "sql": []
         },
         "win_probs": {
           "readers": [
-            "src/services/watsonService.js:88"
+            "src/services/watsonService.js:90"
           ],
           "writers": [],
           "sql": []
@@ -26690,21 +26690,21 @@
         },
         "explanations": {
           "readers": [
-            "src/services/watsonService.js:88"
+            "src/services/watsonService.js:90"
           ],
           "writers": [],
           "sql": []
         },
         "model_trained_at": {
           "readers": [
-            "src/services/watsonService.js:88"
+            "src/services/watsonService.js:90"
           ],
           "writers": [],
           "sql": []
         },
         "predicted_at": {
           "readers": [
-            "src/services/watsonService.js:88"
+            "src/services/watsonService.js:90"
           ],
           "writers": [],
           "sql": []
