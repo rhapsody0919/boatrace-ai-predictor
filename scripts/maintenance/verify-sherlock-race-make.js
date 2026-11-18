@@ -2,7 +2,8 @@
 /**
  * sherlockService.js の getSherlockPredictions が races の行を makeRace（src/pure/raceModel.js）に通すことの振る舞いの試験（DM02、BOA-1678）。
  * scripts/lib/renderJsx.js の module hooks で src を読み、src/services/supabaseClient.js を偽のクライアント（globalThis[FAKE_KEY]）へ
- * 差し替える（verify-bot-race-function.js と同じ形）。data/sherlock/model.json は import の属性なしで読まれるので、.json は既定の物として読む。
+ * 差し替える（verify-bot-race-function.js と同じ形）。data/sherlock/model.json は import の属性なしで読まれるので、resolve で
+ * importAttributes に type: "json" を足し、Node の既定の読み方で読む（fs は使わない）。
  * DB・ネットワークは使わない。戻りはモデルで勝率を計算した新しい形なので凍結は見られず、確率の値はこの試験では見ない。make を通ったことは、破れの行で
  * RangeError の道（空の一覧＋console.error）に入ることで見る。
  */
@@ -16,15 +17,8 @@ export async function resolve(specifier, context, nextResolve) {
   if (resolved.url.endsWith("/src/services/supabaseClient.js")) {
     return { url: "data:text/javascript," + encodeURIComponent("export const supabase = globalThis.${FAKE_KEY};"), shortCircuit: true };
   }
+  if (resolved.url.endsWith(".json")) return { ...resolved, importAttributes: { type: "json" } };
   return resolved;
-}
-export async function load(url, context, nextLoad) {
-  if (url.startsWith("file:") && url.endsWith(".json")) {
-    const { readFile } = await import("node:fs/promises");
-    const { fileURLToPath } = await import("node:url");
-    return { format: "module", source: "export default " + (await readFile(fileURLToPath(url), "utf8")) + ";", shortCircuit: true };
-  }
-  return nextLoad(url, context);
 }
 `;
 register(new URL("../lib/renderJsx.js", import.meta.url));
