@@ -108,37 +108,56 @@ const { clearCache } = await import("../../src/services/core.js");
 const { getVenueCharacteristics } =
   await import("../../src/services/venueQueries.js");
 const WRONG = { fresh: "sea", brackish: "fresh", sea: "brackish" };
-fakeTables.venues = [
-  ...Array.from({ length: 24 }, (_, i) => ({
-    code: i + 1,
-    cluster: `cluster-${i + 1}`,
-    water_type: WRONG[TYPE_KEY[OFFICIAL[i + 1][1]]],
-  })),
-  { code: 99, cluster: "cluster-99", water_type: "sea" }, // 公式の表に無い会場
-];
-clearCache();
-for (let code = 1; code <= 24; code++) {
-  const [name, type, tide] = OFFICIAL[code];
-  const got = await getVenueCharacteristics(code);
-  const want = {
-    waterType: TYPE_KEY[type],
-    tidal: tide === "あり",
-    cluster: `cluster-${code}`,
-  };
-  if (JSON.stringify(got) !== JSON.stringify(want)) {
-    errors.push(
-      `getVenueCharacteristics(${code}) ${name}: 期待 ${JSON.stringify(want)}／実際 ${JSON.stringify(got)}（venues.water_type は公式と食い違うので使わない）`,
-    );
+// 行は本番の venues の形に合わせる（name は NOT NULL、cluster は update_venue_stats の3値。src/pure/venueModel.js）。
+// cluster は3値しか無いので、会場コードの3進の桁（1の位・3の位・9の位）を3回に分けて入れる。
+// 3回の組は24会場で全部違うので、別の会場の行を取り違えるとどれかの回で食い違う
+const CLUSTERS = ["in_strong", "out_strong", "balanced"];
+const clusterOf = (code, digit) => CLUSTERS[Math.floor(code / 3 ** digit) % 3];
+for (let digit = 0; digit < 3; digit++) {
+  fakeTables.venues = [
+    ...Array.from({ length: 24 }, (_, i) => ({
+      code: i + 1,
+      name: OFFICIAL[i + 1][0],
+      cluster: clusterOf(i + 1, digit),
+      water_type: WRONG[TYPE_KEY[OFFICIAL[i + 1][1]]],
+    })),
+    {
+      code: 99,
+      name: "公式の表に無い会場",
+      cluster: "balanced",
+      water_type: "sea",
+    },
+  ];
+  clearCache();
+  for (let code = 1; code <= 24; code++) {
+    const [name, type, tide] = OFFICIAL[code];
+    const got = await getVenueCharacteristics(code);
+    const want = {
+      waterType: TYPE_KEY[type],
+      tidal: tide === "あり",
+      cluster: clusterOf(code, digit),
+    };
+    if (JSON.stringify(got) !== JSON.stringify(want)) {
+      errors.push(
+        `getVenueCharacteristics(${code}) ${name}: 期待 ${JSON.stringify(want)}／実際 ${JSON.stringify(got)}（venues.water_type は公式と食い違うので使わない）`,
+      );
+    }
   }
 }
 {
-  const got = await getVenueCharacteristics(99);
+  // 公式の表に無い会場（1〜24 の外）の行は、水質・干満差を推して返さない。今は null で返す。
+  // DM1x venue のつなぎ（行を makeVenue に通す）の後は RangeError で拒む。つなぎの PR でこの期待を RangeError だけに締める
+  const got = await getVenueCharacteristics(99).then(
+    (v) => v,
+    (err) => err,
+  );
   if (
+    !(got instanceof RangeError) &&
     JSON.stringify(got) !==
-    JSON.stringify({ waterType: null, tidal: null, cluster: "cluster-99" })
+      JSON.stringify({ waterType: null, tidal: null, cluster: "balanced" })
   ) {
     errors.push(
-      `公式の表に無い会場は水質・干満差を null で返す: 実際 ${JSON.stringify(got)}`,
+      `公式の表に無い会場は水質・干満差を null で返すか RangeError で拒む: 実際 ${got instanceof Error ? String(got) : JSON.stringify(got)}`,
     );
   }
   const none = await getVenueCharacteristics(50);
