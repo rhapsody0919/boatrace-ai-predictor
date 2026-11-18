@@ -9,7 +9,7 @@ import {
   prelimEndRaceIdOf,
   SCORE_POINTS,
   SEMIFINAL_DEFAULT_SLOTS,
-} from "../../src/components/race/seriesPoints.js";
+} from "../../src/pure/seriesPoints.js";
 
 // 若松G1（2026-09-22〜27）の予選期間の各日・各レースについて、
 // 「必要得点」の自己整合性を全選手ぶん検証する。

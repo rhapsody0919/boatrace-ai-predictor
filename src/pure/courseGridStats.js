@@ -1,3 +1,4 @@
+// RA41（BOA-1674）で src/components/race/courseGridStats.js から pure の根へ移した（中身は変えていない）
 /**
  * 枠別情報タブの「コース別成績グリッド」の集計（phase a FR-1 / T3-1）
  *

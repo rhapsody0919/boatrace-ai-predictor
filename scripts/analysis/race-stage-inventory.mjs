@@ -4,7 +4,7 @@
 //
 // なぜ要るか: `race_stage` は racelist ページの表示文字列をほぼ生で保存している
 // （`scripts/lib/raceStageParser.js`）ため、会場の自由記述がそのまま入る。
-// 得点率の配点判定（`src/components/race/seriesPoints.js`）は部分一致なので、
+// 得点率の配点判定（`src/pure/seriesPoints.js`）は部分一致なので、
 // 表記ゆれで当たり外れが出る。まず **どんな表記が何件あり、そのうち何件が
 // 予選期間内（＝得点率に算入される）か** を出さないと配点ルールを決められない。
 //
@@ -15,7 +15,7 @@ import { supabase, VENUE_NAMES } from "../lib/supabaseClient.js";
 import {
   classifyStage,
   countsForSeriesScore,
-} from "../../src/components/race/seriesPoints.js";
+} from "../../src/pure/seriesPoints.js";
 import { buildMeets, fetchAllByRaceId } from "../lib/meetBoundaries.js";
 
 /** 旧実装（PR #871 時点）の判定。差分を出すために残す */

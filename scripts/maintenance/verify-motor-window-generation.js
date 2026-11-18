@@ -21,16 +21,18 @@
  *
  * ## 何を検査するか
  *
- * サービス層は import.meta.env に依存し node から実行できないため、ソースを検査する
- * （verify-motor-waku-generation.js と同じ方式）。
- * 1. 期間の開始を max(使用開始日, 今日−days) にする motorWindowStart がある
- * 2. 機力指数・日次系列・使用履歴が motorWindowStart → getRacesForVenueSince を通り、
- *    日数だけの窓（getRacesForVenue）が残っていない
- * 3. 戻り値の形を変えた関数のキャッシュのキーが旧版と違う
+ * サービス層（motorWindowStart・getMotorPowerIndex・fetchMotorDailySeries・getMotorConditionTrend・
+ * getMotorPartsHistory・getMotorUsageHistory・getRaceMotorBreakdown・getVenueMotorStats・getVenueMotorSnapshot・
+ * getVenueMotorRanking・getRacesForVenueSince）を偽の supabase クライアントの上で呼び、返り値と
+ * 記録された問い合わせで見る（BOA-1406。以前は本文の正規表現）。
+ * 1. 期間の開始を max(使用開始日, 基準日−days) にする（基準日は今日、beforeRaceId があればその日）
+ * 2. 機力指数・日次系列・使用履歴・枠番別成績が、その開始日以降のレースだけを集め、日数だけの窓
+ *    （getRacesForVenue）が残っていない。使用開始日が不明なら集計しない
+ * 3. 戻り値の形を変えた関数は、localStorage に残る旧版のキャッシュを読まない
  * 4. 一覧表: 過去レースは再計算せず公式値（rate_source: "official"、power_index: null、
  *    venue_motor_stats はレース日以前のスナップショット）。過去/当日がキャッシュの
- *    キーに入っている（当日に保存した再計算の値を、翌日以降に7日TTLで読まない）
- * 5. 画面: 過去レースでは期間の切り替えを出さず注記に置き換え、公式2連率の列を畳む。
+ *    キーに入っている（当日に保存した再計算の値を、翌日以降に7日TTLで読まない。時計を進めて見る）
+ * 5. 画面（ソースと文言を検査する）: 過去レースでは期間の切り替えを出さず注記に置き換え、公式2連率の列を畳む。
  *    入れ替え前のモーターはドリルダウンの中身を出さない。選手ページも、直近出走が
  *    入れ替え前なら機力指数を出さない
  */
@@ -38,508 +40,216 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dataLayerCall, dataLayerMethod, readDataLayerSource } from "./dataLayerSource.js";
+import {
+  createFakeSupabase,
+  installLocalStorage,
+  registerFakeServiceSupabase,
+  setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
+import {
+  M,
+  V,
+  ent,
+  makeBreakdownWorld,
+  makeWorld,
+  race,
+  resultOf,
+  startRows,
+} from "./verifyData/motor-window-generation.js";
 import {
   formatGenerationDate,
   isClippedByGeneration,
   motorGenerationStartAsOf,
 } from "../../src/utils/motorGeneration.js";
 import { motorWindowFrom } from "../../src/utils/motorPowerIndex.js";
+import {
+  section1,
+  section2,
+  section3,
+  section4,
+  section5,
+} from "./verifyData/motor-window-generation-sections1.js";
+import {
+  section6,
+  section7,
+  section8,
+  section9,
+  section10,
+  section11,
+  section12,
+} from "./verifyData/motor-window-generation-sections2.js";
+import {
+  section13,
+  section14,
+  section15,
+  section16,
+} from "./verifyData/motor-window-generation-sections3.js";
+import {
+  section17,
+  section18,
+  section19,
+} from "./verifyData/motor-window-generation-sections4.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
 const read = (rel) => readFileSync(path.join(root, rel), "utf8");
 
+// サービス層を偽の supabase クライアントの上で呼ぶ（BOA-1675。共通の部品 verifyData/fakeServiceSupabase.js）
+registerFakeServiceSupabase();
+
+const say = console.log.bind(console);
+const sayErr = console.error.bind(console);
 const failures = [];
 const check = (label, ok) => {
-  console.log(`${ok ? "OK  " : "FAIL"} ${label}`);
+  say(`${ok ? "OK  " : "FAIL"} ${label}`);
   if (!ok) failures.push(label);
 };
+// サービス層の [Cache ...] ・エラーの通知は出さない（結果は check で見る）
+console.log = console.error = console.warn = () => {};
 
-const src = readDataLayerSource();
+const fake = setFakeSupabase(
+  createFakeSupabase({}, { scramble: true, project: true }),
+);
+// サービス層のキャッシュは localStorage にも書く。Node には無いので、中身を見られる物を置く（メモリのキャッシュは clearCache で消す）
+const store = installLocalStorage({ inspectable: true });
+// 時計を進められるようにする（キャッシュの期限・「今日」が変わる日をまたぐ振る舞いを見る）
+const RealDate = Date;
+const clock = { offsetMs: 0 };
+globalThis.Date = class extends RealDate {
+  constructor(...args) {
+    if (args.length === 0) super(RealDate.now() + clock.offsetMs);
+    else super(...args);
+  }
+  static now() {
+    return RealDate.now() + clock.offsetMs;
+  }
+};
+
+const { getTodayJST } = await import("../../src/utils/dateUtils.js");
+const core = await import("../../src/services/core.js");
+const motor1 = await import("../../src/services/motorQueries.js");
+const motor2 = await import("../../src/services/motorQueries2.js");
+const motor3 = await import("../../src/services/motorQueries3.js");
+const motor4 = await import("../../src/services/motorQueries4.js");
+const motor5 = await import("../../src/services/motorQueries5.js");
+const motor6 = await import("../../src/services/motorQueries6.js");
+const { clearCache, isPastRace } = core;
+const { motorWindowStart, fetchMotorDailySeries, getRacesForVenueSince } =
+  motor1;
+const { getMotorPowerIndex, getMotorUsageHistory } = motor2;
+const { getRaceMotorBreakdown, getVenueMotorStats, getVenueMotorSnapshot } =
+  motor3;
+const { getVenueMotorRanking } = motor4;
+const { getMotorWakuStats, getMotorRacerWakuStats, getMotorConditionTrend } =
+  motor5;
+const { getMotorPartsHistory } = motor6;
+
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const near = (a, b) => typeof a === "number" && Math.abs(a - b) < 1e-9;
+const addDays = (ymd, n) =>
+  new RealDate(new RealDate(`${ymd}T00:00:00Z`).getTime() + n * 86400000)
+    .toISOString()
+    .slice(0, 10);
+const T = getTodayJST();
+const day = (n) => addDays(T, n); // 今日から n 日後（負は前）
+const rid = (n, no, venue = V) =>
+  `${day(n)}-${String(venue).padStart(2, "0")}-${String(no).padStart(2, "0")}`;
+const run = async (tables, fn) => {
+  clearCache();
+  Object.keys(store).forEach((k) => delete store[k]);
+  clock.offsetMs = 0;
+  fake.reset(tables);
+  return fn();
+};
+const seed = (key, data) =>
+  localStorage.setItem(
+    `boatai:${key}`,
+    JSON.stringify({ data, timestamp: Date.now() }),
+  );
+const tablesAsked = () => fake.calls.map((c) => c.table);
+const askedAbout = (table) => fake.calls.filter((c) => c.table === table);
+const hasFilter = (call, op, col, val) =>
+  call.filters.some(([o, c, v]) => o === op && c === col && v === val);
+
 const slice0 = (text, beginMarker, endMarker) => {
   const begin = text.indexOf(beginMarker);
   const end = text.indexOf(endMarker, begin);
   return begin === -1 || end === -1 ? "" : text.slice(begin, end);
 };
-const slice = (beginMarker, endMarker) => {
-  const begin = src.indexOf(beginMarker);
-  const end = src.indexOf(endMarker, begin + beginMarker.length);
-  return begin >= 0 && end > begin ? src.slice(begin, end) : "";
+
+const ctx = {
+  M,
+  V,
+  askedAbout,
+  check,
+  clearCache,
+  clock,
+  core,
+  day,
+  ent,
+  fake,
+  fetchMotorDailySeries,
+  formatGenerationDate,
+  getMotorConditionTrend,
+  getMotorPartsHistory,
+  getMotorPowerIndex,
+  getMotorRacerWakuStats,
+  getMotorUsageHistory,
+  getMotorWakuStats,
+  getRaceMotorBreakdown,
+  getRacesForVenueSince,
+  getVenueMotorRanking,
+  getVenueMotorSnapshot,
+  getVenueMotorStats,
+  hasFilter,
+  isClippedByGeneration,
+  isPastRace,
+  makeBreakdownWorld,
+  makeWorld,
+  motor1,
+  motor2,
+  motor3,
+  motor4,
+  motor5,
+  motor6,
+  motorGenerationStartAsOf,
+  motorWindowFrom,
+  motorWindowStart,
+  near,
+  race,
+  read,
+  resultOf,
+  rid,
+  run,
+  same,
+  seed,
+  slice0,
+  startRows,
+  store,
+  tablesAsked,
 };
-const methodBody = (name) => dataLayerMethod(name);
-
-// BOA-1019: レース日以前で最新の使用開始日。当日は新しい世代に含める。
-const generationRows = [
-  { start_date: "2025-10-20" },
-  { start_date: "2026-10-06" },
-];
-for (const rows of [generationRows, [...generationRows].reverse()]) {
-  for (const [date, expected] of [
-    ["2025-11-11", "2025-10-20"],
-    ["2026-10-06", "2026-10-06"],
-    ["2026-10-05", "2025-10-20"],
-    ["2025-10-19", null],
-  ]) {
-    for (const input of [date, `${date}-08-07`]) {
-      check(
-        `motorGenerationStartAsOf: ${input} → ${expected}（先頭 ${rows[0].start_date}）`,
-        motorGenerationStartAsOf(rows, input) === expected,
-      );
-    }
-  }
-}
-for (const rows of [[], null]) {
-  check(
-    `motorGenerationStartAsOf: 履歴 ${JSON.stringify(rows)} は null`,
-    motorGenerationStartAsOf(rows, "2026-10-06") === null,
-  );
-}
-
-// 1. 期間の開始日
-const windowFn = slice("async function motorWindowStart(", "\n}\n");
-check("motorWindowStart がある", windowFn.length > 0);
-check(
-  "motorWindowStart: 使用開始日を getMotorGenerationStart で取る",
-  windowFn.includes("await getMotorGenerationStart(venueCode)"),
-);
-// 期間の計算は純関数 motorWindowFrom（BOA-1245。龍神ボート番付と共有）。サービスはそれを呼ぶだけ
-check(
-  "motorWindowStart: 期間の計算を motorWindowFrom に任せる（基準日は今日か beforeRaceId の日）",
-  /return motorWindowFrom\(\s*generationStart,\s*days,\s*beforeRaceId === null \? getTodayJST\(\) : beforeRaceId\.slice\(0, 10\),?\s*\)/.test(
-    windowFn,
-  ),
-);
-check(
-  "motorWindowFrom: 使用開始日が基準日−days より後なら使用開始日で切り詰める（max）",
-  JSON.stringify(motorWindowFrom("2026-10-01", 90, "2026-11-04")) ===
-    JSON.stringify({
-      since: "2026-10-01",
-      generationStart: "2026-10-01",
-      clippedByGeneration: true,
-    }) &&
-    JSON.stringify(motorWindowFrom("2026-01-01", 90, "2026-11-04")) ===
-      JSON.stringify({
-        since: "2026-08-06",
-        generationStart: "2026-01-01",
-        clippedByGeneration: false,
-      }) &&
-    motorWindowFrom("2026-08-06", 90, "2026-11-04").clippedByGeneration ===
-      false,
-);
-check(
-  "motorWindowFrom: 使用開始日が不明なら since: null（集計しない）",
-  JSON.stringify(motorWindowFrom(null, 90, "2026-11-04")) ===
-    JSON.stringify({
-      since: null,
-      generationStart: null,
-      clippedByGeneration: false,
-    }),
-);
-
-// 2. 各集計が世代で切り詰めた窓を通る
-check(
-  "日数だけの窓 getRacesForVenue が残っていない",
-  !/function getRacesForVenue\(/.test(src) &&
-    !/getRacesForVenue\(venueCode/.test(src),
-);
-const dailySeries = slice("function fetchMotorDailySeries(", "\n}\n");
-for (const [label, body] of [
-  ["機力指数（getMotorPowerIndex）", methodBody("getMotorPowerIndex")],
-  ["推移・部品交換（fetchMotorDailySeries）", dailySeries],
-  ["使用履歴（getMotorUsageHistory）", methodBody("getMotorUsageHistory")],
-]) {
-  check(`${label} が見つかる`, body.length > 0);
-  check(
-    `${label}: motorWindowStart で期間の開始を決める`,
-    body.includes("await motorWindowStart(venueCode, "),
-  );
-  check(
-    `${label}: 切り詰めた開始日以降のレースだけを集める`,
-    /getRacesForVenueSince\(\s*venueCode,\s*window\.since[,)]/.test(body),
-  );
-  check(
-    `${label}: 使用開始日が不明なら集計しない`,
-    body.includes("window.since === null"),
-  );
-}
-
-// 3. キャッシュのキー
-check(
-  "機力指数のキャッシュのキーが旧版（v2）と違う",
-  methodBody("getMotorPowerIndex").includes("`motor-power-index-v3-") &&
-    !src.includes("`motor-power-index-v2-"),
-);
-check(
-  "日次系列のキャッシュのキーが旧版と違う（戻り値を {window, series} に変えた）",
-  // 版は後から上がる（BOA-513 で v3）。v2 以上であることを見る
-  /`motor-daily-series-v([2-9]|\d{2,})-/.test(dailySeries) &&
-    !src.includes("`motor-daily-series-${"),
-);
-check(
-  "推移のキャッシュのキーが旧版（v2）と違う",
-  methodBody("getMotorConditionTrend").includes("`motor-condition-v3-") &&
-    !src.includes("`motor-condition-v2-"),
-);
-check(
-  "部品交換のキャッシュのキーが旧版と違う",
-  /`motor-parts-history-v([2-9]|\d{2,})-/.test(
-    methodBody("getMotorPartsHistory"),
-  ),
-);
-check(
-  "使用履歴のキャッシュのキーが旧版と違う",
-  /`motor-usage-history-v([2-9]|\\d{2,})-/.test(
-    methodBody("getMotorUsageHistory"),
-  ),
-);
-
-// 4. 一覧表
-const breakdown = methodBody("getRaceMotorBreakdown");
-check("getRaceMotorBreakdown が見つかる", breakdown.length > 0);
-check(
-  "一覧表: 過去レースかを isPastRace(raceId) で判定する",
-  breakdown.includes("const past = isPastRace(raceId);"),
-);
-check(
-  "一覧表: 過去/当日をキャッシュのキーに含める（v5〜）",
-  breakdown.includes(
-    '`race-motor-breakdown-v11-${past ? "official" : "recalc"}-',
-  ),
-);
-const pastBranch = breakdown.slice(
-  breakdown.indexOf("if (past) {"),
-  breakdown.indexOf("const [powerIndexes, venueMotorStatsList"),
-);
-check("一覧表: 過去レースの分岐がある", pastBranch.length > 0);
-check(
-  "一覧表（過去）: 機力指数を再計算しない（getMotorPowerIndex を呼ばない）",
-  !pastBranch.includes("getMotorPowerIndex"),
-);
-// 行の組み立ては src/pure/raceMotorBreakdown.js の pastMotorRows に移した（開発効率の計画 段3）
-const pastRowsFn = slice0(
-  read("src/pure/raceMotorBreakdown.js"),
-  "export function pastMotorRows(",
-  "\n}\n",
-);
-check(
-  "一覧表（過去）: pastMotorRows を呼ぶ",
-  pastBranch.includes("pastMotorRows(rows, statsAsOf, pretestAsOf)"),
-);
-check(
-  '一覧表（過去）: rate_source: "official"・power_index: null',
-  pastRowsFn.includes('rate_source: "official"') &&
-    pastRowsFn.includes("power_index: null"),
-);
-check(
-  "一覧表（過去）: motor_2rate / motor_3rate を差し替えない（行の組み立て側）",
-  !/motor_2rate:/.test(pastRowsFn) &&
-    !/motor_3rate:/.test(pastRowsFn) &&
-    !pastRowsFn.includes("actual_rate"),
-);
-check(
-  "一覧表（過去）: 優出・優勝・1着率はレース日以前の公式スナップショット",
-  new RegExp(
-    String.raw`${dataLayerCall("getVenueMotorStats")}venueCode, row\.motor_number, raceDate\)`,
-  ).test(pastBranch),
-);
-check(
-  "一覧表（過去）: motor_2rate / motor_3rate を差し替えない（出走表の公式値のまま）",
-  !/motor_2rate:/.test(pastBranch) && !/motor_3rate:/.test(pastBranch),
-);
-const venueStats = methodBody("getVenueMotorStats");
-check(
-  "getVenueMotorStats: asOfDate 以前で最新のスナップショットを取り、キーを分ける",
-  venueStats.includes('.lte("scraped_date", asOfDate ?? "9999-12-31")') &&
-    venueStats.includes("`venue-motor-stats-asof-"),
-);
-const pastFn = slice("function isPastRace(", "\n}\n");
-check(
-  "isPastRace: レースの日付が今日（JST）より前",
-  pastFn.includes("raceId.slice(0, 10) < getTodayJST()"),
-);
-
-// 5. 画面
-const chart = read("src/components/analysis/MotorConditionChart.jsx");
-check(
-  "画面: 過去レース（rate_source: official）では期間の切り替えを出さず注記に置き換える",
-  chart.includes('breakdown.some((r) => r.rate_source === "official")') &&
-    /drillDownMotor === null\s*\?\s*!officialMode/.test(chart) &&
-    chart.includes("analysis.motor.periodOfficialNote"),
-);
-check(
-  "画面: 過去レースでは「公式2連率（節時点）」の列を畳む（見出しとセルの両方）",
-  (chart.match(/\{!officialMode && \(/g) ?? []).length >= 2,
-);
-check(
-  "画面: 入れ替え前のモーターはドリルダウンの中身を出さない",
-  chart.includes("raceDate < generationStart") &&
-    chart.includes("setDrillPreGeneration(true)") &&
-    chart.includes("analysis.motor.drillPreGeneration"),
-);
-check(
-  "画面: 期間を使用開始日で切り詰めたら注記を出す",
-  chart.includes("analysis.motor.periodClippedNote"),
-);
-check(
-  "画面: 切り詰めたときは機力指数の要約に「過去90日」と書かない",
-  chart.includes("period: powerIndex.clipped_by_generation") &&
-    chart.includes("analysis.motor.periodSinceGeneration"),
-);
-// 選手ページの今節のモーター（RA40 BOA-1673 で racerService.js から移した）
-const racer = read("src/services/motorQueries7.js");
-check(
-  "選手ページ: 直近出走が入れ替え前なら機力指数・公式成績を出さない",
-  racer.includes("date < generationStart") &&
-    // 領域の Queries の名前つき import（殻 supabaseDataService は RA40 で消えた）
-    /preGeneration\s*\?\s*null\s*:\s*getMotorPowerIndex\(/.test(
-      racer,
-    ),
-);
-// 2026-09-29 ファン評価1周目の修正
-check(
-  "選手ページ: 直近出走が入れ替え前なら理由を書き、行き止まりのリンクを出さない",
-  racer.includes("preGeneration,\n  };") &&
-    read("src/components/racer/RacerMotorStatusCard.jsx").includes(
-      "{preGeneration ? (",
-    ),
-);
-check(
-  "画面: 入れ替え前のレースは一覧の時点で伝え、「行を押すと推移」の案内を出さない",
-  chart.includes("setRacePreGeneration(preGeneration)") &&
-    chart.includes("analysis.motor.racePreGenerationNote") &&
-    /racePreGeneration \? \(\s*<p className="table-note">\{t\("analysis\.motor\.highlightNote"\)\}/.test(
-      chart,
-    ),
-);
-check(
-  // 当日のレースも「直前まで」で集計するので、注記も当日から出す（BOA-557）
-  "画面: ドリルダウンは（過去・当日とも）「このレースの直前まで」と明示する（BOA-521）",
-  chart.includes("{selectedRace && (") &&
-    chart.includes("analysis.motor.drillAsOfRaceNote"),
-);
-{
-  // 出典の注記は横スクロール枠（右端のフェード）の外に置く（375pxで行末が隠れる）
-  const wrapperStart = chart.indexOf("table-wrapper hscroll-hint");
-  const noteAt = chart.indexOf("motor-official-source-note", wrapperStart);
-  const between = chart.slice(wrapperStart, noteAt);
-  const opens = (between.match(/<div\b/g) ?? []).length;
-  const closes = (between.match(/<\/div>/g) ?? []).length;
-  check(
-    "画面: 出典の注記が横スクロール枠の外にある",
-    wrapperStart >= 0 && noteAt > wrapperStart && closes > opens,
-  );
-}
-check(
-  "画面: 過去レースはドリルダウンでも期間を選ばせない（90日に戻す）",
-  chart.includes("!drillPreGeneration && !isPastSelectedRace") &&
-    /selectedRace\.slice\(0, 10\) < getTodayJST\(\)\) \{\s*setPeriodDays\(90\)/.test(
-      chart,
-    ),
-);
-check(
-  "画面: 入れ替え前のレースでもハイライト行の説明は残す",
-  chart.includes("analysis.motor.highlightNote"),
-);
-// BOA-521: 過去レースのドリルダウンは「このレースの直前まで」で集計する
-{
-  const races = slice("function getRacesForVenueSince(", "\n}\n");
-  check(
-    "getRacesForVenueSince: beforeRaceId より前のレースに限り（race_id <）、キーを分ける",
-    races.includes("races.filter((r) => r.race_id < beforeRaceId)") &&
-      races.includes("${beforeKey(beforeRaceId)}"),
-  );
-  check(
-    "getRacesForVenueSince: includeTarget（既定 false）でだけ対象レース自身を含め（race_id <=）、キーを分ける",
-    races.includes("{ includeTarget = false } = {}") &&
-      races.includes("races.filter((r) => r.race_id <= beforeRaceId)") &&
-      // "-incl" は beforeKey より前（キーの末尾が race_id のままで、過去レースの長い TTL が効く）
-      races.includes(
-        "${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}",
-      ) &&
-      src.includes('beforeRaceId && includeTarget ? "-incl" : ""'),
-  );
-  {
-    // 動きの確認: 同じ filter 式を実データの形に当てる（既定は対象を除き、includeTarget は含む）
-    const rows = [
-      "2026-11-04-01-01",
-      "2026-11-04-01-02",
-      "2026-11-04-01-03",
-    ].map((race_id) => ({ race_id }));
-    const target = "2026-11-04-01-02";
-    const excl = rows.filter((r) => r.race_id < target).map((r) => r.race_id);
-    const incl = rows.filter((r) => r.race_id <= target).map((r) => r.race_id);
-    check(
-      "getRacesForVenueSince: 既定は対象を除き、includeTarget は対象まで含む（後のレースは入らない）",
-      excl.join() === "2026-11-04-01-01" &&
-        incl.join() === "2026-11-04-01-01,2026-11-04-01-02",
-    );
-  }
-  check(
-    "motorWindowStart: beforeRaceId があれば、その日付を基準日にする",
-    windowFn.includes("beforeRaceId === null") &&
-      windowFn.includes("beforeRaceId.slice(0, 10)"),
-  );
-  for (const [label, body] of [
-    ["機力指数", methodBody("getMotorPowerIndex")],
-    ["日次系列", dailySeries],
-    ["使用履歴", methodBody("getMotorUsageHistory")],
-    ["枠番別成績", methodBody("getMotorWakuStats")],
-    ["選手×枠成績", methodBody("getMotorRacerWakuStats")],
-  ]) {
-    check(
-      `${label}: 上限（beforeRaceId）をレースの取得に通し、キャッシュのキーに入れる`,
-      /getRacesForVenueSince\([^)]*beforeRaceId,?\s*(\{ includeTarget \},?\s*)?\)/.test(
-        body,
-      ) && body.includes("${beforeKey(beforeRaceId)}"),
-    );
-  }
-  // BOA-1297: 部品交換・使用履歴は includeTarget を取得まで通し、キャッシュのキーを分ける
-  for (const [label, body] of [
-    ["日次系列", dailySeries],
-    ["使用履歴", methodBody("getMotorUsageHistory")],
-    ["部品交換", methodBody("getMotorPartsHistory")],
-  ]) {
-    check(
-      `${label}: includeTarget（既定 false）を受け、取得に通し、キーを分ける`,
-      body.includes("{ includeTarget = false } = {}") &&
-        body.includes(
-          "${includeKey(beforeRaceId, includeTarget)}${beforeKey(beforeRaceId)}",
-        ),
-    );
-  }
-  check(
-    "日次系列・使用履歴: レースの取得に { includeTarget } を渡す",
-    /getRacesForVenueSince\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(
-      dailySeries,
-    ) &&
-      /getRacesForVenueSince\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(
-        methodBody("getMotorUsageHistory"),
-      ),
-  );
-  check(
-    "部品交換: 日次系列の取得に { includeTarget } を渡す",
-    /fetchMotorDailySeries\([^)]*beforeRaceId,\s*\{ includeTarget \},?\s*\)/.test(
-      methodBody("getMotorPartsHistory"),
-    ),
-  );
-  const champ = methodBody("getVenueMotorChampionshipHistory");
-  check(
-    "優勝履歴: 過去レースではそのレースより前の優勝に限る",
-    champ.includes("raceId < beforeRaceId") &&
-      champ.includes("${beforeKey(beforeRaceId)}"),
-  );
-  check(
-    // 会場全体の取得は getVenueMotorSnapshot に移した（BOA-428。一覧の6基と共有する）
-    "会場内順位: asOfDate 以前のスナップショットで順位を出す",
-    new RegExp(
-      String.raw`${dataLayerCall("getVenueMotorSnapshot")}venueCode, asOfDate\)`,
-    ).test(methodBody("getVenueMotorRanking")) &&
-      methodBody("getVenueMotorSnapshot").includes(
-        '.lte("scraped_date", asOfDate ?? "9999-12-31")',
-      ),
-  );
-  check(
-    // 当日のレースも「このレースの直前まで」（BOA-557）
-    "画面: ドリルダウンで beforeRaceId（過去・当日とも表示中のレース）を9つの取得すべてに渡す",
-    chart.includes("const beforeRaceId = selectedRace ?? null;") &&
-      (chart.match(/\bbeforeRaceId,\n/g) ?? []).length >= 7 &&
-      (chart.match(/isPast \? raceDate : null/g) ?? []).length >= 2,
-  );
-}
-// 2026-09-29 ユーザー判断 B: 使用開始日を画面に出す（ADR-0067 2026-09-28追記の改訂）。
-// 日付を伏せた注記「入れ替え後のため…」が「最近入れ替えた」と誤読されたため
-check(
-  "画面: 使用開始日の行を、期間の切り替えを出すとき（当日のレース）だけに出す",
-  /showPeriodToggle \? \(\s*<>\s*\{\/\*[\s\S]*?\*\/\}\s*\{generationStart !== null && \(/.test(
-    chart,
-  ) && chart.includes("analysis.motor.generationStartSource"),
-);
-check(
-  "画面: 切り詰めの注記と機力指数の要約に使用開始日を差し込む",
-  /periodClippedNote", \{\s*date: formatGenerationDate\(generationStart/.test(
-    chart,
-  ) &&
-    /periodSinceGeneration", \{\s*date: formatGenerationDate\(generationStart/.test(
-      chart,
-    ),
-);
-check(
-  "画面: 使用開始日の取得に失敗しても一覧表は出す（try/catch で null に倒す）",
-  // 領域の Queries の名前つき import（殻 supabaseDataService は RA40 で消えた）
-  /let venueGenerationStart = null;\s*try \{\s*venueGenerationStart =\s*await getMotorGenerationStart\(/.test(
-    chart,
-  ),
-);
-// 入れ替えから1ヶ月以内は「直近1ヶ月」まで切り詰められ、切り替えても中身が変わらない
-// （2026-09-29 ファン評価。丸亀 9/17 入れ替え → 9/29 は両方とも 9/17 以降）
-check(
-  "isClippedByGeneration: 丸亀（9/17〜）は 9/29 時点で30日も切り詰め、戸田（8/6〜）は切り詰めない",
-  isClippedByGeneration("2026-09-17", "2026-09-29", 30) === true &&
-    isClippedByGeneration("2026-08-06", "2026-09-29", 30) === false &&
-    isClippedByGeneration("2026-08-06", "2026-09-29", 90) === true &&
-    isClippedByGeneration(null, "2026-09-29", 30) === false,
-);
-check(
-  "isClippedByGeneration: 境界（使用開始日 = 基準日−days）は切り詰めない",
-  isClippedByGeneration("2026-08-30", "2026-09-29", 30) === false &&
-    isClippedByGeneration("2026-08-31", "2026-09-29", 30) === true,
-);
-check(
-  "formatGenerationDate: 2026/8/6 と 8/6（先頭の0を付けない）",
-  formatGenerationDate("2026-08-06") === "2026/8/6" &&
-    formatGenerationDate("2026-08-06", { short: true }) === "8/6" &&
-    formatGenerationDate(null) === "",
-);
-check(
-  "画面: 両方の期間が切り詰められるときは、期間の切り替えボタンを出さない",
-  /periodChoiceHasEffect && \(\s*<div className="period-toggle"/.test(chart),
-);
-check(
-  "画面: 枠番別成績の注記にも使用開始日を入れる",
-  read("src/components/analysis/MotorWakuStatsGrid.jsx").includes(
-    "date: formatGenerationDate(generationStart, { short: true })",
-  ),
-);
-check(
-  "画面: 経過日数（◯日目）は出さない（ファンの単位は節。2026-09-29 ファン議論）",
-  !/日目/.test(chart),
-);
-for (const lang of ["ja", "en", "zh-TW", "ko"]) {
-  const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
-    .motor;
-  // BOA-521: ドリルダウンは「このレースの直前まで」なので、一覧の注記で機力指数を
-  // 「今日から遡る指標」と説明すると食い違う（2026-09-29 ファン評価）
-  check(
-    `${lang}: 過去レースの出典注記が、機力指数を「今日から遡る」と説明していない`,
-    !/今日から遡|computed backward from today|從今天回溯|오늘부터 거슬러/.test(
-      motor.officialModeSourceNote,
-    ),
-  );
-  check(
-    `${lang}: 使用開始日の行・注記が日付（{{date}}）を受け取り、出典に BOATCAST とある`,
-    motor.generationStartLabel?.includes("{{date}}") &&
-      motor.periodClippedNote.includes("{{date}}") &&
-      motor.periodSinceGeneration.includes("{{date}}") &&
-      motor.generationStartSource?.includes("BOATCAST"),
-  );
-  check(
-    `${lang}: 過去レース・切り詰め・入れ替え前の文言がある`,
-    [
-      "periodOfficialNote",
-      "periodClippedNote",
-      "officialModeSourceNote",
-      "drillPreGeneration",
-      "periodSinceGeneration",
-      "racePreGenerationNote",
-      "drillAsOfRaceNote",
-      "highlightNote",
-    ].every((k) => typeof motor[k] === "string" && motor[k].length > 0),
-  );
-}
+await section1(ctx);
+await section2(ctx);
+await section3(ctx);
+await section4(ctx);
+await section5(ctx);
+await section6(ctx);
+await section7(ctx);
+await section8(ctx);
+await section9(ctx);
+await section10(ctx);
+await section11(ctx);
+await section12(ctx);
+await section13(ctx);
+await section14(ctx);
+await section15(ctx);
+await section16(ctx);
+await section17(ctx);
+await section18(ctx);
+await section19(ctx);
 
 if (failures.length > 0) {
-  console.error(`\n${failures.length}件失敗`);
+  sayErr(`\n${failures.length}件失敗`);
   process.exit(1);
 }
-console.log("\nすべて成功");
+say("\nすべて成功");

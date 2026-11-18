@@ -24,7 +24,7 @@ import {
   officialSeriesScore,
   readOfficialPenalty,
   parseOfficialPlacements,
-} from "../../src/components/race/seriesPoints.js";
+} from "../../src/pure/seriesPoints.js";
 
 // 取得失敗を「データなし」に化けさせない。`scripts/lib/supabaseClient.js` は
 // 15秒でfetchを中断するため、エラーを見ないと空の結果で検証が緑になる

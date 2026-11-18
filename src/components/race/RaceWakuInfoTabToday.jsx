@@ -1,5 +1,5 @@
-import { SMALL_SAMPLE_THRESHOLD } from "./basicInfoStats";
-import { TODAY_METRICS } from "./courseGridStats";
+import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
+import { TODAY_METRICS } from "../../pure/courseGridStats.js";
 import RecentRunsBar from "./RecentRunsBar";
 
 // 1艇ずつの表の先頭の「直近3期」の行（BOA-1295）。値は6艇の表の同じ艇の行（公式の期別成績）。

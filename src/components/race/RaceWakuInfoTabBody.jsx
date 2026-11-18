@@ -1,4 +1,4 @@
-import { recordsBeforeRace } from "./basicInfoStats";
+import { recordsBeforeRace } from "../../pure/basicInfoStats.js";
 import SixBoatCourseTable from "./SixBoatCourseTable";
 import RaceStConsiderationCard from "./RaceStConsiderationCard";
 import { deriveCellView, periodAnchorOf } from "./RaceWakuInfoTabData";

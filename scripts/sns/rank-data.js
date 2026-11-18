@@ -33,7 +33,7 @@ import {
   motorGenerationStartAsOf,
 } from "../../src/utils/motorGeneration.js";
 import { formatPowerIndex } from "../../src/utils/smallSampleRate.js";
-import { SMALL_SAMPLE_THRESHOLD } from "../../src/components/race/basicInfoStats.js";
+import { SMALL_SAMPLE_THRESHOLD } from "../../src/pure/basicInfoStats.js";
 import { buildRacerRaceHistoryRows } from "../../src/services/racerRaceHistoryRows.js";
 import { splitRacerName } from "../../src/utils/racerName.js";
 import {

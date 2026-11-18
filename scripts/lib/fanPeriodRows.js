@@ -164,6 +164,40 @@ export function buildStatsRows(fan) {
 
 const sumCourses = (r, key) => r.courses.reduce((a, c) => a + c[key], 0);
 
+/** 能力指数（整数でなければ警告を足して丸める）。出走が無ければ null */
+function profileAbility(r, noStarts, warnings) {
+  let ability = noStarts ? null : nz(r.ability_now);
+  if (ability !== null && !Number.isInteger(ability)) {
+    warnings.push(
+      `${r.racer_id}: 能力指数 ${ability} が整数でないため、丸めて ability_index（INTEGER）へ入れます`,
+    );
+    ability = Math.round(ability);
+  }
+  return ability;
+}
+
+/** 1選手の racer_profiles の更新行 */
+function profileRow(r, { noStarts, ability, label, includeNewColumns }) {
+  const row = {
+    racer_id: r.racer_id,
+    ability_index: ability,
+    flying_count_period: noStarts ? null : sumCourses(r, "f"),
+    false_start_count_period: noStarts
+      ? null
+      : sumCourses(r, "l1") + r.no_course.l1,
+    period_label: noStarts ? null : label,
+    official_win_rate_period: noStarts ? null : r.win_rate,
+    height_cm: nz(r.height_cm),
+    weight_kg: nz(r.weight_kg),
+    branch: orNull(r.branch),
+  };
+  if (includeNewColumns) {
+    row.sex = r.sex;
+    row.training_term = r.training_term;
+  }
+  return row;
+}
+
 /**
  * 最新期の中間形式 → racer_profiles の更新行（既存の読み手向けの列）。
  * 既存の行の更新のみ（新規作成しない: 氏名・出身地・血液型は、選手ページの表記（氏名の空白、出身地の「県」、
@@ -186,31 +220,8 @@ export function buildProfileSyncRows(fan, { includeNewColumns = true } = {}) {
   for (const r of fan.records) {
     if (r.racer_id === null || r.racer_id === undefined) continue;
     const noStarts = !r.starts;
-    let ability = noStarts ? null : nz(r.ability_now);
-    if (ability !== null && !Number.isInteger(ability)) {
-      warnings.push(
-        `${r.racer_id}: 能力指数 ${ability} が整数でないため、丸めて ability_index（INTEGER）へ入れます`,
-      );
-      ability = Math.round(ability);
-    }
-    const row = {
-      racer_id: r.racer_id,
-      ability_index: ability,
-      flying_count_period: noStarts ? null : sumCourses(r, "f"),
-      false_start_count_period: noStarts
-        ? null
-        : sumCourses(r, "l1") + r.no_course.l1,
-      period_label: noStarts ? null : label,
-      official_win_rate_period: noStarts ? null : r.win_rate,
-      height_cm: nz(r.height_cm),
-      weight_kg: nz(r.weight_kg),
-      branch: orNull(r.branch),
-    };
-    if (includeNewColumns) {
-      row.sex = r.sex;
-      row.training_term = r.training_term;
-    }
-    rows.push(row);
+    const ability = profileAbility(r, noStarts, warnings);
+    rows.push(profileRow(r, { noStarts, ability, label, includeNewColumns }));
   }
   return { rows, warnings };
 }

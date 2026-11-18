@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { WAVE_EXCLUDED_VENUE_CODES } from "../basicInfoStats";
+import { WAVE_EXCLUDED_VENUE_CODES } from "../../../pure/basicInfoStats.js";
 
 // 注記を4本並べるとグレーの壁になって誰も読まないので、
 // 毎回は要らない2本（最終日の構造差・母数が違う行）は

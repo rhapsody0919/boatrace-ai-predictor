@@ -2,7 +2,7 @@
  * VenueCharacteristicsDetails の純な計算（BOA-269）。表示の可否・数値の整形・リンク・決まり手の行を作る
  */
 import { translateTechnique } from "../race/raceIndicators";
-import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
+import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
 import { localizePath } from "../../config/languages";
 import { techniqueBreakdown } from "../../utils/venuePlaceRates";
 

@@ -27,7 +27,7 @@ import {
   isExcludedStage,
   countsForSeriesScore,
   semifinalRaceIdsOf,
-} from "../../src/components/race/seriesPoints.js";
+} from "../../src/pure/seriesPoints.js";
 
 /** PR #871 時点の「レース単位」の締め判定（候補比較のために残す） */
 function pastPrelimRace(raceId, prelimEndRaceId) {

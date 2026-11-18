@@ -1,3 +1,4 @@
+// RA41（BOA-1674）で src/utils/racerOfficialPeriodStats.js から pure の根へ移した（中身は変えていない）
 /**
  * 選手ページの「公式の期別成績」と「進入コース別成績（公式）」の表示用の値を作る（純関数、GS00）。
  *

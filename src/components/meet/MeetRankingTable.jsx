@@ -4,7 +4,7 @@ import {
   FINISH_ABSENT,
   SCORE_POINTS,
   pointsNeededForBorder,
-} from "../race/seriesPoints";
+} from "../../pure/seriesPoints.js";
 import { borderTieOf } from "../../utils/meetPageModel";
 import RacerLink from "../race/assist/RacerLink";
 import "./MeetRankingTable.css";

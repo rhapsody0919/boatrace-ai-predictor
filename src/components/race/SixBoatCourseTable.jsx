@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import SixBoatCourseTableRow from "./SixBoatCourseTableRow";
-import { buildSixBoatLocalRows } from "./sixBoatCourseStats.js";
+import { buildSixBoatLocalRows } from "../../pure/sixBoatCourseStats.js";
 import "./SixBoatCourseTable.css";
 
 const slash = (date) => date.replaceAll("-", "/");

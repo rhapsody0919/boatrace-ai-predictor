@@ -196,6 +196,8 @@ export function unitsOfSource(source) {
     name: u.name,
     hash: hashUnit(u, names),
     lines: u.fn.loc.end.line - u.fn.loc.start.line + 1,
+    start: u.fn.loc.start.line,
+    end: u.fn.loc.end.line,
     complexity: complexityOf(u.fn),
   }));
 }
@@ -205,6 +207,29 @@ export const isOverLine = (u) =>
 
 export const countLines = (text) =>
   text.split("\n").length - (text.endsWith("\n") ? 1 : 0);
+
+/** 空行とコメントだけの行を除いた行の番号（1 始まり）の一覧。parse できなければ throw */
+export function substantiveLineNumbers(source) {
+  const ast = parse(source, { sourceType: "module", plugins: ["jsx"] });
+  const chars = source.split("");
+  for (const c of ast.comments) {
+    for (let i = c.start; i < c.end; i += 1) {
+      if (chars[i] !== "\n") chars[i] = " ";
+    }
+  }
+  return chars
+    .join("")
+    .split("\n")
+    .flatMap((t, i) => (t.trim() === "" ? [] : [i + 1]));
+}
+
+/** 実質の行数（空行・コメントを除く）から、基準を持つ単位の実質の行を除いた数 */
+export function restSubstantive(source, baseline) {
+  const own = unitsOfSource(source).filter((u) => baseline.units[u.hash]);
+  return substantiveLineNumbers(source).filter(
+    (n) => !own.some((u) => n >= u.start && n <= u.end),
+  ).length;
+}
 
 /** 木の全部のファイルの字（{path: source}）→ 基準。線を越える単位だけ載せる */
 export function buildBaseline(files) {
@@ -252,23 +277,39 @@ function fileLineError(file, source, units, baseline) {
     : null;
 }
 
+// 旗の後の既存ファイル（案A）: 実質の行が 400 を越え、base の実質の行から増えたときだけ赤。
+// baseSource が null（base に無い）ときは増えたとみなす
+function substantiveGrowthError(file, source, baseSource, baseline) {
+  const now = restSubstantive(source, baseline);
+  if (now <= MAX_FILE_LINES) return null;
+  const was =
+    typeof baseSource === "string" ? restSubstantive(baseSource, baseline) : null;
+  return was !== null && now <= was
+    ? null
+    : `${file} ファイルの実質の行（空行・コメント・基準を持つ単位を除く）が ${now} 行で ${MAX_FILE_LINES} を越え、base の ${was ?? "なし"} から増えた`;
+}
+
 /**
- * 基準と比べる。files: [{file, source, isNew}]。
+ * 基準と比べる。files: [{file, source, isNew, baseSource}]。
+ * baseSource: base（origin/master。名前を変えたファイルは oldFile）の同じファイルの字。
  * strictExisting: 基準が半分以下になった旗。立てると既存のファイルの線の越えも赤にする
  */
 export function checkAgainstBaseline({ baseline, files, strictExisting = false }) {
   const errors = [];
   const warnings = [];
-  for (const { file, source, isNew } of files) {
+  for (const { file, source, isNew, baseSource } of files) {
     const units = unitsOfSource(source);
     for (const u of units) {
       const r = judgeUnit(u, file, baseline, strictExisting);
       if (r) (r.level === "error" ? errors : warnings).push(r.text);
     }
-    if (isNew || strictExisting) {
-      const e = fileLineError(file, source, units, baseline);
-      if (e) errors.push(e);
-    }
+    const e =
+      isNew || (strictExisting && baseSource === undefined)
+        ? fileLineError(file, source, units, baseline)
+        : strictExisting
+          ? substantiveGrowthError(file, source, baseSource, baseline)
+          : null;
+    if (e) errors.push(e);
   }
   return { errors, warnings };
 }

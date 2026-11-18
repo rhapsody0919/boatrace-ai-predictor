@@ -8,7 +8,7 @@
  * Node から読むため、import は拡張子付き。
  */
 import { tallyWinPlaceShow } from "./racerConditionStats.js";
-import { finishPositionOf } from "../components/race/basicInfoStats.js";
+import { finishPositionOf } from "../pure/basicInfoStats.js";
 
 // 100円単位で賭けた場合の回収率(%)を返す（払戻合計 / (件数*100) * 100）。
 // getRacerBoatReturnRate/getRaceRacerBoatReturnRate/aggregateRacerVenueBoatStats

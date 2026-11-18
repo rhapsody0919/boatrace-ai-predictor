@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1969 |
+| 読んだファイル | 1988 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -260,10 +260,10 @@
 | result_catchup | api/cron/result-catchup.js | 33 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 17 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 18 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 93 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 90 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | sns_daily | api/cron/sns-daily.js | 19 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
 | sns_metrics | api/cron/sns-metrics.js | 24 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
-| sns_send | api/cron/sns-send.js | 81 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_send | api/cron/sns-send.js | 78 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | venue_motor_stats | api/cron/venue-motor-stats.js | 25 | scrape_job_state, scrape_slots, venue_motor_stats |
 
 ## 表ごとの読み手・書き手
@@ -664,7 +664,7 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/maintenance/fix-opening-day-race-id-date.js:78`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:51`
 - 読み手（2）: 
   - `scripts/analysis/verify-poirot.js:56` select(helper:fetchAll)
-  - `src/services/poirotService.js:59` select [model_version, predicted_at, race_id, top_2nd, top_3rd, top_pick, trifecta_prob, win_probs]
+  - `src/services/poirotService.js:62` select [model_version, predicted_at, race_id, top_2nd, top_3rd, top_pick, trifecta_prob, win_probs]
 - 書き手（1）: 
   - `scripts/daily/generate-poirot-predictions.js:78` upsert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -1204,7 +1204,7 @@
   - `scripts/maintenance/backfill-trifecta-trio.js:19` select [*, race_id]
   - `scripts/maintenance/build-races-derived-backfill-sql.js:114` select(helper:fetchAll)
   - `scripts/maintenance/check-exhibition-gap-rate.js:40` select(helper:fetchAll)
-  - `scripts/maintenance/check-result-shadow.js:157` select(helper:fetchByRaceIds)
+  - `scripts/maintenance/check-result-shadow.js:160` select(helper:fetchByRaceIds)
   - `scripts/maintenance/delete-cancelled-race-predictions.js:55` select [race_id]
   - `scripts/maintenance/delete-phantom-race-days.js:62` select(helper:fetchAll)
   - `scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:45` select(helper:fetchAll)
@@ -1307,7 +1307,7 @@
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:48` select(helper:fetchAll)
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:71` select(helper:fetchAll)
   - `scripts/maintenance/backfill-start-timings.js:261` select [race_id]
-  - `scripts/maintenance/check-result-shadow.js:163` select(helper:fetchByRaceIds)
+  - `scripts/maintenance/check-result-shadow.js:166` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:91` select(helper:fetchAll)
   - `scripts/sns/rank-data.js:528` select(helper:readAllIn)
   - `scripts/verification/verify-series-points-border.mjs:64` select [boat_number, finish_mark, race_id]
@@ -1529,7 +1529,7 @@
   - `scripts/lib/raceSeriesLookup.js:174` select [cancellation_status, race_date, venue_code]
   - `scripts/lib/raceStatusJob.js:109` select [cancellation_status, race_date, race_id, race_number, venue_code]
   - `scripts/lib/racesInit/job.js:122` select(helper:fetchAll)
-  - `scripts/lib/scrapeJobs/monitor.js:749` select [race_date, race_id]
+  - `scripts/lib/scrapeJobs/monitor.js:809` select [race_date, race_id]
   - `scripts/lib/scrapeJobs/pcexpectHandlers.js:33` select [race_id, start_time]
   - `scripts/lib/scrapeJobs/resultHandlers.js:153` select [race_date, race_id, start_time]
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select(embed) [cancellation_status]
@@ -1568,7 +1568,7 @@
   - `scripts/maintenance/check-odds-shadow.js:142` select(embed) [cancellation_status, start_time]
   - `scripts/maintenance/check-pre-race-shadow.js:255` select(embed) [cancellation_status, start_time]
   - `scripts/maintenance/check-pre-race-shadow.js:293` select(helper:fetchByRaceIds)
-  - `scripts/maintenance/check-result-shadow.js:125` select(embed) [cancellation_status, start_time]
+  - `scripts/maintenance/check-result-shadow.js:129` select(embed) [cancellation_status, start_time]
   - `scripts/maintenance/delete-cancelled-race-predictions.js:40` select(helper:fetchAll)
   - `scripts/maintenance/delete-phantom-race-days.js:56` select(helper:fetchAll)
   - `scripts/maintenance/delete-phantom-race-days.js:103` select [race_date, race_id, race_number, venue_code]
@@ -1611,7 +1611,7 @@
   - `src/services/motorQueries.js:112` select [race_date, race_id, venue_code]
   - `src/services/motorQueries3.js:282` select(embed) [venue_code]
   - `src/services/mycroftService.js:78` select [race_date, race_id, race_number, start_time, venue_code]
-  - `src/services/poirotService.js:48` select [race_date, race_id, race_number, start_time, venue_code]
+  - `src/services/poirotService.js:49` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/racerQueries2.js:51` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:213` select(helper:fetchAllByIn)
   - `src/services/racerQueries2.js:289` select(helper:fetchAllByIn)
@@ -1678,7 +1678,7 @@
   - `scripts/lib/motorPretestJob.js:197` select [job, last_target_date, mode]
   - `scripts/lib/racesInit/job.js:148` select [job, mode]
   - `scripts/lib/racesInit/predictCodeCheck.js:104` select [job, last_report]
-  - `scripts/lib/scrapeJobs/monitor.js:717` select [*]
+  - `scripts/lib/scrapeJobs/monitor.js:777` select [*]
   - `scripts/lib/scrapeJobs/store.js:86` select [*, job]
   - `scripts/lib/scrapeJobs/store.js:286` select [?, job]
   - `scripts/maintenance/check-morning-init-shadow.js:197` select [consecutive_failures, cursor, job, last_error, last_success_at, mode]
@@ -1711,13 +1711,13 @@
 - 読み手（10）: 
   - `scripts/lib/boatcast/oritenJob.js:374` select [job, outcome, race_date, race_id, status]
   - `scripts/lib/boatcast/oritenJob.js:534` select [job, race_date, race_id]
-  - `scripts/lib/scrapeJobs/monitor.js:727` select [?]
+  - `scripts/lib/scrapeJobs/monitor.js:787` select [?]
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select [job, race_date, race_id]
   - `scripts/lib/scrapeJobs/resultHandlers.js:316` select [job, race_date, race_id, status]
   - `scripts/maintenance/check-morning-init-shadow.js:279` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
   - `scripts/maintenance/check-odds-shadow.js:142` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
   - `scripts/maintenance/check-pre-race-shadow.js:255` select [attempts, done_at, first_attempt_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, rows_written, run_mode, status]
-  - `scripts/maintenance/check-result-shadow.js:125` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
+  - `scripts/maintenance/check-result-shadow.js:129` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
   - `scripts/maintenance/verify-scrape-slots-on-db.js:198` select [attempts, job, status] （検査）
 - 書き手（9）: 
   - `scripts/lib/boatcast/oritenJob.js:568` upsert [?]

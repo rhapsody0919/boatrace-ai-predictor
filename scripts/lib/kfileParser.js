@@ -114,17 +114,10 @@ export async function fetchKFileText(dateStr, { fetchImpl = fetch } = {}) {
   }
 }
 
-/**
- * Kファイルのデコード済みテキストをパースし、レースごとの実進入コースを抽出する。
- * @param {string} text - fetchKFileText()が返すデコード済みテキスト
- * @param {string} raceDate - YYYY-MM-DD（race_id組み立てに使用）
- * @returns {Array<{race_id: string, venue_code: number, race_number: number,
- *   actual_course_1: number|null, ..., actual_course_6: number|null}>}
- */
-export function parseKFileText(text, raceDate) {
+// Kファイルのテキストを行ごとに走査し、会場ヘッダー・レースヘッダーの内側にある結果行ごとに
+// handle(会場, レース番号, 結果行のマッチ) を呼ぶ
+function forEachKResultLine(text, handle) {
   const lines = text.split(/\r?\n/);
-  /** @type {Map<string, {venue: number, raceNo: number, boats: Map<number, number>}>} */
-  const races = new Map();
 
   let venue = null;
   let currentRaceNo = null;
@@ -148,6 +141,22 @@ export function parseKFileText(text, raceDate) {
     const resultMatch = line.match(K_RESULT_RE);
     if (!resultMatch) continue;
 
+    handle(venue, currentRaceNo, resultMatch);
+  }
+}
+
+/**
+ * Kファイルのデコード済みテキストをパースし、レースごとの実進入コースを抽出する。
+ * @param {string} text - fetchKFileText()が返すデコード済みテキスト
+ * @param {string} raceDate - YYYY-MM-DD（race_id組み立てに使用）
+ * @returns {Array<{race_id: string, venue_code: number, race_number: number,
+ *   actual_course_1: number|null, ..., actual_course_6: number|null}>}
+ */
+export function parseKFileText(text, raceDate) {
+  /** @type {Map<string, {venue: number, raceNo: number, boats: Map<number, number>}>} */
+  const races = new Map();
+
+  forEachKResultLine(text, (venue, currentRaceNo, resultMatch) => {
     const boat = parseInt(resultMatch[2], 10);
     const course = parseInt(resultMatch[6], 10);
     const key = `${venue}-${currentRaceNo}`;
@@ -155,7 +164,7 @@ export function parseKFileText(text, raceDate) {
       races.set(key, { venue, raceNo: currentRaceNo, boats: new Map() });
     }
     races.get(key).boats.set(boat, course);
-  }
+  });
 
   const rows = [];
   for (const { venue: v, raceNo, boats } of races.values()) {
@@ -196,34 +205,23 @@ export function parseKFileText(text, raceDate) {
  *   あった（パース異常の疑い）ことを示し、呼び出し元は更新に使うべきでない。
  */
 export function parseKFileRankings(text, raceDate) {
-  const lines = text.split(/\r?\n/);
+  const races = collectRankingRaces(text);
+
+  const rows = [];
+  for (const { venue: v, raceNo, boatsInOrder } of races.values()) {
+    rows.push(buildRankingRow(raceDate, v, raceNo, boatsInOrder));
+  }
+  return rows;
+}
+
+// テキストを走査し、会場・レース番号ごとに有効な着順行の艇番を出現順に集める
+function collectRankingRaces(text) {
   /** @type {Map<string, {venue: number, raceNo: number, boatsInOrder: number[]}>} */
   const races = new Map();
 
-  let venue = null;
-  let currentRaceNo = null;
-
-  for (const line of lines) {
-    const venueMatch = line.match(VENUE_HDR_RE);
-    if (venueMatch) {
-      venue = parseInt(venueMatch[1], 10);
-      currentRaceNo = null;
-      continue;
-    }
-    if (venue === null) continue;
-
-    const headerMatch = line.match(K_RACE_HDR_RE);
-    if (headerMatch) {
-      currentRaceNo = parseInt(headerMatch[1], 10);
-      continue;
-    }
-    if (currentRaceNo === null) continue;
-
-    const resultMatch = line.match(K_RESULT_RE);
-    if (!resultMatch) continue;
-
+  forEachKResultLine(text, (venue, currentRaceNo, resultMatch) => {
     const rank = parseInt(resultMatch[1], 10);
-    if (!(rank >= 1 && rank <= 6)) continue; // F/L/失格/転覆等は着順として扱わない
+    if (!(rank >= 1 && rank <= 6)) return; // F/L/失格/転覆等は着順として扱わない
 
     const boat = parseInt(resultMatch[2], 10);
     const key = `${venue}-${currentRaceNo}`;
@@ -231,26 +229,25 @@ export function parseKFileRankings(text, raceDate) {
       races.set(key, { venue, raceNo: currentRaceNo, boatsInOrder: [] });
     }
     races.get(key).boatsInOrder.push(boat);
-  }
+  });
+  return races;
+}
 
-  const rows = [];
-  for (const { venue: v, raceNo, boatsInOrder } of races.values()) {
-    const raceId = `${raceDate}-${String(v).padStart(2, "0")}-${String(raceNo).padStart(2, "0")}`;
-    const valid = new Set(boatsInOrder).size === boatsInOrder.length; // 艇番重複はパース異常の疑い
-    rows.push({
-      race_id: raceId,
-      venue_code: v,
-      race_number: raceNo,
-      valid,
-      rank1: boatsInOrder[0] ?? null,
-      rank2: boatsInOrder[1] ?? null,
-      rank3: boatsInOrder[2] ?? null,
-      rank4: boatsInOrder[3] ?? null,
-      rank5: boatsInOrder[4] ?? null,
-      rank6: boatsInOrder[5] ?? null,
-    });
-  }
-  return rows;
+function buildRankingRow(raceDate, v, raceNo, boatsInOrder) {
+  const raceId = `${raceDate}-${String(v).padStart(2, "0")}-${String(raceNo).padStart(2, "0")}`;
+  const valid = new Set(boatsInOrder).size === boatsInOrder.length; // 艇番重複はパース異常の疑い
+  return {
+    race_id: raceId,
+    venue_code: v,
+    race_number: raceNo,
+    valid,
+    rank1: boatsInOrder[0] ?? null,
+    rank2: boatsInOrder[1] ?? null,
+    rank3: boatsInOrder[2] ?? null,
+    rank4: boatsInOrder[3] ?? null,
+    rank5: boatsInOrder[4] ?? null,
+    rank6: boatsInOrder[5] ?? null,
+  };
 }
 
 // テスト・デバッグ用に内部関数・正規表現も公開する

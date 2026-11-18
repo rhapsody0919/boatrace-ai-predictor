@@ -286,25 +286,30 @@ export function buildRate2Rows(day, existingByKey) {
     for (const race of venue.races ?? []) {
       const raceId = raceIdOf(day.date, venue.venue_code, race.race_number);
       for (const e of race.entries ?? []) {
-        const cur = existingByKey.get(`${raceId}|${e.boat_number}`);
-        if (!cur || cur.racer_id !== e.racer_id) continue;
-        const g = cur.global_2rate ?? null;
-        const l = cur.local_2rate ?? null;
-        const nextG =
-          g ?? (typeof e.national_2rate === "number" ? e.national_2rate : null);
-        const nextL =
-          l ?? (typeof e.local_2rate === "number" ? e.local_2rate : null);
-        if (nextG === g && nextL === l) continue;
-        rows.push({
-          race_id: raceId,
-          boat_number: e.boat_number,
-          global_2rate: nextG,
-          local_2rate: nextL,
-        });
+        const row = rate2RowFor(raceId, e, existingByKey);
+        if (row) rows.push(row);
       }
     }
   }
   return rows;
+}
+
+/** 項目3の1艇分: 書く行（2連率を持ち回って埋めたもの）。対象外・変わらないときは null */
+function rate2RowFor(raceId, e, existingByKey) {
+  const cur = existingByKey.get(`${raceId}|${e.boat_number}`);
+  if (!cur || cur.racer_id !== e.racer_id) return null;
+  const g = cur.global_2rate ?? null;
+  const l = cur.local_2rate ?? null;
+  const nextG =
+    g ?? (typeof e.national_2rate === "number" ? e.national_2rate : null);
+  const nextL = l ?? (typeof e.local_2rate === "number" ? e.local_2rate : null);
+  if (nextG === g && nextL === l) return null;
+  return {
+    race_id: raceId,
+    boat_number: e.boat_number,
+    global_2rate: nextG,
+    local_2rate: nextL,
+  };
 }
 
 /**
@@ -356,27 +361,30 @@ export function buildFinishCodeRows(day, existingByKey, out = {}) {
       if (!cur) continue;
       const code = typeof r.finish_raw === "string" ? r.finish_raw.trim() : "";
       if (code === "") continue;
-      const before = {
-        official_finish_code: cur.official_finish_code ?? null,
-        finish_mark: cur.finish_mark ?? null,
-        finish_rank: cur.finish_rank ?? null,
-      };
-      const derived =
-        before.finish_mark === null ? finishMarkFromCode(code) : null;
-      const next = {
-        official_finish_code: before.official_finish_code ?? code,
-        finish_mark: derived ? derived.finish_mark : before.finish_mark,
-        finish_rank: before.finish_rank ?? derived?.finish_rank ?? null,
-      };
-      const changed = Object.keys(next).filter(
-        (col) => next[col] !== before[col],
-      );
+      const { next, changed } = nextFinishColumns(cur, code);
       if (changed.length === 0) continue;
       for (const col of changed) filled[col] += 1;
       rows.push({ race_id: raceId, boat_number: r.boat_number, ...next });
     }
   }
   return rows;
+}
+
+/** 既存の行 cur の3列に成績コード code を持ち回って埋めた値 next と、変わった列 changed */
+function nextFinishColumns(cur, code) {
+  const before = {
+    official_finish_code: cur.official_finish_code ?? null,
+    finish_mark: cur.finish_mark ?? null,
+    finish_rank: cur.finish_rank ?? null,
+  };
+  const derived = before.finish_mark === null ? finishMarkFromCode(code) : null;
+  const next = {
+    official_finish_code: before.official_finish_code ?? code,
+    finish_mark: derived ? derived.finish_mark : before.finish_mark,
+    finish_rank: before.finish_rank ?? derived?.finish_rank ?? null,
+  };
+  const changed = Object.keys(next).filter((col) => next[col] !== before[col]);
+  return { next, changed };
 }
 
 /** 返還になる成績コード（F=フライング、L0/L1=出遅れ、K0/K1=欠場）。S0/S1/S2（失格）・00（順位なし）は返還しない */
@@ -467,24 +475,30 @@ export function buildRaceStatusRows(day, statusByRace, out = {}) {
       const raceId = raceIdOf(day.date, venue.venue_code, race.race_number);
       if (!statusByRace.has(raceId) || statusByRace.get(raceId) !== null)
         continue;
-      if (venue.status && venue.status !== "complete") {
-        out.anomalies?.push({
-          race_id: raceId,
-          reason: `K の会場が ${venue.status}`,
-        });
-        continue;
-      }
-      const d = deriveRaceStatusFromK(race);
-      if (d.anomaly) {
-        out.anomalies?.push({ race_id: raceId, reason: d.anomaly });
-        continue;
-      }
-      rows.push({
-        race_id: raceId,
-        race_status: d.race_status,
-        refund_boats: d.refund_boats,
-      });
+      const row = raceStatusRowFor(raceId, venue, race, out);
+      if (row) rows.push(row);
     }
   }
   return rows;
+}
+
+/** 1レース分: 書く行。会場が完了でない・導けないときは out.anomalies に入れて null */
+function raceStatusRowFor(raceId, venue, race, out) {
+  if (venue.status && venue.status !== "complete") {
+    out.anomalies?.push({
+      race_id: raceId,
+      reason: `K の会場が ${venue.status}`,
+    });
+    return null;
+  }
+  const d = deriveRaceStatusFromK(race);
+  if (d.anomaly) {
+    out.anomalies?.push({ race_id: raceId, reason: d.anomaly });
+    return null;
+  }
+  return {
+    race_id: raceId,
+    race_status: d.race_status,
+    refund_boats: d.refund_boats,
+  };
 }

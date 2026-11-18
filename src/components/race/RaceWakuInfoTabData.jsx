@@ -10,7 +10,7 @@ import {
   buildTodayCourseRows,
   computeWakuNariRate,
   getCourseRecentRuns,
-} from "./courseGridStats";
+} from "../../pure/courseGridStats.js";
 
 // 会場全体の決まり手傾向（全艇合算）。venueTendency.technique.dataは
 // { [boatNumber]: { total_races, techniques: [{technique, count, percentage}] } }
