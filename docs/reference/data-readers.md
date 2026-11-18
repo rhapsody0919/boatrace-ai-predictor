@@ -10,8 +10,8 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2041 |
-| 読み書きのあるファイル | 281 |
+| 読んだファイル | 2042 |
+| 読み書きのあるファイル | 282 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
 | RPC の呼び手（箇所） | 51 |
@@ -906,8 +906,8 @@
   - `scripts/maintenance/verify-e2e-har-merge.js:59` rest(rest) [name, race_id] （検査）
   - `scripts/maintenance/verify-full-picture-scene2.js:3168` rest(rest) （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select(embed) [racer_id] （検査）
-  - `scripts/maintenance/verify-sns-today-plan.js:2665` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-sns-today-plan.js:2667` rest(rest) [race_id] （検査）
+  - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:106` rest(rest) [race_id]
+  - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:108` rest(rest) [race_id]
   - `scripts/ml/export-inference-data.js:111` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:75` select(helper:fetchAll)
   - `scripts/sns/push-setsu-kiryoku-short.js:1100` rest(rest) [is_absent, race_id]
@@ -1591,9 +1591,9 @@
   - `scripts/maintenance/verify-scrape-slots-on-db.js:69` select [cancellation_status, race_date, race_id, start_time] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:615` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577` rest(rest) [race_id, start_time] （検査）
-  - `scripts/maintenance/verify-sns-today-plan.js:2660` rest(rest) [race_date] （検査）
-  - `scripts/maintenance/verify-sns-today-plan.js:2661` rest(rest) [cancellation_status] （検査）
-  - `scripts/maintenance/verify-sns-today-plan.js:2662` rest(rest) [race_id] （検査）
+  - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:101` rest(rest) [race_date]
+  - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:102` rest(rest) [cancellation_status]
+  - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:103` rest(rest) [race_id]
   - `scripts/ml/export-inference-data.js:80` select(helper:fetchAll)
   - `scripts/ml/export-training-data.js:71` select(helper:fetchAll)
   - `scripts/sns/push-finals-image.js:1284` rest(rest) [cancellation_status, race_date, race_grade, race_id, race_number, start_time]

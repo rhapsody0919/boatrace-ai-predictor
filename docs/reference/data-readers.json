@@ -5,8 +5,8 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2041,
-    "filesWithAccess": 281,
+    "sourceFiles": 2042,
+    "filesWithAccess": 282,
     "tableReaders": 947,
     "tableWriters": 189,
     "rpcCallers": 51,
@@ -7668,22 +7668,20 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:2665",
+          "ref": "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:106",
           "op": "rest",
           "via": "rest",
           "columns": [
             "race_id"
-          ],
-          "test": true
+          ]
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:2667",
+          "ref": "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:108",
           "op": "rest",
           "via": "rest",
           "columns": [
             "race_id"
-          ],
-          "test": true
+          ]
         },
         {
           "ref": "scripts/ml/export-inference-data.js:111",
@@ -8405,8 +8403,8 @@
             "scripts/maintenance/verify-e2e-har-merge.js:54",
             "scripts/maintenance/verify-e2e-har-merge.js:58",
             "scripts/maintenance/verify-e2e-har-merge.js:59",
-            "scripts/maintenance/verify-sns-today-plan.js:2665",
-            "scripts/maintenance/verify-sns-today-plan.js:2667",
+            "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:106",
+            "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:108",
             "scripts/sns/push-setsu-kiryoku-short.js:1100",
             "scripts/verification/verify-series-points-border.mjs:47",
             "scripts/verification/verify-series-points-needed.mjs:41",
@@ -16924,31 +16922,28 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:2660",
+          "ref": "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:101",
           "op": "rest",
           "via": "rest",
           "columns": [
             "race_date"
-          ],
-          "test": true
+          ]
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:2661",
+          "ref": "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:102",
           "op": "rest",
           "via": "rest",
           "columns": [
             "cancellation_status"
-          ],
-          "test": true
+          ]
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:2662",
+          "ref": "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:103",
           "op": "rest",
           "via": "rest",
           "columns": [
             "race_id"
-          ],
-          "test": true
+          ]
         },
         {
           "ref": "scripts/ml/export-inference-data.js:80",
@@ -17511,7 +17506,7 @@
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
             "scripts/maintenance/verify-sns-auto-plan.js:615",
             "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
-            "scripts/maintenance/verify-sns-today-plan.js:2662",
+            "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:103",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
             "scripts/sns/push-full-picture.js:839",
@@ -17616,7 +17611,7 @@
             "scripts/maintenance/verify-rpc-output-keys.js:266",
             "scripts/maintenance/verify-rpc-output-keys.js:321",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
-            "scripts/maintenance/verify-sns-today-plan.js:2660",
+            "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:101",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
             "scripts/sns/push-full-picture.js:839",
@@ -17997,7 +17992,7 @@
             "scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:114",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
-            "scripts/maintenance/verify-sns-today-plan.js:2661",
+            "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:102",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-full-picture.js:839",
             "scripts/sns/push-setsu-kiryoku-short.js:1099",
