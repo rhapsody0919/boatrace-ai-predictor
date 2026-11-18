@@ -183,33 +183,39 @@ export function classifyExpectedUnpublished(
 ) {
   /** @type {Map<string, "confirmed"|"deferred">} */
   const result = new Map();
-  const rule = EXPECTED_UNPUBLISHED;
   const laterByRace = groupLaterSlots(siblingSlots);
   for (const slot of slots) {
-    if (!isTargetSlot(slot)) continue;
-    if (isExtensionSuccess(slot)) {
-      result.set(slotKeyOf(slot), "confirmed");
-      continue;
-    }
-    if (
-      slot.outcome !== rule.outcome ||
-      (slot.attempts ?? 0) === 0 ||
-      slot.status === "done" ||
-      !isPastWindow(slot, now, registry)
-    ) {
-      continue;
-    }
-    const later = laterByRace.get(slot.race_id) ?? [];
-    if (later.length === 0) continue;
-    if (later.some(isConfirmingSlot)) {
-      result.set(slotKeyOf(slot), "confirmed");
-    } else if (
-      later.some((s) => s.status !== "done" && !isPastWindow(s, now, registry))
-    ) {
-      result.set(slotKeyOf(slot), "deferred");
-    }
+    const kind = classifySlot(slot, laterByRace, now, registry);
+    if (kind) result.set(slotKeyOf(slot), kind);
   }
   return result;
+}
+
+/**
+ * 1つのスロットの判定（classifyExpectedUnpublished の中身）。どちらでもなければ null
+ * @returns {"confirmed"|"deferred"|null}
+ */
+function classifySlot(slot, laterByRace, now, registry) {
+  if (!isTargetSlot(slot)) return null;
+  if (isExtensionSuccess(slot)) return "confirmed";
+  if (!isUnpublishedPastWindow(slot, now, registry)) return null;
+  const later = laterByRace.get(slot.race_id) ?? [];
+  if (later.length === 0) return null;
+  if (later.some(isConfirmingSlot)) return "confirmed";
+  if (later.some((s) => s.status !== "done" && !isPastWindow(s, now, registry))) {
+    return "deferred";
+  }
+  return null;
+}
+
+/** 延長しても取れず（no_values・試行あり・未完了）、窓を過ぎた候補か */
+function isUnpublishedPastWindow(slot, now, registry) {
+  return (
+    slot.outcome === EXPECTED_UNPUBLISHED.outcome &&
+    (slot.attempts ?? 0) !== 0 &&
+    slot.status !== "done" &&
+    isPastWindow(slot, now, registry)
+  );
 }
 
 /** 後続の窓（対象の窓より後）の live のスロットを、レースごとにまとめる */
