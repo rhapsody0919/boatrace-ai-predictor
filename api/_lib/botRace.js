@@ -469,6 +469,34 @@ export function renderRaceHtml(model, { siteJsonLd = [] } = {}) {
 const plain = (status, headers, body) => ({ status, headers, body });
 
 /**
+ * 材料を引く前の門（純関数）。通さないときは {response}、通すときは {key, origin}
+ *
+ * @param {{langMode: "ja"|"prefixed", method?: string, url?: string, headers?: Record<string, string>}} req
+ * @param {number} nowMs
+ */
+export function gateRaceRequest({ langMode, method, url, headers }, nowMs) {
+  if (method !== "GET" && method !== "HEAD") {
+    return {
+      response: plain(
+        405,
+        { ...CLIENT_ERROR_HEADERS, Allow: "GET, HEAD" },
+        "405 Method Not Allowed\n",
+      ),
+    };
+  }
+  const key = parseBotRaceUrl(url, langMode);
+  // 本日（JST）の id だけ。過去・未来は人と同じ SPA に任せる（CDN のキーも本日分に限る）
+  if (!key || key.date !== jstToday(nowMs)) {
+    return { response: plain(404, CLIENT_ERROR_HEADERS, "404 Not Found\n") };
+  }
+  const origin = originOf(headers);
+  if (!origin) {
+    return { response: plain(400, CLIENT_ERROR_HEADERS, "400 Bad Request\n") };
+  }
+  return { key, origin };
+}
+
+/**
  * @param {{langMode?: "ja"|"prefixed", method?: string, url?: string, headers?: Record<string, string>}} req
  * @param {{getRaces: (origin: string, date: string) => Promise<object[]>, now: () => number,
  *   getT: (lang: string) => Promise<Function>, getSiteJsonLd?: () => Promise<object[]>,
@@ -484,20 +512,9 @@ export async function respondRacePage(
     getSeries = defaultSeriesSource,
   },
 ) {
-  if (method !== "GET" && method !== "HEAD") {
-    return plain(
-      405,
-      { ...CLIENT_ERROR_HEADERS, Allow: "GET, HEAD" },
-      "405 Method Not Allowed\n",
-    );
-  }
-  const key = parseBotRaceUrl(url, langMode);
-  // 本日（JST）の id だけ。過去・未来は人と同じ SPA に任せる（CDN のキーも本日分に限る）
-  if (!key || key.date !== jstToday(now())) {
-    return plain(404, CLIENT_ERROR_HEADERS, "404 Not Found\n");
-  }
-  const origin = originOf(headers);
-  if (!origin) return plain(400, CLIENT_ERROR_HEADERS, "400 Bad Request\n");
+  const gate = gateRaceRequest({ langMode, method, url, headers }, now());
+  if (gate.response) return gate.response;
+  const { key, origin } = gate;
   try {
     const [races, t, siteJsonLd] = await Promise.all([
       getRaces(origin, key.date),
