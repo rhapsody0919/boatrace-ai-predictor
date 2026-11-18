@@ -48,7 +48,13 @@ function runChecks(mod) {
     }
   };
   const pick = (rows) => rows.map((r) => [r.motorNumber, r.rank]);
+  runChecksRankBy(mod, check);
+  runChecksSort(mod, check, pick);
+  runChecksSeries(mod, check);
+  return failures;
+}
 
+function runChecksRankBy(mod, check) {
   const rankRows = [
     { motorNumber: 55, top2Rate: 47.9 },
     { motorNumber: 22, top2Rate: 36.1 },
@@ -112,8 +118,9 @@ function runChecks(mod) {
     [...mod.rankBy([{ motorNumber: 1, top2Rate: null }], "top2Rate").entries()],
     [],
   );
+}
 
-
+function runChecksSort(mod, check, pick) {
   check(
     "2連率（降順）: 同値は同じ順位で次が飛ぶ、値なしは末尾で順位 null",
     pick(mod.sortMotorRows(ROWS, "top2Rate")),
@@ -198,6 +205,9 @@ function runChecks(mod) {
     mod.VENUE_SITE_STATS_HIDDEN,
     [6, 17],
   );
+}
+
+function runChecksSeries(mod, check) {
   // 表示の桁（会場サイトによって小数第2位まである）
   check(
     "2連率の表示: 小数第2位があれば残し、無ければ1桁",
@@ -280,7 +290,6 @@ function runChecks(mod) {
     mod.currentSeriesRiders(ENTRIES, "2026-10-03").get(50)?.racer_id,
     5206,
   );
-  return failures;
 }
 
 const MUTANTS = [
