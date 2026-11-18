@@ -29,6 +29,70 @@ async function fetchUnifiedPredictionsRange(startDate) {
   );
 }
 
+function emptyDay(date) {
+  return {
+    date,
+    totalRaces: 0,
+    finishedRaces: 0,
+    turnRaces: 0,
+    turnHits: 0,
+  };
+}
+
+// races と unified 予測から日別の集計（days 配列、日付の昇順）を作る。純関数
+function buildHistoryDays(allRaces, predictions) {
+  // 日付別に集計
+  const dayMap = new Map(); // date -> { totalRaces, finishedRaces, turnRaces, turnHits }
+
+  // ステップ 1: 全レース数を日付別に集計
+  for (const race of allRaces) {
+    const date = race.race_id.substring(0, 10);
+    if (!dayMap.has(date)) {
+      dayMap.set(date, emptyDay(date));
+    }
+    dayMap.get(date).totalRaces++;
+  }
+
+  // ステップ 2: unified予測を日付別に集計
+  // is_hit_turn: true=的中, false=不的中, null=結果未確定 or turnPredictionなし
+  const processedRaceIds = new Set();
+  for (const pred of predictions) {
+    const date = pred.race_id.substring(0, 10);
+
+    if (!dayMap.has(date)) {
+      dayMap.set(date, emptyDay(date));
+    }
+    const dayData = dayMap.get(date);
+
+    // finishedRaces: is_hit_turnが確定している（null以外）レースをカウント
+    // （レース単位で1回のみ、unifiedはrace_idごとに1レコードのため実質不要だが念のため）
+    if (pred.is_hit_turn !== null && !processedRaceIds.has(pred.race_id)) {
+      dayData.finishedRaces++;
+      processedRaceIds.add(pred.race_id);
+    }
+
+    if (pred.is_hit_turn !== null) {
+      dayData.turnRaces++;
+      if (pred.is_hit_turn) dayData.turnHits++;
+    }
+  }
+
+  // ステップ 3: dayMap を days 配列に変換
+  return Array.from(dayMap.values())
+    .map((day) => ({
+      date: day.date,
+      totalRaces: day.totalRaces,
+      finishedRaces: day.finishedRaces,
+      turnRaces: day.turnRaces,
+      turnHits: day.turnHits,
+      turnHitRate:
+        day.turnRaces > 0
+          ? parseFloat(((day.turnHits / day.turnRaces) * 100).toFixed(1))
+          : null,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 // race_history_cache を構築・更新
 async function updateRaceHistoryCache() {
   const now = new Date();
@@ -49,68 +113,7 @@ async function updateRaceHistoryCache() {
     q.gte("race_id", ninetyDaysAgoStr).order("race_id"),
   );
 
-  // 日付別に集計
-  const dayMap = new Map(); // date -> { totalRaces, finishedRaces, turnRaces, turnHits }
-
-  // ステップ 1: 全レース数を日付別に集計
-  for (const race of allRaces) {
-    const date = race.race_id.substring(0, 10);
-    if (!dayMap.has(date)) {
-      dayMap.set(date, {
-        date,
-        totalRaces: 0,
-        finishedRaces: 0,
-        turnRaces: 0,
-        turnHits: 0,
-      });
-    }
-    dayMap.get(date).totalRaces++;
-  }
-
-  // ステップ 2: unified予測を日付別に集計
-  // is_hit_turn: true=的中, false=不的中, null=結果未確定 or turnPredictionなし
-  const processedRaceIds = new Set();
-  for (const pred of predictions) {
-    const date = pred.race_id.substring(0, 10);
-
-    if (!dayMap.has(date)) {
-      dayMap.set(date, {
-        date,
-        totalRaces: 0,
-        finishedRaces: 0,
-        turnRaces: 0,
-        turnHits: 0,
-      });
-    }
-    const dayData = dayMap.get(date);
-
-    // finishedRaces: is_hit_turnが確定している（null以外）レースをカウント
-    // （レース単位で1回のみ、unifiedはrace_idごとに1レコードのため実質不要だが念のため）
-    if (pred.is_hit_turn !== null && !processedRaceIds.has(pred.race_id)) {
-      dayData.finishedRaces++;
-      processedRaceIds.add(pred.race_id);
-    }
-
-    if (pred.is_hit_turn !== null) {
-      dayData.turnRaces++;
-      if (pred.is_hit_turn) dayData.turnHits++;
-    }
-  }
-
-  // ステップ 3: dayMap を days 配列に変換
-  const days = Array.from(dayMap.values())
-    .map((day) => ({
-      date: day.date,
-      totalRaces: day.totalRaces,
-      finishedRaces: day.finishedRaces,
-      turnRaces: day.turnRaces,
-      turnHits: day.turnHits,
-      turnHitRate:
-        day.turnRaces > 0
-          ? parseFloat(((day.turnHits / day.turnRaces) * 100).toFixed(1))
-          : null,
-    }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const days = buildHistoryDays(allRaces, predictions);
 
   console.log(`  日別集計: ${days.length}日分`);
 
