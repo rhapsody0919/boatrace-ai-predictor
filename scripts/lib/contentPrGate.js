@@ -3,108 +3,44 @@
  * fs・git・時計に触れない。入力は全部引数で受ける（集めるのは scripts/content/check-content-pr.js）。
  * 契約: docs/operation/content-pr-contract.md、設定: scripts/content/content-pr-gate.json
  */
-import { createHash } from "node:crypto";
-import { fromMarkdown } from "mdast-util-from-markdown";
-import { gfm } from "micromark-extension-gfm";
-import { gfmFromMarkdown } from "mdast-util-gfm";
 import { decodeNamedCharacterReference } from "decode-named-character-reference";
 import { parseBlogChartLine } from "../../src/utils/blogChartTag.js";
+import { GATE_CONFIG_PATH } from "../maintenance/e2e-scope.js";
 import {
-  GATE_CONFIG_PATH,
-  grandfatherRemovals,
-} from "../maintenance/e2e-scope.js";
+  CHART_JSON_RE,
+  JA_JSON_RE,
+  MANIFEST_RE,
+  MD_RE,
+  TR_JSON_RE,
+  TRANSLATION_SUFFIX_RE,
+  articleIdOf,
+  countInternalLinks,
+  isPlainObject,
+  parseMarkdown,
+  readJpegSize,
+  toText,
+  walk,
+} from "./contentPrGateCommon.js";
+import {
+  checkGateConfigChange,
+  checkManifest,
+} from "./contentPrGateManifest.js";
 
-export const MANIFEST_SCHEMA = "content-pr-manifest/v1";
-export const REVIEW_ROLES = [
-  "content-qa",
-  "wording-editor",
-  "fan",
-  "seo-marketer",
-];
-// p1 が0でなければ error にする役。残り（fan・seo-marketer）は件数を記録するだけ
-const P1_BLOCKING_ROLES = new Set(["content-qa", "wording-editor"]);
+// 下の部品（contentPrGateCommon.js）の公開の名前は、ここから今までどおり import できる
+export {
+  MANIFEST_SCHEMA,
+  REVIEW_ROLES,
+  computeContentSha256,
+  countInternalLinks,
+  readJpegSize,
+  sha256Hex,
+} from "./contentPrGateCommon.js";
+
 const KYOTEI = "競艇";
 const REGULAR_FILE_MODE = "100644";
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const TRANSLATION_SUFFIX_RE = /-(en|ko|zh-tw)$/;
-const MANIFEST_RE = /^docs\/content-manifests\/([^/]+)\.json$/;
-const JA_JSON_RE = /^src\/data\/blog-posts\/([^/]+)\.json$/;
-const TR_JSON_RE = /^src\/data\/blog-posts\/(?:en|ko|zh-TW)\/([^/]+)\.json$/;
-// 図の JSON（docs/design/blog-charts/contract.md）。名前は {記事id}-{図id}.json。形は verify-blog-charts.js（CI）が見る
-const CHART_JSON_RE = /^public\/blog-charts\/([^/]+)\.json$/;
-const MD_RE = /^public\/blog\/([^/]+)\.md$/;
 const IMAGE_RE = /^public\/images\/blog\/[^/]+$/;
 const IMAGE_REF_RE = /\/images\/blog\/[^\s)"'\]>]+/g;
-// 末尾が Z か ±hh:mm の ISO 8601 だけ受ける
-const ISO_RE =
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
-
-export const sha256Hex = (data) =>
-  createHash("sha256").update(data).digest("hex");
-
-const toText = (data) =>
-  typeof data === "string" ? data : new TextDecoder("utf-8").decode(data);
-
-const isNonEmptyString = (v) => typeof v === "string" && v.trim() !== "";
-const isPlainObject = (v) =>
-  v !== null && typeof v === "object" && !Array.isArray(v);
-
-/**
- * JPEG のヘッダー（SOF）から幅と高さを読む。読めなければ null。
- * PR #1699 の scripts/lib/blogImageDimensions.js の readJpegSize と同じ考え方。
- * #1699 が master に入ったら、そちらに共通化する。
- */
-export function readJpegSize(bytes) {
-  const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  if (b.length < 4 || b[0] !== 0xff || b[1] !== 0xd8) return null;
-  let i = 2;
-  while (i + 3 < b.length) {
-    if (b[i] !== 0xff) return null;
-    const marker = b[i + 1];
-    if (marker === 0xff) {
-      i += 1; // 詰め物の 0xFF
-      continue;
-    }
-    // 長さを持たない単独のマーカー
-    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd9)) {
-      i += 2;
-      continue;
-    }
-    const len = (b[i + 2] << 8) | b[i + 3];
-    const isSof =
-      marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker);
-    if (isSof) {
-      if (i + 8 >= b.length) return null;
-      const height = (b[i + 5] << 8) | b[i + 6];
-      const width = (b[i + 7] << 8) | b[i + 8];
-      return width > 0 && height > 0 ? { width, height } : null;
-    }
-    if (len < 2) return null;
-    i += 2 + len;
-  }
-  return null;
-}
-
-/** files（path→sha256）から content_sha256 を作る。path の昇順、各行 "path\tsha\n" をつないだ UTF-8 の sha256 */
-export function computeContentSha256(files) {
-  const body = Object.keys(files)
-    .sort()
-    .map((p) => `${p}\t${files[p]}\n`)
-    .join("");
-  return sha256Hex(Buffer.from(body, "utf8"));
-}
-
-/** 記事の描画（react-markdown + remark-gfm）と同じ GFM で mdast にする */
-const parseMarkdown = (text) =>
-  fromMarkdown(text, {
-    extensions: [gfm()],
-    mdastExtensions: [gfmFromMarkdown()],
-  });
-
-const walk = (node, fn) => {
-  fn(node);
-  for (const c of node.children ?? []) walk(c, fn);
-};
 
 // 前後の行が無い（図のタグが1行目、または末尾の改行なしの最後の行）ときも空行と同じに扱う
 const isBlankOrEdge = (line) => line === undefined || line.trim() === "";
@@ -269,29 +205,6 @@ export function checkKyoteiJson(path, obj, config = {}) {
       ),
     ],
   };
-}
-
-// `//` と `/\`（ブラウザが // と同じに扱う）はプロトコル相対で、外へ出るので数えない
-const isInternalUrl = (url) =>
-  typeof url === "string" &&
-  url.startsWith("/") &&
-  !url.startsWith("//") &&
-  !url.startsWith("/\\");
-
-/** 内部リンクの本数。link と、定義が内部の linkReference を数える。画像・プロトコル相対（//）は数えない */
-export function countInternalLinks(text) {
-  const tree = parseMarkdown(text);
-  const defs = new Map();
-  walk(tree, (n) => {
-    if (n.type === "definition") defs.set(n.identifier, n.url);
-  });
-  let count = 0;
-  walk(tree, (n) => {
-    if (n.type === "link" && isInternalUrl(n.url)) count += 1;
-    if (n.type === "linkReference" && isInternalUrl(defs.get(n.identifier)))
-      count += 1;
-  });
-  return count;
 }
 
 /** 内部リンクが1本以上。既存の免除一覧は改稿（status M）のときだけ効く */
@@ -462,331 +375,9 @@ export function referencedImagePaths(texts) {
   return [...refs].sort();
 }
 
-/**
- * ISO 8601（末尾が Z か ±hh:mm）で、実在する日時か。Date に直して書いた時差の壁時計の時刻に戻し、
- * 元の文字列と一致することで、2026-02-30 や T24:00 のような繰り上がりを弾く（小数秒は3桁まで）
- */
-const isIso = (v) => {
-  if (typeof v !== "string" || !ISO_RE.test(v)) return false;
-  const t = Date.parse(v);
-  if (Number.isNaN(t)) return false;
-  const zone = v.match(/(Z|([+-])(\d{2}):(\d{2}))$/);
-  const offsetMin =
-    zone[1] === "Z"
-      ? 0
-      : (zone[2] === "-" ? -1 : 1) * (Number(zone[3]) * 60 + Number(zone[4]));
-  const wall = new Date(t + offsetMin * 60000).toISOString();
-  return wall.startsWith(v.slice(0, v.length - zone[1].length));
-};
-const isCount = (v) => Number.isInteger(v) && v >= 0;
-
-/** パスが属する記事の id（.md は翻訳の接尾辞を外す、JSON はファイル名）。記事のファイルでなければ null */
-function articleIdOf(path) {
-  const md = path.match(MD_RE);
-  if (md) return md[1].replace(TRANSLATION_SUFFIX_RE, "");
-  const ja = path.match(JA_JSON_RE);
-  if (ja) return ja[1];
-  const tr = path.match(TR_JSON_RE);
-  return tr ? tr[1] : null;
-}
-
-function checkReviews(manifest, config, contentSha) {
+// 許可のパス・状態・ファイルの型
+function entryErrors(entries, config) {
   const errors = [];
-  const p1Recorded = { fan: 0, "seo-marketer": 0 };
-  const reviews = Array.isArray(manifest.reviews) ? manifest.reviews : null;
-  if (!reviews)
-    return { errors: ["[manifest] reviews が配列でない"], p1Recorded };
-
-  for (const role of REVIEW_ROLES) {
-    const n = reviews.filter((r) => r?.role === role).length;
-    if (n !== 1)
-      errors.push(`[review] role ${role} が ${n} 行ある（ちょうど1行が要る）`);
-  }
-  const contentAt = isIso(manifest.content_at)
-    ? Date.parse(manifest.content_at)
-    : NaN;
-  const createdAt = isIso(manifest.created_at)
-    ? Date.parse(manifest.created_at)
-    : NaN;
-
-  reviews.forEach((r, idx) => {
-    const label = `[review] reviews[${idx}]（${r?.role ?? "role なし"}）`;
-    if (!REVIEW_ROLES.includes(r?.role)) {
-      errors.push(`${label} の role が4つの役のどれでもない`);
-      return;
-    }
-    const allowed = config.allowedReviewAgents?.[r.role] ?? [];
-    if (!allowed.includes(r.agent)) {
-      errors.push(
-        `${label} の agent "${r.agent}" は許されていない（許す: ${allowed.join(", ")}）`,
-      );
-    }
-    if (r.result !== "pass")
-      errors.push(`${label} の result が pass でない（${r.result}）`);
-    if (!isCount(r.p0)) errors.push(`${label} の p0 が0以上の整数でない`);
-    else if (r.p0 !== 0) errors.push(`${label} の p0 が ${r.p0} 件ある`);
-    if (!isCount(r.p1)) errors.push(`${label} の p1 が0以上の整数でない`);
-    else if (P1_BLOCKING_ROLES.has(r.role) && r.p1 !== 0) {
-      errors.push(`${label} の p1 が ${r.p1} 件ある`);
-    } else if (!P1_BLOCKING_ROLES.has(r.role)) p1Recorded[r.role] = r.p1;
-    if (r.reviewed_sha256 !== contentSha) {
-      errors.push(`${label} の reviewed_sha256 が content_sha256 と違う`);
-    }
-    if (!isNonEmptyString(r.model)) errors.push(`${label} の model が空`);
-    if (!isIso(r.at))
-      errors.push(`${label} の at が ISO の時刻でない（末尾は Z か ±hh:mm）`);
-    else {
-      const at = Date.parse(r.at);
-      if (!Number.isNaN(contentAt) && at < contentAt)
-        errors.push(`${label} の at が content_at より前`);
-      if (!Number.isNaN(createdAt) && at > createdAt)
-        errors.push(`${label} の at が created_at より後`);
-    }
-  });
-  return { errors, p1Recorded };
-}
-
-function checkManifest({
-  manifestPath,
-  manifest,
-  diffPaths,
-  head,
-  base,
-  basePaths,
-  headPaths,
-  config,
-}) {
-  const errors = [];
-  const fileId = manifestPath.match(MANIFEST_RE)[1];
-  if (manifest.schema !== MANIFEST_SCHEMA)
-    errors.push(`[manifest] schema が ${MANIFEST_SCHEMA} でない`);
-  if (manifest.id !== fileId)
-    errors.push(
-      `[manifest] id "${manifest.id}" がファイル名 "${fileId}" と違う`,
-    );
-  if (!["new", "revision"].includes(manifest.kind))
-    errors.push("[manifest] kind が new か revision でない");
-  if (!isNonEmptyString(manifest.ticket)) errors.push("[manifest] ticket が空");
-  if (!isNonEmptyString(manifest.author?.model))
-    errors.push("[manifest] author.model が空");
-  if (!isNonEmptyString(manifest.author?.lane))
-    errors.push("[manifest] author.lane が空");
-  if (!isIso(manifest.content_at))
-    errors.push(
-      "[manifest] content_at が ISO の時刻でない（末尾は Z か ±hh:mm）",
-    );
-  if (!isIso(manifest.created_at))
-    errors.push(
-      "[manifest] created_at が ISO の時刻でない（末尾は Z か ±hh:mm）",
-    );
-  if (
-    !Array.isArray(manifest.judgement_words) ||
-    !manifest.judgement_words.every((w) => typeof w === "string")
-  ) {
-    errors.push("[manifest] judgement_words が文字列の配列でない");
-  }
-
-  // paths と差分の一致（削除は許さないので、全部「-」なし）
-  const declared = Array.isArray(manifest.paths) ? manifest.paths : [];
-  if (!Array.isArray(manifest.paths))
-    errors.push("[manifest] paths が配列でない");
-  if (Array.isArray(manifest.paths) && declared.length === 0)
-    errors.push("[manifest] paths が空（記事のファイルの変更が無い）");
-  if (new Set(declared).size !== declared.length)
-    errors.push("[manifest] paths に重複がある");
-  if (declared.some((p) => typeof p !== "string" || p.startsWith("-")))
-    errors.push(
-      "[delete] manifest.paths に削除（-）がある。記事の PR では削除を許さない",
-    );
-  const expected = new Set(diffPaths.map((d) => d.path));
-  const declaredSet = new Set(declared);
-  for (const p of expected)
-    if (!declaredSet.has(p))
-      errors.push(`[manifest] paths に差分の ${p} が無い`);
-  for (const p of declaredSet)
-    if (!expected.has(p)) errors.push(`[manifest] paths の ${p} が差分に無い`);
-
-  // files と HEAD の中身の一致
-  const files = isPlainObject(manifest.files) ? manifest.files : {};
-  if (!isPlainObject(manifest.files))
-    errors.push("[manifest] files がオブジェクトでない");
-  const livePaths = declared.filter(
-    (p) => typeof p === "string" && !p.startsWith("-"),
-  );
-  for (const p of livePaths)
-    if (!(p in files)) errors.push(`[manifest] files に ${p} が無い`);
-  for (const p of Object.keys(files)) {
-    if (!livePaths.includes(p)) {
-      errors.push(`[manifest] files の ${p} が paths に無い`);
-      continue;
-    }
-    if (head[p] === undefined)
-      errors.push(`[manifest] files の ${p} が HEAD に無い`);
-    else if (files[p] !== sha256Hex(head[p]))
-      errors.push(`[manifest] files の ${p} の sha256 が HEAD の中身と違う`);
-  }
-  const contentSha = computeContentSha256(files);
-  if (manifest.content_sha256 !== contentSha)
-    errors.push("[manifest] content_sha256 が files からの計算と違う");
-
-  // 1つの PR に1記事。変えた .md・JSON の記事がすべて manifest.id
-  const otherIds = [
-    ...new Set(diffPaths.map((d) => articleIdOf(d.path)).filter(Boolean)),
-  ].filter((id) => id !== manifest.id);
-  if (otherIds.length > 0)
-    errors.push(
-      `[manifest] 1つの PR に1記事。manifest.id "${manifest.id}" 以外の記事 ${otherIds.join("・")} が入っている`,
-    );
-  // 図の JSON も manifest.id の記事のもの。名前が「{記事id}-{図id}」、article が記事 id（HEAD も、M なら base も）。
-  // manifest.id を接頭辞に持つ別の記事（a と a-b）の図は、名前が長いほうの記事 id で始まるので落とす
-  const chartDiffs = diffPaths.filter((x) => CHART_JSON_RE.test(x.path));
-  const longerIds = [...basePaths, ...headPaths]
-    .map((p) => p.match(JA_JSON_RE)?.[1])
-    .filter((id) => id && id.startsWith(`${manifest.id}-`));
-  const articleOf = (raw) => {
-    try {
-      const j = JSON.parse(toText(raw));
-      return isPlainObject(j) ? j.article : undefined;
-    } catch {
-      return undefined; // 読めない JSON は [json] で出している
-    }
-  };
-  for (const d of chartDiffs) {
-    const name = d.path.match(CHART_JSON_RE)[1];
-    if (
-      !name.startsWith(`${manifest.id}-`) ||
-      name.length === manifest.id.length + 1
-    )
-      errors.push(
-        `[chart] ${d.path} の名前が「${manifest.id}-{図id}」の形でない（図の名前は {記事id}-{図id}.json）`,
-      );
-    const owner = longerIds.find((id) => name.startsWith(`${id}-`));
-    if (owner)
-      errors.push(
-        `[chart] ${d.path} は記事 ${owner} の図（manifest.id は "${manifest.id}"）`,
-      );
-    if (head[d.path] !== undefined) {
-      const article = articleOf(head[d.path]);
-      if (article !== manifest.id)
-        errors.push(
-          `[chart] ${d.path} の article ${JSON.stringify(article)} が manifest.id "${manifest.id}" と違う`,
-        );
-    }
-    if (d.status === "M" && base[d.path] !== undefined) {
-      const baseArticle = articleOf(base[d.path]);
-      if (baseArticle !== manifest.id)
-        errors.push(
-          `[chart] ${d.path} の base の article ${JSON.stringify(baseArticle)} が manifest.id "${manifest.id}" と違う（別の記事の図は変えない）`,
-        );
-    }
-  }
-  // 図だけ日々更新しない。図を変えたら同じ記事の本文（.md）も同じ PR で直す（docs/design/blog-charts/contract.md 2節）
-  if (
-    chartDiffs.length > 0 &&
-    !diffPaths.some(
-      (d) => MD_RE.test(d.path) && articleIdOf(d.path) === manifest.id,
-    )
-  )
-    errors.push(
-      `[chart] 図の JSON を変えたのに、記事の本文（public/blog/${manifest.id}.md か翻訳）の差分が無い（本文と表も同じ PR で直す）`,
-    );
-
-  // kind: new は日本語版 JSON の追加がある、revision は無い
-  const addsJaJson = diffPaths.some(
-    (d) => d.status === "A" && JA_JSON_RE.test(d.path),
-  );
-  if (manifest.kind === "new" && !addsJaJson)
-    errors.push("[manifest] kind が new なのに日本語版 JSON の追加が無い");
-  if (manifest.kind === "revision" && addsJaJson)
-    errors.push("[manifest] kind が revision なのに日本語版 JSON の追加がある");
-  const baseJaJson = `src/data/blog-posts/${manifest.id}.json`;
-  if (manifest.kind === "revision" && !basePaths.includes(baseJaJson))
-    errors.push(
-      `[manifest] kind が revision なのに base に ${baseJaJson} が無い（実在しない記事の改稿）`,
-    );
-
-  const reviewResult = checkReviews(manifest, config, manifest.content_sha256);
-  return {
-    errors: [...errors, ...reviewResult.errors],
-    p1Recorded: reviewResult.p1Recorded,
-  };
-}
-
-/**
- * 記事の PR に入った関門の設定（content-pr-gate.json）の変更を見る。オーナー決定 2026-10-26。
- * 通すのは、internalLinkGrandfathered から行を外すだけ（一覧の外のキー・残った行の順は変えない、足さない）で、
- * 外した行がすべて manifest の paths にある記事の .md、かつ改稿後の本文に内部リンクがあるときだけ。
- * 一覧に足す（関門を緩める）変更は通常の PR でオーナー承認（今までどおり）
- */
-function checkGateConfigChange(entry, { head, base, manifest }) {
-  const p = entry.path;
-  if (entry.status !== "M")
-    return [`[gate-config] ${p} は変更（M）だけ扱う（状態 ${entry.status}）`];
-  if (base[p] === undefined || head[p] === undefined)
-    return [`[gate-config] ${p} の base か HEAD の中身が無い`];
-  let baseCfg;
-  let headCfg;
-  try {
-    baseCfg = JSON.parse(base[p]);
-    headCfg = JSON.parse(toText(head[p]));
-  } catch (err) {
-    return [
-      `[gate-config] ${p} の base か HEAD を JSON として読めない: ${err.message}`,
-    ];
-  }
-  const removed = grandfatherRemovals(baseCfg, headCfg);
-  if (!removed)
-    return [
-      `[gate-config] ${p} の変更は internalLinkGrandfathered からの削除だけ許す（足す・並べ替え・他のキーの変更・整形だけの変更は通常の PR でオーナー承認）`,
-    ];
-  const declared = Array.isArray(manifest?.paths) ? manifest.paths : [];
-  const errors = [];
-  for (const r of removed) {
-    if (!MD_RE.test(r) || !declared.includes(r)) {
-      errors.push(
-        `[gate-config] 一覧から外した ${r} がこの PR の manifest の記事（paths の public/blog/<id>.md）でない`,
-      );
-      continue;
-    }
-    if (head[r] === undefined) {
-      errors.push(`[gate-config] 一覧から外した ${r} が HEAD に無い`);
-      continue;
-    }
-    if (countInternalLinks(toText(head[r])) === 0)
-      errors.push(
-        `[gate-config] 一覧から外した ${r} の改稿後の本文に内部リンクが無い（一覧から外せない）`,
-      );
-  }
-  return errors;
-}
-
-/**
- * 関門の本体。
- * @param {object} input
- * @param {{status: string, path: string, mode?: string}[]} input.diff  git diff --raw --no-renames の行。mode は変更後の mode
- * @param {Record<string, Uint8Array|string>} input.head  HEAD の中身（追加・変更したファイルと、参照された画像）。キーが無い＝HEAD に無い
- * @param {Record<string, string>} input.base  base（分岐元）の中身（変更した .md・JSON。判断が要る句を変えた行・値だけで見るのと、featured の比較に使う）
- * @param {string[]} input.basePaths  base のファイル一覧（slug の衝突、.md と JSON の対応、図の JSON の実在）
- * @param {string[]} input.headPaths  HEAD のファイル一覧（同じ用途）
- * @param {object} input.config  scripts/content/content-pr-gate.json
- */
-export function evaluateContentPr({
-  diff,
-  head,
-  base,
-  basePaths,
-  headPaths = [],
-  config,
-}) {
-  const errors = [];
-  const metaKyotei = [];
-  const entries = diff.map((d) => ({
-    status: d.status,
-    path: d.path,
-    mode: d.mode,
-  }));
-
-  // 許可のパス・状態・ファイルの型
   const patterns = (config.allowedPathPatterns ?? []).map((s) => new RegExp(s));
   for (const e of entries) {
     if (e.status === "D") {
@@ -811,25 +402,27 @@ export function evaluateContentPr({
         `[mode] ${e.path} の mode が ${e.mode ?? "不明"}（${REGULAR_FILE_MODE} の通常のファイルだけ許す）`,
       );
   }
+  return errors;
+}
 
-  // manifest はちょうど1つ（追加か変更）
+// manifest はちょうど1つ（追加か変更）。{ manifestPath, errors }
+function pickManifest(entries) {
   const manifestEntries = entries.filter((e) => MANIFEST_RE.test(e.path));
   const liveManifests = manifestEntries.filter((e) => e.status !== "D");
-  let manifestPath = null;
   if (manifestEntries.length !== 1 || liveManifests.length !== 1) {
-    errors.push(
-      `[manifest] docs/content-manifests/ の差分がちょうど1つ（追加か変更）でない（${manifestEntries.length} 件）`,
-    );
-  } else {
-    manifestPath = liveManifests[0].path;
+    return {
+      manifestPath: null,
+      errors: [
+        `[manifest] docs/content-manifests/ の差分がちょうど1つ（追加か変更）でない（${manifestEntries.length} 件）`,
+      ],
+    };
   }
+  return { manifestPath: liveManifests[0].path, errors: [] };
+}
 
-  const live = entries.filter(
-    (e) => e.status !== "D" && !MANIFEST_RE.test(e.path),
-  );
-  const existsAnywhere = new Set([...basePaths, ...headPaths]);
-
-  // .md と JSON を読む
+// .md と JSON を読む。{ textFiles, errors }
+function readTextFiles(live, head) {
+  const errors = [];
   const textFiles = [];
   for (const e of live) {
     const isMd = MD_RE.test(e.path);
@@ -853,8 +446,13 @@ export function evaluateContentPr({
       errors.push(`[json] ${e.path} を JSON として読めない: ${err.message}`);
     }
   }
+  return { textFiles, errors };
+}
 
-  // 本文の関門
+// 本文の関門（生 HTML・「競艇」・内部リンク）。{ errors, metaKyotei }
+function bodyErrors(textFiles, existsAnywhere, config) {
+  const errors = [];
+  const metaKyotei = [];
   const chartExists = (p) => existsAnywhere.has(p);
   for (const f of textFiles) {
     if (f.kind === "md") {
@@ -881,8 +479,12 @@ export function evaluateContentPr({
         });
     }
   }
+  return { errors, metaKyotei };
+}
 
-  // .md と JSON の対応（図の JSON は記事の .md と対にならない）
+// .md と JSON の対応（図の JSON は記事の .md と対にならない）
+function pairErrors(textFiles, existsAnywhere) {
+  const errors = [];
   for (const f of textFiles.filter((t) => !CHART_JSON_RE.test(t.path))) {
     const id = articleIdOf(f.path);
     const jaJson = `src/data/blog-posts/${id}.json`;
@@ -905,60 +507,77 @@ export function evaluateContentPr({
         errors.push(`[pair] ${f.path} の日本語版 ${jaJson} が無い`);
     }
   }
+  return errors;
+}
 
-  // slug と featured（日本語版 JSON）
+// 足した日本語版 JSON の slug と featured
+function newPostErrors(f, basePathSet) {
+  const errors = [];
+  const fileId = f.path.match(JA_JSON_RE)[1];
+  const id = f.json?.id;
+  if (id !== fileId)
+    errors.push(`[slug] ${f.path} の id "${id}" がファイル名と違う`);
+  if (typeof id !== "string" || !SLUG_RE.test(id))
+    errors.push(
+      `[slug] ${f.path} の id "${id}" が小文字英数字とハイフンの形でない`,
+    );
+  else if (TRANSLATION_SUFFIX_RE.test(id))
+    errors.push(`[slug] ${f.path} の id "${id}" が翻訳の接尾辞で終わる`);
+  for (const p of [
+    `src/data/blog-posts/${fileId}.json`,
+    `public/blog/${fileId}.md`,
+  ]) {
+    if (basePathSet.has(p))
+      errors.push(`[slug] ${f.path} の id が base の ${p} と衝突する`);
+  }
+  if (f.json?.featured !== false)
+    errors.push(`[featured] ${f.path} は新規なので featured=false にする`);
+  if (isPlainObject(f.json) && "featuredRank" in f.json)
+    errors.push(`[featured] ${f.path} は新規なので featuredRank を置かない`);
+  return errors;
+}
+
+// 変えた日本語版 JSON の featured・featuredRank は base から変えない
+function revisedPostErrors(f, base) {
+  const baseText = base[f.path];
+  if (baseText === undefined)
+    return [`[featured] ${f.path} の base の中身が無い`];
+  let baseJson;
+  try {
+    baseJson = JSON.parse(baseText);
+  } catch (err) {
+    return [
+      `[featured] ${f.path} の base を JSON として読めない: ${err.message}`,
+    ];
+  }
+  const errors = [];
+  for (const k of ["featured", "featuredRank"]) {
+    if (JSON.stringify(f.json?.[k]) !== JSON.stringify(baseJson?.[k])) {
+      errors.push(`[featured] ${f.path} の ${k} を base から変えている`);
+    }
+  }
+  return errors;
+}
+
+// slug と featured（日本語版 JSON）
+function slugFeaturedErrors(textFiles, basePaths, base) {
+  const errors = [];
   const basePathSet = new Set(basePaths);
   for (const f of textFiles.filter(
     (t) => t.kind === "json" && JA_JSON_RE.test(t.path),
   )) {
-    const fileId = f.path.match(JA_JSON_RE)[1];
-    const id = f.json?.id;
-    if (f.status === "A") {
-      if (id !== fileId)
-        errors.push(`[slug] ${f.path} の id "${id}" がファイル名と違う`);
-      if (typeof id !== "string" || !SLUG_RE.test(id))
-        errors.push(
-          `[slug] ${f.path} の id "${id}" が小文字英数字とハイフンの形でない`,
-        );
-      else if (TRANSLATION_SUFFIX_RE.test(id))
-        errors.push(`[slug] ${f.path} の id "${id}" が翻訳の接尾辞で終わる`);
-      for (const p of [
-        `src/data/blog-posts/${fileId}.json`,
-        `public/blog/${fileId}.md`,
-      ]) {
-        if (basePathSet.has(p))
-          errors.push(`[slug] ${f.path} の id が base の ${p} と衝突する`);
-      }
-      if (f.json?.featured !== false)
-        errors.push(`[featured] ${f.path} は新規なので featured=false にする`);
-      if (isPlainObject(f.json) && "featuredRank" in f.json)
-        errors.push(
-          `[featured] ${f.path} は新規なので featuredRank を置かない`,
-        );
-    } else {
-      const baseText = base[f.path];
-      if (baseText === undefined) {
-        errors.push(`[featured] ${f.path} の base の中身が無い`);
-        continue;
-      }
-      let baseJson;
-      try {
-        baseJson = JSON.parse(baseText);
-      } catch (err) {
-        errors.push(
-          `[featured] ${f.path} の base を JSON として読めない: ${err.message}`,
-        );
-        continue;
-      }
-      for (const k of ["featured", "featuredRank"]) {
-        if (JSON.stringify(f.json?.[k]) !== JSON.stringify(baseJson?.[k])) {
-          errors.push(`[featured] ${f.path} の ${k} を base から変えている`);
-        }
-      }
-    }
+    errors.push(
+      ...(f.status === "A"
+        ? newPostErrors(f, basePathSet)
+        : revisedPostErrors(f, base)),
+    );
   }
+  return errors;
+}
 
-  // 画像: 参照先が HEAD にあり寸法が読める。足した画像はどれかが参照している
+// 画像: 参照先が HEAD にあり寸法が読める。足した画像はどれかが参照している
+function imageErrors(textFiles, live, head) {
+  const errors = [];
   // 図の JSON の文字列は画像の参照に数えない（図は画像を持たない）
   const refs = referencedImagePaths(
     textFiles.filter((f) => !CHART_JSON_RE.test(f.path)).map((f) => f.text),
@@ -981,9 +600,13 @@ export function evaluateContentPr({
         `[image] 変えた ${e.path} をどの .md・JSON（この PR で変えたもの）も参照していない`,
       );
   }
+  return errors;
+}
 
-  // 判断が要る句。実行役は、判断が要る句があれば PR を作らずオーナーへ回す（2026-10-20 オーケストレーター決定）。
-  // PR に来た時点で道を外れているので、見つかれば error にする。見るのは変えた行・足した行だけ（決定 (a)）
+// 判断が要る句。実行役は、判断が要る句があれば PR を作らずオーナーへ回す（2026-10-20 オーケストレーター決定）。
+// PR に来た時点で道を外れているので、見つかれば error にする。見るのは変えた行・足した行だけ（決定 (a)）
+function judgementErrors(textFiles, base, config) {
+  const errors = [];
   const found = new Set();
   for (const f of textFiles) {
     for (const t of changedTextsOf(f, base)) {
@@ -995,57 +618,125 @@ export function evaluateContentPr({
       }
     }
   }
-  const judgementWordsFound = [...found];
+  return { errors, judgementWordsFound: [...found] };
+}
 
-  // manifest
+// manifest を読んで関門にかける。{ errors, manifest, p1Recorded }（manifest は読めた JSON、読めなければ undefined）
+function manifestSection(manifestPath, entries, input) {
+  const { head, base, basePaths, headPaths, config } = input;
+  const errors = [];
   let p1Recorded = { fan: 0, "seo-marketer": 0 };
   let manifest;
-  if (manifestPath) {
-    const raw = head[manifestPath];
-    let parsed = false;
-    if (raw === undefined)
-      errors.push(`[manifest] ${manifestPath} が HEAD に無い`);
-    else {
-      try {
-        manifest = JSON.parse(toText(raw));
-        parsed = true;
-      } catch (err) {
-        errors.push(
-          `[manifest] ${manifestPath} を JSON として読めない: ${err.message}`,
-        );
-      }
-    }
-    if (parsed && !isPlainObject(manifest)) {
+  const raw = head[manifestPath];
+  let parsed = false;
+  if (raw === undefined)
+    errors.push(`[manifest] ${manifestPath} が HEAD に無い`);
+  else {
+    try {
+      manifest = JSON.parse(toText(raw));
+      parsed = true;
+    } catch (err) {
       errors.push(
-        `[manifest] ${manifestPath} が JSON のオブジェクトでない（${Array.isArray(manifest) ? "配列" : manifest === null ? "null" : typeof manifest}）`,
+        `[manifest] ${manifestPath} を JSON として読めない: ${err.message}`,
       );
-    } else if (parsed) {
-      // 設定の変更は manifest の paths に入れない（checkGateConfigChange が別に見る）
-      const diffPaths = entries.filter(
-        (e) => e.path !== manifestPath && e.path !== GATE_CONFIG_PATH,
+    }
+  }
+  if (parsed && !isPlainObject(manifest)) {
+    errors.push(
+      `[manifest] ${manifestPath} が JSON のオブジェクトでない（${Array.isArray(manifest) ? "配列" : manifest === null ? "null" : typeof manifest}）`,
+    );
+  } else if (parsed) {
+    // 設定の変更は manifest の paths に入れない（checkGateConfigChange が別に見る）
+    const diffPaths = entries.filter(
+      (e) => e.path !== manifestPath && e.path !== GATE_CONFIG_PATH,
+    );
+    const r = checkManifest({
+      manifestPath,
+      manifest,
+      diffPaths,
+      head,
+      base,
+      basePaths,
+      headPaths,
+      config,
+    });
+    errors.push(...r.errors);
+    p1Recorded = r.p1Recorded;
+    if (
+      Array.isArray(manifest.judgement_words) &&
+      manifest.judgement_words.length > 0
+    ) {
+      errors.push(
+        `[judgement] manifest.judgement_words が空でない（${manifest.judgement_words.join("・")}）。判断が要る記事は PR にしない`,
       );
-      const r = checkManifest({
-        manifestPath,
-        manifest,
-        diffPaths,
+    }
+  }
+  return { errors, manifest, p1Recorded };
+}
+
+/**
+ * 関門の本体。
+ * @param {object} input
+ * @param {{status: string, path: string, mode?: string}[]} input.diff  git diff --raw --no-renames の行。mode は変更後の mode
+ * @param {Record<string, Uint8Array|string>} input.head  HEAD の中身（追加・変更したファイルと、参照された画像）。キーが無い＝HEAD に無い
+ * @param {Record<string, string>} input.base  base（分岐元）の中身（変更した .md・JSON。判断が要る句を変えた行・値だけで見るのと、featured の比較に使う）
+ * @param {string[]} input.basePaths  base のファイル一覧（slug の衝突、.md と JSON の対応、図の JSON の実在）
+ * @param {string[]} input.headPaths  HEAD のファイル一覧（同じ用途）
+ * @param {object} input.config  scripts/content/content-pr-gate.json
+ */
+export function evaluateContentPr({
+  diff,
+  head,
+  base,
+  basePaths,
+  headPaths = [],
+  config,
+}) {
+  const entries = diff.map((d) => ({
+    status: d.status,
+    path: d.path,
+    mode: d.mode,
+  }));
+  const errors = entryErrors(entries, config);
+
+  const picked = pickManifest(entries);
+  const { manifestPath } = picked;
+  errors.push(...picked.errors);
+
+  const live = entries.filter(
+    (e) => e.status !== "D" && !MANIFEST_RE.test(e.path),
+  );
+  const existsAnywhere = new Set([...basePaths, ...headPaths]);
+
+  const read = readTextFiles(live, head);
+  const { textFiles } = read;
+  errors.push(...read.errors);
+
+  const body = bodyErrors(textFiles, existsAnywhere, config);
+  errors.push(
+    ...body.errors,
+    ...pairErrors(textFiles, existsAnywhere),
+    ...slugFeaturedErrors(textFiles, basePaths, base),
+    ...imageErrors(textFiles, live, head),
+  );
+
+  const judgement = judgementErrors(textFiles, base, config);
+  errors.push(...judgement.errors);
+
+  const section = manifestPath
+    ? manifestSection(manifestPath, entries, {
         head,
         base,
         basePaths,
         headPaths,
         config,
-      });
-      errors.push(...r.errors);
-      p1Recorded = r.p1Recorded;
-      if (
-        Array.isArray(manifest.judgement_words) &&
-        manifest.judgement_words.length > 0
-      ) {
-        errors.push(
-          `[judgement] manifest.judgement_words が空でない（${manifest.judgement_words.join("・")}）。判断が要る記事は PR にしない`,
-        );
-      }
-    }
-  }
+      })
+    : {
+        errors: [],
+        manifest: undefined,
+        p1Recorded: { fan: 0, "seo-marketer": 0 },
+      };
+  errors.push(...section.errors);
 
   const gateEntry = entries.find((e) => e.path === GATE_CONFIG_PATH);
   if (gateEntry)
@@ -1053,17 +744,19 @@ export function evaluateContentPr({
       ...checkGateConfigChange(gateEntry, {
         head,
         base,
-        manifest: isPlainObject(manifest) ? manifest : undefined,
+        manifest: isPlainObject(section.manifest)
+          ? section.manifest
+          : undefined,
       }),
     );
 
   return {
     ok: errors.length === 0,
     errors,
-    judgementWordsFound,
-    p1Recorded,
+    judgementWordsFound: judgement.judgementWordsFound,
+    p1Recorded: section.p1Recorded,
     // meta（metaTitle・metaDescription）に「競艇」がある記事。暫定の例外を後で一括で外すための一覧
-    metaKyotei,
+    metaKyotei: body.metaKyotei,
     manifest: manifestPath,
   };
 }
