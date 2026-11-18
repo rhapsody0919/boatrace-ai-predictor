@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2004 |
+| 読んだファイル | 2005 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -523,7 +523,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `scripts/maintenance/verify-full-picture-scene2.js:3533` rest(rest) （検査）
-  - `src/services/venueQueries2.js:280` select [*, boat_number, percentage, venue_code]
+  - `src/services/venueQueries2.js:284` select [*, boat_number, percentage, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-losing-technique-stats.js:152` delete
   - `scripts/daily/update-losing-technique-stats.js:162` insert [?]
@@ -1235,8 +1235,8 @@
   - `src/services/racerQueries2.js:295` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:37` select(helper:fetchAllByIn)
   - `src/services/ruleMatchService.js:146` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
-  - `src/services/venueQueries2.js:56` select(helper:fetchAllByIn)
-  - `src/services/venueQueries2.js:126` select(helper:fetchAllByIn)
+  - `src/services/venueQueries2.js:57` select(helper:fetchAllByIn)
+  - `src/services/venueQueries2.js:127` select(helper:fetchAllByIn)
 - 書き手（10）: 
   - `scripts/daily/scrape-results.js:438` update [?]
   - `scripts/daily/scrape-results.js:588` update [rank4, rank5, rank6]
@@ -1621,8 +1621,8 @@
   - `src/services/scheduleQueries.js:206` select [race_date, venue_code]
   - `src/services/scheduleQueries.js:230` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/sherlockService.js:66` select [race_date, race_id, race_number, start_time, venue_code]
-  - `src/services/venueQueries2.js:43` select [race_date, race_id, venue_code]
-  - `src/services/venueQueries2.js:116` select [race_date, race_id, venue_code]
+  - `src/services/venueQueries2.js:44` select [race_date, race_id, venue_code]
+  - `src/services/venueQueries2.js:117` select [race_date, race_id, venue_code]
   - `src/services/watsonService.js:72` select [race_date, race_id, race_number, start_time, venue_code]
 - 書き手（20）: 
   - `scripts/daily/generate-predictions.js:971` upsert(helper:upsertChangedRows) [?]
@@ -2124,7 +2124,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `scripts/daily/update-course-baseline-stats.js:146` select(helper:upsertChangedRows)
-  - `src/services/venueQueries2.js:357` select [avg_st, breakout_count, breakout_rate, course, grade, late_rate, runs, st_histogram, stable_rate, window_days, window_end, window_start]
+  - `src/services/venueQueries2.js:361` select [avg_st, breakout_count, breakout_rate, course, grade, late_rate, runs, st_histogram, stable_rate, window_days, window_end, window_start]
 - 書き手（1）: 
   - `scripts/daily/update-course-baseline-stats.js:146` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -2134,7 +2134,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（1）: 
-  - `src/services/venueQueries2.js:250` select [*, boat_number, venue_code]
+  - `src/services/venueQueries2.js:254` select [*, boat_number, venue_code]
 - 書き手（2）: 
   - `scripts/daily/update-top-start-stats.js:143` delete
   - `scripts/daily/update-top-start-stats.js:152` insert [?]
@@ -2268,7 +2268,7 @@
   - `scripts/maintenance/update-venue-stats.js:74` select [avg_first_win_rate, avg_first_win_rate_race_count, code, name]
   - `src/services/core.js:324` select [avg_first_win_rate, code]
   - `src/services/venueQueries.js:56` select [cluster, code]
-  - `src/services/venueQueries2.js:223` select [avg_first_win_rate, avg_first_win_rate_race_count, code]
+  - `src/services/venueQueries2.js:224` select [avg_first_win_rate, avg_first_win_rate_race_count, code, name]
 - 書き手（2）: 
   - `scripts/maintenance/update-venue-stats.js:46` update [avg_first_win_rate, avg_first_win_rate_race_count, updated_at]
   - `scripts/maintenance/update-venue-stats.js:58` update [avg_first_win_rate, avg_first_win_rate_race_count, updated_at]
