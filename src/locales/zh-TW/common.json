@@ -153,8 +153,8 @@
     "assistEntry": {
       "lead": "想依序查看資料的話"
     },
-    "metaTitle": "{{venue}} 第{{race}}場 AI數據分析（{{date}}）- 龍神雷達",
-    "metaDescription": "免費查看{{date}}{{venue}}第{{race}}場的出賽表資料、AI數據分析與展開預測。",
+    "metaTitle": "{{venue}} 第{{race}}場 賽前資訊、展示、AI數據分析（{{date}}）- 龍神雷達",
+    "metaDescription": "免費、免註冊查看{{date}}{{venue}}第{{race}}場的出賽表、展示時間、賽前資訊、AI數據分析、第1彎展開預測與內道崩潰指數。",
     "metaTitleResult": "{{venue}} 第{{race}}場 比賽結果與派彩（{{date}}）- 龍神雷達",
     "metaDescriptionResult": "免費查看{{date}}{{venue}}第{{race}}場的比賽結果、派彩、出賽表資料與AI預測。",
     "metaTitleCancelled": "{{venue}} 第{{race}}場 中止（{{date}}）- 龍神雷達",
