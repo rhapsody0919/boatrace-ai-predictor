@@ -55,6 +55,13 @@ import RateBar from "../common/RateBar";
 import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
 import { countMeetPartsChanges } from "../../utils/motorMeetParts";
 import { bestOf } from "../../utils/bestOf";
+import {
+  computePeriodClip,
+  computeRankClasses,
+  computeRateView as computeMotorRateView,
+  computeStatColumns as computeMotorStatColumns,
+  exhibitionChartDataOf,
+} from "../../pure/motorChartView.js";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
 
@@ -1113,6 +1120,9 @@ function usePeriodAndWakuReset(m) {
   }, [selectedVenue, drillDownMotor]);
 }
 
+const RATE_DEPS = { motorRateView, bestOf };
+const PERIOD_DEPS = { getTodayJST, isClippedByGeneration };
+
 // 2連率・3連率の推移グラフの元データ
 function rateChartData(trendData, firstRatedIndex, drillTallyState) {
   return (
@@ -1167,12 +1177,7 @@ function computeTrendView({ trendData, breakdown, venueMotorStats, powerIndex, u
   );
   const chartData = rateChartData(trendData, firstRatedIndex, drillTallyState);
 
-  const exhibitionChartData = (trendData?.trend ?? [])
-    .filter((row) => row.exhibition_time !== null)
-    .map((row) => ({
-      date: row.date.slice(5),
-      exhibition_time: row.exhibition_time,
-    }));
+  const exhibitionChartData = exhibitionChartDataOf(trendData);
   // このレースがこのモーターの初出走（直前までの走りが0）。「データが見つかりません」
   // だと取得失敗と区別できないので、理由を書く（BOA-557 ファン評価2周目）
   const drillFirstRun =
@@ -1189,14 +1194,6 @@ function computeTrendView({ trendData, breakdown, venueMotorStats, powerIndex, u
   };
 }
 
-// 2連率の列の値ラベル（BOA-830）
-function rateLabelOf(t, officialRates, view, i) {
-  if (view.kind === "notRun") return t("analysis.motor.freshNotRun");
-  if (view.kind === "zero")
-    return t("analysis.motor.freshZeroRuns", { n: view.runs });
-  return officialRates[i] !== null ? `${officialRates[i].toFixed(1)}%` : "-";
-}
-
 function listPowerIndexOf(row) {
   return row.rate_source === "official"
     ? {
@@ -1206,48 +1203,19 @@ function listPowerIndexOf(row) {
     : { value: row.power_index ?? null, n: row.sample_count };
 }
 
-// 棒にする2連率と、その値ラベル・最良の印・一覧の機力指数
+// 棒にする2連率と、その値ラベル・最良の印・一覧の機力指数（整形は src/pure/motorChartView.js）
 function computeRateView(breakdown, freshness, explainBoat, t) {
   // 棒にする2連率。公式（節時点。過去レースは2連率の列そのものが公式値、BOA-329）が 0 の艇は、
   // 現世代でこのレースより前の自前の値（BOA-830、2026-10-11 ユーザー決定）。まだ走っていない艇は棒なし
   const rateViews = breakdown.map(motorRateView);
-  const officialRates = rateViews.map((v) =>
-    v.kind === "official" || v.kind === "own"
-      ? v.value
-      : v.kind === "zero"
-        ? 0
-        : null,
-  );
-  const officialRateValues = officialRates.filter((v) => v !== null);
-  const officialRateMax =
-    officialRateValues.length > 0 ? Math.max(...officialRateValues) : null;
-  // 最良の値ラベル（UI統一ルール R1）。判定はレース詳細の他の表と同じ bestOf（同じ値の最良は全部、
-  // 全艇同値・値なしなら付けない）。表示と同じ1桁で比べる。生の値だと「38.3」に見える 38.33 と
-  // 38.28 の片方にだけ印が付く（9/15〜10/02 で14レース。データ精度検証）。
-  // 行全体の .best-motor（期間の2連率の最大）は外した。棒の札と別の列を指すと、どちらが最良か
-  // 分からないため（BOA-428、UI統一レーンと合意）。
-  // 自前の値（数走の 100% 等）は公式と並べて最良にしない（BOA-830）
-  const officialRateBestBoats = bestOf(
-    breakdown.map((r, i) => ({
-      boat: r.boat_number,
-      value: rateViews[i].kind === "official" ? officialRates[i] : null,
-    })),
-    "max",
-    { digits: 1 },
-  );
-  const rateLabel = (view, i) => rateLabelOf(t, officialRates, view, i);
-  // 新しいモーターの最初の節（その日の公式2連率が全行 0）。優出・優勝はまだ機会が無いので「-」
-  const firstMeet = freshness?.firstMeet === true;
-  // 一覧の機力指数。過去レースは公式に相当する値が無く「-」だったが、新しいモーターの
+  // 一覧の機力指数（listPowerIndex）。過去レースは公式に相当する値が無く「-」だったが、新しいモーターの
   // 入れ替えから間もない間は自前の値を出す（BOA-830「機力指数はこの間も自前」）
-  const explainRow =
-    explainBoat !== null
-      ? breakdown.find((r) => r.boat_number === explainBoat)
-      : null;
-  const explainView = explainRow ? motorRateView(explainRow) : null;
   return {
-    rateViews, officialRates, officialRateMax, officialRateBestBoats, rateLabel,
-    firstMeet, listPowerIndex: listPowerIndexOf, explainRow, explainView,
+    ...computeMotorRateView(
+      { breakdown, rateViews, freshness, explainBoat, t },
+      RATE_DEPS,
+    ),
+    listPowerIndex: listPowerIndexOf,
   };
 }
 
@@ -1290,85 +1258,14 @@ function venueRankCellOf({ t, venueRanks, selectedRace, generationStart }, motor
   );
 }
 
-// 一覧の列を出すか（優出数・優勝数・1着率・前検タイム）と、失敗の札
+// 一覧の列を出すか（優出数・優勝数・1着率・前検タイム。src/pure/motorChartView.js）と、失敗の札
 function computeStatColumns(breakdown, t) {
-  // kyoteibiyori等の会場出走表に倣い、優出数・優勝数・1着率は艇ごとの
-  // 単一バッジではなく、同じレースの全艇を横並びで比較できる列として表示する
-  // （1位・2位を色分けするのも合わせて模倣。BOA-264追加調査）
-  const firstPlaceRates = breakdown.map((r) =>
-    r.race_count && r.first_place_count !== null
-      ? (r.first_place_count / r.race_count) * 100
-      : null,
-  );
-  // 全艇が null（その会場・その節で1着率が取れていない）の列は出さない。
-  // 「-」だけが6行並んで横幅を50px食い、肝心の2連率・機力指数を画面外へ
-  // 押し出していた（2026-09-27、ファン視点のレビュー。条件別タブで
-  // n=0の行を畳んだBOA-432と同じ考え方）
-  // 会場公式のモーター成績の取得に失敗した行があるとき（BOA-740）は、列を畳まず、その行に「取得失敗」を出す。
-  // 畳むと「この会場は公式が出していない」と同じ見た目になり、失敗が見えない
-  const venueStatsFailed = breakdown.some((r) => r.venue_stats_failed);
-  const showFirstPlaceRate =
-    venueStatsFailed || firstPlaceRates.some((v) => v !== null);
-  // 優出数・優勝数も、会場の全モーターで値が無い（会場公式サイトが出していない）ときは
-  // 列ごと畳む。「-」が並ぶと「0回」と読まれる（BOA-513、ファン4人のパネル）
-  const showFinalCount =
-    venueStatsFailed ||
-    breakdown.some(
-      (r) => r.final_count !== null && r.final_count !== undefined,
-    );
-  const showChampionshipCount =
-    venueStatsFailed ||
-    breakdown.some(
-      (r) =>
-        r.championship_count !== null && r.championship_count !== undefined,
-    );
   const venueStatsFailedCell = (
     <span className="motor-stat-failed">
       {t("analysis.motor.venueStatsFailedCell")}
     </span>
   );
-  // 前検タイムも同じ扱い（BOA-451）。節に前検の行が無い開催では列ごと出さない
-  // （ADR-0067 の 2026-09-26 追記「節に前検の行が無い場合は行ごと出さない」と同じ）
-  const hasPretest = breakdown.some(
-    (r) => r.pretest_time !== null && r.pretest_time !== undefined,
-  );
-  return {
-    firstPlaceRates, venueStatsFailed, showFirstPlaceRate, showFinalCount,
-    showChampionshipCount, venueStatsFailedCell, hasPretest,
-  };
-}
-
-// 1位だけを金で示す（同値は全部、全艇同値なら無し）。以前は2位も薄い金で示していたが、
-// レース詳細の色分けのルール（最良だけ金。docs/design/race-detail-ui-unify R1）にそろえた。
-// 引数は breakdown の行番号
-function rankClassFor(highlightBestSets, values, digits) {
-  const best = bestOf(
-    values.map((value, i) => ({ boat: i, value })),
-    "max",
-    { digits },
-  );
-  highlightBestSets.push(best);
-  return (i) => (best.has(i) ? "motor-stat-rank1" : "");
-}
-
-function computeRankClasses(breakdown, firstPlaceRates) {
-  const highlightBestSets = [];
-  const finalCountRankClass = rankClassFor(
-    highlightBestSets,
-    breakdown.map((r) => r.final_count),
-    0,
-  );
-  const championshipCountRankClass = rankClassFor(
-    highlightBestSets,
-    breakdown.map((r) => r.championship_count),
-    0,
-  );
-  const firstPlaceRateRankClass = rankClassFor(highlightBestSets, firstPlaceRates, 1);
-  const hasHighlightedCell = highlightBestSets.some((best) => best.size > 0);
-  return {
-    finalCountRankClass, championshipCountRankClass, firstPlaceRateRankClass,
-    hasHighlightedCell,
-  };
+  return { ...computeMotorStatColumns(breakdown), venueStatsFailedCell };
 }
 
 // 会場公式サイト由来で、表に出ている列の名前（出典の注記に挙げる）
@@ -1387,10 +1284,7 @@ function makeVenueColsLabel(t, cols) {
 
 // 期間トグルを出すか・期間を切り詰めたか
 function computePeriodView(m) {
-  const {
-    breakdown, selectedRace, drillDownMotor, drillPreGeneration,
-    generationStart, powerIndex, trendData,
-  } = m;
+  const { breakdown, selectedRace, drillDownMotor, drillPreGeneration } = m;
   // 過去レースの一覧表は出走表時点の公式値（BOA-329、2026-09-29 ユーザー判断(c)）。
   // 期間の切り替えは効かないので出さず、1行の注記に置き換える
   const officialMode = breakdown.some((r) => r.rate_source === "official");
@@ -1403,23 +1297,8 @@ function computePeriodView(m) {
     drillDownMotor === null
       ? !officialMode
       : !drillPreGeneration && !isPastSelectedRace;
-  // 入れ替えから1ヶ月以内は「直近1ヶ月」まで使用開始日で切り詰められ、どちらの
-  // 期間を選んでも中身が同じになる。押しても変わらないボタンは出さない
-  // （2026-09-29 ファン評価。使用開始日の行と切り詰めの注記は出す）
-  const periodChoiceHasEffect = !isClippedByGeneration(
-    generationStart,
-    getTodayJST(),
-    30,
-  );
-  // 期間を現行モーターの使用開始日で切り詰めたか（入れ替え後で期間が短い）
-  const clippedByGeneration =
-    drillDownMotor === null
-      ? breakdown.some((r) => r.clipped_by_generation)
-      : Boolean(
-          powerIndex?.clipped_by_generation || trendData?.clippedByGeneration,
-        );
   return {
-    officialMode, showPeriodToggle, periodChoiceHasEffect, clippedByGeneration,
+    officialMode, showPeriodToggle, ...computePeriodClip(m, PERIOD_DEPS),
   };
 }
 
@@ -1454,7 +1333,8 @@ function useMotorView(m) {
   );
   return {
     currentParts, expandedParts, ...trend, ...rate, showVenueRank, venueRankCell,
-    todayHighlightCourse, ...cols, ...computeRankClasses(breakdown, cols.firstPlaceRates),
+    todayHighlightCourse, ...cols,
+    ...computeRankClasses(breakdown, cols.firstPlaceRates, RATE_DEPS),
     drillPowerIndexTone, venueColsLabel: makeVenueColsLabel(t, cols),
     ...computePeriodView(m),
     // ディープリンク先の会場が「本日開催中」の一覧に無い（過去レースへ飛んだとき）。
