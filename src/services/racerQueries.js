@@ -3,6 +3,7 @@
 
 import { supabase } from "./supabaseClient";
 import { officialPeriodOf } from "../pure/basicInfoStats.js";
+import { makeRacer } from "../pure/racerModel.js";
 import { fetchAllPages } from "./fetchAllPages.js";
 import { FETCH_ALL_BY_IN_ORDER, fetchAllByIn, withCache } from "./core.js";
 
@@ -315,7 +316,8 @@ export function getAllRacersLite() {
             .range(from, from + pageSize - 1);
 
           if (!page || page.length === 0) break;
-          data.push(...page);
+          // 不変条件の破れ（RangeError）は呼び手の catch で取得失敗と同じ扱い（キャッシュに残さない）
+          data.push(...page.map(makeRacer));
           if (page.length < pageSize) break;
           from += pageSize;
         }
