@@ -9,6 +9,7 @@ import {
   recalcMotorRows,
   settleMotorBreakdown,
 } from "../pure/raceMotorBreakdown.js";
+import { makeMotorStat } from "../pure/motorModel.js";
 import { isPastRace, withCache } from "./core.js";
 import { beforeKey, getMotorGenerationStart } from "./motorQueries.js";
 import {
@@ -50,7 +51,7 @@ export function getVenueMotorStats(venueCode, motorNumber, asOfDate = null) {
         // ただし null（行なし）には倒さず、失敗と分かる値を返す（BOA-740）
         const failed = { fetchFailed: true };
         try {
-          const { data } = await supabase
+          const { data: row } = await supabase
             .from("venue_motor_stats")
             .select("*")
             .eq("venue_code", venueCode)
@@ -60,7 +61,9 @@ export function getVenueMotorStats(venueCode, motorNumber, asOfDate = null) {
             .limit(1)
             .maybeSingle();
 
-          if (!data) return null;
+          if (!row) return null;
+          // 不変条件の破れ（makeMotorStat の RangeError）は下の catch で取得失敗と同じ扱い（fetchFailed、キャッシュしない）
+          const data = makeMotorStat(row);
 
           return {
             scrapedDate: data.scraped_date,
