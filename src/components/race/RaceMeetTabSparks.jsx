@@ -3,7 +3,7 @@
  * 頭の中で組み立てることになる（2026-09-27、ファン視点の議論）。
  * 判定文は出さず、形と基準線を見せて読み手に委ねる。
  */
-import { meetStVerdictTone, MEET_ST_DIFF_THRESHOLD } from "./basicInfoStats";
+import { meetStVerdictTone, MEET_ST_DIFF_THRESHOLD } from "../../pure/basicInfoStats.js";
 import MeetSparkline from "./MeetSparkline";
 
 // 通常より早い＝緑、遅い＝赤（R2）。差の数字に −/+ が付く。

@@ -76,15 +76,60 @@ export function parseOritenText(text) {
   if (typeof text !== "string" || text.length === 0) {
     return fail("本文が空です");
   }
+  const lines = splitLines(text);
+  const dataFailed = checkDataLine(lines, fail);
+  if (dataFailed) return dataFailed;
+  const headFailed = readMeasureHeader(result, lines, fail);
+  if (headFailed) return headFailed;
+  const flag = result.measureFlag;
+  const count = result.declaredItemCount;
+
+  const labelFailed = readLabels(result, lines, fail);
+  if (labelFailed) return labelFailed;
+
+  const bodyLines = lines.slice(3);
+  if (flag === 2) {
+    // 計測不可: 選手の行が無い。行があれば、意味が分からないため書かない
+    if (bodyLines.length > 0) {
+      return fail(`計測不可なのに選手の行があります（${bodyLines.length}行）`);
+    }
+    result.status = ORITEN_STATUSES.unmeasurable;
+    return result;
+  }
+
+  if (bodyLines.length === 0) {
+    return fail("計測ありなのに選手の行がありません");
+  }
+  const rowFailed = readRacerRows(result, bodyLines, count, fail);
+  if (rowFailed) return rowFailed;
+  result.rows.sort((a, b) => a.boatNumber - b.boatNumber);
+  result.status = ORITEN_STATUSES.measured;
+  return result;
+}
+
+/** 改行を揃えて行に分ける。末尾の改行による空要素だけを除く */
+function splitLines(text) {
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
   // 末尾の改行による空要素だけを除く（途中の空行は、列数の不一致として下で構造の異常になる）
   if (lines[lines.length - 1] === "") lines.pop();
+  return lines;
+}
 
+/** 先頭の行が data= か確かめる。異常なら fail の戻り値（result）を返す（正常なら null） */
+function checkDataLine(lines, fail) {
   if (lines[0]?.trim() !== "data=") {
     return fail(
       `先頭の行が data= ではありません（HTMLのエラーページ等の可能性）: ${lines[0]?.slice(0, 40) ?? ""}`,
     );
   }
+  return null;
+}
+
+/**
+ * 2行目（計測状態<TAB>項目数）を読み、result の measureFlag・declaredItemCount へ入れる。
+ * 異常なら fail の戻り値（result）を返す（正常なら null）
+ */
+function readMeasureHeader(result, lines, fail) {
   const head = (lines[1] ?? "").split("\t");
   const flag = Number(head[0]);
   const count = Number(head[1]);
@@ -103,7 +148,15 @@ export function parseOritenText(text) {
   if (count < 1 || count > 6) {
     return fail(`項目数が想定外です: ${count}`);
   }
+  return null;
+}
 
+/**
+ * 3行目（項目名）を読み、result の labels・unknownLabels へ入れる。
+ * 異常なら fail の戻り値（result）を返す（正常なら null）
+ */
+function readLabels(result, lines, fail) {
+  const count = result.declaredItemCount;
   const rawLabels = (lines[2] ?? "").split("\t");
   result.labels = rawLabels.map(normalizeLabel);
   if (rawLabels.length !== count || result.labels.some((l) => l === "")) {
@@ -117,20 +170,13 @@ export function parseOritenText(text) {
   result.unknownLabels = result.labels.filter(
     (l) => !KNOWN_ORITEN_LABELS.includes(l),
   );
+  return null;
+}
 
-  const bodyLines = lines.slice(3);
-  if (flag === 2) {
-    // 計測不可: 選手の行が無い。行があれば、意味が分からないため書かない
-    if (bodyLines.length > 0) {
-      return fail(`計測不可なのに選手の行があります（${bodyLines.length}行）`);
-    }
-    result.status = ORITEN_STATUSES.unmeasurable;
-    return result;
-  }
-
-  if (bodyLines.length === 0) {
-    return fail("計測ありなのに選手の行がありません");
-  }
+/**
+ * 選手の行を読み、result.rows へ足す。異常なら fail の戻り値（result）を返す（正常なら null）
+ */
+function readRacerRows(result, bodyLines, count, fail) {
   const seen = new Set();
   for (const line of bodyLines) {
     const cols = line.split("\t");
@@ -161,9 +207,7 @@ export function parseOritenText(text) {
       values,
     });
   }
-  result.rows.sort((a, b) => a.boatNumber - b.boatNumber);
-  result.status = ORITEN_STATUSES.measured;
-  return result;
+  return null;
 }
 
 /** bc_mst（モーター使用開始日）の本文（`YYYYMMDD` の1行）を解釈する。不正なら null */

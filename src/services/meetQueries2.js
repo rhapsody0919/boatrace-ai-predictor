@@ -20,7 +20,7 @@ import {
   postPrelimFlyingRacerIds,
   runFinishLabel,
   officialMarkOf,
-} from "../components/race/seriesPoints.js";
+} from "../pure/seriesPoints.js";
 import {
   PRETEST_LOOKBACK_DAYS,
   pickMeetPretestByRacer,

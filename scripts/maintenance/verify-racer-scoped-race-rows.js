@@ -16,93 +16,42 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import {
+  createFakeSupabase,
+  installLocalStorage,
+  registerFakeServiceSupabase,
+  setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
+import {
+  R1,
+  R2,
+  R9,
+  RACER,
+  ROW_KEYS,
+  check,
+  checkAsync,
+  checked,
+  expectedServiceRows,
+  only,
+  run,
+  S1,
+  S2,
+  SERVICE_TABLES,
+  entry,
+  ex,
+  race,
+  result,
+  sixSt,
+} from "./verifyData/racer-scoped-race-rows.js";
 import { existsSync } from "node:fs";
-import { buildRacerScopedRaceRows } from "../../src/services/racerScopedRaceRows.js";
+
 // BOA-1501 で src/pure へ移す。移す前後のどちらでも本体を読む（移した後に元の場所の分岐は外す）
-const BASIC_INFO_STATS = existsSync(new URL("../../src/pure/basicInfoStats.js", import.meta.url))
+const BASIC_INFO_STATS = existsSync(
+  new URL("../../src/pure/basicInfoStats.js", import.meta.url),
+)
   ? "../../src/pure/basicInfoStats.js"
   : "../../src/components/race/basicInfoStats.js";
 const { computeRates, getRecentRaces } = await import(BASIC_INFO_STATS);
-
-const R1 = "2026-10-01-04-01";
-const R9 = "2026-10-01-04-09";
-const R2 = "2026-10-02-04-03";
-
-const entry = (race_id, boat_number = 1, extra = {}) => ({
-  race_id,
-  boat_number,
-  grade: "A1",
-  f_count: 0,
-  ...extra,
-});
-const race = (race_id) => ({
-  race_id,
-  race_date: race_id.slice(0, 10),
-  venue_code: race_id.slice(11, 13),
-  race_grade: "一般",
-});
-const result = (race_id, extra = {}) => ({
-  race_id,
-  rank1: 1,
-  rank2: 2,
-  rank3: 3,
-  rank4: 4,
-  rank5: 5,
-  rank6: 6,
-  race_status: "normal",
-  actual_course_1: 1,
-  actual_course_2: 2,
-  actual_course_3: 3,
-  actual_course_4: 4,
-  actual_course_5: 5,
-  actual_course_6: 6,
-  winning_technique: "逃げ",
-  payout_win: 150,
-  ...extra,
-});
-const st = (race_id, boat_number, start_timing, extra = {}) => ({
-  race_id,
-  boat_number,
-  start_timing,
-  is_flying: false,
-  finish_mark: null,
-  entry_course: null,
-  ...extra,
-});
-const ex = (race_id, boat_number, exhibition_time) => ({
-  race_id,
-  boat_number,
-  exhibition_time,
-});
-const sixSt = (race_id, overrides = {}) =>
-  [1, 2, 3, 4, 5, 6].map((b) =>
-    st(race_id, b, 0.1 + b / 100, overrides[b] ?? {}),
-  );
-
-/** 1レース・自艇1号艇の入力。over で配列ごと差し替える */
-const input = (over = {}) => ({
-  entries: [entry(R1)],
-  raceRows: [race(R1)],
-  resultRows: [result(R1)],
-  startTimingRows: sixSt(R1),
-  exhibitionRows: [],
-  conditionRows: [],
-  ...over,
-});
-const run = (over) => buildRacerScopedRaceRows(input(over));
-const only = (over) => {
-  const rows = run(over);
-  assert.equal(rows.length, 1);
-  return rows[0];
-};
-
-let count = 0;
-const check = (name, fn) => {
-  fn();
-  count += 1;
-  console.log(`  ok ${name}`);
-};
 
 console.log("A. 旧の実装から取った値");
 
@@ -350,45 +299,12 @@ check(
   },
 );
 
-check("A14 出力の行のキー（BOA-1052 の表示用キーを追加、35個、順を含む）", () => {
-  assert.deepEqual(Object.keys(only({})), [
-    "raceId",
-    "date",
-    "venueCode",
-    "boatNumber",
-    "raceGrade",
-    "raceTitle",
-    "raceStage",
-    "waveHeight",
-    "seriesDay",
-    "isFinalDay",
-    "rank1",
-    "rank2",
-    "rank3",
-    "rank4",
-    "rank5",
-    "rank6",
-    "winningTechnique",
-    "payoutWin",
-    "finishMark",
-    "absent",
-    "startTiming",
-    "flyingStartTiming",
-    "lateStartTiming",
-    "actualCourse",
-    "entryCourse",
-    "grade",
-    "exhibitionTime",
-    "exhibitionRank",
-    "fCount",
-    "isFlying",
-    "stForRank",
-    "raceBestSt",
-    "innerMinSt",
-    "stRank",
-    "isFastestExhibition",
-  ]);
-});
+check(
+  "A14 出力の行のキー（BOA-1052 の表示用キーを追加、35個、順を含む）",
+  () => {
+    assert.deepEqual(Object.keys(only({})), ROW_KEYS);
+  },
+);
 
 check("A15 entries が空なら空配列", () => {
   assert.deepEqual(run({ entries: [] }), []);
@@ -476,26 +392,94 @@ check("B6 出遅れの ST 欠落・false・フラグ未取得は従来の扱い"
   assert.equal(getRecentRaces([fly])[0].startTiming, 0.01);
 });
 
-console.log("C. 呼び出し");
+console.log("C. 呼び出し（サービス層を偽の supabase の上で呼ぶ）");
 
-const service = readDataLayerSource();
-check("C1 getRacerScopedRaceStats は buildRacerScopedRaceRows を呼ぶ", () => {
-  // 書き方（import の改行・引数の並び）には縛られないよう、名前と行き先だけを見る
-  assert.match(service, /from\s*["']\.\/racerScopedRaceRows\.js["']/);
-  // getRacerScopedRaceStats の本文（次のメソッドの JSDoc の手前まで）が、組み立てた行を返す
-  const start = service.indexOf("getRacerScopedRaceStats(racerId) {");
-  assert.ok(start >= 0, "getRacerScopedRaceStats が DAL に無い");
-  const body = service.slice(start, service.indexOf("\n  /**", start));
-  assert.match(body, /return\s+buildRacerScopedRaceRows\(/);
-  // 旧の整形の本文（目印の変数）が戻っていない
-  assert.doesNotMatch(body, /soleFastestBoatByRace|exhibitionRowsByRace/);
-});
+registerFakeServiceSupabase();
+installLocalStorage();
+const { getRacerScopedRaceStats } =
+  await import("../../src/services/racerQueries2.js");
+const { clearCache, withCache } = await import("../../src/services/core.js");
+const { racerHistoryCutoff } =
+  await import("../../src/utils/racerVenueBoatStats.js");
 
-check("C2 出遅れフラグを取得し、旧キャッシュを使わない（BOA-1052）", () => {
-  const start = service.indexOf("getRacerScopedRaceStats(racerId) {");
-  const body = service.slice(start, service.indexOf("\n  /**", start));
-  assert.match(body, /racer-scoped-race-stats-v12-/);
-  assert.match(body, /"race_id, boat_number, start_timing, is_flying, is_late_start, finish_mark, entry_course"/);
-});
+const install = (tables = SERVICE_TABLES, failTables) => {
+  clearCache();
+  // order は記録だけで並べ替えない。失敗の表は await で例外になる
+  return setFakeSupabase(
+    createFakeSupabase(tables, {
+      sortByOrder: false,
+      failTables: new Map(
+        [...(failTables ?? [])].map((t) => [t, new Error(`${t} 失敗`)]),
+      ),
+    }),
+  );
+};
+await checkAsync(
+  "C1 getRacerScopedRaceStats は取った表を buildRacerScopedRaceRows で組んだ行をそのまま返す",
+  async () => {
+    const fake = install();
+    const rows = await getRacerScopedRaceStats(RACER);
+    const expected = expectedServiceRows();
+    assert.equal(expected.length, 2);
+    assert.deepEqual(rows, expected);
+    // 取る表: race_entries は選手・窓の始点で、他の5表は選手の走の race_id だけで
+    const entryQ = fake.calls.find((q) => q.table === "race_entries");
+    assert.deepEqual(entryQ.filters, [
+      ["eq", "racer_id", RACER],
+      ["gte", "race_id", racerHistoryCutoff()],
+    ]);
+    for (const table of [
+      "races",
+      "race_results",
+      "race_start_timings",
+      "exhibition_data",
+      "race_conditions",
+    ]) {
+      const q = fake.calls.find((c) => c.table === table);
+      assert.ok(q, `${table} を取っていない`);
+      assert.deepEqual(q.filters, [["in", "race_id", [S1, S2]]]);
+    }
+  },
+);
 
-console.log(`✅ racerScopedRaceRows: ${count} 件の例を確認`);
+await checkAsync(
+  "C1b race_conditions の取得に失敗しても例外にせず、conditionRows を null で整形する",
+  async () => {
+    install(SERVICE_TABLES, new Set(["race_conditions"]));
+    const origError = console.error;
+    console.error = () => {};
+    let rows;
+    try {
+      rows = await getRacerScopedRaceStats(RACER);
+    } finally {
+      console.error = origError;
+    }
+    const expected = expectedServiceRows(null);
+    assert.deepEqual(rows, expected);
+  },
+);
+
+await checkAsync(
+  "C2 出遅れフラグ（is_late_start）を含む列で race_start_timings を取り、結果は racer-scoped-race-stats-v12 のキャッシュに入る（旧版のキャッシュは使わない）",
+  async () => {
+    const fake = install();
+    // 旧版（v11）のキャッシュに入っていた古い形の値は返さない
+    const stale = [{ stale: true }];
+    await withCache(`racer-scoped-race-stats-v11-${RACER}`, async () => stale);
+    const rows = await getRacerScopedRaceStats(RACER);
+    assert.notDeepEqual(rows, stale);
+    const stq = fake.calls.find((q) => q.table === "race_start_timings");
+    assert.equal(
+      stq.select,
+      "race_id, boat_number, start_timing, is_flying, is_late_start, finish_mark, entry_course",
+    );
+    assert.equal(rows.find((r) => r.raceId === S2).lateStartTiming, 1.99);
+    // 結果は v12 のキーに入っている（取り直さずに同じ値が返る）
+    const cached = await withCache(`racer-scoped-race-stats-v12-${RACER}`, () =>
+      Promise.reject(new Error("v12 のキャッシュに無い")),
+    );
+    assert.deepEqual(cached, rows);
+  },
+);
+
+console.log(`✅ racerScopedRaceRows: ${checked()} 件の例を確認`);

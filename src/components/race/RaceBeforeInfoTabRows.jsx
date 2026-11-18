@@ -6,7 +6,7 @@ import {
   computeExhibitionTopRates,
   recordsBeforeRace,
   SMALL_SAMPLE_THRESHOLD,
-} from "./basicInfoStats";
+} from "../../pure/basicInfoStats.js";
 import { bestOf } from "../../utils/bestOf";
 
 const smallSampleClass = (n) =>

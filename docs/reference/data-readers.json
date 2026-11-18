@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1969,
+    "sourceFiles": 1988,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -4989,7 +4989,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/poirotService.js:59",
+          "ref": "src/services/poirotService.js:62",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5023,7 +5023,7 @@
         "race_id": {
           "readers": [
             "scripts/daily/generate-poirot-predictions.js:78",
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": [
@@ -5033,49 +5033,49 @@
         "model_version": {
           "readers": [
             "scripts/daily/generate-poirot-predictions.js:78",
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "win_probs": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "top_pick": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "top_2nd": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "top_3rd": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "trifecta_prob": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
         },
         "predicted_at": {
           "readers": [
-            "src/services/poirotService.js:59"
+            "src/services/poirotService.js:62"
           ],
           "writers": [],
           "sql": []
@@ -11277,7 +11277,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/check-result-shadow.js:157",
+          "ref": "scripts/maintenance/check-result-shadow.js:160",
           "op": "select",
           "via": "helper:fetchByRaceIds",
           "columns": []
@@ -13043,7 +13043,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/check-result-shadow.js:163",
+          "ref": "scripts/maintenance/check-result-shadow.js:166",
           "op": "select",
           "via": "helper:fetchByRaceIds",
           "columns": []
@@ -16390,7 +16390,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:749",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:809",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16709,7 +16709,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/check-result-shadow.js:125",
+          "ref": "scripts/maintenance/check-result-shadow.js:129",
           "op": "select",
           "via": "embed",
           "columns": [
@@ -17095,7 +17095,7 @@
           ]
         },
         {
-          "ref": "src/services/poirotService.js:48",
+          "ref": "src/services/poirotService.js:49",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17467,7 +17467,7 @@
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSchedule.js:44",
             "scripts/lib/raceStatusJob.js:109",
-            "scripts/lib/scrapeJobs/monitor.js:749",
+            "scripts/lib/scrapeJobs/monitor.js:809",
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
             "scripts/lib/scrapeJobs/resultHandlers.js:153",
             "scripts/lib/scrapeJobs/resultHandlers.js:275",
@@ -17515,7 +17515,7 @@
             "src/services/meetQueries3.js:62",
             "src/services/motorQueries.js:112",
             "src/services/mycroftService.js:78",
-            "src/services/poirotService.js:48",
+            "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
@@ -17588,7 +17588,7 @@
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSeriesLookup.js:174",
             "scripts/lib/raceStatusJob.js:109",
-            "scripts/lib/scrapeJobs/monitor.js:749",
+            "scripts/lib/scrapeJobs/monitor.js:809",
             "scripts/lib/scrapeJobs/resultHandlers.js:153",
             "scripts/lib/scrapeJobs/resultHandlers.js:275",
             "scripts/lib/snsAutoPlanRunner.js:741",
@@ -17616,7 +17616,7 @@
             "scripts/sns/today-picks.js:101",
             "src/services/motorQueries.js:112",
             "src/services/mycroftService.js:78",
-            "src/services/poirotService.js:48",
+            "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:125",
             "src/services/scheduleQueries.js:205",
@@ -17698,7 +17698,7 @@
             "src/services/motorQueries.js:112",
             "src/services/motorQueries3.js:282",
             "src/services/mycroftService.js:78",
-            "src/services/poirotService.js:48",
+            "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:205",
             "src/services/scheduleQueries.js:229",
@@ -17742,7 +17742,7 @@
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
             "src/services/mycroftService.js:78",
-            "src/services/poirotService.js:48",
+            "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:65",
@@ -17792,7 +17792,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
             "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
@@ -17803,7 +17803,7 @@
             "scripts/sns/push-setsu-kiryoku-short.js:1099",
             "scripts/sns/today-picks.js:101",
             "src/services/mycroftService.js:78",
-            "src/services/poirotService.js:48",
+            "src/services/poirotService.js:49",
             "src/services/ruleMatchService.js:158",
             "src/services/scheduleQueries.js:229",
             "src/services/sherlockService.js:65",
@@ -17986,7 +17986,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:114",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
@@ -18377,7 +18377,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:717",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:777",
           "op": "select",
           "via": "client",
           "columns": [
@@ -18852,7 +18852,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/monitor.js:727",
+          "ref": "scripts/lib/scrapeJobs/monitor.js:787",
           "op": "select",
           "via": "client",
           "columns": [
@@ -18937,7 +18937,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/check-result-shadow.js:125",
+          "ref": "scripts/maintenance/check-result-shadow.js:129",
           "op": "select",
           "via": "client",
           "columns": [
@@ -19070,7 +19070,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-scrape-slots-on-db.js:124",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174",
             "scripts/maintenance/verify-scrape-slots-on-db.js:198",
@@ -19096,7 +19096,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174"
           ],
           "writers": [],
@@ -19113,7 +19113,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174"
           ],
           "writers": [],
@@ -19134,7 +19134,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [],
           "sql": [
@@ -19153,7 +19153,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174",
             "scripts/maintenance/verify-scrape-slots-on-db.js:198"
           ],
@@ -19172,7 +19172,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125",
+            "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/verify-scrape-slots-on-db.js:198"
           ],
           "writers": [],
@@ -19219,7 +19219,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [],
           "sql": [
@@ -19250,7 +19250,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
             "scripts/lib/scrapeJobs/store.js:233",
@@ -19267,7 +19267,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
             "scripts/lib/scrapeJobs/store.js:233",
@@ -19292,7 +19292,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
             "scripts/lib/scrapeJobs/store.js:233"
@@ -19304,7 +19304,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
-            "scripts/maintenance/check-result-shadow.js:125"
+            "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
             "scripts/lib/scrapeJobs/cleanup.js:33",
@@ -29873,7 +29873,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 93,
+      "reachableFiles": 90,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29985,7 +29985,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 81,
+      "reachableFiles": 78,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",

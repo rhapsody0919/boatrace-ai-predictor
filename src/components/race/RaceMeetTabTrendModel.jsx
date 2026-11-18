@@ -9,7 +9,7 @@ import {
   buildMeetTrend,
   getRecentRaces,
   lastStartTiming,
-} from "./basicInfoStats";
+} from "../../pure/basicInfoStats.js";
 
 // 表の日付（9/22）と同じ形。`slice` だけだと「09/22」でゼロ埋めが残る
 export const mdOf = (d) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;

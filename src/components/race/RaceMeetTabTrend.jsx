@@ -9,7 +9,7 @@ import {
   BOAT_LINE_COLORS,
   getBoatChipBackground,
 } from "../../utils/colors";
-import { lastStartTiming } from "./basicInfoStats";
+import { lastStartTiming } from "../../pure/basicInfoStats.js";
 import MeetSparkline from "./MeetSparkline";
 import {
   dayCenter,

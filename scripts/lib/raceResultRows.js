@@ -52,6 +52,66 @@ function buildLegacyPayouts(payoutRows) {
 }
 
 /**
+ * 着順表が使えない（3艇未満・艇番の重複）とき、3連単の払戻の組番から上位3着を復元する。
+ * 復元もできなければ null（理由を log に出す）。
+ */
+function recoverFromTrifecta(legacyPayouts, rowOrder, hasDuplicates, log) {
+  // 3連単（旧列名では trio）の組番は、1〜3着の艇番をそのまま表す
+  const trifectaCombo = Object.keys(legacyPayouts.trio)[0];
+  const trifectaBoats = trifectaCombo
+    ? trifectaCombo.split("-").map((n) => parseInt(n, 10))
+    : [];
+  const trifectaValid =
+    trifectaBoats.length === 3 &&
+    trifectaBoats.every((n) => n >= 1 && n <= 6) &&
+    new Set(trifectaBoats).size === 3;
+  if (!trifectaValid) {
+    log(
+      hasDuplicates
+        ? `  Incomplete data (duplicate boat numbers: ${rowOrder.join("-")})`
+        : `  Incomplete data (got ${rowOrder.length} boats)`,
+    );
+    return null;
+  }
+  log(`  着順テーブル欠落、3連単払戻(${trifectaCombo})から上位3着を復元`);
+  return {
+    rankings: trifectaBoats,
+    raceTimes: [null, null, null],
+    rank456: [null, null, null],
+  };
+}
+
+/** 着順表から上位3着・レースタイム・4〜6着を取る */
+function pickFromBoats(boats, rowOrder) {
+  const finishers = boats.filter((b) => b.finish_rank !== null);
+  // 完走が3艇以上なら、非完走艇は表の最後に並ぶため、先頭3行=完走した3艇。3艇未満は旧実装どおり行順
+  const top3 =
+    finishers.length >= 3
+      ? finishers.slice(0, 3).map((b) => b.boat_number)
+      : rowOrder.slice(0, 3);
+  const rankings = top3;
+  const raceTimes = boats.slice(0, 6).map((b) => b.race_time);
+  const rank456 = [3, 4, 5].map((i) => finishers[i]?.boat_number ?? null);
+  return { rankings, raceTimes, rank456 };
+}
+
+/** スタート情報から進入コース（course_1〜6 → 艇番）を作る */
+function buildCourseInfo(startInfo) {
+  const courseInfo = {};
+  for (const row of startInfo) {
+    if (
+      row.boatLabel !== null &&
+      row.boatLabel >= 1 &&
+      row.boatLabel <= 6 &&
+      row.boatNumber
+    ) {
+      courseInfo[`course_${row.boatLabel}`] = row.boatNumber;
+    }
+  }
+  return courseInfo;
+}
+
+/**
  * 全項目の解析結果を、旧形式（parseRaceResultHtml の戻り値）＋新しい項目にする。
  * 着順を取れない（着順表が無い・3艇未満・艇番の重複）場合は、3連単の払戻の組番から上位3着を復元する。
  * 復元もできなければ null（未公開・構造の違い）。
@@ -65,54 +125,14 @@ export function toLegacyResult(full, { log = () => {} } = {}) {
     rowOrder.length > 0 && new Set(rowOrder).size !== rowOrder.length;
   const legacyPayouts = buildLegacyPayouts(full.payouts);
 
-  let rankings;
-  let raceTimes;
-  let rank456;
-  if (full.boats.length < 3 || hasDuplicates) {
-    // 3連単（旧列名では trio）の組番は、1〜3着の艇番をそのまま表す
-    const trifectaCombo = Object.keys(legacyPayouts.trio)[0];
-    const trifectaBoats = trifectaCombo
-      ? trifectaCombo.split("-").map((n) => parseInt(n, 10))
-      : [];
-    const trifectaValid =
-      trifectaBoats.length === 3 &&
-      trifectaBoats.every((n) => n >= 1 && n <= 6) &&
-      new Set(trifectaBoats).size === 3;
-    if (!trifectaValid) {
-      log(
-        hasDuplicates
-          ? `  Incomplete data (duplicate boat numbers: ${rowOrder.join("-")})`
-          : `  Incomplete data (got ${rowOrder.length} boats)`,
-      );
-      return null;
-    }
-    log(`  着順テーブル欠落、3連単払戻(${trifectaCombo})から上位3着を復元`);
-    rankings = trifectaBoats;
-    raceTimes = [null, null, null];
-    rank456 = [null, null, null];
-  } else {
-    const finishers = full.boats.filter((b) => b.finish_rank !== null);
-    // 完走が3艇以上なら、非完走艇は表の最後に並ぶため、先頭3行=完走した3艇。3艇未満は旧実装どおり行順
-    const top3 =
-      finishers.length >= 3
-        ? finishers.slice(0, 3).map((b) => b.boat_number)
-        : rowOrder.slice(0, 3);
-    rankings = top3;
-    raceTimes = full.boats.slice(0, 6).map((b) => b.race_time);
-    rank456 = [3, 4, 5].map((i) => finishers[i]?.boat_number ?? null);
-  }
+  const picked =
+    full.boats.length < 3 || hasDuplicates
+      ? recoverFromTrifecta(legacyPayouts, rowOrder, hasDuplicates, log)
+      : pickFromBoats(full.boats, rowOrder);
+  if (picked === null) return null;
+  const { rankings, raceTimes, rank456 } = picked;
 
-  const courseInfo = {};
-  for (const row of full.start_info) {
-    if (
-      row.boatLabel !== null &&
-      row.boatLabel >= 1 &&
-      row.boatLabel <= 6 &&
-      row.boatNumber
-    ) {
-      courseInfo[`course_${row.boatLabel}`] = row.boatNumber;
-    }
-  }
+  const courseInfo = buildCourseInfo(full.start_info);
   const startTimings = full.start_info
     .filter((row) => row.startTiming !== null)
     .map((row) => ({

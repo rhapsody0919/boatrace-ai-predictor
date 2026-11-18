@@ -1,7 +1,7 @@
 import { BOAT_COLORS } from "../../utils/colors";
 import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
-import { SMALL_SAMPLE_THRESHOLD } from "./basicInfoStats";
-import { GRID_COURSES } from "./courseGridStats";
+import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
+import { GRID_COURSES } from "../../pure/courseGridStats.js";
 import {
   ExpandedRuns,
   TodayEmptyMessage,

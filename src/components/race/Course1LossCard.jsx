@@ -6,7 +6,7 @@
  */
 import { useTranslation } from "react-i18next";
 import BoatBadge from "./BoatBadge";
-import { buildCourse1LossBreakdown } from "./courseGridStats";
+import { buildCourse1LossBreakdown } from "../../pure/courseGridStats.js";
 import { getDaysAgoJST } from "../../utils/dateUtils";
 import { RACE_PAGE_FROM } from "../../utils/analogySimilarDisplay";
 import "./Course1LossCard.css";

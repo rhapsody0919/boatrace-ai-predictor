@@ -1,7 +1,7 @@
 /**
  * レース内順位の判定（純関数）。
  *
- * `src/components/race/basicInfoStats.js` から手を加えずに移した（開発効率の計画 段3、
+ * `src/pure/basicInfoStats.js` から手を加えずに移した（開発効率の計画 段3、
  * `docs/design/dev-efficiency/plan.md`）。`src/pure/seriesPoints.js` が使い、pure の根の外を
  * 読めない（verify-pure-imports.js）ため。旧の置き場は再 export を残す。
  */

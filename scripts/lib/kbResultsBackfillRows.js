@@ -110,10 +110,16 @@ export function buildRaceResultRow(raceId, fact, race) {
     return { row: null, valid, boatsInOrder };
   }
 
-  // bet_type（raceResultAudit.jsの命名。win/place/2tan/2fuku/wide/3tan/3fuku）ごとの金額を、
-  // 出現順（複勝・拡連複は2〜3件ある）で対応する列に割り当てる。列名・逆転（3tan→payout_trio、
-  // 3fuku→payout_trifecta）は PAYOUT_COLUMNS_BY_KIND に一元化済みのものを使う
-  const row = {
+  const row = baseResultRow(raceId, fact, race, boatsInOrder);
+  fillPayoutColumns(row, fact);
+  fillPopularityColumns(row, race.payouts);
+
+  return { row, valid, boatsInOrder };
+}
+
+// 着順・進入コース・決まり手の列（払戻・人気の列は後から足す）
+function baseResultRow(raceId, fact, race, boatsInOrder) {
+  return {
     race_id: raceId,
     rank1: boatsInOrder[0] ?? null,
     rank2: boatsInOrder[1] ?? null,
@@ -131,6 +137,12 @@ export function buildRaceResultRow(raceId, fact, race) {
     actual_course_6: fact.courses[6] ?? null,
     winning_technique: race.technique ?? null,
   };
+}
+
+// bet_type（raceResultAudit.jsの命名。win/place/2tan/2fuku/wide/3tan/3fuku）ごとの金額を、
+// 出現順（複勝・拡連複は2〜3件ある）で対応する列に割り当てる。列名・逆転（3tan→payout_trio、
+// 3fuku→payout_trifecta）は PAYOUT_COLUMNS_BY_KIND に一元化済みのものを使う
+function fillPayoutColumns(row, fact) {
   for (const column of Object.values(PAYOUT_COLUMNS_BY_KIND).flat()) {
     row[column] = null; // 該当が無い勝式は列を明示的にnullにする（既存値がある行は呼び出し側でupsertChangedRowsが保護する）
   }
@@ -141,16 +153,16 @@ export function buildRaceResultRow(raceId, fact, race) {
     seenPerBetType[p.bet_type] = idx + 1;
     if (columns[idx] !== undefined) row[columns[idx]] = p.amount;
   }
+}
 
-  row.popularity_exacta = popularityByKind(race.payouts, "exacta");
-  row.popularity_quinella = popularityByKind(race.payouts, "quinella");
-  row.popularity_wide_1 = popularityByKind(race.payouts, "wide", 0);
-  row.popularity_wide_2 = popularityByKind(race.payouts, "wide", 1);
-  row.popularity_wide_3 = popularityByKind(race.payouts, "wide", 2);
+function fillPopularityColumns(row, payouts) {
+  row.popularity_exacta = popularityByKind(payouts, "exacta");
+  row.popularity_quinella = popularityByKind(payouts, "quinella");
+  row.popularity_wide_1 = popularityByKind(payouts, "wide", 0);
+  row.popularity_wide_2 = popularityByKind(payouts, "wide", 1);
+  row.popularity_wide_3 = popularityByKind(payouts, "wide", 2);
   // 本体テーブルの命名逆転（PAYOUT_COLUMNS_BY_KINDと同じ向き）: kbの trio(3連複)→popularity_trifecta列、
   // kbの trifecta(3連単)→popularity_trio列
-  row.popularity_trifecta = popularityByKind(race.payouts, "trio");
-  row.popularity_trio = popularityByKind(race.payouts, "trifecta");
-
-  return { row, valid, boatsInOrder };
+  row.popularity_trifecta = popularityByKind(payouts, "trio");
+  row.popularity_trio = popularityByKind(payouts, "trifecta");
 }

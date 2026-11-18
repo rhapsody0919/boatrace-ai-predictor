@@ -17,50 +17,18 @@
  * 実 Supabase へは接続しない（tier=ci）。
  */
 import assert from "node:assert/strict";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import {
+  check,
+  checked,
+  entry,
+  excluded,
+  run,
+  scoreboardRuns,
+  st,
+} from "./verifyData/meet-exclusion.js";
 import { meetExclusionsOf } from "../../src/pure/meetExclusion.js";
 import * as seriesPoints from "../../src/pure/seriesPoints.js";
 import * as meetExclusionShim from "../../src/services/meetExclusion.js";
-
-// 節: 10/1〜10/2 が予選、10/3 が準優（1R）・優勝戦（2R）
-const conditions = [
-  { race_id: "2026-10-01-04-01", race_stage: "予選" },
-  { race_id: "2026-10-01-04-02", race_stage: "予選" },
-  { race_id: "2026-10-02-04-01", race_stage: "予選" },
-  { race_id: "2026-10-02-04-02", race_stage: "予選" },
-  { race_id: "2026-10-03-04-01", race_stage: "準優勝戦" },
-  { race_id: "2026-10-03-04-02", race_stage: "優勝戦" },
-];
-const entry = (race_id, boat_number, racer_id) => ({
-  race_id,
-  boat_number,
-  racer_id,
-});
-const st = (race_id, boat_number, extra = {}) => ({
-  race_id,
-  boat_number,
-  is_flying: false,
-  finish_mark: null,
-  ...extra,
-});
-const base = {
-  usesOfficialSeries: false,
-  officialSeries: null,
-  conditions,
-  meetStarts: [],
-  meetRows: [],
-  prelimOfficial: null,
-  date: "2026-10-02",
-};
-const run = (over) => meetExclusionsOf({ ...base, ...over });
-const excluded = (out) => new Set(out.withdrawnRacerIds);
-
-let count = 0;
-const check = (name, fn) => {
-  fn();
-  count += 1;
-  console.log(`  ok ${name}`);
-};
 
 console.log("A. 旧の実装から取った値");
 
@@ -411,15 +379,21 @@ check(
 // BOA-1072: L1 のみ賞典除外。旧の試験の入力・期待値は維持する。
 check("B6 L1 は lateStart、L0・責任不明のL・他の成績コードは外さない", () => {
   const codes = ["L1", "L0", null, undefined, "01", "K1"];
-  const meetRows = codes.map((_, i) => entry("2026-10-02-04-01", i + 1, 5500 + i));
+  const meetRows = codes.map((_, i) =>
+    entry("2026-10-02-04-01", i + 1, 5500 + i),
+  );
   const out = run({
     meetRows,
-    meetStarts: codes.map((code, i) => st("2026-10-02-04-01", i + 1, {
-      finish_mark: "L", official_finish_code: code,
-    })),
+    meetStarts: codes.map((code, i) =>
+      st("2026-10-02-04-01", i + 1, {
+        finish_mark: "L",
+        official_finish_code: code,
+      }),
+    ),
   });
   assert.deepEqual(out, {
-    withdrawnRacerIds: [5500], exclusionReasonByRacer: { 5500: "lateStart" },
+    withdrawnRacerIds: [5500],
+    exclusionReasonByRacer: { 5500: "lateStart" },
   });
 });
 
@@ -447,17 +421,27 @@ check("B8 公式の備考があればL1の推定も使わない", () => {
     meetStarts: [st("2026-10-02-04-01", 1, { official_finish_code: "L1" })],
   });
   assert.deepEqual(out, {
-    withdrawnRacerIds: [5520], exclusionReasonByRacer: { 5520: "officialWithdrawn" },
+    withdrawnRacerIds: [5520],
+    exclusionReasonByRacer: { 5520: "officialWithdrawn" },
   });
 });
 
 check("B9 FとL1の両方なら、発生順にかかわらずflyingを優先", () => {
-  for (const codes of [["F", "L1"], ["L1", "F"]]) {
+  for (const codes of [
+    ["F", "L1"],
+    ["L1", "F"],
+  ]) {
     const out = run({
-      meetRows: [entry("2026-10-02-04-01", 1, 5530), entry("2026-10-02-04-02", 2, 5530)],
-      meetStarts: codes.map((code, i) => st(`2026-10-02-04-0${i + 1}`, i + 1, {
-        finish_mark: code === "F" ? "F" : "L", official_finish_code: code,
-      })),
+      meetRows: [
+        entry("2026-10-02-04-01", 1, 5530),
+        entry("2026-10-02-04-02", 2, 5530),
+      ],
+      meetStarts: codes.map((code, i) =>
+        st(`2026-10-02-04-0${i + 1}`, i + 1, {
+          finish_mark: code === "F" ? "F" : "L",
+          official_finish_code: code,
+        }),
+      ),
     });
     assert.deepEqual(out.exclusionReasonByRacer, { 5530: "flying" });
   }
@@ -465,7 +449,10 @@ check("B9 FとL1の両方なら、発生順にかかわらずflyingを優先", (
 
 check("B10 L1の理由は不在・前夜の途中帰郷で上書きしない", () => {
   const out = run({
-    meetRows: [entry("2026-10-01-04-01", 1, 5540), entry("2026-10-02-04-01", 2, 5541)],
+    meetRows: [
+      entry("2026-10-01-04-01", 1, 5540),
+      entry("2026-10-02-04-01", 2, 5541),
+    ],
     meetStarts: [st("2026-10-01-04-01", 1, { official_finish_code: "L1" })],
     prelimOfficial: { withdrawnRacerIds: [5540] },
   });
@@ -483,25 +470,33 @@ check("B11 予選の締めが不明でも、入力されたL1は対象", () => {
 
 check("B12 L1の純関数はレースと艇番で結合し、重複・不明な選手を除く", () => {
   const race = "2026-10-02-04-01";
-  const starts = [1, 1, 2, 3, 4].map((boat) => st(race, boat, { official_finish_code: "L1" }));
-  const entries = [entry(race, 1, 5560), entry("2026-10-01-04-01", 2, 5561),
-    entry(race, 3, null), entry(race, 4, undefined)];
+  const starts = [1, 1, 2, 3, 4].map((boat) =>
+    st(race, boat, { official_finish_code: "L1" }),
+  );
+  const entries = [
+    entry(race, 1, 5560),
+    entry("2026-10-01-04-01", 2, 5561),
+    entry(race, 3, null),
+    entry(race, 4, undefined),
+  ];
   const before = JSON.stringify({ starts, entries });
-  assert.deepEqual(seriesPoints.lateStartL1RacerIdsInMeet(starts, entries), [5560]);
+  assert.deepEqual(
+    seriesPoints.lateStartL1RacerIdsInMeet(starts, entries),
+    [5560],
+  );
   assert.equal(JSON.stringify({ starts, entries }), before);
   assert.deepEqual(seriesPoints.lateStartL1RacerIdsInMeet(null, null), []);
   assert.deepEqual(seriesPoints.lateStartL1RacerIdsInMeet([], []), []);
 });
 
-// 旧の場所（getMeetScoreboard）が新しい関数を呼んでいること。即時関数が戻っていないこと
-const service = readDataLayerSource();
-check("C1 getMeetScoreboard は meetExclusionsOf を呼ぶ", () => {
-  // 書き方（import の改行・展開の形）には縛られないよう、名前と行き先だけを見る
-  assert.match(service, /from\s*["']\.\/meetExclusion\.js["']/);
-  assert.match(service, /\bmeetExclusionsOf\(/);
-  // 旧の即時関数の本文（目印のコメント）が DAL に戻っていない
-  assert.doesNotMatch(service, /公式の備考が取れていればそれが正/);
-});
+// getMeetScoreboard（サービス層）を偽の supabase の上で呼び、返り値の除外が meetExclusionsOf の判定どおりであること。
+// 即時関数の判定が DAL に戻っていても、使う入力（予選の締め・出走表・本番ST・公式の備考）を取り違えても、ここで落ちる
+for await (const { c, board } of scoreboardRuns()) {
+  check(c.name, () => {
+    assert.deepEqual(board.withdrawnRacerIds, c.withdrawn);
+    assert.deepEqual(board.exclusionReasonByRacer, c.reasons);
+  });
+}
 
 // DAL が読む旧の置き場（再 export）が、pure の根の同じ関数を指していること
 check(
@@ -511,4 +506,4 @@ check(
   },
 );
 
-console.log(`✅ meetExclusion: ${count} 件の例を確認`);
+console.log(`✅ meetExclusion: ${checked()} 件の例を確認`);

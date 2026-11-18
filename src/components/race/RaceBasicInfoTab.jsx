@@ -29,7 +29,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCurrentMeetFlyingBoats } from "../../hooks/useCurrentMeetFlyingBoats";
 import { parseRaceId } from "../../utils/raceId";
-import { recordsBeforeRace, currentTermStart } from "./basicInfoStats";
+import { recordsBeforeRace, currentTermStart } from "../../pure/basicInfoStats.js";
 import {
   useOfficialRates,
   useOfficialAvgSt,

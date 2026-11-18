@@ -20,9 +20,12 @@ import {
   borderTieOf,
 } from "../../src/utils/meetPageModel.js";
 
-import { readFileSync } from "node:fs";
-import { dataLayerMethod } from "./dataLayerSource.js";
-import { transformSync } from "esbuild";
+import {
+  createFakeSupabase,
+  registerFakeServiceSupabase,
+  setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
+import { createMeetPageHarness } from "./verifyData/meet-page-model.js";
 
 const failures = [];
 let checked = 0;
@@ -283,68 +286,57 @@ check(
   "outOfScope",
 );
 
-// 取得関数の本体をローカルの応答だけで実行し、指定日のグレードの受け渡しも検査する。
-const meetPageMethod = dataLayerMethod("getMeetPage");
-const bodyStart = meetPageMethod.indexOf("{") + 1;
-const bodyEnd = meetPageMethod.indexOf("    // 予選中で公式の表があれば", bodyStart);
-if (bodyEnd < 0) {
-  throw new Error("getMeetPage の本文か、切り出しの印の注釈「予選中で公式の表があれば」が見つからない");
-}
-const getMeetPage = new (Object.getPrototypeOf(async function () {}).constructor)(
-  "supabase", "meetDaysOf", "meetPageState", "seriesDayByDate", "isRaceCancelled",
-  "venueCode", "startDate", "today",
-  meetPageMethod.slice(bodyStart, bodyEnd),
-);
+// 取得関数（src/services/meetQueries3.js の getMeetPage）を、偽の supabase（メモリ上の表）の上で呼ぶ。
+// 指定日のグレードの受け渡し（状態の決まり方）と、並列取得の失敗の伝わり方を見る。
+registerFakeServiceSupabase();
+// 失敗は fake.fail(表, 例外) で入れる（await でも maybeSingle でも reject）
+const fake = setFakeSupabase(createFakeSupabase());
+const { getMeetPage } = await import("../../src/services/meetQueries3.js");
+
 for (const [label, races, expected] of [
-  ["指定日の一般戦", [{ race_id: id(middleStart, 1), race_grade: "ippan" }], "outOfScope"],
-  ["指定日のSG", [{ race_id: id(middleStart, 1), race_grade: "SG" }], "notFound"],
-  ["翌日の一般戦だけ", [{ race_id: id("2026-09-30", 1), race_grade: "ippan" }], "notFound"],
+  [
+    "指定日の一般戦",
+    [{ race_id: id(middleStart, 1), race_grade: "ippan" }],
+    "outOfScope",
+  ],
+  [
+    "指定日のSG",
+    [{ race_id: id(middleStart, 1), race_grade: "SG" }],
+    "notFound",
+  ],
+  [
+    "翌日の一般戦だけ",
+    [{ race_id: id("2026-09-30", 1), race_grade: "ippan" }],
+    "notFound",
+  ],
 ]) {
-  const rows = {
+  fake.reset({
     race_conditions: day(middleStart, 2, () => "予選"),
     races,
-  };
-  const mock = {
-    from(table) {
-      const query = new Proxy({}, {
-        get(_, key) {
-          if (key === "then") return (resolve) => resolve({ data: rows[table] ?? [] });
-          if (key === "maybeSingle") return () => Promise.resolve({ data: null });
-          return () => query;
-        },
-      });
-      return query;
-    },
-  };
-  const page = await getMeetPage(
-    mock, meetDaysOf, meetPageState, () => new Map(), () => false,
-    16, middleStart, middleStart,
-  );
+  });
+  const page = await getMeetPage(16, middleStart, middleStart);
   check(`getMeetPage・race_seriesなし・${label}`, page.state, expected);
+  check(
+    `getMeetPage・${label}は board・qualifiers を持たない`,
+    [page.board, page.qualifiers],
+    [null, null],
+  );
 }
 
 // BOA-1187: 並列取得のどのクエリも失敗を notFound に変換しない。
-for (const table of ["race_series", "race_conditions", "races", "race_results", "race_entries", "racer_series_points"]) {
+for (const table of [
+  "race_series",
+  "race_conditions",
+  "races",
+  "race_results",
+  "race_entries",
+  "racer_series_points",
+]) {
   const error = new Error(`local failure: ${table}`);
-  const mock = {
-    from(name) {
-      const result = () => name === table
-        ? Promise.reject(error)
-        : Promise.resolve({ data: name === "race_series" ? null : [] });
-      const query = new Proxy({}, {
-        get(_, key) {
-          if (key === "then") return (resolve, reject) => result().then(resolve, reject);
-          if (key === "maybeSingle") return result;
-          return () => query;
-        },
-      });
-      return query;
-    },
-  };
+  fake.reset({}, { [table]: error });
   let caught;
   try {
-    await getMeetPage(mock, meetDaysOf, meetPageState, () => new Map(), () => false,
-      16, START, "2026-09-27");
+    await getMeetPage(16, START, "2026-09-27");
   } catch (err) {
     caught = err;
   }
@@ -353,56 +345,42 @@ for (const table of ["race_series", "race_conditions", "races", "race_results", 
 
 // 実ページの取得 effect・状態導出・本文分岐を実行する。依存はローカルの hook/JSX
 // スタブに置換する（DOM 描画は E2E の担当）。本番への取得はしない。
-const pageSource = readFileSync(new URL("../../src/pages/MeetPage.jsx", import.meta.url), "utf8");
-const componentStart = pageSource.indexOf("function MeetPage() {");
-const componentEnd = pageSource.indexOf("\n  return (", componentStart);
-const component = transformSync(
-  pageSource.slice(componentStart, componentEnd) + "\n return { body, page, failed };\n}",
-  { loader: "jsx", jsxFactory: "element" },
-).code;
+const ui = createMeetPageHarness(START);
 const pageKey = `16-${START}`;
-let stored = [{ key: null, page: null }, null];
-let effects = [];
-let robots;
-const renderPage = new Function(
-  "useState", "useEffect", "useParams", "useTranslation", "useLocalizedPath",
-  "getMeetPage", "getTodayJST", "normalizeTitle", "md", "useRobotsMeta",
-  "element", "Link", "DataFetchError", "LoadingScreen", "MeetBody", "console",
-  component + "\nreturn MeetPage();",
-);
-const render = (service) => {
-  let slot = 0;
-  effects = [];
-  return renderPage(
-    () => { const i = slot++; return [stored[i], (value) => { stored[i] = value; }]; },
-    (effect) => effects.push(effect),
-    () => ({ venueCode: "16", startDate: START }),
-    () => ({ t: (key) => key }), () => (path) => path,
-    // 名前つき import（getMeetPage）を同じ偽の取得へ通す（殻 supabaseDataService は RA40 で消えた）
-    (...args) => service.getMeetPage(...args),
-    () => "2026-09-27", (title) => title ?? null, () => "9/28",
-    (value) => { robots = value; },
-    (type, props, ...children) => ({ type, props, children }),
-    "Link", "DataFetchError", "LoadingScreen", "MeetBody", { error() {} },
-  );
+const rejected = {
+  getMeetPage: () => Promise.reject(new Error("local fetch failure")),
 };
-const rejected = { getMeetPage: () => Promise.reject(new Error("local fetch failure")) };
-check("取得待ちは LoadingScreen", render(rejected).body.type, "LoadingScreen");
-check("取得待ちは noindex にしない", robots, false);
-effects[0]();
+check(
+  "取得待ちは LoadingScreen",
+  ui.render(rejected).body.type,
+  "LoadingScreen",
+);
+check("取得待ちは noindex にしない", ui.robots, false);
+ui.effects[0]();
 // effect の then→catch と state 更新を完了させる。
 await new Promise((resolve) => setImmediate(resolve));
-check("例外で failedKey が対象の節になる", stored[1], pageKey);
-check("取得失敗は DataFetchError", render(rejected).body.type, "DataFetchError");
-check("取得失敗は noindex にしない", robots, false);
+check("例外で failedKey が対象の節になる", ui.stored[1], pageKey);
+check(
+  "取得失敗は DataFetchError",
+  ui.render(rejected).body.type,
+  "DataFetchError",
+);
+check("取得失敗は noindex にしない", ui.robots, false);
 for (const [state, knownMeet, expected] of [
-  ["preOpen", true, true], ["preOpen", false, true],
-  ["notFound", false, true], ["outOfScope", true, true],
-  ["prelim", true, false], ["finished", true, false],
+  ["preOpen", true, true],
+  ["preOpen", false, true],
+  ["notFound", false, true],
+  ["outOfScope", true, true],
+  ["prelim", true, false],
+  ["finished", true, false],
 ]) {
-  stored = [{ key: pageKey, page: { state, knownMeet } }, null];
-  render(rejected);
-  check(`MeetPage・${state}・knownMeet=${knownMeet} の noindex`, robots, expected);
+  ui.stored = [{ key: pageKey, page: { state, knownMeet } }, null];
+  ui.render(rejected);
+  check(
+    `MeetPage・${state}・knownMeet=${knownMeet} の noindex`,
+    ui.robots,
+    expected,
+  );
 }
 
 // --- pickMeetAnchor ---
@@ -596,12 +574,26 @@ check(
 const ranks = (list) => list.map((rank) => ({ rank }));
 check(
   "18位が同率5人なら、同率5人・入れるのは1人",
-  borderTieOf(ranks([...Array.from({ length: 17 }, (_, i) => i + 1), 18, 18, 18, 18, 18, 23]), 18),
+  borderTieOf(
+    ranks([
+      ...Array.from({ length: 17 }, (_, i) => i + 1),
+      18,
+      18,
+      18,
+      18,
+      18,
+      23,
+    ]),
+    18,
+  ),
   { rank: 18, tied: 5, seats: 1 },
 );
 check(
   "17位が同率3人（17・18位にまたがる）なら、入れるのは2人",
-  borderTieOf(ranks([...Array.from({ length: 16 }, (_, i) => i + 1), 17, 17, 17, 20]), 18),
+  borderTieOf(
+    ranks([...Array.from({ length: 16 }, (_, i) => i + 1), 17, 17, 17, 20]),
+    18,
+  ),
   { rank: 17, tied: 3, seats: 2 },
 );
 check(

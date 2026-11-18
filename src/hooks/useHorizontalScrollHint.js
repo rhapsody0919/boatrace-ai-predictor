@@ -158,6 +158,14 @@ export function useHorizontalScrollHint(deps = []) {
     if (observer) {
       observer.observe(el);
       if (el.firstElementChild) observer.observe(el.firstElementChild);
+      // 表の幅を決めた表（min-width）は、文字の読み込みで列の幅だけが動いても表自身の幅は変わらず、
+      // 上の2つでは測り直されない。固定した列の幅（scroll-padding-left）が古いまま残り、境目に止める位置が
+      // ずれる。1行目の各セルも見る
+      el.querySelector("tr")
+        ?.querySelectorAll("th, td")
+        .forEach((cell) => {
+          observer.observe(cell);
+        });
     }
     return () => {
       cancelAnimationFrame(raf);
