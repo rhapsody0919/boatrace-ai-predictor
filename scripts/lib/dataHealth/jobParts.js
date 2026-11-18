@@ -37,11 +37,12 @@ export function planFunctionRanges(dueChecks, policies) {
 
 /** 全ての関数が失敗したら（089の未適用・DB障害）、成功にせず例外にする */
 export function assertSomeSucceeded(errors, attempted) {
-  if (Object.keys(errors).length !== attempted) return;
-  const first = Object.entries(errors)[0];
-  throw new Error(
-    `データ健全性の関数が全て失敗しました（${attempted}件）。最初のエラー: ${first[1]}`,
-  );
+  if (Object.keys(errors).length === attempted) {
+    const first = Object.entries(errors)[0];
+    throw new Error(
+      `データ健全性の関数が全て失敗しました（${attempted}件）。最初のエラー: ${first[1]}`,
+    );
+  }
 }
 
 const errorResult = (check, detail) => ({
