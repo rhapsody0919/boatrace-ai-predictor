@@ -16,14 +16,14 @@ import { useRaceEntryFlyingRows } from "./useRaceEntryFlyingRows";
 import { useCurrentMeetFlyingBoats } from "./useCurrentMeetFlyingBoats";
 import {
   ORIGINAL_EXHIBITION_ROW_META,
-  buildOriginalExhibitionRows,
+  buildOriginalExhibitionRowBases,
   originalExhibitionKindLabels,
   isExhibitionCourseOutOfRange,
   toNumber,
   translateTechnique,
   translatePartName,
   expectedCourseWinRateText,
-} from "../components/race/raceIndicators";
+} from "../pure/raceIndicatorText.js";
 import {
   byBoat,
   buildNameRow,
@@ -69,7 +69,7 @@ function buildRows(
       r,
     ]),
   );
-  const originalRows = buildOriginalExhibitionRows(t, originalExhibition);
+  const originalRows = buildOriginalExhibitionRowBases(t, originalExhibition);
   const originalKeys = new Set(originalRows.map((r) => r.key));
   const originalLabels = originalExhibitionKindLabels(t,
     (originalExhibition?.kinds ?? []).filter((kind) =>

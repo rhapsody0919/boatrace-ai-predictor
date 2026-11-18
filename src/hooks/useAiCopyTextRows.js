@@ -2,7 +2,7 @@
  * useAiCopyTextRows - useAiCopyText.js の buildRows が並べる、1行ぶんの値を作る関数（BOA-194）。
  * どれも行（{ key, label, values }）を返す純関数で、値の整形はデータ出走表と同じ。
  * 画面側の整形関数（toNumber・translateTechnique・translatePartName・expectedCourseWinRateText）は
- * 依存の向き（hooks-no-ui）のため import せず、引数 ui で受け取る（useAiCopyText.js が raceIndicators から渡す）。
+ * 引数 ui で受け取る（useAiCopyText.js が src/pure/raceIndicatorText.js から渡す。RA41d で画面の部品から pure へ移した）。
  */
 import { formatExhibitionSt } from "../utils/formatters";
 import { meetPrevRunState, meetPrevRunWhenParams } from "../utils/prevResult";
