@@ -5,8 +5,6 @@
 import { formatDateForUrl } from "./dateUtils.js";
 import { parseRaceResultPage } from "./raceResultParser.js";
 import { toLegacyResult } from "./raceResultRows.js";
-import { BreakerOpenError } from "./scrapeJobs/circuitBreaker.js";
-import { computeResultDigest } from "./scrapeJobs/resultDigest.js";
 import {
   courseColumns,
   payoutColumns,
@@ -14,7 +12,7 @@ import {
   resultPayoutEntries,
 } from "./raceResultRowParts.js";
 
-function getRaceResultUrl(venueCode, raceNo, dateStr) {
+export function getRaceResultUrl(venueCode, raceNo, dateStr) {
   const ymd = formatDateForUrl(dateStr);
   const jcd = String(venueCode).padStart(2, "0");
   return `https://www.boatrace.jp/owpc/pc/race/raceresult?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
@@ -139,116 +137,4 @@ export function isResultComplete(row) {
     row.winning_technique !== null &&
     row.winning_technique !== undefined
   );
-}
-
-/** 書いた race_start_timings の行の数（race_id ごと） */
-function countTimingsByRace(rows) {
-  const timingsWrittenByRace = new Map();
-  for (const row of rows) {
-    timingsWrittenByRace.set(
-      row.race_id,
-      (timingsWrittenByRace.get(row.race_id) ?? 0) + 1,
-    );
-  }
-  return timingsWrittenByRace;
-}
-
-/** 取得できた1レースの outcome（ok / partial） */
-function fetchedOutcome(
-  { race, parsed, row },
-  base,
-  changedIds,
-  timingsWrittenByRace,
-) {
-  // 不成立（全勝式が不成立）のレースは、決まり手が出ない・単勝の払戻が無いため、待っても揃わない。
-  // 「決まり手が未公開」として毎分再取得し続けないよう、着順・払戻の表が読めた時点で完了とする
-  const complete =
-    isResultComplete(row) || parsed.full?.race_status === "no_race";
-  return {
-    ...base,
-    rowsParsed: 1,
-    rowsWritten:
-      (changedIds.has(race.race_id) ? 1 : 0) +
-      (timingsWrittenByRace.get(race.race_id) ?? 0),
-    outcome: complete ? "ok" : "partial",
-    resultDigest: complete
-      ? computeResultDigest(
-          row,
-          (parsed.startTimings ?? []).map((st) => ({
-            race_id: race.race_id,
-            ...st,
-          })),
-        )
-      : undefined,
-    error: complete
-      ? undefined
-      : "決まり手が未公開です（着順・払戻のみ取得。再試行します）",
-  };
-}
-
-/** runForRaces の 3) の後: 取得できたレースの outcome を、書き込みの結果から決める */
-export function settleFetchedOutcomes(fetched, persisted, outcomes, base) {
-  const changedIds = new Set(
-    (persisted?.changedResults ?? []).map((r) => r.race_id),
-  );
-  const timingsWrittenByRace = countTimingsByRace(
-    persisted?.startTimingRowsWritten ?? [],
-  );
-  for (const f of fetched) {
-    if (persisted?.failed) continue; // 上で error を設定済み
-    if (persisted?.errors?.length > 0) {
-      outcomes.set(f.race.race_id, {
-        ...base,
-        rowsParsed: 1,
-        outcome: "error",
-        error: persisted.errors.map((e) => e.message).join(" / "),
-      });
-      continue;
-    }
-    outcomes.set(
-      f.race.race_id,
-      fetchedOutcome(f, base, changedIds, timingsWrittenByRace),
-    );
-  }
-}
-
-/** runForRaces の 2) の1レースぶん: 取得・解析して fetched に足すか、outcomes に失敗を入れる（1つの失敗で他を止めない） */
-export async function fetchOneResult(
-  race,
-  { date, fetchHtml, now, outcomes, base, fetched },
-) {
-  try {
-    const html = await fetchHtml(
-      getRaceResultUrl(race.venue_code, race.race_number, date),
-    );
-    const parsed = parseRaceResultHtml(html);
-    if (!parsed) {
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "no_values",
-        error:
-          "結果ページから着順・払戻を解析できませんでした（未公開・中止・順延の可能性）",
-      });
-      return;
-    }
-    const row = buildRaceResultRow(race.race_id, parsed, {
-      resultAt: now().toISOString(),
-    });
-    fetched.push({ race, parsed, row });
-  } catch (error) {
-    if (error instanceof BreakerOpenError) {
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "breaker_open",
-        retryAt: new Date(error.until),
-        error: error.message,
-      });
-    } else {
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "error",
-        error: error.message,
-      });
-    }
-  }
 }

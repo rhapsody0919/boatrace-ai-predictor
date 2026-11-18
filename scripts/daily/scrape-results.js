@@ -47,17 +47,17 @@ import { detectResultSchema } from "../lib/raceResultSchema.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
+import { computeResultDigest } from "../lib/scrapeJobs/resultDigest.js";
 import { raceStartInstant } from "../lib/scrapeJobs/time.js";
 // 結果ページの取得・解析・行の組み立ては raceResultPage.js に置く（呼び出し元はこれまでどおりここから import できる）
 import {
   ResultHttpError,
   buildRaceResultRow,
-  fetchOneResult,
   fetchRaceResultHtml,
+  getRaceResultUrl,
   isResultComplete,
   parseRaceResultHtml,
   scrapeRaceResult,
-  settleFetchedOutcomes,
 } from "../lib/raceResultPage.js";
 
 export {
@@ -1124,54 +1124,6 @@ export async function scrapeAndSaveResults(races, targetDate) {
   return { updated: newResults.length > 0, count: newResults.length };
 }
 
-/** runForRaces の 1): 既に完了済み（isResultComplete）のレースを読み、outcomes に skipped_have_data を入れる（読むだけ） */
-async function loadFinishedRaceIds(client, races, outcomes, base) {
-  const finished = new Set();
-  const { data, error } = await client
-    .from("race_results")
-    .select("race_id, payout_win, winning_technique")
-    .in(
-      "race_id",
-      races.map((r) => r.race_id),
-    );
-  if (error) {
-    throw new Error(`結果の既存行の取得に失敗しました: ${error.message}`);
-  }
-  for (const r of data ?? []) {
-    if (isResultComplete(r)) finished.add(r.race_id);
-  }
-  for (const race of races) {
-    if (finished.has(race.race_id)) {
-      outcomes.set(race.race_id, { ...base, outcome: "skipped_have_data" });
-    }
-  }
-  return finished;
-}
-
-/** runForRaces の 3) live の書き込み。書き込みは persistRaceResults（元のまま）。想定外の失敗は全レースを error にして {failed: true} */
-async function persistFetchedResults(client, date, fetched, outcomes, base) {
-  try {
-    const startTimeByRaceId = await loadStartTimes(client, date, fetched);
-    return await persistRaceResults({
-      client,
-      newResults: fetched.map((f) => f.row),
-      scrapeCache: new Map(fetched.map((f) => [f.race.race_id, f.parsed])),
-      startTimeByRaceId,
-    });
-  } catch (error) {
-    // 書き込み前後の想定外の失敗（DB接続等）。書けたか分からないため、全レースを再試行する（書き込みは冪等）
-    for (const { race } of fetched) {
-      outcomes.set(race.race_id, {
-        ...base,
-        rowsParsed: 1,
-        outcome: "error",
-        error: `結果の書き込みに失敗しました: ${error.message}`,
-      });
-    }
-    return { failed: true };
-  }
-}
-
 /**
  * レース単位の入口（Vercel Cron のスロット消化・catch-up から呼ぶ。T4b-02-1）。
  *
@@ -1223,10 +1175,27 @@ export async function runForRaces(
   const base = { rowsWritten: 0, rowsParsed: 0, rowsExpected: 1 };
 
   // 1) live: 既に完了済みのレースは、取得しない
-  const finished =
-    live && races.length > 0
-      ? await loadFinishedRaceIds(client, races, outcomes, base)
-      : new Set();
+  const finished = new Set();
+  if (live && races.length > 0) {
+    const { data, error } = await client
+      .from("race_results")
+      .select("race_id, payout_win, winning_technique")
+      .in(
+        "race_id",
+        races.map((r) => r.race_id),
+      );
+    if (error) {
+      throw new Error(`結果の既存行の取得に失敗しました: ${error.message}`);
+    }
+    for (const r of data ?? []) {
+      if (isResultComplete(r)) finished.add(r.race_id);
+    }
+    for (const race of races) {
+      if (finished.has(race.race_id)) {
+        outcomes.set(race.race_id, { ...base, outcome: "skipped_have_data" });
+      }
+    }
+  }
 
   // 2) 取得・解析（1つの失敗で他のレースを止めない）
   /** @type {Array<{race: Object, parsed: NonNullable<ReturnType<typeof parseRaceResultHtml>>, row: Object}>} */
@@ -1234,16 +1203,115 @@ export async function runForRaces(
   await mapWithConcurrency(
     races.filter((race) => !finished.has(race.race_id)),
     concurrency,
-    (race) =>
-      fetchOneResult(race, { date, fetchHtml, now, outcomes, base, fetched }),
+    async (race) => {
+      try {
+        const html = await fetchHtml(
+          getRaceResultUrl(race.venue_code, race.race_number, date),
+        );
+        const parsed = parseRaceResultHtml(html);
+        if (!parsed) {
+          outcomes.set(race.race_id, {
+            ...base,
+            outcome: "no_values",
+            error:
+              "結果ページから着順・払戻を解析できませんでした（未公開・中止・順延の可能性）",
+          });
+          return;
+        }
+        const row = buildRaceResultRow(race.race_id, parsed, {
+          resultAt: now().toISOString(),
+        });
+        fetched.push({ race, parsed, row });
+      } catch (error) {
+        if (error instanceof BreakerOpenError) {
+          outcomes.set(race.race_id, {
+            ...base,
+            outcome: "breaker_open",
+            retryAt: new Date(error.until),
+            error: error.message,
+          });
+        } else {
+          outcomes.set(race.race_id, {
+            ...base,
+            outcome: "error",
+            error: error.message,
+          });
+        }
+      }
+    },
   );
 
   // 3) live: 書き込む。shadow: 書かない
-  const persisted =
-    live && fetched.length > 0
-      ? await persistFetchedResults(client, date, fetched, outcomes, base)
-      : null;
-  settleFetchedOutcomes(fetched, persisted, outcomes, base);
+  let persisted = null;
+  if (live && fetched.length > 0) {
+    try {
+      const startTimeByRaceId = await loadStartTimes(client, date, fetched);
+      persisted = await persistRaceResults({
+        client,
+        newResults: fetched.map((f) => f.row),
+        scrapeCache: new Map(fetched.map((f) => [f.race.race_id, f.parsed])),
+        startTimeByRaceId,
+      });
+    } catch (error) {
+      // 書き込み前後の想定外の失敗（DB接続等）。書けたか分からないため、全レースを再試行する（書き込みは冪等）
+      for (const { race } of fetched) {
+        outcomes.set(race.race_id, {
+          ...base,
+          rowsParsed: 1,
+          outcome: "error",
+          error: `結果の書き込みに失敗しました: ${error.message}`,
+        });
+      }
+      persisted = { failed: true };
+    }
+  }
+
+  const changedIds = new Set(
+    (persisted?.changedResults ?? []).map((r) => r.race_id),
+  );
+  const timingsWrittenByRace = new Map();
+  for (const row of persisted?.startTimingRowsWritten ?? []) {
+    timingsWrittenByRace.set(
+      row.race_id,
+      (timingsWrittenByRace.get(row.race_id) ?? 0) + 1,
+    );
+  }
+  for (const { race, parsed, row } of fetched) {
+    if (persisted?.failed) continue; // 上で error を設定済み
+    if (persisted?.errors?.length > 0) {
+      outcomes.set(race.race_id, {
+        ...base,
+        rowsParsed: 1,
+        outcome: "error",
+        error: persisted.errors.map((e) => e.message).join(" / "),
+      });
+      continue;
+    }
+    // 不成立（全勝式が不成立）のレースは、決まり手が出ない・単勝の払戻が無いため、待っても揃わない。
+    // 「決まり手が未公開」として毎分再取得し続けないよう、着順・払戻の表が読めた時点で完了とする
+    const complete =
+      isResultComplete(row) || parsed.full?.race_status === "no_race";
+    outcomes.set(race.race_id, {
+      ...base,
+      rowsParsed: 1,
+      rowsWritten:
+        (changedIds.has(race.race_id) ? 1 : 0) +
+        (timingsWrittenByRace.get(race.race_id) ?? 0),
+      outcome: complete ? "ok" : "partial",
+      resultDigest: complete
+        ? computeResultDigest(
+            row,
+            (parsed.startTimings ?? []).map((st) => ({
+              race_id: race.race_id,
+              ...st,
+            })),
+          )
+        : undefined,
+      error: complete
+        ? undefined
+        : "決まり手が未公開です（着順・払戻のみ取得。再試行します）",
+    });
+  }
 
   return races.map((race) => ({
     race_id: race.race_id,
