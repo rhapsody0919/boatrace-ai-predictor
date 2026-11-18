@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2020,
+    "sourceFiles": 2023,
     "filesWithAccess": 281,
     "tableReaders": 947,
     "tableWriters": 189,
