@@ -253,18 +253,18 @@ async function writeGrouped(def, rows, { client, pause }) {
   return written;
 }
 
-function getArg(name) {
-  const arg = process.argv.find((a) => a.startsWith(`--${name}=`));
+function getArg(argv, name) {
+  const arg = argv.find((a) => a.startsWith(`--${name}=`));
   return arg ? arg.slice(name.length + 3) : null;
 }
 
-async function main() {
-  if (!isSupabaseEnabled()) throw new Error("Supabaseが設定されていません");
-  const item = getArg("item");
-  const from = getArg("from");
-  const to = getArg("to") ?? from;
-  const dir = getArg("archive-dir") ?? DEFAULT_ARCHIVE_DIR;
-  const apply = process.argv.includes("--apply");
+/** 引数（process.argv）→ 対象の項目・期間・中間JSONの場所・--apply。不正なら意味のある文で投げる */
+export function parseKbGapArgs(argv) {
+  const item = getArg(argv, "item");
+  const from = getArg(argv, "from");
+  const to = getArg(argv, "to") ?? from;
+  const dir = getArg(argv, "archive-dir") ?? DEFAULT_ARCHIVE_DIR;
+  const apply = argv.includes("--apply");
   if (!GAP_FILL_ITEMS[item]) {
     throw new Error(
       `--item=${Object.keys(GAP_FILL_ITEMS).join("|")} を指定してください`,
@@ -273,6 +273,44 @@ async function main() {
   if (!DATE_RE.test(from ?? "") || !DATE_RE.test(to ?? "") || from > to) {
     throw new Error("--from=YYYY-MM-DD [--to=YYYY-MM-DD] を指定してください");
   }
+  return { item, from, to, dir, apply };
+}
+
+/** 終わりの要約の行（main が console.log する順） */
+export function summaryLines({ item, apply, total, written, missingDays, tally, out }) {
+  const mode = apply ? "[APPLY]" : "[DRY-RUN]";
+  const more = (n) => (n ? " ほか" : "");
+  const missing =
+    missingDays.length > 0
+      ? `・中間JSONの無い日 ${missingDays.length}（${missingDays.slice(0, 5).join(", ")}${more(missingDays.length > 5)}）`
+      : "";
+  const lines = [
+    `\n${mode} ${item}: 書く行 ${total}${apply ? `・書いた行 ${written}` : ""}${missing}`,
+  ];
+  if (Object.keys(tally).length > 0) {
+    lines.push(`  値の内訳: ${JSON.stringify(tally)}`);
+  }
+  if (out.filled) {
+    lines.push(`  NULL から埋める艇（列ごと）: ${JSON.stringify(out.filled)}`);
+  }
+  if (out.anomalies.length > 0) {
+    lines.push(
+      `  書かなかったレース（異常）: ${out.anomalies.length}件 ${JSON.stringify(out.anomalies.slice(0, 10))}${more(out.anomalies.length > 10)}`,
+    );
+  }
+  return lines;
+}
+
+/** 行の race_status の数を tally に足す */
+function addTally(tally, rows) {
+  for (const r of rows) {
+    if (r.race_status) tally[r.race_status] = (tally[r.race_status] ?? 0) + 1;
+  }
+}
+
+async function main() {
+  if (!isSupabaseEnabled()) throw new Error("Supabaseが設定されていません");
+  const { item, from, to, dir, apply } = parseKbGapArgs(process.argv);
   const def = GAP_FILL_ITEMS[item];
   console.log(
     `${apply ? "[APPLY]" : "[DRY-RUN]"} ${item}（${def.table}・${def.mode}・列 ${def.columns.join(",")}）${from}〜${to}`,
@@ -290,25 +328,12 @@ async function main() {
     }
     const rows = await planDay(item, day, date, supabase, out);
     total += rows.length;
-    for (const r of rows) {
-      if (r.race_status) tally[r.race_status] = (tally[r.race_status] ?? 0) + 1;
-    }
+    addTally(tally, rows);
     if (rows.length > 0) console.log(`  ${date}: ${rows.length}行`);
     if (apply && rows.length > 0) written += await writeRows(item, rows);
   }
-  console.log(
-    `\n${apply ? "[APPLY]" : "[DRY-RUN]"} ${item}: 書く行 ${total}${apply ? `・書いた行 ${written}` : ""}${missingDays.length > 0 ? `・中間JSONの無い日 ${missingDays.length}（${missingDays.slice(0, 5).join(", ")}${missingDays.length > 5 ? " ほか" : ""}）` : ""}`,
-  );
-  if (Object.keys(tally).length > 0) {
-    console.log(`  値の内訳: ${JSON.stringify(tally)}`);
-  }
-  if (out.filled) {
-    console.log(`  NULL から埋める艇（列ごと）: ${JSON.stringify(out.filled)}`);
-  }
-  if (out.anomalies.length > 0) {
-    console.log(
-      `  書かなかったレース（異常）: ${out.anomalies.length}件 ${JSON.stringify(out.anomalies.slice(0, 10))}${out.anomalies.length > 10 ? " ほか" : ""}`,
-    );
+  for (const line of summaryLines({ item, apply, total, written, missingDays, tally, out })) {
+    console.log(line);
   }
   if (missingDays.length > 0) process.exitCode = 1;
 }
