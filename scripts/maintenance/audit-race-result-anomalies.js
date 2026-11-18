@@ -160,6 +160,54 @@ function compareWithKDir(rows, kDir) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const resultPageUrl = ({ date, venue, race }) =>
+  `https://www.boatrace.jp/owpc/pc/race/raceresult?rno=${race}&jcd=${String(venue).padStart(2, "0")}&hd=${date.replaceAll("-", "")}`;
+
+// 結果ページを取る。429・503 は { stopped }、ほかの失敗は { failed }、取れたら { html }
+async function fetchResultPage(raceId, url, fetchHtml) {
+  try {
+    return { html: await fetchHtml(url) };
+  } catch (error) {
+    if (
+      error instanceof ResultHttpError &&
+      (error.status === 429 || error.status === 503)
+    ) {
+      return {
+        stopped: `HTTP ${error.status} のため中止しました（${raceId}）`,
+      };
+    }
+    return { failed: { race_id: raceId, error: `取得失敗: ${error.message}` } };
+  }
+}
+
+// 解析済みの結果を、今の行と比べて直す（1レース分）。戻り値は results に積む1件
+async function applyParsedResult(raceId, parsed, { client, schema, log }) {
+  const { data: existing, error: readError } = await client
+    .from("race_results")
+    .select(
+      [
+        ...FIX_RESULT_COLUMNS,
+        ...FILL_ONLY_COLUMNS,
+        ...(schema.results ? ["race_status", "refund_boats", "remark"] : []),
+      ].join(","),
+    )
+    .eq("race_id", raceId)
+    .maybeSingle();
+  if (readError || !existing) {
+    return {
+      race_id: raceId,
+      error: `race_results の行を読めません: ${readError?.message ?? "行が無い"}`,
+    };
+  }
+  const newRow = buildRaceResultRow(raceId, parsed);
+  const plan = buildFixPlan(existing, newRow, parsed, schema);
+  const outcome = await applyFixPlan(client, plan);
+  log(
+    `  ${raceId}: ${outcome.error ? `失敗 ${outcome.error}` : `更新 results=${outcome.wrote.results ? Object.keys(plan.resultUpdate).join("/") : "変更なし"} timings=${outcome.wrote.timings} payouts=${outcome.wrote.payouts}`}`,
+  );
+  return outcome;
+}
+
 /**
  * 修正の実行（--apply）。1リクエストずつ、間隔を空けて、429・503で即中止する。
  * 依存（client・fetchHtml・sleep・schema）は差し替え可能（検証用。本番では実物）。
@@ -178,24 +226,18 @@ export async function runApply(
   const results = [];
   let stopped = null;
   for (const [index, raceId] of raceIds.entries()) {
-    const { date, venue, race } = parseRaceId(raceId);
-    const url = `https://www.boatrace.jp/owpc/pc/race/raceresult?rno=${race}&jcd=${String(venue).padStart(2, "0")}&hd=${date.replaceAll("-", "")}`;
+    const url = resultPageUrl(parseRaceId(raceId));
     if (index > 0) await wait(intervalMs + Math.floor(Math.random() * 1000));
-    let html;
-    try {
-      html = await fetchHtml(url);
-    } catch (error) {
-      if (
-        error instanceof ResultHttpError &&
-        (error.status === 429 || error.status === 503)
-      ) {
-        stopped = `HTTP ${error.status} のため中止しました（${raceId}）`;
-        break;
-      }
-      results.push({ race_id: raceId, error: `取得失敗: ${error.message}` });
+    const page = await fetchResultPage(raceId, url, fetchHtml);
+    if (page.stopped) {
+      stopped = page.stopped;
+      break;
+    }
+    if (page.failed) {
+      results.push(page.failed);
       continue;
     }
-    const parsed = parseRaceResultHtml(html);
+    const parsed = parseRaceResultHtml(page.html);
     if (!parsed) {
       results.push({
         race_id: raceId,
@@ -203,31 +245,9 @@ export async function runApply(
       });
       continue;
     }
-    const { data: existing, error: readError } = await client
-      .from("race_results")
-      .select(
-        [
-          ...FIX_RESULT_COLUMNS,
-          ...FILL_ONLY_COLUMNS,
-          ...(schema.results ? ["race_status", "refund_boats", "remark"] : []),
-        ].join(","),
-      )
-      .eq("race_id", raceId)
-      .maybeSingle();
-    if (readError || !existing) {
-      results.push({
-        race_id: raceId,
-        error: `race_results の行を読めません: ${readError?.message ?? "行が無い"}`,
-      });
-      continue;
-    }
-    const newRow = buildRaceResultRow(raceId, parsed);
-    const plan = buildFixPlan(existing, newRow, parsed, schema);
-    const outcome = await applyFixPlan(client, plan);
-    log(
-      `  ${raceId}: ${outcome.error ? `失敗 ${outcome.error}` : `更新 results=${outcome.wrote.results ? Object.keys(plan.resultUpdate).join("/") : "変更なし"} timings=${outcome.wrote.timings} payouts=${outcome.wrote.payouts}`}`,
+    results.push(
+      await applyParsedResult(raceId, parsed, { client, schema, log }),
     );
-    results.push(outcome);
   }
   return { results, stopped, schema };
 }
