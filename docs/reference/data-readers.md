@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2026 |
+| 読んだファイル | 2027 |
 | 読み書きのあるファイル | 281 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -1044,7 +1044,7 @@
   - `scripts/analysis/original-exhibition/fetch.mjs:44` select(helper:all)
   - `scripts/lib/boatcast/oritenJob.js:181` select [content_hash, parser_version, race_id]
   - `scripts/lib/boatcast/oritenJob.js:221` select(helper:upsertChangedRows)
-  - `scripts/maintenance/verify-e2e-no-unroute.js:199` rest(rest) （検査）
+  - `scripts/maintenance/verifyData/e2e-no-unroute-self-test.js:122` rest(rest)
   - `src/services/raceQueries4.js:165` select [item_labels, race_id, updated_at]
 - 書き手（1）: 
   - `scripts/lib/boatcast/oritenJob.js:221` upsert(helper:upsertChangedRows) [?]
