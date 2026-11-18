@@ -17,11 +17,8 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import {
-  validateBlogChart,
-  localize,
-} from "../../src/utils/blogChartContract.js";
-import { checkRiskRules } from "../lib/riskRules.js";
+import { validateBlogChart } from "../../src/utils/blogChartContract.js";
+import { checkChart } from "./verifyData/blog-chart-check.js";
 import { parseBlogChartLine } from "../../src/utils/blogChartTag.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -34,9 +31,6 @@ const EXAMPLE = path.join(
 );
 
 const LANG_SUFFIX = { "-en": "en", "-zh-tw": "zh-TW", "-ko": "ko" };
-const deprecatedPatterns = JSON.parse(
-  readFileSync(path.join(ROOT, "docs/reference/deprecated-terms.json"), "utf8"),
-).terms.flatMap((t) => t.patterns.map((p) => ({ id: t.id, pattern: p })));
 
 /** 記事のファイル名から記事 id と言語を出す（10000-races-analysis-en.md → 10000-races-analysis・en） */
 function articleOf(file) {
@@ -94,65 +88,6 @@ export function scanArticle(file, markdown) {
     });
   });
   return { errors, refs };
-}
-
-/** 文字の項目を全部集める（禁止語の検査用） */
-function texts(value, out = []) {
-  if (typeof value === "string") out.push(value);
-  else if (Array.isArray(value)) value.forEach((v) => texts(v, out));
-  else if (value && typeof value === "object")
-    Object.values(value).forEach((v) => texts(v, out));
-  return out;
-}
-
-/** JSON 1本を、参照元の記事と突き合わせて検査する */
-export function checkChart(name, chart, referrers, { postExists, markdownOf }) {
-  const file = `public/blog-charts/${name}.json`;
-  const errors = validateBlogChart(chart, {
-    langs: [...new Set(referrers.map((r) => r.lang))],
-  }).map((e) => `${file}: ${e.path || "(全体)"}: ${e.message}`);
-  if (chart?.id !== name)
-    errors.push(
-      `${file}: id: ファイル名と同じ "${name}" / 実際: ${JSON.stringify(chart?.id)}`,
-    );
-  const ids = [...new Set(referrers.map((r) => r.article))];
-  if (ids.length > 0 && !ids.includes(chart?.article)) {
-    errors.push(
-      `${file}: article: 参照元の記事 ${ids.join("・")} / 実際: ${JSON.stringify(chart?.article)}`,
-    );
-  }
-  if (typeof chart?.article === "string" && !postExists(chart.article)) {
-    errors.push(
-      `${file}: article: src/data/blog-posts/${chart.article}.json が無い`,
-    );
-  }
-  const rowCount = Array.isArray(chart?.rows) ? chart.rows.length : null;
-  for (const r of referrers) {
-    if (rowCount !== null && r.rows !== rowCount)
-      errors.push(
-        `${r.at}: rows="${rowCount}"（JSON の rows の数） / 実際: rows="${r.rows}"`,
-      );
-    // 答えの割合は本文にも書く（検索・AI の根拠は本文）
-    const md = markdownOf(r.file);
-    for (const m of localize(chart?.description, r.lang).matchAll(
-      /(\d+(?:\.\d+)?)%/g,
-    )) {
-      if (!md.includes(`${m[1]}%`))
-        errors.push(
-          `${r.at}: description の「${m[1]}%」が記事の本文に無い（本文の1行と表にも書く）`,
-        );
-    }
-  }
-  for (const t of texts(chart)) {
-    for (const v of checkRiskRules(t, "blog"))
-      errors.push(
-        `${file}: 書かない言い方「${v.matchedPattern}」（${v.id}）: ${t}`,
-      );
-    for (const d of deprecatedPatterns)
-      if (t.includes(d.pattern))
-        errors.push(`${file}: 廃止語「${d.pattern}」（${d.id}）: ${t}`);
-  }
-  return errors;
 }
 
 /** リポジトリの記事と JSON を全部検査する */
