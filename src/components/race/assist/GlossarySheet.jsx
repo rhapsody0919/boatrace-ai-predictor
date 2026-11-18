@@ -1,6 +1,6 @@
 import BottomSheet from "./BottomSheet";
 import ClassLineup from "./ClassLineup";
-import { SCORE_POINTS } from "../seriesPoints";
+import { SCORE_POINTS } from "../../../pure/seriesPoints.js";
 import {
   ASSIST_COPY as C,
   glossaryForTerm,

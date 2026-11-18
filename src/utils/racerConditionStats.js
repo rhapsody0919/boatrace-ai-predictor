@@ -3,7 +3,7 @@ import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
 import {
   ROUGH_WAVE_CM,
   WAVE_EXCLUDED_VENUE_CODES,
-} from "../components/race/basicInfoStats.js";
+} from "../pure/basicInfoStats.js";
 
 /**
  * 1走分の勝敗を{win, top2, top3}アキュムレータに加算する共通ロジック。

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { groupRunsByMeet } from "./basicInfoStats";
+import { groupRunsByMeet } from "../../pure/basicInfoStats.js";
 import { RunGroupHeadRow, RunRow } from "./RecentRunsTableRows";
 import "./RecentRunsTable.css";
 

@@ -17,7 +17,7 @@ import {
   listAbsentOnlyRacers,
   SEMIFINAL_DEFAULT_SLOTS,
   readOfficialPenalty,
-} from "../components/race/seriesPoints";
+} from "../pure/seriesPoints.js";
 import { pickShobugake } from "../utils/meetPageModel";
 import "./MeetPage.css";
 

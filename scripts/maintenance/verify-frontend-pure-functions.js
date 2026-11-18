@@ -11,7 +11,7 @@
  *   2. src/utils/raceStatus.js                … レースの締切前/結果反映待ち/確定の判定
  *   3. src/components/race/courseGridStats.js … 枠別情報タブのコース別成績
  *   4. src/components/race/venueDayTrend.js   … 「この日の水面傾向」の1行要約
- *   5. src/components/race/weatherInfo.js     … 気象の観測時刻の表示
+ *   5. src/utils/weatherInfo.js（移す前は src/components/race/weatherInfo.js）… 気象の観測時刻の表示
  *   6. src/utils/dateUtils.js                 … ブログ一覧の NEW バッジ（isWithinDays）
  *
  * 末尾の変異検証で、各関数の要（過去に壊れた箇所を含む）を1つずつ壊したコピーに同じ検証を
@@ -55,7 +55,7 @@ const TARGETS = {
     "src/components/race/sixBoatCourseStats.js",
   ),
   venueDayTrend: "src/components/race/venueDayTrend.js",
-  weatherInfo: "src/components/race/weatherInfo.js",
+  weatherInfo: bodyOf("src/utils/weatherInfo.js", "src/components/race/weatherInfo.js"),
   dateUtils: "src/utils/dateUtils.js",
   prevResult: "src/utils/prevResult.js",
   nextOpenDate: "src/utils/nextOpenDate.js",

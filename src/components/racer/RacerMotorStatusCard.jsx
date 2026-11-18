@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { STADIUM_NAMES as VENUE_NAMES } from "../../constants";
 import TrendLineChart from "../analysis/TrendLineChart";
 import MotorStatBadgeRow from "../MotorStatBadgeRow";
-import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
+import { SMALL_SAMPLE_THRESHOLD } from "../../pure/basicInfoStats.js";
 import { formatPowerIndex, powerIndexTone } from "../../utils/smallSampleRate";
 import { exhibitionTimeAxis } from "../../utils/chartDomain";
 import "./RacerMotorStatusCard.css";

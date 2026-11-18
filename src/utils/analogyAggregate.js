@@ -7,7 +7,7 @@
  */
 
 import { bestOf } from "./bestOf.js";
-import { SMALL_SAMPLE_THRESHOLD } from "../components/race/basicInfoStats.js";
+import { SMALL_SAMPLE_THRESHOLD } from "../pure/basicInfoStats.js";
 
 /** スライダーの段（spec B-4） */
 export const SLIDER_STEPS = [

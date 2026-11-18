@@ -3,7 +3,8 @@
  * BOA-1242: 分析の「会場ランキング」（getTodaysVenueRanking）と龍神ボート番付（rank-data.js の venue_payout・
  * venue_favorite）が、同じ純関数（src/utils/venuePayoutStats.js）で数えていることを固定する。DB・通信なし。
  *
- *   1. サービス層が純関数を import して呼び、集計の写しを持たない（二重の実装に戻らない）
+ *   1. サービス層（getTodaysVenueRanking）を偽の supabase の上で呼び、取る表・列・絞りと、返すランキングが純関数と同じ
+ *      になる（BOA-1675。本文の正規表現から置き換え。集計の写しが戻れば、純関数を通した値と食い違う）
  *   2. 移す前の画面の計算（下の legacyRanking に写した）と、乱数の入力 3,000 通りで返り値が一致する
  *   3. 1番人気の数え方（配当と人気のある行だけを分母、人気1を分子）と、不成立・rank1 なしを除くこと
  *   4. rank-data.js が新しい dataset の引数の誤りを、DB を読む前に拒否する
@@ -18,32 +19,148 @@ import {
   venuePayoutRates,
 } from "../../src/utils/venuePayoutStats.js";
 import { isUsableRaceResult } from "../../src/utils/raceResultUsable.js";
-import { readDataLayerSource } from "./dataLayerSource.js";
+import {
+  createFakeSupabase,
+  installLocalStorage,
+  registerFakeServiceSupabase,
+  setFakeSupabase,
+} from "./verifyData/fakeServiceSupabase.js";
 
-// 1. サービス層
-const service = readDataLayerSource();
-const body = service.slice(
-  service.indexOf("getTodaysVenueRanking("),
-  service.indexOf("getVenueDaySummary("),
-);
-assert.match(
-  service,
-  /import \{\s*tallyVenuePayouts,\s*rankVenuesByPayout,\s*\} from "\.\.\/utils\/venuePayoutStats\.js";/,
-);
-assert.match(
-  body,
-  /tallyVenuePayouts\(results,/,
-  "getTodaysVenueRanking が tallyVenuePayouts を呼ぶ",
-);
-assert.match(
-  body,
-  /return rankVenuesByPayout\(byVenue, limit, minRaceCount\);/,
-);
-assert.doesNotMatch(
-  body,
-  /manshuCount \+= 1|payoutSum \+=/,
-  "getTodaysVenueRanking に集計の写しが残っていない",
-);
+// ---- サービス層を偽の supabase クライアントの上で呼ぶ（BOA-1675。共通の部品 verifyData/fakeServiceSupabase.js） ----
+registerFakeServiceSupabase();
+// サービス層のキャッシュは localStorage にも書く。Node には無い（メモリのキャッシュは clearCache で消す）
+installLocalStorage();
+
+// 1. サービス層（公開の入口 getTodaysVenueRanking を偽の supabase の上で呼ぶ）
+const fakeTables = {};
+const fake = setFakeSupabase(createFakeSupabase(fakeTables));
+const { clearCache } = await import("../../src/services/core.js");
+const { getTodaysVenueRanking } =
+  await import("../../src/services/venueQueries2.js");
+const setTables = (next) => {
+  for (const k of Object.keys(fakeTables)) delete fakeTables[k];
+  Object.assign(fakeTables, next);
+  clearCache();
+  fake.calls.length = 0;
+};
+const jstDate = (offsetDays = 0) =>
+  new Date(Date.now() + 9 * 3600 * 1000 + offsetDays * 86400000)
+    .toISOString()
+    .slice(0, 10);
+{
+  const today = jstDate();
+  const mk = (venue, no, rank1, trio, tech, status = null, date = today) => ({
+    race: {
+      race_id: `${date}-${String(venue).padStart(2, "0")}-${String(no).padStart(2, "0")}`,
+      race_date: date,
+      venue_code: venue,
+    },
+    result: {
+      race_id: `${date}-${String(venue).padStart(2, "0")}-${String(no).padStart(2, "0")}`,
+      rank1,
+      payout_trio: trio,
+      winning_technique: tech,
+      race_status: status,
+    },
+  });
+  const data = [
+    // 会場1: 3走。平均 (1200+900+15000)/3 = 5700、万舟 1/3、逃げ 2/3（不成立の1走は数えない）
+    mk(1, 1, 1, 1200, "逃げ"),
+    mk(1, 2, 1, 900, "逃げ"),
+    mk(1, 3, 2, 15000, "差し"),
+    mk(1, 4, 1, 800, "逃げ", "no_race"),
+    // 会場2: 3走。平均 (20000+30000+500)/3、万舟 2/3、逃げ 2/3
+    mk(2, 1, 3, 20000, "まくり"),
+    mk(2, 2, 1, 30000, "逃げ"),
+    mk(2, 3, 1, 500, "逃げ"),
+    // 会場3: 2走（最少の3走に足りない）
+    mk(3, 1, 1, 700, "逃げ"),
+    mk(3, 2, 1, 700, "逃げ"),
+    // 昨日の走（今日の集計に入らない）
+    mk(1, 5, 1, 99999, "逃げ", null, jstDate(-1)),
+  ];
+  setTables({
+    races: data.map((d) => d.race),
+    race_results: data.map((d) => d.result),
+  });
+  const venueByRaceId = new Map(
+    data
+      .filter((d) => d.race.race_date === today)
+      .map((d) => [d.race.race_id, d.race.venue_code]),
+  );
+  const todays = data
+    .filter((d) => d.race.race_date === today)
+    .map((d) => d.result);
+  const want = (limit, min) =>
+    rankVenuesByPayout(
+      tallyVenuePayouts(todays, (id) => venueByRaceId.get(id)),
+      limit,
+      min,
+    );
+  const got = await getTodaysVenueRanking(5, 3);
+  assert.deepStrictEqual(got, want(5, 3));
+  // 手で数えた値（純関数を通した期待値が空振りしていない）
+  assert.deepStrictEqual(
+    got.stable.map((v) => [v.venue_code, v.race_count, v.avg_payout]),
+    [
+      [1, 3, 5700],
+      [2, 3, 50500 / 3],
+    ],
+  );
+  assert.deepStrictEqual(
+    got.rough.map((v) => v.venue_code),
+    [2, 1],
+  );
+  assert.deepStrictEqual(
+    got.manshu.map((v) => [v.venue_code, v.manshu_rate]),
+    [
+      [2, (2 / 3) * 100],
+      [1, (1 / 3) * 100],
+    ],
+  );
+  assert.deepStrictEqual(
+    got.nigeRate.map((v) => [v.venue_code, v.nige_rate]),
+    [
+      [1, (2 / 3) * 100],
+      [2, (2 / 3) * 100],
+    ],
+  );
+  // 取る表・列・絞り
+  const [races] = fake.calls.filter((c) => c.table === "races");
+  assert.deepStrictEqual(races.filters, [["eq", "race_date", today]]);
+  assert.match(races.select, /race_id/);
+  assert.match(races.select, /venue_code/);
+  const rr = fake.calls.filter((c) => c.table === "race_results");
+  assert.equal(rr.length, 1);
+  assert.equal(
+    rr[0].select,
+    "race_id, rank1, payout_trio, winning_technique, race_status",
+  );
+  assert.deepStrictEqual(
+    [...rr[0].filters[0][2]].sort(),
+    [...venueByRaceId.keys()].sort(),
+    "結果は今日のレースだけ取る",
+  );
+  // 引数: 最少の走数と件数は結果へ効く（キャッシュのキーにも入る）
+  assert.deepStrictEqual(await getTodaysVenueRanking(1, 3), want(1, 3));
+  assert.equal((await getTodaysVenueRanking(1, 3)).stable.length, 1);
+  assert.deepStrictEqual(await getTodaysVenueRanking(5, 2), want(5, 2));
+  assert.equal((await getTodaysVenueRanking(5, 2)).stable.length, 3);
+  assert.deepStrictEqual(await getTodaysVenueRanking(5, 4), want(5, 4));
+  // 今日のレースが無ければ空
+  setTables({ races: [], race_results: [] });
+  assert.deepStrictEqual(await getTodaysVenueRanking(5, 3), {
+    stable: [],
+    rough: [],
+    nigeRate: [],
+    manshu: [],
+  });
+  assert.equal(
+    fake.calls.filter((c) => c.table === "race_results").length,
+    0,
+    "レースが無ければ結果は読まない",
+  );
+}
 assert.equal(HIGH_PAYOUT_YEN, 10000);
 
 // 2. 移す前の画面の計算（origin/master 47cca3f08 の getTodaysVenueRanking の中身をそのまま写した）
