@@ -14,6 +14,7 @@ import { sendHolds } from "../../api/_lib/snsMobileApproval.js";
 import { createReadCurrent } from "../../api/_lib/snsClaimCheck.js";
 import { getJaT } from "../../api/_lib/botPage.js";
 import { SCREEN_MARKERS } from "../lib/snsScreenMarkers.js";
+import { DATE, v3RaceDb } from "./verifyData/sns-today-plan-v3-race-db.js";
 import {
   TODAY_NOTICE,
   TODAY_URL,
@@ -46,7 +47,6 @@ const riskRules = JSON.parse(
   ),
 ).rules;
 const t = await getJaT();
-const DATE = "2037-10-17";
 const at = (hhmm) => new Date(`${DATE}T${hhmm}:00+09:00`);
 let me;
 
@@ -2575,117 +2575,7 @@ test("型 b: 候補が100レースを超える日も、欠場・中止を100レ�
 });
 
 // ---------- 型 v3「今日はこれだけ」（BOA-1314、オーナー 2026-11-04 承認） ----------
-// 材料（races・race_conditions・race_entries・exhibition_data・race_series・racer_course_technique_stats）と、送る直前の
-// 欠場・中止の読み直し（pickRaceStatus の in. の形）に答える PostgREST の読み取り
-function v3RaceDb({ absent = [], cancelled = [] } = {}) {
-  const races = [];
-  const conditions = [];
-  const entries = [];
-  for (const [venue, stage] of [
-    [15, "優勝戦"],
-    [2, "予選"],
-  ])
-    for (let r = 1; r <= 12; r += 1) {
-      const race_id = `${DATE}-${String(venue).padStart(2, "0")}-${String(r).padStart(2, "0")}`;
-      races.push({
-        race_id,
-        race_date: DATE,
-        venue_code: venue,
-        race_number: r,
-        start_time: `${String(8 + r).padStart(2, "0")}:${String(venue).padStart(2, "0")}:00`,
-        race_grade: "ippan",
-        cancellation_status: cancelled.includes(race_id) ? "confirmed" : null,
-      });
-      conditions.push({
-        race_id,
-        race_stage: r === 12 ? stage : "予選",
-        series_day: r === 1 ? 4 : null,
-        is_final_day: null,
-        race_title: null,
-      });
-      for (let b = 1; b <= 6; b += 1)
-        entries.push({
-          race_id,
-          boat_number: b,
-          racer_id: venue * 1000 + r * 10 + b,
-          player_name: `選手\u3000${venue}${r}${b}`,
-          grade: "A1",
-          is_absent: absent.includes(`${race_id}:${b}`),
-        });
-    }
-  const stats = [
-    {
-      racer_id: 2041,
-      course: 1,
-      window_start: "2025-12-02",
-      window_end: "2037-10-16",
-      runs: 50,
-      nige_rate: 82.5,
-    },
-    {
-      racer_id: 2051,
-      course: 1,
-      window_start: "2025-12-02",
-      window_end: "2037-10-16",
-      runs: 50,
-      nige_rate: 80.0,
-    },
-    {
-      racer_id: 2062,
-      course: 2,
-      window_start: "2025-12-02",
-      window_end: "2037-10-16",
-      runs: 40,
-      nigashi_rate: 70.0,
-    },
-    {
-      racer_id: 2074,
-      course: 4,
-      window_start: "2025-12-02",
-      window_end: "2037-10-16",
-      runs: 35,
-      makuri_rate: 28.6,
-    },
-  ];
-  const inList = (path) =>
-    decodeURIComponent(path)
-      .match(/in\.\(([^)]*)\)/)[1]
-      .split(",")
-      .map((x) => x.replaceAll('"', ""));
-  const page = (path, rows) => {
-    const offset = Number(path.match(/offset=(\d+)/)?.[1] ?? 0);
-    return rows.slice(offset, offset + 1000);
-  };
-  return async (path) => {
-    if (path.startsWith("races?race_date=eq.")) return page(path, races);
-    if (path.startsWith("races?cancellation_status")) return [];
-    if (path.startsWith("races?race_id=in."))
-      return races.filter((r) => inList(path).includes(r.race_id));
-    if (path.startsWith("race_conditions")) return page(path, conditions);
-    if (path.startsWith("race_entries?race_id=like."))
-      return page(path, entries);
-    if (path.startsWith("race_entries?race_id=in."))
-      return entries.filter((e) => inList(path).includes(e.race_id));
-    if (path.startsWith("exhibition_data")) return [];
-    if (path.startsWith("race_series"))
-      return [2, 15].map((venue_code) => ({
-        venue_code,
-        start_date: "2037-10-14",
-        end_date: "2037-10-19",
-        title: null,
-        grade: "ippan",
-        kind: "ippan",
-      }));
-    if (path.startsWith("racer_course_technique_stats")) {
-      const course = Number(path.match(/course=eq\.(\d)/)[1]);
-      const ids = inList(path).map(Number);
-      return stats.filter(
-        (s) => s.course === course && ids.includes(s.racer_id),
-      );
-    }
-    throw new Error(`想定外の読み取り: ${path}`);
-  };
-}
+// 読み取りの模型 v3RaceDb は verifyData/sns-today-plan-v3-race-db.js
 
 test("型 v3: リポジトリの config で 6:40 に文だけの下書きを作る（画像なし・撮影なし）。札は c、UTM は日付-c、承認すると 7:00 の job、送る直前の検査も通る", async () => {
   const notes = [];
