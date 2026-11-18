@@ -120,13 +120,16 @@
       "paths": [
         "^sns-video-studio/remotion/(?!node_modules/|out/)",
         "^scripts/sns/",
-        "^api/cron/sns-"
+        "^api/cron/sns-",
+        "^api/admin/sns-hub/",
+        "^api/_lib/(xApiAdapter|youtubeUpload|youtubeQueueAdapter|snsXSend|snsXSendStore|snsXDelete|snsSendProbe|snsDeadlineQueue|snsTokenStore|snsExternalOperations)\\.js$"
       ],
       "reachFrom": [
         "^sns-video-studio/remotion/src/",
         "^sns-video-studio/remotion/scripts/",
         "^scripts/sns/",
-        "^api/cron/sns-"
+        "^api/cron/sns-",
+        "^api/admin/sns-hub/"
       ]
     },
     {
