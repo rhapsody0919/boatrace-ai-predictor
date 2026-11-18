@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2049 |
+| 読んだファイル | 2050 |
 | 読み書きのあるファイル | 282 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -410,7 +410,7 @@
   - `scripts/maintenance/check-pre-race-shadow.js:301` select(helper:fetchByRaceIds)
   - `scripts/maintenance/verify-analogy-v16.js:286` rest(rest) [boat_number, exhibition_time, is_absent, race_id] （検査）
   - `scripts/ml/export-inference-data.js:115` select(helper:fetchByRaceIds)
-  - `scripts/ml/export-training-data.js:79` select(helper:fetchAll)
+  - `scripts/ml/export-training-data.js:196` select(helper:fetchAll)
   - `scripts/sns/push-setsu-kiryoku-short.js:1101` rest(rest) [is_absent, race_id]
   - `scripts/sns/rank-data.js:514` select(helper:readAllIn)
   - `src/services/meetQueries.js:269` select(helper:fetchAllByIn)
@@ -647,7 +647,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 取得のジョブ: outcome_distribution_update
 - 読み手（5）: 
-  - `api/outcome-distribution/index.js:66` select(rest) [count_90days, first_boat, venue_code]
+  - `api/outcome-distribution/index.js:47` select(rest) [count_90days, first_boat, venue_code]
   - `scripts/analysis/verify-outcome-distribution-coverage.js:26` select(helper:fetchAll)
   - `scripts/maintenance/verify-full-picture-scene2.js:2849` rest(rest) （検査）
   - `src/services/venueQueries.js:98` select [count_90days, first_boat]
@@ -788,7 +788,7 @@
   - `scripts/maintenance/verify-full-picture-scene2.js:3633` rest(rest) [race_id, race_stage] （検査）
   - `scripts/ml/analogy/build-wind-basis.js:95` select [race_id, wind_direction, wind_speed]
   - `scripts/ml/export-inference-data.js:119` select(helper:fetchByRaceIds)
-  - `scripts/ml/export-training-data.js:83` select(helper:fetchAll)
+  - `scripts/ml/export-training-data.js:201` select(helper:fetchAll)
   - `scripts/sns/push-finals-image.js:1294` rest(rest) [race_id, race_stage]
   - `scripts/sns/push-setsu-kiryoku-short.js:1088` rest(rest) [race_id, race_stage]
   - `scripts/sns/push-setsu-kiryoku-short.js:1093` rest(rest) [race_id, race_stage]
@@ -909,7 +909,7 @@
   - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:106` rest(rest) [race_id]
   - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:108` rest(rest) [race_id]
   - `scripts/ml/export-inference-data.js:111` select(helper:fetchByRaceIds)
-  - `scripts/ml/export-training-data.js:75` select(helper:fetchAll)
+  - `scripts/ml/export-training-data.js:191` select(helper:fetchAll)
   - `scripts/sns/push-setsu-kiryoku-short.js:1100` rest(rest) [is_absent, race_id]
   - `scripts/sns/rank-data.js:365` select(helper:readAllIn)
   - `scripts/sns/rank-data.js:461` select(helper:readAll)
@@ -1014,7 +1014,7 @@
   - `scripts/daily/scrape-odds.js:975` select [?, captured_at, race_id]
   - `scripts/lib/scrapeJobs/predictionOddsHandlers.js:81` select [captured_at, race_id, trifecta_all, trio_all]
   - `scripts/maintenance/check-odds-shadow.js:201` select [?, race_id, source]
-  - `scripts/ml/export-training-data.js:224` select(helper:fetchAll)
+  - `scripts/ml/export-training-data.js:285` select(helper:fetchAll)
   - `src/services/raceQueries2.js:320` select [?, captured_at, race_id]
   - `src/services/sherlockService.js:80` select [captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6, race_id]
 - 書き手（3）: 
@@ -1209,7 +1209,7 @@
   - `scripts/maintenance/delete-phantom-race-days.js:62` select(helper:fetchAll)
   - `scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:45` select(helper:fetchAll)
   - `scripts/maintenance/update-venue-stats.js:32` select(embed) [race_status, rank1]
-  - `scripts/ml/export-training-data.js:87` select(helper:fetchAll)
+  - `scripts/ml/export-training-data.js:206` select(helper:fetchAll)
   - `scripts/sns/rank-data.js:163` select(helper:readAll)
   - `scripts/sns/rank-data.js:372` select(helper:readAllIn)
   - `scripts/sns/rank-data.js:507` select(helper:readAllIn)
@@ -1308,7 +1308,7 @@
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:71` select(helper:fetchAll)
   - `scripts/maintenance/backfill-start-timings.js:261` select [race_id]
   - `scripts/maintenance/check-result-shadow.js:166` select(helper:fetchByRaceIds)
-  - `scripts/ml/export-training-data.js:91` select(helper:fetchAll)
+  - `scripts/ml/export-training-data.js:211` select(helper:fetchAll)
   - `scripts/sns/rank-data.js:528` select(helper:readAllIn)
   - `scripts/verification/verify-series-points-border.mjs:64` select [boat_number, finish_mark, race_id]
   - `scripts/verification/verify-series-points-needed.mjs:58` select [boat_number, finish_mark, race_id]
@@ -1595,7 +1595,7 @@
   - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:102` rest(rest) [cancellation_status]
   - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:103` rest(rest) [race_id]
   - `scripts/ml/export-inference-data.js:80` select(helper:fetchAll)
-  - `scripts/ml/export-training-data.js:71` select(helper:fetchAll)
+  - `scripts/ml/export-training-data.js:186` select(helper:fetchAll)
   - `scripts/sns/push-finals-image.js:1284` rest(rest) [cancellation_status, race_date, race_grade, race_id, race_number, start_time]
   - `scripts/sns/push-finals-image.js:1290` rest(rest) [race_date, race_grade, race_id, race_number, start_time]
   - `scripts/sns/push-full-picture.js:839` rest(rest) [cancellation_status, race_date, race_id, start_time]
