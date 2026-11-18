@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2058 |
+| 読んだファイル | 2060 |
 | 読み書きのあるファイル | 282 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -1257,7 +1257,7 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule.py:282`, `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:73`
 - 読み手（15）: 
   - `api/_lib/botPage.js:277` rest(rest) [end_date, grade, start_date, title, venue_code]
-  - `api/_lib/botRace.js:249` rest(rest)
+  - `api/_lib/botRace.js:211` rest(rest)
   - `scripts/lib/eveDeadlinesJob.js:63` select [end_date, start_date, venue_code]
   - `scripts/lib/motorPretestJob.js:236` select [end_date, start_date, venue_code]
   - `scripts/lib/raceSeriesLookup.js:161` select [end_date, start_date, venue_code]
