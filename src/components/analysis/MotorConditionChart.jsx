@@ -56,11 +56,13 @@ import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
 import { countMeetPartsChanges } from "../../utils/motorMeetParts";
 import { bestOf } from "../../utils/bestOf";
 import {
-  computePeriodClip,
+  computePeriodView,
   computeRankClasses,
   computeRateView as computeMotorRateView,
   computeStatColumns as computeMotorStatColumns,
-  exhibitionChartDataOf,
+  computeTrendView,
+  listPowerIndexOf,
+  makeVenueColsLabel,
 } from "../../pure/motorChartView.js";
 import "./MotorConditionChart.css";
 import "../common/HorizontalScrollHint.css";
@@ -1122,86 +1124,7 @@ function usePeriodAndWakuReset(m) {
 
 const RATE_DEPS = { motorRateView, bestOf };
 const PERIOD_DEPS = { getTodayJST, isClippedByGeneration };
-
-// 2連率・3連率の推移グラフの元データ
-function rateChartData(trendData, firstRatedIndex, drillTallyState) {
-  return (
-    firstRatedIndex === -1
-      ? drillTallyState === "tallied"
-        ? (trendData?.trend ?? [])
-        : []
-      : (trendData?.trend ?? []).slice(firstRatedIndex)
-  ).map((row) => ({
-    date: row.date.slice(5),
-    motor_2rate: row.motor_2rate,
-    motor_3rate: row.motor_3rate,
-  }));
-}
-
-// 使用履歴は新しい順の一覧だが、グラフは推移グラフと同じく左が古く右が新しい
-// 向きにそろえる（逆向きだと「右肩下がり＝最近悪化」と読み違える。BOA-513）
-function usageChartData(usageHistory) {
-  const usageHistoryChartData = [...usageHistory]
-    .reverse()
-    .filter((meet) => meet.rate2 !== null)
-    .map((meet) => ({
-      date: meet.playerName?.replace(/\s+/g, "") ?? "",
-      rate2: meet.rate2,
-      rate3: meet.rate3,
-    }));
-  return usageHistoryChartData;
-}
-
-function emptyKeyOf(drillFirstRun, key) {
-  return drillFirstRun ? "analysis.motor.drillFirstRunEmpty" : key;
-}
-
-// 推移グラフ・展示タイム・使用履歴グラフの元データ
-function computeTrendView({ trendData, breakdown, venueMotorStats, powerIndex, usageHistory }) {
-  // 入れ替え直後は、公式の累計がまだ付かず 2連率・3連率とも 0 の日が続く。この先頭の
-  // 0 の点は「1回も連に絡まなかった」と読めるので描かない（BOA-513、ファン4人のパネル）
-  const firstRatedIndex = (trendData?.trend ?? []).findIndex(
-    (row) => row.motor_2rate !== 0 || row.motor_3rate !== 0,
-  );
-  // 全部の点が 0 のとき、集計前（最初の節がまだ終わっていない）なら線を引かない。
-  // 0% の横線は「一度も2着以内に来ていない」と読まれる（2026-09-29 ファン評価 P1）。
-  // 集計済みで本当に 0%（前の節で3着以内に入らなかった）なら、0 の線を引く。
-  // 区別には会場公式サイトの出走数を使う（officialTallyState）
-  const venueHasOfficialStats = breakdown.some(
-    (r) => r.race_count !== null && r.race_count !== undefined,
-  );
-  // 会場公式の成績が取れなかったとき（BOA-740）は出走数が無いだけなので、「集計前」とは断定しない
-  const drillTallyState = officialTallyState(
-    venueHasOfficialStats && !venueMotorStats?.fetchFailed,
-    venueMotorStats?.raceCount,
-  );
-  const chartData = rateChartData(trendData, firstRatedIndex, drillTallyState);
-
-  const exhibitionChartData = exhibitionChartDataOf(trendData);
-  // このレースがこのモーターの初出走（直前までの走りが0）。「データが見つかりません」
-  // だと取得失敗と区別できないので、理由を書く（BOA-557 ファン評価2周目）
-  const drillFirstRun =
-    powerIndex?.sample_count === 0 && usageHistory.length === 0;
-  const emptyKey = (key) => emptyKeyOf(drillFirstRun, key);
-  const exhibitionAxis = exhibitionTimeAxis(
-    exhibitionChartData.map((row) => row.exhibition_time),
-  );
-
-  const usageHistoryChartData = usageChartData(usageHistory);
-  return {
-    firstRatedIndex, drillTallyState, chartData, exhibitionChartData,
-    emptyKey, exhibitionAxis, usageHistoryChartData,
-  };
-}
-
-function listPowerIndexOf(row) {
-  return row.rate_source === "official"
-    ? {
-        value: row.generation_power_index ?? null,
-        n: row.generation_runs ?? null,
-      }
-    : { value: row.power_index ?? null, n: row.sample_count };
-}
+const TREND_DEPS = { officialTallyState, exhibitionTimeAxis };
 
 // 棒にする2連率と、その値ラベル・最良の印・一覧の機力指数（整形は src/pure/motorChartView.js）
 function computeRateView(breakdown, freshness, explainBoat, t) {
@@ -1268,40 +1191,6 @@ function computeStatColumns(breakdown, t) {
   return { ...computeMotorStatColumns(breakdown), venueStatsFailedCell };
 }
 
-// 会場公式サイト由来で、表に出ている列の名前（出典の注記に挙げる）
-function makeVenueColsLabel(t, cols) {
-  const { showFirstPlaceRate, showFinalCount, showChampionshipCount } = cols;
-  const venueColsLabel = [
-    showFirstPlaceRate && "analysis.motor.firstPlaceRateHeader",
-    showFinalCount && "analysis.motor.finalCountHeader",
-    showChampionshipCount && "analysis.motor.championshipCountHeader",
-  ]
-    .filter(Boolean)
-    .map((key) => t("analysis.motor.quotedLabel", { label: t(key) }))
-    .join(t("analysis.motor.quotedLabelSeparator"));
-  return venueColsLabel;
-}
-
-// 期間トグルを出すか・期間を切り詰めたか
-function computePeriodView(m) {
-  const { breakdown, selectedRace, drillDownMotor, drillPreGeneration } = m;
-  // 過去レースの一覧表は出走表時点の公式値（BOA-329、2026-09-29 ユーザー判断(c)）。
-  // 期間の切り替えは効かないので出さず、1行の注記に置き換える
-  const officialMode = breakdown.some((r) => r.rate_source === "official");
-  const isPastSelectedRace =
-    Boolean(selectedRace) && selectedRace.slice(0, 10) < getTodayJST();
-  // 過去レースは、一覧でもドリルダウンでも期間を選ばせない（90日固定）。
-  // ドリルダウンだけ選べると、押すだけで機力指数の評価が「実力以上」⇔「低調」に
-  // 反転し、一覧の「期間は選べません」とも食い違う（2026-09-29 ファン評価2周目）
-  const showPeriodToggle =
-    drillDownMotor === null
-      ? !officialMode
-      : !drillPreGeneration && !isPastSelectedRace;
-  return {
-    officialMode, showPeriodToggle, ...computePeriodClip(m, PERIOD_DEPS),
-  };
-}
-
 // 画面に出す値を state から導く
 function useMotorView(m) {
   const {
@@ -1310,7 +1199,7 @@ function useMotorView(m) {
   } = m;
   const currentParts = meetParts?.raceId === selectedRace ? meetParts.rows : [];
   const expandedParts = currentParts.find((row) => row.boat === partsBoat);
-  const trend = computeTrendView(m);
+  const trend = computeTrendView(m, TREND_DEPS);
   const rate = computeRateView(breakdown, m.freshness, m.explainBoat, t);
   // 会場内順位の列（BOA-428）。取得の失敗は列を残して印を出す
   const showVenueRank =
@@ -1336,7 +1225,7 @@ function useMotorView(m) {
     todayHighlightCourse, ...cols,
     ...computeRankClasses(breakdown, cols.firstPlaceRates, RATE_DEPS),
     drillPowerIndexTone, venueColsLabel: makeVenueColsLabel(t, cols),
-    ...computePeriodView(m),
+    ...computePeriodView(m, PERIOD_DEPS),
     // ディープリンク先の会場が「本日開催中」の一覧に無い（過去レースへ飛んだとき）。
     // 選択肢に足し、見出しから「本日開催中」を外す（BOA-428・BOA-719）
     venueOffToday: selectedVenue !== null && !venues.includes(selectedVenue),
