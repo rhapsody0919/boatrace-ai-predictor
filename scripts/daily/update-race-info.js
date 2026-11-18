@@ -42,7 +42,6 @@ import {
   scrapeConditions,
 } from "../lib/beforeinfoWeather.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
-import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 // 取得は raceInfoFetch.js、集計（書く行をためる・1件の結果）は raceInfoAccumulate.js に置く
 import {
   defaultFetch,
