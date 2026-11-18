@@ -8,6 +8,9 @@
  *     ことはありうる（未検証）が、中身の同じコードは base に既にある。
  * 手で足した写しは今までどおり赤: 移すだけの判定は1字・1行でも足すと空集合を返す。to・from でない新しいファイルの側は下げない。
  * 警告: 差分の側が既にあるファイルだけのもの（今まで）。
+ * master への push の run（judgeDuplicates の push）: 赤の重なりを赤にせず、印 [dup-on-push] つきの注記にする。別々に緑で入った
+ *     PR の合成の越えは PR の側で取れず、直しの commit でも出しの止まりが解けないため（hq docs/decisions/deploy-guard.md 11/18、
+ *     hq の deploy-guard が注記を拾って直しの票にする）。jscpd の結果が無い（道具の故障）は push でも赤。
  * 移すだけの判定は pr-lane.js（H3・H9 を外す）とここの2か所で使う。prLaneMoveOnly.js を直すと両方に効く。
  * 設定（config/pr-path-rules.json の moveOnly）は head の作業ツリーから読む（lint-changed.js 自身も head から走る。
  * 設定は CODEOWNERS と H の対象で、判定は殻の名前と to の頭2行の注釈に固定）。
@@ -90,4 +93,29 @@ export function classifyDuplicates(duplicates, byFile, moved) {
     else errors.push(text);
   }
   return { errors, warnings };
+}
+
+/** master への push の run の重なりの注記の印。hq の deploy-guard がこの字と「重なり N 行: a:s-e と b:s-e」を拾う（字を変えるなら hq も直す） */
+export const DUP_ON_PUSH = "[dup-on-push]";
+
+/**
+ * jscpd の結果を赤・警告・注記に分ける。
+ * @param {{report: {duplicates: object[]}|null, status: number|null, byFile: Map<string, {added: boolean}>, moved: Set<string>, push: boolean}} a
+ *   report は jscpd の json（無ければ null）、status は jscpd の終了コード、push は master への push の run か
+ * @returns {{errors: string[], warnings: string[], notes: string[]}}
+ */
+export function judgeDuplicates({ report, status, byFile, moved, push }) {
+  if (!report)
+    return {
+      errors: [`jscpd の結果が無い（終了コード ${status}）`],
+      warnings: [],
+      notes: [],
+    };
+  const dup = classifyDuplicates(report.duplicates, byFile, moved);
+  if (!push) return { ...dup, notes: [] };
+  return {
+    errors: [],
+    warnings: dup.warnings,
+    notes: dup.errors.map((e) => `${DUP_ON_PUSH} ${e}`),
+  };
 }

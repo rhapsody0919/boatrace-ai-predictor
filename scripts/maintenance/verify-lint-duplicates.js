@@ -2,6 +2,7 @@
  * verify-lint-duplicates.js - lint-changed.js --ci の jscpd の重なりの分け方（scripts/maintenance/lintDuplicates.js）を小さな固定の入力で試す。
  * 新しいファイルの側の重なりは赤・既にあるファイルだけの重なりは警告（今まで）。split-data-layer.mjs の出力そのままの PR で、
  * 差分の側が全部移しただけのファイルなら警告。手で1行でも足した・移すだけでない新しいファイルが側にあれば赤のまま。
+ * master への push の run（judgeDuplicates の push）: 赤の重なりは [dup-on-push] の注記で緑、jscpd の結果が無い（故障）は赤のまま。
  * fixture の import は文字列の中に置く（行の頭に相対の import を書くと verify-relative-imports が参照先を探す）
  */
 import { test } from "node:test";
@@ -10,6 +11,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   classifyDuplicates,
+  DUP_ON_PUSH,
+  judgeDuplicates,
   loadMoveOnly,
   movedFiles,
   notMovedReason,
@@ -238,4 +241,41 @@ test("movedFiles: to を改名で作った（R）PR は空。notMovedReason は 
 test("loadMoveOnly: 本物の設定の from は殻、読めなければ意味のある文で落ちる", () => {
   assert.ok(new RegExp(moveOnly.from).test(SVC));
   assert.throws(() => loadMoveOnly("/no/such/root"), /moveOnly が読めない/);
+});
+
+// ---- judgeDuplicates: master への push の run の分岐（hq docs/decisions/deploy-guard.md 11/18） ----
+test("judgeDuplicates: PR の run は今までどおり（赤は赤・注記なし）", () => {
+  const r = judgeDuplicates({
+    report: { duplicates: [dup(NEW, OTHER), dup(OLD, OTHER)] },
+    byFile: files([NEW, true], [OLD, false]),
+    moved: new Set(),
+    push: false,
+  });
+  assert.equal(r.errors.length, 1);
+  assert.equal(r.warnings.length, 1);
+  assert.deepEqual(r.notes, []);
+});
+
+test("judgeDuplicates: push の run は越えの重なりを赤にせず印つきの注記にする（警告はそのまま）", () => {
+  const r = judgeDuplicates({
+    report: { duplicates: [dup(NEW, OTHER, 27), dup(OLD, OTHER)] },
+    byFile: files([NEW, true], [OLD, false]),
+    moved: new Set(),
+    push: true,
+  });
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.warnings.length, 1);
+  // hq の deploy-guard が拾う形（印・行数・2ファイルと行）。字を変えるなら hq の拾い方も直す
+  assert.deepEqual(r.notes, [
+    "[dup-on-push] 重なり 27 行: src/utils/handCopy.js:1-27 と src/utils/untouched.js:5-31",
+  ]);
+  assert.equal(DUP_ON_PUSH, "[dup-on-push]");
+});
+
+test("judgeDuplicates: jscpd の結果が無い（道具の故障）は push でも赤", () => {
+  for (const push of [true, false]) {
+    const r = judgeDuplicates({ report: null, status: 1, push });
+    assert.deepEqual(r.errors, ["jscpd の結果が無い（終了コード 1）"]);
+    assert.deepEqual(r.notes, []);
+  }
 });
