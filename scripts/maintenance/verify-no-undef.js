@@ -60,6 +60,7 @@ import {
   validateAllowlist,
 } from "./verifyData/no-undef-allowlist.js";
 import {
+  compareCases,
   EMPTY_CATCH,
   IDEOGRAPHIC_SPACE,
   unitCases,
@@ -299,64 +300,6 @@ async function findingsIn(code, filePath) {
   return { found: [...new Set(found)].sort(), directives: directives.length };
 }
 
-/** 突き合わせの純粋な自己テスト（許可リストが空でも added・stale の判定を確かめる） */
-function compareCases() {
-  const v = (rule, file, name = null) => ({
-    rule,
-    file,
-    name,
-    line: 1,
-    column: 1,
-    message: "m",
-  });
-  const summarize = (r) => [
-    r.added.map((a) => `${a.rule} ${a.file}`),
-    r.stale.map((s) => `${s.rule} ${s.file}`),
-  ];
-  const undefAllow = {
-    "no-undef": {
-      "a.js": { names: ["x"], reason: "r" },
-      "b.js": { names: ["y"], reason: "r" },
-    },
-  };
-  const emptyAllow = { "no-empty": { "c.js": { count: 2, reason: "r" } } };
-  return [
-    {
-      rule: "no-undef",
-      name: "突き合わせ: 載っている名前は通し、出なくなった名前は stale、同じファイルの別の名前は added",
-      run: () =>
-        summarize(
-          compareWithAllowlist(
-            [v("no-undef", "a.js", "x"), v("no-undef", "a.js", "z")],
-            undefAllow,
-            RULES,
-          ),
-        ),
-      want: [["no-undef a.js"], ["no-undef b.js"]],
-    },
-    {
-      rule: "no-empty",
-      name: "突き合わせ: 件数の許可は、超えたら added、満たなければ stale",
-      run: () => [
-        summarize(
-          compareWithAllowlist(
-            [1, 2, 3].map(() => v("no-empty", "c.js")),
-            emptyAllow,
-            RULES,
-          ),
-        ),
-        summarize(
-          compareWithAllowlist([v("no-empty", "c.js")], emptyAllow, RULES),
-        ),
-      ],
-      want: [
-        [["no-empty c.js"], []],
-        [[], ["no-empty c.js"]],
-      ],
-    },
-  ];
-}
-
 /**
  * 変異の検証: 実在のファイルに違反を1つ足した版で、実際の結果の当該ファイルを差し替え、
  * 実際の許可リストと突き合わせて失敗になることを確かめる。許可リストに載っているファイルにも
@@ -457,7 +400,7 @@ async function main() {
       BROKEN_REV,
       BROKEN_FILE,
     }),
-    ...compareCases(),
+    ...compareCases(RULES),
   ].filter((c) => c.rule === null || ACTIVE.has(c.rule));
   if (!(await runCases(selfCases))) {
     console.error(

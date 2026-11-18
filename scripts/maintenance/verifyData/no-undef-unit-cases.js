@@ -1,6 +1,7 @@
 // verify-no-undef.js の自己テストの場面（越えの単位を分けるため移した。verify ではない）。
 // eslint・findingsIn 等は verify から受け取る
 import path from "node:path";
+import { compareWithAllowlist } from "./no-undef-allowlist.js";
 
 // 全角空白（U+3000）。このファイル自体が no-irregular-whitespace に当たらないよう、文字で書かない
 export const IDEOGRAPHIC_SPACE = String.fromCodePoint(0x3000);
@@ -100,7 +101,7 @@ function undefCases({
 }
 
 /** 自己テストの後半（設定コメント・no-empty・no-irregular-whitespace・rules-of-hooks） */
-function gateCases({ eslint, findingsIn }) {
+function gateCases({ findingsIn }) {
   const found = (code, file) => async () =>
     (await findingsIn(code, file)).found;
   const both = (code, file) => () => findingsIn(code, file);
@@ -174,4 +175,62 @@ function gateCases({ eslint, findingsIn }) {
 /** 自己テスト。rule は対象の規則（null は常に実行）。検査中の規則のものだけを実行する */
 export function unitCases(deps) {
   return [...undefCases(deps), ...gateCases(deps)];
+}
+
+/** 突き合わせの純粋な自己テスト（許可リストが空でも added・stale の判定を確かめる） */
+export function compareCases(RULES) {
+  const v = (rule, file, name = null) => ({
+    rule,
+    file,
+    name,
+    line: 1,
+    column: 1,
+    message: "m",
+  });
+  const summarize = (r) => [
+    r.added.map((a) => `${a.rule} ${a.file}`),
+    r.stale.map((s) => `${s.rule} ${s.file}`),
+  ];
+  const undefAllow = {
+    "no-undef": {
+      "a.js": { names: ["x"], reason: "r" },
+      "b.js": { names: ["y"], reason: "r" },
+    },
+  };
+  const emptyAllow = { "no-empty": { "c.js": { count: 2, reason: "r" } } };
+  return [
+    {
+      rule: "no-undef",
+      name: "突き合わせ: 載っている名前は通し、出なくなった名前は stale、同じファイルの別の名前は added",
+      run: () =>
+        summarize(
+          compareWithAllowlist(
+            [v("no-undef", "a.js", "x"), v("no-undef", "a.js", "z")],
+            undefAllow,
+            RULES,
+          ),
+        ),
+      want: [["no-undef a.js"], ["no-undef b.js"]],
+    },
+    {
+      rule: "no-empty",
+      name: "突き合わせ: 件数の許可は、超えたら added、満たなければ stale",
+      run: () => [
+        summarize(
+          compareWithAllowlist(
+            [1, 2, 3].map(() => v("no-empty", "c.js")),
+            emptyAllow,
+            RULES,
+          ),
+        ),
+        summarize(
+          compareWithAllowlist([v("no-empty", "c.js")], emptyAllow, RULES),
+        ),
+      ],
+      want: [
+        [["no-empty c.js"], []],
+        [[], ["no-empty c.js"]],
+      ],
+    },
+  ];
 }
