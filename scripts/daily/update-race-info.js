@@ -36,7 +36,9 @@ import {
 } from "../lib/unchangedRows.js";
 import {
   buildStartTimeLookup,
+  buildWeatherRows,
   convertWindDirection,
+  formatWeatherStats,
   scrapeConditions,
 } from "../lib/beforeinfoWeather.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
@@ -53,7 +55,6 @@ import {
   applyFetchedRaceInfo,
   assertRaceInfoRunArgs,
   createAccumulator,
-  groupConditionRows,
   parsedRaceOutcome,
 } from "../lib/raceInfoAccumulate.js";
 
@@ -79,155 +80,6 @@ async function loadCancellationRows(client, raceIds) {
     );
   }
   return { rows: data || [], error };
-}
-
-/**
- * races.cancellation_status / cancellation_check_streak を更新（BOA-254 FR1）。flushRaceInfo の書き込みの段（元のまま移した）。
- * dry-run では書き込まない（状態が変化するレースのみが対象で、既に変更時のみの更新）
- */
-async function writeCancellationUpdates(
-  acc,
-  { client, dryRun },
-  { countWritten, errors },
-) {
-  let cancellationUpdateCount = 0;
-  for (const {
-    race_id,
-    cancellation_status,
-    cancellation_check_streak,
-  } of dryRun ? [] : acc.cancellationUpdates) {
-    const { error } = await client
-      .from("races")
-      .update({ cancellation_status, cancellation_check_streak })
-      .eq("race_id", race_id);
-    if (!error) {
-      cancellationUpdateCount++;
-      countWritten(race_id);
-    } else {
-      errors.push(error.message);
-      console.error(
-        `❌ races (cancellation_status) 更新エラー [${race_id}]:`,
-        error.message,
-      );
-    }
-  }
-  if (cancellationUpdateCount > 0) {
-    console.log(
-      `  ⚠️ races (cancellation_status): ${cancellationUpdateCount}件`,
-    );
-  }
-}
-
-/** races.start_time を、出走表の締切予定時刻に追従させる（N15）。flushRaceInfo の書き込みの段（元のまま移した）。更新した件数を返す */
-async function writeDeadlineUpdates(
-  acc,
-  { client, dryRun },
-  { countWritten, errors },
-) {
-  let deadlineUpdateCount = 0;
-  for (const update of dryRun ? [] : acc.deadlineUpdates.values()) {
-    const { error } = await client
-      .from("races")
-      .update({ start_time: update.start_time })
-      .eq("race_id", update.race_id);
-    if (!error) {
-      deadlineUpdateCount++;
-      countWritten(update.race_id);
-    } else {
-      errors.push(error.message);
-      console.error(
-        `❌ races (start_time) 更新エラー [${update.race_id}]:`,
-        error.message,
-      );
-    }
-  }
-  if (acc.deadlineUpdates.size > 0) {
-    console.log(
-      `  ${dryRun ? "[DRY-RUN] " : ""}🕒 races.start_time: ${[...acc.deadlineUpdates.values()].map((u) => `${u.race_id} ${u.previous}→${u.start_time.slice(0, 5)}`).join(", ")}` +
-        (dryRun ? "" : `（更新${deadlineUpdateCount}件）`),
-    );
-  }
-  return deadlineUpdateCount;
-}
-
-/**
- * races.race_grade を更新（Source of Truth = races テーブル）。flushRaceInfo の書き込みの段（元のまま移した）。
- * 既存値の取得に失敗している場合（cancellationFetchError）は全件を従来どおり更新する
- */
-async function writeRacesGrade(
-  acc,
-  { client, dryRun, cancellationRows, cancellationFetchError },
-  { countWritten, errors },
-) {
-  const { toWrite: racesGradeToWrite, stats: racesGradeStats } =
-    cancellationFetchError
-      ? planWriteAll(acc.racesGradeUpdates)
-      : diffRows(cancellationRows || [], acc.racesGradeUpdates, {
-          keyColumns: ["race_id"],
-          writeMissing: false, // racesに行が無ければUPDATEしても0件
-        });
-  let racesGradeUpdateCount = 0;
-  if (!dryRun) {
-    for (const { race_id, race_grade } of racesGradeToWrite) {
-      const { error } = await client
-        .from("races")
-        .update({ race_grade })
-        .eq("race_id", race_id);
-      if (!error) {
-        racesGradeUpdateCount++;
-        countWritten(race_id);
-      } else {
-        errors.push(error.message);
-      }
-    }
-  }
-  console.log(
-    `  ${dryRun ? "[DRY-RUN] " : ""}${formatSkipSummary("races.race_grade", racesGradeStats)}` +
-      (dryRun ? "" : ` / 更新${racesGradeUpdateCount}件`),
-  );
-}
-
-/**
- * race_conditions を upsert する。flushRaceInfo の書き込みの段（元のまま移した）。
- * 気象の列（観測時刻を含む）は、展示取得と同じ規則で作る（BOA-358）。気象を書ける行と、
- * 書けない行（取得失敗・気象ブロックなし・発走後の観測）は、キーの組み合わせが違うため
- * 別々にupsertする（PostgRESTの一括upsertは、キーの無い行に明示的にNULLを書くため）
- * includeWeather=false（Vercel。気象は展示側）は、全行を「気象なし」の行として書く
- */
-async function writeConditionRows(
-  acc,
-  { client, dryRun, date, startTimeLookup, includeWeather },
-  countRows,
-) {
-  if (acc.conditionsRows.length > 0) {
-    // 気象の列（観測時刻を含む）は、展示取得と同じ規則で作る（BOA-358）。気象を書ける行と、
-    // 書けない行（取得失敗・気象ブロックなし・発走後の観測）は、キーの組み合わせが違うため
-    // 別々にupsertする（PostgRESTの一括upsertは、キーの無い行に明示的にNULLを書くため）
-    // includeWeather=false（Vercel。気象は展示側）は、全行を「気象なし」の行として書く
-    const groups = groupConditionRows(acc, {
-      includeWeather,
-      date,
-      startTimeLookup,
-    });
-    const labelOf = (key) =>
-      `race_conditions${key[0] === "w" ? "" : "（気象なし）"}${key[1] === "d" ? "" : "（日目を残す）"}`;
-    // weather_observed_at 列（マイグレーション069）が未適用でも書き込めるよう、共通の書き込み関数を使う
-    for (const [group, label] of [...groups].map(([key, rows]) => [
-      rows,
-      labelOf(key),
-    ])) {
-      if (group.length > 0) {
-        countRows(
-          await upsertRaceConditions(client, group, {
-            label,
-            dryRun,
-            optionalColumnGroups:
-              PRE_RACE_OPTIONAL_COLUMN_GROUPS.raceConditions,
-          }),
-        );
-      }
-    }
-  }
 }
 
 /**
@@ -263,15 +115,58 @@ async function flushRaceInfo(
 
   // races.cancellation_status / cancellation_check_streak を更新（BOA-254 FR1）
   // entriesRowsが空（対象レース全てが中止疑い等）でも早期returnより前に書き込む
-  const sink = { countWritten, errors };
-  await writeCancellationUpdates(acc, { client, dryRun }, sink);
+  let cancellationUpdateCount = 0;
+  // dry-run では書き込まない（状態が変化するレースのみが対象で、既に変更時のみの更新）
+  for (const {
+    race_id,
+    cancellation_status,
+    cancellation_check_streak,
+  } of dryRun ? [] : acc.cancellationUpdates) {
+    const { error } = await client
+      .from("races")
+      .update({ cancellation_status, cancellation_check_streak })
+      .eq("race_id", race_id);
+    if (!error) {
+      cancellationUpdateCount++;
+      countWritten(race_id);
+    } else {
+      errors.push(error.message);
+      console.error(
+        `❌ races (cancellation_status) 更新エラー [${race_id}]:`,
+        error.message,
+      );
+    }
+  }
+  if (cancellationUpdateCount > 0) {
+    console.log(
+      `  ⚠️ races (cancellation_status): ${cancellationUpdateCount}件`,
+    );
+  }
 
   // races.start_time を、出走表の締切予定時刻に追従させる（N15）。書き込みデータが無くても、時刻の変更は反映する
-  const deadlineUpdateCount = await writeDeadlineUpdates(
-    acc,
-    { client, dryRun },
-    sink,
-  );
+  let deadlineUpdateCount = 0;
+  for (const update of dryRun ? [] : acc.deadlineUpdates.values()) {
+    const { error } = await client
+      .from("races")
+      .update({ start_time: update.start_time })
+      .eq("race_id", update.race_id);
+    if (!error) {
+      deadlineUpdateCount++;
+      countWritten(update.race_id);
+    } else {
+      errors.push(error.message);
+      console.error(
+        `❌ races (start_time) 更新エラー [${update.race_id}]:`,
+        error.message,
+      );
+    }
+  }
+  if (acc.deadlineUpdates.size > 0) {
+    console.log(
+      `  ${dryRun ? "[DRY-RUN] " : ""}🕒 races.start_time: ${[...acc.deadlineUpdates.values()].map((u) => `${u.race_id} ${u.previous}→${u.start_time.slice(0, 5)}`).join(", ")}` +
+        (dryRun ? "" : `（更新${deadlineUpdateCount}件）`),
+    );
+  }
 
   const result = (updated) => ({
     updated,
@@ -307,17 +202,78 @@ async function flushRaceInfo(
   );
 
   // race_conditions upsert
-  await writeConditionRows(
-    acc,
-    { client, dryRun, date, startTimeLookup, includeWeather },
-    countRows,
-  );
+  if (acc.conditionsRows.length > 0) {
+    // 気象の列（観測時刻を含む）は、展示取得と同じ規則で作る（BOA-358）。気象を書ける行と、
+    // 書けない行（取得失敗・気象ブロックなし・発走後の観測）は、キーの組み合わせが違うため
+    // 別々にupsertする（PostgRESTの一括upsertは、キーの無い行に明示的にNULLを書くため）
+    // includeWeather=false（Vercel。気象は展示側）は、全行を「気象なし」の行として書く
+    let weatherByRaceId = new Map();
+    if (includeWeather) {
+      const { rows: weatherRows, stats: weatherStats } = buildWeatherRows(
+        acc.weatherFetched,
+        date,
+        { startTimeLookup },
+      );
+      console.log(`  🌤️ 気象: ${formatWeatherStats(weatherStats)}`);
+      weatherByRaceId = new Map(weatherRows.map((row) => [row.race_id, row]));
+    }
+    // 列の組み合わせ（気象の有無・日目の有無。順延・中止のタブの日は日目の列を含めない。BOA-501）ごとに
+    // 分けて upsert する。同じ組み合わせの行だけをまとめれば、無い列は触られない
+    const groups = new Map();
+    for (const row of acc.conditionsRows) {
+      const weatherRow = weatherByRaceId.get(row.race_id);
+      const merged = weatherRow ? { ...row, ...weatherRow } : row;
+      const key = `${weatherRow ? "w" : "-"}${"series_day" in row ? "d" : "-"}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(merged);
+    }
+    const labelOf = (key) =>
+      `race_conditions${key[0] === "w" ? "" : "（気象なし）"}${key[1] === "d" ? "" : "（日目を残す）"}`;
+    // weather_observed_at 列（マイグレーション069）が未適用でも書き込めるよう、共通の書き込み関数を使う
+    for (const [group, label] of [...groups].map(([key, rows]) => [
+      rows,
+      labelOf(key),
+    ])) {
+      if (group.length > 0) {
+        countRows(
+          await upsertRaceConditions(client, group, {
+            label,
+            dryRun,
+            optionalColumnGroups:
+              PRE_RACE_OPTIONAL_COLUMN_GROUPS.raceConditions,
+          }),
+        );
+      }
+    }
+  }
 
   // races.race_grade を更新（Source of Truth = races テーブル）
-  await writeRacesGrade(
-    acc,
-    { client, dryRun, cancellationRows, cancellationFetchError },
-    sink,
+  // 既存値の取得に失敗している場合（cancellationFetchError）は全件を従来どおり更新する
+  const { toWrite: racesGradeToWrite, stats: racesGradeStats } =
+    cancellationFetchError
+      ? planWriteAll(acc.racesGradeUpdates)
+      : diffRows(cancellationRows || [], acc.racesGradeUpdates, {
+          keyColumns: ["race_id"],
+          writeMissing: false, // racesに行が無ければUPDATEしても0件
+        });
+  let racesGradeUpdateCount = 0;
+  if (!dryRun) {
+    for (const { race_id, race_grade } of racesGradeToWrite) {
+      const { error } = await client
+        .from("races")
+        .update({ race_grade })
+        .eq("race_id", race_id);
+      if (!error) {
+        racesGradeUpdateCount++;
+        countWritten(race_id);
+      } else {
+        errors.push(error.message);
+      }
+    }
+  }
+  console.log(
+    `  ${dryRun ? "[DRY-RUN] " : ""}${formatSkipSummary("races.race_grade", racesGradeStats)}` +
+      (dryRun ? "" : ` / 更新${racesGradeUpdateCount}件`),
   );
 
   return result(true);

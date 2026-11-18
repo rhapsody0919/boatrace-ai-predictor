@@ -9,7 +9,6 @@ import {
   buildRaceEntryRows,
   planDeadlineUpdates,
 } from "./preRaceRows.js";
-import { buildWeatherRows, formatWeatherStats } from "./beforeinfoWeather.js";
 import { computeRaceInfoDigest } from "./scrapeJobs/preRaceDigest.js";
 
 export function createAccumulator() {
@@ -191,35 +190,6 @@ export function accumulateRaceInfo(
   if (raceGrade) {
     acc.racesGradeUpdates.push({ race_id: r.race_id, race_grade: raceGrade });
   }
-}
-
-/**
- * race_conditions の行を、列の組み合わせ（気象の有無・日目の有無。順延・中止のタブの日は日目の列を含めない。BOA-501）
- * ごとに分ける（書かない）。同じ組み合わせの行だけをまとめれば、無い列は触られない。キーは "w"/"-" と "d"/"-"
- */
-export function groupConditionRows(
-  acc,
-  { includeWeather, date, startTimeLookup },
-) {
-  let weatherByRaceId = new Map();
-  if (includeWeather) {
-    const { rows: weatherRows, stats: weatherStats } = buildWeatherRows(
-      acc.weatherFetched,
-      date,
-      { startTimeLookup },
-    );
-    console.log(`  🌤️ 気象: ${formatWeatherStats(weatherStats)}`);
-    weatherByRaceId = new Map(weatherRows.map((row) => [row.race_id, row]));
-  }
-  const groups = new Map();
-  for (const row of acc.conditionsRows) {
-    const weatherRow = weatherByRaceId.get(row.race_id);
-    const merged = weatherRow ? { ...row, ...weatherRow } : row;
-    const key = `${weatherRow ? "w" : "-"}${"series_day" in row ? "d" : "-"}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(merged);
-  }
-  return groups;
 }
 
 /** runForRaces の引数の検査（mode・date） */
