@@ -30,37 +30,25 @@ import {
 import {
   filterUnchangedRows,
   formatSkipSummary,
-  upsertChangedRows,
 } from "../lib/unchangedRows.js";
-import { buildResultWeatherRows } from "../lib/beforeinfoWeather.js";
 import {
   OFFICIAL_FINISH_CODE_COLUMN,
   buildOfficialFinishCodeRows,
 } from "../lib/officialFinishCode.js";
 import { isColumnMissingError } from "../lib/optionalColumns.js";
-import {
-  buildPayoutRows,
-  buildResultExtras,
-  buildTimingRows,
-} from "../lib/raceResultRows.js";
-import { detectResultSchema } from "../lib/raceResultSchema.js";
-import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
-import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
-import { computeResultDigest } from "../lib/scrapeJobs/resultDigest.js";
-import { raceStartInstant } from "../lib/scrapeJobs/time.js";
 // 結果ページの取得・解析・行の組み立ては raceResultPage.js に置く（呼び出し元はこれまでどおりここから import できる）
 import {
   ResultHttpError,
   buildRaceResultRow,
   fetchRaceResultHtml,
-  getRaceResultUrl,
   isResultComplete,
   parseRaceResultHtml,
   scrapeRaceResult,
 } from "../lib/raceResultPage.js";
 // 結果の書き込みとレース単位の入口は raceResultPersist.js に置く
-import { persistRaceResults, runForRaces } from "../lib/raceResultPersist.js";
+import { persistRaceResults } from "../lib/raceResultPersist.js";
+import { runForRaces } from "../lib/raceResultRun.js";
 
 export {
   runForRaces,
