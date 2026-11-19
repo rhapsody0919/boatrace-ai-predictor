@@ -28,27 +28,6 @@ import { register } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import i18next from "i18next";
-import {
-  runBotPageModelScenes1,
-  runBotPageModelScenes2,
-  runBotPageModelScenes3,
-} from "./verifyData/bot-page-model-scenes-1.js";
-import {
-  runBotPageModelScenes4,
-  runBotPageModelScenes5,
-  runBotPageModelScenes6,
-} from "./verifyData/bot-page-model-scenes-2.js";
-import {
-  runBotPageModelScenes7,
-  runBotPageModelScenes8,
-  runBotPageModelScenes9,
-  runBotPageModelScenes10,
-  runBotPageModelScenes11,
-  runBotPageModelScenes12,
-  runBotPageModelScenes13,
-  runBotPageModelScenes14,
-} from "./verifyData/bot-page-model-scenes-3.js";
-import { runBotPageModelScenes15 } from "./verifyData/bot-page-model-scenes-4.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -207,13 +186,39 @@ function installBrowserTraps() {
   };
 }
 
-// ---- 後半の場面（verifyData/bot-page-model-scenes-1.js） ----
-await runBotPageModelScenes1({ read, failures, check });
+// ---- t は ja の i18next（人の画面と同じ common.json・同じ補間の設定） ----
+// i18next 自身は罠を立てる前に読み込む（検査するのは src/ の木だけ）
+const LANGS = ["ja", "en", "ko", "zh-TW"];
+const locales = Object.fromEntries(
+  LANGS.map((lang) => [
+    lang,
+    JSON.parse(read(`src/locales/${lang}/common.json`)),
+  ]),
+);
+const ja = locales.ja;
+const i18n = i18next.createInstance();
+await i18n.init({
+  lng: "ja",
+  resources: { ja: { common: ja } },
+  defaultNS: "common",
+  ns: ["common"],
+  interpolation: { escapeValue: false },
+});
+const t = i18n.t.bind(i18n);
 // 4言語の i18next（人の画面の src/i18n.js と同じ resources・fallbackLng・補間。§1 の全言語のモデルと §5 の描画で使う）
 const i18nAll = i18next.createInstance();
-
-// ---- 後半の場面（verifyData/bot-page-model-scenes-1.js） ----
-await runBotPageModelScenes2({ read, failures, check, i18nAll });
+await i18nAll.init({
+  lng: "ja",
+  resources: Object.fromEntries(
+    LANGS.map((lang) => [lang, { common: locales[lang] }]),
+  ),
+  fallbackLng: { zh: ["zh-TW", "ja"], default: ["ja"] },
+  supportedLngs: LANGS,
+  defaultNS: "common",
+  ns: ["common"],
+  interpolation: { escapeValue: false },
+  react: { useSuspense: false },
+});
 const tOf = (lang) => i18nAll.getFixedT(lang);
 
 const FIXTURE =
@@ -238,9 +243,448 @@ try {
 const { buildTopModel, buildVenueModel, TodayRacesShapeError } = botPageModel;
 const { transformTodayRaces } = todayRacesModule;
 
-// ---- 後半の場面（verifyData/bot-page-model-scenes-1.js・bot-page-model-scenes-2.js） ----
-await runBotPageModelScenes3({ read, failures, check, i18nAll, tOf, fresh, TODAY, buildTopModel, buildVenueModel });
-await runBotPageModelScenes4({ failures, check, checkThrows, browserTouches, fresh, TODAY, restoreBrowserGlobals, buildVenueModel, buildTopModel, TodayRacesShapeError, transformTodayRaces });
+// 2〜4 と全言語のモデルも罠の中で組む（呼んだときに触る依存も落とす）
+for (const lang of LANGS) {
+  const tl = tOf(lang);
+  try {
+    for (const nowHHMM of [undefined, "12:00", "23:59"]) {
+      buildTopModel(fresh(), { t: tl, today: TODAY, nowHHMM, lang });
+    }
+    for (let code = 1; code <= 24; code += 1) {
+      buildVenueModel(fresh(), code, { t: tl, lang, today: TODAY });
+    }
+  } catch (e) {
+    failures.push(`${lang}: モデルを組めない: ${e?.message}`);
+  }
+}
+
+// ---- 2. フィクスチャからトップ ----
+const top = buildTopModel(fresh(), { t, today: TODAY, nowHHMM: "12:00" });
+check("トップ: 開催中の会場数", top.openVenueCount, 13);
+check("トップ: 会場は24件（人のグリッドと同じ）", top.venues.length, 24);
+check(
+  "トップ: 開催中の会場コード",
+  top.venues.filter((v) => v.isOpen).map((v) => v.venueCode),
+  [1, 2, 3, 6, 8, 9, 12, 15, 16, 18, 19, 22, 23],
+);
+check(
+  "トップ: 見出し（UTC で動かしても JST の日付）",
+  top.heading,
+  "🏁 本日開催中のレース 10/11(日)",
+);
+check(
+  "トップ: 最終更新（JST）",
+  top.updatedText,
+  "レースデータ更新: 10/11 21:26",
+);
+check("トップ: title", top.meta.title, ja.meta.title);
+check("トップ: description", top.meta.description, ja.meta.description);
+check("トップ: canonical", top.meta.canonical, "https://www.boat-ai.jp/");
+check("トップ: 桐生のカード", top.venues[0], {
+  venueCode: 1,
+  name: "桐生",
+  isOpen: true,
+  href: "/venue/1",
+  gradeLabel: null,
+  raceTitle: "第８回日本一しょうゆ杯",
+  seriesDayLabel: "5日目",
+});
+check("トップ: 江戸川は G3", top.venues[2].gradeLabel, "G3");
+check("トップ: 非開催の会場は名前だけ", top.venues[3], {
+  venueCode: 4,
+  name: "平和島",
+  isOpen: false,
+});
+
+// BOA-1220: 人の会場カードと同じ日目・表示条件。時計は JST の HH:MM。
+{
+  const labelOf = (json, nowHHMM, code = 1) =>
+    buildTopModel(json, { t, today: TODAY, nowHHMM }).venues
+      .find((v) => v.venueCode === code).seriesDayLabel;
+  check("日目: 下関は初日", labelOf(fresh(), "12:00", 19), "初日");
+  check("日目: 唐津は全レース終了で非表示", labelOf(fresh(), "23:00", 23), null);
+  check("日目: 時計なしは人のカード同様非表示", labelOf(fresh(), undefined), null);
+  const json = fresh();
+  const races = json.data.find((v) => v.place_cd === 1).races;
+  races.forEach((r) => { r.isFinalDay = false; });
+  races.at(-1).isFinalDay = true;
+  check("日目: 後続レースだけ最終日の印", labelOf(json, "12:00"), "最終日");
+  races.forEach((r) => { r.seriesDay = 1; });
+  check("日目: 初日と最終日の印が重なれば初日", labelOf(json, "12:00"), "初日");
+  races.forEach((r) => { r.seriesDay = null; r.isFinalDay = null; });
+  check("日目: 値なし", labelOf(json, "12:00"), null);
+  races.at(-1).seriesDay = 5;
+  check("日目: 後続レースの値で補完", labelOf(json, "12:00"), "5日目");
+  races.forEach((r) => { r.startTime = "12:00"; });
+  check("日目: 締切と同時刻は次レースに含めない", labelOf(json, "12:00"), null);
+  races.at(-1).startTime = null;
+  check("日目: 時刻欠損は次レースに含める", labelOf(json, "12:00"), "5日目");
+  races.forEach((r) => { r.cancellationStatus = "confirmed"; r.result = null; });
+  check("日目: 丸一日中止は時刻欠損でも非表示", labelOf(json, "12:00"), null);
+}
+
+// ---- 2. フィクスチャから会場ページ ----
+const kiryu = buildVenueModel(fresh(), 1, { t });
+check("桐生: レース数", kiryu.races.length, 12);
+check("桐生: 見出し", kiryu.heading, "🏁 桐生 本日のレース・AI予想");
+check("桐生: 開催ありなので emptyText は null", kiryu.emptyText, null);
+check(
+  "桐生: title（一般戦は節タイトルなし）",
+  kiryu.meta.title,
+  ja.venueRaceList.metaTitle.replace("{{venue}}", "桐生"),
+);
+check(
+  "桐生: canonical",
+  kiryu.meta.canonical,
+  "https://www.boat-ai.jp/venue/1",
+);
+
+// ---- 2. 会場ページの title（予想・出走表）と常設の要約2行（BOA-1189 GS02-b）。24場すべて ----
+{
+  const { venueSummaryLines } = await import("../../src/utils/venueSummary.js");
+  // 数字は月1回作り直すので、期待の文は静的な値から組む（文の形と、高い・はっきりしないの出し分けを見る）
+  const { VENUE_SUMMARY_STATS: S } =
+    await import("../../src/data/venueSummaryStats.js");
+  const c1 = (b) => b.courses[0].rate.toFixed(1);
+  const n = (x) => x.toLocaleString("en-US");
+  const nat = `全国（${n(S.national.races)}レース）の${c1(S.national)}%`;
+  const to = S.to.replaceAll("-", "/");
+  for (let code = 1; code <= 24; code += 1) {
+    const model = buildVenueModel(fresh(), code, { t });
+    const name = ja.venues[code];
+    check(
+      `会場${code}: title は「{会場}競艇の予想・出走表」で始まる`,
+      model.meta.title.startsWith(`${name}競艇の予想・出走表`),
+      true,
+    );
+    const lines = venueSummaryLines(t, code);
+    check(
+      `会場${code}: 要約2行は人の画面と同じ関数の文（開催なしの日も出す）`,
+      model.summaryLines,
+      [lines.course, lines.techniques],
+    );
+    check(
+      `会場${code}: 要約の1行目は会場名と直近1年で始まる`,
+      model.summaryLines[0].startsWith(`${name}の直近1年（`),
+      true,
+    );
+  }
+  check(
+    "若松: 要約の1行目（全国より高い会場）",
+    buildVenueModel(fresh(), 20, { t }).summaryLines[0],
+    `若松の直近1年（${to}まで、${n(S.venues[20].races)}レース）、1コースの1着率は${c1(S.venues[20])}%で、${nat}より高い`,
+  );
+  check(
+    "多摩川: 要約の1行目（全国との差が確かめられない会場）",
+    buildVenueModel(fresh(), 5, { t }).summaryLines[0],
+    `多摩川の直近1年（${to}まで、${n(S.venues[5].races)}レース）、1コースの1着率は${c1(S.venues[5])}%。${nat}との差ははっきりしない`,
+  );
+}
+check("桐生: 1R", kiryu.races[0], {
+  raceNumber: 1,
+  venueName: "桐生",
+  raceLabel: "1R",
+  gradeLabel: null,
+  cancelledLabel: null,
+  deadline: { label: "締切予定時刻", value: "15:19" },
+  href: "/race/2026-10-11-01-01",
+});
+check(
+  "桐生: 締切時刻（レース番号順）",
+  kiryu.races.map((r) => r.deadline?.value),
+  [
+    "15:19",
+    "15:47",
+    "16:17",
+    "16:47",
+    "17:17",
+    "17:48",
+    "18:17",
+    "18:48",
+    "19:16",
+    "19:48",
+    "20:17",
+    "20:45",
+  ],
+);
+check(
+  "江戸川: グレード",
+  buildVenueModel(fresh(), 3, { t }).races[0].gradeLabel,
+  "G3",
+);
+
+// レース番号が逆順で来ても、人の画面と同じくレース番号順に並べる
+{
+  const json = fresh();
+  json.data[0].races.reverse();
+  check(
+    "並び: レース番号順",
+    buildVenueModel(json, 1, { t }).races.map((r) => r.raceNumber),
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+  );
+}
+
+// 中止（その日のフィクスチャには無いので、1レースだけ書き換えて確かめる）
+{
+  const json = fresh();
+  const r3 = json.data[0].races.find((r) => r.raceNo === 3);
+  r3.cancellationStatus = "confirmed";
+  r3.result = null;
+  const r4 = json.data[0].races.find((r) => r.raceNo === 4);
+  r4.cancellationStatus = "confirmed"; // 結果があるので中止にしない（BOA-525）
+  const r5 = json.data[0].races.find((r) => r.raceNo === 5);
+  r5.cancellationStatus = "tentative"; // 暫定は中止にしない
+  r5.result = null;
+  const model = buildVenueModel(json, 1, { t });
+  check("中止: confirmed で結果なし", model.races[2].cancelledLabel, "中止");
+  check(
+    "中止: confirmed でも結果があれば中止にしない",
+    model.races[3].cancelledLabel,
+    null,
+  );
+  check("中止: tentative は中止にしない", model.races[4].cancelledLabel, null);
+}
+
+// SG・G1 開催中は title・description に節タイトル（NFKC）が入る（人のページと同じ関数）
+{
+  const json = fresh();
+  json.data
+    .find((v) => v.place_cd === 3)
+    .races.forEach((r) => {
+      r.raceGrade = "G1";
+    });
+  const model = buildVenueModel(json, 3, { t });
+  check(
+    "G1: title に節タイトル",
+    model.meta.title,
+    ja.venueRaceList.metaTitleSeries
+      .replace("{{venue}}", "江戸川")
+      .replace("{{series}}", "オールレディース 江戸川女王決定戦KIRINCUP"),
+  );
+  check("G1: カードのグレード", model.races[0].gradeLabel, "G1");
+}
+
+// ---- 3. 0件と壊れた入力 ----
+{
+  const empty = {
+    success: true,
+    scrapedAt: "2026-10-11T00:00:00+00:00",
+    data: [],
+  };
+  const emptyTop = buildTopModel(empty, { t, today: TODAY });
+  check("0件: 開催中の会場は0", emptyTop.openVenueCount, 0);
+  check(
+    "0件: 24会場とも非開催",
+    emptyTop.venues.every((v) => !v.isOpen),
+    true,
+  );
+  const emptyVenue = buildVenueModel(empty, 1, { t });
+  check(
+    "0件: 会場ページは開催なしの文言",
+    emptyVenue.emptyText,
+    "本日、このレース場での開催はありません",
+  );
+  check("0件: 会場ページのレースは空", emptyVenue.races, []);
+  check(
+    "開催していない会場（フィクスチャの平和島）も開催なし",
+    buildVenueModel(fresh(), 4, { t }).emptyText,
+    ja.home.noRacesToday,
+  );
+}
+const BROKEN = [
+  ["null", null],
+  ["文字列", "<html>"],
+  ["success が false", { success: false, data: [] }],
+  ["success が無い", { data: [] }],
+  ["data が無い", { success: true }],
+  ["data がオブジェクト", { success: true, data: {} }],
+  ["会場コードが無い", { success: true, data: [{ races: [] }] }],
+  [
+    "会場コードが範囲外",
+    { success: true, data: [{ place_cd: 99, races: [] }] },
+  ],
+  ["races が無い", { success: true, data: [{ place_cd: 1 }] }],
+  [
+    "raceNo が無い",
+    { success: true, data: [{ place_cd: 1, races: [{ startTime: "10:00" }] }] },
+  ],
+];
+for (const [label, input] of BROKEN) {
+  checkThrows(
+    `壊れた入力（${label}）: トップ`,
+    () => buildTopModel(input, { t, today: TODAY }),
+    "TodayRacesShapeError",
+  );
+  checkThrows(
+    `壊れた入力（${label}）: 会場`,
+    () => buildVenueModel(input, 1, { t }),
+    "TodayRacesShapeError",
+  );
+}
+check(
+  "TodayRacesShapeError を公開している",
+  typeof TodayRacesShapeError,
+  "function",
+);
+checkThrows(
+  "会場コード 0 は RangeError",
+  () => buildVenueModel(fresh(), 0, { t }),
+  "RangeError",
+);
+checkThrows(
+  "会場コード 25 は RangeError",
+  () => buildVenueModel(fresh(), 25, { t }),
+  "RangeError",
+);
+checkThrows(
+  "会場コード文字列は RangeError",
+  () => buildVenueModel(fresh(), "01", { t }),
+  "RangeError",
+);
+
+// ---- 4. 選手名・オッズ等が入らない ----
+{
+  const json = fresh();
+  const racerNames = json.data.flatMap((v) =>
+    v.races.flatMap((r) => (r.racers || []).map((p) => p.name)),
+  );
+  check(
+    "フィクスチャに選手名がある（検査が空振りしない）",
+    racerNames.length > 0,
+    true,
+  );
+  const models = [
+    buildTopModel(fresh(), { t, today: TODAY }),
+    ...json.data.map((v) => buildVenueModel(fresh(), v.place_cd, { t })),
+  ];
+  const text = JSON.stringify(models);
+  const leakedNames = racerNames.filter((n) => text.includes(n));
+  check("選手名がモデルに無い", leakedNames.slice(0, 3), []);
+  const FORBIDDEN_KEYS = [
+    "racers",
+    "players",
+    "odds",
+    "payout",
+    "payouts",
+    "result",
+    "rank1",
+    "volatility",
+    "turnPrediction",
+    "winRate",
+    "motor2Rate",
+  ];
+  const keys = new Set();
+  const collect = (v) => {
+    if (Array.isArray(v)) v.forEach(collect);
+    else if (v && typeof v === "object") {
+      for (const [k, x] of Object.entries(v)) {
+        keys.add(k);
+        collect(x);
+      }
+    }
+  };
+  collect(models);
+  check(
+    "入れない項目のキーがモデルに無い",
+    FORBIDDEN_KEYS.filter((k) => keys.has(k)),
+    [],
+  );
+}
+
+// transformTodayRaces は人の画面と同じ形（success・data・scrapedAt、会場名の補完、荒れ度の補助値）
+{
+  const out = transformTodayRaces(
+    {
+      success: true,
+      scrapedAt: "x",
+      data: [
+        {
+          place_cd: 5,
+          races: [{ raceNo: 1, placeCd: 5, volatility: { level: "high" } }],
+        },
+      ],
+    },
+    { 5: 0.5 },
+  );
+  check(
+    "transformTodayRaces: 会場名を会場コードから補う",
+    out.data[0].placeName,
+    "多摩川",
+  );
+  check(
+    "transformTodayRaces: 荒れ度に会場の1コース勝率を足す",
+    out.data[0].races[0].volatility,
+    { level: "high", venueWinRate: 0.5 },
+  );
+  check("transformTodayRaces: scrapedAt はそのまま", out.scrapedAt, "x");
+  check(
+    "transformTodayRaces: inCaution（BOA-822、RPC 157）は無ければ null にそろえる",
+    out.data[0].races[0].inCaution,
+    null,
+  );
+  const ic = { pct: 65, level: "high", n: 34842 };
+  check(
+    "transformTodayRaces: inCaution はレース直下にそのまま通す",
+    transformTodayRaces(
+      {
+        data: [
+          { place_cd: 5, races: [{ raceNo: 1, placeCd: 5, inCaution: ic }] },
+        ],
+      },
+      {},
+    ).data[0].races[0].inCaution,
+    ic,
+  );
+}
+
+// BOA-1219: 今日のレースで対象を決め、初日は race_series を使う。
+{
+  const { seriesOfDate, seriesCoveringDate, SERIES_POSTPONE_TOLERANCE_DAYS } =
+    await import("../../src/utils/meetPageModel.js");
+  const row = { start_date: "2026-10-06", end_date: "2026-10-11", title: "節", grade: "G1" };
+  check("順延3日", seriesOfDate([row], "2026-10-14"), row);
+  check("順延4日", seriesOfDate([row], "2026-10-15"), null);
+  check("未来の節・空", seriesOfDate([row], "2026-10-05"), null);
+  const older = { ...row, start_date: "2026-09-01" };
+  check("初日降順の先頭", seriesOfDate([older, row], "2026-10-11"), row);
+  check("画面とボットで順延許容日数を共有", SERIES_POSTPONE_TOLERANCE_DAYS, 3);
+  // getSeriesOfDate の lte・降順・limit(1) と、その後の共通判定に一致する。
+  const rows = [
+    row,
+    { ...row, start_date: "2026-10-20", end_date: "2026-10-25" },
+    older,
+  ];
+  const before = JSON.stringify(rows);
+  for (const date of [
+    "2026-08-31", "2026-10-06", "2026-10-11",
+    "2026-10-14", "2026-10-15", "2026-10-20",
+  ]) {
+    const latest = rows
+      .filter((r) => r.start_date <= date)
+      .sort((a, b) => b.start_date.localeCompare(a.start_date))[0];
+    check(
+      `${date}: getSeriesOfDate と同じ行を返す`,
+      seriesOfDate(rows, date) === seriesCoveringDate(latest, date),
+      true,
+    );
+  }
+  check("空の節一覧", seriesOfDate([], TODAY), null);
+  check("節一覧を並べ替えない", JSON.stringify(rows), before);
+  for (const lang of ["ja", "en", "zh-TW", "ko"]) {
+    const json = fresh();
+    json.data.find((v) => v.place_cd === 1).races.forEach((r) => { r.raceGrade = "G1"; r.raceTitle = "公式の節"; });
+    const options = { t, lang, today: "2026-10-11", seriesRows: [row] };
+    const model = buildVenueModel(json, 1, options);
+    check(`${lang}: 節リンク`, model.meetBanner, {
+      href: `${lang === "ja" ? "" : `/${lang}`}/venue/1/meet/2026-10-06`,
+      name: "G1 公式の節", inProgress: t("venueMeetBanner.inProgress"), link: t("venueMeetBanner.link"),
+    });
+    check("行なし", buildVenueModel(json, 1, { ...options, seriesRows: [] }).meetBanner, null);
+    check("期限切れ", buildVenueModel(json, 1, { ...options, today: "2026-10-15" }).meetBanner, null);
+    for (const race of json.data.find((v) => v.place_cd === 1).races) race.raceTitle = "グランプリ";
+    check("対象外", buildVenueModel(json, 1, options).meetBanner, null);
+  }
+}
 
 
 // ---- 1. の続き: 木の全モジュールの export された関数を、罠の中で全部呼ぶ ----
@@ -318,24 +762,29 @@ const treeUrls = [...new Set(globalThis[TREE_KEY] ?? [])];
   await new Promise((r) => setTimeout(r, 100));
 }
 
-// ---- 後半の場面（verifyData/bot-page-model-scenes-2.js） ----
-runBotPageModelScenes5({ failures, check, checkThrows, browserTouches, fresh, TODAY, restoreBrowserGlobals, buildVenueModel, buildTopModel, TodayRacesShapeError, transformTodayRaces });
+// ---- 1. の締め: 罠を外し、触った依存・握りつぶされた違反が無いかを見る ----
+restoreBrowserGlobals();
 checked += 1;
-
-// ---- 後半の場面（verifyData/bot-page-model-scenes-2.js） ----
-runBotPageModelScenes6({ failures, check, checkThrows, browserTouches, fresh, TODAY, restoreBrowserGlobals, buildVenueModel, buildTopModel, TodayRacesShapeError, transformTodayRaces });
+for (const touch of new Set(browserTouches))
+  failures.push(`botPageModel.js の木: ${touch}`);
 checked += 1;
-
-// ---- 後半の場面（verifyData/bot-page-model-scenes-3.js） ----
-runBotPageModelScenes7({ SRC_URL, srcUrl, failures, check, ENV_HIT_KEY, guardState, i18nAll, tOf, fresh, buildVenueModel, transformTodayRaces, renderAt });
+for (const file of new Set(globalThis[ENV_HIT_KEY] ?? [])) {
+  failures.push(`${file}: ブラウザ専用の依存（import.meta.env）を使っている`);
+}
 checked += 1;
-
-// ---- 後半の場面（verifyData/bot-page-model-scenes-3.js） ----
-runBotPageModelScenes8({ SRC_URL, srcUrl, failures, check, ENV_HIT_KEY, guardState, i18nAll, tOf, fresh, buildVenueModel, transformTodayRaces, renderAt });
+if (Atomics.load(guardState, 1) > 0) {
+  failures.push(
+    `botPageModel.js の木: react・supabaseClient の import が ${Atomics.load(guardState, 1)} 件（握りつぶされても落とす）`,
+  );
+}
 const treeFileCount = treeUrls.length;
-
-// ---- 後半の場面（verifyData/bot-page-model-scenes-3.js） ----
-runBotPageModelScenes9({ SRC_URL, srcUrl, failures, check, ENV_HIT_KEY, guardState, i18nAll, tOf, fresh, buildVenueModel, transformTodayRaces, treeFileCount, renderAt });
+// 木を観測できていること（hook が働かず空振りしていない）
+check(
+  "§1: import の木を観測できている（10ファイル以上）",
+  treeFileCount >= 10,
+  true,
+);
+Atomics.store(guardState, 0, 1);
 
 // ---- 5. 人の画面が同じ関数を使っている（描いて確かめる） ----
 // renderJsx の hook（vite の変換・拡張子の補い）は §1 の後に入れる（§1 を甘くしないため）。
@@ -346,20 +795,121 @@ const { renderJsx } = await import("../lib/renderJsx.js");
 const React = (await import("react")).default;
 const h = React.createElement;
 const routerUrl = new URL(import.meta.resolve("react-router-dom"));
+// 1回描いて renderJsx の hook と jsdom を入れてから、記録係の hook を重ねる（順を逆にすると拡張子の無い import が素通りする）
+await (
+  await renderJsx(routerUrl, { children: null }, { exportName: "MemoryRouter" })
+).unmount();
 
-// ---- 後半の場面（verifyData/bot-page-model-scenes-3.js） ----
-await runBotPageModelScenes10({ SRC_URL, srcUrl, failures, check, ENV_HIT_KEY, guardState, i18nAll, tOf, fresh, buildVenueModel, transformTodayRaces, treeFileCount, renderJsx, routerUrl, renderAt });
+const FAKE_KEY = "__verifyBotPageModelSupabase";
 const SPY_KEY = "__verifyBotPageModelCalls";
-
-// ---- 後半の場面（verifyData/bot-page-model-scenes-3.js） ----
-runBotPageModelScenes11({ SRC_URL, srcUrl, failures, check, ENV_HIT_KEY, guardState, i18nAll, tOf, fresh, buildVenueModel, transformTodayRaces, treeFileCount, renderJsx, routerUrl, SPY_KEY, renderAt });
+const SPIES = {
+  "utils/pageMeta.js": ["getTopPageMeta", "getTodayVenuePageMeta"],
+  "utils/raceListDisplay.js": [
+    "venueCardHeadline",
+    "raceNumberLabel",
+    "deadlineValueText",
+  ],
+  "utils/todayRaces.js": ["transformTodayRaces"],
+};
+const SWAP_HOOKS = `
+let src;
+let spies;
+export function initialize(data) {
+  src = data.src;
+  spies = data.spies;
+}
+const asModule = (code) => ({ url: "data:text/javascript," + encodeURIComponent(code), shortCircuit: true });
+export async function resolve(specifier, context, nextResolve) {
+  const resolved = await nextResolve(specifier, context);
+  const parent = context.parentURL ?? "";
+  if (resolved.url === src + "services/supabaseClient.js") {
+    return asModule("export const supabase = globalThis.${FAKE_KEY};");
+  }
+  const target = resolved.url.startsWith(src) ? resolved.url.slice(src.length) : null;
+  if (target && spies[target] && parent.startsWith(src)) {
+    const importer = JSON.stringify(parent.slice(src.length));
+    const real = JSON.stringify(resolved.url);
+    const lines = ["import * as real from " + real + ";", "export * from " + real + ";"];
+    for (const name of spies[target]) {
+      lines.push(
+        "export function " + name + "(...args) { const result = real." + name + "(...args);" +
+          " (globalThis.${SPY_KEY} ??= []).push({ importer: " + importer + ", name: " + JSON.stringify(name) + ", args, result });" +
+          " return result; }",
+      );
+    }
+    return asModule(lines.join("\\n"));
+  }
+  return resolved;
+}
+`;
+register(`data:text/javascript,${encodeURIComponent(SWAP_HOOKS)}`, {
+  data: { src: SRC_URL, spies: SPIES },
+});
 const callsOf = (importer, name) =>
   (globalThis[SPY_KEY] ?? []).filter(
     (c) => c.importer === importer && c.name === name,
   );
 
-// ---- 後半の場面（verifyData/bot-page-model-scenes-3.js） ----
-await runBotPageModelScenes12({ SRC_URL, srcUrl, failures, check, ENV_HIT_KEY, guardState, i18nAll, tOf, fresh, buildVenueModel, transformTodayRaces, treeFileCount, renderJsx, routerUrl, SPY_KEY, callsOf, renderAt });
+// 偽の supabase（どの問い合わせも空の結果。auth 等の同期の呼び出しも同じ物を返す）
+const fakeResult = { data: [], error: null, count: 0 };
+const fakeChain = new Proxy(function fake() {}, {
+  get(_, key) {
+    if (key === "then") {
+      return (resolve, reject) =>
+        Promise.resolve(fakeResult).then(resolve, reject);
+    }
+    return typeof key === "symbol" ? undefined : fakeChain;
+  },
+  apply: () => fakeChain,
+});
+globalThis[FAKE_KEY] = fakeChain;
+
+// 通信はしない（fetch を差し替える）。/api/races/today はフィクスチャ、/api/predictions/:date はフィクスチャから組んだ Edge API の形
+// （江戸川だけ G1 にして、会場ページの title に節タイトルが入る場合も見る）
+const withEdogawaG1 = () => {
+  const json = fresh();
+  json.data
+    .find((v) => v.place_cd === 3)
+    .races.forEach((r) => {
+      r.raceGrade = "G1";
+    });
+  return json;
+};
+const pad2 = (n) => String(n).padStart(2, "0");
+const predictionsOf = (date) => ({
+  date,
+  races: withEdogawaG1().data.flatMap((v) =>
+    v.races.map((r) => ({
+      raceId: `${date}-${pad2(v.place_cd)}-${pad2(r.raceNo)}`,
+      venueCode: v.place_cd,
+      raceNumber: r.raceNo,
+      startTime: r.startTime,
+      raceGrade: r.raceGrade ?? null,
+      raceTitle: r.raceTitle ?? null,
+      raceStage: r.raceStage ?? null,
+      cancellationStatus: r.cancellationStatus ?? null,
+      seriesDay: r.seriesDay ?? null,
+      isFinalDay: r.isFinalDay ?? null,
+      entries: [],
+      predictions: {},
+    })),
+  ),
+});
+globalThis.fetch = async (input) => {
+  const url = String(input?.url ?? input);
+  if (url === "/api/races/today") return Response.json(fresh());
+  const m = url.match(/^\/api\/predictions\/(\d{4}-\d{2}-\d{2})(\?|$)/);
+  if (m) return Response.json(predictionsOf(m[1]));
+  return new Response("{}", { status: 404 }); // 他の補助の取得（会場カードの傾向等）は無いものとして描く
+};
+// 部品の console.log 等は黙らせる（失敗の文だけを出す。報告の前に戻す）
+const consoleSaved = { ...console };
+for (const level of ["log", "info", "debug", "warn", "error"]) {
+  console[level] = () => {};
+}
+
+const { setI18n } = await import("react-i18next");
+setI18n(i18nAll);
 const { Routes, Route } = await import("react-router-dom");
 
 /** 部品を MemoryRouter の中に描き、ready() が真になるまで待つ（最長 10 秒。負荷の高い CI でも待てるように） */
@@ -394,9 +944,29 @@ const headMeta = (document) => ({
     document.querySelector('link[rel="canonical"]')?.getAttribute("href") ??
     null,
 });
+const texts = (root, selector) =>
+  [...root.querySelectorAll(selector)].map((el) => el.textContent);
 
-// ---- 後半の場面（verifyData/bot-page-model-scenes-3.js） ----
-await runBotPageModelScenes13({ SRC_URL, srcUrl, failures, check, ENV_HIT_KEY, guardState, i18nAll, tOf, fresh, buildVenueModel, transformTodayRaces, treeFileCount, renderJsx, routerUrl, SPY_KEY, callsOf, renderAt, headMeta });
+// 5a. データ層: 公開の入口（scheduleQueries の getRaces。殻 dataService.js は RA40 BOA-1673 で消す）が todayRaces.js の transformTodayRaces を呼び、同じ値を返す
+{
+  globalThis[SPY_KEY] = [];
+  const { getRaces } = await import(srcUrl("services/scheduleQueries.js"));
+  const out = await getRaces();
+  check(
+    "データ層: getRaces は transformTodayRaces と同じ値（会場の1コース勝率は偽の DB で空）",
+    out,
+    transformTodayRaces(fresh(), {}),
+  );
+  const calls = (globalThis[SPY_KEY] ?? []).filter(
+    (c) =>
+      c.importer.startsWith("services/") && c.name === "transformTodayRaces",
+  );
+  check(
+    "データ層: getRaces が todayRaces.js の transformTodayRaces を呼んでいる（自前の定義で二重にしない）",
+    calls.some((c) => JSON.stringify(c.result) === JSON.stringify(out)),
+    true,
+  );
+}
 
 // 5b. トップ（VenueGridPage と、その中の VenueGridCard）。ja と en で描く
 {
@@ -474,9 +1044,99 @@ await runBotPageModelScenes13({ SRC_URL, srcUrl, failures, check, ENV_HIT_KEY, g
   }
 }
 
-// ---- 後半の場面（verifyData/bot-page-model-scenes-3.js・bot-page-model-scenes-4.js） ----
-await runBotPageModelScenes14({ SRC_URL, srcUrl, failures, check, ENV_HIT_KEY, guardState, i18nAll, tOf, fresh, buildVenueModel, transformTodayRaces, treeFileCount, renderJsx, routerUrl, SPY_KEY, callsOf, renderAt, headMeta });
-runBotPageModelScenes15({ report });
+// 5c. 会場ページ（VenueRaceListPage と、その中の RaceCard）。一般戦の桐生と G1 にした江戸川、ja と en
+{
+  const { default: VenueRaceListPage } = await import(
+    srcUrl("pages/VenueRaceListPage.jsx")
+  );
+  for (const [lang, code] of [
+    ["ja", 1],
+    ["ja", 3],
+    ["en", 1],
+  ]) {
+    await i18nAll.changeLanguage(lang);
+    const model = buildVenueModel(withEdogawaG1(), code, {
+      t: tOf(lang),
+      lang,
+    });
+    const view = await renderAt(
+      lang === "ja" ? `/venue/${code}` : `/${lang}/venue/${code}`,
+      ["/venue/:venueCode", "/:lang/venue/:venueCode"],
+      VenueRaceListPage,
+      (c) => c.querySelectorAll(".race-card").length === model.races.length,
+    );
+    const label = `会場${code}（${lang}）`;
+    check(
+      `${label}: title・description・canonical はモデルと同じ`,
+      headMeta(view.document),
+      model.meta,
+    );
+    const metaCalls = callsOf(
+      "pages/VenueRaceListPage.jsx",
+      "getTodayVenuePageMeta",
+    );
+    check(
+      `${label}: getTodayVenuePageMeta で title 等を組む`,
+      metaCalls.some(
+        (c) =>
+          c.args[1] === code &&
+          c.args[3] === lang &&
+          JSON.stringify(c.result) === JSON.stringify(model.meta),
+      ),
+      true,
+    );
+    const cards = view.container.querySelectorAll(".race-card");
+    check(
+      `${label}: レースカードのレース番号`,
+      texts(view.container, ".race-card .race-number"),
+      model.races.map((r) => r.raceLabel),
+    );
+    check(
+      `${label}: レースカードの締切`,
+      [...cards].map((c) => [
+        c.querySelector(".race-info .info-item .label")?.textContent ?? null,
+        c.querySelector(".race-info .info-item .value")?.textContent ?? null,
+      ]),
+      model.races.map((r) => [
+        r.deadline?.label ?? null,
+        r.deadline?.value ?? null,
+      ]),
+    );
+    const numbers = model.races.map((r) => r.raceNumber);
+    check(
+      `${label}: RaceCard が raceNumberLabel(race.raceNumber) で書く`,
+      numbers.every((n) =>
+        callsOf("components/race/RaceCard.jsx", "raceNumberLabel").some(
+          (c) => c.args[0] === n,
+        ),
+      ),
+      true,
+    );
+    const deadlineCalls = callsOf(
+      "components/race/RaceCard.jsx",
+      "deadlineValueText",
+    );
+    check(
+      `${label}: RaceCard が deadlineValueText(t, race.startTime) で書く`,
+      model.races.every((r) =>
+        deadlineCalls.some(
+          (c) =>
+            typeof c.args[0] === "function" &&
+            c.result === r.deadline?.value &&
+            c.args[1] ===
+              fresh()
+                .data.find((v) => v.place_cd === code)
+                .races.find((x) => x.raceNo === r.raceNumber).startTime,
+        ),
+      ),
+      true,
+    );
+    await view.unmount();
+  }
+}
+
+Object.assign(console, consoleSaved);
+report();
 console.log(
   `✅ verify-bot-page-model: ${checked}件すべて通過（import の経路 ${treeFileCount} ファイル）`,
 );
