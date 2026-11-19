@@ -1987,6 +1987,11 @@
       "guards": "会場のモーターの順位と並べ替え（同値は同じ順位・値なしは末尾・機番で並べたときは2連率の順位・浜名湖と宮島を出さない一覧）の回帰と変異検証（BOA-428）"
     },
     {
+      "script": "verify-venue-motor-snapshot-make.js",
+      "tier": "ci",
+      "guards": "src/services/motorQueries3.js の getVenueMotorSnapshot が venue_motor_stats の行を makeMotorStat に通す（DM1x motor のつなぎ、A 群）。select は9列のまま、正の行は凍結、破れは error・fetchFailed（キャッシュしない）であること"
+    },
+    {
       "script": "verify-venue-motor-stats-drift-detection.js",
       "tier": "ci",
       "guards": "会場別モーター成績の構造変化検知（scripts/lib/venueMotorStats/driftHealth.js、BOA-285）"
