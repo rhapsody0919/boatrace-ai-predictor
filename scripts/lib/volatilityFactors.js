@@ -66,6 +66,109 @@ export function boat1StReason(boat1ST) {
   return `${label}は標準（${v}）`;
 }
 
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+
+/** 会場の重み（会場別の上書きを既定に重ねる） */
+function volatilityWeights(venueCode) {
+  const venueOverride = VENUE_VOLATILITY_WEIGHTS[venueCode] || {};
+  return {
+    winRate: venueOverride.winRate ?? 0.42,
+    avgST: venueOverride.avgST ?? 0.38,
+    nigeProb: 0.12,
+    sigma: venueOverride.sigma ?? 0.05,
+    venue: 0.03,
+  };
+}
+
+function boat1WinRateReason(boat1WinRate) {
+  const v = boat1WinRate.toFixed(2);
+  if (boat1WinRate < 4.0)
+    return `1号艇の全国勝率が非常に低い（${v}）→ イン崩れリスク高`;
+  if (boat1WinRate < 5.5)
+    return `1号艇の全国勝率がやや低い（${v}）→ 崩れやすい`;
+  if (boat1WinRate >= 7.0)
+    return `1号艇の全国勝率が非常に高い（${v}）→ 逃げ鉄板`;
+  if (boat1WinRate >= 6.0) return `1号艇の全国勝率が高い（${v}）→ 逃げ安定`;
+  return `1号艇の全国勝率は標準（${v}）`;
+}
+
+function nigeReason(nigeProb) {
+  const nigePct = (nigeProb * 100).toFixed(0);
+  if (nigeProb < 0.3)
+    return `AI逃げ確率が非常に低い（${nigePct}%）→ まくり・差しが有力`;
+  if (nigeProb < 0.43)
+    return `AI逃げ確率が低い（${nigePct}%）→ まくり・差し有力`;
+  if (nigeProb >= 0.75)
+    return `AI逃げ確率が非常に高い（${nigePct}%）→ 逃げ鉄板`;
+  if (nigeProb >= 0.6) return `AI逃げ確率が高い（${nigePct}%）→ 逃げ安定`;
+  return `AI逃げ確率は標準（${nigePct}%）`;
+}
+
+function sigmaReason(stddev) {
+  const v = stddev.toFixed(2);
+  if (stddev >= 1.5)
+    return `選手間の実力差が大きい（σ=${v}）→ 外枠に実力者の可能性`;
+  if (stddev >= 1.0) return `選手間の実力差がやや大きい（σ=${v}）→ 波乱の要因`;
+  if (stddev < 0.5) return `選手間の実力が拮抗（σ=${v}）→ 接戦になりやすい`;
+  return `選手間の実力差は標準（σ=${v}）`;
+}
+
+/** A. 1号艇の全国勝率 — 低いほどイン崩れしやすい */
+function winRateFactor(racers, weight) {
+  const boat1 = racers.find((r) => r.number === 1);
+  const boat1WinRate = boat1 ? parseFloat(boat1.winRate) : null;
+  if (boat1WinRate == null) return null;
+  const value = 1 - clamp01(boat1WinRate / 8.5);
+  return { value, weight, reason: boat1WinRateReason(boat1WinRate) };
+}
+
+/** B. 1号艇の平均ST（当サイトに蓄積した全期間）— 遅いほどイン崩れしやすい */
+function avgStFactor(boat1ST, weight) {
+  if (boat1ST == null) return null;
+  const value = clamp01((boat1ST - 0.07) / (0.34 - 0.07));
+  return { value, weight, reason: boat1StReason(boat1ST) };
+}
+
+/** C. AI逃げ確率 — 低いほどイン崩れしやすい */
+function nigeFactor(turnPrediction, weight) {
+  const nigeProb = turnPrediction?.distribution?.nige ?? null;
+  if (nigeProb == null) return null;
+  const value = 1 - clamp01((nigeProb - 0.2) / (0.99 - 0.2));
+  return { value, weight, reason: nigeReason(nigeProb) };
+}
+
+/** D. 選手間の勝率σ — 高いほどイン崩れしやすい */
+function sigmaFactor(racers, weight) {
+  const winRates = racers
+    .map((r) => parseFloat(r.winRate))
+    .filter((v) => !isNaN(v));
+  if (winRates.length < 4) return null;
+  const stddev = calculateStdDev(winRates);
+  const value = clamp01((stddev - 0.06) / (2.75 - 0.06));
+  return { value, weight, reason: sigmaReason(stddev) };
+}
+
+/** E. 会場の1コース勝率 — 低いほどイン崩れしやすい。
+ * 動的実績値（直近90日、venueWinRateCache）を優先し、未取得時は静的定数にフォールバック */
+function venueFactor(venueCode, venueWinRateCache, weight) {
+  const dynamicVenueRate = venueWinRateCache[parseInt(venueCode, 10)] ?? null;
+  const venueWinRate =
+    dynamicVenueRate ?? VENUE_1COURSE_WIN_RATE[venueCode] ?? VENUE_1COURSE_AVG;
+  return { value: 1 - clamp01((venueWinRate - 0.43) / (0.62 - 0.43)), weight };
+}
+
+/** 理由の上位3つ（0.5 からの離れ×重みの大きい順） */
+function topReasons(factors) {
+  return [...factors]
+    .filter((f) => f.reason)
+    .sort(
+      (a, b) =>
+        Math.abs(b.value - 0.5) * b.weight - Math.abs(a.value - 0.5) * a.weight,
+    )
+    .slice(0, 3)
+    .map((f) => f.reason);
+}
+
 export function calculateVolatilityComposite(
   racers,
   placeCd,
@@ -82,91 +185,16 @@ export function calculateVolatilityComposite(
   }
 
   const venueCode = String(placeCd).padStart(2, "0");
-  const venueOverride = VENUE_VOLATILITY_WEIGHTS[venueCode] || {};
-
-  const W = {
-    winRate: venueOverride.winRate ?? 0.42,
-    avgST: venueOverride.avgST ?? 0.38,
-    nigeProb: 0.12,
-    sigma: venueOverride.sigma ?? 0.05,
-    venue: 0.03,
-  };
-
-  const factors = []; // { value, weight, reason }
-
-  // A. 1号艇の全国勝率 — 低いほどイン崩れしやすい
-  const boat1 = racers.find((r) => r.number === 1);
-  const boat1WinRate = boat1 ? parseFloat(boat1.winRate) : null;
-  if (boat1WinRate != null) {
-    const norm = 1 - Math.min(1, Math.max(0, boat1WinRate / 8.5));
-    let reason;
-    if (boat1WinRate < 4.0)
-      reason = `1号艇の全国勝率が非常に低い（${boat1WinRate.toFixed(2)}）→ イン崩れリスク高`;
-    else if (boat1WinRate < 5.5)
-      reason = `1号艇の全国勝率がやや低い（${boat1WinRate.toFixed(2)}）→ 崩れやすい`;
-    else if (boat1WinRate >= 7.0)
-      reason = `1号艇の全国勝率が非常に高い（${boat1WinRate.toFixed(2)}）→ 逃げ鉄板`;
-    else if (boat1WinRate >= 6.0)
-      reason = `1号艇の全国勝率が高い（${boat1WinRate.toFixed(2)}）→ 逃げ安定`;
-    else reason = `1号艇の全国勝率は標準（${boat1WinRate.toFixed(2)}）`;
-    factors.push({ value: norm, weight: W.winRate, reason });
-  }
-
-  // B. 1号艇の平均ST（当サイトに蓄積した全期間）— 遅いほどイン崩れしやすい
+  const W = volatilityWeights(venueCode);
   const boat1ST =
     racerStatsList?.find((s) => s.boatNumber === 1)?.avgST ?? null;
-  if (boat1ST != null) {
-    const norm = Math.min(1, Math.max(0, (boat1ST - 0.07) / (0.34 - 0.07)));
-    const reason = boat1StReason(boat1ST);
-    factors.push({ value: norm, weight: W.avgST, reason });
-  }
-
-  // C. AI逃げ確率 — 低いほどイン崩れしやすい
-  const nigeProb = turnPrediction?.distribution?.nige ?? null;
-  if (nigeProb != null) {
-    const norm = 1 - Math.min(1, Math.max(0, (nigeProb - 0.2) / (0.99 - 0.2)));
-    const nigePct = (nigeProb * 100).toFixed(0);
-    let reason;
-    if (nigeProb < 0.3)
-      reason = `AI逃げ確率が非常に低い（${nigePct}%）→ まくり・差しが有力`;
-    else if (nigeProb < 0.43)
-      reason = `AI逃げ確率が低い（${nigePct}%）→ まくり・差し有力`;
-    else if (nigeProb >= 0.75)
-      reason = `AI逃げ確率が非常に高い（${nigePct}%）→ 逃げ鉄板`;
-    else if (nigeProb >= 0.6)
-      reason = `AI逃げ確率が高い（${nigePct}%）→ 逃げ安定`;
-    else reason = `AI逃げ確率は標準（${nigePct}%）`;
-    factors.push({ value: norm, weight: W.nigeProb, reason });
-  }
-
-  // D. 選手間の勝率σ — 高いほどイン崩れしやすい
-  const winRates = racers
-    .map((r) => parseFloat(r.winRate))
-    .filter((v) => !isNaN(v));
-  if (winRates.length >= 4) {
-    const stddev = calculateStdDev(winRates);
-    const norm = Math.min(1, Math.max(0, (stddev - 0.06) / (2.75 - 0.06)));
-    let reason;
-    if (stddev >= 1.5)
-      reason = `選手間の実力差が大きい（σ=${stddev.toFixed(2)}）→ 外枠に実力者の可能性`;
-    else if (stddev >= 1.0)
-      reason = `選手間の実力差がやや大きい（σ=${stddev.toFixed(2)}）→ 波乱の要因`;
-    else if (stddev < 0.5)
-      reason = `選手間の実力が拮抗（σ=${stddev.toFixed(2)}）→ 接戦になりやすい`;
-    else reason = `選手間の実力差は標準（σ=${stddev.toFixed(2)}）`;
-    factors.push({ value: norm, weight: W.sigma, reason });
-  }
-
-  // E. 会場の1コース勝率 — 低いほどイン崩れしやすい
-  // 動的実績値（直近90日、venueWinRateCache）を優先し、未取得時は静的定数にフォールバック
-  const dynamicVenueRate = venueWinRateCache[parseInt(venueCode, 10)] ?? null;
-  const venueWinRate =
-    dynamicVenueRate ?? VENUE_1COURSE_WIN_RATE[venueCode] ?? VENUE_1COURSE_AVG;
-  {
-    const norm =
-      1 - Math.min(1, Math.max(0, (venueWinRate - 0.43) / (0.62 - 0.43)));
-    factors.push({ value: norm, weight: W.venue });
-  }
+  const factors = [
+    winRateFactor(racers, W.winRate),
+    avgStFactor(boat1ST, W.avgST),
+    nigeFactor(turnPrediction, W.nigeProb),
+    sigmaFactor(racers, W.sigma),
+    venueFactor(venueCode, venueWinRateCache, W.venue),
+  ].filter(Boolean);
 
   const totalWeight = factors.reduce((s, f) => s + f.weight, 0);
   if (totalWeight === 0) {
@@ -184,16 +212,7 @@ export function calculateVolatilityComposite(
     0,
   );
 
-  const reasons = [...factors]
-    .filter((f) => f.reason)
-    .sort(
-      (a, b) =>
-        Math.abs(b.value - 0.5) * b.weight - Math.abs(a.value - 0.5) * a.weight,
-    )
-    .slice(0, 3)
-    .map((f) => f.reason);
-
-  return { composite, reasons, boat1AvgST: boat1ST };
+  return { composite, reasons: topReasons(factors), boat1AvgST: boat1ST };
 }
 
 /**
