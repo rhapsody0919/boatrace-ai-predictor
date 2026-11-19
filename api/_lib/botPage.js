@@ -248,17 +248,15 @@ export function createTodayRacesSource({
   };
 }
 
-/** race_series の REST 応答。取得失敗や壊れた日付を「帯なし」にしない。 */
-function assertSeriesRows(rows) {
-  const date = (v) =>
-    typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) &&
-    Number.isFinite(Date.parse(`${v}T00:00:00Z`)) &&
-    new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v;
-  if (!Array.isArray(rows) || rows.length > 1 || rows.some((r) =>
-    !r || !date(r.start_date) || !date(r.end_date) || r.end_date < r.start_date ||
-    !(r.title === null || typeof r.title === "string") ||
-    !(r.grade === null || typeof r.grade === "string"))) {
+/** race_series の REST 応答を、人の画面（getSeriesOfDate）と同じく makeMeet に通した行にする。取得失敗や破れた行を「帯なし」にしない。 */
+function toSeriesRows(rows) {
+  if (!Array.isArray(rows) || rows.length > 1 || rows.some((r) => !r || !(r.title === null || typeof r.title === "string"))) {
     throw new MaterialFetchError("race_series の応答の形が違う");
+  }
+  try {
+    return rows.map(makeMeet);
+  } catch (e) {
+    throw new MaterialFetchError(`race_series の行が壊れている: ${e?.message ?? e}`);
   }
 }
 
@@ -291,13 +289,7 @@ export function createSeriesSource({
     } catch {
       throw new MaterialFetchError("race_series を取得できない");
     }
-    assertSeriesRows(rows);
-    // 人の画面（getSeriesOfDate）と同じく makeMeet に通す。破れは取得失敗（503）で、「帯なし」にしない
-    try {
-      rows = rows.map(makeMeet);
-    } catch (e) {
-      throw new MaterialFetchError(`race_series の行が壊れている: ${e?.message ?? e}`);
-    }
+    rows = toSeriesRows(rows);
     // 日付をまたいだ分を残し続けない。
     for (const [k, v] of cache) if (now() - v.at >= ttlMs) cache.delete(k);
     cache.set(cacheKey, { at: now(), rows });
@@ -617,8 +609,7 @@ export async function respondBotPage(
     if (page === "venue") {
       venueModel = buildVenueModel(json, venueCode, { t, lang, today });
       if (venueModel.meetBannerEligible) {
-        const seriesRows = await getSeriesRows(venueCode, today);
-        assertSeriesRows(seriesRows);
+        const seriesRows = toSeriesRows(await getSeriesRows(venueCode, today));
         venueModel = buildVenueModel(json, venueCode, { t, lang, today, seriesRows });
       }
     }
