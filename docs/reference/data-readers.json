@@ -5,10 +5,10 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2154,
-    "filesWithAccess": 283,
-    "tableReaders": 950,
-    "tableWriters": 192,
+    "sourceFiles": 2176,
+    "filesWithAccess": 285,
+    "tableReaders": 958,
+    "tableWriters": 197,
     "rpcCallers": 53,
     "nameMentions": 239,
     "tablesWithoutReaders": 21,
@@ -6457,6 +6457,12 @@
           "test": true
         },
         {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:179",
+          "op": "select",
+          "via": "helper:filterUnchangedRows",
+          "columns": []
+        },
+        {
           "ref": "scripts/ml/analogy/build-wind-basis.js:95",
           "op": "select",
           "via": "client",
@@ -7710,6 +7716,42 @@
           ]
         },
         {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:101",
+          "op": "select",
+          "via": "helper:upsertChangedRows",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:126",
+          "op": "select",
+          "via": "helper:upsertChangedRows",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:146",
+          "op": "select",
+          "via": "helper:upsertChangedRows",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:161",
+          "op": "select",
+          "via": "helper:filterUnchangedRows",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-3.js:50",
+          "op": "select",
+          "via": "helper:upsertChangedRows",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-3.js:95",
+          "op": "select",
+          "via": "helper:upsertChangedRows",
+          "columns": []
+        },
+        {
           "ref": "scripts/ml/export-inference-data.js:111",
           "op": "select",
           "via": "helper:fetchByRaceIds",
@@ -8355,6 +8397,46 @@
         },
         {
           "ref": "scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:117",
+          "op": "upsert",
+          "via": "helper:upsertChangedRows",
+          "columns": [
+            "?"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:101",
+          "op": "upsert",
+          "via": "helper:upsertChangedRows",
+          "columns": [
+            "?"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:126",
+          "op": "upsert",
+          "via": "helper:upsertChangedRows",
+          "columns": [
+            "?"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:146",
+          "op": "upsert",
+          "via": "helper:upsertChangedRows",
+          "columns": [
+            "?"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-3.js:50",
+          "op": "upsert",
+          "via": "helper:upsertChangedRows",
+          "columns": [
+            "?"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-3.js:95",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -17010,6 +17092,12 @@
           "columns": [
             "race_id"
           ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:193",
+          "op": "select",
+          "via": "helper:filterUnchangedRows",
+          "columns": []
         },
         {
           "ref": "scripts/ml/export-inference-data.js:80",
