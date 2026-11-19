@@ -101,6 +101,81 @@ async function buildRacerIdMap(raceIds, client = supabase) {
   return map;
 }
 
+// 1会場分の (race_id, boat_number) -> racer_id。取得に失敗しても空の Map で続ける
+async function loadVenueRacerIdMap(venue, venueRaces, client) {
+  const raceIds = venueRaces.map((r) => r.race_id);
+  let racerIdMap;
+  try {
+    racerIdMap = await buildRacerIdMap(raceIds, client);
+  } catch (error) {
+    console.error(
+      `  ⚠️ ${venue.name}: race_entries取得エラー（racer_idはNULLのまま続行）:`,
+      error.message,
+    );
+    racerIdMap = new Map();
+  }
+  // race_entries（当日の出走表）が本日分まだ用意できていない場合、racer_idは
+  // 全行NULLのまま静かに保存されうる（サイト側の構造は正常なため、この
+  // scriptのhealth判定＝サイト構造監視には含めない。race_entries自体の欠損は
+  // 別レイヤーの問題のため、ここではログでのみ可視化する）
+  if (raceIds.length > 0 && racerIdMap.size === 0) {
+    console.warn(
+      `  ⚠️ ${venue.name}: race_entriesが本日分未登録の可能性（racer_idは全行NULLになります）`,
+    );
+  }
+  return racerIdMap;
+}
+
+function toEntryCourseRow(venue, race, row, statsPeriod, racerIdMap) {
+  return {
+    race_id: race.race_id,
+    venue_code: venue.venueCode,
+    waku: row.waku,
+    entry_course: row.entryCourse,
+    racer_id: racerIdMap.get(`${race.race_id}:${row.waku}`) ?? null,
+    racer_name_raw: row.racerNameRaw,
+    entry_rate: row.entryRate,
+    avg_st: row.avgSt,
+    place_rate_1: row.placeRates[0],
+    place_rate_2: row.placeRates[1],
+    place_rate_3: row.placeRates[2],
+    place_rate_4: row.placeRates[3],
+    place_rate_5: row.placeRates[4],
+    place_rate_6: row.placeRates[5],
+    stats_period_start: statsPeriod.start,
+    stats_period_end: statsPeriod.end,
+  };
+}
+
+// 1レース分を取得・解析する（rows は会場の rows に足す）。reason は会場の最初の失敗の理由（venueReason を引き継ぎ、無ければこのレースの理由）
+async function scrapeRace(
+  venue,
+  race,
+  racerIdMap,
+  { fetchHtmlImpl, toReason, venueReason },
+) {
+  const url = buildEntryCourseUrl(venue, race.race_no);
+  const rows = [];
+  try {
+    const html = await fetchHtmlImpl(url);
+    const { data, statsPeriod, reason } = parseEntryCourseHtml(html);
+    if (!data) {
+      console.log(
+        `    ⚠️ ${venue.name} ${race.race_no}R: データなし (${reason})`,
+      );
+      return { rows, reason: venueReason ?? reason };
+    }
+    for (const row of data) {
+      rows.push(toEntryCourseRow(venue, race, row, statsPeriod, racerIdMap));
+    }
+    return { rows, reason: venueReason };
+  } catch (error) {
+    const reason = venueReason ?? toReason(error);
+    console.error(`    ❌ ${venue.name} ${race.race_no}R: ${error.message}`);
+    return { rows, reason }; // 途中まで作った行も元のとおり残す
+  }
+}
+
 /**
  * 1会場分（当日の全レース）を取得・解析して、書き込む行を返す。DBへは書かない（読み取りは race_entries のみ）。
  *
@@ -126,26 +201,7 @@ export async function scrapeVenue(
     shouldStop = () => false,
   } = {},
 ) {
-  const raceIds = venueRaces.map((r) => r.race_id);
-  let racerIdMap;
-  try {
-    racerIdMap = await buildRacerIdMap(raceIds, client);
-  } catch (error) {
-    console.error(
-      `  ⚠️ ${venue.name}: race_entries取得エラー（racer_idはNULLのまま続行）:`,
-      error.message,
-    );
-    racerIdMap = new Map();
-  }
-  // race_entries（当日の出走表）が本日分まだ用意できていない場合、racer_idは
-  // 全行NULLのまま静かに保存されうる（サイト側の構造は正常なため、この
-  // scriptのhealth判定＝サイト構造監視には含めない。race_entries自体の欠損は
-  // 別レイヤーの問題のため、ここではログでのみ可視化する）
-  if (raceIds.length > 0 && racerIdMap.size === 0) {
-    console.warn(
-      `  ⚠️ ${venue.name}: race_entriesが本日分未登録の可能性（racer_idは全行NULLになります）`,
-    );
-  }
+  const racerIdMap = await loadVenueRacerIdMap(venue, venueRaces, client);
 
   const rows = [];
   let venueReason = null;
@@ -157,41 +213,13 @@ export async function scrapeVenue(
       break;
     }
     const race = venueRaces[i];
-    const url = buildEntryCourseUrl(venue, race.race_no);
-    try {
-      const html = await fetchHtmlImpl(url);
-      const { data, statsPeriod, reason } = parseEntryCourseHtml(html);
-      if (!data) {
-        venueReason = venueReason ?? reason;
-        console.log(
-          `    ⚠️ ${venue.name} ${race.race_no}R: データなし (${reason})`,
-        );
-      } else {
-        for (const row of data) {
-          rows.push({
-            race_id: race.race_id,
-            venue_code: venue.venueCode,
-            waku: row.waku,
-            entry_course: row.entryCourse,
-            racer_id: racerIdMap.get(`${race.race_id}:${row.waku}`) ?? null,
-            racer_name_raw: row.racerNameRaw,
-            entry_rate: row.entryRate,
-            avg_st: row.avgSt,
-            place_rate_1: row.placeRates[0],
-            place_rate_2: row.placeRates[1],
-            place_rate_3: row.placeRates[2],
-            place_rate_4: row.placeRates[3],
-            place_rate_5: row.placeRates[4],
-            place_rate_6: row.placeRates[5],
-            stats_period_start: statsPeriod.start,
-            stats_period_end: statsPeriod.end,
-          });
-        }
-      }
-    } catch (error) {
-      venueReason = venueReason ?? toReason(error);
-      console.error(`    ❌ ${venue.name} ${race.race_no}R: ${error.message}`);
-    }
+    const got = await scrapeRace(venue, race, racerIdMap, {
+      fetchHtmlImpl,
+      toReason,
+      venueReason,
+    });
+    rows.push(...got.rows);
+    venueReason = got.reason;
     if (i < venueRaces.length - 1) await sleep(delayMs);
   }
   return { rows, reason: venueReason, stoppedEarly };
