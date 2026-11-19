@@ -30351,12 +30351,12 @@
     },
     {
       "file": "scripts/lib/fanPeriodJob.js",
-      "line": 162,
+      "line": 159,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/lib/fanPeriodJob.js",
-      "line": 286,
+      "line": 247,
       "reason": "表の名前が変数（.from(式)）"
     },
     {

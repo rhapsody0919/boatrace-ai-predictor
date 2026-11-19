@@ -2340,8 +2340,8 @@
   - `scripts/lib/boatcast/oritenSchema.js:50` 表の名前が変数（.from(式)）
   - `scripts/lib/dataHealth/job.js:67` RPC の名前が変数（.rpc(式)）
   - `scripts/lib/fanPeriodJob.js:86` 表の名前が変数（.from(式)）
-  - `scripts/lib/fanPeriodJob.js:162` 表の名前が変数（.from(式)）
-  - `scripts/lib/fanPeriodJob.js:286` 表の名前が変数（.from(式)）
+  - `scripts/lib/fanPeriodJob.js:159` 表の名前が変数（.from(式)）
+  - `scripts/lib/fanPeriodJob.js:247` 表の名前が変数（.from(式)）
   - `scripts/lib/pitReportSchema.js:40` 表の名前が変数（.from(式)）
   - `scripts/lib/raceResultSchema.js:84` 表の名前が変数（.from(式)）
   - `scripts/lib/raceSeriesSync.js:75` 表の名前が変数（.from(式)）
