@@ -10,7 +10,9 @@
  *       同期待ちは、最後の照合で不一致に数える
  *   (c) 日次ジョブ: 対象日は「指定時刻の日付の前日」・off/行なしで何もしない・shadow は通知を出さず処理済みにしない・live は通知して
  *       処理済みにする・照合不能／同期待ちが残る間は incomplete（最後の照合まで）・0件はエラー・履歴（直近14日）・通知は1回きり
- *   (d) 配線: レジストリ・maxDuration・vercel.json の cron（UTC→JST換算。kfile_sync の後）・認証
+ *   (d) 配線: レジストリ・maxDuration・vercel.json の cron（UTC→JST換算。kfile_sync の後）・認証。
+ *       api/cron/daily-reconcile.js は本文の字を読まず、export（config・default）と、共通ラッパ（createScrapeCronHandler）へ渡した
+ *       引数を見る（その1本が import する cronWrapper.js だけを、本物へ渡しつつ引数を記録する物へ差し替える）
  *
  * 実行: node scripts/maintenance/verify-daily-reconcile.js
  */
@@ -1058,15 +1060,16 @@ const depsFor = ({
       validateRegistry().length === 0,
     show(validateRegistry()),
   );
-  const apiSource = fs.readFileSync(
-    path.join(ROOT, "api/cron/daily-reconcile.js"),
-    "utf8",
-  );
+  // api/cron/daily-reconcile.js が import する cronWrapper.js だけを、本物の createScrapeCronHandler を呼びつつ引数と戻りを記録する物へ差し替える
+  const SPY = "__verifyDailyReconcileCronHandlers", wrapper = JSON.stringify(new URL("../lib/scrapeJobs/cronWrapper.js", import.meta.url).href);
+  const spy = `import * as real from ${wrapper}; export * from ${wrapper}; export function createScrapeCronHandler(options) { const handler = real.createScrapeCronHandler(options); (globalThis.${SPY} ??= []).push({ options, handler }); return handler; }`;
+  (await import("node:module")).register(`data:text/javascript,${encodeURIComponent(`export async function resolve(s, c, next) { const r = await next(s, c); return r.url === ${wrapper} && c.parentURL?.endsWith("/api/cron/daily-reconcile.js") ? { url: ${JSON.stringify(`data:text/javascript,${encodeURIComponent(spy)}`)}, shortCircuit: true } : r; }`)}`);
+  const api = await import("../../api/cron/daily-reconcile.js"), made = globalThis[SPY] ?? [];
   check(
-    "api/cron/daily-reconcile.js: maxDuration はレジストリと同じ120（リテラル）・共通ラッパ経由・job名",
-    /maxDuration:\s*120/.test(apiSource) &&
-      /createScrapeCronHandler/.test(apiSource) &&
-      /job:\s*"daily_reconcile"/.test(apiSource),
+    "api/cron/daily-reconcile.js: config.maxDuration はレジストリと同じ120・共通ラッパ（createScrapeCronHandler）を job 名 daily_reconcile で1回通し、その戻りを default export にする",
+    api.config?.maxDuration === 120 && api.config.maxDuration === def.maxDurationSec && made.length === 1 &&
+      made[0].options.job === "daily_reconcile" && typeof made[0].options.run === "function" && api.default === made[0].handler,
+    show({ config: api.config, jobs: made.map((m) => m.options.job) }),
   );
   const vercel = JSON.parse(
     fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
@@ -1104,7 +1107,7 @@ const depsFor = ({
         .map((c) => jstMinutes(c.schedule) >= FINAL_ATTEMPT_MINUTES_OF_DAY)
         .join() === "false,false,true",
   );
-  const handler = (await import("../../api/cron/daily-reconcile.js")).default;
+  const handler = api.default;
   const res = { statusCode: null, body: null };
   res.status = (s) => ((res.statusCode = s), res);
   res.json = (b) => ((res.body = b), res);

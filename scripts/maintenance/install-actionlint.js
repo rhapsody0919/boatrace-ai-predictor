@@ -11,6 +11,11 @@
  *   - shellcheck も同じ方法で固定する。ubuntu-latest に入っている shellcheck は
  *     ランナーイメージの更新で版が変わり、指摘の増減で台帳が突然壊れるため
  *
+ * 取り直し: GitHub Releases は CI のランナーに一時的な 403・429・5xx や接続の切断を返すことがある
+ * （2026-11-18 の master の Quality Gates が HTTP 403 の1回で落ち、定時の release が止まった）。
+ * 一時的な失敗（shouldRetryFetch）だけ、間隔を広げながら FETCH_MAX_ATTEMPTS 回まで取り直す。
+ * 404 や sha256 の不一致のような、取り直しても変わらない失敗は1回で失敗にする
+ *
  * 置き場所: $XDG_CACHE_HOME（無ければ ~/.cache）/boatai-tools/<名前>-<版>/。
  * worktree をまたいで共有され、版を上げると別ディレクトリになる。
  *
@@ -64,6 +69,76 @@ export async function toolPaths() {
   };
 }
 
+/** 取得を試す回数の上限（最初の1回を含む）。回数と間隔は目安で、実測の根拠は無い */
+export const FETCH_MAX_ATTEMPTS = 4;
+const RETRY_BASE_MS = 5000;
+const RETRY_FACTOR = 3;
+const RETRYABLE_STATUS = new Set([403, 429]);
+// ECONNRESET・ETIMEDOUT に加え、Node の fetch（undici）が接続の時間切れ・名前解決の一時的な失敗で返す符号
+const RETRYABLE_CODES = new Set([
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "EAI_AGAIN",
+]);
+
+/**
+ * 取得の失敗が一時的で、取り直す価値があるか。status は HTTP の応答の状態、
+ * code は通信の例外の符号（どちらか一方）。純関数
+ */
+export function shouldRetryFetch({ status = null, code = null } = {}) {
+  if (status !== null) {
+    return RETRYABLE_STATUS.has(status) || (status >= 500 && status <= 599);
+  }
+  return code !== null && RETRYABLE_CODES.has(code);
+}
+
+/** failedAttempts 回目の失敗の後に待つ時間（5秒・15秒・45秒）。純関数 */
+export function retryDelayMs(failedAttempts) {
+  return RETRY_BASE_MS * RETRY_FACTOR ** (failedAttempts - 1);
+}
+
+/** fetch の例外から通信の符号を取り出す（Node の fetch は cause に入れる）。無ければ null */
+export function errorCode(e) {
+  return e?.cause?.code ?? e?.code ?? null;
+}
+
+const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * url の本体を Buffer で返す。一時的な失敗は間隔を広げて取り直し、
+ * それ以外と、回数を使い切ったときは理由つきで失敗する。
+ * fetchImpl・sleep・log は検証（verify-install-actionlint.js）で差し替える
+ */
+export async function fetchWithRetry(
+  name,
+  url,
+  { fetchImpl = fetch, sleep = realSleep, log = console.log } = {},
+) {
+  for (let attempt = 1; ; attempt++) {
+    let failure;
+    try {
+      const res = await fetchImpl(url);
+      if (res.ok) return Buffer.from(await res.arrayBuffer());
+      failure = { status: res.status, label: `HTTP ${res.status}` };
+    } catch (e) {
+      const code = errorCode(e);
+      failure = { code, label: code ?? e.message };
+    }
+    const retryable = shouldRetryFetch(failure);
+    if (!retryable || attempt >= FETCH_MAX_ATTEMPTS) {
+      throw new Error(
+        `${name}: 取得に失敗しました（${failure.label}: ${url}${retryable ? `、${attempt}回試行` : ""}）`,
+      );
+    }
+    const waitMs = retryDelayMs(attempt);
+    log(
+      `⏳ ${name}: 取得が一時的に失敗（${failure.label}）。${waitMs / 1000}秒後に取り直します（${attempt}/${FETCH_MAX_ATTEMPTS}回目）`,
+    );
+    await sleep(waitMs);
+  }
+}
+
 async function install(tool) {
   if (!tool.asset) {
     throw new Error(
@@ -75,13 +150,7 @@ async function install(tool) {
     console.log(`✅ ${tool.name} ${tool.version}: 取得済み（${tool.bin}）`);
     return;
   }
-  const res = await fetch(tool.asset.url);
-  if (!res.ok) {
-    throw new Error(
-      `${tool.name}: 取得に失敗しました（HTTP ${res.status}: ${tool.asset.url}）`,
-    );
-  }
-  const body = Buffer.from(await res.arrayBuffer());
+  const body = await fetchWithRetry(tool.name, tool.asset.url);
   const actual = createHash("sha256").update(body).digest("hex");
   if (actual !== tool.asset.sha256) {
     throw new Error(

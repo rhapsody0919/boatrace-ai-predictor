@@ -24,6 +24,7 @@ import {
   createScrapeCronHandler,
 } from "../lib/scrapeJobs/cronWrapper.js";
 import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
+import { cronWiring } from "./verifyData/cronWiring.js";
 import { createMemoryStore } from "../lib/scrapeJobs/testing/memoryStore.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import {
@@ -891,21 +892,21 @@ const writes = (client, table) =>
       def.leaseSec < 1800,
     show(def),
   );
-  const mod = await import("../../api/cron/race-notices.js");
+  // api の本文の字は読まず、export（config・default）と、共通ラッパへ渡した引数で見る
+  const api = await cronWiring(() => import("../../api/cron/race-notices.js"));
   check(
-    "api/cron/race-notices.js: config.maxDuration がレジストリの maxDurationSec と一致し、ハンドラーを export する",
-    typeof mod.default === "function" &&
-      mod.config?.maxDuration === def.maxDurationSec,
-    show(mod.config),
+    "api/cron/race-notices.js: config.maxDuration がレジストリの maxDurationSec と一致する",
+    api.config?.maxDuration === def.maxDurationSec,
+    show(api.config),
   );
-  const src = fs.readFileSync(
-    new URL("../../api/cron/race-notices.js", import.meta.url),
-    "utf8",
-  );
+  // 共通ラッパのハンドラーは処理の完了後に応答する（waitUntil で先に返さない）
   check(
-    "api/cron/race-notices.js: waitUntil を使わず、共通ラッパ経由（処理の完了後に応答する）",
-    !/waitUntil/.test(src.replace(/\/\*[\s\S]*?\*\//g, "")) &&
-      /createScrapeCronHandler/.test(src),
+    "api/cron/race-notices.js: 共通ラッパを job 名 race_notices・runRaceNoticesJob で1回通し、その戻りを default export にする",
+    api.made.length === 1 &&
+      api.made[0].options.job === "race_notices" &&
+      api.made[0].options.run === runRaceNoticesJob &&
+      api.handler === api.made[0].handler,
+    show(api.made.map((m) => m.options.job)),
   );
 
   const vercel = JSON.parse(
