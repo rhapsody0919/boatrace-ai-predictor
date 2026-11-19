@@ -37,9 +37,6 @@ import {
 } from "./verifyData/fakeServiceSupabase.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import i18next from "i18next";
-import { initReactI18next } from "react-i18next";
-import { renderJsx } from "../lib/renderJsx.js";
 import { SMALL_SAMPLE_THRESHOLD } from "../../src/pure/basicInfoStats.js";
 import { formatGenerationDate } from "../../src/utils/motorGeneration.js";
 
@@ -377,111 +374,10 @@ const EMPTY_ROWS = [1, 2, 3, 4, 5, 6].map((course) => ({
   );
 }
 
-// 画面: 本文の字でなく、ドリルダウンの部品（MotorMain）を ja の文言で描いた DOM で見る（scripts/lib/renderJsx.js）
-const ja = JSON.parse(read("src/locales/ja/common.json"));
-await i18next
-  .use(initReactI18next)
-  .init({
-    lng: "ja",
-    resources: { ja: { common: ja } },
-    defaultNS: "common",
-    ns: ["common"],
-    interpolation: { escapeValue: false },
-    react: { useSuspense: false },
-  });
-const wakuRow = (course, raceCount) => ({
-  course,
-  raceCount,
-  winRate: 50,
-  top2Rate: 50,
-  top3Rate: 50,
-  avgExhibitionTime: null,
-  exhibitionTrend: [],
-});
-const racerRow = (course, racerId, raceCount) => ({
-  course,
-  racerId,
-  raceCount,
-  playerName: "選手",
-  winRate: 50,
-  top2Rate: 50,
-  top3Rate: 50,
-});
-// 描く: 世代（generationStart）と、選んだ枠（selectedWakuCourse）を変えて、枠番別成績の表か選手×枠を出す
-const drill = async (generationStart, selectedWakuCourse = null) => {
-  // 選手×枠の名前は Link なので、MemoryRouter の子として描く
-  const view = await renderJsx(
-    new URL(import.meta.resolve("react-router-dom")),
-    {
-      children: createElement(MotorMain, {
-        m: {
-          loading: false,
-          error: null,
-          drillDownMotor: M,
-          drillPreGeneration: false,
-          breakdown: [],
-          setDrillDownMotor() {},
-          selectedRace: null,
-          powerIndex: null,
-          generationStart,
-          periodDays: 90,
-          venueMotorStats: null,
-          venueMotorRanking: null,
-          championshipHistory: { wins: [], generationStart },
-          trendData: null,
-          usageHistory: [],
-          partsHistory: [],
-          embedded: false,
-          selectedWakuCourse,
-          setSelectedWakuCourse() {},
-          motorWakuStats: {
-            rows: [wakuRow(1, 2), wakuRow(2, 12)],
-            generationStart,
-            fetchFailed: false,
-          },
-          motorRacerWakuStats: {
-            rows: [
-              racerRow(1, 4001, 2),
-              racerRow(1, 4002, 12),
-              racerRow(2, 4003, 2),
-            ],
-          },
-        },
-        v: {
-          todayHighlightCourse: null,
-          chartData: [],
-          drillTallyState: null,
-          firstRatedIndex: -1,
-          emptyKey: (k) => k,
-          exhibitionChartData: [],
-          exhibitionAxis: null,
-          usageHistoryChartData: [],
-        },
-      }),
-    },
-    { exportName: "MemoryRouter" },
-  );
-  const { container } = view;
-  const notes = [...container.querySelectorAll(".table-note")].map(
-    (e) => e.textContent,
-  );
-  const out = {
-    text: container.textContent,
-    tableRows: container.querySelectorAll(".motor-waku-table tbody tr").length,
-    racers: [...container.querySelectorAll(".motor-racer-waku-list li")].map(
-      (li) => li.querySelectorAll(".usage-history-rate.is-small-sample").length,
-    ),
-    notes,
-  };
-  await view.unmount();
-  return out;
-};
-const t = i18next.t.bind(i18next);
-const { createElement } = await import("react");
-const { MotorMain } =
-  await import("../../src/components/analysis/MotorConditionDrill.jsx");
-globalThis.requestAnimationFrame = (f) => setTimeout(f, 0); // 横スクロールの目印の hook が使う（jsdom に無い）
-globalThis.cancelAnimationFrame = clearTimeout;
+// 画面: 本文の字でなく、ドリルダウンの部品（MotorMain）を ja の文言で描いた DOM で見る（verifyData/motorWakuDrill.js）
+const { drawMotorDrill, t } = await import("./verifyData/motorWakuDrill.js");
+const drill = (generationStart, course) =>
+  drawMotorDrill(M, generationStart, course);
 const unknown = await drill(null);
 const known = await drill(GEN);
 check(
