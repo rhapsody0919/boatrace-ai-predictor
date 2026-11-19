@@ -23,13 +23,21 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { buildKbDay, summarizeKbDay } from "../lib/kbFileParser.js";
+import {
+  classifyKFileVenues,
+  buildKbDay,
+  decodeLzhText,
+  summarizeKbDay,
+  parseKText,
+  _internal as kbInternal,
+  PENDING_MARKER,
+} from "../lib/kbFileParser.js";
+import { buildArchiveRows } from "../lib/kbArchiveRows.js";
 
 
-import { parseKFileText, parseKFileRankings } from "../lib/kfileParser.js";
 import { cmdDownload } from "./kb-backfill.js";
 import { runKbFileParserScenes1 } from "./verifyData/kb-file-parser-scenes-1.js";
-import { runKbFileParserScenes2 } from "./verifyData/kb-file-parser-scenes-2.js";
+import { runKbFileParserScenes2, runKbFileParserScenes3 } from "./verifyData/kb-file-parser-scenes-2.js";
 
 const FIX = new URL("../lib/__fixtures__/kbfile/", import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, FIX), "utf8");
@@ -95,145 +103,29 @@ for (const d of DAYS) {
   }
 }
 
-// --- 2. K/B整合 ---
-for (const d of DAYS.filter((x) => x.hasB)) {
-  const day = days[d.date];
-  let mismatched = 0;
-  let racesOnlyOneSide = 0;
-  for (const kv of day.k.venues) {
-    const bv = day.b.venues.find((v) => v.venue_code === kv.venue_code);
-    for (const kr of kv.races) {
-      const br = bv?.races.find((r) => r.race_number === kr.race_number);
-      if (!br) {
-        racesOnlyOneSide++;
-        continue;
-      }
-      for (const row of kr.rows) {
-        const e = br.entries.find((x) => x.boat_number === row.boat_number);
-        if (!e || e.racer_id !== row.racer_id) mismatched++;
-      }
-    }
-  }
-  check(
-    `${d.date} K/B: レース集合が一致し、全艇の登録番号が一致`,
-    racesOnlyOneSide === 0 && mismatched === 0,
-    `片側のみ${racesOnlyOneSide} / 不一致${mismatched}`,
-  );
-}
-
-// --- 3. ファイル内クロスチェック（レース別払戻 vs 冒頭の払戻金一覧表） ---
-for (const d of DAYS) {
-  const day = days[d.date];
-  let checked = 0;
-  let bad = 0;
-  for (const v of day.k.venues) {
-    // 一覧表: "  1R  2-5-1   20070    1-2-5     620 ..."（3連単・3連複）。同着の継続行はレース番号なし
-    let current = null;
-    for (const line of v.payout_summary_lines) {
-      const m = /^\s+(\d{1,2})R\s+(\d-\d-\d)\s+(\d+)\s+(\d-\d-\d)\s+(\d+)/.exec(
-        line,
-      );
-      if (!m) continue;
-      current = Number(m[1]);
-      const race = v.races.find((r) => r.race_number === current);
-      const tan = race?.payouts.find(
-        (p) => p.kind === "trifecta" && p.combo === m[2],
-      );
-      const fuku = race?.payouts.find(
-        (p) => p.kind === "trio" && p.combo === m[4],
-      );
-      checked++;
-      if (tan?.amount !== Number(m[3]) || fuku?.amount !== Number(m[5])) bad++;
-    }
-  }
-  // 2005-01-01は3連単が無い時代で一覧表の形式が異なるため、対象があれば検証する
-  check(
-    `${d.date} 払戻: 一覧表と一致（${checked}レース確認）`,
-    bad === 0,
-    `不一致${bad}`,
-  );
-}
-
-// --- 4. 本番DBとの突合（2026-03-15。DBは race_results・exhibition_data・race_start_timings） ---
-{
-  const amagasaki = days["2026-03-15"].k.venues.find(
-    (v) => v.venue_code === 13,
-  );
-  const r1 = amagasaki.races.find((r) => r.race_number === 1);
-  const rank = (n) => r1.rows.find((x) => x.rank === n).boat_number;
-  check(
-    "DB突合 尼崎1R: 着順1-4-6（DB rank1〜3と一致）",
-    eq([rank(1), rank(2), rank(3)], [1, 4, 6]),
-  );
-  const tan = r1.payouts.find((p) => p.kind === "trifecta");
-  const fuku = r1.payouts.find((p) => p.kind === "trio");
-  check(
-    "DB突合 尼崎1R: 3連単2,760円（DB payout_trio）・3連複1,690円（DB payout_trifecta）",
-    tan.amount === 2760 && fuku.amount === 1690,
-  );
-  const ex = Object.fromEntries(
-    r1.rows.map((x) => [x.boat_number, x.exhibition_time]),
-  );
-  check(
-    "DB突合 尼崎1R: 展示タイム6艇がexhibition_dataと一致",
-    eq(ex, { 1: 6.8, 2: 6.75, 3: 6.81, 4: 6.74, 5: 6.81, 6: 6.7 }),
-    JSON.stringify(ex),
-  );
-  const st = Object.fromEntries(
-    r1.rows.map((x) => [x.boat_number, x.start_timing]),
-  );
-  check(
-    "DB突合 尼崎1R: ST6艇がrace_start_timingsと一致",
-    eq(st, { 1: 0.1, 2: 0.1, 3: 0.13, 4: 0.08, 5: 0.19, 6: 0.12 }),
-    JSON.stringify(st),
-  );
-  check(
-    "DB突合 尼崎1R: 決まり手（逃げ）・ステージ（予選）・締切10:35",
-    r1.technique === "逃げ" &&
-      r1.stage === "予選" &&
-      days["2026-03-15"].b.venues.find((v) => v.venue_code === 13).races[0]
-        .deadline_time === "10:35",
-  );
-  // 尼崎: G1「尼崎市制110周年記念 尼崎センプルカップ」2日目（K/Bにグレード表記は無い）
-  check(
-    "尼崎: タイトル・日目",
-    amagasaki.title === "尼崎市制110周年記念尼崎センプルカップ" &&
-      amagasaki.series_day === 2,
-  );
-}
-
-// --- 5. 既存パーサー（kfileParser.js）との一致 ---
-for (const d of DAYS) {
-  const text = read(`k${d.ymd}.txt`);
-  const existingCourses = parseKFileText(text, d.date);
-  const existingRanks = parseKFileRankings(text, d.date);
-  let courseDiff = 0;
-  let rankDiff = 0;
-  const day = days[d.date];
-  for (const v of day.k.venues) {
-    for (const r of v.races) {
-      const id = `${d.date}-${String(v.venue_code).padStart(2, "0")}-${String(r.race_number).padStart(2, "0")}`;
-      const ec = existingCourses.find((x) => x.race_id === id);
-      for (let b = 1; b <= 6; b++) {
-        const mine = r.rows.find((x) => x.boat_number === b)?.course ?? null;
-        if ((ec?.[`actual_course_${b}`] ?? null) !== mine) courseDiff++;
-      }
-      const er = existingRanks.find((x) => x.race_id === id);
-      const mineOrder = r.rows.filter((x) => x.rank).map((x) => x.boat_number);
-      const theirs = [1, 2, 3, 4, 5, 6]
-        .map((n) => er?.[`rank${n}`])
-        .filter((x) => x != null);
-      if (!eq(mineOrder, theirs)) rankDiff++;
-    }
-  }
-  check(
-    `${d.date} 既存パーサーと一致（進入コース差${courseDiff}・着順差${rankDiff}）`,
-    courseDiff === 0 && rankDiff === 0,
-  );
-}
-
 // ---- 後半の場面（verifyData/kb-file-parser-scenes-1.js） ----
-await runKbFileParserScenes1({ FIX, check, eq, days });
+runKbFileParserScenes1({ read, check, eq, DAYS, days });
+
+// --- プレースホルダ（全レース終了前） ---
+{
+  const text = await decodeLzhText(
+    new Uint8Array(fs.readFileSync(new URL("k260920-pending.lzh", FIX))),
+  );
+  const day = buildKbDay({ date: "2026-09-20", kText: text });
+  check(
+    "プレースホルダ: 検出でき、全会場が pending・レース0",
+    text.includes(PENDING_MARKER) &&
+      day.k.venues.length > 0 &&
+      day.k.venues.every((v) => v.status === "pending" && v.races.length === 0),
+  );
+  check(
+    "プレースホルダ: アーカイブ行を1行も作らない（確定データとして扱わない）",
+    buildArchiveRows(day).races.length === 0,
+  );
+}
+
+// ---- 後半の場面（verifyData/kb-file-parser-scenes-2.js） ----
+runKbFileParserScenes2({ check, eq, days });
 
 // --- 8b. download の停止条件（fetchを差し替えて実行。公式サイトへは接続しない） ---
 {
@@ -438,7 +330,97 @@ await runKbFileParserScenes1({ FIX, check, eq, days });
 }
 
 // ---- 後半の場面（verifyData/kb-file-parser-scenes-2.js） ----
-await runKbFileParserScenes2({ FIX, read, check, eq, days });
+await runKbFileParserScenes3({ check, eq, days });
+
+// 9. Kファイルの確定状況は、会場ブロック単位で判定する（中止・順延の会場があるだけの日を、捨てない）
+{
+  const P = "データは、この場の全レース終了後に登録されます。";
+  const block = (code, body) => `${code}KBGN\n${body}\n${code}KEND`;
+  const done = (code) =>
+    block(code, "津［成績］ 7/30 x\n  1R 予選 H1800m 晴 風 北 2m 波 1cm");
+  const pend = (code) => block(code, `ボートレース\n${P}`);
+  const mixed = [done("10"), pend("09"), done("08")].join("\n\n");
+  const c1 = classifyKFileVenues(mixed);
+  check(
+    "K確定状況: 一部の会場だけ未確定（中止・順延）の日は、日全体を未確定にしない",
+    c1.total === 3 &&
+      eq(c1.pendingVenues, [9]) &&
+      eq(c1.completeVenues, [10, 8]) &&
+      c1.allPending === false,
+    JSON.stringify(c1),
+  );
+  const c2 = classifyKFileVenues([pend("01"), pend("02")].join("\n"));
+  check(
+    "K確定状況: 全会場が未確定の日（全レース終了前）は、日全体を未確定にする",
+    c2.total === 2 && c2.allPending === true && c2.completeVenues.length === 0,
+    JSON.stringify(c2),
+  );
+  const c3 = classifyKFileVenues(P);
+  check(
+    "K確定状況: 会場ブロックが読めない形式は、確定とみなさない（allPendingにしない。呼び出し側がファイル全体のマーカーで判定）",
+    c3.total === 0 && c3.allPending === false,
+    JSON.stringify(c3),
+  );
+  const real = await decodeLzhText(
+    fs.readFileSync(new URL("k260920-pending.lzh", FIX)),
+  );
+  const c4 = classifyKFileVenues(real);
+  check(
+    "K確定状況: 実物のプレースホルダ（k260920-pending.lzh、321バイト）は、日全体が未確定として扱われる",
+    c4.allPending === true || (c4.total === 0 && real.includes(P)),
+    JSON.stringify(c4),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 中止のレース（BOA-412）: 払戻金の要約の「NR 中　止」を cancelled_race_numbers に取る
+// フィクスチャは実物の K の抜粋: 2025-12-12 江戸川（全日中止）と 2025-12-03 鳴門（11・12R が中止の途中打ち切り）
+// ---------------------------------------------------------------------------
+{
+  const k = parseKText(read("k251212-03-k251203-14-cancelled.txt"));
+  const edogawa = k.venues.find((v) => v.venue_code === 3);
+  const naruto = k.venues.find((v) => v.venue_code === 14);
+  check(
+    "中止: 全日中止（江戸川 2025-12-12）は、成績0レース・中止 1〜12R",
+    edogawa?.races.length === 0 &&
+      JSON.stringify(edogawa?.cancelled_race_numbers) ===
+        JSON.stringify([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+    JSON.stringify(edogawa?.cancelled_race_numbers),
+  );
+  check(
+    "中止: 途中打ち切り（鳴門 2025-12-03）は、成績 1〜10R・中止 11・12R（重ならず、合わせて12）",
+    naruto?.races.length === 10 &&
+      JSON.stringify(naruto?.cancelled_race_numbers) === "[11,12]" &&
+      !naruto.races.some((r) =>
+        naruto.cancelled_race_numbers.includes(r.race_number),
+      ),
+    JSON.stringify({
+      races: naruto?.races.length,
+      c: naruto?.cancelled_race_numbers,
+    }),
+  );
+  check(
+    "中止: 要約の行は、従来どおり payout_summary_lines にも残す（既存の挙動を変えない）",
+    edogawa?.payout_summary_lines.some((l) => /1R\s+中/.test(l)),
+  );
+  const normal = parseKText(read("k260315.txt"));
+  check(
+    "中止: 中止の無い日（k260315）は、全会場で cancelled_race_numbers が空。払戻の要約行を中止と取り違えない",
+    normal.venues.length > 0 &&
+      normal.venues.every((v) => v.cancelled_race_numbers.length === 0),
+  );
+  const re = kbInternal.K_SUMMARY_CANCELLED_RE;
+  check(
+    "中止の行の正規表現: 全角スペースの有無を問わず取り、払戻の要約（組番と金額）は取らない",
+    re.test("           1R  中　止") &&
+      re.test("          12R  中止") &&
+      !re.test("           1R  3-1-2    2340  3-1-2   680"),
+  );
+  check(
+    "中止: summarizeKbDay に k_cancelled_races（中止のレース数）が出る",
+    summarizeKbDay({ date: "x", k, b: null }).k_cancelled_races === 14,
+  );
+}
 
 if (failures > 0) {
   console.error(`\n${failures}件の検証が失敗しました`);

@@ -3,27 +3,10 @@
  * 判定と期待値は分ける前の verify-kb-file-parser.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-import fs from "node:fs";
-import {
-  decodeLzhText,
-  buildKbDay,
-  PENDING_MARKER,
-  buildKbUrl,
-  kbArchiveRelPath,
-} from "../../lib/kbFileParser.js";
 import { buildArchiveRows, raceTimeToSeconds, classifyStage } from "../../lib/kbArchiveRows.js";
-import {
-  parseWindow,
-  inWindow,
-  windowDayKey,
-  classifyResponse,
-  latestManifest,
-  planDownload,
-  estimatePlan,
-  _internal as cli,
-} from "../kb-backfill.js";
+import { parseKFileText, parseKFileRankings } from "../../lib/kfileParser.js";
 
-let FIX, check, eq, days;
+let read, check, eq, DAYS, days;
 
 /** 元の verify の1つの塊 { } を割った 1/2 */
 function scene1() {
@@ -96,6 +79,148 @@ function scene2({ only2005 }) {
 }
 
 function scene3() {
+  // --- 2. K/B整合 ---
+  for (const d of DAYS.filter((x) => x.hasB)) {
+    const day = days[d.date];
+    let mismatched = 0;
+    let racesOnlyOneSide = 0;
+    for (const kv of day.k.venues) {
+      const bv = day.b.venues.find((v) => v.venue_code === kv.venue_code);
+      for (const kr of kv.races) {
+        const br = bv?.races.find((r) => r.race_number === kr.race_number);
+        if (!br) {
+          racesOnlyOneSide++;
+          continue;
+        }
+        for (const row of kr.rows) {
+          const e = br.entries.find((x) => x.boat_number === row.boat_number);
+          if (!e || e.racer_id !== row.racer_id) mismatched++;
+        }
+      }
+    }
+    check(
+      `${d.date} K/B: レース集合が一致し、全艇の登録番号が一致`,
+      racesOnlyOneSide === 0 && mismatched === 0,
+      `片側のみ${racesOnlyOneSide} / 不一致${mismatched}`,
+    );
+  }
+}
+
+function scene4() {
+  // --- 3. ファイル内クロスチェック（レース別払戻 vs 冒頭の払戻金一覧表） ---
+  for (const d of DAYS) {
+    const day = days[d.date];
+    let checked = 0;
+    let bad = 0;
+    for (const v of day.k.venues) {
+      // 一覧表: "  1R  2-5-1   20070    1-2-5     620 ..."（3連単・3連複）。同着の継続行はレース番号なし
+      let current = null;
+      for (const line of v.payout_summary_lines) {
+        const m = /^\s+(\d{1,2})R\s+(\d-\d-\d)\s+(\d+)\s+(\d-\d-\d)\s+(\d+)/.exec(
+          line,
+        );
+        if (!m) continue;
+        current = Number(m[1]);
+        const race = v.races.find((r) => r.race_number === current);
+        const tan = race?.payouts.find(
+          (p) => p.kind === "trifecta" && p.combo === m[2],
+        );
+        const fuku = race?.payouts.find(
+          (p) => p.kind === "trio" && p.combo === m[4],
+        );
+        checked++;
+        if (tan?.amount !== Number(m[3]) || fuku?.amount !== Number(m[5])) bad++;
+      }
+    }
+    // 2005-01-01は3連単が無い時代で一覧表の形式が異なるため、対象があれば検証する
+    check(
+      `${d.date} 払戻: 一覧表と一致（${checked}レース確認）`,
+      bad === 0,
+      `不一致${bad}`,
+    );
+  }
+}
+
+function scene5() {
+  // --- 4. 本番DBとの突合（2026-03-15。DBは race_results・exhibition_data・race_start_timings） ---
+  {
+    const amagasaki = days["2026-03-15"].k.venues.find(
+      (v) => v.venue_code === 13,
+    );
+    const r1 = amagasaki.races.find((r) => r.race_number === 1);
+    const rank = (n) => r1.rows.find((x) => x.rank === n).boat_number;
+    check(
+      "DB突合 尼崎1R: 着順1-4-6（DB rank1〜3と一致）",
+      eq([rank(1), rank(2), rank(3)], [1, 4, 6]),
+    );
+    const tan = r1.payouts.find((p) => p.kind === "trifecta");
+    const fuku = r1.payouts.find((p) => p.kind === "trio");
+    check(
+      "DB突合 尼崎1R: 3連単2,760円（DB payout_trio）・3連複1,690円（DB payout_trifecta）",
+      tan.amount === 2760 && fuku.amount === 1690,
+    );
+    const ex = Object.fromEntries(
+      r1.rows.map((x) => [x.boat_number, x.exhibition_time]),
+    );
+    check(
+      "DB突合 尼崎1R: 展示タイム6艇がexhibition_dataと一致",
+      eq(ex, { 1: 6.8, 2: 6.75, 3: 6.81, 4: 6.74, 5: 6.81, 6: 6.7 }),
+      JSON.stringify(ex),
+    );
+    const st = Object.fromEntries(
+      r1.rows.map((x) => [x.boat_number, x.start_timing]),
+    );
+    check(
+      "DB突合 尼崎1R: ST6艇がrace_start_timingsと一致",
+      eq(st, { 1: 0.1, 2: 0.1, 3: 0.13, 4: 0.08, 5: 0.19, 6: 0.12 }),
+      JSON.stringify(st),
+    );
+    check(
+      "DB突合 尼崎1R: 決まり手（逃げ）・ステージ（予選）・締切10:35",
+      r1.technique === "逃げ" &&
+        r1.stage === "予選" &&
+        days["2026-03-15"].b.venues.find((v) => v.venue_code === 13).races[0]
+          .deadline_time === "10:35",
+    );
+    // 尼崎: G1「尼崎市制110周年記念 尼崎センプルカップ」2日目（K/Bにグレード表記は無い）
+    check(
+      "尼崎: タイトル・日目",
+      amagasaki.title === "尼崎市制110周年記念尼崎センプルカップ" &&
+        amagasaki.series_day === 2,
+    );
+  }
+}
+
+function scene6() {
+  // --- 5. 既存パーサー（kfileParser.js）との一致 ---
+  for (const d of DAYS) {
+    const text = read(`k${d.ymd}.txt`);
+    const existingCourses = parseKFileText(text, d.date);
+    const existingRanks = parseKFileRankings(text, d.date);
+    let courseDiff = 0;
+    let rankDiff = 0;
+    const day = days[d.date];
+    for (const v of day.k.venues) {
+      for (const r of v.races) {
+        const id = `${d.date}-${String(v.venue_code).padStart(2, "0")}-${String(r.race_number).padStart(2, "0")}`;
+        const ec = existingCourses.find((x) => x.race_id === id);
+        for (let b = 1; b <= 6; b++) {
+          const mine = r.rows.find((x) => x.boat_number === b)?.course ?? null;
+          if ((ec?.[`actual_course_${b}`] ?? null) !== mine) courseDiff++;
+        }
+        const er = existingRanks.find((x) => x.race_id === id);
+        const mineOrder = r.rows.filter((x) => x.rank).map((x) => x.boat_number);
+        const theirs = [1, 2, 3, 4, 5, 6]
+          .map((n) => er?.[`rank${n}`])
+          .filter((x) => x != null);
+        if (!eq(mineOrder, theirs)) rankDiff++;
+      }
+    }
+    check(
+      `${d.date} 既存パーサーと一致（進入コース差${courseDiff}・着順差${rankDiff}）`,
+      courseDiff === 0 && rankDiff === 0,
+    );
+  }
   // --- 6. 特殊表記の保持 ---
   {
     // 同着（2026-03-15 徳山6R）: 3着が2艇（3号艇と5号艇）、3連単が2通り
@@ -122,6 +247,9 @@ function scene3() {
           1420,
     );
   }
+}
+
+function scene7() {
   {
     // 不成立・F（2019-04-15 蒲郡）
     const gamagori = days["2019-04-15"].k.venues.find((v) => v.venue_code === 7);
@@ -186,9 +314,6 @@ function scene3() {
       .flatMap((r) => r.payouts.filter((p) => p.special === "blank"));
     check("空欄の払戻行（単勝・複勝が空）も項目として保持", blank.length >= 0);
   }
-}
-
-async function scene4() {
   {
     const s = days["2005-01-04"].k.venues
       .flatMap((v) => v.races)
@@ -202,118 +327,14 @@ async function scene4() {
     const s1 = scene1();
     scene2(s1);
   }
-  // --- プレースホルダ（全レース終了前） ---
-  {
-    const text = await decodeLzhText(
-      new Uint8Array(fs.readFileSync(new URL("k260920-pending.lzh", FIX))),
-    );
-    const day = buildKbDay({ date: "2026-09-20", kText: text });
-    check(
-      "プレースホルダ: 検出でき、全会場が pending・レース0",
-      text.includes(PENDING_MARKER) &&
-        day.k.venues.length > 0 &&
-        day.k.venues.every((v) => v.status === "pending" && v.races.length === 0),
-    );
-    check(
-      "プレースホルダ: アーカイブ行を1行も作らない（確定データとして扱わない）",
-      buildArchiveRows(day).races.length === 0,
-    );
-  }
 }
 
-function scene5() {
-  // --- 8. CLI ---
-  {
-    check(
-      "URL・アーカイブパス",
-      buildKbUrl("K", "2022-03-24") ===
-        "https://www1.mbrace.or.jp/od2/K/202203/k220324.lzh" &&
-        kbArchiveRelPath("B", "2005-01-04") === "B/200501/b050104.lzh",
-    );
-    const win = parseWindow("22-06");
-    const at = (iso) => new Date(iso);
-    // JST 23:00 = 14:00Z、JST 03:00 = 18:00Z（前日）、JST 12:00 = 03:00Z
-    check(
-      "窓: 22-06は23時と3時が内、12時が外（日またぎ）",
-      inWindow(win, at("2026-09-20T14:00:00Z")) &&
-        inWindow(win, at("2026-09-20T18:00:00Z")) &&
-        !inWindow(win, at("2026-09-20T03:00:00Z")),
-    );
-    check(
-      "日次上限の集計: 23:00と翌03:00が同じ夜",
-      windowDayKey(win, at("2026-09-20T14:00:00Z")) ===
-        windowDayKey(win, at("2026-09-20T18:00:00Z")) &&
-        windowDayKey(win, at("2026-09-20T14:00:00Z")) !==
-          windowDayKey(win, at("2026-09-21T14:00:00Z")),
-    );
-    check(
-      "窓any=常に内",
-      inWindow(parseWindow("any"), at("2026-09-20T03:00:00Z")),
-    );
-    check(
-      "HTTP分類: 403は閾値2、429/503は閾値3+バックオフ、404は不在",
-      classifyResponse(403).threshold === 2 &&
-        classifyResponse(429).backoff &&
-        classifyResponse(503).threshold === 3 &&
-        classifyResponse(404).kind === "absent" &&
-        classifyResponse(200).kind === "ok",
-    );
-    const manifest = latestManifest([
-      { date: "2019-04-01", kind: "K", status: "ok" },
-      { date: "2019-04-01", kind: "B", status: "error" },
-      { date: "2019-04-02", kind: "K", status: "absent" },
-      { date: "2019-04-02", kind: "B", status: "skipped" },
-    ]);
-    const todo = planDownload({
-      from: "2019-04-01",
-      to: "2019-04-03",
-      kinds: ["K", "B"],
-      manifest,
-    });
-    check(
-      "再開: 完了（ok/absent/skipped）は除き、error・未着手を対象にする",
-      eq(todo, [
-        { date: "2019-04-01", kind: "B" },
-        { date: "2019-04-03", kind: "K" },
-        { date: "2019-04-03", kind: "B" },
-      ]),
-    );
-    const est = estimatePlan({
-      requests: 4866,
-      dailyLimit: 2000,
-      meanIntervalMs: 4000,
-      latencyMs: 1000,
-    });
-    check(
-      "見積り: 4,866リクエスト・上限2,000で3夜",
-      est.nights === 3 && est.totalHours === 6.8,
-    );
-    const opts = cli.validateOptions(
-      cli.parseArgs([
-        "download",
-        "--from=2019-04-01",
-        "--to=2019-04-02",
-        "--interval-min-ms=500",
-      ]),
-    );
-    check(
-      "間隔の下限: 3000ms未満の指定は3000msに引き上げる",
-      opts.intervalMinMs === 3000 && opts.intervalMaxMs >= 3000,
-    );
-    let threw = false;
-    try {
-      cli.validateOptions(cli.parseArgs(["download", "--from=2004-12-31"]));
-    } catch {
-      threw = true;
-    }
-    check("公式の最古（2005-01-01）より前は拒否", threw);
-  }
-}
-
-/** verify から呼ぶ入口。env は verify 側の束縛（FIX・check・eq・days） */
-export async function runKbFileParserScenes1(env) {
-  ({ FIX, check, eq, days } = env);
+/** verify から呼ぶ入口。env は verify 側の束縛（read・check・eq・DAYS・days） */
+export function runKbFileParserScenes1(env) {
+  ({ read, check, eq, DAYS, days } = env);
   scene3();
-  await scene4();
+  scene4();
   scene5();
+  scene6();
+  scene7();
 }

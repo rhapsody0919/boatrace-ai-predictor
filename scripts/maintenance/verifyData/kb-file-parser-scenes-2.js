@@ -3,72 +3,118 @@
  * 判定と期待値は分ける前の verify-kb-file-parser.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-import fs from "node:fs";
-import {
-  classifyKFileVenues,
-  decodeLzhText,
-  parseKText,
-  _internal as kbInternal,
-  summarizeKbDay,
-} from "../../lib/kbFileParser.js";
+import { buildKbUrl, kbArchiveRelPath } from "../../lib/kbFileParser.js";
 import { buildArchiveRows, KB_ARCHIVE_TABLES } from "../../lib/kbArchiveRows.js";
 import { upsertChangedRows } from "../../lib/unchangedRows.js";
+import {
+  parseWindow,
+  inWindow,
+  windowDayKey,
+  classifyResponse,
+  latestManifest,
+  planDownload,
+  estimatePlan,
+  _internal as cli,
+} from "../kb-backfill.js";
 
-let FIX, read, check, eq, days;
+let check, eq, days;
 
-/** 元の verify の1つの塊 { } を割った 1/2 */
 function scene1() {
-  const k = parseKText(read("k251212-03-k251203-14-cancelled.txt"));
-  const edogawa = k.venues.find((v) => v.venue_code === 3);
-  const naruto = k.venues.find((v) => v.venue_code === 14);
-  check(
-    "中止: 全日中止（江戸川 2025-12-12）は、成績0レース・中止 1〜12R",
-    edogawa?.races.length === 0 &&
-      JSON.stringify(edogawa?.cancelled_race_numbers) ===
-        JSON.stringify([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
-    JSON.stringify(edogawa?.cancelled_race_numbers),
-  );
-  check(
-    "中止: 途中打ち切り（鳴門 2025-12-03）は、成績 1〜10R・中止 11・12R（重ならず、合わせて12）",
-    naruto?.races.length === 10 &&
-      JSON.stringify(naruto?.cancelled_race_numbers) === "[11,12]" &&
-      !naruto.races.some((r) =>
-        naruto.cancelled_race_numbers.includes(r.race_number),
-      ),
-    JSON.stringify({
-      races: naruto?.races.length,
-      c: naruto?.cancelled_race_numbers,
-    }),
-  );
-  return { k, edogawa };
+  // --- 8. CLI ---
+  {
+    check(
+      "URL・アーカイブパス",
+      buildKbUrl("K", "2022-03-24") ===
+        "https://www1.mbrace.or.jp/od2/K/202203/k220324.lzh" &&
+        kbArchiveRelPath("B", "2005-01-04") === "B/200501/b050104.lzh",
+    );
+    const win = parseWindow("22-06");
+    const at = (iso) => new Date(iso);
+    // JST 23:00 = 14:00Z、JST 03:00 = 18:00Z（前日）、JST 12:00 = 03:00Z
+    check(
+      "窓: 22-06は23時と3時が内、12時が外（日またぎ）",
+      inWindow(win, at("2026-09-20T14:00:00Z")) &&
+        inWindow(win, at("2026-09-20T18:00:00Z")) &&
+        !inWindow(win, at("2026-09-20T03:00:00Z")),
+    );
+    check(
+      "日次上限の集計: 23:00と翌03:00が同じ夜",
+      windowDayKey(win, at("2026-09-20T14:00:00Z")) ===
+        windowDayKey(win, at("2026-09-20T18:00:00Z")) &&
+        windowDayKey(win, at("2026-09-20T14:00:00Z")) !==
+          windowDayKey(win, at("2026-09-21T14:00:00Z")),
+    );
+    check(
+      "窓any=常に内",
+      inWindow(parseWindow("any"), at("2026-09-20T03:00:00Z")),
+    );
+    check(
+      "HTTP分類: 403は閾値2、429/503は閾値3+バックオフ、404は不在",
+      classifyResponse(403).threshold === 2 &&
+        classifyResponse(429).backoff &&
+        classifyResponse(503).threshold === 3 &&
+        classifyResponse(404).kind === "absent" &&
+        classifyResponse(200).kind === "ok",
+    );
+    const manifest = latestManifest([
+      { date: "2019-04-01", kind: "K", status: "ok" },
+      { date: "2019-04-01", kind: "B", status: "error" },
+      { date: "2019-04-02", kind: "K", status: "absent" },
+      { date: "2019-04-02", kind: "B", status: "skipped" },
+    ]);
+    const todo = planDownload({
+      from: "2019-04-01",
+      to: "2019-04-03",
+      kinds: ["K", "B"],
+      manifest,
+    });
+    check(
+      "再開: 完了（ok/absent/skipped）は除き、error・未着手を対象にする",
+      eq(todo, [
+        { date: "2019-04-01", kind: "B" },
+        { date: "2019-04-03", kind: "K" },
+        { date: "2019-04-03", kind: "B" },
+      ]),
+    );
+    const est = estimatePlan({
+      requests: 4866,
+      dailyLimit: 2000,
+      meanIntervalMs: 4000,
+      latencyMs: 1000,
+    });
+    check(
+      "見積り: 4,866リクエスト・上限2,000で3夜",
+      est.nights === 3 && est.totalHours === 6.8,
+    );
+    const opts = cli.validateOptions(
+      cli.parseArgs([
+        "download",
+        "--from=2019-04-01",
+        "--to=2019-04-02",
+        "--interval-min-ms=500",
+      ]),
+    );
+    check(
+      "間隔の下限: 3000ms未満の指定は3000msに引き上げる",
+      opts.intervalMinMs === 3000 && opts.intervalMaxMs >= 3000,
+    );
+    let threw = false;
+    try {
+      cli.validateOptions(cli.parseArgs(["download", "--from=2004-12-31"]));
+    } catch {
+      threw = true;
+    }
+    check("公式の最古（2005-01-01）より前は拒否", threw);
+  }
 }
 
-/** 元の verify の1つの塊 { } を割った 2/2 */
-function scene2({ k, edogawa }) {
-  check(
-    "中止: 要約の行は、従来どおり payout_summary_lines にも残す（既存の挙動を変えない）",
-    edogawa?.payout_summary_lines.some((l) => /1R\s+中/.test(l)),
-  );
-  const normal = parseKText(read("k260315.txt"));
-  check(
-    "中止: 中止の無い日（k260315）は、全会場で cancelled_race_numbers が空。払戻の要約行を中止と取り違えない",
-    normal.venues.length > 0 &&
-      normal.venues.every((v) => v.cancelled_race_numbers.length === 0),
-  );
-  const re = kbInternal.K_SUMMARY_CANCELLED_RE;
-  check(
-    "中止の行の正規表現: 全角スペースの有無を問わず取り、払戻の要約（組番と金額）は取らない",
-    re.test("           1R  中　止") &&
-      re.test("          12R  中止") &&
-      !re.test("           1R  3-1-2    2340  3-1-2   680"),
-  );
-  check(
-    "中止: summarizeKbDay に k_cancelled_races（中止のレース数）が出る",
-    summarizeKbDay({ date: "x", k, b: null }).k_cancelled_races === 14,
-  );
+/** verify から呼ぶ入口。env は verify 側の束縛（check・eq・days） */
+export function runKbFileParserScenes2(env) {
+  ({ check, eq, days } = env);
+  scene1();
 }
 
-async function scene3() {
+async function scene2() {
   // --- 9. load の書き込み経路（メモリ上の偽クライアント。本番DBには接続しない） ---
   {
     const store = new Map(); // table -> Map(key -> row)
@@ -141,55 +187,8 @@ async function scene3() {
   }
 }
 
-async function scene4() {
-  // 9. Kファイルの確定状況は、会場ブロック単位で判定する（中止・順延の会場があるだけの日を、捨てない）
-  {
-    const P = "データは、この場の全レース終了後に登録されます。";
-    const block = (code, body) => `${code}KBGN\n${body}\n${code}KEND`;
-    const done = (code) =>
-      block(code, "津［成績］ 7/30 x\n  1R 予選 H1800m 晴 風 北 2m 波 1cm");
-    const pend = (code) => block(code, `ボートレース\n${P}`);
-    const mixed = [done("10"), pend("09"), done("08")].join("\n\n");
-    const c1 = classifyKFileVenues(mixed);
-    check(
-      "K確定状況: 一部の会場だけ未確定（中止・順延）の日は、日全体を未確定にしない",
-      c1.total === 3 &&
-        eq(c1.pendingVenues, [9]) &&
-        eq(c1.completeVenues, [10, 8]) &&
-        c1.allPending === false,
-      JSON.stringify(c1),
-    );
-    const c2 = classifyKFileVenues([pend("01"), pend("02")].join("\n"));
-    check(
-      "K確定状況: 全会場が未確定の日（全レース終了前）は、日全体を未確定にする",
-      c2.total === 2 && c2.allPending === true && c2.completeVenues.length === 0,
-      JSON.stringify(c2),
-    );
-    const c3 = classifyKFileVenues(P);
-    check(
-      "K確定状況: 会場ブロックが読めない形式は、確定とみなさない（allPendingにしない。呼び出し側がファイル全体のマーカーで判定）",
-      c3.total === 0 && c3.allPending === false,
-      JSON.stringify(c3),
-    );
-    const real = await decodeLzhText(
-      fs.readFileSync(new URL("k260920-pending.lzh", FIX)),
-    );
-    const c4 = classifyKFileVenues(real);
-    check(
-      "K確定状況: 実物のプレースホルダ（k260920-pending.lzh、321バイト）は、日全体が未確定として扱われる",
-      c4.allPending === true || (c4.total === 0 && real.includes(P)),
-      JSON.stringify(c4),
-    );
-  }
-  {
-    const s1 = scene1();
-    scene2(s1);
-  }
-}
-
-/** verify から呼ぶ入口。env は verify 側の束縛（FIX・read・check・eq・days） */
-export async function runKbFileParserScenes2(env) {
-  ({ FIX, read, check, eq, days } = env);
-  await scene3();
-  await scene4();
+/** verify から呼ぶ入口。env は verify 側の束縛（check・eq・days） */
+export async function runKbFileParserScenes3(env) {
+  ({ check, eq, days } = env);
+  await scene2();
 }
