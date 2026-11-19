@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2094,
+    "sourceFiles": 2095,
     "filesWithAccess": 282,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -3906,7 +3906,7 @@
           "test": true
         },
         {
-          "ref": "src/services/scheduleQueries.js:268",
+          "ref": "src/services/scheduleQueries.js:274",
           "op": "select",
           "via": "client",
           "columns": [
@@ -3942,7 +3942,7 @@
             "scripts/daily/generate-morning-digest.js:890",
             "scripts/daily/generate-morning-digest.js:919",
             "scripts/maintenance/verify-morning-digest.js:40",
-            "src/services/scheduleQueries.js:268"
+            "src/services/scheduleQueries.js:274"
           ],
           "writers": [],
           "sql": []
@@ -4039,7 +4039,7 @@
           "test": true
         },
         {
-          "ref": "src/services/scheduleQueries.js:273",
+          "ref": "src/services/scheduleQueries.js:279",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4082,21 +4082,21 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:895",
             "scripts/maintenance/verify-morning-digest.js:58",
-            "src/services/scheduleQueries.js:273"
+            "src/services/scheduleQueries.js:279"
           ],
           "writers": [],
           "sql": []
         },
         "section": {
           "readers": [
-            "src/services/scheduleQueries.js:273"
+            "src/services/scheduleQueries.js:279"
           ],
           "writers": [],
           "sql": []
         },
         "rank": {
           "readers": [
-            "src/services/scheduleQueries.js:273"
+            "src/services/scheduleQueries.js:279"
           ],
           "writers": [],
           "sql": []
@@ -9070,7 +9070,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:179",
+          "ref": "src/services/scheduleQueries.js:183",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9100,7 +9100,7 @@
         "key": {
           "readers": [
             "api/race-history/summary.js:37",
-            "src/services/scheduleQueries.js:179"
+            "src/services/scheduleQueries.js:183"
           ],
           "writers": [
             "scripts/daily/update-race-history-cache.js:121"
@@ -9112,7 +9112,7 @@
         "data": {
           "readers": [
             "api/race-history/summary.js:37",
-            "src/services/scheduleQueries.js:179"
+            "src/services/scheduleQueries.js:183"
           ],
           "writers": [
             "scripts/daily/update-race-history-cache.js:121"
@@ -12649,17 +12649,20 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:69",
+          "ref": "src/services/scheduleQueries.js:71",
           "op": "select",
           "via": "client",
           "columns": [
+            "class_code",
             "end_date",
+            "kind",
             "start_date",
+            "total_days",
             "venue_code"
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:95",
+          "ref": "src/services/scheduleQueries.js:99",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12690,8 +12693,8 @@
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
-            "src/services/scheduleQueries.js:69",
-            "src/services/scheduleQueries.js:95"
+            "src/services/scheduleQueries.js:71",
+            "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
           "sql": [
@@ -12709,8 +12712,8 @@
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
-            "src/services/scheduleQueries.js:69",
-            "src/services/scheduleQueries.js:95"
+            "src/services/scheduleQueries.js:71",
+            "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
           "sql": [
@@ -12728,8 +12731,8 @@
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
-            "src/services/scheduleQueries.js:69",
-            "src/services/scheduleQueries.js:95"
+            "src/services/scheduleQueries.js:71",
+            "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
           "sql": [
@@ -12738,7 +12741,8 @@
         },
         "total_days": {
           "readers": [
-            "src/services/meetQueries3.js:35"
+            "src/services/meetQueries3.js:35",
+            "src/services/scheduleQueries.js:71"
           ],
           "writers": [],
           "sql": []
@@ -12749,14 +12753,15 @@
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:35",
-            "src/services/scheduleQueries.js:95"
+            "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
           "sql": []
         },
         "class_code": {
           "readers": [
-            "src/services/meetQueries3.js:35"
+            "src/services/meetQueries3.js:35",
+            "src/services/scheduleQueries.js:71"
           ],
           "writers": [],
           "sql": []
@@ -12767,7 +12772,7 @@
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:857",
             "src/services/meetQueries3.js:35",
-            "src/services/scheduleQueries.js:95"
+            "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
           "sql": []
@@ -12775,7 +12780,8 @@
         "kind": {
           "readers": [
             "scripts/lib/snsTodayDigestV3.js:115",
-            "src/services/meetQueries3.js:35"
+            "src/services/meetQueries3.js:35",
+            "src/services/scheduleQueries.js:71"
           ],
           "writers": [],
           "sql": []
@@ -17147,7 +17153,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:126",
+          "ref": "src/services/scheduleQueries.js:130",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17155,7 +17161,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:206",
+          "ref": "src/services/scheduleQueries.js:210",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17164,7 +17170,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:230",
+          "ref": "src/services/scheduleQueries.js:234",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17520,7 +17526,7 @@
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/ruleMatchService.js:158",
-            "src/services/scheduleQueries.js:230",
+            "src/services/scheduleQueries.js:234",
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:117",
             "src/services/venueQueries2.js:44",
@@ -17620,9 +17626,9 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
-            "src/services/scheduleQueries.js:126",
-            "src/services/scheduleQueries.js:206",
-            "src/services/scheduleQueries.js:230",
+            "src/services/scheduleQueries.js:130",
+            "src/services/scheduleQueries.js:210",
+            "src/services/scheduleQueries.js:234",
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:117",
             "src/services/venueQueries2.js:44",
@@ -17702,8 +17708,8 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
-            "src/services/scheduleQueries.js:206",
-            "src/services/scheduleQueries.js:230",
+            "src/services/scheduleQueries.js:210",
+            "src/services/scheduleQueries.js:234",
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:117",
             "src/services/venueQueries2.js:44",
@@ -17746,7 +17752,7 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
-            "src/services/scheduleQueries.js:230",
+            "src/services/scheduleQueries.js:234",
             "src/services/sherlockService.js:66",
             "src/services/watsonService.js:72"
           ],
@@ -17807,7 +17813,7 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/ruleMatchService.js:158",
-            "src/services/scheduleQueries.js:230",
+            "src/services/scheduleQueries.js:234",
             "src/services/sherlockService.js:66",
             "src/services/watsonService.js:72"
           ],
@@ -27965,7 +27971,7 @@
           "via": "rest"
         },
         {
-          "ref": "src/services/scheduleQueries.js:53",
+          "ref": "src/services/scheduleQueries.js:55",
           "via": "client"
         }
       ],
