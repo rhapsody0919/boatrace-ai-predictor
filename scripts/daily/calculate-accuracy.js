@@ -97,7 +97,11 @@ async function calculateVolatilityStats() {
     (q) => q.gte("race_id", ninetyDaysAgoStr).order("race_id"),
   );
 
-  const built = buildVolatilityStats(races, results);
+  // 止める予定の列 volatility_level はこのファイルだけが読む（verify-legacy-prediction-readers）。lib へは level として渡す
+  const built = buildVolatilityStats(
+    races.map((race) => ({ ...race, level: race.volatility_level })),
+    results,
+  );
   if (!built) return null;
 
   console.log(

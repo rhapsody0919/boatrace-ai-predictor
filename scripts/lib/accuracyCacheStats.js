@@ -72,6 +72,7 @@ export function addMonths(date, n) {
 
 
 // races × race_results をアプリ側で JOIN する（不成立・中止・結果なしは外す）
+// races の各行は level（荒れ度のレベル）を持つ。止める予定の列の名前は呼び手（calculate-accuracy.js）だけが読む
 function joinVolatility(races, results) {
   const resultMap = new Map(results.map((r) => [r.race_id, r]));
   return races
@@ -81,7 +82,7 @@ function joinVolatility(races, results) {
       if (!result || result.is_cancelled || !isJudgeable(result)) return null;
       return {
         venueCode: race.venue_code,
-        level: race.volatility_level,
+        level: race.level,
         grade: race.race_grade,
         upset: result.rank1 !== 1,
       };
@@ -89,8 +90,8 @@ function joinVolatility(races, results) {
     .filter(Boolean);
 }
 
-// レベル別集計
-function volatilityByLevel(joined, baseline) {
+// レベル別集計（calculate-unified-volatility-accuracy.js も使う）
+export function volatilityByLevel(joined, baseline) {
   const byLevel = {};
   for (const level of ["low", "medium", "high"]) {
     const rows = joined.filter((r) => r.level === level);
