@@ -290,6 +290,34 @@ export async function decideApiGate({
   keys,
   ipRanges,
 }) {
+  const ctx = gateContext({ url, headers, ip, ipRanges });
+  const { result, byMode } = gateResultMakers(ctx, mode);
+  const { inspected } = ctx;
+
+  if (!inspected.ok) {
+    return result({ outcome: "reject", status: 400, reason: "bad_path" });
+  }
+  const path = inspected.decoded;
+  // /API/… のように大文字にした形も関門に掛ける（除外の判定は大文字小文字を区別したまま＝除外を広げない）
+  if (!isUnder(path.toLowerCase(), "/api"))
+    return result({ reason: "not_api" });
+  if (API_GATE_EXCLUDED_PREFIXES.some((prefix) => isUnder(path, prefix))) {
+    return result({ reason: "excluded" });
+  }
+
+  // 受け取った値も、比べる鍵も、前後の空白を落としてから比べる（gateKeysFromEnv と同じ形）
+  const provided = trimmedOrUndefined(headers.get(INTERNAL_KEY_HEADER));
+  if (provided) {
+    return internalKeyResult(provided, keys, ctx.claimedCaller, result, byMode);
+  }
+
+  const reason = passReason(ctx, headers);
+  if (reason) return result({ reason });
+  return byMode("deny", "would_deny");
+}
+
+// 判定に使う要求の値（URL・ヘッダ・ボットの IP の確かめ・パスの検査）
+function gateContext({ url, headers, ip, ipRanges }) {
   const parsed = new URL(url);
   const selfHost = parsed.host;
   const ua = headers.get("user-agent");
@@ -300,7 +328,12 @@ export async function decideApiGate({
   const botVerified = claimedVerifiedBot(ua) ? ipInRanges(ip, ipRanges) : null;
   const inspected = inspectApiPath(parsed.pathname);
   const claimedCaller = sanitizeCaller(headers.get(CALLER_HEADER));
+  return { parsed, selfHost, uaClass, sfs, originHeader, originHost, botVerified, inspected, claimedCaller };
+}
 
+// 結果の形（result）と、段階で拒むか数えるかを分ける形（byMode）
+function gateResultMakers(ctx, mode) {
+  const { parsed, uaClass, sfs, originHost, botVerified, inspected, claimedCaller } = ctx;
   const result = (fields) => ({
     outcome: "pass",
     status: null,
@@ -322,53 +355,46 @@ export async function decideApiGate({
     normalizeGateMode(mode) === "enforce"
       ? result({ outcome: "reject", status: 403, reason: enforceReason })
       : result({ reason: observeReason });
+  return { result, byMode };
+}
 
-  if (!inspected.ok) {
-    return result({ outcome: "reject", status: 400, reason: "bad_path" });
+// 合言葉のヘッダがある要求。current・next のどちらかで一致すれば internal、どちらでもなければ bad_key
+async function internalKeyResult(provided, keys, claimedCaller, result, byMode) {
+  const slots = [
+    ["current", keys?.current],
+    ["next", keys?.next],
+  ].map(([slot, key]) => [slot, trimmedOrUndefined(key) ?? null]);
+  // 両方の枠を必ず比べ（空の枠も捨てる値と比べる）、どちらで一致したか・NEXT があるかを時間差で漏らさない
+  const matches = await Promise.all(
+    slots.map(([, key]) =>
+      constantTimeEqual(provided, key ?? UNSET_KEY_PLACEHOLDER),
+    ),
+  );
+  const hit = slots.find(([, key], i) => key !== null && matches[i]);
+  if (hit) {
+    return result({
+      reason: "internal",
+      key_slot: hit[0],
+      caller: claimedCaller,
+      caller_claimed: null,
+    });
   }
-  const path = inspected.decoded;
-  // /API/… のように大文字にした形も関門に掛ける（除外の判定は大文字小文字を区別したまま＝除外を広げない）
-  if (!isUnder(path.toLowerCase(), "/api"))
-    return result({ reason: "not_api" });
-  if (API_GATE_EXCLUDED_PREFIXES.some((prefix) => isUnder(path, prefix))) {
-    return result({ reason: "excluded" });
-  }
+  return byMode("bad_key", "bad_key");
+}
 
-  // 受け取った値も、比べる鍵も、前後の空白を落としてから比べる（gateKeysFromEnv と同じ形）
-  const provided = trimmedOrUndefined(headers.get(INTERNAL_KEY_HEADER));
-  if (provided) {
-    const slots = [
-      ["current", keys?.current],
-      ["next", keys?.next],
-    ].map(([slot, key]) => [slot, trimmedOrUndefined(key) ?? null]);
-    // 両方の枠を必ず比べ（空の枠も捨てる値と比べる）、どちらで一致したか・NEXT があるかを時間差で漏らさない
-    const matches = await Promise.all(
-      slots.map(([, key]) =>
-        constantTimeEqual(provided, key ?? UNSET_KEY_PLACEHOLDER),
-      ),
-    );
-    const hit = slots.find(([, key], i) => key !== null && matches[i]);
-    if (hit) {
-      return result({
-        reason: "internal",
-        key_slot: hit[0],
-        caller: claimedCaller,
-        caller_claimed: null,
-      });
-    }
-    return byMode("bad_key", "bad_key");
-  }
-
+// 合言葉の無い要求を通す理由（無ければ null）
+function passReason(ctx, headers) {
+  const { selfHost, uaClass, sfs, originHeader, originHost, botVerified } = ctx;
   if (
     sfs === "same-origin" &&
     (originHeader === null || originHost === selfHost)
   ) {
-    return result({ reason: "browser" });
+    return "browser";
   }
   if (sfs === null && hostOf(headers.get("referer")) === selfHost) {
-    return result({ reason: "browser_legacy" });
+    return "browser_legacy";
   }
-  if (botVerified === true) return result({ reason: "search_bot" });
+  if (botVerified === true) return "search_bot";
   // ブラウザの UA で Sec-Fetch-Site が無い要求は、段階に依らず通す（オーナー 2026-11-06 決定、上の 6b）。
   // UA は偽れるので守りとしては弱い。別の理由で数え、件数を見て後で絞る。
   // 別の host の Origin・Referer は別サイトからの要求の印なので通さない（自分の host の Referer は上の browser_legacy）
@@ -379,9 +405,9 @@ export async function decideApiGate({
     (originHeader === null || originHost === selfHost) &&
     (refererHeader === null || hostOf(refererHeader) === selfHost)
   ) {
-    return result({ reason: "browser_no_sfs" });
+    return "browser_no_sfs";
   }
-  return byMode("deny", "would_deny");
+  return null;
 }
 
 /** 400・403 の応答。拒んだ結果を CDN に残さない（no-store） */

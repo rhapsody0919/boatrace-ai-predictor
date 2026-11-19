@@ -4,7 +4,8 @@ HEAD（commit 済みの作業場所）を --base（PR の base の SHA）との�
   1. e2e の spec の比較（spec_guard.py。この写しで新しく書いた物）
   2. 許可リストの向き（guard_direction.py。hq の scripts/guard_direction.py の写し）。行が減る・1対1 の付け替えだけなら通す。
      scripts/maintenance/*-allowlist.json のうち形の表（PARSERS）に無い物の変更は向きを言えないので赤
-  3. verify の変異検査（verify_guard.py。hq の scripts/verify_guard.py の写し）。verify-*.js か verify-registry.json の変更があるときだけ。
+  3. verify の変異検査（verify_guard.py。hq の scripts/verify_guard.py の写し）。verify-*.js・verify-registry.json・verifyData/ の変更があるときだけ
+     （verifyData/ は読む verify-*.js を逆に辿って比べる。どれを拾うかは verify_guard.is_verify_path）。
      registry への行の追加は、同じ PR で新しく足した verify-*.js の行だけ通す
 判定器が読めない・例外のときは赤（握りつぶさない）。理由は1行ずつ出す（GitHub Actions では ::error:: の注記も付ける）。
 verify の実行の囲い（sandbox-exec）は macOS だけにある。GitHub Actions の上（GITHUB_ACTIONS=true）では囲いなしで回す:

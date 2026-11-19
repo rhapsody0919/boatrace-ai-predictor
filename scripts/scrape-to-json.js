@@ -153,6 +153,96 @@ function scrapeRaceTitle($) {
 }
 
 // 出走表から選手情報を取得する関数
+// td.is-lineH2 の i 番目の欄の行（「勝率<br>2連率<br>3連率」等）
+function statLines($stats, i) {
+  return $stats
+    .eq(i)
+    .text()
+    .trim()
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// 出走表の1艇（index は 0 始まりの枠）
+function parseRacer($, tbody, index) {
+  const $tbody = $(tbody);
+
+  // 選手名を取得
+  const name = $tbody.find(".is-fs18.is-fBold a").text().trim();
+
+  // 級別と年齢を取得
+  // .is-fs11 には2つのdivがある: 1つ目が「4203 / B1」、2つ目が「地域/地域<br>年齢/体重」
+  const $fs11Divs = $tbody.find(".is-fs11");
+
+  // 登録番号と級別を取得（例: "4203 / B1" から "4203" と "B1" を抽出）
+  const gradeText = $fs11Divs.eq(0).text().trim();
+  const racerIdMatch = gradeText.match(/^(\d+)/);
+  const racerId = racerIdMatch ? parseInt(racerIdMatch[1]) : null;
+  const gradeMatch = gradeText.match(/\s*\/\s*([AB][12])/);
+  const grade = gradeMatch ? gradeMatch[1] : "-";
+
+  // 年齢を取得（例: "群馬/栃木<br>49歳/54.1kg" から "49" を抽出）
+  const ageText = $fs11Divs.eq(1).text().trim();
+  const ageMatch = ageText.match(/(\d+)歳/);
+  const age = ageMatch ? parseInt(ageMatch[1]) : null;
+
+  return {
+    lane: index + 1, // 1-6
+    racerId: racerId,
+    name: name || "選手名不明",
+    grade: grade || "-",
+    age: age,
+    // 統計データを取得（td.is-lineH2から）
+    ...racerRates($tbody.find("td.is-lineH2")),
+  };
+}
+
+// 全国・当地の勝率・2連率・3連率と、モーター・ボートの番号・2連率・3連率（読めなければ 0、番号は null）
+function racerRates($stats) {
+  // 全国: 勝率<br>2連率<br>3連率
+  const globalStats = statLines($stats, 1);
+  // 当地: 勝率<br>2連率<br>3連率
+  const localStats = statLines($stats, 2);
+  // モーター: 番号<br>2連率<br>3連率
+  const motorStats = statLines($stats, 3);
+  // ボート: 番号<br>2連率<br>3連率
+  const boatStats = statLines($stats, 4);
+  return {
+    globalWinRate: parseFloat(globalStats[0]) || 0,
+    global2Rate: parseFloat(globalStats[1]) || 0,
+    global3Rate: parseFloat(globalStats[2]) || 0,
+    localWinRate: parseFloat(localStats[0]) || 0,
+    local2Rate: parseFloat(localStats[1]) || 0,
+    local3Rate: parseFloat(localStats[2]) || 0,
+    motorNumber: parseInt(motorStats[0]) || null,
+    motor2Rate: parseFloat(motorStats[1]) || 0,
+    motor3Rate: parseFloat(motorStats[2]) || 0,
+    boatNumber: parseInt(boatStats[0]) || null,
+    boat2Rate: parseFloat(boatStats[1]) || 0,
+    boat3Rate: parseFloat(boatStats[2]) || 0,
+  };
+}
+
+// F数・L数（BOA-590）。朝の初期化で書かないと、そのレースのレース情報の窓（発走60分前）まで NULL のままになり、
+// Fバッジ・Lバッジ・「今節」の印が出ない（ナイター会場の後半のレースは夕方まで）。新しい出走表パーサーで同じ
+// ページを読み、艇番で突き合わせる。読めなければ付けない（初期化は止めない。値は窓の取得が埋める）
+function addFlCounts($, racers, placeCd, raceNo) {
+  try {
+    const { entries } = parseRaceListDocument($);
+    for (const racer of racers) {
+      const e = entries.find((x) => x.boat_number === racer.lane);
+      if (!e) continue;
+      if (Number.isInteger(e.f_count)) racer.fCount = e.f_count;
+      if (Number.isInteger(e.l_count)) racer.lCount = e.l_count;
+    }
+  } catch (e) {
+    console.warn(
+      `⚠️ 出走表のF数・L数を読めませんでした（会場${placeCd} ${raceNo}R）: ${e.message}`,
+    );
+  }
+}
+
 async function getRacelist(date, placeCd, raceNo, io = DEFAULT_IO) {
   try {
     const url = getUrl(date, placeCd, raceNo, "racelist");
@@ -165,121 +255,13 @@ async function getRacelist(date, placeCd, raceNo, io = DEFAULT_IO) {
     const raceTitle = scrapeRaceTitle($);
     const raceStage = scrapeRaceStage($);
 
-    const racers = [];
-
     // 選手情報を取得（1号艇から6号艇まで）
+    const racers = [];
     $(".table1 tbody.is-fs12").each((index, tbody) => {
       if (index >= 6) return; // 最大6艇まで
-
-      const $tbody = $(tbody);
-
-      // 選手名を取得
-      const name = $tbody.find(".is-fs18.is-fBold a").text().trim();
-
-      // 級別と年齢を取得
-      // .is-fs11 には2つのdivがある: 1つ目が「4203 / B1」、2つ目が「地域/地域<br>年齢/体重」
-      const $fs11Divs = $tbody.find(".is-fs11");
-
-      // 登録番号と級別を取得（例: "4203 / B1" から "4203" と "B1" を抽出）
-      const gradeText = $fs11Divs.eq(0).text().trim();
-      const racerIdMatch = gradeText.match(/^(\d+)/);
-      const racerId = racerIdMatch ? parseInt(racerIdMatch[1]) : null;
-      const gradeMatch = gradeText.match(/\s*\/\s*([AB][12])/);
-      const grade = gradeMatch ? gradeMatch[1] : "-";
-
-      // 年齢を取得（例: "群馬/栃木<br>49歳/54.1kg" から "49" を抽出）
-      const ageText = $fs11Divs.eq(1).text().trim();
-      const ageMatch = ageText.match(/(\d+)歳/);
-      const age = ageMatch ? parseInt(ageMatch[1]) : null;
-
-      // 統計データを取得（td.is-lineH2から）
-      const $stats = $tbody.find("td.is-lineH2");
-
-      // 全国: 勝率<br>2連率<br>3連率
-      const globalStats = $stats
-        .eq(1)
-        .text()
-        .trim()
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const globalWinRate = parseFloat(globalStats[0]) || 0;
-      const global2Rate = parseFloat(globalStats[1]) || 0;
-      const global3Rate = parseFloat(globalStats[2]) || 0;
-
-      // 当地: 勝率<br>2連率<br>3連率
-      const localStats = $stats
-        .eq(2)
-        .text()
-        .trim()
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const localWinRate = parseFloat(localStats[0]) || 0;
-      const local2Rate = parseFloat(localStats[1]) || 0;
-      const local3Rate = parseFloat(localStats[2]) || 0;
-
-      // モーター: 番号<br>2連率<br>3連率
-      const motorStats = $stats
-        .eq(3)
-        .text()
-        .trim()
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const motorNumber = parseInt(motorStats[0]) || null;
-      const motor2Rate = parseFloat(motorStats[1]) || 0;
-      const motor3Rate = parseFloat(motorStats[2]) || 0;
-
-      // ボート: 番号<br>2連率<br>3連率
-      const boatStats = $stats
-        .eq(4)
-        .text()
-        .trim()
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const boatNumber = parseInt(boatStats[0]) || null;
-      const boat2Rate = parseFloat(boatStats[1]) || 0;
-      const boat3Rate = parseFloat(boatStats[2]) || 0;
-
-      racers.push({
-        lane: index + 1, // 1-6
-        racerId: racerId,
-        name: name || "選手名不明",
-        grade: grade || "-",
-        age: age,
-        globalWinRate: globalWinRate,
-        global2Rate: global2Rate,
-        global3Rate: global3Rate,
-        localWinRate: localWinRate,
-        local2Rate: local2Rate,
-        local3Rate: local3Rate,
-        motorNumber: motorNumber,
-        motor2Rate: motor2Rate,
-        motor3Rate: motor3Rate,
-        boatNumber: boatNumber,
-        boat2Rate: boat2Rate,
-        boat3Rate: boat3Rate,
-      });
+      racers.push(parseRacer($, tbody, index));
     });
-
-    // F数・L数（BOA-590）。朝の初期化で書かないと、そのレースのレース情報の窓（発走60分前）まで NULL のままになり、
-    // Fバッジ・Lバッジ・「今節」の印が出ない（ナイター会場の後半のレースは夕方まで）。新しい出走表パーサーで同じ
-    // ページを読み、艇番で突き合わせる。読めなければ付けない（初期化は止めない。値は窓の取得が埋める）
-    try {
-      const { entries } = parseRaceListDocument($);
-      for (const racer of racers) {
-        const e = entries.find((x) => x.boat_number === racer.lane);
-        if (!e) continue;
-        if (Number.isInteger(e.f_count)) racer.fCount = e.f_count;
-        if (Number.isInteger(e.l_count)) racer.lCount = e.l_count;
-      }
-    } catch (e) {
-      console.warn(
-        `⚠️ 出走表のF数・L数を読めませんでした（会場${placeCd} ${raceNo}R）: ${e.message}`,
-      );
-    }
+    addFlCounts($, racers, placeCd, raceNo);
 
     return racers.length > 0
       ? { racers, raceGrade, raceTitle, raceStage }
