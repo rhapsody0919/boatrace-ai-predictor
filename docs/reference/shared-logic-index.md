@@ -20,6 +20,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | --- | --- | --- |
 | `src/pure/basicInfoStats.js` | basicInfoStats - 「基本情報」タブ（BOA-306）のクライアント側集計ユーティリティ | currentTermStart, recordsBeforeRace, filterRecords, computeRates, getRecentRaces ほか13件 |
 | `src/pure/basicInfoStatsPeriodMeet.js` | — | periodDiffShownFrom, periodDiff, periodsEndedBefore, officialPeriodOf, pickPeriodStats ほか10件 |
+| `src/pure/blogChartAnswers.js` | ブログの図の契約の検査のうち、答えの文（description）の数字の照合。 | checkAnswers |
+| `src/pure/blogChartChecks.js` | ブログの図の契約の検査の部品（src/utils/blogChartContract.js の validateBlogChart が使う）。 | localize, createChecker, isObj, show |
+| `src/pure/blogChartSections.js` | ブログの図の契約の検査のうち、軸・行・切り替え・出典・中身（view・札・系列）の節。 | checkAxes, checkRows, checkSwitch, checkSource, checkViews |
 | `src/pure/courseGridStats.js` | — | buildCourseGrid, getCourseRecentRuns, buildTodayCourseRows, computeWakuNariRate, buildCourse1LossBreakdown ほか3件 |
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
 | `src/pure/favorites.js` | キャッシュの全削除で消さない端末内のユーザー保存。 | parseFavorites, serializeFavorites, toggleRacer, toggleVenue, FAVORITES_KEY ほか1件 |
@@ -346,7 +349,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, guideSteps, windBandLabel |
 | `src/utils/attackDefenseCells.js` | 超展開データ（AttackDefenseTable）のセルの値の算出（純関数）。 | getTotalWins, isDefaultAttackDistribution, getCellValue, attackDefenseColumn, TECHNIQUE_ROWS |
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
-| `src/utils/blogChartContract.js` | ブログの図の契約（docs/design/blog-charts/contract.md、schemaVersion 1）の検査と読み出し。 | localize, valueAxisMax, validateBlogChart, SCHEMA_VERSION, LANGS ほか1件 |
+| `src/utils/blogChartContract.js` | ブログの図の契約（docs/design/blog-charts/contract.md、schemaVersion 1）の検査と読み出し。 | valueAxisMax, validateBlogChart, SCHEMA_VERSION, LANGS, KINDS |
 | `src/utils/blogChartLoader.js` | 記事の Markdown にある図（<ryujin-chart src>）の JSON を、本文を描く前にまとめて取る。 | loadBlogCharts |
 | `src/utils/blogChartPng.js` | ブログの図の PNG の書き出し（ADR 0099、docs/design/blog-charts/contract.md 8節）の固定の一覧と名前。依存なし・… | isPngResponse, BLOG_CHART_PNG_PRESETS, blogChartPngSize, BLOG_CHART_PNG_CREDIT, blogChartPngPath |
 | `src/utils/blogChartTag.js` | ブログの図のタグ <ryujin-chart src="/blog-charts/<name>.json" rows="N"></ryujin-chart> の… | parseBlogChartLine, BLOG_CHART_TAG, BLOG_CHART_SRC_RE, BLOG_CHART_ROWS_RE, BLOG_CHART_ROWS_MAX |
@@ -499,4 +502,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 457 ファイル / export 2574 件。
+対象 460 ファイル / export 2583 件。
