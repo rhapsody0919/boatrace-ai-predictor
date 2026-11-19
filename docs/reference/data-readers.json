@@ -5,16 +5,16 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2212,
-    "filesWithAccess": 285,
-    "tableReaders": 958,
+    "sourceFiles": 2215,
+    "filesWithAccess": 286,
+    "tableReaders": 961,
     "tableWriters": 197,
-    "rpcCallers": 53,
+    "rpcCallers": 55,
     "nameMentions": 266,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 6,
+    "notInSnapshot": 8,
     "unresolved": 33,
     "parseErrors": 0,
     "uncoveredFiles": 55
@@ -7616,7 +7616,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:48",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:46",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7625,7 +7625,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:49",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:47",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7634,7 +7634,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:53",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:51",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7643,7 +7643,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:54",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:52",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7652,7 +7652,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:58",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:56",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7662,7 +7662,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:59",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:57",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -8521,12 +8521,12 @@
             "scripts/maintenance/migrate-to-supabase.js:259",
             "scripts/maintenance/racelist-backfill-load.js:199",
             "scripts/maintenance/verify-analogy-v16.js:289",
-            "scripts/maintenance/verify-e2e-har-merge.js:48",
-            "scripts/maintenance/verify-e2e-har-merge.js:49",
-            "scripts/maintenance/verify-e2e-har-merge.js:53",
-            "scripts/maintenance/verify-e2e-har-merge.js:54",
-            "scripts/maintenance/verify-e2e-har-merge.js:58",
-            "scripts/maintenance/verify-e2e-har-merge.js:59",
+            "scripts/maintenance/verify-e2e-har-merge.js:46",
+            "scripts/maintenance/verify-e2e-har-merge.js:47",
+            "scripts/maintenance/verify-e2e-har-merge.js:51",
+            "scripts/maintenance/verify-e2e-har-merge.js:52",
+            "scripts/maintenance/verify-e2e-har-merge.js:56",
+            "scripts/maintenance/verify-e2e-har-merge.js:57",
             "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:106",
             "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:108",
             "scripts/sns/push-setsu-kiryoku-short.js:1100",
@@ -30245,6 +30245,14 @@
   "notInSnapshot": [
     {
       "kind": "rpc",
+      "name": "b",
+      "refs": [
+        "scripts/maintenance/verifyData/e2e-har-merge-scenes.js:189",
+        "scripts/maintenance/verifyData/e2e-har-merge-scenes.js:208"
+      ]
+    },
+    {
+      "kind": "rpc",
       "name": "get_course_win_rate_baseline",
       "refs": [
         "src/services/venueQueries.js:355"
@@ -30262,6 +30270,15 @@
       "name": "get_racer_scoped_race_rows",
       "refs": [
         "src/services/racerQueries4.js:174"
+      ]
+    },
+    {
+      "kind": "table",
+      "name": "a",
+      "refs": [
+        "scripts/maintenance/verifyData/e2e-har-merge-scenes.js:186",
+        "scripts/maintenance/verifyData/e2e-har-merge-scenes.js:187",
+        "scripts/maintenance/verifyData/e2e-har-merge-scenes.js:188"
       ]
     },
     {

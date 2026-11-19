@@ -10,16 +10,16 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2212 |
-| 読み書きのあるファイル | 285 |
-| 表の読み手（箇所） | 958 |
+| 読んだファイル | 2215 |
+| 読み書きのあるファイル | 286 |
+| 表の読み手（箇所） | 961 |
 | 表の書き手（箇所） | 197 |
-| RPC の呼び手（箇所） | 53 |
+| RPC の呼び手（箇所） | 55 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 266 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
-| コードが使うのに写しに無い名前 | 6 |
+| コードが使うのに写しに無い名前 | 8 |
 | 名前が式で拾えなかった箇所 | 33 |
 | 構文木にできなかったファイル | 0 |
 | 対象外の言語のファイル（Python 等） | 55 |
@@ -901,12 +901,12 @@
   - `scripts/maintenance/restore-entries-branch-hometown.js:119` select(helper:upsertChangedRows)
   - `scripts/maintenance/verify-analogy-v16.js:289` rest(rest) [is_absent, race_id] （検査）
   - `scripts/maintenance/verify-data-readers.js:557` select(embed) [racer_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:48` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:49` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:53` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:54` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:58` rest(rest) [name, race_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:59` rest(rest) [name, race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:46` rest(rest) [race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:47` rest(rest) [race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:51` rest(rest) [race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:52` rest(rest) [race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:56` rest(rest) [name, race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:57` rest(rest) [name, race_id] （検査）
   - `scripts/maintenance/verify-full-picture-scene2.js:3168` rest(rest) （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select(embed) [racer_id] （検査）
   - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:93` select(helper:upsertChangedRows)
@@ -2319,9 +2319,11 @@
 
 写しの取得より後のマイグレーションで足したもの、消したもの、別のスキーマ、誤りのどれか。
 
+- rpc `b`: `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:189`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:208`
 - rpc `get_course_win_rate_baseline`: `src/services/venueQueries.js:355`
 - rpc `get_racer_front_taking_counts`: `src/services/racerQueries4.js:203`
 - rpc `get_racer_scoped_race_rows`: `src/services/racerQueries4.js:174`
+- table `a`: `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:186`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:187`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:188`
 - table `eve_race_deadlines`: `scripts/lib/eveDeadlinesJob.js:77`, `scripts/lib/eveDeadlinesJob.js:274`, `scripts/lib/eveDeadlinesJob.js:422`
 - table `racer_career_meta`: `scripts/lib/racerCareerJob.js:621`, `scripts/lib/racerCareerJob.js:846`, `scripts/lib/racerCareerJob.js:908`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:646`

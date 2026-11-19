@@ -93,6 +93,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/contentTopics/dataInsightSource.js` | ネタ供給モジュール: データ知見。 | getCandidates, recordUsage, id |
 | `scripts/lib/contentTopics/humorSource.js` | ネタ供給モジュール: ゆるユーモア型。 | getCandidates, recordUsage, id |
 | `scripts/lib/contentTopics/index.js` | ネタ供給モジュールのレジストリ。 | collectAllCandidates, topicSources |
+| `scripts/lib/contentTopics/missingContentIndex.js` | AppRouter.jsx に新規追加されたルートのうち、対応する | checkMissingContentIndex |
 | `scripts/lib/contentTopics/newFeatureSource.js` | ネタ供給モジュール: 新機能・既存機能の使い方紹介。 | getCandidates, recordLifehackUsage, id |
 | `scripts/lib/contentTopics/triviaSource.js` | ネタ供給モジュール: 豆知識。 | getCandidates, recordUsage, id |
 | `scripts/lib/contentTopics/venueCharacteristicSource.js` | ネタ供給モジュール: 会場特性。 | getCandidates, recordUsage, id |
@@ -488,4 +489,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 446 ファイル / export 2543 件。
+対象 447 ファイル / export 2544 件。
