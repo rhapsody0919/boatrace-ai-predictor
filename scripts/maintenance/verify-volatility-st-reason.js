@@ -4,7 +4,7 @@
  * 守るもの: 値は racer_aggregated_stats.avg_st（当サイトに蓄積した全期間）なので、理由文がその期間どおりに
  * 書かれていること。以前は「1号艇の今節ST」と書いていて、今節の走ではない値を今節と読ませていた。
  * 予想バッチ（generate-predictions.js・generate-unified-predictions.js）の両方が同じ関数を使うことも、本文の字でなく
- * 偽の Supabase で回した出力（races.volatility_reasons・calculateVolatilityComposite の reasons）で確かめる
+ * 偽の Supabase で回した出力（races に書く理由文・calculateVolatilityComposite の reasons）で確かめる
  */
 import { readFileSync } from "node:fs";
 import { generateAndWriteFromRacesData } from "../daily/generate-predictions.js";
@@ -44,8 +44,8 @@ for (const [st, expected] of cases) {
   const client = createFakeSupabaseClient({ tables: { venues: [], racer_aggregated_stats: [{ racer_id: race.racers[0].racerId, venue_code: 0, avg_st: st }] } });
   console.log = () => {};
   await generateAndWriteFromRacesData({ racesData: { success: true, data: [{ ...venue, races: [structuredClone(race)] }] }, date: race.date, client, now: () => new Date(`${race.date}T06:00:00+09:00`) }).finally(() => (console.log = log));
-  const reasons = client.data.races?.[0]?.volatility_reasons ?? [];
-  check(`generate-predictions.js: 平均ST ${st} の races.volatility_reasons に boat1StReason の文が入り「今節」が無い`, reasons.includes(expected) && !reasons.join().includes("今節"), JSON.stringify(reasons));
+  const races = JSON.stringify(client.data.races ?? []);
+  check(`generate-predictions.js: 平均ST ${st} で races に書く理由文に boat1StReason の文が入り「今節」が無い`, races.includes(JSON.stringify(expected)) && !races.includes("今節"), races);
   const unified = calculateVolatilityComposite(race.racers, race.placeCd, null, [{ boatNumber: 1, avgST: st }]).reasons;
   check(`calculateVolatilityComposite: 平均ST ${st} の reasons に boat1StReason の文が入り「今節」が無い`, unified.includes(expected) && !unified.join().includes("今節"), JSON.stringify(unified));
 }
