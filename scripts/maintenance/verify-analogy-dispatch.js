@@ -33,6 +33,7 @@ import {
 } from "../lib/dbApplyDispatch.js";
 import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 import { evaluateJobStates } from "../lib/scrapeJobs/monitor.js";
+import { cronWiring } from "./verifyData/cronWiring.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -46,6 +47,9 @@ const check = (ok, label, detail = "") => {
   if (!ok) failures++;
 };
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const vercel = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+);
 
 const at = (hhmm) => new Date(`2026-10-04T${hhmm}:00+09:00`);
 function fakeFetch(status = 204) {
@@ -62,6 +66,32 @@ function fakeFetch(status = 204) {
   return f;
 }
 const ctxOf = (now, mode = "live") => ({ now: () => now, client: null, mode });
+
+/**
+ * api/cron の本の配線。本文の字は読まず、export（config・default）と、共通ラッパへ渡した引数で見る
+ * （verifyData/cronWiring.js）。run は shadow で呼び（GitHub を起動しない）、report の target で起動の対象を見る
+ */
+async function wiringOf(load) {
+  const api = await cronWiring(load);
+  const opts = api.made[0]?.options ?? {};
+  const shadow = await opts.run?.(ctxOf(at("04:00"), "shadow"));
+  return {
+    maxDuration: api.config?.maxDuration,
+    job: opts.job,
+    modeGated: opts.modeGated,
+    target: shadow?.report?.target,
+    exported: api.made.length === 1 && api.handler === api.made[0].handler,
+    run: opts.run,
+  };
+}
+/** wiringOf の期待（レジストリの maxDuration・job 名・モードのゲート・起動の対象・default export）。run は JSON に出ないので比べない */
+const wired = (def, job, target) => ({
+  maxDuration: def?.maxDurationSec,
+  job,
+  modeGated: true,
+  target,
+  exported: true,
+});
 const ENV = { GITHUB_ACTIONS_DISPATCH_TOKEN: "t0ken" };
 const run = (f, env = ENV) =>
   createAnalogyDispatchRun("train", { fetchImpl: f, env });
@@ -180,24 +210,18 @@ const run = (f, env = ENV) =>
     "(d) validateRegistry に問題が無い",
     JSON.stringify(validateRegistry()),
   );
-  const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
-  );
   const def = SCRAPE_JOBS.analogy_dispatch_train;
   check(
     def?.kind === "monitor" && def.failureAlertAfter === 1,
     "(d) analogy_dispatch_train: monitor・failureAlertAfter 1",
   );
-  const src = fs.readFileSync(
-    path.join(ROOT, "api/cron/analogy-dispatch-train.js"),
-    "utf8",
+  const w = await wiringOf(
+    () => import("../../api/cron/analogy-dispatch-train.js"),
   );
-  const m = /maxDuration:\s*(\d+)/.exec(src);
   check(
-    Number(m?.[1]) === def?.maxDurationSec &&
-      /modeGated:\s*true/.test(src) &&
-      src.includes('job: "analogy_dispatch_train"'),
+    same(w, wired(def, "analogy_dispatch_train", "train")),
     "(d) api/cron/analogy-dispatch-train.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
+    JSON.stringify(w),
   );
   const crons = vercel.crons
     .filter((c) => c.path === "/api/cron/analogy-dispatch-train")
@@ -295,18 +319,13 @@ const run = (f, env = ENV) =>
     def?.kind === "monitor" && def.failureAlertAfter === 1,
     "(e) analogy_dispatch_morning: monitor・failureAlertAfter 1",
   );
-  const src = fs.readFileSync(
-    path.join(ROOT, "api/cron/analogy-dispatch-morning.js"),
-    "utf8",
+  const w = await wiringOf(
+    () => import("../../api/cron/analogy-dispatch-morning.js"),
   );
   check(
-    Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
-      /modeGated:\s*true/.test(src) &&
-      src.includes('job: "analogy_dispatch_morning"'),
+    same(w, wired(def, "analogy_dispatch_morning", "v16_morning")),
     "(e) api/cron/analogy-dispatch-morning.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
-  );
-  const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+    JSON.stringify(w),
   );
   const crons = vercel.crons
     .filter((c) => c.path === "/api/cron/analogy-dispatch-morning")
@@ -339,19 +358,13 @@ const run = (f, env = ENV) =>
     def?.kind === "monitor" && def.failureAlertAfter === 1,
     "(f) in_caution_dispatch: monitor・failureAlertAfter 1",
   );
-  const src = fs.readFileSync(
-    path.join(ROOT, "api/cron/in-caution-dispatch.js"),
-    "utf8",
+  const w = await wiringOf(
+    () => import("../../api/cron/in-caution-dispatch.js"),
   );
   check(
-    Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
-      /modeGated:\s*true/.test(src) &&
-      src.includes('job: "in_caution_dispatch"') &&
-      src.includes('createAnalogyDispatchRun("in_caution_nightly")'),
+    same(w, wired(def, "in_caution_dispatch", "in_caution_nightly")),
     "(f) api/cron/in-caution-dispatch.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
-  );
-  const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+    JSON.stringify(w),
   );
   const crons = vercel.crons
     .filter((c) => c.path === "/api/cron/in-caution-dispatch")
@@ -589,19 +602,17 @@ const run = (f, env = ENV) =>
     def?.kind === "monitor" && def.failureAlertAfter === 1,
     "(g) db_apply_dispatch: monitor・failureAlertAfter 1",
   );
-  const src = fs.readFileSync(
-    path.join(ROOT, "api/cron/db-apply-dispatch.js"),
-    "utf8",
-  );
+  const w = await wiringOf(() => import("../../api/cron/db-apply-dispatch.js"));
   check(
-    Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
-      /modeGated:\s*true/.test(src) &&
-      src.includes('job: "db_apply_dispatch"') &&
-      src.includes("createDbApplyDispatchRun()"),
+    same(w, wired(def, "db_apply_dispatch", "db_apply_reconcile")),
     "(g) api/cron/db-apply-dispatch.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
+    JSON.stringify(w),
   );
-  const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+
+  // run は毎回作る関数なので、createDbApplyDispatchRun() が作る物と同じ関数か（同じ本文か）でも見る
+  check(
+    String(w.run) === String(createDbApplyDispatchRun()),
+    "(g) api/cron/db-apply-dispatch.js: run は createDbApplyDispatchRun() で作る",
   );
   const crons = vercel.crons
     .filter((c) => c.path === "/api/cron/db-apply-dispatch")
@@ -656,9 +667,6 @@ const run = (f, env = ENV) =>
       alertAfter: 3,
     },
   ];
-  const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
-  );
   for (const c of cases) {
     const f = fakeFetch();
     const r = await createAnalogyDispatchRun(c.target, {
@@ -685,16 +693,11 @@ const run = (f, env = ENV) =>
       `(h) ${c.job}: monitor・failureAlertAfter ${c.alertAfter}`,
       JSON.stringify(def),
     );
-    const src = fs.readFileSync(
-      path.join(ROOT, `api/cron/${c.api}.js`),
-      "utf8",
-    );
+    const w = await wiringOf(() => import(`../../api/cron/${c.api}.js`));
     check(
-      Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
-        /modeGated:\s*true/.test(src) &&
-        src.includes(`job: "${c.job}"`) &&
-        src.includes(`createAnalogyDispatchRun("${c.target}")`),
+      same(w, wired(def, c.job, c.target)),
       `(h) api/cron/${c.api}.js: maxDuration がレジストリと一致し、モードのゲートを掛ける`,
+      JSON.stringify(w),
     );
     const crons = vercel.crons
       .filter((x) => x.path === `/api/cron/${c.api}`)
