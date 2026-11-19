@@ -878,55 +878,9 @@ async function judgeAndUpdateHits(client, resultsToJudge) {
 }
 
 /**
- * 取得した結果をDBへ書き込む（race_results・race_start_timings・気象・的中判定）。
- * scrapeAndSaveResults（GitHub Actions・CLI）と runForRaces（Vercel Cron）で共有する。
- *
- * 書き込みの失敗は、従来どおり後続（気象・的中判定）を止めず、errors に集めて返す
- * （GitHub Actions側は従来どおり無視する。Vercel Cron側は、errors があれば、その実行を失敗として再試行する）。
- *
- * @param {Object} params
- * @param {import("@supabase/supabase-js").SupabaseClient} params.client
- * @param {Object[]} params.newResults buildRaceResultRow が作った行
- * @param {Map<string, ReturnType<typeof parseRaceResultHtml>>} params.scrapeCache race_id → 解析結果
- * @param {Map<string, Date>} params.startTimeByRaceId race_id → 発走予定時刻（気象の観測時刻に使う）
- * @returns {Promise<{changedResults: Object[], startTimingRowsWritten: Object[], errors: Error[]}>}
+ * race_start_timings と race_payouts の書き込み（persistRaceResults の一部）。失敗は errors に足す。書いた timings の行を返す
  */
-async function persistRaceResults({
-  client,
-  newResults,
-  scrapeCache,
-  startTimeByRaceId,
-}) {
-  const errors = [];
-  console.log(`\n📤 Supabaseに結果を書き込み中...`);
-
-  // 決まり手・ST等が公式サイトに出るまで（発走20〜30分後以降）、着順・払戻金だけ揃った
-  // レースは「完了」扱いにならず毎回再取得される（BOA-323）。その間の再取得では、
-  // 前回と同じ値をupsertし直していた。race_results の書き込みは trg_update_predictions で
-  // predictions・bet_recommendations の再UPDATEも連鎖させるため、変更の無い行は書かない。
-  // result_at は取得時刻で毎回変わるが情報を持たないため比較から外す
-  // （変更なしのレースは最初に取得できた時刻が残る）
-  //
-  // 結果系の新しい列・テーブル（マイグレーション077〜079。docs/design/race-result-full-fields/plan.md）は、
-  // 適用済みのDBにだけ書く。未適用のDBでは、旧実装と同じ列だけを書く（挙動が変わらない）
-  const schema = await detectResultSchema(client);
-  const resultRows = schema.results
-    ? newResults.map((row) => ({
-        ...row,
-        ...(scrapeCache.has(row.race_id)
-          ? buildResultExtras(scrapeCache.get(row.race_id))
-          : {}),
-      }))
-    : newResults;
-  const { toWrite: changedResults, error: resultsError } =
-    await upsertChangedRows(client, "race_results", resultRows, {
-      onConflict: "race_id",
-      keyColumns: ["race_id"],
-      ignoreColumns: ["result_at"],
-      label: "race_results",
-    });
-  if (resultsError) errors.push(resultsError);
-
+async function writeTimingsAndPayouts(client, scrapeCache, schema, errors) {
   // race_start_timingsに艇別の結果（ST・着欄・進入・レースタイム）を書き込み。
   // 077が未適用なら、STを読めた艇の行だけ（旧実装と同じ）
   const allStartTimings = [...scrapeCache].flatMap(([raceId, scraped]) =>
@@ -976,7 +930,11 @@ async function persistRaceResults({
       if (payoutsResult.error) errors.push(payoutsResult.error);
     }
   }
+  return startTimingRowsWritten;
+}
 
+/** 結果ページの気象を race_conditions へ（persistRaceResults の一部。失敗しても止めない） */
+async function writeResultWeather(client, scrapeCache, startTimeByRaceId) {
   // レース時点の気象（結果ページの水面気象情報）を race_conditions へ反映する（BOA-358）。
   // 発走前に取得した値（beforeinfo）より新しい確定値のため上書きする。変更のある行だけ書く。
   // 失敗しても、以降の的中判定を止めない
@@ -1006,6 +964,66 @@ async function persistRaceResults({
       `❌ 結果ページの気象の更新エラー（結果は保存済み）: ${weatherError.message}`,
     );
   }
+}
+
+/**
+ * 取得した結果をDBへ書き込む（race_results・race_start_timings・気象・的中判定）。
+ * scrapeAndSaveResults（GitHub Actions・CLI）と runForRaces（Vercel Cron）で共有する。
+ *
+ * 書き込みの失敗は、従来どおり後続（気象・的中判定）を止めず、errors に集めて返す
+ * （GitHub Actions側は従来どおり無視する。Vercel Cron側は、errors があれば、その実行を失敗として再試行する）。
+ *
+ * @param {Object} params
+ * @param {import("@supabase/supabase-js").SupabaseClient} params.client
+ * @param {Object[]} params.newResults buildRaceResultRow が作った行
+ * @param {Map<string, ReturnType<typeof parseRaceResultHtml>>} params.scrapeCache race_id → 解析結果
+ * @param {Map<string, Date>} params.startTimeByRaceId race_id → 発走予定時刻（気象の観測時刻に使う）
+ * @returns {Promise<{changedResults: Object[], startTimingRowsWritten: Object[], errors: Error[]}>}
+ */
+async function persistRaceResults({
+  client,
+  newResults,
+  scrapeCache,
+  startTimeByRaceId,
+}) {
+  const errors = [];
+  console.log(`\n📤 Supabaseに結果を書き込み中...`);
+
+  // 決まり手・ST等が公式サイトに出るまで（発走20〜30分後以降）、着順・払戻金だけ揃った
+  // レースは「完了」扱いにならず毎回再取得される（BOA-323）。その間の再取得では、
+  // 前回と同じ値をupsertし直していた。race_results の書き込みは trg_update_predictions で
+  // predictions・bet_recommendations の再UPDATEも連鎖させるため、変更の無い行は書かない。
+  // result_at は取得時刻で毎回変わるが情報を持たないため比較から外す
+  // （変更なしのレースは最初に取得できた時刻が残る）
+  //
+  // 結果系の新しい列・テーブル（マイグレーション077〜079。docs/design/race-result-full-fields/plan.md）は、
+  // 適用済みのDBにだけ書く。未適用のDBでは、旧実装と同じ列だけを書く（挙動が変わらない）
+  const schema = await detectResultSchema(client);
+  const resultRows = schema.results
+    ? newResults.map((row) => ({
+        ...row,
+        ...(scrapeCache.has(row.race_id)
+          ? buildResultExtras(scrapeCache.get(row.race_id))
+          : {}),
+      }))
+    : newResults;
+  const { toWrite: changedResults, error: resultsError } =
+    await upsertChangedRows(client, "race_results", resultRows, {
+      onConflict: "race_id",
+      keyColumns: ["race_id"],
+      ignoreColumns: ["result_at"],
+      label: "race_results",
+    });
+  if (resultsError) errors.push(resultsError);
+
+  const startTimingRowsWritten = await writeTimingsAndPayouts(
+    client,
+    scrapeCache,
+    schema,
+    errors,
+  );
+
+  await writeResultWeather(client, scrapeCache, startTimeByRaceId);
 
   // 的中判定は、race_resultsが新規・変更のレースだけ行う（judgeAndUpdateHits の説明を参照）
   const changedResultIds = new Set(changedResults.map((r) => r.race_id));
@@ -1175,97 +1193,136 @@ export async function runForRaces(
   const base = { rowsWritten: 0, rowsParsed: 0, rowsExpected: 1 };
 
   // 1) live: 既に完了済みのレースは、取得しない
-  const finished = new Set();
-  if (live && races.length > 0) {
-    const { data, error } = await client
-      .from("race_results")
-      .select("race_id, payout_win, winning_technique")
-      .in(
-        "race_id",
-        races.map((r) => r.race_id),
-      );
-    if (error) {
-      throw new Error(`結果の既存行の取得に失敗しました: ${error.message}`);
-    }
-    for (const r of data ?? []) {
-      if (isResultComplete(r)) finished.add(r.race_id);
-    }
-    for (const race of races) {
-      if (finished.has(race.race_id)) {
-        outcomes.set(race.race_id, { ...base, outcome: "skipped_have_data" });
-      }
-    }
-  }
+  const finished =
+    live && races.length > 0
+      ? await markFinishedRaces(client, races, outcomes, base)
+      : new Set();
 
   // 2) 取得・解析（1つの失敗で他のレースを止めない）
-  /** @type {Array<{race: Object, parsed: NonNullable<ReturnType<typeof parseRaceResultHtml>>, row: Object}>} */
-  const fetched = [];
-  await mapWithConcurrency(
+  const fetched = await fetchAndParseRaces(
     races.filter((race) => !finished.has(race.race_id)),
-    concurrency,
-    async (race) => {
-      try {
-        const html = await fetchHtml(
-          getRaceResultUrl(race.venue_code, race.race_number, date),
-        );
-        const parsed = parseRaceResultHtml(html);
-        if (!parsed) {
-          outcomes.set(race.race_id, {
-            ...base,
-            outcome: "no_values",
-            error:
-              "結果ページから着順・払戻を解析できませんでした（未公開・中止・順延の可能性）",
-          });
-          return;
-        }
-        const row = buildRaceResultRow(race.race_id, parsed, {
-          resultAt: now().toISOString(),
-        });
-        fetched.push({ race, parsed, row });
-      } catch (error) {
-        if (error instanceof BreakerOpenError) {
-          outcomes.set(race.race_id, {
-            ...base,
-            outcome: "breaker_open",
-            retryAt: new Date(error.until),
-            error: error.message,
-          });
-        } else {
-          outcomes.set(race.race_id, {
-            ...base,
-            outcome: "error",
-            error: error.message,
-          });
-        }
-      }
-    },
+    { date, fetchHtml, concurrency, now, outcomes, base },
   );
 
   // 3) live: 書き込む。shadow: 書かない
-  let persisted = null;
-  if (live && fetched.length > 0) {
-    try {
-      const startTimeByRaceId = await loadStartTimes(client, date, fetched);
-      persisted = await persistRaceResults({
-        client,
-        newResults: fetched.map((f) => f.row),
-        scrapeCache: new Map(fetched.map((f) => [f.race.race_id, f.parsed])),
-        startTimeByRaceId,
-      });
-    } catch (error) {
-      // 書き込み前後の想定外の失敗（DB接続等）。書けたか分からないため、全レースを再試行する（書き込みは冪等）
-      for (const { race } of fetched) {
-        outcomes.set(race.race_id, {
-          ...base,
-          rowsParsed: 1,
-          outcome: "error",
-          error: `結果の書き込みに失敗しました: ${error.message}`,
-        });
-      }
-      persisted = { failed: true };
+  const persisted =
+    live && fetched.length > 0
+      ? await persistFetchedResults(client, date, fetched, outcomes, base)
+      : null;
+
+  recordFetchedOutcomes(fetched, persisted, outcomes, base);
+  return races.map((race) => ({
+    race_id: race.race_id,
+    ...outcomes.get(race.race_id),
+  }));
+}
+
+/**
+ * live: race_results で既に完了済み（isResultComplete）のレースを集め、outcomes に skipped_have_data を入れる（runForRaces の 1）
+ * @returns {Promise<Set<string>>}
+ */
+async function markFinishedRaces(client, races, outcomes, base) {
+  const finished = new Set();
+  const { data, error } = await client
+    .from("race_results")
+    .select("race_id, payout_win, winning_technique")
+    .in(
+      "race_id",
+      races.map((r) => r.race_id),
+    );
+  if (error) {
+    throw new Error(`結果の既存行の取得に失敗しました: ${error.message}`);
+  }
+  for (const r of data ?? []) {
+    if (isResultComplete(r)) finished.add(r.race_id);
+  }
+  for (const race of races) {
+    if (finished.has(race.race_id)) {
+      outcomes.set(race.race_id, { ...base, outcome: "skipped_have_data" });
     }
   }
+  return finished;
+}
 
+/**
+ * 結果ページの取得・解析・行の組み立て（runForRaces の 2）。失敗・未公開・ブレーカーは outcomes に入れ、解析できた物を返す
+ * @returns {Promise<Array<{race: Object, parsed: Object, row: Object}>>}
+ */
+async function fetchAndParseRaces(
+  races,
+  { date, fetchHtml, concurrency, now, outcomes, base },
+) {
+  /** @type {Array<{race: Object, parsed: NonNullable<ReturnType<typeof parseRaceResultHtml>>, row: Object}>} */
+  const fetched = [];
+  await mapWithConcurrency(races, concurrency, async (race) => {
+    try {
+      const html = await fetchHtml(
+        getRaceResultUrl(race.venue_code, race.race_number, date),
+      );
+      const parsed = parseRaceResultHtml(html);
+      if (!parsed) {
+        outcomes.set(race.race_id, {
+          ...base,
+          outcome: "no_values",
+          error:
+            "結果ページから着順・払戻を解析できませんでした（未公開・中止・順延の可能性）",
+        });
+        return;
+      }
+      const row = buildRaceResultRow(race.race_id, parsed, {
+        resultAt: now().toISOString(),
+      });
+      fetched.push({ race, parsed, row });
+    } catch (error) {
+      if (error instanceof BreakerOpenError) {
+        outcomes.set(race.race_id, {
+          ...base,
+          outcome: "breaker_open",
+          retryAt: new Date(error.until),
+          error: error.message,
+        });
+      } else {
+        outcomes.set(race.race_id, {
+          ...base,
+          outcome: "error",
+          error: error.message,
+        });
+      }
+    }
+  });
+  return fetched;
+}
+
+/**
+ * live の書き込み（runForRaces の 3）。想定外の失敗は全レースを error にして { failed: true } を返す
+ */
+async function persistFetchedResults(client, date, fetched, outcomes, base) {
+  let persisted = null;
+  try {
+    const startTimeByRaceId = await loadStartTimes(client, date, fetched);
+    persisted = await persistRaceResults({
+      client,
+      newResults: fetched.map((f) => f.row),
+      scrapeCache: new Map(fetched.map((f) => [f.race.race_id, f.parsed])),
+      startTimeByRaceId,
+    });
+  } catch (error) {
+    // 書き込み前後の想定外の失敗（DB接続等）。書けたか分からないため、全レースを再試行する（書き込みは冪等）
+    for (const { race } of fetched) {
+      outcomes.set(race.race_id, {
+        ...base,
+        rowsParsed: 1,
+        outcome: "error",
+        error: `結果の書き込みに失敗しました: ${error.message}`,
+      });
+    }
+    persisted = { failed: true };
+  }
+  return persisted;
+}
+
+/** 取得・解析できたレースの outcome（ok・partial・error）を outcomes に入れる（runForRaces の 4） */
+function recordFetchedOutcomes(fetched, persisted, outcomes, base) {
   const changedIds = new Set(
     (persisted?.changedResults ?? []).map((r) => r.race_id),
   );
@@ -1312,11 +1369,6 @@ export async function runForRaces(
         : "決まり手が未公開です（着順・払戻のみ取得。再試行します）",
     });
   }
-
-  return races.map((race) => ({
-    race_id: race.race_id,
-    ...outcomes.get(race.race_id),
-  }));
 }
 
 /**
