@@ -3,7 +3,7 @@
  *
  * 位置別温度付き Plackett-Luce: シャーロックの勝率を効用として、
  * 2連単・3連単・3連複の順列確率を導出する。数式本体は
- * scripts/lib/harville.js（補正Harville = 同一モデル）を共用し、
+ * src/pure/harville.js（補正Harville = 同一モデル）を共用し、
  * 温度パラメータ (gamma, delta) は実レースデータでフィットした値
  * （data/adler/model.json、scripts/analysis/train-adler-temps.js で週次更新）を使う。
  * Node/ブラウザ両対応のため、外部依存・副作用は持たない。
@@ -13,7 +13,7 @@ import {
   exactaProb,
   trifectaProb,
   trioProb,
-} from "../../scripts/lib/harville.js";
+} from "../pure/harville.js";
 
 /** [a, b, c]（0-indexed）→ "1-2-3"（艇番表記） */
 const comboLabel = (combo) => combo.map((i) => i + 1).join("-");
