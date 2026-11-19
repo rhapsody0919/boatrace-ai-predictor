@@ -3,18 +3,37 @@
  * 判定と期待値は分ける前の verify-analogy-facts.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-import { rankBand, clearDiff, waveBand } from "../../../src/utils/analogyScenario.js";
 import {
-  windWaveView,
-  todayValueRank,
-  noLocalRecord,
-  todayValues,
-  judgeLabelKey,
-} from "../../../src/utils/analogyFacts.js";
-import { similarRaceLink } from "../../../src/utils/analogySimilarDisplay.js";
-import { splitSentences } from "../../../src/utils/analogyFormat.js";
+  hintRows,
+  hintBadgeByForm,
+  minRanks,
+  rankBand,
+  clearDiff,
+  waveBand,
+} from "../../../src/utils/analogyScenario.js";
+import { windWaveView } from "../../../src/utils/analogyFacts.js";
+import { wilsonInterval } from "../../../src/utils/wilson.js";
+import {
+  sliderSteps,
+  defaultStepIndex,
+  normalizeNeighbor,
+  aggregateNeighbors,
+  trifectaList,
+  itemRates,
+  neighborCounts,
+} from "../../../src/utils/analogyAggregate.js";
 
 let check;
+let nb, ag, rates, rows;
+
+// 展開シナリオの画面の判定
+const sh = {
+  course: {
+    kado4: { kado: { hit: [45, 220], miss: [66, 678] } },
+    in_slow02: { d1: { hit: [31, 175], miss: [62, 723] } },
+    flat03: { flat: { hit: [3, 20], miss: [100, 900] } },
+  },
+};
 
 // 今日の風・波の数え方（Q-F3）: 波が別の情報を持つ会場だけ風×波、今日の区分が300件未満なら風だけ
 const pair = (n) =>
@@ -31,6 +50,104 @@ const va = (useWave, waveN) => ({
 const exh = { wind_band: "2-3", wind_speed: 3, wave_height: 4 };
 
 function scene1() {
+  // スライダーの段（spec B-4）
+  check("段（15件の層）", sliderSteps(15), [10, 15]);
+  check("段（800件以上）", sliderSteps(800).length, 12);
+  check(
+    "既定の段（800件）",
+    sliderSteps(800)[defaultStepIndex(sliderSteps(800))],
+    400,
+  );
+  check(
+    "既定の段（15件）",
+    sliderSteps(15)[defaultStepIndex(sliderSteps(15))],
+    15,
+  );
+  // 類似レースの集計
+  nb = [
+    {
+      race_id: "2021-10-14-16-12",
+      finish: [1, 3, 6],
+      technique: "逃げ",
+      items: { venue: 1, nat_win_6: 2, is_final_day: -1 },
+    },
+    {
+      race_id: "2019-08-06-11-12",
+      finish: [3, 1, 4],
+      technique: "まくり",
+      items: { venue: 0, nat_win_6: 2 },
+    },
+    {
+      race_id: "2020-01-01-01-01",
+      finish: [3, 1, 0],
+      technique: null,
+      items: {},
+    },
+  ].map(normalizeNeighbor);
+  check(
+    "日付・会場・R（race_id から）",
+    [nb[0].date, nb[0].venue_code, nb[0].race_number],
+    ["2021-10-14", 16, 12],
+  );
+  ag = aggregateNeighbors(nb);
+  check("集計: 件数（着順の欠けを除く）", ag.n, 2);
+  check("集計: 1着", ag.win, [1, 0, 1, 0, 0, 0]);
+  check("集計: 3着以内", ag.hit[3], [2, 0, 2, 1, 0, 1]);
+  check("集計: 決まり手", ag.tech, { 逃げ: 1, まくり: 1 });
+  check("3連単", trifectaList(ag.tri, { not1: true }), [[[3, 1, 4], 1]]);
+  rates = itemRates(nb, [
+    { key: "venue" },
+    { key: "nat_win_6" },
+    { key: "is_final_day" },
+  ]);
+  check(
+    "同じ割合（会場）",
+    [rates.venue.same, rates.venue.near, rates.venue.n],
+    [0, 1, 2],
+  );
+  check("同じ割合（欠損は数えない）", rates.is_final_day.n, 0);
+  check("1件の同じ・近い・違う", neighborCounts(nb[0], false), {
+    same: 1,
+    near: 1,
+    diff: 0,
+    total: 2,
+  });
+  rows = hintRows(
+    sh,
+    { kado4: true, in_slow02: true, flat03: true },
+    "course",
+    wilsonInterval,
+  );
+  check(
+    "手がかりの札",
+    rows.map((r) => [r.id, r.kind]),
+    [
+      ["kado4", "up"],
+      ["in_slow02", "up"],
+      ["flat03", "unclear"],
+    ],
+  );
+  check(
+    "全体の割合（当てはまる＋当てはまらない）",
+    rows.map((r) => Number(r.pall.toFixed(4))),
+    [
+      Number((111 / 898).toFixed(4)),
+      Number((93 / 898).toFixed(4)),
+      Number((103 / 920).toFixed(4)),
+    ],
+  );
+  check("札は形ごとに1つ", Object.keys(hintBadgeByForm(rows)), ["kado", "d1"]);
+}
+
+function scene2() {
+  check("min 順位", minRanks([34.2, 37.2, 39, null, 37.2, 30], true), [
+    4,
+    2,
+    1,
+    null,
+    2,
+    5,
+  ]);
   check("③の区分", [1, 2, 3, 4, 5, 6, null].map(rankBand), [
     "top",
     "top",
@@ -96,128 +213,10 @@ function scene1() {
     windWaveView(va(true, 500), { wave_height: 3 }),
     null,
   );
-  // ---- カードの今日の値と順位・類似レースのリンク先（2026-10-06 ユーザー指摘） ----
-  check("今日の値と順位", todayValueRank([5, 7, 6, 4, 3, 2], true, 3), {
-    value: 6,
-    from: 2,
-    to: 2,
-    same: 1,
-    of: 6,
-  });
-  // 記録の無い艇（当地勝率 0.00 は欠け）がいるときは、記録のある艇の中の順位（「記録のある5艇中5位」。BOA-802）
-  check(
-    "今日の値と順位（記録の無い艇がいる）",
-    todayValueRank([4.11, 5.2, null, 6.0, 5.5, 4.8], true, 1),
-    { value: 4.11, from: 5, to: 5, same: 1, of: 5 },
-  );
-  check(
-    "今日の値と順位（同じ値は幅）",
-    todayValueRank([5, 6, 6, 4, 3, 2], true, 3),
-    {
-      value: 6,
-      from: 1,
-      to: 2,
-      same: 2,
-      of: 6,
-    },
-  );
-}
-
-function scene2() {
-  check(
-    "今日の値と順位（小さいほど良い）",
-    todayValueRank([0.15, 0.12, 0.18, 0.2, 0.1, 0.16], false, 2).from,
-    2,
-  );
-  check(
-    "今日の値が無ければ null",
-    todayValueRank([5, null, 6, 4, 3, 2], true, 2),
-    null,
-  );
-  check(
-    "類似レースのリンク: 本体の日付はレースページ",
-    similarRaceLink("2025-12-03-20-01"),
-    {
-      internal: true,
-      href: "/race/2025-12-03-20-01",
-    },
-  );
-  check(
-    "類似レースのリンク: 古いレースは公式サイト",
-    similarRaceLink("2019-08-06-11-12").href,
-    "https://www.boatrace.jp/owpc/pc/race/raceresult?rno=12&jcd=11&hd=20190806",
-  );
-  check("類似レースのリンク: 形が違えば null", similarRaceLink("x"), null);
-  // ---- 説明文を1文ずつに分ける（2026-10-06 ユーザー決定の箇条書き） ----
-  check(
-    "1文ずつ（括弧の中の「。」では分けない）",
-    splitSentences(
-      "カド＝一番内（助走を長くとる艇。例）。7つの形。絵は例（縮尺は1艇身≒0.13秒）",
-    ),
-    [
-      "カド＝一番内（助走を長くとる艇。例）。",
-      "7つの形。",
-      "絵は例（縮尺は1艇身≒0.13秒）",
-    ],
-  );
-  check(
-    "英語は「. 」で分け、数字の小数点では分けない",
-    splitSentences("Counted shares. About 0.13 s (e.g. a. b). End"),
-    ["Counted shares.", "About 0.13 s (e.g. a. b).", "End"],
-  );
-  check("空は空", splitSentences(""), []);
-  // ---- ファン評価4周目（2026-10-07 ユーザー決定） ----
-  check("当地勝率 0.00 は記録なし", [0, 0.5, 5.2, null].map(noLocalRecord), [
-    null,
-    0.5,
-    5.2,
-    null,
-  ]);
-  check(
-    "今日の当地勝率の 0.00 は欠け（ほかの項目の 0 はそのまま）",
-    todayValues(
-      {
-        items: {
-          loc_win: { values: [0, 6.1, 0, 5, 4, 3] },
-          recent_win30: { values: [0, 0.1, 0.2, 0.3, 0.4, 0.5] },
-        },
-      },
-      null,
-    ),
-    {
-      loc_win: [null, 6.1, null, 5, 4, 3],
-      recent_win30: [0, 0.1, 0.2, 0.3, 0.4, 0.5],
-    },
-  );
-  check(
-    "判定: ぶれ幅が重なり差が5ポイント未満なら「ほとんど無い」",
-    judgeLabelKey({ level: "unclear", diff: -0.0027 }, [510, 705], [516, 744]),
-    "unclearTiny",
-  );
-  check(
-    "判定: 少ない側が100件未満なら件数が少ない",
-    judgeLabelKey({ level: "unclear", diff: 0.5 }, [4, 5], [300, 1000]),
-    "unclearFew",
-  );
-  check(
-    "判定: 少ない側が100件以上ならぶれ幅が重なる",
-    judgeLabelKey({ level: "unclear", diff: 0.06 }, [766, 1017], [725, 1019]),
-    "unclear",
-  );
-  check(
-    "判定: 境目の100件は「ぶれ幅が重なる」",
-    judgeLabelKey({ level: "unclear", diff: -0.1 }, [60, 100], [70, 100]),
-    "unclear",
-  );
-  check(
-    "判定: 差が大きいはそのまま",
-    judgeLabelKey({ level: "large" }, [4, 5], [1, 5]),
-    "large",
-  );
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（check） */
-export function runAnalogyFactsScenes4(env) {
+export function runAnalogyFactsScenes6(env) {
   ({ check } = env);
   scene1();
   scene2();

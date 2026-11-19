@@ -19,7 +19,7 @@
  */
 import fs from "fs";
 import path from "path";
-
+import zlib from "zlib";
 import { fileURLToPath } from "url";
 import {
   getRaceStageCategory,
@@ -35,26 +35,30 @@ import {
   poolExhDiffs,
   rerankSimilar,
 } from "../../src/utils/analogySimilarRerank.js";
+
 import {
-  entryType,
-  hintConditions,
-  hintToday,
-  maedukeBoats,
-  SLIT_EXAMPLE,
-  SLIT_FORMS,
-  slitForms,
-  windBand,
-} from "../../src/utils/analogyScenario.js";
-import { rateOf, usualOf, typicalRanks, uniformClass, scopeKind } from "../../src/utils/analogyFacts.js";
+  FACT_ITEMS,
+  boatScopeKey,
+  defaultScope,
+  factRows,
+  radarBoats,
+  todayLine,
+  todayPosition,
+  todayValues,
+} from "../../src/utils/analogyFacts.js";
 
 
 
 
-
-import { runAnalogyFactsScenes1 } from "./verifyData/analogy-facts-scenes-1.js";
-import { runAnalogyFactsScenes2, runAnalogyFactsScenes3 } from "./verifyData/analogy-facts-scenes-2.js";
-import { runAnalogyFactsScenes4 } from "./verifyData/analogy-facts-scenes-3.js";
-import { runAnalogyFactsScenes5 } from "./verifyData/analogy-facts-scenes-4.js";
+import { bandBreakdown, flowLinks } from "../../src/utils/analogyAggregate.js";
+import { runAnalogyFactsScenes1, runAnalogyFactsScenes2 } from "./verifyData/analogy-facts-scenes-1.js";
+import {
+  runAnalogyFactsScenes3,
+  runAnalogyFactsScenes4,
+  runAnalogyFactsScenes5,
+} from "./verifyData/analogy-facts-scenes-2.js";
+import { runAnalogyFactsScenes6 } from "./verifyData/analogy-facts-scenes-3.js";
+import { runAnalogyFactsScenes7, runAnalogyFactsScenes8 } from "./verifyData/analogy-facts-scenes-4.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_E2E = path.join(__dirname, "../../e2e");
@@ -262,158 +266,9 @@ const defs = JSON.parse(
     "utf8",
   ),
 );
-for (const c of defs.slit_forms)
-  check(`スリットの形 ${c.st.join(",")}`, slitForms(c.st), c.forms);
-// 龍神ソナーの形の絵の例は、その形の定義を満たす（差に 0.10 を足して ST にする。d3 が凹みの新定義 BOA-777 を満たさなかった）
-for (const f of SLIT_FORMS)
-  check(
-    `形の絵の例 ${f}`,
-    slitForms(SLIT_EXAMPLE[f].map((v) => v + 0.1))[f],
-    true,
-  );
-for (const c of defs.entry_types) {
-  check(`進入の型 ${c.course.join(",")}`, entryType(c.course), c.type);
-  check(`前付け ${c.course.join(",")}`, maedukeBoats(c.course), c.maeduke);
-}
-for (const c of defs.wind_bands)
-  check(`風速区分 ${c.wind_speed}`, windBand(c.wind_speed), c.band);
-for (const c of defs.hints)
-  check(`手がかり ${c.avg_st.join(",")}`, hintConditions(c.avg_st), c.conds);
-// 当てはまる条件のカードの「今日」の行（BOA-814）: 出す差は判定に使った差と同じ。当てはまる条件ごとに、差がしきい値を満たす
-{
-  const ok = {
-    kado4: (d) => d > 0,
-    kado4_02: (d) => d >= 20,
-    in_slow02: (d) => d >= 20,
-    in_fastest: (d) => d > 0,
-    d2_slow01: (d) => d >= 10,
-    d3_slow01: (d) => d >= 10,
-    dash03: (d) => d >= 30,
-    flat03: (d) => d <= 30,
-  };
-  let n = 0;
-  for (const c of defs.hints)
-    for (const [id, hit] of Object.entries(c.conds)) {
-      const tl = hintToday(id, c.avg_st);
-      if (!tl) continue;
-      n += 1;
-      check(
-        `今日の行の差と判定 ${id} ${c.avg_st.join(",")}`,
-        ok[id](tl.diff),
-        hit,
-      );
-    }
-  check("今日の行を確かめた件数", n > 0, true);
-  // 津4R 2026-10-10 のこのコースの平均ST（④.093 が ①〜③で一番早い ①.130 より 0.037秒早い）
-  check(
-    "今日の行 津4R",
-    hintToday("kado4", [0.13, 0.159, 0.144, 0.093, 0.138, 0.152]),
-    {
-      a: { boats: [4], sum: false, v: 93 },
-      b: { boats: [1], sum: false, v: 130 },
-      dir: "fast",
-      diff: 37,
-    },
-  );
-  check(
-    "今日の行 ダッシュ勢先行は和",
-    hintToday("dash03", [0.13, 0.159, 0.144, 0.093, 0.138, 0.152]).diff,
-    50,
-  );
-  check(
-    "今日の行 欠けがあれば出さない",
-    hintToday("kado4", [0.13, null, 0.1, 0.1, 0.1, 0.1]),
-    null,
-  );
-}
 
-// ---- 4. 画面の純粋関数 ------------------------------------------------------
-// BOA-1129: 来る艇の条件の率・件数・平均の順位・級別・範囲の種類
-const SF = {
-  usual: {
-    "1": { win: [55, 100], top2: [70, 100], top3: [80, 100] },
-    "2": { win: [14, 100] },
-  },
-  typ: {
-    "1": {
-      series_score: { win: 2.1, top2: 2.5, top3: null },
-      exh_time: { win: 3 },
-    },
-  },
-};
-const ITEMS = [{ key: "series_score" }, { key: "exh_time" }, { key: "motor_top2" }];
-for (const [label, input, expected] of [
-  ["3/10", [3, 10], 0.3],
-  ["0/10", [0, 10], 0],
-  ["5/5", [5, 5], 1],
-  ["1/3", [1, 3], 0.3333333333333333],
-  ["母数0", [3, 0], null],
-  ["null", null, null],
-  ["undefined", undefined, null],
-  ["空配列", [], null],
-]) check(`rateOf: ${label}`, rateOf(input), expected);
-for (const [label, sf, boat, target, expected] of [
-  ["1着", SF, 1, 1, [55, 100]],
-  ["2着以内", SF, 1, 2, [70, 100]],
-  ["3着以内", SF, 1, 3, [80, 100]],
-  ["文字列の艇番", SF, "1", 1, [55, 100]],
-  ["文字列のtarget", SF, 1, "2", [70, 100]],
-  ["着順キーなし", SF, 2, 2, null],
-  ["艇なし", SF, 3, 1, null],
-  ["target範囲外", SF, 1, 4, null],
-  ["null", null, 1, 1, null],
-  ["undefined", undefined, 1, 1, null],
-  ["空オブジェクト", {}, 1, 1, null],
-  ["母数0も組のまま", { usual: { "1": { win: [0, 0] } } }, 1, 1, [0, 0]],
-]) check(`usualOf: ${label}`, usualOf(sf, boat, target), expected);
-for (const [label, sf, boat, target, items, expected] of [
-  ["1着の項目順", SF, 1, 1, ITEMS, [2.1, 3, null]],
-  ["2着以内の欠けた軸", SF, 1, 2, ITEMS, [2.5, null, null]],
-  ["3着以内の明示null", SF, 1, 3, ITEMS, [null, null, null]],
-  ["文字列の艇番", SF, "1", 1, ITEMS, [2.1, 3, null]],
-  ["艇なし", SF, 2, 1, ITEMS, [null, null, null]],
-  ["null", null, 1, 1, ITEMS, [null, null, null]],
-  ["target範囲外", SF, 1, 4, ITEMS, [null, null, null]],
-  ["項目なし", SF, 1, 1, [], []],
-  ["0を保持", { typ: { "1": { series_score: { win: 0 } } } }, 1, 1,
-    [{ key: "series_score" }], [0]],
-]) check(`typicalRanks: ${label}`, typicalRanks(sf, boat, target, items), expected);
-for (const [label, input, expected] of [
-  ["6艇A1", { classes: Array(6).fill("A1") }, "A1"],
-  ["級別混在", { classes: ["A1", "A1", "A1", "A1", "A1", "B1"] }, null],
-  ["5艇", { classes: Array(5).fill("B1") }, null],
-  ["7艇", { classes: Array(7).fill("B1") }, null],
-  ["配列でない", { classes: "A1A1A1" }, null],
-  ["null", null, null],
-  ["空オブジェクト", {}, null],
-  ["6艇null", { classes: Array(6).fill(null) }, null],
-]) check(`uniformClass: ${label}`, uniformClass(input), expected);
-for (const [input, expected] of [
-  ["VC:01:A1", "VC"], ["NC", "NC"], ["NCR:x", "NCR"], ["", ""],
-]) check(`scopeKind: ${JSON.stringify(input)}`, scopeKind(input), expected);
-
-// 作り手から来ない入力の仕様は未定。現在値を観測するだけで assert しない。
-const KNOWN_GAPS = [
-  // BOA-1130: float32 と NaN を渡す前提。境界の丸め・null の仕様は決めず現在値だけを出す。
-  ["exhDiffLevel: [0.18,0,0,0,0,0]をfloat32化（平均0.03の丸め、Python nanmeanとの一致は未確認）",
-    () => exhDiffLevel(Array(6).fill(0), [0.18, 0, 0, 0, 0, 0].map(Math.fround))],
-  ["exhDiffLevel: [null,0,0,0,0,0.3]（nullを0として平均0.05）",
-    () => exhDiffLevel(Array(6).fill(0), [null, 0, 0, 0, 0, 0.3])],
-  ["exhibitionBoats: null混在（0秒として平均・順位に含む。呼び出し側はNaNに変換）",
-    () => exhibitionBoats([Math.fround(6.7), null, Math.fround(6.8), Math.fround(6.7), Math.fround(6.85), Math.fround(6.9)])],
-  ["exhibitionBoats: 全艇float32の6.8（平均との差の生値は0でない）",
-    () => exhibitionBoats(Array(6).fill(Math.fround(6.8))).exh_time_diff],
-  ["rateOf([12, 10])", () => rateOf([12, 10])],
-  ["rateOf([3, -10])", () => rateOf([3, -10])],
-  ["rateOf([null, 10])", () => rateOf([null, 10])],
-  ['rateOf(["3", "10"])', () => rateOf(["3", "10"])],
-  ["typicalRanks(SF, 1, 1, null)", () => typicalRanks(SF, 1, 1, null)],
-  ['uniformClass: 6艇とも空文字', () => uniformClass({ classes: Array(6).fill("") })],
-  ["uniformClass: 空き要素6個", () => uniformClass({ classes: new Array(6) })],
-  ["scopeKind(null)", () => scopeKind(null)],
-  ["scopeKind(undefined)", () => scopeKind(undefined)],
-  ["scopeKind(12)", () => scopeKind(12)],
-];
+// ---- 後半の場面（verifyData/analogy-facts-scenes-1.js） ----
+runAnalogyFactsScenes1({ check, defs });
 
 const ui = JSON.parse(
   fs.readFileSync(
@@ -423,8 +278,19 @@ const ui = JSON.parse(
 );
 
 // ---- 後半の場面（verifyData/analogy-facts-scenes-1.js・analogy-facts-scenes-2.js） ----
-runAnalogyFactsScenes1({ __dirname, check, ui });
-runAnalogyFactsScenes2({ check });
+runAnalogyFactsScenes2({ check, defs, ui });
+runAnalogyFactsScenes3({ check });
+
+// 例のレースの今日の順位（Python の today_payload と同じ）
+const example = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, "../ml/analogy/testdata/v16-example.json"),
+    "utf8",
+  ),
+);
+
+// ---- 後半の場面（verifyData/analogy-facts-scenes-2.js） ----
+runAnalogyFactsScenes4({ check, example });
 
 // 範囲の名前・層の説明文（日本語の文言で組み立てる）
 const ja = JSON.parse(
@@ -435,9 +301,154 @@ const ja = JSON.parse(
 );
 
 // ---- 後半の場面（verifyData/analogy-facts-scenes-2.js・analogy-facts-scenes-3.js・analogy-facts-scenes-4.js） ----
-runAnalogyFactsScenes3({ check, ja });
-runAnalogyFactsScenes4({ check });
-runAnalogyFactsScenes5({ ROOT_E2E, check, KNOWN_GAPS });
+runAnalogyFactsScenes5({ check, example, ja });
+runAnalogyFactsScenes6({ check });
+runAnalogyFactsScenes7({ check });
+
+// ---- 七角形・項目の表の6艇の値は、その艇を一番上で選んだときと同じ（2026-10-09 ユーザー指摘）
+// e2e の固定データ（若松12R・6艇ともA1）で、3号艇の集めたレースの展示タイムだけ値を変え、1号艇の集めたレースの
+// 3号艇の列と違う数字にする（以前の「比べる艇」は1号艇の集めたレースで数字を出していたので、ここで食い違った）
+{
+  const fx = JSON.parse(
+    zlib.gunzipSync(
+      fs.readFileSync(path.join(ROOT_E2E, "analogy-v16-fixture.json.gz")),
+    ),
+  ).facts;
+  const k3 = fx.today.scope_keys["3"].VC;
+  for (const r of ["1", "2", "3", "4", "5", "6"])
+    fx.facts[k3].by["3"].exh_time[r].win = [1, 50];
+  const values = todayValues(fx.today, fx.exhibition);
+  const items = FACT_ITEMS.filter((it) => it.key !== "boat_2");
+  const countOf = (key) => fx.facts[key]?.n ?? null;
+  let n = 0;
+  for (const picked of [null, "VC", "NC", "NCR", "VA"])
+    for (const target of [1, 2, 3]) {
+      const radar = radarBoats(
+        fx.today,
+        fx.facts,
+        values,
+        items,
+        target,
+        picked,
+      );
+      for (const b of [1, 2, 3, 4, 5, 6]) {
+        // 一番上で b を選んだとき（ConditionFactsTab と同じ: boatScopeKey → factRows → カードの今日の行）
+        const { key } = boatScopeKey(
+          fx.today.scope_keys[String(b)],
+          countOf,
+          picked,
+        );
+        const sf = fx.facts[key];
+        const rows = factRows(sf, b, target, true);
+        items.forEach((it, i) => {
+          const row = rows.find((r) => r.key === it.key);
+          const line = row
+            ? todayLine(row, values[it.key], b, sf, target)
+            : null;
+          check(
+            `七角形の表＝一番上で選んだとき: ${b}号艇 ${it.key} target=${target} picked=${picked}`,
+            radar[b - 1].cells[i].hit ?? null,
+            line?.hit ?? null,
+          );
+          n += 1;
+        });
+      }
+    }
+  // 食い違いを作れているか（1号艇の集めたレースの3号艇の列とは違う数字になる）
+  const k1 = fx.today.scope_keys["1"].VC;
+  const b3 = todayPosition(values.exh_time, false, 3).bucket;
+  check(
+    "検査の前提: 1号艇の集めたレースの3号艇の展示タイムは、3号艇の集めたレースと違う",
+    JSON.stringify(fx.facts[k1].by["3"].exh_time[String(b3)].win) !==
+      JSON.stringify(fx.facts[k3].by["3"].exh_time[String(b3)].win),
+    true,
+  );
+  check(
+    "七角形の表: 3号艇の展示タイムは3号艇の集めたレースの値",
+    radarBoats(fx.today, fx.facts, values, items, 1, null)[2].cells[
+      items.findIndex((it) => it.key === "exh_time")
+    ].hit,
+    [1, 50],
+  );
+  // 件数0の区分は、カードの今日の行と同じく「無し」（レビュー指摘: 表だけ「— 0/0件」になっていた）
+  {
+    const fz = structuredClone(fx);
+    const b5 = todayPosition(values.exh_time, false, 5).bucket;
+    fz.facts[fz.today.scope_keys["5"].VC].by["5"].exh_time[String(b5)].win = [
+      0, 0,
+    ];
+    const ie = items.findIndex((it) => it.key === "exh_time");
+    check(
+      "七角形の表: 件数0の区分は無し",
+      radarBoats(fz.today, fz.facts, values, items, 1, null)[4].cells[ie].hit,
+      null,
+    );
+  }
+  // 手で選んだ範囲の集計がその艇だけ無いときは、既定に戻す（レビュー指摘: 表の行が全部「—」になっていた）
+  {
+    const keys4 = fx.today.scope_keys["4"];
+    const missing = (key) =>
+      key === keys4.NC ? null : (fx.facts[key]?.n ?? null);
+    check(
+      "範囲: 手で選んだ範囲の集計が無い艇は既定に戻す",
+      boatScopeKey(keys4, missing, "NC").key,
+      defaultScope(keys4, missing).key,
+    );
+    check(
+      "範囲: 手で選んだ範囲の集計があればそれを使う",
+      boatScopeKey(keys4, countOf, "NC").key,
+      keys4.NC,
+    );
+  }
+  console.log(`七角形の表と一番上で選んだときの一致: ${n} 件`);
+}
+
+// ---- 着順の流れの帯の内訳（BOA-816）: 帯の件数＝その帯に入る3連単の件数の合計 ----
+{
+  const fx = JSON.parse(
+    zlib.gunzipSync(
+      fs.readFileSync(path.join(ROOT_E2E, "analogy-v16-fixture.json.gz")),
+    ),
+  ).scenario.scenario;
+  let n = 0;
+  for (const { forms } of Object.values(fx.cells))
+    for (const cell of Object.values(forms))
+      for (const [first, not1] of [
+        [null, false],
+        [null, true],
+        [1, false],
+        [4, false],
+      ])
+        for (const [p, a, b, c] of flowLinks(cell.tri, { first, not1 })) {
+          const bd = bandBreakdown(
+            cell.tri,
+            { p, a, b, first, not1 },
+            { first, not1 },
+          );
+          check(
+            `帯の内訳の合計＝帯の件数: ${p}:${a}-${b} first=${first} not1=${not1}`,
+            bd?.total ?? null,
+            c,
+          );
+          n += 1;
+        }
+  // 押したときと絞り込みが変わったら外れる（ファンパネル: 1着を変えたら帯の選択は外す）
+  const any = fx.cells.all.forms.any;
+  const [p0, a0, b0] = flowLinks(any.tri)[0];
+  check(
+    "帯の内訳: 1着の絞り込みが変わったら null",
+    bandBreakdown(
+      any.tri,
+      { p: p0, a: a0, b: b0, first: null, not1: false },
+      { first: a0, not1: false },
+    ),
+    null,
+  );
+  console.log(`帯の内訳の合計＝帯の件数: ${n} 件`);
+}
+
+// ---- 後半の場面（verifyData/analogy-facts-scenes-4.js） ----
+runAnalogyFactsScenes8({ check });
 
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の不一致`);

@@ -3,9 +3,15 @@
  * 判定と期待値は分ける前の verify-analogy-facts.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-import { hintRows, hintBadgeByForm, minRanks } from "../../../src/utils/analogyScenario.js";
-import { defaultScope, parseScopeKey } from "../../../src/utils/analogyFacts.js";
-import { wilsonInterval } from "../../../src/utils/wilson.js";
+import {
+  agreementVerdict,
+  rankPositions,
+  todayPosition,
+  factRows,
+  seriesScoreNote,
+  defaultScope,
+  parseScopeKey,
+} from "../../../src/utils/analogyFacts.js";
 import {
   scopeName,
   fmtDate,
@@ -15,19 +21,24 @@ import {
   fmtEntry,
 } from "../../../src/utils/analogyFormat.js";
 import { describeAnalogyLayer } from "../../../src/utils/analogyLayer.js";
-import {
-  sliderSteps,
-  defaultStepIndex,
-  normalizeNeighbor,
-  aggregateNeighbors,
-  trifectaList,
-  itemRates,
-  neighborCounts,
-} from "../../../src/utils/analogyAggregate.js";
-import { keys } from "./analogy-facts-scenes-1.js";
 
-let check, ja;
-let nb, ag, rates, rows;
+let check, example, ja;
+let scopeFacts;
+
+const HIB = { st_mean30: false };
+
+// カードの並び: 差がはっきりしている（大きい・小さい）ものが先、その中は差の大きい順
+const pairs = (b, w) => ({
+  1: { win: b },
+  2: { win: [0, 0] },
+  3: { win: [0, 0] },
+  4: { win: [0, 0] },
+  5: { win: [0, 0] },
+  6: { win: w },
+});
+
+// 既定の範囲（VC が300件未満なら NC）
+const keys = { VC: "VC:20:2-1-3-0:1A1", NC: "NC:2-1-3-0:1A1", VA: "VA:20" };
 
 const t = (key, opts = {}) => {
   const v = key.split(".").reduce((o, k) => o?.[k], ja);
@@ -35,16 +46,115 @@ const t = (key, opts = {}) => {
   return v.replace(/\{\{(\w+)\}\}/g, (_, k) => String(opts[k] ?? ""));
 };
 
-// 展開シナリオの画面の判定
-const sh = {
-  course: {
-    kado4: { kado: { hit: [45, 220], miss: [66, 678] } },
-    in_slow02: { d1: { hit: [31, 175], miss: [62, 723] } },
-    flat03: { flat: { hit: [3, 20], miss: [100, 900] } },
-  },
-};
-
 function scene1() {
+  // 展示の形と本番の形（同じ Wilson のぶれ幅で言い分ける）
+  check(
+    "展示の形: 同じ形のほうがはっきり高い",
+    agreementVerdict([300, 1000], [150, 1000]),
+    "up",
+  );
+  check(
+    "展示の形: 多摩川12R の例（12% と 15%、件数が少なくぶれ幅が重なる）",
+    agreementVerdict([6, 50], [150, 1000]),
+    "same",
+  );
+  check(
+    "展示の形: 同じ形のほうがはっきり低い",
+    agreementVerdict([100, 1000], [200, 1000]),
+    "down",
+  );
+  check("展示の形: 件数0は出さない", agreementVerdict([0, 0], [1, 10]), null);
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（check） */
+export function runAnalogyFactsScenes3(env) {
+  ({ check } = env);
+  scene1();
+}
+
+function scene2() {
+  for (const [k, v] of Object.entries(example.today.items))
+    check(
+      `例のレースの順位 ${k}`,
+      rankPositions(v.values, HIB[k] ?? true),
+      v.positions,
+    );
+  // 今日の位置: 同じ値の艇は一番良い・一番悪いの両方（3艇が同じ値の真ん中は min 順位）
+  check(
+    "今日の位置（同じ値の最良）",
+    todayPosition([7, 7, 6, 5, 4, 3], true, 2),
+    { bucket: 1, same: 2, value: 7, min: 3, max: 7 },
+  );
+  check(
+    "今日の位置（中間の同じ値）",
+    todayPosition([7, 5, 5, 5, 4, 3], true, 3).bucket,
+    2,
+  );
+  check(
+    "今日の位置（値なし）",
+    todayPosition([null, 5, 5, 5, 4, 3], true, 1),
+    null,
+  );
+  check(
+    "今日の位置（遅いほど悪い）",
+    todayPosition([0.15, 0.12, 0.13, 0.11, 0.18, 0.18], false, 6).bucket,
+    6,
+  );
+  scopeFacts = {
+    by: {
+      1: {
+        nat_win: pairs([60, 100], [40, 100]), // はっきり・差20
+        loc_win: pairs([52, 100], [48, 100]), // はっきりしない
+        motor_2: pairs([700, 1000], [600, 1000]), // はっきり・差10
+        exh_time: pairs([90, 100], [10, 100]), // 展示前は出さない
+      },
+    },
+  };
+  check(
+    "カードの並び（展示前）",
+    factRows(scopeFacts, 1, 1, false).map((r) => r.key),
+    ["nat_win", "motor_2", "loc_win"],
+  );
+  check(
+    "カードの並び（展示後）",
+    factRows(scopeFacts, 1, 1, true).map((r) => r.key),
+    ["exh_time", "nat_win", "motor_2", "loc_win"],
+  );
+  // 今節の平均着順点の注記（R1: 最小3未満かつ最大1以上。優勝戦・準優勝戦の日は final だけ。
+  // 初日（6艇とも0走）は first: カードと七角形の軸を出さず1行で断る。BOA-802 2026-10-10 ユーザー決定）
+  check(
+    "注記: 序盤",
+    seriesScoreNote({
+      round: "yosen",
+      series_runs_before_today: [1, 2, 3, 3, 4, 2],
+    }),
+    "early",
+  );
+  check(
+    "注記: 初日",
+    seriesScoreNote({
+      round: "yosen",
+      series_runs_before_today: [0, 0, 0, 0, 0, 0],
+    }),
+    "first",
+  );
+  check(
+    "注記: 走数が足りる",
+    seriesScoreNote({
+      round: "yosen",
+      series_runs_before_today: [3, 3, 4, 5, 3, 3],
+    }),
+    null,
+  );
+  check(
+    "注記: 優勝戦",
+    seriesScoreNote({
+      round: "yusho",
+      series_runs_before_today: [1, 1, 1, 1, 1, 1],
+    }),
+    "final",
+  );
+  check("既定の範囲（VC）", defaultScope(keys, () => 300).key, keys.VC);
   check(
     "既定の範囲（NC）",
     defaultScope(keys, () => 299),
@@ -55,6 +165,9 @@ function scene1() {
     defaultScope(keys, (k) => (k === keys.VC ? null : 500)).key,
     keys.NC,
   );
+}
+
+function scene3() {
   check(
     "既定の範囲（級別なし）",
     defaultScope({ VA: "VA:20" }, () => 0).key,
@@ -70,13 +183,14 @@ function scene1() {
   });
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（check） */
-export function runAnalogyFactsScenes2(env) {
-  ({ check } = env);
-  scene1();
+/** verify から呼ぶ入口。env は verify 側の束縛（check・example） */
+export function runAnalogyFactsScenes4(env) {
+  ({ check, example } = env);
+  scene2();
+  scene3();
 }
 
-function scene2() {
+function scene4() {
   check(
     "範囲の名前 VC（6艇とも）",
     scopeName("VC:20:6-0-0-0:1A1", t),
@@ -114,109 +228,10 @@ function scene2() {
   check("展示ST", fmtExhSt(0.07), ".07");
   check("割合と件数", fmtRateCount([16, 45]), "36%（16/45）");
   check("進入", fmtEntry([2, 3, 1, 4, 5, 6]), "312/456");
-  // スライダーの段（spec B-4）
-  check("段（15件の層）", sliderSteps(15), [10, 15]);
-  check("段（800件以上）", sliderSteps(800).length, 12);
-  check(
-    "既定の段（800件）",
-    sliderSteps(800)[defaultStepIndex(sliderSteps(800))],
-    400,
-  );
-  check(
-    "既定の段（15件）",
-    sliderSteps(15)[defaultStepIndex(sliderSteps(15))],
-    15,
-  );
-  // 類似レースの集計
-  nb = [
-    {
-      race_id: "2021-10-14-16-12",
-      finish: [1, 3, 6],
-      technique: "逃げ",
-      items: { venue: 1, nat_win_6: 2, is_final_day: -1 },
-    },
-    {
-      race_id: "2019-08-06-11-12",
-      finish: [3, 1, 4],
-      technique: "まくり",
-      items: { venue: 0, nat_win_6: 2 },
-    },
-    {
-      race_id: "2020-01-01-01-01",
-      finish: [3, 1, 0],
-      technique: null,
-      items: {},
-    },
-  ].map(normalizeNeighbor);
-  check(
-    "日付・会場・R（race_id から）",
-    [nb[0].date, nb[0].venue_code, nb[0].race_number],
-    ["2021-10-14", 16, 12],
-  );
-  ag = aggregateNeighbors(nb);
-  check("集計: 件数（着順の欠けを除く）", ag.n, 2);
-  check("集計: 1着", ag.win, [1, 0, 1, 0, 0, 0]);
-  check("集計: 3着以内", ag.hit[3], [2, 0, 2, 1, 0, 1]);
-  check("集計: 決まり手", ag.tech, { 逃げ: 1, まくり: 1 });
-  check("3連単", trifectaList(ag.tri, { not1: true }), [[[3, 1, 4], 1]]);
-  rates = itemRates(nb, [
-    { key: "venue" },
-    { key: "nat_win_6" },
-    { key: "is_final_day" },
-  ]);
-  check(
-    "同じ割合（会場）",
-    [rates.venue.same, rates.venue.near, rates.venue.n],
-    [0, 1, 2],
-  );
-  check("同じ割合（欠損は数えない）", rates.is_final_day.n, 0);
 }
 
-function scene3() {
-  check("1件の同じ・近い・違う", neighborCounts(nb[0], false), {
-    same: 1,
-    near: 1,
-    diff: 0,
-    total: 2,
-  });
-  rows = hintRows(
-    sh,
-    { kado4: true, in_slow02: true, flat03: true },
-    "course",
-    wilsonInterval,
-  );
-  check(
-    "手がかりの札",
-    rows.map((r) => [r.id, r.kind]),
-    [
-      ["kado4", "up"],
-      ["in_slow02", "up"],
-      ["flat03", "unclear"],
-    ],
-  );
-  check(
-    "全体の割合（当てはまる＋当てはまらない）",
-    rows.map((r) => Number(r.pall.toFixed(4))),
-    [
-      Number((111 / 898).toFixed(4)),
-      Number((93 / 898).toFixed(4)),
-      Number((103 / 920).toFixed(4)),
-    ],
-  );
-  check("札は形ごとに1つ", Object.keys(hintBadgeByForm(rows)), ["kado", "d1"]);
-  check("min 順位", minRanks([34.2, 37.2, 39, null, 37.2, 30], true), [
-    4,
-    2,
-    1,
-    null,
-    2,
-    5,
-  ]);
-}
-
-/** verify から呼ぶ入口。env は verify 側の束縛（check・ja） */
-export function runAnalogyFactsScenes3(env) {
-  ({ check, ja } = env);
-  scene2();
-  scene3();
+/** verify から呼ぶ入口。env は verify 側の束縛（check・example・ja） */
+export function runAnalogyFactsScenes5(env) {
+  ({ check, example, ja } = env);
+  scene4();
 }
