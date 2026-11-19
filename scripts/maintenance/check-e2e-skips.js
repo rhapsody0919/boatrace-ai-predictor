@@ -136,49 +136,57 @@ export function reportProblems(report, tests, options = {}) {
     maxAgeHours = DEFAULT_MAX_AGE_HOURS,
     expectProjects = null,
   } = options;
-  const problems = [];
+  return [
+    ...runErrorProblems(report),
+    ...projectProblems(report, tests, expectProjects),
+    ...ageProblems(report, now, maxAgeHours),
+  ];
+}
 
+// 1. `errors` が空か
+function runErrorProblems(report) {
   const errors = report?.errors ?? [];
-  if (errors.length > 0) {
-    const first = errors[0]?.message?.split("\n")[0] ?? "(内容不明)";
-    problems.push(
-      `実行が正常に完了していません（Playwrightのerrorsが${errors.length}件）。先頭: ${first}`,
-    );
-  }
+  if (errors.length === 0) return [];
+  const first = errors[0]?.message?.split("\n")[0] ?? "(内容不明)";
+  return [
+    `実行が正常に完了していません（Playwrightのerrorsが${errors.length}件）。先頭: ${first}`,
+  ];
+}
 
+// 2. 揃っているべきプロジェクトが全部1件以上あるか
+function projectProblems(report, tests, expectProjects) {
   if (tests.length === 0) {
-    problems.push(
+    return [
       "レポートにテストが1件も入っていません。採点する対象がありません。",
-    );
-  } else {
-    const declared = (report?.config?.projects ?? [])
-      .map((p) => p?.name)
-      .filter(Boolean);
-    const expected = expectProjects ?? declared;
-    const ran = new Set(tests.map((t) => t.project).filter(Boolean));
-    const missing = expected.filter((name) => !ran.has(name));
-    if (missing.length > 0) {
-      problems.push(
-        `設定にあるのに1件も走っていないプロジェクトがあります: ${missing.join(", ")}`,
-      );
-    }
+    ];
   }
+  const declared = (report?.config?.projects ?? [])
+    .map((p) => p?.name)
+    .filter(Boolean);
+  const expected = expectProjects ?? declared;
+  const ran = new Set(tests.map((t) => t.project).filter(Boolean));
+  const missing = expected.filter((name) => !ran.has(name));
+  if (missing.length === 0) return [];
+  return [
+    `設定にあるのに1件も走っていないプロジェクトがあります: ${missing.join(", ")}`,
+  ];
+}
 
+// 3. いつの結果か
+function ageProblems(report, now, maxAgeHours) {
   const started = Date.parse(report?.stats?.startTime ?? "");
   if (!Number.isFinite(started)) {
-    problems.push(
+    return [
       "レポートに実行時刻（stats.startTime）がありません。いつの結果か分からないため採点しません。",
-    );
-  } else {
-    const ageHours = (now - started) / 3600000;
-    if (ageHours > maxAgeHours) {
-      problems.push(
-        `レポートが古すぎます（${ageHours.toFixed(1)}時間前、上限${maxAgeHours}時間）。テストを走らせずに採点しかけています。`,
-      );
-    }
+    ];
   }
-
-  return problems;
+  const ageHours = (now - started) / 3600000;
+  if (ageHours > maxAgeHours) {
+    return [
+      `レポートが古すぎます（${ageHours.toFixed(1)}時間前、上限${maxAgeHours}時間）。テストを走らせずに採点しかけています。`,
+    ];
+  }
+  return [];
 }
 
 /**
@@ -237,7 +245,8 @@ function argOf(name) {
   return value;
 }
 
-function main() {
+// コマンドの引数（--max-rate・--max-age-hours・--projects）。不正なら理由を出して exit 1
+function parseCliOptions() {
   const rateArg = argOf("max-rate");
   const maxRate = rateArg ? Number(rateArg) : DEFAULT_MAX_SKIP_RATE;
   if (!Number.isFinite(maxRate) || maxRate < 0 || maxRate > 1) {
@@ -269,17 +278,80 @@ function main() {
     );
     process.exit(1);
   }
+  return { maxRate, maxAgeHours, expectProjects };
+}
 
+function readReport() {
   const reportPath = path.join(repoRoot, "e2e-results.json");
-  let report;
   try {
-    report = JSON.parse(readFileSync(reportPath, "utf8"));
+    return JSON.parse(readFileSync(reportPath, "utf8"));
   } catch {
     console.error(`NG: ${path.relative(repoRoot, reportPath)} を読めません。`);
     console.error("  先に npm run test:e2e を実行してください。");
     process.exit(1);
   }
+}
 
+function exitUnscorable(problems) {
+  console.error("NG: このレポートは採点できません。");
+  for (const p of problems) console.error(`  - ${p}`);
+  console.error("");
+  console.error(
+    "  skipの率が低いことは「テストが動いている」ことを意味しません。",
+  );
+  console.error("  採点対象が揃っていないレポートを通すと、この検査が防ぎたい");
+  console.error("  「緑のまま何も検証していない」状態そのものになります。");
+  console.error("");
+  console.error("  先に npm run test:e2e を実行してください。");
+  console.error(
+    "  一部のプロジェクトだけ走らせた場合は --projects= で期待する集合を指定してください。",
+  );
+  process.exit(1);
+}
+
+function printSkipped(skipped) {
+  // 同じ理由のものはまとめる。同じ条件がずっと真になっていることが見えるように
+  console.log("");
+  for (const [reason, titles] of groupByReason(skipped)) {
+    console.log(`  ${titles.length}件  ${reason}`);
+    for (const title of titles.slice(0, 3)) console.log(`         ${title}`);
+    if (titles.length > 3) console.log(`         ほか${titles.length - 3}件`);
+  }
+
+  // 率では薄まるが、「同じ条件が常に真」はひとかたまりで現れる
+  const clusters = clusteredReasons(skipped);
+  if (clusters.length > 0) {
+    console.log("");
+    console.log(
+      `注意: 同じ理由で${CLUSTER_WARN_COUNT}件以上まとまってskipされています（${clusters.length}組）。`,
+    );
+    console.log(
+      "  その条件が常に真になっていると、これらのテストは緑のまま何も検証しません。",
+    );
+    console.log(
+      "  本日開催レースの有無など実行時刻で変わる条件なら、固定の過去データで検証できないか検討してください。",
+    );
+  }
+}
+
+function exitOverRate(maxRate) {
+  console.error("");
+  console.error(
+    `NG: skipが上限（${(maxRate * 100).toFixed(0)}%）を超えています。`,
+  );
+  console.error(
+    "  データ依存のskipは正常に起こりますが、条件が常に真になっていると、",
+  );
+  console.error(
+    "  そのテストは緑のまま何も検証しません。上の理由ごとの件数を見て、",
+  );
+  console.error("  同じ条件で大量にskipされていないか確認してください。");
+  process.exit(1);
+}
+
+function main() {
+  const { maxRate, maxAgeHours, expectProjects } = parseCliOptions();
+  const report = readReport();
   const tests = flattenTests(report);
 
   // 率を見る前に、このレポートが採点に足るかを見る。
@@ -288,24 +360,7 @@ function main() {
     maxAgeHours,
     expectProjects,
   });
-  if (problems.length > 0) {
-    console.error("NG: このレポートは採点できません。");
-    for (const p of problems) console.error(`  - ${p}`);
-    console.error("");
-    console.error(
-      "  skipの率が低いことは「テストが動いている」ことを意味しません。",
-    );
-    console.error(
-      "  採点対象が揃っていないレポートを通すと、この検査が防ぎたい",
-    );
-    console.error("  「緑のまま何も検証していない」状態そのものになります。");
-    console.error("");
-    console.error("  先に npm run test:e2e を実行してください。");
-    console.error(
-      "  一部のプロジェクトだけ走らせた場合は --projects= で期待する集合を指定してください。",
-    );
-    process.exit(1);
-  }
+  if (problems.length > 0) exitUnscorable(problems);
 
   const { total, skipped, rate, ok } = judge(tests, maxRate);
 
@@ -313,45 +368,9 @@ function main() {
     `E2E: ${total}件中 ${skipped.length}件がskip（${(rate * 100).toFixed(1)}%、上限 ${(maxRate * 100).toFixed(0)}%）`,
   );
 
-  if (skipped.length > 0) {
-    // 同じ理由のものはまとめる。同じ条件がずっと真になっていることが見えるように
-    console.log("");
-    for (const [reason, titles] of groupByReason(skipped)) {
-      console.log(`  ${titles.length}件  ${reason}`);
-      for (const title of titles.slice(0, 3)) console.log(`         ${title}`);
-      if (titles.length > 3) console.log(`         ほか${titles.length - 3}件`);
-    }
+  if (skipped.length > 0) printSkipped(skipped);
 
-    // 率では薄まるが、「同じ条件が常に真」はひとかたまりで現れる
-    const clusters = clusteredReasons(skipped);
-    if (clusters.length > 0) {
-      console.log("");
-      console.log(
-        `注意: 同じ理由で${CLUSTER_WARN_COUNT}件以上まとまってskipされています（${clusters.length}組）。`,
-      );
-      console.log(
-        "  その条件が常に真になっていると、これらのテストは緑のまま何も検証しません。",
-      );
-      console.log(
-        "  本日開催レースの有無など実行時刻で変わる条件なら、固定の過去データで検証できないか検討してください。",
-      );
-    }
-  }
-
-  if (!ok) {
-    console.error("");
-    console.error(
-      `NG: skipが上限（${(maxRate * 100).toFixed(0)}%）を超えています。`,
-    );
-    console.error(
-      "  データ依存のskipは正常に起こりますが、条件が常に真になっていると、",
-    );
-    console.error(
-      "  そのテストは緑のまま何も検証しません。上の理由ごとの件数を見て、",
-    );
-    console.error("  同じ条件で大量にskipされていないか確認してください。");
-    process.exit(1);
-  }
+  if (!ok) exitOverRate(maxRate);
   console.log("");
   console.log("OK: skipは上限内");
 }

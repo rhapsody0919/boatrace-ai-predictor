@@ -151,9 +151,8 @@ export function raceInputs(models, race, windBasis = null) {
   };
 }
 
-/** 固定データ全体を検査する。返り値の ok が false なら不一致 */
-export function checkParity({ meta, dumps, fixture }) {
-  const models = prepareModels(meta, dumps);
+/** 固定データの races と model_version を確かめる（不備は ParityInputError） */
+function assertFixture(meta, fixture) {
   if (!Array.isArray(fixture?.races) || fixture.races.length === 0) {
     throw new ParityInputError("parity_fixture.json に races がありません");
   }
@@ -165,6 +164,86 @@ export function checkParity({ meta, dumps, fixture }) {
       `parity_fixture.json の model_version（${fixture.model_version}）が per_race_meta.json（${meta.model_version}）と違います`,
     );
   }
+}
+
+/** 1艇の検査。特徴量の不一致と SHAP の差を s（そのモデルの集計）へ足し、不一致を note に書く */
+function checkBoat({ raceId, name, model, names, exp, x, b, s, note }) {
+  // 欠けた列を null（欠損）と同じに扱って素通りさせない
+  if (exp.features[b]?.length !== names.length) {
+    throw new ParityInputError(
+      `${raceId}: expected.${name}.features の列の数 ${exp.features[b]?.length} が feature_names の ${names.length} と違います`,
+    );
+  }
+  s.boats += 1;
+  names.forEach((f, j) => {
+    if (!sameFloat(x[j], exp.features[b][j])) {
+      s.feature_mismatches += 1;
+      note(
+        `${raceId} 艇${b + 1} ${name}.${f}: JS ${x[j]} / Python ${exp.features[b][j]}`,
+      );
+    }
+  });
+  // 特徴量の不一致と SHAP の不一致を分けて見るため、SHAP は Python の特徴量で計算する
+  const xPy = Float64Array.from(exp.features[b], (v) => (v === null ? NaN : v));
+  const phi = contributions(model, xPy);
+  if (exp.contrib[b].length !== phi.length) {
+    throw new ParityInputError(
+      `${raceId}: expected.${name}.contrib の長さ ${exp.contrib[b].length} が ${phi.length} と違います`,
+    );
+  }
+  // 期待値の欠け（null）は不一致として扱う
+  const diff = phi.reduce((m, v, j) => {
+    const d = Math.abs(v - (exp.contrib[b][j] ?? NaN));
+    return Number.isNaN(d) ? Infinity : Math.max(m, d);
+  }, 0);
+  const sumMinusRaw = Math.abs(
+    phi.reduce((a, v) => a + v, 0) - predictRaw(model, xPy),
+  );
+  if (diff >= TOLERANCE)
+    note(`${raceId} 艇${b + 1} ${name}: SHAP の最大差 ${diff}`);
+  if (sumMinusRaw >= TOLERANCE)
+    note(
+      `${raceId} 艇${b + 1} ${name}: SHAP の合計と生スコアの差 ${sumMinusRaw}`,
+    );
+  s.max_abs_contrib_diff = Math.max(s.max_abs_contrib_diff, diff);
+  s.max_abs_sum_minus_raw = Math.max(s.max_abs_sum_minus_raw, sumMinusRaw);
+}
+
+/** 1レースの検査。モデルごとに艇の数を確かめてから、艇ごとに checkBoat */
+function checkRace({ models, race, windBasis, stats, note }) {
+  const { inputs } = raceInputs(models, race, windBasis);
+  for (const name of MODELS) {
+    const exp = race.expected?.[name];
+    if (
+      !exp ||
+      exp.features?.length !== inputs[name].length ||
+      exp.contrib?.length !== inputs[name].length
+    ) {
+      throw new ParityInputError(
+        `${race.race_id}: expected.${name} の艇の数が racecard_features と違います`,
+      );
+    }
+    const { model, featureNames: names } = models[name];
+    inputs[name].forEach((x, b) =>
+      checkBoat({
+        raceId: race.race_id,
+        name,
+        model,
+        names,
+        exp,
+        x,
+        b,
+        s: stats[name],
+        note,
+      }),
+    );
+  }
+}
+
+/** 固定データ全体を検査する。返り値の ok が false なら不一致 */
+export function checkParity({ meta, dumps, fixture }) {
+  const models = prepareModels(meta, dumps);
+  assertFixture(meta, fixture);
   const messages = [];
   const note = (m) => {
     if (messages.length < MAX_MESSAGES) messages.push(m);
@@ -182,67 +261,13 @@ export function checkParity({ meta, dumps, fixture }) {
   );
 
   for (const race of fixture.races) {
-    const { inputs } = raceInputs(models, race, meta.wind_basis ?? null);
-    for (const name of MODELS) {
-      const exp = race.expected?.[name];
-      const s = stats[name];
-      const names = models[name].featureNames;
-      if (
-        !exp ||
-        exp.features?.length !== inputs[name].length ||
-        exp.contrib?.length !== inputs[name].length
-      ) {
-        throw new ParityInputError(
-          `${race.race_id}: expected.${name} の艇の数が racecard_features と違います`,
-        );
-      }
-      inputs[name].forEach((x, b) => {
-        // 欠けた列を null（欠損）と同じに扱って素通りさせない
-        if (exp.features[b]?.length !== names.length) {
-          throw new ParityInputError(
-            `${race.race_id}: expected.${name}.features の列の数 ${exp.features[b]?.length} が feature_names の ${names.length} と違います`,
-          );
-        }
-        s.boats += 1;
-        names.forEach((f, j) => {
-          if (!sameFloat(x[j], exp.features[b][j])) {
-            s.feature_mismatches += 1;
-            note(
-              `${race.race_id} 艇${b + 1} ${name}.${f}: JS ${x[j]} / Python ${exp.features[b][j]}`,
-            );
-          }
-        });
-        // 特徴量の不一致と SHAP の不一致を分けて見るため、SHAP は Python の特徴量で計算する
-        const xPy = Float64Array.from(exp.features[b], (v) =>
-          v === null ? NaN : v,
-        );
-        const phi = contributions(models[name].model, xPy);
-        if (exp.contrib[b].length !== phi.length) {
-          throw new ParityInputError(
-            `${race.race_id}: expected.${name}.contrib の長さ ${exp.contrib[b].length} が ${phi.length} と違います`,
-          );
-        }
-        // 期待値の欠け（null）は不一致として扱う
-        const diff = phi.reduce((m, v, j) => {
-          const d = Math.abs(v - (exp.contrib[b][j] ?? NaN));
-          return Number.isNaN(d) ? Infinity : Math.max(m, d);
-        }, 0);
-        const sumMinusRaw = Math.abs(
-          phi.reduce((a, v) => a + v, 0) - predictRaw(models[name].model, xPy),
-        );
-        if (diff >= TOLERANCE)
-          note(`${race.race_id} 艇${b + 1} ${name}: SHAP の最大差 ${diff}`);
-        if (sumMinusRaw >= TOLERANCE)
-          note(
-            `${race.race_id} 艇${b + 1} ${name}: SHAP の合計と生スコアの差 ${sumMinusRaw}`,
-          );
-        s.max_abs_contrib_diff = Math.max(s.max_abs_contrib_diff, diff);
-        s.max_abs_sum_minus_raw = Math.max(
-          s.max_abs_sum_minus_raw,
-          sumMinusRaw,
-        );
-      });
-    }
+    checkRace({
+      models,
+      race,
+      windBasis: meta.wind_basis ?? null,
+      stats,
+      note,
+    });
   }
   const ok = MODELS.every(
     (n) =>

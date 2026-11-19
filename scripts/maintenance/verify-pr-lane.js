@@ -1226,8 +1226,9 @@ const moveRun = (texts, changes = moveChanges) => {
     noHuman: ["secret scripts/analysis/foo.js", "db scripts/analysis/foo.js", "github scripts/analysis/foo.js"],
     needs: ["line-mutation scripts/analysis/foo.js"],
   });
-  ex(["M scripts/lib/x.js"], {}, { human: ["db scripts/lib/x.js"], noNeeds: ["line-mutation scripts/lib/x.js"] });
-  ex(["M scripts/daily/w.js"], { blobs: upsert }, { human: ["db scripts/daily/w.js"] });
+  // DB の書き手（db）にも line-mutation を課す（人の理由は残したまま。免除は judge だけ）
+  ex(["M scripts/lib/x.js"], {}, { human: ["db scripts/lib/x.js"], needs: ["line-mutation scripts/lib/x.js"] });
+  ex(["M scripts/daily/w.js"], { blobs: upsert }, { human: ["db scripts/daily/w.js"], needs: ["line-mutation scripts/daily/w.js"] });
   ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { base: 'sb\n.from("x")\n  .delete()\n', head: "" } } }, { human: ["db scripts/daily/w.js"] });
   ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { head: "const k = process.env.SUPABASE_SERVICE_ROLE_KEY;\n" } } }, { human: ["db scripts/daily/w.js"] });
   ex(["M scripts/daily/w.js"], { blobs: { "scripts/daily/w.js": { head: null } } }, { human: ["db scripts/daily/w.js"] });
