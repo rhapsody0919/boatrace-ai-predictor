@@ -11,6 +11,7 @@
  */
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { register } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -135,13 +136,19 @@ assert.match(
   /buildImageDimensions\(/,
   "vite.config.js が画像のヘッダーから表を作る",
 );
-const blogPost = fs.readFileSync(
-  path.join(ROOT, "src/pages/BlogPost.jsx"),
-  "utf8",
-);
-assert.match(
-  blogPost,
-  /from "virtual:blog-image-dimensions"/,
+// BlogPost.jsx は本文の字でなく import で見る: 仮想モジュールを BlogPost.jsx から頼まれたときだけ印の付く物へ解く
+const HOOK = `export async function resolve(s, c, next) {
+  if (s === "virtual:blog-image-dimensions" && c.parentURL?.endsWith("/src/pages/BlogPost.jsx"))
+    return { url: "data:text/javascript,globalThis.blogDimsFrom='BlogPost';export default {}", shortCircuit: true };
+  const r = await next(s, c), m = /\\/src\\/data\\/blogPosts(En|ZhTw|Ko)?\\.js$/.exec(r.url);
+  return m ? { url: "data:text/javascript,const f=()=>{};export {f as getPostById,f as getRelatedPosts,f as getRelatedPostsForLang,f as isBlogLangAvailable,f as getBlogOverride,f as getBlogMdSuffix};export const blogPosts" + (m[1] ?? "") + "=[]", shortCircuit: true } : r;
+}`;
+register(new URL("../lib/renderJsx.js", import.meta.url));
+register(`data:text/javascript,${encodeURIComponent(HOOK)}`);
+await import("../../src/pages/BlogPost.jsx");
+assert.equal(
+  globalThis.blogDimsFrom,
+  "BlogPost",
   "BlogPost.jsx が仮想モジュールの表を読む",
 );
 
