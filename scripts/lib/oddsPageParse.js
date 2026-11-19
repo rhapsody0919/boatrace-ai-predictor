@@ -5,7 +5,6 @@
 import * as cheerio from "cheerio";
 import { VENUE_NAMES } from "./venueNames.js";
 import {
-  parseTrifectaAll,
   parseTrioAll,
   parseExactaAll,
   parseQuinellaAll,
@@ -107,22 +106,6 @@ export function topTrifectaByOdds(trifectaMap, n = 3) {
     .sort(([ka, oa], [kb, ob]) => oa - ob || compareBoats(ka, kb))
     .slice(0, n)
     .map(([combination, odds]) => ({ combination, odds }));
-}
-
-/**
- * 3連単人気上位3つを、odds3t の全通りの表から求める。
- *
- * 公式の odds3t ページに「人気順」の表は無い（2026-09-21に実ページとフィクスチャで確認。ページの表は、
- * 1着艇ごとに6セクションを横に並べた120通りの組番順のグリッド1つだけ）。旧実装は `.is-p3-0 tbody tr` を
- * 探していたが、`is-p3-0` はそのグリッドの <tbody> 自身のクラスで、内側に <tbody> は無いため、常に0件に
- * なり、trifecta_popular_*・trifecta_odds_* が全行で NULL だった。全通りのグリッド
- * （oddsParser.parseTrifectaAll）から、オッズの低い順に3件選ぶ。
- *
- * @param {CheerioAPI} $ - odds3t ページの cheerio インスタンス
- * @returns {Array<{combination: string|null, odds: number|null}>} 最大3件（グリッドが取れなければ空）
- */
-export function scrapeTrifectaOdds($) {
-  return topTrifectaByOdds(parseTrifectaAll($));
 }
 
 /**
