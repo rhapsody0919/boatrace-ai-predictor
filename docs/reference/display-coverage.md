@@ -22,7 +22,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 「匿名SELECT権限の記述が無い」は、**画面（`src/`）が匿名キーで直接読んでいるのに** `GRANT SELECT … TO anon` もSELECTポリシーもマイグレーションに無いもの。076（BOA-370）が新規テーブルの既定権限を剥奪したため、**076以降に定義されたテーブル**に限って見る。`api/` のEdge Functions経由の読み取りと、RPC経由（`SECURITY DEFINER` がありうる）は対象外。
 
-画面が呼んでいるRPC: `append_sns_metric_observation` / `get_admin_rule_performance` / `get_course_win_rate_baseline` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_today_races` / `import_sns_preview_bundle`
+画面が呼んでいるRPC: `append_sns_metric_observation` / `get_admin_rule_performance` / `get_course_win_rate_baseline` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_racer_front_taking_counts` / `get_racer_scoped_race_rows` / `get_today_races` / `import_sns_preview_bundle`
 
 ## 要判断: 画面から読んでいない（例外登録なし）（34件）
 
@@ -106,7 +106,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `analogy_feedback` | 表 | 143_analogy_feedback.sql | 画面が直接 | 記述なし | 画面が匿名キーで直接読むが GRANT SELECT … TO anon もSELECTポリシーも無い（076以降は明示が必要） |
 | `analogy_models` | 表 | 118_analogy_contribution_tables.sql | 画面が直接 | GRANT（118_analogy_contribution_tables.sql） |  |
 | `bet_recommendations` | 表 | 001_schema.sql | 画面が直接 | ポリシー（001_schema.sql） |  |
-| `exhibition_data` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_st_predictability(画面) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
+| `exhibition_data` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_st_predictability(画面), get_racer_scoped_race_rows(画面) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
 | `exhibition_time_top_stats` | 表 | 028_exhibition_time_top_stats.sql | 画面が直接 | GRANT（028_exhibition_time_top_stats.sql） |  |
 | `losing_technique_stats` | 表 | 026_losing_technique_stats.sql | 画面が直接 | GRANT（026_losing_technique_stats.sql） |  |
 | `model_performance_daily` | 表 | 001_schema.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
@@ -120,8 +120,8 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `outcome_distribution` | 表 | 020_outcome_distribution.sql | API・画面が直接 | GRANT（020_outcome_distribution.sql） |  |
 | `poirot_predictions` | 表 | 021_poirot_predictions.sql | 画面が直接 | ポリシー（021_poirot_predictions.sql） |  |
 | `predictions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
-| `race_conditions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_racer_accident_records(画面), get_today_races(API・画面) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
-| `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_racer_accident_records(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
+| `race_conditions` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_racer_accident_records(画面), get_racer_scoped_race_rows(画面), get_today_races(API・画面) | ポリシー（076_enable_rls_on_public_tables.sql） |  |
+| `race_entries` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_race_exhibition_trend(画面), get_race_return_rate(画面), get_race_st_predictability(画面), get_race_technique_profile(画面), get_racer_accident_records(画面), get_racer_front_taking_counts(画面), get_racer_scoped_race_rows(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `race_history_cache` | 表 | 020_race_history_cache.sql | API・画面が直接 | GRANT（020_race_history_cache.sql） |  |
 | `race_odds` | 表 | 001_schema.sql | API・画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
 | `race_odds_final` | 表 | 108_race_odds_final.sql | 画面が直接 | GRANT（108_race_odds_final.sql） |  |
@@ -129,14 +129,14 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `race_original_exhibition_values` | 表 | 091_boatcast_original_exhibition.sql | 画面が直接 | GRANT（096_original_exhibition_public_read.sql） |  |
 | `race_pit_comments` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_pit_reports` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
-| `race_results` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_course_win_rate_baseline(画面), get_race_return_rate(画面), get_race_technique_profile(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
+| `race_results` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_course_win_rate_baseline(画面), get_race_return_rate(画面), get_race_technique_profile(画面), get_racer_front_taking_counts(画面), get_racer_scoped_race_rows(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `race_series` | 表 | 084_race_series.sql | API・画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `racer_grade_cache` | 表 | 054_racer_grade_cache_table.sql | 画面が直接 | GRANT（054_racer_grade_cache_table.sql） |  |
 | `racer_news` | 表 | 036_create_racer_news.sql | 画面が直接 | ポリシー（036_create_racer_news.sql） |  |
 | `racer_period_stats` | 表 | 083_racer_period_stats.sql | 画面が直接 / RPC経由: get_course_win_rate_baseline(画面) | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `racer_profiles` | 表 | 035_create_racer_profiles.sql | 画面が直接 | ポリシー（035_create_racer_profiles.sql） |  |
 | `racer_series_points` | 表 | 064_racer_series_points.sql | 画面が直接 | ポリシー（076_enable_rls_on_public_tables.sql） |  |
-| `races` | 表 | 001_schema.sql | API・画面が直接 / RPC経由: get_course_win_rate_baseline(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
+| `races` | 表 | 001_schema.sql | API・画面が直接 / RPC経由: get_course_win_rate_baseline(画面), get_racer_front_taking_counts(画面), get_racer_scoped_race_rows(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `sns_approvers` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 | 記述なし |  |
 | `sns_bundle_imports` | 表 | 135_sns_preview_bundle_import.sql | RPC経由: import_sns_preview_bundle(API) | 記述なし |  |
 | `sns_drafts` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 / RPC経由: append_sns_metric_observation(API), import_sns_preview_bundle(API) | 記述なし |  |

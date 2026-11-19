@@ -5,17 +5,17 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2095,
+    "sourceFiles": 2100,
     "filesWithAccess": 282,
     "tableReaders": 947,
     "tableWriters": 189,
-    "rpcCallers": 51,
+    "rpcCallers": 53,
     "nameMentions": 239,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 4,
-    "unresolved": 32,
+    "notInSnapshot": 6,
+    "unresolved": 33,
     "parseErrors": 0,
     "uncoveredFiles": 55
   },
@@ -1776,13 +1776,13 @@
           ]
         },
         {
-          "ref": "src/services/racerQueries2.js:233",
+          "ref": "src/services/racerQueries2.js:202",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:302",
+          "ref": "src/services/racerQueries2.js:330",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -6579,13 +6579,13 @@
           ]
         },
         {
-          "ref": "src/services/racerQueries2.js:114",
+          "ref": "src/services/racerQueries2.js:116",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:308",
+          "ref": "src/services/racerQueries2.js:336",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -11523,19 +11523,19 @@
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:52",
+          "ref": "src/services/racerQueries2.js:54",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:219",
+          "ref": "src/services/racerQueries2.js:188",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:295",
+          "ref": "src/services/racerQueries2.js:323",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -13152,13 +13152,13 @@
           ]
         },
         {
-          "ref": "src/services/racerQueries2.js:225",
+          "ref": "src/services/racerQueries2.js:194",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:316",
+          "ref": "src/services/racerQueries2.js:344",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -14397,7 +14397,7 @@
           ]
         },
         {
-          "ref": "src/services/racerQueries4.js:70",
+          "ref": "src/services/racerQueries4.js:71",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14415,7 +14415,7 @@
           ]
         },
         {
-          "ref": "src/services/racerQueries4.js:79",
+          "ref": "src/services/racerQueries4.js:80",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14439,8 +14439,8 @@
             "src/services/raceQueries2.js:270",
             "src/services/racerQueries.js:227",
             "src/services/racerQueries.js:266",
-            "src/services/racerQueries4.js:70",
-            "src/services/racerQueries4.js:79"
+            "src/services/racerQueries4.js:71",
+            "src/services/racerQueries4.js:80"
           ],
           "writers": [],
           "sql": [
@@ -14453,8 +14453,8 @@
             "src/services/raceQueries2.js:270",
             "src/services/racerQueries.js:227",
             "src/services/racerQueries.js:266",
-            "src/services/racerQueries4.js:70",
-            "src/services/racerQueries4.js:79"
+            "src/services/racerQueries4.js:71",
+            "src/services/racerQueries4.js:80"
           ],
           "writers": [],
           "sql": []
@@ -14465,22 +14465,22 @@
             "src/services/raceQueries2.js:270",
             "src/services/racerQueries.js:227",
             "src/services/racerQueries.js:266",
-            "src/services/racerQueries4.js:70",
-            "src/services/racerQueries4.js:79"
+            "src/services/racerQueries4.js:71",
+            "src/services/racerQueries4.js:80"
           ],
           "writers": [],
           "sql": []
         },
         "calc_from": {
           "readers": [
-            "src/services/racerQueries4.js:70"
+            "src/services/racerQueries4.js:71"
           ],
           "writers": [],
           "sql": []
         },
         "calc_to": {
           "readers": [
-            "src/services/racerQueries4.js:70"
+            "src/services/racerQueries4.js:71"
           ],
           "writers": [],
           "sql": []
@@ -14522,14 +14522,14 @@
         },
         "win_rate": {
           "readers": [
-            "src/services/racerQueries4.js:70"
+            "src/services/racerQueries4.js:71"
           ],
           "writers": [],
           "sql": []
         },
         "top2_rate": {
           "readers": [
-            "src/services/racerQueries4.js:70"
+            "src/services/racerQueries4.js:71"
           ],
           "writers": [],
           "sql": []
@@ -14546,21 +14546,21 @@
         },
         "starts": {
           "readers": [
-            "src/services/racerQueries4.js:70"
+            "src/services/racerQueries4.js:71"
           ],
           "writers": [],
           "sql": []
         },
         "finals": {
           "readers": [
-            "src/services/racerQueries4.js:70"
+            "src/services/racerQueries4.js:71"
           ],
           "writers": [],
           "sql": []
         },
         "wins": {
           "readers": [
-            "src/services/racerQueries4.js:70"
+            "src/services/racerQueries4.js:71"
           ],
           "writers": [],
           "sql": []
@@ -14569,7 +14569,7 @@
           "readers": [
             "src/services/raceQueries2.js:270",
             "src/services/racerQueries.js:227",
-            "src/services/racerQueries4.js:70"
+            "src/services/racerQueries4.js:71"
           ],
           "writers": [],
           "sql": []
@@ -17115,19 +17115,19 @@
           ]
         },
         {
-          "ref": "src/services/racerQueries2.js:51",
+          "ref": "src/services/racerQueries2.js:53",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:213",
+          "ref": "src/services/racerQueries2.js:182",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
         },
         {
-          "ref": "src/services/racerQueries2.js:289",
+          "ref": "src/services/racerQueries2.js:317",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -27757,7 +27757,7 @@
       "mentions": [
         "api/predictions/[date].js:57",
         "scripts/maintenance/check-anon-access.js:104",
-        "scripts/maintenance/check-anon-access.js:177"
+        "scripts/maintenance/check-anon-access.js:180"
       ],
       "triggerOn": [],
       "calledByRpc": [],
@@ -27934,7 +27934,7 @@
       },
       "callers": [
         {
-          "ref": "src/services/racerQueries4.js:129",
+          "ref": "src/services/racerQueries4.js:130",
           "via": "client"
         }
       ],
@@ -27976,8 +27976,8 @@
         }
       ],
       "mentions": [
-        "scripts/maintenance/check-anon-access.js:113",
-        "scripts/maintenance/check-anon-access.js:176"
+        "scripts/maintenance/check-anon-access.js:116",
+        "scripts/maintenance/check-anon-access.js:179"
       ],
       "triggerOn": [],
       "calledByRpc": [],
@@ -30075,6 +30075,20 @@
       ]
     },
     {
+      "kind": "rpc",
+      "name": "get_racer_front_taking_counts",
+      "refs": [
+        "src/services/racerQueries4.js:203"
+      ]
+    },
+    {
+      "kind": "rpc",
+      "name": "get_racer_scoped_race_rows",
+      "refs": [
+        "src/services/racerQueries4.js:174"
+      ]
+    },
+    {
       "kind": "table",
       "name": "eve_race_deadlines",
       "refs": [
@@ -30260,6 +30274,11 @@
       "file": "scripts/maintenance/motor-pretest-backfill.js",
       "line": 451,
       "reason": "表の名前が変数（.from(式)）"
+    },
+    {
+      "file": "scripts/maintenance/verifyData/fakeServiceSupabase.js",
+      "line": 51,
+      "reason": "RPC の名前が変数（.rpc(式)）"
     }
   ],
   "unresolvedJobs": [],
