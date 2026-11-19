@@ -5,21 +5,15 @@
  * 守るもの: JST の今日・未来は s-maxage=300、JST の今日より前だけ s-maxage=86400。
  * とくに JST 0:00〜8:59（UTC ではまだ前日）に当日を「過去」と判定して1日キャッシュにしないこと（以前の UTC 判定の不具合）。
  * api/predictions/[date].js がこの関数を使い、UTC の日付（toISOString の直比較）で判定していないこと。
+ * 後者は関数のファイルの本文を読まず、default export の handler を偽の fetch・時計で呼び、応答の Cache-Control で見る。
  */
 process.env.TZ = "UTC";
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import handler from "../../api/predictions/[date].js";
 import {
   jstDate,
   predictionsCacheControl,
 } from "../../api/_lib/predictionsCache.js";
-
-const repoRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
 
 const failures = [];
 let checked = 0;
@@ -83,21 +77,44 @@ check(
 );
 check("JST 12時: 過去は1日", predictionsCacheControl("2025-12-02", NOON), LONG);
 
-// 関数のファイルが同じ判定を使う
-const src = readFileSync(
-  path.join(repoRoot, "api/predictions/[date].js"),
-  "utf8",
-);
-check(
-  "api/predictions/[date].js が predictionsCacheControl を使う",
-  /predictionsCacheControl\(date, Date\.now\(\)\)/.test(src),
-  true,
-);
-check(
-  "api/predictions/[date].js に UTC の日付での当日判定が残っていない",
-  /new Date\(\)\.toISOString\(\)\.split\(['"]T['"]\)\[0\]/.test(src),
-  false,
-);
+// 関数のファイルが同じ判定を使う: handler を偽の fetch（Supabase の RPC の代わり）と時計で呼び、応答の Cache-Control を見る。
+// JST 6時（UTC ではまだ前日）に JST の前日を1日・当日を5分にする。UTC の日付で比べると前日を当日とみなして5分になる
+async function cacheControlOf(date, nowMs) {
+  const realNow = Date.now;
+  const realFetch = globalThis.fetch;
+  const calls = [];
+  Date.now = () => nowMs;
+  globalThis.fetch = async (url) => {
+    calls.push(String(url));
+    return new Response(JSON.stringify({ races: [] }), { status: 200 });
+  };
+  try {
+    const res = await handler(
+      new Request(`https://www.boat-ai.jp/api/predictions/${date}`),
+    );
+    return {
+      status: res.status,
+      cacheControl: res.headers.get("Cache-Control"),
+      rpc: calls.map((u) => u.split("/rpc/")[1] ?? u),
+    };
+  } finally {
+    Date.now = realNow;
+    globalThis.fetch = realFetch;
+  }
+}
+for (const [label, date, nowMs, cacheControl] of [
+  ["JST 6時の当日", "2026-10-12", MORNING, SHORT],
+  ["JST 6時の前日（UTC では当日）", "2026-10-11", MORNING, LONG],
+  ["JST 23:59 の当日", "2026-10-12", MIDNIGHT - 60_000, SHORT],
+  ["JST 0:00 に前日になった日", "2026-10-12", MIDNIGHT, LONG],
+  ["JST 12時の過去", "2025-12-02", NOON, LONG],
+]) {
+  check(
+    `api/predictions/[date].js の応答: ${label}`,
+    await cacheControlOf(date, nowMs),
+    { status: 200, cacheControl, rpc: ["get_predictions_by_date"] },
+  );
+}
 
 if (failures.length > 0) {
   console.error(
