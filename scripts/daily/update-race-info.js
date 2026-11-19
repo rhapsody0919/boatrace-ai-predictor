@@ -51,11 +51,12 @@ import {
 } from "../lib/raceInfoAccumulate.js";
 import {
   conditionGroups,
-  logDeadlineUpdates,
-  logUpdateError,
+  entriesUpsertOptions,
   planRacesGrade,
   racesUpdates,
+  updateRacesBeforeRows,
   updateRacesEach,
+  writeCounters,
 } from "../lib/raceInfoWrite.js";
 
 export { fetchRaceInfoDetailed };
@@ -101,51 +102,15 @@ async function flushRaceInfo(
     includeWeather,
   },
 ) {
-  const written = new Map();
-  const errors = [];
-  const countWritten = (raceId) =>
-    written.set(raceId, (written.get(raceId) ?? 0) + 1);
-  const countRows = (result) => {
-    // 書き込みが1行も成功していないバッチ（全滅）は、DBが変わっていないので数えない
-    if (result.written > 0) {
-      for (const row of result.toWrite) countWritten(row.race_id);
-    }
-    if (result.error) errors.push(result.error.message);
-  };
+  const { written, errors, countWritten, countRows } = writeCounters();
 
-  // races.cancellation_status / cancellation_check_streak を更新（BOA-254 FR1）
-  // entriesRowsが空（対象レース全てが中止疑い等）でも早期returnより前に書き込む
-  // （状態が変化するレースのみが対象で、既に変更時のみの更新）
-  const cancellationUpdateCount = await updateRacesEach(
-    client,
-    racesUpdates(
-      dryRun,
-      acc.cancellationUpdates,
-      ({ cancellation_status, cancellation_check_streak }) => ({
-        cancellation_status,
-        cancellation_check_streak,
-      }),
-    ),
-    {
-      onOk: countWritten,
-      onError: logUpdateError(errors, "cancellation_status"),
-    },
-  );
-  if (cancellationUpdateCount > 0) {
-    console.log(
-      `  ⚠️ races (cancellation_status): ${cancellationUpdateCount}件`,
-    );
-  }
-
-  // races.start_time を、出走表の締切予定時刻に追従させる（N15）。書き込みデータが無くても、時刻の変更は反映する
-  const deadlineUpdateCount = await updateRacesEach(
-    client,
-    racesUpdates(dryRun, [...acc.deadlineUpdates.values()], (u) => ({
-      start_time: u.start_time,
-    })),
-    { onOk: countWritten, onError: logUpdateError(errors, "start_time") },
-  );
-  logDeadlineUpdates(acc, dryRun, deadlineUpdateCount);
+  // races.cancellation_status / cancellation_check_streak（BOA-254 FR1）と races.start_time（N15）を先に更新する
+  // （entriesRowsが空＝対象レース全てが中止疑い等でも、早期returnより前に書く）
+  const deadlineUpdateCount = await updateRacesBeforeRows(client, acc, {
+    dryRun,
+    countWritten,
+    errors,
+  });
 
   const result = (updated) => ({
     updated,
@@ -169,15 +134,12 @@ async function flushRaceInfo(
   // race_entries upsert（ai_score系は書き込み対象の列に含まれないため比較にも現れない）
   // 書く行には updated_at を設定する（WS2。created_at はINSERT時のDBの DEFAULT に任せる）
   countRows(
-    await upsertChangedRows(client, "race_entries", acc.entriesRows, {
-      onConflict: "race_id,boat_number",
-      keyColumns: ["race_id", "boat_number"],
-      label: "race_entries",
-      dryRun,
-      stampUpdatedAt: true,
-      // 未適用の列は、行に含めない（detectPreRaceSchema）。判定後に列が無くなった場合の書き直し用
-      optionalColumnGroups: PRE_RACE_OPTIONAL_COLUMN_GROUPS.raceEntries,
-    }),
+    await upsertChangedRows(
+      client,
+      "race_entries",
+      acc.entriesRows,
+      entriesUpsertOptions(dryRun),
+    ),
   );
 
   // race_conditions upsert（列の組み合わせごとに分けて。conditionGroups）
