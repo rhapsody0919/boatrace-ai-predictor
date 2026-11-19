@@ -2103,15 +2103,10 @@ const doneOdds = (delayMin, over = {}) =>
     "scrape-pseudo": SCRAPE_JOBS.pseudo,
   };
   for (const [file, def] of Object.entries(files)) {
-    const src = fs.readFileSync(path.join(ROOT, `api/cron/${file}.js`), "utf8");
-    const m = /maxDuration:\s*(\d+)/.exec(src);
-    check(
-      `api/cron/${file}.js: maxDuration(${m?.[1]}) がレジストリの maxDurationSec(${def.maxDurationSec}) と一致し、ハンドラーをexportする`,
-      m && Number(m[1]) === def.maxDurationSec && /export default/.test(src),
-    );
+    // 本文の字は読まず、export（config・default）で見る（config.maxDuration は Vercel がビルド時に読むリテラルそのもの）
     const mod = await import(`../../api/cron/${file}.js`);
     check(
-      `api/cron/${file}.js: 読み込めて、config.maxDuration と default の関数がある`,
+      `api/cron/${file}.js: maxDuration(${mod.config?.maxDuration}) がレジストリの maxDurationSec(${def.maxDurationSec}) と一致し、ハンドラーを export する`,
       typeof mod.default === "function" &&
         mod.config?.maxDuration === def.maxDurationSec,
     );
