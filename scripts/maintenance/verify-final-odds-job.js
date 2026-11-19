@@ -31,6 +31,7 @@ import {
   graceMinFor,
   validateRegistry,
 } from "../lib/scrapeJobs/registry.js";
+import { cronWiring } from "./verifyData/cronWiring.js";
 
 const printOut = console.log.bind(console);
 const printErr = console.error.bind(console);
@@ -412,17 +413,18 @@ const SLOT = {
     validateRegistry().length === 0,
     show(validateRegistry()),
   );
-  const cronSrc = fs.readFileSync(
-    new URL("../../api/cron/odds-final.js", import.meta.url),
-    "utf8",
-  );
-  const maxDuration = Number(/maxDuration:\s*(\d+)/.exec(cronSrc)?.[1]);
+  // api の本文の字は読まず、export（config）と、共通ラッパへ渡した引数で見る。
+  // handleSlot は毎回作る関数なので、createFinalOddsSlotHandler() が作る物と同じ関数か（同じ本文か）で見る
+  const api = await cronWiring(() => import("../../api/cron/odds-final.js"));
+  const opts = api.made[0]?.options;
   check(
-    "(d) api/cron/odds-final.js の maxDuration がレジストリと一致し、job='odds_final' で登録している",
-    maxDuration === def.maxDurationSec &&
-      /job:\s*"odds_final"/.test(cronSrc) &&
-      /createFinalOddsSlotHandler\(\)/.test(cronSrc),
-    String(maxDuration),
+    "(d) api/cron/odds-final.js の maxDuration がレジストリと一致し、job='odds_final'・createFinalOddsSlotHandler() の handleSlot で登録している",
+    api.config?.maxDuration === def.maxDurationSec &&
+      api.made.length === 1 &&
+      opts.job === "odds_final" &&
+      String(opts.handleSlot) === String(createFinalOddsSlotHandler()) &&
+      api.handler === api.made[0].handler,
+    show({ config: api.config, job: opts?.job }),
   );
   const vercel = JSON.parse(
     fs.readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"),
