@@ -13,7 +13,7 @@
  *       本番の SQL で独立に出した3連単の平均配当と一致する（3連複の平均ではない）
  *   (b) 逃げで決まったレースだけに絞っても同じ（update-nige-outcome-distribution.js の対象）
  *   (c) 配当の無いレース（不成立等）は、平均の分母に入れない
- *   (d) 日次の2本が、3連単の列（TRIFECTA_PAYOUT_COLUMN）を select している
+ *   (d) 日次の2本が、3連単の列（TRIFECTA_PAYOUT_COLUMN）を select し、共通の集計の行を書く（偽の supabase の上で export を呼ぶ）
  *   (e) ルールの追跡: 3連複（betType 'trio'）の的中の払戻は payout_trifecta（3連複）
  *   (f) 変異検証: 3連複の列で集計する版・分母に配当の無いレースを入れる版で、上の検証が失敗する
  */
@@ -25,6 +25,7 @@ import {
   aggregateOutcomeDistribution,
 } from "../lib/outcomeDistribution.js";
 import { calculatePayout } from "../daily-rule-tracking.js";
+import { runDaily } from "./verifyData/dailySupabase.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -196,17 +197,26 @@ function missingPayoutExcluded(aggregate = aggregateOutcomeDistribution) {
 }
 
 {
-  // (d) 日次の2本が、3連単の列を select し、共通の集計を使う
-  for (const file of [
-    "scripts/daily/update-outcome-distribution.js",
-    "scripts/daily/update-nige-outcome-distribution.js",
+  // (d) 日次の2本の export を、偽の supabase（verifyData/dailySupabase.js、DB に繋がない）の上で書きまで呼ぶ
+  const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  for (const [file, fn, nige] of [
+    ["update-outcome-distribution.js", "runOutcomeDistribution", false],
+    ["update-nige-outcome-distribution.js", "runNigeOutcomeDistribution", true],
   ]) {
-    const src = fs.readFileSync(path.join(ROOT, file), "utf8");
+    const table = file.slice(7, -3).replaceAll("-", "_"); // 書く表（outcome_distribution 等）
+    const load = async () => (await import(`../daily/${file}`))[fn]();
+    const { cols, written, report } = await runDaily(rows, load, table);
+    const only = rows.filter((r) => !nige || r.winning_technique === "逃げ");
+    const want = aggregateOutcomeDistribution(only, { today });
+    const flat = Object.values(want).flat();
     check(
-      `(d) ${file}: 3連単の列（TRIFECTA_PAYOUT_COLUMN）を select し、共通の集計（aggregateOutcomeDistribution）を使う。payout_trifecta を読まない`,
-      src.includes("${TRIFECTA_PAYOUT_COLUMN}") &&
-        src.includes("aggregateOutcomeDistribution(") &&
-        !src.includes("payout_trifecta"),
+      `(d) ${file}: 3連単の列（TRIFECTA_PAYOUT_COLUMN）を select し、payout_trifecta を読まず、共通の集計（aggregateOutcomeDistribution）の行をそのまま書く${nige ? "（逃げだけ）" : ""}`,
+      cols.includes(TRIFECTA_PAYOUT_COLUMN) &&
+        !cols.includes("payout_trifecta") &&
+        flat.length > 0 &&
+        JSON.stringify(written) === JSON.stringify(flat) &&
+        report.rowsWritten === flat.length,
+      show({ cols, report: report.report }),
     );
   }
 }
