@@ -10,10 +10,10 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2126 |
-| 読み書きのあるファイル | 282 |
-| 表の読み手（箇所） | 947 |
-| 表の書き手（箇所） | 189 |
+| 読んだファイル | 2142 |
+| 読み書きのあるファイル | 283 |
+| 表の読み手（箇所） | 950 |
+| 表の書き手（箇所） | 192 |
 | RPC の呼び手（箇所） | 53 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 239 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
@@ -38,7 +38,7 @@
 | [bet_filters](#t-bet_filters) | table | service だけ | 0 | 0 |  |  |  |  |
 | [bet_recommendations](#t-bet_recommendations) | table | anon 可 | 5 | 4 | data_health_morning_freshness, data_health_nightly_freshness | update_prediction_results |  |  |
 | [daily_bet_summary](#t-daily_bet_summary) | table | service だけ | 0 | 0 |  |  |  |  |
-| [exhibition_data](#t-exhibition_data) | table | anon 可 | 51 | 3 | data_health_coverage, data_health_table_rows, get_predictions_by_date ほか3 |  | exhibition, race_info, races_init |  |
+| [exhibition_data](#t-exhibition_data) | table | anon 可 | 52 | 4 | data_health_coverage, data_health_table_rows, get_predictions_by_date ほか3 |  | exhibition, race_info, races_init |  |
 | [exhibition_time_top_stats](#t-exhibition_time_top_stats) | table | anon 可 | 1 | 2 | data_health_nightly_freshness |  |  |  |
 | [external_predictions](#t-external_predictions) | table | anon 可 | 1 | 1 | data_health_table_rows |  | pcexpect |  |
 | [fetch_counts](#t-fetch_counts) | table | service だけ | 0 | 0 | fetch_counts_daily | add_fetch_counts |  |  |
@@ -63,7 +63,7 @@
 | [prediction_odds](#t-prediction_odds) | table | anon 可 | 4 | 2 | get_predictions_by_date, get_predictions_by_date_light |  | odds |  |
 | [predictions](#t-predictions) | table | anon 可 | 44 | 10 | get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date ほか6 | update_prediction_results | exhibition, kfile_sync, race_info ほか4 | hq:platform/finals_sheet.py |
 | [race_conditions](#t-race_conditions) | table | anon 可 | 44 | 6 | data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields ほか5 |  | exhibition, kfile_sync, race_info ほか4 |  |
-| [race_entries](#t-race_entries) | table | anon 可 | 140 | 10 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
+| [race_entries](#t-race_entries) | table | anon 可 | 142 | 12 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
 | [race_history_cache](#t-race_history_cache) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
 | [race_notices_health](#t-race_notices_health) | table | service だけ | 2 | 1 |  |  | race_notices |  |
 | [race_odds](#t-race_odds) | table | anon 可 | 15 | 3 | data_health_coverage, data_health_table_rows |  | odds, odds_final |  |
@@ -380,7 +380,7 @@
 - 本体で読む RPC: data_health_coverage, data_health_table_rows, get_predictions_by_date, get_predictions_by_date_light, get_race_exhibition_trend, get_race_st_predictability
 - 取得のジョブ: exhibition, race_info, races_init
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:8`, `scripts/maintenance/backfill-kb-gaps.js:82`, `scripts/maintenance/delete-phantom-races.js:86`, `scripts/maintenance/fix-opening-day-race-id-date.js:72`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:45`, `scripts/ml/analogy/v16_morning.py:292`
-- 読み手（51）: 
+- 読み手（52）: 
   - `api/_lib/analogyV16.js:103` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
   - `api/_lib/racerEntryExhibition.js:192` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
   - `api/_lib/snsClaimCheck.js:229` rest(rest) [is_absent, race_id]
@@ -409,6 +409,7 @@
   - `scripts/maintenance/check-exhibition-gap-rate.js:46` select(helper:fetchAll)
   - `scripts/maintenance/check-pre-race-shadow.js:301` select(helper:fetchByRaceIds)
   - `scripts/maintenance/verify-analogy-v16.js:286` rest(rest) [boat_number, exhibition_time, is_absent, race_id] （検査）
+  - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:32` select(helper:upsertChangedRows)
   - `scripts/ml/export-inference-data.js:115` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:196` select(helper:fetchAll)
   - `scripts/sns/push-setsu-kiryoku-short.js:1101` rest(rest) [is_absent, race_id]
@@ -432,10 +433,11 @@
   - `src/services/racerQueries3.js:119` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:194` select(helper:fetchAllByIn)
   - `src/services/sherlockService.js:76` select [boat_number, exhibition_time, race_id, start_timing]
-- 書き手（3）: 
+- 書き手（4）: 
   - `scripts/daily/generate-predictions.js:1070` upsert(helper:upsertChangedRows) [?]
   - `scripts/daily/scrape-exhibition-data.js:265` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/verify-pre-race-parsers.js:1868` upsert [?] （検査）
+  - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:32` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-exhibition_time_top_stats"></a>exhibition_time_top_stats
@@ -820,7 +822,7 @@
 - 取得のジョブ: exhibition, race_info, races_init
 - 写しに無い列の名前（埋め込みの別名・JSON のキー・誤りのどれか）: name
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:77`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:7`, `scripts/maintenance/backfill-kb-gaps.js:81`, `scripts/maintenance/delete-phantom-races.js:88`, `scripts/maintenance/fix-opening-day-race-id-date.js:66`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:39`, `scripts/ml/analogy/v16_morning.py:292`
-- 読み手（140）: 
+- 読み手（142）: 
   - `api/_lib/analogyV16.js:105` rest(rest) [boat_number, is_absent, race_id]
   - `api/_lib/racerEntryExhibition.js:171` rest(rest) [boat_number, race_id, racer_id]
   - `api/_lib/snsClaimCheck.js:228` rest(rest) [is_absent, race_id]
@@ -906,6 +908,8 @@
   - `scripts/maintenance/verify-e2e-har-merge.js:59` rest(rest) [name, race_id] （検査）
   - `scripts/maintenance/verify-full-picture-scene2.js:3168` rest(rest) （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select(embed) [racer_id] （検査）
+  - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:93` select(helper:upsertChangedRows)
+  - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:117` select(helper:upsertChangedRows)
   - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:106` rest(rest) [race_id]
   - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:108` rest(rest) [race_id]
   - `scripts/ml/export-inference-data.js:111` select(helper:fetchByRaceIds)
@@ -961,7 +965,7 @@
   - `src/services/racerQueries5.js:45` select [grade, race_id, racer_id]
   - `src/services/sherlockService.js:70` select [boat_2rate, boat_number, grade, local_win_rate, motor_2rate, player_name, race_id, win_rate]
   - `src/services/watsonService.js:76` select [boat_number, player_name, race_id]
-- 書き手（10）: 
+- 書き手（12）: 
   - `scripts/daily/generate-predictions.js:1035` upsert(helper:upsertChangedRows) [?]
   - `scripts/daily/update-race-info.js:443` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/backfill-race-data.js:182` upsert [?]
@@ -972,6 +976,8 @@
   - `scripts/maintenance/racelist-backfill-load.js:97` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/restore-contaminated-race-entries.js:206` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/restore-entries-branch-hometown.js:119` upsert(helper:upsertChangedRows) [?]
+  - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:93` upsert(helper:upsertChangedRows) [?]
+  - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:117` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-race_history_cache"></a>race_history_cache

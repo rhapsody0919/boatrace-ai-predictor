@@ -5,10 +5,10 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2126,
-    "filesWithAccess": 282,
-    "tableReaders": 947,
-    "tableWriters": 189,
+    "sourceFiles": 2142,
+    "filesWithAccess": 283,
+    "tableReaders": 950,
+    "tableWriters": 192,
     "rpcCallers": 53,
     "nameMentions": 239,
     "tablesWithoutReaders": 21,
@@ -1604,6 +1604,12 @@
           "test": true
         },
         {
+          "ref": "scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:32",
+          "op": "select",
+          "via": "helper:upsertChangedRows",
+          "columns": []
+        },
+        {
           "ref": "scripts/ml/export-inference-data.js:115",
           "op": "select",
           "via": "helper:fetchByRaceIds",
@@ -1836,6 +1842,14 @@
             "?"
           ],
           "test": true
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:32",
+          "op": "upsert",
+          "via": "helper:upsertChangedRows",
+          "columns": [
+            "?"
+          ]
         }
       ],
       "readByRpc": [
@@ -7668,6 +7682,18 @@
           "test": true
         },
         {
+          "ref": "scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:93",
+          "op": "select",
+          "via": "helper:upsertChangedRows",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:117",
+          "op": "select",
+          "via": "helper:upsertChangedRows",
+          "columns": []
+        },
+        {
           "ref": "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:106",
           "op": "rest",
           "via": "rest",
@@ -8313,6 +8339,22 @@
         },
         {
           "ref": "scripts/maintenance/restore-entries-branch-hometown.js:119",
+          "op": "upsert",
+          "via": "helper:upsertChangedRows",
+          "columns": [
+            "?"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:93",
+          "op": "upsert",
+          "via": "helper:upsertChangedRows",
+          "columns": [
+            "?"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:117",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
