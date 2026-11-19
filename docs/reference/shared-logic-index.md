@@ -35,6 +35,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/modelAssert.js` | — | assertObject, assertInt, assertIntOrNull, assertText, parseIsoDate ほか1件 |
 | `src/pure/motorChartView.js` | モーター調子（MotorConditionChart）の系列・列の整形（RA21、画面の部品から移した。振る舞いは変えない）。 | exhibitionChartDataOf, computeRateView, computeStatColumns, computeRankClasses, computePeriodClip ほか4件 |
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
+| `src/pure/predictionAssistState.js` | 思考アシストのページの状態（useReducer の初期値と操作）と、画面の部品に依らない取り出し。 | createAssistReducer, deepRunsOf, placeAxisOf, courseByBoatOf, buildBetSummary ほか3件 |
 | `src/pure/predictionModel.js` | — | makePrediction |
 | `src/pure/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
 | `src/pure/raceIndicatorText.js` | レース分析指標の字の小さな部品（決まり手・部品名の訳、数値化、オリジナル展示の行の素、展示進入・想定コース1着率の字）。画面の部品 | originalExhibitionKindLabels, buildOriginalExhibitionRowBases, isExhibitionCourseOutOfRange, expectedCourseWinRateText, TECHNIQUE_KEY_BY_NAME ほか7件 |
@@ -473,4 +474,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 431 ファイル / export 2489 件。
+対象 432 ファイル / export 2497 件。
