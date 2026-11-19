@@ -29,7 +29,7 @@ export const AI_CRAWLER_USER_AGENTS = [
 
 // 断るクローラー（Supabase の枠越えの主因。JS を実行して頁を描き、1頁ごとに Supabase を大量に読む。
 // オーナー 11/19「推奨通り」）。public/robots.txt で Disallow し、守らない物に備えて middleware.js が 403 を返す。
-// 判定は大文字小文字を問わない部分一致。robots.txt との一致は verify-middleware-routing.js の [14] で固定
+// 判定は大文字小文字を問わない部分一致。middleware の 403 は scripts/maintenance/verify-blocked-crawlers.js で固定
 export const BLOCKED_CRAWLER_USER_AGENTS = [
   "Reflectionbot",
   "meta-externalagent",

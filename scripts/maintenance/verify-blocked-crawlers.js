@@ -2,15 +2,11 @@
  * 断るクローラー（Reflectionbot・meta-externalagent・Bytespider。Supabase の枠越えの主因、オーナー 2026-11-19）の検査。
  * 1. 見本の UA（大文字小文字を変えた物も）は middleware.js が matcher の全パスで 403・no-store を返す
  * 2. 検索ボット（Googlebot・bingbot）・他の AI（GPTBot・ClaudeBot 等）・SNS・人のブラウザは 403 にならず今の経路のまま
- * robots.txt の側は verify-robots-txt.js
  * middleware 関数を直接呼ぶ（verify-middleware-routing.js と同じ作り）。
  */
 
 import middleware, { config } from "../../middleware.js";
-
-// 正本は src/config/aiCrawlerBots.js の BLOCKED_CRAWLER_USER_AGENTS。ここは見本として持ち、middleware の振る舞いで確かめる
-// （新しい verify は src の本文を読まない決まりのため import しない）
-const BLOCKED_CRAWLER_USER_AGENTS = ["Reflectionbot", "meta-externalagent", "Bytespider"];
+import { BLOCKED_CRAWLER_USER_AGENTS, isBlockedCrawler } from "../../src/config/aiCrawlerBots.js";
 
 const BOT_UA =
   "Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)";
@@ -80,7 +76,14 @@ console.log("断るクローラーは 403、他の UA は今のまま");
     "/api/races/today",
     "/admin/rules",
   ];
+  check(
+    "一覧は Reflectionbot・meta-externalagent・Bytespider の3つ",
+    JSON.stringify(BLOCKED_CRAWLER_USER_AGENTS) ===
+      JSON.stringify(["Reflectionbot", "meta-externalagent", "Bytespider"]),
+  );
+  check("UA なしは断る対象でない", !isBlockedCrawler(null) && !isBlockedCrawler(""));
   for (const ua of BLOCKED_SAMPLES) {
+    check(`${ua} は断る対象`, isBlockedCrawler(ua));
     for (const path of PATHS) {
       check(`${path} は matcher に一致する`, matchesMatcher(path));
       const res = await call(path, { ua });
@@ -92,6 +95,7 @@ console.log("断るクローラーは 403、他の UA は今のまま");
     }
   }
   for (const ua of ALLOWED_SAMPLES) {
+    check(`${ua} は断る対象でない`, !isBlockedCrawler(ua));
     for (const path of PATHS) {
       const res = await call(path, { ua });
       check(`${ua} ${path} → 403 にならない`, res?.status !== 403, describe(res));

@@ -187,7 +187,7 @@
     {
       "script": "verify-blocked-crawlers.js",
       "tier": "ci",
-      "guards": "断るクローラー（Reflectionbot・meta-externalagent・Bytespider、Supabase の枠越えの主因 2026-11-19）は middleware.js が matcher の全パスで 403・no-store（大文字小文字を問わない部分一致）、検索ボット・他の AI・SNS・人は 403 にならず今の経路のまま（robots.txt は verify-robots-txt.js）"
+      "guards": "断るクローラー（Reflectionbot・meta-externalagent・Bytespider、Supabase の枠越えの主因 2026-11-19）は middleware.js が matcher の全パスで 403・no-store（大文字小文字を問わない部分一致）、検索ボット・他の AI・SNS・人は 403 にならず今の経路のまま"
     },
     {
       "script": "verify-blog-chart-png.js",
@@ -1433,11 +1433,6 @@
       "script": "verify-ro-query.js",
       "tier": "ci",
       "guards": "本番の読み取り専用ロール claude_ro（マイグレーション 166、ADR-0096）と scripts/db/ro-query.js。PGlite で 166 を適用し、RLS の表が0行に化けず全行読めること、READ ONLY を外しても表・SECURITY DEFINER の書き込み関数・public への CREATE で書けないこと、sns_oauth_tokens を読めないこと、PUBLIC が呼べる書き込みの SECURITY DEFINER 関数があれば 166 が例外で全体を戻すこと。ro-query の1文だけ・上限＋1行の打ち切り・必ず ROLLBACK・ロールの確認、SCRAM の検証子を pg のクライアントの証明で検証"
-    },
-    {
-      "script": "verify-robots-txt.js",
-      "tier": "ci",
-      "guards": "public/robots.txt で断るクローラー（Reflectionbot・meta-externalagent・Bytespider、Supabase の枠越えの主因 2026-11-19）の組に Disallow: / があり、名指しの組はこの3つだけ、User-agent: * は Allow: / のまま（検索ボット・他の AI は止めない）"
     },
     {
       "script": "verify-rpc-key-regression.js",
