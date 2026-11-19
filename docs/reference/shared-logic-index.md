@@ -18,7 +18,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
-| `src/pure/basicInfoStats.js` | basicInfoStats - 「基本情報」タブ（BOA-306）のクライアント側集計ユーティリティ | currentTermStart, recordsBeforeRace, filterRecords, computeRates, getRecentRaces ほか28件 |
+| `src/pure/basicInfoStats.js` | basicInfoStats - 「基本情報」タブ（BOA-306）のクライアント側集計ユーティリティ | currentTermStart, recordsBeforeRace, filterRecords, computeRates, getRecentRaces ほか13件 |
+| `src/pure/basicInfoStatsPeriodMeet.js` | — | periodDiffShownFrom, periodDiff, periodsEndedBefore, officialPeriodOf, pickPeriodStats ほか10件 |
 | `src/pure/courseGridStats.js` | — | buildCourseGrid, getCourseRecentRuns, buildTodayCourseRows, computeWakuNariRate, buildCourse1LossBreakdown ほか3件 |
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
 | `src/pure/favorites.js` | キャッシュの全削除で消さない端末内のユーザー保存。 | parseFavorites, serializeFavorites, toggleRacer, toggleVenue, FAVORITES_KEY ほか1件 |
@@ -48,7 +49,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/racerScopedRunTables.js` | RPC get_racer_scoped_race_rows（マイグレーション 203）の行を、6表の行の形へ戻す（純関数）。 | tablesFromRacerScopedRuns |
 | `src/pure/scheduleModel.js` | — | makeDigestDay, makeDigestRow |
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
-| `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか35件 |
+| `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか20件 |
+| `src/pure/seriesPointsParts.js` | — | prelimEndDayOf, noRaceDaysOf, semifinalRaceIdsOf, semifinalSlotsOf, isAbsentStartRow ほか10件 |
 | `src/pure/sixBoatCourseStats.js` | 6艇の想定コース別成績（公式の直近3期、BOA-1291）。取得・表示は呼び出し側で行う。 | periodsBefore, buildSixBoatCourseRows, buildSixBoatLocalRows, SIX_BOAT_WARN_ENTRIES |
 | `src/pure/snsPostText.js` | — | buildPostText |
 | `src/pure/techniqueNames.js` | 決まり手の英語キー → 日本語の名前。展開予測（src/utils/turnPrediction.js）をやめた後も、データ出走表などの | TECHNIQUE_NAMES |
@@ -489,4 +491,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 447 ファイル / export 2544 件。
+対象 449 ファイル / export 2544 件。
