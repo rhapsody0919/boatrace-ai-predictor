@@ -12,6 +12,9 @@ import { VENUE_SUMMARY_STATS as S } from "../../src/data/venueSummaryStats.js";
 import { STADIUM_NAMES } from "../../src/constants/index.js";
 import { venueSummaryPeriod } from "../../src/utils/venueSummary.js";
 
+// 画面の部品（.jsx）を下で import して描くため、renderJsx の module hooks を先に入れる
+register(new URL("../lib/renderJsx.js", import.meta.url));
+
 const cli = fileURLToPath(new URL("../sns/rank-data.js", import.meta.url));
 const run = (args) => spawnSync(process.execPath, [cli, ...args], {
   encoding: "utf8",
@@ -88,7 +91,6 @@ console.log("✅ verify-sns-rank-data: 144行・画面の定数との一致・�
 // 画面のランキング（下限 SHOW_MIN_N は export が無い）を本文の字でなく描いて読み、公開JSONの値・除外・並びを全件確認する。
 const weather = JSON.parse(readFileSync(new URL("../../public/data/weather-in-escape.json", import.meta.url), "utf8"));
 globalThis.fetch = async () => ({ ok: true, json: async () => weather });
-register(new URL("../lib/renderJsx.js", import.meta.url));
 const { default: Chart } = await import("../../src/components/analysis/WeatherInEscapeChart.jsx");
 const view = await renderJsx(new URL(import.meta.resolve("react-router-dom")), { children: createElement(Chart) }, { exportName: "MemoryRouter" });
 await view.act(() => new Promise((r) => setTimeout(r, 0)));
