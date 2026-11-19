@@ -29,6 +29,7 @@ import {
   TodayRacesShapeError,
 } from "../../src/utils/botPageModel.js";
 import { getJSTNow } from "../../src/utils/dateUtils.js";
+import { makeMeet } from "../../src/pure/meetModel.js";
 import {
   DEFAULT_LANGUAGE,
   SUPPORTED_LANGUAGES,
@@ -247,17 +248,15 @@ export function createTodayRacesSource({
   };
 }
 
-/** race_series の REST 応答。取得失敗や壊れた日付を「帯なし」にしない。 */
+/** race_series の REST 応答を、人の画面（getSeriesOfDate）と同じく makeMeet に通した行にする。取得失敗や破れた行を「帯なし」にしない。 */
 function assertSeriesRows(rows) {
-  const date = (v) =>
-    typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) &&
-    Number.isFinite(Date.parse(`${v}T00:00:00Z`)) &&
-    new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v;
-  if (!Array.isArray(rows) || rows.length > 1 || rows.some((r) =>
-    !r || !date(r.start_date) || !date(r.end_date) || r.end_date < r.start_date ||
-    !(r.title === null || typeof r.title === "string") ||
-    !(r.grade === null || typeof r.grade === "string"))) {
+  if (!Array.isArray(rows) || rows.length > 1 || rows.some((r) => !r || !(r.title === null || typeof r.title === "string"))) {
     throw new MaterialFetchError("race_series の応答の形が違う");
+  }
+  try {
+    return rows.map(makeMeet);
+  } catch (e) {
+    throw new MaterialFetchError(`race_series の行が壊れている: ${e?.message ?? e}`);
   }
 }
 
@@ -274,7 +273,7 @@ export function createSeriesSource({
     const base = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
     const key = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY;
     if (!base || !key) throw new MaterialFetchError("Supabase の URL か anon キーが無い");
-    const url = `${String(base).replace(/\/$/, "")}/rest/v1/race_series?venue_code=eq.${venueCode}&start_date=lte.${date}&order=start_date.desc&limit=1&select=start_date,end_date,title,grade`;
+    const url = `${String(base).replace(/\/$/, "")}/rest/v1/race_series?venue_code=eq.${venueCode}&start_date=lte.${date}&order=start_date.desc&limit=1&select=start_date,end_date,title,grade,venue_code,total_days,class_code,kind`;
     let rows;
     try {
       const res = await fetchImpl(url, {
@@ -290,7 +289,7 @@ export function createSeriesSource({
     } catch {
       throw new MaterialFetchError("race_series を取得できない");
     }
-    assertSeriesRows(rows);
+    rows = assertSeriesRows(rows);
     // 日付をまたいだ分を残し続けない。
     for (const [k, v] of cache) if (now() - v.at >= ttlMs) cache.delete(k);
     cache.set(cacheKey, { at: now(), rows });
