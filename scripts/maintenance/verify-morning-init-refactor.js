@@ -24,12 +24,8 @@
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import {
-  getTodayVenues,
-  scrapeRacesData,
-  scrapeVenue,
-} from "../scrape-to-json.js";
 
+import { generateAndWriteFromRacesData } from "../daily/generate-predictions.js";
 
 
 
@@ -37,7 +33,7 @@ import {
   FALLBACK_FROM_JST_HOUR,
   decideMorningInitOnGha,
 } from "../lib/racesInit/ghaSkip.js";
-
+import { createFakeSupabaseClient } from "../lib/scrapeJobs/testing/fakeSupabaseClient.js";
 import { runMorningInitRefactorScenes1 } from "./verifyData/morning-init-refactor-scenes-1.js";
 import { runMorningInitRefactorScenes2 } from "./verifyData/morning-init-refactor-scenes-2.js";
 import {
@@ -138,157 +134,182 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   return fetchHtml;
 }
 
+// ---- 後半の場面（verifyData/morning-init-refactor-scenes-1.js） ----
+await runMorningInitRefactorScenes1({ check, show, same, rejects, GOLDEN_VENUE, GOLDEN_VENUES, DATE, createFixtureFetch });
+
 // ---------------------------------------------------------------------------
-// (a) scrape-to-json.js
+// (b) generate-predictions.js
 // ---------------------------------------------------------------------------
 {
-  const fetchHtml = createFixtureFetch();
-  const venues = await getTodayVenues(DATE, { fetchHtml, strict: true });
-  check(
-    "(a) 開催会場一覧: 旧実装の出力（golden）と一致",
-    same(venues, GOLDEN_VENUES),
-    show(venues),
-  );
+  const racesData = () => ({
+    success: true,
+    data: [structuredClone(GOLDEN_VENUE)],
+  });
+  const newClient = (opts = {}) =>
+    createFakeSupabaseClient({
+      tables: {
+        venues: [{ code: 1, avg_first_win_rate: 0.5 }],
+        racer_aggregated_stats: [],
+        ...opts.tables,
+      },
+      failOn: opts.failOn,
+    });
 
-  const venue = await scrapeVenue(DATE, 1, { fetchHtml, strict: true });
+  const client = newClient();
+  const result = await generateAndWriteFromRacesData({
+    now: () => FIXED_NOW,
+    racesData: racesData(),
+    date: DATE,
+    client,
+    throwOnError: true,
+  });
+  const raceIds = client.data.races.map((r) => r.race_id).sort();
   check(
-    "(a) 1会場の出走表・直前情報・発走時刻: 旧実装の出力（golden）と完全に一致（strict）",
-    same(venue, GOLDEN_VENUE),
+    "(b) 12レース分の races・race_entries（72行）・predictions（36行）を書く",
+    result.predictedRaceIds.length === 12 &&
+      client.data.races.length === 12 &&
+      client.data.race_entries.length === 72 &&
+      client.data.predictions.length === 36 &&
+      raceIds[0] === "2026-09-21-01-01" &&
+      raceIds[11] === "2026-09-21-01-12",
+    `races=${client.data.races.length} entries=${client.data.race_entries?.length} preds=${client.data.predictions?.length}`,
   );
-  const venueDefault = await scrapeVenue(DATE, 1, { fetchHtml });
   check(
-    "(a) 既定（非 strict）でも、同じ出力（従来の GitHub Actions・CLI と同じ）",
-    same(venueDefault, GOLDEN_VENUE),
+    "(b) races.start_time は HH:MM:00・race_date は指定した対象日",
+    client.data.races.every(
+      (r) => /^\d{2}:\d{2}:00$/.test(r.start_time) && r.race_date === DATE,
+    ),
   );
   check(
-    "(a) 12レース・全レースに6艇・発走時刻あり",
-    venue.races.length === 12 &&
-      venue.races.every((r) => r.racers.length === 6 && r.startTime),
+    "(b) race_conditions に、レース名・開催ステージを書く（BOA-347）",
+    client.data.race_conditions.length === 12 &&
+      client.data.race_conditions.every((r) => r.race_title || r.race_stage),
   );
-
-  const data = await scrapeRacesData(DATE, [1], {
-    fetchHtml,
-    venueDelayMs: 0,
+  // BOA-590: F数・L数を朝の初期化で書く（レース情報の窓＝発走60分前まで NULL にしない）
+  const fl = client.data.race_entries.filter(
+    (e) => e.race_id === "2026-09-21-01-01",
+  );
+  check(
+    "(b) BOA-590: race_entries に F数・L数を書く（5号艇 F1、ほかは F0・L0）",
+    fl.length === 6 &&
+      fl.find((e) => e.boat_number === 5)?.f_count === 1 &&
+      fl.filter((e) => e.boat_number !== 5).every((e) => e.f_count === 0) &&
+      fl.every((e) => e.l_count === 0),
+    show(fl.map((e) => [e.boat_number, e.f_count, e.l_count])),
+  );
+  {
+    // F数・L数が読めなかった艇は、列を送らない（既存の値を NULL で上書きしない）
+    const noFl = racesData();
+    for (const r of noFl.data[0].races)
+      for (const x of r.racers) {
+        delete x.fCount;
+        delete x.lCount;
+      }
+    const c2 = newClient();
+    await generateAndWriteFromRacesData({
+      now: () => FIXED_NOW,
+      racesData: noFl,
+      date: DATE,
+      client: c2,
+      throwOnError: true,
+    });
+    // 偽クライアントは送られた行をそのまま保存する（新しい行なので、送らなかった列は行に無い）
+    const sent = c2.data.race_entries;
+    check(
+      "(b) BOA-590: F数・L数が読めなかった艇は、f_count・l_count の列を送らない",
+      sent.length > 0 &&
+        sent.every((r) => !("f_count" in r) && !("l_count" in r)),
+      show(sent.slice(0, 1)),
+    );
+  }
+  const racesUpserts = client.writesTo("races").length;
+  const entriesUpserts = client.writesTo("race_entries").length;
+  await generateAndWriteFromRacesData({
+    now: () => FIXED_NOW,
+    racesData: racesData(),
+    date: DATE,
+    client,
+    throwOnError: true,
   });
   check(
-    "(a) scrapeRacesData: races.json と同じ形（success・date・data・scrapedAt）をメモリ上で返す",
-    data.success === true &&
-      data.date === DATE &&
-      data.data.length === 1 &&
-      same(data.data[0], GOLDEN_VENUE) &&
-      typeof data.scrapedAt === "string",
+    "(b) 2回目: 変更の無い races・race_entries は書かない（WS8(b)）。predictions は upsert で36行のまま、削除しない（BOA-628）",
+    client.writesTo("races").length === racesUpserts &&
+      client.writesTo("race_entries").length === entriesUpserts &&
+      client.data.predictions.length === 36 &&
+      client.writesTo("predictions").filter((w) => w.op === "delete").length ===
+        0,
   );
 
-  // 非 strict: 取得の失敗は、従来どおり null・空に化ける
-  const failVenues = await getTodayVenues(DATE, {
-    fetchHtml: createFixtureFetch({ fail: () => true }),
-  });
-  check(
-    "(a) 非 strict: 会場一覧の取得失敗は [] に化ける（従来どおり）",
-    same(failVenues, []),
-  );
-  const racelist3Fails = await scrapeVenue(DATE, 1, {
-    fetchHtml: createFixtureFetch({
-      fail: (u) => u.includes("racelist") && u.includes("rno=3"),
-    }),
-  });
-  check(
-    "(a) 非 strict: racelist の失敗は、そのレースの選手が空になるだけ（従来どおり）",
-    racelist3Fails.races.length === 12 &&
-      racelist3Fails.races[2].racers.length === 0 &&
-      racelist3Fails.races[3].racers.length === 6,
-  );
-  const beforeinfoFails = await scrapeVenue(DATE, 1, {
-    fetchHtml: createFixtureFetch({
-      fail: (u) => u.includes("beforeinfo"),
-    }),
-  });
-  check(
-    "(a) 非 strict: beforeinfo が取れなくても、全レースがそろう（beforeinfo は取らない。BOA-1145）",
-    same(beforeinfoFails, GOLDEN_VENUE),
-  );
-
-  // strict: 失敗は例外
-  const e1 = await rejects(
-    getTodayVenues(DATE, {
-      fetchHtml: createFixtureFetch({ fail: () => true }),
-      strict: true,
-    }),
-  );
-  check(
-    "(a) strict: 会場一覧の取得失敗は例外（開催なしに化けない）",
-    e1 && /開催会場一覧の取得に失敗/.test(e1.message),
-    e1?.message,
-  );
-  const e2 = await rejects(
-    scrapeVenue(DATE, 1, {
-      fetchHtml: createFixtureFetch({
-        fail: (u) => u.includes("racelist") && u.includes("rno=3"),
+  // 失敗の扱い
+  const failing = (failOn) => newClient({ failOn });
+  for (const [label, failOn] of [
+    ["race_entries の書き込み", { "race_entries:upsert": "boom-entries" }],
+    ["races の書き込み", { "races:upsert": "boom-races" }],
+    ["predictions の書き込み", { "predictions:upsert": "boom-preds" }],
+  ]) {
+    const err = await rejects(
+      generateAndWriteFromRacesData({
+        now: () => FIXED_NOW,
+        racesData: racesData(),
+        date: DATE,
+        client: failing(failOn),
+        throwOnError: true,
       }),
-      strict: true,
-    }),
-  );
-  check(
-    "(a) strict: racelist が1ページでも失敗したら、会場全体が例外（一部欠けたまま書かない）",
-    e2 && /会場1/.test(e2.message),
-    e2?.message,
-  );
-  const beforeinfoLog = createFixtureFetch({
-    fail: (u) => u.includes("beforeinfo"),
-  });
-  const e3 = await rejects(
-    scrapeVenue(DATE, 1, { fetchHtml: beforeinfoLog, strict: true }),
-  );
-  check(
-    "(a) strict: beforeinfo が全て失敗しても、会場は例外にならない（beforeinfo を取りに行かない。BOA-1145）",
-    e3 === null && !beforeinfoLog.log.some((u) => u.includes("beforeinfo")),
-    e3?.message,
-  );
-  const e4 = await rejects(
-    scrapeVenue(DATE, 1, {
-      fetchHtml: createFixtureFetch({
-        fail: (u) => u.includes("raceindex"),
+    );
+    check(`(b) throwOnError: ${label}の失敗は例外`, err !== null, err?.message);
+    const swallowed = await rejects(
+      generateAndWriteFromRacesData({
+        now: () => FIXED_NOW,
+        racesData: racesData(),
+        date: DATE,
+        client: failing(failOn),
+        throwOnError: false,
       }),
-      strict: true,
+    );
+    check(
+      `(b) throwOnError: false（CLI が指定）: ${label}の失敗は握りつぶして続行（morning-init の後続を止めない）`,
+      swallowed === null,
+      swallowed?.message,
+    );
+    const byDefault = await rejects(
+      generateAndWriteFromRacesData({
+        now: () => FIXED_NOW,
+        racesData: racesData(),
+        date: DATE,
+        client: failing(failOn),
+      }),
+    );
+    check(
+      `(b) 既定（BOA-391）: ${label}の失敗は例外`,
+      byDefault !== null,
+      byDefault?.message,
+    );
+  }
+  const noClient = await rejects(
+    generateAndWriteFromRacesData({
+      now: () => FIXED_NOW,
+      racesData: racesData(),
+      date: DATE,
+      client: null,
+      throwOnError: true,
     }),
   );
   check(
-    "(a) strict: 発走時刻のページが失敗したら例外",
-    e4 && /発走時刻の取得に失敗/.test(e4.message),
-    e4?.message,
+    "(b) throwOnError: Supabase が無ければ例外",
+    noClient && /Supabase/.test(noClient.message),
   );
-  const noTimesFetch = async (url) =>
-    String(url).includes("raceindex")
-      ? "<html><body><table><tr><td>-</td></tr></table></body></html>"
-      : createFixtureFetch()(url);
-  const e5 = await rejects(
-    scrapeVenue(DATE, 1, { fetchHtml: noTimesFetch, strict: true }),
+  const badData = await rejects(
+    generateAndWriteFromRacesData({
+      now: () => FIXED_NOW,
+      racesData: { success: false },
+      date: DATE,
+      client: newClient(),
+    }),
   );
-  check(
-    "(a) strict: 発走時刻が1件も読めなければ例外（start_time が NULL のまま書かない）",
-    e5 && /発走時刻を1件も取得できません/.test(e5.message),
-    e5?.message,
-  );
-
-  // 並列度の上限
-  const limited = createFixtureFetch({ latencyMs: 8 });
-  await scrapeVenue(DATE, 1, { fetchHtml: limited, raceConcurrency: 3 });
-  check(
-    "(a) raceConcurrency=3: 同時リクエストは最大3（3レース×racelist。beforeinfo は取らない）",
-    limited.maxActive <= 3 && limited.maxActive >= 2,
-    `maxActive=${limited.maxActive}`,
-  );
-  const unlimited = createFixtureFetch({ latencyMs: 8 });
-  await scrapeVenue(DATE, 1, { fetchHtml: unlimited });
-  check(
-    "(a) 既定（12レース同時）: 12リクエスト（racelist）が同時に走る",
-    unlimited.maxActive === 12,
-    `maxActive=${unlimited.maxActive}`,
-  );
+  check("(b) 有効なデータが無ければ例外（従来どおり）", badData !== null);
 }
 
-// ---- 後半の場面（verifyData/morning-init-refactor-scenes-1.js・morning-init-refactor-scenes-2.js・morning-init-refactor-scenes-3.js） ----
-await runMorningInitRefactorScenes1({ FIXED_NOW, check, show, rejects, GOLDEN_VENUE, DATE });
+// ---- 後半の場面（verifyData/morning-init-refactor-scenes-2.js・morning-init-refactor-scenes-3.js） ----
 await runMorningInitRefactorScenes2({ FIXED_NOW, check, show, same, rejects, DATE });
 await runMorningInitRefactorScenes3({ out, check, show, same, sleep, rejects, fixture, DATE });
 
