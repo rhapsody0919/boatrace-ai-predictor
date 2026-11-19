@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2091 |
+| 読んだファイル | 2092 |
 | 読み書きのあるファイル | 282 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -602,7 +602,7 @@
   - `scripts/lib/motorPretestJob.js:269` select [race_date, racer_id, venue_code]
   - `scripts/maintenance/verify-pretest-row-pick.js:74` select [pretest_rank, pretest_time, race_date, racer_id, series_title, venue_code] （検査）
   - `src/services/meetQueries2.js:144` select [motor_number, pretest_rank, pretest_time, race_date, racer_class, racer_id, venue_code]
-  - `src/services/motorQueries2.js:40` select [pretest_rank, pretest_time, race_date, racer_id, venue_code]
+  - `src/services/motorQueries2.js:41` select [pretest_rank, pretest_time, race_date, racer_id, venue_code]
   - `src/services/motorQueries4.js:139` select [race_date, venue_code]
   - `src/services/motorQueries4.js:155` select [motor_2rate, motor_number, pretest_time, race_date, racer_id, venue_code]
 - 書き手（0）: なし
@@ -927,8 +927,8 @@
   - `src/services/meetQueries3.js:60` select [boat_number, player_name, race_id, racer_id]
   - `src/services/motorQueries.js:234` select [motor_2rate, race_id]
   - `src/services/motorQueries.js:274` select [boat_number, motor_2rate, motor_3rate, motor_number, race_id]
-  - `src/services/motorQueries2.js:106` select [boat_number, global_2rate, motor_number, race_id]
-  - `src/services/motorQueries2.js:257` select [boat_number, grade, motor_number, player_name, race_id, racer_id]
+  - `src/services/motorQueries2.js:111` select [boat_number, global_2rate, motor_number, race_id]
+  - `src/services/motorQueries2.js:262` select [boat_number, grade, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries3.js:240` select [boat_number, motor_2rate, motor_3rate, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries3.js:303` select [boat_number, motor_number, player_name, race_id, racer_id]
   - `src/services/motorQueries4.js:160` select [motor_2rate, motor_number, player_name, race_id, racer_id]
@@ -1220,8 +1220,8 @@
   - `src/services/meetQueries.js:105` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/meetQueries2.js:128` select(helper:fetchAllByIn)
   - `src/services/meetQueries3.js:55` select [race_id, rank1, rank2, rank3, rank4, rank5, rank6]
-  - `src/services/motorQueries2.js:125` select [race_id, rank1, rank2, rank3]
-  - `src/services/motorQueries2.js:353` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
+  - `src/services/motorQueries2.js:130` select [race_id, rank1, rank2, rank3]
+  - `src/services/motorQueries2.js:358` select [race_id, race_status, rank1, rank2, rank3, rank4, rank5, rank6]
   - `src/services/motorQueries3.js:312` select [race_id, rank1]
   - `src/services/motorQueries5.js:53` select(helper:fetchAllByIn)
   - `src/services/raceQueries.js:84` select(helper:fetchAllByIn)
