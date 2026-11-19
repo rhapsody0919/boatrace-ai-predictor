@@ -1569,12 +1569,12 @@ test("BOA-1164 PostgREST の読み取り: 閉じる候補は要照合・YouTube�
   );
 });
 
-test("BOA-1164 検査の枠: cron は Chromium の上限に runner と同じ値を渡す", async () => {
-  const cron = await readFile(
-    new URL("../../api/cron/sns-send.js", import.meta.url),
-    "utf8",
-  );
-  assert.match(cron, /maxInspections:\s*SNS_SEND_HEADLESS_BUDGET/);
+test("BOA-1164 検査の枠: cron は Chromium の上限に runner と同じ値を渡す（本文の字でなく、cron の run が作る Chromium の引数で見る。作った所で止め、送信・DB に届かせない）", async () => {
+  const stub = `export const createChromiumHeadless = (o) => { globalThis.snsSendHeadless = o; throw new Error("headless_stub"); };`;
+  (await import("node:module")).register(`data:text/javascript,${encodeURIComponent(`export async function resolve(s, c, next) { const r = await next(s, c); return r.url.endsWith("/api/_lib/snsHeadless.js") && (c.parentURL ?? "").endsWith("/api/cron/sns-send.js") ? { url: ${JSON.stringify(`data:text/javascript,${encodeURIComponent(stub)}`)}, shortCircuit: true } : r; }`)}`);
+  const { made } = await (await import("./verifyData/cronWiring.js")).cronWiring(() => import("../../api/cron/sns-send.js"));
+  await assert.rejects(made[0].options.run({}), /headless_stub/);
+  assert.equal(globalThis.snsSendHeadless?.maxInspections, (await import("../lib/snsSendRunner.js")).SNS_SEND_HEADLESS_BUDGET);
 });
 test("BOA-1164 閉じる: YouTube で削除済み（videos.list の items が空）なら youtube_closed_deleted で閉じる。DB も found=false を受ける", async () => {
   const { y } = await retainedJob();
