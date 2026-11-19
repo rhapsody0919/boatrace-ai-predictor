@@ -89,6 +89,7 @@ import {
   layoutTrendByDate,
 } from "../../src/utils/trendDateLayout.js";
 import { buildMeets, fetchAllByRaceId } from "../lib/meetBoundaries.js";
+import { buildRacerScopedRaceRows } from "../../src/services/racerScopedRaceRows.js";
 import {
   pickMeetPretestByRacer,
   pickLatestPretestByRacer,
@@ -597,17 +598,12 @@ check(
     // 本番STの行そのものが無い欠場（他艇の行はある）も、履歴で「欠場」と出す
     // （2026-06-13 浜名湖5R・12R の中岡正彦が「着外(順位不明)」になっていた）。
     // 整形は getRacerScopedRaceStats から racerScopedRaceRows.js へ移した（BOA-1022）
-    const racerScopedRows = readFileSync(
-      new URL("../../src/services/racerScopedRaceRows.js", import.meta.url),
-      "utf8",
-    );
-    check(
-      "選手の履歴は、本番STの行が無い欠場も欠場として扱う",
-      /absent:\s*isAbsentStartRow\(st\) \|\|\s*\(!st && stRowsByRace\.has\(entry\.race_id\)\)/.test(
-        racerScopedRows,
-      ),
-      true,
-    );
+    // 行の整形（buildRacerScopedRaceRows）を呼んで見る。RA は他艇の行だけ・RB は「欠」の行・RC は行が無い（取得漏れは欠場にしない）
+    const RC = `${RA.slice(0, 14)}03`, ids = [RA, RB, RC];
+    const scoped = buildRacerScopedRaceRows({ entries: ids.map((race_id) => ({ race_id, boat_number: 4 })), raceRows: ids.map((race_id) => ({ race_id, race_date: race_id.slice(0, 10), venue_code: 5 })),
+      resultRows: ids.map((race_id) => ({ race_id, rank1: 1 })), exhibitionRows: [], conditionRows: [],
+      startTimingRows: [{ race_id: RA, boat_number: 1, start_timing: 0.12 }, { race_id: RB, boat_number: 4, start_timing: null, finish_mark: "欠" }] });
+    check("選手の履歴は、本番STの行が無い欠場も欠場として扱う", scoped.map((r) => [r.raceId, r.absent]), [[RA, true], [RB, true], [RC, false]]);
     const meetTab = readFileSync(
       new URL("../../src/components/race/RaceMeetTab.jsx", import.meta.url),
       "utf8",
