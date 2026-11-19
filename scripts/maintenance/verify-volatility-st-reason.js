@@ -3,10 +3,13 @@
  *
  * 守るもの: 値は racer_aggregated_stats.avg_st（当サイトに蓄積した全期間）なので、理由文がその期間どおりに
  * 書かれていること。以前は「1号艇の今節ST」と書いていて、今節の走ではない値を今節と読ませていた。
- * 予想バッチ（generate-predictions.js・generate-unified-predictions.js）の両方が同じ関数を使うことも確かめる
+ * 予想バッチ（generate-predictions.js・generate-unified-predictions.js）の両方が同じ関数を使うことも、本文の字でなく
+ * 偽の Supabase で回した出力（races.volatility_reasons・calculateVolatilityComposite の reasons）で確かめる
  */
 import { readFileSync } from "node:fs";
-import { boat1StReason } from "../lib/volatilityFactors.js";
+import { generateAndWriteFromRacesData } from "../daily/generate-predictions.js";
+import { boat1StReason, calculateVolatilityComposite } from "../lib/volatilityFactors.js";
+import { createFakeSupabaseClient } from "../lib/scrapeJobs/testing/fakeSupabaseClient.js";
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -34,21 +37,18 @@ check(
   cases.every(([st]) => !boat1StReason(st).includes("今節")),
 );
 
-for (const file of [
-  "scripts/daily/generate-predictions.js",
-  "scripts/lib/volatilityFactors.js",
-]) {
-  const src = readFileSync(new URL(`../../${file}`, import.meta.url), "utf8");
-  check(`${file} に「今節ST」の理由文が残っていない`, !src.includes("の今節ST"));
+const venue = JSON.parse(readFileSync(new URL("../lib/racesInit/__fixtures__/golden-venue-01.json", import.meta.url), "utf8"));
+const race = { ...venue.races[0], racers: venue.races[0].racers.map((r) => ({ ...r, number: r.lane, winRate: r.globalWinRate })) };
+const log = console.log;
+for (const [st, expected] of cases) {
+  const client = createFakeSupabaseClient({ tables: { venues: [], racer_aggregated_stats: [{ racer_id: race.racers[0].racerId, venue_code: 0, avg_st: st }] } });
+  console.log = () => {};
+  await generateAndWriteFromRacesData({ racesData: { success: true, data: [{ ...venue, races: [structuredClone(race)] }] }, date: race.date, client, now: () => new Date(`${race.date}T06:00:00+09:00`) }).finally(() => (console.log = log));
+  const reasons = client.data.races?.[0]?.volatility_reasons ?? [];
+  check(`generate-predictions.js: 平均ST ${st} の races.volatility_reasons に boat1StReason の文が入り「今節」が無い`, reasons.includes(expected) && !reasons.join().includes("今節"), JSON.stringify(reasons));
+  const unified = calculateVolatilityComposite(race.racers, race.placeCd, null, [{ boatNumber: 1, avgST: st }]).reasons;
+  check(`calculateVolatilityComposite: 平均ST ${st} の reasons に boat1StReason の文が入り「今節」が無い`, unified.includes(expected) && !unified.join().includes("今節"), JSON.stringify(unified));
 }
-const gp = readFileSync(
-  new URL("../daily/generate-predictions.js", import.meta.url),
-  "utf8",
-);
-check(
-  "generate-predictions.js は boat1StReason を使う（文言の二重管理をしない）",
-  gp.includes("boat1StReason(boat1ST)"),
-);
 
 if (failures > 0) {
   console.error(`\n${failures}件失敗`);
