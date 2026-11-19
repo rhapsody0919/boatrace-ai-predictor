@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2221,
+    "sourceFiles": 2232,
     "filesWithAccess": 286,
     "tableReaders": 961,
     "tableWriters": 197,
@@ -21373,13 +21373,6 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-metrics-runner.js:642",
-          "op": "rest",
-          "via": "rest",
-          "columns": [],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verify-sns-month-calendar.js:47",
           "op": "rest",
           "via": "rest",
@@ -21415,6 +21408,12 @@
         },
         {
           "ref": "scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:67",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:260",
           "op": "rest",
           "via": "rest",
           "columns": []
@@ -22134,13 +22133,12 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-sns-metrics-runner.js:632",
+          "ref": "scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:250",
           "op": "rest",
           "via": "rest",
           "columns": [
             "state"
-          ],
-          "test": true
+          ]
         }
       ],
       "writers": [
@@ -22221,7 +22219,7 @@
             "scripts/lib/snsMetricsRunner.js:506",
             "scripts/lib/snsMetricsRunner.js:520",
             "scripts/lib/snsMetricsRunner.js:551",
-            "scripts/maintenance/verify-sns-metrics-runner.js:632"
+            "scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:250"
           ],
           "writers": [],
           "sql": [
@@ -23947,13 +23945,6 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-sns-metrics-runner.js:651",
-          "op": "rest",
-          "via": "rest",
-          "columns": [],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verify-sns-month-calendar.js:46",
           "op": "rest",
           "via": "rest",
@@ -24013,6 +24004,12 @@
           "via": "rest",
           "columns": [],
           "test": true
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:269",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
         },
         {
           "ref": "scripts/sns/delete-x-post.js:110",
