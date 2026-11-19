@@ -532,8 +532,8 @@ async function runReport(coverageRows, windowRows = [], detectionLagRows = []) {
       /r.start_time/.test(sql) && /r.cancellation_status/.test(sql) &&
       /as races/.test(sql) && !/window_closed_at/.test(sql),
   );
-  const source = fs.readFileSync(new URL("../analysis/data-health-report.js", import.meta.url), "utf8");
-  check("閾値は共通のDETECTION_LAGから読む", source.includes("< DETECTION_LAG.rate"));
+  const lagAt = (w) => summarizeDetectionLagRow({ total: 50, measured: 50, unmeasured: 0, within_threshold: w }).belowThreshold, edge = Math.round(DETECTION_LAG.rate * 50);
+  check("閾値は共通のDETECTION_LAGから読む（割合がちょうど rate なら未達でなく、1件少ないと未達）", edge / 50 === DETECTION_LAG.rate && !lagAt(edge) && lagAt(edge - 1) && !lagAt(50));
 
   const slot = (over = {}) => ({
     job: "odds", race_id: "test", race_date: "2026-09-19", offset_min: -60,
