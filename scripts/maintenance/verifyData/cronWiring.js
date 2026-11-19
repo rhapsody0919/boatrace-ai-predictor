@@ -23,7 +23,8 @@ export function createScrapeCronHandler(options) {
 }
 
 // 解決の hook（module.register が別の thread で動かす）。api/cron/ の本からの cronWrapper.js の import だけをこの本へ向ける
-const WRAPPER = new URL("../../lib/scrapeJobs/cronWrapper.js", import.meta.url).href;
+const WRAPPER = new URL("../../lib/scrapeJobs/cronWrapper.js", import.meta.url)
+  .href;
 const API_DIR = new URL("../../../api/cron/", import.meta.url).href;
 const HOOKS = `
 export async function resolve(specifier, context, next) {
