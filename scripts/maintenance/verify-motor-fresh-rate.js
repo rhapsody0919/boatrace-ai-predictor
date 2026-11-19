@@ -42,6 +42,7 @@ import {
   oldGenerationTables,
   rows3,
 } from "./verifyData/motor-fresh-rate.js";
+import { settleMotorBreakdown } from "../../src/pure/raceMotorBreakdown.js";
 import {
   motorRateView,
   motorRate3View,
@@ -220,11 +221,11 @@ check(
   "過去レースの機力指数は、自前の値があれば出す（generation_power_index）",
   chart.includes("row.generation_power_index"),
 );
+const settle = (failed, row = { a: 1 }) => settleMotorBreakdown([row], { columns: [{ b: 2 }], freshness: { f: 1 }, failed });
 check(
-  "サービス: 材料が取れなかったら保存しない（fetchFailed）",
-  /fresh\.failed\s*\n?\s*\?\s*\{ rows: merged, freshness: fresh\.freshness, fetchFailed: true \}/.test(
-    read("src/pure/raceMotorBreakdown.js"),
-  ),
+  "サービス: 材料が取れなかったら保存しない（fetchFailed。会場公式の成績が取れなかったときも同じ）",
+  same(settle(true), { rows: [{ a: 1, b: 2 }], freshness: { f: 1 }, fetchFailed: true }) && same(settle(false), { rows: [{ a: 1, b: 2 }], freshness: { f: 1 } }) &&
+    settle(false, { venue_stats_failed: true }).fetchFailed === true,
 );
 
 // ---- サービス層を偽の supabase クライアントの上で呼ぶ（BOA-1675。共通の部品 verifyData/fakeServiceSupabase.js） ----
