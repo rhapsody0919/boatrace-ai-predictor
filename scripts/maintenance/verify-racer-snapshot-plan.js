@@ -18,7 +18,8 @@ import {
   RACER_SNAPSHOT_TEMPLATE_VERSION,
 } from "../lib/racerSnapshotPlan.js";
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { declarationSource } from "./verifyData/sourceScope.js";
 import { renderWithFreshPage } from "../lib/renderWithFreshPage.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
 
@@ -117,16 +118,17 @@ check("読み込み中が残れば skipped", !canSaveRacerSnapshot(completedHtml
 check("ready が無ければ skipped", !canSaveRacerSnapshot(completedHtml().replace('data-snapshot-ready="true"', "")));
 check("目印のない旧HTMLは skipped", !canSaveRacerSnapshot('<div data-snapshot-ready="true"></div>'));
 
-// 実際の生成関数（写す道・描く道）だけを取り出し、ブラウザ・ファイルI/O・fetch・環境変数を差し替える。
-// 生成スクリプトのトップレベル（本番向け生成）は実行しない。
-const generatorSource = readFileSync(
-  new URL("../generate-ai-snapshots.js", import.meta.url),
-  "utf8",
-);
-const generatorBody = generatorSource.slice(
-  generatorSource.indexOf("async function fetchFromSource("),
-  generatorSource.indexOf("function generateWinningTechniqueSnapshot("),
-);
+// 実際の生成関数（写す道・描く道）だけを名前で取り出し（generateRacerSnapshots と、それが使う上の宣言を import を辿って）、
+// ブラウザ・ファイルI/O・fetch・環境変数を差し替える。生成スクリプトのトップレベル（本番向け生成）は実行しない。
+const INJECTED = [
+  "planRacerSnapshots", "readFileSync", "statSync", "path", "DIST_DIR", "SNAPSHOT_DIR", "mkdirSync", "renderWithFreshPage",
+  "RACER_CONCURRENCY", "dedupeDefaultTitle", "writeFileSync", "canSaveRacerSnapshot", "console", "process", "fetch",
+  "RACER_SOURCE_ORIGIN", "RACER_COPY_CONCURRENCY", "mainAssetsOf", "adaptCopiedRacerHtml", "decideRacerSnapshotSource",
+  "olderIso", "sourceChangedDuringCopy", "mapWithConcurrency", "rmSync",
+];
+const repoFile = (rel) => new URL(`../../${rel}`, import.meta.url);
+const repoFs = { read: (rel) => readFileSync(repoFile(rel), "utf8"), exists: (rel) => existsSync(repoFile(rel)) };
+const generatorBody = declarationSource(repoFs, "scripts/generate-ai-snapshots.js", "generateRacerSnapshots", INJECTED);
 const INDEX_HTML =
   '<script type="module" crossorigin src="/assets/main-NEW1.js"></script><link rel="stylesheet" crossorigin href="/assets/main-NEW2.css">';
 function loadGenerator({
@@ -138,33 +140,7 @@ function loadGenerator({
   removed = [],
   writeFile,
 }) {
-  return new Function(
-    "planRacerSnapshots",
-    "readFileSync",
-    "statSync",
-    "path",
-    "DIST_DIR",
-    "SNAPSHOT_DIR",
-    "mkdirSync",
-    "renderWithFreshPage",
-    "RACER_CONCURRENCY",
-    "dedupeDefaultTitle",
-    "writeFileSync",
-    "canSaveRacerSnapshot",
-    "console",
-    "process",
-    "fetch",
-    "RACER_SOURCE_ORIGIN",
-    "RACER_COPY_CONCURRENCY",
-    "mainAssetsOf",
-    "adaptCopiedRacerHtml",
-    "decideRacerSnapshotSource",
-    "olderIso",
-    "sourceChangedDuringCopy",
-    "mapWithConcurrency",
-    "rmSync",
-    generatorBody + "; return generateRacerSnapshots;",
-  )(
+  return new Function(...INJECTED, generatorBody + "; return generateRacerSnapshots;")(
     () => ({ ids, reason: "test" }),
     (p) => (String(p).endsWith("index.html") ? INDEX_HTML : ""),
     (p) => {
