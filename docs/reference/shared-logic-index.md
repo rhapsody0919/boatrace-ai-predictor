@@ -55,6 +55,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか20件 |
 | `src/pure/seriesPointsParts.js` | — | prelimEndDayOf, noRaceDaysOf, semifinalRaceIdsOf, semifinalSlotsOf, isAbsentStartRow ほか10件 |
 | `src/pure/sixBoatCourseStats.js` | 6艇の想定コース別成績（公式の直近3期、BOA-1291）。取得・表示は呼び出し側で行う。 | periodsBefore, buildSixBoatCourseRows, buildSixBoatLocalRows, SIX_BOAT_WARN_ENTRIES |
+| `src/pure/snsObservationChecks.js` | SNS観測の入力の検査（src/utils/snsObservations.js の validateObservationInput の中の検査を、順を変えず… | assertObservationEnvelope, assertMetricAndSource, assertObservedAt, assertPeriodBounds, assertDataThrough ほか7件 |
+| `src/pure/snsObservationWindows.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。窓・取得元・指標・時刻の判定（src/utils/snsObservations.js から移し… | windowsFor, displayWindowFor, observationPeriod, OBSERVATION_WINDOWS, FULL_PICTURE_FORMAT ほか10件 |
 | `src/pure/snsPostText.js` | — | buildPostText |
 | `src/pure/techniqueNames.js` | 決まり手の英語キー → 日本語の名前。展開予測（src/utils/turnPrediction.js）をやめた後も、データ出走表などの | TECHNIQUE_NAMES |
 | `src/pure/venueModel.js` | — | makeVenue |
@@ -274,19 +276,46 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups, racerSnapshotProblems, RACER_SNAPSHOT_STALE_HOURS |
 | `scripts/lib/sns/finalsImageBase.js` | — | hasPoll, pngSize, checkImages, schedule, dailyLimitReason ほか23件 |
+| `scripts/lib/sns/fullPictureRows.js` | 全貌動画の取り込み（scripts/sns/push-full-picture.js）から移した、下書きの文と行の組み立て（純粋関数）。 | fullYoutubeText, draftRows, fullTagsOf, draftTexts |
+| `scripts/lib/sns/fullPictureShape.js` | 全貌動画の取り込み（scripts/sns/push-full-picture.js）から移した、api・scripts/sns に依らない純な部分: 定数・チ… | supersedePlan, schedule, bakedDeadlineReasons, FULL_PICTURE_FORMAT, FILES ほか22件 |
+| `scripts/lib/sns/mp4Info.js` | MP4 の大きさと尺の純粋な読み取り。push-setsu-kiryoku-short.js から移した（字は同じ） | mp4Info |
+| `scripts/lib/sns/researchPushRules.js` | — | PUSH_RULES |
+| `scripts/lib/sns/researchSchedule.js` | — | schedule, dryRunClock, checkTiming, DEADLINE_AFTER_MIN, EXPIRES_BEFORE_MIN ほか11件 |
+| `scripts/lib/sns/setsuDeadlines.js` | 節の機力の Shorts の締切の照合（純粋関数）。push-setsu-kiryoku-short.js から移した（字は同じ） | finalDeadlineMismatch, borderDeadlineMismatch, eveDeadlineMismatch, raceNumberOf, isFinalStage |
+| `scripts/lib/sns/shortSchedule.js` | YouTube Shorts の口（push-setsu-kiryoku-short.js・push-upset-win-short.js）の時刻・日の上限とク… | schedule, checkTiming, youtubeRoomReason, dryRunClock, SEND_DELAY_SEC ほか14件 |
 | `scripts/lib/sns/thinkingGradeDay.js` | — | thinkingGradeDayVenue, todayTargetReason, THINKING_GRADE_DAY_GRADES, THINKING_GRADE_DAY_MIN_RACE_NUMBER, THINKING_GRADE_DAY_MAX_RACE_NUMBER ほか1件 |
-| `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel, reviewGate, createAutoPlanStore ほか8件 |
-| `scripts/lib/snsDailyRunner.js` | SNS の暦日の値の取り込み（sns-pdca-loop tasks 22、cron `sns_daily`、plan §5）。JST 10:00 に1日1回、… | ptMidnightUtc, runSnsDaily, setsuShortLink, mergeSameKey, createYoutubeAnalyticsClient ほか9件 |
+| `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel |
+| `scripts/lib/snsAutoPlanRunnerEvaluate.js` | SNS の自動送信の計画の検査（api/ の checkPublicDisplay・sendHolds は runner から引数で渡す）。snsAutoPla… | sharedChecks, evaluateChannel |
+| `scripts/lib/snsAutoPlanRunnerParts.js` | SNS の自動送信の計画の部品。snsAutoPlanRunner.js から、定数・素材の振り分け（planCandidates）・ | planCandidatesWith, reviewGate, AUTO_PLAN_STAGES, NOTIFY_BEFORE_MIN, VETO_BEFORE_MIN ほか8件 |
+| `scripts/lib/snsAutoPlanRunnerStore.js` | SNS の自動送信の計画の DB 操作（PostgREST の読み書き）。snsAutoPlanRunner.js の createAutoPlanStore … | createAutoPlanStore |
+| `scripts/lib/snsDailyRunner.js` | SNS の暦日の値の取り込み（sns-pdca-loop tasks 22、cron `sns_daily`、plan §5）。JST 10:00 に1日1回、… | runSnsDaily, mergeSameKey |
+| `scripts/lib/snsDailyRunnerGa4.js` | SNS の暦日の取り込みの GA4 側。snsDailyRunner.js から、collectGa4（割った）・collectSetsuShort・setsu… | collectGa4, setsuShortLink, collectSetsuShort |
+| `scripts/lib/snsDailyRunnerParts.js` | SNS の暦日の取り込みの共通の部品。snsDailyRunner.js から、定数・指標の定義の文（def）・日付の関数を移した（振る舞いは同じ）。 | ptMidnightUtc, SNS_DAILY_LOOKBACK_DAYS, UTM_CAMPAIGNS, SETSU_SHORT_FORMAT, CHANNEL_METRICS ほか16件 |
+| `scripts/lib/snsDailyRunnerStore.js` | SNS の暦日の取り込みの DB 操作（PostgREST）。snsDailyRunner.js の createSnsDailyStore を移した（振る舞い… | createSnsDailyStore |
+| `scripts/lib/snsDailyRunnerYoutube.js` | SNS の暦日の取り込みの YouTube 側。snsDailyRunner.js から、collectYoutube・collectEngaged・ytRow… | collectYoutube, collectEngaged, createYoutubeAnalyticsClient |
 | `scripts/lib/snsGa4.js` | SNS の流入の GA4 の共通部分（sns-pdca-loop plan §5）。分析スクリプト（scripts/analysis/sns-pdca-base… | getServiceAccountToken, createGa4Client, X_SOURCES, YOUTUBE_SOURCES, SITE_HOST ほか6件 |
-| `scripts/lib/snsMetricsRunner.js` | SNS の 48h・7d の取り込み（sns-pdca-loop tasks 21、cron `sns_metrics`、plan §5）。 | runSnsMetrics, createYoutubeMetricsReader, createXMetricsReader, dailySendMicrousd, createSnsMetricsStore ほか7件 |
+| `scripts/lib/snsMetricsRunner.js` | SNS の 48h・7d の取り込み（sns-pdca-loop tasks 21、cron `sns_metrics`、plan §5）。 | runSnsMetrics, createXMetricsReader, SNS_METRICS_MAX_JOBS, SNS_METRICS_ALERT_ATTEMPTS, SNS_METRICS_MONITOR_DAYS ほか2件 |
+| `scripts/lib/snsMetricsRunnerParts.js` | SNS の 48h・7d の取り込みの部品。snsMetricsRunner.js から、指標の定義・欠測／値の行の組み立て・job の不備の判定を移した（振る… | brokenReason, missingRows, valueRows, YOUTUBE_BATCH, YOUTUBE_METRICS ほか4件 |
+| `scripts/lib/snsMetricsRunnerReaders.js` | SNS の 48h・7d の取り込みの読み取り（YouTube・X）。snsMetricsRunner.js から、getJson・各 reader・daily… | createYoutubeMetricsReader, createXMetricsReader, dailySendMicrousd, YOUTUBE_API_BASE |
+| `scripts/lib/snsMetricsRunnerStore.js` | SNS の 48h・7d の取り込みの DB 操作（PostgREST）。snsMetricsRunner.js から、createSnsMetricsStor… | joinDueJobs, createSnsMetricsStore |
 | `scripts/lib/snsObservationCollector.js` | — | collectDueObservations, mockObservationProvider |
 | `scripts/lib/snsPostTracking.js` | X の親の投稿の UTM（sns-pdca-loop tasks 23、plan §2・§5、spec C3）。 | insertTrackingUrl, prepareRaceTracking, createPostTrackingStore |
 | `scripts/lib/snsScreenMarkers.js` | 送る前のリンク先の表示の確認（sns-pdca-loop tasks 10、spec A2、ADR 0091）で見る、画面ごとの印。 | SCREEN_MARKERS, SCREEN_TABS |
 | `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | headlessNeed, sendFailureOf, runSnsSend, createPostgrestReader, createPostgrestEventWriter ほか17件 |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTodayCourseWinPost.js` | /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」）の本文と、その機械の検査（純関数）。 | buildCourseWinPost, checkCourseWinPost, COURSE_WIN_FOOT, COURSE_WIN_LINK_LEAD, xWeightedLength |
-| `scripts/lib/snsTodayDigestV3.js` | /today の X 投稿の型 v3「今日はこれだけ」（BOA-1314、オーナー 2026-11-04 承認、hq の台帳 TD02）。文だけで画像は無い。7… | v3DateLine, loadTodayV3Material, buildTodayDigestV3, checkTodayDigestV3, V3_BODY ほか14件 |
-| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, prepareTodayV3, courseWinSheetUrl, prepareCourseWin, courseWinFeasible ほか31件 |
+| `scripts/lib/snsTodayDigestV3.js` | /today の X 投稿の型 v3「今日はこれだけ」（BOA-1314、オーナー 2026-11-04 承認、hq の台帳 TD02）。文だけで画像は無い。7… | loadTodayV3Material, buildTodayDigestV3, checkTodayDigestV3 |
+| `scripts/lib/snsTodayDigestV3Base.js` | snsTodayDigestV3.js から移した、型 v3 の定数・文言・小さな道具（純粋）。値・文字は元のまま。 | v3DateLine, V3_BODY, V3_FINAL, V3_SEMI, V3_MIN_RUNS ほか20件 |
+| `scripts/lib/snsTodayDigestV3Build.js` | snsTodayDigestV3.js の buildTodayDigestV3 から移した、本文を組む段（純粋）。順・文字・鍵の順は元のまま。 | venueDayLabels, raceHelpers, liveRaces, headerLines, finalsInfo ほか4件 |
+| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | runTodayPlan, TODAY_URL, todayTrackingUrl, prepareTodayV3, buildTodayPost ほか3件 |
+| `scripts/lib/snsTodayPlannerAuto.js` | snsTodayPlannerDraft.js から移した、/today の自動の承認（item を notified にして承認者で承認、失敗なら戻す）。 | autoApprove |
+| `scripts/lib/snsTodayPlannerCourseWin.js` | snsTodayPlannerParts.js から移した、型 b（course_win）の用意（撮影用ページの URL・中身の用意・出せるかの確認）。 | courseWinSheetUrlOf, prepareCourseWinOf, courseWinFeasibleOf, COURSE_WIN_SHEET_PATH, COURSE_WIN_SHEET_ELEMENT ほか2件 |
+| `scripts/lib/snsTodayPlannerDraft.js` | snsTodayPlanner.js の runTodayPlan から移した、書く側（下書き・tracking・返信・item・自動の承認・Slack の知ら… | writeTodayDraft |
+| `scripts/lib/snsTodayPlannerParts.js` | snsTodayPlanner.js から移した、/today 投稿の計画の部品（時刻・型 v3/b の用意・本文 buildTodayPost・日付の道具）。 | todaySchedule, prepareTodayV3Of, typeAOf, todayCandidates, todayFeatured ほか24件 |
+| `scripts/lib/snsTodayPlannerShots.js` | snsTodayPlanner.js の runTodayPlan から移した、画像まわり（/today の表示確認・型 b の撮影・型 a の龍神ソナーの図）… | assertTodayPageReady, shootCourseWinSheet, MAX_IMAGE_BYTES, launchInfoOf |
+| `scripts/lib/snsTodayPlannerSource.js` | snsTodayPlannerDraft.js から移した、下書きの source_data の組み立て（純粋。型 v3・型 b の記録、deadline_qu… | sourceDataOf |
+| `scripts/lib/snsTodayPlannerSteps.js` | snsTodayPlanner.js の runTodayPlan から移した、決める側の段（時間の門・前の下書きの扱い・型の選び・本文の用意・画像）。 | windowOutcome, existingOutcome, pickedType, prepareBody, chooseBody ほか3件 |
+| `scripts/lib/snsTodayPlannerStore.js` | snsTodayPlanner.js から移した、/today 計画の DB の道具（PostgREST の store）と朝の記録（nextTodayLog・… | createTodayStore, nextTodayLog, missedTodayText, finishTodayLog, REBUILD_MAX_FAILURES |
 | `scripts/lib/snsTodayVariants.js` | /today の X 投稿の見出し（本文の1行目）を2案で日替わりに出す（2026-10-20 オーナー承認、hq 経由）。 | normalizeTodayCurrent, normalizeTodayPost, normalizeTodayVariants, normalizeTodayExperiment, pickExperimentSide ほか10件 |
 | `scripts/lib/snsXSlots.js` | X の日の枠の出し物ごとの取り置き（マイグレーション 182、docs/design/x-daily-slots/plan.md）を、取り込み（push-ful… | slotDecision, checkXSlot, SLOT_KINDS, isMissingFunction, slotRoomBody ほか1件 |
 | `scripts/lib/sourceFileWalk.js` | — | walkSourceFiles, readSourceFile |
@@ -422,7 +451,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/snsDraftDiff.js` | 投稿用の値だけ。署名URL・状態変更は本文差分に含めない。 | draftContent, characterDiff, numericDiff, compareDraftSnapshots |
 | `src/utils/snsMonthCalendar.js` | — | calendarDay, calendarState, calendarRowDay, calendarVenue, calendarMonth ほか3件 |
 | `src/utils/snsObservationCsv.js` | — | csvPublicationRange, buildObservationCsvRows, serializeObservationCsv, CSV_COLUMNS |
-| `src/utils/snsObservations.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 | windowsFor, displayWindowFor, observationPeriod, validateObservation, validateProviderObservation ほか16件 |
+| `src/utils/snsObservations.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 | validateObservation, validateProviderObservation, compareObservations, buildObservationUtm, buildYoutubeProfileUtm ほか2件 |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
 | `src/utils/stDeviation.js` | 本番STと展示STのズレ（/本番ST − 展示ST/）。どちらかが無い（null・undefined）走は null。 | stDeviation |
 | `src/utils/techniqueColors.js` | 決まり手の色（グラフの棒・帯・凡例の点）。色そのものは design-tokens.css の | sortTechniquesOfficial, techniqueColor, OFFICIAL_TECHNIQUE_ORDER |
@@ -504,4 +533,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 462 ファイル / export 2617 件。
+対象 491 ファイル / export 2781 件。
