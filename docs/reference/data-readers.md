@@ -10,8 +10,8 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2267 |
-| 読み書きのあるファイル | 287 |
+| 読んだファイル | 2268 |
+| 読み書きのあるファイル | 288 |
 | 表の読み手（箇所） | 963 |
 | 表の書き手（箇所） | 197 |
 | RPC の呼び手（箇所） | 55 |
@@ -221,7 +221,7 @@
 | analogy_dispatch_train | api/cron/analogy-dispatch-train.js | 16 | scrape_job_state, scrape_slots |
 | analogy_v16_exhibition | api/cron/analogy-exhibition.js | 21 | analogy_v16_snapshots, scrape_job_state, scrape_slots |
 | boatcast_motor_start | api/cron/boatcast-motor-start.js | 22 | scrape_job_state, scrape_slots, venue_motor_start_dates |
-| boatcast_oriten | api/cron/boatcast-oriten.js | 23 | race_original_exhibition, race_original_exhibition_values, scrape_job_state, scrape_slots |
+| boatcast_oriten | api/cron/boatcast-oriten.js | 24 | race_original_exhibition, race_original_exhibition_values, scrape_job_state, scrape_slots |
 | daily_reconcile | api/cron/daily-reconcile.js | 21 | scrape_job_state, scrape_slots |
 | data_health | api/cron/data-health.js | 21 | scrape_job_state, scrape_slots |
 | data_health_morning | api/cron/data-health-morning.js | 21 | scrape_job_state, scrape_slots |
@@ -1062,12 +1062,12 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/original-exhibition/check-rewrite.mjs:15`, `scripts/lib/boatcast/oritenSchema.js:12`
 - 読み手（5）: 
   - `scripts/analysis/original-exhibition/fetch.mjs:44` select(helper:all)
-  - `scripts/lib/boatcast/oritenJob.js:181` select [content_hash, parser_version, race_id]
-  - `scripts/lib/boatcast/oritenJob.js:221` select(helper:upsertChangedRows)
+  - `scripts/lib/boatcast/oritenJob.js:183` select [content_hash, parser_version, race_id]
+  - `scripts/lib/boatcast/oritenJob.js:223` select(helper:upsertChangedRows)
   - `scripts/maintenance/verifyData/e2e-no-unroute-self-test.js:122` rest(rest)
   - `src/services/raceQueries4.js:165` select [item_labels, race_id, updated_at]
 - 書き手（1）: 
-  - `scripts/lib/boatcast/oritenJob.js:221` upsert(helper:upsertChangedRows) [?]
+  - `scripts/lib/boatcast/oritenJob.js:223` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-race_original_exhibition_values"></a>race_original_exhibition_values
@@ -1077,13 +1077,13 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/original-exhibition/check-rewrite.mjs:15`, `scripts/lib/boatcast/oritenSchema.js:13`
 - 読み手（5）: 
   - `scripts/analysis/original-exhibition/fetch.mjs:49` select(helper:all)
-  - `scripts/lib/boatcast/oritenJob.js:201` select(helper:upsertChangedRows)
-  - `scripts/lib/boatcast/oritenJob.js:240` select [boat_number, kind, race_id]
+  - `scripts/lib/boatcast/oritenJob.js:203` select(helper:upsertChangedRows)
+  - `scripts/lib/boatcast/oritenJobParts.js:39` select [boat_number, kind, race_id]
   - `src/services/meetQueries.js:333` select(helper:fetchAllByIn)
   - `src/services/raceQueries4.js:170` select [boat_number, kind, race_id, value]
 - 書き手（2）: 
-  - `scripts/lib/boatcast/oritenJob.js:201` upsert(helper:upsertChangedRows) [?]
-  - `scripts/lib/boatcast/oritenJob.js:248` delete
+  - `scripts/lib/boatcast/oritenJob.js:203` upsert(helper:upsertChangedRows) [?]
+  - `scripts/lib/boatcast/oritenJobParts.js:47` delete
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-race_outcome_frequencies"></a>race_outcome_frequencies
@@ -1537,8 +1537,8 @@
   - `scripts/generate-sitemap.js:662` select [race_date, venue_code]
   - `scripts/lib/analogyDispatch.js:75` select [cancellation_status, race_date, race_id, start_time]
   - `scripts/lib/analogyV16Exhibition.js:253` rest(rest) [race_date, race_id, start_time]
-  - `scripts/lib/boatcast/oritenJob.js:401` select [race_date, race_id, start_time]
-  - `scripts/lib/boatcast/oritenJob.js:522` select [race_date, race_id, start_time]
+  - `scripts/lib/boatcast/oritenJob.js:280` select [race_date, race_id, start_time]
+  - `scripts/lib/boatcast/oritenJobParts.js:162` select [race_date, race_id, start_time]
   - `scripts/lib/dailyReconcileJob.js:91` select(helper:fetchAll)
   - `scripts/lib/eveDeadlinesJob.js:387` select [race_date, race_id, start_time]
   - `scripts/lib/inCautionHealth.js:137` select [cancellation_status, race_id]
@@ -1707,7 +1707,7 @@
   - `scripts/maintenance/verify-gha-skip-gate.js:1354` rest(rest) （検査）
   - `scripts/sns/push-research-image.js:717` rest(rest) [job, last_report]
 - 書き手（14）: 
-  - `scripts/lib/boatcast/oritenJob.js:498` update [last_report]
+  - `scripts/lib/boatcast/oritenJobParts.js:203` update [last_report]
   - `scripts/lib/racesInit/job.js:364` update [cursor, last_report]
   - `scripts/lib/racesInit/predictCodeCheck.js:98` upsert [job, last_report, updated_at]
   - `scripts/lib/racesInit/predictCodeCheck.js:116` update [last_report, updated_at]
@@ -1730,8 +1730,8 @@
 - 本体で書く RPC: claim_scrape_slots, claim_scrape_slots_by_offset, ensure_scrape_slots
 - 取得のジョブ: analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition, boatcast_motor_start, boatcast_oriten, daily_reconcile, data_health, data_health_morning, db_apply_dispatch, e2e_rerecord_dispatch, entry_course_stats, eve_deadlines, eve_deadlines_reconcile, exhibition, fan_period, in_caution_dispatch, in_caution_health, in_caution_today_health, key_canary_dispatch, kfile_sync, morning_digest, motor_pretest, odds, odds_final, outcome_distribution_update, pcexpect, pit_reports, point_rank, pseudo, race_info, race_notices, race_series, race_status, racer_career_main, racer_course_technique_stats, racer_news, racer_profiles, races_init, release_dispatch, result, result_catchup, scrape-cleanup, scrape-monitor, sns_auto_plan, sns_daily, sns_metrics, sns_send, venue_motor_stats
 - 読み手（10）: 
-  - `scripts/lib/boatcast/oritenJob.js:374` select [job, outcome, race_date, race_id, status]
-  - `scripts/lib/boatcast/oritenJob.js:534` select [job, race_date, race_id]
+  - `scripts/lib/boatcast/oritenJob.js:253` select [job, outcome, race_date, race_id, status]
+  - `scripts/lib/boatcast/oritenJobParts.js:172` select [job, race_date, race_id]
   - `scripts/lib/scrapeJobs/monitor.js:787` select [?]
   - `scripts/lib/scrapeJobs/resultHandlers.js:214` select [job, race_date, race_id]
   - `scripts/lib/scrapeJobs/resultHandlers.js:316` select [job, race_date, race_id, status]
@@ -1741,7 +1741,7 @@
   - `scripts/maintenance/check-result-shadow.js:129` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
   - `scripts/maintenance/verify-scrape-slots-on-db.js:198` select [attempts, job, status] （検査）
 - 書き手（9）: 
-  - `scripts/lib/boatcast/oritenJob.js:568` upsert [?]
+  - `scripts/lib/boatcast/oritenJobParts.js:188` upsert [?]
   - `scripts/lib/pitReportJob.js:400` upsert [?]
   - `scripts/lib/scrapeJobs/cleanup.js:33` update [last_error, lease_until, next_attempt_at, status]
   - `scripts/lib/scrapeJobs/cleanup.js:52` delete

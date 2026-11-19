@@ -5,8 +5,8 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2267,
-    "filesWithAccess": 287,
+    "sourceFiles": 2268,
+    "filesWithAccess": 288,
     "tableReaders": 963,
     "tableWriters": 197,
     "rpcCallers": 55,
@@ -9931,7 +9931,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:181",
+          "ref": "scripts/lib/boatcast/oritenJob.js:183",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9941,7 +9941,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:221",
+          "ref": "scripts/lib/boatcast/oritenJob.js:223",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
@@ -9965,7 +9965,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:221",
+          "ref": "scripts/lib/boatcast/oritenJob.js:223",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -9979,7 +9979,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:181",
+            "scripts/lib/boatcast/oritenJob.js:183",
             "src/services/raceQueries4.js:165"
           ],
           "writers": [],
@@ -10004,14 +10004,14 @@
         },
         "content_hash": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:181"
+            "scripts/lib/boatcast/oritenJob.js:183"
           ],
           "writers": [],
           "sql": []
         },
         "parser_version": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:181"
+            "scripts/lib/boatcast/oritenJob.js:183"
           ],
           "writers": [],
           "sql": []
@@ -10064,13 +10064,13 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:201",
+          "ref": "scripts/lib/boatcast/oritenJob.js:203",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
         },
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:240",
+          "ref": "scripts/lib/boatcast/oritenJobParts.js:39",
           "op": "select",
           "via": "client",
           "columns": [
@@ -10099,7 +10099,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:201",
+          "ref": "scripts/lib/boatcast/oritenJob.js:203",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -10107,7 +10107,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:248",
+          "ref": "scripts/lib/boatcast/oritenJobParts.js:47",
           "op": "delete",
           "via": "client",
           "columns": []
@@ -10119,8 +10119,8 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:240",
-            "scripts/lib/boatcast/oritenJob.js:248",
+            "scripts/lib/boatcast/oritenJobParts.js:39",
+            "scripts/lib/boatcast/oritenJobParts.js:47",
             "src/services/raceQueries4.js:170"
           ],
           "writers": [],
@@ -10128,8 +10128,8 @@
         },
         "boat_number": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:240",
-            "scripts/lib/boatcast/oritenJob.js:248",
+            "scripts/lib/boatcast/oritenJobParts.js:39",
+            "scripts/lib/boatcast/oritenJobParts.js:47",
             "src/services/raceQueries4.js:170"
           ],
           "writers": [],
@@ -10137,8 +10137,8 @@
         },
         "kind": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:240",
-            "scripts/lib/boatcast/oritenJob.js:248",
+            "scripts/lib/boatcast/oritenJobParts.js:39",
+            "scripts/lib/boatcast/oritenJobParts.js:47",
             "src/services/raceQueries4.js:170"
           ],
           "writers": [],
@@ -16437,7 +16437,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:401",
+          "ref": "scripts/lib/boatcast/oritenJob.js:280",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16447,7 +16447,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:522",
+          "ref": "scripts/lib/boatcast/oritenJobParts.js:162",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17625,8 +17625,8 @@
             "scripts/daily/update-race-info.js:513",
             "scripts/lib/analogyDispatch.js:75",
             "scripts/lib/analogyV16Exhibition.js:253",
-            "scripts/lib/boatcast/oritenJob.js:401",
-            "scripts/lib/boatcast/oritenJob.js:522",
+            "scripts/lib/boatcast/oritenJob.js:280",
+            "scripts/lib/boatcast/oritenJobParts.js:162",
             "scripts/lib/eveDeadlinesJob.js:387",
             "scripts/lib/inCautionHealth.js:137",
             "scripts/lib/motorPretestRows.js:112",
@@ -17747,8 +17747,8 @@
             "scripts/generate-sitemap.js:662",
             "scripts/lib/analogyDispatch.js:75",
             "scripts/lib/analogyV16Exhibition.js:253",
-            "scripts/lib/boatcast/oritenJob.js:401",
-            "scripts/lib/boatcast/oritenJob.js:522",
+            "scripts/lib/boatcast/oritenJob.js:280",
+            "scripts/lib/boatcast/oritenJobParts.js:162",
             "scripts/lib/eveDeadlinesJob.js:387",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/pitReportJob.js:290",
@@ -17944,8 +17944,8 @@
             "scripts/daily/scrape-results.js:1501",
             "scripts/lib/analogyDispatch.js:75",
             "scripts/lib/analogyV16Exhibition.js:253",
-            "scripts/lib/boatcast/oritenJob.js:401",
-            "scripts/lib/boatcast/oritenJob.js:522",
+            "scripts/lib/boatcast/oritenJob.js:280",
+            "scripts/lib/boatcast/oritenJobParts.js:162",
             "scripts/lib/eveDeadlinesJob.js:387",
             "scripts/lib/pitReportJob.js:290",
             "scripts/lib/pitReportJob.js:365",
@@ -18615,7 +18615,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:498",
+          "ref": "scripts/lib/boatcast/oritenJobParts.js:203",
           "op": "update",
           "via": "client",
           "columns": [
@@ -18745,7 +18745,7 @@
       "columns": {
         "job": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:498",
+            "scripts/lib/boatcast/oritenJobParts.js:203",
             "scripts/lib/dataHealth/job.js:94",
             "scripts/lib/eveDeadlinesJob.js:362",
             "scripts/lib/motorPretestJob.js:176",
@@ -18887,7 +18887,7 @@
             "scripts/sns/push-research-image.js:717"
           ],
           "writers": [
-            "scripts/lib/boatcast/oritenJob.js:498",
+            "scripts/lib/boatcast/oritenJobParts.js:203",
             "scripts/lib/racesInit/job.js:364",
             "scripts/lib/racesInit/predictCodeCheck.js:116",
             "scripts/lib/racesInit/predictCodeCheck.js:138",
@@ -18997,7 +18997,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:374",
+          "ref": "scripts/lib/boatcast/oritenJob.js:253",
           "op": "select",
           "via": "client",
           "columns": [
@@ -19009,7 +19009,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:534",
+          "ref": "scripts/lib/boatcast/oritenJobParts.js:172",
           "op": "select",
           "via": "client",
           "columns": [
@@ -19135,7 +19135,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/boatcast/oritenJob.js:568",
+          "ref": "scripts/lib/boatcast/oritenJobParts.js:188",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -19228,9 +19228,9 @@
       "columns": {
         "job": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:374",
-            "scripts/lib/boatcast/oritenJob.js:534",
-            "scripts/lib/boatcast/oritenJob.js:568",
+            "scripts/lib/boatcast/oritenJob.js:253",
+            "scripts/lib/boatcast/oritenJobParts.js:172",
+            "scripts/lib/boatcast/oritenJobParts.js:188",
             "scripts/lib/pitReportJob.js:400",
             "scripts/lib/scrapeJobs/resultHandlers.js:214",
             "scripts/lib/scrapeJobs/resultHandlers.js:316",
@@ -19252,9 +19252,9 @@
         },
         "race_id": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:374",
-            "scripts/lib/boatcast/oritenJob.js:534",
-            "scripts/lib/boatcast/oritenJob.js:568",
+            "scripts/lib/boatcast/oritenJob.js:253",
+            "scripts/lib/boatcast/oritenJobParts.js:172",
+            "scripts/lib/boatcast/oritenJobParts.js:188",
             "scripts/lib/pitReportJob.js:400",
             "scripts/lib/scrapeJobs/resultHandlers.js:214",
             "scripts/lib/scrapeJobs/resultHandlers.js:316",
@@ -19275,7 +19275,7 @@
         },
         "offset_min": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:568",
+            "scripts/lib/boatcast/oritenJobParts.js:188",
             "scripts/lib/pitReportJob.js:400",
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
@@ -19292,8 +19292,8 @@
         },
         "race_date": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:374",
-            "scripts/lib/boatcast/oritenJob.js:534",
+            "scripts/lib/boatcast/oritenJob.js:253",
+            "scripts/lib/boatcast/oritenJobParts.js:172",
             "scripts/lib/scrapeJobs/cleanup.js:33",
             "scripts/lib/scrapeJobs/cleanup.js:52",
             "scripts/lib/scrapeJobs/resultHandlers.js:214",
@@ -19312,7 +19312,7 @@
         },
         "status": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:374",
+            "scripts/lib/boatcast/oritenJob.js:253",
             "scripts/lib/scrapeJobs/cleanup.js:33",
             "scripts/lib/scrapeJobs/resultHandlers.js:316",
             "scripts/lib/scrapeJobs/store.js:233",
@@ -19430,7 +19430,7 @@
         },
         "outcome": {
           "readers": [
-            "scripts/lib/boatcast/oritenJob.js:374",
+            "scripts/lib/boatcast/oritenJob.js:253",
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
@@ -28962,17 +28962,17 @@
     {
       "job": "boatcast_oriten",
       "entry": "api/cron/boatcast-oriten.js",
-      "reachableFiles": 23,
+      "reachableFiles": 24,
       "writes": {
         "race_original_exhibition": [
-          "scripts/lib/boatcast/oritenJob.js:221"
+          "scripts/lib/boatcast/oritenJob.js:223"
         ],
         "race_original_exhibition_values": [
-          "scripts/lib/boatcast/oritenJob.js:201",
-          "scripts/lib/boatcast/oritenJob.js:248"
+          "scripts/lib/boatcast/oritenJob.js:203",
+          "scripts/lib/boatcast/oritenJobParts.js:47"
         ],
         "scrape_job_state": [
-          "scripts/lib/boatcast/oritenJob.js:498",
+          "scripts/lib/boatcast/oritenJobParts.js:203",
           "scripts/lib/scrapeJobs/store.js:102",
           "scripts/lib/scrapeJobs/store.js:110",
           "scripts/lib/scrapeJobs/store.js:129",
@@ -28984,7 +28984,7 @@
           "scripts/lib/scrapeJobs/store.js:398"
         ],
         "scrape_slots": [
-          "scripts/lib/boatcast/oritenJob.js:568",
+          "scripts/lib/boatcast/oritenJobParts.js:188",
           "scripts/lib/scrapeJobs/store.js:233",
           "scripts/lib/scrapeJobs/store.js:269"
         ]

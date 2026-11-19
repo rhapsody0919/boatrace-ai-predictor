@@ -72,7 +72,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/blogImageDimensions.js` | ブログ画像（public/images/blog/）の実寸を、画像のヘッダーから読む（BOA-908）。 | readJpegSize, buildImageDimensions |
 | `scripts/lib/boatcast/boatcastClient.js` | BOATCAST（race.boatcast.jp）への取得の共通部品: URL・間隔の制御・カナリア・403の解釈。 | buildOritenUrl, buildMotorStartUrl, createPacer, fetchBoatcast, checkCanary ほか6件 |
 | `scripts/lib/boatcast/motorStartJob.js` | BOATCASTのモーター使用開始日（bc_mst。N26）の日次取得ジョブ（docs/design/boatcast-original-exhibition/… | fetchMotorStartDates, nextHistory, createMotorStartRun, MOTOR_START_JOB, ABORT_AFTER_CONSECUTIVE_FAILURES ほか1件 |
-| `scripts/lib/boatcast/oritenJob.js` | BOATCASTのオリジナル展示（bc_oriten。N25）の取得ジョブ（docs/design/boatcast-original-exhibition/）… | processOritenRace, tickOf, takeTick, clearTicks, mergeReport ほか6件 |
+| `scripts/lib/boatcast/oritenJob.js` | BOATCASTのオリジナル展示（bc_oriten。N25）の取得ジョブ（docs/design/boatcast-original-exhibition/）… | processOritenRace, evaluateVenueNoData, createOritenSlotHandler, createOritenStore, ORITEN_JOB ほか2件 |
+| `scripts/lib/boatcast/oritenJobParts.js` | BOATCASTのオリジナル展示ジョブ（oritenJob.js）から分けた部品（リファクタ。振る舞いは変えない）。 | buildOritenWarnings, deleteStaleValues, tickOf, takeTick, clearTicks ほか4件 |
 | `scripts/lib/boatcast/oritenParser.js` | BOATCASTのオリジナル展示（bc_oriten）ファイルの解析（純関数。DB・取得先に接続しない）。 | normalizeLabel, parseOritenText, parseMotorStartDate, ORITEN_PARSER_VERSION, ORITEN_STATUSES ほか1件 |
 | `scripts/lib/boatcast/oritenRows.js` | オリジナル展示の解析結果（oritenParser.js）から、DBへ書く行・未公開（403）時の再試行の判断・ | computeOritenHash, parseLastModified, buildOritenRows, compareLabelsToMap, decideNotPublished ほか1件 |
 | `scripts/lib/boatcast/oritenSchema.js` | オリジナル展示・モーター使用開始日の保存先（マイグレーション091）が、接続先のDBに適用済みかの判定。 | detectBoatcastSchema, clearBoatcastSchemaCache, ORITEN_TABLES, MOTOR_START_TABLES, BOATCAST_SCHEMA_CACHE_TTL_MS |
@@ -496,4 +497,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 454 ファイル / export 2567 件。
+対象 455 ファイル / export 2572 件。
