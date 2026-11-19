@@ -44,12 +44,19 @@
  */
 
 import { createHash } from "node:crypto";
-import * as cheerio from "cheerio";
 import { supabase, fetchAll } from "../lib/supabaseClient.js";
 import { diffRows } from "../lib/unchangedRows.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { archiveRawHtml } from "../lib/rawHtmlArchive.js";
+import { collectVenueResults } from "../lib/raceNoticesRows.js";
+import {
+  parseInformationHtml,
+  resolveRaceDate,
+  parseAccidentRow,
+  parseEquipmentChangeRow,
+  parseAbsenceRow,
+} from "../lib/raceNoticesParse.js";
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -61,15 +68,6 @@ const FETCH_HEADERS = {
 // supabaseClient.js の FETCH_TIMEOUT_MS と同じ値（Node.js標準fetchの無期限
 // ハング不具合対策、PR #639セルフレビュー由来の既存踏襲）
 const FETCH_TIMEOUT_MS = 15000;
-
-const NO_NOTICE_TEXT = "現在、お知らせはありません";
-
-const CATEGORY_LABELS = {
-  "事故・内規違反・減点": "accident",
-  "モーター・ボート変更": "equipment_change",
-  "欠場・帰郷": "absence",
-};
-const EXPECTED_CATEGORY_COUNT = Object.keys(CATEGORY_LABELS).length;
 
 /**
  * race/information ページを取得する
@@ -142,165 +140,6 @@ function normalizeRacerName(name) {
     .join("");
 }
 
-/**
- * 「MM/DD」文字列と基準日（YYYYMMDD）から実際の日付（YYYY-MM-DD）を復元する。
- * 節が年をまたぐ場合（12月開催の節が1月まで続く等）、基準日が1月で行がの
- * 月が12月なら前年と判定する。それ以外は基準年をそのまま使う
- * （行の月が基準月より後＝来年、というケースは実運用上ほぼ起きないため
- * 未対応。発生した場合はconsole.warnで気づけるようにする）
- */
-function resolveRaceDate(mmddText, baseDateYmd) {
-  const m = mmddText.match(/^(\d{1,2})\/(\d{1,2})$/);
-  if (!m) return null;
-  const month = parseInt(m[1], 10);
-  const day = parseInt(m[2], 10);
-  const baseYear = parseInt(baseDateYmd.slice(0, 4), 10);
-  const baseMonth = parseInt(baseDateYmd.slice(4, 6), 10);
-
-  let year = baseYear;
-  if (baseMonth === 1 && month === 12) {
-    year -= 1;
-  } else if (month > baseMonth + 1) {
-    // 基準月より2ヶ月以上先の月＝想定外（節の跨ぎ方が想定と違う可能性）
-    console.warn(
-      `⚠️ race-information: 想定外の日付関係 baseDate=${baseDateYmd} row=${mmddText}`,
-    );
-  }
-
-  const mm = String(month).padStart(2, "0");
-  const dd = String(day).padStart(2, "0");
-  return `${year}-${mm}-${dd}`;
-}
-
-function parseAccidentRow(cells) {
-  // [日付, レース番号, 選手名, 違反/事故内容, 処分]
-  if (cells.length < 5) return null;
-  const [dateText, raceNoText, racerName, violationText, penaltyText] = cells;
-  const penaltyMatch = penaltyText.match(/減点(\d+)点/);
-  const raceNoMatch = raceNoText.match(/(\d+)R/);
-  return {
-    dateText,
-    racerName,
-    detailText: `${violationText} ${penaltyText}`.trim(),
-    structuredData: {
-      raceNo: raceNoMatch ? parseInt(raceNoMatch[1], 10) : null,
-      violation: violationText,
-      penaltyText,
-      penaltyPoints: penaltyMatch ? parseInt(penaltyMatch[1], 10) : null,
-    },
-  };
-}
-
-function parseEquipmentChangeRow(cells) {
-  // [日付, 選手名, 変更内容, 適用タイミング]
-  if (cells.length < 3) return null;
-  const [dateText, racerName, changeText, effectiveFrom = null] = cells;
-  const changeMatch = changeText.match(
-    /(\d+)\s*→\s*(\d+)\s*[（(](モーター|ボート)変更[）)]/,
-  );
-  return {
-    dateText,
-    racerName,
-    detailText: [changeText, effectiveFrom].filter(Boolean).join(" "),
-    structuredData: changeMatch
-      ? {
-          equipmentType: changeMatch[3] === "モーター" ? "motor" : "boat",
-          oldNumber: parseInt(changeMatch[1], 10),
-          newNumber: parseInt(changeMatch[2], 10),
-          effectiveFrom: effectiveFrom || null,
-        }
-      : { rawText: changeText, effectiveFrom: effectiveFrom || null },
-  };
-}
-
-function parseAbsenceRow(cells) {
-  // [日付, 選手名, 理由]
-  if (cells.length < 3) return null;
-  const [dateText, racerName, reasonText] = cells;
-  const isReturnHome = reasonText.includes("帰郷");
-  const subReasonMatch = reasonText.match(/[（(](.+)[）)]/);
-  return {
-    dateText,
-    racerName,
-    detailText: reasonText,
-    structuredData: {
-      // BOA-318記載の「途中帰郷」「即日帰郷」「即刻帰郷」の区別は実データで
-      // 未確認（実例では「帰郷（その他）」「帰郷（私傷病のため）」のみ観測）。
-      // 見つかり次第このtypeの分類ロジックを見直す
-      type: isReturnHome ? "帰郷" : "欠場",
-      subReason: subReasonMatch ? subReasonMatch[1] : null,
-      rawText: reasonText,
-    },
-  };
-}
-
-const ROW_PARSERS = {
-  accident: parseAccidentRow,
-  equipment_change: parseEquipmentChangeRow,
-  absence: parseAbsenceRow,
-};
-
-/**
- * HTMLから3区分の通知を抽出する
- * rowsUnparsed: 通知の表に行（セルあり）があるのに、行の解析・日付の解決に失敗して捨てた行数（BOA-373）。
- * 「通知なし」と「行はあるが読めない（構造変化・未知の書式）」を区別するために数える
- * @returns {{notes: Array|null, reason: string|null, rowsUnparsed: number}}
- */
-function parseInformationHtml(html, dateYmd) {
-  const $ = cheerio.load(html);
-  const sections = $(".title7_mainLabel");
-  if (sections.length === 0) {
-    return { notes: null, reason: "notice_section_not_found", rowsUnparsed: 0 };
-  }
-
-  const notes = [];
-  let matchedCategories = 0;
-  let rowsUnparsed = 0;
-
-  sections.each((_, el) => {
-    const label = $(el).text().trim();
-    const category = CATEGORY_LABELS[label];
-    if (!category) return; // 未知の見出し＝構造変化の可能性、件数チェックで検知
-    matchedCategories++;
-
-    const table = $(el).closest(".title7").next(".table1").find("table");
-    if (table.length === 0) return;
-
-    if (table.text().includes(NO_NOTICE_TEXT)) return; // 通知なし（正常系）
-
-    table.find("tbody tr").each((__, tr) => {
-      const cells = $(tr)
-        .find("th,td")
-        .map((___, c) => $(c).text().trim())
-        .get()
-        .filter((t) => t.length > 0);
-      if (cells.length === 0) return;
-
-      const parser = ROW_PARSERS[category];
-      const parsed = parser ? parser(cells) : null;
-      const raceDate = parsed
-        ? resolveRaceDate(parsed.dateText, dateYmd)
-        : null;
-      if (!raceDate) {
-        rowsUnparsed++;
-        return;
-      }
-
-      notes.push({
-        category,
-        raceDate,
-        racerName: parsed.racerName,
-        detailText: parsed.detailText,
-        structuredData: parsed.structuredData,
-      });
-    });
-  });
-
-  if (matchedCategories < EXPECTED_CATEGORY_COUNT) {
-    return { notes, reason: "unexpected_section_count", rowsUnparsed };
-  }
-  return { notes, reason: null, rowsUnparsed };
-}
 
 /**
  * racer_profiles から 正規化した氏名→racer_id の対応表を作る。
@@ -373,8 +212,140 @@ function digestNotes(noteRows) {
   return createHash("sha1").update(keys.join("\n")).digest("hex").slice(0, 16);
 }
 
-/** 取得しなかった（ブレーカーが開いていた・ソフトデッドラインを過ぎた）会場。構造変化の失敗とは区別する */
-const NOT_ATTEMPTED_REASONS = new Set(["breaker_open", "deadline"]);
+
+function emptyResult() {
+  return {
+    updated: false,
+    count: 0,
+    venuesChecked: 0,
+    venuesFailed: [],
+    venuesNotAttempted: [],
+    notesParsed: 0,
+    rowsUnparsed: 0,
+    venuesWithUnparsedRows: [],
+    notesInserted: 0,
+    healthWritten: 0,
+    healthSkipped: 0,
+    digest: digestNotes([]),
+    writeErrors: [],
+    capturedPages: [],
+  };
+}
+
+/** race_special_notes へ upsert（重複は無視）。失敗は writeErrors に足す。戻り値は新規に入った行数 */
+async function writeSpecialNotes(client, allNoteRows, { dryRun, writeErrors }) {
+  let insertedCount = 0;
+  if (allNoteRows.length > 0 && !dryRun) {
+    const { data, error } = await client
+      .from("race_special_notes")
+      .upsert(allNoteRows, {
+        onConflict: "venue_code,race_date,category,detail_text,racer_name",
+        ignoreDuplicates: true,
+      })
+      .select("id");
+    if (error) {
+      console.error("❌ race_special_notes 書き込みエラー:", error.message);
+      writeErrors.push(`race_special_notes書き込みエラー: ${error.message}`);
+    } else {
+      insertedCount = data?.length ?? 0;
+    }
+  }
+  return insertedCount;
+}
+
+/** race_notices_health へ変更のある行だけ upsert。失敗は writeErrors に足す */
+async function writeNoticesHealth(
+  client,
+  existingHealthRows,
+  healthUpdates,
+  { dryRun, writeErrors },
+) {
+  // 変更のある行（had_success・last_reason が変わった、または新規の会場×日）だけを書く（D9）。
+  // last_checked_at は毎回変わるが情報を持たないため、比較から外す。既存行の取得に失敗した場合
+  // （非strict）は、既存行が空になり、全行が「新規」として書かれる（従来と同じ、書く側に倒れる）
+  const { toWrite: healthToWrite } = diffRows(
+    existingHealthRows,
+    healthUpdates,
+    {
+      keyColumns: ["venue_code", "check_date"],
+      ignoreColumns: ["last_checked_at"],
+    },
+  );
+  let healthWritten = 0;
+  if (healthToWrite.length > 0 && !dryRun) {
+    const { error } = await client
+      .from("race_notices_health")
+      .upsert(healthToWrite, { onConflict: "venue_code,check_date" });
+    if (error) {
+      console.error("❌ race_notices_health 書き込みエラー:", error.message);
+      writeErrors.push(`race_notices_health書き込みエラー: ${error.message}`);
+    } else {
+      healthWritten = healthToWrite.length;
+    }
+  }
+  return { healthWritten, healthToWrite };
+}
+
+/**
+ * 1会場分の取得・解析（通知を検出したら生HTMLを保管する。dryRun では保管しない）。
+ * 戻り値: { venueCode, outcome: {success, reason}, notes, rowsUnparsed?, capturedPath? }
+ */
+async function scrapeVenueNotices(
+  venueCode,
+  { client, fetchPage, dryRun, shouldStop, date, dateYmd },
+) {
+  if (shouldStop()) {
+    return {
+      venueCode,
+      outcome: { success: false, reason: "deadline" },
+      notes: [],
+    };
+  }
+  const { html, reason: fetchReason } = await fetchPage(venueCode, dateYmd);
+  if (!html) {
+    return {
+      venueCode,
+      outcome: { success: false, reason: fetchReason },
+      notes: [],
+    };
+  }
+  const {
+    notes,
+    reason: parseReason,
+    rowsUnparsed,
+  } = parseInformationHtml(html, dateYmd);
+  // parseReasonが立っている場合（見出し自体が見つからない、または3区分
+  // 揃わない）は構造変化の疑いとして必ず失敗扱いにする。notesが空配列でも
+  // nullでなければ「取得自体は成功」と誤判定してしまうバグを防ぐ
+  // （notes !== null だけを見るとunexpected_section_countを握りつぶす）
+  let capturedPath = null;
+  // 通知を1件でも検出した瞬間の生HTMLを保管する（N28調査用の暫定計測、2026-09-23）。
+  // race_special_notesが稼働開始から0件のまま続いており、パーサーの不具合か、
+  // 単に通知が無いだけかを実例が出るまで判別できなかった。次に検出した瞬間を
+  // 確実に押さえるための一時的なフック（恒久化するかはBOA-XXXで判断）。
+  // dryRun（shadow）では、他のテーブルと同じく副作用を起こさない
+  if (notes && notes.length > 0 && !dryRun) {
+    const contentHash = createHash("sha1")
+      .update(html)
+      .digest("hex")
+      .slice(0, 16);
+    // race_id形式（YYYY-MM-DD-VV-RR）を流用した会場×日のキー（RRは固定で"00"）
+    const pseudoRaceId = `${date}-${String(venueCode).padStart(2, "0")}-00`;
+    capturedPath = await archiveRawHtml(client, {
+      pageType: "race_notices",
+      raceId: pseudoRaceId,
+      contentHash,
+      html,
+    });
+  }
+  return {
+    venueCode,
+    outcome: { success: parseReason === null, reason: parseReason },
+    notes: notes ?? [],
+    rowsUnparsed,
+    capturedPath,
+  };
+}
 
 /**
  * @param {Array<{race_id: string, venue_code: number, race_no: number, start_time: Date}>} schedule
@@ -405,22 +376,7 @@ export async function run(schedule, date, options = {}) {
     shouldStop = () => false,
   } = options;
 
-  const empty = {
-    updated: false,
-    count: 0,
-    venuesChecked: 0,
-    venuesFailed: [],
-    venuesNotAttempted: [],
-    notesParsed: 0,
-    rowsUnparsed: 0,
-    venuesWithUnparsedRows: [],
-    notesInserted: 0,
-    healthWritten: 0,
-    healthSkipped: 0,
-    digest: digestNotes([]),
-    writeErrors: [],
-    capturedPages: [],
-  };
+  const empty = emptyResult();
 
   if (!client) {
     if (strict) throw new Error("Supabase が設定されていません");
@@ -452,178 +408,39 @@ export async function run(schedule, date, options = {}) {
   const perVenue = await mapWithConcurrency(
     venueCodes,
     concurrency,
-    async (venueCode) => {
-      if (shouldStop()) {
-        return {
-          venueCode,
-          outcome: { success: false, reason: "deadline" },
-          notes: [],
-        };
-      }
-      const { html, reason: fetchReason } = await fetchPage(venueCode, dateYmd);
-      if (!html) {
-        return {
-          venueCode,
-          outcome: { success: false, reason: fetchReason },
-          notes: [],
-        };
-      }
-      const {
-        notes,
-        reason: parseReason,
-        rowsUnparsed,
-      } = parseInformationHtml(html, dateYmd);
-      // parseReasonが立っている場合（見出し自体が見つからない、または3区分
-      // 揃わない）は構造変化の疑いとして必ず失敗扱いにする。notesが空配列でも
-      // nullでなければ「取得自体は成功」と誤判定してしまうバグを防ぐ
-      // （notes !== null だけを見るとunexpected_section_countを握りつぶす）
-      let capturedPath = null;
-      // 通知を1件でも検出した瞬間の生HTMLを保管する（N28調査用の暫定計測、2026-09-23）。
-      // race_special_notesが稼働開始から0件のまま続いており、パーサーの不具合か、
-      // 単に通知が無いだけかを実例が出るまで判別できなかった。次に検出した瞬間を
-      // 確実に押さえるための一時的なフック（恒久化するかはBOA-XXXで判断）。
-      // dryRun（shadow）では、他のテーブルと同じく副作用を起こさない
-      if (notes && notes.length > 0 && !dryRun) {
-        const contentHash = createHash("sha1")
-          .update(html)
-          .digest("hex")
-          .slice(0, 16);
-        // race_id形式（YYYY-MM-DD-VV-RR）を流用した会場×日のキー（RRは固定で"00"）
-        const pseudoRaceId = `${date}-${String(venueCode).padStart(2, "0")}-00`;
-        capturedPath = await archiveRawHtml(client, {
-          pageType: "race_notices",
-          raceId: pseudoRaceId,
-          contentHash,
-          html,
-        });
-      }
-      return {
-        venueCode,
-        outcome: { success: parseReason === null, reason: parseReason },
-        notes: notes ?? [],
-        rowsUnparsed,
-        capturedPath,
-      };
-    },
+    (venueCode) =>
+      scrapeVenueNotices(venueCode, {
+        client,
+        fetchPage,
+        dryRun,
+        shouldStop,
+        date,
+        dateYmd,
+      }),
   );
 
-  const allNoteRows = [];
-  const healthUpdates = [];
-  const venuesFailed = [];
-  const venuesNotAttempted = [];
-  const capturedPages = [];
-  /** 行はあるのに解析できなかった会場（BOA-373） */
-  const venuesWithUnparsedRows = [];
-
-  for (const {
-    venueCode,
-    outcome,
-    notes,
-    rowsUnparsed,
-    capturedPath,
-  } of perVenue) {
-    if (rowsUnparsed > 0) {
-      venuesWithUnparsedRows.push({ venueCode, rows: rowsUnparsed });
-    }
-    if (capturedPath) {
-      capturedPages.push({ venueCode, path: capturedPath });
-      console.log(
-        `  📸 会場${venueCode}: 通知検出、生HTMLを保管（${capturedPath}）`,
-      );
-    }
-    for (const note of notes) {
-      const racerId =
-        racerNameMap.get(normalizeRacerName(note.racerName)) ?? null;
-      allNoteRows.push({
-        venue_code: venueCode,
-        race_date: note.raceDate,
-        category: note.category,
-        racer_id: racerId,
-        // racer_id は同姓同名で一意に特定できない選手がnullになり、一意制約の差別化に使えない
-        // （BOA-371）ため、必ず取得できる生の選手名表記（racer_name）を差別化キーに使う
-        racer_name: note.racerName,
-        boat_number: null, // 情報ページ自体には艇番の記載がないため未実装（将来race_entries突き合わせで補完可）
-        detail_text: note.detailText,
-        structured_data: {
-          ...note.structuredData,
-          racerName: note.racerName,
-        },
-      });
-    }
-
-    if (NOT_ATTEMPTED_REASONS.has(outcome.reason)) {
-      // 取得していない会場は、構造変化の判定材料にならないため、集計行を作らない
-      venuesNotAttempted.push(venueCode);
-      console.log(`  ⏭️ 会場${venueCode}: 取得せず（${outcome.reason}）`);
-      continue;
-    }
-
-    const prev = existingHealth.get(venueCode);
-    const hadSuccess = (prev?.had_success ?? false) || outcome.success;
-    const lastReason = outcome.success
-      ? (prev?.last_reason ?? null)
-      : outcome.reason;
-    healthUpdates.push({
-      venue_code: venueCode,
-      check_date: date,
-      had_success: hadSuccess,
-      last_reason: lastReason,
-      last_checked_at: new Date().toISOString(),
-    });
-
-    if (!outcome.success) {
-      venuesFailed.push({ venueCode, reason: outcome.reason });
-      console.log(`  ⚠️ 会場${venueCode}: ${outcome.reason}`);
-    } else if (notes.length > 0) {
-      console.log(`  📝 会場${venueCode}: 通知あり`);
-    }
-  }
+  const col = collectVenueResults(perVenue, {
+    racerIdOf: (name) =>
+      racerNameMap.get(normalizeRacerName(name)) ?? null,
+    existingHealth,
+    date,
+  });
 
   const writeErrors = [];
-  let insertedCount = 0;
-  if (allNoteRows.length > 0 && !dryRun) {
-    const { data, error } = await client
-      .from("race_special_notes")
-      .upsert(allNoteRows, {
-        onConflict: "venue_code,race_date,category,detail_text,racer_name",
-        ignoreDuplicates: true,
-      })
-      .select("id");
-    if (error) {
-      console.error("❌ race_special_notes 書き込みエラー:", error.message);
-      writeErrors.push(`race_special_notes書き込みエラー: ${error.message}`);
-    } else {
-      insertedCount = data?.length ?? 0;
-    }
-  }
-
-  // 変更のある行（had_success・last_reason が変わった、または新規の会場×日）だけを書く（D9）。
-  // last_checked_at は毎回変わるが情報を持たないため、比較から外す。既存行の取得に失敗した場合
-  // （非strict）は、既存行が空になり、全行が「新規」として書かれる（従来と同じ、書く側に倒れる）
-  const { toWrite: healthToWrite } = diffRows(
+  const insertedCount = await writeSpecialNotes(client, col.allNoteRows, {
+    dryRun,
+    writeErrors,
+  });
+  const { healthWritten, healthToWrite } = await writeNoticesHealth(
+    client,
     existingHealthRows,
-    healthUpdates,
-    {
-      keyColumns: ["venue_code", "check_date"],
-      ignoreColumns: ["last_checked_at"],
-    },
+    col.healthUpdates,
+    { dryRun, writeErrors },
   );
-  let healthWritten = 0;
-  if (healthToWrite.length > 0 && !dryRun) {
-    const { error } = await client
-      .from("race_notices_health")
-      .upsert(healthToWrite, { onConflict: "venue_code,check_date" });
-    if (error) {
-      console.error("❌ race_notices_health 書き込みエラー:", error.message);
-      writeErrors.push(`race_notices_health書き込みエラー: ${error.message}`);
-    } else {
-      healthWritten = healthToWrite.length;
-    }
-  }
 
-  const venuesChecked = venueCodes.length - venuesNotAttempted.length;
+  const venuesChecked = venueCodes.length - col.venuesNotAttempted.length;
   console.log(
-    `📊 レース特記事項: ${venuesChecked}会場チェック${dryRun ? "[DRY-RUN]" : ""}、${insertedCount}件新規保存、集計行${healthWritten}件書き込み（変更なし${healthUpdates.length - healthToWrite.length}件スキップ）`,
+    `📊 レース特記事項: ${venuesChecked}会場チェック${dryRun ? "[DRY-RUN]" : ""}、${insertedCount}件新規保存、集計行${healthWritten}件書き込み（変更なし${col.healthUpdates.length - healthToWrite.length}件スキップ）`,
   );
   // 共通ラッパ（strict）は、書き込みの失敗を例外にする。両方の書き込みを試みた後にまとめて投げる
   if (strict && writeErrors.length > 0) {
@@ -633,17 +450,17 @@ export async function run(schedule, date, options = {}) {
     updated: insertedCount > 0,
     count: insertedCount,
     venuesChecked,
-    venuesFailed,
-    venuesNotAttempted,
-    notesParsed: allNoteRows.length,
-    rowsUnparsed: venuesWithUnparsedRows.reduce((n, v) => n + v.rows, 0),
-    venuesWithUnparsedRows,
+    venuesFailed: col.venuesFailed,
+    venuesNotAttempted: col.venuesNotAttempted,
+    notesParsed: col.allNoteRows.length,
+    rowsUnparsed: col.venuesWithUnparsedRows.reduce((n, v) => n + v.rows, 0),
+    venuesWithUnparsedRows: col.venuesWithUnparsedRows,
     notesInserted: insertedCount,
     healthWritten,
-    healthSkipped: healthUpdates.length - healthToWrite.length,
-    digest: digestNotes(allNoteRows),
+    healthSkipped: col.healthUpdates.length - healthToWrite.length,
+    digest: digestNotes(col.allNoteRows),
     writeErrors,
-    capturedPages,
+    capturedPages: col.capturedPages,
   };
 }
 
