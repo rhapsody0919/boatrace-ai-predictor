@@ -110,7 +110,8 @@ const ANON_RPCS = [
   "get_course_win_rate_baseline",
   // 選手の事故の記録（本番 2026-11-04 に anon の EXECUTE を確認。この一覧への記載が漏れていた）
   "get_racer_accident_records",
-  // 選手の走を1走1行で返す（203。レースの頁の6表の生の行の読みの置き換え）
+  // 203: レースの頁の6表の生の行の読みの置き換え（「イン屋」の札の件数・選手の走を1走1行）
+  "get_racer_front_taking_counts",
   "get_racer_scoped_race_rows",
   "get_today_races",
 ];
