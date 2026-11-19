@@ -152,25 +152,8 @@ async function findJudgedPredictions(raceIds) {
   );
 }
 
-async function main() {
-  const raw = getArg("race-ids");
-  if (!raw) {
-    console.error(
-      "使い方: node scripts/maintenance/delete-phantom-races.js --race-ids=<カンマ区切り> [--apply] [--allow-partial]",
-    );
-    return 1;
-  }
-  const raceIds = [
-    ...new Set(
-      raw
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-    ),
-  ];
-  const parsed = raceIds.map((id) => ({ raceId: id, ...parseRaceId(id) }));
-  console.log(`指定: ${raceIds.length}レース`);
-
+/** 守り1〜3（開催場一覧に載っていない・走った証拠が無い・判定済みの予想が無い）で対象を絞る */
+async function applyGuards(parsed) {
   // 守り1: 公式の開催場一覧に載っていないこと
   const dates = [...new Set(parsed.map((p) => p.date))].sort();
   console.log(`開催場一覧を読む日: ${dates.length}日`);
@@ -223,6 +206,52 @@ async function main() {
     }
   }
 
+  return { targets, rejected };
+}
+
+/** DELETE_ORDER の順に消し、消した行数（失敗は文）を record.rows_deleted に書く。失敗したらそこで止める */
+async function deleteRows(ids, counts, record) {
+  for (const table of DELETE_ORDER) {
+    if (counts[table] === 0) {
+      record.rows_deleted[table] = 0;
+      continue;
+    }
+    const { data, error } = await supabase
+      .from(table)
+      .delete()
+      .in("race_id", ids)
+      .select("race_id");
+    if (error) {
+      console.error(`${table} の削除に失敗: ${error.message}`);
+      record.rows_deleted[table] = `失敗: ${error.message}`;
+      break;
+    }
+    record.rows_deleted[table] = data.length;
+    console.log(`  ${table}: ${data.length}行を削除`);
+  }
+}
+
+async function main() {
+  const raw = getArg("race-ids");
+  if (!raw) {
+    console.error(
+      "使い方: node scripts/maintenance/delete-phantom-races.js --race-ids=<カンマ区切り> [--apply] [--allow-partial]",
+    );
+    return 1;
+  }
+  const raceIds = [
+    ...new Set(
+      raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ];
+  const parsed = raceIds.map((id) => ({ raceId: id, ...parseRaceId(id) }));
+  console.log(`指定: ${raceIds.length}レース`);
+
+  const { targets, rejected } = await applyGuards(parsed);
+
   if (rejected.length > 0) {
     console.log(`\n守りに引っかかった ${rejected.length}件:`);
     for (const r of rejected) console.log(`  ${r.raceId} — ${r.reason}`);
@@ -264,24 +293,7 @@ async function main() {
     rows_deleted: {},
   };
 
-  for (const table of DELETE_ORDER) {
-    if (counts[table] === 0) {
-      record.rows_deleted[table] = 0;
-      continue;
-    }
-    const { data, error } = await supabase
-      .from(table)
-      .delete()
-      .in("race_id", ids)
-      .select("race_id");
-    if (error) {
-      console.error(`${table} の削除に失敗: ${error.message}`);
-      record.rows_deleted[table] = `失敗: ${error.message}`;
-      break;
-    }
-    record.rows_deleted[table] = data.length;
-    console.log(`  ${table}: ${data.length}行を削除`);
-  }
+  await deleteRows(ids, counts, record);
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const outFile = path.join(
