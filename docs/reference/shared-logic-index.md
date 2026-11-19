@@ -82,7 +82,12 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/contentChannels/captureScreenshot.js` | ブログ/note/YouTubeサムネイル用のスクリーンショット取得。 | captureScreenshot |
 | `scripts/lib/contentChannels/coverImageStrategy.js` | ブログ/note/YouTubeサムネイルのカバー画像調達方法を、ネタ種別ごとに決める。 | getCoverImageStrategy |
 | `scripts/lib/contentChannels/renderCoverCard.js` | DataQuoteCard（sns-video-studio/remotion/src/DataQuoteCard.jsx）を | renderCoverCard, COMPOSITION_IDS |
-| `scripts/lib/contentPrGate.js` | 記事の中身だけの PR を機械で判定する関門（純粋関数）。 | readJpegSize, computeContentSha256, checkRawHtml, checkKyoteiMd, changedJsonStrings ほか13件 |
+| `scripts/lib/contentPrGate.js` | 記事の中身だけの PR を機械で判定する関門（純粋関数）。 | evaluateContentPr |
+| `scripts/lib/contentPrGateCommon.js` | 記事の PR の関門（contentPrGate.js）と、manifest の関門（contentPrGateManifest.js）が共有する下の部品（純粋… | readJpegSize, computeContentSha256, countInternalLinks, articleIdOf, MANIFEST_SCHEMA ほか15件 |
+| `scripts/lib/contentPrGateEvaluate.js` | 記事の PR の関門の本体 evaluateContentPr（純粋関数）。fs・git・時計に触れない。 | evaluateContentPrWith |
+| `scripts/lib/contentPrGateManifest.js` | 記事の PR の関門のうち manifest（docs/content-manifests/<id>.json）を見る部分（純粋関数。contentPrGate… | checkManifest, checkGateConfigChange |
+| `scripts/lib/contentPrGatePosts.js` | 記事の PR の関門のうち、.md と JSON の対応・slug・featured の検査（純粋関数。contentPrGateEvaluate.js から使… | pairErrors, slugFeaturedErrors |
+| `scripts/lib/contentPrGateText.js` | 記事の PR の関門の本文の検査（純粋関数）。生 HTML・「競艇」・内部リンク・判断が要る句・変えた行の取り出し・画像の参照。 | checkRawHtml, checkKyoteiMd, changedJsonStrings, changedMdLines, checkKyoteiJson ほか7件 |
 | `scripts/lib/contentRevisionHistory.js` | sns_draftsの却下・修正依頼履歴（revision_reason_codes/revision_reason_freetext）を | getRecentRevisions, countReasonCodes |
 | `scripts/lib/contentTopics/dailyResultSource.js` | ネタ供給モジュール: 成績（当日結果）。 | getCandidates, id |
 | `scripts/lib/contentTopics/dataInsightSource.js` | ネタ供給モジュール: データ知見。 | getCandidates, recordUsage, id |
@@ -476,4 +481,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 434 ファイル / export 2502 件。
+対象 439 ファイル / export 2522 件。
