@@ -79,34 +79,8 @@ async function buildNameToRacerIdMap() {
   return { map, duplicateNames };
 }
 
-async function main() {
-  const { dryRun } = parseArgs();
-
-  console.log("=== race_entries.racer_id バックフィル（BOA-324） ===");
-  console.log(
-    dryRun
-      ? "モード: dry-run（更新は実行しません）"
-      : "モード: 実行（race_entriesを更新します）",
-  );
-  console.log("");
-
-  const { map: nameToRacerId, duplicateNames } = await buildNameToRacerIdMap();
-  console.log(
-    `racer_profiles: ${nameToRacerId.size}件のユニークな名前をロード（重複名 ${duplicateNames.length}件は対象外）`,
-  );
-  if (duplicateNames.length > 0) {
-    console.log("重複名一覧:", JSON.stringify(duplicateNames));
-  }
-
-  const nullEntries = await fetchAllPaged(
-    "race_entries",
-    "race_id, boat_number, player_name",
-    "race_id",
-    (q) => q.is("racer_id", null),
-  );
-  console.log(`racer_id NULLの行: ${nullEntries.length}件`);
-  console.log("");
-
+// NULL の行の distinct な player_name を racer_profiles の名前と突き合わせ、一致・未一致をログに出す
+function matchNullNames(nullEntries, nameToRacerId) {
   const distinctNames = new Set(nullEntries.map((e) => e.player_name));
   const matchedNames = [];
   const unmatchedNames = [];
@@ -129,16 +103,18 @@ async function main() {
   }
   console.log("");
 
-  const nullCountByName = new Map();
-  for (const e of nullEntries) {
-    nullCountByName.set(
-      e.player_name,
-      (nullCountByName.get(e.player_name) || 0) + 1,
-    );
-  }
+  return { distinctNames, matchedNames, unmatchedNames };
+}
 
+// 一致した名前ごとに racer_id を書く（dry-run は件数だけ数える）
+async function applyRacerIds(
+  matchedNames,
+  nameToRacerId,
+  nullCountByName,
+  dryRun,
+) {
   let updatedRows = 0;
-  let updateErrors = [];
+  const updateErrors = [];
 
   for (let i = 0; i < matchedNames.length; i++) {
     const name = matchedNames[i];
@@ -174,6 +150,57 @@ async function main() {
       );
     }
   }
+
+  return { updatedRows, updateErrors };
+}
+
+async function main() {
+  const { dryRun } = parseArgs();
+
+  console.log("=== race_entries.racer_id バックフィル（BOA-324） ===");
+  console.log(
+    dryRun
+      ? "モード: dry-run（更新は実行しません）"
+      : "モード: 実行（race_entriesを更新します）",
+  );
+  console.log("");
+
+  const { map: nameToRacerId, duplicateNames } = await buildNameToRacerIdMap();
+  console.log(
+    `racer_profiles: ${nameToRacerId.size}件のユニークな名前をロード（重複名 ${duplicateNames.length}件は対象外）`,
+  );
+  if (duplicateNames.length > 0) {
+    console.log("重複名一覧:", JSON.stringify(duplicateNames));
+  }
+
+  const nullEntries = await fetchAllPaged(
+    "race_entries",
+    "race_id, boat_number, player_name",
+    "race_id",
+    (q) => q.is("racer_id", null),
+  );
+  console.log(`racer_id NULLの行: ${nullEntries.length}件`);
+  console.log("");
+
+  const { distinctNames, matchedNames, unmatchedNames } = matchNullNames(
+    nullEntries,
+    nameToRacerId,
+  );
+
+  const nullCountByName = new Map();
+  for (const e of nullEntries) {
+    nullCountByName.set(
+      e.player_name,
+      (nullCountByName.get(e.player_name) || 0) + 1,
+    );
+  }
+
+  const { updatedRows, updateErrors } = await applyRacerIds(
+    matchedNames,
+    nameToRacerId,
+    nullCountByName,
+    dryRun,
+  );
 
   console.log("");
   console.log("=== 結果サマリー ===");
