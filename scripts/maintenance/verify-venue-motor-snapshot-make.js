@@ -42,25 +42,19 @@ const stat = (motor, extra = {}) => ({
   ...extra,
 });
 
-function use(rows) {
-  return setFakeSupabase(createFakeSupabase({ venue_motor_stats: rows }, { project: true }));
-}
+const use = (rows) => setFakeSupabase(createFakeSupabase({ venue_motor_stats: rows }, { project: true }));
 
-// 失敗の道は console.error に1行を出す。試験の出力を汚さないよう黙らせ、出た文を見る
-async function quiet(fn) {
+let count = 0;
+// 失敗の道は console.error に1行を出す。試験ごとに黙らせて、出た文を試験に渡す
+async function test(name, fn) {
   const original = console.error;
-  const lines = [];
-  console.error = (...args) => lines.push(args.join(" "));
+  const logged = [];
+  console.error = (...args) => logged.push(args.join(" "));
   try {
-    return { value: await fn(), lines };
+    await fn(logged);
   } finally {
     console.error = original;
   }
-}
-
-let count = 0;
-async function test(name, fn) {
-  await fn();
   count += 1;
   console.log(`ok - ${name}`);
 }
@@ -72,11 +66,10 @@ const BROKEN = [
 ];
 
 for (const [label, extra, message] of BROKEN) {
-  await test(`${label}の行は error・fetchFailed を返す（RangeError を取得失敗と同じ道へ）`, async () => {
+  await test(`${label}の行は error・fetchFailed を返す（RangeError を取得失敗と同じ道へ）`, async (logged) => {
     use([stat(11), stat(21, extra)]);
-    const { value, lines } = await quiet(() => getVenueMotorSnapshot(VENUE, "2026-11-10"));
-    assert.deepEqual(value, { state: "error", fetchFailed: true });
-    assert.ok(lines.some((l) => message.test(l)), `破れの文が出ていない: ${lines.join(" / ")}`);
+    assert.deepEqual(await getVenueMotorSnapshot(VENUE, "2026-11-10"), { state: "error", fetchFailed: true });
+    assert.ok(logged.some((l) => message.test(l)), `破れの文が出ていない: ${logged.join(" / ")}`);
   });
 }
 
