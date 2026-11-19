@@ -96,7 +96,15 @@ export async function runForRaces(
         startTimeByRaceId,
       });
     } catch (error) {
-      markPersistFailed(fetched, outcomes, base, error);
+      // 書き込み前後の想定外の失敗（DB接続等）。書けたか分からないため、全レースを再試行する（書き込みは冪等）
+      for (const { race } of fetched) {
+        outcomes.set(race.race_id, {
+          ...base,
+          rowsParsed: 1,
+          outcome: "error",
+          error: `結果の書き込みに失敗しました: ${error.message}`,
+        });
+      }
       persisted = { failed: true };
     }
   }
@@ -181,20 +189,6 @@ async function fetchAndParseRace(
         error: error.message,
       });
     }
-  }
-}
-
-/**
- * 書き込み前後の想定外の失敗（DB接続等）。書けたか分からないため、全レースを error にして再試行させる（書き込みは冪等。runForRaces の 3）
- */
-function markPersistFailed(fetched, outcomes, base, error) {
-  for (const { race } of fetched) {
-    outcomes.set(race.race_id, {
-      ...base,
-      rowsParsed: 1,
-      outcome: "error",
-      error: `結果の書き込みに失敗しました: ${error.message}`,
-    });
   }
 }
 
