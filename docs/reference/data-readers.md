@@ -282,7 +282,7 @@
 - 書き手（3）: 
   - `scripts/daily/calculate-accuracy.js:482` upsert [data, key, updated_at]
   - `scripts/daily/calculate-unified-model-accuracy.js:171` upsert [data, key, updated_at]
-  - `scripts/daily/calculate-unified-volatility-accuracy.js:166` upsert [data, key, updated_at]
+  - `scripts/daily/calculate-unified-volatility-accuracy.js:183` upsert [data, key, updated_at]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-analogy_contribution_profiles"></a>analogy_contribution_profiles
@@ -710,7 +710,7 @@
   - `scripts/daily/calculate-accuracy.js:45` select(helper:fetchAll)
   - `scripts/daily/calculate-accuracy.js:119` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-model-accuracy.js:66` select(helper:fetchAll)
-  - `scripts/daily/calculate-unified-volatility-accuracy.js:68` select(helper:fetchAll)
+  - `scripts/daily/calculate-unified-volatility-accuracy.js:155` select(helper:fetchAll)
   - `scripts/daily/generate-moriarty-recommendations.js:81` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/daily/generate-morning-digest.js:326` select [feature_contributions, model_id, race_id]
   - `scripts/daily/generate-unified-predictions.js:187` select(helper:fetchAll)
@@ -1163,7 +1163,7 @@
   - `scripts/daily-rule-tracking.js:149` select [*, race_id]
   - `scripts/daily/calculate-accuracy.js:187` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-model-accuracy.js:74` select(helper:fetchAll)
-  - `scripts/daily/calculate-unified-volatility-accuracy.js:79` select(helper:fetchAll)
+  - `scripts/daily/calculate-unified-volatility-accuracy.js:166` select(helper:fetchAll)
   - `scripts/daily/calculate-venue-grade-stats.js:73` select(embed) [is_cancelled, payout_trio, race_status, rank1, rank2, rank3, refund_boats, winning_technique]
   - `scripts/daily/scrape-odds.js:70` select [payout_win, race_id]
   - `scripts/daily/scrape-results.js:368` select [race_id, rank1]

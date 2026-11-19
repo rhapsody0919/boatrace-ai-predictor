@@ -101,7 +101,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:166",
+          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:183",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -128,7 +128,7 @@
           "writers": [
             "scripts/daily/calculate-accuracy.js:482",
             "scripts/daily/calculate-unified-model-accuracy.js:171",
-            "scripts/daily/calculate-unified-volatility-accuracy.js:166"
+            "scripts/daily/calculate-unified-volatility-accuracy.js:183"
           ],
           "sql": [
             "rpc:data_health_nightly_freshness"
@@ -145,7 +145,7 @@
           "writers": [
             "scripts/daily/calculate-accuracy.js:482",
             "scripts/daily/calculate-unified-model-accuracy.js:171",
-            "scripts/daily/calculate-unified-volatility-accuracy.js:166"
+            "scripts/daily/calculate-unified-volatility-accuracy.js:183"
           ],
           "sql": []
         },
@@ -154,7 +154,7 @@
           "writers": [
             "scripts/daily/calculate-accuracy.js:482",
             "scripts/daily/calculate-unified-model-accuracy.js:171",
-            "scripts/daily/calculate-unified-volatility-accuracy.js:166"
+            "scripts/daily/calculate-unified-volatility-accuracy.js:183"
           ],
           "sql": [
             "rpc:data_health_nightly_freshness"
@@ -5427,7 +5427,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:68",
+          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:155",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -10908,7 +10908,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:79",
+          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:166",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
