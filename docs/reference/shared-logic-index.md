@@ -117,7 +117,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/disqualifiedFinishMark.js` | BOA-582(2): 失格（Kファイルの成績コード S0〜S2）の艇の着欄（finish_mark）を、結果ページから決める（純関数）。 | buildDisqualifiedMarkRows, buildOfficialRowRows, DISQUALIFIED_MARKS, isDisqualifiedCode |
 | `scripts/lib/e2eCoverageMap.js` | E2E の「spec → 動いた src のファイル」の表（毎晩の全件で作る。docs/design/ci-minutes-reduction/design.m… | lineStartsOf, offsetToPosition, normalizeSource, coveredSources, parseCoverageRows ほか3件 |
 | `scripts/lib/erDiagramFromDdl.js` | docs/db-migration/ のSQL DDLからmermaid erDiagramを機械的に導出する。 | parseTablesFromSql, findLinkedMigrations, buildMermaidErDiagram, DB_MIGRATION_DIR, DESIGN_DIR |
-| `scripts/lib/eveDeadlinesJob.js` | 前夜の締切予定（eve_race_deadlines、マイグレーション202、BOA-1282）の共通ラッパ向けハンドラー2つ。 | isFinalRound, readExpectedVenues, readEveRows, buildEveRows, nameTargets ほか9件 |
+| `scripts/lib/eveDeadlinesJob.js` | 前夜の締切予定（eve_race_deadlines、マイグレーション202、BOA-1282）の共通ラッパ向けハンドラー2つ。 | isFinalRound, readExpectedVenues, readEveRows, buildEveRows, nameTargets ほか8件 |
+| `scripts/lib/eveDeadlinesRows.js` | 前夜の締切予定（eveDeadlinesJob.js）の純な部分: 書く行・優勝戦の判定・raceindex の振り分け・通知・戻り値。 | eveIsFinal, eveRow, isSameEveRow, parseVenueIndex, acceptVenueIndex ほか4件 |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
 | `scripts/lib/fanPeriodJob.js` | 期別成績（fan、racer_period_stats）の定期取り込み。共通ラッパ向けハンドラー（api/cron/fan-period.js）。 | fanIdEndedBefore, periodOfFanId, daysSincePeriodEnd, fanRawPath, runFanPeriodJob ほか2件 |
 | `scripts/lib/fanPeriodParser.js` | 公式「レーサー期別成績」ファイル（fan）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | parseFanId, fanIdOf, buildFanUrl, fanArchiveRelPath, listFanIds ほか14件 |
@@ -152,6 +153,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/meetBoundaries.js` | 節（開催）の切り出しと、全レースの一括取得。 | buildMeets, fetchAllByRaceId |
 | `scripts/lib/mergeOrder.js` | マージ順の台帳。「PR 901 は 902 のマージ後に」という順序を、並行セッションのオーケストレーションが | ledgerPath, parseLedger, readLedger, writeLedger, prerequisitesOf ほか3件 |
 | `scripts/lib/monthlyScheduleParser.js` | 月間スケジュール（boatrace.jp race/monthlyschedule）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | buildMonthlyScheduleUrl, parseYm, listYms, parseMonthlySchedule, mergeMonthlySchedules ほか8件 |
+| `scripts/lib/motorPretestCoverage.js` | 前検タイムの定期取得（motorPretestJob.js）の純関数: 取得の窓の日付・会場ごとの充足の引き継ぎと集計・last_report の形。 | fetchWindow, mergeCoverage, coverageSummary, reportCoverage |
 | `scripts/lib/motorPretestJob.js` | 前検タイム・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）の共通ラッパ向けハンドラー（tasks.md T4b-20）。 | fetchMotorPretest, findMotorPretestDriftAlerts, buildCoverageAlerts, runMotorPretestJob, MOTOR_PRETEST_CONCURRENCY ほか3件 |
 | `scripts/lib/motorPretestParser.js` | 公式のモーター抽選結果・前検タイム（boatrace.jp race/rankingmotor）のパーサー（純関数。DB・取得先に接続しない） | buildMotorPretestUrl, readHeaderLabels, competitionRanks, parseMotorPretestHtml, MOTOR_PRETEST_PARSER_VERSION ほか1件 |
 | `scripts/lib/motorPretestRows.js` | 前検タイム（N23、motor_pretest_stats）の、行の組み立て・期待件数の算出・書き込み。 | buildMotorPretestRows, writeMotorPretestRows, loadExpectedRacers, summarizeVenueCoverage, MOTOR_PRETEST_TABLE ほか1件 |
@@ -215,8 +217,10 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racerStStats.js` | 選手のST統計（racer_aggregated_stats の avg_st / avg_st_last_30 / st_stddev / | countsAsStart, computeRacerStStats, fetchRacerEntries, fetchStartTimingsForEntries, RECENT_ST_WINDOW ほか1件 |
 | `scripts/lib/racesInit/digest.js` | 朝の初期化（races-init）の shadow で記録する、レースごとのダイジェスト（純粋関数。DB・取得先に接続しない）。 | raceIdOf, digestScrapedRace, digestScrapedVenue, digestDbRace, compareRaceDigests |
 | `scripts/lib/racesInit/ghaSkip.js` | GitHub Actions 側の朝の初期化（morning-init.js）を止める変数 SKIP_MORNING_INIT_ON_GHA の判定（純粋関数）… | decideMorningInitOnGha, FALLBACK_FROM_JST_HOUR |
-| `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | inCautionAlertUntil, backoffMinutes, resolveVenuesLimit, isBreakerOpenError, defaultCheckNoProgram ほか5件 |
+| `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | inCautionAlertUntil, resolveVenuesLimit, defaultCheckNoProgram, runRacesInitJob, createPredictCodeOnTick ほか3件 |
 | `scripts/lib/racesInit/predictCodeCheck.js` | 予測ロジックの変更検知による再生成（WS4b T4b-07-5、plan.md §4.2(d)・設計判断(g)）。 | hashFiles, computePredictCodeHash, checkPredictCodeChange, PREDICT_CODE_HASH_JOB, PREDICT_LOGIC_FILES |
+| `scripts/lib/racesInit/runReport.js` | 朝の初期化（job.js の runRacesInitJob）の1回の起動の報告（last_report）・応答の本文・失敗の文を作る。 | buildRunResult, ALERT_NOTIFY_HOURS |
+| `scripts/lib/racesInit/venueSteps.js` | 朝の初期化（job.js の runRacesInitJob）の会場の処理と、会場一覧の再確認。cursor（進捗）を書き換える。 | backoffMinutes, isBreakerOpenError, processVenues, recheckVenueList, remainingVenues |
 | `scripts/lib/rawHtmlArchive.js` | 取得した生HTMLの保管（optimal-scraping-design.md §2.2・承認済みQ1）の最小実装。 | rawHtmlPath, archiveRawHtml, RAW_HTML_BUCKET |
 | `scripts/lib/relativeImportGraph.js` | 相対 import を辿って、入口から届くファイルを集める（node 標準だけを使う）。 | codeFiles, relativeSpecs, resolveSpec, reach, CODE ほか2件 |
 | `scripts/lib/releaseDecide.js` | 本番のデプロイをまとめて出すかどうかの判定（純関数、ADR-0106）。起動と GitHub の読み取りは releaseDispatch.js。 | freshnessBasis, decideRelease, COMPARE_FILES_CAP, FRESH_HEAD_MS, AUTOMATED_COMMIT_EMAIL ほか1件 |
@@ -492,4 +496,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 450 ファイル / export 2550 件。
+対象 454 ファイル / export 2567 件。

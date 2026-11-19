@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2263,
+    "sourceFiles": 2267,
     "filesWithAccess": 287,
     "tableReaders": 963,
     "tableWriters": 197,
@@ -1065,7 +1065,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/generate-moriarty-recommendations.js:348",
+          "ref": "scripts/daily/generate-moriarty-recommendations.js:361",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -1107,7 +1107,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/daily/generate-moriarty-recommendations.js:348",
+            "scripts/daily/generate-moriarty-recommendations.js:361",
             "scripts/daily/generate-unified-trifecta-reference.js:176",
             "scripts/daily/update-moriarty-outcomes.js:173",
             "scripts/daily/update-moriarty-outcomes.js:30",
@@ -1124,7 +1124,7 @@
         },
         "model_id": {
           "readers": [
-            "scripts/daily/generate-moriarty-recommendations.js:348",
+            "scripts/daily/generate-moriarty-recommendations.js:361",
             "scripts/daily/generate-unified-trifecta-reference.js:176",
             "scripts/daily/update-moriarty-outcomes.js:173",
             "scripts/daily/update-moriarty-outcomes.js:30",
@@ -4257,7 +4257,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/lib/motorPretestJob.js:252",
+          "ref": "scripts/lib/motorPretestJob.js:217",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4266,7 +4266,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/motorPretestJob.js:269",
+          "ref": "scripts/lib/motorPretestJob.js:233",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4345,8 +4345,8 @@
       "columns": {
         "race_date": {
           "readers": [
-            "scripts/lib/motorPretestJob.js:252",
-            "scripts/lib/motorPretestJob.js:269",
+            "scripts/lib/motorPretestJob.js:217",
+            "scripts/lib/motorPretestJob.js:233",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:144",
             "src/services/motorQueries2.js:41",
@@ -4358,8 +4358,8 @@
         },
         "venue_code": {
           "readers": [
-            "scripts/lib/motorPretestJob.js:252",
-            "scripts/lib/motorPretestJob.js:269",
+            "scripts/lib/motorPretestJob.js:217",
+            "scripts/lib/motorPretestJob.js:233",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:144",
             "src/services/motorQueries2.js:41",
@@ -4371,7 +4371,7 @@
         },
         "racer_id": {
           "readers": [
-            "scripts/lib/motorPretestJob.js:269",
+            "scripts/lib/motorPretestJob.js:233",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
             "src/services/meetQueries2.js:144",
             "src/services/motorQueries2.js:41",
@@ -12679,7 +12679,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/eveDeadlinesJob.js:63",
+          "ref": "scripts/lib/eveDeadlinesJob.js:66",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12689,7 +12689,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/motorPretestJob.js:236",
+          "ref": "scripts/lib/motorPretestJob.js:197",
           "op": "select",
           "via": "client",
           "columns": [
@@ -12830,8 +12830,8 @@
         "venue_code": {
           "readers": [
             "api/_lib/botPage.js:276",
-            "scripts/lib/eveDeadlinesJob.js:63",
-            "scripts/lib/motorPretestJob.js:236",
+            "scripts/lib/eveDeadlinesJob.js:66",
+            "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:849",
@@ -12849,8 +12849,8 @@
         "start_date": {
           "readers": [
             "api/_lib/botPage.js:276",
-            "scripts/lib/eveDeadlinesJob.js:63",
-            "scripts/lib/motorPretestJob.js:236",
+            "scripts/lib/eveDeadlinesJob.js:66",
+            "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:849",
@@ -12868,8 +12868,8 @@
         "end_date": {
           "readers": [
             "api/_lib/botPage.js:276",
-            "scripts/lib/eveDeadlinesJob.js:63",
-            "scripts/lib/motorPretestJob.js:236",
+            "scripts/lib/eveDeadlinesJob.js:66",
+            "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
             "scripts/maintenance/verify-bot-race-function.js:849",
@@ -16463,7 +16463,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/eveDeadlinesJob.js:410",
+          "ref": "scripts/lib/eveDeadlinesJob.js:387",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16548,7 +16548,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racesInit/job.js:122",
+          "ref": "scripts/lib/racesInit/job.js:106",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -17627,7 +17627,7 @@
             "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
-            "scripts/lib/eveDeadlinesJob.js:410",
+            "scripts/lib/eveDeadlinesJob.js:387",
             "scripts/lib/inCautionHealth.js:137",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/pitReportJob.js:290",
@@ -17749,7 +17749,7 @@
             "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
-            "scripts/lib/eveDeadlinesJob.js:410",
+            "scripts/lib/eveDeadlinesJob.js:387",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/pitReportJob.js:290",
             "scripts/lib/pitReportJob.js:365",
@@ -17946,7 +17946,7 @@
             "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:401",
             "scripts/lib/boatcast/oritenJob.js:522",
-            "scripts/lib/eveDeadlinesJob.js:410",
+            "scripts/lib/eveDeadlinesJob.js:387",
             "scripts/lib/pitReportJob.js:290",
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSchedule.js:44",
@@ -18501,7 +18501,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/eveDeadlinesJob.js:385",
+          "ref": "scripts/lib/eveDeadlinesJob.js:362",
           "op": "select",
           "via": "client",
           "columns": [
@@ -18516,7 +18516,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/motorPretestJob.js:197",
+          "ref": "scripts/lib/motorPretestJob.js:176",
           "op": "select",
           "via": "client",
           "columns": [
@@ -18526,7 +18526,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racesInit/job.js:148",
+          "ref": "scripts/lib/racesInit/job.js:132",
           "op": "select",
           "via": "client",
           "columns": [
@@ -18623,7 +18623,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racesInit/job.js:517",
+          "ref": "scripts/lib/racesInit/job.js:364",
           "op": "update",
           "via": "client",
           "columns": [
@@ -18747,10 +18747,10 @@
           "readers": [
             "scripts/lib/boatcast/oritenJob.js:498",
             "scripts/lib/dataHealth/job.js:94",
-            "scripts/lib/eveDeadlinesJob.js:385",
-            "scripts/lib/motorPretestJob.js:197",
-            "scripts/lib/racesInit/job.js:148",
-            "scripts/lib/racesInit/job.js:517",
+            "scripts/lib/eveDeadlinesJob.js:362",
+            "scripts/lib/motorPretestJob.js:176",
+            "scripts/lib/racesInit/job.js:132",
+            "scripts/lib/racesInit/job.js:364",
             "scripts/lib/racesInit/predictCodeCheck.js:116",
             "scripts/lib/racesInit/predictCodeCheck.js:138",
             "scripts/lib/racesInit/predictCodeCheck.js:86",
@@ -18780,8 +18780,8 @@
         },
         "mode": {
           "readers": [
-            "scripts/lib/motorPretestJob.js:197",
-            "scripts/lib/racesInit/job.js:148",
+            "scripts/lib/motorPretestJob.js:176",
+            "scripts/lib/racesInit/job.js:132",
             "scripts/maintenance/check-morning-init-shadow.js:197",
             "scripts/maintenance/check-scrape-monitor-liveness.js:139"
           ],
@@ -18847,8 +18847,8 @@
         },
         "last_target_date": {
           "readers": [
-            "scripts/lib/eveDeadlinesJob.js:385",
-            "scripts/lib/motorPretestJob.js:197",
+            "scripts/lib/eveDeadlinesJob.js:362",
+            "scripts/lib/motorPretestJob.js:176",
             "scripts/maintenance/check-scrape-monitor-liveness.js:139"
           ],
           "writers": [],
@@ -18864,7 +18864,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:197"
           ],
           "writers": [
-            "scripts/lib/racesInit/job.js:517"
+            "scripts/lib/racesInit/job.js:364"
           ],
           "sql": []
         },
@@ -18888,7 +18888,7 @@
           ],
           "writers": [
             "scripts/lib/boatcast/oritenJob.js:498",
-            "scripts/lib/racesInit/job.js:517",
+            "scripts/lib/racesInit/job.js:364",
             "scripts/lib/racesInit/predictCodeCheck.js:116",
             "scripts/lib/racesInit/predictCodeCheck.js:138",
             "scripts/lib/racesInit/predictCodeCheck.js:98"
@@ -29128,11 +29128,11 @@
     {
       "job": "eve_deadlines",
       "entry": "api/cron/eve-deadlines.js",
-      "reachableFiles": 22,
+      "reachableFiles": 23,
       "writes": {
         "eve_race_deadlines": [
           "scripts/lib/eveDeadlinesJob.js:274",
-          "scripts/lib/eveDeadlinesJob.js:422"
+          "scripts/lib/eveDeadlinesJob.js:399"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29154,11 +29154,11 @@
     {
       "job": "eve_deadlines_reconcile",
       "entry": "api/cron/eve-deadlines-reconcile.js",
-      "reachableFiles": 22,
+      "reachableFiles": 23,
       "writes": {
         "eve_race_deadlines": [
           "scripts/lib/eveDeadlinesJob.js:274",
-          "scripts/lib/eveDeadlinesJob.js:422"
+          "scripts/lib/eveDeadlinesJob.js:399"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29412,7 +29412,7 @@
     {
       "job": "motor_pretest",
       "entry": "api/cron/motor-pretest.js",
-      "reachableFiles": 24,
+      "reachableFiles": 25,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29872,7 +29872,7 @@
     {
       "job": "races_init",
       "entry": "api/cron/races-init.js",
-      "reachableFiles": 46,
+      "reachableFiles": 48,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070"
@@ -29892,7 +29892,7 @@
           "scripts/daily/generate-predictions.js:971"
         ],
         "scrape_job_state": [
-          "scripts/lib/racesInit/job.js:517",
+          "scripts/lib/racesInit/job.js:364",
           "scripts/lib/racesInit/predictCodeCheck.js:116",
           "scripts/lib/racesInit/predictCodeCheck.js:138",
           "scripts/lib/racesInit/predictCodeCheck.js:98",
@@ -30291,9 +30291,9 @@
       "kind": "table",
       "name": "eve_race_deadlines",
       "refs": [
-        "scripts/lib/eveDeadlinesJob.js:77",
+        "scripts/lib/eveDeadlinesJob.js:80",
         "scripts/lib/eveDeadlinesJob.js:274",
-        "scripts/lib/eveDeadlinesJob.js:422"
+        "scripts/lib/eveDeadlinesJob.js:399"
       ]
     },
     {
