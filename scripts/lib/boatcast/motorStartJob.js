@@ -101,6 +101,129 @@ export function nextHistory(previous, entry) {
   return [...kept, entry].slice(-HISTORY_DAYS);
 }
 
+/** 一部だけ取れなかった（失敗・時間切れ）ときの通知（純関数） */
+function buildIncompleteAlerts({
+  incomplete,
+  rows,
+  expected,
+  stopped,
+  failures,
+  now,
+}) {
+  if (!incomplete) return [];
+  return [
+    {
+      key: "motor_start_incomplete",
+      text: `モーター使用開始日（bc_mst）が${rows.length}/${expected}会場しか取れていません${stopped ? "（時間切れ）" : ""}${
+        failures.length > 0
+          ? `: ${failures
+              .slice(0, 5)
+              .map((f) => `${f.venue} ${f.reason}`)
+              .join(" / ")}`
+          : ""
+      }`,
+      until: addSeconds(now, ALERT_HOURS * 3600).toISOString(),
+    },
+  ];
+}
+
+/** 成功の戻り値（純関数） */
+function buildOkResult({
+  ctx,
+  rows,
+  failures,
+  stopped,
+  expected,
+  rowsWritten,
+}) {
+  const incomplete = failures.length > 0 || stopped;
+  const now = ctx.now();
+  const alerts = buildIncompleteAlerts({
+    incomplete,
+    rows,
+    expected,
+    stopped,
+    failures,
+    now,
+  });
+  return {
+    outcome: "ok",
+    rowsWritten,
+    rowsParsed: rows.length,
+    rowsExpected: expected,
+    incomplete,
+    report: {
+      alerts,
+      fetched: rows.length,
+      expected,
+      failed: failures.map((f) => f.venue),
+      // 日ごとの取得の履歴（完了の定義A・Bの実測に使う。本体のテーブルは、新しい日付が現れたときだけ増えるため、日ごとの
+      // 取得の成否・完了時刻が残らない）。同じ対象日の再実行（補足の起動）は置き換え、直近14日分を残す
+      history: nextHistory(ctx.state?.last_report?.history, {
+        date: ctx.targetDate,
+        fetched: rows.length,
+        expected,
+        failed: failures.map((f) => f.venue),
+        complete: !incomplete,
+        doneAt: now.toISOString(),
+      }),
+    },
+    body: { fetched: rows.length, expected, failed: failures.length },
+  };
+}
+
+/** 最初から続けて失敗したときの error 戻り値（純関数） */
+function buildAbortedResult(failures, expected) {
+  return {
+    outcome: "error",
+    error: `bc_mst の取得が最初から${failures.length}件続けて失敗しました（アクセス拒否・接続の異常の疑い）: ${failures
+      .map((f) => `${f.venue}: ${f.reason}`)
+      .join(" / ")}`,
+    rowsParsed: 0,
+    rowsExpected: expected,
+  };
+}
+
+/**
+ * live の書き込み。失敗なら { error: 戻り値 }、成功なら { written }。
+ */
+async function writeMotorStartRows(ctx, rows, expected) {
+  if (!(await detectBoatcastSchema(ctx.client, MOTOR_START_TABLES))) {
+    return {
+      error: {
+        outcome: "error",
+        error:
+          "マイグレーション091（venue_motor_start_dates）が未適用のため、書き込みませんでした",
+        rowsParsed: rows.length,
+        rowsExpected: expected,
+      },
+    };
+  }
+  const result = await upsertChangedRows(
+    ctx.client,
+    "venue_motor_start_dates",
+    rows,
+    {
+      onConflict: "venue_code,start_date",
+      keyColumns: ["venue_code", "start_date"],
+      chunkColumn: "venue_code",
+      chunkSize: 24,
+      label: "venue_motor_start_dates",
+    },
+  );
+  if (result.error) {
+    return {
+      error: {
+        outcome: "error",
+        error: result.error.message,
+        rowsParsed: rows.length,
+        rowsExpected: expected,
+      },
+    };
+  }
+  return { written: result.written };
+}
+
 /**
  * 日次ジョブのハンドラー（共通ラッパの run(ctx)）。
  */
@@ -119,92 +242,22 @@ export function createMotorStartRun({
     const { rows, failures, aborted, stopped } = fetched;
     const expected = venues.length;
 
-    if (aborted) {
-      return {
-        outcome: "error",
-        error: `bc_mst の取得が最初から${failures.length}件続けて失敗しました（アクセス拒否・接続の異常の疑い）: ${failures
-          .map((f) => `${f.venue}: ${f.reason}`)
-          .join(" / ")}`,
-        rowsParsed: 0,
-        rowsExpected: expected,
-      };
-    }
+    if (aborted) return buildAbortedResult(failures, expected);
 
     let rowsWritten = 0;
     if (ctx.mode === "live" && rows.length > 0) {
-      if (!(await detectBoatcastSchema(ctx.client, MOTOR_START_TABLES))) {
-        return {
-          outcome: "error",
-          error:
-            "マイグレーション091（venue_motor_start_dates）が未適用のため、書き込みませんでした",
-          rowsParsed: rows.length,
-          rowsExpected: expected,
-        };
-      }
-      const result = await upsertChangedRows(
-        ctx.client,
-        "venue_motor_start_dates",
-        rows,
-        {
-          onConflict: "venue_code,start_date",
-          keyColumns: ["venue_code", "start_date"],
-          chunkColumn: "venue_code",
-          chunkSize: 24,
-          label: "venue_motor_start_dates",
-        },
-      );
-      if (result.error) {
-        return {
-          outcome: "error",
-          error: result.error.message,
-          rowsParsed: rows.length,
-          rowsExpected: expected,
-        };
-      }
-      rowsWritten = result.written;
+      const written = await writeMotorStartRows(ctx, rows, expected);
+      if (written.error) return written.error;
+      rowsWritten = written.written;
     }
 
-    const incomplete = failures.length > 0 || stopped;
-    const now = ctx.now();
-    const alerts = incomplete
-      ? [
-          {
-            key: "motor_start_incomplete",
-            text: `モーター使用開始日（bc_mst）が${rows.length}/${expected}会場しか取れていません${stopped ? "（時間切れ）" : ""}${
-              failures.length > 0
-                ? `: ${failures
-                    .slice(0, 5)
-                    .map((f) => `${f.venue} ${f.reason}`)
-                    .join(" / ")}`
-                : ""
-            }`,
-            until: addSeconds(now, ALERT_HOURS * 3600).toISOString(),
-          },
-        ]
-      : [];
-    return {
-      outcome: "ok",
+    return buildOkResult({
+      ctx,
+      rows,
+      failures,
+      stopped,
+      expected,
       rowsWritten,
-      rowsParsed: rows.length,
-      rowsExpected: expected,
-      incomplete,
-      report: {
-        alerts,
-        fetched: rows.length,
-        expected,
-        failed: failures.map((f) => f.venue),
-        // 日ごとの取得の履歴（完了の定義A・Bの実測に使う。本体のテーブルは、新しい日付が現れたときだけ増えるため、日ごとの
-        // 取得の成否・完了時刻が残らない）。同じ対象日の再実行（補足の起動）は置き換え、直近14日分を残す
-        history: nextHistory(ctx.state?.last_report?.history, {
-          date: ctx.targetDate,
-          fetched: rows.length,
-          expected,
-          failed: failures.map((f) => f.venue),
-          complete: !incomplete,
-          doneAt: now.toISOString(),
-        }),
-      },
-      body: { fetched: rows.length, expected, failed: failures.length },
-    };
+    });
   };
 }
