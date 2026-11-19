@@ -11262,7 +11262,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/raceStatusJob.js:125",
+          "ref": "scripts/lib/raceStatusJob.js:110",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11864,7 +11864,7 @@
             "scripts/daily/update-winning-technique-stats.js:62",
             "scripts/lib/inCautionHealth.js:142",
             "scripts/lib/raceResultFix.js:117",
-            "scripts/lib/raceStatusJob.js:125",
+            "scripts/lib/raceStatusJob.js:110",
             "scripts/maintenance/audit-race-result-anomalies.js:207",
             "scripts/maintenance/backfill-actual-course.js:111",
             "scripts/maintenance/backfill-actual-course.js:65",
@@ -16536,7 +16536,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/raceStatusJob.js:109",
+          "ref": "scripts/lib/raceStatusJob.js:93",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17633,7 +17633,7 @@
             "scripts/lib/pitReportJob.js:290",
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSchedule.js:44",
-            "scripts/lib/raceStatusJob.js:109",
+            "scripts/lib/raceStatusJob.js:93",
             "scripts/lib/scrapeJobs/monitor.js:809",
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
             "scripts/lib/scrapeJobs/resultHandlers.js:153",
@@ -17754,7 +17754,7 @@
             "scripts/lib/pitReportJob.js:290",
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/raceSeriesLookup.js:174",
-            "scripts/lib/raceStatusJob.js:109",
+            "scripts/lib/raceStatusJob.js:93",
             "scripts/lib/scrapeJobs/monitor.js:809",
             "scripts/lib/scrapeJobs/resultHandlers.js:153",
             "scripts/lib/scrapeJobs/resultHandlers.js:275",
@@ -17845,7 +17845,7 @@
             "scripts/generate-sitemap.js:662",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/raceSeriesLookup.js:174",
-            "scripts/lib/raceStatusJob.js:109",
+            "scripts/lib/raceStatusJob.js:93",
             "scripts/lib/snsTodayDigestV3.js:100",
             "scripts/lib/snsTodayDigestV3.js:145",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:35",
@@ -17896,7 +17896,7 @@
             "scripts/daily/scrape-results.js:1550",
             "scripts/lib/pitReportJob.js:290",
             "scripts/lib/pitReportJob.js:365",
-            "scripts/lib/raceStatusJob.js:109",
+            "scripts/lib/raceStatusJob.js:93",
             "scripts/lib/snsTodayDigestV3.js:100",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:35",
             "scripts/maintenance/backfill-missing-venue-day.js:73",
@@ -18139,7 +18139,7 @@
             "scripts/lib/inCautionHealth.js:137",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/raceSeriesLookup.js:174",
-            "scripts/lib/raceStatusJob.js:109",
+            "scripts/lib/raceStatusJob.js:93",
             "scripts/lib/scrapeJobs/resultHandlers.js:214",
             "scripts/lib/snsAutoPlanRunner.js:741",
             "scripts/lib/snsTodayDigestV3.js:100",

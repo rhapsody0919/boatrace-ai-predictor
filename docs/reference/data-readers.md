@@ -1206,7 +1206,7 @@
   - `scripts/daily/update-winning-technique-stats.js:197` select(helper:fetchAll)
   - `scripts/lib/dailyReconcileJob.js:97` select(helper:fetchAll)
   - `scripts/lib/inCautionHealth.js:142` select [race_id, rank1]
-  - `scripts/lib/raceStatusJob.js:125` select [race_id]
+  - `scripts/lib/raceStatusJob.js:110` select [race_id]
   - `scripts/maintenance/audit-missing-results.js:73` select(helper:fetchAll)
   - `scripts/maintenance/audit-race-result-anomalies.js:97` select(helper:fetchAll)
   - `scripts/maintenance/audit-race-result-anomalies.js:207` select [?, race_id]
@@ -1547,7 +1547,7 @@
   - `scripts/lib/pitReportJob.js:365` select [race_date, race_grade, race_id, race_number, start_time]
   - `scripts/lib/raceSchedule.js:44` select [race_id, start_time]
   - `scripts/lib/raceSeriesLookup.js:174` select [cancellation_status, race_date, venue_code]
-  - `scripts/lib/raceStatusJob.js:109` select [cancellation_status, race_date, race_id, race_number, venue_code]
+  - `scripts/lib/raceStatusJob.js:93` select [cancellation_status, race_date, race_id, race_number, venue_code]
   - `scripts/lib/racesInit/job.js:122` select(helper:fetchAll)
   - `scripts/lib/scrapeJobs/monitor.js:809` select [race_date, race_id]
   - `scripts/lib/scrapeJobs/pcexpectHandlers.js:33` select [race_id, start_time]
