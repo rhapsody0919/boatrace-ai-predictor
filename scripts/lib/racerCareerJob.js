@@ -14,8 +14,19 @@
  *     kb_archive_races.stage_kind は使わない
  *   - 勝率の着順点・出走の数え方は持たない（src/pure/racerCareerStats.js、BOA-1193 が読み手の側で使う）
  */
-import { isCareerFinalStage } from "../../src/pure/racerCareerStats.js";
 import { upsertChangedRows } from "./unchangedRows.js";
+import { addDays, halfMonthRanges, kbYearRanges } from "./racerCareerSeries.js";
+import {
+  computeCounts,
+  existingChunkSize,
+  fetchExistingKeys,
+  kbFingerprint,
+  loadJudgeInputs,
+  OTHER_ERA_MAX_ROWS,
+  PAGE_ROWS,
+  sameKbFingerprint,
+  writeMeta,
+} from "./racerCareerDb.js";
 import {
   KB_FIRST_DATE,
   KB_LAST_DATE,
@@ -69,252 +80,34 @@ export const CAREER_TABLES = Object.freeze({
   },
 });
 
+export {
+  computeCounts,
+  existingChunkSize,
+  fetchExistingKeys,
+  kbFingerprint,
+  loadJudgeInputs,
+  OTHER_ERA_MAX_ROWS,
+  PAGE_ROWS,
+  sameKbFingerprint,
+  writeMeta,
+} from "./racerCareerDb.js";
+export {
+  finalStagesOf,
+  gradeOverridesOf,
+  halfMonthRanges,
+  SERIES_GAP_DAYS,
+  SPECIAL_SERIES_RULES,
+  specialSeriesGroups,
+  splitByRacerLinks,
+  venueDayIdOf,
+} from "./racerCareerSeries.js";
+
 /** 消えるセルがこの割合を超えたら止める（元の表の取り違え・部分的な読みで大量に消さない） */
 export const MAX_STALE_RATIO = 0.2;
 
 // ---------------------------------------------------------------------------
 // 純関数
 // ---------------------------------------------------------------------------
-
-/**
- * 種別の原文のうち、優勝戦に当たるものだけを返す（RPC の p_final_stages）。
- * @param {unknown[]} stages
- * @returns {string[]}
- */
-export function finalStagesOf(stages) {
-  if (!Array.isArray(stages)) throw new Error("種別の一覧が配列ではない");
-  return [
-    ...new Set(stages.filter((s) => typeof s === "string" && isCareerFinalStage(s))),
-  ].sort();
-}
-
-const nfkc = (s) => (typeof s === "string" ? s.normalize("NFKC") : "");
-
-/**
- * 同じ開催日に2つの格のレースが混ざる節と、公式が別の格で数えた節（official-data-spec、2026-10-28）。
- *   split:  選手のつながり（同じレースに出た選手を結ぶ）で2つの組に分け、seed のレースを含む組を primary にする。
- *           QC は12人だけがトライアル・順位決定・賞金女王決定に出る。CC は最終日の12Rが SG の優勝戦（11R はレディースCC）
- *   whole:  節の全レースを grade にする
- */
-export const SPECIAL_SERIES_RULES = Object.freeze([
-  {
-    id: "qc",
-    match: (t) => t.includes("クイーンズクライマックス") && t.includes("QC"),
-    kind: "split",
-    primaryGrade: "G1",
-    otherGrade: "G3",
-    isSeed: (race) => nfkc(race.stage).includes("トライアル"),
-  },
-  {
-    id: "cc",
-    match: (t) => t.includes("チャレンジカップ") && t.includes("レディース"),
-    kind: "split",
-    primaryGrade: "SG",
-    otherGrade: "G2",
-    isSeed: (race, ctx) =>
-      race.race_number === 12 && race.race_id.startsWith(ctx.lastDay),
-  },
-  {
-    id: "karatsu-2024-battle",
-    match: (t, day) =>
-      t.includes("バトルトーナメント") &&
-      day.venue_code === 23 &&
-      day.race_date >= "2024-10-12" &&
-      day.race_date <= "2024-10-14",
-    kind: "whole",
-    grade: "G1",
-  },
-]);
-
-const pad2 = (n) => String(n).padStart(2, "0");
-/** 'YYYY-MM-DD-VV'（kb_archive_venue_days.venue_day_id と race_id の先頭と同じ形） */
-export const venueDayIdOf = (day) =>
-  `${String(day.race_date).slice(0, 10)}-${pad2(day.venue_code)}`;
-
-const addDays = (date, n) => {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-};
-
-/** 節の中で欠けてよい日数（中止・順延で丸一日開催が無い日） */
-export const SERIES_GAP_DAYS = 2;
-
-/**
- * 開催日の一覧（{venue_code, race_date, title}）から、特別な節を見つけ、同じ会場の近い日を1つの節にまとめる。
- * @param {Array<{venue_code: number, race_date: string, title: string|null}>} series
- * @returns {Array<{rule: object, venueDays: string[], lastDay: string}>}
- */
-
-export function specialSeriesGroups(series) {
-  if (!Array.isArray(series)) throw new Error("開催日の一覧が配列ではない");
-  const hits = [];
-  for (const day of series) {
-    const t = nfkc(day.title);
-    const rule = SPECIAL_SERIES_RULES.find((r) =>
-      r.match(t, { ...day, race_date: String(day.race_date).slice(0, 10) }),
-    );
-    if (rule)
-      hits.push({
-        rule,
-        day: { ...day, race_date: String(day.race_date).slice(0, 10) },
-        title: t,
-      });
-  }
-  // main は「レースごとの題」で日を拾うので、同じ開催日が題を変えて2回来ることがある。開催日で1つにする
-  const seen = new Set();
-  const unique = hits.filter((h) => {
-    const k = `${h.rule.id}|${venueDayIdOf(h.day)}`;
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
-  unique.sort(
-    (a, b) =>
-      a.day.venue_code - b.day.venue_code ||
-      a.day.race_date.localeCompare(b.day.race_date),
-  );
-  // 同じ規則・同じ会場で、間が SERIES_GAP_DAYS 日以内なら同じ節（丸一日の中止で日が欠けても割らない）
-  const groups = [];
-  for (const h of unique) {
-    const last = groups.at(-1);
-    if (
-      last &&
-      last.rule === h.rule &&
-      last.venueCode === h.day.venue_code &&
-      h.day.race_date <= addDays(last.lastDate, SERIES_GAP_DAYS + 1)
-    ) {
-      last.venueDays.push(venueDayIdOf(h.day));
-      last.lastDate = h.day.race_date;
-    } else {
-      groups.push({
-        rule: h.rule,
-        venueCode: h.day.venue_code,
-        title: h.title,
-        venueDays: [venueDayIdOf(h.day)],
-        lastDate: h.day.race_date,
-      });
-    }
-  }
-  return groups.map((g) => ({
-    rule: g.rule,
-    title: g.title,
-    venueDays: g.venueDays,
-    lastDay: venueDayIdOf({ race_date: g.lastDate, venue_code: g.venueCode }),
-  }));
-}
-
-/**
- * 選手のつながりで、seed のレースと同じ組のレースの集合を返す（union-find）。
- * @param {Array<{race_id: string, racer_ids: number[]}>} races
- * @param {(race: object) => boolean} isSeed
- * @returns {{primary: Set<string>, judged: Set<string>, primaryRacers: number, otherRacers: number}}
- */
-export function splitByRacerLinks(races, isSeed) {
-  const parent = new Map();
-  const find = (x) => {
-    while (parent.get(x) !== x) {
-      parent.set(x, parent.get(parent.get(x)));
-      x = parent.get(x);
-    }
-    return x;
-  };
-  const union = (a, b) => {
-    const ra = find(a);
-    const rb = find(b);
-    if (ra !== rb) parent.set(ra, rb);
-  };
-  for (const race of races) {
-    for (const id of race.racer_ids) if (!parent.has(id)) parent.set(id, id);
-    for (let i = 1; i < race.racer_ids.length; i++)
-      union(race.racer_ids[0], race.racer_ids[i]);
-  }
-  const seedRoots = new Set(
-    races
-      .filter((r) => isSeed(r) && r.racer_ids.length > 0)
-      .map((r) => find(r.racer_ids[0])),
-  );
-  const primary = new Set();
-  const judged = new Set();
-  const racersByRoot = new Map();
-  for (const id of parent.keys()) {
-    const root = find(id);
-    racersByRoot.set(root, (racersByRoot.get(root) ?? 0) + 1);
-  }
-  for (const race of races) {
-    if (race.racer_ids.length === 0) continue; // 出た選手が分からない（中止等）。グレードを補正しない
-    judged.add(race.race_id);
-    if (seedRoots.has(find(race.racer_ids[0]))) primary.add(race.race_id);
-  }
-  let primaryRacers = 0;
-  let otherRacers = 0;
-  for (const [root, n] of racersByRoot) {
-    if (seedRoots.has(root)) primaryRacers += n;
-    else otherRacers += n;
-  }
-  return { primary, judged, primaryRacers, otherRacers };
-}
-
-/**
- * 特別な節のレースごとのグレード（RPC の p_override_race_ids・p_override_grades）。
- * @param {ReturnType<typeof specialSeriesGroups>} groups
- * @param {Array<{race_id: string, race_number: number, stage: string|null, racer_ids: number[]}>} races
- * @returns {{raceIds: string[], grades: string[], report: object[]}}
- */
-export function gradeOverridesOf(groups, races) {
-  const byDay = new Map();
-  for (const race of races) {
-    const day = race.race_id.slice(0, 13);
-    if (!byDay.has(day)) byDay.set(day, []);
-    byDay.get(day).push(race);
-  }
-  const out = new Map();
-  const report = [];
-  for (const g of groups) {
-    const groupRaces = g.venueDays.flatMap((d) => byDay.get(d) ?? []);
-    if (groupRaces.length === 0) {
-      report.push({ rule: g.rule.id, venueDays: g.venueDays, races: 0 });
-      continue;
-    }
-    if (g.rule.kind === "whole") {
-      for (const r of groupRaces) out.set(r.race_id, g.rule.grade);
-      report.push({
-        rule: g.rule.id,
-        venueDays: g.venueDays,
-        races: groupRaces.length,
-        grade: g.rule.grade,
-      });
-      continue;
-    }
-    const split = splitByRacerLinks(groupRaces, (r) =>
-      g.rule.isSeed(r, { lastDay: g.lastDay }),
-    );
-    // 基準のレースがまだ無い（main で、開催中の QC のトライアルの前など）。補正せずに元のグレードのまま数え、
-    // 報告に seedMissing を残す（その節の選手は出走中なので、基準のレースが入った後の晩に数え直される）。
-    // kb は終わった節だけなので、runKbEra が seedMissing を見つけたら止める
-    if (split.primary.size === 0) {
-      report.push({ rule: g.rule.id, venueDays: g.venueDays, races: groupRaces.length, seedMissing: true });
-      continue;
-    }
-    for (const r of groupRaces) {
-      if (!split.judged.has(r.race_id)) continue;
-      out.set(
-        r.race_id,
-        split.primary.has(r.race_id) ? g.rule.primaryGrade : g.rule.otherGrade,
-      );
-    }
-    report.push({
-      rule: g.rule.id,
-      venueDays: g.venueDays,
-      races: groupRaces.length,
-      primaryRaces: split.primary.size,
-      primaryRacers: split.primaryRacers,
-      otherRacers: split.otherRacers,
-    });
-  }
-  const raceIds = [...out.keys()].sort();
-  return { raceIds, grades: raceIds.map((id) => out.get(id)), report };
-}
 
 const keyOf = (row, keyColumns) =>
   keyColumns.map((c) => String(row[c])).join("|");
@@ -372,166 +165,11 @@ export function staleRowsOf(existing, incoming, keyColumns) {
   return existing.filter((r) => !keep.has(keyOf(r, keyColumns)));
 }
 
-/**
- * 期間を chunkDays 日ごとの [from, to) に分ける（kb は race_id の範囲読み。1回の RPC を 8秒の打ち切りより十分短くする）。
- * 月の頭と16日で切る（同じ節を細かく分けすぎない。数え方は足し算なので節をまたいでもよい）。
- * @returns {Array<{from: string, to: string}>}
- */
-export function halfMonthRanges(from, lastInclusive) {
-  const out = [];
-  let cur = from;
-  const end = addDays(lastInclusive, 1);
-  while (cur < end) {
-    const [y, m, d] = cur.split("-").map(Number);
-    const next =
-      d < 16
-        ? `${y}-${pad2(m)}-16`
-        : m === 12
-          ? `${y + 1}-01-01`
-          : `${y}-${pad2(m + 1)}-01`;
-    out.push({ from: cur, to: next < end ? next : end });
-    cur = next;
-  }
-  return out;
-}
-
 /** 選手の一覧を size 人ずつに分ける */
 export function chunk(list, size) {
   const out = [];
   for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
   return out;
-}
-
-// ---------------------------------------------------------------------------
-// DB の読み書き（client は service_role の Supabase）
-// ---------------------------------------------------------------------------
-
-async function rpc(client, fn, args) {
-  const { data, error } = await client.rpc(fn, args);
-  if (error) throw new Error(`${fn} の呼び出しに失敗: ${error.message}`);
-  if (data === null || data === undefined)
-    throw new Error(`${fn} が値を返さなかった`);
-  return data;
-}
-
-/**
- * 判定の材料（優勝戦の種別・グレードの補正）を作る。
- * @param {{client: object, era: "kb"|"main", ranges: Array<{from: string, to: string}>, activeFrom?: string|null}} opts
- */
-export async function loadJudgeInputs({
-  client,
-  era,
-  ranges,
-  activeFrom = null,
-}) {
-  const stages = new Set();
-  const series = [];
-  const active = new Set();
-  for (const r of ranges) {
-    const data = await rpc(client, "racer_career_inputs", {
-      p_era: era,
-      p_from: r.from,
-      p_to: r.to,
-      p_active_from: activeFrom,
-    });
-    for (const s of data.stages ?? []) stages.add(s);
-    series.push(...(data.series ?? []));
-    for (const id of data.active_racer_ids ?? []) active.add(Number(id));
-  }
-  const groups = specialSeriesGroups(series);
-  const venueDays = groups.flatMap((g) => g.venueDays);
-  const specialRaces =
-    venueDays.length === 0
-      ? []
-      : await rpc(client, "racer_career_special_races", {
-          p_era: era,
-          p_venue_days: venueDays,
-        });
-  const overrides = gradeOverridesOf(groups, specialRaces);
-  return {
-    finalStages: finalStagesOf([...stages]),
-    stageCount: stages.size,
-    overrides,
-    activeRacerIds: [...active].sort((a, b) => a - b),
-  };
-}
-
-/** 1回分の計算（書かない） */
-export async function computeCounts(
-  client,
-  { era, from, to, racerIds, inputs },
-) {
-  return rpc(client, "compute_racer_career_counts", {
-    p_era: era,
-    p_from: from,
-    p_to: to,
-    p_racer_ids: racerIds,
-    p_final_stages: inputs.finalStages,
-    p_override_race_ids: inputs.overrides.raceIds,
-    p_override_grades: inputs.overrides.grades,
-  });
-}
-
-const PAGE = 1000;
-
-/** 層（と選手）の今ある行のキーを、ページを分けて全部読む（1000行で黙って切れないように） */
-export async function fetchExistingKeys(
-  client,
-  table,
-  keyColumns,
-  { era, racerIds = null },
-) {
-  const out = [];
-  for (let from = 0; ; from += PAGE) {
-    let q = client.from(table).select(keyColumns.join(",")).eq("era", era);
-    if (racerIds) q = q.in("racer_id", racerIds);
-    for (const c of keyColumns) q = q.order(c, { ascending: true });
-    const { data, error } = await q.range(from, from + PAGE - 1);
-    if (error)
-      throw new Error(`${table} の既存行の読み取りに失敗: ${error.message}`);
-    out.push(...data);
-    if (data.length < PAGE) break;
-  }
-  return out;
-}
-
-/**
- * もう一方の層の、1選手あたりの行数の上限（既存行の読み取りは2層とも読むため）。
- * kb の実測の最大（system-architect の再審査、2026-10-31）: 場別 132・期別 106・進入コース別 90。
- * 優勝戦の出走は kb の最大を同じ程度と置いた。main は1年で kb の数分の1なので、同じ値を上限に使う
- */
-export const OTHER_ERA_MAX_ROWS = Object.freeze({
-  racer_venue_stats: 132,
-  racer_term_stats: 106,
-  racer_course_stats: 90,
-  racer_championships: 132,
-});
-
-/** PostgREST の1回の読みの上限 */
-export const PAGE_ROWS = 1000;
-
-/**
- * 既存行の読み取り（fetchExistingRows）の1回の選手数。この層の新しい行の1選手の最大と、もう一方の層の上限の和で、
- * 900行に収まる人数にする。1選手だけで収まらなければ止める
- * @param {object[]} rows この層の新しい行
- * @param {number} otherEraMax もう一方の層の1選手の上限
- * @param {object[]} [existingRows] この層の今ある行のキー（racer_id を持つ）
- */
-export function existingChunkSize(rows, otherEraMax = 0, existingRows = []) {
-  // この層は「新しい行」と「今ある行（消える前のセルを含む）」の多い方を見る
-  const count = (list) => {
-    const per = new Map();
-    for (const r of list) per.set(r.racer_id, (per.get(r.racer_id) ?? 0) + 1);
-    return per;
-  };
-  const fresh = count(rows);
-  const old = count(existingRows);
-  const ids = new Set([...fresh.keys(), ...old.keys()]);
-  const perRacer = [...ids].map((id) => Math.max(fresh.get(id) ?? 0, old.get(id) ?? 0));
-  const max = Math.max(1, ...perRacer) + otherEraMax;
-  if (max > 900)
-    throw new Error(`1選手の行が2層で ${max} 行になりうる。既存行の読みが1000行の上限で切れる`);
-  return Math.max(1, Math.floor(900 / max));
 }
 
 /**
@@ -544,6 +182,32 @@ export async function writeCareerRows(
   client,
   { era, acc, racerIds = null, dryRun, allowMassDelete = false, upsertBatchRacers = 100 },
 ) {
+  const plans = await planCareerWrites(client, { era, acc, racerIds, allowMassDelete });
+
+  let written = 0;
+  let deleted = 0;
+  let rows = 0;
+  const perTable = {};
+  for (const { spec, incoming, stale, existing } of plans) {
+    rows += incoming.length;
+    const tableWritten = await upsertCareerTable(client, {
+      spec,
+      incoming,
+      existing,
+      era,
+      dryRun,
+      upsertBatchRacers,
+    });
+    if (!dryRun) await deleteStaleCells(client, spec, stale);
+    written += tableWritten;
+    deleted += stale.length;
+    perTable[spec.table] = { rows: incoming.length, written: tableWritten, stale: stale.length };
+  }
+  return { written, deleted, rows, perTable };
+}
+
+/** 4表の今ある行と消えるセルを先に読み、消えるセルが多すぎる表があれば書く前に止める */
+async function planCareerWrites(client, { era, acc, racerIds, allowMassDelete }) {
   const plans = [];
   for (const [part, spec] of Object.entries(CAREER_TABLES)) {
     const incoming = [...(acc.get(part)?.values() ?? [])];
@@ -562,104 +226,52 @@ export async function writeCareerRows(
       );
     plans.push({ spec, incoming, stale, existing });
   }
+  return plans;
+}
 
-  let written = 0;
-  let deleted = 0;
-  let rows = 0;
-  const perTable = {};
-  for (const { spec, incoming, stale, existing } of plans) {
-    rows += incoming.length;
-    // 既存行の読み取りは選手の数だけ並列に投げるので、選手 upsertBatchRacers 人ずつに分ける
-    const byRacer = new Map();
-    for (const r of incoming) {
-      if (!byRacer.has(r.racer_id)) byRacer.set(r.racer_id, []);
-      byRacer.get(r.racer_id).push(r);
-    }
-    let tableWritten = 0;
-    for (const ids of chunk([...byRacer.keys()], upsertBatchRacers)) {
-      const batch = ids.flatMap((id) => byRacer.get(id));
-      const idSet = new Set(ids);
-      const res = await upsertChangedRows(client, spec.table, batch, {
-        onConflict: spec.keyColumns.join(","),
-        keyColumns: spec.keyColumns,
-        chunkColumn: "racer_id",
-        chunkSize: existingChunkSize(
-          batch,
-          OTHER_ERA_MAX_ROWS[spec.table] ?? 0,
-          existing.filter((r) => idSet.has(r.racer_id)),
-        ),
-        // 1回の読みがちょうど上限で返ったら、切れた既存行のまま書かずに止める
-        fullPageRows: PAGE_ROWS,
-        failOnFetchError: true,
-        label: `${spec.table}（${era}）`,
-        dryRun,
-        stampUpdatedAt: true,
-      });
-      if (res.error) throw res.error;
-      tableWritten += res.written;
-    }
-    if (!dryRun) {
-      for (const key of stale) {
-        let q = client.from(spec.table).delete();
-        for (const c of spec.keyColumns) q = q.eq(c, key[c]);
-        const { error } = await q;
-        if (error)
-          throw new Error(`${spec.table} の古いセルの削除に失敗: ${error.message}`);
-      }
-    }
-    written += tableWritten;
-    deleted += stale.length;
-    perTable[spec.table] = { rows: incoming.length, written: tableWritten, stale: stale.length };
+/** 1表の新しい行を、選手 upsertBatchRacers 人ずつ書く（既存行の読み取りは選手の数だけ並列に投げるため）。書いた行数を返す */
+async function upsertCareerTable(client, { spec, incoming, existing, era, dryRun, upsertBatchRacers }) {
+  const byRacer = new Map();
+  for (const r of incoming) {
+    if (!byRacer.has(r.racer_id)) byRacer.set(r.racer_id, []);
+    byRacer.get(r.racer_id).push(r);
   }
-  return { written, deleted, rows, perTable };
+  let tableWritten = 0;
+  for (const ids of chunk([...byRacer.keys()], upsertBatchRacers)) {
+    const batch = ids.flatMap((id) => byRacer.get(id));
+    const idSet = new Set(ids);
+    const res = await upsertChangedRows(client, spec.table, batch, {
+      onConflict: spec.keyColumns.join(","),
+      keyColumns: spec.keyColumns,
+      chunkColumn: "racer_id",
+      chunkSize: existingChunkSize(
+        batch,
+        OTHER_ERA_MAX_ROWS[spec.table] ?? 0,
+        existing.filter((r) => idSet.has(r.racer_id)),
+      ),
+      // 1回の読みがちょうど上限で返ったら、切れた既存行のまま書かずに止める
+      fullPageRows: PAGE_ROWS,
+      failOnFetchError: true,
+      label: `${spec.table}（${era}）`,
+      dryRun,
+      stampUpdatedAt: true,
+    });
+    if (res.error) throw res.error;
+    tableWritten += res.written;
+  }
+  return tableWritten;
 }
 
-/** 計算の記録（racer_career_meta）を書く */
-export async function writeMeta(client, meta, { dryRun }) {
-  if (dryRun) return;
-  const { error } = await client
-    .from("racer_career_meta")
-    .upsert(
-      { ...meta, updated_at: new Date().toISOString() },
-      { onConflict: "era" },
-    );
-  if (error)
-    throw new Error(`racer_career_meta の書き込みに失敗: ${error.message}`);
-}
-
-/** kb_archive の指紋（開催日の数・レースの数・最大の日付）。安い数え方だけを使う */
-export async function kbFingerprint(client) {
-  const count = async (table) => {
-    const { count: n, error } = await client
-      .from(table)
-      .select("*", { count: "exact", head: true });
+/** 新しい計算に無いセルを1つずつ消す */
+async function deleteStaleCells(client, spec, stale) {
+  for (const key of stale) {
+    let q = client.from(spec.table).delete();
+    for (const c of spec.keyColumns) q = q.eq(c, key[c]);
+    const { error } = await q;
     if (error)
-      throw new Error(`${table} の件数の読み取りに失敗: ${error.message}`);
-    return n;
-  };
-  const { data, error } = await client
-    .from("kb_archive_venue_days")
-    .select("race_date")
-    .order("race_date", { ascending: false })
-    .limit(1);
-  if (error)
-    throw new Error(
-      `kb_archive_venue_days の最大の日付の読み取りに失敗: ${error.message}`,
-    );
-  return {
-    venue_days: await count("kb_archive_venue_days"),
-    races: await count("kb_archive_races"),
-    max_race_date: data?.[0]?.race_date ?? null,
-  };
+      throw new Error(`${spec.table} の古いセルの削除に失敗: ${error.message}`);
+  }
 }
-
-/** 2つの kb の指紋が同じか（boats_by_year 等の付け足しは見ない） */
-export const sameKbFingerprint = (a, b) =>
-  !!a &&
-  !!b &&
-  a.venue_days === b.venue_days &&
-  a.races === b.races &&
-  String(a.max_race_date) === String(b.max_race_date);
 
 /**
  * kb 層を全期間で計算し直す（CLI から1回だけ）。
@@ -672,20 +284,7 @@ export async function runKbEra({
   log = console.log,
 }) {
   const startedAt = new Date().toISOString();
-  const years = [];
-  for (
-    let y = Number(KB_FIRST_DATE.slice(0, 4));
-    y <= Number(KB_LAST_DATE.slice(0, 4));
-    y++
-  )
-    years.push({
-      from:
-        y === Number(KB_FIRST_DATE.slice(0, 4)) ? KB_FIRST_DATE : `${y}-01-01`,
-      to:
-        y === Number(KB_LAST_DATE.slice(0, 4))
-          ? addDays(KB_LAST_DATE, 1)
-          : `${y + 1}-01-01`,
-    });
+  const years = kbYearRanges();
   const fingerprintBefore = await kbFingerprint(client);
   log(`kb_archive の指紋: ${JSON.stringify(fingerprintBefore)}`);
   const inputs = await loadJudgeInputs({ client, era: "kb", ranges: years });
@@ -693,36 +292,9 @@ export async function runKbEra({
     `優勝戦の種別 ${inputs.finalStages.length}/${inputs.stageCount}、グレードの補正 ${inputs.overrides.raceIds.length}レース`,
   );
   for (const r of inputs.overrides.report) log(`  補正: ${JSON.stringify(r)}`);
-  const missingSeed = inputs.overrides.report.filter((r) => r.seedMissing);
-  if (missingSeed.length > 0)
-    throw new Error(
-      `グレードの補正: 基準のレースが見つからない節がある（${missingSeed.map((r) => `${r.rule} ${r.venueDays[0]}〜`).join("、")}）。節の作りが変わった可能性がある`,
-    );
+  assertSeedsFound(inputs.overrides.report);
 
-  const acc = new Map();
-  const boatsByYear = {};
-  let maxRaceDate = null;
-  for (const r of halfMonthRanges(KB_FIRST_DATE, KB_LAST_DATE)) {
-    const t0 = Date.now();
-    const result = await computeCounts(client, {
-      era: "kb",
-      from: r.from,
-      to: r.to,
-      racerIds: null,
-      inputs,
-    });
-    mergeCareerResult(acc, result, "kb");
-    const y = r.from.slice(0, 4);
-    boatsByYear[y] = (boatsByYear[y] ?? 0) + Number(result.boat_rows ?? 0);
-    if (
-      result.max_race_date &&
-      (!maxRaceDate || result.max_race_date > maxRaceDate)
-    )
-      maxRaceDate = result.max_race_date;
-    log(
-      `  ${r.from}〜${r.to}: 艇 ${result.boat_rows} 行（${Date.now() - t0}ms）`,
-    );
-  }
+  const { acc, boatsByYear, maxRaceDate } = await computeKbCounts(client, inputs, log);
   const sourceRows = Object.values(boatsByYear).reduce((a, b) => a + b, 0);
   if (sourceRows === 0)
     throw new Error(
@@ -756,6 +328,44 @@ export async function runKbEra({
   };
   await writeMeta(client, meta, { dryRun });
   return { meta, writeRes };
+}
+
+/** kb は終わった節だけなので、基準のレースが見つからない節があれば止める */
+function assertSeedsFound(report) {
+  const missingSeed = report.filter((r) => r.seedMissing);
+  if (missingSeed.length > 0)
+    throw new Error(
+      `グレードの補正: 基準のレースが見つからない節がある（${missingSeed.map((r) => `${r.rule} ${r.venueDays[0]}〜`).join("、")}）。節の作りが変わった可能性がある`,
+    );
+}
+
+/** 2つの日付の遅い方（next が無ければ cur） */
+const laterRaceDate = (cur, next) =>
+  next && (!cur || next > cur) ? next : cur;
+
+/** kb の全期間を半月ずつ数えて足し合わせる */
+async function computeKbCounts(client, inputs, log) {
+  const acc = new Map();
+  const boatsByYear = {};
+  let maxRaceDate = null;
+  for (const r of halfMonthRanges(KB_FIRST_DATE, KB_LAST_DATE)) {
+    const t0 = Date.now();
+    const result = await computeCounts(client, {
+      era: "kb",
+      from: r.from,
+      to: r.to,
+      racerIds: null,
+      inputs,
+    });
+    mergeCareerResult(acc, result, "kb");
+    const y = r.from.slice(0, 4);
+    boatsByYear[y] = (boatsByYear[y] ?? 0) + Number(result.boat_rows ?? 0);
+    maxRaceDate = laterRaceDate(maxRaceDate, result.max_race_date);
+    log(
+      `  ${r.from}〜${r.to}: 艇 ${result.boat_rows} 行（${Date.now() - t0}ms）`,
+    );
+  }
+  return { acc, boatsByYear, maxRaceDate };
 }
 
 /**
@@ -793,22 +403,68 @@ export async function runMainEra({
       `main: ${activeFrom} 以降に出走表に載った選手が0人（出走表の取り込みが止まっている可能性）`,
     );
 
-  let written = 0;
-  let deleted = 0;
-  let rows = 0;
-  let boatRows = 0;
-  let maxRaceDate = null;
-  // 同じ日・同じモード（shadow と live を混ぜない）の前の起動が時間切れで止まっていたら、その続きから始める
-  const resumeAfter =
-    resume &&
+  const resumeAfter = mainResumeAfter(resume, today, dryRun);
+  const todo = resumeAfter === null ? racerIds : racerIds.filter((id) => id > resumeAfter);
+  const totals = await computeMainBatches(client, {
+    todo,
+    to,
+    inputs,
+    batchSize,
+    shouldStop,
+    dryRun,
+    allowMassDelete,
+    lastRacerId: resumeAfter,
+  });
+  const complete = totals.done === todo.length;
+  if (complete) {
+    await writeMainMeta(client, {
+      startedAt,
+      all,
+      activeFrom,
+      racerCount: racerIds.length,
+      inputs,
+      totals,
+      dryRun,
+    });
+  }
+  return {
+    racers: racerIds.length,
+    resumedAfter: resumeAfter,
+    cursor: complete ? null : { date: today, dryRun, lastRacerId: totals.lastRacerId },
+    done: totals.done,
+    complete,
+    written: totals.written,
+    deleted: totals.deleted,
+    rows: totals.rows,
+    boatRows: totals.boatRows,
+    maxRaceDate: totals.maxRaceDate,
+  };
+}
+
+/** 同じ日・同じモード（shadow と live を混ぜない）の前の起動が時間切れで止まっていたら、その続きの位置（無ければ null） */
+function mainResumeAfter(resume, today, dryRun) {
+  return resume &&
     resume.date === today &&
     resume.dryRun === dryRun &&
     Number.isFinite(resume.lastRacerId)
-      ? resume.lastRacerId
-      : null;
-  const todo = resumeAfter === null ? racerIds : racerIds.filter((id) => id > resumeAfter);
-  let done = 0;
-  let lastRacerId = resumeAfter;
+    ? resume.lastRacerId
+    : null;
+}
+
+/** main の選手を batchSize 人ずつ計算し直して書く。shouldStop が true になったら次の組に着手しない */
+async function computeMainBatches(
+  client,
+  { todo, to, inputs, batchSize, shouldStop, dryRun, allowMassDelete, lastRacerId },
+) {
+  const totals = {
+    written: 0,
+    deleted: 0,
+    rows: 0,
+    boatRows: 0,
+    maxRaceDate: null,
+    done: 0,
+    lastRacerId,
+  };
   for (const ids of chunk(todo, batchSize)) {
     if (shouldStop()) break;
     const result = await computeCounts(client, {
@@ -826,63 +482,52 @@ export async function runMainEra({
       dryRun,
       allowMassDelete,
     });
-    written += res.written;
-    deleted += res.deleted;
-    rows += res.rows;
-    boatRows += Number(result.boat_rows ?? 0);
-    if (
-      result.max_race_date &&
-      (!maxRaceDate || result.max_race_date > maxRaceDate)
-    )
-      maxRaceDate = result.max_race_date;
-    done += ids.length;
-    lastRacerId = ids.at(-1);
+    totals.written += res.written;
+    totals.deleted += res.deleted;
+    totals.rows += res.rows;
+    totals.boatRows += Number(result.boat_rows ?? 0);
+    totals.maxRaceDate = laterRaceDate(totals.maxRaceDate, result.max_race_date);
+    totals.done += ids.length;
+    totals.lastRacerId = ids.at(-1);
   }
-  const complete = done === todo.length;
-  if (complete) {
-    // 全選手を計算し直した時刻（初回の CLI --all）は、毎晩の部分の計算で消さずに持ち越す。
-    // 画面は full_computed_at が無い main 層を「未計算」として扱う
-    const { data: prevMeta, error: prevErr } = await client
-      .from("racer_career_meta")
-      .select("report")
-      .eq("era", "main")
-      .maybeSingle();
-    if (prevErr)
-      throw new Error(`racer_career_meta の読み取りに失敗: ${prevErr.message}`);
-    const fullComputedAt = all
-      ? startedAt
-      : (prevMeta?.report?.full_computed_at ?? null);
-    await writeMeta(
-      client,
-      {
-        era: "main",
-        computed_at: startedAt,
-        rule_version: RULE_VERSION,
-        source_from: MAIN_TABLES_START,
-        source_to: maxRaceDate,
-        source_rows: boatRows,
-        fingerprint: { racers: racerIds.length, all, active_from: activeFrom },
-        report: {
-          full_computed_at: fullComputedAt,
-          overrides: inputs.overrides.report,
-          final_stages: inputs.finalStages.length,
-        },
+  return totals;
+}
+
+/** 全選手を終えた main の計算の記録を書く */
+async function writeMainMeta(
+  client,
+  { startedAt, all, activeFrom, racerCount, inputs, totals, dryRun },
+) {
+  // 全選手を計算し直した時刻（初回の CLI --all）は、毎晩の部分の計算で消さずに持ち越す。
+  // 画面は full_computed_at が無い main 層を「未計算」として扱う
+  const { data: prevMeta, error: prevErr } = await client
+    .from("racer_career_meta")
+    .select("report")
+    .eq("era", "main")
+    .maybeSingle();
+  if (prevErr)
+    throw new Error(`racer_career_meta の読み取りに失敗: ${prevErr.message}`);
+  const fullComputedAt = all
+    ? startedAt
+    : (prevMeta?.report?.full_computed_at ?? null);
+  await writeMeta(
+    client,
+    {
+      era: "main",
+      computed_at: startedAt,
+      rule_version: RULE_VERSION,
+      source_from: MAIN_TABLES_START,
+      source_to: totals.maxRaceDate,
+      source_rows: totals.boatRows,
+      fingerprint: { racers: racerCount, all, active_from: activeFrom },
+      report: {
+        full_computed_at: fullComputedAt,
+        overrides: inputs.overrides.report,
+        final_stages: inputs.finalStages.length,
       },
-      { dryRun },
-    );
-  }
-  return {
-    racers: racerIds.length,
-    resumedAfter: resumeAfter,
-    cursor: complete ? null : { date: today, dryRun, lastRacerId },
-    done,
-    complete,
-    written,
-    deleted,
-    rows,
-    boatRows,
-    maxRaceDate,
-  };
+    },
+    { dryRun },
+  );
 }
 
 /**
