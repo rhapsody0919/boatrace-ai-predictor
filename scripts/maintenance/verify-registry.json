@@ -917,6 +917,11 @@
       "guards": "BOA-1245: 画面の機力指数（getMotorPowerIndex・motorWindowStart）と番付の motor_power が同じ純関数 src/utils/motorPowerIndex.js で数える（サービス層に計算の写しが無い、移す前の画面の計算と乱数3,000通りで一致（指数・期間）、会場の全機は1機ずつの計算と同じ、載せる最少の走数は画面の SMALL_SAMPLE_THRESHOLD）、rank-data.js が motor_power の引数の誤りを DB の前に拒否する（DB・通信なし）"
     },
     {
+      "script": "verify-motor-pretest-make.js",
+      "tier": "ci",
+      "guards": "src/services/motorQueries2.js の fetchPretestByRacer が motor_pretest_stats の行を makeMotorPretest に通す（DM1x motor のつなぎ、A 群）。select は4列のまま、正の行は凍結、破れは RangeError で reject すること"
+    },
+    {
       "script": "verify-motor-pretest.js",
       "tier": "ci",
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
