@@ -17,14 +17,11 @@
 process.env.TZ = "UTC";
 
 import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { createElement } from "react";
+import { renderJsx } from "../lib/renderJsx.js";
 
-const repoRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
-const read = (rel) => readFileSync(path.join(repoRoot, rel), "utf8");
+const read = (rel) =>
+  readFileSync(new URL(`../../${rel}`, import.meta.url), "utf8");
 
 const failures = [];
 let checked = 0;
@@ -263,13 +260,17 @@ const links = (html) =>
   );
 }
 
-// 人の DigestCardGrid の初期表示の枚数と同じ（残りは「もっと見る」まで描かれない）
+// 人の DigestCardGrid の初期表示の枚数と同じ（残りは「もっと見る」まで描かれない）。
+// 本文の字は読まず、部品を previewCount を渡さずに描いて、初めに出る枚数を数える
+const cardOf = (n) => createElement("i", { key: n });
+const grid = await renderJsx(
+  new URL("../../src/components/digest/DigestCardGrid.jsx", import.meta.url),
+  { rows: [...Array(CARD_PREVIEW_COUNT + 3).keys()], children: cardOf },
+);
 check(
   "カードの枚数は人の DigestCardGrid の previewCount の既定値と同じ",
-  read("src/components/digest/DigestCardGrid.jsx").match(
-    /previewCount\s*=\s*(\d+)/,
-  )?.[1],
-  String(CARD_PREVIEW_COUNT),
+  grid.container.querySelectorAll(".digest-grid > i").length,
+  CARD_PREVIEW_COUNT,
 );
 
 // ---- 3. 選手の値 ----
@@ -507,7 +508,7 @@ for (const noNigashiRows of [false, true]) {
   );
   check(
     "today.js は edge でない",
-    /runtime\s*:\s*["']edge["']/.test(read("api/bot-page/today.js")),
+    todayModule.config?.runtime === "edge",
     false,
   );
 }
