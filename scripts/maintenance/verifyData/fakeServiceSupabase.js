@@ -11,6 +11,8 @@
  *
  * 記録（fake.calls）の 1 件: { table, select, filters: [[op, col, val]], orders: [col], desc: Set, range, limit, single }
  * 偽が扱う絞り: eq・neq・gt・gte・lt・lte・in・like・is。それ以外は throw する。
+ * rpc(name, args): opts.rpcs[name](args) の返す行を order・range（・maxRows）で切って返す。記録は fake.rpcCalls の
+ *   { name, args, orders, range }。opts.rpcs に無い名前は、関数の無い本番と同じ PGRST202 の例外にする。
  */
 import { register } from "node:module";
 
@@ -42,6 +44,11 @@ export function registerFakeServiceSupabase() {
       if (!current)
         throw new Error("setFakeSupabase(fake) を先に呼ぶこと（偽が未設定）");
       return current.from(table);
+    },
+    rpc: (name, args) => {
+      if (!current)
+        throw new Error("setFakeSupabase(fake) を先に呼ぶこと（偽が未設定）");
+      return current.rpc(name, args);
     },
   };
 }
@@ -150,7 +157,8 @@ const failureOf = (table, value) =>
  * @param {boolean} [opts.project] select で頼んだ列だけ返す
  * @param {number|null} [opts.maxRows] 1回の返す行の上限（PostgREST は 1000）。range が無ければ先頭から
  * @param {boolean} [opts.sortByOrder] order で並べ替える（既定 true。false なら記録だけで表の順で返す）
- * 戻り値: { calls, tables, failTables, from, reset(tables, fails), queriesOn(table), fail(table, value) }
+ * @param {Record<string, (args: object) => object[]>} [opts.rpcs] RPC の名前 → 行を返す関数（投げれば呼び出しが例外になる）
+ * 戻り値: { calls, rpcCalls, tables, failTables, from, rpc, reset(tables, fails), queriesOn(table), fail(table, value) }
  */
 export function createFakeSupabase(tables = {}, opts = {}) {
   const {
@@ -159,10 +167,34 @@ export function createFakeSupabase(tables = {}, opts = {}) {
     project = false,
     maxRows = null,
     sortByOrder = true,
+    rpcs = {},
   } = opts;
   const calls = [];
+  const rpcCalls = [];
   const fake = {
     calls,
+    rpcCalls,
+    rpc(name, args) {
+      const q = { ...newQuery(null), name, args };
+      rpcCalls.push(q);
+      const run = async () => {
+        if (!rpcs[name])
+          throw Object.assign(
+            new Error(
+              `Could not find the function public.${name} in the schema cache`,
+            ),
+            { code: "PGRST202" },
+          );
+        const rows = await rpcs[name](args);
+        const sorted = sortRows(rows, q, {
+          scramble,
+          salt: rpcCalls.length,
+          sortByOrder,
+        });
+        return { data: pageOf(sorted, q, maxRows), error: null };
+      };
+      return buildChain(q, run);
+    },
     tables,
     failTables,
     reset(newTables, fails = {}) {

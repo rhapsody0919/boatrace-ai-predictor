@@ -3,32 +3,33 @@ import { useTranslation } from "react-i18next";
 import RacerLink from "./assist/RacerLink";
 import BoatBadge from "./BoatBadge";
 import { entrantRowsOf } from "../../utils/raceEntrants";
-import { getRacerScopedRaceStats } from "../../services/racerQueries2.js";
-import { summarizeFrontTaking } from "../../utils/frontTaking";
+import { getRaceFrontTakingByRacer } from "../../services/racerQueries6.js";
 import "./RaceEntrantsSummary.css";
 
-// 札の対象の選手。既存の getRacerScopedRaceStats（選手単位のキャッシュ）だけを使い、このレースより前の走で判定する。
-// 結果は「raceId:racerId」の集合で持ち、別のレースの値を混ぜない。取得に失敗した選手は札なし（欄そのものは崩さない）
+// 札の対象の選手。DB 側で数えた前付けの件数（getRaceFrontTakingByRacer、6選手で1回）を使い、このレースより前の走で判定する。
+// 結果は「raceId:racerId」の集合で持ち、別のレースの値を混ぜない。取得に失敗したら札なし（欄そのものは崩さない）
 function useInyaRacerIds(rows, raceId) {
   const [found, setFound] = useState(() => new Set());
   const racerKey = rows.map((r) => r.racerId ?? "").join(",");
   useEffect(() => {
-    if (!raceId) return undefined;
+    const racerIds = racerKey.split(",").filter(Boolean);
+    if (!raceId || racerIds.length === 0) return undefined;
     let cancelled = false;
-    racerKey
-      .split(",")
-      .filter(Boolean)
-      .forEach((racerId) => {
-        getRacerScopedRaceStats(racerId)
-          .then((records) => {
-            if (cancelled) return;
-            if (!summarizeFrontTaking(records, { beforeRaceId: raceId }).isInya)
-              return;
-            setFound((prev) => new Set(prev).add(`${raceId}:${racerId}`));
-          })
-          .catch((err) => {
-            console.error("前付けの傾向の取得エラー:", err?.message);
-          });
+    getRaceFrontTakingByRacer(racerIds, raceId)
+      .then((byRacer) => {
+        if (cancelled) return;
+        const inya = racerIds.filter((racerId) => byRacer[racerId]?.isInya);
+        if (inya.length === 0) return;
+        setFound(
+          (prev) =>
+            new Set([
+              ...prev,
+              ...inya.map((racerId) => `${raceId}:${racerId}`),
+            ]),
+        );
+      })
+      .catch((err) => {
+        console.error("前付けの傾向の取得エラー:", err?.message);
       });
     return () => {
       cancelled = true;
