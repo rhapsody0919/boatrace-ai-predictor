@@ -10,9 +10,10 @@
  * 詳細: docs/design/content-ops-flow/spec.md フローC-7
  */
 
-import { promises as fs } from "fs";
+import { existsSync, promises as fs, readFileSync } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { localSourceFiles } from "../verifyData/sourceScope.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../../..");
@@ -54,7 +55,13 @@ async function collectTargetFiles() {
     await Promise.all(TARGET_DIRS.map(listMarkdownFiles))
   ).flat();
   const existing = [];
-  for (const relPath of [...TARGET_FILES, ...fromDirs]) {
+  // 割ったページ（同じフォルダの相対 import の先）も見る。名指しの順を先に、足した物は後ろへ
+  const repoFs = {
+    read: (rel) => readFileSync(path.join(REPO_ROOT, rel), "utf8"),
+    exists: (rel) => existsSync(path.join(REPO_ROOT, rel)),
+  };
+  const split = TARGET_FILES.flatMap((f) => localSourceFiles(repoFs, f));
+  for (const relPath of [...new Set([...TARGET_FILES, ...split]), ...fromDirs]) {
     try {
       await fs.access(path.join(REPO_ROOT, relPath));
       existing.push(relPath);

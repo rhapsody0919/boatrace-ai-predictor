@@ -21,7 +21,8 @@
  * 「移設先が変わったので案内も直せ」と言える。文字列同士の突き合わせだけの
  * 検査にはしない。
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { localSourceFiles } from "./verifyData/sourceScope.js";
 
 const AI_TAB = "src/components/race/RaceAiPredictionTab.jsx";
 const RESULT_TAB = "src/components/race/RaceResult.jsx";
@@ -62,7 +63,9 @@ if (!aiRendersVerdict || resultRendersVerdict) {
 const expectedTab = resultRendersVerdict ? "結果" : "AI予想";
 const wrongTab = expectedTab === "AI予想" ? "結果" : "AI予想";
 
-for (const file of GUIDANCE_FILES) {
+// 割ったページ（同じフォルダの相対 import の先）の文も見る
+const scanned = GUIDANCE_FILES.flatMap((f) => localSourceFiles({ read, exists: existsSync }, f));
+for (const file of scanned) {
   const source = read(file);
   // JSXは要素をまたいで改行するため、行単位ではなく句点で区切る
   const sentences = source
