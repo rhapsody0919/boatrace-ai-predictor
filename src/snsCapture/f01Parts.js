@@ -166,6 +166,70 @@ function flowTri(m, q) {
   throw new Error(`引数 tab は similar か scenario（${q.tab}）`);
 }
 
+/** winBars の props。押せる棒（onSelect あり）で描く。本番の棒は押せるので、押せない形（onSelect 無し）にすると見た目が変わる */
+function winBarsProps(m) {
+  const sim = need(api(m, "similar")?.similar, "api.similar.similar");
+  return {
+    sim,
+    ag: similarSlice(sim.neighbors).ag,
+    target: 1,
+    boat: null,
+    onSelect: noop,
+  };
+}
+
+/** flow の props（着順の流れ） */
+function flowProps(m, q) {
+  return {
+    tri: flowTri(m, q),
+    first: q.first ? int(q.first, "first") : null,
+    not1: false,
+    sel: null,
+    onPickFirst: noop,
+    onPickFirstKey: noop,
+    onToggleLink: noop,
+  };
+}
+
+/** pattern の props（展開シナリオの形の札） */
+function patternProps(m, q, stage) {
+  const data = scenarioOf(m);
+  if (!SLIT_FORMS.includes(q.form))
+    throw new Error(`引数 form は ${SLIT_FORMS.join("・")}（${q.form}）`);
+  // 札の印（ScenarioTab と同じ: 枠なりの進入・手がかりの版は既定の course、展示後は今日の展示の形）
+  const badges = hintBadgeByForm(
+    hintRows(
+      data.scenario?.hints,
+      data.hints?.course,
+      "course",
+      wilsonInterval,
+    ),
+  );
+  const exh = stage === "exhibition" ? data.exhibition : null;
+  const today = exh && !exh.forms_excluded ? (exh.forms ?? []) : [];
+  return {
+    f: q.form,
+    forms: need(
+      data.scenario?.cells?.waku?.forms,
+      "api.scenario.scenario.cells.waku.forms",
+    ),
+    pressed: false,
+    onSlit: noop,
+    hint: Boolean(badges[q.form]),
+    today: today.includes(q.form),
+  };
+}
+
+/** followTop・followTable の props（思考アシスト＞相手。ThinkingAssistPage と同じ: 範囲は会場の全レース＝ scenario の VA） */
+function followProps(part, m, q) {
+  const va = need(api(m, "scenarioVA")?.scenario, "api.scenarioVA.scenario");
+  const axis = int(q.axis ?? 1, "axis");
+  const f = need(winFollowers(va, axis), `${axis}号艇を軸にしたときの2着`);
+  return part === "followTop"
+    ? { f, axis, onAxis: noop, auto: false }
+    : { f, axis, marks: axisMarks(va, f, axis) };
+}
+
 /**
  * 部品の props（名前は F01_PARTS[part].props と同じ）
  * @param {keyof typeof F01_PARTS} part
@@ -183,64 +247,15 @@ export function f01PartProps(part, m, query) {
       return { ...radarInputs(m, stage), picks: [1], axisSel: null, onAxis: noop };
     case "rows":
       return { ...radarInputs(m, stage), picks: [1], main: 1, onPress: noop };
-    case "winBars": {
-      const sim = need(api(m, "similar")?.similar, "api.similar.similar");
-      // 押せる棒（onSelect あり）で描く。本番の棒は押せるので、押せない形（onSelect 無し）にすると見た目が変わる
-      return {
-        sim,
-        ag: similarSlice(sim.neighbors).ag,
-        target: 1,
-        boat: null,
-        onSelect: noop,
-      };
-    }
+    case "winBars":
+      return winBarsProps(m);
     case "flow":
-      return {
-        tri: flowTri(m, q),
-        first: q.first ? int(q.first, "first") : null,
-        not1: false,
-        sel: null,
-        onPickFirst: noop,
-        onPickFirstKey: noop,
-        onToggleLink: noop,
-      };
-    case "pattern": {
-      const data = scenarioOf(m);
-      if (!SLIT_FORMS.includes(q.form))
-        throw new Error(`引数 form は ${SLIT_FORMS.join("・")}（${q.form}）`);
-      // 札の印（ScenarioTab と同じ: 枠なりの進入・手がかりの版は既定の course、展示後は今日の展示の形）
-      const badges = hintBadgeByForm(
-        hintRows(
-          data.scenario?.hints,
-          data.hints?.course,
-          "course",
-          wilsonInterval,
-        ),
-      );
-      const exh = stage === "exhibition" ? data.exhibition : null;
-      const today = exh && !exh.forms_excluded ? (exh.forms ?? []) : [];
-      return {
-        f: q.form,
-        forms: need(
-          data.scenario?.cells?.waku?.forms,
-          "api.scenario.scenario.cells.waku.forms",
-        ),
-        pressed: false,
-        onSlit: noop,
-        hint: Boolean(badges[q.form]),
-        today: today.includes(q.form),
-      };
-    }
+      return flowProps(m, q);
+    case "pattern":
+      return patternProps(m, q, stage);
     case "followTop":
-    case "followTable": {
-      // 思考アシスト＞相手（ThinkingAssistPage と同じ: 範囲は会場の全レース＝ scenario の VA）
-      const va = need(api(m, "scenarioVA")?.scenario, "api.scenarioVA.scenario");
-      const axis = int(q.axis ?? 1, "axis");
-      const f = need(winFollowers(va, axis), `${axis}号艇を軸にしたときの2着`);
-      return part === "followTop"
-        ? { f, axis, onAxis: noop, auto: false }
-        : { f, axis, marks: axisMarks(va, f, axis) };
-    }
+    case "followTable":
+      return followProps(part, m, q);
     default:
       throw new Error(
         `撮影用の部品 ${part} は無い（${Object.keys(F01_PARTS).join("・")}）`,
