@@ -1,9 +1,8 @@
 /**
  * 記事の PR の関門の本体 evaluateContentPr（純粋関数）。fs・git・時計に触れない。
  * 入力は全部引数で受ける（集めるのは scripts/content/check-content-pr.js）。契約: docs/operation/content-pr-contract.md
- * contentPrGate.js が公開の名前として再 export する
+ * contentPrGate.js が e2e-scope.js の部品を渡して evaluateContentPr として出す
  */
-import { GATE_CONFIG_PATH } from "../maintenance/e2e-scope.js";
 import {
   CHART_JSON_RE,
   JA_JSON_RE,
@@ -34,7 +33,7 @@ const REGULAR_FILE_MODE = "100644";
 const IMAGE_RE = /^public\/images\/blog\/[^/]+$/;
 
 // 許可のパス・状態・ファイルの型
-function entryErrors(entries, config) {
+function entryErrors(entries, config, gatePath) {
   const errors = [];
   const patterns = (config.allowedPathPatterns ?? []).map((s) => new RegExp(s));
   for (const e of entries) {
@@ -51,7 +50,7 @@ function entryErrors(entries, config) {
       e.path.split("/").some((seg) => seg === "." || seg === ".." || seg === "")
     )
       errors.push(`[path] ${e.path} は . や .. や空の区切りを含む`);
-    else if (e.path === GATE_CONFIG_PATH) {
+    else if (e.path === gatePath) {
       // 許可の型の外。免除の一覧から外すだけの変更かを checkGateConfigChange で見る（型を足しても素通りさせない）
     } else if (!patterns.some((re) => re.test(e.path)))
       errors.push(`[path] ${e.path} は記事の PR で変えてよいパスでない`);
@@ -187,7 +186,7 @@ function judgementErrors(textFiles, base, config) {
 }
 
 // manifest を読んで関門にかける。{ errors, manifest, p1Recorded }（manifest は読めた JSON、読めなければ undefined）
-function manifestSection(manifestPath, entries, input) {
+function manifestSection(manifestPath, entries, input, gatePath) {
   const { head, base, basePaths, headPaths, config } = input;
   const errors = [];
   let p1Recorded = { fan: 0, "seo-marketer": 0 };
@@ -213,7 +212,7 @@ function manifestSection(manifestPath, entries, input) {
   } else if (parsed) {
     // 設定の変更は manifest の paths に入れない（checkGateConfigChange が別に見る）
     const diffPaths = entries.filter(
-      (e) => e.path !== manifestPath && e.path !== GATE_CONFIG_PATH,
+      (e) => e.path !== manifestPath && e.path !== gatePath,
     );
     const r = checkManifest({
       manifestPath,
@@ -248,21 +247,20 @@ function manifestSection(manifestPath, entries, input) {
  * @param {string[]} input.basePaths  base のファイル一覧（slug の衝突、.md と JSON の対応、図の JSON の実在）
  * @param {string[]} input.headPaths  HEAD のファイル一覧（同じ用途）
  * @param {object} input.config  scripts/content/content-pr-gate.json
+ * @param {{gatePath: string, grandfatherRemovals: Function}} scope  関門の設定のパスと免除の一覧の差の判定
+ *   （scripts/maintenance/e2e-scope.js の GATE_CONFIG_PATH・grandfatherRemovals。入口の contentPrGate.js が渡す。
+ *   scripts/lib から e2e-scope.js への依存の辺を入口の1本に保つため）
  */
-export function evaluateContentPr({
-  diff,
-  head,
-  base,
-  basePaths,
-  headPaths = [],
-  config,
-}) {
+export function evaluateContentPrWith(
+  { diff, head, base, basePaths, headPaths = [], config },
+  { gatePath, grandfatherRemovals },
+) {
   const entries = diff.map((d) => ({
     status: d.status,
     path: d.path,
     mode: d.mode,
   }));
-  const errors = entryErrors(entries, config);
+  const errors = entryErrors(entries, config, gatePath);
 
   const picked = pickManifest(entries);
   const { manifestPath } = picked;
@@ -289,13 +287,12 @@ export function evaluateContentPr({
   errors.push(...judgement.errors);
 
   const section = manifestPath
-    ? manifestSection(manifestPath, entries, {
-        head,
-        base,
-        basePaths,
-        headPaths,
-        config,
-      })
+    ? manifestSection(
+        manifestPath,
+        entries,
+        { head, base, basePaths, headPaths, config },
+        gatePath,
+      )
     : {
         errors: [],
         manifest: undefined,
@@ -303,16 +300,20 @@ export function evaluateContentPr({
       };
   errors.push(...section.errors);
 
-  const gateEntry = entries.find((e) => e.path === GATE_CONFIG_PATH);
+  const gateEntry = entries.find((e) => e.path === gatePath);
   if (gateEntry)
     errors.push(
-      ...checkGateConfigChange(gateEntry, {
-        head,
-        base,
-        manifest: isPlainObject(section.manifest)
-          ? section.manifest
-          : undefined,
-      }),
+      ...checkGateConfigChange(
+        gateEntry,
+        {
+          head,
+          base,
+          manifest: isPlainObject(section.manifest)
+            ? section.manifest
+            : undefined,
+        },
+        grandfatherRemovals,
+      ),
     );
 
   return {

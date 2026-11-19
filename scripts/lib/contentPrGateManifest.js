@@ -2,7 +2,6 @@
  * 記事の PR の関門のうち manifest（docs/content-manifests/<id>.json）を見る部分（純粋関数。contentPrGate.js から使う）。
  * 4つの役のレビュー・paths と files・図の JSON・kind・関門の設定の変更。契約: docs/operation/content-pr-contract.md
  */
-import { grandfatherRemovals } from "../maintenance/e2e-scope.js";
 import {
   CHART_JSON_RE,
   JA_JSON_RE,
@@ -300,8 +299,13 @@ export function checkManifest({
  * 通すのは、internalLinkGrandfathered から行を外すだけ（一覧の外のキー・残った行の順は変えない、足さない）で、
  * 外した行がすべて manifest の paths にある記事の .md、かつ改稿後の本文に内部リンクがあるときだけ。
  * 一覧に足す（関門を緩める）変更は通常の PR でオーナー承認（今までどおり）
+ * grandfatherRemovals は scripts/maintenance/e2e-scope.js の同じ名前の関数（呼び側が渡す）
  */
-export function checkGateConfigChange(entry, { head, base, manifest }) {
+export function checkGateConfigChange(
+  entry,
+  { head, base, manifest },
+  grandfatherRemovals,
+) {
   const p = entry.path;
   if (entry.status !== "M")
     return [`[gate-config] ${p} は変更（M）だけ扱う（状態 ${entry.status}）`];

@@ -7,8 +7,14 @@
  * - contentPrGateCommon.js: 定数・パスの型・ハッシュ・時刻の形・JPEG の寸法・内部リンクの数え方
  * - contentPrGateText.js: 本文の検査（生 HTML・「競艇」・内部リンク・判断が要る句）
  * - contentPrGateManifest.js: manifest の検査
- * - contentPrGateEvaluate.js: 関門の本体 evaluateContentPr
+ * - contentPrGateEvaluate.js: 関門の本体（e2e-scope.js の部品はこの入口から渡す。scripts/lib から e2e-scope.js への依存の辺を入口の1本に保つ）
  */
+import {
+  GATE_CONFIG_PATH,
+  grandfatherRemovals,
+} from "../maintenance/e2e-scope.js";
+import { evaluateContentPrWith } from "./contentPrGateEvaluate.js";
+
 export {
   MANIFEST_SCHEMA,
   REVIEW_ROLES,
@@ -30,4 +36,14 @@ export {
   normalizeForJudgement,
   referencedImagePaths,
 } from "./contentPrGateText.js";
-export { evaluateContentPr } from "./contentPrGateEvaluate.js";
+
+/**
+ * 関門の本体（contentPrGateEvaluate.js の evaluateContentPrWith）に、e2e-scope.js の設定のパスと免除の一覧の差の判定を渡す。
+ * 入力と戻り値は contentPrGateEvaluate.js の説明のとおり
+ */
+export function evaluateContentPr(input) {
+  return evaluateContentPrWith(input, {
+    gatePath: GATE_CONFIG_PATH,
+    grandfatherRemovals,
+  });
+}
