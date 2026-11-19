@@ -528,10 +528,9 @@ export function formatSkipSummary(label, stats, { fallback = false } = {}) {
  *   その列は今回の実行で書き込まれていない（error は null のまま＝成功扱いになるため、呼び出し元が
  *   完了を判定するときはこちらも見る）
  */
-export async function upsertChangedRows(
-  client,
+/** upsertChangedRows の選択肢に既定値を入れ、updated_at を押すときの ignoreColumns と列のグループを組む */
+function resolveUpsertOptions(
   table,
-  incomingRows,
   {
     onConflict,
     keyColumns,
@@ -548,41 +547,34 @@ export async function upsertChangedRows(
     failOnFetchError = false,
   },
 ) {
-  const {
-    toWrite: changedRows,
-    stats,
-    fallback,
-    error: fetchError,
-  } = await filterUnchangedRows(client, table, incomingRows, {
+  return {
+    onConflict,
     keyColumns,
     chunkColumn,
     chunkSize,
+    label,
+    batchSize,
+    dryRun,
+    stampUpdatedAt,
+    now,
     fullPageRows,
     failOnFetchError,
     ignoreColumns: stampUpdatedAt
       ? [...new Set([...ignoreColumns, UPDATED_AT_COLUMN])]
       : ignoreColumns,
-  });
-  // failOnFetchError: 既存行が読めなければ全行を書かずに止める（読みの上限で切れたまま書かない）
-  if (fetchError) {
-    return {
-      written: 0,
-      skipped: 0,
-      error: fetchError,
-      stats,
-      toWrite: [],
-      droppedGroups: [],
-    };
-  }
-  // 時刻は、既存行の取得が済んだ「書き込みの直前」に取る（created_at のDBの now() との差を小さくする）
-  const updatedAt = (now ?? new Date()).toISOString();
-  const toWrite = stampUpdatedAt
-    ? changedRows.map((row) => ({ ...row, [UPDATED_AT_COLUMN]: updatedAt }))
-    : changedRows;
-  const groups = stampUpdatedAt
-    ? { ...optionalColumnGroups, [UPDATED_AT_GROUP]: [UPDATED_AT_COLUMN] }
-    : optionalColumnGroups;
-  // 一度「列が無い」と分かったグループは、以降のバッチでも最初から除く
+    groups: stampUpdatedAt
+      ? { ...optionalColumnGroups, [UPDATED_AT_GROUP]: [UPDATED_AT_COLUMN] }
+      : optionalColumnGroups,
+  };
+}
+
+/** 変わった行を batchSize ごとに書く（dryRun なら書かない）。一度「列が無い」と分かったグループは、以降のバッチでも最初から除く */
+async function writeChangedBatches(
+  client,
+  table,
+  toWrite,
+  { onConflict, groups, batchSize, dryRun },
+) {
   const columnState = createOptionalColumnState();
   let error = null;
   let written = 0;
@@ -609,10 +601,25 @@ export async function upsertChangedRows(
       }
     }
   }
-  // 列を落としたまま「成功」として終わらせない。落としたグループは、呼び出し元が戻り値を
-  // 見ていなくても必ず目に入るよう、書き込みの要約と同じ行に出す
-  // （2026-09-27、N19のloadで race_entries の6列が一斉に書かれないまま成功扱いになった）
-  const droppedGroups = [...columnState.missingGroups];
+  return { written, error, droppedGroups: [...columnState.missingGroups] };
+}
+
+/**
+ * 書き込みの要約を出す。列を落としたまま「成功」として終わらせない。落としたグループは、呼び出し元が戻り値を
+ * 見ていなくても必ず目に入るよう、書き込みの要約と同じ行に出す
+ * （2026-09-27、N19のloadで race_entries の6列が一斉に書かれないまま成功扱いになった）
+ */
+function reportUpsertResult({
+  table,
+  label,
+  stats,
+  fallback,
+  dryRun,
+  written,
+  total,
+  groups,
+  droppedGroups,
+}) {
   const droppedNote =
     droppedGroups.length === 0
       ? ""
@@ -622,7 +629,7 @@ export async function upsertChangedRows(
   // 書き込みの成否が分かってから出力する（失敗した行を「書き込んだ」と誤読させない）
   console.log(
     `  ${dryRun ? "[DRY-RUN] " : ""}${formatSkipSummary(label, stats, { fallback })}` +
-      (dryRun || written === toWrite.length
+      (dryRun || written === total
         ? ""
         : ` / 実際に書き込めたのは${written}件`) +
       droppedNote,
@@ -633,6 +640,56 @@ export async function upsertChangedRows(
         `マイグレーションが未適用なら適用し、適用済みならエラーの原因を確認してから書き直してください`,
     );
   }
+}
+
+export async function upsertChangedRows(client, table, incomingRows, options) {
+  const o = resolveUpsertOptions(table, options);
+  const {
+    toWrite: changedRows,
+    stats,
+    fallback,
+    error: fetchError,
+  } = await filterUnchangedRows(client, table, incomingRows, {
+    keyColumns: o.keyColumns,
+    chunkColumn: o.chunkColumn,
+    chunkSize: o.chunkSize,
+    fullPageRows: o.fullPageRows,
+    failOnFetchError: o.failOnFetchError,
+    ignoreColumns: o.ignoreColumns,
+  });
+  // failOnFetchError: 既存行が読めなければ全行を書かずに止める（読みの上限で切れたまま書かない）
+  if (fetchError) {
+    return {
+      written: 0,
+      skipped: 0,
+      error: fetchError,
+      stats,
+      toWrite: [],
+      droppedGroups: [],
+    };
+  }
+  // 時刻は、既存行の取得が済んだ「書き込みの直前」に取る（created_at のDBの now() との差を小さくする）
+  const updatedAt = (o.now ?? new Date()).toISOString();
+  const toWrite = o.stampUpdatedAt
+    ? changedRows.map((row) => ({ ...row, [UPDATED_AT_COLUMN]: updatedAt }))
+    : changedRows;
+  const { written, error, droppedGroups } = await writeChangedBatches(
+    client,
+    table,
+    toWrite,
+    o,
+  );
+  reportUpsertResult({
+    table,
+    label: o.label,
+    stats,
+    fallback,
+    dryRun: o.dryRun,
+    written,
+    total: toWrite.length,
+    groups: o.groups,
+    droppedGroups,
+  });
   return {
     written,
     skipped: stats.unchanged,
