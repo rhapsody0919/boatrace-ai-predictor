@@ -89,22 +89,36 @@ export const actualOptions = { keyColumns: ["race_id"], writeMissing: false };
 
 function scene1() {
   {
-    // volatility更新（writeMissing:false）: racesに行が無いレースはUPDATE対象外
+    // races.race_grade（update-race-info.js: 既存行からrace_gradeを比較）
     const race = db.races[0];
-    const r = diffRows(
+    const same = diffRows(
       db.races,
-      [{ race_id: "2026-09-18-99-99", volatility_score: 10 }],
+      [{ race_id: race.race_id, race_grade: "ippan" }],
       {
         keyColumns: ["race_id"],
         writeMissing: false,
       },
     );
-    check(
-      "races volatility: 行が無いレースはUPDATEしない（writeMissing:false）",
-      r.toWrite.length === 0 && r.stats.missing === 1,
+    const changed = diffRows(
+      db.races,
+      [{ race_id: race.race_id, race_grade: "G1" }],
+      {
+        keyColumns: ["race_id"],
+        writeMissing: false,
+      },
     );
-    void race;
+    check("races.race_grade: 同一値は変更なし", same.toWrite.length === 0);
+    check(
+      "races.race_grade: 変化（ippan→G1）は書く",
+      changed.toWrite.length === 1,
+    );
   }
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（check・db・kfileText・clone・diff） */
+export function runUnchangedRowsScenes1(env) {
+  ({ check, db, kfileText, clone, diff } = env);
+  scene1();
 }
 
 function scene2() {
@@ -290,9 +304,8 @@ function scene4() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（check・db・kfileText・clone・diff） */
-export function runUnchangedRowsScenes1(env) {
+export function runUnchangedRowsScenes2(env) {
   ({ check, db, kfileText, clone, diff } = env);
-  scene1();
   scene2();
   scene3();
   scene4();
@@ -317,7 +330,7 @@ function scene5() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（check・db・kfileText・clone・diff・ACTUAL） */
-export function runUnchangedRowsScenes2(env) {
+export function runUnchangedRowsScenes3(env) {
   ({ check, db, kfileText, clone, diff, ACTUAL } = env);
   scene5();
 }

@@ -79,7 +79,7 @@ function scene1() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（check・db・clone・diff・entryIncoming・racesOptions・racesIncoming・ACTUAL） */
-export function runUnchangedRowsScenes3(env) {
+export function runUnchangedRowsScenes4(env) {
   ({ check, db, clone, diff, entryIncoming, racesOptions, racesIncoming, ACTUAL } = env);
   scene1();
 }
@@ -269,7 +269,7 @@ function scene4() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（check・db・clone・diff・entryIncoming・racesOptions・racesIncoming・ACTUAL） */
-export async function runUnchangedRowsScenes4(env) {
+export async function runUnchangedRowsScenes5(env) {
   ({ check, db, clone, diff, entryIncoming, racesOptions, racesIncoming, ACTUAL } = env);
   await scene2();
   await scene3();

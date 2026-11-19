@@ -19,9 +19,13 @@
 import fs from "node:fs";
 import { diffRows, normalizeValue, NUMERIC_SCALES, roundToScale } from "../lib/unchangedRows.js";
 import { parseKFileRankings, parseKFileText } from "../lib/kfileParser.js";
-import { runUnchangedRowsScenes1, runUnchangedRowsScenes2 } from "./verifyData/unchanged-rows-scenes-1.js";
-import { runUnchangedRowsScenes3, runUnchangedRowsScenes4 } from "./verifyData/unchanged-rows-scenes-2.js";
-import { runUnchangedRowsScenes5 } from "./verifyData/unchanged-rows-scenes-3.js";
+import {
+  runUnchangedRowsScenes1,
+  runUnchangedRowsScenes2,
+  runUnchangedRowsScenes3,
+} from "./verifyData/unchanged-rows-scenes-1.js";
+import { runUnchangedRowsScenes4, runUnchangedRowsScenes5 } from "./verifyData/unchanged-rows-scenes-2.js";
+import { runUnchangedRowsScenes6 } from "./verifyData/unchanged-rows-scenes-3.js";
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -353,39 +357,34 @@ const racesIncoming = (row, overrides = {}) => ({
     same.toWrite.length === 0,
   );
 }
-{
-  // races.race_grade（update-race-info.js: 既存行からrace_gradeを比較）
-  const race = db.races[0];
-  const same = diffRows(
-    db.races,
-    [{ race_id: race.race_id, race_grade: "ippan" }],
-    {
-      keyColumns: ["race_id"],
-      writeMissing: false,
-    },
-  );
-  const changed = diffRows(
-    db.races,
-    [{ race_id: race.race_id, race_grade: "G1" }],
-    {
-      keyColumns: ["race_id"],
-      writeMissing: false,
-    },
-  );
-  check("races.race_grade: 同一値は変更なし", same.toWrite.length === 0);
-  check(
-    "races.race_grade: 変化（ippan→G1）は書く",
-    changed.toWrite.length === 1,
-  );
-}
 
 // ---- 後半の場面（verifyData/unchanged-rows-scenes-1.js） ----
 runUnchangedRowsScenes1({ check, db, kfileText, clone, diff });
+{
+  // volatility更新（writeMissing:false）: racesに行が無いレースはUPDATE対象外
+  const race = db.races[0];
+  const r = diffRows(
+    db.races,
+    [{ race_id: "2026-09-18-99-99", volatility_score: 10 }],
+    {
+      keyColumns: ["race_id"],
+      writeMissing: false,
+    },
+  );
+  check(
+    "races volatility: 行が無いレースはUPDATEしない（writeMissing:false）",
+    r.toWrite.length === 0 && r.stats.missing === 1,
+  );
+  void race;
+}
+
+// ---- 後半の場面（verifyData/unchanged-rows-scenes-1.js） ----
+runUnchangedRowsScenes2({ check, db, kfileText, clone, diff });
 const ACTUAL = [1, 2, 3, 4, 5, 6].map((n) => `actual_course_${n}`);
 
 // ---- 後半の場面（verifyData/unchanged-rows-scenes-1.js・unchanged-rows-scenes-2.js） ----
-runUnchangedRowsScenes2({ check, db, kfileText, clone, diff, ACTUAL });
-runUnchangedRowsScenes3({ check, db, clone, diff, entryIncoming, racesOptions, racesIncoming, ACTUAL });
+runUnchangedRowsScenes3({ check, db, kfileText, clone, diff, ACTUAL });
+runUnchangedRowsScenes4({ check, db, clone, diff, entryIncoming, racesOptions, racesIncoming, ACTUAL });
 
 // ---------------------------------------------------------------------------
 // 6b. BOA-349の原因: 1号艇が欠場したレース（Kファイルの結果行が欠場行「K0」「K1」）
@@ -438,8 +437,8 @@ for (const { file, date, raceId, absentLine } of [
 }
 
 // ---- 後半の場面（verifyData/unchanged-rows-scenes-2.js・unchanged-rows-scenes-3.js） ----
-await runUnchangedRowsScenes4({ check, db, clone, diff, entryIncoming, racesOptions, racesIncoming, ACTUAL });
-await runUnchangedRowsScenes5({ check, clone });
+await runUnchangedRowsScenes5({ check, db, clone, diff, entryIncoming, racesOptions, racesIncoming, ACTUAL });
+await runUnchangedRowsScenes6({ check, clone });
 
 if (failures > 0) {
   console.error(`\n❌ ${failures}件の検証に失敗`);

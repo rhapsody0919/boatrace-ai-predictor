@@ -112,7 +112,7 @@ async function scene2() {
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（check・clone） */
-export async function runUnchangedRowsScenes5(env) {
+export async function runUnchangedRowsScenes6(env) {
   ({ check, clone } = env);
   await scene1();
   await scene2();
