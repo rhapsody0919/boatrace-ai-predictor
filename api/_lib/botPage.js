@@ -249,7 +249,7 @@ export function createTodayRacesSource({
 }
 
 /** race_series の REST 応答を、人の画面（getSeriesOfDate）と同じく makeMeet に通した行にする。取得失敗や破れた行を「帯なし」にしない。 */
-function toSeriesRows(rows) {
+function assertSeriesRows(rows) {
   if (!Array.isArray(rows) || rows.length > 1 || rows.some((r) => !r || !(r.title === null || typeof r.title === "string"))) {
     throw new MaterialFetchError("race_series の応答の形が違う");
   }
@@ -289,7 +289,7 @@ export function createSeriesSource({
     } catch {
       throw new MaterialFetchError("race_series を取得できない");
     }
-    rows = toSeriesRows(rows);
+    rows = assertSeriesRows(rows);
     // 日付をまたいだ分を残し続けない。
     for (const [k, v] of cache) if (now() - v.at >= ttlMs) cache.delete(k);
     cache.set(cacheKey, { at: now(), rows });
@@ -609,7 +609,8 @@ export async function respondBotPage(
     if (page === "venue") {
       venueModel = buildVenueModel(json, venueCode, { t, lang, today });
       if (venueModel.meetBannerEligible) {
-        const seriesRows = toSeriesRows(await getSeriesRows(venueCode, today));
+        const seriesRows = await getSeriesRows(venueCode, today);
+        assertSeriesRows(seriesRows);
         venueModel = buildVenueModel(json, venueCode, { t, lang, today, seriesRows });
       }
     }
