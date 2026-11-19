@@ -2,16 +2,15 @@
  * 断るクローラー（Reflectionbot・meta-externalagent・Bytespider。Supabase の枠越えの主因、オーナー 2026-11-19）の検査。
  * 1. 見本の UA（大文字小文字を変えた物も）は middleware.js が matcher の全パスで 403・no-store を返す
  * 2. 検索ボット（Googlebot・bingbot）・他の AI（GPTBot・ClaudeBot 等）・SNS・人のブラウザは 403 にならず今の経路のまま
- * 3. public/robots.txt に同じ3つだけの Disallow: / があり、User-agent: * は Allow: / のまま
+ * robots.txt の側は verify-robots-txt.js
  * middleware 関数を直接呼ぶ（verify-middleware-routing.js と同じ作り）。
  */
 
-import { readFileSync } from "node:fs";
 import middleware, { config } from "../../middleware.js";
-import {
-  BLOCKED_CRAWLER_USER_AGENTS,
-  isBlockedCrawler,
-} from "../../src/config/aiCrawlerBots.js";
+
+// 正本は src/config/aiCrawlerBots.js の BLOCKED_CRAWLER_USER_AGENTS。ここは見本として持ち、middleware の振る舞いで確かめる
+// （新しい verify は src の本文を読まない決まりのため import しない）
+const BLOCKED_CRAWLER_USER_AGENTS = ["Reflectionbot", "meta-externalagent", "Bytespider"];
 
 const BOT_UA =
   "Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)";
@@ -82,7 +81,6 @@ console.log("断るクローラーは 403、他の UA は今のまま");
     "/admin/rules",
   ];
   for (const ua of BLOCKED_SAMPLES) {
-    check(`${ua} は断る対象`, isBlockedCrawler(ua));
     for (const path of PATHS) {
       check(`${path} は matcher に一致する`, matchesMatcher(path));
       const res = await call(path, { ua });
@@ -94,13 +92,11 @@ console.log("断るクローラーは 403、他の UA は今のまま");
     }
   }
   for (const ua of ALLOWED_SAMPLES) {
-    check(`${ua} は断る対象でない`, !isBlockedCrawler(ua));
     for (const path of PATHS) {
       const res = await call(path, { ua });
       check(`${ua} ${path} → 403 にならない`, res?.status !== 403, describe(res));
     }
   }
-  check("UA なしは断る対象でない", !isBlockedCrawler(null) && !isBlockedCrawler(""));
   check(
     "Googlebot の / は今のまま素通り",
     (await call("/", { ua: ALLOWED_SAMPLES[2] })) === undefined,
@@ -111,36 +107,10 @@ console.log("断るクローラーは 403、他の UA は今のまま");
       "https://www.boat-ai.jp/api/bot-page/top",
   );
 
-  // robots.txt: 3つそれぞれの組に Disallow: / があり、User-agent: * の組は Allow: / のまま
-  const robots = readFileSync(new URL("../../public/robots.txt", import.meta.url), "utf8");
-  const groups = robots
-    .split(/\n\s*\n/)
-    .map((block) => block.split("\n").map((l) => l.replace(/#.*/, "").trim()).filter(Boolean));
-  const groupOf = (name) =>
-    groups.find((lines) =>
-      lines.some((l) => l.toLowerCase() === `user-agent: ${name.toLowerCase()}`),
-    ) ?? [];
-  for (const name of BLOCKED_CRAWLER_USER_AGENTS) {
-    check(`robots.txt: ${name} は Disallow: /`, groupOf(name).includes("Disallow: /"));
-  }
-  check(
-    "robots.txt: User-agent: * は Allow: / のまま（検索・他の AI は止めない）",
-    groupOf("*").includes("Allow: /") && !groupOf("*").includes("Disallow: /"),
-  );
-  const named = groups
-    .flat()
-    .filter((l) => /^user-agent:/i.test(l))
-    .map((l) => l.replace(/^user-agent:\s*/i, ""))
-    .filter((n) => n !== "*");
-  check(
-    "robots.txt で名指しで断るのは BLOCKED_CRAWLER_USER_AGENTS と同じ3つだけ",
-    JSON.stringify([...named].sort()) === JSON.stringify([...BLOCKED_CRAWLER_USER_AGENTS].sort()),
-    named.join(","),
-  );
 }
 
 if (failures.length > 0) {
   console.error(`\nNG: ${failures.length}件失敗`);
   process.exit(1);
 }
-console.log("\nOK: 断るクローラーだけが 403、robots.txt と一覧が一致している");
+console.log("\nOK: 断るクローラーだけが 403");
