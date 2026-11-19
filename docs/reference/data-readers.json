@@ -16773,7 +16773,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fix-opening-day-race-id-date.js:226",
+          "ref": "scripts/maintenance/fix-opening-day-race-id-date.js:191",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16792,7 +16792,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fix-tsu-2025-12-02-date.js:155",
+          "ref": "scripts/maintenance/fix-tsu-2025-12-02-date.js:122",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17332,7 +17332,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fix-opening-day-race-id-date.js:237",
+          "ref": "scripts/maintenance/fix-opening-day-race-id-date.js:202",
           "op": "update",
           "via": "client",
           "columns": [
@@ -17340,7 +17340,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fix-opening-day-race-id-date.js:260",
+          "ref": "scripts/maintenance/fix-opening-day-race-id-date.js:225",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -17348,13 +17348,13 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fix-opening-day-race-id-date.js:339",
+          "ref": "scripts/maintenance/fix-opening-day-race-id-date.js:333",
           "op": "delete",
           "via": "client",
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/fix-tsu-2025-12-02-date.js:163",
+          "ref": "scripts/maintenance/fix-tsu-2025-12-02-date.js:130",
           "op": "update",
           "via": "client",
           "columns": [
@@ -17362,7 +17362,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fix-tsu-2025-12-02-date.js:185",
+          "ref": "scripts/maintenance/fix-tsu-2025-12-02-date.js:152",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -17370,7 +17370,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/fix-tsu-2025-12-02-date.js:256",
+          "ref": "scripts/maintenance/fix-tsu-2025-12-02-date.js:247",
           "op": "delete",
           "via": "client",
           "columns": []
@@ -17496,13 +17496,13 @@
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/delete-phantom-race-days.js:253",
             "scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:114",
-            "scripts/maintenance/fix-opening-day-race-id-date.js:226",
-            "scripts/maintenance/fix-opening-day-race-id-date.js:237",
-            "scripts/maintenance/fix-opening-day-race-id-date.js:339",
+            "scripts/maintenance/fix-opening-day-race-id-date.js:191",
+            "scripts/maintenance/fix-opening-day-race-id-date.js:202",
+            "scripts/maintenance/fix-opening-day-race-id-date.js:333",
             "scripts/maintenance/fix-opening-day-race-id-date.js:98",
-            "scripts/maintenance/fix-tsu-2025-12-02-date.js:155",
-            "scripts/maintenance/fix-tsu-2025-12-02-date.js:163",
-            "scripts/maintenance/fix-tsu-2025-12-02-date.js:256",
+            "scripts/maintenance/fix-tsu-2025-12-02-date.js:122",
+            "scripts/maintenance/fix-tsu-2025-12-02-date.js:130",
+            "scripts/maintenance/fix-tsu-2025-12-02-date.js:247",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
             "scripts/maintenance/migrate-to-supabase.js:249",
             "scripts/maintenance/update-venue-stats.js:32",
@@ -17757,8 +17757,8 @@
             "src/services/watsonService.js:72"
           ],
           "writers": [
-            "scripts/maintenance/fix-opening-day-race-id-date.js:237",
-            "scripts/maintenance/fix-tsu-2025-12-02-date.js:163"
+            "scripts/maintenance/fix-opening-day-race-id-date.js:202",
+            "scripts/maintenance/fix-tsu-2025-12-02-date.js:130"
           ],
           "sql": [
             "rpc:data_health_entries_duplicates",
@@ -30217,12 +30217,12 @@
     },
     {
       "file": "scripts/maintenance/delete-phantom-races.js",
-      "line": 195,
+      "line": 178,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/maintenance/delete-phantom-races.js",
-      "line": 273,
+      "line": 220,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
@@ -30242,12 +30242,12 @@
     },
     {
       "file": "scripts/maintenance/fix-opening-day-race-id-date.js",
-      "line": 204,
+      "line": 169,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/maintenance/fix-opening-day-race-id-date.js",
-      "line": 285,
+      "line": 254,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
@@ -30257,12 +30257,12 @@
     },
     {
       "file": "scripts/maintenance/fix-tsu-2025-12-02-date.js",
-      "line": 133,
+      "line": 100,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/maintenance/fix-tsu-2025-12-02-date.js",
-      "line": 209,
+      "line": 180,
       "reason": "表の名前が変数（.from(式)）"
     },
     {

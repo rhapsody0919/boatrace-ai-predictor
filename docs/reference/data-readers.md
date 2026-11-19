@@ -1575,9 +1575,9 @@
   - `scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:39` select(helper:fetchAll)
   - `scripts/maintenance/fix-opening-day-entries-from-b.js:302` select(helper:fetchAll)
   - `scripts/maintenance/fix-opening-day-race-id-date.js:98` select [*, race_id]
-  - `scripts/maintenance/fix-opening-day-race-id-date.js:226` select [race_id]
+  - `scripts/maintenance/fix-opening-day-race-id-date.js:191` select [race_id]
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:71` select [*, race_date, race_id, venue_code]
-  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:155` select [race_id]
+  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:122` select [race_id]
   - `scripts/maintenance/motor-pretest-backfill.js:217` select [race_date, race_number, venue_code]
   - `scripts/maintenance/update-venue-stats.js:32` select [race_date, race_id, venue_code]
   - `scripts/maintenance/verify-analogy-v16.js:276` rest(rest) [cancellation_status, race_date, race_id, start_time] （検査）
@@ -1638,12 +1638,12 @@
   - `scripts/maintenance/backfill-race-series-meta.js:147` upsert [?]
   - `scripts/maintenance/delete-phantom-race-days.js:253` delete
   - `scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:114` update [cancellation_status]
-  - `scripts/maintenance/fix-opening-day-race-id-date.js:237` update [race_number]
-  - `scripts/maintenance/fix-opening-day-race-id-date.js:260` insert [?]
-  - `scripts/maintenance/fix-opening-day-race-id-date.js:339` delete
-  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:163` update [race_number]
-  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:185` insert [?]
-  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:256` delete
+  - `scripts/maintenance/fix-opening-day-race-id-date.js:202` update [race_number]
+  - `scripts/maintenance/fix-opening-day-race-id-date.js:225` insert [?]
+  - `scripts/maintenance/fix-opening-day-race-id-date.js:333` delete
+  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:130` update [race_number]
+  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:152` insert [?]
+  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:247` delete
   - `scripts/maintenance/migrate-to-supabase.js:249` upsert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -2330,16 +2330,16 @@
   - `scripts/lib/snsSendRunner.js:627` REST の表の名前が式（/rest/v1/${…}）
   - `scripts/maintenance/backfill-kb-gaps.js:204` 表の名前が変数（.from(式)）
   - `scripts/maintenance/backfill-kb-gaps.js:239` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/delete-phantom-races.js:195` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/delete-phantom-races.js:273` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/delete-phantom-races.js:178` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/delete-phantom-races.js:220` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fan-backfill.js:360` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fan-backfill.js:444` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fix-opening-day-race-id-date.js:153` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/fix-opening-day-race-id-date.js:204` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/fix-opening-day-race-id-date.js:285` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/fix-opening-day-race-id-date.js:169` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/fix-opening-day-race-id-date.js:254` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:84` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:133` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:209` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:100` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/fix-tsu-2025-12-02-date.js:180` 表の名前が変数（.from(式)）
   - `scripts/maintenance/kb-backfill.js:957` 表の名前が変数（.from(式)）
   - `scripts/maintenance/motor-pretest-backfill.js:451` 表の名前が変数（.from(式)）
   - `scripts/maintenance/verifyData/fakeServiceSupabase.js:51` RPC の名前が変数（.rpc(式)）
