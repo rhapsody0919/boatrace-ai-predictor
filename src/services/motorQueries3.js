@@ -382,10 +382,15 @@ export function getVenueMotorSnapshot(venueCode, asOfDate = null) {
             .eq("venue_code", venueCode)
             .eq("scraped_date", latestRow.scraped_date);
           if (!data || data.length === 0) return { state: "empty" };
+          // venue_code・scraped_date は eq で1つに決まるので select に足さず（録画の URL を変えない）、行に付けてから makeMotorStat に通す。
+          // 不変条件の破れ（RangeError）は下の catch で取得失敗と同じ扱い（fetchFailed、キャッシュしない）
+          const rows = data.map((row) =>
+            makeMotorStat({ venue_code: venueCode, scraped_date: latestRow.scraped_date, ...row }),
+          );
           return {
             state: "ok",
             scrapedDate: latestRow.scraped_date,
-            rows: data,
+            rows,
           };
         } catch (err) {
           console.error("venue_motor_stats取得エラー(例外):", err.message);

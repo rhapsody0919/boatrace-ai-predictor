@@ -5,6 +5,7 @@ import { supabase } from "./supabaseClient";
 import { stDeviation } from "../utils/stDeviation.js";
 import { winnerEntryCourseOf } from "../utils/raceOutcome.js";
 import { chunkArray, fetchAllByIn, withCache } from "./core.js";
+import { makeRaceEntry } from "../pure/raceModel.js";
 
 /**
  * オッズ（race_odds・race_odds_final）のキャッシュTTL。本日以降のレースは、発走前は数分おきに、締切後は締切時オッズが
@@ -147,7 +148,9 @@ export function getRaceEntryOfficialRatesBreakdown(raceId) {
         .eq("race_id", raceId)
         .order("boat_number");
 
-      return data ?? [];
+      // race_id は eq で1つに決まるので select に足さず（録画の URL を変えない）、行に付けてから makeRaceEntry に通す。
+      // 不変条件の破れ（RangeError）は reject になり、呼び手（useOfficialRates・useRaceEntryFlyingRows・useThinkingAssistData）の catch で取得失敗の表示
+      return (data ?? []).map((row) => makeRaceEntry({ race_id: raceId, ...row }));
     });
   }
 

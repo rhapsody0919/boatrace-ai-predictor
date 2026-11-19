@@ -17,8 +17,6 @@
  * 使い方: node scripts/maintenance/verify-release-dispatch.js
  */
 import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   COMPARE_FILES_CAP,
   RELEASE_GATE_WORKFLOWS,
@@ -34,11 +32,8 @@ import {
 } from "../lib/releaseDispatch.js";
 import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 import { evaluateJobStates } from "../lib/scrapeJobs/monitor.js";
+import { cronWiring } from "./verifyData/cronWiring.js";
 
-const ROOT = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
 let failures = 0;
 const check = (ok, label, detail = "") => {
   console.log(
@@ -829,19 +824,24 @@ for (const [label, env, expect] of [
     "(e) レジストリ: release_dispatch は monitor・failureAlertAfter 1・livenessStaleMin 13時間",
     JSON.stringify(def),
   );
-  const src = fs.readFileSync(
-    path.join(ROOT, "api/cron/release-dispatch.js"),
-    "utf8",
+  // api の本文の字は読まず、export（config）と、共通ラッパへ渡した引数で見る。
+  // run は毎回作る関数なので、createReleaseDispatchRun() が作る物と同じ関数か（同じ本文か）で見る
+  const api = await cronWiring(
+    () => import("../../api/cron/release-dispatch.js"),
   );
+  const opts = api.made[0]?.options;
   check(
-    Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
-      /modeGated:\s*true/.test(src) &&
-      src.includes('job: "release_dispatch"') &&
-      src.includes("createReleaseDispatchRun()"),
-    "(e) api/cron/release-dispatch.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
+    api.config?.maxDuration === def?.maxDurationSec &&
+      api.made.length === 1 &&
+      opts.modeGated === true &&
+      opts.job === "release_dispatch" &&
+      String(opts.run) === String(createReleaseDispatchRun()) &&
+      api.handler === api.made[0].handler,
+    "(e) api/cron/release-dispatch.js: maxDuration がレジストリと一致し、job 名 release_dispatch・createReleaseDispatchRun() の run で登録し、モードのゲートを掛ける",
+    JSON.stringify([api.config, opts?.job, opts?.modeGated]),
   );
   const vercel = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+    fs.readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"),
   );
   const crons = vercel.crons
     .filter((c) => c.path.startsWith("/api/cron/release-dispatch"))
