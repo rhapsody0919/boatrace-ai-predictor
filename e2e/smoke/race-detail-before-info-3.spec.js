@@ -46,7 +46,15 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
   test("選手の出走履歴の取得に失敗したら「出走なし」に化けさせず、再読み込みを出す", async ({
     page,
   }) => {
-    // getRacerScopedRaceStats の race_results 取得（actual_course を含む）だけを落とす
+    // 選手の走の取得を落とす。走の RPC（マイグレーション 203）と、203 が無いときに落ちる6表の読みのうち
+    // getRacerScopedRaceStats の race_results 取得（actual_course を含む）の両方
+    await page.route("**/rest/v1/rpc/get_racer_scoped_race_rows*", (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "stub failure" }),
+      }),
+    );
     await page.route("**/rest/v1/race_results?*", (route) => {
       const url = decodeURIComponent(route.request().url());
       if (!url.includes("actual_course_1") || !url.includes("payout_win"))
@@ -73,7 +81,20 @@ test.describe("レース詳細の直前情報タブ: この枠からの進入コ
   test("1艇だけ取得に失敗しても、まだ取得中の他艇は読み込み中のまま表示する", async ({
     page,
   }) => {
-    // 1号艇（登番3833）の出走履歴だけ即失敗、他の艇は応答を遅らせる
+    // 1号艇（登番3833）の出走履歴だけ即失敗、他の艇は応答を遅らせる（走の RPC と、203 が無いときに落ちる6表の読みの両方）
+    await page.route(
+      "**/rest/v1/rpc/get_racer_scoped_race_rows*",
+      async (route) => {
+        if (String(route.request().postDataJSON()?.p_racer_id) === "3833")
+          return route.fulfill({
+            status: 500,
+            contentType: "application/json",
+            body: JSON.stringify({ message: "stub failure" }),
+          });
+        await new Promise((resolve) => setTimeout(resolve, 15000));
+        return route.fallback().catch(() => {});
+      },
+    );
     await page.route("**/rest/v1/race_entries?*", async (route) => {
       const url = decodeURIComponent(route.request().url());
       if (!url.includes("f_count")) return route.fallback();

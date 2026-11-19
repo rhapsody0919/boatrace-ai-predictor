@@ -1331,6 +1331,11 @@
       "guards": "選手の走ごとの行の整形（src/services/racerScopedRaceRows.js、getRacerScopedRaceStats から切り出し。src の12ファイルが読む）。raceId の昇順、不成立・rank1 null の除外、欠場（「欠」と自艇だけ本番STの行が無い走）、FのSTを平均に入れない、race_conditions の取得失敗は undefined、展示の同順位と単独最速（#962・#1010・#1029・#1107・BOA-333 の再現、BOA-1022）"
     },
     {
+      "script": "verify-racer-scoped-race-rpc.js",
+      "tier": "ci",
+      "guards": "選手の走を1走1行で返す RPC（マイグレーション 203、get_racer_scoped_race_rows）と、行を6表の形へ戻す src/pure/racerScopedRunTables.js・呼び手 getRacerScopedRaceStats。同じ表から、6表の生の行の読みと RPC の道の返す行が完全に同じ（不成立・結果なし・F・出遅れ・欠場・自艇だけ ST の行なし・展示の同タイム・条件の行なし・同じレースに2艇・窓の外・別の選手）。RPC が有れば6表を読まず要求は選手ごとに1本、1500走を1000行で切らない、関数が無い（PGRST202・42883）・権限なしのときだけ6表の読みに落ち、ほかの失敗は例外のまま。STABLE・SECURITY INVOKER・search_path 固定・anon が RLS の下で呼べる・2回当てても失敗しない。SQL203 を PGlite、外部接続なし"
+    },
+    {
       "script": "verify-racer-season-stats-parse.js",
       "tier": "ci",
       "guards": "期別成績のURL・不存在判定・前期後期ラベルと手書きHTMLの期間・数値・着順内訳を通信なしで検証（BOA-1061）"

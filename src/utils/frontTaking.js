@@ -48,6 +48,19 @@ const isInyaRate = (runs, rate) =>
   rate >= FRONT_TAKING_MIN_RATE;
 
 /**
+ * 件数（母数の走・前付けの走）から、割合と札の判定を出す。DB 側で数えた件数
+ * （マイグレーション 203 の RPC get_racer_front_taking_counts）にも、走の行から数えた件数にも使う（判定は1か所）
+ *
+ * @param {number} runs 母数の走
+ * @param {number} taken 前付けの走
+ * @returns {{runs: number, taken: number, rate: number|null, isInya: boolean}}
+ */
+export function frontTakingOfCounts(runs, taken) {
+  const rate = runs > 0 ? (taken / runs) * 100 : null;
+  return { runs, taken, rate, isInya: isInyaRate(runs, rate) };
+}
+
+/**
  * @param {Array<{raceId: string, boatNumber: number, actualCourse: number|null}>|null|undefined} records
  * @param {{beforeRaceId?: string|null}} [options]
  * @returns {{runs: number, taken: number, rate: number|null,
@@ -59,14 +72,15 @@ export function summarizeFrontTaking(records, { beforeRaceId = null } = {}) {
     isCountedRun(r, beforeRaceId),
   );
   const takenRuns = counted.filter(isFrontTaken);
-  const runs = counted.length;
-  const taken = takenRuns.length;
-  const rate = runs > 0 ? (taken / runs) * 100 : null;
+  const { runs, taken, rate, isInya } = frontTakingOfCounts(
+    counted.length,
+    takenRuns.length,
+  );
   return {
     runs,
     taken,
     rate,
     byCourse: countByCourse(takenRuns),
-    isInya: isInyaRate(runs, rate),
+    isInya,
   };
 }

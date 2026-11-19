@@ -9,6 +9,8 @@ import { isUsableRaceResult } from "../utils/raceResultUsable.js";
 import { racerHistoryCutoff } from "../utils/racerVenueBoatStats.js";
 import { fetchAllByIn, withCache } from "./core.js";
 import { fetchRacerEntriesSince } from "./racerQueries.js";
+import { fetchRacerScopedRunsOrNull } from "./racerQueries4.js";
+import { tablesFromRacerScopedRuns } from "../pure/racerScopedRunTables.js";
 
 /**
  * 指定選手の会場別（当地）成績を取得する（選手個人ページ用）
@@ -176,6 +178,16 @@ export function getRacerScopedRaceStats(racerId) {
 
       const cutoffStr = racerHistoryCutoff();
 
+      // 先に DB 側で1走1行にまとめた形（マイグレーション 203 の RPC）で取る。6表の生の行（1走あたり16行、
+      // 1頁の6選手で約2.8万行）を読むのが Supabase の Egress の主因だった（2026-11-19）。
+      // 整形は同じ buildRacerScopedRaceRows なので、返す行は下の6表の読みと同じ
+      // （scripts/maintenance/verify-racer-scoped-race-rpc.js）。関数が本番に無い間だけ null が返り、下の読みに落ちる
+      const runs = await fetchRacerScopedRunsOrNull(racerId, cutoffStr);
+      if (runs !== null) {
+        return buildRacerScopedRaceRows(tablesFromRacerScopedRuns(runs));
+      }
+
+      // 以下は 203 が本番に当たるまでの読み（当たって E2E の録画を撮り直した後に消す）。
       // gradeはST考察のベースライン（st_course_baselineの(course, grade)セル）を
       // 引くのに使う（phase a FR-1）。race_entries.gradeは実測でnull 0件・4値（A1/A2/B1/B2）
       const entries = await fetchRacerEntriesSince(
