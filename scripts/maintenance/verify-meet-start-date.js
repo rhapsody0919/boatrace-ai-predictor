@@ -21,7 +21,11 @@
  * 接続しないので tier=ci。実データ全件との突き合わせは `verify-meet-grouping.js`
  * （tier=manual）が担う。
  */
-import { checkRowsAndService } from "./verifyData/meet-start-date-rows.js";
+import {
+  checkCodexAndGrouping,
+  checkRowsEntry,
+  checkService,
+} from "./verifyData/meet-start-date-rows.js";
 import { findMeetStartDate } from "../../src/utils/meetGrouping.js";
 
 let failures = 0;
@@ -330,7 +334,9 @@ check(
 );
 
 // ---- 行から節の初日を決める共通の入口（BOA-856）・BOA-861 の今節の区切り・サービス本体（verifyData/meet-start-date-rows.js） ----
-await checkRowsAndService(check);
+checkRowsEntry(check);
+checkCodexAndGrouping(check);
+await checkService(check);
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
 process.exit(failures === 0 ? 0 : 1);

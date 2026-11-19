@@ -25,7 +25,11 @@ import {
   scoreboardRuns,
   st,
 } from "./verifyData/meet-exclusion.js";
-import { checkSpecValues } from "./verifyData/meet-exclusion-spec.js";
+import {
+  checkSpecFlyingAndWithdrawn,
+  checkSpecLateStart,
+  checkSpecLateStartEdges,
+} from "./verifyData/meet-exclusion-spec.js";
 import { meetExclusionsOf } from "../../src/pure/meetExclusion.js";
 import * as meetExclusionShim from "../../src/services/meetExclusion.js";
 
@@ -305,7 +309,9 @@ check(
 );
 
 // B. 仕様の値（公式の規程から決まる「外すか外さないか」）の場面は verifyData/meet-exclusion-spec.js
-checkSpecValues();
+checkSpecFlyingAndWithdrawn();
+checkSpecLateStart();
+checkSpecLateStartEdges();
 
 // getMeetScoreboard（サービス層）を偽の supabase の上で呼び、返り値の除外が meetExclusionsOf の判定どおりであること。
 // 即時関数の判定が DAL に戻っていても、使う入力（予選の締め・出走表・本番ST・公式の備考）を取り違えても、ここで落ちる

@@ -24,7 +24,11 @@ import {
   loadSeriesDayByVenue,
   planSeriesDayBackfill,
 } from "../lib/raceSeriesLookup.js";
-import { checkTabsAndCancellations } from "./verifyData/series-day-fallback-tabs.js";
+import {
+  checkCancelledSeries,
+  checkTabsAndBoundaries,
+  printKnownGaps,
+} from "./verifyData/series-day-fallback-tabs.js";
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -314,7 +318,9 @@ for (const [label, pass, detail] of backfillCases(planSeriesDayBackfill)) {
 // ---------------------------------------------------------------------------
 // (g) 日目はタブのラベルから読む・中止・順延のある節・KNOWN_GAPS（verifyData/series-day-fallback-tabs.js）
 // ---------------------------------------------------------------------------
-checkTabsAndCancellations(check, show);
+checkTabsAndBoundaries(check);
+checkCancelledSeries(check);
+printKnownGaps();
 
 console.log("");
 if (failures === 0) {

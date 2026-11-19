@@ -6,8 +6,8 @@ import assert from "node:assert/strict";
 import * as seriesPoints from "../../../src/pure/seriesPoints.js";
 import { check, entry, excluded, run, st } from "./meet-exclusion.js";
 
-/** B 節の場面を順に check へ渡す */
-export function checkSpecValues() {
+/** B1〜B5: 今節F・予選終了・途中帰郷・公式の備考 */
+export function checkSpecFlyingAndWithdrawn() {
   console.log("B. 仕様の値（外すか外さないか）");
 
   check("B1 予選中に切った今節Fは賞典除外で順位から外す", () => {
@@ -78,7 +78,10 @@ export function checkSpecValues() {
       assert.equal(out.exclusionReasonByRacer[5440], "flying");
     },
   );
+}
 
+/** B6〜B8: L1 の賞典除外（BOA-1072） */
+export function checkSpecLateStart() {
   // BOA-1072: L1 のみ賞典除外。旧の試験の入力・期待値は維持する。
   check("B6 L1 は lateStart、L0・責任不明のL・他の成績コードは外さない", () => {
     const codes = ["L1", "L0", null, undefined, "01", "K1"];
@@ -128,7 +131,10 @@ export function checkSpecValues() {
       exclusionReasonByRacer: { 5520: "officialWithdrawn" },
     });
   });
+}
 
+/** B9〜B12: F と L1 の優先・上書きしない・予選の締めが不明・L1 の純関数 */
+export function checkSpecLateStartEdges() {
   check("B9 FとL1の両方なら、発生順にかかわらずflyingを優先", () => {
     for (const codes of [
       ["F", "L1"],
