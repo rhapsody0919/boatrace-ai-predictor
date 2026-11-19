@@ -360,16 +360,16 @@ const imported = jobCtx();
     JSON.stringify(schedules),
   );
   const def = SCRAPE_JOBS.fan_period;
-  const api = fs.readFileSync(
-    path.join(ROOT, "api/cron/fan-period.js"),
-    "utf8",
-  );
+  // api の本文の字は読まず、export（config・default）を import して見る
+  const api = await import("../../api/cron/fan-period.js");
   check(
-    "レジストリ: 日次・06:00・boatrace.jp、maxDuration が api と一致",
+    "レジストリ: 日次・06:00・boatrace.jp、maxDuration が api の config と一致し、api はハンドラーを export する",
     def?.kind === "daily" &&
       def.targetTimeJst === "06:00" &&
       same(def.hosts, ["boatrace.jp"]) &&
-      new RegExp(`maxDuration:\\s*${def.maxDurationSec}\\b`).test(api),
+      api.config?.maxDuration === def.maxDurationSec &&
+      typeof api.default === "function",
+    JSON.stringify(api.config),
   );
   const sql = fs.readFileSync(
     path.join(ROOT, "docs/db-migration/125_raw_snapshots.sql"),
