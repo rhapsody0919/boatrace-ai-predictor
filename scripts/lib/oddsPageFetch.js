@@ -132,6 +132,24 @@ function winFailureResult(s, venueCode, raceNo) {
   };
 }
 
+/** 3連単のページ（読み込み済み）から、人気上位3件と（wantFull なら）全通り。同期（取得の待ちの段数を変えない） */
+function trifectaFromPage($trif, wantFull) {
+  // 120通りのグリッドを1回だけ解析し、人気上位3件（trifecta_popular_*）と全通り（trifecta_all）の両方に使う
+  const fullMap = parseTrifectaAll($trif);
+  const trifecta = topTrifectaByOdds(fullMap);
+  // 全通り捕捉ウィンドウ: 120通りを保存（EV分析用・BOA-104）
+  const trifectaAll =
+    wantFull && fullMap.size > 0 ? Object.fromEntries(fullMap) : null;
+  return { trifecta, trifectaAll };
+}
+
+/** 解析結果から fetchOddsDetailed の戻り（ok か、全通り系の欠けがあれば partial と欠けた列） */
+function detailResult(data, wantFull) {
+  const patch = fullOddsPatchOf(data);
+  const missing = wantFull ? FULL_ODDS_KEYS.filter((k) => !(k in patch)) : [];
+  return { status: missing.length > 0 ? "partial" : "ok", data, missing };
+}
+
 /**
  * 1レースの単勝・3連単・（wantFull時）全通り系オッズを取得し、結果の種別つきで返す
  *
@@ -204,18 +222,9 @@ export async function fetchOddsDetailed(
     const placeOdds = scrapePlaceOdds($win);
 
     const trifRes = okResponse(bySettled.trif);
-    let trifecta = [];
-    let trifectaAll = null;
-    if (trifRes) {
-      const $trif = cheerio.load(await trifRes.text());
-      // 120通りのグリッドを1回だけ解析し、人気上位3件（trifecta_popular_*）と全通り（trifecta_all）の両方に使う
-      const fullMap = parseTrifectaAll($trif);
-      trifecta = topTrifectaByOdds(fullMap);
-      // 全通り捕捉ウィンドウ: 120通りを保存（EV分析用・BOA-104）
-      if (wantFull && fullMap.size > 0) {
-        trifectaAll = Object.fromEntries(fullMap);
-      }
-    }
+    const { trifecta, trifectaAll } = trifRes
+      ? trifectaFromPage(cheerio.load(await trifRes.text()), wantFull)
+      : { trifecta: [], trifectaAll: null };
 
     // 単勝の行そのものが無ければ、未公開（null）。値が全て 0.0（票0）のときは発売済みなので、
     // 単勝は null のまま、他券種を保存する（BOA-486）
@@ -238,19 +247,19 @@ export async function fetchOddsDetailed(
         ));
     }
 
-    const data = {
-      winOdds,
-      placeOdds,
-      trifecta,
-      trifectaAll,
-      trioAll,
-      exactaAll,
-      quinellaAll,
-      wideAll,
-    };
-    const patch = fullOddsPatchOf(data);
-    const missing = wantFull ? FULL_ODDS_KEYS.filter((k) => !(k in patch)) : [];
-    return { status: missing.length > 0 ? "partial" : "ok", data, missing };
+    return detailResult(
+      {
+        winOdds,
+        placeOdds,
+        trifecta,
+        trifectaAll,
+        trioAll,
+        exactaAll,
+        quinellaAll,
+        wideAll,
+      },
+      wantFull,
+    );
   } catch (err) {
     console.error(
       `  ❌ ${VENUE_NAMES[venueCode]} ${raceNo}R オッズ取得エラー: ${err.message}`,
