@@ -66,137 +66,111 @@ function classify(ev) {
   return "skip";
 }
 
-async function main() {
-  const { dryRun } = parseArgs();
-  if (!isSupabaseEnabled()) {
-    console.error("❌ Supabase未設定");
-    process.exit(1);
+async function fetchEntriesWithStats(raceId, racerStatsCache) {
+  const { data: entries } = await supabase
+    .from("race_entries")
+    .select(
+      "boat_number, racer_id, win_rate, local_win_rate, motor_2rate, grade",
+    )
+    .eq("race_id", raceId)
+    .order("boat_number");
+  if (!entries || entries.length < 6) return null;
+
+  const racerIdsToFetch = entries
+    .map((e) => e.racer_id)
+    .filter((id) => id != null && !racerStatsCache.has(id));
+  if (racerIdsToFetch.length > 0) {
+    const { data: statsRows } = await supabase
+      .from("racer_aggregated_stats")
+      .select("racer_id, avg_st, course_race_counts")
+      .in("racer_id", racerIdsToFetch)
+      .eq("venue_code", 0);
+    for (const s of statsRows ?? []) racerStatsCache.set(s.racer_id, s);
   }
+  return entries;
+}
 
-  const date = parseDateArg() || getTodayDateJST();
-  console.log(`📅 対象日: ${date}${dryRun ? " [DRY-RUN]" : ""}`);
+function toPlayers(entries) {
+  return entries.map((e) => ({
+    number: e.boat_number,
+    course: e.boat_number,
+    racerId: e.racer_id,
+    winRate: e.win_rate,
+    localWinRate: e.local_win_rate,
+    motor2Rate: e.motor_2rate,
+    grade: e.grade,
+  }));
+}
 
-  const unifiedPredictions = await fetchTodayUnifiedPredictions(date);
-  if (unifiedPredictions.length === 0) {
-    console.log(
-      "📭 predictions(model_id=unified)が未生成です。先にgenerate-unified-predictions.jsを実行してください",
-    );
-    return;
-  }
-  const raceIds = unifiedPredictions.map((p) => p.race_id);
-  console.log(`🎯 対象: ${raceIds.length}レース`);
+function bestCandidate(patterns, trifectaAll) {
+  const candidates = patterns
+    .filter((p) => p.first && p.second && p.third)
+    .map((p) => {
+      const combo = `${p.first}-${p.second}-${p.third}`;
+      const odds = trifectaAll[combo] ?? null;
+      return {
+        combo,
+        odds,
+        probability: p.combinedProbability ?? 0,
+        ev: odds != null ? odds * (p.combinedProbability ?? 0) : null,
+      };
+    })
+    .filter((c) => c.odds != null);
+  if (candidates.length === 0) return null;
+  return candidates.reduce((a, b) => (b.ev > a.ev ? b : a));
+}
 
-  const trifectaAllMap = await fetchLatestTrifectaAll(raceIds);
-  console.log(`💰 オッズ取得済み: ${trifectaAllMap.size}レース`);
+function toRecommendation(raceId, best) {
+  return {
+    race_id: raceId,
+    model_id: MODEL_ID,
+    recommendation: classify(best.ev),
+    reasons: {
+      combo: best.combo,
+      odds: best.odds,
+      probability: Math.round(best.probability * 100000) / 100000,
+    },
+    expected_value: Math.round(best.ev * 100) / 100,
+    expected_hit_rate: Math.round(best.probability * 10000) / 10000,
+    expected_payout: Math.round(best.odds * 100),
+  };
+}
 
-  const racerStatsCache = new Map();
-  const recommendations = [];
+// 1レース分。戻り値: null=数えずに飛ばす（オッズ・展開・出走表が欠ける）、{ rec: null }=候補なし、{ rec }=推奨
+async function recommendForRace(pred, trifectaRow, racerStatsCache) {
+  if (!trifectaRow) return null; // オッズ未取得（発走直前まで待つ必要あり）
 
-  let processed = 0;
-  for (const pred of unifiedPredictions) {
-    const trifectaRow = trifectaAllMap.get(pred.race_id);
-    if (!trifectaRow) continue; // オッズ未取得（発走直前まで待つ必要あり）
+  const turnPrediction = pred.feature_contributions?.turnPrediction;
+  if (!turnPrediction) return null;
 
-    const turnPrediction = pred.feature_contributions?.turnPrediction;
-    if (!turnPrediction) continue;
+  const entries = await fetchEntriesWithStats(pred.race_id, racerStatsCache);
+  if (!entries) return null;
 
-    const { data: entries } = await supabase
-      .from("race_entries")
-      .select(
-        "boat_number, racer_id, win_rate, local_win_rate, motor_2rate, grade",
-      )
-      .eq("race_id", pred.race_id)
-      .order("boat_number");
-    if (!entries || entries.length < 6) continue;
+  const indicatorData = await fetchRaceIndicatorData(
+    pred.race_id,
+    entries.map((e) => ({ boatNumber: e.boat_number, racerId: e.racer_id })),
+  );
+  const { patterns } = calculateUnifiedScores(
+    toPlayers(entries),
+    turnPrediction,
+    indicatorData,
+    racerStatsCache,
+  );
 
-    const racerIdsToFetch = entries
-      .map((e) => e.racer_id)
-      .filter((id) => id != null && !racerStatsCache.has(id));
-    if (racerIdsToFetch.length > 0) {
-      const { data: statsRows } = await supabase
-        .from("racer_aggregated_stats")
-        .select("racer_id, avg_st, course_race_counts")
-        .in("racer_id", racerIdsToFetch)
-        .eq("venue_code", 0);
-      for (const s of statsRows ?? []) racerStatsCache.set(s.racer_id, s);
-    }
+  const best = bestCandidate(patterns, trifectaRow.trifecta_all);
+  return { rec: best ? toRecommendation(pred.race_id, best) : null };
+}
 
-    const players = entries.map((e) => ({
-      number: e.boat_number,
-      course: e.boat_number,
-      racerId: e.racer_id,
-      winRate: e.win_rate,
-      localWinRate: e.local_win_rate,
-      motor2Rate: e.motor_2rate,
-      grade: e.grade,
-    }));
-
-    const indicatorData = await fetchRaceIndicatorData(
-      pred.race_id,
-      entries.map((e) => ({ boatNumber: e.boat_number, racerId: e.racer_id })),
-    );
-    const { patterns } = calculateUnifiedScores(
-      players,
-      turnPrediction,
-      indicatorData,
-      racerStatsCache,
-    );
-
-    const candidates = patterns
-      .filter((p) => p.first && p.second && p.third)
-      .map((p) => {
-        const combo = `${p.first}-${p.second}-${p.third}`;
-        const odds = trifectaRow.trifecta_all[combo] ?? null;
-        return {
-          combo,
-          odds,
-          probability: p.combinedProbability ?? 0,
-          ev: odds != null ? odds * (p.combinedProbability ?? 0) : null,
-        };
-      })
-      .filter((c) => c.odds != null);
-
-    if (candidates.length === 0) {
-      processed += 1;
-      continue;
-    }
-
-    const best = candidates.reduce((a, b) => (b.ev > a.ev ? b : a));
-
-    recommendations.push({
-      race_id: pred.race_id,
-      model_id: MODEL_ID,
-      recommendation: classify(best.ev),
-      reasons: {
-        combo: best.combo,
-        odds: best.odds,
-        probability: Math.round(best.probability * 100000) / 100000,
-      },
-      expected_value: Math.round(best.ev * 100) / 100,
-      expected_hit_rate: Math.round(best.probability * 10000) / 10000,
-      expected_payout: Math.round(best.odds * 100),
-    });
-
-    processed += 1;
-    if (processed % 50 === 0)
-      console.log(`  ${processed}/${unifiedPredictions.length}件処理...`);
-  }
-
+function logBreakdown(recommendations) {
   console.log(`\n📊 ${recommendations.length}件の推奨を生成しました`);
   const byRecommendation = { bet: 0, neutral: 0, skip: 0 };
   for (const r of recommendations) byRecommendation[r.recommendation] += 1;
   console.log(
     `  内訳: bet=${byRecommendation.bet} neutral=${byRecommendation.neutral} skip=${byRecommendation.skip}`,
   );
+}
 
-  if (dryRun) {
-    console.log("[DRY-RUN] Supabase書き込みはスキップ");
-    console.log(JSON.stringify(recommendations[0], null, 2));
-    return;
-  }
-
-  if (recommendations.length === 0) return;
-
+async function writeRecommendations(recommendations) {
   const targetRaceIds = recommendations.map((r) => r.race_id);
   const { error: deleteError } = await supabase
     .from("bet_recommendations")
@@ -227,6 +201,60 @@ async function main() {
   console.log(
     `✅ bet_recommendations: ${recommendations.length}件書き込み完了`,
   );
+}
+
+async function main() {
+  const { dryRun } = parseArgs();
+  if (!isSupabaseEnabled()) {
+    console.error("❌ Supabase未設定");
+    process.exit(1);
+  }
+
+  const date = parseDateArg() || getTodayDateJST();
+  console.log(`📅 対象日: ${date}${dryRun ? " [DRY-RUN]" : ""}`);
+
+  const unifiedPredictions = await fetchTodayUnifiedPredictions(date);
+  if (unifiedPredictions.length === 0) {
+    console.log(
+      "📭 predictions(model_id=unified)が未生成です。先にgenerate-unified-predictions.jsを実行してください",
+    );
+    return;
+  }
+  const raceIds = unifiedPredictions.map((p) => p.race_id);
+  console.log(`🎯 対象: ${raceIds.length}レース`);
+
+  const trifectaAllMap = await fetchLatestTrifectaAll(raceIds);
+  console.log(`💰 オッズ取得済み: ${trifectaAllMap.size}レース`);
+
+  const racerStatsCache = new Map();
+  const recommendations = [];
+
+  let processed = 0;
+  for (const pred of unifiedPredictions) {
+    const got = await recommendForRace(
+      pred,
+      trifectaAllMap.get(pred.race_id),
+      racerStatsCache,
+    );
+    if (!got) continue;
+    processed += 1;
+    if (!got.rec) continue;
+    recommendations.push(got.rec);
+    if (processed % 50 === 0)
+      console.log(`  ${processed}/${unifiedPredictions.length}件処理...`);
+  }
+
+  logBreakdown(recommendations);
+
+  if (dryRun) {
+    console.log("[DRY-RUN] Supabase書き込みはスキップ");
+    console.log(JSON.stringify(recommendations[0], null, 2));
+    return;
+  }
+
+  if (recommendations.length === 0) return;
+
+  await writeRecommendations(recommendations);
 }
 
 main().catch((error) => {
