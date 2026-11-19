@@ -6,6 +6,8 @@ import { supabase } from "./supabaseClient";
 import { seriesCoveringDate } from "../utils/meetPageModel.js";
 import { transformTodayRaces } from "../utils/todayRaces.js";
 import { makeDigestDay } from "../pure/scheduleModel.js";
+import { makeMeet } from "../pure/meetModel.js";
+import { makeRace } from "../pure/raceModel.js";
 import {
   CACHE_TTL,
   EDGE_API_BASE,
@@ -67,10 +69,12 @@ export async function getUpcomingSeries(today) {
       if (!supabase) throw new Error("Supabase client not initialized");
       const { data } = await supabase
         .from("race_series")
-        .select("venue_code,start_date,end_date")
+        .select("venue_code,start_date,end_date,total_days,class_code,kind")
         .gte("end_date", today)
         .order("start_date");
-      return data ?? [];
+      // makeMeet の必須の列（total_days・class_code・kind）を select に足した。不変条件の破れ（RangeError）は reject になり、
+      // 呼び手（VenueGridPage の useNextOpenDates）の catch で次開催日だけ出さない（会場グリッドは出す）
+      return (data ?? []).map(makeMeet);
     });
   }
 
@@ -233,7 +237,9 @@ export function getTodaysRacesForVenue(venueCode) {
         .eq("race_date", today)
         .order("race_number");
 
-      return data ?? [];
+      // venue_code は eq で1つに決まるので select に足さず（録画の URL を変えない）、行に付けてから makeRace に通す。
+      // 不変条件の破れ（RangeError）は reject になり、呼び手（useVenueRaceSelector）の catch で取得失敗の表示
+      return (data ?? []).map((row) => makeRace({ venue_code: venueCode, ...row }));
     });
   }
 

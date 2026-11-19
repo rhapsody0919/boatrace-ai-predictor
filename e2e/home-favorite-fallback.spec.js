@@ -69,7 +69,7 @@ async function routeNextSeries(page, info, { empty = false, pending = false } = 
   await page.route("**/rest/v1/race_series*", (route) => {
     if (pending) return route.abort();
     return route.fulfill({ json: empty ? [] : [info.closed, info.first, info.second].map((code) => ({
-      venue_code: code, start_date: start, end_date: start,
+      venue_code: code, start_date: start, end_date: start, total_days: 1, class_code: "Ippan", kind: "ippan",
     })) });
   });
   return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
