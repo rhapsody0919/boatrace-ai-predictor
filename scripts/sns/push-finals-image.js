@@ -40,677 +40,97 @@
  *   ・3 許可が off なので書かなかった・4 同じレースの同じ種類が既にある（何もしない）・5 予定に入れたが送れなかった（保留・期限切れ・
  *   個別承認・本投稿は出たが投票のリプが出なかった）
  */
-import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import twitterText from "twitter-text";
-import { createXSnapshot, pollOptionsIssue } from "../../api/_lib/snsXSend.js";
+import { hasPoll, schedule } from "../lib/sns/finalsImageBase.js";
+import { KINDS, bundleKindOf } from "./pushFinalsImageKinds.js";
+import { CHECKS } from "./pushFinalsImageChecks.js";
+import { readImages } from "./pushFinalsImageRows.js";
 import {
-  deadlineIso,
-  FINALS_PART_VARIANTS,
-  THINKING_PART_VARIANTS,
+  findPrior,
+  makeReject,
+  receiveCheck,
+  revisionOf,
+  writeRows,
+} from "./pushFinalsImageSteps.js";
+import {
+  finalsStatus,
+  resultLine,
+  waitForSend,
+} from "./pushFinalsImageStatus.js";
+import { createRestStore } from "./pushFinalsImageStore.js";
+
+// 分けたファイルへ移した名前も、今までどおりこのファイルから import できる
+export {
+  FINALS_IMAGE_FORMAT,
+  FINALS_REPLY_FORMAT,
+  FINALS_STAGE,
+  IMAGE_SUFFIXES,
+  imageNamesOf,
+  IMAGE_WIDTH,
+  IMAGE_HEIGHT,
+  IMAGE_MAX_BYTES,
+  EXPIRES_BEFORE_MIN,
+  LATEST_BEFORE_MIN,
+  SEND_DELAY_SEC,
+  REPLY_EARLIEST_BEFORE_MIN,
+  REPLY_LATEST_BEFORE_MIN,
+  BANNED_WORDS,
+  POLL_OPTIONS,
+  TODAY_THINKING_IMAGE_FORMAT,
+  TODAY_THINKING_REPLY_FORMAT,
+  hasPoll,
+  pngSize,
+  checkImages,
+  schedule,
+  dailyLimitReason,
+  reservedChildren,
+  RETRYABLE_JOB_STATES,
+  statusOf,
+} from "../lib/sns/finalsImageBase.js";
+export {
+  THINKING_GRADE_DAY_GRADES,
+  THINKING_GRADE_DAY_MIN_RACE_NUMBER,
+  THINKING_GRADE_DAY_MAX_RACE_NUMBER,
+  thinkingGradeDayVenue,
+  isThinkingGradeDayRace,
+  todayTargetReason,
+} from "../lib/sns/thinkingGradeDay.js";
+export {
+  FINALS_VARIANT,
+  FINALS_POLL_VARIANT,
+  FINALS_REPLY_VARIANT,
   TODAY_THINKING_KIND,
-} from "../../api/_lib/snsClaimCheck.js";
-import { xPostValid } from "../../api/_lib/snsXLength.js";
-import { matchRiskRules, draftRiskFields } from "../lib/riskRuleMatcher.js";
-import { checkXSlot, SLOT_KINDS, xSlotRoomVia } from "../lib/snsXSlots.js";
-import { readTodayPicks } from "./today-picks.js";
+  KINDS,
+  BUNDLE_FORMATS,
+  bundleKindOf,
+} from "./pushFinalsImageKinds.js";
+export {
+  THINKING_URL_REASON,
+  checkFinalsImage,
+  checkFinalsReply,
+  checkTodayThinkingImage,
+  checkTodayThinkingReply,
+  checkRace,
+} from "./pushFinalsImageChecks.js";
+export { draftRow } from "./pushFinalsImageRows.js";
+export {
+  WAIT_POLL_SEC,
+  WAIT_AFTER_EXPIRES_SEC,
+  finalsStatus,
+  waitForSend,
+  resultLine,
+} from "./pushFinalsImageStatus.js";
+export { createRestStore } from "./pushFinalsImageStore.js";
 
-export const FINALS_IMAGE_FORMAT = "finals_image";
-/** 展示後のリプの bundle の format（下書きの format・item の kind は本投稿と同じ finals_image） */
-export const FINALS_REPLY_FORMAT = "finals_reply";
-/**
- * item の版（172 の variant）。同じ優勝戦の全貌（full_picture・x・main）と両立させ、種類ごとに1レース1件に限る（176・177 の一意の索引）。
- * 下書きの source_data.finals_image.part との対応は FINALS_PART_VARIANTS（snsClaimCheck.js）
- */
-export const FINALS_VARIANT = FINALS_PART_VARIANTS.main;
-export const FINALS_POLL_VARIANT = FINALS_PART_VARIANTS.poll;
-export const FINALS_REPLY_VARIANT = FINALS_PART_VARIANTS.reply;
-export const FINALS_STAGE = "優勝戦";
-/**
- * 画像の名前の後ろ（hq の finals_run.py の出力は <race_id>-1-map.png の形）。bundle.images がこの順の4つちょうどであること。
- * snsXSend.js は snapshot.media を順に上げて1投稿にまとめる（先頭は cover_image_path）
- */
-export const IMAGE_SUFFIXES = [
-  "1-map.png",
-  "2-q12.png",
-  "3-q3.png",
-  "4-routes.png",
-];
-export const imageNamesOf = (raceId) =>
-  IMAGE_SUFFIXES.map((suffix) => `${raceId}-${suffix}`);
-export const IMAGE_WIDTH = 1080;
-export const IMAGE_HEIGHT = 1350;
-/** 1枚の上限。承認の関数（160）の X の画像の上限と同じ（X の画像の上限 5MB 以内） */
-export const IMAGE_MAX_BYTES = 5000000;
-/** 期限（送り手が送れる最後）は締切の5分前。transition_sns_send_139（176）の finals_image の期限と同じ値 */
-export const EXPIRES_BEFORE_MIN = 5;
-/**
- * 本投稿を受け取る最後は締切の15分前（目安・根拠は送り手の周期）。本投稿の後に投票のリプを期限（5分前）までに送るので、
- * 送る時刻の遅らせ2分＋本投稿と投票のリプの送り手の実行（2分ごと）2回分＋リース5分を残す（/code-review の指摘。これより短いと投票のリプが期限に間に合わない）
- */
-export const LATEST_BEFORE_MIN = 15;
-/**
- * 送る時刻は受け取りの2分後（送り手の1周期）。本投稿を承認してから投票のリプを承認するまでの間に、送り手が本投稿を
- * claim して（子の枠を数えずに）送るのを防ぐ。投票のリプの承認に落ちたら、送る時刻の前に item を held_manual にして止める
- */
-export const SEND_DELAY_SEC = 120;
-/** 展示後のリプを受け取る窓は締切の25分前から13分前まで（13分前ちょうどは受け取らない。オーナー 2026-10-26） */
-export const REPLY_EARLIEST_BEFORE_MIN = 25;
-export const REPLY_LATEST_BEFORE_MIN = 13;
-/** hq と決めた禁止表現（risk-rules.json に加えて見る。NFKC でそろえて含むかを見る） */
-export const BANNED_WORDS = ["必ず当たる", "稼げる", "万舟券", "儲か", "競艇"];
-/** 投票は4択（A〜D の道、hq の finals_sheet.py の poll_options） */
-export const POLL_OPTIONS = 4;
-const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
-const RACE_URL =
-  /^https:\/\/www\.boat-ai\.jp\/race\/([0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2})(?:[?#]|$)/;
-const STOP_SQL =
-  "UPDATE public.sns_auto_send_control SET finals_image_enabled = false WHERE channel = 'x';";
-
-/** /today の対象レースの思考投稿（BOA-1169、189）の bundle の format。下書きの format は3本とも TODAY_THINKING_IMAGE_FORMAT */
-export const TODAY_THINKING_IMAGE_FORMAT = "today_thinking_image";
-export const TODAY_THINKING_REPLY_FORMAT = "today_thinking_reply";
-export { TODAY_THINKING_KIND };
-
-/**
- * 種類（item の kind）ごとの設定。stage は受け取る段（null は段を見ず race_conditions も読まない）、flag は自動送信の許可の列、
- * slot は取り置き（182）の出し物、sourceKey は下書きの source_data のキー（readCurrent はこのキーで振り分ける。他の種類のキーを入れない）、
- * todayTarget は race_id がその日の /today の X 投稿の対象であることを求めるか
- */
-export const KINDS = Object.freeze({
-  finals_image: Object.freeze({
-    kind: FINALS_IMAGE_FORMAT,
-    stage: FINALS_STAGE,
-    flag: "finals_image_enabled",
-    migration: "176",
-    slot: SLOT_KINDS.finals,
-    variants: FINALS_PART_VARIANTS,
-    sourceKey: "finals_image",
-    draftFormat: FINALS_IMAGE_FORMAT,
-    title: "優勝戦 思考の順",
-    label: { main: "優勝戦の画像", reply: "優勝戦の展示後のリプ" },
-    storage: "finals-image",
-    stopSql: STOP_SQL,
-    todayTarget: false,
-  }),
-  today_thinking: Object.freeze({
-    kind: TODAY_THINKING_KIND,
-    stage: null,
-    flag: "today_thinking_enabled",
-    migration: "189",
-    slot: SLOT_KINDS.todayThinking,
-    variants: THINKING_PART_VARIANTS,
-    sourceKey: "today_thinking",
-    draftFormat: TODAY_THINKING_IMAGE_FORMAT,
-    title: "/today 思考の順",
-    label: {
-      main: "/today の思考投稿",
-      reply: "/today の思考投稿の展示後のリプ",
-    },
-    storage: "today-thinking",
-    stopSql:
-      "UPDATE public.sns_auto_send_control SET today_thinking_enabled = false WHERE channel = 'x';",
-    todayTarget: true,
-  }),
-});
-
-/** bundle の format → 種類と部分。表に無い format は優勝戦の本投稿として扱い、checkFinalsImage が format の違いで拒む（今までと同じ） */
-export const BUNDLE_FORMATS = Object.freeze({
-  [FINALS_IMAGE_FORMAT]: { kind: FINALS_IMAGE_FORMAT, part: "main" },
-  [FINALS_REPLY_FORMAT]: { kind: FINALS_IMAGE_FORMAT, part: "reply" },
-  [TODAY_THINKING_IMAGE_FORMAT]: { kind: TODAY_THINKING_KIND, part: "main" },
-  [TODAY_THINKING_REPLY_FORMAT]: { kind: TODAY_THINKING_KIND, part: "reply" },
-});
-export const bundleKindOf = (format) =>
-  typeof format === "string" && Object.hasOwn(BUNDLE_FORMATS, format)
-    ? BUNDLE_FORMATS[format]
-    : BUNDLE_FORMATS[FINALS_IMAGE_FORMAT];
-
-const minutesBefore = (iso, min) =>
-  new Date(Date.parse(iso) - min * 60000).toISOString();
-const jstTime = (iso) =>
-  new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
-const jstDate = (date) =>
-  new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10);
-
-/** today_thinking の本文に URL があるときの理由（オーナー 2026-10-27: 3本とも本文に URL を付けない） */
-export const THINKING_URL_REASON = "today_thinking の本文に URL がある";
-
-/**
- * 投稿の文の検査（純粋関数）。label は理由の頭（x_text・poll_text）。
- * noUrl（today_thinking）は URL を1つも許さない。それ以外（優勝戦）は、無いかこのレースのページ1つだけ
- */
-function textReasons(text, raceId, riskRules, label, { noUrl = false } = {}) {
-  if (typeof text !== "string" || !text.trim()) return [`${label} が無い`];
-  const reasons = [];
-  // スレッドにしない1投稿なので、送り手の検査（createDeadlinePreflight）と同じく加重の280まで
-  if (!xPostValid(text)) reasons.push(`${label} が X の加重280を超える`);
-  if (/[{}]|\$\{/.test(text))
-    reasons.push(`${label} に置き場所（{ } ・\${）が残っている`);
-  const urls = twitterText.extractUrls(text);
-  if (noUrl) {
-    if (urls.length) reasons.push(`${THINKING_URL_REASON}（${label}）`);
-  } else if (
-    // リンクは無いか、このレースのページ1つだけ
-    urls.length > 1 ||
-    (urls.length === 1 && urls[0].match(RACE_URL)?.[1] !== raceId)
-  )
-    reasons.push(`${label} のリンクがこのレースのページ1つでない`);
-  const normalized = text.normalize("NFKC");
-  const banned = BANNED_WORDS.filter((w) => normalized.includes(w));
-  if (banned.length) reasons.push(`${label} の禁止表現: ${banned.join(",")}`);
-  const hits = matchRiskRules(
-    draftRiskFields({ platform: "x", caption_text: text, hashtags: [] }),
-    "x",
-    riskRules,
-  );
-  if (hits.length)
-    reasons.push(
-      `${label} の禁止表現（risk-rules）: ${hits.map((h) => h.id).join(",")}`,
-    );
-  return reasons;
-}
-
-/** 本投稿と展示後のリプに共通の bundle の検査（純粋関数）。text は textReasons の追加の設定 */
-function commonReasons(bundle, format, riskRules, text = {}) {
-  const reasons = [];
-  if (bundle?.format !== format) reasons.push(`format が ${format} でない`);
-  if (!/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(bundle?.race_id ?? ""))
-    reasons.push("race_id が不正");
-  if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(bundle?.deadline ?? ""))
-    reasons.push("deadline が HH:MM でない");
-  const expected = imageNamesOf(bundle?.race_id);
-  if (
-    !Array.isArray(bundle?.images) ||
-    bundle.images.length !== expected.length ||
-    bundle.images.some((name, i) => name !== expected[i])
-  )
-    reasons.push(`images が ${expected.join(",")} の4つ・この順でない`);
-  if (bundle?.review?.p0_count !== 0)
-    reasons.push(`機械の検査の P0 が0件でない（${bundle?.review?.p0_count}）`);
-  return [
-    ...reasons,
-    ...textReasons(bundle?.x_text, bundle?.race_id, riskRules, "x_text", text),
-  ];
-}
-
-/** 値が空でないか（null・undefined・空の配列・空白だけの文字列は空） */
-const present = (v) =>
-  Array.isArray(v)
-    ? v.length > 0
-    : typeof v === "string"
-      ? v.trim() !== ""
-      : v != null;
-
-/**
- * bundle に投票（poll・poll_text のどちらか）があるか（純粋関数）。無ければ投票のリプを作らない（BOA-1208）。
- * キーが無い・null・空（[]・""）はどれも「投票なし」
- */
-export function hasPoll(bundle) {
-  return present(bundle?.poll) || present(bundle?.poll_text);
-}
-
-/**
- * 本投稿の bundle.json の検査（純粋関数、format で優勝戦と思考投稿を分ける）。投票は任意（BOA-1208）。
- * poll・poll_text のどちらかがあれば、両方そろって 4択・poll_text の検査が通ること
- */
-function mainReasons(bundle, riskRules, format, text = {}) {
-  const reasons = commonReasons(bundle, format, riskRules, text);
-  if (!hasPoll(bundle)) return reasons;
-  const pollIssue = pollOptionsIssue(bundle?.poll);
-  if (pollIssue) reasons.push(pollIssue);
-  else if (bundle.poll.length !== POLL_OPTIONS)
-    reasons.push(`投票の選択肢が${POLL_OPTIONS}個でない`);
-  return [
-    ...reasons,
-    ...textReasons(
-      bundle?.poll_text,
-      bundle?.race_id,
-      riskRules,
-      "poll_text",
-      text,
-    ),
-  ];
-}
-
-/** 本投稿の bundle.json の検査（純粋関数）。不合格は理由の配列を返す。投票（poll 4択・poll_text）は任意 */
-export function checkFinalsImage(bundle, riskRules = []) {
-  return mainReasons(bundle, riskRules, FINALS_IMAGE_FORMAT);
-}
-
-/** 展示後のリプの bundle.json の検査（純粋関数） */
-export function checkFinalsReply(bundle, riskRules = []) {
-  return commonReasons(bundle, FINALS_REPLY_FORMAT, riskRules);
-}
-
-/** 思考投稿の本投稿（format=today_thinking_image）の検査（純粋関数）。優勝戦の本投稿と同じ検査に、本文に URL が無いことを足す */
-export function checkTodayThinkingImage(bundle, riskRules = []) {
-  return mainReasons(bundle, riskRules, TODAY_THINKING_IMAGE_FORMAT, {
-    noUrl: true,
-  });
-}
-
-/** 思考投稿の展示後のリプ（format=today_thinking_reply）の検査（純粋関数） */
-export function checkTodayThinkingReply(bundle, riskRules = []) {
-  return commonReasons(bundle, TODAY_THINKING_REPLY_FORMAT, riskRules, {
-    noUrl: true,
-  });
-}
-
-/** 種類と部分ごとの bundle の検査 */
-const CHECKS = {
-  [FINALS_IMAGE_FORMAT]: { main: checkFinalsImage, reply: checkFinalsReply },
-  [TODAY_THINKING_KIND]: {
-    main: checkTodayThinkingImage,
-    reply: checkTodayThinkingReply,
-  },
-};
-
-/** PNG の幅と高さ（IHDR）。PNG でなければ null */
-export function pngSize(bytes) {
-  if (
-    !(bytes instanceof Uint8Array) ||
-    bytes.byteLength < 24 ||
-    PNG_SIGNATURE.some((b, i) => bytes[i] !== b)
-  )
-    return null;
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  return { width: view.getUint32(16), height: view.getUint32(20) };
-}
-
-/** 画像4枚の検査（純粋関数）。names は bundle.images、files は名前→バイト（無いものは undefined） */
-export function checkImages(names, files) {
-  const reasons = [];
-  for (const name of names) {
-    const bytes = files[name];
-    if (!bytes) {
-      reasons.push(`${name} が無い`);
-      continue;
-    }
-    if (bytes.byteLength < 1 || bytes.byteLength > IMAGE_MAX_BYTES)
-      reasons.push(`${name} の大きさが不正（${bytes.byteLength} バイト）`);
-    const size = pngSize(bytes);
-    if (!size) reasons.push(`${name} が PNG でない`);
-    else if (size.width !== IMAGE_WIDTH || size.height !== IMAGE_HEIGHT)
-      reasons.push(
-        `${name} が ${IMAGE_WIDTH}×${IMAGE_HEIGHT} でない（${size.width}×${size.height}）`,
-      );
-  }
-  return reasons;
-}
-
-/**
- * 締切まわりの時刻（純粋関数）。止められる期限（veto_until）は今、送る時刻は SEND_DELAY_SEC の後。
- * item の CHECK（notify_by < veto_until < deadline_at、153）のため、notify_by は今の1分前
- */
-export function schedule(deadlineAt, now) {
-  return {
-    deadline_at: deadlineAt,
-    expires_at: minutesBefore(deadlineAt, EXPIRES_BEFORE_MIN),
-    latest: minutesBefore(deadlineAt, LATEST_BEFORE_MIN),
-    notify_by: new Date(now.getTime() - 60000).toISOString(),
-    veto_until: now.toISOString(),
-    send_at: new Date(now.getTime() + SEND_DELAY_SEC * 1000).toISOString(),
-  };
-}
-
-/**
- * レース・段の検査（純粋関数）。DB から読んだ行を受ける。
- * 受け取る窓は [締切−earliestMin, 締切−latestMin)。本投稿は earliestMin なし・latestMin=8、展示後のリプは 25・13。
- * requiredStage は求める段（既定は優勝戦）。null なら段を見ない（思考投稿）
- */
-export function checkRace({
-  bundle,
-  race,
-  stage,
-  now,
-  earliestMin = null,
-  latestMin = LATEST_BEFORE_MIN,
-  requiredStage = FINALS_STAGE,
-}) {
-  const deadlineAt = race && deadlineIso(race);
-  if (!deadlineAt) return { reasons: ["レースが見つからない"] };
-  const reasons = [];
-  if (race.cancellation_status != null) reasons.push("レースが中止");
-  if (race.race_date !== jstDate(now)) reasons.push("今日のレースでない");
-  if (requiredStage != null && stage !== requiredStage)
-    reasons.push(`${requiredStage}でない（race_stage=${stage ?? "なし"}）`);
-  // deadline は race_id の日付の JST の HH:MM（races.start_time の時・分と一致すること）
-  if (race.start_time?.slice(0, 5) !== bundle.deadline)
-    reasons.push(
-      `deadline が races の締切（${race.start_time?.slice(0, 5)}）と違う`,
-    );
-  if (race.race_date !== bundle.race_id.slice(0, 10))
-    reasons.push("race_id の日付が races と違う");
-  if (
-    earliestMin != null &&
-    now.getTime() < Date.parse(minutesBefore(deadlineAt, earliestMin))
-  )
-    reasons.push(`締切の${earliestMin}分前より前`);
-  if (now.getTime() >= Date.parse(minutesBefore(deadlineAt, latestMin)))
-    reasons.push(`締切の${latestMin}分前を過ぎた`);
-  return { reasons, deadlineAt };
-}
-
-/**
- * X の日の上限（sns_x_send_control.daily_limit_x、無ければ daily_limit）に need 本が入るか（純粋関数）。
- * 数え方は transition_sns_send_139 の claim と同じ（今日の JST の X の試行＋他経路の本数＋need）。入らなければ理由を返す。
- * 入らないまま job を作ると、claim が「日次全体上限です」で投げ続け、期限まで2分ごとに Slack が鳴る（2026-10-26 system-architect の P1）。
- * 投票のある本投稿は投票のリプと対で need=2（177 の claim も親の claim で子の分を数える）。投票の無い本投稿は need=1（BOA-1208）。
- * 本投稿（子でない job）は、177 の claim と同じく、他の親の予約の子（children のうち、親が今日 claim 済みのもの）も数える。
- * 展示後のリプ（子）は他の子を数えない（177 と同じ）
- */
-export function dailyLimitReason({
-  sendControl,
-  jobs,
-  now,
-  need = 1,
-  children = [],
-}) {
-  const limit = sendControl?.daily_limit_x ?? sendControl?.daily_limit;
-  const today = jstDate(now);
-  if (!limit || sendControl.daily_baseline_date !== today)
-    return "X の日の上限・他経路の本数が今日の分として確かめられていない（daily_baseline_date）";
-  const used = jobs.reduce(
-    (n, job) =>
-      n +
-      (job.attempt_dates ?? []).filter(
-        (day, i) => day === today && job.attempt_channels?.[i] === "x",
-      ).length,
-    0,
-  );
-  const external = sendControl.daily_external_count ?? 0;
-  const reserved = reservedChildren({ jobs, children, today, now });
-  return used + external + reserved + need > limit
-    ? `X の日の上限 ${limit} に${need}本が入らない（今日の試行 ${used}・他経路 ${external}・予約の子 ${reserved}）`
-    : null;
-}
-
-/**
- * 他の親の予約の子の数（純粋関数）。177 の transition_sns_send_139 の v_children の「他の親の子」と同じ条件:
- * 子は X・queued・attempts=0・期限の前・下書きの bundle_import_id が NULL（children は store.waitingChildren がこの形で読む）、
- * 親は今日の試行があり sending・reconcile・posted（jobs は今日の試行のある job）
- */
-export function reservedChildren({ jobs, children, today, now }) {
-  const claimed = new Set(
-    jobs
-      .filter(
-        (job) =>
-          ["sending", "reconcile", "posted"].includes(job.state) &&
-          (job.attempt_dates ?? []).includes(today),
-      )
-      .map((job) => job.id),
-  );
-  return children.filter(
-    (c) =>
-      c.channel === "x" &&
-      c.state === "queued" &&
-      c.attempts === 0 &&
-      Date.parse(c.expires_at) > now.getTime() &&
-      c.bundle_import_id == null &&
-      claimed.has(c.parent_job_id),
-  ).length;
-}
-
-const raceUrlOf = (raceId) => `https://www.boat-ai.jp/race/${raceId}?tab=sonar`;
-
-/** 送る直前の読み直しの材料（deadline_queue）。parentJobId はリプの親（本投稿の job） */
-const queueOf = (bundle, { revision, when, observedAt, parentJobId }) => ({
-  deadline_at: when.deadline_at,
-  expires_at: when.expires_at,
-  source_revision: revision,
-  source_observed_at: observedAt,
-  public_url: raceUrlOf(bundle.race_id),
-  screen_key: "race-sonar",
-  ...(parentJobId ? { parent_job_id: parentJobId } : {}),
-});
-
-/**
- * 下書きの行（純粋関数）。part は main（本投稿）・poll（投票のリプ）・reply（展示後のリプ）。
- * public_url は送る直前の表示の確認に使う。poll は媒体なし・source_data.x_poll（createXSnapshot が snapshot.poll に写す）。
- * poll は親の job ができるまで公開保留（子だけ先に承認されて単独の投稿にならない。/today の reply と同じ）。
- * kind は KINDS のキー（既定は優勝戦）。source_data のキーは種類ごとに1つだけ（digest・full_picture・他の種類のキーを入れない。
- * readCurrent がキーで振り分けるため）
- */
-export function draftRow(
-  bundle,
-  {
-    revision,
-    paths = [],
-    when,
-    observedAt,
-    part = "main",
-    parentJobId = null,
-    kind = FINALS_IMAGE_FORMAT,
-  },
-) {
-  const cfg = KINDS[kind];
-  const raceUrl = raceUrlOf(bundle.race_id);
-  const poll = part === "poll";
-  return {
-    content_group_id: randomUUID(),
-    language: "ja",
-    status: "pending_review",
-    format: cfg.draftFormat,
-    platform: "x",
-    title: `${cfg.title}${{ main: "", poll: "（投票のリプ）", reply: "（展示後のリプ）" }[part]} ${bundle.race_id}`,
-    caption_text: poll ? bundle.poll_text : bundle.x_text,
-    hashtags: [],
-    publish_blocked: poll,
-    publication_hold_reasons: [],
-    send_lane: "A",
-    scheduled_at: when.send_at,
-    cover_image_path: paths[0] ?? null,
-    source_data: {
-      [cfg.sourceKey]: {
-        race_id: bundle.race_id,
-        revision,
-        review: bundle.review,
-        part,
-      },
-      // 承認の関数（160）が媒体をこの順で照合する（先頭は cover_image_path）
-      ...(paths.length ? { image_paths: paths } : {}),
-      // 投票は締切で閉じる（分は送る時に runXSendJob が決める）
-      ...(poll
-        ? { x_poll: { options: bundle.poll, closes_at: when.deadline_at } }
-        : {}),
-      // thread_length は入れない（送り手の検査が加重280で見る）
-      deadline_queue: queueOf(bundle, {
-        revision,
-        when,
-        observedAt,
-        parentJobId,
-      }),
-      release_evidence: {
-        status: "released",
-        url: raceUrl,
-        screen_key: "race-sonar",
-        confirmed_by: "push-finals-image",
-        reference: cfg.draftFormat,
-        checked_at: observedAt,
-        confirmed_at: observedAt,
-      },
-      qa: { pass: true, numeric_claims_match: true, L0_hits: [] },
-    },
-  };
-}
-
-/** item の行（純粋関数）。自動（notified）は止めるリンクを作らない（全貌と同じ。153 の CHECK が要るので使わない乱数のハッシュ） */
-function itemRow(
-  bundle,
-  { draftId, variant, when, state, observedAt, kind = FINALS_IMAGE_FORMAT },
-) {
-  return {
-    kind,
-    variant,
-    draft_id: draftId,
-    channel: "x",
-    race_id: bundle.race_id,
-    deadline_at: when.deadline_at,
-    notify_by: when.notify_by,
-    veto_until: when.veto_until,
-    state,
-    checks: { passed: true, review: bundle.review, checked_at: observedAt },
-    ...(state === "notified"
-      ? {
-          notified_at: observedAt,
-          stop_token_hash: randomBytes(32).toString("hex"),
-        }
-      : {}),
-  };
-}
-
-/**
- * 同じレース・同じ種類の生きている item を見る。送った・送っている item があれば { already } を返す。
- * 自動の item の job が送らずに終わった（held・failed・cancelled）か、承認の途中で落ちて job が無い item は、作り直す対象として返す
- */
-async function liveOf(store, raceId, variant, kind) {
-  const live = (await store.finalsItems(raceId, variant, kind)).filter(
-    (i) => !["stopped", "held_manual"].includes(i.state),
-  );
-  const retry = [];
-  for (const item of live) {
-    const job = await store.jobForDraft(item.draft_id);
-    if (
-      item.state === "notified" &&
-      (!job || RETRYABLE_JOB_STATES.includes(job.state))
-    )
-      retry.push(item);
-    else
-      return {
-        already: {
-          already: true,
-          reason: `同じレースの ${variant} が既にある（item ${item.state}・job ${job?.state ?? "なし"}）。作らなかった`,
-          status: statusOf(raceId, item, job),
-        },
-      };
-  }
-  return { retry };
-}
-
-/** フォルダの画像4枚を読み、検査する。読めない（ENOENT 以外）は原因を残す */
-async function readImages(folder, names, readBytes) {
-  const files = {};
-  const readErrors = [];
-  for (const name of names) {
-    try {
-      files[name] = await readBytes(path.join(folder, name));
-    } catch (error) {
-      files[name] = undefined;
-      // 無い（ENOENT）は checkImages が「無い」と書く。それ以外（権限・I/O）は原因を残す
-      if (error?.code && error.code !== "ENOENT")
-        readErrors.push(
-          `${name} を読めない（${error.code}: ${error.message}）`,
-        );
-    }
-  }
-  return { files, reasons: [...readErrors, ...checkImages(names, files)] };
-}
-
-/** 下書きを自動送信の承認者で承認する（媒体は手元のバイトで hash を取る） */
-async function approveDraft(
-  store,
-  draft,
-  approverId,
-  when,
-  byPath = new Map(),
-) {
-  const snapshot = await createXSnapshot(draft, async (p) =>
-    byPath.has(p)
-      ? byPath.get(p)
-      : Promise.reject(new Error("媒体の path が違う")),
-  );
-  return store.approve({
-    p_draft_id: draft.id,
-    p_approver_id: approverId,
-    p_snapshot: snapshot,
-    p_scheduled_at: when.send_at,
-  });
-}
-
-/**
- * グレードの日に /today の対象の外でも受ける格（races.race_grade の値、強い順。hq の a2、オーナー 2026-10-31・11-02 の (a)）。
- * races.race_grade は raceListParser.js が SG・G1・G2・G3・ippan で書き、PG1 は G1 として入る（本番 2026 年の値に PG1 は0件。
- * BBCトーナメント・スピードクイーンメモリアル・マスターズチャンピオン・レディースチャンピオン・ヤングダービーの行は G1、
- * race_series.grade も G1。2026-11-02 に読み取りで確認）。そのため今の DB では PG1 と G1 の場は同じ格として比べる。
- * 他の書き手が PG1 と書けば G1 より上として扱う
- */
-export const THINKING_GRADE_DAY_GRADES = Object.freeze(["SG", "PG1", "G1"]);
-/** グレードの日に受けるレース番号（hq は開催場の 12R→11R→10R から選ぶ） */
-export const THINKING_GRADE_DAY_MIN_RACE_NUMBER = 10;
-export const THINKING_GRADE_DAY_MAX_RACE_NUMBER = 12;
-
-const gradeRankOf = (grade) =>
-  typeof grade === "string"
-    ? THINKING_GRADE_DAY_GRADES.indexOf(grade.toUpperCase())
-    : -1;
-/** race_id（YYYY-MM-DD-会場-R）の日と会場の部分 */
-const venueKeyOf = (raceId) =>
-  typeof raceId === "string" ? raceId.slice(0, 13) : null;
-
-/**
- * その日の思考投稿を受ける場（純粋関数）。twelves はその日の 12R の races の行（race_id・race_grade・start_time）。
- * 格の最上位（SG ＞ PG1 ＞ G1）の場で、同じ格が2場以上なら 12R の締切（start_time）が遅い方。締切も同じなら race_id の小さい方
- * （行の順に依らず、本投稿と展示後のリプで同じ場を選ぶ）。中止は見ない（日中に中止が入っても場が入れ替わらないように。
- * 中止のレースそのものは checkRace がはじく）。当たる場が無ければ null。返り値は race_id の日と会場の部分（例 2026-11-01-13）
- */
-export function thinkingGradeDayVenue(twelves) {
-  const better = (a, b) =>
-    gradeRankOf(a.race_grade) - gradeRankOf(b.race_grade) ||
-    b.start_time.localeCompare(a.start_time) ||
-    a.race_id.localeCompare(b.race_id);
-  const best = (twelves ?? [])
-    .filter(
-      (r) =>
-        typeof r?.race_id === "string" &&
-        gradeRankOf(r?.race_grade) >= 0 &&
-        typeof r?.start_time === "string",
-    )
-    .reduce((top, r) => (!top || better(r, top) < 0 ? r : top), null);
-  return best ? venueKeyOf(best.race_id) : null;
-}
-
-const inVenueRange = (race, venue) => {
-  const n = race?.race_number;
-  return (
-    venue !== null &&
-    venueKeyOf(race?.race_id) === venue &&
-    Number.isInteger(n) &&
-    n >= THINKING_GRADE_DAY_MIN_RACE_NUMBER &&
-    n <= THINKING_GRADE_DAY_MAX_RACE_NUMBER
-  );
-};
-
-/** races の行が、その日の受ける場（thinkingGradeDayVenue）の 10〜12R か（純粋関数） */
-export const isThinkingGradeDayRace = (race, twelves) =>
-  inVenueRange(race, thinkingGradeDayVenue(twelves));
-
-/**
- * 思考投稿を受けるレースか（純粋関数）。その日の /today の X 投稿が送られている（posted）ことを求めたうえで、次のどちらか:
- *   - その投稿の対象（today-picks.js の readTodayPicks の featured か list）に race_id が入っている（審査の P2）
- *   - その日の格の最上位（SG ＞ PG1 ＞ G1）の場の 10〜12R。同じ格が2場以上なら 12R の締切が遅い方の場
- *     （hq の a2、オーナー 2026-10-31・11-02 の (a)。正本は hq の drafts/x-thinking-today-20261027.md v2）
- * どちらでもなければ理由を返す。race は races の行（race_number）、twelves はその日の 12R の races の行
- */
-export function todayTargetReason(picks, raceId, race = null, twelves = []) {
-  if (!picks?.draft_id)
-    return "その日の /today の X 投稿が無い（today_thinking の対象を確かめられない）";
-  // 送られた /today の投稿の対象だけ（held・pending_review のまま出ていない投稿の候補には出さない。hq は呼び直すので、7:00 の後に通る）
-  if (picks.status !== "posted")
-    return `その日の /today の X 投稿がまだ送られていない（status=${picks.status ?? "不明"}）`;
-  const ids = [picks.featured, ...(picks.list ?? [])]
-    .filter(Boolean)
-    .map((r) => r.race_id);
-  if (ids.includes(raceId)) return null;
-  const notToday = `/today の X 投稿の対象でない（${raceId}）`;
-  // races の行が無い・別のレースの行なら、グレードを見ずにそう書く（checkRace も行が無いことを別に書く）
-  if (race?.race_id !== raceId)
-    return `${notToday}。races の行が無くグレードを確かめられない`;
-  const venue = thinkingGradeDayVenue(twelves);
-  if (inVenueRange(race, venue)) return null;
-  return `${notToday}。その日の格の最上位の場（${venue ?? "SG・PG1・G1 の場が無い"}）の ${THINKING_GRADE_DAY_MIN_RACE_NUMBER}〜${THINKING_GRADE_DAY_MAX_RACE_NUMBER}R でもない（race_grade=${race.race_grade ?? "不明"}・race_number=${race.race_number ?? "不明"}）`;
+/** この種類の自動送信の許可を読み、書き込みをするか（許可が on で --dry-run でない）を返す */
+async function readPermission(store, cfg, dryRun) {
+  // 読むのはこの種類の許可の列だけ（他の種類の列が無い＝マイグレーションの前でも、この種類の許可を外さない）
+  const controls = await store.controls(cfg.flag);
+  // 列が無い（176・189 が未適用）・行が無いときも off（fail-closed）。許可は本投稿・投票のリプ・展示後のリプに共通
+  const enabled = controls.x?.[cfg.flag] === true;
+  return { controls, enabled, writes: enabled && !dryRun };
 }
 
 /**
@@ -738,53 +158,20 @@ export async function pushFinalsImage(
   const reply = part === "reply";
   const head = { part, kind };
   const label = cfg.label[part];
-  // 読むのはこの種類の許可の列だけ（他の種類の列が無い＝マイグレーションの前でも、この種類の許可を外さない）
-  const controls = await store.controls(cfg.flag);
-  // 列が無い（176・189 が未適用）・行が無いときも off（fail-closed）。許可は本投稿・投票のリプ・展示後のリプに共通
-  const enabled = controls.x?.[cfg.flag] === true;
-  const writes = enabled && !dryRun;
-  const reject = async (reasons) => {
-    if (writes)
-      await notify(
-        `SNS ${label} ${bundle?.race_id ?? "不明"} を検査で拒否した\n${reasons.join("\n")}`,
-      ).catch((error) =>
-        console.error(`Slack に通知できません: ${error.message}`),
-      );
-    return { ...head, reasons };
-  };
+  const { controls, enabled, writes } = await readPermission(
+    store,
+    cfg,
+    dryRun,
+  );
+  const reject = makeReject({ writes, notify, label, bundle, head });
   const reasons = CHECKS[kind][part](bundle, riskRules);
   if (reasons.length) return reject(reasons);
-  // 起こす係（hq finals_run.py）は2分ごとに呼ぶ。同じレース・同じ種類の生きている item・送った item があれば
-  // 何も作らず、今の状態を返す（DB の一意の索引でも止まる、176・177）。送らずに終わった自動の item は superseded で止めて作り直す
-  const variant = cfg.variants[part];
-  const live = await liveOf(store, bundle.race_id, variant, kind);
-  if (live.already) return { ...head, ...live.already };
-  const retry = [...live.retry];
-  if (!reply) {
-    // 本投稿を作り直すなら、前の投票のリプも止める（今度の bundle に投票が無くても止める。BOA-1208）
-    const poll = (
-      await store.finalsItems(bundle.race_id, cfg.variants.poll, kind)
-    ).filter((i) => !["stopped", "held_manual", "sent"].includes(i.state));
-    retry.push(...poll);
-  }
-  // 展示後のリプの親は、送った本投稿（job が posted で tweet id がある）。item の状態ではなく job で見る
-  // （要照合の後で手で complete した等で item が sent にならない場合も、送った本投稿につなぐ）
-  let parentJob = null;
-  if (reply) {
-    for (const item of await store.finalsItems(
-      bundle.race_id,
-      cfg.variants.main,
-      kind,
-    )) {
-      const job = await store.jobForDraft(item.draft_id);
-      if (job?.state === "posted" && job.external_post_id) {
-        parentJob = job;
-        break;
-      }
-    }
-    if (!parentJob)
-      return reject(["本投稿がまだ送られていない（リプの親が無い）"]);
-  }
+  // 同じレース・同じ種類の生きている item・送った item があれば何も作らず、今の状態を返す（DB の一意の索引でも止まる、176・177）。
+  // 送らずに終わった自動の item は superseded で止めて作り直す
+  const prior = await findPrior(store, bundle, { kind, cfg, part });
+  if (prior.already) return { ...head, ...prior.already };
+  if (reply && !prior.parentJob)
+    return reject(["本投稿がまだ送られていない（リプの親が無い）"]);
   const names = bundle.images;
   const { files, reasons: imageReasons } = await readImages(
     folder,
@@ -792,63 +179,18 @@ export async function pushFinalsImage(
     readBytes,
   );
   if (imageReasons.length) return reject(imageReasons);
-  const [race, stage, sendControl, todayJobs, children, picks, twelves] =
-    await Promise.all([
-      store.race(bundle.race_id),
-      // 段を見ない種類（思考投稿）は race_conditions を読まない
-      cfg.stage ? store.stage(bundle.race_id) : null,
-      store.sendControl(),
-      store.jobsAttemptedOn(jstDate(now)),
-      reply ? [] : store.waitingChildren(now),
-      cfg.todayTarget ? store.todayPicks(jstDate(now)) : null,
-      // その日の 12R（格の最上位の場を決める。思考投稿だけ）
-      cfg.todayTarget ? store.twelfthRaces(jstDate(now)) : [],
-    ]);
-  const raceCheck = checkRace({
-    bundle,
-    race,
-    stage,
-    now,
-    requiredStage: cfg.stage,
-    ...(reply
-      ? {
-          earliestMin: REPLY_EARLIEST_BEFORE_MIN,
-          latestMin: REPLY_LATEST_BEFORE_MIN,
-        }
-      : {}),
-  });
-  // 本投稿が上限で入らなければ投票のリプも作らない（投票があれば対で2本分）
   const withPoll = !reply && hasPoll(bundle);
-  const need = withPoll ? 2 : 1;
-  const limitReason = dailyLimitReason({
-    sendControl,
-    jobs: todayJobs,
+  const raceCheck = await receiveCheck({
+    store,
+    bundle,
+    cfg,
+    reply,
     now,
-    need,
-    children,
+    need: withPoll ? 2 : 1,
   });
-  if (limitReason) raceCheck.reasons.push(limitReason);
-  if (cfg.todayTarget) {
-    const targetReason = todayTargetReason(
-      picks,
-      bundle.race_id,
-      race,
-      twelves,
-    );
-    if (targetReason) raceCheck.reasons.push(targetReason);
-  }
-  // 出し物ごとの取り置き（182、docs/design/x-daily-slots/plan.md）。他の出し物の取り置きの残りを使わないか。
-  // 182 の前・読めないときは上の日の上限だけで決める（送り手の claim が正）
-  const xSlot = store.xSlotRoom
-    ? await checkXSlot(store.xSlotRoom, cfg.slot, need)
-    : null;
-  if (xSlot?.blocked) raceCheck.reasons.push(xSlot.reason);
-  if (xSlot?.note) console.error(xSlot.note);
   if (raceCheck.reasons.length) return reject(raceCheck.reasons);
   const when = schedule(raceCheck.deadlineAt, now);
-  const hash = createHash("sha256").update(JSON.stringify(bundle));
-  for (const name of names) hash.update(files[name]);
-  const revision = hash.digest("hex").slice(0, 32);
+  const revision = revisionOf(bundle, names, files);
   if (!writes)
     return {
       ...head,
@@ -859,586 +201,44 @@ export async function pushFinalsImage(
       revision,
       when,
     };
-
-  // 前の item を止め、下書きを公開保留に戻す（148 のトリガーが承認を外し、queued・held の job を取り消す。
-  // 止めた本投稿を親に持つ投票のリプの job が queued のまま残り、送り手が「親を待つ」を知らせ続けないように）
-  for (const item of retry) {
-    await store.updateItem(item.id, item.state, {
-      state: "stopped",
-      stopped_at: now.toISOString(),
-      stopped_via: "superseded",
-    });
-    await store.updateDraft(item.draft_id, { publish_blocked: true });
-  }
-  const paths = names.map(
-    (name) =>
-      `${cfg.storage}/${bundle.race_id}/${revision}/${reply ? "reply-" : ""}${name}`,
+  const out = await writeRows(
+    store,
+    { bundle, cfg, kind, reply, names, files, revision, when, now },
+    {
+      retry: prior.retry,
+      controls,
+      parentJob: prior.parentJob,
+      withPoll,
+      notify,
+      label,
+    },
   );
-  for (const [i, name] of names.entries())
-    await store.saveFile(paths[i], files[name]);
-  const observedAt = now.toISOString();
-  const auto = controls.x?.mode === "auto" && controls.x?.auto_approver_id;
-  const byPath = new Map(paths.map((p, i) => [p, files[names[i]]]));
-  const out = reply
-    ? await pushReplyRows(store, bundle, {
-        revision,
-        paths,
-        when,
-        observedAt,
-        auto,
-        approverId: controls.x?.auto_approver_id,
-        parentJob,
-        byPath,
-        kind,
-      })
-    : await pushMainRows(store, bundle, {
-        revision,
-        paths,
-        when,
-        observedAt,
-        auto,
-        approverId: controls.x?.auto_approver_id,
-        byPath,
-        kind,
-        withPoll,
-      });
-  const line = out.send_at
-    ? `x: 今すぐ送る（送り手の次の実行、期限 ${jstTime(when.expires_at)}${withPoll ? "。投票のリプは本投稿の公開の後" : ""}）${controls.x?.dry_run !== false ? "（試運転中: claim の前で止まる）" : ""}`
-    : out.error
-      ? `x: 自動の承認に失敗（${reply ? "個別承認に回した" : withPoll ? "本投稿・投票のリプとも止めた" : "本投稿を止めた"}）: ${out.error}`
-      : reply
-        ? "x: 自動モードでないので個別承認で承認する"
-        : withPoll
-          ? "x: 自動モードでないので送らない（投票のリプは自動の道だけでつなぐ。本投稿だけを出さない）"
-          : "x: 自動モードでないので送らない";
-  await notify(
-    `SNS ${label} ${bundle.race_id}（締切 ${jstTime(when.deadline_at)}）\n${line}\n止めるには: ${cfg.stopSql}`,
-  ).catch((error) => console.error(`Slack に通知できません: ${error.message}`));
   return { ...head, ...out, revision, when };
 }
 
-/**
- * 本投稿と投票のリプの行を作る。withPoll が false（投票の無い bundle、BOA-1208）なら本投稿だけを作り、自動なら本投稿だけを承認する。
- * 投票があれば、自動なら本投稿を承認し、その job を投票のリプの deadline_queue.parent_job_id に入れて公開保留を外してから承認する
- * （/today の reply と同じ順、snsTodayPlanner.js）。どこかで落ちたら作った item をすべて held_manual（投票があるときは、投票のリプの無い本投稿だけを出さない）。
- * 自動でないときも作った item をすべて held_manual（投票があるときは、子を親につなぐのが自動の道だけのため。投票が無いときも今までどおり手動では送らない）
- */
-async function pushMainRows(
-  store,
-  bundle,
-  {
-    revision,
-    paths,
-    when,
-    observedAt,
-    auto,
-    approverId,
-    byPath,
-    kind = FINALS_IMAGE_FORMAT,
-    withPoll = hasPoll(bundle),
-  },
-) {
-  const { variants } = KINDS[kind];
-  const state = auto ? "notified" : "held_manual";
-  const draft = await store.insertDraft(
-    draftRow(bundle, { revision, paths, when, observedAt, kind }),
-  );
-  let pollDraft = withPoll
-    ? await store.insertDraft(
-        draftRow(bundle, { revision, when, observedAt, part: "poll", kind }),
-      )
-    : null;
-  const heldReason = auto
-    ? null
-    : withPoll
-      ? "自動モードでない（投票のリプは自動の道だけでつなぐ）"
-      : "自動モードでない";
-  const item = await store.insertItem({
-    ...itemRow(bundle, {
-      draftId: draft.id,
-      variant: variants.main,
-      when,
-      state,
-      observedAt,
-      kind,
-    }),
-    ...(heldReason ? { held_reason: heldReason } : {}),
-  });
-  const pollItem = pollDraft
-    ? await store.insertItem({
-        ...itemRow(bundle, {
-          draftId: pollDraft.id,
-          variant: variants.poll,
-          when,
-          state,
-          observedAt,
-          kind,
-        }),
-        ...(heldReason ? { held_reason: heldReason } : {}),
-      })
-    : null;
-  const out = {
-    draft_id: draft.id,
-    item_id: item.id,
-    ...(pollItem
-      ? { poll_draft_id: pollDraft.id, poll_item_id: pollItem.id }
-      : {}),
-    auto: Boolean(auto),
-  };
-  if (!auto) return out;
-  try {
-    const job = await approveDraft(store, draft, approverId, when, byPath);
-    if (!job?.id) throw new Error("本投稿の job の id を受け取れない");
-    if (pollDraft) {
-      pollDraft = await store.updateDraft(pollDraft.id, {
-        source_data: {
-          ...pollDraft.source_data,
-          deadline_queue: {
-            ...pollDraft.source_data.deadline_queue,
-            parent_job_id: job.id,
-          },
-        },
-        publish_blocked: false,
-      });
-      const pollJob = await approveDraft(store, pollDraft, approverId, when);
-      out.poll_job_id = pollJob?.id ?? null;
-    }
-    out.job_id = job.id;
-    out.send_at = when.send_at;
-  } catch (error) {
-    out.error = error.message;
-    delete out.job_id;
-    // 承認した本投稿の job は、item が notified でないと claim で止まる（transition_sns_x_send の auto_stopped）
-    for (const row of [item, pollItem].filter(Boolean))
-      await store
-        .updateItem(row.id, "notified", {
-          state: "held_manual",
-          held_reason: `${pollItem ? "本投稿・投票のリプの" : "本投稿の"}自動の承認に失敗: ${error.message.split("\n")[0]}`,
-        })
-        .catch((updateError) => {
-          // item が notified のまま。次の呼び出しで superseded にして作り直す
-          console.error(
-            `item ${row.id} を held_manual に戻せない: ${updateError.message}`,
-          );
-          out.error += `（item ${row.id} を戻せない: ${updateError.message}）`;
-        });
-  }
-  return out;
-}
+const USAGE =
+  "使い方: node --env-file=.env.local scripts/sns/push-finals-image.js <フォルダ> [--dry-run] [--no-wait] | --status <race_id> [--kind today_thinking]";
 
-/** 展示後のリプの行を作る。親（本投稿の job）は deadline_queue.parent_job_id。自動でなければ manual（個別承認でも親につながっている） */
-async function pushReplyRows(
-  store,
-  bundle,
-  {
-    revision,
-    paths,
-    when,
-    observedAt,
-    auto,
-    approverId,
-    parentJob,
-    byPath,
-    kind = FINALS_IMAGE_FORMAT,
-  },
-) {
-  const draft = await store.insertDraft(
-    draftRow(bundle, {
-      revision,
-      paths,
-      when,
-      observedAt,
-      part: "reply",
-      parentJobId: parentJob.id,
-      kind,
-    }),
-  );
-  const item = await store.insertItem(
-    itemRow(bundle, {
-      draftId: draft.id,
-      variant: KINDS[kind].variants.reply,
-      when,
-      state: auto ? "notified" : "manual",
-      observedAt,
-      kind,
-    }),
-  );
-  const out = { draft_id: draft.id, item_id: item.id, auto: Boolean(auto) };
-  if (!auto) return out;
-  try {
-    const job = await approveDraft(store, draft, approverId, when, byPath);
-    out.job_id = job?.id ?? null;
-    out.send_at = when.send_at;
-  } catch (error) {
-    out.error = error.message;
-    try {
-      await store.updateItem(item.id, "notified", { state: "manual" });
-    } catch (updateError) {
-      // item が notified のまま job が無い。次の呼び出しで superseded にして作り直す
-      console.error(
-        `item ${item.id} を manual に戻せない: ${updateError.message}`,
-      );
-      out.error += `（item を manual に戻せない: ${updateError.message}）`;
-    }
-  }
-  return out;
-}
-
-/** 作り直してよい job の状態（送らずに終わった） */
-export const RETRYABLE_JOB_STATES = ["held", "failed", "cancelled"];
-
-/** item と job から、hq に返す状態（純粋関数） */
-export const statusOf = (raceId, item, job) => ({
-  race_id: raceId,
-  item_state: item?.state ?? null,
-  job_id: job?.id ?? null,
-  job_state: job?.state ?? null,
-  error_code: job?.error_code ?? null,
-  posted_at: job?.posted_at ?? null,
-  tweet_id: job?.external_post_id ?? null,
-  tweet_url: job?.external_post_url ?? null,
-});
-
-/**
- * 1つの種類の状態。新しい順に、生きている item（無ければ最新の item）の job。item が無ければ null。
- * skipStopped（投票のリプ）は止めた item を数えない（投票ありの束を投票なしで作り直したとき、前の試行の止めた投票のリプを出さない。BOA-1208）
- */
-async function variantStatus(
-  raceId,
-  variant,
-  store,
-  kind,
-  { skipStopped = false } = {},
-) {
-  const all = await store.finalsItems(raceId, variant, kind);
-  const items = skipStopped ? all.filter((i) => i.state !== "stopped") : all;
-  const item =
-    items.find((i) => !["stopped", "held_manual"].includes(i.state)) ??
-    items[0];
-  if (!item) return null;
-  return statusOf(raceId, item, await store.jobForDraft(item.draft_id));
-}
-
-/**
- * 送った時刻・tweet id（hq の記録用）。本投稿の状態に、投票のリプ（poll）・展示後のリプ（reply）の状態を添える（無ければ null。
- * どちらも任意で、本投稿の完了はリプを待たない。BOA-1208）。本投稿が無ければ null。
- * kind は KINDS のキー（既定は優勝戦）
- */
-export async function finalsStatus(
-  raceId,
-  { store, kind = FINALS_IMAGE_FORMAT },
-) {
-  const { variants } = KINDS[kind];
-  const main = await variantStatus(raceId, variants.main, store, kind);
-  if (!main) return null;
-  return {
-    ...main,
-    poll: await variantStatus(raceId, variants.poll, store, kind, {
-      skipStopped: true,
-    }),
-    reply: await variantStatus(raceId, variants.reply, store, kind),
-  };
-}
-
-/** 送り手の結果を待つ間隔と、期限の後に待つ時間（送り手の最後の実行の終わりを待つ） */
-export const WAIT_POLL_SEC = 15;
-export const WAIT_AFTER_EXPIRES_SEC = 90;
-// reconcile は begin_post から complete までの送っている途中でもあるので、終わりに数えない（期限＋90秒まで待つ）
-const DONE_STATES = ["posted", ...RETRYABLE_JOB_STATES];
-
-/**
- * この push の job（draft で引く）が送り終わる（posted・held 等）か、期限＋WAIT_AFTER_EXPIRES_SEC を過ぎるまで待つ。
- * pollDraftId（本投稿）があれば、本投稿が posted になった後、投票のリプも送り終わるまで待ち、status.poll に入れる
- */
-export async function waitForSend(
-  raceId,
-  {
-    store,
-    draftId,
-    pollDraftId = null,
-    expiresAt,
-    now = () => new Date(),
-    sleep,
-  },
-) {
-  const until = Date.parse(expiresAt) + WAIT_AFTER_EXPIRES_SEC * 1000;
-  for (;;) {
-    const status = statusOf(raceId, null, await store.jobForDraft(draftId));
-    const timedOut = now().getTime() >= until;
-    if (DONE_STATES.includes(status.job_state) || timedOut) {
-      if (!pollDraftId) return status;
-      const poll = statusOf(raceId, null, await store.jobForDraft(pollDraftId));
-      if (
-        status.job_state !== "posted" ||
-        DONE_STATES.includes(poll.job_state) ||
-        timedOut
-      )
-        return { ...status, poll };
-    }
-    await sleep(WAIT_POLL_SEC);
-  }
-}
-
-/** 結果の1行と exit の番号（純粋関数）。status は待った結果（--no-wait なら null） */
-export function resultLine(
-  raceId,
-  result,
-  status = null,
-  { waited = Boolean(status) } = {},
-) {
-  // 投票のリプを待つのは、この push が投票のリプを作った（待った結果に poll がある）ときだけ（BOA-1208）
-  const pollPending =
-    result.part !== "reply" &&
-    status?.job_state === "posted" &&
-    status.poll != null &&
-    status.poll.job_state !== "posted";
-  const outcome = result.reasons?.length
-    ? "rejected"
-    : result.already
-      ? "already_exists"
-      : result.disabled
-        ? "disabled"
-        : result.dryRun
-          ? "dry_run_ok"
-          : status?.job_state === "posted"
-            ? pollPending
-              ? "poll_not_posted"
-              : "posted"
-            : result.job_id && !waited
-              ? "queued"
-              : "not_posted";
-  const code = {
-    posted: 0,
-    dry_run_ok: 0,
-    queued: 0,
-    rejected: 1,
-    disabled: 3,
-    already_exists: 4,
-    not_posted: 5,
-    poll_not_posted: 5,
-    error: 6,
-  }[outcome];
-  const s = status ?? result.status ?? null;
-  const line = {
-    race_id: raceId ?? null,
-    part: result.part ?? "main",
-    // 優勝戦の行は今までと同じバイト列にする（kind は思考投稿の行にだけ足す）
-    ...(result.kind && result.kind !== FINALS_IMAGE_FORMAT
-      ? { kind: result.kind }
-      : {}),
-    outcome,
-    job_id: s?.job_id ?? result.job_id ?? null,
-    job_state: s?.job_state ?? null,
-    tweet_id: s?.tweet_id ?? null,
-    tweet_url: s?.tweet_url ?? null,
-    posted_at: s?.posted_at ?? null,
-    error_code: s?.error_code ?? result.error ?? null,
-    reason:
-      result.reasons?.join(" / ") ??
-      result.reason ??
-      (result.disabled
-        ? `自動送信の許可（${KINDS[result.kind]?.flag ?? KINDS[FINALS_IMAGE_FORMAT].flag}）が off なので送らなかった`
-        : pollPending
-          ? "本投稿は出たが、投票のリプが出ていない"
-          : null),
-    poll_job_id: s?.poll?.job_id ?? result.poll_job_id ?? null,
-    poll_job_state: s?.poll?.job_state ?? null,
-    poll_tweet_id: s?.poll?.tweet_id ?? null,
-    poll_error_code: s?.poll?.error_code ?? null,
-  };
-  return { code, text: `FINALS_RESULT ${JSON.stringify(line)}` };
-}
-/** PostgREST・Storage の読み書き（service_role）。失敗は投げる */
-export function createRestStore({ url, key, fetchImpl = fetch }) {
-  const headers = { apikey: key, Authorization: `Bearer ${key}` };
-  async function call(p, { method = "GET", body } = {}) {
-    const response = await fetchImpl(`${url}/rest/v1/${p}`, {
-      method,
-      headers: {
-        ...headers,
-        ...(body !== undefined
-          ? {
-              "Content-Type": "application/json",
-              Prefer: "return=representation",
-            }
-          : {}),
-      },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-    const text = await response.text();
-    if (!response.ok)
-      throw new Error(
-        `DB 操作に失敗: HTTP ${response.status} ${method} ${p.split("?")[0]} ${text.slice(0, 300)}`,
-      );
-    return text ? JSON.parse(text) : null;
-  }
-  const one = (rows, what) => {
-    if (!Array.isArray(rows) || rows.length !== 1) throw new Error(what);
-    return rows[0];
-  };
-  const id = (raceId) => encodeURIComponent(raceId);
-  return {
-    race: async (raceId) =>
-      (
-        await call(
-          `races?race_id=eq.${id(raceId)}&select=race_id,race_date,start_time,cancellation_status,race_grade,race_number`,
-        )
-      )[0] ?? null,
-    // その日の 12R（思考投稿の受ける場を決める。thinkingGradeDayVenue）
-    twelfthRaces: (date) =>
-      call(
-        `races?race_date=eq.${encodeURIComponent(date)}&race_number=eq.12&select=race_id,race_grade,start_time&order=race_id`,
-      ),
-    stage: async (raceId) =>
-      (
-        await call(`race_conditions?race_id=eq.${id(raceId)}&select=race_stage`)
-      )[0]?.race_stage ?? null,
-    // kind は KINDS のキー（既定は優勝戦）。variant は種類ごとに違うが、kind でも絞る
-    finalsItems: (raceId, variant, kind = FINALS_IMAGE_FORMAT) =>
-      call(
-        `sns_auto_send_items?kind=eq.${KINDS[kind].kind}&variant=eq.${variant}&race_id=eq.${id(raceId)}&select=id,state,draft_id&order=created_at.desc`,
-      ),
-    // 許可の列（flag、既定は finals_image_enabled）が無い（176・189 が未適用）と PostgREST が 400 を返すので、その時は列なしで読み直して off とする。
-    // 読むのは呼んだ種類の列だけ（他の種類の列を同じ select に並べると、189 の前に finals_image_enabled まで外れて優勝戦が止まる）
-    async controls(flag = KINDS[FINALS_IMAGE_FORMAT].flag) {
-      if (!Object.values(KINDS).some((k) => k.flag === flag))
-        throw new Error(`許可の列 ${flag} を知らない`);
-      let rows;
-      try {
-        rows = await call(
-          `sns_auto_send_control?select=channel,mode,dry_run,auto_approver_id,${flag}`,
-        );
-      } catch (error) {
-        if (!/HTTP 400/.test(error.message)) throw error;
-        const migration = Object.values(KINDS).find(
-          (k) => k.flag === flag,
-        ).migration;
-        console.error(
-          `${flag} の列が無い（マイグレーション ${migration} が未適用）。許可は off として扱う`,
-        );
-        rows = await call(
-          "sns_auto_send_control?select=channel,mode,dry_run,auto_approver_id",
-        );
-      }
-      return Object.fromEntries(rows.map((r) => [r.channel, r]));
-    },
-    sendControl: async () =>
-      (
-        await call(
-          "sns_x_send_control?id=eq.true&select=daily_limit,daily_limit_x,daily_baseline_date,daily_external_count",
-        )
-      )[0] ?? null,
-    // X の日の枠の取り置きの残り（182）
-    xSlotRoom: xSlotRoomVia(call),
-    // その日の /today の X 投稿の対象（思考投稿の受け取りの条件、today-picks.js と同じ読み方）
-    todayPicks: (date) => readTodayPicks(date, call),
-    // 今日（JST）に試行のある job（X・YouTube の両方。数えるのは dailyLimitReason が X だけ）
-    jobsAttemptedOn: (day) =>
-      call(
-        `sns_x_send_jobs?attempt_dates=cs.${encodeURIComponent(`{${day}}`)}&select=id,state,attempt_dates,attempt_channels`,
-      ),
-    // まだ claim していない X の子（親の予約の枠。reservedChildren が親で絞る）
-    waitingChildren: async (now) =>
-      (
-        await call(
-          `sns_x_send_jobs?state=eq.queued&attempts=eq.0&channel=eq.x&parent_job_id=not.is.null&expires_at=gt.${encodeURIComponent(now.toISOString())}&select=id,state,channel,attempts,expires_at,parent_job_id,sns_drafts(bundle_import_id)`,
-        )
-      ).map(({ sns_drafts: draft, ...job }) => ({
-        ...job,
-        bundle_import_id: draft?.bundle_import_id ?? null,
-      })),
-    jobForDraft: async (draftId) =>
-      (
-        await call(
-          `sns_x_send_jobs?draft_id=eq.${draftId}&select=id,state,error_code,posted_at,external_post_id,external_post_url`,
-        )
-      )[0] ?? null,
-    async saveFile(p, bytes) {
-      const response = await fetchImpl(
-        `${url}/storage/v1/object/sns-hub-media/${p}`,
-        {
-          method: "POST",
-          headers: {
-            ...headers,
-            "Content-Type": "image/png",
-            "x-upsert": "true",
-          },
-          body: bytes,
-        },
-      );
-      if (!response.ok)
-        throw new Error(`画像を保存できない: HTTP ${response.status} ${p}`);
-    },
-    insertDraft: async (row) =>
-      one(
-        await call("sns_drafts", { method: "POST", body: row }),
-        "下書きを作れない",
-      ),
-    insertItem: async (row) =>
-      one(
-        await call("sns_auto_send_items", { method: "POST", body: row }),
-        "item を作れない",
-      ),
-    updateDraft: async (draftId, patch) =>
-      one(
-        await call(`sns_drafts?id=eq.${draftId}`, {
-          method: "PATCH",
-          body: patch,
-        }),
-        `下書き ${draftId} を更新できない`,
-      ),
-    updateItem: async (itemId, fromState, patch) =>
-      one(
-        await call(
-          `sns_auto_send_items?id=eq.${itemId}&state=eq.${fromState}`,
-          {
-            method: "PATCH",
-            body: { ...patch, updated_at: new Date().toISOString() },
-          },
-        ),
-        `item ${itemId} を更新できない`,
-      ),
-    approve: (args) =>
-      call("rpc/approve_sns_x_send", { method: "POST", body: args }),
-  };
-}
-
-async function main() {
-  const args = process.argv.slice(2);
-  const usage =
-    "使い方: node --env-file=.env.local scripts/sns/push-finals-image.js <フォルダ> [--dry-run] [--no-wait] | --status <race_id> [--kind today_thinking]";
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !key) {
-    console.error("SUPABASE_URL・SUPABASE_SERVICE_KEY が無い（.env.local）");
+/** --status <race_id> [--kind <種類>]: 送った時刻・tweet id を出す */
+async function printStatus(args, store) {
+  const kindAt = args.indexOf("--kind");
+  const kind = kindAt > 0 ? args[kindAt + 1] : "finals_image";
+  if (
+    !args[1] ||
+    args[1].startsWith("--") ||
+    !Object.hasOwn(KINDS, kind ?? "")
+  ) {
+    console.error(USAGE);
     process.exit(2);
   }
-  const store = createRestStore({ url, key });
-  if (args[0] === "--status") {
-    const kindAt = args.indexOf("--kind");
-    const kind = kindAt > 0 ? args[kindAt + 1] : FINALS_IMAGE_FORMAT;
-    if (
-      !args[1] ||
-      args[1].startsWith("--") ||
-      !Object.hasOwn(KINDS, kind ?? "")
-    ) {
-      console.error(usage);
-      process.exit(2);
-    }
-    console.log(
-      JSON.stringify(await finalsStatus(args[1], { store, kind }), null, 2),
-    );
-    return;
-  }
-  const dryRun = args.includes("--dry-run");
-  const folder = args.find((a) => !a.startsWith("--"));
-  if (!folder) {
-    console.error(usage);
-    process.exit(2);
-  }
-  const webhook =
-    process.env.SLACK_WEBHOOK_URL || process.env.SLACK_DIGEST_WEBHOOK_URL;
-  const riskRules = JSON.parse(
+  console.log(
+    JSON.stringify(await finalsStatus(args[1], { store, kind }), null, 2),
+  );
+}
+
+/** リスクの規則（risk-rules.json の rules） */
+const readRiskRules = async () =>
+  JSON.parse(
     await readFile(
       new URL(
         "../../sns-video-studio/remotion/risk-rules.json",
@@ -1447,14 +247,67 @@ async function main() {
       "utf8",
     ),
   ).rules;
-  let bundleRaceId = null;
+
+/** フォルダの bundle.json の race_id。読めなければ null（読めない bundle.json は pushFinalsImage が投げ、error の1行にする） */
+async function bundleRaceIdOf(folder) {
   try {
-    bundleRaceId = JSON.parse(
-      await readFile(path.join(folder, "bundle.json"), "utf8"),
-    ).race_id;
+    return JSON.parse(await readFile(path.join(folder, "bundle.json"), "utf8"))
+      .race_id;
   } catch {
-    /* 読めない bundle.json は pushFinalsImage が投げ、下で error の1行にする */
+    return null;
   }
+}
+
+/** Slack の webhook があれば送る通知（無ければ標準出力だけ） */
+const makeNotify = (webhook) => async (text) => {
+  console.log(text);
+  if (!webhook) return;
+  const response = await fetch(webhook, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!response.ok)
+    throw new Error(`Slack が HTTP ${response.status} を返した`);
+};
+
+const readLocalBytes = async (p) => {
+  await stat(p);
+  return new Uint8Array(await readFile(p));
+};
+
+/** job を作ったら、送り手が送り終わるまで待つ（--no-wait なら待たない） */
+const waitIfQueued = (args, result, bundleRaceId, store, fail) =>
+  result.job_id && !args.includes("--no-wait")
+    ? waitForSend(bundleRaceId, {
+        store,
+        draftId: result.draft_id,
+        pollDraftId: result.poll_draft_id ?? null,
+        expiresAt: result.when.expires_at,
+        sleep: (sec) => new Promise((r) => setTimeout(r, sec * 1000)),
+      }).catch(fail)
+    : null;
+
+async function main() {
+  const args = process.argv.slice(2);
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) {
+    console.error("SUPABASE_URL・SUPABASE_SERVICE_KEY が無い（.env.local）");
+    process.exit(2);
+  }
+  const store = createRestStore({ url, key });
+  if (args[0] === "--status") return printStatus(args, store);
+  const dryRun = args.includes("--dry-run");
+  const folder = args.find((a) => !a.startsWith("--"));
+  if (!folder) {
+    console.error(USAGE);
+    process.exit(2);
+  }
+  const webhook =
+    process.env.SLACK_WEBHOOK_URL || process.env.SLACK_DIGEST_WEBHOOK_URL;
+  const riskRules = await readRiskRules();
+  const bundleRaceId = await bundleRaceIdOf(folder);
   // どこで落ちても、最後の1行は FINALS_RESULT（exit 6）
   const fail = (error) => {
     console.error(error);
@@ -1465,35 +318,13 @@ async function main() {
   };
   const result = await pushFinalsImage(folder, {
     store,
-    readBytes: async (p) => {
-      await stat(p);
-      return new Uint8Array(await readFile(p));
-    },
-    notify: async (text) => {
-      console.log(text);
-      if (!webhook) return;
-      const response = await fetch(webhook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      if (!response.ok)
-        throw new Error(`Slack が HTTP ${response.status} を返した`);
-    },
+    readBytes: readLocalBytes,
+    notify: makeNotify(webhook),
     riskRules,
     dryRun,
   }).catch(fail);
   console.log(JSON.stringify(result, null, 2));
-  const status =
-    result.job_id && !args.includes("--no-wait")
-      ? await waitForSend(bundleRaceId, {
-          store,
-          draftId: result.draft_id,
-          pollDraftId: result.poll_draft_id ?? null,
-          expiresAt: result.when.expires_at,
-          sleep: (sec) => new Promise((r) => setTimeout(r, sec * 1000)),
-        }).catch(fail)
-      : null;
+  const status = await waitIfQueued(args, result, bundleRaceId, store, fail);
   const { code, text } = resultLine(bundleRaceId, result, status);
   console.log(text);
   process.exit(code);
