@@ -116,6 +116,87 @@ export async function edgesMatch(node, { edgeCheck, edgeColorVar }) {
   return near(10) && near(img.height - 11);
 }
 
+/** 未ログインの新しい context を作り（解析は止め、Cookie の帯は「拒否」を記録して出さない）、url を開いた page を返す */
+async function openPage(
+  browser,
+  { url, viewport, deviceScaleFactor, gotoTimeoutMs },
+) {
+  const context = await browser.newContext({
+    viewport,
+    deviceScaleFactor,
+    storageState: undefined,
+  });
+  await context.route(BLOCKED, (route) => route.abort());
+  await context.addInitScript((key) => {
+    try {
+      window.localStorage.setItem(key, "rejected");
+    } catch {
+      // 保存できない環境でも開く（帯が出れば screenshot が止める）
+    }
+  }, CONSENT_KEY);
+  const page = await context.newPage();
+  await page.goto(url, {
+    waitUntil: "domcontentloaded",
+    timeout: gotoTimeoutMs,
+  });
+  return page;
+}
+
+/** 印ごとに見えるのを待つ（最大 waitMs）。見えた印はその selector、見えなければ null の配列 */
+const visibleSelectorsOf = (page, requiredSelectors, waitMs) =>
+  Promise.all(
+    requiredSelectors.map((selector) =>
+      page
+        .locator(selector)
+        .first()
+        .waitFor({ state: "visible", timeout: waitMs })
+        .then(
+          () => selector,
+          () => null,
+        ),
+    ),
+  );
+
+/** element を撮る。印と同じだけ待ち、label があれば見出しを差し込み、位置が落ち着いてから captureElement で撮る */
+async function shotElement(page, { element, label, edgeColorVar, waitMs }) {
+  const target = page.locator(element).first();
+  // 図は印（requiredSelectors）より後に描かれることがある（本番の関数は手元より遅い）。印と同じだけ待つ
+  await target.waitFor({ state: "visible", timeout: waitMs }).catch(() => {
+    throw new Error("screenshot_component_missing");
+  });
+  if (label)
+    await target.evaluate((node, text) => {
+      const head = document.createElement("div");
+      head.textContent = text;
+      head.style.cssText =
+        "font-size:18px;font-weight:700;color:#fff;padding:12px 16px 0;letter-spacing:0.02em";
+      node.prepend(head);
+    }, label);
+  await target.scrollIntoViewIfNeeded();
+  await page.evaluate(() => document.fonts.ready);
+  // 位置と大きさが落ち着いてから撮る。後から読み込まれる部品で表示がずれると、上に背景の帯が入り、
+  // 下が切れた図になる（2026-10-19 の /today の4枚目、桐生6R）。撮る途中のずれ・別の部品の混入は captureElement が落とす
+  return { png: await captureElement(page, target, { edgeColorVar }) };
+}
+
+/** screenshot の open に渡す after(page)。印が全部見え・覆う帯が無いことを確かめてから撮る */
+const screenshotAfter =
+  ({ requiredSelectors, element, label, edgeColorVar, waitMs }) =>
+  async (page) => {
+    for (const selector of requiredSelectors)
+      if (!(await page.locator(selector).first().isVisible()))
+        throw new Error("screenshot_component_missing");
+    // 画面を覆う帯が出ていれば撮らない
+    for (const selector of OVERLAYS)
+      if (await page.locator(selector).first().isVisible())
+        throw new Error("screenshot_overlay_visible");
+    // フォントの読み込みを待ってから撮る（文字が空白のまま撮らない）
+    if (element)
+      return shotElement(page, { element, label, edgeColorVar, waitMs });
+    await page.evaluate(() => document.fonts.ready);
+    return { png: await page.screenshot({ type: "png" }) };
+  };
+
 export function createChromiumHeadless({
   launch = launchChromium,
   gotoTimeoutMs = 30000,
@@ -140,36 +221,13 @@ export function createChromiumHeadless({
       throw error;
     }
     try {
-      const context = await browser.newContext({
+      const page = await openPage(browser, {
+        url,
         viewport,
         deviceScaleFactor,
-        storageState: undefined,
+        gotoTimeoutMs,
       });
-      await context.route(BLOCKED, (route) => route.abort());
-      await context.addInitScript((key) => {
-        try {
-          window.localStorage.setItem(key, "rejected");
-        } catch {
-          // 保存できない環境でも開く（帯が出れば screenshot が止める）
-        }
-      }, CONSENT_KEY);
-      const page = await context.newPage();
-      await page.goto(url, {
-        waitUntil: "domcontentloaded",
-        timeout: gotoTimeoutMs,
-      });
-      const visible = await Promise.all(
-        requiredSelectors.map((selector) =>
-          page
-            .locator(selector)
-            .first()
-            .waitFor({ state: "visible", timeout: waitMs })
-            .then(
-              () => selector,
-              () => null,
-            ),
-        ),
-      );
+      const visible = await visibleSelectorsOf(page, requiredSelectors, waitMs);
       return {
         finalUrl: page.url(),
         visibleSelectors: visible.filter(Boolean),
@@ -210,42 +268,13 @@ export function createChromiumHeadless({
     }) {
       return open(
         { url, viewport, deviceScaleFactor, requiredSelectors },
-        async (page) => {
-          for (const selector of requiredSelectors)
-            if (!(await page.locator(selector).first().isVisible()))
-              throw new Error("screenshot_component_missing");
-          // 画面を覆う帯が出ていれば撮らない
-          for (const selector of OVERLAYS)
-            if (await page.locator(selector).first().isVisible())
-              throw new Error("screenshot_overlay_visible");
-          // フォントの読み込みを待ってから撮る（文字が空白のまま撮らない）
-          if (element) {
-            const target = page.locator(element).first();
-            // 図は印（requiredSelectors）より後に描かれることがある（本番の関数は手元より遅い）。印と同じだけ待つ
-            await target
-              .waitFor({ state: "visible", timeout: waitMs })
-              .catch(() => {
-                throw new Error("screenshot_component_missing");
-              });
-            if (label)
-              await target.evaluate((node, text) => {
-                const head = document.createElement("div");
-                head.textContent = text;
-                head.style.cssText =
-                  "font-size:18px;font-weight:700;color:#fff;padding:12px 16px 0;letter-spacing:0.02em";
-                node.prepend(head);
-              }, label);
-            await target.scrollIntoViewIfNeeded();
-            await page.evaluate(() => document.fonts.ready);
-            // 位置と大きさが落ち着いてから撮る。後から読み込まれる部品で表示がずれると、上に背景の帯が入り、
-            // 下が切れた図になる（2026-10-19 の /today の4枚目、桐生6R）。撮る途中のずれ・別の部品の混入は captureElement が落とす
-            return {
-              png: await captureElement(page, target, { edgeColorVar }),
-            };
-          }
-          await page.evaluate(() => document.fonts.ready);
-          return { png: await page.screenshot({ type: "png" }) };
-        },
+        screenshotAfter({
+          requiredSelectors,
+          element,
+          label,
+          edgeColorVar,
+          waitMs,
+        }),
       );
     },
     async close() {},
