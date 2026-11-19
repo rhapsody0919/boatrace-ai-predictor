@@ -366,10 +366,9 @@ async function fetchOneOdds(race, { date, fetchFn, outcomes, base, fetched }) {
 }
 
 /**
- * runForRaces の 4): 0分（締切時点）窓の行で全通り系の欠けを、直近のスナップショット（同じ窓の行を除く）から
- * 補う（ADR-0057）。読むだけで、rows の行をその場で書き換える
+ * runForRaces の 4) の対象: 0分（締切時点）窓の行のうち全通り系が欠けている物（race_id → 取れている全通り系）
  */
-async function fillZeroWindowFromSnapshots(client, fetched, rows, now) {
+function zeroWindowFallbackTargets(fetched, rows) {
   const fallbackTargets = new Map();
   for (const { race } of fetched) {
     if (race.window_min !== 0) continue;
@@ -381,21 +380,27 @@ async function fillZeroWindowFromSnapshots(client, fetched, rows, now) {
       fallbackTargets.set(race.race_id, patch);
     }
   }
-  if (fallbackTargets.size === 0) return;
+  return fallbackTargets;
+}
+
+/**
+ * runForRaces の 4) の読み: 直近のスナップショットの問い（await するのは呼び出し側。async の殻を挟まず、
+ * 書き込みの列の順を分ける前と同じにする）
+ */
+function fallbackSnapshotQuery(client, fallbackTargets, now) {
   const cutoffIso = new Date(
     now().getTime() - MAX_FALLBACK_AGE_MINUTES * 60000,
   ).toISOString();
-  const { data, error } = await client
+  return client
     .from("race_odds")
     .select(`race_id, captured_at, window_min, ${FULL_ODDS_KEYS.join(", ")}`)
     .in("race_id", [...fallbackTargets.keys()])
     .gte("captured_at", cutoffIso)
     .order("captured_at", { ascending: false });
-  if (error) {
-    throw new Error(
-      `オッズの補完用スナップショットの取得に失敗しました: ${error.message}`,
-    );
-  }
+}
+
+/** runForRaces の 4) の補完: スナップショットの行から欠けを埋める（rows の行をその場で書き換える） */
+function applyFallbackPatches(rows, fallbackTargets, data) {
   // 自分の窓（0分）の行は、部分的な前回の試行の可能性があるため、補完元にしない
   const snapshots = (data ?? []).filter((r) => r.window_min !== 0);
   for (const [raceId, fallback] of pickFallbackPatches(
@@ -481,7 +486,20 @@ export async function runForRaces(
   const rows = buildOddsWindowRows(fetched, existing, capturedAt); // race_id -> 行
 
   // 4) 0分（締切時点）窓: 全通り系の欠けを、直近のスナップショット（同じ窓の行を除く）から補完する（ADR-0057）
-  await fillZeroWindowFromSnapshots(client, fetched, rows, now);
+  const fallbackTargets = zeroWindowFallbackTargets(fetched, rows);
+  if (fallbackTargets.size > 0) {
+    const { data, error } = await fallbackSnapshotQuery(
+      client,
+      fallbackTargets,
+      now,
+    );
+    if (error) {
+      throw new Error(
+        `オッズの補完用スナップショットの取得に失敗しました: ${error.message}`,
+      );
+    }
+    applyFallbackPatches(rows, fallbackTargets, data);
+  }
 
   // 5) live: 書き込む。shadow: 書かない
   let writeError = null;

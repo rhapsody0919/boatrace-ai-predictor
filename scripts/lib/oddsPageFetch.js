@@ -58,12 +58,6 @@ const settledDetail = (s) =>
     ? `HTTP ${s.value.status}`
     : (s.reason?.message ?? String(s.reason));
 
-/** 全ページを並列に取得する（key → allSettled の結果） */
-async function settleAll(settleKeys, keys) {
-  const settled = await settleKeys(keys);
-  return Object.fromEntries(keys.map((k, i) => [k, settled[i]]));
-}
-
 /**
  * 単勝ページだけを先に取得する。未公開なら NO_VALUES を返す（他のページは取得しない）。公開されていれば、
  * 読み取った本文を Response に包み直して、以降の処理（単勝の解析）に渡し、残りのページを並列に取得する
@@ -138,23 +132,6 @@ function winFailureResult(s, venueCode, raceNo) {
   };
 }
 
-/** 3連単のページ（取れなければ null）から、人気上位3件と（wantFull なら）全通り */
-async function parseTrifectaPage(trifRes, wantFull) {
-  let trifecta = [];
-  let trifectaAll = null;
-  if (trifRes) {
-    const $trif = cheerio.load(await trifRes.text());
-    // 120通りのグリッドを1回だけ解析し、人気上位3件（trifecta_popular_*）と全通り（trifecta_all）の両方に使う
-    const fullMap = parseTrifectaAll($trif);
-    trifecta = topTrifectaByOdds(fullMap);
-    // 全通り捕捉ウィンドウ: 120通りを保存（EV分析用・BOA-104）
-    if (wantFull && fullMap.size > 0) {
-      trifectaAll = Object.fromEntries(fullMap);
-    }
-  }
-  return { trifecta, trifectaAll };
-}
-
 /**
  * 1レースの単勝・3連単・（wantFull時）全通り系オッズを取得し、結果の種別つきで返す
  *
@@ -205,9 +182,14 @@ export async function fetchOddsDetailed(
       Promise.allSettled(
         ks.map((k) => Promise.resolve().then(() => fetchFn(urlByKey[k]))),
       );
-    const bySettled = winFirst
-      ? await settleWinFirst(settleKeys, keys)
-      : await settleAll(settleKeys, keys);
+    // 全ページを並列に取得する（key → allSettled の結果）。async の殻を挟まず、分ける前と同じ待ちの段数にする
+    let bySettled;
+    if (winFirst) {
+      bySettled = await settleWinFirst(settleKeys, keys);
+    } else {
+      const settled = await settleKeys(keys);
+      bySettled = Object.fromEntries(keys.map((k, i) => [k, settled[i]]));
+    }
     if (bySettled === NO_VALUES) {
       return { status: "no_values", data: null, missing: [] };
     }
@@ -221,10 +203,19 @@ export async function fetchOddsDetailed(
     const winOdds = scrapeWinOdds($win);
     const placeOdds = scrapePlaceOdds($win);
 
-    const { trifecta, trifectaAll } = await parseTrifectaPage(
-      okResponse(bySettled.trif),
-      wantFull,
-    );
+    const trifRes = okResponse(bySettled.trif);
+    let trifecta = [];
+    let trifectaAll = null;
+    if (trifRes) {
+      const $trif = cheerio.load(await trifRes.text());
+      // 120通りのグリッドを1回だけ解析し、人気上位3件（trifecta_popular_*）と全通り（trifecta_all）の両方に使う
+      const fullMap = parseTrifectaAll($trif);
+      trifecta = topTrifectaByOdds(fullMap);
+      // 全通り捕捉ウィンドウ: 120通りを保存（EV分析用・BOA-104）
+      if (wantFull && fullMap.size > 0) {
+        trifectaAll = Object.fromEntries(fullMap);
+      }
+    }
 
     // 単勝の行そのものが無ければ、未公開（null）。値が全て 0.0（票0）のときは発売済みなので、
     // 単勝は null のまま、他券種を保存する（BOA-486）
