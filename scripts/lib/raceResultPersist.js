@@ -75,93 +75,105 @@ async function judgeAndUpdateHits(client, resultsToJudge) {
   console.log(`  ✅ 3連複的中: ${trifectaHits}件, 3連単的中: ${trioHits}件`);
 }
 
+
+/** race_results の行（マイグレーション077〜079 が適用済みなら結果の追加の列を足す。persistRaceResults の一部） */
+function buildResultRows(newResults, scrapeCache, schema) {
+  // 結果系の新しい列・テーブル（マイグレーション077〜079。docs/design/race-result-full-fields/plan.md）は、
+  // 適用済みのDBにだけ書く。未適用のDBでは、旧実装と同じ列だけを書く（挙動が変わらない）
+  return schema.results
+    ? newResults.map((row) => ({
+        ...row,
+        ...(scrapeCache.has(row.race_id)
+          ? buildResultExtras(scrapeCache.get(row.race_id))
+          : {}),
+      }))
+    : newResults;
+}
+
 /**
- * race_start_timings と race_payouts の書き込み（persistRaceResults の一部）。失敗は errors に足す。書いた timings の行を返す
+ * race_results の upsert（変更の無い行は書かない。persistRaceResults の一部）。
+ * async にせず upsertChangedRows の Promise をそのまま返す（await の段数を変えず、並列の書き込みの順を保つ）
  */
-async function writeTimingsAndPayouts(client, scrapeCache, schema, errors) {
-  // race_start_timingsに艇別の結果（ST・着欄・進入・レースタイム）を書き込み。
-  // 077が未適用なら、STを読めた艇の行だけ（旧実装と同じ）
-  const allStartTimings = [...scrapeCache].flatMap(([raceId, scraped]) =>
+function upsertResultRows(client, resultRows) {
+  // 決まり手・ST等が公式サイトに出るまで（発走20〜30分後以降）、着順・払戻金だけ揃った
+  // レースは「完了」扱いにならず毎回再取得される（BOA-323）。その間の再取得では、
+  // 前回と同じ値をupsertし直していた。race_results の書き込みは trg_update_predictions で
+  // predictions・bet_recommendations の再UPDATEも連鎖させるため、変更の無い行は書かない。
+  // result_at は取得時刻で毎回変わるが情報を持たないため比較から外す
+  // （変更なしのレースは最初に取得できた時刻が残る）
+  return upsertChangedRows(client, "race_results", resultRows, {
+    onConflict: "race_id",
+    keyColumns: ["race_id"],
+    ignoreColumns: ["result_at"],
+    label: "race_results",
+  });
+}
+
+/** race_start_timings の行（艇別の結果: ST・着欄・進入・レースタイム。077が未適用なら、STを読めた艇の行だけ＝旧実装と同じ） */
+function buildAllTimingRows(scrapeCache, schema) {
+  return [...scrapeCache].flatMap(([raceId, scraped]) =>
     buildTimingRows(raceId, scraped, {
       extended: schema.timings,
       officialRow: schema.officialRow,
     }),
   );
-
-  let startTimingRowsWritten = [];
-  if (allStartTimings.length > 0) {
-    // 書く行には updated_at を設定する（WS2。created_at はINSERT時のDBの DEFAULT に任せる）
-    const timingsResult = await upsertChangedRows(
-      client,
-      "race_start_timings",
-      allStartTimings,
-      {
-        onConflict: "race_id,boat_number",
-        keyColumns: ["race_id", "boat_number"],
-        label: "race_start_timings",
-        stampUpdatedAt: true,
-      },
-    );
-    startTimingRowsWritten = timingsResult.toWrite;
-    if (timingsResult.error) errors.push(timingsResult.error);
-  }
-
-  // 払戻明細（同着の複数口・特払・不成立を含む。079が適用済みのときだけ）
-  if (schema.payouts) {
-    const payoutRows = [...scrapeCache].flatMap(([raceId, scraped]) =>
-      buildPayoutRows(raceId, scraped),
-    );
-    if (payoutRows.length > 0) {
-      const payoutsResult = await upsertChangedRows(
-        client,
-        "race_payouts",
-        payoutRows,
-        {
-          onConflict: "race_id,bet_type,seq",
-          keyColumns: ["race_id", "bet_type", "seq"],
-          label: "race_payouts",
-          stampUpdatedAt: true,
-          // 1レース約8〜14行。PostgRESTの1000行上限を超えない範囲に分割する
-          chunkSize: 50,
-        },
-      );
-      if (payoutsResult.error) errors.push(payoutsResult.error);
-    }
-  }
-  return startTimingRowsWritten;
 }
 
-/** 結果ページの気象を race_conditions へ（persistRaceResults の一部。失敗しても止めない） */
-async function writeResultWeather(client, scrapeCache, startTimeByRaceId) {
-  // レース時点の気象（結果ページの水面気象情報）を race_conditions へ反映する（BOA-358）。
-  // 発走前に取得した値（beforeinfo）より新しい確定値のため上書きする。変更のある行だけ書く。
-  // 失敗しても、以降の的中判定を止めない
-  try {
-    const { rows: weatherRows, stats: weatherStats } = buildResultWeatherRows(
-      [...scrapeCache].map(([raceId, scraped]) => ({
-        raceId,
-        startTime: startTimeByRaceId.get(raceId) ?? null,
-        conditions: scraped.weather,
-      })),
-    );
-    console.log(
-      `🌤️ 結果ページの気象: 取得${weatherStats.fetched}レース / 解析${weatherStats.parsed}レース`,
-    );
-    if (weatherStats.fetched > 0 && weatherRows.length === 0) {
-      console.warn(
-        "⚠️ 結果ページの気象: 結果を取得したが、気象が1件も解析できなかった（公式ページの構造変更の可能性）",
-      );
-    }
-    if (weatherRows.length > 0) {
-      await upsertRaceConditions(client, weatherRows, {
-        label: "race_conditions(結果ページの気象)",
-      });
-    }
-  } catch (weatherError) {
-    console.error(
-      `❌ 結果ページの気象の更新エラー（結果は保存済み）: ${weatherError.message}`,
+/** race_start_timings の upsert（async にせず Promise をそのまま返す）。書く行には updated_at を設定する（WS2。created_at はINSERT時のDBの DEFAULT に任せる） */
+function upsertTimingRows(client, allStartTimings) {
+  return upsertChangedRows(client, "race_start_timings", allStartTimings, {
+    onConflict: "race_id,boat_number",
+    keyColumns: ["race_id", "boat_number"],
+    label: "race_start_timings",
+    stampUpdatedAt: true,
+  });
+}
+
+/** 払戻明細の行（同着の複数口・特払・不成立を含む） */
+function buildAllPayoutRows(scrapeCache) {
+  return [...scrapeCache].flatMap(([raceId, scraped]) =>
+    buildPayoutRows(raceId, scraped),
+  );
+}
+
+/** race_payouts の upsert（async にせず Promise をそのまま返す）。1レース約8〜14行。PostgRESTの1000行上限を超えない範囲に分割する */
+function upsertPayoutRows(client, payoutRows) {
+  return upsertChangedRows(client, "race_payouts", payoutRows, {
+    onConflict: "race_id,bet_type,seq",
+    keyColumns: ["race_id", "bet_type", "seq"],
+    label: "race_payouts",
+    stampUpdatedAt: true,
+    chunkSize: 50,
+  });
+}
+
+/**
+ * 結果ページの気象（水面気象情報）の race_conditions の行を組み立て、取得・解析の件数を出す（persistRaceResults の一部）。
+ * 解析できなければ throw する（呼び手の try で受ける）
+ */
+function buildWeatherRows(scrapeCache, startTimeByRaceId) {
+  const { rows: weatherRows, stats: weatherStats } = buildResultWeatherRows(
+    [...scrapeCache].map(([raceId, scraped]) => ({
+      raceId,
+      startTime: startTimeByRaceId.get(raceId) ?? null,
+      conditions: scraped.weather,
+    })),
+  );
+  console.log(
+    `🌤️ 結果ページの気象: 取得${weatherStats.fetched}レース / 解析${weatherStats.parsed}レース`,
+  );
+  if (weatherStats.fetched > 0 && weatherRows.length === 0) {
+    console.warn(
+      "⚠️ 結果ページの気象: 結果を取得したが、気象が1件も解析できなかった（公式ページの構造変更の可能性）",
     );
   }
+  return weatherRows;
+}
+
+/** 的中判定の対象（race_results が新規・変更のレースだけ。judgeAndUpdateHits の説明を参照） */
+function pickResultsToJudge(newResults, changedResults) {
+  const changedResultIds = new Set(changedResults.map((r) => r.race_id));
+  return newResults.filter((r) => changedResultIds.has(r.race_id));
 }
 
 /**
@@ -170,6 +182,9 @@ async function writeResultWeather(client, scrapeCache, startTimeByRaceId) {
  *
  * 書き込みの失敗は、従来どおり後続（気象・的中判定）を止めず、errors に集めて返す
  * （GitHub Actions側は従来どおり無視する。Vercel Cron側は、errors があれば、その実行を失敗として再試行する）。
+ *
+ * await はこの関数の中に元のまま並べる（分けた先を async にすると await の段が増え、Vercel Cron の並列の
+ * スロットの間で書き込みの順が入れ替わる。hq write_match の result-jobs の場面で確かめた）
  *
  * @param {Object} params
  * @param {import("@supabase/supabase-js").SupabaseClient} params.client
@@ -187,48 +202,51 @@ export async function persistRaceResults({
   const errors = [];
   console.log(`\n📤 Supabaseに結果を書き込み中...`);
 
-  // 決まり手・ST等が公式サイトに出るまで（発走20〜30分後以降）、着順・払戻金だけ揃った
-  // レースは「完了」扱いにならず毎回再取得される（BOA-323）。その間の再取得では、
-  // 前回と同じ値をupsertし直していた。race_results の書き込みは trg_update_predictions で
-  // predictions・bet_recommendations の再UPDATEも連鎖させるため、変更の無い行は書かない。
-  // result_at は取得時刻で毎回変わるが情報を持たないため比較から外す
-  // （変更なしのレースは最初に取得できた時刻が残る）
-  //
-  // 結果系の新しい列・テーブル（マイグレーション077〜079。docs/design/race-result-full-fields/plan.md）は、
-  // 適用済みのDBにだけ書く。未適用のDBでは、旧実装と同じ列だけを書く（挙動が変わらない）
   const schema = await detectResultSchema(client);
-  const resultRows = schema.results
-    ? newResults.map((row) => ({
-        ...row,
-        ...(scrapeCache.has(row.race_id)
-          ? buildResultExtras(scrapeCache.get(row.race_id))
-          : {}),
-      }))
-    : newResults;
   const { toWrite: changedResults, error: resultsError } =
-    await upsertChangedRows(client, "race_results", resultRows, {
-      onConflict: "race_id",
-      keyColumns: ["race_id"],
-      ignoreColumns: ["result_at"],
-      label: "race_results",
-    });
+    await upsertResultRows(
+      client,
+      buildResultRows(newResults, scrapeCache, schema),
+    );
   if (resultsError) errors.push(resultsError);
 
-  const startTimingRowsWritten = await writeTimingsAndPayouts(
+  const allStartTimings = buildAllTimingRows(scrapeCache, schema);
+  let startTimingRowsWritten = [];
+  if (allStartTimings.length > 0) {
+    const timingsResult = await upsertTimingRows(client, allStartTimings);
+    startTimingRowsWritten = timingsResult.toWrite;
+    if (timingsResult.error) errors.push(timingsResult.error);
+  }
+
+  // 払戻明細（079が適用済みのときだけ）
+  if (schema.payouts) {
+    const payoutRows = buildAllPayoutRows(scrapeCache);
+    if (payoutRows.length > 0) {
+      const payoutsResult = await upsertPayoutRows(client, payoutRows);
+      if (payoutsResult.error) errors.push(payoutsResult.error);
+    }
+  }
+
+  // レース時点の気象（結果ページの水面気象情報）を race_conditions へ反映する（BOA-358）。
+  // 発走前に取得した値（beforeinfo）より新しい確定値のため上書きする。変更のある行だけ書く。
+  // 失敗しても、以降の的中判定を止めない
+  try {
+    const weatherRows = buildWeatherRows(scrapeCache, startTimeByRaceId);
+    if (weatherRows.length > 0) {
+      await upsertRaceConditions(client, weatherRows, {
+        label: "race_conditions(結果ページの気象)",
+      });
+    }
+  } catch (weatherError) {
+    console.error(
+      `❌ 結果ページの気象の更新エラー（結果は保存済み）: ${weatherError.message}`,
+    );
+  }
+
+  await judgeAndUpdateHits(
     client,
-    scrapeCache,
-    schema,
-    errors,
+    pickResultsToJudge(newResults, changedResults),
   );
-
-  await writeResultWeather(client, scrapeCache, startTimeByRaceId);
-
-  // 的中判定は、race_resultsが新規・変更のレースだけ行う（judgeAndUpdateHits の説明を参照）
-  const changedResultIds = new Set(changedResults.map((r) => r.race_id));
-  const resultsToJudge = newResults.filter((r) =>
-    changedResultIds.has(r.race_id),
-  );
-  await judgeAndUpdateHits(client, resultsToJudge);
 
   return { changedResults, startTimingRowsWritten, errors };
 }
