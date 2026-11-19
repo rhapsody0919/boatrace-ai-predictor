@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2262,
+    "sourceFiles": 2263,
     "filesWithAccess": 287,
     "tableReaders": 963,
     "tableWriters": 197,
@@ -5577,7 +5577,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/backfill-missing-venue-day.js:138",
+          "ref": "scripts/maintenance/backfill-missing-venue-day.js:131",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5863,7 +5863,7 @@
             "scripts/daily/todays-volatility-digest.js:56",
             "scripts/lib/inCautionHealth.js:127",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
-            "scripts/maintenance/backfill-missing-venue-day.js:138",
+            "scripts/maintenance/backfill-missing-venue-day.js:131",
             "scripts/maintenance/backfill-place-hits.js:62",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/delete-cancelled-race-predictions.js:139",
@@ -7424,7 +7424,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racerProfileSync.js:335",
+          "ref": "scripts/lib/racerProfileSync.js:343",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8521,7 +8521,7 @@
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/raceIndicatorData.js:87",
             "scripts/lib/racelistBackfillRows.js:127",
-            "scripts/lib/racerProfileSync.js:335",
+            "scripts/lib/racerProfileSync.js:343",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/backfill-race-data.js:182",
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
@@ -8640,7 +8640,7 @@
             "scripts/daily/generate-unified-trifecta-reference.js:71",
             "scripts/lib/pitReportJob.js:188",
             "scripts/lib/raceIndicatorData.js:72",
-            "scripts/lib/racerProfileSync.js:335",
+            "scripts/lib/racerProfileSync.js:343",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/backfill-race-data.js:182",
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
@@ -9017,7 +9017,7 @@
             "scripts/lib/pitReportJob.js:188",
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/raceIndicatorData.js:87",
-            "scripts/lib/racerProfileSync.js:335",
+            "scripts/lib/racerProfileSync.js:343",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
             "scripts/maintenance/backfill-race-entries-racer-id.js:131",
@@ -14218,7 +14218,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
+          "ref": "scripts/lib/racerNews/officialGradeAnnouncements.js:190",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -14262,7 +14262,7 @@
             "src/services/racerQueries5.js:60"
           ],
           "writers": [
-            "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
+            "scripts/lib/racerNews/officialGradeAnnouncements.js:190",
             "scripts/maintenance/add-racer-news.js:49"
           ],
           "sql": []
@@ -14272,7 +14272,7 @@
             "src/services/racerQueries5.js:60"
           ],
           "writers": [
-            "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
+            "scripts/lib/racerNews/officialGradeAnnouncements.js:190",
             "scripts/maintenance/add-racer-news.js:49"
           ],
           "sql": []
@@ -14282,7 +14282,7 @@
             "src/services/racerQueries5.js:60"
           ],
           "writers": [
-            "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
+            "scripts/lib/racerNews/officialGradeAnnouncements.js:190",
             "scripts/maintenance/add-racer-news.js:49"
           ],
           "sql": []
@@ -14293,7 +14293,7 @@
             "src/services/racerQueries5.js:60"
           ],
           "writers": [
-            "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
+            "scripts/lib/racerNews/officialGradeAnnouncements.js:190",
             "scripts/maintenance/add-racer-news.js:49"
           ],
           "sql": []
@@ -14303,7 +14303,7 @@
             "src/services/racerQueries5.js:60"
           ],
           "writers": [
-            "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
+            "scripts/lib/racerNews/officialGradeAnnouncements.js:190",
             "scripts/maintenance/add-racer-news.js:49"
           ],
           "sql": []
@@ -14313,7 +14313,7 @@
             "src/services/racerQueries5.js:60"
           ],
           "writers": [
-            "scripts/lib/racerNews/officialGradeAnnouncements.js:214",
+            "scripts/lib/racerNews/officialGradeAnnouncements.js:190",
             "scripts/maintenance/add-racer-news.js:49"
           ],
           "sql": []
@@ -15347,7 +15347,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/racerNews/officialGradeAnnouncements.js:174",
+          "ref": "scripts/lib/racerNews/officialGradeAnnouncements.js:164",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15357,7 +15357,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racerProfileSync.js:321",
+          "ref": "scripts/lib/racerProfileSync.js:329",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15468,7 +15468,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/racerProfileSync.js:265",
+          "ref": "scripts/lib/racerProfileSync.js:273",
           "op": "update",
           "via": "client",
           "columns": [
@@ -15476,7 +15476,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racerProfileSync.js:283",
+          "ref": "scripts/lib/racerProfileSync.js:291",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -15511,8 +15511,8 @@
         "racer_id": {
           "readers": [
             "scripts/analysis/verify-racer-season-stats-accuracy.js:95",
-            "scripts/lib/racerNews/officialGradeAnnouncements.js:174",
-            "scripts/lib/racerProfileSync.js:265",
+            "scripts/lib/racerNews/officialGradeAnnouncements.js:164",
+            "scripts/lib/racerProfileSync.js:273",
             "scripts/maintenance/fan-backfill-load.js:239",
             "scripts/maintenance/fan-backfill-load.js:259",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
@@ -15522,13 +15522,13 @@
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
         "name": {
           "readers": [
-            "scripts/lib/racerNews/officialGradeAnnouncements.js:174",
+            "scripts/lib/racerNews/officialGradeAnnouncements.js:164",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
             "scripts/sns/delete-x-post.js:124",
             "src/services/motorQueries4.js:176",
@@ -15536,7 +15536,7 @@
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
@@ -15546,7 +15546,7 @@
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
@@ -15556,7 +15556,7 @@
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
@@ -15566,7 +15566,7 @@
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
@@ -15576,7 +15576,7 @@
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
@@ -15585,18 +15585,18 @@
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
         "branch": {
           "readers": [
-            "scripts/lib/racerNews/officialGradeAnnouncements.js:174",
+            "scripts/lib/racerNews/officialGradeAnnouncements.js:164",
             "src/services/racerQueries.js:311",
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
@@ -15607,7 +15607,7 @@
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
@@ -15617,14 +15617,14 @@
             "src/services/racerQueries5.js:31"
           ],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
         "grade_at_scrape": {
           "readers": [],
           "writers": [
-            "scripts/lib/racerProfileSync.js:283"
+            "scripts/lib/racerProfileSync.js:291"
           ],
           "sql": []
         },
@@ -16681,7 +16681,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/backfill-missing-venue-day.js:73",
+          "ref": "scripts/maintenance/backfill-missing-venue-day.js:68",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16692,22 +16692,22 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-missing-venue-day.js:133",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "cancellation_status",
-            "race_id"
-          ]
-        },
-        {
-          "ref": "scripts/maintenance/backfill-missing-venue-day.js:156",
+          "ref": "scripts/maintenance/backfill-missing-venue-day.js:111",
           "op": "select",
           "via": "client",
           "columns": [
             "race_date",
             "race_id",
             "venue_code"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/backfill-missing-venue-day.js:126",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "cancellation_status",
+            "race_id"
           ]
         },
         {
@@ -17453,7 +17453,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-missing-venue-day.js:125",
+          "ref": "scripts/maintenance/backfill-missing-venue-day.js:184",
           "op": "update",
           "via": "client",
           "columns": [
@@ -17642,10 +17642,10 @@
             "scripts/lib/snsTodayDigestV3.js:100",
             "scripts/maintenance/audit-missing-results.js:252",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:35",
-            "scripts/maintenance/backfill-missing-venue-day.js:125",
-            "scripts/maintenance/backfill-missing-venue-day.js:133",
-            "scripts/maintenance/backfill-missing-venue-day.js:156",
-            "scripts/maintenance/backfill-missing-venue-day.js:73",
+            "scripts/maintenance/backfill-missing-venue-day.js:111",
+            "scripts/maintenance/backfill-missing-venue-day.js:126",
+            "scripts/maintenance/backfill-missing-venue-day.js:184",
+            "scripts/maintenance/backfill-missing-venue-day.js:68",
             "scripts/maintenance/backfill-race-conditions.js:70",
             "scripts/maintenance/backfill-race-data.js:275",
             "scripts/maintenance/backfill-race-series-meta.js:147",
@@ -17761,8 +17761,8 @@
             "scripts/lib/snsAutoPlanRunner.js:741",
             "scripts/lib/snsTodayDigestV3.js:100",
             "scripts/lib/snsTodayDigestV3.js:145",
-            "scripts/maintenance/backfill-missing-venue-day.js:156",
-            "scripts/maintenance/backfill-missing-venue-day.js:73",
+            "scripts/maintenance/backfill-missing-venue-day.js:111",
+            "scripts/maintenance/backfill-missing-venue-day.js:68",
             "scripts/maintenance/backfill-race-data.js:275",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/backfill-start-timings.js:223",
@@ -17849,8 +17849,8 @@
             "scripts/lib/snsTodayDigestV3.js:100",
             "scripts/lib/snsTodayDigestV3.js:145",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:35",
-            "scripts/maintenance/backfill-missing-venue-day.js:156",
-            "scripts/maintenance/backfill-missing-venue-day.js:73",
+            "scripts/maintenance/backfill-missing-venue-day.js:111",
+            "scripts/maintenance/backfill-missing-venue-day.js:68",
             "scripts/maintenance/backfill-race-data.js:275",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/backfill-results-by-race-id.js:37",
@@ -17899,7 +17899,7 @@
             "scripts/lib/raceStatusJob.js:93",
             "scripts/lib/snsTodayDigestV3.js:100",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:35",
-            "scripts/maintenance/backfill-missing-venue-day.js:73",
+            "scripts/maintenance/backfill-missing-venue-day.js:68",
             "scripts/maintenance/backfill-race-data.js:275",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/backfill-results-by-race-id.js:37",
@@ -18145,8 +18145,8 @@
             "scripts/lib/snsTodayDigestV3.js:100",
             "scripts/lib/snsTodayDigestV3.js:145",
             "scripts/maintenance/audit-missing-results.js:252",
-            "scripts/maintenance/backfill-missing-venue-day.js:125",
-            "scripts/maintenance/backfill-missing-venue-day.js:133",
+            "scripts/maintenance/backfill-missing-venue-day.js:126",
+            "scripts/maintenance/backfill-missing-venue-day.js:184",
             "scripts/maintenance/backfill-race-conditions.js:70",
             "scripts/maintenance/backfill-results-by-race-id.js:37",
             "scripts/maintenance/check-morning-init-shadow.js:113",
@@ -18170,7 +18170,7 @@
             "scripts/daily/scrape-results.js:930",
             "scripts/daily/update-race-info.js:376",
             "scripts/maintenance/audit-missing-results.js:252",
-            "scripts/maintenance/backfill-missing-venue-day.js:125",
+            "scripts/maintenance/backfill-missing-venue-day.js:184",
             "scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:114"
           ],
           "sql": [
@@ -18535,7 +18535,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racesInit/predictCodeCheck.js:104",
+          "ref": "scripts/lib/racesInit/predictCodeCheck.js:86",
           "op": "select",
           "via": "client",
           "columns": [
@@ -18632,7 +18632,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racesInit/predictCodeCheck.js:115",
+          "ref": "scripts/lib/racesInit/predictCodeCheck.js:98",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -18642,7 +18642,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racesInit/predictCodeCheck.js:136",
+          "ref": "scripts/lib/racesInit/predictCodeCheck.js:116",
           "op": "update",
           "via": "client",
           "columns": [
@@ -18651,7 +18651,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racesInit/predictCodeCheck.js:157",
+          "ref": "scripts/lib/racesInit/predictCodeCheck.js:138",
           "op": "update",
           "via": "client",
           "columns": [
@@ -18751,10 +18751,10 @@
             "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/racesInit/job.js:148",
             "scripts/lib/racesInit/job.js:517",
-            "scripts/lib/racesInit/predictCodeCheck.js:104",
-            "scripts/lib/racesInit/predictCodeCheck.js:115",
-            "scripts/lib/racesInit/predictCodeCheck.js:136",
-            "scripts/lib/racesInit/predictCodeCheck.js:157",
+            "scripts/lib/racesInit/predictCodeCheck.js:116",
+            "scripts/lib/racesInit/predictCodeCheck.js:138",
+            "scripts/lib/racesInit/predictCodeCheck.js:86",
+            "scripts/lib/racesInit/predictCodeCheck.js:98",
             "scripts/lib/scrapeJobs/store.js:102",
             "scripts/lib/scrapeJobs/store.js:110",
             "scripts/lib/scrapeJobs/store.js:129",
@@ -18771,7 +18771,7 @@
             "scripts/sns/push-research-image.js:717"
           ],
           "writers": [
-            "scripts/lib/racesInit/predictCodeCheck.js:115",
+            "scripts/lib/racesInit/predictCodeCheck.js:98",
             "scripts/lib/scrapeJobs/store.js:102"
           ],
           "sql": [
@@ -18882,25 +18882,25 @@
         "last_report": {
           "readers": [
             "scripts/lib/dataHealth/job.js:94",
-            "scripts/lib/racesInit/predictCodeCheck.js:104",
-            "scripts/lib/racesInit/predictCodeCheck.js:157",
+            "scripts/lib/racesInit/predictCodeCheck.js:138",
+            "scripts/lib/racesInit/predictCodeCheck.js:86",
             "scripts/sns/push-research-image.js:717"
           ],
           "writers": [
             "scripts/lib/boatcast/oritenJob.js:498",
             "scripts/lib/racesInit/job.js:517",
-            "scripts/lib/racesInit/predictCodeCheck.js:115",
-            "scripts/lib/racesInit/predictCodeCheck.js:136",
-            "scripts/lib/racesInit/predictCodeCheck.js:157"
+            "scripts/lib/racesInit/predictCodeCheck.js:116",
+            "scripts/lib/racesInit/predictCodeCheck.js:138",
+            "scripts/lib/racesInit/predictCodeCheck.js:98"
           ],
           "sql": []
         },
         "updated_at": {
           "readers": [],
           "writers": [
-            "scripts/lib/racesInit/predictCodeCheck.js:115",
-            "scripts/lib/racesInit/predictCodeCheck.js:136",
-            "scripts/lib/racesInit/predictCodeCheck.js:157",
+            "scripts/lib/racesInit/predictCodeCheck.js:116",
+            "scripts/lib/racesInit/predictCodeCheck.js:138",
+            "scripts/lib/racesInit/predictCodeCheck.js:98",
             "scripts/lib/scrapeJobs/store.js:135",
             "scripts/lib/scrapeJobs/store.js:318"
           ],
@@ -29820,7 +29820,7 @@
       "reachableFiles": 21,
       "writes": {
         "racer_news": [
-          "scripts/lib/racerNews/officialGradeAnnouncements.js:214"
+          "scripts/lib/racerNews/officialGradeAnnouncements.js:190"
         ],
         "racer_news_pending": [
           "scripts/lib/racerNews/pendingReview.js:162",
@@ -29846,11 +29846,11 @@
     {
       "job": "racer_profiles",
       "entry": "api/cron/racer-profiles.js",
-      "reachableFiles": 19,
+      "reachableFiles": 20,
       "writes": {
         "racer_profiles": [
-          "scripts/lib/racerProfileSync.js:265",
-          "scripts/lib/racerProfileSync.js:283"
+          "scripts/lib/racerProfileSync.js:273",
+          "scripts/lib/racerProfileSync.js:291"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29893,9 +29893,9 @@
         ],
         "scrape_job_state": [
           "scripts/lib/racesInit/job.js:517",
-          "scripts/lib/racesInit/predictCodeCheck.js:115",
-          "scripts/lib/racesInit/predictCodeCheck.js:136",
-          "scripts/lib/racesInit/predictCodeCheck.js:157",
+          "scripts/lib/racesInit/predictCodeCheck.js:116",
+          "scripts/lib/racesInit/predictCodeCheck.js:138",
+          "scripts/lib/racesInit/predictCodeCheck.js:98",
           "scripts/lib/scrapeJobs/store.js:102",
           "scripts/lib/scrapeJobs/store.js:110",
           "scripts/lib/scrapeJobs/store.js:129",

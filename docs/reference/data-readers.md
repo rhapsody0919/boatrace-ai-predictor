@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2262 |
+| 読んだファイル | 2263 |
 | 読み書きのあるファイル | 287 |
 | 表の読み手（箇所） | 963 |
 | 表の書き手（箇所） | 197 |
@@ -253,7 +253,7 @@
 | racer_career_main | api/cron/racer-career-main.js | 20 | racer_career_meta, scrape_job_state, scrape_slots |
 | racer_course_technique_stats | api/cron/racer-course-technique-stats.js | 18 | racer_course_technique_stats, scrape_job_state, scrape_slots, venue_course_technique_baseline |
 | racer_news | api/cron/racer-news.js | 21 | racer_news, racer_news_pending, scrape_job_state, scrape_slots |
-| racer_profiles | api/cron/racer-profiles.js | 19 | racer_profiles, scrape_job_state, scrape_slots |
+| racer_profiles | api/cron/racer-profiles.js | 20 | racer_profiles, scrape_job_state, scrape_slots |
 | races_init | api/cron/races-init.js | 46 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | release_dispatch | api/cron/release-dispatch.js | 19 | scrape_job_state, scrape_slots |
 | result | api/cron/result.js | 33 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
@@ -727,7 +727,7 @@
   - `scripts/lib/inCautionHealth.js:127` select [feature_contributions, model_id, race_id]
   - `scripts/lib/scrapeJobs/predictionOddsHandlers.js:50` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/maintenance/backfill-is-hit-turn.js:28` select(helper:fetchAll)
-  - `scripts/maintenance/backfill-missing-venue-day.js:138` select [race_id]
+  - `scripts/maintenance/backfill-missing-venue-day.js:131` select [race_id]
   - `scripts/maintenance/backfill-place-hits.js:62` select [is_hit_place, prediction_id, race_id, top_pick]
   - `scripts/maintenance/backfill-refund-hit-flags.js:87` select(helper:fetchAll)
   - `scripts/maintenance/backfill-refund-hit-flags.js:106` select(helper:fetchAll)
@@ -875,7 +875,7 @@
   - `scripts/lib/raceIndicatorData.js:72` select [boat_number, race_id, racer_id, win_rate]
   - `scripts/lib/raceIndicatorData.js:87` select [race_id, racer_id, win_rate]
   - `scripts/lib/racelistBackfillRows.js:127` select [race_id]
-  - `scripts/lib/racerProfileSync.js:335` select [boat_number, race_id, racer_id]
+  - `scripts/lib/racerProfileSync.js:343` select [boat_number, race_id, racer_id]
   - `scripts/lib/racerStStats.js:127` select(helper:fetchAll)
   - `scripts/lib/snsTodayDigestV3.js:108` rest(rest) [boat_number, grade, is_absent, player_name, race_id, racer_id]
   - `scripts/lib/venueEntryCourseStats/scrape.js:49` select(helper:fetchAll)
@@ -1404,7 +1404,7 @@
   - `scripts/lib/racerNews/dedup.js:34` select [id, source_url]
   - `src/services/racerQueries5.js:60` select [created_at, id, published_at, racer_id, source_name, source_url, summary, title]
 - 書き手（2）: 
-  - `scripts/lib/racerNews/officialGradeAnnouncements.js:214` insert [published_at, racer_id, source_name, source_url, summary, title]
+  - `scripts/lib/racerNews/officialGradeAnnouncements.js:190` insert [published_at, racer_id, source_name, source_url, summary, title]
   - `scripts/maintenance/add-racer-news.js:49` insert [published_at, racer_id, source_name, source_url, summary, title]
 
 ### <a id="t-racer_news_pending"></a>racer_news_pending
@@ -1443,8 +1443,8 @@
 - 読み手（15）: 
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:95` select [racer_id]
   - `scripts/daily/scrape-race-information.js:157` select(helper:fetchAll)
-  - `scripts/lib/racerNews/officialGradeAnnouncements.js:174` select [branch, name, racer_id]
-  - `scripts/lib/racerProfileSync.js:321` select [?]
+  - `scripts/lib/racerNews/officialGradeAnnouncements.js:164` select [branch, name, racer_id]
+  - `scripts/lib/racerProfileSync.js:329` select [?]
   - `scripts/maintenance/backfill-race-entries-racer-id.js:60` select(helper:fetchAllPaged)
   - `scripts/maintenance/fan-backfill-load.js:239` select [racer_id, sex, training_term]
   - `scripts/maintenance/fan-backfill-load.js:338` select(helper:fetchAll)
@@ -1457,8 +1457,8 @@
   - `src/services/racerQueries.js:311` select [birth_date, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
   - `src/services/racerQueries5.js:31` select [birth_date, blood_type, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
 - 書き手（3）: 
-  - `scripts/lib/racerProfileSync.js:265` update [?]
-  - `scripts/lib/racerProfileSync.js:283` upsert [birth_date, blood_type, branch, grade_at_scrape, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
+  - `scripts/lib/racerProfileSync.js:273` update [?]
+  - `scripts/lib/racerProfileSync.js:291` upsert [birth_date, blood_type, branch, grade_at_scrape, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
   - `scripts/maintenance/fan-backfill-load.js:259` update [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -1564,9 +1564,9 @@
   - `scripts/maintenance/backfill-kb-gaps.js:125` select(helper:read)
   - `scripts/maintenance/backfill-kb-recent-results.js:119` select(helper:fetchAll)
   - `scripts/maintenance/backfill-kb-recent-results.js:145` select(helper:fetchAll)
-  - `scripts/maintenance/backfill-missing-venue-day.js:73` select [race_date, race_id, race_number, venue_code]
-  - `scripts/maintenance/backfill-missing-venue-day.js:133` select [cancellation_status, race_id]
-  - `scripts/maintenance/backfill-missing-venue-day.js:156` select [race_date, race_id, venue_code]
+  - `scripts/maintenance/backfill-missing-venue-day.js:68` select [race_date, race_id, race_number, venue_code]
+  - `scripts/maintenance/backfill-missing-venue-day.js:111` select [race_date, race_id, venue_code]
+  - `scripts/maintenance/backfill-missing-venue-day.js:126` select [cancellation_status, race_id]
   - `scripts/maintenance/backfill-opening-day-races.js:94` select(helper:count)
   - `scripts/maintenance/backfill-opening-day-races.js:147` select(helper:upsertChangedRows)
   - `scripts/maintenance/backfill-pit-reports.js:123` select(helper:fetchAll)
@@ -1654,7 +1654,7 @@
   - `scripts/daily/update-race-info.js:400` update [start_time]
   - `scripts/daily/update-race-info.js:513` update [race_grade]
   - `scripts/maintenance/audit-missing-results.js:252` update [cancellation_status]
-  - `scripts/maintenance/backfill-missing-venue-day.js:125` update [cancellation_status]
+  - `scripts/maintenance/backfill-missing-venue-day.js:184` update [cancellation_status]
   - `scripts/maintenance/backfill-opening-day-races.js:147` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/backfill-race-series-meta.js:147` upsert [?]
   - `scripts/maintenance/delete-phantom-race-days.js:253` delete
@@ -1698,7 +1698,7 @@
   - `scripts/lib/ghaSkipGate.js:450` rest(rest)
   - `scripts/lib/motorPretestJob.js:197` select [job, last_target_date, mode]
   - `scripts/lib/racesInit/job.js:148` select [job, mode]
-  - `scripts/lib/racesInit/predictCodeCheck.js:104` select [job, last_report]
+  - `scripts/lib/racesInit/predictCodeCheck.js:86` select [job, last_report]
   - `scripts/lib/scrapeJobs/monitor.js:777` select [*]
   - `scripts/lib/scrapeJobs/store.js:86` select [*, job]
   - `scripts/lib/scrapeJobs/store.js:286` select [?, job]
@@ -1709,9 +1709,9 @@
 - 書き手（14）: 
   - `scripts/lib/boatcast/oritenJob.js:498` update [last_report]
   - `scripts/lib/racesInit/job.js:517` update [cursor, last_report]
-  - `scripts/lib/racesInit/predictCodeCheck.js:115` upsert [job, last_report, updated_at]
-  - `scripts/lib/racesInit/predictCodeCheck.js:136` update [last_report, updated_at]
-  - `scripts/lib/racesInit/predictCodeCheck.js:157` update [last_report, updated_at]
+  - `scripts/lib/racesInit/predictCodeCheck.js:98` upsert [job, last_report, updated_at]
+  - `scripts/lib/racesInit/predictCodeCheck.js:116` update [last_report, updated_at]
+  - `scripts/lib/racesInit/predictCodeCheck.js:138` update [last_report, updated_at]
   - `scripts/lib/scrapeJobs/store.js:102` upsert [job]
   - `scripts/lib/scrapeJobs/store.js:110` update [last_tick_at]
   - `scripts/lib/scrapeJobs/store.js:129` update [?]

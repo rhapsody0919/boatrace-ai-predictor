@@ -208,6 +208,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racerNews/templates.js` | — | generateGradeAnnouncementNews |
 | `scripts/lib/racerNewsJob.js` | 選手ニュース（B5、racer_news・racer_news_pending）の共通ラッパ向けハンドラー（tasks.md T4b-15-1）。 | runRacerNewsJob |
 | `scripts/lib/racerProfileSync.js` | — | parseArgs, fetchHtmlWithRetry, parseProfileHtml, getProfileUrl, toSeasonStatsRow ほか16件 |
+| `scripts/lib/racerProfileSyncSteps.js` | — | createSyncCounters, createSyncState, populationLogLine, runSyncWorkers, buildSyncSummary ほか1件 |
 | `scripts/lib/racerProfilesJob.js` | 選手プロフィール・期別成績（B6、racer_profiles）の共通ラッパ向けハンドラー（tasks.md T4b-16-1）。 | resolveChunkSize, runRacerProfilesJob, RACER_PROFILES_CHUNK, RACER_PROFILES_CONCURRENCY |
 | `scripts/lib/racerSeasonStats.js` | — | getSeasonStatsUrl, isRacerPageNotFound, derivePeriodLabel, parseSeasonStatsHtml, scrapeSeasonStats ほか2件 |
 | `scripts/lib/racerSnapshotPlan.js` | 選手ページのスナップショット（BOA-848）を、このビルドで作るか・どの選手を作るかを決める。 | planRacerSnapshots, canSaveRacerSnapshot, decideRacerSnapshotSource, sourceChangedDuringCopy, olderIso ほか4件 |
@@ -491,4 +492,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 449 ファイル / export 2544 件。
+対象 450 ファイル / export 2550 件。
