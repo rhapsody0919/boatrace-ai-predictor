@@ -86,6 +86,15 @@ ADR-0077（録画の再生と時計の固定）は変えない。軽い組も同
 - **`verify-e2e-scope.js` 自身は0件にしない**（守りを弱める PR が e2e なしで通り、後の PR で抜け道を作る段を塞ぐ）
 - **限界**: 辿り方は正規表現で、パスを分けて組み立てる書き方（`path.join(root, "scripts", name)` 等）は拾えない。今の e2e・src にその形で一覧のディレクトリを読む所は無い。読む所を足すときは verify に固定の入力を足す
 
+## 追記（2026-11-18）: verify の補助（verifyData/）も0件に入れる
+
+`e2eSkipPathPatterns` に `^scripts/maintenance/verifyData/(?!e2e-scope)[^/]+\.js$` を足す。verify-*.js を分けた補助（fixture・偽の client 等）で、verify-*.js と一緒に変わる。
+
+- **理由**: verify-*.js だけの PR は 11/03 から0件だが、verify を分ける PR は補助を verifyData/ に置くので `full` に落ちていた。11/18 02:20〜07:49Z の PR の e2e 62 run のうち、差分が verify-*.js と verifyData/ だけの物が 18 run・e2e-shard 90 job・880分（e2e-shard の走行分の35%、同じ窓の全 job の走行分 3,660分の24%）
+- **読まれない根拠**: master で `verifyData` を import するのは `scripts/maintenance/verify-*.js` と verifyData/ の中だけ（src・api・e2e・scripts/lib・.github に無い）。e2e の閉包は今までどおり `verify-e2e-scope.js` が確かめる（一覧の頭 `scripts/maintenance/verifyData/` が閉包・Node 側の文字列に出れば落ちる）。本番のビルドは `scripts/maintenance/` ごと Vercel の ignoreCommand の除外（scripts/lib/vercelIgnoreBuild.js）
+- **入れないもの**: 下の階層・.js 以外（今は直下の .js が58本だけ。増えたら全部に倒れる）、`e2e-scope` で始まる名前（verify-e2e-scope.js を分けたとき、守りを弱める PR が e2e なしで通る段を塞ぐ。上の「自身は0件にしない」と同じ理由）
+- 検査の側（Quality Gates の verify:ci）は今までどおり全 PR で走る
+
 ## 追記（2026-11-08、CI02）: 範囲 selected と、none を閉包の外へ
 
 正本の設計は `docs/design/ci-minutes-reduction/design.md` 12章（hq の CI02）。各段の PR で、この追記の該当の行を「予定」から「済み」に直す。

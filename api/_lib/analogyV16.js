@@ -163,8 +163,8 @@ export function json(body, status, cache) {
 }
 
 /** URL の末尾の race_id と stage。不正なら RangeError */
-export function parseRequest(req) {
-  const url = new URL(req.url);
+// パスの末尾の raceId を取り、日付・会場・レースを確かめる（parts は raceId を除いた残り）
+function parseRacePath(url) {
   const parts = url.pathname.split("/");
   const raceId = parts.pop();
   if (!isRaceId(raceId)) throw new RangeError("raceId は YYYY-MM-DD-VV-RR");
@@ -178,40 +178,57 @@ export function parseRequest(req) {
     venue < 1 || venue > 24 || race < 1 || race > 12
   )
     throw new RangeError("raceId の日付・会場・レースが不正です");
-  const rules = {
-    stage: (v) => STAGES.includes(v),
-    include: (v) => v === "racers",
-    races: (v) => v === "1",
-    boats: (v) => v === "1",
-    scope: (v) => /^(VC|NC|NCR|VA|VG|NA)(:[0-9A-Za-z:-]+)?$/.test(v),
-    boat: (v) => /^[2-6]$/.test(v),
-  };
-  const keys = {
-    facts: ["stage", "include"],
-    similar: ["stage"],
-    layer: ["stage"],
-    scenario: ["stage", "races", "boats", "scope", "boat"],
-  }[parts.pop()];
-  if (!keys) throw new RangeError("API のパスが不正です");
-  // Vercel が足す動的ルートの組は、パスと同じ表記の1組だけ除く。
+  return { parts, raceId };
+}
+
+const QUERY_RULES = {
+  stage: (v) => STAGES.includes(v),
+  include: (v) => v === "racers",
+  races: (v) => v === "1",
+  boats: (v) => v === "1",
+  scope: (v) => /^(VC|NC|NCR|VA|VG|NA)(:[0-9A-Za-z:-]+)?$/.test(v),
+  boat: (v) => /^[2-6]$/.test(v),
+};
+
+const QUERY_KEYS = {
+  facts: ["stage", "include"],
+  similar: ["stage"],
+  layer: ["stage"],
+  scenario: ["stage", "races", "boats", "scope", "boat"],
+};
+
+// Vercel が足す動的ルートの組は、パスと同じ表記の1組だけ除く。
+function queryWithoutRoute(url, raceId) {
   if (url.search && url.search.slice(1).split("&").includes(""))
     throw new RangeError("クエリに空の組があります");
   let routeSeen = false;
-  const raw = url.search.slice(1).split("&")
+  return url.search.slice(1).split("&")
     .filter((pair) => {
       if (pair !== `raceId=${raceId}`) return true;
       if (routeSeen) throw new RangeError("raceId が重複しています");
       routeSeen = true;
       return false;
     }).join("&");
+}
+
+function canonicalQuery(url, keys) {
   const canonical = [];
   for (const key of keys) {
     if (!url.searchParams.has(key)) continue;
     const value = url.searchParams.get(key);
-    if (!rules[key](value)) throw new RangeError(`${key} の値が不正です`);
+    if (!QUERY_RULES[key](value)) throw new RangeError(`${key} の値が不正です`);
     canonical.push(`${key}=${encodeURIComponent(value)}`);
   }
-  if (raw !== canonical.join("&")) throw new RangeError("クエリの表記が不正です");
+  return canonical.join("&");
+}
+
+export function parseRequest(req) {
+  const url = new URL(req.url);
+  const { parts, raceId } = parseRacePath(url);
+  const keys = QUERY_KEYS[parts.pop()];
+  if (!keys) throw new RangeError("API のパスが不正です");
+  const raw = queryWithoutRoute(url, raceId);
+  if (raw !== canonicalQuery(url, keys)) throw new RangeError("クエリの表記が不正です");
   const stage = url.searchParams.get("stage") ?? "racecard";
   if (!STAGES.includes(stage))
     throw new RangeError(`stage は ${STAGES.join("|")}`);

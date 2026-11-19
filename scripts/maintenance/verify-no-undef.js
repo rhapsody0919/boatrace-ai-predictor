@@ -55,6 +55,16 @@ import { execFileSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  compareWithAllowlist,
+  validateAllowlist,
+} from "./verifyData/no-undef-allowlist.js";
+import {
+  compareCases,
+  EMPTY_CATCH,
+  IDEOGRAPHIC_SPACE,
+  unitCases,
+} from "./verifyData/no-undef-unit-cases.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
@@ -221,70 +231,10 @@ function classify(results) {
   return { violations, directives, unchecked };
 }
 
-/**
- * 違反と許可リストを突き合わせる。検査中の規則だけを見る。
- * no-undef: { ファイル: { names, reason } }。載っていない名前が出たら added、出なくなった名前は stale
- * 他の規則: { ファイル: { count, reason } }。件数を超えたら added、満たなければ stale
- */
-function compareWithAllowlist(violations, allowRules) {
-  const groups = new Map();
-  for (const v of violations) {
-    const k = `${v.rule}\t${v.file}`;
-    if (!groups.has(k)) groups.set(k, []);
-    groups.get(k).push(v);
-  }
-  const added = [];
-  for (const [k, items] of groups) {
-    const [rule, file] = k.split("\t");
-    const entry = allowRules[rule]?.[file];
-    if (rule === "no-undef") {
-      const names = new Set(entry?.names ?? []);
-      const extra = items.filter((v) => !names.has(v.name));
-      if (extra.length > 0)
-        added.push({
-          rule,
-          file,
-          detail: "許可リストに無い名前",
-          items: extra,
-        });
-    } else if (items.length > (entry?.count ?? 0)) {
-      added.push({
-        rule,
-        file,
-        detail: `${items.length} 件（許可 ${entry?.count ?? 0} 件）`,
-        items,
-      });
-    }
-  }
-  const stale = [];
-  for (const rule of RULES) {
-    for (const [file, entry] of Object.entries(allowRules[rule] ?? {})) {
-      const items = groups.get(`${rule}\t${file}`) ?? [];
-      if (rule === "no-undef") {
-        const present = new Set(items.map((v) => v.name));
-        const gone = entry.names.filter((n) => !present.has(n));
-        if (gone.length > 0)
-          stale.push({
-            rule,
-            file,
-            detail: `出なくなった名前 ${gone.join(", ")}`,
-          });
-      } else if (items.length < entry.count) {
-        stale.push({
-          rule,
-          file,
-          detail: `実際 ${items.length} 件（許可 ${entry.count} 件）`,
-        });
-      }
-    }
-  }
-  return { added, stale };
-}
-
 /** 判定の全体。ok=false なら失敗 */
 function judge(results, allowRules) {
   const { violations, directives, unchecked } = classify(results);
-  const { added, stale } = compareWithAllowlist(violations, allowRules);
+  const { added, stale } = compareWithAllowlist(violations, allowRules, RULES);
   return {
     ok:
       unchecked.length === 0 &&
@@ -299,40 +249,11 @@ function judge(results, allowRules) {
   };
 }
 
-/** 許可リストの形を確かめる。不正なら投げる */
-function validateAllowlist(json) {
-  const rules = json?.rules;
-  if (rules === null || typeof rules !== "object" || Array.isArray(rules)) {
-    throw new Error("rules オブジェクトがありません");
-  }
-  for (const [rule, files] of Object.entries(rules)) {
-    if (!KNOWN_RULES.includes(rule)) {
-      throw new Error(
-        `知らない規則です: ${rule}（使えるのは ${KNOWN_RULES.join(",")}）`,
-      );
-    }
-    for (const [file, e] of Object.entries(files)) {
-      const reasonOk = typeof e?.reason === "string" && e.reason.trim() !== "";
-      const valueOk =
-        rule === "no-undef"
-          ? Array.isArray(e?.names) &&
-            e.names.length > 0 &&
-            e.names.every((n) => typeof n === "string" && n !== "")
-          : Number.isInteger(e?.count) && e.count >= 1;
-      if (!reasonOk || !valueOk) {
-        throw new Error(
-          `形式が不正です（no-undef は names の配列、他は count（1以上の整数）、どちらも reason が必要）: ${rule} ${file} ${JSON.stringify(e)}`,
-        );
-      }
-    }
-  }
-  return rules;
-}
-
 async function loadAllowlist() {
   try {
     return validateAllowlist(
       JSON.parse(await fs.readFile(ALLOWLIST_PATH, "utf8")),
+      KNOWN_RULES,
     );
   } catch (e) {
     throw new Error(
@@ -377,209 +298,6 @@ async function findingsIn(code, filePath) {
     v.rule === "no-undef" ? `no-undef:${v.name}` : v.rule,
   );
   return { found: [...new Set(found)].sort(), directives: directives.length };
-}
-
-// 全角空白（U+3000）。このファイル自体が no-irregular-whitespace に当たらないよう、文字で書かない
-const IDEOGRAPHIC_SPACE = String.fromCodePoint(0x3000);
-const HOOK_IN_CONDITION =
-  'import { useState } from "react";\nexport function Selftest({ a }) {\n  if (a) {\n    useState(0);\n  }\n  return null;\n}\n';
-const EMPTY_CATCH =
-  "export function a() {\n  try {\n    JSON.parse('1');\n  } catch (e) {}\n}\n";
-
-/** 自己テスト。rule は対象の規則（null は常に実行）。検査中の規則のものだけを実行する */
-function unitCases() {
-  const found = (code, file) => async () =>
-    (await findingsIn(code, file)).found;
-  const both = (code, file) => () => findingsIn(code, file);
-  return [
-    {
-      rule: null,
-      name: "変異検査の一時ファイル（*.__mutant-*.js）だけを走査から外し、本物の scripts のファイルは外さない（BOA-1583）",
-      run: async () => [
-        await eslint.isPathIgnored(path.join(ROOT, "scripts/maintenance/verify-x.__mutant-1-1.js")),
-        await eslint.isPathIgnored(path.join(ROOT, "scripts/maintenance/verify-x.js")),
-        await eslint.isPathIgnored(path.join(ROOT, "src/mutant-notes.js")),
-      ],
-      want: [true, false, false],
-    },
-    {
-      rule: "no-undef",
-      name: "#1020 直前の master の supabaseDataService.js → groupIntoCurrentMeet を検出する",
-      run: async () =>
-        (
-          await findingsIn(gitShow(`${BROKEN_REV}:${BROKEN_FILE}`), BROKEN_FILE)
-        ).found.filter((x) => x.startsWith("no-undef:")),
-      want: ["no-undef:groupIntoCurrentMeet"],
-    },
-    {
-      rule: "no-undef",
-      name: "src/ はブラウザ用 → process を検出する（Node のグローバルを付けていない）",
-      run: found("export const a = process.env.X;\n", "src/undef-selftest.js"),
-      want: ["no-undef:process"],
-    },
-    {
-      rule: "no-undef",
-      name: "src/ の window・document は通す",
-      run: found(
-        "export const a = window.innerWidth + document.title;\n",
-        "src/undef-selftest.js",
-      ),
-      want: [],
-    },
-    {
-      rule: "no-undef",
-      name: "e2e/ は Node と page.evaluate 内のブラウザの両方 → process・Buffer・document を通す",
-      run: found(
-        "export const a = [process.env.X, Buffer.from('x'), () => document.title];\n",
-        "e2e/undef-selftest.spec.js",
-      ),
-      want: [],
-    },
-    {
-      rule: "no-undef",
-      name: "scripts/ の .mjs も検査対象 → 未定義を検出し、process は通す",
-      run: found(
-        "console.log(process.argv, notDefinedAnywhere);\n",
-        "scripts/undef-selftest.mjs",
-      ),
-      want: ["no-undef:notDefinedAnywhere"],
-    },
-    {
-      rule: "no-undef",
-      name: "api/ は Node → process を通し、未定義は検出する",
-      run: found(
-        "export default () => [process.env.X, missingHelper()];\n",
-        "api/undef-selftest.js",
-      ),
-      want: ["no-undef:missingHelper"],
-    },
-    {
-      rule: "no-undef",
-      name: "/* global */ と /* eslint-disable */ は効かず、設定コメントとして検出する",
-      run: both(
-        "/* eslint-disable */\n/* global someGlobal */\nexport const a = someGlobal;\n",
-        "src/lint-gate-selftest.js",
-      ),
-      want: { found: ["no-undef:someGlobal"], directives: 2 },
-    },
-    {
-      rule: "no-undef",
-      name: "説明の区切りが --- でも、検査中の規則を名指す disable を検出する",
-      run: both(
-        "// eslint-disable-next-line no-undef --- 理由\nexport const a = otherGlobal;\n",
-        "src/lint-gate-selftest.js",
-      ),
-      want: { found: ["no-undef:otherGlobal"], directives: 1 },
-    },
-    {
-      rule: null,
-      name: "検査中でない規則（exhaustive-deps）の disable と規則の設定は通す",
-      run: both(
-        "// eslint-disable-next-line react-hooks/exhaustive-deps -- 理由\n/* eslint react-hooks/exhaustive-deps: off */\nexport const a = 1;\n",
-        "src/lint-gate-selftest.js",
-      ),
-      want: { found: [], directives: 0 },
-    },
-    {
-      rule: "no-undef",
-      name: "検査中の規則の設定（/* eslint no-undef: off */）は検出する",
-      run: both(
-        "/* eslint no-undef: off */\nexport const a = 1;\n",
-        "src/lint-gate-selftest.js",
-      ),
-      want: { found: [], directives: 1 },
-    },
-    {
-      rule: "no-empty",
-      name: "no-empty: 空の catch を検出する",
-      run: found(EMPTY_CATCH, "src/lint-gate-selftest.js"),
-      want: ["no-empty"],
-    },
-    {
-      rule: "no-empty",
-      name: "no-empty: eslint-disable-next-line no-empty は効かず、違反と設定コメントの両方を検出する",
-      run: both(
-        "export function a() {\n  try {\n    JSON.parse('1');\n    // eslint-disable-next-line no-empty\n  } catch (e) {}\n}\n",
-        "src/lint-gate-selftest.js",
-      ),
-      want: { found: ["no-empty"], directives: 1 },
-    },
-    {
-      rule: "no-irregular-whitespace",
-      name: "no-irregular-whitespace: コメント中の全角空白を検出する",
-      run: found(
-        `// a${IDEOGRAPHIC_SPACE}b\nexport const a = 1;\n`,
-        "scripts/lint-gate-selftest.js",
-      ),
-      want: ["no-irregular-whitespace"],
-    },
-    {
-      rule: "react-hooks/rules-of-hooks",
-      name: "rules-of-hooks: src/ の条件の中の useState を検出する",
-      run: found(HOOK_IN_CONDITION, "src/lint-gate-selftest.jsx"),
-      want: ["react-hooks/rules-of-hooks"],
-    },
-    {
-      rule: "react-hooks/rules-of-hooks",
-      name: "rules-of-hooks: e2e/ は対象外（Playwright の use(...) の誤検出を避ける）",
-      run: found(HOOK_IN_CONDITION, "e2e/lint-gate-selftest.spec.js"),
-      want: [],
-    },
-  ];
-}
-
-/** 突き合わせの純粋な自己テスト（許可リストが空でも added・stale の判定を確かめる） */
-function compareCases() {
-  const v = (rule, file, name = null) => ({
-    rule,
-    file,
-    name,
-    line: 1,
-    column: 1,
-    message: "m",
-  });
-  const summarize = (r) => [
-    r.added.map((a) => `${a.rule} ${a.file}`),
-    r.stale.map((s) => `${s.rule} ${s.file}`),
-  ];
-  const undefAllow = {
-    "no-undef": {
-      "a.js": { names: ["x"], reason: "r" },
-      "b.js": { names: ["y"], reason: "r" },
-    },
-  };
-  const emptyAllow = { "no-empty": { "c.js": { count: 2, reason: "r" } } };
-  return [
-    {
-      rule: "no-undef",
-      name: "突き合わせ: 載っている名前は通し、出なくなった名前は stale、同じファイルの別の名前は added",
-      run: () =>
-        summarize(
-          compareWithAllowlist(
-            [v("no-undef", "a.js", "x"), v("no-undef", "a.js", "z")],
-            undefAllow,
-          ),
-        ),
-      want: [["no-undef a.js"], ["no-undef b.js"]],
-    },
-    {
-      rule: "no-empty",
-      name: "突き合わせ: 件数の許可は、超えたら added、満たなければ stale",
-      run: () => [
-        summarize(
-          compareWithAllowlist(
-            [1, 2, 3].map(() => v("no-empty", "c.js")),
-            emptyAllow,
-          ),
-        ),
-        summarize(compareWithAllowlist([v("no-empty", "c.js")], emptyAllow)),
-      ],
-      want: [
-        [["no-empty c.js"], []],
-        [[], ["no-empty c.js"]],
-      ],
-    },
-  ];
 }
 
 /**
@@ -673,9 +391,17 @@ async function runCases(cases) {
 }
 
 async function main() {
-  const selfCases = [...unitCases(), ...compareCases()].filter(
-    (c) => c.rule === null || ACTIVE.has(c.rule),
-  );
+  const selfCases = [
+    ...unitCases({
+      eslint,
+      ROOT,
+      findingsIn,
+      gitShow,
+      BROKEN_REV,
+      BROKEN_FILE,
+    }),
+    ...compareCases(RULES),
+  ].filter((c) => c.rule === null || ACTIVE.has(c.rule));
   if (!(await runCases(selfCases))) {
     console.error(
       "自己テストが失敗したため検査結果を信用できません。eslint.config.js と本スクリプトを確認してください",

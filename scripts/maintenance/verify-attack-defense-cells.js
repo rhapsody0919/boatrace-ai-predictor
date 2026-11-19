@@ -7,38 +7,20 @@
  * （2026-10-25 hq 依頼、FT01。画面と投稿の数字が食い違わないようにする）。移す前の関数と 20,000 通りの入力で
  * 値が一致することを確かめてから移した。ここでは画面の決まり（回数／分母、参考の※、全国平均の%、「-」）を固定する。
  *
- *   1. 表が計算を自前に持たず、attackDefenseCells.js を import する（二重の実装に戻らない）
+ *   1. 表（AttackDefenseTable の default export）を描いた各セルが attackDefenseColumn の値と同じ（二重の実装に戻らない）。
+ *      部品の本文の字は読まず、scripts/lib/renderJsx.js で描いた DOM で見る
  *   2. 1号艇は逃げ（攻め）と差され・まくられ・捲差され・その他（守り、負け数が分母の割合）
  *   3. 全枠の勝ちが2〜4は reference、2未満は全国平均の%（default）、2〜6号艇の逃げは「-」、出走0は「-」
  *   4. isDefaultAttackDistribution は集計側の既定の分布（scripts/lib/winningTechniques.js）だけを真にする
  */
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
+  TECHNIQUE_ROWS,
   attackDefenseColumn,
   isDefaultAttackDistribution,
 } from "../../src/utils/attackDefenseCells.js";
 import { COURSE_DEFAULT_DISTRIBUTION } from "../lib/winningTechniques.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const table = fs.readFileSync(
-  path.join(__dirname, "../../src/components/race/AttackDefenseTable.jsx"),
-  "utf8",
-);
-
-// 1. 表は計算を import する
-assert.match(
-  table,
-  /from "\.\.\/\.\.\/utils\/attackDefenseCells"/,
-  "表が attackDefenseCells.js を import する",
-);
-assert.doesNotMatch(
-  table,
-  /function getCellValue|const DEFAULT_ATTACK|function calcCount/,
-  "表に計算の写しが無い",
-);
+import { renderJsx } from "../lib/renderJsx.js";
 
 const stat = (boatNumber, counts, attack, defense = {}) => ({
   boatNumber,
@@ -151,5 +133,78 @@ assert.equal(
   "一部の枠だけなら偽",
 );
 assert.equal(isDefaultAttackDistribution(null), false, "無ければ偽");
+
+// 1. 画面の表は attackDefenseColumn と同じ値を描く（1号艇・参考・全国平均・「-」が混ざる6艇。並びは号艇順）
+{
+  const boats = [
+    stat(
+      1,
+      { 1: { total: 20, wins: 10 } },
+      { 1: { nige: 0.9, nuki: 0.1 } },
+      { 1: { sashi: 0.5, makuri: 0.3, makurizashi: 0.15, nuki: 0.05 } },
+    ),
+    stat(
+      2,
+      { 2: { total: 30, wins: 4 } },
+      { 2: { sashi: 0.5, makuri: 0.25, makurizashi: 0.25 } },
+    ),
+    stat(3, { 3: { total: 10, wins: 1 } }, { 3: { makuri: 1 } }),
+    stat(4, { 1: { total: 9, wins: 9 } }, { 4: { sashi: 1 } }),
+    stat(
+      5,
+      { 5: { total: 12, wins: 2 }, 1: { total: 3, wins: 3 } },
+      { 5: { makurizashi: 1 } },
+    ),
+    stat(6, { 6: { total: 8, wins: 6 } }, { 6: { makuri: 0.5, sashi: 0.5 } }),
+  ];
+  const view = await renderJsx(
+    new URL("../../src/components/race/AttackDefenseTable.jsx", import.meta.url),
+    { racerStats: [...boats].reverse(), players: [] },
+  );
+  const asText = (v) =>
+    typeof v === "string"
+      ? v
+      : v.type === "reference"
+        ? `${v.value}※`
+        : v.value;
+  const asClass = (v) =>
+    typeof v === "string"
+      ? null
+      : v.type === "reference"
+        ? "ad-reference-value"
+        : "ad-default-value";
+  const expected = boats.map((b) => attackDefenseColumn(b));
+  const cellsOf = (tr) =>
+    [...tr.querySelectorAll("td")].slice(1).map((td) => ({
+      text: td.textContent,
+      cls: td.firstElementChild?.className ?? null,
+    }));
+  for (const box of [".ad-table-desktop", ".ad-table-mobile"]) {
+    const rows = [...view.container.querySelectorAll(`${box} tbody tr`)];
+    assert.equal(rows.length, 2 + TECHNIQUE_ROWS.length, `${box}: 行の数`);
+    assert.deepEqual(
+      cellsOf(rows[1]).map((c) => c.text),
+      expected.map((c) => (c.total || c.wins ? `${c.wins}/${c.total}` : "-")),
+      `${box}: 勝ち/出走の行`,
+    );
+    TECHNIQUE_ROWS.forEach((row, i) => {
+      assert.deepEqual(
+        cellsOf(rows[2 + i]),
+        expected.map((c) => ({
+          text: asText(c.cells[row.key]),
+          cls: asClass(c.cells[row.key]),
+        })),
+        `${box}: ${row.key} の行が attackDefenseColumn と同じ`,
+      );
+    });
+  }
+  await view.unmount();
+  const empty = await renderJsx(
+    new URL("../../src/components/race/AttackDefenseTable.jsx", import.meta.url),
+    { racerStats: boats.slice(0, 5), players: [] },
+  );
+  assert.equal(empty.container.innerHTML, "", "6艇そろわなければ描かない");
+  await empty.unmount();
+}
 
 console.log("verify-attack-defense-cells: OK");
