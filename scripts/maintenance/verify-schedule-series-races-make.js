@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * scheduleQueries.js の getUpcomingSeries（トップの会場グリッドの次開催日）が race_series の行を makeMeet（src/pure/meetModel.js）に、
+ * scheduleQueries.js の getUpcomingSeries（トップの会場グリッドの次開催日）と getSeriesOfDate（レース詳細の帯・会場の節の帯）が
+ * race_series の行を makeMeet（src/pure/meetModel.js）に、
  * getTodaysRacesForVenue（分析の会場・レースの選び）が races の行を makeRace（src/pure/raceModel.js）に通すことの振る舞いの試験
  * （DM1x schedule のつなぎ、A 群）。偽の supabase（verifyData/fakeServiceSupabase.js、select で頼んだ列だけ返す）の上で
  * サービス層を直に呼ぶ。DB・ネットワーク・fs は使わない。
@@ -8,6 +9,9 @@
  * 確かめること:
  *   - getUpcomingSeries: select に total_days・class_code・kind を足した。正の行は凍結して値のまま。破れ（total_days が日程と合わない・
  *     class_code が不明）は makeMeet の RangeError で reject（呼び手 VenueGridPage の catch で次開催日だけ出さない）
+ *   - getSeriesOfDate: select の末尾に venue_code・total_days・class_code・kind を足した（前の4列はボットの2か所と同じ）。
+ *     正の行は凍結して値のまま。破れは makeMeet の RangeError で reject（呼び手の catch で取得失敗。「節なし」にしない）。
+ *     その日を含まない節（順延の許容の外）は検査の後で null
  *   - getTodaysRacesForVenue: select は3列のまま（録画の URL を変えない）、venue_code は eq の値を行に付ける。正の行は凍結。
  *     破れ（race_id の会場と引いた会場が食い違う・レース番号が race_id と食い違う）は makeRace の RangeError で reject
  *   - 失敗はキャッシュに残らない
@@ -23,7 +27,7 @@ import {
 registerFakeServiceSupabase();
 installLocalStorage();
 
-const { getUpcomingSeries, getTodaysRacesForVenue } = await import("../../src/services/scheduleQueries.js");
+const { getUpcomingSeries, getSeriesOfDate, getTodaysRacesForVenue } = await import("../../src/services/scheduleQueries.js");
 
 const TODAY_JST = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
 const meet = (venue, start, end, extra = {}) => ({
@@ -81,6 +85,34 @@ await test("節: 正の行は凍結して値のまま返り、select は6列（�
   for (const r of out) assert.ok(Object.isFrozen(r), `行が凍結されていない: ${r.venue_code}`);
   const { title: _skip, ...expected } = meet(16, "2026-09-28", "2026-10-03");
   assert.deepEqual({ ...out[0] }, expected);
+});
+
+// ---- getSeriesOfDate ----
+const SERIES_OF_DATE_SELECT = "start_date,end_date,title,grade,venue_code,total_days,class_code,kind";
+
+await test("その日の節: total_days が日程と合わない行は RangeError で reject する", async () => {
+  use({ race_series: [meet(16, "2026-09-28", "2026-10-03", { total_days: 5 })] });
+  await rejectsWith(getSeriesOfDate(16, "2026-09-29"), /meet の total_days が end_date - start_date \+ 1 と違う: 5（期待 6、meet venue_code=16/);
+});
+
+await test("その日の節: kind が不明な行は RangeError で reject する（その日を含まない節でも検査は先）", async () => {
+  use({ race_series: [meet(16, "2026-09-01", "2026-09-06", { kind: "x" })] });
+  await rejectsWith(getSeriesOfDate(16, "2026-09-30"), /meet の kind が不明な値: x/);
+});
+
+await test("その日の節: 正の行は凍結して値のまま返り、select は8列（直前の破れはキャッシュに残らない）", async () => {
+  const fake = use({
+    race_series: [
+      meet(16, "2026-09-14", "2026-09-19"),
+      meet(16, "2026-09-28", "2026-10-03", { title: "児島", grade: "G1" }),
+      meet(4, "2026-09-29", "2026-10-04"),
+    ],
+  });
+  const out = await getSeriesOfDate(16, "2026-09-29");
+  assert.deepEqual(fake.queriesOn("race_series").map((q) => q.select), [SERIES_OF_DATE_SELECT]);
+  assert.ok(Object.isFrozen(out), "行が凍結されていない");
+  assert.deepEqual({ ...out }, meet(16, "2026-09-28", "2026-10-03", { title: "児島", grade: "G1" }));
+  assert.equal(await getSeriesOfDate(16, "2026-10-07"), null, "順延の許容（3日）の外は null");
 });
 
 // ---- getTodaysRacesForVenue ----

@@ -848,15 +848,20 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
         end_date: "2026-10-03",
         title: "t",
         grade: "G1",
+        venue_code: 16,
+        total_days: 6,
+        class_code: "G1",
+        kind: "g1",
       },
     ]),
   );
   const getSeries = createSeriesSource({ fetchImpl: f, now: () => clock, env });
   const got = await getSeries(16, "2026-09-29");
   check("節: 人と同じ条件の1行", f.calls, [
-    "https://x.supabase.co/rest/v1/race_series?venue_code=eq.16&start_date=lte.2026-09-29&select=start_date,end_date,title,grade&order=start_date.desc&limit=1",
+    "https://x.supabase.co/rest/v1/race_series?venue_code=eq.16&start_date=lte.2026-09-29&select=start_date,end_date,title,grade,venue_code,total_days,class_code,kind&order=start_date.desc&limit=1",
   ]);
   check("節: その日を含む節を返す", got?.start_date, "2026-09-28");
+  check("節: 返す行は makeMeet で凍結", Object.isFrozen(got), true);
   await getSeries(16, "2026-09-29");
   check("節: 60秒以内は使い回す", f.calls.length, 1);
   clock = NOW + 61_000;
@@ -868,6 +873,23 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     ["HTTP 500", stubFetch(() => jsonResponse({}, 500))],
     ["配列でない", stubFetch(() => jsonResponse({ a: 1 }))],
     ["日付が無い", stubFetch(() => jsonResponse([{ title: "x" }]))],
+    // makeMeet の破れ（人の画面の getSeriesOfDate と同じ検査）は「節なし」でなく取得失敗
+    [
+      "total_days が日程と合わない",
+      stubFetch(() =>
+        jsonResponse([
+          { start_date: "2026-09-28", end_date: "2026-10-03", title: "t", grade: "G1", venue_code: 16, total_days: 5, class_code: "G1", kind: "g1" },
+        ]),
+      ),
+    ],
+    [
+      "class_code が不明",
+      stubFetch(() =>
+        jsonResponse([
+          { start_date: "2026-09-28", end_date: "2026-10-03", title: "t", grade: "G1", venue_code: 16, total_days: 6, class_code: "G9", kind: "g1" },
+        ]),
+      ),
+    ],
   ]) {
     const src = createSeriesSource({ fetchImpl: impl, env });
     const err = await src(16, "2026-09-29").then(
@@ -1083,6 +1105,10 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     end_date: "2026-10-03",
     title: "児島キングカップ開設７４周年記念競走",
     grade: "G1",
+    // makeMeet の必須の列（getSeriesOfDate が select に足した。値は本番の行の形）
+    total_days: 6,
+    class_code: "G1",
+    kind: "g1",
   };
   const fixtureOf = (d) =>
     JSON.parse(

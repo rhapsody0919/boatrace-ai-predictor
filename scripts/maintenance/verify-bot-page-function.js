@@ -1351,7 +1351,7 @@ for (const code of [1, 24]) {
 // REST の取り口は実接続せず検査する。失敗をキャッシュしない。
 {
   const { createSeriesSource } = await import("../../api/_lib/botPage.js");
-  const row = { start_date: "2026-10-06", end_date: "2026-10-11", title: null, grade: "G1" };
+  const row = { start_date: "2026-10-06", end_date: "2026-10-11", title: null, grade: "G1", venue_code: 1, total_days: 6, class_code: "G1", kind: "g1" };
   const calls = [];
   let clock = 0;
   let broken = false;
@@ -1368,7 +1368,7 @@ for (const code of [1, 24]) {
   check("節REST: 同時取得1回", calls.length, 1);
   const url = new URL(calls[0].url);
   check("節REST: 人と同じクエリ", Object.fromEntries(url.searchParams), {
-    venue_code: "eq.1", start_date: "lte.2026-10-11", order: "start_date.desc", limit: "1", select: "start_date,end_date,title,grade",
+    venue_code: "eq.1", start_date: "lte.2026-10-11", order: "start_date.desc", limit: "1", select: "start_date,end_date,title,grade,venue_code,total_days,class_code,kind",
   });
   check("節REST: anon と timeout", [calls[0].options.headers.apikey, calls[0].options.headers.Authorization, calls[0].options.signal instanceof AbortSignal], ["fixture-anon", "Bearer fixture-anon", true]);
   clock = 59000;
@@ -1383,6 +1383,12 @@ for (const code of [1, 24]) {
   await source(2, "2026-10-11");
   await source(1, "2026-10-12");
   check("節REST: 会場・日付を混ぜない", calls.length, 5);
+  // makeMeet の破れ（人の画面の getSeriesOfDate と同じ検査）は「帯なし」でなく例外（503）
+  for (const bad of [{ ...row, total_days: 5 }, { ...row, class_code: "G9" }, { ...row, venue_code: 25 }]) {
+    const getRows = createSeriesSource({ env: { SUPABASE_URL: "https://example.invalid", SUPABASE_ANON_KEY: "fixture" }, fetchImpl: async () => jsonResponse([bad]) });
+    check("節REST: makeMeet の破れは MaterialFetchError", await getRows(1, "2026-10-11").then(() => null, (e) => e.name), "MaterialFetchError");
+  }
+  check("節REST: 返す行は makeMeet で凍結", Object.isFrozen((await source(1, "2026-10-11"))[0]), true);
   for (const response of [() => jsonResponse([], 500), () => new Response("not json"), () => { throw new Error("offline"); }]) {
     const getRows = createSeriesSource({ env: { SUPABASE_URL: "https://example.invalid", SUPABASE_ANON_KEY: "fixture" }, fetchImpl: async () => response() });
     check("節REST: HTTP/JSON/通信失敗は例外", await getRows(1, "2026-10-11").then(() => false, () => true), true);

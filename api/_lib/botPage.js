@@ -29,6 +29,7 @@ import {
   TodayRacesShapeError,
 } from "../../src/utils/botPageModel.js";
 import { getJSTNow } from "../../src/utils/dateUtils.js";
+import { makeMeet } from "../../src/pure/meetModel.js";
 import {
   DEFAULT_LANGUAGE,
   SUPPORTED_LANGUAGES,
@@ -274,7 +275,7 @@ export function createSeriesSource({
     const base = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
     const key = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY;
     if (!base || !key) throw new MaterialFetchError("Supabase の URL か anon キーが無い");
-    const url = `${String(base).replace(/\/$/, "")}/rest/v1/race_series?venue_code=eq.${venueCode}&start_date=lte.${date}&order=start_date.desc&limit=1&select=start_date,end_date,title,grade`;
+    const url = `${String(base).replace(/\/$/, "")}/rest/v1/race_series?venue_code=eq.${venueCode}&start_date=lte.${date}&order=start_date.desc&limit=1&select=start_date,end_date,title,grade,venue_code,total_days,class_code,kind`;
     let rows;
     try {
       const res = await fetchImpl(url, {
@@ -291,6 +292,12 @@ export function createSeriesSource({
       throw new MaterialFetchError("race_series を取得できない");
     }
     assertSeriesRows(rows);
+    // 人の画面（getSeriesOfDate）と同じく makeMeet に通す。破れは取得失敗（503）で、「帯なし」にしない
+    try {
+      rows = rows.map(makeMeet);
+    } catch (e) {
+      throw new MaterialFetchError(`race_series の行が壊れている: ${e?.message ?? e}`);
+    }
     // 日付をまたいだ分を残し続けない。
     for (const [k, v] of cache) if (now() - v.at >= ttlMs) cache.delete(k);
     cache.set(cacheKey, { at: now(), rows });

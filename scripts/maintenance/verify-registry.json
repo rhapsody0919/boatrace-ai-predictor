@@ -1472,7 +1472,7 @@
     {
       "script": "verify-schedule-series-races-make.js",
       "tier": "ci",
-      "guards": "src/services/scheduleQueries.js の getUpcomingSeries が race_series の行を makeMeet に、getTodaysRacesForVenue が races の行を makeRace に通す（DM1x schedule のつなぎ、A 群）。正の行は凍結、破れは RangeError で reject（キャッシュしない）すること"
+      "guards": "src/services/scheduleQueries.js の getUpcomingSeries・getSeriesOfDate が race_series の行を makeMeet に、getTodaysRacesForVenue が races の行を makeRace に通す（DM1x schedule のつなぎ、A 群）。正の行は凍結、破れは RangeError で reject（キャッシュしない）すること"
     },
     {
       "script": "verify-schema-detect.js",
