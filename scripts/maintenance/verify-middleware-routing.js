@@ -31,6 +31,8 @@
  * 12. /api の関門（BOA-1110 段階3、api/_lib/apiGate.js）: matcher に /api/:path* がある。rewrite 先の /api/bot-page/* と
  *    /api/admin/* は関門の除外（ログ無し・既存の分岐へ）。観測（API_GATE_MODE 未設定）は外の要求も通して would_deny の1行を出し、
  *    禁じた形のパスだけ 400。強制は環境変数だけで 403。env の鍵の末尾の改行を落として比べる（再現テスト）
+ * 14. 断るクローラー（Reflectionbot・meta-externalagent・Bytespider）は matcher の全パスで 403（大文字小文字を問わない部分一致）。
+ *    検索ボット・他の AI・人のブラウザは 403 にならず今の経路のまま。public/robots.txt に同じ3つの Disallow: / がある
  *
  * Vercel の matcher は path-to-regexp 構文。このリポジトリが使う
  * 「固定パス」と「/prefix/:path*」の2形だけを解釈し、それ以外の形が足されたら
@@ -43,7 +45,9 @@ import { internalApiHeaders } from "../../api/_lib/internalApiHeaders.js";
 import {
   AI_CRAWLER_USER_AGENTS,
   BOT_PAGE_PREFIXED_LANGS,
+  BLOCKED_CRAWLER_USER_AGENTS,
   BOT_PAGE_USER_AGENTS,
+  isBlockedCrawler,
   resolveSnapshotPath,
 } from "../../src/config/aiCrawlerBots.js";
 import { compileIpRanges, decideApiGate } from "../../api/_lib/apiGate.js";
@@ -1068,6 +1072,96 @@ for (const path of ["/x/today/extra", "/x/other", "/en/x/today"]) {
   check(
     `${path} は短いリンクの対象外`,
     !matchesMatcher(path) && (await call(path)) === undefined,
+  );
+}
+
+console.log("[14] 断るクローラーは 403、他の UA は今のまま");
+{
+  // 見本は各社の公開の UA の形（大文字小文字を変えた物も含む）
+  const BLOCKED_SAMPLES = [
+    "Mozilla/5.0 (compatible; Reflectionbot/1.0; +https://reflection.ai/bot)",
+    "meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)",
+    "Mozilla/5.0 (Linux; Android 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Mobile Safari/537.36 (compatible; Bytespider; spider-feedback@bytedance.com)",
+    "Mozilla/5.0 (compatible; REFLECTIONBOT/2.0)",
+    "Meta-ExternalAgent/1.1",
+    "bytespider",
+  ];
+  const ALLOWED_SAMPLES = [
+    HUMAN_UA,
+    BOT_UA,
+    "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
+    "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "meta-externalfetcher/1.1",
+    "Twitterbot/1.0",
+  ];
+  const PATHS = [
+    "/",
+    "/race/2026-11-19-01-01",
+    "/racer/4561",
+    "/venue/1",
+    "/blog",
+    "/today",
+    "/en/",
+    "/api/races/today",
+    "/admin/rules",
+  ];
+  for (const ua of BLOCKED_SAMPLES) {
+    check(`${ua} は断る対象`, isBlockedCrawler(ua));
+    for (const path of PATHS) {
+      check(`${path} は matcher に一致する`, matchesMatcher(path));
+      const res = await call(path, { ua });
+      check(
+        `${ua} ${path} → 403・no-store`,
+        res?.status === 403 && res.headers.get("cache-control") === "no-store",
+        describe(res),
+      );
+    }
+  }
+  for (const ua of ALLOWED_SAMPLES) {
+    check(`${ua} は断る対象でない`, !isBlockedCrawler(ua));
+    for (const path of PATHS) {
+      const res = await call(path, { ua });
+      check(`${ua} ${path} → 403 にならない`, res?.status !== 403, describe(res));
+    }
+  }
+  check("UA なしは断る対象でない", !isBlockedCrawler(null) && !isBlockedCrawler(""));
+  check(
+    "Googlebot の / は今のまま素通り",
+    (await call("/", { ua: ALLOWED_SAMPLES[2] })) === undefined,
+  );
+  check(
+    "GPTBot の / は今のまま関数へ",
+    (await call("/", { ua: BOT_UA }))?.headers.get("x-middleware-rewrite") ===
+      "https://www.boat-ai.jp/api/bot-page/top",
+  );
+
+  // robots.txt: 3つそれぞれの組に Disallow: / があり、User-agent: * の組は Allow: / のまま
+  const robots = readFileSync(new URL("../../public/robots.txt", import.meta.url), "utf8");
+  const groups = robots
+    .split(/\n\s*\n/)
+    .map((block) => block.split("\n").map((l) => l.replace(/#.*/, "").trim()).filter(Boolean));
+  const groupOf = (name) =>
+    groups.find((lines) =>
+      lines.some((l) => l.toLowerCase() === `user-agent: ${name.toLowerCase()}`),
+    ) ?? [];
+  for (const name of BLOCKED_CRAWLER_USER_AGENTS) {
+    check(`robots.txt: ${name} は Disallow: /`, groupOf(name).includes("Disallow: /"));
+  }
+  check(
+    "robots.txt: User-agent: * は Allow: / のまま（検索・他の AI は止めない）",
+    groupOf("*").includes("Allow: /") && !groupOf("*").includes("Disallow: /"),
+  );
+  const named = groups
+    .flat()
+    .filter((l) => /^user-agent:/i.test(l))
+    .map((l) => l.replace(/^user-agent:\s*/i, ""))
+    .filter((n) => n !== "*");
+  check(
+    "robots.txt で名指しで断るのは BLOCKED_CRAWLER_USER_AGENTS と同じ3つだけ",
+    JSON.stringify([...named].sort()) === JSON.stringify([...BLOCKED_CRAWLER_USER_AGENTS].sort()),
+    named.join(","),
   );
 }
 

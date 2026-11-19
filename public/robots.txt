@@ -9,3 +9,14 @@ Sitemap: https://www.boat-ai.jp/sitemap.xml
 
 # Crawl-delay (optional, helps prevent server overload)
 Crawl-delay: 1
+
+# 学習用の AI クローラーを断る（Supabase の枠越えの主因、2026-11-19）。
+# middleware.js も同じ UA に 403 を返す（一覧は src/config/aiCrawlerBots.js の BLOCKED_CRAWLER_USER_AGENTS）
+User-agent: Reflectionbot
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
