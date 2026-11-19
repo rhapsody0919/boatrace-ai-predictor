@@ -25,19 +25,221 @@ import {
   upsertWithOptionalColumns,
 } from "./optionalColumns.js";
 import {
-  NUMERIC_SCALES,
-  TIMESTAMP_COLUMNS,
-  normalizeTimestamp,
-  normalizeValue,
-} from "./unchangedRowsNormalize.js";
+  UPDATED_AT_COLUMN,
+  fetchExistingRows,
+  resolveUpsertOptions,
+  reportUpsertResult,
+} from "./unchangedRowsUpsert.js";
 
 /**
- * 「変更のある行を書くときに updated_at を設定する」テーブル（WS2、マイグレーション071）の
- * updated_at 列と、その列が未適用のDBでの書き直しに使うグループ名。
- * created_at は設定しない（INSERT時にDBの DEFAULT now() が入り、UPSERTの更新側では触られない）
+ * numeric(p,s) 列の scale（2026-09-19時点の本番スキーマ information_schema.columns の実測値）。
+ * 列が numeric 型でも、ここに無い列は文字列・数値を区別する厳密比較になる（＝変更ありに倒れる）。
  */
-export const UPDATED_AT_COLUMN = "updated_at";
-export const UPDATED_AT_GROUP = "マイグレーション071（updated_at）";
+export const NUMERIC_SCALES = {
+  races: {
+    first_boat_avg_st: 3,
+    first_boat_motor_2rate: 2,
+    first_boat_win_rate: 3,
+    motor_2rate_stddev: 2,
+    win_rate_avg: 3,
+    win_rate_stddev: 3,
+  },
+  race_entries: {
+    weight_kg: 1,
+    boat_2rate: 2,
+    boat_3rate: 2,
+    global_2rate: 2,
+    global_3rate: 2,
+    local_2rate: 2,
+    local_3rate: 2,
+    local_win_rate: 3,
+    motor_2rate: 2,
+    motor_3rate: 2,
+    win_rate: 3,
+  },
+  // 選手別の日次集計（aggregate-racer-stats.js、BOA-600。2026-10-01 本番スキーマの実測値）
+  racer_aggregated_stats: {
+    avg_st: 3,
+    avg_st_last_30: 3,
+    st_stddev: 3,
+    flying_rate: 4,
+  },
+  race_conditions: {
+    temperature: 1,
+    water_temperature: 1,
+    wind_speed: 1,
+  },
+  exhibition_data: {
+    adjustment_weight: 1,
+    exhibition_time: 2,
+    prev_start_timing: 2,
+    start_timing: 2,
+    tilt: 1,
+    today_weight: 1,
+  },
+  race_start_timings: {
+    start_timing: 3,
+    race_seconds: 1,
+  },
+  // 前検タイム（docs/db-migration/090_motor_pretest_stats.sql）
+  motor_pretest_stats: {
+    motor_2rate: 1,
+    boat_2rate: 1,
+    pretest_time: 2,
+  },
+  // K/Bファイル長期バックフィルのアーカイブ表（docs/db-migration/074_kb_archive_tables.sql）
+  kb_archive_boats: {
+    boat_2rate: 2,
+    exhibition_time: 2,
+    local_2rate: 2,
+    local_win_rate: 2,
+    motor_2rate: 2,
+    national_2rate: 2,
+    national_win_rate: 2,
+    race_seconds: 1,
+    start_timing: 2,
+  },
+  // BOATCASTのオリジナル展示（docs/db-migration/091_boatcast_original_exhibition.sql）
+  race_original_exhibition_values: {
+    value: 2,
+  },
+  // コース×級別のベースライン（docs/db-migration/094_course_baselines.sql、phase a FR-1）。
+  // ここに登録しないと NUMERIC_SCALES[table] ?? {} で空になり、NUMERIC列が
+  // 文字列と数値で比較されて毎日全行が「変更あり」と判定される（plan.md §5.1）
+  st_course_baseline: {
+    avg_st: 3,
+    stable_rate: 2,
+    late_rate: 2,
+    breakout_rate: 2,
+  },
+  // 逃げシミュレーション（同上、phase a FR-6）
+  nige_second_by_course: {
+    second_rate: 2,
+    exacta_rate: 2,
+  },
+  // 「本日のデータ一覧」の事前集計（docs/db-migration/098_morning_data_digest.sql、BOA-402）
+  venue_course_technique_baseline: {
+    nige_rate: 2,
+    makuri_rate: 2,
+    nigashi_rate: 2,
+  },
+  racer_course_technique_stats: {
+    nige_rate: 2,
+    nige_expected: 2,
+    makuri_rate: 2,
+    makuri_expected: 2,
+    nigashi_rate: 2,
+    nigashi_expected: 2,
+    nige_rate_90d: 2,
+    makuri_rate_90d: 2,
+    nigashi_rate_90d: 2,
+  },
+  // morning_digest_rows は日付ごとに delete→insert する設計のため upsertChangedRows を
+  // 使わないが、将来差分更新に変えたときに登録漏れで毎日全行更新になるのを防ぐため先に入れておく
+  morning_digest_rows: {
+    metric_value: 2,
+    metric_expected: 2,
+    metric_skill_delta: 2,
+    metric_venue_baseline: 2,
+    metric_predicted: 2,
+    metric_wilson_lower: 2,
+    rate_90d: 2,
+    motor_2rate: 2,
+    volatility_percentile: 2,
+  },
+  // 買い目オッズ（BOA-404、docs/db-migration/011_prediction_odds.sql）。DECIMAL(8,1)
+  prediction_odds: {
+    trifecta_odds_standard: 1,
+    trio_odds_standard: 1,
+    trifecta_odds_safe_bet: 1,
+    trio_odds_safe_bet: 1,
+    trifecta_odds_upset_focus: 1,
+    trio_odds_upset_focus: 1,
+  },
+  // 得点率の日ごとの写し（BOA-1210、docs/db-migration/192_racer_series_points_daily.sql）。NUMERIC(4,2)
+  racer_series_points_daily: {
+    score_rate: 2,
+  },
+};
+
+/**
+ * timestamptz 列（比較時に時刻として正規化する列）。DBは「2026-09-19T01:34:00+00:00」形式で返し、
+ * 書き込み側は「2026-09-19T01:34:00.000Z」等の形式で持つため、文字列のまま比較すると
+ * 同じ時刻でも永久に「変更あり」になる。ここに無い timestamptz 列は厳密比較（＝変更ありに倒れる）。
+ */
+export const TIMESTAMP_COLUMNS = {
+  race_conditions: ["weather_observed_at"],
+};
+
+/**
+ * timestamptz の比較用正規化。同じ瞬間なら表記（タイムゾーン・桁数）に依らず同じ値になる。
+ * 時刻として解釈できない値は、文字列のまま返して厳密比較に任せる（＝変更ありに倒れる）。
+ *
+ * @param {unknown} value
+ */
+export function normalizeTimestamp(value) {
+  if (value === undefined || value === null) return null;
+  const ms = Date.parse(
+    value instanceof Date ? value.toISOString() : String(value),
+  );
+  return Number.isFinite(ms) ? ms : value;
+}
+
+/**
+ * PostgreSQL の numeric 丸め（0から遠い側への四捨五入）を再現する。
+ * PostgREST へ送られる JSON 数値は String(x) と同じ10進表現のため、その文字列に
+ * 指数を足して桁シフトすることで、2進浮動小数の誤差（1.005 → 1.00 になる等）を避ける。
+ */
+export function roundToScale(value, scale) {
+  const abs = Math.abs(value);
+  const text = String(abs);
+  // 指数表記（1e-7, 1e21等）は文字列シフトができないため toFixed に委ねる
+  // （本スキーマの値域では現れない。万一現れても判定が変更ありに倒れるだけ）
+  if (/e/i.test(text)) return Number(value.toFixed(scale));
+  const shifted = Math.round(Number(`${text}e${scale}`));
+  const rounded = Number(`${shifted}e-${scale}`);
+  return value < 0 && rounded !== 0 ? -rounded : rounded;
+}
+
+function canonicalize(value) {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .filter((k) => value[k] !== undefined)
+        .map((k) => [k, canonicalize(value[k])]),
+    );
+  }
+  if (typeof value === "number" && !Number.isFinite(value)) return null;
+  return value;
+}
+
+/**
+ * 比較用の正規化。undefined/null/NaN/Infinity は null に揃える（JSON化すると null になるため、
+ * DBへ書かれる値と一致させる）。numeric 列（scale 指定あり）は数値化して丸める。
+ * jsonb/配列は、キー順に依存しない正準形（JSON文字列）にする。
+ *
+ * @param {unknown} value
+ * @param {number|undefined} scale numeric列のscale。undefinedなら数値の丸めをしない
+ */
+export function normalizeValue(value, scale) {
+  if (value === undefined || value === null) return null;
+  if (scale !== undefined) {
+    if (typeof value === "string") {
+      if (value.trim() === "") return value; // 数値化できない文字列は厳密比較に任せる
+      const n = Number(value);
+      return Number.isFinite(n) ? roundToScale(n, scale) : value;
+    }
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? roundToScale(value, scale) : null;
+    }
+    return value;
+  }
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "object") return JSON.stringify(canonicalize(value));
+  return value;
+}
 
 function buildKey(row, keyColumns) {
   return keyColumns.map((c) => String(row[c])).join("|");
@@ -172,60 +374,6 @@ export function planWriteAll(rows) {
 }
 
 /**
- * 対象行の既存値を、chunkColumn（主キー先頭列）のIN句で取得する。
- * 1リクエストあたり chunkSize 件のIDに分割し、PostgRESTの上限（1000行）を超えない範囲にする
- * （race_entries/exhibition_data は1レース6行のため、100レース=600行）。
- *
- * @returns {Promise<{rows: Object[], error: Error|null}>}
- */
-export async function fetchExistingRows(
-  client,
-  table,
-  {
-    columns,
-    chunkColumn = "race_id",
-    ids,
-    chunkSize = 100,
-    fullPageRows = null,
-  },
-) {
-  const chunks = [];
-  for (let i = 0; i < ids.length; i += chunkSize) {
-    chunks.push(ids.slice(i, i + chunkSize));
-  }
-  // チャンクは互いに独立した読み取りのため並列に取得する
-  const results = await Promise.all(
-    chunks.map((chunk) =>
-      client.from(table).select(columns.join(",")).in(chunkColumn, chunk),
-    ),
-  );
-  const failed = results.find((result) => result.error);
-  if (failed) {
-    // code を残す（呼び出し側が「表が無い」等をコードで判定できるように）
-    const error = new Error(
-      `${table}既存行取得エラー: ${failed.error.message}`,
-    );
-    error.code = failed.error.code;
-    error.cause = failed.error;
-    return { rows: [], error };
-  }
-  // fullPageRows（PostgREST の上限の 1000 等）ちょうどで返ったチャンクは、黙って切れた可能性がある
-  if (
-    fullPageRows &&
-    results.some((r) => (r.data ?? []).length >= fullPageRows)
-  ) {
-    return {
-      rows: [],
-      error: new Error(
-        `${table}既存行取得エラー: 1回の読みが ${fullPageRows} 行で返った（上限で切れた可能性。chunkSize を小さくする）`,
-      ),
-    };
-  }
-  const rows = results.flatMap((result) => result.data ?? []);
-  return { rows, error: null };
-}
-
-/**
  * 書き込み予定の行から、変更のある行だけを絞り込む（既存行の取得を含む）。
  * 既存行の取得に失敗した場合は、従来どおり全行を書く（fallback: true）。
  *
@@ -290,116 +438,6 @@ export async function filterUnchangedRows(
     writeMissing,
   });
   return { toWrite, fallback: false, stats };
-}
-
-/**
- * ログ用の1行表記（効果を後から実測できるよう、スキップ件数と書き込み件数を必ず出す）
- */
-export function formatSkipSummary(label, stats, { fallback = false } = {}) {
-  const skipped = stats.unchanged;
-  const suffix = fallback ? "（既存行を取得できず全件書き込み）" : "";
-  const columns = Object.entries(stats.changedColumns ?? {})
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([column, count]) => `${column}×${count}`)
-    .join(", ");
-  const detail = columns ? `（変更のあった列: ${columns}）` : "";
-  return `${label}: 変更なし${skipped}件スキップ / 書き込み${stats.toWrite}件${detail}${suffix}`;
-}
-
-/**
- * 変更のある行だけを upsert する（バッチ分割つき）。
- *
- * stampUpdatedAt=true の場合、書き込む（＝変更のあった、または新規の）行に updated_at=現在時刻を
- * 設定する。updated_at は比較から自動的に外す（毎回変わる値を比較に含めると、常に「変更あり」になり
- * 変更の無い行を書かない効果が無くなる）。updated_at 列が未適用のDBでは、その列を除いて書き直す。
- * optionalColumnGroups は、同様に「未適用なら除いて書き直す」列（{グループ名: 列名の配列}）。
- * 既知の限界: 既存行の取得に失敗して全行を書く場合（fallback）は、変更の有無が分からないまま
- * 全行に updated_at を設定する（「書き込んだ時刻」になる）。取得失敗は例外的な状態のため許容する
- * （stats・ログに fallback が出る）。
- *
- * @returns {Promise<{written: number, skipped: number, error: Error|null, stats: Object, toWrite: Object[], droppedGroups: string[]}>}
- *   toWrite は書き込み対象（dry-runでも「書くはずの行」を返す）。呼び出し側が後続処理を絞る用途に使う。
- *   droppedGroups は「列が無い」と判定して除いたまま書いた optionalColumnGroups の名前。空でなければ、
- *   その列は今回の実行で書き込まれていない（error は null のまま＝成功扱いになるため、呼び出し元が
- *   完了を判定するときはこちらも見る）
- */
-/** upsertChangedRows の選択肢に既定値を入れ、updated_at を押すときの ignoreColumns と列のグループを組む */
-function resolveUpsertOptions(
-  table,
-  {
-    onConflict,
-    keyColumns,
-    ignoreColumns = [],
-    chunkColumn = "race_id",
-    chunkSize = 100,
-    label = table,
-    batchSize = 1000,
-    dryRun = false,
-    stampUpdatedAt = false,
-    optionalColumnGroups = {},
-    now = null,
-    fullPageRows = null,
-    failOnFetchError = false,
-  },
-) {
-  return {
-    onConflict,
-    keyColumns,
-    chunkColumn,
-    chunkSize,
-    label,
-    batchSize,
-    dryRun,
-    stampUpdatedAt,
-    now,
-    fullPageRows,
-    failOnFetchError,
-    ignoreColumns: stampUpdatedAt
-      ? [...new Set([...ignoreColumns, UPDATED_AT_COLUMN])]
-      : ignoreColumns,
-    groups: stampUpdatedAt
-      ? { ...optionalColumnGroups, [UPDATED_AT_GROUP]: [UPDATED_AT_COLUMN] }
-      : optionalColumnGroups,
-  };
-}
-
-/**
- * 書き込みの要約を出す。列を落としたまま「成功」として終わらせない。落としたグループは、呼び出し元が戻り値を
- * 見ていなくても必ず目に入るよう、書き込みの要約と同じ行に出す
- * （2026-09-27、N19のloadで race_entries の6列が一斉に書かれないまま成功扱いになった）
- */
-function reportUpsertResult({
-  table,
-  label,
-  stats,
-  fallback,
-  dryRun,
-  written,
-  total,
-  groups,
-  droppedGroups,
-}) {
-  const droppedNote =
-    droppedGroups.length === 0
-      ? ""
-      : ` / ⚠️ 列を除いて書いたグループ: ${droppedGroups
-          .map((name) => `${name}（${(groups[name] ?? []).join(", ")}）`)
-          .join(" / ")}`;
-  // 書き込みの成否が分かってから出力する（失敗した行を「書き込んだ」と誤読させない）
-  console.log(
-    `  ${dryRun ? "[DRY-RUN] " : ""}${formatSkipSummary(label, stats, { fallback })}` +
-      (dryRun || written === total
-        ? ""
-        : ` / 実際に書き込めたのは${written}件`) +
-      droppedNote,
-  );
-  if (droppedGroups.length > 0) {
-    console.warn(
-      `⚠️ ${table}: 上記の列は今回の実行で書き込まれていません。` +
-        `マイグレーションが未適用なら適用し、適用済みならエラーの原因を確認してから書き直してください`,
-    );
-  }
 }
 
 export async function upsertChangedRows(client, table, incomingRows, options) {
@@ -483,9 +521,8 @@ export async function upsertChangedRows(client, table, incomingRows, options) {
 }
 
 export {
-  NUMERIC_SCALES,
-  TIMESTAMP_COLUMNS,
-  normalizeTimestamp,
-  roundToScale,
-  normalizeValue,
-} from "./unchangedRowsNormalize.js";
+  UPDATED_AT_COLUMN,
+  UPDATED_AT_GROUP,
+  fetchExistingRows,
+  formatSkipSummary,
+} from "./unchangedRowsUpsert.js";
