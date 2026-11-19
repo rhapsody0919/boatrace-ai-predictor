@@ -28,17 +28,11 @@ import {
   getTodayDateJST,
   parseDateArg,
 } from "../lib/dateUtils.js";
-import { computeInCaution, toInCautionRates } from "../lib/inCaution.js";
-import { predictFirstMark } from "../lib/turnPrediction.js";
-import {
-  calculateVolatilityComposite,
-  toVolatilityPercentile,
-} from "../lib/volatilityFactors.js";
+import { toInCautionRates } from "../lib/inCaution.js";
+import { buildUnifiedPredictionRow } from "../lib/unifiedPredictionRow.js";
 
 const MODEL_ID = "unified";
 const VOLATILITY_LOOKBACK_DAYS = 90;
-const FALLBACK_PERCENTILE = 0.5; // 分布データが不足する場合のフォールバック（運用開始直後）
-const MIN_DISTRIBUTION_SAMPLES = 20; // これ未満ならフォールバックを使う
 const IN_CAUTION_RPC_ATTEMPTS = 3;
 const IN_CAUTION_RPC_RETRY_MS = 2000;
 
@@ -128,35 +122,6 @@ async function fetchRacerStats(racerIds, client = supabase) {
     data?.forEach((r) => map.set(r.racer_id, r));
   }
   return map;
-}
-
-/**
- * FR1複勝予想: コース別勝率が高い上位2艇を選出する（EV計算不要、backtest-course-rate-only.jsと同じロジック）
- */
-// コース別勝率のサンプル数がこれ未満の場合は判定不能として除外する
-// （2026-08-14修正、BOA-190。total:1/wins:1のような極少サンプルが勝率100%として
-// 実績豊富な選手を押しのけて1位表示されるのを防ぐ）
-const MIN_COURSE_SAMPLES = 5;
-
-function calculatePlaceRecommendation(entries, racerStatsMap) {
-  const courseRates = entries.map((e) => {
-    const stats = racerStatsMap.get(e.racer_id);
-    const counts = stats?.course_race_counts?.[String(e.boat_number)];
-    const rate =
-      counts?.total >= MIN_COURSE_SAMPLES
-        ? ((counts.wins ?? 0) / counts.total) * 100
-        : null;
-    return { boat: e.boat_number, rate };
-  });
-
-  const valid = courseRates.filter((c) => c.rate != null);
-  const sorted = [...valid].sort((a, b) => b.rate - a.rate);
-  const boats = sorted.slice(0, 2).map((c) => c.boat);
-
-  return {
-    boats, // 複勝予想上位2艇（データ不足時は1艇以下になりうる）
-    courseRates: Object.fromEntries(courseRates.map((c) => [c.boat, c.rate])),
-  };
 }
 
 /**
@@ -324,6 +289,40 @@ export async function findRacesMissingUnified(
     .sort();
 }
 
+/** predictions へ1,000行ずつ upsert する。1バッチでも失敗したら例外（成功したバッチは反映済み）。戻り値は書けた行数 */
+async function upsertUnifiedBatches(client, predictionsData) {
+  // 2026-08-14修正（BOA-185）: 旧実装は先にdeleteしてからinsertしており、insert失敗時
+  // （タイムアウト・接続断等）に削除済みの行が復元されずデータが消失していた。
+  // predictionsテーブルには idx_predictions_unique（race_id, model_id 一意、
+  // is_shadow=FALSE の部分インデックス）があるため、upsertで置き換えると
+  // delete/insertを分離せず単一操作でアトミックに更新できる（onConflictは実データで
+  // 動作確認済み）。バッチが失敗しても既に成功した分は反映済みのまま残り、
+  // 失敗分だけが旧データのまま留まる（全滅する旧実装より安全）
+  let written = 0;
+  const failedBatches = [];
+  for (let i = 0; i < predictionsData.length; i += 1000) {
+    const batch = predictionsData.slice(i, i + 1000);
+    const { error } = await client
+      .from("predictions")
+      .upsert(batch, { onConflict: "race_id,model_id" });
+    if (error) {
+      console.error("❌ predictions書き込みエラー:", error.message);
+      failedBatches.push(error.message);
+    } else {
+      written += batch.length;
+    }
+  }
+  if (failedBatches.length > 0) {
+    console.error(
+      `⚠️ 一部書き込みに失敗しました。実際にDBへ反映された件数を必ず確認してください`,
+    );
+    throw new Error(
+      `unified の predictions 書き込みに失敗しました（${failedBatches.length}バッチ、反映済み${written}/${predictionsData.length}件）: ${failedBatches[0]}`,
+    );
+  }
+  return written;
+}
+
 /**
  * unified の日次予測を生成して predictions（model_id='unified'）へ upsert する。
  * process.argv・process.exit に依存しない（Vercel Function の races-init が呼ぶ。WS4b T4b-07-3）。
@@ -383,12 +382,9 @@ export async function generateUnifiedPredictions({
     return { targetRaces: raceIds.length, generated: 0, written: 0 };
   }
 
-  const allRacerIds = new Set();
-  for (const race of races) {
-    for (const e of race.entries) {
-      if (e.racer_id) allRacerIds.add(e.racer_id);
-    }
-  }
+  const allRacerIds = new Set(
+    races.flatMap((race) => race.entries.map((e) => e.racer_id).filter(Boolean)),
+  );
   const racerStatsMap = await fetchRacerStats([...allRacerIds], client);
   console.log(`📊 ${racerStatsMap.size}人の選手統計を取得しました`);
 
@@ -404,81 +400,14 @@ export async function generateUnifiedPredictions({
   });
   const inCautionFailed = !inCautionRates?.usable;
 
-  const predictionsData = [];
-  for (const race of races) {
-    const turnPredictionPlayers = race.entries.map((e) => {
-      const stats = racerStatsMap.get(e.racer_id);
-      return {
-        boatNumber: e.boat_number,
-        course: e.boat_number,
-        avgST: stats?.avg_st ?? null,
-        stStddev: stats?.st_stddev ?? null,
-        attackDistribution: stats?.attack_distribution || null,
-        defenseDistribution: stats?.defense_distribution || null,
-        courseRaceCounts: stats?.course_race_counts || null,
-        motor2Rate: e.motor_2rate,
-        grade: e.grade,
-        globalWinRate: e.win_rate,
-        localWinRate: e.local_win_rate,
-      };
-    });
-
-    const turnPrediction = predictFirstMark(turnPredictionPlayers, {
-      venueCode: race.venueCode,
-      windSpeed: race.windSpeed,
-      waveHeight: race.waveHeight,
-    });
-
-    const placeRecommendation = calculatePlaceRecommendation(
-      race.entries,
+  const predictionsData = races.map((race) =>
+    buildUnifiedPredictionRow(race, {
+      modelId: MODEL_ID,
       racerStatsMap,
-    );
-
-    const volatility = calculateVolatilityComposite(
-      race.entries.map((e) => ({ number: e.boat_number, winRate: e.win_rate })),
-      race.venueCode,
-      turnPrediction,
-      race.entries.map((e) => ({
-        boatNumber: e.boat_number,
-        avgST: racerStatsMap.get(e.racer_id)?.avg_st ?? null,
-      })),
-    );
-
-    const dist = volatilityDistByVenue.get(race.venueCode) || [];
-    const volatilityPercentileIsFallback =
-      dist.length < MIN_DISTRIBUTION_SAMPLES;
-    const volatilityPercentile = volatilityPercentileIsFallback
-      ? FALLBACK_PERCENTILE
-      : toVolatilityPercentile(volatility.composite, dist);
-
-    const { inCaution, skip: inCautionSkip } = computeInCaution({
-      entries: race.entries,
-      raceStage: race.raceStage,
-      rates: inCautionRates,
-    });
-
-    predictionsData.push({
-      race_id: race.raceId,
-      model_id: MODEL_ID,
-      top_pick: placeRecommendation.boats[0] ?? race.entries[0].boat_number,
-      top_2nd: placeRecommendation.boats[1] ?? null,
-      top_3rd: null,
-      confidence: null,
-      is_shadow: false,
-      feature_contributions: {
-        placeRecommendation,
-        turnPrediction,
-        volatilityComposite: volatility.composite,
-        volatilityPercentile,
-        // フォールバック値0.5は「標準」に見えてしまい実態と異なるため、フロント側で
-        // 「データ収集中」表示に切り替えられるようフラグを持たせる（2026-08-14ユーザー指摘）
-        volatilityPercentileIsFallback,
-        volatilityReasons: volatility.reasons,
-        inCaution,
-        inCautionSkip,
-      },
-    });
-  }
+      volatilityDistByVenue,
+      inCautionRates,
+    }),
+  );
 
   console.log(`\n📊 ${predictionsData.length}レース分の予測を生成しました`);
 
@@ -493,35 +422,7 @@ export async function generateUnifiedPredictions({
     };
   }
 
-  // 2026-08-14修正（BOA-185）: 旧実装は先にdeleteしてからinsertしており、insert失敗時
-  // （タイムアウト・接続断等）に削除済みの行が復元されずデータが消失していた。
-  // predictionsテーブルには idx_predictions_unique（race_id, model_id 一意、
-  // is_shadow=FALSE の部分インデックス）があるため、upsertで置き換えると
-  // delete/insertを分離せず単一操作でアトミックに更新できる（onConflictは実データで
-  // 動作確認済み）。バッチが失敗しても既に成功した分は反映済みのまま残り、
-  // 失敗分だけが旧データのまま留まる（全滅する旧実装より安全）
-  let written = 0;
-  const failedBatches = [];
-  for (let i = 0; i < predictionsData.length; i += 1000) {
-    const batch = predictionsData.slice(i, i + 1000);
-    const { error } = await client
-      .from("predictions")
-      .upsert(batch, { onConflict: "race_id,model_id" });
-    if (error) {
-      console.error("❌ predictions書き込みエラー:", error.message);
-      failedBatches.push(error.message);
-    } else {
-      written += batch.length;
-    }
-  }
-  if (failedBatches.length > 0) {
-    console.error(
-      `⚠️ 一部書き込みに失敗しました。実際にDBへ反映された件数を必ず確認してください`,
-    );
-    throw new Error(
-      `unified の predictions 書き込みに失敗しました（${failedBatches.length}バッチ、反映済み${written}/${predictionsData.length}件）: ${failedBatches[0]}`,
-    );
-  }
+  const written = await upsertUnifiedBatches(client, predictionsData);
   console.log(`✅ predictions: ${predictionsData.length}件書き込み完了`);
   return {
     targetRaces: raceIds.length,
