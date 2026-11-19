@@ -132,6 +132,94 @@ function fetchRaceConditionsOrNull(raceIds) {
 }
 
 /**
+ * 選手の走を6表の生の行で読む（マイグレーション 203 の RPC が本番に当たるまでの読み。
+ * 当たって E2E の録画を撮り直した後に消す）。getRacerScopedRaceStats から字のまま移した
+ *
+ * @returns {Promise<object>} buildRacerScopedRaceRows の入力（走が無ければ全部が空）
+ */
+async function fetchRacerScopedRaceTables(racerId, cutoffStr) {
+  // gradeはST考察のベースライン（st_course_baselineの(course, grade)セル）を
+  // 引くのに使う（phase a FR-1）。race_entries.gradeは実測でnull 0件・4値（A1/A2/B1/B2）
+  const entries = await fetchRacerEntriesSince(
+    racerId,
+    "race_id, boat_number, grade, f_count",
+    cutoffStr,
+  );
+
+  if (entries.length === 0) {
+    return {
+      entries: [],
+      raceRows: [],
+      resultRows: [],
+      startTimingRows: [],
+      exhibitionRows: [],
+      conditionRows: [],
+    };
+  }
+
+  const raceIds = [...new Set(entries.map((e) => e.race_id))];
+  // race_gradeはraces側のカラム（race_conditions側は017マイグレーションで
+  // 削除済み）。race_conditions.series_day/is_final_dayは**下記で取得する**。
+  // 以前ここには「generate-predictions.jsが常にnullを書くため取得しない」と
+  // 書いてあったが、BOA-226（update-race-info.jsのscrapeSeriesDay()）と
+  // BOA-390のバックフィルで埋まり、条件別タブ（phase a FR-2）の初日・最終日行が
+  // 実際にこの2列を読んでいる（2026-09-28実測で2026-02-01以降
+  // 36,607/36,629行＝99.94%。残る22行は当日＝スクレイプ前の分）。
+  // ただし2025-12は12行・2026-01は0行で、選手の窓の前半はrace_conditionsの
+  // 行そのものが無い（BOA-498）。
+  // rank4〜6はBOA-238で追加（過去データは未バックフィルのためnullのままの
+  // 行がある）。start_timingは平均ST（BOA-306フィードバック#1で会場/グレード
+  // フィルタ対応が必要になったため追加、race_start_timingsから取得）。
+  // actual_course_1〜6はBOA-257（Kファイル方式の実進入コース、2025-12-04以降
+  // のみバックフィル済み）
+  const [
+    raceRows,
+    resultRows,
+    startTimingRows,
+    exhibitionRows,
+    conditionRows,
+  ] = await Promise.all([
+    fetchAllByIn(
+      "races",
+      "race_id, race_date, venue_code, race_grade",
+      "race_id",
+      raceIds,
+    ),
+    fetchAllByIn(
+      "race_results",
+      "race_id, rank1, rank2, rank3, rank4, rank5, rank6, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique, payout_win",
+      "race_id",
+      raceIds,
+    ),
+    fetchAllByIn(
+      "race_start_timings",
+      // finish_mark: 欠場の走を「着外」でなく「欠場」と出すため（BOA-504）
+      "race_id, boat_number, start_timing, is_flying, is_late_start, finish_mark, entry_course",
+      "race_id",
+      raceIds,
+    ),
+    // 展示タイム1位判定には自艇だけでなく同レースの全艇分が必要
+    fetchAllByIn(
+      "exhibition_data",
+      "race_id, boat_number, exhibition_time",
+      "race_id",
+      raceIds,
+    ),
+    // レース名・種別・波・初日・最終日。失敗は null（理由は fetchRaceConditionsOrNull）
+    fetchRaceConditionsOrNull(raceIds),
+  ]);
+
+  return {
+    entries,
+    raceRows,
+    resultRows,
+    startTimingRows,
+    exhibitionRows,
+    conditionRows,
+  };
+}
+
+/**
  * 指定選手の過去2年分の出走履歴を、レース詳細ページ「基本情報」タブ
  * （BOA-306）の会場/グレード/期間フィルタ用にフラットな形で1回だけ取得する。
  * getRacerVenueStats/getRacerRaceHistoryと同じ「対象は1選手のみなのでその場で
@@ -179,88 +267,16 @@ export function getRacerScopedRaceStats(racerId) {
       const cutoffStr = racerHistoryCutoff();
 
       // 先に DB 側で1走1行にまとめた形（マイグレーション 203 の RPC）で取る。6表の生の行（1走あたり16行、
-      // 1頁の6選手で約2.8万行）を読むのが Supabase の Egress の主因だった（2026-11-19）。
-      // 整形は同じ buildRacerScopedRaceRows なので、返す行は下の6表の読みと同じ
-      // （scripts/maintenance/verify-racer-scoped-race-rpc.js）。関数が本番に無い間だけ null が返り、下の読みに落ちる
+      // 1選手の中央で約3,500行）を読むのが Supabase の Egress の主因だった（2026-11-19）。
+      // 関数が本番に無い間だけ null が返り、今までの6表の読みに落ちる。整形はどちらも同じ
+      // buildRacerScopedRaceRows（src/services/racerScopedRaceRows.js）なので、返す行は同じ
+      // （scripts/maintenance/verify-racer-scoped-race-rpc.js）
       const runs = await fetchRacerScopedRunsOrNull(racerId, cutoffStr);
-      if (runs !== null) {
-        return buildRacerScopedRaceRows(tablesFromRacerScopedRuns(runs));
-      }
-
-      // 以下は 203 が本番に当たるまでの読み（当たって E2E の録画を撮り直した後に消す）。
-      // gradeはST考察のベースライン（st_course_baselineの(course, grade)セル）を
-      // 引くのに使う（phase a FR-1）。race_entries.gradeは実測でnull 0件・4値（A1/A2/B1/B2）
-      const entries = await fetchRacerEntriesSince(
-        racerId,
-        "race_id, boat_number, grade, f_count",
-        cutoffStr,
+      return buildRacerScopedRaceRows(
+        runs !== null
+          ? tablesFromRacerScopedRuns(runs)
+          : await fetchRacerScopedRaceTables(racerId, cutoffStr),
       );
-
-      if (entries.length === 0) {
-        return [];
-      }
-
-      const raceIds = [...new Set(entries.map((e) => e.race_id))];
-      // race_gradeはraces側のカラム（race_conditions側は017マイグレーションで
-      // 削除済み）。race_conditions.series_day/is_final_dayは**下記で取得する**。
-      // 以前ここには「generate-predictions.jsが常にnullを書くため取得しない」と
-      // 書いてあったが、BOA-226（update-race-info.jsのscrapeSeriesDay()）と
-      // BOA-390のバックフィルで埋まり、条件別タブ（phase a FR-2）の初日・最終日行が
-      // 実際にこの2列を読んでいる（2026-09-28実測で2026-02-01以降
-      // 36,607/36,629行＝99.94%。残る22行は当日＝スクレイプ前の分）。
-      // ただし2025-12は12行・2026-01は0行で、選手の窓の前半はrace_conditionsの
-      // 行そのものが無い（BOA-498）。
-      // rank4〜6はBOA-238で追加（過去データは未バックフィルのためnullのままの
-      // 行がある）。start_timingは平均ST（BOA-306フィードバック#1で会場/グレード
-      // フィルタ対応が必要になったため追加、race_start_timingsから取得）。
-      // actual_course_1〜6はBOA-257（Kファイル方式の実進入コース、2025-12-04以降
-      // のみバックフィル済み）
-      const [
-        raceRows,
-        resultRows,
-        startTimingRows,
-        exhibitionRows,
-        conditionRows,
-      ] = await Promise.all([
-        fetchAllByIn(
-          "races",
-          "race_id, race_date, venue_code, race_grade",
-          "race_id",
-          raceIds,
-        ),
-        fetchAllByIn(
-          "race_results",
-          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique, payout_win",
-          "race_id",
-          raceIds,
-        ),
-        fetchAllByIn(
-          "race_start_timings",
-          // finish_mark: 欠場の走を「着外」でなく「欠場」と出すため（BOA-504）
-          "race_id, boat_number, start_timing, is_flying, is_late_start, finish_mark, entry_course",
-          "race_id",
-          raceIds,
-        ),
-        // 展示タイム1位判定には自艇だけでなく同レースの全艇分が必要
-        fetchAllByIn(
-          "exhibition_data",
-          "race_id, boat_number, exhibition_time",
-          "race_id",
-          raceIds,
-        ),
-        // レース名・種別・波・初日・最終日。失敗は null（理由は fetchRaceConditionsOrNull）
-        fetchRaceConditionsOrNull(raceIds),
-      ]);
-
-      // 整形は src/services/racerScopedRaceRows.js（BOA-1022、手を加えずに移した）
-      return buildRacerScopedRaceRows({
-        entries,
-        raceRows,
-        resultRows,
-        startTimingRows,
-        exhibitionRows,
-        conditionRows,
-      });
     });
   }
 
