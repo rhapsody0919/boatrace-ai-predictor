@@ -1450,6 +1450,11 @@
       "guards": "schedule の型 makeDigestDay（morning_digest_days の行）・makeDigestRow（morning_digest_rows の行）（src/pure/scheduleModel.js、設計図 §10 DM15）。主キー（digest_date の実在する日・section 6値・rank 1以上）と、取った列だけ回数は0以上・window_end が window_start 以後・真偽の列・suppressed_venues の整数の配列・会場1〜24・艇番とコースは null か1〜6・レースの3列は returned だけ null・数値の7列は flying・returned 以外で null を許さない（2つの表の CHECK 9本と同じ）を検査して凍結すること。select で取らない列は落とさないこと"
     },
     {
+      "script": "verify-schedule-series-races-make.js",
+      "tier": "ci",
+      "guards": "src/services/scheduleQueries.js の getUpcomingSeries が race_series の行を makeMeet に、getTodaysRacesForVenue が races の行を makeRace に通す（DM1x schedule のつなぎ、A 群）。正の行は凍結、破れは RangeError で reject（キャッシュしない）すること"
+    },
+    {
       "script": "verify-schema-detect.js",
       "tier": "ci",
       "guards": "マイグレーション適用判定・確認不能時の再試行・client別TTLキャッシュとclear（BOA-1075）"
