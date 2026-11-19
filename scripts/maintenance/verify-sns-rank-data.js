@@ -2,6 +2,9 @@
 /** BOA-1240: 会場ページと番付データの一致を、DB・通信なしで確認する。 */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { register } from "node:module";
+import { createElement } from "react";
+import { renderJsx } from "../lib/renderJsx.js";
 import { WIND_BINS } from "../analysis/analyze-weather-in-escape.js";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -82,12 +85,18 @@ for (const args of [
 }
 console.log("✅ verify-sns-rank-data: 144行・画面の定数との一致・引数の拒否を確認");
 
-// 画面の下限をソースから照合し、公開JSONの値・除外・並びを全件確認する。
+// 画面のランキング（下限 SHOW_MIN_N は export が無い）を本文の字でなく描いて読み、公開JSONの値・除外・並びを全件確認する。
 const weather = JSON.parse(readFileSync(new URL("../../public/data/weather-in-escape.json", import.meta.url), "utf8"));
-const chart = readFileSync(new URL("../../src/components/analysis/WeatherInEscapeChart.jsx", import.meta.url), "utf8");
-const minMatch = chart.match(/const SHOW_MIN_N = (\d+);/);
-assert.ok(minMatch, "画面の SHOW_MIN_N を読み取れる");
-const minN = Number(minMatch[1]);
+globalThis.fetch = async () => ({ ok: true, json: async () => weather });
+register(new URL("../lib/renderJsx.js", import.meta.url));
+const { default: Chart } = await import("../../src/components/analysis/WeatherInEscapeChart.jsx");
+const view = await renderJsx(new URL(import.meta.resolve("react-router-dom")), { children: createElement(Chart) }, { exportName: "MemoryRouter" });
+await view.act(() => new Promise((r) => setTimeout(r, 0)));
+const table = view.container.querySelector('[data-testid="wie-ranking"]');
+const onScreen = { tail_strong: [...table.querySelectorAll("tbody tr")].map((tr) => tr.children[1].textContent) };
+await view.act(() => [...table.closest("section").querySelectorAll("button")].find((b) => b.textContent.includes("head_strong")).click());
+onScreen.head_strong = [...table.querySelectorAll("tbody tr")].map((tr) => tr.children[1].textContent);
+await view.unmount();
 const weatherResult = run(["--dataset=venue_in_by_weather"]);
 assert.equal(weatherResult.status, 0, weatherResult.stderr);
 assert.equal(weatherResult.stderr, "");
@@ -107,8 +116,7 @@ let expectedCount = 0;
 const excluded = [];
 for (const bin of ["head_strong", "tail_strong"]) {
   const entries = Object.entries(weather.venues);
-  const eligible = entries.filter(([, v]) => (v.bins[bin]?.n ?? 0) >= minN)
-    .sort((a, b) => a[1].bins[bin].diff - b[1].bins[bin].diff);
+  const eligible = onScreen[bin].map((code) => [code, weather.venues[code]]);
   const rows = output.rows.filter((r) => r.extra.bin === bin);
   expectedCount += eligible.length;
   assert.deepEqual(rows, eligible.map(([code, v]) => ({
@@ -118,10 +126,10 @@ for (const bin of ["head_strong", "tail_strong"]) {
       diff: v.bins[bin].diff, venue_rate: v.rate,
     },
   })));
-  excluded.push({ bin, names: entries.filter(([, v]) => (v.bins[bin]?.n ?? 0) < minN).map(([code]) => STADIUM_NAMES[code]) });
+  excluded.push({ bin, names: entries.filter(([code]) => !onScreen[bin].includes(code)).map(([code]) => STADIUM_NAMES[code]) });
 }
 assert.equal(output.rows.length, expectedCount, "強風2区分のみ（波を含まない）");
-assert.ok(output.rows.every((r) => r.n >= minN));
+assert.ok(onScreen.tail_strong.length > 0 && onScreen.head_strong.length > 0, "画面のランキングが空でない");
 assert.deepEqual(output.excluded, excluded);
 const kiryuTail = output.rows.find((r) => r.extra.venue_code === 1 && r.extra.bin === "tail_strong");
 assert.ok(kiryuTail);
