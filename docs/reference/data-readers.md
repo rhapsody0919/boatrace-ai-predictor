@@ -10,12 +10,12 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2206 |
+| 読んだファイル | 2212 |
 | 読み書きのあるファイル | 285 |
 | 表の読み手（箇所） | 958 |
 | 表の書き手（箇所） | 197 |
 | RPC の呼び手（箇所） | 53 |
-| 名前の文字列だけの箇所（呼ぶ経路は式） | 262 |
+| 名前の文字列だけの箇所（呼ぶ経路は式） | 266 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
@@ -143,7 +143,7 @@
 | RPC | 権限 | definer | 呼び手 | 呼ぶ RPC | 本体が読む表 | 本体が書く表 | 外の読み手 |
 |---|---|---|---|---|---|---|---|
 | activate_analogy_model | service だけ |  | 名前の文字列: scripts/ml/analogy/db.py:136 |  | analogy_models | analogy_models |  |
-| add_fetch_counts | service だけ |  | scripts/lib/scrapeJobs/fetchCounter.js:140 / 名前の文字列: scripts/lib/scrapeJobs/fetchCounter.js:15 |  |  | fetch_counts, fetch_counts_minute |  |
+| add_fetch_counts | service だけ |  | scripts/lib/scrapeJobs/fetchCounter.js:140 / 名前の文字列: scripts/lib/scrapeJobs/fetchCounter.js:15, scripts/maintenance/verifyData/fetch-counter-scenes.js:155, scripts/maintenance/verifyData/fetch-counter-scenes.js:168 ほか2 |  |  | fetch_counts, fetch_counts_minute |  |
 | analogy_feedback_guard | service だけ | yes | トリガー: analogy_feedback |  | analogy_feedback |  |  |
 | append_sns_metric_observation | service だけ |  | api/admin/sns-hub/observations.js:198, scripts/lib/snsDailyRunner.js:818, scripts/lib/snsMetricsRunner.js:501, scripts/maintenance/verify-sns-daily-runner.js:1278 |  | sns_drafts, sns_metric_observations | sns_metric_observations |  |
 | approve_sns_x_send | service だけ |  | api/_lib/snsXSendStore.js:115, scripts/lib/snsTodayPlanner.js:1270, scripts/sns/push-finals-image.js:1402, scripts/sns/push-full-picture.js:885 | sns_bundle_send_allowed | sns_approvers, sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs | sns_drafts, sns_x_send_jobs |  |
@@ -227,7 +227,7 @@
 | data_health_morning | api/cron/data-health-morning.js | 21 | scrape_job_state, scrape_slots |
 | db_apply_dispatch | api/cron/db-apply-dispatch.js | 17 | scrape_job_state, scrape_slots |
 | e2e_rerecord_dispatch | api/cron/e2e-rerecord-dispatch.js | 16 | scrape_job_state, scrape_slots |
-| entry_course_stats | api/cron/entry-course-stats.js | 27 | scrape_job_state, scrape_slots, venue_entry_course_stats |
+| entry_course_stats | api/cron/entry-course-stats.js | 28 | scrape_job_state, scrape_slots, venue_entry_course_stats |
 | eve_deadlines | api/cron/eve-deadlines.js | 22 | eve_race_deadlines, scrape_job_state, scrape_slots |
 | eve_deadlines_reconcile | api/cron/eve-deadlines-reconcile.js | 22 | eve_race_deadlines, scrape_job_state, scrape_slots |
 | exhibition | api/cron/exhibition.js | 43 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
@@ -868,7 +868,6 @@
   - `scripts/daily/generate-unified-predictions.js:236` select(helper:fetchAll)
   - `scripts/daily/generate-unified-trifecta-reference.js:71` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/daily/morning-init.js:298` select(helper:fetchAll)
-  - `scripts/daily/scrape-venue-entry-course-stats.js:91` select(helper:fetchAll)
   - `scripts/daily/update-race-info.js:443` select(helper:upsertChangedRows)
   - `scripts/lib/analogyV16Exhibition.js:261` rest(rest) [is_absent, race_id]
   - `scripts/lib/motorPretestRows.js:134` select [race_id, racer_id]
@@ -879,6 +878,7 @@
   - `scripts/lib/racerProfileSync.js:335` select [boat_number, race_id, racer_id]
   - `scripts/lib/racerStStats.js:127` select(helper:fetchAll)
   - `scripts/lib/snsTodayDigestV3.js:108` rest(rest) [boat_number, grade, is_absent, player_name, race_id, racer_id]
+  - `scripts/lib/venueEntryCourseStats/scrape.js:49` select(helper:fetchAll)
   - `scripts/maintenance/audit-race-entries-vs-kb.js:68` select(helper:fetchAll)
   - `scripts/maintenance/backfill-kb-recent-results.js:154` select(helper:fetchAll)
   - `scripts/maintenance/backfill-opening-day-races.js:95` select(helper:count)
@@ -1596,7 +1596,7 @@
   - `scripts/maintenance/fix-opening-day-race-id-date.js:191` select [race_id]
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:71` select [*, race_date, race_id, venue_code]
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:122` select [race_id]
-  - `scripts/maintenance/motor-pretest-backfill.js:217` select [race_date, race_number, venue_code]
+  - `scripts/maintenance/motor-pretest-backfill-fetch.js:72` select [race_date, race_number, venue_code]
   - `scripts/maintenance/update-venue-stats.js:32` select [race_date, race_id, venue_code]
   - `scripts/maintenance/verify-analogy-v16.js:276` rest(rest) [cancellation_status, race_date, race_id, start_time] （検査）
   - `scripts/maintenance/verify-data-readers.js:557` rest(rest) [race_id] （検査）
@@ -2217,7 +2217,7 @@
 - 取得のジョブ: entry_course_stats
 - 読み手（0）: なし
 - 書き手（1）: 
-  - `scripts/daily/scrape-venue-entry-course-stats.js:251` upsert [?]
+  - `scripts/lib/venueEntryCourseStats/scrape.js:209` upsert [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: venue_code, racer_id, racer_name_raw, entry_rate, avg_st, place_rate_1, place_rate_2, place_rate_3, place_rate_4, place_rate_5, place_rate_6, stats_period_start, stats_period_end, scraped_at
 
 ### <a id="t-venue_grade_boat_stats"></a>venue_grade_boat_stats
@@ -2359,8 +2359,8 @@
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:84` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:100` 表の名前が変数（.from(式)）
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:180` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/kb-backfill.js:957` 表の名前が変数（.from(式)）
-  - `scripts/maintenance/motor-pretest-backfill.js:451` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/kb-backfill-load.js:313` 表の名前が変数（.from(式)）
+  - `scripts/maintenance/motor-pretest-backfill.js:251` 表の名前が変数（.from(式)）
   - `scripts/maintenance/verifyData/fakeServiceSupabase.js:51` RPC の名前が変数（.rpc(式)）
 - 構文木にできなかったファイル: 0
 - 対象外の言語で DB を読み書きしうるファイル（Python。拾っていない）: 55

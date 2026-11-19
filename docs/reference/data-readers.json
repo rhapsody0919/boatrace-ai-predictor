@@ -5,12 +5,12 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2206,
+    "sourceFiles": 2212,
     "filesWithAccess": 285,
     "tableReaders": 958,
     "tableWriters": 197,
     "rpcCallers": 53,
-    "nameMentions": 262,
+    "nameMentions": 266,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
@@ -7361,12 +7361,6 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/scrape-venue-entry-course-stats.js:91",
-          "op": "select",
-          "via": "helper:fetchAll",
-          "columns": []
-        },
-        {
           "ref": "scripts/daily/update-race-info.js:443",
           "op": "select",
           "via": "helper:upsertChangedRows",
@@ -7457,6 +7451,12 @@
             "race_id",
             "racer_id"
           ]
+        },
+        {
+          "ref": "scripts/lib/venueEntryCourseStats/scrape.js:49",
+          "op": "select",
+          "via": "helper:fetchAll",
+          "columns": []
         },
         {
           "ref": "scripts/maintenance/audit-race-entries-vs-kb.js:68",
@@ -16942,7 +16942,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/motor-pretest-backfill.js:217",
+          "ref": "scripts/maintenance/motor-pretest-backfill-fetch.js:72",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17757,7 +17757,7 @@
             "scripts/maintenance/backfill-start-timings.js:223",
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
-            "scripts/maintenance/motor-pretest-backfill.js:217",
+            "scripts/maintenance/motor-pretest-backfill-fetch.js:72",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
@@ -17846,7 +17846,7 @@
             "scripts/maintenance/backfill-start-timings.js:223",
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
-            "scripts/maintenance/motor-pretest-backfill.js:217",
+            "scripts/maintenance/motor-pretest-backfill-fetch.js:72",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
@@ -17894,7 +17894,7 @@
             "scripts/maintenance/backfill-results-by-race-id.js:37",
             "scripts/maintenance/backfill-start-timings.js:223",
             "scripts/maintenance/delete-phantom-race-days.js:103",
-            "scripts/maintenance/motor-pretest-backfill.js:217",
+            "scripts/maintenance/motor-pretest-backfill-fetch.js:72",
             "scripts/sns/push-finals-image.js:1284",
             "scripts/sns/push-finals-image.js:1290",
             "src/services/mycroftService.js:79",
@@ -25825,7 +25825,7 @@
       "readers": [],
       "writers": [
         {
-          "ref": "scripts/daily/scrape-venue-entry-course-stats.js:251",
+          "ref": "scripts/lib/venueEntryCourseStats/scrape.js:209",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -25841,7 +25841,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/daily/scrape-venue-entry-course-stats.js:251"
+            "scripts/lib/venueEntryCourseStats/scrape.js:209"
           ],
           "writers": [],
           "sql": []
@@ -25853,14 +25853,14 @@
         },
         "waku": {
           "readers": [
-            "scripts/daily/scrape-venue-entry-course-stats.js:251"
+            "scripts/lib/venueEntryCourseStats/scrape.js:209"
           ],
           "writers": [],
           "sql": []
         },
         "entry_course": {
           "readers": [
-            "scripts/daily/scrape-venue-entry-course-stats.js:251"
+            "scripts/lib/venueEntryCourseStats/scrape.js:209"
           ],
           "writers": [],
           "sql": []
@@ -27033,7 +27033,11 @@
         }
       ],
       "mentions": [
-        "scripts/lib/scrapeJobs/fetchCounter.js:15"
+        "scripts/lib/scrapeJobs/fetchCounter.js:15",
+        "scripts/maintenance/verifyData/fetch-counter-scenes.js:155",
+        "scripts/maintenance/verifyData/fetch-counter-scenes.js:168",
+        "scripts/maintenance/verifyData/fetch-counter-scenes.js:174",
+        "scripts/maintenance/verifyData/fetch-counter-scenes.js:217"
       ],
       "triggerOn": [],
       "calledByRpc": [],
@@ -29093,7 +29097,7 @@
     {
       "job": "entry_course_stats",
       "entry": "api/cron/entry-course-stats.js",
-      "reachableFiles": 27,
+      "reachableFiles": 28,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29111,7 +29115,7 @@
           "scripts/lib/scrapeJobs/store.js:269"
         ],
         "venue_entry_course_stats": [
-          "scripts/daily/scrape-venue-entry-course-stats.js:251"
+          "scripts/lib/venueEntryCourseStats/scrape.js:209"
         ]
       }
     },
@@ -30438,13 +30442,13 @@
       "reason": "表の名前が変数（.from(式)）"
     },
     {
-      "file": "scripts/maintenance/kb-backfill.js",
-      "line": 957,
+      "file": "scripts/maintenance/kb-backfill-load.js",
+      "line": 313,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
       "file": "scripts/maintenance/motor-pretest-backfill.js",
-      "line": 451,
+      "line": 251,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
