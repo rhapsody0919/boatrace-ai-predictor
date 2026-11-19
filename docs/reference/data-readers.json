@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2120,
+    "sourceFiles": 2122,
     "filesWithAccess": 282,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -3906,7 +3906,7 @@
           "test": true
         },
         {
-          "ref": "src/services/scheduleQueries.js:274",
+          "ref": "src/services/scheduleQueries.js:278",
           "op": "select",
           "via": "client",
           "columns": [
@@ -3942,7 +3942,7 @@
             "scripts/daily/generate-morning-digest.js:890",
             "scripts/daily/generate-morning-digest.js:919",
             "scripts/maintenance/verify-morning-digest.js:40",
-            "src/services/scheduleQueries.js:274"
+            "src/services/scheduleQueries.js:278"
           ],
           "writers": [],
           "sql": []
@@ -4039,7 +4039,7 @@
           "test": true
         },
         {
-          "ref": "src/services/scheduleQueries.js:279",
+          "ref": "src/services/scheduleQueries.js:283",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4082,21 +4082,21 @@
           "readers": [
             "scripts/daily/generate-morning-digest.js:895",
             "scripts/maintenance/verify-morning-digest.js:58",
-            "src/services/scheduleQueries.js:279"
+            "src/services/scheduleQueries.js:283"
           ],
           "writers": [],
           "sql": []
         },
         "section": {
           "readers": [
-            "src/services/scheduleQueries.js:279"
+            "src/services/scheduleQueries.js:283"
           ],
           "writers": [],
           "sql": []
         },
         "rank": {
           "readers": [
-            "src/services/scheduleQueries.js:279"
+            "src/services/scheduleQueries.js:283"
           ],
           "writers": [],
           "sql": []
@@ -9070,7 +9070,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:183",
+          "ref": "src/services/scheduleQueries.js:187",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9100,7 +9100,7 @@
         "key": {
           "readers": [
             "api/race-history/summary.js:37",
-            "src/services/scheduleQueries.js:183"
+            "src/services/scheduleQueries.js:187"
           ],
           "writers": [
             "scripts/daily/update-race-history-cache.js:124"
@@ -9112,7 +9112,7 @@
         "data": {
           "readers": [
             "api/race-history/summary.js:37",
-            "src/services/scheduleQueries.js:183"
+            "src/services/scheduleQueries.js:187"
           ],
           "writers": [
             "scripts/daily/update-race-history-cache.js:124"
@@ -12522,19 +12522,22 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/botPage.js:277",
+          "ref": "api/_lib/botPage.js:276",
           "op": "rest",
           "via": "rest",
           "columns": [
+            "class_code",
             "end_date",
             "grade",
+            "kind",
             "start_date",
             "title",
+            "total_days",
             "venue_code"
           ]
         },
         {
-          "ref": "api/_lib/botRace.js:211",
+          "ref": "api/_lib/botRace.js:212",
           "op": "rest",
           "via": "rest",
           "columns": []
@@ -12601,14 +12604,17 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-bot-race-function.js:857",
+          "ref": "scripts/maintenance/verify-bot-race-function.js:849",
           "op": "rest",
           "via": "rest",
           "columns": [
+            "class_code",
             "end_date",
             "grade",
+            "kind",
             "start_date",
             "title",
+            "total_days",
             "venue_code"
           ],
           "test": true
@@ -12666,10 +12672,13 @@
           "op": "select",
           "via": "client",
           "columns": [
+            "class_code",
             "end_date",
             "grade",
+            "kind",
             "start_date",
             "title",
+            "total_days",
             "venue_code"
           ]
         }
@@ -12684,12 +12693,12 @@
       "columns": {
         "venue_code": {
           "readers": [
-            "api/_lib/botPage.js:277",
+            "api/_lib/botPage.js:276",
             "scripts/lib/eveDeadlinesJob.js:63",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:857",
+            "scripts/maintenance/verify-bot-race-function.js:849",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
@@ -12703,12 +12712,12 @@
         },
         "start_date": {
           "readers": [
-            "api/_lib/botPage.js:277",
+            "api/_lib/botPage.js:276",
             "scripts/lib/eveDeadlinesJob.js:63",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:857",
+            "scripts/maintenance/verify-bot-race-function.js:849",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
@@ -12722,12 +12731,12 @@
         },
         "end_date": {
           "readers": [
-            "api/_lib/botPage.js:277",
+            "api/_lib/botPage.js:276",
             "scripts/lib/eveDeadlinesJob.js:63",
             "scripts/lib/motorPretestJob.js:236",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:857",
+            "scripts/maintenance/verify-bot-race-function.js:849",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
@@ -12741,17 +12750,20 @@
         },
         "total_days": {
           "readers": [
+            "api/_lib/botPage.js:276",
+            "scripts/maintenance/verify-bot-race-function.js:849",
             "src/services/meetQueries3.js:35",
-            "src/services/scheduleQueries.js:71"
+            "src/services/scheduleQueries.js:71",
+            "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
           "sql": []
         },
         "title": {
           "readers": [
-            "api/_lib/botPage.js:277",
+            "api/_lib/botPage.js:276",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:857",
+            "scripts/maintenance/verify-bot-race-function.js:849",
             "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:99"
           ],
@@ -12760,17 +12772,20 @@
         },
         "class_code": {
           "readers": [
+            "api/_lib/botPage.js:276",
+            "scripts/maintenance/verify-bot-race-function.js:849",
             "src/services/meetQueries3.js:35",
-            "src/services/scheduleQueries.js:71"
+            "src/services/scheduleQueries.js:71",
+            "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
           "sql": []
         },
         "grade": {
           "readers": [
-            "api/_lib/botPage.js:277",
+            "api/_lib/botPage.js:276",
             "scripts/lib/snsTodayDigestV3.js:115",
-            "scripts/maintenance/verify-bot-race-function.js:857",
+            "scripts/maintenance/verify-bot-race-function.js:849",
             "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:99"
           ],
@@ -12779,9 +12794,12 @@
         },
         "kind": {
           "readers": [
+            "api/_lib/botPage.js:276",
             "scripts/lib/snsTodayDigestV3.js:115",
+            "scripts/maintenance/verify-bot-race-function.js:849",
             "src/services/meetQueries3.js:35",
-            "src/services/scheduleQueries.js:71"
+            "src/services/scheduleQueries.js:71",
+            "src/services/scheduleQueries.js:99"
           ],
           "writers": [],
           "sql": []
@@ -17153,7 +17171,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:130",
+          "ref": "src/services/scheduleQueries.js:134",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17161,7 +17179,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:210",
+          "ref": "src/services/scheduleQueries.js:214",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17170,7 +17188,7 @@
           ]
         },
         {
-          "ref": "src/services/scheduleQueries.js:234",
+          "ref": "src/services/scheduleQueries.js:238",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17526,7 +17544,7 @@
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
             "src/services/ruleMatchService.js:158",
-            "src/services/scheduleQueries.js:234",
+            "src/services/scheduleQueries.js:238",
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:117",
             "src/services/venueQueries2.js:44",
@@ -17626,9 +17644,9 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
-            "src/services/scheduleQueries.js:130",
-            "src/services/scheduleQueries.js:210",
-            "src/services/scheduleQueries.js:234",
+            "src/services/scheduleQueries.js:134",
+            "src/services/scheduleQueries.js:214",
+            "src/services/scheduleQueries.js:238",
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:117",
             "src/services/venueQueries2.js:44",
@@ -17708,8 +17726,8 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
-            "src/services/scheduleQueries.js:210",
-            "src/services/scheduleQueries.js:234",
+            "src/services/scheduleQueries.js:214",
+            "src/services/scheduleQueries.js:238",
             "src/services/sherlockService.js:66",
             "src/services/venueQueries2.js:117",
             "src/services/venueQueries2.js:44",
@@ -17752,7 +17770,7 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/racerQueries3.js:252",
-            "src/services/scheduleQueries.js:234",
+            "src/services/scheduleQueries.js:238",
             "src/services/sherlockService.js:66",
             "src/services/watsonService.js:72"
           ],
@@ -17813,7 +17831,7 @@
             "src/services/mycroftService.js:79",
             "src/services/poirotService.js:49",
             "src/services/ruleMatchService.js:158",
-            "src/services/scheduleQueries.js:234",
+            "src/services/scheduleQueries.js:238",
             "src/services/sherlockService.js:66",
             "src/services/watsonService.js:72"
           ],
@@ -29891,7 +29909,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 90,
+      "reachableFiles": 93,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -30003,7 +30021,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 78,
+      "reachableFiles": 81,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",

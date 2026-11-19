@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2120 |
+| 読んだファイル | 2122 |
 | 読み書きのあるファイル | 282 |
 | 表の読み手（箇所） | 947 |
 | 表の書き手（箇所） | 189 |
@@ -260,10 +260,10 @@
 | result_catchup | api/cron/result-catchup.js | 33 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 17 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 18 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 90 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 93 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | sns_daily | api/cron/sns-daily.js | 19 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
 | sns_metrics | api/cron/sns-metrics.js | 24 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
-| sns_send | api/cron/sns-send.js | 78 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_send | api/cron/sns-send.js | 81 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | venue_motor_stats | api/cron/venue-motor-stats.js | 25 | scrape_job_state, scrape_slots, venue_motor_stats |
 
 ## 表ごとの読み手・書き手
@@ -575,7 +575,7 @@
 - 取得のジョブ: morning_digest
 - 読み手（2）: 
   - `scripts/maintenance/verify-morning-digest.js:40` select [digest_date, generated_at, notes, race_count, venue_count] （検査）
-  - `src/services/scheduleQueries.js:274` select [*, digest_date]
+  - `src/services/scheduleQueries.js:278` select [*, digest_date]
 - 書き手（2）: 
   - `scripts/daily/generate-morning-digest.js:890` upsert [?]
   - `scripts/daily/generate-morning-digest.js:919` update [generated_at]
@@ -587,7 +587,7 @@
 - 取得のジョブ: morning_digest
 - 読み手（2）: 
   - `scripts/maintenance/verify-morning-digest.js:58` select [*, digest_date] （検査）
-  - `src/services/scheduleQueries.js:279` select [*, digest_date, rank, section]
+  - `src/services/scheduleQueries.js:283` select [*, digest_date, rank, section]
 - 書き手（3）: 
   - `scripts/daily/generate-morning-digest.js:895` delete
   - `scripts/daily/generate-morning-digest.js:904` insert [?]
@@ -980,7 +980,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（2）: 
   - `api/race-history/summary.js:37` select(rest) [data, key]
-  - `src/services/scheduleQueries.js:183` select [data, key]
+  - `src/services/scheduleQueries.js:187` select [data, key]
 - 書き手（1）: 
   - `scripts/daily/update-race-history-cache.js:124` upsert [data, key, updated_at]
 
@@ -1256,8 +1256,8 @@
 - 本体で読む RPC: data_health_race_series, data_health_table_rows
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule.py:282`, `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:73`
 - 読み手（15）: 
-  - `api/_lib/botPage.js:277` rest(rest) [end_date, grade, start_date, title, venue_code]
-  - `api/_lib/botRace.js:211` rest(rest)
+  - `api/_lib/botPage.js:276` rest(rest) [class_code, end_date, grade, kind, start_date, title, total_days, venue_code]
+  - `api/_lib/botRace.js:212` rest(rest)
   - `scripts/lib/eveDeadlinesJob.js:63` select [end_date, start_date, venue_code]
   - `scripts/lib/motorPretestJob.js:236` select [end_date, start_date, venue_code]
   - `scripts/lib/raceSeriesLookup.js:161` select [end_date, start_date, venue_code]
@@ -1265,12 +1265,12 @@
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:358` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:64` select(helper:fetchAll)
-  - `scripts/maintenance/verify-bot-race-function.js:857` rest(rest) [end_date, grade, start_date, title, venue_code] （検査）
+  - `scripts/maintenance/verify-bot-race-function.js:849` rest(rest) [class_code, end_date, grade, kind, start_date, title, total_days, venue_code] （検査）
   - `src/services/meetQueries3.js:35` select [class_code, end_date, grade, kind, start_date, title, total_days, venue_code]
   - `src/services/motorQueries7.js:21` select [end_date, start_date, venue_code]
   - `src/services/raceQueries2.js:254` select [end_date, start_date, venue_code]
   - `src/services/scheduleQueries.js:71` select [class_code, end_date, kind, start_date, total_days, venue_code]
-  - `src/services/scheduleQueries.js:99` select [end_date, grade, start_date, title, venue_code]
+  - `src/services/scheduleQueries.js:99` select [class_code, end_date, grade, kind, start_date, title, total_days, venue_code]
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -1617,9 +1617,9 @@
   - `src/services/racerQueries2.js:317` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:252` select [race_date, race_id, race_number, venue_code]
   - `src/services/ruleMatchService.js:158` select [race_id, start_time]
-  - `src/services/scheduleQueries.js:130` select [race_date]
-  - `src/services/scheduleQueries.js:210` select [race_date, venue_code]
-  - `src/services/scheduleQueries.js:234` select [race_date, race_id, race_number, start_time, venue_code]
+  - `src/services/scheduleQueries.js:134` select [race_date]
+  - `src/services/scheduleQueries.js:214` select [race_date, venue_code]
+  - `src/services/scheduleQueries.js:238` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/sherlockService.js:66` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/venueQueries2.js:44` select [race_date, race_id, venue_code]
   - `src/services/venueQueries2.js:117` select [race_date, race_id, venue_code]
