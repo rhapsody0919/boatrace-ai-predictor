@@ -273,6 +273,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups, racerSnapshotProblems, RACER_SNAPSHOT_STALE_HOURS |
+| `scripts/lib/sns/finalsImageBase.js` | — | hasPoll, pngSize, checkImages, schedule, dailyLimitReason ほか23件 |
+| `scripts/lib/sns/thinkingGradeDay.js` | — | thinkingGradeDayVenue, todayTargetReason, THINKING_GRADE_DAY_GRADES, THINKING_GRADE_DAY_MIN_RACE_NUMBER, THINKING_GRADE_DAY_MAX_RACE_NUMBER ほか1件 |
 | `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel, reviewGate, createAutoPlanStore ほか8件 |
 | `scripts/lib/snsDailyRunner.js` | SNS の暦日の値の取り込み（sns-pdca-loop tasks 22、cron `sns_daily`、plan §5）。JST 10:00 に1日1回、… | ptMidnightUtc, runSnsDaily, setsuShortLink, mergeSameKey, createYoutubeAnalyticsClient ほか9件 |
 | `scripts/lib/snsGa4.js` | SNS の流入の GA4 の共通部分（sns-pdca-loop plan §5）。分析スクリプト（scripts/analysis/sns-pdca-base… | getServiceAccountToken, createGa4Client, X_SOURCES, YOUTUBE_SOURCES, SITE_HOST ほか6件 |
@@ -502,4 +504,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 460 ファイル / export 2583 件。
+対象 462 ファイル / export 2617 件。
