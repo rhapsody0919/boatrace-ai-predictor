@@ -4,18 +4,12 @@
  */
 
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
-import zlib from "node:zlib";
 import { parseRaceListPage } from "../../lib/raceListParser.js";
-import {
-  buildFillRow,
-  RACELIST_BACKFILL_COLUMNS,
-  racelistArchiveRelPath,
-} from "../../lib/racelistBackfillRows.js";
+import { buildFillRow, RACELIST_BACKFILL_COLUMNS } from "../../lib/racelistBackfillRows.js";
 import * as cli from "../racelist-backfill.js";
 
-let FIXTURES, check, existingAllNull, entry;
+let FIXTURES, check, existingAllNull, entry, withTmpArchive, writeParsedFixture;
 
 // ---------------------------------------------------------------------------
 // 7. load: フェイククライアントでの統合確認
@@ -55,35 +49,17 @@ function fakeLoadClient({ existingRows = [], failUpsert = false } = {}) {
   };
 }
 
-async function withTmpArchive(fn) {
-  const dir = fs.mkdtempSync(
-    path.join(os.tmpdir(), "racelist-backfill-verify-"),
-  );
-  try {
-    return await fn(dir);
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+function scene1() {
+  {
+    const opts = cli._internal.validateOptions(
+      cli._internal.parseArgs(["download", "--interval-min-ms=100"]),
+    );
+    check(
+      "validateOptions: --interval-min-msの下限（3000ms）を強制する",
+      opts.intervalMinMs === 3000,
+      String(opts.intervalMinMs),
+    );
   }
-}
-
-function writeParsedFixture(dir, raceId, entries) {
-  const rel = racelistArchiveRelPath(raceId, "json.gz");
-  const file = path.join(dir, "parsed", rel);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(
-    file,
-    zlib.gzipSync(
-      JSON.stringify({
-        schema: "racelist-backfill/v1",
-        race_id: raceId,
-        entries,
-        anomalies: [],
-      }),
-    ),
-  );
-}
-
-async function scene1() {
   // ---------------------------------------------------------------------------
   // 6. 実ページのフィクスチャ（scripts/lib/__fixtures__/raceInfo/）
   // ---------------------------------------------------------------------------
@@ -129,6 +105,15 @@ async function scene1() {
         page.entries.every((e) => RACELIST_BACKFILL_COLUMNS.every((c) => c in e)),
     );
   }
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（FIXTURES・check・existingAllNull・entry・withTmpArchive・writeParsedFixture） */
+export function runRacelistBackfillScenes1(env) {
+  ({ FIXTURES, check, existingAllNull, entry, withTmpArchive, writeParsedFixture } = env);
+  scene1();
+}
+
+async function scene2() {
   await withTmpArchive(async (dir) => {
     const raceId = "2025-12-03-01-07";
     writeParsedFixture(dir, raceId, [
@@ -161,9 +146,6 @@ async function scene1() {
       JSON.stringify(r),
     );
   });
-}
-
-async function scene2() {
   await withTmpArchive(async (dir) => {
     const raceId = "2025-12-03-01-07";
     writeParsedFixture(dir, raceId, [{ ...entry, boat_number: 1 }]);
@@ -211,6 +193,9 @@ async function scene2() {
       JSON.stringify(r),
     );
   });
+}
+
+function scene3() {
   // ---------------------------------------------------------------------------
   // 8. 変異検証（buildFillRow の上書き禁止ロジックを壊すと、検証2が失敗すること）
   // ---------------------------------------------------------------------------
@@ -248,9 +233,9 @@ async function scene2() {
   }
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（FIXTURES・check・existingAllNull・entry） */
-export async function runRacelistBackfillScenes1(env) {
-  ({ FIXTURES, check, existingAllNull, entry } = env);
-  await scene1();
+/** verify から呼ぶ入口。env は verify 側の束縛（FIXTURES・check・existingAllNull・entry・withTmpArchive・writeParsedFixture） */
+export async function runRacelistBackfillScenes2(env) {
+  ({ FIXTURES, check, existingAllNull, entry, withTmpArchive, writeParsedFixture } = env);
   await scene2();
+  scene3();
 }

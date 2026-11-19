@@ -17,10 +17,10 @@
  *   8. 変異検証: buildFillRow の「既存値があれば上書きしない」判定を壊すと、検証が失敗する
  */
 
-
-
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-
+import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -33,7 +33,7 @@ import {
   racelistArchiveRelPath,
 } from "../lib/racelistBackfillRows.js";
 import * as cli from "./racelist-backfill.js";
-import { runRacelistBackfillScenes1 } from "./verifyData/racelist-backfill-scenes.js";
+import { runRacelistBackfillScenes1, runRacelistBackfillScenes2 } from "./verifyData/racelist-backfill-scenes.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const FIXTURES = path.join(ROOT, "scripts/lib/__fixtures__/raceInfo");
@@ -412,19 +412,40 @@ function fakeTargetClient(raceEntryRows) {
   }
   check("validateOptions: --from > --to なら例外", threw);
 }
-{
-  const opts = cli._internal.validateOptions(
-    cli._internal.parseArgs(["download", "--interval-min-ms=100"]),
+
+// ---- 後半の場面（verifyData/racelist-backfill-scenes.js） ----
+runRacelistBackfillScenes1({ FIXTURES, check, existingAllNull, entry, withTmpArchive, writeParsedFixture });
+
+async function withTmpArchive(fn) {
+  const dir = fs.mkdtempSync(
+    path.join(os.tmpdir(), "racelist-backfill-verify-"),
   );
-  check(
-    "validateOptions: --interval-min-msの下限（3000ms）を強制する",
-    opts.intervalMinMs === 3000,
-    String(opts.intervalMinMs),
+  try {
+    return await fn(dir);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function writeParsedFixture(dir, raceId, entries) {
+  const rel = racelistArchiveRelPath(raceId, "json.gz");
+  const file = path.join(dir, "parsed", rel);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(
+    file,
+    zlib.gzipSync(
+      JSON.stringify({
+        schema: "racelist-backfill/v1",
+        race_id: raceId,
+        entries,
+        anomalies: [],
+      }),
+    ),
   );
 }
 
 // ---- 後半の場面（verifyData/racelist-backfill-scenes.js） ----
-await runRacelistBackfillScenes1({ FIXTURES, check, existingAllNull, entry });
+await runRacelistBackfillScenes2({ FIXTURES, check, existingAllNull, entry, withTmpArchive, writeParsedFixture });
 
 // ---------------------------------------------------------------------------
 
