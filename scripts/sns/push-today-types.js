@@ -32,6 +32,46 @@ const addDays = (day, n) =>
     .toISOString()
     .slice(0, 10);
 
+// 暦に無い日（2026-02-30 等。Date.parse は 3/2 にずらして受ける）も落とす
+const isCalendarDay = (day) =>
+  DAY.test(day ?? "") &&
+  !Number.isNaN(Date.parse(day)) &&
+  new Date(`${day}T00:00:00Z`).toISOString().slice(0, 10) === day;
+
+// 1行の検査。落ちたら { reason }、通れば { row }（seen は同じ日の重複の検出に使い、ここで書き換える）
+function checkTypeItem(item, i, { today, last, seen, riskRules, now }) {
+  const at = `types[${i}]${item?.day ? `（${item.day}）` : ""}`;
+  if (!isCalendarDay(item?.day))
+    return { reason: `${at}: day が YYYY-MM-DD でない` };
+  if (item.day < today || item.day > last)
+    return {
+      reason: `${at}: day は ${today}〜${last}（JST の今日〜${SCHEDULE_MAX_AHEAD_DAYS}日後）`,
+    };
+  if (seen.has(item.day)) return { reason: `${at}: 同じ日が2回ある` };
+  seen.add(item.day);
+  const checked = normalizeTypeScheduleRow(item, item.day);
+  if (!checked.post) return { reason: `${at}: ${checked.reason}` };
+  const hits = matchRiskRules(
+    [checked.post.heading, checked.post.link_lead ?? ""].map((text) => ({
+      text,
+      field: "body",
+    })),
+    "x",
+    riskRules,
+  );
+  if (hits.length)
+    return { reason: `${at}: 禁止表現 ${hits.map((h) => h.id).join(",")}` };
+  return {
+    row: {
+      day: item.day,
+      type_id: checked.type_id,
+      post: checked.post,
+      source: "hq",
+      updated_at: now.toISOString(),
+    },
+  };
+}
+
 /**
  * 型の列を検査する（純粋関数）。返り値 { rows, reasons }。reasons が空のときだけ rows を入れる
  */
@@ -46,53 +86,11 @@ export function checkTypeSchedule(
   const last = addDays(today, SCHEDULE_MAX_AHEAD_DAYS);
   const reasons = [];
   const rows = [];
-  const seen = new Set();
+  const ctx = { today, last, seen: new Set(), riskRules, now };
   for (const [i, item] of items.entries()) {
-    const at = `types[${i}]${item?.day ? `（${item.day}）` : ""}`;
-    // 暦に無い日（2026-02-30 等。Date.parse は 3/2 にずらして受ける）も落とす
-    if (
-      !DAY.test(item?.day ?? "") ||
-      Number.isNaN(Date.parse(item.day)) ||
-      new Date(`${item.day}T00:00:00Z`).toISOString().slice(0, 10) !== item.day
-    ) {
-      reasons.push(`${at}: day が YYYY-MM-DD でない`);
-      continue;
-    }
-    if (item.day < today || item.day > last) {
-      reasons.push(
-        `${at}: day は ${today}〜${last}（JST の今日〜${SCHEDULE_MAX_AHEAD_DAYS}日後）`,
-      );
-      continue;
-    }
-    if (seen.has(item.day)) {
-      reasons.push(`${at}: 同じ日が2回ある`);
-      continue;
-    }
-    seen.add(item.day);
-    const checked = normalizeTypeScheduleRow(item, item.day);
-    if (!checked.post) {
-      reasons.push(`${at}: ${checked.reason}`);
-      continue;
-    }
-    const hits = matchRiskRules(
-      [checked.post.heading, checked.post.link_lead ?? ""].map((text) => ({
-        text,
-        field: "body",
-      })),
-      "x",
-      riskRules,
-    );
-    if (hits.length) {
-      reasons.push(`${at}: 禁止表現 ${hits.map((h) => h.id).join(",")}`);
-      continue;
-    }
-    rows.push({
-      day: item.day,
-      type_id: checked.type_id,
-      post: checked.post,
-      source: "hq",
-      updated_at: now.toISOString(),
-    });
+    const r = checkTypeItem(item, i, ctx);
+    if (r.reason) reasons.push(r.reason);
+    else rows.push(r.row);
   }
   return { rows, reasons };
 }

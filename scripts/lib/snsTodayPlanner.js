@@ -19,649 +19,270 @@
  */
 import { matchRiskRules, draftRiskFields } from "./riskRuleMatcher.js";
 import { SITE_BASE_URL } from "../../api/_lib/snsHubHelpers.js";
+import { buildTodayModel } from "../../api/_lib/botToday.js";
 import {
   TODAY_SCREEN_KEY,
   digestRevision,
   pickRaceStatus,
 } from "../../api/_lib/snsTodayDigest.js";
-import { buildTodayModel } from "../../api/_lib/botToday.js";
 import { createXSnapshot } from "../../api/_lib/snsXSend.js";
+import { loadTodayVariants } from "./snsTodayVariants.js";
 import {
-  TODAY_HEADING_BUILTIN,
-  loadTodayVariants,
-  normalizeTodayVariants,
-  pickTodayPost,
-  renderTodayHeading,
-} from "./snsTodayVariants.js";
-import { buildCourseWinSheet } from "../../src/utils/todayCourseWin.js";
+  SHOT_BUDGET_MS,
+  SONAR_EDGE_COLOR_VAR,
+  SONAR_ELEMENT,
+  SONAR_READY,
+  SONAR_WAIT_UNTIL,
+  TODAY_MAX_IMAGES,
+  firstLine,
+  isTodayRebuild,
+  jstDate,
+  buildTodayPostOf,
+  jstHm,
+  prepareTodayV3Of,
+  todayPostUrlOf,
+  todaySchedule,
+  todayTrackingUrlOf,
+} from "./snsTodayPlannerParts.js";
 import {
-  buildCourseWinPost,
-  checkCourseWinPost,
-} from "./snsTodayCourseWinPost.js";
-import { createHash, randomBytes } from "node:crypto";
+  courseWinFeasibleOf,
+  courseWinSheetUrlOf,
+  prepareCourseWinOf,
+} from "./snsTodayPlannerCourseWin.js";
 import {
-  V3_BODY,
-  buildTodayDigestV3,
-  checkTodayDigestV3,
-  loadTodayV3Material,
-} from "./snsTodayDigestV3.js";
-import { checkXSlot, SLOT_KINDS, xSlotRoomVia } from "./snsXSlots.js";
+  MAX_IMAGE_BYTES,
+  assertTodayPageReady,
+  launchInfoOf,
+} from "./snsTodayPlannerShots.js";
+import {
+  captureImages,
+  chooseBody,
+  existingOutcome,
+  pickedType,
+  prepareBody,
+  todayDone,
+  windowOutcome,
+} from "./snsTodayPlannerSteps.js";
+import { writeTodayDraft } from "./snsTodayPlannerDraft.js";
 
+// 部品・store は隣のファイルへ移した。import 元は変えずに済むよう、元の名前を再 export する
+export {
+  SONAR_EDGE_COLOR_VAR,
+  SONAR_ELEMENT,
+  SONAR_READY,
+  TODAY_DEADLINE,
+  TODAY_EXPIRES,
+  TODAY_LATEST,
+  TODAY_LINK_LABEL,
+  TODAY_MAX_IMAGES,
+  TODAY_MIN_SAMPLE,
+  TODAY_NOTICE,
+  TODAY_PICK_RULES,
+  TODAY_PLAN_FROM,
+  TODAY_SEND_AT,
+  isTodayRebuild,
+  todayCandidates,
+  todayFeatured,
+  todaySchedule,
+  todayUtmContent,
+  typeAOf,
+} from "./snsTodayPlannerParts.js";
+export {
+  COURSE_WIN_SHEET_ELEMENT,
+  COURSE_WIN_SHEET_PATH,
+  COURSE_WIN_SHEET_VIEWPORT,
+  COURSE_WIN_STATUS_CHUNK,
+} from "./snsTodayPlannerCourseWin.js";
+export {
+  REBUILD_MAX_FAILURES,
+  createTodayStore,
+  finishTodayLog,
+  missedTodayText,
+  nextTodayLog,
+} from "./snsTodayPlannerStore.js";
+
+// api/ の物（SITE_BASE_URL・botToday・snsTodayDigest・snsXSend）は scripts/lib の新しいファイルから import できない（lib-no-entry）ので、
+// ここで束ねて引数で渡す。公開の関数は元の形のまま
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
-
-// 計画の開始と、送る時刻（早くてこの時刻、2026-11-04 オーナー決定 7:00、BOA-1314）。載せるレースは締切がこれより後のものだけ
-export const TODAY_PLAN_FROM = "06:30";
-export const TODAY_SEND_AT = "07:00";
-// 下書きを作れる最後の時刻。過ぎて下書きが無ければ「作れなかった」を知らせる
-export const TODAY_LATEST = "08:00";
-// item の締切に見立てる時刻と失効（失効は締切の30分前、expiry_minutes=30 と一致）。153 の CHECK: notify_by < veto_until < deadline_at
-export const TODAY_DEADLINE = "09:00";
-export const TODAY_EXPIRES = "08:30";
-
-/**
- * その日の時刻（ISO）。送る時刻は 7:00 と now（下書きを作る時刻）の遅い方。now を渡さなければ 7:00
- * 締切に見立てる 9:00（失効 8:30）。notify_by は計画の開始、veto_until は送る時刻（153 の CHECK: notify_by < veto_until < deadline_at）
- */
-export function todaySchedule(date, now = null) {
-  const at = (hhmm) => new Date(`${date}T${hhmm}:00+09:00`).toISOString();
-  const sendAt = new Date(
-    Math.max(Date.parse(at(TODAY_SEND_AT)), now ? now.getTime() : 0),
-  ).toISOString();
-  return {
-    plan_from: at(TODAY_PLAN_FROM),
-    latest: at(TODAY_LATEST),
-    scheduled_at: sendAt,
-    deadline_at: at(TODAY_DEADLINE),
-    notify_by: at(TODAY_PLAN_FROM),
-    veto_until: sendAt,
-    expires_at: at(TODAY_EXPIRES),
-  };
-}
-
-/** utm_content は「日付-札」（札は実際に送った型 a・b・c（v3）。hq の比べが GA4 の流入を型で分ける、§10-5） */
-export const todayUtmContent = (date, sent) => `${date}-${sent}`;
 export const todayTrackingUrl = (date, sent = "a") =>
-  `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${todayUtmContent(date, sent)}`;
-
-// 本文だけ短い道にする。追跡行には従来の UTM URL を保存する。
-const todayPostUrl = (date, sent) =>
-  `${new URL("/x/today", TODAY_URL)}?d=${todayUtmContent(date, sent)}`;
-
-const sha256 = (text) => createHash("sha256").update(text).digest("hex");
-
-/**
- * 型 v3（今の型、BOA-1314）の本文と検査（純粋でない: DB を読む）。返り値 { ok: true, text, picks, featured, blocks, summary, url } か { ok: false, reason }。
- * sent は札（config の current.id、utm_content の末尾）
- */
-export async function prepareTodayV3({ date, sendAt, raceDb, t, sent }) {
-  const url = todayPostUrl(date, sent);
-  const made = buildTodayDigestV3(await loadTodayV3Material(raceDb, date), {
-    sendAt,
-    t,
-    url,
-  });
-  if (!made.ok) return made;
-  const problems = checkTodayDigestV3(made.text, { date, url });
-  return problems.length
-    ? { ok: false, reason: `check_failed:${problems.join(",")}` }
-    : { ...made, url };
-}
-
-// 型 b の画像の撮影用のページ（src/pages/TodaySheet.jsx）。1080×1350 をそのままの画素で撮る
-export const COURSE_WIN_SHEET_PATH = "/share/today-sheet";
-export const COURSE_WIN_SHEET_ELEMENT = "[data-today-sheet]";
-export const COURSE_WIN_SHEET_VIEWPORT = { width: 1080, height: 1350 };
-/** 欠場・中止を1回に読むレースの数（6艇×100＝600行で、PostgREST の上限1000行の内） */
-export const COURSE_WIN_STATUS_CHUNK = 100;
-
-/** 撮影用のページの URL。渡すのは日付・送る時刻・除く行だけ（数字は渡さない。ページはサーバーの朝の一覧から作る） */
-export function courseWinSheetUrl(date, sendAt, skip = []) {
-  const params = new URLSearchParams({ date, from: sendAt });
-  if (skip.length) params.set("skip", [...skip].sort().join(","));
-  return `${SITE_BASE_URL}${COURSE_WIN_SHEET_PATH}?${params}`;
-}
-
-/**
- * 型 b の中身（純粋でない: 欠場・中止を読む）。返り値 { ok: true, sheet, post, url, sheetUrl } か { ok: false, reason }。
- * 候補のうち送る時刻より後の締切の全員の状態を読み、欠場・中止・締切の分からない行を除いてから並べる（上限までは後ろから補う）
- */
-export async function prepareCourseWin(digest, { date, sendAt, raceDb, t }) {
-  const notes = digest.day?.notes?.courseWin;
-  const first = buildCourseWinSheet(notes, { sendAt });
-  if (!first.ok) return first;
-  const live = notes.candidates.filter(
-    (c) =>
-      typeof c.start_time === "string" && c.start_time.slice(0, 5) > sendAt,
+  todayTrackingUrlOf(TODAY_URL, date, sent);
+const todayPostUrl = (date, sent) => todayPostUrlOf(TODAY_URL, date, sent);
+export const prepareTodayV3 = (options) => prepareTodayV3Of(TODAY_URL, options);
+export const buildTodayPost = (digest, options) =>
+  buildTodayPostOf(
+    buildTodayModel(digest, { date: options.date, t: options.t }),
+    digest,
+    options,
   );
-  // pickRaceStatus はレースの全艇の出走表を1回で読む。PostgREST の上限1000行（約166レース分）を超えないよう、
-  // レースを COURSE_WIN_STATUS_CHUNK ずつに分けて読む（Codex の審査 P1。候補は1日に100〜130レース前後に散る）
-  const raceIds = [...new Set(live.map((c) => c.race_id))];
-  const statuses = [];
-  for (let i = 0; i < raceIds.length; i += COURSE_WIN_STATUS_CHUNK) {
-    const ids = new Set(raceIds.slice(i, i + COURSE_WIN_STATUS_CHUNK));
-    statuses.push(
-      ...(await pickRaceStatus(
-        raceDb,
-        live.filter((c) => ids.has(c.race_id)),
-      )),
-    );
-  }
-  const skip = statuses
-    .filter((p) => p.reason)
-    .map((p) => `${p.race_id}:${p.boat_number}`);
-  const sheet = buildCourseWinSheet(notes, {
-    sendAt,
-    excluded: new Set(skip),
-  });
-  if (!sheet.ok) return sheet;
-  const url = todayPostUrl(date, "b");
-  const venueName = (code) => t(`venues.${code}`);
-  const text = buildCourseWinPost(sheet, { venueName, url });
-  const problems = checkCourseWinPost(text, sheet, {
-    imageKey: sheet.key,
-    url,
-    venueName,
-  });
-  if (problems.length)
-    return { ok: false, reason: `check_failed:${problems.join(",")}` };
-  return {
-    ok: true,
-    sheet,
-    url: todayTrackingUrl(date, "b"),
-    sheetUrl: courseWinSheetUrl(date, sendAt, skip),
-    post: {
-      text,
-      reply: null,
-      races: [],
-      // 送る直前に欠場・中止を読み直す対象（画像に載る全行）
-      picks: sheet.sections.flatMap((s) =>
-        s.rows.map((r) => ({ race_id: r.race_id, boat_number: r.boat_number })),
-      ),
-    },
-  };
-}
-
-/**
- * 比べの a の日にも、その日に型 b を出せたかを残す（DB を読まない分だけ。欠場の読み直しと撮影は b の日にしか分からない）。
- * 両方の日で b を出せた組だけで見る感度分析に使う（data-scientist の審査 P2-1）。返り値 { ok, reason? }
- */
-export function courseWinFeasible(digest, { date, sendAt, t }) {
-  const sheet = buildCourseWinSheet(digest.day?.notes?.courseWin, { sendAt });
-  if (!sheet.ok) return { ok: false, reason: sheet.reason };
-  const url = todayPostUrl(date, "b");
-  const venueName = (code) => t(`venues.${code}`);
-  const problems = checkCourseWinPost(
-    buildCourseWinPost(sheet, { venueName, url }),
-    sheet,
-    { imageKey: sheet.key, url, venueName },
-  );
-  return problems.length
-    ? { ok: false, reason: `check_failed:${problems.join(",")}` }
-    : { ok: true };
-}
-
-/** config の型 a（b を出せない日に使う）。config が壊れていれば既定の文 */
-export function typeAOf(config) {
-  const { fallback, variants } = normalizeTodayVariants(config);
-  const a = variants[0];
-  return a
-    ? {
-        type_id: a.type_id,
-        heading: a.heading,
-        link_lead: a.link_lead,
-        link_position: a.link_position,
-        variant: { id: a.id, uuid: a.uuid },
-      }
-    : {
-        type_id: "today-a",
-        heading: fallback,
-        link_lead: null,
-        link_position: "after_heading",
-        variant: { id: "default", uuid: null },
-      };
-}
-
-// 本文に載せる区分と人数・最低の走数（2026-10-15 オーナー承認の型）。逃がし・注目レースは、選ぶ式の向きを /today 側で直すまで載せない
-// 見出し（2026-10-15 hq 承認の文）。割合は一覧に保存されたしきい値（morning_digest_days.notes.thresholds）を使う
-export const TODAY_PICK_RULES = [
-  {
-    section: "nige",
-    mark: "逃げ",
-    limit: 3,
-    threshold: 70,
-    legend: (pct) =>
-      `全国で1コースに入ったとき逃げ切った割合${pct}%以上の1号艇`,
-  },
-  {
-    section: "makuri",
-    mark: "まくり",
-    limit: 2,
-    threshold: 25,
-    legend: (pct) => `そのコースでまくりで1着の割合${pct}%以上の選手`,
-  },
-];
-export const TODAY_MIN_SAMPLE = 30;
-/** 見出しの直後に置くリンクの行の頭 */
-export const TODAY_LINK_LABEL = "今日の一覧はこちら：";
-export const TODAY_NOTICE =
-  "過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。";
-
-/** 載せてよい候補（区分・rank の順）。送る時刻までに締切を過ぎる・走数30未満・締切の無い行は除く。区分の中の同じレースは最初の行だけ */
-export function todayCandidates(rows, sendAt = TODAY_SEND_AT) {
-  return TODAY_PICK_RULES.flatMap(({ section }) => {
-    const seen = new Set();
-    return rows
-      .filter(
-        (row) =>
-          row.section === section &&
-          typeof row.start_time === "string" &&
-          row.start_time.slice(0, 5) > sendAt &&
-          Number(row.sample_size) >= TODAY_MIN_SAMPLE,
-      )
-      .sort((a, b) => a.rank - b.rank)
-      .filter((row) => !seen.has(row.race_id) && seen.add(row.race_id));
-  });
-}
-
-/**
- * 決まった型の本文（AI 生成なし）。候補から欠場・中止・締切を確かめられない行（excluded の race_id:艇番）を除き、
- * 区分ごとに上限まで rank の順に選び、全体を締切→会場→R の順に並べる。候補が0件なら null（その日は送らない）
- * 印の意味を1行ずつ、その後に全体を締切の早い順で。1行は「［逃げ］会場R HH:MM締切｜艇番 選手名｜全国N走」（2026-10-15 オーナー回答）
- */
-// 注目レースの割合の言い方（選んだ区分ごと）。逃がしからの注目は、向きの確認が済むまで載せない
-const FEATURED_RATE = {
-  nige: (course) => `${course}コースで逃げ切った割合`,
-  makuri: (course) => `${course}コースでまくりで1着の割合`,
+export const courseWinSheetUrl = (date, sendAt, skip = []) =>
+  courseWinSheetUrlOf(SITE_BASE_URL, date, sendAt, skip);
+const courseWinApi = {
+  siteBase: SITE_BASE_URL,
+  todayUrl: TODAY_URL,
+  pickRaceStatus,
 };
-const pct = (value) => `${Number(value)}%`;
+export const prepareCourseWin = (digest, options) =>
+  prepareCourseWinOf(courseWinApi, digest, options);
+export const courseWinFeasible = (digest, options) =>
+  courseWinFeasibleOf(TODAY_URL, digest, options);
 
-/** /today の注目レース（featured）。逃げ・まくりから選ばれ、送る時刻より後の締切で、数字がそろっているときだけ */
-// 画像は対象レースの龍神ソナーの図を最大4枚（2026-10-16 ユーザー決定。X の1投稿の上限が4枚）。
-// 図の元データ（analogy-v16-morning）は 7:24〜7:26 に書かれる（10/14〜10/17 の実測）。遅れる日のために 7:30 まではそろうまでやり直し、
-// 7:30 を過ぎたら撮れた分で作る（型 a・b だけ。今の型 v3 は画像なし）
-export const TODAY_MAX_IMAGES = 4;
-export const SONAR_ELEMENT = ".af-hep .af-dark";
-// 図の外周の色（.af-dark の放射状のグラデーションの外側、AnalogyV16.css）。撮った画像の上端・下端がこの色でなければ、
-// 別の部品が入った画像として撮り直す（2026-10-24 BOA-1013）
-export const SONAR_EDGE_COLOR_VAR = "--ryujin-navy-600";
-// 図を撮る前に待つ印は条件のカードだけ。段の表示（analogy-stage-chip）は展示のデータが入ると切り替えのボタンに変わり、
-// 展示の後に撮ると見えない（2026-10-17 夜の作り直しで4枚とも screenshot_component_missing）
-export const SONAR_READY = ['[data-testid="analogy-fact-card"]'];
-// 図を待つのは型 a・b だけ（v3 は文だけ）。下書きを作れる最後（8:00）より前に置く（BOA-1314 で 7:00 送りにしたため、ほかの時刻と同じく 8:30 から1時間繰り上げ。図のデータは 7:24〜7:26 に書かれる）
-const SONAR_WAIT_UNTIL = "07:30";
-const SHOT_BUDGET_MS = 120_000;
+// 段（Steps・Shots・Draft・Auto）へ渡す api/ 由来の道具
+const api = {
+  todayUrl: TODAY_URL,
+  screenKey: TODAY_SCREEN_KEY,
+  pickRaceStatus,
+  createXSnapshot,
+  prepareTodayV3,
+  prepareCourseWin,
+  courseWinFeasible,
+  buildTodayPost,
+  todayPostUrl,
+  todayTrackingUrl,
+};
 
-export function todayFeatured(rows, sendAt = TODAY_SEND_AT) {
-  const row = rows.find((r) => r.section === "featured");
-  if (
-    !row ||
-    !FEATURED_RATE[row.from] ||
-    typeof row.start_time !== "string" ||
-    row.start_time.slice(0, 5) <= sendAt ||
-    !Number.isInteger(row.boat_number) ||
-    !Number.isInteger(row.course) ||
-    !Number.isFinite(Number(row.metric_value)) ||
-    !Number.isFinite(Number(row.metric_venue_baseline)) ||
-    !Number.isInteger(row.sample_size)
-  )
-    return null;
-  return row;
+/** 型 a の画像: 対象レースの龍神ソナーの図。撮れないうちは何も書かない（例外で止め、次の実行でやり直す） */
+async function shootSonar(
+  aPost,
+  { headless, t, nowMs, startedMs, waitOver, info },
+) {
+  const pngs = [];
+  const missing = [];
+  for (const race of aPost.races.slice(0, TODAY_MAX_IMAGES)) {
+    // 1枚は最悪 約75秒かかる。関数の時間（300秒）で止められると何も記録されないので、120秒を過ぎたら新しく撮らない
+    if (nowMs() - startedMs > SHOT_BUDGET_MS) {
+      missing.push(`${race.race_id}: time_budget`);
+      continue;
+    }
+    try {
+      const shot = await headless.screenshot({
+        url: `${SITE_BASE_URL}/race/${race.race_id}?tab=sonar&boat=${race.boat_number}`,
+        requiredSelectors: SONAR_READY,
+        viewport: { width: 390, height: 844 },
+        element: SONAR_ELEMENT,
+        edgeColorVar: SONAR_EDGE_COLOR_VAR,
+        label: `${t(`venues.${race.venue_code}`)}${race.race_number}R ${race.start_time.slice(0, 5)}締切`,
+      });
+      if (shot.png.byteLength > MAX_IMAGE_BYTES)
+        throw new Error("image_too_large");
+      pngs.push(shot.png);
+    } catch (error) {
+      missing.push(`${race.race_id}: ${firstLine(error.message)}${info()}`);
+    }
+  }
+  if (!pngs.length || (missing.length && !waitOver))
+    throw new Error(`sonar_not_ready（${missing.join(" / ")}）`);
+  return pngs;
 }
 
-export function buildTodayPost(
+/** テストから差し替えられる口の既定 */
+const withDefaults = ({
+  notify = async () => {},
+  nowMs = Date.now,
+  // 確認用に、送る時刻を過ぎた日の下書きを1回だけ作る日付（scrape_job_state.cursor.today_rebuild。オーナーが本番 SQL で入れる）
+  reviewDate = null,
+  // 見出しの案の設定（config/today-variants.json）。テストから差し替える
+  loadVariants = loadTodayVariants,
+}) => ({ notify, nowMs, reviewDate, loadVariants });
+
+// 画像・知らせまわりの道具と、本文を選ぶ段が使う物をまとめる
+const stepEnv = (
+  deps,
+  d,
+  { digest, date, sendAt, revision, settled, now, startedMs },
+) => ({
   digest,
-  {
-    date,
-    t,
-    url,
-    sendAt = TODAY_SEND_AT,
-    excluded = new Set(),
-    heading = TODAY_HEADING_BUILTIN,
-    linkLead = null,
-    linkPosition = "after_heading",
-  },
-) {
-  const model = buildTodayModel(digest, { date, t });
-  const key = (row) => `${row.race_id}:${row.boat_number}`;
-  const found = todayFeatured(digest.rows, sendAt);
-  const featured = found && !excluded.has(key(found)) ? found : null;
-  // 注目レースの選手は一覧に重ねて出さない
-  const candidates = todayCandidates(digest.rows, sendAt).filter(
-    (row) =>
-      !excluded.has(key(row)) && (!featured || key(row) !== key(featured)),
-  );
-  const picks = TODAY_PICK_RULES.flatMap(({ section, limit }) =>
-    candidates.filter((row) => row.section === section).slice(0, limit),
-  ).sort(
-    (a, b) =>
-      a.start_time.localeCompare(b.start_time) ||
-      a.venue_code - b.venue_code ||
-      a.race_number - b.race_number,
-  );
-  if (!picks.length && !featured) return null;
-  // 印の意味（その日に出る区分だけ）を先に1行ずつ、その後に全体を締切の早い順で（2026-10-15 オーナー「締め切り順が良い」）
-  const thresholds = digest.day?.notes?.thresholds ?? {};
-  const rules = TODAY_PICK_RULES.filter((rule) =>
-    picks.some((row) => row.section === rule.section),
-  );
-  const mark = Object.fromEntries(
-    rules.map((rule) => [rule.section, rule.mark]),
-  );
-  const head = (row) =>
-    `${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}`;
-  // 見出し（1行目）だけは日替わりの案（config/today-variants.json）。ほかは機械が作る
-  // リンクの置き場は型で選ぶ（PD02）。既定は見出しの直後（3行目）。末尾だと長文の折りたたみの先に隠れて押されにくい
-  // （2026-10-22 オーナー「前倒しで押される形」、10/20 は表示321・クリック1以下）。reply は本文に置かず自分への返信に置く
-  const linkLine = `${linkLead ?? TODAY_LINK_LABEL}${url}`;
-  const lines = [renderTodayHeading(heading, model.dateLine), ""];
-  if (linkPosition === "after_heading") lines.push(linkLine, "");
-  // 注目レースを先頭に（2026-10-16 オーナー指示。「イン崩れ指数」「AIが算出」の言い方は使わない）
-  if (featured)
-    lines.push(
-      `注目レース：${head(featured)}｜${FEATURED_RATE[featured.from](featured.course)} ${pct(featured.metric_value)}（全国${featured.sample_size}走）・この会場の平均 ${pct(featured.metric_venue_baseline)}`,
-      "",
-    );
-  if (picks.length) {
-    lines.push(
-      ...rules.map(
-        (rule) =>
-          `［${rule.mark}］${rule.legend(thresholds[rule.section] ?? rule.threshold)}`,
-      ),
-      "",
-    );
-    for (const row of picks)
-      lines.push(
-        `［${mark[row.section]}］${head(row)}｜全国${row.sample_size}走`,
-      );
-    lines.push("");
-  }
-  lines.push(TODAY_NOTICE);
-  if (linkPosition === "end") lines.push("", linkLine);
+  date,
+  sendAt,
+  raceDb: deps.raceDb,
+  t: deps.t,
+  loadVariants: d.loadVariants,
+  v3Again: settled.v3Again,
+  revision,
+  headless: deps.headless,
+  info: launchInfoOf(deps.headless),
+  waitOver: now >= new Date(`${date}T${SONAR_WAIT_UNTIL}:00+09:00`),
+  nowMs: d.nowMs,
+  startedMs,
+  shootSonar,
+  api,
+});
+
+// 送信の設定は1回だけ読み、型の選び方（返信を選べるか）と自動の承認の両方に使う（2回読むと間で変わりうる）。
+// 確認用の作り直し（review）は自動にしない
+async function readControl(store, review) {
+  const control = !review && store.control ? await store.control() : null;
   return {
-    text: lines.join("\n"),
-    // 自分への返信に置く文（reply の型だけ）。返信は親の投稿の後に送る（送信の runner が親の posted を待つ）
-    reply: linkPosition === "reply" ? linkLine : null,
-    // 画像（龍神ソナーの図）を撮るレース。注目レースを先頭に、一覧を締切順で、同じレースは1回
-    races: [...(featured ? [featured] : []), ...picks]
-      .filter(
-        (row, i, all) => all.findIndex((r) => r.race_id === row.race_id) === i,
-      )
-      .map(({ race_id, venue_code, race_number, start_time, boat_number }) => ({
-        race_id,
-        venue_code,
-        race_number,
-        start_time,
-        boat_number,
-      })),
-    // 送る直前に欠場・中止を読み直す対象（注目レースを含む）
-    picks: [...(featured ? [featured] : []), ...picks].map((row) => ({
-      race_id: row.race_id,
-      boat_number: row.boat_number,
-    })),
+    control,
+    replyAllowed:
+      control?.mode === "auto" && Boolean(control?.auto_approver_id),
   };
 }
 
-const jstHm = (iso) =>
-  new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
-const jstDate = (date) =>
-  new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10);
-
-/** 確認用の作り直し（cursor.today_rebuild）が今の実行で効くか。送る時刻を過ぎた、その日の分だけ */
-export function isTodayRebuild(reviewDate, now) {
-  const date = jstDate(now);
-  return reviewDate === date && now >= new Date(todaySchedule(date).latest);
+// shadow（live でない）では本文だけ組んで、禁止表現の有無で結果を返す（撮影・DB・Slack には書かない）
+function previewOutcome(chosen, riskOf, revision) {
+  const risk = [
+    ...riskOf(chosen.post.text),
+    ...(chosen.post.reply ? riskOf(chosen.post.reply) : []),
+  ];
+  return { outcome: risk.length ? "held_manual" : "manual", revision };
 }
-
-// 理由の文字列は1件につき最初の1行だけ残す（Playwright の例外はブラウザのログ全文を含み、cursor の記録が切れた。2026-10-17）
-const firstLine = (message) => String(message).split("\n")[0].slice(0, 160);
 
 /**
  * @param {{mode: string, now: () => Date}} ctx
  * @param {{store, getDigest, raceDb, t, headless, markers, riskRules, trackingStore, saveImage, signImage, notify?}} deps
  */
-export async function runTodayPlan(
-  ctx,
-  {
-    store,
-    getDigest,
-    raceDb,
-    t,
-    headless,
-    markers,
-    riskRules,
-    trackingStore,
-    saveImage,
-    signImage,
-    notify = async () => {},
-    nowMs = Date.now,
-    // 確認用に、送る時刻を過ぎた日の下書きを1回だけ作る日付（scrape_job_state.cursor.today_rebuild。オーナーが本番 SQL で入れる）
-    reviewDate = null,
-    // 見出しの案の設定（config/today-variants.json）。テストから差し替える
-    loadVariants = loadTodayVariants,
-  },
-) {
-  const live = ctx.mode === "live";
+export async function runTodayPlan(ctx, deps) {
+  const { store, getDigest, raceDb, t, headless, markers, riskRules } = deps;
+  const d = withDefaults(deps);
   const now = ctx.now();
   const date = jstDate(now);
   // 確認用の作り直し（送る時刻を過ぎた後）は、送る時刻を今にしない（item の veto_until が締切を越えないように）
   const when = todaySchedule(
     date,
-    isTodayRebuild(reviewDate, now) ? null : now,
+    isTodayRebuild(d.reviewDate, now) ? null : now,
   );
-  const done = (extra) => ({
-    rowsWritten: extra.written ? 1 : 0,
-    report: { items: [{ kind: "digest", date, ...extra }], alerts: [] },
-  });
-  if (now < new Date(when.plan_from))
-    return done({ outcome: "skipped", reason: "outside_window" });
+  const done = (extra) => todayDone(date, extra);
   // 確認用の作り直し（送る時刻を過ぎていても作る。期限は過ぎているので承認・送信はできない）
-  const review = isTodayRebuild(reviewDate, now);
-  if (now >= new Date(when.latest) && !review) {
-    // 送る時刻を過ぎて、その日の下書きが無い（作れずに朝が終わった）。cron がその日1回だけ Slack に知らせる
-    const { draft } = await store.todayState(date);
-    return done(
-      draft
-        ? { outcome: "skipped", reason: "outside_window" }
-        : { outcome: "missed", reason: "no_draft_by_send_time" },
-    );
-  }
-  const startedMs = nowMs();
+  const review = isTodayRebuild(d.reviewDate, now);
+  const gate = await windowOutcome(store, date, now, when, review);
+  if (gate) return done(gate);
+  const startedMs = d.nowMs();
   const digest = await getDigest(date);
   if (!digest.day?.generated_at)
     return done({ outcome: "skipped", reason: "not_generated" });
   const revision = await digestRevision(digest);
   const existing = await store.todayState(date);
-  // 下書きを作った後に item の作成で落ちた（item が無い。返信の型なら返信の item も）ときは、同じ版でも作り直して item を作る
-  // 返信の型は、子の item が無い・親と状態が違う・親が自動で承認済み（notified）なのに子が親の job につながっていない
-  // （子の承認の前に関数が落ちた）ときも作り直す。「変化なし」で親だけが送られるのを防ぐ（system-architect の審査 P2-2）
-  const isReply =
-    existing.draft?.source_data?.content_type?.link_position === "reply";
-  const replyPending =
-    isReply &&
-    (!existing.reply?.item ||
-      existing.reply.item.state !== existing.item?.state ||
-      (existing.item?.state === "notified" &&
-        (!existing.reply.draft?.source_data?.deadline_queue?.parent_job_id ||
-          // 子を親につないだ後、子の承認（job の作成）の前に落ちた（Codex の審査 P1）
-          !["approved", "posted"].includes(existing.reply.draft?.status))));
-  // 型 v3 は材料を DB から読むので、一覧の版が同じでも本文が変われば（欠場・中止で選ぶ人やレースが変わる）作り直す。
-  // 比べるのは下書きを作ったときの送る時刻での本文（時刻が進んで締切の線が動いただけでは作り直さない）
-  // 送った・止めた item（manual・notified でない）は作り直さないので読まない。読んだ結果は下の本文に使い回す（/code-review の指摘）
-  const storedV3 = existing.draft?.source_data?.digest_v3;
-  let v3Again = null;
-  const v3Same = async () => {
-    if (!storedV3 || !["manual", "notified"].includes(existing.item?.state))
-      return true;
-    const again = await prepareTodayV3({
-      date,
-      sendAt: storedV3.send_at,
-      raceDb,
-      t,
-      sent: existing.draft.source_data.content_type?.sent,
-    });
-    v3Again = { sendAt: storedV3.send_at, made: again };
-    // 作れなくなった（載せたレースが全部中止など）ときは作り直さず、送る直前の検査（欠場・中止）に任せる
-    return !again.ok || sha256(again.text) === storedV3.text_sha256;
-  };
-  if (
-    existing.item &&
-    !replyPending &&
-    existing.draft?.source_data?.digest?.revision === revision &&
-    (await v3Same())
-  )
-    return done({ outcome: "unchanged", item_id: existing.item?.id ?? null });
-  // held_manual（禁止表現）・止めた item は、版が変わっても作り直さない（オーナーの判断に回す）。
-  // 自動で承認した（notified）ものは作り直す（版が変わると送る直前の読み直しで止まるため。2026-10-18）
-  if (existing.item && !["manual", "notified"].includes(existing.item.state))
-    return done({ outcome: "skipped", reason: `item_${existing.item.state}` });
-  // 返信の子だけを止めた（stopped・held_manual）ときも、親を作り直さない（system-architect の審査 P3-1）
-  if (
-    existing.reply?.item &&
-    !["manual", "notified"].includes(existing.reply.item.state)
-  )
-    return done({
-      outcome: "skipped",
-      reason: `reply_item_${existing.reply.item.state}`,
-    });
+  const settled = await existingOutcome({
+    date,
+    existing,
+    revision,
+    raceDb,
+    t,
+    api,
+  });
+  if (settled.extra) return done(settled.extra);
 
   // 載せるのは、締切が送る時刻（7:00、遅れた日はその時刻）より後のレースだけ
   const sendAt = jstHm(when.scheduled_at);
-  // 送信の設定は1回だけ読み、型の選び方（返信を選べるか）と自動の承認の両方に使う（2回読むと間で変わりうる）。
-  // 確認用の作り直し（review）は自動にしない
-  const control = !review && store.control ? await store.control() : null;
-  const replyAllowed =
-    control?.mode === "auto" && Boolean(control?.auto_approver_id);
-  // その日の型（PD02）。下書きができた後は、その日の型を変えない（作り直しでも同じ型。途中で列が変わっても返信の下書きを取り残さない）
-  // 型 v3 は見出しを持たない（heading null）ので、本文の型（body）で見分ける（/code-review の指摘）
-  const picked =
-    (existing.draft?.source_data?.content_type?.heading ||
-      existing.draft?.source_data?.content_type?.body === V3_BODY) &&
-    existing.draft?.source_data?.today_variant
-      ? {
-          ...existing.draft.source_data.content_type,
-          variant: existing.draft.source_data.today_variant,
-          content_type: existing.draft.source_data.content_type,
-        }
-      : await pickTodayType(date, { store, loadVariants, replyAllowed });
-
-  // 型 b（course_win、hq 2026-10-27）の本文と画像の中身。材料・機械の検査がそろわない日は型 a で送り、理由を残す
-  // （/today は機械の検査が通れば自動で送るので、検査を通らない b は送らない）
-  let courseWin = null;
-  let bFallback = null;
-  // 型 v3（今の型）。作れない・検査を通らない日は送らない（型 a・b へ倒さない。オーナー 11/4「v3 が入ったら a・b は送らない」）
-  let v3 = null;
-  if (picked.body === V3_BODY) {
-    v3 =
-      v3Again?.sendAt === sendAt
-        ? v3Again.made
-        : await prepareTodayV3({
-            date,
-            sendAt,
-            raceDb,
-            t,
-            sent: picked.variant.id,
-          });
-    if (!v3.ok)
-      return done({ outcome: "skipped", reason: `v3:${v3.reason}`, revision });
-  }
-  if (picked.body === "course_win") {
-    const made = await prepareCourseWin(digest, {
-      date,
-      sendAt,
-      raceDb,
-      t,
-    });
-    if (made.ok) courseWin = made;
-    else bFallback = made.reason;
-  }
-
-  // 型 a の本文（今の型）。b を作れなかった日・b が撮れなかった日もここに来る
-  const buildTypeA = async (fallbackReason) => {
-    const base = fallbackReason ? typeAOf(loadVariants()) : picked;
-    const url = todayTrackingUrl(date, "a");
-    // 欠場・中止・締切を確かめられない候補は除く（区分の上限までは後ろの rank から補う）
-    const featuredRow = todayFeatured(digest.rows, sendAt);
-    const statuses = await pickRaceStatus(raceDb, [
-      ...(featuredRow ? [featuredRow] : []),
-      ...todayCandidates(digest.rows, sendAt),
-    ]);
-    const excluded = new Set(
-      statuses
-        .filter((p) => p.reason)
-        .map((p) => `${p.race_id}:${p.boat_number}`),
-    );
-    const contentType = {
-      ...picked.content_type,
-      ...(fallbackReason
-        ? {
-            id: base.type_id,
-            fallback_reason: `course_win:${fallbackReason}`,
-          }
-        : {}),
-      heading: base.heading,
-      link_lead: base.link_lead ?? null,
-      link_position: base.link_position,
-      body: null,
-      sent: "a",
-      // 比べの a の日: その日に b を出せたか（DB を読まない分）
-      ...(!fallbackReason &&
-      picked.content_type?.side === "a" &&
-      picked.content_type?.pair != null
-        ? (() => {
-            const f = courseWinFeasible(digest, { date, sendAt, t });
-            return {
-              b_feasible: f.ok,
-              ...(f.ok ? {} : { b_reason: f.reason }),
-            };
-          })()
-        : {}),
-    };
-    const post = buildTodayPost(digest, {
-      date,
-      t,
-      url: todayPostUrl(date, "a"),
-      sendAt,
-      excluded,
-      heading: base.heading,
-      linkLead: contentType.link_lead,
-      linkPosition: contentType.link_position,
-    });
-    return {
-      post,
-      contentType,
-      trackingUrl: url,
-      variant: fallbackReason ? base.variant : picked.variant,
-    };
-  };
-  let chosen = v3
-    ? {
-        post: { text: v3.text, reply: null, races: [], picks: v3.picks },
-        trackingUrl: todayTrackingUrl(date, picked.variant.id),
-        variant: picked.variant,
-        contentType: {
-          ...picked.content_type,
-          heading: null,
-          link_lead: null,
-          link_position: "after_heading",
-          body: V3_BODY,
-          sent: picked.variant.id,
-        },
-      }
-    : courseWin
-      ? {
-          post: courseWin.post,
-          trackingUrl: courseWin.url,
-          variant: picked.variant,
-          contentType: {
-            ...picked.content_type,
-            heading: picked.heading,
-            link_lead: null,
-            link_position: "end",
-            body: "course_win",
-            sent: "b",
-          },
-        }
-      : await buildTypeA(bFallback);
+  const { control, replyAllowed } = await readControl(store, review);
+  const loadVariants = d.loadVariants;
+  const picked = await pickedType(existing, date, {
+    store,
+    loadVariants,
+    replyAllowed,
+  });
+  const env = stepEnv(deps, d, {
+    digest,
+    date,
+    sendAt,
+    revision,
+    settled,
+    now,
+    startedMs,
+  });
+  const prep = await prepareBody(picked, env);
+  if (prep.extra) return done(prep.extra);
+  const chosen = await chooseBody(prep, picked, env);
   if (!chosen.post)
     return done({ outcome: "skipped", reason: "no_candidates", revision });
   const riskOf = (text) =>
@@ -670,691 +291,42 @@ export async function runTodayPlan(
       "x",
       riskRules,
     );
-  if (!live) {
-    const risk = [
-      ...riskOf(chosen.post.text),
-      ...(chosen.post.reply ? riskOf(chosen.post.reply) : []),
-    ];
-    return done({ outcome: risk.length ? "held_manual" : "manual", revision });
-  }
+  if (ctx.mode !== "live")
+    return done(previewOutcome(chosen, riskOf, revision));
 
   // リンク先（/today）が未ログインで見えることを確かめる（送る直前の検査と同じ印）
-  // 失敗の理由に起動の様子（残りの Chromium・空きメモリ）を添える。本番の関数のログを見ずに切り分けるため（2026-10-18）
-  const info = () => (headless.launchInfo ? ` [${headless.launchInfo()}]` : "");
-  const page = await headless
-    .inspect({
-      url: TODAY_URL,
-      context: { storageState: null },
-      requiredSelectors: markers[TODAY_SCREEN_KEY],
-    })
-    .catch((error) => {
-      throw new Error(`${firstLine(error.message)}${info()}`);
-    });
-  if (
-    page.finalUrl !== TODAY_URL ||
-    !markers[TODAY_SCREEN_KEY].every((m) => page.visibleSelectors?.includes(m))
-  )
-    throw new Error("today_page_not_ready");
-  const waitOver = now >= new Date(`${date}T${SONAR_WAIT_UNTIL}:00+09:00`);
-  let shots = [];
-  if (courseWin) {
-    // 型 b の画像: 撮影用のページ1枚。ページが出した指紋が計画の物と同じとき（同じ行・同じ窓）だけ撮れる
-    try {
-      const shot = await headless.screenshot({
-        url: courseWin.sheetUrl,
-        requiredSelectors: [`[data-today-sheet-key="${courseWin.sheet.key}"]`],
-        viewport: COURSE_WIN_SHEET_VIEWPORT,
-        deviceScaleFactor: 1,
-        element: COURSE_WIN_SHEET_ELEMENT,
-        // label は渡さない。snsHeadless は label を要素の先頭に焼き込み、下余白が 64px を割る（コードレビューの P1）
-      });
-      if (shot.png.byteLength > 5_000_000) throw new Error("image_too_large");
-      shots = [shot.png];
-    } catch (error) {
-      // 図を待つのと同じ 7:30 までは次の回にやり直す。過ぎたら型 a で送る（その日を落とさない）
-      if (!waitOver)
-        throw new Error(
-          `course_win_sheet_not_ready（${firstLine(error.message)}${info()}）`,
-        );
-      bFallback = `sheet_capture_failed: ${firstLine(error.message)}`;
-      courseWin = null;
-      chosen = await buildTypeA(bFallback);
-      if (!chosen.post)
-        return done({ outcome: "skipped", reason: "no_candidates", revision });
-    }
-  }
-  // 型 v3 は文だけ（画像なし）
-  if (!courseWin && !v3) shots = await shootSonar(chosen.post);
-  const { post, contentType, trackingUrl, variant } = chosen;
-  const caption = post.text;
-  const replyRisk = post.reply ? riskOf(post.reply) : [];
-  // 返信の文に禁止表現があれば、親も止める（リンクの無い親だけを送らない）
-  const risk = [...riskOf(caption), ...replyRisk];
-  const checkedAt = now.toISOString();
-  const imagePaths = courseWin
-    ? [`today/${date}/${revision}-sheet.png`]
-    : shots.map((_, i) => `today/${date}/${revision}-${i + 1}.png`);
-  for (const [i, png] of shots.entries()) await saveImage(imagePaths[i], png);
-  const imagePath = imagePaths[0] ?? null;
-
-  /** 型 a の画像: 対象レースの龍神ソナーの図。撮れないうちは何も書かない（例外で止め、次の実行でやり直す） */
-  async function shootSonar(aPost) {
-    const pngs = [];
-    const missing = [];
-    for (const race of aPost.races.slice(0, TODAY_MAX_IMAGES)) {
-      // 1枚は最悪 約75秒かかる。関数の時間（300秒）で止められると何も記録されないので、120秒を過ぎたら新しく撮らない
-      if (nowMs() - startedMs > SHOT_BUDGET_MS) {
-        missing.push(`${race.race_id}: time_budget`);
-        continue;
-      }
-      try {
-        const shot = await headless.screenshot({
-          url: `${SITE_BASE_URL}/race/${race.race_id}?tab=sonar&boat=${race.boat_number}`,
-          requiredSelectors: SONAR_READY,
-          viewport: { width: 390, height: 844 },
-          element: SONAR_ELEMENT,
-          edgeColorVar: SONAR_EDGE_COLOR_VAR,
-          label: `${t(`venues.${race.venue_code}`)}${race.race_number}R ${race.start_time.slice(0, 5)}締切`,
-        });
-        // X の画像は1枚 5 MB まで（承認の関数 160 と同じ）。超えたら撮れなかった扱い
-        if (shot.png.byteLength > 5_000_000) throw new Error("image_too_large");
-        pngs.push(shot.png);
-      } catch (error) {
-        missing.push(`${race.race_id}: ${firstLine(error.message)}${info()}`);
-      }
-    }
-    if (!pngs.length || (missing.length && !waitOver))
-      throw new Error(`sonar_not_ready（${missing.join(" / ")}）`);
-    return pngs;
-  }
-  const releaseEvidence = {
-    status: "released",
-    url: TODAY_URL,
-    screen_key: TODAY_SCREEN_KEY,
-    checked_at: checkedAt,
-    confirmed_by: "sns-auto-plan",
-    reference: `headless:${TODAY_SCREEN_KEY}`,
-    confirmed_at: checkedAt,
-  };
-  const raceCount = digest.day.race_count ?? 0;
-  const sourceData = {
-    // 個別承認の画面の一覧は source_data.race_id の「日付-」で今日の下書きを拾う
-    race_id: `${date}-today`,
-    // 画像の順（先頭は cover_image_path）。承認の関数（160）がこの順で媒体を照合する。
-    // 文だけの型 v3 は持たない（160 は image_paths があれば1〜4枚を求める。無ければ本文だけの投稿として承認できる）
-    ...(imagePaths.length ? { image_paths: imagePaths } : {}),
-    // picks は送る直前の検査（readCurrent）が欠場・中止を読み直す対象
-    digest: { date, revision, picks: post.picks },
-    // 見出しの案の札（uuid は sns_template_variants の行。入るまでは null）
-    today_variant: variant,
-    // 型の札（PD02）。hq の毎日の PDCA は id を読む。source は schedule（型の列）か config、fallback_reason は列を使わなかった理由
-    content_type: contentType,
-    // 型 v3 の記録（hq の today-picks.js の form c・思考投稿の対象、作り直しの判定）。featured は 🏆 の優勝戦（無い日は null）
-    ...(v3
-      ? {
-          digest_v3: {
-            send_at: sendAt,
-            text_sha256: sha256(v3.text),
-            featured: v3.featured,
-            blocks: v3.blocks,
-            summary: v3.summary,
-          },
-        }
-      : {}),
-    // 型 b の記録（hq の比べと、言い切りの線の確かめ）。K は送る時刻での段ごとの候補数、line はその日の Bonferroni の線
-    ...(courseWin
-      ? {
-          course_win: {
-            key: courseWin.sheet.key,
-            k: courseWin.sheet.k,
-            line: courseWin.sheet.line,
-            claim: courseWin.sheet.claim,
-            tail: courseWin.sheet.tail,
-            window: courseWin.sheet.window,
-            send_at: courseWin.sheet.sendAt,
-            sheet_url: courseWin.sheetUrl,
-            featured: {
-              race_id: courseWin.sheet.featured.race_id,
-              boat_number: courseWin.sheet.featured.boat_number,
-              racer_id: courseWin.sheet.featured.racer_id,
-              runs: courseWin.sheet.featured.runs,
-              wins: courseWin.sheet.featured.wins,
-              grade: courseWin.sheet.featured.grade,
-              baseline_pct: courseWin.sheet.featured.baseline_pct,
-              z: courseWin.sheet.featured.z,
-            },
-            rows: courseWin.sheet.sections.map((sec) => ({
-              section: sec.key,
-              racers: sec.rows.map((r) => r.racer_id),
-            })),
-          },
-        }
-      : {}),
-    deadline_queue: {
-      deadline_at: when.deadline_at,
-      expires_at: when.expires_at,
-      source_revision: revision,
-      source_observed_at: checkedAt,
-      public_url: trackingUrl,
-      screen_key: TODAY_SCREEN_KEY,
-      thread_length: 1,
-    },
-    // 数字は一覧の表そのもの。数値の照合は、送る直前に版（行の hash）を読み直して一致を見ることで代える
-    qa: { pass: true, numeric_claims_match: true, L0_hits: [] },
-    release_evidence: releaseEvidence,
-    // 出典の記録（旧個別承認 140 approve_sns_mobile_channel の条件に合わせて入れていたもの。版の照合の材料として残す）。
-    // 値は一覧の日の行（レース数）、sha256 は版
-    source_manifest: [
-      {
-        name: "morning_digest.json",
-        sha256: revision,
-        hash_verified: true,
-        stage: "digest",
-        source_url: "/today",
-        fetched_at: checkedAt,
-      },
-    ],
-    bundle: {
-      claims: [
-        {
-          source: "morning_digest",
-          path: ["day", "race_count"],
-          value: raceCount,
-          count: raceCount,
-          scope: "当日",
-        },
-      ],
-      source_data: { morning_digest: { day: { race_count: raceCount } } },
-    },
-  };
-  const fields = {
-    caption_text: caption,
-    cover_image_path: imagePath,
-    source_data: sourceData,
-    risk_flags: risk,
-  };
-  let draft = existing.draft
-    ? await store.updateTodayDraft(existing.draft.id, fields)
-    : await store.insertDraft({
-        content_group_id: crypto.randomUUID(),
-        platform: "x",
-        language: "ja",
-        status: "pending_review",
-        format: "today_digest",
-        title: "本日のデータ一覧",
-        hashtags: [],
-        publish_blocked: false,
-        publication_hold_reasons: [],
-        send_lane: "A",
-        scheduled_at: when.scheduled_at,
-        ...fields,
-      });
-  const trackingRow = {
-    draft_id: draft.id,
-    template_variant_id: variant.uuid,
-    race_url: TODAY_URL,
-    tracking_url: trackingUrl,
-    utm_source: "x",
-    utm_medium: "social",
-    utm_campaign: "today_digest",
-    utm_content: todayUtmContent(date, contentType.sent),
-    release_evidence: releaseEvidence,
-  };
-  let variantSaved = Boolean(variant.uuid);
-  try {
-    await trackingStore.save(trackingRow);
-  } catch (error) {
-    // 案の uuid の行が sns_template_variants にまだ無い（設定の uuid を先に入れた）ときだけ、札なしで保存して投稿は止めない。
-    // 外部キー違反（PostgREST は 409）に限る。一時的な失敗は投げて次の回にやり直す（札を null に固定しない）。札は source_data.today_variant に残る
-    if (!variant.uuid || !/HTTP 409|foreign key/i.test(error.message))
-      throw error;
-    console.error(
-      `/today の tracking に案の札（${variant.uuid}）を入れられない。札なしで保存する: ${error.message}`,
-    );
-    variantSaved = false;
-    await trackingStore.save({ ...trackingRow, template_variant_id: null });
-  }
-  // 案の比較（管理画面の観測の CSV・比較）は下書きの template_variant_id を読むので、下書きにも入れる（承認の前なので承認は外れない）。
-  // tracking に入った（行がある）ときだけ。入れられなければ下書きは札なしのまま（source_data.today_variant には残る）
-  if (variantSaved)
-    draft = await store
-      .updateTodayDraft(draft.id, { template_variant_id: variant.uuid })
-      .catch((error) => {
-        console.error(
-          `/today の下書きに案の札（${variant.uuid}）を入れられない: ${error.message}`,
-        );
-        return draft;
-      });
-  // 返信（link_position=reply）: リンクだけの子の下書き。親の job ができるまで公開保留（子だけ先に承認されて単独の投稿にならない）。
-  // 親と同じ版・締切・表示の確認を持つので、送る直前の検査（readCurrent）は親と同じに通る。thread_index は 0 のまま
-  // （X の月の予約は thread_index=0 を URL つきの額で引く。子は URL つきなので、こちらに合わせる）
-  let replyDraft = existing.reply?.draft ?? null;
-  if (post.reply) {
-    const { image_paths: _images, ...rest } = sourceData;
-    const replyFields = {
-      caption_text: post.reply,
-      source_data: {
-        ...rest,
-        race_id: `${date}-today-reply`,
-        today_reply: { parent_draft_id: draft.id },
-      },
-      risk_flags: replyRisk,
-      publish_blocked: true,
-    };
-    replyDraft = replyDraft
-      ? await store.updateTodayDraft(replyDraft.id, replyFields)
-      : await store.insertDraft({
-          content_group_id: draft.content_group_id,
-          platform: "x",
-          language: "ja",
-          status: "pending_review",
-          format: "today_digest",
-          title: "本日のデータ一覧（返信のリンク）",
-          hashtags: [],
-          cover_image_path: null,
-          publication_hold_reasons: [],
-          send_lane: "A",
-          scheduled_at: when.scheduled_at,
-          ...replyFields,
-        });
-  }
-  // 返信の型を引き継いだ作り直しで、自動でなくなっていたら（mode を manual に戻した等）送らない。親だけが承認されて
-  // リンクの無い投稿が出るのを防ぐ（/code-review の指摘）
-  const replyBlocked = Boolean(post.reply) && !replyAllowed;
-  const state = risk.length || replyBlocked ? "held_manual" : "manual";
-  const checks = {
-    passed: risk.length === 0,
-    risk: risk.map((r) => r.id),
-    digest_revision: revision,
-    display: { ok: true, checked_at: checkedAt },
-    checked_at: checkedAt,
-  };
-  const heldReason = risk.length
-    ? `禁止表現: ${checks.risk.join(",")}`
-    : replyBlocked
-      ? "返信の型は自動（mode=auto）の日だけ送れる"
-      : null;
-  let item = existing.item
-    ? await store.updateItem(existing.item.id, existing.item.state, {
-        state,
-        checks,
-        held_reason: heldReason,
-      })
-    : await store.insertItem({
-        kind: "digest",
-        draft_id: draft.id,
-        channel: "x",
-        race_id: `today:${date}`,
-        deadline_at: when.deadline_at,
-        notify_by: when.notify_by,
-        veto_until: when.veto_until,
-        state,
-        checks,
-        held_reason: heldReason,
-      });
-  const replyRow = {
-    kind: "digest",
-    channel: "x",
-    race_id: `today:${date}:reply`,
-    deadline_at: when.deadline_at,
-    notify_by: when.notify_by,
-    veto_until: when.veto_until,
-  };
-  let replyItem = existing.reply?.item ?? null;
-  if (replyDraft && post.reply)
-    replyItem = replyItem
-      ? await store.updateItem(replyItem.id, replyItem.state, {
-          state,
-          checks,
-          held_reason: heldReason,
-        })
-      : await store.insertItem({
-          ...replyRow,
-          draft_id: replyDraft.id,
-          state,
-          checks,
-          held_reason: heldReason,
-        });
-  // 自動（mode=auto、2026-10-18 オーナー決定: /today も承認なし）: item を notified にして自動送信の承認者で承認する。
-  // 送る時刻は 7:00 と下書きを作った時刻の遅い方（veto_until と同じ）。確認用の作り直し（review）は自動にしない
-  let autoError = null;
-  let slotNote = null;
-  const auto = state === "manual" && replyAllowed;
-  if (auto) {
-    try {
-      // X の日の枠の /today の取り置き（182、docs/design/x-daily-slots/plan.md）。返信の型は親と返信の2本。
-      // 入らないと分かったら自動の承認をしない（下の失敗の道で item を戻す）。182 の前・読めないときは今のまま（claim が正）
-      if (store.xSlotRoom) {
-        // 作り直し（版が同じ）では前の版の job が queued のまま残るので、この下書きの job は数えない（system-architect の P2）
-        const slot = await checkXSlot(
-          store.xSlotRoom,
-          SLOT_KINDS.today,
-          replyItem ? 2 : 1,
-          draft.id,
-        );
-        slotNote = slot.note ?? null;
-        if (slot.blocked) throw new Error(slot.reason);
-      }
-      item = await store.updateItem(item.id, "manual", {
-        state: "notified",
-        notified_at: checkedAt,
-        // 止めるリンクは作らない（オーナー決定）。153 の CHECK が notified に要求するので、使わない乱数のハッシュを入れる
-        stop_token_hash: randomBytes(32).toString("hex"),
-      });
-      const bytes = new Map(imagePaths.map((p, i) => [p, shots[i]]));
-      const parentJob = await store.approve({
-        p_draft_id: draft.id,
-        p_approver_id: control.auto_approver_id,
-        p_snapshot: await createXSnapshot(draft, async (p) => {
-          if (!bytes.has(p)) throw new Error(`媒体が無い: ${p}`);
-          return bytes.get(p);
-        }),
-        p_scheduled_at: when.scheduled_at,
-      });
-      // 返信: 親の job を deadline_queue.parent_job_id に入れて（承認は queue の一致を照合する）公開保留を外してから承認する。
-      // 送信の runner は親が posted の子だけを選び、claim も parent_not_posted で止める（153・158）
-      if (replyItem) {
-        if (!parentJob?.id) throw new Error("親の job の id を受け取れない");
-        replyItem = await store.updateItem(replyItem.id, "manual", {
-          state: "notified",
-          notified_at: checkedAt,
-          stop_token_hash: randomBytes(32).toString("hex"),
-        });
-        replyDraft = await store.updateTodayDraft(replyDraft.id, {
-          source_data: {
-            ...replyDraft.source_data,
-            deadline_queue: {
-              ...replyDraft.source_data.deadline_queue,
-              parent_job_id: parentJob.id,
-            },
-          },
-          publish_blocked: false,
-        });
-        await store.approve({
-          p_draft_id: replyDraft.id,
-          p_approver_id: control.auto_approver_id,
-          p_snapshot: await createXSnapshot(replyDraft, async (p) => {
-            throw new Error(`返信に媒体は無い: ${p}`);
-          }),
-          p_scheduled_at: when.scheduled_at,
-        });
-      }
-    } catch (error) {
-      autoError = error.message;
-      // 自動の承認者の job は item が notified でないと claim で止まる。返信の型は親も子も held_manual にする
-      // （manual に戻すと親だけが承認されてリンクの無い投稿が出うる。x-channel の審査 P2）。返信の無い型は今までどおり manual
-      const back = replyItem
-        ? {
-            state: "held_manual",
-            held_reason: `返信の型の自動の承認に失敗: ${firstLine(autoError)}`,
-          }
-        : { state: "manual" };
-      // 戻せなかったら握りつぶさず、Slack の知らせ（autoError）に載せる
-      const undo = (row) =>
-        store.updateItem(row.id, row.state, back).catch((e) => {
-          autoError += ` / item ${row.id} を戻せない: ${e.message}`;
-        });
-      await undo(item);
-      if (replyItem && replyItem.state !== back.state) await undo(replyItem);
-    }
-  }
-  const images = await Promise.all(
-    imagePaths.map((path) => signImage(path).catch(() => null)),
+  await assertTodayPageReady(headless, markers, env.info, api);
+  const captured = await captureImages({ ...prep, chosen }, picked, env);
+  if (captured.extra) return done(captured.extra);
+  const { post, contentType, trackingUrl, variant } = captured.chosen;
+  return done(
+    await writeTodayDraft({
+      ...d,
+      api,
+      store,
+      trackingStore: deps.trackingStore,
+      saveImage: deps.saveImage,
+      signImage: deps.signImage,
+      existing,
+      control,
+      replyAllowed,
+      review,
+      now,
+      date,
+      when,
+      sendAt,
+      revision,
+      digest,
+      riskOf,
+      replyRisk: post.reply ? riskOf(post.reply) : [],
+      post,
+      contentType,
+      trackingUrl,
+      variant,
+      v3: prep.v3,
+      courseWin: captured.courseWin,
+      bFallback: captured.bFallback,
+      shots: captured.shots,
+    }),
   );
-  // 承認を外したのは、item があった（＝前に Slack で知らせた）ときだけ
-  const rebuilt = Boolean(existing.draft && existing.item);
-  const head = review
-    ? "確認用に今日の下書きを作り直した（送る時刻を過ぎているので、承認・送信はできない）"
-    : rebuilt
-      ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
-      : auto && !autoError
-        ? `今日の投稿を ${jstHm(when.scheduled_at)} に自動で送る（承認なし${control.dry_run !== false ? "。ただし試運転中なので claim の前で止まる" : ""}）。止めるには: UPDATE public.sns_x_send_control SET paused = true WHERE id = true;`
-        : autoError
-          ? `今日の投稿の自動の承認に失敗したので送らない: ${autoError}`
-          : state === "manual"
-            ? "今日の投稿の下書きができたが、X は個別承認（mode=manual）なので送らない。自動で送るなら sns_auto_send_control の mode を auto にする"
-            : "今日の投稿の下書きに禁止表現があり、止めた";
-  try {
-    await notify(
-      `SNS /today（${date}）: ${head}${slotNote ? `\n${slotNote}` : ""}${bFallback ? `\n（型 b の日だったが型 a で送る: ${bFallback}）` : ""}\n${caption}${post.reply ? `\n\n（自分への返信）${post.reply}` : ""}${images
-        .filter(Boolean)
-        .map((url, i) => `\n画像${i + 1}: ${url}`)
-        .join("")}`,
-    );
-  } catch (error) {
-    console.error(`Slack に通知できません: ${error.message}`);
-  }
-  return done({
-    outcome: rebuilt ? "rebuilt" : auto && !autoError ? "notified" : state,
-    ...(autoError ? { reason: `auto_failed: ${autoError}` } : {}),
-    ...(review ? { review: true } : {}),
-    item_id: item.id,
-    draft_id: draft.id,
-    ...(replyDraft && post.reply ? { reply_draft_id: replyDraft.id } : {}),
-    content_type: contentType.id,
-    ...(contentType.fallback_reason
-      ? { type_fallback: contentType.fallback_reason }
-      : {}),
-    revision,
-    written: true,
-  });
-}
-
-/**
- * その日の型を選ぶ（PD02）。型の列（store.typeSchedule）を読み、読めなければ config の案で送る（止めない。理由は fallback_reason）。
- * 返信（reply）は自動（mode=auto・自動送信の承認者あり）で、確認用の作り直しでないときだけ選べる（親から順につなぐのが自動の道だけのため）
- */
-async function pickTodayType(date, { store, loadVariants, replyAllowed }) {
-  const config = loadVariants();
-  // 今の型（v3）の日は型の列を使わないので読まない（読めないときの誤った「config の案で送る」も出さない）
-  const fixed = pickTodayPost(config, date, { allowReply: replyAllowed });
-  if (fixed.body === V3_BODY) return fixed;
-  let row = null;
-  let scheduleError = null;
-  if (store.typeSchedule) {
-    try {
-      row = await store.typeSchedule(date);
-    } catch (error) {
-      // 表がまだ無い（174 の適用前、PostgREST は 404）と、それ以外の読み取りの失敗を分ける
-      scheduleError = /HTTP 404/.test(error.message)
-        ? "schedule_unavailable"
-        : "schedule_read_failed";
-      console.error(
-        `/today の型の列を読めない（config の案で送る）: ${error.message}`,
-      );
-    }
-  }
-  return pickTodayPost(config, date, {
-    row,
-    scheduleError,
-    allowReply: replyAllowed,
-  });
-}
-
-/** PostgREST の読み書き（service_role）。失敗は握りつぶさず投げる */
-export function createTodayStore({ url, key, fetchImpl = fetch }) {
-  async function call(path, { method = "GET", body } = {}) {
-    const response = await fetchImpl(`${url}/rest/v1/${path}`, {
-      method,
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        ...(body !== undefined
-          ? {
-              "Content-Type": "application/json",
-              Prefer: "return=representation",
-            }
-          : {}),
-      },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-    if (!response.ok)
-      throw new Error(
-        `/today の計画の DB 操作に失敗: HTTP ${response.status} ${method} ${path.split("?")[0]}`,
-      );
-    const text = await response.text();
-    return text ? JSON.parse(text) : null;
-  }
-  const one = (rows, what) => {
-    if (rows?.length !== 1)
-      throw new Error(`${what}（条件に合う行が無い。他の操作と競合した）`);
-    return rows[0];
-  };
-  return {
-    // 親（本文）と返信（source_data.today_reply のある子、PD02）を分けて返す
-    async todayState(date) {
-      const [drafts, items] = await Promise.all([
-        call(
-          `sns_drafts?send_lane=eq.A&format=eq.today_digest&source_data->digest->>date=eq.${date}&status=neq.archived&select=id,status,source_data&limit=4`,
-        ),
-        call(
-          `sns_auto_send_items?kind=eq.digest&race_id=in.(${encodeURIComponent(`"today:${date}","today:${date}:reply"`)})&select=id,state,draft_id,race_id`,
-        ),
-      ]);
-      const parents = drafts.filter((d) => !d.source_data?.today_reply);
-      if (parents.length > 1)
-        throw new Error(`/today の下書きが2件ある: ${date}`);
-      const draft = parents[0] ?? null;
-      const replies = drafts.filter(
-        (d) =>
-          draft && d.source_data?.today_reply?.parent_draft_id === draft.id,
-      );
-      if (replies.length > 1)
-        throw new Error(`/today の返信の下書きが2件ある: ${date}`);
-      return {
-        draft,
-        item: items.find((i) => i.race_id === `today:${date}`) ?? null,
-        reply: replies[0]
-          ? {
-              draft: replies[0],
-              item:
-                items.find((i) => i.race_id === `today:${date}:reply`) ?? null,
-            }
-          : null,
-      };
-    },
-    // 型の列のその日の行（PD02、174）。無ければ null。表が無い（174 の適用前）は HTTP 404 で投げる（呼び出し側が config で送る）
-    async typeSchedule(date) {
-      const rows = await call(
-        `sns_today_type_schedule?day=eq.${date}&select=day,type_id,post`,
-      );
-      return rows[0] ?? null;
-    },
-    insertDraft: async (row) =>
-      one(
-        await call("sns_drafts", { method: "POST", body: row }),
-        "下書きを作れない",
-      ),
-    // 承認済みでも書き換える（148 のトリガーが承認を外し、待っている job を取り消す）。送信が始まったものは 148 が拒否する
-    async updateTodayDraft(id, patch) {
-      return one(
-        await call(
-          `sns_drafts?id=eq.${id}&status=in.(pending_review,approved)`,
-          { method: "PATCH", body: patch },
-        ),
-        `下書き ${id} を書き換えられない`,
-      );
-    },
-    insertItem: async (row) =>
-      one(
-        await call("sns_auto_send_items", { method: "POST", body: row }),
-        "item を作れない",
-      ),
-    control: async () =>
-      (
-        await call(
-          "sns_auto_send_control?channel=eq.x&select=mode,dry_run,auto_approver_id",
-        )
-      )[0] ?? null,
-    approve: (args) =>
-      call("rpc/approve_sns_x_send", { method: "POST", body: args }),
-    // X の日の枠の取り置きの残り（182）
-    xSlotRoom: xSlotRoomVia(call),
-    async updateItem(id, fromState, patch) {
-      return one(
-        await call(`sns_auto_send_items?id=eq.${id}&state=eq.${fromState}`, {
-          method: "PATCH",
-          body: { ...patch, updated_at: new Date().toISOString() },
-        }),
-        `item ${id} を更新できない`,
-      );
-    },
-  };
-}
-
-/**
- * /today の計画の各回の結果を、その日の分だけ残す（scrape_job_state.cursor.today）。report は5分ごとに上書きされ、
- * 送る時刻を過ぎると「時間外」だけになって朝の経過が読めなくなるため（2026-10-17、下書きができなかった朝に原因を追えなかった）。
- * 時間外の skip は残さない。日付が変わったら空から。最新の30件まで
- * @param {{date?: string, events?: object[]}|null|undefined} prev 前回の cursor.today
- * @param {{outcome?: string, reason?: string, item_id?: string}} item この回の report.items の /today の1件
- */
-export function nextTodayLog(prev, item, now) {
-  const date = jstDate(now);
-  const events = prev?.date === date ? [...(prev.events ?? [])] : [];
-  if (item && item.reason !== "outside_window" && item.outcome !== "missed")
-    events.push({
-      at: now.toISOString(),
-      outcome: item.outcome ?? null,
-      reason: item.reason
-        ? String(item.reason)
-            .split(" / ")
-            .map(firstLine)
-            .join(" / ")
-            .slice(0, 600)
-        : null,
-    });
-  const same = prev?.date === date;
-  return {
-    date,
-    events: events.slice(-30),
-    ...(same && prev.missed_notified ? { missed_notified: true } : {}),
-    ...(same && prev.rebuild_failures
-      ? { rebuild_failures: prev.rebuild_failures }
-      : {}),
-  };
-}
-
-// 確認用の作り直しが続けて失敗したら、この回数で Slack に知らせてやめる（5分ごとに夜まで繰り返さない）
-export const REBUILD_MAX_FAILURES = 3;
-
-/** その日の下書きを作れずに送る時刻を過ぎたときの Slack の文（朝の経過から最後の理由を添える） */
-export function missedTodayText(log) {
-  const last = [...(log?.events ?? [])]
-    .reverse()
-    .find((e) => e.reason || e.outcome);
-  const at = (iso) =>
-    new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
-  return [
-    `SNS /today（${log?.date}）: ${TODAY_LATEST} までに下書きを作れなかった。今日は送らない`,
-    last
-      ? `最後の結果（${at(last.at)}）: ${last.outcome}${last.reason ? ` ${last.reason}` : ""}（朝の記録 ${log.events.length}件）`
-      : "朝の実行が一度も最後まで終わっていない（関数の時間切れなど。Vercel のログを確かめる）",
-  ].join("\n");
-}
-
-/**
- * 1回の実行の後の朝の記録と、Slack に出す「作れなかった」の文（その日まだ知らせていないときだけ。知らせたら呼び出し側が
- * log.missed_notified=true にして cursor に保存する）
- */
-export function finishTodayLog(prev, item, now, { rebuilding = false } = {}) {
-  const log = nextTodayLog(prev, item, now);
-  if (rebuilding && item?.outcome === "error")
-    log.rebuild_failures = (log.rebuild_failures ?? 0) + 1;
-  // 作り直しをやめる（呼び出し側が cursor.today_rebuild を消す）。知らせるのはこのときの1回だけ
-  const giveUp =
-    rebuilding && (log.rebuild_failures ?? 0) >= REBUILD_MAX_FAILURES;
-  if (giveUp) delete log.rebuild_failures;
-  return {
-    log,
-    giveUp,
-    notice: giveUp
-      ? [
-          `SNS /today（${log.date}）: 確認用の作り直しが${REBUILD_MAX_FAILURES}回続けて失敗したので、やめた（もう一度は today_rebuild を入れ直す）`,
-          `最後の理由: ${log.events.at(-1)?.reason ?? "なし"}`,
-        ].join("\n")
-      : item?.outcome === "missed" && !log.missed_notified
-        ? missedTodayText(log)
-        : null,
-  };
 }
