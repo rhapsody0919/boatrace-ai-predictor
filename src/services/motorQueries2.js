@@ -11,6 +11,7 @@ import {
 } from "../utils/pretestRows";
 import { computeMotorPowerIndex } from "../utils/motorPowerIndex.js";
 import { chunkArray, withCache } from "./core.js";
+import { makeMotorPretest } from "../pure/motorModel.js";
 import {
   beforeKey,
   findBoatColumnIndex,
@@ -42,7 +43,11 @@ export async function fetchPretestByRacer(venueCode, date) {
     .eq("venue_code", venueCode)
     .gte("race_date", shiftDate(date, -PRETEST_LOOKBACK_DAYS))
     .lte("race_date", date);
-  return pickLatestPretestByRacer(data ?? []);
+  // venue_code は eq で1つに決まるので select に足さず（録画の URL を変えない）、行に付けてから makeMotorPretest に通す。
+  // 不変条件の破れ（RangeError）は上の取得の失敗と同じく投げる（呼び手 getRaceMotorBreakdown の withCache は保存せず、画面は取得失敗）
+  return pickLatestPretestByRacer(
+    (data ?? []).map((row) => makeMotorPretest({ venue_code: venueCode, ...row })),
+  );
 }
 
 /**

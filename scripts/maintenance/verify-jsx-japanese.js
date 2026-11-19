@@ -310,8 +310,7 @@ export function findInFile(rel) {
 
 const keyOf = (h) => `${h.file}\u0000${h.text}`;
 
-function main() {
-  const files = reachableFiles();
+function collectHits(files) {
   const hits = [];
   const badAllows = [];
   for (const f of files) {
@@ -319,25 +318,14 @@ function main() {
     hits.push(...r.hits);
     badAllows.push(...r.badAllows);
   }
+  return { hits, badAllows };
+}
 
-  if (process.argv.includes("--print")) {
-    for (const h of hits)
-      console.log(`${h.file}:${h.line} [${h.kind}] ${h.text}`);
-    console.log(`${hits.length} 件（${files.length} ファイル）`);
-    return;
-  }
-
-  const baseline = JSON.parse(read(BASELINE_PATH)).entries;
+/** 台帳と見つかった物を突き合わせる: 台帳に無い物（fresh）と、直ったのに台帳に残る物（stale） */
+function compareWithBaseline(baseline, hits) {
   const remaining = new Map();
-  for (const e of baseline) {
-    if (!/^BOA-\d+$/.test(e.ticket ?? "")) {
-      console.error(
-        `NG: 台帳の項目に所属チケット（ticket: "BOA-123"）がありません → ${e.file} ${e.text}`,
-      );
-      process.exit(1);
-    }
+  for (const e of baseline)
     remaining.set(keyOf(e), (remaining.get(keyOf(e)) ?? 0) + 1);
-  }
   const fresh = [];
   for (const h of hits) {
     const k = keyOf(h);
@@ -352,7 +340,10 @@ function main() {
     }
     return false;
   });
+  return { fresh, stale };
+}
 
+function failureMessages(fresh, stale, badAllows) {
   const failures = [];
   if (fresh.length > 0) {
     failures.push(
@@ -376,6 +367,30 @@ function main() {
         badAllows.map((b) => `      ${b.file}:${b.line}`).join("\n"),
     );
   }
+  return failures;
+}
+
+function main() {
+  const files = reachableFiles();
+  const { hits, badAllows } = collectHits(files);
+
+  if (process.argv.includes("--print")) {
+    for (const h of hits)
+      console.log(`${h.file}:${h.line} [${h.kind}] ${h.text}`);
+    console.log(`${hits.length} 件（${files.length} ファイル）`);
+    return;
+  }
+
+  const baseline = JSON.parse(read(BASELINE_PATH)).entries;
+  const noTicket = baseline.find((e) => !/^BOA-\d+$/.test(e.ticket ?? ""));
+  if (noTicket) {
+    console.error(
+      `NG: 台帳の項目に所属チケット（ticket: "BOA-123"）がありません → ${noTicket.file} ${noTicket.text}`,
+    );
+    process.exit(1);
+  }
+  const { fresh, stale } = compareWithBaseline(baseline, hits);
+  const failures = failureMessages(fresh, stale, badAllows);
   if (failures.length > 0) {
     console.error("NG: JSX の日本語の直書き");
     for (const f of failures) console.error(`  - ${f}`);

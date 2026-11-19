@@ -19,6 +19,7 @@ import contextlib
 import hashlib
 import json
 import os
+import posixpath
 import re
 import shutil
 import subprocess
@@ -31,6 +32,11 @@ from typing import Callable, Dict, FrozenSet, Iterable, List, Mapping, Optional,
 Json = Dict[str, object]
 VERIFY_RE = re.compile(r"scripts/maintenance/verify-[^/]+\.js")
 REGISTRY = "scripts/maintenance/verify-registry.json"
+# verify の本の置き場（龍神 11/18 の verify 分割。verify-*.js が静的な相対 import で読む試しの本・fixture）。ops 審査 20261118-165852 §1 P1:
+# ここだけを変える PR は変異検査の外で、fixture を削って verify を弱めても機械マージに乗った。読む verify-* を逆に辿り、旧（master の verify＋本）と
+# 新（PR の verify＋本）を同じ変異で比べる。本は製品に数えない（変異を当てない）
+DATA_PREFIX = "scripts/maintenance/verifyData/"
+REL_IMPORT_RE = re.compile(r"""(?:\bfrom|\bimport|\brequire)\s*\(?\s*(["'`])(\.{1,2}/[^"'`\n]+)\1""")
 DEFAULTS: Json = {
     "max_mutants_per_verify": 40,  # 目安（根拠なし）。ここまで等間隔に間引く
     "run_timeout_sec": 120,  # 目安（根拠なし）。verify 1回の上限。超えたら落ちた扱い
@@ -153,9 +159,53 @@ class Verdict:
     record: Json = field(default_factory=dict)  # 台帳の finished 行へ残す
 
 
+def is_data_path(p: str) -> bool:
+    """verifyData/ の下のファイル（どの深さ・拡張子も。.js 以外は import で辿れず人へ回る）"""
+    return p.startswith(DATA_PREFIX) and len(p) > len(DATA_PREFIX)
+
+
 def is_verify_path(p: str) -> bool:
     """拾う前（票の変えてよいファイル）に守りの当たりを外してよいパスの形。判定そのものは evaluate"""
-    return bool(VERIFY_RE.fullmatch(p)) or p == REGISTRY
+    return bool(VERIFY_RE.fullmatch(p)) or p == REGISTRY or is_data_path(p)
+
+
+def _rel_targets(rel: str, text: str) -> List[str]:
+    """rel の本文の静的な相対 import（from・import・require の文字列）が指すパスの候補（拡張子の省略・index.js も）"""
+    out: List[str] = []
+    for m in REL_IMPORT_RE.finditer(text):
+        t = posixpath.normpath(posixpath.join(posixpath.dirname(rel), m.group(2)))
+        out += [t, t + ".js", t + "/index.js"]
+    return out
+
+
+def data_readers(repo: Path, changes: Mapping[str, str], master_text: Callable[[str], Optional[str]]) -> Dict[str, List[str]]:
+    """変わった verifyData/ のファイルごとに、それを（verifyData/ の中を経て推移で）import する verify-*.js。旧（master）と新（作業場所）の本文の
+    辺の和で逆に辿る（新で import をやめた verify も旧で読んでいれば拾う）。注釈の中の import も数える（多めに拾う側＝止める側）"""
+    maint = repo / "scripts" / "maintenance"
+    files = {_rel(f, repo) for f in maint.glob("verify-*.js")} | {_rel(f, repo) for f in (repo / DATA_PREFIX).rglob("*") if f.is_file()} if maint.is_dir() else set()
+    files |= {p for p in changes if VERIFY_RE.fullmatch(p) or is_data_path(p)}
+    rev: Dict[str, set] = {}
+    for f in files:
+        texts = [(repo / f).read_text(encoding="utf-8", errors="replace")] if (repo / f).is_file() else []
+        if f in changes:  # 変わっていない物は master と同じ本文
+            texts.append(master_text(f) or "")
+        for t in texts:
+            for tgt in _rel_targets(f, t):
+                rev.setdefault(tgt, set()).add(f)
+    out: Dict[str, List[str]] = {}
+    for p in sorted(x for x in changes if is_data_path(x)):
+        seen, stack, vs = {p}, [p], set()
+        while stack:
+            for r in rev.get(stack.pop(), ()):
+                if r in seen:
+                    continue
+                seen.add(r)
+                if VERIFY_RE.fullmatch(r):
+                    vs.add(r)
+                elif is_data_path(r):
+                    stack.append(r)
+        out[p] = sorted(vs)
+    return out
 
 
 # ① ---------------------------------------------------------------------------
@@ -389,12 +439,16 @@ TEST_HELPERS = frozenset({"scripts/lib/renderJsx.js", "scripts/lib/renderWithFre
                           "scripts/maintenance/dataLayerSource.js"})  # verify がデータ層の本文を読む読み先（1406・1409 で字の変異が等価の見逃しになった）
 
 
-def product_files(repo: Path, script_rel: str, texts: Iterable[str]) -> List[str]:
+def product_files(repo: Path, script_rel: str, texts: Iterable[str], extra: Optional[Mapping[str, Sequence[str]]] = None) -> List[str]:
     """verify が import・読む src/・api/・scripts/ の物（文字列の中の相対パス・src/…・api/…・scripts/… が指す .js/.mjs/.cjs/.jsx/.ts。
-    直の参照だけで、推移は見ない）。scripts/maintenance/verify-*.js・旧の写し（*.__old__.js）・試しの道具（TEST_HELPERS・__fixtures__）は除く"""
-    base = (repo / script_rel).parent
+    直の参照だけで、推移は見ない）。scripts/maintenance/verify-*.js・旧の写し（*.__old__.js）・試しの道具（TEST_HELPERS・__fixtures__）は除く。
+    verifyData/ の本は製品に数えず、その本文（作業場所の版と extra の {本: [旧の本文]}）が指す物を同じ規則で拾う（本の中は推移で辿る）"""
+    pending = [(script_rel, t) for t in texts] + [(r, t) for r, ts in (extra or {}).items() for t in ts]
+    seen_data = set(extra or {})
     found: List[str] = []
-    for t in texts:
+    while pending:
+        rel0, t = pending.pop(0)
+        base = (repo / rel0).parent
         for m in LITERAL_RE.finditer(t):
             s = m.group(2)
             if not re.search(r"\.(?:m?js|cjs|jsx|tsx?)$", s):
@@ -403,6 +457,11 @@ def product_files(repo: Path, script_rel: str, texts: Iterable[str]) -> List[str
             try:
                 rel = _rel(cand, repo)
             except ValueError:
+                continue
+            if is_data_path(rel):
+                if rel not in seen_data and (repo / rel).is_file():
+                    seen_data.add(rel)
+                    pending.append((rel, (repo / rel).read_text(encoding="utf-8", errors="replace")))
                 continue
             if VERIFY_RE.fullmatch(rel) or rel.endswith(".__old__.js") or rel == script_rel or rel in TEST_HELPERS or "/__fixtures__/" in rel:
                 continue
@@ -457,14 +516,26 @@ def apply_mutant(src: bytes, m: Json) -> bytes:
     return (s[: int(m["start"])] + str(m["repl"]) + s[int(m["end"]):]).encode("utf-8")  # type: ignore[call-overload]
 
 
-def mutation_gate(runner: Runner, script_rel: str, old_text: str, new_exists: bool, cfg: Json) -> Tuple[bool, str, Json]:
-    """1本の今ある verify の ②。(通ったか, 通らない理由, 台帳の記録)"""
+Swap = Mapping[str, Tuple[Optional[bytes], Optional[bytes]]]  # verifyData/ の変わった本: (master の中身, PR の中身)。None は無い
+
+
+def _set_data(runner: Runner, swap: Swap, old: bool) -> None:
+    for rel, pair in swap.items():
+        b = pair[0] if old else pair[1]
+        runner.put(rel, b) if b is not None else runner.drop(rel)
+
+
+def mutation_gate(runner: Runner, script_rel: str, old_text: str, new_exists: bool, cfg: Json, swap: Optional[Swap] = None) -> Tuple[bool, str, Json]:
+    """1本の今ある verify の ②。(通ったか, 通らない理由, 台帳の記録)。swap があれば、旧の verify は verifyData/ の本も master の版にして回す"""
     repo = runner.repo
+    swap = swap or {}
     new_path = repo / script_rel
     new_text = new_path.read_text(encoding="utf-8") if new_exists else ""
     old_path = new_path.with_name(new_path.stem + ".__old__.js")
     rec: Json = {"script": script_rel, "deleted": not new_exists}
-    prods = product_files(repo, script_rel, [old_text, new_text])
+    if swap:
+        rec["data_swapped"] = sorted(swap)
+    prods = product_files(repo, script_rel, [old_text, new_text], {r: [o.decode("utf-8", "replace")] for r, (o, _) in swap.items() if o is not None})
     rec["products"] = prods
     if not prods:
         return False, f"{script_rel}: 製品のファイル（src/・api/・scripts/ の import・読み先）が見つからず変異を作れない", rec
@@ -480,8 +551,17 @@ def mutation_gate(runner: Runner, script_rel: str, old_text: str, new_exists: bo
         return False, f"{script_rel}: 振る舞いを変える変異が作れない（{rec.get('skipped_product', '候補なし')}）", rec
     old_path.parent.mkdir(parents=True, exist_ok=True)
     old_path.write_text(old_text, encoding="utf-8")
+
+    def old_passes() -> bool:
+        if not swap:
+            return runner.passes(old_path)
+        _set_data(runner, swap, True)
+        try:
+            return runner.passes(old_path)
+        finally:
+            _set_data(runner, swap, False)
     try:
-        if not runner.passes(old_path):
+        if not old_passes():
             return False, f"{script_rel}: 変異なしで旧の verify が通らない（作業場所で再現できず比べられない）", rec
         if new_exists and not runner.passes(new_path):
             return False, f"{script_rel}: 変異なしで新の verify が通らない", rec
@@ -492,7 +572,7 @@ def mutation_gate(runner: Runner, script_rel: str, old_text: str, new_exists: bo
             orig = (repo / rel).read_bytes()
             try:
                 runner.write(rel, apply_mutant(orig, m))
-                if runner.passes(old_path):
+                if old_passes():
                     continue  # 旧が落とさない変異は比べない
                 killed_old.append(mkey(m))
                 if not (new_exists and not runner.passes(new_path)):
@@ -938,13 +1018,15 @@ def resolve_nm(repo: Path, cfg: Json) -> Optional[Path]:
 
 def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str], Optional[str]], cfg: Optional[Json] = None,
              run: Run = default_run) -> Verdict:
-    """verify-*.js と registry に当たる差分を判定する。excused に入らなかったパスは human に理由が付く（呼び出し側は今までどおり人へ回す）。
-    これ以外のパス（package.json・scripts/lib/・e2e/ 等）には何もしない"""
+    """verify-*.js・registry・verifyData/ に当たる差分を判定する。excused に入らなかったパスは human に理由が付く（呼び出し側は今までどおり人へ回す）。
+    これ以外のパス（package.json・scripts/lib/・e2e/ 等）には何もしない。
+    verifyData/ の変更は、それを読む verify-*.js（逆に辿る）を全部 ② で回し（旧は master の verify＋本、新は PR の verify＋本）、全部通れば通す"""
     c: Json = {**DEFAULTS, **(cfg or {})}
     repo = Path(repo).resolve()  # sandbox のプロファイルは実パスで見る（macOS の /var は /private/var）
     verifies = {p: s for p, s in changes.items() if VERIFY_RE.fullmatch(p)}
+    datas = {p: s for p, s in changes.items() if is_data_path(p)}
     reg = changes.get(REGISTRY)
-    if not verifies and reg is None:
+    if not verifies and reg is None and not datas:
         return Verdict(frozenset(), [], {})
     excused: set = set()
     human: List[str] = []
@@ -952,11 +1034,18 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
     nm = resolve_nm(repo, c)
     if nm is None:
         why = "node_modules（@babel/parser）が作業場所にも config の node_modules にも無く、verify を回せない"
-        return Verdict(frozenset(), [f"{p}: {why}" for p in [*verifies, *([REGISTRY] if reg else [])]], {"error": why})
+        return Verdict(frozenset(), [f"{p}: {why}" for p in [*verifies, *datas, *([REGISTRY] if reg else [])]], {"error": why})
     try:
         rn_ctx = Runner(repo, nm, c, run)
     except (RuntimeError, OSError, subprocess.SubprocessError) as e:
-        return Verdict(frozenset(), [f"{p}: verify を回す場所を作れない（{type(e).__name__}: {str(e)[:150]}）" for p in [*verifies, *([REGISTRY] if reg else [])]], {"error": str(e)[:200]})
+        return Verdict(frozenset(), [f"{p}: verify を回す場所を作れない（{type(e).__name__}: {str(e)[:150]}）" for p in [*verifies, *datas, *([REGISTRY] if reg else [])]], {"error": str(e)[:200]})
+    readers = data_readers(repo, changes, master_text) if datas else {}
+    swap: Dict[str, Tuple[Optional[bytes], Optional[bytes]]] = {}
+    for p in datas:
+        o = master_text(p)
+        swap[p] = (o.encode("utf-8") if o is not None else None, (repo / p).read_bytes() if (repo / p).is_file() else None)
+    data_readers_all = {v for rs in readers.values() for v in rs}
+    gated: Dict[str, bool] = {}  # verify ごとの ①・② の合否（verifyData/ の判定に使う）
     with rn_ctx as rn:
         for p, st in sorted(verifies.items()):
             if st == "A":
@@ -972,6 +1061,7 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
                 else:
                     ok, why, rec = addition_gate(rn, p, c)
                     record["addition"].append(rec)  # type: ignore[union-attr]
+                    gated[p] = ok
                     if ok:
                         excused.add(p)
                         record["added"].append(p)  # type: ignore[union-attr]
@@ -982,7 +1072,7 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
                 if old is None:
                     human.append(f"{p}: origin/master に無い（今ある verify の変更として見られない）")
                     continue
-                if st == "M" and same_ast(nm, old, (rn.repo / p).read_text(encoding="utf-8")):
+                if st == "M" and p not in data_readers_all and same_ast(nm, old, (rn.repo / p).read_text(encoding="utf-8")):
                     excused.add(p)  # 注釈・案内の文だけの変更（HR34 #2511）。振る舞いが同じなので変異で比べるまでもない
                     record.setdefault("same_ast", []).append(p)  # type: ignore[union-attr]
                     continue
@@ -992,14 +1082,17 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
                         human += [f"{p}: {x}" for x in probs]
                         record.setdefault("static", []).extend(f"{p}: {x}" for x in probs)
                         continue
-                ok, why, rec = mutation_gate(rn, p, old, st == "M", c)
+                ok, why, rec = mutation_gate(rn, p, old, st == "M", c, swap)
                 record["mutation"].append(rec)  # type: ignore[union-attr]
+                gated[p] = ok
                 if ok:
                     excused.add(p)
                 else:
                     human.append(why)
             else:
                 human.append(f"{p}: 変更の種類 {st} は見ない")
+        if datas:
+            data_gate_verdicts(rn, nm, c, datas, readers, swap, master_text, gated, excused, human, record)
         if reg is not None:
             if reg != "M":
                 human.append(f"{REGISTRY}: 追加・削除ではなく変更だけ見る（status {reg}）")
@@ -1014,6 +1107,44 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
                     excused.add(REGISTRY)
                     record["registry"] = {"added": added, "removed": removed, "desc_only": not added and not removed}
     return Verdict(frozenset(excused), human, record)
+
+
+def data_gate_verdicts(rn: Runner, nm: Path, c: Json, datas: Mapping[str, str], readers: Mapping[str, List[str]], swap: Swap,
+                       master_text: Callable[[str], Optional[str]], gated: Dict[str, bool], excused: set, human: List[str], record: Json) -> None:
+    """verifyData/ の変更の判定（excused・human・record を足す）。読む verify のうち PR が変えていない物もここで ② に掛ける（旧の本と新の本で比べる）。
+    読む verify が無い（静的な相対 import で辿れない・.json を fs で読む等）・読む verify のどれかが通らない・静的な語が増えたものは人へ"""
+    record["data"] = {"readers": {k: list(v) for k, v in readers.items()}}
+    for v in sorted({v for rs in readers.values() for v in rs} - set(gated)):
+        old = master_text(v)
+        if old is None:  # 作業場所にあって master に無いのに変更に無い（name_status の外）。比べられない
+            gated[v] = False
+            human.append(f"{v}: verifyData/ を読むが origin/master に無く比べられない")
+            continue
+        ok, why, rec = mutation_gate(rn, v, old, (rn.repo / v).is_file(), c, swap)
+        rec["via_data"] = True
+        record["mutation"].append(rec)  # type: ignore[union-attr]
+        gated[v] = ok
+        if not ok:
+            human.append(f"{why}（verifyData/ の変更で）")
+    for p, st in sorted(datas.items()):
+        old, new = swap[p]
+        if st not in ("A", "M", "D"):
+            human.append(f"{p}: 変更の種類 {st} は見ない")
+            continue
+        if new is not None:
+            probs = static_added_problems((old or b"").decode("utf-8", "replace"), new.decode("utf-8", "replace"))
+            if probs:
+                human += [f"{p}: {x}" for x in probs]
+                continue
+        rs = readers.get(p) or []
+        if not rs:
+            human.append(f"{p}: verifyData/ の変更を読む verify-*.js が静的な相対 import で辿れず、変異で比べられない")
+            continue
+        bad = [v for v in rs if not gated.get(v)]
+        if bad:
+            human.append(f"{p}: 読む verify {len(bad)}/{len(rs)} 本が変異検査を通らない（{'・'.join(bad[:3])}）")
+            continue
+        excused.add(p)
 
 
 # git の読み（呼び出し側の便）-----------------------------------------------------

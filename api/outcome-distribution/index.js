@@ -41,6 +41,87 @@ const VENUE_NAMES = {
   24: "大村",
 };
 
+// outcome_distribution テーブルから該当会場のデータを取得
+async function fetchOutcomeRows(parsedVenueCode) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/outcome_distribution?venue_code=eq.${parsedVenueCode}&order=first_boat,count_90days.desc`,
+    {
+      method: "GET",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Supabase outcome_distribution error: ${response.status}`,
+    );
+  }
+
+  const rows = await response.json();
+  if (!rows || rows.length === 0) {
+    throw new Error(
+      "No outcome distribution data for this venue — run update-outcome-distribution.js first",
+    );
+  }
+  return rows;
+}
+
+// 1着別にグループ化（1-6）。total_races・last_updated は最初に total_races が真の行から取る
+function groupByFirstBoat(rows) {
+  const data = {};
+  let totalRaces = 0;
+  let lastUpdated = null;
+
+  for (const row of rows) {
+    const firstBoat = row.first_boat;
+    if (!data[firstBoat]) {
+      data[firstBoat] = [];
+    }
+
+    data[firstBoat].push({
+      second_boat: row.second_boat,
+      third_boat: row.third_boat,
+      count: row.count_90days,
+      probability: row.probability,
+      avg_payout: row.avg_payout,
+    });
+
+    if (!totalRaces) {
+      totalRaces = row.total_races;
+      lastUpdated = row.last_updated;
+    }
+  }
+  return { data, totalRaces, lastUpdated };
+}
+
+async function respondOutcomeDistribution(url) {
+  const parsedVenueCode = parseInt(url.searchParams.get("venue_code"), 10);
+  const rows = await fetchOutcomeRows(parsedVenueCode);
+  const { data, totalRaces, lastUpdated } = groupByFirstBoat(rows);
+
+  const venueName = VENUE_NAMES[String(parsedVenueCode).padStart(2, "0")];
+
+  const result = {
+    venue_code: parsedVenueCode,
+    venue_name: venueName,
+    total_races: totalRaces,
+    last_updated: lastUpdated,
+    data: data,
+  };
+
+  return new Response(JSON.stringify(result), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      // 出目分布データは update-outcome-distribution.js が日1回更新するため24時間キャッシュで十分
+      "Cache-Control": "s-maxage=86400, stale-while-revalidate=3600",
+    },
+  });
+}
+
 export default async function handler(req) {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -59,76 +140,7 @@ export default async function handler(req) {
   if (invalid) return badRequest(invalid);
 
   try {
-    const parsedVenueCode = parseInt(url.searchParams.get("venue_code"), 10);
-
-    // outcome_distribution テーブルから該当会場のデータを取得
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/outcome_distribution?venue_code=eq.${parsedVenueCode}&order=first_boat,count_90days.desc`,
-      {
-        method: "GET",
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        },
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Supabase outcome_distribution error: ${response.status}`,
-      );
-    }
-
-    const rows = await response.json();
-    if (!rows || rows.length === 0) {
-      throw new Error(
-        "No outcome distribution data for this venue — run update-outcome-distribution.js first",
-      );
-    }
-
-    // 1着別にグループ化（1-6）
-    const data = {};
-    let totalRaces = 0;
-    let lastUpdated = null;
-
-    for (const row of rows) {
-      const firstBoat = row.first_boat;
-      if (!data[firstBoat]) {
-        data[firstBoat] = [];
-      }
-
-      data[firstBoat].push({
-        second_boat: row.second_boat,
-        third_boat: row.third_boat,
-        count: row.count_90days,
-        probability: row.probability,
-        avg_payout: row.avg_payout,
-      });
-
-      if (!totalRaces) {
-        totalRaces = row.total_races;
-        lastUpdated = row.last_updated;
-      }
-    }
-
-    const venueName = VENUE_NAMES[String(parsedVenueCode).padStart(2, "0")];
-
-    const result = {
-      venue_code: parsedVenueCode,
-      venue_name: venueName,
-      total_races: totalRaces,
-      last_updated: lastUpdated,
-      data: data,
-    };
-
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        // 出目分布データは update-outcome-distribution.js が日1回更新するため24時間キャッシュで十分
-        "Cache-Control": "s-maxage=86400, stale-while-revalidate=3600",
-      },
-    });
+    return await respondOutcomeDistribution(url);
   } catch (error) {
     console.error("Outcome Distribution Edge function error:", error);
 

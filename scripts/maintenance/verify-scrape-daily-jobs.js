@@ -53,6 +53,7 @@ import {
   mergePendingLists,
 } from "../lib/racerNews/pendingReview.js";
 import { VENUE_MOTOR_STATS_CONFIG } from "../lib/venueMotorStats/venueConfig.js";
+import { createFakeSupabaseClient as createFakeClient } from "../lib/scrapeJobs/testing/fakeSupabaseClient.js";
 
 // 検証の対象コードが出すログは捨て、結果の行だけを出す
 const out = { log: console.log, error: console.error };
@@ -69,7 +70,6 @@ function check(label, pass, detail = "") {
 const show = (v) => JSON.stringify(v);
 const same = (a, b) => show(a) === show(b);
 const jst = (text) => new Date(`${text}+09:00`);
-const clone = (v) => JSON.parse(JSON.stringify(v));
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const FIXTURES = new URL("../lib/__fixtures__/pointRank/", import.meta.url);
@@ -96,161 +96,6 @@ const MOTOR_FIXTURES = new URL(
 );
 const MOTOR = (name) =>
   fs.readFileSync(new URL(`${name}.html`, MOTOR_FIXTURES), "utf8");
-
-// ---------------------------------------------------------------------------
-// 道具: インメモリのSupabaseクライアント（PostgREST の、この検証に必要な部分だけ）
-// ---------------------------------------------------------------------------
-function createFakeClient({ tables = {}, failOn = {} } = {}) {
-  const data = Object.fromEntries(
-    Object.entries(tables).map(([k, rows]) => [k, rows.map(clone)]),
-  );
-  const writes = [];
-  const calls = [];
-  const likeRe = (pattern) =>
-    new RegExp(
-      `^${pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*")}$`,
-    );
-
-  function from(table) {
-    const q = {
-      op: "select",
-      filters: [],
-      orders: [],
-      range: null,
-      limitN: null,
-      single: false,
-      returning: false,
-      payload: null,
-      opts: null,
-    };
-    const b = {
-      select() {
-        if (q.op !== "select") q.returning = true;
-        return b;
-      },
-      eq(c, v) {
-        q.filters.push((r) => r[c] === v);
-        return b;
-      },
-      in(c, vs) {
-        q.filters.push((r) => vs.includes(r[c]));
-        return b;
-      },
-      like(c, p) {
-        const re = likeRe(p);
-        q.filters.push((r) => re.test(String(r[c])));
-        return b;
-      },
-      gte(c, v) {
-        q.filters.push((r) => r[c] >= v);
-        return b;
-      },
-      not(c, op, v) {
-        if (op === "is" && v === null) q.filters.push((r) => r[c] != null);
-        else throw new Error(`fake: not(${c}, ${op}) は未対応`);
-        return b;
-      },
-      order(c, { ascending = true } = {}) {
-        q.orders.push([c, ascending]);
-        return b;
-      },
-      range(a, z) {
-        q.range = [a, z];
-        return b;
-      },
-      limit(n) {
-        q.limitN = n;
-        return b;
-      },
-      maybeSingle() {
-        q.single = true;
-        return b;
-      },
-      insert(rows) {
-        q.op = "insert";
-        q.payload = Array.isArray(rows) ? rows : [rows];
-        return b;
-      },
-      upsert(rows, opts) {
-        q.op = "upsert";
-        q.payload = Array.isArray(rows) ? rows : [rows];
-        q.opts = opts ?? {};
-        return b;
-      },
-      update(patch) {
-        q.op = "update";
-        q.payload = patch;
-        return b;
-      },
-      then(resolve, reject) {
-        return Promise.resolve(exec()).then(resolve, reject);
-      },
-    };
-    function exec() {
-      calls.push({ table, op: q.op });
-      const failure = failOn[`${table}:${q.op}`];
-      if (failure) return { data: null, error: { message: failure } };
-      const rows = (data[table] ??= []);
-      const matched = () => rows.filter((r) => q.filters.every((f) => f(r)));
-      if (q.op === "select") {
-        let found = matched();
-        for (const [c, asc] of [...q.orders].reverse()) {
-          found = [...found].sort(
-            (x, y) => (x[c] < y[c] ? -1 : x[c] > y[c] ? 1 : 0) * (asc ? 1 : -1),
-          );
-        }
-        if (q.range) found = found.slice(q.range[0], q.range[1] + 1);
-        if (q.limitN !== null) found = found.slice(0, q.limitN);
-        const copies = found.map(clone);
-        return { data: q.single ? (copies[0] ?? null) : copies, error: null };
-      }
-      if (q.op === "insert") {
-        for (const r of q.payload) rows.push(clone(r));
-        writes.push({ table, op: "insert", count: q.payload.length });
-        return { data: q.returning ? q.payload.map(clone) : null, error: null };
-      }
-      if (q.op === "upsert") {
-        const keys = String(q.opts.onConflict ?? "")
-          .split(",")
-          .filter(Boolean);
-        const touched = [];
-        for (const r of q.payload) {
-          const existing = rows.find((e) => keys.every((k) => e[k] === r[k]));
-          if (existing) {
-            if (!q.opts.ignoreDuplicates) {
-              Object.assign(existing, clone(r));
-              touched.push(existing);
-            }
-          } else {
-            const created = clone(r);
-            rows.push(created);
-            touched.push(created);
-          }
-        }
-        writes.push({ table, op: "upsert", count: q.payload.length });
-        return { data: q.returning ? touched.map(clone) : null, error: null };
-      }
-      // update
-      const hit = matched();
-      for (const r of hit) Object.assign(r, clone(q.payload));
-      writes.push({ table, op: "update", count: hit.length });
-      return { data: q.returning ? hit.map(clone) : null, error: null };
-    }
-    return b;
-  }
-
-  return {
-    from,
-    data,
-    writes,
-    calls,
-    writesTo: (table) => writes.filter((w) => w.table === table),
-    /** どんな呼び出しもエラーにする（off・行なし・075未適用の検証用） */
-    get callCount() {
-      return calls.length;
-    },
-  };
-}
 
 /** 偽の politeFetch: URL → HTML（または Error・Response）。呼び出しを記録し、同時実行数の最大値も測る */
 function createFakeFetch(resolve) {
