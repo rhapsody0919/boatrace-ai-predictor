@@ -2381,15 +2381,14 @@ const summaryOf = ({
     workflow,
     command,
   ] of wiring) {
-    const src = read(`api/cron/${file}.js`);
-    const literal = Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]);
+    // maxDuration は Vercel がビルド時に読む config のリテラル。本文の字でなく export の値で見る
     const mod = await import(
       new URL(`../../api/cron/${file}.js`, import.meta.url)
     );
+    const maxDuration = mod.config?.maxDuration;
     check(
-      `配線 ${job}: api/cron/${file}.js の maxDuration(${literal}) がレジストリ(${SCRAPE_JOBS[job].maxDurationSec})と一致し、ハンドラーを export する`,
-      literal === SCRAPE_JOBS[job].maxDurationSec &&
-        mod.config.maxDuration === literal &&
+      `配線 ${job}: api/cron/${file}.js の maxDuration(${maxDuration}) がレジストリ(${SCRAPE_JOBS[job].maxDurationSec})と一致し、ハンドラーを export する`,
+      maxDuration === SCRAPE_JOBS[job].maxDurationSec &&
         typeof mod.default === "function" &&
         SCRAPE_JOBS[job].kind === "daily",
     );
