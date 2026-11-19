@@ -5,8 +5,8 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2268,
-    "filesWithAccess": 288,
+    "sourceFiles": 2270,
+    "filesWithAccess": 289,
     "tableReaders": 963,
     "tableWriters": 197,
     "rpcCallers": 55,
@@ -2780,7 +2780,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/racerCareerJob.js:651",
+          "ref": "scripts/lib/racerCareerDb.js:138",
           "op": "select",
           "via": "helper:count",
           "columns": []
@@ -2944,7 +2944,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/lib/racerCareerJob.js:641",
+          "ref": "scripts/lib/racerCareerDb.js:128",
           "op": "select",
           "via": "client",
           "columns": [
@@ -2952,7 +2952,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/racerCareerJob.js:650",
+          "ref": "scripts/lib/racerCareerDb.js:137",
           "op": "select",
           "via": "helper:count",
           "columns": []
@@ -2970,7 +2970,7 @@
         },
         "race_date": {
           "readers": [
-            "scripts/lib/racerCareerJob.js:641"
+            "scripts/lib/racerCareerDb.js:128"
           ],
           "writers": [],
           "sql": []
@@ -29764,10 +29764,10 @@
     {
       "job": "racer_career_main",
       "entry": "api/cron/racer-career-main.js",
-      "reachableFiles": 20,
+      "reachableFiles": 22,
       "writes": {
         "racer_career_meta": [
-          "scripts/lib/racerCareerJob.js:621"
+          "scripts/lib/racerCareerDb.js:108"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -30300,9 +30300,9 @@
       "kind": "table",
       "name": "racer_career_meta",
       "refs": [
-        "scripts/lib/racerCareerJob.js:621",
-        "scripts/lib/racerCareerJob.js:846",
-        "scripts/lib/racerCareerJob.js:908"
+        "scripts/lib/racerCareerDb.js:108",
+        "scripts/lib/racerCareerJob.js:504",
+        "scripts/lib/racerCareerJob.js:553"
       ]
     },
     {
@@ -30386,7 +30386,7 @@
     },
     {
       "file": "scripts/lib/racerCareerJob.js",
-      "line": 603,
+      "line": 268,
       "reason": "表の名前が変数（.from(式)）"
     },
     {

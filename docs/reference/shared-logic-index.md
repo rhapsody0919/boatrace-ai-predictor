@@ -204,7 +204,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceStatusJob.js` | 中止・順延の早期確定（race_status、共通ラッパ cronWrapper.js の continuous ジョブ）。 | runRaceStatusJob, RACE_STATUS_CONCURRENCY, CONFIRM_REASON |
 | `scripts/lib/raceStatusParsers.js` | 開催場一覧（race/index）と結果ページ（raceresult）から、中止・順延の告知を読み取る純粋関数。 | raceIndexUrl, raceResultUrl, classifyStatusText, parseVenueStatuses, isRaceCancelledPage |
 | `scripts/lib/racelistBackfillRows.js` | 出走表（racelist）過去分バックフィルの、行の組み立て・URL・アーカイブパス（純関数。DB・取得先に接続しない） | parseRaceId, buildRacelistUrl, racelistArchiveRelPath, buildFillRow, buildFillRowsForRace ほか2件 |
-| `scripts/lib/racerCareerJob.js` | 選手ページ（GS00 案2）の集計の表（マイグレーション 190）の書き手の共通部分。 | finalStagesOf, specialSeriesGroups, splitByRacerLinks, gradeOverridesOf, mergeCareerResult ほか23件 |
+| `scripts/lib/racerCareerDb.js` | 選手ページの集計の表（racerCareerJob.js）の DB の読み（判定の材料・計算の RPC・今ある行・kb の指紋）と、計算の記録の書き込み。 | loadJudgeInputs, computeCounts, fetchExistingKeys, writeMeta, kbFingerprint ほか4件 |
+| `scripts/lib/racerCareerJob.js` | 選手ページ（GS00 案2）の集計の表（マイグレーション 190）の書き手の共通部分。 | mergeCareerResult, staleRowsOf, chunk, writeCareerRows, runKbEra ほか6件 |
+| `scripts/lib/racerCareerSeries.js` | 選手ページの集計の表の判定の材料のうち、特別な節（同じ開催日に2つの格が混ざる節・公式が別の格で数えた節）の | finalStagesOf, specialSeriesGroups, splitByRacerLinks, gradeOverridesOf, halfMonthRanges ほか5件 |
 | `scripts/lib/racerNews/dedup.js` | — | isAlreadyProcessed |
 | `scripts/lib/racerNews/officialGradeAnnouncements.js` | — | collectGradeAnnouncementNews |
 | `scripts/lib/racerNews/pendingReview.js` | — | listPending, listAll, hasItemForSourceUrl, addPendingItem, updateStatus ほか3件 |
@@ -497,4 +499,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 455 ファイル / export 2572 件。
+対象 457 ファイル / export 2574 件。

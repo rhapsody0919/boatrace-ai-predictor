@@ -10,8 +10,8 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2268 |
-| 読み書きのあるファイル | 288 |
+| 読んだファイル | 2270 |
+| 読み書きのあるファイル | 289 |
 | 表の読み手（箇所） | 963 |
 | 表の書き手（箇所） | 197 |
 | RPC の呼び手（箇所） | 55 |
@@ -250,7 +250,7 @@
 | race_notices | api/cron/race-notices.js | 23 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
 | race_series | api/cron/race-series.js | 20 | scrape_job_state, scrape_slots |
 | race_status | api/cron/race-status.js | 34 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| racer_career_main | api/cron/racer-career-main.js | 20 | racer_career_meta, scrape_job_state, scrape_slots |
+| racer_career_main | api/cron/racer-career-main.js | 22 | racer_career_meta, scrape_job_state, scrape_slots |
 | racer_course_technique_stats | api/cron/racer-course-technique-stats.js | 18 | racer_course_technique_stats, scrape_job_state, scrape_slots, venue_course_technique_baseline |
 | racer_news | api/cron/racer-news.js | 21 | racer_news, racer_news_pending, scrape_job_state, scrape_slots |
 | racer_profiles | api/cron/racer-profiles.js | 20 | racer_profiles, scrape_job_state, scrape_slots |
@@ -504,7 +504,7 @@
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:290` select [has_result, payout_3fuku, payout_3tan, race_id]
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:64` select(helper:fetchAll)
   - `scripts/daily/update-winning-technique-stats.js:212` select(helper:fetchAll)
-  - `scripts/lib/racerCareerJob.js:651` select(helper:count)
+  - `scripts/lib/racerCareerDb.js:138` select(helper:count)
   - `scripts/maintenance/verify-full-picture-scene2.js:3641` rest(rest) （検査）
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -514,8 +514,8 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:71`
 - 読み手（2）: 
-  - `scripts/lib/racerCareerJob.js:641` select [race_date]
-  - `scripts/lib/racerCareerJob.js:650` select(helper:count)
+  - `scripts/lib/racerCareerDb.js:128` select [race_date]
+  - `scripts/lib/racerCareerDb.js:137` select(helper:count)
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -2327,7 +2327,7 @@
 - rpc `get_racer_scoped_race_rows`: `src/services/racerQueries4.js:174`
 - table `a`: `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:186`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:187`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:188`
 - table `eve_race_deadlines`: `scripts/lib/eveDeadlinesJob.js:80`, `scripts/lib/eveDeadlinesJob.js:274`, `scripts/lib/eveDeadlinesJob.js:399`
-- table `racer_career_meta`: `scripts/lib/racerCareerJob.js:621`, `scripts/lib/racerCareerJob.js:846`, `scripts/lib/racerCareerJob.js:908`
+- table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:504`, `scripts/lib/racerCareerJob.js:553`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:646`
 
 ## 拾えなかったもの
@@ -2347,7 +2347,7 @@
   - `scripts/lib/raceSeriesSync.js:75` 表の名前が変数（.from(式)）
   - `scripts/lib/raceSeriesSync.js:91` 表の名前が変数（.from(式)）
   - `scripts/lib/raceSeriesSync.js:104` 表の名前が変数（.from(式)）
-  - `scripts/lib/racerCareerJob.js:603` 表の名前が変数（.from(式)）
+  - `scripts/lib/racerCareerJob.js:268` 表の名前が変数（.from(式)）
   - `scripts/lib/schemaDetect.js:67` 表の名前が変数（.from(式)）
   - `scripts/lib/snsAutoPlanRunner.js:92` RPC の名前が変数（.rpc(式)）
   - `scripts/lib/snsSendRunner.js:627` REST の表の名前が式（/rest/v1/${…}）
