@@ -364,42 +364,6 @@ function resolveUpsertOptions(
   };
 }
 
-/** 変わった行を batchSize ごとに書く（dryRun なら書かない）。一度「列が無い」と分かったグループは、以降のバッチでも最初から除く */
-async function writeChangedBatches(
-  client,
-  table,
-  toWrite,
-  { onConflict, groups, batchSize, dryRun },
-) {
-  const columnState = createOptionalColumnState();
-  let error = null;
-  let written = 0;
-  if (!dryRun) {
-    for (let i = 0; i < toWrite.length; i += batchSize) {
-      const batch = toWrite.slice(i, i + batchSize);
-      const { error: batchError } = await upsertWithOptionalColumns(
-        client,
-        table,
-        batch,
-        { onConflict, optionalColumnGroups: groups },
-        columnState,
-      );
-      if (batchError) {
-        error = new Error(`${table}書き込みエラー: ${batchError.message}`);
-        // 包み直しでPostgRESTのコードを落とさない（呼び出し元が「列が無い」等を判定できるように）。
-        // 2026-09-27、raceConditionsWriter が message だけを見ていたため、コードでの判定に
-        // 切り替えた際に weather_observed_at のフォールバックが効かなくなりかけた
-        error.code = batchError.code;
-        error.cause = batchError;
-        console.error(`❌ ${error.message}`);
-      } else {
-        written += batch.length;
-      }
-    }
-  }
-  return { written, error, droppedGroups: [...columnState.missingGroups] };
-}
-
 /**
  * 書き込みの要約を出す。列を落としたまま「成功」として終わらせない。落としたグループは、呼び出し元が戻り値を
  * 見ていなくても必ず目に入るよう、書き込みの要約と同じ行に出す
@@ -469,12 +433,34 @@ export async function upsertChangedRows(client, table, incomingRows, options) {
   const toWrite = o.stampUpdatedAt
     ? changedRows.map((row) => ({ ...row, [UPDATED_AT_COLUMN]: updatedAt }))
     : changedRows;
-  const { written, error, droppedGroups } = await writeChangedBatches(
-    client,
-    table,
-    toWrite,
-    o,
-  );
+  // 一度「列が無い」と分かったグループは、以降のバッチでも最初から除く
+  const columnState = createOptionalColumnState();
+  let error = null;
+  let written = 0;
+  if (!o.dryRun) {
+    for (let i = 0; i < toWrite.length; i += o.batchSize) {
+      const batch = toWrite.slice(i, i + o.batchSize);
+      const { error: batchError } = await upsertWithOptionalColumns(
+        client,
+        table,
+        batch,
+        { onConflict: o.onConflict, optionalColumnGroups: o.groups },
+        columnState,
+      );
+      if (batchError) {
+        error = new Error(`${table}書き込みエラー: ${batchError.message}`);
+        // 包み直しでPostgRESTのコードを落とさない（呼び出し元が「列が無い」等を判定できるように）。
+        // 2026-09-27、raceConditionsWriter が message だけを見ていたため、コードでの判定に
+        // 切り替えた際に weather_observed_at のフォールバックが効かなくなりかけた
+        error.code = batchError.code;
+        error.cause = batchError;
+        console.error(`❌ ${error.message}`);
+      } else {
+        written += batch.length;
+      }
+    }
+  }
+  const droppedGroups = [...columnState.missingGroups];
   reportUpsertResult({
     table,
     label: o.label,
