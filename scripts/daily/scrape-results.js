@@ -1321,6 +1321,39 @@ async function persistFetchedResults(client, date, fetched, outcomes, base) {
   return persisted;
 }
 
+/** 書き込みまで済んだ1レースの outcome（ok か partial。recordFetchedOutcomes の一部） */
+function fetchedOutcome(
+  race,
+  parsed,
+  row,
+  { changedIds, timingsWrittenByRace, base },
+) {
+  // 不成立（全勝式が不成立）のレースは、決まり手が出ない・単勝の払戻が無いため、待っても揃わない。
+  // 「決まり手が未公開」として毎分再取得し続けないよう、着順・払戻の表が読めた時点で完了とする
+  const complete =
+    isResultComplete(row) || parsed.full?.race_status === "no_race";
+  return {
+    ...base,
+    rowsParsed: 1,
+    rowsWritten:
+      (changedIds.has(race.race_id) ? 1 : 0) +
+      (timingsWrittenByRace.get(race.race_id) ?? 0),
+    outcome: complete ? "ok" : "partial",
+    resultDigest: complete
+      ? computeResultDigest(
+          row,
+          (parsed.startTimings ?? []).map((st) => ({
+            race_id: race.race_id,
+            ...st,
+          })),
+        )
+      : undefined,
+    error: complete
+      ? undefined
+      : "決まり手が未公開です（着順・払戻のみ取得。再試行します）",
+  };
+}
+
 /** 取得・解析できたレースの outcome（ok・partial・error）を outcomes に入れる（runForRaces の 4） */
 function recordFetchedOutcomes(fetched, persisted, outcomes, base) {
   const changedIds = new Set(
@@ -1344,30 +1377,14 @@ function recordFetchedOutcomes(fetched, persisted, outcomes, base) {
       });
       continue;
     }
-    // 不成立（全勝式が不成立）のレースは、決まり手が出ない・単勝の払戻が無いため、待っても揃わない。
-    // 「決まり手が未公開」として毎分再取得し続けないよう、着順・払戻の表が読めた時点で完了とする
-    const complete =
-      isResultComplete(row) || parsed.full?.race_status === "no_race";
-    outcomes.set(race.race_id, {
-      ...base,
-      rowsParsed: 1,
-      rowsWritten:
-        (changedIds.has(race.race_id) ? 1 : 0) +
-        (timingsWrittenByRace.get(race.race_id) ?? 0),
-      outcome: complete ? "ok" : "partial",
-      resultDigest: complete
-        ? computeResultDigest(
-            row,
-            (parsed.startTimings ?? []).map((st) => ({
-              race_id: race.race_id,
-              ...st,
-            })),
-          )
-        : undefined,
-      error: complete
-        ? undefined
-        : "決まり手が未公開です（着順・払戻のみ取得。再試行します）",
-    });
+    outcomes.set(
+      race.race_id,
+      fetchedOutcome(race, parsed, row, {
+        changedIds,
+        timingsWrittenByRace,
+        base,
+      }),
+    );
   }
 }
 
