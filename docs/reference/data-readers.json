@@ -91,7 +91,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/calculate-unified-model-accuracy.js:171",
+          "ref": "scripts/daily/calculate-unified-model-accuracy.js:203",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -127,7 +127,7 @@
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:482",
-            "scripts/daily/calculate-unified-model-accuracy.js:171",
+            "scripts/daily/calculate-unified-model-accuracy.js:203",
             "scripts/daily/calculate-unified-volatility-accuracy.js:183"
           ],
           "sql": [
@@ -144,7 +144,7 @@
           ],
           "writers": [
             "scripts/daily/calculate-accuracy.js:482",
-            "scripts/daily/calculate-unified-model-accuracy.js:171",
+            "scripts/daily/calculate-unified-model-accuracy.js:203",
             "scripts/daily/calculate-unified-volatility-accuracy.js:183"
           ],
           "sql": []
@@ -153,7 +153,7 @@
           "readers": [],
           "writers": [
             "scripts/daily/calculate-accuracy.js:482",
-            "scripts/daily/calculate-unified-model-accuracy.js:171",
+            "scripts/daily/calculate-unified-model-accuracy.js:203",
             "scripts/daily/calculate-unified-volatility-accuracy.js:183"
           ],
           "sql": [
@@ -1073,13 +1073,13 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-unified-trifecta-reference.js:202",
+          "ref": "scripts/daily/generate-unified-trifecta-reference.js:176",
           "op": "delete",
           "via": "client",
           "columns": []
         },
         {
-          "ref": "scripts/daily/generate-unified-trifecta-reference.js:214",
+          "ref": "scripts/daily/generate-unified-trifecta-reference.js:188",
           "op": "insert",
           "via": "client",
           "columns": [
@@ -1108,7 +1108,7 @@
         "race_id": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:348",
-            "scripts/daily/generate-unified-trifecta-reference.js:202",
+            "scripts/daily/generate-unified-trifecta-reference.js:176",
             "scripts/daily/update-moriarty-outcomes.js:173",
             "scripts/daily/update-moriarty-outcomes.js:30",
             "src/services/moriartyService.js:141",
@@ -1125,7 +1125,7 @@
         "model_id": {
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:348",
-            "scripts/daily/generate-unified-trifecta-reference.js:202",
+            "scripts/daily/generate-unified-trifecta-reference.js:176",
             "scripts/daily/update-moriarty-outcomes.js:173",
             "scripts/daily/update-moriarty-outcomes.js:30",
             "src/services/moriartyService.js:141",
@@ -5421,7 +5421,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-unified-model-accuracy.js:66",
+          "ref": "scripts/daily/calculate-unified-model-accuracy.js:179",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -5571,7 +5571,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-place-hits.js:14",
+          "ref": "scripts/maintenance/backfill-place-hits.js:62",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5754,7 +5754,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-place-hits.js:60",
+          "ref": "scripts/maintenance/backfill-place-hits.js:42",
           "op": "update",
           "via": "client",
           "columns": [
@@ -5817,8 +5817,8 @@
             "scripts/daily/scrape-results.js:1026",
             "scripts/daily/scrape-results.js:1634",
             "scripts/maintenance/backfill-is-hit-turn.js:69",
-            "scripts/maintenance/backfill-place-hits.js:14",
-            "scripts/maintenance/backfill-place-hits.js:60",
+            "scripts/maintenance/backfill-place-hits.js:42",
+            "scripts/maintenance/backfill-place-hits.js:62",
             "scripts/maintenance/backfill-refund-hit-flags.js:135",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/backfill-trifecta-trio.js:62",
@@ -5850,7 +5850,7 @@
             "scripts/lib/inCautionHealth.js:127",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
             "scripts/maintenance/backfill-missing-venue-day.js:138",
-            "scripts/maintenance/backfill-place-hits.js:14",
+            "scripts/maintenance/backfill-place-hits.js:62",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/delete-cancelled-race-predictions.js:139",
             "scripts/maintenance/delete-cancelled-race-predictions.js:72",
@@ -5922,7 +5922,7 @@
             "scripts/daily/scrape-prediction-odds.js:40",
             "scripts/daily/scrape-results.js:1004",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
-            "scripts/maintenance/backfill-place-hits.js:14",
+            "scripts/maintenance/backfill-place-hits.js:62",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:26",
@@ -6037,12 +6037,12 @@
         },
         "is_hit_place": {
           "readers": [
-            "scripts/maintenance/backfill-place-hits.js:14",
+            "scripts/maintenance/backfill-place-hits.js:62",
             "scripts/maintenance/delete-phantom-races.js:138",
             "src/services/predictionQueries3.js:133"
           ],
           "writers": [
-            "scripts/maintenance/backfill-place-hits.js:60"
+            "scripts/maintenance/backfill-place-hits.js:42"
           ],
           "sql": [
             "rpc:get_accuracy_summary",
@@ -6099,7 +6099,7 @@
             "src/services/predictionQueries3.js:133"
           ],
           "writers": [
-            "scripts/maintenance/backfill-place-hits.js:60"
+            "scripts/maintenance/backfill-place-hits.js:42"
           ],
           "sql": [
             "rpc:get_accuracy_summary",
@@ -7321,7 +7321,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/generate-unified-trifecta-reference.js:104",
+          "ref": "scripts/daily/generate-unified-trifecta-reference.js:71",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7469,13 +7469,13 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:108",
+          "ref": "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:172",
           "op": "select",
           "via": "helper:fetchAllPaged",
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/backfill-race-entries-racer-id.js:101",
+          "ref": "scripts/maintenance/backfill-race-entries-racer-id.js:176",
           "op": "select",
           "via": "helper:fetchAllPaged",
           "columns": []
@@ -8264,7 +8264,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
+          "ref": "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
           "op": "update",
           "via": "client",
           "columns": [
@@ -8272,7 +8272,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-race-entries-racer-id.js:155",
+          "ref": "scripts/maintenance/backfill-race-entries-racer-id.js:131",
           "op": "update",
           "via": "client",
           "columns": [
@@ -8378,7 +8378,7 @@
             "scripts/analysis/verify-volatility-predictive-power.js:58",
             "scripts/daily/generate-moriarty-recommendations.js:122",
             "scripts/daily/generate-morning-digest.js:155",
-            "scripts/daily/generate-unified-trifecta-reference.js:104",
+            "scripts/daily/generate-unified-trifecta-reference.js:71",
             "scripts/lib/analogyV16Exhibition.js:261",
             "scripts/lib/motorPretestRows.js:134",
             "scripts/lib/pitReportJob.js:188",
@@ -8388,8 +8388,8 @@
             "scripts/lib/racerProfileSync.js:335",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/backfill-race-data.js:182",
-            "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
-            "scripts/maintenance/backfill-race-entries-racer-id.js:155",
+            "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
+            "scripts/maintenance/backfill-race-entries-racer-id.js:131",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/backfill-racer-ids.js:228",
             "scripts/maintenance/check-morning-init-shadow.js:121",
@@ -8501,14 +8501,14 @@
             "scripts/analysis/verify-volatility-predictive-power.js:58",
             "scripts/daily/generate-moriarty-recommendations.js:122",
             "scripts/daily/generate-morning-digest.js:155",
-            "scripts/daily/generate-unified-trifecta-reference.js:104",
+            "scripts/daily/generate-unified-trifecta-reference.js:71",
             "scripts/lib/pitReportJob.js:188",
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/racerProfileSync.js:335",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/backfill-race-data.js:182",
-            "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
-            "scripts/maintenance/backfill-race-entries-racer-id.js:155",
+            "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
+            "scripts/maintenance/backfill-race-entries-racer-id.js:131",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/backfill-racer-ids.js:228",
             "scripts/maintenance/check-morning-init-shadow.js:121",
@@ -8578,8 +8578,8 @@
             "scripts/analysis/verify-race-analysis-rpc.js:28",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/lib/snsTodayDigestV3.js:108",
-            "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
-            "scripts/maintenance/backfill-race-entries-racer-id.js:155",
+            "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
+            "scripts/maintenance/backfill-race-entries-racer-id.js:131",
             "scripts/verification/verify-series-points-border.mjs:47",
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
@@ -8619,7 +8619,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:111",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/daily/generate-morning-digest.js:155",
-            "scripts/daily/generate-unified-trifecta-reference.js:104",
+            "scripts/daily/generate-unified-trifecta-reference.js:71",
             "scripts/lib/snsTodayDigestV3.js:108",
             "scripts/maintenance/check-morning-init-shadow.js:121",
             "src/services/motorQueries2.js:262",
@@ -8661,7 +8661,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:111",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/analysis/verify-volatility-predictive-power.js:58",
-            "scripts/daily/generate-unified-trifecta-reference.js:104",
+            "scripts/daily/generate-unified-trifecta-reference.js:71",
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/raceIndicatorData.js:87",
             "src/services/raceQueries.js:144",
@@ -8690,7 +8690,7 @@
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
-            "scripts/daily/generate-unified-trifecta-reference.js:104",
+            "scripts/daily/generate-unified-trifecta-reference.js:71",
             "src/services/raceQueries.js:144",
             "src/services/raceQueries.js:169",
             "src/services/raceQueries3.js:83",
@@ -8738,7 +8738,7 @@
             "scripts/analysis/collect-venue-stats.js:261",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/daily/generate-morning-digest.js:155",
-            "scripts/daily/generate-unified-trifecta-reference.js:104",
+            "scripts/daily/generate-unified-trifecta-reference.js:71",
             "src/services/motorQueries.js:234",
             "src/services/motorQueries.js:274",
             "src/services/motorQueries3.js:240",
@@ -8876,15 +8876,15 @@
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/analysis/verify-volatility-predictive-power.js:58",
             "scripts/daily/generate-morning-digest.js:155",
-            "scripts/daily/generate-unified-trifecta-reference.js:104",
+            "scripts/daily/generate-unified-trifecta-reference.js:71",
             "scripts/lib/motorPretestRows.js:134",
             "scripts/lib/pitReportJob.js:188",
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/raceIndicatorData.js:87",
             "scripts/lib/racerProfileSync.js:335",
             "scripts/lib/snsTodayDigestV3.js:108",
-            "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
-            "scripts/maintenance/backfill-race-entries-racer-id.js:155",
+            "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
+            "scripts/maintenance/backfill-race-entries-racer-id.js:131",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/check-morning-init-shadow.js:121",
             "scripts/maintenance/delete-phantom-race-days.js:112",
@@ -8928,8 +8928,8 @@
             "src/services/racerQueries5.js:45"
           ],
           "writers": [
-            "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155",
-            "scripts/maintenance/backfill-race-entries-racer-id.js:155",
+            "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
+            "scripts/maintenance/backfill-race-entries-racer-id.js:131",
             "scripts/maintenance/backfill-racer-ids.js:228"
           ],
           "sql": [
@@ -10902,7 +10902,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-unified-model-accuracy.js:74",
+          "ref": "scripts/daily/calculate-unified-model-accuracy.js:187",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -11194,7 +11194,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/backfill-place-hits.js:31",
+          "ref": "scripts/maintenance/backfill-place-hits.js:30",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11732,7 +11732,7 @@
             "scripts/maintenance/audit-race-result-anomalies.js:207",
             "scripts/maintenance/backfill-actual-course.js:111",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "scripts/maintenance/backfill-place-hits.js:31",
+            "scripts/maintenance/backfill-place-hits.js:30",
             "scripts/maintenance/backfill-race-data.js:195",
             "scripts/maintenance/backfill-race-data.js:279",
             "scripts/maintenance/backfill-rank456-from-kfile.js:157",
@@ -11805,7 +11805,7 @@
             "scripts/daily/update-winning-technique-stats.js:62",
             "scripts/lib/inCautionHealth.js:142",
             "scripts/maintenance/backfill-actual-course.js:65",
-            "scripts/maintenance/backfill-place-hits.js:31",
+            "scripts/maintenance/backfill-place-hits.js:30",
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/verification/verify-series-points-border.mjs:56",
@@ -11855,7 +11855,7 @@
             "scripts/daily/update-nige-outcome-distribution.js:63",
             "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
-            "scripts/maintenance/backfill-place-hits.js:31",
+            "scripts/maintenance/backfill-place-hits.js:30",
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
@@ -11893,7 +11893,7 @@
             "scripts/daily/update-nige-outcome-distribution.js:63",
             "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
-            "scripts/maintenance/backfill-place-hits.js:31",
+            "scripts/maintenance/backfill-place-hits.js:30",
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
@@ -11941,7 +11941,7 @@
           "readers": [
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
-            "scripts/maintenance/backfill-place-hits.js:31",
+            "scripts/maintenance/backfill-place-hits.js:30",
             "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
@@ -11957,7 +11957,7 @@
           "readers": [
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
-            "scripts/maintenance/backfill-place-hits.js:31",
+            "scripts/maintenance/backfill-place-hits.js:30",
             "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
@@ -13537,7 +13537,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/generate-unified-trifecta-reference.js:117",
+          "ref": "scripts/daily/generate-unified-trifecta-reference.js:84",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13590,7 +13590,7 @@
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
-            "scripts/daily/generate-unified-trifecta-reference.js:117",
+            "scripts/daily/generate-unified-trifecta-reference.js:84",
             "src/services/racerQueries.js:199"
           ],
           "writers": [],
@@ -13607,7 +13607,7 @@
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
-            "scripts/daily/generate-unified-trifecta-reference.js:117",
+            "scripts/daily/generate-unified-trifecta-reference.js:84",
             "src/services/racerQueries.js:199"
           ],
           "writers": [],
@@ -13622,7 +13622,7 @@
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
-            "scripts/daily/generate-unified-trifecta-reference.js:117",
+            "scripts/daily/generate-unified-trifecta-reference.js:84",
             "src/services/racerQueries.js:199"
           ],
           "writers": [],
@@ -13717,7 +13717,7 @@
             "scripts/analysis/verify-volatility-predictive-power.js:87",
             "scripts/daily/generate-predictions.js:553",
             "scripts/daily/generate-unified-predictions.js:118",
-            "scripts/daily/generate-unified-trifecta-reference.js:117",
+            "scripts/daily/generate-unified-trifecta-reference.js:84",
             "src/services/racerQueries.js:199"
           ],
           "writers": [],

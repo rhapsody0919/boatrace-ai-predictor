@@ -281,7 +281,7 @@
   - `src/services/predictionQueries4.js:44` select [data, key]
 - 書き手（3）: 
   - `scripts/daily/calculate-accuracy.js:482` upsert [data, key, updated_at]
-  - `scripts/daily/calculate-unified-model-accuracy.js:171` upsert [data, key, updated_at]
+  - `scripts/daily/calculate-unified-model-accuracy.js:203` upsert [data, key, updated_at]
   - `scripts/daily/calculate-unified-volatility-accuracy.js:183` upsert [data, key, updated_at]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -362,8 +362,8 @@
   - `src/services/predictionQueries4.js:62` select [expected_hit_rate, expected_payout, expected_value, model_id, race_id, reasons, recommendation]
 - 書き手（4）: 
   - `scripts/daily/generate-moriarty-recommendations.js:348` upsert [?]
-  - `scripts/daily/generate-unified-trifecta-reference.js:202` delete
-  - `scripts/daily/generate-unified-trifecta-reference.js:214` insert [?]
+  - `scripts/daily/generate-unified-trifecta-reference.js:176` delete
+  - `scripts/daily/generate-unified-trifecta-reference.js:188` insert [?]
   - `scripts/daily/update-moriarty-outcomes.js:173` update [actual_hit, actual_payout]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -709,7 +709,7 @@
   - `scripts/daily-rule-tracking.js:129` select [*, model_id, race_id]
   - `scripts/daily/calculate-accuracy.js:45` select(helper:fetchAll)
   - `scripts/daily/calculate-accuracy.js:119` select(helper:fetchAll)
-  - `scripts/daily/calculate-unified-model-accuracy.js:66` select(helper:fetchAll)
+  - `scripts/daily/calculate-unified-model-accuracy.js:179` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-volatility-accuracy.js:155` select(helper:fetchAll)
   - `scripts/daily/generate-moriarty-recommendations.js:81` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/daily/generate-morning-digest.js:326` select [feature_contributions, model_id, race_id]
@@ -726,7 +726,7 @@
   - `scripts/lib/scrapeJobs/predictionOddsHandlers.js:50` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/maintenance/backfill-is-hit-turn.js:28` select(helper:fetchAll)
   - `scripts/maintenance/backfill-missing-venue-day.js:138` select [race_id]
-  - `scripts/maintenance/backfill-place-hits.js:14` select [is_hit_place, prediction_id, race_id, top_pick]
+  - `scripts/maintenance/backfill-place-hits.js:62` select [is_hit_place, prediction_id, race_id, top_pick]
   - `scripts/maintenance/backfill-refund-hit-flags.js:87` select(helper:fetchAll)
   - `scripts/maintenance/backfill-refund-hit-flags.js:106` select(helper:fetchAll)
   - `scripts/maintenance/backfill-trifecta-trio.js:37` select [model_id, prediction_id, race_id, top_2nd, top_3rd, top_pick]
@@ -745,7 +745,7 @@
   - `scripts/daily/scrape-results.js:1026` update [?]
   - `scripts/daily/scrape-results.js:1634` update [?]
   - `scripts/maintenance/backfill-is-hit-turn.js:69` update [is_hit_turn]
-  - `scripts/maintenance/backfill-place-hits.js:60` update [is_hit_place, payout_place]
+  - `scripts/maintenance/backfill-place-hits.js:42` update [is_hit_place, payout_place]
   - `scripts/maintenance/backfill-refund-hit-flags.js:135` update [?]
   - `scripts/maintenance/backfill-trifecta-trio.js:62` update [?]
   - `scripts/maintenance/delete-cancelled-race-predictions.js:139` delete
@@ -863,7 +863,7 @@
   - `scripts/daily/generate-predictions.js:1299` select(helper:selectByRaceIds)
   - `scripts/daily/generate-unified-predictions.js:61` select(helper:fetchAll)
   - `scripts/daily/generate-unified-predictions.js:271` select(helper:fetchAll)
-  - `scripts/daily/generate-unified-trifecta-reference.js:104` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
+  - `scripts/daily/generate-unified-trifecta-reference.js:71` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/daily/morning-init.js:298` select(helper:fetchAll)
   - `scripts/daily/scrape-venue-entry-course-stats.js:91` select(helper:fetchAll)
   - `scripts/daily/update-race-info.js:443` select(helper:upsertChangedRows)
@@ -881,8 +881,8 @@
   - `scripts/maintenance/backfill-opening-day-races.js:95` select(helper:count)
   - `scripts/maintenance/backfill-pit-reports.js:146` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-entries-racer-id-remaining.js:69` select(helper:fetchAllPaged)
-  - `scripts/maintenance/backfill-race-entries-racer-id-remaining.js:108` select(helper:fetchAllPaged)
-  - `scripts/maintenance/backfill-race-entries-racer-id.js:101` select(helper:fetchAllPaged)
+  - `scripts/maintenance/backfill-race-entries-racer-id-remaining.js:172` select(helper:fetchAllPaged)
+  - `scripts/maintenance/backfill-race-entries-racer-id.js:176` select(helper:fetchAllPaged)
   - `scripts/maintenance/backfill-racer-ids.js:128` select [boat_number, race_id, racer_id]
   - `scripts/maintenance/build-races-derived-backfill-sql.js:157` select(helper:fetchAll)
   - `scripts/maintenance/check-morning-init-shadow.js:121` select [age, boat_number, boat_number_id, grade, motor_number, race_id, racer_id]
@@ -965,8 +965,8 @@
   - `scripts/daily/generate-predictions.js:1035` upsert(helper:upsertChangedRows) [?]
   - `scripts/daily/update-race-info.js:443` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/backfill-race-data.js:182` upsert [?]
-  - `scripts/maintenance/backfill-race-entries-racer-id-remaining.js:155` update [racer_id]
-  - `scripts/maintenance/backfill-race-entries-racer-id.js:155` update [racer_id]
+  - `scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127` update [racer_id]
+  - `scripts/maintenance/backfill-race-entries-racer-id.js:131` update [racer_id]
   - `scripts/maintenance/backfill-racer-ids.js:228` update [racer_id]
   - `scripts/maintenance/migrate-to-supabase.js:259` upsert [?]
   - `scripts/maintenance/racelist-backfill-load.js:97` upsert(helper:upsertChangedRows) [?]
@@ -1162,7 +1162,7 @@
   - `scripts/analysis/verify-volatility-predictive-power.js:42` select(helper:fetchAll)
   - `scripts/daily-rule-tracking.js:149` select [*, race_id]
   - `scripts/daily/calculate-accuracy.js:187` select(helper:fetchAll)
-  - `scripts/daily/calculate-unified-model-accuracy.js:74` select(helper:fetchAll)
+  - `scripts/daily/calculate-unified-model-accuracy.js:187` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-volatility-accuracy.js:166` select(helper:fetchAll)
   - `scripts/daily/calculate-venue-grade-stats.js:73` select(embed) [is_cancelled, payout_trio, race_status, rank1, rank2, rank3, refund_boats, winning_technique]
   - `scripts/daily/scrape-odds.js:70` select [payout_win, race_id]
@@ -1195,7 +1195,7 @@
   - `scripts/maintenance/backfill-kb-recent-results.js:125` select(helper:fetchAll)
   - `scripts/maintenance/backfill-kb-recent-results.js:351` select(helper:upsertChangedRows)
   - `scripts/maintenance/backfill-opening-day-races.js:98` select(helper:count)
-  - `scripts/maintenance/backfill-place-hits.js:31` select [payout_place_1, payout_place_2, race_id, rank1, rank2, rank3]
+  - `scripts/maintenance/backfill-place-hits.js:30` select [payout_place_1, payout_place_2, race_id, rank1, rank2, rank3]
   - `scripts/maintenance/backfill-race-data.js:279` select [race_id, winning_technique]
   - `scripts/maintenance/backfill-rank456-from-kfile.js:75` select [race_id, rank1, rank2, rank3, rank4]
   - `scripts/maintenance/backfill-refund-hit-flags.js:77` select(helper:fetchAll)
@@ -1345,7 +1345,7 @@
   - `scripts/analysis/verify-volatility-predictive-power.js:87` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-predictions.js:553` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-unified-predictions.js:118` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
-  - `scripts/daily/generate-unified-trifecta-reference.js:117` select [avg_st, course_race_counts, racer_id, venue_code]
+  - `scripts/daily/generate-unified-trifecta-reference.js:84` select [avg_st, course_race_counts, racer_id, venue_code]
   - `src/services/racerQueries.js:199` select [avg_st, avg_st_last_30, course_race_counts, flying_rate, racer_id, st_stddev, total_races, venue_code]
 - 書き手（1）: 
   - `scripts/analysis/aggregate-racer-stats.js:504` upsert(helper:upsertChangedRows) [?]
