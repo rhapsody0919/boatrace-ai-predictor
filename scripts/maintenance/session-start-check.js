@@ -45,7 +45,7 @@ import { checkVisualAssetAge } from "./content-ops-checks/check-visual-asset-age
 import { checkQualityBacklog } from "./content-ops-checks/check-quality-backlog.js";
 import { checkRecentFlowAContent } from "./content-ops-checks/check-recent-flow-a-content.js";
 import { checkDeprecatedTerms } from "./content-ops-checks/check-deprecated-terms.js";
-import { checkMissingContentIndex } from "./content-ops-checks/check-missing-content-index.js";
+import { checkMissingContentIndex } from "../lib/contentTopics/missingContentIndex.js";
 import { checkContentQualityAudit } from "./content-ops-checks/check-content-quality-audit.js";
 import { checkPendingInsights } from "./content-ops-checks/check-pending-insights.js";
 import { supabase } from "../lib/supabaseClient.js";

@@ -9,6 +9,9 @@
  * とは限らない（管理画面・リダイレクト等）ため、強制エラーにはせず
  * session-start-check.js経由で提示するだけに留める。詳細:
  * docs/design/content-ops-flow/spec.md フローA-1
+ *
+ * 置き場: 元は scripts/maintenance/content-ops-checks/check-missing-content-index.js。scripts/lib の
+ * newFeatureSource.js が入口の側（maintenance）を読まないよう、字のままここへ移した。
  */
 
 import { execFile } from "child_process";
