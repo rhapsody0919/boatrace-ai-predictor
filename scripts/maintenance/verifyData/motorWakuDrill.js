@@ -3,17 +3,11 @@
  * 枠番別成績の表・選手×枠・注記を DOM から取り出す（verify の部品。verify-motor-waku-generation.js が使う）。
  * 部品の本文の字は読まない。描くのは scripts/lib/renderJsx.js（module hooks は呼ぶ側が先に登録する）
  */
-import { readFileSync } from "node:fs";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 import { renderJsx } from "../../lib/renderJsx.js";
+import ja from "../../../src/locales/ja/common.json" with { type: "json" };
 
-const ja = JSON.parse(
-  readFileSync(
-    new URL("../../../src/locales/ja/common.json", import.meta.url),
-    "utf8",
-  ),
-);
 await i18next.use(initReactI18next).init({
   lng: "ja",
   resources: { ja: { common: ja } },
