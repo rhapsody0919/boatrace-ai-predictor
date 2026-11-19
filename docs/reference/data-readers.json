@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2232,
-    "filesWithAccess": 286,
-    "tableReaders": 961,
+    "sourceFiles": 2262,
+    "filesWithAccess": 287,
+    "tableReaders": 963,
     "tableWriters": 197,
     "rpcCallers": 55,
     "nameMentions": 266,
@@ -7697,6 +7697,18 @@
           "ref": "scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:117",
           "op": "select",
           "via": "helper:upsertChangedRows",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/series-points-stage-rules-scenes-1.js:194",
+          "op": "select",
+          "via": "helper:fetchAllByRaceId",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/series-points-stage-rules-scenes-1.js:215",
+          "op": "select",
+          "via": "helper:fetchAllByRaceId",
           "columns": []
         },
         {
@@ -15397,11 +15409,10 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-sns-x-delete.js:418",
+          "ref": "scripts/maintenance/verifyData/sns-x-delete-scenes-1.js:70",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         },
         {
           "ref": "scripts/sns/delete-x-post.js:124",
@@ -21400,13 +21411,6 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-x-delete.js:417",
-          "op": "rest",
-          "via": "rest",
-          "columns": [],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:67",
           "op": "rest",
           "via": "rest",
@@ -21414,6 +21418,12 @@
         },
         {
           "ref": "scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:260",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-x-delete-scenes-1.js:69",
           "op": "rest",
           "via": "rest",
           "columns": []
@@ -23999,14 +24009,13 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-x-delete.js:415",
+          "ref": "scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:269",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         },
         {
-          "ref": "scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:269",
+          "ref": "scripts/maintenance/verifyData/sns-x-delete-scenes-1.js:67",
           "op": "rest",
           "via": "rest",
           "columns": []
