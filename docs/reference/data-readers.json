@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2117,
+    "sourceFiles": 2120,
     "filesWithAccess": 282,
     "tableReaders": 947,
     "tableWriters": 189,
@@ -28998,7 +28998,7 @@
     {
       "job": "exhibition",
       "entry": "api/cron/exhibition.js",
-      "reachableFiles": 41,
+      "reachableFiles": 43,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070",
@@ -29444,7 +29444,7 @@
     {
       "job": "race_info",
       "entry": "api/cron/race-info.js",
-      "reachableFiles": 41,
+      "reachableFiles": 43,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070",
@@ -29690,7 +29690,7 @@
     {
       "job": "races_init",
       "entry": "api/cron/races-init.js",
-      "reachableFiles": 44,
+      "reachableFiles": 46,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070"
@@ -29733,7 +29733,7 @@
     {
       "job": "release_dispatch",
       "entry": "api/cron/release-dispatch.js",
-      "reachableFiles": 18,
+      "reachableFiles": 19,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
