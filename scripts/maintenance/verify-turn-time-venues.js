@@ -6,8 +6,9 @@
  * 守ること:
  *   - 住之江（12）・尼崎（13）・徳山（18）だけを対象にする（data-catalog E12）
  *   - 会場コードは "12" でも 12 でもよい
- *   - scripts/lib/boatcast/publicMap.js で直線の項目が無い会場（TWO）と一致する
- *     （src から scripts は読まないので定数を別に持つ。片方だけ変えると食い違う）
+ *   - scripts/lib/boatcast/publicMap.js の ORITEN_PUBLIC_MAP で直線の項目が無い公開の会場（TWO）と一致する
+ *     （src から scripts は読まないので定数を別に持つ。片方だけ変えると食い違う）。
+ *     表は export を import して値で比べる（本文の字を正規表現で読まない）
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -16,6 +17,10 @@ import {
   DISTINCT_TURN_TIME_VENUE_CODES,
   hasDistinctTurnTime,
 } from "../../src/utils/turnTimeVenues.js";
+import {
+  ORITEN_LABELS,
+  ORITEN_PUBLIC_MAP,
+} from "../lib/boatcast/publicMap.js";
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -38,17 +43,15 @@ check(
   ),
 );
 
-const publicMap = readFileSync(
-  path.join(root, "scripts/lib/boatcast/publicMap.js"),
-  "utf8",
-);
-const twoVenues = [
-  ...publicMap.matchAll(/^\s*"?(\d{1,2})"?: pub\("[^"]+", TWO\)/gm),
-]
-  .map((m) => Number(m[1]))
+const twoVenues = Object.entries(ORITEN_PUBLIC_MAP)
+  .filter(
+    ([, v]) =>
+      v.status === "public" && !v.items.includes(ORITEN_LABELS.straight),
+  )
+  .map(([code]) => Number(code))
   .sort((a, b) => a - b);
 check(
-  `publicMap.js の直線なし（TWO）の会場と一致する（TWO: ${JSON.stringify(twoVenues)}）`,
+  `publicMap.js の公開の会場で直線の項目が無い（TWO）会場と一致する（TWO: ${JSON.stringify(twoVenues)}）`,
   JSON.stringify(twoVenues) ===
     JSON.stringify([...DISTINCT_TURN_TIME_VENUE_CODES].sort((a, b) => a - b)),
 );
