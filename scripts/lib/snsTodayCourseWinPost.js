@@ -7,7 +7,7 @@
  * この検査が1つでも通らなければ、計画は型 b を出さずに型 a で送る（理由は content_type.fallback_reason）。
  */
 import twitterText from "twitter-text";
-import { X_POST_MAX } from "../../api/_lib/snsXLength.js";
+import { X_POST_MAX } from "./sns/xLength.js";
 
 /** 本文の最後の免責とタグ（「#競艇」は付けない、hq §6） */
 // 進入の一言（wording-editor P2-3）は本文に足すと加重280を超える日がある（長い名前・言い切りの日で 286）ので、

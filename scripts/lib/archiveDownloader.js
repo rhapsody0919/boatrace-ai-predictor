@@ -21,7 +21,7 @@ import {
   windowDayKey,
   classifyResponse,
   estimatePlan,
-} from "../maintenance/kb-backfill.js";
+} from "./kbBackfillPlan.js";
 import { appendJsonl } from "./archiveFiles.js";
 import {
   baseEntry,

@@ -10,7 +10,7 @@
  *
  * 依存（runForRaces）は引数で差し替えられる（scripts/maintenance/verify-scrape-odds-job.js が、DB・取得先なしで検証する）。
  */
-import { runForRaces } from "../../daily/scrape-odds.js";
+import { runForRaces } from "../oddsRunForRaces.js";
 import { SCRAPE_JOBS, graceMinFor } from "./registry.js";
 import { isFinalOutcome } from "./outcomes.js";
 
