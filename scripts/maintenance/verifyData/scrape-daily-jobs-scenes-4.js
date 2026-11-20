@@ -13,7 +13,7 @@ import { ecTables, ecFetch } from "./scrape-daily-jobs-scenes-3.js";
 let check, show, same, jst, liveRow, runJob;
 
 /** 元の verify の1つの塊 { } を割った 1/5 */
-async function scene1() {
+async function entryStep1() {
   const at = jst("2026-09-19T20:00:00");
   const runIt = (store, client, fetchImpl, when = at, deps = {}) =>
     runJob({
@@ -96,7 +96,7 @@ async function scene1() {
 }
 
 /** 元の verify の1つの塊 { } を割った 2/5 */
-async function scene2({ runIt }) {
+async function entryStep2({ runIt }) {
   // 一時的な失敗の会場だけを、補足の起動が再取得する
   {
     const client = createFakeClient({ tables: ecTables() });
@@ -161,7 +161,7 @@ async function scene2({ runIt }) {
 }
 
 /** 元の verify の1つの塊 { } を割った 3/5 */
-async function scene3({ runIt }) {
+async function entryStep3({ runIt }) {
   {
     // 徳山だけ構造変化(13日連続の履歴あり)。他は正常 → 14日目に通知が last_report.alerts に入る
     const client = createFakeClient({ tables: ecTables() });
@@ -220,7 +220,7 @@ async function scene3({ runIt }) {
 }
 
 /** 元の verify の1つの塊 { } を割った 4/5 */
-async function scene4({ runIt }) {
+async function entryStep4({ runIt }) {
   // races が0件は、エラー（朝の初期化の失敗を成功にしない）
   {
     const client = createFakeClient({ tables: { races: [] } });
@@ -255,7 +255,7 @@ async function scene4({ runIt }) {
 }
 
 /** 元の verify の1つの塊 { } を割った 5/5 */
-async function scene5() {
+async function entryStep5() {
   // BOA-364: GitHub Actions（CLI）の対象日と0件の扱い
   {
     const { resolveCliTargetDate, main } =
@@ -312,18 +312,18 @@ async function scene5() {
   }
 }
 
-async function scene6() {
+async function entryStep6() {
   {
-    const s1 = await scene1();
-    const s2 = await scene2(s1);
-    const s3 = await scene3(s2);
-    await scene4(s3);
-    await scene5();
+    const s1 = await entryStep1();
+    const s2 = await entryStep2(s1);
+    const s3 = await entryStep3(s2);
+    await entryStep4(s3);
+    await entryStep5();
   }
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（check・show・same・jst・liveRow・runJob） */
 export async function runScrapeDailyJobsScenes4(env) {
   ({ check, show, same, jst, liveRow, runJob } = env);
-  await scene6();
+  await entryStep6();
 }
