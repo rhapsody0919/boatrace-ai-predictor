@@ -11,6 +11,8 @@
  * DB・取得先には繋がない（ハンドラーの本体は runSlots の偽で置き換える）。
  */
 import { fakeOf, probeImport } from "./importProbe.js";
+// 偽の本は ?m= を付けて読み込む（下の FAKES）。ここの静的な import は verify から辿れるようにするだけ（中身は使わない）
+import "./cron-entry-fakes.js";
 
 const KEY = Symbol.for("verify.cronEntry");
 const FAKES = import.meta.resolve("./cron-entry-fakes.js");

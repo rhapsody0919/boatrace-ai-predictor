@@ -10,6 +10,8 @@
  *   r.ran("odds")（run の引数の並び）・r.refreshes（mainRefresh の引数）・r.gateVars・r.logs・r.warns・r.exitCode
  */
 import { fakeOf, probeImport } from "./importProbe.js";
+// 偽の本は ?m= を付けて読み込む（下の FAKES）。ここの静的な import は verify から辿れるようにするだけ（中身は使わない）
+import "./scrape-scheduled-fakes.js";
 
 const KEY = Symbol.for("verify.scrapeScheduled");
 const SCHEDULED = import.meta.resolve("../../daily/scrape-scheduled.js");

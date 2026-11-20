@@ -5,7 +5,8 @@
  */
 const M = new URL(import.meta.url).searchParams.get("m");
 const record = () => globalThis[Symbol.for("verify.cronEntry")];
-record().loaded.push(M);
+// ?m= の無い読み込み（cron-entry-probe.js の静的な import）は記録しない
+if (M) record().loaded.push(M);
 
 const maker = (name) =>
   function made(...args) {

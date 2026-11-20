@@ -8,6 +8,8 @@
  */
 import { fileURLToPath } from "node:url";
 import { fakeOf, probeImport } from "./importProbe.js";
+// 偽の本は ?m= を付けて読み込む（下の FAKE）。ここの静的な import は verify から辿れるようにするだけ（中身は使わない）
+import "./supabase-read-fake.js";
 
 const KEY = Symbol.for("verify.supabaseReads");
 const CHECK = import.meta.resolve("../check-pre-race-shadow.js");

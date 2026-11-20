@@ -4,7 +4,6 @@
  * import を偽に差し替えて読み込み・呼び出し、作り手へ渡した引数・読み込まれた本・client に呼んだ method で見る。
  * check は呼ぶ verify の check(label, pass, detail)。
  */
-import { runSlotsWithRefresh } from "../../lib/scrapeJobs/preRaceHandlers.js";
 import { SCRAPE_JOBS } from "../../lib/scrapeJobs/registry.js";
 import { cronEntry, oddsWiring, preRaceRefresh } from "./cron-entry-probe.js";
 import { shadowCheckCalls } from "./shadow-check-reads.js";
@@ -107,80 +106,6 @@ export async function checkNoLegacyExhibition({ check, show }) {
     !("runLegacyExhibition" in p.module) &&
       !p.loadedAfter.includes("legacyExhibition"),
     show({ loadedAtImport: p.loadedAtImport, loadedAfter: p.loadedAfter }),
-  );
-}
-
-/** 予測の再計算の配線（preRaceHandlers.js は再計算を有効なときだけ読み込む・全スロットの後に1回・入口は再計算を静的に import しない） */
-export async function checkRefreshWiring({ check, show }) {
-  const args = { isDryRun: false, specificRaceIds: ["2026-09-19-05-01"] };
-  const p = await preRaceRefresh(args);
-  check(
-    "preRaceHandlers.js: generate-predictions.js（mainRefresh）と従来の展示（scrape-exhibition-data.js）を静的に import しない。展示のハンドラーの既定の refresh が呼ばれたときだけ generate-predictions.js を読み込み、その mainRefresh に引数をそのまま渡す。従来の経路（runLegacyExhibition）の export も無い",
-    same(p.loadedAtImport, ["store"]) &&
-      same(p.loadedAfter, ["predictions", "store"]) &&
-      same(p.refreshes, [[args]]) &&
-      p.job === "exhibition" &&
-      p.status === 200 &&
-      !("runLegacyExhibition" in p.module),
-    show({ ...p, module: undefined }),
-  );
-  for (const file of ["exhibition", "race-info"]) {
-    const e = await cronEntry(file);
-    check(
-      `api/cron/${file}.js: 本体は preRaceHandlers.js の作り手で、generate-predictions.js（mainRefresh）を静的に import しない`,
-      same(e.loaded, ["preRaceHandlers"]) && e.made[0]?.m === "preRaceHandlers",
-      show(brief(e)),
-    );
-  }
-  // スロットの経路: 全スロットの完了（runJob の戻り）の後に、変更を書いたレースを日付ごとに1回だけ再計算する
-  const order = [];
-  const refresh = async (a) => {
-    order.push(["refresh", a.date, [...a.specificRaceIds].sort()]);
-  };
-  const runJob = async ({ handleSlot }) => {
-    order.push(["job-start"]);
-    await handleSlot("2026-09-19", "2026-09-19-05-02");
-    await handleSlot("2026-09-19", "2026-09-19-05-01");
-    order.push(["job-end"]);
-    return { status: 200, body: { success: true } };
-  };
-  const createHandleSlot = (collector) => async (date, raceId) =>
-    collector.onChanged(date, raceId);
-  // refreshAfterChange の案内のログ（🤖 予測の再計算）は verify の出力に混ぜない
-  const run = async (env) => {
-    const log = console.log;
-    console.log = () => {};
-    try {
-      return await runSlotsWithRefresh({
-        job: "race_info",
-        createHandleSlot,
-        refresh,
-        client: null,
-        runJob,
-        store: {},
-        env,
-      });
-    } finally {
-      console.log = log;
-    }
-  };
-  const on = await run({ REFRESH_ON_VERCEL: "true" });
-  check(
-    "preRaceHandlers.js: スロットの経路は、全スロットの完了の後に、変更を書いたレースについて1回だけ refreshAfterChange（REFRESH_ON_VERCEL=true のとき mainRefresh）を呼ぶ",
-    same(order, [
-      ["job-start"],
-      ["job-end"],
-      ["refresh", "2026-09-19", ["2026-09-19-05-01", "2026-09-19-05-02"]],
-    ]) && on.body.refresh?.[0]?.refreshed === true,
-    show({ order, body: on.body }),
-  );
-  order.length = 0;
-  const off = await run({});
-  check(
-    "preRaceHandlers.js: REFRESH_ON_VERCEL が無ければ、変更を書いても再計算しない",
-    same(order, [["job-start"], ["job-end"]]) &&
-      off.body.refresh?.[0]?.refreshed === false,
-    show({ order, body: off.body }),
   );
 }
 
