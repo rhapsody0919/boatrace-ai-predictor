@@ -22,7 +22,7 @@ import {
   createHtmlFetcher,
   scrapeVenue,
   writeEntryCourseRows,
-} from "../daily/scrape-venue-entry-course-stats.js";
+} from "./venueEntryCourseStats/scrape.js";
 
 /** 会場（別ドメイン）の同時取得数。1会場内は逐次のため、各ドメインへの同時リクエストは常に1 */
 export const ENTRY_COURSE_CONCURRENCY = 3;

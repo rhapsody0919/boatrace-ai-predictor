@@ -24,8 +24,9 @@ try {
   for (const name of ["verify-query-errors.js", "verify-scraped-at-on-update.js"]) {
     write(`scripts/maintenance/${name}`, fs.readFileSync(new URL(name, import.meta.url), "utf8"));
   }
+  // 本物の scripts/lib/sourceFileWalk.js を隔離した木から再 export する（本文の字は写さない。振る舞いをそのまま使う）
   const helper = new URL("../lib/sourceFileWalk.js", import.meta.url);
-  if (fs.existsSync(helper)) write("scripts/lib/sourceFileWalk.js", fs.readFileSync(helper, "utf8"));
+  write("scripts/lib/sourceFileWalk.js", `export * from ${JSON.stringify(helper.href)};\n`);
   // 一覧後のstat・再帰readdir・read直前の削除を同期的に注入する。
   const preload = write("remove.mjs", `
     import fs from "node:fs";

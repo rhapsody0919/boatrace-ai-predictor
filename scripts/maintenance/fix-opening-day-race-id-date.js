@@ -162,6 +162,190 @@ async function countRemainingReferences(raceId) {
   return remaining;
 }
 
+/** dry-run: 旧IDを参照する子テーブルの件数を数える */
+async function countChildren(oldId, newId, progress, raceReport, summary) {
+  for (const table of CHILD_TABLES) {
+    const { count, error } = await supabase
+      .from(table)
+      .select("*", { count: "exact", head: true })
+      .eq("race_id", oldId);
+    if (error) {
+      if (isMissingColumnError(error)) continue;
+      console.error(`${progress} ${table}件数確認エラー: ${error.message}`);
+      summary.errors.push({
+        oldId,
+        newId,
+        step: `dryrun_count_${table}`,
+        error: error.message,
+      });
+      continue;
+    }
+    if (count > 0) raceReport.childUpdates[table] = count;
+  }
+}
+
+/** 正しいIDの races の行が無ければ、旧行の race_number を退避してから作る（冪等）。失敗は summary に足して false */
+async function ensureNewRace(oldRace, oldId, newId, progress, summary) {
+  // 1. 新IDでracesに行が無ければ作成（冪等: 既にあればスキップ）
+  const { data: existingNew } = await supabase
+    .from("races")
+    .select("race_id")
+    .eq("race_id", newId)
+    .maybeSingle();
+
+  if (!existingNew) {
+    const { venueCode, raceNumber } = parseVenueAndRaceNumberFromId(oldId);
+
+    // 1a. UNIQUE(race_date, venue_code, race_number)の組を一時的に空ける
+    // （race_numberはrace_id文字列から再計算するため冪等・何度実行しても同じ値）
+    const { error: quarantineError } = await supabase
+      .from("races")
+      .update({ race_number: raceNumber + RACE_NUMBER_QUARANTINE_OFFSET })
+      .eq("race_id", oldId);
+    if (quarantineError) {
+      console.error(
+        `${progress} 旧race_number退避失敗: ${quarantineError.message}`,
+      );
+      summary.errors.push({
+        oldId,
+        newId,
+        step: "quarantine_old_race_number",
+        error: quarantineError.message,
+      });
+      return false;
+    }
+
+    const {
+      race_id: _drop,
+      updated_at: _dropUpdatedAt,
+      venue_code: _dropVenueCode,
+      race_number: _dropRaceNumber,
+      ...rest
+    } = oldRace;
+    const { error: insertError } = await supabase.from("races").insert({
+      race_id: newId,
+      venue_code: venueCode,
+      race_number: raceNumber,
+      ...rest,
+      updated_at: new Date().toISOString(),
+    });
+    if (insertError) {
+      console.error(
+        `${progress} races新規行INSERT失敗: ${insertError.message}`,
+      );
+      summary.errors.push({
+        oldId,
+        newId,
+        step: "insert_races",
+        error: insertError.message,
+      });
+      return false;
+    }
+  }
+  return true;
+}
+
+/** 子テーブルの race_id を正しいIDに付け替える。付け替えに失敗した表があれば true */
+async function moveChildren(oldId, newId, progress, raceReport, summary) {
+  // 2. 子テーブルのrace_idを新IDに付け替え
+  let childFailed = false;
+  for (const table of CHILD_TABLES) {
+    const { data, error } = await supabase
+      .from(table)
+      .update({ race_id: newId })
+      .eq("race_id", oldId)
+      .select("race_id");
+    if (error) {
+      // race_id列が存在しないテーブルはPostgRESTがエラーを返すため無視する
+      if (isMissingColumnError(error)) continue;
+      console.error(
+        `${progress} ${table}のrace_id付け替え失敗: ${error.message}`,
+      );
+      summary.errors.push({
+        oldId,
+        newId,
+        step: `update_${table}`,
+        error: error.message,
+      });
+      childFailed = true;
+      continue;
+    }
+    const updatedCount = data?.length ?? 0;
+    if (updatedCount > 0) raceReport.childUpdates[table] = updatedCount;
+  }
+  return childFailed;
+}
+
+/** 1レースを旧IDから正しいIDへ移す（dry-run は子テーブルの件数だけ数える）。結果は summary に足す */
+async function fixRace(oldRace, progress, dryRun, summary) {
+  const oldId = oldRace.race_id;
+  const newId = computeCorrectRaceId(oldRace);
+  const raceReport = { oldId, newId, childUpdates: {} };
+
+  console.log(`${progress} ${oldId} -> ${newId}`);
+  if (dryRun) {
+    await countChildren(oldId, newId, progress, raceReport, summary);
+    summary.perRace.push(raceReport);
+    return;
+  }
+
+  if (!(await ensureNewRace(oldRace, oldId, newId, progress, summary))) return;
+
+  const childFailed = await moveChildren(
+    oldId,
+    newId,
+    progress,
+    raceReport,
+    summary,
+  );
+
+  if (childFailed) {
+    console.error(
+      `${progress} 子テーブル更新に失敗したため旧raceの削除をスキップ: ${oldId}`,
+    );
+    summary.perRace.push(raceReport);
+    return;
+  }
+
+  // 3. DELETE直前に、oldIdを参照する行がCHILD_TABLES全件で本当に0件か
+  // 独立して確認する。races(race_id)へのFKはほとんどON DELETE CASCADEの
+  // ため、上のUPDATE呼び出しの成功報告を信用してそのままDELETEすると、
+  // 何らかの理由で更新漏れがあった場合に検知できず巻き込み削除・
+  // 孤児レコード化しうる（セルフレビューで判明、詳細はファイル冒頭コメント）。
+  const remaining = await countRemainingReferences(oldId);
+  if (Object.keys(remaining).length > 0) {
+    console.error(
+      `${progress} 旧race_id(${oldId})への参照が残っているため削除をスキップ:`,
+      JSON.stringify(remaining),
+    );
+    summary.errors.push({
+      oldId,
+      newId,
+      step: "verify_no_remaining_references",
+      remaining,
+    });
+    summary.perRace.push(raceReport);
+    return;
+  }
+
+  // 4. 旧raceを削除（全子テーブルの付け替え完了を確認済みのため安全）
+  const { error: deleteError } = await supabase
+    .from("races")
+    .delete()
+    .eq("race_id", oldId);
+  if (deleteError) {
+    console.error(`${progress} 旧races行DELETE失敗: ${deleteError.message}`);
+    summary.errors.push({
+      oldId,
+      newId,
+      step: "delete_old_races",
+      error: deleteError.message,
+    });
+  }
+
+  summary.perRace.push(raceReport);
+}
+
 async function main() {
   const { dryRun, onlyRaceId } = parseArgs();
 
@@ -191,165 +375,8 @@ async function main() {
 
   for (let i = 0; i < mismatched.length; i++) {
     const oldRace = mismatched[i];
-    const oldId = oldRace.race_id;
-    const newId = computeCorrectRaceId(oldRace);
     const progress = `[${i + 1}/${mismatched.length}]`;
-    const raceReport = { oldId, newId, childUpdates: {} };
-
-    console.log(`${progress} ${oldId} -> ${newId}`);
-
-    if (dryRun) {
-      for (const table of CHILD_TABLES) {
-        const { count, error } = await supabase
-          .from(table)
-          .select("*", { count: "exact", head: true })
-          .eq("race_id", oldId);
-        if (error) {
-          if (isMissingColumnError(error)) continue;
-          console.error(`${progress} ${table}件数確認エラー: ${error.message}`);
-          summary.errors.push({
-            oldId,
-            newId,
-            step: `dryrun_count_${table}`,
-            error: error.message,
-          });
-          continue;
-        }
-        if (count > 0) raceReport.childUpdates[table] = count;
-      }
-      summary.perRace.push(raceReport);
-      continue;
-    }
-
-    // 1. 新IDでracesに行が無ければ作成（冪等: 既にあればスキップ）
-    const { data: existingNew } = await supabase
-      .from("races")
-      .select("race_id")
-      .eq("race_id", newId)
-      .maybeSingle();
-
-    if (!existingNew) {
-      const { venueCode, raceNumber } = parseVenueAndRaceNumberFromId(oldId);
-
-      // 1a. UNIQUE(race_date, venue_code, race_number)の組を一時的に空ける
-      // （race_numberはrace_id文字列から再計算するため冪等・何度実行しても同じ値）
-      const { error: quarantineError } = await supabase
-        .from("races")
-        .update({ race_number: raceNumber + RACE_NUMBER_QUARANTINE_OFFSET })
-        .eq("race_id", oldId);
-      if (quarantineError) {
-        console.error(
-          `${progress} 旧race_number退避失敗: ${quarantineError.message}`,
-        );
-        summary.errors.push({
-          oldId,
-          newId,
-          step: "quarantine_old_race_number",
-          error: quarantineError.message,
-        });
-        continue;
-      }
-
-      const {
-        race_id: _drop,
-        updated_at: _dropUpdatedAt,
-        venue_code: _dropVenueCode,
-        race_number: _dropRaceNumber,
-        ...rest
-      } = oldRace;
-      const { error: insertError } = await supabase.from("races").insert({
-        race_id: newId,
-        venue_code: venueCode,
-        race_number: raceNumber,
-        ...rest,
-        updated_at: new Date().toISOString(),
-      });
-      if (insertError) {
-        console.error(
-          `${progress} races新規行INSERT失敗: ${insertError.message}`,
-        );
-        summary.errors.push({
-          oldId,
-          newId,
-          step: "insert_races",
-          error: insertError.message,
-        });
-        continue;
-      }
-    }
-
-    // 2. 子テーブルのrace_idを新IDに付け替え
-    let childFailed = false;
-    for (const table of CHILD_TABLES) {
-      const { data, error } = await supabase
-        .from(table)
-        .update({ race_id: newId })
-        .eq("race_id", oldId)
-        .select("race_id");
-      if (error) {
-        // race_id列が存在しないテーブルはPostgRESTがエラーを返すため無視する
-        if (isMissingColumnError(error)) continue;
-        console.error(
-          `${progress} ${table}のrace_id付け替え失敗: ${error.message}`,
-        );
-        summary.errors.push({
-          oldId,
-          newId,
-          step: `update_${table}`,
-          error: error.message,
-        });
-        childFailed = true;
-        continue;
-      }
-      const updatedCount = data?.length ?? 0;
-      if (updatedCount > 0) raceReport.childUpdates[table] = updatedCount;
-    }
-
-    if (childFailed) {
-      console.error(
-        `${progress} 子テーブル更新に失敗したため旧raceの削除をスキップ: ${oldId}`,
-      );
-      summary.perRace.push(raceReport);
-      continue;
-    }
-
-    // 3. DELETE直前に、oldIdを参照する行がCHILD_TABLES全件で本当に0件か
-    // 独立して確認する。races(race_id)へのFKはほとんどON DELETE CASCADEの
-    // ため、上のUPDATE呼び出しの成功報告を信用してそのままDELETEすると、
-    // 何らかの理由で更新漏れがあった場合に検知できず巻き込み削除・
-    // 孤児レコード化しうる（セルフレビューで判明、詳細はファイル冒頭コメント）。
-    const remaining = await countRemainingReferences(oldId);
-    if (Object.keys(remaining).length > 0) {
-      console.error(
-        `${progress} 旧race_id(${oldId})への参照が残っているため削除をスキップ:`,
-        JSON.stringify(remaining),
-      );
-      summary.errors.push({
-        oldId,
-        newId,
-        step: "verify_no_remaining_references",
-        remaining,
-      });
-      summary.perRace.push(raceReport);
-      continue;
-    }
-
-    // 4. 旧raceを削除（全子テーブルの付け替え完了を確認済みのため安全）
-    const { error: deleteError } = await supabase
-      .from("races")
-      .delete()
-      .eq("race_id", oldId);
-    if (deleteError) {
-      console.error(`${progress} 旧races行DELETE失敗: ${deleteError.message}`);
-      summary.errors.push({
-        oldId,
-        newId,
-        step: "delete_old_races",
-        error: deleteError.message,
-      });
-    }
-
-    summary.perRace.push(raceReport);
+    await fixRace(oldRace, progress, dryRun, summary);
   }
 
   console.log("");

@@ -39,6 +39,7 @@ import {
 } from "../lib/liveOdds.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { FetchError } from "../lib/scrapeJobs/politeFetch.js";
+import { runLiveOddsWiringScenes } from "./verifyData/odds-live-api-wiring-scenes.js";
 
 const printOut = console.log.bind(console);
 const printErr = console.error.bind(console);
@@ -493,31 +494,10 @@ const fetcher = (fn) => {
 }
 
 // ---- (e) 設定 ----
+// api/odds/live.js の本文の字は読まず、読み込んで export と、手前の部品へ渡した引数・呼び出しの記録で見る（verifyData/odds-live-api-wiring-scenes.js）
+const live = await runLiveOddsWiringScenes({ check, show, htmlResponse, page: T3_PREDEADLINE, WRITE_METHODS });
 {
-  const api = fs.readFileSync(
-    new URL("../../api/odds/live.js", import.meta.url),
-    "utf8",
-  );
-  check(
-    "api/odds/live.js: maxDuration=30",
-    /export const config = \{\s*maxDuration: 30,?\s*\}/.test(api),
-  );
-  check(
-    "api/odds/live.js: 再試行なし・12秒で打ち切り・ブレーカーは DB ストア（Cron と共有）",
-    /maxRetries:\s*0/.test(api) &&
-      /timeoutMs:\s*12000/.test(api) &&
-      /createSupabaseStore\(supabase\)\.breakerStore/.test(api),
-  );
-  // 前は文字列 race_odds の出現そのものを禁じていて、範囲の外で DB の最新の窓を読む変更（BOA-1149）まで
-  // 落としていた。書き込みだけを探す。要求の処理の本体（scripts/lib/liveOdds.js）も読む
-  const liveOddsLib = fs.readFileSync(
-    new URL("../lib/liveOdds.js", import.meta.url),
-    "utf8",
-  );
-  const writes = [
-    ...raceOddsWrites(api).map((h) => `api/odds/live.js: ${h}`),
-    ...raceOddsWrites(liveOddsLib).map((h) => `scripts/lib/liveOdds.js: ${h}`),
-  ];
+  const { writes } = live;
   check(
     "api/odds/live.js・scripts/lib/liveOdds.js: race_odds に書かない（読むのは許す）",
     writes.length === 0,
@@ -617,10 +597,11 @@ const fetcher = (fn) => {
     rawSearch: canonical,
   });
   check("正しい形のクエリ: 200", ok.status === 200, show(ok.status));
-  const apiSrc = fs.readFileSync(new URL("../../api/odds/live.js", import.meta.url), "utf8");
+  const viaApi = await live.live.call(live.liveReq(`?page=3t&raceId=${live.LIVE_RACE}`));
   check(
     "api/odds/live.js: req.url の生のクエリを rawSearch に渡す",
-    /rawSearch:\s*new URL\(req\.url/.test(apiSrc),
+    live.first.status === 200 && viaApi.status === 400 && viaApi.headers["Cache-Control"] === CACHE_NO_STORE,
+    show({ canonical: live.first.status, reordered: viaApi.status, cacheControl: viaApi.headers["Cache-Control"] }),
   );
 }
 

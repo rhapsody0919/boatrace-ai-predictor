@@ -44,7 +44,8 @@ export const WORKFLOW_EXCLUSIONS = Object.freeze({
   },
   "e2e-release.yml": {
     kind: "no_table",
-    reason: "配備先（本番の URL）での読むだけの E2E（ZB02、BOA-1497。prod-jobs は /api の合言葉だけ。失敗は Slack）。表を書かない",
+    reason:
+      "配備先（本番の URL）での読むだけの E2E（ZB02、BOA-1497。prod-jobs は /api の合言葉だけ。失敗は Slack）。表を書かない",
   },
   "e2e-rerecord.yml": {
     kind: "no_table",
@@ -122,29 +123,19 @@ export function usesProdJobs(yamlText) {
   );
 }
 
-/**
- * 登録の漏れ・残骸を返す（空なら正常）。
- * @param {{workflows: Record<string, string>, checks: ReadonlyArray<{id: string, workflow?: string}>, exclusions?: Record<string, {kind: string, reason: string}>, watched?: ReadonlyArray<string>|null}} input
- *   workflows はファイル名 → 本文。watched は job-watch.json の watched（.github/workflows/ からのパス）。null なら照合しない
- */
-export function findCoverageProblems({
-  workflows,
-  checks,
-  exclusions = WORKFLOW_EXCLUSIONS,
-  watched = null,
-}) {
-  const problems = [];
-  const watchedFiles = watched
-    ? new Set(watched.map((w) => w.replace(/^\.github\/workflows\//, "")))
-    : null;
-  const prodJobs = Object.keys(workflows).filter((f) =>
-    usesProdJobs(workflows[f]),
-  );
+// 鮮度の項目の workflow → その項目の id の一覧（checks の順）
+function checkIdsByWorkflow(checks) {
   const covered = new Map();
   for (const c of checks) {
     if (!c.workflow) continue;
     covered.set(c.workflow, [...(covered.get(c.workflow) ?? []), c.id]);
   }
+  return covered;
+}
+
+// prod-jobs を使う workflow ごとの、鮮度の項目・除外・job の失敗の見張りへの載り漏れと二重
+function prodJobsProblems(prodJobs, covered, exclusions, watchedFiles) {
+  const problems = [];
   for (const f of prodJobs) {
     const inChecks = covered.has(f);
     const inExclusions = Object.hasOwn(exclusions, f);
@@ -161,6 +152,12 @@ export function findCoverageProblems({
         `${f}: 鮮度の項目（${covered.get(f).join("、")}）と除外の両方に載っています。どちらかにしてください`,
       );
   }
+  return problems;
+}
+
+// 鮮度の項目の workflow が無い・prod-jobs を使わない（一覧の残骸）
+function checkLeftovers(covered, workflows) {
+  const problems = [];
   for (const [f, ids] of covered) {
     if (!Object.hasOwn(workflows, f))
       problems.push(`${ids.join("、")}: workflow ${f} がありません`);
@@ -169,6 +166,12 @@ export function findCoverageProblems({
         `${ids.join("、")}: workflow ${f} は prod-jobs を使っていません（一覧の残骸）`,
       );
   }
+  return problems;
+}
+
+// 除外の残骸と、kind・reason の不正
+function exclusionProblems(exclusions, workflows) {
+  const problems = [];
   for (const [f, ex] of Object.entries(exclusions)) {
     if (!Object.hasOwn(workflows, f))
       problems.push(`除外 ${f}: workflow がありません（一覧の残骸）`);
@@ -180,4 +183,29 @@ export function findCoverageProblems({
       problems.push(`除外 ${f}: 理由（reason）を書いてください`);
   }
   return problems;
+}
+
+/**
+ * 登録の漏れ・残骸を返す（空なら正常）。
+ * @param {{workflows: Record<string, string>, checks: ReadonlyArray<{id: string, workflow?: string}>, exclusions?: Record<string, {kind: string, reason: string}>, watched?: ReadonlyArray<string>|null}} input
+ *   workflows はファイル名 → 本文。watched は job-watch.json の watched（.github/workflows/ からのパス）。null なら照合しない
+ */
+export function findCoverageProblems({
+  workflows,
+  checks,
+  exclusions = WORKFLOW_EXCLUSIONS,
+  watched = null,
+}) {
+  const watchedFiles = watched
+    ? new Set(watched.map((w) => w.replace(/^\.github\/workflows\//, "")))
+    : null;
+  const prodJobs = Object.keys(workflows).filter((f) =>
+    usesProdJobs(workflows[f]),
+  );
+  const covered = checkIdsByWorkflow(checks);
+  return [
+    ...prodJobsProblems(prodJobs, covered, exclusions, watchedFiles),
+    ...checkLeftovers(covered, workflows),
+    ...exclusionProblems(exclusions, workflows),
+  ];
 }

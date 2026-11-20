@@ -16,116 +16,33 @@
  * - GA4 の鍵が未設定の間は GA4 を飛ばし、report.alerts で知らせる
  * - shadow は取得と比較までで、書かない
  */
-import twitterText from "twitter-text";
 import {
-  X_SOURCES,
-  YOUTUBE_SOURCES,
-  and,
-  exact,
-  hostFilter,
-  inList,
-  sonarTabFilter,
-  assistPageFilter,
-  SITE_HOST,
-} from "./snsGa4.js";
+  CHANNEL_METRICS,
+  ENGAGED_LOOKBACK_DAYS,
+  UPSERT_CHUNK,
+  ptDate,
+  range,
+} from "./snsDailyRunnerParts.js";
+import { collectGa4, collectSetsuShort } from "./snsDailyRunnerGa4.js";
+import {
+  collectEngaged,
+  collectYoutube,
+} from "./snsDailyRunnerYoutube.js";
 
-export const SNS_DAILY_LOOKBACK_DAYS = 3;
-export const UTM_CAMPAIGNS = ["race-full", "today_digest"];
-/** YouTube Shorts「節の機力」の下書きの format（scripts/sns/push-setsu-kiryoku-short.js、#2112。そちらを import しない） */
-export const SETSU_SHORT_FORMAT = "setsu_kiryoku_short";
-/** 説明欄のリンクの utm_* と GA4 のセッションの次元。required は無ければ結びつけない（同じ会場のページへの別の投稿の流入を拾わないため） */
-const SETSU_UTM_DIMS = [
-  { param: "utm_source", dim: "sessionSource", required: true },
-  { param: "utm_medium", dim: "sessionMedium", required: true },
-  { param: "utm_campaign", dim: "sessionCampaignName", required: false },
-  { param: "utm_content", dim: "sessionManualAdContent", required: true },
-];
-const VENUE_PATH = /^\/venue\/(\d{1,2})\/?$/i;
-const CHANNEL_METRICS = ["views", "engagedViews", "subscribersGained"];
-// averageViewDuration（秒）は 2026-10-24 に追加（BOA-1006 (b)、hq の Shorts の改善の周の主な指標）。
-// Shorts の「スワイプされた割合」は公開の API の指標に無い（YouTube Analytics の metrics の一覧、2026-10-24 確認）。
-// 近いものは engagedViews / views で、今の行から計算できる
-const VIDEO_METRICS = [
-  "views",
-  "engagedViews",
-  "averageViewPercentage",
-  "averageViewDuration",
-  "subscribersGained",
-];
-/**
- * 動画ごとの engagedViews・views（と平均の視聴の割合・時間）を sns_metric_observations にも入れる（PD02、hq の毎日の PDCA の流れ shorts_engaged）。
- * 窓は pt3d（マイグレーション 175）: 太平洋時間の投稿日から3日（投稿日＋2日）の暦日の和。終わりは PT の3日目の翌日 0:00。
- * Analytics は暦日の粒度なので、「投稿から72時間」のような時間の窓へ変換しない（docs/design/sns-hub-metrics/contract.md「日次Analyticsを
- * 時間窓へ推測変換しない」。day_end と同じく投稿ごとに長さが違う窓）。投稿前の views は0なので、和は [posted_at, period_end) と同じ。
- * 反映の遅れ（2〜3日、BOA-1006 (b)）のため、3日目が取り直しの最も古い日（D−3）より前になってから1回入れる。
- * 値（engagedViews と分母の views）が無ければ、値が出るまで ENGAGED_LOOKBACK_DAYS の間は毎日やり直す
- */
-export const ENGAGED_WINDOW = "pt3d";
-const ENGAGED_PT_DAYS = 3;
-// 3日目が D−3 より前になるのは投稿の約6日後。14日まで見ると、欠測のときに約8回やり直せる
-export const ENGAGED_LOOKBACK_DAYS = 14;
-/** 同じ日の2回目の起動（補足の起動・重複配信）で欠測の revision を重ねない間隔 */
-const ENGAGED_RETRY_HOURS = 20;
-/** Analytics を読む時間の上限（関数の時間 300 秒の中で、残りは次の起動に回す） */
-export const ENGAGED_BUDGET_MS = 90000;
-const ENGAGED_METRICS = [
-  "engagedViews",
-  "views",
-  "averageViewPercentage",
-  "averageViewDuration",
-];
-/** PT の暦日 day の 0:00 の UTC の時刻（夏時間は UTC 07:00、冬時間は 08:00） */
-export function ptMidnightUtc(day) {
-  const hit = /^\d{4}-\d{2}-\d{2}$/.test(day ?? "")
-    ? ["07", "08"]
-        .map((h) => new Date(`${day}T${h}:00:00Z`))
-        .find(
-          (t) => ptDate(t) === day && ptDate(new Date(t.getTime() - 1)) !== day,
-        )
-    : null;
-  if (!hit) throw new Error(`PT の 0:00 を出せない日付: ${day}`);
-  return hit.toISOString();
-}
-const RACE_ID_RE = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/;
-/** 時刻を JST の YYYY-MM-DD にする */
-const toJstDay = (iso) =>
-  new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(0, 10);
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const UPSERT_CHUNK = 500;
-const YT_MISSING = "Analytics が行を返さない（未確定の可能性）";
-
-const def = {
-  ytChannel: (m) =>
-    `YouTube Analytics reports dimensions=day・チャネル全体・${m}・太平洋時間の暦日・v1`,
-  ytVideo: (m) =>
-    `YouTube Analytics reports dimensions=day filters=video・${m}・太平洋時間の暦日・v1`,
-  ytEngaged: (m) =>
-    `YouTube Analytics reports filters=video・${m}・太平洋時間の暦日で投稿日から${ENGAGED_PT_DAYS}日の和（窓 pt3d、終わりは PT の${ENGAGED_PT_DAYS}日目の翌日 0:00）・D−3 より前になってから・v1`,
-  ga4Channel: (m) =>
-    `GA4 ${m}・hostName=${SITE_HOST}・sessionSource は X・YouTube の完全一致のリスト・流入元ごとの和・JST の暦日・Cookie 同意者のみ・v1`,
-  // 全貌（utm_content=race_id）は X・YouTube と utm_term（full・shorts）で分ける
-  ga4FullPicture: (m, source, term) =>
-    `GA4 ${m}・utm_source=${source}・utm_medium=social・utm_campaign=race-full・utm_content=race_id・utm_term=${term || "(なし)"}・JST の暦日・投稿日と翌日だけ・Cookie 同意者のみ・v1`,
-  ga4SetsuShort: (m) =>
-    `GA4 ${m}・節の機力の Shorts（format=${SETSU_SHORT_FORMAT}）・説明欄のリンクの utm_source・utm_medium・utm_content（と、あれば utm_campaign）と landingPage の会場が一致・JST の暦日・投稿日と翌日だけ・Cookie 同意者のみ・v1`,
-  ga4Utm: (m, campaign) =>
-    `GA4 ${m}・utm_source=x・utm_medium=social・utm_campaign=${campaign}・JST の暦日・Cookie 同意者のみ・v1`,
-};
-
-/** YYYY-MM-DD に日数を足す */
-export const addDays = (day, n) =>
-  new Date(Date.parse(`${day}T00:00:00Z`) + n * 86400000)
-    .toISOString()
-    .slice(0, 10);
-export const ptDate = (date) =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(
-    date,
-  );
-const range = (endExclusive) =>
-  Array.from({ length: SNS_DAILY_LOOKBACK_DAYS }, (_, i) =>
-    addDays(endExclusive, i - SNS_DAILY_LOOKBACK_DAYS),
-  );
+export {
+  SNS_DAILY_LOOKBACK_DAYS,
+  UTM_CAMPAIGNS,
+  SETSU_SHORT_FORMAT,
+  ENGAGED_WINDOW,
+  ENGAGED_LOOKBACK_DAYS,
+  ENGAGED_BUDGET_MS,
+  ptMidnightUtc,
+  addDays,
+  ptDate,
+} from "./snsDailyRunnerParts.js";
+export { setsuShortLink } from "./snsDailyRunnerGa4.js";
+export { createYoutubeAnalyticsClient } from "./snsDailyRunnerYoutube.js";
+export { createSnsDailyStore } from "./snsDailyRunnerStore.js";
 
 const rowKey = (r) =>
   [
@@ -137,6 +54,111 @@ const rowKey = (r) =>
     r.metric_name,
     r.definition,
   ].join("|");
+
+/** YouTube Analytics の日次と pt3d の観測を集める。取得に失敗しても errors に足すだけで続ける（acc に取れた分を残す） */
+async function collectYoutubeSide({
+  youtube,
+  store,
+  now,
+  startedMs,
+  ptDays,
+  push,
+  youtubeZeroFinalizations,
+  errors,
+  acc,
+}) {
+  try {
+    const yt = await youtube();
+    acc.expected += ptDays.length * CHANNEL_METRICS.length;
+    const videos = await store.youtubeVideos(
+      new Date(now.getTime() - ENGAGED_LOOKBACK_DAYS * 86400000).toISOString(),
+    );
+    await collectYoutube({
+      yt,
+      videos,
+      ptDays,
+      push,
+      youtubeZeroFinalizations,
+    });
+    // 観測（pt3d）は日次の表と別に失敗を数える。動画ごとの失敗は collectEngaged の中で errors に入れて次へ進む
+    try {
+      acc.observations = await collectEngaged({
+        yt,
+        store,
+        videos,
+        ptDays,
+        now,
+        startedMs,
+        errors,
+      });
+    } catch (error) {
+      errors.push(`engagedViews の観測の準備: ${error.message}`);
+    }
+  } catch (error) {
+    errors.push(`YouTube Analytics: ${error.message}`);
+  }
+}
+
+/** GA4 の流入を集める。鍵が無ければ alerts で知らせて飛ばす */
+async function collectGa4Side({ ga4, store, jstDays, push, errors, alerts, acc }) {
+  if (!ga4) {
+    alerts.push({
+      key: "ga4_unconfigured",
+      text: "SNS の日次の取り込み: GA4 の鍵（GOOGLE_SERVICE_ACCOUNT_KEY・GA4_PROPERTY_ID）が Vercel に無いので、GA4 の流入を取っていない",
+    });
+    return;
+  }
+  try {
+    const runReport = await ga4();
+    acc.expected += jstDays.length * 2 * 3;
+    await collectGa4({ runReport, store, jstDays, push });
+    // 節の機力の Shorts の失敗は、ほかの GA4 の行と分けて知らせる（ほかの行は書く。補足の起動がやり直す）
+    try {
+      await collectSetsuShort({ runReport, store, jstDays, push });
+    } catch (error) {
+      errors.push(`GA4（節の機力の Shorts）: ${error.message}`);
+    }
+  } catch (error) {
+    errors.push(`GA4: ${error.message}`);
+  }
+}
+
+/** 既存の行と比べて、値か欠測の理由が変わった行だけを返す */
+function changedRows(rows, existing) {
+  return rows.filter((r) => {
+    const old = existing.get(rowKey(r));
+    return (
+      !old ||
+      (old.metric_value === null ? null : Number(old.metric_value)) !==
+        r.metric_value ||
+      (old.missing_reason ?? null) !== (r.missing_reason ?? null)
+    );
+  });
+}
+
+/** pt3d の観測を入れる。入れた数を返す。窓の CHECK が未適用なら alerts に足して止める */
+async function appendObservations(store, observations, errors, alerts) {
+  let observed = 0;
+  for (const { draft_id, observation } of observations) {
+    try {
+      await store.appendObservation(draft_id, observation);
+      observed += 1;
+    } catch (error) {
+      // 175 の前（窓の CHECK に pt3d が無い）は、日次の取り込みを失敗にせず知らせる（当てれば次の日から入る）。
+      // 判定は窓の CHECK の名前だけ。ほかの CHECK 違反（期間の式等）は本当の不整合なので失敗にする（system-architect の審査 P2-2）
+      if (/sns_metric_observations_window_check/.test(error.message)) {
+        alerts.push({
+          key: "engaged_window_unapplied",
+          text: "SNS の日次の取り込み: 動画ごとの engagedViews（pt3d）を sns_metric_observations に入れられない。マイグレーション 175 が未適用",
+        });
+        break;
+      }
+      // 1件の失敗で残りの動画を止めない（system-architect の審査 P3-1）
+      errors.push(`engagedViews の観測（${draft_id}）: ${error.message}`);
+    }
+  }
+  return observed;
+}
 
 /**
  * @param {{mode: string, now: () => Date, targetDate: string}} ctx targetDate は JST の対象日（cron ラッパが解決する）
@@ -161,60 +183,22 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
       observed_at: observedAt,
       ...row,
     });
-  let expected = 0;
+  // expected: 取れるはずの行数、observations: 入れる pt3d の観測（どちらも取得の途中までの分が残る）
+  const acc = { expected: 0, observations: [] };
 
-  let observations = [];
-  try {
-    const yt = await youtube();
-    expected += ptDays.length * CHANNEL_METRICS.length;
-    const videos = await store.youtubeVideos(
-      new Date(now.getTime() - ENGAGED_LOOKBACK_DAYS * 86400000).toISOString(),
-    );
-    await collectYoutube({
-      yt,
-      videos,
-      ptDays,
-      push,
-      youtubeZeroFinalizations,
-    });
-    // 観測（pt3d）は日次の表と別に失敗を数える。動画ごとの失敗は collectEngaged の中で errors に入れて次へ進む
-    try {
-      observations = await collectEngaged({
-        yt,
-        store,
-        videos,
-        ptDays,
-        now,
-        startedMs,
-        errors,
-      });
-    } catch (error) {
-      errors.push(`engagedViews の観測の準備: ${error.message}`);
-    }
-  } catch (error) {
-    errors.push(`YouTube Analytics: ${error.message}`);
-  }
-
-  if (!ga4) {
-    alerts.push({
-      key: "ga4_unconfigured",
-      text: "SNS の日次の取り込み: GA4 の鍵（GOOGLE_SERVICE_ACCOUNT_KEY・GA4_PROPERTY_ID）が Vercel に無いので、GA4 の流入を取っていない",
-    });
-  } else {
-    try {
-      const runReport = await ga4();
-      expected += jstDays.length * 2 * 3;
-      await collectGa4({ runReport, store, jstDays, push });
-      // 節の機力の Shorts の失敗は、ほかの GA4 の行と分けて知らせる（ほかの行は書く。補足の起動がやり直す）
-      try {
-        await collectSetsuShort({ runReport, store, jstDays, push });
-      } catch (error) {
-        errors.push(`GA4（節の機力の Shorts）: ${error.message}`);
-      }
-    } catch (error) {
-      errors.push(`GA4: ${error.message}`);
-    }
-  }
+  await collectYoutubeSide({
+    youtube,
+    store,
+    now,
+    startedMs,
+    ptDays,
+    push,
+    youtubeZeroFinalizations,
+    errors,
+    acc,
+  });
+  await collectGa4Side({ ga4, store, jstDays, push, errors, alerts, acc });
+  const { expected, observations } = acc;
 
   // 同じキーの行が2つあると、本番の一括 upsert（1文の INSERT … ON CONFLICT）が「同じ行を2回更新」で文ごと拒まれる。
   // GA4 の次元を足したことで同じキーに複数の行が来うる（例: 下書きの ID の UTM に utm_term を付けた来訪）ので、値を足して1行にする
@@ -226,39 +210,14 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
   const existing = new Map(
     (await store.existing(from, to)).map((r) => [rowKey(r), r]),
   );
-  const changed = rows.filter((r) => {
-    const old = existing.get(rowKey(r));
-    return (
-      !old ||
-      (old.metric_value === null ? null : Number(old.metric_value)) !==
-        r.metric_value ||
-      (old.missing_reason ?? null) !== (r.missing_reason ?? null)
-    );
-  });
+  const changed = changedRows(rows, existing);
   const live = ctx.mode === "live";
   if (live)
     for (let i = 0; i < changed.length; i += UPSERT_CHUNK)
       await store.upsert(changed.slice(i, i + UPSERT_CHUNK));
-  let observed = 0;
-  if (live)
-    for (const { draft_id, observation } of observations) {
-      try {
-        await store.appendObservation(draft_id, observation);
-        observed += 1;
-      } catch (error) {
-        // 175 の前（窓の CHECK に pt3d が無い）は、日次の取り込みを失敗にせず知らせる（当てれば次の日から入る）。
-        // 判定は窓の CHECK の名前だけ。ほかの CHECK 違反（期間の式等）は本当の不整合なので失敗にする（system-architect の審査 P2-2）
-        if (/sns_metric_observations_window_check/.test(error.message)) {
-          alerts.push({
-            key: "engaged_window_unapplied",
-            text: "SNS の日次の取り込み: 動画ごとの engagedViews（pt3d）を sns_metric_observations に入れられない。マイグレーション 175 が未適用",
-          });
-          break;
-        }
-        // 1件の失敗で残りの動画を止めない（system-architect の審査 P3-1）
-        errors.push(`engagedViews の観測（${draft_id}）: ${error.message}`);
-      }
-    }
+  const observed = live
+    ? await appendObservations(store, observations, errors, alerts)
+    : 0;
 
   const report = {
     jstDays,
@@ -282,470 +241,6 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
   };
 }
 
-async function collectYoutube({
-  yt,
-  videos,
-  ptDays,
-  push,
-  youtubeZeroFinalizations,
-}) {
-  const pushDaily = (args) => {
-    const finalDayWithoutRow = args.day === ptDays[0] && args.row === undefined;
-    const finalizeZero =
-      finalDayWithoutRow && CHANNEL_METRICS.includes(args.metric);
-    const row = ytRow({ ...args, finalDayWithoutRow, finalizeZero });
-    push(row);
-    if (finalizeZero)
-      youtubeZeroFinalizations.push({
-        day: row.day,
-        channel: row.channel,
-        draft_id: row.draft_id,
-        metric_name: row.metric_name,
-        reason: "Analytics が行を返さない日を D−3 で0と確定",
-      });
-  };
-  const channelRows = await yt.report({
-    startDate: ptDays[0],
-    endDate: ptDays.at(-1),
-    dimensions: "day",
-    metrics: CHANNEL_METRICS.join(","),
-  });
-  const byDay = new Map(channelRows.map((r) => [r.day, r]));
-  for (const day of ptDays)
-    for (const metric of CHANNEL_METRICS)
-      pushDaily({
-        day,
-        metric,
-        row: byDay.get(day),
-        definition: def.ytChannel(metric),
-      });
-
-  // 投稿日か翌日が取り直しの範囲に入る動画だけ。動画ごとに1回（クォータ1）
-  for (const video of videos) {
-    const posted = ptDate(new Date(video.posted_at));
-    const days = [posted, addDays(posted, 1)].filter((d) => ptDays.includes(d));
-    if (!days.length || !video.external_post_id) continue;
-    const videoRows = await yt.report({
-      startDate: days[0],
-      endDate: days.at(-1),
-      dimensions: "day",
-      metrics: VIDEO_METRICS.join(","),
-      filters: `video==${video.external_post_id}`,
-    });
-    const videoByDay = new Map(videoRows.map((r) => [r.day, r]));
-    for (const day of days)
-      for (const metric of VIDEO_METRICS)
-        pushDaily({
-          day,
-          metric,
-          row: videoByDay.get(day),
-          definition: def.ytVideo(metric),
-          draft_id: video.draft_id,
-        });
-  }
-}
-
-/**
- * pt3d の観測（sns_metric_observations、append_sns_metric_observation に渡す形）。投稿日から3日目が D−3 より前の動画で、
- * まだ値の入った観測が無いものだけ。動画ごとに1回（クォータ1）。engagedViews は分母 views を持つ
- */
-async function collectEngaged({
-  yt,
-  store,
-  videos,
-  ptDays,
-  now,
-  startedMs = Date.now(),
-  errors = [],
-}) {
-  const due = videos.filter(
-    (v) =>
-      v.external_post_id &&
-      v.posted_at &&
-      // D−3 は今日も取り直す日（反映が日で揺れる）なので、それより前だけ（system-architect の審査 P2-3）
-      addDays(ptDate(new Date(v.posted_at)), ENGAGED_PT_DAYS - 1) < ptDays[0],
-  );
-  if (!due.length) return [];
-  // 指標ごとに、まだ入れる要るものだけを残す（Codex の審査 P1: 4指標は別々に保存するので、1つだけ落ちても取り直す）。
-  // 入れない: 値のある観測がある指標（engagedViews は分母も）と、直近（同じ日の2回目の起動）に欠測で入れた指標
-  const since = now.getTime() - ENGAGED_RETRY_HOURS * 3600000;
-  const settled = new Set(
-    (
-      await store.engagedObservations(
-        due.map((v) => v.draft_id),
-        ENGAGED_METRICS,
-      )
-    )
-      .filter(
-        (o) =>
-          o.definition === def.ytEngaged(o.metric_name) &&
-          ((o.metric_value !== null &&
-            (o.metric_name !== "engagedViews" ||
-              o.denominator_value !== null)) ||
-            Date.parse(o.observed_at) >= since),
-      )
-      .map((o) => `${o.draft_id}|${o.metric_name}`),
-  );
-  const pending = (v) =>
-    ENGAGED_METRICS.filter((m) => !settled.has(`${v.draft_id}|${m}`));
-  const out = [];
-  for (const video of due.filter((v) => pending(v).length)) {
-    if (Date.now() - startedMs > ENGAGED_BUDGET_MS) break; // 残りは次の起動（値が入るまで毎日やり直す）
-    const start = ptDate(new Date(video.posted_at));
-    let row;
-    try {
-      [row] = await yt.report({
-        startDate: start,
-        endDate: addDays(start, ENGAGED_PT_DAYS - 1),
-        metrics: ENGAGED_METRICS.join(","),
-        filters: `video==${video.external_post_id}`,
-      });
-    } catch (error) {
-      // 1本の失敗で残りの動画を止めない。この動画は次の日にやり直す
-      errors.push(
-        `engagedViews の観測（${video.draft_id}）の読み取り: ${error.message}`,
-      );
-      continue;
-    }
-    const periodEnd = ptMidnightUtc(addDays(start, ENGAGED_PT_DAYS));
-    const value = (m) =>
-      Number.isFinite(row?.[m]) && row[m] >= 0 ? row[m] : null;
-    for (const metric of pending(video)) {
-      const v = value(metric);
-      out.push({
-        draft_id: video.draft_id,
-        observation: {
-          window: ENGAGED_WINDOW,
-          external_post_id: video.external_post_id,
-          observed_at: now.toISOString(),
-          period_start: video.posted_at,
-          period_end: periodEnd,
-          data_through: v === null ? null : periodEnd,
-          source: "youtube-analytics",
-          metric_name: metric,
-          metric_value: v,
-          missing_reason: v === null ? YT_MISSING : null,
-          definition: def.ytEngaged(metric),
-          measurement_kind: "period",
-          ...(metric === "engagedViews" && value("views") !== null
-            ? { denominator_name: "views", denominator_value: value("views") }
-            : {}),
-        },
-      });
-    }
-  }
-  return out;
-}
-
-function ytRow({
-  day,
-  metric,
-  row,
-  definition,
-  draft_id = null,
-  finalDayWithoutRow = false,
-  finalizeZero = false,
-}) {
-  // DB の CHECK は値と missing_reason のどちらか一方。規則による0の理由は report に残す。
-  const value = finalizeZero ? 0 : row?.[metric];
-  const ok = Number.isFinite(value) && value >= 0;
-  return {
-    day,
-    channel: "youtube",
-    draft_id,
-    source: "youtube-analytics",
-    metric_name: metric,
-    metric_value: ok ? value : null,
-    missing_reason: ok
-      ? null
-      : finalDayWithoutRow
-        ? "Analytics が行を返さない日を D−3 で確定したが、視聴なしの平均は算出できない"
-        : YT_MISSING,
-    definition,
-  };
-}
-
-const ga4Day = (yyyymmdd) =>
-  `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
-
-async function collectGa4({ runReport, store, jstDays, push }) {
-  const dateRanges = [{ startDate: jstDays[0], endDate: jstDays.at(-1) }];
-  const snsSources = inList("sessionSource", [
-    ...X_SOURCES,
-    ...YOUTUBE_SOURCES,
-  ]);
-  const channelOf = (source) =>
-    YOUTUBE_SOURCES.includes(source) ? "youtube" : "x";
-
-  // チャネル全体: 流入元ごとの行をチャネルに足し、行の無い日は0
-  const [visits, sonar] = await Promise.all([
-    runReport({
-      dateRanges,
-      dimensions: [{ name: "date" }, { name: "sessionSource" }],
-      metrics: [{ name: "totalUsers" }, { name: "sessions" }],
-      dimensionFilter: and(hostFilter, snsSources),
-    }),
-    runReport({
-      dateRanges,
-      dimensions: [{ name: "date" }, { name: "sessionSource" }],
-      metrics: [{ name: "totalUsers" }],
-      dimensionFilter: and(hostFilter, snsSources, sonarTabFilter),
-    }),
-  ]);
-  const totals = new Map();
-  const add = (day, channel, metric, value) => {
-    const key = `${day}|${channel}|${metric}`;
-    totals.set(key, (totals.get(key) ?? 0) + value);
-  };
-  for (const [date, source, users, sessions] of visits) {
-    add(ga4Day(date), channelOf(source), "users", users);
-    add(ga4Day(date), channelOf(source), "sessions", sessions);
-  }
-  for (const [date, source, users] of sonar)
-    add(ga4Day(date), channelOf(source), "sonar_users", users);
-  for (const day of jstDays)
-    for (const channel of ["x", "youtube"])
-      for (const metric of ["users", "sessions", "sonar_users"])
-        push({
-          day,
-          channel,
-          source: "site-analytics",
-          metric_name: metric,
-          metric_value: totals.get(`${day}|${channel}|${metric}`) ?? 0,
-          missing_reason: null,
-          definition: def.ga4Channel(metric),
-        });
-
-  // 投稿の UTM ごと（行がある分だけ）。
-  // - utm_content の先頭が下書きの ID（auto-plan の race-full・today_digest、X だけ）: draft_id に結びつける
-  // - utm_content がレース ID（全貌動画。hq の作り手が X の本文と YouTube の概要欄に付ける、2026-10-19 合意）:
-  //   X・YouTube を utm_term（full・shorts）ごとに分け、その全貌の下書きの実際の投稿日（JST）と翌日の2日分だけを残す
-  //   （GA4 の反映は最大48時間遅れるが、毎日 D−3〜D−1 を取り直すので両日とも58時間後まで読み直す。2026-10-19 オーナー決定）
-  const utmFilter = and(
-    hostFilter,
-    inList("sessionSource", ["x", "youtube"]),
-    exact("sessionMedium", "social"),
-    inList("sessionCampaignName", UTM_CAMPAIGNS),
-  );
-  const utmDims = [
-    { name: "date" },
-    { name: "sessionSource" },
-    { name: "sessionCampaignName" },
-    { name: "sessionManualAdContent" },
-    { name: "sessionManualTerm" },
-  ];
-  const [utmVisits, utmSonar, utmAssist] = await Promise.all([
-    runReport({
-      dateRanges,
-      dimensions: utmDims,
-      metrics: [{ name: "totalUsers" }, { name: "sessions" }],
-      dimensionFilter: utmFilter,
-    }),
-    runReport({
-      dateRanges,
-      dimensions: utmDims,
-      metrics: [{ name: "totalUsers" }],
-      dimensionFilter: and(utmFilter, sonarTabFilter),
-    }),
-    runReport({
-      dateRanges,
-      dimensions: utmDims,
-      metrics: [{ name: "totalUsers" }],
-      dimensionFilter: and(utmFilter, assistPageFilter),
-    }),
-  ]);
-  const contents = [...utmVisits, ...utmSonar, ...utmAssist].map(([, , , content]) =>
-    String(content),
-  );
-  const candidates = [
-    ...new Set(
-      contents.map((c) => c.split("/")[0]).filter((id) => UUID_RE.test(id)),
-    ),
-  ];
-  // 全貌の完全版の機能への導線は utm_content が「レース ID/sonar」「レース ID/assist」（hq 契約 10/24 C1）。下書きの結びつけはレース ID で
-  const raceKey = (c) => String(c).split("/")[0];
-  const raceIds = [
-    ...new Set(contents.map(raceKey).filter((c) => RACE_ID_RE.test(c))),
-  ];
-  const [known, fullPicture] = await Promise.all([
-    candidates.length ? store.existingDrafts(candidates) : [],
-    raceIds.length ? store.fullPictureDrafts(raceIds) : [],
-  ]);
-  const knownIds = new Set(known);
-  // 同じレース・チャネルに下書きが複数ある（作り直して push した等）ときは、投稿された中で最初のものを使う
-  const fpDraft = new Map();
-  for (const d of fullPicture.filter((d) => d.posted_at)) {
-    const key = `${d.race_id}|${d.platform}`;
-    if (
-      !fpDraft.has(key) ||
-      Date.parse(d.posted_at) < Date.parse(fpDraft.get(key).posted_at)
-    )
-      fpDraft.set(key, d);
-  }
-  const utmRow = (
-    date,
-    rawSource,
-    campaign,
-    content,
-    rawTerm,
-    metric,
-    value,
-  ) => {
-    const day = ga4Day(date);
-    // GA4 の inList は大文字小文字を区別しないので、比べる前にそろえる
-    const source = String(rawSource).toLowerCase();
-    // 合意している utm_term は full・shorts だけ。未設定は空、それ以外は「その他」に寄せる
-    const term =
-      rawTerm === "(not set)" || !rawTerm
-        ? ""
-        : ["full", "shorts"].includes(String(rawTerm).toLowerCase())
-          ? String(rawTerm).toLowerCase()
-          : "その他";
-    if (RACE_ID_RE.test(raceKey(content))) {
-      if (campaign !== "race-full") return;
-      const channel = source === "youtube" ? "youtube" : "x";
-      const draft = fpDraft.get(`${raceKey(content)}|${channel}`);
-      // 投稿された全貌の下書きが無い（まだ送っていない・手で出した）ときは、投稿日が分からないので数えない
-      if (!draft?.posted_at) return;
-      const postedDay = toJstDay(draft.posted_at);
-      if (day !== postedDay && day !== addDays(postedDay, 1)) return;
-      push({
-        day,
-        channel,
-        draft_id: draft.id,
-        utm_content: content,
-        source: "site-analytics",
-        metric_name: metric,
-        metric_value: value,
-        missing_reason: null,
-        definition: def.ga4FullPicture(metric, source, term),
-      });
-      return;
-    }
-    // 下書きの ID の UTM は X だけ（今までどおり）
-    if (source !== "x") return;
-    const id = content.split("/")[0];
-    push({
-      day,
-      channel: "x",
-      draft_id: knownIds.has(id) ? id : null,
-      utm_content: content,
-      source: "site-analytics",
-      metric_name: metric,
-      metric_value: value,
-      missing_reason: null,
-      definition: def.ga4Utm(metric, campaign),
-    });
-  };
-  for (const [
-    date,
-    source,
-    campaign,
-    content,
-    term,
-    users,
-    sessions,
-  ] of utmVisits) {
-    utmRow(date, source, campaign, String(content), term, "users", users);
-    utmRow(date, source, campaign, String(content), term, "sessions", sessions);
-  }
-  for (const [date, source, campaign, content, term, users] of utmSonar)
-    utmRow(date, source, campaign, String(content), term, "sonar_users", users);
-  for (const [date, source, campaign, content, term, users] of utmAssist)
-    utmRow(date, source, campaign, String(content), term, "assist_users", users);
-}
-
-/**
- * 説明欄の会場のページのリンク（push-setsu-kiryoku-short.js の descriptionLink と同じ twitter-text の取り出し）から、
- * 会場の番号と utm_*（小文字）を出す。会場のページのリンクが無い・必須の utm_* が欠けていれば null
- */
-export function setsuShortLink(caption) {
-  for (const raw of twitterText.extractUrls(caption ?? "")) {
-    let u;
-    try {
-      u = new URL(raw);
-    } catch {
-      continue;
-    }
-    const m = VENUE_PATH.exec(u.pathname);
-    if (u.hostname !== SITE_HOST || !m) continue;
-    const utm = {};
-    for (const { param, dim, required } of SETSU_UTM_DIMS) {
-      const v = u.searchParams.get(param);
-      if (v) utm[dim] = v.toLowerCase();
-      else if (required) return null;
-    }
-    return { venue: Number(m[1]), utm };
-  }
-  return null;
-}
-
-/**
- * 節の機力の Shorts の流入（users・sessions）。取り直しの範囲に投稿日か翌日が入る投稿済みの下書きだけ。下書きが無ければ GA4 を呼ばない。
- * リンク（会場と utm_*）ごとに1回読み、次元は日付だけにする（照合の条件を GA4 のフィルタに入れ、totalUsers を GA4 の側で重複なしに数える。
- * campaign・大文字小文字・末尾の / で行を分けて足すと人数が重なるため。Codex の審査 P1）。
- * その日の値は、同じリンクの下書きのうち投稿日（JST）が同じ日のもの、無ければ前の日のものに付ける。
- * 同じ会場・同じ utm の投稿が続く日は、その日の流入を当日の投稿に付ける（GA4 では前の日の投稿の翌日の分と見分けられない）
- */
-async function collectSetsuShort({ runReport, store, jstDays, push }) {
-  const since = `${addDays(jstDays[0], -1)}T00:00:00+09:00`;
-  const groups = new Map();
-  for (const d of await store.setsuShortDrafts(since)) {
-    const link = d.posted_at ? setsuShortLink(d.caption_text) : null;
-    if (!link) continue;
-    const key = JSON.stringify(link);
-    groups.set(key, [...(groups.get(key) ?? []), { ...d, link }]);
-  }
-  const results = await Promise.all(
-    [...groups.values()].map((drafts) => {
-      const { venue, utm } = drafts[0].link;
-      return runReport({
-        dateRanges: [{ startDate: jstDays[0], endDate: jstDays.at(-1) }],
-        dimensions: [{ name: "date" }],
-        metrics: [{ name: "totalUsers" }, { name: "sessions" }],
-        dimensionFilter: and(
-          hostFilter,
-          {
-            filter: {
-              fieldName: "landingPage",
-              stringFilter: {
-                matchType: "FULL_REGEXP",
-                value: `^/venue/0?${venue}/?$`,
-              },
-            },
-          },
-          // GA4 の文字列のフィルタは既定で大文字小文字を区別しない
-          ...Object.entries(utm).map(([dim, v]) => exact(dim, v)),
-        ),
-      });
-    }),
-  );
-  [...groups.values()].forEach((drafts, g) => {
-    for (const [date, users, sessions] of results[g]) {
-      const day = ga4Day(date);
-      const draft =
-        drafts.find((d) => toJstDay(d.posted_at) === day) ??
-        drafts.find((d) => addDays(toJstDay(d.posted_at), 1) === day);
-      if (!draft) continue;
-      for (const [metric, value] of [
-        ["users", users],
-        ["sessions", sessions],
-      ])
-        push({
-          day,
-          channel: "youtube",
-          draft_id: draft.id,
-          utm_content: draft.link.utm.sessionManualAdContent,
-          source: "site-analytics",
-          metric_name: metric,
-          metric_value: value,
-          missing_reason: null,
-          definition: def.ga4SetsuShort(metric),
-        });
-    }
-  });
-}
-
 /** 一意キーが同じ行を1行にする（値は足す。欠測の行は値のある行に負ける）。GA4 の値はどれも人数・回数なので足せる */
 export function mergeSameKey(rows) {
   const byKey = new Map();
@@ -761,130 +256,4 @@ export function mergeSameKey(rows) {
       });
   }
   return [...byKey.values()];
-}
-
-/** YouTube Analytics の reports（channel==MINE）。行を {day, 指標...} にする */
-export function createYoutubeAnalyticsClient({
-  accessToken,
-  fetchImpl = fetch,
-}) {
-  if (!accessToken)
-    throw new Error("YouTube Analytics の access token がありません");
-  return {
-    async report(params) {
-      const query = new URLSearchParams({ ids: "channel==MINE", ...params });
-      const response = await fetchImpl(
-        `https://youtubeanalytics.googleapis.com/v2/reports?${query}`,
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          signal: AbortSignal.timeout(30000),
-        },
-      );
-      const body = await response.json().catch(() => null);
-      if (!response.ok || !body)
-        throw new Error(
-          `YouTube Analytics reports が失敗: HTTP ${response.status}`,
-        );
-      const names = (body.columnHeaders ?? []).map((h) => h.name);
-      return (body.rows ?? []).map((row) =>
-        Object.fromEntries(row.map((value, i) => [names[i], value])),
-      );
-    },
-  };
-}
-
-const COLUMNS =
-  "day,channel,draft_id,utm_content,source,metric_name,metric_value,missing_reason,definition";
-
-/** PostgREST の読み書き（service_role）。失敗は握りつぶさず投げる */
-export function createSnsDailyStore({ url, key, fetchImpl = fetch }) {
-  const headers = { apikey: key, Authorization: `Bearer ${key}` };
-  async function get(path) {
-    const response = await fetchImpl(`${url}/rest/v1/${path}`, { headers });
-    if (!response.ok)
-      throw new Error(
-        `日次の取り込みの DB の読み取りに失敗: HTTP ${response.status} ${path.split("?")[0]}`,
-      );
-    return response.json();
-  }
-  return {
-    // pt3d の観測（入れ直すかは runner が指標と定義ごとに決める）
-    engagedObservations: (draftIds, metrics) =>
-      get(
-        `sns_metric_observations?window=eq.${ENGAGED_WINDOW}&source=eq.youtube-analytics&metric_name=in.(${metrics.join(",")})&draft_id=in.(${draftIds.join(",")})&select=draft_id,metric_name,definition,metric_value,denominator_value,observed_at`,
-      ),
-    async appendObservation(draftId, observation) {
-      const response = await fetchImpl(
-        `${url}/rest/v1/rpc/append_sns_metric_observation`,
-        {
-          method: "POST",
-          headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            p_draft_id: draftId,
-            p_observation: observation,
-          }),
-        },
-      );
-      if (!response.ok) {
-        // PostgREST の本文は details（失敗した行の全体）が長く、先頭で切ると制約名が落ちる。code と message だけを残す
-        const text = await response.text();
-        let detail = text;
-        try {
-          const body = JSON.parse(text);
-          detail = `${body.code ?? ""} ${body.message ?? ""}`.trim() || text;
-        } catch {
-          // JSON でなければ本文のまま
-        }
-        throw new Error(
-          `観測の保存に失敗: HTTP ${response.status} ${detail.slice(0, 300)}`,
-        );
-      }
-    },
-    youtubeVideos: (since) =>
-      get(
-        `sns_x_send_jobs?channel=eq.youtube&state=eq.posted&posted_at=gte.${encodeURIComponent(since)}&select=draft_id,external_post_id,posted_at`,
-      ),
-    // 全貌（format=full_picture）の下書きを race_id から引く（push-full-picture が source_data.full_picture.race_id に入れる）
-    fullPictureDrafts: (raceIds) =>
-      get(
-        `sns_drafts?format=eq.full_picture&source_data->full_picture->>race_id=in.(${raceIds.join(",")})&select=id,platform,posted_at,race_id:source_data->full_picture->>race_id`,
-      ),
-    // 節の機力の Shorts の投稿済みの下書き（説明欄のリンクで GA4 の行に結びつける）
-    setsuShortDrafts: (since) =>
-      get(
-        `sns_drafts?format=eq.${SETSU_SHORT_FORMAT}&platform=eq.youtube&posted_at=gte.${encodeURIComponent(since)}&select=id,posted_at,caption_text`,
-      ),
-    async existingDrafts(ids) {
-      return (await get(`sns_drafts?id=in.(${ids.join(",")})&select=id`)).map(
-        (d) => d.id,
-      );
-    },
-    // max-rows（1000）で切れないように 1000 行ずつ読む
-    async existing(from, to) {
-      const out = [];
-      for (let offset = 0; ; offset += 1000) {
-        const page = await get(
-          `sns_channel_daily?day=gte.${from}&day=lte.${to}&select=${COLUMNS}&order=id.asc&limit=1000&offset=${offset}`,
-        );
-        out.push(...page);
-        if (page.length < 1000) return out;
-      }
-    },
-    async upsert(rows) {
-      const response = await fetchImpl(
-        `${url}/rest/v1/sns_channel_daily?on_conflict=day,channel,draft_id,utm_content,source,metric_name,definition`,
-        {
-          method: "POST",
-          headers: {
-            ...headers,
-            "Content-Type": "application/json",
-            Prefer: "resolution=merge-duplicates,return=minimal",
-          },
-          body: JSON.stringify(rows),
-        },
-      );
-      if (!response.ok)
-        throw new Error(`日次の取り込みの保存に失敗: HTTP ${response.status}`);
-    },
-  };
 }

@@ -18,6 +18,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import { renderBlogPost } from "./verifyData/blog-post-page.js";
 import { blogRehypePlugins } from "../../src/utils/blogMarkdownSanitize.js";
 
 const render = (markdown, rehypePlugins) =>
@@ -129,13 +130,16 @@ test("ブログの図のタグの src は /blog-charts/ の JSON だけ残る（
 });
 
 test("BlogPost.jsx はこの許可リストで描いている（rehype-raw だけに戻していない）", async () => {
-  const source = await readFile(
-    new URL("../../src/pages/BlogPost.jsx", import.meta.url),
-    "utf8",
+  // 頁に攻撃の Markdown を渡して描き、本文に残らないことを見る（本文の字を fs で読まない）
+  const view = await renderBlogPost(
+    ATTACKS.filter((a) => a.leaks).map((a) => a.md).join("\n"),
   );
-  assert.match(source, /rehypePlugins=\{blogRehypePlugins\}/);
-  assert.doesNotMatch(source, /from "rehype-raw"/);
-  assert.equal((source.match(/rehypePlugins=/g) ?? []).length, 1);
+  assert.ok(view.article, "本文の要素が描かれていない");
+  assert.equal(
+    view.article.querySelectorAll("script, iframe, form, base, meta, embed, object, [style]").length,
+    0,
+  );
+  await view.unmount();
 });
 
 test("既存の全記事の描画は、許可リストを入れる前と同じ", async () => {

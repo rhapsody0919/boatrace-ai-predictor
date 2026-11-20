@@ -82,6 +82,26 @@ async function fetchPredictionOddsForRace(
   raceNo,
   modelPredictions,
 ) {
+  const maps = await fetchOddsMaps(date, venueCode, raceNo);
+  if (!maps) return null;
+  const { trifMap, trioMap } = maps;
+  if (trifMap.size === 0 && trioMap.size === 0) return null;
+
+  const row = buildPredictionOddsRow(
+    modelPredictions,
+    trifMap,
+    trioMap,
+    new Date().toISOString(),
+  );
+  console.log(oddsLogLine(row, venueCode, raceNo));
+  return row;
+}
+
+/**
+ * 1レースの3連単・3連複の全オッズ（買い目 → 倍率）。HTTP の失敗は警告して空の Map、通信の例外は null
+ * @returns {Promise<{trifMap: Map<string, number>, trioMap: Map<string, number>}|null>}
+ */
+async function fetchOddsMaps(date, venueCode, raceNo) {
   const ymd = date.replace(/-/g, "");
   const jcd = String(venueCode).padStart(2, "0");
   const trifUrl = `https://www.boatrace.jp/owpc/pc/race/odds3t?rno=${raceNo}&jcd=${jcd}&hd=${ymd}`;
@@ -117,10 +137,18 @@ async function fetchPredictionOddsForRace(
     );
     return null;
   }
+  return { trifMap, trioMap };
+}
 
-  if (trifMap.size === 0 && trioMap.size === 0) return null;
-
-  const row = { updated_at: new Date().toISOString() };
+/**
+ * prediction_odds の1行（race_id 以外）。モデルごとの予測の買い目と、そのオッズ（無ければ null）。純関数
+ * @param {Object} modelPredictions - { standard, safeBet, upsetFocus }（各 {top1, top2, top3}）
+ * @param {Map<string, number>} trifMap
+ * @param {Map<string, number>} trioMap
+ * @param {string} updatedAt - ISO の時刻
+ */
+function buildPredictionOddsRow(modelPredictions, trifMap, trioMap, updatedAt) {
+  const row = { updated_at: updatedAt };
 
   for (const [modelId, colSuffix] of Object.entries(MODEL_TO_COLUMN)) {
     const pred = modelPredictions[modelId];
@@ -138,19 +166,21 @@ async function fetchPredictionOddsForRace(
     row[`trio_pred_${colSuffix}`] = tkKey;
     row[`trio_odds_${colSuffix}`] = trioMap.get(tkKey) ?? null;
   }
+  return row;
+}
 
+/** 1レースの取得の結果の行（オッズが1つでも取れたら ✅） */
+function oddsLogLine(row, venueCode, raceNo) {
   const oddsFound = Object.values(MODEL_TO_COLUMN).filter(
     (s) => row[`trifecta_odds_${s}`] != null || row[`trio_odds_${s}`] != null,
   ).length;
 
   const vname = VENUE_NAMES[venueCode] || `会場${venueCode}`;
-  console.log(
+  return (
     `  ${oddsFound > 0 ? "✅" : "⚠️ "} ${vname} ${raceNo}R` +
-      ` — 3連単: ${row.trifecta_odds_standard ?? "-"}倍` +
-      ` / 3連複: ${row.trio_odds_standard ?? "-"}倍`,
+    ` — 3連単: ${row.trifecta_odds_standard ?? "-"}倍` +
+    ` / 3連複: ${row.trio_odds_standard ?? "-"}倍`
   );
-
-  return row;
 }
 
 /**

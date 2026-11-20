@@ -47,6 +47,7 @@ import {
   runMotorPretestJob,
 } from "../lib/motorPretestJob.js";
 import * as backfill from "./motor-pretest-backfill.js";
+import { cronWiring } from "./verifyData/cronWiring.js";
 import * as cheerio from "cheerio";
 
 // 検証の対象コードが出すログは捨て、結果の行だけを出す
@@ -1535,15 +1536,16 @@ for (const [label, seriesB] of [
       validateRegistry().length === 0,
     show(validateRegistry()),
   );
-  const apiSource = fs.readFileSync(
-    path.join(ROOT, "api/cron/motor-pretest.js"),
-    "utf8",
-  );
+  // api の本文の字は読まず、export（config・default）と、共通ラッパへ渡した引数で見る
+  const api = await cronWiring(() => import("../../api/cron/motor-pretest.js"));
   check(
-    "api/cron/motor-pretest.js: maxDuration はレジストリと同じ300（リテラル）・共通ラッパ経由・job名",
-    /maxDuration:\s*300/.test(apiSource) &&
-      /createScrapeCronHandler/.test(apiSource) &&
-      /job:\s*"motor_pretest"/.test(apiSource),
+    "api/cron/motor-pretest.js: maxDuration はレジストリと同じ300・共通ラッパを job 名 motor_pretest で1回通し、その戻りを default export にする",
+    api.config?.maxDuration === 300 &&
+      api.made.length === 1 &&
+      api.made[0].options.job === "motor_pretest" &&
+      typeof api.made[0].options.run === "function" &&
+      api.handler === api.made[0].handler,
+    show({ config: api.config, jobs: api.made.map((m) => m.options.job) }),
   );
   const vercel = JSON.parse(
     fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
@@ -1579,13 +1581,12 @@ for (const [label, seriesB] of [
     "vercel.json: api/cron/*.js は syd1 に固定されている",
     same(vercel.functions?.["api/cron/*.js"]?.regions, ["syd1"]),
   );
-  const handler = (await import("../../api/cron/motor-pretest.js")).default;
   const res = { statusCode: null, body: null };
   res.status = (s) => ((res.statusCode = s), res);
   res.json = (b) => ((res.body = b), res);
   const prevSecret = process.env.CRON_SECRET;
   process.env.CRON_SECRET = "verify-secret";
-  await handler({ headers: {} }, res);
+  await api.handler({ headers: {} }, res);
   process.env.CRON_SECRET = prevSecret;
   check(
     "api/cron/motor-pretest.js: 認証なしのリクエストは401",

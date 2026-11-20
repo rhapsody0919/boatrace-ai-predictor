@@ -44,6 +44,7 @@ import {
   needsMeetSeries,
   seriesCoveringDate,
 } from "../../src/utils/meetPageModel.js";
+import { makeMeet } from "../../src/pure/meetModel.js";
 import { internalApiHeaders } from "./internalApiHeaders.js";
 import { gateRaceRequest, plain } from "./botRaceRequest.js";
 import { renderRaceHtml } from "./botRaceHtml.js";
@@ -187,7 +188,7 @@ export function createPredictionsSource({
  * その日以前に始まったいちばん新しい節を1行取り、seriesCoveringDate で順延の分まで同じ節とみなす。
  * 会場・日ごとに ttlMs だけ使い回す。読み手は人の画面と同じ anon キー（api/_lib/botToday.js と同じ環境変数）
  *
- * @returns {(venueCode: number, date: string) => Promise<{start_date: string, end_date: string, title: string|null, grade: string|null}|null>}
+ * @returns {(venueCode: number, date: string) => Promise<Readonly<import("../../src/pure/meetModel.js").Meet>|null>}
  */
 export function createSeriesSource({
   fetchImpl = (...args) => fetch(...args),
@@ -210,7 +211,7 @@ export function createSeriesSource({
     const url =
       `${String(base).replace(/\/$/, "")}/rest/v1/race_series` +
       `?venue_code=eq.${venueCode}&start_date=lte.${date}` +
-      `&select=start_date,end_date,title,grade&order=start_date.desc&limit=1`;
+      `&select=start_date,end_date,title,grade,venue_code,total_days,class_code,kind&order=start_date.desc&limit=1`;
     let res;
     try {
       res = await fetchImpl(url, {
@@ -237,13 +238,13 @@ export function createSeriesSource({
     if (!Array.isArray(rows)) {
       throw new SeriesFetchError("race_series の応答が配列でない");
     }
-    const latest = rows[0] ?? null;
-    if (
-      latest &&
-      (typeof latest.start_date !== "string" ||
-        typeof latest.end_date !== "string")
-    ) {
-      throw new SeriesFetchError("race_series の start_date・end_date が無い");
+    // 人の画面（getSeriesOfDate）と同じく makeMeet に通す。破れ（日付が無い・壊れた・total_days が日程と合わない等）は
+    // 取得失敗として扱う（節のリンクを出さない。「節なし」と区別してログに残す）
+    let latest = null;
+    try {
+      latest = rows[0] ? makeMeet(rows[0]) : null;
+    } catch (e) {
+      throw new SeriesFetchError(`race_series の行が壊れている: ${e?.message ?? e}`);
     }
     return seriesCoveringDate(latest, date);
   }

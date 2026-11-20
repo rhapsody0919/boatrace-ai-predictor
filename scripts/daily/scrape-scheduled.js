@@ -45,35 +45,12 @@ import { isGhaFetchStopped, shouldSkipOnGha } from "../lib/ghaSkipGate.js";
  */
 const gateSkips = async (varName) => (await shouldSkipOnGha({ varName })).skip;
 
-async function main() {
-  console.log("🎯 スクレイピングオーケストレーター開始");
-  console.log(`⏰ ${new Date().toISOString()}`);
-
-  if (!isSupabaseEnabled()) {
-    console.error("❌ Supabase環境変数が未設定です。");
-    process.exit(1);
-  }
-
-  // 取得の非常停止（fetch_stop、マイグレーション178）が立っていれば、SKIP 変数に関係なく公式へ取りに行かない（ADR-0101 決定6）
-  if ((await isGhaFetchStopped()).stopped) {
-    console.log("⏭️ 取得の非常停止中のため、GitHub Actions の取得をすべて行わない");
-    return;
-  }
-
-  const date = parseDateArg() || getTodayDateJST();
-  console.log(`📅 対象日: ${date}`);
-
-  // 1. スケジュール取得（全スクリプト共通、1回のみ）
-  // DB障害を「対象なし」にしない。例外で exit 1 にし、workflow を失敗させて気づけるようにする（BOA-352）
-  const schedule = await getRaceSchedule(date, { throwOnError: true });
-  if (schedule.length === 0) {
-    console.log("📭 対象レースなし（スケジュール未登録）。終了。");
-    return;
-  }
-  console.log(`📊 当日レース数: ${schedule.length}件`);
-
-  // 2. 各ウィンドウの対象レースを事前評価
-  // ★ 各スクリプト内部の getRacesInWindow 呼び出しと同じ窓幅で判定する（不整合防止）
+/**
+ * 2. 各ウィンドウの対象レースを事前評価する（SKIP 変数と肩代わりの判定を含む）。
+ * ★ 各スクリプト内部の getRacesInWindow 呼び出しと同じ窓幅で判定する（不整合防止）
+ * 判定の式は verify-scrape-*-job.js が字で読むので、形を変えない
+ */
+async function evaluateWindows(schedule) {
   // オッズ取得（WS4b・T4b-04）は Vercel Function(api/cron/odds.js)へ移行する。切り替え後、GitHub Actions 側の
   // 取得を、リポジトリ変数のトグルのみで止める（コードは削除せず、切り戻しも変数のトグルだけで完結。
   // SKIP_EXHIBITION_ON_GHAと同じ方式）。既定（未設定・true以外）は従来どおり実行する。
@@ -117,23 +94,49 @@ async function main() {
   // A3 を GitHub Actions が肩代わりするとき（SKIP_ODDS_ON_GHA が未設定、または Vercel が不調）だけ、A4 も肩代わりする
   const hasPredictionOddsRaces = !skipOdds && upcomingRaces.length > 0;
 
-  if (
+  return {
+    skipOdds,
+    hasOddsRaces,
+    skipRaceInfo,
+    hasUpdateRaces,
+    hasExhibitionRaces,
+    finishedRaces,
+    upcomingRaces,
+    hasPredictionOddsRaces,
+  };
+}
+
+/** 全ウィンドウに対象レースが無い（何もせず終われる）か */
+function nothingDue({
+  hasOddsRaces,
+  hasUpdateRaces,
+  hasExhibitionRaces,
+  finishedRaces,
+  hasPredictionOddsRaces,
+}) {
+  return (
     !hasOddsRaces &&
     !hasUpdateRaces &&
     !hasExhibitionRaces &&
     finishedRaces.length === 0 &&
     !hasPredictionOddsRaces
-  ) {
-    console.log("📭 全ウィンドウ対象レースなし。終了。");
-    return;
-  }
+  );
+}
 
-  // 3. 対象レースごとに必要な処理のみ実行
+/**
+ * 3. 発走前の取得（レース情報・オッズ・展示）を順に行う。更新があれば起点ごとの集合に race_id を足す。
+ * 戻りは「どれかが更新されたか」
+ */
+async function runPreRaceSteps(schedule, date, windows, ids) {
+  const {
+    skipOdds,
+    hasOddsRaces,
+    skipRaceInfo,
+    hasUpdateRaces,
+    hasExhibitionRaces,
+  } = windows;
+  const { infoRaceIds, oddsRaceIds, exhibitionRaceIds } = ids;
   let anyUpdated = false;
-  // 予測リフレッシュの対象を、起点ごとに集める（SKIP_ODDS_REFRESH_ON_GHA でオッズ起点を外せるようにするため）
-  const infoRaceIds = new Set();
-  const oddsRaceIds = new Set();
-  const exhibitionRaceIds = new Set();
 
   // レース情報更新（発走60分前ウィンドウ）。SKIP_RACE_INFO_ON_GHA=true の間は hasUpdateRaces が false になり、行わない
   if (skipRaceInfo) {
@@ -199,14 +202,20 @@ async function main() {
     }
   }
 
-  // 結果取得（発走後5分以上）
-  // WS4b（T4b-02-4・T4b-05-3）: 結果取得はVercel Function(api/cron/result.js)、Kファイル同期は
-  // api/cron/kfile-sync.js へ移行する。切り替え後、GitHub Actions側の取得を、リポジトリ変数のトグルのみで止める
-  // （コードは削除せず、切り戻しも変数のトグルだけで完結。SKIP_EXHIBITION_ON_GHAと同じ方式）。
-  //   SKIP_RESULTS_ON_GHA=true  結果取得（と中止・順延の確定）を行わない。Kファイル同期は、下の変数で別に止める
-  //   SKIP_KFILE_ON_GHA=true    Kファイル同期（進入コース・rank4〜6）を行わない
-  // 既定（未設定・true以外）は、どちらも従来どおり実行する。
-  // 変数が true のときだけ、対象のレースがあるときに、肩代わりの条件を確かめる（満たすときだけ実行する）
+  return anyUpdated;
+}
+
+/**
+ * 結果取得（発走後5分以上）。更新があれば true
+ * WS4b（T4b-02-4・T4b-05-3）: 結果取得はVercel Function(api/cron/result.js)、Kファイル同期は
+ * api/cron/kfile-sync.js へ移行する。切り替え後、GitHub Actions側の取得を、リポジトリ変数のトグルのみで止める
+ * （コードは削除せず、切り戻しも変数のトグルだけで完結。SKIP_EXHIBITION_ON_GHAと同じ方式）。
+ *   SKIP_RESULTS_ON_GHA=true  結果取得（と中止・順延の確定）を行わない。Kファイル同期は、下の変数で別に止める
+ *   SKIP_KFILE_ON_GHA=true    Kファイル同期（進入コース・rank4〜6）を行わない
+ * 既定（未設定・true以外）は、どちらも従来どおり実行する。
+ * 変数が true のときだけ、対象のレースがあるときに、肩代わりの条件を確かめる（満たすときだけ実行する）
+ */
+async function runResultsStep(schedule, date, finishedRaces) {
   const resultsDue = finishedRaces.length > 0;
   const skipResults =
     process.env.SKIP_RESULTS_ON_GHA === "true" &&
@@ -223,18 +232,29 @@ async function main() {
       return { updated: false, count: 0 };
     });
     if (updated) {
-      anyUpdated = true;
       // 結果更新は予測リフレッシュ不要（結果は変わらない）
       console.log(`  → 結果取得: ${count}件`);
+      return true;
     }
   }
+  return false;
+}
 
-  // 4. データが更新された場合のみ予測リフレッシュ
-  // 案1（BOA-353 T4b-03）: SKIP_ODDS_REFRESH_ON_GHA が "true" の間は、オッズ起点の再計算を外す
-  // （オッズは予測の入力に含まれない。展示・気象の変更を起点にした再計算は、Vercel の
-  // api/cron/exhibition.js が REFRESH_ON_VERCEL=true のときに行う。組み合わせの表は
-  // scripts/lib/predictionRefresh.js）。既定（未設定）は従来どおりオッズ起点を含める。
-  // 切り戻しはリポジトリ変数のトグルのみで完結させる（コード変更・redeployなし）
+/**
+ * 4. データが更新された場合のみ予測リフレッシュ
+ * 案1（BOA-353 T4b-03）: SKIP_ODDS_REFRESH_ON_GHA が "true" の間は、オッズ起点の再計算を外す
+ * （オッズは予測の入力に含まれない。展示・気象の変更を起点にした再計算は、Vercel の
+ * api/cron/exhibition.js が REFRESH_ON_VERCEL=true のときに行う。組み合わせの表は
+ * scripts/lib/predictionRefresh.js）。既定（未設定）は従来どおりオッズ起点を含める。
+ * 切り戻しはリポジトリ変数のトグルのみで完結させる（コード変更・redeployなし）
+ */
+async function refreshPredictions({
+  skipOdds,
+  anyUpdated,
+  infoRaceIds,
+  oddsRaceIds,
+  exhibitionRaceIds,
+}) {
   const skipOddsRefresh = isOddsRefreshSkippedOnGha();
   if (skipOdds && !skipOddsRefresh) {
     // オッズ取得を止めたのに、オッズ起点の再計算を外していない: GitHub側の再計算のきっかけが、オッズ→レース情報のみに
@@ -268,9 +288,68 @@ async function main() {
   } else if (!anyUpdated) {
     console.log("\n📭 新規データなし → 予測リフレッシュスキップ");
   }
+}
+
+async function main() {
+  console.log("🎯 スクレイピングオーケストレーター開始");
+  console.log(`⏰ ${new Date().toISOString()}`);
+
+  if (!isSupabaseEnabled()) {
+    console.error("❌ Supabase環境変数が未設定です。");
+    process.exit(1);
+  }
+
+  // 取得の非常停止（fetch_stop、マイグレーション178）が立っていれば、SKIP 変数に関係なく公式へ取りに行かない（ADR-0101 決定6）
+  if ((await isGhaFetchStopped()).stopped) {
+    console.log("⏭️ 取得の非常停止中のため、GitHub Actions の取得をすべて行わない");
+    return;
+  }
+
+  const date = parseDateArg() || getTodayDateJST();
+  console.log(`📅 対象日: ${date}`);
+
+  // 1. スケジュール取得（全スクリプト共通、1回のみ）
+  // DB障害を「対象なし」にしない。例外で exit 1 にし、workflow を失敗させて気づけるようにする（BOA-352）
+  const schedule = await getRaceSchedule(date, { throwOnError: true });
+  if (schedule.length === 0) {
+    console.log("📭 対象レースなし（スケジュール未登録）。終了。");
+    return;
+  }
+  console.log(`📊 当日レース数: ${schedule.length}件`);
+
+  // 2. 各ウィンドウの対象レースを事前評価
+  const windows = await evaluateWindows(schedule);
+  if (nothingDue(windows)) {
+    console.log("📭 全ウィンドウ対象レースなし。終了。");
+    return;
+  }
+
+  // 3. 対象レースごとに必要な処理のみ実行
+  // 予測リフレッシュの対象を、起点ごとに集める（SKIP_ODDS_REFRESH_ON_GHA でオッズ起点を外せるようにするため）
+  const infoRaceIds = new Set();
+  const oddsRaceIds = new Set();
+  const exhibitionRaceIds = new Set();
+  let anyUpdated = await runPreRaceSteps(schedule, date, windows, {
+    infoRaceIds,
+    oddsRaceIds,
+    exhibitionRaceIds,
+  });
+  if (await runResultsStep(schedule, date, windows.finishedRaces)) {
+    anyUpdated = true;
+  }
+
+  // 4. データが更新された場合のみ予測リフレッシュ
+  await refreshPredictions({
+    skipOdds: windows.skipOdds,
+    anyUpdated,
+    infoRaceIds,
+    oddsRaceIds,
+    exhibitionRaceIds,
+  });
 
   // 5. 予測買い目オッズ更新（発走前レースに対して毎回実行。A3 を肩代わりしているときのみ）
   // 予測リフレッシュの有無に関わらず、オッズは発走まで変動し続けるため独立して実行する
+  const { hasPredictionOddsRaces, upcomingRaces } = windows;
   if (hasPredictionOddsRaces) {
     console.log(`\n💹 予測買い目オッズ更新: ${upcomingRaces.length}レース`);
     await runPredictionOdds(

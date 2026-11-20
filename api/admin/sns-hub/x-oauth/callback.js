@@ -41,6 +41,24 @@ function readCookie(req) {
   return state && verifier ? { state, verifier } : null;
 }
 
+// 戻りの検査（元は handleCallback の頭）。拒む時は back の Response、通れば null。
+// 順は error → state（cookie・state・code・sameText）→ 設定。saved は readCookie(req) の結果
+function rejectCallback(url, saved, env, configured) {
+  if (url.searchParams.get("error")) return back("x=error&reason=denied");
+  const state = url.searchParams.get("state");
+  const code = url.searchParams.get("code");
+  if (!saved || !state || !code || !sameText(state, saved.state))
+    return back("x=error&reason=state");
+  if (
+    !env.X_OAUTH_CLIENT_ID ||
+    !env.X_OAUTH_CLIENT_SECRET ||
+    !env.SNS_TOKEN_ENC_KEY ||
+    !configured
+  )
+    return back("x=error&reason=config");
+  return null;
+}
+
 // テストから env・fetch・DB を差し替えるための本体。Vercel からは下の handler（依存は既定値）が呼ばれる
 export async function handleCallback(
   req,
@@ -57,19 +75,10 @@ export async function handleCallback(
   if (req.method !== "GET")
     return new Response("Method not allowed", { status: 405 });
   const url = new URL(req.url);
-  if (url.searchParams.get("error")) return back("x=error&reason=denied");
   const saved = readCookie(req);
-  const state = url.searchParams.get("state");
+  const rejected = rejectCallback(url, saved, env, configured);
+  if (rejected) return rejected;
   const code = url.searchParams.get("code");
-  if (!saved || !state || !code || !sameText(state, saved.state))
-    return back("x=error&reason=state");
-  if (
-    !env.X_OAUTH_CLIENT_ID ||
-    !env.X_OAUTH_CLIENT_SECRET ||
-    !env.SNS_TOKEN_ENC_KEY ||
-    !configured
-  )
-    return back("x=error&reason=config");
   try {
     const tokens = await exchangeCode({
       code,

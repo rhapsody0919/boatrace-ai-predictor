@@ -18,11 +18,16 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
-| `src/pure/basicInfoStats.js` | basicInfoStats - 「基本情報」タブ（BOA-306）のクライアント側集計ユーティリティ | currentTermStart, recordsBeforeRace, filterRecords, computeRates, getRecentRaces ほか28件 |
+| `src/pure/basicInfoStats.js` | basicInfoStats - 「基本情報」タブ（BOA-306）のクライアント側集計ユーティリティ | currentTermStart, recordsBeforeRace, filterRecords, computeRates, getRecentRaces ほか13件 |
+| `src/pure/basicInfoStatsPeriodMeet.js` | — | periodDiffShownFrom, periodDiff, periodsEndedBefore, officialPeriodOf, pickPeriodStats ほか10件 |
+| `src/pure/blogChartAnswers.js` | ブログの図の契約の検査のうち、答えの文（description）の数字の照合。 | checkAnswers |
+| `src/pure/blogChartChecks.js` | ブログの図の契約の検査の部品（src/utils/blogChartContract.js の validateBlogChart が使う）。 | localize, createChecker, isObj, show |
+| `src/pure/blogChartSections.js` | ブログの図の契約の検査のうち、軸・行・切り替え・出典・中身（view・札・系列）の節。 | checkAxes, checkRows, checkSwitch, checkSource, checkViews |
 | `src/pure/courseGridStats.js` | — | buildCourseGrid, getCourseRecentRuns, buildTodayCourseRows, computeWakuNariRate, buildCourse1LossBreakdown ほか3件 |
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
 | `src/pure/favorites.js` | キャッシュの全削除で消さない端末内のユーザー保存。 | parseFavorites, serializeFavorites, toggleRacer, toggleVenue, FAVORITES_KEY ほか1件 |
 | `src/pure/finishPosition.js` | レース内順位の判定（純関数）。 | finishPositionOf |
+| `src/pure/harville.js` | — | normalizeProbs, impliedProbsFromOdds, condSecond, condThird, exactaProb ほか6件 |
 | `src/pure/hitJudge.js` | 複勝的中判定（2着以内） | isPlaceHit, isShowHit |
 | `src/pure/jstDate.js` | — | getJSTNow, getDaysAgoJST |
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
@@ -45,13 +50,18 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/racerCareerStats.js` | — | isCareerFinalStage, isCareerStart, careerFinishPoints, careerWinRate, isCareerFinalAppearance ほか2件 |
 | `src/pure/racerModel.js` | — | makeRacer, makeRacerSeriesPoint |
 | `src/pure/racerOfficialPeriodStats.js` | — | periodLabel, periodAppliedLabel, periodRangeLabel, buildPeriodRows, buildCourseRows ほか3件 |
+| `src/pure/racerScopedRunTables.js` | RPC get_racer_scoped_race_rows（マイグレーション 203）の行を、6表の行の形へ戻す（純関数）。 | tablesFromRacerScopedRuns |
 | `src/pure/scheduleModel.js` | — | makeDigestDay, makeDigestRow |
 | `src/pure/semifinalCount.js` | — | countSemifinalsByRacer |
-| `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか35件 |
+| `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか20件 |
+| `src/pure/seriesPointsParts.js` | — | prelimEndDayOf, noRaceDaysOf, semifinalRaceIdsOf, semifinalSlotsOf, isAbsentStartRow ほか10件 |
 | `src/pure/sixBoatCourseStats.js` | 6艇の想定コース別成績（公式の直近3期、BOA-1291）。取得・表示は呼び出し側で行う。 | periodsBefore, buildSixBoatCourseRows, buildSixBoatLocalRows, SIX_BOAT_WARN_ENTRIES |
+| `src/pure/snsObservationChecks.js` | SNS観測の入力の検査（src/utils/snsObservations.js の validateObservationInput の中の検査を、順を変えず… | assertObservationEnvelope, assertMetricAndSource, assertObservedAt, assertPeriodBounds, assertDataThrough ほか7件 |
+| `src/pure/snsObservationWindows.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。窓・取得元・指標・時刻の判定（src/utils/snsObservations.js から移し… | windowsFor, displayWindowFor, observationPeriod, OBSERVATION_WINDOWS, FULL_PICTURE_FORMAT ほか10件 |
 | `src/pure/snsPostText.js` | — | buildPostText |
 | `src/pure/techniqueNames.js` | 決まり手の英語キー → 日本語の名前。展開予測（src/utils/turnPrediction.js）をやめた後も、データ出走表などの | TECHNIQUE_NAMES |
 | `src/pure/venueModel.js` | — | makeVenue |
+| `src/pure/winningTechniques.js` | — | COURSE_DEFAULT_DISTRIBUTION, COURSE_DEFAULT_DEFENSE |
 
 ## scripts/lib — バッチ・取得・集計の共通ロジック
 
@@ -59,17 +69,21 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
+| `scripts/lib/accuracyCacheStats.js` | — | summarizeHits, computeStats, jstDateStr, addMonths, volatilityByLevel ほか4件 |
 | `scripts/lib/analogyDispatch.js` | BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習… | morningRetryNeeded, morningShouldDispatch, dispatchWorkflow, createAnalogyDispatchRun, GITHUB_REPO ほか2件 |
 | `scripts/lib/analogyV16Exhibition.js` | アナロジー・ファインダー v16 の展示後の段（BOA-271 tasks T4-2・T4-3。plan「展示後の段」）。 | selectExhibitionTargets, exhibitionNeighbors, displayRow, runAnalogyV16Exhibition, MAX_RACES |
 | `scripts/lib/analogyV16ExhibitionToday.js` | アナロジー・ファインダー v16 の展示後の段の「今日の展示の値」（today-exhibition。BOA-271 T4-2）。 | todayExhibition, BOATS |
-| `scripts/lib/archiveDownloader.js` | 公式サイトの静的ファイル・ページを、生のまま保管する取得ループ（fan・月間スケジュールのCLI共通） | readJsonl, fetchOnce, planItems, runArchiveDownload, HARD_MIN_INTERVAL_MS ほか4件 |
+| `scripts/lib/archiveDownloadSteps.js` | 取得ループ（archiveDownloader.js の runArchiveDownload）から分けた部品（リファクタ。振る舞いは変えない）。 | resolveRunDeps, planRun, createRunContext, fetchItem, classifyFetched ほか4件 |
+| `scripts/lib/archiveDownloader.js` | 公式サイトの静的ファイル・ページを、生のまま保管する取得ループ（fan・月間スケジュールのCLI共通） | fetchOnce, planItems, runArchiveDownload, HARD_MIN_INTERVAL_MS, FETCH_TIMEOUT_MS ほか1件 |
+| `scripts/lib/archiveFiles.js` | 取得ループ（archiveDownloader.js）の、マニフェスト（JSONL）と内容ハッシュの小さな部品。 | readJsonl, sha256, appendJsonl |
 | `scripts/lib/beforeInfoParser.js` | 公式の直前情報ページ（boatrace.jp beforeinfo）の全項目パーサー（純関数。DB・取得先に接続しない） | parseStartExhibitionCell, parseBeforeInfoDocument, parseBeforeInfoPage, BEFOREINFO_PARSER_VERSION |
 | `scripts/lib/beforeinfoWeather.js` | 公式ページの「水面気象情報」の解析（BOA-358） | convertWindDirection, scrapeObservedPoint, scrapeConditions, hasAnyWeather, resolveObservedAt ほか5件 |
 | `scripts/lib/blogChartPng.js` | ブログの図の PNG をビルドで書き出す（ADR 0099、docs/design/blog-charts/contract.md 8節）。 | planBlogChartPngs, enterExportMode, exportBlogChartPngs |
 | `scripts/lib/blogImageDimensions.js` | ブログ画像（public/images/blog/）の実寸を、画像のヘッダーから読む（BOA-908）。 | readJpegSize, buildImageDimensions |
 | `scripts/lib/boatcast/boatcastClient.js` | BOATCAST（race.boatcast.jp）への取得の共通部品: URL・間隔の制御・カナリア・403の解釈。 | buildOritenUrl, buildMotorStartUrl, createPacer, fetchBoatcast, checkCanary ほか6件 |
 | `scripts/lib/boatcast/motorStartJob.js` | BOATCASTのモーター使用開始日（bc_mst。N26）の日次取得ジョブ（docs/design/boatcast-original-exhibition/… | fetchMotorStartDates, nextHistory, createMotorStartRun, MOTOR_START_JOB, ABORT_AFTER_CONSECUTIVE_FAILURES ほか1件 |
-| `scripts/lib/boatcast/oritenJob.js` | BOATCASTのオリジナル展示（bc_oriten。N25）の取得ジョブ（docs/design/boatcast-original-exhibition/）… | processOritenRace, tickOf, takeTick, clearTicks, mergeReport ほか6件 |
+| `scripts/lib/boatcast/oritenJob.js` | BOATCASTのオリジナル展示（bc_oriten。N25）の取得ジョブ（docs/design/boatcast-original-exhibition/）… | processOritenRace, evaluateVenueNoData, createOritenSlotHandler, createOritenStore, ORITEN_JOB ほか2件 |
+| `scripts/lib/boatcast/oritenJobParts.js` | BOATCASTのオリジナル展示ジョブ（oritenJob.js）から分けた部品（リファクタ。振る舞いは変えない）。 | buildOritenWarnings, deleteStaleValues, tickOf, takeTick, clearTicks ほか4件 |
 | `scripts/lib/boatcast/oritenParser.js` | BOATCASTのオリジナル展示（bc_oriten）ファイルの解析（純関数。DB・取得先に接続しない）。 | normalizeLabel, parseOritenText, parseMotorStartDate, ORITEN_PARSER_VERSION, ORITEN_STATUSES ほか1件 |
 | `scripts/lib/boatcast/oritenRows.js` | オリジナル展示の解析結果（oritenParser.js）から、DBへ書く行・未公開（403）時の再試行の判断・ | computeOritenHash, parseLastModified, buildOritenRows, compareLabelsToMap, decideNotPublished ほか1件 |
 | `scripts/lib/boatcast/oritenSchema.js` | オリジナル展示・モーター使用開始日の保存先（マイグレーション091）が、接続先のDBに適用済みかの判定。 | detectBoatcastSchema, clearBoatcastSchemaCache, ORITEN_TABLES, MOTOR_START_TABLES, BOATCAST_SCHEMA_CACHE_TTL_MS |
@@ -81,12 +95,18 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/contentChannels/captureScreenshot.js` | ブログ/note/YouTubeサムネイル用のスクリーンショット取得。 | captureScreenshot |
 | `scripts/lib/contentChannels/coverImageStrategy.js` | ブログ/note/YouTubeサムネイルのカバー画像調達方法を、ネタ種別ごとに決める。 | getCoverImageStrategy |
 | `scripts/lib/contentChannels/renderCoverCard.js` | DataQuoteCard（sns-video-studio/remotion/src/DataQuoteCard.jsx）を | renderCoverCard, COMPOSITION_IDS |
-| `scripts/lib/contentPrGate.js` | 記事の中身だけの PR を機械で判定する関門（純粋関数）。 | readJpegSize, computeContentSha256, checkRawHtml, checkKyoteiMd, changedJsonStrings ほか13件 |
+| `scripts/lib/contentPrGate.js` | 記事の中身だけの PR を機械で判定する関門（純粋関数）。 | evaluateContentPr |
+| `scripts/lib/contentPrGateCommon.js` | 記事の PR の関門（contentPrGate.js）と、manifest の関門（contentPrGateManifest.js）が共有する下の部品（純粋… | readJpegSize, computeContentSha256, countInternalLinks, articleIdOf, MANIFEST_SCHEMA ほか15件 |
+| `scripts/lib/contentPrGateEvaluate.js` | 記事の PR の関門の本体 evaluateContentPr（純粋関数）。fs・git・時計に触れない。 | evaluateContentPrWith |
+| `scripts/lib/contentPrGateManifest.js` | 記事の PR の関門のうち manifest（docs/content-manifests/<id>.json）を見る部分（純粋関数。contentPrGate… | checkManifest, checkGateConfigChange |
+| `scripts/lib/contentPrGatePosts.js` | 記事の PR の関門のうち、.md と JSON の対応・slug・featured の検査（純粋関数。contentPrGateEvaluate.js から使… | pairErrors, slugFeaturedErrors |
+| `scripts/lib/contentPrGateText.js` | 記事の PR の関門の本文の検査（純粋関数）。生 HTML・「競艇」・内部リンク・判断が要る句・変えた行の取り出し・画像の参照。 | checkRawHtml, checkKyoteiMd, changedJsonStrings, changedMdLines, checkKyoteiJson ほか7件 |
 | `scripts/lib/contentRevisionHistory.js` | sns_draftsの却下・修正依頼履歴（revision_reason_codes/revision_reason_freetext）を | getRecentRevisions, countReasonCodes |
 | `scripts/lib/contentTopics/dailyResultSource.js` | ネタ供給モジュール: 成績（当日結果）。 | getCandidates, id |
 | `scripts/lib/contentTopics/dataInsightSource.js` | ネタ供給モジュール: データ知見。 | getCandidates, recordUsage, id |
 | `scripts/lib/contentTopics/humorSource.js` | ネタ供給モジュール: ゆるユーモア型。 | getCandidates, recordUsage, id |
 | `scripts/lib/contentTopics/index.js` | ネタ供給モジュールのレジストリ。 | collectAllCandidates, topicSources |
+| `scripts/lib/contentTopics/missingContentIndex.js` | AppRouter.jsx に新規追加されたルートのうち、対応する | checkMissingContentIndex |
 | `scripts/lib/contentTopics/newFeatureSource.js` | ネタ供給モジュール: 新機能・既存機能の使い方紹介。 | getCandidates, recordLifehackUsage, id |
 | `scripts/lib/contentTopics/triviaSource.js` | ネタ供給モジュール: 豆知識。 | getCandidates, recordUsage, id |
 | `scripts/lib/contentTopics/venueCharacteristicSource.js` | ネタ供給モジュール: 会場特性。 | getCandidates, recordUsage, id |
@@ -94,21 +114,38 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/dailyReconcile.js` | 日次の照合（N29、完了の定義Cの独立した突合先）の、突合の純関数。DB・取得先に接続しない。 | parseKDay, normalizeCombination, comparePayoutColumns, comparePayoutTable, compareCourses ほか4件 |
 | `scripts/lib/dailyReconcileJob.js` | 日次の照合（N29、daily_reconcile）の共通ラッパ向けハンドラー（tasks.md T4b-21）。 | loadReconcileInputs, buildReconcileAlerts, updateHistory, runDailyReconcileJob, FINAL_ATTEMPT_MINUTES_OF_DAY ほか3件 |
 | `scripts/lib/dataHealth/checks.js` | 汎用の日次監視（data_health、完了の定義C）の登録表。データセットごとに、次を宣言する。 | validateChecks, DEFAULT_THRESHOLD, DEFAULT_DAYS, DEFAULT_MIN_DENOMINATOR, NIGHTLY_FRESHNESS_CHECKS ほか3件 |
+| `scripts/lib/dataHealth/checksValidate.js` | 登録表（checks.js）の整合性の検査の部品。どれも純関数で、違反の文の一覧（空なら正常）を返す。 | validateCommon, validateFreshnessCheck, validateCountCheck, validatePolicies |
 | `scripts/lib/dataHealth/coverageSpec.js` | 存在充足率（完了の定義A）の指標と、その集計SQLの正本（data-health-report.js と、汎用の日次監視 | literalCoverageSlots, buildCoverageSql, buildMonthlySql, ALL_ODDS_COLUMNS, ODDS_FULL_GRID_SINCE ほか3件 |
-| `scripts/lib/dataHealth/evaluate.js` | 汎用の日次監視（data_health）の判定（純粋関数。DB・時計・Slackに触れない）。 | weekdayOf, isDueToday, periodFor, evaluateCountCheck, formatObserved ほか8件 |
-| `scripts/lib/dataHealth/functions.js` | 汎用の日次監視（data_health）が呼ぶDB関数の定義（SQLの正本）。 | renderFunctionDdl, renderInlineSql, MAX_RANGE_DAYS, TABLE_ROWS_TABLES, NIGHTLY_FRESHNESS_ITEMS ほか4件 |
+| `scripts/lib/dataHealth/evaluate.js` | 汎用の日次監視（data_health）の判定（純粋関数。DB・時計・Slackに触れない）。 | weekdayOf, isDueToday, periodFor, evaluateCountCheck, evaluateEmptyTables ほか5件 |
+| `scripts/lib/dataHealth/evaluateParts.js` | evaluate.js の部品（純粋関数。DB・時計・Slackに触れない）。通知文・鮮度の判定・件数の集計の部品を、 | rowStats, formatObserved, evaluateFreshnessCheck, formatBreach, sum |
+| `scripts/lib/dataHealth/freshnessSql.js` | 鮮度・存在の項目（classification: freshness）。関数は { 項目のキー: { applicable, ok, observed } } … | NIGHTLY_FRESHNESS_ITEMS, MORNING_FRESHNESS_ITEMS |
+| `scripts/lib/dataHealth/functions.js` | 汎用の日次監視（data_health）が呼ぶDB関数の定義（SQLの正本）。 | renderFunctionDdl, renderInlineSql, MAX_RANGE_DAYS, DATA_HEALTH_FUNCTIONS, functionByName ほか1件 |
 | `scripts/lib/dataHealth/job.js` | 汎用の日次監視 data_health（完了の定義C）の実行。api/cron/data-health.js が、共通ラッパ | createRpcCaller, readDeliveredKeys, runDataHealthChecks, DATA_HEALTH_JOB, DATA_HEALTH_MORNING_JOB ほか3件 |
+| `scripts/lib/dataHealth/jobParts.js` | job.js（runDataHealthChecks）の部品。関数の呼び出し計画・項目の判定・通知の候補・報告の組み立てを、 | planFunctionRanges, judgeCheck, countStatuses, callFunctions, TABLE_ROWS_FN ほか1件 |
+| `scripts/lib/dataHealth/tableSql.js` | 空でないことを確認するテーブル（data_health_table_rows）。テーブルを足すときは、 | TABLE_ROWS_TABLES |
 | `scripts/lib/dataHealth/workflowCoverage.js` | Environment prod-jobs を使う workflow（.github/workflows）の、data_health への登録の一覧。 | usesProdJobs, findCoverageProblems, WORKFLOW_EXCLUSIONS |
-| `scripts/lib/dataReaders.js` | データの読み手の台帳（docs/reference/data-readers.{json,md}）の抽出と組み立て。DB にも | isFixtureLike, isSourceFile, literalString, parseSelect, parseRestPath ほか17件 |
+| `scripts/lib/dataReaders.js` | — | isSourceFile, pythonMentions, LEDGER_JSON, LEDGER_MD, EXTRA_FILE ほか1件 |
+| `scripts/lib/dataReadersAccess.js` | — | stripSqlNoise, sqlTableRefs, relationAccess, functionAccess, resolveImport ほか3件 |
+| `scripts/lib/dataReadersAst.js` | — | literalString |
+| `scripts/lib/dataReadersLedger.js` | — | buildLedger, FORMAT |
+| `scripts/lib/dataReadersMarkdown.js` | — | renderMarkdown |
+| `scripts/lib/dataReadersSelect.js` | — | parseSelect, parseRestPath |
+| `scripts/lib/dataReadersVisit.js` | — | isFixtureLike, extractAccesses |
 | `scripts/lib/dateUtils.js` | 日付ユーティリティ（バックエンド用） | getTodayDateJST, getYesterdayDateJST, getDateDaysAgo, formatDateForUrl, parseDateArg ほか5件 |
+| `scripts/lib/dbApplyClassifyParts.js` | scripts/lib/dbApplySql.js から移した、軽い／重い／止めるの判定（ADR-0097）の部品。1文の判定（classifyStatemen… | classifyStatement, destructiveTargets, backupEntry, missingBackupStops, statementStops ほか3件 |
 | `scripts/lib/dbApplyDispatch.js` | db-apply の定期の突き合わせ（db-apply.yml の mode=reconcile）を Vercel Cron から起動する（ADR-0097、 | findRecentReconcileSuccess, createDbApplyDispatchRun, DB_APPLY_WORKFLOW, STALE_AFTER_MS, RESTART_AFTER_MS ほか1件 |
-| `scripts/lib/dbApplySql.js` | 本番 DB 適用ワークフロー（.github/workflows/db-apply.yml）が、承認の前にマイグレーションを検査するための純粋関数。 | validateMigrationPath, splitStatements, extractTables, inspectMigration, extractConfirmationSections ほか15件 |
+| `scripts/lib/dbApplyNameParts.js` | scripts/lib/dbApplySql.js から移した、SQL の名前の部品（識別子の正規表現・名前の正規化・括弧の深さ0での分割・ | canonName, splitTopLevel, disallowedCalls, isPiiColumn, columnsOfCreateTable ほか3件 |
+| `scripts/lib/dbApplyRenderParts.js` | scripts/lib/dbApplySql.js から移した、job summary（renderSummary）の部品。冒頭コメントの確認の節の取り出し・ | extractConfirmationSections, longLineLines, confirmationLines, bodyLines, LONG_LINE_CHARS ほか8件 |
+| `scripts/lib/dbApplySql.js` | 本番 DB 適用ワークフロー（.github/workflows/db-apply.yml）が、承認の前にマイグレーションを検査するための純粋関数。 | validateMigrationPath, splitStatements, inspectMigration, renderSummary, psqlArgs ほか8件 |
+| `scripts/lib/dbApplySqlParts.js` | scripts/lib/dbApplySql.js から移した、SQL の字句の読み（splitStatements の1字句ずつ）・トランザクション制御と拒否… | extractTables, invisibleRejections, transactionShape, transactionRejections, scanStatements ほか10件 |
 | `scripts/lib/dbReconcile.js` | 本番 DB の自動の適用（ADR-0097）で、次に当てるマイグレーションを選ぶための純粋関数。 | ledgerState, ledgerRowAddedAsUnapplied, evaluateCandidate, pickNext, isBusy ほか6件 |
 | `scripts/lib/deployHookPolicy.js` | Vercel Deploy Hook を叩くかどうかの判定（BOA-361）。 | decideDeployHook, DEPLOY_HOOK_WINDOW_MINUTES |
 | `scripts/lib/disqualifiedFinishMark.js` | BOA-582(2): 失格（Kファイルの成績コード S0〜S2）の艇の着欄（finish_mark）を、結果ページから決める（純関数）。 | buildDisqualifiedMarkRows, buildOfficialRowRows, DISQUALIFIED_MARKS, isDisqualifiedCode |
 | `scripts/lib/e2eCoverageMap.js` | E2E の「spec → 動いた src のファイル」の表（毎晩の全件で作る。docs/design/ci-minutes-reduction/design.m… | lineStartsOf, offsetToPosition, normalizeSource, coveredSources, parseCoverageRows ほか3件 |
 | `scripts/lib/erDiagramFromDdl.js` | docs/db-migration/ のSQL DDLからmermaid erDiagramを機械的に導出する。 | parseTablesFromSql, findLinkedMigrations, buildMermaidErDiagram, DB_MIGRATION_DIR, DESIGN_DIR |
-| `scripts/lib/eveDeadlinesJob.js` | 前夜の締切予定（eve_race_deadlines、マイグレーション202、BOA-1282）の共通ラッパ向けハンドラー2つ。 | isFinalRound, readExpectedVenues, readEveRows, buildEveRows, nameTargets ほか9件 |
+| `scripts/lib/eveDeadlinesJob.js` | 前夜の締切予定（eve_race_deadlines、マイグレーション202、BOA-1282）の共通ラッパ向けハンドラー2つ。 | isFinalRound, readExpectedVenues, readEveRows, buildEveRows, nameTargets ほか8件 |
+| `scripts/lib/eveDeadlinesRows.js` | 前夜の締切予定（eveDeadlinesJob.js）の純な部分: 書く行・優勝戦の判定・raceindex の振り分け・通知・戻り値。 | eveIsFinal, eveRow, isSameEveRow, parseVenueIndex, acceptVenueIndex ほか4件 |
+| `scripts/lib/exhibitionJobParts.js` | scrape-exhibition-data.js の部品。公式ページの解析結果から展示の行を組み立て、 | toLegacyExhibition, upsertExhibitionRows, groupTargetsByVenue, absorbVenueResults, markHaveData ほか4件 |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
 | `scripts/lib/fanPeriodJob.js` | 期別成績（fan、racer_period_stats）の定期取り込み。共通ラッパ向けハンドラー（api/cron/fan-period.js）。 | fanIdEndedBefore, periodOfFanId, daysSincePeriodEnd, fanRawPath, runFanPeriodJob ほか2件 |
 | `scripts/lib/fanPeriodParser.js` | 公式「レーサー期別成績」ファイル（fan）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | parseFanId, fanIdOf, buildFanUrl, fanArchiveRelPath, listFanIds ほか14件 |
@@ -120,9 +157,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/fortuneTelling/shichuSuimei.js` | 四柱推命（日柱まで。時柱は出生時刻不明のため省略、spec.md準拠） | calculateScore |
 | `scripts/lib/fortuneTelling/westernAstrology.js` | 西洋占星術（太陽星座ベースのトランジット計算） | calculateScore |
 | `scripts/lib/ga4MeasurementBreaks.js` | GA4 の計測方法が変わった日（この日の前後で PV を比較してはいけない日）の一覧と、 | ga4PvBreaksWithin, formatGa4PvBreakNotice, GA4_PV_BREAKS |
-| `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, jobKeysFor, createRestJobStateClient, shouldSkipOnGha ほか9件 |
+| `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, createRestJobStateClient, shouldSkipOnGha, isGhaFetchStopped ほか4件 |
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
-| `scripts/lib/harville.js` | — | normalizeProbs, impliedProbsFromOdds, condSecond, condThird, exactaProb ほか6件 |
+| `scripts/lib/harville.js` | — | — |
 | `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | buildPredictionHitUpdate, calculateHits, isWinHit, isTrifectaHit, isTrioHit ほか3件 |
 | `scripts/lib/inCaution.js` | BOA-822 イン崩れ注意度: 朝の生成（generate-unified-predictions.js）がレースごとの値を決める純関数。 | toInCautionRates, computeInCaution |
 | `scripts/lib/inCautionHealth.js` | BOA-822 イン崩れ注意度の監視（tasks 12、plan §9。完了の定義C）。DB は読み取りだけ。 | evaluateInCautionTable, evaluateInCautionToday, readInCautionTable, readInCautionToday, runInCautionHealth ほか1件 |
@@ -131,7 +168,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/jobWatch.js` | 定期の job の見張り（.github/workflows/job-watch.yml、ADR-0097 の追記「定期の job の見張り」）の純粋関数。 | classifyLog, jobTimeouts, cancelledByTimeout, decideRun, rerunBlockers ほか8件 |
 | `scripts/lib/kbArchiveBoundary.js` | K/B の長期アーカイブ（kb_archive_*）と本体テーブル（races ほか）の境目の日。 | MAIN_TABLES_START, KB_LAST_DATE, KB_FIRST_DATE |
 | `scripts/lib/kbArchiveRows.js` | K/B中間形式（kb-day/v1）→ アーカイブ表（kb_archive_*）の行への変換 | raceTimeToSeconds, classifyStage, buildArchiveRows, KB_ARCHIVE_TABLES |
-| `scripts/lib/kbFileParser.js` | 公式ダウンロードデータ（Kファイル=競走成績、Bファイル=番組表）の全項目パーサー | buildKbUrl, kbArchiveRelPath, decodeLzhText, decodeLzhBytes, classifyKFileVenues ほか9件 |
+| `scripts/lib/kbBackfillPlan.js` | kb（公式の成績・番組のアーカイブ）の取得の計画の純粋関数（日付の列・取得の窓・応答の分類・計画と見積り）。 | jstToday, parseWindow, inWindow, windowDayKey, classifyResponse ほか3件 |
+| `scripts/lib/kbFileParser.js` | 公式ダウンロードデータ（Kファイル=競走成績、Bファイル=番組表）の全項目パーサー | buildKbUrl, kbArchiveRelPath, decodeLzhText, decodeLzhBytes, classifyKFileVenues ほか6件 |
+| `scripts/lib/kbFileParserB.js` | — | parseBText |
+| `scripts/lib/kbFileParserK.js` | — | parseKText |
+| `scripts/lib/kbFileParserText.js` | — | PENDING_MARKER |
 | `scripts/lib/kbGapFill.js` | K/Bファイル（kb-day/v1。kb-backfill.js parse の出力）から、本体テーブルの欠落を補う行を作る（純関数）。 | assertColumnSet, buildStartTimingRows, buildMissingBoatRows, buildExhibitionRows, normalizeKStage ほか7件 |
 | `scripts/lib/kbResultsBackfillRows.js` | K/Bアーカイブ（kb-day/v1、scripts/lib/kbFileParser.js）から race_results の欠損行を | classifyMissingResult, buildRaceFactsForDay, buildRaceResultRow, MISSING_STATUS |
 | `scripts/lib/kelly-criterion.js` | — | kellyFraction, halfKelly, quarterKelly |
@@ -143,10 +184,18 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/meetBoundaries.js` | 節（開催）の切り出しと、全レースの一括取得。 | buildMeets, fetchAllByRaceId |
 | `scripts/lib/mergeOrder.js` | マージ順の台帳。「PR 901 は 902 のマージ後に」という順序を、並行セッションのオーケストレーションが | ledgerPath, parseLedger, readLedger, writeLedger, prerequisitesOf ほか3件 |
 | `scripts/lib/monthlyScheduleParser.js` | 月間スケジュール（boatrace.jp race/monthlyschedule）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | buildMonthlyScheduleUrl, parseYm, listYms, parseMonthlySchedule, mergeMonthlySchedules ほか8件 |
+| `scripts/lib/moriartyBetJudge.js` | モリアーティの推奨（bet_recommendations.reasons）の照合のうち、3連単・3連複の部分（純粋関数）。 | judgeThreeBoatBet |
+| `scripts/lib/morningDigestParts.js` | generate-morning-digest.js の純粋な部品（DB に触らない）。 | baselineKey, lookupBaseline, buildMetricRow, sectionRow, indexStats ほか6件 |
+| `scripts/lib/morningDigestSummary.js` | generate-morning-digest.js のまとめの部品（DB に触らない）。 | rankRows, motorTargetsOf, logMotorSummary, logSectionSummary, buildDayRow ほか8件 |
+| `scripts/lib/motorPretestCoverage.js` | 前検タイムの定期取得（motorPretestJob.js）の純関数: 取得の窓の日付・会場ごとの充足の引き継ぎと集計・last_report の形。 | fetchWindow, mergeCoverage, coverageSummary, reportCoverage |
 | `scripts/lib/motorPretestJob.js` | 前検タイム・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）の共通ラッパ向けハンドラー（tasks.md T4b-20）。 | fetchMotorPretest, findMotorPretestDriftAlerts, buildCoverageAlerts, runMotorPretestJob, MOTOR_PRETEST_CONCURRENCY ほか3件 |
 | `scripts/lib/motorPretestParser.js` | 公式のモーター抽選結果・前検タイム（boatrace.jp race/rankingmotor）のパーサー（純関数。DB・取得先に接続しない） | buildMotorPretestUrl, readHeaderLabels, competitionRanks, parseMotorPretestHtml, MOTOR_PRETEST_PARSER_VERSION ほか1件 |
 | `scripts/lib/motorPretestRows.js` | 前検タイム（N23、motor_pretest_stats）の、行の組み立て・期待件数の算出・書き込み。 | buildMotorPretestRows, writeMotorPretestRows, loadExpectedRacers, summarizeVenueCoverage, MOTOR_PRETEST_TABLE ほか1件 |
+| `scripts/lib/oddsPageFetch.js` | レース前オッズの取得（scrape-odds.js から分けた部分）: オッズページの URL・取得と待ち合わせ・単勝と3連単の読み。 | fetchOddsDetailed, fetchOddsForRace, defaultFetch |
+| `scripts/lib/oddsPageParse.js` | オッズページの読み（scrape-odds.js から分けた純粋関数）: 単勝・複勝・3連単・全通り系・race_odds の基本の行。 | scrapeWinOdds, isWinOddsUnpublished, scrapePlaceOdds, topTrifectaByOdds, parseFullOddsCombinations ほか3件 |
 | `scripts/lib/oddsParser.js` | boatrace.jp オッズページの共通パーサー | parseOddsTable, parseTrifectaAll, parseTrioAll, parseRangeOddsValue, parseExactaAll ほか4件 |
+| `scripts/lib/oddsRows.js` | レース前オッズの行の組み立て（scrape-odds.js から分けた純粋関数）: 取得の対象・全通り系の補い・ウィンドウの行・1件の結果。 | pickFallbackPatches, missingFullKeysByRace, collectOddsTargets, buildFullOddsRows, groupFullOddsBySignature ほか11件 |
+| `scripts/lib/oddsRunForRaces.js` | レース単位のオッズ取得と race_odds への書き込み（runForRaces と、その再試行・窓の補いの部品）。 | runForRaces |
 | `scripts/lib/officialFinishCode.js` | 公式の成績コード（Kファイルの着順欄。01〜06・F・L0・L1・K0・K1・S0・S1・S2 等）を、 | buildOfficialFinishCodeRows, OFFICIAL_FINISH_CODE_COLUMN |
 | `scripts/lib/openingDayBackfill.js` | 節の初日の欠落（racesに1行も無い会場日）を、公式サイトの過去日ページから補うCLI | parseOnly, selectTargets, buildRaceRows, createThrottledFetch, tallyOutcomes ほか10件 |
 | `scripts/lib/optionalColumns.js` | 「マイグレーション未適用のDBでも壊れない」書き込みの共通処理 | isColumnMissingError, stripColumns, createOptionalColumnState, upsertWithOptionalColumns |
@@ -154,12 +203,14 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/outputEscape.js` | XML のテキスト・引用符付き属性に使う。URL の連結後に呼ぶ。 | escapeXml, sanitizeLlmsLinkText |
 | `scripts/lib/parametric-calibration.js` | — | solveLinear, PlattCalibrator, BetaCalibrator, OddsAwareCalibrator |
 | `scripts/lib/payoutCalculator.js` | 配当・回収率ユーティリティ | calculateRecoveryRate, getTrifectaKey, getTrioKey, calculateHitRate, payoutToRecoveryRate ほか1件 |
+| `scripts/lib/pcexpect/scrape.js` | 公式サイトのコンピュータ予想（pcexpect）の取得・解析・external_predictions への upsert（runForRaces）。 | buildUrl, fetchHtml, parsePcexpect, computePcexpectDigest, runForRaces |
 | `scripts/lib/pitReportJob.js` | ピットレポート（選手コメント）の取得ジョブ（BOA-379、docs/design/pit-comments/plan.md）。 | buildPitReportUrl, fetchPitReportHtml, processPitReportRace, createPitReportSlotHandler, createPitReportStore ほか3件 |
 | `scripts/lib/pitReportParser.js` | 公式のピットレポート（boatrace.jp race/pitreport）のパーサー（純関数。DB・取得先に接続しない） | splitConfidence, parsePitReportHtml, PIT_REPORT_PARSER_VERSION, PIT_REPORT_STATUSES |
 | `scripts/lib/pitReportRows.js` | ピットレポートの解析結果（pitReportParser.js）から、DBへ書く行・スロットの結果（outcome）・ | isPitReportCandidate, pendingRetrySec, outcomeForStatus, computeContentHash, buildPitReportRows ほか5件 |
 | `scripts/lib/pitReportSchema.js` | ピットレポートの保存先（マイグレーション085: race_pit_reports・race_pit_comments）が、接続先のDBに | detectPitReportSchema, clearPitReportSchemaCache, PIT_REPORT_TABLES, PIT_SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/placementDistribution.js` | 2着・3着のコース別統計分布 | getPlacementBaseline, PLACEMENT_DISTRIBUTION, GLOBAL_PLACEMENT_AVERAGE |
 | `scripts/lib/pointRankJob.js` | 得点率（B2、racer_series_points）の共通ラッパ向けハンドラー（tasks.md T4b-12-1、plan.md §4.3）。 | isLastChanceForPending, runPointRankJob, POINT_RANK_CONCURRENCY |
+| `scripts/lib/pointRankJobParts.js` | scrape-point-rank.js の純粋な部品（DB に触らない）。 | isTableExpected, judgeVenue, buildVenueGrades, buildVenueLastRaces, buildSeriesPointRows ほか10件 |
 | `scripts/lib/pointRankParser.js` | boatrace.jp 得点率一覧ページ（pointrank）の共通パーサー | parsePointRankTable, parseHayamiSeriesDay, parsePointRankAsOf, parseHayamiRaceNumber |
 | `scripts/lib/prShape.js` | PR の差分の形の機械の検査（symlink・submodule・LFS・バイナリ・.gitattributes・上限超え）。純粋関数。 | mechanicalRejections, parseRawDiff, patchOf, isAllowedMedia, isHarmlessNoBody ほか2件 |
 | `scripts/lib/preRaceRows.js` | 出走表・直前情報の全項目の解析結果（scripts/lib/raceListParser.js・beforeInfoParser.js）から、DBへ書く行を作る | formatJstHm, buildRaceEntryRows, buildRaceConditionRow, buildExhibitionRows, planDeadlineUpdates |
@@ -172,13 +223,22 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceEntriesKbRestore.js` | 出走表（race_entries）の複製汚染を、公式Bファイル（番組表）から復元するための純粋関数（BOA-422） | indexBEntriesByRace, compareRace, buildRestoredRow, buildRestorePlan, COLUMNS_FROM_B ほか4件 |
 | `scripts/lib/raceIndexParser.js` | 公式の raceindex（/owpc/pc/race/raceindex?jcd=VV&hd=YYYYMMDD、会場の1日のレース一覧）の解析（BOA-128… | parseRaceIndex, raceIndexProblems, isLastDayLabel, isFinalRaceName |
 | `scripts/lib/raceIndicatorData.js` | データ出走表11指標のデータ取得（AI予想モデル大規模改修 Task6a） | fetchStPredictability, fetchReturnRate, fetchTechniqueProfile, fetchExhibitionTrend, fetchRacerForm ほか1件 |
+| `scripts/lib/raceInfoAccumulate.js` | レース情報の集計（update-race-info.js から分けた純粋関数）: 取得の結果を、書く行（中止・締切・条件・出走表）にためる・ | createAccumulator, accumulateRaceInfo, assertRaceInfoRunArgs, applyFetchedRaceInfo, parsedRaceOutcome |
+| `scripts/lib/raceInfoFetch.js` | 出走表・直前情報の取得（update-race-info.js から分けた部分）: racelist・beforeinfo を取って読む。 | fetchRaceInfoDetailed, fetchRaceInfo, fetchRaceInfos, defaultFetch |
+| `scripts/lib/raceInfoWrite.js` | レース情報の書き込みの部品（update-race-info.js の flushRaceInfo から分けた）: races の列の更新の繰り返し・ | updateRacesEach, conditionGroups, planRacesGrade, racesUpdates, writeCounters ほか2件 |
 | `scripts/lib/raceListParser.js` | 公式の出走表ページ（boatrace.jp racelist）の全項目パーサー（純関数。DB・取得先に接続しない） | scrapeSeriesDay, scrapeRaceMeta, parseRaceListDocument, parseRaceListPage, RACELIST_PARSER_VERSION |
 | `scripts/lib/raceNoticesJob.js` | レース特記事項（A5、race_special_notes）の共通ラッパ向けハンドラー（BOA-353 T4b-11-1、plan.md §2.2）。 | runRaceNoticesJob, RACE_NOTICES_CONCURRENCY |
+| `scripts/lib/raceNoticesParse.js` | — | resolveRaceDate, parseAccidentRow, parseEquipmentChangeRow, parseAbsenceRow, parseInformationHtml |
+| `scripts/lib/raceNoticesRows.js` | — | collectVenueResults |
 | `scripts/lib/raceOutcomeFilters.js` | 不成立（race_status='no_race'）のレースを集計から外すための共通の部品（BOA-545）。 | isNoRaceResult, placedRanks, NOT_NO_RACE_FILTER |
 | `scripts/lib/raceResultAudit.js` | 既存の race_results の誤り（Q6: 返還・不成立の払戻¥100、非完走艇の着順）を特定する純関数群。 | analyzeRaceFromDb, parseRaceId, summarizeDbFindings, isRefundedKFinish, kDayToRaceFacts ほか4件 |
 | `scripts/lib/raceResultFix.js` | 既存の race_results の誤り（Q6）を、公式の結果ページの再取得で修正するための計画づくりと書き込み。 | buildFixPlan, applyFixPlan, FIX_RESULT_COLUMNS, FILL_ONLY_COLUMNS, FIX_EXTRA_COLUMNS |
+| `scripts/lib/raceResultPage.js` | 結果ページ（raceresult）の取得・解析と、race_results に書く行の組み立て（scrape-results.js から分けた部分）。 | getRaceResultUrl, fetchRaceResultHtml, parseRaceResultHtml, scrapeRaceResult, buildRaceResultRow ほか2件 |
 | `scripts/lib/raceResultParser.js` | 公式の結果ページ（boatrace.jp raceresult）の全項目パーサー（純関数。DB・取得先に接続しない） | parseRaceSeconds, parseStartCell, classifyRaceStatus, parseRaceResultPage, RESULT_PARSER_VERSION ほか2件 |
+| `scripts/lib/raceResultPersist.js` | — | persistRaceResults |
+| `scripts/lib/raceResultRowParts.js` | scripts/daily/scrape-results.js の行の組み立て・判定のうち、DB に触らない純粋な部分。 | resultPayoutEntries, payoutColumns, popularityColumns, courseColumns |
 | `scripts/lib/raceResultRows.js` | 結果ページの全項目（scripts/lib/raceResultParser.js）から、DBへ書く行・旧形式の解析結果を作る（純関数）。 | toLegacyResult, buildResultExtras, buildTimingRows, buildPayoutRows |
+| `scripts/lib/raceResultRun.js` | — | runForRaces |
 | `scripts/lib/raceResultSchema.js` | 結果系の新しい列・テーブル（マイグレーション077〜079・119）が、接続先のDBに適用済みかの判定。 | detectResultSchema, clearResultSchemaCache, RESULT_SCHEMA_TARGETS, SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/raceSchedule.js` | レーススケジュール管理モジュール | getRaceSchedule, getRacesInWindow, getRacesAfterStart, getRacesPastResultWindow, getRacesBeforeStart |
 | `scripts/lib/raceSeriesJob.js` | 節（race_series、マイグレーション084）の定期取得。共通ラッパ向けハンドラー（api/cron/race-series.js）。 | runRaceSeriesJob, RACE_SERIES_EXPECTED_VENUES |
@@ -190,24 +250,31 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceStatusJob.js` | 中止・順延の早期確定（race_status、共通ラッパ cronWrapper.js の continuous ジョブ）。 | runRaceStatusJob, RACE_STATUS_CONCURRENCY, CONFIRM_REASON |
 | `scripts/lib/raceStatusParsers.js` | 開催場一覧（race/index）と結果ページ（raceresult）から、中止・順延の告知を読み取る純粋関数。 | raceIndexUrl, raceResultUrl, classifyStatusText, parseVenueStatuses, isRaceCancelledPage |
 | `scripts/lib/racelistBackfillRows.js` | 出走表（racelist）過去分バックフィルの、行の組み立て・URL・アーカイブパス（純関数。DB・取得先に接続しない） | parseRaceId, buildRacelistUrl, racelistArchiveRelPath, buildFillRow, buildFillRowsForRace ほか2件 |
-| `scripts/lib/racerCareerJob.js` | 選手ページ（GS00 案2）の集計の表（マイグレーション 190）の書き手の共通部分。 | finalStagesOf, specialSeriesGroups, splitByRacerLinks, gradeOverridesOf, mergeCareerResult ほか23件 |
+| `scripts/lib/racerCareerCore.js` | — | mergeCareerResult, staleRowsOf, chunk, writeCareerRows, runKbEra ほか4件 |
+| `scripts/lib/racerCareerDb.js` | 選手ページの集計の表（racerCareerJob.js）の DB の読み（判定の材料・計算の RPC・今ある行・kb の指紋）と、計算の記録の書き込み。 | loadJudgeInputs, computeCounts, fetchExistingKeys, writeMeta, kbFingerprint ほか4件 |
+| `scripts/lib/racerCareerJob.js` | — | runMainEra, runRacerCareerMainJob |
+| `scripts/lib/racerCareerSeries.js` | 選手ページの集計の表の判定の材料のうち、特別な節（同じ開催日に2つの格が混ざる節・公式が別の格で数えた節）の | finalStagesOf, specialSeriesGroups, splitByRacerLinks, gradeOverridesOf, halfMonthRanges ほか5件 |
 | `scripts/lib/racerNews/dedup.js` | — | isAlreadyProcessed |
 | `scripts/lib/racerNews/officialGradeAnnouncements.js` | — | collectGradeAnnouncementNews |
 | `scripts/lib/racerNews/pendingReview.js` | — | listPending, listAll, hasItemForSourceUrl, addPendingItem, updateStatus ほか3件 |
 | `scripts/lib/racerNews/templates.js` | — | generateGradeAnnouncementNews |
 | `scripts/lib/racerNewsJob.js` | 選手ニュース（B5、racer_news・racer_news_pending）の共通ラッパ向けハンドラー（tasks.md T4b-15-1）。 | runRacerNewsJob |
 | `scripts/lib/racerProfileSync.js` | — | parseArgs, fetchHtmlWithRetry, parseProfileHtml, getProfileUrl, toSeasonStatsRow ほか16件 |
+| `scripts/lib/racerProfileSyncSteps.js` | — | createSyncCounters, createSyncState, populationLogLine, runSyncWorkers, buildSyncSummary ほか1件 |
 | `scripts/lib/racerProfilesJob.js` | 選手プロフィール・期別成績（B6、racer_profiles）の共通ラッパ向けハンドラー（tasks.md T4b-16-1）。 | resolveChunkSize, runRacerProfilesJob, RACER_PROFILES_CHUNK, RACER_PROFILES_CONCURRENCY |
 | `scripts/lib/racerSeasonStats.js` | — | getSeasonStatsUrl, isRacerPageNotFound, derivePeriodLabel, parseSeasonStatsHtml, scrapeSeasonStats ほか2件 |
 | `scripts/lib/racerSnapshotPlan.js` | 選手ページのスナップショット（BOA-848）を、このビルドで作るか・どの選手を作るかを決める。 | planRacerSnapshots, canSaveRacerSnapshot, decideRacerSnapshotSource, sourceChangedDuringCopy, olderIso ほか4件 |
 | `scripts/lib/racerStStats.js` | 選手のST統計（racer_aggregated_stats の avg_st / avg_st_last_30 / st_stddev / | countsAsStart, computeRacerStStats, fetchRacerEntries, fetchStartTimingsForEntries, RECENT_ST_WINDOW ほか1件 |
 | `scripts/lib/racesInit/digest.js` | 朝の初期化（races-init）の shadow で記録する、レースごとのダイジェスト（純粋関数。DB・取得先に接続しない）。 | raceIdOf, digestScrapedRace, digestScrapedVenue, digestDbRace, compareRaceDigests |
 | `scripts/lib/racesInit/ghaSkip.js` | GitHub Actions 側の朝の初期化（morning-init.js）を止める変数 SKIP_MORNING_INIT_ON_GHA の判定（純粋関数）… | decideMorningInitOnGha, FALLBACK_FROM_JST_HOUR |
-| `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | inCautionAlertUntil, backoffMinutes, resolveVenuesLimit, isBreakerOpenError, defaultCheckNoProgram ほか5件 |
+| `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | inCautionAlertUntil, resolveVenuesLimit, defaultCheckNoProgram, runRacesInitJob, createPredictCodeOnTick ほか3件 |
 | `scripts/lib/racesInit/predictCodeCheck.js` | 予測ロジックの変更検知による再生成（WS4b T4b-07-5、plan.md §4.2(d)・設計判断(g)）。 | hashFiles, computePredictCodeHash, checkPredictCodeChange, PREDICT_CODE_HASH_JOB, PREDICT_LOGIC_FILES |
+| `scripts/lib/racesInit/runReport.js` | 朝の初期化（job.js の runRacesInitJob）の1回の起動の報告（last_report）・応答の本文・失敗の文を作る。 | buildRunResult, ALERT_NOTIFY_HOURS |
+| `scripts/lib/racesInit/venueSteps.js` | 朝の初期化（job.js の runRacesInitJob）の会場の処理と、会場一覧の再確認。cursor（進捗）を書き換える。 | backoffMinutes, isBreakerOpenError, processVenues, recheckVenueList, remainingVenues |
 | `scripts/lib/rawHtmlArchive.js` | 取得した生HTMLの保管（optimal-scraping-design.md §2.2・承認済みQ1）の最小実装。 | rawHtmlPath, archiveRawHtml, RAW_HTML_BUCKET |
 | `scripts/lib/relativeImportGraph.js` | 相対 import を辿って、入口から届くファイルを集める（node 標準だけを使う）。 | codeFiles, relativeSpecs, resolveSpec, reach, CODE ほか2件 |
-| `scripts/lib/releaseDispatch.js` | 本番のデプロイをまとめて出す（ADR-0106、オーナー 2026-11-06 決定）。Vercel Cron（api/cron/release-dispatc… | freshnessBasis, staleReleaseAlerts, summarizeGates, decideRelease, fetchMasterHead ほか14件 |
+| `scripts/lib/releaseDecide.js` | 本番のデプロイをまとめて出すかどうかの判定（純関数、ADR-0106）。起動と GitHub の読み取りは releaseDispatch.js。 | freshnessBasis, decideRelease, COMPARE_FILES_CAP, FRESH_HEAD_MS, AUTOMATED_COMMIT_EMAIL ほか1件 |
+| `scripts/lib/releaseDispatch.js` | 本番のデプロイをまとめて出す（ADR-0106、オーナー 2026-11-06 決定）。Vercel Cron（api/cron/release-dispatc… | staleReleaseAlerts, summarizeGates, fetchMasterHead, fetchCompare, fetchGateRuns ほか8件 |
 | `scripts/lib/renderJsx.js` | verify から React の部品（.jsx）を jsdom に描き、DOM を返す（hq のオーナー決定 2026-11-09）。 | resolve, load, renderJsx |
 | `scripts/lib/renderWithFreshPage.js` | 新しいページを開く関数を作る。ブラウザが落ちていたら起動し直してから開く。 | createPageOpener, renderWithFreshPage |
 | `scripts/lib/reportComparison.js` | 定点観測レポート（search-console-report.js / i18n-demand-report.js）の | findPreviousReport, findRecentReports, detectTrend, perDay, formatDelta |
@@ -216,32 +283,46 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/roQuery.js` | 本番の読み取り専用ロール claude_ro で1文を実行する（scripts/db/ro-query.js の本体、ADR-0096）。 | checkReadStatement, parseRowLimit, checkRoUrl, runReadOnlyQuery, formatResult ほか4件 |
 | `scripts/lib/schemaDetect.js` | 「マイグレーションの列・テーブルが、接続先のDBに適用済みか」の判定（共通処理） | createSchemaDetector, DEFAULT_SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/schemaErDiagram.js` | schemaErDiagram.js — 本番スキーマの写し（docs/reference/schema-snapshot.json、ADR-0102）から、 | domainOf, mermaidType, relationshipOf, buildSchemaEr, renderDomainDiagram ほか3件 |
-| `scripts/lib/schemaSnapshot.js` | 本番スキーマの写し（docs/reference/schema-snapshot.json、ADR-0102）を組み立てる純粋関数。DB に触れない。 | ledgerFiles, appliedLedgerState, snapshotFreshness, buildSnapshot, serializeSnapshot ほか5件 |
+| `scripts/lib/schemaSnapshot.js` | 本番スキーマの写し（docs/reference/schema-snapshot.json、ADR-0102）を組み立てる純粋関数。DB に触れない。 | ledgerFiles, appliedLedgerState, snapshotFreshness, buildSnapshot, serializeSnapshot ほか4件 |
+| `scripts/lib/schemaSnapshotParts.js` | scripts/lib/schemaSnapshot.js から移した、スキーマの写しの組み立ての部品（記号の表・並べ替えの道具・表／列／制約／索引／ポリシー／ | buildRelations, addColumns, addConstraints, addIndexes, addPolicies ほか8件 |
 | `scripts/lib/scramVerifier.js` | PostgreSQL の SCRAM-SHA-256 の検証子（pg_authid.rolpassword の形）を作る。RFC 5802 / RFC 7677… | scramSha256Verifier, SCRAM_ITERATIONS |
-| `scripts/lib/scrapeJobs/circuitBreaker.js` | ホスト単位のサーキットブレーカー（BOA-368、plan.md §2.2・§8、ADR-0067）。 | normalizeBreakerRead, effectiveBlockLevel, blockDurationMs, createCircuitBreaker, BreakerOpenError ほか2件 |
+| `scripts/lib/scrapeJobs/circuitBreaker.js` | ホスト単位のサーキットブレーカー（BOA-368、plan.md §2.2・§8、ADR-0067）。 | createCircuitBreaker, BreakerOpenError, FetchStoppedError |
+| `scripts/lib/scrapeJobs/circuitBreakerParts.js` | — | normalizeBreakerRead, effectiveBlockLevel, blockDurationMs, MAX_BREAKER_LEVEL, blockBaseOf ほか9件 |
 | `scripts/lib/scrapeJobs/cleanup.js` | 予定表の保守（scrape-cleanup、plan.md §3.9・T4a-11）。日次（JST 04:00）。 | cleanupCutoffs, runCleanup, SLOT_RETENTION_DAYS |
 | `scripts/lib/scrapeJobs/concurrency.js` | 並列度の上限つきの map（取得先への負荷を抑える。plan.md §8）。 | mapWithConcurrency, createSemaphore |
-| `scripts/lib/scrapeJobs/cronWrapper.js` | Vercel Cron 向けの共通ラッパ（plan.md §2.2）。各データセットの api/cron/*.js は、これを経由する。 | isAuthorized, defaultWorker, shouldEnsureSlots, createCronFetchContext, runScrapeJob ほか4件 |
+| `scripts/lib/scrapeJobs/cronWrapper.js` | Vercel Cron 向けの共通ラッパ（plan.md §2.2）。各データセットの api/cron/*.js は、これを経由する。 | isAuthorized, shouldEnsureSlots, createCronFetchContext, runScrapeJob, createScrapeCronHandler ほか2件 |
+| `scripts/lib/scrapeJobs/cronWrapperParts.js` | — | defaultWorker, createShouldStop, createRecordFailure, tickFailureInfo, summaryVerdict ほか19件 |
 | `scripts/lib/scrapeJobs/dailyJob.js` | 日次ジョブの共通部分（plan.md §4.3）。 | resolveTargetDate |
 | `scripts/lib/scrapeJobs/expectedUnpublished.js` | 発売開始の遅れ（想定内の未公開。BOA-386・完了の定義Bの見直し）: 「発走60分前のオッズが、その窓（±3分）の間は | laterOffsetsOf, firstRaceIdSet, slotDeadlineOf, isPastWindow, isExtensionSuccess ほか8件 |
 | `scripts/lib/scrapeJobs/fetchCounter.js` | 取得先への取得の数を数え、fetch_counts（マイグレーション185）へ足す（BOA-1145 P3 = spec §7.1 の M2、ADR-0101 … | fetchKindOf, fetchTargetOf, jstDayHour, createFetchCounter, FETCH_COUNT_RPC |
 | `scripts/lib/scrapeJobs/fetchCounts.js` | M1: 最終 outcome と累積 attempts からの固定ページ数による近似。純粋関数。 | validateTargetDate, dailyFetchCounts, FETCH_COUNT_NOTES |
 | `scripts/lib/scrapeJobs/finalOddsHandlers.js` | 締切時オッズ（公式）の取り直し（BOA-496）の Vercel Cron ハンドラー。api/cron/odds-final.js から使う。 | parseFinalOddsRaceId, savedPagesOf, parseFinalOddsPage, computeFinalOddsDigest, createFinalOddsSlotHandler ほか3件 |
+| `scripts/lib/scrapeJobs/ghaSkipGateParts.js` | — | openBreakerKey, resultMakers, dailyTargetInstant, buildRestJobStateClient, jobKeysFor ほか16件 |
 | `scripts/lib/scrapeJobs/htmlFetch.js` | politeFetch（Response を返す）を、既存のスクレイパー（scrape-to-json.js・scrape-pcexpect.js）が受け取る | makeFetchHtml |
-| `scripts/lib/scrapeJobs/monitor.js` | データ取得の監視（完了の定義C、plan.md §7）。予定表（scrape_slots）とジョブ状態（scrape_job_state）から、 | livenessCheckable, percentile, computeWindowStats, aggregateByJob, evaluateExpired ほか15件 |
+| `scripts/lib/scrapeJobs/monitor.js` | データ取得の監視（完了の定義C、plan.md §7）。予定表（scrape_slots）とジョブ状態（scrape_job_state）から、 | postSlack, runMonitor |
+| `scripts/lib/scrapeJobs/monitorAlerts.js` | — | evaluateExpired, evaluateRacesPresent, evaluateWindowRates, evaluateDetectionLag, evaluateJobStates ほか2件 |
+| `scripts/lib/scrapeJobs/monitorFormat.js` | — | formatAlertMessage, formatDailySummary |
+| `scripts/lib/scrapeJobs/monitorInput.js` | — | collectMonitorInput |
+| `scripts/lib/scrapeJobs/monitorWindowStats.js` | — | livenessCheckable, percentile, computeWindowStats, aggregateByJob, THRESHOLDS ほか3件 |
 | `scripts/lib/scrapeJobs/oddsDigest.js` | オッズ取得（A3）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | computeOddsDigest, ODDS_DIGEST_FULL_KEYS |
 | `scripts/lib/scrapeJobs/oddsHandlers.js` | オッズ取得（A3）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parseOddsRaceId, shouldProbeWinFirst, createOddsSlotHandler |
 | `scripts/lib/scrapeJobs/outcomes.js` | スロット・ジョブの結果（outcome）の扱い（純粋関数）。 | isFinalOutcome, truncateError, applyZeroRowGuard, computeRetryAt, FINAL_OUTCOMES ほか2件 |
 | `scripts/lib/scrapeJobs/pcexpectHandlers.js` | 公式コンピュータ予想（B1、external_predictions）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関… | parsePcexpectRaceId, createPcexpectSlotHandler |
-| `scripts/lib/scrapeJobs/politeFetch.js` | 取得先（boatrace.jp 等）への、負荷に配慮した取得（ADR-0067・BOA-368、plan.md §2.2・§8）。 | hostKeyOf, pathKeyOf, describeBlockedResponse, parseRetryAfterMs, createPoliteFetch ほか4件 |
+| `scripts/lib/scrapeJobs/politeFetch.js` | 取得先（boatrace.jp 等）への、負荷に配慮した取得（ADR-0067・BOA-368、plan.md §2.2・§8）。 | hostKeyOf, pathKeyOf, createPoliteFetch, DEFAULT_USER_AGENT, DEFAULT_BLOCK_PATH_KEYS ほか1件 |
+| `scripts/lib/scrapeJobs/politeFetchParts.js` | — | describeBlockedResponse, parseRetryAfterMs, BLOCKED_STATUSES, FetchError, backoffMs ほか3件 |
 | `scripts/lib/scrapeJobs/preRaceDigest.js` | レース情報（A1）・展示（A2）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | computeRaceInfoDigest, computeExhibitionDigest, RACE_ENTRY_DIGEST_COLUMNS, RACE_CONDITION_DIGEST_COLUMNS, EXHIBITION_DIGEST_COLUMNS |
 | `scripts/lib/scrapeJobs/preRaceHandlers.js` | レース情報（A1）・展示（A2）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parsePreRaceId, createScheduleLoader, createSeriesDayLoader, createRaceInfoSlotHandler, createExhibitionSlotHandler ほか5件 |
 | `scripts/lib/scrapeJobs/predictionOddsHandlers.js` | 買い目オッズ（A4、prediction_odds）を、A3（オッズ取得、race_odds）の成功フックから導出する（BOA-404、 | fetchPredictionsByModel, fetchLatestRaceOdds, deriveRowsForRaces, buildShadowDigest, deriveAndUpsertPredictionOdds ほか3件 |
-| `scripts/lib/scrapeJobs/registry.js` | ジョブレジストリ: 窓・許容幅・再試行・リース・並列度・実行時間の定義（plan.md §3.6・§4.3・§4.4）。 | activeMinutesOf, isScheduledDate, isCatchupOffset, isWeightOnlyOffset, mainWindowOffsetsOf ほか10件 |
+| `scripts/lib/scrapeJobs/registry.js` | ジョブレジストリ: 窓・許容幅・再試行・リース・並列度・実行時間の定義（plan.md §3.6・§4.3・§4.4）。 | nextPollTime, graceOverridesOf, windowJobNames, slotDefsFor, validateRegistry ほか3件 |
+| `scripts/lib/scrapeJobs/registryParts.js` | registry.js から移した、レジストリの定義を読む小さな純関数（registryValidate.js と registry.js が共有する。循環を避… | isCatchupOffset, isWeightOnlyOffset, mainWindowOffsetsOf, graceMinFor, activeMinutesOf ほか3件 |
+| `scripts/lib/scrapeJobs/registryValidate.js` | registry.js の validateRegistry から移した、ジョブ定義ごとの検査（problems へ追記する。順・文は元のまま）。 | validateJobDef |
 | `scripts/lib/scrapeJobs/resultDigest.js` | 結果取得（A6）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | pickResultColumns, pickStartTimingColumns, computeResultDigest, RESULT_DIGEST_COLUMNS, START_TIMING_DIGEST_COLUMNS |
+| `scripts/lib/scrapeJobs/resultHandlerParts.js` | resultHandlers.js の catch-up（createResultCatchupRun）と Kファイル同期（createKFileSyncRun… | catchupCandidates, summarizeCatchupResults, expiredResultSlots, racesWithoutConfirmedCancellation, openResultSlots ほか9件 |
 | `scripts/lib/scrapeJobs/resultHandlers.js` | 結果取得（A6）まわりの Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parseRaceId, addDays, overdueWindows, createResultSlotHandler, createResultOnTick ほか5件 |
 | `scripts/lib/scrapeJobs/schemaErrors.js` | 「予定表のテーブル・関数がDBに無い」エラーの判定。 | isScrapeSchemaMissingError, isClaimByOffsetMissingError, SCRAPE_SCHEMA_OBJECTS |
-| `scripts/lib/scrapeJobs/store.js` | 予定表（scrape_slots）・ジョブ状態（scrape_job_state）へのアクセス（Supabase実装）。 | createSupabaseStore, BREAKER_RPC_RECHECK_MS, FETCH_STOP_RECHECK_MS, TICK_WRITE_INTERVAL_MS |
+| `scripts/lib/scrapeJobs/store.js` | 予定表（scrape_slots）・ジョブ状態（scrape_job_state）へのアクセス（Supabase実装）。 | createSupabaseStore |
+| `scripts/lib/scrapeJobs/storeBreaker.js` | store.js（createSupabaseStore）から移したサーキットブレーカーの保存（createBreakerMethods。振る舞いは元のまま）。 | createBreakerMethods, BREAKER_RPC_RECHECK_MS, FETCH_STOP_RECHECK_MS |
+| `scripts/lib/scrapeJobs/storeParts.js` | store.js（createSupabaseStore）から移したメソッドの群の工場（振る舞いは元のまま）。 | createStateMethods, createSlotMethods, TICK_WRITE_INTERVAL_MS, wrap |
 | `scripts/lib/scrapeJobs/testing/fakeSupabaseClient.js` | テスト用のインメモリの Supabase クライアント（PostgREST の、検証に必要な部分だけ）。DB・取得先に接続しない。 | createFakeSupabaseClient |
 | `scripts/lib/scrapeJobs/testing/memoryStore.js` | テスト用のインメモリのストア（store.js と同じインターフェース）。共通ラッパの検証（verify-scrape-jobs.js）専用。 | createMemoryStore |
 | `scripts/lib/scrapeJobs/time.js` | 予定表（scrape_slots）まわりの時刻計算（純粋関数。実行環境のタイムゾーンに依存しない） | toJstDateString, jstStartOfDay, jstMinutesOfDay, raceStartInstant, slotDeadline ほか2件 |
@@ -250,18 +331,55 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups, racerSnapshotProblems, RACER_SNAPSHOT_STALE_HOURS |
-| `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel, reviewGate, createAutoPlanStore ほか8件 |
-| `scripts/lib/snsDailyRunner.js` | SNS の暦日の値の取り込み（sns-pdca-loop tasks 22、cron `sns_daily`、plan §5）。JST 10:00 に1日1回、… | ptMidnightUtc, runSnsDaily, setsuShortLink, mergeSameKey, createYoutubeAnalyticsClient ほか9件 |
+| `scripts/lib/sns/deadlineIso.js` | — | deadlineIso |
+| `scripts/lib/sns/finalsImageBase.js` | — | hasPoll, pngSize, checkImages, schedule, dailyLimitReason ほか23件 |
+| `scripts/lib/sns/fullPictureRows.js` | 全貌動画の取り込み（scripts/sns/push-full-picture.js）から移した、下書きの文と行の組み立て（純粋関数）。 | fullYoutubeText, draftRows, fullTagsOf, draftTexts |
+| `scripts/lib/sns/fullPictureShape.js` | 全貌動画の取り込み（scripts/sns/push-full-picture.js）から移した、api・scripts/sns に依らない純な部分: 定数・チ… | supersedePlan, schedule, bakedDeadlineReasons, FULL_PICTURE_FORMAT, FILES ほか22件 |
+| `scripts/lib/sns/mp4Info.js` | MP4 の大きさと尺の純粋な読み取り。push-setsu-kiryoku-short.js から移した（字は同じ） | mp4Info |
+| `scripts/lib/sns/publicDisplayCheck.js` | — | checkPublicDisplay |
+| `scripts/lib/sns/researchPushRules.js` | — | PUSH_RULES |
+| `scripts/lib/sns/researchSchedule.js` | — | schedule, dryRunClock, checkTiming, DEADLINE_AFTER_MIN, EXPIRES_BEFORE_MIN ほか11件 |
+| `scripts/lib/sns/setsuDeadlines.js` | 節の機力の Shorts の締切の照合（純粋関数）。push-setsu-kiryoku-short.js から移した（字は同じ） | finalDeadlineMismatch, borderDeadlineMismatch, eveDeadlineMismatch, raceNumberOf, isFinalStage |
+| `scripts/lib/sns/shortSchedule.js` | YouTube Shorts の口（push-setsu-kiryoku-short.js・push-upset-win-short.js）の時刻・日の上限とク… | schedule, checkTiming, youtubeRoomReason, dryRunClock, SEND_DELAY_SEC ほか14件 |
+| `scripts/lib/sns/siteBaseUrl.js` | — | SITE_BASE_URL |
+| `scripts/lib/sns/thinkingGradeDay.js` | — | thinkingGradeDayVenue, todayTargetReason, THINKING_GRADE_DAY_GRADES, THINKING_GRADE_DAY_MIN_RACE_NUMBER, THINKING_GRADE_DAY_MAX_RACE_NUMBER ほか1件 |
+| `scripts/lib/sns/todayDigestStatus.js` | /today の X 投稿の版（digestRevision）と、載せる候補のレースの状態（pickRaceStatus）。 | digestRevision, pickRaceStatus, TODAY_SCREEN_KEY |
+| `scripts/lib/sns/xApiBase.js` | — | X_API_BASE |
+| `scripts/lib/sns/xLength.js` | X の投稿の文字数（2026-10-14 オーナー決定: X は長文の1投稿、Premium 前提）。 | xPostValid, X_POST_MAX, X_LONG_POST_MAX, xPostMax |
+| `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel |
+| `scripts/lib/snsAutoPlanRunnerEvaluate.js` | SNS の自動送信の計画の検査（api/ の checkPublicDisplay・sendHolds は runner から引数で渡す）。snsAutoPla… | sharedChecks, evaluateChannel |
+| `scripts/lib/snsAutoPlanRunnerParts.js` | SNS の自動送信の計画の部品。snsAutoPlanRunner.js から、定数・素材の振り分け（planCandidates）・ | planCandidatesWith, reviewGate, AUTO_PLAN_STAGES, NOTIFY_BEFORE_MIN, VETO_BEFORE_MIN ほか8件 |
+| `scripts/lib/snsAutoPlanRunnerStore.js` | SNS の自動送信の計画の DB 操作（PostgREST の読み書き）。snsAutoPlanRunner.js の createAutoPlanStore … | createAutoPlanStore |
+| `scripts/lib/snsDailyRunner.js` | SNS の暦日の値の取り込み（sns-pdca-loop tasks 22、cron `sns_daily`、plan §5）。JST 10:00 に1日1回、… | runSnsDaily, mergeSameKey |
+| `scripts/lib/snsDailyRunnerGa4.js` | SNS の暦日の取り込みの GA4 側。snsDailyRunner.js から、collectGa4（割った）・collectSetsuShort・setsu… | collectGa4, setsuShortLink, collectSetsuShort |
+| `scripts/lib/snsDailyRunnerParts.js` | SNS の暦日の取り込みの共通の部品。snsDailyRunner.js から、定数・指標の定義の文（def）・日付の関数を移した（振る舞いは同じ）。 | ptMidnightUtc, SNS_DAILY_LOOKBACK_DAYS, UTM_CAMPAIGNS, SETSU_SHORT_FORMAT, CHANNEL_METRICS ほか16件 |
+| `scripts/lib/snsDailyRunnerStore.js` | SNS の暦日の取り込みの DB 操作（PostgREST）。snsDailyRunner.js の createSnsDailyStore を移した（振る舞い… | createSnsDailyStore |
+| `scripts/lib/snsDailyRunnerYoutube.js` | SNS の暦日の取り込みの YouTube 側。snsDailyRunner.js から、collectYoutube・collectEngaged・ytRow… | collectYoutube, collectEngaged, createYoutubeAnalyticsClient |
 | `scripts/lib/snsGa4.js` | SNS の流入の GA4 の共通部分（sns-pdca-loop plan §5）。分析スクリプト（scripts/analysis/sns-pdca-base… | getServiceAccountToken, createGa4Client, X_SOURCES, YOUTUBE_SOURCES, SITE_HOST ほか6件 |
-| `scripts/lib/snsMetricsRunner.js` | SNS の 48h・7d の取り込み（sns-pdca-loop tasks 21、cron `sns_metrics`、plan §5）。 | runSnsMetrics, createYoutubeMetricsReader, createXMetricsReader, dailySendMicrousd, createSnsMetricsStore ほか7件 |
+| `scripts/lib/snsMetricsRunner.js` | SNS の 48h・7d の取り込み（sns-pdca-loop tasks 21、cron `sns_metrics`、plan §5）。 | runSnsMetrics, createXMetricsReader, SNS_METRICS_MAX_JOBS, SNS_METRICS_ALERT_ATTEMPTS, SNS_METRICS_MONITOR_DAYS ほか2件 |
+| `scripts/lib/snsMetricsRunnerParts.js` | SNS の 48h・7d の取り込みの部品。snsMetricsRunner.js から、指標の定義・欠測／値の行の組み立て・job の不備の判定を移した（振る… | brokenReason, missingRows, valueRows, YOUTUBE_BATCH, YOUTUBE_METRICS ほか4件 |
+| `scripts/lib/snsMetricsRunnerReaders.js` | SNS の 48h・7d の取り込みの読み取り（YouTube・X）。snsMetricsRunner.js から、getJson・各 reader・daily… | createYoutubeMetricsReader, createXMetricsReader, dailySendMicrousd, YOUTUBE_API_BASE |
+| `scripts/lib/snsMetricsRunnerStore.js` | SNS の 48h・7d の取り込みの DB 操作（PostgREST）。snsMetricsRunner.js から、createSnsMetricsStor… | joinDueJobs, createSnsMetricsStore |
 | `scripts/lib/snsObservationCollector.js` | — | collectDueObservations, mockObservationProvider |
 | `scripts/lib/snsPostTracking.js` | X の親の投稿の UTM（sns-pdca-loop tasks 23、plan §2・§5、spec C3）。 | insertTrackingUrl, prepareRaceTracking, createPostTrackingStore |
 | `scripts/lib/snsScreenMarkers.js` | 送る前のリンク先の表示の確認（sns-pdca-loop tasks 10、spec A2、ADR 0091）で見る、画面ごとの印。 | SCREEN_MARKERS, SCREEN_TABS |
-| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | headlessNeed, sendFailureOf, runSnsSend, createPostgrestReader, createPostgrestEventWriter ほか17件 |
+| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createPostgrestEventWriter, createSnsSendStore, pickDueJobs |
+| `scripts/lib/snsSendRunnerParts.js` | snsSendRunner.js（SNS の送信の runner）から移した、定数・小さな関数・runSnsSend の中の塊（実行の各段）。 | headlessNeed, youtubeQuotaDayWait, sendFailureOf, keptRetry, createRunState ほか26件 |
+| `scripts/lib/snsSendRunnerSend.js` | snsSendRunnerParts.js から分けた、候補を順に送る段（sendCandidates）と、非公開で残した YouTube の見直しの段（res… | sendCandidates, resumeRetainedJobs |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTodayCourseWinPost.js` | /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」）の本文と、その機械の検査（純関数）。 | buildCourseWinPost, checkCourseWinPost, COURSE_WIN_FOOT, COURSE_WIN_LINK_LEAD, xWeightedLength |
-| `scripts/lib/snsTodayDigestV3.js` | /today の X 投稿の型 v3「今日はこれだけ」（BOA-1314、オーナー 2026-11-04 承認、hq の台帳 TD02）。文だけで画像は無い。7… | v3DateLine, loadTodayV3Material, buildTodayDigestV3, checkTodayDigestV3, V3_BODY ほか14件 |
-| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, prepareTodayV3, courseWinSheetUrl, prepareCourseWin, courseWinFeasible ほか31件 |
+| `scripts/lib/snsTodayDigestV3.js` | /today の X 投稿の型 v3「今日はこれだけ」（BOA-1314、オーナー 2026-11-04 承認、hq の台帳 TD02）。文だけで画像は無い。7… | loadTodayV3Material, buildTodayDigestV3, checkTodayDigestV3 |
+| `scripts/lib/snsTodayDigestV3Base.js` | snsTodayDigestV3.js から移した、型 v3 の定数・文言・小さな道具（純粋）。値・文字は元のまま。 | v3DateLine, V3_BODY, V3_FINAL, V3_SEMI, V3_MIN_RUNS ほか20件 |
+| `scripts/lib/snsTodayDigestV3Build.js` | snsTodayDigestV3.js の buildTodayDigestV3 から移した、本文を組む段（純粋）。順・文字・鍵の順は元のまま。 | venueDayLabels, raceHelpers, liveRaces, headerLines, finalsInfo ほか4件 |
+| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | runTodayPlan, TODAY_URL, todayTrackingUrl, prepareTodayV3, buildTodayPost ほか3件 |
+| `scripts/lib/snsTodayPlannerAuto.js` | snsTodayPlannerDraft.js から移した、/today の自動の承認（item を notified にして承認者で承認、失敗なら戻す）。 | autoApprove |
+| `scripts/lib/snsTodayPlannerCourseWin.js` | snsTodayPlannerParts.js から移した、型 b（course_win）の用意（撮影用ページの URL・中身の用意・出せるかの確認）。 | courseWinSheetUrlOf, prepareCourseWinOf, courseWinFeasibleOf, COURSE_WIN_SHEET_PATH, COURSE_WIN_SHEET_ELEMENT ほか2件 |
+| `scripts/lib/snsTodayPlannerDraft.js` | snsTodayPlanner.js の runTodayPlan から移した、書く側（下書き・tracking・返信・item・自動の承認・Slack の知ら… | writeTodayDraft |
+| `scripts/lib/snsTodayPlannerParts.js` | snsTodayPlanner.js から移した、/today 投稿の計画の部品（時刻・型 v3/b の用意・本文 buildTodayPost・日付の道具）。 | todaySchedule, prepareTodayV3Of, typeAOf, todayCandidates, todayFeatured ほか24件 |
+| `scripts/lib/snsTodayPlannerShots.js` | snsTodayPlanner.js の runTodayPlan から移した、画像まわり（/today の表示確認・型 b の撮影・型 a の龍神ソナーの図）… | assertTodayPageReady, shootCourseWinSheet, MAX_IMAGE_BYTES, launchInfoOf |
+| `scripts/lib/snsTodayPlannerSource.js` | snsTodayPlannerDraft.js から移した、下書きの source_data の組み立て（純粋。型 v3・型 b の記録、deadline_qu… | sourceDataOf |
+| `scripts/lib/snsTodayPlannerSteps.js` | snsTodayPlanner.js の runTodayPlan から移した、決める側の段（時間の門・前の下書きの扱い・型の選び・本文の用意・画像）。 | windowOutcome, existingOutcome, pickedType, prepareBody, chooseBody ほか3件 |
+| `scripts/lib/snsTodayPlannerStore.js` | snsTodayPlanner.js から移した、/today 計画の DB の道具（PostgREST の store）と朝の記録（nextTodayLog・… | createTodayStore, nextTodayLog, missedTodayText, finishTodayLog, REBUILD_MAX_FAILURES |
 | `scripts/lib/snsTodayVariants.js` | /today の X 投稿の見出し（本文の1行目）を2案で日替わりに出す（2026-10-20 オーナー承認、hq 経由）。 | normalizeTodayCurrent, normalizeTodayPost, normalizeTodayVariants, normalizeTodayExperiment, pickExperimentSide ほか10件 |
 | `scripts/lib/snsXSlots.js` | X の日の枠の出し物ごとの取り置き（マイグレーション 182、docs/design/x-daily-slots/plan.md）を、取り込み（push-ful… | slotDecision, checkXSlot, SLOT_KINDS, isMissingFunction, slotRoomBody ほか1件 |
 | `scripts/lib/sourceFileWalk.js` | — | walkSourceFiles, readSourceFile |
@@ -269,10 +387,15 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/stripNonCode.js` | コメント・文字列・テンプレート・正規表現リテラルの中身を空白に置き換える簡易な字句解析（純関数）。 | stripNonCode |
 | `scripts/lib/supabaseClient.js` | — | fetchAll, supabase, isSupabaseEnabled, VENUE_CODES |
 | `scripts/lib/turnPrediction.js` | 1マーク展開予測ロジック v5（バックエンド用） | predictFirstMarkV2, predictFirstMark |
-| `scripts/lib/unchangedRows.js` | 「変更の無い行は書かない」ための共通ライブラリ（WS8(b)、BOA-349） | normalizeTimestamp, roundToScale, normalizeValue, diffRows, planWriteAll ほか8件 |
+| `scripts/lib/turnPredictionBoats.js` | 1マーク展開予測（turnPrediction.js）の艇ごとの特徴。 | clamp, predictStartTimes, stAdvantageMatrix, motorZScores, playerSkillZScores ほか2件 |
+| `scripts/lib/turnPredictionPatterns.js` | 1マーク展開予測（turnPrediction.js）の決着パターン。 | rawPatterns, rankPatterns, techniqueDistribution |
+| `scripts/lib/unchangedRows.js` | 「変更の無い行は書かない」ための共通ライブラリ（WS8(b)、BOA-349） | normalizeTimestamp, roundToScale, normalizeValue, diffRows, planWriteAll ほか4件 |
+| `scripts/lib/unchangedRowsUpsert.js` | 「変更のある行を書くときに updated_at を設定する」テーブル（WS2、マイグレーション071）の | fetchExistingRows, formatSkipSummary, UPDATED_AT_COLUMN, UPDATED_AT_GROUP |
 | `scripts/lib/unifiedModel.js` | 新AI予想モデル「unified」のスコアリング本体（AI予想モデル大規模改修 Task6b/Task8, ADR0009, FR1/FR2/FR6） | calculateUnifiedScores, softmaxProbabilities |
+| `scripts/lib/unifiedPredictionRow.js` | — | calculatePlaceRecommendation, buildUnifiedPredictionRow |
 | `scripts/lib/venueEntryCourseStats/driftHealth.js` | 進入コース別選手成績ページ（BOA-293、FR-6 Phase 6c）の、会場公式サイトのHTML構造変化の検知。 | isEntryCourseStructuralDriftReason, findEntryCourseStatsDriftAlerts, ENTRY_COURSE_STRUCTURAL_DRIFT_REASONS |
 | `scripts/lib/venueEntryCourseStats/parser.js` | parser - 進入コース別選手成績（`/modules/raceinfo/?page=index_racecourse`）の | parseEntryCourseHtml |
+| `scripts/lib/venueEntryCourseStats/scrape.js` | — | createHtmlFetcher, scrapeVenue, writeEntryCourseRows |
 | `scripts/lib/venueEntryCourseStats/venueConfig.js` | venueConfig - 進入コース別選手成績スクレイピング対象会場設定（BOA-293） | buildEntryCourseUrl, VENUE_ENTRY_COURSE_STATS_CONFIG, EXCLUDED_VENUES |
 | `scripts/lib/venueEntryCourseStatsJob.js` | 進入コース別選手成績（B4、venue_entry_course_stats）の共通ラッパ向けハンドラー（tasks.md T4b-13-1）。 | runVenueEntryCourseStatsJob, ENTRY_COURSE_CONCURRENCY |
 | `scripts/lib/venueFirstWinRate.js` | 会場別の1号艇勝率（直近N日）の集計（BOA-303）。 | aggregateFirstWinRate |
@@ -280,6 +403,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/venueMotorStats/parserUtils.js` | parserUtils - 会場公式サイトのモーター成績パーサー間で共通の変換・DOM操作 | normalizeText, toIntOrNull, toFloatOrNull, toStrictIntOrNull, parseBestTime ほか5件 |
 | `scripts/lib/venueMotorStats/parsers/gamagori.js` | gamagori - 蒲郡専用パーサー（BOA-264） | parseGamagoriMotorTable |
 | `scripts/lib/venueMotorStats/parsers/genericTable.js` | genericTable - 会場公式サイトのモーター成績テーブルの汎用パーサー（BOA-264） | parseGenericMotorTable, _internal |
+| `scripts/lib/venueMotorStats/scrape.js` | 会場別のモーター成績の取得（会場ごとの parser）・行の組み立て・venue_motor_stats への書き込み。 | createParsers, scrapeVenueMotorStats, toMotorStatsRow, writeMotorStatsRows |
 | `scripts/lib/venueMotorStats/venueConfig.js` | venueConfig - 会場別モーター成績スクレイピング設定（BOA-264） | VENUE_MOTOR_STATS_CONFIG, EXCLUDED_VENUES |
 | `scripts/lib/venueMotorStatsJob.js` | 会場別モーター成績（B3、venue_motor_stats）の共通ラッパ向けハンドラー（tasks.md T4b-14-1）。 | runVenueMotorStatsJob, VENUE_MOTOR_STATS_CONCURRENCY |
 | `scripts/lib/venueNames.js` | 会場コードの正準表。Node・Edge共通、副作用なし。 | VENUE_NAMES |
@@ -288,7 +412,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/vercelIgnoreBuild.js` | Vercel の Ignored Build Step（vercel.json の ignoreCommand）の判定（BOA-908）。 | isSiteIrrelevant, shouldSkipBuild, IGNORED_DIRS, ALWAYS_BUILD |
 | `scripts/lib/verifyRegistryOrder.js` | verify-registry.json の entries を script の名前の順に保つ（BOA-938）。 | registryOrderProblems, sortRegistryText |
 | `scripts/lib/volatilityFactors.js` | イン崩れ因子（複合スコア・会場内パーセンタイル変換） | boat1StReason, calculateVolatilityComposite, toVolatilityPercentile |
-| `scripts/lib/winningTechniques.js` | 決まり手ユーティリティ | toTechniqueKey, getDefaultDistribution, TECHNIQUES, TECHNIQUE_NAMES, COURSE_DEFAULT_DISTRIBUTION ほか1件 |
+| `scripts/lib/winningTechniques.js` | — | toTechniqueKey, getDefaultDistribution, TECHNIQUES, TECHNIQUE_NAMES |
 
 ## src/utils — 画面の純粋なユーティリティ
 
@@ -322,7 +446,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, guideSteps, windBandLabel |
 | `src/utils/attackDefenseCells.js` | 超展開データ（AttackDefenseTable）のセルの値の算出（純関数）。 | getTotalWins, isDefaultAttackDistribution, getCellValue, attackDefenseColumn, TECHNIQUE_ROWS |
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
-| `src/utils/blogChartContract.js` | ブログの図の契約（docs/design/blog-charts/contract.md、schemaVersion 1）の検査と読み出し。 | localize, valueAxisMax, validateBlogChart, SCHEMA_VERSION, LANGS ほか1件 |
+| `src/utils/blogChartContract.js` | ブログの図の契約（docs/design/blog-charts/contract.md、schemaVersion 1）の検査と読み出し。 | valueAxisMax, validateBlogChart, SCHEMA_VERSION, LANGS, KINDS |
 | `src/utils/blogChartLoader.js` | 記事の Markdown にある図（<ryujin-chart src>）の JSON を、本文を描く前にまとめて取る。 | loadBlogCharts |
 | `src/utils/blogChartPng.js` | ブログの図の PNG の書き出し（ADR 0099、docs/design/blog-charts/contract.md 8節）の固定の一覧と名前。依存なし・… | isPngResponse, BLOG_CHART_PNG_PRESETS, blogChartPngSize, BLOG_CHART_PNG_CREDIT, blogChartPngPath |
 | `src/utils/blogChartTag.js` | ブログの図のタグ <ryujin-chart src="/blog-charts/<name>.json" rows="N"></ryujin-chart> の… | parseBlogChartLine, BLOG_CHART_TAG, BLOG_CHART_SRC_RE, BLOG_CHART_ROWS_RE, BLOG_CHART_ROWS_MAX |
@@ -340,7 +464,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか12件 |
 | `src/utils/errorMessage.js` | 例外から、画面のエラー状態に入れる文言を取り出す（BOA-668）。 | errorMessageOf |
 | `src/utils/formatters.js` | フォーマット関数 | slashDate, formatCapturedAtJst, formatExhibitionSt, formatPercent, formatDate ほか5件 |
-| `src/utils/frontTaking.js` | 「イン屋」の判定（前付けの割合、BOA-1422・BOA-1250。#2169 の作り直し）。純関数で、DB・追加のクエリは持たない。 | summarizeFrontTaking, FRONT_TAKING_MIN_RUNS, FRONT_TAKING_MIN_RATE |
+| `src/utils/frontTaking.js` | 「イン屋」の判定（前付けの割合、BOA-1422・BOA-1250。#2169 の作り直し）。純関数で、DB・追加のクエリは持たない。 | frontTakingOfCounts, summarizeFrontTaking, FRONT_TAKING_MIN_RUNS, FRONT_TAKING_MIN_RATE |
 | `src/utils/homeAiIntroFaq.js` | トップの「よくある質問」（HomeAiIntro）の問い・答えと FAQPage の JSON-LD を組む純粋な関数。 | buildFaqItems, toFaqPageLd, isAssistShown |
 | `src/utils/horizontalScrollHint.js` | 右に残っている幅がこれを超えたら「溢れている」とみなす（px）。「›」を出す、右に余白を足す、 | hscrollFadeWidth, horizontalScrollHintState, horizontalScrollStep, snapScrollTarget, tailPaddingFor ほか3件 |
 | `src/utils/inCautionAccuracy.js` | /accuracy のイン崩れ注意度の段ごとの実績（BOA-822 task 24、screens S-5、plan §6）の表示用の値（純関数）。 | inCautionAccuracyView, MIN_RATE_N, pct1 |
@@ -393,7 +517,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/snsDraftDiff.js` | 投稿用の値だけ。署名URL・状態変更は本文差分に含めない。 | draftContent, characterDiff, numericDiff, compareDraftSnapshots |
 | `src/utils/snsMonthCalendar.js` | — | calendarDay, calendarState, calendarRowDay, calendarVenue, calendarMonth ほか3件 |
 | `src/utils/snsObservationCsv.js` | — | csvPublicationRange, buildObservationCsvRows, serializeObservationCsv, CSV_COLUMNS |
-| `src/utils/snsObservations.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 | windowsFor, displayWindowFor, observationPeriod, validateObservation, validateProviderObservation ほか16件 |
+| `src/utils/snsObservations.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 | validateObservation, validateProviderObservation, compareObservations, buildObservationUtm, buildYoutubeProfileUtm ほか2件 |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
 | `src/utils/stDeviation.js` | 本番STと展示STのズレ（/本番ST − 展示ST/）。どちらかが無い（null・undefined）走は null。 | stDeviation |
 | `src/utils/techniqueColors.js` | 決まり手の色（グラフの棒・帯・凡例の点）。色そのものは design-tokens.css の | sortTechniquesOfficial, techniqueColor, OFFICIAL_TECHNIQUE_ORDER |
@@ -424,7 +548,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | --- | --- | --- |
 | `src/services/adlerModel.js` | アドラー予想 共有モデルロジック（純粋関数のみ） | rankPermutations |
 | `src/services/adlerService.js` | アドラー予想 データ取得・推論サービス | getAdlerModelInfo, getAdlerPredictions |
-| `src/services/adminRulePerformance.js` | 管理画面（/admin/rules）の運用成績（全体・ルール別・週別）の取得と整形（BOA-567） | shapeRulePerformance, fetchRulePerformance, RULE_PERFORMANCE_START_DATE |
+| `src/services/adminRulePerformance.js` | 管理画面（/admin/rules）の運用成績（全体・ルール別・週別）の取得と整形（BOA-567） | shapeRulePerformance, fetchRulePerformance |
 | `src/services/adminRuleService.js` | 管理者向けルール分析サービス | getRuleApplicationHistory |
 | `src/services/analogyFeedback.js` | 龍神ソナー（BOA-271）の「画面の中の声」を analogy_feedback に送る（docs/db-migration/143_analogy_feed… | sendAnalogyFeedback |
 | `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getRaceSt30, getAnalogyFacts, getAnalogyLayer, getAnalogySimilar ほか2件 |
@@ -436,6 +560,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/meetQueries.js` | — | getCurrentMeetFlyingBoats, getRaceMeetPrevRuns, getRacerMeetExhibitionTrendBefore, getMeetOriginalExhibitionByRaceBoat |
 | `src/services/meetQueries2.js` | — | getMeetScoreboard |
 | `src/services/meetQueries3.js` | — | getMeetPage |
+| `src/services/meetQueries4.js` | — | — |
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
 | `src/services/motorQueries.js` | — | findBoatColumnIndex, courseOfBoat, toMaintenanceResult, beforeKey, includeKey ほか8件 |
 | `src/services/motorQueries2.js` | — | fetchPretestByRacer, getMotorPowerIndex, getRaceMotorFreshness, getMotorUsageHistory |
@@ -457,8 +582,9 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/racerQueries.js` | — | fetchRacerEntriesSince, getRacerFormTrend, getRacerFormSummary, getRacerTechniqueProfile, getRacerAggregatedStats ほか5件 |
 | `src/services/racerQueries2.js` | — | getRacerVenueStats, getRacerScopedRaceStats, getRacerRaceHistory |
 | `src/services/racerQueries3.js` | — | getRacerBoatReturnRate, getStDeviationTrend, getExhibitionTimeTrend, getTodaysRacerFormRanking |
-| `src/services/racerQueries4.js` | — | getRacerPeriodStats, getRacerAccidentRecords |
+| `src/services/racerQueries4.js` | — | getRacerPeriodStats, getRacerAccidentRecords, fetchRacerScopedRunsOrNull, fetchRacerFrontTakingCountsOrNull |
 | `src/services/racerQueries5.js` | — | getRacerPageData, getRacerAllPeriodStats, getRacerStats |
+| `src/services/racerQueries6.js` | — | getRaceFrontTakingByRacer |
 | `src/services/racerRaceHistoryRows.js` | 選手の出走履歴の行（getRacerRaceHistory の返り値）の整形（純関数）。 | isUnrankedFinishMark, buildRacerRaceHistoryRows |
 | `src/services/racerScopedRaceRows.js` | 選手の走ごとの行（getRacerScopedRaceStats の返り値）の整形（純関数）。 | buildRacerScopedRaceRows |
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, getVenueName, getTodaysMatchingRaces ほか1件 |
@@ -474,4 +600,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 432 ファイル / export 2497 件。
+対象 558 ファイル / export 3082 件。

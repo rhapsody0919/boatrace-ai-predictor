@@ -57,6 +57,76 @@ const sqlDays = (days) => (days ? `'{${days.join(",")}}'` : "NULL");
 /** /today の返信の型（親と返信の2本、どちらも kind=digest）に要る取り置き */
 export const TODAY_REPLY_RESERVE = 2;
 
+/** hq の行1つと DB の同じ kind の行（無ければ undefined）を比べ、違いを lines・sql に足す（元は reserveDiff の for の中身） */
+function diffRow(row, cur, lines, sql) {
+  if (!cur) {
+    lines.push(`DB に ${row.kind} の行が無い（hq ${row.daily_count}本）`);
+    sql.push(
+      `INSERT INTO public.sns_x_kind_reserves(kind, daily_count, weekdays) VALUES ('${row.kind}', ${row.daily_count}, ${sqlDays(row.weekdays)});`,
+    );
+  } else if (
+    cur.daily_count !== row.daily_count ||
+    !sameDays(cur.weekdays, row.weekdays)
+  ) {
+    lines.push(
+      `${row.kind}: DB ${cur.daily_count}本（曜日 ${cur.weekdays ?? "毎日"}）・hq ${row.daily_count}本（曜日 ${row.weekdays ?? "毎日"}）`,
+    );
+    sql.push(
+      `UPDATE public.sns_x_kind_reserves SET daily_count = ${row.daily_count}, weekdays = ${sqlDays(row.weekdays)}, updated_at = now() WHERE kind = '${row.kind}';`,
+    );
+  }
+}
+
+/** 行の違い: hq の行ごと（DB に無い・値が違う）→ DB にだけある行（hq に無い）の順 */
+function diffRows(hqRows, dbRows, lines, sql) {
+  const db = new Map(dbRows.map((r) => [r.kind, r]));
+  for (const row of hqRows) diffRow(row, db.get(row.kind), lines, sql);
+  for (const cur of dbRows)
+    if (!hqRows.some((r) => r.kind === cur.kind)) {
+      lines.push(`DB の ${cur.kind}（${cur.daily_count}本）は hq に無い`);
+      sql.push(
+        `DELETE FROM public.sns_x_kind_reserves WHERE kind = '${cur.kind}';`,
+      );
+    }
+}
+
+/** 日の上限（daily_limit_x）の違い */
+function diffLimit(hqLimit, dbLimit, lines, sql) {
+  if (hqLimit !== dbLimit) {
+    lines.push(`daily_limit_x: DB ${dbLimit}・hq ${hqLimit}`);
+    sql.push(
+      `UPDATE public.sns_x_send_control SET daily_limit_x = ${hqLimit} WHERE id = true;`,
+    );
+  }
+}
+
+/** /today の返信の型が有効なのに digest の取り置きが足りない（hq・DB のそれぞれ） */
+function diffTodayReply(hqRows, dbRows, lines) {
+  for (const [where, rows] of [
+    ["hq", hqRows],
+    ["DB", dbRows],
+  ]) {
+    const count = rows.find((r) => r.kind === "digest")?.daily_count ?? 0;
+    if (count < TODAY_REPLY_RESERVE)
+      lines.push(
+        `/today の返信の型が有効（config/today-variants.json の reply_enabled=true）なのに、${where} の digest の取り置きが ${count}（2本要る。親と返信が止まる）`,
+      );
+  }
+}
+
+/** 曜日ごとの取り置きの合計が上限を越える */
+function diffWeekdaySums(hqRows, hqLimit, lines) {
+  for (let dow = 1; dow <= 7; dow++) {
+    const sum = hqRows
+      .filter((r) => !r.weekdays || r.weekdays.includes(dow))
+      .reduce((n, r) => n + r.daily_count, 0);
+    if (sum > hqLimit)
+      lines.push(
+        `曜日 ${dow}（1=月）の取り置きの合計 ${sum} が上限 ${hqLimit} を越える（後から送る出し物が止まる）`,
+      );
+  }
+}
+
 /**
  * hq の行と DB の行を比べ、違いの説明と直す SQL を返す（純粋関数）。各曜日の取り置きの合計が上限を越えるかも見る。
  * todayReplyEnabled（龍神の config/today-variants.json の reply_enabled）が true なのに /today（digest）の取り置きが2未満なら違いとして出す
@@ -71,59 +141,10 @@ export function reserveDiff(
     throw new Error(`hq の daily_limit_x が不正（${hqLimit}）`);
   const lines = [];
   const sql = [];
-  const db = new Map(dbRows.map((r) => [r.kind, r]));
-  for (const row of hqRows) {
-    const cur = db.get(row.kind);
-    if (!cur) {
-      lines.push(`DB に ${row.kind} の行が無い（hq ${row.daily_count}本）`);
-      sql.push(
-        `INSERT INTO public.sns_x_kind_reserves(kind, daily_count, weekdays) VALUES ('${row.kind}', ${row.daily_count}, ${sqlDays(row.weekdays)});`,
-      );
-    } else if (
-      cur.daily_count !== row.daily_count ||
-      !sameDays(cur.weekdays, row.weekdays)
-    ) {
-      lines.push(
-        `${row.kind}: DB ${cur.daily_count}本（曜日 ${cur.weekdays ?? "毎日"}）・hq ${row.daily_count}本（曜日 ${row.weekdays ?? "毎日"}）`,
-      );
-      sql.push(
-        `UPDATE public.sns_x_kind_reserves SET daily_count = ${row.daily_count}, weekdays = ${sqlDays(row.weekdays)}, updated_at = now() WHERE kind = '${row.kind}';`,
-      );
-    }
-  }
-  for (const cur of dbRows)
-    if (!hqRows.some((r) => r.kind === cur.kind)) {
-      lines.push(`DB の ${cur.kind}（${cur.daily_count}本）は hq に無い`);
-      sql.push(
-        `DELETE FROM public.sns_x_kind_reserves WHERE kind = '${cur.kind}';`,
-      );
-    }
-  if (hqLimit !== dbLimit) {
-    lines.push(`daily_limit_x: DB ${dbLimit}・hq ${hqLimit}`);
-    sql.push(
-      `UPDATE public.sns_x_send_control SET daily_limit_x = ${hqLimit} WHERE id = true;`,
-    );
-  }
-  if (todayReplyEnabled)
-    for (const [where, rows] of [
-      ["hq", hqRows],
-      ["DB", dbRows],
-    ]) {
-      const count = rows.find((r) => r.kind === "digest")?.daily_count ?? 0;
-      if (count < TODAY_REPLY_RESERVE)
-        lines.push(
-          `/today の返信の型が有効（config/today-variants.json の reply_enabled=true）なのに、${where} の digest の取り置きが ${count}（2本要る。親と返信が止まる）`,
-        );
-    }
-  for (let dow = 1; dow <= 7; dow++) {
-    const sum = hqRows
-      .filter((r) => !r.weekdays || r.weekdays.includes(dow))
-      .reduce((n, r) => n + r.daily_count, 0);
-    if (sum > hqLimit)
-      lines.push(
-        `曜日 ${dow}（1=月）の取り置きの合計 ${sum} が上限 ${hqLimit} を越える（後から送る出し物が止まる）`,
-      );
-  }
+  diffRows(hqRows, dbRows, lines, sql);
+  diffLimit(hqLimit, dbLimit, lines, sql);
+  if (todayReplyEnabled) diffTodayReply(hqRows, dbRows, lines);
+  diffWeekdaySums(hqRows, hqLimit, lines);
   return { ok: lines.length === 0, lines, sql };
 }
 

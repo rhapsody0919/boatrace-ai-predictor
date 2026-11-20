@@ -1,109 +1,75 @@
 import { buildPostText } from "../../src/pure/snsPostText.js";
+import {
+  pollDurationMinutes,
+  pollOptionsIssue,
+  sha256,
+  waitSecsOf,
+  holdReasonOf,
+  X_CHUNK_BYTES,
+  X_MAX_POLLS,
+  X_MEDIA_MAX_BYTES,
+  YOUTUBE_MEDIA_MAX_BYTES,
+} from "./snsXSendCore.js";
+
 /** X呼び出しは注入のみ。実adapter・鍵・cronは今回提供しない。 */
-export const X_MEDIA_MAX_BYTES = 32 * 1024 * 1024;
-/** YouTube の動画も 32 MiB まで（youtubeQueueAdapter.js は1回の multipart で上げるため。承認と送信の上限をそろえる、2026-10-13）。 */
-export const YOUTUBE_MEDIA_MAX_BYTES = 32 * 1024 * 1024;
-export const X_MAX_POLLS = 10;
-// 媒体の処理の待ちは1回 1〜30 秒に収める（極端な値で関数が時間切れになり、job が sending のまま残るのを防ぐ。2026-10-13 オーケストレーター決定）
-export const X_MAX_WAIT_SECS = 30;
-
-/** check_after_secs を待つ秒数にする。無ければ1秒、数でなければ投げる（begin_post の前なので保留になる） */
-export function waitSecsOf(info) {
-  const secs = info.check_after_secs;
-  if (secs === undefined) return 1;
-  if (typeof secs !== "number" || !Number.isFinite(secs))
-    throw new Error("媒体の処理の待ち時間（check_after_secs）が不正です");
-  return Math.min(X_MAX_WAIT_SECS, Math.max(1, secs));
-}
-// X の投票（POST /2/tweets の poll）の上限: 2〜4択、1つ25字まで、5〜10080分（7日）
-export const X_POLL_MIN_OPTIONS = 2;
-export const X_POLL_MAX_OPTIONS = 4;
-export const X_POLL_OPTION_MAX_CHARS = 25;
-export const X_POLL_MIN_MINUTES = 5;
-export const X_POLL_MAX_MINUTES = 10080;
-
-/** 投票の選択肢の不備（純粋関数）。無ければ null。字数はコードポイントで数える（絵文字・異体字は X と数えが違いうるので、使わない前提） */
-export function pollOptionsIssue(options) {
-  if (
-    !Array.isArray(options) ||
-    options.length < X_POLL_MIN_OPTIONS ||
-    options.length > X_POLL_MAX_OPTIONS
-  )
-    return `投票の選択肢が${X_POLL_MIN_OPTIONS}〜${X_POLL_MAX_OPTIONS}個でない`;
-  for (const option of options) {
-    if (typeof option !== "string" || !option.trim())
-      return "投票の選択肢に空がある";
-    if ([...option].length > X_POLL_OPTION_MAX_CHARS)
-      return `投票の選択肢「${option}」が${X_POLL_OPTION_MAX_CHARS}字を超える`;
-  }
-  if (new Set(options).size !== options.length)
-    return "投票の選択肢が重なっている";
-  return null;
-}
-
-/**
- * 投票の時間（分、純粋関数）。投票は締切（closes_at）で閉じるように、送る時の今から締切までの分（切り捨て）を
- * X の範囲（5〜10080）に収める。承認するのは締切（closes_at）で、分は送る時に決まる
- */
-export function pollDurationMinutes(closesAt, nowMs) {
-  const t = Date.parse(closesAt);
-  if (!Number.isFinite(t)) throw new Error("poll_closes_at_invalid");
-  return Math.min(
-    X_POLL_MAX_MINUTES,
-    Math.max(X_POLL_MIN_MINUTES, Math.floor((t - nowMs) / 60000)),
-  );
-}
-
-// X の分割アップロードは1回 5 MB まで。5 MiB（5,242,880）は十進の 5 MB を超えるので、余裕をとって 4 MiB にする
-export const X_CHUNK_BYTES = 4 * 1024 * 1024;
-
-export async function sha256(bytes) {
-  return Array.from(
-    new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
-    (b) => b.toString(16).padStart(2, "0"),
-  ).join("");
-}
+// 定数・投票の検査・sha256・保留の理由は snsXSendCore.js へ移した。外へは同じ名で出す
+export {
+  holdReasonOf,
+  pollDurationMinutes,
+  pollOptionsIssue,
+  sha256,
+  waitSecsOf,
+  X_CHUNK_BYTES,
+  X_MAX_POLLS,
+  X_MAX_WAIT_SECS,
+  X_MEDIA_MAX_BYTES,
+  X_POLL_MAX_MINUTES,
+  X_POLL_MAX_OPTIONS,
+  X_POLL_MIN_MINUTES,
+  X_POLL_MIN_OPTIONS,
+  X_POLL_OPTION_MAX_CHARS,
+  YOUTUBE_MEDIA_MAX_BYTES,
+} from "./snsXSendCore.js";
 
 /** SQL140 revisionと実媒体snapshotによる既存の確認版。 */
 export async function mobileVersion(revision, snapshot) {
   return sha256(new TextEncoder().encode(JSON.stringify([revision, snapshot])));
 }
 
-export async function createXSnapshot(draft, loadMedia) {
-  if (draft.source_data?.dataCardUrl)
-    throw new Error("追加画像のある投稿は手動経路を使ってください");
-  const path = draft.video_storage_path || draft.cover_image_path;
-  const text = buildPostText(draft);
-  if (!text.trim() && !path) throw new Error("内容が空です");
+/** 媒体の path から Content-Type を決める（対応外は null） */
+function mediaTypeOf(path) {
+  if (path.endsWith(".mp4")) return "video/mp4";
+  if (/\.jpe?g$/i.test(path)) return "image/jpeg";
+  if (path.endsWith(".png")) return "image/png";
+  return null;
+}
+
+/** 下書きから載せる媒体の path の列（YouTube は動画＋cover、X は画像の複数枚か先頭の1つ） */
+function snapshotPaths(draft, path) {
+  if (draft.platform === "youtube")
+    return [path, draft.cover_image_path].filter(Boolean);
+  return Array.isArray(draft.source_data?.image_paths)
+    ? draft.source_data.image_paths // X の画像の複数枚（/today、160）。先頭は cover_image_path
+    : [path].filter(Boolean);
+}
+
+/** 投票（優勝戦の投票のリプ、177）の検査。X は投票と媒体を同じ投稿に載せられない。不備は投げる */
+function assertPollSnapshot(poll, paths) {
+  const issue = pollOptionsIssue(poll?.options);
+  if (issue) throw new Error(issue);
+  if (paths.length) throw new Error("投票と媒体は同じ投稿に載せられない");
+  if (!Number.isFinite(Date.parse(poll.closes_at)))
+    throw new Error("投票の締切（closes_at）が不正です");
+}
+
+/** 媒体を順に読んで、path・sha256・size・type の列にする */
+async function loadSnapshotMedia(paths, loadMedia, maxBytes) {
   const media = [];
-  const maxBytes =
-    draft.platform === "youtube" ? YOUTUBE_MEDIA_MAX_BYTES : X_MEDIA_MAX_BYTES;
-  const paths =
-    draft.platform === "youtube"
-      ? [path, draft.cover_image_path].filter(Boolean)
-      : Array.isArray(draft.source_data?.image_paths)
-        ? draft.source_data.image_paths // X の画像の複数枚（/today、160）。先頭は cover_image_path
-        : [path].filter(Boolean);
-  // 投票（優勝戦の投票のリプ、177）: 下書きの source_data.x_poll を写す。X は投票と媒体を同じ投稿に載せられない
-  const poll = draft.platform === "x" ? draft.source_data?.x_poll : undefined;
-  if (poll !== undefined) {
-    const issue = pollOptionsIssue(poll?.options);
-    if (issue) throw new Error(issue);
-    if (paths.length) throw new Error("投票と媒体は同じ投稿に載せられない");
-    if (!Number.isFinite(Date.parse(poll.closes_at)))
-      throw new Error("投票の締切（closes_at）が不正です");
-  }
   for (const path of paths) {
     const bytes = await loadMedia(path, maxBytes);
     if (!bytes.byteLength || bytes.byteLength > maxBytes)
       throw new Error("媒体の容量が不正です");
-    const type = path.endsWith(".mp4")
-      ? "video/mp4"
-      : /\.jpe?g$/i.test(path)
-        ? "image/jpeg"
-        : path.endsWith(".png")
-          ? "image/png"
-          : null;
+    const type = mediaTypeOf(path);
     if (!type) throw new Error("対応していない媒体です");
     media.push({
       path,
@@ -112,9 +78,12 @@ export async function createXSnapshot(draft, loadMedia) {
       type,
     });
   }
+  return media;
+}
+
+/** snapshot の text・media の後ろに付く鍵（poll・youtube_title・queue。この順） */
+function snapshotExtras(draft, poll) {
   return {
-    text,
-    media,
     ...(poll !== undefined
       ? { poll: { options: poll.options, closes_at: poll.closes_at } }
       : {}),
@@ -122,13 +91,38 @@ export async function createXSnapshot(draft, loadMedia) {
     ...(draft.source_data?.deadline_queue
       ? { queue: draft.source_data.deadline_queue }
       : {}),
-    source: {
-      caption_text: draft.caption_text ?? null,
-      hashtags: draft.hashtags ?? null,
-      video_storage_path: draft.video_storage_path ?? null,
-      cover_image_path: draft.cover_image_path ?? null,
-      language: draft.language,
-    },
+  };
+}
+
+/** snapshot の source（元の下書きの写し） */
+function snapshotSource(draft) {
+  return {
+    caption_text: draft.caption_text ?? null,
+    hashtags: draft.hashtags ?? null,
+    video_storage_path: draft.video_storage_path ?? null,
+    cover_image_path: draft.cover_image_path ?? null,
+    language: draft.language,
+  };
+}
+
+export async function createXSnapshot(draft, loadMedia) {
+  if (draft.source_data?.dataCardUrl)
+    throw new Error("追加画像のある投稿は手動経路を使ってください");
+  const path = draft.video_storage_path || draft.cover_image_path;
+  const text = buildPostText(draft);
+  if (!text.trim() && !path) throw new Error("内容が空です");
+  const maxBytes =
+    draft.platform === "youtube" ? YOUTUBE_MEDIA_MAX_BYTES : X_MEDIA_MAX_BYTES;
+  const paths = snapshotPaths(draft, path);
+  // 投票（優勝戦の投票のリプ、177）: 下書きの source_data.x_poll を写す
+  const poll = draft.platform === "x" ? draft.source_data?.x_poll : undefined;
+  if (poll !== undefined) assertPollSnapshot(poll, paths);
+  const media = await loadSnapshotMedia(paths, loadMedia, maxBytes);
+  return {
+    text,
+    media,
+    ...snapshotExtras(draft, poll),
+    source: snapshotSource(draft),
   };
 }
 
@@ -138,51 +132,9 @@ export async function createXSnapshot(draft, loadMedia) {
  * createPost({text,mediaIds}) -> {id,posted_at}。POSTはadapter内部でも自動再試行禁止。
  * wait(seconds)は実adapter側でcheck_after_secsを尊重。DB失敗時は決して再送しない。
  */
-// HTTP の状態の種類（DB の error_code は英小文字と _ だけ。数字を入れられない）
-const HTTP_KINDS = {
-  400: "bad_request",
-  401: "unauthorized",
-  402: "payment_required",
-  403: "forbidden",
-  404: "not_found",
-  409: "conflict",
-  413: "too_large",
-  429: "rate_limited",
-};
-/**
- * 保留の理由（純粋関数）。英小文字と _ の理由はそのまま。それ以外は「段階_種類」にする（API の本文・鍵は入れない）。
- * 2026-10-18、/today の初めての実送信が preflight_or_media_failed だけを残し、どこで落ちたか分からなかった
- */
-export function holdReasonOf(error, stage) {
-  const message = String(error?.message ?? "");
-  if (/^[a-z_]{1,64}$/.test(message)) return message;
-  if (error?.dbRejected) return `${stage}_db_rejected`.slice(0, 64);
-  const status = Number(message.match(/HTTP (\d{3})/)?.[1]);
-  const kind = status
-    ? (HTTP_KINDS[status] ?? (status >= 500 ? "server_error" : "http_error"))
-    : /browser has been closed|Target page/.test(message)
-      ? "browser_closed"
-      : /timeout|Timeout/.test(message)
-        ? "timeout"
-        : /媒体が変更/.test(message)
-          ? "media_changed"
-          : /媒体処理が完了しません/.test(message)
-            ? "processing_failed"
-            : "error";
-  return `${stage}_${kind}`.slice(0, 64);
-}
-
-export async function runXSendJob(
-  id,
-  { store, x, loadMedia, wait, preflight, now = () => Date.now() },
-) {
-  if (!x || !wait) throw new Error("X adapterは未接続です");
-  const job = await store.transition(id, "claim");
-  if (job.state !== "sending") return job;
-  let postStarted = false;
-  // どの段階で落ちたか（保留の理由に入れる）
-  let stage = "precheck";
-  const check = async (action) => {
+/** store.transition の拒否（DB/RPC）と媒体・X の失敗を区別する check を作る（元は runXSendJob の中） */
+function makeCheck(store, id) {
+  return async (action) => {
     let current;
     try {
       current = await store.transition(id, action);
@@ -194,82 +146,135 @@ export async function runXSendJob(
     if (current.state === "held") throw new Error(current.error_code);
     return current;
   };
+}
+
+/** 承認版の hash・チャネルの検査（元は runXSendJob の try の頭）。不備は投げる */
+async function assertApprovedJob(job) {
+  if (
+    (await sha256(new TextEncoder().encode(job.snapshot_text))) !==
+    job.approved_hash
+  ) {
+    throw new Error("承認版のhashが一致しません");
+  }
+  if (job.channel && job.channel !== "x") throw new Error("チャネルが違います");
+}
+
+/** 投票は begin_post の前に形を確かめ、時間（分）を決める。投票が無ければ null。st.stage は元の stage */
+function pollForPost(snapshot, now, st) {
+  if (snapshot.poll === undefined) return null;
+  st.stage = "poll";
+  const issue = pollOptionsIssue(snapshot.poll?.options);
+  if (issue || snapshot.media?.length) throw new Error("poll_invalid");
+  let minutes;
   try {
-    if (
-      (await sha256(new TextEncoder().encode(job.snapshot_text))) !==
-      job.approved_hash
-    ) {
-      throw new Error("承認版のhashが一致しません");
-    }
-    if (job.channel && job.channel !== "x")
-      throw new Error("チャネルが違います");
+    minutes = pollDurationMinutes(snapshot.poll.closes_at, now());
+  } catch {
+    throw new Error("poll_invalid");
+  }
+  return { options: snapshot.poll.options, duration_minutes: minutes };
+}
+
+/** finalize の後、媒体の処理が済むまで待って status を引く（元の for の中身） */
+async function awaitMediaProcessing(first, upload, { x, wait, check, st }) {
+  let result = first;
+  for (
+    let poll = 0;
+    result.processing_info && result.processing_info.state !== "succeeded";
+    poll++
+  ) {
+    if (result.processing_info.state === "failed" || poll >= X_MAX_POLLS)
+      throw new Error("媒体処理が完了しません");
+    await wait(waitSecsOf(result.processing_info));
+    await check("check");
+    st.stage = "x_status";
+    result = await x.status(upload.id);
+  }
+  return result;
+}
+
+/** 媒体1つを読み・分割して上げ・処理の完了を待ち、upload.id を返す（元の for-of の中身） */
+async function uploadOneMedia(m, ctx) {
+  const { x, loadMedia, check, st } = ctx;
+  st.stage = "media_load";
+  const bytes = await loadMedia(m.path);
+  if (bytes.byteLength !== m.size || (await sha256(bytes)) !== m.sha256)
+    throw new Error("媒体が変更されています");
+  await check("check");
+  st.stage = "x_initialize";
+  const upload = await x.initialize({
+    size: m.size,
+    type: m.type,
+    category: m.type.startsWith("video/") ? "tweet_video" : "tweet_image",
+  });
+  for (
+    let offset = 0, index = 0;
+    offset < bytes.byteLength;
+    offset += X_CHUNK_BYTES, index++
+  ) {
+    await check("check");
+    st.stage = "x_append";
+    await x.append({
+      id: upload.id,
+      index,
+      bytes: bytes.slice(offset, offset + X_CHUNK_BYTES),
+    });
+  }
+  await check("check");
+  st.stage = "x_finalize";
+  await awaitMediaProcessing(await x.finalize(upload.id), upload, ctx);
+  return upload.id;
+}
+
+/** 返信先（親の job の投稿 id）。親があるのに投稿されていなければ投げる。親が無ければ null */
+async function replyToOf(snapshot, store) {
+  const replyTo = snapshot.queue?.parent_job_id
+    ? (await store.parent(snapshot.queue.parent_job_id)).external_post_id
+    : null;
+  if (snapshot.queue?.parent_job_id && !replyTo)
+    throw new Error("parent_not_posted");
+  return replyTo;
+}
+
+/** begin_post の前に保留へ落とす（送っていない）。理由は holdReasonOf。DB の失敗は握って永続状態を優先 */
+async function holdUnsent(store, id, error, stage) {
+  const reason = holdReasonOf(error, stage);
+  // API本文や認証情報をDB・ログに保存しない（adapter の例外は「X API … が失敗: HTTP 403 種類」の形で、本文を含まない）
+  console.error(`X 送信 ${id} を保留: ${reason}: ${error.message}`);
+  // begin_postの応答喪失でもDB側reconcileをfailで戻せない。
+  try {
+    await store.transition(id, "hold", { reason });
+  } catch {
+    /* 永続状態を優先 */
+  }
+  // 送信の側（snsSendRunner）の report にも同じ理由を残す
+  error.holdReason = reason;
+}
+
+export async function runXSendJob(
+  id,
+  { store, x, loadMedia, wait, preflight, now = () => Date.now() },
+) {
+  if (!x || !wait) throw new Error("X adapterは未接続です");
+  const job = await store.transition(id, "claim");
+  if (job.state !== "sending") return job;
+  let postStarted = false;
+  // どの段階で落ちたか（保留の理由に入れる）。取り出した関数へ渡すので object に持つ
+  const st = { stage: "precheck" };
+  const check = makeCheck(store, id);
+  try {
+    await assertApprovedJob(job);
     if (!preflight) throw new Error("送信前検査は未接続です");
-    stage = "preflight";
+    st.stage = "preflight";
     await preflight(job);
     const snapshot = JSON.parse(job.snapshot_text);
     // 投票は begin_post の前に形を確かめ、時間（分）を決める（後で落ちると、何も送っていない job が要照合に残る）
-    let poll = null;
-    if (snapshot.poll !== undefined) {
-      stage = "poll";
-      const issue = pollOptionsIssue(snapshot.poll?.options);
-      if (issue || snapshot.media?.length) throw new Error("poll_invalid");
-      let minutes;
-      try {
-        minutes = pollDurationMinutes(snapshot.poll.closes_at, now());
-      } catch {
-        throw new Error("poll_invalid");
-      }
-      poll = { options: snapshot.poll.options, duration_minutes: minutes };
-    }
+    const poll = pollForPost(snapshot, now, st);
     const mediaIds = [];
     for (const m of snapshot.media) {
-      stage = "media_load";
-      const bytes = await loadMedia(m.path);
-      if (bytes.byteLength !== m.size || (await sha256(bytes)) !== m.sha256)
-        throw new Error("媒体が変更されています");
-      await check("check");
-      stage = "x_initialize";
-      const upload = await x.initialize({
-        size: m.size,
-        type: m.type,
-        category: m.type.startsWith("video/") ? "tweet_video" : "tweet_image",
-      });
-      for (
-        let offset = 0, index = 0;
-        offset < bytes.byteLength;
-        offset += X_CHUNK_BYTES, index++
-      ) {
-        await check("check");
-        stage = "x_append";
-        await x.append({
-          id: upload.id,
-          index,
-          bytes: bytes.slice(offset, offset + X_CHUNK_BYTES),
-        });
-      }
-      await check("check");
-      stage = "x_finalize";
-      let result = await x.finalize(upload.id);
-      for (
-        let poll = 0;
-        result.processing_info && result.processing_info.state !== "succeeded";
-        poll++
-      ) {
-        if (result.processing_info.state === "failed" || poll >= X_MAX_POLLS)
-          throw new Error("媒体処理が完了しません");
-        await wait(waitSecsOf(result.processing_info));
-        await check("check");
-        stage = "x_status";
-        result = await x.status(upload.id);
-      }
-      mediaIds.push(upload.id);
+      mediaIds.push(await uploadOneMedia(m, { x, loadMedia, wait, check, st }));
     }
-    const replyTo = snapshot.queue?.parent_job_id
-      ? (await store.parent(snapshot.queue.parent_job_id)).external_post_id
-      : null;
-    if (snapshot.queue?.parent_job_id && !replyTo)
-      throw new Error("parent_not_posted");
-    stage = "preflight_before_post";
+    const replyTo = await replyToOf(snapshot, store);
+    st.stage = "preflight_before_post";
     await preflight(job);
     await check("begin_post");
     postStarted = true;
@@ -282,17 +287,7 @@ export async function runXSendJob(
     return await store.transition(id, "complete", result);
   } catch (error) {
     if (!postStarted) {
-      const reason = holdReasonOf(error, stage);
-      // API本文や認証情報をDB・ログに保存しない（adapter の例外は「X API … が失敗: HTTP 403 種類」の形で、本文を含まない）
-      console.error(`X 送信 ${id} を保留: ${reason}: ${error.message}`);
-      // begin_postの応答喪失でもDB側reconcileをfailで戻せない。
-      try {
-        await store.transition(id, "hold", { reason });
-      } catch {
-        /* 永続状態を優先 */
-      }
-      // 送信の側（snsSendRunner）の report にも同じ理由を残す
-      error.holdReason = reason;
+      await holdUnsent(store, id, error, st.stage);
     } else {
       // begin_post の後（要照合、出たかもしれない）。runner は送らなかった理由と分けて stage=after_post に残す（BOA-1201）
       error.postStarted = true;

@@ -6,6 +6,8 @@ import { supabase } from "./supabaseClient";
 import { seriesCoveringDate } from "../utils/meetPageModel.js";
 import { transformTodayRaces } from "../utils/todayRaces.js";
 import { makeDigestDay } from "../pure/scheduleModel.js";
+import { makeMeet } from "../pure/meetModel.js";
+import { makeRace } from "../pure/raceModel.js";
 import {
   CACHE_TTL,
   EDGE_API_BASE,
@@ -67,10 +69,12 @@ export async function getUpcomingSeries(today) {
       if (!supabase) throw new Error("Supabase client not initialized");
       const { data } = await supabase
         .from("race_series")
-        .select("venue_code,start_date,end_date")
+        .select("venue_code,start_date,end_date,total_days,class_code,kind")
         .gte("end_date", today)
         .order("start_date");
-      return data ?? [];
+      // makeMeet の必須の列（total_days・class_code・kind）を select に足した。不変条件の破れ（RangeError）は reject になり、
+      // 呼び手（VenueGridPage の useNextOpenDates）の catch で次開催日だけ出さない（会場グリッドは出す）
+      return (data ?? []).map(makeMeet);
     });
   }
 
@@ -86,19 +90,23 @@ export async function getUpcomingSeries(today) {
  * 行が無ければ null。クエリの失敗は supabase クライアントが例外にする
  * @param {number} venueCode
  * @param {string} date YYYY-MM-DD
- * @returns {Promise<{start_date: string, end_date: string, title: string|null, grade: string|null} | null>}
+ * @returns {Promise<Readonly<import("../pure/meetModel.js").Meet> | null>} 凍結した race_series の1行
  */
 export async function getSeriesOfDate(venueCode, date) {
     return withCache(`venue-series-of-date-${venueCode}-${date}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
       const { data } = await supabase
         .from("race_series")
-        .select("start_date,end_date,title,grade")
+        .select("start_date,end_date,title,grade,venue_code,total_days,class_code,kind")
         .eq("venue_code", venueCode)
         .lte("start_date", date)
         .order("start_date", { ascending: false })
         .limit(1);
-      return seriesCoveringDate(data?.[0] ?? null, date);
+      // makeMeet の必須の列（venue_code・total_days・class_code・kind）は select の末尾に足した（前の4列はボットの2か所
+      // api/_lib/botRace.js・botPage.js と同じ並びのまま）。不変条件の破れ（RangeError）は reject になり、呼び手
+      // （RaceNumberStrip・VenueMeetBanner）の catch で取得失敗として扱う（「節なし」にしない）
+      const latest = data?.[0] ? makeMeet(data[0]) : null;
+      return seriesCoveringDate(latest, date);
     });
   }
 
@@ -233,7 +241,9 @@ export function getTodaysRacesForVenue(venueCode) {
         .eq("race_date", today)
         .order("race_number");
 
-      return data ?? [];
+      // venue_code は eq で1つに決まるので select に足さず（録画の URL を変えない）、行に付けてから makeRace に通す。
+      // 不変条件の破れ（RangeError）は reject になり、呼び手（useVenueRaceSelector）の catch で取得失敗の表示
+      return (data ?? []).map((row) => makeRace({ venue_code: venueCode, ...row }));
     });
   }
 

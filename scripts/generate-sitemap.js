@@ -26,16 +26,16 @@ import {
   laterDate,
   renderUrlEntry,
 } from "./lib/sitemapLastmod.js";
+import { isDirectRun } from "./lib/isDirectRun.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SITE_URL = "https://www.boat-ai.jp";
 const PUBLIC_DIR = path.join(__dirname, "../public");
 const BLOG_DIR = path.join(PUBLIC_DIR, "blog");
 
 // 静的ページの定義
-const staticPages = [
+export const staticPages = [
   {
     loc: "/",
     lastmodFrom: "raceData",
@@ -360,7 +360,7 @@ function getBlogPosts() {
 // 直近7日分のレースページをSupabaseから取得
 // 過去の日別レースページ（/races/YYYY-MM-DD）は検索需要がほぼゼロで大半が未インデックスのまま
 // クロールバジェットを消費していたため、直近7日分のみに限定する（BOA-84）
-async function getRacePages() {
+export async function getRacePages() {
   const racePages = [];
 
   try {
@@ -421,7 +421,7 @@ async function getRacePages() {
 // BOA-1186: 検索露出のある詳細を、日本語・JSTの本日を含む7日だけ追加。
 // 結果の存在は画面と同じ rank1 で判定する（confirmed が残っていても結果を優先）。
 // 最大24会場×12R×7日=2016 URL。失敗時は生成を止め、既存の sitemap を保つ。
-async function getRaceDetailPages() {
+export async function getRaceDetailPages() {
   const { isSupabaseEnabled, fetchAll } =
     await import("./lib/supabaseClient.js");
   if (!isSupabaseEnabled()) return [];
@@ -447,7 +447,7 @@ async function getRaceDetailPages() {
 // 対象はページ側の noindex 判定（RacerProfile.jsx）と同じ isRacerIndexable（src/utils/racerIndexPolicy.js）:
 // ニュースがある選手、または現役の A1 選手（最新の出走が A1 で直近30日以内。集客レーン、2026-10-02）。
 // lastmod は、ニュースの最新日と最新の出走日の新しい方（ページの中身が変わった日）
-async function getRacerPages() {
+export async function getRacerPages() {
   const racerPages = [];
 
   try {
@@ -547,7 +547,7 @@ async function getRacerPages() {
 // 黙って sitemap から落ちると、気づかないまま索引から消える。design-reviewer 指摘4）
 const MEET_PAGE_DATA_FROM = "2025-12-02";
 
-async function getMeetPages(latest) {
+export async function getMeetPages(latest) {
   const { supabase, isSupabaseEnabled, fetchAll } =
     await import("./lib/supabaseClient.js");
   if (!isSupabaseEnabled()) {
@@ -646,7 +646,7 @@ async function getMeetPages(latest) {
 }
 
 // 開催日（JSTの今日以前で最新）。全体と会場別。取れなければ null（lastmod を出さない）
-async function getLatestRaceDates() {
+export async function getLatestRaceDates() {
   const result = { overall: null, byVenue: new Map() };
   try {
     const { supabase, isSupabaseEnabled } =
@@ -689,7 +689,7 @@ function alternatesFor(loc) {
 }
 
 // sitemap.xmlの生成
-async function generateSitemap() {
+export async function generateSitemap() {
   const blogPosts = getBlogPosts();
   const racePages = await getRacePages();
   const raceDetailPages = await getRaceDetailPages();
@@ -789,4 +789,5 @@ async function main() {
   }
 }
 
-main();
+// 直接起動のときだけ main を回す（import されただけなら DB の読み・sitemap.xml の書きは走らない。verify が生成の関数を偽の DB で呼ぶため）
+if (isDirectRun(import.meta.url)) main();
