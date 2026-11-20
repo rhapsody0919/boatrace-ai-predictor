@@ -5,8 +5,8 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2420,
-    "filesWithAccess": 300,
+    "sourceFiles": 2424,
+    "filesWithAccess": 301,
     "tableReaders": 948,
     "tableWriters": 195,
     "rpcCallers": 55,
@@ -18379,20 +18379,20 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:86",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "*",
-            "job"
-          ]
-        },
-        {
-          "ref": "scripts/lib/scrapeJobs/store.js:286",
+          "ref": "scripts/lib/scrapeJobs/storeBreaker.js:37",
           "op": "select",
           "via": "client",
           "columns": [
             "?",
+            "job"
+          ]
+        },
+        {
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:35",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "*",
             "job"
           ]
         },
@@ -18487,23 +18487,24 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:102",
-          "op": "upsert",
-          "via": "client",
-          "columns": [
-            "job"
-          ]
-        },
-        {
-          "ref": "scripts/lib/scrapeJobs/store.js:110",
+          "ref": "scripts/lib/scrapeJobs/storeBreaker.js:78",
           "op": "update",
           "via": "client",
           "columns": [
-            "last_tick_at"
+            "breaker_open_until",
+            "updated_at"
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:129",
+          "ref": "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "op": "upsert",
+          "via": "client",
+          "columns": [
+            "?"
+          ]
+        },
+        {
+          "ref": "scripts/lib/scrapeJobs/storeBreaker.js:166",
           "op": "update",
           "via": "client",
           "columns": [
@@ -18511,7 +18512,31 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:135",
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:51",
+          "op": "upsert",
+          "via": "client",
+          "columns": [
+            "job"
+          ]
+        },
+        {
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:59",
+          "op": "update",
+          "via": "client",
+          "columns": [
+            "last_tick_at"
+          ]
+        },
+        {
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:78",
+          "op": "update",
+          "via": "client",
+          "columns": [
+            "?"
+          ]
+        },
+        {
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:84",
           "op": "update",
           "via": "client",
           "columns": [
@@ -18521,7 +18546,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:147",
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:96",
           "op": "update",
           "via": "client",
           "columns": [
@@ -18530,37 +18555,12 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:161",
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:110",
           "op": "update",
           "via": "client",
           "columns": [
             "claimed_by",
             "lease_until"
-          ]
-        },
-        {
-          "ref": "scripts/lib/scrapeJobs/store.js:318",
-          "op": "update",
-          "via": "client",
-          "columns": [
-            "breaker_open_until",
-            "updated_at"
-          ]
-        },
-        {
-          "ref": "scripts/lib/scrapeJobs/store.js:368",
-          "op": "upsert",
-          "via": "client",
-          "columns": [
-            "?"
-          ]
-        },
-        {
-          "ref": "scripts/lib/scrapeJobs/store.js:398",
-          "op": "update",
-          "via": "client",
-          "columns": [
-            "?"
           ]
         }
       ],
@@ -18582,24 +18582,24 @@
             "scripts/lib/racesInit/predictCodeCheck.js:138",
             "scripts/lib/racesInit/predictCodeCheck.js:86",
             "scripts/lib/racesInit/predictCodeCheck.js:98",
-            "scripts/lib/scrapeJobs/store.js:102",
-            "scripts/lib/scrapeJobs/store.js:110",
-            "scripts/lib/scrapeJobs/store.js:129",
-            "scripts/lib/scrapeJobs/store.js:135",
-            "scripts/lib/scrapeJobs/store.js:147",
-            "scripts/lib/scrapeJobs/store.js:161",
-            "scripts/lib/scrapeJobs/store.js:286",
-            "scripts/lib/scrapeJobs/store.js:318",
-            "scripts/lib/scrapeJobs/store.js:368",
-            "scripts/lib/scrapeJobs/store.js:398",
-            "scripts/lib/scrapeJobs/store.js:86",
+            "scripts/lib/scrapeJobs/storeBreaker.js:130",
+            "scripts/lib/scrapeJobs/storeBreaker.js:166",
+            "scripts/lib/scrapeJobs/storeBreaker.js:37",
+            "scripts/lib/scrapeJobs/storeBreaker.js:78",
+            "scripts/lib/scrapeJobs/storeParts.js:110",
+            "scripts/lib/scrapeJobs/storeParts.js:35",
+            "scripts/lib/scrapeJobs/storeParts.js:51",
+            "scripts/lib/scrapeJobs/storeParts.js:59",
+            "scripts/lib/scrapeJobs/storeParts.js:78",
+            "scripts/lib/scrapeJobs/storeParts.js:84",
+            "scripts/lib/scrapeJobs/storeParts.js:96",
             "scripts/maintenance/check-morning-init-shadow.js:197",
             "scripts/maintenance/check-scrape-monitor-liveness.js:139",
             "scripts/sns/pushResearchImageStore.js:61"
           ],
           "writers": [
             "scripts/lib/racesInit/predictCodeCheck.js:98",
-            "scripts/lib/scrapeJobs/store.js:102"
+            "scripts/lib/scrapeJobs/storeParts.js:51"
           ],
           "sql": [
             "rpc:scrape_breaker_open"
@@ -18618,18 +18618,18 @@
         "lease_until": {
           "readers": [],
           "writers": [
-            "scripts/lib/scrapeJobs/store.js:147",
-            "scripts/lib/scrapeJobs/store.js:161"
+            "scripts/lib/scrapeJobs/storeParts.js:110",
+            "scripts/lib/scrapeJobs/storeParts.js:96"
           ],
           "sql": []
         },
         "claimed_by": {
           "readers": [
-            "scripts/lib/scrapeJobs/store.js:161"
+            "scripts/lib/scrapeJobs/storeParts.js:110"
           ],
           "writers": [
-            "scripts/lib/scrapeJobs/store.js:147",
-            "scripts/lib/scrapeJobs/store.js:161"
+            "scripts/lib/scrapeJobs/storeParts.js:110",
+            "scripts/lib/scrapeJobs/storeParts.js:96"
           ],
           "sql": []
         },
@@ -18638,7 +18638,7 @@
             "scripts/maintenance/check-scrape-monitor-liveness.js:139"
           ],
           "writers": [
-            "scripts/lib/scrapeJobs/store.js:110"
+            "scripts/lib/scrapeJobs/storeParts.js:59"
           ],
           "sql": []
         },
@@ -18656,7 +18656,7 @@
             "scripts/maintenance/check-scrape-monitor-liveness.js:139"
           ],
           "writers": [
-            "scripts/lib/scrapeJobs/store.js:135"
+            "scripts/lib/scrapeJobs/storeParts.js:84"
           ],
           "sql": [
             "rpc:scrape_breaker_open"
@@ -18668,7 +18668,7 @@
             "scripts/maintenance/check-scrape-monitor-liveness.js:139"
           ],
           "writers": [
-            "scripts/lib/scrapeJobs/store.js:135"
+            "scripts/lib/scrapeJobs/storeParts.js:84"
           ],
           "sql": []
         },
@@ -18697,10 +18697,10 @@
         },
         "breaker_open_until": {
           "readers": [
-            "scripts/lib/scrapeJobs/store.js:318"
+            "scripts/lib/scrapeJobs/storeBreaker.js:78"
           ],
           "writers": [
-            "scripts/lib/scrapeJobs/store.js:318"
+            "scripts/lib/scrapeJobs/storeBreaker.js:78"
           ],
           "sql": [
             "rpc:scrape_breaker_open"
@@ -18728,8 +18728,8 @@
             "scripts/lib/racesInit/predictCodeCheck.js:116",
             "scripts/lib/racesInit/predictCodeCheck.js:138",
             "scripts/lib/racesInit/predictCodeCheck.js:98",
-            "scripts/lib/scrapeJobs/store.js:135",
-            "scripts/lib/scrapeJobs/store.js:318"
+            "scripts/lib/scrapeJobs/storeBreaker.js:78",
+            "scripts/lib/scrapeJobs/storeParts.js:84"
           ],
           "sql": [
             "rpc:scrape_breaker_open"
@@ -18995,7 +18995,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:233",
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:206",
           "op": "update",
           "via": "client",
           "columns": [
@@ -19009,7 +19009,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:269",
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:242",
           "op": "update",
           "via": "client",
           "columns": [
@@ -19085,8 +19085,8 @@
             "scripts/lib/pitReportJob.js:400",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
-            "scripts/lib/scrapeJobs/store.js:233",
-            "scripts/lib/scrapeJobs/store.js:269",
+            "scripts/lib/scrapeJobs/storeParts.js:206",
+            "scripts/lib/scrapeJobs/storeParts.js:242",
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
@@ -19142,8 +19142,8 @@
             "scripts/lib/boatcast/oritenJob.js:253",
             "scripts/lib/scrapeJobs/cleanup.js:33",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
-            "scripts/lib/scrapeJobs/store.js:233",
-            "scripts/lib/scrapeJobs/store.js:269",
+            "scripts/lib/scrapeJobs/storeParts.js:206",
+            "scripts/lib/scrapeJobs/storeParts.js:242",
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
@@ -19153,7 +19153,7 @@
           ],
           "writers": [
             "scripts/lib/scrapeJobs/cleanup.js:33",
-            "scripts/lib/scrapeJobs/store.js:233",
+            "scripts/lib/scrapeJobs/storeParts.js:206",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174"
           ],
           "sql": [
@@ -19189,7 +19189,7 @@
           "readers": [],
           "writers": [
             "scripts/lib/scrapeJobs/cleanup.js:33",
-            "scripts/lib/scrapeJobs/store.js:233"
+            "scripts/lib/scrapeJobs/storeParts.js:206"
           ],
           "sql": [
             "rpc:claim_scrape_slots",
@@ -19198,8 +19198,8 @@
         },
         "claimed_by": {
           "readers": [
-            "scripts/lib/scrapeJobs/store.js:233",
-            "scripts/lib/scrapeJobs/store.js:269",
+            "scripts/lib/scrapeJobs/storeParts.js:206",
+            "scripts/lib/scrapeJobs/storeParts.js:242",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174"
           ],
           "writers": [],
@@ -19247,7 +19247,7 @@
             "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
-            "scripts/lib/scrapeJobs/store.js:233",
+            "scripts/lib/scrapeJobs/storeParts.js:206",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174"
           ],
           "sql": [
@@ -19264,7 +19264,7 @@
             "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
-            "scripts/lib/scrapeJobs/store.js:233",
+            "scripts/lib/scrapeJobs/storeParts.js:206",
             "scripts/maintenance/verify-scrape-slots-on-db.js:174"
           ],
           "sql": [
@@ -19277,7 +19277,7 @@
             "scripts/maintenance/check-pre-race-shadow.js:255"
           ],
           "writers": [
-            "scripts/lib/scrapeJobs/store.js:233"
+            "scripts/lib/scrapeJobs/storeParts.js:206"
           ],
           "sql": []
         },
@@ -19289,7 +19289,7 @@
             "scripts/maintenance/check-result-shadow.js:129"
           ],
           "writers": [
-            "scripts/lib/scrapeJobs/store.js:233"
+            "scripts/lib/scrapeJobs/storeParts.js:206"
           ],
           "sql": []
         },
@@ -19302,7 +19302,7 @@
           ],
           "writers": [
             "scripts/lib/scrapeJobs/cleanup.js:33",
-            "scripts/lib/scrapeJobs/store.js:233"
+            "scripts/lib/scrapeJobs/storeParts.js:206"
           ],
           "sql": []
         },
@@ -26996,7 +26996,7 @@
       },
       "callers": [
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:216",
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:175",
           "via": "client"
         },
         {
@@ -27029,7 +27029,7 @@
       },
       "callers": [
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:197",
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:156",
           "via": "client"
         }
       ],
@@ -27556,7 +27556,7 @@
       },
       "callers": [
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:175",
+          "ref": "scripts/lib/scrapeJobs/storeParts.js:134",
           "via": "client"
         },
         {
@@ -28257,12 +28257,12 @@
       },
       "callers": [
         {
-          "ref": "scripts/lib/scrapeJobs/store.js:335",
+          "ref": "scripts/lib/scrapeJobs/storeBreaker.js:95",
           "via": "client"
         }
       ],
       "mentions": [
-        "scripts/lib/scrapeJobs/store.js:356"
+        "scripts/lib/scrapeJobs/storeBreaker.js:118"
       ],
       "triggerOn": [],
       "calledByRpc": [],
@@ -28693,91 +28693,91 @@
     {
       "job": "analogy_dispatch_morning",
       "entry": "api/cron/analogy-dispatch-morning.js",
-      "reachableFiles": 19,
+      "reachableFiles": 23,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "analogy_dispatch_train",
       "entry": "api/cron/analogy-dispatch-train.js",
-      "reachableFiles": 19,
+      "reachableFiles": 23,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "analogy_v16_exhibition",
       "entry": "api/cron/analogy-exhibition.js",
-      "reachableFiles": 24,
+      "reachableFiles": 28,
       "writes": {
         "analogy_v16_snapshots": [
           "scripts/lib/analogyV16Exhibition.js:307"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "boatcast_motor_start",
       "entry": "api/cron/boatcast-motor-start.js",
-      "reachableFiles": 26,
+      "reachableFiles": 30,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ],
         "venue_motor_start_dates": [
           "scripts/lib/boatcast/motorStartJob.js:202"
@@ -28787,7 +28787,7 @@
     {
       "job": "boatcast_oriten",
       "entry": "api/cron/boatcast-oriten.js",
-      "reachableFiles": 28,
+      "reachableFiles": 32,
       "writes": {
         "race_original_exhibition": [
           "scripts/lib/boatcast/oritenJob.js:223"
@@ -28798,152 +28798,152 @@
         ],
         "scrape_job_state": [
           "scripts/lib/boatcast/oritenJobParts.js:203",
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
           "scripts/lib/boatcast/oritenJobParts.js:188",
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "daily_reconcile",
       "entry": "api/cron/daily-reconcile.js",
-      "reachableFiles": 27,
+      "reachableFiles": 31,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "data_health",
       "entry": "api/cron/data-health.js",
-      "reachableFiles": 29,
+      "reachableFiles": 33,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "data_health_morning",
       "entry": "api/cron/data-health-morning.js",
-      "reachableFiles": 29,
+      "reachableFiles": 33,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "db_apply_dispatch",
       "entry": "api/cron/db-apply-dispatch.js",
-      "reachableFiles": 20,
+      "reachableFiles": 24,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "e2e_rerecord_dispatch",
       "entry": "api/cron/e2e-rerecord-dispatch.js",
-      "reachableFiles": 19,
+      "reachableFiles": 23,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "entry_course_stats",
       "entry": "api/cron/entry-course-stats.js",
-      "reachableFiles": 30,
+      "reachableFiles": 34,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ],
         "venue_entry_course_stats": [
           "scripts/lib/venueEntryCourseStats/scrape.js:209"
@@ -28953,59 +28953,59 @@
     {
       "job": "eve_deadlines",
       "entry": "api/cron/eve-deadlines.js",
-      "reachableFiles": 26,
+      "reachableFiles": 30,
       "writes": {
         "eve_race_deadlines": [
           "scripts/lib/eveDeadlinesJob.js:274",
           "scripts/lib/eveDeadlinesJob.js:399"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "eve_deadlines_reconcile",
       "entry": "api/cron/eve-deadlines-reconcile.js",
-      "reachableFiles": 26,
+      "reachableFiles": 30,
       "writes": {
         "eve_race_deadlines": [
           "scripts/lib/eveDeadlinesJob.js:274",
           "scripts/lib/eveDeadlinesJob.js:399"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "exhibition",
       "entry": "api/cron/exhibition.js",
-      "reachableFiles": 52,
+      "reachableFiles": 56,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070",
@@ -29027,139 +29027,139 @@
           "scripts/lib/raceInfoWrite.js:18"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "fan_period",
       "entry": "api/cron/fan-period.js",
-      "reachableFiles": 29,
+      "reachableFiles": 33,
       "writes": {
         "raw_snapshots": [
           "scripts/lib/fanPeriodJob.js:116"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "in_caution_dispatch",
       "entry": "api/cron/in-caution-dispatch.js",
-      "reachableFiles": 19,
+      "reachableFiles": 23,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "in_caution_health",
       "entry": "api/cron/in-caution-health.js",
-      "reachableFiles": 27,
+      "reachableFiles": 31,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "in_caution_today_health",
       "entry": "api/cron/in-caution-today-health.js",
-      "reachableFiles": 27,
+      "reachableFiles": 31,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "key_canary_dispatch",
       "entry": "api/cron/key-canary-dispatch.js",
-      "reachableFiles": 19,
+      "reachableFiles": 23,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "kfile_sync",
       "entry": "api/cron/kfile-sync.js",
-      "reachableFiles": 45,
+      "reachableFiles": 49,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29185,26 +29185,26 @@
           "scripts/daily/scrape-results.js:758"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "morning_digest",
       "entry": "api/cron/morning-digest.js",
-      "reachableFiles": 25,
+      "reachableFiles": 29,
       "writes": {
         "morning_digest_days": [
           "scripts/daily/generate-morning-digest.js:510",
@@ -29216,48 +29216,48 @@
           "scripts/daily/generate-morning-digest.js:532"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "motor_pretest",
       "entry": "api/cron/motor-pretest.js",
-      "reachableFiles": 29,
+      "reachableFiles": 33,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "odds",
       "entry": "api/cron/odds.js",
-      "reachableFiles": 32,
+      "reachableFiles": 36,
       "writes": {
         "prediction_odds": [
           "scripts/lib/scrapeJobs/predictionOddsHandlers.js:194"
@@ -29266,51 +29266,51 @@
           "scripts/lib/oddsRunForRaces.js:212"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "odds_final",
       "entry": "api/cron/odds-final.js",
-      "reachableFiles": 22,
+      "reachableFiles": 26,
       "writes": {
         "race_odds_final": [
           "scripts/lib/scrapeJobs/finalOddsHandlers.js:144"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "outcome_distribution_update",
       "entry": "api/cron/outcome-distribution-update.js",
-      "reachableFiles": 24,
+      "reachableFiles": 28,
       "writes": {
         "nige_outcome_distribution": [
           "scripts/daily/update-nige-outcome-distribution.js:120",
@@ -29321,51 +29321,51 @@
           "scripts/daily/update-outcome-distribution.js:126"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "pcexpect",
       "entry": "api/cron/pcexpect.js",
-      "reachableFiles": 21,
+      "reachableFiles": 25,
       "writes": {
         "external_predictions": [
           "scripts/lib/pcexpect/scrape.js:144"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "pit_reports",
       "entry": "api/cron/pit-reports.js",
-      "reachableFiles": 25,
+      "reachableFiles": 29,
       "writes": {
         "race_pit_comments": [
           "scripts/lib/pitReportJob.js:242",
@@ -29375,74 +29375,74 @@
           "scripts/lib/pitReportJob.js:270"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
           "scripts/lib/pitReportJob.js:400",
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "point_rank",
       "entry": "api/cron/point-rank.js",
-      "reachableFiles": 33,
+      "reachableFiles": 37,
       "writes": {
         "racer_series_points": [
           "scripts/daily/scrape-point-rank.js:399"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "pseudo",
       "entry": "api/cron/scrape-pseudo.js",
-      "reachableFiles": 18,
+      "reachableFiles": 22,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "race_info",
       "entry": "api/cron/race-info.js",
-      "reachableFiles": 52,
+      "reachableFiles": 56,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070",
@@ -29464,26 +29464,26 @@
           "scripts/lib/raceInfoWrite.js:18"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "race_notices",
       "entry": "api/cron/race-notices.js",
-      "reachableFiles": 27,
+      "reachableFiles": 31,
       "writes": {
         "race_notices_health": [
           "scripts/daily/scrape-race-information.js:277"
@@ -29492,48 +29492,48 @@
           "scripts/daily/scrape-race-information.js:240"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "race_series",
       "entry": "api/cron/race-series.js",
-      "reachableFiles": 24,
+      "reachableFiles": 28,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "race_status",
       "entry": "api/cron/race-status.js",
-      "reachableFiles": 45,
+      "reachableFiles": 49,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29559,69 +29559,69 @@
           "scripts/daily/scrape-results.js:758"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "racer_career_main",
       "entry": "api/cron/racer-career-main.js",
-      "reachableFiles": 27,
+      "reachableFiles": 31,
       "writes": {
         "racer_career_meta": [
           "scripts/lib/racerCareerDb.js:108"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "racer_course_technique_stats",
       "entry": "api/cron/racer-course-technique-stats.js",
-      "reachableFiles": 22,
+      "reachableFiles": 26,
       "writes": {
         "racer_course_technique_stats": [
           "scripts/daily/update-racer-course-technique-stats.js:330"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ],
         "venue_course_technique_baseline": [
           "scripts/daily/update-racer-course-technique-stats.js:255"
@@ -29631,7 +29631,7 @@
     {
       "job": "racer_news",
       "entry": "api/cron/racer-news.js",
-      "reachableFiles": 24,
+      "reachableFiles": 28,
       "writes": {
         "racer_news": [
           "scripts/lib/racerNews/officialGradeAnnouncements.js:190"
@@ -29641,52 +29641,52 @@
           "scripts/lib/racerNews/pendingReview.js:179"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "racer_profiles",
       "entry": "api/cron/racer-profiles.js",
-      "reachableFiles": 23,
+      "reachableFiles": 27,
       "writes": {
         "racer_profiles": [
           "scripts/lib/racerProfileSync.js:273",
           "scripts/lib/racerProfileSync.js:291"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "races_init",
       "entry": "api/cron/races-init.js",
-      "reachableFiles": 53,
+      "reachableFiles": 57,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070"
@@ -29710,48 +29710,48 @@
           "scripts/lib/racesInit/predictCodeCheck.js:116",
           "scripts/lib/racesInit/predictCodeCheck.js:138",
           "scripts/lib/racesInit/predictCodeCheck.js:98",
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "release_dispatch",
       "entry": "api/cron/release-dispatch.js",
-      "reachableFiles": 22,
+      "reachableFiles": 26,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "result",
       "entry": "api/cron/result.js",
-      "reachableFiles": 45,
+      "reachableFiles": 49,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29777,26 +29777,26 @@
           "scripts/daily/scrape-results.js:758"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "result_catchup",
       "entry": "api/cron/result-catchup.js",
-      "reachableFiles": 45,
+      "reachableFiles": 49,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29822,87 +29822,87 @@
           "scripts/daily/scrape-results.js:758"
         ],
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "scrape-cleanup",
       "entry": "api/cron/scrape-cleanup.js",
-      "reachableFiles": 20,
+      "reachableFiles": 24,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
           "scripts/lib/scrapeJobs/cleanup.js:33",
           "scripts/lib/scrapeJobs/cleanup.js:52",
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "scrape-monitor",
       "entry": "api/cron/scrape-monitor.js",
-      "reachableFiles": 25,
+      "reachableFiles": 29,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
       }
     },
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 129,
+      "reachableFiles": 133,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ],
         "sns_auto_send_items": [
           "scripts/lib/snsAutoPlanRunnerStore.js:102",
@@ -29930,22 +29930,22 @@
     {
       "job": "sns_daily",
       "entry": "api/cron/sns-daily.js",
-      "reachableFiles": 27,
+      "reachableFiles": 31,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ],
         "sns_channel_daily": [
           "scripts/lib/snsDailyRunnerStore.js:85"
@@ -29961,22 +29961,22 @@
     {
       "job": "sns_metrics",
       "entry": "api/cron/sns-metrics.js",
-      "reachableFiles": 38,
+      "reachableFiles": 42,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ],
         "sns_drafts": [
           "api/_lib/snsHubHelpers.js:135"
@@ -29999,22 +29999,22 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 101,
+      "reachableFiles": 105,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ],
         "sns_drafts": [
           "api/_lib/snsHubHelpers.js:135"
@@ -30039,22 +30039,22 @@
     {
       "job": "venue_motor_stats",
       "entry": "api/cron/venue-motor-stats.js",
-      "reachableFiles": 27,
+      "reachableFiles": 31,
       "writes": {
         "scrape_job_state": [
-          "scripts/lib/scrapeJobs/store.js:102",
-          "scripts/lib/scrapeJobs/store.js:110",
-          "scripts/lib/scrapeJobs/store.js:129",
-          "scripts/lib/scrapeJobs/store.js:135",
-          "scripts/lib/scrapeJobs/store.js:147",
-          "scripts/lib/scrapeJobs/store.js:161",
-          "scripts/lib/scrapeJobs/store.js:318",
-          "scripts/lib/scrapeJobs/store.js:368",
-          "scripts/lib/scrapeJobs/store.js:398"
+          "scripts/lib/scrapeJobs/storeBreaker.js:130",
+          "scripts/lib/scrapeJobs/storeBreaker.js:166",
+          "scripts/lib/scrapeJobs/storeBreaker.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:110",
+          "scripts/lib/scrapeJobs/storeParts.js:51",
+          "scripts/lib/scrapeJobs/storeParts.js:59",
+          "scripts/lib/scrapeJobs/storeParts.js:78",
+          "scripts/lib/scrapeJobs/storeParts.js:84",
+          "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/scrapeJobs/store.js:233",
-          "scripts/lib/scrapeJobs/store.js:269"
+          "scripts/lib/scrapeJobs/storeParts.js:206",
+          "scripts/lib/scrapeJobs/storeParts.js:242"
         ],
         "venue_motor_stats": [
           "scripts/lib/venueMotorStats/scrape.js:106"

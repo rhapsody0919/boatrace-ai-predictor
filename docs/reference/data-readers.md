@@ -10,8 +10,8 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2420 |
-| 読み書きのあるファイル | 300 |
+| 読んだファイル | 2424 |
+| 読み書きのあるファイル | 301 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
 | RPC の呼び手（箇所） | 55 |
@@ -147,8 +147,8 @@
 | analogy_feedback_guard | service だけ | yes | トリガー: analogy_feedback |  | analogy_feedback |  |  |
 | append_sns_metric_observation | service だけ |  | api/admin/sns-hub/observations.js:198, scripts/lib/snsDailyRunnerStore.js:28, scripts/lib/snsMetricsRunnerStore.js:94, scripts/maintenance/verify-sns-daily-runner.js:1278 |  | sns_drafts, sns_metric_observations | sns_metric_observations |  |
 | approve_sns_x_send | service だけ |  | api/_lib/snsXSendStore.js:115, scripts/lib/snsTodayPlannerStore.js:110, scripts/sns/pushFinalsImageStore.js:183, scripts/sns/pushFullPictureStore.js:101 | sns_bundle_send_allowed | sns_approvers, sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs | sns_drafts, sns_x_send_jobs |  |
-| claim_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/store.js:216, scripts/maintenance/verify-scrape-slots-on-db.js:47 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:17 |  | races, scrape_slots | scrape_slots |  |
-| claim_scrape_slots_by_offset | service だけ |  | scripts/lib/scrapeJobs/store.js:197 |  | races, scrape_slots | scrape_slots |  |
+| claim_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:175, scripts/maintenance/verify-scrape-slots-on-db.js:47 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:17 |  | races, scrape_slots | scrape_slots |  |
+| claim_scrape_slots_by_offset | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:156 |  | races, scrape_slots | scrape_slots |  |
 | compute_nige_second_by_course | service だけ |  | scripts/daily/update-course-baseline-stats.js:184 |  | race_results, races |  |  |
 | compute_racer_course_technique_stats | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:304 |  | race_entries, race_results, races, venue_course_technique_baseline |  |  |
 | compute_st_course_baseline | service だけ |  | scripts/daily/update-course-baseline-stats.js:170 |  | race_entries, race_results, race_start_timings, races |  |  |
@@ -167,7 +167,7 @@
 | data_health_racer_period_stats | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:310, scripts/lib/dataHealth/functions.js:89, scripts/maintenance/verifyData/data-health-job-scenes-1.js:267 |  | race_entries, racer_period_stats, races |  |  |
 | data_health_table_rows | service だけ |  | 名前の文字列: scripts/lib/dataHealth/functions.js:147, scripts/lib/dataHealth/jobParts.js:10, scripts/maintenance/verifyData/data-health-job-fixtures.js:77 ほか2 |  | exhibition_data, external_predictions, race_conditions, race_entries, race_odds, race_payouts, race_pit_reports, race_results, race_series, race_special_notes, race_start_timings, racer_period_stats, racer_profiles, racer_series_points, races, venue_entry_course_stats, venue_motor_stats |  |  |
 | enqueue_sns_metric_jobs | service だけ |  | トリガー: sns_x_send_jobs |  | sns_drafts | sns_metric_jobs |  |
-| ensure_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/store.js:175, scripts/maintenance/verify-scrape-slots-on-db.js:58 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:16, scripts/maintenance/verifyData/morning-init-jobs-scenes-3.js:133 |  | races | scrape_slots |  |
+| ensure_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:134, scripts/maintenance/verify-scrape-slots-on-db.js:58 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:16, scripts/maintenance/verifyData/morning-init-jobs-scenes-3.js:133 |  | races | scrape_slots |  |
 | fetch_counts_daily | service だけ |  | なし |  | fetch_counts |  |  |
 | get_accuracy_summary | service だけ |  | なし |  | models, predictions |  |  |
 | get_admin_rule_performance | service だけ |  | api/admin/rules/performance.js:41, scripts/maintenance/verify-admin-rule-performance.js:211 |  | predictions, race_results |  |  |
@@ -192,7 +192,7 @@
 | roll_sns_send_baselines | service だけ |  | 名前の文字列: scripts/lib/snsAutoPlanRunner.js:72 |  |  | sns_x_send_control, sns_youtube_quota_control |  |
 | roll_sns_x_send_period | service だけ |  | 名前の文字列: scripts/lib/snsAutoPlanRunner.js:72 |  | sns_x_send_control | sns_x_send_control |  |
 | save_sns_draft_diff | service だけ |  | api/_lib/snsXSendStore.js:49 | read_sns_draft_diff, sns_diff_content, sns_mobile_revision | sns_drafts | sns_drafts |  |
-| scrape_breaker_open | service だけ |  | scripts/lib/scrapeJobs/store.js:335 / 名前の文字列: scripts/lib/scrapeJobs/store.js:356 |  |  | scrape_job_state |  |
+| scrape_breaker_open | service だけ |  | scripts/lib/scrapeJobs/storeBreaker.js:95 / 名前の文字列: scripts/lib/scrapeJobs/storeBreaker.js:118 |  |  | scrape_job_state |  |
 | sns_bundle_send_allowed | service だけ |  | RPC から: approve_sns_x_send, guard_sns_preview_bundle_draft, transition_sns_send_139, transition_sns_x_send |  | sns_auto_send_items, sns_bundle_imports |  |  |
 | sns_claim_external | service だけ | yes | 名前の文字列: api/_lib/snsExternalOperations.js:15, api/_lib/snsExternalOperations.js:24, scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:95 ほか1 |  | sns_drafts | sns_drafts |  |
 | sns_diff_content | service だけ |  | RPC から: guard_sns_diff_approval, read_sns_draft_diff, save_sns_draft_diff |  |  |  |  |
@@ -217,54 +217,54 @@
 
 | ジョブ | 入口 | たどったファイル | 書く表 |
 |---|---|---|---|
-| analogy_dispatch_morning | api/cron/analogy-dispatch-morning.js | 19 | scrape_job_state, scrape_slots |
-| analogy_dispatch_train | api/cron/analogy-dispatch-train.js | 19 | scrape_job_state, scrape_slots |
-| analogy_v16_exhibition | api/cron/analogy-exhibition.js | 24 | analogy_v16_snapshots, scrape_job_state, scrape_slots |
-| boatcast_motor_start | api/cron/boatcast-motor-start.js | 26 | scrape_job_state, scrape_slots, venue_motor_start_dates |
-| boatcast_oriten | api/cron/boatcast-oriten.js | 28 | race_original_exhibition, race_original_exhibition_values, scrape_job_state, scrape_slots |
-| daily_reconcile | api/cron/daily-reconcile.js | 27 | scrape_job_state, scrape_slots |
-| data_health | api/cron/data-health.js | 29 | scrape_job_state, scrape_slots |
-| data_health_morning | api/cron/data-health-morning.js | 29 | scrape_job_state, scrape_slots |
-| db_apply_dispatch | api/cron/db-apply-dispatch.js | 20 | scrape_job_state, scrape_slots |
-| e2e_rerecord_dispatch | api/cron/e2e-rerecord-dispatch.js | 19 | scrape_job_state, scrape_slots |
-| entry_course_stats | api/cron/entry-course-stats.js | 30 | scrape_job_state, scrape_slots, venue_entry_course_stats |
-| eve_deadlines | api/cron/eve-deadlines.js | 26 | eve_race_deadlines, scrape_job_state, scrape_slots |
-| eve_deadlines_reconcile | api/cron/eve-deadlines-reconcile.js | 26 | eve_race_deadlines, scrape_job_state, scrape_slots |
-| exhibition | api/cron/exhibition.js | 52 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
-| fan_period | api/cron/fan-period.js | 29 | raw_snapshots, scrape_job_state, scrape_slots |
-| in_caution_dispatch | api/cron/in-caution-dispatch.js | 19 | scrape_job_state, scrape_slots |
-| in_caution_health | api/cron/in-caution-health.js | 27 | scrape_job_state, scrape_slots |
-| in_caution_today_health | api/cron/in-caution-today-health.js | 27 | scrape_job_state, scrape_slots |
-| key_canary_dispatch | api/cron/key-canary-dispatch.js | 19 | scrape_job_state, scrape_slots |
-| kfile_sync | api/cron/kfile-sync.js | 45 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| morning_digest | api/cron/morning-digest.js | 25 | morning_digest_days, morning_digest_rows, scrape_job_state, scrape_slots |
-| motor_pretest | api/cron/motor-pretest.js | 29 | scrape_job_state, scrape_slots |
-| odds | api/cron/odds.js | 32 | prediction_odds, race_odds, scrape_job_state, scrape_slots |
-| odds_final | api/cron/odds-final.js | 22 | race_odds_final, scrape_job_state, scrape_slots |
-| outcome_distribution_update | api/cron/outcome-distribution-update.js | 24 | nige_outcome_distribution, outcome_distribution, scrape_job_state, scrape_slots |
-| pcexpect | api/cron/pcexpect.js | 21 | external_predictions, scrape_job_state, scrape_slots |
-| pit_reports | api/cron/pit-reports.js | 25 | race_pit_comments, race_pit_reports, scrape_job_state, scrape_slots |
-| point_rank | api/cron/point-rank.js | 33 | racer_series_points, scrape_job_state, scrape_slots |
-| pseudo | api/cron/scrape-pseudo.js | 18 | scrape_job_state, scrape_slots |
-| race_info | api/cron/race-info.js | 52 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
-| race_notices | api/cron/race-notices.js | 27 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
-| race_series | api/cron/race-series.js | 24 | scrape_job_state, scrape_slots |
-| race_status | api/cron/race-status.js | 45 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| racer_career_main | api/cron/racer-career-main.js | 27 | racer_career_meta, scrape_job_state, scrape_slots |
-| racer_course_technique_stats | api/cron/racer-course-technique-stats.js | 22 | racer_course_technique_stats, scrape_job_state, scrape_slots, venue_course_technique_baseline |
-| racer_news | api/cron/racer-news.js | 24 | racer_news, racer_news_pending, scrape_job_state, scrape_slots |
-| racer_profiles | api/cron/racer-profiles.js | 23 | racer_profiles, scrape_job_state, scrape_slots |
-| races_init | api/cron/races-init.js | 53 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
-| release_dispatch | api/cron/release-dispatch.js | 22 | scrape_job_state, scrape_slots |
-| result | api/cron/result.js | 45 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| result_catchup | api/cron/result-catchup.js | 45 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| scrape-cleanup | api/cron/scrape-cleanup.js | 20 | scrape_job_state, scrape_slots |
-| scrape-monitor | api/cron/scrape-monitor.js | 25 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 129 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
-| sns_daily | api/cron/sns-daily.js | 27 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
-| sns_metrics | api/cron/sns-metrics.js | 38 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
-| sns_send | api/cron/sns-send.js | 101 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
-| venue_motor_stats | api/cron/venue-motor-stats.js | 27 | scrape_job_state, scrape_slots, venue_motor_stats |
+| analogy_dispatch_morning | api/cron/analogy-dispatch-morning.js | 23 | scrape_job_state, scrape_slots |
+| analogy_dispatch_train | api/cron/analogy-dispatch-train.js | 23 | scrape_job_state, scrape_slots |
+| analogy_v16_exhibition | api/cron/analogy-exhibition.js | 28 | analogy_v16_snapshots, scrape_job_state, scrape_slots |
+| boatcast_motor_start | api/cron/boatcast-motor-start.js | 30 | scrape_job_state, scrape_slots, venue_motor_start_dates |
+| boatcast_oriten | api/cron/boatcast-oriten.js | 32 | race_original_exhibition, race_original_exhibition_values, scrape_job_state, scrape_slots |
+| daily_reconcile | api/cron/daily-reconcile.js | 31 | scrape_job_state, scrape_slots |
+| data_health | api/cron/data-health.js | 33 | scrape_job_state, scrape_slots |
+| data_health_morning | api/cron/data-health-morning.js | 33 | scrape_job_state, scrape_slots |
+| db_apply_dispatch | api/cron/db-apply-dispatch.js | 24 | scrape_job_state, scrape_slots |
+| e2e_rerecord_dispatch | api/cron/e2e-rerecord-dispatch.js | 23 | scrape_job_state, scrape_slots |
+| entry_course_stats | api/cron/entry-course-stats.js | 34 | scrape_job_state, scrape_slots, venue_entry_course_stats |
+| eve_deadlines | api/cron/eve-deadlines.js | 30 | eve_race_deadlines, scrape_job_state, scrape_slots |
+| eve_deadlines_reconcile | api/cron/eve-deadlines-reconcile.js | 30 | eve_race_deadlines, scrape_job_state, scrape_slots |
+| exhibition | api/cron/exhibition.js | 56 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
+| fan_period | api/cron/fan-period.js | 33 | raw_snapshots, scrape_job_state, scrape_slots |
+| in_caution_dispatch | api/cron/in-caution-dispatch.js | 23 | scrape_job_state, scrape_slots |
+| in_caution_health | api/cron/in-caution-health.js | 31 | scrape_job_state, scrape_slots |
+| in_caution_today_health | api/cron/in-caution-today-health.js | 31 | scrape_job_state, scrape_slots |
+| key_canary_dispatch | api/cron/key-canary-dispatch.js | 23 | scrape_job_state, scrape_slots |
+| kfile_sync | api/cron/kfile-sync.js | 49 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| morning_digest | api/cron/morning-digest.js | 29 | morning_digest_days, morning_digest_rows, scrape_job_state, scrape_slots |
+| motor_pretest | api/cron/motor-pretest.js | 33 | scrape_job_state, scrape_slots |
+| odds | api/cron/odds.js | 36 | prediction_odds, race_odds, scrape_job_state, scrape_slots |
+| odds_final | api/cron/odds-final.js | 26 | race_odds_final, scrape_job_state, scrape_slots |
+| outcome_distribution_update | api/cron/outcome-distribution-update.js | 28 | nige_outcome_distribution, outcome_distribution, scrape_job_state, scrape_slots |
+| pcexpect | api/cron/pcexpect.js | 25 | external_predictions, scrape_job_state, scrape_slots |
+| pit_reports | api/cron/pit-reports.js | 29 | race_pit_comments, race_pit_reports, scrape_job_state, scrape_slots |
+| point_rank | api/cron/point-rank.js | 37 | racer_series_points, scrape_job_state, scrape_slots |
+| pseudo | api/cron/scrape-pseudo.js | 22 | scrape_job_state, scrape_slots |
+| race_info | api/cron/race-info.js | 56 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
+| race_notices | api/cron/race-notices.js | 31 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
+| race_series | api/cron/race-series.js | 28 | scrape_job_state, scrape_slots |
+| race_status | api/cron/race-status.js | 49 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| racer_career_main | api/cron/racer-career-main.js | 31 | racer_career_meta, scrape_job_state, scrape_slots |
+| racer_course_technique_stats | api/cron/racer-course-technique-stats.js | 26 | racer_course_technique_stats, scrape_job_state, scrape_slots, venue_course_technique_baseline |
+| racer_news | api/cron/racer-news.js | 28 | racer_news, racer_news_pending, scrape_job_state, scrape_slots |
+| racer_profiles | api/cron/racer-profiles.js | 27 | racer_profiles, scrape_job_state, scrape_slots |
+| races_init | api/cron/races-init.js | 57 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
+| release_dispatch | api/cron/release-dispatch.js | 26 | scrape_job_state, scrape_slots |
+| result | api/cron/result.js | 49 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| result_catchup | api/cron/result-catchup.js | 49 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| scrape-cleanup | api/cron/scrape-cleanup.js | 24 | scrape_job_state, scrape_slots |
+| scrape-monitor | api/cron/scrape-monitor.js | 29 | scrape_job_state, scrape_slots |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 133 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_daily | api/cron/sns-daily.js | 31 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
+| sns_metrics | api/cron/sns-metrics.js | 42 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
+| sns_send | api/cron/sns-send.js | 105 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| venue_motor_stats | api/cron/venue-motor-stats.js | 31 | scrape_job_state, scrape_slots, venue_motor_stats |
 
 ## 表ごとの読み手・書き手
 
@@ -1683,8 +1683,8 @@
   - `scripts/lib/racesInit/job.js:132` select [job, mode]
   - `scripts/lib/racesInit/predictCodeCheck.js:86` select [job, last_report]
   - `scripts/lib/scrapeJobs/monitorInput.js:36` select [*]
-  - `scripts/lib/scrapeJobs/store.js:86` select [*, job]
-  - `scripts/lib/scrapeJobs/store.js:286` select [?, job]
+  - `scripts/lib/scrapeJobs/storeBreaker.js:37` select [?, job]
+  - `scripts/lib/scrapeJobs/storeParts.js:35` select [*, job]
   - `scripts/maintenance/check-morning-init-shadow.js:197` select [consecutive_failures, cursor, job, last_error, last_success_at, mode]
   - `scripts/maintenance/check-scrape-monitor-liveness.js:139` select [consecutive_failures, job, last_error, last_success_at, last_target_date, last_tick_at, mode]
   - `scripts/maintenance/verify-gha-skip-gate.js:1354` rest(rest) （検査）
@@ -1695,15 +1695,15 @@
   - `scripts/lib/racesInit/predictCodeCheck.js:98` upsert [job, last_report, updated_at]
   - `scripts/lib/racesInit/predictCodeCheck.js:116` update [last_report, updated_at]
   - `scripts/lib/racesInit/predictCodeCheck.js:138` update [last_report, updated_at]
-  - `scripts/lib/scrapeJobs/store.js:102` upsert [job]
-  - `scripts/lib/scrapeJobs/store.js:110` update [last_tick_at]
-  - `scripts/lib/scrapeJobs/store.js:129` update [?]
-  - `scripts/lib/scrapeJobs/store.js:135` update [consecutive_failures, last_error, updated_at]
-  - `scripts/lib/scrapeJobs/store.js:147` update [claimed_by, lease_until]
-  - `scripts/lib/scrapeJobs/store.js:161` update [claimed_by, lease_until]
-  - `scripts/lib/scrapeJobs/store.js:318` update [breaker_open_until, updated_at]
-  - `scripts/lib/scrapeJobs/store.js:368` upsert [?]
-  - `scripts/lib/scrapeJobs/store.js:398` update [?]
+  - `scripts/lib/scrapeJobs/storeBreaker.js:78` update [breaker_open_until, updated_at]
+  - `scripts/lib/scrapeJobs/storeBreaker.js:130` upsert [?]
+  - `scripts/lib/scrapeJobs/storeBreaker.js:166` update [?]
+  - `scripts/lib/scrapeJobs/storeParts.js:51` upsert [job]
+  - `scripts/lib/scrapeJobs/storeParts.js:59` update [last_tick_at]
+  - `scripts/lib/scrapeJobs/storeParts.js:78` update [?]
+  - `scripts/lib/scrapeJobs/storeParts.js:84` update [consecutive_failures, last_error, updated_at]
+  - `scripts/lib/scrapeJobs/storeParts.js:96` update [claimed_by, lease_until]
+  - `scripts/lib/scrapeJobs/storeParts.js:110` update [claimed_by, lease_until]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-scrape_slots"></a>scrape_slots
@@ -1728,8 +1728,8 @@
   - `scripts/lib/pitReportJob.js:400` upsert [?]
   - `scripts/lib/scrapeJobs/cleanup.js:33` update [last_error, lease_until, next_attempt_at, status]
   - `scripts/lib/scrapeJobs/cleanup.js:52` delete
-  - `scripts/lib/scrapeJobs/store.js:233` update [done_at, last_error, lease_until, outcome, result_digest, rows_written, status]
-  - `scripts/lib/scrapeJobs/store.js:269` update [?]
+  - `scripts/lib/scrapeJobs/storeParts.js:206` update [done_at, last_error, lease_until, outcome, result_digest, rows_written, status]
+  - `scripts/lib/scrapeJobs/storeParts.js:242` update [?]
   - `scripts/maintenance/verify-scrape-slots-on-db.js:124` delete （検査）
   - `scripts/maintenance/verify-scrape-slots-on-db.js:174` update [done_at, outcome, status] （検査）
   - `scripts/maintenance/verify-scrape-slots-on-db.js:211` delete （検査）

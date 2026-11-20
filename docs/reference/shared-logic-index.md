@@ -307,12 +307,16 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/preRaceDigest.js` | レース情報（A1）・展示（A2）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | computeRaceInfoDigest, computeExhibitionDigest, RACE_ENTRY_DIGEST_COLUMNS, RACE_CONDITION_DIGEST_COLUMNS, EXHIBITION_DIGEST_COLUMNS |
 | `scripts/lib/scrapeJobs/preRaceHandlers.js` | レース情報（A1）・展示（A2）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parsePreRaceId, createScheduleLoader, createSeriesDayLoader, createRaceInfoSlotHandler, createExhibitionSlotHandler ほか5件 |
 | `scripts/lib/scrapeJobs/predictionOddsHandlers.js` | 買い目オッズ（A4、prediction_odds）を、A3（オッズ取得、race_odds）の成功フックから導出する（BOA-404、 | fetchPredictionsByModel, fetchLatestRaceOdds, deriveRowsForRaces, buildShadowDigest, deriveAndUpsertPredictionOdds ほか3件 |
-| `scripts/lib/scrapeJobs/registry.js` | ジョブレジストリ: 窓・許容幅・再試行・リース・並列度・実行時間の定義（plan.md §3.6・§4.3・§4.4）。 | activeMinutesOf, isScheduledDate, isCatchupOffset, isWeightOnlyOffset, mainWindowOffsetsOf ほか10件 |
+| `scripts/lib/scrapeJobs/registry.js` | ジョブレジストリ: 窓・許容幅・再試行・リース・並列度・実行時間の定義（plan.md §3.6・§4.3・§4.4）。 | nextPollTime, graceOverridesOf, windowJobNames, slotDefsFor, validateRegistry ほか3件 |
+| `scripts/lib/scrapeJobs/registryParts.js` | registry.js から移した、レジストリの定義を読む小さな純関数（registryValidate.js と registry.js が共有する。循環を避… | isCatchupOffset, isWeightOnlyOffset, mainWindowOffsetsOf, graceMinFor, activeMinutesOf ほか3件 |
+| `scripts/lib/scrapeJobs/registryValidate.js` | registry.js の validateRegistry から移した、ジョブ定義ごとの検査（problems へ追記する。順・文は元のまま）。 | validateJobDef |
 | `scripts/lib/scrapeJobs/resultDigest.js` | 結果取得（A6）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | pickResultColumns, pickStartTimingColumns, computeResultDigest, RESULT_DIGEST_COLUMNS, START_TIMING_DIGEST_COLUMNS |
 | `scripts/lib/scrapeJobs/resultHandlerParts.js` | resultHandlers.js の catch-up（createResultCatchupRun）と Kファイル同期（createKFileSyncRun… | catchupCandidates, summarizeCatchupResults, expiredResultSlots, racesWithoutConfirmedCancellation, openResultSlots ほか9件 |
 | `scripts/lib/scrapeJobs/resultHandlers.js` | 結果取得（A6）まわりの Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parseRaceId, addDays, overdueWindows, createResultSlotHandler, createResultOnTick ほか5件 |
 | `scripts/lib/scrapeJobs/schemaErrors.js` | 「予定表のテーブル・関数がDBに無い」エラーの判定。 | isScrapeSchemaMissingError, isClaimByOffsetMissingError, SCRAPE_SCHEMA_OBJECTS |
-| `scripts/lib/scrapeJobs/store.js` | 予定表（scrape_slots）・ジョブ状態（scrape_job_state）へのアクセス（Supabase実装）。 | createSupabaseStore, BREAKER_RPC_RECHECK_MS, FETCH_STOP_RECHECK_MS, TICK_WRITE_INTERVAL_MS |
+| `scripts/lib/scrapeJobs/store.js` | 予定表（scrape_slots）・ジョブ状態（scrape_job_state）へのアクセス（Supabase実装）。 | createSupabaseStore |
+| `scripts/lib/scrapeJobs/storeBreaker.js` | store.js（createSupabaseStore）から移したサーキットブレーカーの保存（createBreakerMethods。振る舞いは元のまま）。 | createBreakerMethods, BREAKER_RPC_RECHECK_MS, FETCH_STOP_RECHECK_MS |
+| `scripts/lib/scrapeJobs/storeParts.js` | store.js（createSupabaseStore）から移したメソッドの群の工場（振る舞いは元のまま）。 | createStateMethods, createSlotMethods, TICK_WRITE_INTERVAL_MS, wrap |
 | `scripts/lib/scrapeJobs/testing/fakeSupabaseClient.js` | テスト用のインメモリの Supabase クライアント（PostgREST の、検証に必要な部分だけ）。DB・取得先に接続しない。 | createFakeSupabaseClient |
 | `scripts/lib/scrapeJobs/testing/memoryStore.js` | テスト用のインメモリのストア（store.js と同じインターフェース）。共通ラッパの検証（verify-scrape-jobs.js）専用。 | createMemoryStore |
 | `scripts/lib/scrapeJobs/time.js` | 予定表（scrape_slots）まわりの時刻計算（純粋関数。実行環境のタイムゾーンに依存しない） | toJstDateString, jstStartOfDay, jstMinutesOfDay, raceStartInstant, slotDeadline ほか2件 |
@@ -590,4 +594,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 548 ファイル / export 3012 件。
+対象 552 ファイル / export 3018 件。
