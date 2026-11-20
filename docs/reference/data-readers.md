@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2338 |
+| 読んだファイル | 2342 |
 | 読み書きのあるファイル | 293 |
 | 表の読み手（箇所） | 949 |
 | 表の書き手（箇所） | 197 |
@@ -387,7 +387,7 @@
   - `api/_lib/snsClaimCheckReaders.js:236` rest(rest) [is_absent, race_id]
   - `api/_lib/snsTodayDigest.js:54` rest(rest) [boat_number, is_absent, race_id]
   - `scripts/analysis/original-exhibition/fetch.mjs:59` select(helper:all)
-  - `scripts/analysis/train-conditional-logit.js:90` select(helper:fetchAll)
+  - `scripts/analysis/train-conditional-logit.js:88` select(helper:fetchAll)
   - `scripts/analysis/verify-race-analysis-rpc.js:35` select [boat_number, race_id, start_timing]
   - `scripts/analysis/verify-race-analysis-rpc.js:78` select(helper:fetchAll)
   - `scripts/analysis/verify-race-analysis-rpc.js:127` select [boat_number, exhibition_time, race_id]
@@ -694,7 +694,7 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/maintenance/delete-phantom-races.js:83`, `scripts/maintenance/fix-opening-day-race-id-date.js:68`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:41`, `scripts/ml/analogy/in_caution_bands.py:204`, `scripts/ml/analogy/tests/test_in_caution_bands.py:286`, `scripts/ml/analogy/tests/test_in_caution_bands.py:318`
 - 読み手（44）: 
   - `scripts/analysis/analyze-prediction-ensemble.js:66` select(helper:fetchAll)
-  - `scripts/analysis/analyze-upset-factors.js:134` select [feature_contributions, model_id, race_id]
+  - `scripts/analysis/analyze-upset-factors.js:109` select [feature_contributions, model_id, race_id]
   - `scripts/analysis/calibration-report.js:92` select(helper:fetchAll)
   - `scripts/analysis/campaign-backtest-fetch-races.js:49` select [feature_contributions, predicted_at, race_id]
   - `scripts/analysis/collect-venue-stats.js:231` select [confidence, model_id, race_id, top_2nd, top_3rd, top_pick]
@@ -702,7 +702,7 @@
   - `scripts/analysis/find-video-worthy-race.js:76` select [feature_contributions, model_id, predicted_at, race_id]
   - `scripts/analysis/simulate-nige-calibration.js:36` select(helper:fetchAll)
   - `scripts/analysis/train-moriarty-calibration.js:67` select(helper:fetchAll)
-  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:77` select [feature_contributions, model_id, prediction_id, race_id]
+  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:75` select [feature_contributions, model_id, prediction_id, race_id]
   - `scripts/analysis/verify-calculations.js:15` select [model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/daily-rule-tracking.js:129` select [*, model_id, race_id]
   - `scripts/daily/calculate-accuracy.js:45` select(helper:fetchAll)
@@ -765,8 +765,8 @@
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:40` select(helper:all)
   - `scripts/analysis/calibrate-unified-model.js:152` select [race_id, wave_height, wind_speed]
   - `scripts/analysis/race-stage-inventory.mjs:31` select(helper:fetchAllByRaceId)
-  - `scripts/analysis/series-points-scoring-hypotheses.mjs:180` select(helper:fetchAllByRaceId)
-  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:117` select [race_id, wave_height, weather, wind_direction, wind_speed]
+  - `scripts/analysis/series-points-scoring-hypotheses.mjs:53` select(helper:fetchAllByRaceId)
+  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:115` select [race_id, wave_height, weather, wind_direction, wind_speed]
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:90` select [race_id, wave_height, wind_speed]
   - `scripts/analysis/verify-volatility-predictive-power.js:72` select [race_id, wave_height, wind_speed]
   - `scripts/daily/generate-predictions.js:1300` select(helper:selectByRaceIds)
@@ -837,10 +837,10 @@
   - `scripts/analysis/original-exhibition/fetch.mjs:74` select(helper:all)
   - `scripts/analysis/past-rate-check/label-threshold-checks.mjs:87` select [race_id]
   - `scripts/analysis/past-rate-check/label-threshold-checks.mjs:88` select [boat_number, created_at, race_id, updated_at]
-  - `scripts/analysis/series-points-scoring-hypotheses.mjs:185` select(helper:fetchAllByRaceId)
-  - `scripts/analysis/train-conditional-logit.js:85` select(helper:fetchAll)
+  - `scripts/analysis/series-points-scoring-hypotheses.mjs:58` select(helper:fetchAllByRaceId)
+  - `scripts/analysis/train-conditional-logit.js:83` select(helper:fetchAll)
   - `scripts/analysis/train-moriarty-calibration.js:77` select(helper:fetchAll)
-  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:111` select [boat_number, grade, race_id, win_rate]
+  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:109` select [boat_number, grade, race_id, win_rate]
   - `scripts/analysis/verify-race-analysis-rpc.js:28` select [boat_number, player_name, race_id, racer_id]
   - `scripts/analysis/verify-race-analysis-rpc.js:49` select [boat_number, race_id, racer_id]
   - `scripts/analysis/verify-race-analysis-rpc.js:120` select [boat_number, player_name, race_id, racer_id]
@@ -1017,7 +1017,7 @@
   - `api/odds/live.js:79` select [*, captured_at, race_id]
   - `scripts/analysis/backtest-unified-model.js:73` select(helper:fetchAll)
   - `scripts/analysis/check-win-odds-vs-final.js:45` select(helper:fetchAll)
-  - `scripts/analysis/train-conditional-logit.js:103` select(helper:fetchAll)
+  - `scripts/analysis/train-conditional-logit.js:101` select(helper:fetchAll)
   - `scripts/analysis/train-moriarty-calibration.js:83` select(helper:fetchAll)
   - `scripts/daily/generate-moriarty-recommendations.js:97` select [captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6, race_id]
   - `scripts/daily/generate-unified-trifecta-reference.js:55` select(helper:fetchAll)
@@ -1141,7 +1141,7 @@
   - `scripts/analysis/aggregate-racer-stats.js:70` select(helper:fetchAll)
   - `scripts/analysis/analogy-finder-md6/export-actual-course.js:20` select(helper:fetchAll)
   - `scripts/analysis/analyze-indicator-predictive-power.js:116` select(helper:fetchAll)
-  - `scripts/analysis/analyze-upset-factors.js:119` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
+  - `scripts/analysis/analyze-upset-factors.js:94` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
   - `scripts/analysis/backtest-course-rate-only.js:60` select(helper:fetchAll)
   - `scripts/analysis/backtest-unified-model.js:196` select(helper:fetchAll)
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:42` select(helper:all)
@@ -1156,11 +1156,11 @@
   - `scripts/analysis/original-exhibition/fetch.mjs:69` select(helper:all)
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:274` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, is_cancelled, is_no_race, payout_trifecta, payout_trio, race_id, race_status, rank1, rank2, rank3, refund_boats]
   - `scripts/analysis/redesign-volatility-by-venue.js:150` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
-  - `scripts/analysis/series-points-scoring-hypotheses.mjs:190` select(helper:fetchAllByRaceId)
+  - `scripts/analysis/series-points-scoring-hypotheses.mjs:63` select(helper:fetchAllByRaceId)
   - `scripts/analysis/simulate-nige-calibration.js:42` select(helper:fetchAll)
-  - `scripts/analysis/train-conditional-logit.js:95` select(helper:fetchAll)
-  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:62` select [race_id]
-  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:103` select [course_1, course_2, course_3, course_4, course_5, course_6, race_id, rank1, rank2, rank3, winning_technique]
+  - `scripts/analysis/train-conditional-logit.js:93` select(helper:fetchAll)
+  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:60` select [race_id]
+  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:101` select [course_1, course_2, course_3, course_4, course_5, course_6, race_id, rank1, rank2, rank3, winning_technique]
   - `scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:78` select(helper:fetchAll)
   - `scripts/analysis/verify-all-venues-label-accuracy.js:93` select [race_id, rank1]
   - `scripts/analysis/verify-calculations.js:20` select [payout_place_1, payout_place_2, payout_trifecta, payout_trio, payout_win, race_id, rank1, rank2, rank3]
@@ -1306,7 +1306,7 @@
   - `scripts/analysis/full-picture-answer-stage/actual.cjs:10` select [boat_number, entry_course, finish_rank, is_flying, is_late_start, race_id, start_timing]
   - `scripts/analysis/original-exhibition/fetch.mjs:64` select(helper:all)
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:280` select [boat_number, finish_mark, is_flying, is_late_start, race_id, start_timing]
-  - `scripts/analysis/series-points-scoring-hypotheses.mjs:197` select(helper:fetchAllByRaceId)
+  - `scripts/analysis/series-points-scoring-hypotheses.mjs:70` select(helper:fetchAllByRaceId)
   - `scripts/analysis/verify-race-analysis-rpc.js:74` select(helper:fetchAll)
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:169` select(helper:fetchInChunks)
   - `scripts/daily/generate-morning-digest.js:699` select [boat_number, finish_mark, race_id, start_timing]
@@ -1458,7 +1458,7 @@
 - 本体で読む RPC: data_health_nightly_freshness, data_health_table_rows
 - 取得のジョブ: point_rank
 - 読み手（5）: 
-  - `scripts/analysis/series-points-scoring-hypotheses.mjs:203` select [meet_start_date, penalty_points, racer_id, rank, remarks, score_rate, total_points, venue_code]
+  - `scripts/analysis/series-points-scoring-hypotheses.mjs:76` select [meet_start_date, penalty_points, racer_id, rank, remarks, score_rate, total_points, venue_code]
   - `scripts/verification/verify-series-points-official.mjs:46` select [meet_start_date, penalty_points, placements, player_name, racer_id, rank, remarks, score_rate, total_points, venue_code]
   - `scripts/verification/verify-series-points-official.mjs:135` select [meet_start_date, racer_id, venue_code]
   - `src/services/meetQueries2.js:193` select [meet_start_date, penalty_points, placements, racer_id, remarks, scraped_at, total_points, venue_code]
@@ -1482,7 +1482,7 @@
   - `api/_lib/snsClaimCheckReaders.js:320` rest(rest) [cancellation_status, race_id]
   - `api/_lib/snsTodayDigest.js:50` rest(rest) [cancellation_status, race_id, start_time]
   - `api/odds/live.js:72` select [race_date, race_id, start_time]
-  - `scripts/analysis/analyze-upset-factors.js:106` select [first_boat_motor_2rate, first_boat_win_rate, motor_2rate_stddev, race_date, race_id, venue_code, volatility_level, volatility_score, win_rate_stddev]
+  - `scripts/analysis/analyze-upset-factors.js:81` select [first_boat_motor_2rate, first_boat_win_rate, motor_2rate_stddev, race_date, race_id, venue_code, volatility_level, volatility_score, win_rate_stddev]
   - `scripts/analysis/backtest-unified-model.js:109` select [race_id, venue_code]
   - `scripts/analysis/boa845-axis-place/fetch_today.mjs:32` select(helper:all)
   - `scripts/analysis/calibrate-unified-model.js:145` select [race_id, venue_code]
@@ -1492,7 +1492,7 @@
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:284` select [cancellation_status, race_id]
   - `scripts/analysis/race-stage-inventory.mjs:36` select(helper:fetchAllByRaceId)
   - `scripts/analysis/redesign-volatility-by-venue.js:135` select [first_boat_avg_st, first_boat_motor_2rate, first_boat_win_rate, race_date, race_id, venue_code, volatility_score, win_rate_stddev]
-  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:95` select [first_boat_grade, first_boat_win_rate, race_date, race_grade, race_id, race_number, venue_code, volatility_level, volatility_score]
+  - `scripts/analysis/turn-prediction-venue-deep-analysis.js:93` select [first_boat_grade, first_boat_win_rate, race_date, race_grade, race_id, race_number, venue_code, volatility_level, volatility_score]
   - `scripts/analysis/verify-all-venues-label-accuracy.js:67` select [race_date, race_id, venue_code, volatility_score]
   - `scripts/analysis/verify-calculations.js:7` select [race_date, race_id]
   - `scripts/analysis/verify-label-accuracy.js:76` select [race_date, race_id, venue_code, volatility_score]
