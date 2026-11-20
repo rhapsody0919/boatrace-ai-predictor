@@ -231,7 +231,13 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/preciousPaths.js` | gitに入らない「取り直しが高くつくデータ」の置き場所。 | PRECIOUS_PATHS, BACKUP_DIR_FROM_HOME |
 | `scripts/lib/predictionHitFix.js` | — | fixMissingHitFlags |
 | `scripts/lib/predictionOddsDerive.js` | 買い目オッズ（prediction_odds）を、予想の買い目（predictions）と、オッズの最新スナップショット | trioKeyOf, buildPredictionOddsRow, percentDiff, percentileOf, summarizePredictionOddsDiff ほか2件 |
+| `scripts/lib/predictionRaceBuild.js` | — | getTop3FromPattern, calculateConfidence, generateRaceId, standardPickStrengths, safeBetPickStrengths ほか9件 |
+| `scripts/lib/predictionRaceFetch.js` | — | fetchVenueWinRates, fetchRacerStats, selectByRaceIds, groupRowsByRaceId, entriesToRacers ほか4件 |
 | `scripts/lib/predictionRefresh.js` | 予測の再計算（predictions のリフレッシュ）を、どこが・いつ起動するかの方針（案1、BOA-353 T4b-03、 | isRefreshOnVercelEnabled, isOddsRefreshSkippedOnGha, isOddsSkippedOnGha, collectGhaRefreshRaceIds, refreshAfterExhibition ほか1件 |
+| `scripts/lib/predictionRefreshSteps.js` | — | resolveRefreshOptions, logRefreshStart, logRefreshDryRun, volatilitySummary, logVolatilityUpdateError ほか11件 |
+| `scripts/lib/predictionScoring.js` | — | turnWinnerBonus, calculateTurnBonus, calculateExhibitionBonus, calculateStandardScoreV2, calculateSafeBetScore ほか3件 |
+| `scripts/lib/predictionVolatility.js` | — | calculateStdDev, volatilityWeights, volatilityFactorWinRate, volatilityFactorAvgST, volatilityFactorNige ほか5件 |
+| `scripts/lib/predictionWriteRows.js` | — | convertWindDirection, upsertRacesRows, buildEntryRow, buildEntryRows, upsertEntryRows ほか10件 |
 | `scripts/lib/previewSnapshotPlan.js` | ブログ記事・翻訳記事・ブログ一覧のボット向けスナップショットを、このビルドで作るか（Vercel の費用、2026-11-05、ADR 0032 追記）。 | planBlogSnapshots, PREVIEW_BOT_HTML_MARKER |
 | `scripts/lib/raceCancellation.js` | — | confirmCancellationsForRaceIds, clearCancellationsWithResults, clearCancellationsWithResultsInRange |
 | `scripts/lib/raceConditionsWriter.js` | race_conditions への書き込み（気象列を含む）の共通処理（BOA-358） | isObservedAtColumnMissing, upsertRaceConditions, OBSERVED_AT_COLUMN |
@@ -624,4 +630,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 582 ファイル / export 3131 件。
+対象 588 ファイル / export 3203 件。
