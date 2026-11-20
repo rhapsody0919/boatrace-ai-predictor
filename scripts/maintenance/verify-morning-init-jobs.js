@@ -482,7 +482,7 @@ await runMorningInitJobsScenes3({ check, show, same, jst, clone, GOLDEN_VENUE, D
       "(h) デプロイされた予測ロジック（generate-predictions.js と計算の lib）のハッシュを計算できる",
       typeof real === "string" &&
         /^[0-9a-f]{16}$/.test(real) &&
-        ["../../daily/generate-predictions.js", "../turnPrediction.js", "../venueParameters.js", "../winningTechniques.js"].every((rel) => PREDICT_LOGIC_FILES.includes(rel)) &&
+        ["../../daily/generate-predictions.js", "../turnPrediction.js", "../venueParameters.js", "../winningTechniques.js", "../predictionVolatility.js", "../predictionScoring.js", "../predictionRaceBuild.js", "../predictionRaceFetch.js", "../predictionRefreshSteps.js", "../predictionWriteRows.js"].every((rel) => PREDICT_LOGIC_FILES.includes(rel)) &&
         new Set(PREDICT_LOGIC_FILES).size === PREDICT_LOGIC_FILES.length && real === computePredictCodeHash(),
       String(real),
     );
