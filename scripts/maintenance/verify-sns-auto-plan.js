@@ -2,22 +2,30 @@
 // SQL154 までを PGlite に入れ（本番と同じ。158 は未適用の前提でも動くことを確かめる）、153 のトリガー・制約の上で
 // item の作成 → 検査 → manual・held_manual → 公開保留の解除 → 本人の承認までを通す。数値の照合・表示の確認はモック。外部接続なし。
 // 自動（mode=auto、全貌動画、2026-10-18 ユーザー決定）: 評価役の P0 が0件なら notified にして自動送信の承認者で承認する（X は親から順）。
-import { test, before, beforeEach, after } from "node:test";
+import { test, before } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { randomBytes } from "node:crypto";
+
 import { PGlite } from "@electric-sql/pglite";
 import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 import { createMockHeadless } from "../../api/_lib/snsDeadlineQueue.js";
 import { sendHolds } from "../../api/_lib/snsMobileApproval.js";
 import { SCREEN_MARKERS } from "../lib/snsScreenMarkers.js";
-import {
-  createAutoPlanStore,
-  planCandidates,
-  reviewGate,
-  runSnsAutoPlan,
-} from "../lib/snsAutoPlanRunner.js";
+import { runSnsAutoPlan } from "../lib/snsAutoPlanRunner.js";
 import { SCRAPE_JOBS, activeMinutesOf } from "../lib/scrapeJobs/registry.js";
+import {
+  RACE,
+  PRE_153,
+  hash,
+  manifest,
+  CLAIMS,
+  runSnsAutoPlanScenes1,
+  runSnsAutoPlanScenes2,
+  runSnsAutoPlanScenes3,
+  runSnsAutoPlanScenes4,
+  runSnsAutoPlanScenes5,
+} from "./verifyData/sns-auto-plan-scenes-1.js";
+import { runSnsAutoPlanScenes6 } from "./verifyData/sns-auto-plan-scenes-2.js";
 
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
@@ -31,22 +39,13 @@ const riskRules = JSON.parse(
 ).rules;
 // JST 2037-10-16 12:00。締切（発走）は JST 15:00、送る時刻（止められる期限）は 14:00、失効は 14:30
 const T0 = new Date("2037-10-16T03:00:00Z");
-const RACE = "2037-10-16-04-12";
+
+// ---- 後半の場面（verifyData/sns-auto-plan-scenes-1.js） ----
+runSnsAutoPlanScenes1({ db, all, T0, addRace, importBundle, run });
 const RACE_URL = `https://www.boat-ai.jp/race/${RACE}?tab=sonar`;
-const PRE_153 = [
-  "035_sns_marketing_hub_schema.sql",
-  "042_content_drafts_columns.sql",
-  "135_sns_preview_bundle_import.sql",
-  "136_sns_metric_observations.sql",
-  "137_sns_x_send.sql",
-  "138_sns_external_operations.sql",
-  "139_sns_deadline_queue.sql",
-  "140_sns_mobile_approval.sql",
-  "145_sns_edit_assist.sql",
-  "146_sns_shorts_send.sql",
-  "147_sns_draft_diff.sql",
-  "148_sns_posted_approval_guard.sql",
-];
+
+// ---- 後半の場面（verifyData/sns-auto-plan-scenes-1.js） ----
+runSnsAutoPlanScenes2({ db, all, T0, RACE_URL, addRace, importBundle, run });
 let me;
 
 before(async () => {
@@ -79,18 +78,9 @@ before(async () => {
   me = (await first("SELECT id FROM sns_approvers WHERE display_name='本人'"))
     .id;
 });
-beforeEach(async () => {
-  await db.exec(`
-    DELETE FROM sns_post_tracking; UPDATE sns_x_send_jobs SET parent_job_id=NULL; DELETE FROM sns_x_send_jobs;
-    DELETE FROM sns_auto_send_items;
-    ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;
-    DELETE FROM sns_bundle_imports; DELETE FROM races; DELETE FROM race_conditions;
-    UPDATE sns_auto_send_control SET mode='manual', dry_run=true;
-    UPDATE sns_x_send_control SET schedule_minutes=60, expiry_minutes=30;`);
-  await db.query("UPDATE test_clock SET value=$1", [T0.toISOString()]);
-  await addRace(RACE, "準優勝戦");
-});
-after(() => db.close());
+
+// ---- 後半の場面（verifyData/sns-auto-plan-scenes-1.js） ----
+runSnsAutoPlanScenes3({ db, all, T0, RACE_URL, addRace, importBundle, run });
 
 async function addRace(
   raceId,
@@ -105,23 +95,9 @@ async function addRace(
   ]);
   await db.query("INSERT INTO race_conditions VALUES($1,$2)", [raceId, stage]);
 }
-const hash = () => randomBytes(32).toString("hex");
-const manifest = [
-  { name: "draft.mp4", storage_path: "b/draft.mp4" },
-  { name: "draft-x.mp4", storage_path: "b/draft-x.mp4" },
-  { name: "scene-1.png", storage_path: "b/scene-1.png" },
-];
-const CLAIMS = [
-  {
-    id: "c1",
-    text: "1号艇の勝率",
-    value: 7.12,
-    source: {
-      endpoint: `/api/analogy/facts/${RACE}`,
-      path: ["facts", 0, "value"],
-    },
-  },
-];
+
+// ---- 後半の場面（verifyData/sns-auto-plan-scenes-1.js） ----
+runSnsAutoPlanScenes4({ db, all, T0, RACE_URL, addRace, importBundle, run });
 async function importBundle({
   raceId = RACE,
   parent,
@@ -411,222 +387,8 @@ test("準優勝戦の素材 v1 から X・YouTube の item を作り、合格な
   assert.ok(notes.every((n) => n.includes("個別承認（mode=manual）なので送らない")));
 });
 
-test("同じ素材でもう一度走らせても item・下書き・通知は増えない", async () => {
-  const group = await importBundle();
-  await run();
-  const before = await drafts(group, "x");
-  const notes = [];
-  const result = await run({ notes });
-  assert.equal((await items()).length, 2);
-  assert.deepEqual(await drafts(group, "x"), before);
-  assert.equal(result.rowsWritten, 0);
-  assert.equal(notes.length, 0);
-});
-
-test("優勝戦・準優勝戦以外・中止・送る時刻を過ぎたレースは item を作らない", async () => {
-  await addRace("2037-10-16-05-01", "予選");
-  await addRace("2037-10-16-06-12", "優勝戦", { cancelled: "confirmed" });
-  await addRace("2037-10-16-07-12", "優勝戦", { start: "12:59:00" });
-  await addRace("2037-10-16-08-12", "ツッキー優勝戦");
-  for (const raceId of [
-    "2037-10-16-05-01",
-    "2037-10-16-06-12",
-    "2037-10-16-07-12",
-    "2037-10-16-08-12",
-  ])
-    await importBundle({ raceId });
-  const result = await run();
-  assert.equal((await items()).length, 0);
-  assert.deepEqual(result.report.items.map((i) => i.reason).sort(), [
-    "not_final_stage",
-    "not_final_stage",
-    "race_cancelled",
-    "too_late",
-  ]);
-});
-
-test("数値の照合が合わなければ held_manual にし、下書き・UTM の表は変えない", async () => {
-  const group = await importBundle();
-  const notes = [];
-  await run({
-    notes,
-    checkClaims: async () => ({
-      ok: false,
-      revision: null,
-      observedAt: T0.toISOString(),
-      results: [{ id: "c1", ok: false, reason: "value_mismatch" }],
-    }),
-  });
-  const [x] = await items();
-  assert.equal(x.state, "held_manual");
-  assert.match(x.held_reason, /数値の照合: c1 value_mismatch/);
-  const [parent] = await drafts(group, "x");
-  assert.equal(parent.publish_blocked, true);
-  assert.equal(parent.caption_text.includes("utm_"), false);
-  assert.equal((await all("SELECT * FROM sns_post_tracking")).length, 0);
-  assert.equal(notes.length, 2);
-  assert.ok(notes[0].includes("止めた"));
-});
-
-test("UTM を差し込んだ後の本文に禁止表現があれば held_manual", async () => {
-  await importBundle({ parent: `競艇の準優勝戦。\n${RACE_URL}` });
-  await run();
-  const [x, yt] = await items();
-  assert.equal(x.state, "held_manual");
-  assert.match(x.held_reason, /禁止表現/);
-  assert.equal(yt.state, "manual");
-});
-
-test("取得の失敗だけなら checking のままやり直し、3回目で held_manual。途中で通れば manual", async () => {
-  await importBundle();
-  const failing = async () => ({
-    ok: false,
-    revision: null,
-    observedAt: T0.toISOString(),
-    results: [{ id: "c1", ok: false, reason: "fetch_failed: HTTP 503" }],
-  });
-  await run({ checkClaims: failing });
-  assert.deepEqual(
-    (await items()).map((i) => [i.state, i.checks.attempts]),
-    [
-      ["checking", 1],
-      ["checking", 1],
-    ],
-  );
-  await run({ checkClaims: failing });
-  await run();
-  assert.deepEqual(
-    (await items()).map((i) => i.state),
-    ["manual", "manual"],
-  );
-
-  await db.exec(
-    "DELETE FROM sns_post_tracking; UPDATE sns_x_send_jobs SET parent_job_id=NULL; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER; DELETE FROM sns_bundle_imports;",
-  );
-  await importBundle();
-  for (let i = 0; i < 3; i++) await run({ checkClaims: failing });
-  assert.deepEqual(
-    (await items()).map((i) => [i.state, i.checks.attempts]),
-    [
-      ["held_manual", 3],
-      ["held_manual", 3],
-    ],
-  );
-});
-
-test("リンク先の表示の印が見えなければ held_manual（やり直さない）", async () => {
-  await importBundle();
-  await run({ headless: createMockHeadless({ visibleSelectors: [] }) });
-  const [x] = await items();
-  assert.equal(x.state, "held_manual");
-  assert.match(x.held_reason, /リンク先の表示: public_component_missing/);
-});
-
-test("shadow は検査だけで、item・下書き・UTM の表・Slack に書かない", async () => {
-  const group = await importBundle();
-  const notes = [];
-  sqlStore.calls.length = 0;
-  const result = await run({ mode: "shadow", notes });
-  assert.equal((await items()).length, 0);
-  assert.equal((await drafts(group, "x"))[0].publish_blocked, true);
-  assert.equal((await all("SELECT * FROM sns_post_tracking")).length, 0);
-  assert.equal(notes.length, 0);
-  assert.deepEqual(
-    result.report.items.map((i) => i.outcome),
-    ["manual", "manual"],
-  );
-  assert.equal(sqlStore.calls.length, 0);
-});
-
-test("manual にした後で公開保留を外せずに落ちたものは、次の実行で外す", async () => {
-  const group = await importBundle();
-  await run();
-  await db.exec(
-    "ALTER TABLE sns_drafts DISABLE TRIGGER USER; UPDATE sns_drafts SET publish_blocked=true; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
-  );
-  const result = await run();
-  assert.deepEqual(
-    (await drafts(group, "x")).map((d) => d.publish_blocked),
-    [false, true],
-  );
-  assert.equal((await drafts(group, "youtube"))[0].publish_blocked, false);
-  assert.deepEqual(
-    result.report.items.filter((i) => i.outcome === "unblocked").length,
-    2,
-  );
-});
-
-test("158 が未適用で月の切り替えの関数が無くても、知らせて item の計画は続ける", async () => {
-  sqlStore.calls.length = 0;
-  await importBundle();
-  const result = await run();
-  assert.deepEqual(sqlStore.calls, [
-    "roll_sns_send_baselines",
-    "roll_sns_x_send_period",
-  ]);
-  assert.deepEqual(
-    result.report.alerts.map((a) => a.key),
-    ["roll:roll_sns_x_send_period"],
-  );
-  assert.equal((await items()).length, 2);
-});
-
-test("同じレースの素材が2つあれば新しい方を使い、別の素材の item が生きていれば作らない", async () => {
-  const older = await importBundle({ createdAt: "2037-10-15T00:00:00Z" });
-  const newer = await importBundle({ createdAt: "2037-10-16T00:00:00Z" });
-  await run();
-  assert.ok((await items()).every((i) => i.bundle_import_id === newer));
-  const rows = await sqlStore.todaysBundles("2037-10-16");
-  const plans = planCandidates(
-    { ...rows, bundles: rows.bundles.filter((b) => b.id === older) },
-    T0,
-  );
-  assert.equal(plans.todo.length, 0);
-});
-
-test("PostgREST の store: URL・条件付きの更新・失敗は投げる", async () => {
-  const calls = [];
-  const fetchImpl = async (url, options = {}) => {
-    calls.push({ url, method: options.method ?? "GET", body: options.body });
-    if (url.includes("fail")) return new Response("", { status: 500 });
-    if (options.method === "PATCH" && url.includes("none"))
-      return new Response("[]");
-    if (url.includes("sns_bundle_imports"))
-      return new Response(
-        JSON.stringify([
-          { id: "b1", bundle: { race_id: RACE }, created_at: "x" },
-          { id: "b2", bundle: { race_id: "2037-10-15-01-01" } },
-        ]),
-      );
-    return new Response(JSON.stringify([{ id: "1" }]));
-  };
-  const store = createAutoPlanStore({ url: "https://db", key: "k", fetchImpl });
-  const rows = await store.todaysBundles("2037-10-16");
-  assert.deepEqual(
-    rows.bundles.map((b) => b.id),
-    ["b1"],
-  );
-  const urls = calls.map((c) => decodeURIComponent(c.url));
-  assert.ok(
-    urls[0].includes(
-      "schema_version=eq.ryujin-preview/1&created_at=gte.2037-10-12T15:00:00.000Z",
-    ),
-  );
-  assert.ok(urls.some((u) => u.includes(`races?race_id=in.("${RACE}")`)));
-  assert.ok(
-    urls.some((u) => u.includes('sns_drafts?bundle_import_id=in.("b1")')),
-  );
-  await store.updateItem("i1", "checking", { state: "manual" });
-  assert.ok(
-    calls.at(-1).url.endsWith("sns_auto_send_items?id=eq.i1&state=eq.checking"),
-  );
-  await store.updateDraft("d1", { publish_blocked: false });
-  assert.ok(
-    calls.at(-1).url.endsWith("sns_drafts?id=eq.d1&status=eq.pending_review"),
-  );
-  await assert.rejects(store.updateDraft("none", {}), /更新できない/);
-  await assert.rejects(store.rpc("fail"), /HTTP 500/);
-});
+// ---- 後半の場面（verifyData/sns-auto-plan-scenes-1.js） ----
+runSnsAutoPlanScenes5({ db, all, T0, RACE_URL, addRace, importBundle, sqlStore, run, items, drafts });
 
 test("cron の登録: sns_auto_plan は JST 5:30〜23:00 の中だけを死活の監視で見る、vercel.json に5分ごと", async () => {
   const active = activeMinutesOf(SCRAPE_JOBS.sns_auto_plan);
@@ -648,203 +410,5 @@ test("cron の登録: sns_auto_plan は JST 5:30〜23:00 の中だけを死活�
   );
 });
 
-const failingFetch = async () => ({
-  ok: false,
-  revision: null,
-  observedAt: T0.toISOString(),
-  results: [{ id: "c1", ok: false, reason: "fetch_failed: HTTP 503" }],
-});
-
-test("やり直し中（checking）の古い素材の item は、新しい素材が入ったら閉じ、次の実行で新しい素材の item を作る", async () => {
-  await importBundle({ createdAt: "2037-10-15T00:00:00Z" });
-  await run({ checkClaims: failingFetch });
-  assert.deepEqual(
-    (await items()).map((i) => i.state),
-    ["checking", "checking"],
-  );
-  const newer = await importBundle({ createdAt: "2037-10-16T00:00:00Z" });
-  await run();
-  assert.deepEqual((await items()).map((i) => i.state).sort(), [
-    "held_manual",
-    "held_manual",
-  ]);
-  await run();
-  const live = (await items()).filter((i) => i.state === "manual");
-  assert.equal(live.length, 2);
-  assert.ok(live.every((i) => i.bundle_import_id === newer));
-});
-
-test("やり直し中（checking）の item は、送る時刻を過ぎたら held_manual に閉じる", async () => {
-  await importBundle();
-  await run({ checkClaims: failingFetch });
-  const late = new Date("2037-10-16T05:00:00Z");
-  await runSnsAutoPlan(
-    { mode: "live", now: () => late, shouldStop: () => false },
-    {
-      store: sqlStore,
-      checkClaims: okClaims,
-      headless: createMockHeadless({
-        visibleSelectors: SCREEN_MARKERS["race-sonar"],
-      }),
-      markers: SCREEN_MARKERS,
-      riskRules,
-      trackingStore,
-    },
-  );
-  const rows = await items();
-  assert.deepEqual(
-    rows.map((i) => i.state),
-    ["held_manual", "held_manual"],
-  );
-  assert.match(rows[0].held_reason, /too_late/);
-});
-
-test("1つの素材の検査が例外で落ちても、ほかのレースの item は作る", async () => {
-  await addRace("2037-10-16-09-11", "優勝戦");
-  await importBundle({ raceId: "2037-10-16-09-11" });
-  await importBundle();
-  const result = await run({
-    checkClaims: async ({ raceId }) => {
-      if (raceId === RACE) throw new Error("boom");
-      return okClaims();
-    },
-  });
-  assert.deepEqual(
-    result.report.alerts
-      .filter((a) => a.key.startsWith("plan:"))
-      .map((a) => a.key),
-    [`plan:${RACE}`],
-  );
-  assert.ok((await items()).every((i) => i.race_id === "2037-10-16-09-11"));
-  assert.equal((await items()).length, 2);
-});
-
-const jobsOf = (groupId) =>
-  all(
-    `SELECT j.*, d.platform, d.thread_index FROM sns_x_send_jobs j JOIN sns_drafts d ON d.id=j.draft_id
-     WHERE d.bundle_import_id=$1 ORDER BY d.platform, d.thread_index`,
-    [groupId],
-  );
-const autoApprover = async () =>
-  (
-    await first(
-      "SELECT auto_approver_id a FROM sns_auto_send_control WHERE channel='x'",
-    )
-  ).a;
-
-test("mode=auto で評価役の P0 が0件なら、事前通知のあと自動送信の承認者で承認する（X は親から順、送る時刻は締切の60分前）", async () => {
-  await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
-  const group = await importBundle({
-    qa: {
-      pass: true,
-      numeric_claims_match: true,
-      L0_hits: [],
-      review: { p0: 0, p1: 1 },
-    },
-  });
-  const notes = [];
-  const result = await run({ notes });
-  const [x, yt] = await items();
-  assert.deepEqual([x.state, yt.state], ["notified", "notified"]);
-  assert.ok(x.notified_at && x.stop_token_hash);
-  const jobs = await jobsOf(group);
-  const auto = await autoApprover();
-  assert.deepEqual(
-    jobs.map((j) => [j.platform, j.thread_index, j.state]),
-    [
-      ["x", 0, "queued"],
-      ["x", 1, "queued"],
-      ["youtube", 0, "queued"],
-    ],
-  );
-  assert.ok(jobs.every((j) => j.approver_id === auto));
-  // 子は1つ前の job につなぐ（親が posted になるまで claim されない）
-  assert.equal(jobs[1].parent_job_id, jobs[0].id);
-  assert.equal(jobs[0].parent_job_id, null);
-  for (const j of jobs)
-    assert.equal(j.scheduled_at.toISOString(), "2037-10-16T05:00:00.000Z");
-  assert.ok(
-    result.report.items.filter((i) => i.outcome === "auto_approved").length ===
-      2,
-  );
-  assert.equal(notes.filter((n) => n.includes("JST 14:00 に送る")).length, 2);
-  // もう一度走らせても承認・通知は増えない
-  const again = [];
-  await run({ notes: again });
-  assert.equal((await jobsOf(group)).length, 3);
-  assert.equal(again.length, 0);
-});
-
-test("評価役の P0 があれば自動では送らず manual のまま知らせる", async () => {
-  await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
-  const group = await importBundle({
-    qa: {
-      pass: true,
-      numeric_claims_match: true,
-      L0_hits: [],
-      review: { p0: 2 },
-    },
-  });
-  const notes = [];
-  await run({ notes });
-  assert.deepEqual(
-    (await items()).map((i) => i.state),
-    ["manual", "manual"],
-  );
-  assert.equal((await jobsOf(group)).length, 0);
-  assert.equal(notes.filter((n) => n.includes("P0 が2件")).length, 2);
-});
-
-test("事前通知に失敗したら notifying のまま承認せず、次の実行で通知してから承認する", async () => {
-  await db.exec(
-    "UPDATE sns_auto_send_control SET mode='auto' WHERE channel='x'",
-  );
-  const group = await importBundle();
-  const failed = await run({
-    notify: async (text) => {
-      if (text.includes("自動送信（全貌動画）")) throw new Error("slack down");
-    },
-  });
-  const [x, yt] = await items();
-  assert.deepEqual([x.state, yt.state], ["notifying", "manual"]);
-  assert.equal((await jobsOf(group)).length, 0);
-  assert.ok(failed.report.alerts.some((a) => a.key.startsWith("plan:")));
-  const notes = [];
-  await run({ notes });
-  assert.equal((await items())[0].state, "notified");
-  assert.deepEqual(
-    (await jobsOf(group)).map((j) => [j.platform, j.thread_index]),
-    [
-      ["x", 0],
-      ["x", 1],
-    ],
-  );
-  assert.equal(notes.length, 1);
-});
-
-test("mode=manual なら今までどおり個別承認（自動の承認者の job は作らない）", async () => {
-  const group = await importBundle({
-    qa: {
-      pass: true,
-      numeric_claims_match: true,
-      L0_hits: [],
-      review: { p0: 0 },
-    },
-  });
-  await run();
-  assert.deepEqual(
-    (await items()).map((i) => i.state),
-    ["manual", "manual"],
-  );
-  assert.equal((await jobsOf(group)).length, 0);
-});
-
-test("評価役の判定: review.p0 があればそれ、無ければ qa.pass", () => {
-  assert.equal(reviewGate({ pass: true }).ok, true);
-  assert.equal(reviewGate({ pass: false }).ok, false);
-  assert.equal(reviewGate(null).ok, false);
-  assert.equal(reviewGate({ pass: true, review: { p0: 0 } }).ok, true);
-  assert.equal(reviewGate({ pass: true, review: { p0: 1 } }).ok, false);
-  assert.equal(reviewGate({ pass: true, review: { p0: "0" } }).ok, false);
-  assert.equal(reviewGate({ pass: true, review: {} }).ok, false);
-});
+// ---- 後半の場面（verifyData/sns-auto-plan-scenes-2.js） ----
+runSnsAutoPlanScenes6({ db, first, all, riskRules, T0, addRace, importBundle, sqlStore, trackingStore, okClaims, run, items });

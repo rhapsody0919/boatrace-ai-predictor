@@ -221,6 +221,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/pitReportParser.js` | 公式のピットレポート（boatrace.jp race/pitreport）のパーサー（純関数。DB・取得先に接続しない） | splitConfidence, parsePitReportHtml, PIT_REPORT_PARSER_VERSION, PIT_REPORT_STATUSES |
 | `scripts/lib/pitReportRows.js` | ピットレポートの解析結果（pitReportParser.js）から、DBへ書く行・スロットの結果（outcome）・ | isPitReportCandidate, pendingRetrySec, outcomeForStatus, computeContentHash, buildPitReportRows ほか5件 |
 | `scripts/lib/pitReportSchema.js` | ピットレポートの保存先（マイグレーション085: race_pit_reports・race_pit_comments）が、接続先のDBに | detectPitReportSchema, clearPitReportSchemaCache, PIT_REPORT_TABLES, PIT_SCHEMA_CACHE_TTL_MS |
+| `scripts/lib/pitReportWrite.js` | ピットレポート（pitReportJob.js の processPitReportRace）の、解析結果の読みと live の書き込み。 | readParsedPitReport, settlePartial, writePitReportLive, failure |
 | `scripts/lib/placementDistribution.js` | 2着・3着のコース別統計分布 | getPlacementBaseline, PLACEMENT_DISTRIBUTION, GLOBAL_PLACEMENT_AVERAGE |
 | `scripts/lib/pointRankFetch.js` | — | — |
 | `scripts/lib/pointRankJob.js` | 得点率（B2、racer_series_points）の共通ラッパ向けハンドラー（tasks.md T4b-12-1、plan.md §4.3）。 | isLastChanceForPending, runPointRankJob, POINT_RANK_CONCURRENCY |
@@ -374,6 +375,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/sns/thinkingGradeDay.js` | — | thinkingGradeDayVenue, todayTargetReason, THINKING_GRADE_DAY_GRADES, THINKING_GRADE_DAY_MIN_RACE_NUMBER, THINKING_GRADE_DAY_MAX_RACE_NUMBER ほか1件 |
 | `scripts/lib/sns/todayDigestStatus.js` | /today の X 投稿の版（digestRevision）と、載せる候補のレースの状態（pickRaceStatus）。 | digestRevision, pickRaceStatus, TODAY_SCREEN_KEY |
 | `scripts/lib/sns/todayDraft.js` | — | isTodayDraft |
+| `scripts/lib/sns/todayModel.js` | /today のモデル（人の画面の部分集合）の組み立て。api/_lib/botToday.js から字のまま下ろした物（scripts/lib から api/… | buildTodayModel, NOT_GENERATED_TEXT, CARD_PREVIEW_COUNT |
 | `scripts/lib/sns/xApiBase.js` | — | X_API_BASE |
 | `scripts/lib/sns/xLength.js` | X の投稿の文字数（2026-10-14 オーナー決定: X は長文の1投稿、Premium 前提）。 | xPostValid, X_POST_MAX, X_LONG_POST_MAX, xPostMax |
 | `scripts/lib/sns/xSend.js` | — | mobileVersion, createXSnapshot, runXSendJob, createMockXAdapter |
@@ -634,4 +636,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 592 ファイル / export 3208 件。
+対象 594 ファイル / export 3215 件。
