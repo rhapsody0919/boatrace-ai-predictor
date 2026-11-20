@@ -30,6 +30,8 @@ import {
 import { mainRefresh as mainRefreshRaw } from "../daily/generate-predictions.js";
 import { scrapeAndUpsertRaces } from "../daily/scrape-exhibition-data.js";
 import { createFakeClient } from "./verifyData/prediction-refresh-fake-client.js";
+import { checkRefreshWiring } from "./verifyData/cron-entry-checks.js";
+import { checkScheduledRefresh } from "./verifyData/scrape-scheduled-scenes.js";
 import { runPredictionRefreshScenes1 } from "./verifyData/prediction-refresh-scenes-1.js";
 import { runPredictionRefreshScenes2, runPredictionRefreshScenes3 } from "./verifyData/prediction-refresh-scenes-2.js";
 import { runPredictionRefreshScenes4 } from "./verifyData/prediction-refresh-scenes-3.js";
@@ -389,61 +391,24 @@ await runPredictionRefreshScenes2({ mainRefresh, check, show, raceTables, NOW, q
 await runPredictionRefreshScenes3({ mainRefresh, check, show, raceTables, NOW, quiet });
 
 // ---------------------------------------------------------------------------
-// (h) 配線の静的確認（scrape-scheduled.js・api/cron/exhibition.js は、import 時に実行される／HTTPハンドラーの
-//     ため、ここでは実行できない。トグルの配線が外れていないことを、ソースで確認する）
+// (h) 配線（scrape-scheduled.js は import 時に main が動く入口、api/cron/exhibition.js・race-info.js は HTTP ハンドラー）。
+//     本文の字は読まず、取得・DB を偽に差し替えて main を回す・import を差し替えて作り手への引数を見る
+//     （verifyData/scrape-scheduled-scenes.js・cron-entry-checks.js）
 // ---------------------------------------------------------------------------
 {
+  await checkScheduledRefresh({ check, show });
   const fs = await import("node:fs");
-  const read = (path) =>
-    fs.readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
-  const scheduled = read("scripts/daily/scrape-scheduled.js");
-  check(
-    "scrape-scheduled.js: オッズ起点の除外は SKIP_ODDS_REFRESH_ON_GHA（isOddsRefreshSkippedOnGha）で決まり、collectGhaRefreshRaceIds で対象を集める",
-    /const skipOddsRefresh = isOddsRefreshSkippedOnGha\(\)/.test(scheduled) &&
-      /collectGhaRefreshRaceIds\(\{[\s\S]*?skipOddsRefresh,[\s\S]*?\}\)/.test(
-        scheduled,
-      ),
+  const workflow = fs.readFileSync(
+    new URL("../../.github/workflows/scrape-scheduled.yml", import.meta.url),
+    "utf8",
   );
-  check(
-    "scrape-scheduled.js: 書き込み方式を指定しない（既定の upsert。replace は BOA-628 で廃止）",
-    !/writeMode/.test(scheduled),
-  );
-  check(
-    "scrape-scheduled.js: オッズ・レース情報・展示の各起点を別々の集合に集めている（オッズ起点だけを外せる）",
-    /oddsRaceIds\.add/.test(scheduled) &&
-      /infoRaceIds\.add/.test(scheduled) &&
-      /exhibitionRaceIds\.add/.test(scheduled) &&
-      !/updatedRaceIds\.add/.test(scheduled),
-  );
-  const workflow = read(".github/workflows/scrape-scheduled.yml");
   check(
     "scrape-scheduled.yml: SKIP_ODDS_REFRESH_ON_GHA を、リポジトリ変数（vars）から環境に渡す（未設定なら空＝off）",
     /SKIP_ODDS_REFRESH_ON_GHA: \$\{\{ vars\.SKIP_ODDS_REFRESH_ON_GHA \}\}/.test(
       workflow,
     ),
   );
-  // 展示・レース情報の Vercel 関数の本体は scripts/lib/scrapeJobs/preRaceHandlers.js（api/cron/exhibition.js・race-info.js は薄い入口）
-  const handlers = read("scripts/lib/scrapeJobs/preRaceHandlers.js");
-  check(
-    "preRaceHandlers.js: mainRefresh は有効なときだけ動的 import する（無効なときは同じモジュール読み込み）。展示の従来の経路（runLegacyExhibition）は消した（scraping-load-budget spec の P0）",
-    !/runLegacyExhibition\(/.test(handlers) &&
-      /await import\("\.\.\/\.\.\/daily\/generate-predictions\.js"\)/.test(
-        handlers,
-      ) &&
-      !/^import .*generate-predictions/m.test(handlers),
-  );
-  check(
-    "preRaceHandlers.js: レース情報・展示のスロットの経路は、全スロットの完了後に、変更を書いたレースについて refreshAfterChange を呼ぶ（スロットのリースの外）",
-    /refreshAfterChange\(\{\s*result: \{ changedRaceIds/.test(handlers),
-  );
-  for (const file of ["exhibition", "race-info"]) {
-    const entry = read(`api/cron/${file}.js`);
-    check(
-      `api/cron/${file}.js: 本体は preRaceHandlers.js（mainRefresh を静的 import しない）`,
-      /scripts\/lib\/scrapeJobs\/preRaceHandlers\.js/.test(entry) &&
-        !/generate-predictions/.test(entry.replace(/\/\*[\s\S]*?\*\//g, "")),
-    );
-  }
+  await checkRefreshWiring({ check, show });
 }
 
 // ---- 後半の場面（verifyData/prediction-refresh-scenes-3.js） ----
