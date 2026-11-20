@@ -50,6 +50,40 @@ const countText = (count, total) =>
     ? `上位${count}件 / ${total}件`
     : `${count}件`;
 
+// 行をセクションごとに分ける
+function groupTodayRows(rows) {
+  const bySection = {};
+  for (const row of rows) {
+    // 逃がしは人の画面の一覧と同じく2号艇だけ。3号艇は折りたたみの中なので出さない（2026-10-15）
+    if (row.section === "nigashi" && row.course !== NIGASHI_LIST_COURSE) continue;
+    (bySection[row.section] ??= []).push(row);
+  }
+  return bySection;
+}
+
+// 日付と開催数の行
+const todayDateLine = (day, date) =>
+  day
+    ? `${formatJaDate(date)}\u3000${day.venue_count}会場 ${day.race_count}レース`
+    : formatJaDate(date);
+
+// 期間の行
+const todayWindow = (day) =>
+  day?.window_start
+    ? `${day.window_start} 〜 ${day.window_end}（${day.window_days}日）／ 調子は直近90日`
+    : null;
+
+// 用語（イン崩れ指数には時刻を足す）
+const todayGlossary = (day) =>
+  MORNING_DIGEST_GLOSSARY.map((entry) => ({
+    term: entry.term,
+    body:
+      glossaryBodyToText(entry.body) +
+      (entry.key === GLOSSARY_KEY_VOLATILITY && day?.generated_at
+        ? `この数値は ${volatilityTime(day.generated_at)} 時点のものです。`
+        : ""),
+  }));
+
 /**
  * /today のモデル（人の画面の部分集合）
  *
@@ -59,12 +93,7 @@ const countText = (count, total) =>
 export function buildTodayModel(digest, { date, t }) {
   const { day, rows } = digest;
   const generated = Boolean(day?.generated_at);
-  const bySection = {};
-  for (const row of rows) {
-    // 逃がしは人の画面の一覧と同じく2号艇だけ。3号艇は折りたたみの中なので出さない（2026-10-15）
-    if (row.section === "nigashi" && row.course !== NIGASHI_LIST_COURSE) continue;
-    (bySection[row.section] ??= []).push(row);
-  }
+  const bySection = groupTodayRows(rows);
   const race = (row) => ({
     race: `${t(`venues.${row.venue_code}`)} ${row.race_number}R`,
     deadline: deadlineText(row.start_time),
@@ -104,12 +133,8 @@ export function buildTodayModel(digest, { date, t }) {
       canonical: MORNING_DIGEST_META.canonical,
     },
     h1: MORNING_DIGEST_META.h1,
-    dateLine: day
-      ? `${formatJaDate(date)}\u3000${day.venue_count}会場 ${day.race_count}レース`
-      : formatJaDate(date),
-    window: day?.window_start
-      ? `${day.window_start} 〜 ${day.window_end}（${day.window_days}日）／ 調子は直近90日`
-      : null,
+    dateLine: todayDateLine(day, date),
+    window: todayWindow(day),
     generated,
     notGeneratedText: generated ? null : NOT_GENERATED_TEXT,
     featured:
@@ -128,15 +153,6 @@ export function buildTodayModel(digest, { date, t }) {
           racerSection("returned"),
         ]
       : [],
-    glossary: generated
-      ? MORNING_DIGEST_GLOSSARY.map((entry) => ({
-          term: entry.term,
-          body:
-            glossaryBodyToText(entry.body) +
-            (entry.key === GLOSSARY_KEY_VOLATILITY && day?.generated_at
-              ? `この数値は ${volatilityTime(day.generated_at)} 時点のものです。`
-              : ""),
-        }))
-      : [],
+    glossary: generated ? todayGlossary(day) : [],
   };
 }
