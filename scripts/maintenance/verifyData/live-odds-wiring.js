@@ -8,13 +8,13 @@
  *
  * 使い方:
  *   const live = await loadLiveOddsApi({ fetchImpl: async () => new Response(html) });
- *   live.config・live.handler・live.record（politeFetchOptions・stores・queries・rpcs・supabase・rows）・await live.call({ method, url, query })
+ *   live.config・live.handler・live.supabase（live.js が受け取る偽物）・live.record（politeFetchOptions・stores・queries・rpcs・rows）・await live.call({ method, url, query })
  */
 import { register } from "node:module";
 // 写し3本の静的な import。読み込みの差し替えは下の HOOKS（URL）で行うが、verify→verifyData の辿り（変異検査の data_readers）が静的な相対 import しか見ないため、ここで名指しする
 import "./live-odds-wiring-politeFetch.js";
 import "./live-odds-wiring-store.js";
-import "./live-odds-wiring-supabase.js";
+import { supabase as fakeSupabaseExport } from "./live-odds-wiring-supabase.js";
 
 export const WIRING_KEY = Symbol.for("verify-odds-live-api.live-odds-wiring"); // 写し3本も同じ鍵を Symbol.for で持つ
 
@@ -97,6 +97,7 @@ export async function loadLiveOddsApi({ fetchImpl }) {
     config: mod.config,
     handler: mod.default,
     record,
+    supabase: fakeSupabaseExport, // api/odds/live.js が supabaseClient.js から受け取る物（store へ渡した client と比べる用）
     async call(req) {
       const { res, out } = fakeRes();
       await mod.default(req, res);

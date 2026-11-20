@@ -518,7 +518,7 @@ const liveFirst = await live.call(liveReq(`?${new URLSearchParams({ raceId: LIVE
       opts[0].maxRetries === 0 &&
       opts[0].timeoutMs === 12000 &&
       live.record.stores.length === 1 &&
-      live.record.stores[0].client === live.record.supabase &&
+      live.record.stores[0].client === live.supabase &&
       live.record.queries.some((q) => q.table === "scrape_job_state"),
     show({
       status: liveFirst.status,
