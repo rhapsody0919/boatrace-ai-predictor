@@ -4,10 +4,14 @@
  * スタイルは EnglishGuide.css を共用
  */
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import { getSiteFooterLinks } from "../components/siteFooterLinks";
+import {
+  GuidePage,
+  GuideTable,
+  ExampleEntriesTable,
+  TechniqueList,
+  DataPointModels,
+  RaceTabsList,
+} from "./GuideParts";
 import "./EnglishGuide.css";
 
 const TECHNIQUES = [
@@ -98,56 +102,6 @@ const EXAMPLE_RACE = {
   venue: "스미노에",
   date: "2026년 9월 6일",
   raceNo: 11,
-  entries: [
-    {
-      boat: 1,
-      name: "徳増　　秀樹",
-      grade: "A1",
-      winRate: "6.16",
-      localWinRate: "6.59",
-      motor2Rate: "32.2%",
-    },
-    {
-      boat: 2,
-      name: "近江　　翔吾",
-      grade: "A2",
-      winRate: "6.49",
-      localWinRate: "6.24",
-      motor2Rate: "28.2%",
-    },
-    {
-      boat: 3,
-      name: "山本　　修一",
-      grade: "A2",
-      winRate: "5.68",
-      localWinRate: "6.62",
-      motor2Rate: "38.0%",
-    },
-    {
-      boat: 4,
-      name: "佐々木　翔斗",
-      grade: "A2",
-      winRate: "5.30",
-      localWinRate: "5.43",
-      motor2Rate: "33.7%",
-    },
-    {
-      boat: 5,
-      name: "白水　　勝也",
-      grade: "A1",
-      winRate: "6.38",
-      localWinRate: "6.50",
-      motor2Rate: "23.5%",
-    },
-    {
-      boat: 6,
-      name: "間庭　　菜摘",
-      grade: "B1",
-      winRate: "4.67",
-      localWinRate: "4.56",
-      motor2Rate: "27.8%",
-    },
-  ],
   payout: "¥1,010",
 };
 
@@ -211,28 +165,17 @@ function KoreaVsJapanSection() {
         한국 경정(미사리)과 기본 규칙은 같지만, 예측 관점에서 중요한 차이가
         있습니다:
       </p>
-      <div className="eg-table-wrapper">
-        <table className="eg-table">
-          <thead>
-            <tr>
-              <th>항목</th>
-              <th>한국 경정</th>
-              <th>일본 경정</th>
-            </tr>
-          </thead>
-          <tbody>
-            {DIFFERENCES.map((d) => (
-              <tr key={d.item}>
-                <td>
-                  <strong>{d.item}</strong>
-                </td>
-                <td>{d.kr}</td>
-                <td>{d.jp}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <GuideTable head={["항목", "한국 경정", "일본 경정"]}>
+        {DIFFERENCES.map((d) => (
+          <tr key={d.item}>
+            <td>
+              <strong>{d.item}</strong>
+            </td>
+            <td>{d.kr}</td>
+            <td>{d.jp}</td>
+          </tr>
+        ))}
+      </GuideTable>
       <p className="eg-note">
         핵심 차이는 <strong>1코스 승률</strong>입니다. 일본은 약 50%로
         한국(약 34%)보다 훨씬 높아, 예측의 출발점이 「1코스가 지키느냐,
@@ -286,17 +229,7 @@ function TechniquesSection() {
         개념이지만 일본어 용어를 알아두면 일본 중계와 용신 레이더 예측을
         읽을 수 있습니다.
       </p>
-      <div className="eg-technique-list">
-        {TECHNIQUES.map((t) => (
-          <div key={t.name} className="eg-technique">
-            <div className="eg-technique-name">
-              <strong>{t.name}</strong>{" "}
-              <span className="eg-kanji">{t.kanji}</span>
-            </div>
-            <p>{t.desc}</p>
-          </div>
-        ))}
-      </div>
+      <TechniqueList items={TECHNIQUES} />
     </section>
   );
 }
@@ -336,28 +269,17 @@ function BetTypesSection() {
   return (
     <section className="eg-section">
       <h2>🎫 베팅 방식</h2>
-      <div className="eg-table-wrapper">
-        <table className="eg-table">
-          <thead>
-            <tr>
-              <th>방식</th>
-              <th>맞히는 것</th>
-              <th>난이도</th>
-            </tr>
-          </thead>
-          <tbody>
-            {BET_TYPES.map((b) => (
-              <tr key={b.name}>
-                <td>
-                  <strong>{b.name}</strong>
-                </td>
-                <td>{b.pick}</td>
-                <td>{b.difficulty}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <GuideTable head={["방식", "맞히는 것", "난이도"]}>
+        {BET_TYPES.map((b) => (
+          <tr key={b.name}>
+            <td>
+              <strong>{b.name}</strong>
+            </td>
+            <td>{b.pick}</td>
+            <td>{b.difficulty}</td>
+          </tr>
+        ))}
+      </GuideTable>
       <p className="eg-note">
         삼쌍승식(일본의 3연단)이 압도적으로 인기 있는 방식으로, ¥100당 평균
         배당은 약 ¥7,000, 큰 이변 때는 ¥100,000를 넘기도 합니다.
@@ -366,7 +288,7 @@ function BetTypesSection() {
   );
 }
 
-function ReadingPredictionSection({ t }) {
+function ReadingPredictionSection() {
   return (
     <section className="eg-section">
       <h2>🤖 용신 레이더 예측 보는 법</h2>
@@ -385,15 +307,7 @@ function ReadingPredictionSection({ t }) {
           <strong>6척의 객관적 데이터 표</strong>를 확인합니다. 용신
           레이더는 예측 모델을 고르게 하지 않습니다 — 모두가 같은 데이터를
           보고 직접 판단합니다:
-          <div className="eg-models">
-            {DATA_POINTS.map((d) => (
-              <div key={d.name} className="eg-model">
-                <span className="eg-model-icon">{d.icon}</span>
-                <strong>{d.name}</strong>
-                <p>{d.desc}</p>
-              </div>
-            ))}
-          </div>
+          <DataPointModels points={DATA_POINTS} />
         </li>
         <li>
           <strong>「AI 예상」 탭을 엽니다</strong> — 1턴 마크 전개
@@ -402,14 +316,7 @@ function ReadingPredictionSection({ t }) {
           경주가 끝나면 예측이 적중했는지도 여기서 확인합니다.
         </li>
       </ol>
-      <p>{RACE_TABS_INTRO}</p>
-      <ul className="eg-list eg-race-tabs">
-        {RACE_TABS.map((tab) => (
-          <li key={tab.key}>
-            <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
-          </li>
-        ))}
-      </ul>
+      <RaceTabsList intro={RACE_TABS_INTRO} tabs={RACE_TABS} />
     </section>
   );
 }
@@ -423,34 +330,7 @@ function ExampleRaceSection() {
         {EXAMPLE_RACE.date} {EXAMPLE_RACE.venue} {EXAMPLE_RACE.raceNo}R — 의
         실제 출주표 데이터, 실제 베팅, 실제 배당금을 보여드립니다.
       </p>
-      <div className="eg-table-wrapper">
-        <table className="eg-table">
-          <thead>
-            <tr>
-              <th>정번호</th>
-              <th>선수</th>
-              <th>급별</th>
-              <th>승률</th>
-              <th>현지 승률</th>
-              <th>모터 2연대율</th>
-            </tr>
-          </thead>
-          <tbody>
-            {EXAMPLE_RACE.entries.map((e) => (
-              <tr key={e.boat}>
-                <td>
-                  <strong>{e.boat}</strong>
-                </td>
-                <td translate="no">{e.name}</td>
-                <td>{e.grade}</td>
-                <td>{e.winRate}</td>
-                <td>{e.localWinRate}</td>
-                <td>{e.motor2Rate}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ExampleEntriesTable head={["정번호", "선수", "급별", "승률", "현지 승률", "모터 2연대율"]} />
       <p>
         <strong>해석:</strong> 1번 보트는 A1급이며 이 경정장 현지 승률이
         가장 높습니다(6.59) — 1코스에서 인빠지기로 이기는 전형적인 유력
@@ -536,54 +416,44 @@ function CtaSection() {
 }
 
 export default function KoGuide() {
-  const { t } = useTranslation();
-
   return (
-    <div className="app">
-      <title>일본 경정(쿄테이)이란? 규칙·베팅 입문 가이드 | 용신 레이더</title>
-      <meta
-        name="description"
-        content="일본 경정(BOAT RACE) 입문 가이드: 규칙, 승리 전법, 베팅 방식, 한국 경정과의 차이, 그리고 용신 레이더의 무료 AI 예측 보는 법."
-      />
-      <link rel="canonical" href="https://www.boat-ai.jp/ko/guide" />
+    <GuidePage
+      title="일본 경정(쿄테이)이란? 규칙·베팅 입문 가이드 | 용신 레이더"
+      description="일본 경정(BOAT RACE) 입문 가이드: 규칙, 승리 전법, 베팅 방식, 한국 경정과의 차이, 그리고 용신 레이더의 무료 AI 예측 보는 법."
+      canonical="https://www.boat-ai.jp/ko/guide"
+    >
+      {/* Hero */}
+      <HeroSection />
 
-      <Header />
+      {/* Korea vs Japan */}
+      <KoreaVsJapanSection />
 
-      <div className="eg-container">
-        {/* Hero */}
-        <HeroSection />
+      {/* Quick facts */}
+      <BasicInfoSection />
 
-        {/* Korea vs Japan */}
-        <KoreaVsJapanSection />
+      {/* Winning techniques */}
+      <TechniquesSection />
 
-        {/* Quick facts */}
-        <BasicInfoSection />
+      {/* Racer classes */}
+      <RacerClassesSection />
 
-        {/* Winning techniques */}
-        <TechniquesSection />
+      {/* Betting types */}
+      <BetTypesSection />
 
-        {/* Racer classes */}
-        <RacerClassesSection />
+      {/* How to read boatAI */}
+      <ReadingPredictionSection />
 
-        {/* Betting types */}
-        <BetTypesSection />
+      {/* Real example (BOA-250): actual past race data */}
+      <ExampleRaceSection />
 
-        {/* How to read boatAI */}
-        <ReadingPredictionSection t={t} />
+      {/* Venue guides */}
+      <VenueGuideSection />
 
-        {/* Real example (BOA-250): actual past race data */}
-        <ExampleRaceSection />
+      {/* Legal disclaimer */}
+      <DisclaimerSection />
 
-        {/* Venue guides */}
-        <VenueGuideSection />
-
-        {/* Legal disclaimer */}
-        <DisclaimerSection />
-
-        {/* CTA */}
-        <CtaSection />
-      </div>
-      <Footer links={getSiteFooterLinks(t)} />
-    </div>
+      {/* CTA */}
+      <CtaSection />
+    </GuidePage>
   );
 }

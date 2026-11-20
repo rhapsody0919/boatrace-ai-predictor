@@ -3,10 +3,14 @@
  * EnglishGuide の繁体字版。スタイルは EnglishGuide.css を共用
  */
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import { getSiteFooterLinks } from "../components/siteFooterLinks";
+import {
+  GuidePage,
+  GuideTable,
+  ExampleEntriesTable,
+  TechniqueList,
+  DataPointModels,
+  RaceTabsList,
+} from "./GuideParts";
 import "./EnglishGuide.css";
 
 const TECHNIQUES = [
@@ -61,56 +65,6 @@ const EXAMPLE_RACE = {
   venue: "住之江",
   date: "2026年9月6日",
   raceNo: 11,
-  entries: [
-    {
-      boat: 1,
-      name: "徳増　　秀樹",
-      grade: "A1",
-      winRate: "6.16",
-      localWinRate: "6.59",
-      motor2Rate: "32.2%",
-    },
-    {
-      boat: 2,
-      name: "近江　　翔吾",
-      grade: "A2",
-      winRate: "6.49",
-      localWinRate: "6.24",
-      motor2Rate: "28.2%",
-    },
-    {
-      boat: 3,
-      name: "山本　　修一",
-      grade: "A2",
-      winRate: "5.68",
-      localWinRate: "6.62",
-      motor2Rate: "38.0%",
-    },
-    {
-      boat: 4,
-      name: "佐々木　翔斗",
-      grade: "A2",
-      winRate: "5.30",
-      localWinRate: "5.43",
-      motor2Rate: "33.7%",
-    },
-    {
-      boat: 5,
-      name: "白水　　勝也",
-      grade: "A1",
-      winRate: "6.38",
-      localWinRate: "6.50",
-      motor2Rate: "23.5%",
-    },
-    {
-      boat: 6,
-      name: "間庭　　菜摘",
-      grade: "B1",
-      winRate: "4.67",
-      localWinRate: "4.56",
-      motor2Rate: "27.8%",
-    },
-  ],
   payout: "¥1,010",
 };
 
@@ -221,17 +175,7 @@ function TechniquesSection() {
         每一場勝利都會依「如何獲勝」被官方分類。 記住這 6
         個詞，就能看懂日文賽事實況和龍神雷達的預測。
       </p>
-      <div className="eg-technique-list">
-        {TECHNIQUES.map((t) => (
-          <div key={t.name} className="eg-technique">
-            <div className="eg-technique-name">
-              <strong>{t.name}</strong>{" "}
-              <span className="eg-kanji">{t.kanji}</span>
-            </div>
-            <p>{t.desc}</p>
-          </div>
-        ))}
-      </div>
+      <TechniqueList items={TECHNIQUES} />
     </section>
   );
 }
@@ -270,28 +214,17 @@ function BetTypesSection() {
   return (
     <section className="eg-section">
       <h2>🎫 投注玩法</h2>
-      <div className="eg-table-wrapper">
-        <table className="eg-table">
-          <thead>
-            <tr>
-              <th>玩法</th>
-              <th>投注內容</th>
-              <th>難度</th>
-            </tr>
-          </thead>
-          <tbody>
-            {BET_TYPES.map((b) => (
-              <tr key={b.name}>
-                <td>
-                  <strong>{b.name}</strong>
-                </td>
-                <td>{b.pick}</td>
-                <td>{b.difficulty}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <GuideTable head={["玩法", "投注內容", "難度"]}>
+        {BET_TYPES.map((b) => (
+          <tr key={b.name}>
+            <td>
+              <strong>{b.name}</strong>
+            </td>
+            <td>{b.pick}</td>
+            <td>{b.difficulty}</td>
+          </tr>
+        ))}
+      </GuideTable>
       <p className="eg-note">
         3連單是最受歡迎的玩法 — 每注 ¥100 的平均派彩約
         ¥7,000，大爆冷時甚至超過 ¥100,000。
@@ -300,7 +233,7 @@ function BetTypesSection() {
   );
 }
 
-function ReadingPredictionSection({ t }) {
+function ReadingPredictionSection() {
   return (
     <section className="eg-section">
       <h2>🤖 如何看懂龍神雷達的預測</h2>
@@ -319,29 +252,14 @@ function ReadingPredictionSection({ t }) {
           <strong>查看6艇的客觀數據表</strong>。
           龍神雷達不會要你選擇預測模型 —
           所有人看到的都是同一份數據，自行判斷：
-          <div className="eg-models">
-            {DATA_POINTS.map((d) => (
-              <div key={d.name} className="eg-model">
-                <span className="eg-model-icon">{d.icon}</span>
-                <strong>{d.name}</strong>
-                <p>{d.desc}</p>
-              </div>
-            ))}
-          </div>
+          <DataPointModels points={DATA_POINTS} />
         </li>
         <li>
           <strong>打開「AI預測」分頁</strong> —
           第一轉彎標的展開預測（附各展開的機率）、1號位失守指數（數值高代表容易爆冷：派彩更高、命中率更低），比賽結束後也能在這裡確認預測是否命中。
         </li>
       </ol>
-      <p>{RACE_TABS_INTRO}</p>
-      <ul className="eg-list eg-race-tabs">
-        {RACE_TABS.map((tab) => (
-          <li key={tab.key}>
-            <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
-          </li>
-        ))}
-      </ul>
+      <RaceTabsList intro={RACE_TABS_INTRO} tabs={RACE_TABS} />
     </section>
   );
 }
@@ -355,34 +273,7 @@ function ExampleRaceSection() {
         {EXAMPLE_RACE.date} {EXAMPLE_RACE.venue} 第{EXAMPLE_RACE.raceNo}場 —
         帶你看真實的出走表數據、真實的買法，以及真實的配當。
       </p>
-      <div className="eg-table-wrapper">
-        <table className="eg-table">
-          <thead>
-            <tr>
-              <th>艇號</th>
-              <th>選手</th>
-              <th>級別</th>
-              <th>勝率</th>
-              <th>當地勝率</th>
-              <th>馬達2連率</th>
-            </tr>
-          </thead>
-          <tbody>
-            {EXAMPLE_RACE.entries.map((e) => (
-              <tr key={e.boat}>
-                <td>
-                  <strong>{e.boat}</strong>
-                </td>
-                <td translate="no">{e.name}</td>
-                <td>{e.grade}</td>
-                <td>{e.winRate}</td>
-                <td>{e.localWinRate}</td>
-                <td>{e.motor2Rate}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ExampleEntriesTable head={["艇號", "選手", "級別", "勝率", "當地勝率", "馬達2連率"]} />
       <p>
         <strong>怎麼解讀：</strong>{" "}
         1號艇是A1級別，且本場當地勝率全場最高（6.59）——是典型的「1號位逃走（Nige）」熱門。3號艇雖然只是A2級別，但馬達2連率（38.0%）明顯優於其他艇——這是很多人不單看級別、而多考慮馬達表現來選2着的常見理由。
@@ -457,54 +348,44 @@ function CtaSection() {
 }
 
 export default function ZhTwGuide() {
-  const { t } = useTranslation();
-
   return (
-    <div className="app">
-      <title>什麼是日本賽艇（Kyotei）？規則與投注入門指南 | 龍神雷達</title>
-      <meta
-        name="description"
-        content="日本賽艇（BOAT RACE / Kyotei）新手完全指南：比賽規則、獲勝方式、投注玩法，以及如何看懂龍神雷達的免費 AI 預測。"
-      />
-      <link rel="canonical" href="https://www.boat-ai.jp/zh-TW/guide" />
+    <GuidePage
+      title="什麼是日本賽艇（Kyotei）？規則與投注入門指南 | 龍神雷達"
+      description="日本賽艇（BOAT RACE / Kyotei）新手完全指南：比賽規則、獲勝方式、投注玩法，以及如何看懂龍神雷達的免費 AI 預測。"
+      canonical="https://www.boat-ai.jp/zh-TW/guide"
+    >
+      {/* Hero */}
+      <HeroSection />
 
-      <Header />
+      {/* Quick facts */}
+      <QuickFactsSection />
 
-      <div className="eg-container">
-        {/* Hero */}
-        <HeroSection />
+      {/* The key concept */}
+      <LaneOneSection />
 
-        {/* Quick facts */}
-        <QuickFactsSection />
+      {/* Winning techniques */}
+      <TechniquesSection />
 
-        {/* The key concept */}
-        <LaneOneSection />
+      {/* Racer classes */}
+      <RacerClassesSection />
 
-        {/* Winning techniques */}
-        <TechniquesSection />
+      {/* Betting types */}
+      <BetTypesSection />
 
-        {/* Racer classes */}
-        <RacerClassesSection />
+      {/* How to read boatAI */}
+      <ReadingPredictionSection />
 
-        {/* Betting types */}
-        <BetTypesSection />
+      {/* Real example (BOA-250): actual past race data */}
+      <ExampleRaceSection />
 
-        {/* How to read boatAI */}
-        <ReadingPredictionSection t={t} />
+      {/* Venue guides */}
+      <VenueGuideSection />
 
-        {/* Real example (BOA-250): actual past race data */}
-        <ExampleRaceSection />
+      {/* Legal disclaimer */}
+      <DisclaimerSection />
 
-        {/* Venue guides */}
-        <VenueGuideSection />
-
-        {/* Legal disclaimer */}
-        <DisclaimerSection />
-
-        {/* CTA */}
-        <CtaSection />
-      </div>
-      <Footer links={getSiteFooterLinks(t)} />
-    </div>
+      {/* CTA */}
+      <CtaSection />
+    </GuidePage>
   );
 }
