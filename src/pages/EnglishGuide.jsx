@@ -8,8 +8,8 @@ import {
   GuideSection,
   GuideHero,
   GuideCta,
-  GuideTable,
   ExampleEntriesTable,
+  BetTypesTable,
   TechniqueList,
   DataPointModels,
   RaceTabsList,
@@ -255,17 +255,7 @@ function RacerClassesSection() {
 function BetTypesSection() {
   return (
     <GuideSection heading={<>🎫 Betting Types</>}>
-      <GuideTable head={<><th>Bet type</th><th>What you pick</th><th>Difficulty</th></>}>
-        {BET_TYPES.map((b) => (
-          <tr key={b.name}>
-            <td>
-              <strong>{b.name}</strong>
-            </td>
-            <td>{b.pick}</td>
-            <td>{b.difficulty}</td>
-          </tr>
-        ))}
-      </GuideTable>
+      <BetTypesTable head={<><th>Bet type</th><th>What you pick</th><th>Difficulty</th></>} items={BET_TYPES} />
       {/* i18n-allow: 券種の日本語名を併記する（マークシート・発売所で見る表記） */}
       <p className="eg-note">
         The Trifecta (3連単) is by far the most popular bet — average

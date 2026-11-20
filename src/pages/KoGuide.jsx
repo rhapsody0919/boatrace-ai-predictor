@@ -11,6 +11,7 @@ import {
   GuideCta,
   GuideTable,
   ExampleEntriesTable,
+  BetTypesTable,
   TechniqueList,
   DataPointModels,
   RaceTabsList,
@@ -253,17 +254,7 @@ function RacerClassesSection() {
 function BetTypesSection() {
   return (
     <GuideSection heading={<>🎫 베팅 방식</>}>
-      <GuideTable head={<><th>방식</th><th>맞히는 것</th><th>난이도</th></>}>
-        {BET_TYPES.map((b) => (
-          <tr key={b.name}>
-            <td>
-              <strong>{b.name}</strong>
-            </td>
-            <td>{b.pick}</td>
-            <td>{b.difficulty}</td>
-          </tr>
-        ))}
-      </GuideTable>
+      <BetTypesTable head={<><th>방식</th><th>맞히는 것</th><th>난이도</th></>} items={BET_TYPES} />
       <p className="eg-note">
         삼쌍승식(일본의 3연단)이 압도적으로 인기 있는 방식으로, ¥100당 평균
         배당은 약 ¥7,000, 큰 이변 때는 ¥100,000를 넘기도 합니다.

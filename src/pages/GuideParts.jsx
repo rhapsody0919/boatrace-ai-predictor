@@ -1,5 +1,5 @@
 /**
- * GuideParts - 外国語の入門ガイド（EnglishGuide・KoGuide・ZhTwGuide）が共に使う殻: 頁の枠・頭・節・CTA・表・決まり手・データの項目・レース詳細のタブの一覧・実例のレースの出走表。
+ * GuideParts - 外国語の入門ガイド（EnglishGuide・KoGuide・ZhTwGuide）が共に使う殻: 頁の枠・頭・節・CTA・表・券種の表・決まり手・データの項目・レース詳細のタブの一覧・実例のレースの出走表。
  * 画面の文は各ページから渡す（言語ごとの字は各ページに残す。廃止語の検査 check-deprecated-terms がページを名指しで読むため）
  */
 import { Link } from "react-router-dom";
@@ -121,6 +121,23 @@ export function GuideTable({ head, children }) {
         <tbody>{children}</tbody>
       </table>
     </div>
+  );
+}
+
+/** 券種の表（名・当てる物・難しさ。見出しの字だけ言語ごと） */
+export function BetTypesTable({ head, items }) {
+  return (
+    <GuideTable head={head}>
+      {items.map((b) => (
+        <tr key={b.name}>
+          <td>
+            <strong>{b.name}</strong>
+          </td>
+          <td>{b.pick}</td>
+          <td>{b.difficulty}</td>
+        </tr>
+      ))}
+    </GuideTable>
   );
 }
 

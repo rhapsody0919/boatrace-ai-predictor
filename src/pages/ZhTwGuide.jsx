@@ -8,8 +8,8 @@ import {
   GuideSection,
   GuideHero,
   GuideCta,
-  GuideTable,
   ExampleEntriesTable,
+  BetTypesTable,
   TechniqueList,
   DataPointModels,
   RaceTabsList,
@@ -199,17 +199,7 @@ function RacerClassesSection() {
 function BetTypesSection() {
   return (
     <GuideSection heading={<>🎫 投注玩法</>}>
-      <GuideTable head={<><th>玩法</th><th>投注內容</th><th>難度</th></>}>
-        {BET_TYPES.map((b) => (
-          <tr key={b.name}>
-            <td>
-              <strong>{b.name}</strong>
-            </td>
-            <td>{b.pick}</td>
-            <td>{b.difficulty}</td>
-          </tr>
-        ))}
-      </GuideTable>
+      <BetTypesTable head={<><th>玩法</th><th>投注內容</th><th>難度</th></>} items={BET_TYPES} />
       <p className="eg-note">
         3連單是最受歡迎的玩法 — 每注 ¥100 的平均派彩約
         ¥7,000，大爆冷時甚至超過 ¥100,000。
