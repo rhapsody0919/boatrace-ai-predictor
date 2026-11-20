@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2512 |
+| 読んだファイル | 2522 |
 | 読み書きのあるファイル | 309 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -171,7 +171,7 @@
 | fetch_counts_daily | service だけ |  | なし |  | fetch_counts |  |  |
 | get_accuracy_summary | service だけ |  | なし |  | models, predictions |  |  |
 | get_admin_rule_performance | service だけ |  | api/admin/rules/performance.js:41, scripts/maintenance/verify-admin-rule-performance.js:211 |  | predictions, race_results |  |  |
-| get_in_caution_band_rates | service だけ |  | scripts/daily/generate-unified-predictions.js:196, scripts/lib/inCautionHealth.js:107 / 名前の文字列: scripts/maintenance/verifyData/morning-init-jobs-scenes-3.js:154 |  | in_caution_gap_band_daily |  |  |
+| get_in_caution_band_rates | service だけ |  | scripts/lib/inCautionHealth.js:107, scripts/lib/unifiedPredictionsRun.js:163 / 名前の文字列: scripts/maintenance/verifyData/morning-init-jobs-scenes-3.js:154 |  | in_caution_gap_band_daily |  |  |
 | get_latest_racer_grades | service だけ |  | scripts/daily/update-racer-grade-cache.js:17 |  | race_entries |  |  |
 | get_predictions_by_date | anon 可 |  | api/predictions/[date].js:61, src/services/predictionQueries2.js:216 / 名前の文字列: api/predictions/[date].js:57, scripts/maintenance/check-anon-access.js:103 |  | exhibition_data, prediction_odds, predictions, race_conditions, race_entries, race_payouts, race_results, races |  |  |
 | get_predictions_by_date_light | anon 可 |  | api/predictions/[date].js:61, scripts/maintenance/verify-predictions-response.js:156, src/services/predictionQueries2.js:216 / 名前の文字列: api/predictions/[date].js:57, scripts/maintenance/check-anon-access.js:104, scripts/maintenance/check-anon-access.js:180 |  | exhibition_data, prediction_odds, predictions, race_conditions, race_entries, race_payouts, race_results, races |  |  |
@@ -711,9 +711,6 @@
   - `scripts/daily/calculate-unified-volatility-accuracy.js:115` select(helper:fetchAll)
   - `scripts/daily/generate-moriarty-recommendations.js:81` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/daily/generate-morning-digest.js:298` select [feature_contributions, model_id, race_id]
-  - `scripts/daily/generate-unified-predictions.js:152` select(helper:fetchAll)
-  - `scripts/daily/generate-unified-predictions.js:247` select(helper:fetchAll)
-  - `scripts/daily/generate-unified-predictions.js:260` select(helper:fetchAll)
   - `scripts/daily/generate-unified-trifecta-reference.js:44` select [feature_contributions, is_shadow, model_id, race_id]
   - `scripts/daily/scrape-prediction-odds.js:40` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/daily/todays-volatility-digest.js:124` select [feature_contributions, model_id, race_id]
@@ -722,6 +719,9 @@
   - `scripts/lib/predictionHitFix.js:24` select(helper:fetchAll)
   - `scripts/lib/raceResultPersist.js:39` select [feature_contributions, model_id, prediction_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/lib/scrapeJobs/predictionOddsHandlers.js:50` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
+  - `scripts/lib/unifiedPredictionsRun.js:119` select(helper:fetchAll)
+  - `scripts/lib/unifiedPredictionsRun.js:214` select(helper:fetchAll)
+  - `scripts/lib/unifiedPredictionsRun.js:227` select(helper:fetchAll)
   - `scripts/maintenance/backfill-is-hit-turn.js:28` select(helper:fetchAll)
   - `scripts/maintenance/backfill-missing-venue-day.js:131` select [race_id]
   - `scripts/maintenance/backfill-place-hits.js:62` select [is_hit_place, prediction_id, race_id, top_pick]
@@ -738,10 +738,10 @@
   - `src/services/raceQueries2.js:226` select [feature_contributions, model_id, predicted_at, race_id]
   - `src/services/ruleMatchService.js:124` select [confidence, model_id, predicted_at, race_id, top_2nd, top_3rd, top_pick]
 - 書き手（10）: 
-  - `scripts/daily/generate-unified-predictions.js:306` upsert [?]
   - `scripts/lib/predictionHitFix.js:73` update [?]
   - `scripts/lib/predictionWriteRows.js:328` upsert [?]
   - `scripts/lib/raceResultPersist.js:61` update [?]
+  - `scripts/lib/unifiedPredictionsRun.js:273` upsert [?]
   - `scripts/maintenance/backfill-is-hit-turn.js:69` update [is_hit_turn]
   - `scripts/maintenance/backfill-place-hits.js:42` update [is_hit_place, payout_place]
   - `scripts/maintenance/backfill-refund-hit-flags.js:135` update [?]
@@ -769,13 +769,13 @@
   - `scripts/analysis/turn-prediction-venue-deep-analysis.js:115` select [race_id, wave_height, weather, wind_direction, wind_speed]
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:90` select [race_id, wave_height, wind_speed]
   - `scripts/analysis/verify-volatility-predictive-power.js:72` select [race_id, wave_height, wind_speed]
-  - `scripts/daily/generate-unified-predictions.js:64` select(helper:fetchAll)
   - `scripts/lib/analogyV16Exhibition.js:191` rest(rest) [race_id, wave_height, weather, weather_observed_at, wind_direction, wind_speed]
   - `scripts/lib/pointRankRun.js:120` select [race_id, series_day]
   - `scripts/lib/predictionRaceFetch.js:152` select(helper:selectByRaceIds)
   - `scripts/lib/raceConditionsWriter.js:44` select(helper:upsertChangedRows)
   - `scripts/lib/snsAutoPlanRunnerStore.js:58` rest(rest) [race_id, race_stage]
   - `scripts/lib/snsTodayDigestV3.js:85` rest(rest) [is_final_day, race_id, race_stage, race_title, series_day]
+  - `scripts/lib/unifiedPredictionsRun.js:31` select(helper:fetchAll)
   - `scripts/maintenance/backfill-opening-day-races.js:96` select(helper:count)
   - `scripts/maintenance/backfill-race-conditions.js:77` select [race_id]
   - `scripts/maintenance/backfill-race-series-meta.js:162` select(helper:fetchAll)
@@ -853,8 +853,6 @@
   - `scripts/analysis/verify-volatility-predictive-power.js:58` select [boat_number, race_id, racer_id, win_rate]
   - `scripts/daily/generate-moriarty-recommendations.js:122` select [ai_score_safe_bet, ai_score_standard, ai_score_upset_focus, boat_number, race_id]
   - `scripts/daily/generate-morning-digest.js:152` select [boat_number, grade, is_absent, motor_2rate, motor_number, player_name, race_id, racer_id]
-  - `scripts/daily/generate-unified-predictions.js:55` select(helper:fetchAll)
-  - `scripts/daily/generate-unified-predictions.js:236` select(helper:fetchAll)
   - `scripts/daily/generate-unified-trifecta-reference.js:71` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/daily/morning-init.js:259` select(helper:fetchAll)
   - `scripts/lib/analogyV16Exhibition.js:261` rest(rest) [is_absent, race_id]
@@ -870,6 +868,8 @@
   - `scripts/lib/racerStStats.js:127` select(helper:fetchAll)
   - `scripts/lib/sns/todayDigestStatus.js:37` rest(rest) [boat_number, is_absent, race_id]
   - `scripts/lib/snsTodayDigestV3.js:89` rest(rest) [boat_number, grade, is_absent, player_name, race_id, racer_id]
+  - `scripts/lib/unifiedPredictionsRun.js:22` select(helper:fetchAll)
+  - `scripts/lib/unifiedPredictionsRun.js:203` select(helper:fetchAll)
   - `scripts/lib/venueEntryCourseStats/scrape.js:49` select(helper:fetchAll)
   - `scripts/maintenance/audit-race-entries-vs-kb.js:68` select(helper:fetchAll)
   - `scripts/maintenance/backfill-kb-recent-results.js:154` select(helper:fetchAll)
@@ -891,7 +891,7 @@
   - `scripts/maintenance/restore-entries-branch-hometown.js:39` select(helper:fetchAll)
   - `scripts/maintenance/restore-entries-branch-hometown.js:119` select(helper:upsertChangedRows)
   - `scripts/maintenance/verify-analogy-v16.js:321` rest(rest) [is_absent, race_id] （検査）
-  - `scripts/maintenance/verify-data-readers.js:557` select(embed) [racer_id] （検査）
+  - `scripts/maintenance/verify-data-readers.js:369` select(embed) [racer_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:46` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:47` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:51` rest(rest) [race_id] （検査）
@@ -1352,9 +1352,9 @@
   - `scripts/analysis/calibrate-unified-model.js:162` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:105` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/analysis/verify-volatility-predictive-power.js:87` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
-  - `scripts/daily/generate-unified-predictions.js:112` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `scripts/daily/generate-unified-trifecta-reference.js:84` select [avg_st, course_race_counts, racer_id, venue_code]
   - `scripts/lib/predictionRaceFetch.js:18` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
+  - `scripts/lib/unifiedPredictionsRun.js:79` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
   - `src/services/racerQueries.js:199` select [avg_st, avg_st_last_30, course_race_counts, flying_rate, racer_id, st_stddev, total_races, venue_code]
 - 書き手（1）: 
   - `scripts/analysis/aggregate-racer-stats.js:501` upsert(helper:upsertChangedRows) [?]
@@ -1587,7 +1587,7 @@
   - `scripts/maintenance/motor-pretest-backfill-fetch.js:72` select [race_date, race_number, venue_code]
   - `scripts/maintenance/update-venue-stats.js:32` select [race_date, race_id, venue_code]
   - `scripts/maintenance/verify-analogy-v16.js:308` rest(rest) [cancellation_status, race_date, race_id, start_time] （検査）
-  - `scripts/maintenance/verify-data-readers.js:557` rest(rest) [race_id] （検査）
+  - `scripts/maintenance/verify-data-readers.js:369` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-live-api-key.js:32` rest(rest) [*] （検査）
   - `scripts/maintenance/verify-e2e-live-api-key.js:33` rest(rest) （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select [race_date, race_id, venue_code] （検査）
@@ -1886,8 +1886,8 @@
   - `scripts/lib/snsDailyRunnerStore.js:68` rest(rest) [id]
   - `scripts/lib/snsMetricsRunnerStore.js:62` rest(rest) [format, id, platform, posted_at, status]
   - `scripts/lib/snsTodayPlannerStore.js:45` rest(rest) [format, id, send_lane, source_data, status]
-  - `scripts/maintenance/verify-data-readers.js:183` rest(rest) [created_at, id, status] （検査）
-  - `scripts/maintenance/verify-data-readers.js:205` rest(rest) [id] （検査）
+  - `scripts/maintenance/verify-data-readers.js:179` rest(rest) [created_at, id, status] （検査）
+  - `scripts/maintenance/verify-data-readers.js:201` rest(rest) [id] （検査）
   - `scripts/maintenance/verify-display-coverage.js:170` rest(rest) [*] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:617` rest(rest) [bundle_import_id] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:625` rest(rest) [id, status] （検査）
