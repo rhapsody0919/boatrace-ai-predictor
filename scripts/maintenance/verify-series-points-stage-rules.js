@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 
 import { CLASSIFY_CASES, GAMAGORI, MARUGAME, WAKAMATSU } from "./verifyData/series-points-stage-rules.js";
 /**
@@ -315,14 +314,8 @@ check(
 // ---- 後半の場面（verifyData/series-points-stage-rules-scenes-1.js） ----
 runSeriesPointsStageRulesScenes1({ check });
 
-// 3b で見る画面の本文（RaceMeetTab.jsx の字）。本文を fs で読む文は verify に残す
-const meetTabSource = readFileSync(
-  new URL("../../src/components/race/RaceMeetTab.jsx", import.meta.url),
-  "utf8",
-);
-
 // ---- 後半の場面（verifyData/series-points-stage-rules-scenes-1.js） ----
-await runSeriesPointsStageRulesScenes2({ check, meetTabSource });
+await runSeriesPointsStageRulesScenes2({ check });
 
 // ---- 6. 公式の得点率一覧の読み替え（BOA-475） --------------------------------
 // 公式の得点率は (着順点 − 減点) ÷ 走数。走数の列は無いが `placements` の

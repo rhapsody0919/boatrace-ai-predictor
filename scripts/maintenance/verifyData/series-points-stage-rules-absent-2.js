@@ -4,12 +4,12 @@
  */
 
 /** verify の元の 606〜792 行（2つに割った） */
-export function absentScenesLate({ listSeriesFinishes, listAbsentOnlyRacers, runFinishLabel, officialMarkOf, dayCenter, dayTickLabels, layoutTrendByDate, buildRacerScopedRaceRows, check, meetTabSource, base, withPrelim, board, RA, RB }) {
-  absentScenesLatePart1({ listSeriesFinishes, runFinishLabel, officialMarkOf, buildRacerScopedRaceRows, check, meetTabSource, base, withPrelim, RA, RB });
+export function absentScenesLate({ listSeriesFinishes, listAbsentOnlyRacers, runFinishLabel, officialMarkOf, dayCenter, dayTickLabels, layoutTrendByDate, buildRacerScopedRaceRows, check, base, withPrelim, board, RA, RB }) {
+  absentScenesLatePart1({ listSeriesFinishes, runFinishLabel, officialMarkOf, buildRacerScopedRaceRows, check, base, withPrelim, RA, RB });
   absentScenesLatePart2({ listAbsentOnlyRacers, dayCenter, dayTickLabels, layoutTrendByDate, check, board });
 }
 
-function absentScenesLatePart1({ listSeriesFinishes, runFinishLabel, officialMarkOf, buildRacerScopedRaceRows, check, meetTabSource, base, withPrelim, RA, RB }) {
+function absentScenesLatePart1({ listSeriesFinishes, runFinishLabel, officialMarkOf, buildRacerScopedRaceRows, check, base, withPrelim, RA, RB }) {
   {
     // 本番STの行そのものが無い欠場（他艇の行はある）も、履歴で「欠場」と出す
     // （2026-06-13 浜名湖5R・12R の中岡正彦が「着外(順位不明)」になっていた）。
@@ -20,18 +20,6 @@ function absentScenesLatePart1({ listSeriesFinishes, runFinishLabel, officialMar
       resultRows: ids.map((race_id) => ({ race_id, rank1: 1 })), exhibitionRows: [], conditionRows: [],
       startTimingRows: [{ race_id: RA, boat_number: 1, start_timing: 0.12 }, { race_id: RB, boat_number: 4, start_timing: null, finish_mark: "欠" }] });
     check("選手の履歴は、本番STの行が無い欠場も欠場として扱う", scoped.map((r) => [r.raceId, r.absent]), [[RA, true], [RB, true], [RC, false]]);
-    const meetTab = meetTabSource;
-    check(
-      "全走欠場の選手を選んだ詳細に欠場の見出し、「欠」があれば意味の注記を出す",
-      meetTab.includes('t("meetTab.absentDetail")') &&
-        // 「欠」を含む走の判定で注記を出し分けていること。条件を変数に切り出す・
-        // 段落を組み替える（BOA-714・BOA-738）たびに書き方の照合が外れたので、
-        // 変数名と JSX の書き方には依存しない（判定の式と、その変数で注記を出すことだけ見る）
-        /(\w+) = [^;]*r\.finishes\.includes\(FINISH_ABSENT\)[\s\S]*\b\1 &&[\s\S]{0,40}t\("meetTab\.finishAbsentNote"\)/.test(
-          meetTab,
-        ),
-      true,
-    );
   }
   // 推移の点の下に出す着順（BOA-537）。数字・F・欠・公式の記号。推測で「失」と書かない
   {

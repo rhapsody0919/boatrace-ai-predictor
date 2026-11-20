@@ -34,8 +34,9 @@ import { fetchAllByRaceId } from "../../lib/meetBoundaries.js";
 import { buildRacerScopedRaceRows } from "../../../src/services/racerScopedRaceRows.js";
 import { absentScenesLate } from "./series-points-stage-rules-absent-2.js";
 import { absentScenesEarly } from "./series-points-stage-rules-absent-1.js";
+import { meetTabAbsentScenes } from "./series-points-stage-rules-meet-tab.js";
 
-let check, meetTabSource;
+let check;
 let score, KNOWN_GAPS;
 
 const t = (key) => `T(${key})`;
@@ -68,7 +69,8 @@ async function scene2() {
   // 入れない」。区別は `started`（本番STの記録があるか）で行う
   {
     const { base, withPrelim, board, RA, RB } = await absentScenesEarly({ createFakeSupabase, installLocalStorage, registerFakeServiceSupabase, setFakeSupabase, computeSeriesScore, listSeriesFinishes, buildMeetRanking, listAbsentOnlyRacers, FINISH_ABSENT, isAbsentStartRow, check });
-    absentScenesLate({ listSeriesFinishes, listAbsentOnlyRacers, runFinishLabel, officialMarkOf, dayCenter, dayTickLabels, layoutTrendByDate, buildRacerScopedRaceRows, check, meetTabSource, base, withPrelim, board, RA, RB });
+    absentScenesLate({ listSeriesFinishes, listAbsentOnlyRacers, runFinishLabel, officialMarkOf, dayCenter, dayTickLabels, layoutTrendByDate, buildRacerScopedRaceRows, check, base, withPrelim, board, RA, RB });
+    await meetTabAbsentScenes({ board, check });
   }
   // 「届かず」の判定に使う上限は、残りレースの種別ごとの1着の点で出す。
   // 予選配点の10点で決め打ちすると、ドリーム戦が残っている選手を取りこぼす
@@ -220,9 +222,9 @@ async function scene3() {
   }
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（check・meetTabSource） */
+/** verify から呼ぶ入口。env は verify 側の束縛（check） */
 export async function runSeriesPointsStageRulesScenes2(env) {
-  ({ check, meetTabSource } = env);
+  ({ check } = env);
   await scene2();
   await scene3();
 }
