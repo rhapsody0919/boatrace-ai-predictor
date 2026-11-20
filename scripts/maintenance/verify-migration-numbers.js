@@ -32,7 +32,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
-import { ALLOWED_DUPLICATES } from "./verifyData/migration-numbers-allowed-duplicates.js";
+import { checkGaps, numericPart, pad3 } from "./verifyData/migration-numbers-gaps.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
@@ -41,7 +41,6 @@ const MIGRATION_DIR = path.join(REPO_ROOT, MIGRATION_DIR_REL);
 const LEDGER_FILE = "APPLIED.md";
 
 const SQL_FILE_RE = /^(\d{3}[a-z]?)_.+\.sql$/;
-const NUMBERED_DOC_RE = /^(\d{3})_.+\.md$/;
 
 /** 番号を付けない既存の .sql（初期の単発スクリプト。台帳には別枠で記載） */
 const UNNUMBERED_ALLOWED = ["add-defense-distribution.sql"];
@@ -52,8 +51,49 @@ const STALE_BASE_HOURS = 24;
 const FROZEN_REASON =
   "本番適用済み。リネームすると docs/design・ADR・コード内コメント・PR履歴からの参照が壊れるため凍結（適用状況は APPLIED.md）";
 
-const numericPart = (id) => Number.parseInt(id, 10);
-const pad3 = (n) => String(n).padStart(3, "0");
+/**
+ * 既存の重複（凍結）。番号 -> 同番号で許可するファイル名の一覧。
+ * 新規の重複は、ここに追加せず、後から作った側を最大番号+1にリネームして解消すること。
+ * この一覧を増やす変更は、レビューで理由を明示すること。
+ */
+const ALLOWED_DUPLICATES = {
+  "008": [
+    "008_ADD_EXHIBITION_TO_RPC.sql",
+    "008_accuracy_rpc.sql",
+    "008_venue_rules.sql",
+  ],
+  "009": ["009_RACE_HISTORY_RPC.sql", "009_add_first_boat_avg_st.sql"],
+  "020": ["020_outcome_distribution.sql", "020_race_history_cache.sql"],
+  "021": ["021_external_predictions.sql", "021_poirot_predictions.sql"],
+  "022": ["022_moriarty_setup.sql", "022_race_odds_trifecta_all.sql"],
+  "029": ["029_race_analysis_rpc.sql", "029_watson_predictions.sql"],
+  "030": ["030_ai_model_redesign_schema.sql", "030_mycroft_predictions.sql"],
+  "035": ["035_create_racer_profiles.sql", "035_sns_marketing_hub_schema.sql"],
+  "039": [
+    "039_fix_volatility_percentile_in_predictions_rpc.sql",
+    "039_sns_strategy_insights.sql",
+  ],
+  "047": [
+    "047_race_cancellation_status.sql",
+    "047_sns_topic_categories_feature_intro_repurpose.sql",
+  ],
+  "048": [
+    "048_add_cancellation_status_to_predictions_rpc.sql",
+    "048_drop_venues_avg_volatility_score.sql",
+  ],
+  "050": [
+    "050_race_entries_racer_id_index.sql",
+    "050_race_results_full_order_and_payouts.sql",
+    "050_sns_topic_categories_humor.sql",
+  ],
+  "054": ["054_racer_grade_cache_table.sql", "054_sns_campaigns_schema.sql"],
+  "059": [
+    "059_exhibition_data_weight_prev_result.sql",
+    "059_venue_grade_boat_stats.sql",
+  ],
+  "064": ["064_racer_series_points.sql", "064_venue_entry_course_stats.sql"],
+};
+
 
 /** ファイル名一覧を、番号 -> ファイル名[] にまとめる（NNN_*.sql のみ） */
 function groupSqlById(fileNames) {
@@ -64,19 +104,6 @@ function groupSqlById(fileNames) {
     byId.set(m[1], [...(byId.get(m[1]) ?? []), f]);
   }
   return byId;
-}
-
-/** 連続する欠番を "024" / "002-006" のような範囲表記にまとめる */
-function formatRanges(nums) {
-  const ranges = [];
-  for (const n of nums) {
-    const last = ranges[ranges.length - 1];
-    if (last && last.end + 1 === n) last.end = n;
-    else ranges.push({ start: n, end: n });
-  }
-  return ranges.map((r) =>
-    r.start === r.end ? pad3(r.start) : `${pad3(r.start)}-${pad3(r.end)}`,
-  );
 }
 
 /** --base=<ref> の値を取り出す（最後の指定を優先。未指定ならnull） */
@@ -201,27 +228,6 @@ function checkDuplicates(byId, { errors, warnings }) {
     }
   }
   return frozenCount;
-}
-
-/** 2. 欠番（番号付きの設計資料 NNN_*.md も「使用済み」として扱う） */
-function checkGaps(byId, localFiles, { warnings }) {
-  const usedNumbers = new Set([
-    ...[...byId.keys()].map(numericPart),
-    ...localFiles
-      .map((f) => NUMBERED_DOC_RE.exec(f)?.[1])
-      .filter(Boolean)
-      .map(numericPart),
-  ]);
-  if (usedNumbers.size > 0) {
-    const maxLocal = Math.max(...usedNumbers);
-    const gaps = [];
-    for (let n = 1; n <= maxLocal; n += 1) {
-      if (!usedNumbers.has(n)) gaps.push(n);
-    }
-    if (gaps.length > 0) {
-      warnings.push(`欠番: ${formatRanges(gaps).join(", ")}（失敗にはしない）`);
-    }
-  }
 }
 
 /** base の最新コミット日時を知らせ、古ければ fetch を促す */
