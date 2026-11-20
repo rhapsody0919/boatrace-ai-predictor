@@ -14,15 +14,14 @@
  *
  * 依存（runForRaces 等）は引数で差し替えられる（scripts/maintenance/verify-scrape-result-job.js が、DB・取得先なしで検証する）。
  */
+import { KFILE_SYNC_LOOKBACK_DAYS, syncKFileForDate } from "../kfileSync.js";
 import {
-  KFILE_SYNC_LOOKBACK_DAYS,
   clearCancellationsWithResultsInRange,
   confirmCancellationsForRaceIds,
-  fetchRaceResultHtml,
-  fixMissingHitFlags,
-  runForRaces,
-  syncKFileForDate,
-} from "../../daily/scrape-results.js";
+} from "../raceCancellation.js";
+import { fetchRaceResultHtml } from "../raceResultPage.js";
+import { fixMissingHitFlags } from "../predictionHitFix.js";
+import { runForRaces } from "../raceResultRun.js";
 import { fetchKFileText, parseKFileRankings } from "../kfileParser.js";
 import {
   catchupCandidates,

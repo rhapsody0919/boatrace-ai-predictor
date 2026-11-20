@@ -16,7 +16,7 @@ import {
   registerFakeServiceSupabase,
   setFakeSupabase,
 } from "./verifyData/fakeServiceSupabase.js";
-import { createMeetPageHarness } from "./verifyData/meet-page-model.js";
+import { openMeetPage } from "./verifyData/meet-page-model.js";
 import { runMeetPageModelScenes1 } from "./verifyData/meet-page-model-scenes.js";
 
 const failures = [];
@@ -335,29 +335,30 @@ for (const table of [
   check(`getMeetPage・${table} の失敗は同じ例外で伝播`, caught === error, true);
 }
 
-// 実ページの取得 effect・状態導出・本文分岐を実行する。依存はローカルの hook/JSX
-// スタブに置換する（DOM 描画は E2E の担当）。本番への取得はしない。
-const ui = createMeetPageHarness(START);
+// 実ページ（MeetPage.jsx）を描いて、取得待ち・取得失敗・noindex を DOM で見る（verifyData/meet-page-model.js）。
+// 取得関数だけを偽の物に差し替える。本番への取得はしない。
 const pageKey = `16-${START}`;
-const rejected = {
-  getMeetPage: () => Promise.reject(new Error("local fetch failure")),
-};
+let rejectFetch;
+const pending = new Promise((_, reject) => {
+  rejectFetch = reject;
+});
+let ui = await openMeetPage(START, () => pending);
 check(
   "取得待ちは LoadingScreen",
-  ui.render(rejected).body.type,
+  ui.bodyKind(),
   "LoadingScreen",
 );
-check("取得待ちは noindex にしない", ui.robots, false);
-ui.effects[0]();
-// effect の then→catch と state 更新を完了させる。
-await new Promise((resolve) => setImmediate(resolve));
-check("例外で failedKey が対象の節になる", ui.stored[1], pageKey);
+check("取得待ちは noindex にしない", ui.robotsNoindex(), false);
+rejectFetch(new Error("local fetch failure"));
+await ui.settle();
+check("例外で failedKey が対象の節になる", ui.failedKey(), pageKey);
 check(
   "取得失敗は DataFetchError",
-  ui.render(rejected).body.type,
+  ui.bodyKind(),
   "DataFetchError",
 );
-check("取得失敗は noindex にしない", ui.robots, false);
+check("取得失敗は noindex にしない", ui.robotsNoindex(), false);
+await ui.unmount();
 for (const [state, knownMeet, expected] of [
   ["preOpen", true, true],
   ["preOpen", false, true],
@@ -366,13 +367,14 @@ for (const [state, knownMeet, expected] of [
   ["prelim", true, false],
   ["finished", true, false],
 ]) {
-  ui.stored = [{ key: pageKey, page: { state, knownMeet } }, null];
-  ui.render(rejected);
+  ui = await openMeetPage(START, () => Promise.resolve({ state, knownMeet, board: null, qualifiers: null }));
+  await ui.settle();
   check(
     `MeetPage・${state}・knownMeet=${knownMeet} の noindex`,
-    ui.robots,
+    ui.robotsNoindex(),
     expected,
   );
+  await ui.unmount();
 }
 
 // --- pickMeetAnchor ---

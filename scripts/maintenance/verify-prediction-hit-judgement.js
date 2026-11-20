@@ -355,15 +355,30 @@ check(
  * 時刻ではなく通し番号で区別する。プロセス間（verify:ci の並列実行）での衝突も避けるため process.pid も含める
  */
 let mutantSeq = 0;
-async function withMutant(relPath, from, to, run) {
+/** 置き換え元の字を持つファイル。relPath 自身か、relPath が import・再 export する相対パスの先（関数を lib へ移しても追う）。無ければ null */
+function mutantTarget(relPath, from) {
   const file = path.join(ROOT, relPath);
-  const src = fs.readFileSync(file, "utf8");
-  if (!src.includes(from)) return [`置き換え元が見つからない: ${from}`];
-  const mutant = file.replace(
+  const hops = [
+    ...fs
+      .readFileSync(file, "utf8")
+      .matchAll(/\bfrom\s+["'](\.{1,2}\/[^"']+\.js)["']/g),
+  ]
+    .map((m) => path.resolve(path.dirname(file), m[1]))
+    .filter((f) => fs.existsSync(f));
+  return (
+    [file, ...hops]
+      .map((f) => ({ file: f, src: fs.readFileSync(f, "utf8") }))
+      .find((t) => t.src.includes(from)) ?? null
+  );
+}
+async function withMutant(relPath, from, to, run) {
+  const target = mutantTarget(relPath, from);
+  if (!target) return null;
+  const mutant = target.file.replace(
     /\.js$/,
     `.__mutant-${process.pid}-${++mutantSeq}.js`,
   );
-  fs.writeFileSync(mutant, src.replace(from, to));
+  fs.writeFileSync(mutant, target.src.replace(from, to));
   try {
     return await run(await import(pathToFileURL(mutant).href));
   } catch (e) {
@@ -390,8 +405,8 @@ const MUTANTS = [
   [
     "書き直し: 展開予測の NULL を埋める",
     "scripts/maintenance/backfill-refund-hit-flags.js",
-    "if (isJudgeable(result)) update.is_hit_turn",
-    "if (false) update.is_hit_turn",
+    "if (isJudgeable(result))\n      update.is_hit_turn",
+    "if (false)\n      update.is_hit_turn",
     (m) => evaluatePlan(m),
   ],
   [
@@ -419,13 +434,19 @@ const MUTANTS = [
 for (const [label, rel, from, to, run] of MUTANTS) {
   const failed = await withMutant(rel, from, to, run);
   check(
-    `(e) 変異検証: ${label} → 検証が失敗する（${failed.length}項目）`,
-    failed.length > 0,
+    `(e) 変異検証: ${label} → 検証が失敗する（${failed ? `${failed.length}項目` : "置き換え元が無い"}）`,
+    failed !== null && failed.length > 0,
+    failed ? "" : `置き換え元が見つからない: ${from}`,
   );
 }
 
 // ---- 後半の場面（verifyData/prediction-hit-judgement-scenes.js） ----
-await runPredictionHitJudgementScenes1({ MIGRATION, check, evaluateTrigger, hit });
+await runPredictionHitJudgementScenes1({
+  MIGRATION,
+  check,
+  evaluateTrigger,
+  hit,
+});
 
 if (failures > 0) {
   console.error(`\n${failures}件の検証が失敗しました`);

@@ -27,10 +27,6 @@ import {
 import { createPoliteFetch } from "../lib/scrapeJobs/politeFetch.js";
 import { createSupabaseStore } from "../lib/scrapeJobs/store.js";
 
-
-
-
-
 import {
   runScrapeFetchStopScenes1,
   runScrapeFetchStopScenes2,
@@ -205,7 +201,9 @@ const mkClock = (start = Date.parse("2026-10-26T03:00:00Z")) => {
 // (c)(d) store.breakerStore
 {
   const mkClient = (responses) => {
-    responses.push(...Array(5).fill({ data: { breaker_open_until: null }, error: null }));
+    responses.push(
+      ...Array(5).fill({ data: { breaker_open_until: null }, error: null }),
+    );
     const log = [];
     const client = {
       // 184 の前（scrape_breaker_open が無い）の形で、upsert に戻る経路を確かめる
@@ -213,7 +211,8 @@ const mkClock = (start = Date.parse("2026-10-26T03:00:00Z")) => {
         data: null,
         error: {
           code: "PGRST202",
-          message: "Could not find the function public.scrape_breaker_open(p_job, p_level, p_opened_at, p_reason, p_until) in the schema cache",
+          message:
+            "Could not find the function public.scrape_breaker_open(p_job, p_level, p_opened_at, p_reason, p_until) in the schema cache",
         },
       }),
       from(table) {
@@ -390,14 +389,23 @@ await runScrapeFetchStopScenes1({ check, show, HOST, mkClock });
 // ---- 後半の場面（verifyData/scrape-fetch-stop-scenes.js） ----
 runScrapeFetchStopScenes2({ check, show, HOST, mkClock });
 {
-  const src = fs.readFileSync(
-    new URL("../daily/scrape-race-information.js", import.meta.url),
-    "utf8",
-  );
+  // 製品を import して振る舞いで見る: 子の FetchStoppedError は breaker_open、名前だけ同じ Error は fetch_error
+  const { createInformationFetcher } =
+    await import("../daily/scrape-race-information.js");
+  const reasonOf = async (err) =>
+    (
+      await createInformationFetcher(async () => {
+        throw err;
+      })(1, "20261120")
+    ).reason;
+  const lookalike = Object.assign(new Error("偽物"), {
+    name: "BreakerOpenError",
+  });
   check(
-    "(i) scrape-race-information.js も名前ではなく instanceof で見る",
-    /error instanceof BreakerOpenError/.test(src) &&
-      !/name === "BreakerOpenError"/.test(src),
+    "(i) scrape-race-information.js も名前ではなく instanceof で見る（FetchStoppedError は breaker_open、名前だけの偽物は fetch_error）",
+    (await reasonOf(new FetchStoppedError(HOST, 0))) === "breaker_open" &&
+      (await reasonOf(new BreakerOpenError(HOST, 0))) === "breaker_open" &&
+      (await reasonOf(lookalike)) === "fetch_error: 偽物",
   );
 }
 
