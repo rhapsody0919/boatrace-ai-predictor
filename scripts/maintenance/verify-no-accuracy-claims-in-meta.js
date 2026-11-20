@@ -9,6 +9,7 @@
  */
 
 import { readFileSync } from "node:fs";
+import { renderPage } from "./verifyData/jsx-page-render.js";
 
 const read = (rel) =>
   readFileSync(new URL(`../../${rel}`, import.meta.url), "utf-8");
@@ -17,9 +18,12 @@ const BANNED = ["高精度", "精度", "的中", "回収率", "必勝"];
 
 const llms = read("public/llms.txt");
 const llmsHeader = llms.split("## ブログ記事")[0];
+// About を描いて、頁の説明文（<meta name="description">）を読む（本文の字を fs で読まない）
+const about = await renderPage("pages/About.jsx", { path: "/about" });
 const aboutDescription =
-  read("src/pages/About.jsx").match(/const DESCRIPTION =\s*"([^"]*)"/)?.[1] ??
+  about.document.head.querySelector('meta[name="description"]')?.getAttribute("content") ??
   null;
+await about.unmount();
 
 const targets = [
   ["index.html", read("index.html")],
