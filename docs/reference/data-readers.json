@@ -5,8 +5,8 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2367,
-    "filesWithAccess": 297,
+    "sourceFiles": 2368,
+    "filesWithAccess": 298,
     "tableReaders": 948,
     "tableWriters": 195,
     "rpcCallers": 55,
@@ -5479,7 +5479,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/todays-volatility-digest.js:56",
+          "ref": "scripts/daily/todays-volatility-digest.js:124",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5820,7 +5820,7 @@
             "scripts/daily/generate-unified-predictions.js:306",
             "scripts/daily/generate-unified-trifecta-reference.js:44",
             "scripts/daily/scrape-prediction-odds.js:40",
-            "scripts/daily/todays-volatility-digest.js:56",
+            "scripts/daily/todays-volatility-digest.js:124",
             "scripts/lib/inCautionHealth.js:127",
             "scripts/lib/raceResultPersist.js:39",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
@@ -5864,7 +5864,7 @@
             "scripts/daily/generate-unified-predictions.js:306",
             "scripts/daily/generate-unified-trifecta-reference.js:44",
             "scripts/daily/scrape-prediction-odds.js:40",
-            "scripts/daily/todays-volatility-digest.js:56",
+            "scripts/daily/todays-volatility-digest.js:124",
             "scripts/lib/inCautionHealth.js:127",
             "scripts/lib/raceResultPersist.js:39",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
@@ -5984,7 +5984,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:75",
             "scripts/daily/generate-morning-digest.js:298",
             "scripts/daily/generate-unified-trifecta-reference.js:44",
-            "scripts/daily/todays-volatility-digest.js:56",
+            "scripts/daily/todays-volatility-digest.js:124",
             "scripts/lib/inCautionHealth.js:127",
             "scripts/lib/raceResultPersist.js:39",
             "src/services/raceQueries2.js:226"
@@ -7283,7 +7283,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/morning-init.js:298",
+          "ref": "scripts/daily/morning-init.js:259",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -10966,7 +10966,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-venue-grade-stats.js:73",
+          "ref": "scripts/daily/calculate-venue-grade-stats.js:176",
           "op": "select",
           "via": "embed",
           "columns": [
@@ -11840,7 +11840,7 @@
             "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/scrape-results.js:196",
             "scripts/daily/scrape-results.js:314",
             "scripts/daily/update-losing-technique-stats.js:55",
@@ -11895,7 +11895,7 @@
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/scrape-results.js:314",
             "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-nige-outcome-distribution.js:63",
@@ -11933,7 +11933,7 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:101",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-poirot.js:73",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/scrape-results.js:314",
             "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-nige-outcome-distribution.js:63",
@@ -12038,7 +12038,7 @@
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-poirot.js:73",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-outcome-frequencies.js:19",
             "src/services/adminRuleService.js:42",
@@ -12058,7 +12058,7 @@
             "scripts/analysis/redesign-volatility-by-venue.js:150",
             "scripts/analysis/verify-poirot.js:73",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/update-losing-technique-stats.js:55",
             "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-nige-outcome-distribution.js:63",
@@ -12143,7 +12143,7 @@
             "scripts/analysis/redesign-volatility-by-venue.js:150",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:101",
             "scripts/analysis/verify-race-analysis-rpc.js:211",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/scrape-results.js:821",
             "scripts/daily/update-losing-technique-stats.js:55",
             "scripts/daily/update-nige-outcome-distribution.js:63",
@@ -12504,7 +12504,7 @@
         "race_status": {
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/maintenance/update-venue-stats.js:32",
@@ -12520,7 +12520,7 @@
         "refund_boats": {
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
-            "scripts/daily/calculate-venue-grade-stats.js:73"
+            "scripts/daily/calculate-venue-grade-stats.js:176"
           ],
           "writers": [],
           "sql": [
@@ -16088,7 +16088,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-venue-grade-stats.js:73",
+          "ref": "scripts/daily/calculate-venue-grade-stats.js:176",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16139,7 +16139,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/morning-init.js:184",
+          "ref": "scripts/daily/morning-init.js:173",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16148,21 +16148,21 @@
           ]
         },
         {
-          "ref": "scripts/daily/morning-init.js:229",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "*",
-            "race_id"
-          ]
-        },
-        {
-          "ref": "scripts/daily/morning-init.js:263",
+          "ref": "scripts/daily/morning-init.js:221",
           "op": "select",
           "via": "client",
           "columns": [
             "race_id",
             "updated_at"
+          ]
+        },
+        {
+          "ref": "scripts/daily/morning-init.js:391",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "*",
+            "race_id"
           ]
         },
         {
@@ -16215,7 +16215,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/todays-volatility-digest.js:80",
+          "ref": "scripts/daily/todays-volatility-digest.js:148",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16443,7 +16443,15 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/resultHandlers.js:153",
+          "ref": "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
+          "op": "select",
+          "via": "embed",
+          "columns": [
+            "cancellation_status"
+          ]
+        },
+        {
+          "ref": "scripts/lib/scrapeJobs/resultHandlerParts.js:71",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16453,15 +16461,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/resultHandlers.js:214",
-          "op": "select",
-          "via": "embed",
-          "columns": [
-            "cancellation_status"
-          ]
-        },
-        {
-          "ref": "scripts/lib/scrapeJobs/resultHandlers.js:275",
+          "ref": "scripts/lib/scrapeJobs/resultHandlers.js:167",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17446,12 +17446,12 @@
             "scripts/analysis/verify-label-accuracy.js:76",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:83",
             "scripts/analysis/verify-volatility-predictive-power.js:65",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/generate-morning-digest.js:130",
             "scripts/daily/generate-predictions.js:1652",
-            "scripts/daily/morning-init.js:184",
-            "scripts/daily/morning-init.js:229",
-            "scripts/daily/morning-init.js:263",
+            "scripts/daily/morning-init.js:173",
+            "scripts/daily/morning-init.js:221",
+            "scripts/daily/morning-init.js:391",
             "scripts/daily/morning-init.js:86",
             "scripts/daily/scrape-point-rank.js:150",
             "scripts/daily/scrape-results.js:667",
@@ -17460,7 +17460,7 @@
             "scripts/daily/scrape-results.js:758",
             "scripts/daily/scrape-results.js:789",
             "scripts/daily/scrape-results.js:947",
-            "scripts/daily/todays-volatility-digest.js:80",
+            "scripts/daily/todays-volatility-digest.js:148",
             "scripts/daily/update-moriarty-outcomes.js:59",
             "scripts/daily/update-outcome-frequencies.js:43",
             "scripts/daily/update-race-info.js:70",
@@ -17479,8 +17479,8 @@
             "scripts/lib/raceStatusJob.js:93",
             "scripts/lib/scrapeJobs/monitor.js:809",
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
-            "scripts/lib/scrapeJobs/resultHandlers.js:153",
-            "scripts/lib/scrapeJobs/resultHandlers.js:275",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:71",
+            "scripts/lib/scrapeJobs/resultHandlers.js:167",
             "scripts/lib/snsAutoPlanRunnerStore.js:55",
             "scripts/lib/snsTodayDigestV3.js:81",
             "scripts/maintenance/audit-missing-results.js:252",
@@ -17578,11 +17578,11 @@
             "scripts/analysis/verify-calculations.js:7",
             "scripts/analysis/verify-label-accuracy.js:76",
             "scripts/analysis/verify-racer-season-stats-accuracy.js:79",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/generate-morning-digest.js:130",
             "scripts/daily/scrape-results.js:789",
             "scripts/daily/scrape-results.js:947",
-            "scripts/daily/todays-volatility-digest.js:80",
+            "scripts/daily/todays-volatility-digest.js:148",
             "scripts/generate-sitemap.js:379",
             "scripts/generate-sitemap.js:662",
             "scripts/lib/analogyDispatch.js:75",
@@ -17596,8 +17596,8 @@
             "scripts/lib/raceSeriesLookup.js:174",
             "scripts/lib/raceStatusJob.js:93",
             "scripts/lib/scrapeJobs/monitor.js:809",
-            "scripts/lib/scrapeJobs/resultHandlers.js:153",
-            "scripts/lib/scrapeJobs/resultHandlers.js:275",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:71",
+            "scripts/lib/scrapeJobs/resultHandlers.js:167",
             "scripts/lib/snsAutoPlanRunnerStore.js:55",
             "scripts/lib/snsTodayDigestV3.js:126",
             "scripts/lib/snsTodayDigestV3.js:81",
@@ -17675,7 +17675,7 @@
             "scripts/analysis/verify-label-accuracy.js:76",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:83",
             "scripts/analysis/verify-volatility-predictive-power.js:65",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/generate-morning-digest.js:130",
             "scripts/daily/morning-init.js:86",
             "scripts/daily/scrape-results.js:947",
@@ -17788,8 +17788,8 @@
             "scripts/lib/raceResultRun.js:278",
             "scripts/lib/raceSchedule.js:44",
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
-            "scripts/lib/scrapeJobs/resultHandlers.js:153",
-            "scripts/lib/scrapeJobs/resultHandlers.js:275",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:71",
+            "scripts/lib/scrapeJobs/resultHandlers.js:167",
             "scripts/lib/snsAutoPlanRunnerStore.js:55",
             "scripts/lib/snsTodayDigestV3.js:81",
             "scripts/maintenance/check-morning-init-shadow.js:113",
@@ -17908,7 +17908,7 @@
         },
         "updated_at": {
           "readers": [
-            "scripts/daily/morning-init.js:263"
+            "scripts/daily/morning-init.js:221"
           ],
           "writers": [],
           "sql": [
@@ -17927,7 +17927,7 @@
         "race_grade": {
           "readers": [
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:93",
-            "scripts/daily/calculate-venue-grade-stats.js:73",
+            "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/generate-morning-digest.js:130",
             "scripts/daily/scrape-point-rank.js:150",
             "scripts/daily/update-race-info.js:70",
@@ -17963,14 +17963,14 @@
             "scripts/daily/scrape-results.js:731",
             "scripts/daily/scrape-results.js:758",
             "scripts/daily/scrape-results.js:789",
-            "scripts/daily/todays-volatility-digest.js:80",
+            "scripts/daily/todays-volatility-digest.js:148",
             "scripts/daily/update-race-info.js:70",
             "scripts/lib/analogyDispatch.js:75",
             "scripts/lib/inCautionHealth.js:137",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/raceSeriesLookup.js:174",
             "scripts/lib/raceStatusJob.js:93",
-            "scripts/lib/scrapeJobs/resultHandlers.js:214",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
             "scripts/lib/snsAutoPlanRunnerStore.js:55",
             "scripts/lib/snsTodayDigestV3.js:126",
             "scripts/lib/snsTodayDigestV3.js:81",
@@ -18855,7 +18855,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/resultHandlers.js:214",
+          "ref": "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
           "op": "select",
           "via": "client",
           "columns": [
@@ -18865,7 +18865,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/scrapeJobs/resultHandlers.js:316",
+          "ref": "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
           "op": "select",
           "via": "client",
           "columns": [
@@ -19060,8 +19060,8 @@
             "scripts/lib/boatcast/oritenJobParts.js:172",
             "scripts/lib/boatcast/oritenJobParts.js:188",
             "scripts/lib/pitReportJob.js:400",
-            "scripts/lib/scrapeJobs/resultHandlers.js:214",
-            "scripts/lib/scrapeJobs/resultHandlers.js:316",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
@@ -19084,8 +19084,8 @@
             "scripts/lib/boatcast/oritenJobParts.js:172",
             "scripts/lib/boatcast/oritenJobParts.js:188",
             "scripts/lib/pitReportJob.js:400",
-            "scripts/lib/scrapeJobs/resultHandlers.js:214",
-            "scripts/lib/scrapeJobs/resultHandlers.js:316",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
             "scripts/lib/scrapeJobs/store.js:233",
             "scripts/lib/scrapeJobs/store.js:269",
             "scripts/maintenance/check-morning-init-shadow.js:279",
@@ -19124,8 +19124,8 @@
             "scripts/lib/boatcast/oritenJobParts.js:172",
             "scripts/lib/scrapeJobs/cleanup.js:33",
             "scripts/lib/scrapeJobs/cleanup.js:52",
-            "scripts/lib/scrapeJobs/resultHandlers.js:214",
-            "scripts/lib/scrapeJobs/resultHandlers.js:316",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
@@ -19142,7 +19142,7 @@
           "readers": [
             "scripts/lib/boatcast/oritenJob.js:253",
             "scripts/lib/scrapeJobs/cleanup.js:33",
-            "scripts/lib/scrapeJobs/resultHandlers.js:316",
+            "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
             "scripts/lib/scrapeJobs/store.js:233",
             "scripts/lib/scrapeJobs/store.js:269",
             "scripts/maintenance/check-morning-init-shadow.js:279",
@@ -25784,7 +25784,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/daily/calculate-venue-grade-stats.js:190",
+          "ref": "scripts/daily/calculate-venue-grade-stats.js:210",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
@@ -25818,7 +25818,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/calculate-venue-grade-stats.js:190",
+          "ref": "scripts/daily/calculate-venue-grade-stats.js:210",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -29160,7 +29160,7 @@
     {
       "job": "kfile_sync",
       "entry": "api/cron/kfile-sync.js",
-      "reachableFiles": 38,
+      "reachableFiles": 39,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29759,7 +29759,7 @@
     {
       "job": "result",
       "entry": "api/cron/result.js",
-      "reachableFiles": 38,
+      "reachableFiles": 39,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29804,7 +29804,7 @@
     {
       "job": "result_catchup",
       "entry": "api/cron/result-catchup.js",
-      "reachableFiles": 38,
+      "reachableFiles": 39,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
