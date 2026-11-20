@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2463,
+    "sourceFiles": 2467,
     "filesWithAccess": 306,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -11194,7 +11194,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/audit-race-result-anomalies.js:207",
+          "ref": "scripts/maintenance/audit-race-result-anomalies.js:172",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11768,7 +11768,7 @@
             "scripts/lib/raceResultFix.js:117",
             "scripts/lib/raceResultRun.js:131",
             "scripts/lib/raceStatusJob.js:108",
-            "scripts/maintenance/audit-race-result-anomalies.js:207",
+            "scripts/maintenance/audit-race-result-anomalies.js:172",
             "scripts/maintenance/backfill-actual-course.js:111",
             "scripts/maintenance/backfill-actual-course.js:65",
             "scripts/maintenance/backfill-place-hits.js:30",
@@ -16888,7 +16888,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-rpc-output-keys.js:266",
+          "ref": "scripts/maintenance/verify-rpc-output-keys.js:155",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16897,7 +16897,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-rpc-output-keys.js:321",
+          "ref": "scripts/maintenance/verify-rpc-output-keys.js:210",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17599,8 +17599,8 @@
             "scripts/maintenance/verify-analogy-v16.js:308",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
-            "scripts/maintenance/verify-rpc-output-keys.js:266",
-            "scripts/maintenance/verify-rpc-output-keys.js:321",
+            "scripts/maintenance/verify-rpc-output-keys.js:155",
+            "scripts/maintenance/verify-rpc-output-keys.js:210",
             "scripts/maintenance/verify-scrape-slots-on-db.js:68",
             "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:101",
             "scripts/sns/pushFinalsImageStore.js:71",
@@ -17687,7 +17687,7 @@
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
-            "scripts/maintenance/verify-rpc-output-keys.js:321",
+            "scripts/maintenance/verify-rpc-output-keys.js:210",
             "src/services/motorQueries.js:112",
             "src/services/motorQueries3.js:285",
             "src/services/mycroftService.js:79",

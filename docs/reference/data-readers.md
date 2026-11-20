@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2463 |
+| 読んだファイル | 2467 |
 | 読み書きのあるファイル | 306 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -1200,7 +1200,7 @@
   - `scripts/lib/raceStatusJob.js:108` select [race_id]
   - `scripts/maintenance/audit-missing-results.js:73` select(helper:fetchAll)
   - `scripts/maintenance/audit-race-result-anomalies.js:97` select(helper:fetchAll)
-  - `scripts/maintenance/audit-race-result-anomalies.js:207` select [?, race_id]
+  - `scripts/maintenance/audit-race-result-anomalies.js:172` select [?, race_id]
   - `scripts/maintenance/backfill-actual-course.js:65` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id, rank1]
   - `scripts/maintenance/backfill-is-hit-turn.js:42` select(helper:fetchAll)
   - `scripts/maintenance/backfill-kb-recent-results.js:125` select(helper:fetchAll)
@@ -1592,8 +1592,8 @@
   - `scripts/maintenance/verify-e2e-live-api-key.js:33` rest(rest) （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select [race_date, race_id, venue_code] （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:128` select [race_date, venue_code] （検査）
-  - `scripts/maintenance/verify-rpc-output-keys.js:266` select [race_date] （検査）
-  - `scripts/maintenance/verify-rpc-output-keys.js:321` select [race_date, venue_code] （検査）
+  - `scripts/maintenance/verify-rpc-output-keys.js:155` select [race_date] （検査）
+  - `scripts/maintenance/verify-rpc-output-keys.js:210` select [race_date, venue_code] （検査）
   - `scripts/maintenance/verify-scrape-slots-on-db.js:68` select [cancellation_status, race_date, race_id, start_time] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:615` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577` rest(rest) [race_id, start_time] （検査）
