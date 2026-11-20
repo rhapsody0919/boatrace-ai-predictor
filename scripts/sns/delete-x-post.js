@@ -61,6 +61,11 @@ export function parseDeleteArgs(argv) {
       out[FLAGS[arg]].push(value);
     } else return { error: `知らない引数: ${arg}` };
   }
+  return parsedArgsIssue(out) ?? out;
+}
+
+/** 引数を読み終えた後の検査（件数・--apply の ID と理由）。不備は { error }、無ければ null（元は parseDeleteArgs の後半） */
+function parsedArgsIssue(out) {
   const count = out.tweetIds.length + out.itemIds.length + out.jobIds.length;
   if (out.apply && !count)
     return {
@@ -73,7 +78,7 @@ export function parseDeleteArgs(argv) {
     const issue = deleteReasonIssue(out.reason);
     if (issue) return { error: issue };
   }
-  return out;
+  return null;
 }
 
 /** PostgREST の読み取り（service key、GET だけ） */
@@ -200,65 +205,51 @@ function printRows(rows) {
 const basic = (user, password) =>
   `Basic ${Buffer.from(`${user}:${password}`).toString("base64")}`;
 
-export async function main(
-  argv = process.argv.slice(2),
-  env = process.env,
-  fetchImpl = fetch,
-) {
-  const args = parseDeleteArgs(argv);
-  const finish = (code, result) => {
-    console.log(`DELETE_RESULT ${JSON.stringify(result)}`);
-    return code;
-  };
+/** 最後の1行 DELETE_RESULT を出して終了コードを返す */
+function finish(code, result) {
+  console.log(`DELETE_RESULT ${JSON.stringify(result)}`);
+  return code;
+}
+
+/** 引数・HQ_TEST・鍵の検査（元は main の頭）。不備なら終了コード 2 の result、無ければ null。args.error は stderr にも出す */
+function mainPrecheck(args, env) {
   if (args.error) {
     console.error(args.error);
-    return finish(2, { mode: "error", error: args.error });
+    return { mode: "error", error: args.error };
   }
   if (args.apply && env.HQ_TEST)
-    return finish(2, {
+    return {
       mode: "error",
       error: "HQ_TEST が立っている（試験から本物の X を消さない）",
-    });
-  const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
-  const key = env.SUPABASE_SERVICE_KEY;
-  if (!url || !key)
-    return finish(2, {
+    };
+  if (!(env.SUPABASE_URL || env.VITE_SUPABASE_URL) || !env.SUPABASE_SERVICE_KEY)
+    return {
       mode: "error",
       error: "SUPABASE_URL・SUPABASE_SERVICE_KEY が無い（.env.local）",
-    });
-  const { rows, missing, skipped } = await listTargets(
-    args,
-    createReadStore({ url, key, fetchImpl }),
-  );
-  printRows(rows);
-  if (missing.length) console.log(`送信の記録に無い: ${missing.join(", ")}`);
-  for (const r of skipped)
-    console.log(
-      `外した（--item-id で当たった消せない job）: ${r.job_id} ${r.issue}`,
-    );
-  if (!args.apply) {
-    const explicit =
-      args.tweetIds.length + args.itemIds.length + args.jobIds.length > 0;
-    return finish(0, {
-      mode: "dry-run",
-      [explicit ? "targets" : "candidates"]: rows,
-      missing,
-      skipped,
-    });
-  }
+    };
+  return null;
+}
+
+/** --apply の前の止め（元は main の中）。消す相手が多い・記録に無い・消せないなら終了コード 2 の result、無ければ null */
+function applyBlocked(rows, missing) {
   const blocked = rows.filter((r) => r.issue);
   if (rows.length > DELETE_MAX_TARGETS)
-    return finish(2, {
+    return {
       mode: "error",
       error: `消す相手が${rows.length}件（1回${DELETE_MAX_TARGETS}件まで。何も消していない）`,
-    });
+    };
   if (!rows.length || missing.length || blocked.length)
-    return finish(2, {
+    return {
       mode: "error",
       error: "記録に無い・消せない投稿がある（何も消していない）",
       missing,
       blocked,
-    });
+    };
+  return null;
+}
+
+/** 本番の関数 /api/admin/sns-hub/delete-x-post を Basic 認証で呼んで、DELETE_RESULT の終了コードを返す（元は main の後半） */
+async function applyDelete(args, rows, env, fetchImpl) {
   const user = env.SNS_HUB_BASIC_AUTH_USER;
   const password = env.SNS_HUB_BASIC_AUTH_PASSWORD;
   if (!user || !password)
@@ -286,6 +277,41 @@ export async function main(
       error: `${body?.error ?? "応答が読めない"}（HTTP ${response.status}。--apply を外して記録を見直す）`,
     });
   return finish(body.data.ok ? 0 : 1, { mode: "apply", ...body.data });
+}
+
+export async function main(
+  argv = process.argv.slice(2),
+  env = process.env,
+  fetchImpl = fetch,
+) {
+  const args = parseDeleteArgs(argv);
+  const failed = mainPrecheck(args, env);
+  if (failed) return finish(2, failed);
+  const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
+  const key = env.SUPABASE_SERVICE_KEY;
+  const { rows, missing, skipped } = await listTargets(
+    args,
+    createReadStore({ url, key, fetchImpl }),
+  );
+  printRows(rows);
+  if (missing.length) console.log(`送信の記録に無い: ${missing.join(", ")}`);
+  for (const r of skipped)
+    console.log(
+      `外した（--item-id で当たった消せない job）: ${r.job_id} ${r.issue}`,
+    );
+  if (!args.apply) {
+    const explicit =
+      args.tweetIds.length + args.itemIds.length + args.jobIds.length > 0;
+    return finish(0, {
+      mode: "dry-run",
+      [explicit ? "targets" : "candidates"]: rows,
+      missing,
+      skipped,
+    });
+  }
+  const blocked = applyBlocked(rows, missing);
+  if (blocked) return finish(2, blocked);
+  return applyDelete(args, rows, env, fetchImpl);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href)
