@@ -11,10 +11,9 @@
  *   5. rank-data.js が motor_power の引数の誤りを DB の前に拒否する
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { withMotorChartPure } from "./verifyData/motorChartSource.js";
+import { chartPowerIndexToneScenes, rankDataMotorPowerScenes } from "./verifyData/motor-power-shared-rank-data.js";
 import {
   computeMotorPowerIndex,
   computeVenueMotorPowerIndexes,
@@ -248,30 +247,11 @@ assert.deepStrictEqual(await motorWindowStart(2, 30, "2026-10-01-02-01"), {
 failTables.clear();
 setTables({});
 
-const rankData = readFileSync(
-  new URL("../sns/rank-data.js", import.meta.url),
-  "utf8",
-);
-assert.match(
-  rankData,
-  // BOA-1501 で src/pure へ移す。移す前後のどちらの置き場でも合格（移した後に元の場所の分岐は外す）
-  /import \{ SMALL_SAMPLE_THRESHOLD \} from "\.\.\/\.\.\/src\/(?:pure|components\/race)\/basicInfoStats\.js";/,
-);
-assert.match(rankData, /m\.sample_count >= SMALL_SAMPLE_THRESHOLD/);
-const chart = withMotorChartPure(
-  readFileSync(
-    new URL(
-      "../../src/components/analysis/MotorConditionChart.jsx",
-      import.meta.url,
-    ),
-    "utf8",
-  ),
-);
-assert.match(
-  chart,
-  /powerIndexTone\(\s*powerIndex\?\.power_index,\s*powerIndex\?\.sample_count,\s*SMALL_SAMPLE_THRESHOLD,?\s*\)/,
-  "画面の小標本の線が SMALL_SAMPLE_THRESHOLD のまま",
-);
+// 4. 番付（rank-data.js の motor_power を偽の DB の上で回す）と画面（詳細の機力指数の色）の小標本の線は
+// どちらも SMALL_SAMPLE_THRESHOLD（本文の字でなく、線の前後の走数で振る舞いを見る）
+const { SMALL_SAMPLE_THRESHOLD } = await import("../../src/pure/basicInfoStats.js");
+await rankDataMotorPowerScenes({ assert, computeVenueMotorPowerIndexes, threshold: SMALL_SAMPLE_THRESHOLD });
+await chartPowerIndexToneScenes({ assert, threshold: SMALL_SAMPLE_THRESHOLD });
 
 // 2. 移す前の画面の計算（origin/master 47cca3f08 の getMotorPowerIndex・motorWindowStart の中身を写した）
 function legacyPowerIndex(entries, resultByRaceId) {

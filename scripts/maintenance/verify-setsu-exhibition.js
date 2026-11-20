@@ -2,46 +2,20 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:http";
+import { setsuExhibitionOf } from "../sns/setsu-exhibition.js";
 import {
-  setsuExhibitionOf,
-  readSetsuExhibition,
-} from "../sns/setsu-exhibition.js";
+  date,
+  series,
+  races,
+  motors,
+  runSetsuExhibitionScenes1,
+  runSetsuExhibitionScenes2,
+  runSetsuExhibitionScenes3,
+} from "./verifyData/setsu-exhibition-scenes-1.js";
+import { runSetsuExhibitionScenes4 } from "./verifyData/setsu-exhibition-scenes-2.js";
 
-const date = "2026-11-02";
-const series = [
-  {
-    venue_code: 1,
-    start_date: "2026-10-30",
-    end_date: "2026-11-02",
-    title: "節A",
-    grade: "G1",
-  },
-];
-const races = [
-  {
-    race_id: "202611020101",
-    race_date: date,
-    venue_code: 1,
-    race_number: 1,
-    start_time: "10:45:00",
-    cancellation_status: "tentative",
-  },
-  {
-    race_id: "202610300101",
-    race_date: "2026-10-30",
-    venue_code: 1,
-    race_number: 1,
-    start_time: "10:30:00",
-  },
-  {
-    race_id: "202611020102",
-    race_date: date,
-    venue_code: 1,
-    race_number: 2,
-    start_time: "11:12:00",
-    cancellation_status: "confirmed",
-  },
-];
+// ---- 後半の場面（verifyData/setsu-exhibition-scenes-1.js） ----
+runSetsuExhibitionScenes1();
 const conditions = races.map((r) => ({
   race_id: r.race_id,
   series_day: r.race_date === date ? 4 : 1,
@@ -65,22 +39,9 @@ const exhibitions = entries.map((e) => ({
   exhibition_time: [6.7, 6.71, "6.71", 6.72, 6.5, null][e.boat_number - 1],
   exhibition_course: 7 - e.boat_number,
 }));
-const motors = [
-  {
-    race_date: "2026-10-30",
-    venue_code: 1,
-    racer_id: 4006,
-    motor_number: 10,
-    motor_2rate: 0,
-  },
-  {
-    race_date: date,
-    venue_code: 1,
-    racer_id: 4005,
-    motor_number: 11,
-    motor_2rate: 99,
-  },
-];
+
+// ---- 後半の場面（verifyData/setsu-exhibition-scenes-1.js） ----
+runSetsuExhibitionScenes2({ conditions, entries, exhibitions });
 const rows = { series, races, conditions, entries, exhibitions, motors };
 const snapshot = JSON.stringify(rows);
 const result = setsuExhibitionOf(date, rows);
@@ -316,245 +277,9 @@ assert.ok(
   );
 }
 
-// final_entries の3つの場合（優勝戦の出走表あり / 無いが準優の結果あり / どちらも無い）。
-{
-  const fSeries = [
-    {
-      venue_code: 2,
-      start_date: "2026-10-28",
-      end_date: "2026-11-02",
-      title: "節F",
-      grade: "SG",
-    },
-  ];
-  const race = (id, d, n, stage, extra = {}) => ({
-    race: {
-      race_id: id,
-      race_date: d,
-      venue_code: 2,
-      race_number: n,
-      start_time: "15:00:00",
-      ...extra,
-    },
-    cond: {
-      race_id: id,
-      series_day: 1,
-      is_final_day: false,
-      race_stage: stage,
-    },
-  });
-  const semis = [
-    race("s10", "2026-11-01", 10, "準優勝戦"),
-    race("s11", "2026-11-01", 11, "準優勝戦"),
-    race("s12", "2026-11-01", 12, "準優勝戦"),
-  ];
-  const prelim = race("q1", "2026-11-01", 1, "予選");
-  const finalRace = race("f12", date, 12, "優勝戦");
-  const entriesFor = (id, base) =>
-    [1, 2, 3, 4, 5, 6].map((b) => ({
-      race_id: id,
-      boat_number: b,
-      racer_id: base + b,
-      player_name: "x",
-      grade: "A1",
-      motor_number: b,
-    }));
-  const semiEntries = [
-    ...entriesFor("s10", 100),
-    ...entriesFor("s11", 200),
-    ...entriesFor("s12", 300),
-    ...entriesFor("q1", 900),
-  ];
-  const results = [
-    { race_id: "s10", rank1: 3, rank2: 1, is_cancelled: false },
-    { race_id: "s11", rank1: 2, rank2: null, is_cancelled: false }, // 2着が欠けた（失格等）: そろった人数だけ
-    { race_id: "q1", rank1: 1, rank2: 2, is_cancelled: false }, // 予選は使わない
-  ];
-  // s12 は中止（結果なし）
-  semis[2].race.cancellation_status = "confirmed";
-  const base = {
-    series: fSeries,
-    races: [...semis, prelim].map((x) => x.race),
-    conditions: [...semis, prelim].map((x) => x.cond),
-    entries: semiEntries,
-    results,
-  };
-  const day = "2026-11-01";
-  assert.deepEqual(
-    setsuExhibitionOf(day, base).meets[0].final_entries,
-    [
-      { boat_number: null, racer_id: 103, source: "semifinal_top2" },
-      { boat_number: null, racer_id: 101, source: "semifinal_top2" },
-      { boat_number: null, racer_id: 202, source: "semifinal_top2" },
-    ],
-    "準優の1・2着（中止・欠けた着は除く）",
-  );
-  // 前夜に翌日の優勝戦の出走表が入っていれば、出走表を使う。
-  const withFinal = {
-    ...base,
-    races: [...base.races, finalRace.race],
-    conditions: [...base.conditions, finalRace.cond],
-    entries: [
-      ...semiEntries,
-      ...[6, 5, 4, 3, 2, 1].map((b) => ({
-        race_id: "f12",
-        boat_number: b,
-        racer_id: 700 + b,
-        player_name: "x",
-        grade: "A1",
-        motor_number: b,
-      })),
-    ],
-  };
-  const expectedEntries = [1, 2, 3, 4, 5, 6].map((b) => ({
-    boat_number: b,
-    racer_id: 700 + b,
-    source: "entries",
-  }));
-  assert.deepEqual(
-    setsuExhibitionOf(day, withFinal).meets[0].final_entries,
-    expectedEntries,
-    "前夜でも出走表があれば entries",
-  );
-  // 優勝戦の欠場者は出場者に入れない。
-  const scratched = structuredClone(withFinal);
-  scratched.entries.find(
-    (e) => e.race_id === "f12" && e.boat_number === 4,
-  ).is_absent = true;
-  assert.deepEqual(
-    setsuExhibitionOf(day, scratched).meets[0].final_entries.map(
-      (e) => e.boat_number,
-    ),
-    [1, 2, 3, 5, 6],
-  );
-  assert.deepEqual(
-    setsuExhibitionOf(date, {
-      ...withFinal,
-      races: [
-        ...withFinal.races,
-        { ...finalRace.race, race_id: "f01", race_number: 1 },
-      ],
-    }).meets[0].final_entries,
-    expectedEntries,
-    "優勝戦の日は出走表",
-  );
-  // 優勝戦のレースはあるが出走表がまだ無い: 準優の結果で補う。
-  assert.equal(
-    setsuExhibitionOf(day, { ...withFinal, entries: semiEntries }).meets[0]
-      .final_entries[0].source,
-    "semifinal_top2",
-  );
-  // どちらも無い。
-  assert.deepEqual(
-    setsuExhibitionOf(day, { ...base, results: [] }).meets[0].final_entries,
-    [],
-  );
-  // 2日先の優勝戦は使わない（節の最終日より前の日）。
-  assert.deepEqual(
-    setsuExhibitionOf("2026-10-31", {
-      ...withFinal,
-      races: [...withFinal.races, race("q0", "2026-10-31", 1, "予選").race],
-      results: [],
-    }).meets[0].final_entries,
-    [],
-  );
-}
-
-const tables = {
-  races,
-  race_series: series,
-  race_conditions: conditions,
-  race_entries: entries,
-  exhibition_data: exhibitions,
-  motor_pretest_stats: motors,
-  race_results: [],
-};
-const calls = [];
-const fakeFetchAll = async (table, select, build) => {
-  const filters = [];
-  const orders = [];
-  const q = {};
-  for (const op of ["eq", "in", "gte", "lte"])
-    q[op] = (key, value) => {
-      filters.push([op, key, value]);
-      return q;
-    };
-  q.order = (key) => {
-    orders.push(key);
-    return q;
-  };
-  build(q);
-  assert.ok(orders.length, `${table} のページ順序`);
-  calls.push({ table, select, filters, orders });
-  return tables[table].filter((row) =>
-    filters.every(([op, key, value]) =>
-      op === "eq"
-        ? row[key] === value
-        : op === "in"
-          ? value.includes(row[key])
-          : op === "gte"
-            ? row[key] >= value
-            : row[key] <= value,
-    ),
-  );
-};
-assert.deepEqual(await readSetsuExhibition(date, fakeFetchAll), result);
-// 同じ会場で後に始まった節があれば、そちらだけを読む（meets の数と meet_id も見る）。
-const second = { ...series[0], start_date: "2026-11-01" };
-tables.race_series = [...series, second];
-calls.length = 0;
-const overlap = await readSetsuExhibition(date, fakeFetchAll);
-assert.equal(overlap.meets.length, 1, "会場ごとに節は1つ");
-assert.equal(overlap.meets[0].meet_id, "1-2026-11-01");
-assert.deepEqual(
-  overlap.meets[0].racers[5].runs.map((r) => r.race_id),
-  ["202611020101"],
-  "前の節の走を混ぜない",
-);
-assert.equal(
-  calls.filter((c) => c.table === "motor_pretest_stats").length,
-  1,
-  "前の節は読まない",
-);
-tables.race_series = series;
-calls.length = 0;
-await readSetsuExhibition(date, fakeFetchAll);
-
-assert.deepEqual(calls.find((c) => c.table === "motor_pretest_stats").filters, [
-  ["eq", "venue_code", 1],
-  ["eq", "race_date", "2026-10-30"],
-]);
-assert.deepEqual(
-  calls.filter((c) => c.table === "races")[1].filters,
-  [
-    ["eq", "venue_code", 1],
-    ["gte", "race_date", "2026-10-30"],
-    ["lte", "race_date", "2026-11-03"],
-  ],
-  "翌日の優勝戦の出走表まで読む",
-);
-assert.ok(
-  calls
-    .find((c) => c.table === "race_entries")
-    .select.split(",")
-    .includes("grade"),
-);
-assert.ok(
-  calls
-    .find((c) => c.table === "races")
-    .select.split(",")
-    .includes("start_time"),
-);
-assert.deepEqual(await readSetsuExhibition(date, async () => []), {
-  date,
-  meets: [],
-});
-await assert.rejects(
-  readSetsuExhibition(date, async () => {
-    throw new Error("read failed");
-  }),
-  /read failed/,
-);
+// ---- 後半の場面（verifyData/setsu-exhibition-scenes-1.js・setsu-exhibition-scenes-2.js） ----
+await runSetsuExhibitionScenes3({ conditions, entries, exhibitions, result });
+await runSetsuExhibitionScenes4();
 for (const invalid of ["2026/11/02", "2026-02-30", "bad"]) {
   const child = spawnSync(
     process.execPath,

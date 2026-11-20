@@ -160,14 +160,40 @@ function getArg(name) {
   return arg ? arg.slice(name.length + 3) : null;
 }
 
-async function main() {
-  if (!isSupabaseEnabled()) throw new Error("Supabaseが設定されていません");
+/** 引数（--from・--to・--apply）を読む。日付の形か期間の向きが違えば throw */
+function parseBackfillArgs() {
   const from = getArg("from");
   const to = getArg("to") ?? from;
   const apply = process.argv.includes("--apply");
   if (!DATE_RE.test(from ?? "") || !DATE_RE.test(to ?? "") || from > to) {
     throw new Error("--from=YYYY-MM-DD [--to=YYYY-MM-DD] を指定してください");
   }
+  return { from, to, apply };
+}
+
+/** 1レースを取り直す（定期取得と同じ processPitReportRace）。例外は outcome error の結果にする */
+async function runBackfillTarget(target, apply, polite) {
+  try {
+    return await processPitReportRace({
+      raceId: target.race_id,
+      race: target.race,
+      mode: apply ? "live" : "shadow",
+      fetchHtml: (url) => fetchPitReportHtml(url, polite),
+      client: supabase,
+      // 発走時刻を渡さない＝過去のレースは、コメントが足りなくても ok で閉じる（再試行しない）
+    });
+  } catch (e) {
+    return { outcome: "error", error: e.message };
+  }
+}
+
+/** 1レースの結果の行 */
+const formatRunLine = (target, result) =>
+  `  ${target.race_id} ${target.reason} ${target.before}→${result.rowsParsed ?? "-"}件 outcome=${result.outcome}${result.rowsWritten ? ` 書き込み${result.rowsWritten}行` : ""}${result.error ? ` (${result.error})` : ""}`;
+
+async function main() {
+  if (!isSupabaseEnabled()) throw new Error("Supabaseが設定されていません");
+  const { from, to, apply } = parseBackfillArgs();
 
   const { races, reports, entryCounts } = await loadBackfillInputs(
     supabase,
@@ -185,23 +211,9 @@ async function main() {
   for (const [i, target] of targets.entries()) {
     if (i > 0)
       await new Promise((resolve) => setTimeout(resolve, REQUEST_INTERVAL_MS));
-    let result;
-    try {
-      result = await processPitReportRace({
-        raceId: target.race_id,
-        race: target.race,
-        mode: apply ? "live" : "shadow",
-        fetchHtml: (url) => fetchPitReportHtml(url, polite),
-        client: supabase,
-        // 発走時刻を渡さない＝過去のレースは、コメントが足りなくても ok で閉じる（再試行しない）
-      });
-    } catch (e) {
-      result = { outcome: "error", error: e.message };
-    }
+    const result = await runBackfillTarget(target, apply, polite);
     runs.push({ target, result });
-    console.log(
-      `  ${target.race_id} ${target.reason} ${target.before}→${result.rowsParsed ?? "-"}件 outcome=${result.outcome}${result.rowsWritten ? ` 書き込み${result.rowsWritten}行` : ""}${result.error ? ` (${result.error})` : ""}`,
-    );
+    console.log(formatRunLine(target, result));
   }
 
   const summary = summarizePitReportBackfill(runs);

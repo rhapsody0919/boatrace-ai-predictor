@@ -16,7 +16,7 @@
  *    - 唐津（会場コード23）2026-09-30 3R（公式と自前の混在）: 10号機 公式55.56（前の節まで9走）、
  *      7号機 公式2連率0・3連率28.57（8走で2着以内0回）、53号機 公式0（0走）
  * 2. 入れ替えから90日以内の判定
- * 3. 画面とサービスのソース（一覧が motorRateView を使う・帯・「※」・キャッシュの版）
+ * 3. 画面（一覧を描いて: motorRateView・帯・見出し・「※」・機力指数）とサービス（キャッシュの版）
  * 4. 4言語の文言キーと、禁止語を使っていないこと
  */
 
@@ -24,7 +24,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { withMotorChartPure } from "./verifyData/motorChartSource.js";
+import { motorListScenes } from "./verifyData/motor-fresh-rate-list.js";
 import {
   createFakeSupabase,
   registerFakeServiceSupabase,
@@ -189,38 +189,6 @@ check(
 );
 
 // ---- 3. ソース ----
-const chart = withMotorChartPure(
-  read("src/components/analysis/MotorConditionChart.jsx"),
-);
-check(
-  "一覧の2連率の列は motorRateView、過去レースの3連率は motorRate3View で決める",
-  chart.includes("breakdown.map(motorRateView)") &&
-    chart.includes("motorRate3View(row)"),
-);
-check(
-  "最初の節（その日の公式2連率が全行0）は表の上に帯を出し、優出・優勝は「-」",
-  chart.includes('t("analysis.motor.freshFirstMeetBanner"') &&
-    /firstMeet\s*\?\s*"-"\s*:\s*\(row\.final_count \?\? "-"\)/.test(chart) &&
-    /firstMeet\s*\?\s*"-"\s*:\s*\(row\.championship_count \?\? "-"\)/.test(
-      chart,
-    ),
-);
-check(
-  "最初の開催だけ、2連率の列の見出しから「公式」を外す（2026-10-11 ユーザー決定）",
-  /firstMeet\s*\?\s*"analysis\.motor\.freshRate2Header"\s*:\s*"analysis\.motor\.officialRate2Header"/.test(
-    chart,
-  ),
-);
-check(
-  "「※」は押しても行のドリルダウンを開かない（stopPropagation）",
-  /className="motor-fresh-own-mark"[\s\S]{0,900}e\.stopPropagation\(\)/.test(
-    chart,
-  ),
-);
-check(
-  "過去レースの機力指数は、自前の値があれば出す（generation_power_index）",
-  chart.includes("row.generation_power_index"),
-);
 const settle = (failed, row = { a: 1 }) => settleMotorBreakdown([row], { columns: [{ b: 2 }], freshness: { f: 1 }, failed });
 check(
   "サービス: 材料が取れなかったら保存しない（fetchFailed。会場公式の成績が取れなかったときも同じ）",
@@ -297,6 +265,9 @@ await section1(ctx);
 await section2(ctx);
 await section3(ctx);
 await section4(ctx);
+// 一覧（MotorListView）を本物の useMotorView の値で描いて見る（本文の字でなく描いた結果）。.jsx は
+// registerFakeServiceSupabase が入れた renderJsx の hooks で読む。描くと jsdom の localStorage に替わるので、サービスの後に置く
+await motorListScenes({ check });
 
 if (failures.length > 0) {
   console.error(`\n${failures.length}件失敗`);
