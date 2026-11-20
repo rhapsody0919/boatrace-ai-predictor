@@ -116,13 +116,14 @@ export function motorState(over = {}) {
 /** モータ情報（一覧かドリルダウン。m.drillDownMotor で決まる）を本物の useMotorView の値で描き、fn(container, v) を返す */
 export async function drawMotor(over, fn) {
   await setup();
-  const [{ createElement }, { useMotorView }, { MotorMain, MotorFooterNotes }] = await Promise.all([
+  // useMotorView は hook を使わない関数（名前だけ use で始まる）なので、別名で呼ぶ
+  const [{ createElement }, { useMotorView: motorViewOf }, { MotorMain, MotorFooterNotes }] = await Promise.all([
     import("react"),
     mod("components/analysis/motorConditionView.jsx"),
     mod("components/analysis/MotorConditionDrill.jsx"),
   ]);
   const m = motorState(over);
-  const v = useMotorView(m);
+  const v = motorViewOf(m);
   const element = createElement("div", null,
     createElement(MotorMain, { m, v, scroll: SCROLL, scrollRef: null }),
     createElement(MotorFooterNotes, { m, v }));

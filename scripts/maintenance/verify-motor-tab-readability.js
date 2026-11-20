@@ -41,7 +41,10 @@ import {
   usageTables,
 } from "./verifyData/motor-tab-readability.js";
 import * as scenes from "./verifyData/motor-tab-readability-scenes.js";
-import { runDrillLoad, tJa } from "./verifyData/motor-tab-readability-render.js";
+import {
+  runDrillLoad,
+  tJa,
+} from "./verifyData/motor-tab-readability-render.js";
 import { recalcMotorRows } from "../../src/pure/raceMotorBreakdown.js";
 import {
   formatPowerIndex,
@@ -58,10 +61,12 @@ import {
   section1,
   section2,
   section3,
+} from "./verifyData/motor-tab-readability-sections1.js";
+import {
   section4,
   section5,
   section5b,
-} from "./verifyData/motor-tab-readability-sections1.js";
+} from "./verifyData/motor-tab-readability-sections3.js";
 import {
   section6,
   section7,
@@ -154,7 +159,11 @@ const racerCard = async () => {
   // 機力指数は4走で -0.04（小標本・丸めて 0.0）にした戻りでも描く（偽の DB の場面は機力指数の走を持たない）
   const small = await scenes.racerCardScene({
     ...status,
-    powerIndex: { power_index: -0.04, sample_count: 4, clipped_by_generation: false },
+    powerIndex: {
+      power_index: -0.04,
+      sample_count: 4,
+      clipped_by_generation: false,
+    },
   });
   return { status, card, single, small };
 };
