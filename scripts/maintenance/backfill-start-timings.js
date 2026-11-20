@@ -130,7 +130,9 @@ async function scrapeRaceResult(date, placeCd, raceNo, maxRetries = 3) {
 
       if (response.status === 429 || response.status === 503) {
         const wait = (attempt + 1) * 5000;
-        console.warn(`  レート制限 (${response.status}), ${wait / 1000}秒待機...`);
+        console.warn(
+          `  レート制限 (${response.status}), ${wait / 1000}秒待機...`,
+        );
         await sleep(wait);
         continue;
       }
@@ -190,31 +192,22 @@ async function updateWinningTechnique(raceId, winningTechnique, dryRun) {
   return { success: !error, error };
 }
 
-// メイン処理
-async function main() {
-  const options = parseArgs();
-
-  if (!options.from || !options.to) {
-    console.log("使用方法:");
-    console.log(
-      "  node scripts/maintenance/backfill-start-timings.js --from=2025-12-01 --to=2025-12-31",
-    );
-    console.log("");
-    console.log("オプション:");
-    console.log("  --dry-run       実際には更新しない（テスト実行）");
-    console.log("  --limit=N       最初のN件のみ処理");
-    console.log("  --verbose, -v   詳細ログを出力");
-    process.exit(1);
-  }
-
-  console.log("=== スタートタイミング補完スクリプト ===");
-  console.log(`期間: ${options.from} 〜 ${options.to}`);
+function printUsage() {
   console.log(
-    `モード: ${options.dryRun ? "ドライラン（テスト）" : "本番実行"}`,
+    [
+      "使用方法:",
+      "  node scripts/maintenance/backfill-start-timings.js --from=2025-12-01 --to=2025-12-31",
+      "",
+      "オプション:",
+      "  --dry-run       実際には更新しない（テスト実行）",
+      "  --limit=N       最初のN件のみ処理",
+      "  --verbose, -v   詳細ログを出力",
+    ].join("\n"),
   );
-  console.log("");
+}
 
-  // 対象レースを取得（Supabaseのデフォルトlimit 1000を回避）
+// 対象レースを取得（Supabaseのデフォルトlimit 1000を回避）
+async function fetchAllRaces(options) {
   let allRaces = [];
   const pageSize = 1000;
   let offset = 0;
@@ -237,6 +230,95 @@ async function main() {
     if (data.length < pageSize) break;
     offset += pageSize;
   }
+  return allRaces;
+}
+
+// 指定の表から race_id の集合を取得（Supabaseのinクエリは大量データに対応するためチャンクで取得。refine で条件を足す）
+async function fetchRaceIdSet(table, columns, raceIds, refine = (q) => q) {
+  const found = new Set();
+  for (let i = 0; i < raceIds.length; i += 500) {
+    const chunk = raceIds.slice(i, i + 500);
+    const { data } = await refine(
+      supabase.from(table).select(columns).in("race_id", chunk),
+    );
+    for (const row of data ?? []) found.add(row.race_id);
+  }
+  return found;
+}
+
+// 1レースを処理（ctx: options・existingTimings・missingTechniques・stats・total）
+async function processRace(race, ctx) {
+  const { options, existingTimings, missingTechniques, stats } = ctx;
+  const result = await scrapeRaceResult(
+    race.race_date,
+    race.venue_code,
+    race.race_number,
+  );
+
+  if (!result) {
+    stats.timingsSkipped++;
+    stats.techniquesSkipped++;
+  } else {
+    // スタートタイミング
+    if (!existingTimings.has(race.race_id) && result.startTimings.length > 0) {
+      const upsertResult = await upsertStartTimings(
+        race.race_id,
+        result.startTimings,
+        options.dryRun,
+      );
+      if (upsertResult.success) {
+        stats.timingsUpserted++;
+      } else {
+        stats.errors++;
+        console.error(
+          `${race.race_id} ST更新エラー:`,
+          upsertResult.error?.message,
+        );
+      }
+    } else {
+      stats.timingsSkipped++;
+    }
+
+    // 決まり手
+    if (missingTechniques.has(race.race_id) && result.winningTechnique) {
+      const updateResult = await updateWinningTechnique(
+        race.race_id,
+        result.winningTechnique,
+        options.dryRun,
+      );
+      if (updateResult.success) {
+        stats.techniquesUpdated++;
+      } else {
+        stats.errors++;
+      }
+    } else {
+      stats.techniquesSkipped++;
+    }
+  }
+
+  stats.processed++;
+  if (stats.processed % 50 === 0 || stats.processed === ctx.total) {
+    console.log(
+      `[${stats.processed}/${ctx.total}] ST: ${stats.timingsUpserted}件登録, 決まり手: ${stats.techniquesUpdated}件更新`,
+    );
+  }
+}
+
+// メイン処理
+async function main() {
+  const options = parseArgs();
+
+  if (!options.from || !options.to) {
+    printUsage();
+    process.exit(1);
+  }
+
+  const mode = options.dryRun ? "ドライラン（テスト）" : "本番実行";
+  console.log(
+    `=== スタートタイミング補完スクリプト ===\n期間: ${options.from} 〜 ${options.to}\nモード: ${mode}\n`,
+  );
+
+  const allRaces = await fetchAllRaces(options);
 
   const races = options.limit ? allRaces.slice(0, options.limit) : allRaces;
   const error = null;
@@ -250,39 +332,20 @@ async function main() {
     `対象レース数: ${races.length}件${options.limit ? ` (limit: ${options.limit})` : ""}`,
   );
 
-  // 既にスタートタイミングが登録済みのレースを取得
   const raceIds = races.map((r) => r.race_id);
-  const existingTimings = new Set();
-
-  // Supabaseのinクエリは大量データに対応するためチャンクで取得
-  for (let i = 0; i < raceIds.length; i += 500) {
-    const chunk = raceIds.slice(i, i + 500);
-    const { data } = await supabase
-      .from("race_start_timings")
-      .select("race_id")
-      .in("race_id", chunk);
-    if (data) {
-      for (const row of data) {
-        existingTimings.add(row.race_id);
-      }
-    }
-  }
-
-  // winning_techniqueがnullのレースを取得
-  const missingTechniques = new Set();
-  for (let i = 0; i < raceIds.length; i += 500) {
-    const chunk = raceIds.slice(i, i + 500);
-    const { data } = await supabase
-      .from("race_results")
-      .select("race_id, winning_technique")
-      .in("race_id", chunk)
-      .is("winning_technique", null);
-    if (data) {
-      for (const row of data) {
-        missingTechniques.add(row.race_id);
-      }
-    }
-  }
+  // 既にスタートタイミングが登録済みのレース
+  const existingTimings = await fetchRaceIdSet(
+    "race_start_timings",
+    "race_id",
+    raceIds,
+  );
+  // winning_techniqueがnullのレース
+  const missingTechniques = await fetchRaceIdSet(
+    "race_results",
+    "race_id, winning_technique",
+    raceIds,
+    (q) => q.is("winning_technique", null),
+  );
 
   // スタートタイミング未登録 or 決まり手未登録のレースのみ対象
   const targetRaces = races.filter(
@@ -294,91 +357,37 @@ async function main() {
   console.log(`スクレイピング対象: ${targetRaces.length}件`);
   console.log("");
 
-  let timingsUpserted = 0;
-  let timingsSkipped = 0;
-  let techniquesUpdated = 0;
-  let techniquesSkipped = 0;
-  let errors = 0;
-  let processed = 0;
+  const stats = {
+    timingsUpserted: 0,
+    timingsSkipped: 0,
+    techniquesUpdated: 0,
+    techniquesSkipped: 0,
+    errors: 0,
+    processed: 0,
+  };
+  const ctx = {
+    options,
+    existingTimings,
+    missingTechniques,
+    stats,
+    total: targetRaces.length,
+  };
 
   const CONCURRENCY = 5;
   const BATCH_DELAY_MS = 1000;
 
-  async function processRace(race) {
-    const result = await scrapeRaceResult(
-      race.race_date,
-      race.venue_code,
-      race.race_number,
-    );
-
-    if (!result) {
-      timingsSkipped++;
-      techniquesSkipped++;
-    } else {
-      // スタートタイミング
-      if (
-        !existingTimings.has(race.race_id) &&
-        result.startTimings.length > 0
-      ) {
-        const upsertResult = await upsertStartTimings(
-          race.race_id,
-          result.startTimings,
-          options.dryRun,
-        );
-        if (upsertResult.success) {
-          timingsUpserted++;
-        } else {
-          errors++;
-          console.error(
-            `${race.race_id} ST更新エラー:`,
-            upsertResult.error?.message,
-          );
-        }
-      } else {
-        timingsSkipped++;
-      }
-
-      // 決まり手
-      if (missingTechniques.has(race.race_id) && result.winningTechnique) {
-        const updateResult = await updateWinningTechnique(
-          race.race_id,
-          result.winningTechnique,
-          options.dryRun,
-        );
-        if (updateResult.success) {
-          techniquesUpdated++;
-        } else {
-          errors++;
-        }
-      } else {
-        techniquesSkipped++;
-      }
-    }
-
-    processed++;
-    if (processed % 50 === 0 || processed === targetRaces.length) {
-      console.log(
-        `[${processed}/${targetRaces.length}] ST: ${timingsUpserted}件登録, 決まり手: ${techniquesUpdated}件更新`,
-      );
-    }
-  }
-
   // 並列実行（CONCURRENCY件ずつ、バッチ間ディレイ付き）
   for (let i = 0; i < targetRaces.length; i += CONCURRENCY) {
     const batch = targetRaces.slice(i, i + CONCURRENCY);
-    await Promise.all(batch.map((race) => processRace(race)));
+    await Promise.all(batch.map((race) => processRace(race, ctx)));
     if (i + CONCURRENCY < targetRaces.length) {
       await sleep(BATCH_DELAY_MS);
     }
   }
 
-  console.log("");
-  console.log("=== 完了 ===");
-  console.log(`race_start_timings登録: ${timingsUpserted}件`);
-  console.log(`race_start_timingsスキップ: ${timingsSkipped}件`);
-  console.log(`winning_technique更新: ${techniquesUpdated}件`);
-  console.log(`winning_techniqueスキップ: ${techniquesSkipped}件`);
-  console.log(`エラー: ${errors}件`);
+  console.log(
+    `\n=== 完了 ===\nrace_start_timings登録: ${stats.timingsUpserted}件\nrace_start_timingsスキップ: ${stats.timingsSkipped}件\nwinning_technique更新: ${stats.techniquesUpdated}件\nwinning_techniqueスキップ: ${stats.techniquesSkipped}件\nエラー: ${stats.errors}件`,
+  );
 }
 
 main().catch(console.error);
