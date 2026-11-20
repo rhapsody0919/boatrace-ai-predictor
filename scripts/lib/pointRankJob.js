@@ -16,7 +16,7 @@
  *   - 0件エラー: 期待会場数（SG/G1の4日目以降）が0でないのに、解析できた行が0件なら失敗（共通ラッパの判定）。
  *     表が無いのが仕様の日（一般戦・G3・SG/G1の序盤）は、期待0件で正常
  */
-import { run as runPointRank } from "../daily/scrape-point-rank.js";
+import { run as runPointRank } from "./pointRankRun.js";
 
 /** 会場（1ページ、約8〜10秒）の同時取得数。開催中の約15会場を約50秒で終える */
 export const POINT_RANK_CONCURRENCY = 3;
