@@ -5,12 +5,12 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2522,
+    "sourceFiles": 2542,
     "filesWithAccess": 309,
     "tableReaders": 948,
     "tableWriters": 195,
     "rpcCallers": 55,
-    "nameMentions": 265,
+    "nameMentions": 266,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
@@ -1802,13 +1802,12 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-pre-race-parsers.js:1375",
+          "ref": "scripts/maintenance/verifyData/pre-race-parsers-scenes-5.js:247",
           "op": "upsert",
           "via": "client",
           "columns": [
             "?"
-          ],
-          "test": true
+          ]
         },
         {
           "ref": "scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:32",
@@ -1846,7 +1845,7 @@
             "scripts/lib/snsTodayDigestV3.js:93",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:48",
             "scripts/maintenance/verify-analogy-v16.js:318",
-            "scripts/maintenance/verify-pre-race-parsers.js:1375",
+            "scripts/maintenance/verifyData/pre-race-parsers-scenes-5.js:247",
             "scripts/sns/pushSetsuKiryokuShortStore.js:120",
             "src/services/meetQueries2.js:155",
             "src/services/motorQueries6.js:120",
@@ -1880,7 +1879,7 @@
             "scripts/lib/sns/todayDigestStatus.js:39",
             "scripts/lib/snsTodayDigestV3.js:93",
             "scripts/maintenance/verify-analogy-v16.js:318",
-            "scripts/maintenance/verify-pre-race-parsers.js:1375",
+            "scripts/maintenance/verifyData/pre-race-parsers-scenes-5.js:247",
             "src/services/meetQueries2.js:155",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
@@ -13258,13 +13257,12 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-race-result-parser.js:1675",
+          "ref": "scripts/maintenance/verifyData/race-result-parser-scenes-6.js:327",
           "op": "upsert",
           "via": "client",
           "columns": [
             "?"
-          ],
-          "test": true
+          ]
         }
       ],
       "readByRpc": [
@@ -13287,7 +13285,7 @@
             "scripts/lib/raceResultFix.js:125",
             "scripts/maintenance/backfill-disqualified-finish-marks.js:212",
             "scripts/maintenance/backfill-start-timings.js:175",
-            "scripts/maintenance/verify-race-result-parser.js:1675",
+            "scripts/maintenance/verifyData/race-result-parser-scenes-6.js:327",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
             "src/services/meetQueries.js:111",
@@ -13313,7 +13311,7 @@
             "scripts/lib/raceResultFix.js:125",
             "scripts/maintenance/backfill-disqualified-finish-marks.js:212",
             "scripts/maintenance/backfill-start-timings.js:175",
-            "scripts/maintenance/verify-race-result-parser.js:1675",
+            "scripts/maintenance/verifyData/race-result-parser-scenes-6.js:327",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
             "src/services/meetQueries.js:111",
@@ -27225,7 +27223,8 @@
         "scripts/maintenance/verifyData/data-health-job-for-job.js:40",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:113",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:174",
-        "scripts/maintenance/verifyData/data-health-job-scenes-3.js:309"
+        "scripts/maintenance/verifyData/data-health-job-scenes-3.js:309",
+        "scripts/maintenance/verifyData/data-health-job-tail.js:62"
       ],
       "triggerOn": [],
       "calledByRpc": [],

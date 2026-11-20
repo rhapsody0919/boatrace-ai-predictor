@@ -10,12 +10,12 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2522 |
+| 読んだファイル | 2542 |
 | 読み書きのあるファイル | 309 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
 | RPC の呼び手（箇所） | 55 |
-| 名前の文字列だけの箇所（呼ぶ経路は式） | 265 |
+| 名前の文字列だけの箇所（呼ぶ経路は式） | 266 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
@@ -156,7 +156,7 @@
 | compute_venue_course_entry_baseline | service だけ |  | なし |  | race_entries, race_results, races |  |  |
 | compute_venue_course_technique_baseline | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:222 |  | race_entries, race_results, races |  |  |
 | data_health_cancellation_with_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:349, scripts/lib/dataHealth/functions.js:118 |  | race_results, races |  |  |
-| data_health_coverage | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:72, scripts/lib/dataHealth/functions.js:53, scripts/maintenance/verifyData/data-health-job-fixtures.js:76 ほか5 |  | exhibition_data, race_conditions, race_odds, race_results, race_start_timings, races |  |  |
+| data_health_coverage | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:72, scripts/lib/dataHealth/functions.js:53, scripts/maintenance/verifyData/data-health-job-fixtures.js:76 ほか6 |  | exhibition_data, race_conditions, race_odds, race_results, race_start_timings, races |  |  |
 | data_health_entries_duplicates | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:329, scripts/lib/dataHealth/functions.js:109 |  | race_entries, race_results, races |  |  |
 | data_health_monthly_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:376, scripts/lib/dataHealth/functions.js:98, scripts/maintenance/verifyData/data-health-job-for-job.js:42 ほか1 |  | race_results, races |  |  |
 | data_health_morning_freshness | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:205, scripts/lib/dataHealth/checks.js:214, scripts/lib/dataHealth/checks.js:224 ほか4 |  | analogy_v16_snapshots, bet_recommendations, poirot_predictions, races |  |  |
@@ -432,7 +432,7 @@
 - 書き手（4）: 
   - `scripts/lib/exhibitionJobParts.js:70` upsert(helper:upsertChangedRows) [?]
   - `scripts/lib/predictionWriteRows.js:132` upsert(helper:upsertChangedRows) [?]
-  - `scripts/maintenance/verify-pre-race-parsers.js:1375` upsert [?] （検査）
+  - `scripts/maintenance/verifyData/pre-race-parsers-scenes-5.js:247` upsert [?]
   - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:32` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -1336,7 +1336,7 @@
   - `scripts/lib/raceResultPersist.js:124` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:212` update [?]
   - `scripts/maintenance/backfill-start-timings.js:175` upsert [?]
-  - `scripts/maintenance/verify-race-result-parser.js:1675` upsert [?] （検査）
+  - `scripts/maintenance/verifyData/race-result-parser-scenes-6.js:327` upsert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-racer_aggregated_stats"></a>racer_aggregated_stats
