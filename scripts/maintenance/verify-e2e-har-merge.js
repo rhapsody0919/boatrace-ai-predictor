@@ -7,7 +7,9 @@
  * かのどちらかで、原因が録画の中身に埋もれて見つけにくい。実際の E2E・本番には依存しない。
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { canonicalUrl, harKey, mergeHarLogs } from "../../e2e/har-merge.js";
@@ -312,18 +314,41 @@ check(
 );
 // 通知の重複判定は event で絞らない（schedule だけを見ると、Vercel Cron の dispatch の通知を数えず1日最大4回に戻る）。
 // PR のブランチを ref にした手の起動は数えない
+// 本文の字は読まず、偽の gh（受けた endpoint を記録して空の runs を返す）を PATH に置いて notify-dedupe を実行し、取得先の形で見る
 {
-  const src = readFileSync(
-    path.join(repoRoot, "scripts", "maintenance", "e2e-recording.js"),
-    "utf8",
+  const dir = mkdtempSync(path.join(os.tmpdir(), "e2e-har-merge-gh-"));
+  const log = path.join(dir, "endpoints.txt");
+  writeFileSync(
+    path.join(dir, "gh"),
+    `#!/bin/sh\nprintf '%s\\n' "$2" >> ${JSON.stringify(log)}\necho '{"workflow_runs":[]}'\n`,
+    { mode: 0o755 },
   );
+  const run = spawnSync(
+    process.execPath,
+    [path.join(repoRoot, "scripts/maintenance/e2e-recording.js"), "notify-dedupe"],
+    {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        PATH: `${dir}${path.delimiter}${process.env.PATH ?? ""}`,
+        GITHUB_REPOSITORY: "rhapsody0919/boatrace-ai-predictor",
+        GITHUB_RUN_ID: "1",
+      },
+    },
+  );
+  const endpoints = existsSync(log)
+    ? readFileSync(log, "utf8").trim().split("\n")
+    : [];
+  rmSync(dir, { recursive: true, force: true });
+  const runsEndpoint = endpoints.find((e) => /e2e-rerecord\.yml\/runs\?/.test(e)) ?? "";
   check(
     "notify-dedupe の runs の取得は event で絞らず、master だけを見る",
     [
-      /e2e-rerecord\.yml\/runs\?[^`]*event=/.test(src),
-      /e2e-rerecord\.yml\/runs\?branch=master&/.test(src),
+      run.status === 0 && endpoints.length === 1,
+      /[?&]event=/.test(runsEndpoint),
+      /e2e-rerecord\.yml\/runs\?branch=master&/.test(runsEndpoint),
     ],
-    [false, true],
+    [true, false, true],
   );
 }
 // 状態関数（failure() / success() / cancelled() / always()）は if: の中でしか使えない。

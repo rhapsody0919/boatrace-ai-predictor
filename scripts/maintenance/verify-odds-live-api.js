@@ -39,6 +39,7 @@ import {
 } from "../lib/liveOdds.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { FetchError } from "../lib/scrapeJobs/politeFetch.js";
+import { loadLiveOddsApi } from "./verifyData/live-odds-wiring.js";
 
 const printOut = console.log.bind(console);
 const printErr = console.error.bind(console);
@@ -493,30 +494,49 @@ const fetcher = (fn) => {
 }
 
 // ---- (e) 設定 ----
+// api/odds/live.js の本文の字は読まず、読み込んで export と、手前の部品（politeFetch・DB ストア・supabase）へ渡した引数と呼び出しの記録で見る。
+// 当日のレースだけ受けるので、raceId は今日（JST）の物。公式へは偽の fetch（発売中の実ページ）で答え、DB は記録する偽物（verifyData/live-odds-wiring.js）
+const LIVE_RACE = `${new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)}-21-02`;
+const liveReq = (search) => ({
+  method: "GET",
+  url: `/api/odds/live${search}`,
+  query: { raceId: LIVE_RACE, page: "3t" },
+});
+const live = await loadLiveOddsApi({ fetchImpl: async () => htmlResponse(T3_PREDEADLINE) });
+const liveFirst = await live.call(liveReq(`?${new URLSearchParams({ raceId: LIVE_RACE, page: "3t" })}`));
 {
-  const api = fs.readFileSync(
-    new URL("../../api/odds/live.js", import.meta.url),
-    "utf8",
-  );
   check(
     "api/odds/live.js: maxDuration=30",
-    /export const config = \{\s*maxDuration: 30,?\s*\}/.test(api),
+    JSON.stringify(live.config) === JSON.stringify({ maxDuration: 30 }),
+    show(live.config),
   );
+  const opts = live.record.politeFetchOptions;
   check(
     "api/odds/live.js: 再試行なし・12秒で打ち切り・ブレーカーは DB ストア（Cron と共有）",
-    /maxRetries:\s*0/.test(api) &&
-      /timeoutMs:\s*12000/.test(api) &&
-      /createSupabaseStore\(supabase\)\.breakerStore/.test(api),
+    liveFirst.status === 200 &&
+      opts.length === 1 &&
+      opts[0].maxRetries === 0 &&
+      opts[0].timeoutMs === 12000 &&
+      live.record.stores.length === 1 &&
+      live.record.stores[0].client === live.record.supabase &&
+      live.record.queries.some((q) => q.table === "scrape_job_state"),
+    show({
+      status: liveFirst.status,
+      opts: opts.map(({ maxRetries, timeoutMs }) => ({ maxRetries, timeoutMs })),
+      stores: live.record.stores.length,
+      tables: [...new Set(live.record.queries.map((q) => q.table))],
+    }),
   );
   // 前は文字列 race_odds の出現そのものを禁じていて、範囲の外で DB の最新の窓を読む変更（BOA-1149）まで
   // 落としていた。書き込みだけを探す。要求の処理の本体（scripts/lib/liveOdds.js）も読む
-  const liveOddsLib = fs.readFileSync(
-    new URL("../lib/liveOdds.js", import.meta.url),
-    "utf8",
-  );
+  // 締切が分かり範囲の外（今日の 00:01 締切）→ race_odds の最新行を読む経路も通す。どちらの経路でも race_odds に書かない
+  live.record.rows.races = { race_date: LIVE_RACE.slice(0, 10), start_time: "00:01" };
+  await live.call(liveReq(`?${new URLSearchParams({ raceId: LIVE_RACE, page: "3t" })}`));
   const writes = [
-    ...raceOddsWrites(api).map((h) => `api/odds/live.js: ${h}`),
-    ...raceOddsWrites(liveOddsLib).map((h) => `scripts/lib/liveOdds.js: ${h}`),
+    ...live.record.queries
+      .filter((q) => q.table === "race_odds" && WRITE_METHODS.has(q.method))
+      .map((q) => `${q.table}.${q.method}(`),
+    ...live.record.rpcs.filter((r) => /odds/i.test(r.name)).map((r) => `rpc ${r.name}`),
   ];
   check(
     "api/odds/live.js・scripts/lib/liveOdds.js: race_odds に書かない（読むのは許す）",
@@ -617,10 +637,13 @@ const fetcher = (fn) => {
     rawSearch: canonical,
   });
   check("正しい形のクエリ: 200", ok.status === 200, show(ok.status));
-  const apiSrc = fs.readFileSync(new URL("../../api/odds/live.js", import.meta.url), "utf8");
+  const viaApi = await live.call(liveReq(`?page=3t&raceId=${LIVE_RACE}`));
   check(
     "api/odds/live.js: req.url の生のクエリを rawSearch に渡す",
-    /rawSearch:\s*new URL\(req\.url/.test(apiSrc),
+    liveFirst.status === 200 &&
+      viaApi.status === 400 &&
+      viaApi.headers["Cache-Control"] === CACHE_NO_STORE,
+    show({ canonical: liveFirst.status, reordered: viaApi.status, cacheControl: viaApi.headers["Cache-Control"] }),
   );
 }
 
