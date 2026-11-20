@@ -263,7 +263,8 @@ async function gsg5Scene4() {
 
 /** verify から呼ぶ入口。env は verify 側の束縛（jst・minutesAgo・show・row・fakeClient・throwingClient・mod・record） */
 export async function runGhaSkipGateScenes6(env) {
-  ({ jst, minutesAgo, show, row, fakeClient, throwingClient, mod, record } = env);
+  ({ jst, minutesAgo, show, row, fakeClient, throwingClient, mod, record } =
+    env);
   await gsg5Scene3();
   await gsg5Scene4();
 }

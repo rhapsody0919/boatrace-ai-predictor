@@ -3,7 +3,18 @@
  * 判定と期待値は分ける前の verify-gha-skip-gate.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-let jst, minutesAgo, show, row, throwingClient, mod, record, decide, skipOf, NOW, healthy, V;
+let jst,
+  minutesAgo,
+  show,
+  row,
+  throwingClient,
+  mod,
+  record,
+  decide,
+  skipOf,
+  NOW,
+  healthy,
+  V;
 
 async function gsg1Scene1() {
   // ---- (a) 変数が true でない → DB を読まず、常に実行 ----
@@ -83,7 +94,8 @@ async function gsg1Scene1() {
 
 /** verify から呼ぶ入口。env は verify 側の束縛（jst・minutesAgo・show・row・throwingClient・mod・record・decide・skipOf） */
 export async function runGhaSkipGateScenes1(env) {
-  ({ jst, minutesAgo, show, row, throwingClient, mod, record, decide, skipOf } = env);
+  ({ jst, minutesAgo, show, row, throwingClient, mod, record, decide, skipOf } =
+    env);
   await gsg1Scene1();
 }
 
@@ -298,6 +310,19 @@ async function gsg1Scene5() {
 
 /** verify から呼ぶ入口。env は verify 側の束縛（jst・minutesAgo・show・row・throwingClient・mod・record・decide・skipOf・NOW・healthy・V） */
 export async function runGhaSkipGateScenes2(env) {
-  ({ jst, minutesAgo, show, row, throwingClient, mod, record, decide, skipOf, NOW, healthy, V } = env);
+  ({
+    jst,
+    minutesAgo,
+    show,
+    row,
+    throwingClient,
+    mod,
+    record,
+    decide,
+    skipOf,
+    NOW,
+    healthy,
+    V,
+  } = env);
   await gsg1Scene5();
 }

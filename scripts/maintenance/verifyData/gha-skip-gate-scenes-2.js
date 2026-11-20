@@ -83,10 +83,8 @@ async function gsg2Scene1() {
 async function gsg2Scene2({ stale, dbErrors }) {
   // 投げる側の実物の文字列（store.js の truncateError は message をそのまま入れる）
   const realErrors = [
-    new ResultHttpError(
-      "https://www.boatrace.jp/owpc/pc/race/raceresult",
-      403,
-    ).message,
+    new ResultHttpError("https://www.boatrace.jp/owpc/pc/race/raceresult", 403)
+      .message,
     "HTTP 403", // race_info（update-race-info.js）・odds_final・point_rank・racerProfileSync の HTTP 503
     "point_rank: 取得できません: HTTP 403",
     "Kファイル取得失敗: HTTP 403 (https://www1.mbrace.or.jp/od2/K/x.lzh)",
@@ -96,10 +94,8 @@ async function gsg2Scene2({ stale, dbErrors }) {
     "HTTP 429 for https://www.boatrace.jp/x",
     new FetchError("https://www.boatrace.jp/x", 3, new Error("timeout"))
       .message,
-    new BreakerOpenError(
-      "host:boatrace.jp",
-      Date.parse("2026-09-24T03:00:00Z"),
-    ).message,
+    new BreakerOpenError("host:boatrace.jp", Date.parse("2026-09-24T03:00:00Z"))
+      .message,
   ];
   record(
     "isFetchFailureError（再現 P1）: 各ジョブが投げる実物の形（ResultHttpError・HTTP 403・Kファイル・racer_news の (403)・http_403・HTTP 503・FetchError・BreakerOpenError）を拾う",
@@ -234,6 +230,18 @@ async function gsg2Scene4() {
 
 /** verify から呼ぶ入口。env は verify 側の束縛（jst・minutesAgo・show・row・record・mod・decide・skipOf・NOW・healthy・V） */
 export async function runGhaSkipGateScenes3(env) {
-  ({ jst, minutesAgo, show, row, record, mod, decide, skipOf, NOW, healthy, V } = env);
+  ({
+    jst,
+    minutesAgo,
+    show,
+    row,
+    record,
+    mod,
+    decide,
+    skipOf,
+    NOW,
+    healthy,
+    V,
+  } = env);
   await gsg2Scene4();
 }
