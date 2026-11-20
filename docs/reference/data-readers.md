@@ -10,8 +10,8 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2609 |
-| 読み書きのあるファイル | 315 |
+| 読んだファイル | 2610 |
+| 読み書きのあるファイル | 316 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
 | RPC の呼び手（箇所） | 55 |
@@ -150,11 +150,11 @@
 | claim_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:175, scripts/maintenance/verify-scrape-slots-on-db.js:43 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:17, scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:194, scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:230 |  | races, scrape_slots | scrape_slots |  |
 | claim_scrape_slots_by_offset | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:156 / 名前の文字列: scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:176, scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:229 |  | races, scrape_slots | scrape_slots |  |
 | compute_nige_second_by_course | service だけ |  | scripts/daily/update-course-baseline-stats.js:184 |  | race_results, races |  |  |
-| compute_racer_course_technique_stats | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:304 |  | race_entries, race_results, races, venue_course_technique_baseline |  |  |
+| compute_racer_course_technique_stats | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:374 |  | race_entries, race_results, races, venue_course_technique_baseline |  |  |
 | compute_st_course_baseline | service だけ |  | scripts/daily/update-course-baseline-stats.js:170 |  | race_entries, race_results, race_start_timings, races |  |  |
 | compute_today_course_win_stats | service だけ |  | scripts/daily/generate-morning-digest.js:253 |  | race_entries, race_results, races |  |  |
 | compute_venue_course_entry_baseline | service だけ |  | なし |  | race_entries, race_results, races |  |  |
-| compute_venue_course_technique_baseline | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:222 |  | race_entries, race_results, races |  |  |
+| compute_venue_course_technique_baseline | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:349 |  | race_entries, race_results, races |  |  |
 | data_health_cancellation_with_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:349, scripts/lib/dataHealth/functions.js:118 |  | race_results, races |  |  |
 | data_health_coverage | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:72, scripts/lib/dataHealth/functions.js:53, scripts/maintenance/verifyData/data-health-job-fixtures.js:76 ほか6 |  | exhibition_data, race_conditions, race_odds, race_results, race_start_timings, races |  |  |
 | data_health_entries_duplicates | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:329, scripts/lib/dataHealth/functions.js:109 |  | race_entries, race_results, races |  |  |
@@ -243,7 +243,7 @@
 | odds_final | api/cron/odds-final.js | 26 | race_odds_final, scrape_job_state, scrape_slots |
 | outcome_distribution_update | api/cron/outcome-distribution-update.js | 28 | nige_outcome_distribution, outcome_distribution, scrape_job_state, scrape_slots |
 | pcexpect | api/cron/pcexpect.js | 25 | external_predictions, scrape_job_state, scrape_slots |
-| pit_reports | api/cron/pit-reports.js | 29 | race_pit_comments, race_pit_reports, scrape_job_state, scrape_slots |
+| pit_reports | api/cron/pit-reports.js | 30 | race_pit_comments, race_pit_reports, scrape_job_state, scrape_slots |
 | point_rank | api/cron/point-rank.js | 31 | racer_series_points, scrape_job_state, scrape_slots |
 | pseudo | api/cron/scrape-pseudo.js | 22 | scrape_job_state, scrape_slots |
 | race_info | api/cron/race-info.js | 62 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
@@ -857,7 +857,7 @@
   - `scripts/daily/morning-init.js:259` select(helper:fetchAll)
   - `scripts/lib/analogyV16Exhibition.js:261` rest(rest) [is_absent, race_id]
   - `scripts/lib/motorPretestRows.js:134` select [race_id, racer_id]
-  - `scripts/lib/pitReportJob.js:188` select [boat_number, race_id, racer_id]
+  - `scripts/lib/pitReportWrite.js:75` select [boat_number, race_id, racer_id]
   - `scripts/lib/predictionRaceFetch.js:151` select(helper:selectByRaceIds)
   - `scripts/lib/predictionWriteRows.js:94` select(helper:upsertChangedRows)
   - `scripts/lib/raceIndicatorData.js:72` select [boat_number, race_id, racer_id, win_rate]
@@ -1106,11 +1106,11 @@
 - 取得のジョブ: pit_reports
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/lib/pitReportSchema.js:14`
 - 読み手（2）: 
-  - `scripts/lib/pitReportJob.js:242` select(helper:upsertChangedRows)
+  - `scripts/lib/pitReportWrite.js:108` select(helper:upsertChangedRows)
   - `src/services/raceQueries4.js:94` select [boat_number, comment_text, confidence_stars, previous_race_number, race_id, racer_id]
 - 書き手（2）: 
-  - `scripts/lib/pitReportJob.js:242` upsert(helper:upsertChangedRows) [?]
-  - `scripts/lib/pitReportJob.js:259` delete
+  - `scripts/lib/pitReportWrite.js:108` upsert(helper:upsertChangedRows) [?]
+  - `scripts/lib/pitReportWrite.js:126` delete
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-race_pit_reports"></a>race_pit_reports
@@ -1120,12 +1120,12 @@
 - 取得のジョブ: pit_reports
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/lib/pitReportSchema.js:13`
 - 読み手（4）: 
-  - `scripts/lib/pitReportJob.js:207` select [content_hash, parser_version, race_id, raw_storage_path]
-  - `scripts/lib/pitReportJob.js:270` select(helper:upsertChangedRows)
+  - `scripts/lib/pitReportWrite.js:139` select(helper:upsertChangedRows)
+  - `scripts/lib/pitReportWrite.js:186` select [content_hash, parser_version, race_id, raw_storage_path]
   - `scripts/maintenance/backfill-pit-reports.js:134` select(helper:fetchAll)
   - `src/services/raceQueries4.js:87` select [comment_count, created_at, race_id, reporter_name, status, target_from, target_to, updated_at]
 - 書き手（1）: 
-  - `scripts/lib/pitReportJob.js:270` upsert(helper:upsertChangedRows) [?]
+  - `scripts/lib/pitReportWrite.js:139` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-race_results"></a>race_results
@@ -1367,10 +1367,10 @@
 - 読み手（4）: 
   - `scripts/daily/generate-morning-digest.js:222` select [*, course, racer_id]
   - `scripts/daily/generate-morning-digest.js:355` select [window_end]
-  - `scripts/daily/update-racer-course-technique-stats.js:330` select(helper:upsertChangedRows)
+  - `scripts/daily/update-racer-course-technique-stats.js:386` select(helper:upsertStamped)
   - `scripts/lib/snsTodayDigestV3.js:113` rest(rest) [course, makuri_rate, nigashi_rate, nige_rate, racer_id, runs, window_end, window_start]
 - 書き手（1）: 
-  - `scripts/daily/update-racer-course-technique-stats.js:330` upsert(helper:upsertChangedRows) [?]
+  - `scripts/daily/update-racer-course-technique-stats.js:386` upsert(helper:upsertStamped) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-racer_grade_cache"></a>racer_grade_cache
@@ -1520,8 +1520,8 @@
   - `scripts/lib/eveDeadlinesJob.js:387` select [race_date, race_id, start_time]
   - `scripts/lib/inCautionHealth.js:137` select [cancellation_status, race_id]
   - `scripts/lib/motorPretestRows.js:112` select [cancellation_status, race_date, race_id, venue_code]
-  - `scripts/lib/pitReportJob.js:290` select [race_date, race_grade, race_id, race_number, start_time]
-  - `scripts/lib/pitReportJob.js:365` select [race_date, race_grade, race_id, race_number, start_time]
+  - `scripts/lib/pitReportJob.js:157` select [race_date, race_grade, race_id, race_number, start_time]
+  - `scripts/lib/pitReportJob.js:232` select [race_date, race_grade, race_id, race_number, start_time]
   - `scripts/lib/pointRankRun.js:101` select [cancellation_status, race_grade, race_id]
   - `scripts/lib/predictionRaceFetch.js:154` select(helper:selectByRaceIds)
   - `scripts/lib/predictionWriteRows.js:35` select(helper:upsertChangedRows)
@@ -1725,7 +1725,7 @@
   - `scripts/maintenance/verify-scrape-slots-on-db.js:209` select [attempts, job, status] （検査）
 - 書き手（9）: 
   - `scripts/lib/boatcast/oritenJobParts.js:188` upsert [?]
-  - `scripts/lib/pitReportJob.js:400` upsert [?]
+  - `scripts/lib/pitReportJob.js:267` upsert [?]
   - `scripts/lib/scrapeJobs/cleanup.js:33` update [last_error, lease_until, next_attempt_at, status]
   - `scripts/lib/scrapeJobs/cleanup.js:52` delete
   - `scripts/lib/scrapeJobs/storeParts.js:206` update [done_at, last_error, lease_until, outcome, result_digest, rows_written, status]
@@ -2186,12 +2186,12 @@
 - 取得のジョブ: racer_course_technique_stats
 - 読み手（5）: 
   - `scripts/daily/generate-morning-digest.js:237` select [*]
-  - `scripts/daily/update-racer-course-technique-stats.js:255` select(helper:upsertChangedRows)
-  - `scripts/daily/update-racer-course-technique-stats.js:283` select [*]
+  - `scripts/daily/update-racer-course-technique-stats.js:262` select [*]
+  - `scripts/daily/update-racer-course-technique-stats.js:361` select(helper:upsertStamped)
   - `scripts/maintenance/verifyData/full-picture-scene2-b-12.js:202` rest(rest)
   - `scripts/maintenance/verifyData/full-picture-scene2-b-6.js:75` rest(rest)
 - 書き手（1）: 
-  - `scripts/daily/update-racer-course-technique-stats.js:255` upsert(helper:upsertChangedRows) [?]
+  - `scripts/daily/update-racer-course-technique-stats.js:361` upsert(helper:upsertStamped) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-venue_entry_course_stats"></a>venue_entry_course_stats

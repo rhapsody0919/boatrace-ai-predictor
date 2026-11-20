@@ -5,8 +5,8 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2609,
-    "filesWithAccess": 315,
+    "sourceFiles": 2610,
+    "filesWithAccess": 316,
     "tableReaders": 948,
     "tableWriters": 195,
     "rpcCallers": 55,
@@ -7263,7 +7263,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/pitReportJob.js:188",
+          "ref": "scripts/lib/pitReportWrite.js:75",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8424,7 +8424,7 @@
             "scripts/daily/generate-unified-trifecta-reference.js:71",
             "scripts/lib/analogyV16Exhibition.js:261",
             "scripts/lib/motorPretestRows.js:134",
-            "scripts/lib/pitReportJob.js:188",
+            "scripts/lib/pitReportWrite.js:75",
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/raceIndicatorData.js:87",
             "scripts/lib/racelistBackfillRows.js:127",
@@ -8544,7 +8544,7 @@
             "scripts/daily/generate-moriarty-recommendations.js:122",
             "scripts/daily/generate-morning-digest.js:152",
             "scripts/daily/generate-unified-trifecta-reference.js:71",
-            "scripts/lib/pitReportJob.js:188",
+            "scripts/lib/pitReportWrite.js:75",
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/racerProfileSync.js:343",
             "scripts/lib/sns/todayDigestStatus.js:37",
@@ -8920,7 +8920,7 @@
             "scripts/daily/generate-morning-digest.js:152",
             "scripts/daily/generate-unified-trifecta-reference.js:71",
             "scripts/lib/motorPretestRows.js:134",
-            "scripts/lib/pitReportJob.js:188",
+            "scripts/lib/pitReportWrite.js:75",
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/raceIndicatorData.js:87",
             "scripts/lib/racerProfileSync.js:343",
@@ -10331,7 +10331,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/lib/pitReportJob.js:242",
+          "ref": "scripts/lib/pitReportWrite.js:108",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
@@ -10352,7 +10352,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/pitReportJob.js:242",
+          "ref": "scripts/lib/pitReportWrite.js:108",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -10360,7 +10360,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/pitReportJob.js:259",
+          "ref": "scripts/lib/pitReportWrite.js:126",
           "op": "delete",
           "via": "client",
           "columns": []
@@ -10372,7 +10372,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/lib/pitReportJob.js:259",
+            "scripts/lib/pitReportWrite.js:126",
             "src/services/raceQueries4.js:94"
           ],
           "writers": [],
@@ -10447,7 +10447,13 @@
       },
       "readers": [
         {
-          "ref": "scripts/lib/pitReportJob.js:207",
+          "ref": "scripts/lib/pitReportWrite.js:139",
+          "op": "select",
+          "via": "helper:upsertChangedRows",
+          "columns": []
+        },
+        {
+          "ref": "scripts/lib/pitReportWrite.js:186",
           "op": "select",
           "via": "client",
           "columns": [
@@ -10456,12 +10462,6 @@
             "race_id",
             "raw_storage_path"
           ]
-        },
-        {
-          "ref": "scripts/lib/pitReportJob.js:270",
-          "op": "select",
-          "via": "helper:upsertChangedRows",
-          "columns": []
         },
         {
           "ref": "scripts/maintenance/backfill-pit-reports.js:134",
@@ -10487,7 +10487,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/pitReportJob.js:270",
+          "ref": "scripts/lib/pitReportWrite.js:139",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -10504,7 +10504,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "scripts/lib/pitReportJob.js:207",
+            "scripts/lib/pitReportWrite.js:186",
             "src/services/raceQueries4.js:87"
           ],
           "writers": [],
@@ -10551,21 +10551,21 @@
         },
         "content_hash": {
           "readers": [
-            "scripts/lib/pitReportJob.js:207"
+            "scripts/lib/pitReportWrite.js:186"
           ],
           "writers": [],
           "sql": []
         },
         "parser_version": {
           "readers": [
-            "scripts/lib/pitReportJob.js:207"
+            "scripts/lib/pitReportWrite.js:186"
           ],
           "writers": [],
           "sql": []
         },
         "raw_storage_path": {
           "readers": [
-            "scripts/lib/pitReportJob.js:207"
+            "scripts/lib/pitReportWrite.js:186"
           ],
           "writers": [],
           "sql": []
@@ -13792,9 +13792,9 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-racer-course-technique-stats.js:330",
+          "ref": "scripts/daily/update-racer-course-technique-stats.js:386",
           "op": "select",
-          "via": "helper:upsertChangedRows",
+          "via": "helper:upsertStamped",
           "columns": []
         },
         {
@@ -13815,9 +13815,9 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/update-racer-course-technique-stats.js:330",
+          "ref": "scripts/daily/update-racer-course-technique-stats.js:386",
           "op": "upsert",
-          "via": "helper:upsertChangedRows",
+          "via": "helper:upsertStamped",
           "columns": [
             "?"
           ]
@@ -16255,7 +16255,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/pitReportJob.js:290",
+          "ref": "scripts/lib/pitReportJob.js:157",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16267,7 +16267,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/pitReportJob.js:365",
+          "ref": "scripts/lib/pitReportJob.js:232",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17433,8 +17433,8 @@
             "scripts/lib/eveDeadlinesJob.js:387",
             "scripts/lib/inCautionHealth.js:137",
             "scripts/lib/motorPretestRows.js:112",
-            "scripts/lib/pitReportJob.js:290",
-            "scripts/lib/pitReportJob.js:365",
+            "scripts/lib/pitReportJob.js:157",
+            "scripts/lib/pitReportJob.js:232",
             "scripts/lib/pointRankRun.js:101",
             "scripts/lib/predictionRefreshSteps.js:127",
             "scripts/lib/raceCancellation.js:118",
@@ -17560,8 +17560,8 @@
             "scripts/lib/boatcast/oritenJobParts.js:162",
             "scripts/lib/eveDeadlinesJob.js:387",
             "scripts/lib/motorPretestRows.js:112",
-            "scripts/lib/pitReportJob.js:290",
-            "scripts/lib/pitReportJob.js:365",
+            "scripts/lib/pitReportJob.js:157",
+            "scripts/lib/pitReportJob.js:232",
             "scripts/lib/raceCancellation.js:149",
             "scripts/lib/raceSeriesLookup.js:174",
             "scripts/lib/raceStatusJob.js:91",
@@ -17704,8 +17704,8 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:93",
             "scripts/daily/generate-morning-digest.js:130",
             "scripts/daily/scrape-results.js:293",
-            "scripts/lib/pitReportJob.js:290",
-            "scripts/lib/pitReportJob.js:365",
+            "scripts/lib/pitReportJob.js:157",
+            "scripts/lib/pitReportJob.js:232",
             "scripts/lib/raceStatusJob.js:91",
             "scripts/lib/snsTodayDigestV3.js:81",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:35",
@@ -17752,8 +17752,8 @@
             "scripts/lib/boatcast/oritenJob.js:280",
             "scripts/lib/boatcast/oritenJobParts.js:162",
             "scripts/lib/eveDeadlinesJob.js:387",
-            "scripts/lib/pitReportJob.js:290",
-            "scripts/lib/pitReportJob.js:365",
+            "scripts/lib/pitReportJob.js:157",
+            "scripts/lib/pitReportJob.js:232",
             "scripts/lib/raceResultRun.js:278",
             "scripts/lib/raceSchedule.js:44",
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
@@ -17899,8 +17899,8 @@
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:93",
             "scripts/daily/calculate-venue-grade-stats.js:176",
             "scripts/daily/generate-morning-digest.js:130",
-            "scripts/lib/pitReportJob.js:290",
-            "scripts/lib/pitReportJob.js:365",
+            "scripts/lib/pitReportJob.js:157",
+            "scripts/lib/pitReportJob.js:232",
             "scripts/lib/pointRankRun.js:101",
             "scripts/lib/raceInfoRunForRaces.js:34",
             "scripts/lib/snsTodayDigestV3.js:81",
@@ -18941,7 +18941,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/pitReportJob.js:400",
+          "ref": "scripts/lib/pitReportJob.js:267",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -19029,7 +19029,7 @@
             "scripts/lib/boatcast/oritenJob.js:253",
             "scripts/lib/boatcast/oritenJobParts.js:172",
             "scripts/lib/boatcast/oritenJobParts.js:188",
-            "scripts/lib/pitReportJob.js:400",
+            "scripts/lib/pitReportJob.js:267",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
             "scripts/maintenance/check-morning-init-shadow.js:279",
@@ -19053,7 +19053,7 @@
             "scripts/lib/boatcast/oritenJob.js:253",
             "scripts/lib/boatcast/oritenJobParts.js:172",
             "scripts/lib/boatcast/oritenJobParts.js:188",
-            "scripts/lib/pitReportJob.js:400",
+            "scripts/lib/pitReportJob.js:267",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:81",
             "scripts/lib/scrapeJobs/storeParts.js:206",
@@ -19074,7 +19074,7 @@
         "offset_min": {
           "readers": [
             "scripts/lib/boatcast/oritenJobParts.js:188",
-            "scripts/lib/pitReportJob.js:400",
+            "scripts/lib/pitReportJob.js:267",
             "scripts/maintenance/check-morning-init-shadow.js:279",
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
@@ -25479,18 +25479,18 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-racer-course-technique-stats.js:255",
-          "op": "select",
-          "via": "helper:upsertChangedRows",
-          "columns": []
-        },
-        {
-          "ref": "scripts/daily/update-racer-course-technique-stats.js:283",
+          "ref": "scripts/daily/update-racer-course-technique-stats.js:262",
           "op": "select",
           "via": "client",
           "columns": [
             "*"
           ]
+        },
+        {
+          "ref": "scripts/daily/update-racer-course-technique-stats.js:361",
+          "op": "select",
+          "via": "helper:upsertStamped",
+          "columns": []
         },
         {
           "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-12.js:202",
@@ -25507,9 +25507,9 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/update-racer-course-technique-stats.js:255",
+          "ref": "scripts/daily/update-racer-course-technique-stats.js:361",
           "op": "upsert",
-          "via": "helper:upsertChangedRows",
+          "via": "helper:upsertStamped",
           "columns": [
             "?"
           ]
@@ -27054,7 +27054,7 @@
       },
       "callers": [
         {
-          "ref": "scripts/daily/update-racer-course-technique-stats.js:304",
+          "ref": "scripts/daily/update-racer-course-technique-stats.js:374",
           "via": "helper:callAggregate"
         }
       ],
@@ -27155,7 +27155,7 @@
       },
       "callers": [
         {
-          "ref": "scripts/daily/update-racer-course-technique-stats.js:222",
+          "ref": "scripts/daily/update-racer-course-technique-stats.js:349",
           "via": "helper:callAggregate"
         }
       ],
@@ -29341,14 +29341,14 @@
     {
       "job": "pit_reports",
       "entry": "api/cron/pit-reports.js",
-      "reachableFiles": 29,
+      "reachableFiles": 30,
       "writes": {
         "race_pit_comments": [
-          "scripts/lib/pitReportJob.js:242",
-          "scripts/lib/pitReportJob.js:259"
+          "scripts/lib/pitReportWrite.js:108",
+          "scripts/lib/pitReportWrite.js:126"
         ],
         "race_pit_reports": [
-          "scripts/lib/pitReportJob.js:270"
+          "scripts/lib/pitReportWrite.js:139"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
@@ -29362,7 +29362,7 @@
           "scripts/lib/scrapeJobs/storeParts.js:96"
         ],
         "scrape_slots": [
-          "scripts/lib/pitReportJob.js:400",
+          "scripts/lib/pitReportJob.js:267",
           "scripts/lib/scrapeJobs/storeParts.js:206",
           "scripts/lib/scrapeJobs/storeParts.js:242"
         ]
@@ -29563,7 +29563,7 @@
       "reachableFiles": 26,
       "writes": {
         "racer_course_technique_stats": [
-          "scripts/daily/update-racer-course-technique-stats.js:330"
+          "scripts/daily/update-racer-course-technique-stats.js:386"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
@@ -29581,7 +29581,7 @@
           "scripts/lib/scrapeJobs/storeParts.js:242"
         ],
         "venue_course_technique_baseline": [
-          "scripts/daily/update-racer-course-technique-stats.js:255"
+          "scripts/daily/update-racer-course-technique-stats.js:361"
         ]
       }
     },

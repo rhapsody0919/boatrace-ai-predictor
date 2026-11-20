@@ -221,6 +221,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/pitReportParser.js` | 公式のピットレポート（boatrace.jp race/pitreport）のパーサー（純関数。DB・取得先に接続しない） | splitConfidence, parsePitReportHtml, PIT_REPORT_PARSER_VERSION, PIT_REPORT_STATUSES |
 | `scripts/lib/pitReportRows.js` | ピットレポートの解析結果（pitReportParser.js）から、DBへ書く行・スロットの結果（outcome）・ | isPitReportCandidate, pendingRetrySec, outcomeForStatus, computeContentHash, buildPitReportRows ほか5件 |
 | `scripts/lib/pitReportSchema.js` | ピットレポートの保存先（マイグレーション085: race_pit_reports・race_pit_comments）が、接続先のDBに | detectPitReportSchema, clearPitReportSchemaCache, PIT_REPORT_TABLES, PIT_SCHEMA_CACHE_TTL_MS |
+| `scripts/lib/pitReportWrite.js` | ピットレポート（pitReportJob.js の processPitReportRace）の、解析結果の読みと live の書き込み。 | readParsedPitReport, settlePartial, writePitReportLive, failure |
 | `scripts/lib/placementDistribution.js` | 2着・3着のコース別統計分布 | getPlacementBaseline, PLACEMENT_DISTRIBUTION, GLOBAL_PLACEMENT_AVERAGE |
 | `scripts/lib/pointRankFetch.js` | — | — |
 | `scripts/lib/pointRankJob.js` | 得点率（B2、racer_series_points）の共通ラッパ向けハンドラー（tasks.md T4b-12-1、plan.md §4.3）。 | isLastChanceForPending, runPointRankJob, POINT_RANK_CONCURRENCY |
@@ -634,4 +635,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 592 ファイル / export 3208 件。
+対象 593 ファイル / export 3212 件。
