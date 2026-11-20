@@ -39,8 +39,8 @@ import {
   sharedChecks as sharedChecksWith,
 } from "./snsAutoPlanRunnerEvaluate.js";
 import { sendHolds } from "../../api/_lib/snsMobileApproval.js";
-import { checkPublicDisplay } from "../../api/_lib/snsDeadlineQueue.js";
-import { deadlineIso } from "../../api/_lib/snsClaimCheck.js";
+import { checkPublicDisplay } from "./sns/publicDisplayCheck.js";
+import { deadlineIso } from "./sns/deadlineIso.js";
 
 export {
   AUTO_PLAN_STAGES,
