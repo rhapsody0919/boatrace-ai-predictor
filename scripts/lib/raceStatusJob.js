@@ -23,10 +23,8 @@ import { toJstDateString } from "./scrapeJobs/time.js";
 import { isCancellationConfirmed } from "./cancellationStatus.js";
 import { mapWithConcurrency } from "./scrapeJobs/concurrency.js";
 import { BreakerOpenError } from "./scrapeJobs/circuitBreaker.js";
-import {
-  confirmCancellationsForRaceIds,
-  fetchRaceResultHtml,
-} from "../daily/scrape-results.js";
+import { confirmCancellationsForRaceIds } from "./raceCancellation.js";
+import { fetchRaceResultHtml } from "./raceResultPage.js";
 import {
   isRaceCancelledPage,
   parseVenueStatuses,

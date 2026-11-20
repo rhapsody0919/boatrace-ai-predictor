@@ -3,7 +3,6 @@
  * 部品を1か所壊すと同じ確かめが落ちることを見る（描かずに通る偽の緑を防ぐ）。
  */
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderJsx } from "../lib/renderJsx.js";
@@ -39,19 +38,13 @@ await view.rerender({ ...props, badges: [] });
 assert.equal(view.container.innerHTML, "");
 await view.unmount();
 
-// 3. 1か所壊した写し（バッジの文字を key に）では同じ確かめが落ちる。
-//    写しは react を解けるようリポジトリの node_modules/.cache の下に置く（OS の tmp からは解けない）
-const cacheDir = path.join(repoRoot, "node_modules/.cache");
-mkdirSync(cacheDir, { recursive: true });
-const brokenDir = mkdtempSync(path.join(cacheDir, "render-jsx-"));
-const brokenPath = path.join(brokenDir, "MotorStatBadgeRow.jsx");
-const source = readFileSync(componentPath, "utf8");
-assert.ok(source.includes("{badge.text}"), "壊す場所が見つからない（部品が変わったら壊し方を直す）");
-writeFileSync(brokenPath, source.replace("{badge.text}", "{badge.key}"));
+// 3. 1か所壊した部品（バッジの文字を key に。verifyData/render-jsx-broken-badge-row.jsx）では同じ確かめが落ちる
+// 壊した部品は相対 import で読み込む（hooks は上の renderJsx が登録済み）。描くのは同じ URL
+await import("./verifyData/render-jsx-broken-badge-row.jsx");
+const brokenPath = new URL("./verifyData/render-jsx-broken-badge-row.jsx", import.meta.url);
 const broken = await renderJsx(brokenPath, props);
 assert.throws(() => checkBadgeRow(broken.container), assert.AssertionError);
 await broken.unmount();
-rmSync(brokenDir, { recursive: true, force: true });
 
 // 4. 無い export は意味のある文で落ちる
 await assert.rejects(renderJsx(componentPath, props, { exportName: "Nope" }), /export "Nope"/);

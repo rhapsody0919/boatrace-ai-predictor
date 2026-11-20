@@ -35,6 +35,7 @@ import {
 import { fetchAll } from "../lib/supabaseClient.js";
 import { upsertChangedRows } from "../lib/unchangedRows.js";
 import { isNoRaceResult, placedRanks } from "../lib/raceOutcomeFilters.js";
+import { isDirectRun } from "../lib/isDirectRun.js";
 
 // ===== 取得（ページング＋例外。BOA-581 と同じ作り、BOA-600） =====
 
@@ -213,9 +214,7 @@ async function calculateAttackDistribution(racerId, venueCode = null) {
     null,
     DECISIVE_RESULT_SELECT,
   );
-  if (!fetched) {
-    return null;
-  }
+  if (!fetched) return null;
 
   // 2. 選手が1着になったレースのみ抽出し、コース別に決まり手を集計
   const { courseWins, totalWins } = tallyWinTechniques(
@@ -278,9 +277,7 @@ async function calculateDefenseDistribution(racerId, venueCode = null) {
     null,
     DECISIVE_RESULT_SELECT,
   );
-  if (!fetched) {
-    return null;
-  }
+  if (!fetched) return null;
 
   // 選手が1着でないレースを対象に、勝者の決まり手をコース別に集計
   const courseLosses = tallyLossTechniques(
@@ -673,7 +670,7 @@ async function saveSingleRecord(record, dryRun) {
 }
 
 /** --- 単一選手モード --- */
-async function runSingleRacer(racerId, venueCode, dryRun) {
+export async function runSingleRacer(racerId, venueCode, dryRun) {
   console.log(`選手 ${racerId} の統計を集計中...`);
 
   // 全会場の統計
@@ -809,7 +806,10 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("実行エラー:", err);
-  process.exit(1);
-});
+// 直接起動のときだけ main を回す（import されただけなら argv の解析・DB の読み書き・process.exit は走らない。verify が runSingleRacer を偽の DB で呼ぶため）
+if (isDirectRun(import.meta.url)) {
+  main().catch((err) => {
+    console.error("実行エラー:", err);
+    process.exit(1);
+  });
+}

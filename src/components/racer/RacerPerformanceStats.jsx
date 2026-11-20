@@ -1,62 +1,37 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
-import { formatPercent, slashDate } from "../../utils/formatters";
 import RacerConditionStats from "./RacerConditionStats";
-import { aggregateRacerCrossStats } from "../../services/core.js";
-import { getRacerRaceHistory } from "../../services/racerQueries2.js";
 import { aggregateRacerVenueBoatStats } from "../../utils/racerVenueBoatStats.js";
-import { ALL_VENUE_CODES } from "../../constants";
-import RecentRunsTable from "../race/RecentRunsTable";
-import { GRADE_LABELS } from "../race/raceGradeLabels";
 import "./RacerPerformanceStats.css";
 import { techniqueColor } from "../../utils/techniqueColors";
 import { ST_TREND_ID } from "../../utils/racerPagePath";
-
-// 会場別/枠番別の一覧テーブル。行クリックでフィルタに反映する形が4箇所
-// （会場別・枠番別の全体一覧、会場/枠番固定時のクロス集計2種）で共通のため
-// 集約（BOA-159レビューで発見、component-reuse.md準拠）
-function StatBreakdownTable({ headers, rows, translateNo }) {
-  return (
-    <div className="table-wrapper">
-      <table
-        className="racer-return-rate-table"
-        translate={translateNo ? "no" : undefined}
-      >
-        <thead>
-          <tr>
-            {headers.map((header) => (
-              <th key={header}>{header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr
-              key={row.key}
-              className="racer-vc-row-clickable"
-              onClick={row.onClick}
-            >
-              {row.cells.map((cell, index) => (
-                <td key={index}>{cell}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+import { useRacerVcState } from "./useRacerVcState";
+import {
+  NARROW_CHART_RUNS,
+  courseStatsOf,
+  displayTechniquesOf,
+  racePagesOf,
+  raceLabelOfWith,
+  stAxisOf,
+  trendChartsOf,
+  vcLabelOf,
+} from "./racerPerformanceView";
+import { VcFilterBar, VcHistoryError } from "./RacerPerformanceFilters";
+import { SummaryCards, VcCards, WinRateChart } from "./RacerPerformanceCards";
+import {
+  BothFixedNoRuns,
+  CourseBreakdown,
+  CrossBoatBreakdown,
+  CrossVenueBreakdown,
+  ReturnRateTable,
+  VenueBreakdown,
+} from "./RacerPerformanceBreakdown";
+import {
+  ExhibitionChart,
+  RaceList,
+  StTrendChart,
+} from "./RacerPerformanceTrends";
 
 // 決まり手内訳のバー+凡例。フィルタ選択時（決まり手タブ）・未選択時（unfiltered
 // セクション）の両方で同じ見た目を使うため共通化（BOA-159レビューで発見）
@@ -91,11 +66,143 @@ function TechniqueBarLegend({ techniques }) {
   );
 }
 
-// races.race_gradeのコード値→表示名。RaceHistoryTable.jsxへ移設
-// （BOA-159/333共通化、component-reuse.md準拠。フィルタUI・vcLabelParts等
-// テーブル外でも使うためimportして流用する）
+/** 決まり手傾向（常時表示、ADR-0063）。常に現在の全フィルタ条件（vcData）で絞り込んだ内訳を表示する */
+function TechniqueSection({ view, vcActive, vcLabel }) {
+  const { hasVcData, vcData, displayTechniques } = view;
+  return (
+    <div className="racer-technique-profile">
+      <h3>
+        決まり手傾向（
+        {hasVcData ? "2025年12月以降・最大過去2年" : "過去90日"}・勝利時）
+        {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
+      </h3>
+      {displayTechniques.length > 0 ? (
+        <TechniqueBarLegend techniques={displayTechniques} />
+      ) : hasVcData && vcData.win === 0 ? (
+        <p className="racer-stat-note">1着なし（0回/{vcData.n}回）</p>
+      ) : hasVcData ? (
+        <p className="racer-stat-note">
+          決まり手データなし（勝利{vcData.win}回中、記録なし）
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
-const VC_RACE_PAGE_SIZE = 10;
+/** 全体集計（決まり手・推移・レース一覧は常時これを使う。ADR-0063）。会場・枠番どちらも"all"の場合はnull/nullで全体集計になる */
+function useVcData(vc) {
+  const { vcHistory, vcVenueFixed, vcBoatFixed, vcVenue, vcBoat } = vc;
+  const vcGradeValue = vc.vcGrade === "all" ? null : vc.vcGrade;
+  const vcStageValue = vc.vcStage === "all" ? null : vc.vcStage;
+  return useMemo(() => {
+    if (!vcHistory) return null;
+    return aggregateRacerVenueBoatStats(
+      vcHistory,
+      vcVenueFixed ? Number(vcVenue) : null,
+      vcBoatFixed ? Number(vcBoat) : null,
+      vcGradeValue,
+      vcStageValue,
+    );
+  }, [
+    vcHistory,
+    vcVenueFixed,
+    vcBoatFixed,
+    vcVenue,
+    vcBoat,
+    vcGradeValue,
+    vcStageValue,
+  ]);
+}
+
+/** 表示の材料。vcDataの有無で表示ソースを切り替える（履歴ロード中・エラー時は既存props＝サーバー側事前集計をフォールバック表示に使う） */
+function useRacerPerformanceView(t, vc, stats) {
+  const vcData = useVcData(vc);
+  const {
+    formTrend,
+    techniqueProfile,
+    aggregatedStats,
+    exhibitionTimeTrend,
+    boatReturnRate,
+    venueStats,
+  } = stats ?? {};
+  const hasVcData = !!vcData;
+  const showStTrend = hasVcData && vcData.stN > 1;
+  useStTrendScroll(showStTrend);
+  const isNarrow =
+    typeof window !== "undefined" &&
+    (window.matchMedia?.("(max-width: 600px)").matches ?? false);
+  const hasTechniques = (techniqueProfile?.techniques?.length ?? 0) > 0;
+  const courseStats = courseStatsOf(vc.historyCourseStats, aggregatedStats);
+  return {
+    vcData,
+    hasVcData,
+    showStTrend,
+    isNarrow,
+    chartRuns: (rows) => (isNarrow ? rows.slice(-NARROW_CHART_RUNS) : rows),
+    raceLabelOf: raceLabelOfWith(t),
+    vcLabel: vcLabelOf(t, vc),
+    ...stAxisOf(vcData),
+    displayTechniques: displayTechniquesOf(vcData, techniqueProfile),
+    ...trendChartsOf(formTrend, exhibitionTimeTrend),
+    hasTechniques,
+    // 決まり手傾向セクション（常時表示、ADR-0063）の表示要否。vcDataがあれば
+    // 出走自体があるかどうか（n>0）で判定、フォールバック時はhasTechniquesで判定
+    showTechniqueSection: hasVcData ? vcData.n > 0 : hasTechniques,
+    hasReturnRate: (boatReturnRate?.length ?? 0) > 0,
+    ...racePagesOf(vcData, vc.vcRacePage),
+    courseStats,
+    hasCourseStats: courseStats.length > 0,
+    hasVenueStats: (venueStats?.length ?? 0) > 0,
+  };
+}
+
+// 他の画面の「STの推移 ›」（龍神ソナーの平均STの表、BOA-879）から #st-trend で来たら、描画後に1回だけそこへ移る。
+// 成績は非同期で届くので、ブラウザ標準のハッシュの移動（読み込み時の1回）では間に合わない
+function useStTrendScroll(showStTrend) {
+  const { hash } = useLocation();
+  const stTrendScrolled = useRef(false);
+  useEffect(() => {
+    if (hash !== `#${ST_TREND_ID}` || !showStTrend || stTrendScrolled.current)
+      return;
+    document.getElementById(ST_TREND_ID)?.scrollIntoView({ block: "start" });
+    stTrendScrolled.current = true;
+  }, [hash, showStTrend]);
+}
+
+const hasAnyDataOf = (stats, view) =>
+  stats?.formSummary != null ||
+  view.chartData.length > 0 ||
+  view.hasTechniques ||
+  stats?.aggregatedStats != null ||
+  view.exhibitionChartData.length > 0 ||
+  view.hasReturnRate ||
+  view.hasCourseStats ||
+  view.hasVenueStats;
+
+/** 成績ブロック（会場・枠番の固定状況で4分岐、ADR-0063）。並びは元の4つの枠のまま */
+function breakdownBlocks(t, vc, view, venueStats) {
+  const { vcVenueFixed, vcBoatFixed, vcHistoryLoading, vcHistoryError } = vc;
+  const settled = !vcHistoryLoading && !vcHistoryError;
+  return [
+    !vcVenueFixed && !vcBoatFixed && view.hasVenueStats && (
+      <VenueBreakdown key="venue" t={t} vc={vc} venueStats={venueStats} />
+    ),
+    !vcVenueFixed && !vcBoatFixed && view.hasCourseStats && (
+      <CourseBreakdown key="course" vc={vc} courseStats={view.courseStats} />
+    ),
+    vcVenueFixed && !vcBoatFixed && settled && (
+      <CrossBoatBreakdown key="crossBoat" vc={vc} vcLabel={view.vcLabel} />
+    ),
+    !vcVenueFixed && vcBoatFixed && settled && (
+      <CrossVenueBreakdown
+        key="crossVenue"
+        t={t}
+        vc={vc}
+        vcLabel={view.vcLabel}
+      />
+    ),
+  ];
+}
 
 /**
  * 選手個別ページの成績・調子セクション
@@ -140,350 +247,12 @@ export default function RacerPerformanceStats({
   onHistoryStateChange,
 }) {
   const { t } = useTranslation();
-  // 推移グラフのツールチップの見出し。日付だけだと同じ日の2走を見分けられない（BOA-583）
-  const raceLabelOf = (label, payload) => {
-    const d = payload?.[0]?.payload;
-    if (!d?.venueCode) return label;
-    return `${d.date} ${t(`venues.${d.venueCode}`, String(d.venueCode))} ${d.raceNo}R`;
-  };
-  // スマホ幅では推移グラフを直近50走に絞る。200走を幅約250pxに描くと1走あたり約1.2pxで、
-  // 線と点が帯に潰れて読めなかった（BOA-583 ファン評価2周目）
-  const NARROW_CHART_RUNS = 50;
-  const isNarrow =
-    typeof window !== "undefined" &&
-    (window.matchMedia?.("(max-width: 600px)").matches ?? false);
-  const chartRuns = (rows) =>
-    isNarrow ? rows.slice(-NARROW_CHART_RUNS) : rows;
-  // 横軸はレースごとの値（raceKey＝race_id）で、目盛りには日付だけを出す
-  const raceTick = (key) =>
-    typeof key === "string" && key.length > 10 ? key.slice(2, 10) : key;
-  // 会場×枠番フィルタ。「全会場」「全枠番」がそれぞれ絞り込みなしを表す。
-  // 表示は「枠番」。実際の進入コースはBOA-257の制約により取得できないため、
-  // 発走前に決まる枠番（艇番）基準で集計・表示する
-  const [vcVenue, setVcVenue] = useState("all");
-  const [vcBoat, setVcBoat] = useState("all");
-  // グレード（races.race_grade）・レース種別（race_conditions.race_stage、
-  // 「優勝戦」「準優勝戦」の完全一致のみ判定可能。BOA-159）
-  const [vcGrade, setVcGrade] = useState("all");
-  const [vcStage, setVcStage] = useState("all");
-  // レース一覧のページ番号（1始まり、常時表示。ADR-0063）。フィルタが変わったら1ページ目に
-  // 戻す必要があるため、フィルタ変更を検知してリセットする
-  const [vcRacePage, setVcRacePage] = useState(1);
-  // 出走履歴取得が失敗した際、手動で再試行するためのトークン。フィルタ
-  // （vcVenue/vcBoat/vcGrade/vcStage）はネットワークI/Oを発生させない設計に
-  // しているため、選び直しでは再試行にならない。専用のトリガーとして分離している
-  const [vcRetryToken, setVcRetryToken] = useState(0);
-  // racerIdをデータと一緒に保持し、propsのracerIdと食い違えば「別選手の
-  // 履歴」として無視する（同一マウントのまま別選手ページへ遷移した場合に、
-  // 前選手の履歴が新しい選手のフィルタ結果として残り続けるのを防ぐ）。
-  // useEffectでracerId変化時にリセットする代わりにレンダー中の導出値として
-  // 扱うことで、エフェクト内での同期的なsetStateを避けている
-  const [vcHistoryState, setVcHistoryState] = useState({
-    racerId: null,
-    fetching: false,
-    data: null,
-    error: false,
-  });
-  // vcActive: フィルタが1つ以上選択されているか（vcLabel生成・成績ブロックの
-  // 分岐に使う。履歴取得のトリガーには使わない、下記参照）
-  const vcActive =
-    vcVenue !== "all" ||
-    vcBoat !== "all" ||
-    vcGrade !== "all" ||
-    vcStage !== "all";
-  const vcVenueFixed = vcVenue !== "all";
-  const vcBoatFixed = vcBoat !== "all";
-  const vcHistory =
-    vcHistoryState.racerId === racerId ? vcHistoryState.data : null;
-  const vcHistoryLoading =
-    !!racerId &&
-    vcHistory === null &&
-    vcHistoryState.racerId === racerId &&
-    vcHistoryState.fetching;
-  const vcHistoryError =
-    vcHistoryState.racerId === racerId && vcHistoryState.error;
-
-  // 履歴はレース一覧・ST推移・条件別の共通入力。別選手の履歴は未完了とする。
-  const snapshotHistoryState = vcHistoryError
-    ? "error"
-    : vcHistory === null
-      ? "loading"
-      : vcHistory.length
-        ? "done"
-        : "empty";
-  useEffect(() => {
-    onHistoryStateChange?.({ racerId, state: snapshotHistoryState });
-  }, [racerId, snapshotHistoryState, onHistoryStateChange]);
-
-  useEffect(() => {
-    // 決まり手・推移・レース一覧を常時表示するため（ADR-0063）、フィルタ操作を
-    // 待たずracerIdが確定したら常に履歴を取得する（フィルタ変更自体は
-    // 追加I/Oを発生させない、既存の最適化方針は維持）
-    if (!racerId || vcHistory !== null) return;
-    let cancelled = false;
-    const loadHistory = async () => {
-      setVcHistoryState({ racerId, fetching: true, data: null, error: false });
-      try {
-        const result = await getRacerRaceHistory(racerId);
-        if (!cancelled) {
-          setVcHistoryState({
-            racerId,
-            fetching: false,
-            data: result,
-            error: false,
-          });
-        }
-      } catch (err) {
-        console.error("選手出走履歴取得エラー:", err.message);
-        if (!cancelled) {
-          setVcHistoryState({
-            racerId,
-            fetching: false,
-            data: null,
-            error: true,
-          });
-        }
-      }
-    };
-    loadHistory();
-    return () => {
-      cancelled = true;
-    };
-  }, [racerId, vcHistory, vcRetryToken]);
-
-  // 同じマウントで選手が変わったら、コミット前にフィルタを初期値へ戻す。
-  const [previousRacerId, setPreviousRacerId] = useState(racerId);
-  if (previousRacerId !== racerId) {
-    setPreviousRacerId(racerId);
-    setVcVenue("all");
-    setVcBoat("all");
-    setVcGrade("all");
-    setVcStage("all");
-  }
-
-  // フィルタまたは選手が変わったら、レース一覧を1ページ目へ戻す。
-  const racePageInputs = [racerId, vcVenue, vcBoat, vcGrade, vcStage];
-  const [previousRacePageInputs, setPreviousRacePageInputs] =
-    useState(racePageInputs);
-  if (
-    racePageInputs.some(
-      (value, index) => value !== previousRacePageInputs[index],
-    )
-  ) {
-    setPreviousRacePageInputs(racePageInputs);
-    setVcRacePage(1);
-  }
-
-  const vcGradeValue = vcGrade === "all" ? null : vcGrade;
-  const vcStageValue = vcStage === "all" ? null : vcStage;
-
-  // 全体集計（決まり手・推移・レース一覧は常時これを使う。ADR-0063）。
-  // 会場・枠番どちらも"all"の場合はnull/nullで全体集計になる
-  const vcData = useMemo(() => {
-    if (!vcHistory) return null;
-    return aggregateRacerVenueBoatStats(
-      vcHistory,
-      vcVenueFixed ? Number(vcVenue) : null,
-      vcBoatFixed ? Number(vcBoat) : null,
-      vcGradeValue,
-      vcStageValue,
-    );
-  }, [
-    vcHistory,
-    vcVenueFixed,
-    vcBoatFixed,
-    vcVenue,
-    vcBoat,
-    vcGradeValue,
-    vcStageValue,
-  ]);
-  // STの推移の縦軸。0 から 0.1 刻みで等間隔にする（自動だと 0.15・0.30・0.50 のように
-  // 上だけ間隔が広くなり、上の方の走の数を読み違えた。ファン評価1周目）
-  const stMax = Math.max(
-    0,
-    ...(vcData?.series ?? []).map((d) => d.start_timing ?? 0),
-  );
-  const stAxisTop = Math.max(0.3, Math.ceil(stMax * 10) / 10);
-  const stAxisTicks = Array.from(
-    { length: Math.round(stAxisTop * 10) + 1 },
-    (_, i) => Math.round(i * 10) / 100,
-  );
-
-  // クロス集計（成績ブロック用。会場・枠番のどちらか一方だけ固定の場合のみ
-  // 使う。両方固定/両方未固定はnull——それぞれ既存の単一カード/一覧表示を使う）
-  const vcCrossData = useMemo(() => {
-    if (!vcHistory || vcVenueFixed === vcBoatFixed) return null;
-    if (vcVenueFixed) {
-      return aggregateRacerCrossStats(
-        vcHistory,
-        { venueCode: Number(vcVenue) },
-        "boat",
-        vcGradeValue,
-        vcStageValue,
-      );
-    }
-    return aggregateRacerCrossStats(
-      vcHistory,
-      { boatNumber: Number(vcBoat) },
-      "venue",
-      vcGradeValue,
-      vcStageValue,
-    );
-  }, [
-    vcHistory,
-    vcVenueFixed,
-    vcBoatFixed,
-    vcVenue,
-    vcBoat,
-    vcGradeValue,
-    vcStageValue,
-  ]);
-
-  const vcTechTotal = vcData
-    ? Object.values(vcData.tech).reduce((a, b) => a + b, 0)
-    : 0;
-  // 選択中の軸だけをラベルに含める（未選択の軸まで「全会場」等と並べると
-  // 4軸化で冗長になるため。docs/design/racer-stats-drilldown/plan.md参照）
-  const vcLabelParts = [];
-  if (vcVenue !== "all") vcLabelParts.push(t(`venues.${vcVenue}`, vcVenue));
-  if (vcBoat !== "all") vcLabelParts.push(`${vcBoat}号艇`);
-  if (vcGrade !== "all") vcLabelParts.push(GRADE_LABELS[vcGrade] ?? vcGrade);
-  if (vcStage !== "all") vcLabelParts.push(vcStage);
-  const vcLabel = vcLabelParts.length > 0 ? vcLabelParts.join("×") : "全条件";
-  const {
-    formSummary,
-    formTrend,
-    techniqueProfile,
-    aggregatedStats,
-    exhibitionTimeTrend,
-    boatReturnRate,
-    venueStats,
-    officialAvgSt,
-  } = stats ?? {};
-
-  // vcDataの有無で表示ソースを切り替える。決まり手・推移・レース一覧は常時
-  // 表示（ADR-0063）だが、履歴ロード中・エラー時はvcDataがまだ無いため、
-  // その間は既存props（サーバー側事前集計）をフォールバック表示に使う
-  const hasVcData = !!vcData;
-  const showStTrend = hasVcData && vcData.stN > 1;
-
-  // 他の画面の「STの推移 ›」（龍神ソナーの平均STの表、BOA-879）から #st-trend で来たら、描画後に1回だけそこへ移る。
-  // 成績は非同期で届くので、ブラウザ標準のハッシュの移動（読み込み時の1回）では間に合わない
-  const { hash } = useLocation();
-  const stTrendScrolled = useRef(false);
-  useEffect(() => {
-    if (hash !== `#${ST_TREND_ID}` || !showStTrend || stTrendScrolled.current)
-      return;
-    document.getElementById(ST_TREND_ID)?.scrollIntoView({ block: "start" });
-    stTrendScrolled.current = true;
-  }, [hash, showStTrend]);
-
-  // 決まり手表示用に、データソースに関わらず同じ形（{technique, count, percentage}[]）
-  // へ正規化する。JSXブロックを1つに統一するため（両ブランチの見た目の重複を回避）
-  const displayTechniques = hasVcData
-    ? Object.entries(vcData.tech)
-        .map(([technique, count]) => ({
-          technique,
-          count,
-          percentage: vcTechTotal > 0 ? (count / vcTechTotal) * 100 : 0,
-          countLabel: `${count}回/${vcTechTotal}回`,
-        }))
-        .sort((a, b) => b.count - a.count)
-    : (techniqueProfile?.techniques ?? []).map((tech) => ({
-        technique: tech.technique,
-        count: tech.count,
-        percentage: tech.percentage,
-        countLabel: `${tech.count}回`,
-      }));
-
-  const chartData = (formTrend?.trend ?? []).map((row) => ({
-    date: row.date.slice(5),
-    national_win_rate: row.win_rate,
-    local_win_rate: row.local_win_rate,
-  }));
-
-  const exhibitionChartData = (exhibitionTimeTrend?.trend ?? []).map((row) => ({
-    date: row.date.slice(5),
-    avg_exhibition_time: row.avg_exhibition_time,
-  }));
-
-  const hasTechniques = (techniqueProfile?.techniques?.length ?? 0) > 0;
-  // 決まり手傾向セクション（常時表示、ADR-0063）の表示要否。vcDataがあれば
-  // 出走自体があるかどうか（n>0）で判定、フォールバック時はhasTechniquesで判定
-  const showTechniqueSection = hasVcData ? vcData.n > 0 : hasTechniques;
-  const hasReturnRate = (boatReturnRate?.length ?? 0) > 0;
-
-  // レース一覧タブ（BOA-159）のページング。vcData.matchedRacesは絞り込み
-  // 条件に合致した個別レースの配列（新しい順）
-  const vcRaceTotalPages = vcData
-    ? Math.max(1, Math.ceil(vcData.matchedRaces.length / VC_RACE_PAGE_SIZE))
-    : 1;
-  const vcRacePageRows = vcData
-    ? vcData.matchedRaces.slice(
-        (vcRacePage - 1) * VC_RACE_PAGE_SIZE,
-        vcRacePage * VC_RACE_PAGE_SIZE,
-      )
-    : [];
-
-  // 枠番別成績（全会場計）。出走履歴が届いたら、会場別・条件別・レース一覧と同じ履歴から数える（BOA-1190）。
-  // 日次の集計（course_race_counts）は race_results の course_1〜6 が空のレース（結果はあるのに
-  // 進入の列が無い、本番で約4%）を数えず、同じ画面の「全体」の走数と合わなかった（/racer/3941 で 218走と 232走）。
-  // 履歴の読み込み中・失敗・空のときは、これまでどおり日次の集計を出す
-  const historyCourseStats = useMemo(
-    () =>
-      vcHistory?.length
-        ? aggregateRacerCrossStats(vcHistory, {}, "boat", null, null).map(
-            (row) => ({
-              course: row.key,
-              total: row.n,
-              wins: row.win,
-              winRate: row.winRate,
-              top2Rate: row.top2Rate,
-              top3Rate: row.top3Rate,
-            }),
-          )
-        : null,
-    [vcHistory],
-  );
-  // course_race_counts: { "1": { total, wins, top2, top3 }, ... } → コース番号昇順の配列に変換
-  const courseStats = (
-    historyCourseStats ??
-    Object.entries(aggregatedStats?.course_race_counts ?? {}).map(
-      ([course, counts]) => ({
-        course: Number(course),
-        total: counts.total ?? 0,
-        wins: counts.wins ?? 0,
-        winRate: counts.total > 0 ? counts.wins / counts.total : null,
-        // top2/top3は本チケット（BOA-268）で追加したフィールドのため、
-        // バッチ集計（aggregate-racer-stats.js）が再実行されるまでは
-        // 未集計の選手が存在する。undefinedを0扱いすると「2連率0%」と
-        // 誤表示するため、区別してnull（"-"表示）にする
-        top2Rate:
-          counts.total > 0 && counts.top2 !== undefined
-            ? counts.top2 / counts.total
-            : null,
-        top3Rate:
-          counts.total > 0 && counts.top3 !== undefined
-            ? counts.top3 / counts.total
-            : null,
-      }),
-    )
-  )
-    .filter((row) => row.total >= 5)
-    .sort((a, b) => a.course - b.course);
-  const hasCourseStats = courseStats.length > 0;
-
-  const hasVenueStats = (venueStats?.length ?? 0) > 0;
-
-  const hasAnyData =
-    formSummary != null ||
-    chartData.length > 0 ||
-    hasTechniques ||
-    aggregatedStats != null ||
-    exhibitionChartData.length > 0 ||
-    hasReturnRate ||
-    hasCourseStats ||
-    hasVenueStats;
+  const vc = useRacerVcState(racerId, onHistoryStateChange);
+  const view = useRacerPerformanceView(t, vc, stats);
+  const { vcData, vcLabel } = view;
+  const { snapshotHistoryState, vcActive } = vc;
+  const { formSummary, aggregatedStats, boatReturnRate, venueStats } =
+    stats ?? {};
 
   // 見出しに選手名を入れる（「選手名 成績」の語を見出しにも出す。seo-marketer GS00）
   const heading = racerName ? (
@@ -506,7 +275,7 @@ export default function RacerPerformanceStats({
     );
   }
 
-  if (!hasAnyData) {
+  if (!hasAnyDataOf(stats, view)) {
     return <span hidden data-snapshot-history={snapshotHistoryState} />;
   }
 
@@ -516,642 +285,38 @@ export default function RacerPerformanceStats({
       data-snapshot-history={snapshotHistoryState}
     >
       <h2>{heading}</h2>
-
-      {/* フィルタ: 見出し直下・最上部に常時表示（ADR-0063）。venueStatsが
-          空（出走実績が薄い選手）でも全会場を選べるようにするため、この
-          ブロック自体はhasAnyData（上でチェック済み）にのみ依存する */}
-      <div className="racer-vc-filter controls-section">
-        <div className="racer-vc-filter-field">
-          <label htmlFor="vc-venue">会場</label>
-          <select
-            id="vc-venue"
-            className="venue-select"
-            value={vcVenue}
-            onChange={(e) => setVcVenue(e.target.value)}
-          >
-            <option value="all">全会場</option>
-            {ALL_VENUE_CODES.map((code) => (
-              <option key={code} value={code}>
-                {code === todayVenueCode ? "🏁 " : ""}
-                {t(`venues.${code}`, code)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="racer-vc-filter-field">
-          <label htmlFor="vc-boat">枠番</label>
-          <select
-            id="vc-boat"
-            className="venue-select"
-            value={vcBoat}
-            onChange={(e) => setVcBoat(e.target.value)}
-          >
-            <option value="all">全枠番</option>
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <option key={n} value={n}>
-                {n}号艇
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="racer-vc-filter-field">
-          <label htmlFor="vc-grade">グレード</label>
-          <select
-            id="vc-grade"
-            className="venue-select"
-            value={vcGrade}
-            onChange={(e) => setVcGrade(e.target.value)}
-          >
-            <option value="all">全グレード</option>
-            {Object.entries(GRADE_LABELS).map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="racer-vc-filter-field">
-          <label htmlFor="vc-stage">レース種別</label>
-          <select
-            id="vc-stage"
-            className="venue-select"
-            value={vcStage}
-            onChange={(e) => setVcStage(e.target.value)}
-          >
-            <option value="all">全レース</option>
-            <option value="優勝戦">優勝戦</option>
-            <option value="準優勝戦">準優勝戦</option>
-          </select>
-        </div>
-        {todayVenueCode && vcVenue !== String(todayVenueCode) && (
-          <button
-            type="button"
-            className="racer-vc-today-badge"
-            onClick={() => setVcVenue(String(todayVenueCode))}
-          >
-            🏁 本日は{t(`venues.${todayVenueCode}`, todayVenueCode)}で出走 →
-          </button>
-        )}
-        {vcActive && (
-          <span className="racer-vc-filter-badge">
-            {vcHistoryError
-              ? `${vcLabel}（読み込みに失敗しました）`
-              : vcHistoryLoading
-                ? `${vcLabel}（集計中…）`
-                : vcData
-                  ? `${vcLabel}（${vcData.n}走）`
-                  : vcLabel}
-          </span>
-        )}
-      </div>
-
-      {vcHistoryLoading && <p className="racer-stat-note">集計中…</p>}
-
-      {vcHistoryError && (
-        <p className="racer-stat-note">
-          出走履歴の取得に失敗しました。
-          <button
-            type="button"
-            className="racer-vc-retry-button"
-            onClick={() => setVcRetryToken((n) => n + 1)}
-          >
-            再試行
-          </button>
-        </p>
-      )}
-
-      <div className="racer-stat-cards-grid">
-        {formSummary && (
-          <div className="racer-stat-card">
-            <h3>選手調子（全国勝率）</h3>
-            <div className="racer-stat-value-row">
-              <span className="racer-stat-value">
-                {formSummary.current_win_rate?.toFixed(2)}
-              </span>
-              {formSummary.delta !== null && (
-                <span
-                  className={`racer-stat-delta ${
-                    formSummary.delta > 0
-                      ? "racer-stat-delta-up"
-                      : formSummary.delta < 0
-                        ? "racer-stat-delta-down"
-                        : ""
-                  }`}
-                >
-                  {formSummary.delta > 0
-                    ? "↑"
-                    : formSummary.delta < 0
-                      ? "↓"
-                      : "→"}{" "}
-                  {Math.abs(formSummary.delta).toFixed(2)}
-                </span>
-              )}
-            </div>
-            <p className="racer-stat-note">
-              約90日前:{" "}
-              {formSummary.past_win_rate !== null
-                ? formSummary.past_win_rate.toFixed(2)
-                : "データなし"}
-            </p>
-          </div>
-        )}
-
-        {(officialAvgSt?.avgSt != null ||
-          aggregatedStats?.avg_st_last_30 != null) && (
-          <div className="racer-stat-card">
-            {/* 全会場・全条件の値で、上の絞り込みには連動しない（連動すると「桐生での平均ST」と
-                読まれていた、BOA-583）。絞り込み後の平均STは下の表。
-                データ出走表と同じ二本立て（BOA-815）: 主は公式の出走表と同じ値（2桁）、注記に直近30走 */}
-            <h3>平均ST（公式）</h3>
-            <div className="racer-stat-value-row">
-              <span className="racer-stat-value">
-                {officialAvgSt?.avgSt != null
-                  ? officialAvgSt.avgSt.toFixed(2)
-                  : "—"}
-              </span>
-              {aggregatedStats?.flying_rate > 0 && (
-                <span className="racer-stat-sub">
-                  {/* 期間と走数を添える。公式の期別成績（その期の F の回数）と別の集計だと分かるように（ファン評価 GS00 3周目） */}
-                  F率 {(aggregatedStats.flying_rate * 100).toFixed(1)}%
-                  （当サイト集計・2025年12月以降
-                  {aggregatedStats.total_races > 0
-                    ? `・${aggregatedStats.total_races}走`
-                    : ""}
-                  ）
-                </span>
-              )}
-            </div>
-            <p className="racer-stat-note">
-              {officialAvgSt?.period
-                ? `${slashDate(officialAvgSt.period.calcFrom)}〜${slashDate(officialAvgSt.period.calcTo)} の公式の期別成績・全会場（「選手調子（全国勝率）」は出走表の値で、集計の期間が違います）`
-                : "公式の期別成績・全会場"}
-            </p>
-            <p className="racer-stat-note">
-              直近30走:{" "}
-              {aggregatedStats?.avg_st_last_30 != null
-                ? Number(aggregatedStats.avg_st_last_30).toFixed(3)
-                : "—"}
-              （F・Lを除く。龍神ソナー・思考アシストと同じ考え方）
-            </p>
-          </div>
-        )}
-      </div>
-
-      {chartData.length > 0 && (
-        <div className="racer-stat-chart">
-          <h3>全国勝率・当地勝率の推移</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart
-              data={chartData}
-              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(value) => value?.toFixed(2)} />
-              <Legend />
-              <Line
-                type="stepAfter"
-                dataKey="national_win_rate"
-                name="全国勝率"
-                stroke="var(--brand-accent-primary)"
-                strokeWidth={2}
-                dot={{ r: 2 }}
-              />
-              <Line
-                type="stepAfter"
-                dataKey="local_win_rate"
-                name="当地勝率"
-                stroke="var(--brand-accent-secondary)"
-                strokeWidth={2}
-                dot={{ r: 2 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* 成績ブロック（会場・枠番の固定状況で4分岐、ADR-0063） */}
-      {!vcVenueFixed && !vcBoatFixed && hasVenueStats && (
-        <div className="racer-technique-profile">
-          <h3>
-            会場別成績（当地成績、2025年12月以降・最大過去2年・出走5走以上）
-            <span className="h3-hint">会場名をクリックで絞り込み →</span>
-          </h3>
-          <StatBreakdownTable
-            translateNo
-            headers={["会場", "出走数", "1着率", "2連率", "3連率"]}
-            rows={venueStats.map((row) => ({
-              key: row.venue_code,
-              onClick: () => setVcVenue(String(row.venue_code)),
-              cells: [
-                t(`venues.${row.venue_code}`),
-                row.total_races,
-                row.win_rate !== null ? formatPercent(row.win_rate) : "-",
-                row.top2_rate !== null ? formatPercent(row.top2_rate) : "-",
-                row.top3_rate !== null ? formatPercent(row.top3_rate) : "-",
-              ],
-            }))}
-          />
-        </div>
-      )}
-
-      {!vcVenueFixed && !vcBoatFixed && hasCourseStats && (
-        <div className="racer-technique-profile">
-          <h3>
-            枠番別成績（当サイト集計・2025年12月以降・全会場計）
-            <span className="h3-hint">枠番をクリックで絞り込み →</span>
-          </h3>
-          <p className="racer-vc-note">
-            ※何号艇で出たかで分けた成績です。実際に入ったコースで分けた成績は、公式の期別成績がある選手なら上の「進入コース別成績（公式）」にあります
-          </p>
-          <StatBreakdownTable
-            headers={["枠番", "出走数", "勝数", "1着率", "2連率", "3連率"]}
-            rows={courseStats.map((row) => ({
-              key: row.course,
-              onClick: () => setVcBoat(String(row.course)),
-              cells: [
-                row.course,
-                row.total,
-                row.wins,
-                row.winRate !== null ? formatPercent(row.winRate) : "-",
-                row.top2Rate !== null ? formatPercent(row.top2Rate) : "-",
-                row.top3Rate !== null ? formatPercent(row.top3Rate) : "-",
-              ],
-            }))}
-          />
-        </div>
-      )}
-
-      {vcVenueFixed && !vcBoatFixed && !vcHistoryLoading && !vcHistoryError && (
-        <div className="racer-technique-profile">
-          <h3>
-            枠番別成績 — {vcLabel}
-            <span className="h3-hint">枠番をクリックでさらに絞り込み →</span>
-          </h3>
-          {vcCrossData && vcCrossData.length > 0 ? (
-            <StatBreakdownTable
-              headers={["枠番", "出走数", "1着率", "2連率", "3連率"]}
-              rows={vcCrossData.map((row) => ({
-                key: row.key,
-                onClick: () => setVcBoat(String(row.key)),
-                cells: [
-                  `${row.key}号艇`,
-                  row.n,
-                  row.winRate !== null ? formatPercent(row.winRate) : "-",
-                  row.top2Rate !== null ? formatPercent(row.top2Rate) : "-",
-                  row.top3Rate !== null ? formatPercent(row.top3Rate) : "-",
-                ],
-              }))}
-            />
-          ) : (
-            <p className="racer-stat-note">
-              {vcLabel}: 該当する出走がありません（対象期間:
-              2025年12月以降、最大過去2年）
-            </p>
-          )}
-        </div>
-      )}
-
-      {!vcVenueFixed && vcBoatFixed && !vcHistoryLoading && !vcHistoryError && (
-        <div className="racer-technique-profile">
-          <h3>
-            会場別成績 — {vcLabel}
-            <span className="h3-hint">会場をクリックでさらに絞り込み →</span>
-          </h3>
-          {vcCrossData && vcCrossData.length > 0 ? (
-            <StatBreakdownTable
-              translateNo
-              headers={["会場", "出走数", "1着率", "2連率", "3連率"]}
-              rows={vcCrossData.map((row) => ({
-                key: row.key,
-                onClick: () => setVcVenue(String(row.key)),
-                cells: [
-                  t(`venues.${row.key}`, row.key),
-                  row.n,
-                  row.winRate !== null ? formatPercent(row.winRate) : "-",
-                  row.top2Rate !== null ? formatPercent(row.top2Rate) : "-",
-                  row.top3Rate !== null ? formatPercent(row.top3Rate) : "-",
-                ],
-              }))}
-            />
-          ) : (
-            <p className="racer-stat-note">
-              {vcLabel}: 該当する出走がありません（対象期間:
-              2025年12月以降、最大過去2年）
-            </p>
-          )}
-        </div>
-      )}
-
+      <VcFilterBar
+        t={t}
+        vc={vc}
+        vcData={vcData}
+        vcLabel={vcLabel}
+        todayVenueCode={todayVenueCode}
+      />
+      {vc.vcHistoryLoading && <p className="racer-stat-note">集計中…</p>}
+      <VcHistoryError vc={vc} />
+      <SummaryCards
+        formSummary={formSummary}
+        officialAvgSt={stats?.officialAvgSt}
+        aggregatedStats={aggregatedStats}
+      />
+      <WinRateChart chartData={view.chartData} />
+      {breakdownBlocks(t, vc, view, venueStats)}
       {/* レース条件別の成績（BOA-336）。フィルタには連動しない（全会場・全条件の履歴から集計） */}
-      <RacerConditionStats history={vcHistory} />
-
-      {hasReturnRate && (
-        <div className="racer-technique-profile">
-          <h3>枠番別回収率（過去180日）</h3>
-          <div className="table-wrapper">
-            <table className="racer-return-rate-table">
-              <thead>
-                <tr>
-                  <th>枠番</th>
-                  <th>出走数</th>
-                  <th>単勝回収率</th>
-                  <th>複勝回収率</th>
-                </tr>
-              </thead>
-              <tbody>
-                {boatReturnRate.map((row) => (
-                  <tr key={row.boat_number}>
-                    <td>{row.boat_number}</td>
-                    <td>{row.sample_count}</td>
-                    <td>
-                      {row.win_return_rate !== null
-                        ? `${row.win_return_rate.toFixed(0)}%`
-                        : "-"}
-                    </td>
-                    <td>
-                      {row.place_return_rate !== null
-                        ? `${row.place_return_rate.toFixed(0)}%`
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <RacerConditionStats history={vc.vcHistory} />
+      <ReturnRateTable view={view} boatReturnRate={boatReturnRate} />
+      <BothFixedNoRuns vc={vc} vcData={vcData} vcLabel={vcLabel} />
+      <VcCards vc={vc} vcData={vcData} />
+      {view.showTechniqueSection && (
+        <TechniqueSection view={view} vcActive={vcActive} vcLabel={vcLabel} />
       )}
-
-      {vcVenueFixed &&
-        vcBoatFixed &&
-        !vcHistoryLoading &&
-        !vcHistoryError &&
-        vcData &&
-        vcData.n === 0 && (
-          <p className="racer-stat-note">
-            {vcLabel}: 該当する出走がありません（対象期間:
-            2025年12月以降、最大過去2年）
-          </p>
-        )}
-
-      {vcVenueFixed && vcBoatFixed && vcData && vcData.n > 0 && (
-        <div className="racer-stat-cards-grid racer-vc-cards-grid">
-          <div className="racer-stat-card">
-            <h3>1着率</h3>
-            <span className="racer-stat-value">
-              {vcData.winRate !== null ? formatPercent(vcData.winRate) : "-"}
-            </span>
-            <p className="racer-stat-note">
-              {vcData.win}回/{vcData.n}回
-            </p>
-          </div>
-          <div className="racer-stat-card">
-            <h3>2連率</h3>
-            <span className="racer-stat-value">
-              {vcData.top2Rate !== null ? formatPercent(vcData.top2Rate) : "-"}
-            </span>
-            <p className="racer-stat-note">
-              {vcData.top2}回/{vcData.n}回
-            </p>
-          </div>
-          <div className="racer-stat-card">
-            <h3>3連率</h3>
-            <span className="racer-stat-value">
-              {vcData.top3Rate !== null ? formatPercent(vcData.top3Rate) : "-"}
-            </span>
-            <p className="racer-stat-note">
-              {vcData.top3}回/{vcData.n}回
-            </p>
-          </div>
-          <div className="racer-stat-card">
-            <h3>単勝回収率</h3>
-            <span className="racer-stat-value">
-              {vcData.returnRate !== null
-                ? `${vcData.returnRate.toFixed(0)}%`
-                : "-"}
-            </span>
-            <p className="racer-stat-note">{vcData.n}回</p>
-          </div>
-          <div className="racer-stat-card">
-            <h3>複勝回収率</h3>
-            <span className="racer-stat-value">
-              {vcData.placeReturnRate !== null
-                ? `${vcData.placeReturnRate.toFixed(0)}%`
-                : "-"}
-            </span>
-            <p className="racer-stat-note">{vcData.n}回</p>
-          </div>
-          <div className="racer-stat-card">
-            <h3>平均ST</h3>
-            <span className="racer-stat-value">
-              {/* 上の平均STカード（0.175）と桁をそろえる（BOA-624） */}
-              {vcData.avgSt !== null ? vcData.avgSt.toFixed(3) : "-"}
-            </span>
-            <p className="racer-stat-note">{vcData.stN}回</p>
-          </div>
-          <div className="racer-stat-card">
-            <h3>平均展示タイム</h3>
-            <span className="racer-stat-value">
-              {vcData.avgExhibitionTime !== null
-                ? vcData.avgExhibitionTime.toFixed(2)
-                : "-"}
-            </span>
-            <p className="racer-stat-note">{vcData.exN}回</p>
-          </div>
-        </div>
-      )}
-
-      {/* 決まり手・推移・レース一覧は常時表示（タブ廃止、ADR-0063）。
-          常に現在の全フィルタ条件（vcData）で絞り込んだ内訳を表示する */}
-      {showTechniqueSection && (
-        <div className="racer-technique-profile">
-          <h3>
-            決まり手傾向（
-            {hasVcData ? "2025年12月以降・最大過去2年" : "過去90日"}・勝利時）
-            {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
-          </h3>
-          {displayTechniques.length > 0 ? (
-            <TechniqueBarLegend techniques={displayTechniques} />
-          ) : hasVcData && vcData.win === 0 ? (
-            <p className="racer-stat-note">1着なし（0回/{vcData.n}回）</p>
-          ) : hasVcData ? (
-            <p className="racer-stat-note">
-              決まり手データなし（勝利{vcData.win}回中、記録なし）
-            </p>
-          ) : null}
-        </div>
-      )}
-
-      {hasVcData && vcData.series.length === 0 && (
+      {view.hasVcData && vcData.series.length === 0 && (
         <p className="racer-stat-note">
           推移を表示するにはデータが不足しています
         </p>
       )}
-
-      {(hasVcData
-        ? vcData.series.some((d) => d.avg_exhibition_time != null)
-        : exhibitionChartData.length > 0) && (
-        <div className="racer-stat-chart">
-          <h3>
-            展示タイムの推移（
-            {hasVcData ? "2025年12月以降・最大過去2年" : "過去90日"}）
-            {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
-          </h3>
-          <p className="racer-stat-note">
-            1走ごとの展示タイム。下ほど速い。会場によって出方が違うので、会場をまたいだ上下は調子の変化とは限りません
-            {isNarrow && `（この画面幅では直近${NARROW_CHART_RUNS}走）`}
-          </p>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart
-              data={
-                hasVcData
-                  ? chartRuns(
-                      vcData.series.filter(
-                        (d) => d.avg_exhibition_time != null,
-                      ),
-                    )
-                  : exhibitionChartData
-              }
-              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey={hasVcData ? "raceKey" : "date"}
-                tickFormatter={raceTick}
-                tick={{ fontSize: 11 }}
-              />
-              <YAxis
-                tick={{ fontSize: 11 }}
-                domain={["auto", "auto"]}
-                tickFormatter={(v) => v.toFixed(2)}
-                unit="秒"
-                width={56}
-              />
-              <Tooltip
-                formatter={(value) => [`${value?.toFixed(2)}秒`, "展示タイム"]}
-                labelFormatter={raceLabelOf}
-              />
-              {/* 階段線（stepAfter）だと1走ごとの値が縦線に埋もれて傾向が読めなかった（BOA-583） */}
-              <Line
-                type="linear"
-                dataKey="avg_exhibition_time"
-                name="展示タイム"
-                stroke="var(--brand-accent-primary)"
-                strokeWidth={1.5}
-                dot={{ r: 1.5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {showStTrend && (
-        <div className="racer-stat-chart racer-st-trend" id={ST_TREND_ID}>
-          <h3>
-            {/* 本番ST（race_start_timings）は2025-12から。展示ST（2026-03〜）を
-                使っていた頃の「2026年3月以降」のままだと横軸と食い違う（BOA-576） */}
-            STの推移（2025年12月以降・最大過去2年）
-            {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
-          </h3>
-          <p className="racer-stat-note">
-            1走ごとの本番ST。下ほど速い（0がスタートライン）。赤い点はフライングの走で、線には含めていません
-            {isNarrow && `（この画面幅では直近${NARROW_CHART_RUNS}走）`}
-          </p>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart
-              data={chartRuns(
-                vcData.series.filter(
-                  (d) => d.start_timing != null || d.flying != null,
-                ),
-              )}
-              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="raceKey"
-                tickFormatter={raceTick}
-                tick={{ fontSize: 11 }}
-              />
-              {/* 0 がスタートライン。下ほど速い（0 に近い）。目盛りは 0.05 刻み */}
-              <YAxis
-                tick={{ fontSize: 11 }}
-                domain={[0, stAxisTop]}
-                ticks={stAxisTicks}
-                tickFormatter={(v) => v.toFixed(2)}
-                unit="秒"
-                width={56}
-              />
-              <Tooltip
-                formatter={(value, name, item) =>
-                  name === "F"
-                    ? [
-                        item?.payload?.flyingSt != null
-                          ? `F${Number(item.payload.flyingSt).toFixed(2).replace(/^0/, "")}`
-                          : "フライング",
-                        "F",
-                      ]
-                    : [`${value?.toFixed(2)}秒`, name]
-                }
-                labelFormatter={raceLabelOf}
-              />
-              <Line
-                type="linear"
-                dataKey="start_timing"
-                name="ST"
-                stroke="var(--brand-accent-secondary)"
-                strokeWidth={1.5}
-                dot={{ r: 1.5 }}
-                connectNulls
-              />
-              {/* フライングの走は平均・線から外し、0 の位置に赤い点で残す（F 後にスタートを
-                  控えたかを読めるように。BOA-583） */}
-              <Line
-                type="linear"
-                dataKey="flying"
-                name="F"
-                stroke="none"
-                dot={{ r: 4, fill: "var(--color-error)", stroke: "none" }}
-                activeDot={{ r: 5, fill: "var(--color-error)" }}
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {hasVcData && vcData.n > 0 && (
-        <div className="racer-vc-race-list">
-          <h3>
-            レース一覧
-            {vcActive && <span className="racer-vc-scope">— {vcLabel}</span>}
-          </h3>
-          <RecentRunsTable rows={vcRacePageRows} />
-          {vcRaceTotalPages > 1 && (
-            <div className="racer-vc-pager">
-              <button
-                type="button"
-                disabled={vcRacePage <= 1}
-                onClick={() => setVcRacePage((p) => p - 1)}
-              >
-                ← 前へ
-              </button>
-              <span>
-                {vcRacePage} / {vcRaceTotalPages}ページ（全
-                {vcData.matchedRaces.length}走）
-              </span>
-              <button
-                type="button"
-                disabled={vcRacePage >= vcRaceTotalPages}
-                onClick={() => setVcRacePage((p) => p + 1)}
-              >
-                次へ →
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
+      <ExhibitionChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
+      <StTrendChart view={view} vcActive={vcActive} vcLabel={vcLabel} />
+      <RaceList vc={vc} view={view} vcLabel={vcLabel} />
       <p className="racer-analysis-tools-link">
         <Link to="/winning-technique?tab=techprofile">
           データ分析ツールで本日開催中の会場・レース単位の傾向も見る →
