@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2410,
+    "sourceFiles": 2416,
     "filesWithAccess": 300,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -1406,16 +1406,6 @@
           ]
         },
         {
-          "ref": "api/_lib/snsTodayDigest.js:54",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "boat_number",
-            "is_absent",
-            "race_id"
-          ]
-        },
-        {
           "ref": "scripts/analysis/original-exhibition/fetch.mjs:59",
           "op": "select",
           "via": "helper:all",
@@ -1527,6 +1517,16 @@
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
+        },
+        {
+          "ref": "scripts/lib/sns/todayDigestStatus.js:39",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "boat_number",
+            "is_absent",
+            "race_id"
+          ]
         },
         {
           "ref": "scripts/lib/snsTodayDigestV3.js:93",
@@ -1836,13 +1836,13 @@
             "api/_lib/racerEntryExhibition.js:192",
             "api/_lib/snsClaimCheckReaders.js:231",
             "api/_lib/snsClaimCheckReaders.js:41",
-            "api/_lib/snsTodayDigest.js:54",
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
             "scripts/analysis/verify-race-analysis-rpc.js:35",
             "scripts/daily/scrape-exhibition-data.js:454",
             "scripts/lib/analogyV16Exhibition.js:156",
             "scripts/lib/analogyV16Exhibition.js:258",
+            "scripts/lib/sns/todayDigestStatus.js:39",
             "scripts/lib/snsTodayDigestV3.js:93",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:48",
             "scripts/maintenance/verify-analogy-v16.js:286",
@@ -1872,12 +1872,12 @@
           "readers": [
             "api/_lib/analogyV16.js:103",
             "api/_lib/racerEntryExhibition.js:192",
-            "api/_lib/snsTodayDigest.js:54",
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
             "scripts/analysis/verify-race-analysis-rpc.js:35",
             "scripts/lib/analogyV16Exhibition.js:156",
             "scripts/lib/analogyV16Exhibition.js:258",
+            "scripts/lib/sns/todayDigestStatus.js:39",
             "scripts/lib/snsTodayDigestV3.js:93",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/maintenance/verify-pre-race-parsers.js:1375",
@@ -2060,9 +2060,9 @@
             "api/_lib/racerEntryExhibition.js:192",
             "api/_lib/snsClaimCheckReaders.js:231",
             "api/_lib/snsClaimCheckReaders.js:41",
-            "api/_lib/snsTodayDigest.js:54",
             "scripts/lib/analogyV16Exhibition.js:156",
             "scripts/lib/analogyV16Exhibition.js:258",
+            "scripts/lib/sns/todayDigestStatus.js:39",
             "scripts/lib/snsTodayDigestV3.js:93",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/sns/pushSetsuKiryokuShortStore.js:120",
@@ -6926,16 +6926,6 @@
           ]
         },
         {
-          "ref": "api/_lib/snsTodayDigest.js:52",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "boat_number",
-            "is_absent",
-            "race_id"
-          ]
-        },
-        {
           "ref": "scripts/analysis/aggregate-racer-stats.js:627",
           "op": "select",
           "via": "client",
@@ -7366,6 +7356,16 @@
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
+        },
+        {
+          "ref": "scripts/lib/sns/todayDigestStatus.js:37",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "boat_number",
+            "is_absent",
+            "race_id"
+          ]
         },
         {
           "ref": "scripts/lib/snsTodayDigestV3.js:89",
@@ -8409,7 +8409,6 @@
             "api/_lib/racerEntryExhibition.js:171",
             "api/_lib/snsClaimCheckReaders.js:230",
             "api/_lib/snsClaimCheckReaders.js:40",
-            "api/_lib/snsTodayDigest.js:52",
             "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-course-rate-only.js:81",
             "scripts/analysis/backtest-unified-model.js:100",
@@ -8441,6 +8440,7 @@
             "scripts/lib/raceIndicatorData.js:87",
             "scripts/lib/racelistBackfillRows.js:127",
             "scripts/lib/racerProfileSync.js:343",
+            "scripts/lib/sns/todayDigestStatus.js:37",
             "scripts/lib/snsTodayDigestV3.js:89",
             "scripts/maintenance/backfill-race-data.js:182",
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
@@ -8534,7 +8534,6 @@
           "readers": [
             "api/_lib/analogyV16.js:105",
             "api/_lib/racerEntryExhibition.js:171",
-            "api/_lib/snsTodayDigest.js:52",
             "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-course-rate-only.js:81",
             "scripts/analysis/backtest-unified-model.js:100",
@@ -8560,6 +8559,7 @@
             "scripts/lib/pitReportJob.js:188",
             "scripts/lib/raceIndicatorData.js:72",
             "scripts/lib/racerProfileSync.js:343",
+            "scripts/lib/sns/todayDigestStatus.js:37",
             "scripts/lib/snsTodayDigestV3.js:89",
             "scripts/maintenance/backfill-race-data.js:182",
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
@@ -9064,9 +9064,9 @@
             "api/_lib/analogyV16.js:105",
             "api/_lib/snsClaimCheckReaders.js:230",
             "api/_lib/snsClaimCheckReaders.js:40",
-            "api/_lib/snsTodayDigest.js:52",
             "scripts/daily/generate-morning-digest.js:152",
             "scripts/lib/analogyV16Exhibition.js:261",
+            "scripts/lib/sns/todayDigestStatus.js:37",
             "scripts/lib/snsTodayDigestV3.js:89",
             "scripts/maintenance/verify-analogy-v16.js:289",
             "scripts/sns/pushSetsuKiryokuShortStore.js:119"
@@ -9691,8 +9691,7 @@
       ],
       "external": [],
       "scrapeJobs": [
-        "odds",
-        "odds_final"
+        "odds"
       ]
     },
     "race_odds_final": {
@@ -15892,16 +15891,6 @@
           ]
         },
         {
-          "ref": "api/_lib/snsTodayDigest.js:50",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "cancellation_status",
-            "race_id",
-            "start_time"
-          ]
-        },
-        {
           "ref": "api/odds/live.js:72",
           "op": "select",
           "via": "client",
@@ -16466,6 +16455,16 @@
           "via": "client",
           "columns": [
             "race_date",
+            "race_id",
+            "start_time"
+          ]
+        },
+        {
+          "ref": "scripts/lib/sns/todayDigestStatus.js:35",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "cancellation_status",
             "race_id",
             "start_time"
           ]
@@ -17431,7 +17430,6 @@
             "api/_lib/snsClaimCheckReaders.js:229",
             "api/_lib/snsClaimCheckReaders.js:315",
             "api/_lib/snsClaimCheckReaders.js:39",
-            "api/_lib/snsTodayDigest.js:50",
             "api/odds/live.js:72",
             "scripts/analysis/analyze-upset-factors.js:81",
             "scripts/analysis/backtest-unified-model.js:109",
@@ -17481,6 +17479,7 @@
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:71",
             "scripts/lib/scrapeJobs/resultHandlers.js:167",
+            "scripts/lib/sns/todayDigestStatus.js:35",
             "scripts/lib/snsAutoPlanRunnerStore.js:55",
             "scripts/lib/snsTodayDigestV3.js:81",
             "scripts/maintenance/audit-missing-results.js:252",
@@ -17773,7 +17772,6 @@
             "api/_lib/analogyV16.js:101",
             "api/_lib/racerEntryExhibition.js:196",
             "api/_lib/snsClaimCheckReaders.js:39",
-            "api/_lib/snsTodayDigest.js:50",
             "api/odds/live.js:72",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:126",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:62",
@@ -17790,6 +17788,7 @@
             "scripts/lib/scrapeJobs/pcexpectHandlers.js:33",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:71",
             "scripts/lib/scrapeJobs/resultHandlers.js:167",
+            "scripts/lib/sns/todayDigestStatus.js:35",
             "scripts/lib/snsAutoPlanRunnerStore.js:55",
             "scripts/lib/snsTodayDigestV3.js:81",
             "scripts/maintenance/check-morning-init-shadow.js:113",
@@ -17955,7 +17954,6 @@
             "api/_lib/snsClaimCheckReaders.js:229",
             "api/_lib/snsClaimCheckReaders.js:315",
             "api/_lib/snsClaimCheckReaders.js:39",
-            "api/_lib/snsTodayDigest.js:50",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:62",
             "scripts/analysis/past-rate-check/poolContractRowChecks.mjs:69",
             "scripts/daily/scrape-point-rank.js:150",
@@ -17971,6 +17969,7 @@
             "scripts/lib/raceSeriesLookup.js:174",
             "scripts/lib/raceStatusJob.js:93",
             "scripts/lib/scrapeJobs/resultHandlerParts.js:61",
+            "scripts/lib/sns/todayDigestStatus.js:35",
             "scripts/lib/snsAutoPlanRunnerStore.js:55",
             "scripts/lib/snsTodayDigestV3.js:126",
             "scripts/lib/snsTodayDigestV3.js:81",
@@ -20957,7 +20956,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsHubHelpers.js:119",
+          "ref": "api/_lib/snsHubHelpers.js:118",
           "op": "select",
           "via": "rest",
           "columns": [
@@ -21308,7 +21307,7 @@
       ],
       "writers": [
         {
-          "ref": "api/_lib/snsHubHelpers.js:136",
+          "ref": "api/_lib/snsHubHelpers.js:135",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -21389,8 +21388,8 @@
           "readers": [
             "api/_lib/snsClaimCheck.js:177",
             "api/_lib/snsClaimCheckReaders.js:149",
-            "api/_lib/snsHubHelpers.js:119",
-            "api/_lib/snsHubHelpers.js:136",
+            "api/_lib/snsHubHelpers.js:118",
+            "api/_lib/snsHubHelpers.js:135",
             "api/_lib/snsXSendStore.js:73",
             "api/admin/sns-hub/revisions/index.js:57",
             "scripts/analysis/youtube-posts-report.js:22",
@@ -22578,7 +22577,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsHubHelpers.js:162",
+          "ref": "api/_lib/snsHubHelpers.js:161",
           "op": "select",
           "via": "rest",
           "columns": [
@@ -22620,7 +22619,7 @@
       ],
       "writers": [
         {
-          "ref": "api/_lib/snsHubHelpers.js:179",
+          "ref": "api/_lib/snsHubHelpers.js:178",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -22648,8 +22647,8 @@
       "columns": {
         "id": {
           "readers": [
-            "api/_lib/snsHubHelpers.js:162",
-            "api/_lib/snsHubHelpers.js:179",
+            "api/_lib/snsHubHelpers.js:161",
+            "api/_lib/snsHubHelpers.js:178",
             "scripts/lib/snsStrategyInsights.js:56"
           ],
           "writers": [],
@@ -28929,7 +28928,7 @@
     {
       "job": "entry_course_stats",
       "entry": "api/cron/entry-course-stats.js",
-      "reachableFiles": 28,
+      "reachableFiles": 27,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29006,7 +29005,7 @@
     {
       "job": "exhibition",
       "entry": "api/cron/exhibition.js",
-      "reachableFiles": 48,
+      "reachableFiles": 49,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070",
@@ -29286,13 +29285,8 @@
     {
       "job": "odds_final",
       "entry": "api/cron/odds-final.js",
-      "reachableFiles": 27,
+      "reachableFiles": 19,
       "writes": {
-        "race_odds": [
-          "scripts/daily/scrape-odds.js:279",
-          "scripts/daily/scrape-odds.js:294",
-          "scripts/lib/oddsRunForRaces.js:212"
-        ],
         "race_odds_final": [
           "scripts/lib/scrapeJobs/finalOddsHandlers.js:144"
         ],
@@ -29448,7 +29442,7 @@
     {
       "job": "race_info",
       "entry": "api/cron/race-info.js",
-      "reachableFiles": 48,
+      "reachableFiles": 49,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070",
@@ -29692,7 +29686,7 @@
     {
       "job": "races_init",
       "entry": "api/cron/races-init.js",
-      "reachableFiles": 49,
+      "reachableFiles": 50,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070"
@@ -29893,7 +29887,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 123,
+      "reachableFiles": 126,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29915,7 +29909,7 @@
           "scripts/lib/snsTodayPlannerStore.js:115"
         ],
         "sns_drafts": [
-          "api/_lib/snsHubHelpers.js:136",
+          "api/_lib/snsHubHelpers.js:135",
           "scripts/lib/snsAutoPlanRunnerStore.js:112",
           "scripts/lib/snsTodayPlannerStore.js:92"
         ],
@@ -29926,7 +29920,7 @@
           "scripts/lib/snsSendRunner.js:172"
         ],
         "sns_strategy_insights": [
-          "api/_lib/snsHubHelpers.js:179"
+          "api/_lib/snsHubHelpers.js:178"
         ],
         "sns_x_send_control": [
           "api/_lib/snsXSendStore.js:157"
@@ -29936,7 +29930,7 @@
     {
       "job": "sns_daily",
       "entry": "api/cron/sns-daily.js",
-      "reachableFiles": 23,
+      "reachableFiles": 24,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29957,17 +29951,17 @@
           "scripts/lib/snsDailyRunnerStore.js:85"
         ],
         "sns_drafts": [
-          "api/_lib/snsHubHelpers.js:136"
+          "api/_lib/snsHubHelpers.js:135"
         ],
         "sns_strategy_insights": [
-          "api/_lib/snsHubHelpers.js:179"
+          "api/_lib/snsHubHelpers.js:178"
         ]
       }
     },
     {
       "job": "sns_metrics",
       "entry": "api/cron/sns-metrics.js",
-      "reachableFiles": 34,
+      "reachableFiles": 35,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29985,7 +29979,7 @@
           "scripts/lib/scrapeJobs/store.js:269"
         ],
         "sns_drafts": [
-          "api/_lib/snsHubHelpers.js:136"
+          "api/_lib/snsHubHelpers.js:135"
         ],
         "sns_metric_jobs": [
           "scripts/lib/snsMetricsRunnerStore.js:113",
@@ -29998,14 +29992,14 @@
           "api/_lib/snsTokenDb.js:76"
         ],
         "sns_strategy_insights": [
-          "api/_lib/snsHubHelpers.js:179"
+          "api/_lib/snsHubHelpers.js:178"
         ]
       }
     },
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 94,
+      "reachableFiles": 98,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -30023,7 +30017,7 @@
           "scripts/lib/scrapeJobs/store.js:269"
         ],
         "sns_drafts": [
-          "api/_lib/snsHubHelpers.js:136"
+          "api/_lib/snsHubHelpers.js:135"
         ],
         "sns_oauth_tokens": [
           "api/_lib/snsTokenDb.js:36",
@@ -30035,7 +30029,7 @@
           "scripts/lib/snsSendRunner.js:172"
         ],
         "sns_strategy_insights": [
-          "api/_lib/snsHubHelpers.js:179"
+          "api/_lib/snsHubHelpers.js:178"
         ],
         "sns_x_send_control": [
           "api/_lib/snsXSendStore.js:157"
