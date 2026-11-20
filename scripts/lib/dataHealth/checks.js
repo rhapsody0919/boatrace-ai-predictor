@@ -24,6 +24,12 @@
  * （race_status ジョブ）で避ける。
  */
 import { COVERAGE_METRICS } from "./coverageSpec.js";
+import {
+  validateCommon,
+  validateCountCheck,
+  validateFreshnessCheck,
+  validatePolicies,
+} from "./checksValidate.js";
 
 /** 既定の閾値（完了の定義A: 充足率99%以上） */
 export const DEFAULT_THRESHOLD = 0.99;
@@ -422,84 +428,20 @@ export function validateChecks({
   const problems = [];
   const ids = new Set();
   const fnNames = new Set(functions.map((f) => f.name));
+  const ctx = {
+    tableRowsTables,
+    defaults: { threshold: DEFAULT_THRESHOLD, days: DEFAULT_DAYS },
+  };
   for (const c of checks) {
     if (ids.has(c.id)) problems.push(`${c.id}: id が重複しています`);
     ids.add(c.id);
-    if (!fnNames.has(c.fn)) problems.push(`${c.id}: 未登録の関数です: ${c.fn}`);
-    if (!["alert", "info"].includes(c.severity))
-      problems.push(`${c.id}: severity が不正です: ${c.severity}`);
-    if (c.classification === "freshness") {
-      const fn = functions.find((f) => f.name === c.fn);
-      const keys = new Set((fn?.items ?? []).map((i) => i.key));
-      if (!Array.isArray(c.items) || c.items.length === 0)
-        problems.push(`${c.id}: items（関数の項目のキー）が空です`);
-      for (const key of c.items ?? [])
-        if (!keys.has(key))
-          problems.push(`${c.id}: 関数 ${c.fn} に無い項目です: ${key}`);
-      if (!/^[a-z0-9-]+\.yml$/.test(c.workflow ?? ""))
-        problems.push(
-          `${c.id}: workflow（.github/workflows のファイル名）が不正です`,
-        );
-      if (c.severity === "info" && !c.note)
-        problems.push(
-          `${c.id}: info（通知しない）にする理由を note に書いてください`,
-        );
-      continue;
-    }
-    if (c.classification !== "count")
-      problems.push(`${c.id}: classification が不正です`);
-    const threshold = c.threshold ?? DEFAULT_THRESHOLD;
-    if (!(threshold > 0 && threshold <= 1))
-      problems.push(`${c.id}: threshold は 0 < x <= 1 です: ${threshold}`);
-    if (c.threshold !== undefined && !c.note)
-      problems.push(
-        `${c.id}: 既定と違う閾値には、理由を note に書いてください`,
-      );
-    const days = c.days ?? DEFAULT_DAYS;
-    if (!Number.isInteger(days) || days < 1 || days > 14)
-      problems.push(
-        `${c.id}: days は 1〜14 の整数です（日次はDisk IOのため14日まで）: ${days}`,
-      );
-    if (c.since !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(c.since))
-      problems.push(`${c.id}: since は YYYY-MM-DD です: ${c.since}`);
-    if (
-      c.lagDays !== undefined &&
-      !(Number.isInteger(c.lagDays) && c.lagDays >= 0 && c.lagDays < days)
-    )
-      problems.push(`${c.id}: lagDays は 0 以上 days 未満の整数です`);
-    if (
-      c.requiresTable !== undefined &&
-      !tableRowsTables.includes(c.requiresTable)
-    )
-      problems.push(
-        `${c.id}: requiresTable が data_health_table_rows の対象にありません: ${c.requiresTable}`,
-      );
-    if (
-      !/^[a-z_0-9]+$/.test(c.numerator) ||
-      !/^[a-z_0-9]+$/.test(c.denominator)
-    )
-      problems.push(`${c.id}: 分子・分母の列名が不正です`);
-    if (
-      c.cadence !== undefined &&
-      !(
-        Number.isInteger(c.cadence.weeklyOn) &&
-        c.cadence.weeklyOn >= 0 &&
-        c.cadence.weeklyOn <= 6
-      )
-    )
-      problems.push(`${c.id}: cadence.weeklyOn は 0〜6 です`);
+    problems.push(...validateCommon(c, fnNames));
+    problems.push(
+      ...(c.classification === "freshness"
+        ? validateFreshnessCheck(c, functions)
+        : validateCountCheck(c, ctx)),
+    );
   }
-  for (const [table, p] of Object.entries(policies)) {
-    if (!["forbid", "info", "pending"].includes(p.policy))
-      problems.push(`${table}: policy が不正です: ${p.policy}`);
-    if (!tableRowsTables.includes(table))
-      problems.push(`${table}: data_health_table_rows の対象にありません`);
-  }
-  for (const table of tableRowsTables) {
-    if (!policies[table])
-      problems.push(
-        `${table}: 空テーブルの扱い（EMPTY_TABLE_POLICIES）が未登録です`,
-      );
-  }
+  problems.push(...validatePolicies(policies, tableRowsTables));
   return problems;
 }

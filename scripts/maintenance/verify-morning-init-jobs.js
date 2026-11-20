@@ -477,12 +477,13 @@ await runMorningInitJobsScenes3({ check, show, same, jst, clone, GOLDEN_VENUE, D
         /^[0-9a-f]{16}$/.test(base),
     );
     const real = computePredictCodeHash();
+    // 本数でなく中身で見る: 予測ロジックの各ファイルが一覧に漏れなく・重複なく入り、全て読める（読めないと real は null）
     check(
-      "(h) デプロイされた予測ロジック（generate-predictions.js ほか4ファイル）のハッシュを計算できる",
+      "(h) デプロイされた予測ロジック（generate-predictions.js と計算の lib）のハッシュを計算できる",
       typeof real === "string" &&
         /^[0-9a-f]{16}$/.test(real) &&
-        PREDICT_LOGIC_FILES.length === 4 &&
-        real === computePredictCodeHash(),
+        ["../../daily/generate-predictions.js", "../turnPrediction.js", "../venueParameters.js", "../winningTechniques.js"].every((rel) => PREDICT_LOGIC_FILES.includes(rel)) &&
+        new Set(PREDICT_LOGIC_FILES).size === PREDICT_LOGIC_FILES.length && real === computePredictCodeHash(),
       String(real),
     );
     const edited = computePredictCodeHash({

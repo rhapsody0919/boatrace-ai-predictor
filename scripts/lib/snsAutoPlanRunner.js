@@ -38,7 +38,7 @@ import {
   evaluateChannel as evaluateChannelWith,
   sharedChecks as sharedChecksWith,
 } from "./snsAutoPlanRunnerEvaluate.js";
-import { sendHolds } from "../../api/_lib/snsMobileApproval.js";
+import { sendHolds } from "./sns/sendHolds.js";
 import { checkPublicDisplay } from "./sns/publicDisplayCheck.js";
 import { deadlineIso } from "./sns/deadlineIso.js";
 

@@ -12,8 +12,7 @@
  */
 
 import { VENUE_RULES_BY_VENUE, VENUE_NAMES } from "../config/venueRules.js";
-
-export const RULE_PERFORMANCE_START_DATE = "2026-01-16";
+import { RULE_PERFORMANCE_START_DATE } from "../config/rulePerformance.js";
 
 const percent = (numerator, denominator) =>
   denominator > 0 ? Math.round((numerator / denominator) * 100) : 0;
