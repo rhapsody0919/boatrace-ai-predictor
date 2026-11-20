@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2426,
+    "sourceFiles": 2427,
     "filesWithAccess": 301,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -607,7 +607,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/analogyV16.js:99",
+          "ref": "api/_lib/analogyV16.js:135",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -768,7 +768,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "api/_lib/analogyV16.js:99",
+            "api/_lib/analogyV16.js:135",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:128",
@@ -788,7 +788,7 @@
         },
         "stage": {
           "readers": [
-            "api/_lib/analogyV16.js:99",
+            "api/_lib/analogyV16.js:135",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:128",
@@ -809,7 +809,7 @@
         },
         "run_id": {
           "readers": [
-            "api/_lib/analogyV16.js:99",
+            "api/_lib/analogyV16.js:135",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:128",
@@ -821,7 +821,7 @@
         },
         "computed_at": {
           "readers": [
-            "api/_lib/analogyV16.js:99",
+            "api/_lib/analogyV16.js:135",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:128",
@@ -833,7 +833,7 @@
         },
         "pool_cutoff": {
           "readers": [
-            "api/_lib/analogyV16.js:99",
+            "api/_lib/analogyV16.js:135",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/lib/analogyV16Exhibition.js:251"
           ],
@@ -842,7 +842,7 @@
         },
         "model_version": {
           "readers": [
-            "api/_lib/analogyV16.js:99",
+            "api/_lib/analogyV16.js:135",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/lib/analogyV16Exhibition.js:251"
           ],
@@ -851,7 +851,7 @@
         },
         "n_layer": {
           "readers": [
-            "api/_lib/analogyV16.js:99",
+            "api/_lib/analogyV16.js:135",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:253",
@@ -862,7 +862,7 @@
         },
         "status": {
           "readers": [
-            "api/_lib/analogyV16.js:99",
+            "api/_lib/analogyV16.js:135",
             "scripts/analysis/analogy-v16-rebuild/inspect.mjs:4",
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:253",
@@ -875,7 +875,7 @@
         },
         "exact": {
           "readers": [
-            "api/_lib/analogyV16.js:99",
+            "api/_lib/analogyV16.js:135",
             "scripts/maintenance/verify-analogy-v16.js:279"
           ],
           "writers": [],
@@ -1366,7 +1366,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/analogyV16.js:103",
+          "ref": "api/_lib/analogyV16.js:139",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1832,7 +1832,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "api/_lib/analogyV16.js:103",
+            "api/_lib/analogyV16.js:139",
             "api/_lib/racerEntryExhibition.js:192",
             "api/_lib/snsClaimCheckReaders.js:231",
             "api/_lib/snsClaimCheckReaders.js:41",
@@ -1870,7 +1870,7 @@
         },
         "boat_number": {
           "readers": [
-            "api/_lib/analogyV16.js:103",
+            "api/_lib/analogyV16.js:139",
             "api/_lib/racerEntryExhibition.js:192",
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
@@ -1902,7 +1902,7 @@
         },
         "exhibition_time": {
           "readers": [
-            "api/_lib/analogyV16.js:103",
+            "api/_lib/analogyV16.js:139",
             "api/_lib/racerEntryExhibition.js:192",
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
@@ -2056,7 +2056,7 @@
         },
         "is_absent": {
           "readers": [
-            "api/_lib/analogyV16.js:103",
+            "api/_lib/analogyV16.js:139",
             "api/_lib/racerEntryExhibition.js:192",
             "api/_lib/snsClaimCheckReaders.js:231",
             "api/_lib/snsClaimCheckReaders.js:41",
@@ -6888,7 +6888,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/analogyV16.js:105",
+          "ref": "api/_lib/analogyV16.js:141",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -8405,7 +8405,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "api/_lib/analogyV16.js:105",
+            "api/_lib/analogyV16.js:141",
             "api/_lib/racerEntryExhibition.js:171",
             "api/_lib/snsClaimCheckReaders.js:230",
             "api/_lib/snsClaimCheckReaders.js:40",
@@ -8532,7 +8532,7 @@
         },
         "boat_number": {
           "readers": [
-            "api/_lib/analogyV16.js:105",
+            "api/_lib/analogyV16.js:141",
             "api/_lib/racerEntryExhibition.js:171",
             "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-course-rate-only.js:81",
@@ -9061,7 +9061,7 @@
         },
         "is_absent": {
           "readers": [
-            "api/_lib/analogyV16.js:105",
+            "api/_lib/analogyV16.js:141",
             "api/_lib/snsClaimCheckReaders.js:230",
             "api/_lib/snsClaimCheckReaders.js:40",
             "scripts/daily/generate-morning-digest.js:152",
@@ -15840,7 +15840,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/analogyV16.js:101",
+          "ref": "api/_lib/analogyV16.js:137",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -17425,7 +17425,7 @@
       "columns": {
         "race_id": {
           "readers": [
-            "api/_lib/analogyV16.js:101",
+            "api/_lib/analogyV16.js:137",
             "api/_lib/racerEntryExhibition.js:196",
             "api/_lib/snsClaimCheckReaders.js:229",
             "api/_lib/snsClaimCheckReaders.js:315",
@@ -17564,7 +17564,7 @@
         },
         "race_date": {
           "readers": [
-            "api/_lib/analogyV16.js:101",
+            "api/_lib/analogyV16.js:137",
             "api/_lib/racerEntryExhibition.js:196",
             "api/_lib/snsClaimCheckReaders.js:39",
             "api/odds/live.js:72",
@@ -17664,7 +17664,7 @@
         },
         "venue_code": {
           "readers": [
-            "api/_lib/analogyV16.js:101",
+            "api/_lib/analogyV16.js:137",
             "scripts/analysis/analyze-upset-factors.js:81",
             "scripts/analysis/backtest-unified-model.js:109",
             "scripts/analysis/calibrate-unified-model.js:145",
@@ -17769,7 +17769,7 @@
         },
         "start_time": {
           "readers": [
-            "api/_lib/analogyV16.js:101",
+            "api/_lib/analogyV16.js:137",
             "api/_lib/racerEntryExhibition.js:196",
             "api/_lib/snsClaimCheckReaders.js:39",
             "api/odds/live.js:72",
