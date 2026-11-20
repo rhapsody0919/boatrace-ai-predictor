@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2439,
+    "sourceFiles": 2440,
     "filesWithAccess": 301,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -101,7 +101,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:142",
+          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:143",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -128,7 +128,7 @@
           "writers": [
             "scripts/daily/calculate-accuracy.js:177",
             "scripts/daily/calculate-unified-model-accuracy.js:203",
-            "scripts/daily/calculate-unified-volatility-accuracy.js:142"
+            "scripts/daily/calculate-unified-volatility-accuracy.js:143"
           ],
           "sql": [
             "rpc:data_health_nightly_freshness"
@@ -145,7 +145,7 @@
           "writers": [
             "scripts/daily/calculate-accuracy.js:177",
             "scripts/daily/calculate-unified-model-accuracy.js:203",
-            "scripts/daily/calculate-unified-volatility-accuracy.js:142"
+            "scripts/daily/calculate-unified-volatility-accuracy.js:143"
           ],
           "sql": []
         },
@@ -154,7 +154,7 @@
           "writers": [
             "scripts/daily/calculate-accuracy.js:177",
             "scripts/daily/calculate-unified-model-accuracy.js:203",
-            "scripts/daily/calculate-unified-volatility-accuracy.js:142"
+            "scripts/daily/calculate-unified-volatility-accuracy.js:143"
           ],
           "sql": [
             "rpc:data_health_nightly_freshness"
@@ -5402,7 +5402,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:114",
+          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:115",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -6926,7 +6926,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:627",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:624",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8914,7 +8914,7 @@
         "racer_id": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:171",
-            "scripts/analysis/aggregate-racer-stats.js:627",
+            "scripts/analysis/aggregate-racer-stats.js:624",
             "scripts/analysis/analyze-indicator-predictive-power.js:131",
             "scripts/analysis/backtest-course-rate-only.js:81",
             "scripts/analysis/backtest-unified-model.js:100",
@@ -10631,7 +10631,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:70",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:71",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -10959,7 +10959,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:125",
+          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:126",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -13483,7 +13483,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:504",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:501",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
@@ -13622,7 +13622,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/analysis/aggregate-racer-stats.js:504",
+          "ref": "scripts/analysis/aggregate-racer-stats.js:501",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [

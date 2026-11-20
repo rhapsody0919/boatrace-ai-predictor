@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2439 |
+| 読んだファイル | 2440 |
 | 読み書きのあるファイル | 301 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -282,7 +282,7 @@
 - 書き手（3）: 
   - `scripts/daily/calculate-accuracy.js:177` upsert [data, key, updated_at]
   - `scripts/daily/calculate-unified-model-accuracy.js:203` upsert [data, key, updated_at]
-  - `scripts/daily/calculate-unified-volatility-accuracy.js:142` upsert [data, key, updated_at]
+  - `scripts/daily/calculate-unified-volatility-accuracy.js:143` upsert [data, key, updated_at]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-analogy_contribution_profiles"></a>analogy_contribution_profiles
@@ -708,7 +708,7 @@
   - `scripts/daily/calculate-accuracy.js:25` select(helper:fetchAll)
   - `scripts/daily/calculate-accuracy.js:65` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-model-accuracy.js:179` select(helper:fetchAll)
-  - `scripts/daily/calculate-unified-volatility-accuracy.js:114` select(helper:fetchAll)
+  - `scripts/daily/calculate-unified-volatility-accuracy.js:115` select(helper:fetchAll)
   - `scripts/daily/generate-moriarty-recommendations.js:81` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/daily/generate-morning-digest.js:298` select [feature_contributions, model_id, race_id]
   - `scripts/daily/generate-unified-predictions.js:152` select(helper:fetchAll)
@@ -823,7 +823,7 @@
   - `api/_lib/racerEntryExhibition.js:171` rest(rest) [boat_number, race_id, racer_id]
   - `api/_lib/snsClaimCheckReaders.js:40` rest(rest) [is_absent, race_id]
   - `api/_lib/snsClaimCheckReaders.js:230` rest(rest) [is_absent, race_id]
-  - `scripts/analysis/aggregate-racer-stats.js:627` select [racer_id]
+  - `scripts/analysis/aggregate-racer-stats.js:624` select [racer_id]
   - `scripts/analysis/analyze-indicator-predictive-power.js:131` select [boat_number, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/analysis/backtest-course-rate-only.js:81` select [boat_number, race_id, racer_id]
   - `scripts/analysis/backtest-unified-model.js:100` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
@@ -1137,7 +1137,7 @@
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:76`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:10`, `scripts/lib/raceResultSchema.js:25`, `scripts/maintenance/delete-phantom-races.js:74`, `scripts/maintenance/fix-opening-day-race-id-date.js:69`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:42`
 - 読み手（111）: 
   - `api/_lib/snsClaimCheckReaders.js:316` rest(rest) [race_id, rank1]
-  - `scripts/analysis/aggregate-racer-stats.js:70` select(helper:fetchAll)
+  - `scripts/analysis/aggregate-racer-stats.js:71` select(helper:fetchAll)
   - `scripts/analysis/analogy-finder-md6/export-actual-course.js:20` select(helper:fetchAll)
   - `scripts/analysis/analyze-indicator-predictive-power.js:116` select(helper:fetchAll)
   - `scripts/analysis/analyze-upset-factors.js:94` select [is_cancelled, is_no_race, payout_win, race_id, rank1, winning_technique]
@@ -1174,7 +1174,7 @@
   - `scripts/daily-rule-tracking.js:149` select [*, race_id]
   - `scripts/daily/calculate-accuracy.js:94` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-model-accuracy.js:187` select(helper:fetchAll)
-  - `scripts/daily/calculate-unified-volatility-accuracy.js:125` select(helper:fetchAll)
+  - `scripts/daily/calculate-unified-volatility-accuracy.js:126` select(helper:fetchAll)
   - `scripts/daily/calculate-venue-grade-stats.js:176` select(embed) [is_cancelled, payout_trio, race_status, rank1, rank2, rank3, refund_boats, winning_technique]
   - `scripts/daily/scrape-odds.js:70` select [payout_win, race_id]
   - `scripts/daily/scrape-results.js:196` select [race_id, rank1]
@@ -1345,7 +1345,7 @@
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（12）: 
   - `api/_lib/racerEntryExhibition.js:188` rest(rest) [calculated_at, course_entry_tendency, racer_id, venue_code]
-  - `scripts/analysis/aggregate-racer-stats.js:504` select(helper:upsertChangedRows)
+  - `scripts/analysis/aggregate-racer-stats.js:501` select(helper:upsertChangedRows)
   - `scripts/analysis/analyze-indicator-predictive-power.js:145` select [avg_st, course_race_counts, racer_id, venue_code]
   - `scripts/analysis/backtest-course-rate-only.js:92` select [course_race_counts, racer_id, venue_code]
   - `scripts/analysis/backtest-unified-model.js:126` select [attack_distribution, avg_st, course_race_counts, defense_distribution, racer_id, st_stddev, venue_code]
@@ -1357,7 +1357,7 @@
   - `scripts/daily/generate-unified-trifecta-reference.js:84` select [avg_st, course_race_counts, racer_id, venue_code]
   - `src/services/racerQueries.js:199` select [avg_st, avg_st_last_30, course_race_counts, flying_rate, racer_id, st_stddev, total_races, venue_code]
 - 書き手（1）: 
-  - `scripts/analysis/aggregate-racer-stats.js:504` upsert(helper:upsertChangedRows) [?]
+  - `scripts/analysis/aggregate-racer-stats.js:501` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-racer_course_technique_stats"></a>racer_course_technique_stats
