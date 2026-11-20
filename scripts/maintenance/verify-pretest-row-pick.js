@@ -189,29 +189,8 @@ function groupIntoRuns(rows) {
   return runs;
 }
 
-async function main() {
-  const days = parseDays(process.argv.slice(2));
-  const today = new Date().toISOString().slice(0, 10);
-  const from = shiftDate(today, -days);
-  // 6日ルックバックの検査に、期間の頭より前の行も要る
-  const pretestFrom = shiftDate(from, -LOOKBACK_DAYS);
-
-  console.log(`前検タイムの行の選び方を検査します（${from} 〜 ${today}）`);
-
-  // 節の初日を決めるため、開催日は検査期間より前（最長の節＋余裕で9日）まで見る
-  const [pretestRows, entryRows, openDatesByVenue] = await Promise.all([
-    fetchPretestRows(pretestFrom, today),
-    fetchEntries(from, today),
-    fetchVenueOpenDates(shiftDate(from, -9), today),
-  ]);
-  const meetStartLookup = buildMeetStartLookup(openDatesByVenue);
-  console.log(
-    `  motor_pretest_stats: ${pretestRows.length}行 / 出走: ${entryRows.length}件`,
-  );
-
-  const failures = [];
-
-  // A. 節の中で前検タイム・順位が変動しないこと
+/** A. 節の中で前検タイム・順位が変動しないこと。違反は failures へ足す */
+function checkVaryingRuns(pretestRows, failures) {
   const runs = groupIntoRuns(pretestRows);
   const varyingRuns = runs.filter((run) => {
     const times = new Set(run.map((r) => String(r.pretest_time)));
@@ -239,8 +218,10 @@ async function main() {
   } else {
     console.log(`  [A] OK: ${runs.length}区間すべてで前検タイム・順位が単一値`);
   }
+}
 
-  // B/C. 6日ルックバックで採る行が「その日の節」のものか、カバー率が保てているか
+/** B/C の下ごしらえ。6日ルックバックで採る行が「その日の節」のものかを数える。B の違反は failures へ足す */
+function checkLookback(pretestRows, entryRows, meetStartLookup, failures) {
   const byVenueRacer = new Map();
   pretestRows.forEach((row) => {
     const key = `${row.venue_code}|${row.racer_id}`;
@@ -298,6 +279,37 @@ async function main() {
           : ""),
     );
   }
+  return { matched };
+}
+
+async function main() {
+  const days = parseDays(process.argv.slice(2));
+  const today = new Date().toISOString().slice(0, 10);
+  const from = shiftDate(today, -days);
+  // 6日ルックバックの検査に、期間の頭より前の行も要る
+  const pretestFrom = shiftDate(from, -LOOKBACK_DAYS);
+
+  console.log(`前検タイムの行の選び方を検査します（${from} 〜 ${today}）`);
+
+  // 節の初日を決めるため、開催日は検査期間より前（最長の節＋余裕で9日）まで見る
+  const [pretestRows, entryRows, openDatesByVenue] = await Promise.all([
+    fetchPretestRows(pretestFrom, today),
+    fetchEntries(from, today),
+    fetchVenueOpenDates(shiftDate(from, -9), today),
+  ]);
+  const meetStartLookup = buildMeetStartLookup(openDatesByVenue);
+  console.log(
+    `  motor_pretest_stats: ${pretestRows.length}行 / 出走: ${entryRows.length}件`,
+  );
+
+  const failures = [];
+  checkVaryingRuns(pretestRows, failures);
+  const { matched } = checkLookback(
+    pretestRows,
+    entryRows,
+    meetStartLookup,
+    failures,
+  );
 
   const coverage =
     entryRows.length > 0 ? (matched / entryRows.length) * 100 : 0;
