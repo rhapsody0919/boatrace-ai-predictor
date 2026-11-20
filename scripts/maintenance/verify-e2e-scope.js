@@ -26,6 +26,7 @@ import {
   GATE_CONFIG_PATH,
   grandfatherRemovals,
 } from "./e2e-scope.js";
+import { closureFrom } from "./verifyData/e2e-scope-closure.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -464,16 +465,6 @@ export function scanText(
 
 {
   const prefixes = skipPrefixes(config);
-  const exts = [
-    "",
-    ".js",
-    ".jsx",
-    ".mjs",
-    ".cjs",
-    ".json",
-    "/index.js",
-    "/index.jsx",
-  ];
   const statOf = (p) => {
     try {
       return statSync(p);
@@ -481,8 +472,6 @@ export function scanText(
       return null;
     }
   };
-  const inRepo = (abs) =>
-    abs === repoRoot || abs.startsWith(repoRoot + path.sep);
   const listFiles = (dir) =>
     readdirSync(dir, { withFileTypes: true }).flatMap((ent) =>
       ent.isDirectory()
@@ -515,49 +504,34 @@ export function scanText(
     workflowScripts.length > 0,
     true,
   );
-  const reachable = new Set(roots);
-  const queue = [...roots];
-  const reads = new Set();
-  const leakedLiterals = [];
-  while (queue.length > 0) {
-    const file = queue.pop();
-    const css = /\.css$/.test(file);
-    if (!css && !/\.(js|jsx|mjs|cjs|html)$/.test(file)) continue;
-    const rel = path.relative(repoRoot, file);
-    const { specs, literals } = scanText(readFileSync(file, "utf8"), {
-      css,
-      nodeSide: !rel.startsWith("src/"),
-      prefixes,
+  const disk = { read: (p) => readFileSync(p, "utf8"), stat: statOf };
+  const closureOf = (root, roots, io = disk) =>
+    closureFrom({ root, roots, io, scan: scanText, prefixes });
+  {
+    // #2986 で src が scripts/lib を直に読まなくなり実例が消えた。読めば閉包に入ることを偽の木で守る
+    const at = (rel) => path.join(repoRoot, "__fake__", rel);
+    const tree = new Map([
+      [at("src/a.js"), 'import { b } from "../scripts/lib/b";'],
+      [at("scripts/lib/b.js"), 'export { c } from "./c.js";'],
+      [at("scripts/lib/c.js"), "export const c = 1;"],
+    ]);
+    const file = { isFile: () => true, isDirectory: () => false };
+    const fake = closureOf(at(""), [at("src/a.js")], {
+      read: (p) => tree.get(p),
+      stat: (p) => (tree.has(p) ? file : null),
     });
-    for (const l of literals) leakedLiterals.push(`${rel}: ${l}`);
-    for (const spec of specs) {
-      const clean = spec.split("?")[0].split("#")[0];
-      if (!clean || /^\/\//.test(clean)) continue;
-      const base = clean.startsWith("/")
-        ? path.join(repoRoot, clean)
-        : path.resolve(path.dirname(file), clean);
-      if (!inRepo(base)) continue;
-      const cut = /\/$/.test(clean) || spec !== clean ? "/" : "";
-      const target = exts.map((e) => base + e).find((p) => statOf(p)?.isFile());
-      if (target) {
-        reads.add(path.relative(repoRoot, target));
-        if (!reachable.has(target)) {
-          reachable.add(target);
-          queue.push(target);
-        }
-      } else if (statOf(base)?.isDirectory() || cut) {
-        // ディレクトリ・`${` で切れた頭の読み。その下の全部を読みうるものとして判定する
-        reads.add(`${path.relative(repoRoot, base)}/`.replace(/\/+$/, "/"));
-      } else {
-        // 解けない指定（public/ の URL・書き出し先・拡張子の無い頭）も黙って捨てず、頭として一覧と照らす
-        reads.add(path.relative(repoRoot, base));
-      }
-    }
+    check(
+      "閉包が src から scripts/lib を辿る（検査の前提、偽の木）",
+      ["scripts/lib/b.js", "scripts/lib/c.js"].filter((f) =>
+        fake.rels.includes(f),
+      ).length,
+      2,
+    );
   }
-  const rels = [...reachable].map((f) => path.relative(repoRoot, f));
+  const { rels, reads, leakedLiterals } = closureOf(repoRoot, roots);
   check(
-    "閉包が src から scripts/lib を辿る（検査の前提）",
-    rels.includes("scripts/lib/hitCalculator.js"),
+    "閉包が e2e から scripts/lib を辿る（検査の前提）",
+    rels.some((f) => f.startsWith("scripts/lib/")),
     true,
   );
   check(

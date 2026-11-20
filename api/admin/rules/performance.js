@@ -18,7 +18,7 @@ import {
 } from "../../_lib/snsHubHelpers.js";
 import { requireAdminAuth } from "../../_lib/adminAuth.js";
 import { toRpcRules } from "../../../src/config/venueRules.js";
-import { RULE_PERFORMANCE_START_DATE } from "../../../src/services/adminRulePerformance.js";
+import { RULE_PERFORMANCE_START_DATE } from "../../../src/config/rulePerformance.js";
 
 export const config = {
   runtime: "edge",
