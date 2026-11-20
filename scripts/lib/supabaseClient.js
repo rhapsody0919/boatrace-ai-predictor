@@ -91,10 +91,10 @@ export async function fetchAll(
   buildQuery,
   { throwOnError = true, client = supabase, unordered } = {},
 ) {
-  if (
-    unordered !== undefined &&
-    !(typeof unordered === "string" && unordered.trim())
-  ) {
+  // unordered（並び順なしを許す理由）は、指定するなら空でない文字列（fetchAll の条件から移した。verify が fetchAll の字だけを切り出すため、中に置く）
+  const hasReason = (u) =>
+    u === undefined || (typeof u === "string" && Boolean(u.trim()));
+  if (!hasReason(unordered)) {
     throw new Error(
       `${table}: fetchAll の unordered には、並び順なしを許す理由を書いてください（BOA-753）`,
     );
