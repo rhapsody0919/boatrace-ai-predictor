@@ -71,7 +71,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/analogyDispatch.js` | BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習… | morningRetryNeeded, morningShouldDispatch, dispatchWorkflow, createAnalogyDispatchRun, GITHUB_REPO ほか2件 |
 | `scripts/lib/analogyV16Exhibition.js` | アナロジー・ファインダー v16 の展示後の段（BOA-271 tasks T4-2・T4-3。plan「展示後の段」）。 | selectExhibitionTargets, exhibitionNeighbors, displayRow, runAnalogyV16Exhibition, MAX_RACES |
 | `scripts/lib/analogyV16ExhibitionToday.js` | アナロジー・ファインダー v16 の展示後の段の「今日の展示の値」（today-exhibition。BOA-271 T4-2）。 | todayExhibition, BOATS |
-| `scripts/lib/archiveDownloader.js` | 公式サイトの静的ファイル・ページを、生のまま保管する取得ループ（fan・月間スケジュールのCLI共通） | readJsonl, fetchOnce, planItems, runArchiveDownload, HARD_MIN_INTERVAL_MS ほか4件 |
+| `scripts/lib/archiveDownloadSteps.js` | 取得ループ（archiveDownloader.js の runArchiveDownload）から分けた部品（リファクタ。振る舞いは変えない）。 | resolveRunDeps, planRun, createRunContext, fetchItem, classifyFetched ほか4件 |
+| `scripts/lib/archiveDownloader.js` | 公式サイトの静的ファイル・ページを、生のまま保管する取得ループ（fan・月間スケジュールのCLI共通） | fetchOnce, planItems, runArchiveDownload, HARD_MIN_INTERVAL_MS, FETCH_TIMEOUT_MS ほか1件 |
+| `scripts/lib/archiveFiles.js` | 取得ループ（archiveDownloader.js）の、マニフェスト（JSONL）と内容ハッシュの小さな部品。 | readJsonl, sha256, appendJsonl |
 | `scripts/lib/beforeInfoParser.js` | 公式の直前情報ページ（boatrace.jp beforeinfo）の全項目パーサー（純関数。DB・取得先に接続しない） | parseStartExhibitionCell, parseBeforeInfoDocument, parseBeforeInfoPage, BEFOREINFO_PARSER_VERSION |
 | `scripts/lib/beforeinfoWeather.js` | 公式ページの「水面気象情報」の解析（BOA-358） | convertWindDirection, scrapeObservedPoint, scrapeConditions, hasAnyWeather, resolveObservedAt ほか5件 |
 | `scripts/lib/blogChartPng.js` | ブログの図の PNG をビルドで書き出す（ADR 0099、docs/design/blog-charts/contract.md 8節）。 | planBlogChartPngs, enterExportMode, exportBlogChartPngs |
@@ -128,6 +130,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/erDiagramFromDdl.js` | docs/db-migration/ のSQL DDLからmermaid erDiagramを機械的に導出する。 | parseTablesFromSql, findLinkedMigrations, buildMermaidErDiagram, DB_MIGRATION_DIR, DESIGN_DIR |
 | `scripts/lib/eveDeadlinesJob.js` | 前夜の締切予定（eve_race_deadlines、マイグレーション202、BOA-1282）の共通ラッパ向けハンドラー2つ。 | isFinalRound, readExpectedVenues, readEveRows, buildEveRows, nameTargets ほか8件 |
 | `scripts/lib/eveDeadlinesRows.js` | 前夜の締切予定（eveDeadlinesJob.js）の純な部分: 書く行・優勝戦の判定・raceindex の振り分け・通知・戻り値。 | eveIsFinal, eveRow, isSameEveRow, parseVenueIndex, acceptVenueIndex ほか4件 |
+| `scripts/lib/exhibitionJobParts.js` | scrape-exhibition-data.js の部品。公式ページの解析結果から展示の行を組み立て、 | toLegacyExhibition, upsertExhibitionRows, groupTargetsByVenue, absorbVenueResults, markHaveData ほか4件 |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
 | `scripts/lib/fanPeriodJob.js` | 期別成績（fan、racer_period_stats）の定期取り込み。共通ラッパ向けハンドラー（api/cron/fan-period.js）。 | fanIdEndedBefore, periodOfFanId, daysSincePeriodEnd, fanRawPath, runFanPeriodJob ほか2件 |
 | `scripts/lib/fanPeriodParser.js` | 公式「レーサー期別成績」ファイル（fan）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | parseFanId, fanIdOf, buildFanUrl, fanArchiveRelPath, listFanIds ほか14件 |
@@ -163,6 +166,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/mergeOrder.js` | マージ順の台帳。「PR 901 は 902 のマージ後に」という順序を、並行セッションのオーケストレーションが | ledgerPath, parseLedger, readLedger, writeLedger, prerequisitesOf ほか3件 |
 | `scripts/lib/monthlyScheduleParser.js` | 月間スケジュール（boatrace.jp race/monthlyschedule）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | buildMonthlyScheduleUrl, parseYm, listYms, parseMonthlySchedule, mergeMonthlySchedules ほか8件 |
 | `scripts/lib/moriartyBetJudge.js` | モリアーティの推奨（bet_recommendations.reasons）の照合のうち、3連単・3連複の部分（純粋関数）。 | judgeThreeBoatBet |
+| `scripts/lib/morningDigestParts.js` | generate-morning-digest.js の純粋な部品（DB に触らない）。 | baselineKey, lookupBaseline, buildMetricRow, sectionRow, indexStats ほか6件 |
+| `scripts/lib/morningDigestSummary.js` | generate-morning-digest.js のまとめの部品（DB に触らない）。 | rankRows, motorTargetsOf, logMotorSummary, logSectionSummary, buildDayRow ほか8件 |
 | `scripts/lib/motorPretestCoverage.js` | 前検タイムの定期取得（motorPretestJob.js）の純関数: 取得の窓の日付・会場ごとの充足の引き継ぎと集計・last_report の形。 | fetchWindow, mergeCoverage, coverageSummary, reportCoverage |
 | `scripts/lib/motorPretestJob.js` | 前検タイム・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）の共通ラッパ向けハンドラー（tasks.md T4b-20）。 | fetchMotorPretest, findMotorPretestDriftAlerts, buildCoverageAlerts, runMotorPretestJob, MOTOR_PRETEST_CONCURRENCY ほか3件 |
 | `scripts/lib/motorPretestParser.js` | 公式のモーター抽選結果・前検タイム（boatrace.jp race/rankingmotor）のパーサー（純関数。DB・取得先に接続しない） | buildMotorPretestUrl, readHeaderLabels, competitionRanks, parseMotorPretestHtml, MOTOR_PRETEST_PARSER_VERSION ほか1件 |
@@ -184,6 +189,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/pitReportSchema.js` | ピットレポートの保存先（マイグレーション085: race_pit_reports・race_pit_comments）が、接続先のDBに | detectPitReportSchema, clearPitReportSchemaCache, PIT_REPORT_TABLES, PIT_SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/placementDistribution.js` | 2着・3着のコース別統計分布 | getPlacementBaseline, PLACEMENT_DISTRIBUTION, GLOBAL_PLACEMENT_AVERAGE |
 | `scripts/lib/pointRankJob.js` | 得点率（B2、racer_series_points）の共通ラッパ向けハンドラー（tasks.md T4b-12-1、plan.md §4.3）。 | isLastChanceForPending, runPointRankJob, POINT_RANK_CONCURRENCY |
+| `scripts/lib/pointRankJobParts.js` | scrape-point-rank.js の純粋な部品（DB に触らない）。 | isTableExpected, judgeVenue, buildVenueGrades, buildVenueLastRaces, buildSeriesPointRows ほか10件 |
 | `scripts/lib/pointRankParser.js` | boatrace.jp 得点率一覧ページ（pointrank）の共通パーサー | parsePointRankTable, parseHayamiSeriesDay, parsePointRankAsOf, parseHayamiRaceNumber |
 | `scripts/lib/prShape.js` | PR の差分の形の機械の検査（symlink・submodule・LFS・バイナリ・.gitattributes・上限超え）。純粋関数。 | mechanicalRejections, parseRawDiff, patchOf, isAllowedMedia, isHarmlessNoBody ほか2件 |
 | `scripts/lib/preRaceRows.js` | 出走表・直前情報の全項目の解析結果（scripts/lib/raceListParser.js・beforeInfoParser.js）から、DBへ書く行を作る | formatJstHm, buildRaceEntryRows, buildRaceConditionRow, buildExhibitionRows, planDeadlineUpdates |
@@ -341,7 +347,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/turnPrediction.js` | 1マーク展開予測ロジック v5（バックエンド用） | predictFirstMarkV2, predictFirstMark |
 | `scripts/lib/turnPredictionBoats.js` | 1マーク展開予測（turnPrediction.js）の艇ごとの特徴。 | clamp, predictStartTimes, stAdvantageMatrix, motorZScores, playerSkillZScores ほか2件 |
 | `scripts/lib/turnPredictionPatterns.js` | 1マーク展開予測（turnPrediction.js）の決着パターン。 | rawPatterns, rankPatterns, techniqueDistribution |
-| `scripts/lib/unchangedRows.js` | 「変更の無い行は書かない」ための共通ライブラリ（WS8(b)、BOA-349） | normalizeTimestamp, roundToScale, normalizeValue, diffRows, planWriteAll ほか8件 |
+| `scripts/lib/unchangedRows.js` | 「変更の無い行は書かない」ための共通ライブラリ（WS8(b)、BOA-349） | normalizeTimestamp, roundToScale, normalizeValue, diffRows, planWriteAll ほか4件 |
+| `scripts/lib/unchangedRowsUpsert.js` | 「変更のある行を書くときに updated_at を設定する」テーブル（WS2、マイグレーション071）の | fetchExistingRows, formatSkipSummary, UPDATED_AT_COLUMN, UPDATED_AT_GROUP |
 | `scripts/lib/unifiedModel.js` | 新AI予想モデル「unified」のスコアリング本体（AI予想モデル大規模改修 Task6b/Task8, ADR0009, FR1/FR2/FR6） | calculateUnifiedScores, softmaxProbabilities |
 | `scripts/lib/unifiedPredictionRow.js` | — | calculatePlaceRecommendation, buildUnifiedPredictionRow |
 | `scripts/lib/venueEntryCourseStats/driftHealth.js` | 進入コース別選手成績ページ（BOA-293、FR-6 Phase 6c）の、会場公式サイトのHTML構造変化の検知。 | isEntryCourseStructuralDriftReason, findEntryCourseStatsDriftAlerts, ENTRY_COURSE_STRUCTURAL_DRIFT_REASONS |
@@ -549,4 +556,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 507 ファイル / export 2871 件。
+対象 514 ファイル / export 2928 件。
