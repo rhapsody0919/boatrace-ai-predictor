@@ -34,8 +34,8 @@ import {
   resumeRetainedYoutubeJob,
   runYoutubePublishJob,
   runYoutubeQueueJob,
-} from "../../api/_lib/snsDeadlineQueue.js";
-import { runXSendJob } from "../../api/_lib/snsXSend.js";
+} from "./sns/youtubeQueue.js";
+import { runXSendJob } from "./sns/xSend.js";
 import {
   addReconcileAlerts,
   addWaitingChildAlerts,

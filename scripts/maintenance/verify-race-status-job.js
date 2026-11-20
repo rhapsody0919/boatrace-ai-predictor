@@ -28,6 +28,7 @@ import {
   raceResultUrl,
 } from "../lib/raceStatusParsers.js";
 import { runRaceStatusJob } from "../lib/raceStatusJob.js";
+import { cronWiring } from "./verifyData/cronWiring.js";
 
 const out = { log: console.log, error: console.error };
 console.log = console.warn = console.error = () => {};
@@ -615,17 +616,16 @@ const runWrapped = ({ mode, client, fetchHtml, extra = {} }) => {
       validateRegistry().length === 0,
     show(validateRegistry()),
   );
-  const api = fs.readFileSync(
-    new URL("../../api/cron/race-status.js", import.meta.url),
-    "utf8",
-  );
-  const apiMax = /maxDuration:\s*(\d+)/.exec(api)?.[1];
+  // api の本文の字は読まず、export（config・default）と、共通ラッパへ渡した引数で見る
+  const api = await cronWiring(() => import("../../api/cron/race-status.js"));
   check(
-    "api/cron/race-status.js: maxDuration がレジストリと同じ。job=race_status で共通ラッパに接続",
-    Number(apiMax) === def.maxDurationSec &&
-      api.includes('job: "race_status"') &&
-      api.includes("run: runRaceStatusJob"),
-    `${apiMax}`,
+    "api/cron/race-status.js: maxDuration がレジストリと同じ。job=race_status・run=runRaceStatusJob で共通ラッパを1回通し、その戻りを default export にする",
+    api.config?.maxDuration === def.maxDurationSec &&
+      api.made.length === 1 &&
+      api.made[0].options.job === "race_status" &&
+      api.made[0].options.run === runRaceStatusJob &&
+      api.handler === api.made[0].handler,
+    show({ config: api.config, jobs: api.made.map((w) => w.options.job) }),
   );
   const vercel = JSON.parse(
     fs.readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"),
@@ -636,19 +636,11 @@ const runWrapped = ({ mode, client, fetchHtml, extra = {} }) => {
     crons.length === 1 && crons[0].schedule === "*/10 21-23,0-14 * * *",
     show(crons),
   );
-  const results = fs.readFileSync(
-    new URL("../daily/scrape-results.js", import.meta.url),
-    "utf8",
-  );
-  const jobSrc = fs.readFileSync(
-    new URL("../lib/raceStatusJob.js", import.meta.url),
-    "utf8",
-  );
+  // 書き込みが cancellation_status の更新だけ（他の列を触らない）ことは、上の live の実行の記録で見る
+  const results = await import("../daily/scrape-results.js");
   check(
-    "確定の書き込みは、既存の confirmCancellationsForRaceIds の再利用（二重実装しない。結果のあるレース・確定済みを除く）",
-    jobSrc.includes("confirmCancellationsForRaceIds") &&
-      !/\.update\(/.test(jobSrc) &&
-      results.includes("export async function confirmCancellationsForRaceIds"),
+    "確定の書き込みは、既存の confirmCancellationsForRaceIds の再利用（scrape-results.js が関数を export する）",
+    typeof results.confirmCancellationsForRaceIds === "function",
   );
 }
 

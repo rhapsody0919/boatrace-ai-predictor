@@ -2,6 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
+import { renderBlogPost } from "./verifyData/blog-post-page.js";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ReactMarkdown from "react-markdown";
@@ -71,12 +72,19 @@ test("全記事で先頭 h1 以外の描画・h2/h3 の順序・FAQ が同じ", 
   console.log(`全 ${files.length} 記事を照合`);
 });
 
-test("BlogPost は ReactMarkdown の入力だけを処理し、FAQ は元の content を読む", () => {
-  const source = readFileSync(
-    new URL("../../src/pages/BlogPost.jsx", import.meta.url),
-    "utf8",
+test("BlogPost は ReactMarkdown の入力だけを処理し、FAQ は元の content を読む", async () => {
+  // 頁を描いて見る（本文の字を fs で読まない）。先頭の h1 は除かれ、2つ目の h1・本文・FAQ は残る
+  const original = "# 題\n\n本文\n\n# 2つ目\n\n## よくある質問\n\n### Q1\nA1\n";
+  const view = await renderBlogPost(original);
+  assert.ok(view.article, "本文の要素が描かれていない");
+  assert.deepEqual(
+    [...view.article.querySelectorAll("h1")].map((h) => h.textContent),
+    ["2つ目"],
   );
-  assert.match(source, /\{stripBlogLeadingH1\(content\)\}\s*<\/ReactMarkdown>/);
-  assert.match(source, /extractFaqItems\(content\)/);
-  assert.equal((source.match(/stripBlogLeadingH1\(content\)/g) || []).length, 1);
+  assert.match(view.article.textContent, /本文/);
+  assert.deepEqual(
+    view.faqQuestions,
+    extractFaqItems(original).map((item) => item.question),
+  );
+  await view.unmount();
 });

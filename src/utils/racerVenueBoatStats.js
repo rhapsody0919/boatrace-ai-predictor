@@ -50,95 +50,129 @@ export function aggregateRacerVenueBoatStats(
   raceGrade,
   raceStage,
 ) {
-  let n = 0,
-    returnSum = 0,
-    placeReturnSum = 0,
-    stSum = 0,
-    stN = 0,
-    exSum = 0,
-    exN = 0;
-  const totals = { win: 0, top2: 0, top3: 0 };
-  const tech = {};
-  const series = [];
-  const matchedRaces = [];
+  const acc = {
+    n: 0,
+    returnSum: 0,
+    placeReturnSum: 0,
+    stSum: 0,
+    stN: 0,
+    exSum: 0,
+    exN: 0,
+    totals: { win: 0, top2: 0, top3: 0 },
+    tech: {},
+    series: [],
+    matchedRaces: [],
+  };
 
   for (const row of history ?? []) {
-    if (venueCode && row.venueCode !== venueCode) continue;
-    if (boatNumber && row.boatNumber !== boatNumber) continue;
-    if (raceGrade && row.raceGrade !== raceGrade) continue;
-    if (raceStage && row.raceStage !== raceStage) continue;
+    if (!matchesRacerFilter(row, venueCode, boatNumber, raceGrade, raceStage))
+      continue;
 
-    n += 1;
-    const isWin = tallyWinPlaceShow(totals, row);
-    if (isWin) {
-      if (row.winningTechnique) {
-        tech[row.winningTechnique] = (tech[row.winningTechnique] ?? 0) + 1;
-      }
-      returnSum += row.payoutWin ?? 0;
-      placeReturnSum += row.payoutPlace1 ?? 0;
-    } else if (!row.unranked && row.rank2 === row.boatNumber) {
-      placeReturnSum += row.payoutPlace2 ?? 0;
-    }
-
-    const hasEx = row.exhibitionTime !== null;
-    // フライングは異常値のため平均ST・STの推移から除く（今節タブ・ST考察と同じ扱い。BOA-576）
-    const hasSt = row.startTiming != null && !row.isFlying;
-    if (hasSt) {
-      stSum += Number(row.startTiming);
-      stN += 1;
-    }
-    if (hasEx) {
-      exSum += Number(row.exhibitionTime);
-      exN += 1;
-    }
-    if (hasEx || hasSt || row.isFlying) {
-      // historyは既にrace_id（YYYY-MM-DD-会場-レース番号）昇順でソート済みの
-      // ため点の並び順は正しいが、対象期間が最大2年に及ぶため月日だけを表示
-      // すると異なる年の同じ月日が同一ラベルに見えてしまう。年下2桁を含めて
-      // 曖昧さを避ける（例: "25-05-12"）
-      series.push({
-        date: row.raceId.slice(2, 10),
-        // グラフの横軸は走ごとに一意な値にする。日付だけだと同じ日の2走が1つの目盛りにまとまり、
-        // 2走目に乗せても1走目のツールチップが出た（BOA-583 ファン評価2周目）
-        raceKey: row.raceId,
-        // ツールチップで同じ日の2走を見分けるため（BOA-583）
-        venueCode: row.venueCode,
-        raceNo: Number(row.raceId.slice(-2)),
-        avg_exhibition_time: hasEx ? Number(row.exhibitionTime) : null,
-        start_timing: hasSt ? Number(row.startTiming) : null,
-        // フライングの走は平均・線からは外すが、どこで切ったかは印で残す（BOA-583）。
-        // 0（スタートライン）の位置に置く
-        flying: row.isFlying ? 0 : null,
-        // ツールチップで F の深さ（F.01 か F.04 か）を出す
-        flyingSt: row.isFlying ? (row.startTiming ?? null) : null,
-      });
-    }
-
-    matchedRaces.push({
-      raceId: row.raceId,
-      date: row.raceId.slice(0, 10),
-      venueCode: row.venueCode,
-      raceNo: Number(row.raceId.slice(-2)),
-      raceTitle: row.raceTitle,
-      raceGrade: row.raceGrade,
-      raceStage: row.raceStage,
-      boatNumber: row.boatNumber,
-      startTiming: row.startTiming ?? null,
-      isFlying: row.isFlying === true,
-      entryCourse: row.entryCourse ?? null,
-      startTimingRank: row.stRank ?? null,
-      finishRank: row.unranked ? null : finishPositionOf(row),
-      finishMark: row.finishMark ?? null,
-      absent: row.finishMark === "欠",
-      winningTechnique: row.winningTechnique,
-      payoutWin: row.payoutWin,
-    });
+    acc.n += 1;
+    const isWin = tallyWinPlaceShow(acc.totals, row);
+    addPayouts(acc, row, isWin);
+    addStExhibition(acc, row);
+    acc.matchedRaces.push(matchedRaceRow(row));
   }
 
   // レース一覧（BOA-159）は日付降順（新しい順）で見せる。集計用のhistory自体は
   // 昇順ソート済みのため、この配列だけ表示直前に反転する
-  matchedRaces.reverse();
+  acc.matchedRaces.reverse();
 
+  return summarizeRacerStats(acc);
+}
+
+// 会場・枠番・グレード・レース種別の完全一致（null は絞り込みなし）
+function matchesRacerFilter(row, venueCode, boatNumber, raceGrade, raceStage) {
+  if (venueCode && row.venueCode !== venueCode) return false;
+  if (boatNumber && row.boatNumber !== boatNumber) return false;
+  if (raceGrade && row.raceGrade !== raceGrade) return false;
+  if (raceStage && row.raceStage !== raceStage) return false;
+  return true;
+}
+
+// 1着なら決まり手と単勝・複勝（1着側）の払戻、2着なら複勝（2着側）の払戻を積む
+function addPayouts(acc, row, isWin) {
+  if (isWin) {
+    if (row.winningTechnique) {
+      acc.tech[row.winningTechnique] =
+        (acc.tech[row.winningTechnique] ?? 0) + 1;
+    }
+    acc.returnSum += row.payoutWin ?? 0;
+    acc.placeReturnSum += row.payoutPlace1 ?? 0;
+  } else if (!row.unranked && row.rank2 === row.boatNumber) {
+    acc.placeReturnSum += row.payoutPlace2 ?? 0;
+  }
+}
+
+// 平均ST・平均展示タイムの和と件数を積み、推移の点（series）を足す
+function addStExhibition(acc, row) {
+  const hasEx = row.exhibitionTime !== null;
+  // フライングは異常値のため平均ST・STの推移から除く（今節タブ・ST考察と同じ扱い。BOA-576）
+  const hasSt = row.startTiming != null && !row.isFlying;
+  if (hasSt) {
+    acc.stSum += Number(row.startTiming);
+    acc.stN += 1;
+  }
+  if (hasEx) {
+    acc.exSum += Number(row.exhibitionTime);
+    acc.exN += 1;
+  }
+  if (hasEx || hasSt || row.isFlying) {
+    acc.series.push(seriesPoint(row, hasEx, hasSt));
+  }
+}
+
+// 推移のグラフの1点
+function seriesPoint(row, hasEx, hasSt) {
+  // historyは既にrace_id（YYYY-MM-DD-会場-レース番号）昇順でソート済みの
+  // ため点の並び順は正しいが、対象期間が最大2年に及ぶため月日だけを表示
+  // すると異なる年の同じ月日が同一ラベルに見えてしまう。年下2桁を含めて
+  // 曖昧さを避ける（例: "25-05-12"）
+  return {
+    date: row.raceId.slice(2, 10),
+    // グラフの横軸は走ごとに一意な値にする。日付だけだと同じ日の2走が1つの目盛りにまとまり、
+    // 2走目に乗せても1走目のツールチップが出た（BOA-583 ファン評価2周目）
+    raceKey: row.raceId,
+    // ツールチップで同じ日の2走を見分けるため（BOA-583）
+    venueCode: row.venueCode,
+    raceNo: Number(row.raceId.slice(-2)),
+    avg_exhibition_time: hasEx ? Number(row.exhibitionTime) : null,
+    start_timing: hasSt ? Number(row.startTiming) : null,
+    // フライングの走は平均・線からは外すが、どこで切ったかは印で残す（BOA-583）。
+    // 0（スタートライン）の位置に置く
+    flying: row.isFlying ? 0 : null,
+    // ツールチップで F の深さ（F.01 か F.04 か）を出す
+    flyingSt: row.isFlying ? (row.startTiming ?? null) : null,
+  };
+}
+
+// レース一覧（BOA-159）の1行
+function matchedRaceRow(row) {
+  return {
+    raceId: row.raceId,
+    date: row.raceId.slice(0, 10),
+    venueCode: row.venueCode,
+    raceNo: Number(row.raceId.slice(-2)),
+    raceTitle: row.raceTitle,
+    raceGrade: row.raceGrade,
+    raceStage: row.raceStage,
+    boatNumber: row.boatNumber,
+    startTiming: row.startTiming ?? null,
+    isFlying: row.isFlying === true,
+    entryCourse: row.entryCourse ?? null,
+    startTimingRank: row.stRank ?? null,
+    finishRank: row.unranked ? null : finishPositionOf(row),
+    finishMark: row.finishMark ?? null,
+    absent: row.finishMark === "欠",
+    winningTechnique: row.winningTechnique,
+    payoutWin: row.payoutWin,
+  };
+}
+
+// 積んだ和と件数から率・平均を出す（返す object の鍵の順は元のまま）
+function summarizeRacerStats(acc) {
+  const { n, totals, stN, exN } = acc;
   return {
     n,
     win: totals.win,
@@ -147,14 +181,14 @@ export function aggregateRacerVenueBoatStats(
     winRate: n > 0 ? totals.win / n : null,
     top2Rate: n > 0 ? totals.top2 / n : null,
     top3Rate: n > 0 ? totals.top3 / n : null,
-    tech,
-    avgSt: stN > 0 ? stSum / stN : null,
+    tech: acc.tech,
+    avgSt: stN > 0 ? acc.stSum / stN : null,
     stN,
-    avgExhibitionTime: exN > 0 ? exSum / exN : null,
+    avgExhibitionTime: exN > 0 ? acc.exSum / exN : null,
     exN,
-    returnRate: toReturnRate(returnSum, n),
-    placeReturnRate: toReturnRate(placeReturnSum, n),
-    series,
-    matchedRaces,
+    returnRate: toReturnRate(acc.returnSum, n),
+    placeReturnRate: toReturnRate(acc.placeReturnSum, n),
+    series: acc.series,
+    matchedRaces: acc.matchedRaces,
   };
 }

@@ -11,12 +11,13 @@ import tempfile
 from pathlib import Path
 
 W = Path(__file__).resolve().parent.parent
+os.environ["HQ_TEST"] = "1"  # 変異のロック（scripts/mut_lock.py）を試験では迂回する（pre-commit の1本90秒の上限・負荷の線で待たない）
 spec = importlib.util.spec_from_file_location("verify_guard", W / "verify_guard.py")
 vg = importlib.util.module_from_spec(spec)
 sys.modules["verify_guard"] = vg
 spec.loader.exec_module(vg)
 
-NM = W.parents[2] / "node_modules"  # 龍神の写し: リポジトリの根の node_modules（hq の版は ~/boatrace-ai-predictor/node_modules）
+NM = W.parents[2] / "node_modules"
 HAVE_NM = (NM / "@babel" / "parser").is_dir()
 ok, skipped = [], 0
 
@@ -294,6 +295,40 @@ else:
     check("作業場所のコピーへの書きは本物の作業場所に出ない（コピーは別の場所・終われば消える）", not rn_.repo.exists())
     srv.close()
     shutil.rmtree(outside, ignore_errors=True)
+
+    # HR66 段2 P1-5: 読みと起動を締めた形（write_match の worker が使う）。既定の形（verify の Runner）は変えない
+    dp = vg.sandbox_profile([outside])
+    check("sandbox_profile: 既定の形は起動を拒まず、ホームの下を丸ごとは拒まない（鍵の場所と Keychain の口だけ拒む）", "process-exec" not in dp and f'(deny file-read-data (subpath "{Path.home().resolve()}"))' not in dp and "(deny file-read*" in dp and "mach-lookup" in dp)
+    fh = Path(tempfile.mkdtemp(prefix="vg-fakehome-")).resolve()
+    for rel in (".ssh/id_ed25519", ".config/gh/hosts.yml", "Library/Keychains/login.keychain-db", "proj/.env", "proj/.env.local", "proj/notes.txt", "ok/data.txt", "ok/.env", ".netrc", ".zshrc", ".supabase/access-token", "Library/Preferences/x.plist"):
+        (fh / rel).parent.mkdir(parents=True, exist_ok=True)
+        (fh / rel).write_text("secret")
+    wr = Path(tempfile.mkdtemp(prefix="vg-strict-")).resolve()
+    node_bin = Path(shutil.which("node")).resolve()
+    PROBE = ('const fs = require("fs"), cp = require("child_process"); const out = {};\n'
+             'for (const [k, f] of Object.entries(JSON.parse(process.argv[2]))) { try { fs.readFileSync(f); out[k] = "read"; } catch (e) { out[k] = e.code; } }\n'
+             'try { fs.readdirSync(process.argv[3]); out.ls = "read"; } catch (e) { out.ls = e.code; }\n'
+             'for (const [k, a] of [["true", ["/usr/bin/true"]], ["sh", ["/bin/sh", "-c", "exit 0"]], ["node", [process.execPath, "-e", "0"]]]) { const r = cp.spawnSync(a[0], a.slice(1)); out["exec_" + k] = r.error ? r.error.code : r.status; }\n'
+             'console.log(JSON.stringify(out));\n')
+    (wr / "probe.cjs").write_text(PROBE)
+    files = {k: str(fh / k) for k in (".ssh/id_ed25519", ".config/gh/hosts.yml", "Library/Keychains/login.keychain-db", "proj/.env", "proj/.env.local", "proj/notes.txt", "ok/data.txt", "ok/.env", ".netrc", ".zshrc", ".supabase/access-token", "Library/Preferences/x.plist")}
+
+    def strict(allow, exec_only):
+        (wr / "p.sb").write_text(vg.sandbox_profile([wr], home_read_allow=allow, exec_only=exec_only, home=fh))
+        r = subprocess.run([vg.SANDBOX_EXEC, "-f", str(wr / "p.sb"), *vg.native_arch_prefix(), "node", str(wr / "probe.cjs"), json.dumps(files), str(fh)], capture_output=True, text=True, cwd=wr)
+        return json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else {"error": r.stderr[-300:], "rc": r.returncode}
+    got = strict([fh / "ok"], [node_bin, Path("/usr/bin/arch")])
+    check("締めた形: ホームの下は許した場所だけ読める（他の本・一覧は EPERM）", got.get("ok/data.txt") == "read" and got.get("proj/notes.txt") == "EPERM" and got.get("ls") == "EPERM", got)
+    check("締めた形: 鍵の場所（.ssh・.config/gh・Keychains・.netrc・.env*）は読めない", all(got.get(k) == "EPERM" for k in (".ssh/id_ed25519", ".config/gh/hosts.yml", "Library/Keychains/login.keychain-db", "proj/.env", "proj/.env.local", ".netrc")), got)
+    check("締めた形: 許した場所の中でも .env は読めない（鍵の名指しが後ろで勝つ）", got.get("ok/.env") == "EPERM", got)
+    check("締めた形: node 以外の起動は拒まれる（sh・true）。node 自身は起こせる", got.get("exec_true") == "EPERM" and got.get("exec_sh") == "EPERM" and got.get("exec_node") == 0, got)
+    got = strict([fh], [node_bin, Path("/usr/bin/arch")])
+    check("締めた形: ホームを丸ごと許しても鍵の場所は読めない", got.get("proj/notes.txt") == "read" and all(got.get(k) == "EPERM" for k in (".ssh/id_ed25519", ".config/gh/hosts.yml", "Library/Keychains/login.keychain-db", "proj/.env", ".netrc")), got)
+    got = strict(None, None)
+    check("既定の形（verify の Runner）: 鍵の場所（.ssh・.config/gh・Keychains・.netrc・.env*）は読めない", all(got.get(k) == "EPERM" for k in (".ssh/id_ed25519", ".config/gh/hosts.yml", "Library/Keychains/login.keychain-db", "proj/.env", "proj/.env.local", "ok/.env", ".netrc", ".zshrc", ".supabase/access-token", "Library/Preferences/x.plist")), got)
+    check("既定の形（verify の Runner）: 鍵でない本は読めて起動もできる（Runner の使い方は変わらない）", got.get("proj/notes.txt") == "read" and got.get("ls") == "read" and got.get("exec_sh") == 0 and got.get("exec_true") == 0, got)
+    shutil.rmtree(fh, ignore_errors=True)
+    shutil.rmtree(wr, ignore_errors=True)
 
     # renderJsx（龍神の origin/master の scripts/lib/renderJsx.js）が vite・module.register・jsdom ごとサンドボックスの中で動く
     RJ = subprocess.run(["git", "-C", str(W.parents[2]), "show", "origin/master:scripts/lib/renderJsx.js"], capture_output=True, text=True)

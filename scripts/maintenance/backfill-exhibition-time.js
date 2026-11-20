@@ -58,8 +58,8 @@ async function findMissingRaces(date) {
   return schedule.filter((r) => r.start_time < now && !withTime.has(r.race_id));
 }
 
-async function main() {
-  const { from, to, dryRun, limit } = parseArgs();
+/** 引数を検査する（誤りは文つきで throw） */
+function assertArgs({ from, to, limit }) {
   if (!DATE_PATTERN.test(from ?? "") || !DATE_PATTERN.test(to ?? "")) {
     throw new Error("--from=YYYY-MM-DD と --to=YYYY-MM-DD を指定してください");
   }
@@ -67,6 +67,28 @@ async function main() {
   if (limit !== null && !(limit > 0)) {
     throw new Error("--limit は1以上の整数を指定してください");
   }
+}
+
+/** 会場名ごとの件数 */
+function countByVenue(missing) {
+  return missing.reduce((acc, r) => {
+    const name = VENUE_NAMES[r.venue_code];
+    acc[name] = (acc[name] ?? 0) + 1;
+    return acc;
+  }, {});
+}
+
+function logStillMissing(stillMissing) {
+  console.log(
+    stillMissing === null
+      ? "   → 補完後の確認ができませんでした（スケジュール取得不可）。dry-runで再確認してください"
+      : `   → 補完後の未取得: ${stillMissing.length}レース（中止・順延等で公式ページに展示タイムが無いものを含む）`,
+  );
+}
+
+async function main() {
+  const { from, to, dryRun, limit } = parseArgs();
+  assertArgs({ from, to, limit });
   if (!isSupabaseEnabled()) {
     throw new Error("Supabase環境変数が未設定です");
   }
@@ -82,24 +104,14 @@ async function main() {
     }
     if (remaining !== null) missing = missing.slice(0, remaining);
 
-    const byVenue = missing.reduce((acc, r) => {
-      const name = VENUE_NAMES[r.venue_code];
-      acc[name] = (acc[name] ?? 0) + 1;
-      return acc;
-    }, {});
     console.log(
-      `📅 ${date}: 展示タイム未取得（発走済み）${missing.length}レース ${JSON.stringify(byVenue)}`,
+      `📅 ${date}: 展示タイム未取得（発走済み）${missing.length}レース ${JSON.stringify(countByVenue(missing))}`,
     );
 
     if (missing.length === 0 || dryRun) continue;
 
     await scrapeAndUpsertRaces(missing, date);
-    const stillMissing = await findMissingRaces(date);
-    console.log(
-      stillMissing === null
-        ? "   → 補完後の確認ができませんでした（スケジュール取得不可）。dry-runで再確認してください"
-        : `   → 補完後の未取得: ${stillMissing.length}レース（中止・順延等で公式ページに展示タイムが無いものを含む）`,
-    );
+    logStillMissing(await findMissingRaces(date));
 
     if (remaining !== null) {
       remaining -= missing.length;

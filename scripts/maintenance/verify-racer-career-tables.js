@@ -1087,9 +1087,9 @@ test("レジストリ・vercel.json・api/cron: 23:30 と 01:00 JST、maxDuratio
     },
     { kind: "daily", targetTimeJst: "23:30", maxDurationSec: 300 },
   );
-  const src = await read("../../api/cron/racer-career-main.js");
-  assert.equal(Number(/maxDuration:\s*(\d+)/.exec(src)[1]), def.maxDurationSec);
+  // api の本文の字は読まず、export（config・default）で見る
   const mod = await import("../../api/cron/racer-career-main.js");
+  assert.equal(mod.config?.maxDuration, def.maxDurationSec);
   assert.equal(typeof mod.default, "function");
   const vercel = JSON.parse(await read("../../vercel.json"));
   const schedules = vercel.crons

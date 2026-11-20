@@ -124,62 +124,64 @@ export function jobSkipsBotPush(jobText) {
   );
 }
 
-/** 1ワークフローの問題を返す。 */
-export function checkWorkflow(name, yaml) {
+/** push-with-retry.sh を呼ぶワークフローの、トークンの発行・push の if・コミットのメッセージの問題を返す。 */
+function checkPushSteps(name, yaml, steps, pushSteps) {
   const problems = [];
-  const steps = listSteps(yaml);
-  const pushSteps = steps.filter((s) => s.includes("push-with-retry.sh"));
-  if (pushSteps.length > 0) {
-    for (const s of pushSteps) {
-      if (!s.includes(PUSH_TOKEN_ENV)) {
-        problems.push(
-          `${name}: push-with-retry.sh のステップに env の ${PUSH_TOKEN_ENV} が無い`,
-        );
-      }
-    }
-    const tokenStep = steps.find(
-      (s) =>
-        /^\s*id:\s*app-token\s*$/m.test(s) &&
-        s.includes("actions/create-github-app-token@"),
-    );
-    if (!tokenStep) {
+  for (const s of pushSteps) {
+    if (!s.includes(PUSH_TOKEN_ENV)) {
       problems.push(
-        `${name}: id: app-token の actions/create-github-app-token ステップが無い`,
+        `${name}: push-with-retry.sh のステップに env の ${PUSH_TOKEN_ENV} が無い`,
       );
-    } else if (
-      !tokenStep.includes("secrets.RYUJIN_BOT_APP_ID") ||
-      !tokenStep.includes("secrets.RYUJIN_BOT_PRIVATE_KEY")
-    ) {
-      problems.push(
-        `${name}: app-token のステップが RYUJIN_BOT_APP_ID・RYUJIN_BOT_PRIVATE_KEY を使っていない`,
-      );
-    }
-    if (tokenStep && !tokenStep.includes("github.ref == 'refs/heads/master'")) {
-      problems.push(
-        `${name}: app-token のステップの if に github.ref == 'refs/heads/master' が無い`,
-      );
-    }
-    for (const s of pushSteps) {
-      const cond = (s.match(/^\s*if:\s*(.*)$/m) || [])[1] || "";
-      // !cancelled()・always() は「先行ステップの失敗」でも走るので、トークンの発行の成功を明示しないと
-      // 空の PUSH_TOKEN で GITHUB_TOKEN に戻ってしまう
-      if (
-        /!cancelled\(\)|always\(\)/.test(cond) &&
-        !cond.includes("steps.app-token.outcome == 'success'")
-      ) {
-        problems.push(
-          `${name}: push のステップの if（${cond}）が、トークンの発行の失敗後も走る（steps.app-token.outcome == 'success' を足す）`,
-        );
-      }
-    }
-    for (const m of yaml.matchAll(/git commit -m "([^"]*)"/g)) {
-      if (!m[1].endsWith("[automated]")) {
-        problems.push(
-          `${name}: コミットのメッセージが [automated] で終わらない: ${m[1]}`,
-        );
-      }
     }
   }
+  const tokenStep = steps.find(
+    (s) =>
+      /^\s*id:\s*app-token\s*$/m.test(s) &&
+      s.includes("actions/create-github-app-token@"),
+  );
+  if (!tokenStep) {
+    problems.push(
+      `${name}: id: app-token の actions/create-github-app-token ステップが無い`,
+    );
+  } else if (
+    !tokenStep.includes("secrets.RYUJIN_BOT_APP_ID") ||
+    !tokenStep.includes("secrets.RYUJIN_BOT_PRIVATE_KEY")
+  ) {
+    problems.push(
+      `${name}: app-token のステップが RYUJIN_BOT_APP_ID・RYUJIN_BOT_PRIVATE_KEY を使っていない`,
+    );
+  }
+  if (tokenStep && !tokenStep.includes("github.ref == 'refs/heads/master'")) {
+    problems.push(
+      `${name}: app-token のステップの if に github.ref == 'refs/heads/master' が無い`,
+    );
+  }
+  for (const s of pushSteps) {
+    const cond = (s.match(/^\s*if:\s*(.*)$/m) || [])[1] || "";
+    // !cancelled()・always() は「先行ステップの失敗」でも走るので、トークンの発行の成功を明示しないと
+    // 空の PUSH_TOKEN で GITHUB_TOKEN に戻ってしまう
+    if (
+      /!cancelled\(\)|always\(\)/.test(cond) &&
+      !cond.includes("steps.app-token.outcome == 'success'")
+    ) {
+      problems.push(
+        `${name}: push のステップの if（${cond}）が、トークンの発行の失敗後も走る（steps.app-token.outcome == 'success' を足す）`,
+      );
+    }
+  }
+  for (const m of yaml.matchAll(/git commit -m "([^"]*)"/g)) {
+    if (!m[1].endsWith("[automated]")) {
+      problems.push(
+        `${name}: コミットのメッセージが [automated] で終わらない: ${m[1]}`,
+      );
+    }
+  }
+  return problems;
+}
+
+/** RYUJIN_BOT_* を使う job の environment と、master への push で動く job のボットの push の除外の問題を返す。 */
+function checkJobs(name, yaml) {
+  const problems = [];
   for (const job of listJobs(yaml)) {
     if (
       job.text.includes("secrets.RYUJIN_BOT_") &&
@@ -201,6 +203,15 @@ export function checkWorkflow(name, yaml) {
     }
   }
   return problems;
+}
+
+/** 1ワークフローの問題を返す。 */
+export function checkWorkflow(name, yaml) {
+  const steps = listSteps(yaml);
+  const pushSteps = steps.filter((s) => s.includes("push-with-retry.sh"));
+  const problems =
+    pushSteps.length > 0 ? checkPushSteps(name, yaml, steps, pushSteps) : [];
+  return [...problems, ...checkJobs(name, yaml)];
 }
 
 // --- 判定ロジックの固定入力での検証 ---

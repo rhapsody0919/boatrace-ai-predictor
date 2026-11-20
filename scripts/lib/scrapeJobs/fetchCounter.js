@@ -44,16 +44,23 @@ export function jstDayHour(date) {
   return { day, hour, minute: hour * 60 + jst.getUTCMinutes() };
 }
 
-/**
- * @param {Object} params
- * @param {{rpc: Function} | null} params.client Supabase（無ければ数えるだけで書かない）
- * @param {"vercel"|"live"|"gha"} params.source
- * @param {() => Date} [params.now]
- * @param {number} [params.flushEvery] maybeFlush が書く件数（溜まった取得の数）
- * @param {number} [params.flushAfterMs] maybeFlush が書く経過時間（最初に溜まってから）
- * @param {number} [params.maxPending] 書けないときに持ち越す行の上限
- */
-export function createFetchCounter({
+/** 持ち越す行（Map）に1件足す。上限（maxPending）に届いていて新しいキーなら足さず false */
+function bumpCount(map, maxPending, key, make, count = 1) {
+  const cur = map.get(key);
+  if (cur) {
+    cur.count += count;
+    return true;
+  }
+  if (map.size >= maxPending) return false;
+  map.set(key, { ...make, count });
+  return true;
+}
+
+const rowKey = (r) => [r.day, r.hour, r.host, r.path, r.kind, r.source].join("\u0000");
+const minuteKey = (r) => [r.day, r.minute, r.host, r.source].join("\u0000");
+
+/** createFetchCounter の引数の既定値 */
+function counterConfig({
   client,
   source,
   now = () => new Date(),
@@ -64,6 +71,54 @@ export function createFetchCounter({
   autoFlush = true,
   logger = console,
 } = {}) {
+  return { client, source, now, flushEvery, flushAfterMs, maxPending, autoFlush, logger };
+}
+
+/** 1回の取得の、時間別の行と分別の行。URL を解釈できなければ null（数えない）。now は URL の解釈の後に呼ぶ */
+function rowsOfFetch(url, now, source, status, error, timedOut) {
+  let target;
+  try {
+    target = fetchTargetOf(url);
+  } catch {
+    return null;
+  }
+  const t = now();
+  const { day, hour, minute } = jstDayHour(t);
+  const kind = fetchKindOf({ status, error, timedOut });
+  return {
+    t,
+    row: { day, hour, ...target, kind, source },
+    m: { day, minute, host: target.host, source },
+  };
+}
+
+/** 書けなかった行を、持ち越しの Map へ戻す。戻した取得の数を返す */
+function restoreRows(pending, pendingMinutes, maxPending, rows, minutes) {
+  let fetches = 0;
+  for (const r of rows) {
+    const { count, ...make } = r;
+    bumpCount(pending, maxPending, rowKey(r), make, count);
+    fetches += count;
+  }
+  for (const m of minutes) {
+    const { count, ...make } = m;
+    bumpCount(pendingMinutes, maxPending, minuteKey(m), make, count);
+  }
+  return fetches;
+}
+
+/**
+ * @param {Object} params
+ * @param {{rpc: Function} | null} params.client Supabase（無ければ数えるだけで書かない）
+ * @param {"vercel"|"live"|"gha"} params.source
+ * @param {() => Date} [params.now]
+ * @param {number} [params.flushEvery] maybeFlush が書く件数（溜まった取得の数）
+ * @param {number} [params.flushAfterMs] maybeFlush が書く経過時間（最初に溜まってから）
+ * @param {number} [params.maxPending] 書けないときに持ち越す行の上限
+ */
+export function createFetchCounter(options) {
+  const { client, source, now, flushEvery, flushAfterMs, maxPending, autoFlush, logger } =
+    counterConfig(options);
   /** @type {Map<string, {day: string, hour: number, host: string, path: string, kind: string, source: string, count: number}>} */
   let pending = new Map();
   /** 分の表（fetch_counts_minute）の行。1分の上限（目安60）を見るため。パス・種類は持たない（審査 P2-1） */
@@ -74,19 +129,6 @@ export function createFetchCounter({
   let disabled = false;
   let flushing = null;
 
-  const rowKey = (r) => [r.day, r.hour, r.host, r.path, r.kind, r.source].join("\u0000");
-  const minuteKey = (r) => [r.day, r.minute, r.host, r.source].join("\u0000");
-  const bump = (map, key, make, count = 1) => {
-    const cur = map.get(key);
-    if (cur) {
-      cur.count += count;
-      return true;
-    }
-    if (map.size >= maxPending) return false;
-    map.set(key, { ...make, count });
-    return true;
-  };
-
   const due = () =>
     pendingFetches > 0 &&
     (pendingFetches >= flushEvery ||
@@ -94,37 +136,21 @@ export function createFetchCounter({
 
   const add = ({ url, status, error, timedOut } = {}) => {
     if (disabled) return;
-    let target;
-    try {
-      target = fetchTargetOf(url);
-    } catch {
-      return;
-    }
-    const t = now();
-    const { day, hour, minute } = jstDayHour(t);
-    const kind = fetchKindOf({ status, error, timedOut });
-    const row = { day, hour, ...target, kind, source };
-    if (!bump(pending, rowKey(row), row)) {
+    const rows = rowsOfFetch(url, now, source, status, error, timedOut);
+    if (!rows) return;
+    const { t, row, m } = rows;
+    if (!bumpCount(pending, maxPending, rowKey(row), row)) {
       logger?.warn?.(`⚠️ fetch_counts: 持ち越しが上限（${maxPending}行）に達したので、新しいキーを数えない`);
       return;
     }
-    const m = { day, minute, host: target.host, source };
-    bump(pendingMinutes, minuteKey(m), m);
+    bumpCount(pendingMinutes, maxPending, minuteKey(m), m);
     pendingFetches++;
     if (firstPendingAt === null) firstPendingAt = t.getTime();
     if (autoFlush && due()) void flush();
   };
 
   const restore = (rows, minutes) => {
-    for (const r of rows) {
-      const { count, ...make } = r;
-      bump(pending, rowKey(r), make, count);
-      pendingFetches += count;
-    }
-    for (const m of minutes) {
-      const { count, ...make } = m;
-      bump(pendingMinutes, minuteKey(m), make, count);
-    }
+    pendingFetches += restoreRows(pending, pendingMinutes, maxPending, rows, minutes);
     if (firstPendingAt === null) firstPendingAt = now().getTime();
   };
 
