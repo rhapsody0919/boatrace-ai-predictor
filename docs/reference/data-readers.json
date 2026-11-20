@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2416,
+    "sourceFiles": 2420,
     "filesWithAccess": 300,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -26859,7 +26859,7 @@
       },
       "callers": [
         {
-          "ref": "scripts/lib/scrapeJobs/fetchCounter.js:140",
+          "ref": "scripts/lib/scrapeJobs/fetchCounter.js:166",
           "via": "client"
         }
       ],
@@ -27208,7 +27208,7 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/checks.js:343",
+        "scripts/lib/dataHealth/checks.js:349",
         "scripts/lib/dataHealth/functions.js:118"
       ],
       "triggerOn": [],
@@ -27231,7 +27231,7 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/checks.js:66",
+        "scripts/lib/dataHealth/checks.js:72",
         "scripts/lib/dataHealth/functions.js:53",
         "scripts/maintenance/verifyData/data-health-job-fixtures.js:76",
         "scripts/maintenance/verifyData/data-health-job-for-job.js:38",
@@ -27264,7 +27264,7 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/checks.js:323",
+        "scripts/lib/dataHealth/checks.js:329",
         "scripts/lib/dataHealth/functions.js:109"
       ],
       "triggerOn": [],
@@ -27288,7 +27288,7 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/checks.js:370",
+        "scripts/lib/dataHealth/checks.js:376",
         "scripts/lib/dataHealth/functions.js:98",
         "scripts/maintenance/verifyData/data-health-job-for-job.js:42",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:291"
@@ -27313,9 +27313,9 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/checks.js:199",
-        "scripts/lib/dataHealth/checks.js:208",
-        "scripts/lib/dataHealth/checks.js:218",
+        "scripts/lib/dataHealth/checks.js:205",
+        "scripts/lib/dataHealth/checks.js:214",
+        "scripts/lib/dataHealth/checks.js:224",
         "scripts/lib/dataHealth/functions.js:137",
         "scripts/maintenance/verifyData/data-health-job-scenes-2.js:40",
         "scripts/maintenance/verifyData/data-health-job-scenes-2.js:42",
@@ -27343,7 +27343,7 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/checks.js:105",
+        "scripts/lib/dataHealth/checks.js:111",
         "scripts/lib/dataHealth/functions.js:127",
         "scripts/maintenance/verifyData/data-health-job-scenes-2.js:39",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:65",
@@ -27388,7 +27388,7 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/checks.js:268",
+        "scripts/lib/dataHealth/checks.js:274",
         "scripts/lib/dataHealth/functions.js:71",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:231",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:288",
@@ -27414,8 +27414,8 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/checks.js:242",
-        "scripts/lib/dataHealth/checks.js:255",
+        "scripts/lib/dataHealth/checks.js:248",
+        "scripts/lib/dataHealth/checks.js:261",
         "scripts/lib/dataHealth/functions.js:62",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:209"
       ],
@@ -27440,7 +27440,7 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/checks.js:293",
+        "scripts/lib/dataHealth/checks.js:299",
         "scripts/lib/dataHealth/functions.js:80",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:250",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:297",
@@ -27467,7 +27467,7 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/checks.js:304",
+        "scripts/lib/dataHealth/checks.js:310",
         "scripts/lib/dataHealth/functions.js:89",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:267"
       ],
@@ -28693,7 +28693,7 @@
     {
       "job": "analogy_dispatch_morning",
       "entry": "api/cron/analogy-dispatch-morning.js",
-      "reachableFiles": 16,
+      "reachableFiles": 19,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28715,7 +28715,7 @@
     {
       "job": "analogy_dispatch_train",
       "entry": "api/cron/analogy-dispatch-train.js",
-      "reachableFiles": 16,
+      "reachableFiles": 19,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28737,7 +28737,7 @@
     {
       "job": "analogy_v16_exhibition",
       "entry": "api/cron/analogy-exhibition.js",
-      "reachableFiles": 21,
+      "reachableFiles": 24,
       "writes": {
         "analogy_v16_snapshots": [
           "scripts/lib/analogyV16Exhibition.js:307"
@@ -28762,7 +28762,7 @@
     {
       "job": "boatcast_motor_start",
       "entry": "api/cron/boatcast-motor-start.js",
-      "reachableFiles": 23,
+      "reachableFiles": 26,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28787,7 +28787,7 @@
     {
       "job": "boatcast_oriten",
       "entry": "api/cron/boatcast-oriten.js",
-      "reachableFiles": 25,
+      "reachableFiles": 28,
       "writes": {
         "race_original_exhibition": [
           "scripts/lib/boatcast/oritenJob.js:223"
@@ -28818,7 +28818,7 @@
     {
       "job": "daily_reconcile",
       "entry": "api/cron/daily-reconcile.js",
-      "reachableFiles": 24,
+      "reachableFiles": 27,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28840,7 +28840,7 @@
     {
       "job": "data_health",
       "entry": "api/cron/data-health.js",
-      "reachableFiles": 25,
+      "reachableFiles": 29,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28862,7 +28862,7 @@
     {
       "job": "data_health_morning",
       "entry": "api/cron/data-health-morning.js",
-      "reachableFiles": 25,
+      "reachableFiles": 29,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28884,7 +28884,7 @@
     {
       "job": "db_apply_dispatch",
       "entry": "api/cron/db-apply-dispatch.js",
-      "reachableFiles": 17,
+      "reachableFiles": 20,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28906,7 +28906,7 @@
     {
       "job": "e2e_rerecord_dispatch",
       "entry": "api/cron/e2e-rerecord-dispatch.js",
-      "reachableFiles": 16,
+      "reachableFiles": 19,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28928,7 +28928,7 @@
     {
       "job": "entry_course_stats",
       "entry": "api/cron/entry-course-stats.js",
-      "reachableFiles": 27,
+      "reachableFiles": 30,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28953,7 +28953,7 @@
     {
       "job": "eve_deadlines",
       "entry": "api/cron/eve-deadlines.js",
-      "reachableFiles": 23,
+      "reachableFiles": 26,
       "writes": {
         "eve_race_deadlines": [
           "scripts/lib/eveDeadlinesJob.js:274",
@@ -28979,7 +28979,7 @@
     {
       "job": "eve_deadlines_reconcile",
       "entry": "api/cron/eve-deadlines-reconcile.js",
-      "reachableFiles": 23,
+      "reachableFiles": 26,
       "writes": {
         "eve_race_deadlines": [
           "scripts/lib/eveDeadlinesJob.js:274",
@@ -29005,7 +29005,7 @@
     {
       "job": "exhibition",
       "entry": "api/cron/exhibition.js",
-      "reachableFiles": 49,
+      "reachableFiles": 52,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070",
@@ -29046,7 +29046,7 @@
     {
       "job": "fan_period",
       "entry": "api/cron/fan-period.js",
-      "reachableFiles": 26,
+      "reachableFiles": 29,
       "writes": {
         "raw_snapshots": [
           "scripts/lib/fanPeriodJob.js:116"
@@ -29071,7 +29071,7 @@
     {
       "job": "in_caution_dispatch",
       "entry": "api/cron/in-caution-dispatch.js",
-      "reachableFiles": 16,
+      "reachableFiles": 19,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29093,7 +29093,7 @@
     {
       "job": "in_caution_health",
       "entry": "api/cron/in-caution-health.js",
-      "reachableFiles": 24,
+      "reachableFiles": 27,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29115,7 +29115,7 @@
     {
       "job": "in_caution_today_health",
       "entry": "api/cron/in-caution-today-health.js",
-      "reachableFiles": 24,
+      "reachableFiles": 27,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29137,7 +29137,7 @@
     {
       "job": "key_canary_dispatch",
       "entry": "api/cron/key-canary-dispatch.js",
-      "reachableFiles": 16,
+      "reachableFiles": 19,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29159,7 +29159,7 @@
     {
       "job": "kfile_sync",
       "entry": "api/cron/kfile-sync.js",
-      "reachableFiles": 42,
+      "reachableFiles": 45,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29204,7 +29204,7 @@
     {
       "job": "morning_digest",
       "entry": "api/cron/morning-digest.js",
-      "reachableFiles": 22,
+      "reachableFiles": 25,
       "writes": {
         "morning_digest_days": [
           "scripts/daily/generate-morning-digest.js:510",
@@ -29235,7 +29235,7 @@
     {
       "job": "motor_pretest",
       "entry": "api/cron/motor-pretest.js",
-      "reachableFiles": 26,
+      "reachableFiles": 29,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29257,7 +29257,7 @@
     {
       "job": "odds",
       "entry": "api/cron/odds.js",
-      "reachableFiles": 29,
+      "reachableFiles": 32,
       "writes": {
         "prediction_odds": [
           "scripts/lib/scrapeJobs/predictionOddsHandlers.js:194"
@@ -29285,7 +29285,7 @@
     {
       "job": "odds_final",
       "entry": "api/cron/odds-final.js",
-      "reachableFiles": 19,
+      "reachableFiles": 22,
       "writes": {
         "race_odds_final": [
           "scripts/lib/scrapeJobs/finalOddsHandlers.js:144"
@@ -29310,7 +29310,7 @@
     {
       "job": "outcome_distribution_update",
       "entry": "api/cron/outcome-distribution-update.js",
-      "reachableFiles": 21,
+      "reachableFiles": 24,
       "writes": {
         "nige_outcome_distribution": [
           "scripts/daily/update-nige-outcome-distribution.js:120",
@@ -29340,7 +29340,7 @@
     {
       "job": "pcexpect",
       "entry": "api/cron/pcexpect.js",
-      "reachableFiles": 18,
+      "reachableFiles": 21,
       "writes": {
         "external_predictions": [
           "scripts/lib/pcexpect/scrape.js:144"
@@ -29365,7 +29365,7 @@
     {
       "job": "pit_reports",
       "entry": "api/cron/pit-reports.js",
-      "reachableFiles": 22,
+      "reachableFiles": 25,
       "writes": {
         "race_pit_comments": [
           "scripts/lib/pitReportJob.js:242",
@@ -29395,7 +29395,7 @@
     {
       "job": "point_rank",
       "entry": "api/cron/point-rank.js",
-      "reachableFiles": 30,
+      "reachableFiles": 33,
       "writes": {
         "racer_series_points": [
           "scripts/daily/scrape-point-rank.js:399"
@@ -29420,7 +29420,7 @@
     {
       "job": "pseudo",
       "entry": "api/cron/scrape-pseudo.js",
-      "reachableFiles": 15,
+      "reachableFiles": 18,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29442,7 +29442,7 @@
     {
       "job": "race_info",
       "entry": "api/cron/race-info.js",
-      "reachableFiles": 49,
+      "reachableFiles": 52,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070",
@@ -29483,7 +29483,7 @@
     {
       "job": "race_notices",
       "entry": "api/cron/race-notices.js",
-      "reachableFiles": 24,
+      "reachableFiles": 27,
       "writes": {
         "race_notices_health": [
           "scripts/daily/scrape-race-information.js:277"
@@ -29511,7 +29511,7 @@
     {
       "job": "race_series",
       "entry": "api/cron/race-series.js",
-      "reachableFiles": 21,
+      "reachableFiles": 24,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29533,7 +29533,7 @@
     {
       "job": "race_status",
       "entry": "api/cron/race-status.js",
-      "reachableFiles": 42,
+      "reachableFiles": 45,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29578,7 +29578,7 @@
     {
       "job": "racer_career_main",
       "entry": "api/cron/racer-career-main.js",
-      "reachableFiles": 24,
+      "reachableFiles": 27,
       "writes": {
         "racer_career_meta": [
           "scripts/lib/racerCareerDb.js:108"
@@ -29603,7 +29603,7 @@
     {
       "job": "racer_course_technique_stats",
       "entry": "api/cron/racer-course-technique-stats.js",
-      "reachableFiles": 19,
+      "reachableFiles": 22,
       "writes": {
         "racer_course_technique_stats": [
           "scripts/daily/update-racer-course-technique-stats.js:330"
@@ -29631,7 +29631,7 @@
     {
       "job": "racer_news",
       "entry": "api/cron/racer-news.js",
-      "reachableFiles": 21,
+      "reachableFiles": 24,
       "writes": {
         "racer_news": [
           "scripts/lib/racerNews/officialGradeAnnouncements.js:190"
@@ -29660,7 +29660,7 @@
     {
       "job": "racer_profiles",
       "entry": "api/cron/racer-profiles.js",
-      "reachableFiles": 20,
+      "reachableFiles": 23,
       "writes": {
         "racer_profiles": [
           "scripts/lib/racerProfileSync.js:273",
@@ -29686,7 +29686,7 @@
     {
       "job": "races_init",
       "entry": "api/cron/races-init.js",
-      "reachableFiles": 50,
+      "reachableFiles": 53,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070"
@@ -29729,7 +29729,7 @@
     {
       "job": "release_dispatch",
       "entry": "api/cron/release-dispatch.js",
-      "reachableFiles": 19,
+      "reachableFiles": 22,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29751,7 +29751,7 @@
     {
       "job": "result",
       "entry": "api/cron/result.js",
-      "reachableFiles": 42,
+      "reachableFiles": 45,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29796,7 +29796,7 @@
     {
       "job": "result_catchup",
       "entry": "api/cron/result-catchup.js",
-      "reachableFiles": 42,
+      "reachableFiles": 45,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29841,7 +29841,7 @@
     {
       "job": "scrape-cleanup",
       "entry": "api/cron/scrape-cleanup.js",
-      "reachableFiles": 17,
+      "reachableFiles": 20,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29865,7 +29865,7 @@
     {
       "job": "scrape-monitor",
       "entry": "api/cron/scrape-monitor.js",
-      "reachableFiles": 22,
+      "reachableFiles": 25,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29887,7 +29887,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 126,
+      "reachableFiles": 129,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29930,7 +29930,7 @@
     {
       "job": "sns_daily",
       "entry": "api/cron/sns-daily.js",
-      "reachableFiles": 24,
+      "reachableFiles": 27,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29961,7 +29961,7 @@
     {
       "job": "sns_metrics",
       "entry": "api/cron/sns-metrics.js",
-      "reachableFiles": 35,
+      "reachableFiles": 38,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29999,7 +29999,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 98,
+      "reachableFiles": 101,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -30039,7 +30039,7 @@
     {
       "job": "venue_motor_stats",
       "entry": "api/cron/venue-motor-stats.js",
-      "reachableFiles": 24,
+      "reachableFiles": 27,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
