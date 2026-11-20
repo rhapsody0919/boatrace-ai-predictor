@@ -198,6 +198,88 @@ async function motorPowerParity() {
   );
 }
 
+/** 選手ページと同じ取得（選手1人の全会場の race_entries → 5つの表）を再現して、画面と同じ履歴の行にする */
+async function racerHistoryRows(racerId, since) {
+  // 選手ページと同じ: 選手1人の全会場の race_entries（730日）→ 5つの表
+  const entries = await readAll(
+    "race_entries",
+    "race_id, boat_number",
+    ["race_id", "boat_number"],
+    (q) => q.eq("racer_id", racerId).gte("race_id", since),
+  );
+  const raceIds = [...new Set(entries.map((e) => e.race_id))];
+  const [raceRows, resultRows, exhibitionRows, conditionRows, stRows] =
+    await Promise.all([
+      readAllIn(
+        "races",
+        "race_id, venue_code, race_grade",
+        "race_id",
+        raceIds,
+        ["race_id"],
+      ),
+      readAllIn(
+        "race_results",
+        "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
+        "race_id",
+        raceIds,
+        ["race_id"],
+      ),
+      readAllIn(
+        "exhibition_data",
+        "race_id, boat_number, exhibition_time",
+        "race_id",
+        raceIds,
+        ["race_id", "boat_number"],
+      ),
+      readAllIn(
+        "race_conditions",
+        "race_id, race_stage, race_title, weather, wind_speed, wave_height",
+        "race_id",
+        raceIds,
+        ["race_id"],
+      ),
+      readAllIn(
+        "race_start_timings",
+        "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
+        "race_id",
+        raceIds,
+        ["race_id", "boat_number"],
+      ),
+    ]);
+  return buildRacerRaceHistoryRows({
+    entries,
+    raceRows,
+    resultRows,
+    exhibitionRows,
+    conditionRows,
+    stRows,
+  });
+}
+
+/** rank-data.js の行（逃げ・出走数・平均ST）が選手ページの集計と一致することを確かめる */
+function assertRacerRowsMatchPage(out, racerId, page) {
+  const nige = out.rows.find(
+    (r) =>
+      r.extra.racer_id === racerId && r.extra.metric === "nige_rate_boat1",
+  );
+  const st = out.rows.find(
+    (r) => r.extra.racer_id === racerId && r.extra.metric === "avg_st_boat1",
+  );
+  assert.equal(
+    nige.n,
+    page.n,
+    `${racerId} の1号艇の出走数（ページは ${page.n}回）`,
+  );
+  assert.equal(nige.k, page.tech["逃げ"] ?? 0, `${racerId} の逃げの回数`);
+  assert.equal(nige.extra.wins, page.win);
+  if (st)
+    assert.equal(
+      st.value,
+      Number(page.avgSt.toFixed(3)),
+      `${racerId} の平均ST（ページは ${page.avgSt.toFixed(3)}）`,
+    );
+}
+
 async function racerPageParity() {
   const today = new Date(Date.now() + 9 * 3600 * 1000)
     .toISOString()
@@ -225,81 +307,9 @@ async function racerPageParity() {
     );
   const since = racerHistoryCutoff();
   for (const racerId of ids) {
-    // 選手ページと同じ: 選手1人の全会場の race_entries（730日）→ 5つの表
-    const entries = await readAll(
-      "race_entries",
-      "race_id, boat_number",
-      ["race_id", "boat_number"],
-      (q) => q.eq("racer_id", racerId).gte("race_id", since),
-    );
-    const raceIds = [...new Set(entries.map((e) => e.race_id))];
-    const [raceRows, resultRows, exhibitionRows, conditionRows, stRows] =
-      await Promise.all([
-        readAllIn(
-          "races",
-          "race_id, venue_code, race_grade",
-          "race_id",
-          raceIds,
-          ["race_id"],
-        ),
-        readAllIn(
-          "race_results",
-          "race_id, rank1, rank2, rank3, rank4, rank5, rank6, winning_technique, payout_win, payout_place_1, payout_place_2, race_status, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6",
-          "race_id",
-          raceIds,
-          ["race_id"],
-        ),
-        readAllIn(
-          "exhibition_data",
-          "race_id, boat_number, exhibition_time",
-          "race_id",
-          raceIds,
-          ["race_id", "boat_number"],
-        ),
-        readAllIn(
-          "race_conditions",
-          "race_id, race_stage, race_title, weather, wind_speed, wave_height",
-          "race_id",
-          raceIds,
-          ["race_id"],
-        ),
-        readAllIn(
-          "race_start_timings",
-          "race_id, boat_number, start_timing, is_flying, finish_mark, entry_course",
-          "race_id",
-          raceIds,
-          ["race_id", "boat_number"],
-        ),
-      ]);
-    const history = buildRacerRaceHistoryRows({
-      entries,
-      raceRows,
-      resultRows,
-      exhibitionRows,
-      conditionRows,
-      stRows,
-    });
+    const history = await racerHistoryRows(racerId, since);
     const page = aggregateRacerVenueBoatStats(history, venue, 1, null, null);
-    const nige = out.rows.find(
-      (r) =>
-        r.extra.racer_id === racerId && r.extra.metric === "nige_rate_boat1",
-    );
-    const st = out.rows.find(
-      (r) => r.extra.racer_id === racerId && r.extra.metric === "avg_st_boat1",
-    );
-    assert.equal(
-      nige.n,
-      page.n,
-      `${racerId} の1号艇の出走数（ページは ${page.n}回）`,
-    );
-    assert.equal(nige.k, page.tech["逃げ"] ?? 0, `${racerId} の逃げの回数`);
-    assert.equal(nige.extra.wins, page.win);
-    if (st)
-      assert.equal(
-        st.value,
-        Number(page.avgSt.toFixed(3)),
-        `${racerId} の平均ST（ページは ${page.avgSt.toFixed(3)}）`,
-      );
+    assertRacerRowsMatchPage(out, racerId, page);
   }
   console.log(
     `✅ racer_page: 会場 ${venue}・${today} の出走表の ${ids.length} 人で、会場×1号艇の逃げ・出走数・平均ST が選手ページの取得と一致`,

@@ -1,5 +1,5 @@
 // 選手ページの成績集計で共有する純関数（node からも import できるよう、サービス層から分けている）
-import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
+import { isPlaceHit, isShowHit } from "../pure/hitJudge.js";
 import {
   ROUGH_WAVE_CM,
   WAVE_EXCLUDED_VENUE_CODES,

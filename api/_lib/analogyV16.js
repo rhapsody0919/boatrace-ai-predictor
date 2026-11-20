@@ -57,8 +57,44 @@ async function gunzipJson(res) {
   return JSON.parse(await new Response(stream).text());
 }
 
-/** Storage の gzip の JSON。無ければ null（404・400 は Storage の「無い」） */
+// 過去の日付の物は不変（パスに実行ID が入り上書きしない、ADR-0085 決定3）なので、関数のメモリに置いて
+// Storage の読み（Egress）を減らす。当日・未来の日付と日付で始まらないパスは置かない。無い（null）も置かない
+const MEMORY_MAX = 48;
+const memory = new Map();
+
+/** 今日（JST）の日付 YYYY-MM-DD */
+const jstDate = (nowMs) =>
+  new Date(nowMs + 9 * 3600_000).toISOString().slice(0, 10);
+
+/** パスが過去の日付（JST の今日より前）で始まるか。不変とみなしてよい物 */
+export function isPastPath(path, nowMs = Date.now()) {
+  const m = /^(\d{4}-\d{2}-\d{2})\//.exec(path);
+  return m !== null && m[1] < jstDate(nowMs);
+}
+
+/** Storage の gzip の JSON。無ければ null（404・400 は Storage の「無い」）。過去の日付の物は関数のメモリに置く */
 export async function readObject(path) {
+  const cacheable = isPastPath(path);
+  if (cacheable && memory.has(path)) {
+    const hit = memory.get(path);
+    memory.delete(path);
+    memory.set(path, hit); // 新しい順に並べ直す（LRU）
+    return hit;
+  }
+  const obj = await fetchObject(path);
+  if (cacheable && obj !== null) {
+    memory.set(path, obj);
+    if (memory.size > MEMORY_MAX) memory.delete(memory.keys().next().value);
+  }
+  return obj;
+}
+
+/** 試験用: 関数のメモリを空にする */
+export function clearObjectMemory() {
+  memory.clear();
+}
+
+async function fetchObject(path) {
   const { url, key } = env();
   const res = await fetch(`${url}/storage/v1/object/${BUCKET}/${path}`, {
     headers: authHeaders(key),
@@ -144,9 +180,23 @@ export function resolveStatus(s, deadlinePassed) {
   return "before_exhibition";
 }
 
-/** キャッシュ: 締切前 60秒、締切後 1日。not_saved とエラーはキャッシュしない */
-export function cacheControl(status, deadlinePassed) {
+/**
+ * キャッシュ: 締切前 60秒、締切後 1日、過去の日付（JST の今日より前）7日。not_saved とエラーはキャッシュしない。
+ * 過去の日付の作り直し（CLI）は最大7日で反映される。raceId を渡さなければ従来どおり
+ */
+export function cacheControl(
+  status,
+  deadlinePassed,
+  raceId,
+  nowMs = Date.now(),
+) {
   if (status === "not_saved") return "no-store";
+  if (
+    raceId &&
+    isRaceId(raceId) &&
+    isPastPath(`${raceId.slice(0, 10)}/`, nowMs)
+  )
+    return "public, s-maxage=604800, stale-while-revalidate=86400";
   return deadlinePassed
     ? "public, s-maxage=86400, stale-while-revalidate=3600"
     : "public, s-maxage=60, stale-while-revalidate=30";
@@ -175,7 +225,10 @@ function parseRacePath(url) {
   if (
     !Number.isFinite(calendar.getTime()) ||
     calendar.toISOString().slice(0, 10) !== date ||
-    venue < 1 || venue > 24 || race < 1 || race > 12
+    venue < 1 ||
+    venue > 24 ||
+    race < 1 ||
+    race > 12
   )
     throw new RangeError("raceId の日付・会場・レースが不正です");
   return { parts, raceId };
@@ -202,13 +255,16 @@ function queryWithoutRoute(url, raceId) {
   if (url.search && url.search.slice(1).split("&").includes(""))
     throw new RangeError("クエリに空の組があります");
   let routeSeen = false;
-  return url.search.slice(1).split("&")
+  return url.search
+    .slice(1)
+    .split("&")
     .filter((pair) => {
       if (pair !== `raceId=${raceId}`) return true;
       if (routeSeen) throw new RangeError("raceId が重複しています");
       routeSeen = true;
       return false;
-    }).join("&");
+    })
+    .join("&");
 }
 
 function canonicalQuery(url, keys) {
@@ -228,7 +284,8 @@ export function parseRequest(req) {
   const keys = QUERY_KEYS[parts.pop()];
   if (!keys) throw new RangeError("API のパスが不正です");
   const raw = queryWithoutRoute(url, raceId);
-  if (raw !== canonicalQuery(url, keys)) throw new RangeError("クエリの表記が不正です");
+  if (raw !== canonicalQuery(url, keys))
+    throw new RangeError("クエリの表記が不正です");
   const stage = url.searchParams.get("stage") ?? "racecard";
   if (!STAGES.includes(stage))
     throw new RangeError(`stage は ${STAGES.join("|")}`);
@@ -262,7 +319,7 @@ export function createHandler(build) {
       return json(
         { status, ...body },
         200,
-        cacheControl(status, deadlinePassed),
+        cacheControl(status, deadlinePassed, parsed.raceId),
       );
     } catch (e) {
       if (e instanceof RangeError)

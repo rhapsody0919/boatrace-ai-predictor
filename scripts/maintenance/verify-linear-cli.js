@@ -37,6 +37,128 @@ const STATES = [
   { id: "s-dup", name: "Duplicate", type: "canceled" },
 ];
 
+const ok = (data) => [200, { data }];
+const fail = (status, errors) => [status, { errors }];
+
+/** viewer の問い合わせへの応答 */
+const viewerReply = () =>
+  ok({
+    viewer: {
+      id: "u1",
+      name: "test",
+      teams: { nodes: [{ id: "t1", key: "BOA", name: "boat" }] },
+    },
+  });
+
+/** 起票の前の未アーカイブ件数（scripts/lib/linearIssueGate.js）。既定は10件で閾値の下 */
+const countActiveReply = (state) => {
+  if (state.scenario.countFails) return fail(500, [{ message: "count boom" }]);
+  const n = state.scenario.activeCount ?? 10;
+  return ok({
+    issues: {
+      nodes: Array.from({ length: n }, (_, i) => ({ id: `a${i}` })),
+      pageInfo: { hasNextPage: false, endCursor: null },
+    },
+  });
+};
+
+const getIssueReply = () =>
+  ok({
+    issues: {
+      nodes: [
+        {
+          id: "i1",
+          identifier: "BOA-1",
+          title: "t",
+          description: "",
+          state: { id: "s-todo", name: "Todo" },
+          createdAt: "2026-10-01T00:00:00Z",
+          updatedAt: "2026-10-01T00:00:00Z",
+          url: "u",
+        },
+      ],
+    },
+  });
+
+const updateIssueReply = (state, variables) => {
+  const s = STATES.find((x) => x.id === variables.input.stateId);
+  return ok({
+    issueUpdate: {
+      success: true,
+      issue: {
+        id: "i1",
+        identifier: "BOA-1",
+        title: "t",
+        state: { name: s.name, type: s.type },
+      },
+    },
+  });
+};
+
+const createCommentReply = (state) =>
+  ok({
+    commentCreate: {
+      success: state.scenario.commentFails !== true,
+      comment: { id: "c1", body: "b" },
+    },
+  });
+
+const archiveIssueReply = (state) => {
+  if (state.scenario.archive === "graphqlError")
+    return [
+      200,
+      { errors: [{ message: "boom", extensions: { code: "INTERNAL" } }] },
+    ];
+  return ok({ issueArchive: { success: state.scenario.archive !== "fail" } });
+};
+
+const createIssueReply = (state, variables) => {
+  if (state.scenario.create === "usageLimit") {
+    // 2026-09-28 に実際に返った形（HTTP 400 と 200 の両方を試す）
+    return fail(state.scenario.status ?? 400, [
+      {
+        message: "You've exceeded the free issue limit for this workspace",
+        extensions: { code: "USAGE_LIMIT_EXCEEDED" },
+      },
+    ]);
+  }
+  return ok({
+    issueCreate: {
+      success: true,
+      issue: {
+        id: "i2",
+        identifier: "BOA-2",
+        title: variables.input.title,
+        description: "",
+        state: { name: "Todo" },
+        url: "u",
+      },
+    },
+  });
+};
+
+/** 操作名 → 応答（[HTTP の状態, 本文]） */
+const OP_REPLIES = {
+  CountActiveIssues: countActiveReply,
+  GetStates: () => ok({ workflowStates: { nodes: STATES } }),
+  GetIssue: getIssueReply,
+  UpdateIssue: updateIssueReply,
+  CreateComment: createCommentReply,
+  ArchiveIssue: archiveIssueReply,
+  CreateIssue: createIssueReply,
+};
+
+/** 模擬サーバーの1リクエストの応答（[HTTP の状態, 本文]）。届いた操作を state.calls に積む */
+function mockReplyFor(state, query, variables) {
+  const op = (query.match(/\b(mutation|query)\s+(\w+)/) || [])[2] ?? "viewer";
+  state.calls.push(op);
+  if (/viewer/.test(query)) return viewerReply();
+  const handler = OP_REPLIES[op];
+  return handler
+    ? handler(state, variables)
+    : fail(400, [{ message: `unknown op ${op}` }]);
+}
+
 /** シナリオごとに応答を変える模擬サーバー。届いた操作を calls に積む */
 function startMock() {
   const state = { scenario: {}, calls: [], slack: [] };
@@ -54,127 +176,7 @@ function startMock() {
         return reply(200, {});
       }
       const { query, variables } = JSON.parse(body);
-      const op =
-        (query.match(/\b(mutation|query)\s+(\w+)/) || [])[2] ?? "viewer";
-      state.calls.push(op);
-
-      if (/viewer/.test(query)) {
-        return reply(200, {
-          data: {
-            viewer: {
-              id: "u1",
-              name: "test",
-              teams: { nodes: [{ id: "t1", key: "BOA", name: "boat" }] },
-            },
-          },
-        });
-      }
-      // 起票の前の未アーカイブ件数（scripts/lib/linearIssueGate.js）。既定は10件で閾値の下
-      if (op === "CountActiveIssues") {
-        if (state.scenario.countFails) {
-          return reply(500, { errors: [{ message: "count boom" }] });
-        }
-        const n = state.scenario.activeCount ?? 10;
-        return reply(200, {
-          data: {
-            issues: {
-              nodes: Array.from({ length: n }, (_, i) => ({ id: `a${i}` })),
-              pageInfo: { hasNextPage: false, endCursor: null },
-            },
-          },
-        });
-      }
-      if (op === "GetStates") {
-        return reply(200, { data: { workflowStates: { nodes: STATES } } });
-      }
-      if (op === "GetIssue") {
-        return reply(200, {
-          data: {
-            issues: {
-              nodes: [
-                {
-                  id: "i1",
-                  identifier: "BOA-1",
-                  title: "t",
-                  description: "",
-                  state: { id: "s-todo", name: "Todo" },
-                  createdAt: "2026-10-01T00:00:00Z",
-                  updatedAt: "2026-10-01T00:00:00Z",
-                  url: "u",
-                },
-              ],
-            },
-          },
-        });
-      }
-      if (op === "UpdateIssue") {
-        const s = STATES.find((x) => x.id === variables.input.stateId);
-        return reply(200, {
-          data: {
-            issueUpdate: {
-              success: true,
-              issue: {
-                id: "i1",
-                identifier: "BOA-1",
-                title: "t",
-                state: { name: s.name, type: s.type },
-              },
-            },
-          },
-        });
-      }
-      if (op === "CreateComment") {
-        return reply(200, {
-          data: {
-            commentCreate: {
-              success: state.scenario.commentFails !== true,
-              comment: { id: "c1", body: "b" },
-            },
-          },
-        });
-      }
-      if (op === "ArchiveIssue") {
-        if (state.scenario.archive === "graphqlError") {
-          return reply(200, {
-            errors: [{ message: "boom", extensions: { code: "INTERNAL" } }],
-          });
-        }
-        return reply(200, {
-          data: {
-            issueArchive: { success: state.scenario.archive !== "fail" },
-          },
-        });
-      }
-      if (op === "CreateIssue") {
-        if (state.scenario.create === "usageLimit") {
-          // 2026-09-28 に実際に返った形（HTTP 400 と 200 の両方を試す）
-          return reply(state.scenario.status ?? 400, {
-            errors: [
-              {
-                message:
-                  "You've exceeded the free issue limit for this workspace",
-                extensions: { code: "USAGE_LIMIT_EXCEEDED" },
-              },
-            ],
-          });
-        }
-        return reply(200, {
-          data: {
-            issueCreate: {
-              success: true,
-              issue: {
-                id: "i2",
-                identifier: "BOA-2",
-                title: variables.input.title,
-                description: "",
-                state: { name: "Todo" },
-                url: "u",
-              },
-            },
-          },
-        });
-      }
-      return reply(400, { errors: [{ message: `unknown op ${op}` }] });
+      return reply(...mockReplyFor(state, query, variables));
     });
   });
   return new Promise((resolve) => {

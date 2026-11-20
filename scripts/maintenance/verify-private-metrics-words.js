@@ -136,16 +136,15 @@ export function findViolations(lines) {
     .filter((l) => l.rules.length > 0);
 }
 
-function main() {
-  // --- 判定ロジックの固定入力での検証 ---
-  const failures = [];
-  function check(label, actual, expected) {
-    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-      failures.push(
-        `${label}: 期待 ${JSON.stringify(expected)} / 実際 ${JSON.stringify(actual)}`,
-      );
-    }
-  }
+const git = (args) =>
+  execFileSync("git", args, {
+    cwd: repoRoot,
+    encoding: "utf8",
+    maxBuffer: 512 * 1024 * 1024,
+  });
+
+/** 1行の判定・対象のファイルの固定入力での検証 */
+function checkRules(check) {
   check("収益と数字", matchLine("推定収益は約550"), ["revenue"]);
   check("収益だけ（数字なし）は通す", matchLine("収益化の方針"), []);
   check("全角の数字も数字", matchLine("売上は５"), ["revenue"]);
@@ -177,6 +176,10 @@ function main() {
   check("対象外: package.json", isTargetFile("package.json"), false);
   check("対象外: src のコード", isTargetFile("src/utils/analytics.js"), false);
   check("対象外: 画像", isTargetFile("docs/a.png"), false);
+}
+
+/** diff から足した行を取り出す検証 */
+function checkAddedLines(check) {
   check(
     "diff から足した行だけを取る",
     addedLines(
@@ -222,55 +225,50 @@ function main() {
     ),
     [],
   );
-  if (failures.length > 0) {
-    console.error(
-      "NG: お金・PV の語の検査ロジックが期待どおりに動いていません",
-    );
-    for (const f of failures) console.error(`  - ${f}`);
-    process.exit(1);
-  }
+}
 
-  function git(args) {
-    return execFileSync("git", args, {
-      cwd: repoRoot,
-      encoding: "utf8",
-      maxBuffer: 512 * 1024 * 1024,
-    });
-  }
-
-  // --- 今の全ファイルに当てた数（誤検知の実測） ---
-  if (process.argv.includes("--scan-all")) {
-    const files = git(["-c", "core.quotePath=false", "ls-files"])
-      .split("\n")
-      .filter(Boolean)
-      .filter(isTargetFile);
-    const byFile = new Map();
-    for (const file of files) {
-      let text;
-      try {
-        text = readFileSync(path.join(repoRoot, file), "utf8");
-      } catch (err) {
-        console.error(`読めないので飛ばした: ${file}（${err.message}）`);
-        continue;
-      }
-      const lines = text
-        .split("\n")
-        .map((t, i) => ({ file, line: i + 1, text: t }));
-      const v = findViolations(lines);
-      if (v.length > 0) byFile.set(file, v);
+/** 判定ロジックの固定入力での検証。外れた件の文を返す */
+function selfCheckFailures() {
+  const failures = [];
+  function check(label, actual, expected) {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      failures.push(
+        `${label}: 期待 ${JSON.stringify(expected)} / 実際 ${JSON.stringify(actual)}`,
+      );
     }
-    console.log(JSON.stringify(Object.fromEntries(byFile)));
-    process.exit(0);
   }
+  checkRules(check);
+  checkAddedLines(check);
+  return failures;
+}
 
-  // --- PR の差分を見る ---
-  const base =
-    process.argv
-      .slice(2)
-      .filter((a) => a.startsWith("--base="))
-      .map((a) => a.slice("--base=".length))
-      .pop() || "origin/master";
+/** 今の全ファイルに当てた数（誤検知の実測）を出して終わる */
+function scanAllAndExit() {
+  const files = git(["-c", "core.quotePath=false", "ls-files"])
+    .split("\n")
+    .filter(Boolean)
+    .filter(isTargetFile);
+  const byFile = new Map();
+  for (const file of files) {
+    let text;
+    try {
+      text = readFileSync(path.join(repoRoot, file), "utf8");
+    } catch (err) {
+      console.error(`読めないので飛ばした: ${file}（${err.message}）`);
+      continue;
+    }
+    const lines = text
+      .split("\n")
+      .map((t, i) => ({ file, line: i + 1, text: t }));
+    const v = findViolations(lines);
+    if (v.length > 0) byFile.set(file, v);
+  }
+  console.log(JSON.stringify(Object.fromEntries(byFile)));
+  process.exit(0);
+}
 
+/** 足した行を取る diff。base を解決できなければ（CI は失敗・手元はスキップで）終わる */
+function diffOrExit(base) {
   let diff;
   try {
     git(["rev-parse", "--verify", "--quiet", `${base}^{commit}`]);
@@ -293,9 +291,11 @@ function main() {
     console.log(`スキップ: ${message}（手元のため。CIでは失敗扱い）`);
     process.exit(0);
   }
+  return diff;
+}
 
-  const added = addedLines(diff);
-  const violations = findViolations(added);
+/** 当たった行を出して失敗で終わる */
+function failWithViolations(violations) {
   if (violations.length > 0) {
     const labels = new Map(RULES.map((r) => [r.id, r.label]));
     console.error(
@@ -316,6 +316,33 @@ function main() {
     );
     process.exit(1);
   }
+}
+
+function main() {
+  // --- 判定ロジックの固定入力での検証 ---
+  const failures = selfCheckFailures();
+  if (failures.length > 0) {
+    console.error(
+      "NG: お金・PV の語の検査ロジックが期待どおりに動いていません",
+    );
+    for (const f of failures) console.error(`  - ${f}`);
+    process.exit(1);
+  }
+
+  // --- 今の全ファイルに当てた数（誤検知の実測） ---
+  if (process.argv.includes("--scan-all")) scanAllAndExit();
+
+  // --- PR の差分を見る ---
+  const base =
+    process.argv
+      .slice(2)
+      .filter((a) => a.startsWith("--base="))
+      .map((a) => a.slice("--base=".length))
+      .pop() || "origin/master";
+
+  const added = addedLines(diffOrExit(base));
+  const violations = findViolations(added);
+  if (violations.length > 0) failWithViolations(violations);
 
   console.log(
     `OK: PR（${base}...HEAD）の足した行 ${added.length} 行に、公開のリポジトリに置かない数の書き方は無い`,

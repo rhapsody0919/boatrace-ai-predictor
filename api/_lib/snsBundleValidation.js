@@ -142,11 +142,4 @@ export async function validateBundle(
   };
 }
 
-/** 入力のreleaseフラグやQA.passを書き換えてもv0を公開可能にしない。 */
-export function isBundlePublicationBlocked(draft) {
-  return Boolean(
-    draft.publish_blocked ||
-    draft.bundle_import_id ||
-    draft.bundle_version_hash,
-  );
-}
+export { isBundlePublicationBlocked } from "../../scripts/lib/sns/bundlePublicationBlocked.js";

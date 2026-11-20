@@ -32,6 +32,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
+import { checkGaps, numericPart, pad3 } from "./verifyData/migration-numbers-gaps.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
@@ -40,7 +41,6 @@ const MIGRATION_DIR = path.join(REPO_ROOT, MIGRATION_DIR_REL);
 const LEDGER_FILE = "APPLIED.md";
 
 const SQL_FILE_RE = /^(\d{3}[a-z]?)_.+\.sql$/;
-const NUMBERED_DOC_RE = /^(\d{3})_.+\.md$/;
 
 /** 番号を付けない既存の .sql（初期の単発スクリプト。台帳には別枠で記載） */
 const UNNUMBERED_ALLOWED = ["add-defense-distribution.sql"];
@@ -94,8 +94,6 @@ const ALLOWED_DUPLICATES = {
   "064": ["064_racer_series_points.sql", "064_venue_entry_course_stats.sql"],
 };
 
-const numericPart = (id) => Number.parseInt(id, 10);
-const pad3 = (n) => String(n).padStart(3, "0");
 
 /** ファイル名一覧を、番号 -> ファイル名[] にまとめる（NNN_*.sql のみ） */
 function groupSqlById(fileNames) {
@@ -106,19 +104,6 @@ function groupSqlById(fileNames) {
     byId.set(m[1], [...(byId.get(m[1]) ?? []), f]);
   }
   return byId;
-}
-
-/** 連続する欠番を "024" / "002-006" のような範囲表記にまとめる */
-function formatRanges(nums) {
-  const ranges = [];
-  for (const n of nums) {
-    const last = ranges[ranges.length - 1];
-    if (last && last.end + 1 === n) last.end = n;
-    else ranges.push({ start: n, end: n });
-  }
-  return ranges.map((r) =>
-    r.start === r.end ? pad3(r.start) : `${pad3(r.start)}-${pad3(r.end)}`,
-  );
 }
 
 /** --base=<ref> の値を取り出す（最後の指定を優先。未指定ならnull） */
@@ -213,31 +198,8 @@ function selfTest() {
   return cases.every(([got, want]) => got === want);
 }
 
-async function main() {
-  const errors = [];
-  const warnings = [];
-  const notices = [];
-
-  if (!selfTest()) {
-    errors.push(
-      "検査の自己テスト（ledgerStatusOf・isAppliedStatus）が失敗しました",
-    );
-  }
-  let ledgerText = "";
-  try {
-    ledgerText = await fs.readFile(
-      path.join(MIGRATION_DIR, LEDGER_FILE),
-      "utf8",
-    );
-  } catch {
-    // 台帳が読めない場合は、4 の検査が失敗として報告する。ここでは例外の扱いをしないだけ
-  }
-
-  const localFiles = await fs.readdir(MIGRATION_DIR);
-  const byId = groupSqlById(localFiles);
-  const sqlFiles = [...byId.values()].flat();
-
-  // 1. 重複
+/** 1. 番号の重複。凍結した数を返す */
+function checkDuplicates(byId, { errors, warnings }) {
   let frozenCount = 0;
   for (const [id, files] of byId) {
     if (files.length < 2) continue;
@@ -265,80 +227,77 @@ async function main() {
       );
     }
   }
+  return frozenCount;
+}
 
-  // 2. 欠番（番号付きの設計資料 NNN_*.md も「使用済み」として扱う）
-  const usedNumbers = new Set([
-    ...[...byId.keys()].map(numericPart),
-    ...localFiles
-      .map((f) => NUMBERED_DOC_RE.exec(f)?.[1])
-      .filter(Boolean)
-      .map(numericPart),
-  ]);
-  if (usedNumbers.size > 0) {
-    const maxLocal = Math.max(...usedNumbers);
-    const gaps = [];
-    for (let n = 1; n <= maxLocal; n += 1) {
-      if (!usedNumbers.has(n)) gaps.push(n);
-    }
-    if (gaps.length > 0) {
-      warnings.push(`欠番: ${formatRanges(gaps).join(", ")}（失敗にはしない）`);
+/** base の最新コミット日時を知らせ、古ければ fetch を促す */
+function noteBaseFreshness(baseRef, { warnings, notices }) {
+  const commitTime = getRefCommitTime(baseRef);
+  if (commitTime === null) return;
+  const ageHours = (Date.now() - commitTime.getTime()) / 3_600_000;
+  notices.push(
+    `${baseRef} の最新コミット日時: ${commitTime.toISOString()}（${Math.floor(ageHours)}時間前）`,
+  );
+  if (ageHours > STALE_BASE_HOURS) {
+    warnings.push(
+      `${baseRef} が${STALE_BASE_HOURS}時間以上前の状態です。他セッションが新しい番号をmasterに入れている可能性があるため、git fetch origin master してから再実行してください`,
+    );
+  }
+}
+
+/** 新規ファイルの番号が base の最大番号より後か（台帳で適用済みなら通す） */
+function checkNewFileNumbers(newFiles, baseRef, baseMaxId, ledgerText, { errors, notices }) {
+  for (const f of newFiles) {
+    const id = SQL_FILE_RE.exec(f)[1];
+    if (id <= baseMaxId) {
+      if (isAppliedStatus(ledgerStatusOf(ledgerText, f))) {
+        notices.push(
+          `新規ファイル ${f} の番号 ${id} は ${baseRef} の最大番号 ${baseMaxId} 以下だが、${LEDGER_FILE} で本番に適用済みのため振り直さずに通します`,
+        );
+        continue;
+      }
+      errors.push(
+        `新規ファイル ${f} の番号 ${id} が ${baseRef} の最大番号 ${baseMaxId} 以下です。${pad3(numericPart(baseMaxId) + 1)} 以降にリネームしてください`,
+      );
     }
   }
+}
 
-  // 3. base の最大番号との比較。新規ファイル = ローカルにあり base に無いファイル
-  let newFiles = null;
+/** 3. base の最大番号との比較。新規ファイル = ローカルにあり base に無いファイル。比べられなければ null */
+function checkAgainstBase(sqlFiles, ledgerText, report) {
+  const { notices } = report;
   const baseRef = parseBaseRef(process.argv.slice(2));
   if (baseRef === null) {
     notices.push(
       "--base 未指定のため、baseの最大番号との比較はスキップしました（npm run verify:migration-numbers は origin/master を指定済み）。",
     );
-  } else {
-    const { files: baseFiles, reason } = listBaseFiles(baseRef);
-    const baseIds =
-      baseFiles === null ? [] : [...groupSqlById(baseFiles).keys()];
-    if (baseFiles === null) {
-      notices.push(`baseの最大番号との比較をスキップしました: ${reason}`);
-    } else if (baseIds.length === 0) {
-      notices.push(
-        `baseの最大番号との比較をスキップしました: ${baseRef} の ${MIGRATION_DIR_REL}/ に NNN_*.sql が1件もありません`,
-      );
-    } else {
-      const baseSet = new Set(baseFiles);
-      const baseMaxId = [...baseIds].sort().at(-1);
-      newFiles = sqlFiles.filter((f) => !baseSet.has(f));
-      for (const f of newFiles) {
-        const id = SQL_FILE_RE.exec(f)[1];
-        if (id <= baseMaxId) {
-          if (isAppliedStatus(ledgerStatusOf(ledgerText, f))) {
-            notices.push(
-              `新規ファイル ${f} の番号 ${id} は ${baseRef} の最大番号 ${baseMaxId} 以下だが、${LEDGER_FILE} で本番に適用済みのため振り直さずに通します`,
-            );
-            continue;
-          }
-          errors.push(
-            `新規ファイル ${f} の番号 ${id} が ${baseRef} の最大番号 ${baseMaxId} 以下です。${pad3(numericPart(baseMaxId) + 1)} 以降にリネームしてください`,
-          );
-        }
-      }
-      notices.push(
-        `${baseRef} の最大番号は ${baseMaxId}、このブランチの新規ファイル ${newFiles.length}件。次の新規マイグレーションは ${pad3(numericPart(baseMaxId) + 1)} 以降を使う（着手時とPR作成前に fetch して再確認）。`,
-      );
-      const commitTime = getRefCommitTime(baseRef);
-      if (commitTime !== null) {
-        const ageHours = (Date.now() - commitTime.getTime()) / 3_600_000;
-        notices.push(
-          `${baseRef} の最新コミット日時: ${commitTime.toISOString()}（${Math.floor(ageHours)}時間前）`,
-        );
-        if (ageHours > STALE_BASE_HOURS) {
-          warnings.push(
-            `${baseRef} が${STALE_BASE_HOURS}時間以上前の状態です。他セッションが新しい番号をmasterに入れている可能性があるため、git fetch origin master してから再実行してください`,
-          );
-        }
-      }
-    }
+    return null;
   }
+  const { files: baseFiles, reason } = listBaseFiles(baseRef);
+  const baseIds = baseFiles === null ? [] : [...groupSqlById(baseFiles).keys()];
+  if (baseFiles === null) {
+    notices.push(`baseの最大番号との比較をスキップしました: ${reason}`);
+    return null;
+  }
+  if (baseIds.length === 0) {
+    notices.push(
+      `baseの最大番号との比較をスキップしました: ${baseRef} の ${MIGRATION_DIR_REL}/ に NNN_*.sql が1件もありません`,
+    );
+    return null;
+  }
+  const baseSet = new Set(baseFiles);
+  const baseMaxId = [...baseIds].sort().at(-1);
+  const newFiles = sqlFiles.filter((f) => !baseSet.has(f));
+  checkNewFileNumbers(newFiles, baseRef, baseMaxId, ledgerText, report);
+  notices.push(
+    `${baseRef} の最大番号は ${baseMaxId}、このブランチの新規ファイル ${newFiles.length}件。次の新規マイグレーションは ${pad3(numericPart(baseMaxId) + 1)} 以降を使う（着手時とPR作成前に fetch して再確認）。`,
+  );
+  noteBaseFreshness(baseRef, report);
+  return newFiles;
+}
 
-  // 4. 台帳（APPLIED.md）に、ファイル名の行（表の行）があること
+/** 4. 台帳（APPLIED.md）に、ファイル名の行（表の行）があること */
+async function checkLedgerRows(sqlFiles, newFiles, { errors, warnings }) {
   try {
     const ledger = await fs.readFile(
       path.join(MIGRATION_DIR, LEDGER_FILE),
@@ -363,8 +322,10 @@ async function main() {
       `${LEDGER_FILE} を読めませんでした（台帳との突合をスキップ）: ${err.message}`,
     );
   }
+}
 
-  // 5. NNN_*.sql の命名規則に合わない .sql
+/** 5. NNN_*.sql の命名規則に合わない .sql */
+function checkNaming(localFiles, { errors }) {
   const misnamed = localFiles.filter(
     (f) =>
       f.endsWith(".sql") &&
@@ -376,6 +337,38 @@ async function main() {
       `番号付きの命名規則（NNN_名前.sql、NNNは3桁ゼロ埋め、サブ番号は英小文字1字）に合わない .sql（番号検査をすり抜けるため）: ${misnamed.join(", ")}`,
     );
   }
+}
+
+/** 台帳の本文。読めなければ空（4 の検査が失敗として報告する） */
+async function readLedgerText() {
+  try {
+    return await fs.readFile(path.join(MIGRATION_DIR, LEDGER_FILE), "utf8");
+  } catch {
+    // 台帳が読めない場合は、4 の検査が失敗として報告する。ここでは例外の扱いをしないだけ
+    return "";
+  }
+}
+
+async function main() {
+  const report = { errors: [], warnings: [], notices: [] };
+  const { errors, warnings, notices } = report;
+
+  if (!selfTest()) {
+    errors.push(
+      "検査の自己テスト（ledgerStatusOf・isAppliedStatus）が失敗しました",
+    );
+  }
+  const ledgerText = await readLedgerText();
+
+  const localFiles = await fs.readdir(MIGRATION_DIR);
+  const byId = groupSqlById(localFiles);
+  const sqlFiles = [...byId.values()].flat();
+
+  const frozenCount = checkDuplicates(byId, report);
+  checkGaps(byId, localFiles, report);
+  const newFiles = checkAgainstBase(sqlFiles, ledgerText, report);
+  await checkLedgerRows(sqlFiles, newFiles, report);
+  checkNaming(localFiles, report);
 
   for (const w of warnings) console.warn(`WARN: ${w}`);
   for (const n of notices) console.log(`INFO: ${n}`);
