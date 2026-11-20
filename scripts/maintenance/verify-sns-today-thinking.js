@@ -7,12 +7,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
-import { imageNamesOf, pushFinalsImage } from "../sns/push-finals-image.js";
+import { imageNamesOf } from "../sns/push-finals-image.js";
 import { todayPicksOf } from "../sns/today-picks.js";
 
-import { runSnsTodayThinkingScenes1 } from "./verifyData/sns-today-thinking-scenes-1.js";
-import { runSnsTodayThinkingScenes2 } from "./verifyData/sns-today-thinking-scenes-2.js";
-import { runSnsTodayThinkingScenes3 } from "./verifyData/sns-today-thinking-scenes-3.js";
+import { runSnsTodayThinkingScenesB1 } from "./verifyData/sns-today-thinking-scenes-b.js";
 
 const BASE_FILES = [
   "035_sns_marketing_hub_schema.sql",
@@ -358,56 +356,9 @@ const replyBundle = (patch = {}) => ({
 });
 const IMAGES = (names = NAMES) =>
   Object.fromEntries(names.map((name, i) => [name, png(1080, 1350, 200 + i)]));
-const push = (b = bundle(), opts = {}, deps = store) => {
-  const f = {
-    "/f/bundle.json": new TextEncoder().encode(JSON.stringify(b)),
-    ...Object.fromEntries(
-      Object.entries(IMAGES(b.images ?? NAMES)).map(([name, bytes]) => [
-        `/f/${name}`,
-        bytes,
-      ]),
-    ),
-  };
-  const notes = [];
-  return pushFinalsImage("/f", {
-    store: deps,
-    readBytes: async (p) => {
-      if (!f[p]) throw new Error("no file");
-      return f[p];
-    },
-    notify: async (text) => notes.push(text),
-    riskRules,
-    now: PUSHED_AT,
-    ...opts,
-  }).then((r) => ({ ...r, notes }));
-};
-const transition = async (jobId, action, result = {}, pg = db) =>
-  (
-    await pg.query("SELECT public.transition_sns_x_send($1,$2,$3::jsonb) r", [
-      jobId,
-      action,
-      JSON.stringify(result),
-    ])
-  ).rows[0].r;
-const claim = (jobId) => transition(jobId, "claim");
-async function post(jobId, tweetId, postedAt) {
-  await claim(jobId);
-  await transition(jobId, "begin_post");
-  await transition(jobId, "complete", { id: tweetId, posted_at: postedAt });
-}
-const counts = async () => ({
-  drafts: Number((await first("SELECT count(*) n FROM sns_drafts")).n),
-  items: Number((await first("SELECT count(*) n FROM sns_auto_send_items")).n),
-  jobs: Number((await first("SELECT count(*) n FROM sns_x_send_jobs")).n),
-  saved: saved.length,
-});
-const NOTHING = { drafts: 0, items: 0, jobs: 0, saved: 0 };
 
-/** 送り手の読み直し（readCurrent）に PGlite の行を渡す。読んだ表を残す */
-const readTables = [];
-
-// ---- 後半の場面（verifyData/sns-today-thinking-scenes-1.js・sns-today-thinking-scenes-2.js・sns-today-thinking-scenes-3.js） ----
-runSnsTodayThinkingScenes1({
+// ---- 後半の場面（verifyData/sns-today-thinking-scenes-b.js） ----
+runSnsTodayThinkingScenesB1({
   BASE_FILES,
   MIGRATION,
   MD5_182,
@@ -416,66 +367,30 @@ runSnsTodayThinkingScenes1({
   md5,
   transitionBody,
   migration189ForTest,
-  db,
-  first,
-  all,
-  RACE,
-  DEADLINE,
-  at,
-  NOW,
-  setClock,
-  saved,
-  stageCalls,
-  store,
-  slotAsked,
-  POLL,
-  replyBundle,
-  push,
-  transition,
-  claim,
-  post,
-  readTables,
-});
-runSnsTodayThinkingScenes2({
-  db,
-  first,
-  riskRules,
-  RACE,
-  OTHER_RACE,
-  DAY,
-  CLEAR_SQL,
-  TODAY_DRAFT,
-  sttState,
-  stageCalls,
-  bundle,
-  replyBundle,
-  push,
-  claim,
-  counts,
-  NOTHING,
-});
-runSnsTodayThinkingScenes3({
   openDb,
   db,
   first,
   all,
   riskRules,
   RACE,
+  OTHER_RACE,
   DAY,
   DEADLINE,
+  NAMES,
   at,
   NOW,
+  PUSHED_AT,
   setClock,
   CONTROL_SQL,
   CLEAR_SQL,
+  TODAY_DRAFT,
+  sttState,
+  saved,
+  stageCalls,
   store,
   slotAsked,
+  POLL,
   bundle,
-  push,
-  transition,
-  claim,
-  post,
-  counts,
-  NOTHING,
-  readTables,
+  replyBundle,
+  IMAGES,
 });
