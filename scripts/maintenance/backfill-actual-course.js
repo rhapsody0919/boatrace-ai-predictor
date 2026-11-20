@@ -134,78 +134,97 @@ async function backfillOneDay(dateStr, pendingIds, dryRun) {
   return { status: "ok", updated, notFound, notInKFile };
 }
 
-async function main() {
-  const options = parseArgs();
-  if (!options.from || !options.to) {
-    console.log("使用方法:");
-    console.log(
-      "  node scripts/maintenance/backfill-actual-course.js --from=2025-12-04 --to=2026-09-14",
-    );
-    console.log("オプション:");
-    console.log(
-      "  --dry-run         実際には更新しない（対象日数・レース数のみ集計）",
-    );
-    console.log(
-      "  --sleep-ms=N      1日ごとのダウンロード間隔(ms、デフォルト300)",
-    );
-    process.exit(1);
-  }
+function printUsage() {
+  console.log("使用方法:");
+  console.log(
+    "  node scripts/maintenance/backfill-actual-course.js --from=2025-12-04 --to=2026-09-14",
+  );
+  console.log("オプション:");
+  console.log(
+    "  --dry-run         実際には更新しない（対象日数・レース数のみ集計）",
+  );
+  console.log(
+    "  --sleep-ms=N      1日ごとのダウンロード間隔(ms、デフォルト300)",
+  );
+}
 
+function printHeader(options) {
   console.log("=== 進入コースバックフィル(Kファイル方式, BOA-257) ===");
   console.log(`期間: ${options.from} 〜 ${options.to}`);
   console.log(`モード: ${options.dryRun ? "ドライラン" : "本番実行"}`);
   console.log("");
+}
 
-  let daysProcessed = 0;
-  let daysSkippedAlreadySynced = 0;
-  let daysNoKFile = 0;
-  let daysError = 0;
-  let totalUpdated = 0;
-  let totalNotFound = 0;
-  let totalNotInKFile = 0;
+/** 1日の結果を集計に足し、処理した日は1行出す */
+function recordDayResult(tally, dateStr, result) {
+  if (result.status === "no_kfile" || result.status === "no_races_parsed") {
+    tally.daysNoKFile++;
+    return;
+  }
+  tally.daysProcessed++;
+  tally.totalUpdated += result.updated;
+  tally.totalNotFound += result.notFound || 0;
+  tally.totalNotInKFile += result.notInKFile || 0;
+  console.log(
+    `[${dateStr}] ${result.dryRun ? "(dry-run) " : ""}更新: ${result.updated}件${result.notFound ? `, 該当行なし: ${result.notFound}件` : ""}${result.notInKFile ? `, Kファイルに無い未取得: ${result.notInKFile}件` : ""}`,
+  );
+}
+
+function printSummary(tally) {
+  console.log("");
+  console.log("=== 完了 ===");
+  console.log(`処理日数: ${tally.daysProcessed}`);
+  console.log(`既に同期済みでスキップ: ${tally.daysSkippedAlreadySynced}日`);
+  console.log(`Kファイル無し/開催なし: ${tally.daysNoKFile}日`);
+  console.log(`エラー: ${tally.daysError}日`);
+  console.log(`更新レース数合計: ${tally.totalUpdated}件`);
+  if (tally.totalNotFound > 0) {
+    console.log(`race_resultsに該当行が無かった件数: ${tally.totalNotFound}件`);
+  }
+  if (tally.totalNotInKFile > 0) {
+    console.log(
+      `未取得だがKファイルに無かった件数（埋められない）: ${tally.totalNotInKFile}件`,
+    );
+  }
+}
+
+async function main() {
+  const options = parseArgs();
+  if (!options.from || !options.to) {
+    printUsage();
+    process.exit(1);
+  }
+
+  printHeader(options);
+
+  const tally = {
+    daysProcessed: 0,
+    daysSkippedAlreadySynced: 0,
+    daysNoKFile: 0,
+    daysError: 0,
+    totalUpdated: 0,
+    totalNotFound: 0,
+    totalNotInKFile: 0,
+  };
 
   for (const dateStr of dateRange(options.from, options.to)) {
     try {
       const pendingIds = await fetchPendingRaceIds(dateStr);
       if (pendingIds.size === 0) {
-        daysSkippedAlreadySynced++;
+        tally.daysSkippedAlreadySynced++;
         continue;
       }
 
       const result = await backfillOneDay(dateStr, pendingIds, options.dryRun);
-      if (result.status === "no_kfile" || result.status === "no_races_parsed") {
-        daysNoKFile++;
-      } else {
-        daysProcessed++;
-        totalUpdated += result.updated;
-        totalNotFound += result.notFound || 0;
-        totalNotInKFile += result.notInKFile || 0;
-        console.log(
-          `[${dateStr}] ${result.dryRun ? "(dry-run) " : ""}更新: ${result.updated}件${result.notFound ? `, 該当行なし: ${result.notFound}件` : ""}${result.notInKFile ? `, Kファイルに無い未取得: ${result.notInKFile}件` : ""}`,
-        );
-      }
+      recordDayResult(tally, dateStr, result);
     } catch (e) {
-      daysError++;
+      tally.daysError++;
       console.error(`[${dateStr}] ❌ ${e.message}`);
     }
     await sleep(options.sleepMs);
   }
 
-  console.log("");
-  console.log("=== 完了 ===");
-  console.log(`処理日数: ${daysProcessed}`);
-  console.log(`既に同期済みでスキップ: ${daysSkippedAlreadySynced}日`);
-  console.log(`Kファイル無し/開催なし: ${daysNoKFile}日`);
-  console.log(`エラー: ${daysError}日`);
-  console.log(`更新レース数合計: ${totalUpdated}件`);
-  if (totalNotFound > 0) {
-    console.log(`race_resultsに該当行が無かった件数: ${totalNotFound}件`);
-  }
-  if (totalNotInKFile > 0) {
-    console.log(
-      `未取得だがKファイルに無かった件数（埋められない）: ${totalNotInKFile}件`,
-    );
-  }
+  printSummary(tally);
 }
 
 main().catch((e) => {

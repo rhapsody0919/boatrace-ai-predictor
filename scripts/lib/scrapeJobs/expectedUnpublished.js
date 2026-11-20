@@ -164,6 +164,24 @@ export function isExtensionSuccess(slot) {
   );
 }
 
+/** 延長の成功ではない候補が、期限+許容幅を過ぎた未結論の取得失敗か（classifyExpectedUnpublished から移した条件） */
+function isUnresolvedCandidate(slot, rule, now, registry) {
+  return !(
+    slot.outcome !== rule.outcome ||
+    (slot.attempts ?? 0) === 0 ||
+    slot.status === "done" ||
+    !isPastWindow(slot, now, registry)
+  );
+}
+
+/** 後続の窓から confirmed / deferred / どちらでもない(undefined) を決める（classifyExpectedUnpublished から移した） */
+function classifyByLater(later, now, registry) {
+  if (later.some(isConfirmingSlot)) return "confirmed";
+  if (later.some((s) => s.status !== "done" && !isPastWindow(s, now, registry)))
+    return "deferred";
+  return undefined;
+}
+
 /**
  * 発売開始の遅れ（想定内の未公開）の判定。
  *
@@ -191,23 +209,11 @@ export function classifyExpectedUnpublished(
       result.set(slotKeyOf(slot), "confirmed");
       continue;
     }
-    if (
-      slot.outcome !== rule.outcome ||
-      (slot.attempts ?? 0) === 0 ||
-      slot.status === "done" ||
-      !isPastWindow(slot, now, registry)
-    ) {
-      continue;
-    }
+    if (!isUnresolvedCandidate(slot, rule, now, registry)) continue;
     const later = laterByRace.get(slot.race_id) ?? [];
     if (later.length === 0) continue;
-    if (later.some(isConfirmingSlot)) {
-      result.set(slotKeyOf(slot), "confirmed");
-    } else if (
-      later.some((s) => s.status !== "done" && !isPastWindow(s, now, registry))
-    ) {
-      result.set(slotKeyOf(slot), "deferred");
-    }
+    const verdict = classifyByLater(later, now, registry);
+    if (verdict) result.set(slotKeyOf(slot), verdict);
   }
   return result;
 }

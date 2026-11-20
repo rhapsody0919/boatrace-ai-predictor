@@ -25,7 +25,7 @@ import {
   digestRevision,
   pickRaceStatus,
 } from "./sns/todayDigestStatus.js";
-import { createXSnapshot } from "../../api/_lib/snsXSend.js";
+import { createXSnapshot } from "./sns/xSend.js";
 import { loadTodayVariants } from "./snsTodayVariants.js";
 import {
   SHOT_BUDGET_MS,

@@ -59,6 +59,7 @@ import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
 import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { createMemoryStore } from "../lib/scrapeJobs/testing/memoryStore.js";
+import { cronWiring } from "./verifyData/cronWiring.js";
 import { supabase as moduleSupabase } from "../lib/supabaseClient.js";
 import { clone, createFakeDb } from "./verifyData/scrape-result-job-fake-db.js";
 
@@ -2125,17 +2126,15 @@ const catchupCtx = (
     ["kfile-sync", "kfile_sync"],
     ["result-catchup", "result_catchup"],
   ]) {
-    const src = fs.readFileSync(path.join(ROOT, `api/cron/${file}.js`), "utf8");
-    const m = /maxDuration:\s*(\d+)/.exec(src);
-    const mod = await import(`../../api/cron/${file}.js`);
+    // api の本文の字は読まず、export（config・default）と、共通ラッパへ渡した引数で見る
+    const api = await cronWiring(() => import(`../../api/cron/${file}.js`));
     check(
-      `api/cron/${file}.js: maxDuration(${m?.[1]}) がレジストリ(${job})の maxDurationSec(${SCRAPE_JOBS[job].maxDurationSec}) と一致し、config・default の関数がある。共通ラッパ経由（job='${job}'）`,
-      m &&
-        Number(m[1]) === SCRAPE_JOBS[job].maxDurationSec &&
-        mod.config?.maxDuration === SCRAPE_JOBS[job].maxDurationSec &&
-        typeof mod.default === "function" &&
-        new RegExp(`job: "${job}"`).test(src) &&
-        /createScrapeCronHandler/.test(src),
+      `api/cron/${file}.js: maxDuration(${api.config?.maxDuration}) がレジストリ(${job})の maxDurationSec(${SCRAPE_JOBS[job].maxDurationSec}) と一致し、共通ラッパを job='${job}' で1回通した戻りを default export にする`,
+      api.config?.maxDuration === SCRAPE_JOBS[job].maxDurationSec &&
+        api.made.length === 1 &&
+        api.made[0].options.job === job &&
+        api.handler === api.made[0].handler,
+      show(api.made.map((w) => w.options.job)),
     );
   }
   // 認証: CRON_SECRET なし・誤りは401（取得もDBアクセスもしない）

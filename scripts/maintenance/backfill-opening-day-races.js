@@ -100,6 +100,49 @@ async function countRows(client, date, venueCode) {
   return { races, entries, conditions, exhibition, results };
 }
 
+/** 出走表（1R）から races の行と、dry-run で見せる計画を作る */
+function buildVenueDayPlan({ date, venueCode, page }) {
+  const { rows, anomalies } = buildRaceRows({ date, venueCode, page });
+  const plan = {
+    races: rows.length,
+    entriesOn1R: page.entries.length,
+    seriesDay: page.meta.seriesDay,
+    grade: page.meta.raceGrade,
+    title: page.meta.raceTitle,
+    anomalies: [...anomalies, ...page.anomalies],
+  };
+  return { rows, plan };
+}
+
+const toRaceRefs = (rows) =>
+  rows.map((r) => ({
+    race_id: r.race_id,
+    venue_code: r.venue_code,
+    race_number: r.race_number,
+  }));
+
+function stopIfThrottleTripped(throttled) {
+  if (throttled.state.tripped) {
+    throw new BackfillAbortError(throttled.state.tripped);
+  }
+}
+
+/** 3段の結果から会場日の status とエラーの先頭10件を決める */
+function judgeVenueDay({ info, exhibition, results, tallies }) {
+  const errors = [...info, ...exhibition, ...results]
+    .filter((r) => r.outcome === "error" || r.outcome === "breaker_open")
+    .map((r) => `${r.race_id}: ${r.error}`)
+    .slice(0, 10);
+  const failed = Object.values(tallies).some(hasFailure);
+  // 値の無いレース（順延・中止・未公開）がある会場日は、done にせず、人が確認する
+  // （2026-06-03の江戸川・蒲郡は順延・中止で、結果・展示が全て無かった）
+  const gaps = Object.values(tallies).some(hasGap);
+  return {
+    status: failed ? "partial" : gaps ? "done_with_gaps" : "done",
+    errors,
+  };
+}
+
 async function processVenueDay({ date, venueCode }, { throttled, apply }) {
   const fetchFn = throttled.fetchFn;
   const client = supabase;
@@ -125,15 +168,7 @@ async function processVenueDay({ date, venueCode }, { throttled, apply }) {
       db: before,
     };
   }
-  const { rows, anomalies } = buildRaceRows({ date, venueCode, page });
-  const plan = {
-    races: rows.length,
-    entriesOn1R: page.entries.length,
-    seriesDay: page.meta.seriesDay,
-    grade: page.meta.raceGrade,
-    title: page.meta.raceTitle,
-    anomalies: [...anomalies, ...page.anomalies],
-  };
+  const { rows, plan } = buildVenueDayPlan({ date, venueCode, page });
   if (rows.length === 0) {
     return {
       status: "no_data",
@@ -151,17 +186,9 @@ async function processVenueDay({ date, venueCode }, { throttled, apply }) {
   });
   if (raced.error) throw raced.error;
 
-  const races = rows.map((r) => ({
-    race_id: r.race_id,
-    venue_code: r.venue_code,
-    race_number: r.race_number,
-  }));
+  const races = toRaceRefs(rows);
   const tallies = {};
-  const stopIfTripped = () => {
-    if (throttled.state.tripped) {
-      throw new BackfillAbortError(throttled.state.tripped);
-    }
-  };
+  const stopIfTripped = () => stopIfThrottleTripped(throttled);
 
   const info = await runRaceInfo(races, {
     date,
@@ -193,16 +220,14 @@ async function processVenueDay({ date, venueCode }, { throttled, apply }) {
   tallies.results = tallyOutcomes(results);
   stopIfTripped();
 
-  const errors = [...info, ...exhibition, ...results]
-    .filter((r) => r.outcome === "error" || r.outcome === "breaker_open")
-    .map((r) => `${r.race_id}: ${r.error}`)
-    .slice(0, 10);
-  const failed = Object.values(tallies).some(hasFailure);
-  // 値の無いレース（順延・中止・未公開）がある会場日は、done にせず、人が確認する
-  // （2026-06-03の江戸川・蒲郡は順延・中止で、結果・展示が全て無かった）
-  const gaps = Object.values(tallies).some(hasGap);
+  const { status, errors } = judgeVenueDay({
+    info,
+    exhibition,
+    results,
+    tallies,
+  });
   return {
-    status: failed ? "partial" : gaps ? "done_with_gaps" : "done",
+    status,
     plan,
     tallies,
     errors,
@@ -217,26 +242,29 @@ function writeReport(reportPath, report) {
   fs.renameSync(tmp, reportPath);
 }
 
-async function main() {
+/** 引数を読む（誤りは文つきで throw） */
+function readOptions() {
   const apply = hasFlag("apply");
   const listPath = getArg("list") ?? DEFAULT_LIST;
   const reportPath = getArg("report") ?? DEFAULT_REPORT;
   const intervalMs = toInt(getArg("interval-ms"), "interval-ms") ?? 3500;
   const maxRequests = toInt(getArg("max-requests"), "max-requests") ?? 5000;
   const limit = toInt(getArg("limit"), "limit");
+  return { apply, listPath, reportPath, intervalMs, maxRequests, limit };
+}
 
-  if (!isSupabaseEnabled()) {
-    throw new Error(
-      "Supabase環境変数（SUPABASE_URL・SUPABASE_SERVICE_KEY）が未設定です",
-    );
-  }
+function readList(listPath) {
   const list = JSON.parse(fs.readFileSync(listPath, "utf8"));
   if (!Array.isArray(list.rows)) {
     throw new Error(
       `欠落リストの形式が不正です（rows がありません）: ${listPath}`,
     );
   }
+  return list;
+}
 
+/** 前回の記録と、そこで done の会場日の集合 */
+function readPrevious(reportPath) {
   const previous = fs.existsSync(reportPath)
     ? JSON.parse(fs.readFileSync(reportPath, "utf8"))
     : null;
@@ -245,6 +273,43 @@ async function main() {
       .filter((e) => e.status === "done")
       .map((e) => venueDayKey(e.date, e.venue_code)),
   );
+  return { previous, done };
+}
+
+function upsertEntry(report, entry) {
+  const key = venueDayKey(entry.date, entry.venue_code);
+  const at = report.entries.findIndex(
+    (e) => venueDayKey(e.date, e.venue_code) === key,
+  );
+  if (at >= 0) report.entries[at] = entry;
+  else report.entries.push(entry);
+}
+
+function progressLine(i, total, t, entry, requests) {
+  const label = `${t.race_date} 会場${t.venue_code}`;
+  return (
+    `[${i + 1}/${total}] ${label}: ${entry.status}` +
+    (entry.plan
+      ? ` (${entry.plan.races}R, 日目=${entry.plan.seriesDay}, ${entry.plan.grade})`
+      : "") +
+    (entry.note ? ` ${entry.note}` : "") +
+    (entry.errors?.length ? ` errors=${entry.errors.length}` : "") +
+    ` [req ${requests}]`
+  );
+}
+
+async function main() {
+  const { apply, listPath, reportPath, intervalMs, maxRequests, limit } =
+    readOptions();
+
+  if (!isSupabaseEnabled()) {
+    throw new Error(
+      "Supabase環境変数（SUPABASE_URL・SUPABASE_SERVICE_KEY）が未設定です",
+    );
+  }
+  const list = readList(listPath);
+
+  const { previous, done } = readPrevious(reportPath);
   const targets = selectTargets(list.rows, {
     only: parseOnly(getArg("only")),
     skip: apply ? done : new Set(),
@@ -265,50 +330,31 @@ async function main() {
     apply,
     entries: apply ? [...(previous?.entries ?? [])] : [],
   };
-  const upsertEntry = (entry) => {
-    const key = venueDayKey(entry.date, entry.venue_code);
-    const at = report.entries.findIndex(
-      (e) => venueDayKey(e.date, e.venue_code) === key,
-    );
-    if (at >= 0) report.entries[at] = entry;
-    else report.entries.push(entry);
-  };
 
   let aborted = null;
   for (const [i, t] of targets.entries()) {
-    const label = `${t.race_date} 会場${t.venue_code}`;
+    const key = { date: t.race_date, venue_code: t.venue_code };
     let entry;
     try {
       const result = await processVenueDay(
         { date: t.race_date, venueCode: t.venue_code },
         { throttled, apply },
       );
-      entry = { date: t.race_date, venue_code: t.venue_code, ...result };
+      entry = { ...key, ...result };
     } catch (error) {
       if (error instanceof BackfillAbortError) {
         aborted = error.message;
         break;
       }
-      entry = {
-        date: t.race_date,
-        venue_code: t.venue_code,
-        status: "error",
-        note: error.message,
-      };
+      entry = { ...key, status: "error", note: error.message };
     }
-    upsertEntry({ ...entry, at: new Date().toISOString() });
+    upsertEntry(report, { ...entry, at: new Date().toISOString() });
     if (apply) {
       report.requests = throttled.state.requests;
       writeReport(reportPath, report);
     }
     console.log(
-      `[${i + 1}/${targets.length}] ${label}: ${entry.status}` +
-        (entry.plan
-          ? ` (${entry.plan.races}R, 日目=${entry.plan.seriesDay}, ${entry.plan.grade})`
-          : "") +
-        (entry.note ? ` ${entry.note}` : "") +
-        (entry.errors?.length ? ` errors=${entry.errors.length}` : "") +
-        ` [req ${throttled.state.requests}]`,
+      progressLine(i, targets.length, t, entry, throttled.state.requests),
     );
     throttled.clearCache();
     if (throttled.state.tripped) {
@@ -317,6 +363,11 @@ async function main() {
     }
   }
 
+  finishRun({ report, throttled, aborted, apply, reportPath });
+}
+
+/** 集計を記録へ入れて出し、中断なら exit 2 */
+function finishRun({ report, throttled, aborted, apply, reportPath }) {
   const summary = {};
   for (const e of report.entries)
     summary[e.status] = (summary[e.status] ?? 0) + 1;

@@ -258,8 +258,8 @@ function getArg(name) {
   return arg ? arg.slice(name.length + 3) : null;
 }
 
-async function main() {
-  if (!isSupabaseEnabled()) throw new Error("Supabaseが設定されていません");
+/** 引数を読んで検査する（誤りは文つきで throw） */
+function parseMainArgs() {
   const item = getArg("item");
   const from = getArg("from");
   const to = getArg("to") ?? from;
@@ -273,6 +273,44 @@ async function main() {
   if (!DATE_RE.test(from ?? "") || !DATE_RE.test(to ?? "") || from > to) {
     throw new Error("--from=YYYY-MM-DD [--to=YYYY-MM-DD] を指定してください");
   }
+  return { item, from, to, dir, apply };
+}
+
+/** race_status の値ごとの件数を tally へ足す */
+function addStatusTally(tally, rows) {
+  for (const r of rows) {
+    if (r.race_status) tally[r.race_status] = (tally[r.race_status] ?? 0) + 1;
+  }
+}
+
+function printSummary({
+  apply,
+  item,
+  total,
+  written,
+  missingDays,
+  tally,
+  out,
+}) {
+  console.log(
+    `\n${apply ? "[APPLY]" : "[DRY-RUN]"} ${item}: 書く行 ${total}${apply ? `・書いた行 ${written}` : ""}${missingDays.length > 0 ? `・中間JSONの無い日 ${missingDays.length}（${missingDays.slice(0, 5).join(", ")}${missingDays.length > 5 ? " ほか" : ""}）` : ""}`,
+  );
+  if (Object.keys(tally).length > 0) {
+    console.log(`  値の内訳: ${JSON.stringify(tally)}`);
+  }
+  if (out.filled) {
+    console.log(`  NULL から埋める艇（列ごと）: ${JSON.stringify(out.filled)}`);
+  }
+  if (out.anomalies.length > 0) {
+    console.log(
+      `  書かなかったレース（異常）: ${out.anomalies.length}件 ${JSON.stringify(out.anomalies.slice(0, 10))}${out.anomalies.length > 10 ? " ほか" : ""}`,
+    );
+  }
+}
+
+async function main() {
+  if (!isSupabaseEnabled()) throw new Error("Supabaseが設定されていません");
+  const { item, from, to, dir, apply } = parseMainArgs();
   const def = GAP_FILL_ITEMS[item];
   console.log(
     `${apply ? "[APPLY]" : "[DRY-RUN]"} ${item}（${def.table}・${def.mode}・列 ${def.columns.join(",")}）${from}〜${to}`,
@@ -290,26 +328,11 @@ async function main() {
     }
     const rows = await planDay(item, day, date, supabase, out);
     total += rows.length;
-    for (const r of rows) {
-      if (r.race_status) tally[r.race_status] = (tally[r.race_status] ?? 0) + 1;
-    }
+    addStatusTally(tally, rows);
     if (rows.length > 0) console.log(`  ${date}: ${rows.length}行`);
     if (apply && rows.length > 0) written += await writeRows(item, rows);
   }
-  console.log(
-    `\n${apply ? "[APPLY]" : "[DRY-RUN]"} ${item}: 書く行 ${total}${apply ? `・書いた行 ${written}` : ""}${missingDays.length > 0 ? `・中間JSONの無い日 ${missingDays.length}（${missingDays.slice(0, 5).join(", ")}${missingDays.length > 5 ? " ほか" : ""}）` : ""}`,
-  );
-  if (Object.keys(tally).length > 0) {
-    console.log(`  値の内訳: ${JSON.stringify(tally)}`);
-  }
-  if (out.filled) {
-    console.log(`  NULL から埋める艇（列ごと）: ${JSON.stringify(out.filled)}`);
-  }
-  if (out.anomalies.length > 0) {
-    console.log(
-      `  書かなかったレース（異常）: ${out.anomalies.length}件 ${JSON.stringify(out.anomalies.slice(0, 10))}${out.anomalies.length > 10 ? " ほか" : ""}`,
-    );
-  }
+  printSummary({ apply, item, total, written, missingDays, tally, out });
   if (missingDays.length > 0) process.exitCode = 1;
 }
 

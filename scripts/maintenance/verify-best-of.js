@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 6艇の中の最良値の判定 `bestOf`（src/utils/bestOf.js）の回帰テスト。
+ * 6艇の中の最良値の判定 `bestOf`（src/pure/bestOf.js）の回帰テスト。
  * docs/design/race-detail-ui-unify spec R1。DB 接続は不要。
  *
  * 守ること:
@@ -19,7 +19,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SRC = path.join(__dirname, "../../src/utils/bestOf.js");
+const SRC = path.join(__dirname, "../../src/pure/bestOf.js");
 
 const c = (...values) => values.map((value, i) => ({ boat: i + 1, value }));
 const sorted = (set) => [...set].sort((a, b) => a - b);

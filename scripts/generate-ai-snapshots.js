@@ -22,6 +22,7 @@ import { blogPostsZhTw } from "../src/data/blogPostsZhTw.js";
 import { blogPostsKo } from "../src/data/blogPostsKo.js";
 import { renderWithFreshPage } from "./lib/renderWithFreshPage.js";
 import { planBlogSnapshots } from "./lib/previewSnapshotPlan.js";
+import { isDirectRun } from "./lib/isDirectRun.js";
 import { withSnapshotBrowser } from "./aiSnapshots/staticServer.js";
 import {
   addChartPngStatus,
@@ -112,7 +113,7 @@ async function generateBlogSnapshots(openPage, baseUrl) {
 }
 
 // 翻訳記事の言語と記事の一覧（src/config/languages.js の BLOG_TRANSLATION_SOURCES と同じ）
-const BLOG_TRANSLATIONS = {
+export const BLOG_TRANSLATIONS = {
   en: blogPostsEn,
   "zh-TW": blogPostsZhTw,
   ko: blogPostsKo,
@@ -326,7 +327,7 @@ const BLOG_STEPS = {
   generateBlogListSnapshots,
 };
 
-async function main() {
+export async function main() {
   console.log("AIクローラー向けスナップショット生成を開始します...");
 
   generateWinningTechniqueSnapshot();
@@ -391,11 +392,14 @@ async function main() {
   console.log("スナップショット生成が完了しました。");
 }
 
-main().catch((err) => {
-  // ここに到達するのはgenerateWinningTechniqueSnapshot()・generateTodaySnapshot()自体の失敗のみ
-  // （ブログ側のエラーは上のtry-catchで既に吸収済み）。同期的なテンプレート
-  // 生成なので、失敗する場合は環境差異ではなく実際のバグの可能性が高く、
-  // ビルドを失敗させて気づけるようにする。
-  console.error("スナップショット生成中にエラーが発生しました:", err);
-  process.exit(1);
-});
+// 直接起動（npm run build）のときだけ main を回す（import されただけなら描き・書きは走らない。verify が BLOG_TRANSLATIONS・main を読むため）
+if (isDirectRun(import.meta.url)) {
+  main().catch((err) => {
+    // ここに到達するのはgenerateWinningTechniqueSnapshot()・generateTodaySnapshot()自体の失敗のみ
+    // （ブログ側のエラーは上のtry-catchで既に吸収済み）。同期的なテンプレート
+    // 生成なので、失敗する場合は環境差異ではなく実際のバグの可能性が高く、
+    // ビルドを失敗させて気づけるようにする。
+    console.error("スナップショット生成中にエラーが発生しました:", err);
+    process.exit(1);
+  });
+}
