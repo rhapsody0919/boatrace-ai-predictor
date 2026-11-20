@@ -5,6 +5,9 @@
 import { Link } from "react-router-dom";
 import {
   GuidePage,
+  GuideSection,
+  GuideHero,
+  GuideCta,
   GuideTable,
   ExampleEntriesTable,
   TechniqueList,
@@ -99,24 +102,9 @@ const RACE_TABS = [
 const RACE_TABS_INTRO =
   "比賽頁面分為以下分頁，依此順序排列。前4個分頁一次比較6艘艇，後面的分頁則是選擇1艘艇深入查看。";
 
-function HeroSection() {
-  return (
-    <section className="eg-hero">
-      <h1>🚤 什麼是日本賽艇（Kyotei）？</h1>
-      <p className="eg-hero-lead">
-        日本賽艇（BOAT RACE，日文稱 Kyotei）是日本四大公營競技之一， 全國 24
-        個賽場幾乎每天都有比賽。6 艘水上滑行艇繞行 600 公尺水道 3
-        圈一決勝負，觀眾可以合法投注比賽結果。
-        這份指南帶你從零開始，一路學到像行家一樣看懂 AI 預測。
-      </p>
-    </section>
-  );
-}
-
 function QuickFactsSection() {
   return (
-    <section className="eg-section">
-      <h2>⚡ 快速認識</h2>
+    <GuideSection heading={<>⚡ 快速認識</>}>
       <div className="eg-facts-grid">
         <div className="eg-fact">
           <strong>6 艘艇</strong>
@@ -143,7 +131,7 @@ function QuickFactsSection() {
           <span>賠率由投注總額決定，與賽馬相同</span>
         </div>
       </div>
-    </section>
+    </GuideSection>
   );
 }
 
@@ -169,21 +157,19 @@ function LaneOneSection() {
 
 function TechniquesSection() {
   return (
-    <section className="eg-section">
-      <h2>🥇 6 種獲勝方式（Kimarite）</h2>
+    <GuideSection heading={<>🥇 6 種獲勝方式（Kimarite）</>}>
       <p>
         每一場勝利都會依「如何獲勝」被官方分類。 記住這 6
         個詞，就能看懂日文賽事實況和龍神雷達的預測。
       </p>
       <TechniqueList items={TECHNIQUES} />
-    </section>
+    </GuideSection>
   );
 }
 
 function RacerClassesSection() {
   return (
-    <section className="eg-section">
-      <h2>🏅 選手級別</h2>
+    <GuideSection heading={<>🏅 選手級別</>}>
       <p>
         全日本約 1,600 名職業選手分為四個級別，每半年重新評級一次。
         級別是預測表現的重要依據：
@@ -206,15 +192,14 @@ function RacerClassesSection() {
       <p className="eg-note">
         女子選手與男子選手同場競技 — 賽艇是少數男女直接對決的運動之一。
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
 function BetTypesSection() {
   return (
-    <section className="eg-section">
-      <h2>🎫 投注玩法</h2>
-      <GuideTable head={["玩法", "投注內容", "難度"]}>
+    <GuideSection heading={<>🎫 投注玩法</>}>
+      <GuideTable head={<><th>玩法</th><th>投注內容</th><th>難度</th></>}>
         {BET_TYPES.map((b) => (
           <tr key={b.name}>
             <td>
@@ -229,14 +214,13 @@ function BetTypesSection() {
         3連單是最受歡迎的玩法 — 每注 ¥100 的平均派彩約
         ¥7,000，大爆冷時甚至超過 ¥100,000。
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
 function ReadingPredictionSection() {
   return (
-    <section className="eg-section">
-      <h2>🤖 如何看懂龍神雷達的預測</h2>
+    <GuideSection heading={<>🤖 如何看懂龍神雷達的預測</>}>
       <p>
         龍神雷達為每場比賽分析選手成績、馬達性能、賽場特性、起跑時機等數據，
         並清楚呈現每個選擇的
@@ -260,20 +244,19 @@ function ReadingPredictionSection() {
         </li>
       </ol>
       <RaceTabsList intro={RACE_TABS_INTRO} tabs={RACE_TABS} />
-    </section>
+    </GuideSection>
   );
 }
 
 function ExampleRaceSection() {
   return (
-    <section className="eg-section">
-      <h2>📋 實際案例：解讀數據並填寫投注單</h2>
+    <GuideSection heading={<>📋 實際案例：解讀數據並填寫投注單</>}>
       <p>
         許多新手指南只用虛構的數字說明。這裡用一場真實比賽 —{" "}
         {EXAMPLE_RACE.date} {EXAMPLE_RACE.venue} 第{EXAMPLE_RACE.raceNo}場 —
         帶你看真實的出走表數據、真實的買法，以及真實的配當。
       </p>
-      <ExampleEntriesTable head={["艇號", "選手", "級別", "勝率", "當地勝率", "馬達2連率"]} />
+      <ExampleEntriesTable head={<><th>艇號</th><th>選手</th><th>級別</th><th>勝率</th><th>當地勝率</th><th>馬達2連率</th></>} />
       <p>
         <strong>怎麼解讀：</strong>{" "}
         1號艇是A1級別，且本場當地勝率全場最高（6.59）——是典型的「1號位逃走（Nige）」熱門。3號艇雖然只是A2級別，但馬達2連率（38.0%）明顯優於其他艇——這是很多人不單看級別、而多考慮馬達表現來選2着的常見理由。
@@ -293,14 +276,13 @@ function ExampleRaceSection() {
           → 查看龍神雷達對這場比賽的完整數據分析
         </Link>
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
 function VenueGuideSection() {
   return (
-    <section className="eg-section">
-      <h2>🏟️ 親臨賽場體驗</h2>
+    <GuideSection heading={<>🏟️ 親臨賽場體驗</>}>
       <p>
         現場觀看賽艇既便宜（入場費 ¥100）又難忘。
         我們為旅客最容易抵達的賽場準備了繁體中文賽場指南 —
@@ -309,7 +291,7 @@ function VenueGuideSection() {
       <p>
         <Link to="/zh-TW/venues">→ 瀏覽賽場指南</Link>
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
@@ -336,17 +318,6 @@ function DisclaimerSection() {
   );
 }
 
-function CtaSection() {
-  return (
-    <section className="eg-cta">
-      <h2>準備好見識 AI 的實力了嗎？</h2>
-      <Link to="/zh-TW/" className="eg-cta-button">
-        🏁 查看今日免費預測
-      </Link>
-    </section>
-  );
-}
-
 export default function ZhTwGuide() {
   return (
     <GuidePage
@@ -354,38 +325,24 @@ export default function ZhTwGuide() {
       description="日本賽艇（BOAT RACE / Kyotei）新手完全指南：比賽規則、獲勝方式、投注玩法，以及如何看懂龍神雷達的免費 AI 預測。"
       canonical="https://www.boat-ai.jp/zh-TW/guide"
     >
-      {/* Hero */}
-      <HeroSection />
-
-      {/* Quick facts */}
+      <GuideHero heading={<>🚤 什麼是日本賽艇（Kyotei）？</>}>
+        日本賽艇（BOAT RACE，日文稱 Kyotei）是日本四大公營競技之一， 全國 24
+        個賽場幾乎每天都有比賽。6 艘水上滑行艇繞行 600 公尺水道 3
+        圈一決勝負，觀眾可以合法投注比賽結果。
+        這份指南帶你從零開始，一路學到像行家一樣看懂 AI 預測。
+      </GuideHero>
       <QuickFactsSection />
-
-      {/* The key concept */}
       <LaneOneSection />
-
-      {/* Winning techniques */}
       <TechniquesSection />
-
-      {/* Racer classes */}
       <RacerClassesSection />
-
-      {/* Betting types */}
       <BetTypesSection />
-
-      {/* How to read boatAI */}
       <ReadingPredictionSection />
-
-      {/* Real example (BOA-250): actual past race data */}
       <ExampleRaceSection />
-
-      {/* Venue guides */}
       <VenueGuideSection />
-
-      {/* Legal disclaimer */}
       <DisclaimerSection />
-
-      {/* CTA */}
-      <CtaSection />
+      <GuideCta to="/zh-TW/" heading={<>準備好見識 AI 的實力了嗎？</>}>
+        🏁 查看今日免費預測
+      </GuideCta>
     </GuidePage>
   );
 }

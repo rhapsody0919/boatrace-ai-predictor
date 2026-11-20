@@ -6,6 +6,9 @@
 import { Link } from "react-router-dom";
 import {
   GuidePage,
+  GuideSection,
+  GuideHero,
+  GuideCta,
   GuideTable,
   ExampleEntriesTable,
   TechniqueList,
@@ -142,21 +145,6 @@ const RACE_TABS = [
 const RACE_TABS_INTRO =
   "경주 페이지는 아래 순서의 탭으로 나뉩니다. 앞의 4개 탭은 6명을 한꺼번에 비교하고, 뒤의 탭은 보트 하나를 골라 깊이 살펴봅니다.";
 
-function HeroSection() {
-  return (
-    <section className="eg-hero">
-      <h1>🚤 일본 경정(쿄테이)이란?</h1>
-      <p className="eg-hero-lead">
-        일본 경정(BOAT RACE, 일본어로는 쿄테이)은 일본의 4대 공영 경기 중
-        하나로, 전국 24개 경정장에서 거의 매일 열립니다. 6척의 모터보트가
-        600m 수면을 3바퀴 돌아 승부를 가리고, 결과에 합법적으로 베팅할 수
-        있습니다. 미사리 경정을 아는 분이라면 이미 절반은 아는 셈 — 이
-        가이드는 나머지 절반, 일본만의 특징과 AI 예측 읽는 법을 안내합니다.
-      </p>
-    </section>
-  );
-}
-
 function KoreaVsJapanSection() {
   return (
     <section className="eg-section eg-highlight">
@@ -165,7 +153,7 @@ function KoreaVsJapanSection() {
         한국 경정(미사리)과 기본 규칙은 같지만, 예측 관점에서 중요한 차이가
         있습니다:
       </p>
-      <GuideTable head={["항목", "한국 경정", "일본 경정"]}>
+      <GuideTable head={<><th>항목</th><th>한국 경정</th><th>일본 경정</th></>}>
         {DIFFERENCES.map((d) => (
           <tr key={d.item}>
             <td>
@@ -188,8 +176,7 @@ function KoreaVsJapanSection() {
 
 function BasicInfoSection() {
   return (
-    <section className="eg-section">
-      <h2>⚡ 기본 정보</h2>
+    <GuideSection heading={<>⚡ 기본 정보</>}>
       <div className="eg-facts-grid">
         <div className="eg-fact">
           <strong>6척</strong>
@@ -216,28 +203,26 @@ function BasicInfoSection() {
           <span>배당률은 베팅 총액으로 결정 (경마와 동일)</span>
         </div>
       </div>
-    </section>
+    </GuideSection>
   );
 }
 
 function TechniquesSection() {
   return (
-    <section className="eg-section">
-      <h2>🥇 6가지 승리 전법 (키마리테)</h2>
+    <GuideSection heading={<>🥇 6가지 승리 전법 (키마리테)</>}>
       <p>
         모든 승리는 「어떻게 이겼는가」로 공식 분류됩니다. 한국 경정과 같은
         개념이지만 일본어 용어를 알아두면 일본 중계와 용신 레이더 예측을
         읽을 수 있습니다.
       </p>
       <TechniqueList items={TECHNIQUES} />
-    </section>
+    </GuideSection>
   );
 }
 
 function RacerClassesSection() {
   return (
-    <section className="eg-section">
-      <h2>🏅 선수 등급</h2>
+    <GuideSection heading={<>🏅 선수 등급</>}>
       <p>
         약 1,600명의 프로 선수가 4개 등급으로 나뉘며, 반년마다 재심사를
         받습니다. 등급은 성적을 예측하는 강력한 지표입니다:
@@ -261,15 +246,14 @@ function RacerClassesSection() {
         여자 선수가 남자 선수와 같은 경주에서 직접 겨루는, 몇 안 되는 스포츠
         중 하나입니다.
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
 function BetTypesSection() {
   return (
-    <section className="eg-section">
-      <h2>🎫 베팅 방식</h2>
-      <GuideTable head={["방식", "맞히는 것", "난이도"]}>
+    <GuideSection heading={<>🎫 베팅 방식</>}>
+      <GuideTable head={<><th>방식</th><th>맞히는 것</th><th>난이도</th></>}>
         {BET_TYPES.map((b) => (
           <tr key={b.name}>
             <td>
@@ -284,14 +268,13 @@ function BetTypesSection() {
         삼쌍승식(일본의 3연단)이 압도적으로 인기 있는 방식으로, ¥100당 평균
         배당은 약 ¥7,000, 큰 이변 때는 ¥100,000를 넘기도 합니다.
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
 function ReadingPredictionSection() {
   return (
-    <section className="eg-section">
-      <h2>🤖 용신 레이더 예측 보는 법</h2>
+    <GuideSection heading={<>🤖 용신 레이더 예측 보는 법</>}>
       <p>
         용신 레이더는 경주마다 선수 성적, 모터 성능, 경정장 특성, 스타트
         타이밍 등의 데이터를 분석해 모든 추천의 <strong>이유</strong>
@@ -317,20 +300,19 @@ function ReadingPredictionSection() {
         </li>
       </ol>
       <RaceTabsList intro={RACE_TABS_INTRO} tabs={RACE_TABS} />
-    </section>
+    </GuideSection>
   );
 }
 
 function ExampleRaceSection() {
   return (
-    <section className="eg-section">
-      <h2>📋 실제 사례: 데이터 읽고 투표용지 작성하기</h2>
+    <GuideSection heading={<>📋 실제 사례: 데이터 읽고 투표용지 작성하기</>}>
       <p>
         많은 입문 가이드는 가상의 숫자로 설명합니다. 여기서는 실제 경주 —{" "}
         {EXAMPLE_RACE.date} {EXAMPLE_RACE.venue} {EXAMPLE_RACE.raceNo}R — 의
         실제 출주표 데이터, 실제 베팅, 실제 배당금을 보여드립니다.
       </p>
-      <ExampleEntriesTable head={["정번호", "선수", "급별", "승률", "현지 승률", "모터 2연대율"]} />
+      <ExampleEntriesTable head={<><th>정번호</th><th>선수</th><th>급별</th><th>승률</th><th>현지 승률</th><th>모터 2연대율</th></>} />
       <p>
         <strong>해석:</strong> 1번 보트는 A1급이며 이 경정장 현지 승률이
         가장 높습니다(6.59) — 1코스에서 인빠지기로 이기는 전형적인 유력
@@ -353,14 +335,13 @@ function ExampleRaceSection() {
           → 이 경주에 대한 용신 레이더의 전체 데이터 분석 보기
         </Link>
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
 function VenueGuideSection() {
   return (
-    <section className="eg-section">
-      <h2>🏟️ 직접 경정장에 가보기</h2>
+    <GuideSection heading={<>🏟️ 직접 경정장에 가보기</>}>
       <p>
         현장 관람은 입장료 ¥100로 저렴하고 잊지 못할 경험입니다. 일본 전국
         24개 경정장 모두의 한국어 가이드를 준비했습니다 — 하네다 공항 근처의
@@ -369,7 +350,7 @@ function VenueGuideSection() {
       <p>
         <Link to="/ko/venues">→ 경정장 가이드 보기</Link>
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
@@ -404,17 +385,6 @@ function DisclaimerSection() {
   );
 }
 
-function CtaSection() {
-  return (
-    <section className="eg-cta">
-      <h2>AI의 실력을 직접 확인해 보세요</h2>
-      <Link to="/ko/" className="eg-cta-button">
-        🏁 오늘의 무료 예측 보기
-      </Link>
-    </section>
-  );
-}
-
 export default function KoGuide() {
   return (
     <GuidePage
@@ -422,38 +392,25 @@ export default function KoGuide() {
       description="일본 경정(BOAT RACE) 입문 가이드: 규칙, 승리 전법, 베팅 방식, 한국 경정과의 차이, 그리고 용신 레이더의 무료 AI 예측 보는 법."
       canonical="https://www.boat-ai.jp/ko/guide"
     >
-      {/* Hero */}
-      <HeroSection />
-
-      {/* Korea vs Japan */}
+      <GuideHero heading={<>🚤 일본 경정(쿄테이)이란?</>}>
+        일본 경정(BOAT RACE, 일본어로는 쿄테이)은 일본의 4대 공영 경기 중
+        하나로, 전국 24개 경정장에서 거의 매일 열립니다. 6척의 모터보트가
+        600m 수면을 3바퀴 돌아 승부를 가리고, 결과에 합법적으로 베팅할 수
+        있습니다. 미사리 경정을 아는 분이라면 이미 절반은 아는 셈 — 이
+        가이드는 나머지 절반, 일본만의 특징과 AI 예측 읽는 법을 안내합니다.
+      </GuideHero>
       <KoreaVsJapanSection />
-
-      {/* Quick facts */}
       <BasicInfoSection />
-
-      {/* Winning techniques */}
       <TechniquesSection />
-
-      {/* Racer classes */}
       <RacerClassesSection />
-
-      {/* Betting types */}
       <BetTypesSection />
-
-      {/* How to read boatAI */}
       <ReadingPredictionSection />
-
-      {/* Real example (BOA-250): actual past race data */}
       <ExampleRaceSection />
-
-      {/* Venue guides */}
       <VenueGuideSection />
-
-      {/* Legal disclaimer */}
       <DisclaimerSection />
-
-      {/* CTA */}
-      <CtaSection />
+      <GuideCta to="/ko/" heading={<>AI의 실력을 직접 확인해 보세요</>}>
+        🏁 오늘의 무료 예측 보기
+      </GuideCta>
     </GuidePage>
   );
 }

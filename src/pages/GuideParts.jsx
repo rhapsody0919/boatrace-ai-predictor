@@ -1,7 +1,8 @@
 /**
- * GuideParts - 外国語の入門ガイド（EnglishGuide・KoGuide・ZhTwGuide）が共に使う殻: 頁の枠・表・データの項目・レース詳細のタブの一覧・実例のレースの出走表。
+ * GuideParts - 外国語の入門ガイド（EnglishGuide・KoGuide・ZhTwGuide）が共に使う殻: 頁の枠・頭・節・CTA・表・決まり手・データの項目・レース詳細のタブの一覧・実例のレースの出走表。
  * 画面の文は各ページから渡す（言語ごとの字は各ページに残す。廃止語の検査 check-deprecated-terms がページを名指しで読むため）
  */
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -77,17 +78,45 @@ export function GuidePage({ title, description, canonical, children }) {
   );
 }
 
-/** 見出しの行（head の字の列）と本体の行（children の tr）の表 */
+/** 頁の頭（h1 と導入の文） */
+export function GuideHero({ heading, children }) {
+  return (
+    <section className="eg-hero">
+      <h1>{heading}</h1>
+      <p className="eg-hero-lead">{children}</p>
+    </section>
+  );
+}
+
+/** 本文の節（h2 と中身） */
+export function GuideSection({ heading, children }) {
+  return (
+    <section className="eg-section">
+      <h2>{heading}</h2>
+      {children}
+    </section>
+  );
+}
+
+/** 頁の終わりの CTA（見出しと今日の予想へのボタン） */
+export function GuideCta({ to, heading, children }) {
+  return (
+    <section className="eg-cta">
+      <h2>{heading}</h2>
+      <Link to={to} className="eg-cta-button">
+        {children}
+      </Link>
+    </section>
+  );
+}
+
+/** 見出しの行（head は th の断片）と本体の行（children の tr）の表 */
 export function GuideTable({ head, children }) {
   return (
     <div className="eg-table-wrapper">
       <table className="eg-table">
         <thead>
-          <tr>
-            {head.map((h) => (
-              <th key={h}>{h}</th>
-            ))}
-          </tr>
+          <tr>{head}</tr>
         </thead>
         <tbody>{children}</tbody>
       </table>
