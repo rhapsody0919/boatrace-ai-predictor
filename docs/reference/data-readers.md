@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2551 |
+| 読んだファイル | 2556 |
 | 読み書きのあるファイル | 309 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -902,8 +902,8 @@
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select(embed) [racer_id] （検査）
   - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:93` select(helper:upsertChangedRows)
   - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:117` select(helper:upsertChangedRows)
-  - `scripts/maintenance/verifyData/series-points-stage-rules-scenes-1.js:194` select(helper:fetchAllByRaceId)
-  - `scripts/maintenance/verifyData/series-points-stage-rules-scenes-1.js:215` select(helper:fetchAllByRaceId)
+  - `scripts/maintenance/verifyData/series-points-stage-rules-scenes-1.js:196` select(helper:fetchAllByRaceId)
+  - `scripts/maintenance/verifyData/series-points-stage-rules-scenes-1.js:217` select(helper:fetchAllByRaceId)
   - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:106` rest(rest) [race_id]
   - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:108` rest(rest) [race_id]
   - `scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:101` select(helper:upsertChangedRows)

@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2551,
+    "sourceFiles": 2556,
     "filesWithAccess": 309,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -7619,13 +7619,13 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verifyData/series-points-stage-rules-scenes-1.js:194",
+          "ref": "scripts/maintenance/verifyData/series-points-stage-rules-scenes-1.js:196",
           "op": "select",
           "via": "helper:fetchAllByRaceId",
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verifyData/series-points-stage-rules-scenes-1.js:215",
+          "ref": "scripts/maintenance/verifyData/series-points-stage-rules-scenes-1.js:217",
           "op": "select",
           "via": "helper:fetchAllByRaceId",
           "columns": []
