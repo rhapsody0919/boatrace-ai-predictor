@@ -27,6 +27,21 @@ export const AI_CRAWLER_USER_AGENTS = [
   "DuckDuckBot",
 ];
 
+// 断るクローラー（Supabase の枠越えの主因。JS を実行して頁を描き、1頁ごとに Supabase を大量に読む。
+// オーナー 11/19「推奨通り」）。public/robots.txt で Disallow し、守らない物に備えて middleware.js が 403 を返す。
+// 判定は大文字小文字を問わない部分一致。middleware の 403 は scripts/maintenance/verify-blocked-crawlers.js で固定
+export const BLOCKED_CRAWLER_USER_AGENTS = [
+  "Reflectionbot",
+  "meta-externalagent",
+  "Bytespider",
+];
+
+export function isBlockedCrawler(userAgent) {
+  if (!userAgent) return false;
+  const ua = userAgent.toLowerCase();
+  return BLOCKED_CRAWLER_USER_AGENTS.some((name) => ua.includes(name.toLowerCase()));
+}
+
 // 日替わりページ（/ と /venue/1〜24）のボット向け HTML を出す UA（ADR 0089 決定1）。
 // 今は AI_CRAWLER_USER_AGENTS と同じ。検索ボット（bingbot・Applebot・DuckDuckBot）だけ止めるときは、
 // ここから外す（ブログ等のスナップショットには残る）

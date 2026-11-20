@@ -185,6 +185,11 @@
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
     },
     {
+      "script": "verify-blocked-crawlers.js",
+      "tier": "ci",
+      "guards": "断るクローラー（Reflectionbot・meta-externalagent・Bytespider、Supabase の枠越えの主因 2026-11-19）は middleware.js が matcher の全パスで 403・no-store（大文字小文字を問わない部分一致）、検索ボット・他の AI・SNS・人は 403 にならず今の経路のまま"
+    },
+    {
       "script": "verify-blog-chart-png.js",
       "tier": "ci",
       "guards": "ブログの図の PNG の書き出し（ADR 0099、src/utils/blogChartPng.js・scripts/lib/blogChartPng.js）。大きさの固定の一覧が整数の画素（1080×1350・1280×720）で BlogChart.css の [data-chart-export] と同じ、URL のパス、本番の判定は content-type と先頭8バイトの両方（無い PNG は rewrite で index.html が返る）、撮る図の一覧を記事ごとにまとめる、朝夜のまとめの行（足された・変わった JSON だけ、作られていない理由を status.json から）、status.json の照合が図の PNG の失敗を拾う"
