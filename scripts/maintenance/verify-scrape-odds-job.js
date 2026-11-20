@@ -35,6 +35,8 @@ import { parseOddsRaceId } from "../lib/scrapeJobs/oddsHandlers.js";
 import { isOddsSkippedOnGha } from "../lib/predictionRefresh.js";
 
 import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
+import { checkOddsEntry } from "./verifyData/cron-entry-checks.js";
+import { checkScheduledOdds } from "./verifyData/scrape-scheduled-scenes.js";
 
 
 import { runScrapeOddsJobScenes1 } from "./verifyData/scrape-odds-job-scenes-1.js";
@@ -253,40 +255,8 @@ runScrapeOddsJobScenes5({ printOut, check, show, same, DATE, RACE_A, fullRow });
       isOddsSkippedOnGha({ SKIP_ODDS_ON_GHA: "true" }) === true &&
       isOddsSkippedOnGha({ SKIP_ODDS_ON_GHA: " True " }) === true,
   );
-  const scheduled = fs.readFileSync(
-    path.join(ROOT, "scripts/daily/scrape-scheduled.js"),
-    "utf8",
-  );
-  check(
-    "scrape-scheduled.js: SKIP_ODDS_ON_GHA が true の間は、オッズの事前評価（hasOddsRaces）が false になり、runOdds を呼ばない。既存の入口 run は残す",
-    // 変数が true のときだけ、対象のレースがあるときに、Vercel が健全かを確認する（フェイルセーフ付きSKIP）。
-    // 未設定・falseなら skipOdds は false（DBを読まない）
-    /const skipOdds =\s*isOddsSkippedOnGha\(\) && \(!oddsDue \|\| \(await gateSkips\("SKIP_ODDS_ON_GHA"\)\)\);/.test(
-      scheduled,
-    ) &&
-      /const hasOddsRaces = !skipOdds && oddsDue;/.test(scheduled) &&
-      /if \(hasOddsRaces\) \{\s*const \{ updated, count \} = await runOdds\(schedule, date\)/.test(
-        scheduled,
-      ),
-  );
-  check(
-    "scrape-scheduled.js: 買い目オッズ（A4）は、A3 を GitHub Actions が肩代わりするとき（skipOdds が false）だけ動く。Vercel の A3 から導出しているため、二重取得しない（BOA-645）",
-    /const hasPredictionOddsRaces = !skipOdds && upcomingRaces\.length > 0;/.test(
-      scheduled,
-    ) &&
-      /if \(hasPredictionOddsRaces\) \{\s*console\.log\([^)]*\);\s*await runPredictionOdds\(/.test(
-        scheduled,
-      ) &&
-      // 早期終了の判定も同じ条件にする（A4 しか無い起動で、何もせず最後まで進まない）
-      /finishedRaces\.length === 0 &&\s*!hasPredictionOddsRaces/.test(
-        scheduled,
-      ) &&
-      (scheduled.match(/runPredictionOdds\(/g) ?? []).length === 1,
-  );
-  check(
-    "scrape-scheduled.js: 案1が有効でないままオッズを止めた場合は警告（SKIP_ODDS_REFRESH_ON_GHA が true でないとき）",
-    /if \(skipOdds && !skipOddsRefresh\)/.test(scheduled),
-  );
+  // scrape-scheduled.js の切り替えは、偽の取得のもとで main を回して見る（verifyData/scrape-scheduled-scenes.js）
+  await checkScheduledOdds({ check, show });
   const workflow = fs.readFileSync(
     path.join(ROOT, ".github/workflows/scrape-scheduled.yml"),
     "utf8",
@@ -333,36 +303,8 @@ runScrapeOddsJobScenes5({ printOut, check, show, same, DATE, RACE_A, fullRow });
     validateRegistry().length === 0,
     show(validateRegistry()),
   );
-  const apiSource = fs.readFileSync(
-    path.join(ROOT, "api/cron/odds.js"),
-    "utf8",
-  );
-  const md = /maxDuration:\s*(\d+)/.exec(apiSource);
-  check(
-    "api/cron/odds.js: maxDuration がレジストリ（odds.maxDurationSec）と同じ値のリテラル",
-    md && Number(md[1]) === def.maxDurationSec,
-    `${md?.[1]} / ${def.maxDurationSec}`,
-  );
-  check(
-    // BOA-404（T4b-10-3）: prediction_odds の導出フックを足すため、createScrapeCronHandler の直接呼び出しから
-    // createOddsCronHandlerWithPredictionOdds（内部で runScrapeJob に job="odds"・
-    // createOddsSlotHandler を渡す。waitUntilは使わない）に変わった
-    "api/cron/odds.js: prediction_odds の導出フック込みのハンドラー経由で job='odds'・handleSlot（waitUntil は使わない）",
-    /createOddsCronHandlerWithPredictionOdds\(\)/.test(apiSource) &&
-      !/waitUntil/.test(apiSource.replace(/\/\*[\s\S]*?\*\//g, "")),
-  );
-  const predictionOddsHandlersSource = fs.readFileSync(
-    path.join(ROOT, "scripts/lib/scrapeJobs/predictionOddsHandlers.js"),
-    "utf8",
-  );
-  check(
-    "predictionOddsHandlers.js: createOddsCronHandlerWithPredictionOdds は job='odds'・createOddsSlotHandler を runScrapeJob に渡す",
-    /job:\s*"odds"/.test(predictionOddsHandlersSource) &&
-      /createSlotHandler = createOddsSlotHandler/.test(
-        predictionOddsHandlersSource,
-      ) &&
-      /handleSlot:\s*createSlotHandler\(/.test(predictionOddsHandlersSource),
-  );
+  // api/cron/odds.js とその本体の配線は、import を偽に差し替えて見る（verifyData/cron-entry-checks.js）
+  await checkOddsEntry({ check, show });
   const vercel = JSON.parse(
     fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
   );
