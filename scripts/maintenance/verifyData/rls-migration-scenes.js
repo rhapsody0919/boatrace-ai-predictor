@@ -31,11 +31,11 @@ async function scene1() {
       "CREATE TABLE public.future_table (id serial PRIMARY KEY, note text)",
     );
     const priv = await db.query(`
-      SELECT has_table_privilege('anon', 'public.future_table', 'SELECT') AS a_sel,
-             has_table_privilege('anon', 'public.future_table', 'INSERT') AS a_ins,
-             has_table_privilege('authenticated', 'public.future_table', 'SELECT') AS u_sel,
-             has_table_privilege('authenticated', 'public.future_table', 'INSERT') AS u_ins,
-             has_table_privilege('service_role', 'public.future_table', 'INSERT') AS s_ins`);
+    SELECT has_table_privilege('anon', 'public.future_table', 'SELECT') AS a_sel,
+           has_table_privilege('anon', 'public.future_table', 'INSERT') AS a_ins,
+           has_table_privilege('authenticated', 'public.future_table', 'SELECT') AS u_sel,
+           has_table_privilege('authenticated', 'public.future_table', 'INSERT') AS u_ins,
+           has_table_privilege('service_role', 'public.future_table', 'INSERT') AS s_ins`);
     const p = priv.rows[0];
     check(
       "(g) 適用後に作る新規テーブルは、anon/authenticatedに権限が付かない（service_roleには付く）",
@@ -81,14 +81,14 @@ async function scene1() {
       );
       const rls = await db.query(
         `
-        SELECT count(*)::int AS n FROM pg_class
-        WHERE relnamespace = 'public'::regnamespace AND relname = ANY($1) AND relrowsecurity`,
+      SELECT count(*)::int AS n FROM pg_class
+      WHERE relnamespace = 'public'::regnamespace AND relname = ANY($1) AND relrowsecurity`,
         [TARGET_TABLES],
       );
       check("(i) ロールバック後は対象16テーブルのRLSが無効", rls.rows[0].n === 0);
       const opts = await db.query(`
-        SELECT reloptions FROM pg_class
-        WHERE relnamespace = 'public'::regnamespace AND relname = 'v_production_models'`);
+      SELECT reloptions FROM pg_class
+      WHERE relnamespace = 'public'::regnamespace AND relname = 'v_production_models'`);
       check(
         "(i) ロールバック後は security_invoker が解除される",
         !(opts.rows[0].reloptions ?? []).includes("security_invoker=true"),

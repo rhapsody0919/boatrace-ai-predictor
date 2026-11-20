@@ -168,10 +168,10 @@ function scene2() {
         "scripts/lib/rows.js",
         extractAccesses(
           `export async function upsertRows(client, table, rows) {
-    const old = await Promise.all(rows.map((r) => client.from(table).select("*").eq("id", r.id)));
-    return client.from(table).upsert(rows);
-  }
-  export function wrap(c, t) { return upsertRows(c, t, []); }`,
+  const old = await Promise.all(rows.map((r) => client.from(table).select("*").eq("id", r.id)));
+  return client.from(table).upsert(rows);
+}
+export function wrap(c, t) { return upsertRows(c, t, []); }`,
           "scripts/lib/rows.js",
           known,
         ),
@@ -180,9 +180,9 @@ function scene2() {
         "scripts/daily/job.js",
         extractAccesses(
           `import { upsertRows, wrap } from "../lib/rows.js";
-  await upsertRows(client, "races", rows);
-  await wrap(client, "race_entries");
-  await upsertRows(client, "not_a_table", rows);`,
+await upsertRows(client, "races", rows);
+await wrap(client, "race_entries");
+await upsertRows(client, "not_a_table", rows);`,
           "scripts/daily/job.js",
           known,
         ),
