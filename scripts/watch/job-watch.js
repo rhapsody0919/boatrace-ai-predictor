@@ -45,8 +45,13 @@ function fail(message) {
 
 const token = process.env.GITHUB_TOKEN;
 const repo = process.env.GITHUB_REPOSITORY ?? "";
-if (!token) fail("GITHUB_TOKEN が無い");
-if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) fail("GITHUB_REPOSITORY の形が違う");
+// 直に回したとき（node scripts/watch/job-watch.js scan|rerun）だけ確かめて動く。verify は import して scan を偽の fetch で回す
+const isMain =
+  Boolean(process.argv[1]) &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain && !token) fail("GITHUB_TOKEN が無い");
+if (isMain && !/^[\w.-]+\/[\w.-]+$/.test(repo))
+  fail("GITHUB_REPOSITORY の形が違う");
 
 async function gh(
   method,
@@ -388,7 +393,11 @@ async function rerun() {
   }
 }
 
-const command = process.argv[2];
-const main = command === "scan" ? scan : command === "rerun" ? rerun : null;
-if (!main) fail("使い方: job-watch.js scan | rerun");
-main().catch((err) => fail(`見張りで失敗: ${err.message}`));
+export { CANARY_PATH, scan };
+
+if (isMain) {
+  const command = process.argv[2];
+  const main = command === "scan" ? scan : command === "rerun" ? rerun : null;
+  if (!main) fail("使い方: job-watch.js scan | rerun");
+  main().catch((err) => fail(`見張りで失敗: ${err.message}`));
+}
