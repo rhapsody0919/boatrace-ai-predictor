@@ -481,8 +481,6 @@ export function scanText(
       return null;
     }
   };
-  const inRepo = (abs) =>
-    abs === repoRoot || abs.startsWith(repoRoot + path.sep);
   const listFiles = (dir) =>
     readdirSync(dir, { withFileTypes: true }).flatMap((ent) =>
       ent.isDirectory()
@@ -515,49 +513,93 @@ export function scanText(
     workflowScripts.length > 0,
     true,
   );
-  const reachable = new Set(roots);
-  const queue = [...roots];
-  const reads = new Set();
-  const leakedLiterals = [];
-  while (queue.length > 0) {
-    const file = queue.pop();
-    const css = /\.css$/.test(file);
-    if (!css && !/\.(js|jsx|mjs|cjs|html)$/.test(file)) continue;
-    const rel = path.relative(repoRoot, file);
-    const { specs, literals } = scanText(readFileSync(file, "utf8"), {
-      css,
-      nodeSide: !rel.startsWith("src/"),
-      prefixes,
-    });
-    for (const l of literals) leakedLiterals.push(`${rel}: ${l}`);
-    for (const spec of specs) {
-      const clean = spec.split("?")[0].split("#")[0];
-      if (!clean || /^\/\//.test(clean)) continue;
-      const base = clean.startsWith("/")
-        ? path.join(repoRoot, clean)
-        : path.resolve(path.dirname(file), clean);
-      if (!inRepo(base)) continue;
-      const cut = /\/$/.test(clean) || spec !== clean ? "/" : "";
-      const target = exts.map((e) => base + e).find((p) => statOf(p)?.isFile());
-      if (target) {
-        reads.add(path.relative(repoRoot, target));
-        if (!reachable.has(target)) {
-          reachable.add(target);
-          queue.push(target);
+  // 根から import・相対のパスで辿れる先（閉包）。根の木（root）を引数にし、本物の木と下の偽の木で同じ辿りを使う
+  const closureOf = (root, rootFiles) => {
+    const inRoot = (abs) => abs === root || abs.startsWith(root + path.sep);
+    const reachable = new Set(rootFiles);
+    const queue = [...rootFiles];
+    const reads = new Set();
+    const leakedLiterals = [];
+    while (queue.length > 0) {
+      const file = queue.pop();
+      const css = /\.css$/.test(file);
+      if (!css && !/\.(js|jsx|mjs|cjs|html)$/.test(file)) continue;
+      const rel = path.relative(root, file);
+      const { specs, literals } = scanText(readFileSync(file, "utf8"), {
+        css,
+        nodeSide: !rel.startsWith("src/"),
+        prefixes,
+      });
+      for (const l of literals) leakedLiterals.push(`${rel}: ${l}`);
+      for (const spec of specs) {
+        const clean = spec.split("?")[0].split("#")[0];
+        if (!clean || /^\/\//.test(clean)) continue;
+        const base = clean.startsWith("/")
+          ? path.join(root, clean)
+          : path.resolve(path.dirname(file), clean);
+        if (!inRoot(base)) continue;
+        const cut = /\/$/.test(clean) || spec !== clean ? "/" : "";
+        const target = exts
+          .map((e) => base + e)
+          .find((p) => statOf(p)?.isFile());
+        if (target) {
+          reads.add(path.relative(root, target));
+          if (!reachable.has(target)) {
+            reachable.add(target);
+            queue.push(target);
+          }
+        } else if (statOf(base)?.isDirectory() || cut) {
+          // ディレクトリ・`${` で切れた頭の読み。その下の全部を読みうるものとして判定する
+          reads.add(`${path.relative(root, base)}/`.replace(/\/+$/, "/"));
+        } else {
+          // 解けない指定（public/ の URL・書き出し先・拡張子の無い頭）も黙って捨てず、頭として一覧と照らす
+          reads.add(path.relative(root, base));
         }
-      } else if (statOf(base)?.isDirectory() || cut) {
-        // ディレクトリ・`${` で切れた頭の読み。その下の全部を読みうるものとして判定する
-        reads.add(`${path.relative(repoRoot, base)}/`.replace(/\/+$/, "/"));
-      } else {
-        // 解けない指定（public/ の URL・書き出し先・拡張子の無い頭）も黙って捨てず、頭として一覧と照らす
-        reads.add(path.relative(repoRoot, base));
       }
     }
+    return {
+      rels: [...reachable].map((f) => path.relative(root, f)),
+      reads,
+      leakedLiterals,
+    };
+  };
+  // src から scripts/lib への辿りは偽の小さな木で確かめる。本物の src は scripts/lib を直に読まなくなった
+  // （#2986 で racerConditionStats が hitCalculator を読まなくなり、実例が消えた）が、読めば閉包に入ることは守る
+  {
+    const fake = mkdtempSync(path.join(tmpdir(), "e2e-scope-closure-"));
+    try {
+      mkdirSync(path.join(fake, "src/utils"), { recursive: true });
+      mkdirSync(path.join(fake, "scripts/lib/sub"), { recursive: true });
+      writeFileSync(
+        path.join(fake, "src/utils/a.js"),
+        'import { b } from "../../scripts/lib/b.js";\nexport const a = b;\n',
+      );
+      writeFileSync(
+        path.join(fake, "scripts/lib/b.js"),
+        'export { c as b } from "./sub/c";\n',
+      );
+      writeFileSync(
+        path.join(fake, "scripts/lib/sub/c.js"),
+        "export const c = 1;\n",
+      );
+      const { rels: fakeRels } = closureOf(fake, [
+        path.join(fake, "src/utils/a.js"),
+      ]);
+      check(
+        "閉包が src から scripts/lib を辿る（検査の前提、偽の木）",
+        ["scripts/lib/b.js", "scripts/lib/sub/c.js"].every((f) =>
+          fakeRels.includes(f),
+        ),
+        true,
+      );
+    } finally {
+      rmSync(fake, { recursive: true, force: true });
+    }
   }
-  const rels = [...reachable].map((f) => path.relative(repoRoot, f));
+  const { rels, reads, leakedLiterals } = closureOf(repoRoot, roots);
   check(
-    "閉包が src から scripts/lib を辿る（検査の前提）",
-    rels.includes("scripts/lib/hitCalculator.js"),
+    "閉包が e2e から scripts/lib を辿る（検査の前提）",
+    rels.some((f) => f.startsWith("scripts/lib/")),
     true,
   );
   check(
