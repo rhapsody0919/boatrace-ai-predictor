@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2456 |
+| 読んだファイル | 2459 |
 | 読み書きのあるファイル | 306 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -147,7 +147,7 @@
 | analogy_feedback_guard | service だけ | yes | トリガー: analogy_feedback |  | analogy_feedback |  |  |
 | append_sns_metric_observation | service だけ |  | api/admin/sns-hub/observations.js:198, scripts/lib/snsDailyRunnerStore.js:28, scripts/lib/snsMetricsRunnerStore.js:94, scripts/maintenance/verify-sns-daily-runner.js:1279 |  | sns_drafts, sns_metric_observations | sns_metric_observations |  |
 | approve_sns_x_send | service だけ |  | api/_lib/snsXSendStore.js:115, scripts/lib/snsTodayPlannerStore.js:110, scripts/sns/pushFinalsImageStore.js:183, scripts/sns/pushFullPictureStore.js:101 | sns_bundle_send_allowed | sns_approvers, sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs | sns_drafts, sns_x_send_jobs |  |
-| claim_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:175, scripts/maintenance/verify-scrape-slots-on-db.js:47 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:17 |  | races, scrape_slots | scrape_slots |  |
+| claim_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:175, scripts/maintenance/verify-scrape-slots-on-db.js:43 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:17 |  | races, scrape_slots | scrape_slots |  |
 | claim_scrape_slots_by_offset | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:156 |  | races, scrape_slots | scrape_slots |  |
 | compute_nige_second_by_course | service だけ |  | scripts/daily/update-course-baseline-stats.js:184 |  | race_results, races |  |  |
 | compute_racer_course_technique_stats | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:304 |  | race_entries, race_results, races, venue_course_technique_baseline |  |  |
@@ -167,7 +167,7 @@
 | data_health_racer_period_stats | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:310, scripts/lib/dataHealth/functions.js:89, scripts/maintenance/verifyData/data-health-job-scenes-1.js:267 |  | race_entries, racer_period_stats, races |  |  |
 | data_health_table_rows | service だけ |  | 名前の文字列: scripts/lib/dataHealth/functions.js:147, scripts/lib/dataHealth/jobParts.js:10, scripts/maintenance/verifyData/data-health-job-fixtures.js:77 ほか2 |  | exhibition_data, external_predictions, race_conditions, race_entries, race_odds, race_payouts, race_pit_reports, race_results, race_series, race_special_notes, race_start_timings, racer_period_stats, racer_profiles, racer_series_points, races, venue_entry_course_stats, venue_motor_stats |  |  |
 | enqueue_sns_metric_jobs | service だけ |  | トリガー: sns_x_send_jobs |  | sns_drafts | sns_metric_jobs |  |
-| ensure_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:134, scripts/maintenance/verify-scrape-slots-on-db.js:58 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:16, scripts/maintenance/verifyData/morning-init-jobs-scenes-3.js:133 |  | races | scrape_slots |  |
+| ensure_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:134, scripts/maintenance/verify-scrape-slots-on-db.js:54 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:16, scripts/maintenance/verifyData/morning-init-jobs-scenes-3.js:133 |  | races | scrape_slots |  |
 | fetch_counts_daily | service だけ |  | なし |  | fetch_counts |  |  |
 | get_accuracy_summary | service だけ |  | なし |  | models, predictions |  |  |
 | get_admin_rule_performance | service だけ |  | api/admin/rules/performance.js:41, scripts/maintenance/verify-admin-rule-performance.js:211 |  | predictions, race_results |  |  |
@@ -334,9 +334,9 @@
   - `scripts/analysis/past-rate-check/pool-contract-check.mjs:253` select [n_layer, race_id, stage, status]
   - `scripts/lib/analogyDispatch.js:80` select [race_id, stage]
   - `scripts/lib/analogyV16Exhibition.js:251` rest(rest) [model_version, n_layer, pool_cutoff, race_id, run_id, stage, status]
-  - `scripts/maintenance/verify-analogy-v16.js:269` rest(rest) [stage] （検査）
-  - `scripts/maintenance/verify-analogy-v16.js:279` rest(rest) [computed_at, exact, race_id, stage, status] （検査）
-  - `scripts/maintenance/verify-analogy-v16.js:281` rest(rest) [race_id, stage] （検査）
+  - `scripts/maintenance/verify-analogy-v16.js:301` rest(rest) [stage] （検査）
+  - `scripts/maintenance/verify-analogy-v16.js:311` rest(rest) [computed_at, exact, race_id, stage, status] （検査）
+  - `scripts/maintenance/verify-analogy-v16.js:313` rest(rest) [race_id, stage] （検査）
 - 書き手（1）: 
   - `scripts/lib/analogyV16Exhibition.js:307` upsert(rest) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -405,7 +405,7 @@
   - `scripts/maintenance/backfill-opening-day-races.js:97` select(helper:count)
   - `scripts/maintenance/check-exhibition-gap-rate.js:46` select(helper:fetchAll)
   - `scripts/maintenance/check-pre-race-shadow.js:301` select(helper:fetchByRaceIds)
-  - `scripts/maintenance/verify-analogy-v16.js:286` rest(rest) [boat_number, exhibition_time, is_absent, race_id] （検査）
+  - `scripts/maintenance/verify-analogy-v16.js:318` rest(rest) [boat_number, exhibition_time, is_absent, race_id] （検査）
   - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:32` select(helper:upsertChangedRows)
   - `scripts/ml/export-inference-data.js:115` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:196` select(helper:fetchAll)
@@ -890,7 +890,7 @@
   - `scripts/maintenance/restore-contaminated-race-entries.js:206` select(helper:upsertChangedRows)
   - `scripts/maintenance/restore-entries-branch-hometown.js:39` select(helper:fetchAll)
   - `scripts/maintenance/restore-entries-branch-hometown.js:119` select(helper:upsertChangedRows)
-  - `scripts/maintenance/verify-analogy-v16.js:289` rest(rest) [is_absent, race_id] （検査）
+  - `scripts/maintenance/verify-analogy-v16.js:321` rest(rest) [is_absent, race_id] （検査）
   - `scripts/maintenance/verify-data-readers.js:557` select(embed) [racer_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:46` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:47` rest(rest) [race_id] （検査）
@@ -1586,7 +1586,7 @@
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:122` select [race_id]
   - `scripts/maintenance/motor-pretest-backfill-fetch.js:72` select [race_date, race_number, venue_code]
   - `scripts/maintenance/update-venue-stats.js:32` select [race_date, race_id, venue_code]
-  - `scripts/maintenance/verify-analogy-v16.js:276` rest(rest) [cancellation_status, race_date, race_id, start_time] （検査）
+  - `scripts/maintenance/verify-analogy-v16.js:308` rest(rest) [cancellation_status, race_date, race_id, start_time] （検査）
   - `scripts/maintenance/verify-data-readers.js:557` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-live-api-key.js:32` rest(rest) [*] （検査）
   - `scripts/maintenance/verify-e2e-live-api-key.js:33` rest(rest) （検査）
@@ -1594,7 +1594,7 @@
   - `scripts/maintenance/verify-pretest-row-pick.js:128` select [race_date, venue_code] （検査）
   - `scripts/maintenance/verify-rpc-output-keys.js:266` select [race_date] （検査）
   - `scripts/maintenance/verify-rpc-output-keys.js:321` select [race_date, venue_code] （検査）
-  - `scripts/maintenance/verify-scrape-slots-on-db.js:69` select [cancellation_status, race_date, race_id, start_time] （検査）
+  - `scripts/maintenance/verify-scrape-slots-on-db.js:68` select [cancellation_status, race_date, race_id, start_time] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:615` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577` rest(rest) [race_id, start_time] （検査）
   - `scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:101` rest(rest) [race_date]
@@ -1722,7 +1722,7 @@
   - `scripts/maintenance/check-odds-shadow.js:142` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
   - `scripts/maintenance/check-pre-race-shadow.js:255` select [attempts, done_at, first_attempt_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, rows_written, run_mode, status]
   - `scripts/maintenance/check-result-shadow.js:129` select [attempts, done_at, job, last_error, offset_min, outcome, race_date, race_id, result_digest, run_mode, status]
-  - `scripts/maintenance/verify-scrape-slots-on-db.js:198` select [attempts, job, status] （検査）
+  - `scripts/maintenance/verify-scrape-slots-on-db.js:209` select [attempts, job, status] （検査）
 - 書き手（9）: 
   - `scripts/lib/boatcast/oritenJobParts.js:188` upsert [?]
   - `scripts/lib/pitReportJob.js:400` upsert [?]
@@ -1730,9 +1730,9 @@
   - `scripts/lib/scrapeJobs/cleanup.js:52` delete
   - `scripts/lib/scrapeJobs/storeParts.js:206` update [done_at, last_error, lease_until, outcome, result_digest, rows_written, status]
   - `scripts/lib/scrapeJobs/storeParts.js:242` update [?]
-  - `scripts/maintenance/verify-scrape-slots-on-db.js:124` delete （検査）
-  - `scripts/maintenance/verify-scrape-slots-on-db.js:174` update [done_at, outcome, status] （検査）
-  - `scripts/maintenance/verify-scrape-slots-on-db.js:211` delete （検査）
+  - `scripts/maintenance/verify-scrape-slots-on-db.js:128` delete （検査）
+  - `scripts/maintenance/verify-scrape-slots-on-db.js:183` update [done_at, outcome, status] （検査）
+  - `scripts/maintenance/verify-scrape-slots-on-db.js:238` delete （検査）
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-sns_approvers"></a>sns_approvers

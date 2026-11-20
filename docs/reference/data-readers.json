@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2456,
+    "sourceFiles": 2459,
     "filesWithAccess": 306,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -718,7 +718,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-analogy-v16.js:269",
+          "ref": "scripts/maintenance/verify-analogy-v16.js:301",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -727,7 +727,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-analogy-v16.js:279",
+          "ref": "scripts/maintenance/verify-analogy-v16.js:311",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -740,7 +740,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-analogy-v16.js:281",
+          "ref": "scripts/maintenance/verify-analogy-v16.js:313",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -778,8 +778,8 @@
             "scripts/lib/analogyDispatch.js:80",
             "scripts/lib/analogyV16Exhibition.js:251",
             "scripts/lib/analogyV16Exhibition.js:307",
-            "scripts/maintenance/verify-analogy-v16.js:279",
-            "scripts/maintenance/verify-analogy-v16.js:281"
+            "scripts/maintenance/verify-analogy-v16.js:311",
+            "scripts/maintenance/verify-analogy-v16.js:313"
           ],
           "writers": [],
           "sql": [
@@ -798,9 +798,9 @@
             "scripts/lib/analogyDispatch.js:80",
             "scripts/lib/analogyV16Exhibition.js:251",
             "scripts/lib/analogyV16Exhibition.js:307",
-            "scripts/maintenance/verify-analogy-v16.js:269",
-            "scripts/maintenance/verify-analogy-v16.js:279",
-            "scripts/maintenance/verify-analogy-v16.js:281"
+            "scripts/maintenance/verify-analogy-v16.js:301",
+            "scripts/maintenance/verify-analogy-v16.js:311",
+            "scripts/maintenance/verify-analogy-v16.js:313"
           ],
           "writers": [],
           "sql": [
@@ -826,7 +826,7 @@
             "scripts/analysis/analogy-v16-rebuild/snaps.mjs:4",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:128",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:200",
-            "scripts/maintenance/verify-analogy-v16.js:279"
+            "scripts/maintenance/verify-analogy-v16.js:311"
           ],
           "writers": [],
           "sql": []
@@ -868,7 +868,7 @@
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:253",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:71",
             "scripts/lib/analogyV16Exhibition.js:251",
-            "scripts/maintenance/verify-analogy-v16.js:279"
+            "scripts/maintenance/verify-analogy-v16.js:311"
           ],
           "writers": [],
           "sql": []
@@ -876,7 +876,7 @@
         "exact": {
           "readers": [
             "api/_lib/analogyV16.js:135",
-            "scripts/maintenance/verify-analogy-v16.js:279"
+            "scripts/maintenance/verify-analogy-v16.js:311"
           ],
           "writers": [],
           "sql": []
@@ -1565,7 +1565,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-analogy-v16.js:286",
+          "ref": "scripts/maintenance/verify-analogy-v16.js:318",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1845,7 +1845,7 @@
             "scripts/lib/sns/todayDigestStatus.js:39",
             "scripts/lib/snsTodayDigestV3.js:93",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:48",
-            "scripts/maintenance/verify-analogy-v16.js:286",
+            "scripts/maintenance/verify-analogy-v16.js:318",
             "scripts/maintenance/verify-pre-race-parsers.js:1375",
             "scripts/sns/pushSetsuKiryokuShortStore.js:120",
             "src/services/meetQueries2.js:155",
@@ -1879,7 +1879,7 @@
             "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/lib/sns/todayDigestStatus.js:39",
             "scripts/lib/snsTodayDigestV3.js:93",
-            "scripts/maintenance/verify-analogy-v16.js:286",
+            "scripts/maintenance/verify-analogy-v16.js:318",
             "scripts/maintenance/verify-pre-race-parsers.js:1375",
             "src/services/meetQueries2.js:155",
             "src/services/motorQueries6.js:120",
@@ -1909,7 +1909,7 @@
             "scripts/lib/analogyV16Exhibition.js:156",
             "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/lib/exhibitionRunForRaces.js:196",
-            "scripts/maintenance/verify-analogy-v16.js:286",
+            "scripts/maintenance/verify-analogy-v16.js:318",
             "src/services/meetQueries2.js:155",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
@@ -2064,7 +2064,7 @@
             "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/lib/sns/todayDigestStatus.js:39",
             "scripts/lib/snsTodayDigestV3.js:93",
-            "scripts/maintenance/verify-analogy-v16.js:286",
+            "scripts/maintenance/verify-analogy-v16.js:318",
             "scripts/sns/pushSetsuKiryokuShortStore.js:120",
             "src/services/motorQueries6.js:120",
             "src/services/raceQueries2.js:188"
@@ -7517,7 +7517,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-analogy-v16.js:289",
+          "ref": "scripts/maintenance/verify-analogy-v16.js:321",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -8449,7 +8449,7 @@
             "scripts/maintenance/delete-phantom-race-days.js:112",
             "scripts/maintenance/migrate-to-supabase.js:259",
             "scripts/maintenance/racelist-backfill-load.js:199",
-            "scripts/maintenance/verify-analogy-v16.js:289",
+            "scripts/maintenance/verify-analogy-v16.js:321",
             "scripts/maintenance/verify-e2e-har-merge.js:46",
             "scripts/maintenance/verify-e2e-har-merge.js:47",
             "scripts/maintenance/verify-e2e-har-merge.js:51",
@@ -9066,7 +9066,7 @@
             "scripts/lib/analogyV16Exhibition.js:261",
             "scripts/lib/sns/todayDigestStatus.js:37",
             "scripts/lib/snsTodayDigestV3.js:89",
-            "scripts/maintenance/verify-analogy-v16.js:289",
+            "scripts/maintenance/verify-analogy-v16.js:321",
             "scripts/sns/pushSetsuKiryokuShortStore.js:119"
           ],
           "writers": [],
@@ -16838,7 +16838,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-analogy-v16.js:276",
+          "ref": "scripts/maintenance/verify-analogy-v16.js:308",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -16915,7 +16915,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:69",
+          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:68",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17502,10 +17502,10 @@
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
             "scripts/maintenance/migrate-to-supabase.js:249",
             "scripts/maintenance/update-venue-stats.js:32",
-            "scripts/maintenance/verify-analogy-v16.js:276",
+            "scripts/maintenance/verify-analogy-v16.js:308",
             "scripts/maintenance/verify-data-readers.js:557",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:69",
+            "scripts/maintenance/verify-scrape-slots-on-db.js:68",
             "scripts/maintenance/verify-sns-auto-plan.js:615",
             "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
             "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:103",
@@ -17604,12 +17604,12 @@
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
             "scripts/maintenance/motor-pretest-backfill-fetch.js:72",
             "scripts/maintenance/update-venue-stats.js:32",
-            "scripts/maintenance/verify-analogy-v16.js:276",
+            "scripts/maintenance/verify-analogy-v16.js:308",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
             "scripts/maintenance/verify-rpc-output-keys.js:266",
             "scripts/maintenance/verify-rpc-output-keys.js:321",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:69",
+            "scripts/maintenance/verify-scrape-slots-on-db.js:68",
             "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:101",
             "scripts/sns/pushFinalsImageStore.js:71",
             "scripts/sns/pushFinalsImageStore.js:77",
@@ -17791,8 +17791,8 @@
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
             "scripts/maintenance/check-result-shadow.js:129",
-            "scripts/maintenance/verify-analogy-v16.js:276",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:69",
+            "scripts/maintenance/verify-analogy-v16.js:308",
+            "scripts/maintenance/verify-scrape-slots-on-db.js:68",
             "scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577",
             "scripts/sns/pushFinalsImageStore.js:71",
             "scripts/sns/pushFinalsImageStore.js:77",
@@ -17979,8 +17979,8 @@
             "scripts/maintenance/check-pre-race-shadow.js:255",
             "scripts/maintenance/check-result-shadow.js:129",
             "scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:114",
-            "scripts/maintenance/verify-analogy-v16.js:276",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:69",
+            "scripts/maintenance/verify-analogy-v16.js:308",
+            "scripts/maintenance/verify-scrape-slots-on-db.js:68",
             "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:102",
             "scripts/sns/pushFinalsImageStore.js:71",
             "scripts/sns/pushFullPictureStore.js:43",
@@ -18944,7 +18944,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:198",
+          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:209",
           "op": "select",
           "via": "client",
           "columns": [
@@ -19012,14 +19012,14 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:124",
+          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:128",
           "op": "delete",
           "via": "client",
           "columns": [],
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:174",
+          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:183",
           "op": "update",
           "via": "client",
           "columns": [
@@ -19030,7 +19030,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:211",
+          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:238",
           "op": "delete",
           "via": "client",
           "columns": [],
@@ -19060,10 +19060,10 @@
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
             "scripts/maintenance/check-result-shadow.js:129",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:124",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:174",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:198",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:211"
+            "scripts/maintenance/verify-scrape-slots-on-db.js:128",
+            "scripts/maintenance/verify-scrape-slots-on-db.js:183",
+            "scripts/maintenance/verify-scrape-slots-on-db.js:209",
+            "scripts/maintenance/verify-scrape-slots-on-db.js:238"
           ],
           "writers": [],
           "sql": [
@@ -19086,7 +19086,7 @@
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
             "scripts/maintenance/check-result-shadow.js:129",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:174"
+            "scripts/maintenance/verify-scrape-slots-on-db.js:183"
           ],
           "writers": [],
           "sql": [
@@ -19103,7 +19103,7 @@
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
             "scripts/maintenance/check-result-shadow.js:129",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:174"
+            "scripts/maintenance/verify-scrape-slots-on-db.js:183"
           ],
           "writers": [],
           "sql": [
@@ -19143,13 +19143,13 @@
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
             "scripts/maintenance/check-result-shadow.js:129",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:174",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:198"
+            "scripts/maintenance/verify-scrape-slots-on-db.js:183",
+            "scripts/maintenance/verify-scrape-slots-on-db.js:209"
           ],
           "writers": [
             "scripts/lib/scrapeJobs/cleanup.js:33",
             "scripts/lib/scrapeJobs/storeParts.js:206",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:174"
+            "scripts/maintenance/verify-scrape-slots-on-db.js:183"
           ],
           "sql": [
             "rpc:claim_scrape_slots",
@@ -19162,7 +19162,7 @@
             "scripts/maintenance/check-odds-shadow.js:142",
             "scripts/maintenance/check-pre-race-shadow.js:255",
             "scripts/maintenance/check-result-shadow.js:129",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:198"
+            "scripts/maintenance/verify-scrape-slots-on-db.js:209"
           ],
           "writers": [],
           "sql": [
@@ -19195,7 +19195,7 @@
           "readers": [
             "scripts/lib/scrapeJobs/storeParts.js:206",
             "scripts/lib/scrapeJobs/storeParts.js:242",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:174"
+            "scripts/maintenance/verify-scrape-slots-on-db.js:183"
           ],
           "writers": [],
           "sql": [
@@ -19243,7 +19243,7 @@
           ],
           "writers": [
             "scripts/lib/scrapeJobs/storeParts.js:206",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:174"
+            "scripts/maintenance/verify-scrape-slots-on-db.js:183"
           ],
           "sql": [
             "rpc:claim_scrape_slots",
@@ -19260,7 +19260,7 @@
           ],
           "writers": [
             "scripts/lib/scrapeJobs/storeParts.js:206",
-            "scripts/maintenance/verify-scrape-slots-on-db.js:174"
+            "scripts/maintenance/verify-scrape-slots-on-db.js:183"
           ],
           "sql": [
             "rpc:claim_scrape_slots",
@@ -26995,7 +26995,7 @@
           "via": "client"
         },
         {
-          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:47",
+          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:43",
           "via": "client"
         }
       ],
@@ -27555,7 +27555,7 @@
           "via": "client"
         },
         {
-          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:58",
+          "ref": "scripts/maintenance/verify-scrape-slots-on-db.js:54",
           "via": "client"
         }
       ],
