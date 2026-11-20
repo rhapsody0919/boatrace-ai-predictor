@@ -478,10 +478,10 @@ await runMorningInitJobsScenes3({ check, show, same, jst, clone, GOLDEN_VENUE, D
     );
     const real = computePredictCodeHash();
     check(
-      "(h) デプロイされた予測ロジック（generate-predictions.js ほか4ファイル）のハッシュを計算できる",
+      "(h) デプロイされた予測ロジック（generate-predictions.js ほか9ファイル）のハッシュを計算できる",
       typeof real === "string" &&
         /^[0-9a-f]{16}$/.test(real) &&
-        PREDICT_LOGIC_FILES.length === 4 &&
+        PREDICT_LOGIC_FILES.length === 10 &&
         real === computePredictCodeHash(),
       String(real),
     );
