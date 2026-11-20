@@ -1,7 +1,7 @@
 /**
  * 記事の PR の関門の本体 evaluateContentPr（純粋関数）。fs・git・時計に触れない。
  * 入力は全部引数で受ける（集めるのは scripts/content/check-content-pr.js）。契約: docs/operation/content-pr-contract.md
- * contentPrGate.js が e2e-scope.js の部品を渡して evaluateContentPr として出す
+ * 入口側の scripts/content/contentPrGateEval.js が e2e-scope.js の部品を渡して evaluateContentPr として出す
  */
 import {
   CHART_JSON_RE,
@@ -248,8 +248,8 @@ function manifestSection(manifestPath, entries, input, gatePath) {
  * @param {string[]} input.headPaths  HEAD のファイル一覧（同じ用途）
  * @param {object} input.config  scripts/content/content-pr-gate.json
  * @param {{gatePath: string, grandfatherRemovals: Function}} scope  関門の設定のパスと免除の一覧の差の判定
- *   （scripts/maintenance/e2e-scope.js の GATE_CONFIG_PATH・grandfatherRemovals。入口の contentPrGate.js が渡す。
- *   scripts/lib から e2e-scope.js への依存の辺を入口の1本に保つため）
+ *   （scripts/maintenance/e2e-scope.js の GATE_CONFIG_PATH・grandfatherRemovals。入口側の scripts/content/contentPrGateEval.js が渡す。
+ *   scripts/lib から入口の e2e-scope.js を読まないため）
  */
 export function evaluateContentPrWith(
   { diff, head, base, basePaths, headPaths = [], config },
