@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2499,
+    "sourceFiles": 2506,
     "filesWithAccess": 306,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -29191,7 +29191,7 @@
     {
       "job": "morning_digest",
       "entry": "api/cron/morning-digest.js",
-      "reachableFiles": 29,
+      "reachableFiles": 30,
       "writes": {
         "morning_digest_days": [
           "scripts/daily/generate-morning-digest.js:510",
@@ -29855,7 +29855,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 133,
+      "reachableFiles": 134,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
@@ -29967,7 +29967,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 109,
+      "reachableFiles": 110,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
