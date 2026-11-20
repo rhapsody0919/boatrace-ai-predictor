@@ -15,9 +15,6 @@
  * （kb-backfill.js 自体は変更しない）。
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import crypto from "node:crypto";
 import {
   inWindow,
   parseWindow,
@@ -25,6 +22,18 @@ import {
   classifyResponse,
   estimatePlan,
 } from "../maintenance/kb-backfill.js";
+import { appendJsonl } from "./archiveFiles.js";
+import {
+  baseEntry,
+  classifyFetched,
+  createRunContext,
+  fetchItem,
+  handleAbsentResponse,
+  planRun,
+  recordInvalidContent,
+  recordVerdict,
+  resolveRunDeps,
+} from "./archiveDownloadSteps.js";
 
 export { inWindow, parseWindow, windowDayKey, classifyResponse, estimatePlan };
 
@@ -35,29 +44,7 @@ export const FETCH_TIMEOUT_MS = 45000;
 export const isDone = (s) =>
   s && (s.status === "ok" || (s.status === "absent" && !s.expected));
 
-const sleepDefault = (ms) => new Promise((r) => setTimeout(r, ms));
-export const sha256 = (buf) =>
-  crypto.createHash("sha256").update(buf).digest("hex");
-
-export function readJsonl(file) {
-  if (!fs.existsSync(file)) return [];
-  return fs
-    .readFileSync(file, "utf8")
-    .split("\n")
-    .filter(Boolean)
-    .map((l, i) => {
-      try {
-        return JSON.parse(l);
-      } catch (e) {
-        throw new Error(`${file} の${i + 1}行目が不正なJSONです: ${e.message}`);
-      }
-    });
-}
-
-export const appendJsonl = (file, obj) => {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${JSON.stringify(obj)}\n`);
-};
+export { appendJsonl, readJsonl, sha256 } from "./archiveFiles.js";
 
 /** 1回のHTTP取得（リダイレクトは追わない）。Last-Modified を返す（公開時期の実測用） */
 export async function fetchOnce(url, userAgent) {
@@ -89,6 +76,53 @@ export function planItems(items, manifest) {
   });
 }
 
+/** 取得前の停止の理由（窓の外・日次上限・最大件数）。無ければ null（純関数） */
+function preFetchStopReason({ win, now, opts, usedTonight, requests }) {
+  if (!inWindow(win, now)) return `実行窓（JST ${opts.window}）の外です`;
+  if (usedTonight >= opts.dailyLimit)
+    return `日次上限 ${opts.dailyLimit} リクエストに到達しました`;
+  if (requests >= opts.maxRequests)
+    return `--max-requests=${opts.maxRequests} に到達しました`;
+  return null;
+}
+
+/**
+ * 失敗（403・429・503・5xx・接続失敗）の扱い。サーキットブレーカーで止めるなら終了コード、
+ * 同じ対象をやり直すなら null。
+ */
+async function handleBadResponse(r, { i, item, cls, res, netError, entry }) {
+  const c = r.counters;
+  c.consecutiveBad = c.badKind === cls.kind ? c.consecutiveBad + 1 : 1;
+  c.badKind = cls.kind;
+  const failed = {
+    ...entry,
+    status: "error",
+    reason: netError
+      ? String(netError.message ?? netError)
+      : `HTTP ${res.status}`,
+  };
+  appendJsonl(r.manifestFile, failed);
+  r.stats.error++;
+  r.log(
+    `[${i + 1}/${r.items.length}] ${item.key} ${failed.reason}（連続 ${c.consecutiveBad}/${cls.threshold}）`,
+  );
+  if (c.consecutiveBad >= cls.threshold)
+    return r.stop(
+      4,
+      `サーキットブレーカー: ${cls.kind} が ${c.consecutiveBad} 回連続しました。時間を置き、間隔を広げてから再開してください`,
+      item,
+    );
+  if (cls.backoff) {
+    const wait = Math.min(
+      300000,
+      r.backoffBaseMs * 2 ** (c.consecutiveBad - 1),
+    );
+    r.log(`  バックオフ ${Math.round(wait / 1000)} 秒`);
+    await r.sleepFn(wait);
+  } else await r.pace();
+  return null;
+}
+
 /**
  * @param {object} p
  * @param {Array<{key: string, url: string}>} p.items 取得する項目（この順に取得）
@@ -113,172 +147,72 @@ export async function runArchiveDownload({
   isAbsentExpected = () => false,
   deps = {},
 }) {
-  const sleepFn = deps.sleep ?? sleepDefault;
-  const fetchFn = deps.fetchOnce ?? ((url) => fetchOnce(url, userAgent));
-  const nowFn = deps.now ?? (() => new Date());
-  const backoffBaseMs = deps.backoffBaseMs ?? 30000;
-  const log = deps.log ?? console.log;
+  const d = resolveRunDeps(deps, userAgent, fetchOnce);
   const win = parseWindow(opts.window);
-  // マニフェスト（追記のみ）の項目ごとの最新が、状態
-  const byKey = new Map();
-  for (const e of readJsonl(manifestFile)) byKey.set(e.key, e);
-  // refresh: 完了済みも取り直す（更新される項目。例: 当月・翌月の月間スケジュール）
-  const todo = opts.refresh ? items : planItems(items, byKey);
-  const meanInterval = (opts.intervalMinMs + opts.intervalMaxMs) / 2;
-  const est = estimatePlan({
-    requests: todo.length,
-    dailyLimit: opts.dailyLimit,
-    meanIntervalMs: meanInterval,
-    latencyMs: opts.latencyMs,
+  const plan = planRun({
+    items,
+    manifestFile,
+    opts,
+    log: d.log,
+    planItems,
+    estimatePlan,
   });
-  log(
-    `未取得 ${todo.length} リクエスト（全 ${items.length}）/ 日次上限 ${opts.dailyLimit} → 最短 ${est.nights} 夜、合計約 ${est.totalHours} 時間` +
-      `（間隔 ${opts.intervalMinMs}〜${opts.intervalMaxMs}ms + 応答 ${opts.latencyMs}ms を仮定）`,
-  );
-  if (opts.dryRun) {
-    log(
-      "[DRY-RUN] ネットワーク・書き込みなし。先頭5件:",
-      JSON.stringify(todo.slice(0, 5).map((t) => t.key)),
-    );
-    return 0;
-  }
-  if (todo.length === 0) {
-    log("未取得はありません（完了済み）");
-    return 0;
-  }
-
-  const runId = new Date().toISOString().replace(/[:.]/g, "-");
-  const stats = { requests: 0, ok: 0, absent: 0, pending: 0, error: 0 };
-  let consecutiveBad = 0;
-  let badKind = null;
+  if (plan.done) return 0;
+  const r = createRunContext({
+    todo: plan.todo,
+    manifestFile,
+    runsFile,
+    opts,
+    dayKeyOf: (at) => windowDayKey(win, at),
+    d,
+    isAbsentExpected,
+  });
+  const { stats, pace, stop, runId } = r;
   let consecutiveInvalid = 0;
-  let consecutiveAbsent = 0;
-  const pace = () =>
-    sleepFn(
-      opts.intervalMinMs +
-        Math.random() * (opts.intervalMaxMs - opts.intervalMinMs),
-    );
-  const nightCount = () => {
-    const k = windowDayKey(win, nowFn());
-    return readJsonl(manifestFile).filter(
-      (e) => e.requested && windowDayKey(win, e.fetchedAt) === k,
-    ).length;
-  };
-  let usedTonight = nightCount();
+  const c = r.counters;
+  for (let i = 0; i < r.items.length; i++) {
+    const item = r.items[i];
+    const reason = preFetchStopReason({
+      win,
+      now: d.nowFn(),
+      opts,
+      usedTonight: c.usedTonight,
+      requests: stats.requests,
+    });
+    if (reason) return stop(2, reason, item);
 
-  const stop = (code, reason, resumeFrom) => {
-    log(`\n停止: ${reason}`);
-    if (resumeFrom)
-      log(`再開: 同じコマンドを再実行（次の対象 ${resumeFrom.key}）`);
-    log(`集計: ${JSON.stringify(stats)}`);
-    appendJsonl(runsFile, { runId, stopped: reason, stats });
-    return code;
-  };
-
-  for (let i = 0; i < todo.length; i++) {
-    const item = todo[i];
-    if (!inWindow(win, nowFn()))
-      return stop(2, `実行窓（JST ${opts.window}）の外です`, item);
-    if (usedTonight >= opts.dailyLimit)
-      return stop(
-        2,
-        `日次上限 ${opts.dailyLimit} リクエストに到達しました`,
-        item,
-      );
-    if (stats.requests >= opts.maxRequests)
-      return stop(2, `--max-requests=${opts.maxRequests} に到達しました`, item);
-
-    let res;
-    let netError = null;
-    try {
-      res = await fetchFn(item.url);
-    } catch (e) {
-      netError = e;
-    }
+    const { res, netError } = await fetchItem(d.fetchFn, item.url);
     stats.requests++;
-    usedTonight++;
-    const fetchedAt = nowFn().toISOString();
-    const cls = netError
-      ? { kind: "network", bad: true, threshold: 3, backoff: true }
-      : classifyResponse(res.status);
-    let entry = {
-      key: item.key,
-      url: item.url,
-      requested: true,
-      fetchedAt,
-      http: res?.status ?? null,
-      ms: res?.ms ?? null,
-      lastModified: res?.lastModified ?? null,
-    };
+    c.usedTonight++;
+    const entry = baseEntry(item, d.nowFn().toISOString(), res);
+    const cls = classifyFetched(netError, res, classifyResponse);
 
     if (cls.bad) {
-      consecutiveBad = badKind === cls.kind ? consecutiveBad + 1 : 1;
-      badKind = cls.kind;
-      entry = {
-        ...entry,
-        status: "error",
-        reason: netError
-          ? String(netError.message ?? netError)
-          : `HTTP ${res.status}`,
-      };
-      appendJsonl(manifestFile, entry);
-      stats.error++;
-      log(
-        `[${i + 1}/${todo.length}] ${item.key} ${entry.reason}（連続 ${consecutiveBad}/${cls.threshold}）`,
-      );
-      if (consecutiveBad >= cls.threshold)
-        return stop(
-          4,
-          `サーキットブレーカー: ${cls.kind} が ${consecutiveBad} 回連続しました。時間を置き、間隔を広げてから再開してください`,
-          item,
-        );
-      if (cls.backoff) {
-        const wait = Math.min(
-          300000,
-          backoffBaseMs * 2 ** (consecutiveBad - 1),
-        );
-        log(`  バックオフ ${Math.round(wait / 1000)} 秒`);
-        await sleepFn(wait);
-      } else await pace();
+      const code = await handleBadResponse(r, {
+        i,
+        item,
+        cls,
+        res,
+        netError,
+        entry,
+      });
+      if (code !== null) return code;
       i--; // 同じ対象をやり直す（連続失敗の上限で必ず止まる）
       continue;
     }
-    consecutiveBad = 0;
-    badKind = null;
+    c.consecutiveBad = 0;
+    c.badKind = null;
 
     if (cls.kind === "absent") {
-      appendJsonl(manifestFile, {
-        ...entry,
-        status: "absent",
-        expected: isAbsentExpected(item),
-      });
-      stats.absent++;
-      if (isAbsentExpected(item)) {
-        log(`[${i + 1}/${todo.length}] ${item.key} 404（未公開。想定内）`);
-      } else {
-        consecutiveAbsent++;
-        log(`[${i + 1}/${todo.length}] ${item.key} 404`);
-        if (consecutiveAbsent >= 3)
-          return stop(
-            4,
-            `404が${consecutiveAbsent}回連続しました（URL構造の変更またはアクセス制限の疑い）`,
-            todo[i + 1] ?? null,
-          );
-      }
+      const code = handleAbsentResponse(r, { i, item, entry });
+      if (code !== null) return code;
     } else {
-      consecutiveAbsent = 0;
+      c.consecutiveAbsent = 0;
       let verdict = null;
       try {
         verdict = await validate(res.bytes, item);
       } catch (e) {
-        appendJsonl(manifestFile, {
-          ...entry,
-          status: "error",
-          reason: `内容が想定外: ${e.message}`,
-          bytes: res.bytes.length,
-        });
-        stats.error++;
-        log(`[${i + 1}/${todo.length}] ${item.key} 内容が想定外: ${e.message}`);
+        recordInvalidContent(r, { i, item, res, entry, error: e });
         consecutiveInvalid++;
         if (consecutiveInvalid >= 3)
           return stop(
@@ -290,35 +224,11 @@ export async function runArchiveDownload({
         continue;
       }
       consecutiveInvalid = 0;
-      if (verdict.status === "pending") {
-        appendJsonl(manifestFile, {
-          ...entry,
-          status: "pending",
-          bytes: res.bytes.length,
-          reason: verdict.note ?? null,
-        });
-        stats.pending++;
-        log(
-          `[${i + 1}/${todo.length}] ${item.key} 未確定（${verdict.note ?? "pending"}）。保存しません`,
-        );
-      } else {
-        const file = save(item, res.bytes);
-        appendJsonl(manifestFile, {
-          ...entry,
-          status: "ok",
-          bytes: res.bytes.length,
-          sha256: sha256(res.bytes),
-          file,
-        });
-        stats.ok++;
-        log(
-          `[${i + 1}/${todo.length}] ${item.key} ok ${res.bytes.length}B ${res.ms}ms lm=${res.lastModified ?? "-"}（今夜 ${usedTonight}/${opts.dailyLimit}）`,
-        );
-      }
+      recordVerdict(r, { i, item, res, entry, verdict, save });
     }
     await pace();
   }
-  log(`\n完了: ${JSON.stringify(stats)}`);
+  d.log(`\n完了: ${JSON.stringify(stats)}`);
   appendJsonl(runsFile, { runId, completed: true, stats });
   // 0件取得のまま「成功」にしない（想定内の404だけの実行は成功）
   if (stats.requests > 0 && stats.ok + stats.absent === 0) return 1;
