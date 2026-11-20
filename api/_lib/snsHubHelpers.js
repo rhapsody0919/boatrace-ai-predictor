@@ -2,6 +2,7 @@
  * SNSマーケティングハブ用の共有ヘルパー（api/admin/sns-hub/配下の複数ハンドラーから利用）
  * ファイル名に`_`prefixを付けたディレクトリはVercelのルーティング対象外になる。
  */
+import { SITE_BASE_URL } from "../../scripts/lib/sns/siteBaseUrl.js";
 
 export const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -74,8 +75,6 @@ export async function signStoragePath(path, expiresIn = 3600) {
   const map = await signStoragePaths([path], expiresIn);
   return map[path] || null;
 }
-
-export const SITE_BASE_URL = "https://www.boat-ai.jp";
 
 /**
  * `cover_image_path`をブラウザで表示可能なURLに変換する。
@@ -194,3 +193,5 @@ export async function updateInsight(id, patch) {
   const rows = await response.json();
   return rows[0] || null;
 }
+
+export { SITE_BASE_URL } from "../../scripts/lib/sns/siteBaseUrl.js";
