@@ -129,11 +129,8 @@ function readK() {
   return { k, missingDays };
 }
 
-async function main() {
-  const { k, missingDays } = readK();
-  if (k.size === 0)
-    throw new Error(`${archiveDir} に K の解析済みデータがありません`);
-  const db = await readDb();
+/** K ファイルと DB の風向の組（会場・K の角度・DB の角度）と、DB の風向が空で K から埋められる行 */
+function pairKWithDb(db, k) {
   const pairs = [];
   const fill = [];
   for (const c of db) {
@@ -153,6 +150,11 @@ async function main() {
       db: ANG[c.wind_direction],
     });
   }
+  return { pairs, fill };
+}
+
+/** 会場ごとの回転の最頻値と一致率。最頻の回転が方位マークの回転と違う会場は problems に */
+function venueRotations(pairs) {
   const venues = {};
   const offsets = {};
   const problems = [];
@@ -180,6 +182,16 @@ async function main() {
     };
     offsets[v] = off;
   }
+  return { venues, offsets, problems };
+}
+
+async function main() {
+  const { k, missingDays } = readK();
+  if (k.size === 0)
+    throw new Error(`${archiveDir} に K の解析済みデータがありません`);
+  const db = await readDb();
+  const { pairs, fill } = pairKWithDb(db, k);
+  const { venues, offsets, problems } = venueRotations(pairs);
   if (problems.length) throw new Error(problems.join("\n"));
   const basis = {
     offsets_deg: offsets,
