@@ -285,7 +285,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/fetchCounts.js` | M1: 最終 outcome と累積 attempts からの固定ページ数による近似。純粋関数。 | validateTargetDate, dailyFetchCounts, FETCH_COUNT_NOTES |
 | `scripts/lib/scrapeJobs/finalOddsHandlers.js` | 締切時オッズ（公式）の取り直し（BOA-496）の Vercel Cron ハンドラー。api/cron/odds-final.js から使う。 | parseFinalOddsRaceId, savedPagesOf, parseFinalOddsPage, computeFinalOddsDigest, createFinalOddsSlotHandler ほか3件 |
 | `scripts/lib/scrapeJobs/htmlFetch.js` | politeFetch（Response を返す）を、既存のスクレイパー（scrape-to-json.js・scrape-pcexpect.js）が受け取る | makeFetchHtml |
-| `scripts/lib/scrapeJobs/monitor.js` | データ取得の監視（完了の定義C、plan.md §7）。予定表（scrape_slots）とジョブ状態（scrape_job_state）から、 | livenessCheckable, percentile, computeWindowStats, aggregateByJob, evaluateExpired ほか15件 |
+| `scripts/lib/scrapeJobs/monitor.js` | データ取得の監視（完了の定義C、plan.md §7）。予定表（scrape_slots）とジョブ状態（scrape_job_state）から、 | postSlack, runMonitor |
+| `scripts/lib/scrapeJobs/monitorAlerts.js` | — | evaluateExpired, evaluateRacesPresent, evaluateWindowRates, evaluateDetectionLag, evaluateJobStates ほか2件 |
+| `scripts/lib/scrapeJobs/monitorFormat.js` | — | formatAlertMessage, formatDailySummary |
+| `scripts/lib/scrapeJobs/monitorInput.js` | — | collectMonitorInput |
+| `scripts/lib/scrapeJobs/monitorWindowStats.js` | — | livenessCheckable, percentile, computeWindowStats, aggregateByJob, THRESHOLDS ほか3件 |
 | `scripts/lib/scrapeJobs/oddsDigest.js` | オッズ取得（A3）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | computeOddsDigest, ODDS_DIGEST_FULL_KEYS |
 | `scripts/lib/scrapeJobs/oddsHandlers.js` | オッズ取得（A3）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parseOddsRaceId, shouldProbeWinFirst, createOddsSlotHandler |
 | `scripts/lib/scrapeJobs/outcomes.js` | スロット・ジョブの結果（outcome）の扱い（純粋関数）。 | isFinalOutcome, truncateError, applyZeroRowGuard, computeRetryAt, FINAL_OUTCOMES ほか2件 |
@@ -570,4 +574,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 528 ファイル / export 2942 件。
+対象 532 ファイル / export 2942 件。
