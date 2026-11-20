@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2610,
+    "sourceFiles": 2621,
     "filesWithAccess": 316,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -12628,7 +12628,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-bot-race-function.js:849",
+          "ref": "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -12640,8 +12640,7 @@
             "title",
             "total_days",
             "venue_code"
-          ],
-          "test": true
+          ]
         },
         {
           "ref": "src/services/meetQueries3.js:35",
@@ -12722,7 +12721,7 @@
             "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:96",
-            "scripts/maintenance/verify-bot-race-function.js:849",
+            "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
@@ -12741,7 +12740,7 @@
             "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:96",
-            "scripts/maintenance/verify-bot-race-function.js:849",
+            "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
@@ -12760,7 +12759,7 @@
             "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/raceSeriesLookup.js:161",
             "scripts/lib/snsTodayDigestV3.js:96",
-            "scripts/maintenance/verify-bot-race-function.js:849",
+            "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/motorQueries7.js:21",
             "src/services/raceQueries2.js:254",
@@ -12775,7 +12774,7 @@
         "total_days": {
           "readers": [
             "api/_lib/botPage.js:276",
-            "scripts/maintenance/verify-bot-race-function.js:849",
+            "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
@@ -12787,7 +12786,7 @@
           "readers": [
             "api/_lib/botPage.js:276",
             "scripts/lib/snsTodayDigestV3.js:96",
-            "scripts/maintenance/verify-bot-race-function.js:849",
+            "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:99"
           ],
@@ -12797,7 +12796,7 @@
         "class_code": {
           "readers": [
             "api/_lib/botPage.js:276",
-            "scripts/maintenance/verify-bot-race-function.js:849",
+            "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
@@ -12809,7 +12808,7 @@
           "readers": [
             "api/_lib/botPage.js:276",
             "scripts/lib/snsTodayDigestV3.js:96",
-            "scripts/maintenance/verify-bot-race-function.js:849",
+            "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:99"
           ],
@@ -12820,7 +12819,7 @@
           "readers": [
             "api/_lib/botPage.js:276",
             "scripts/lib/snsTodayDigestV3.js:96",
-            "scripts/maintenance/verify-bot-race-function.js:849",
+            "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:71",
             "src/services/scheduleQueries.js:99"
@@ -29844,7 +29843,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 134,
+      "reachableFiles": 135,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
@@ -29956,7 +29955,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 110,
+      "reachableFiles": 111,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",

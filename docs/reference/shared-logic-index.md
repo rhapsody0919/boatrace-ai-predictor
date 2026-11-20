@@ -375,6 +375,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/sns/thinkingGradeDay.js` | — | thinkingGradeDayVenue, todayTargetReason, THINKING_GRADE_DAY_GRADES, THINKING_GRADE_DAY_MIN_RACE_NUMBER, THINKING_GRADE_DAY_MAX_RACE_NUMBER ほか1件 |
 | `scripts/lib/sns/todayDigestStatus.js` | /today の X 投稿の版（digestRevision）と、載せる候補のレースの状態（pickRaceStatus）。 | digestRevision, pickRaceStatus, TODAY_SCREEN_KEY |
 | `scripts/lib/sns/todayDraft.js` | — | isTodayDraft |
+| `scripts/lib/sns/todayModel.js` | /today のモデル（人の画面の部分集合）の組み立て。api/_lib/botToday.js から字のまま下ろした物（scripts/lib から api/… | buildTodayModel, NOT_GENERATED_TEXT, CARD_PREVIEW_COUNT |
 | `scripts/lib/sns/xApiBase.js` | — | X_API_BASE |
 | `scripts/lib/sns/xLength.js` | X の投稿の文字数（2026-10-14 オーナー決定: X は長文の1投稿、Premium 前提）。 | xPostValid, X_POST_MAX, X_LONG_POST_MAX, xPostMax |
 | `scripts/lib/sns/xSend.js` | — | mobileVersion, createXSnapshot, runXSendJob, createMockXAdapter |
@@ -635,4 +636,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 593 ファイル / export 3212 件。
+対象 594 ファイル / export 3215 件。
