@@ -146,6 +146,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/eveDeadlinesJob.js` | 前夜の締切予定（eve_race_deadlines、マイグレーション202、BOA-1282）の共通ラッパ向けハンドラー2つ。 | isFinalRound, readExpectedVenues, readEveRows, buildEveRows, nameTargets ほか8件 |
 | `scripts/lib/eveDeadlinesRows.js` | 前夜の締切予定（eveDeadlinesJob.js）の純な部分: 書く行・優勝戦の判定・raceindex の振り分け・通知・戻り値。 | eveIsFinal, eveRow, isSameEveRow, parseVenueIndex, acceptVenueIndex ほか4件 |
 | `scripts/lib/exhibitionJobParts.js` | scrape-exhibition-data.js の部品。公式ページの解析結果から展示の行を組み立て、 | toLegacyExhibition, upsertExhibitionRows, groupTargetsByVenue, absorbVenueResults, markHaveData ほか4件 |
+| `scripts/lib/exhibitionRunForRaces.js` | — | fetchExhibitionDetailed, runForRaces, updateRaceConditionsWeather |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
 | `scripts/lib/fanPeriodJob.js` | 期別成績（fan、racer_period_stats）の定期取り込み。共通ラッパ向けハンドラー（api/cron/fan-period.js）。 | fanIdEndedBefore, periodOfFanId, daysSincePeriodEnd, fanRawPath, runFanPeriodJob ほか2件 |
 | `scripts/lib/fanPeriodParser.js` | 公式「レーサー期別成績」ファイル（fan）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | parseFanId, fanIdOf, buildFanUrl, fanArchiveRelPath, listFanIds ほか14件 |
@@ -177,6 +178,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/kbResultsBackfillRows.js` | K/Bアーカイブ（kb-day/v1、scripts/lib/kbFileParser.js）から race_results の欠損行を | classifyMissingResult, buildRaceFactsForDay, buildRaceResultRow, MISSING_STATUS |
 | `scripts/lib/kelly-criterion.js` | — | kellyFraction, halfKelly, quarterKelly |
 | `scripts/lib/kfileParser.js` | 公式成績ファイル（Kファイル）のダウンロード・解凍・パース（BOA-257） | fetchKFileText, parseKFileText, parseKFileRankings, _internal |
+| `scripts/lib/kfileSync.js` | — | syncOfficialFinishCodeFromKFile, syncKFileForDate, KFILE_SYNC_LOOKBACK_DAYS |
+| `scripts/lib/kfileSyncCourse.js` | — | syncActualCourseFromKFile, syncRank456FromKFile |
 | `scripts/lib/latestByRaceId.js` | 行の配列から、IDフィールド（既定はrace_id）ごとにタイムスタンプフィールド | latestByRaceId |
 | `scripts/lib/launchChromium.js` | Chromium の起動（ビルド時の AI スナップショット scripts/generate-ai-snapshots.js と、 | installJapaneseFont, reapChromium, cleanTmpLeftovers, launchChromium, JAPANESE_FONT ほか1件 |
 | `scripts/lib/linearIssueGate.js` | Linear の起票の前に、未アーカイブのチケット数を数えて上限の手前で止める（hq 台帳 PL48、2026-10-20）。 | countActiveIssues, issueGateDecision, gateBlockedMessage, assertCanCreateIssue, slackNotifierFromEnv ほか5件 |
@@ -209,27 +212,34 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/pitReportRows.js` | ピットレポートの解析結果（pitReportParser.js）から、DBへ書く行・スロットの結果（outcome）・ | isPitReportCandidate, pendingRetrySec, outcomeForStatus, computeContentHash, buildPitReportRows ほか5件 |
 | `scripts/lib/pitReportSchema.js` | ピットレポートの保存先（マイグレーション085: race_pit_reports・race_pit_comments）が、接続先のDBに | detectPitReportSchema, clearPitReportSchemaCache, PIT_REPORT_TABLES, PIT_SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/placementDistribution.js` | 2着・3着のコース別統計分布 | getPlacementBaseline, PLACEMENT_DISTRIBUTION, GLOBAL_PLACEMENT_AVERAGE |
+| `scripts/lib/pointRankFetch.js` | — | — |
 | `scripts/lib/pointRankJob.js` | 得点率（B2、racer_series_points）の共通ラッパ向けハンドラー（tasks.md T4b-12-1、plan.md §4.3）。 | isLastChanceForPending, runPointRankJob, POINT_RANK_CONCURRENCY |
 | `scripts/lib/pointRankJobParts.js` | scrape-point-rank.js の純粋な部品（DB に触らない）。 | isTableExpected, judgeVenue, buildVenueGrades, buildVenueLastRaces, buildSeriesPointRows ほか10件 |
 | `scripts/lib/pointRankParser.js` | boatrace.jp 得点率一覧ページ（pointrank）の共通パーサー | parsePointRankTable, parseHayamiSeriesDay, parsePointRankAsOf, parseHayamiRaceNumber |
+| `scripts/lib/pointRankRun.js` | — | run |
 | `scripts/lib/prShape.js` | PR の差分の形の機械の検査（symlink・submodule・LFS・バイナリ・.gitattributes・上限超え）。純粋関数。 | mechanicalRejections, parseRawDiff, patchOf, isAllowedMedia, isHarmlessNoBody ほか2件 |
 | `scripts/lib/preRaceRows.js` | 出走表・直前情報の全項目の解析結果（scripts/lib/raceListParser.js・beforeInfoParser.js）から、DBへ書く行を作る | formatJstHm, buildRaceEntryRows, buildRaceConditionRow, buildExhibitionRows, planDeadlineUpdates |
 | `scripts/lib/preRaceSchema.js` | 出走表・直前情報の新しい列（マイグレーション081・082）が、接続先のDBに適用済みかの判定 | PRE_RACE_SCHEMA_TARGETS, detectPreRaceSchema, clearPreRaceSchemaCache, PRE_RACE_OPTIONAL_COLUMN_GROUPS |
 | `scripts/lib/preciousPaths.js` | gitに入らない「取り直しが高くつくデータ」の置き場所。 | PRECIOUS_PATHS, BACKUP_DIR_FROM_HOME |
+| `scripts/lib/predictionHitFix.js` | — | fixMissingHitFlags |
 | `scripts/lib/predictionOddsDerive.js` | 買い目オッズ（prediction_odds）を、予想の買い目（predictions）と、オッズの最新スナップショット | trioKeyOf, buildPredictionOddsRow, percentDiff, percentileOf, summarizePredictionOddsDiff ほか2件 |
 | `scripts/lib/predictionRefresh.js` | 予測の再計算（predictions のリフレッシュ）を、どこが・いつ起動するかの方針（案1、BOA-353 T4b-03、 | isRefreshOnVercelEnabled, isOddsRefreshSkippedOnGha, isOddsSkippedOnGha, collectGhaRefreshRaceIds, refreshAfterExhibition ほか1件 |
 | `scripts/lib/previewSnapshotPlan.js` | ブログ記事・翻訳記事・ブログ一覧のボット向けスナップショットを、このビルドで作るか（Vercel の費用、2026-11-05、ADR 0032 追記）。 | planBlogSnapshots, PREVIEW_BOT_HTML_MARKER |
+| `scripts/lib/raceCancellation.js` | — | confirmCancellationsForRaceIds, clearCancellationsWithResults, clearCancellationsWithResultsInRange |
 | `scripts/lib/raceConditionsWriter.js` | race_conditions への書き込み（気象列を含む）の共通処理（BOA-358） | isObservedAtColumnMissing, upsertRaceConditions, OBSERVED_AT_COLUMN |
 | `scripts/lib/raceEntriesKbRestore.js` | 出走表（race_entries）の複製汚染を、公式Bファイル（番組表）から復元するための純粋関数（BOA-422） | indexBEntriesByRace, compareRace, buildRestoredRow, buildRestorePlan, COLUMNS_FROM_B ほか4件 |
 | `scripts/lib/raceIndexParser.js` | 公式の raceindex（/owpc/pc/race/raceindex?jcd=VV&hd=YYYYMMDD、会場の1日のレース一覧）の解析（BOA-128… | parseRaceIndex, raceIndexProblems, isLastDayLabel, isFinalRaceName |
 | `scripts/lib/raceIndicatorData.js` | データ出走表11指標のデータ取得（AI予想モデル大規模改修 Task6a） | fetchStPredictability, fetchReturnRate, fetchTechniqueProfile, fetchExhibitionTrend, fetchRacerForm ほか1件 |
 | `scripts/lib/raceInfoAccumulate.js` | レース情報の集計（update-race-info.js から分けた純粋関数）: 取得の結果を、書く行（中止・締切・条件・出走表）にためる・ | createAccumulator, accumulateRaceInfo, assertRaceInfoRunArgs, applyFetchedRaceInfo, parsedRaceOutcome |
 | `scripts/lib/raceInfoFetch.js` | 出走表・直前情報の取得（update-race-info.js から分けた部分）: racelist・beforeinfo を取って読む。 | fetchRaceInfoDetailed, fetchRaceInfo, fetchRaceInfos, defaultFetch |
+| `scripts/lib/raceInfoRunForRaces.js` | — | runForRaces |
 | `scripts/lib/raceInfoWrite.js` | レース情報の書き込みの部品（update-race-info.js の flushRaceInfo から分けた）: races の列の更新の繰り返し・ | updateRacesEach, conditionGroups, planRacesGrade, racesUpdates, writeCounters ほか2件 |
 | `scripts/lib/raceListParser.js` | 公式の出走表ページ（boatrace.jp racelist）の全項目パーサー（純関数。DB・取得先に接続しない） | scrapeSeriesDay, scrapeRaceMeta, parseRaceListDocument, parseRaceListPage, RACELIST_PARSER_VERSION |
+| `scripts/lib/raceNoticesFetch.js` | — | createInformationFetcher |
 | `scripts/lib/raceNoticesJob.js` | レース特記事項（A5、race_special_notes）の共通ラッパ向けハンドラー（BOA-353 T4b-11-1、plan.md §2.2）。 | runRaceNoticesJob, RACE_NOTICES_CONCURRENCY |
 | `scripts/lib/raceNoticesParse.js` | — | resolveRaceDate, parseAccidentRow, parseEquipmentChangeRow, parseAbsenceRow, parseInformationHtml |
 | `scripts/lib/raceNoticesRows.js` | — | collectVenueResults |
+| `scripts/lib/raceNoticesRun.js` | — | run |
 | `scripts/lib/raceOutcomeFilters.js` | 不成立（race_status='no_race'）のレースを集計から外すための共通の部品（BOA-545）。 | isNoRaceResult, placedRanks, NOT_NO_RACE_FILTER |
 | `scripts/lib/raceResultAudit.js` | 既存の race_results の誤り（Q6: 返還・不成立の払戻¥100、非完走艇の着順）を特定する純関数群。 | analyzeRaceFromDb, parseRaceId, summarizeDbFindings, isRefundedKFinish, kDayToRaceFacts ほか4件 |
 | `scripts/lib/raceResultFix.js` | 既存の race_results の誤り（Q6）を、公式の結果ページの再取得で修正するための計画づくりと書き込み。 | buildFixPlan, applyFixPlan, FIX_RESULT_COLUMNS, FILL_ONLY_COLUMNS, FIX_EXTRA_COLUMNS |
@@ -331,6 +341,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups, racerSnapshotProblems, RACER_SNAPSHOT_STALE_HOURS |
+| `scripts/lib/sns/bundlePublicationBlocked.js` | — | isBundlePublicationBlocked |
 | `scripts/lib/sns/deadlineIso.js` | — | deadlineIso |
 | `scripts/lib/sns/finalsImageBase.js` | — | hasPoll, pngSize, checkImages, schedule, dailyLimitReason ほか23件 |
 | `scripts/lib/sns/fullPictureRows.js` | 全貌動画の取り込み（scripts/sns/push-full-picture.js）から移した、下書きの文と行の組み立て（純粋関数）。 | fullYoutubeText, draftRows, fullTagsOf, draftTexts |
@@ -339,13 +350,18 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/sns/publicDisplayCheck.js` | — | checkPublicDisplay |
 | `scripts/lib/sns/researchPushRules.js` | — | PUSH_RULES |
 | `scripts/lib/sns/researchSchedule.js` | — | schedule, dryRunClock, checkTiming, DEADLINE_AFTER_MIN, EXPIRES_BEFORE_MIN ほか11件 |
+| `scripts/lib/sns/sendHolds.js` | — | sendHolds, mobileHolds |
 | `scripts/lib/sns/setsuDeadlines.js` | 節の機力の Shorts の締切の照合（純粋関数）。push-setsu-kiryoku-short.js から移した（字は同じ） | finalDeadlineMismatch, borderDeadlineMismatch, eveDeadlineMismatch, raceNumberOf, isFinalStage |
 | `scripts/lib/sns/shortSchedule.js` | YouTube Shorts の口（push-setsu-kiryoku-short.js・push-upset-win-short.js）の時刻・日の上限とク… | schedule, checkTiming, youtubeRoomReason, dryRunClock, SEND_DELAY_SEC ほか14件 |
 | `scripts/lib/sns/siteBaseUrl.js` | — | SITE_BASE_URL |
 | `scripts/lib/sns/thinkingGradeDay.js` | — | thinkingGradeDayVenue, todayTargetReason, THINKING_GRADE_DAY_GRADES, THINKING_GRADE_DAY_MIN_RACE_NUMBER, THINKING_GRADE_DAY_MAX_RACE_NUMBER ほか1件 |
 | `scripts/lib/sns/todayDigestStatus.js` | /today の X 投稿の版（digestRevision）と、載せる候補のレースの状態（pickRaceStatus）。 | digestRevision, pickRaceStatus, TODAY_SCREEN_KEY |
+| `scripts/lib/sns/todayDraft.js` | — | isTodayDraft |
 | `scripts/lib/sns/xApiBase.js` | — | X_API_BASE |
 | `scripts/lib/sns/xLength.js` | X の投稿の文字数（2026-10-14 オーナー決定: X は長文の1投稿、Premium 前提）。 | xPostValid, X_POST_MAX, X_LONG_POST_MAX, xPostMax |
+| `scripts/lib/sns/xSend.js` | — | mobileVersion, createXSnapshot, runXSendJob, createMockXAdapter |
+| `scripts/lib/sns/xSendCore.js` | X の送信の定数・投票の検査・sha256・保留の理由（外部通信も store も使わない純粋な部分）。 | waitSecsOf, pollOptionsIssue, pollDurationMinutes, sha256, holdReasonOf ほか10件 |
+| `scripts/lib/sns/youtubeQueue.js` | — | fillFullUrl, runYoutubeQueueJob, runYoutubePublishJob, resumeRetainedYoutubeJob, createMockYoutubeAdapter ほか4件 |
 | `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel |
 | `scripts/lib/snsAutoPlanRunnerEvaluate.js` | SNS の自動送信の計画の検査（api/ の checkPublicDisplay・sendHolds は runner から引数で渡す）。snsAutoPla… | sharedChecks, evaluateChannel |
 | `scripts/lib/snsAutoPlanRunnerParts.js` | SNS の自動送信の計画の部品。snsAutoPlanRunner.js から、定数・素材の振り分け（planCandidates）・ | planCandidatesWith, reviewGate, AUTO_PLAN_STAGES, NOTIFY_BEFORE_MIN, VETO_BEFORE_MIN ほか8件 |
@@ -600,4 +616,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 558 ファイル / export 3082 件。
+対象 574 ファイル / export 3130 件。

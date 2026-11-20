@@ -16,7 +16,7 @@ import { toJstDateString } from "./scrapeJobs/time.js";
 import {
   createInformationFetcher,
   run as runRaceInformation,
-} from "../daily/scrape-race-information.js";
+} from "./raceNoticesRun.js";
 
 /** 会場（1ページ）の同時取得数。1ページ約8〜10秒のため、13〜24会場を、cron-job.org の30秒に近い時間で終える */
 export const RACE_NOTICES_CONCURRENCY = 6;

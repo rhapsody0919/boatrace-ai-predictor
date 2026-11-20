@@ -22,6 +22,7 @@ import {
 import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
 import { volatilityByLevel } from "../lib/accuracyCacheStats.js";
 import { VENUE_NAMES } from "../lib/venueNames.js";
+import { isDirectRun } from "../lib/isDirectRun.js";
 
 const MODEL_ID = "unified";
 
@@ -102,7 +103,7 @@ function logVolatilitySummary({ baseline, byLevel, byVenue }) {
   console.log(`  会場別: ${byVenue.length}会場分集計`);
 }
 
-async function main() {
+export async function main() {
   if (!isSupabaseEnabled()) {
     console.error("❌ Supabase環境変数が未設定です。");
     process.exit(1);
@@ -153,4 +154,5 @@ async function main() {
   );
 }
 
-main();
+// 直接起動のときだけ main を回す（import されただけなら DB の読み書きは走らない。verify が main を偽の DB で呼ぶため）
+if (isDirectRun(import.meta.url)) main();
