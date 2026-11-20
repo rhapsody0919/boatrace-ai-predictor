@@ -8,6 +8,7 @@ import {
   decryptTokens,
   encryptTokens,
   getXAccessToken,
+  toBase64Url,
   X_TOKEN_URL,
 } from "../../api/_lib/snsTokenStore.js";
 import { handleStart } from "../../api/admin/sns-hub/x-oauth/start.js";
@@ -84,6 +85,13 @@ test("PKCE: challenge は verifier の SHA-256（base64url）、許可画面の 
     "tweet.write",
     "users.read",
   ]);
+});
+
+test("PKCE: base64url は + を -、/ を _ に替えて = を落とす（乱数に + や / が出なくても毎回確かめる）", () => {
+  const bytes = Uint8Array.from([0xfb, 0xef, 0xff]); // base64 は "++//"
+  assert.equal(toBase64Url(bytes), Buffer.from(bytes).toString("base64url"));
+  assert.equal(toBase64Url(bytes), "--__");
+  assert.equal(toBase64Url(Uint8Array.from([0xff])), "_w");
 });
 
 test("連携の開始: 認証なしは401、鍵が無ければ503、あれば state と verifier を HttpOnly の Cookie に入れて X へ送る", async () => {
