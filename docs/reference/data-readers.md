@@ -10,8 +10,8 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2444 |
-| 読み書きのあるファイル | 302 |
+| 読んだファイル | 2450 |
+| 読み書きのあるファイル | 306 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
 | RPC の呼び手（箇所） | 55 |
@@ -61,8 +61,8 @@
 | [outcome_distribution](#t-outcome_distribution) | table | anon 可 | 5 | 2 | data_health_nightly_freshness |  | outcome_distribution_update |  |
 | [poirot_predictions](#t-poirot_predictions) | table | anon 可 | 2 | 1 | data_health_morning_freshness |  |  |  |
 | [prediction_odds](#t-prediction_odds) | table | anon 可 | 4 | 2 | get_predictions_by_date, get_predictions_by_date_light |  | odds |  |
-| [predictions](#t-predictions) | table | anon 可 | 44 | 10 | get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date ほか6 | update_prediction_results | exhibition, kfile_sync, race_info ほか4 | hq:platform/finals_sheet.py |
-| [race_conditions](#t-race_conditions) | table | anon 可 | 44 | 6 | data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields ほか5 |  | exhibition, kfile_sync, race_info ほか4 |  |
+| [predictions](#t-predictions) | table | anon 可 | 44 | 10 | get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date ほか6 | update_prediction_results | exhibition, kfile_sync, race_info ほか3 | hq:platform/finals_sheet.py |
+| [race_conditions](#t-race_conditions) | table | anon 可 | 44 | 6 | data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields ほか5 |  | exhibition, kfile_sync, race_info ほか3 |  |
 | [race_entries](#t-race_entries) | table | anon 可 | 146 | 17 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
 | [race_history_cache](#t-race_history_cache) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
 | [race_notices_health](#t-race_notices_health) | table | service だけ | 2 | 1 |  |  | race_notices |  |
@@ -71,13 +71,13 @@
 | [race_original_exhibition](#t-race_original_exhibition) | table | anon 可 | 5 | 1 |  |  | boatcast_oriten |  |
 | [race_original_exhibition_values](#t-race_original_exhibition_values) | table | anon 可 | 5 | 2 |  |  | boatcast_oriten |  |
 | [race_outcome_frequencies](#t-race_outcome_frequencies) | table | anon 可 | 0 | 1 |  |  |  |  |
-| [race_payouts](#t-race_payouts) | table | anon 可 | 3 | 2 | data_health_table_rows, get_predictions_by_date, get_predictions_by_date_light |  | kfile_sync, race_status, result ほか1 |  |
+| [race_payouts](#t-race_payouts) | table | anon 可 | 3 | 2 | data_health_table_rows, get_predictions_by_date, get_predictions_by_date_light |  | kfile_sync, result, result_catchup |  |
 | [race_pit_comments](#t-race_pit_comments) | table | anon 可 | 2 | 2 |  |  | pit_reports |  |
 | [race_pit_reports](#t-race_pit_reports) | table | anon 可 | 4 | 1 | data_health_pit_reports, data_health_table_rows |  | pit_reports |  |
-| [race_results](#t-race_results) | table | anon 可 | 111 | 10 | compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline ほか17 |  | kfile_sync, race_status, result ほか1 |  |
+| [race_results](#t-race_results) | table | anon 可 | 111 | 10 | compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline ほか17 |  | kfile_sync, result, result_catchup |  |
 | [race_series](#t-race_series) | table | anon 可 | 15 | 0 | data_health_race_series, data_health_table_rows |  |  |  |
 | [race_special_notes](#t-race_special_notes) | table | service だけ | 1 | 1 | data_health_table_rows |  | race_notices |  |
-| [race_start_timings](#t-race_start_timings) | table | anon 可 | 28 | 6 | compute_st_course_baseline, data_health_coverage, data_health_table_rows ほか2 |  | kfile_sync, race_status, result ほか1 |  |
+| [race_start_timings](#t-race_start_timings) | table | anon 可 | 28 | 6 | compute_st_course_baseline, data_health_coverage, data_health_table_rows ほか2 |  | kfile_sync, result, result_catchup |  |
 | [racer_aggregated_stats](#t-racer_aggregated_stats) | table | anon 可 | 12 | 1 | data_health_nightly_freshness |  |  |  |
 | [racer_course_technique_stats](#t-racer_course_technique_stats) | table | anon 可 | 4 | 1 |  |  | racer_course_technique_stats |  |
 | [racer_grade_cache](#t-racer_grade_cache) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
@@ -236,7 +236,7 @@
 | in_caution_health | api/cron/in-caution-health.js | 31 | scrape_job_state, scrape_slots |
 | in_caution_today_health | api/cron/in-caution-today-health.js | 31 | scrape_job_state, scrape_slots |
 | key_canary_dispatch | api/cron/key-canary-dispatch.js | 23 | scrape_job_state, scrape_slots |
-| kfile_sync | api/cron/kfile-sync.js | 49 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| kfile_sync | api/cron/kfile-sync.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | morning_digest | api/cron/morning-digest.js | 29 | morning_digest_days, morning_digest_rows, scrape_job_state, scrape_slots |
 | motor_pretest | api/cron/motor-pretest.js | 33 | scrape_job_state, scrape_slots |
 | odds | api/cron/odds.js | 36 | prediction_odds, race_odds, scrape_job_state, scrape_slots |
@@ -247,17 +247,17 @@
 | point_rank | api/cron/point-rank.js | 31 | racer_series_points, scrape_job_state, scrape_slots |
 | pseudo | api/cron/scrape-pseudo.js | 22 | scrape_job_state, scrape_slots |
 | race_info | api/cron/race-info.js | 56 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
-| race_notices | api/cron/race-notices.js | 31 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
+| race_notices | api/cron/race-notices.js | 32 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
 | race_series | api/cron/race-series.js | 28 | scrape_job_state, scrape_slots |
-| race_status | api/cron/race-status.js | 49 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| race_status | api/cron/race-status.js | 32 | races, scrape_job_state, scrape_slots |
 | racer_career_main | api/cron/racer-career-main.js | 31 | racer_career_meta, scrape_job_state, scrape_slots |
 | racer_course_technique_stats | api/cron/racer-course-technique-stats.js | 26 | racer_course_technique_stats, scrape_job_state, scrape_slots, venue_course_technique_baseline |
 | racer_news | api/cron/racer-news.js | 28 | racer_news, racer_news_pending, scrape_job_state, scrape_slots |
 | racer_profiles | api/cron/racer-profiles.js | 27 | racer_profiles, scrape_job_state, scrape_slots |
 | races_init | api/cron/races-init.js | 57 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | release_dispatch | api/cron/release-dispatch.js | 26 | scrape_job_state, scrape_slots |
-| result | api/cron/result.js | 49 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| result_catchup | api/cron/result-catchup.js | 49 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| result | api/cron/result.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| result_catchup | api/cron/result-catchup.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 24 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 29 | scrape_job_state, scrape_slots |
 | sns_auto_plan | api/cron/sns-auto-plan.js | 133 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
@@ -689,7 +689,7 @@
 - 定義で読むビュー: v_prediction_performance, v_todays_recommendations
 - 本体で読む RPC: get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date, get_predictions_by_date_light, get_race_history_summary, get_today_races, update_prediction_results
 - 本体で書く RPC: update_prediction_results
-- 取得のジョブ: exhibition, kfile_sync, race_info, race_status, races_init, result, result_catchup
+- 取得のジョブ: exhibition, kfile_sync, race_info, races_init, result, result_catchup
 - 外の読み手: hq `platform/finals_sheet.py`（read） 廃止した3モデルのうち safeBet の予想（BOA-1124 の記述では predictions.safeBet.top3）を「龍神の本線」として読む。読む経路（表・RPC・API のどれか）と列は未確認。3モデルの生成を止める前に hq 側の参照を外す（BOA-1124、2026-10-27）
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/maintenance/delete-phantom-races.js:83`, `scripts/maintenance/fix-opening-day-race-id-date.js:68`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:41`, `scripts/ml/analogy/in_caution_bands.py:204`, `scripts/ml/analogy/tests/test_in_caution_bands.py:286`, `scripts/ml/analogy/tests/test_in_caution_bands.py:318`
 - 読み手（44）: 
@@ -716,10 +716,10 @@
   - `scripts/daily/generate-unified-predictions.js:260` select(helper:fetchAll)
   - `scripts/daily/generate-unified-trifecta-reference.js:44` select [feature_contributions, is_shadow, model_id, race_id]
   - `scripts/daily/scrape-prediction-odds.js:40` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
-  - `scripts/daily/scrape-results.js:982` select(helper:fetchAll)
   - `scripts/daily/todays-volatility-digest.js:124` select [feature_contributions, model_id, race_id]
   - `scripts/daily/update-race-history-cache.js:27` select(helper:fetchAll)
   - `scripts/lib/inCautionHealth.js:127` select [feature_contributions, model_id, race_id]
+  - `scripts/lib/predictionHitFix.js:24` select(helper:fetchAll)
   - `scripts/lib/raceResultPersist.js:39` select [feature_contributions, model_id, prediction_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/lib/scrapeJobs/predictionOddsHandlers.js:50` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/maintenance/backfill-is-hit-turn.js:28` select(helper:fetchAll)
@@ -740,7 +740,7 @@
 - 書き手（10）: 
   - `scripts/daily/generate-predictions.js:1720` upsert [?]
   - `scripts/daily/generate-unified-predictions.js:306` upsert [?]
-  - `scripts/daily/scrape-results.js:1031` update [?]
+  - `scripts/lib/predictionHitFix.js:73` update [?]
   - `scripts/lib/raceResultPersist.js:61` update [?]
   - `scripts/maintenance/backfill-is-hit-turn.js:69` update [is_hit_turn]
   - `scripts/maintenance/backfill-place-hits.js:42` update [is_hit_place, payout_place]
@@ -754,7 +754,7 @@
 
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields, data_health_table_rows, get_predictions_by_date, get_predictions_by_date_light, get_racer_accident_records, get_today_races
-- 取得のジョブ: exhibition, kfile_sync, race_info, race_status, races_init, result, result_catchup
+- 取得のジョブ: exhibition, kfile_sync, race_info, races_init, result, result_catchup
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:75`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:9`, `scripts/maintenance/delete-phantom-races.js:87`, `scripts/maintenance/fix-opening-day-race-id-date.js:70`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:43`
 - 読み手（44）: 
   - `api/_lib/racerEntryExhibition.js:173` rest(rest) [is_final_day, race_id, series_day]
@@ -1000,10 +1000,10 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 取得のジョブ: race_notices
 - 読み手（2）: 
-  - `scripts/daily/scrape-race-information.js:188` select [check_date, had_success, last_reason, venue_code]
+  - `scripts/lib/raceNoticesRun.js:64` select [check_date, had_success, last_reason, venue_code]
   - `scripts/maintenance/check-race-notices-drift.js:75` select [check_date, had_success, last_reason, venue_code]
 - 書き手（1）: 
-  - `scripts/daily/scrape-race-information.js:277` upsert [?]
+  - `scripts/lib/raceNoticesRun.js:152` upsert [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: last_checked_at
 
 ### <a id="t-race_odds"></a>race_odds
@@ -1089,7 +1089,7 @@
 
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_table_rows, get_predictions_by_date, get_predictions_by_date_light
-- 取得のジョブ: kfile_sync, race_status, result, result_catchup
+- 取得のジョブ: kfile_sync, result, result_catchup
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/lib/raceResultSchema.js:30`, `scripts/maintenance/delete-phantom-races.js:77`
 - 読み手（3）: 
   - `scripts/lib/dailyReconcileJob.js:106` select(helper:fetchAll)
@@ -1133,7 +1133,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 定義で読むビュー: v_prediction_performance
 - 本体で読む RPC: compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats, compute_venue_course_entry_baseline, compute_venue_course_technique_baseline, data_health_cancellation_with_result, data_health_coverage, data_health_entries_duplicates, data_health_monthly_result, data_health_nightly_freshness, data_health_table_rows, get_admin_rule_performance, get_predictions_by_date, get_predictions_by_date_light, get_race_return_rate, get_race_technique_profile, get_today_races, update_venue_stats
-- 取得のジョブ: kfile_sync, race_status, result, result_catchup
+- 取得のジョブ: kfile_sync, result, result_catchup
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:76`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:10`, `scripts/lib/raceResultSchema.js:25`, `scripts/maintenance/delete-phantom-races.js:74`, `scripts/maintenance/fix-opening-day-race-id-date.js:69`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:42`
 - 読み手（111）: 
   - `api/_lib/snsClaimCheckReaders.js:316` rest(rest) [race_id, rank1]
@@ -1177,13 +1177,7 @@
   - `scripts/daily/calculate-unified-volatility-accuracy.js:126` select(helper:fetchAll)
   - `scripts/daily/calculate-venue-grade-stats.js:176` select(embed) [is_cancelled, payout_trio, race_status, rank1, rank2, rank3, refund_boats, winning_technique]
   - `scripts/daily/scrape-odds.js:70` select [payout_win, race_id]
-  - `scripts/daily/scrape-results.js:196` select [race_id, rank1]
-  - `scripts/daily/scrape-results.js:252` select(helper:filterUnchangedRows)
-  - `scripts/daily/scrape-results.js:314` select [race_id, rank1, rank2, rank3, rank4]
-  - `scripts/daily/scrape-results.js:665` select [race_id]
-  - `scripts/daily/scrape-results.js:729` select [race_id]
-  - `scripts/daily/scrape-results.js:821` select [payout_win, race_id, winning_technique]
-  - `scripts/daily/scrape-results.js:1003` select(helper:fetchAll)
+  - `scripts/daily/scrape-results.js:167` select [payout_win, race_id, winning_technique]
   - `scripts/daily/update-exhibition-time-top-stats.js:185` select(helper:fetchAll)
   - `scripts/daily/update-losing-technique-stats.js:55` select [is_cancelled, race_id, rank1, winning_technique]
   - `scripts/daily/update-moriarty-outcomes.js:46` select [is_cancelled, payout_trifecta, payout_trio, payout_win, race_id, race_status, rank1, rank2, rank3]
@@ -1195,9 +1189,15 @@
   - `scripts/daily/update-winning-technique-stats.js:197` select(helper:fetchAll)
   - `scripts/lib/dailyReconcileJob.js:97` select(helper:fetchAll)
   - `scripts/lib/inCautionHealth.js:142` select [race_id, rank1]
+  - `scripts/lib/kfileSyncCourse.js:54` select [race_id, rank1]
+  - `scripts/lib/kfileSyncCourse.js:145` select(helper:filterUnchangedRows)
+  - `scripts/lib/kfileSyncCourse.js:254` select [race_id, rank1, rank2, rank3, rank4]
+  - `scripts/lib/predictionHitFix.js:45` select(helper:fetchAll)
+  - `scripts/lib/raceCancellation.js:25` select [race_id]
+  - `scripts/lib/raceCancellation.js:89` select [race_id]
   - `scripts/lib/raceResultPersist.js:104` select(helper:upsertChangedRows)
   - `scripts/lib/raceResultRun.js:131` select [payout_win, race_id, winning_technique]
-  - `scripts/lib/raceStatusJob.js:110` select [race_id]
+  - `scripts/lib/raceStatusJob.js:108` select [race_id]
   - `scripts/maintenance/audit-missing-results.js:73` select(helper:fetchAll)
   - `scripts/maintenance/audit-race-result-anomalies.js:97` select(helper:fetchAll)
   - `scripts/maintenance/audit-race-result-anomalies.js:207` select [?, race_id]
@@ -1248,8 +1248,8 @@
   - `src/services/venueQueries2.js:57` select(helper:fetchAllByIn)
   - `src/services/venueQueries2.js:127` select(helper:fetchAllByIn)
 - 書き手（10）: 
-  - `scripts/daily/scrape-results.js:266` update [?]
-  - `scripts/daily/scrape-results.js:416` update [rank4, rank5, rank6]
+  - `scripts/lib/kfileSyncCourse.js:68` update [?]
+  - `scripts/lib/kfileSyncCourse.js:229` update [rank4, rank5, rank6]
   - `scripts/lib/raceResultFix.js:117` update [?]
   - `scripts/lib/raceResultPersist.js:104` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/backfill-actual-course.js:111` update [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6]
@@ -1292,14 +1292,14 @@
 - 読み手（1）: 
   - `scripts/daily/generate-morning-digest.js:482` select [category, detail_text, race_date, racer_id, venue_code]
 - 書き手（1）: 
-  - `scripts/daily/scrape-race-information.js:240` upsert [?]
+  - `scripts/lib/raceNoticesRun.js:115` upsert [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: boat_number, structured_data, scraped_at
 
 ### <a id="t-race_start_timings"></a>race_start_timings
 
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: compute_st_course_baseline, data_health_coverage, data_health_table_rows, get_race_st_predictability, get_racer_accident_records
-- 取得のジョブ: kfile_sync, race_status, result, result_catchup
+- 取得のジョブ: kfile_sync, result, result_catchup
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:11`, `scripts/lib/raceResultSchema.js:20`, `scripts/lib/raceResultSchema.js:35`, `scripts/maintenance/backfill-kb-gaps.js:80`, `scripts/maintenance/delete-phantom-races.js:76`, `scripts/maintenance/fix-opening-day-race-id-date.js:67`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:40`
 - 読み手（28）: 
   - `scripts/analysis/full-picture-answer-stage/actual.cjs:10` select [boat_number, entry_course, finish_rank, is_flying, is_late_start, race_id, start_timing]
@@ -1309,8 +1309,8 @@
   - `scripts/analysis/verify-race-analysis-rpc.js:74` select(helper:fetchAll)
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:169` select(helper:fetchInChunks)
   - `scripts/daily/generate-morning-digest.js:391` select [boat_number, finish_mark, race_id, start_timing]
-  - `scripts/daily/scrape-results.js:467` select [?, boat_number, race_id]
   - `scripts/daily/update-top-start-stats.js:173` select(helper:fetchAll)
+  - `scripts/lib/kfileSync.js:43` select [?, boat_number, race_id]
   - `scripts/lib/raceResultPersist.js:124` select(helper:upsertChangedRows)
   - `scripts/lib/racerStStats.js:152` select(helper:fetchAll)
   - `scripts/maintenance/audit-race-result-anomalies.js:107` select(helper:fetchAll)
@@ -1331,7 +1331,7 @@
   - `src/services/racerQueries2.js:344` select(helper:fetchAllByIn)
   - `src/services/racerQueries3.js:113` select(helper:fetchAllByIn)
 - 書き手（6）: 
-  - `scripts/daily/scrape-results.js:537` upsert [?]
+  - `scripts/lib/kfileSync.js:67` upsert [?]
   - `scripts/lib/raceResultFix.js:125` upsert [?]
   - `scripts/lib/raceResultPersist.js:124` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:212` update [?]
@@ -1431,7 +1431,7 @@
 - 取得のジョブ: racer_profiles
 - 読み手（15）: 
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:95` select [racer_id]
-  - `scripts/daily/scrape-race-information.js:157` select(helper:fetchAll)
+  - `scripts/lib/raceNoticesRun.js:33` select(helper:fetchAll)
   - `scripts/lib/racerNews/officialGradeAnnouncements.js:164` select [branch, name, racer_id]
   - `scripts/lib/racerProfileSync.js:329` select [?]
   - `scripts/maintenance/backfill-race-entries-racer-id.js:60` select(helper:fetchAllPaged)
@@ -1507,10 +1507,7 @@
   - `scripts/daily/morning-init.js:173` select [*, race_id]
   - `scripts/daily/morning-init.js:221` select [race_id, updated_at]
   - `scripts/daily/morning-init.js:391` select [*, race_id]
-  - `scripts/daily/scrape-results.js:667` select [cancellation_status, race_id]
-  - `scripts/daily/scrape-results.js:731` select [cancellation_status, race_id]
-  - `scripts/daily/scrape-results.js:789` select [cancellation_status, race_date, race_id]
-  - `scripts/daily/scrape-results.js:947` select [race_date, race_id, race_number, venue_code]
+  - `scripts/daily/scrape-results.js:293` select [race_date, race_id, race_number, venue_code]
   - `scripts/daily/todays-volatility-digest.js:148` select [cancellation_status, race_date, race_id]
   - `scripts/daily/update-moriarty-outcomes.js:59` select [race_id, venue_code]
   - `scripts/daily/update-outcome-frequencies.js:43` select [race_id, venue_code]
@@ -1528,17 +1525,20 @@
   - `scripts/lib/pitReportJob.js:290` select [race_date, race_grade, race_id, race_number, start_time]
   - `scripts/lib/pitReportJob.js:365` select [race_date, race_grade, race_id, race_number, start_time]
   - `scripts/lib/pointRankRun.js:101` select [cancellation_status, race_grade, race_id]
+  - `scripts/lib/raceCancellation.js:27` select [cancellation_status, race_id]
+  - `scripts/lib/raceCancellation.js:91` select [cancellation_status, race_id]
+  - `scripts/lib/raceCancellation.js:149` select [cancellation_status, race_date, race_id]
   - `scripts/lib/raceInfoRunForRaces.js:34` select [cancellation_check_streak, cancellation_status, race_grade, race_id]
   - `scripts/lib/raceResultRun.js:278` select [race_id, start_time]
   - `scripts/lib/raceSchedule.js:44` select [race_id, start_time]
   - `scripts/lib/raceSeriesLookup.js:174` select [cancellation_status, race_date, venue_code]
-  - `scripts/lib/raceStatusJob.js:93` select [cancellation_status, race_date, race_id, race_number, venue_code]
+  - `scripts/lib/raceStatusJob.js:91` select [cancellation_status, race_date, race_id, race_number, venue_code]
   - `scripts/lib/racesInit/job.js:106` select(helper:fetchAll)
   - `scripts/lib/scrapeJobs/monitorInput.js:68` select [race_date, race_id]
   - `scripts/lib/scrapeJobs/pcexpectHandlers.js:33` select [race_id, start_time]
   - `scripts/lib/scrapeJobs/resultHandlerParts.js:61` select(embed) [cancellation_status]
   - `scripts/lib/scrapeJobs/resultHandlerParts.js:71` select [race_date, race_id, start_time]
-  - `scripts/lib/scrapeJobs/resultHandlers.js:167` select [race_date, race_id, start_time]
+  - `scripts/lib/scrapeJobs/resultHandlers.js:166` select [race_date, race_id, start_time]
   - `scripts/lib/sns/todayDigestStatus.js:35` rest(rest) [cancellation_status, race_id, start_time]
   - `scripts/lib/snsAutoPlanRunnerStore.js:55` rest(rest) [cancellation_status, race_date, race_id, start_time]
   - `scripts/lib/snsTodayDigestV3.js:81` rest(rest) [cancellation_status, race_date, race_grade, race_id, race_number, start_time, venue_code]
@@ -1633,8 +1633,8 @@
 - 書き手（18）: 
   - `scripts/daily/generate-predictions.js:971` upsert(helper:upsertChangedRows) [?]
   - `scripts/daily/generate-predictions.js:1652` update [?]
-  - `scripts/daily/scrape-results.js:697` update [cancellation_status]
-  - `scripts/daily/scrape-results.js:758` update [cancellation_check_streak, cancellation_status]
+  - `scripts/lib/raceCancellation.js:57` update [cancellation_status]
+  - `scripts/lib/raceCancellation.js:118` update [cancellation_check_streak, cancellation_status]
   - `scripts/lib/raceInfoWrite.js:18` update [?]
   - `scripts/maintenance/audit-missing-results.js:252` update [cancellation_status]
   - `scripts/maintenance/backfill-missing-venue-day.js:184` update [cancellation_status]

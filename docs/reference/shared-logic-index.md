@@ -178,6 +178,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/kbResultsBackfillRows.js` | K/Bアーカイブ（kb-day/v1、scripts/lib/kbFileParser.js）から race_results の欠損行を | classifyMissingResult, buildRaceFactsForDay, buildRaceResultRow, MISSING_STATUS |
 | `scripts/lib/kelly-criterion.js` | — | kellyFraction, halfKelly, quarterKelly |
 | `scripts/lib/kfileParser.js` | 公式成績ファイル（Kファイル）のダウンロード・解凍・パース（BOA-257） | fetchKFileText, parseKFileText, parseKFileRankings, _internal |
+| `scripts/lib/kfileSync.js` | — | syncOfficialFinishCodeFromKFile, syncKFileForDate, KFILE_SYNC_LOOKBACK_DAYS |
+| `scripts/lib/kfileSyncCourse.js` | — | syncActualCourseFromKFile, syncRank456FromKFile |
 | `scripts/lib/latestByRaceId.js` | 行の配列から、IDフィールド（既定はrace_id）ごとにタイムスタンプフィールド | latestByRaceId |
 | `scripts/lib/launchChromium.js` | Chromium の起動（ビルド時の AI スナップショット scripts/generate-ai-snapshots.js と、 | installJapaneseFont, reapChromium, cleanTmpLeftovers, launchChromium, JAPANESE_FONT ほか1件 |
 | `scripts/lib/linearIssueGate.js` | Linear の起票の前に、未アーカイブのチケット数を数えて上限の手前で止める（hq 台帳 PL48、2026-10-20）。 | countActiveIssues, issueGateDecision, gateBlockedMessage, assertCanCreateIssue, slackNotifierFromEnv ほか5件 |
@@ -219,9 +221,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/preRaceRows.js` | 出走表・直前情報の全項目の解析結果（scripts/lib/raceListParser.js・beforeInfoParser.js）から、DBへ書く行を作る | formatJstHm, buildRaceEntryRows, buildRaceConditionRow, buildExhibitionRows, planDeadlineUpdates |
 | `scripts/lib/preRaceSchema.js` | 出走表・直前情報の新しい列（マイグレーション081・082）が、接続先のDBに適用済みかの判定 | PRE_RACE_SCHEMA_TARGETS, detectPreRaceSchema, clearPreRaceSchemaCache, PRE_RACE_OPTIONAL_COLUMN_GROUPS |
 | `scripts/lib/preciousPaths.js` | gitに入らない「取り直しが高くつくデータ」の置き場所。 | PRECIOUS_PATHS, BACKUP_DIR_FROM_HOME |
+| `scripts/lib/predictionHitFix.js` | — | fixMissingHitFlags |
 | `scripts/lib/predictionOddsDerive.js` | 買い目オッズ（prediction_odds）を、予想の買い目（predictions）と、オッズの最新スナップショット | trioKeyOf, buildPredictionOddsRow, percentDiff, percentileOf, summarizePredictionOddsDiff ほか2件 |
 | `scripts/lib/predictionRefresh.js` | 予測の再計算（predictions のリフレッシュ）を、どこが・いつ起動するかの方針（案1、BOA-353 T4b-03、 | isRefreshOnVercelEnabled, isOddsRefreshSkippedOnGha, isOddsSkippedOnGha, collectGhaRefreshRaceIds, refreshAfterExhibition ほか1件 |
 | `scripts/lib/previewSnapshotPlan.js` | ブログ記事・翻訳記事・ブログ一覧のボット向けスナップショットを、このビルドで作るか（Vercel の費用、2026-11-05、ADR 0032 追記）。 | planBlogSnapshots, PREVIEW_BOT_HTML_MARKER |
+| `scripts/lib/raceCancellation.js` | — | confirmCancellationsForRaceIds, clearCancellationsWithResults, clearCancellationsWithResultsInRange |
 | `scripts/lib/raceConditionsWriter.js` | race_conditions への書き込み（気象列を含む）の共通処理（BOA-358） | isObservedAtColumnMissing, upsertRaceConditions, OBSERVED_AT_COLUMN |
 | `scripts/lib/raceEntriesKbRestore.js` | 出走表（race_entries）の複製汚染を、公式Bファイル（番組表）から復元するための純粋関数（BOA-422） | indexBEntriesByRace, compareRace, buildRestoredRow, buildRestorePlan, COLUMNS_FROM_B ほか4件 |
 | `scripts/lib/raceIndexParser.js` | 公式の raceindex（/owpc/pc/race/raceindex?jcd=VV&hd=YYYYMMDD、会場の1日のレース一覧）の解析（BOA-128… | parseRaceIndex, raceIndexProblems, isLastDayLabel, isFinalRaceName |
@@ -231,9 +235,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceInfoRunForRaces.js` | — | runForRaces |
 | `scripts/lib/raceInfoWrite.js` | レース情報の書き込みの部品（update-race-info.js の flushRaceInfo から分けた）: races の列の更新の繰り返し・ | updateRacesEach, conditionGroups, planRacesGrade, racesUpdates, writeCounters ほか2件 |
 | `scripts/lib/raceListParser.js` | 公式の出走表ページ（boatrace.jp racelist）の全項目パーサー（純関数。DB・取得先に接続しない） | scrapeSeriesDay, scrapeRaceMeta, parseRaceListDocument, parseRaceListPage, RACELIST_PARSER_VERSION |
+| `scripts/lib/raceNoticesFetch.js` | — | createInformationFetcher |
 | `scripts/lib/raceNoticesJob.js` | レース特記事項（A5、race_special_notes）の共通ラッパ向けハンドラー（BOA-353 T4b-11-1、plan.md §2.2）。 | runRaceNoticesJob, RACE_NOTICES_CONCURRENCY |
 | `scripts/lib/raceNoticesParse.js` | — | resolveRaceDate, parseAccidentRow, parseEquipmentChangeRow, parseAbsenceRow, parseInformationHtml |
 | `scripts/lib/raceNoticesRows.js` | — | collectVenueResults |
+| `scripts/lib/raceNoticesRun.js` | — | run |
 | `scripts/lib/raceOutcomeFilters.js` | 不成立（race_status='no_race'）のレースを集計から外すための共通の部品（BOA-545）。 | isNoRaceResult, placedRanks, NOT_NO_RACE_FILTER |
 | `scripts/lib/raceResultAudit.js` | 既存の race_results の誤り（Q6: 返還・不成立の払戻¥100、非完走艇の着順）を特定する純関数群。 | analyzeRaceFromDb, parseRaceId, summarizeDbFindings, isRefundedKFinish, kDayToRaceFacts ほか4件 |
 | `scripts/lib/raceResultFix.js` | 既存の race_results の誤り（Q6）を、公式の結果ページの再取得で修正するための計画づくりと書き込み。 | buildFixPlan, applyFixPlan, FIX_RESULT_COLUMNS, FILL_ONLY_COLUMNS, FIX_EXTRA_COLUMNS |
@@ -604,4 +610,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 562 ファイル / export 3087 件。
+対象 568 ファイル / export 3098 件。
