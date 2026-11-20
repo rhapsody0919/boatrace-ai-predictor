@@ -160,16 +160,27 @@ const isFinalStage = (stage) => {
  * @param {string[]} p.raceIds 節の日の全レース（出走表または種別にあるもの）
  * @returns {"preOpen"|"notFound"|"outOfScope"|"prelim"|"prelimFinalDay"|"prelimDone"|"semifinalDay"|"finalDay"|"finished"}
  */
-export function meetPageState({
+export function meetPageState(params) {
+  const scope = meetPageScopeState(params);
+  if (scope) return scope;
+  const { today, meetDays, conditions, doneRaceIds, raceIds } = params;
+  const pastDays = meetDays.filter((d) => d <= today);
+  if (pastDays.length === 0) return "preOpen";
+  const day = pastDays[pastDays.length - 1];
+  return meetPageDayState(day, { conditions, doneRaceIds, raceIds });
+}
+
+/**
+ * meetPageState の前段: 節が無い・対象外のときの状態。進行の判定へ進むなら null
+ * （引数は meetPageState と同じ object）
+ */
+function meetPageScopeState({
   today,
   startDate,
   meetDays,
   hasEntries,
   grade,
   title,
-  conditions,
-  doneRaceIds,
-  raceIds,
   windowHasRaces = false,
   startDateGrade = null,
 }) {
@@ -182,10 +193,15 @@ export function meetPageState({
   }
   if (isOutOfScopeMeetTitle(title)) return "outOfScope";
   if (!MEET_PAGE_GRADES.includes(grade)) return "outOfScope";
+  return null;
+}
 
-  const pastDays = meetDays.filter((d) => d <= today);
-  if (pastDays.length === 0) return "preOpen";
-  const day = pastDays[pastDays.length - 1];
+/**
+ * meetPageState の後段: 基準の日 day（表示日以前の最後の開催日）での進行の状態
+ * @param {string} day
+ * @param {{conditions: object[]|undefined, doneRaceIds: Set<string>, raceIds: string[]}} p
+ */
+function meetPageDayState(day, { conditions, doneRaceIds, raceIds }) {
   const stagesOf = (d) =>
     (conditions ?? [])
       .filter((c) => dateOf(c.race_id) === d)
