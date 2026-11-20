@@ -83,6 +83,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/analogyDispatch.js` | BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習… | morningRetryNeeded, morningShouldDispatch, dispatchWorkflow, createAnalogyDispatchRun, GITHUB_REPO ほか2件 |
 | `scripts/lib/analogyV16Exhibition.js` | アナロジー・ファインダー v16 の展示後の段（BOA-271 tasks T4-2・T4-3。plan「展示後の段」）。 | selectExhibitionTargets, exhibitionNeighbors, displayRow, runAnalogyV16Exhibition, MAX_RACES |
 | `scripts/lib/analogyV16ExhibitionToday.js` | アナロジー・ファインダー v16 の展示後の段の「今日の展示の値」（today-exhibition。BOA-271 T4-2）。 | todayExhibition, BOATS |
+| `scripts/lib/analogyV16Store.js` | アナロジー・ファインダー v16 の読み書きの共通部品（BOA-271 tasks T5-1・T4-3。plan「API」「展示後の段」）。 | rest, objectPath, isPastPath, readObject, clearObjectMemory ほか7件 |
 | `scripts/lib/archiveDownloadSteps.js` | 取得ループ（archiveDownloader.js の runArchiveDownload）から分けた部品（リファクタ。振る舞いは変えない）。 | resolveRunDeps, planRun, createRunContext, fetchItem, classifyFetched ほか4件 |
 | `scripts/lib/archiveDownloader.js` | 公式サイトの静的ファイル・ページを、生のまま保管する取得ループ（fan・月間スケジュールのCLI共通） | fetchOnce, planItems, runArchiveDownload, HARD_MIN_INTERVAL_MS, FETCH_TIMEOUT_MS ほか1件 |
 | `scripts/lib/archiveFiles.js` | 取得ループ（archiveDownloader.js）の、マニフェスト（JSONL）と内容ハッシュの小さな部品。 | readJsonl, sha256, appendJsonl |
@@ -636,4 +637,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 594 ファイル / export 3214 件。
+対象 595 ファイル / export 3226 件。
