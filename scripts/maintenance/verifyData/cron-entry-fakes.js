@@ -39,7 +39,7 @@ export async function runScrapeJob(options) {
   return { status: 200, body: { success: true } };
 }
 
-// scripts/daily/generate-predictions.js（予測の再計算）
+// scripts/lib/predictionRun.js・scripts/daily/generate-predictions.js（予測の再計算）
 export async function mainRefresh(...args) {
   record().refreshes.push(args);
 }
