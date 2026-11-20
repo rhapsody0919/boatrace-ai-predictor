@@ -18,7 +18,7 @@ import {
   parseOddsUpdatedAt,
   isFinalOdds,
 } from "./oddsParser.js";
-import { scrapeWinOdds, scrapePlaceOdds } from "../daily/scrape-odds.js";
+import { scrapeWinOdds, scrapePlaceOdds } from "./oddsPageParse.js";
 import { toJstDateString } from "./scrapeJobs/time.js";
 import { BreakerOpenError } from "./scrapeJobs/circuitBreaker.js";
 import { FetchError } from "./scrapeJobs/politeFetch.js";
