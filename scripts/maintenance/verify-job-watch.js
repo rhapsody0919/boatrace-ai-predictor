@@ -28,6 +28,7 @@ import {
   recoveryReruns,
   runMarker,
 } from "../lib/jobWatch.js";
+import { checkJobWatchScan } from "./verifyData/job-watch-scan.js";
 import { runJobWatchScenes1 } from "./verifyData/job-watch-scenes.js";
 
 const ROOT = path.resolve(
@@ -294,16 +295,6 @@ const run = (o = {}) => ({
       oneJob,
     ) === false,
   );
-  const src = readFileSync(
-    path.join(ROOT, "scripts/watch/job-watch.js"),
-    "utf8",
-  );
-  check(
-    "job-watch.js の scan が cancelled を候補に入れ、cancelledByTimeout で時間切れだけを拾う",
-    /r\.conclusion === "cancelled"\)/.test(src) &&
-      /cancelledByTimeout\(jobs, yaml\)/.test(src) &&
-      /if \(r\.conclusion === "cancelled" && !timedOut\) continue;/.test(src),
-  );
 }
 
 // 3c. 毎晩の網羅の表が古い
@@ -373,17 +364,11 @@ const run = (o = {}) => ({
     "workflow がまだ一覧に無ければ（404 にせず）項目にしない",
     (await item(fakeGh(null, null))) === null,
   );
-  const src = readFileSync(
-    path.join(ROOT, "scripts/watch/job-watch.js"),
-    "utf8",
-  );
-  check(
-    "scan は表の項目を job-watch-failure に足す",
-    /const nightly = await nightlyFailureItem\(\{ gh, repo, now, done \}\);\s*if \(nightly\) failureItems\.push\(nightly\);/.test(
-      src,
-    ),
-  );
 }
+
+// 3d. scan の配線（時間切れの cancelled・push・閉じた Issue の印・master の run・毎晩の表の項目）は、
+//     本文の字でなく、偽の GitHub API で scan を回して見る（verifyData/job-watch-scan.js）
+await checkJobWatchScan({ check });
 
 // 4・5. 登録と許可の一覧
 const config = JSON.parse(
@@ -395,16 +380,11 @@ const nameOf = (f) =>
     .exec(yml(f))?.[1]
     .trim()
     .replace(/^["']|["']$/g, "");
-// 4〜6 の本文の読みは verify に置く（4〜6 の塊は verifyData/ へ移すため。読む物と回数は前と同じ）
+// 4〜6 の workflow の一覧は verify で読む（4〜6 の塊は verifyData/ へ移すため）
 const WORKFLOW_FILES = readdirSync(WF);
-const JOB_WATCH_JS_1 = readFileSync(path.join(ROOT, "scripts/watch/job-watch.js"), "utf8");
-const JOB_WATCH_JS_2 = readFileSync(
-  path.join(ROOT, "scripts/watch/job-watch.js"),
-  "utf8",
-);
 
 // ---- 後半の場面（verifyData/job-watch-scenes.js） ----
-runJobWatchScenes1({ check, config, yml, nameOf, WORKFLOW_FILES, JOB_WATCH_JS_1, JOB_WATCH_JS_2 });
+runJobWatchScenes1({ check, config, yml, nameOf, WORKFLOW_FILES });
 
 if (failures > 0) {
   console.error(`\n${failures} 件失敗`);

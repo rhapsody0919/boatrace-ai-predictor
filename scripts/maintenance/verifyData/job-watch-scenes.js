@@ -5,7 +5,7 @@
 
 import { classifyLog } from "../../lib/jobWatch.js";
 
-let check, config, yml, nameOf, WORKFLOW_FILES, JOB_WATCH_JS_1, JOB_WATCH_JS_2;
+let check, config, yml, nameOf, WORKFLOW_FILES;
 
 /** 元の verify の1つの塊 { } を割った 1/2 */
 function scene1() {
@@ -45,12 +45,7 @@ function scene1() {
       jobs.scan,
     ),
   );
-  check(
-    "カナリアの path は job-watch.js の CANARY_PATH と同じ",
-    /const CANARY_PATH = "\.github\/workflows\/key-canary\.yml";/.test(
-      JOB_WATCH_JS_1,
-    ),
-  );
+  // カナリアの path（job-watch.js の CANARY_PATH）は verifyData/job-watch-scan.js が export で見る
   check(
     "毎時の schedule があり、scan は schedule でも起きる",
     /^ {2}schedule:\n {4}- cron: '(?!0 )\d{1,2} \* \* \* \*'$/m.test(jw) &&
@@ -69,34 +64,17 @@ function scene1() {
       ) &&
       !/concurrency:/.test(jobs.rerun),
   );
-  const js = JOB_WATCH_JS_2;
+  // scan の側（push の run も数える・閉じた Issue の印も数える）は verifyData/job-watch-scan.js が偽の GitHub で回して見る
   check(
-    "見回りは push で動く見張りの対象（Post-merge Checks 等）も数える",
-    /r\.event === "push"/.test(js) &&
-      /github\.event\.workflow_run\.event == 'push'/.test(jobs.scan),
+    "job-watch.yml: scan は push で動く見張りの対象（Post-merge Checks 等）の run でも起きる",
+    /github\.event\.workflow_run\.event == 'push'/.test(jobs.scan),
   );
-  check(
-    "scan は閉じた Issue（state=closed）の本文・コメントも handledMarkers に渡す",
-    /state=closed&since=\$\{since\}/.test(js) &&
-      /handledMarkers\(\[\s*\.\.\.openTexts,\s*\.\.\.closedTexts\s*\]\)/.test(
-        js,
-      ),
-  );
-  return { jobs, js };
+  return { jobs };
 }
 
 /** 元の verify の1つの塊 { } を割った 2/2 */
-function scene2({ jobs, js }) {
-  check(
-    "見回りは master の run だけを一覧で取る（PR の CI を取らない）",
-    /actions\/runs\?branch=master&created=/.test(js),
-  );
-  check(
-    "既に書いた run のログ・job は読み直さない（時間切れの判定の job の取得も、印の確認の後）",
-    /if \(alreadyNoted\) \{[\s\S]{0,500}?continue;\s*\}\s*const jobs = await runJobs\(r\.id\);/.test(
-      js,
-    ),
-  );
+function scene2({ jobs }) {
+  // master の run だけを取る・既に書いた run の job を読み直さないは verifyData/job-watch-scan.js
   check(
     "同じリポジトリの run だけ",
     /workflow_run\.head_repository\.full_name == github\.repository/.test(
@@ -236,8 +214,8 @@ function scene3() {
   }
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（check・config・yml・nameOf・WORKFLOW_FILES・JOB_WATCH_JS_1・JOB_WATCH_JS_2） */
+/** verify から呼ぶ入口。env は verify 側の束縛（check・config・yml・nameOf・WORKFLOW_FILES） */
 export function runJobWatchScenes1(env) {
-  ({ check, config, yml, nameOf, WORKFLOW_FILES, JOB_WATCH_JS_1, JOB_WATCH_JS_2 } = env);
+  ({ check, config, yml, nameOf, WORKFLOW_FILES } = env);
   scene3();
 }
