@@ -37,6 +37,99 @@ function splitTopLevel(str) {
   return parts;
 }
 
+const COLUMN_TYPE_RE =
+  /^([\w()0-9,\s]+?)(?:\s+(?:NOT NULL|DEFAULT|PRIMARY KEY|UNIQUE|CHECK|REFERENCES).*)?$/i;
+
+// カラム定義の「名前の後ろ」から型を取り出す
+function columnTypeOf(rest) {
+  const typeMatch = rest.match(COLUMN_TYPE_RE);
+  return (typeMatch?.[1] || rest.split(/\s+/)[0]).trim();
+}
+
+// カラム定義の「名前の後ろ」に REFERENCES があれば外部キーの関係を返す（無ければ null）
+function referenceOf(tableName, columnName, rest) {
+  const ref = rest.match(/REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i);
+  return ref
+    ? {
+        fromTable: tableName,
+        fromColumn: columnName,
+        toTable: ref[1],
+        toColumn: ref[2],
+      }
+    : null;
+}
+
+// CREATE TABLE のテーブルレベルの制約行。FOREIGN KEY があれば関係を返す
+function tableConstraintFk(tableName, line) {
+  const fk = line.match(
+    /FOREIGN KEY\s*\(\s*(\w+)\s*\)\s*REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i,
+  );
+  return fk
+    ? {
+        fromTable: tableName,
+        fromColumn: fk[1],
+        toTable: fk[2],
+        toColumn: fk[3],
+      }
+    : null;
+}
+
+// PRIMARY KEY (a, b) 単独の行: 既に読んだカラムに isPk を立てる
+function markPrimaryKeys(table, line) {
+  const pkCols = [...line.matchAll(/\(([^)]+)\)/g)][0]?.[1]
+    .split(",")
+    .map((c) => c.trim());
+  for (const col of pkCols || []) {
+    const existing = table.columns.find((c) => c.name === col);
+    if (existing) existing.isPk = true;
+  }
+}
+
+// CREATE TABLE の本文の1行（トップレベルのカンマで分けた1つ）を table と relationships に反映する
+function applyCreateTableLine(table, relationships, rawLine) {
+  const line = rawLine.trim();
+  if (!line) return;
+
+  // テーブルレベルの制約行（CONSTRAINT/UNIQUE/CHECK/PRIMARY KEY(...)単独）
+  if (/^(CONSTRAINT|UNIQUE|CHECK)\b/i.test(line)) {
+    const fk = tableConstraintFk(table.name, line);
+    if (fk) relationships.push(fk);
+    return;
+  }
+  if (/^PRIMARY KEY\s*\(/i.test(line)) {
+    markPrimaryKeys(table, line);
+    return;
+  }
+
+  // 通常のカラム定義: 先頭トークンがカラム名
+  const colMatch = line.match(/^(\w+)\s+(.+)$/s);
+  if (!colMatch) return;
+  const [, columnName, rest] = colMatch;
+  const isPk = /PRIMARY KEY/i.test(rest);
+  table.columns.push({ name: columnName, type: columnTypeOf(rest), isPk });
+
+  const ref = referenceOf(table.name, columnName, rest);
+  if (ref) relationships.push(ref);
+}
+
+// ALTER TABLE の ADD COLUMN 句1つを table と relationships に反映する
+function applyAddColumnClause(table, relationships, rawClause) {
+  const clause = rawClause.trim();
+  const colMatch = clause.match(
+    /^ADD COLUMN(?:\s+IF NOT EXISTS)?\s+(\w+)\s+(.+)$/is,
+  );
+  if (!colMatch) return;
+  const [, columnName, rest] = colMatch;
+  table.columns.push({
+    name: columnName,
+    type: columnTypeOf(rest),
+    isPk: false,
+  });
+
+  const ref = referenceOf(table.name, columnName, rest);
+  if (ref) relationships.push(ref);
+}
+
 /**
  * SQLテキストからCREATE TABLE文とALTER TABLE ... ADD COLUMN文を抽出し、
  * テーブル・カラム・外部キー関係の一覧を返す。
@@ -69,60 +162,8 @@ export function parseTablesFromSql(rawSqlText) {
   while ((m = createTableRe.exec(sqlText))) {
     const [, tableName, body] = m;
     const table = getTable(tableName, { newTable: true });
-
     for (const rawLine of splitTopLevel(body)) {
-      const line = rawLine.trim();
-      if (!line) continue;
-
-      // テーブルレベルの制約行（CONSTRAINT/UNIQUE/CHECK/PRIMARY KEY(...)単独）
-      if (/^(CONSTRAINT|UNIQUE|CHECK)\b/i.test(line)) {
-        const fk = line.match(
-          /FOREIGN KEY\s*\(\s*(\w+)\s*\)\s*REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i,
-        );
-        if (fk) {
-          relationships.push({
-            fromTable: tableName,
-            fromColumn: fk[1],
-            toTable: fk[2],
-            toColumn: fk[3],
-          });
-        }
-        continue;
-      }
-      if (/^PRIMARY KEY\s*\(/i.test(line)) {
-        const pkCols = [...line.matchAll(/\(([^)]+)\)/g)][0]?.[1]
-          .split(",")
-          .map((c) => c.trim());
-        for (const col of pkCols || []) {
-          const existing = table.columns.find((c) => c.name === col);
-          if (existing) existing.isPk = true;
-        }
-        continue;
-      }
-
-      // 通常のカラム定義: 先頭トークンがカラム名
-      const colMatch = line.match(/^(\w+)\s+(.+)$/s);
-      if (!colMatch) continue;
-      const [, columnName, rest] = colMatch;
-      const isPk = /PRIMARY KEY/i.test(rest);
-      const typeMatch = rest.match(
-        /^([\w()0-9,\s]+?)(?:\s+(?:NOT NULL|DEFAULT|PRIMARY KEY|UNIQUE|CHECK|REFERENCES).*)?$/i,
-      );
-      const type = (typeMatch?.[1] || rest.split(/\s+/)[0]).trim();
-
-      table.columns.push({ name: columnName, type, isPk });
-
-      const ref = rest.match(
-        /REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i,
-      );
-      if (ref) {
-        relationships.push({
-          fromTable: tableName,
-          fromColumn: columnName,
-          toTable: ref[1],
-          toColumn: ref[2],
-        });
-      }
+      applyCreateTableLine(table, relationships, rawLine);
     }
   }
 
@@ -134,31 +175,8 @@ export function parseTablesFromSql(rawSqlText) {
     const [, tableName, body] = m;
     if (!/ADD COLUMN/i.test(body)) continue;
     const table = getTable(tableName); // 既存テーブルへの追加。newTableは立てない
-
     for (const rawClause of splitTopLevel(body)) {
-      const clause = rawClause.trim();
-      const colMatch = clause.match(
-        /^ADD COLUMN(?:\s+IF NOT EXISTS)?\s+(\w+)\s+(.+)$/is,
-      );
-      if (!colMatch) continue;
-      const [, columnName, rest] = colMatch;
-      const typeMatch = rest.match(
-        /^([\w()0-9,\s]+?)(?:\s+(?:NOT NULL|DEFAULT|PRIMARY KEY|UNIQUE|CHECK|REFERENCES).*)?$/i,
-      );
-      const type = (typeMatch?.[1] || rest.split(/\s+/)[0]).trim();
-      table.columns.push({ name: columnName, type, isPk: false });
-
-      const ref = rest.match(
-        /REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i,
-      );
-      if (ref) {
-        relationships.push({
-          fromTable: tableName,
-          fromColumn: columnName,
-          toTable: ref[1],
-          toColumn: ref[2],
-        });
-      }
+      applyAddColumnClause(table, relationships, rawClause);
     }
   }
 

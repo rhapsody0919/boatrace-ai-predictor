@@ -153,6 +153,16 @@ export function findMissing(
   origin,
   { stampToleranceMin = 10 } = {},
 ) {
+  return [
+    ...missingTexts(bot, human, stampToleranceMin),
+    ...missingHrefs(bot, human, origin),
+    ...missingHeadBasics(bot, human),
+    ...missingAlternates(bot, human),
+    ...missingJsonLd(bot, human),
+  ];
+}
+
+function missingTexts(bot, human, stampToleranceMin) {
   const missing = [];
   const humanText = normalizeText(human.text);
   for (const t of bot.texts) {
@@ -163,6 +173,11 @@ export function findMissing(
       missing.push({ kind: "text", value: t });
     }
   }
+  return missing;
+}
+
+function missingHrefs(bot, human, origin) {
+  const missing = [];
   const humanHrefs = new Set(
     (human.hrefs ?? []).map((h) => normalizeHref(h, origin)),
   );
@@ -171,6 +186,11 @@ export function findMissing(
       missing.push({ kind: "href", value: h });
     }
   }
+  return missing;
+}
+
+function missingHeadBasics(bot, human) {
+  const missing = [];
   if (bot.head.title !== (human.head?.title ?? "")) {
     missing.push({ kind: "title", value: bot.head.title });
   }
@@ -180,6 +200,11 @@ export function findMissing(
   if (!(human.head?.canonicals ?? []).includes(bot.head.canonical)) {
     missing.push({ kind: "canonical", value: bot.head.canonical });
   }
+  return missing;
+}
+
+function missingAlternates(bot, human) {
+  const missing = [];
   const pair = ({ hreflang, href }) => `${hreflang} ${href}`;
   const humanAlternates = new Set((human.head?.alternates ?? []).map(pair));
   for (const a of bot.head.alternates ?? []) {
@@ -187,6 +212,11 @@ export function findMissing(
       missing.push({ kind: "hreflang", value: pair(a) });
     }
   }
+  return missing;
+}
+
+function missingJsonLd(bot, human) {
+  const missing = [];
   const humanLd = new Set(
     (human.head?.jsonLd ?? []).map(parseLd).filter((v) => v !== null),
   );
@@ -321,7 +351,18 @@ export function evaluateSnapshotStatus(httpStatus, body) {
       message: `ブログ・翻訳・一覧は作っていない（${blog.skipped}）${groups.length > 0 ? `。${groups.join("。")}` : ""}`,
     };
   }
-  // 翻訳記事・一覧（BOA-848 第2段）の件数。無ければ（足す前の版）出さない
+  const extra = snapshotExtraCounts(status);
+  if (status.ok) {
+    return {
+      level: "ok",
+      message: `ブログ ${blog.succeeded}/${blog.total} 件${extra ? `（${extra}）` : ""}（${status.generatedAt} のビルド）`,
+    };
+  }
+  return failedSnapshotResult(status, blog);
+}
+
+/** 翻訳記事・一覧（BOA-848 第2段）の件数。無ければ（足す前の版）出さない */
+function snapshotExtraCounts(status) {
   const i18n =
     status.blogI18n && !("fatalError" in status.blogI18n)
       ? Object.entries(status.blogI18n)
@@ -331,13 +372,10 @@ export function evaluateSnapshotStatus(httpStatus, body) {
   const list = status.blogList
     ? `一覧 ${status.blogList.succeeded}/${status.blogList.total}`
     : "";
-  const extra = [i18n && `翻訳 ${i18n}`, list].filter(Boolean).join("、");
-  if (status.ok) {
-    return {
-      level: "ok",
-      message: `ブログ ${blog.succeeded}/${blog.total} 件${extra ? `（${extra}）` : ""}（${status.generatedAt} のビルド）`,
-    };
-  }
+  return [i18n && `翻訳 ${i18n}`, list].filter(Boolean).join("、");
+}
+
+function failedSnapshotResult(status, blog) {
   const groups = failedSnapshotGroups(status);
   const groupText = groups.length > 0 ? `。${groups.join("。")}` : "";
   if (blog.fatalError) {
