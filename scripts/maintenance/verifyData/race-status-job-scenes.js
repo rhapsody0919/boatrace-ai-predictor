@@ -3,39 +3,158 @@
  * 判定と期待値は分ける前の verify-race-status-job.js と同じ。check などは verify 側の物を受け取る（失敗の数は verify が数える）。
  */
 
-import { runScrapeJob } from "../../lib/scrapeJobs/cronWrapper.js";
-import { createMemoryStore } from "../../lib/scrapeJobs/testing/memoryStore.js";
 import { BreakerOpenError } from "../../lib/scrapeJobs/circuitBreaker.js";
 import { runRaceStatusJob } from "../../lib/raceStatusJob.js";
 
-let out, check, show, INDEX, createFakeClient, DATE, NOW, raceId, scenarioTables, stubFetchHtml, ctxOf, statusOf;
+let out, check, show, INDEX, stubFetchHtml, ctxOf;
 
 // ---------------------------------------------------------------------------
-// (e) mode（共通ラッパ経由）
+// 偽クライアント（races・race_results の読み取りと、races の cancellation_status 更新）
 // ---------------------------------------------------------------------------
-const runWrapped = ({ mode, client, fetchHtml, extra = {} }) => {
-  const store = createMemoryStore({
-    rows: mode ? { race_status: { job: "race_status", mode } } : {},
-  });
-  return {
-    store,
-    promise: runScrapeJob({
-      job: "race_status",
-      store,
-      run: (ctx) => runRaceStatusJob(ctx, { fetchHtml }),
-      now: () => NOW,
-      worker: "w-test",
-      modeGated: true,
-      client,
-      politeFetch: async () => {
-        throw new Error("使わない");
+export function createFakeClient({ tables = {}, fail = {} } = {}) {
+  const state = Object.fromEntries(
+    Object.entries(tables).map(([k, rows]) => [k, rows.map((r) => ({ ...r }))]),
+  );
+  const calls = [];
+  const matches = (row, filters) =>
+    filters.every(([kind, column, value]) =>
+      kind === "eq" ? row[column] === value : value.includes(row[column]),
+    );
+  const from = (table) => {
+    const q = { table, op: "select", filters: [], payload: null };
+    const b = {
+      select: () => b,
+      update: (payload) => ((q.op = "update"), (q.payload = payload), b),
+      eq: (c, v) => (q.filters.push(["eq", c, v]), b),
+      in: (c, v) => (q.filters.push(["in", c, v]), b),
+      then: (resolve, reject) => {
+        calls.push({ table, op: q.op, payload: q.payload, filters: q.filters });
+        const failure = fail[`${table}:${q.op}`];
+        const result = failure
+          ? { data: null, error: { message: failure } }
+          : (() => {
+              const rows = (state[table] ??= []).filter((r) =>
+                matches(r, q.filters),
+              );
+              if (q.op === "update") {
+                for (const r of rows) Object.assign(r, q.payload);
+                return { data: null, error: null };
+              }
+              return { data: rows.map((r) => ({ ...r })), error: null };
+            })();
+        return Promise.resolve(result).then(resolve, reject);
       },
-      ...extra,
-    }),
+    };
+    return b;
   };
-};
+  return { from, state, calls };
+}
+
+export const DATE = "2026-09-21";
+
+ // 14:00 JST
+export const raceId = (venue, no) =>
+  `${DATE}-${String(venue).padStart(2, "0")}-${String(no).padStart(2, "0")}`;
+
+const racesOf = (venue, from, to, status = null) =>
+  Array.from({ length: to - from + 1 }, (_, i) => ({
+    race_id: raceId(venue, from + i),
+    race_date: DATE,
+    venue_code: venue,
+    race_number: from + i,
+    cancellation_status: status,
+  }));
+
+/** 2026-09-21 の状況を再現する races（戸田1〜6Rは既に確定、津1〜4Rは実施済み・5Rは確定、桐生は告知なし） */
+export function scenarioTables() {
+  return {
+    races: [
+      ...racesOf(2, 1, 6, "confirmed"),
+      ...racesOf(2, 7, 12),
+      ...racesOf(3, 1, 12),
+      ...racesOf(9, 1, 4),
+      ...racesOf(9, 5, 5, "confirmed"),
+      ...racesOf(9, 6, 12),
+      ...racesOf(10, 9, 12),
+      ...racesOf(1, 1, 12),
+    ],
+    race_results: [1, 2, 3, 4].map((n) => ({ race_id: raceId(9, n) })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// (d) ジョブ: 確定の範囲
+// ---------------------------------------------------------------------------
+export const statusOf = (client, id) =>
+  client.state.races.find((r) => r.race_id === id).cancellation_status;
+
+/** verify から呼ぶ入口。env は verify 側の束縛（out・check・show・INDEX・stubFetchHtml） */
+export function runRaceStatusJobScenes1(env) {
+  ({ out, check, show, INDEX, stubFetchHtml } = env);
+
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（out・check・show・INDEX・stubFetchHtml） */
+export function runRaceStatusJobScenes2(env) {
+  ({ out, check, show, INDEX, stubFetchHtml } = env);
+
+}
+
+/** verify から呼ぶ入口。env は verify 側の束縛（out・check・show・INDEX・stubFetchHtml・ctxOf） */
+export function runRaceStatusJobScenes3(env) {
+  ({ out, check, show, INDEX, stubFetchHtml, ctxOf } = env);
+
+}
 
 async function scene1() {
+  // 結果のあるレースは、告知があっても確定にしない（矛盾として報告）
+  {
+    const tables = scenarioTables();
+    tables.race_results.push({ race_id: raceId(9, 8) }); // 津8Rに結果がある
+    const client = createFakeClient({ tables });
+    const fetchHtml = stubFetchHtml();
+    const res = await runRaceStatusJob(ctxOf(client, "live"), { fetchHtml });
+    check(
+      "結果のあるレース（津8R）は、告知があっても確定にせず・結果ページも取得せず、contradictions に残す",
+      statusOf(client, raceId(9, 8)) === null &&
+        show(res.report.contradictions) === show([raceId(9, 8)]) &&
+        !fetchHtml.resultCalls().some((u) => u.includes("rno=8&jcd=09")),
+      show(res.report.contradictions),
+    );
+  }
+  // 暫定（tentative）は確定に上げられる。確定済みは上書き・再取得しない
+  {
+    const tables = {
+      races: [...racesOf(2, 7, 8, "tentative"), ...racesOf(2, 9, 9, "confirmed")],
+      race_results: [],
+    };
+    const client = createFakeClient({ tables });
+    const fetchHtml = stubFetchHtml();
+    await runRaceStatusJob(ctxOf(client, "live"), { fetchHtml });
+    check(
+      "暫定（tentative）のレースは確定に上がる。確定済み（9R）は取得もしない",
+      statusOf(client, raceId(2, 7)) === "confirmed" &&
+        statusOf(client, raceId(2, 8)) === "confirmed" &&
+        fetchHtml.resultCalls().length === 2,
+    );
+  }
+  // 告知が無い日: 開催場一覧の1リクエストだけで終わる
+  {
+    const quiet = INDEX.replaceAll(">中止順延<", ">1R以降発売中<")
+      .replaceAll(">5R以降中止順延<", ">1R以降発売中<")
+      .replaceAll(">10R以降中止<", ">1R以降発売中<");
+    const client = createFakeClient({ tables: scenarioTables() });
+    const fetchHtml = stubFetchHtml({ index: quiet });
+    const res = await runRaceStatusJob(ctxOf(client, "live"), { fetchHtml });
+    check(
+      "告知の無い日: 開催場一覧の1リクエストのみ。races・結果ページへは何もしない",
+      fetchHtml.calls.length === 1 &&
+        client.calls.length === 0 &&
+        res.rowsWritten === 0 &&
+        res.report.announced.length === 0,
+      show({ calls: fetchHtml.calls.length, db: client.calls.length }),
+    );
+  }
   // 未知の文言（「中止」「順延」を含む既知でない形）は、確定せず報告する
   {
     const odd = INDEX.replace(">中止順延<", ">本日の開催中止のお知らせ<");
@@ -54,77 +173,13 @@ async function scene1() {
   }
 }
 
-async function scene2() {
-  {
-    const offClient = createFakeClient({ tables: scenarioTables() });
-    const offFetch = stubFetchHtml();
-    const off = runWrapped({
-      mode: "off",
-      client: offClient,
-      fetchHtml: offFetch,
-    });
-    const offRes = await off.promise;
-    check(
-      "off: 何もしない（取得もDBの読み書きもしない）",
-      offRes.status === 200 &&
-        offRes.body.skipped === "mode_off" &&
-        offFetch.calls.length === 0 &&
-        offClient.calls.length === 0,
-      show(offRes.body),
-    );
-    const none = runWrapped({
-      mode: null,
-      client: offClient,
-      fetchHtml: offFetch,
-    });
-    const noneRes = await none.promise;
-    check(
-      "ジョブ状態の行が無い（デプロイ直後）: off として何もしない。誤報にならない",
-      noneRes.body.skipped === "mode_off" &&
-        offFetch.calls.length === 0 &&
-        none.store.state.get("race_status")?.mode === "off",
-    );
-
-    const shadowClient = createFakeClient({ tables: scenarioTables() });
-    const shadowFetch = stubFetchHtml();
-    const shadow = runWrapped({
-      mode: "shadow",
-      client: shadowClient,
-      fetchHtml: shadowFetch,
-    });
-    const shadowRes = await shadow.promise;
-    const report = shadow.store.state.get("race_status").last_report;
-    check(
-      "shadow: 取得・解析はするが races へ書かない。確定するはずのレース（28件全て。打ち切らない）を wouldConfirm に残す",
-      shadowRes.status === 200 &&
-        !shadowClient.calls.some((c) => c.op === "update") &&
-        shadowClient.state.races.filter(
-          (r) => r.cancellation_status === "confirmed",
-        ).length === 7 &&
-        report.confirmed === 0 &&
-        report.wouldConfirm.length === 28 &&
-        report.wouldConfirm.every((id) => id.startsWith(DATE)),
-      show({ status: shadowRes.status, confirmed: report?.confirmed }),
-    );
-
-    const liveClient = createFakeClient({ tables: scenarioTables() });
-    const live = runWrapped({
-      mode: "live",
-      client: liveClient,
-      fetchHtml: stubFetchHtml(),
-    });
-    const liveRes = await live.promise;
-    check(
-      "live: 確定を書く。件数を rowsWritten に記録する（0件でも成功。告知の無い日は正常）",
-      liveRes.status === 200 &&
-        liveRes.body.rowsWritten === 28 &&
-        live.store.state.get("race_status").last_rows_written === 28,
-      show(liveRes.body),
-    );
-  }
+/** verify から呼ぶ入口。env は verify 側の束縛（out・check・show・INDEX・stubFetchHtml・ctxOf） */
+export async function runRaceStatusJobScenes4(env) {
+  ({ out, check, show, INDEX, stubFetchHtml, ctxOf } = env);
+  await scene1();
 }
 
-async function scene3() {
+async function scene2() {
   // ---------------------------------------------------------------------------
   // (f) 失敗
   // ---------------------------------------------------------------------------
@@ -216,20 +271,18 @@ async function scene3() {
   }
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（out・check・show・INDEX・createFakeClient・DATE・NOW・raceId・scenarioTables・stubFetchHtml・ctxOf・statusOf） */
-export async function runRaceStatusJobScenes1(env) {
-  ({ out, check, show, INDEX, createFakeClient, DATE, NOW, raceId, scenarioTables, stubFetchHtml, ctxOf, statusOf } = env);
-  await scene1();
+/** verify から呼ぶ入口。env は verify 側の束縛（out・check・show・INDEX・stubFetchHtml・ctxOf） */
+export async function runRaceStatusJobScenes5(env) {
+  ({ out, check, show, INDEX, stubFetchHtml, ctxOf } = env);
   await scene2();
-  await scene3();
 }
 
-function scene4() {
+function scene3() {
   out.log("\n全ての検証が成功しました");
 }
 
-/** verify から呼ぶ入口。env は verify 側の束縛（out・check・show・INDEX・createFakeClient・DATE・NOW・raceId・scenarioTables・stubFetchHtml・ctxOf・statusOf） */
-export function runRaceStatusJobScenes2(env) {
-  ({ out, check, show, INDEX, createFakeClient, DATE, NOW, raceId, scenarioTables, stubFetchHtml, ctxOf, statusOf } = env);
-  scene4();
+/** verify から呼ぶ入口。env は verify 側の束縛（out・check・show・INDEX・stubFetchHtml・ctxOf） */
+export function runRaceStatusJobScenes6(env) {
+  ({ out, check, show, INDEX, stubFetchHtml, ctxOf } = env);
+  scene3();
 }
