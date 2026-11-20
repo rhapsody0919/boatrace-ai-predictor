@@ -331,10 +331,10 @@ async function scene6() {
   // 部分一意索引では PostgREST の upsert（ON CONFLICT (cols)、WHERE句なし）が推論できないことの確認
   // （075が race_odds の一意索引を部分索引にしない理由）
   await db.exec(`
-  CREATE TABLE t_partial (race_id text, captured_at timestamptz, window_min smallint, source text default 'gha', primary key (race_id, captured_at));
-  CREATE UNIQUE INDEX uq_partial ON t_partial (race_id, window_min) WHERE source = 'vercel' AND window_min IS NOT NULL;
-  INSERT INTO t_partial (race_id, captured_at, window_min, source) VALUES ('a', now(), -60, 'vercel');
-  `);
+CREATE TABLE t_partial (race_id text, captured_at timestamptz, window_min smallint, source text default 'gha', primary key (race_id, captured_at));
+CREATE UNIQUE INDEX uq_partial ON t_partial (race_id, window_min) WHERE source = 'vercel' AND window_min IS NOT NULL;
+INSERT INTO t_partial (race_id, captured_at, window_min, source) VALUES ('a', now(), -60, 'vercel');
+`);
 }
 
 /** verify から呼ぶ入口。env は verify 側の束縛（db・check・q） */

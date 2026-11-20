@@ -98,11 +98,11 @@ async function scene7() {
   // まだ done でないスロットは、発走時刻の変更に追従する。既に done のスロットは再オープンしない（既知の限界）
   await db.exec("DELETE FROM scrape_slots");
   await db.exec(`
-    INSERT INTO races (race_id, race_date, venue_code, race_number, start_time) VALUES
-     ('2026-09-19-02-01','2026-09-19',2,1,'10:00:00'),
-     ('2026-09-19-02-02','2026-09-19',2,2,'10:30:00'),
-     ('2026-09-19-02-03','2026-09-19',2,3,'11:00:00');
-  `);
+  INSERT INTO races (race_id, race_date, venue_code, race_number, start_time) VALUES
+   ('2026-09-19-02-01','2026-09-19',2,1,'10:00:00'),
+   ('2026-09-19-02-02','2026-09-19',2,2,'10:30:00'),
+   ('2026-09-19-02-03','2026-09-19',2,3,'11:00:00');
+`);
   await q(
     `SELECT ensure_scrape_slots('2026-09-19'::date, $1::jsonb, false, $2::timestamptz)`,
     [

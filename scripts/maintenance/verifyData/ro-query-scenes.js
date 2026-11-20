@@ -13,18 +13,18 @@ async function scene1() {
     [
       "PUBLIC が呼べる VOLATILE な SECURITY DEFINER 関数",
       `CREATE FUNCTION public.legacy_writer() RETURNS void LANGUAGE sql SECURITY DEFINER
-         AS $$ DELETE FROM public.races $$;
-       GRANT EXECUTE ON FUNCTION public.legacy_writer() TO PUBLIC;`,
+       AS $$ DELETE FROM public.races $$;
+     GRANT EXECUTE ON FUNCTION public.legacy_writer() TO PUBLIC;`,
       /legacy_writer/,
     ],
     [
       "STABLE な SECURITY DEFINER 関数（中で VOLATILE な関数を呼べば書ける）",
       `CREATE FUNCTION public.vw() RETURNS int LANGUAGE sql VOLATILE
-         AS $$ INSERT INTO public.races VALUES ('LEAK', 'x') RETURNING 1 $$;
-       REVOKE ALL ON FUNCTION public.vw() FROM PUBLIC;
-       CREATE FUNCTION public.st() RETURNS int LANGUAGE sql STABLE SECURITY DEFINER
-         AS $$ SELECT public.vw() $$;
-       GRANT EXECUTE ON FUNCTION public.st() TO PUBLIC;`,
+       AS $$ INSERT INTO public.races VALUES ('LEAK', 'x') RETURNING 1 $$;
+     REVOKE ALL ON FUNCTION public.vw() FROM PUBLIC;
+     CREATE FUNCTION public.st() RETURNS int LANGUAGE sql STABLE SECURITY DEFINER
+       AS $$ SELECT public.vw() $$;
+     GRANT EXECUTE ON FUNCTION public.st() TO PUBLIC;`,
       /public\.st\(\)|st\(\)/,
     ],
     [
@@ -35,7 +35,7 @@ async function scene1() {
     [
       "public 以外のスキーマの表への書き込み",
       `CREATE SCHEMA ext; GRANT USAGE ON SCHEMA ext TO PUBLIC;
-       CREATE TABLE ext.t (x int); GRANT INSERT ON ext.t TO PUBLIC;`,
+     CREATE TABLE ext.t (x int); GRANT INSERT ON ext.t TO PUBLIC;`,
       /ext\.t\(INSERT\)/,
     ],
     [
@@ -56,7 +56,7 @@ async function scene1() {
     [
       "許可リストの jwt_exp と並んでいても jwt_secret は止まる",
       `ALTER DATABASE postgres SET app.settings.jwt_exp = '3600';
-       ALTER DATABASE postgres SET app.settings.jwt_secret = 'super-secret-value';`,
+     ALTER DATABASE postgres SET app.settings.jwt_secret = 'super-secret-value';`,
       /: app\.settings\.jwt_secret$/,
     ],
     [

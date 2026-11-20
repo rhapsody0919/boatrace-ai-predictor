@@ -120,36 +120,36 @@ export async function runBotPageModelScenes10(env) {
 
 function scene5() {
   SWAP_HOOKS = `
-  let src;
-  let spies;
-  export function initialize(data) {
-    src = data.src;
-    spies = data.spies;
+let src;
+let spies;
+export function initialize(data) {
+  src = data.src;
+  spies = data.spies;
+}
+const asModule = (code) => ({ url: "data:text/javascript," + encodeURIComponent(code), shortCircuit: true });
+export async function resolve(specifier, context, nextResolve) {
+  const resolved = await nextResolve(specifier, context);
+  const parent = context.parentURL ?? "";
+  if (resolved.url === src + "services/supabaseClient.js") {
+    return asModule("export const supabase = globalThis.${FAKE_KEY};");
   }
-  const asModule = (code) => ({ url: "data:text/javascript," + encodeURIComponent(code), shortCircuit: true });
-  export async function resolve(specifier, context, nextResolve) {
-    const resolved = await nextResolve(specifier, context);
-    const parent = context.parentURL ?? "";
-    if (resolved.url === src + "services/supabaseClient.js") {
-      return asModule("export const supabase = globalThis.${FAKE_KEY};");
+  const target = resolved.url.startsWith(src) ? resolved.url.slice(src.length) : null;
+  if (target && spies[target] && parent.startsWith(src)) {
+    const importer = JSON.stringify(parent.slice(src.length));
+    const real = JSON.stringify(resolved.url);
+    const lines = ["import * as real from " + real + ";", "export * from " + real + ";"];
+    for (const name of spies[target]) {
+      lines.push(
+        "export function " + name + "(...args) { const result = real." + name + "(...args);" +
+          " (globalThis.${SPY_KEY} ??= []).push({ importer: " + importer + ", name: " + JSON.stringify(name) + ", args, result });" +
+          " return result; }",
+      );
     }
-    const target = resolved.url.startsWith(src) ? resolved.url.slice(src.length) : null;
-    if (target && spies[target] && parent.startsWith(src)) {
-      const importer = JSON.stringify(parent.slice(src.length));
-      const real = JSON.stringify(resolved.url);
-      const lines = ["import * as real from " + real + ";", "export * from " + real + ";"];
-      for (const name of spies[target]) {
-        lines.push(
-          "export function " + name + "(...args) { const result = real." + name + "(...args);" +
-            " (globalThis.${SPY_KEY} ??= []).push({ importer: " + importer + ", name: " + JSON.stringify(name) + ", args, result });" +
-            " return result; }",
-        );
-      }
-      return asModule(lines.join("\\n"));
-    }
-    return resolved;
+    return asModule(lines.join("\\n"));
   }
-  `;
+  return resolved;
+}
+`;
   register(`data:text/javascript,${encodeURIComponent(SWAP_HOOKS)}`, {
     data: { src: SRC_URL, spies: SPIES },
   });
