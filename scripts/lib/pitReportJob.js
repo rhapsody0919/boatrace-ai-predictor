@@ -18,16 +18,17 @@
 import { PIT_REPORT_STATUSES, parsePitReportHtml } from "./pitReportParser.js";
 import {
   PIT_REPORT_OUTCOMES,
-  buildPitReportRows,
   computeContentHash,
-  findRacerMismatches,
   isPitReportCandidate,
   outcomeForStatus,
   pendingRetrySec,
 } from "./pitReportRows.js";
-import { detectPitReportSchema } from "./pitReportSchema.js";
+import {
+  failure,
+  readParsedPitReport,
+  writePitReportLive,
+} from "./pitReportWrite.js";
 import { archiveRawHtml } from "./rawHtmlArchive.js";
-import { upsertChangedRows } from "./unchangedRows.js";
 import { createSupabaseStore } from "./scrapeJobs/store.js";
 import { SCRAPE_JOBS } from "./scrapeJobs/registry.js";
 import { computeRetryAt } from "./scrapeJobs/outcomes.js";
@@ -70,12 +71,6 @@ export async function fetchPitReportHtml(url, fetchImpl = fetch) {
   return response.text();
 }
 
-const failure = (message, extra = {}) => ({
-  outcome: PIT_REPORT_OUTCOMES.error,
-  error: message,
-  ...extra,
-});
-
 /**
  * 1レースのピットレポートを、取得・解析し、live なら書き込む。
  *
@@ -113,50 +108,18 @@ export async function processPitReportRace({
     return { outcome: PIT_REPORT_OUTCOMES.notTarget, rowsWritten: 0 };
   }
 
-  let commentCount = 0;
-  let expectedBoats = null;
-  /**
-   * 公開済みでもコメントが出走艇の数に満たない間は、発走まで partial で再試行する（BOA-611）。
-   * 公式はレポーターが艇ごとにコメントを順に足していく（2026-10-01 児島7R: 11:54 の検知は1艇、13:22 は6艇）。
-   * 発走後・発走時刻が不明なときは、そのまま完了にする（再試行を続けて期限切れの監視を鳴らさない）。
-   * 書き込みは content_hash で変わったときだけなので、取り直しても同じ内容なら書かない。
-   */
-  const settle = (result) =>
-    result.outcome === PIT_REPORT_OUTCOMES.ok &&
-    expectedBoats !== null &&
-    commentCount < expectedBoats &&
-    Number.isFinite(minutesToStart) &&
-    minutesToStart > 0
-      ? {
-          ...result,
-          outcome: PIT_REPORT_OUTCOMES.partial,
-          retrySec: pendingRetrySec(minutesToStart),
-        }
-      : result;
-
   const url = buildPitReportUrl(raceId);
   const html = await fetchHtml(url);
   const parsed = parsePitReportHtml(html);
   const outcome = outcomeForStatus(parsed.status);
   const digest = computeContentHash(parsed);
-  const base = { status: parsed.status, resultDigest: digest, parsed };
-
-  if (parsed.status === PIT_REPORT_STATUSES.unrecognized) {
-    return failure(
-      `parse_anomaly: ${parsed.anomalies.join(" / ") || "想定外の構造"}`,
-      base,
-    );
-  }
-  if (parsed.status === PIT_REPORT_STATUSES.comments) {
-    if (parsed.anomalies.length > 0) {
-      // 想定外の表記のまま書かない（構造の変化を、黙って書き込まない）
-      return failure(`parse_anomaly: ${parsed.anomalies.join(" / ")}`, base);
-    }
-    const count = parsed.boats.filter((b) => b.commentText !== null).length;
-    commentCount = count;
-    base.rowsParsed = count;
-    base.rowsExpected = 1;
-  }
+  const read = readParsedPitReport(parsed, {
+    status: parsed.status,
+    resultDigest: digest,
+    parsed,
+  });
+  if (read.fail) return read.fail;
+  const { base, commentCount } = read;
   // 書き込まない結果（未公開・データなし）、shadow は、ここまで
   if (
     mode !== "live" ||
@@ -173,115 +136,19 @@ export async function processPitReportRace({
         : {}),
     };
   }
-
-  // --- live の書き込み ---
-  if (!(await detectPitReportSchema(client))) {
-    return failure(
-      "マイグレーション085（race_pit_reports・race_pit_comments）が未適用のため、書き込みませんでした",
-      base,
-    );
-  }
-
-  // 出走表の登録番号との突合（別のレース・ずれた艇番へ、コメントを付けて書かない）
-  if (parsed.status === PIT_REPORT_STATUSES.comments) {
-    const { data: entries, error: entriesError } = await client
-      .from("race_entries")
-      .select("boat_number, racer_id")
-      .eq("race_id", raceId);
-    if (entriesError) {
-      return failure(
-        `出走表の読み取りに失敗しました: ${entriesError.message}`,
-        base,
-      );
-    }
-    // 出走表が読めない（0件）ときは、全艇そろうまで待つ判定をしない（従来どおり完了にする）
-    expectedBoats = (entries ?? []).length > 0 ? entries.length : null;
-    const mismatches = findRacerMismatches(parsed.boats, entries ?? []);
-    if (mismatches.length > 0) {
-      return failure(`parse_anomaly: ${mismatches.join(" / ")}`, base);
-    }
-  }
-
-  // 内容が既存と同じなら、何も書かない（変更の無い行は書かない）
-  const { data: existing, error: existingError } = await client
-    .from("race_pit_reports")
-    .select("content_hash, parser_version, raw_storage_path")
-    .eq("race_id", raceId)
-    .maybeSingle();
-  if (existingError) {
-    return failure(
-      `race_pit_reports の読み取りに失敗しました: ${existingError.message}`,
-      base,
-    );
-  }
-  if (
-    existing &&
-    existing.content_hash === digest &&
-    existing.parser_version === parsed.parserVersion
-  ) {
-    return settle({ ...base, outcome, rowsWritten: 0 });
-  }
-
-  // 内容が変わった（または初めて）: 生HTMLの保管（コメントありのみ。失敗しても続ける）→ 艇ごと → レース単位の行
-  const rawPath =
-    parsed.status === PIT_REPORT_STATUSES.comments
-      ? await archive(client, {
-          pageType: PIT_REPORT_PAGE_TYPE,
-          raceId,
-          contentHash: digest,
-          html,
-        })
-      : null;
-  const rows = buildPitReportRows(parsed, {
-    raceId,
-    rawStoragePath: rawPath,
-  });
-
-  let rowsWritten = 0;
-  if (rows.comments.length > 0) {
-    const commentResult = await upsertChangedRows(
-      client,
-      "race_pit_comments",
-      rows.comments,
-      {
-        onConflict: "race_id,boat_number",
-        keyColumns: ["race_id", "boat_number"],
-        stampUpdatedAt: true,
-        label: "race_pit_comments",
-      },
-    );
-    if (commentResult.error) return failure(commentResult.error.message, base);
-    rowsWritten += commentResult.written;
-  }
-  if (existing) {
-    // 更新で艇のコメントが減った場合（通常は起きない）、残らないようにする
-    const keep = rows.comments.map((c) => c.boat_number);
-    let del = client.from("race_pit_comments").delete().eq("race_id", raceId);
-    if (keep.length > 0)
-      del = del.not("boat_number", "in", `(${keep.join(",")})`);
-    const { error: deleteError } = await del;
-    if (deleteError) {
-      return failure(
-        `古いコメントの削除に失敗しました: ${deleteError.message}`,
-        base,
-      );
-    }
-  }
-  const reportResult = await upsertChangedRows(
+  return writePitReportLive({
     client,
-    "race_pit_reports",
-    [rows.report],
-    {
-      onConflict: "race_id",
-      keyColumns: ["race_id"],
-      ignoreColumns: ["raw_storage_path"],
-      stampUpdatedAt: true,
-      label: "race_pit_reports",
-    },
-  );
-  if (reportResult.error) return failure(reportResult.error.message, base);
-  rowsWritten += reportResult.written;
-  return settle({ ...base, outcome, rowsWritten });
+    raceId,
+    parsed,
+    html,
+    digest,
+    base,
+    outcome,
+    archive,
+    pageType: PIT_REPORT_PAGE_TYPE,
+    minutesToStart,
+    commentCount,
+  });
 }
 
 /** races の1行を読む（グレード・レース番号）。無ければ null。DBエラーは例外 */
