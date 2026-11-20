@@ -747,7 +747,7 @@
   - `scripts/maintenance/backfill-refund-hit-flags.js:135` update [?]
   - `scripts/maintenance/backfill-trifecta-trio.js:62` update [?]
   - `scripts/maintenance/delete-cancelled-race-predictions.js:139` delete
-  - `scripts/maintenance/migrate-to-supabase.js:270` upsert [?]
+  - `scripts/maintenance/migrate-to-supabase.js:293` upsert(helper:upsertRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-race_conditions"></a>race_conditions
@@ -972,7 +972,7 @@
   - `scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127` update [racer_id]
   - `scripts/maintenance/backfill-race-entries-racer-id.js:131` update [racer_id]
   - `scripts/maintenance/backfill-racer-ids.js:171` update [racer_id]
-  - `scripts/maintenance/migrate-to-supabase.js:259` upsert [?]
+  - `scripts/maintenance/migrate-to-supabase.js:284` upsert(helper:upsertRows) [?]
   - `scripts/maintenance/racelist-backfill-load.js:97` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/restore-contaminated-race-entries.js:169` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/restore-entries-branch-hometown.js:119` upsert(helper:upsertChangedRows) [?]
@@ -1257,7 +1257,7 @@
   - `scripts/maintenance/backfill-race-data.js:195` update [winning_technique]
   - `scripts/maintenance/backfill-rank456-from-kfile.js:157` update [rank4, rank5, rank6]
   - `scripts/maintenance/backfill-start-timings.js:188` update [winning_technique]
-  - `scripts/maintenance/migrate-to-supabase.js:284` upsert [?]
+  - `scripts/maintenance/migrate-to-supabase.js:305` upsert(helper:upsertRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-race_series"></a>race_series
@@ -1648,7 +1648,7 @@
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:130` update [race_number]
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:152` insert [?]
   - `scripts/maintenance/fix-tsu-2025-12-02-date.js:247` delete
-  - `scripts/maintenance/migrate-to-supabase.js:249` upsert [?]
+  - `scripts/maintenance/migrate-to-supabase.js:276` upsert(helper:upsertRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-raw_snapshots"></a>raw_snapshots

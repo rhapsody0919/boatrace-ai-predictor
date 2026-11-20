@@ -5755,9 +5755,9 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/migrate-to-supabase.js:270",
+          "ref": "scripts/maintenance/migrate-to-supabase.js:293",
           "op": "upsert",
-          "via": "client",
+          "via": "helper:upsertRows",
           "columns": [
             "?"
           ]
@@ -5825,7 +5825,6 @@
             "scripts/maintenance/delete-cancelled-race-predictions.js:139",
             "scripts/maintenance/delete-cancelled-race-predictions.js:72",
             "scripts/maintenance/delete-phantom-races.js:138",
-            "scripts/maintenance/migrate-to-supabase.js:270",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:26",
             "src/services/predictionQueries3.js:133",
@@ -5864,7 +5863,6 @@
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:50",
             "scripts/lib/unifiedPredictionsRun.js:273",
             "scripts/maintenance/backfill-trifecta-trio.js:37",
-            "scripts/maintenance/migrate-to-supabase.js:270",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:26",
             "src/services/predictionQueries3.js:133",
@@ -8281,9 +8279,9 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/migrate-to-supabase.js:259",
+          "ref": "scripts/maintenance/migrate-to-supabase.js:284",
           "op": "upsert",
-          "via": "client",
+          "via": "helper:upsertRows",
           "columns": [
             "?"
           ]
@@ -8440,7 +8438,6 @@
             "scripts/maintenance/backfill-racer-ids.js:171",
             "scripts/maintenance/check-morning-init-shadow.js:121",
             "scripts/maintenance/delete-phantom-race-days.js:112",
-            "scripts/maintenance/migrate-to-supabase.js:259",
             "scripts/maintenance/racelist-backfill-load.js:199",
             "scripts/maintenance/verify-analogy-v16.js:321",
             "scripts/maintenance/verify-e2e-har-merge.js:46",
@@ -8559,7 +8556,6 @@
             "scripts/maintenance/backfill-racer-ids.js:171",
             "scripts/maintenance/check-morning-init-shadow.js:121",
             "scripts/maintenance/delete-phantom-race-days.js:112",
-            "scripts/maintenance/migrate-to-supabase.js:259",
             "scripts/verification/verify-series-points-border.mjs:47",
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
@@ -11690,9 +11686,9 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/migrate-to-supabase.js:284",
+          "ref": "scripts/maintenance/migrate-to-supabase.js:305",
           "op": "upsert",
-          "via": "client",
+          "via": "helper:upsertRows",
           "columns": [
             "?"
           ]
@@ -11773,7 +11769,6 @@
             "scripts/maintenance/backfill-start-timings.js:188",
             "scripts/maintenance/backfill-trifecta-trio.js:19",
             "scripts/maintenance/delete-cancelled-race-predictions.js:55",
-            "scripts/maintenance/migrate-to-supabase.js:284",
             "scripts/verification/verify-series-points-border.mjs:56",
             "scripts/verification/verify-series-points-needed.mjs:50",
             "scripts/verification/verify-series-points-official.mjs:164",
@@ -17359,9 +17354,9 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/migrate-to-supabase.js:249",
+          "ref": "scripts/maintenance/migrate-to-supabase.js:276",
           "op": "upsert",
-          "via": "client",
+          "via": "helper:upsertRows",
           "columns": [
             "?"
           ]
@@ -17482,7 +17477,6 @@
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:130",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:247",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
-            "scripts/maintenance/migrate-to-supabase.js:249",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-analogy-v16.js:308",
             "scripts/maintenance/verify-data-readers.js:369",
