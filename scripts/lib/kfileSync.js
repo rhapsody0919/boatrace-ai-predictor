@@ -30,17 +30,12 @@ export const KFILE_SYNC_LOOKBACK_DAYS = 4;
  * @param {Object} [options] syncActualCourseFromKFile と同じ（dryRun・client・loadText）と now（テスト用）
  * @returns {Promise<{updated: number, status: string, parsed: number, pending: number, error?: string}>}
  */
-export async function syncOfficialFinishCodeFromKFile(
-  dateStr,
-  {
-    dryRun = false,
-    client = supabase,
-    loadText = () => fetchKFileText(dateStr),
-    now = () => new Date(),
-  } = {},
-) {
-  const column = OFFICIAL_FINISH_CODE_COLUMN;
-  // 1日で1000行（約166レース）を超える日がある（2026-01-02 は192レース）ので、ページングして全部読む
+/**
+ * その日の race_start_timings（race_id・boat_number・成績コードの列）を全部読む。
+ * 1日で1000行（約166レース）を超える日がある（2026-01-02 は192レース）ので、ページングして全部読む
+ * @returns {Promise<{timings: Object[], readError: Object|null}>} 読みに失敗したら、そこまでの行と error
+ */
+async function readTimingsForDate(client, dateStr, column) {
   const timings = [];
   let readError = null;
   for (let from = 0; ; from += 1000) {
@@ -59,24 +54,68 @@ export async function syncOfficialFinishCodeFromKFile(
     timings.push(...(data ?? []));
     if ((data ?? []).length < 1000) break;
   }
-  if (readError && isColumnMissingError(readError, [column])) {
+  return { timings, readError };
+}
+
+/**
+ * 成績コードの行を1000行ずつ upsert する。失敗したら、書けた件数（失敗した塊の手前まで）と error を返す
+ * @returns {Promise<{written: number, error: Object|null}>}
+ */
+async function writeFinishCodeRows(client, dateStr, toWrite) {
+  for (let i = 0; i < toWrite.length; i += 1000) {
+    const { error } = await client
+      .from("race_start_timings")
+      .upsert(toWrite.slice(i, i + 1000), {
+        onConflict: "race_id,boat_number",
+      });
+    if (error) {
+      console.error(
+        `  ⚠️ 成績コード書き込みエラー(${dateStr}): ${error.message}`,
+      );
+      return { written: i, error };
+    }
+  }
+  return { written: toWrite.length, error: null };
+}
+
+/**
+ * race_start_timings の読みに失敗したときの戻り値。列が未適用（116 が未適用）なら column_missing、ほかは pending_check_failed
+ */
+function finishCodeReadFailure(readError, dateStr, column) {
+  if (isColumnMissingError(readError, [column])) {
     console.warn(
       `  ⚠️ 成績コード: race_start_timings.${column} が未適用のため、同期しません（マイグレーション116）`,
     );
     return { updated: 0, parsed: 0, pending: 0, status: "column_missing" };
   }
-  if (readError) {
-    console.error(
-      `  ⚠️ 成績コード対象確認エラー(${dateStr}): ${readError.message}`,
-    );
-    return {
-      updated: 0,
-      parsed: 0,
-      pending: 0,
-      status: "pending_check_failed",
-      error: readError.message,
-    };
-  }
+  console.error(
+    `  ⚠️ 成績コード対象確認エラー(${dateStr}): ${readError.message}`,
+  );
+  return {
+    updated: 0,
+    parsed: 0,
+    pending: 0,
+    status: "pending_check_failed",
+    error: readError.message,
+  };
+}
+
+export async function syncOfficialFinishCodeFromKFile(
+  dateStr,
+  {
+    dryRun = false,
+    client = supabase,
+    loadText = () => fetchKFileText(dateStr),
+    now = () => new Date(),
+  } = {},
+) {
+  const column = OFFICIAL_FINISH_CODE_COLUMN;
+  const { timings, readError } = await readTimingsForDate(
+    client,
+    dateStr,
+    column,
+  );
+  if (readError) return finishCodeReadFailure(readError, dateStr, column);
   const current = new Map(
     timings.map((t) => [`${t.race_id}|${t.boat_number}`, t[column] ?? null]),
   );
@@ -113,24 +152,19 @@ export async function syncOfficialFinishCodeFromKFile(
     })
     .map((r) => ({ ...r, updated_at: at }));
   if (!dryRun && toWrite.length > 0) {
-    for (let i = 0; i < toWrite.length; i += 1000) {
-      const { error } = await client
-        .from("race_start_timings")
-        .upsert(toWrite.slice(i, i + 1000), {
-          onConflict: "race_id,boat_number",
-        });
-      if (error) {
-        console.error(
-          `  ⚠️ 成績コード書き込みエラー(${dateStr}): ${error.message}`,
-        );
-        return {
-          updated: i,
-          parsed: parsed.length,
-          pending,
-          status: "write_error",
-          error: error.message,
-        };
-      }
+    const { written, error } = await writeFinishCodeRows(
+      client,
+      dateStr,
+      toWrite,
+    );
+    if (error) {
+      return {
+        updated: written,
+        parsed: parsed.length,
+        pending,
+        status: "write_error",
+        error: error.message,
+      };
     }
   }
   console.log(

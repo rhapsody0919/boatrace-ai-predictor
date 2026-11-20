@@ -43,6 +43,42 @@ const ACTUAL_COURSE_COLUMNS = [1, 2, 3, 4, 5, 6].map(
  *   nothing_pending（同期済み・対象なし。ダウンロードしない）/ pending_check_failed / kfile_error（ダウンロード失敗。
  *   error に理由）/ kfile_unavailable（未公開・開催なし）/ no_races_parsed / synced
  */
+/**
+ * 結果確定済み（rank1あり）だが進入コースが1艇分も未取得（actual_course_1〜6が全てnull）のレースを1件だけ探す。
+ * 1艇でも埋まっていれば同期済み（欠場艇のcolumnだけがnullのレースを含む。上のBOA-349参照）
+ */
+function findActualCoursePending(client, dateStr) {
+  return ACTUAL_COURSE_COLUMNS.reduce(
+    (query, column) => query.is(column, null),
+    client
+      .from("race_results")
+      .select("race_id")
+      .gte("race_id", dateStr)
+      .lt("race_id", `${dateStr}~`)
+      .not("rank1", "is", null),
+  ).limit(1);
+}
+
+/** 進入コースの行を1件ずつ UPDATE する。失敗した行はログに残して数えない。戻り値は書けた件数 */
+async function updateActualCourseRows(client, toWrite) {
+  let updated = 0;
+  for (const row of toWrite) {
+    const { race_id: raceId, ...columns } = row;
+    const { error: updateError } = await client
+      .from("race_results")
+      .update(columns)
+      .eq("race_id", raceId);
+    if (updateError) {
+      console.error(
+        `  ⚠️ actual_course更新エラー(${raceId}): ${updateError.message}`,
+      );
+    } else {
+      updated++;
+    }
+  }
+  return updated;
+}
+
 export async function syncActualCourseFromKFile(
   dateStr,
   {
@@ -51,19 +87,11 @@ export async function syncActualCourseFromKFile(
     loadText = () => fetchKFileText(dateStr),
   } = {},
 ) {
-  // 結果確定済み（rank1あり）だが進入コースが1艇分も未取得（actual_course_1〜6が全てnull）の
-  // レースが無ければ、Kファイルのダウンロード自体をスキップする（無駄な外部アクセスを避ける）。
-  // 1艇でも埋まっていれば同期済み（欠場艇のcolumnだけがnullのレースを含む。上のBOA-349参照）
-  const { data: pending, error: pendingError } =
-    await ACTUAL_COURSE_COLUMNS.reduce(
-      (query, column) => query.is(column, null),
-      client
-        .from("race_results")
-        .select("race_id")
-        .gte("race_id", dateStr)
-        .lt("race_id", `${dateStr}~`)
-        .not("rank1", "is", null),
-    ).limit(1);
+  // 未取得のレースが無ければ、Kファイルのダウンロード自体をスキップする（無駄な外部アクセスを避ける）
+  const { data: pending, error: pendingError } = await findActualCoursePending(
+    client,
+    dateStr,
+  );
 
   if (pendingError) {
     // actual_course_1列がまだ存在しない場合（マイグレーション未適用）もここに来る。
@@ -121,25 +149,9 @@ export async function syncActualCourseFromKFile(
     { keyColumns: ["race_id"], writeMissing: false },
   );
 
-  let updated = 0;
-  if (dryRun) {
-    updated = toWrite.length;
-  } else {
-    for (const row of toWrite) {
-      const { race_id: raceId, ...columns } = row;
-      const { error: updateError } = await client
-        .from("race_results")
-        .update(columns)
-        .eq("race_id", raceId);
-      if (updateError) {
-        console.error(
-          `  ⚠️ actual_course更新エラー(${raceId}): ${updateError.message}`,
-        );
-      } else {
-        updated++;
-      }
-    }
-  }
+  const updated = dryRun
+    ? toWrite.length
+    : await updateActualCourseRows(client, toWrite);
   console.log(
     `  ✅ ${dryRun ? "[DRY-RUN] " : ""}${formatSkipSummary(`進入コース(Kファイル方式, ${dateStr})`, stats, { fallback })}` +
       ` / 更新${updated}件（Kファイル${rows.length}件中、race_results未登録${stats.missing}件）`,
@@ -165,6 +177,69 @@ export async function syncActualCourseFromKFile(
  * @returns {Promise<{updated: number, status: string, parsed: number, pending: number, skipped?: number, error?: string}>}
  *   status は syncActualCourseFromKFile と同じ語彙
  */
+/**
+ * pending（rank4 が未取得の既存の行）の1レースを、Kファイルの行 k と比べて書かない理由を返す。書くなら null。
+ * BOA-338のbackfill-rank456-from-kfile.jsのmismatchDetailsと同様、不一致・重複艇番・Kファイルに無いを区別する
+ */
+function rank456SkipReason(race, k) {
+  if (!k) return "not_in_kfile";
+  if (!k.valid) return "duplicate_boat_in_kfile";
+  if (
+    k.rank1 !== race.rank1 ||
+    k.rank2 !== race.rank2 ||
+    k.rank3 !== race.rank3
+  )
+    return "rank1_3_mismatch";
+  return null;
+}
+
+/**
+ * pending の各レースに rank4〜6 を書く（dryRun は数えるだけ）。
+ * スキップは race_id・理由・両側の値をログに残す（集計件数だけでは恒常的な不一致レースがあっても気づけないため）。
+ * Kファイルにも4〜6着が無いレース（3着以内しか完走していない等）は pending の条件（rank4がnull）を永久に満たし続け、
+ * null→nullの空UPDATEを毎回発行してしまう（BOA-349と同種）ので、既存値（null）と同じなら書かない
+ * @returns {Promise<{updated: number, skipped: number, unchanged: number}>}
+ */
+async function applyRank456(client, pending, kfileByRaceId, dryRun) {
+  let updated = 0;
+  let skipped = 0;
+  let unchanged = 0;
+  for (const race of pending) {
+    const k = kfileByRaceId.get(race.race_id);
+    const reason = rank456SkipReason(race, k);
+    if (reason) {
+      skipped++;
+      console.log(
+        `  ⚠️ rank456スキップ(${race.race_id}): ${reason}` +
+          (k
+            ? ` db=[${race.rank1},${race.rank2},${race.rank3}] kfile=[${k.rank1},${k.rank2},${k.rank3}]`
+            : ""),
+      );
+      continue;
+    }
+    if (k.rank4 == null && k.rank5 == null && k.rank6 == null) {
+      unchanged++;
+      continue;
+    }
+    if (dryRun) {
+      updated++;
+      continue;
+    }
+    const { error: updateError } = await client
+      .from("race_results")
+      .update({ rank4: k.rank4, rank5: k.rank5, rank6: k.rank6 })
+      .eq("race_id", race.race_id);
+    if (updateError) {
+      console.error(
+        `  ⚠️ rank456更新エラー(${race.race_id}): ${updateError.message}`,
+      );
+    } else {
+      updated++;
+    }
+  }
+  return { updated, skipped, unchanged };
+}
+
 export async function syncRank456FromKFile(
   dateStr,
   {
@@ -234,61 +309,12 @@ export async function syncRank456FromKFile(
     };
   }
   const kfileByRaceId = new Map(rows.map((r) => [r.race_id, r]));
-
-  let updated = 0;
-  let skipped = 0;
-  let unchanged = 0;
-  for (const race of pending) {
-    const k = kfileByRaceId.get(race.race_id);
-    if (
-      !k ||
-      !k.valid ||
-      k.rank1 !== race.rank1 ||
-      k.rank2 !== race.rank2 ||
-      k.rank3 !== race.rank3
-    ) {
-      skipped++;
-      // BOA-338のbackfill-rank456-from-kfile.jsのmismatchDetailsと同様、
-      // race_id・理由・両側の値を残す。集計件数だけでは恒常的な不一致
-      // レースがあっても気づけないため（毎日スキップされ続けるだけになる）
-      const reason = !k
-        ? "not_in_kfile"
-        : !k.valid
-          ? "duplicate_boat_in_kfile"
-          : "rank1_3_mismatch";
-      console.log(
-        `  ⚠️ rank456スキップ(${race.race_id}): ${reason}` +
-          (k
-            ? ` db=[${race.rank1},${race.rank2},${race.rank3}] kfile=[${k.rank1},${k.rank2},${k.rank3}]`
-            : ""),
-      );
-      continue;
-    }
-
-    // Kファイルにも4〜6着が無いレース（3着以内しか完走していない等）は、pendingの条件
-    // （rank4がnull）を永久に満たし続けるため、null→nullの空UPDATEを毎回発行してしまう
-    // （BOA-349と同種）。既存値（null）と同じなら書かない
-    if (k.rank4 == null && k.rank5 == null && k.rank6 == null) {
-      unchanged++;
-      continue;
-    }
-
-    if (dryRun) {
-      updated++;
-      continue;
-    }
-    const { error: updateError } = await client
-      .from("race_results")
-      .update({ rank4: k.rank4, rank5: k.rank5, rank6: k.rank6 })
-      .eq("race_id", race.race_id);
-    if (updateError) {
-      console.error(
-        `  ⚠️ rank456更新エラー(${race.race_id}): ${updateError.message}`,
-      );
-    } else {
-      updated++;
-    }
-  }
+  const { updated, skipped, unchanged } = await applyRank456(
+    client,
+    pending,
+    kfileByRaceId,
+    dryRun,
+  );
   console.log(
     `  ✅ ${dryRun ? "[DRY-RUN] " : ""}rank456(Kファイル方式): ${updated}/${pending.length}件更新 (${dateStr}, スキップ${skipped}件, 変更なし${unchanged}件スキップ)`,
   );
