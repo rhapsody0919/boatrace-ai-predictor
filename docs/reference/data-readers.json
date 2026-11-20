@@ -5,12 +5,12 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2542,
+    "sourceFiles": 2551,
     "filesWithAccess": 309,
     "tableReaders": 948,
     "tableWriters": 195,
     "rpcCallers": 55,
-    "nameMentions": 266,
+    "nameMentions": 271,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
@@ -26990,7 +26990,9 @@
         }
       ],
       "mentions": [
-        "scripts/lib/scrapeJobs/schemaErrors.js:17"
+        "scripts/lib/scrapeJobs/schemaErrors.js:17",
+        "scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:194",
+        "scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:230"
       ],
       "triggerOn": [],
       "calledByRpc": [],
@@ -27018,7 +27020,10 @@
           "via": "client"
         }
       ],
-      "mentions": [],
+      "mentions": [
+        "scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:176",
+        "scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:229"
+      ],
       "triggerOn": [],
       "calledByRpc": [],
       "reads": [
@@ -27552,7 +27557,8 @@
       ],
       "mentions": [
         "scripts/lib/scrapeJobs/schemaErrors.js:16",
-        "scripts/maintenance/verifyData/morning-init-jobs-scenes-3.js:133"
+        "scripts/maintenance/verifyData/morning-init-jobs-scenes-3.js:133",
+        "scripts/maintenance/verifyData/scrape-jobs-scenes-8.js:315"
       ],
       "triggerOn": [],
       "calledByRpc": [],
