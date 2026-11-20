@@ -34,7 +34,7 @@
  * 手動の動作確認: GET /api/cron/races-init?venues=N（Authorization: Bearer {CRON_SECRET}）で、1回の呼び出しで
  * 処理する会場数を N にする（mode が shadow・live のとき。live の場合は、書き込みと cursor の前進を伴う）。
  */
-import { getTodayVenues, scrapeVenue } from "../../scrape-to-json.js";
+import { getTodayVenues, scrapeVenue } from "../scrapeToJson.js";
 import { fetchAll } from "../supabaseClient.js";
 import { truncateError } from "../scrapeJobs/outcomes.js";
 import { windowJobNames } from "../scrapeJobs/registry.js";
@@ -143,7 +143,7 @@ async function defaultEnsureSlots(client, date) {
 
 async function defaultEnsureUnified(client, date, now) {
   const { findRacesMissingUnified, generateUnifiedPredictions } =
-    await import("../../daily/generate-unified-predictions.js");
+    await import("../unifiedPredictionsRun.js");
   // 発走済みのレースは、欠けていても数えず、書きもしない（BOA-628）
   const missing = await findRacesMissingUnified(date, client, { now });
   if (missing.length === 0)

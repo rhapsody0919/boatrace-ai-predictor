@@ -129,8 +129,8 @@ function readK() {
   return { k, missingDays };
 }
 
-/** K ファイルと DB の風向の組（会場・K の角度・DB の角度）と、DB の風向が空で K から埋められる行 */
-function pairKWithDb(db, k) {
+/** DB の行と K の突き合わせ。会場ごとの回転の推定に使う組と、DB の風向が空の行の K の風向（main から移した） */
+function collectPairs(db, k) {
   const pairs = [];
   const fill = [];
   for (const c of db) {
@@ -153,8 +153,8 @@ function pairKWithDb(db, k) {
   return { pairs, fill };
 }
 
-/** 会場ごとの回転の最頻値と一致率。最頻の回転が方位マークの回転と違う会場は problems に */
-function venueRotations(pairs) {
+/** 会場ごとの最頻の回転と方位マークの回転の照合・統計（main から移した） */
+function venueStats(pairs) {
   const venues = {};
   const offsets = {};
   const problems = [];
@@ -185,15 +185,9 @@ function venueRotations(pairs) {
   return { venues, offsets, problems };
 }
 
-async function main() {
-  const { k, missingDays } = readK();
-  if (k.size === 0)
-    throw new Error(`${archiveDir} に K の解析済みデータがありません`);
-  const db = await readDb();
-  const { pairs, fill } = pairKWithDb(db, k);
-  const { venues, offsets, problems } = venueRotations(pairs);
-  if (problems.length) throw new Error(problems.join("\n"));
-  const basis = {
+/** wind_basis.json の中身（main から移した） */
+function buildBasis(pairs, missingDays, venues, offsets) {
+  return {
     offsets_deg: offsets,
     method: {
       definition:
@@ -206,6 +200,10 @@ async function main() {
     },
     venues,
   };
+}
+
+/** wind_basis.json → k_wind_fill.csv の順に書く（main から移した） */
+function writeBasisFiles(basis, fill) {
   fs.writeFileSync(
     path.join(HERE, "wind_basis.json"),
     `${JSON.stringify(basis, null, 1)}\n`,
@@ -214,6 +212,18 @@ async function main() {
     path.join(HERE, "k_wind_fill.csv"),
     `race_id,wind_direction\n${fill.sort().join("\n")}\n`,
   );
+}
+
+async function main() {
+  const { k, missingDays } = readK();
+  if (k.size === 0)
+    throw new Error(`${archiveDir} に K の解析済みデータがありません`);
+  const db = await readDb();
+  const { pairs, fill } = collectPairs(db, k);
+  const { venues, offsets, problems } = venueStats(pairs);
+  if (problems.length) throw new Error(problems.join("\n"));
+  const basis = buildBasis(pairs, missingDays, venues, offsets);
+  writeBasisFiles(basis, fill);
   console.log(
     `組 ${pairs.length}（K の欠けた日 ${missingDays}）、24会場とも最頻の回転が方位マークと一致、埋める行 ${fill.length}`,
   );

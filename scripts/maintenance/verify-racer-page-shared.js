@@ -6,16 +6,18 @@
  *   1. サービス層（領域の Queries の公開の入口）を偽の supabase クライアントの上で呼ぶ（BOA-1406。本文の正規表現から置き換え）。
  *      getRacerRaceHistory が race_entries を列 "race_id, boat_number"・その選手・racerHistoryCutoff() 以降で取り、
  *      返した履歴を純関数で数えると手で数えた値になる。getRacerBoatReturnRate の回収率は toReturnRate と同じ
- *   1b. 振る舞いへ移せない物は文字で見る（緩めない）: 選手ページの import、rank-data.js の呼び方・asOf の式・期間の絞り
+ *   1b. 選手ページの部品が純関数を import する（読み込みの道で見る）。rank-data.js の racer_page を偽の DB の上で回し、
+ *      呼び方（会場×1号艇）・asOf（今日は見た時刻・過去の日はその日の終わり）・期間の絞り（窓の外・後の日を混ぜない）を見る
  *   2. racerHistoryCutoff は移す前の式（見た時刻から730日、その環境の時刻で数えて UTC の日付）と同じ
  *   3. 番付は会場の走だけを読む。会場で絞る集計は、全会場の履歴でも会場の走だけの履歴でも同じ値になる（乱数 2,000 通り）
  *   4. rank-data.js が racer_page の引数の誤りを DB の前に拒否する
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { register } from "node:module";
 import { fileURLToPath } from "node:url";
+import { importersOf } from "./verifyData/hit-verification-guidance-pages.js";
+import { rankDataRacerPageScenes } from "./verifyData/racer-page-shared-rank-data.js";
 
 // src/ の .js は vite の書き方（拡張子の無い import・import.meta.env）なので、renderJsx の module hooks で読む。
 // その上に、src/services/supabaseClient.js を偽のクライアントを返すだけの物へ差し替える hook を重ねる
@@ -274,36 +276,14 @@ assert.equal(boatRates[0].win_return_rate, 162.5);
 assert.equal(boatRates[0].place_return_rate, 117.5);
 delete globalThis[FAKE_KEY];
 
-// 1b. 振る舞いへ移せない物（BOA-1406）。選手ページは部品の描画に supabase・router が要り、純関数を
-// import していることは描いた結果からは見分けられないので、import の文字で見る
-const page = readFileSync(
-  new URL(
-    "../../src/components/racer/RacerPerformanceStats.jsx",
-    import.meta.url,
-  ),
-  "utf8",
+// 1b. 選手ページの部品は純関数 aggregateRacerVenueBoatStats の置き場（racerVenueBoatStats.js）を import する
+// （読み込みの道で見る。本文の字は読まない）。番付の racer_page は偽の DB の上で回し、呼び方・期間を見る
+assert.ok(
+  (await importersOf("utils/racerVenueBoatStats.js", ["components/racer/RacerPerformanceStats.jsx"]))
+    .includes("components/racer/RacerPerformanceStats.jsx"),
+  "選手ページ（RacerPerformanceStats.jsx）が racerVenueBoatStats.js の純関数を使わなくなった",
 );
-assert.match(
-  page,
-  /import \{ aggregateRacerVenueBoatStats \} from "\.\.\/\.\.\/utils\/racerVenueBoatStats\.js";/,
-);
-// rank-data.js は export が無い CLI（DB を読む）なので、呼び方・asOf の式・期間の絞りは文字で見る
-const rankData = readFileSync(
-  new URL("../sns/rank-data.js", import.meta.url),
-  "utf8",
-);
-assert.match(
-  rankData,
-  /aggregateRacerVenueBoatStats\(\s*history,\s*venueCode,\s*1,\s*null,\s*null,?\s*\)/,
-  "番付はページの会場×1号艇と同じ引数",
-);
-// 既定（今日）はページと同じ見た時刻、--date の過去の日はその日の終わり。後の走は race_id < 翌日で外す（/code-review #1）
-assert.match(
-  rankData,
-  /const asOf =\s*date && date < jstToday\(\)\s*\?\s*new Date\(`\$\{date\}T23:59:59\+09:00`\)\s*:\s*new Date\(\);/,
-);
-assert.match(rankData, /const since = racerHistoryCutoff\(asOf\);/);
-assert.match(rankData, /\.gte\("race_id", since\)\s*\.lt\("race_id", until\)/);
+await rankDataRacerPageScenes({ assert, aggregateRacerVenueBoatStats, racerHistoryCutoff });
 assert.equal(toReturnRate(1500, 10), 150);
 assert.equal(toReturnRate(0, 0), null);
 

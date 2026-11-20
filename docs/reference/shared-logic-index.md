@@ -45,7 +45,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
 | `src/pure/predictionAssistBets.js` | 思考アシスト（BOA-430）の艇の行・賭式・オッズ・更新の間隔の計算。純粋関数だけ。 | courseFilled, buildRacers, oddsByBetType, boxBets, roughState ほか12件 |
 | `src/pure/predictionAssistBoardParts.js` | 思考アシスト（BOA-430）のボードの部品のうち、文言（src/data）を読まない計算。純粋関数だけ。 | firstPlaceComposite, missingFirstBoats, LENSES, stText, METRICS ほか1件 |
+| `src/pure/predictionAssistDeepDive.js` | predictionAssistDeepDive - 思考アシストの深掘りの部品（今節の各走・前の5走・コースの1着・着の色と点・会場の成績の無い艇・得意の決ま… | meetRuns, priorRuns, courseWins, finishOf, monthDay ほか2件 |
 | `src/pure/predictionAssistGuide.js` | 思考アシスト（BOA-430）のガイドの段の組み立て。純粋関数だけ。 | guideStepsWith |
+| `src/pure/predictionAssistPower.js` | predictionAssistPower - 思考アシストの機力の部品（項目ごとの一番・部品交換・チルトの違う艇・オリジナル展示の種別）。 | powerWinners, partsChangedBoats, tiltOutliers, OX_RULE |
 | `src/pure/predictionAssistScope.js` | 思考アシスト（BOA-430）の画面のモデルのうち、範囲・荒れ・類似レース・級の並び・最良値・決まり手の計算。純粋関数だけ。 | sameClassLabel, baseVerdict, roughCard, roughWithInCaution, similarSummary ほか11件 |
 | `src/pure/predictionAssistState.js` | 思考アシストのページの状態（useReducer の初期値と操作）と、画面の部品に依らない取り出し。 | createAssistReducer, deepRunsOf, placeAxisOf, courseByBoatOf, buildBetSummary ほか3件 |
 | `src/pure/predictionModel.js` | — | makePrediction |
@@ -231,7 +233,13 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/preciousPaths.js` | gitに入らない「取り直しが高くつくデータ」の置き場所。 | PRECIOUS_PATHS, BACKUP_DIR_FROM_HOME |
 | `scripts/lib/predictionHitFix.js` | — | fixMissingHitFlags |
 | `scripts/lib/predictionOddsDerive.js` | 買い目オッズ（prediction_odds）を、予想の買い目（predictions）と、オッズの最新スナップショット | trioKeyOf, buildPredictionOddsRow, percentDiff, percentileOf, summarizePredictionOddsDiff ほか2件 |
+| `scripts/lib/predictionRaceBuild.js` | — | getTop3FromPattern, calculateConfidence, generateRaceId, standardPickStrengths, safeBetPickStrengths ほか9件 |
+| `scripts/lib/predictionRaceFetch.js` | — | fetchVenueWinRates, fetchRacerStats, selectByRaceIds, groupRowsByRaceId, entriesToRacers ほか4件 |
 | `scripts/lib/predictionRefresh.js` | 予測の再計算（predictions のリフレッシュ）を、どこが・いつ起動するかの方針（案1、BOA-353 T4b-03、 | isRefreshOnVercelEnabled, isOddsRefreshSkippedOnGha, isOddsSkippedOnGha, collectGhaRefreshRaceIds, refreshAfterExhibition ほか1件 |
+| `scripts/lib/predictionRefreshSteps.js` | — | resolveRefreshOptions, logRefreshStart, logRefreshDryRun, volatilitySummary, logVolatilityUpdateError ほか11件 |
+| `scripts/lib/predictionScoring.js` | — | turnWinnerBonus, calculateTurnBonus, calculateExhibitionBonus, calculateStandardScoreV2, calculateSafeBetScore ほか3件 |
+| `scripts/lib/predictionVolatility.js` | — | calculateStdDev, volatilityWeights, volatilityFactorWinRate, volatilityFactorAvgST, volatilityFactorNige ほか5件 |
+| `scripts/lib/predictionWriteRows.js` | — | convertWindDirection, upsertRacesRows, buildEntryRow, buildEntryRows, upsertEntryRows ほか10件 |
 | `scripts/lib/previewSnapshotPlan.js` | ブログ記事・翻訳記事・ブログ一覧のボット向けスナップショットを、このビルドで作るか（Vercel の費用、2026-11-05、ADR 0032 追記）。 | planBlogSnapshots, PREVIEW_BOT_HTML_MARKER |
 | `scripts/lib/raceCancellation.js` | — | confirmCancellationsForRaceIds, clearCancellationsWithResults, clearCancellationsWithResultsInRange |
 | `scripts/lib/raceConditionsWriter.js` | race_conditions への書き込み（気象列を含む）の共通処理（BOA-358） | isObservedAtColumnMissing, upsertRaceConditions, OBSERVED_AT_COLUMN |
@@ -346,6 +354,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/time.js` | 予定表（scrape_slots）まわりの時刻計算（純粋関数。実行環境のタイムゾーンに依存しない） | toJstDateString, jstStartOfDay, jstMinutesOfDay, raceStartInstant, slotDeadline ほか2件 |
 | `scripts/lib/scrapeJobs/venueDailyJob.js` | 会場公式サイトから、会場ごとに取得する日次ジョブの共通の流れ（B3 会場別モーター成績・B4 進入コース別選手成績。 | runVenueDailyJob |
 | `scripts/lib/scrapeJobs/venueJobSupport.js` | 会場ごとに取得する日次ジョブ（B3 会場別モーター成績・B4 進入コース別選手成績。tasks.md T4b-14・T4b-13）の | updateHealthForDate, isTransientReason, reasonFromError, previouslySettledVenues, driftAlertsToReport |
+| `scripts/lib/scrapeToJson.js` | — | defaultFetchHtml, getTodayVenues, scrapeVenue |
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups, racerSnapshotProblems, RACER_SNAPSHOT_STALE_HOURS |
@@ -417,6 +426,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/unchangedRowsUpsert.js` | 「変更のある行を書くときに updated_at を設定する」テーブル（WS2、マイグレーション071）の | fetchExistingRows, formatSkipSummary, UPDATED_AT_COLUMN, UPDATED_AT_GROUP |
 | `scripts/lib/unifiedModel.js` | 新AI予想モデル「unified」のスコアリング本体（AI予想モデル大規模改修 Task6b/Task8, ADR0009, FR1/FR2/FR6） | calculateUnifiedScores, softmaxProbabilities |
 | `scripts/lib/unifiedPredictionRow.js` | — | calculatePlaceRecommendation, buildUnifiedPredictionRow |
+| `scripts/lib/unifiedPredictionsRun.js` | — | findRacesMissingUnified, generateUnifiedPredictions |
 | `scripts/lib/venueEntryCourseStats/driftHealth.js` | 進入コース別選手成績ページ（BOA-293、FR-6 Phase 6c）の、会場公式サイトのHTML構造変化の検知。 | isEntryCourseStructuralDriftReason, findEntryCourseStatsDriftAlerts, ENTRY_COURSE_STRUCTURAL_DRIFT_REASONS |
 | `scripts/lib/venueEntryCourseStats/parser.js` | parser - 進入コース別選手成績（`/modules/raceinfo/?page=index_racecourse`）の | parseEntryCourseHtml |
 | `scripts/lib/venueEntryCourseStats/scrape.js` | — | createHtmlFetcher, scrapeVenue, writeEntryCourseRows |
@@ -466,7 +476,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/assistEvents.js` | — | assistEventOf |
 | `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, boardModel |
 | `src/utils/assistSession.js` | 思考アシストの買い目などを、同じタブの中でレースごとに残す（sessionStorage）。 | parseAssistSession, loadAssistSession, saveAssistSession, ASSIST_SESSION_PREFIX, ASSIST_SESSION_MAX ほか1件 |
-| `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, factsEntry, axisWhyKinds, b1Usual ほか30件 |
+| `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, factsEntry, axisWhyKinds, b1Usual ほか19件 |
 | `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, windBandLabel, guideSteps |
 | `src/utils/attackDefenseCells.js` | 超展開データ（AttackDefenseTable）のセルの値の算出（純関数）。 | getTotalWins, isDefaultAttackDistribution, getCellValue, attackDefenseColumn, TECHNIQUE_ROWS |
 | `src/utils/bestOf.js` | 再 export だけのファイル。本体は `src/pure/bestOf.js`。 | — |
@@ -624,4 +634,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 582 ファイル / export 3131 件。
+対象 592 ファイル / export 3208 件。

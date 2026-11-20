@@ -59,6 +59,8 @@ import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
 import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { createMemoryStore } from "../lib/scrapeJobs/testing/memoryStore.js";
+import { cronWiring } from "./verifyData/cronWiring.js";
+import { checkScheduledResults } from "./verifyData/scrape-scheduled-scenes.js";
 import { supabase as moduleSupabase } from "../lib/supabaseClient.js";
 import { clone, createFakeDb } from "./verifyData/scrape-result-job-fake-db.js";
 
@@ -1954,33 +1956,11 @@ const catchupCtx = (
 // (g) 切り替えの仕組み
 // ---------------------------------------------------------------------------
 {
-  const scheduled = fs.readFileSync(
-    path.join(ROOT, "scripts/daily/scrape-scheduled.js"),
-    "utf8",
-  );
+  // scrape-scheduled.js の切り替えは、偽の取得のもとで main を回して見る（verifyData/scrape-scheduled-scenes.js）
+  await checkScheduledResults({ check, show });
   const workflow = fs.readFileSync(
     path.join(ROOT, ".github/workflows/scrape-scheduled.yml"),
     "utf8",
-  );
-  check(
-    'scrape-scheduled.js: SKIP_RESULTS_ON_GHA・SKIP_KFILE_ON_GHA は、文字列 "true" のときだけ有効（未設定・空・falseは従来どおり全て実行）',
-    // 変数が true のときだけ、対象のレースがあるときに、Vercel が健全かを確認する（フェイルセーフ付きSKIP）。
-    // 未設定・空・falseなら false（DBを読まない）
-    /const skipResults =\s*process\.env\.SKIP_RESULTS_ON_GHA === "true" &&\s*\(!resultsDue \|\| \(await gateSkips\("SKIP_RESULTS_ON_GHA"\)\)\);/.test(
-      scheduled,
-    ) &&
-      /const skipKFile =\s*process\.env\.SKIP_KFILE_ON_GHA === "true" &&\s*\(!resultsDue \|\| \(await gateSkips\("SKIP_KFILE_ON_GHA"\)\)\);/.test(
-        scheduled,
-      ),
-  );
-  check(
-    "scrape-scheduled.js: 結果取得とKファイル同期の両方を止めた場合だけ、run() を呼ばない。片方だけならフラグを渡す",
-    /finishedRaces\.length > 0 && !\(skipResults && skipKFile\)/.test(
-      scheduled,
-    ) &&
-      /runResults\(schedule, date, \{\s*skipResults,\s*skipKFile,?\s*\}\)/.test(
-        scheduled,
-      ),
   );
   check(
     "scrape-scheduled.yml: リポジトリ変数 SKIP_RESULTS_ON_GHA・SKIP_KFILE_ON_GHA を、オーケストレーターのステップに渡す（設定していなければ空＝従来どおり）",
@@ -2125,17 +2105,15 @@ const catchupCtx = (
     ["kfile-sync", "kfile_sync"],
     ["result-catchup", "result_catchup"],
   ]) {
-    const src = fs.readFileSync(path.join(ROOT, `api/cron/${file}.js`), "utf8");
-    const m = /maxDuration:\s*(\d+)/.exec(src);
-    const mod = await import(`../../api/cron/${file}.js`);
+    // api の本文の字は読まず、export（config・default）と、共通ラッパへ渡した引数で見る
+    const api = await cronWiring(() => import(`../../api/cron/${file}.js`));
     check(
-      `api/cron/${file}.js: maxDuration(${m?.[1]}) がレジストリ(${job})の maxDurationSec(${SCRAPE_JOBS[job].maxDurationSec}) と一致し、config・default の関数がある。共通ラッパ経由（job='${job}'）`,
-      m &&
-        Number(m[1]) === SCRAPE_JOBS[job].maxDurationSec &&
-        mod.config?.maxDuration === SCRAPE_JOBS[job].maxDurationSec &&
-        typeof mod.default === "function" &&
-        new RegExp(`job: "${job}"`).test(src) &&
-        /createScrapeCronHandler/.test(src),
+      `api/cron/${file}.js: maxDuration(${api.config?.maxDuration}) がレジストリ(${job})の maxDurationSec(${SCRAPE_JOBS[job].maxDurationSec}) と一致し、共通ラッパを job='${job}' で1回通した戻りを default export にする`,
+      api.config?.maxDuration === SCRAPE_JOBS[job].maxDurationSec &&
+        api.made.length === 1 &&
+        api.made[0].options.job === job &&
+        api.handler === api.made[0].handler,
+      show(api.made.map((w) => w.options.job)),
     );
   }
   // 認証: CRON_SECRET なし・誤りは401（取得もDBアクセスもしない）
