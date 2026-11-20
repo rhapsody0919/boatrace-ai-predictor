@@ -3,36 +3,43 @@
  * 共通の道具・場面は ctx で受け取り、前の場面で作った物は ctx に足されて次へ渡る。
  */
 
-import { withMotorChartPure } from "./motorChartSource.js";
-
 export async function section6(ctx) {
   const {
+    M,
     V,
     check,
     day,
+    drill,
     exhibitionSparklineY,
     exhibitionTimeAxis,
+    getMotorPowerIndex,
     getRaceMotorBreakdown,
     grid,
     near,
-    read,
+    racerCardView: card,
     rid,
     run,
+    runDrillLoad,
+    tJa,
     todayScene,
   } = ctx;
+  const H = (key) => tJa(`analysis.motor.${key}`);
   // ---- BOA-557（BOA-549 ファン評価の残り） ----
   {
-    const chart = withMotorChartPure(
-      read("src/components/analysis/MotorConditionChart.jsx"),
-    );
-    const racerCard = read("src/components/racer/RacerMotorStatusCard.jsx");
-    const trendChart = read("src/components/analysis/TrendLineChart.jsx");
     // 当日のレースも「このレースの直前まで」。終了後に開くとそのレース自身の結果が入り、
     // 翌日（過去レース扱い）に開いたときと数字が変わっていた
-    check(
-      "ドリルダウンは当日のレースも「このレースの直前まで」で集計する",
-      /const beforeRaceId = selectedRace \?\? null;/.test(chart),
-    );
+    {
+      const { tt, tables } = todayScene(day, rid);
+      const [got, before, all] = await run(tables, async () => {
+        const loaded = await runDrillLoad({ selectedVenue: V, selectedRace: tt, drillDownMotor: M });
+        return [loaded, await getMotorPowerIndex(V, M, 90, tt), await getMotorPowerIndex(V, M, 90, null)];
+      });
+      check(
+        `ドリルダウンは当日のレースも「このレースの直前まで」で集計する（ドリルダウンの取得 useDrillLoad を偽の DB で回した機力指数の走数 ${got.PowerIndex?.sample_count}・直前まで ${before?.sample_count}・全部 ${all?.sample_count}）`,
+        got.PowerIndex?.sample_count === before?.sample_count &&
+          before?.sample_count !== all?.sample_count,
+      );
+    }
     check(
       "一覧の機力指数も当日のレースは「このレースの直前まで」（同日の後のレース・このレース自身を入れず、公式の2連率・3連率を直前までの値に差し替える）",
       await (async () => {
@@ -57,20 +64,15 @@ export async function section6(ctx) {
       exhibitionSparklineY(6.7, 6.7, 6.9, 24) === 0 &&
         exhibitionSparklineY(6.9, 6.7, 6.9, 24) === 24 &&
         exhibitionSparklineY(6.8, 6.8, 6.8, 24) === 0 &&
-        grid.includes("exhibitionSparklineY(t, min, max, height)"),
+        // 描いた枠番別成績の線（6.7・6.9・6.8）: 最速の 6.7 が上端、最遅の 6.9 が下端
+        grid.rows[1].sparkline === "0.0,0.0 40.0,24.0 80.0,12.0",
     );
+    const exhibitionTicks = (times) => exhibitionTimeAxis(times).ticks.map((x) => x.toFixed(2));
+    const ex = drill.charts[H("exhibitionTrendHeading")];
     check(
-      "モータ情報の展示タイムの推移は縦軸を反転し（速いほど上）、渡した目盛りを全部出す",
-      /dataKey: "exhibition_time"/.test(chart) &&
-        /yTicks=\{exhibitionAxis\?\.ticks\}[\s\S]{0,300}yReversed/.test(
-          chart,
-        ) &&
-        read("src/components/analysis/TrendLineChart.jsx").includes(
-          "interval={yTicks ? 0 : undefined}",
-        ) &&
-        read("src/components/analysis/TrendLineChart.jsx").includes(
-          "reversed={yReversed}",
-        ),
+      "モータ情報の展示タイムの推移は縦軸を反転し（速いほど上）、渡した目盛りを全部出す（描いたグラフ）",
+      ex?.yTicks.join("/") === exhibitionTicks([6.8, 6.9, 6.75]).join("/") &&
+        ex.yTickYs.every((y, i) => i === 0 || y > ex.yTickYs[i - 1]),
     );
     // 展示タイムの縦軸の端は0.2秒の倍数（6.43 / 6.63 … や上端だけ7.10にしない）
     // 範囲だけ渡すと recharts が5本に等分し、幅0.6秒で 6.80/6.95/7.10… になった（ファン評価）
@@ -84,76 +86,72 @@ export async function section6(ctx) {
           JSON.stringify([6.4, 6.6, 6.8, 7, 7.2]) &&
         exhibitionTimeAxis([null]) === null,
     );
+    const linear = (c) => c.curves.length > 0 && c.curves.every((d) => !/[CQ]/.test(d));
     check(
-      "展示タイムのグラフ（モータ情報・選手ページ）が0.2秒刻みの範囲と目盛りを使い、直線でつなぐ",
-      [chart, racerCard].every(
-        (src) =>
-          src.includes("yAxisDomain={exhibitionAxis?.domain}") &&
-          src.includes("yTicks={exhibitionAxis?.ticks}") &&
-          /dataKey: "exhibition_time",[\s\S]{0,200}type: "linear"/.test(src),
-      ) &&
-        !/dataMin - 0\.1/.test(chart + racerCard) &&
-        /ticks=\{yTicks\}/.test(trendChart),
+      "展示タイムのグラフ（モータ情報・選手ページ）が0.2秒刻みの範囲と目盛りを使い、直線でつなぐ（描いた2つのグラフ）",
+      [
+        [ex, [6.8, 6.9, 6.75]],
+        [card.chart, [6.81, 6.9, 6.7]],
+      ].every(([c, times]) => c && c.yTicks.join("/") === exhibitionTicks(times).join("/") && linear(c)),
     );
   }
 }
 
 export async function section7(ctx) {
-  const { check, competitionRank, read } = ctx;
+  const { check, competitionRank, drill, racerCardView: card, read, scenes, tJa } = ctx;
+  const H = (key) => tJa(`analysis.motor.${key}`);
+  const slanted = (c) => c && c.xTicks.length === c.xTickTransforms.length && c.xTickTransforms.every((x) => x.startsWith("rotate(-35"));
   {
-    const chart = withMotorChartPure(
-      read("src/components/analysis/MotorConditionChart.jsx"),
-    );
-    const racerCard = read("src/components/racer/RacerMotorStatusCard.jsx");
-    const trendChart = read("src/components/analysis/TrendLineChart.jsx");
     check(
-      "選手ページの展示タイムも、375pxでラベルを間引かない",
-      /yTicks=\{exhibitionAxis\?\.ticks\}\s*\/\/[^\n]*\n\s*slantXLabels/.test(
-        racerCard,
-      ),
+      "選手ページの展示タイムも、375pxでラベルを間引かない（描いたカードの横軸: 3点とも斜めに出す）",
+      card.chart?.xTicks.length === 3 && slanted(card.chart),
     );
+    const noRace = await scenes.drillScene({ selectedRace: null });
     check(
-      "「このレースの直前まで」の注記を当日のレースのドリルダウンにも出す",
-      /\{selectedRace && \(\s*<p className="table-note">\s*\{t\("analysis\.motor\.drillAsOfRaceNote"\)\}/.test(
-        chart,
-      ),
+      "「このレースの直前まで」の注記を当日のレースのドリルダウンにも出す（描いたドリルダウン。レースを選んでいなければ出さない）",
+      drill.notes.includes(H("drillAsOfRaceNote")) && !noRace.notes.includes(H("drillAsOfRaceNote")),
     );
+    // 8節（選手名は10字）。間引けば名前が欠け、曲線なら path に C が出る
+    const names = Array.from({ length: 8 }, (_, i) => `選手名の長い選手${i + 1}号`);
+    const many = await scenes.drillScene({
+      usageHistory: names.map((name, i) => ({ ...scenes.drillState().usageHistory[1], racerId: i + 1, playerName: name, rate2: 30 + (i % 3) * 20 })),
+    });
+    const usage = many.charts[H("usageHistoryHeading")];
     check(
-      "使用履歴のグラフは選手名を間引かず、直線でつなぐ",
-      /slantXLabels\b/.test(chart) &&
-        /interval: 0/.test(trendChart) &&
-        !/dataKey: "rate[23]",[\s\S]{0,160}type: "monotone"/.test(
-          chart.slice(chart.indexOf("usageHistoryChartData}")),
-        ),
+      "使用履歴のグラフは選手名を間引かず、直線でつなぐ（描いた8節のグラフ）",
+      usage?.xTicks.length === 8 && slanted(usage) && usage.curves.length === 2 && usage.curves.every((d) => !/[CQ]/.test(d)),
     );
+    const { single } = await ctx.racerCard();
     check(
-      "選手ページの展示タイムの横軸は、レース番号を全部の点に付けるか全部付けない",
-      /hasDoubleRunDay && row\.raceNo/.test(racerCard),
+      "選手ページの展示タイムの横軸は、レース番号を全部の点に付けるか全部付けない（描いたカード）",
+      card.chart?.xTicks.every((x) => / \d+R$/.test(x)) && single.chart?.xTicks.every((x) => !/R$/.test(x)),
     );
+    const oneMeet = await scenes.drillScene({ usageHistory: [scenes.drillState().usageHistory[0]] });
+    const chartNote = ` ${H("usageHistoryChartNote")}`;
     check(
-      "使用履歴のグラフの向きの説明は、グラフが出ているときだけ",
-      /usageHistoryChartData\.length > 1 &&\s*` \$\{t\("analysis\.motor\.usageHistoryChartNote"\)\}`/.test(
-        chart,
-      ),
+      "使用履歴のグラフの向きの説明は、グラフが出ているときだけ（描いた使用履歴: 2節は出す、1節は出さない）",
+      drill.notes.includes(`${H("usageHistoryNote")}${chartNote}`) &&
+        oneMeet.charts[H("usageHistoryHeading")] === null &&
+        oneMeet.notes.includes(H("usageHistoryNote")),
     );
     // 初出走（直前までの走りが0）の空表示は、取得失敗と区別できる文言にする
+    const firstRun = await scenes.drillScene({
+      powerIndex: { power_index: null, sample_count: 0 },
+      usageHistory: [],
+      trendData: { trend: [] },
+    });
+    const notFirst = await scenes.drillScene({ usageHistory: [], trendData: { trend: [] } });
     check(
-      "初出走のドリルダウンは「データが見つかりません」でなく理由を出す（3か所）",
-      /drillFirstRun =\s*powerIndex\?\.sample_count === 0 && usageHistory\.length === 0/.test(
-        chart,
-      ) &&
-        (
-          chart.match(/t\(emptyKey\("analysis\.motor\.[a-zA-Z]+Empty"\)\)/g) ??
-          []
-        ).length === 3,
+      "初出走のドリルダウンは「データが見つかりません」でなく理由を出す（3か所。描いたドリルダウン）",
+      firstRun.empties.filter((e) => e === H("drillFirstRunEmpty")).length === 3 &&
+        !notFirst.empties.includes(H("drillFirstRunEmpty")),
     );
     // ダークモードでツールチップの見出しが白地に白字にならない
     check(
-      "推移グラフのツールチップはテーマの色（背景・文字）を使う",
-      /contentStyle=\{\{[\s\S]{0,120}background: "var\(--surface-card\)"/.test(
-        trendChart,
-      ) &&
-        /labelStyle=\{\{ color: "var\(--text-primary\)" \}\}/.test(trendChart),
+      "推移グラフのツールチップはテーマの色（背景・文字）を使う（描いたグラフの全部）",
+      Object.values(drill.charts).filter(Boolean).every(
+        (c) => c.tooltip.includes("background: var(--surface-card)") && c.tooltipLabel.includes("color: var(--text-primary)"),
+      ),
     );
     for (const lang of ["ja", "en", "zh-TW", "ko"]) {
       const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
@@ -191,16 +189,11 @@ export async function section7(ctx) {
     "competitionRank: 小さいほど良い指標（事故率）は昇順",
     competitionRank([0.1, 0.2, 0.2, 0.5], 0.5, { ascending: true }).rank === 4,
   );
-  const chart = withMotorChartPure(
-    read("src/components/analysis/MotorConditionChart.jsx"),
-  );
-  Object.assign(ctx, { chart });
 }
 
 export async function section8(ctx) {
   const {
     V,
-    chart,
     check,
     day,
     getVenueMotorRanking,
@@ -208,7 +201,9 @@ export async function section8(ctx) {
     read,
     run,
     same,
+    scenes,
     seed,
+    tJa,
   } = ctx;
   {
     // 会場内順位は competitionRank で出す: 同じ値は同じ順位（1, 2, 2, 4）・値なしと出走数 0 は母数に入れない
@@ -234,15 +229,16 @@ export async function section8(ctx) {
         last.tied === 1 &&
         none === null,
     );
+    // 描いたドリルダウンの会場内順位の札（同順位・単独）と、公式の更新遅れの注記に添える切り捨ての注記
+    const tied = await scenes.drillScene({ venueMotorRanking: { ...own, value: 50 } });
+    const alone = await scenes.drillScene({ venueMotorRanking: { ...last, value: 41.24 } });
+    const badge = (key, r, value) => tJa(`analysis.motor.${key}`, { rank: r.rank, total: r.total, value });
     check(
-      "会場内順位: 画面は同順位なら「◯位タイ」の文言、値・切り捨ての注記を出す",
-      /venueMotorRanking\.tied > 1\s*\?\s*"analysis\.motor\.venueRankBadgeTied"/.test(
-        chart,
-      ) &&
-        /value: Number\(venueMotorRanking\.value\)\.toFixed\(1\)/.test(chart) &&
-        /venueMotorRanking &&\s*` \$\{t\("analysis\.motor\.venueRankRoundingNote"\)\}`/.test(
-          chart,
-        ),
+      "会場内順位: 画面は同順位なら「◯位タイ」の文言、値・切り捨ての注記を出す（描いたドリルダウン）",
+      tied.text.includes(badge("venueRankBadgeTied", own, "50.0")) &&
+        alone.text.includes(badge("venueRankBadge", last, "41.2")) &&
+        !alone.text.includes(badge("venueRankBadgeTied", last, "41.2")) &&
+        tied.notes.includes(`${tJa("analysis.motor.officialSnapshotNote")} ${tJa("analysis.motor.venueRankRoundingNote")}`),
     );
   }
   for (const lang of ["ja", "en", "zh-TW", "ko"]) {

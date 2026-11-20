@@ -18,14 +18,13 @@
  *
  * ## 何を検査するか
  *
- * 画面はブラウザでしか動かないため、ソースと文言を検査する
- * （verify-motor-window-generation.js と同じ方式）。
+ * 画面（一覧・ドリルダウン・枠番別成績・選手ページのカード・推移グラフ）は ja の訳で描いて、描いた結果を見る
+ * （verifyData/motor-tab-readability-render.js・-scenes.js）。取得は偽の DB の上のサービス層。訳（locales）は字で見る。
  */
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { withMotorChartPure } from "./verifyData/motorChartSource.js";
 import {
   createFakeSupabase,
   installLocalStorage,
@@ -36,10 +35,14 @@ import {
   M,
   V,
   partsScene,
+  racerStatusScene,
   rankingTables,
   todayScene,
   usageTables,
 } from "./verifyData/motor-tab-readability.js";
+import * as scenes from "./verifyData/motor-tab-readability-scenes.js";
+import { runDrillLoad, tJa } from "./verifyData/motor-tab-readability-render.js";
+import { recalcMotorRows } from "../../src/pure/raceMotorBreakdown.js";
 import {
   formatPowerIndex,
   formatRateOrCount,
@@ -104,7 +107,7 @@ const { getTodayJST } = await import("../../src/utils/dateUtils.js");
 const { clearCache } = await import("../../src/services/core.js");
 const { fetchMotorDailySeries } =
   await import("../../src/services/motorQueries.js");
-const { getMotorUsageHistory } =
+const { getMotorPowerIndex, getMotorUsageHistory } =
   await import("../../src/services/motorQueries2.js");
 const { getRaceMotorBreakdown } =
   await import("../../src/services/motorQueries3.js");
@@ -136,19 +139,29 @@ const seed = (key, data) =>
     JSON.stringify({ data, timestamp: Date.now() }),
   );
 
-const chart = withMotorChartPure(
-  read("src/components/analysis/MotorConditionChart.jsx"),
-);
-const grid = read("src/components/analysis/MotorWakuStatsGrid.jsx");
-const card = read("src/components/racer/RacerMotorStatusCard.jsx");
-// 選手ページの今節のモーター（RA40 BOA-1673 で racerService.js から移した）
-const racerMotor = read("src/services/motorQueries7.js");
+// 選手ページの今節のモーター（RA40 BOA-1673 で racerService.js から移した）を偽の DB で取り、その戻りでカードを描く。
+// single は1日1走だけにした戻りで描いたカード（横軸にレース番号を付けない）、small は機力指数を小標本にした戻りで描いたカード
+const { getRacerCurrentMotorStatus } =
+  await import("../../src/services/motorQueries7.js");
+const racerCard = async () => {
+  const { racerId, tables } = racerStatusScene(day, rid);
+  const status = await run(tables, () => getRacerCurrentMotorStatus(racerId));
+  const card = await scenes.racerCardScene(status);
+  const single = await scenes.racerCardScene({
+    ...status,
+    meetTrend: (status?.meetTrend ?? []).filter((_, i) => i !== 1),
+  });
+  // 機力指数は4走で -0.04（小標本・丸めて 0.0）にした戻りでも描く（偽の DB の場面は機力指数の走を持たない）
+  const small = await scenes.racerCardScene({
+    ...status,
+    powerIndex: { power_index: -0.04, sample_count: 4, clipped_by_generation: false },
+  });
+  return { status, card, single, small };
+};
 
 const ctx = {
   M,
   V,
-  card,
-  chart,
   check,
   competitionRank,
   day,
@@ -158,21 +171,25 @@ const ctx = {
   formatPowerIndex,
   formatRateOrCount,
   getMotorPartsHistory,
+  getMotorPowerIndex,
   getMotorUsageHistory,
   getRaceMotorBreakdown,
   getVenueMotorRanking,
-  grid,
   near,
   officialTallyState,
   partsScene,
   powerIndexTone,
-  racerMotor,
+  racerCard,
   rankingTables,
   read,
+  recalcMotorRows,
   rid,
   run,
+  runDrillLoad,
   same,
+  scenes,
   seed,
+  tJa,
   todayScene,
   usageTables,
 };

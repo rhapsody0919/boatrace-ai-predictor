@@ -4,53 +4,65 @@
  */
 
 export async function section1(ctx) {
-  const { card, chart, check, formatRateOrCount, grid, racerMotor, read } = ctx;
+  const { check, formatRateOrCount, scenes, tJa } = ctx;
+  const grid = await scenes.wakuGridScene();
+  const drill = await scenes.drillScene();
+  const H = (key) => tJa(`analysis.motor.${key}`);
   check(
-    "枠番別成績の表に、横スクロールの目印（hscroll-hint・›）を付ける",
-    grid.includes("useHorizontalScrollHint(") &&
-      grid.includes("hscroll-hint") &&
-      grid.includes('className="table-scroll"'),
+    "枠番別成績の表に、横スクロールの目印（hscroll-hint・›）を付ける（描いた表の枠）",
+    grid.hint,
   );
   check(
-    "枠番別成績の見出しは、セルに%が付くので (%) の付かない名前（legend2/legend3）を使う",
-    grid.includes('t("analysis.motor.legend2")') &&
-      grid.includes('t("analysis.motor.legend3")') &&
-      !grid.includes('t("analysis.motor.rate2Header")'),
+    "枠番別成績の見出しは、セルに%が付くので (%) の付かない名前（legend2/legend3）を使う（描いた表の見出し）",
+    grid.heads[2] === H("legend2") &&
+      grid.heads[3] === H("legend3") &&
+      !grid.heads.includes(H("rate2Header")),
   );
   check(
-    "使用履歴の2連率ラベルも (%) の付かない名前を使う（「2連率 (%) 66.7%」と二重にしない）",
-    !/\{t\("analysis\.motor\.rate2Header"\)\} \{meet\.rate2/.test(chart),
+    "使用履歴の2連率ラベルも (%) の付かない名前を使う（「2連率 (%) 66.7%」と二重にしない。描いた使用履歴）",
+    drill.usageRates.join("|") === `${H("legend2")} 66.7%|${H("legend2")} 50.0%`,
+  );
+  {
+    // 当日の一覧は会場公式の列が無い。過去レースの一覧は 1着率の列だけ（優出・優勝の値が無い）
+    const today = await scenes.motorListScene();
+    const past = await scenes.pastListScene();
+    const quoted = (key) => tJa("analysis.motor.quotedLabel", { label: H(key) });
+    check(
+      "過去レースの出典注記は、表に出ている会場公式の列だけを挙げる（1着率の列が無ければ触れない。描いた一覧）",
+      past.text.includes(tJa("analysis.motor.venueColsPastNote", { venueCols: quoted("firstPlaceRateHeader") })) &&
+        !past.text.includes(quoted("finalCountHeader")) &&
+        !today.text.includes(quoted("firstPlaceRateHeader")),
+    );
+  }
+  check(
+    "2連率・3連率の推移グラフに見出しを付ける（描いたドリルダウン）",
+    drill.headings.includes(H("rateTrendHeading")) &&
+      drill.charts[H("rateTrendHeading")] !== null,
   );
   check(
-    "過去レースの出典注記は、表に出ている会場公式の列だけを挙げる（1着率の列が無ければ触れない）",
-    /venueColsLabel = \[\s*showFirstPlaceRate && "analysis\.motor\.firstPlaceRateHeader"/.test(
-      chart,
-    ),
+    "使用履歴のグラフは左が古く右が新しい（推移グラフと同じ向き。描いたグラフの横軸）",
+    drill.charts[H("usageHistoryHeading")]?.xTicks.join("/") === "旧一/新二",
   );
   check(
-    "2連率・3連率の推移グラフに見出しを付ける",
-    chart.includes('t("analysis.motor.rateTrendHeading")'),
+    "公式サイトのスナップショット（鮮度・順位・1着率・優出・優勝）の更新が遅れる旨を注記する（描いたドリルダウン）",
+    drill.notes.some((n) => n.startsWith(H("officialSnapshotNote"))),
   );
-  check(
-    "使用履歴のグラフは左が古く右が新しい（推移グラフと同じ向き）",
-    /usageHistoryChartData = \[\.\.\.usageHistory\]\s*\.reverse\(\)/.test(
-      chart,
-    ),
-  );
-  check(
-    "公式サイトのスナップショット（鮮度・順位・1着率・優出・優勝）の更新が遅れる旨を注記する",
-    chart.includes('t("analysis.motor.officialSnapshotNote")'),
-  );
-  check(
-    "選手ページ: 同じ日に2回走った日は、横軸にレース番号を添える",
-    racerMotor.includes("raceNo: Number(e.race_id.slice(-2))") &&
-      // 2回走った日が1日でもあれば全部の点に付ける（BOA-557。付く点と付かない点が混ざらない）
-      card.includes("runsOnDate.values()].some((n) => n > 1)"),
-  );
-  check(
-    "選手ページ: 説明文の「）」と「、」の間に空白を入れない（1つのテンプレート文字列で組む）",
-    /\}）、この選手がこのモーターで出走してからの展示タイム`/.test(card),
-  );
+  {
+    // 選手ページ: 偽の DB の上で getRacerCurrentMotorStatus を回し、その戻りでカードを描く
+    const { status, card, single, small } = await ctx.racerCard();
+    const [d1, d2] = [ctx.day(-2).slice(5), ctx.day(-1).slice(5)];
+    check(
+      "選手ページ: 同じ日に2回走った日は、横軸にレース番号を添える（全部の点に付ける。1日1走なら付けない。偽の DB の今節のモーターで描いたカード）",
+      status?.meetTrend.map((r) => r.raceNo).join(",") === "2,9,4" &&
+        card.chart?.xTicks.join("/") === `${d1} 2R/${d1} 9R/${d2} 4R` &&
+        single.chart?.xTicks.join("/") === `${d1}/${d2}`,
+    );
+    check(
+      "選手ページ: 説明文の「）」と「、」の間に空白を入れない（描いたカードの説明文）",
+      card.caption === `今節（${d1}〜${d2}）、この選手がこのモーターで出走してからの展示タイム`,
+    );
+    Object.assign(ctx, { racerCardView: small });
+  }
   // ---- BOA-513 PR2: ファン4人のパネルで決めた表示（2026-09-29 ユーザー承認） ----
   check(
     "formatRateOrCount: n<6 は「該当数/出走数」、6以上は %、出走なしは「-」",
@@ -60,60 +72,71 @@ export async function section1(ctx) {
       formatRateOrCount(50, 6, 6) === "50.0%" &&
       formatRateOrCount(null, 0, 6) === "-",
   );
+  const racers = await scenes.racerWakuScene();
   check(
-    "枠番別成績・選手×枠成績の率を formatRateOrCount で出す（n<6 の率を % で出さない）",
-    (grid.match(/formatRateOrCount\(/g) ?? []).length >= 3 &&
-      (
-        read("src/components/analysis/MotorRacerWakuDrillDown.jsx").match(
-          /formatRateOrCount\(/g,
-        ) ?? []
-      ).length >= 3,
+    "枠番別成績・選手×枠成績の率を formatRateOrCount で出す（n<6 の率を % で出さない。描いた表と一覧）",
+    grid.rows[0].rates.join("/") === "2/3/2/3/3/3" &&
+      grid.rows[1].rates.join("/") === "50.0%/50.0%/75.0%" &&
+      racers[0].rates.join("|") === `${H("firstPlaceRateHeader")} 1/3|${H("legend2")} 2/3|${H("legend3")} 3/3` &&
+      racers[1].rates.join("|") === `${H("firstPlaceRateHeader")} 25.0%|${H("legend2")} 50.0%|${H("legend3")} 75.0%`,
   );
   check(
-    "展示タイムのスパークラインは3点未満なら出さない",
-    grid.includes("trend.length < 3) return null"),
+    "展示タイムのスパークラインは3点未満なら出さない（描いた表: 2点の行は無し、3点の行は有り）",
+    grid.rows[0].sparkline === null && grid.rows[1].sparkline !== null,
   );
+  Object.assign(ctx, { grid, drill, racers });
 }
 
 export async function section2(ctx) {
   const {
     M,
     V,
-    chart,
     check,
     day,
+    drill,
     fetchMotorDailySeries,
     getMotorPartsHistory,
     officialTallyState,
     partsScene,
-    read,
+    recalcMotorRows,
     rid,
     run,
     same,
+    scenes,
     seed,
+    tJa,
   } = ctx;
+  const H = (key) => tJa(`analysis.motor.${key}`);
+  {
+    // 当日の一覧: 優出・優勝の値がどの艇にも無い → 列も注記も無い。1艇に値がある → 列と注記に出す
+    const none = await scenes.motorListScene();
+    const some = await scenes.motorListScene({ 2: { final_count: 3, championship_count: 1 } });
+    const quoted = (key) => tJa("analysis.motor.quotedLabel", { label: H(key) });
+    const cols = (list) => [H("finalCountHeader"), H("championshipCountHeader")].map((h) => list.heads.includes(h));
+    check(
+      "優出数・優勝数は、会場の全モーターで値が無いとき列ごと畳む（見出し・セル・出典注記。描いた一覧）",
+      same(cols(none), [false, false]) &&
+        same(cols(some), [true, true]) &&
+        some.text.includes(quoted("finalCountHeader")) &&
+        some.text.includes(quoted("championshipCountHeader")) &&
+        // 列が1つも無い会場（戸田など）では、列名の文ごと出さない（文が崩れない）
+        !none.notes.some((n) => n.includes(tJa("analysis.motor.venueColsTodayNote", { venueCols: "" }).trim())),
+    );
+    check(
+      "結果の出た走が無い新モーター（sample_count === 0）に「初下ろし」を添える（描いた一覧と、行の組み立て recalcMotorRows）",
+      none.rate2[0] === `0.0${H("firstUseBadge")}` &&
+        !none.rate2[1].includes(H("firstUseBadge")) &&
+        same(
+          recalcMotorRows([{ racer_id: 1 }, { racer_id: 2 }], [{ sample_count: 0 }, { sample_count: 5 }], [], new Map()).map((r) => r.sample_count),
+          [0, 5],
+        ),
+    );
+    Object.assign(ctx, { list: none });
+  }
   check(
-    "優出数・優勝数は、会場の全モーターで値が無いとき列ごと畳む（見出し・セル・出典注記）",
-    chart.includes("showFinalCount && (") &&
-      chart.includes("showChampionshipCount && (") &&
-      chart.includes('showFinalCount && "analysis.motor.finalCountHeader"') &&
-      // 列が1つも無い会場（戸田など）では、列名の文ごと出さない（文が崩れない）
-      /\{venueColsLabel &&\s*`\$\{t\(/.test(chart),
-  );
-  check(
-    "結果の出た走が無い新モーター（sample_count === 0）に「初下ろし」を添える",
-    chart.includes("row.sample_count === 0 && (") &&
-      chart.includes('t("analysis.motor.firstUseBadge")') &&
-      // 行の組み立ては src/pure/raceMotorBreakdown.js の recalcMotorRows に移した
-      /sample_count: powerIndexes\[i\]\?\.sample_count/.test(
-        read("src/pure/raceMotorBreakdown.js"),
-      ),
-  );
-  check(
-    "推移グラフは、入れ替え直後の 2連率・3連率とも 0 の先頭の点を描かない",
-    /findIndex\(\s*\(row\) => row\.motor_2rate !== 0 \|\| row\.motor_3rate !== 0/.test(
-      chart,
-    ),
+    "推移グラフは、入れ替え直後の 2連率・3連率とも 0 の先頭の点を描かない（描いた推移の横軸は 0 でない日から）",
+    drill.charts[H("rateTrendHeading")]?.xTicks.join("/") === "10-05/10-09" &&
+      drill.charts[H("exhibitionTrendHeading")]?.xTicks.join("/") === "10-01/10-05/10-09",
   );
   {
     // 偽の DB: 使用開始日は40日前。a2 に部品交換、c にプロペラ交換が記録される（同じ日の2レースは a・a2）
@@ -149,8 +172,8 @@ export async function section2(ctx) {
         ),
     );
     check(
-      "部品交換: チャートが raceNos を「◯R」に整形する（画面）",
-      chart.includes("event.raceNos.map((n) => `${n}R`)"),
+      "部品交換: チャートが raceNos を「◯R」に整形する（描いた部品交換の履歴）",
+      drill.parts.includes(`2026-10-05 5R${tJa("listSeparator")}11R`),
     );
   }
   // ---- BOA-513 PR2 ファン評価1周目（2026-09-29） ----
@@ -164,41 +187,50 @@ export async function section2(ctx) {
       officialTallyState(true, null) === "pending" &&
       officialTallyState(false, null) === "unknown",
   );
-  check(
-    "推移グラフ: 全部の点が 0 のとき、集計前なら線を引かず、集計済みなら 0 の線を引き、不明なら断定しない",
-    /firstRatedIndex === -1\s*\?\s*drillTallyState === "tallied"/.test(chart) &&
-      chart.includes('t("analysis.motor.trendNotYetOfficial")') &&
-      chart.includes('t("analysis.motor.trendOfficialZeroUnknown")'),
-  );
+  {
+    const tallied = await scenes.allZeroTrendScene({ raceCount: 2 });
+    const pending = await scenes.allZeroTrendScene({ raceCount: 0 });
+    const unknown = await scenes.allZeroTrendScene({ raceCount: 0, venueHasStats: false });
+    check(
+      "推移グラフ: 全部の点が 0 のとき、集計前なら線を引かず、集計済みなら 0 の線を引き、不明なら断定しない（描いた推移の節）",
+      tallied.chart?.xTicks.length === 2 &&
+        pending.chart === null &&
+        pending.text === H("trendNotYetOfficial") &&
+        unknown.chart === null &&
+        unknown.text === H("trendOfficialZeroUnknown"),
+    );
+  }
 }
 
 export async function section3(ctx) {
-  const { chart, check, powerIndexTone, read } = ctx;
+  const { check, drill, powerIndexTone, racers, scenes, tJa } = ctx;
+  const H = (key) => tJa(`analysis.motor.${key}`);
+  const noLeadingZero = await scenes.drillScene({
+    trendData: { trend: [{ date: "2026-10-01", motor_2rate: 30, motor_3rate: 50, exhibition_time: 6.8 }, { date: "2026-10-05", motor_2rate: 35, motor_3rate: 55, exhibition_time: 6.9 }] },
+  });
   check(
-    "推移グラフ: 先頭の 0 を落としたときは、展示タイムと始まりがずれる理由を書く",
-    chart.includes("firstRatedIndex > 0 && (") &&
-      chart.includes('t("analysis.motor.trendStartNote")'),
+    "推移グラフ: 先頭の 0 を落としたときは、展示タイムと始まりがずれる理由を書く（描いたドリルダウン。落とさないときは書かない）",
+    drill.notes.includes(H("trendStartNote")) && !noLeadingZero.notes.includes(H("trendStartNote")),
   );
   check(
-    "使用履歴: 今日これから走るレースは「未」と出し、欠場等の「-」と区別する",
-    /r\.date >= getTodayJST\(\)\s*\?\s*t\("analysis\.motor\.usageHistoryNotRun"\)/.test(
-      chart,
-    ),
+    "使用履歴: 今日これから走るレースは「未」と出し、欠場等の「-」と区別する（描いた使用履歴）",
+    drill.usageRanks[0] === [tJa("analysis.motor.usageHistoryRank", { n: 1 }), "-", H("usageHistoryNotRun")].join(" "),
   );
   check(
-    "選手×枠成績: n<6 では (n=◯) を付けない（分数に走数が入る）",
-    /\{!isSmallSample && \(\s*<span className="motor-waku-n">/.test(
-      read("src/components/analysis/MotorRacerWakuDrillDown.jsx"),
-    ),
+    "選手×枠成績: n<6 では (n=◯) を付けない（分数に走数が入る。描いた一覧）",
+    racers[0].n === null && racers[1].n === tJa("analysis.motor.sampleCount", { n: 12 }),
   );
   // 公式の 0.0 の「集計前」の印は、BOA-830（公式が 0 の艇は自前の値）に置き換えた。
   // 新しい決まりは verify-motor-fresh-rate.js が守る
-  check(
-    "一覧: 「集計前」の印と注記を出さない（BOA-830 で、公式が 0 の艇は自前の値に置き換えた）",
-    !chart.includes("isOfficialPending") &&
-      !chart.includes('t("analysis.motor.officialPendingBadge")') &&
-      !chart.includes('t("analysis.motor.officialPendingNote")'),
-  );
+  {
+    // 過去レースで公式 0/0 の艇がある一覧に、「集計前」の印・注記（訳があれば訳、無ければキー）が出ない
+    const past = await scenes.pastListScene();
+    const marks = ["officialPendingBadge", "officialPendingNote"].flatMap((k) => [`analysis.motor.${k}`, H(k)]);
+    check(
+      "一覧: 「集計前」の印と注記を出さない（BOA-830 で、公式が 0 の艇は自前の値に置き換えた。描いた過去レースの一覧）",
+      marks.every((mark) => !past.text.includes(mark)),
+    );
+  }
   // ---- BOA-549: 走数が少ない機力指数（2026-09-29 ファン4人のパネル） ----
   check(
     "powerIndexTone: n<6 は評価せず small、6以上は符号で good/bad/even、値なしは null",
@@ -219,32 +251,36 @@ export async function section4(ctx) {
   const {
     M,
     V,
-    card,
-    chart,
     check,
     day,
+    drill,
     formatPowerIndex,
     getMotorUsageHistory,
+    list,
     near,
-    read,
+    racerCardView: card,
     rid,
     run,
     same,
+    scenes,
     seed,
+    tJa,
     usageTables,
   } = ctx;
+  const H = (key) => tJa(`analysis.motor.${key}`);
+  // 一覧の2号艇は4走で +9.5、ドリルダウンと選手ページは4走で -0.04（どれも6走未満）
   check(
-    "機力指数: 一覧・ドリルダウン・選手ページの3か所で powerIndexTone を使い、小標本では評価の言葉を出さない",
-    (chart.match(/powerIndexTone\(/g) ?? []).length >= 2 &&
-      chart.includes('t("analysis.motor.powerIndexSmallSample")') &&
-      card.includes("powerIndexTone(") &&
-      card.includes('tone === "small"'),
+    "機力指数: 一覧・ドリルダウン・選手ページの3か所で powerIndexTone を使い、小標本では評価の言葉を出さない（描いた3か所）",
+    list.power[1].cls.split(" ").includes("is-small-sample") &&
+      drill.summaryClass.split(" ").includes("is-small-sample") &&
+      drill.summary.endsWith(H("powerIndexSmallSample")) &&
+      ![H("powerIndexGood"), H("powerIndexBad")].some((w) => drill.summary.includes(w)) &&
+      card.indexClass.split(" ").includes("is-small-sample"),
   );
   check(
-    "グラフ: 縦軸のラベルを縦方向の中央に置き（375px で切れない）、展示タイムの目盛りは小数2桁にそろえる",
-    read("src/components/analysis/TrendLineChart.jsx").includes(
-      'style: { textAnchor: "middle" }',
-    ) && /exhibitionYAxis"\)\}\s*yTickDecimals=\{2\}/.test(chart),
+    "グラフ: 縦軸のラベルを縦方向の中央に置き（375px で切れない）、展示タイムの目盛りは小数2桁にそろえる（描いたグラフ）",
+    Object.values(drill.charts).filter(Boolean).every((c) => c.yLabelAnchor === "middle") &&
+      drill.charts[H("exhibitionTrendHeading")]?.yTicks.every((x) => /^\d+\.\d{2}$/.test(x)),
   );
   {
     // 使用履歴の節ごとの2連率も、着順の付かなかった走を分母に数える（機力指数・枠番別と
@@ -276,21 +312,30 @@ export async function section4(ctx) {
       formatPowerIndex(12.14) === "+12.1" &&
       formatPowerIndex(-4.1) === "-4.1" &&
       formatPowerIndex(0) === "0.0" &&
-      !/power_index > 0 \? "\+" : ""/.test(chart + card),
+      // 画面（一覧・ドリルダウン・選手ページ）の -0.04 も 0.0（"-0.0"・"+0.0" にしない）
+      list.power[2].text === "0.0" &&
+      drill.summary.includes(tJa("analysis.motor.powerIndexSummary", { index: "0.0", count: 4, period: H("period90") })) &&
+      card.index.startsWith("機力指数 0.0（"),
   );
+  {
+    const plain = await scenes.motorListScene({ 2: { sample_count: 13 } });
+    const note = tJa("analysis.motor.powerIndexSmallSampleNote", { n: 6 });
+    check(
+      "一覧: オレンジ色の機力指数がある行があるときは、表の下の注記で意味（6走未満の参考値）を書く（描いた一覧。無い一覧には書かない）",
+      list.notes.some((n) => n.includes(note)) && !plain.notes.some((n) => n.includes(note)),
+    );
+  }
+  {
+    // 全部の点が 0・会場公式の出走数 0。取得に失敗していれば断定せず、取れていれば集計前
+    const failed = await scenes.allZeroTrendScene({ raceCount: 0, fetchFailed: true });
+    check(
+      "1基の詳細: 会場公式の成績が取れなかったとき（fetchFailed）は、推移グラフを「集計前」と判定しない（BOA-740。描いた推移の節）",
+      failed.text === H("trendOfficialZeroUnknown"),
+    );
+  }
   check(
-    "一覧: オレンジ色の機力指数がある行があるときは、表の下の注記で意味（6走未満の参考値）を書く",
-    chart.includes('t("analysis.motor.powerIndexSmallSampleNote"'),
-  );
-  check(
-    "1基の詳細: 会場公式の成績が取れなかったとき（fetchFailed）は、推移グラフを「集計前」と判定しない（BOA-740）",
-    /officialTallyState\(\s*venueHasOfficialStats && !venueMotorStats\?\.fetchFailed,\s*venueMotorStats\?\.raceCount,?\s*\)/.test(
-      chart,
-    ),
-  );
-  check(
-    "選手ページ: 参考値の文言をレースページと同じ「— 走数が少ないため参考値」にそろえる",
-    card.includes('" — 走数が少ないため参考値"'),
+    "選手ページ: 参考値の文言をレースページと同じ「— 走数が少ないため参考値」にそろえる（描いたカード）",
+    card.index.endsWith(" — 走数が少ないため参考値"),
   );
 }
 
