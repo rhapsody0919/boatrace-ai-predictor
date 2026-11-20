@@ -30,7 +30,10 @@
   color: var(--color-gray-600);
 }
 
+/* gray-500 on gray-100 は 4.34:1 で WCAG AA（4.5:1）に届かない（e2e-live 44656826624 の /racers）。
+   B1 と見分けるため、地を一段明るくし枠で囲む（gray-600 on gray-50 は 7.24:1） */
 .racer-grade-b2 {
-  background: var(--color-gray-100);
-  color: var(--color-gray-500);
+  background: var(--color-gray-50);
+  color: var(--color-gray-600);
+  border: var(--border-width-1) solid var(--color-gray-200);
 }
