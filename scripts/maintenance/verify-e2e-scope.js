@@ -26,6 +26,7 @@ import {
   GATE_CONFIG_PATH,
   grandfatherRemovals,
 } from "./e2e-scope.js";
+import { closureFrom } from "./verifyData/e2e-scope-closure.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -464,16 +465,6 @@ export function scanText(
 
 {
   const prefixes = skipPrefixes(config);
-  const exts = [
-    "",
-    ".js",
-    ".jsx",
-    ".mjs",
-    ".cjs",
-    ".json",
-    "/index.js",
-    "/index.jsx",
-  ];
   const statOf = (p) => {
     try {
       return statSync(p);
@@ -513,56 +504,9 @@ export function scanText(
     workflowScripts.length > 0,
     true,
   );
-  // 根から import・相対のパスで辿れる先（閉包）。本物の木と下の偽の木（メモリの上）で同じ辿りを使う
   const disk = { read: (p) => readFileSync(p, "utf8"), stat: statOf };
-  const closureOf = (root, roots, io = disk) => {
-    const reachable = new Set(roots);
-    const queue = [...roots];
-    const reads = new Set();
-    const leakedLiterals = [];
-    while (queue.length > 0) {
-      const file = queue.pop();
-      const css = /\.css$/.test(file);
-      if (!css && !/\.(js|jsx|mjs|cjs|html)$/.test(file)) continue;
-      const rel = path.relative(root, file);
-      const { specs, literals } = scanText(io.read(file), {
-        css,
-        nodeSide: !rel.startsWith("src/"),
-        prefixes,
-      });
-      for (const l of literals) leakedLiterals.push(`${rel}: ${l}`);
-      for (const spec of specs) {
-        const clean = spec.split("?")[0].split("#")[0];
-        if (!clean || /^\/\//.test(clean)) continue;
-        const base = clean.startsWith("/")
-          ? path.join(root, clean)
-          : path.resolve(path.dirname(file), clean);
-        if (base !== root && !base.startsWith(root + path.sep)) continue;
-        const cut = /\/$/.test(clean) || spec !== clean ? "/" : "";
-        const target = exts
-          .map((e) => base + e)
-          .find((p) => io.stat(p)?.isFile());
-        if (target) {
-          reads.add(path.relative(root, target));
-          if (!reachable.has(target)) {
-            reachable.add(target);
-            queue.push(target);
-          }
-        } else if (io.stat(base)?.isDirectory() || cut) {
-          // ディレクトリ・`${` で切れた頭の読み。その下の全部を読みうるものとして判定する
-          reads.add(`${path.relative(root, base)}/`.replace(/\/+$/, "/"));
-        } else {
-          // 解けない指定（public/ の URL・書き出し先・拡張子の無い頭）も黙って捨てず、頭として一覧と照らす
-          reads.add(path.relative(root, base));
-        }
-      }
-    }
-    return {
-      rels: [...reachable].map((f) => path.relative(root, f)),
-      reads,
-      leakedLiterals,
-    };
-  };
+  const closureOf = (root, roots, io = disk) =>
+    closureFrom({ root, roots, io, scan: scanText, prefixes });
   {
     // #2986 で src が scripts/lib を直に読まなくなり実例が消えた。読めば閉包に入ることを偽の木で守る
     const at = (rel) => path.join(repoRoot, "__fake__", rel);
