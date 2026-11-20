@@ -17,8 +17,8 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { evaluateContentPr } from "../content/contentPrGateEval.js";
 import {
-  evaluateContentPr,
   readJpegSize,
   checkRawHtml,
   checkKyoteiMd,
