@@ -60,22 +60,25 @@
  * 終了コード: 0=合格 / 1=AまたはBの違反、または検査が成立していない。
  */
 import { createClient } from "@supabase/supabase-js";
-import { fetchAll, VENUE_NAMES } from "../lib/supabaseClient.js";
+import { VENUE_NAMES } from "../lib/supabaseClient.js";
 import { groupIntoCurrentMeet } from "../../src/utils/meetGrouping.js";
+import {
+  dateOf,
+  dayDiff,
+  FETCH_TIMEOUT_MS,
+  fetchByIn,
+  findRiskyBoundaries,
+  lastLeftFirstRight,
+  median,
+  readAll,
+  todayJst,
+  venueOf,
+} from "./verifyData/meet-grouping-io.js";
 
 /** `series_day` が埋まり始めた月。これより前は行そのものが無いので検査できない */
 const DATA_START = "2026-02-01";
 /** 検査する選手数の既定値。多いほど厳しいが、そのぶん本番DBを読む */
 const DEFAULT_RACERS = 300;
-/**
- * 1ページあたりの待ち時間の上限（ms）。共有クライアント
- * （`scripts/lib/supabaseClient.js`）の15秒では `race_conditions` の全件取得が
- * 中断する（2026-09-28に実際に中断した。`scripts/lib/meetBoundaries.js` の
- * `fetchAllByRaceId` が同じ問題に当たっている）。
- */
-const FETCH_TIMEOUT_MS = 90000;
-/** ページ取得の再試行回数。1ページの中断で検査全体を落とさないため */
-const PAGE_RETRIES = 3;
 /**
  * 検査が成立していると見なす最小の会場×開催日数。1日あたり24会場のうち
  * 実際に開催しているのは十数会場なので、窓の日数から控えめに見積もる。
@@ -125,64 +128,6 @@ function parseArgs(argv) {
     }
   }
   if (out.since < DATA_START) out.since = DATA_START;
-  return out;
-}
-
-const dayDiff = (a, b) => (new Date(a) - new Date(b)) / 86400000;
-/** race_id（YYYY-MM-DD-VV-RR）の会場コード部分 */
-const venueOf = (raceId) => raceId.split("-")[3];
-const dateOf = (raceId) => raceId.slice(0, 10);
-const median = (nums) => {
-  const sorted = [...nums].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
-};
-/**
- * 「今日」をJSTで返す。`race_id` の日付はJSTなので、UTCで求めると
- * JSTの午前0〜9時に1日前の日付を「今日」と判定し、前日の本当の取得漏れを
- * 「当日だから当然」として除外してしまう。
- */
-const todayJst = () =>
-  new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
-
-/**
- * 取得失敗を「該当0件」と混同しないため、全クエリで throwOnError を立てる
- * （空データで合格すると、一致率100%という結論が「何も読めていないだけ」で出る）。
- * `race_id` で並べるのは、offsetページングで行が入れ替わって取りこぼすのを防ぐため。
- */
-async function readAll(client, table, select, build) {
-  // 並び順は**全順序**にする。`fetchAll` は `.range(offset, …)` のoffsetページングで、
-  // 同じ値が並ぶ並び順だとページの境目で行を取りこぼす・重複させる。`race_entries`
-  // は1つの `race_id` に6行あるので `race_id` だけでは足りず、`racer_id` を足す
-  // （`scripts/lib/meetBoundaries.js` の `fetchAllByRaceId` は同じ問題をキーセット
-  // 方式で解くが、フィルタを渡せないのでここでは使えない）
-  const withOrder = (q) => {
-    const ordered = (build ? build(q) : q).order("race_id");
-    return select.includes("racer_id") ? ordered.order("racer_id") : ordered;
-  };
-  let lastError = null;
-  for (let attempt = 1; attempt <= PAGE_RETRIES; attempt++) {
-    try {
-      return await fetchAll(table, select, withOrder, {
-        throwOnError: true,
-        client,
-      });
-    } catch (err) {
-      lastError = err;
-    }
-  }
-  throw new Error(
-    `${table} の取得に${PAGE_RETRIES}回失敗: ${lastError?.message}`,
-  );
-}
-
-async function fetchByIn(client, table, select, col, ids, chunk = 150) {
-  const out = [];
-  for (let i = 0; i < ids.length; i += chunk) {
-    const slice = ids.slice(i, i + chunk);
-    out.push(
-      ...(await readAll(client, table, select, (q) => q.in(col, slice))),
-    );
-  }
   return out;
 }
 
@@ -377,113 +322,68 @@ async function checkRacerScopedAgreement(
  *           同じ節の中で「空きの前」と「空き以降」を突き合わせる。節ぜんたいを
  *           両側に取ると前半が後半に必ず含まれてしまい、全選手が違反に見える
  */
-async function checkRiskyBoundaries(client, segmentsByVenue) {
-  const risky = [];
-  for (const [venue, segments] of segmentsByVenue) {
-    for (let s = 1; s < segments.length; s++) {
-      const prev = segments[s - 1];
-      const next = segments[s];
-      const gap = dayDiff(next.dates[0], prev.dates.at(-1));
-      if (gap <= 2) {
-        risky.push({
-          venue,
-          kind: "繋げる",
-          gap,
-          label: `${prev.dates.at(-1)}→${next.dates[0]}`,
-          left: prev.dates,
-          right: next.dates,
-        });
-      }
-    }
-    for (const seg of segments) {
-      for (let i = 1; i < seg.dates.length; i++) {
-        const gap = dayDiff(seg.dates[i], seg.dates[i - 1]);
-        if (gap > 2) {
-          risky.push({
-            venue,
-            kind: "切る",
-            gap,
-            label: `${seg.dates[i - 1]}→${seg.dates[i]}`,
-            left: seg.dates.slice(0, i),
-            right: seg.dates.slice(i),
-          });
-        }
-      }
-    }
+/** 1つの境界の違反（無ければ null）。出走の読みは await せず呼び元が待つ */
+async function boundaryViolation(client, b) {
+  const span = [...b.left, ...b.right].sort();
+  const entries = await readAll(
+    client,
+    "race_entries",
+    "racer_id, race_id",
+    (q) =>
+      q
+        .gte("race_id", span[0])
+        .lte("race_id", `${span.at(-1)}-zz`)
+        .like("race_id", `__________-${b.venue}-__`)
+        .not("racer_id", "is", null),
+  );
+  if (entries.length === 0) {
+    // 出走が1件も無いのは境界の作り方かクエリがおかしい。0人＝安全と読まない
+    return {
+      ...b,
+      racers: [],
+      note: "出走0件（検査が成立していない）",
+    };
   }
+  const leftDates = new Set(b.left);
+  const rightDates = new Set(b.right);
+  const inLeft = new Set();
+  const inRight = new Set();
+  for (const e of entries) {
+    const d = dateOf(e.race_id);
+    if (leftDates.has(d)) inLeft.add(e.racer_id);
+    if (rightDates.has(d)) inRight.add(e.racer_id);
+  }
+  // 節の在籍だけで判定すると偽陽性になる。推定が実際に誤るのは
+  // **その選手自身の**「左側の最後の出走」と「右側の最初の出走」の間隔が
+  // 2日以内（＝推定が境目と見ない）ときに限る。前の節の途中で帰郷した、
+  // 次の節の初日を欠場した、といった選手は推定でも正しく分かれる
+  const { lastLeft, firstRight } = lastLeftFirstRight(
+    entries,
+    leftDates,
+    rightDates,
+  );
+  const both = [...inLeft].filter((r) => inRight.has(r));
+  const merged = both.filter(
+    (r) => dayDiff(firstRight.get(r), lastLeft.get(r)) <= 2,
+  );
+  if (merged.length > 0)
+    return { ...b, racers: merged, straddling: both.length };
+  return null;
+}
 
+async function checkRiskyBoundaries(client, segmentsByVenue) {
+  const risky = findRiskyBoundaries(segmentsByVenue);
   const violations = [];
   for (const b of risky) {
-    const span = [...b.left, ...b.right].sort();
-    const entries = await readAll(
-      client,
-      "race_entries",
-      "racer_id, race_id",
-      (q) =>
-        q
-          .gte("race_id", span[0])
-          .lte("race_id", `${span.at(-1)}-zz`)
-          .like("race_id", `__________-${b.venue}-__`)
-          .not("racer_id", "is", null),
-    );
-    if (entries.length === 0) {
-      // 出走が1件も無いのは境界の作り方かクエリがおかしい。0人＝安全と読まない
-      violations.push({
-        ...b,
-        racers: [],
-        note: "出走0件（検査が成立していない）",
-      });
-      continue;
-    }
-    const leftDates = new Set(b.left);
-    const rightDates = new Set(b.right);
-    const inLeft = new Set();
-    const inRight = new Set();
-    for (const e of entries) {
-      const d = dateOf(e.race_id);
-      if (leftDates.has(d)) inLeft.add(e.racer_id);
-      if (rightDates.has(d)) inRight.add(e.racer_id);
-    }
-    // 節の在籍だけで判定すると偽陽性になる。推定が実際に誤るのは
-    // **その選手自身の**「左側の最後の出走」と「右側の最初の出走」の間隔が
-    // 2日以内（＝推定が境目と見ない）ときに限る。前の節の途中で帰郷した、
-    // 次の節の初日を欠場した、といった選手は推定でも正しく分かれる
-    const lastLeft = new Map();
-    const firstRight = new Map();
-    for (const e of entries) {
-      const d = dateOf(e.race_id);
-      if (leftDates.has(d)) {
-        const cur = lastLeft.get(e.racer_id);
-        if (!cur || d > cur) lastLeft.set(e.racer_id, d);
-      }
-      if (rightDates.has(d)) {
-        const cur = firstRight.get(e.racer_id);
-        if (!cur || d < cur) firstRight.set(e.racer_id, d);
-      }
-    }
-    const both = [...inLeft].filter((r) => inRight.has(r));
-    const merged = both.filter(
-      (r) => dayDiff(firstRight.get(r), lastLeft.get(r)) <= 2,
-    );
-    if (merged.length > 0)
-      violations.push({ ...b, racers: merged, straddling: both.length });
+    const v = await boundaryViolation(client, b);
+    if (v) violations.push(v);
   }
   return { risky, violations };
 }
 
-async function main() {
-  const { since, racers } = parseArgs(process.argv.slice(2));
-  const client = makeClient();
-  if (!client) {
-    console.error(
-      "Supabase環境変数が未設定（SUPABASE_URL / SUPABASE_SERVICE_KEY）",
-    );
-    process.exit(1);
-  }
-  console.log(`節推定の検査（${since} 以降、選手${racers}人まで）\n`);
-
-  const { segmentsByVenue, segmentOfDay, postponed, totalDays, coverageStart } =
-    await loadMeetSegments(client, since);
+/** 節の読みの要約・下限の確認・順延の参考（下限割れは終了 1） */
+function reportSegments(loaded, since) {
+  const { segmentsByVenue, postponed, totalDays, coverageStart } = loaded;
   const windowDays = Math.max(1, dayDiff(todayJst(), since));
   const minVenueDays = Math.round(windowDays * MIN_VENUE_DAYS_PER_WINDOW_DAY);
   const meets = [...segmentsByVenue.values()].reduce((a, s) => a + s.length, 0);
@@ -511,14 +411,10 @@ async function main() {
         ),
       );
   }
+}
 
-  const a = await checkRacerScopedAgreement(
-    client,
-    segmentOfDay,
-    since,
-    racers,
-    coverageStart,
-  );
+/** 検査Aの結果の表示（アンカー0件は終了 1）。不一致の率・除外の率を返す */
+function reportAgreement(a) {
   if (a.anchors === 0) {
     console.error(
       "\n❌ 判定できたアンカーが0件。race_entries を読めていないので合格にしない。",
@@ -545,8 +441,11 @@ async function main() {
         `      racer=${m.racerId} ${m.anchor} 推定${m.estimated}走 / 実${m.expected}走`,
       ),
     );
+  return skipPct;
+}
 
-  const b = await checkRiskyBoundaries(client, segmentsByVenue);
+/** 検査Bの結果の表示（危険な境界0箇所は終了 1） */
+function reportBoundaries(b) {
   const merge = b.risky.filter((r) => r.kind === "繋げる").length;
   const split = b.risky.filter((r) => r.kind === "切る").length;
   console.log(
@@ -567,7 +466,10 @@ async function main() {
     );
     process.exit(1);
   }
+}
 
+/** 不合格の理由（空なら合格） */
+function collectProblems(a, b, skipPct) {
   const problems = [];
   if (a.mismatches.length > 0)
     problems.push(`検査Aの不一致${a.mismatches.length}件`);
@@ -577,6 +479,36 @@ async function main() {
     problems.push(
       `判定不可の割合${skipPct.toFixed(2)}%（上限${MAX_SKIP_PCT}%）`,
     );
+  return problems;
+}
+
+async function main() {
+  const { since, racers } = parseArgs(process.argv.slice(2));
+  const client = makeClient();
+  if (!client) {
+    console.error(
+      "Supabase環境変数が未設定（SUPABASE_URL / SUPABASE_SERVICE_KEY）",
+    );
+    process.exit(1);
+  }
+  console.log(`節推定の検査（${since} 以降、選手${racers}人まで）\n`);
+
+  const loaded = await loadMeetSegments(client, since);
+  reportSegments(loaded, since);
+
+  const a = await checkRacerScopedAgreement(
+    client,
+    loaded.segmentOfDay,
+    since,
+    racers,
+    loaded.coverageStart,
+  );
+  const skipPct = reportAgreement(a);
+
+  const b = await checkRiskyBoundaries(client, loaded.segmentsByVenue);
+  reportBoundaries(b);
+
+  const problems = collectProblems(a, b, skipPct);
   if (problems.length > 0) {
     console.error(
       `\n❌ 不合格: ${problems.join(" / ")}` +
