@@ -5,12 +5,12 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2588,
-    "filesWithAccess": 309,
+    "sourceFiles": 2601,
+    "filesWithAccess": 315,
     "tableReaders": 948,
     "tableWriters": 195,
     "rpcCallers": 55,
-    "nameMentions": 271,
+    "nameMentions": 272,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
@@ -2746,11 +2746,10 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:2566",
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-10.js:85",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         }
       ],
       "writers": [],
@@ -3007,11 +3006,10 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:2458",
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-9.js:242",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         },
         {
           "ref": "src/services/venueQueries2.js:284",
@@ -4815,11 +4813,10 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1774",
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-6.js:209",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         },
         {
           "ref": "src/services/venueQueries.js:98",
@@ -5623,11 +5620,10 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1926",
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-7.js:159",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         },
         {
           "ref": "src/services/adminRuleService.js:26",
@@ -6406,14 +6402,13 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:2558",
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-10.js:77",
           "op": "rest",
           "via": "rest",
           "columns": [
             "race_id",
             "race_stage"
-          ],
-          "test": true
+          ]
         },
         {
           "ref": "scripts/maintenance/verifyData/unchanged-rows-scenes-2.js:179",
@@ -6648,7 +6643,7 @@
             "scripts/maintenance/backfill-race-series-meta.js:337",
             "scripts/maintenance/backfill-series-day.js:175",
             "scripts/maintenance/backfill-series-day.js:196",
-            "scripts/maintenance/verify-full-picture-scene2.js:2558",
+            "scripts/maintenance/verifyData/full-picture-scene2-b-10.js:77",
             "scripts/ml/analogy/build-wind-basis.js:95",
             "scripts/sns/pushFinalsImageStore.js:82",
             "scripts/sns/pushSetsuKiryokuShortStore.js:107",
@@ -6808,7 +6803,7 @@
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/lib/snsAutoPlanRunnerStore.js:58",
             "scripts/lib/snsTodayDigestV3.js:85",
-            "scripts/maintenance/verify-full-picture-scene2.js:2558",
+            "scripts/maintenance/verifyData/full-picture-scene2-b-10.js:77",
             "scripts/sns/pushFinalsImageStore.js:82",
             "scripts/sns/pushSetsuKiryokuShortStore.js:107",
             "scripts/sns/pushSetsuKiryokuShortStore.js:112",
@@ -7591,13 +7586,6 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:2093",
-          "op": "rest",
-          "via": "rest",
-          "columns": [],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verify-pretest-row-pick.js:93",
           "op": "select",
           "via": "embed",
@@ -7605,6 +7593,12 @@
             "racer_id"
           ],
           "test": true
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-8.js:86",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
         },
         {
           "ref": "scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:93",
@@ -14392,18 +14386,16 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1526",
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-10.js:128",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:2608",
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-5.js:178",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         },
         {
           "ref": "src/services/raceQueries2.js:270",
@@ -25507,18 +25499,16 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1641",
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-12.js:202",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:3061",
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-6.js:75",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         }
       ],
       "writers": [
@@ -26707,11 +26697,10 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1796",
+          "ref": "scripts/maintenance/verifyData/full-picture-scene2-b-7.js:32",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         },
         {
           "ref": "src/services/venueQueries.js:255",
@@ -27939,6 +27928,7 @@
       ],
       "mentions": [
         "scripts/maintenance/check-anon-access.js:112",
+        "scripts/maintenance/verifyData/full-picture-scene2-b-3.js:129",
         "sns-video-studio/remotion/scripts/full-picture/fetch-materials.mjs:683"
       ],
       "triggerOn": [],
