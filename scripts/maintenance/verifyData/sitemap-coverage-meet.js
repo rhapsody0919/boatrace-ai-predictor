@@ -1,7 +1,7 @@
 // verify-sitemap-coverage.js の /meet の固定データと getMeetPages の実行（越えの単位を分けるため移した。verify ではない）
-// fn（generate-sitemap.js から切り出した getMeetPages の字）・model・languages は verify の側の物を受け取る
+// gen は import した generate-sitemap.js（sitemap-generator.js の loadSitemapGenerator）。偽の DB の場面を置いて本物の getMeetPages を回す
 import assert from "node:assert/strict";
-import vm from "node:vm";
+import { atFixedNow, sitemapScene } from "./sitemap-generator.js";
 
 export const meetSeries = (start, venue = 1, title = "固定の節") => ({
   venue_code: venue,
@@ -11,7 +11,7 @@ export const meetSeries = (start, venue = 1, title = "固定の節") => ({
   title,
 });
 
-export function makeMeetRun({ fn, model, languages }) {
+export function makeMeetRun(gen) {
   return async (meet, dates, { fail = null, conditions = [] } = {}) => {
     const entries = dates.map((d) => ({
       race_id: `${d}-01-01`,
@@ -23,9 +23,7 @@ export function makeMeetRun({ fn, model, languages }) {
       race_conditions: conditions,
       races: entries.map((r) => ({ ...r, race_grade: "G1" })),
     };
-    const client = {
-      supabase: {},
-      isSupabaseEnabled: () => true,
+    sitemapScene({
       async fetchAll(table, columns, build) {
         if (table === fail) throw new Error("fixture meet read failed");
         let rows = tables[table];
@@ -55,29 +53,9 @@ export function makeMeetRun({ fn, model, languages }) {
         build(q);
         return rows;
       },
-    };
-    const code = fn
-      .replace(/await import\("\.\/lib\/supabaseClient\.js"\)/g, "client")
-      .replace(
-        /await import\("\.\.\/src\/utils\/meetPageModel\.js"\)/g,
-        "model",
-      );
-    class FixedDate extends Date {
-      static now() {
-        return Date.parse("2026-10-30T15:30:00Z");
-      }
-    }
-    return vm.runInNewContext(
-      `(async () => { ${code}; return getMeetPages(latest); })()`,
-      {
-        client,
-        model,
-        ...languages,
-        Date: FixedDate,
-        console,
-        MEET_PAGE_DATA_FROM: "2025-12-02",
-        latest: { byVenue: new Map([[1, "2026-10-31"]]) },
-      },
+    });
+    return atFixedNow(() =>
+      gen.getMeetPages({ byVenue: new Map([[1, "2026-10-31"]]) }),
     );
   };
 }
