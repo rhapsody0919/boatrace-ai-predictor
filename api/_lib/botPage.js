@@ -40,6 +40,22 @@ import {
   toBreadcrumbListLd,
 } from "../../src/utils/breadcrumbLd.js";
 import { internalApiHeaders } from "./internalApiHeaders.js";
+import {
+  BOT_PAGE_PREFIXED_LANGS,
+  prefixedLangFromUrl,
+  venueCodeFromUrl,
+} from "./botPageUrl.js";
+
+import {
+  aiIntroHtml,
+  blogHtml,
+  escapeHtml,
+  link,
+  span,
+} from "./botPageHtml.js";
+
+export { BOT_PAGE_PREFIXED_LANGS, prefixedLangFromUrl, venueCodeFromUrl };
+export { escapeHtml };
 
 // 人のページの HreflangTags と同じ（hreflang の URL は本番のドメインで出す）
 const SITE_ORIGIN = "https://www.boat-ai.jp";
@@ -73,28 +89,12 @@ export const ROBOTS =
 export const MATERIAL_TTL_MS = 60_000;
 const FETCH_TIMEOUT_MS = 8_000;
 
-const VENUE_CODE = /^(?:[1-9]|1\d|2[0-4])$/;
-
-/** 言語版を出す言語（ja 以外の対応言語。src/config/languages.js の SUPPORTED_LANGUAGES） */
-export const BOT_PAGE_PREFIXED_LANGS = SUPPORTED_LANGUAGES.map(
-  ({ code }) => code,
-).filter((code) => code !== DEFAULT_LANGUAGE);
-
 /** 材料（/api/races/today）が取れない */
 export class MaterialFetchError extends Error {
   constructor(message) {
     super(message);
     this.name = "MaterialFetchError";
   }
-}
-
-export function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }
 
 // ---- 言語ごとの t（人の画面と同じ common.json・同じ補間の設定・ja へのフォールバック） ----
@@ -370,61 +370,6 @@ ${bodyHtml}
 `;
 }
 
-const span = (text) => (text ? ` <span>${escapeHtml(text)}</span>` : "");
-
-const link = (href, text) =>
-  `<a href="${escapeHtml(href)}">${escapeHtml(text)}</a>`;
-const listOf = (tag, items) =>
-  `<${tag}>\n${items.map((x) => `<li>${escapeHtml(x)}</li>`).join("\n")}\n</${tag}>`;
-
-// 人のトップの HomeAiIntro と同じ並び（見出し → 紹介文 → 2つの確かめ方 → 成績ページへのリンク → よくある質問）
-function aiIntroHtml(a) {
-  const tools = a.tools.map(
-    (tool) =>
-      `<div>\n<p>${escapeHtml(tool.name)}</p>\n<p>${escapeHtml(tool.where)}</p>\n${listOf("ul", tool.questions)}\n</div>`,
-  );
-  // 人の画面と同じ <details>。人の画面は閉じている（答えは DOM にある）。ボット向けは開いた形で出す
-  const faq = a.faqItems.map(
-    ({ question, answer }) =>
-      `<details open>\n<summary>${escapeHtml(question)}</summary>\n<p>${escapeHtml(answer)}</p>\n</details>`,
-  );
-  return [
-    "<section>",
-    `<h2>${escapeHtml(a.title)}</h2>`,
-    ...a.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`),
-    "<div>",
-    `<h3>${escapeHtml(a.checkTitle)}</h3>`,
-    ...tools,
-    listOf("ol", a.steps),
-    `<p>${link(a.venuesLink.href, a.venuesLink.text)}</p>`,
-    `<p>${escapeHtml(a.note)}</p>`,
-    "</div>",
-    `<ul>\n${a.links.map((l) => `<li>${link(l.href, l.text)}</li>`).join("\n")}\n</ul>`,
-    "<div>",
-    `<h3>${escapeHtml(a.faqTitle)}</h3>`,
-    ...faq,
-    "</div>",
-    "</section>",
-  ].join("\n");
-}
-
-// 人のトップのブログ欄と同じ並び（見出し → 説明 → 注目記事 → 新着記事 → 一覧へのリンク）
-function blogHtml(b) {
-  const card = (post) =>
-    `<li><a href="${escapeHtml(post.href)}"><span>${escapeHtml(post.category)}</span> <h3>${escapeHtml(post.title)}</h3> <p>${escapeHtml(post.description)}</p> <span>${escapeHtml(post.readTime)}</span></a></li>`;
-  return [
-    "<section>",
-    `<h2>${escapeHtml(b.title)}</h2>`,
-    `<p>${escapeHtml(b.lead)}</p>`,
-    ...b.groups.flatMap((g) => [
-      `<h3>${escapeHtml(g.heading)}</h3>`,
-      `<ul>\n${g.posts.map(card).join("\n")}\n</ul>`,
-    ]),
-    `<p>${link(b.allPostsLink.href, b.allPostsLink.text)}</p>`,
-    "</section>",
-  ].join("\n");
-}
-
 /**
  * @param {ReturnType<typeof buildTopModel>} model
  * @param {{siteJsonLd?: object[]}} [options] - index.html の共通の JSON-LD（getSiteJsonLd）
@@ -509,60 +454,41 @@ export function renderVenueHtml(model, viewLabel, { siteJsonLd = [] } = {}) {
 
 const plain = (status, headers, body) => ({ status, headers, body });
 
-const pathnameOf = (url) => {
-  try {
-    return new URL(url ?? "", "http://localhost").pathname;
-  } catch {
-    return null;
+// 入口の検査（method・言語・会場コード・origin）。断るなら reject に応答、通すなら lang・venueCode・origin
+function botPageRequestGate({ page, langMode, method, url, headers }) {
+  if (method !== "GET" && method !== "HEAD") {
+    return {
+      reject: plain(
+        405,
+        { ...CLIENT_ERROR_HEADERS, Allow: "GET, HEAD" },
+        "405 Method Not Allowed\n",
+      ),
+    };
   }
-};
-
-const LANG_ALT = BOT_PAGE_PREFIXED_LANGS.map((l) =>
-  l.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-).join("|");
-// 言語版の受けるパス。関数を直接呼ぶ形と、middleware の rewrite 経由で元のパスのまま届く形
-const LANG_TOP_PATH = new RegExp(
-  `^(?:/api/bot-page/(${LANG_ALT})/top|/(${LANG_ALT})/?)$`,
-);
-const LANG_VENUE_PATH = new RegExp(
-  `^(?:/api/bot-page)?/(${LANG_ALT})/venue/([^/]+)$`,
-);
-const JA_VENUE_PATH = /^(?:\/api\/bot-page)?\/venue\/([^/]+)$/;
-
-/**
- * パスの会場コード（1〜24、0埋めなし）。それ以外は null
- *
- * @param {string} url
- * @param {string} [lang] - ja（既定）は接頭辞なしのパスだけ、それ以外はその言語の接頭辞付きのパスだけを受ける
- */
-export function venueCodeFromUrl(url, lang = DEFAULT_LANGUAGE) {
-  const pathname = pathnameOf(url);
-  if (pathname === null) return null;
-  let code;
-  if (lang === DEFAULT_LANGUAGE) {
-    code = JA_VENUE_PATH.exec(pathname)?.[1];
-  } else {
-    const m = LANG_VENUE_PATH.exec(pathname);
-    code = m && m[1] === lang ? m[2] : undefined;
+  const lang =
+    langMode === "prefixed" ? prefixedLangFromUrl(page, url) : DEFAULT_LANGUAGE;
+  if (lang === null) {
+    return { reject: plain(404, CLIENT_ERROR_HEADERS, "404 Not Found\n") };
   }
-  if (code === undefined || !VENUE_CODE.test(code)) return null;
-  return Number(code);
+  const venueCode = page === "venue" ? venueCodeFromUrl(url, lang) : null;
+  if (page === "venue" && venueCode === null) {
+    return { reject: plain(404, CLIENT_ERROR_HEADERS, "404 Not Found\n") };
+  }
+  const origin = originOf(headers);
+  if (!origin)
+    return { reject: plain(400, CLIENT_ERROR_HEADERS, "400 Bad Request\n") };
+  return { lang, venueCode, origin };
 }
 
-/**
- * 言語版の関数のパスから言語を読む（en・zh-TW・ko）。それ以外は null
- *
- * @param {"top"|"venue"} page
- * @param {string} url
- */
-export function prefixedLangFromUrl(page, url) {
-  const pathname = pathnameOf(url);
-  if (pathname === null) return null;
-  if (page === "top") {
-    const m = LANG_TOP_PATH.exec(pathname);
-    return m ? (m[1] ?? m[2]) : null;
+// 会場のページのモデル。開催の帯を出せるときだけ節の行を読んで組み直す（await はここの1回だけ）
+async function venueModelOf(json, venueCode, { t, lang, today }, getSeriesRows) {
+  let venueModel = buildVenueModel(json, venueCode, { t, lang, today });
+  if (venueModel.meetBannerEligible) {
+    const seriesRows = await getSeriesRows(venueCode, today);
+    assertSeriesRows(seriesRows);
+    venueModel = buildVenueModel(json, venueCode, { t, lang, today, seriesRows });
   }
-  return LANG_VENUE_PATH.exec(pathname)?.[1] ?? null;
+  return venueModel;
 }
 
 /**
@@ -578,24 +504,9 @@ export async function respondBotPage(
     getSiteJsonLd: loadSiteJsonLd = getSiteJsonLd,
   },
 ) {
-  if (method !== "GET" && method !== "HEAD") {
-    return plain(
-      405,
-      { ...CLIENT_ERROR_HEADERS, Allow: "GET, HEAD" },
-      "405 Method Not Allowed\n",
-    );
-  }
-  const lang =
-    langMode === "prefixed" ? prefixedLangFromUrl(page, url) : DEFAULT_LANGUAGE;
-  if (lang === null) {
-    return plain(404, CLIENT_ERROR_HEADERS, "404 Not Found\n");
-  }
-  const venueCode = page === "venue" ? venueCodeFromUrl(url, lang) : null;
-  if (page === "venue" && venueCode === null) {
-    return plain(404, CLIENT_ERROR_HEADERS, "404 Not Found\n");
-  }
-  const origin = originOf(headers);
-  if (!origin) return plain(400, CLIENT_ERROR_HEADERS, "400 Bad Request\n");
+  const gate = botPageRequestGate({ page, langMode, method, url, headers });
+  if (gate.reject) return gate.reject;
+  const { lang, venueCode, origin } = gate;
 
   try {
     const [json, t, siteJsonLd] = await Promise.all([
@@ -607,12 +518,7 @@ export async function respondBotPage(
     const today = jstNow.slice(0, 10);
     let venueModel;
     if (page === "venue") {
-      venueModel = buildVenueModel(json, venueCode, { t, lang, today });
-      if (venueModel.meetBannerEligible) {
-        const seriesRows = await getSeriesRows(venueCode, today);
-        assertSeriesRows(seriesRows);
-        venueModel = buildVenueModel(json, venueCode, { t, lang, today, seriesRows });
-      }
+      venueModel = await venueModelOf(json, venueCode, { t, lang, today }, getSeriesRows);
     }
     const html =
       page === "venue"
