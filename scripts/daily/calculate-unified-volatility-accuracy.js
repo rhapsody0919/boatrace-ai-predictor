@@ -20,35 +20,10 @@ import {
   isSupabaseEnabled,
 } from "../lib/supabaseClient.js";
 import { isNoRaceResult } from "../lib/raceOutcomeFilters.js";
+import { volatilityByLevel } from "../lib/accuracyCacheStats.js";
+import { VENUE_NAMES } from "../lib/venueNames.js";
 
 const MODEL_ID = "unified";
-
-const VENUE_NAMES = {
-  1: "桐生",
-  2: "戸田",
-  3: "江戸川",
-  4: "平和島",
-  5: "多摩川",
-  6: "浜名湖",
-  7: "蒲郡",
-  8: "常滑",
-  9: "津",
-  10: "三国",
-  11: "びわこ",
-  12: "住之江",
-  13: "尼崎",
-  14: "鳴門",
-  15: "丸亀",
-  16: "児島",
-  17: "宮島",
-  18: "徳山",
-  19: "下関",
-  20: "若松",
-  21: "芦屋",
-  22: "福岡",
-  23: "唐津",
-  24: "大村",
-};
 
 function levelOf(percentile) {
   if (percentile >= 0.7) return "high"; // 警戒
@@ -73,22 +48,6 @@ function joinPredictionsWithResults(predictions, results) {
       };
     })
     .filter(Boolean);
-}
-
-function buildByLevel(joined, baseline) {
-  const byLevel = {};
-  for (const level of ["low", "medium", "high"]) {
-    const rows = joined.filter((r) => r.level === level);
-    if (rows.length === 0) continue;
-    const upsetCount = rows.filter((r) => r.upset).length;
-    const upsetRate = parseFloat(((upsetCount / rows.length) * 100).toFixed(1));
-    byLevel[level] = {
-      raceCount: rows.length,
-      upsetRate,
-      lift: parseFloat((upsetRate - baseline.upsetRate).toFixed(1)),
-    };
-  }
-  return byLevel;
 }
 
 // 会場別: 「イン崩れ注意（高）」ラベル時の実際のイン崩れ率 vs 会場全体の平均
@@ -124,7 +83,7 @@ function buildVolatilitySummary(joined) {
     raceCount: joined.length,
     upsetRate: parseFloat(((totalUpset / joined.length) * 100).toFixed(1)),
   };
-  const byLevel = buildByLevel(joined, baseline);
+  const byLevel = volatilityByLevel(joined, baseline);
   const byVenue = buildByVenue(joined);
   return { baseline, byLevel, byVenue };
 }
