@@ -19,6 +19,13 @@ const only = (r, steps) =>
 
 /** オッズ（A3）・買い目オッズ（A4）の切り替え（SKIP_ODDS_ON_GHA）と、案1が無いままの停止の警告 */
 export async function checkScheduledOdds({ check, show }) {
+  await oddsByDefault({ check, show });
+  await oddsSkipped({ check, show });
+  await oddsWindows({ check, show });
+}
+
+/** 既定（変数が未設定・true 以外）は従来どおりオッズと買い目オッズを取る */
+async function oddsByDefault({ check, show }) {
   const due = [raceAt("O5", 5)];
   let r = await runScheduled({ races: due });
   check(
@@ -44,7 +51,12 @@ export async function checkScheduledOdds({ check, show }) {
       show(r.calls),
     );
   }
-  r = await runScheduled({ env: { SKIP_ODDS_ON_GHA: "true" }, races: due });
+}
+
+/** SKIP_ODDS_ON_GHA=true のときの肩代わりの判定と、案1の順序の警告 */
+async function oddsSkipped({ check, show }) {
+  const due = [raceAt("O5", 5)];
+  let r = await runScheduled({ env: { SKIP_ODDS_ON_GHA: "true" }, races: due });
   check(
     "scrape-scheduled.js: SKIP_ODDS_ON_GHA=true で対象があり Vercel が健全（gate が skip）なら、オッズも買い目オッズも取らず早く終わる",
     same(r.gateVars, ["SKIP_ODDS_ON_GHA"]) &&
@@ -92,7 +104,11 @@ export async function checkScheduledOdds({ check, show }) {
     same(r.gateVars, []) && only(r, ["results"]),
     show(r.calls),
   );
-  r = await runScheduled({ races: [raceAt("A45", 45)] });
+}
+
+/** 窓ごとの対象（買い目オッズだけ・結果だけ・どの窓にも無い） */
+async function oddsWindows({ check, show }) {
+  let r = await runScheduled({ races: [raceAt("A45", 45)] });
   check(
     "scrape-scheduled.js: 買い目オッズだけの対象（発走45分前）でも早く終わらず、買い目オッズを1回取る",
     only(r, ["predictionOdds"]) &&

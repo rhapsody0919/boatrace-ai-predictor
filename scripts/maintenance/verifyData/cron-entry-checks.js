@@ -64,6 +64,11 @@ export async function checkPreRaceEntries({ check, show }) {
       `${e.config?.maxDuration} / ${SCRAPE_JOBS[job].maxDurationSec}`,
     );
   }
+  await raceInfoEntry({ check, show });
+  await exhibitionEntry({ check, show });
+}
+
+async function raceInfoEntry({ check, show }) {
   const ri = await cronEntry("race-info");
   const opts = ri.made[0]?.args[0] ?? {};
   const collector = { onChanged: () => {} };
@@ -80,6 +85,9 @@ export async function checkPreRaceEntries({ check, show }) {
       slotMade.args[0]?.onChanged === collector.onChanged,
     show(brief(ri)),
   );
+}
+
+async function exhibitionEntry({ check, show }) {
   const ex = await cronEntry("exhibition");
   check(
     "api/cron/exhibition.js: createExhibitionCronHandler を引数なしで1回作り、default export にする",
