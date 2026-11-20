@@ -3,10 +3,17 @@
  * 競技を全く知らない海外ユーザーが、ルール理解から boatAI の予想の読み方まで到達できる構成
  */
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import { getSiteFooterLinks } from "../components/siteFooterLinks";
+import {
+  GuidePage,
+  GuideSection,
+  GuideHero,
+  GuideCta,
+  ExampleEntriesTable,
+  BetTypesTable,
+  TechniqueList,
+  DataPointModels,
+  RaceTabsList,
+} from "./GuideParts";
 import "./EnglishGuide.css";
 
 const TECHNIQUES = [
@@ -85,56 +92,6 @@ const EXAMPLE_RACE = {
   venue: "Suminoe",
   date: "September 6, 2026",
   raceNo: 11,
-  entries: [
-    {
-      boat: 1,
-      name: "徳増　　秀樹",
-      grade: "A1",
-      winRate: "6.16",
-      localWinRate: "6.59",
-      motor2Rate: "32.2%",
-    },
-    {
-      boat: 2,
-      name: "近江　　翔吾",
-      grade: "A2",
-      winRate: "6.49",
-      localWinRate: "6.24",
-      motor2Rate: "28.2%",
-    },
-    {
-      boat: 3,
-      name: "山本　　修一",
-      grade: "A2",
-      winRate: "5.68",
-      localWinRate: "6.62",
-      motor2Rate: "38.0%",
-    },
-    {
-      boat: 4,
-      name: "佐々木　翔斗",
-      grade: "A2",
-      winRate: "5.30",
-      localWinRate: "5.43",
-      motor2Rate: "33.7%",
-    },
-    {
-      boat: 5,
-      name: "白水　　勝也",
-      grade: "A1",
-      winRate: "6.38",
-      localWinRate: "6.50",
-      motor2Rate: "23.5%",
-    },
-    {
-      boat: 6,
-      name: "間庭　　菜摘",
-      grade: "B1",
-      winRate: "4.67",
-      localWinRate: "4.56",
-      motor2Rate: "27.8%",
-    },
-  ],
   pick: [1, 3, 4],
   payout: "¥1,010",
 };
@@ -192,26 +149,9 @@ const RACE_TABS = [
 const RACE_TABS_INTRO =
   "The race page is split into tabs, in this order. The first four compare all 6 boats at once; the later ones let you pick one boat and dig in.";
 
-function HeroSection() {
-  return (
-    <section className="eg-hero">
-      <h1>🚤 What is Kyotei?</h1>
-      <p className="eg-hero-lead">
-        Kyotei — Japanese boat racing — is one of Japan&apos;s four
-        government-sanctioned betting sports, running nearly every day at 24
-        venues across the country. Six hydroplane boats race three laps
-        around a 600m course, and you can bet on the outcome. This guide
-        takes you from zero knowledge to reading AI predictions like a
-        local.
-      </p>
-    </section>
-  );
-}
-
 function QuickFactsSection() {
   return (
-    <section className="eg-section">
-      <h2>⚡ Quick Facts</h2>
+    <GuideSection heading={<>⚡ Quick Facts</>}>
       <div className="eg-facts-grid">
         <div className="eg-fact">
           <strong>6 boats</strong>
@@ -238,7 +178,7 @@ function QuickFactsSection() {
           <span>Odds are set by the betting pool, like horse racing</span>
         </div>
       </div>
-    </section>
+    </GuideSection>
   );
 }
 
@@ -271,32 +211,20 @@ function LaneOneSection() {
 
 function TechniquesSection() {
   return (
-    <section className="eg-section">
-      <h2>🥇 The 6 Winning Techniques (Kimarite)</h2>
+    <GuideSection heading={<>🥇 The 6 Winning Techniques (Kimarite)</>}>
       <p>
         Every win is officially classified by <em>how</em> the boat won.
         Learning these six terms unlocks Japanese race commentary and Ryujin
         Radar&apos;s predictions.
       </p>
-      <div className="eg-technique-list">
-        {TECHNIQUES.map((t) => (
-          <div key={t.name} className="eg-technique">
-            <div className="eg-technique-name">
-              <strong>{t.name}</strong>{" "}
-              <span className="eg-kanji">{t.kanji}</span> — {t.en}
-            </div>
-            <p>{t.desc}</p>
-          </div>
-        ))}
-      </div>
-    </section>
+      <TechniqueList items={TECHNIQUES} />
+    </GuideSection>
   );
 }
 
 function RacerClassesSection() {
   return (
-    <section className="eg-section">
-      <h2>🏅 Racer Classes</h2>
+    <GuideSection heading={<>🏅 Racer Classes</>}>
       <p>
         All ~1,600 professional racers are ranked into four classes,
         reviewed twice a year. Class is a strong predictor of performance:
@@ -320,50 +248,27 @@ function RacerClassesSection() {
         Women race alongside men in the same races — Kyotei is one of the
         few sports where both compete directly.
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
 function BetTypesSection() {
   return (
-    <section className="eg-section">
-      <h2>🎫 Betting Types</h2>
-      <div className="eg-table-wrapper">
-        <table className="eg-table">
-          <thead>
-            <tr>
-              <th>Bet type</th>
-              <th>What you pick</th>
-              <th>Difficulty</th>
-            </tr>
-          </thead>
-          <tbody>
-            {BET_TYPES.map((b) => (
-              <tr key={b.name}>
-                <td>
-                  <strong>{b.name}</strong>
-                </td>
-                <td>{b.pick}</td>
-                <td>{b.difficulty}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <GuideSection heading={<>🎫 Betting Types</>}>
+      <BetTypesTable head={<><th>Bet type</th><th>What you pick</th><th>Difficulty</th></>} items={BET_TYPES} />
       {/* i18n-allow: 券種の日本語名を併記する（マークシート・発売所で見る表記） */}
       <p className="eg-note">
         The Trifecta (3連単) is by far the most popular bet — average
         payouts are around ¥7,000 per ¥100 stake, with big upsets paying
         over ¥100,000.
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
-function ReadingPredictionSection({ t }) {
+function ReadingPredictionSection() {
   return (
-    <section className="eg-section">
-      <h2>🤖 How to Read Ryujin Radar&apos;s Predictions</h2>
+    <GuideSection heading={<>🤖 How to Read Ryujin Radar&apos;s Predictions</>}>
       <p>
         Ryujin Radar analyzes the data behind every race — racer stats, motor
         performance, venue bias, start timing and more — and shows you{" "}
@@ -379,15 +284,7 @@ function ReadingPredictionSection({ t }) {
           <strong>View the objective Data Table</strong> for all 6 boats.
           Ryujin Radar doesn&apos;t make you choose a prediction model —
           everyone sees the same data and builds their own read:
-          <div className="eg-models">
-            {DATA_POINTS.map((d) => (
-              <div key={d.name} className="eg-model">
-                <span className="eg-model-icon">{d.icon}</span>
-                <strong>{d.name}</strong>
-                <p>{d.desc}</p>
-              </div>
-            ))}
-          </div>
+          <DataPointModels points={DATA_POINTS} />
         </li>
         <li>
           <strong>Open the AI Prediction tab</strong> — the First Mark
@@ -397,56 +294,21 @@ function ReadingPredictionSection({ t }) {
           race is over, whether the forecast hit.
         </li>
       </ol>
-      <p>{RACE_TABS_INTRO}</p>
-      <ul className="eg-list eg-race-tabs">
-        {RACE_TABS.map((tab) => (
-          <li key={tab.key}>
-            <strong>{t(`raceTabs.${tab.key}`)}</strong>: {tab.desc}
-          </li>
-        ))}
-      </ul>
-    </section>
+      <RaceTabsList intro={RACE_TABS_INTRO} tabs={RACE_TABS} />
+    </GuideSection>
   );
 }
 
 function ExampleRaceSection() {
   return (
-    <section className="eg-section">
-      <h2>📋 A Real Example: Reading the Data &amp; Marking a Slip</h2>
+    <GuideSection heading={<>📋 A Real Example: Reading the Data &amp; Marking a Slip</>}>
       <p>
         Most beginner guides use made-up numbers. Here&apos;s an actual race
         — Boat Race {EXAMPLE_RACE.venue}, {EXAMPLE_RACE.date}, Race{" "}
         {EXAMPLE_RACE.raceNo} — with the real entry data, the real bet, and
         the real payout.
       </p>
-      <div className="eg-table-wrapper">
-        <table className="eg-table">
-          <thead>
-            <tr>
-              <th>Boat</th>
-              <th>Racer</th>
-              <th>Class</th>
-              <th>Win rate</th>
-              <th>Local win rate</th>
-              <th>Motor 2-rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            {EXAMPLE_RACE.entries.map((e) => (
-              <tr key={e.boat}>
-                <td>
-                  <strong>{e.boat}</strong>
-                </td>
-                <td translate="no">{e.name}</td>
-                <td>{e.grade}</td>
-                <td>{e.winRate}</td>
-                <td>{e.localWinRate}</td>
-                <td>{e.motor2Rate}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ExampleEntriesTable head={<><th>Boat</th><th>Racer</th><th>Class</th><th>Win rate</th><th>Local win rate</th><th>Motor 2-rate</th></>} />
       <p>
         <strong>Reading it:</strong> Boat 1 is A1 class with this
         venue&apos;s best local win rate (6.59) — the textbook favorite to
@@ -472,14 +334,13 @@ function ExampleRaceSection() {
           → See Ryujin Radar&apos;s full data breakdown for this race
         </Link>
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
 function VenueGuideSection() {
   return (
-    <section className="eg-section">
-      <h2>🏟️ Visit a Venue in Person</h2>
+    <GuideSection heading={<>🏟️ Visit a Venue in Person</>}>
       <p>
         Watching Kyotei live is cheap (¥100 entrance) and unforgettable. We
         have English visitor guides for the venues easiest to reach as a
@@ -489,7 +350,7 @@ function VenueGuideSection() {
       <p>
         <Link to="/en/venues">→ Browse the venue guides</Link>
       </p>
-    </section>
+    </GuideSection>
   );
 }
 
@@ -520,68 +381,33 @@ function DisclaimerSection() {
   );
 }
 
-function CtaSection() {
-  return (
-    <section className="eg-cta">
-      <h2>Ready to see the AI in action?</h2>
-      <Link to="/en/" className="eg-cta-button">
-        🏁 View Today&apos;s Free Predictions
-      </Link>
-    </section>
-  );
-}
-
 export default function EnglishGuide() {
-  const { t } = useTranslation();
-
   return (
-    <div className="app">
-      <title>
-        What is Kyotei? Rules, Betting & Free AI Guide | Ryujin Radar
-      </title>
-      <meta
-        name="description"
-        content="A complete beginner's guide to Kyotei (Japanese boat racing): rules, winning techniques, betting types, and how to read Ryujin Radar's free AI predictions."
-      />
-      <link rel="canonical" href="https://www.boat-ai.jp/en/guide" />
-
-      <Header />
-
-      <div className="eg-container">
-        {/* Hero */}
-        <HeroSection />
-
-        {/* Quick facts */}
-        <QuickFactsSection />
-
-        {/* The key concept */}
-        <LaneOneSection />
-
-        {/* Winning techniques */}
-        <TechniquesSection />
-
-        {/* Racer classes */}
-        <RacerClassesSection />
-
-        {/* Betting types */}
-        <BetTypesSection />
-
-        {/* How to read boatAI */}
-        <ReadingPredictionSection t={t} />
-
-        {/* Real example (BOA-250): actual past race data, not a fictional walkthrough */}
-        <ExampleRaceSection />
-
-        {/* Venue guides */}
-        <VenueGuideSection />
-
-        {/* Legal disclaimer */}
-        <DisclaimerSection />
-
-        {/* CTA */}
-        <CtaSection />
-      </div>
-      <Footer links={getSiteFooterLinks(t)} />
-    </div>
+    <GuidePage
+      title="What is Kyotei? Rules, Betting & Free AI Guide | Ryujin Radar"
+      description="A complete beginner's guide to Kyotei (Japanese boat racing): rules, winning techniques, betting types, and how to read Ryujin Radar's free AI predictions."
+      canonical="https://www.boat-ai.jp/en/guide"
+    >
+      <GuideHero heading={<>🚤 What is Kyotei?</>}>
+        Kyotei — Japanese boat racing — is one of Japan&apos;s four
+        government-sanctioned betting sports, running nearly every day at 24
+        venues across the country. Six hydroplane boats race three laps
+        around a 600m course, and you can bet on the outcome. This guide
+        takes you from zero knowledge to reading AI predictions like a
+        local.
+      </GuideHero>
+      <QuickFactsSection />
+      <LaneOneSection />
+      <TechniquesSection />
+      <RacerClassesSection />
+      <BetTypesSection />
+      <ReadingPredictionSection />
+      <ExampleRaceSection />
+      <VenueGuideSection />
+      <DisclaimerSection />
+      <GuideCta to="/en/" heading={<>Ready to see the AI in action?</>}>
+        🏁 View Today&apos;s Free Predictions
+      </GuideCta>
+    </GuidePage>
   );
 }
