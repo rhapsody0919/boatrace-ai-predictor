@@ -25,6 +25,216 @@ const valueOf = (row, column) => {
   return v === undefined ? null : v;
 };
 
+/** PostgREST の .or("col.is.null,col.lt.X")。条件は is.null・lt・gt・eq・neq のみ（値は文字列の比較）。条件のどれかに合えば真 */
+const orFilter = (expr) => {
+  const conds = String(expr)
+    .split(",")
+    .map((part) => {
+      const [c, op, ...rest] = part.split(".");
+      const v = rest.join(".");
+      return (r) => {
+        const x = valueOf(r, c);
+        if (op === "is" && v === "null") return x === null || x === undefined;
+        if (op === "lt") return x !== null && x !== undefined && x < v;
+        if (op === "gt") return x !== null && x !== undefined && x > v;
+        if (op === "eq") return String(x) === v;
+        if (op === "neq") return String(x) !== v;
+        throw new Error(`fake: or(${part}) は未対応`);
+      };
+    });
+  return (r) => conds.some((f) => f(r));
+};
+
+/** 問い合わせの状態 q（操作・条件・並び・範囲・返り値の指定）の初期値 */
+const newQuery = () => ({
+  op: "select",
+  filters: [],
+  orders: [],
+  range: null,
+  limitN: null,
+  single: false,
+  returning: false,
+  countOpt: null,
+  payload: null,
+  opts: null,
+});
+
+/** select と絞り込みのメソッド（b は組み立て中のビルダー。呼び出しごとに b を返して連鎖させる） */
+const filterMethods = (q, b) => ({
+  select(_columns, opts) {
+    if (q.op !== "select") q.returning = true;
+    else if (opts?.count) q.countOpt = { head: !!opts.head };
+    return b;
+  },
+  eq(c, v) {
+    q.filters.push((r) => valueOf(r, c) === v);
+    return b;
+  },
+  neq(c, v) {
+    q.filters.push((r) => valueOf(r, c) !== v);
+    return b;
+  },
+  in(c, vs) {
+    q.filters.push((r) => vs.includes(valueOf(r, c)));
+    return b;
+  },
+  like(c, p) {
+    const re = likeRe(p);
+    q.filters.push((r) => re.test(String(valueOf(r, c))));
+    return b;
+  },
+  gte(c, v) {
+    q.filters.push((r) => valueOf(r, c) >= v);
+    return b;
+  },
+  lt(c, v) {
+    q.filters.push((r) => valueOf(r, c) < v);
+    return b;
+  },
+  is(c, v) {
+    if (v !== null) throw new Error(`fake: is(${c}, ${v}) は未対応`);
+    q.filters.push(
+      (r) => valueOf(r, c) === null || valueOf(r, c) === undefined,
+    );
+    return b;
+  },
+  not(c, op, v) {
+    if (op === "is" && v === null) q.filters.push((r) => valueOf(r, c) != null);
+    else throw new Error(`fake: not(${c}, ${op}) は未対応`);
+    return b;
+  },
+  // PostgREST の .or("col.is.null,col.lt.X")。条件は is.null・lt・gt・eq・neq のみ（値は文字列の比較）
+  or(expr) {
+    q.filters.push(orFilter(expr));
+    return b;
+  },
+});
+
+/** 並び・範囲・件数・単一行のメソッド */
+const shapeMethods = (q, b) => ({
+  order(c, { ascending = true } = {}) {
+    q.orders.push([c, ascending]);
+    return b;
+  },
+  range(a, z) {
+    q.range = [a, z];
+    return b;
+  },
+  limit(n) {
+    q.limitN = n;
+    return b;
+  },
+  maybeSingle() {
+    q.single = true;
+    return b;
+  },
+});
+
+/** insert・upsert・update・delete のメソッド（操作と載せ荷を q に書く） */
+const writeMethods = (q, b) => ({
+  insert(rows) {
+    q.op = "insert";
+    q.payload = Array.isArray(rows) ? rows : [rows];
+    return b;
+  },
+  upsert(rows, opts) {
+    q.op = "upsert";
+    q.payload = Array.isArray(rows) ? rows : [rows];
+    q.opts = opts ?? {};
+    return b;
+  },
+  update(patch) {
+    q.op = "update";
+    q.payload = patch;
+    return b;
+  },
+  delete() {
+    q.op = "delete";
+    return b;
+  },
+});
+
+/** ビルダー（await すると exec の結果を返す thenable）。メソッドの鍵の順は select→絞り込み→並び→書き込み→then */
+const makeBuilder = (q, exec) => {
+  const b = {};
+  Object.assign(
+    b,
+    filterMethods(q, b),
+    shapeMethods(q, b),
+    writeMethods(q, b),
+    {
+      then(resolve, reject) {
+        return Promise.resolve(exec()).then(resolve, reject);
+      },
+    },
+  );
+  return b;
+};
+
+/** select の結果（count 指定・並び・範囲・limit・maybeSingle） */
+const selectResult = (q, matchedRows) => {
+  let found = matchedRows;
+  if (q.countOpt)
+    return {
+      data: q.countOpt.head ? null : found.map(clone),
+      count: found.length,
+      error: null,
+    };
+  for (const [c, asc] of [...q.orders].reverse()) {
+    found = [...found].sort(
+      (x, y) => (x[c] < y[c] ? -1 : x[c] > y[c] ? 1 : 0) * (asc ? 1 : -1),
+    );
+  }
+  if (q.range) found = found.slice(q.range[0], q.range[1] + 1);
+  if (q.limitN !== null) found = found.slice(0, q.limitN);
+  const copies = found.map(clone);
+  return { data: q.single ? (copies[0] ?? null) : copies, error: null };
+};
+
+/** insert: 行を足し、writes に記録する */
+const insertResult = (q, table, rows, writes) => {
+  for (const r of q.payload) rows.push(clone(r));
+  writes.push({ table, op: "insert", count: q.payload.length });
+  return { data: q.returning ? q.payload.map(clone) : null, error: null };
+};
+
+/** upsert: onConflict の鍵で既存の行を更新（ignoreDuplicates なら触らない）か足し、writes に記録する */
+const upsertResult = (q, table, rows, writes) => {
+  const keys = String(q.opts.onConflict ?? "")
+    .split(",")
+    .filter(Boolean);
+  const touched = [];
+  for (const r of q.payload) {
+    const existing = rows.find((e) => keys.every((k) => e[k] === r[k]));
+    if (existing) {
+      if (!q.opts.ignoreDuplicates) {
+        Object.assign(existing, clone(r));
+        touched.push(existing);
+      }
+    } else {
+      const created = clone(r);
+      rows.push(created);
+      touched.push(created);
+    }
+  }
+  writes.push({ table, op: "upsert", count: q.payload.length });
+  return { data: q.returning ? touched.map(clone) : null, error: null };
+};
+
+/** delete: 合った行を除き（data[table] を作り直す）、writes に記録する */
+const deleteResult = (q, table, rows, hit, data, writes) => {
+  data[table] = rows.filter((r) => !hit.includes(r));
+  writes.push({ table, op: "delete", count: hit.length });
+  return { data: q.returning ? hit.map(clone) : null, error: null };
+};
+
+/** update: 合った行へ patch を重ね、writes に記録する */
+const updateResult = (q, table, hit, writes) => {
+  for (const r of hit) Object.assign(r, clone(q.payload));
+  writes.push({ table, op: "update", count: hit.length });
+  return { data: q.returning ? hit.map(clone) : null, error: null };
+};
+
 export function createFakeSupabaseClient({
   tables = {},
   failOn = {},
@@ -38,122 +248,7 @@ export function createFakeSupabaseClient({
   const calls = [];
 
   function from(table) {
-    const q = {
-      op: "select",
-      filters: [],
-      orders: [],
-      range: null,
-      limitN: null,
-      single: false,
-      returning: false,
-      countOpt: null,
-      payload: null,
-      opts: null,
-    };
-    const b = {
-      select(_columns, opts) {
-        if (q.op !== "select") q.returning = true;
-        else if (opts?.count) q.countOpt = { head: !!opts.head };
-        return b;
-      },
-      eq(c, v) {
-        q.filters.push((r) => valueOf(r, c) === v);
-        return b;
-      },
-      neq(c, v) {
-        q.filters.push((r) => valueOf(r, c) !== v);
-        return b;
-      },
-      in(c, vs) {
-        q.filters.push((r) => vs.includes(valueOf(r, c)));
-        return b;
-      },
-      like(c, p) {
-        const re = likeRe(p);
-        q.filters.push((r) => re.test(String(valueOf(r, c))));
-        return b;
-      },
-      gte(c, v) {
-        q.filters.push((r) => valueOf(r, c) >= v);
-        return b;
-      },
-      lt(c, v) {
-        q.filters.push((r) => valueOf(r, c) < v);
-        return b;
-      },
-      is(c, v) {
-        if (v !== null) throw new Error(`fake: is(${c}, ${v}) は未対応`);
-        q.filters.push(
-          (r) => valueOf(r, c) === null || valueOf(r, c) === undefined,
-        );
-        return b;
-      },
-      not(c, op, v) {
-        if (op === "is" && v === null)
-          q.filters.push((r) => valueOf(r, c) != null);
-        else throw new Error(`fake: not(${c}, ${op}) は未対応`);
-        return b;
-      },
-      // PostgREST の .or("col.is.null,col.lt.X")。条件は is.null・lt・gt・eq・neq のみ（値は文字列の比較）
-      or(expr) {
-        const conds = String(expr)
-          .split(",")
-          .map((part) => {
-            const [c, op, ...rest] = part.split(".");
-            const v = rest.join(".");
-            return (r) => {
-              const x = valueOf(r, c);
-              if (op === "is" && v === "null") return x === null || x === undefined;
-              if (op === "lt") return x !== null && x !== undefined && x < v;
-              if (op === "gt") return x !== null && x !== undefined && x > v;
-              if (op === "eq") return String(x) === v;
-              if (op === "neq") return String(x) !== v;
-              throw new Error(`fake: or(${part}) は未対応`);
-            };
-          });
-        q.filters.push((r) => conds.some((f) => f(r)));
-        return b;
-      },
-      order(c, { ascending = true } = {}) {
-        q.orders.push([c, ascending]);
-        return b;
-      },
-      range(a, z) {
-        q.range = [a, z];
-        return b;
-      },
-      limit(n) {
-        q.limitN = n;
-        return b;
-      },
-      maybeSingle() {
-        q.single = true;
-        return b;
-      },
-      insert(rows) {
-        q.op = "insert";
-        q.payload = Array.isArray(rows) ? rows : [rows];
-        return b;
-      },
-      upsert(rows, opts) {
-        q.op = "upsert";
-        q.payload = Array.isArray(rows) ? rows : [rows];
-        q.opts = opts ?? {};
-        return b;
-      },
-      update(patch) {
-        q.op = "update";
-        q.payload = patch;
-        return b;
-      },
-      delete() {
-        q.op = "delete";
-        return b;
-      },
-      then(resolve, reject) {
-        return Promise.resolve(exec()).then(resolve, reject);
-      },
-    };
+    const q = newQuery();
     function exec() {
       calls.push({ table, op: q.op });
       const failure = failOn[`${table}:${q.op}`];
@@ -161,63 +256,15 @@ export function createFakeSupabaseClient({
       if (message) return { data: null, error: { message } };
       const rows = (data[table] ??= []);
       const matched = () => rows.filter((r) => q.filters.every((f) => f(r)));
-      if (q.op === "select") {
-        let found = matched();
-        if (q.countOpt)
-          return {
-            data: q.countOpt.head ? null : found.map(clone),
-            count: found.length,
-            error: null,
-          };
-        for (const [c, asc] of [...q.orders].reverse()) {
-          found = [...found].sort(
-            (x, y) => (x[c] < y[c] ? -1 : x[c] > y[c] ? 1 : 0) * (asc ? 1 : -1),
-          );
-        }
-        if (q.range) found = found.slice(q.range[0], q.range[1] + 1);
-        if (q.limitN !== null) found = found.slice(0, q.limitN);
-        const copies = found.map(clone);
-        return { data: q.single ? (copies[0] ?? null) : copies, error: null };
-      }
-      if (q.op === "insert") {
-        for (const r of q.payload) rows.push(clone(r));
-        writes.push({ table, op: "insert", count: q.payload.length });
-        return { data: q.returning ? q.payload.map(clone) : null, error: null };
-      }
-      if (q.op === "upsert") {
-        const keys = String(q.opts.onConflict ?? "")
-          .split(",")
-          .filter(Boolean);
-        const touched = [];
-        for (const r of q.payload) {
-          const existing = rows.find((e) => keys.every((k) => e[k] === r[k]));
-          if (existing) {
-            if (!q.opts.ignoreDuplicates) {
-              Object.assign(existing, clone(r));
-              touched.push(existing);
-            }
-          } else {
-            const created = clone(r);
-            rows.push(created);
-            touched.push(created);
-          }
-        }
-        writes.push({ table, op: "upsert", count: q.payload.length });
-        return { data: q.returning ? touched.map(clone) : null, error: null };
-      }
-      if (q.op === "delete") {
-        const hit = matched();
-        data[table] = rows.filter((r) => !hit.includes(r));
-        writes.push({ table, op: "delete", count: hit.length });
-        return { data: q.returning ? hit.map(clone) : null, error: null };
-      }
+      if (q.op === "select") return selectResult(q, matched());
+      if (q.op === "insert") return insertResult(q, table, rows, writes);
+      if (q.op === "upsert") return upsertResult(q, table, rows, writes);
+      if (q.op === "delete")
+        return deleteResult(q, table, rows, matched(), data, writes);
       // update
-      const hit = matched();
-      for (const r of hit) Object.assign(r, clone(q.payload));
-      writes.push({ table, op: "update", count: hit.length });
-      return { data: q.returning ? hit.map(clone) : null, error: null };
+      return updateResult(q, table, matched(), writes);
     }
-    return b;
+    return makeBuilder(q, exec);
   }
 
   /** rpcs に渡した関数（名前 → (args) => 返り値）を呼ぶ。無い関数はエラーを返す */
