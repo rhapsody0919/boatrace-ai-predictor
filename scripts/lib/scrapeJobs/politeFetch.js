@@ -32,27 +32,24 @@
 import { HOST_JOB_PREFIX, SCRAPE_JOBS } from "./registry.js";
 import { BreakerOpenError } from "./circuitBreaker.js";
 import { createSemaphore } from "./concurrency.js";
+import {
+  BLOCKED_STATUSES,
+  FetchError,
+  backoffMs,
+  decideHostByCanary,
+  describeBlockedResponse,
+  fetchOnce,
+  parseRetryAfterMs,
+  probeHostWithCanary,
+} from "./politeFetchParts.js";
+
+// FetchError・403 の応答の説明・Retry-After の解釈は politeFetchParts.js へ移した（ここから従来どおり import できる）
+export { FetchError, describeBlockedResponse, parseRetryAfterMs };
+
+const RETRYABLE_STATUSES = new Set([429, 503]);
 
 export const DEFAULT_USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
-
-const RETRYABLE_STATUSES = new Set([429, 503]);
-// 取得先の拒否。待っても数分では戻らない見込みが高いため、再試行せず、そのパスのブレーカーを開く（BOA-1145）
-const BLOCKED_STATUSES = new Set([403]);
-// 本文を持てないステータス（new Response(body, {status}) が例外になる）
-const NULL_BODY_STATUSES = new Set([101, 204, 205, 304]);
-
-export class FetchError extends Error {
-  constructor(url, attempts, cause) {
-    super(
-      `取得に失敗しました（${attempts}回試行）: ${url} — ${cause?.message ?? cause}`,
-    );
-    this.name = "FetchError";
-    this.url = url;
-    this.attempts = attempts;
-    this.cause = cause;
-  }
-}
 
 /** ブレーカーのキー（scrape_job_state.job）。www・www1 等は同じホストとして扱う */
 export function hostKeyOf(url) {
@@ -81,54 +78,186 @@ export const DEFAULT_CANARY_URLS = Object.freeze({
     "https://www.boatrace.jp/owpc/pc/race/index",
 });
 
-const fromCode = (n) => (n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "");
-const decodeEntities = (text) =>
-  text
-    .replace(/&#(\d{1,7});/g, (_, n) => fromCode(Number(n)))
-    .replace(/&#x([0-9a-f]{1,6});/gi, (_, n) => fromCode(Number.parseInt(n, 16)))
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
+/** createPoliteFetch の引数の既定値（3つに分けて、1つの関数の複雑さを抑える） */
+const httpConfig = ({
+  fetchImpl = globalThis.fetch,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  random = Math.random,
+  now = () => Date.now(),
+  timeoutMs = 15000,
+  userAgent = DEFAULT_USER_AGENT,
+} = {}) => ({ fetchImpl, sleep, random, now, timeoutMs, userAgent });
+
+const retryConfig = ({
+  maxRetries = 2,
+  baseDelayMs = 1000,
+  maxDelayMs = 10000,
+  jitterMs = 500,
+  maxConcurrent = 20,
+} = {}) => ({ maxRetries, baseDelayMs, maxDelayMs, jitterMs, maxConcurrent });
+
+const policyConfig = ({
+  breaker,
+  blockPathKeys = DEFAULT_BLOCK_PATH_KEYS,
+  canaryUrls = DEFAULT_CANARY_URLS,
+  // false: 429/503 をブレーカーの連続の失敗に数えない（段階を上げない）。利用者の要求（/api/odds/live）用。
+  // Retry-After が10秒を超えるときにその時間開くのは同じ（#1983 の審査 P2 の決定）
+  countOverload = true,
+  // 取得の数を数える（fetchCounter.js。1回の fetch＝再試行・カナリアも1件。BOA-1145 P3）。無ければ数えない
+  counter = null,
+} = {}) => ({ breaker, blockPathKeys, canaryUrls, countOverload, counter });
+
+/** ホスト・パスの試行の印を外す（取得しなかった・結果が出なかったとき） */
+const abortProbes = (breaker, hostKey, pathKey, guarded) => {
+  breaker?.abortProbe(hostKey);
+  if (guarded) breaker?.abortProbe(pathKey);
+};
 
 /**
- * 403 の応答を、ブレーカーの記録（last_error、500字まで）に残す1行にする（spec §5.1）。
- * Server・server-timing・Akamai の参照番号（本文の「Reference #18.xxxx」。数値文字参照で書かれることがある）・本文の先頭200字
- * （タグを除き空白を詰めたもの）。本文を読めなくても（読み済み等）ヘッダだけで返す
- * @param {Response} response
- * @returns {Promise<string>}
+ * 取得の段（politeFetch の1回の中身）は、await の位置と段数を保ったまま小さな関数に分けるため、generator にして
+ * yield で値を渡し、この run が await で受ける（yield 1つ＝元の await 1つ。async の関数を await で呼ぶと段が増え、
+ * 並行の取得でブレーカーの状態を見る順が変わりうる）。yield* の委譲は段を増やさない。
  */
-export async function describeBlockedResponse(response) {
-  let body = "";
-  try {
-    body = await response.clone().text();
-  } catch {
-    body = "";
+const run = async (gen) => {
+  let step = gen.next();
+  while (!step.done) {
+    let value;
+    let failure = null;
+    try {
+      value = await step.value;
+    } catch (error) {
+      failure = { error };
+    }
+    step = failure ? gen.throw(failure.error) : gen.next(value);
   }
-  const text = decodeEntities(body.replace(/<[^>]*>/g, " "))
-    .replace(/\s+/g, " ")
-    .trim();
-  const ref = /Reference\s*#\s*([0-9a-f]+(?:\.[0-9a-f]+)+)/i.exec(text)?.[1];
-  const parts = [`HTTP ${response.status}`];
-  const server = response.headers.get("server");
-  if (server) parts.push(`server: ${server.slice(0, 40)}`);
-  const timing = response.headers.get("server-timing");
-  if (timing) parts.push(`server-timing: ${timing.slice(0, 120)}`);
-  if (ref) parts.push(`ref: ${ref}`);
-  if (text) parts.push(`body: ${text.slice(0, 200)}`);
-  return parts.join(" | ");
+  return step.value;
+};
+
+/** 応答の処理で「もう一度取る」を表す印 */
+const RETRY = Symbol("retry");
+
+/**
+ * ブレーカーの確認: 先に予約なしで両方を見る（パスが開いているのにホストの半開の試行を DB で予約して、全体の試行を止めないため）。
+ * パスの確認が失敗したら、ホストの半開の試行を予約していたら戻す（取得しないため）。ホストの半開の試行は、要求された
+ * ページではなくカナリアのページで行う（閉じたら要求されたページを取る）
+ */
+function* checkBreakers(env, { hostKey, pathKey, guarded }) {
+  const { breaker, canaryUrls } = env;
+  yield breaker.check(hostKey, { reserve: false });
+  if (guarded) yield breaker.check(pathKey, { reserve: false });
+  const hostCheck = yield breaker.check(hostKey);
+  if (guarded) {
+    try {
+      yield breaker.check(pathKey);
+    } catch (error) {
+      breaker.abortProbe(hostKey);
+      throw error;
+    }
+  }
+  const canaryUrl = canaryUrls[hostKey];
+  if (hostCheck?.probe && canaryUrl) {
+    try {
+      yield probeHostWithCanary(env, hostKey, canaryUrl);
+    } catch (error) {
+      if (guarded) breaker.abortProbe(pathKey);
+      throw error;
+    }
+  }
 }
 
-const isPassStatus = (status) => status >= 200 && status < 400;
-
-/** Retry-After（秒、またはHTTP日付）をミリ秒に。解釈できなければ null */
-export function parseRetryAfterMs(value, nowMs = Date.now()) {
-  if (value === null || value === undefined || value === "") return null;
-  const text = String(value).trim();
-  if (/^\d+(\.\d+)?$/.test(text)) return Math.max(0, Number(text) * 1000);
-  const at = Date.parse(text);
-  return Number.isNaN(at) ? null : Math.max(0, at - nowMs);
+/**
+ * 登録したパスの 403: 再試行せず、パスのブレーカーを開いて BreakerOpenError を投げる（ブレーカーが無ければ応答を返す）。
+ * 同じプロセスで既に開いていた（並行の要求の 403 が後から届いた）ならカナリアを取らない。ホストは応答した
+ * （過負荷ではない）ので、ホストの数え方は従来どおり成功の側
+ */
+function* onGuardedBlocked(env, response, { hostKey, pathKey }) {
+  const { breaker, now } = env;
+  if (!breaker) return response;
+  const reason = yield describeBlockedResponse(response);
+  const wasOpen = breaker.snapshot(pathKey).openUntil > now();
+  yield breaker.recordSuccess(hostKey);
+  yield breaker.recordBlocked(pathKey, reason);
+  if (!wasOpen) {
+    console.warn(`⚠️ ${pathKey}: 拒否された（${reason}）`);
+    yield decideHostByCanary(env, hostKey);
+  }
+  throw new BreakerOpenError(pathKey, breaker.snapshot(pathKey).openUntil);
 }
+
+/**
+ * 429/503。Retry-After が再試行の上限（10秒）を超える: 再試行せず、ホストをその時間（上限60分）開く
+ * （spec §5.1、BOA-1145 P4a ④b）。それ以外は連続の失敗に数え、再試行の回数が残っていれば待って RETRY を返す
+ */
+function* onRetryable(env, response, { hostKey, pathKey, guarded }, attempt) {
+  const { breaker, now, maxDelayMs, maxRetries, sleep } = env;
+  if (guarded) breaker?.abortProbe(pathKey);
+  const retryAfterMs = parseRetryAfterMs(
+    response.headers.get("retry-after"),
+    now(),
+  );
+  if (retryAfterMs !== null && retryAfterMs > maxDelayMs) {
+    yield breaker?.recordRetryAfter(
+      hostKey,
+      retryAfterMs,
+      `HTTP ${response.status} Retry-After ${Math.round(retryAfterMs / 1000)}s`,
+    );
+    return response;
+  }
+  if (env.countOverload)
+    yield breaker?.recordFailure(hostKey, `HTTP ${response.status}`);
+  else breaker?.abortProbe(hostKey);
+  if (attempt < maxRetries) {
+    yield sleep(backoffMs(env, attempt, retryAfterMs));
+    return RETRY;
+  }
+  return response;
+}
+
+/** 応答ごとの記録。返す応答か、もう一度取る印（RETRY）。登録したパスのブレーカーは、2xx・3xx でだけ閉じる（半開の試行が 404・500・保守のページでも閉じない） */
+function* onResponse(env, response, keys, attempt) {
+  const { breaker } = env;
+  if (keys.guarded && BLOCKED_STATUSES.has(response.status)) {
+    return yield* onGuardedBlocked(env, response, keys);
+  }
+  if (env.retryableStatuses.has(response.status)) {
+    return yield* onRetryable(env, response, keys, attempt);
+  }
+  yield breaker?.recordSuccess(keys.hostKey);
+  if (keys.guarded) {
+    if (response.ok) yield breaker?.recordSuccess(keys.pathKey);
+    else breaker?.abortProbe(keys.pathKey);
+  }
+  return response;
+}
+
+/** 1回の politeFetch（セマフォの中で動く）。ループは必ず return か throw で終わる（maxRetries >= 0 のため） */
+function* politeFetchSteps(env, url, init) {
+  const { breaker, maxRetries, sleep } = env;
+  const hostKey = hostKeyOf(url);
+  const pathKey = pathKeyOf(url);
+  const keys = { hostKey, pathKey, guarded: env.blockPathKeys.has(pathKey) };
+  let lastError;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (breaker) yield* checkBreakers(env, keys);
+    let response;
+    try {
+      response = yield fetchOnce(env, url, init);
+    } catch (error) {
+      abortProbes(breaker, hostKey, pathKey, keys.guarded);
+      lastError = error;
+      if (attempt < maxRetries) {
+        yield sleep(backoffMs(env, attempt, null));
+        continue;
+      }
+      throw new FetchError(url, attempt + 1, error);
+    }
+    const out = yield* onResponse(env, response, keys, attempt);
+    if (out !== RETRY) return out;
+  }
+  throw new FetchError(url, maxRetries + 1, lastError);
+}
+
+const politeFetchLoop = (env, url, init) => run(politeFetchSteps(env, url, init));
 
 /**
  * @param {Object} [options]
@@ -138,208 +267,16 @@ export function parseRetryAfterMs(value, nowMs = Date.now()) {
  * @param {() => number} [options.random] 0以上1未満
  * @param {() => number} [options.now] epoch ms（Retry-After の日付形式の解釈用）
  */
-export function createPoliteFetch({
-  fetchImpl = globalThis.fetch,
-  breaker,
-  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-  random = Math.random,
-  now = () => Date.now(),
-  timeoutMs = 15000,
-  maxRetries = 2,
-  baseDelayMs = 1000,
-  maxDelayMs = 10000,
-  jitterMs = 500,
-  maxConcurrent = 20,
-  userAgent = DEFAULT_USER_AGENT,
-  blockPathKeys = DEFAULT_BLOCK_PATH_KEYS,
-  canaryUrls = DEFAULT_CANARY_URLS,
-  // false: 429/503 をブレーカーの連続の失敗に数えない（段階を上げない）。利用者の要求（/api/odds/live）用。
-  // Retry-After が10秒を超えるときにその時間開くのは同じ（#1983 の審査 P2 の決定）
-  countOverload = true,
-  // 取得の数を数える（fetchCounter.js。1回の fetch＝再試行・カナリアも1件。BOA-1145 P3）。無ければ数えない
-  counter = null,
-} = {}) {
-  const semaphore = createSemaphore(maxConcurrent);
-  // カナリアを取っている最中のホスト（同じプロセスで同時に 403 が重なっても1件にする）
-  const canaryRunning = new Set();
-
-  const backoffMs = (attempt, retryAfterMs) => {
-    const base = retryAfterMs ?? baseDelayMs * 2 ** attempt;
-    return Math.min(maxDelayMs, base) + Math.floor(random() * jitterMs);
+export function createPoliteFetch(options) {
+  const env = {
+    ...httpConfig(options),
+    ...retryConfig(options),
+    ...policyConfig(options),
+    // カナリアを取っている最中のホスト（同じプロセスで同時に 403 が重なっても1件にする）
+    canaryRunning: new Set(),
+    retryableStatuses: RETRYABLE_STATUSES,
   };
-
-  // 1回の fetch を数える（数える側の失敗は取得に響かせない）
-  const count = (entry) => {
-    try {
-      counter?.add(entry);
-    } catch {
-      // 数えるのは監視のため。取得は止めない
-    }
-  };
-  const fetchOnce = async (url, init) => {
-    try {
-      const response = await fetchOnceRaw(url, init);
-      count({ url, status: response.status });
-      return response;
-    } catch (error) {
-      // 呼び出し側の中断（ソフトデッドライン等）は数えない。自前の打ち切りは timeout として数える（審査 P2-3）
-      if (!init.signal?.aborted) {
-        count({ url, error, timedOut: error?.politeFetchTimedOut === true });
-      }
-      throw error;
-    }
-  };
-
-  // タイムアウトはヘッダーと本文の両方に効かせ、本文を読み込んだ Response を返す
-  const fetchOnceRaw = async (url, init) => {
-    const controller = new AbortController();
-    let timedOut = false;
-    const timer = setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-    }, timeoutMs);
-    // 呼び出し側の signal も尊重する（どちらかが中断すれば中断）
-    if (init.signal) {
-      if (init.signal.aborted) controller.abort();
-      else
-        init.signal.addEventListener("abort", () => controller.abort(), {
-          once: true,
-        });
-    }
-    try {
-      const headers = new Headers(init.headers ?? {});
-      if (!headers.has("user-agent")) headers.set("user-agent", userAgent);
-      const response = await fetchImpl(url, {
-        ...init,
-        headers,
-        signal: controller.signal,
-      });
-      const body = await response.arrayBuffer();
-      const out = new Response(
-        NULL_BODY_STATUSES.has(response.status) || body.byteLength === 0
-          ? null
-          : body,
-        {
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers,
-        },
-      );
-      Object.defineProperty(out, "url", { value: response.url ?? url });
-      return out;
-    } catch (error) {
-      if (timedOut && error && typeof error === "object") {
-        try {
-          error.politeFetchTimedOut = true;
-        } catch {
-          // 凍結された例外には印を付けられない（network として数える）
-        }
-      }
-      throw error;
-    } finally {
-      clearTimeout(timer);
-    }
-  };
-
-  /**
-   * カナリア（半開の試行・パスが開いた直後の確認）の 429/503。通常の取得と同じく、Retry-After が10秒を超えるならその時間
-   * （上限60分）開き、それ以外は連続の失敗に数える（#1983 の審査 P3・Codex の P1）
-   */
-  const recordCanaryOverload = async (hostKey, response) => {
-    const retryAfterMs = parseRetryAfterMs(
-      response.headers.get("retry-after"),
-      now(),
-    );
-    if (retryAfterMs !== null && retryAfterMs > maxDelayMs) {
-      await breaker.recordRetryAfter(
-        hostKey,
-        retryAfterMs,
-        `HTTP ${response.status} Retry-After ${Math.round(retryAfterMs / 1000)}s`,
-      );
-    } else {
-      await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
-    }
-  };
-
-  /**
-   * ホストの半開の試行を、カナリアのページで行う（check(hostKey) が試行を予約した後に呼ぶ）。
-   * 403 は段階を上げて開き直し、429/503 は開き直して例外を投げる。それ以外の応答（2xx・3xx・404・500・502・504）は閉じて戻る
-   * （spec §5.1 の「500・404 は成功の側」。閉じないと期限が過去のまま残り、全ての取得がカナリアに置き換わって詰まり、
-   * 期限で見る監視も知らせない。審査 P1-1）。接続の失敗は試行の印だけ外して例外を投げる
-   */
-  const probeHostWithCanary = async (hostKey, canaryUrl) => {
-    let response;
-    try {
-      response = await fetchOnce(canaryUrl, {});
-    } catch (error) {
-      breaker.abortProbe(hostKey);
-      throw new FetchError(canaryUrl, 1, error);
-    }
-    if (BLOCKED_STATUSES.has(response.status)) {
-      const reason = await describeBlockedResponse(response);
-      console.warn(`⚠️ ${hostKey}: 半開のカナリアが拒否された（${reason}）`);
-      await breaker.recordBlocked(hostKey, reason);
-    } else if (RETRYABLE_STATUSES.has(response.status)) {
-      await recordCanaryOverload(hostKey, response);
-    } else {
-      if (!isPassStatus(response.status)) {
-        console.warn(
-          `⚠️ ${hostKey}: 半開のカナリア（${canaryUrl}）が HTTP ${response.status}。拒否・過負荷ではないので閉じる`,
-        );
-      }
-      await breaker.recordSuccess(hostKey);
-      return;
-    }
-    throw new BreakerOpenError(
-      hostKey,
-      Math.max(breaker.snapshot(hostKey).openUntil, now() + 5000),
-    );
-  };
-
-  /**
-   * パスが 403 で開いた直後に、ホストへ広げるかをカナリアで決める（spec §5.1）。ホストが既に開いている・カナリアの取得に
-   * 失敗したときは何もしない（パスのブレーカーは開いたまま）
-   */
-  const decideHostByCanary = async (hostKey) => {
-    const canaryUrl = canaryUrls[hostKey];
-    if (!canaryUrl || canaryRunning.has(hostKey)) return;
-    canaryRunning.add(hostKey);
-    try {
-      let reserved;
-      try {
-        reserved = await breaker.check(hostKey);
-      } catch {
-        return; // ホストは既に開いている（非常停止を含む）
-      }
-      if (reserved?.probe) {
-        // ホストの半開の試行と重なった: その試行をカナリアで行う
-        await probeHostWithCanary(hostKey, canaryUrl).catch(() => {});
-        return;
-      }
-      let response;
-      try {
-        response = await fetchOnce(canaryUrl, {});
-      } catch (error) {
-        console.warn(
-          `⚠️ ${hostKey}: カナリア（${canaryUrl}）の取得に失敗。ホストは開かない: ${error?.message ?? error}`,
-        );
-        return;
-      }
-      if (BLOCKED_STATUSES.has(response.status)) {
-        const reason = await describeBlockedResponse(response);
-        console.warn(
-          `⚠️ ${hostKey}: カナリアも拒否された。ホスト全体を開く（${reason}）`,
-        );
-        await breaker.recordBlocked(hostKey, `canary ${reason}`);
-      } else if (RETRYABLE_STATUSES.has(response.status)) {
-        await recordCanaryOverload(hostKey, response);
-      } else {
-        await breaker.recordSuccess(hostKey);
-      }
-    } finally {
-      canaryRunning.delete(hostKey);
-    }
-  };
+  const semaphore = createSemaphore(env.maxConcurrent);
 
   /**
    * @param {string} url
@@ -347,102 +284,7 @@ export function createPoliteFetch({
    * @returns {Promise<Response>}
    */
   async function politeFetch(url, init = {}) {
-    return semaphore.run(async () => {
-      const hostKey = hostKeyOf(url);
-      const pathKey = pathKeyOf(url);
-      const guarded = blockPathKeys.has(pathKey);
-      let lastError;
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        if (breaker) {
-          // 先に予約なしで両方を見る（パスが開いているのにホストの半開の試行を DB で予約して、全体の試行を止めないため）
-          await breaker.check(hostKey, { reserve: false });
-          if (guarded) await breaker.check(pathKey, { reserve: false });
-          const hostCheck = await breaker.check(hostKey);
-          if (guarded) {
-            try {
-              await breaker.check(pathKey);
-            } catch (error) {
-              // ホストの半開の試行を予約していたら戻す（取得しないため）
-              breaker.abortProbe(hostKey);
-              throw error;
-            }
-          }
-          const canaryUrl = canaryUrls[hostKey];
-          if (hostCheck?.probe && canaryUrl) {
-            // ホストの半開の試行は、要求されたページではなくカナリアのページで行う（閉じたら要求されたページを取る）
-            try {
-              await probeHostWithCanary(hostKey, canaryUrl);
-            } catch (error) {
-              if (guarded) breaker.abortProbe(pathKey);
-              throw error;
-            }
-          }
-        }
-        let response;
-        try {
-          response = await fetchOnce(url, init);
-        } catch (error) {
-          breaker?.abortProbe(hostKey);
-          if (guarded) breaker?.abortProbe(pathKey);
-          lastError = error;
-          if (attempt < maxRetries) {
-            await sleep(backoffMs(attempt, null));
-            continue;
-          }
-          throw new FetchError(url, attempt + 1, error);
-        }
-        if (guarded && BLOCKED_STATUSES.has(response.status)) {
-          if (!breaker) return response;
-          const reason = await describeBlockedResponse(response);
-          // 同じプロセスで既に開いていた（並行の要求の 403 が後から届いた）ならカナリアを取らない
-          const wasOpen = breaker.snapshot(pathKey).openUntil > now();
-          // ホストは応答した（過負荷ではない）: ホストの数え方は従来どおり成功の側
-          await breaker.recordSuccess(hostKey);
-          await breaker.recordBlocked(pathKey, reason);
-          if (!wasOpen) {
-            console.warn(`⚠️ ${pathKey}: 拒否された（${reason}）`);
-            await decideHostByCanary(hostKey);
-          }
-          throw new BreakerOpenError(
-            pathKey,
-            breaker.snapshot(pathKey).openUntil,
-          );
-        }
-        if (RETRYABLE_STATUSES.has(response.status)) {
-          if (guarded) breaker?.abortProbe(pathKey);
-          const retryAfterMs = parseRetryAfterMs(
-            response.headers.get("retry-after"),
-            now(),
-          );
-          if (retryAfterMs !== null && retryAfterMs > maxDelayMs) {
-            // 待つ時間が再試行の上限（10秒）を超える: 再試行せず、ホストをその時間（上限60分）開く（spec §5.1、BOA-1145 P4a ④b）
-            await breaker?.recordRetryAfter(
-              hostKey,
-              retryAfterMs,
-              `HTTP ${response.status} Retry-After ${Math.round(retryAfterMs / 1000)}s`,
-            );
-            return response;
-          }
-          if (countOverload)
-            await breaker?.recordFailure(hostKey, `HTTP ${response.status}`);
-          else breaker?.abortProbe(hostKey);
-          if (attempt < maxRetries) {
-            await sleep(backoffMs(attempt, retryAfterMs));
-            continue;
-          }
-          return response;
-        }
-        await breaker?.recordSuccess(hostKey);
-        if (guarded) {
-          // 登録したパスのブレーカーは、2xx・3xx でだけ閉じる（半開の試行が 404・500・保守のページでも閉じない）
-          if (response.ok) await breaker?.recordSuccess(pathKey);
-          else breaker?.abortProbe(pathKey);
-        }
-        return response;
-      }
-      // ループは必ず return か throw で終わる（maxRetries >= 0 のため）
-      throw new FetchError(url, maxRetries + 1, lastError);
-    });
+    return semaphore.run(() => politeFetchLoop(env, url, init));
   }
 
   return politeFetch;
