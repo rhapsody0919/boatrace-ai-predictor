@@ -27,6 +27,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/favoriteRuns.js` | お気に入り選手の出走と、出走が無いときの会場表示（GS04-5）。 | venuesFromPredictions, venuesFromTodayRaces, buildFavoriteRuns, statLineOf, buildFavoritesFallback ほか4件 |
 | `src/pure/favorites.js` | キャッシュの全削除で消さない端末内のユーザー保存。 | parseFavorites, serializeFavorites, toggleRacer, toggleVenue, FAVORITES_KEY ほか1件 |
 | `src/pure/finishPosition.js` | レース内順位の判定（純関数）。 | finishPositionOf |
+| `src/pure/harville.js` | — | normalizeProbs, impliedProbsFromOdds, condSecond, condThird, exactaProb ほか6件 |
 | `src/pure/hitJudge.js` | 複勝的中判定（2着以内） | isPlaceHit, isShowHit |
 | `src/pure/jstDate.js` | — | getJSTNow, getDaysAgoJST |
 | `src/pure/localizePath.js` | 対応言語の唯一の情報源 | parseLangFromPath, localizePath, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE |
@@ -152,7 +153,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/ga4MeasurementBreaks.js` | GA4 の計測方法が変わった日（この日の前後で PV を比較してはいけない日）の一覧と、 | ga4PvBreaksWithin, formatGa4PvBreakNotice, GA4_PV_BREAKS |
 | `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, jobKeysFor, createRestJobStateClient, shouldSkipOnGha ほか9件 |
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
-| `scripts/lib/harville.js` | — | normalizeProbs, impliedProbsFromOdds, condSecond, condThird, exactaProb ほか6件 |
+| `scripts/lib/harville.js` | — | — |
 | `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | buildPredictionHitUpdate, calculateHits, isWinHit, isTrifectaHit, isTrioHit ほか3件 |
 | `scripts/lib/inCaution.js` | BOA-822 イン崩れ注意度: 朝の生成（generate-unified-predictions.js）がレースごとの値を決める純関数。 | toInCautionRates, computeInCaution |
 | `scripts/lib/inCautionHealth.js` | BOA-822 イン崩れ注意度の監視（tasks 12、plan §9。完了の定義C）。DB は読み取りだけ。 | evaluateInCautionTable, evaluateInCautionToday, readInCautionTable, readInCautionToday, runInCautionHealth ほか1件 |
@@ -187,6 +188,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/oddsPageParse.js` | オッズページの読み（scrape-odds.js から分けた純粋関数）: 単勝・複勝・3連単・全通り系・race_odds の基本の行。 | scrapeWinOdds, isWinOddsUnpublished, scrapePlaceOdds, topTrifectaByOdds, parseFullOddsCombinations ほか3件 |
 | `scripts/lib/oddsParser.js` | boatrace.jp オッズページの共通パーサー | parseOddsTable, parseTrifectaAll, parseTrioAll, parseRangeOddsValue, parseExactaAll ほか4件 |
 | `scripts/lib/oddsRows.js` | レース前オッズの行の組み立て（scrape-odds.js から分けた純粋関数）: 取得の対象・全通り系の補い・ウィンドウの行・1件の結果。 | pickFallbackPatches, missingFullKeysByRace, collectOddsTargets, buildFullOddsRows, groupFullOddsBySignature ほか11件 |
+| `scripts/lib/oddsRunForRaces.js` | レース単位のオッズ取得と race_odds への書き込み（runForRaces と、その再試行・窓の補いの部品）。 | runForRaces |
 | `scripts/lib/officialFinishCode.js` | 公式の成績コード（Kファイルの着順欄。01〜06・F・L0・L1・K0・K1・S0・S1・S2 等）を、 | buildOfficialFinishCodeRows, OFFICIAL_FINISH_CODE_COLUMN |
 | `scripts/lib/openingDayBackfill.js` | 節の初日の欠落（racesに1行も無い会場日）を、公式サイトの過去日ページから補うCLI | parseOnly, selectTargets, buildRaceRows, createThrottledFetch, tallyOutcomes ほか10件 |
 | `scripts/lib/optionalColumns.js` | 「マイグレーション未適用のDBでも壊れない」書き込みの共通処理 | isColumnMissingError, stripColumns, createOptionalColumnState, upsertWithOptionalColumns |
@@ -578,4 +580,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 536 ファイル / export 2953 件。
+対象 538 ファイル / export 2954 件。

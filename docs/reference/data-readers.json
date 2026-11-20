@@ -5,8 +5,8 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2408,
-    "filesWithAccess": 299,
+    "sourceFiles": 2410,
+    "filesWithAccess": 300,
     "tableReaders": 948,
     "tableWriters": 195,
     "rpcCallers": 55,
@@ -9348,13 +9348,13 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:144",
+          "ref": "scripts/daily/scrape-odds.js:135",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:323",
+          "ref": "scripts/lib/oddsRunForRaces.js:27",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9364,7 +9364,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:395",
+          "ref": "scripts/lib/oddsRunForRaces.js:99",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9428,7 +9428,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/scrape-odds.js:288",
+          "ref": "scripts/daily/scrape-odds.js:279",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -9436,7 +9436,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:303",
+          "ref": "scripts/daily/scrape-odds.js:294",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -9444,7 +9444,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:508",
+          "ref": "scripts/lib/oddsRunForRaces.js:212",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -9463,10 +9463,10 @@
           "readers": [
             "api/odds/live.js:79",
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "scripts/daily/scrape-odds.js:288",
-            "scripts/daily/scrape-odds.js:303",
-            "scripts/daily/scrape-odds.js:323",
-            "scripts/daily/scrape-odds.js:395",
+            "scripts/daily/scrape-odds.js:279",
+            "scripts/daily/scrape-odds.js:294",
+            "scripts/lib/oddsRunForRaces.js:27",
+            "scripts/lib/oddsRunForRaces.js:99",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:81",
             "scripts/maintenance/check-odds-shadow.js:201",
             "src/services/raceQueries2.js:320",
@@ -9481,9 +9481,9 @@
           "readers": [
             "api/odds/live.js:79",
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "scripts/daily/scrape-odds.js:288",
-            "scripts/daily/scrape-odds.js:303",
-            "scripts/daily/scrape-odds.js:395",
+            "scripts/daily/scrape-odds.js:279",
+            "scripts/daily/scrape-odds.js:294",
+            "scripts/lib/oddsRunForRaces.js:99",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:81",
             "src/services/raceQueries2.js:320",
             "src/services/sherlockService.js:80"
@@ -9670,7 +9670,7 @@
         },
         "window_min": {
           "readers": [
-            "scripts/daily/scrape-odds.js:323"
+            "scripts/lib/oddsRunForRaces.js:27"
           ],
           "writers": [],
           "sql": []
@@ -10981,7 +10981,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:79",
+          "ref": "scripts/daily/scrape-odds.js:70",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11757,7 +11757,7 @@
             "scripts/analysis/verify-race-analysis-rpc.js:211",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily-rule-tracking.js:149",
-            "scripts/daily/scrape-odds.js:79",
+            "scripts/daily/scrape-odds.js:70",
             "scripts/daily/scrape-results.js:196",
             "scripts/daily/scrape-results.js:266",
             "scripts/daily/scrape-results.js:314",
@@ -11967,7 +11967,7 @@
             "scripts/analysis/redesign-volatility-by-venue.js:150",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
-            "scripts/daily/scrape-odds.js:79",
+            "scripts/daily/scrape-odds.js:70",
             "scripts/daily/scrape-results.js:821",
             "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/lib/raceResultRun.js:131",
@@ -29264,9 +29264,7 @@
           "scripts/lib/scrapeJobs/predictionOddsHandlers.js:194"
         ],
         "race_odds": [
-          "scripts/daily/scrape-odds.js:288",
-          "scripts/daily/scrape-odds.js:303",
-          "scripts/daily/scrape-odds.js:508"
+          "scripts/lib/oddsRunForRaces.js:212"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29288,12 +29286,12 @@
     {
       "job": "odds_final",
       "entry": "api/cron/odds-final.js",
-      "reachableFiles": 26,
+      "reachableFiles": 27,
       "writes": {
         "race_odds": [
-          "scripts/daily/scrape-odds.js:288",
-          "scripts/daily/scrape-odds.js:303",
-          "scripts/daily/scrape-odds.js:508"
+          "scripts/daily/scrape-odds.js:279",
+          "scripts/daily/scrape-odds.js:294",
+          "scripts/lib/oddsRunForRaces.js:212"
         ],
         "race_odds_final": [
           "scripts/lib/scrapeJobs/finalOddsHandlers.js:144"

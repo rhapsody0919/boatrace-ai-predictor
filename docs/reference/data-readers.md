@@ -10,8 +10,8 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2408 |
-| 読み書きのあるファイル | 299 |
+| 読んだファイル | 2410 |
+| 読み書きのあるファイル | 300 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
 | RPC の呼び手（箇所） | 55 |
@@ -240,7 +240,7 @@
 | morning_digest | api/cron/morning-digest.js | 22 | morning_digest_days, morning_digest_rows, scrape_job_state, scrape_slots |
 | motor_pretest | api/cron/motor-pretest.js | 26 | scrape_job_state, scrape_slots |
 | odds | api/cron/odds.js | 29 | prediction_odds, race_odds, scrape_job_state, scrape_slots |
-| odds_final | api/cron/odds-final.js | 26 | race_odds, race_odds_final, scrape_job_state, scrape_slots |
+| odds_final | api/cron/odds-final.js | 27 | race_odds, race_odds_final, scrape_job_state, scrape_slots |
 | outcome_distribution_update | api/cron/outcome-distribution-update.js | 21 | nige_outcome_distribution, outcome_distribution, scrape_job_state, scrape_slots |
 | pcexpect | api/cron/pcexpect.js | 18 | external_predictions, scrape_job_state, scrape_slots |
 | pit_reports | api/cron/pit-reports.js | 22 | race_pit_comments, race_pit_reports, scrape_job_state, scrape_slots |
@@ -1020,18 +1020,18 @@
   - `scripts/analysis/train-moriarty-calibration.js:83` select(helper:fetchAll)
   - `scripts/daily/generate-moriarty-recommendations.js:97` select [captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6, race_id]
   - `scripts/daily/generate-unified-trifecta-reference.js:55` select(helper:fetchAll)
-  - `scripts/daily/scrape-odds.js:144` select(helper:fetchAll)
-  - `scripts/daily/scrape-odds.js:323` select [*, race_id, window_min]
-  - `scripts/daily/scrape-odds.js:395` select [?, captured_at, race_id]
+  - `scripts/daily/scrape-odds.js:135` select(helper:fetchAll)
+  - `scripts/lib/oddsRunForRaces.js:27` select [*, race_id, window_min]
+  - `scripts/lib/oddsRunForRaces.js:99` select [?, captured_at, race_id]
   - `scripts/lib/scrapeJobs/predictionOddsHandlers.js:81` select [captured_at, race_id, trifecta_all, trio_all]
   - `scripts/maintenance/check-odds-shadow.js:201` select [?, race_id, source]
   - `scripts/ml/export-training-data.js:285` select(helper:fetchAll)
   - `src/services/raceQueries2.js:320` select [?, captured_at, race_id]
   - `src/services/sherlockService.js:80` select [captured_at, odds_win_1, odds_win_2, odds_win_3, odds_win_4, odds_win_5, odds_win_6, race_id]
 - 書き手（3）: 
-  - `scripts/daily/scrape-odds.js:288` upsert [?]
-  - `scripts/daily/scrape-odds.js:303` upsert [?]
-  - `scripts/daily/scrape-odds.js:508` upsert [?]
+  - `scripts/daily/scrape-odds.js:279` upsert [?]
+  - `scripts/daily/scrape-odds.js:294` upsert [?]
+  - `scripts/lib/oddsRunForRaces.js:212` upsert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-race_odds_final"></a>race_odds_final
@@ -1176,7 +1176,7 @@
   - `scripts/daily/calculate-unified-model-accuracy.js:187` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-volatility-accuracy.js:125` select(helper:fetchAll)
   - `scripts/daily/calculate-venue-grade-stats.js:176` select(embed) [is_cancelled, payout_trio, race_status, rank1, rank2, rank3, refund_boats, winning_technique]
-  - `scripts/daily/scrape-odds.js:79` select [payout_win, race_id]
+  - `scripts/daily/scrape-odds.js:70` select [payout_win, race_id]
   - `scripts/daily/scrape-results.js:196` select [race_id, rank1]
   - `scripts/daily/scrape-results.js:252` select(helper:filterUnchangedRows)
   - `scripts/daily/scrape-results.js:314` select [race_id, rank1, rank2, rank3, rank4]
