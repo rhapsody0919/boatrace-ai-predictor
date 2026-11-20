@@ -153,51 +153,178 @@ function checkBaseline(rows) {
   return problems;
 }
 
+// 逃げ・逃がしの列の形（1コースは逃げ、2〜6コースは逃がし）
+function racerShapeProblems(r, label) {
+  const problems = [];
+  if (
+    r.course === 1 &&
+    (r.nige_rate === null ||
+      r.nige_expected === null ||
+      r.nigashi_rate !== null)
+  ) {
+    problems.push(
+      `${label}: 1コースは逃げの3列を持ち逃がしを持たないはずです`,
+    );
+  }
+  if (
+    r.course > 1 &&
+    (r.nige_rate !== null ||
+      r.nigashi_rate === null ||
+      r.nigashi_expected === null)
+  ) {
+    problems.push(
+      `${label}: 2〜6コースは逃がしの3列を持ち逃げを持たないはずです`,
+    );
+  }
+  return problems;
+}
+
+function racerValueProblems(r, label) {
+  const problems = [];
+  if (r.makuri_rate === null || r.makuri_expected === null) {
+    problems.push(`${label}: まくりの率または期待値がNULLです`);
+  }
+  if (r.runs <= 0) {
+    problems.push(`${label}: runs が ${r.runs} です`);
+  }
+  // 調子窓に走が無ければ率はNULL（「0%だった」と「走っていない」を区別する）
+  if (
+    r.runs_90d === 0 &&
+    (r.nige_rate_90d !== null ||
+      r.makuri_rate_90d !== null ||
+      r.nigashi_rate_90d !== null)
+  ) {
+    problems.push(
+      `${label}: runs_90d=0 なのに90日窓の率がNULLではありません`,
+    );
+  }
+  return problems;
+}
+
 function checkRacerStats(rows) {
   const problems = [];
 
   for (const r of rows) {
     const label = `選手${r.racer_id} ${r.course}コース`;
-    if (
-      r.course === 1 &&
-      (r.nige_rate === null ||
-        r.nige_expected === null ||
-        r.nigashi_rate !== null)
-    ) {
-      problems.push(
-        `${label}: 1コースは逃げの3列を持ち逃がしを持たないはずです`,
-      );
-    }
-    if (
-      r.course > 1 &&
-      (r.nige_rate !== null ||
-        r.nigashi_rate === null ||
-        r.nigashi_expected === null)
-    ) {
-      problems.push(
-        `${label}: 2〜6コースは逃がしの3列を持ち逃げを持たないはずです`,
-      );
-    }
-    if (r.makuri_rate === null || r.makuri_expected === null) {
-      problems.push(`${label}: まくりの率または期待値がNULLです`);
-    }
-    if (r.runs <= 0) {
-      problems.push(`${label}: runs が ${r.runs} です`);
-    }
-    // 調子窓に走が無ければ率はNULL（「0%だった」と「走っていない」を区別する）
-    if (
-      r.runs_90d === 0 &&
-      (r.nige_rate_90d !== null ||
-        r.makuri_rate_90d !== null ||
-        r.nigashi_rate_90d !== null)
-    ) {
-      problems.push(
-        `${label}: runs_90d=0 なのに90日窓の率がNULLではありません`,
-      );
-    }
+    problems.push(...racerShapeProblems(r, label));
+    problems.push(...racerValueProblems(r, label));
   }
 
   return problems;
+}
+
+/** 整合チェックの失敗の文（先頭20件＋残りの件数） */
+function consistencyError(table, problems) {
+  return new Error(
+    `${table} の整合チェックに失敗しました:\n  - ${problems
+      .slice(0, 20)
+      .join(
+        "\n  - ",
+      )}${problems.length > 20 ? `\n  - ...他 ${problems.length - 20} 件` : ""}`,
+  );
+}
+
+function logBaselineSummary(baselineRows) {
+  const gradeCells = baselineRows.filter((r) => r.race_grade !== "ALL").length;
+  const allCells = baselineRows.length - gradeCells;
+  console.log(
+    `\n[venue_course_technique_baseline] 集計結果 ${baselineRows.length} 行（グレード別 ${gradeCells} ＋ ALL ${allCells}）`,
+  );
+  console.log(
+    `  集計期間 ${baselineRows[0].window_start} 〜 ${baselineRows[0].window_end}（${baselineRows[0].window_days}日）`,
+  );
+  const sparse = baselineRows.filter(
+    (r) => r.race_grade !== "ALL" && r.runs < MIN_BASELINE_RUNS,
+  ).length;
+  console.log(
+    `  母数${MIN_BASELINE_RUNS}未満のグレード別セル ${sparse} 件（ALL 行へフォールバックする）`,
+  );
+}
+
+function logRacerSummary(racerRows) {
+  console.log(
+    `\n[racer_course_technique_stats] 集計結果 ${racerRows.length} 行（${
+      new Set(racerRows.map((r) => r.racer_id)).size
+    }選手）`,
+  );
+  const noForm = racerRows.filter((r) => r.runs_90d === 0).length;
+  console.log(
+    `  直近90日に1走も無い (racer, course) の組 ${noForm} 件（率はNULLで保存する）`,
+  );
+}
+
+// racer 側のRPCは venue_course_technique_baseline を読むため、1の書き込み後に呼ぶ。
+// dry-run では1が書かれていないので、表がまだ空なら選手側の期待値は全てNULLになる。
+// それを「整合チェックの失敗」として報告すると原因が分かりにくいため、先に区別する。
+// 戻り値: 表が空なら run() の契約の戻り値（選手側を行わない）、そうでなければ null
+async function dryRunBaselineCheck() {
+  const { count, error } = await supabase
+    .from("venue_course_technique_baseline")
+    .select("*", { count: "exact", head: true });
+  if (error) throw error;
+  if (!count) {
+    console.log(
+      "\n[dry-run] venue_course_technique_baseline がまだ空のため、選手側の集計は行いません。" +
+        "\n         （期待値はこの表を引くため、空のままでは全てNULLになります）" +
+        "\n         本番実行（--dry-run なし）でベースラインを投入してから、もう一度 dry-run してください。",
+    );
+    console.log("\n完了しました（dry-run のため書き込んでいません）");
+    return {
+      outcome: "ok",
+      rowsWritten: 0,
+      report: { dryRun: true, skipped: "baseline_empty" },
+    };
+  }
+  console.log(
+    `\n[dry-run] ベースラインを書き込んでいないため、選手側の期待値は既存の ${count} 行を参照します`,
+  );
+  return null;
+}
+
+/**
+ * last_updated は「値が実際に変わった日」を入れる。比較からは外す（ignoreColumns）。
+ * onConflict はキー列そのもの、chunkColumn はキーの先頭の列。結果の error は投げる
+ */
+async function upsertStamped(table, rows, { today, dryRun, keyColumns }) {
+  const result = await upsertChangedRows(
+    supabase,
+    table,
+    rows.map((r) => ({ ...r, last_updated: today })),
+    {
+      onConflict: keyColumns.join(","),
+      keyColumns,
+      ignoreColumns: ["last_updated"],
+      chunkColumn: keyColumns[0],
+      label: table,
+      dryRun,
+      stampUpdatedAt: true,
+    },
+  );
+  if (result.error) throw result.error;
+  console.log(
+    formatSkipSummary(table, result.stats, { fallback: result.fallback }),
+  );
+  return result;
+}
+
+function runResult(baselineRows, racerRows, baselineResult, racerResult) {
+  return {
+    outcome: "ok",
+    // upsertChangedRows は written を**トップレベル**で返す（stats.written ではない）
+    rowsWritten: (baselineResult.written ?? 0) + (racerResult.written ?? 0),
+    // 「変更なしで書き込み0件」は正常なので rowsWritten では判定しない。
+    // applyZeroRowGuard は `rowsExpected > 0 && rowsParsed === 0` のときだけ error にするため、
+    // rowsExpected には定数 1（＝集計結果が1行以上あるはず）を渡す。
+    // 両方に同じ集計行数を入れると、0件のとき rowsExpected も0になり判定が働かない
+    rowsExpected: 1,
+    rowsParsed: baselineRows.length + racerRows.length,
+    report: {
+      windowStart: baselineRows[0]?.window_start ?? null,
+      windowEnd: baselineRows[0]?.window_end ?? null,
+      baselineRows: baselineRows.length,
+      racerRows: racerRows.length,
+    },
+  };
 }
 
 /**
@@ -223,151 +350,49 @@ export async function runRacerCourseTechniqueStats({ dryRun = false } = {}) {
     "compute_venue_course_technique_baseline",
     ["venue_code", "race_grade", "course"],
   );
-  const gradeCells = baselineRows.filter((r) => r.race_grade !== "ALL").length;
-  const allCells = baselineRows.length - gradeCells;
-  console.log(
-    `\n[venue_course_technique_baseline] 集計結果 ${baselineRows.length} 行（グレード別 ${gradeCells} ＋ ALL ${allCells}）`,
-  );
-  console.log(
-    `  集計期間 ${baselineRows[0].window_start} 〜 ${baselineRows[0].window_end}（${baselineRows[0].window_days}日）`,
-  );
-  const sparse = baselineRows.filter(
-    (r) => r.race_grade !== "ALL" && r.runs < MIN_BASELINE_RUNS,
-  ).length;
-  console.log(
-    `  母数${MIN_BASELINE_RUNS}未満のグレード別セル ${sparse} 件（ALL 行へフォールバックする）`,
-  );
+  logBaselineSummary(baselineRows);
 
   const baselineProblems = checkBaseline(baselineRows);
   if (baselineProblems.length > 0) {
-    throw new Error(
-      `venue_course_technique_baseline の整合チェックに失敗しました:\n  - ${baselineProblems
-        .slice(0, 20)
-        .join(
-          "\n  - ",
-        )}${baselineProblems.length > 20 ? `\n  - ...他 ${baselineProblems.length - 20} 件` : ""}`,
-    );
+    throw consistencyError("venue_course_technique_baseline", baselineProblems);
   }
   console.log("  整合チェック: OK");
 
-  const stamp = (rows) => rows.map((r) => ({ ...r, last_updated: today }));
-
-  const baselineResult = await upsertChangedRows(
-    supabase,
+  const baselineResult = await upsertStamped(
     "venue_course_technique_baseline",
-    stamp(baselineRows),
-    {
-      onConflict: "venue_code,race_grade,course",
-      keyColumns: ["venue_code", "race_grade", "course"],
-      ignoreColumns: ["last_updated"],
-      chunkColumn: "venue_code",
-      label: "venue_course_technique_baseline",
-      dryRun,
-      stampUpdatedAt: true,
-    },
-  );
-  if (baselineResult.error) throw baselineResult.error;
-  console.log(
-    formatSkipSummary("venue_course_technique_baseline", baselineResult.stats, {
-      fallback: baselineResult.fallback,
-    }),
+    baselineRows,
+    { today, dryRun, keyColumns: ["venue_code", "race_grade", "course"] },
   );
 
   // --- 2. 選手 × コースの実績 ---
-  //
-  // racer 側のRPCは venue_course_technique_baseline を読むため、1の書き込み後に呼ぶ。
-  // dry-run では1が書かれていないので、表がまだ空なら選手側の期待値は全てNULLになる。
-  // それを「整合チェックの失敗」として報告すると原因が分かりにくいため、先に区別する。
+  // （racer 側のRPCはベースラインを読むため、1の書き込み後に呼ぶ。dryRunBaselineCheck を参照）
   if (dryRun) {
-    const { count, error } = await supabase
-      .from("venue_course_technique_baseline")
-      .select("*", { count: "exact", head: true });
-    if (error) throw error;
-    if (!count) {
-      console.log(
-        "\n[dry-run] venue_course_technique_baseline がまだ空のため、選手側の集計は行いません。" +
-          "\n         （期待値はこの表を引くため、空のままでは全てNULLになります）" +
-          "\n         本番実行（--dry-run なし）でベースラインを投入してから、もう一度 dry-run してください。",
-      );
-      console.log("\n完了しました（dry-run のため書き込んでいません）");
-      return {
-        outcome: "ok",
-        rowsWritten: 0,
-        report: { dryRun: true, skipped: "baseline_empty" },
-      };
-    }
-    console.log(
-      `\n[dry-run] ベースラインを書き込んでいないため、選手側の期待値は既存の ${count} 行を参照します`,
-    );
+    const skipped = await dryRunBaselineCheck();
+    if (skipped) return skipped;
   }
 
   const racerRows = await callAggregate(
     "compute_racer_course_technique_stats",
     ["racer_id", "course"],
   );
-  console.log(
-    `\n[racer_course_technique_stats] 集計結果 ${racerRows.length} 行（${
-      new Set(racerRows.map((r) => r.racer_id)).size
-    }選手）`,
-  );
-  const noForm = racerRows.filter((r) => r.runs_90d === 0).length;
-  console.log(
-    `  直近90日に1走も無い (racer, course) の組 ${noForm} 件（率はNULLで保存する）`,
-  );
+  logRacerSummary(racerRows);
 
   const racerProblems = checkRacerStats(racerRows);
   if (racerProblems.length > 0) {
-    throw new Error(
-      `racer_course_technique_stats の整合チェックに失敗しました:\n  - ${racerProblems
-        .slice(0, 20)
-        .join(
-          "\n  - ",
-        )}${racerProblems.length > 20 ? `\n  - ...他 ${racerProblems.length - 20} 件` : ""}`,
-    );
+    throw consistencyError("racer_course_technique_stats", racerProblems);
   }
   console.log("  整合チェック: OK");
 
-  const racerResult = await upsertChangedRows(
-    supabase,
+  const racerResult = await upsertStamped(
     "racer_course_technique_stats",
-    stamp(racerRows),
-    {
-      onConflict: "racer_id,course",
-      keyColumns: ["racer_id", "course"],
-      ignoreColumns: ["last_updated"],
-      chunkColumn: "racer_id",
-      label: "racer_course_technique_stats",
-      dryRun,
-      stampUpdatedAt: true,
-    },
-  );
-  if (racerResult.error) throw racerResult.error;
-  console.log(
-    formatSkipSummary("racer_course_technique_stats", racerResult.stats, {
-      fallback: racerResult.fallback,
-    }),
+    racerRows,
+    { today, dryRun, keyColumns: ["racer_id", "course"] },
   );
 
   console.log(
     `\n完了しました${dryRun ? "（dry-run のため書き込んでいません）" : ""}`,
   );
-  return {
-    outcome: "ok",
-    // upsertChangedRows は written を**トップレベル**で返す（stats.written ではない）
-    rowsWritten: (baselineResult.written ?? 0) + (racerResult.written ?? 0),
-    // 「変更なしで書き込み0件」は正常なので rowsWritten では判定しない。
-    // applyZeroRowGuard は `rowsExpected > 0 && rowsParsed === 0` のときだけ error にするため、
-    // rowsExpected には定数 1（＝集計結果が1行以上あるはず）を渡す。
-    // 両方に同じ集計行数を入れると、0件のとき rowsExpected も0になり判定が働かない
-    rowsExpected: 1,
-    rowsParsed: baselineRows.length + racerRows.length,
-    report: {
-      windowStart: baselineRows[0]?.window_start ?? null,
-      windowEnd: baselineRows[0]?.window_end ?? null,
-      baselineRows: baselineRows.length,
-      racerRows: racerRows.length,
-    },
-  };
+  return runResult(baselineRows, racerRows, baselineResult, racerResult);
 }
 
 // --- CLI（node scripts/daily/update-racer-course-technique-stats.js [--dry-run]） ---
