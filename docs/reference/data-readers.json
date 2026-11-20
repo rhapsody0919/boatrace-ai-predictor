@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2384,
+    "sourceFiles": 2396,
     "filesWithAccess": 298,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -27210,7 +27210,7 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/checks.js:343",
-        "scripts/lib/dataHealth/functions.js:517"
+        "scripts/lib/dataHealth/functions.js:118"
       ],
       "triggerOn": [],
       "calledByRpc": [],
@@ -27233,7 +27233,7 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/checks.js:66",
-        "scripts/lib/dataHealth/functions.js:452",
+        "scripts/lib/dataHealth/functions.js:53",
         "scripts/maintenance/verifyData/data-health-job-fixtures.js:76",
         "scripts/maintenance/verifyData/data-health-job-for-job.js:38",
         "scripts/maintenance/verifyData/data-health-job-for-job.js:40",
@@ -27266,7 +27266,7 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/checks.js:323",
-        "scripts/lib/dataHealth/functions.js:508"
+        "scripts/lib/dataHealth/functions.js:109"
       ],
       "triggerOn": [],
       "calledByRpc": [],
@@ -27290,7 +27290,7 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/checks.js:370",
-        "scripts/lib/dataHealth/functions.js:497",
+        "scripts/lib/dataHealth/functions.js:98",
         "scripts/maintenance/verifyData/data-health-job-for-job.js:42",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:291"
       ],
@@ -27317,7 +27317,7 @@
         "scripts/lib/dataHealth/checks.js:199",
         "scripts/lib/dataHealth/checks.js:208",
         "scripts/lib/dataHealth/checks.js:218",
-        "scripts/lib/dataHealth/functions.js:536",
+        "scripts/lib/dataHealth/functions.js:137",
         "scripts/maintenance/verifyData/data-health-job-scenes-2.js:40",
         "scripts/maintenance/verifyData/data-health-job-scenes-2.js:42",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:111"
@@ -27345,7 +27345,7 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/checks.js:105",
-        "scripts/lib/dataHealth/functions.js:526",
+        "scripts/lib/dataHealth/functions.js:127",
         "scripts/maintenance/verifyData/data-health-job-scenes-2.js:39",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:65",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:79"
@@ -27390,7 +27390,7 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/checks.js:268",
-        "scripts/lib/dataHealth/functions.js:470",
+        "scripts/lib/dataHealth/functions.js:71",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:231",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:288",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:321"
@@ -27417,7 +27417,7 @@
       "mentions": [
         "scripts/lib/dataHealth/checks.js:242",
         "scripts/lib/dataHealth/checks.js:255",
-        "scripts/lib/dataHealth/functions.js:461",
+        "scripts/lib/dataHealth/functions.js:62",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:209"
       ],
       "triggerOn": [],
@@ -27442,7 +27442,7 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/checks.js:293",
-        "scripts/lib/dataHealth/functions.js:479",
+        "scripts/lib/dataHealth/functions.js:80",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:250",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:297",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:322",
@@ -27469,7 +27469,7 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/checks.js:304",
-        "scripts/lib/dataHealth/functions.js:488",
+        "scripts/lib/dataHealth/functions.js:89",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:267"
       ],
       "triggerOn": [],
@@ -27493,7 +27493,7 @@
       },
       "callers": [],
       "mentions": [
-        "scripts/lib/dataHealth/functions.js:546",
+        "scripts/lib/dataHealth/functions.js:147",
         "scripts/lib/dataHealth/jobParts.js:10",
         "scripts/maintenance/verifyData/data-health-job-fixtures.js:77",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:279",
@@ -28819,7 +28819,7 @@
     {
       "job": "daily_reconcile",
       "entry": "api/cron/daily-reconcile.js",
-      "reachableFiles": 21,
+      "reachableFiles": 24,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28841,7 +28841,7 @@
     {
       "job": "data_health",
       "entry": "api/cron/data-health.js",
-      "reachableFiles": 23,
+      "reachableFiles": 25,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28863,7 +28863,7 @@
     {
       "job": "data_health_morning",
       "entry": "api/cron/data-health-morning.js",
-      "reachableFiles": 23,
+      "reachableFiles": 25,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29047,7 +29047,7 @@
     {
       "job": "fan_period",
       "entry": "api/cron/fan-period.js",
-      "reachableFiles": 23,
+      "reachableFiles": 26,
       "writes": {
         "raw_snapshots": [
           "scripts/lib/fanPeriodJob.js:116"
@@ -29160,7 +29160,7 @@
     {
       "job": "kfile_sync",
       "entry": "api/cron/kfile-sync.js",
-      "reachableFiles": 39,
+      "reachableFiles": 42,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29541,7 +29541,7 @@
     {
       "job": "race_status",
       "entry": "api/cron/race-status.js",
-      "reachableFiles": 39,
+      "reachableFiles": 42,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29586,7 +29586,7 @@
     {
       "job": "racer_career_main",
       "entry": "api/cron/racer-career-main.js",
-      "reachableFiles": 23,
+      "reachableFiles": 24,
       "writes": {
         "racer_career_meta": [
           "scripts/lib/racerCareerDb.js:108"
@@ -29759,7 +29759,7 @@
     {
       "job": "result",
       "entry": "api/cron/result.js",
-      "reachableFiles": 39,
+      "reachableFiles": 42,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -29804,7 +29804,7 @@
     {
       "job": "result_catchup",
       "entry": "api/cron/result-catchup.js",
-      "reachableFiles": 39,
+      "reachableFiles": 42,
       "writes": {
         "predictions": [
           "scripts/daily/scrape-results.js:1031",
@@ -30123,8 +30123,8 @@
       "name": "racer_career_meta",
       "refs": [
         "scripts/lib/racerCareerDb.js:108",
-        "scripts/lib/racerCareerJob.js:504",
-        "scripts/lib/racerCareerJob.js:553"
+        "scripts/lib/racerCareerJob.js:174",
+        "scripts/lib/racerCareerJob.js:223"
       ]
     },
     {
@@ -30207,8 +30207,8 @@
       "reason": "表の名前が変数（.from(式)）"
     },
     {
-      "file": "scripts/lib/racerCareerJob.js",
-      "line": 268,
+      "file": "scripts/lib/racerCareerCore.js",
+      "line": 226,
       "reason": "表の名前が変数（.from(式)）"
     },
     {

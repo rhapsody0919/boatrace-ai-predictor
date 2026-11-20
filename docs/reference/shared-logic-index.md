@@ -115,11 +115,19 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/dataHealth/coverageSpec.js` | 存在充足率（完了の定義A）の指標と、その集計SQLの正本（data-health-report.js と、汎用の日次監視 | literalCoverageSlots, buildCoverageSql, buildMonthlySql, ALL_ODDS_COLUMNS, ODDS_FULL_GRID_SINCE ほか3件 |
 | `scripts/lib/dataHealth/evaluate.js` | 汎用の日次監視（data_health）の判定（純粋関数。DB・時計・Slackに触れない）。 | weekdayOf, isDueToday, periodFor, evaluateCountCheck, evaluateEmptyTables ほか5件 |
 | `scripts/lib/dataHealth/evaluateParts.js` | evaluate.js の部品（純粋関数。DB・時計・Slackに触れない）。通知文・鮮度の判定・件数の集計の部品を、 | rowStats, formatObserved, evaluateFreshnessCheck, formatBreach, sum |
-| `scripts/lib/dataHealth/functions.js` | 汎用の日次監視（data_health）が呼ぶDB関数の定義（SQLの正本）。 | renderFunctionDdl, renderInlineSql, MAX_RANGE_DAYS, TABLE_ROWS_TABLES, NIGHTLY_FRESHNESS_ITEMS ほか4件 |
+| `scripts/lib/dataHealth/freshnessSql.js` | 鮮度・存在の項目（classification: freshness）。関数は { 項目のキー: { applicable, ok, observed } } … | NIGHTLY_FRESHNESS_ITEMS, MORNING_FRESHNESS_ITEMS |
+| `scripts/lib/dataHealth/functions.js` | 汎用の日次監視（data_health）が呼ぶDB関数の定義（SQLの正本）。 | renderFunctionDdl, renderInlineSql, MAX_RANGE_DAYS, DATA_HEALTH_FUNCTIONS, functionByName ほか1件 |
 | `scripts/lib/dataHealth/job.js` | 汎用の日次監視 data_health（完了の定義C）の実行。api/cron/data-health.js が、共通ラッパ | createRpcCaller, readDeliveredKeys, runDataHealthChecks, DATA_HEALTH_JOB, DATA_HEALTH_MORNING_JOB ほか3件 |
 | `scripts/lib/dataHealth/jobParts.js` | job.js（runDataHealthChecks）の部品。関数の呼び出し計画・項目の判定・通知の候補・報告の組み立てを、 | planFunctionRanges, judgeCheck, countStatuses, callFunctions, TABLE_ROWS_FN ほか1件 |
+| `scripts/lib/dataHealth/tableSql.js` | 空でないことを確認するテーブル（data_health_table_rows）。テーブルを足すときは、 | TABLE_ROWS_TABLES |
 | `scripts/lib/dataHealth/workflowCoverage.js` | Environment prod-jobs を使う workflow（.github/workflows）の、data_health への登録の一覧。 | usesProdJobs, findCoverageProblems, WORKFLOW_EXCLUSIONS |
-| `scripts/lib/dataReaders.js` | データの読み手の台帳（docs/reference/data-readers.{json,md}）の抽出と組み立て。DB にも | isFixtureLike, isSourceFile, literalString, parseSelect, parseRestPath ほか17件 |
+| `scripts/lib/dataReaders.js` | — | isSourceFile, pythonMentions, LEDGER_JSON, LEDGER_MD, EXTRA_FILE ほか1件 |
+| `scripts/lib/dataReadersAccess.js` | — | stripSqlNoise, sqlTableRefs, relationAccess, functionAccess, resolveImport ほか3件 |
+| `scripts/lib/dataReadersAst.js` | — | literalString |
+| `scripts/lib/dataReadersLedger.js` | — | buildLedger, FORMAT |
+| `scripts/lib/dataReadersMarkdown.js` | — | renderMarkdown |
+| `scripts/lib/dataReadersSelect.js` | — | parseSelect, parseRestPath |
+| `scripts/lib/dataReadersVisit.js` | — | isFixtureLike, extractAccesses |
 | `scripts/lib/dateUtils.js` | 日付ユーティリティ（バックエンド用） | getTodayDateJST, getYesterdayDateJST, getDateDaysAgo, formatDateForUrl, parseDateArg ほか5件 |
 | `scripts/lib/dbApplyDispatch.js` | db-apply の定期の突き合わせ（db-apply.yml の mode=reconcile）を Vercel Cron から起動する（ADR-0097、 | findRecentReconcileSuccess, createDbApplyDispatchRun, DB_APPLY_WORKFLOW, STALE_AFTER_MS, RESTART_AFTER_MS ほか1件 |
 | `scripts/lib/dbApplySql.js` | 本番 DB 適用ワークフロー（.github/workflows/db-apply.yml）が、承認の前にマイグレーションを検査するための純粋関数。 | validateMigrationPath, splitStatements, extractTables, inspectMigration, extractConfirmationSections ほか15件 |
@@ -153,7 +161,10 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/jobWatch.js` | 定期の job の見張り（.github/workflows/job-watch.yml、ADR-0097 の追記「定期の job の見張り」）の純粋関数。 | classifyLog, jobTimeouts, cancelledByTimeout, decideRun, rerunBlockers ほか8件 |
 | `scripts/lib/kbArchiveBoundary.js` | K/B の長期アーカイブ（kb_archive_*）と本体テーブル（races ほか）の境目の日。 | MAIN_TABLES_START, KB_LAST_DATE, KB_FIRST_DATE |
 | `scripts/lib/kbArchiveRows.js` | K/B中間形式（kb-day/v1）→ アーカイブ表（kb_archive_*）の行への変換 | raceTimeToSeconds, classifyStage, buildArchiveRows, KB_ARCHIVE_TABLES |
-| `scripts/lib/kbFileParser.js` | 公式ダウンロードデータ（Kファイル=競走成績、Bファイル=番組表）の全項目パーサー | buildKbUrl, kbArchiveRelPath, decodeLzhText, decodeLzhBytes, classifyKFileVenues ほか9件 |
+| `scripts/lib/kbFileParser.js` | 公式ダウンロードデータ（Kファイル=競走成績、Bファイル=番組表）の全項目パーサー | buildKbUrl, kbArchiveRelPath, decodeLzhText, decodeLzhBytes, classifyKFileVenues ほか6件 |
+| `scripts/lib/kbFileParserB.js` | — | parseBText |
+| `scripts/lib/kbFileParserK.js` | — | parseKText |
+| `scripts/lib/kbFileParserText.js` | — | PENDING_MARKER |
 | `scripts/lib/kbGapFill.js` | K/Bファイル（kb-day/v1。kb-backfill.js parse の出力）から、本体テーブルの欠落を補う行を作る（純関数）。 | assertColumnSet, buildStartTimingRows, buildMissingBoatRows, buildExhibitionRows, normalizeKStage ほか7件 |
 | `scripts/lib/kbResultsBackfillRows.js` | K/Bアーカイブ（kb-day/v1、scripts/lib/kbFileParser.js）から race_results の欠損行を | classifyMissingResult, buildRaceFactsForDay, buildRaceResultRow, MISSING_STATUS |
 | `scripts/lib/kelly-criterion.js` | — | kellyFraction, halfKelly, quarterKelly |
@@ -229,8 +240,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceStatusJob.js` | 中止・順延の早期確定（race_status、共通ラッパ cronWrapper.js の continuous ジョブ）。 | runRaceStatusJob, RACE_STATUS_CONCURRENCY, CONFIRM_REASON |
 | `scripts/lib/raceStatusParsers.js` | 開催場一覧（race/index）と結果ページ（raceresult）から、中止・順延の告知を読み取る純粋関数。 | raceIndexUrl, raceResultUrl, classifyStatusText, parseVenueStatuses, isRaceCancelledPage |
 | `scripts/lib/racelistBackfillRows.js` | 出走表（racelist）過去分バックフィルの、行の組み立て・URL・アーカイブパス（純関数。DB・取得先に接続しない） | parseRaceId, buildRacelistUrl, racelistArchiveRelPath, buildFillRow, buildFillRowsForRace ほか2件 |
+| `scripts/lib/racerCareerCore.js` | — | mergeCareerResult, staleRowsOf, chunk, writeCareerRows, runKbEra ほか4件 |
 | `scripts/lib/racerCareerDb.js` | 選手ページの集計の表（racerCareerJob.js）の DB の読み（判定の材料・計算の RPC・今ある行・kb の指紋）と、計算の記録の書き込み。 | loadJudgeInputs, computeCounts, fetchExistingKeys, writeMeta, kbFingerprint ほか4件 |
-| `scripts/lib/racerCareerJob.js` | 選手ページ（GS00 案2）の集計の表（マイグレーション 190）の書き手の共通部分。 | mergeCareerResult, staleRowsOf, chunk, writeCareerRows, runKbEra ほか6件 |
+| `scripts/lib/racerCareerJob.js` | — | runMainEra, runRacerCareerMainJob |
 | `scripts/lib/racerCareerSeries.js` | 選手ページの集計の表の判定の材料のうち、特別な節（同じ開催日に2つの格が混ざる節・公式が別の格で数えた節）の | finalStagesOf, specialSeriesGroups, splitByRacerLinks, gradeOverridesOf, halfMonthRanges ほか5件 |
 | `scripts/lib/racerNews/dedup.js` | — | isAlreadyProcessed |
 | `scripts/lib/racerNews/officialGradeAnnouncements.js` | — | collectGradeAnnouncementNews |
@@ -558,4 +570,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 516 ファイル / export 2942 件。
+対象 528 ファイル / export 2942 件。

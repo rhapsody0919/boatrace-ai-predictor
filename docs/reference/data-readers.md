@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2384 |
+| 読んだファイル | 2396 |
 | 読み書きのあるファイル | 298 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -155,17 +155,17 @@
 | compute_today_course_win_stats | service だけ |  | scripts/daily/generate-morning-digest.js:253 |  | race_entries, race_results, races |  |  |
 | compute_venue_course_entry_baseline | service だけ |  | なし |  | race_entries, race_results, races |  |  |
 | compute_venue_course_technique_baseline | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:222 |  | race_entries, race_results, races |  |  |
-| data_health_cancellation_with_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:343, scripts/lib/dataHealth/functions.js:517 |  | race_results, races |  |  |
-| data_health_coverage | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:66, scripts/lib/dataHealth/functions.js:452, scripts/maintenance/verifyData/data-health-job-fixtures.js:76 ほか5 |  | exhibition_data, race_conditions, race_odds, race_results, race_start_timings, races |  |  |
-| data_health_entries_duplicates | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:323, scripts/lib/dataHealth/functions.js:508 |  | race_entries, race_results, races |  |  |
-| data_health_monthly_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:370, scripts/lib/dataHealth/functions.js:497, scripts/maintenance/verifyData/data-health-job-for-job.js:42 ほか1 |  | race_results, races |  |  |
+| data_health_cancellation_with_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:343, scripts/lib/dataHealth/functions.js:118 |  | race_results, races |  |  |
+| data_health_coverage | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:66, scripts/lib/dataHealth/functions.js:53, scripts/maintenance/verifyData/data-health-job-fixtures.js:76 ほか5 |  | exhibition_data, race_conditions, race_odds, race_results, race_start_timings, races |  |  |
+| data_health_entries_duplicates | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:323, scripts/lib/dataHealth/functions.js:109 |  | race_entries, race_results, races |  |  |
+| data_health_monthly_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:370, scripts/lib/dataHealth/functions.js:98, scripts/maintenance/verifyData/data-health-job-for-job.js:42 ほか1 |  | race_results, races |  |  |
 | data_health_morning_freshness | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:199, scripts/lib/dataHealth/checks.js:208, scripts/lib/dataHealth/checks.js:218 ほか4 |  | analogy_v16_snapshots, bet_recommendations, poirot_predictions, races |  |  |
-| data_health_nightly_freshness | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:105, scripts/lib/dataHealth/functions.js:526, scripts/maintenance/verifyData/data-health-job-scenes-2.js:39 ほか2 |  | accuracy_cache, bet_recommendations, exhibition_time_top_stats, losing_technique_stats, model_performance_daily, nige_outcome_distribution, nige_second_by_course, outcome_distribution, race_conditions, race_history_cache, race_results, racer_aggregated_stats, racer_grade_cache, racer_series_points, races, st_course_baseline, top_start_stats, venue_grade_boat_stats, venue_technique_period_stats, venues, winning_technique_stats |  |  |
-| data_health_pit_reports | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:268, scripts/lib/dataHealth/functions.js:470, scripts/maintenance/verifyData/data-health-job-scenes-1.js:231 ほか2 |  | race_pit_reports, races |  |  |
-| data_health_pre_race_fields | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:242, scripts/lib/dataHealth/checks.js:255, scripts/lib/dataHealth/functions.js:461 ほか1 |  | race_conditions, race_entries, races |  |  |
-| data_health_race_series | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:293, scripts/lib/dataHealth/functions.js:479, scripts/maintenance/verifyData/data-health-job-scenes-1.js:250 ほか3 |  | race_series, races |  |  |
-| data_health_racer_period_stats | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:304, scripts/lib/dataHealth/functions.js:488, scripts/maintenance/verifyData/data-health-job-scenes-1.js:267 |  | race_entries, racer_period_stats, races |  |  |
-| data_health_table_rows | service だけ |  | 名前の文字列: scripts/lib/dataHealth/functions.js:546, scripts/lib/dataHealth/jobParts.js:10, scripts/maintenance/verifyData/data-health-job-fixtures.js:77 ほか2 |  | exhibition_data, external_predictions, race_conditions, race_entries, race_odds, race_payouts, race_pit_reports, race_results, race_series, race_special_notes, race_start_timings, racer_period_stats, racer_profiles, racer_series_points, races, venue_entry_course_stats, venue_motor_stats |  |  |
+| data_health_nightly_freshness | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:105, scripts/lib/dataHealth/functions.js:127, scripts/maintenance/verifyData/data-health-job-scenes-2.js:39 ほか2 |  | accuracy_cache, bet_recommendations, exhibition_time_top_stats, losing_technique_stats, model_performance_daily, nige_outcome_distribution, nige_second_by_course, outcome_distribution, race_conditions, race_history_cache, race_results, racer_aggregated_stats, racer_grade_cache, racer_series_points, races, st_course_baseline, top_start_stats, venue_grade_boat_stats, venue_technique_period_stats, venues, winning_technique_stats |  |  |
+| data_health_pit_reports | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:268, scripts/lib/dataHealth/functions.js:71, scripts/maintenance/verifyData/data-health-job-scenes-1.js:231 ほか2 |  | race_pit_reports, races |  |  |
+| data_health_pre_race_fields | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:242, scripts/lib/dataHealth/checks.js:255, scripts/lib/dataHealth/functions.js:62 ほか1 |  | race_conditions, race_entries, races |  |  |
+| data_health_race_series | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:293, scripts/lib/dataHealth/functions.js:80, scripts/maintenance/verifyData/data-health-job-scenes-1.js:250 ほか3 |  | race_series, races |  |  |
+| data_health_racer_period_stats | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:304, scripts/lib/dataHealth/functions.js:89, scripts/maintenance/verifyData/data-health-job-scenes-1.js:267 |  | race_entries, racer_period_stats, races |  |  |
+| data_health_table_rows | service だけ |  | 名前の文字列: scripts/lib/dataHealth/functions.js:147, scripts/lib/dataHealth/jobParts.js:10, scripts/maintenance/verifyData/data-health-job-fixtures.js:77 ほか2 |  | exhibition_data, external_predictions, race_conditions, race_entries, race_odds, race_payouts, race_pit_reports, race_results, race_series, race_special_notes, race_start_timings, racer_period_stats, racer_profiles, racer_series_points, races, venue_entry_course_stats, venue_motor_stats |  |  |
 | enqueue_sns_metric_jobs | service だけ |  | トリガー: sns_x_send_jobs |  | sns_drafts | sns_metric_jobs |  |
 | ensure_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/store.js:175, scripts/maintenance/verify-scrape-slots-on-db.js:58 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:16, scripts/maintenance/verifyData/morning-init-jobs-scenes-3.js:133 |  | races | scrape_slots |  |
 | fetch_counts_daily | service だけ |  | なし |  | fetch_counts |  |  |
@@ -222,21 +222,21 @@
 | analogy_v16_exhibition | api/cron/analogy-exhibition.js | 21 | analogy_v16_snapshots, scrape_job_state, scrape_slots |
 | boatcast_motor_start | api/cron/boatcast-motor-start.js | 23 | scrape_job_state, scrape_slots, venue_motor_start_dates |
 | boatcast_oriten | api/cron/boatcast-oriten.js | 25 | race_original_exhibition, race_original_exhibition_values, scrape_job_state, scrape_slots |
-| daily_reconcile | api/cron/daily-reconcile.js | 21 | scrape_job_state, scrape_slots |
-| data_health | api/cron/data-health.js | 23 | scrape_job_state, scrape_slots |
-| data_health_morning | api/cron/data-health-morning.js | 23 | scrape_job_state, scrape_slots |
+| daily_reconcile | api/cron/daily-reconcile.js | 24 | scrape_job_state, scrape_slots |
+| data_health | api/cron/data-health.js | 25 | scrape_job_state, scrape_slots |
+| data_health_morning | api/cron/data-health-morning.js | 25 | scrape_job_state, scrape_slots |
 | db_apply_dispatch | api/cron/db-apply-dispatch.js | 17 | scrape_job_state, scrape_slots |
 | e2e_rerecord_dispatch | api/cron/e2e-rerecord-dispatch.js | 16 | scrape_job_state, scrape_slots |
 | entry_course_stats | api/cron/entry-course-stats.js | 28 | scrape_job_state, scrape_slots, venue_entry_course_stats |
 | eve_deadlines | api/cron/eve-deadlines.js | 23 | eve_race_deadlines, scrape_job_state, scrape_slots |
 | eve_deadlines_reconcile | api/cron/eve-deadlines-reconcile.js | 23 | eve_race_deadlines, scrape_job_state, scrape_slots |
 | exhibition | api/cron/exhibition.js | 48 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
-| fan_period | api/cron/fan-period.js | 23 | raw_snapshots, scrape_job_state, scrape_slots |
+| fan_period | api/cron/fan-period.js | 26 | raw_snapshots, scrape_job_state, scrape_slots |
 | in_caution_dispatch | api/cron/in-caution-dispatch.js | 16 | scrape_job_state, scrape_slots |
 | in_caution_health | api/cron/in-caution-health.js | 24 | scrape_job_state, scrape_slots |
 | in_caution_today_health | api/cron/in-caution-today-health.js | 24 | scrape_job_state, scrape_slots |
 | key_canary_dispatch | api/cron/key-canary-dispatch.js | 16 | scrape_job_state, scrape_slots |
-| kfile_sync | api/cron/kfile-sync.js | 39 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| kfile_sync | api/cron/kfile-sync.js | 42 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | morning_digest | api/cron/morning-digest.js | 22 | morning_digest_days, morning_digest_rows, scrape_job_state, scrape_slots |
 | motor_pretest | api/cron/motor-pretest.js | 26 | scrape_job_state, scrape_slots |
 | odds | api/cron/odds.js | 29 | prediction_odds, race_odds, scrape_job_state, scrape_slots |
@@ -249,15 +249,15 @@
 | race_info | api/cron/race-info.js | 48 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | race_notices | api/cron/race-notices.js | 24 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
 | race_series | api/cron/race-series.js | 21 | scrape_job_state, scrape_slots |
-| race_status | api/cron/race-status.js | 39 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| racer_career_main | api/cron/racer-career-main.js | 23 | racer_career_meta, scrape_job_state, scrape_slots |
+| race_status | api/cron/race-status.js | 42 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| racer_career_main | api/cron/racer-career-main.js | 24 | racer_career_meta, scrape_job_state, scrape_slots |
 | racer_course_technique_stats | api/cron/racer-course-technique-stats.js | 19 | racer_course_technique_stats, scrape_job_state, scrape_slots, venue_course_technique_baseline |
 | racer_news | api/cron/racer-news.js | 21 | racer_news, racer_news_pending, scrape_job_state, scrape_slots |
 | racer_profiles | api/cron/racer-profiles.js | 20 | racer_profiles, scrape_job_state, scrape_slots |
 | races_init | api/cron/races-init.js | 49 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | release_dispatch | api/cron/release-dispatch.js | 19 | scrape_job_state, scrape_slots |
-| result | api/cron/result.js | 39 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| result_catchup | api/cron/result-catchup.js | 39 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| result | api/cron/result.js | 42 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
+| result_catchup | api/cron/result-catchup.js | 42 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 17 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 18 | scrape_job_state, scrape_slots |
 | sns_auto_plan | api/cron/sns-auto-plan.js | 117 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
@@ -2309,7 +2309,7 @@
 - rpc `get_racer_scoped_race_rows`: `src/services/racerQueries4.js:174`
 - table `a`: `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:186`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:187`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:188`
 - table `eve_race_deadlines`: `scripts/lib/eveDeadlinesJob.js:80`, `scripts/lib/eveDeadlinesJob.js:274`, `scripts/lib/eveDeadlinesJob.js:399`
-- table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:504`, `scripts/lib/racerCareerJob.js:553`
+- table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:174`, `scripts/lib/racerCareerJob.js:223`
 - table `sns_send_events`: `scripts/lib/snsSendRunner.js:172`
 
 ## 拾えなかったもの
@@ -2329,7 +2329,7 @@
   - `scripts/lib/raceSeriesSync.js:75` 表の名前が変数（.from(式)）
   - `scripts/lib/raceSeriesSync.js:91` 表の名前が変数（.from(式)）
   - `scripts/lib/raceSeriesSync.js:104` 表の名前が変数（.from(式)）
-  - `scripts/lib/racerCareerJob.js:268` 表の名前が変数（.from(式)）
+  - `scripts/lib/racerCareerCore.js:226` 表の名前が変数（.from(式)）
   - `scripts/lib/schemaDetect.js:67` 表の名前が変数（.from(式)）
   - `scripts/lib/snsAutoPlanRunner.js:74` RPC の名前が変数（.rpc(式)）
   - `scripts/lib/snsSendRunner.js:153` REST の表の名前が式（/rest/v1/${…}）
