@@ -513,16 +513,11 @@ export function scanText(
     workflowScripts.length > 0,
     true,
   );
-  // 根から import・相対のパスで辿れる先（閉包）。根の木（root）を引数にし、本物の木と下の偽の木で同じ辿りを使う
-  const realFs = {
-    readText: (p) => readFileSync(p, "utf8"),
-    isFile: (p) => Boolean(statOf(p)?.isFile()),
-    isDir: (p) => Boolean(statOf(p)?.isDirectory()),
-  };
-  const closureOf = (root, rootFiles, fsView = realFs) => {
-    const inRoot = (abs) => abs === root || abs.startsWith(root + path.sep);
-    const reachable = new Set(rootFiles);
-    const queue = [...rootFiles];
+  // 根から import・相対のパスで辿れる先（閉包）。本物の木と下の偽の木（メモリの上）で同じ辿りを使う
+  const disk = { read: (p) => readFileSync(p, "utf8"), stat: statOf };
+  const closureOf = (root, roots, io = disk) => {
+    const reachable = new Set(roots);
+    const queue = [...roots];
     const reads = new Set();
     const leakedLiterals = [];
     while (queue.length > 0) {
@@ -530,7 +525,7 @@ export function scanText(
       const css = /\.css$/.test(file);
       if (!css && !/\.(js|jsx|mjs|cjs|html)$/.test(file)) continue;
       const rel = path.relative(root, file);
-      const { specs, literals } = scanText(fsView.readText(file), {
+      const { specs, literals } = scanText(io.read(file), {
         css,
         nodeSide: !rel.startsWith("src/"),
         prefixes,
@@ -542,16 +537,18 @@ export function scanText(
         const base = clean.startsWith("/")
           ? path.join(root, clean)
           : path.resolve(path.dirname(file), clean);
-        if (!inRoot(base)) continue;
+        if (base !== root && !base.startsWith(root + path.sep)) continue;
         const cut = /\/$/.test(clean) || spec !== clean ? "/" : "";
-        const target = exts.map((e) => base + e).find((p) => fsView.isFile(p));
+        const target = exts
+          .map((e) => base + e)
+          .find((p) => io.stat(p)?.isFile());
         if (target) {
           reads.add(path.relative(root, target));
           if (!reachable.has(target)) {
             reachable.add(target);
             queue.push(target);
           }
-        } else if (fsView.isDir(base) || cut) {
+        } else if (io.stat(base)?.isDirectory() || cut) {
           // ディレクトリ・`${` で切れた頭の読み。その下の全部を読みうるものとして判定する
           reads.add(`${path.relative(root, base)}/`.replace(/\/+$/, "/"));
         } else {
@@ -566,37 +563,25 @@ export function scanText(
       leakedLiterals,
     };
   };
-  // src から scripts/lib への辿りは偽の小さな木（メモリの上、ファイルは書かない）で確かめる。本物の src は scripts/lib を
-  // 直に読まなくなった（#2986 で racerConditionStats が hitCalculator を読まなくなり、実例が消えた）が、読めば閉包に入ることは守る
   {
-    const fake = path.join(repoRoot, "__e2e_scope_fake__");
-    const tree = new Map(
-      Object.entries({
-        "src/utils/a.js":
-          'import { b } from "../../scripts/lib/b.js";\nexport const a = b;\n',
-        "scripts/lib/b.js": 'export { c as b } from "./sub/c";\n',
-        "scripts/lib/sub/c.js": "export const c = 1;\n",
-      }).map(([rel, text]) => [path.join(fake, rel), text]),
-    );
-    const fakeFs = {
-      readText: (p) => {
-        if (!tree.has(p)) throw new Error(`偽の木に無いファイルを読んだ: ${p}`);
-        return tree.get(p);
-      },
-      isFile: (p) => tree.has(p),
-      isDir: (p) => [...tree.keys()].some((f) => f.startsWith(p + path.sep)),
-    };
-    const { rels: fakeRels } = closureOf(
-      fake,
-      [path.join(fake, "src/utils/a.js")],
-      fakeFs,
-    );
+    // #2986 で src が scripts/lib を直に読まなくなり実例が消えた。読めば閉包に入ることを偽の木で守る
+    const at = (rel) => path.join(repoRoot, "__fake__", rel);
+    const tree = new Map([
+      [at("src/a.js"), 'import { b } from "../scripts/lib/b";'],
+      [at("scripts/lib/b.js"), 'export { c } from "./c.js";'],
+      [at("scripts/lib/c.js"), "export const c = 1;"],
+    ]);
+    const file = { isFile: () => true, isDirectory: () => false };
+    const fake = closureOf(at(""), [at("src/a.js")], {
+      read: (p) => tree.get(p),
+      stat: (p) => (tree.has(p) ? file : null),
+    });
     check(
       "閉包が src から scripts/lib を辿る（検査の前提、偽の木）",
-      ["scripts/lib/b.js", "scripts/lib/sub/c.js"].every((f) =>
-        fakeRels.includes(f),
-      ),
-      true,
+      ["scripts/lib/b.js", "scripts/lib/c.js"].filter((f) =>
+        fake.rels.includes(f),
+      ).length,
+      2,
     );
   }
   const { rels, reads, leakedLiterals } = closureOf(repoRoot, roots);
