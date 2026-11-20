@@ -20,7 +20,17 @@
  * fine-grained PAT は公開リポジトリを読めるので新しい鍵は作らない。
  */
 import { GITHUB_REPO, githubHeaders } from "./analogyDispatch.js";
-import { isSiteIrrelevant } from "./vercelIgnoreBuild.js";
+import { decideRelease } from "./releaseDecide.js";
+
+// 出すかどうかの判定（純関数）は releaseDecide.js。今までどおりここからも読めるようにする
+export {
+  AUTOMATED_COMMIT_EMAIL,
+  COMPARE_FILES_CAP,
+  FRESH_HEAD_MS,
+  decideRelease,
+  freshnessBasis,
+  isAutomatedCommit,
+} from "./releaseDecide.js";
 
 export const RELEASE_HOOK_ENV = "RELEASE_DEPLOY_HOOK_URL";
 // master への push で走り、失敗が「本番に出す前に止めるべき壊れ」を示す検査（ADR-0079・ADR-0072）
@@ -28,35 +38,6 @@ export const RELEASE_GATE_WORKFLOWS = Object.freeze([
   "post-merge-checks.yml",
   "quality-gates.yml",
 ]);
-// compare API は files を300件まで返す。300件に達したら全部を見ていないのでビルドする側に倒す
-export const COMPARE_FILES_CAP = 300;
-// master の先がこれより新しいと、検査の run がまだ作られていないことがある
-export const FRESH_HEAD_MS = 10 * 60 * 1000;
-// 自動 docs 再生成などの機械の commit の印（ADR-0078）。regenerate-generated-docs.yml は author・committer を
-// action@github.com にして題を「… [automated]」で終える。題だけ・メールだけでは除かない（両方そろったものだけ）。
-// 人の merge は committer が GitHub（noreply@github.com）になるので、題だけ偽っても当たらない
-export const AUTOMATED_COMMIT_EMAIL = "action@github.com";
-export const isAutomatedCommit = (c) =>
-  c?.authorEmail === AUTOMATED_COMMIT_EMAIL &&
-  c?.committerEmail === AUTOMATED_COMMIT_EMAIL &&
-  /\[automated\]\s*$/.test((c?.message ?? "").split("\n")[0]);
-
-/**
- * 先の新しさの判定に使う時刻。先から自動 commit を除いた、最後の人・作り手の commit の時刻。
- * 範囲（compare の commits、古い順）が読めない・全部が自動のときは先の時刻（今までどおり）。
- * FRESH_HEAD_MS の目的（検査の run がまだ無い版を出さない）は、人の commit が新しければ今までどおり働く。
- * 自動 commit の run は quality-gates・post-merge-checks で skipped になる（ADR-0106）ので待つ理由にならない
- */
-export function freshnessBasis(head, commits) {
-  const list = Array.isArray(commits) ? commits : [];
-  if (list.length === 0 || list[list.length - 1]?.sha !== head.sha) {
-    return head.committedAt;
-  }
-  for (let i = list.length - 1; i >= 0; i--) {
-    if (!isAutomatedCommit(list[i])) return list[i].committedAt;
-  }
-  return head.committedAt;
-}
 // 検査の run を読む本数（1ページ）とページの上限。1日約59本の push で、止まっていても約5日分を覆う
 export const GATE_RUNS_PER_PAGE = 100;
 export const GATE_RUNS_MAX_PAGES = 3;
@@ -108,7 +89,9 @@ export function summarizeGates(rangeShas, gateRuns) {
         state: "red",
         conclusion: null,
         headSha: rangeShas[0] ?? "",
-        unresolved: ["出す範囲の run を全部読めていない（範囲が大きい。直したら手で出す）"],
+        unresolved: [
+          "出す範囲の run を全部読めていない（範囲が大きい。直したら手で出す）",
+        ],
       };
     }
     const inRange = runs
@@ -130,107 +113,12 @@ export function summarizeGates(rangeShas, gateRuns) {
         unresolved: ["失敗した run を再実行して通すか、直して手で出す"],
       };
     }
-    return { workflow, state: "green", headSha: inRange[inRange.length - 1].head_sha };
+    return {
+      workflow,
+      state: "green",
+      headSha: inRange[inRange.length - 1].head_sha,
+    };
   });
-}
-
-/**
- * 出すかどうか（純関数）
- * @param {{
- *   deployedSha: string,
- *   head: {sha: string, committedAt: string},
- *   compare: {status: string, files: {filename: string, previous_filename?: string}[], commitShas: string[]},
- *   gates: ReturnType<typeof summarizeGates>,
- *   previous: {released?: boolean, fromSha?: string, lastReleasedSha?: string} | null,
- *   now: Date,
- * }} input
- * @returns {{action: "none"|"release"|"deferred"|"blocked"|"error", reason: string, stuck: boolean}}
- */
-export function decideRelease({
-  deployedSha,
-  head,
-  compare,
-  gates,
-  previous,
-  now,
-}) {
-  // 前回叩いたのに本番の版が動いていない
-  const stuck = Boolean(
-    previous?.released && previous.fromSha && previous.fromSha === deployedSha,
-  );
-  const result = (action, reason) => ({ action, reason, stuck });
-
-  if (compare.status === "identical") {
-    return result("none", "本番は master の先と同じ");
-  }
-  if (compare.status !== "ahead") {
-    // behind・diverged: 本番の版が master に無い（force push・別の枝から出した 等）。黙って上書きしない
-    return result(
-      "error",
-      `本番の版 ${deployedSha.slice(0, 9)} が master の祖先ではない（compare の status: ${compare.status}）`,
-    );
-  }
-  if (stuck) {
-    // ビルドの失敗と、出た後の Instant Rollback（A→B を出した後に A へ戻した）は、本番の版だけでは区別できない。
-    // 戻した本番に壊れた版を出し直さないよう、自動では叩かない。本番の版が動けば（手で出す等）自動に戻る
-    return result(
-      "error",
-      `前回叩いた版（${previous.masterSha?.slice(0, 9) ?? "?"}）が本番に出ていない（本番の版は ${deployedSha.slice(0, 9)} のまま）。` +
-        "ビルドの失敗か、出た後の Instant Rollback。自動では出し直さない。Vercel で確かめ、直したら手で出す（ADR-0106「手で出す」）",
-    );
-  }
-  if (
-    previous?.lastReleasedSha &&
-    compare.commitShas.includes(previous.lastReleasedSha)
-  ) {
-    return result(
-      "error",
-      `本番の版 ${deployedSha.slice(0, 9)} が前に出した版 ${previous.lastReleasedSha.slice(0, 9)} より古い（Instant Rollback？）。` +
-        "巻き戻した本番に master を出し直さない。master を直して手で出すか、release_dispatch の mode を off にする",
-    );
-  }
-  const paths = compare.files.flatMap((f) =>
-    f.previous_filename ? [f.filename, f.previous_filename] : [f.filename],
-  );
-  const capped = compare.files.length >= COMPARE_FILES_CAP;
-  if (!capped && paths.every(isSiteIrrelevant)) {
-    // 変更が打ち消し合って files が空のときも含む（中身が同じ木を出し直さない）
-    return result(
-      "none",
-      paths.length === 0
-        ? "差分のファイルが無い（変更と戻しが打ち消し合った 等）"
-        : `サイトに関係ない差分だけ（${paths.length}件）`,
-    );
-  }
-  if (
-    now.getTime() - Date.parse(freshnessBasis(head, compare.commits)) <
-    FRESH_HEAD_MS
-  ) {
-    return result(
-      "deferred",
-      `master の先 ${head.sha.slice(0, 9)}（自動 commit を除く）が10分以内のコミット（検査の run がまだ無いことがある）`,
-    );
-  }
-  const red = gates.filter((g) => g.state === "red");
-  if (red.length > 0) {
-    return result(
-      "blocked",
-      `master の検査が通っていない: ${red.map((g) => `${g.workflow}=${g.conclusion}（${g.headSha.slice(0, 9)}${g.unresolved?.length ? `、${g.unresolved.join("・")}` : ""}）`).join(", ")}`,
-    );
-  }
-  const pending = gates.filter((g) => g.state === "pending");
-  if (pending.length > 0) {
-    return result(
-      "deferred",
-      `master の検査が走っている: ${pending.map((g) => `${g.workflow}（${g.headSha.slice(0, 9)}）`).join(", ")}`,
-    );
-  }
-  return result(
-    "release",
-    capped
-      ? `差分が ${COMPARE_FILES_CAP} 件以上（全部は見ていない）`
-      : `サイトに関わる差分がある（${paths.length}件）`,
-  );
 }
 
 async function ghGet({ fetchImpl, token, url }) {
@@ -321,6 +209,123 @@ export async function fetchGateRuns({
   );
 }
 
+/** 20分後の拾い直しで、定時が「待つ」で終わっていないときの答え（前の記録をそのまま残す） */
+function followupSkipped(previous) {
+  const report = { ...(previous ?? {}), followupSkipped: true };
+  return {
+    rowsWritten: 0,
+    report,
+    body: {
+      followupSkipped: true,
+      previousAction: previous?.action ?? null,
+    },
+  };
+}
+
+/** 今の本番の版と GitHub の鍵の名を環境変数から読む。欠けていれば error の答え */
+function readReleaseEnv(env) {
+  const deployedSha = env.VERCEL_GIT_COMMIT_SHA;
+  if (!deployedSha) {
+    return {
+      error: {
+        outcome: "error",
+        error: "VERCEL_GIT_COMMIT_SHA が無い（今の本番の版が分からない）",
+      },
+    };
+  }
+  const token = env.GITHUB_ACTIONS_DISPATCH_TOKEN;
+  if (!token) {
+    return {
+      error: {
+        outcome: "error",
+        error: "GITHUB_ACTIONS_DISPATCH_TOKEN が未設定（Vercel の環境変数）",
+      },
+    };
+  }
+  return { deployedSha, token };
+}
+
+/** master の先・compare・検査の run を読む。読めなければ error の答え */
+async function readGitHub({ fetchImpl, token, deployedSha }) {
+  try {
+    const head = await fetchMasterHead({ fetchImpl, token });
+    const compare = await fetchCompare({
+      fetchImpl,
+      token,
+      deployedSha,
+      headSha: head.sha,
+    });
+    const gateRuns = await fetchGateRuns({
+      fetchImpl,
+      token,
+      rangeShas: compare.commitShas,
+      complete: compare.complete,
+    });
+    return { head, compare, gateRuns };
+  } catch (error) {
+    return {
+      error: { outcome: "error", error: `GitHub を読めない: ${error.message}` },
+    };
+  }
+}
+
+/** Deploy Hook を叩く。叩けなければ error の答え、叩けたら null */
+async function fireDeployHook({ fetchImpl, env }) {
+  const hook = env[RELEASE_HOOK_ENV];
+  if (!hook) {
+    return {
+      outcome: "error",
+      error: `${RELEASE_HOOK_ENV} が未設定（Vercel の環境変数）。出すべき差分があるのに出せない`,
+    };
+  }
+  try {
+    const res = await fetchImpl(hook, {
+      method: "POST",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+    }
+  } catch (error) {
+    return {
+      outcome: "error",
+      error: `Deploy Hook を叩けない: ${error.message}`,
+    };
+  }
+  return null;
+}
+
+/** 読んだ物と答えから、last_report に置く記録を組む */
+function releaseReport({
+  deployedSha,
+  head,
+  compare,
+  gates,
+  decision,
+  previous,
+  ctx,
+}) {
+  return {
+    deployedSha,
+    masterSha: head.sha,
+    status: compare.status,
+    files: compare.files.length,
+    gates,
+    action: decision.action,
+    reason: decision.reason,
+    released: false,
+    fromSha: deployedSha,
+    lastReleasedSha: previous?.lastReleasedSha ?? null,
+    alerts: staleReleaseAlerts({
+      action: decision.action,
+      mode: ctx.mode,
+      oldestCommittedAt: compare.oldestCommittedAt,
+      now: ctx.now(),
+    }),
+  };
+}
+
 /**
  * @param {{fetchImpl?: typeof fetch, env?: Record<string, string|undefined>}} [deps]
  */
@@ -333,52 +338,15 @@ export function createReleaseDispatchRun({
     // 20分後の拾い直しは、定時が「待つ」で終わったときだけ動く。それ以外は前の記録をそのまま残す
     // （置き換えると、定時で叩いた記録が消えて次の定時で「出ていない」を見張れなくなる）
     if (isFollowupTick(ctx.now()) && previous?.action !== "deferred") {
-      const report = { ...(previous ?? {}), followupSkipped: true };
-      return {
-        rowsWritten: 0,
-        report,
-        body: {
-          followupSkipped: true,
-          previousAction: previous?.action ?? null,
-        },
-      };
+      return followupSkipped(previous);
     }
 
-    const deployedSha = env.VERCEL_GIT_COMMIT_SHA;
-    if (!deployedSha) {
-      return {
-        outcome: "error",
-        error: "VERCEL_GIT_COMMIT_SHA が無い（今の本番の版が分からない）",
-      };
-    }
-    const token = env.GITHUB_ACTIONS_DISPATCH_TOKEN;
-    if (!token) {
-      return {
-        outcome: "error",
-        error: "GITHUB_ACTIONS_DISPATCH_TOKEN が未設定（Vercel の環境変数）",
-      };
-    }
-
-    let head;
-    let compare;
-    let gateRuns;
-    try {
-      head = await fetchMasterHead({ fetchImpl, token });
-      compare = await fetchCompare({
-        fetchImpl,
-        token,
-        deployedSha,
-        headSha: head.sha,
-      });
-      gateRuns = await fetchGateRuns({
-        fetchImpl,
-        token,
-        rangeShas: compare.commitShas,
-        complete: compare.complete,
-      });
-    } catch (error) {
-      return { outcome: "error", error: `GitHub を読めない: ${error.message}` };
-    }
+    const envRead = readReleaseEnv(env);
+    if (envRead.error) return envRead.error;
+    const { deployedSha, token } = envRead;
+    const read = await readGitHub({ fetchImpl, token, deployedSha });
+    if (read.error) return read.error;
+    const { head, compare, gateRuns } = read;
 
     const gates = summarizeGates(compare.commitShas, gateRuns);
     const decision = decideRelease({
@@ -389,24 +357,15 @@ export function createReleaseDispatchRun({
       previous,
       now: ctx.now(),
     });
-    const report = {
+    const report = releaseReport({
       deployedSha,
-      masterSha: head.sha,
-      status: compare.status,
-      files: compare.files.length,
+      head,
+      compare,
       gates,
-      action: decision.action,
-      reason: decision.reason,
-      released: false,
-      fromSha: deployedSha,
-      lastReleasedSha: previous?.lastReleasedSha ?? null,
-      alerts: staleReleaseAlerts({
-        action: decision.action,
-        mode: ctx.mode,
-        oldestCommittedAt: compare.oldestCommittedAt,
-        now: ctx.now(),
-      }),
-    };
+      decision,
+      previous,
+      ctx,
+    });
     if (decision.action !== "release") {
       if (decision.action === "error" || decision.action === "blocked") {
         return { outcome: "error", error: decision.reason };
@@ -418,28 +377,8 @@ export function createReleaseDispatchRun({
       const body = { ...report, wouldRelease: true };
       return { rowsWritten: 0, report: body, body };
     }
-    const hook = env[RELEASE_HOOK_ENV];
-    if (!hook) {
-      return {
-        outcome: "error",
-        error: `${RELEASE_HOOK_ENV} が未設定（Vercel の環境変数）。出すべき差分があるのに出せない`,
-      };
-    }
-    try {
-      const res = await fetchImpl(hook, {
-        method: "POST",
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
-      }
-    } catch (error) {
-      return {
-        outcome: "error",
-        error: `Deploy Hook を叩けない: ${error.message}`,
-      };
-    }
+    const hookError = await fireDeployHook({ fetchImpl, env });
+    if (hookError) return hookError;
     const body = { ...report, released: true, lastReleasedSha: head.sha };
     return { rowsWritten: 0, report: body, body };
   };

@@ -67,6 +67,168 @@ function hasDeadHeat(rows) {
 const firstPayout = (payouts, kind) =>
   payouts.find((p) => p.kind === kind) ?? null;
 
+/** kb_archive_venue_days の1行 */
+function venueDayRow(date, vc, venueDayId, kv, bv) {
+  const src = kv ?? bv;
+  return {
+    venue_day_id: venueDayId,
+    race_date: date,
+    venue_code: vc,
+    title: src.title ?? bv?.title ?? null,
+    title_short: src.title_short ?? null,
+    day_label: src.day_label ?? null,
+    series_day: src.series_day ?? bv?.series_day ?? null,
+    has_k: Boolean(kv),
+    has_b: Boolean(bv),
+    // race_grade は書かない（K/B にグレードの項目は無い）。race_series の kind から別に補完する
+    // （BOA-651、docs/archive/issues/boa-651-kb-archive-grade.md）。ここで null を送ると、load の再実行
+    // （upsertChangedRows）が補完した値を NULL で上書きする
+    // is_final_day も書かない（BOA-696）。K/B は最終日も「第N日」と書き、「最終日」と書かないため、K/B からは
+    // 常に false になる。race_series の終了日から別に補完する（docs/issues/boa-696-kb-archive-final-day.md）。
+    // 列は NOT NULL DEFAULT false なので、挿入では false、load の再実行では補完した値を保つ
+    created_at: null, // バックフィル行はNULL（取得時刻を偽らない。data-acquisition.md）
+  };
+}
+
+const amountOf = (p) => p?.amount ?? null;
+const pick = (o, key) => o?.[key] ?? null;
+const pickFirst = (a, b, key) => a?.[key] ?? b?.[key] ?? null;
+
+/** kb_archive_races の払戻の列 */
+function racePayoutColumns(payouts) {
+  const win = firstPayout(payouts, "win");
+  const exacta = firstPayout(payouts, "exacta");
+  const quinella = firstPayout(payouts, "quinella");
+  const tri3t = firstPayout(payouts, "trifecta");
+  const tri3f = firstPayout(payouts, "trio");
+  return {
+    payout_win: amountOf(win),
+    payout_2tan: amountOf(exacta),
+    payout_2fuku: amountOf(quinella),
+    payout_3tan: amountOf(tri3t),
+    payout_3fuku: amountOf(tri3f),
+    combo_3tan: tri3t?.combo ?? null,
+    popularity_3tan: tri3t?.popularity ?? null,
+  };
+}
+
+/** kb_archive_races の1行（kr=Kファイルのレース、br=Bファイルのレース。どちらか null） */
+function raceRow({ raceId, venueDayId, date, vc, rn }, kr, br, rows) {
+  const stage = kr?.stage ?? br?.stage ?? null;
+  return {
+    race_id: raceId,
+    venue_day_id: venueDayId,
+    race_date: date,
+    venue_code: vc,
+    race_number: rn,
+    stage,
+    stage_kind: classifyStage(stage),
+    distance_m: kr?.distance_m ?? br?.distance_m ?? null,
+    deadline_time: br?.deadline_time ?? null,
+    ...raceConditionColumns(kr),
+    has_result: rows.length > 0,
+    dead_heat: hasDeadHeat(rows),
+    ...racePayoutColumns(kr?.payouts ?? []),
+    created_at: null,
+  };
+}
+
+/** kb_archive_races の気象・決まり手の列（Kファイルだけが持つ） */
+function raceConditionColumns(kr) {
+  return {
+    weather: kr?.weather ?? null,
+    wind_direction: kr?.wind_direction ?? null,
+    wind_speed: kr?.wind_speed ?? null,
+    wave_height: kr?.wave_height ?? null,
+    technique: kr?.technique ?? null,
+  };
+}
+
+/** kb_archive_boats の出走表（Bファイル）由来の列 */
+function boatEntryColumns(e) {
+  return {
+    class: pick(e, "class"),
+    age: pick(e, "age"),
+    branch: pick(e, "branch"),
+    weight: pick(e, "weight"),
+    national_win_rate: pick(e, "national_win_rate"),
+    national_2rate: pick(e, "national_2rate"),
+    local_win_rate: pick(e, "local_win_rate"),
+    local_2rate: pick(e, "local_2rate"),
+  };
+}
+
+/** kb_archive_boats の成績（Kファイル）由来の列 */
+function boatResultColumns(k) {
+  return {
+    exhibition_time: k?.exhibition_time ?? null,
+    course: k?.course ?? null,
+    start_timing: k?.start_timing ?? null,
+    is_flying: k ? k.is_flying : null,
+    is_late_start: k ? k.is_late_start : null,
+    finish_raw: k?.finish_raw ?? null,
+    finish_rank: k?.rank ?? null,
+    race_seconds: raceTimeToSeconds(k?.race_time),
+  };
+}
+
+/** kb_archive_boats の1行（k=Kファイルの成績、e=Bファイルの出走表。どちらか null） */
+function boatRow(raceId, bn, k, e) {
+  return {
+    race_id: raceId,
+    boat_number: bn,
+    racer_id: pickFirst(k, e, "racer_id"),
+    ...boatEntryColumns(e),
+    motor_number: pickFirst(k, e, "motor_number"),
+    motor_2rate: pick(e, "motor_2rate"),
+    boat_id: pickFirst(k, e, "boat_id"),
+    boat_2rate: pick(e, "boat_2rate"),
+    ...boatResultColumns(k),
+    created_at: null,
+  };
+}
+
+/** 1レースの艇の行を boats に足す（K と B の登録番号の不一致は warnings に） */
+function pushBoatRows(raceId, rows, br, boats, warnings) {
+  const kByBoat = new Map();
+  for (const r of rows)
+    if (!kByBoat.has(r.boat_number)) kByBoat.set(r.boat_number, r);
+  const bByBoat = new Map(
+    (br?.entries ?? []).map((e) => [e.boat_number, e]),
+  );
+  const boatNumbers = [
+    ...new Set([...kByBoat.keys(), ...bByBoat.keys()]),
+  ].sort((a, b) => a - b);
+  for (const bn of boatNumbers) {
+    const k = kByBoat.get(bn) ?? null;
+    const e = bByBoat.get(bn) ?? null;
+    if (k && e && k.racer_id !== e.racer_id) {
+      warnings.push(
+        `${raceId} ${bn}号艇: 登録番号がK(${k.racer_id})とB(${e.racer_id})で不一致（選手変更の可能性）`,
+      );
+    }
+    boats.push(boatRow(raceId, bn, k, e));
+  }
+}
+
+/** 1会場ぶんのレース・艇の行を races・boats に足す */
+function pushVenueRaces({ date, vc, venueDayId }, kv, bv, out) {
+  const kRaces = new Map((kv?.races ?? []).map((r) => [r.race_number, r]));
+  const bRaces = new Map((bv?.races ?? []).map((r) => [r.race_number, r]));
+  const raceNumbers = [...new Set([...kRaces.keys(), ...bRaces.keys()])].sort(
+    (a, b) => a - b,
+  );
+
+  for (const rn of raceNumbers) {
+    const kr = kRaces.get(rn) ?? null;
+    const br = bRaces.get(rn) ?? null;
+    const raceId = `${date}-${pad2(vc)}-${pad2(rn)}`;
+    const rows = kr?.rows ?? [];
+    out.races.push(raceRow({ raceId, venueDayId, date, vc, rn }, kr, br, rows));
+    pushBoatRows(raceId, rows, br, out.boats, out.warnings);
+  }
+}
+
 /**
  * @param {ReturnType<import("./kbFileParser.js").buildKbDay>} day
  * @returns {{venueDays: object[], races: object[], boats: object[], warnings: string[]}}
@@ -77,6 +239,7 @@ export function buildArchiveRows(day) {
   const races = [];
   const boats = [];
   const warnings = [];
+  const out = { races, boats, warnings };
 
   const kByVenue = new Map((day.k?.venues ?? []).map((v) => [v.venue_code, v]));
   const bByVenue = new Map((day.b?.venues ?? []).map((v) => [v.venue_code, v]));
@@ -93,121 +256,14 @@ export function buildArchiveRows(day) {
       );
       continue;
     }
-    const src = kv ?? bv;
     if (kv?.date_in_body && kv.date_in_body !== date) {
       warnings.push(
         `${date} 会場${vc}: Kファイル本文の日付が不一致（${kv.date_in_body}）`,
       );
     }
     const venueDayId = `${date}-${pad2(vc)}`;
-    venueDays.push({
-      venue_day_id: venueDayId,
-      race_date: date,
-      venue_code: vc,
-      title: src.title ?? bv?.title ?? null,
-      title_short: src.title_short ?? null,
-      day_label: src.day_label ?? null,
-      series_day: src.series_day ?? bv?.series_day ?? null,
-      has_k: Boolean(kv),
-      has_b: Boolean(bv),
-      // race_grade は書かない（K/B にグレードの項目は無い）。race_series の kind から別に補完する
-      // （BOA-651、docs/archive/issues/boa-651-kb-archive-grade.md）。ここで null を送ると、load の再実行
-      // （upsertChangedRows）が補完した値を NULL で上書きする
-      // is_final_day も書かない（BOA-696）。K/B は最終日も「第N日」と書き、「最終日」と書かないため、K/B からは
-      // 常に false になる。race_series の終了日から別に補完する（docs/issues/boa-696-kb-archive-final-day.md）。
-      // 列は NOT NULL DEFAULT false なので、挿入では false、load の再実行では補完した値を保つ
-      created_at: null, // バックフィル行はNULL（取得時刻を偽らない。data-acquisition.md）
-    });
-
-    const kRaces = new Map((kv?.races ?? []).map((r) => [r.race_number, r]));
-    const bRaces = new Map((bv?.races ?? []).map((r) => [r.race_number, r]));
-    const raceNumbers = [...new Set([...kRaces.keys(), ...bRaces.keys()])].sort(
-      (a, b) => a - b,
-    );
-
-    for (const rn of raceNumbers) {
-      const kr = kRaces.get(rn) ?? null;
-      const br = bRaces.get(rn) ?? null;
-      const raceId = `${date}-${pad2(vc)}-${pad2(rn)}`;
-      const payouts = kr?.payouts ?? [];
-      const win = firstPayout(payouts, "win");
-      const exacta = firstPayout(payouts, "exacta");
-      const quinella = firstPayout(payouts, "quinella");
-      const tri3t = firstPayout(payouts, "trifecta");
-      const tri3f = firstPayout(payouts, "trio");
-      const rows = kr?.rows ?? [];
-      races.push({
-        race_id: raceId,
-        venue_day_id: venueDayId,
-        race_date: date,
-        venue_code: vc,
-        race_number: rn,
-        stage: kr?.stage ?? br?.stage ?? null,
-        stage_kind: classifyStage(kr?.stage ?? br?.stage ?? null),
-        distance_m: kr?.distance_m ?? br?.distance_m ?? null,
-        deadline_time: br?.deadline_time ?? null,
-        weather: kr?.weather ?? null,
-        wind_direction: kr?.wind_direction ?? null,
-        wind_speed: kr?.wind_speed ?? null,
-        wave_height: kr?.wave_height ?? null,
-        technique: kr?.technique ?? null,
-        has_result: rows.length > 0,
-        dead_heat: hasDeadHeat(rows),
-        payout_win: win?.amount ?? null,
-        payout_2tan: exacta?.amount ?? null,
-        payout_2fuku: quinella?.amount ?? null,
-        payout_3tan: tri3t?.amount ?? null,
-        payout_3fuku: tri3f?.amount ?? null,
-        combo_3tan: tri3t?.combo ?? null,
-        popularity_3tan: tri3t?.popularity ?? null,
-        created_at: null,
-      });
-
-      const kByBoat = new Map();
-      for (const r of rows)
-        if (!kByBoat.has(r.boat_number)) kByBoat.set(r.boat_number, r);
-      const bByBoat = new Map(
-        (br?.entries ?? []).map((e) => [e.boat_number, e]),
-      );
-      const boatNumbers = [
-        ...new Set([...kByBoat.keys(), ...bByBoat.keys()]),
-      ].sort((a, b) => a - b);
-      for (const bn of boatNumbers) {
-        const k = kByBoat.get(bn) ?? null;
-        const e = bByBoat.get(bn) ?? null;
-        if (k && e && k.racer_id !== e.racer_id) {
-          warnings.push(
-            `${raceId} ${bn}号艇: 登録番号がK(${k.racer_id})とB(${e.racer_id})で不一致（選手変更の可能性）`,
-          );
-        }
-        boats.push({
-          race_id: raceId,
-          boat_number: bn,
-          racer_id: k?.racer_id ?? e?.racer_id ?? null,
-          class: e?.class ?? null,
-          age: e?.age ?? null,
-          branch: e?.branch ?? null,
-          weight: e?.weight ?? null,
-          national_win_rate: e?.national_win_rate ?? null,
-          national_2rate: e?.national_2rate ?? null,
-          local_win_rate: e?.local_win_rate ?? null,
-          local_2rate: e?.local_2rate ?? null,
-          motor_number: k?.motor_number ?? e?.motor_number ?? null,
-          motor_2rate: e?.motor_2rate ?? null,
-          boat_id: k?.boat_id ?? e?.boat_id ?? null,
-          boat_2rate: e?.boat_2rate ?? null,
-          exhibition_time: k?.exhibition_time ?? null,
-          course: k?.course ?? null,
-          start_timing: k?.start_timing ?? null,
-          is_flying: k ? k.is_flying : null,
-          is_late_start: k ? k.is_late_start : null,
-          finish_raw: k?.finish_raw ?? null,
-          finish_rank: k?.rank ?? null,
-          race_seconds: raceTimeToSeconds(k?.race_time),
-          created_at: null,
-        });
-      }
-    }
+    venueDays.push(venueDayRow(date, vc, venueDayId, kv, bv));
+    pushVenueRaces({ date, vc, venueDayId }, kv, bv, out);
   }
   return { venueDays, races, boats, warnings };
 }

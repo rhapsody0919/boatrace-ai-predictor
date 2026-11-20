@@ -89,6 +89,19 @@ async function findMissingRaces(date) {
   };
 }
 
+/** beforeinfo の水面気象（取れなければ null）→ race_conditions の気象の列（純関数） */
+function conditionColumns(conditions) {
+  return {
+    weather: conditions?.weather ?? null,
+    wind_direction: convertWindDirection(conditions?.windDirection ?? null),
+    wind_speed: conditions?.windVelocity ?? null,
+    wave_height:
+      conditions?.waveHeight != null ? Math.round(conditions.waveHeight) : null,
+    temperature: conditions?.airTemp ?? null,
+    water_temperature: conditions?.waterTemp ?? null,
+  };
+}
+
 async function buildRow(raceId) {
   const [, , , venue, raceNo] = raceId.split("-");
   const ymd = raceId.slice(0, 10).replace(/-/g, "");
@@ -115,18 +128,46 @@ async function buildRow(raceId) {
 
   return {
     race_id: raceId,
-    weather: conditions?.weather ?? null,
-    wind_direction: convertWindDirection(conditions?.windDirection ?? null),
-    wind_speed: conditions?.windVelocity ?? null,
-    wave_height:
-      conditions?.waveHeight != null ? Math.round(conditions.waveHeight) : null,
-    temperature: conditions?.airTemp ?? null,
-    water_temperature: conditions?.waterTemp ?? null,
+    ...conditionColumns(conditions),
     race_title: raceTitle,
     race_stage: raceStage,
     series_day: seriesDay,
     is_final_day: isFinalDay,
   };
+}
+
+/** 欠損のレースごとに行を作る（間隔を空ける）。作れなかったレースは数えてログに出す */
+async function buildRows(targets) {
+  let failures = 0;
+  const rows = [];
+  for (const { race_id } of targets) {
+    try {
+      rows.push(await buildRow(race_id));
+    } catch (err) {
+      failures++;
+      console.error(`  ❌ ${race_id}: ${err.message}`);
+    }
+    await new Promise((r) => setTimeout(r, REQUEST_INTERVAL_MS));
+  }
+  return { rows, failures };
+}
+
+/** 1日分の行を WRITE_BATCH_SIZE ごとに upsert する（既存の行は上書きしない）。書いた件数を返す。失敗は exitCode=1 で続ける */
+async function writeRows(date, rows) {
+  let written = 0;
+  for (let i = 0; i < rows.length; i += WRITE_BATCH_SIZE) {
+    const batch = rows.slice(i, i + WRITE_BATCH_SIZE);
+    const { error } = await supabase
+      .from("race_conditions")
+      .upsert(batch, { onConflict: "race_id", ignoreDuplicates: true });
+    if (error) {
+      console.error(`  ❌ 書き込みエラー(${date} batch ${i}): ${error.message}`);
+      process.exitCode = 1;
+      continue;
+    }
+    written += batch.length;
+  }
+  return written;
 }
 
 async function main() {
@@ -160,16 +201,8 @@ async function main() {
       `📅 ${date}: 欠損 ${targets.length}件（中止・順延で対象外 ${skippedCancelled}件）`,
     );
 
-    const rows = [];
-    for (const { race_id } of targets) {
-      try {
-        rows.push(await buildRow(race_id));
-      } catch (err) {
-        totalFailures++;
-        console.error(`  ❌ ${race_id}: ${err.message}`);
-      }
-      await new Promise((r) => setTimeout(r, REQUEST_INTERVAL_MS));
-    }
+    const { rows, failures } = await buildRows(targets);
+    totalFailures += failures;
 
     for (const r of rows) {
       const stage = r.race_stage ?? "null";
@@ -179,18 +212,7 @@ async function main() {
     totalRows += rows.length;
     if (!apply) continue;
 
-    for (let i = 0; i < rows.length; i += WRITE_BATCH_SIZE) {
-      const batch = rows.slice(i, i + WRITE_BATCH_SIZE);
-      const { error } = await supabase
-        .from("race_conditions")
-        .upsert(batch, { onConflict: "race_id", ignoreDuplicates: true });
-      if (error) {
-        console.error(`  ❌ 書き込みエラー(${date} batch ${i}): ${error.message}`);
-        process.exitCode = 1;
-        continue;
-      }
-      totalWritten += batch.length;
-    }
+    totalWritten += await writeRows(date, rows);
     console.log(`  ✅ ${date}: ${apply ? "書き込み" : "取得"}完了`);
   }
 

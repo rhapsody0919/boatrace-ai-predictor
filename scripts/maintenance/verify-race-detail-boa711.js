@@ -4,7 +4,8 @@
  * 画面はブラウザでしか動かないため、ソースと文言を検査する（verify-motor-tab-readability.js と同じ方式）。
  * 数値の判定（ST考察の差の色 diffTone）は verify-race-indicator-tones.js で検査する。
  */
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { localSourceFiles } from "./verifyData/sourceScope.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -263,7 +264,8 @@ check(
   ];
   const files = [
     ...LANGS.map((l) => `src/locales/${l}/common.json`),
-    "src/pages/HowToUse.jsx",
+    // 割ったページ（同じフォルダの相対 import の先）も見る
+    ...localSourceFiles({ read, exists: (rel) => existsSync(path.join(root, rel)) }, "src/pages/HowToUse.jsx"),
     ...readdirSync(path.join(root, "public/blog"))
       .filter((f) => f.endsWith(".md"))
       .map((f) => `public/blog/${f}`),

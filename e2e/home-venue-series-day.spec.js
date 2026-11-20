@@ -29,7 +29,7 @@ test("ensureOpenVenues は、開催中の会場が足りないとき（深夜の
   expect(venues).toHaveLength(3);
 });
 
-const cardOf =(page, code, prefix = "") =>
+const cardOf = (page, code, prefix = "") =>
   page.locator(`a.venue-grid-card--open[href="${prefix}/venue/${code}"]`);
 
 // BOA-1584: 今日のトップの開催中の会場の数。0（0:00〜7:00 JST 前後）なら開催中を前提とする test は skip する
@@ -39,12 +39,21 @@ async function openVenueCount(page) {
   return page.locator(".venue-grid-card--open").count();
 }
 
+// 同じ会場のレースを minRaces 件まで足す（番号は空いている所から）。朝（0:00〜7:00 JST 前後）は本日のレースが空で、
+// ensureOpenVenues の作る会場が1レースだけになる。レース単位の値の補いを確かめるには2レース要る
+function padRaces(venue, minRaces) {
+  const used = new Set(venue.races.map((r) => r.raceNo));
+  for (let no = 1; venue.races.length < minRaces && no <= 12; no++)
+    if (!used.has(no)) venue.races.push({ ...venue.races[0], raceNo: no });
+}
+
 // 最初に races のある会場を書き換え、その会場コードを返す
-function rewriteFirstVenue(page, edit) {
+function rewriteFirstVenue(page, edit, { minRaces = 1 } = {}) {
   const picked = { code: null };
   const ready = setJstNoon(page).then(() =>
     rewriteTodayRaces(page, (venues) => {
       const venue = ensureOpenVenues(venues, 1)[0];
+      padRaces(venue, minRaces);
       picked.code = venueCodeOf(venue);
       venue.races.forEach((r, i) => {
         r.cancellationStatus = null;
@@ -59,12 +68,16 @@ function rewriteFirstVenue(page, edit) {
 test("節の途中の日は、会場名の横に「N日目」を出す。レース単位で欠けた日目は同じ会場の値で補う", async ({
   page,
 }) => {
-  const { picked, ready } = rewriteFirstVenue(page, (r, i) => {
-    r.startTime = "23:59";
-    // 出走表の取得前のレースは日目が null（レース詳細と同じく、値のあるレースで補う）
-    r.seriesDay = i === 0 ? null : 3;
-    r.isFinalDay = false;
-  });
+  const { picked, ready } = rewriteFirstVenue(
+    page,
+    (r, i) => {
+      r.startTime = "23:59";
+      // 出走表の取得前のレースは日目が null（レース詳細と同じく、値のあるレースで補う）
+      r.seriesDay = i === 0 ? null : 3;
+      r.isFinalDay = false;
+    },
+    { minRaces: 2 },
+  );
   await ready;
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const day = cardOf(page, await waitCode(picked)).locator(

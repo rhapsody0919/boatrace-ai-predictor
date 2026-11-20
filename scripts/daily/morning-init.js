@@ -162,171 +162,152 @@ const isTrueVar = (name) =>
     .trim()
     .toLowerCase() === "true";
 
-async function main() {
-  console.log("🌅 朝の初期化チェック");
-  console.log(`⏰ ${new Date().toISOString()}`);
-
-  // 取得の非常停止（fetch_stop、マイグレーション178）が立っていれば、SKIP 変数・安全装置に関係なく初期化しない
-  // （Vercel の races_init が止まって races が0件でも、GitHub が素の fetch で取りに行かない。ADR-0101 決定6、system-architect の審査 A）。
-  // 非常停止の間は、DB だけを使う予測の再生成・unified の確認も止まる（新しいデータが入らないので意図どおり）。
-  // GHA は起動ごとに新しいプロセスで直前の値を持たないので、読み取りに失敗した起動は止めない側になる（isGhaFetchStopped）
-  if ((await isGhaFetchStopped()).stopped) {
-    console.log("⏭️ 取得の非常停止中のため、朝の初期化を行わない");
-    return;
+// SKIP_MORNING_INIT_ON_GHA=true のときの判定（フェイルセーフと肩代わりの条件）。true なら何もせず終える。
+// 続けるときはフェイルセーフで初期化する旨を警告する
+async function skipByGhaToggle() {
+  const jstHour = getJSTNow().getUTCHours();
+  let racesCount = null;
+  if (jstHour >= FALLBACK_FROM_JST_HOUR && isSupabaseEnabled()) {
+    const today = parseDateArg() || getTodayDateJST();
+    const { count, error } = await supabase
+      .from("races")
+      .select("*", { count: "exact", head: true })
+      .gte("race_id", today)
+      .lt("race_id", `${today}~`);
+    // 読み取りに失敗したら、件数は不明（下の肩代わりの判定に進む）
+    racesCount = error ? null : (count ?? 0);
   }
-
-  if (isTrueVar("SKIP_MORNING_INIT_ON_GHA")) {
-    const jstHour = getJSTNow().getUTCHours();
-    let racesCount = null;
-    if (jstHour >= FALLBACK_FROM_JST_HOUR && isSupabaseEnabled()) {
-      const today = parseDateArg() || getTodayDateJST();
-      const { count, error } = await supabase
-        .from("races")
-        .select("*", { count: "exact", head: true })
-        .gte("race_id", today)
-        .lt("race_id", `${today}~`);
-      // 読み取りに失敗したら、件数は不明（下の肩代わりの判定に進む）
-      racesCount = error ? null : (count ?? 0);
-    }
-    let decision = decideMorningInitOnGha({
+  let decision = decideMorningInitOnGha({
+    skipVar: true,
+    jstHour,
+    racesCount,
+  });
+  if (decision.needsGate) {
+    // フェイルセーフの候補。GitHub の肩代わりの条件を満たすかを確かめる（確かめられなければ実行しない）
+    const gate = await shouldSkipOnGha({
+      varName: "SKIP_MORNING_INIT_ON_GHA",
+    });
+    decision = decideMorningInitOnGha({
       skipVar: true,
       jstHour,
       racesCount,
+      gateSkip: gate.skip,
     });
-    if (decision.needsGate) {
-      // フェイルセーフの候補。GitHub の肩代わりの条件を満たすかを確かめる（確かめられなければ実行しない）
-      const gate = await shouldSkipOnGha({
-        varName: "SKIP_MORNING_INIT_ON_GHA",
-      });
-      decision = decideMorningInitOnGha({
-        skipVar: true,
-        jstHour,
-        racesCount,
-        gateSkip: gate.skip,
-      });
-    }
-    if (!decision.run) {
-      console.log(
-        `⏭️ 朝の初期化をスキップ（SKIP_MORNING_INIT_ON_GHA=true。Vercel の races-init が担当。${decision.reason}）`,
-      );
-      return;
-    }
-    console.warn(
-      `⚠️ SKIP_MORNING_INIT_ON_GHA=true ですが、フェイルセーフで初期化します（${decision.reason}。JST ${FALLBACK_FROM_JST_HOUR}時を過ぎても、当日の races が無い・確認できません）`,
+  }
+  if (!decision.run) {
+    console.log(
+      `⏭️ 朝の初期化をスキップ（SKIP_MORNING_INIT_ON_GHA=true。Vercel の races-init が担当。${decision.reason}）`,
     );
+    return true;
   }
+  console.warn(
+    `⚠️ SKIP_MORNING_INIT_ON_GHA=true ですが、フェイルセーフで初期化します（${decision.reason}。JST ${FALLBACK_FROM_JST_HOUR}時を過ぎても、当日の races が無い・確認できません）`,
+  );
+  return false;
+}
 
-  if (!isSupabaseEnabled()) {
-    console.error("❌ Supabase環境変数が未設定です。");
-    process.exit(1);
-  }
+// generate-predictions.js がDB更新後にコード変更されていた場合のみ予測を再生成する（その判定）。
+// git 未使用環境またはクエリ失敗の場合は false
+async function shouldRegeneratePredictions(date) {
+  try {
+    const gitTs = execSync(
+      "git log -1 --format=%ct scripts/daily/generate-predictions.js",
+      { encoding: "utf8", cwd: ROOT },
+    ).trim();
+    if (gitTs) {
+      const scriptModifiedAt = new Date(parseInt(gitTs, 10) * 1000);
 
-  const date = parseDateArg() || getTodayDateJST();
-  console.log(`📅 対象日: ${date}`);
+      const { data: latestRace } = await supabase
+        .from("races")
+        .select("updated_at")
+        .gte("race_id", date)
+        .lt("race_id", `${date}~`)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .single();
 
-  // 当日の races テーブルを確認
-  const { count, error } = await supabase
-    .from("races")
-    .select("*", { count: "exact", head: true })
-    .gte("race_id", date)
-    .lt("race_id", `${date}~`);
-
-  if (error) {
-    console.error("❌ races テーブル確認エラー:", error.message);
-    process.exit(1);
-  }
-
-  if ((count || 0) > 0) {
-    // 過去日付を明示指定した再実行では、boatrace.jpのトップページはもう当日分を
-    // 表示していないため、この取得漏れチェックは「今日」かつロールオーバーが
-    // 起こりうる早朝（JST 9時まで）でのみ行う
-    if (date === getTodayDateJST() && getJSTNow().getUTCHours() < 9) {
-      const scraped = await ensureAllVenuesScraped(date);
-      if (scraped) {
-        // 取得漏れ会場をDBに反映しても、CDNキャッシュが更新されなければ
-        // フロント側は「開催なし」表示のまま残ってしまう（今回の不具合と同じ症状）
-        await triggerDeployHook();
+      if (latestRace && scriptModifiedAt > new Date(latestRace.updated_at)) {
+        console.log(
+          `🔄 予測スクリプトがDB更新後に変更されています（${scriptModifiedAt.toISOString()} > ${latestRace.updated_at}）`,
+        );
+        return true;
       }
     }
+  } catch {
+    // git 未使用環境またはクエリ失敗の場合はスキップ
+  }
+  return false;
+}
 
-    // generate-predictions.js がDB更新後にコード変更されていた場合のみ予測を再生成する
-    let shouldRegen = false;
-    try {
-      const gitTs = execSync(
-        "git log -1 --format=%ct scripts/daily/generate-predictions.js",
-        { encoding: "utf8", cwd: ROOT },
-      ).trim();
-      if (gitTs) {
-        const scriptModifiedAt = new Date(parseInt(gitTs, 10) * 1000);
+// 予測のみ再生成する（当日の全 race_entries の race_id を対象に mainRefresh）
+async function regeneratePredictions(date) {
+  console.log("🤖 予測のみ再生成します...");
+  // main() は races.json（git stale）を読むため使わない。
+  // mainRefresh() は race_entries（DB）から読むため stale データを混入しない。
+  const genPath = path.join(
+    ROOT,
+    "scripts",
+    "daily",
+    "generate-predictions.js",
+  );
+  const { mainRefresh } = await import(genPath);
 
-        const { data: latestRace } = await supabase
-          .from("races")
-          .select("updated_at")
-          .gte("race_id", date)
-          .lt("race_id", `${date}~`)
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .single();
+  // 当日の全 race_entries から race_id を収集
+  // BOA-372: 1レース6行のため、Supabaseの既定1000行上限で約166レースを超えると
+  // 欠ける（以前は素の .select() のみで、fetchAll の range ページネーションを
+  // 使っていなかった）。ensureUnifiedPredictions と同じ fetchAll に統一する
+  const entries = await fetchAll("race_entries", "race_id", (q) =>
+    q
+      .gte("race_id", date)
+      .lt("race_id", `${date}~`)
+      .order("race_id")
+      .order("boat_number"),
+  );
+  const allTodayRaceIds = [
+    ...new Set((entries || []).map((e) => e.race_id)),
+  ];
 
-        if (latestRace && scriptModifiedAt > new Date(latestRace.updated_at)) {
-          shouldRegen = true;
-          console.log(
-            `🔄 予測スクリプトがDB更新後に変更されています（${scriptModifiedAt.toISOString()} > ${latestRace.updated_at}）`,
-          );
-        }
-      }
-    } catch {
-      // git 未使用環境またはクエリ失敗の場合はスキップ
+  if (allTodayRaceIds.length > 0) {
+    await mainRefresh({
+      isDryRun: false,
+      specificRaceIds: allTodayRaceIds,
+      // 上のshouldRegen判定は races.updated_at の最大値を基準にしている。変更の無い
+      // レースをスキップする通常の更新（WS8(b)）だと、再生成しても値が変わらなければ
+      // updated_at が進まず、次回以降も再生成が走り続けてしまう。この経路だけは
+      // 全レースの updated_at を進める
+      forceTouchRaces: true,
+    });
+  } else {
+    console.log("⚠️ race_entries にデータなし — スキップ");
+  }
+  console.log("✅ 予測再生成完了");
+}
+
+// 当日の races が既にあるとき: 取得漏れ会場の確認・予測の再生成・unified の確認
+async function handleInitializedDay(date, count) {
+  // 過去日付を明示指定した再実行では、boatrace.jpのトップページはもう当日分を
+  // 表示していないため、この取得漏れチェックは「今日」かつロールオーバーが
+  // 起こりうる早朝（JST 9時まで）でのみ行う
+  if (date === getTodayDateJST() && getJSTNow().getUTCHours() < 9) {
+    const scraped = await ensureAllVenuesScraped(date);
+    if (scraped) {
+      // 取得漏れ会場をDBに反映しても、CDNキャッシュが更新されなければ
+      // フロント側は「開催なし」表示のまま残ってしまう（今回の不具合と同じ症状）
+      await triggerDeployHook();
     }
-
-    if (shouldRegen) {
-      console.log("🤖 予測のみ再生成します...");
-      // main() は races.json（git stale）を読むため使わない。
-      // mainRefresh() は race_entries（DB）から読むため stale データを混入しない。
-      const genPath = path.join(
-        ROOT,
-        "scripts",
-        "daily",
-        "generate-predictions.js",
-      );
-      const { mainRefresh } = await import(genPath);
-
-      // 当日の全 race_entries から race_id を収集
-      // BOA-372: 1レース6行のため、Supabaseの既定1000行上限で約166レースを超えると
-      // 欠ける（以前は素の .select() のみで、fetchAll の range ページネーションを
-      // 使っていなかった）。ensureUnifiedPredictions と同じ fetchAll に統一する
-      const entries = await fetchAll("race_entries", "race_id", (q) =>
-        q
-          .gte("race_id", date)
-          .lt("race_id", `${date}~`)
-          .order("race_id")
-          .order("boat_number"),
-      );
-      const allTodayRaceIds = [
-        ...new Set((entries || []).map((e) => e.race_id)),
-      ];
-
-      if (allTodayRaceIds.length > 0) {
-        await mainRefresh({
-          isDryRun: false,
-          specificRaceIds: allTodayRaceIds,
-          // 上のshouldRegen判定は races.updated_at の最大値を基準にしている。変更の無い
-          // レースをスキップする通常の更新（WS8(b)）だと、再生成しても値が変わらなければ
-          // updated_at が進まず、次回以降も再生成が走り続けてしまう。この経路だけは
-          // 全レースの updated_at を進める
-          forceTouchRaces: true,
-        });
-      } else {
-        console.log("⚠️ race_entries にデータなし — スキップ");
-      }
-      console.log("✅ 予測再生成完了");
-    } else {
-      console.log(`✅ 初期化済み（${count}レース）。スキップ。`);
-    }
-    await ensureUnifiedPredictions(date);
-    return;
   }
 
+  // generate-predictions.js がDB更新後にコード変更されていた場合のみ予測を再生成する
+  if (await shouldRegeneratePredictions(date)) {
+    await regeneratePredictions(date);
+  } else {
+    console.log(`✅ 初期化済み（${count}レース）。スキップ。`);
+  }
+  await ensureUnifiedPredictions(date);
+}
+
+// 未初期化の日の朝の初期化（Step 1〜3 と Deploy Hook）
+async function initializeDay(date) {
   console.log("📋 未初期化のため朝の初期化を開始します...");
 
   // Step 1: scrape-to-json.js でレースデータを取得し races.json を生成
@@ -376,6 +357,53 @@ async function main() {
   console.log("\n✅ 朝の初期化完了");
 
   await triggerDeployHook();
+}
+
+async function main() {
+  console.log("🌅 朝の初期化チェック");
+  console.log(`⏰ ${new Date().toISOString()}`);
+
+  // 取得の非常停止（fetch_stop、マイグレーション178）が立っていれば、SKIP 変数・安全装置に関係なく初期化しない
+  // （Vercel の races_init が止まって races が0件でも、GitHub が素の fetch で取りに行かない。ADR-0101 決定6、system-architect の審査 A）。
+  // 非常停止の間は、DB だけを使う予測の再生成・unified の確認も止まる（新しいデータが入らないので意図どおり）。
+  // GHA は起動ごとに新しいプロセスで直前の値を持たないので、読み取りに失敗した起動は止めない側になる（isGhaFetchStopped）
+  if ((await isGhaFetchStopped()).stopped) {
+    console.log("⏭️ 取得の非常停止中のため、朝の初期化を行わない");
+    return;
+  }
+
+  if (isTrueVar("SKIP_MORNING_INIT_ON_GHA")) {
+    if (await skipByGhaToggle()) {
+      return;
+    }
+  }
+
+  if (!isSupabaseEnabled()) {
+    console.error("❌ Supabase環境変数が未設定です。");
+    process.exit(1);
+  }
+
+  const date = parseDateArg() || getTodayDateJST();
+  console.log(`📅 対象日: ${date}`);
+
+  // 当日の races テーブルを確認
+  const { count, error } = await supabase
+    .from("races")
+    .select("*", { count: "exact", head: true })
+    .gte("race_id", date)
+    .lt("race_id", `${date}~`);
+
+  if (error) {
+    console.error("❌ races テーブル確認エラー:", error.message);
+    process.exit(1);
+  }
+
+  if ((count || 0) > 0) {
+    await handleInitializedDay(date, count);
+    return;
+  }
+
+  await initializeDay(date);
 }
 
 main().catch((error) => {

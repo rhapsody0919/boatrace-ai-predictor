@@ -63,6 +63,109 @@ function getBucket(stats, venueCode, grade, boatNumber) {
   return stats.get(key);
 }
 
+// 艇番別集計（1〜6）。全レースは6艇が出走する前提で、毎レース各艇番のrace_countに
+// +1する（RacerPerformanceStats.jsx等の既存のcourseRaceCounts集計と同じ考え方）
+function tallyBoats(stats, venueCode, grade, placed, techKey) {
+  const { rank1, rank2, rank3 } = placed;
+  for (let boat = 1; boat <= 6; boat++) {
+    const b = getBucket(stats, venueCode, grade, boat);
+    b.race_count += 1;
+    if (rank1 === boat) {
+      b.wins += 1;
+      if (techKey) b.technique[techKey] = (b.technique[techKey] || 0) + 1;
+    }
+    if (rank1 === boat || rank2 === boat) b.top2 += 1;
+    if (rank1 === boat || rank2 === boat || rank3 === boat) b.top3 += 1;
+  }
+}
+
+// レース全体集計（boat_number=0）: 決まり手構成比・万舟率・平均配当
+function tallyWide(stats, venueCode, grade, techKey, payout_trio) {
+  const wide = getBucket(stats, venueCode, grade, 0);
+  wide.race_count += 1;
+  if (techKey) wide.technique[techKey] = (wide.technique[techKey] || 0) + 1;
+  // payout_trioが実際の3連単（DB列名の歴史的な逆転、payout_trifectaは実際の3連複）。
+  // is_cancelled/is_no_raceでない有効なレースでもスクレイピング取得失敗等で
+  // payout_trioがNULLになりうるため（scrape-results.js参照）、万舟率・平均配当の
+  // 分母はrace_countではなく専用のpayout_countを使う（getTodaysVenueRankingの
+  // payoutCountと同じ考え方）
+  if (payout_trio !== null && payout_trio !== undefined) {
+    wide.payout_count += 1;
+    wide.payout_trio_sum += payout_trio;
+    if (payout_trio >= 10000) wide.manshu_count += 1;
+  }
+}
+
+// 1レースをセルへ数える。対象外なら理由（"noGrade"・"unusable"）を返し、数えたら null
+function tallyRace(stats, r) {
+  const grade = r.race_grade;
+  if (!grade || !GRADE_KEYS.includes(grade)) {
+    return "noGrade";
+  }
+  const result = Array.isArray(r.race_results)
+    ? r.race_results[0]
+    : r.race_results;
+  if (
+    !result ||
+    result.is_cancelled ||
+    isNoRaceResult(result) ||
+    result.rank1 === null
+  ) {
+    return "unusable";
+  }
+
+  const venueCode = r.venue_code;
+  const { winning_technique, payout_trio } = result;
+  // 完走3艇未満のレースは、返還艇が表の行順で2着・3着に入っている。2連対・3連対に数えない（BOA-579）
+  const placed = placedRanks(result);
+  // 決まり手の異常値（"逃げ抜き"等、6分類に含まれない値）はtoTechniqueKeyがnullを
+  // 返すため自然に除外される（実データで1件確認済み、BOA-263調査時点）
+  const techKey = toTechniqueKey(winning_technique);
+
+  tallyBoats(stats, venueCode, grade, placed, techKey);
+  tallyWide(stats, venueCode, grade, techKey, payout_trio);
+  return null;
+}
+
+function toRows(stats) {
+  return [...stats.values()].map((v) => ({
+    venue_code: v.venue_code,
+    race_grade: v.race_grade,
+    boat_number: v.boat_number,
+    race_count: v.race_count,
+    wins: v.wins,
+    top2: v.top2,
+    top3: v.top3,
+    technique_breakdown: v.technique,
+    payout_count: v.payout_count,
+    manshu_count: v.manshu_count,
+    payout_trio_sum: v.payout_trio_sum,
+  }));
+}
+
+// 鳴門（venue_code=14）の艇番別勝率をサンプル表示（ブラッシュアップ時の
+// モック値: 一般戦1号艇67.4%→G1 63.0%→SG 83.3%、3号艇は逆にG1で上昇、と
+// 比較する）
+function printNarutoSample(rows) {
+  const naruto = rows.filter((r) => r.venue_code === 14 && r.boat_number <= 3);
+  console.log("鳴門（venue_code=14）の1〜3号艇サンプル:");
+  naruto
+    .sort(
+      (a, b) =>
+        a.boat_number - b.boat_number ||
+        a.race_grade.localeCompare(b.race_grade),
+    )
+    .forEach((r) => {
+      const winRate =
+        r.race_count > 0 ? ((r.wins / r.race_count) * 100).toFixed(1) : "-";
+      const top2Rate =
+        r.race_count > 0 ? ((r.top2 / r.race_count) * 100).toFixed(1) : "-";
+      console.log(
+        `  ${r.boat_number}号艇 ${r.race_grade}: n=${r.race_count} 勝率=${winRate}% 連対率=${top2Rate}%`,
+      );
+    });
+}
+
 async function calculateVenueGradeStats() {
   console.log(
     `🔬 会場×グレード×艇番統計を集計中（${CLEAN_DATA_SINCE} 〜、race_gradeがNULLの欠損期間は除外）`,
@@ -84,105 +187,22 @@ async function calculateVenueGradeStats() {
   let skippedUnusable = 0;
 
   races.forEach((r) => {
-    const grade = r.race_grade;
-    if (!grade || !GRADE_KEYS.includes(grade)) {
-      skippedNoGrade++;
-      return;
-    }
-    const result = Array.isArray(r.race_results)
-      ? r.race_results[0]
-      : r.race_results;
-    if (
-      !result ||
-      result.is_cancelled ||
-      isNoRaceResult(result) ||
-      result.rank1 === null
-    ) {
-      skippedUnusable++;
-      return;
-    }
-
-    const venueCode = r.venue_code;
-    const { winning_technique, payout_trio } = result;
-    // 完走3艇未満のレースは、返還艇が表の行順で2着・3着に入っている。2連対・3連対に数えない（BOA-579）
-    const { rank1, rank2, rank3 } = placedRanks(result);
-    // 決まり手の異常値（"逃げ抜き"等、6分類に含まれない値）はtoTechniqueKeyがnullを
-    // 返すため自然に除外される（実データで1件確認済み、BOA-263調査時点）
-    const techKey = toTechniqueKey(winning_technique);
-
-    // 艇番別集計（1〜6）。全レースは6艇が出走する前提で、毎レース各艇番のrace_countに
-    // +1する（RacerPerformanceStats.jsx等の既存のcourseRaceCounts集計と同じ考え方）
-    for (let boat = 1; boat <= 6; boat++) {
-      const b = getBucket(stats, venueCode, grade, boat);
-      b.race_count += 1;
-      if (rank1 === boat) {
-        b.wins += 1;
-        if (techKey) b.technique[techKey] = (b.technique[techKey] || 0) + 1;
-      }
-      if (rank1 === boat || rank2 === boat) b.top2 += 1;
-      if (rank1 === boat || rank2 === boat || rank3 === boat) b.top3 += 1;
-    }
-
-    // レース全体集計（boat_number=0）: 決まり手構成比・万舟率・平均配当
-    const wide = getBucket(stats, venueCode, grade, 0);
-    wide.race_count += 1;
-    if (techKey) wide.technique[techKey] = (wide.technique[techKey] || 0) + 1;
-    // payout_trioが実際の3連単（DB列名の歴史的な逆転、payout_trifectaは実際の3連複）。
-    // is_cancelled/is_no_raceでない有効なレースでもスクレイピング取得失敗等で
-    // payout_trioがNULLになりうるため（scrape-results.js参照）、万舟率・平均配当の
-    // 分母はrace_countではなく専用のpayout_countを使う（getTodaysVenueRankingの
-    // payoutCountと同じ考え方）
-    if (payout_trio !== null && payout_trio !== undefined) {
-      wide.payout_count += 1;
-      wide.payout_trio_sum += payout_trio;
-      if (payout_trio >= 10000) wide.manshu_count += 1;
-    }
+    const skipped = tallyRace(stats, r);
+    if (skipped === "noGrade") skippedNoGrade++;
+    else if (skipped === "unusable") skippedUnusable++;
   });
 
   console.log(
     `  対象レース: ${races.length}件（race_grade欠損によるスキップ: ${skippedNoGrade}件、中止/不成立等によるスキップ: ${skippedUnusable}件）`,
   );
 
-  const rows = [...stats.values()].map((v) => ({
-    venue_code: v.venue_code,
-    race_grade: v.race_grade,
-    boat_number: v.boat_number,
-    race_count: v.race_count,
-    wins: v.wins,
-    top2: v.top2,
-    top3: v.top3,
-    technique_breakdown: v.technique,
-    payout_count: v.payout_count,
-    manshu_count: v.manshu_count,
-    payout_trio_sum: v.payout_trio_sum,
-  }));
+  const rows = toRows(stats);
 
   console.log(`  集計セル数: ${rows.length}`);
 
   if (isDryRun) {
     console.log("🔍 --dry-run: DB書き込みはスキップします");
-    // 鳴門（venue_code=14）の艇番別勝率をサンプル表示（ブラッシュアップ時の
-    // モック値: 一般戦1号艇67.4%→G1 63.0%→SG 83.3%、3号艇は逆にG1で上昇、と
-    // 比較する）
-    const naruto = rows.filter(
-      (r) => r.venue_code === 14 && r.boat_number <= 3,
-    );
-    console.log("鳴門（venue_code=14）の1〜3号艇サンプル:");
-    naruto
-      .sort(
-        (a, b) =>
-          a.boat_number - b.boat_number ||
-          a.race_grade.localeCompare(b.race_grade),
-      )
-      .forEach((r) => {
-        const winRate =
-          r.race_count > 0 ? ((r.wins / r.race_count) * 100).toFixed(1) : "-";
-        const top2Rate =
-          r.race_count > 0 ? ((r.top2 / r.race_count) * 100).toFixed(1) : "-";
-        console.log(
-          `  ${r.boat_number}号艇 ${r.race_grade}: n=${r.race_count} 勝率=${winRate}% 連対率=${top2Rate}%`,
-        );
-      });
+    printNarutoSample(rows);
   }
 
   // 値の変わったセルだけを書く（日次で全セルを書き直さない）。updated_at は変わったセルにだけ付ける。

@@ -221,6 +221,108 @@ export function normalizeTypeScheduleRow(
   return n.post ? { type_id: row.type_id, post: n.post } : n;
 }
 
+// 今の型（v3）の返り値
+const currentTypePost = (current, row) => ({
+  heading: null,
+  link_lead: null,
+  link_position: "after_heading",
+  body: current.body,
+  variant: { id: current.id, uuid: null },
+  content_type: {
+    id: current.type_id,
+    side: current.id,
+    source: "config",
+    fallback_reason: row ? "current_type" : "no_schedule_row",
+  },
+});
+
+// 案（a・b）が無いときの既定の文
+const defaultBase = (fallback) => ({
+  id: "default",
+  uuid: null,
+  type_id: TODAY_BASE_TYPE_ID,
+  heading: fallback,
+  link_lead: null,
+  link_position: "after_heading",
+  body: null,
+});
+
+// 比べの組（hq が数える）。比べの外は付けない
+// mode を残す（pairs は組の中の比べ、all_b は過去の a の日との前後比べ。読み方が違う）
+function pairTagOf(inPair, ab, experiment) {
+  if (!inPair) return {};
+  return ab.pair !== null
+    ? {
+        experiment: experiment.id,
+        mode: experiment.mode,
+        pair: ab.pair,
+        slot: ab.slot,
+      }
+    : { experiment: experiment.id, mode: experiment.mode, day: ab.day };
+}
+
+// config の案で送るときの理由（content_type.fallback_reason）
+function fallbackReasonOf({ row, inPair, ab, scheduleError, checked }) {
+  if (row && inPair)
+    return ab.pair !== null ? "experiment_pair" : "experiment_all_b";
+  return scheduleError ?? checked?.reason ?? "no_schedule_row";
+}
+
+// a・b どちらの案か（比べの設定があればそれ、無ければ日の偶奇）と、その案
+function selectBase({ variants, ab, day, fallback }) {
+  const index = ab ? (ab.side === "a" ? 0 : 1) : day % 2;
+  return {
+    side: variants.length ? (index === 0 ? "a" : "b") : "default",
+    base: variants.length ? variants[index] : defaultBase(fallback),
+  };
+}
+
+const isPairDay = (ab) =>
+  Boolean(ab && (ab.pair !== null || ab.day !== undefined));
+
+// 型の列の行を検査する。返信が使えない理由が config の reply_enabled=false なら reply_disabled にする
+function checkedScheduleRow(row, date, { inPair, allowReply, replyOn }) {
+  const checked =
+    row && !inPair
+      ? normalizeTypeScheduleRow(row, date, {
+          allowReply: allowReply && replyOn,
+        })
+      : null;
+  if (checked?.reason === "reply_not_allowed" && !replyOn)
+    checked.reason = "reply_disabled";
+  return checked;
+}
+
+// 型の列の型の日の返り値。見出しの a・b の札（today_variant・template_variant_id）を付けない。札と実際の文面が食い違い、
+// a・b の比較の母数を汚すため（x-channel の審査 P1）。型の比較は content_type で行う
+const schedulePost = (checked, side, pairTag) => ({
+  ...checked.post,
+  body: null,
+  variant: { id: "schedule", uuid: null },
+  content_type: {
+    id: checked.type_id,
+    side,
+    source: "schedule",
+    ...pairTag,
+  },
+});
+
+// config の案で送る日の返り値
+const configPost = (base, side, pairTag, reason) => ({
+  heading: base.heading,
+  link_lead: base.link_lead,
+  link_position: base.link_position,
+  body: base.body ?? null,
+  variant: { id: base.id, uuid: base.uuid },
+  content_type: {
+    id: base.type_id,
+    side,
+    source: "config",
+    fallback_reason: reason,
+    ...pairTag,
+  },
+});
+
 /**
  * その日の投稿の型（純粋関数）。a・b は今までどおり日の偶奇（pickTodayHeading）。型の列にその日の行があれば、その中身で送る
  * （a・b どちらの日も。hq が基準の型を変えたときに config の PR を待たない）。行が無い・壊れている・読めない（scheduleError）・
@@ -239,92 +341,22 @@ export function pickTodayPost(
   const ab = experiment ? pickExperimentSide(experiment, date) : null;
   // 今の型（v3）: 比べの b の日（組・all_b の期間）を除き、毎日この型。型の列の行があっても使わない（列は見出しの型 a の口）
   if (current && !(variants.length && ab?.side === "b"))
-    return {
-      heading: null,
-      link_lead: null,
-      link_position: "after_heading",
-      body: current.body,
-      variant: { id: current.id, uuid: null },
-      content_type: {
-        id: current.type_id,
-        side: current.id,
-        source: "config",
-        fallback_reason: row ? "current_type" : "no_schedule_row",
-      },
-    };
-  const index = ab ? (ab.side === "a" ? 0 : 1) : day % 2;
-  const side = variants.length ? (index === 0 ? "a" : "b") : "default";
-  const base = variants.length
-    ? variants[index]
-    : {
-        id: "default",
-        uuid: null,
-        type_id: TODAY_BASE_TYPE_ID,
-        heading: fallback,
-        link_lead: null,
-        link_position: "after_heading",
-        body: null,
-      };
-  const variant = { id: base.id, uuid: base.uuid };
+    return currentTypePost(current, row);
+  const { base, side } = selectBase({ variants, ab, day, fallback });
   // 返信は X の投稿が1日1本増え、月の予約も URL つきの額で2本分引く（158 の thread_index=0）。費用の線はオーナーの判断なので、
   // config の reply_enabled が true の間だけ選べる（既定は false。system-architect の審査 P1-1）
   const replyOn = config?.reply_enabled === true;
   // 比べの日（組の日・all_b の b の日）は型の列を使わない（列の型が入ると a・b の束が別の型で汚れる）。理由は fallback_reason に残す
-  const inPair = Boolean(ab && (ab.pair !== null || ab.day !== undefined));
-  const checked =
-    row && !inPair
-      ? normalizeTypeScheduleRow(row, date, {
-          allowReply: allowReply && replyOn,
-        })
-      : null;
-  if (checked?.reason === "reply_not_allowed" && !replyOn)
-    checked.reason = "reply_disabled";
-  // 列の型の日は、見出しの a・b の札（today_variant・template_variant_id）を付けない。札と実際の文面が食い違い、
-  // a・b の比較の母数を汚すため（x-channel の審査 P1）。型の比較は content_type で行う
-  // 比べの組（hq が数える）。比べの外は付けない
-  // mode を残す（pairs は組の中の比べ、all_b は過去の a の日との前後比べ。読み方が違う）
-  const pairTag = !inPair
-    ? {}
-    : ab.pair !== null
-      ? {
-          experiment: experiment.id,
-          mode: experiment.mode,
-          pair: ab.pair,
-          slot: ab.slot,
-        }
-      : { experiment: experiment.id, mode: experiment.mode, day: ab.day };
-  if (checked?.post)
-    return {
-      ...checked.post,
-      body: null,
-      variant: { id: "schedule", uuid: null },
-      content_type: {
-        id: checked.type_id,
-        side,
-        source: "schedule",
-        ...pairTag,
-      },
-    };
-  const reason =
-    row && inPair
-      ? ab.pair !== null
-        ? "experiment_pair"
-        : "experiment_all_b"
-      : (scheduleError ?? checked?.reason ?? "no_schedule_row");
-  return {
-    heading: base.heading,
-    link_lead: base.link_lead,
-    link_position: base.link_position,
-    body: base.body ?? null,
-    variant,
-    content_type: {
-      id: base.type_id,
-      side,
-      source: "config",
-      fallback_reason: reason,
-      ...pairTag,
-    },
-  };
+  const inPair = isPairDay(ab);
+  const checked = checkedScheduleRow(row, date, {
+    inPair,
+    allowReply,
+    replyOn,
+  });
+  const pairTag = pairTagOf(inPair, ab, experiment);
+  if (checked?.post) return schedulePost(checked, side, pairTag);
+  const reason = fallbackReasonOf({ row, inPair, ab, scheduleError, checked });
+  return configPost(base, side, pairTag, reason);
 }
 
 /** 見出しの文に日付の表示を差し込む */

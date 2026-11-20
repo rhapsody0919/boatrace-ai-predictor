@@ -14,6 +14,7 @@ import {
 } from "../lib/snsDailyRunner.js";
 import { createGa4Client, getServiceAccountToken } from "../lib/snsGa4.js";
 import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
+import { importSpecifiers } from "./verifyData/importSpecifiers.js";
 
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
@@ -1418,9 +1419,6 @@ test("思考アシストの UTM: page_view の人数を投稿日と翌日だけ�
 });
 
 test("snsGa4 はブログ記事のファイルを読む src モジュールに依存しない", async () => {
-  const source = await readFile(new URL("../lib/snsGa4.js", import.meta.url), "utf8");
-  const { parse } = await import("espree");
-  const ast = parse(source, { ecmaVersion: "latest", sourceType: "module" });
-  const imports = ast.body.filter(n => n.type === "ImportDeclaration" || n.type === "ExportAllDeclaration" || n.type === "ExportNamedDeclaration" && n.source);
-  assert.deepEqual(imports.map(n => n.source.value), ["node:crypto"]);
+  // 本文の字は読まず、import の解決で直の依存を見る（verifyData/importSpecifiers.js）
+  assert.deepEqual(await importSpecifiers(new URL("../lib/snsGa4.js", import.meta.url)), ["node:crypto"]);
 });

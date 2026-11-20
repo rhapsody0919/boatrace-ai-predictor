@@ -14,7 +14,7 @@
  * 依存（runForRaces・発走時刻の読み取り）は引数で差し替えられる
  * （scripts/maintenance/verify-morning-init-jobs.js が、DB・取得先なしで検証する）。
  */
-import { runForRaces } from "../../daily/scrape-pcexpect.js";
+import { runForRaces } from "../pcexpect/scrape.js";
 import { makeFetchHtml } from "./htmlFetch.js";
 import { raceStartInstant } from "./time.js";
 

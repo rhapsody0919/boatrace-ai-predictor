@@ -55,30 +55,7 @@ async function callAggregate(fnName) {
   return data;
 }
 
-async function main() {
-  if (!isSupabaseEnabled()) {
-    throw new Error(
-      "Supabaseの環境変数が未設定です（SUPABASE_URL / SUPABASE_SERVICE_KEY）",
-    );
-  }
-
-  const today = todayJST();
-  console.log(
-    `コース×級別ベースラインの集計を開始します（${today} JST${DRY_RUN ? " / dry-run" : ""}）`,
-  );
-
-  // --- 1. ST考察のベースライン（コース×級別の24セル） ---
-  const stRows = await callAggregate("compute_st_course_baseline");
-  console.log(`\n[st_course_baseline] 集計結果 ${stRows.length} 行`);
-  if (stRows.length !== 24) {
-    throw new Error(
-      `st_course_baseline は24行（コース6 × 級別4）のはずですが ${stRows.length} 行でした`,
-    );
-  }
-  const window = { start: stRows[0].window_start, end: stRows[0].window_end };
-  console.log(
-    `  集計期間 ${window.start} 〜 ${window.end}（${stRows[0].window_days}日）`,
-  );
+function logStRows(stRows) {
   for (const r of stRows) {
     const breakout =
       r.breakout_count === null
@@ -88,16 +65,10 @@ async function main() {
       `  ${r.course}コース ${r.grade}: n=${r.runs} 平均ST=${r.avg_st} 安定率=${r.stable_rate}% 出遅率=${r.late_rate}% ${breakout}`,
     );
   }
+}
 
-  // --- 2. 逃げシミュレーション（会場 × 2着コース） ---
-  const nigeRows = await callAggregate("compute_nige_second_by_course");
-  console.log(
-    `\n[nige_second_by_course] 集計結果 ${nigeRows.length} 行（${
-      new Set(nigeRows.map((r) => r.venue_code)).size
-    }会場）`,
-  );
-
-  // --- 3. 整合チェック（T2-3。壊れた値を本番に入れない） ---
+// 整合チェック（T2-3。壊れた値を本番に入れない）。問題の文の列を返す
+function findConsistencyProblems(stRows, nigeRows) {
   const problems = [];
   for (const r of stRows) {
     const bins = r.st_histogram ?? {};
@@ -131,14 +102,10 @@ async function main() {
       );
     }
   }
-  if (problems.length > 0) {
-    throw new Error(
-      `整合チェックに失敗しました:\n  - ${problems.join("\n  - ")}`,
-    );
-  }
-  console.log("\n整合チェック: OK（ビン合計 / 2着率の合計 / 2連単確率の合計）");
+  return problems;
+}
 
-  // --- 4. 書き込み（変更のある行だけ） ---
+async function writeBaselines(today, stRows, nigeRows) {
   // last_updated は「値が実際に変わった日」を入れる。毎日書き換えると全行が必ず
   // 変更扱いになり、条件付きupsertの意味が消えるため ignoreColumns で比較から外す
   const stamp = (rows) => rows.map((r) => ({ ...r, last_updated: today }));
@@ -185,6 +152,53 @@ async function main() {
       fallback: nigeResult.fallback,
     }),
   );
+}
+
+async function main() {
+  if (!isSupabaseEnabled()) {
+    throw new Error(
+      "Supabaseの環境変数が未設定です（SUPABASE_URL / SUPABASE_SERVICE_KEY）",
+    );
+  }
+
+  const today = todayJST();
+  console.log(
+    `コース×級別ベースラインの集計を開始します（${today} JST${DRY_RUN ? " / dry-run" : ""}）`,
+  );
+
+  // --- 1. ST考察のベースライン（コース×級別の24セル） ---
+  const stRows = await callAggregate("compute_st_course_baseline");
+  console.log(`\n[st_course_baseline] 集計結果 ${stRows.length} 行`);
+  if (stRows.length !== 24) {
+    throw new Error(
+      `st_course_baseline は24行（コース6 × 級別4）のはずですが ${stRows.length} 行でした`,
+    );
+  }
+  const window = { start: stRows[0].window_start, end: stRows[0].window_end };
+  console.log(
+    `  集計期間 ${window.start} 〜 ${window.end}（${stRows[0].window_days}日）`,
+  );
+  logStRows(stRows);
+
+  // --- 2. 逃げシミュレーション（会場 × 2着コース） ---
+  const nigeRows = await callAggregate("compute_nige_second_by_course");
+  console.log(
+    `\n[nige_second_by_course] 集計結果 ${nigeRows.length} 行（${
+      new Set(nigeRows.map((r) => r.venue_code)).size
+    }会場）`,
+  );
+
+  // --- 3. 整合チェック（T2-3。壊れた値を本番に入れない） ---
+  const problems = findConsistencyProblems(stRows, nigeRows);
+  if (problems.length > 0) {
+    throw new Error(
+      `整合チェックに失敗しました:\n  - ${problems.join("\n  - ")}`,
+    );
+  }
+  console.log("\n整合チェック: OK（ビン合計 / 2着率の合計 / 2連単確率の合計）");
+
+  // --- 4. 書き込み（変更のある行だけ） ---
+  await writeBaselines(today, stRows, nigeRows);
 
   console.log(
     `\n完了しました${DRY_RUN ? "（dry-run のため書き込んでいません）" : ""}`,

@@ -92,6 +92,123 @@ function finalEntriesOf(
   return top2;
 }
 
+/** 節の1走分の艇（選手）の最初の行。節の初日の機の整備前の2連率を添える（setsuExhibitionOf から移した） */
+function newRacerOf(s, entry, motors) {
+  const motor = motors.find(
+    (m) =>
+      m.race_date === s.start_date &&
+      sameVenue(m.venue_code, s.venue_code) &&
+      m.racer_id === entry.racer_id &&
+      m.motor_number === entry.motor_number,
+  );
+  return {
+    racer_id: entry.racer_id,
+    name: entry.player_name,
+    class: entry.grade ?? null,
+    motor_number: entry.motor_number,
+    motor_2rate_at_start: motor?.motor_2rate ?? null,
+    runs: [],
+  };
+}
+
+/** 展示タイム（欠場・無しは null）。setsuExhibitionOf の timeOf から移した */
+const exhibitionTimeOf = (entry, ex) =>
+  entry.is_absent || ex?.is_absent || ex?.exhibition_time == null
+    ? null
+    : Number(ex.exhibition_time);
+
+/** 選手の1走の行（展示の順位は同じレースの有効なタイムの中で数える、同タイムは同順位） */
+function runOf(race, entry, ex, time, times, conditionById) {
+  return {
+    race_id: race.race_id,
+    date: race.race_date,
+    race_number: race.race_number,
+    race_stage: conditionById.get(race.race_id)?.race_stage ?? null,
+    boat_number: entry.boat_number,
+    exhibition_time: ex?.exhibition_time ?? null,
+    exhibition_rank:
+      time == null || !Number.isFinite(time)
+        ? null
+        : 1 + times.filter((t) => t < time).length,
+    exhibition_course: ex?.exhibition_course ?? null,
+  };
+}
+
+/** 1レースの艇を racers（選手ごとの Map）へ足す（setsuExhibitionOf のレースのループの中身） */
+function addRaceRuns(racers, race, s, ctx) {
+  const { motors, conditionById, exhibitionByBoat } = ctx;
+  const boats = ctx.entriesOf(race);
+  const timeOf = (entry) => {
+    const ex = exhibitionByBoat.get(`${race.race_id}-${entry.boat_number}`);
+    return exhibitionTimeOf(entry, ex);
+  };
+  const times = boats
+    .map(timeOf)
+    .filter((t) => t != null && Number.isFinite(t));
+  for (const entry of boats) {
+    if (entry.racer_id == null) continue;
+    if (!racers.has(entry.racer_id))
+      racers.set(entry.racer_id, newRacerOf(s, entry, motors));
+    const racer = racers.get(entry.racer_id);
+    if (entry.grade != null) racer.class = entry.grade; // 走は race_id の昇順なので、最後に入るのがいちばん新しい級
+    const ex = exhibitionByBoat.get(`${race.race_id}-${entry.boat_number}`);
+    const time = timeOf(entry);
+    racer.runs.push(runOf(race, entry, ex, time, times, conditionById));
+  }
+}
+
+/** 節（s）1つ分の出力（setsuExhibitionOf の meets の map の中身） */
+function meetOf(s, ctx) {
+  const { date, races, conditionById, resultById, entriesOf, cancelled } = ctx;
+  // s はその会場で date 以前に始まったいちばん新しい節なので、start_date 以降の走は全部この節のもの。
+  // 翌日の分は優勝戦の出走表（前夜の時点で入っていれば）を拾うためだけに使う。
+  const meetRacesWithNext = races
+    .filter(
+      (r) =>
+        sameVenue(r.venue_code, s.venue_code) &&
+        r.race_date >= s.start_date &&
+        r.race_date <= addDaysToDateString(date, 1),
+    )
+    .sort(byRace);
+  const meetRaces = meetRacesWithNext.filter((r) => r.race_date <= date);
+  const todayRaces = meetRaces.filter((r) => r.race_date === date);
+  const todayConditions = todayRaces
+    .map((r) => conditionById.get(r.race_id))
+    .filter(Boolean);
+  const seriesDays = todayConditions
+    .map((c) => c.series_day)
+    .filter((d) => d != null);
+  const racers = new Map();
+  for (const race of meetRaces) {
+    if (cancelled(race)) continue;
+    addRaceRuns(racers, race, s, ctx);
+  }
+  const firstRace = todayRaces.find((r) => Number(r.race_number) === 1);
+  return {
+    meet_id: `${s.venue_code}-${s.start_date}`,
+    venue_code: s.venue_code,
+    start_date: s.start_date,
+    end_date: s.end_date,
+    title: s.title,
+    grade: s.grade,
+    series_day: seriesDays.length ? Math.min(...seriesDays) : null,
+    is_final_day: todayConditions.length
+      ? todayConditions.some((c) => c.is_final_day === true)
+      : null,
+    first_race_deadline: deadlineOf(date, firstRace?.start_time),
+    final_entries: finalEntriesOf(
+      { finalRaces: meetRacesWithNext, semifinalRaces: meetRaces },
+      {
+        stageOf: (r) => conditionById.get(r.race_id)?.race_stage ?? null,
+        entriesOf,
+        cancelled,
+        resultOf: (r) => resultById.get(r.race_id) ?? null,
+      },
+    ),
+    racers: [...racers.values()].sort((a, b) => a.racer_id - b.racer_id),
+  };
+}
+
 /** 行から出力を作る純粋関数。同タイムは method=min、日をまたいで秒数を比べない。 */
 export function setsuExhibitionOf(
   date,
@@ -123,107 +240,19 @@ export function setsuExhibitionOf(
       cancellationStatus: race.cancellation_status,
       result: resultById.get(race.race_id) ?? null,
     });
+  const ctx = {
+    date,
+    races,
+    motors,
+    conditionById,
+    resultById,
+    exhibitionByBoat,
+    entriesOf,
+    cancelled,
+  };
   const meets = active
     .sort((a, b) => Number(a.venue_code) - Number(b.venue_code))
-    .map((s) => {
-      // s はその会場で date 以前に始まったいちばん新しい節なので、start_date 以降の走は全部この節のもの。
-      // 翌日の分は優勝戦の出走表（前夜の時点で入っていれば）を拾うためだけに使う。
-      const meetRacesWithNext = races
-        .filter(
-          (r) =>
-            sameVenue(r.venue_code, s.venue_code) &&
-            r.race_date >= s.start_date &&
-            r.race_date <= addDaysToDateString(date, 1),
-        )
-        .sort(byRace);
-      const meetRaces = meetRacesWithNext.filter((r) => r.race_date <= date);
-      const todayRaces = meetRaces.filter((r) => r.race_date === date);
-      const todayConditions = todayRaces
-        .map((r) => conditionById.get(r.race_id))
-        .filter(Boolean);
-      const seriesDays = todayConditions
-        .map((c) => c.series_day)
-        .filter((d) => d != null);
-      const racers = new Map();
-      for (const race of meetRaces) {
-        if (cancelled(race)) continue;
-        const boats = entriesOf(race);
-        const timeOf = (entry) => {
-          const ex = exhibitionByBoat.get(
-            `${race.race_id}-${entry.boat_number}`,
-          );
-          return entry.is_absent || ex?.is_absent || ex?.exhibition_time == null
-            ? null
-            : Number(ex.exhibition_time);
-        };
-        const times = boats
-          .map(timeOf)
-          .filter((t) => t != null && Number.isFinite(t));
-        for (const entry of boats) {
-          if (entry.racer_id == null) continue;
-          if (!racers.has(entry.racer_id)) {
-            const motor = motors.find(
-              (m) =>
-                m.race_date === s.start_date &&
-                sameVenue(m.venue_code, s.venue_code) &&
-                m.racer_id === entry.racer_id &&
-                m.motor_number === entry.motor_number,
-            );
-            racers.set(entry.racer_id, {
-              racer_id: entry.racer_id,
-              name: entry.player_name,
-              class: entry.grade ?? null,
-              motor_number: entry.motor_number,
-              motor_2rate_at_start: motor?.motor_2rate ?? null,
-              runs: [],
-            });
-          }
-          const racer = racers.get(entry.racer_id);
-          if (entry.grade != null) racer.class = entry.grade; // 走は race_id の昇順なので、最後に入るのがいちばん新しい級
-          const ex = exhibitionByBoat.get(
-            `${race.race_id}-${entry.boat_number}`,
-          );
-          const time = timeOf(entry);
-          racer.runs.push({
-            race_id: race.race_id,
-            date: race.race_date,
-            race_number: race.race_number,
-            race_stage: conditionById.get(race.race_id)?.race_stage ?? null,
-            boat_number: entry.boat_number,
-            exhibition_time: ex?.exhibition_time ?? null,
-            exhibition_rank:
-              time == null || !Number.isFinite(time)
-                ? null
-                : 1 + times.filter((t) => t < time).length,
-            exhibition_course: ex?.exhibition_course ?? null,
-          });
-        }
-      }
-      const firstRace = todayRaces.find((r) => Number(r.race_number) === 1);
-      return {
-        meet_id: `${s.venue_code}-${s.start_date}`,
-        venue_code: s.venue_code,
-        start_date: s.start_date,
-        end_date: s.end_date,
-        title: s.title,
-        grade: s.grade,
-        series_day: seriesDays.length ? Math.min(...seriesDays) : null,
-        is_final_day: todayConditions.length
-          ? todayConditions.some((c) => c.is_final_day === true)
-          : null,
-        first_race_deadline: deadlineOf(date, firstRace?.start_time),
-        final_entries: finalEntriesOf(
-          { finalRaces: meetRacesWithNext, semifinalRaces: meetRaces },
-          {
-            stageOf: (r) => conditionById.get(r.race_id)?.race_stage ?? null,
-            entriesOf,
-            cancelled,
-            resultOf: (r) => resultById.get(r.race_id) ?? null,
-          },
-        ),
-        racers: [...racers.values()].sort((a, b) => a.racer_id - b.racer_id),
-      };
-    });
+    .map((s) => meetOf(s, ctx));
   return { date, meets };
 }
 

@@ -111,22 +111,10 @@ export async function runRacerProfilesJob(
   const size = resolveChunkSize(ctx.query, chunkSize);
 
   // 前回までの進捗。対象日・モードが一致するときだけ引き継ぐ
-  const previous = ctx.state?.cursor ?? null;
-  const resume =
-    previous && previous.targetDate === date && previous.mode === ctx.mode
-      ? previous
-      : null;
-  if (resume?.done) {
-    // shadow の完了後の起動（live は、共通ラッパが last_target_date で、ここへ来ない）
-    return {
-      rowsWritten: 0,
-      cursor: previous,
-      report: ctx.state?.last_report ?? undefined,
-      body: { skipped: "cycle_done", date },
-    };
-  }
+  const resume = resumableCursor(ctx.state, date, ctx.mode);
+  // shadow の完了後の起動（live は、共通ラッパが last_target_date で、ここへ来ない）
+  if (resume?.done) return cycleDoneResult(ctx.state, resume, date);
   const afterRacerId = resume?.afterRacerId ?? null;
-  const stats = resume?.stats ?? zeroStats();
 
   // 起動時の月ではなく、再開中も固定された対象日の月で決める。
   const newProfilesOnly = ![5, 11].includes(Number(date.slice(5, 7)));
@@ -152,6 +140,77 @@ export async function runRacerProfilesJob(
   });
 
   // 系統的な失敗は、cursor を進めずに、実行の失敗にする（次の起動が、同じチャンクをやり直す）
+  const systemic = systemicFailures(summary);
+  if (systemic.length > 0) {
+    return systemicErrorResult({
+      systemic,
+      date,
+      mode: ctx.mode,
+      afterRacerId,
+      summary,
+    });
+  }
+
+  // 新人だけの回で、登録済み選手がいるときの対象0人は正常。それ以外の空はエラー。
+  if (isUnexpectedEmpty(resume, summary, newProfilesOnly)) {
+    return {
+      outcome: "error",
+      error:
+        "対象選手が0件でした（racer_profiles・直近の race_entries が空の疑い）",
+      report: { date, mode: ctx.mode, summary: brief(summary) },
+    };
+  }
+
+  return chunkResult({
+    date,
+    mode: ctx.mode,
+    nowMs: () => ctx.now().getTime(),
+    size,
+    summary,
+    resume,
+    afterRacerId,
+  });
+}
+
+/** shadow の完了後の起動の結果（前回の report を残す） */
+function cycleDoneResult(state, resume, date) {
+  return {
+    rowsWritten: 0,
+    cursor: resume,
+    report: state?.last_report ?? undefined,
+    body: { skipped: "cycle_done", date },
+  };
+}
+
+/** 系統的な失敗の結果（cursor を進めない） */
+function systemicErrorResult({ systemic, date, mode, afterRacerId, summary }) {
+  return {
+    outcome: "error",
+    error: `選手プロフィール・期別成績の取得に失敗（再開位置: ${afterRacerId ?? "先頭"}）: ${systemic.join(" / ")}`,
+    rowsWritten: 0,
+    report: { date, mode, afterRacerId, summary: brief(summary) },
+  };
+}
+
+/** 再開でない回の対象0人のうち、新人だけの回で登録済み選手がいる（正常）を除いたもの */
+function isUnexpectedEmpty(resume, summary, newProfilesOnly) {
+  return (
+    !resume &&
+    summary.targetCount === 0 &&
+    !(newProfilesOnly && summary.registeredCount > 0)
+  );
+}
+
+/** 前回までの進捗のうち、対象日・モードが一致するもの（無ければ null） */
+function resumableCursor(state, date, mode) {
+  const previous = state?.cursor ?? null;
+  return previous && previous.targetDate === date && previous.mode === mode
+    ? previous
+    : null;
+}
+
+/** 実行の失敗にする系統的な失敗の文（無ければ空） */
+function systemicFailures(summary) {
   const systemic = [];
   if (summary.aborted) {
     systemic.push(
@@ -163,76 +222,72 @@ export async function runRacerProfilesJob(
       `新規選手のプロフィール保存でDBエラー${summary.profile.saveErrorCount}件`,
     );
   }
-  const parsed =
-    summary.season.successCount +
-    summary.season.unchangedCount +
-    summary.season.noDataCount;
-  const attempts = parsed + summary.season.failCount;
-  if (systemic.length > 0) {
-    return {
-      outcome: "error",
-      error: `選手プロフィール・期別成績の取得に失敗（再開位置: ${afterRacerId ?? "先頭"}）: ${systemic.join(" / ")}`,
-      rowsWritten: 0,
-      report: { date, mode: ctx.mode, afterRacerId, summary: brief(summary) },
-    };
-  }
+  return systemic;
+}
 
-  // 新人だけの回で、登録済み選手がいるときの対象0人は正常。それ以外の空はエラー。
-  if (
-    !resume &&
-    summary.targetCount === 0 &&
-    !(newProfilesOnly && summary.registeredCount > 0)
-  ) {
-    return {
-      outcome: "error",
-      error: "対象選手が0件でした（racer_profiles・直近の race_entries が空の疑い）",
-      report: { date, mode: ctx.mode, summary: brief(summary) },
-    };
-  }
-
-  const nextStats = addStats(stats, summary);
-  const done = summary.remaining === 0;
-  const nextAfter = summary.lastProcessedRacerId ?? afterRacerId;
-  const cursor = {
-    targetDate: date,
-    mode: ctx.mode,
-    afterRacerId: nextAfter,
-    done,
-    stats: nextStats,
-  };
-
+/** サイクルの完了時の、期別成績の失敗率の通知（出さなければ空）。nowMs は通知を出すときだけ呼ぶ */
+function seasonFailAlerts(stats, done, nowMs, date) {
   const alerts = [];
-  if (done && nextStats.seasonTargets > 0) {
-    const failRate = nextStats.seasonFailed / nextStats.seasonTargets;
+  if (done && stats.seasonTargets > 0) {
+    const failRate = stats.seasonFailed / stats.seasonTargets;
     const shouldAlert =
-      nextStats.seasonTargets >= MIN_SAMPLE_FOR_SEASON_FAIL_RATE
+      stats.seasonTargets >= MIN_SAMPLE_FOR_SEASON_FAIL_RATE
         ? failRate > MAX_SEASON_FAIL_RATE
-        : nextStats.seasonFailed >= SMALL_SAMPLE_SEASON_FAIL_COUNT;
+        : stats.seasonFailed >= SMALL_SAMPLE_SEASON_FAIL_COUNT;
     if (shouldAlert) {
       alerts.push({
         key: "season_fail_rate",
         // 月次の1回きりの事象のため、last_report が残る間ずっと再通知しない（monitor は until を過ぎた通知を出さない）
         until: new Date(
-          ctx.now().getTime() + ALERT_NOTIFY_DAYS * 24 * 3600 * 1000,
+          nowMs() + ALERT_NOTIFY_DAYS * 24 * 3600 * 1000,
         ).toISOString(),
-        text: `選手期別成績の失敗率が${(failRate * 100).toFixed(1)}%（${nextStats.seasonFailed}/${nextStats.seasonTargets}人、上限${MAX_SEASON_FAIL_RATE * 100}%）。対象日 ${date}`,
+        text: `選手期別成績の失敗率が${(failRate * 100).toFixed(1)}%（${stats.seasonFailed}/${stats.seasonTargets}人、上限${MAX_SEASON_FAIL_RATE * 100}%）。対象日 ${date}`,
       });
     }
   }
+  return alerts;
+}
+
+/** チャンクを処理し終えた後の、共通ラッパへの結果（cursor・report・件数） */
+function chunkResult({
+  date,
+  mode,
+  nowMs,
+  size,
+  summary,
+  resume,
+  afterRacerId,
+}) {
+  const stats = resume?.stats ?? zeroStats();
+  const parsed =
+    summary.season.successCount +
+    summary.season.unchangedCount +
+    summary.season.noDataCount;
+  const attempts = parsed + summary.season.failCount;
+  const nextStats = addStats(stats, summary);
+  const done = summary.remaining === 0;
+  const nextAfter = summary.lastProcessedRacerId ?? afterRacerId;
+  const cursor = {
+    targetDate: date,
+    mode,
+    afterRacerId: nextAfter,
+    done,
+    stats: nextStats,
+  };
 
   const report = {
     date,
-    mode: ctx.mode,
+    mode,
     done,
     chunk: brief(summary),
     cycle: nextStats,
     afterRacerId: nextAfter,
-    alerts,
+    alerts: seasonFailAlerts(nextStats, done, nowMs, date),
   };
 
   return {
     rowsWritten:
-      ctx.mode === "live"
+      mode === "live"
         ? summary.season.successCount + summary.profile.successCount
         : 0,
     // 0件エラー: 期別成績を取得した選手が十分（MIN_SAMPLE_FOR_ZERO_GUARD人以上）いるのに、1件も解析できなかった

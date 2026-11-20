@@ -80,6 +80,117 @@ export function computePredictCodeHash({
   }
 }
 
+/** 保存済みのハッシュの行（DB を読む殻）。無ければ null */
+async function readHashRow(client) {
+  const { data: row, error } = await client
+    .from("scrape_job_state")
+    .select("last_report")
+    .eq("job", PREDICT_CODE_HASH_JOB)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`予測ロジックのハッシュの読み取りに失敗: ${error.message}`);
+  }
+  return row;
+}
+
+/** 初回: 基準を保存するのみ（ignoreDuplicates: 他の起動が先に作っていれば、何もしない） */
+async function saveBaseline(client, hash, at) {
+  const { error: insertError } = await client.from("scrape_job_state").upsert(
+    {
+      job: PREDICT_CODE_HASH_JOB,
+      last_report: { hash, at },
+      updated_at: at,
+    },
+    { onConflict: "job", ignoreDuplicates: true },
+  );
+  if (insertError) {
+    throw new Error(
+      `予測ロジックのハッシュの保存に失敗: ${insertError.message}`,
+    );
+  }
+}
+
+/** 保存済みのハッシュを条件付きで更新する。更新できた（この起動が再生成する）なら true */
+async function claimHash(client, { hash, stored, at }) {
+  const claim = client
+    .from("scrape_job_state")
+    .update({
+      last_report: { hash, previous: stored, at },
+      updated_at: at,
+    })
+    .eq("job", PREDICT_CODE_HASH_JOB);
+  const { data: claimed, error: claimError } = await (
+    stored === null
+      ? claim.is("last_report->>hash", null)
+      : claim.eq("last_report->>hash", stored)
+  ).select("job");
+  if (claimError) {
+    throw new Error(
+      `予測ロジックのハッシュの更新に失敗: ${claimError.message}`,
+    );
+  }
+  return (claimed?.length ?? 0) > 0;
+}
+
+/** 元のハッシュに戻して、次の起動が再試行できるようにする（戻せなくても、元の例外を優先する） */
+async function restoreHash(client, { hash, stored, at, now }, reason) {
+  const { error: restoreError } = await client
+    .from("scrape_job_state")
+    .update({
+      last_report: {
+        hash: stored,
+        at,
+        failedRegeneration: truncateError(reason),
+      },
+      updated_at: now().toISOString(),
+    })
+    .eq("job", PREDICT_CODE_HASH_JOB)
+    .eq("last_report->>hash", hash);
+  if (restoreError) {
+    console.error(
+      `❌ 予測ロジックのハッシュを元に戻せませんでした: ${restoreError.message}`,
+    );
+  }
+}
+
+/** 発走前のレースの ID。発走済みのレースは、的中フラグ・払戻を保つため再生成しない */
+function upcomingRaceIds(schedule, now) {
+  return schedule
+    .filter((r) => r.start_time.getTime() > now().getTime())
+    .map((r) => r.race_id);
+}
+
+/** 当日の発走前のレースを再生成する（mainRefresh を呼ぶ殻） */
+async function regenerateUpcoming({
+  client,
+  now,
+  hash,
+  stored,
+  refresh,
+  getSchedule,
+}) {
+  const date = toJstDateString(now());
+  const schedule = await getSchedule(date, { client, throwOnError: true });
+  const raceIds = upcomingRaceIds(schedule, now);
+  if (raceIds.length === 0) {
+    return { status: "regenerated", races: 0, hash };
+  }
+  console.log(
+    `🔄 予測ロジックが変更されました（${stored ?? "なし"} → ${hash}）。発走前の${raceIds.length}レースを再生成します`,
+  );
+  await refresh({
+    isDryRun: false,
+    specificRaceIds: raceIds,
+    // races.updated_at を進める（従来の再生成経路と同じ）。書き込みは upsert（unified を削除しない）
+    forceTouchRaces: true,
+    date,
+    writeMode: "upsert",
+    client,
+    now,
+  });
+  return { status: "regenerated", races: raceIds.length, hash };
+}
+
 /**
  * ハッシュを確認し、変わっていれば当日の発走前のレースを再生成する。
  *
@@ -100,31 +211,10 @@ export async function checkPredictCodeChange({
 }) {
   if (!hash) return { status: "hash_unavailable" };
 
-  const { data: row, error } = await client
-    .from("scrape_job_state")
-    .select("last_report")
-    .eq("job", PREDICT_CODE_HASH_JOB)
-    .maybeSingle();
-  if (error) {
-    throw new Error(`予測ロジックのハッシュの読み取りに失敗: ${error.message}`);
-  }
-
+  const row = await readHashRow(client);
   const at = now().toISOString();
   if (!row) {
-    // 初回: 基準を保存するのみ（ignoreDuplicates: 他の起動が先に作っていれば、何もしない）
-    const { error: insertError } = await client.from("scrape_job_state").upsert(
-      {
-        job: PREDICT_CODE_HASH_JOB,
-        last_report: { hash, at },
-        updated_at: at,
-      },
-      { onConflict: "job", ignoreDuplicates: true },
-    );
-    if (insertError) {
-      throw new Error(
-        `予測ロジックのハッシュの保存に失敗: ${insertError.message}`,
-      );
-    }
+    await saveBaseline(client, hash, at);
     return { status: "baseline", hash };
   }
 
@@ -132,72 +222,20 @@ export async function checkPredictCodeChange({
   if (stored === hash) return { status: "unchanged", hash };
 
   // 変わっていた: 先に、保存済みのハッシュを更新した1つの起動だけが、再生成する（条件付き更新）
-  const claim = client
-    .from("scrape_job_state")
-    .update({
-      last_report: { hash, previous: stored, at },
-      updated_at: at,
-    })
-    .eq("job", PREDICT_CODE_HASH_JOB);
-  const { data: claimed, error: claimError } = await (
-    stored === null
-      ? claim.is("last_report->>hash", null)
-      : claim.eq("last_report->>hash", stored)
-  ).select("job");
-  if (claimError) {
-    throw new Error(
-      `予測ロジックのハッシュの更新に失敗: ${claimError.message}`,
-    );
-  }
-  if ((claimed?.length ?? 0) === 0) return { status: "claimed_elsewhere" };
-
-  const restore = async (reason) => {
-    // 元のハッシュに戻して、次の起動が再試行できるようにする（戻せなくても、元の例外を優先する）
-    const { error: restoreError } = await client
-      .from("scrape_job_state")
-      .update({
-        last_report: {
-          hash: stored,
-          at,
-          failedRegeneration: truncateError(reason),
-        },
-        updated_at: now().toISOString(),
-      })
-      .eq("job", PREDICT_CODE_HASH_JOB)
-      .eq("last_report->>hash", hash);
-    if (restoreError) {
-      console.error(
-        `❌ 予測ロジックのハッシュを元に戻せませんでした: ${restoreError.message}`,
-      );
-    }
-  };
+  if (!(await claimHash(client, { hash, stored, at })))
+    return { status: "claimed_elsewhere" };
 
   try {
-    const date = toJstDateString(now());
-    const schedule = await getSchedule(date, { client, throwOnError: true });
-    // 発走済みのレースは、的中フラグ・払戻を保つため再生成しない
-    const raceIds = schedule
-      .filter((r) => r.start_time.getTime() > now().getTime())
-      .map((r) => r.race_id);
-    if (raceIds.length === 0) {
-      return { status: "regenerated", races: 0, hash };
-    }
-    console.log(
-      `🔄 予測ロジックが変更されました（${stored ?? "なし"} → ${hash}）。発走前の${raceIds.length}レースを再生成します`,
-    );
-    await refresh({
-      isDryRun: false,
-      specificRaceIds: raceIds,
-      // races.updated_at を進める（従来の再生成経路と同じ）。書き込みは upsert（unified を削除しない）
-      forceTouchRaces: true,
-      date,
-      writeMode: "upsert",
+    return await regenerateUpcoming({
       client,
       now,
+      hash,
+      stored,
+      refresh,
+      getSchedule,
     });
-    return { status: "regenerated", races: raceIds.length, hash };
   } catch (error) {
-    await restore(error);
+    await restoreHash(client, { hash, stored, at, now }, error);
     throw error;
   }
 }

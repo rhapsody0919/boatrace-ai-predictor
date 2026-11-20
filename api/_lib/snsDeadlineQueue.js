@@ -1,7 +1,7 @@
 import { xPostValid } from './snsXLength.js';
-import { SCREEN_TABS } from '../../scripts/lib/snsScreenMarkers.js';
 import { hasLink } from './snsResearchImage.js';
 import { holdReasonOf } from './snsXSend.js';
+import { checkPublicDisplay } from "../../scripts/lib/sns/publicDisplayCheck.js";
 
 // 推奨値は運用承認ではない。DB timing_approved=falseが初期値。
 export const QUEUE_TIMING_PROPOSAL = { scheduleMinutes: 90, expiryMinutes: 30 };
@@ -10,22 +10,6 @@ export function deadlineSchedule(deadlineAt, policy = QUEUE_TIMING_PROPOSAL) {
   if (!Number.isFinite(t) || policy.scheduleMinutes <= policy.expiryMinutes || policy.expiryMinutes <= 0) throw new Error('締切設定が不正です');
   return { scheduled_at: new Date(t - policy.scheduleMinutes * 60000).toISOString(),
     expires_at: new Date(t - policy.expiryMinutes * 60000).toISOString() };
-}
-
-/** headless.inspectは毎回新しい未認証contextで開く。Cookie/Storage/Preview設定を持ち込まない。
- * {url, context:{storageState:null}, requiredSelectors} -> {finalUrl, visibleSelectors}
- * selectorsは公開画面の印の設定。HTTP200やfeatureFlagsだけでは合格しない。
- */
-export async function checkPublicDisplay(queue, headless, markers) {
-  if (!headless || !queue?.public_url || !markers?.[queue.screen_key]?.length) throw new Error('public_check_unconfigured');
-  const url = new URL(queue.public_url);
-  // UTM 以外の query は、タブを直接開く tab（SCREEN_TABS の値だけ）しか受け付けない（sns-pdca-loop tasks 10）。
-  if (url.origin !== 'https://www.boat-ai.jp' || url.username || url.password ||
-    url.hash || [...url.searchParams.keys()].some(k => !['utm_source','utm_medium','utm_campaign','utm_content','tab'].includes(k)) ||
-    (url.searchParams.has('tab') && !SCREEN_TABS.includes(url.searchParams.get('tab')))) throw new Error('public_url_invalid');
-  const selectors = markers[queue.screen_key];
-  const result = await headless.inspect({ url: url.href, context: { storageState: null }, requiredSelectors: selectors });
-  if (result.finalUrl !== url.href || !selectors.every(s => result.visibleSelectors?.includes(s))) throw new Error('public_component_missing');
 }
 
 /** readCurrentは送信時点の欠場・API版を返す注入契約。保存済み欠場なしだけでは通さない。 */
@@ -106,28 +90,9 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
     const { sha256 } = await import('./snsXSend.js');
     if (await sha256(new TextEncoder().encode(job.snapshot_text)) !== job.approved_hash) throw new Error('承認版が違います');
     const snapshot = JSON.parse(job.snapshot_text);
-    const cover = snapshot.source?.cover_image_path;
-    if (!snapshot.source?.video_storage_path || !Array.isArray(snapshot.media) ||
-      snapshot.media.length !== (cover ? 2 : 1) || snapshot.media[0].type !== 'video/mp4' ||
-      snapshot.media[0].path !== snapshot.source.video_storage_path ||
-      (cover && (snapshot.media[1].path !== cover || !['image/jpeg','image/png'].includes(snapshot.media[1].type)))) {
-      throw new Error('動画・カバーの再承認が必要です');
-    }
-    if (!['scheduled','immediate'].includes(snapshot.queue?.youtube_mode)) throw new Error('公開方法が未指定です');
-    const verifiedMedia = [];
-    for (const media of snapshot.media) {
-      if (!loadMedia) throw new Error('媒体検査が未接続です');
-      const bytes = await loadMedia(media.path);
-      if (bytes.byteLength !== media.size || await sha256(bytes) !== media.sha256) throw new Error('媒体が変更されています');
-      verifiedMedia.push({ ...media, bytes });
-    }
-    // 親（全貌の完全版）がある Shorts は、親の公開済みの動画 ID で URL の置き場所を埋める。runner は親が posted の子だけを選び、
-    // DB も claim で parent_not_posted として止めるので、ここで親が無いのは異常（begin_post の前なので外部へは何も送らない）
-    if (snapshot.queue?.parent_job_id) {
-      if (!store.parent) throw new Error('親の照会が未接続です');
-      snapshot.text = fillFullUrl(snapshot.text, (await store.parent(snapshot.queue.parent_job_id)).external_post_id);
-    }
-    if (snapshot.text?.includes(FULL_URL_PLACEHOLDER)) throw new Error('unresolved_placeholder');
+    assertMediaContract(snapshot);
+    const verifiedMedia = await verifyMedia(snapshot, loadMedia, sha256);
+    await fillParentUrl(snapshot, store);
     // adapter が送る前に分かる不備（題名の長さ等）は begin_post の前に落とす。後で落ちると、何も上がっていない job が要照合に残る
     if (youtube.validate) youtube.validate(snapshot);
     await checked(preflight, job);
@@ -149,17 +114,57 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
     publicationPhaseStarted = true;
     return await runYoutubePublishJob(uploadedJob, { store, youtube, preflight });
   } catch (error) {
-    if (started && uploadedKnown && !publicationPhaseStarted) { try { await store.transition(id, 'youtube_retain', retainResult(error)); } catch { /* update開始後は残置扱いに戻さない */ } }
-    if (!started) {
-      try { await store.transition(id, 'hold', { reason: 'youtube_preflight_failed' }); } catch { /* reconcileを戻さない */ }
-      // job の error_code は begin_post の前の全部の失敗で youtube_preflight_failed。元の理由は runner の report と
-      // sns_send_events（191、stage=send）に残す（BOA-1201。X の runXSendJob と同じ holdReason）
-      error.holdReason ??= holdReasonOf(error, 'youtube_preflight');
-    } else {
-      // begin_post の後（要照合、上がったかもしれない）。runner は stage=after_post に残す（BOA-1201）
-      error.postStarted = true;
-    }
+    await recordQueueFailure(error, { id, store, started, uploadedKnown, publicationPhaseStarted });
     throw error;
+  }
+}
+
+/** 動画・カバーの形が承認した snapshot の契約どおりか。違えば再承認 */
+function assertMediaContract(snapshot) {
+  const cover = snapshot.source?.cover_image_path;
+  if (!snapshot.source?.video_storage_path || !Array.isArray(snapshot.media) ||
+    snapshot.media.length !== (cover ? 2 : 1) || snapshot.media[0].type !== 'video/mp4' ||
+    snapshot.media[0].path !== snapshot.source.video_storage_path ||
+    (cover && (snapshot.media[1].path !== cover || !['image/jpeg','image/png'].includes(snapshot.media[1].type)))) {
+    throw new Error('動画・カバーの再承認が必要です');
+  }
+  if (!['scheduled','immediate'].includes(snapshot.queue?.youtube_mode)) throw new Error('公開方法が未指定です');
+}
+
+/** 媒体を読み、承認した大きさ・sha256 と合うことを確かめる */
+async function verifyMedia(snapshot, loadMedia, sha256) {
+  const verifiedMedia = [];
+  for (const media of snapshot.media) {
+    if (!loadMedia) throw new Error('媒体検査が未接続です');
+    const bytes = await loadMedia(media.path);
+    if (bytes.byteLength !== media.size || await sha256(bytes) !== media.sha256) throw new Error('媒体が変更されています');
+    verifiedMedia.push({ ...media, bytes });
+  }
+  return verifiedMedia;
+}
+
+/** 親（全貌の完全版）がある Shorts は、親の公開済みの動画 ID で URL の置き場所を埋める（snapshot.text を書き換える）。 */
+async function fillParentUrl(snapshot, store) {
+  // runner は親が posted の子だけを選び、
+  // DB も claim で parent_not_posted として止めるので、ここで親が無いのは異常（begin_post の前なので外部へは何も送らない）
+  if (snapshot.queue?.parent_job_id) {
+    if (!store.parent) throw new Error('親の照会が未接続です');
+    snapshot.text = fillFullUrl(snapshot.text, (await store.parent(snapshot.queue.parent_job_id)).external_post_id);
+  }
+  if (snapshot.text?.includes(FULL_URL_PLACEHOLDER)) throw new Error('unresolved_placeholder');
+}
+
+/** runYoutubeQueueJob の失敗の記録（上がった後の残置・begin_post の前の hold・理由の印）。投げ直しは呼び元 */
+async function recordQueueFailure(error, { id, store, started, uploadedKnown, publicationPhaseStarted }) {
+  if (started && uploadedKnown && !publicationPhaseStarted) { try { await store.transition(id, 'youtube_retain', retainResult(error)); } catch { /* update開始後は残置扱いに戻さない */ } }
+  if (!started) {
+    try { await store.transition(id, 'hold', { reason: 'youtube_preflight_failed' }); } catch { /* reconcileを戻さない */ }
+    // job の error_code は begin_post の前の全部の失敗で youtube_preflight_failed。元の理由は runner の report と
+    // sns_send_events（191、stage=send）に残す（BOA-1201。X の runXSendJob と同じ holdReason）
+    error.holdReason ??= holdReasonOf(error, 'youtube_preflight');
+  } else {
+    // begin_post の後（要照合、上がったかもしれない）。runner は stage=after_post に残す（BOA-1201）
+    error.postStarted = true;
   }
 }
 /**
@@ -213,6 +218,15 @@ export async function resumeRetainedYoutubeJob(job, deps) {
   });
 }
 
+/** 処理の状態の読みが、この job の非公開の動画を確かめているか */
+const processingConfirmed = (processing, job) =>
+  processing?.confirmed === true && processing.id === job.external_post_id && processing.privacyStatus === 'private';
+
+/** 公開の確認の読みが、この job の公開済みの動画を確かめているか */
+const publicationConfirmed = (result, job) =>
+  result?.confirmed === true && result.privacyStatus === 'public' && result.id === job.external_post_id &&
+  Number.isFinite(Date.parse(result.posted_at));
+
 /**
  * 処理の状態を1回読み、済んでいれば公開する（runYoutubePublishJob と resumeRetainedYoutubeJob の共通）。
  * retainBeforeReady: ready の前（読み取りの失敗）でも非公開のまま残す（youtube_retain）か。処理の失敗と ready の後は常に残す
@@ -221,7 +235,7 @@ async function publishWhenProcessed(job, { store, youtube, preflight }, { check,
   let publishStarted = false, retainPrivate = retainBeforeReady;
   try {
     const processing = await check();
-    if (processing?.confirmed !== true || processing.id !== job.external_post_id || processing.privacyStatus !== 'private') {
+    if (!processingConfirmed(processing, job)) {
       retainPrivate = false;
       throw new Error('youtube_processing_unconfirmed');
     }
@@ -239,8 +253,7 @@ async function publishWhenProcessed(job, { store, youtube, preflight }, { check,
       if (method === 'videos.update') publishStarted = true;
     };
     const result = await youtube.makePublic({ job, privacyStatus: 'public', publishAt: null, beforeCall });
-    if (result?.confirmed !== true || result.privacyStatus !== 'public' || result.id !== job.external_post_id ||
-      !Number.isFinite(Date.parse(result.posted_at))) throw new Error('youtube_publication_unconfirmed');
+    if (!publicationConfirmed(result, job)) throw new Error('youtube_publication_unconfirmed');
     return await store.transition(job.id, 'complete', result);
   } catch (error) {
     // update開始後は公開済みかもしれない。非公開と決めつけず読取照合に残す。
@@ -315,3 +328,5 @@ export async function closeRetainedYoutubeJob(job, { store, lookup }) {
     throw new Error(`youtube_close_not_private（${result?.privacyStatus ?? '不明'}）`);
   return store.transition(job.id, 'youtube_close_private', { owned: true, privacyStatus: 'private', id: result.id });
 }
+
+export { checkPublicDisplay } from "../../scripts/lib/sns/publicDisplayCheck.js";

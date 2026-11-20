@@ -31,26 +31,10 @@ import {
 export const RACE_SERIES_EXPECTED_VENUES = 24;
 
 /**
- * @param {Object} ctx 共通ラッパの文脈（targetDate・mode・politeFetch・client）
- * @param {{expectedVenues?: number, sleepMs?: number}} [options] テスト用の差し替え
+ * 前月・当月・翌月の月間スケジュールを取って解析する（取得の殻）。
+ * 取れない・解析できない・会場数が違う・節名の未掲載以外の要確認は problems へ
  */
-export async function runRaceSeriesJob(
-  ctx,
-  { expectedVenues = RACE_SERIES_EXPECTED_VENUES, sleepMs = 200 } = {},
-) {
-  const date = ctx.targetDate;
-  if (!date)
-    throw new Error("対象日を解決できません（ctx.targetDate がありません）");
-  if (!isScheduledDate(SCRAPE_JOBS.race_series, date))
-    return {
-      rowsWritten: 0,
-      rowsParsed: 0,
-      report: { date, mode: ctx.mode, skipped: "not_scheduled" },
-      body: { skipped: "not_scheduled" },
-    };
-  const month = ymOf(date);
-  const yms = [shiftYm(month, -1), month, shiftYm(month, 1)];
-
+async function fetchSchedulePages(ctx, yms, expectedVenues) {
   const pages = [];
   const problems = [];
   let untitled = 0;
@@ -77,26 +61,22 @@ export async function runRaceSeriesJob(
     }
     pages.push(page);
   }
+  return { pages, problems, untitled };
+}
 
-  const plan =
-    problems.length === 0
-      ? planRaceSeriesRows(pages, month, shiftYm(month, 1))
-      : { rows: [], unresolved: [], anomalies: [] };
-  for (const a of plan.anomalies)
-    problems.push(`会場${a.venue_code}: ${a.problem}`);
-  for (const u of plan.unresolved)
-    problems.push(
-      `確定できない節: 会場${u.venue_code} ${u.seen_from}〜${u.seen_to}（${u.reason}）`,
-    );
+/** 節の計画の要確認・確定できない節を問題の文にする（純関数） */
+function planProblems(plan) {
+  return [
+    ...plan.anomalies.map((a) => `会場${a.venue_code}: ${a.problem}`),
+    ...plan.unresolved.map(
+      (u) =>
+        `確定できない節: 会場${u.venue_code} ${u.seen_from}〜${u.seen_to}（${u.reason}）`,
+    ),
+  ];
+}
 
-  const report = {
-    date,
-    mode: ctx.mode,
-    months: yms,
-    series: plan.rows.length,
-    untitledSegments: untitled,
-    problems: problems.slice(0, 10),
-  };
+/** 書く前に止める結果（問題がある・節が0件）。止めないなら null（純関数） */
+function blockedResult(problems, plan, month, report) {
   if (problems.length > 0)
     return {
       outcome: "error",
@@ -111,13 +91,11 @@ export async function runRaceSeriesJob(
       rowsParsed: 0,
       report,
     };
+  return null;
+}
 
-  if (ctx.mode === "shadow")
-    return { rowsWritten: 0, rowsParsed: plan.rows.length, report };
-
-  const summary = await writeRaceSeriesRows(ctx.client, plan.rows, {
-    sleepMs,
-  });
+/** 書いた後の結果（純関数） */
+function writtenResult(summary, plan, report, yms, untitled) {
   const fullReport = {
     ...report,
     written: summary.written,
@@ -143,4 +121,56 @@ export async function runRaceSeriesJob(
       untitledSegments: untitled,
     },
   };
+}
+
+/**
+ * @param {Object} ctx 共通ラッパの文脈（targetDate・mode・politeFetch・client）
+ * @param {{expectedVenues?: number, sleepMs?: number}} [options] テスト用の差し替え
+ */
+export async function runRaceSeriesJob(
+  ctx,
+  { expectedVenues = RACE_SERIES_EXPECTED_VENUES, sleepMs = 200 } = {},
+) {
+  const date = ctx.targetDate;
+  if (!date)
+    throw new Error("対象日を解決できません（ctx.targetDate がありません）");
+  if (!isScheduledDate(SCRAPE_JOBS.race_series, date))
+    return {
+      rowsWritten: 0,
+      rowsParsed: 0,
+      report: { date, mode: ctx.mode, skipped: "not_scheduled" },
+      body: { skipped: "not_scheduled" },
+    };
+  const month = ymOf(date);
+  const yms = [shiftYm(month, -1), month, shiftYm(month, 1)];
+
+  const { pages, problems, untitled } = await fetchSchedulePages(
+    ctx,
+    yms,
+    expectedVenues,
+  );
+  const plan =
+    problems.length === 0
+      ? planRaceSeriesRows(pages, month, shiftYm(month, 1))
+      : { rows: [], unresolved: [], anomalies: [] };
+  problems.push(...planProblems(plan));
+
+  const report = {
+    date,
+    mode: ctx.mode,
+    months: yms,
+    series: plan.rows.length,
+    untitledSegments: untitled,
+    problems: problems.slice(0, 10),
+  };
+  const blocked = blockedResult(problems, plan, month, report);
+  if (blocked) return blocked;
+
+  if (ctx.mode === "shadow")
+    return { rowsWritten: 0, rowsParsed: plan.rows.length, report };
+
+  const summary = await writeRaceSeriesRows(ctx.client, plan.rows, {
+    sleepMs,
+  });
+  return writtenResult(summary, plan, report, yms, untitled);
 }

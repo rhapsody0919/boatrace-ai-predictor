@@ -4,7 +4,8 @@
  * - refresh token は使い切り。refresh は lock_until（90秒）と locked_by を条件付き UPDATE で取り、保存は WHERE locked_by=自分 にする
  * - Edge でも Node でも動くよう Web Crypto を使う
  */
-import { SUPABASE_URL, SUPABASE_SERVICE_KEY } from "./snsHubHelpers.js";
+// PostgREST の読み書き（createPostgrestTokenDb）は snsTokenDb.js へ移した。外へは同じ名で出す
+export { createPostgrestTokenDb } from "./snsTokenDb.js";
 
 export const X_AUTHORIZE_URL = "https://x.com/i/oauth2/authorize";
 export const X_TOKEN_URL = "https://api.x.com/2/oauth2/token";
@@ -166,83 +167,6 @@ export async function fetchAccountId(accessToken, fetchImpl = fetch) {
   return body.data.id;
 }
 
-/** sns_oauth_tokens（provider='x'）の PostgREST の読み書き。条件付き UPDATE で行ロックの代わりにする */
-export function createPostgrestTokenDb({
-  url = SUPABASE_URL,
-  key = SUPABASE_SERVICE_KEY,
-  fetchImpl = fetch,
-} = {}) {
-  async function call(path, options = {}) {
-    const response = await fetchImpl(`${url}/rest/v1/${path}`, {
-      ...options,
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-        Prefer: "return=representation",
-        ...options.headers,
-      },
-    });
-    if (!response.ok)
-      throw new Error(
-        `X のトークンの DB 操作に失敗しました: HTTP ${response.status}`,
-      );
-    return response.json();
-  }
-  const base = "sns_oauth_tokens?provider=eq.x";
-  return {
-    async read() {
-      return (await call(`${base}&select=*`))[0] ?? null;
-    },
-    async upsert(row) {
-      await call("sns_oauth_tokens?on_conflict=provider", {
-        method: "POST",
-        headers: {
-          Prefer: "resolution=merge-duplicates,return=representation",
-        },
-        body: JSON.stringify({
-          provider: "x",
-          ...row,
-          lock_until: null,
-          locked_by: null,
-        }),
-      });
-    },
-    async tryLock(lockId, now, until) {
-      const free = encodeURIComponent(
-        `(lock_until.is.null,lock_until.lt.${now.toISOString()})`,
-      );
-      return (
-        (
-          await call(`${base}&or=${free}`, {
-            method: "PATCH",
-            body: JSON.stringify({
-              lock_until: until.toISOString(),
-              locked_by: lockId,
-            }),
-          })
-        ).length === 1
-      );
-    },
-    async saveLocked(lockId, row) {
-      return (
-        (
-          await call(`${base}&locked_by=eq.${lockId}`, {
-            method: "PATCH",
-            body: JSON.stringify({ ...row, lock_until: null, locked_by: null }),
-          })
-        ).length === 1
-      );
-    },
-    async release(lockId) {
-      await call(`${base}&locked_by=eq.${lockId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ lock_until: null, locked_by: null }),
-      });
-    },
-  };
-}
-
 // 通知に失敗しても元の失敗を優先して投げる。通知できなかったこと自体はログに残す
 async function notifyLogged(notify, message) {
   try {
@@ -250,6 +174,110 @@ async function notifyLogged(notify, message) {
   } catch (error) {
     console.error(`Slack に通知できません（${message}）: ${error.message}`);
   }
+}
+
+/** 行の access token を復号して {accessToken, accountId} にする（元は getXAccessToken の中に4か所） */
+async function openedAccess(row, keyBase64) {
+  return {
+    accessToken: (await decryptTokens(row, keyBase64)).access_token,
+    accountId: row.account_id,
+  };
+}
+
+/**
+ * ロックを取った後の refresh（元は getXAccessToken の try/catch）。
+ * 直前に別の呼び出しが更新していれば {reuse: {accessToken, accountId}}、refresh したら {fresh, locked}。失敗はロックを外して投げる
+ */
+async function refreshUnderLock(
+  { db, keyBase64, clientId, clientSecret, fetchImpl, now },
+  lockId,
+) {
+  let fresh;
+  let locked;
+  try {
+    // ロックを取った後に読み直す（直前に別の呼び出しが更新していれば、その値を使う）
+    locked = await db.read();
+    if (
+      Date.parse(locked.access_expires_at) - REFRESH_MARGIN_MS >
+      now().getTime()
+    ) {
+      await db.release(lockId);
+      return { reuse: await openedAccess(locked, keyBase64) };
+    }
+    const { refresh_token } = await decryptTokens(locked, keyBase64);
+    fresh = await refreshTokens({
+      refreshToken: refresh_token,
+      clientId,
+      clientSecret,
+      fetchImpl,
+    });
+  } catch (error) {
+    await db
+      .release(lockId)
+      .catch((e) =>
+        console.error(`X のトークンのロックを外せません: ${e.message}`),
+      );
+    // refresh の失敗は続く状態なので、ここでは通知しない（呼び出し側の runner が report.alerts で、再通知の間隔ごとに知らせる。
+    // 2分ごとの実行のたびに Slack へ流さないため）。通知するのは、取り返しのつかない「保存の失敗」だけ
+    throw error;
+  }
+  return { fresh, locked };
+}
+
+/** 保存できなかった後の始末（元は getXAccessToken の if (!saved)）。別のトークンが入っていればそれを返し、無ければ通知して投げる */
+async function recoverUnsaved({ db, keyBase64, notify }, locked, saveError) {
+  // ロック中にオーナーが連携をやり直していた（upsert でロックが外れ、別のトークンが入った）なら、それを使う。
+  // 読み直し・復号が失敗しても、通知を飛ばさずに下へ進む（保存できたか確かめられないので、やり直しを知らせる。
+  // 開発の補助の点検 D1、2026-10-13）
+  let readError = null;
+  if (!saveError) {
+    try {
+      const latest = await db.read();
+      if (latest && latest.ciphertext !== locked.ciphertext)
+        return await openedAccess(latest, keyBase64);
+    } catch (error) {
+      readError = error;
+    }
+  }
+  const reason = saveError
+    ? `DB の保存に失敗: ${saveError.message}`
+    : readError
+      ? `保存できたか確かめるための読み直しに失敗: ${readError.message}`
+      : "ロックが切れて別の呼び出しに取られた";
+  await notifyLogged(
+    notify,
+    `X のトークンを更新したが保存できなかった（${reason}）。X の連携のやり直しが要る（管理画面の「X と連携する」）`,
+  );
+  throw new Error(
+    `X のトークンを保存できません（${reason}。連携のやり直しが要る）`,
+  );
+}
+
+/** refresh した token を暗号化して保存し {accessToken, accountId} を返す。保存に失敗したら recoverUnsaved */
+async function saveRefreshed(o, lockId, fresh, locked) {
+  const { db, keyBase64, now } = o;
+  const sealed = await encryptTokens(
+    { access_token: fresh.access_token, refresh_token: fresh.refresh_token },
+    keyBase64,
+  );
+  let saveError = null;
+  const saved = await db
+    .saveLocked(lockId, {
+      ...sealed,
+      access_expires_at: new Date(
+        now().getTime() + fresh.expires_in * 1000,
+      ).toISOString(),
+      refreshed_at: now().toISOString(),
+    })
+    .catch((e) => {
+      saveError = e;
+      return false;
+    });
+  if (!saved) return await recoverUnsaved(o, locked, saveError);
+  return {
+    accessToken: fresh.access_token,
+    accountId: locked.account_id,
+  };
 }
 
 /**
@@ -269,6 +297,7 @@ export async function getXAccessToken({
   waitMs = 3000,
   maxWaits = 40,
 }) {
+  const o = { db, keyBase64, clientId, clientSecret, fetchImpl, notify, now };
   for (let attempt = 0; attempt <= maxWaits; attempt++) {
     const row = await db.read();
     if (!row)
@@ -280,10 +309,7 @@ export async function getXAccessToken({
       Date.parse(row.access_expires_at) - REFRESH_MARGIN_MS >
       current.getTime()
     )
-      return {
-        accessToken: (await decryptTokens(row, keyBase64)).access_token,
-        accountId: row.account_id,
-      };
+      return await openedAccess(row, keyBase64);
     const lockId = crypto.randomUUID();
     if (
       !(await db.tryLock(
@@ -295,90 +321,9 @@ export async function getXAccessToken({
       await sleep(waitMs);
       continue;
     }
-    let fresh;
-    let locked;
-    try {
-      // ロックを取った後に読み直す（直前に別の呼び出しが更新していれば、その値を使う）
-      locked = await db.read();
-      if (
-        Date.parse(locked.access_expires_at) - REFRESH_MARGIN_MS >
-        now().getTime()
-      ) {
-        await db.release(lockId);
-        return {
-          accessToken: (await decryptTokens(locked, keyBase64)).access_token,
-          accountId: locked.account_id,
-        };
-      }
-      const { refresh_token } = await decryptTokens(locked, keyBase64);
-      fresh = await refreshTokens({
-        refreshToken: refresh_token,
-        clientId,
-        clientSecret,
-        fetchImpl,
-      });
-    } catch (error) {
-      await db
-        .release(lockId)
-        .catch((e) =>
-          console.error(`X のトークンのロックを外せません: ${e.message}`),
-        );
-      // refresh の失敗は続く状態なので、ここでは通知しない（呼び出し側の runner が report.alerts で、再通知の間隔ごとに知らせる。
-      // 2分ごとの実行のたびに Slack へ流さないため）。通知するのは、取り返しのつかない「保存の失敗」だけ
-      throw error;
-    }
-    const sealed = await encryptTokens(
-      { access_token: fresh.access_token, refresh_token: fresh.refresh_token },
-      keyBase64,
-    );
-    let saveError = null;
-    const saved = await db
-      .saveLocked(lockId, {
-        ...sealed,
-        access_expires_at: new Date(
-          now().getTime() + fresh.expires_in * 1000,
-        ).toISOString(),
-        refreshed_at: now().toISOString(),
-      })
-      .catch((e) => {
-        saveError = e;
-        return false;
-      });
-    if (!saved) {
-      // ロック中にオーナーが連携をやり直していた（upsert でロックが外れ、別のトークンが入った）なら、それを使う。
-      // 読み直し・復号が失敗しても、通知を飛ばさずに下へ進む（保存できたか確かめられないので、やり直しを知らせる。
-      // 開発の補助の点検 D1、2026-10-13）
-      let readError = null;
-      if (!saveError) {
-        try {
-          const latest = await db.read();
-          if (latest && latest.ciphertext !== locked.ciphertext)
-            return {
-              accessToken: (await decryptTokens(latest, keyBase64))
-                .access_token,
-              accountId: latest.account_id,
-            };
-        } catch (error) {
-          readError = error;
-        }
-      }
-      const reason = saveError
-        ? `DB の保存に失敗: ${saveError.message}`
-        : readError
-          ? `保存できたか確かめるための読み直しに失敗: ${readError.message}`
-          : "ロックが切れて別の呼び出しに取られた";
-      await notifyLogged(
-        notify,
-        `X のトークンを更新したが保存できなかった（${reason}）。X の連携のやり直しが要る（管理画面の「X と連携する」）`,
-      );
-      throw new Error(
-        `X のトークンを保存できません（${reason}。連携のやり直しが要る）`,
-      );
-    }
-    return {
-      accessToken: fresh.access_token,
-      accountId: locked.account_id,
-    };
+    const got = await refreshUnderLock(o, lockId);
+    if (got.reuse) return got.reuse;
+    return await saveRefreshed(o, lockId, got.fresh, got.locked);
   }
   throw new Error("X のトークンの更新を待ちきれませんでした");
 }

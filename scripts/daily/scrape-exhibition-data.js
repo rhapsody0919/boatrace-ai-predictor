@@ -23,16 +23,25 @@ import {
   formatWeatherStats,
 } from "../lib/beforeinfoWeather.js";
 import { parseBeforeInfoDocument } from "../lib/beforeInfoParser.js";
-import { buildExhibitionRows } from "../lib/preRaceRows.js";
 import {
   PRE_RACE_OPTIONAL_COLUMN_GROUPS,
   detectPreRaceSchema,
 } from "../lib/preRaceSchema.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
-import { upsertChangedRows } from "../lib/unchangedRows.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
-import { computeExhibitionDigest } from "../lib/scrapeJobs/preRaceDigest.js";
+import {
+  absorbVenueResults,
+  classifyFetched,
+  groupTargetsByVenue,
+  markHaveData,
+  settleOutcomes,
+  toLegacyExhibition,
+  upsertExhibitionRows,
+} from "../lib/exhibitionJobParts.js";
+
+// 読み手（backfill-exhibition-time.js 等）が今までどおりこのファイルから読めるように再 export
+export { toLegacyExhibition };
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -43,20 +52,6 @@ const FETCH_HEADERS = {
 };
 
 // マイグレーション056（BOA-221）・059（BOA-289）で追加した列。未適用のDBでは除いて書き込む
-const BOA221_COLUMNS = [
-  "tilt",
-  "propeller_change",
-  "parts_changed",
-  "adjustment_weight",
-];
-const BOA289_COLUMNS = [
-  "today_weight",
-  "prev_race_no",
-  "prev_entry_course",
-  "prev_start_timing",
-  "prev_finish_rank",
-];
-
 /**
  * Supabase から「展示タイムが取得済み」の race_id セットを取得
  *
@@ -76,14 +71,17 @@ const BOA289_COLUMNS = [
 export async function getRaceIdsWithExhibitionTime(date) {
   if (!isSupabaseEnabled()) return new Set();
 
-  const rows = await fetchAll("exhibition_data", "race_id", (q) =>
-    q
-      .gte("race_id", date)
-      .lt("race_id", `${date}~`)
-      .not("exhibition_time", "is", null)
-      .not("start_timing", "is", null)
-      .order("race_id")
-      .order("boat_number"),
+  const rows = await fetchAll(
+    "exhibition_data",
+    "race_id",
+    (q) =>
+      q
+        .gte("race_id", date)
+        .lt("race_id", `${date}~`)
+        .not("exhibition_time", "is", null)
+        .not("start_timing", "is", null)
+        .order("race_id")
+        .order("boat_number"),
     // 取得済みのスキップ判定にだけ使う。失敗したら空・途中までの集合になり、窓内のレースを取り直す（取得先への
     // 負荷が少し増えるだけで、データは欠けない）。例外にすると、その回の展示の取得が丸ごと飛ぶ
     // 握りつぶし可（BOA-391）: スキップ判定だけで、失敗時は取り直すため欠けない
@@ -91,55 +89,6 @@ export async function getRaceIdsWithExhibitionTime(date) {
   );
 
   return new Set(rows.map((r) => r.race_id));
-}
-
-/**
- * 直前情報の解析結果（scripts/lib/beforeInfoParser.js）を、旧実装（scrapeExhibitionData）と同じ形にする。
- * 旧形式の項目（展示タイム・チルト・プロペラ・部品交換・調整重量・当日体重・前走成績・展示ST・フライング有無）は
- * 旧実装と同じ値。新しい項目（展示進入・F/L・前走の着順の生表記・欠場）が加わる。
- *
- * @param {ReturnType<typeof parseBeforeInfoDocument>} page
- * @param {number} tbodiesCount 直前情報の表の tbody の数（理由の表記用）
- * @returns {{ data: Array|null, reason: string|null }}
- *   reason: 'tables_lt_2' | 'no_boats' | 'no_values' | null(成功)
- */
-export function toLegacyExhibition(page, tbodiesCount = 0) {
-  if (page.tables_count < 2) {
-    return { data: null, reason: `tables_lt_2 (found ${page.tables_count})` };
-  }
-  if (page.boats.length === 0) {
-    return { data: null, reason: `no_boats (tbodies=${tbodiesCount})` };
-  }
-  const data = page.boats.map((b) => {
-    const entry = {
-      boatNumber: b.boat_number,
-      exhibitionTime: b.exhibition_time,
-      startTiming: null,
-      tilt: b.tilt,
-      propellerChange: b.propeller_text,
-      partsChanged: b.parts_changed.length > 0 ? b.parts_changed : null,
-      adjustmentWeight: b.adjustment_weight,
-      todayWeight: b.weight_kg,
-      prevRaceNo: b.prev_race_no,
-      prevEntryCourse: b.prev_entry_course,
-      prevStartTiming: b.prev_start_timing,
-      prevFinishRank: b.prev_finish_rank,
-      exhibitionCourse: b.exhibition_course,
-      startFlag: b.start_flag,
-      prevFinishMark: b.prev_finish_mark,
-      isAbsent: b.is_absent,
-    };
-    // 旧実装と同じく、STの数値が読めた艇だけに、展示STとフライング有無を持たせる
-    if (b.start_timing !== null) {
-      entry.startTiming = b.start_timing;
-      entry.isFlying = b.start_flag === "F";
-    }
-    return entry;
-  });
-  if (!data.some((e) => e.exhibitionTime !== null || e.startTiming !== null)) {
-    return { data: null, reason: `no_values (boats=${data.length})` };
-  }
-  return { data, reason: null };
 }
 
 /**
@@ -261,21 +210,6 @@ async function fetchExhibitionForRace(date, venueCode, raceNo) {
  * 適用済みのマイグレーション分は引き続き書き込み続ける（scripts/lib/optionalColumns.js）
  * 書き込みエラーは upsertChangedRows がログに出す（呼び出し元の戻り値・後続処理は従来どおり）
  */
-function upsertExhibitionRows(client, rows, { dryRun = false } = {}) {
-  return upsertChangedRows(client, "exhibition_data", rows, {
-    onConflict: "race_id,boat_number",
-    keyColumns: ["race_id", "boat_number"],
-    label: "exhibition_data",
-    dryRun,
-    stampUpdatedAt: true,
-    optionalColumnGroups: {
-      "マイグレーション056（BOA-221）": BOA221_COLUMNS,
-      "マイグレーション059（BOA-289）": BOA289_COLUMNS,
-      ...PRE_RACE_OPTIONAL_COLUMN_GROUPS.exhibition,
-    },
-  });
-}
-
 /**
  * オーケストレーターから呼び出し可能な展示データ取得処理
  * @param {Array} schedule - getRaceSchedule() の返り値（外部から渡す）
@@ -355,24 +289,15 @@ export async function scrapeAndUpsertRaces(
   // 直前情報の新しい列（マイグレーション082）が適用済みかを先に判定する。未適用なら、旧実装と同じ列だけを書く
   const extended = (await detectPreRaceSchema(client)).exhibition;
 
-  // 会場ごとにグループ化
-  const byVenue = new Map();
-  for (const r of targets) {
-    if (!byVenue.has(r.venue_code)) byVenue.set(r.venue_code, []);
-    byVenue.get(r.venue_code).push(r);
-  }
-
   let totalFetched = 0;
   const allRows = [];
   // 気象の反映対象（レースごとの解析結果）。展示データが未公開でも、ページを取得できたレースは対象
   const weatherFetched = [];
 
-  const venueEntries = [...byVenue.entries()];
+  // 会場ごとにグループ化し、会場内の全対象レースを並列取得
+  const venueEntries = [...groupTargetsByVenue(targets).entries()];
   for (let vi = 0; vi < venueEntries.length; vi++) {
     const [venueCode, races] = venueEntries[vi];
-    const venueName = VENUE_NAMES[venueCode];
-
-    // 会場内の全対象レースを並列取得
     const results = await Promise.all(
       races.map((r) =>
         fetchExhibitionForRace(date, venueCode, r.race_no).then(
@@ -387,36 +312,12 @@ export async function scrapeAndUpsertRaces(
         ),
       ),
     );
-
-    let venueFetched = 0;
-    for (const {
-      raceId,
-      startTime,
-      data,
-      reason,
-      conditions,
-      page,
-    } of results) {
-      const raceNo = raceId.split("-")[4];
-      if (conditions) {
-        weatherFetched.push({ raceId, venueCode, startTime, conditions });
-      }
-      if (data) {
-        // 展示タイム・展示STのある艇の行を書く（旧実装と同じ）。082適用済みなら、展示進入・F/L・前走の着順の
-        // 生表記・欠場（欠場艇の行を含む）も書く（scripts/lib/preRaceRows.js）
-        allRows.push(...buildExhibitionRows(raceId, page.boats, { extended }));
-        venueFetched++;
-      } else {
-        console.log(
-          `  ⚠️ ${venueName} ${parseInt(raceNo)}R: データなし (${reason})`,
-        );
-      }
-    }
-
-    if (venueFetched > 0) {
-      console.log(`  ✅ ${venueName}: ${venueFetched}R 取得`);
-    }
-    totalFetched += venueFetched;
+    totalFetched += absorbVenueResults(results, {
+      venueCode,
+      extended,
+      allRows,
+      weatherFetched,
+    });
 
     // 会場間1秒待機（サーバー負荷配慮）
     if (vi < venueEntries.length - 1) {
@@ -463,6 +364,35 @@ export async function scrapeAndUpsertRaces(
   };
 }
 
+/** runForRaces の引数の既定と確かめ（Vercel の予定表スロットは fetchFn に politeFetch を渡す） */
+function runForRacesOptions({
+  date,
+  mode = "live",
+  fetchFn = defaultFetch,
+  client = supabase,
+  concurrency = 1,
+  schedule = null,
+  updateWeather = true,
+  catchup = false,
+  weightOnly = false,
+}) {
+  if (mode !== "live" && mode !== "shadow") {
+    throw new Error(`mode は live か shadow にしてください: ${mode}`);
+  }
+  if (!date) throw new Error("date（YYYY-MM-DD）が必要です");
+  return {
+    date,
+    mode,
+    fetchFn,
+    client,
+    concurrency,
+    schedule,
+    updateWeather,
+    catchup,
+    weightOnly,
+  };
+}
+
 /**
  * レース単位の展示データ取得（Vercel Cron の予定表スロット `exhibition` から呼ぶ。tasks.md T4b-06-2）。
  * beforeinfo を1回取得し、展示データ（exhibition_data）と気象（race_conditions）を、run と同じ解析・行の組み立て・
@@ -500,34 +430,22 @@ export async function scrapeAndUpsertRaces(
  * @returns {Promise<Array<{race_id: string, outcome: string, rowsWritten: number, rowsParsed: number, rowsExpected: number, changed: boolean, resultDigest?: string, error?: string, retryAt?: Date}>>}
  *   changed: 今回、展示データまたは気象を実際に書き換えた（予測の再計算の対象になる）
  */
-export async function runForRaces(
-  races,
-  {
+export async function runForRaces(races, options = {}) {
+  const {
     date,
-    mode = "live",
-    fetchFn = defaultFetch,
-    client = supabase,
-    concurrency = 1,
-    schedule = null,
-    updateWeather = true,
-    catchup = false,
-    weightOnly = false,
-  } = {},
-) {
-  if (mode !== "live" && mode !== "shadow") {
-    throw new Error(`mode は live か shadow にしてください: ${mode}`);
-  }
-  if (!date) throw new Error("date（YYYY-MM-DD）が必要です");
+    mode,
+    fetchFn,
+    client,
+    concurrency,
+    schedule,
+    updateWeather,
+    catchup,
+    weightOnly,
+  } = runForRacesOptions(options);
   if (races.length === 0) return [];
   const live = mode === "live";
   /** @type {Map<string, Object>} */
   const outcomes = new Map();
-  const base = {
-    rowsWritten: 0,
-    rowsParsed: 0,
-    rowsExpected: 1,
-    changed: false,
-  };
 
   // 1) live（と、窓の外の補完）: 展示タイムが取得済みのレースは、取得しない
   //    （shadow の通常のスロットは、既存の経路が書いた行と比べるため、取得済みでも取得・解析する）
@@ -547,9 +465,7 @@ export async function runForRaces(
         `展示データの取得済みの確認に失敗しました: ${error.message}`,
       );
     }
-    for (const row of data ?? []) {
-      outcomes.set(row.race_id, { ...base, outcome: "skipped_have_data" });
-    }
+    markHaveData(outcomes, data);
   }
 
   // 2) 取得・解析（1つの失敗で他のレースを止めない）
@@ -576,55 +492,13 @@ export async function runForRaces(
     (weatherOn
       ? await getRaceSchedule(date, { client, throwOnError: true })
       : []);
-  const startOf = new Map(fullSchedule.map((r) => [r.race_id, r.start_time]));
   // 直前情報の新しい列（マイグレーション082）が適用済みかを先に判定する。未適用なら、旧実装と同じ列だけを書く
   const extended =
     fetched.length > 0 ? (await detectPreRaceSchema(client)).exhibition : false;
-  const rowsByRace = new Map();
-  const weatherFetched = [];
-  for (const { race, detail } of fetched) {
-    if (detail.status === "breaker_open") {
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "breaker_open",
-        retryAt: detail.retryAt,
-        error: detail.error,
-      });
-      continue;
-    }
-    if (detail.status !== "ok") {
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "error",
-        error: `直前情報を取得できませんでした: ${detail.error}`,
-      });
-      continue;
-    }
-    // 気象は、展示が未公開でも、ページを取得できたレースは対象（従来の run と同じ）
-    if (detail.conditions) {
-      weatherFetched.push({
-        raceId: race.race_id,
-        venueCode: race.venue_code,
-        startTime: startOf.get(race.race_id) ?? null,
-        conditions: detail.conditions,
-      });
-    }
-    // 展示が未公開（detail.data が null）でも、当日体重・調整重量だけは公開されていることがある（BOA-500）。
-    // その場合 buildExhibitionRows（extended）が展示前の行を返すので、書いて残す。展示タイム・チルトは
-    // 後の窓（-33）で同じ行に埋まる。1行も作れないときだけ no_values（従来どおり再試行）
-    const rows = buildExhibitionRows(race.race_id, detail.page.boats, {
-      extended,
-    });
-    if (rows.length === 0) {
-      outcomes.set(race.race_id, {
-        ...base,
-        outcome: "no_values",
-        error: `展示データが未公開です（${detail.reason}）`,
-      });
-      continue;
-    }
-    rowsByRace.set(race.race_id, rows);
-  }
+  const { rowsByRace, weatherFetched } = classifyFetched(fetched, outcomes, {
+    startOf: new Map(fullSchedule.map((r) => [r.race_id, r.start_time])),
+    extended,
+  });
 
   // 4) 気象（live のみ）を展示より先に書く。展示タイムがそろったのを見て動く読み手（アナロジーの展示後の段等）が、
   //    同じ取得回の気象を読めるようにするため（BOA-271 T4-3。展示の後に書くと、その数秒の間に前の回の気象を読む）。
@@ -637,66 +511,13 @@ export async function runForRaces(
         })
       : null;
 
-  // 書き込み（shadow は書かない）
+  // 書き込み（shadow は書かない）。5) 気象を書き込んだレースも changed にする
   const allRows = [...rowsByRace.values()].flat();
   const write =
     allRows.length > 0
       ? await upsertExhibitionRows(client, allRows, { dryRun: !live })
       : null;
-  const writtenByRace = new Map();
-  if (live && write && write.written > 0) {
-    for (const row of write.toWrite) {
-      writtenByRace.set(row.race_id, (writtenByRace.get(row.race_id) ?? 0) + 1);
-    }
-  }
-  for (const [raceId, rows] of rowsByRace) {
-    const common = {
-      ...base,
-      rowsParsed: rows.length,
-      rowsWritten: writtenByRace.get(raceId) ?? 0,
-      changed: (writtenByRace.get(raceId) ?? 0) > 0,
-      resultDigest: computeExhibitionDigest(rows),
-    };
-    if (write?.error) {
-      outcomes.set(raceId, {
-        ...common,
-        outcome: "error",
-        error: `展示データの書き込みに失敗しました: ${write.error.message}`,
-      });
-    } else if (rows.some((row) => row.exhibition_time != null)) {
-      outcomes.set(raceId, { ...common, outcome: "ok" });
-    } else if (
-      weightOnly &&
-      rows.some(
-        (row) => row.today_weight != null || row.adjustment_weight != null,
-      )
-    ) {
-      // 体重だけの窓: 展示前に取れるもの（当日体重・調整重量）が取れたので完了。展示タイムは -33 の窓が取る
-      outcomes.set(raceId, { ...common, outcome: "ok" });
-    } else {
-      // 展示タイムが未公開。書いた行（展示STだけ、または展示前の当日体重・調整重量だけ）は残し、
-      // 展示タイムが入るまで再試行する
-      const hasSt = rows.some((row) => row.start_timing != null);
-      const hasWeight = rows.some(
-        (row) => row.today_weight != null || row.adjustment_weight != null,
-      );
-      outcomes.set(raceId, {
-        ...common,
-        outcome: "partial",
-        error: hasSt
-          ? "展示タイムが未公開です（展示STのみ）"
-          : hasWeight
-            ? "展示タイムが未公開です（展示前の当日体重・調整重量のみ）"
-            : "展示タイム・当日体重が未公開です（欠場艇の行のみ）",
-      });
-    }
-  }
-
-  // 5) 気象も予測の入力（イン崩れ指数の風速・波高）のため、書き込んだレースは再計算の対象に含める
-  for (const raceId of weather?.changedRaceIds ?? []) {
-    const outcome = outcomes.get(raceId);
-    if (outcome) outcomes.set(raceId, { ...outcome, changed: true });
-  }
+  settleOutcomes(outcomes, rowsByRace, { write, live, weightOnly, weather });
 
   return races.map((race) => ({
     race_id: race.race_id,

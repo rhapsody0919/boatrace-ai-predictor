@@ -70,6 +70,41 @@ export async function exportXVideo(source, target, exec = run) {
   ]);
 }
 
+/** フォルダの中の決まった名前のファイルを読む（それ以外は ignored に名前だけ） */
+async function readFolder(folder) {
+  const names = await readdir(folder);
+  const ignored = names.filter(
+    (n) => !ALLOWED.includes(n) && !n.startsWith("."),
+  );
+  const files = new Map();
+  for (const name of names.filter((n) => ALLOWED.includes(n)))
+    files.set(name, await readFile(path.join(folder, name)));
+  return { files, ignored };
+}
+
+/** v1 で、x_thread[0] の媒体が draft-x.mp4 なのにフォルダに無いとき、draft.mp4 から書き出す必要がある */
+const needsXVideo = (bundle, files) =>
+  bundle?.schema_version === BUNDLE_SCHEMA_V1 &&
+  bundle.x_thread?.[0]?.media === X_VIDEO &&
+  !files.has(X_VIDEO);
+
+/** 容量の上限は v1 だけ広げる（v0 は管理画面の取り込みと同じ上限のまま） */
+const limitsOf = (bundle) =>
+  bundle?.schema_version === BUNDLE_SCHEMA_V1 ? BUNDLE_LIMITS_V1 : BUNDLE_LIMITS;
+
+/** 読んだファイルを multipart にして validateBundle で検査する */
+function validateFiles(files, bundle, { riskRules, derived }) {
+  const form = new FormData();
+  for (const [name, bytes] of files)
+    form.append("files", new Blob([bytes], { type: mimeOf(name) }), name);
+  return validateBundle(form, riskRules, {
+    schemas: [BUNDLE_SCHEMA, BUNDLE_SCHEMA_V1],
+    limits: limitsOf(bundle),
+    derived,
+    v1Fields: validateV1Fields,
+  });
+}
+
 /**
  * フォルダを読み、必要なら X 用の動画を書き出して、検査済みの bundle を返す
  * @returns {Promise<{validated: object, ignored: string[], derived: string[]}>}
@@ -78,24 +113,14 @@ export async function prepareBundle(
   folder,
   { riskRules = [], exec = run } = {},
 ) {
-  const names = await readdir(folder);
-  const ignored = names.filter(
-    (n) => !ALLOWED.includes(n) && !n.startsWith("."),
-  );
-  const files = new Map();
-  for (const name of names.filter((n) => ALLOWED.includes(n)))
-    files.set(name, await readFile(path.join(folder, name)));
+  const { files, ignored } = await readFolder(folder);
   const bundle = JSON.parse(
     files.get("bundle.json")?.toString("utf8") ?? "null",
   );
   const derived = [];
   let tmp;
   try {
-    if (
-      bundle?.schema_version === BUNDLE_SCHEMA_V1 &&
-      bundle.x_thread?.[0]?.media === X_VIDEO &&
-      !files.has(X_VIDEO)
-    ) {
+    if (needsXVideo(bundle, files)) {
       if (!files.has("draft.mp4"))
         throw new Error(`draft.mp4 が無いので ${X_VIDEO} を作れません`);
       tmp = await mkdtemp(path.join(tmpdir(), "sns-push-bundle-"));
@@ -104,19 +129,7 @@ export async function prepareBundle(
       files.set(X_VIDEO, await readFile(target));
       derived.push(X_VIDEO);
     }
-    const form = new FormData();
-    for (const [name, bytes] of files)
-      form.append("files", new Blob([bytes], { type: mimeOf(name) }), name);
-    const validated = await validateBundle(form, riskRules, {
-      schemas: [BUNDLE_SCHEMA, BUNDLE_SCHEMA_V1],
-      // 容量の上限は v1 だけ広げる（v0 は管理画面の取り込みと同じ上限のまま）
-      limits:
-        bundle?.schema_version === BUNDLE_SCHEMA_V1
-          ? BUNDLE_LIMITS_V1
-          : BUNDLE_LIMITS,
-      derived,
-      v1Fields: validateV1Fields,
-    });
+    const validated = await validateFiles(files, bundle, { riskRules, derived });
     return { validated, ignored, derived };
   } finally {
     if (tmp) await rm(tmp, { recursive: true, force: true });
