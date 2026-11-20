@@ -2,7 +2,7 @@
  * 記事の中身だけの PR の関門（CLI）。
  * 使い方: node scripts/content/check-content-pr.js [--base origin/master]
  * git から差分（git diff --raw -z --no-renames <base>...HEAD。変更後の mode つき）・HEAD の中身・
- * base と HEAD のファイル一覧を集め、scripts/lib/contentPrGate.js に渡す。
+ * base と HEAD のファイル一覧を集め、関門（scripts/content/contentPrGateEval.js）に渡す。
  * 結果の JSON を標準出力に出す。errors があれば終了コード1、無ければ0、git 等の失敗は2。
  * 契約: docs/operation/content-pr-contract.md
  */
@@ -10,10 +10,8 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import {
-  evaluateContentPr,
-  referencedImagePaths,
-} from "../lib/contentPrGate.js";
+import { referencedImagePaths } from "../lib/contentPrGate.js";
+import { evaluateContentPr } from "./contentPrGateEval.js";
 import { isDirectRun } from "../lib/isDirectRun.js";
 
 const CONFIG_PATH = join(
