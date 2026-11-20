@@ -14,13 +14,10 @@ export const TODAY_ROW_SELECT = `${ROW_SELECT},racer_name,boat_number,sample_siz
 export const createTodayDigestSource = (options = {}) =>
   createDigestSource({ ttlMs: 0, rowSelect: TODAY_ROW_SELECT, ...options });
 
-/** 下書きが /today の投稿か（source_data.digest を持ち、素材のバンドルではない） */
-export const isTodayDraft = (draft) =>
-  !draft?.bundle_import_id &&
-  /^\d{4}-\d{2}-\d{2}$/.test(draft?.source_data?.digest?.date ?? "");
-
 export {
   TODAY_SCREEN_KEY,
   digestRevision,
   pickRaceStatus,
 } from "../../scripts/lib/sns/todayDigestStatus.js";
+
+export { isTodayDraft } from "../../scripts/lib/sns/todayDraft.js";
