@@ -69,6 +69,12 @@ import {
   compareRaceInfoShadowDigests,
 } from "./check-pre-race-shadow.js";
 import { createDb } from "./verifyData/scrape-pre-race-job-db.js";
+import {
+  checkNoLegacyExhibition,
+  checkPreRaceEntries,
+  checkShadowReadOnly,
+} from "./verifyData/cron-entry-checks.js";
+import { checkScheduledPreRace } from "./verifyData/scrape-scheduled-scenes.js";
 import { runScrapePreRaceJobScenes1 } from "./verifyData/scrape-pre-race-job-scenes-1.js";
 import { runScrapePreRaceJobScenes2, runScrapePreRaceJobScenes3 } from "./verifyData/scrape-pre-race-job-scenes-2.js";
 import { runScrapePreRaceJobScenes4 } from "./verifyData/scrape-pre-race-job-scenes-3.js";
@@ -875,16 +881,8 @@ async function exhibitionShadowWritesNothing(run) {
     "check-pre-race-shadow（A2）: ダイジェストが違えば不一致として数える",
     exBad.matched === 0 && exBad.mismatched.length === 1,
   );
-  const checkSource = fs.readFileSync(
-    path.join(ROOT, "scripts/maintenance/check-pre-race-shadow.js"),
-    "utf8",
-  );
-  check(
-    "check-pre-race-shadow: 読み取りのみ（insert・update・upsert・delete・rpc を呼ばない）",
-    !/\.(insert|update|upsert|delete|rpc)\(/.test(
-      checkSource.replace(/\/\*[\s\S]*?\*\//g, ""),
-    ),
-  );
+  // 読み取りのみかは、偽の Supabase で集計を回し、呼んだ method で見る（verifyData/cron-entry-checks.js）
+  await checkShadowReadOnly({ check, show });
 }
 
 // ---------------------------------------------------------------------------
@@ -1113,16 +1111,11 @@ await runScrapePreRaceJobScenes2({ check, show, BEFORE_AFTER_START_HTML, SUMI_RA
 // (g) 従来の経路（runLegacyExhibition）が消えている（P0）
 // ---------------------------------------------------------------------------
 {
-  const source = fs.readFileSync(
-    new URL("../lib/scrapeJobs/preRaceHandlers.js", import.meta.url),
-    "utf8",
-  );
   check(
-    "従来の経路（素の fetch で beforeinfo を叩く runLegacyExhibition）が消えている: export も、scrape-exhibition-data.js の run の import も無い",
-    !("runLegacyExhibition" in preRaceHandlersModule) &&
-      !/run as runExhibitionLegacy/.test(source) &&
-      !/legacy\s*=/.test(source),
+    "従来の経路の export（runLegacyExhibition）が preRaceHandlers.js に無い",
+    !("runLegacyExhibition" in preRaceHandlersModule),
   );
+  await checkNoLegacyExhibition({ check, show });
 }
 
 // ---------------------------------------------------------------------------
@@ -1246,20 +1239,7 @@ await runScrapePreRaceJobScenes2({ check, show, BEFORE_AFTER_START_HTML, SUMI_RA
   const vercel = JSON.parse(
     fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
   );
-  for (const [job, file, def] of [
-    ["race_info", "race-info", ri],
-    ["exhibition", "exhibition", ex],
-  ]) {
-    const source = fs.readFileSync(
-      path.join(ROOT, `api/cron/${file}.js`),
-      "utf8",
-    );
-    const md = /maxDuration:\s*(\d+)/.exec(source);
-    check(
-      `api/cron/${file}.js: maxDuration がレジストリ（${job}.maxDurationSec）と同じ値のリテラル`,
-      md && Number(md[1]) === def.maxDurationSec,
-      `${md?.[1]} / ${def.maxDurationSec}`,
-    );
+  for (const file of ["race-info", "exhibition"]) {
     const crons = vercel.crons.filter((c) => c.path === `/api/cron/${file}`);
     check(
       `vercel.json: /api/cron/${file} は1本、cron式は毎分・UTC 22〜23時と 0〜14時（JST 07:00〜23:59）`,
@@ -1267,33 +1247,18 @@ await runScrapePreRaceJobScenes2({ check, show, BEFORE_AFTER_START_HTML, SUMI_RA
       show(crons),
     );
   }
-  const riSource = fs.readFileSync(
-    path.join(ROOT, "api/cron/race-info.js"),
-    "utf8",
-  );
-  check(
-    "api/cron/race-info.js: job='race_info' のハンドラーで、waitUntil は使わない",
-    /job: "race_info"/.test(riSource) &&
-      !/waitUntil/.test(riSource.replace(/\/\*[\s\S]*?\*\//g, "")),
-  );
+  // api/cron の maxDuration・ハンドラーの配線は、import を偽に差し替えて見る（verifyData/cron-entry-checks.js）
+  await checkPreRaceEntries({ check, show });
   check(
     "vercel.json: 関数のリージョンは api/cron/*.js で syd1（DBと同じ）",
     vercel.functions?.["api/cron/*.js"]?.regions?.[0] === "syd1",
   );
-  // 切り替えの仕組み: SKIP_RACE_INFO_ON_GHA は "true" のときだけ有効（既定は従来どおり）
-  const scheduled = fs.readFileSync(
-    path.join(ROOT, "scripts/daily/scrape-scheduled.js"),
-    "utf8",
-  );
+  // 切り替えの仕組み（SKIP_RACE_INFO_ON_GHA・SKIP_EXHIBITION_ON_GHA は "true" のときだけ有効）は、偽の取得のもとで
+  // scrape-scheduled.js の main を回して見る（verifyData/scrape-scheduled-scenes.js）
+  await checkScheduledPreRace({ check, show });
   const workflow = fs.readFileSync(
     path.join(ROOT, ".github/workflows/scrape-scheduled.yml"),
     "utf8",
-  );
-  check(
-    '切り替え: scrape-scheduled.js は SKIP_RACE_INFO_ON_GHA が文字列 "true" のときだけ、対象のレースがあるときに Vercel の健全性を確認して、レース情報更新を止める（未設定・空・false は従来どおり）',
-    /process\.env\.SKIP_RACE_INFO_ON_GHA === "true" &&\s*\(!raceInfoDue \|\| \(await gateSkips\("SKIP_RACE_INFO_ON_GHA"\)\)\)/.test(
-      scheduled,
-    ) && /const hasUpdateRaces = !skipRaceInfo && raceInfoDue;/.test(scheduled),
   );
   check(
     "切り替え: ワークフローは、リポジトリ変数 SKIP_RACE_INFO_ON_GHA を環境変数として渡す（設定は、この検証の範囲外）",
@@ -1301,15 +1266,7 @@ await runScrapePreRaceJobScenes2({ check, show, BEFORE_AFTER_START_HTML, SUMI_RA
       workflow,
     ),
   );
-  check(
-    "切り替え: SKIP_EXHIBITION_ON_GHA（既存）は、true のときだけ、対象のレースがあるときに Vercel の健全性を確認する（mode が live になるまでは、従来どおり静的にスキップ。下の gate の検証）",
-    /process\.env\.SKIP_EXHIBITION_ON_GHA === "true" &&\s*\(!exhibitionDue \|\| \(await gateSkips\("SKIP_EXHIBITION_ON_GHA"\)\)\)/.test(
-      scheduled,
-    ) &&
-      /const hasExhibitionRaces = !skipExhibition && exhibitionDue;/.test(
-        scheduled,
-      ),
-  );
+
 }
 
 // ---- 後半の場面（verifyData/scrape-pre-race-job-scenes-2.js・scrape-pre-race-job-scenes-3.js・scrape-pre-race-job-scenes-4.js・scrape-pre-race-job-scenes-5.js・scrape-pre-race-job-scenes-6.js） ----

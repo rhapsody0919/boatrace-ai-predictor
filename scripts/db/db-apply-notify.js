@@ -46,10 +46,9 @@ async function github(method, pathAndQuery, body) {
   return res.json();
 }
 
-async function main() {
-  const repo = process.env.GITHUB_REPOSITORY ?? "";
-  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) fail("GITHUB_REPOSITORY の形が違う");
-  const items = buildNotifications({
+/** env から buildNotifications の入力を組む（読むだけ） */
+function notificationInput(repo) {
+  return {
     dryRun: process.env.DB_APPLY_DRY_RUN !== "false",
     status: process.env.STATUS ?? "",
     file: process.env.FILE ?? "",
@@ -69,8 +68,11 @@ async function main() {
     stale: parseJson("STALE", []),
     runUrl: `https://github.com/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`,
     now: new Date(),
-  });
+  };
+}
 
+/** 印のある項目を元の PR のコメントに出す。Slack に出す文を返す（同じ印が既にあれば出さない） */
+async function postPrComments(repo, items) {
   const toSlack = [];
   const commentsByPr = new Map();
   for (const item of items) {
@@ -101,6 +103,14 @@ async function main() {
     commentsByPr.get(item.pr).push(marker);
     toSlack.push(item.text);
   }
+  return toSlack;
+}
+
+async function main() {
+  const repo = process.env.GITHUB_REPOSITORY ?? "";
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) fail("GITHUB_REPOSITORY の形が違う");
+  const items = buildNotifications(notificationInput(repo));
+  const toSlack = await postPrComments(repo, items);
 
   if (toSlack.length === 0) {
     console.log("知らせることは無い");

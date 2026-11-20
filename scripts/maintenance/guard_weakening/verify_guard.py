@@ -8,8 +8,14 @@ maker-dispatch の guarded（scripts/maintenance/verify-*）に当たった差�
 ② 今ある verify-*.js の変更・削除（M・D）。製品のファイル（その verify が import・読む src/ api/ scripts/ の物。verify 自身は除く）に @babel/parser で振る舞いを変える変異
    （比べる演算子の反転・&&↔||・戻り値を null に・数値の定数を変える・文の削除）を作り、「旧の verify（origin/master の版）で落ちた変異 ⊆ 新の verify で落ちた変異」なら通す。
    変異が作れない・製品のファイルが見つからない・基準（変異なし）で旧か新が落ちる・node_modules が無いときは通さない（止める側）
+   結果の型（record.mutation[].outcome）: ok・weakened（弱め）のほか、旧の verify が PR の木で通らない赤を split（分けよ: verify の変更を前段の PR へ）・
+   rule_change（決まりの変更: 人が見る）・old_red_on_base（比べられない）に分ける（old_red。どれも通さない）
+   incomparable（比べられない・人が見る。11/20 オーナー yes、drafts/hr34-guard-false-red-20261120.md）: base の実の木（base_ref）で、旧の verify が製品を import しない・
+   変異なしで通らない・変異を1つも落とさないとき。excused には入れず（hq は人行きのまま）、Verdict.incomparable に文を入れる（龍神の CI は警告にして赤にしない）。
+   確かめの形の数（throw・exit・push・assert 系・リテラル）が旧より減った・早抜けや catch が増えた物は static_fewer（弱めの疑い）で赤のまま。
+   取りこぼしは旧・新を1回ずつ回し直し、旧が通れば数えず（flaky_old）、旧が落とし新も落とせば flaky_new（揺れる verify。弱めと言わないが通さない）
 
-verify の実行は macOS の sandbox-exec（ネットワーク拒否・fs の書きは「worktree のコピー」と TMPDIR の一時の場所だけ・読みと子プロセスの起動は許す）。
+verify の実行は macOS の sandbox-exec（ネットワーク拒否・fs の書きは「worktree のコピー」と TMPDIR の一時の場所だけ・読みと子プロセスの起動は許す。ただし鍵の場所と Keychain の口は拒む）。
 node --permission は使わない（vite の import・module.register・child_process が落ち、龍神の renderJsx 経由の試験や spawnSync の旧 verify が動かないため、11/9 ops 審査 P0-1）。
 sandbox-exec が無い環境では判定を出さず止める側。静的な確かめ（①）は今も多重の防御として残す。
 使い方: evaluate(repo, changes, master_text, cfg) -> Verdict。changes は {パス: A|M|D}（git diff --name-status --no-renames origin/master）。"""
@@ -23,11 +29,15 @@ import posixpath
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, FrozenSet, Iterable, List, Mapping, Optional, Sequence, Tuple
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import mut_lock as ml  # noqa: E402  変異のロック（道具が自分で取る、外で mkdir しない）
 
 Json = Dict[str, object]
 VERIFY_RE = re.compile(r"scripts/maintenance/verify-[^/]+\.js")
@@ -40,6 +50,7 @@ REL_IMPORT_RE = re.compile(r"""(?:\bfrom|\bimport|\brequire)\s*\(?\s*(["'`])(\.{
 DEFAULTS: Json = {
     "max_mutants_per_verify": 40,  # 目安（根拠なし）。ここまで等間隔に間引く
     "run_timeout_sec": 120,  # 目安（根拠なし）。verify 1回の上限。超えたら落ちた扱い
+    "direction_mutants": 10,  # 目安（根拠なし）。「決まりの変更」の向きを示すのに旧・新それぞれで試す変異の数（old_red）
     "sandbox": True,  # sandbox-exec（ネットワーク拒否・fs 書きは worktree のコピーと TMPDIR だけ）。False は試験用（守りが無い）
     "node_modules": "",  # 作業場所に node_modules が無いときの場所（lane の npm ci 後）。どちらも無ければ止める側
 }
@@ -139,6 +150,49 @@ console.log(JSON.stringify(files.map((f) => {
 })));
 """
 
+# 確かめの形の数（「比べられない」に落とす前の見張りの糸。関門ではない: 条件を空にする書き換えは数に出ない。ops 審査 11/20 P1）。
+# 減れば疑う物: throw 文・process.exit（0 以外）と process.exitCode の代入（0 以外）・.push( の呼び出し・assert 系の名前の呼び出し・リテラル（場面の表・fixture の量）。
+# 増えれば疑う物: process.exit(0) と exitCode = 0（早抜け・上書き）・catch 節（握りつぶし）
+CHECKS_JS = r"""
+const path = require("path"), fs = require("fs");
+const nm = process.argv[1], files = process.argv.slice(2);
+const { createRequire } = require("module");
+const parser = createRequire(path.join(nm, "x.js"))("@babel/parser");
+const ASSERT = /^(assert|expect|check|fail|ok|equal|notEqual|deepEqual|notDeepEqual|strictEqual|notStrictEqual|deepStrictEqual|notDeepStrictEqual|throws|rejects|doesNotThrow|doesNotReject|match|doesNotMatch|ifError)/;
+const LIT = new Set(["StringLiteral", "NumericLiteral", "TemplateElement", "RegExpLiteral", "BooleanLiteral", "NullLiteral", "BigIntLiteral"]);
+const zero = (a) => !a || (a.type === "NumericLiteral" && a.value === 0);
+function count(src) {
+  const ast = parser.parse(src, { sourceType: "unambiguous", errorRecovery: false, plugins: ["jsx"] });
+  const c = { throw: 0, exit: 0, push: 0, assert: 0, lit: 0, exit0: 0, catch: 0 };
+  (function walk(n) {
+    if (!n || typeof n.type !== "string") return;
+    if (n.type === "ImportDeclaration" || n.type === "ExportAllDeclaration") return;
+    if (n.type === "ThrowStatement") c.throw++;
+    else if (n.type === "CatchClause") c.catch++;
+    else if (LIT.has(n.type)) c.lit++;
+    else if (n.type === "CallExpression") {
+      const cal = n.callee;
+      const name = cal.type === "Identifier" ? cal.name : (cal.type === "MemberExpression" && !cal.computed && cal.property.type === "Identifier") ? cal.property.name : "";
+      const root = cal.type === "MemberExpression" && cal.object.type === "Identifier" ? cal.object.name : "";
+      if (root === "process" && name === "exit") { if (zero(n.arguments[0])) c.exit0++; else c.exit++; }
+      else if (name === "push") c.push++;
+      else if (ASSERT.test(name) || root === "assert") c.assert++;
+    } else if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression" && !n.left.computed && n.left.property.name === "exitCode") {
+      if (zero(n.right)) c.exit0++; else c.exit++;
+    }
+    for (const k of Object.keys(n)) {
+      if (k === "loc" || k === "leadingComments" || k === "trailingComments" || k === "innerComments") continue;
+      const v = n[k];
+      if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v.type === "string") walk(v);
+    }
+  })(ast.program);
+  return c;
+}
+console.log(JSON.stringify(files.map((f) => { try { return count(fs.readFileSync(f, "utf8")); } catch (e) { return null; } })));
+"""
+CHECK_DOWN = ("throw", "exit", "push", "assert", "lit")  # 旧より減れば赤
+CHECK_UP = ("exit0", "catch")  # 旧より増えれば赤
+
 WRITE_RE = re.compile(r"\b(?:writeFile|writeFileSync|appendFile|appendFileSync|mkdir|mkdirSync|mkdtemp|mkdtempSync|rm|rmSync|rmdir|rmdirSync|unlink|unlinkSync|"
                       r"rename|renameSync|copyFile|copyFileSync|cp|cpSync|createWriteStream|truncate|truncateSync|symlink|symlinkSync)\s*\(")
 NET_RE = re.compile(r"""(?:["'`](?:node:)?(?:child_process|net|http|https|http2|dgram|dns|tls|worker_threads|cluster|vm)["'`])|\bfetch\s*\(|\bWebSocket\b|\bXMLHttpRequest\b|\bexecSync\b|\bspawnSync\b""")
@@ -157,6 +211,7 @@ class Verdict:
     excused: FrozenSet[str]  # 人へ回さなくてよいパス
     human: List[str]  # 人へ回す理由（excused に入れなかったパスごと）
     record: Json = field(default_factory=dict)  # 台帳の finished 行へ残す
+    incomparable: List[str] = field(default_factory=list)  # human のうち「比べられない（人が見る）」の文。赤ではないが excused でもない（hq は人行き、龍神の CI は警告）
 
 
 def is_data_path(p: str) -> bool:
@@ -309,12 +364,43 @@ def _rel(p: Path, root: Path) -> str:
 SANDBOX_EXEC = "/usr/bin/sandbox-exec"
 
 
-def sandbox_profile(writable: Iterable[Path]) -> str:
-    """Seatbelt のプロファイル。ネットワーク拒否・fs の書きは writable の下と /dev/null 等だけ。読み・プロセスの起動は許す（default allow）。
-    パスは実パス（macOS の /var は /private/var）で渡すこと"""
-    subs = "\n".join(f'  (subpath "{str(Path(w).resolve())}")' for w in writable)
-    return ("(version 1)\n(allow default)\n(deny network*)\n(deny file-write*)\n"
-            f"(allow file-write*\n{subs}\n  (literal \"/dev/null\") (literal \"/dev/dtracehelper\") (literal \"/dev/tty\") (regex #\"^/dev/fd/\"))\n")
+SECRET_DIRS = (".ssh", ".config", ".aws", ".gnupg", ".claude", ".codex", ".docker", ".kube", "Library/Keychains", "Library/Application Support", "Library/Cookies",
+               ".terraform.d", ".supabase", "Library/Preferences")
+SECRET_FILES = (".netrc", ".npmrc", ".git-credentials", ".gitconfig", ".zsh_history", ".bash_history", ".claude.json",
+                ".bashrc", ".bash_profile", ".zshrc", ".zprofile", ".profile")  # シェルの設定は export した鍵を持ちうる（11/18 ops 審査 P1）
+KEYCHAIN_MACH = ("com.apple.SecurityServer", "com.apple.securityd.xpc", "com.apple.secd", "com.apple.security.agent")
+
+
+def _sb_quote(p: object) -> str:
+    return str(p).replace("\\", "\\\\").replace('"', '\\"')
+
+
+def sandbox_profile(writable: Iterable[Path], home_read_allow: Optional[Iterable[Path]] = None, exec_only: Optional[Iterable[Path]] = None,
+                    home: Optional[Path] = None) -> str:
+    """Seatbelt のプロファイル。ネットワーク拒否・fs の書きは writable の下と /dev/null 等だけ。
+    既定（home_read_allow・exec_only が None）は読み・プロセスの起動を許す（default allow。verify の Runner は git・node の子を使う）。
+    鍵の場所（SECRET_DIRS・SECRET_FILES・ホームの下の .env*）と Keychain の口（KEYCHAIN_MACH）は既定の形でも拒む（11/18 HR66、Runner も PR の本を回す）。
+    home_read_allow を渡すと（HR66 段2 P1-5、write_match の worker）: ホームの下の読みを全部拒み、writable と home_read_allow の下だけ許す。
+      その後ろで鍵の場所を名指しで拒む（許した場所と重なっても鍵は読めない）。
+      Keychain は securityd 経由でも読めるので mach の口（KEYCHAIN_MACH）も拒む（11/18 実測: どちらか片方でも security find-generic-password が失敗）。
+    exec_only を渡すと、その実パスの本以外の process-exec を拒む（子の sh・git・security・curl を起こせない）。
+    同じ操作の名で書く（file-read-data の拒否は file-read* の許可では戻らない、11/18 実測）。パスは実パス（macOS の /var は /private/var）で渡すこと"""
+    writable = list(writable)
+    subs = "\n".join(f'  (subpath "{_sb_quote(Path(w).resolve())}")' for w in writable)
+    out = ("(version 1)\n(allow default)\n(deny network*)\n(deny file-write*)\n"
+           f"(allow file-write*\n{subs}\n  (literal \"/dev/null\") (literal \"/dev/dtracehelper\") (literal \"/dev/tty\") (regex #\"^/dev/fd/\"))\n")
+    h = (home or Path.home()).resolve()
+    if home_read_allow is not None:
+        allow = "\n".join(f'  (subpath "{_sb_quote(Path(a).resolve())}")' for a in [*writable, *home_read_allow])
+        out += f'(deny file-read-data (subpath "{_sb_quote(h)}"))\n(allow file-read-data\n{allow})\n'
+    # 鍵の場所と Keychain の口の拒否はどちらの形にも効かせる（既定の形＝verify の Runner も PR の本を回す。11/18 HR66）。許しの後ろに置いて勝たせる
+    secret = "\n".join([f'  (subpath "{_sb_quote(h / d)}")' for d in SECRET_DIRS] + [f'  (literal "{_sb_quote(h / f)}")' for f in SECRET_FILES]
+                       + [f'  (regex #"^{re.escape(str(h))}/(.*/)?\\.env[^/]*$")'])
+    out += f"(deny file-read-data\n{secret})\n(deny file-read*\n{secret})\n"
+    out += "(deny mach-lookup " + " ".join(f'(global-name "{n}")' for n in KEYCHAIN_MACH) + ")\n"
+    if exec_only is not None:
+        out += "(deny process-exec*)\n(allow process-exec*\n" + "\n".join(f'  (literal "{_sb_quote(Path(e).resolve())}")' for e in exec_only) + ")\n"
+    return out
 
 
 def native_arch_prefix() -> List[str]:
@@ -378,14 +464,19 @@ class Runner:
     """作業場所 src のコピー（self.repo。一時の場所の中）で verify を回す。node_modules は symlink を張る。終わりに全部消す。
     verify は sandbox-exec の中（ネットワーク拒否・書きはコピーと TMPDIR だけ）で動く"""
 
-    def __init__(self, src: Path, nm: Path, cfg: Json, run: Run):
+    def __init__(self, src: Path, nm: Path, cfg: Json, run: Run, populate: Optional[Callable[[Path], None]] = None):
+        """populate を渡すと、src を写す代わりにその関数が写しの中身を置く（base の実の木。_base_tree）"""
         if cfg.get("sandbox") and not sandbox_available():
             raise RuntimeError(f"{SANDBOX_EXEC} が無い（macOS 以外か、削除された）。サンドボックス無しでは verify を回さない")
         self.nm, self.cfg, self.run = nm.resolve(), cfg, run
         self.scratch = Path(tempfile.mkdtemp(prefix="verify-guard-")).resolve()
         try:
             self.repo = self.scratch / "work"
-            copy_worktree(src.resolve(), self.repo)
+            if populate is not None:
+                self.repo.mkdir(parents=True)
+                populate(self.repo)
+            else:
+                copy_worktree(src.resolve(), self.repo)
             self.git = (self.repo / ".git").is_dir()
             self.tmp = self.scratch / "tmp"
             self.tmp.mkdir()
@@ -473,7 +564,7 @@ def product_files(repo: Path, script_rel: str, texts: Iterable[str], extra: Opti
 def make_mutants(repo: Path, nm: Path, rel: str) -> Tuple[List[Json], str]:
     """(変異の並び, 作れなかった理由)。変異は {file, kind, line, start, end, repl}。解析できない物は理由に"""
     try:
-        r = subprocess.run(["node", "--permission", f"--allow-fs-read={repo.resolve()}", f"--allow-fs-read={nm.resolve()}", "-e", MUTATOR_JS,
+        r = subprocess.run([*native_arch_prefix(), "node", "--permission", f"--allow-fs-read={repo.resolve()}", f"--allow-fs-read={nm.resolve()}", "-e", MUTATOR_JS,
                             str(nm.resolve()), str((repo / rel).resolve())], capture_output=True, text=True, timeout=60)
         d = json.loads(r.stdout)
     except (subprocess.TimeoutExpired, ValueError, OSError) as e:
@@ -489,7 +580,7 @@ def same_ast(nm: Path, old_text: str, new_text: str) -> bool:
     try:
         (d / "old.js").write_text(old_text, encoding="utf-8")
         (d / "new.js").write_text(new_text, encoding="utf-8")
-        r = subprocess.run(["node", "--permission", f"--allow-fs-read={d}", f"--allow-fs-read={nm.resolve()}", "-e", NORMALIZE_JS,
+        r = subprocess.run([*native_arch_prefix(), "node", "--permission", f"--allow-fs-read={d}", f"--allow-fs-read={nm.resolve()}", "-e", NORMALIZE_JS,
                             str(nm.resolve()), str(d / "old.js"), str(d / "new.js")], capture_output=True, text=True, timeout=60)
         a, b = json.loads(r.stdout)
         return bool(a) and a == b
@@ -511,9 +602,11 @@ def mkey(m: Json) -> str:
 
 
 def apply_mutant(src: bytes, m: Json) -> bytes:
-    """@babel/parser の位置は UTF-16 の文字単位に近い（BMP 外の文字は未検証）。文字列に直してから切る"""
-    s = src.decode("utf-8")
-    return (s[: int(m["start"])] + str(m["repl"]) + s[int(m["end"]):]).encode("utf-8")  # type: ignore[call-overload]
+    """@babel/parser の start・end は JS の文字列の添字（UTF-16 の単位。BMP の外の字は2つに数える）。Python の文字で切ると絵文字の後ろで
+    狙いと違う所が変わる（11/20 龍神 #2974: && でなく名前の途中が切れた）。UTF-16 に直して切り、UTF-8 に戻す"""
+    u = src.decode("utf-8").encode("utf-16-le")
+    a, b = 2 * int(m["start"]), 2 * int(m["end"])  # type: ignore[call-overload]
+    return (u[:a] + str(m["repl"]).encode("utf-16-le") + u[b:]).decode("utf-16-le").encode("utf-8")
 
 
 Swap = Mapping[str, Tuple[Optional[bytes], Optional[bytes]]]  # verifyData/ の変わった本: (master の中身, PR の中身)。None は無い
@@ -525,8 +618,216 @@ def _set_data(runner: Runner, swap: Swap, old: bool) -> None:
         runner.put(rel, b) if b is not None else runner.drop(rel)
 
 
-def mutation_gate(runner: Runner, script_rel: str, old_text: str, new_exists: bool, cfg: Json, swap: Optional[Swap] = None) -> Tuple[bool, str, Json]:
-    """1本の今ある verify の ②。(通ったか, 通らない理由, 台帳の記録)。swap があれば、旧の verify は verifyData/ の本も master の版にして回す"""
+def _set_tree(runner: Runner, oth: Swap, old: bool) -> None:
+    """PR が変えた本文を base の版（old）か PR の版へ。消す物を先に、置く物を後に（ファイルとディレクトリの入れ替えでも、消した後の空のディレクトリを片付けて置ける）。
+    空でないディレクトリの所へは置けず OSError（呼ぶ側が「戻せない」にする）"""
+    want = {rel: (pair[0] if old else pair[1]) for rel, pair in oth.items()}
+    for rel in sorted(r for r, b in want.items() if b is None):
+        if not (runner.repo / rel).is_dir():
+            runner.drop(rel)
+    for rel in sorted(r for r, b in want.items() if b is not None):
+        f = runner.repo / rel
+        if f.is_dir() and not f.is_symlink():
+            f.rmdir()
+        runner.put(rel, want[rel])  # type: ignore[arg-type]
+
+
+Others = Callable[[], Tuple[Swap, Sequence[str]]]  # (PR が変えた守り以外のファイルの (base の中身, PR の中身), 戻せない物)
+# ② の結果の型（rec["outcome"]）。通すのは ok だけ。弱めの赤（weakened＝旧が落とす変異を新が落とさない）と、旧の verify が PR の木で通らない赤を分ける
+OUT_OK, OUT_WEAKENED, OUT_SPLIT, OUT_RULE, OUT_OLD_RED, OUT_NEW_RED = "ok", "weakened", "split", "rule_change", "old_red_on_base", "new_red"
+# 11/20: incomparable＝比べられない（人が見る。赤でない別の結果）・static_fewer＝比べられないうえ確かめの形の数が減った（赤）・flaky_new＝新が同じ変異を落としたり落とさなかったり（赤）
+OUT_INCOMPARABLE, OUT_FEWER, OUT_FLAKY = "incomparable", "static_fewer", "flaky_new"
+INCOMPARABLE_HEAD = "【比べられない（人が見る）】"
+BaseRunner = Callable[[], Optional["Runner"]]  # base の実の木（merge-base）の Runner。作れなければ None（「比べられない」と言わず今どおり赤）
+
+
+def check_counts(nm: Path, texts: Sequence[str]) -> Optional[Dict[str, int]]:
+    """本文の並びの確かめの形の数の和（CHECKS_JS）。1本でも解析できない・node が回らないは None（数えられない＝止める側）"""
+    d = Path(tempfile.mkdtemp(prefix="verify-guard-chk-")).resolve()
+    try:
+        files = []
+        for i, t in enumerate(texts):
+            (d / f"{i}.js").write_text(t, encoding="utf-8")
+            files.append(str(d / f"{i}.js"))
+        r = subprocess.run([*native_arch_prefix(), "node", "--permission", f"--allow-fs-read={d}", f"--allow-fs-read={nm.resolve()}", "-e", CHECKS_JS,
+                            str(nm.resolve()), *files], capture_output=True, text=True, timeout=60)
+        out = json.loads(r.stdout)
+    except (subprocess.TimeoutExpired, ValueError, OSError):
+        return None
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    if not isinstance(out, list) or len(out) != len(texts) or any(not isinstance(c, dict) for c in out):
+        return None
+    return {k: sum(int(c.get(k) or 0) for c in out) for k in (*CHECK_DOWN, *CHECK_UP)}
+
+
+def _data_closure(repo: Path, script_rel: str, text: str, swap: Swap, old: bool) -> List[str]:
+    """verify の本文から静的な相対 import で辿れる verifyData/ の本（推移）。old は master の版（swap の旧。変わっていない本は作業場所の版）で辿る"""
+    seen: List[str] = []
+    stack = [(script_rel, text)]
+    while stack:
+        rel0, t = stack.pop()
+        for tgt in _rel_targets(rel0, t):
+            if not is_data_path(tgt) or tgt in seen:
+                continue
+            b = (swap[tgt][0] if old else swap[tgt][1]) if tgt in swap else ((repo / tgt).read_bytes() if (repo / tgt).is_file() else None)
+            if b is None:
+                continue
+            seen.append(tgt)
+            stack.append((tgt, b.decode("utf-8", "replace")))
+    return seen
+
+
+def static_fewer(runner: Runner, script_rel: str, old_text: str, new_text: str, swap: Swap, rec: Json) -> str:
+    """旧と新の確かめの形の数を比べ、弱めの疑いがあれば理由（無ければ空）。数えるのは verify 自身と、旧か新が辿る verifyData/ のうち PR が変えた本だけ
+    （変えていない大きな本を import に足して数を水増しできないように。ops 審査 11/20 P1）"""
+    repo = runner.repo
+    datas = sorted({d for d in [*_data_closure(repo, script_rel, old_text, swap, True), *_data_closure(repo, script_rel, new_text, swap, False)] if d in swap})
+    olds = [old_text] + [swap[d][0].decode("utf-8", "replace") for d in datas if swap[d][0] is not None]  # type: ignore[union-attr]
+    news = [new_text] + [swap[d][1].decode("utf-8", "replace") for d in datas if swap[d][1] is not None]  # type: ignore[union-attr]
+    co, cn = check_counts(runner.nm, olds), check_counts(runner.nm, news)
+    rec["static_counts"] = {"old": co, "new": cn, "data": datas}
+    if co is None or cn is None:
+        return "確かめの形の数を数えられない（旧か新の本文を @babel/parser で読めない）"
+    bad = [f"{k} {co[k]}→{cn[k]}" for k in CHECK_DOWN if cn[k] < co[k]] + [f"{k} {co[k]}→{cn[k]}" for k in CHECK_UP if cn[k] > co[k]]
+    return ("確かめの形の数が旧より弱い側へ動いた（" + "・".join(bad) + "。throw・exit・push・assert 系・リテラル lit は減ると、exit0・catch は増えると疑う）") if bad else ""
+
+
+def incomparable(runner: Runner, base: Optional[BaseRunner], script_rel: str, old_text: str, new_text: str, cfg: Json, swap: Swap, rec: Json,
+                 kind: str) -> Tuple[Optional[bool], str]:
+    """「比べられない（人が見る）」に当たるか。kind は PR の木での止まり方: no_product（製品の import が無い）・old_red（変異なしで旧が通らない）・no_kill（旧が変異を1つも落とさない）。
+    返す: (True, 文)＝比べられない / (False, 文)＝赤（確かめの形の数が弱い側へ動いた等） / (None, "")＝当たらない（呼ぶ側が今どおりの赤にする）。
+    当たるかは base の実の木（PR が動かせない）だけで決める（ops 審査 11/20 P0-1・P0-2: PR の木の製品の水増し・型の変更で狙って落とせないように）:
+      old_red → base の木で旧が変異なしで2回とも通らない（1回の揺れ・時間切れで落とさない）
+      no_product・no_kill → base の木で、旧の本文が指す製品が無い、または旧が変異（上限まで）を1つも落とさない
+    そのうえで新の verify が PR の木で変異なしで通ること（old_red は環境で回せないので見ない）と、確かめの形の数（static_fewer）を見る"""
+    b = base() if base else None
+    if b is None:
+        return None, ""
+    b_script = b.repo / script_rel
+    if not b_script.is_file() or b_script.read_text(encoding="utf-8", errors="replace") != old_text:
+        return None, ""  # base の木の verify が旧の本文と違う（呼ぶ側の base_ref と master_text が合っていない）
+    brec: Json = {"kind": kind}
+    rec["base"] = brec
+    if kind == "old_red":
+        if b.passes(b_script) or b.passes(b_script):
+            return None, ""
+        why = "base の木でも旧の verify が変異なしで通らない（鍵・ref・ネット等が要り、判定の場所で回せない verify）"
+    else:
+        prods = product_files(b.repo, script_rel, [old_text])
+        ms: List[Json] = []
+        for p in prods:
+            ms += make_mutants(b.repo, b.nm, p)[0]
+        chosen = pick(ms, int(cfg["max_mutants_per_verify"]))  # type: ignore[call-overload]
+        brec.update(products=prods, mutants_used=len(chosen))
+        if chosen:
+            if not b.passes(b_script):
+                return None, ""
+            for m in chosen:
+                if _kills(b, [m], lambda: b.passes(b_script)):
+                    brec["killed_old"] = 1
+                    return None, ""  # base では旧が変異を落とす＝比べられる verify。PR の木で比べられないのは PR の側の形なので赤のまま
+            brec["killed_old"] = 0
+        why = ("製品（src/・api/・scripts/）を import せず変異を作れない verify" if not prods else
+               f"base の木でも旧の verify が製品の変異 {len(chosen)} 件を1つも落とさない")
+        if kind == "no_product" and not runner.passes(runner.repo / script_rel):
+            return False, f"{script_rel}: 変異なしで新の verify が通らない"
+    fewer = static_fewer(runner, script_rel, old_text, new_text, swap, rec)
+    if fewer:
+        rec["outcome"] = OUT_FEWER
+        return False, f"{script_rel}: 【弱めの疑い】{why}ので変異では比べられず、{fewer}"
+    rec["outcome"] = OUT_INCOMPARABLE
+    return True, (f"{script_rel}: {INCOMPARABLE_HEAD}{why}。弱めの証拠は無い（確かめの形の数は減っていない）が、弱めていない証明でもない。"
+                  "機械では通さず、人が差分を見る")
+
+
+def _kills(runner: Runner, mutants: Sequence[Json], passes: Callable[[], bool]) -> int:
+    n = 0
+    for m in mutants:
+        rel = str(m["file"])
+        orig = (runner.repo / rel).read_bytes()
+        try:
+            runner.write(rel, apply_mutant(orig, m))
+            n += 0 if passes() else 1
+        finally:
+            runner.write(rel, orig)
+    return n
+
+
+def old_red(runner: Runner, script_rel: str, old_path: Path, old_text: str, new_exists: bool, cfg: Json, swap: Swap,
+            others: Optional[Others], chosen: Sequence[Json], rec: Json) -> str:
+    """変異なしで旧の verify が PR の木で通らないときの見分け（11/19 オーナー yes、龍神 #2900・#2901）。どれも通さない（止める側）。理由と次の手を返し rec["outcome"] に型を残す。
+    PR が変えた守り以外のファイル（others＝対象の本文）だけを base の版へ戻した木で、旧と新を変異なしで回す:
+      旧が通らない → old_red_on_base（base でも旧が通らない・環境の違い。比べられない）
+      旧も新も通る → split（新の verify は base の本文でも通る＝verify の変更だけを前段の PR に出せ、そこで旧と新を変異で比べられる）
+      旧は通り新は通らない → rule_change（新の verify は PR の本文でだけ通る＝決まりを変えたか、守りと本文を分けられない変更。人が見る）
+    「旧だけを戻した木で回す」だけでは見分けにならない（戻せば base と同じで、旧はいつも通る）ので、分けられるかは新の verify を base の本文で回して決める。
+    rule_change の向きは数だけ: 旧（base の本文）と新（PR の本文）がそれぞれ落とす変異の数（木ごとに変異の集合が違い、弱めていない根拠にはならない）。
+    split は弱めの判定をしていない（空にした新の verify も split になる）。前段の PR の変異検査が決める"""
+    repo, new_path = runner.repo, runner.repo / script_rel
+    if new_exists and not runner.passes(new_path):
+        rec["outcome"] = OUT_NEW_RED
+        return f"{script_rel}: 変異なしで旧の verify も新の verify も通らない（PR の木で verify が赤。先に新の verify を通す）"
+    oth, unrev = others() if others else ({}, [])
+    oth = dict(oth)
+    rec["reverted"] = len(oth)
+    modes = {r: (repo / r).stat().st_mode for r in oth if (repo / r).is_file()}  # put は新しく作ると 0644。戻した後に実行ビットを合わせる
+
+    def old_on_base() -> bool:
+        _set_data(runner, swap, True)
+        try:
+            return runner.passes(old_path)
+        finally:
+            _set_data(runner, swap, False)
+    k_old = n_old = 0
+    old_ok = new_ok = False
+    err = ""
+    try:
+        try:
+            _set_tree(runner, oth, True)  # 対象の本文を base の版へ
+        except (OSError, RuntimeError) as e:  # ファイルとディレクトリの入れ替え等で戻せない。型を消さず「比べられない」で止める
+            err = f"{type(e).__name__}: {str(e)[:100]}"
+        if not err:
+            old_ok = bool(oth) and old_on_base()
+            new_ok = old_ok and new_exists and runner.passes(new_path)
+            if old_ok and not new_ok and new_exists:
+                ms: List[Json] = []
+                for p in product_files(repo, script_rel, [old_text], {r: [o.decode("utf-8", "replace")] for r, (o, _) in swap.items() if o is not None}):
+                    ms += make_mutants(repo, runner.nm, p)[0]
+                base_ms = pick(ms, int(cfg["direction_mutants"]))  # type: ignore[call-overload]
+                n_old, k_old = len(base_ms), _kills(runner, base_ms, old_on_base)
+    finally:
+        _set_tree(runner, oth, False)
+        for r, m in modes.items():
+            if (repo / r).is_file():
+                os.chmod(repo / r, m)
+    if err or (old_ok and unrev):  # 戻せない物があると、戻した木は前段の PR の木と同じでない。分けよ・決まりの変更と言わない
+        rec["outcome"] = OUT_OLD_RED
+        return (f"{script_rel}: 【比べられない】変異なしで旧の verify が PR の木で通らず、PR が変えた本文を base の版へ戻せないので見分けられない"
+                f"（{err or '字で読めない・symlink: ' + '・'.join(list(unrev)[:3])}）。人が見る")
+    if not old_ok:
+        rec["outcome"] = OUT_OLD_RED
+        return (f"{script_rel}: 【比べられない】変異なしで旧の verify が通らない（PR が変えた本文 {len(oth)} 件を base の版へ戻しても通らない。"
+                "base で旧の verify が通るか・他の verify や registry の変更・作業場所の node_modules を確かめる）")
+    if new_ok:
+        rec["outcome"] = OUT_SPLIT
+        return (f"{script_rel}: 【分けよ】守り（verify・verifyData/）と、それが見る本文を同じ PR で動かしたので比べられない。弱めかは未判定（この赤は手で通さない）。"
+                f"verify・verifyData/ の変更だけを前段の PR へ（新の verify は base の本文でも通るので、前段の変異検査で旧と新を比べて決まる。本文 {len(oth)} 件はその後の PR で）")
+    if not new_exists:
+        rec["outcome"] = OUT_RULE
+        return (f"{script_rel}: 【決まりの変更: 人が見る】向き: 守りが無くなる。verify の削除と、それが見る本文の変更が同じ PR（旧の verify は base の本文でだけ通る）")
+    new_ms = pick(list(chosen), int(cfg["direction_mutants"]))  # type: ignore[call-overload]
+    k_new = _kills(runner, new_ms, lambda: runner.passes(new_path))
+    rec.update(outcome=OUT_RULE, direction={"old_killed": k_old, "old_tried": n_old, "new_killed": k_new, "new_tried": len(new_ms)})
+    trend = (f"落とす変異の数 旧 {k_old}/{n_old}（base の本文）→ 新 {k_new}/{len(new_ms)}（PR の本文）" if k_old and len(new_ms) else "出せない（旧が落とす変異を作れない）")
+    return (f"{script_rel}: 【決まりの変更: 人が見る】向き: {trend}。数だけの目安で、弱めていない根拠ではない（木ごとに変異が違う）。"
+            "旧の verify は base の本文でだけ、新の verify は PR の本文でだけ通る（決まりそのものを変えたか、守りと本文を分けられない変更。前段の PR には分けられない）")
+
+
+def mutation_gate(runner: Runner, script_rel: str, old_text: str, new_exists: bool, cfg: Json, swap: Optional[Swap] = None,
+                  others: Optional[Others] = None, base: Optional[BaseRunner] = None) -> Tuple[bool, str, Json]:
+    """1本の今ある verify の ②。(通ったか, 通らない理由, 台帳の記録)。swap があれば、旧の verify は verifyData/ の本も master の版にして回す。
+    others は PR が変えた守り以外のファイルの (base の中身, PR の中身) と、戻せない物の並びを返す関数。旧が PR の木で通らないときの見分け（old_red）にだけ使う"""
     repo = runner.repo
     swap = swap or {}
     new_path = repo / script_rel
@@ -537,8 +838,11 @@ def mutation_gate(runner: Runner, script_rel: str, old_text: str, new_exists: bo
         rec["data_swapped"] = sorted(swap)
     prods = product_files(repo, script_rel, [old_text, new_text], {r: [o.decode("utf-8", "replace")] for r, (o, _) in swap.items() if o is not None})
     rec["products"] = prods
+    def inc(kind: str) -> Tuple[Optional[bool], str]:  # 削除は「比べられない」にしない（守りが無くなる。今どおり赤）
+        return incomparable(runner, base, script_rel, old_text, new_text, cfg, swap, rec, kind) if new_exists else (None, "")
     if not prods:
-        return False, f"{script_rel}: 製品のファイル（src/・api/・scripts/ の import・読み先）が見つからず変異を作れない", rec
+        hit, msg = inc("no_product")
+        return False, (msg if hit is not None else f"{script_rel}: 製品のファイル（src/・api/・scripts/ の import・読み先）が見つからず変異を作れない"), rec
     mutants: List[Json] = []
     for p in prods:
         ms, why = make_mutants(repo, runner.nm, p)
@@ -562,11 +866,16 @@ def mutation_gate(runner: Runner, script_rel: str, old_text: str, new_exists: bo
             _set_data(runner, swap, False)
     try:
         if not old_passes():
-            return False, f"{script_rel}: 変異なしで旧の verify が通らない（作業場所で再現できず比べられない）", rec
+            hit, msg = inc("old_red")
+            if hit is not None:
+                return False, msg, rec
+            return False, old_red(runner, script_rel, old_path, old_text, new_exists, cfg, swap, others, chosen, rec), rec
         if new_exists and not runner.passes(new_path):
             return False, f"{script_rel}: 変異なしで新の verify が通らない", rec
         killed_old: List[str] = []
         missed: List[str] = []
+        flaky_old: List[str] = []
+        flaky_new: List[str] = []
         for m in chosen:
             rel = str(m["file"])
             orig = (repo / rel).read_bytes()
@@ -574,18 +883,45 @@ def mutation_gate(runner: Runner, script_rel: str, old_text: str, new_exists: bo
                 runner.write(rel, apply_mutant(orig, m))
                 if old_passes():
                     continue  # 旧が落とさない変異は比べない
-                killed_old.append(mkey(m))
-                if not (new_exists and not runner.passes(new_path)):
+                if new_exists and not runner.passes(new_path):
+                    killed_old.append(mkey(m))
+                    continue
+                if not new_exists:
+                    killed_old.append(mkey(m))
                     missed.append(mkey(m))
+                    continue
+                # 取りこぼしの候補。1回の落ち（乱数・負荷・時間切れ）を弱めに数えないよう、変異を当てたまま旧・新を1回ずつ回し直す（11/20 龍神 #2973・#2974・#3068）
+                if old_passes():
+                    flaky_old.append(mkey(m))  # 旧の1回目の落ちは揺れ。旧が落とす変異に数えない
+                    continue
+                killed_old.append(mkey(m))
+                if runner.passes(new_path):
+                    missed.append(mkey(m))
+                else:
+                    flaky_new.append(mkey(m))  # 新は落としたり落とさなかったり。弱めとは言わないが緑にもしない（ops 審査 11/20 P0-3）
             finally:
                 runner.write(rel, orig)
     finally:
         old_path.unlink(missing_ok=True)
     rec.update(killed_old=len(killed_old), missed=missed)
+    if flaky_old:
+        rec["flaky_old"] = flaky_old
+    if flaky_new:
+        rec["flaky_new"] = flaky_new
     if not killed_old:  # 旧が1つも変異を落とさない＝比べる物が無い（旧が弱い・削除も同じ）。⊆ が空で自明に成り立つのを通さない（P0-2）
-        return False, (f"{script_rel}: 旧の verify が変異 {len(chosen)} 件を1つも落とさず、新と比べられない（{'削除' if not new_exists else '変更'}は人が見る）"), rec
+        hit, msg = inc("no_kill")
+        if hit is not None:
+            return False, msg, rec
+        thin = "。base の木では旧が変異を落とすので、PR の木の標本が薄まった疑い（新の verify が足した製品の import・製品の側の変更）" if (rec.get("base") or {}).get("killed_old") else ""  # type: ignore[union-attr]
+        return False, (f"{script_rel}: 旧の verify が変異 {len(chosen)} 件を1つも落とさず、新と比べられない（{'削除' if not new_exists else '変更'}は人が見る）{thin}"), rec
     if missed:
-        return False, f"{script_rel}: 旧の verify が落とす変異 {len(missed)}/{len(killed_old)} を新の verify が落とさない（{missed[0]}）", rec
+        rec["outcome"] = OUT_WEAKENED
+        return False, f"{script_rel}: 【弱め】旧の verify が落とす変異 {len(missed)}/{len(killed_old)} を新の verify が落とさない（回し直しても同じ。{missed[0]}）", rec
+    if flaky_new:
+        rec["outcome"] = OUT_FLAKY
+        return False, (f"{script_rel}: 【揺れる verify】旧の verify が2回とも落とす変異 {len(flaky_new)}/{len(killed_old)} を、新の verify が落としたり落とさなかったりする（{flaky_new[0]}）。"
+                       "弱めとは言えないが通さない。乱数・時刻に依らない固定の入力の確かめを足して決定的にする"), rec
+    rec["outcome"] = OUT_OK
     return True, "", rec
 
 
@@ -674,7 +1010,7 @@ MAX_ENTRIES = 400
 def extract_literals(repo: Path, nm: Path, rel: str) -> Tuple[List[str], List[Json], str]:
     """(文字列リテラルの並び, 正規表現リテラルの並び, 失敗の理由)。コメントは含まない"""
     try:
-        r = subprocess.run(["node", "--permission", f"--allow-fs-read={repo.resolve()}", f"--allow-fs-read={nm.resolve()}", "-e", EXTRACT_JS,
+        r = subprocess.run([*native_arch_prefix(), "node", "--permission", f"--allow-fs-read={repo.resolve()}", f"--allow-fs-read={nm.resolve()}", "-e", EXTRACT_JS,
                             str(nm.resolve()), str((repo / rel).resolve())], capture_output=True, text=True, timeout=60)
         d = json.loads(r.stdout)
     except (subprocess.TimeoutExpired, ValueError, OSError) as e:
@@ -1016,10 +1352,27 @@ def resolve_nm(repo: Path, cfg: Json) -> Optional[Path]:
     return None
 
 
+def _base_tree(repo: Path, base_ref: str) -> Callable[[Path], None]:
+    """base_ref の実の木を dst に置く関数（Runner の populate）。repo の .git には書かない（一時の索引で read-tree → checkout-index）。
+    置いた後、写しに git の索引を持たせる（git ls-files を使う旧の verify が base の木でも動くように。seed_git_index）"""
+    def populate(dst: Path) -> None:
+        idx = dst.parent / "base.index"
+        env = {**os.environ, "GIT_INDEX_FILE": str(idx)}
+        for args in (["read-tree", base_ref], ["checkout-index", "-a", f"--prefix={dst}/"]):
+            r = subprocess.run(["git", *args], cwd=repo, env=env, capture_output=True)
+            if r.returncode != 0:
+                raise RuntimeError(f"git {args[0]} が失敗（{r.stderr.decode('utf-8', 'replace').strip()[:150]}）")
+        rels = [x for x in subprocess.run(["git", "ls-files", "-z"], cwd=repo, env=env, capture_output=True, check=True).stdout.decode("utf-8").split("\0") if x]
+        idx.unlink(missing_ok=True)
+        seed_git_index(repo, dst, [x for x in rels if (dst / x).is_file() or (dst / x).is_symlink()])
+    return populate
+
+
 def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str], Optional[str]], cfg: Optional[Json] = None,
-             run: Run = default_run) -> Verdict:
+             run: Run = default_run, base_ref: Optional[str] = None) -> Verdict:
     """verify-*.js・registry・verifyData/ に当たる差分を判定する。excused に入らなかったパスは human に理由が付く（呼び出し側は今までどおり人へ回す）。
     これ以外のパス（package.json・scripts/lib/・e2e/ 等）には何もしない。
+    base_ref（master_text と同じ点＝merge-base の SHA）を渡すと、比べられない verify を base の実の木で確かめて Verdict.incomparable に分ける。渡さなければ今までどおり赤。
     verifyData/ の変更は、それを読む verify-*.js（逆に辿る）を全部 ② で回し（旧は master の verify＋本、新は PR の verify＋本）、全部通れば通す"""
     c: Json = {**DEFAULTS, **(cfg or {})}
     repo = Path(repo).resolve()  # sandbox のプロファイルは実パスで見る（macOS の /var は /private/var）
@@ -1035,9 +1388,16 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
     if nm is None:
         why = "node_modules（@babel/parser）が作業場所にも config の node_modules にも無く、verify を回せない"
         return Verdict(frozenset(), [f"{p}: {why}" for p in [*verifies, *datas, *([REGISTRY] if reg else [])]], {"error": why})
+    all_paths = [*verifies, *datas, *([REGISTRY] if reg else [])]
+    lock = contextlib.ExitStack()  # 変異のロック（scripts/mut_lock.py。本数・負荷の線は config/load-guard.json、取れるまで待つ。試験 HQ_TEST=1 は迂回）
+    try:
+        lock.enter_context(ml.held("verify_guard の変異"))
+    except (ml.Busy, ValueError) as e:
+        return Verdict(frozenset(), [f"{p}: 変異のロックを取れない（{e}）" for p in all_paths], {"error": f"mut_lock: {str(e)[:200]}"})
     try:
         rn_ctx = Runner(repo, nm, c, run)
     except (RuntimeError, OSError, subprocess.SubprocessError) as e:
+        lock.close()
         return Verdict(frozenset(), [f"{p}: verify を回す場所を作れない（{type(e).__name__}: {str(e)[:150]}）" for p in [*verifies, *datas, *([REGISTRY] if reg else [])]], {"error": str(e)[:200]})
     readers = data_readers(repo, changes, master_text) if datas else {}
     swap: Dict[str, Tuple[Optional[bytes], Optional[bytes]]] = {}
@@ -1045,8 +1405,43 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
         o = master_text(p)
         swap[p] = (o.encode("utf-8") if o is not None else None, (repo / p).read_bytes() if (repo / p).is_file() else None)
     data_readers_all = {v for rs in readers.values() for v in rs}
+    others_memo: List[Dict[str, Tuple[Optional[bytes], Optional[bytes]]]] = []
+
+    def others() -> Tuple[Swap, Sequence[str]]:
+        """PR が変えた守り以外のファイル（対象の本文）の (base の中身, PR の中身)。要るとき（old_red）に1回だけ読む。base を字で読めない物（バイナリ等）は戻さず record に残す"""
+        if not others_memo:
+            out: Dict[str, Tuple[Optional[bytes], Optional[bytes]]] = {}
+            for q, qs in sorted(changes.items()):
+                if is_verify_path(q) or qs not in ("A", "M", "D"):
+                    continue
+                f = repo / q
+                try:
+                    o = None if qs == "A" else master_text(q)
+                except UnicodeDecodeError:
+                    o = None
+                if (qs != "A" and o is None) or f.is_symlink():  # symlink は中身でなく張り先なので戻さない
+                    record.setdefault("unreverted", []).append(q)  # type: ignore[union-attr]
+                    continue
+                out[q] = (o.encode("utf-8") if o is not None else None, f.read_bytes() if f.is_file() else None)
+            others_memo.append(out)
+        return others_memo[0], [str(x) for x in record.get("unreverted") or []]  # type: ignore[union-attr]
+    base_memo: List[Optional[Runner]] = []
+
+    def base_runner() -> Optional[Runner]:
+        """base の実の木の Runner。要るとき（比べられない型の確かめ）に1回だけ作り、終わりに lock と一緒に片付ける。作れなければ None（今どおり赤）"""
+        if not base_memo:
+            b: Optional[Runner] = None
+            if base_ref and (repo / ".git").exists():
+                try:
+                    b = Runner(repo, nm, c, run, populate=_base_tree(repo, base_ref))
+                    lock.callback(b.__exit__, None, None, None)
+                except (RuntimeError, OSError, subprocess.SubprocessError) as e:
+                    record["base_error"] = f"{type(e).__name__}: {str(e)[:150]}"
+            base_memo.append(b)
+        return base_memo[0]
     gated: Dict[str, bool] = {}  # verify ごとの ①・② の合否（verifyData/ の判定に使う）
-    with rn_ctx as rn:
+    inc_lines: List[str] = []
+    with lock, rn_ctx as rn:
         for p, st in sorted(verifies.items()):
             if st == "A":
                 if master_text(p) is not None:
@@ -1082,17 +1477,19 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
                         human += [f"{p}: {x}" for x in probs]
                         record.setdefault("static", []).extend(f"{p}: {x}" for x in probs)
                         continue
-                ok, why, rec = mutation_gate(rn, p, old, st == "M", c, swap)
+                ok, why, rec = mutation_gate(rn, p, old, st == "M", c, swap, others, base_runner)
                 record["mutation"].append(rec)  # type: ignore[union-attr]
                 gated[p] = ok
                 if ok:
                     excused.add(p)
                 else:
                     human.append(why)
+                    if rec.get("outcome") == OUT_INCOMPARABLE:
+                        inc_lines.append(why)
             else:
                 human.append(f"{p}: 変更の種類 {st} は見ない")
         if datas:
-            data_gate_verdicts(rn, nm, c, datas, readers, swap, master_text, gated, excused, human, record)
+            data_gate_verdicts(rn, nm, c, datas, readers, swap, master_text, gated, excused, human, record, others, base_runner, inc_lines)
         if reg is not None:
             if reg != "M":
                 human.append(f"{REGISTRY}: 追加・削除ではなく変更だけ見る（status {reg}）")
@@ -1106,11 +1503,16 @@ def evaluate(repo: Path, changes: Mapping[str, str], master_text: Callable[[str]
                 else:  # 行の追加・削除・説明の欄の書き換え（HR34）のどれか。動きの欄の変更は why で人へ出ている
                     excused.add(REGISTRY)
                     record["registry"] = {"added": added, "removed": removed, "desc_only": not added and not removed}
-    return Verdict(frozenset(excused), human, record)
+    inc_set = set(inc_lines)
+    if inc_lines:
+        record["incomparable"] = len(inc_lines)
+    # 赤を先に並べる（呼び手は先頭の1件を例に出す。先頭が「比べられない」で後ろの赤が隠れないように。ops 審査 11/20 P1）
+    return Verdict(frozenset(excused), [h for h in human if h not in inc_set] + [h for h in human if h in inc_set], record, [h for h in human if h in inc_set])
 
 
 def data_gate_verdicts(rn: Runner, nm: Path, c: Json, datas: Mapping[str, str], readers: Mapping[str, List[str]], swap: Swap,
-                       master_text: Callable[[str], Optional[str]], gated: Dict[str, bool], excused: set, human: List[str], record: Json) -> None:
+                       master_text: Callable[[str], Optional[str]], gated: Dict[str, bool], excused: set, human: List[str], record: Json,
+                       others: Optional[Others] = None, base: Optional[BaseRunner] = None, inc_lines: Optional[List[str]] = None) -> None:
     """verifyData/ の変更の判定（excused・human・record を足す）。読む verify のうち PR が変えていない物もここで ② に掛ける（旧の本と新の本で比べる）。
     読む verify が無い（静的な相対 import で辿れない・.json を fs で読む等）・読む verify のどれかが通らない・静的な語が増えたものは人へ"""
     record["data"] = {"readers": {k: list(v) for k, v in readers.items()}}
@@ -1120,12 +1522,14 @@ def data_gate_verdicts(rn: Runner, nm: Path, c: Json, datas: Mapping[str, str], 
             gated[v] = False
             human.append(f"{v}: verifyData/ を読むが origin/master に無く比べられない")
             continue
-        ok, why, rec = mutation_gate(rn, v, old, (rn.repo / v).is_file(), c, swap)
+        ok, why, rec = mutation_gate(rn, v, old, (rn.repo / v).is_file(), c, swap, others, base)
         rec["via_data"] = True
         record["mutation"].append(rec)  # type: ignore[union-attr]
         gated[v] = ok
         if not ok:
             human.append(f"{why}（verifyData/ の変更で）")
+            if rec.get("outcome") == OUT_INCOMPARABLE and inc_lines is not None:
+                inc_lines.append(human[-1])
     for p, st in sorted(datas.items()):
         old, new = swap[p]
         if st not in ("A", "M", "D"):
@@ -1142,7 +1546,15 @@ def data_gate_verdicts(rn: Runner, nm: Path, c: Json, datas: Mapping[str, str], 
             continue
         bad = [v for v in rs if not gated.get(v)]
         if bad:
-            human.append(f"{p}: 読む verify {len(bad)}/{len(rs)} 本が変異検査を通らない（{'・'.join(bad[:3])}）")
+            outs = {str(r.get("script")): r.get("outcome") for r in record["mutation"]}  # type: ignore[union-attr]
+            if all(outs.get(v) == OUT_INCOMPARABLE for v in bad):  # 読む verify が全部「比べられない」なら本も同じ結果（本の側の静的な語の赤は上で先に出ている）
+                human.append(f"{p}: {INCOMPARABLE_HEAD}この verifyData/ を読む verify {len(bad)}/{len(rs)} 本が変異で比べられない（{'・'.join(bad[:3])}）。機械では通さず、人が差分を見る")
+                if inc_lines is not None:
+                    inc_lines.append(human[-1])
+            elif all(outs.get(v) == OUT_SPLIT for v in bad):
+                human.append(f"{p}: 【分けよ】この verifyData/ の変更を前段の PR へ。弱めかは未判定（この赤は手で通さない。前段の変異検査で決まる）（読む verify {len(bad)}/{len(rs)} 本とも、本文と同じ PR で動かしたので比べられない。{'・'.join(bad[:3])}）")
+            else:
+                human.append(f"{p}: 読む verify {len(bad)}/{len(rs)} 本が変異検査を通らない（{'・'.join(bad[:3])}）")
             continue
         excused.add(p)
 
