@@ -1,10 +1,9 @@
 /**
- * verify-hit-verification-guidance.js の道具。verify ではない。DB・公式・ネットには繋がない。
+ * verify-hit-verification-guidance.js の道具。verify ではない。外部の通信はしない。
  *   renderedSentences(page, path) … 頁を描いて、見える文を「。」と改行で区切って返す（空白は除く）
  *   importersOf(target, modules)   … modules を読み込んだとき、target の部品を import した module の一覧
  *                                    （module の import を読み込みの道で見る。本文の字を fs で読まない）
  */
-import { MessageChannel, receiveMessageOnPort } from "node:worker_threads";
 import { register } from "node:module";
 import { renderJsx } from "../../lib/renderJsx.js";
 import { renderPage } from "./jsx-page-render.js";
@@ -43,9 +42,10 @@ export async function importersOf(target, modules) {
   });
   await quietly(() => Promise.all(modules.map((m) => import(new URL(m, SRC).href))));
   const found = new Set();
-  for (let m = receiveMessageOnPort(port1); m; m = receiveMessageOnPort(port1)) {
-    found.add(m.message.slice(SRC.href.length));
-  }
+  port1.onmessage = (m) => found.add(m.data.slice(SRC.href.length));
+  // 記録の message は import の解決の間に別の thread から送られる。1件届くまで（最長5秒）待ち、続けて届く分を取り込む
+  for (let waited = 0; found.size === 0 && waited < 5000; waited += 20) await new Promise((resolve) => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 100));
   port1.close();
   return [...found].sort();
 }

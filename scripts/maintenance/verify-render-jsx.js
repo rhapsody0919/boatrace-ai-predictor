@@ -39,7 +39,9 @@ assert.equal(view.container.innerHTML, "");
 await view.unmount();
 
 // 3. 1か所壊した部品（バッジの文字を key に。verifyData/render-jsx-broken-badge-row.jsx）では同じ確かめが落ちる
-const brokenPath = path.join(repoRoot, "scripts/maintenance/verifyData/render-jsx-broken-badge-row.jsx");
+// 壊した部品は相対 import で読み込む（hooks は上の renderJsx が登録済み）。描くのは同じ URL
+await import("./verifyData/render-jsx-broken-badge-row.jsx");
+const brokenPath = new URL("./verifyData/render-jsx-broken-badge-row.jsx", import.meta.url);
 const broken = await renderJsx(brokenPath, props);
 assert.throws(() => checkBadgeRow(broken.container), assert.AssertionError);
 await broken.unmount();
