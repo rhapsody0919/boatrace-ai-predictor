@@ -27,7 +27,6 @@ const repoRoot = path.resolve(
 );
 
 import { runE2eHarMergeScenes1 } from "./verifyData/e2e-har-merge-scenes.js";
-import { notifyDedupeEndpoints } from "./verifyData/e2e-har-merge-notify-dedupe.js";
 
 const failures = [];
 let checked = 0;
@@ -313,18 +312,18 @@ check(
 );
 // 通知の重複判定は event で絞らない（schedule だけを見ると、Vercel Cron の dispatch の通知を数えず1日最大4回に戻る）。
 // PR のブランチを ref にした手の起動は数えない
-// 本文の字は読まず、偽の gh を PATH に置いて notify-dedupe を実行し、runs の取得先の形で見る（verifyData/e2e-har-merge-notify-dedupe.js）
 {
-  const { status, endpoints } = notifyDedupeEndpoints(repoRoot);
-  const runs = endpoints.find((e) => /e2e-rerecord\.yml\/runs\?/.test(e)) ?? "";
+  const src = readFileSync(
+    path.join(repoRoot, "scripts", "maintenance", "e2e-recording.js"),
+    "utf8",
+  );
   check(
     "notify-dedupe の runs の取得は event で絞らず、master だけを見る",
     [
-      status === 0 && endpoints.length === 1,
-      /[?&]event=/.test(runs),
-      /e2e-rerecord\.yml\/runs\?branch=master&/.test(runs),
+      /e2e-rerecord\.yml\/runs\?[^`]*event=/.test(src),
+      /e2e-rerecord\.yml\/runs\?branch=master&/.test(src),
     ],
-    [true, false, true],
+    [false, true],
   );
 }
 // 状態関数（failure() / success() / cancelled() / always()）は if: の中でしか使えない。

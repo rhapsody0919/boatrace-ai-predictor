@@ -11,8 +11,12 @@
  *   live.config・live.handler・live.record（politeFetchOptions・stores・queries・rpcs・supabase・rows）・await live.call({ method, url, query })
  */
 import { register } from "node:module";
+// 写し3本の静的な import。読み込みの差し替えは下の HOOKS（URL）で行うが、verify→verifyData の辿り（変異検査の data_readers）が静的な相対 import しか見ないため、ここで名指しする
+import "./live-odds-wiring-politeFetch.js";
+import "./live-odds-wiring-store.js";
+import "./live-odds-wiring-supabase.js";
 
-export const WIRING_KEY = Symbol.for("verify-odds-live-api.live-odds-wiring");
+export const WIRING_KEY = Symbol.for("verify-odds-live-api.live-odds-wiring"); // 写し3本も同じ鍵を Symbol.for で持つ
 
 const LIVE_URL = new URL("../../../api/odds/live.js", import.meta.url).href;
 const MAP = {
