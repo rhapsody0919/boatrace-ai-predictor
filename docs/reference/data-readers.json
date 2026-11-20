@@ -5,10 +5,10 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2350,
-    "filesWithAccess": 295,
+    "sourceFiles": 2360,
+    "filesWithAccess": 296,
     "tableReaders": 949,
-    "tableWriters": 197,
+    "tableWriters": 195,
     "rpcCallers": 55,
     "nameMentions": 265,
     "tablesWithoutReaders": 21,
@@ -81,7 +81,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/calculate-accuracy.js:482",
+          "ref": "scripts/daily/calculate-accuracy.js:177",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -101,7 +101,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:183",
+          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:142",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -126,9 +126,9 @@
             "src/services/predictionQueries4.js:44"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:482",
+            "scripts/daily/calculate-accuracy.js:177",
             "scripts/daily/calculate-unified-model-accuracy.js:203",
-            "scripts/daily/calculate-unified-volatility-accuracy.js:183"
+            "scripts/daily/calculate-unified-volatility-accuracy.js:142"
           ],
           "sql": [
             "rpc:data_health_nightly_freshness"
@@ -143,18 +143,18 @@
             "src/services/predictionQueries4.js:44"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:482",
+            "scripts/daily/calculate-accuracy.js:177",
             "scripts/daily/calculate-unified-model-accuracy.js:203",
-            "scripts/daily/calculate-unified-volatility-accuracy.js:183"
+            "scripts/daily/calculate-unified-volatility-accuracy.js:142"
           ],
           "sql": []
         },
         "updated_at": {
           "readers": [],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:482",
+            "scripts/daily/calculate-accuracy.js:177",
             "scripts/daily/calculate-unified-model-accuracy.js:203",
-            "scripts/daily/calculate-unified-volatility-accuracy.js:183"
+            "scripts/daily/calculate-unified-volatility-accuracy.js:142"
           ],
           "sql": [
             "rpc:data_health_nightly_freshness"
@@ -998,7 +998,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/daily/update-moriarty-outcomes.js:30",
+          "ref": "scripts/daily/update-moriarty-outcomes.js:31",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1087,7 +1087,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-moriarty-outcomes.js:173",
+          "ref": "scripts/daily/update-moriarty-outcomes.js:144",
           "op": "update",
           "via": "client",
           "columns": [
@@ -1109,8 +1109,8 @@
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:361",
             "scripts/daily/generate-unified-trifecta-reference.js:176",
-            "scripts/daily/update-moriarty-outcomes.js:173",
-            "scripts/daily/update-moriarty-outcomes.js:30",
+            "scripts/daily/update-moriarty-outcomes.js:144",
+            "scripts/daily/update-moriarty-outcomes.js:31",
             "src/services/moriartyService.js:141",
             "src/services/moriartyService.js:68",
             "src/services/predictionQueries4.js:62"
@@ -1126,8 +1126,8 @@
           "readers": [
             "scripts/daily/generate-moriarty-recommendations.js:361",
             "scripts/daily/generate-unified-trifecta-reference.js:176",
-            "scripts/daily/update-moriarty-outcomes.js:173",
-            "scripts/daily/update-moriarty-outcomes.js:30",
+            "scripts/daily/update-moriarty-outcomes.js:144",
+            "scripts/daily/update-moriarty-outcomes.js:31",
             "src/services/moriartyService.js:141",
             "src/services/moriartyService.js:268",
             "src/services/moriartyService.js:68",
@@ -1142,7 +1142,7 @@
         },
         "recommendation": {
           "readers": [
-            "scripts/daily/update-moriarty-outcomes.js:30",
+            "scripts/daily/update-moriarty-outcomes.js:31",
             "src/services/moriartyService.js:141",
             "src/services/moriartyService.js:268",
             "src/services/moriartyService.js:68",
@@ -1155,7 +1155,7 @@
         },
         "reasons": {
           "readers": [
-            "scripts/daily/update-moriarty-outcomes.js:30",
+            "scripts/daily/update-moriarty-outcomes.js:31",
             "src/services/moriartyService.js:141",
             "src/services/predictionQueries4.js:62"
           ],
@@ -1169,7 +1169,7 @@
         },
         "expected_value": {
           "readers": [
-            "scripts/daily/update-moriarty-outcomes.js:30",
+            "scripts/daily/update-moriarty-outcomes.js:31",
             "src/services/moriartyService.js:141",
             "src/services/moriartyService.js:268",
             "src/services/predictionQueries4.js:62"
@@ -1193,12 +1193,12 @@
         },
         "actual_hit": {
           "readers": [
-            "scripts/daily/update-moriarty-outcomes.js:30",
+            "scripts/daily/update-moriarty-outcomes.js:31",
             "src/services/moriartyService.js:141",
             "src/services/moriartyService.js:268"
           ],
           "writers": [
-            "scripts/daily/update-moriarty-outcomes.js:173"
+            "scripts/daily/update-moriarty-outcomes.js:144"
           ],
           "sql": [
             "rpc:update_prediction_results"
@@ -1209,7 +1209,7 @@
             "src/services/moriartyService.js:141"
           ],
           "writers": [
-            "scripts/daily/update-moriarty-outcomes.js:173"
+            "scripts/daily/update-moriarty-outcomes.js:144"
           ],
           "sql": [
             "rpc:update_prediction_results"
@@ -1222,7 +1222,7 @@
         },
         "created_at": {
           "readers": [
-            "scripts/daily/update-moriarty-outcomes.js:30"
+            "scripts/daily/update-moriarty-outcomes.js:31"
           ],
           "writers": [],
           "sql": [
@@ -1231,7 +1231,7 @@
         },
         "bet_fraction": {
           "readers": [
-            "scripts/daily/update-moriarty-outcomes.js:30",
+            "scripts/daily/update-moriarty-outcomes.js:31",
             "src/services/moriartyService.js:141"
           ],
           "writers": [],
@@ -3371,7 +3371,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/update-moriarty-outcomes.js:273",
+          "ref": "scripts/daily/update-moriarty-outcomes.js:264",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -3387,7 +3387,7 @@
       "columns": {
         "model_id": {
           "readers": [
-            "scripts/daily/update-moriarty-outcomes.js:273",
+            "scripts/daily/update-moriarty-outcomes.js:264",
             "src/services/moriartyService.js:181",
             "src/services/moriartyService.js:223",
             "src/services/moriartyService.js:40"
@@ -3399,7 +3399,7 @@
         },
         "date": {
           "readers": [
-            "scripts/daily/update-moriarty-outcomes.js:273",
+            "scripts/daily/update-moriarty-outcomes.js:264",
             "src/services/moriartyService.js:181",
             "src/services/moriartyService.js:223",
             "src/services/moriartyService.js:40"
@@ -3501,7 +3501,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/daily/calculate-accuracy.js:370",
+          "ref": "scripts/daily/calculate-accuracy.js:140",
           "op": "select",
           "via": "client",
           "columns": [
@@ -3538,7 +3538,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/calculate-accuracy.js:536",
+          "ref": "scripts/daily/calculate-accuracy.js:231",
           "op": "update",
           "via": "client",
           "columns": [
@@ -3566,8 +3566,8 @@
       "columns": {
         "model_id": {
           "readers": [
-            "scripts/daily/calculate-accuracy.js:370",
-            "scripts/daily/calculate-accuracy.js:536",
+            "scripts/daily/calculate-accuracy.js:140",
+            "scripts/daily/calculate-accuracy.js:231",
             "src/services/predictionQueries3.js:114"
           ],
           "writers": [],
@@ -3692,11 +3692,11 @@
         },
         "total_predictions": {
           "readers": [
-            "scripts/daily/calculate-accuracy.js:370",
+            "scripts/daily/calculate-accuracy.js:140",
             "src/services/predictionQueries3.js:114"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "rpc:get_accuracy_summary",
@@ -3705,11 +3705,11 @@
         },
         "hit_rate_win": {
           "readers": [
-            "scripts/daily/calculate-accuracy.js:370",
+            "scripts/daily/calculate-accuracy.js:140",
             "src/services/predictionQueries3.js:114"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "rpc:get_accuracy_summary",
@@ -3718,11 +3718,11 @@
         },
         "recovery_rate_win": {
           "readers": [
-            "scripts/daily/calculate-accuracy.js:370",
+            "scripts/daily/calculate-accuracy.js:140",
             "src/services/predictionQueries3.js:114"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "rpc:get_accuracy_summary",
@@ -3732,7 +3732,7 @@
         "last_evaluated_at": {
           "readers": [],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "view:v_production_models"
@@ -3748,7 +3748,7 @@
         "updated_at": {
           "readers": [],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "view:v_production_models"
@@ -3756,11 +3756,11 @@
         },
         "hit_rate_place": {
           "readers": [
-            "scripts/daily/calculate-accuracy.js:370",
+            "scripts/daily/calculate-accuracy.js:140",
             "src/services/predictionQueries3.js:114"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "rpc:get_accuracy_summary"
@@ -3768,11 +3768,11 @@
         },
         "hit_rate_trifecta": {
           "readers": [
-            "scripts/daily/calculate-accuracy.js:370",
+            "scripts/daily/calculate-accuracy.js:140",
             "src/services/predictionQueries3.js:114"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "rpc:get_accuracy_summary"
@@ -3780,11 +3780,11 @@
         },
         "hit_rate_trio": {
           "readers": [
-            "scripts/daily/calculate-accuracy.js:370",
+            "scripts/daily/calculate-accuracy.js:140",
             "src/services/predictionQueries3.js:114"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "rpc:get_accuracy_summary"
@@ -3792,11 +3792,11 @@
         },
         "recovery_rate_place": {
           "readers": [
-            "scripts/daily/calculate-accuracy.js:370",
+            "scripts/daily/calculate-accuracy.js:140",
             "src/services/predictionQueries3.js:114"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "rpc:get_accuracy_summary"
@@ -3804,11 +3804,11 @@
         },
         "recovery_rate_trifecta": {
           "readers": [
-            "scripts/daily/calculate-accuracy.js:370",
+            "scripts/daily/calculate-accuracy.js:140",
             "src/services/predictionQueries3.js:114"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "rpc:get_accuracy_summary"
@@ -3816,11 +3816,11 @@
         },
         "recovery_rate_trio": {
           "readers": [
-            "scripts/daily/calculate-accuracy.js:370",
+            "scripts/daily/calculate-accuracy.js:140",
             "src/services/predictionQueries3.js:114"
           ],
           "writers": [
-            "scripts/daily/calculate-accuracy.js:536"
+            "scripts/daily/calculate-accuracy.js:231"
           ],
           "sql": [
             "rpc:get_accuracy_summary"
@@ -5384,13 +5384,13 @@
           ]
         },
         {
-          "ref": "scripts/daily/calculate-accuracy.js:45",
+          "ref": "scripts/daily/calculate-accuracy.js:25",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-accuracy.js:119",
+          "ref": "scripts/daily/calculate-accuracy.js:65",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -5402,7 +5402,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:155",
+          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:114",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -7289,7 +7289,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/update-race-info.js:443",
+          "ref": "scripts/daily/update-race-info.js:137",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
@@ -8256,7 +8256,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-race-info.js:443",
+          "ref": "scripts/daily/update-race-info.js:137",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -9354,13 +9354,13 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:592",
+          "ref": "scripts/daily/scrape-odds.js:144",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:887",
+          "ref": "scripts/daily/scrape-odds.js:323",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9370,7 +9370,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:975",
+          "ref": "scripts/daily/scrape-odds.js:395",
           "op": "select",
           "via": "client",
           "columns": [
@@ -9434,7 +9434,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/daily/scrape-odds.js:746",
+          "ref": "scripts/daily/scrape-odds.js:288",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -9442,7 +9442,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:769",
+          "ref": "scripts/daily/scrape-odds.js:303",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -9450,7 +9450,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:999",
+          "ref": "scripts/daily/scrape-odds.js:508",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -9469,10 +9469,10 @@
           "readers": [
             "api/odds/live.js:79",
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "scripts/daily/scrape-odds.js:746",
-            "scripts/daily/scrape-odds.js:769",
-            "scripts/daily/scrape-odds.js:887",
-            "scripts/daily/scrape-odds.js:975",
+            "scripts/daily/scrape-odds.js:288",
+            "scripts/daily/scrape-odds.js:303",
+            "scripts/daily/scrape-odds.js:323",
+            "scripts/daily/scrape-odds.js:395",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:81",
             "scripts/maintenance/check-odds-shadow.js:201",
             "src/services/raceQueries2.js:320",
@@ -9487,9 +9487,9 @@
           "readers": [
             "api/odds/live.js:79",
             "scripts/daily/generate-moriarty-recommendations.js:97",
-            "scripts/daily/scrape-odds.js:746",
-            "scripts/daily/scrape-odds.js:769",
-            "scripts/daily/scrape-odds.js:975",
+            "scripts/daily/scrape-odds.js:288",
+            "scripts/daily/scrape-odds.js:303",
+            "scripts/daily/scrape-odds.js:395",
             "scripts/lib/scrapeJobs/predictionOddsHandlers.js:81",
             "src/services/raceQueries2.js:320",
             "src/services/sherlockService.js:80"
@@ -9676,7 +9676,7 @@
         },
         "window_min": {
           "readers": [
-            "scripts/daily/scrape-odds.js:887"
+            "scripts/daily/scrape-odds.js:323"
           ],
           "writers": [],
           "sql": []
@@ -10954,7 +10954,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/calculate-accuracy.js:187",
+          "ref": "scripts/daily/calculate-accuracy.js:94",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -10966,7 +10966,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:166",
+          "ref": "scripts/daily/calculate-unified-volatility-accuracy.js:125",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -10987,7 +10987,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/scrape-odds.js:70",
+          "ref": "scripts/daily/scrape-odds.js:79",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11072,7 +11072,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-moriarty-outcomes.js:45",
+          "ref": "scripts/daily/update-moriarty-outcomes.js:46",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11763,7 +11763,7 @@
             "scripts/analysis/verify-race-analysis-rpc.js:211",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily-rule-tracking.js:149",
-            "scripts/daily/scrape-odds.js:70",
+            "scripts/daily/scrape-odds.js:79",
             "scripts/daily/scrape-results.js:196",
             "scripts/daily/scrape-results.js:266",
             "scripts/daily/scrape-results.js:314",
@@ -11772,7 +11772,7 @@
             "scripts/daily/scrape-results.js:729",
             "scripts/daily/scrape-results.js:821",
             "scripts/daily/update-losing-technique-stats.js:55",
-            "scripts/daily/update-moriarty-outcomes.js:45",
+            "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-nige-outcome-distribution.js:63",
             "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
@@ -11850,7 +11850,7 @@
             "scripts/daily/scrape-results.js:196",
             "scripts/daily/scrape-results.js:314",
             "scripts/daily/update-losing-technique-stats.js:55",
-            "scripts/daily/update-moriarty-outcomes.js:45",
+            "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-nige-outcome-distribution.js:63",
             "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
@@ -11903,7 +11903,7 @@
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/scrape-results.js:314",
-            "scripts/daily/update-moriarty-outcomes.js:45",
+            "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-nige-outcome-distribution.js:63",
             "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
@@ -11941,7 +11941,7 @@
             "scripts/analysis/verify-poirot.js:73",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/scrape-results.js:314",
-            "scripts/daily/update-moriarty-outcomes.js:45",
+            "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-nige-outcome-distribution.js:63",
             "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
@@ -11973,9 +11973,9 @@
             "scripts/analysis/redesign-volatility-by-venue.js:150",
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-race-analysis-rpc.js:285",
-            "scripts/daily/scrape-odds.js:70",
+            "scripts/daily/scrape-odds.js:79",
             "scripts/daily/scrape-results.js:821",
-            "scripts/daily/update-moriarty-outcomes.js:45",
+            "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/lib/raceResultRun.js:131",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
             "src/services/adminRuleService.js:42",
@@ -12027,7 +12027,7 @@
             "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/analysis/verify-calculations.js:20",
-            "scripts/daily/update-moriarty-outcomes.js:45",
+            "scripts/daily/update-moriarty-outcomes.js:46",
             "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
           ],
@@ -12045,7 +12045,7 @@
             "scripts/analysis/verify-calculations.js:20",
             "scripts/analysis/verify-poirot.js:73",
             "scripts/daily/calculate-venue-grade-stats.js:73",
-            "scripts/daily/update-moriarty-outcomes.js:45",
+            "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-outcome-frequencies.js:19",
             "src/services/adminRuleService.js:42",
             "src/services/ruleMatchService.js:146"
@@ -12066,7 +12066,7 @@
             "scripts/analysis/verify-race-analysis-rpc.js:285",
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/update-losing-technique-stats.js:55",
-            "scripts/daily/update-moriarty-outcomes.js:45",
+            "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-nige-outcome-distribution.js:63",
             "scripts/daily/update-outcome-distribution.js:60",
             "scripts/daily/update-outcome-frequencies.js:19",
@@ -12511,7 +12511,7 @@
           "readers": [
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
             "scripts/daily/calculate-venue-grade-stats.js:73",
-            "scripts/daily/update-moriarty-outcomes.js:45",
+            "scripts/daily/update-moriarty-outcomes.js:46",
             "scripts/daily/update-outcome-frequencies.js:19",
             "scripts/maintenance/update-venue-stats.js:32",
             "src/services/motorQueries2.js:358",
@@ -16088,7 +16088,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/calculate-accuracy.js:178",
+          "ref": "scripts/daily/calculate-accuracy.js:85",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -16231,7 +16231,7 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-moriarty-outcomes.js:58",
+          "ref": "scripts/daily/update-moriarty-outcomes.js:59",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16255,7 +16255,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/daily/update-race-info.js:174",
+          "ref": "scripts/daily/update-race-info.js:70",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17291,28 +17291,11 @@
           ]
         },
         {
-          "ref": "scripts/daily/update-race-info.js:376",
+          "ref": "scripts/lib/raceInfoWrite.js:18",
           "op": "update",
           "via": "client",
           "columns": [
-            "cancellation_check_streak",
-            "cancellation_status"
-          ]
-        },
-        {
-          "ref": "scripts/daily/update-race-info.js:400",
-          "op": "update",
-          "via": "client",
-          "columns": [
-            "start_time"
-          ]
-        },
-        {
-          "ref": "scripts/daily/update-race-info.js:513",
-          "op": "update",
-          "via": "client",
-          "columns": [
-            "race_grade"
+            "?"
           ]
         },
         {
@@ -17484,12 +17467,9 @@
             "scripts/daily/scrape-results.js:789",
             "scripts/daily/scrape-results.js:947",
             "scripts/daily/todays-volatility-digest.js:80",
-            "scripts/daily/update-moriarty-outcomes.js:58",
+            "scripts/daily/update-moriarty-outcomes.js:59",
             "scripts/daily/update-outcome-frequencies.js:43",
-            "scripts/daily/update-race-info.js:174",
-            "scripts/daily/update-race-info.js:376",
-            "scripts/daily/update-race-info.js:400",
-            "scripts/daily/update-race-info.js:513",
+            "scripts/daily/update-race-info.js:70",
             "scripts/lib/analogyDispatch.js:75",
             "scripts/lib/analogyV16Exhibition.js:253",
             "scripts/lib/boatcast/oritenJob.js:280",
@@ -17499,6 +17479,7 @@
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/pitReportJob.js:290",
             "scripts/lib/pitReportJob.js:365",
+            "scripts/lib/raceInfoWrite.js:18",
             "scripts/lib/raceResultRun.js:278",
             "scripts/lib/raceSchedule.js:44",
             "scripts/lib/raceStatusJob.js:93",
@@ -17704,7 +17685,7 @@
             "scripts/daily/generate-morning-digest.js:133",
             "scripts/daily/morning-init.js:86",
             "scripts/daily/scrape-results.js:947",
-            "scripts/daily/update-moriarty-outcomes.js:58",
+            "scripts/daily/update-moriarty-outcomes.js:59",
             "scripts/daily/update-outcome-frequencies.js:43",
             "scripts/generate-sitemap.js:379",
             "scripts/generate-sitemap.js:662",
@@ -17838,9 +17819,7 @@
             "src/services/sherlockService.js:66",
             "src/services/watsonService.js:72"
           ],
-          "writers": [
-            "scripts/daily/update-race-info.js:400"
-          ],
+          "writers": [],
           "sql": [
             "rpc:claim_scrape_slots",
             "rpc:claim_scrape_slots_by_offset",
@@ -17957,7 +17936,7 @@
             "scripts/daily/calculate-venue-grade-stats.js:73",
             "scripts/daily/generate-morning-digest.js:133",
             "scripts/daily/scrape-point-rank.js:349",
-            "scripts/daily/update-race-info.js:174",
+            "scripts/daily/update-race-info.js:70",
             "scripts/lib/pitReportJob.js:290",
             "scripts/lib/pitReportJob.js:365",
             "scripts/lib/snsTodayDigestV3.js:81",
@@ -17965,9 +17944,7 @@
             "scripts/sns/pushFinalsImageStore.js:77",
             "src/services/meetQueries3.js:50"
           ],
-          "writers": [
-            "scripts/daily/update-race-info.js:513"
-          ],
+          "writers": [],
           "sql": [
             "rpc:compute_racer_course_technique_stats",
             "rpc:compute_venue_course_technique_baseline",
@@ -17993,7 +17970,7 @@
             "scripts/daily/scrape-results.js:758",
             "scripts/daily/scrape-results.js:789",
             "scripts/daily/todays-volatility-digest.js:80",
-            "scripts/daily/update-race-info.js:174",
+            "scripts/daily/update-race-info.js:70",
             "scripts/lib/analogyDispatch.js:75",
             "scripts/lib/inCautionHealth.js:137",
             "scripts/lib/motorPretestRows.js:112",
@@ -18027,7 +18004,6 @@
           "writers": [
             "scripts/daily/scrape-results.js:697",
             "scripts/daily/scrape-results.js:758",
-            "scripts/daily/update-race-info.js:376",
             "scripts/maintenance/audit-missing-results.js:252",
             "scripts/maintenance/backfill-missing-venue-day.js:184",
             "scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:114"
@@ -18052,12 +18028,11 @@
         },
         "cancellation_check_streak": {
           "readers": [
-            "scripts/daily/update-race-info.js:174",
+            "scripts/daily/update-race-info.js:70",
             "scripts/maintenance/backfill-results-by-race-id.js:37"
           ],
           "writers": [
-            "scripts/daily/scrape-results.js:758",
-            "scripts/daily/update-race-info.js:376"
+            "scripts/daily/scrape-results.js:758"
           ],
           "sql": []
         }
@@ -18351,7 +18326,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/lib/dataHealth/job.js:94",
+          "ref": "scripts/lib/dataHealth/job.js:98",
           "op": "select",
           "via": "client",
           "columns": [
@@ -18605,7 +18580,7 @@
         "job": {
           "readers": [
             "scripts/lib/boatcast/oritenJobParts.js:203",
-            "scripts/lib/dataHealth/job.js:94",
+            "scripts/lib/dataHealth/job.js:98",
             "scripts/lib/eveDeadlinesJob.js:362",
             "scripts/lib/motorPretestJob.js:176",
             "scripts/lib/racesInit/job.js:132",
@@ -18740,7 +18715,7 @@
         },
         "last_report": {
           "readers": [
-            "scripts/lib/dataHealth/job.js:94",
+            "scripts/lib/dataHealth/job.js:98",
             "scripts/lib/racesInit/predictCodeCheck.js:138",
             "scripts/lib/racesInit/predictCodeCheck.js:86",
             "scripts/sns/pushResearchImageStore.js:61"
@@ -27525,7 +27500,7 @@
       "callers": [],
       "mentions": [
         "scripts/lib/dataHealth/functions.js:546",
-        "scripts/lib/dataHealth/job.js:51",
+        "scripts/lib/dataHealth/jobParts.js:10",
         "scripts/maintenance/verifyData/data-health-job-fixtures.js:77",
         "scripts/maintenance/verifyData/data-health-job-scenes-1.js:279",
         "scripts/maintenance/verifyData/data-health-job-scenes-3.js:66"
@@ -28872,7 +28847,7 @@
     {
       "job": "data_health",
       "entry": "api/cron/data-health.js",
-      "reachableFiles": 21,
+      "reachableFiles": 23,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -28894,7 +28869,7 @@
     {
       "job": "data_health_morning",
       "entry": "api/cron/data-health-morning.js",
-      "reachableFiles": 21,
+      "reachableFiles": 23,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29037,7 +29012,7 @@
     {
       "job": "exhibition",
       "entry": "api/cron/exhibition.js",
-      "reachableFiles": 43,
+      "reachableFiles": 46,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070",
@@ -29051,14 +29026,12 @@
         ],
         "race_entries": [
           "scripts/daily/generate-predictions.js:1035",
-          "scripts/daily/update-race-info.js:443"
+          "scripts/daily/update-race-info.js:137"
         ],
         "races": [
           "scripts/daily/generate-predictions.js:1652",
           "scripts/daily/generate-predictions.js:971",
-          "scripts/daily/update-race-info.js:376",
-          "scripts/daily/update-race-info.js:400",
-          "scripts/daily/update-race-info.js:513"
+          "scripts/lib/raceInfoWrite.js:18"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29291,15 +29264,15 @@
     {
       "job": "odds",
       "entry": "api/cron/odds.js",
-      "reachableFiles": 25,
+      "reachableFiles": 28,
       "writes": {
         "prediction_odds": [
           "scripts/lib/scrapeJobs/predictionOddsHandlers.js:194"
         ],
         "race_odds": [
-          "scripts/daily/scrape-odds.js:746",
-          "scripts/daily/scrape-odds.js:769",
-          "scripts/daily/scrape-odds.js:999"
+          "scripts/daily/scrape-odds.js:288",
+          "scripts/daily/scrape-odds.js:303",
+          "scripts/daily/scrape-odds.js:508"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29321,12 +29294,12 @@
     {
       "job": "odds_final",
       "entry": "api/cron/odds-final.js",
-      "reachableFiles": 23,
+      "reachableFiles": 26,
       "writes": {
         "race_odds": [
-          "scripts/daily/scrape-odds.js:746",
-          "scripts/daily/scrape-odds.js:769",
-          "scripts/daily/scrape-odds.js:999"
+          "scripts/daily/scrape-odds.js:288",
+          "scripts/daily/scrape-odds.js:303",
+          "scripts/daily/scrape-odds.js:508"
         ],
         "race_odds_final": [
           "scripts/lib/scrapeJobs/finalOddsHandlers.js:144"
@@ -29483,7 +29456,7 @@
     {
       "job": "race_info",
       "entry": "api/cron/race-info.js",
-      "reachableFiles": 43,
+      "reachableFiles": 46,
       "writes": {
         "exhibition_data": [
           "scripts/daily/generate-predictions.js:1070",
@@ -29497,14 +29470,12 @@
         ],
         "race_entries": [
           "scripts/daily/generate-predictions.js:1035",
-          "scripts/daily/update-race-info.js:443"
+          "scripts/daily/update-race-info.js:137"
         ],
         "races": [
           "scripts/daily/generate-predictions.js:1652",
           "scripts/daily/generate-predictions.js:971",
-          "scripts/daily/update-race-info.js:376",
-          "scripts/daily/update-race-info.js:400",
-          "scripts/daily/update-race-info.js:513"
+          "scripts/lib/raceInfoWrite.js:18"
         ],
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -30198,7 +30169,7 @@
     },
     {
       "file": "scripts/lib/dataHealth/job.js",
-      "line": 67,
+      "line": 71,
       "reason": "RPC の名前が変数（.rpc(式)）"
     },
     {

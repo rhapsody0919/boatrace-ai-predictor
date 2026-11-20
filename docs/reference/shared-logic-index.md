@@ -67,6 +67,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
+| `scripts/lib/accuracyCacheStats.js` | — | summarizeHits, computeStats, jstDateStr, addMonths, volatilityByLevel ほか4件 |
 | `scripts/lib/analogyDispatch.js` | BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習… | morningRetryNeeded, morningShouldDispatch, dispatchWorkflow, createAnalogyDispatchRun, GITHUB_REPO ほか2件 |
 | `scripts/lib/analogyV16Exhibition.js` | アナロジー・ファインダー v16 の展示後の段（BOA-271 tasks T4-2・T4-3。plan「展示後の段」）。 | selectExhibitionTargets, exhibitionNeighbors, displayRow, runAnalogyV16Exhibition, MAX_RACES |
 | `scripts/lib/analogyV16ExhibitionToday.js` | アナロジー・ファインダー v16 の展示後の段の「今日の展示の値」（today-exhibition。BOA-271 T4-2）。 | todayExhibition, BOATS |
@@ -110,9 +111,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/dailyReconcileJob.js` | 日次の照合（N29、daily_reconcile）の共通ラッパ向けハンドラー（tasks.md T4b-21）。 | loadReconcileInputs, buildReconcileAlerts, updateHistory, runDailyReconcileJob, FINAL_ATTEMPT_MINUTES_OF_DAY ほか3件 |
 | `scripts/lib/dataHealth/checks.js` | 汎用の日次監視（data_health、完了の定義C）の登録表。データセットごとに、次を宣言する。 | validateChecks, DEFAULT_THRESHOLD, DEFAULT_DAYS, DEFAULT_MIN_DENOMINATOR, NIGHTLY_FRESHNESS_CHECKS ほか3件 |
 | `scripts/lib/dataHealth/coverageSpec.js` | 存在充足率（完了の定義A）の指標と、その集計SQLの正本（data-health-report.js と、汎用の日次監視 | literalCoverageSlots, buildCoverageSql, buildMonthlySql, ALL_ODDS_COLUMNS, ODDS_FULL_GRID_SINCE ほか3件 |
-| `scripts/lib/dataHealth/evaluate.js` | 汎用の日次監視（data_health）の判定（純粋関数。DB・時計・Slackに触れない）。 | weekdayOf, isDueToday, periodFor, evaluateCountCheck, formatObserved ほか8件 |
+| `scripts/lib/dataHealth/evaluate.js` | 汎用の日次監視（data_health）の判定（純粋関数。DB・時計・Slackに触れない）。 | weekdayOf, isDueToday, periodFor, evaluateCountCheck, evaluateEmptyTables ほか5件 |
+| `scripts/lib/dataHealth/evaluateParts.js` | evaluate.js の部品（純粋関数。DB・時計・Slackに触れない）。通知文・鮮度の判定・件数の集計の部品を、 | rowStats, formatObserved, evaluateFreshnessCheck, formatBreach, sum |
 | `scripts/lib/dataHealth/functions.js` | 汎用の日次監視（data_health）が呼ぶDB関数の定義（SQLの正本）。 | renderFunctionDdl, renderInlineSql, MAX_RANGE_DAYS, TABLE_ROWS_TABLES, NIGHTLY_FRESHNESS_ITEMS ほか4件 |
 | `scripts/lib/dataHealth/job.js` | 汎用の日次監視 data_health（完了の定義C）の実行。api/cron/data-health.js が、共通ラッパ | createRpcCaller, readDeliveredKeys, runDataHealthChecks, DATA_HEALTH_JOB, DATA_HEALTH_MORNING_JOB ほか3件 |
+| `scripts/lib/dataHealth/jobParts.js` | job.js（runDataHealthChecks）の部品。関数の呼び出し計画・項目の判定・通知の候補・報告の組み立てを、 | planFunctionRanges, judgeCheck, countStatuses, callFunctions, TABLE_ROWS_FN ほか1件 |
 | `scripts/lib/dataHealth/workflowCoverage.js` | Environment prod-jobs を使う workflow（.github/workflows）の、data_health への登録の一覧。 | usesProdJobs, findCoverageProblems, WORKFLOW_EXCLUSIONS |
 | `scripts/lib/dataReaders.js` | データの読み手の台帳（docs/reference/data-readers.{json,md}）の抽出と組み立て。DB にも | isFixtureLike, isSourceFile, literalString, parseSelect, parseRestPath ほか17件 |
 | `scripts/lib/dateUtils.js` | 日付ユーティリティ（バックエンド用） | getTodayDateJST, getYesterdayDateJST, getDateDaysAgo, formatDateForUrl, parseDateArg ほか5件 |
@@ -159,11 +162,15 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/meetBoundaries.js` | 節（開催）の切り出しと、全レースの一括取得。 | buildMeets, fetchAllByRaceId |
 | `scripts/lib/mergeOrder.js` | マージ順の台帳。「PR 901 は 902 のマージ後に」という順序を、並行セッションのオーケストレーションが | ledgerPath, parseLedger, readLedger, writeLedger, prerequisitesOf ほか3件 |
 | `scripts/lib/monthlyScheduleParser.js` | 月間スケジュール（boatrace.jp race/monthlyschedule）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | buildMonthlyScheduleUrl, parseYm, listYms, parseMonthlySchedule, mergeMonthlySchedules ほか8件 |
+| `scripts/lib/moriartyBetJudge.js` | モリアーティの推奨（bet_recommendations.reasons）の照合のうち、3連単・3連複の部分（純粋関数）。 | judgeThreeBoatBet |
 | `scripts/lib/motorPretestCoverage.js` | 前検タイムの定期取得（motorPretestJob.js）の純関数: 取得の窓の日付・会場ごとの充足の引き継ぎと集計・last_report の形。 | fetchWindow, mergeCoverage, coverageSummary, reportCoverage |
 | `scripts/lib/motorPretestJob.js` | 前検タイム・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）の共通ラッパ向けハンドラー（tasks.md T4b-20）。 | fetchMotorPretest, findMotorPretestDriftAlerts, buildCoverageAlerts, runMotorPretestJob, MOTOR_PRETEST_CONCURRENCY ほか3件 |
 | `scripts/lib/motorPretestParser.js` | 公式のモーター抽選結果・前検タイム（boatrace.jp race/rankingmotor）のパーサー（純関数。DB・取得先に接続しない） | buildMotorPretestUrl, readHeaderLabels, competitionRanks, parseMotorPretestHtml, MOTOR_PRETEST_PARSER_VERSION ほか1件 |
 | `scripts/lib/motorPretestRows.js` | 前検タイム（N23、motor_pretest_stats）の、行の組み立て・期待件数の算出・書き込み。 | buildMotorPretestRows, writeMotorPretestRows, loadExpectedRacers, summarizeVenueCoverage, MOTOR_PRETEST_TABLE ほか1件 |
+| `scripts/lib/oddsPageFetch.js` | レース前オッズの取得（scrape-odds.js から分けた部分）: オッズページの URL・取得と待ち合わせ・単勝と3連単の読み。 | fetchOddsDetailed, fetchOddsForRace, defaultFetch |
+| `scripts/lib/oddsPageParse.js` | オッズページの読み（scrape-odds.js から分けた純粋関数）: 単勝・複勝・3連単・全通り系・race_odds の基本の行。 | scrapeWinOdds, isWinOddsUnpublished, scrapePlaceOdds, topTrifectaByOdds, parseFullOddsCombinations ほか3件 |
 | `scripts/lib/oddsParser.js` | boatrace.jp オッズページの共通パーサー | parseOddsTable, parseTrifectaAll, parseTrioAll, parseRangeOddsValue, parseExactaAll ほか4件 |
+| `scripts/lib/oddsRows.js` | レース前オッズの行の組み立て（scrape-odds.js から分けた純粋関数）: 取得の対象・全通り系の補い・ウィンドウの行・1件の結果。 | pickFallbackPatches, missingFullKeysByRace, collectOddsTargets, buildFullOddsRows, groupFullOddsBySignature ほか11件 |
 | `scripts/lib/officialFinishCode.js` | 公式の成績コード（Kファイルの着順欄。01〜06・F・L0・L1・K0・K1・S0・S1・S2 等）を、 | buildOfficialFinishCodeRows, OFFICIAL_FINISH_CODE_COLUMN |
 | `scripts/lib/openingDayBackfill.js` | 節の初日の欠落（racesに1行も無い会場日）を、公式サイトの過去日ページから補うCLI | parseOnly, selectTargets, buildRaceRows, createThrottledFetch, tallyOutcomes ほか10件 |
 | `scripts/lib/optionalColumns.js` | 「マイグレーション未適用のDBでも壊れない」書き込みの共通処理 | isColumnMissingError, stripColumns, createOptionalColumnState, upsertWithOptionalColumns |
@@ -189,6 +196,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceEntriesKbRestore.js` | 出走表（race_entries）の複製汚染を、公式Bファイル（番組表）から復元するための純粋関数（BOA-422） | indexBEntriesByRace, compareRace, buildRestoredRow, buildRestorePlan, COLUMNS_FROM_B ほか4件 |
 | `scripts/lib/raceIndexParser.js` | 公式の raceindex（/owpc/pc/race/raceindex?jcd=VV&hd=YYYYMMDD、会場の1日のレース一覧）の解析（BOA-128… | parseRaceIndex, raceIndexProblems, isLastDayLabel, isFinalRaceName |
 | `scripts/lib/raceIndicatorData.js` | データ出走表11指標のデータ取得（AI予想モデル大規模改修 Task6a） | fetchStPredictability, fetchReturnRate, fetchTechniqueProfile, fetchExhibitionTrend, fetchRacerForm ほか1件 |
+| `scripts/lib/raceInfoAccumulate.js` | レース情報の集計（update-race-info.js から分けた純粋関数）: 取得の結果を、書く行（中止・締切・条件・出走表）にためる・ | createAccumulator, accumulateRaceInfo, assertRaceInfoRunArgs, applyFetchedRaceInfo, parsedRaceOutcome |
+| `scripts/lib/raceInfoFetch.js` | 出走表・直前情報の取得（update-race-info.js から分けた部分）: racelist・beforeinfo を取って読む。 | fetchRaceInfoDetailed, fetchRaceInfo, fetchRaceInfos, defaultFetch |
+| `scripts/lib/raceInfoWrite.js` | レース情報の書き込みの部品（update-race-info.js の flushRaceInfo から分けた）: races の列の更新の繰り返し・ | updateRacesEach, conditionGroups, planRacesGrade, racesUpdates, writeCounters ほか2件 |
 | `scripts/lib/raceListParser.js` | 公式の出走表ページ（boatrace.jp racelist）の全項目パーサー（純関数。DB・取得先に接続しない） | scrapeSeriesDay, scrapeRaceMeta, parseRaceListDocument, parseRaceListPage, RACELIST_PARSER_VERSION |
 | `scripts/lib/raceNoticesJob.js` | レース特記事項（A5、race_special_notes）の共通ラッパ向けハンドラー（BOA-353 T4b-11-1、plan.md §2.2）。 | runRaceNoticesJob, RACE_NOTICES_CONCURRENCY |
 | `scripts/lib/raceNoticesParse.js` | — | resolveRaceDate, parseAccidentRow, parseEquipmentChangeRow, parseAbsenceRow, parseInformationHtml |
@@ -539,4 +549,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 497 ファイル / export 2810 件。
+対象 507 ファイル / export 2871 件。
