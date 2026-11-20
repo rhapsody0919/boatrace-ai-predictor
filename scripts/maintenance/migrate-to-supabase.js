@@ -46,14 +46,13 @@ const args = process.argv.slice(2)
 const isDryRun = args.includes('--dry-run')
 const dateArg = args.find((_, i) => args[i - 1] === '--date')
 
-/**
- * レースデータの変換
- */
-function transformRace(race, dateStr) {
-    const firstBoat = race.predictions?.standard?.players?.find(p => p.number === 1)
-        || race.prediction?.players?.find(p => p.number === 1)
+/** 新形式 (predictions.standard.players) または 旧形式 (prediction.players) の選手の配列 */
+function playersOf(race) {
+    return race.predictions?.standard?.players || race.prediction?.players || []
+}
 
-    const players = race.predictions?.standard?.players || race.prediction?.players || []
+/** 勝率・モーター2連率のばらつき（transformRace から移した） */
+function rateStats(players) {
     const winRates = players.map(p => parseFloat(p.winRate)).filter(r => !isNaN(r))
     const motor2Rates = players.map(p => parseFloat(p.motor2Rate)).filter(r => !isNaN(r))
 
@@ -66,6 +65,37 @@ function transformRace(race, dateStr) {
     const motor2RateStddev = motor2Rates.length > 0
         ? Math.sqrt(motor2Rates.reduce((sum, r) => sum + Math.pow(r - motor2Rates.reduce((a, b) => a + b, 0) / motor2Rates.length, 2), 0) / motor2Rates.length)
         : null
+    return { winRateAvg, winRateStddev, motor2RateStddev }
+}
+
+/** races 行の荒れ度の列（transformRace から移した） */
+function volatilityColumns(race) {
+    return {
+        volatility_score: race.volatility?.score || null,
+        volatility_level: race.volatility?.level || null,
+        recommended_model: race.volatility?.recommendedModel || null,
+        volatility_reasons: race.volatility?.reasons || null
+    }
+}
+
+/** races 行の1号艇の列（transformRace から移した） */
+function firstBoatColumns(firstBoat) {
+    return {
+        first_boat_grade: firstBoat?.grade || null,
+        first_boat_win_rate: firstBoat ? parseFloat(firstBoat.winRate) : null,
+        first_boat_motor_2rate: firstBoat ? parseFloat(firstBoat.motor2Rate) : null
+    }
+}
+
+/**
+ * レースデータの変換
+ */
+function transformRace(race, dateStr) {
+    const firstBoat = race.predictions?.standard?.players?.find(p => p.number === 1)
+        || race.prediction?.players?.find(p => p.number === 1)
+
+    const players = playersOf(race)
+    const { winRateAvg, winRateStddev, motor2RateStddev } = rateStats(players)
 
     return {
         race_id: race.raceId,
@@ -73,16 +103,31 @@ function transformRace(race, dateStr) {
         venue_code: race.venueCode,
         race_number: race.raceNumber,
         start_time: race.startTime,
-        volatility_score: race.volatility?.score || null,
-        volatility_level: race.volatility?.level || null,
-        recommended_model: race.volatility?.recommendedModel || null,
-        volatility_reasons: race.volatility?.reasons || null,
-        first_boat_grade: firstBoat?.grade || null,
-        first_boat_win_rate: firstBoat ? parseFloat(firstBoat.winRate) : null,
-        first_boat_motor_2rate: firstBoat ? parseFloat(firstBoat.motor2Rate) : null,
+        ...volatilityColumns(race),
+        ...firstBoatColumns(firstBoat),
         win_rate_avg: winRateAvg,
         win_rate_stddev: winRateStddev,
         motor_2rate_stddev: motor2RateStddev
+    }
+}
+
+/** race_entries 1行（transformEntries から移した） */
+function entryRow(race, player, safeBetPlayer, upsetPlayer) {
+    return {
+        race_id: race.raceId,
+        boat_number: player.number,
+        player_name: player.name?.trim(),
+        grade: player.grade,
+        age: player.age,
+        win_rate: parseFloat(player.winRate) || null,
+        local_win_rate: parseFloat(player.localWinRate) || null,
+        motor_number: player.motorNumber,
+        motor_2rate: parseFloat(player.motor2Rate) || null,
+        boat_number_id: player.boatNumber,
+        boat_2rate: parseFloat(player.boat2Rate) || null,
+        ai_score_standard: player.aiScore,
+        ai_score_safe_bet: safeBetPlayer?.aiScore || null,
+        ai_score_upset_focus: upsetPlayer?.aiScore || null
     }
 }
 
@@ -93,7 +138,7 @@ function transformEntries(race) {
     const entries = []
 
     // 新形式 (predictions.standard.players) または 旧形式 (prediction.players)
-    const standardPlayers = race.predictions?.standard?.players || race.prediction?.players || []
+    const standardPlayers = playersOf(race)
     const safeBetPlayers = race.predictions?.safeBet?.players || []
     const upsetPlayers = race.predictions?.upsetFocus?.players || []
 
@@ -101,25 +146,31 @@ function transformEntries(race) {
         const safeBetPlayer = safeBetPlayers.find(p => p.number === player.number)
         const upsetPlayer = upsetPlayers.find(p => p.number === player.number)
 
-        entries.push({
-            race_id: race.raceId,
-            boat_number: player.number,
-            player_name: player.name?.trim(),
-            grade: player.grade,
-            age: player.age,
-            win_rate: parseFloat(player.winRate) || null,
-            local_win_rate: parseFloat(player.localWinRate) || null,
-            motor_number: player.motorNumber,
-            motor_2rate: parseFloat(player.motor2Rate) || null,
-            boat_number_id: player.boatNumber,
-            boat_2rate: parseFloat(player.boat2Rate) || null,
-            ai_score_standard: player.aiScore,
-            ai_score_safe_bet: safeBetPlayer?.aiScore || null,
-            ai_score_upset_focus: upsetPlayer?.aiScore || null
-        })
+        entries.push(entryRow(race, player, safeBetPlayer, upsetPlayer))
     }
 
     return entries
+}
+
+/** predictions 1行（transformPredictions から移した。新形式の各モデルと旧形式で共通） */
+function predictionRow(race, modelId, pred) {
+    const scores = {}
+    if (pred.players) {
+        for (const player of pred.players) {
+            scores[player.number] = player.aiScore
+        }
+    }
+
+    return {
+        race_id: race.raceId,
+        model_id: modelId,
+        top_pick: pred.topPick,
+        top_2nd: pred.top3?.[1] || null,
+        top_3rd: pred.top3?.[2] || null,
+        confidence: pred.confidence,
+        scores: Object.keys(scores).length > 0 ? scores : null,
+        is_shadow: false
+    }
 }
 
 /**
@@ -140,45 +191,12 @@ function transformPredictions(race) {
             const pred = race.predictions[key]
             if (!pred) continue
 
-            const scores = {}
-            if (pred.players) {
-                for (const player of pred.players) {
-                    scores[player.number] = player.aiScore
-                }
-            }
-
-            predictions.push({
-                race_id: race.raceId,
-                model_id: modelId,
-                top_pick: pred.topPick,
-                top_2nd: pred.top3?.[1] || null,
-                top_3rd: pred.top3?.[2] || null,
-                confidence: pred.confidence,
-                scores: Object.keys(scores).length > 0 ? scores : null,
-                is_shadow: false
-            })
+            predictions.push(predictionRow(race, modelId, pred))
         }
     }
     // 旧形式: prediction (単一)
     else if (race.prediction) {
-        const pred = race.prediction
-        const scores = {}
-        if (pred.players) {
-            for (const player of pred.players) {
-                scores[player.number] = player.aiScore
-            }
-        }
-
-        predictions.push({
-            race_id: race.raceId,
-            model_id: 'standard',
-            top_pick: pred.topPick,
-            top_2nd: pred.top3?.[1] || null,
-            top_3rd: pred.top3?.[2] || null,
-            confidence: pred.confidence,
-            scores: Object.keys(scores).length > 0 ? scores : null,
-            is_shadow: false
-        })
+        predictions.push(predictionRow(race, 'standard', race.prediction))
     }
 
     return predictions
@@ -224,6 +242,16 @@ function transformResult(race) {
     }
 }
 
+/** 書き込みの問い合わせ（await は呼び元に残す。migrateDay から移した） */
+function upsertRows(table, rows, options) {
+    return supabase.from(table).upsert(rows, options)
+}
+
+/** 書き込みの誤りを `<見出し>: <文>` の例外にする（migrateDay から移した） */
+function throwWriteError(label, error) {
+    if (error) throw new Error(`${label}: ${error.message}`)
+}
+
 /**
  * 1日分のデータを移行
  */
@@ -245,20 +273,16 @@ async function migrateDay(dateStr) {
             // 1. races テーブル
             const raceData = transformRace(race, dateStr)
             if (!isDryRun) {
-                const { error: raceError } = await supabase
-                    .from('races')
-                    .upsert(raceData, { onConflict: 'race_id' })
-                if (raceError) throw new Error(`Race: ${raceError.message}`)
+                const { error: raceError } = await upsertRows('races', raceData, { onConflict: 'race_id' })
+                throwWriteError('Race', raceError)
             }
             dayStats.races++
 
             // 2. race_entries テーブル
             const entriesData = transformEntries(race)
             if (entriesData.length > 0 && !isDryRun) {
-                const { error: entriesError } = await supabase
-                    .from('race_entries')
-                    .upsert(entriesData, { onConflict: 'race_id,boat_number' })
-                if (entriesError) throw new Error(`Entries: ${entriesError.message}`)
+                const { error: entriesError } = await upsertRows('race_entries', entriesData, { onConflict: 'race_id,boat_number' })
+                throwWriteError('Entries', entriesError)
             }
             dayStats.entries += entriesData.length
 
@@ -266,13 +290,11 @@ async function migrateDay(dateStr) {
             const predictionsData = transformPredictions(race)
             for (const pred of predictionsData) {
                 if (!isDryRun) {
-                    const { error: predError } = await supabase
-                        .from('predictions')
-                        .upsert(pred, {
-                            onConflict: 'race_id,model_id',
-                            ignoreDuplicates: false
-                        })
-                    if (predError) throw new Error(`Prediction: ${predError.message}`)
+                    const { error: predError } = await upsertRows('predictions', pred, {
+                        onConflict: 'race_id,model_id',
+                        ignoreDuplicates: false
+                    })
+                    throwWriteError('Prediction', predError)
                 }
                 dayStats.predictions++
             }
@@ -280,10 +302,8 @@ async function migrateDay(dateStr) {
             // 4. race_results テーブル
             const resultData = transformResult(race)
             if (resultData && !isDryRun) {
-                const { error: resultError } = await supabase
-                    .from('race_results')
-                    .upsert(resultData, { onConflict: 'race_id' })
-                if (resultError) throw new Error(`Result: ${resultError.message}`)
+                const { error: resultError } = await upsertRows('race_results', resultData, { onConflict: 'race_id' })
+                throwWriteError('Result', resultError)
                 dayStats.results++
             } else if (resultData) {
                 dayStats.results++

@@ -19,7 +19,7 @@
  */
 import { matchRiskRules, draftRiskFields } from "./riskRuleMatcher.js";
 import { SITE_BASE_URL } from "./sns/siteBaseUrl.js";
-import { buildTodayModel } from "../../api/_lib/botToday.js";
+import { buildTodayModel } from "./sns/todayModel.js";
 import {
   TODAY_SCREEN_KEY,
   digestRevision,
