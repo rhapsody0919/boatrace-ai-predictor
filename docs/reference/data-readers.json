@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2377,
+    "sourceFiles": 2384,
     "filesWithAccess": 298,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -15,7 +15,7 @@
     "rpcsWithoutCallers": 7,
     "external": 1,
     "notInSnapshot": 8,
-    "unresolved": 34,
+    "unresolved": 35,
     "parseErrors": 0,
     "uncoveredFiles": 55
   },
@@ -1802,7 +1802,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-pre-race-parsers.js:1868",
+          "ref": "scripts/maintenance/verify-pre-race-parsers.js:1375",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -1846,7 +1846,7 @@
             "scripts/lib/snsTodayDigestV3.js:93",
             "scripts/maintenance/backfill-exhibition-by-race-id.js:48",
             "scripts/maintenance/verify-analogy-v16.js:286",
-            "scripts/maintenance/verify-pre-race-parsers.js:1868",
+            "scripts/maintenance/verify-pre-race-parsers.js:1375",
             "scripts/sns/pushSetsuKiryokuShortStore.js:120",
             "src/services/meetQueries2.js:155",
             "src/services/motorQueries6.js:120",
@@ -1880,7 +1880,7 @@
             "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/lib/snsTodayDigestV3.js:93",
             "scripts/maintenance/verify-analogy-v16.js:286",
-            "scripts/maintenance/verify-pre-race-parsers.js:1868",
+            "scripts/maintenance/verify-pre-race-parsers.js:1375",
             "src/services/meetQueries2.js:155",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
@@ -30299,6 +30299,11 @@
     {
       "file": "scripts/maintenance/verifyData/fakeServiceSupabase.js",
       "line": 51,
+      "reason": "RPC の名前が変数（.rpc(式)）"
+    },
+    {
+      "file": "scripts/maintenance/verifyData/live-odds-wiring-supabase.js",
+      "line": 13,
       "reason": "RPC の名前が変数（.rpc(式)）"
     },
     {

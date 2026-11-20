@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2377 |
+| 読んだファイル | 2384 |
 | 読み書きのあるファイル | 298 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -20,7 +20,7 @@
 | 呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し） | 7 |
 | 外の読み手（手で足した行） | 1 |
 | コードが使うのに写しに無い名前 | 8 |
-| 名前が式で拾えなかった箇所 | 34 |
+| 名前が式で拾えなかった箇所 | 35 |
 | 構文木にできなかったファイル | 0 |
 | 対象外の言語のファイル（Python 等） | 55 |
 
@@ -432,7 +432,7 @@
 - 書き手（4）: 
   - `scripts/daily/generate-predictions.js:1070` upsert(helper:upsertChangedRows) [?]
   - `scripts/lib/exhibitionJobParts.js:70` upsert(helper:upsertChangedRows) [?]
-  - `scripts/maintenance/verify-pre-race-parsers.js:1868` upsert [?] （検査）
+  - `scripts/maintenance/verify-pre-race-parsers.js:1375` upsert [?] （検査）
   - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:32` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -2314,7 +2314,7 @@
 
 ## 拾えなかったもの
 
-- 名前が式（変数・テンプレートの式）の箇所: 34
+- 名前が式（変数・テンプレートの式）の箇所: 35
   - `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:50` 表の名前が変数（.from(式)）
   - `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:15` 表の名前が変数（.from(式)）
   - `scripts/analysis/original-exhibition/check-rewrite.mjs:20` 表の名前が変数（.from(式)）
@@ -2348,6 +2348,7 @@
   - `scripts/maintenance/kb-backfill-load.js:313` 表の名前が変数（.from(式)）
   - `scripts/maintenance/motor-pretest-backfill.js:251` 表の名前が変数（.from(式)）
   - `scripts/maintenance/verifyData/fakeServiceSupabase.js:51` RPC の名前が変数（.rpc(式)）
+  - `scripts/maintenance/verifyData/live-odds-wiring-supabase.js:13` RPC の名前が変数（.rpc(式)）
   - `scripts/sns/pushSetsuKiryokuShortStore.js:37` REST の表の名前が式（/rest/v1/${…}）
 - 構文木にできなかったファイル: 0
 - 対象外の言語で DB を読み書きしうるファイル（Python。拾っていない）: 55
