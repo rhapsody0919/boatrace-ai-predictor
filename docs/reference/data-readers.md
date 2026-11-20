@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2653 |
+| 読んだファイル | 2662 |
 | 読み書きのあるファイル | 319 |
 | 表の読み手（箇所） | 949 |
 | 表の書き手（箇所） | 195 |
@@ -892,12 +892,12 @@
   - `scripts/maintenance/restore-entries-branch-hometown.js:119` select(helper:upsertChangedRows)
   - `scripts/maintenance/verify-analogy-v16.js:321` rest(rest) [is_absent, race_id] （検査）
   - `scripts/maintenance/verify-data-readers.js:369` select(embed) [racer_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:46` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:47` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:51` rest(rest) [race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:48` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:52` rest(rest) [race_id] （検査）
-  - `scripts/maintenance/verify-e2e-har-merge.js:56` rest(rest) [name, race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:53` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-e2e-har-merge.js:57` rest(rest) [name, race_id] （検査）
+  - `scripts/maintenance/verify-e2e-har-merge.js:58` rest(rest) [name, race_id] （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select(embed) [racer_id] （検査）
   - `scripts/maintenance/verifyData/full-picture-scene2-b-8.js:86` rest(rest)
   - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:93` select(helper:upsertChangedRows)
@@ -1797,8 +1797,8 @@
   - `api/_lib/snsClaimCheckReaders.js:310` rest(rest) [channel, id, kind, race_id, state]
   - `scripts/lib/snsAutoPlanRunnerStore.js:64` rest(rest) [*, race_id]
   - `scripts/lib/snsTodayPlannerStore.js:48` rest(rest) [draft_id, id, kind, race_id, state]
-  - `scripts/maintenance/verify-sns-today-plan.js:745` rest(rest) [kind, race_id] （検査）
   - `scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:294` rest(rest) [id, state]
+  - `scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:270` rest(rest) [kind, race_id]
   - `scripts/sns/push-upset-win-short.js:122` rest(rest) [channel, created_at, draft_id, held_reason, id, kind, race_id, state]
   - `scripts/sns/pushFinalsImageStore.js:88` rest(rest) [created_at, draft_id, id, kind, race_id, state, variant]
   - `scripts/sns/pushFullPictureStore.js:109` rest(rest) [channel, deadline_at, draft_id, id, kind, race_id, state, variant]
@@ -1891,12 +1891,12 @@
   - `scripts/maintenance/verify-display-coverage.js:170` rest(rest) [*] （検査）
   - `scripts/maintenance/verify-sns-daily-runner.js:966` rest(rest) [caption_text, format, id, platform, posted_at] （検査）
   - `scripts/maintenance/verify-sns-month-calendar.js:47` rest(rest) （検査）
-  - `scripts/maintenance/verify-sns-today-plan.js:738` rest(rest) [format, send_lane] （検査）
-  - `scripts/maintenance/verify-sns-today-plan.js:762` rest(rest) [id, status] （検査）
   - `scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:290` rest(rest) [bundle_import_id]
   - `scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:298` rest(rest) [id, status]
   - `scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:67` rest(rest)
   - `scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:260` rest(rest)
+  - `scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:263` rest(rest) [format, send_lane]
+  - `scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:287` rest(rest) [id, status]
   - `scripts/maintenance/verifyData/sns-x-delete-scenes-1.js:69` rest(rest)
   - `scripts/sns/delete-x-post.js:123` rest(rest) [format, id, source_data, status, title]
   - `scripts/sns/pushFinalsImageStore.js:110` select(embed) [bundle_import_id]
@@ -1996,8 +1996,8 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 読み手（3）: 
   - `scripts/lib/snsTodayPlannerStore.js:79` rest(rest) [day, post, type_id]
-  - `scripts/maintenance/verify-sns-today-plan.js:755` rest(rest) [day, post, type_id] （検査）
   - `scripts/maintenance/verify-sns-today-variants.js:358` rest(rest) [day] （検査）
+  - `scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:280` rest(rest) [day, post, type_id]
 - 書き手（1）: 
   - `scripts/sns/push-today-types.js:104` upsert(rest) [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: source, updated_at

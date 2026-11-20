@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2653,
+    "sourceFiles": 2662,
     "filesWithAccess": 319,
     "tableReaders": 949,
     "tableWriters": 195,
@@ -7528,15 +7528,6 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:46",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "race_id"
-          ],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verify-e2e-har-merge.js:47",
           "op": "rest",
           "via": "rest",
@@ -7546,7 +7537,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:51",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:48",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7564,7 +7555,16 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:56",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:53",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "race_id"
+          ],
+          "test": true
+        },
+        {
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:57",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7574,7 +7574,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-e2e-har-merge.js:57",
+          "ref": "scripts/maintenance/verify-e2e-har-merge.js:58",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -8440,12 +8440,12 @@
             "scripts/maintenance/delete-phantom-race-days.js:112",
             "scripts/maintenance/racelist-backfill-load.js:199",
             "scripts/maintenance/verify-analogy-v16.js:321",
-            "scripts/maintenance/verify-e2e-har-merge.js:46",
             "scripts/maintenance/verify-e2e-har-merge.js:47",
-            "scripts/maintenance/verify-e2e-har-merge.js:51",
+            "scripts/maintenance/verify-e2e-har-merge.js:48",
             "scripts/maintenance/verify-e2e-har-merge.js:52",
-            "scripts/maintenance/verify-e2e-har-merge.js:56",
+            "scripts/maintenance/verify-e2e-har-merge.js:53",
             "scripts/maintenance/verify-e2e-har-merge.js:57",
+            "scripts/maintenance/verify-e2e-har-merge.js:58",
             "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:106",
             "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:108",
             "scripts/sns/pushSetsuKiryokuShortStore.js:119",
@@ -19916,22 +19916,21 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:745",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "kind",
-            "race_id"
-          ],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:294",
           "op": "rest",
           "via": "rest",
           "columns": [
             "id",
             "state"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:270",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "kind",
+            "race_id"
           ]
         },
         {
@@ -20144,7 +20143,7 @@
             "api/_lib/snsClaimCheckReaders.js:310",
             "scripts/lib/snsAutoPlanRunnerStore.js:64",
             "scripts/lib/snsTodayPlannerStore.js:48",
-            "scripts/maintenance/verify-sns-today-plan.js:745",
+            "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:270",
             "scripts/sns/push-upset-win-short.js:122",
             "scripts/sns/pushFinalsImageStore.js:88",
             "scripts/sns/pushFullPictureStore.js:109",
@@ -20278,7 +20277,7 @@
             "api/_lib/snsClaimCheckReaders.js:308",
             "api/_lib/snsClaimCheckReaders.js:310",
             "scripts/lib/snsTodayPlannerStore.js:48",
-            "scripts/maintenance/verify-sns-today-plan.js:745",
+            "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:270",
             "scripts/sns/push-upset-win-short.js:122",
             "scripts/sns/pushFinalsImageStore.js:88",
             "scripts/sns/pushFullPictureStore.js:109",
@@ -21164,26 +21163,6 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:738",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "format",
-            "send_lane"
-          ],
-          "test": true
-        },
-        {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:762",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "id",
-            "status"
-          ],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:290",
           "op": "rest",
           "via": "rest",
@@ -21211,6 +21190,24 @@
           "op": "rest",
           "via": "rest",
           "columns": []
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:263",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "format",
+            "send_lane"
+          ]
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:287",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "id",
+            "status"
+          ]
         },
         {
           "ref": "scripts/maintenance/verifyData/sns-x-delete-scenes-1.js:69",
@@ -21371,8 +21368,8 @@
             "scripts/maintenance/verify-data-readers.js:179",
             "scripts/maintenance/verify-data-readers.js:201",
             "scripts/maintenance/verify-sns-daily-runner.js:966",
-            "scripts/maintenance/verify-sns-today-plan.js:762",
             "scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:298",
+            "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:287",
             "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushFinalsImageStore.js:165",
             "scripts/sns/pushFullPictureStore.js:115",
@@ -21431,7 +21428,7 @@
             "scripts/lib/snsMetricsRunnerStore.js:62",
             "scripts/lib/snsTodayPlannerStore.js:45",
             "scripts/maintenance/verify-sns-daily-runner.js:966",
-            "scripts/maintenance/verify-sns-today-plan.js:738",
+            "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:263",
             "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushSetsuKiryokuShortStore.js:78",
             "scripts/sns/today-picks.js:98"
@@ -21510,8 +21507,8 @@
             "scripts/lib/snsTodayPlannerStore.js:45",
             "scripts/lib/snsTodayPlannerStore.js:92",
             "scripts/maintenance/verify-data-readers.js:179",
-            "scripts/maintenance/verify-sns-today-plan.js:762",
             "scripts/maintenance/verifyData/sns-auto-plan-scenes-1.js:298",
+            "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:287",
             "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushFullPictureStore.js:145",
             "scripts/sns/today-picks.js:98"
@@ -21879,7 +21876,7 @@
         "send_lane": {
           "readers": [
             "scripts/lib/snsTodayPlannerStore.js:45",
-            "scripts/maintenance/verify-sns-today-plan.js:738",
+            "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:263",
             "scripts/sns/today-picks.js:98"
           ],
           "writers": [],
@@ -22871,17 +22868,6 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-sns-today-plan.js:755",
-          "op": "rest",
-          "via": "rest",
-          "columns": [
-            "day",
-            "post",
-            "type_id"
-          ],
-          "test": true
-        },
-        {
           "ref": "scripts/maintenance/verify-sns-today-variants.js:358",
           "op": "rest",
           "via": "rest",
@@ -22889,6 +22875,16 @@
             "day"
           ],
           "test": true
+        },
+        {
+          "ref": "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:280",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "day",
+            "post",
+            "type_id"
+          ]
         }
       ],
       "writers": [
@@ -22908,8 +22904,8 @@
         "day": {
           "readers": [
             "scripts/lib/snsTodayPlannerStore.js:79",
-            "scripts/maintenance/verify-sns-today-plan.js:755",
             "scripts/maintenance/verify-sns-today-variants.js:358",
+            "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:280",
             "scripts/sns/push-today-types.js:104"
           ],
           "writers": [],
@@ -22918,7 +22914,7 @@
         "type_id": {
           "readers": [
             "scripts/lib/snsTodayPlannerStore.js:79",
-            "scripts/maintenance/verify-sns-today-plan.js:755"
+            "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:280"
           ],
           "writers": [],
           "sql": []
@@ -22926,7 +22922,7 @@
         "post": {
           "readers": [
             "scripts/lib/snsTodayPlannerStore.js:79",
-            "scripts/maintenance/verify-sns-today-plan.js:755"
+            "scripts/maintenance/verifyData/sns-today-plan-scenes-1.js:280"
           ],
           "writers": [],
           "sql": []
