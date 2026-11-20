@@ -427,7 +427,7 @@ await runPredictionRefreshScenes3({ mainRefresh, check, show, raceTables, NOW, q
   check(
     "preRaceHandlers.js: mainRefresh は有効なときだけ動的 import する（無効なときは同じモジュール読み込み）。展示の従来の経路（runLegacyExhibition）は消した（scraping-load-budget spec の P0）",
     !/runLegacyExhibition\(/.test(handlers) &&
-      /await import\("\.\.\/\.\.\/daily\/generate-predictions\.js"\)/.test(
+      /await import\("\.\.\/predictionRun\.js"\)/.test(
         handlers,
       ) &&
       !/^import .*generate-predictions/m.test(handlers),

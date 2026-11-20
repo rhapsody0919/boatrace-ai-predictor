@@ -287,7 +287,7 @@ export function createExhibitionSlotHandler({
 
 /** mainRefresh を、必要なときだけ読み込む（無効なときは、従来と完全に同じ動作にする） */
 const defaultRefresh = async (args) =>
-  (await import("../../daily/generate-predictions.js")).mainRefresh(args);
+  (await import("../predictionRun.js")).mainRefresh(args);
 
 /**
  * スロットの処理（runScrapeJob）の後に、変更を書いたレースの予測を再計算する（案1。plan.md §5）。
