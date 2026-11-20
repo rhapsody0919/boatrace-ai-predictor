@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2342 |
+| 読んだファイル | 2346 |
 | 読み書きのあるファイル | 293 |
 | 表の読み手（箇所） | 949 |
 | 表の書き手（箇所） | 197 |
@@ -260,10 +260,10 @@
 | result_catchup | api/cron/result-catchup.js | 33 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 17 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 18 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 114 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 117 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | sns_daily | api/cron/sns-daily.js | 23 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
-| sns_metrics | api/cron/sns-metrics.js | 29 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
-| sns_send | api/cron/sns-send.js | 84 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_metrics | api/cron/sns-metrics.js | 30 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
+| sns_send | api/cron/sns-send.js | 88 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | venue_motor_stats | api/cron/venue-motor-stats.js | 25 | scrape_job_state, scrape_slots, venue_motor_stats |
 
 ## 表ごとの読み手・書き手
@@ -1442,7 +1442,7 @@
   - `scripts/maintenance/restore-contaminated-race-entries.js:101` select(helper:fetchAll)
   - `scripts/maintenance/restore-entries-branch-hometown.js:62` select(helper:fetchAll)
   - `scripts/maintenance/verifyData/sns-x-delete-scenes-1.js:70` rest(rest)
-  - `scripts/sns/delete-x-post.js:124` rest(rest) [name, racer_id]
+  - `scripts/sns/delete-x-post.js:129` rest(rest) [name, racer_id]
   - `src/services/motorQueries4.js:176` select [name, racer_id]
   - `src/services/racerQueries.js:311` select [birth_date, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
   - `src/services/racerQueries5.js:31` select [birth_date, blood_type, branch, height_cm, hometown, name, name_kana, racer_id, registration_period, weight_kg]
@@ -1761,7 +1761,7 @@
   - `api/_lib/snsClaimCheckReaders.js:318` rest(rest) [channel, upset_win_short_enabled]
   - `api/_lib/snsXSendStore.js:152` rest(rest) [channel, dry_run, mode]
   - `scripts/lib/snsAutoPlanRunnerStore.js:77` rest(rest) [auto_approver_id, channel, dry_run, mode]
-  - `scripts/lib/snsSendRunner.js:680` rest(rest) [channel, dry_run, mode]
+  - `scripts/lib/snsSendRunner.js:206` rest(rest) [channel, dry_run, mode]
   - `scripts/lib/snsTodayPlannerStore.js:106` rest(rest) [auto_approver_id, channel, dry_run, mode]
   - `scripts/sns/push-upset-win-short.js:103` rest(rest) [auto_approver_id, channel, dry_run, mode, upset_win_short_enabled]
   - `scripts/sns/push-upset-win-short.js:115` rest(rest) [auto_approver_id, channel, dry_run, mode]
@@ -1901,7 +1901,7 @@
   - `scripts/maintenance/verifyData/sns-existing-fixes-fixture.js:67` rest(rest)
   - `scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:260` rest(rest)
   - `scripts/maintenance/verifyData/sns-x-delete-scenes-1.js:69` rest(rest)
-  - `scripts/sns/delete-x-post.js:118` rest(rest) [format, id, source_data, status, title]
+  - `scripts/sns/delete-x-post.js:123` rest(rest) [format, id, source_data, status, title]
   - `scripts/sns/pushFinalsImageStore.js:110` select(embed) [bundle_import_id]
   - `scripts/sns/pushFullPictureStore.js:115` rest(rest) [id, source_data]
   - `scripts/sns/pushSetsuKiryokuShortStore.js:78` rest(rest) [format, id]
@@ -1947,12 +1947,12 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 取得のジョブ: sns_metrics, sns_send
 - 読み手（1）: 
-  - `api/_lib/snsTokenStore.js:195` rest(rest) [*, provider]
+  - `api/_lib/snsTokenDb.js:33` rest(rest) [*, provider]
 - 書き手（4）: 
-  - `api/_lib/snsTokenStore.js:198` upsert(rest) [?]
-  - `api/_lib/snsTokenStore.js:217` update(rest) [?]
-  - `api/_lib/snsTokenStore.js:230` update(rest) [?]
-  - `api/_lib/snsTokenStore.js:238` update(rest) [?]
+  - `api/_lib/snsTokenDb.js:36` upsert(rest) [?]
+  - `api/_lib/snsTokenDb.js:55` update(rest) [?]
+  - `api/_lib/snsTokenDb.js:68` update(rest) [?]
+  - `api/_lib/snsTokenDb.js:76` update(rest) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-sns_post_tracking"></a>sns_post_tracking
@@ -2038,7 +2038,7 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 本体で読む RPC: sns_x_slot_room
 - 読み手（1）: 
-  - `scripts/sns/x-slots-check.js:158` rest(rest) [daily_count, kind, weekdays]
+  - `scripts/sns/x-slots-check.js:179` rest(rest) [daily_count, kind, weekdays]
 - 書き手（0）: なし
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: note, updated_at
 
@@ -2054,7 +2054,7 @@
   - `scripts/lib/snsMetricsRunnerStore.js:119` rest(rest) [*, id]
   - `scripts/sns/pushFinalsImageStore.js:94` rest(rest) [daily_baseline_date, daily_external_count, daily_limit, daily_limit_x, id]
   - `scripts/sns/pushSetsuKiryokuShortStore.js:156` rest(rest) [daily_baseline_date, daily_external_count, daily_limit, daily_limit_youtube, expiry_minutes, id, max_source_age_seconds]
-  - `scripts/sns/x-slots-check.js:160` rest(rest) [daily_limit_x]
+  - `scripts/sns/x-slots-check.js:181` rest(rest) [daily_limit_x]
 - 書き手（1）: 
   - `api/_lib/snsXSendStore.js:157` update(rest) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
@@ -2072,20 +2072,20 @@
   - `scripts/lib/snsAutoPlanRunnerStore.js:92` rest(rest) [draft_id, id, state]
   - `scripts/lib/snsDailyRunnerStore.js:55` rest(rest) [channel, draft_id, external_post_id, posted_at, state]
   - `scripts/lib/snsMetricsRunnerStore.js:64` rest(rest) [channel, draft_id, external_post_id, state]
-  - `scripts/lib/snsSendRunner.js:690` rest(rest) [*, id, scheduled_at, state]
-  - `scripts/lib/snsSendRunner.js:697` rest(rest) [external_post_id, id, state]
-  - `scripts/lib/snsSendRunner.js:709` rest(rest) [channel, expires_at, id, parent_job_id, state]
-  - `scripts/lib/snsSendRunner.js:713` rest(rest) [external_post_id, id, state]
-  - `scripts/lib/snsSendRunner.js:722` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage]
-  - `scripts/lib/snsSendRunner.js:729` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage]
-  - `scripts/lib/snsSendRunner.js:735` rest(rest) [channel, error_code, id, state, youtube_stage]
+  - `scripts/lib/snsSendRunner.js:216` rest(rest) [*, id, scheduled_at, state]
+  - `scripts/lib/snsSendRunner.js:223` rest(rest) [external_post_id, id, state]
+  - `scripts/lib/snsSendRunner.js:235` rest(rest) [channel, expires_at, id, parent_job_id, state]
+  - `scripts/lib/snsSendRunner.js:239` rest(rest) [external_post_id, id, state]
+  - `scripts/lib/snsSendRunner.js:248` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage]
+  - `scripts/lib/snsSendRunner.js:255` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage]
+  - `scripts/lib/snsSendRunner.js:261` rest(rest) [channel, error_code, id, state, youtube_stage]
   - `scripts/maintenance/verify-sns-month-calendar.js:46` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-send-runner.js:504` rest(rest) [channel, error_code, id, state, youtube_stage] （検査）
   - `scripts/maintenance/verify-sns-send-runner.js:1568` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage] （検査）
   - `scripts/maintenance/verify-sns-send-runner.js:2236` rest(rest) [attempts, channel, error_code, expires_at, external_post_id, id, snapshot, state, youtube_stage] （検査）
   - `scripts/maintenance/verifyData/sns-metrics-runner-scenes-1.js:269` rest(rest)
   - `scripts/maintenance/verifyData/sns-x-delete-scenes-1.js:67` rest(rest)
-  - `scripts/sns/delete-x-post.js:110` rest(rest) [posted_at]
+  - `scripts/sns/delete-x-post.js:115` rest(rest) [posted_at]
   - `scripts/sns/pushFinalsImageStore.js:104` rest(rest) [attempt_channels, attempt_dates, id, state]
   - `scripts/sns/pushFinalsImageStore.js:110` rest(rest) [attempts, channel, expires_at, id, parent_job_id, state]
   - `scripts/sns/pushFinalsImageStore.js:119` rest(rest) [draft_id, error_code, external_post_id, external_post_url, id, posted_at, state]
@@ -2313,7 +2313,7 @@
 - table `a`: `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:186`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:187`, `scripts/maintenance/verifyData/e2e-har-merge-scenes.js:188`
 - table `eve_race_deadlines`: `scripts/lib/eveDeadlinesJob.js:80`, `scripts/lib/eveDeadlinesJob.js:274`, `scripts/lib/eveDeadlinesJob.js:399`
 - table `racer_career_meta`: `scripts/lib/racerCareerDb.js:108`, `scripts/lib/racerCareerJob.js:504`, `scripts/lib/racerCareerJob.js:553`
-- table `sns_send_events`: `scripts/lib/snsSendRunner.js:646`
+- table `sns_send_events`: `scripts/lib/snsSendRunner.js:172`
 
 ## 拾えなかったもの
 
@@ -2335,7 +2335,7 @@
   - `scripts/lib/racerCareerJob.js:268` 表の名前が変数（.from(式)）
   - `scripts/lib/schemaDetect.js:67` 表の名前が変数（.from(式)）
   - `scripts/lib/snsAutoPlanRunner.js:74` RPC の名前が変数（.rpc(式)）
-  - `scripts/lib/snsSendRunner.js:627` REST の表の名前が式（/rest/v1/${…}）
+  - `scripts/lib/snsSendRunner.js:153` REST の表の名前が式（/rest/v1/${…}）
   - `scripts/maintenance/backfill-kb-gaps.js:204` 表の名前が変数（.from(式)）
   - `scripts/maintenance/backfill-kb-gaps.js:239` 表の名前が変数（.from(式)）
   - `scripts/maintenance/delete-phantom-races.js:178` 表の名前が変数（.from(式)）

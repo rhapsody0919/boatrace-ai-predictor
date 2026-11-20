@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2342,
+    "sourceFiles": 2346,
     "filesWithAccess": 293,
     "tableReaders": 949,
     "tableWriters": 197,
@@ -15325,7 +15325,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/sns/delete-x-post.js:124",
+          "ref": "scripts/sns/delete-x-post.js:129",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -15426,7 +15426,7 @@
             "scripts/maintenance/fan-backfill-load.js:239",
             "scripts/maintenance/fan-backfill-load.js:259",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
-            "scripts/sns/delete-x-post.js:124",
+            "scripts/sns/delete-x-post.js:129",
             "src/services/motorQueries4.js:176",
             "src/services/racerQueries.js:311",
             "src/services/racerQueries5.js:31"
@@ -15440,7 +15440,7 @@
           "readers": [
             "scripts/lib/racerNews/officialGradeAnnouncements.js:164",
             "scripts/maintenance/fix-opening-day-entries-from-b.js:312",
-            "scripts/sns/delete-x-post.js:124",
+            "scripts/sns/delete-x-post.js:129",
             "src/services/motorQueries4.js:176",
             "src/services/racerQueries.js:311",
             "src/services/racerQueries5.js:31"
@@ -19542,7 +19542,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:680",
+          "ref": "scripts/lib/snsSendRunner.js:206",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19672,7 +19672,7 @@
             "api/_lib/snsClaimCheckReaders.js:318",
             "api/_lib/snsXSendStore.js:152",
             "scripts/lib/snsAutoPlanRunnerStore.js:77",
-            "scripts/lib/snsSendRunner.js:680",
+            "scripts/lib/snsSendRunner.js:206",
             "scripts/lib/snsTodayPlannerStore.js:106",
             "scripts/sns/push-upset-win-short.js:103",
             "scripts/sns/push-upset-win-short.js:115",
@@ -19693,7 +19693,7 @@
           "readers": [
             "api/_lib/snsXSendStore.js:152",
             "scripts/lib/snsAutoPlanRunnerStore.js:77",
-            "scripts/lib/snsSendRunner.js:680",
+            "scripts/lib/snsSendRunner.js:206",
             "scripts/lib/snsTodayPlannerStore.js:106",
             "scripts/sns/push-upset-win-short.js:103",
             "scripts/sns/push-upset-win-short.js:115",
@@ -19713,7 +19713,7 @@
           "readers": [
             "api/_lib/snsXSendStore.js:152",
             "scripts/lib/snsAutoPlanRunnerStore.js:77",
-            "scripts/lib/snsSendRunner.js:680",
+            "scripts/lib/snsSendRunner.js:206",
             "scripts/lib/snsTodayPlannerStore.js:106",
             "scripts/sns/push-upset-win-short.js:103",
             "scripts/sns/push-upset-win-short.js:115",
@@ -21286,7 +21286,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/sns/delete-x-post.js:118",
+          "ref": "scripts/sns/delete-x-post.js:123",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -21440,7 +21440,7 @@
             "scripts/maintenance/verify-sns-auto-plan.js:625",
             "scripts/maintenance/verify-sns-daily-runner.js:965",
             "scripts/maintenance/verify-sns-today-plan.js:762",
-            "scripts/sns/delete-x-post.js:118",
+            "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushFinalsImageStore.js:165",
             "scripts/sns/pushFullPictureStore.js:115",
             "scripts/sns/pushFullPictureStore.js:145",
@@ -21499,7 +21499,7 @@
             "scripts/lib/snsTodayPlannerStore.js:45",
             "scripts/maintenance/verify-sns-daily-runner.js:965",
             "scripts/maintenance/verify-sns-today-plan.js:738",
-            "scripts/sns/delete-x-post.js:118",
+            "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushSetsuKiryokuShortStore.js:78",
             "scripts/sns/today-picks.js:98"
           ],
@@ -21579,7 +21579,7 @@
             "scripts/maintenance/verify-data-readers.js:183",
             "scripts/maintenance/verify-sns-auto-plan.js:625",
             "scripts/maintenance/verify-sns-today-plan.js:762",
-            "scripts/sns/delete-x-post.js:118",
+            "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushFullPictureStore.js:145",
             "scripts/sns/today-picks.js:98"
           ],
@@ -21661,7 +21661,7 @@
             "scripts/lib/snsAutoPlanRunnerStore.js:61",
             "scripts/lib/snsDailyRunnerStore.js:60",
             "scripts/lib/snsTodayPlannerStore.js:45",
-            "scripts/sns/delete-x-post.js:118",
+            "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushFullPictureStore.js:115",
             "scripts/sns/today-picks.js:98"
           ],
@@ -21798,7 +21798,7 @@
             "scripts/analysis/youtube-posts-report.js:22",
             "scripts/lib/contentRevisionHistory.js:34",
             "scripts/lib/snsAutoPlanRunnerStore.js:61",
-            "scripts/sns/delete-x-post.js:118"
+            "scripts/sns/delete-x-post.js:123"
           ],
           "writers": [],
           "sql": [
@@ -22388,7 +22388,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsTokenStore.js:195",
+          "ref": "api/_lib/snsTokenDb.js:33",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22399,7 +22399,7 @@
       ],
       "writers": [
         {
-          "ref": "api/_lib/snsTokenStore.js:198",
+          "ref": "api/_lib/snsTokenDb.js:36",
           "op": "upsert",
           "via": "rest",
           "columns": [
@@ -22407,7 +22407,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsTokenStore.js:217",
+          "ref": "api/_lib/snsTokenDb.js:55",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -22415,7 +22415,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsTokenStore.js:230",
+          "ref": "api/_lib/snsTokenDb.js:68",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -22423,7 +22423,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsTokenStore.js:238",
+          "ref": "api/_lib/snsTokenDb.js:76",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -22437,11 +22437,11 @@
       "columns": {
         "provider": {
           "readers": [
-            "api/_lib/snsTokenStore.js:195",
-            "api/_lib/snsTokenStore.js:198",
-            "api/_lib/snsTokenStore.js:217",
-            "api/_lib/snsTokenStore.js:230",
-            "api/_lib/snsTokenStore.js:238"
+            "api/_lib/snsTokenDb.js:33",
+            "api/_lib/snsTokenDb.js:36",
+            "api/_lib/snsTokenDb.js:55",
+            "api/_lib/snsTokenDb.js:68",
+            "api/_lib/snsTokenDb.js:76"
           ],
           "writers": [],
           "sql": []
@@ -22483,8 +22483,8 @@
         },
         "locked_by": {
           "readers": [
-            "api/_lib/snsTokenStore.js:230",
-            "api/_lib/snsTokenStore.js:238"
+            "api/_lib/snsTokenDb.js:68",
+            "api/_lib/snsTokenDb.js:76"
           ],
           "writers": [],
           "sql": []
@@ -23269,7 +23269,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/sns/x-slots-check.js:158",
+          "ref": "scripts/sns/x-slots-check.js:179",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23288,7 +23288,7 @@
       "columns": {
         "kind": {
           "readers": [
-            "scripts/sns/x-slots-check.js:158"
+            "scripts/sns/x-slots-check.js:179"
           ],
           "writers": [],
           "sql": [
@@ -23297,7 +23297,7 @@
         },
         "daily_count": {
           "readers": [
-            "scripts/sns/x-slots-check.js:158"
+            "scripts/sns/x-slots-check.js:179"
           ],
           "writers": [],
           "sql": [
@@ -23306,7 +23306,7 @@
         },
         "weekdays": {
           "readers": [
-            "scripts/sns/x-slots-check.js:158"
+            "scripts/sns/x-slots-check.js:179"
           ],
           "writers": [],
           "sql": [
@@ -23394,7 +23394,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/x-slots-check.js:160",
+          "ref": "scripts/sns/x-slots-check.js:181",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23603,7 +23603,7 @@
         "daily_limit_x": {
           "readers": [
             "scripts/sns/pushFinalsImageStore.js:94",
-            "scripts/sns/x-slots-check.js:160"
+            "scripts/sns/x-slots-check.js:181"
           ],
           "writers": [],
           "sql": [
@@ -23725,7 +23725,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:690",
+          "ref": "scripts/lib/snsSendRunner.js:216",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23736,7 +23736,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:697",
+          "ref": "scripts/lib/snsSendRunner.js:223",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23746,7 +23746,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:709",
+          "ref": "scripts/lib/snsSendRunner.js:235",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23758,7 +23758,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:713",
+          "ref": "scripts/lib/snsSendRunner.js:239",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23768,7 +23768,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:722",
+          "ref": "scripts/lib/snsSendRunner.js:248",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23784,7 +23784,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:729",
+          "ref": "scripts/lib/snsSendRunner.js:255",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23800,7 +23800,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:735",
+          "ref": "scripts/lib/snsSendRunner.js:261",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23878,7 +23878,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/sns/delete-x-post.js:110",
+          "ref": "scripts/sns/delete-x-post.js:115",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -24019,13 +24019,13 @@
             "api/_lib/snsXSendStore.js:70",
             "api/admin/sns-hub/delete-x-post.js:39",
             "scripts/lib/snsAutoPlanRunnerStore.js:92",
-            "scripts/lib/snsSendRunner.js:690",
-            "scripts/lib/snsSendRunner.js:697",
-            "scripts/lib/snsSendRunner.js:709",
-            "scripts/lib/snsSendRunner.js:713",
-            "scripts/lib/snsSendRunner.js:722",
-            "scripts/lib/snsSendRunner.js:729",
-            "scripts/lib/snsSendRunner.js:735",
+            "scripts/lib/snsSendRunner.js:216",
+            "scripts/lib/snsSendRunner.js:223",
+            "scripts/lib/snsSendRunner.js:235",
+            "scripts/lib/snsSendRunner.js:239",
+            "scripts/lib/snsSendRunner.js:248",
+            "scripts/lib/snsSendRunner.js:255",
+            "scripts/lib/snsSendRunner.js:261",
             "scripts/maintenance/verify-sns-send-runner.js:1568",
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/maintenance/verify-sns-send-runner.js:504",
@@ -24083,13 +24083,13 @@
             "scripts/lib/snsAutoPlanRunnerStore.js:92",
             "scripts/lib/snsDailyRunnerStore.js:55",
             "scripts/lib/snsMetricsRunnerStore.js:64",
-            "scripts/lib/snsSendRunner.js:690",
-            "scripts/lib/snsSendRunner.js:697",
-            "scripts/lib/snsSendRunner.js:709",
-            "scripts/lib/snsSendRunner.js:713",
-            "scripts/lib/snsSendRunner.js:722",
-            "scripts/lib/snsSendRunner.js:729",
-            "scripts/lib/snsSendRunner.js:735",
+            "scripts/lib/snsSendRunner.js:216",
+            "scripts/lib/snsSendRunner.js:223",
+            "scripts/lib/snsSendRunner.js:235",
+            "scripts/lib/snsSendRunner.js:239",
+            "scripts/lib/snsSendRunner.js:248",
+            "scripts/lib/snsSendRunner.js:255",
+            "scripts/lib/snsSendRunner.js:261",
             "scripts/maintenance/verify-sns-send-runner.js:1568",
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/maintenance/verify-sns-send-runner.js:504",
@@ -24117,8 +24117,8 @@
         "snapshot": {
           "readers": [
             "api/_lib/snsXSendStore.js:70",
-            "scripts/lib/snsSendRunner.js:722",
-            "scripts/lib/snsSendRunner.js:729",
+            "scripts/lib/snsSendRunner.js:248",
+            "scripts/lib/snsSendRunner.js:255",
             "scripts/maintenance/verify-sns-send-runner.js:1568",
             "scripts/maintenance/verify-sns-send-runner.js:2236"
           ],
@@ -24172,7 +24172,7 @@
           "readers": [
             "api/_lib/snsXSendStore.js:137",
             "api/_lib/snsXSendStore.js:70",
-            "scripts/lib/snsSendRunner.js:690",
+            "scripts/lib/snsSendRunner.js:216",
             "scripts/sns/pushResearchImageStore.js:66",
             "scripts/sns/pushSetsuKiryokuShortStore.js:166",
             "scripts/sns/pushSetsuKiryokuShortStore.js:175"
@@ -24186,8 +24186,8 @@
         "attempts": {
           "readers": [
             "api/_lib/snsXSendStore.js:137",
-            "scripts/lib/snsSendRunner.js:722",
-            "scripts/lib/snsSendRunner.js:729",
+            "scripts/lib/snsSendRunner.js:248",
+            "scripts/lib/snsSendRunner.js:255",
             "scripts/maintenance/verify-sns-send-runner.js:1568",
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/sns/pushFinalsImageStore.js:110",
@@ -24220,9 +24220,9 @@
           "readers": [
             "api/_lib/snsXSendStore.js:137",
             "api/_lib/snsXSendStore.js:70",
-            "scripts/lib/snsSendRunner.js:722",
-            "scripts/lib/snsSendRunner.js:729",
-            "scripts/lib/snsSendRunner.js:735",
+            "scripts/lib/snsSendRunner.js:248",
+            "scripts/lib/snsSendRunner.js:255",
+            "scripts/lib/snsSendRunner.js:261",
             "scripts/maintenance/verify-sns-send-runner.js:1568",
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/maintenance/verify-sns-send-runner.js:504",
@@ -24245,10 +24245,10 @@
             "api/_lib/snsXSendStore.js:70",
             "scripts/lib/snsDailyRunnerStore.js:55",
             "scripts/lib/snsMetricsRunnerStore.js:64",
-            "scripts/lib/snsSendRunner.js:697",
-            "scripts/lib/snsSendRunner.js:713",
-            "scripts/lib/snsSendRunner.js:722",
-            "scripts/lib/snsSendRunner.js:729",
+            "scripts/lib/snsSendRunner.js:223",
+            "scripts/lib/snsSendRunner.js:239",
+            "scripts/lib/snsSendRunner.js:248",
+            "scripts/lib/snsSendRunner.js:255",
             "scripts/maintenance/verify-sns-send-runner.js:1568",
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/sns/pushFinalsImageStore.js:119",
@@ -24279,7 +24279,7 @@
             "api/_lib/snsXSendStore.js:137",
             "api/_lib/snsXSendStore.js:70",
             "scripts/lib/snsDailyRunnerStore.js:55",
-            "scripts/sns/delete-x-post.js:110",
+            "scripts/sns/delete-x-post.js:115",
             "scripts/sns/pushFinalsImageStore.js:119",
             "scripts/sns/pushResearchImageStore.js:66",
             "scripts/sns/pushSetsuKiryokuShortStore.js:166"
@@ -24308,10 +24308,10 @@
           "readers": [
             "scripts/lib/snsDailyRunnerStore.js:55",
             "scripts/lib/snsMetricsRunnerStore.js:64",
-            "scripts/lib/snsSendRunner.js:709",
-            "scripts/lib/snsSendRunner.js:722",
-            "scripts/lib/snsSendRunner.js:729",
-            "scripts/lib/snsSendRunner.js:735",
+            "scripts/lib/snsSendRunner.js:235",
+            "scripts/lib/snsSendRunner.js:248",
+            "scripts/lib/snsSendRunner.js:255",
+            "scripts/lib/snsSendRunner.js:261",
             "scripts/maintenance/verify-sns-send-runner.js:1568",
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/maintenance/verify-sns-send-runner.js:504",
@@ -24331,9 +24331,9 @@
           "readers": [
             "api/_lib/snsXSendStore.js:137",
             "api/_lib/snsXSendStore.js:70",
-            "scripts/lib/snsSendRunner.js:709",
-            "scripts/lib/snsSendRunner.js:722",
-            "scripts/lib/snsSendRunner.js:729",
+            "scripts/lib/snsSendRunner.js:235",
+            "scripts/lib/snsSendRunner.js:248",
+            "scripts/lib/snsSendRunner.js:255",
             "scripts/maintenance/verify-sns-send-runner.js:1568",
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/sns/pushFinalsImageStore.js:110",
@@ -24402,7 +24402,7 @@
         },
         "parent_job_id": {
           "readers": [
-            "scripts/lib/snsSendRunner.js:709",
+            "scripts/lib/snsSendRunner.js:235",
             "scripts/sns/pushFinalsImageStore.js:110"
           ],
           "writers": [],
@@ -24416,9 +24416,9 @@
         "youtube_stage": {
           "readers": [
             "api/_lib/snsXSendStore.js:70",
-            "scripts/lib/snsSendRunner.js:722",
-            "scripts/lib/snsSendRunner.js:729",
-            "scripts/lib/snsSendRunner.js:735",
+            "scripts/lib/snsSendRunner.js:248",
+            "scripts/lib/snsSendRunner.js:255",
+            "scripts/lib/snsSendRunner.js:261",
             "scripts/maintenance/verify-sns-send-runner.js:1568",
             "scripts/maintenance/verify-sns-send-runner.js:2236",
             "scripts/maintenance/verify-sns-send-runner.js:504"
@@ -29930,7 +29930,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 114,
+      "reachableFiles": 117,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29960,7 +29960,7 @@
           "scripts/lib/snsPostTracking.js:76"
         ],
         "sns_send_events": [
-          "scripts/lib/snsSendRunner.js:646"
+          "scripts/lib/snsSendRunner.js:172"
         ],
         "sns_strategy_insights": [
           "api/_lib/snsHubHelpers.js:179"
@@ -30004,7 +30004,7 @@
     {
       "job": "sns_metrics",
       "entry": "api/cron/sns-metrics.js",
-      "reachableFiles": 29,
+      "reachableFiles": 30,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -30029,10 +30029,10 @@
           "scripts/lib/snsMetricsRunnerStore.js:99"
         ],
         "sns_oauth_tokens": [
-          "api/_lib/snsTokenStore.js:198",
-          "api/_lib/snsTokenStore.js:217",
-          "api/_lib/snsTokenStore.js:230",
-          "api/_lib/snsTokenStore.js:238"
+          "api/_lib/snsTokenDb.js:36",
+          "api/_lib/snsTokenDb.js:55",
+          "api/_lib/snsTokenDb.js:68",
+          "api/_lib/snsTokenDb.js:76"
         ],
         "sns_strategy_insights": [
           "api/_lib/snsHubHelpers.js:179"
@@ -30042,7 +30042,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 84,
+      "reachableFiles": 88,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -30063,13 +30063,13 @@
           "api/_lib/snsHubHelpers.js:136"
         ],
         "sns_oauth_tokens": [
-          "api/_lib/snsTokenStore.js:198",
-          "api/_lib/snsTokenStore.js:217",
-          "api/_lib/snsTokenStore.js:230",
-          "api/_lib/snsTokenStore.js:238"
+          "api/_lib/snsTokenDb.js:36",
+          "api/_lib/snsTokenDb.js:55",
+          "api/_lib/snsTokenDb.js:68",
+          "api/_lib/snsTokenDb.js:76"
         ],
         "sns_send_events": [
-          "scripts/lib/snsSendRunner.js:646"
+          "scripts/lib/snsSendRunner.js:172"
         ],
         "sns_strategy_insights": [
           "api/_lib/snsHubHelpers.js:179"
@@ -30166,7 +30166,7 @@
       "kind": "table",
       "name": "sns_send_events",
       "refs": [
-        "scripts/lib/snsSendRunner.js:646"
+        "scripts/lib/snsSendRunner.js:172"
       ]
     }
   ],
@@ -30258,7 +30258,7 @@
     },
     {
       "file": "scripts/lib/snsSendRunner.js",
-      "line": 627,
+      "line": 153,
       "reason": "REST の表の名前が式（/rest/v1/${…}）"
     },
     {

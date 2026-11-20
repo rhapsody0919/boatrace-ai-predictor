@@ -301,7 +301,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snsObservationCollector.js` | — | collectDueObservations, mockObservationProvider |
 | `scripts/lib/snsPostTracking.js` | X の親の投稿の UTM（sns-pdca-loop tasks 23、plan §2・§5、spec C3）。 | insertTrackingUrl, prepareRaceTracking, createPostTrackingStore |
 | `scripts/lib/snsScreenMarkers.js` | 送る前のリンク先の表示の確認（sns-pdca-loop tasks 10、spec A2、ADR 0091）で見る、画面ごとの印。 | SCREEN_MARKERS, SCREEN_TABS |
-| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | headlessNeed, sendFailureOf, runSnsSend, createPostgrestReader, createPostgrestEventWriter ほか17件 |
+| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createPostgrestEventWriter, createSnsSendStore, pickDueJobs |
+| `scripts/lib/snsSendRunnerParts.js` | snsSendRunner.js（SNS の送信の runner）から移した、定数・小さな関数・runSnsSend の中の塊（実行の各段）。 | headlessNeed, youtubeQuotaDayWait, sendFailureOf, keptRetry, createRunState ほか26件 |
+| `scripts/lib/snsSendRunnerSend.js` | snsSendRunnerParts.js から分けた、候補を順に送る段（sendCandidates）と、非公開で残した YouTube の見直しの段（res… | sendCandidates, resumeRetainedJobs |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTodayCourseWinPost.js` | /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」）の本文と、その機械の検査（純関数）。 | buildCourseWinPost, checkCourseWinPost, COURSE_WIN_FOOT, COURSE_WIN_LINK_LEAD, xWeightedLength |
 | `scripts/lib/snsTodayDigestV3.js` | /today の X 投稿の型 v3「今日はこれだけ」（BOA-1314、オーナー 2026-11-04 承認、hq の台帳 TD02）。文だけで画像は無い。7… | loadTodayV3Material, buildTodayDigestV3, checkTodayDigestV3 |
@@ -533,4 +535,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 491 ファイル / export 2781 件。
+対象 493 ファイル / export 2797 件。
