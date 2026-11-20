@@ -26,7 +26,7 @@ import {
   scrapeVenueMotorStats,
   toMotorStatsRow,
   writeMotorStatsRows,
-} from "../daily/scrape-venue-motor-stats.js";
+} from "./venueMotorStats/scrape.js";
 
 /** 会場（別ドメイン）の同時取得数 */
 export const VENUE_MOTOR_STATS_CONCURRENCY = 4;
