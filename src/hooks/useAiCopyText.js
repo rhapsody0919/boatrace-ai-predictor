@@ -54,7 +54,8 @@ import { isRaceCancelled } from "../utils/raceCancellation";
 import { splitRacerName } from "../utils/racerName";
 
 // courseStats: useSixBoatCourseStats の戻り値。想定コース1着率の行に使う（データ出走表と同じ値、BOA-1296）
-function buildRows(
+// export は verify-ai-copy-text.js が行の組み立てを直に呼ぶため（画面からは useAiCopyText を通す）
+export function buildRows(
   t,
   players,
   analysis,

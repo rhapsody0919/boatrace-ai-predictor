@@ -139,8 +139,8 @@ const build = (lang, overrides = {}) => {
 // raceIndicators の整形・訳語は実物を使う（JSX は esbuild で変換）。
 const bundled = await bundle({
   stdin: {
-    contents: fs.readFileSync(path.join(ROOT, "src/hooks/useAiCopyText.js"), "utf8") +
-      "\nexport { buildRows };" +
+    // 製品のフックの本文は読まず、export を組んで呼ぶ（buildRows は製品の export）
+    contents: 'export { buildRows, useAiCopyText } from "./useAiCopyText.js";' +
       '\nexport { buildBasicIndicatorRows, buildIndicatorRows, buildOriginalExhibitionRows } from "../components/race/raceIndicators";',
     resolveDir: path.join(ROOT, "src/hooks"),
     loader: "js",
