@@ -1,10 +1,10 @@
 /**
  * cron-entry-probe.js - api/cron の入口と scripts/lib/scrapeJobs/preRaceHandlers.js の配線を、本文の字でなく、import の差し替えで見る（verify の部品）。
  *
- * cronEntry(file): api/cron/{file}.js を、本体（preRaceHandlers.js・predictionOddsHandlers.js）と予測の再計算（generate-predictions.js）を
- *   偽（cron-entry-fakes.js）にして新しく読み込み、config・default と、作り手の呼び出し（made）・読み込まれた偽（loaded）を返す。
- *   入口が generate-predictions.js を直に import すれば loaded に predictions が出る。
- * preRaceRefresh(): preRaceHandlers.js を、generate-predictions.js・scrape-exhibition-data.js・store.js を偽にして新しく読み込み、
+ * cronEntry(file): api/cron/{file}.js を、本体（preRaceHandlers.js・predictionOddsHandlers.js）と予測の再計算（generate-predictions.js・
+ *   その本体の predictionRun.js）を偽（cron-entry-fakes.js）にして新しく読み込み、config・default と、作り手の呼び出し（made）・読み込まれた偽（loaded）を返す。
+ *   入口が generate-predictions.js か predictionRun.js を直に import すれば loaded に predictions が出る。
+ * preRaceRefresh(): preRaceHandlers.js を、予測の再計算（predictionRun.js。generate-predictions.js も念のため）・scrape-exhibition-data.js・store.js を偽にして新しく読み込み、
  *   読み込みの直後の loaded と、展示のハンドラー（mode=live・Vercel Cron の起動）が渡す既定の refresh を1回呼んだ後の loaded・再計算の引数を返す。
  * oddsWiring(): predictionOddsHandlers.js を、共通ラッパ（cronWrapper.js）・オッズのスロットのハンドラー（oddsHandlers.js）・store.js を偽にして
  *   新しく読み込み、createOddsCronHandlerWithPredictionOdds() の既定のハンドラーを1回呼んで、runScrapeJob へ渡した引数と作られたスロットのハンドラーを返す。
@@ -20,6 +20,7 @@ const PRE_RACE = import.meta.resolve("../../lib/scrapeJobs/preRaceHandlers.js");
 const PREDICTION_ODDS = import.meta
   .resolve("../../lib/scrapeJobs/predictionOddsHandlers.js");
 const GENERATE = import.meta.resolve("../../daily/generate-predictions.js");
+const PREDICTION_RUN = import.meta.resolve("../../lib/predictionRun.js");
 const LEGACY_EXHIBITION = import.meta
   .resolve("../../daily/scrape-exhibition-data.js");
 const STORE = import.meta.resolve("../../lib/scrapeJobs/store.js");
@@ -38,6 +39,7 @@ export async function cronEntry(file) {
     [PRE_RACE]: fakeOf(FAKES, "preRaceHandlers", n),
     [PREDICTION_ODDS]: fakeOf(FAKES, "predictionOddsHandlers", n),
     [GENERATE]: fakeOf(FAKES, "predictions", n),
+    [PREDICTION_RUN]: fakeOf(FAKES, "predictions", n),
   }));
   return {
     config: mod.config,
@@ -51,6 +53,7 @@ export async function preRaceRefresh(args) {
   const rec = fresh("live");
   const mod = await probeImport(PRE_RACE, (n) => ({
     [GENERATE]: fakeOf(FAKES, "predictions", n),
+    [PREDICTION_RUN]: fakeOf(FAKES, "predictions", n),
     [LEGACY_EXHIBITION]: fakeOf(FAKES, "legacyExhibition", n),
     [STORE]: fakeOf(FAKES, "store", n),
   }));

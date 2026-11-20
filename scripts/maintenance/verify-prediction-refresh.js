@@ -30,6 +30,7 @@ import {
 import { mainRefresh as mainRefreshRaw } from "../daily/generate-predictions.js";
 import { scrapeAndUpsertRaces } from "../daily/scrape-exhibition-data.js";
 import { createFakeClient } from "./verifyData/prediction-refresh-fake-client.js";
+import { preRaceRefresh } from "./verifyData/cron-entry-probe.js";
 import { runPredictionRefreshScenes1 } from "./verifyData/prediction-refresh-scenes-1.js";
 import { runPredictionRefreshScenes2, runPredictionRefreshScenes3 } from "./verifyData/prediction-refresh-scenes-2.js";
 import { runPredictionRefreshScenes4 } from "./verifyData/prediction-refresh-scenes-3.js";
@@ -424,13 +425,20 @@ await runPredictionRefreshScenes3({ mainRefresh, check, show, raceTables, NOW, q
   );
   // 展示・レース情報の Vercel 関数の本体は scripts/lib/scrapeJobs/preRaceHandlers.js（api/cron/exhibition.js・race-info.js は薄い入口）
   const handlers = read("scripts/lib/scrapeJobs/preRaceHandlers.js");
+  // 動的 import の先は字でなく振る舞いで見る: 予測の再計算の本（predictionRun.js・generate-predictions.js）を偽にして preRaceHandlers.js を読み込み、
+  // 読み込みの直後は偽が読まれず、既定の refresh を1回呼ぶと偽が読まれ、その mainRefresh に引数がそのまま渡る（verifyData/cron-entry-probe.js）
+  const refreshArgs = { isDryRun: false, specificRaceIds: ["probe-race"] };
+  const probe = await preRaceRefresh(refreshArgs);
   check(
     "preRaceHandlers.js: mainRefresh は有効なときだけ動的 import する（無効なときは同じモジュール読み込み）。展示の従来の経路（runLegacyExhibition）は消した（scraping-load-budget spec の P0）",
     !/runLegacyExhibition\(/.test(handlers) &&
-      /await import\("\.\.\/predictionRun\.js"\)/.test(
-        handlers,
-      ) &&
-      !/^import .*generate-predictions/m.test(handlers),
+      !/^import .*(generate-predictions|predictionRun)/m.test(handlers) &&
+      probe.status === 200 &&
+      !probe.loadedAtImport.includes("predictions") &&
+      probe.loadedAfter.includes("predictions") &&
+      probe.refreshes.length === 1 &&
+      probe.refreshes[0][0] === refreshArgs,
+    show({ status: probe.status, loadedAtImport: probe.loadedAtImport, loadedAfter: probe.loadedAfter, refreshes: probe.refreshes.length }),
   );
   check(
     "preRaceHandlers.js: レース情報・展示のスロットの経路は、全スロットの完了後に、変更を書いたレースについて refreshAfterChange を呼ぶ（スロットのリースの外）",
