@@ -153,7 +153,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/fortuneTelling/shichuSuimei.js` | 四柱推命（日柱まで。時柱は出生時刻不明のため省略、spec.md準拠） | calculateScore |
 | `scripts/lib/fortuneTelling/westernAstrology.js` | 西洋占星術（太陽星座ベースのトランジット計算） | calculateScore |
 | `scripts/lib/ga4MeasurementBreaks.js` | GA4 の計測方法が変わった日（この日の前後で PV を比較してはいけない日）の一覧と、 | ga4PvBreaksWithin, formatGa4PvBreakNotice, GA4_PV_BREAKS |
-| `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, jobKeysFor, createRestJobStateClient, shouldSkipOnGha ほか9件 |
+| `scripts/lib/ghaSkipGate.js` | GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。 | evaluateJobHealth, decideFromRows, createRestJobStateClient, shouldSkipOnGha, isGhaFetchStopped ほか4件 |
 | `scripts/lib/googleServiceAuth.js` | Googleサービスアカウント認証の共通ヘルパー（BOA-139） | getGoogleAuthClient |
 | `scripts/lib/harville.js` | — | — |
 | `scripts/lib/hitCalculator.js` | 的中判定ユーティリティ | buildPredictionHitUpdate, calculateHits, isWinHit, isTrifectaHit, isTrioHit ほか3件 |
@@ -292,6 +292,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/fetchCounter.js` | 取得先への取得の数を数え、fetch_counts（マイグレーション185）へ足す（BOA-1145 P3 = spec §7.1 の M2、ADR-0101 … | fetchKindOf, fetchTargetOf, jstDayHour, createFetchCounter, FETCH_COUNT_RPC |
 | `scripts/lib/scrapeJobs/fetchCounts.js` | M1: 最終 outcome と累積 attempts からの固定ページ数による近似。純粋関数。 | validateTargetDate, dailyFetchCounts, FETCH_COUNT_NOTES |
 | `scripts/lib/scrapeJobs/finalOddsHandlers.js` | 締切時オッズ（公式）の取り直し（BOA-496）の Vercel Cron ハンドラー。api/cron/odds-final.js から使う。 | parseFinalOddsRaceId, savedPagesOf, parseFinalOddsPage, computeFinalOddsDigest, createFinalOddsSlotHandler ほか3件 |
+| `scripts/lib/scrapeJobs/ghaSkipGateParts.js` | — | openBreakerKey, resultMakers, dailyTargetInstant, buildRestJobStateClient, jobKeysFor ほか16件 |
 | `scripts/lib/scrapeJobs/htmlFetch.js` | politeFetch（Response を返す）を、既存のスクレイパー（scrape-to-json.js・scrape-pcexpect.js）が受け取る | makeFetchHtml |
 | `scripts/lib/scrapeJobs/monitor.js` | データ取得の監視（完了の定義C、plan.md §7）。予定表（scrape_slots）とジョブ状態（scrape_job_state）から、 | postSlack, runMonitor |
 | `scripts/lib/scrapeJobs/monitorAlerts.js` | — | evaluateExpired, evaluateRacesPresent, evaluateWindowRates, evaluateDetectionLag, evaluateJobStates ほか2件 |
@@ -594,4 +595,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 552 ファイル / export 3018 件。
+対象 553 ファイル / export 3034 件。

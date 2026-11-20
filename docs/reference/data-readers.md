@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2424 |
+| 読んだファイル | 2425 |
 | 読み書きのあるファイル | 301 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -244,7 +244,7 @@
 | outcome_distribution_update | api/cron/outcome-distribution-update.js | 28 | nige_outcome_distribution, outcome_distribution, scrape_job_state, scrape_slots |
 | pcexpect | api/cron/pcexpect.js | 25 | external_predictions, scrape_job_state, scrape_slots |
 | pit_reports | api/cron/pit-reports.js | 29 | race_pit_comments, race_pit_reports, scrape_job_state, scrape_slots |
-| point_rank | api/cron/point-rank.js | 37 | racer_series_points, scrape_job_state, scrape_slots |
+| point_rank | api/cron/point-rank.js | 38 | racer_series_points, scrape_job_state, scrape_slots |
 | pseudo | api/cron/scrape-pseudo.js | 22 | scrape_job_state, scrape_slots |
 | race_info | api/cron/race-info.js | 56 | exhibition_data, predictions, race_conditions, race_entries, races, scrape_job_state, scrape_slots |
 | race_notices | api/cron/race-notices.js | 31 | race_notices_health, race_special_notes, scrape_job_state, scrape_slots |
@@ -1678,10 +1678,10 @@
 - 読み手（13）: 
   - `scripts/lib/dataHealth/job.js:98` select [job, last_report]
   - `scripts/lib/eveDeadlinesJob.js:362` select [job, last_target_date]
-  - `scripts/lib/ghaSkipGate.js:450` rest(rest)
   - `scripts/lib/motorPretestJob.js:176` select [job, last_target_date, mode]
   - `scripts/lib/racesInit/job.js:132` select [job, mode]
   - `scripts/lib/racesInit/predictCodeCheck.js:86` select [job, last_report]
+  - `scripts/lib/scrapeJobs/ghaSkipGateParts.js:93` rest(rest)
   - `scripts/lib/scrapeJobs/monitorInput.js:36` select [*]
   - `scripts/lib/scrapeJobs/storeBreaker.js:37` select [?, job]
   - `scripts/lib/scrapeJobs/storeParts.js:35` select [*, job]

@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2424,
+    "sourceFiles": 2425,
     "filesWithAccess": 301,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -18337,12 +18337,6 @@
           ]
         },
         {
-          "ref": "scripts/lib/ghaSkipGate.js:450",
-          "op": "rest",
-          "via": "rest",
-          "columns": []
-        },
-        {
           "ref": "scripts/lib/motorPretestJob.js:176",
           "op": "select",
           "via": "client",
@@ -18369,6 +18363,12 @@
             "job",
             "last_report"
           ]
+        },
+        {
+          "ref": "scripts/lib/scrapeJobs/ghaSkipGateParts.js:93",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
         },
         {
           "ref": "scripts/lib/scrapeJobs/monitorInput.js:36",
@@ -29395,7 +29395,7 @@
     {
       "job": "point_rank",
       "entry": "api/cron/point-rank.js",
-      "reachableFiles": 37,
+      "reachableFiles": 38,
       "writes": {
         "racer_series_points": [
           "scripts/daily/scrape-point-rank.js:399"
