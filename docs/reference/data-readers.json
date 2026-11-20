@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2459,
+    "sourceFiles": 2506,
     "filesWithAccess": 306,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -7499,7 +7499,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/restore-contaminated-race-entries.js:206",
+          "ref": "scripts/maintenance/restore-contaminated-race-entries.js:169",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
@@ -8280,7 +8280,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-racer-ids.js:228",
+          "ref": "scripts/maintenance/backfill-racer-ids.js:171",
           "op": "update",
           "via": "client",
           "columns": [
@@ -8304,7 +8304,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/restore-contaminated-race-entries.js:206",
+          "ref": "scripts/maintenance/restore-contaminated-race-entries.js:169",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -8444,7 +8444,7 @@
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
             "scripts/maintenance/backfill-race-entries-racer-id.js:131",
             "scripts/maintenance/backfill-racer-ids.js:128",
-            "scripts/maintenance/backfill-racer-ids.js:228",
+            "scripts/maintenance/backfill-racer-ids.js:171",
             "scripts/maintenance/check-morning-init-shadow.js:121",
             "scripts/maintenance/delete-phantom-race-days.js:112",
             "scripts/maintenance/migrate-to-supabase.js:259",
@@ -8563,7 +8563,7 @@
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
             "scripts/maintenance/backfill-race-entries-racer-id.js:131",
             "scripts/maintenance/backfill-racer-ids.js:128",
-            "scripts/maintenance/backfill-racer-ids.js:228",
+            "scripts/maintenance/backfill-racer-ids.js:171",
             "scripts/maintenance/check-morning-init-shadow.js:121",
             "scripts/maintenance/delete-phantom-race-days.js:112",
             "scripts/maintenance/migrate-to-supabase.js:259",
@@ -8983,7 +8983,7 @@
           "writers": [
             "scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127",
             "scripts/maintenance/backfill-race-entries-racer-id.js:131",
-            "scripts/maintenance/backfill-racer-ids.js:228"
+            "scripts/maintenance/backfill-racer-ids.js:171"
           ],
           "sql": [
             "rpc:compute_racer_course_technique_stats",
@@ -11194,7 +11194,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/audit-race-result-anomalies.js:207",
+          "ref": "scripts/maintenance/audit-race-result-anomalies.js:172",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11292,13 +11292,10 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-start-timings.js:276",
+          "ref": "scripts/maintenance/backfill-start-timings.js:343",
           "op": "select",
-          "via": "client",
-          "columns": [
-            "race_id",
-            "winning_technique"
-          ]
+          "via": "helper:fetchRaceIdSet",
+          "columns": []
         },
         {
           "ref": "scripts/maintenance/backfill-trifecta-trio.js:19",
@@ -11692,7 +11689,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-start-timings.js:186",
+          "ref": "scripts/maintenance/backfill-start-timings.js:188",
           "op": "update",
           "via": "client",
           "columns": [
@@ -11771,7 +11768,7 @@
             "scripts/lib/raceResultFix.js:117",
             "scripts/lib/raceResultRun.js:131",
             "scripts/lib/raceStatusJob.js:108",
-            "scripts/maintenance/audit-race-result-anomalies.js:207",
+            "scripts/maintenance/audit-race-result-anomalies.js:172",
             "scripts/maintenance/backfill-actual-course.js:111",
             "scripts/maintenance/backfill-actual-course.js:65",
             "scripts/maintenance/backfill-place-hits.js:30",
@@ -11780,8 +11777,7 @@
             "scripts/maintenance/backfill-rank456-from-kfile.js:157",
             "scripts/maintenance/backfill-rank456-from-kfile.js:75",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
-            "scripts/maintenance/backfill-start-timings.js:186",
-            "scripts/maintenance/backfill-start-timings.js:276",
+            "scripts/maintenance/backfill-start-timings.js:188",
             "scripts/maintenance/backfill-trifecta-trio.js:19",
             "scripts/maintenance/delete-cancelled-race-predictions.js:55",
             "scripts/maintenance/migrate-to-supabase.js:284",
@@ -12147,12 +12143,11 @@
             "scripts/lib/raceResultRun.js:131",
             "scripts/maintenance/backfill-race-data.js:225",
             "scripts/maintenance/backfill-results-by-race-id.js:52",
-            "scripts/maintenance/backfill-start-timings.js:276",
             "src/services/raceQueries3.js:125"
           ],
           "writers": [
             "scripts/maintenance/backfill-race-data.js:195",
-            "scripts/maintenance/backfill-start-timings.js:186"
+            "scripts/maintenance/backfill-start-timings.js:188"
           ],
           "sql": [
             "rpc:compute_nige_second_by_course",
@@ -13105,12 +13100,10 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/backfill-start-timings.js:261",
+          "ref": "scripts/maintenance/backfill-start-timings.js:337",
           "op": "select",
-          "via": "client",
-          "columns": [
-            "race_id"
-          ]
+          "via": "helper:fetchRaceIdSet",
+          "columns": []
         },
         {
           "ref": "scripts/maintenance/check-result-shadow.js:166",
@@ -13257,7 +13250,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-start-timings.js:173",
+          "ref": "scripts/maintenance/backfill-start-timings.js:175",
           "op": "upsert",
           "via": "client",
           "columns": [
@@ -13293,8 +13286,7 @@
             "scripts/lib/kfileSync.js:67",
             "scripts/lib/raceResultFix.js:125",
             "scripts/maintenance/backfill-disqualified-finish-marks.js:212",
-            "scripts/maintenance/backfill-start-timings.js:173",
-            "scripts/maintenance/backfill-start-timings.js:261",
+            "scripts/maintenance/backfill-start-timings.js:175",
             "scripts/maintenance/verify-race-result-parser.js:1675",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
@@ -13320,7 +13312,7 @@
             "scripts/lib/kfileSync.js:67",
             "scripts/lib/raceResultFix.js:125",
             "scripts/maintenance/backfill-disqualified-finish-marks.js:212",
-            "scripts/maintenance/backfill-start-timings.js:173",
+            "scripts/maintenance/backfill-start-timings.js:175",
             "scripts/maintenance/verify-race-result-parser.js:1675",
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
@@ -16582,7 +16574,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/backfill-opening-day-races.js:147",
+          "ref": "scripts/maintenance/backfill-opening-day-races.js:182",
           "op": "select",
           "via": "helper:upsertChangedRows",
           "columns": []
@@ -16672,7 +16664,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/backfill-start-timings.js:223",
+          "ref": "scripts/maintenance/backfill-start-timings.js:216",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16896,7 +16888,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-rpc-output-keys.js:266",
+          "ref": "scripts/maintenance/verify-rpc-output-keys.js:155",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16905,7 +16897,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-rpc-output-keys.js:321",
+          "ref": "scripts/maintenance/verify-rpc-output-keys.js:210",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17303,7 +17295,7 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/backfill-opening-day-races.js:147",
+          "ref": "scripts/maintenance/backfill-opening-day-races.js:182",
           "op": "upsert",
           "via": "helper:upsertChangedRows",
           "columns": [
@@ -17487,7 +17479,7 @@
             "scripts/maintenance/backfill-race-data.js:275",
             "scripts/maintenance/backfill-race-series-meta.js:147",
             "scripts/maintenance/backfill-results-by-race-id.js:37",
-            "scripts/maintenance/backfill-start-timings.js:223",
+            "scripts/maintenance/backfill-start-timings.js:216",
             "scripts/maintenance/check-morning-init-shadow.js:113",
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/delete-phantom-race-days.js:253",
@@ -17599,7 +17591,7 @@
             "scripts/maintenance/backfill-missing-venue-day.js:68",
             "scripts/maintenance/backfill-race-data.js:275",
             "scripts/maintenance/backfill-racer-ids.js:128",
-            "scripts/maintenance/backfill-start-timings.js:223",
+            "scripts/maintenance/backfill-start-timings.js:216",
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
             "scripts/maintenance/motor-pretest-backfill-fetch.js:72",
@@ -17607,8 +17599,8 @@
             "scripts/maintenance/verify-analogy-v16.js:308",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
-            "scripts/maintenance/verify-rpc-output-keys.js:266",
-            "scripts/maintenance/verify-rpc-output-keys.js:321",
+            "scripts/maintenance/verify-rpc-output-keys.js:155",
+            "scripts/maintenance/verify-rpc-output-keys.js:210",
             "scripts/maintenance/verify-scrape-slots-on-db.js:68",
             "scripts/maintenance/verifyData/sns-today-plan-v3-race-db.js:101",
             "scripts/sns/pushFinalsImageStore.js:71",
@@ -17688,14 +17680,14 @@
             "scripts/maintenance/backfill-race-data.js:275",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/backfill-results-by-race-id.js:37",
-            "scripts/maintenance/backfill-start-timings.js:223",
+            "scripts/maintenance/backfill-start-timings.js:216",
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
             "scripts/maintenance/motor-pretest-backfill-fetch.js:72",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
-            "scripts/maintenance/verify-rpc-output-keys.js:321",
+            "scripts/maintenance/verify-rpc-output-keys.js:210",
             "src/services/motorQueries.js:112",
             "src/services/motorQueries3.js:285",
             "src/services/mycroftService.js:79",
@@ -17737,7 +17729,7 @@
             "scripts/maintenance/backfill-race-data.js:275",
             "scripts/maintenance/backfill-racer-ids.js:128",
             "scripts/maintenance/backfill-results-by-race-id.js:37",
-            "scripts/maintenance/backfill-start-timings.js:223",
+            "scripts/maintenance/backfill-start-timings.js:216",
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/motor-pretest-backfill-fetch.js:72",
             "scripts/sns/pushFinalsImageStore.js:71",
@@ -29199,7 +29191,7 @@
     {
       "job": "morning_digest",
       "entry": "api/cron/morning-digest.js",
-      "reachableFiles": 29,
+      "reachableFiles": 30,
       "writes": {
         "morning_digest_days": [
           "scripts/daily/generate-morning-digest.js:510",
@@ -29863,7 +29855,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 133,
+      "reachableFiles": 134,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
@@ -29975,7 +29967,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 109,
+      "reachableFiles": 110,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",

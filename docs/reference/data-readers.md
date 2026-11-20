@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2459 |
+| 読んだファイル | 2506 |
 | 読み書きのあるファイル | 306 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -237,7 +237,7 @@
 | in_caution_today_health | api/cron/in-caution-today-health.js | 31 | scrape_job_state, scrape_slots |
 | key_canary_dispatch | api/cron/key-canary-dispatch.js | 23 | scrape_job_state, scrape_slots |
 | kfile_sync | api/cron/kfile-sync.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| morning_digest | api/cron/morning-digest.js | 29 | morning_digest_days, morning_digest_rows, scrape_job_state, scrape_slots |
+| morning_digest | api/cron/morning-digest.js | 30 | morning_digest_days, morning_digest_rows, scrape_job_state, scrape_slots |
 | motor_pretest | api/cron/motor-pretest.js | 33 | scrape_job_state, scrape_slots |
 | odds | api/cron/odds.js | 36 | prediction_odds, race_odds, scrape_job_state, scrape_slots |
 | odds_final | api/cron/odds-final.js | 26 | race_odds_final, scrape_job_state, scrape_slots |
@@ -260,10 +260,10 @@
 | result_catchup | api/cron/result-catchup.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 24 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 29 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 133 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 134 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | sns_daily | api/cron/sns-daily.js | 31 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
 | sns_metrics | api/cron/sns-metrics.js | 42 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
-| sns_send | api/cron/sns-send.js | 109 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_send | api/cron/sns-send.js | 110 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | venue_motor_stats | api/cron/venue-motor-stats.js | 31 | scrape_job_state, scrape_slots, venue_motor_stats |
 
 ## 表ごとの読み手・書き手
@@ -887,7 +887,7 @@
   - `scripts/maintenance/racelist-backfill-load.js:97` select(helper:upsertChangedRows)
   - `scripts/maintenance/racelist-backfill-load.js:199` select [race_id]
   - `scripts/maintenance/restore-contaminated-race-entries.js:81` select(helper:fetchAll)
-  - `scripts/maintenance/restore-contaminated-race-entries.js:206` select(helper:upsertChangedRows)
+  - `scripts/maintenance/restore-contaminated-race-entries.js:169` select(helper:upsertChangedRows)
   - `scripts/maintenance/restore-entries-branch-hometown.js:39` select(helper:fetchAll)
   - `scripts/maintenance/restore-entries-branch-hometown.js:119` select(helper:upsertChangedRows)
   - `scripts/maintenance/verify-analogy-v16.js:321` rest(rest) [is_absent, race_id] （検査）
@@ -971,10 +971,10 @@
   - `scripts/maintenance/backfill-race-data.js:182` upsert [?]
   - `scripts/maintenance/backfill-race-entries-racer-id-remaining.js:127` update [racer_id]
   - `scripts/maintenance/backfill-race-entries-racer-id.js:131` update [racer_id]
-  - `scripts/maintenance/backfill-racer-ids.js:228` update [racer_id]
+  - `scripts/maintenance/backfill-racer-ids.js:171` update [racer_id]
   - `scripts/maintenance/migrate-to-supabase.js:259` upsert [?]
   - `scripts/maintenance/racelist-backfill-load.js:97` upsert(helper:upsertChangedRows) [?]
-  - `scripts/maintenance/restore-contaminated-race-entries.js:206` upsert(helper:upsertChangedRows) [?]
+  - `scripts/maintenance/restore-contaminated-race-entries.js:169` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/restore-entries-branch-hometown.js:119` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:93` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/verifyData/scraped-timestamps-scenes-1.js:117` upsert(helper:upsertChangedRows) [?]
@@ -1200,7 +1200,7 @@
   - `scripts/lib/raceStatusJob.js:108` select [race_id]
   - `scripts/maintenance/audit-missing-results.js:73` select(helper:fetchAll)
   - `scripts/maintenance/audit-race-result-anomalies.js:97` select(helper:fetchAll)
-  - `scripts/maintenance/audit-race-result-anomalies.js:207` select [?, race_id]
+  - `scripts/maintenance/audit-race-result-anomalies.js:172` select [?, race_id]
   - `scripts/maintenance/backfill-actual-course.js:65` select [actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, race_id, rank1]
   - `scripts/maintenance/backfill-is-hit-turn.js:42` select(helper:fetchAll)
   - `scripts/maintenance/backfill-kb-recent-results.js:125` select(helper:fetchAll)
@@ -1211,7 +1211,7 @@
   - `scripts/maintenance/backfill-rank456-from-kfile.js:75` select [race_id, rank1, rank2, rank3, rank4]
   - `scripts/maintenance/backfill-refund-hit-flags.js:77` select(helper:fetchAll)
   - `scripts/maintenance/backfill-results-by-race-id.js:52` select [payout_win, race_id, winning_technique]
-  - `scripts/maintenance/backfill-start-timings.js:276` select [race_id, winning_technique]
+  - `scripts/maintenance/backfill-start-timings.js:343` select(helper:fetchRaceIdSet)
   - `scripts/maintenance/backfill-trifecta-trio.js:19` select [*, race_id]
   - `scripts/maintenance/build-races-derived-backfill-sql.js:114` select(helper:fetchAll)
   - `scripts/maintenance/check-exhibition-gap-rate.js:40` select(helper:fetchAll)
@@ -1256,7 +1256,7 @@
   - `scripts/maintenance/backfill-kb-recent-results.js:351` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/backfill-race-data.js:195` update [winning_technique]
   - `scripts/maintenance/backfill-rank456-from-kfile.js:157` update [rank4, rank5, rank6]
-  - `scripts/maintenance/backfill-start-timings.js:186` update [winning_technique]
+  - `scripts/maintenance/backfill-start-timings.js:188` update [winning_technique]
   - `scripts/maintenance/migrate-to-supabase.js:284` upsert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -1316,7 +1316,7 @@
   - `scripts/maintenance/audit-race-result-anomalies.js:107` select(helper:fetchAll)
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:48` select(helper:fetchAll)
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:71` select(helper:fetchAll)
-  - `scripts/maintenance/backfill-start-timings.js:261` select [race_id]
+  - `scripts/maintenance/backfill-start-timings.js:337` select(helper:fetchRaceIdSet)
   - `scripts/maintenance/check-result-shadow.js:166` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:211` select(helper:fetchAll)
   - `scripts/verification/verify-series-points-border.mjs:64` select [boat_number, finish_mark, race_id]
@@ -1335,7 +1335,7 @@
   - `scripts/lib/raceResultFix.js:125` upsert [?]
   - `scripts/lib/raceResultPersist.js:124` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/backfill-disqualified-finish-marks.js:212` update [?]
-  - `scripts/maintenance/backfill-start-timings.js:173` upsert [?]
+  - `scripts/maintenance/backfill-start-timings.js:175` upsert [?]
   - `scripts/maintenance/verify-race-result-parser.js:1675` upsert [?] （検査）
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -1554,7 +1554,7 @@
   - `scripts/maintenance/backfill-missing-venue-day.js:111` select [race_date, race_id, venue_code]
   - `scripts/maintenance/backfill-missing-venue-day.js:126` select [cancellation_status, race_id]
   - `scripts/maintenance/backfill-opening-day-races.js:94` select(helper:count)
-  - `scripts/maintenance/backfill-opening-day-races.js:147` select(helper:upsertChangedRows)
+  - `scripts/maintenance/backfill-opening-day-races.js:182` select(helper:upsertChangedRows)
   - `scripts/maintenance/backfill-pit-reports.js:123` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-conditions.js:70` select [cancellation_status, race_id]
   - `scripts/maintenance/backfill-race-data.js:275` select [race_date, race_id, race_number, venue_code]
@@ -1566,7 +1566,7 @@
   - `scripts/maintenance/backfill-results-by-race-id.js:37` select [cancellation_check_streak, cancellation_status, race_id, race_number, venue_code]
   - `scripts/maintenance/backfill-series-day.js:46` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:85` select(helper:fetchAll)
-  - `scripts/maintenance/backfill-start-timings.js:223` select [race_date, race_id, race_number, venue_code]
+  - `scripts/maintenance/backfill-start-timings.js:216` select [race_date, race_id, race_number, venue_code]
   - `scripts/maintenance/build-races-derived-backfill-sql.js:106` select(helper:fetchAll)
   - `scripts/maintenance/check-exhibition-gap-rate.js:39` select(helper:fetchAll)
   - `scripts/maintenance/check-morning-init-shadow.js:113` select [cancellation_status, race_id, start_time]
@@ -1592,8 +1592,8 @@
   - `scripts/maintenance/verify-e2e-live-api-key.js:33` rest(rest) （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select [race_date, race_id, venue_code] （検査）
   - `scripts/maintenance/verify-pretest-row-pick.js:128` select [race_date, venue_code] （検査）
-  - `scripts/maintenance/verify-rpc-output-keys.js:266` select [race_date] （検査）
-  - `scripts/maintenance/verify-rpc-output-keys.js:321` select [race_date, venue_code] （検査）
+  - `scripts/maintenance/verify-rpc-output-keys.js:155` select [race_date] （検査）
+  - `scripts/maintenance/verify-rpc-output-keys.js:210` select [race_date, venue_code] （検査）
   - `scripts/maintenance/verify-scrape-slots-on-db.js:68` select [cancellation_status, race_date, race_id, start_time] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:615` rest(rest) [race_id] （検査）
   - `scripts/maintenance/verify-sns-setsu-kiryoku-short.js:1577` rest(rest) [race_id, start_time] （検査）
@@ -1638,7 +1638,7 @@
   - `scripts/lib/raceInfoWrite.js:18` update [?]
   - `scripts/maintenance/audit-missing-results.js:252` update [cancellation_status]
   - `scripts/maintenance/backfill-missing-venue-day.js:184` update [cancellation_status]
-  - `scripts/maintenance/backfill-opening-day-races.js:147` upsert(helper:upsertChangedRows) [?]
+  - `scripts/maintenance/backfill-opening-day-races.js:182` upsert(helper:upsertChangedRows) [?]
   - `scripts/maintenance/backfill-race-series-meta.js:147` upsert [?]
   - `scripts/maintenance/delete-phantom-race-days.js:253` delete
   - `scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:114` update [cancellation_status]

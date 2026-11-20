@@ -18,8 +18,10 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
+| `src/pure/analogyAggregate.js` | アナロジー・ファインダー v16 の類似レース・展開シナリオの集計（BOA-271 spec FR-B・FR-C）。純粋関数。 | sliderSteps, defaultStepIndex, normalizeNeighbor, similarSlice, aggregateNeighbors ほか22件 |
 | `src/pure/basicInfoStats.js` | basicInfoStats - 「基本情報」タブ（BOA-306）のクライアント側集計ユーティリティ | currentTermStart, recordsBeforeRace, filterRecords, computeRates, getRecentRaces ほか13件 |
 | `src/pure/basicInfoStatsPeriodMeet.js` | — | periodDiffShownFrom, periodDiff, periodsEndedBefore, officialPeriodOf, pickPeriodStats ほか10件 |
+| `src/pure/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
 | `src/pure/blogChartAnswers.js` | ブログの図の契約の検査のうち、答えの文（description）の数字の照合。 | checkAnswers |
 | `src/pure/blogChartChecks.js` | ブログの図の契約の検査の部品（src/utils/blogChartContract.js の validateBlogChart が使う）。 | localize, createChecker, isObj, show |
 | `src/pure/blogChartSections.js` | ブログの図の契約の検査のうち、軸・行・切り替え・出典・中身（view・札・系列）の節。 | checkAxes, checkRows, checkSwitch, checkSource, checkViews |
@@ -40,6 +42,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/modelAssert.js` | — | assertObject, assertInt, assertIntOrNull, assertText, parseIsoDate ほか1件 |
 | `src/pure/motorChartView.js` | モーター調子（MotorConditionChart）の系列・列の整形（RA21、画面の部品から移した。振る舞いは変えない）。 | exhibitionChartDataOf, computeRateView, computeStatColumns, computeRankClasses, computePeriodClip ほか4件 |
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
+| `src/pure/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
+| `src/pure/predictionAssistBets.js` | 思考アシスト（BOA-430）の艇の行・賭式・オッズ・更新の間隔の計算。純粋関数だけ。 | courseFilled, buildRacers, oddsByBetType, boxBets, roughState ほか12件 |
+| `src/pure/predictionAssistBoardParts.js` | 思考アシスト（BOA-430）のボードの部品のうち、文言（src/data）を読まない計算。純粋関数だけ。 | firstPlaceComposite, missingFirstBoats, LENSES, stText, METRICS ほか1件 |
+| `src/pure/predictionAssistGuide.js` | 思考アシスト（BOA-430）のガイドの段の組み立て。純粋関数だけ。 | guideStepsWith |
+| `src/pure/predictionAssistScope.js` | 思考アシスト（BOA-430）の画面のモデルのうち、範囲・荒れ・類似レース・級の並び・最良値・決まり手の計算。純粋関数だけ。 | sameClassLabel, baseVerdict, roughCard, roughWithInCaution, similarSummary ほか11件 |
 | `src/pure/predictionAssistState.js` | 思考アシストのページの状態（useReducer の初期値と操作）と、画面の部品に依らない取り出し。 | createAssistReducer, deepRunsOf, placeAxisOf, courseByBoatOf, buildBetSummary ほか3件 |
 | `src/pure/predictionModel.js` | — | makePrediction |
 | `src/pure/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
@@ -61,6 +68,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/snsPostText.js` | — | buildPostText |
 | `src/pure/techniqueNames.js` | 決まり手の英語キー → 日本語の名前。展開予測（src/utils/turnPrediction.js）をやめた後も、データ出走表などの | TECHNIQUE_NAMES |
 | `src/pure/venueModel.js` | — | makeVenue |
+| `src/pure/wilson.js` | wilson - 二項比率のWilson信頼区間（純関数） | wilsonLowerBound, wilsonInterval, wilsonLowerBoundFromRate, isSmallSample |
 | `src/pure/winningTechniques.js` | — | COURSE_DEFAULT_DISTRIBUTION, COURSE_DEFAULT_DEFENSE |
 
 ## scripts/lib — バッチ・取得・集計の共通ロジック
@@ -439,7 +447,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/accidentRate.js` | — | currentPeriodRange, computeAccidentStats, ACCIDENT_RATE_LINE, ACCIDENT_NEAR_POINTS, ACCIDENT_BADGE_MIN_STARTS |
 | `src/utils/aiCopyPrompts.js` | race-ai-copy機能の分析依頼プロンプト種別定義 | getAiCopyPromptOptions, getAiCopyPromptText, getAiCopyPromptLabel, aiCopyFollowUpKeys, AI_COPY_PROMPT_TYPES |
 | `src/utils/aiCopyText.js` | 「AI用にコピー」（BOA-194）の文面を組み立てる純関数（BOA-770）。 | formatJstDateTime, toMarkdownTable, buildTurnPredictionSection, buildPremiseLines, buildNotes ほか3件 |
-| `src/utils/analogyAggregate.js` | アナロジー・ファインダー v16 の類似レース・展開シナリオの集計（BOA-271 spec FR-B・FR-C）。純粋関数。 | sliderSteps, defaultStepIndex, normalizeNeighbor, similarSlice, aggregateNeighbors ほか22件 |
+| `src/utils/analogyAggregate.js` | 再 export だけのファイル。本体は `src/pure/analogyAggregate.js`。 | — |
 | `src/utils/analogyContribution.js` | アナロジー・ファインダーの寄与度（BOA-271 FR-1）の純粋関数。 | sliceCandidates, resolveContributionSlice, themeEntries, roundToTotal, MIN_RACES ほか6件 |
 | `src/utils/analogyFacts.js` | アナロジー・ファインダー v16「差がつく材料」（タブ1、BOA-271 spec FR-A）の純粋関数。 | rankPositions, todayPosition, todayValueRank, judgeGap, agreementVerdict ほか30件 |
 | `src/utils/analogyFormat.js` | アナロジー・ファインダー v16 の表記（BOA-271 screens「純粋関数」）。 | fmtEntry, comboLabel, scopeName, fmtFactValue, splitSentences ほか8件 |
@@ -456,12 +464,12 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analogyTreeShap.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: LightGBM の | compileModel, predictRaw, contributions |
 | `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか10件 |
 | `src/utils/assistEvents.js` | — | assistEventOf |
-| `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, sameClassLabel, baseVerdict, roughCard ほか37件 |
+| `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, boardModel |
 | `src/utils/assistSession.js` | 思考アシストの買い目などを、同じタブの中でレースごとに残す（sessionStorage）。 | parseAssistSession, loadAssistSession, saveAssistSession, ASSIST_SESSION_PREFIX, ASSIST_SESSION_MAX ほか1件 |
 | `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, factsEntry, axisWhyKinds, b1Usual ほか30件 |
-| `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, guideSteps, windBandLabel |
+| `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, windBandLabel, guideSteps |
 | `src/utils/attackDefenseCells.js` | 超展開データ（AttackDefenseTable）のセルの値の算出（純関数）。 | getTotalWins, isDefaultAttackDistribution, getCellValue, attackDefenseColumn, TECHNIQUE_ROWS |
-| `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
+| `src/utils/bestOf.js` | 再 export だけのファイル。本体は `src/pure/bestOf.js`。 | — |
 | `src/utils/blogChartContract.js` | ブログの図の契約（docs/design/blog-charts/contract.md、schemaVersion 1）の検査と読み出し。 | valueAxisMax, validateBlogChart, SCHEMA_VERSION, LANGS, KINDS |
 | `src/utils/blogChartLoader.js` | 記事の Markdown にある図（<ryujin-chart src>）の JSON を、本文を描く前にまとめて取る。 | loadBlogCharts |
 | `src/utils/blogChartPng.js` | ブログの図の PNG の書き出し（ADR 0099、docs/design/blog-charts/contract.md 8節）の固定の一覧と名前。依存なし・… | isPngResponse, BLOG_CHART_PNG_PRESETS, blogChartPngSize, BLOG_CHART_PNG_CREDIT, blogChartPngPath |
@@ -494,7 +502,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/motorPowerIndex.js` | モーターの機力指数（BOA-265）と、その集計の期間（BOA-329）の純関数（BOA-1245）。 | motorWindowFrom, computeMotorPowerIndex, computeVenueMotorPowerIndexes |
 | `src/utils/motorUsage.js` | モーターの使用回数と「未使用（新モーター・実績なし）」の判定（BOA-702）。 | motorUsageCount, isUnusedMotor |
 | `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
-| `src/utils/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
+| `src/utils/oddsMath.js` | 再 export だけのファイル。本体は `src/pure/oddsMath.js`。 | — |
 | `src/utils/originalExhibition.js` | オリジナル展示（BOATCAST、race_original_exhibition・_values）の行を画面の形にする（純関数）。 | shapeOriginalExhibition, ORIGINAL_EXHIBITION_KINDS |
 | `src/utils/pageMeta.js` | トップ（/）と会場ページ（本日分、/venue/:code）の title・meta description・canonical を作る。 | getTopPageMeta, getTodayVenuePageMeta, getTodayVenueBreadcrumbItems |
 | `src/utils/pastRate/count.js` | BOA-635「過去に発生した割合を見る」の数え方（docs/design/past-rate-check/spec.md FR-1・共通の数え方）。純粋関数。 | orderCombos, countPastRate, incompatibleForms, TYPES, TENKAI_TECHNIQUES ほか3件 |
@@ -553,7 +561,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/volatilityLevel.js` | getVolatilityLevel - イン崩れ指数（percentile）からレベルを判定する共通ヘルパー | getVolatilityLevel, volatilityDisplayValue |
 | `src/utils/weatherInfo.js` | weatherInfo - 直前情報タブの気象カード向けラベル変換（BOA-304） | translateWeather, weatherIcon, translateWindDirection, formatObservedTime |
 | `src/utils/webShare.js` | Web Share API 対応判定ヘルパー | canShareVideo, shareVideoFile, downloadFileBlob |
-| `src/utils/wilson.js` | wilson - 二項比率のWilson信頼区間（純関数） | wilsonLowerBound, wilsonInterval, wilsonLowerBoundFromRate, isSmallSample |
+| `src/utils/wilson.js` | 再 export だけのファイル。本体は `src/pure/wilson.js`。 | — |
 | `src/utils/windDirection.js` | 風向の表示（BOA-819）。 | trueWindDirection, windRelation, WIND_DIRECTIONS, VENUE_WIND_OFFSET_DEG |
 
 ## src/services — 画面のデータ取得
@@ -616,4 +624,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 574 ファイル / export 3130 件。
+対象 582 ファイル / export 3131 件。

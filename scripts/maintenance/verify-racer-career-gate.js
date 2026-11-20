@@ -103,6 +103,146 @@ const termOf = (date) => {
   return m >= 11 ? `${y}-11-01` : `${y - 1}-11-01`;
 };
 
+const careerKey = (racer, term) => `${racer}|${String(term).slice(0, 10)}`;
+
+const emptyOurs = () => ({
+  buckets: new Map(),
+  first: 0,
+  second: 0,
+  other: 0,
+  course: {},
+  champ: [],
+});
+
+// 件数のまま持ち、グレード×優勝戦か×着のコードごとに純関数で出走を数える。勝率は選手×期ごとに1走1行に広げて
+// careerWinRate に渡す（丸めを BOA-1193 と同じにするため。広げるのは1選手×1期の数百行だけ）。
+// 点が決まらない走（グレードが unknown・点が null）は勝率に入れず、unknownRuns として数える（0点にしない）
+const FINAL_STAGE = "優勝戦";
+const OTHER_STAGE = "予選";
+function tallyOf(o, career) {
+  let starts = 0;
+  let unknownRuns = 0;
+  const rows = [];
+  for (const [b, n] of o.buckets) {
+    const [grade, isFinal, code] = b.split("|");
+    if (!career.isCareerStart(code)) continue;
+    starts += n;
+    const pts = grade === "unknown" ? null : career.careerFinishPoints(grade, isFinal === "1", code);
+    if (pts === null || pts === undefined) {
+      unknownRuns += n;
+      continue;
+    }
+    const row = { grade, stage: isFinal === "1" ? FINAL_STAGE : OTHER_STAGE, finish_raw: code };
+    for (let i = 0; i < n; i++) rows.push(row);
+  }
+  return { starts, unknownRuns, winRate: rows.length === 0 ? null : career.careerWinRate(rows) };
+}
+
+/** こちらの集計（選手×期ごと）を3つの表から組む */
+function buildOurs(termRows, courseRows, champRows) {
+  const ours = new Map();
+  const ensure = (k) => {
+    if (!ours.has(k)) ours.set(k, emptyOurs());
+    return ours.get(k);
+  };
+  for (const r of termRows) {
+    const o = ensure(careerKey(r.racer_id, r.term_start));
+    for (const [col, code] of Object.entries(CODE_OF_COLUMN)) {
+      const n = Number(r[col] ?? 0);
+      if (n === 0) continue;
+      const b = `${r.race_grade}|${r.is_final === true ? 1 : 0}|${code}`;
+      o.buckets.set(b, (o.buckets.get(b) ?? 0) + n);
+    }
+    o.first += Number(r.p1 ?? 0);
+    o.second += Number(r.p2 ?? 0);
+    o.other += Number(r.other_code ?? 0);
+  }
+  for (const r of courseRows) {
+    const o = ensure(careerKey(r.racer_id, r.term_start));
+    const c = (o.course[r.course] ??= Object.fromEntries(
+      COURSE_COLUMNS.map((x) => [x, 0]),
+    ));
+    for (const col of COURSE_COLUMNS) c[col] += Number(r[col] ?? 0);
+  }
+  for (const r of champRows)
+    ensure(careerKey(r.racer_id, termOf(r.race_date))).champ.push(r.finish_code);
+  return ours;
+}
+
+const COMPARE_FIELDS = [
+  "starts",
+  "first_count",
+  "second_count",
+  "win_rate",
+  "finals",
+  "wins",
+  "course",
+];
+
+function gotOf(o, tally, career) {
+  return {
+    starts: tally.starts,
+    first_count: o.first,
+    second_count: o.second,
+    win_rate: tally.winRate,
+    finals: o.champ.filter((c) => career.isCareerFinalAppearance(c)).length,
+    wins: o.champ.filter((c) => c === "01").length,
+  };
+}
+
+function wantOf(off) {
+  return {
+    starts: Number(off.starts ?? 0),
+    first_count: Number(off.first_count ?? 0),
+    second_count: Number(off.second_count ?? 0),
+    win_rate:
+      off.win_rate === null || Number(off.starts ?? 0) === 0
+        ? null
+        : Number(off.win_rate),
+    finals: Number(off.finals ?? 0),
+    wins: Number(off.wins ?? 0),
+  };
+}
+
+/** 勝率は小数2桁で丸めて比べる。他は厳密 */
+function sameField(f, a, b) {
+  if (f !== "win_rate") return a === b;
+  return (
+    (a === null && b === null) ||
+    (a !== null && b !== null && Math.round(a * 100) === Math.round(b * 100))
+  );
+}
+
+function diffTotals(got, want) {
+  const diff = {};
+  for (const f of Object.keys(got)) {
+    const a = got[f] === null ? null : Number(got[f]);
+    const b = want[f];
+    if (!sameField(f, a, b)) diff[f] = { ours: a, official: b };
+  }
+  return diff;
+}
+
+/** コース別の差を diff.course へ足す */
+function addCourseDiff(diff, o, off) {
+  for (let c = 1; c <= 6; c++) {
+    const mine = o.course[c] ?? {};
+    for (const col of COURSE_COLUMNS) {
+      const a = Number(mine[col] ?? 0);
+      const b = Number(off[`c${c}_${col}`] ?? 0);
+      if (a !== b)
+        (diff.course ??= {})[`c${c}_${col}`] = { ours: a, official: b };
+    }
+  }
+}
+
+/** 公式の1行（選手×期）と、こちらの集計の差 */
+function diffOne(off, o, tally, career) {
+  const diff = diffTotals(gotOf(o, tally, career), wantOf(off));
+  addCourseDiff(diff, o, off);
+  return diff;
+}
+
 /**
  * 照合（純関数。テストは verify-racer-career-tables.js）。
  * @param {{termRows: object[], courseRows: object[], champRows: object[], official: object[],
@@ -115,74 +255,7 @@ export function compareCareerToOfficial({
   official,
   career,
 }) {
-  const key = (racer, term) => `${racer}|${String(term).slice(0, 10)}`;
-  const ours = new Map();
-  const ensure = (k) => {
-    if (!ours.has(k))
-      ours.set(k, {
-        buckets: new Map(),
-        first: 0,
-        second: 0,
-        other: 0,
-        course: {},
-        champ: [],
-      });
-    return ours.get(k);
-  };
-  // 件数のまま持ち、グレード×優勝戦か×着のコードごとに純関数で出走を数える。勝率は選手×期ごとに1走1行に広げて
-  // careerWinRate に渡す（丸めを BOA-1193 と同じにするため。広げるのは1選手×1期の数百行だけ）。
-  // 点が決まらない走（グレードが unknown・点が null）は勝率に入れず、unknownRuns として数える（0点にしない）
-  const FINAL_STAGE = "優勝戦";
-  const OTHER_STAGE = "予選";
-  const tallyOf = (o) => {
-    let starts = 0;
-    let unknownRuns = 0;
-    const rows = [];
-    for (const [b, n] of o.buckets) {
-      const [grade, isFinal, code] = b.split("|");
-      if (!career.isCareerStart(code)) continue;
-      starts += n;
-      const pts = grade === "unknown" ? null : career.careerFinishPoints(grade, isFinal === "1", code);
-      if (pts === null || pts === undefined) {
-        unknownRuns += n;
-        continue;
-      }
-      const row = { grade, stage: isFinal === "1" ? FINAL_STAGE : OTHER_STAGE, finish_raw: code };
-      for (let i = 0; i < n; i++) rows.push(row);
-    }
-    return { starts, unknownRuns, winRate: rows.length === 0 ? null : career.careerWinRate(rows) };
-  };
-  for (const r of termRows) {
-    const o = ensure(key(r.racer_id, r.term_start));
-    for (const [col, code] of Object.entries(CODE_OF_COLUMN)) {
-      const n = Number(r[col] ?? 0);
-      if (n === 0) continue;
-      const b = `${r.race_grade}|${r.is_final === true ? 1 : 0}|${code}`;
-      o.buckets.set(b, (o.buckets.get(b) ?? 0) + n);
-    }
-    o.first += Number(r.p1 ?? 0);
-    o.second += Number(r.p2 ?? 0);
-    o.other += Number(r.other_code ?? 0);
-  }
-  for (const r of courseRows) {
-    const o = ensure(key(r.racer_id, r.term_start));
-    const c = (o.course[r.course] ??= Object.fromEntries(
-      COURSE_COLUMNS.map((x) => [x, 0]),
-    ));
-    for (const col of COURSE_COLUMNS) c[col] += Number(r[col] ?? 0);
-  }
-  for (const r of champRows)
-    ensure(key(r.racer_id, termOf(r.race_date))).champ.push(r.finish_code);
-
-  const fields = [
-    "starts",
-    "first_count",
-    "second_count",
-    "win_rate",
-    "finals",
-    "wins",
-    "course",
-  ];
+  const ours = buildOurs(termRows, courseRows, champRows);
   const perTerm = {};
   const mismatches = [];
   let compared = 0;
@@ -193,63 +266,15 @@ export function compareCareerToOfficial({
     const t = (perTerm[term] ??= {
       racers: 0,
       mismatched: 0,
-      byField: Object.fromEntries(fields.map((f) => [f, 0])),
+      byField: Object.fromEntries(COMPARE_FIELDS.map((f) => [f, 0])),
     });
-    const k = key(off.racer_id, term);
+    const k = careerKey(off.racer_id, term);
     seen.add(k);
-    const o = ours.get(k) ?? {
-      buckets: new Map(),
-      first: 0,
-      second: 0,
-      other: 0,
-      course: {},
-      champ: [],
-    };
-    const tally = tallyOf(o);
-    const starts = tally.starts;
+    const o = ours.get(k) ?? emptyOurs();
+    const tally = tallyOf(o, career);
     if (tally.unknownRuns > 0)
       unknownRuns.push({ racer_id: off.racer_id, term, unknown_runs: tally.unknownRuns });
-    const got = {
-      starts,
-      first_count: o.first,
-      second_count: o.second,
-      win_rate: tally.winRate,
-      finals: o.champ.filter((c) => career.isCareerFinalAppearance(c)).length,
-      wins: o.champ.filter((c) => c === "01").length,
-    };
-    const want = {
-      starts: Number(off.starts ?? 0),
-      first_count: Number(off.first_count ?? 0),
-      second_count: Number(off.second_count ?? 0),
-      win_rate:
-        off.win_rate === null || Number(off.starts ?? 0) === 0
-          ? null
-          : Number(off.win_rate),
-      finals: Number(off.finals ?? 0),
-      wins: Number(off.wins ?? 0),
-    };
-    const diff = {};
-    for (const f of Object.keys(got)) {
-      const a = got[f] === null ? null : Number(got[f]);
-      const b = want[f];
-      const same =
-        f === "win_rate"
-          ? (a === null && b === null) ||
-            (a !== null &&
-              b !== null &&
-              Math.round(a * 100) === Math.round(b * 100))
-          : a === b;
-      if (!same) diff[f] = { ours: a, official: b };
-    }
-    for (let c = 1; c <= 6; c++) {
-      const mine = o.course[c] ?? {};
-      for (const col of COURSE_COLUMNS) {
-        const a = Number(mine[col] ?? 0);
-        const b = Number(off[`c${c}_${col}`] ?? 0);
-        if (a !== b)
-          (diff.course ??= {})[`c${c}_${col}`] = { ours: a, official: b };
-      }
-    }
+    const diff = diffOne(off, o, tally, career);
     compared += 1;
     t.racers += 1;
     if (Object.keys(diff).length > 0) {
@@ -267,7 +292,7 @@ export function compareCareerToOfficial({
   const extra = [];
   for (const [k, o] of ours) {
     if (seen.has(k)) continue;
-    if (tallyOf(o).starts > 0) extra.push(k);
+    if (tallyOf(o, career).starts > 0) extra.push(k);
   }
   return { compared, perTerm, mismatches, extra, unknownRuns };
 }
@@ -283,88 +308,73 @@ function parseArgs(argv) {
   return opts;
 }
 
-async function main() {
-  const opts = parseArgs(process.argv.slice(2));
-  const career = await loadCareerFunctions();
-  const client = new pg.Client({
-    connectionString: checkRoUrl(process.env.SUPABASE_RO_DB_URL),
-    ssl: { rejectUnauthorized: false },
-    application_name: "verify-racer-career-gate",
-  });
-  await client.connect();
-  let termRows;
-  let courseRows;
-  let champRows;
-  let official;
-  try {
-    await client.query("BEGIN READ ONLY");
-    const who = (await client.query("SELECT current_user AS u")).rows[0].u;
-    if (who !== RO_ROLE)
-      throw new Error(`接続ロールが ${who}（${RO_ROLE} でない）`);
-    await client.query("SET LOCAL statement_timeout = '120s'");
-    const meta = (
-      await client.query(
-        "SELECT era, computed_at, rule_version, report->>'full_computed_at' AS full_at FROM racer_career_meta ORDER BY era",
-      )
-    ).rows;
-    console.log(`計算の記録: ${JSON.stringify(meta)}`);
-    if (
-      !meta.some((m) => m.era === "kb") ||
-      !meta.some((m) => m.era === "main" && m.full_at)
+/** 読み取り専用の接続の確認と、計算の記録（meta）の検査。足りなければ止める */
+async function checkCareerMeta(client) {
+  await client.query("BEGIN READ ONLY");
+  const who = (await client.query("SELECT current_user AS u")).rows[0].u;
+  if (who !== RO_ROLE)
+    throw new Error(`接続ロールが ${who}（${RO_ROLE} でない）`);
+  await client.query("SET LOCAL statement_timeout = '120s'");
+  const meta = (
+    await client.query(
+      "SELECT era, computed_at, rule_version, report->>'full_computed_at' AS full_at FROM racer_career_meta ORDER BY era",
     )
-      throw new Error(
-        "kb 層か main 層（全選手）がまだ計算されていない（racer-career-backfill.js を先に実行する）",
-      );
-    const stale = staleRuleEras(meta);
-    if (stale.length > 0)
-      throw new Error(
-        `${stale.join("・")} 層の rule_version が今の ${RULE_VERSION} と違う（規則を変えた後に racer-career-backfill.js で計算し直す）`,
-      );
-    const cols = [
-      "racer_id",
-      "term_start::text AS term_start",
-      ...COUNT_COLUMNS,
-    ];
-    termRows = (
-      await client.query(
-        `SELECT ${cols.join(", ")}, race_grade, is_final FROM racer_term_stats WHERE term_start BETWEEN $1::date AND $2::date`,
-        [opts.from, opts.to],
-      )
-    ).rows;
-    courseRows = (
-      await client.query(
-        `SELECT racer_id, course, term_start::text AS term_start, ${COURSE_COLUMNS.join(", ")} FROM racer_course_stats WHERE term_start BETWEEN $1::date AND $2::date`,
-        [opts.from, opts.to],
-      )
-    ).rows;
-    champRows = (
-      await client.query(
-        `SELECT racer_id, race_date::text AS race_date, finish_code FROM racer_championships
+  ).rows;
+  console.log(`計算の記録: ${JSON.stringify(meta)}`);
+  if (
+    !meta.some((m) => m.era === "kb") ||
+    !meta.some((m) => m.era === "main" && m.full_at)
+  )
+    throw new Error(
+      "kb 層か main 層（全選手）がまだ計算されていない（racer-career-backfill.js を先に実行する）",
+    );
+  const stale = staleRuleEras(meta);
+  if (stale.length > 0)
+    throw new Error(
+      `${stale.join("・")} 層の rule_version が今の ${RULE_VERSION} と違う（規則を変えた後に racer-career-backfill.js で計算し直す）`,
+    );
+}
+
+/** 4つの表（期ごとの成績・コース別・優勝戦・公式）を読む */
+async function readCareerTables(client, opts) {
+  const cols = [
+    "racer_id",
+    "term_start::text AS term_start",
+    ...COUNT_COLUMNS,
+  ];
+  const termRows = (
+    await client.query(
+      `SELECT ${cols.join(", ")}, race_grade, is_final FROM racer_term_stats WHERE term_start BETWEEN $1::date AND $2::date`,
+      [opts.from, opts.to],
+    )
+  ).rows;
+  const courseRows = (
+    await client.query(
+      `SELECT racer_id, course, term_start::text AS term_start, ${COURSE_COLUMNS.join(", ")} FROM racer_course_stats WHERE term_start BETWEEN $1::date AND $2::date`,
+      [opts.from, opts.to],
+    )
+  ).rows;
+  const champRows = (
+    await client.query(
+      `SELECT racer_id, race_date::text AS race_date, finish_code FROM racer_championships
         WHERE race_date >= $1::date AND race_date < ($2::date + interval '6 months')`,
-        [opts.from, opts.to],
-      )
-    ).rows;
-    const courseCols = [];
-    for (let c = 1; c <= 6; c++)
-      for (const col of COURSE_COLUMNS) courseCols.push(`c${c}_${col}`);
-    official = (
-      await client.query(
-        `SELECT racer_id, calc_from::text AS calc_from, starts, first_count, second_count, win_rate, finals, wins, ${courseCols.join(", ")}
+      [opts.from, opts.to],
+    )
+  ).rows;
+  const courseCols = [];
+  for (let c = 1; c <= 6; c++)
+    for (const col of COURSE_COLUMNS) courseCols.push(`c${c}_${col}`);
+  const official = (
+    await client.query(
+      `SELECT racer_id, calc_from::text AS calc_from, starts, first_count, second_count, win_rate, finals, wins, ${courseCols.join(", ")}
          FROM racer_period_stats WHERE calc_from BETWEEN $1::date AND $2::date`,
-        [opts.from, opts.to],
-      )
-    ).rows;
-  } finally {
-    await client.query("ROLLBACK").catch(() => {});
-    await client.end();
-  }
-  const res = compareCareerToOfficial({
-    termRows,
-    courseRows,
-    champRows,
-    official,
-    career,
-  });
+      [opts.from, opts.to],
+    )
+  ).rows;
+  return { termRows, courseRows, champRows, official };
+}
+
+function printCareerReport(res, opts) {
   console.log(`照らした選手×期: ${res.compared}`);
   for (const [term, t] of Object.entries(res.perTerm).sort())
     console.log(
@@ -381,6 +391,27 @@ async function main() {
   if (res.mismatches.length > 30)
     console.log(`  …ほか ${res.mismatches.length - 30} 件`);
   if (opts.out) writeFileSync(opts.out, `${JSON.stringify(res, null, 2)}\n`);
+}
+
+async function main() {
+  const opts = parseArgs(process.argv.slice(2));
+  const career = await loadCareerFunctions();
+  const client = new pg.Client({
+    connectionString: checkRoUrl(process.env.SUPABASE_RO_DB_URL),
+    ssl: { rejectUnauthorized: false },
+    application_name: "verify-racer-career-gate",
+  });
+  await client.connect();
+  let tables;
+  try {
+    await checkCareerMeta(client);
+    tables = await readCareerTables(client, opts);
+  } finally {
+    await client.query("ROLLBACK").catch(() => {});
+    await client.end();
+  }
+  const res = compareCareerToOfficial({ ...tables, career });
+  printCareerReport(res, opts);
   if (res.compared === 0)
     throw new Error("照らす行が0件（racer_period_stats か期の指定を確かめる）");
   process.exitCode =
