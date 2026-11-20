@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2450,
+    "sourceFiles": 2456,
     "filesWithAccess": 306,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -29975,7 +29975,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 105,
+      "reachableFiles": 109,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",

@@ -341,6 +341,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups, racerSnapshotProblems, RACER_SNAPSHOT_STALE_HOURS |
+| `scripts/lib/sns/bundlePublicationBlocked.js` | — | isBundlePublicationBlocked |
 | `scripts/lib/sns/deadlineIso.js` | — | deadlineIso |
 | `scripts/lib/sns/finalsImageBase.js` | — | hasPoll, pngSize, checkImages, schedule, dailyLimitReason ほか23件 |
 | `scripts/lib/sns/fullPictureRows.js` | 全貌動画の取り込み（scripts/sns/push-full-picture.js）から移した、下書きの文と行の組み立て（純粋関数）。 | fullYoutubeText, draftRows, fullTagsOf, draftTexts |
@@ -349,13 +350,18 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/sns/publicDisplayCheck.js` | — | checkPublicDisplay |
 | `scripts/lib/sns/researchPushRules.js` | — | PUSH_RULES |
 | `scripts/lib/sns/researchSchedule.js` | — | schedule, dryRunClock, checkTiming, DEADLINE_AFTER_MIN, EXPIRES_BEFORE_MIN ほか11件 |
+| `scripts/lib/sns/sendHolds.js` | — | sendHolds, mobileHolds |
 | `scripts/lib/sns/setsuDeadlines.js` | 節の機力の Shorts の締切の照合（純粋関数）。push-setsu-kiryoku-short.js から移した（字は同じ） | finalDeadlineMismatch, borderDeadlineMismatch, eveDeadlineMismatch, raceNumberOf, isFinalStage |
 | `scripts/lib/sns/shortSchedule.js` | YouTube Shorts の口（push-setsu-kiryoku-short.js・push-upset-win-short.js）の時刻・日の上限とク… | schedule, checkTiming, youtubeRoomReason, dryRunClock, SEND_DELAY_SEC ほか14件 |
 | `scripts/lib/sns/siteBaseUrl.js` | — | SITE_BASE_URL |
 | `scripts/lib/sns/thinkingGradeDay.js` | — | thinkingGradeDayVenue, todayTargetReason, THINKING_GRADE_DAY_GRADES, THINKING_GRADE_DAY_MIN_RACE_NUMBER, THINKING_GRADE_DAY_MAX_RACE_NUMBER ほか1件 |
 | `scripts/lib/sns/todayDigestStatus.js` | /today の X 投稿の版（digestRevision）と、載せる候補のレースの状態（pickRaceStatus）。 | digestRevision, pickRaceStatus, TODAY_SCREEN_KEY |
+| `scripts/lib/sns/todayDraft.js` | — | isTodayDraft |
 | `scripts/lib/sns/xApiBase.js` | — | X_API_BASE |
 | `scripts/lib/sns/xLength.js` | X の投稿の文字数（2026-10-14 オーナー決定: X は長文の1投稿、Premium 前提）。 | xPostValid, X_POST_MAX, X_LONG_POST_MAX, xPostMax |
+| `scripts/lib/sns/xSend.js` | — | mobileVersion, createXSnapshot, runXSendJob, createMockXAdapter |
+| `scripts/lib/sns/xSendCore.js` | X の送信の定数・投票の検査・sha256・保留の理由（外部通信も store も使わない純粋な部分）。 | waitSecsOf, pollOptionsIssue, pollDurationMinutes, sha256, holdReasonOf ほか10件 |
+| `scripts/lib/sns/youtubeQueue.js` | — | fillFullUrl, runYoutubeQueueJob, runYoutubePublishJob, resumeRetainedYoutubeJob, createMockYoutubeAdapter ほか4件 |
 | `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel |
 | `scripts/lib/snsAutoPlanRunnerEvaluate.js` | SNS の自動送信の計画の検査（api/ の checkPublicDisplay・sendHolds は runner から引数で渡す）。snsAutoPla… | sharedChecks, evaluateChannel |
 | `scripts/lib/snsAutoPlanRunnerParts.js` | SNS の自動送信の計画の部品。snsAutoPlanRunner.js から、定数・素材の振り分け（planCandidates）・ | planCandidatesWith, reviewGate, AUTO_PLAN_STAGES, NOTIFY_BEFORE_MIN, VETO_BEFORE_MIN ほか8件 |
@@ -610,4 +616,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 568 ファイル / export 3098 件。
+対象 574 ファイル / export 3130 件。
