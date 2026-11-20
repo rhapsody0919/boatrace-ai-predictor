@@ -132,8 +132,12 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/dataReadersSelect.js` | — | parseSelect, parseRestPath |
 | `scripts/lib/dataReadersVisit.js` | — | isFixtureLike, extractAccesses |
 | `scripts/lib/dateUtils.js` | 日付ユーティリティ（バックエンド用） | getTodayDateJST, getYesterdayDateJST, getDateDaysAgo, formatDateForUrl, parseDateArg ほか5件 |
+| `scripts/lib/dbApplyClassifyParts.js` | scripts/lib/dbApplySql.js から移した、軽い／重い／止めるの判定（ADR-0097）の部品。1文の判定（classifyStatemen… | classifyStatement, destructiveTargets, backupEntry, missingBackupStops, statementStops ほか3件 |
 | `scripts/lib/dbApplyDispatch.js` | db-apply の定期の突き合わせ（db-apply.yml の mode=reconcile）を Vercel Cron から起動する（ADR-0097、 | findRecentReconcileSuccess, createDbApplyDispatchRun, DB_APPLY_WORKFLOW, STALE_AFTER_MS, RESTART_AFTER_MS ほか1件 |
-| `scripts/lib/dbApplySql.js` | 本番 DB 適用ワークフロー（.github/workflows/db-apply.yml）が、承認の前にマイグレーションを検査するための純粋関数。 | validateMigrationPath, splitStatements, extractTables, inspectMigration, extractConfirmationSections ほか15件 |
+| `scripts/lib/dbApplyNameParts.js` | scripts/lib/dbApplySql.js から移した、SQL の名前の部品（識別子の正規表現・名前の正規化・括弧の深さ0での分割・ | canonName, splitTopLevel, disallowedCalls, isPiiColumn, columnsOfCreateTable ほか3件 |
+| `scripts/lib/dbApplyRenderParts.js` | scripts/lib/dbApplySql.js から移した、job summary（renderSummary）の部品。冒頭コメントの確認の節の取り出し・ | extractConfirmationSections, longLineLines, confirmationLines, bodyLines, LONG_LINE_CHARS ほか8件 |
+| `scripts/lib/dbApplySql.js` | 本番 DB 適用ワークフロー（.github/workflows/db-apply.yml）が、承認の前にマイグレーションを検査するための純粋関数。 | validateMigrationPath, splitStatements, inspectMigration, renderSummary, psqlArgs ほか8件 |
+| `scripts/lib/dbApplySqlParts.js` | scripts/lib/dbApplySql.js から移した、SQL の字句の読み（splitStatements の1字句ずつ）・トランザクション制御と拒否… | extractTables, invisibleRejections, transactionShape, transactionRejections, scanStatements ほか10件 |
 | `scripts/lib/dbReconcile.js` | 本番 DB の自動の適用（ADR-0097）で、次に当てるマイグレーションを選ぶための純粋関数。 | ledgerState, ledgerRowAddedAsUnapplied, evaluateCandidate, pickNext, isBusy ほか6件 |
 | `scripts/lib/deployHookPolicy.js` | Vercel Deploy Hook を叩くかどうかの判定（BOA-361）。 | decideDeployHook, DEPLOY_HOOK_WINDOW_MINUTES |
 | `scripts/lib/disqualifiedFinishMark.js` | BOA-582(2): 失格（Kファイルの成績コード S0〜S2）の艇の着欄（finish_mark）を、結果ページから決める（純関数）。 | buildDisqualifiedMarkRows, buildOfficialRowRows, DISQUALIFIED_MARKS, isDisqualifiedCode |
@@ -279,7 +283,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/roQuery.js` | 本番の読み取り専用ロール claude_ro で1文を実行する（scripts/db/ro-query.js の本体、ADR-0096）。 | checkReadStatement, parseRowLimit, checkRoUrl, runReadOnlyQuery, formatResult ほか4件 |
 | `scripts/lib/schemaDetect.js` | 「マイグレーションの列・テーブルが、接続先のDBに適用済みか」の判定（共通処理） | createSchemaDetector, DEFAULT_SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/schemaErDiagram.js` | schemaErDiagram.js — 本番スキーマの写し（docs/reference/schema-snapshot.json、ADR-0102）から、 | domainOf, mermaidType, relationshipOf, buildSchemaEr, renderDomainDiagram ほか3件 |
-| `scripts/lib/schemaSnapshot.js` | 本番スキーマの写し（docs/reference/schema-snapshot.json、ADR-0102）を組み立てる純粋関数。DB に触れない。 | ledgerFiles, appliedLedgerState, snapshotFreshness, buildSnapshot, serializeSnapshot ほか5件 |
+| `scripts/lib/schemaSnapshot.js` | 本番スキーマの写し（docs/reference/schema-snapshot.json、ADR-0102）を組み立てる純粋関数。DB に触れない。 | ledgerFiles, appliedLedgerState, snapshotFreshness, buildSnapshot, serializeSnapshot ほか4件 |
+| `scripts/lib/schemaSnapshotParts.js` | scripts/lib/schemaSnapshot.js から移した、スキーマの写しの組み立ての部品（記号の表・並べ替えの道具・表／列／制約／索引／ポリシー／ | buildRelations, addColumns, addConstraints, addIndexes, addPolicies ほか8件 |
 | `scripts/lib/scramVerifier.js` | PostgreSQL の SCRAM-SHA-256 の検証子（pg_authid.rolpassword の形）を作る。RFC 5802 / RFC 7677… | scramSha256Verifier, SCRAM_ITERATIONS |
 | `scripts/lib/scrapeJobs/circuitBreaker.js` | ホスト単位のサーキットブレーカー（BOA-368、plan.md §2.2・§8、ADR-0067）。 | createCircuitBreaker, BreakerOpenError, FetchStoppedError |
 | `scripts/lib/scrapeJobs/circuitBreakerParts.js` | — | normalizeBreakerRead, effectiveBlockLevel, blockDurationMs, MAX_BREAKER_LEVEL, blockBaseOf ほか9件 |
@@ -595,4 +600,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 553 ファイル / export 3033 件。
+対象 558 ファイル / export 3082 件。
