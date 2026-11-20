@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2433 |
+| 読んだファイル | 2434 |
 | 読み書きのあるファイル | 301 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -145,7 +145,7 @@
 | activate_analogy_model | service だけ |  | 名前の文字列: scripts/ml/analogy/db.py:136 |  | analogy_models | analogy_models |  |
 | add_fetch_counts | service だけ |  | scripts/lib/scrapeJobs/fetchCounter.js:166 / 名前の文字列: scripts/lib/scrapeJobs/fetchCounter.js:15, scripts/maintenance/verifyData/fetch-counter-scenes.js:155, scripts/maintenance/verifyData/fetch-counter-scenes.js:168 ほか2 |  |  | fetch_counts, fetch_counts_minute |  |
 | analogy_feedback_guard | service だけ | yes | トリガー: analogy_feedback |  | analogy_feedback |  |  |
-| append_sns_metric_observation | service だけ |  | api/admin/sns-hub/observations.js:198, scripts/lib/snsDailyRunnerStore.js:28, scripts/lib/snsMetricsRunnerStore.js:94, scripts/maintenance/verify-sns-daily-runner.js:1278 |  | sns_drafts, sns_metric_observations | sns_metric_observations |  |
+| append_sns_metric_observation | service だけ |  | api/admin/sns-hub/observations.js:198, scripts/lib/snsDailyRunnerStore.js:28, scripts/lib/snsMetricsRunnerStore.js:94, scripts/maintenance/verify-sns-daily-runner.js:1279 |  | sns_drafts, sns_metric_observations | sns_metric_observations |  |
 | approve_sns_x_send | service だけ |  | api/_lib/snsXSendStore.js:115, scripts/lib/snsTodayPlannerStore.js:110, scripts/sns/pushFinalsImageStore.js:183, scripts/sns/pushFullPictureStore.js:101 | sns_bundle_send_allowed | sns_approvers, sns_auto_send_control, sns_auto_send_items, sns_drafts, sns_x_send_control, sns_x_send_jobs | sns_drafts, sns_x_send_jobs |  |
 | claim_scrape_slots | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:175, scripts/maintenance/verify-scrape-slots-on-db.js:47 / 名前の文字列: scripts/lib/scrapeJobs/schemaErrors.js:17 |  | races, scrape_slots | scrape_slots |  |
 | claim_scrape_slots_by_offset | service だけ |  | scripts/lib/scrapeJobs/storeParts.js:156 |  | races, scrape_slots | scrape_slots |  |
@@ -1891,7 +1891,7 @@
   - `scripts/maintenance/verify-display-coverage.js:170` rest(rest) [*] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:617` rest(rest) [bundle_import_id] （検査）
   - `scripts/maintenance/verify-sns-auto-plan.js:625` rest(rest) [id, status] （検査）
-  - `scripts/maintenance/verify-sns-daily-runner.js:965` rest(rest) [caption_text, format, id, platform, posted_at] （検査）
+  - `scripts/maintenance/verify-sns-daily-runner.js:966` rest(rest) [caption_text, format, id, platform, posted_at] （検査）
   - `scripts/maintenance/verify-sns-month-calendar.js:47` rest(rest) （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:738` rest(rest) [format, send_lane] （検査）
   - `scripts/maintenance/verify-sns-today-plan.js:762` rest(rest) [id, status] （検査）

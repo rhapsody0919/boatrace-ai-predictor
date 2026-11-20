@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2433,
+    "sourceFiles": 2434,
     "filesWithAccess": 301,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -21196,7 +21196,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-daily-runner.js:965",
+          "ref": "scripts/maintenance/verify-sns-daily-runner.js:966",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -21406,7 +21406,7 @@
             "scripts/maintenance/verify-data-readers.js:183",
             "scripts/maintenance/verify-data-readers.js:205",
             "scripts/maintenance/verify-sns-auto-plan.js:625",
-            "scripts/maintenance/verify-sns-daily-runner.js:965",
+            "scripts/maintenance/verify-sns-daily-runner.js:966",
             "scripts/maintenance/verify-sns-today-plan.js:762",
             "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushFinalsImageStore.js:165",
@@ -21465,7 +21465,7 @@
             "scripts/lib/snsDailyRunnerStore.js:65",
             "scripts/lib/snsMetricsRunnerStore.js:62",
             "scripts/lib/snsTodayPlannerStore.js:45",
-            "scripts/maintenance/verify-sns-daily-runner.js:965",
+            "scripts/maintenance/verify-sns-daily-runner.js:966",
             "scripts/maintenance/verify-sns-today-plan.js:738",
             "scripts/sns/delete-x-post.js:123",
             "scripts/sns/pushSetsuKiryokuShortStore.js:78",
@@ -21521,7 +21521,7 @@
             "scripts/lib/snsDailyRunnerStore.js:60",
             "scripts/lib/snsDailyRunnerStore.js:65",
             "scripts/lib/snsMetricsRunnerStore.js:62",
-            "scripts/maintenance/verify-sns-daily-runner.js:965"
+            "scripts/maintenance/verify-sns-daily-runner.js:966"
           ],
           "writers": [],
           "sql": [
@@ -21598,7 +21598,7 @@
             "api/_lib/snsClaimCheckReaders.js:149",
             "scripts/lib/snsAutoPlanRunnerStore.js:61",
             "scripts/lib/snsDailyRunnerStore.js:65",
-            "scripts/maintenance/verify-sns-daily-runner.js:965",
+            "scripts/maintenance/verify-sns-daily-runner.js:966",
             "scripts/sns/today-picks.js:98"
           ],
           "writers": [],
@@ -21703,7 +21703,7 @@
             "scripts/lib/snsDailyRunnerStore.js:60",
             "scripts/lib/snsDailyRunnerStore.js:65",
             "scripts/lib/snsMetricsRunnerStore.js:62",
-            "scripts/maintenance/verify-sns-daily-runner.js:965"
+            "scripts/maintenance/verify-sns-daily-runner.js:966"
           ],
           "writers": [],
           "sql": [
@@ -26923,7 +26923,7 @@
           "via": "rest"
         },
         {
-          "ref": "scripts/maintenance/verify-sns-daily-runner.js:1278",
+          "ref": "scripts/maintenance/verify-sns-daily-runner.js:1279",
           "via": "rest"
         }
       ],
