@@ -40,6 +40,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/modelAssert.js` | — | assertObject, assertInt, assertIntOrNull, assertText, parseIsoDate ほか1件 |
 | `src/pure/motorChartView.js` | モーター調子（MotorConditionChart）の系列・列の整形（RA21、画面の部品から移した。振る舞いは変えない）。 | exhibitionChartDataOf, computeRateView, computeStatColumns, computeRankClasses, computePeriodClip ほか4件 |
 | `src/pure/motorModel.js` | — | makeMotorStat, makeMotorPretest |
+| `src/pure/predictionAssistGuide.js` | 思考アシスト（BOA-430）のガイドの段の組み立て。純粋関数だけ。 | guideStepsWith |
 | `src/pure/predictionAssistState.js` | 思考アシストのページの状態（useReducer の初期値と操作）と、画面の部品に依らない取り出し。 | createAssistReducer, deepRunsOf, placeAxisOf, courseByBoatOf, buildBetSummary ほか3件 |
 | `src/pure/predictionModel.js` | — | makePrediction |
 | `src/pure/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
@@ -459,7 +460,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, sameClassLabel, baseVerdict, roughCard ほか37件 |
 | `src/utils/assistSession.js` | 思考アシストの買い目などを、同じタブの中でレースごとに残す（sessionStorage）。 | parseAssistSession, loadAssistSession, saveAssistSession, ASSIST_SESSION_PREFIX, ASSIST_SESSION_MAX ほか1件 |
 | `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, factsEntry, axisWhyKinds, b1Usual ほか30件 |
-| `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, guideSteps, windBandLabel |
+| `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, windBandLabel, guideSteps |
 | `src/utils/attackDefenseCells.js` | 超展開データ（AttackDefenseTable）のセルの値の算出（純関数）。 | getTotalWins, isDefaultAttackDistribution, getCellValue, attackDefenseColumn, TECHNIQUE_ROWS |
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
 | `src/utils/blogChartContract.js` | ブログの図の契約（docs/design/blog-charts/contract.md、schemaVersion 1）の検査と読み出し。 | valueAxisMax, validateBlogChart, SCHEMA_VERSION, LANGS, KINDS |
@@ -616,4 +617,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 574 ファイル / export 3130 件。
+対象 575 ファイル / export 3131 件。
