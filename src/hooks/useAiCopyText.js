@@ -54,8 +54,7 @@ import { isRaceCancelled } from "../utils/raceCancellation";
 import { splitRacerName } from "../utils/racerName";
 
 // courseStats: useSixBoatCourseStats の戻り値。想定コース1着率の行に使う（データ出走表と同じ値、BOA-1296）
-// export は verify-ai-copy-text.js が行の組み立てを直に呼ぶため（画面からは useAiCopyText を通す）
-export function buildRows(
+function buildRows(
   t,
   players,
   analysis,
@@ -264,3 +263,7 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
       !isRaceCancelled(prediction),
   };
 }
+
+// 行の組み立ては verify-ai-copy-text.js が直に呼ぶ（画面からは useAiCopyText を通す）。
+// 別名にするのは、本文に `export { buildRows }` を足して組む旧い verify と名前が二重にならないため
+export { buildRows as buildAiCopyRows };
