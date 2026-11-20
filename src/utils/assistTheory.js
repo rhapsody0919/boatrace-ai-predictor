@@ -14,6 +14,7 @@ import {
   TEXT_THEORY,
 } from "../data/theoryCatalog.js";
 import { ASSIST_COPY as C } from "../data/thinkingAssistCopy.js";
+import { guideStepsWith } from "../pure/predictionAssistGuide.js";
 
 const pct = (k, n) => (n ? Math.round((k / n) * 100) : 0);
 
@@ -412,56 +413,4 @@ export function theoryCard(id, ctx) {
  * @param {{post: boolean, rough: object|null, hintTop: object|null}} ctx
  * @returns {Array<{lens: string, target: string, step: string, q: string, sub: string, at: "top"|"bottom"}>}
  */
-export function guideSteps({ post, rough, hintTop }) {
-  const b1 = rough?.b1?.verdict;
-  const m = rough?.manshu?.verdict;
-  const roughSub =
-    b1 && m
-      ? C.guideRoughSub(C.guideVerdictWord[b1], C.guideVerdictWord[m])
-      : C.guideRoughSubNone;
-  const flowSub = hintTop
-    ? C.guideFlowSub(
-        C.formNames[hintTop.form],
-        pct(hintTop.hit[0], hintTop.hit[1]),
-        ATTACK_BOAT[hintTop.form] ?? null,
-      )
-    : C.guideFlowSubNone;
-  return [
-    {
-      lens: "axis",
-      target: "rough",
-      ...C.guide[0],
-      sub: roughSub,
-      at: "bottom",
-    },
-    {
-      lens: "axis",
-      target: "axis",
-      ...C.guide[1],
-      sub: C.guideAxisSub,
-      at: "top",
-    },
-    { lens: "flow", target: "board", ...C.guide[2], sub: flowSub, at: "top" },
-    {
-      lens: "power",
-      target: "power",
-      ...C.guide[3],
-      sub: post ? C.guidePowerSubPost : C.guidePowerSubPre,
-      at: "top",
-    },
-    {
-      lens: "place",
-      target: "board",
-      ...C.guide[4],
-      sub: C.guidePlaceSub,
-      at: "top",
-    },
-    {
-      lens: "bet",
-      target: "foot",
-      ...C.guide[5],
-      sub: C.guideBetSub,
-      at: "top",
-    },
-  ];
-}
+export const guideSteps = (ctx) => guideStepsWith(C, ATTACK_BOAT, ctx);
