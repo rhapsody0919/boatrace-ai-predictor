@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2369,
+    "sourceFiles": 2375,
     "filesWithAccess": 298,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -1610,7 +1610,7 @@
           "columns": []
         },
         {
-          "ref": "src/services/meetQueries2.js:166",
+          "ref": "src/services/meetQueries2.js:155",
           "op": "select",
           "via": "client",
           "columns": [
@@ -1848,7 +1848,7 @@
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/maintenance/verify-pre-race-parsers.js:1868",
             "scripts/sns/pushSetsuKiryokuShortStore.js:120",
-            "src/services/meetQueries2.js:166",
+            "src/services/meetQueries2.js:155",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
             "src/services/motorQueries7.js:78",
@@ -1881,7 +1881,7 @@
             "scripts/lib/snsTodayDigestV3.js:93",
             "scripts/maintenance/verify-analogy-v16.js:286",
             "scripts/maintenance/verify-pre-race-parsers.js:1868",
-            "src/services/meetQueries2.js:166",
+            "src/services/meetQueries2.js:155",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
             "src/services/motorQueries7.js:78",
@@ -1910,7 +1910,7 @@
             "scripts/lib/analogyV16Exhibition.js:156",
             "scripts/lib/analogyV16Exhibition.js:258",
             "scripts/maintenance/verify-analogy-v16.js:286",
-            "src/services/meetQueries2.js:166",
+            "src/services/meetQueries2.js:155",
             "src/services/motorQueries6.js:120",
             "src/services/motorQueries6.js:136",
             "src/services/motorQueries7.js:78",
@@ -4251,7 +4251,7 @@
           "test": true
         },
         {
-          "ref": "src/services/meetQueries2.js:144",
+          "ref": "src/services/meetQueries2.js:133",
           "op": "select",
           "via": "client",
           "columns": [
@@ -4309,7 +4309,7 @@
             "scripts/lib/motorPretestJob.js:217",
             "scripts/lib/motorPretestJob.js:233",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
-            "src/services/meetQueries2.js:144",
+            "src/services/meetQueries2.js:133",
             "src/services/motorQueries2.js:41",
             "src/services/motorQueries4.js:139",
             "src/services/motorQueries4.js:155"
@@ -4322,7 +4322,7 @@
             "scripts/lib/motorPretestJob.js:217",
             "scripts/lib/motorPretestJob.js:233",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
-            "src/services/meetQueries2.js:144",
+            "src/services/meetQueries2.js:133",
             "src/services/motorQueries2.js:41",
             "src/services/motorQueries4.js:139",
             "src/services/motorQueries4.js:155"
@@ -4334,7 +4334,7 @@
           "readers": [
             "scripts/lib/motorPretestJob.js:233",
             "scripts/maintenance/verify-pretest-row-pick.js:74",
-            "src/services/meetQueries2.js:144",
+            "src/services/meetQueries2.js:133",
             "src/services/motorQueries2.js:41",
             "src/services/motorQueries4.js:155"
           ],
@@ -4343,14 +4343,14 @@
         },
         "racer_class": {
           "readers": [
-            "src/services/meetQueries2.js:144"
+            "src/services/meetQueries2.js:133"
           ],
           "writers": [],
           "sql": []
         },
         "motor_number": {
           "readers": [
-            "src/services/meetQueries2.js:144",
+            "src/services/meetQueries2.js:133",
             "src/services/motorQueries4.js:155"
           ],
           "writers": [],
@@ -4376,7 +4376,7 @@
         "pretest_time": {
           "readers": [
             "scripts/maintenance/verify-pretest-row-pick.js:74",
-            "src/services/meetQueries2.js:144",
+            "src/services/meetQueries2.js:133",
             "src/services/motorQueries2.js:41",
             "src/services/motorQueries4.js:155"
           ],
@@ -4386,7 +4386,7 @@
         "pretest_rank": {
           "readers": [
             "scripts/maintenance/verify-pretest-row-pick.js:74",
-            "src/services/meetQueries2.js:144",
+            "src/services/meetQueries2.js:133",
             "src/services/motorQueries2.js:41"
           ],
           "writers": [],
@@ -5306,7 +5306,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/collect-venue-stats.js:231",
+          "ref": "scripts/analysis/collect-venue-stats.js:45",
           "op": "select",
           "via": "client",
           "columns": [
@@ -5808,7 +5808,7 @@
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:109",
             "scripts/analysis/campaign-backtest-fetch-races.js:49",
-            "scripts/analysis/collect-venue-stats.js:231",
+            "scripts/analysis/collect-venue-stats.js:45",
             "scripts/analysis/find-missing-dates.js:32",
             "scripts/analysis/find-video-worthy-race.js:76",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:75",
@@ -5853,7 +5853,7 @@
         "model_id": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:109",
-            "scripts/analysis/collect-venue-stats.js:231",
+            "scripts/analysis/collect-venue-stats.js:45",
             "scripts/analysis/find-video-worthy-race.js:76",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:75",
             "scripts/analysis/verify-calculations.js:15",
@@ -5891,7 +5891,7 @@
         },
         "top_pick": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:231",
+            "scripts/analysis/collect-venue-stats.js:45",
             "scripts/analysis/verify-calculations.js:15",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -5915,7 +5915,7 @@
         },
         "top_2nd": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:231",
+            "scripts/analysis/collect-venue-stats.js:45",
             "scripts/analysis/verify-calculations.js:15",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -5936,7 +5936,7 @@
         },
         "top_3rd": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:231",
+            "scripts/analysis/collect-venue-stats.js:45",
             "scripts/analysis/verify-calculations.js:15",
             "scripts/daily/generate-moriarty-recommendations.js:81",
             "scripts/daily/scrape-prediction-odds.js:40",
@@ -5957,7 +5957,7 @@
         },
         "confidence": {
           "readers": [
-            "scripts/analysis/collect-venue-stats.js:231",
+            "scripts/analysis/collect-venue-stats.js:45",
             "scripts/maintenance/verify-admin-rule-performance.js:268",
             "src/services/adminRuleService.js:26",
             "src/services/ruleMatchService.js:124"
@@ -6511,7 +6511,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries2.js:115",
+          "ref": "src/services/meetQueries2.js:104",
           "op": "select",
           "via": "client",
           "columns": [
@@ -6659,7 +6659,7 @@
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/currentMeetEntries.js:44",
-            "src/services/meetQueries2.js:115",
+            "src/services/meetQueries2.js:104",
             "src/services/meetQueries3.js:43",
             "src/services/motorQueries.js:205",
             "src/services/motorQueries3.js:285"
@@ -6748,7 +6748,7 @@
         "race_title": {
           "readers": [
             "scripts/lib/snsTodayDigestV3.js:85",
-            "src/services/meetQueries2.js:115",
+            "src/services/meetQueries2.js:104",
             "src/services/meetQueries3.js:43"
           ],
           "writers": [],
@@ -6765,7 +6765,7 @@
             "scripts/lib/snsTodayDigestV3.js:85",
             "scripts/maintenance/backfill-series-day.js:175",
             "src/services/currentMeetEntries.js:44",
-            "src/services/meetQueries2.js:115",
+            "src/services/meetQueries2.js:104",
             "src/services/meetQueries3.js:43",
             "src/services/motorQueries.js:205"
           ],
@@ -6785,7 +6785,7 @@
             "scripts/lib/snsTodayDigestV3.js:85",
             "scripts/verification/verify-series-points-official.mjs:158",
             "src/services/currentMeetEntries.js:44",
-            "src/services/meetQueries2.js:115",
+            "src/services/meetQueries2.js:104",
             "src/services/meetQueries3.js:43",
             "src/services/motorQueries.js:205"
           ],
@@ -6817,7 +6817,7 @@
             "scripts/verification/verify-series-points-border.mjs:79",
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:158",
-            "src/services/meetQueries2.js:115",
+            "src/services/meetQueries2.js:104",
             "src/services/meetQueries3.js:43",
             "src/services/motorQueries3.js:285"
           ],
@@ -7018,7 +7018,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/collect-venue-stats.js:261",
+          "ref": "scripts/analysis/collect-venue-stats.js:75",
           "op": "select",
           "via": "client",
           "columns": [
@@ -7821,7 +7821,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries2.js:105",
+          "ref": "src/services/meetQueries2.js:94",
           "op": "select",
           "via": "client",
           "columns": [
@@ -8415,7 +8415,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:261",
+            "scripts/analysis/collect-venue-stats.js:75",
             "scripts/analysis/find-missing-dates.js:31",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:87",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
@@ -8470,7 +8470,7 @@
             "src/services/meetQueries.js:252",
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
-            "src/services/meetQueries2.js:105",
+            "src/services/meetQueries2.js:94",
             "src/services/meetQueries3.js:60",
             "src/services/motorQueries.js:234",
             "src/services/motorQueries.js:274",
@@ -8540,7 +8540,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:261",
+            "scripts/analysis/collect-venue-stats.js:75",
             "scripts/analysis/past-rate-check/label-threshold-checks.mjs:88",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-race-analysis-rpc.js:120",
@@ -8578,7 +8578,7 @@
             "src/services/meetQueries.js:252",
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
-            "src/services/meetQueries2.js:105",
+            "src/services/meetQueries2.js:94",
             "src/services/meetQueries3.js:60",
             "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:111",
@@ -8638,7 +8638,7 @@
             "scripts/verification/verify-series-points-border.mjs:47",
             "scripts/verification/verify-series-points-needed.mjs:41",
             "scripts/verification/verify-series-points-official.mjs:149",
-            "src/services/meetQueries2.js:105",
+            "src/services/meetQueries2.js:94",
             "src/services/meetQueries3.js:60",
             "src/services/motorQueries2.js:262",
             "src/services/motorQueries3.js:240",
@@ -8670,7 +8670,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:261",
+            "scripts/analysis/collect-venue-stats.js:75",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/daily/generate-morning-digest.js:152",
@@ -8712,7 +8712,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:261",
+            "scripts/analysis/collect-venue-stats.js:75",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/analysis/verify-volatility-predictive-power.js:58",
@@ -8766,7 +8766,7 @@
             "scripts/maintenance/check-morning-init-shadow.js:121",
             "src/services/currentMeetEntries.js:26",
             "src/services/meetQueries.js:252",
-            "src/services/meetQueries2.js:105",
+            "src/services/meetQueries2.js:94",
             "src/services/motorQueries.js:274",
             "src/services/motorQueries2.js:111",
             "src/services/motorQueries2.js:262",
@@ -8790,7 +8790,7 @@
             "scripts/analysis/backtest-unified-model.js:100",
             "scripts/analysis/calibrate-unified-model.js:136",
             "scripts/analysis/campaign-backtest-fetch-races.js:96",
-            "scripts/analysis/collect-venue-stats.js:261",
+            "scripts/analysis/collect-venue-stats.js:75",
             "scripts/analysis/verify-turn-prediction-accuracy-v6.js:74",
             "scripts/daily/generate-morning-digest.js:152",
             "scripts/daily/generate-unified-trifecta-reference.js:71",
@@ -8954,7 +8954,7 @@
             "src/services/meetQueries.js:252",
             "src/services/meetQueries.js:37",
             "src/services/meetQueries.js:49",
-            "src/services/meetQueries2.js:105",
+            "src/services/meetQueries2.js:94",
             "src/services/meetQueries3.js:60",
             "src/services/motorQueries2.js:262",
             "src/services/motorQueries3.js:240",
@@ -10712,7 +10712,7 @@
           ]
         },
         {
-          "ref": "scripts/analysis/collect-venue-stats.js:247",
+          "ref": "scripts/analysis/collect-venue-stats.js:61",
           "op": "select",
           "via": "client",
           "columns": [
@@ -11457,7 +11457,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries2.js:128",
+          "ref": "src/services/meetQueries2.js:117",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []
@@ -11743,7 +11743,7 @@
             "api/_lib/snsClaimCheckReaders.js:321",
             "scripts/analysis/analyze-upset-factors.js:94",
             "scripts/analysis/campaign-backtest-score.js:59",
-            "scripts/analysis/collect-venue-stats.js:247",
+            "scripts/analysis/collect-venue-stats.js:61",
             "scripts/analysis/find-missing-dates.js:33",
             "scripts/analysis/find-video-worthy-race.js:93",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:274",
@@ -13171,7 +13171,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries2.js:176",
+          "ref": "src/services/meetQueries2.js:165",
           "op": "select",
           "via": "client",
           "columns": [
@@ -13305,7 +13305,7 @@
             "scripts/verification/verify-series-points-needed.mjs:58",
             "src/services/meetQueries.js:111",
             "src/services/meetQueries.js:79",
-            "src/services/meetQueries2.js:176",
+            "src/services/meetQueries2.js:165",
             "src/services/raceQueries4.js:22"
           ],
           "writers": [],
@@ -13331,7 +13331,7 @@
             "scripts/verification/verify-series-points-needed.mjs:58",
             "src/services/meetQueries.js:111",
             "src/services/meetQueries.js:79",
-            "src/services/meetQueries2.js:176",
+            "src/services/meetQueries2.js:165",
             "src/services/raceQueries4.js:22"
           ],
           "writers": [],
@@ -13346,7 +13346,7 @@
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:280",
             "scripts/daily/generate-morning-digest.js:391",
-            "src/services/meetQueries2.js:176",
+            "src/services/meetQueries2.js:165",
             "src/services/raceQueries4.js:22"
           ],
           "writers": [],
@@ -13361,7 +13361,7 @@
             "scripts/analysis/full-picture-answer-stage/actual.cjs:10",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:280",
             "src/services/meetQueries.js:79",
-            "src/services/meetQueries2.js:176",
+            "src/services/meetQueries2.js:165",
             "src/services/raceQueries4.js:22"
           ],
           "writers": [],
@@ -13396,7 +13396,7 @@
             "scripts/verification/verify-series-points-border.mjs:64",
             "scripts/verification/verify-series-points-needed.mjs:58",
             "src/services/meetQueries.js:111",
-            "src/services/meetQueries2.js:176",
+            "src/services/meetQueries2.js:165",
             "src/services/raceQueries4.js:22"
           ],
           "writers": [],
@@ -15645,7 +15645,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries2.js:193",
+          "ref": "src/services/meetQueries2.js:182",
           "op": "select",
           "via": "client",
           "columns": [
@@ -15697,7 +15697,7 @@
             "scripts/analysis/series-points-scoring-hypotheses.mjs:76",
             "scripts/verification/verify-series-points-official.mjs:135",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/meetQueries2.js:193",
+            "src/services/meetQueries2.js:182",
             "src/services/meetQueries3.js:65"
           ],
           "writers": [],
@@ -15708,7 +15708,7 @@
             "scripts/analysis/series-points-scoring-hypotheses.mjs:76",
             "scripts/verification/verify-series-points-official.mjs:135",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/meetQueries2.js:193",
+            "src/services/meetQueries2.js:182",
             "src/services/meetQueries3.js:65"
           ],
           "writers": [],
@@ -15719,7 +15719,7 @@
             "scripts/analysis/series-points-scoring-hypotheses.mjs:76",
             "scripts/verification/verify-series-points-official.mjs:135",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/meetQueries2.js:193"
+            "src/services/meetQueries2.js:182"
           ],
           "writers": [],
           "sql": []
@@ -15762,7 +15762,7 @@
         "placements": {
           "readers": [
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/meetQueries2.js:193"
+            "src/services/meetQueries2.js:182"
           ],
           "writers": [],
           "sql": []
@@ -15771,7 +15771,7 @@
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:76",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/meetQueries2.js:193"
+            "src/services/meetQueries2.js:182"
           ],
           "writers": [],
           "sql": []
@@ -15780,7 +15780,7 @@
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:76",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/meetQueries2.js:193"
+            "src/services/meetQueries2.js:182"
           ],
           "writers": [],
           "sql": []
@@ -15789,14 +15789,14 @@
           "readers": [
             "scripts/analysis/series-points-scoring-hypotheses.mjs:76",
             "scripts/verification/verify-series-points-official.mjs:46",
-            "src/services/meetQueries2.js:193"
+            "src/services/meetQueries2.js:182"
           ],
           "writers": [],
           "sql": []
         },
         "scraped_at": {
           "readers": [
-            "src/services/meetQueries2.js:193",
+            "src/services/meetQueries2.js:182",
             "src/services/meetQueries3.js:65"
           ],
           "writers": [],
@@ -17081,7 +17081,7 @@
           ]
         },
         {
-          "ref": "src/services/meetQueries2.js:137",
+          "ref": "src/services/meetQueries2.js:126",
           "op": "select",
           "via": "helper:fetchAllByIn",
           "columns": []

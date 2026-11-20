@@ -518,6 +518,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/meetQueries.js` | — | getCurrentMeetFlyingBoats, getRaceMeetPrevRuns, getRacerMeetExhibitionTrendBefore, getMeetOriginalExhibitionByRaceBoat |
 | `src/services/meetQueries2.js` | — | getMeetScoreboard |
 | `src/services/meetQueries3.js` | — | getMeetPage |
+| `src/services/meetQueries4.js` | — | — |
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
 | `src/services/motorQueries.js` | — | findBoatColumnIndex, courseOfBoat, toMaintenanceResult, beforeKey, includeKey ほか8件 |
 | `src/services/motorQueries2.js` | — | fetchPretestByRacer, getMotorPowerIndex, getRaceMotorFreshness, getMotorUsageHistory |
@@ -557,4 +558,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 515 ファイル / export 2942 件。
+対象 516 ファイル / export 2942 件。
