@@ -85,14 +85,8 @@ async function apiAll(repo, token, pathAndQuery) {
   fail(`GitHub API ${pathAndQuery} が20ページを超えた`);
 }
 
-async function main() {
-  const token = requireEnv("GITHUB_TOKEN", /^\S+$/);
-  const repo = requireEnv("GITHUB_REPOSITORY", /^[\w.-]+\/[\w.-]+$/);
-  const runId = requireEnv("GITHUB_RUN_ID", /^\d+$/);
-  const switchSha = requireEnv("DB_APPLY_SWITCH_SHA", /^[0-9a-f]{40}$/);
-  const reviewerUserId = Number(requireEnv("REVIEWER_BOT_USER_ID", /^\d+$/));
-
-  // db-apply の他の run が動いている・待っているなら何もしない
+/** db-apply の run を、動いている・待っている状態ごとに全部集める */
+async function listDbApplyRuns(repo, token) {
   const runs = [];
   for (const status of [
     "in_progress",
@@ -108,6 +102,59 @@ async function main() {
     );
     runs.push(...res.workflow_runs);
   }
+  return runs;
+}
+
+/** git log（--format=@%H --name-only）の出力から、足されたマイグレーションのファイル → 足したコミットの列 */
+function addCommitsByMigration(log) {
+  const addCommitsByFile = new Map();
+  let current = null;
+  for (const line of log.split("\n")) {
+    if (line.startsWith("@")) current = line.slice(1);
+    else if (MIGRATION_PATH_RE.test(line)) {
+      addCommitsByFile.set(line, [
+        ...(addCommitsByFile.get(line) ?? []),
+        current,
+      ]);
+    }
+  }
+  return addCommitsByFile;
+}
+
+/** 候補の git から読める事実（master の blob・足したコミットの親の数・台帳の差分） */
+function gitFactsOf(file, commit) {
+  const masterBlob = existsSync(path.join(ROOT, file))
+    ? git("rev-parse", `HEAD:${file}`)
+    : null;
+  const commitParents =
+    git("rev-list", "--parents", "-n", "1", commit).split(" ").length - 1;
+  const ledgerDiff = git("diff", `${commit}^1`, commit, "--", LEDGER_PATH);
+  return { masterBlob, commitParents, ledgerDiff };
+}
+
+const prSummary = (p) => ({
+  number: p.number,
+  merged: p.merged_at !== null,
+  baseRef: p.base.ref,
+  mergeCommitSha: p.merge_commit_sha,
+  headSha: p.head.sha,
+});
+
+const reviewSummary = (r) => ({
+  userId: r.user?.id ?? -1,
+  state: r.state,
+  commitId: r.commit_id,
+});
+
+async function main() {
+  const token = requireEnv("GITHUB_TOKEN", /^\S+$/);
+  const repo = requireEnv("GITHUB_REPOSITORY", /^[\w.-]+\/[\w.-]+$/);
+  const runId = requireEnv("GITHUB_RUN_ID", /^\d+$/);
+  const switchSha = requireEnv("DB_APPLY_SWITCH_SHA", /^[0-9a-f]{40}$/);
+  const reviewerUserId = Number(requireEnv("REVIEWER_BOT_USER_ID", /^\d+$/));
+
+  // db-apply の他の run が動いている・待っているなら何もしない
+  const runs = await listDbApplyRuns(repo, token);
   // 重いものの承認待ちが6時間を超えたら知らせる（busy でも数える。承認待ちの run があると busy になるため）
   const stale = staleWaitingRuns(runs, new Date());
   if (isBusy(runs, runId)) return output({ status: "busy", stale });
@@ -131,17 +178,7 @@ async function main() {
     "--",
     "docs/db-migration/",
   );
-  const addCommitsByFile = new Map();
-  let current = null;
-  for (const line of log.split("\n")) {
-    if (line.startsWith("@")) current = line.slice(1);
-    else if (MIGRATION_PATH_RE.test(line)) {
-      addCommitsByFile.set(line, [
-        ...(addCommitsByFile.get(line) ?? []),
-        current,
-      ]);
-    }
-  }
+  const addCommitsByFile = addCommitsByMigration(log);
 
   const candidates = [];
   for (const [file, addCommits] of addCommitsByFile) {
@@ -156,20 +193,9 @@ async function main() {
       continue;
     }
     const commit = addCommits[0];
-    const masterBlob = existsSync(path.join(ROOT, file))
-      ? git("rev-parse", `HEAD:${file}`)
-      : null;
-    const commitParents =
-      git("rev-list", "--parents", "-n", "1", commit).split(" ").length - 1;
-    const ledgerDiff = git("diff", `${commit}^1`, commit, "--", LEDGER_PATH);
+    const { masterBlob, commitParents, ledgerDiff } = gitFactsOf(file, commit);
     const prs = (await api(repo, token, `/commits/${commit}/pulls`)).map(
-      (p) => ({
-        number: p.number,
-        merged: p.merged_at !== null,
-        baseRef: p.base.ref,
-        mergeCommitSha: p.merge_commit_sha,
-        headSha: p.head.sha,
-      }),
+      prSummary,
     );
     const pr = prs.find(
       (p) => p.merged && p.baseRef === "master" && p.mergeCommitSha === commit,
@@ -184,11 +210,7 @@ async function main() {
       );
       headBlob = contents.sha ?? null;
       reviews = (await apiAll(repo, token, `/pulls/${pr.number}/reviews`)).map(
-        (r) => ({
-          userId: r.user?.id ?? -1,
-          state: r.state,
-          commitId: r.commit_id,
-        }),
+        reviewSummary,
       );
     }
     const runbook = `docs/db-migration/${fileName.split("_")[0]}-runbook.md`;
