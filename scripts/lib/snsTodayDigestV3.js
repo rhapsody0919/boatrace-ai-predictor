@@ -10,7 +10,7 @@
  *   丸一日中止の日は出さない（同じ関数が判定する）
  * - 載せるのは締切が送る時刻より後のレースだけ。欠場の艇・中止のレースは選ばない
  */
-import { xPostValid } from "../../api/_lib/snsXLength.js";
+import { xPostValid } from "./sns/xLength.js";
 import { addDaysToDateString } from "./dateUtils.js";
 import {
   PAGE,

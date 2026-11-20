@@ -5,8 +5,10 @@
  * - 投稿は POST /2/tweets。返信は reply.in_reply_to_tweet_id、投票は poll.options・poll.duration_minutes（媒体と同じ投稿に載せられない）
  * - POST は自動で再試行しない（応答が分からない投稿は要照合に残す。契約どおり）
  * - posted_at は投稿の ID（snowflake）に入っている作成時刻から求める（読み取りの API を余分に呼ばない）
+ * X_API_BASE は scripts/lib/sns/xApiBase.js（scripts/lib の snsMetricsRunner も読むので api/ から下ろした）
  */
-export const X_API_BASE = "https://api.x.com";
+import { X_API_BASE } from "../../scripts/lib/sns/xApiBase.js";
+
 const TIMEOUT_MS = 30000;
 // X の snowflake ID の時刻の起点（2010-11-04T01:42:54.657Z）
 const SNOWFLAKE_EPOCH_MS = 1288834974657n;
@@ -175,3 +177,5 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
     },
   };
 }
+
+export { X_API_BASE } from "../../scripts/lib/sns/xApiBase.js";

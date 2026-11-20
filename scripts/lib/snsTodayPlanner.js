@@ -18,13 +18,13 @@
  * - shadow では読むだけで、撮影・Storage・DB・Slack には書かない
  */
 import { matchRiskRules, draftRiskFields } from "./riskRuleMatcher.js";
-import { SITE_BASE_URL } from "../../api/_lib/snsHubHelpers.js";
+import { SITE_BASE_URL } from "./sns/siteBaseUrl.js";
 import { buildTodayModel } from "../../api/_lib/botToday.js";
 import {
   TODAY_SCREEN_KEY,
   digestRevision,
   pickRaceStatus,
-} from "../../api/_lib/snsTodayDigest.js";
+} from "./sns/todayDigestStatus.js";
 import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 import { loadTodayVariants } from "./snsTodayVariants.js";
 import {

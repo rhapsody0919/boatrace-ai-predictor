@@ -17,7 +17,7 @@ import {
   observationPeriod,
   withinSnapshotTolerance,
 } from "../../src/utils/snsObservations.js";
-import { X_API_BASE } from "../../api/_lib/xApiAdapter.js";
+import { X_API_BASE } from "./sns/xApiBase.js";
 import { createXMetricsReader as createXReaderWith } from "./snsMetricsRunnerReaders.js";
 import {
   SOURCE_BY_CHANNEL,
