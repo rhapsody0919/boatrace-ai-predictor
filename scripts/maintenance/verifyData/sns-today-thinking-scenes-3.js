@@ -238,6 +238,9 @@ function stt3Scene2() {
     assert.equal(row.source_data.finals_image, undefined);
     assert.equal(row.source_data.digest, undefined);
   });
+}
+
+function stt3Scene2b() {
   test("マイグレーションの前（許可の列が無く PostgREST が 400）: 優勝戦は今のまま読め、思考投稿は off として扱う", async () => {
     const asked = [];
     const fetchImpl = async (url) => {
@@ -388,5 +391,6 @@ export function runSnsTodayThinkingScenes3(env) {
   } = env);
   stt3Scene1();
   stt3Scene2();
+  stt3Scene2b();
   stt3Scene3();
 }
