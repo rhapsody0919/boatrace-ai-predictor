@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2621,
+    "sourceFiles": 2635,
     "filesWithAccess": 316,
     "tableReaders": 948,
     "tableWriters": 195,
@@ -18394,11 +18394,10 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-gha-skip-gate.js:1354",
+          "ref": "scripts/maintenance/verifyData/gha-skip-gate-scenes-6.js:27",
           "op": "rest",
           "via": "rest",
-          "columns": [],
-          "test": true
+          "columns": []
         },
         {
           "ref": "scripts/sns/pushResearchImageStore.js:61",

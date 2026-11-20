@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2621 |
+| 読んだファイル | 2635 |
 | 読み書きのあるファイル | 316 |
 | 表の読み手（箇所） | 948 |
 | 表の書き手（箇所） | 195 |
@@ -1687,7 +1687,7 @@
   - `scripts/lib/scrapeJobs/storeParts.js:35` select [*, job]
   - `scripts/maintenance/check-morning-init-shadow.js:197` select [consecutive_failures, cursor, job, last_error, last_success_at, mode]
   - `scripts/maintenance/check-scrape-monitor-liveness.js:139` select [consecutive_failures, job, last_error, last_success_at, last_target_date, last_tick_at, mode]
-  - `scripts/maintenance/verify-gha-skip-gate.js:1354` rest(rest) （検査）
+  - `scripts/maintenance/verifyData/gha-skip-gate-scenes-6.js:27` rest(rest)
   - `scripts/sns/pushResearchImageStore.js:61` rest(rest) [job, last_report]
 - 書き手（14）: 
   - `scripts/lib/boatcast/oritenJobParts.js:203` update [last_report]
