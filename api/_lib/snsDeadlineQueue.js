@@ -1,7 +1,7 @@
 import { xPostValid } from './snsXLength.js';
-import { SCREEN_TABS } from '../../scripts/lib/snsScreenMarkers.js';
 import { hasLink } from './snsResearchImage.js';
 import { holdReasonOf } from './snsXSend.js';
+import { checkPublicDisplay } from "../../scripts/lib/sns/publicDisplayCheck.js";
 
 // 推奨値は運用承認ではない。DB timing_approved=falseが初期値。
 export const QUEUE_TIMING_PROPOSAL = { scheduleMinutes: 90, expiryMinutes: 30 };
@@ -10,27 +10,6 @@ export function deadlineSchedule(deadlineAt, policy = QUEUE_TIMING_PROPOSAL) {
   if (!Number.isFinite(t) || policy.scheduleMinutes <= policy.expiryMinutes || policy.expiryMinutes <= 0) throw new Error('締切設定が不正です');
   return { scheduled_at: new Date(t - policy.scheduleMinutes * 60000).toISOString(),
     expires_at: new Date(t - policy.expiryMinutes * 60000).toISOString() };
-}
-
-/** 公開URLの形（boat-ai.jp の origin・認証情報とフラグメントなし・query は UTM と tab だけ） */
-function publicUrlValid(url) {
-  // UTM 以外の query は、タブを直接開く tab（SCREEN_TABS の値だけ）しか受け付けない（sns-pdca-loop tasks 10）。
-  const badQuery = [...url.searchParams.keys()].some(k => !['utm_source','utm_medium','utm_campaign','utm_content','tab'].includes(k));
-  const badTab = url.searchParams.has('tab') && !SCREEN_TABS.includes(url.searchParams.get('tab'));
-  return !(url.origin !== 'https://www.boat-ai.jp' || url.username || url.password || url.hash || badQuery || badTab);
-}
-
-/** headless.inspectは毎回新しい未認証contextで開く。Cookie/Storage/Preview設定を持ち込まない。
- * {url, context:{storageState:null}, requiredSelectors} -> {finalUrl, visibleSelectors}
- * selectorsは公開画面の印の設定。HTTP200やfeatureFlagsだけでは合格しない。
- */
-export async function checkPublicDisplay(queue, headless, markers) {
-  if (!headless || !queue?.public_url || !markers?.[queue.screen_key]?.length) throw new Error('public_check_unconfigured');
-  const url = new URL(queue.public_url);
-  if (!publicUrlValid(url)) throw new Error('public_url_invalid');
-  const selectors = markers[queue.screen_key];
-  const result = await headless.inspect({ url: url.href, context: { storageState: null }, requiredSelectors: selectors });
-  if (result.finalUrl !== url.href || !selectors.every(s => result.visibleSelectors?.includes(s))) throw new Error('public_component_missing');
 }
 
 /** readCurrentは送信時点の欠場・API版を返す注入契約。保存済み欠場なしだけでは通さない。 */
@@ -349,3 +328,5 @@ export async function closeRetainedYoutubeJob(job, { store, lookup }) {
     throw new Error(`youtube_close_not_private（${result?.privacyStatus ?? '不明'}）`);
   return store.transition(job.id, 'youtube_close_private', { owned: true, privacyStatus: 'private', id: result.id });
 }
+
+export { checkPublicDisplay } from "../../scripts/lib/sns/publicDisplayCheck.js";

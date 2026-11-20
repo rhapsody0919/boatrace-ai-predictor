@@ -16,6 +16,7 @@ import {
   setsuItemVariantOf,
 } from "./snsSetsuKiryokuShort.js";
 import { parseUpsetId, UPSET_WIN_SHORT_KIND } from "./snsUpsetWinShort.js";
+import { deadlineIso } from "../../scripts/lib/sns/deadlineIso.js";
 
 /** 優勝戦の投稿の部分（下書きの source_data.finals_image.part）と item の variant（176・177）。part の無い下書きは本投稿 */
 export const FINALS_PART_VARIANTS = Object.freeze({
@@ -32,12 +33,6 @@ export const THINKING_PART_VARIANTS = Object.freeze({
 });
 /** /today の対象レースの思考投稿の item の kind（189） */
 export const TODAY_THINKING_KIND = "today_thinking";
-
-/** races の締切（発走の時刻、JST）を ISO にする。承認（auto-plan）と送る直前で同じ文字列になるよう、ここだけで作る */
-export function deadlineIso(race) {
-  if (!race?.race_date || !race?.start_time) return null;
-  return new Date(`${race.race_date}T${race.start_time}+09:00`).toISOString();
-}
 
 /** レースの行・出走表・展示の3つの読み（db の呼び出しの配列。Promise.all の先頭に並べる） */
 export const raceCalls = (db, id) => [
@@ -350,3 +345,5 @@ const READERS = [
 
 /** 下書きの種類の読み手（無ければ undefined） */
 export const readerFor = (draft) => READERS.find((r) => r.match(draft));
+
+export { deadlineIso } from "../../scripts/lib/sns/deadlineIso.js";
