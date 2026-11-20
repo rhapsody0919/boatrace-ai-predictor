@@ -119,6 +119,14 @@ async function syncRecentKFile() {
   }
 }
 
+export {
+  KFILE_SYNC_LOOKBACK_DAYS,
+  syncActualCourseFromKFile,
+  syncRank456FromKFile,
+  syncOfficialFinishCodeFromKFile,
+  syncKFileForDate,
+} from "../lib/kfileSync.js";
+
 /**
  * 発走90分超で結果が取得できていないレースを中止・順延「確定」として扱う（BOA-254 FR2）。
  * getRacesAfterStart(schedule, 5) が対象とする5〜90分後ウィンドウを抜けた
@@ -139,6 +147,12 @@ async function confirmOverdueCancellations(schedule) {
     console.error(`❌ ${error.message}`);
   }
 }
+
+export {
+  confirmCancellationsForRaceIds,
+  clearCancellationsWithResults,
+  clearCancellationsWithResultsInRange,
+} from "../lib/raceCancellation.js";
 
 /**
  * 結果スクレイピング・DB書き込みの共通処理（GitHub Actions・CLI）
@@ -294,24 +308,10 @@ async function scrapeResults(dateStr = null) {
   await scrapeAndSaveResults(races, targetDate);
 }
 
+export { fixMissingHitFlags } from "../lib/predictionHitFix.js";
+
 // スタンドアローン実行時のみ実行する（import 時に実行させない）
 if (process.argv[1] === new URL(import.meta.url).pathname) {
   const targetDate = parseDateArg();
   scrapeResults(targetDate);
 }
-
-export {
-  KFILE_SYNC_LOOKBACK_DAYS,
-  syncActualCourseFromKFile,
-  syncRank456FromKFile,
-  syncOfficialFinishCodeFromKFile,
-  syncKFileForDate,
-} from "../lib/kfileSync.js";
-
-export {
-  confirmCancellationsForRaceIds,
-  clearCancellationsWithResults,
-  clearCancellationsWithResultsInRange,
-} from "../lib/raceCancellation.js";
-
-export { fixMissingHitFlags } from "../lib/predictionHitFix.js";
