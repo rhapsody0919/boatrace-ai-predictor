@@ -14,6 +14,7 @@ import { canonicalUrl, harKey, mergeHarLogs } from "../../e2e/har-merge.js";
 import { isPartialRun } from "../../e2e/global-setup.js";
 
 import {
+  collectTodayRuns,
   NOTIFY_STEP_PREFIX,
   notifyDedupe,
   recordCancelledInJobs,
@@ -312,18 +313,37 @@ check(
 );
 // 通知の重複判定は event で絞らない（schedule だけを見ると、Vercel Cron の dispatch の通知を数えず1日最大4回に戻る）。
 // PR のブランチを ref にした手の起動は数えない
+// 本文の字は読まず、collectTodayRuns に偽の gh api を渡して問い合わせた endpoint で見る（GitHub には繋がない）
 {
-  const src = readFileSync(
-    path.join(repoRoot, "scripts", "maintenance", "e2e-recording.js"),
-    "utf8",
-  );
+  const asked = [];
+  const gh = (endpoint) => {
+    asked.push(endpoint);
+    return endpoint.endsWith("/jobs")
+      ? { jobs: [] }
+      : { workflow_runs: [{ id: 7, created_at: "2026-11-20T01:00:00Z" }] };
+  };
+  const repo = process.env.GITHUB_REPOSITORY;
+  process.env.GITHUB_REPOSITORY = "o/r";
+  let runs;
+  try {
+    runs = collectTodayRuns(new Date("2026-11-20T03:00:00Z"), { gh });
+  } finally {
+    if (repo === undefined) delete process.env.GITHUB_REPOSITORY;
+    else process.env.GITHUB_REPOSITORY = repo;
+  }
+  const [listPath, listQuery = ""] = (asked[0] ?? "").split("?");
+  const q = new URLSearchParams(listQuery);
   check(
-    "notify-dedupe の runs の取得は event で絞らず、master だけを見る",
+    "notify-dedupe の runs の取得は event で絞らず、master だけを見る（JST の今日の0時から）。run ごとに job を読む",
+    [listPath, q.get("branch"), q.has("event"), q.get("created"), asked.slice(1), runs],
     [
-      /e2e-rerecord\.yml\/runs\?[^`]*event=/.test(src),
-      /e2e-rerecord\.yml\/runs\?branch=master&/.test(src),
+      "repos/o/r/actions/workflows/e2e-rerecord.yml/runs",
+      "master",
+      false,
+      ">=2026-11-19T15:00:00.000Z",
+      ["repos/o/r/actions/runs/7/jobs"],
+      [{ id: 7, createdAt: "2026-11-20T01:00:00Z", notified: false, recordCancelled: false }],
     ],
-    [false, true],
   );
 }
 // 状態関数（failure() / success() / cancelled() / always()）は if: の中でしか使えない。
