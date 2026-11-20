@@ -146,6 +146,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/eveDeadlinesJob.js` | 前夜の締切予定（eve_race_deadlines、マイグレーション202、BOA-1282）の共通ラッパ向けハンドラー2つ。 | isFinalRound, readExpectedVenues, readEveRows, buildEveRows, nameTargets ほか8件 |
 | `scripts/lib/eveDeadlinesRows.js` | 前夜の締切予定（eveDeadlinesJob.js）の純な部分: 書く行・優勝戦の判定・raceindex の振り分け・通知・戻り値。 | eveIsFinal, eveRow, isSameEveRow, parseVenueIndex, acceptVenueIndex ほか4件 |
 | `scripts/lib/exhibitionJobParts.js` | scrape-exhibition-data.js の部品。公式ページの解析結果から展示の行を組み立て、 | toLegacyExhibition, upsertExhibitionRows, groupTargetsByVenue, absorbVenueResults, markHaveData ほか4件 |
+| `scripts/lib/exhibitionRunForRaces.js` | — | fetchExhibitionDetailed, runForRaces, updateRaceConditionsWeather |
 | `scripts/lib/fakeSupabaseClient.js` | 検証用の偽のSupabaseクライアント（メモリ上のテーブル。DB・ネットワークに接続しない）。 | fakeClient |
 | `scripts/lib/fanPeriodJob.js` | 期別成績（fan、racer_period_stats）の定期取り込み。共通ラッパ向けハンドラー（api/cron/fan-period.js）。 | fanIdEndedBefore, periodOfFanId, daysSincePeriodEnd, fanRawPath, runFanPeriodJob ほか2件 |
 | `scripts/lib/fanPeriodParser.js` | 公式「レーサー期別成績」ファイル（fan）の全項目パーサー（純関数。ネットワーク・DB・fsに触れない） | parseFanId, fanIdOf, buildFanUrl, fanArchiveRelPath, listFanIds ほか14件 |
@@ -209,9 +210,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/pitReportRows.js` | ピットレポートの解析結果（pitReportParser.js）から、DBへ書く行・スロットの結果（outcome）・ | isPitReportCandidate, pendingRetrySec, outcomeForStatus, computeContentHash, buildPitReportRows ほか5件 |
 | `scripts/lib/pitReportSchema.js` | ピットレポートの保存先（マイグレーション085: race_pit_reports・race_pit_comments）が、接続先のDBに | detectPitReportSchema, clearPitReportSchemaCache, PIT_REPORT_TABLES, PIT_SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/placementDistribution.js` | 2着・3着のコース別統計分布 | getPlacementBaseline, PLACEMENT_DISTRIBUTION, GLOBAL_PLACEMENT_AVERAGE |
+| `scripts/lib/pointRankFetch.js` | — | — |
 | `scripts/lib/pointRankJob.js` | 得点率（B2、racer_series_points）の共通ラッパ向けハンドラー（tasks.md T4b-12-1、plan.md §4.3）。 | isLastChanceForPending, runPointRankJob, POINT_RANK_CONCURRENCY |
 | `scripts/lib/pointRankJobParts.js` | scrape-point-rank.js の純粋な部品（DB に触らない）。 | isTableExpected, judgeVenue, buildVenueGrades, buildVenueLastRaces, buildSeriesPointRows ほか10件 |
 | `scripts/lib/pointRankParser.js` | boatrace.jp 得点率一覧ページ（pointrank）の共通パーサー | parsePointRankTable, parseHayamiSeriesDay, parsePointRankAsOf, parseHayamiRaceNumber |
+| `scripts/lib/pointRankRun.js` | — | run |
 | `scripts/lib/prShape.js` | PR の差分の形の機械の検査（symlink・submodule・LFS・バイナリ・.gitattributes・上限超え）。純粋関数。 | mechanicalRejections, parseRawDiff, patchOf, isAllowedMedia, isHarmlessNoBody ほか2件 |
 | `scripts/lib/preRaceRows.js` | 出走表・直前情報の全項目の解析結果（scripts/lib/raceListParser.js・beforeInfoParser.js）から、DBへ書く行を作る | formatJstHm, buildRaceEntryRows, buildRaceConditionRow, buildExhibitionRows, planDeadlineUpdates |
 | `scripts/lib/preRaceSchema.js` | 出走表・直前情報の新しい列（マイグレーション081・082）が、接続先のDBに適用済みかの判定 | PRE_RACE_SCHEMA_TARGETS, detectPreRaceSchema, clearPreRaceSchemaCache, PRE_RACE_OPTIONAL_COLUMN_GROUPS |
@@ -225,6 +228,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceIndicatorData.js` | データ出走表11指標のデータ取得（AI予想モデル大規模改修 Task6a） | fetchStPredictability, fetchReturnRate, fetchTechniqueProfile, fetchExhibitionTrend, fetchRacerForm ほか1件 |
 | `scripts/lib/raceInfoAccumulate.js` | レース情報の集計（update-race-info.js から分けた純粋関数）: 取得の結果を、書く行（中止・締切・条件・出走表）にためる・ | createAccumulator, accumulateRaceInfo, assertRaceInfoRunArgs, applyFetchedRaceInfo, parsedRaceOutcome |
 | `scripts/lib/raceInfoFetch.js` | 出走表・直前情報の取得（update-race-info.js から分けた部分）: racelist・beforeinfo を取って読む。 | fetchRaceInfoDetailed, fetchRaceInfo, fetchRaceInfos, defaultFetch |
+| `scripts/lib/raceInfoRunForRaces.js` | — | runForRaces |
 | `scripts/lib/raceInfoWrite.js` | レース情報の書き込みの部品（update-race-info.js の flushRaceInfo から分けた）: races の列の更新の繰り返し・ | updateRacesEach, conditionGroups, planRacesGrade, racesUpdates, writeCounters ほか2件 |
 | `scripts/lib/raceListParser.js` | 公式の出走表ページ（boatrace.jp racelist）の全項目パーサー（純関数。DB・取得先に接続しない） | scrapeSeriesDay, scrapeRaceMeta, parseRaceListDocument, parseRaceListPage, RACELIST_PARSER_VERSION |
 | `scripts/lib/raceNoticesJob.js` | レース特記事項（A5、race_special_notes）の共通ラッパ向けハンドラー（BOA-353 T4b-11-1、plan.md §2.2）。 | runRaceNoticesJob, RACE_NOTICES_CONCURRENCY |
@@ -600,4 +604,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 558 ファイル / export 3082 件。
+対象 562 ファイル / export 3087 件。
