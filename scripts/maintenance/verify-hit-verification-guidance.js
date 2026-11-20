@@ -21,7 +21,7 @@
  * 「移設先が変わったので案内も直せ」と言える。文字列同士の突き合わせだけの
  * 検査にはしない。
  */
-import { readFileSync } from "node:fs";
+import { importersOf, renderedSentences } from "./verifyData/hit-verification-guidance-pages.js";
 
 const AI_TAB = "src/components/race/RaceAiPredictionTab.jsx";
 const RESULT_TAB = "src/components/race/RaceResult.jsx";
@@ -39,13 +39,16 @@ const GUIDANCE_MARKER = "的中";
 /** 案内の対象を絞る語。これが無い「的中率」だけの文は対象外 */
 const REQUIRES_LOCATION = "確認";
 
-const read = (path) => readFileSync(path, "utf8");
+// 頁は描いた文で見る。部品は、読み込みの道で TurnPatternList を import した先で見る（本文の字を fs で読まない）
+const PAGE_PATHS = { "src/pages/About.jsx": "/about", "src/pages/FAQ.jsx": "/faq", "src/pages/HowToUse.jsx": "/how-to-use" };
+const srcRel = (file) => file.replace(/^src\//, "");
+const importers = await importersOf("components/race/TurnPatternList.jsx", [AI_TAB, RESULT_TAB].map(srcRel));
 
 const errors = [];
 
 // 1. 的中判定（展開予測の答え合わせ）を描いているのはどちらのタブか
-const aiRendersVerdict = read(AI_TAB).includes("TurnPatternList");
-const resultRendersVerdict = read(RESULT_TAB).includes("TurnPatternList");
+const aiRendersVerdict = importers.includes(srcRel(AI_TAB));
+const resultRendersVerdict = importers.includes(srcRel(RESULT_TAB));
 
 if (!aiRendersVerdict || resultRendersVerdict) {
   errors.push(
@@ -63,11 +66,8 @@ const expectedTab = resultRendersVerdict ? "結果" : "AI予想";
 const wrongTab = expectedTab === "AI予想" ? "結果" : "AI予想";
 
 for (const file of GUIDANCE_FILES) {
-  const source = read(file);
-  // JSXは要素をまたいで改行するため、行単位ではなく句点で区切る
-  const sentences = source
-    .split(/[。\n]/)
-    .map((s) => s.replace(/\s+/g, ""))
+  // 描いた文を句点で区切る（JSX の改行の違いは描いた結果に出ない）
+  const sentences = (await renderedSentences(srcRel(file), PAGE_PATHS[file]))
     .filter(
       (s) => s.includes(GUIDANCE_MARKER) && s.includes(REQUIRES_LOCATION),
     );
