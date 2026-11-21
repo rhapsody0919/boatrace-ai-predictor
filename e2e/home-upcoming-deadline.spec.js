@@ -250,7 +250,7 @@ test.describe("375px", () => {
     await expect(visibleRows(page)).toHaveCount(3, { timeout: 30000 });
     const sectionBox = await section(page).boundingBox();
     const cardTop = (await page.locator(".venue-grid").boundingBox()).y;
-    // 節の下の余白（margin-bottom 1rem = 16px）までは節の高さに含める
-    expect(cardTop - baseTop).toBeLessThanOrEqual(sectionBox.height + 16);
+    // 節の上下の余白（margin 0.75rem・1rem = 12px＋16px）までは節の高さに含める
+    expect(cardTop - baseTop).toBeLessThanOrEqual(sectionBox.height + 28);
   });
 });

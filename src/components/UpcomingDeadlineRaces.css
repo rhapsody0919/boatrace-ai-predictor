@@ -2,7 +2,7 @@
    行の高さを固定し、読み込み中の場所取り（--placeholder）と同じ高さにして CLS を出さない。
    色は意味トークンだけ（グレード・優勝戦の札は既存のバッジと同じ固定色に白字） */
 .upcoming-deadline {
-  margin: 0 0 1rem;
+  margin: 0.75rem 0 1rem;
 }
 
 .upcoming-deadline--placeholder {
