@@ -43,7 +43,7 @@ test("若松の会場特徴カードに「アウト強い」を出さない（BO
   await expect(card).toContainText(
     `${VENUE_SUMMARY_STATS.venues[VENUE].courses[0].rate.toFixed(1)}%`,
   );
-  // 折りたたまれていても textContent には出る。見出し・要約・本文の全体で出ないこと
+  // 見出し・要約・本文の全体で出ないこと
   const text = await card.evaluate((el) => el.textContent ?? "");
   expect(text).not.toContain("アウト強い");
   expect(text).not.toContain("イン強い");

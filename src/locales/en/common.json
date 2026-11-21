@@ -103,16 +103,13 @@
     "jumpToNextRace": "Go to R{{race}}",
     "nextDeadlineMarker": "{{venue}}: next deadline R{{race}} {{time}}",
     "allClosedMarker": "{{venue}}: all races today have closed",
+    "courseSectionLink": "See {{venue}}'s results by starting course (last 12 months) ↓",
     "todayTitle": "Today's races & AI predictions",
     "metaTitleSeries": "{{venue}} Boat Race Predictions & Race Card ({{series}}) - AI Data | Ryujin Radar",
     "metaDescriptionSeries": "Today's race card and AI predictions for every race at {{venue}} boat race stadium during {{series}}, plus the meet's score rate ranking."
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "Water: {{summary}}. Open the 1st-place rate by starting course and the winning-technique table",
-    "collapsedTeaserNoSummary": "Open the 1st-place rate by starting course and the winning-technique table",
-    "title": "This Venue's Tendencies (last 12 months)",
     "note": "1st-place rates are shown by the starting course each boat actually took (not the lane number). Winning techniques are shares of all races.",
-    "nationalAverageTooltip": "National {{value}}%",
     "footnote": "Based on {{count}} races from {{from}} to {{to}} (excluding cancelled and void races). National figures cover {{nationalCount}} races in the same period. Courses 4–6 have few wins, so venue rankings can change from year to year. Past figures only; they do not indicate future results.",
     "waterType": {
       "fresh": "Freshwater",
@@ -134,15 +131,21 @@
       "smallSampleNote": "Shares for lanes with few wins can swing widely.",
       "outcomeLink": "See this venue's most common results (Analysis tools)"
     },
-    "courseHeader": "1st-place rate by starting course",
     "courseLabel": "Course {{course}}",
     "techniqueTitle": "Winning techniques (share of all races)",
     "techniqueName": "Technique",
     "techniqueVenue": "This venue",
     "techniqueNational": "National",
     "megumareNote": "Lucky win: {{count}} of {{races}} races (national: {{nationalCount}} of {{nationalRaces}} races). Too few to compare venues by share.",
-    "winsOfRaces": "{{count}} of {{races}} races",
-    "nationalLegend": "The vertical line marks the national value"
+    "sectionTitle": "{{venue}}: results by starting course and features (last 12 months)",
+    "period": "{{from}}–{{to}} · {{races}} races (national: {{nationalRaces}} races)",
+    "courseColumn": "Starting course",
+    "winRateColumn": "1st-place rate",
+    "winsColumn": "1st places",
+    "waterTitle": "Water",
+    "waterText": "Water: {{water}}. Tidal range: {{tidal}} (BOAT RACE official venue data).",
+    "tidalYes": "yes",
+    "tidalNo": "none"
   },
   "raceDetailPage": {
     "assistSwitch": {

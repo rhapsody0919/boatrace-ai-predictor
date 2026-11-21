@@ -102,16 +102,13 @@
     "jumpToNextRace": "前往{{race}}R",
     "nextDeadlineMarker": "{{venue}}　下一場截止 {{race}}R {{time}}",
     "allClosedMarker": "{{venue}}　今日比賽皆已截止",
+    "courseSectionLink": "查看{{venue}}各進場道次成績與特徵（近1年）↓",
     "todayTitle": "今日賽程、AI預測",
     "metaTitleSeries": "{{venue}}賽艇預測、出走表（{{series}}）｜今日AI預測 - 龍神雷達",
     "metaDescriptionSeries": "{{venue}}賽艇場舉辦{{series}}期間的今日出走表與全部比賽AI預測，並可查看本節的得分率排名。"
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "水質：{{summary}}。展開各進場道次第1名率與決勝方式表",
-    "collapsedTeaserNoSummary": "展開各進場道次第1名率與決勝方式表",
-    "title": "本賽場的特徵（近1年）",
     "note": "第1名的比例依實際進場道次（非艇號）顯示。決勝方式為占全部比賽的比例。",
-    "nationalAverageTooltip": "全國{{value}}%",
     "footnote": "統計{{from}}〜{{to}}的{{count}}場比賽（不含停賽、不成立）。全國數值為同期間{{nationalCount}}場比賽。4〜6道第1名次數較少，賽場的排名可能逐年變動。僅為過去的統計，不代表未來結果。",
     "waterType": {
       "fresh": "淡水",
@@ -132,15 +129,21 @@
       "smallSampleNote": "第1名次數較少的艇號，比例容易波動。",
       "outcomeLink": "查看此賽場的常見結果排行（分析工具）"
     },
-    "courseHeader": "各進場道次第1名率",
     "courseLabel": "{{course}}道",
     "techniqueTitle": "決勝方式（占全部比賽的比例）",
     "techniqueName": "決勝方式",
     "techniqueVenue": "本賽場",
     "techniqueNational": "全國",
     "megumareNote": "幸運勝出為{{races}}場中{{count}}次（全國為{{nationalRaces}}場中{{nationalCount}}次）。次數較少，不以比例比較賽場。",
-    "winsOfRaces": "{{races}}場中{{count}}次",
-    "nationalLegend": "縱線為全國數值"
+    "sectionTitle": "{{venue}}各進場道次成績與特徵（近1年）",
+    "period": "{{from}}〜{{to}}，{{races}}場（全國{{nationalRaces}}場）",
+    "courseColumn": "進場道次",
+    "winRateColumn": "第1名率",
+    "winsColumn": "第1名次數",
+    "waterTitle": "水面",
+    "waterText": "水質為{{water}}。潮差{{tidal}}（BOAT RACE 官方賽場資料）。",
+    "tidalYes": "有",
+    "tidalNo": "無"
   },
   "raceDetailPage": {
     "assistSwitch": {

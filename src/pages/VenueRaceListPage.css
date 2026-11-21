@@ -109,3 +109,35 @@
   line-height: 1.6;
   color: var(--text-secondary);
 }
+
+/* 要約2行の直下の、出走表の後の節へのページ内リンク（BOA-1687）。出走表を押し下げないよう、リンク1行の高さ
+   は見出しの下の余白から取る（戻るリンクの下 1rem と見出しの下 1.5rem が重なって約2rem空いていた）。
+   リンクは要約に付ける */
+.venue-race-list-container
+  .page-header:has(+ .venue-summary-lines + .venue-race-list__course-link) {
+  margin-bottom: var(--spacing-2);
+}
+
+.venue-race-list-container
+  .venue-summary-lines:has(+ .venue-race-list__course-link) {
+  margin-bottom: 0;
+}
+
+.venue-race-list__course-link {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-sm);
+  line-height: 1.3;
+}
+
+.venue-race-list__course-link a {
+  color: var(--brand-accent-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* 狭い幅は戻るリンクが1行を占め、その下に 1rem あるので、見出しの下をさらに詰める */
+@media (max-width: 480px) {
+  .venue-race-list-container
+    .page-header:has(+ .venue-summary-lines + .venue-race-list__course-link) {
+    margin-bottom: var(--spacing-1);
+  }
+}
