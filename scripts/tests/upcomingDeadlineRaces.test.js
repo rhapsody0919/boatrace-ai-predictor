@@ -2,9 +2,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  pickUpcomingDeadlineRaces,
   moreButtonVenues,
+  selectUpcomingDeadlineRaces,
 } from "../../src/pure/upcomingDeadlineRaces.js";
+import { pickUpcomingDeadlineRaces } from "../../src/utils/raceListDisplay.js";
 
 const DATE = "2026-11-22";
 const racers = (name, rank = "A1") => [
@@ -109,4 +110,8 @@ test("隠れる行（4行目以降）と「もっと見る」に出す会場（�
   const none = moreButtonVenues(rows.slice(0, 3));
   assert.deepEqual(none.hidden, []);
   assert.deepEqual(none.venues, []);
+});
+
+test("src/pure の選び方は部品（中止・グレード・選手名）が欠けたら例外（黙って既定の判定にしない）", () => {
+  assert.throws(() => selectUpcomingDeadlineRaces([], "12:00", {}), /部品 isRaceCancelled が無い/);
 });

@@ -5,12 +5,11 @@
  * 材料は getRaces()（/api/races/today）の今の応答だけ。新しい DB の読み・API は足さない。
  * Node から import するため、ブラウザ専用の依存を持ち込まない。import は拡張子付きで書く。
  * 試験: scripts/tests/upcomingDeadlineRaces.test.js（新しい置き場は src/pure。src/utils に新しいファイルを足さない）
+ * src/pure は根の外を import できない（verify-pure-imports）。中止・グレード・選手名の判定は src/utils の部品を
+ * 呼び出し側から parts で受ける。人とボットは src/utils/raceListDisplay.js の pickUpcomingDeadlineRaces から同じ部品で呼ぶ
  */
-import { gradeConfigOf } from "../utils/raceListDisplay.js";
-import { isRaceCancelled } from "../utils/raceCancellation.js";
 import { getRaceId } from "./raceId.js";
 import { isFinalStage } from "./raceStageConfig.js";
-import { splitRacerName } from "../utils/racerName.js";
 
 /** 節に出す行の上限（PC は全部、3列×2段） */
 export const UPCOMING_MAX_ROWS = 6;
@@ -22,7 +21,7 @@ export const UPCOMING_MORE_VENUE_NAMES = 2;
 const HHMM = /^\d{2}:\d{2}$/;
 
 // 1号艇（waku 1）。欠場・出走表の前で名前が無ければ null（選手名を出さない）
-function boat1Of(race) {
+function boat1Of(race, splitRacerName) {
   const racer = (race.racers || []).find((r) => Number(r?.waku) === 1);
   const name = splitRacerName(racer?.name).join(" ");
   if (!name) return null;
@@ -38,21 +37,27 @@ function boat1Of(race) {
  *
  * @param {{placeCd: number, races?: object[]}[]} venuesData - transformTodayRaces の data
  * @param {string|null} nowHHMM
- * @param {{max?: number}} [options]
+ * @param {{max?: number, isRaceCancelled: (race: object) => boolean, gradeConfigOf: (raceGrade: unknown) => {label: string, color: string}|null,
+ *   splitRacerName: (name: unknown) => string[]}} parts - 中止の判定・グレードの表示・選手名の分け方（src/utils の部品）
  * @returns {{raceId: string, venueCode: number, raceNo: number, startTime: string, gradeLabel: string|null,
  *   gradeColor: string|null, isFinal: boolean, boat1: {name: string, rank: string|null}|null, cautionHigh: boolean}[]}
  */
-export function pickUpcomingDeadlineRaces(
+export function selectUpcomingDeadlineRaces(
   venuesData,
   nowHHMM,
-  { max = UPCOMING_MAX_ROWS } = {},
+  { max = UPCOMING_MAX_ROWS, ...parts },
 ) {
+  for (const k of ["isRaceCancelled", "gradeConfigOf", "splitRacerName"]) {
+    if (typeof parts[k] !== "function") {
+      throw new TypeError(`selectUpcomingDeadlineRaces: 部品 ${k} が無い（src/utils/raceListDisplay.js の版から呼ぶ）`);
+    }
+  }
   if (!isHHMM(nowHHMM)) return [];
   const rows = (venuesData || []).flatMap((venue) => {
     const venueCode = Number(venue.placeCd ?? venue.place_cd);
     return (venue.races || [])
-      .filter((race) => isUpcoming(race, nowHHMM))
-      .map((race) => toRow(race, venueCode))
+      .filter((race) => isUpcoming(race, nowHHMM, parts.isRaceCancelled))
+      .map((race) => toRow(race, venueCode, parts))
       .filter((row) => row.raceId);
   });
   rows.sort(
@@ -67,10 +72,10 @@ export function pickUpcomingDeadlineRaces(
 const isHHMM = (v) => typeof v === "string" && HHMM.test(v);
 
 // 締切予定が nowHHMM より後で、中止でない（startTime の欠けた行は入れない）
-const isUpcoming = (race, nowHHMM) =>
+const isUpcoming = (race, nowHHMM, isRaceCancelled) =>
   isHHMM(race.startTime) && race.startTime > nowHHMM && !isRaceCancelled(race);
 
-function toRow(race, venueCode) {
+function toRow(race, venueCode, { gradeConfigOf, splitRacerName }) {
   const grade = gradeConfigOf(race.raceGrade);
   return {
     raceId: getRaceId({
@@ -82,7 +87,7 @@ function toRow(race, venueCode) {
     gradeLabel: grade?.label ?? null,
     gradeColor: grade?.color ?? null,
     isFinal: isFinalStage(race.raceStage),
-    boat1: boat1Of(race),
+    boat1: boat1Of(race, splitRacerName),
     cautionHigh: race.inCaution?.level === "high",
   };
 }

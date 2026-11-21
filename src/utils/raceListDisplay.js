@@ -5,6 +5,9 @@
  * （botPageModel.js）の両方がここを通す。Node からも import するため、ブラウザ専用の依存を持ち込まない。
  */
 import { GRADE_CONFIG } from "../constants/gradeConfig.js";
+import { isRaceCancelled } from "./raceCancellation.js";
+import { splitRacerName } from "./racerName.js";
+import { selectUpcomingDeadlineRaces } from "../pure/upcomingDeadlineRaces.js";
 
 /** 会場名（人の画面は会場コードの i18n キーで出す） */
 export function venueNameOf(t, venueCode) {
@@ -43,4 +46,14 @@ export function deadlineValueText(t, startTime) {
 /** JST の HH:MM より後の最初のレース。時刻欠損は候補に含める（VenueGridCard と同じ判定）。 */
 export function findNextRace(races, nowHHMM) {
   return races.find((r) => !r.startTime || r.startTime > nowHHMM) || null;
+}
+
+/** トップの「まもなく締切のレース」の行（BOA-1690）。人とボットが同じ部品（中止・グレード・選手名）で src/pure の選び方を呼ぶ */
+export function pickUpcomingDeadlineRaces(venuesData, nowHHMM, options = {}) {
+  return selectUpcomingDeadlineRaces(venuesData, nowHHMM, {
+    ...options,
+    isRaceCancelled,
+    gradeConfigOf,
+    splitRacerName,
+  });
 }

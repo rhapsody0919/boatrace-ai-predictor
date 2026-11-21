@@ -16,9 +16,12 @@ import { useTranslation } from "react-i18next";
 import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { isInCautionEnabled } from "../config/featureFlags";
 import { getRaceStageBadge } from "../constants/raceStageConfig";
-import { raceNumberLabel, deadlineValueText } from "../utils/raceListDisplay";
 import {
+  raceNumberLabel,
+  deadlineValueText,
   pickUpcomingDeadlineRaces,
+} from "../utils/raceListDisplay";
+import {
   moreButtonVenues,
   UPCOMING_MOBILE_VISIBLE,
 } from "../pure/upcomingDeadlineRaces";

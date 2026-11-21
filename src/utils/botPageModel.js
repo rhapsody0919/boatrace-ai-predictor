@@ -35,6 +35,7 @@ import {
   gradeConfigOf,
   raceNumberLabel,
   deadlineValueText,
+  pickUpcomingDeadlineRaces,
 } from "./raceListDisplay.js";
 import { getVenueSeriesDayLabel } from "./raceDetailHeading.js";
 import { isRaceCancelled } from "./raceCancellation.js";
@@ -49,7 +50,6 @@ import { localizePath } from "../pure/localizePath.js";
 import { buildFaqItems, isAssistShown, toFaqPageLd } from "./homeAiIntroFaq.js";
 import { getHomeBlogPosts } from "../data/blogPosts.js";
 import { meetBannerSeriesOf, seriesOfDate } from "./meetPageModel.js";
-import { pickUpcomingDeadlineRaces } from "../pure/upcomingDeadlineRaces.js";
 
 const DEFAULT_LANG = "ja";
 

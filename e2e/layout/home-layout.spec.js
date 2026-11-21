@@ -1,11 +1,16 @@
 // 旧 e2e/layout.spec.js から切り出しスクリプトで移した（CI02。題・中身は元のまま、import の相対の字だけ1段深くした）
-import { test, expect } from "../fixtures.js";
+import { test, expect, e2eTodayJST } from "../fixtures.js";
 import {
   ensureOpenVenues,
   rewriteTodayRaces,
   setJstNoon,
 } from "../today-races-rewrite.js";
-import { OVERFLOW_TOLERANCE_PX, gotoAndSettle } from "./helpers.js";
+import {
+  OVERFLOW_TOLERANCE_PX,
+  expectNoWastedGrids,
+  gotoAndSettle,
+  inspectGrids,
+} from "./helpers.js";
 
 /**
  * BOA-539 の再現テスト。
@@ -138,6 +143,50 @@ test.describe("レイアウト: トップの会場カードの日目の札（BOA
         return out;
       }, OVERFLOW_TOLERANCE_PX);
       expect(problems, JSON.stringify(problems, null, 2)).toEqual([]);
+    });
+  }
+});
+
+/**
+ * BOA-1690: トップの「まもなく締切のレース」の節。行の数は締切前のレースの数で 1〜6 に変わる。
+ * PC（768px 以上）は列が3の上限で、行が3より少ない日に右へ空の列を残さない（verify-code-pitfalls・ZB03 ①）。
+ * 締切前のレースを n 本だけ残すよう録画を書き換え、節のグリッドだけを inspectGrids で測る（幅は layout-* の project ごと）
+ */
+test.describe("レイアウト: まもなく締切のレースの節の列（BOA-1690）", () => {
+  for (const n of [1, 2, 3, 6]) {
+    test(`締切前が ${n} 本の日に空の列が残らない（768px 以上は列が ${Math.min(n, 3)}、未満は1列）`, async ({
+      page,
+    }) => {
+      await setJstNoon(page);
+      await rewriteTodayRaces(page, (venues) => {
+        ensureOpenVenues(venues, n);
+        let k = 0;
+        for (const v of venues)
+          for (const r of v.races ?? []) {
+            r.cancellationStatus = null;
+            r.date ??= e2eTodayJST();
+            r.startTime = k < n ? `12:${String(10 + k).padStart(2, "0")}` : "10:00";
+            k += 1;
+          }
+      });
+      await page.goto("/", { waitUntil: "domcontentloaded" });
+      await expect(page.locator(".upcoming-deadline__item")).toHaveCount(n, {
+        timeout: 30000,
+      });
+      const result = await inspectGrids(page);
+      expectNoWastedGrids({
+        ...result,
+        found: result.found.filter((f) => f.cls.startsWith("upcoming-deadline")),
+      });
+      const columns = await page
+        .locator(".upcoming-deadline__list")
+        .evaluate((el) =>
+          getComputedStyle(el)
+            .gridTemplateColumns.split(" ")
+            .filter((t) => parseFloat(t) > 0).length,
+        );
+      const wide = page.viewportSize().width >= 768;
+      expect(columns).toBe(wide ? Math.min(n, 3) : 1);
     });
   }
 });

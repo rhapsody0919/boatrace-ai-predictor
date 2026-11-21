@@ -161,8 +161,12 @@
     min-height: 170px;
   }
 
+  /* 列は3が上限。行が3より少ない日に右へ空の列を残さない（auto-fit、DigestCardGrid.css と同じ calc() 方式） */
   .upcoming-deadline__list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(calc((100% - 2 * 8px) / 3), 1fr)
+    );
   }
 
   .upcoming-deadline__item--more {
