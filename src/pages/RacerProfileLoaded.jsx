@@ -7,6 +7,7 @@ import {
   RacerOfficialStats,
 } from "../components/racer";
 import RacerFrontTaking from "../components/racer/RacerFrontTaking";
+import RacerSummaryBlock from "../components/racer/RacerSummaryBlock";
 import { Link } from "react-router-dom";
 import DataFetchError from "../components/DataFetchError";
 import InlineFetchError from "../components/InlineFetchError";
@@ -23,6 +24,7 @@ export default function RacerProfileLoaded({
   displayName,
   front,
   period,
+  summary,
   motorStatus,
   stats,
   statsLoading,
@@ -37,6 +39,14 @@ export default function RacerProfileLoaded({
         racerId={racerId}
         isInya={front.frontTaking?.isInya === true}
       />
+      {data.profile && !period.periodFailed && (
+        <RacerSummaryBlock
+          grade={data.grade}
+          // 期別の行が届く前は undefined（取得中）、届いて出走が無ければ null
+          summary={period.periodRows ? summary : undefined}
+          front={front.frontTaking}
+        />
+      )}
       <RacerProfileCard profile={data.profile} racerId={racerId} />
       {data.profile && (
         <RacerFrontTaking

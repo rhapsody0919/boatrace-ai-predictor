@@ -43,3 +43,19 @@
     padding: var(--spacing-2);
   }
 }
+
+/* 畳んだプロフィール（BOA-1688） */
+.racer-profile-more {
+  margin-top: var(--spacing-2);
+}
+
+.racer-profile-more > summary {
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  padding: var(--spacing-1) 0;
+}
+
+.racer-profile-more[open] > summary {
+  margin-bottom: var(--spacing-2);
+}

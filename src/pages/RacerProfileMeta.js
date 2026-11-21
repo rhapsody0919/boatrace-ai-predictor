@@ -51,3 +51,13 @@ export function buildSocialMeta({ loading, error, data, title, description, cano
 export function pickTodayVenue(motorStatus, isTodayFn) {
   return motorStatus && isTodayFn(motorStatus.date) ? motorStatus.venueCode : null;
 }
+
+// 期別の要約（buildRacerSummary）から description に入れる1文。期の名前を必ず付ける
+// （出走表の全国勝率とは集計期間が違う。BOA-1688）。勝率が無ければ null
+export function periodSentence(summary) {
+  if (summary?.winRate == null) return null;
+  const parts = [`${summary.label}の勝率 ${summary.winRate.toFixed(2)}`];
+  if (summary.top2Rate != null) parts.push(`2連率 ${summary.top2Rate.toFixed(1)}%`);
+  parts.push(`優出 ${summary.periodFinals}`, `優勝 ${summary.periodWins}`);
+  return `${parts.join("・")}。`;
+}
