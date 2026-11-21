@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2711,
+    "sourceFiles": 2712,
     "filesWithAccess": 320,
     "tableReaders": 949,
     "tableWriters": 195,
@@ -12546,7 +12546,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/botPage.js:276",
+          "ref": "api/_lib/botPage.js:244",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -12716,7 +12716,7 @@
       "columns": {
         "venue_code": {
           "readers": [
-            "api/_lib/botPage.js:276",
+            "api/_lib/botPage.js:244",
             "scripts/lib/eveDeadlinesJob.js:66",
             "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/raceSeriesLookup.js:161",
@@ -12735,7 +12735,7 @@
         },
         "start_date": {
           "readers": [
-            "api/_lib/botPage.js:276",
+            "api/_lib/botPage.js:244",
             "scripts/lib/eveDeadlinesJob.js:66",
             "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/raceSeriesLookup.js:161",
@@ -12754,7 +12754,7 @@
         },
         "end_date": {
           "readers": [
-            "api/_lib/botPage.js:276",
+            "api/_lib/botPage.js:244",
             "scripts/lib/eveDeadlinesJob.js:66",
             "scripts/lib/motorPretestJob.js:197",
             "scripts/lib/raceSeriesLookup.js:161",
@@ -12773,7 +12773,7 @@
         },
         "total_days": {
           "readers": [
-            "api/_lib/botPage.js:276",
+            "api/_lib/botPage.js:244",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:71",
@@ -12784,7 +12784,7 @@
         },
         "title": {
           "readers": [
-            "api/_lib/botPage.js:276",
+            "api/_lib/botPage.js:244",
             "scripts/lib/snsTodayDigestV3.js:96",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
@@ -12795,7 +12795,7 @@
         },
         "class_code": {
           "readers": [
-            "api/_lib/botPage.js:276",
+            "api/_lib/botPage.js:244",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
             "src/services/scheduleQueries.js:71",
@@ -12806,7 +12806,7 @@
         },
         "grade": {
           "readers": [
-            "api/_lib/botPage.js:276",
+            "api/_lib/botPage.js:244",
             "scripts/lib/snsTodayDigestV3.js:96",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
@@ -12817,7 +12817,7 @@
         },
         "kind": {
           "readers": [
-            "api/_lib/botPage.js:276",
+            "api/_lib/botPage.js:244",
             "scripts/lib/snsTodayDigestV3.js:96",
             "scripts/maintenance/verifyData/bot-race-function-scenes-3.js:207",
             "src/services/meetQueries3.js:35",
@@ -29843,7 +29843,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 137,
+      "reachableFiles": 138,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
@@ -29955,7 +29955,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 113,
+      "reachableFiles": 114,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/storeBreaker.js:130",
