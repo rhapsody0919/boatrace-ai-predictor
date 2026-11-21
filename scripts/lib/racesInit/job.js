@@ -34,15 +34,18 @@
  * 手動の動作確認: GET /api/cron/races-init?venues=N（Authorization: Bearer {CRON_SECRET}）で、1回の呼び出しで
  * 処理する会場数を N にする（mode が shadow・live のとき。live の場合は、書き込みと cursor の前進を伴う）。
  */
-import { getTodayVenues, scrapeVenue } from "../../scrape-to-json.js";
+import { getTodayVenues, scrapeVenue } from "../scrapeToJson.js";
 import { fetchAll } from "../supabaseClient.js";
-import { BreakerOpenError } from "../scrapeJobs/circuitBreaker.js";
 import { truncateError } from "../scrapeJobs/outcomes.js";
 import { windowJobNames } from "../scrapeJobs/registry.js";
 import { createSupabaseStore } from "../scrapeJobs/store.js";
 import { makeFetchHtml } from "../scrapeJobs/htmlFetch.js";
-import { jstMinutesOfDay } from "../scrapeJobs/time.js";
-import { digestScrapedVenue } from "./digest.js";
+import { ALERT_NOTIFY_HOURS, buildRunResult } from "./runReport.js";
+import {
+  processVenues,
+  recheckVenueList,
+  remainingVenues,
+} from "./venueSteps.js";
 import { parseVenueStatuses, raceIndexUrl } from "../raceStatusParsers.js";
 
 /** 1回の呼び出しで処理する会場数の上限（時間の許す限り、この数まで。1会場約30秒） */
@@ -51,16 +54,12 @@ export const RACES_INIT_VENUES_PER_INVOCATION = 8;
 export const RACES_INIT_RACE_CONCURRENCY = 6;
 /** 手動の動作確認（?venues=N）の上限 */
 const MAX_VENUES_OVERRIDE = 24;
-/** 会場一覧の再確認（取りこぼし会場の確認）を行う、JSTの時刻の上限（従来の morning-init と同じ9時） */
-const RECHECK_UNTIL_JST_MIN = 9 * 60;
-/** 会場の失敗の通知を出す連続失敗回数と、通知を出す期間（時間） */
-const ALERT_AFTER_ATTEMPTS = 3;
-const ALERT_NOTIFY_HOURS = 3;
 /**
  * イン崩れ注意度の表が読めなかった（RPC の失敗・表の欠け）ときに、後始末の unified をやり直す回数の上限（BOA-822）。
  * 起動は2分ごとなので約10分。超えたら失敗として通知し、その日はやり直さない
  */
 export const IN_CAUTION_MAX_ATTEMPTS = 5;
+export { backoffMinutes, isBreakerOpenError } from "./venueSteps.js";
 
 /**
  * イン崩れ注意度の打ち切りの通知を残す期限。scrape-monitor の運用窓（JST 07:00〜）に必ず入るよう、
@@ -77,13 +76,6 @@ export function inCautionAlertUntil(now) {
       Date.parse(`${jstDate}T09:00:00+09:00`),
     ),
   ).toISOString();
-}
-/** last_report に残す、失敗の内容の最大数 */
-const MAX_FAILURES_IN_REPORT = 10;
-
-/** 再試行の待ち時間（分）。attempts=1 のとき2分、以降 4・8・16、上限20分 */
-export function backoffMinutes(attempts) {
-  return Math.min(20, 2 * 2 ** Math.max(0, attempts - 1));
 }
 
 /** ?venues=N の解釈（不正な値は例外にする。無視して既定にしない） */
@@ -105,14 +97,6 @@ export function resolveVenuesLimit(
   return Number(raw);
 }
 
-/** エラー（または cause の連鎖）に、サーキットブレーカーが開いていたことが含まれるか */
-export function isBreakerOpenError(error) {
-  for (let e = error, i = 0; e && i < 5; e = e.cause, i++) {
-    if (e instanceof BreakerOpenError) return true;
-  }
-  return false;
-}
-
 // ---------------------------------------------------------------------------
 // 既定の依存（テストでは差し替える）
 // ---------------------------------------------------------------------------
@@ -131,7 +115,7 @@ async function defaultExistingVenueCodes(client, date) {
 /** 1会場の races・race_entries・exhibition_data・predictions・race_conditions を書く（失敗は例外） */
 async function defaultWriteVenue(venue, { date, client, now }) {
   const { generateAndWriteFromRacesData } =
-    await import("../../daily/generate-predictions.js");
+    await import("../predictionRun.js");
   await generateAndWriteFromRacesData({
     racesData: { success: true, date, data: [venue] },
     date,
@@ -159,7 +143,7 @@ async function defaultEnsureSlots(client, date) {
 
 async function defaultEnsureUnified(client, date, now) {
   const { findRacesMissingUnified, generateUnifiedPredictions } =
-    await import("../../daily/generate-unified-predictions.js");
+    await import("../unifiedPredictionsRun.js");
   // 発走済みのレースは、欠けていても数えず、書きもしない（BOA-628）
   const missing = await findRacesMissingUnified(date, client, { now });
   if (missing.length === 0)
@@ -252,10 +236,50 @@ const newCursor = ({ date, mode, venues, existing, now }) => ({
   done: false,
 });
 
-const isPending = (cursor, code, nowMs) =>
-  !cursor.settled.includes(code) &&
-  (!cursor.retryAfter[code] ||
-    new Date(cursor.retryAfter[code]).getTime() <= nowMs);
+/**
+ * 前回までの進捗（cursor）を引き継ぐか、その日の最初の起動なら計画を作る。
+ * 進める cursor か、ここで終える結果（result）を返す
+ */
+async function startCursor(ctx, d, { date, live, fetchHtml }) {
+  const now = ctx.now();
+  const previous = ctx.state?.cursor ?? null;
+  const cursor =
+    previous && previous.targetDate === date && previous.mode === ctx.mode
+      ? structuredClone(previous)
+      : null;
+  if (cursor?.done) {
+    // shadow の完了後の起動（live は、共通ラッパが last_target_date で、ここへ来ない）
+    return {
+      result: {
+        rowsWritten: 0,
+        cursor: previous,
+        report: ctx.state?.last_report ?? undefined,
+        body: { skipped: "cycle_done", date },
+      },
+    };
+  }
+  if (cursor) return { cursor };
+
+  // 1. 計画: その日の最初の起動
+  const venues = await d.getVenues(date, { fetchHtml, strict: true });
+  if (venues.length === 0) {
+    // 開催会場が1件も見つからない: 未公開・構造変化・開催なしの区別が付かないため、対象日を済みにせず、
+    // 次の起動が再確認する（08:00 を過ぎても未完了なら、日次の期限超過の通知が出る）
+    return {
+      result: {
+        incomplete: true,
+        report: { date, mode: ctx.mode, done: false, noVenues: true },
+        body: { date, noVenues: true },
+      },
+    };
+  }
+  const existing = live
+    ? await d.existingVenueCodes(ctx.client, date)
+    : new Set();
+  return {
+    cursor: newCursor({ date, mode: ctx.mode, venues, existing, now }),
+  };
+}
 
 /**
  * @param {Object} ctx 共通ラッパが渡す実行の文脈（cronWrapper.js の ctx。state.cursor は前回までの進捗）
@@ -269,149 +293,32 @@ export async function runRacesInitJob(ctx, deps = {}) {
   const live = ctx.mode === "live";
   const limit = resolveVenuesLimit(ctx.query);
   const fetchHtml = makeFetchHtml(ctx.politeFetch);
-  const now = ctx.now();
-
-  const previous = ctx.state?.cursor ?? null;
-  let cursor =
-    previous && previous.targetDate === date && previous.mode === ctx.mode
-      ? structuredClone(previous)
-      : null;
-  if (cursor?.done) {
-    // shadow の完了後の起動（live は、共通ラッパが last_target_date で、ここへ来ない）
-    return {
-      rowsWritten: 0,
-      cursor: previous,
-      report: ctx.state?.last_report ?? undefined,
-      body: { skipped: "cycle_done", date },
-    };
-  }
-
-  // 1. 計画: その日の最初の起動
-  if (!cursor) {
-    const venues = await d.getVenues(date, { fetchHtml, strict: true });
-    if (venues.length === 0) {
-      // 開催会場が1件も見つからない: 未公開・構造変化・開催なしの区別が付かないため、対象日を済みにせず、
-      // 次の起動が再確認する（08:00 を過ぎても未完了なら、日次の期限超過の通知が出る）
-      return {
-        incomplete: true,
-        report: { date, mode: ctx.mode, done: false, noVenues: true },
-        body: { date, noVenues: true },
-      };
-    }
-    const existing = live
-      ? await d.existingVenueCodes(ctx.client, date)
-      : new Set();
-    cursor = newCursor({ date, mode: ctx.mode, venues, existing, now });
-  }
+  const started = await startCursor(ctx, d, { date, live, fetchHtml });
+  if (started.result) return started.result;
+  const { cursor } = started;
 
   // 2. 会場の処理
-  const failures = [];
   const wroteBefore = cursor.settled.length;
-  let attempted = 0;
-  let racesThisRun = 0;
-  let breakerOpen = false;
-  for (const code of cursor.targets) {
-    if (attempted >= limit || ctx.shouldStop()) break;
-    if (!isPending(cursor, code, ctx.now().getTime())) continue;
-    attempted++;
-    cursor.attempts[code] = (cursor.attempts[code] ?? 0) + 1;
-    try {
-      const venue = await d.scrapeVenue(date, code, {
-        fetchHtml,
-        strict: true,
-        raceConcurrency: RACES_INIT_RACE_CONCURRENCY,
-      });
-      const summary = venue ? digestScrapedVenue(date, venue) : null;
-      if (!summary || summary.races === 0) {
-        // 開催会場一覧にあるのに、出走表が1レースも取れない（未公開・構造変化）。成功にしない
-        throw new Error(
-          `会場${code}: 開催会場一覧にあるのに、出走表を取得できませんでした（未公開・ページの構造変化の可能性）`,
-        );
-      }
-      if (live) {
-        await d.writeVenue(venue, { date, client: ctx.client, now: ctx.now });
-        cursor.wroteAny = true;
-      }
-      Object.assign(cursor.digests, summary.digests);
-      cursor.races += summary.races;
-      cursor.entries += summary.entries;
-      racesThisRun += summary.races;
-      cursor.settled.push(code);
-      delete cursor.retryAfter[code];
-      delete cursor.lastErrors[code];
-    } catch (error) {
-      if (isBreakerOpenError(error)) {
-        // 取得先のブレーカーが開いている: 失敗にせず、この起動を終える（試行回数も戻す）
-        cursor.attempts[code] -= 1;
-        breakerOpen = true;
-        break;
-      }
-      // 番組の無い中止の会場（節の打ち切り等）は、失敗にせず済みにする（BOA-721）。確認自体の失敗は、
-      // 番組なしと判断できないので、元の失敗として扱う
-      let noProgram = false;
-      try {
-        noProgram = await d.checkNoProgram(date, code, { fetchHtml });
-      } catch (checkError) {
-        if (isBreakerOpenError(checkError)) {
-          cursor.attempts[code] -= 1;
-          breakerOpen = true;
-          break;
-        }
-        console.error(
-          `⚠️ races-init 会場${code}: 番組なしの確認に失敗: ${truncateError(checkError)}`,
-        );
-      }
-      if (noProgram) {
-        (cursor.noProgram ??= []).push(code);
-        cursor.settled.push(code);
-        delete cursor.retryAfter[code];
-        delete cursor.lastErrors[code];
-        console.log(
-          `ℹ️ races-init 会場${code}: 開催場一覧で中止、出走表が「データがありません」（番組なし）。races を作らずに済みにする`,
-        );
-        continue;
-      }
-      const message = truncateError(error);
-      cursor.lastErrors[code] = message;
-      cursor.retryAfter[code] = new Date(
-        ctx.now().getTime() + backoffMinutes(cursor.attempts[code]) * 60_000,
-      ).toISOString();
-      failures.push({
-        venue: code,
-        attempts: cursor.attempts[code],
-        error: message,
-      });
-      console.error(`❌ races-init 会場${code}: ${message}`);
-    }
-  }
-
-  const remaining = () =>
-    cursor.targets.filter((v) => !cursor.settled.includes(v));
+  const run = await processVenues({
+    ctx,
+    d,
+    cursor,
+    date,
+    live,
+    limit,
+    fetchHtml,
+    raceConcurrency: RACES_INIT_RACE_CONCURRENCY,
+  });
+  const { racesThisRun, breakerOpen } = run;
 
   // 3. 会場一覧の再確認（取りこぼし会場。全ての会場が済んでから、1回だけ）
-  if (
-    !breakerOpen &&
-    remaining().length === 0 &&
-    !cursor.listRechecked &&
-    jstMinutesOfDay(ctx.now()) < RECHECK_UNTIL_JST_MIN
-  ) {
-    const list = await d.getVenues(date, { fetchHtml, strict: true });
-    cursor.listRechecked = true;
-    const added = list.filter((v) => !cursor.venues.includes(v));
-    if (added.length > 0) {
-      const existing = live
-        ? await d.existingVenueCodes(ctx.client, date)
-        : new Set();
-      cursor.venues.push(...added);
-      cursor.targets.push(...added.filter((v) => !existing.has(v)));
-      console.log(`⚠️ 開催会場の取りこぼしを検出: [${added.join(", ")}]`);
-    }
-  }
+  if (!breakerOpen)
+    await recheckVenueList({ ctx, d, cursor, date, live, fetchHtml });
 
   // 4. 後始末（live のみ。全ての会場が済んでから）
   let finalizeError = null;
   let finalizePending = false;
-  if (!breakerOpen && remaining().length === 0) {
+  if (!breakerOpen && remainingVenues(cursor).length === 0) {
     if (live) {
       ({ error: finalizeError, pending: finalizePending } = await finalizeCycle(
         { ctx, d, cursor, date },
@@ -421,80 +328,20 @@ export async function runRacesInitJob(ctx, deps = {}) {
   }
 
   // 結果
-  const allFailed = attempted > 0 && failures.length === attempted;
-  const pending = remaining();
-  const alerts = pending
-    .filter(
-      (v) =>
-        (cursor.attempts[v] ?? 0) >= ALERT_AFTER_ATTEMPTS &&
-        cursor.lastErrors[v],
-    )
-    .map((v) => ({
-      key: `venue_failed:${v}`,
-      until: new Date(
-        ctx.now().getTime() + ALERT_NOTIFY_HOURS * 3600 * 1000,
-      ).toISOString(),
-      text: `朝の初期化で会場${v}が${cursor.attempts[v]}回連続で失敗しています（対象日 ${date}）: ${cursor.lastErrors[v]}`,
-    }));
-  if (finalizeError) {
-    alerts.push({
-      key: "finalize_failed",
-      until: new Date(
-        ctx.now().getTime() + ALERT_NOTIFY_HOURS * 3600 * 1000,
-      ).toISOString(),
-      text: `朝の初期化の後始末に失敗しています（対象日 ${date}）: ${finalizeError}`,
-    });
-  } else if (
-    cursor.finalize?.inCautionAlert &&
-    new Date(cursor.finalize.inCautionAlert.until) > ctx.now()
-  ) {
-    // イン崩れ注意度の打ち切りの通知は、次の起動の成功の報告でも残す（成功の報告が alerts を空にして、
-    // scrape-monitor の運用窓 JST 07:00 より前に消えるため。2026-10-13 レビュー F1）。key は同じなので二重には出ない
-    alerts.push(cursor.finalize.inCautionAlert);
-  }
-
-  const report = {
+  const { report, body, failedError } = buildRunResult({
+    ctx,
+    cursor,
     date,
-    mode: ctx.mode,
-    done: cursor.done,
-    existingVenues: cursor.existing.length,
-    venues: cursor.venues.length,
-    settled: cursor.settled.length,
-    noProgram: cursor.noProgram ?? [],
-    pending,
-    races: cursor.races,
-    entries: cursor.entries,
-    wroteAny: cursor.wroteAny,
-    finalize: cursor.finalize,
-    breakerOpen,
-    failures: failures.slice(0, MAX_FAILURES_IN_REPORT),
-    alerts,
-  };
-  const body = {
-    date,
-    done: cursor.done,
-    attempted,
-    settledThisRun: cursor.settled.length - wroteBefore,
-    settled: cursor.settled.length,
-    remaining: pending.length,
-    ...(breakerOpen ? { skipped: "breaker_open" } : {}),
-    ...(failures.length > 0 ? { failures: failures.length } : {}),
-  };
+    run,
+    wroteBefore,
+    finalizeError,
+  });
 
   // 全ての試行が失敗、または後始末の失敗は、実行の失敗にする。ただし、その起動の進捗は、先に保存する
   // （共通ラッパは、失敗のとき cursor を保存しないため。保存しないと、成功した会場を次の起動がやり直す）
-  if (allFailed || finalizeError) {
+  if (failedError) {
     await saveProgress(ctx, { cursor, report });
-    return {
-      outcome: "error",
-      error: allFailed
-        ? `朝の初期化: 試行した${attempted}会場が全て失敗しました（${failures
-            .slice(0, 3)
-            .map((f) => `会場${f.venue}: ${f.error}`)
-            .join(" / ")}）`
-        : `朝の初期化の後始末に失敗しました: ${finalizeError}`,
-      report,
-    };
+    return { outcome: "error", error: failedError, report };
   }
 
   return {
@@ -592,7 +439,7 @@ export function createPredictCodeOnTick({ check } = {}) {
       now: ctx.now,
       // 再計算のモジュールは、ハッシュが変わったときだけ読み込む
       refresh: async (args) =>
-        (await import("../../daily/generate-predictions.js")).mainRefresh(args),
+        (await import("../predictionRun.js")).mainRefresh(args),
       getSchedule: getRaceSchedule,
     });
   };

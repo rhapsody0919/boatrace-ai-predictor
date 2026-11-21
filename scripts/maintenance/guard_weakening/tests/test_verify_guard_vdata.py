@@ -10,12 +10,13 @@ import tempfile
 from pathlib import Path
 
 W = Path(__file__).resolve().parent.parent
+os.environ["HQ_TEST"] = "1"  # 変異のロック（scripts/mut_lock.py）を試験では迂回する（pre-commit の1本90秒の上限・負荷の線で待たない）
 spec = importlib.util.spec_from_file_location("verify_guard", W / "verify_guard.py")
 vg = importlib.util.module_from_spec(spec)
 sys.modules["verify_guard"] = vg
 spec.loader.exec_module(vg)
 
-NM = W.parents[2] / "node_modules"  # 龍神の写し: リポジトリの根の node_modules（hq の版は ~/boatrace-ai-predictor/node_modules）
+NM = W.parents[2] / "node_modules"
 HAVE_NM = (NM / "@babel" / "parser").is_dir()
 ok, skipped = [], 0
 

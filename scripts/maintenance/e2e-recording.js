@@ -251,14 +251,19 @@ export function notifyDedupe(now, currentRunId, runs) {
   return { notify: true, reasons: [] };
 }
 
-/** notifyDedupe の入力を GitHub API から集める（Actions 上で使う。GH_TOKEN が要る） */
-function collectTodayRuns(now) {
+/** gh api の1回（Actions 上で使う。GH_TOKEN が要る） */
+const ghApi = (endpoint) =>
+  JSON.parse(execFileSync("gh", ["api", endpoint], { encoding: "utf8" }));
+
+/**
+ * notifyDedupe の入力を GitHub API から集める（Actions 上で使う。GH_TOKEN が要る）。
+ * gh は endpoint → 応答の JSON（既定は gh api。verify が偽を渡す）
+ */
+export function collectTodayRuns(now, { gh = ghApi } = {}) {
   const repo = process.env.GITHUB_REPOSITORY || repoSlug();
   const since = new Date(
     `${jstDate(now).slice(0, 10)}T00:00:00+09:00`,
   ).toISOString();
-  const gh = (endpoint) =>
-    JSON.parse(execFileSync("gh", ["api", endpoint], { encoding: "utf8" }));
   const { workflow_runs: runs = [] } = gh(
     `repos/${repo}/actions/workflows/e2e-rerecord.yml/runs?branch=master&per_page=30&created=${encodeURIComponent(`>=${since}`)}`,
   );

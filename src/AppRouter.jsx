@@ -189,10 +189,7 @@ function LocalizedRoutes({ lng = "ja" }) {
       <Route path="/" element={<VenueGridPage />} />
       <Route path="venue/:venueCode" element={<VenueRaceListPage />} />
       {/* 節ページ（SG/G1/G2 の全選手の得点率ランキング・準優ボーダー・勝ち上がり、BOA-682） */}
-      <Route
-        path="venue/:venueCode/meet/:startDate"
-        element={<MeetPage />}
-      />
+      <Route path="venue/:venueCode/meet/:startDate" element={<MeetPage />} />
       <Route path="race/:raceId" element={<RaceDetailPage />} />
       {/* 思考アシスト（BOA-430）。ja 専用（languages.js の JA_ONLY_UNDER_TRANSLATED）。言語付きの URL は ja 版へ移る */}
       <Route path="race/:raceId/assist" element={<ThinkingAssistPage />} />
@@ -256,6 +253,22 @@ function LocalizedRoutes({ lng = "ja" }) {
         )}
       <Route path="responsible-gambling" element={<ResponsibleGambling />} />
 
+      {adminRoutes()}
+
+      {/* α版・動線非公開ページ（Watson/Mycroft等の実験モデルが継続開発中のため維持） */}
+      <Route path="holmes" element={<Holmes />} />
+      <Route path="poirot" element={<Poirot />} />
+
+      {/* Fallback: 不明なパスはトップへ */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+// 管理画面のルート（LocalizedRoutes の Routes の子へそのまま展開する）
+function adminRoutes() {
+  return (
+    <>
       {/* Admin Pages (Hidden)。Basic認証は middleware.js。綴り違いの回避は AdminRouteGuard で塞ぐ */}
       <Route
         path="admin/rules"
@@ -283,18 +296,13 @@ function LocalizedRoutes({ lng = "ja" }) {
           key={sub}
           path={`admin/sns-hub/${sub}`}
           element={
-            <AdminRouteGuard path={`/admin/sns-hub/${sub}`}>{page}</AdminRouteGuard>
+            <AdminRouteGuard path={`/admin/sns-hub/${sub}`}>
+              {page}
+            </AdminRouteGuard>
           }
         />
       ))}
-
-      {/* α版・動線非公開ページ（Watson/Mycroft等の実験モデルが継続開発中のため維持） */}
-      <Route path="holmes" element={<Holmes />} />
-      <Route path="poirot" element={<Poirot />} />
-
-      {/* Fallback: 不明なパスはトップへ */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    </>
   );
 }
 

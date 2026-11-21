@@ -8,6 +8,7 @@ import {
 } from "../pure/basicInfoStats.js";
 import { currentPeriodRange } from "../utils/accidentRate.js";
 import { isPermissionDeniedError, withCache } from "./core.js";
+import { fetchAllPages } from "./fetchAllPages.js";
 
 /**
  * 選手の「前期」の期別成績を取得する（phase a FR-4c、マイグレーション095）。
@@ -146,3 +147,67 @@ export function getRacerAccidentRecords(racerIds, raceDate) {
       },
     );
   }
+
+// 203 の RPC が本番に無い（未適用: PostgREST は PGRST202、PostgreSQL は 42883）か、呼ぶ権限が無いか
+const isRpcUnavailableError = (error) =>
+  error?.code === "PGRST202" ||
+  error?.code === "42883" ||
+  isPermissionDeniedError(error);
+
+/**
+ * 選手の走を「1走1行」で取る（マイグレーション 203 の RPC get_racer_scoped_race_rows）。
+ * 6表の生の行（1走あたり16行）の代わりで、返す行は約1/16、要求は選手ごとに1本になる
+ * （Supabase の Egress・Log Ingestion の主因の直し、2026-11-19）。行を6表の形へ戻すのは
+ * src/pure/racerScopedRunTables.js。
+ *
+ * 1選手の730日の窓は最大で約1460走になりうるので、1000行の上限で黙って切れないよう、
+ * 一意な並び（race_id・boat_number）で .range() のページを読み切る（BOA-1051 と同じ）。
+ *
+ * @returns {Promise<Array<object>|null>} 関数が本番に無い（203 が未適用: PostgREST は PGRST202、
+ *   PostgreSQL は 42883）・呼ぶ権限が無いときは null（呼び手が今までの6表の読みに落とす）。
+ *   それ以外の失敗は例外のまま（黙って重い読みに落とさない）
+ */
+export async function fetchRacerScopedRunsOrNull(racerId, sinceRaceId) {
+  try {
+    return await fetchAllPages((from, to) =>
+      supabase
+        .rpc("get_racer_scoped_race_rows", {
+          p_racer_id: racerId,
+          p_since: sinceRaceId,
+        })
+        .order("race_id")
+        .order("boat_number")
+        .range(from, to),
+    );
+  } catch (error) {
+    if (isRpcUnavailableError(error)) return null;
+    throw error;
+  }
+}
+
+/**
+ * 選手ごとの「前付けの走の件数」を DB 側で数えて取る（マイグレーション 203 の RPC get_racer_front_taking_counts）。
+ * レースの頁を開いただけで走る「イン屋」の札の読みで、6選手の全走（6表で約2万行）の代わりに6行だけ受け取る。
+ * 数え方は src/utils/frontTaking.js の summarizeFrontTaking と同じ（scripts/maintenance/verify-racer-scoped-race-rpc.js）。
+ *
+ * @returns {Promise<Array<{racer_id: number, runs: number, taken: number}>|null>} 数える走の無い選手は行が無い。
+ *   関数が本番に無い（PGRST202・42883）・呼ぶ権限が無いときは null（呼び手が今までの読みに落とす）。
+ *   それ以外の失敗は例外のまま
+ */
+export async function fetchRacerFrontTakingCountsOrNull(
+  racerIds,
+  sinceRaceId,
+  beforeRaceId,
+) {
+  try {
+    const { data } = await supabase.rpc("get_racer_front_taking_counts", {
+      p_racer_ids: racerIds,
+      p_since: sinceRaceId,
+      p_before_race_id: beforeRaceId,
+    });
+    return data ?? [];
+  } catch (error) {
+    if (isRpcUnavailableError(error)) return null;
+    throw error;
+  }
+}

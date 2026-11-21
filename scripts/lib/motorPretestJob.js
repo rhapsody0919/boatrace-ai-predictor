@@ -41,6 +41,12 @@ import {
   writeMotorPretestRows,
 } from "./motorPretestRows.js";
 import { VENUE_NAMES } from "./supabaseClient.js";
+import {
+  coverageSummary,
+  fetchWindow,
+  mergeCoverage,
+  reportCoverage,
+} from "./motorPretestCoverage.js";
 
 /** 会場（1ページ、約8〜10秒）の同時取得数。開催中の約13会場を約40秒で終える（B2 得点率と同じ並列度） */
 export const MOTOR_PRETEST_CONCURRENCY = 3;
@@ -164,6 +170,82 @@ export function buildCoverageAlerts(date, coverage, now) {
   return alerts;
 }
 
+/** 朝の初期化（races_init）が live で、その日の分がまだ完了していないか（DB を読む殻） */
+async function waitingForRacesInit(client, date) {
+  const initState = await client
+    .from("scrape_job_state")
+    .select("mode, last_target_date")
+    .eq("job", "races_init")
+    .maybeSingle();
+  if (initState.error) {
+    throw new Error(
+      `前検タイム: races_init の状態の取得に失敗しました: ${initState.error.message}`,
+    );
+  }
+  return (
+    initState.data?.mode === "live" && initState.data.last_target_date !== date
+  );
+}
+
+/**
+ * その会場をこの日に取るか（DB を読む殻）。会場ごとに最新1行だけ読む。前の節・未来の保存行を今回の節の取得済みと扱わない。
+ * @param {{nextDate: string, oldest: string}} window 対象日の翌日・6日前
+ */
+async function venueNeedsFetch(client, venue, date, expected, window) {
+  const { nextDate, oldest } = window;
+  const series = await client
+    .from("race_series")
+    .select("start_date, end_date")
+    .eq("venue_code", venue.venueCode)
+    .lt("start_date", nextDate)
+    .order("start_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (series.error)
+    throw new Error(
+      `前検タイム: 節の取得に失敗しました: ${series.error.message}`,
+    );
+  // 節が引けない（race_series の取り込み前・取りこぼし）会場は、その会場だけ従来どおり取る。
+  // 1会場の欠けで全会場を止めない（BOA-1150 の審査 P2）
+  if (
+    !series.data ||
+    series.data.end_date < date ||
+    series.data.start_date === date
+  )
+    return true;
+  const saved = await client
+    .from("motor_pretest_stats")
+    .select("race_date")
+    .eq("venue_code", venue.venueCode)
+    .gte("race_date", series.data.start_date)
+    .lt("race_date", nextDate)
+    .order("race_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (saved.error)
+    throw new Error(
+      `前検タイム: 保存日の取得に失敗しました: ${saved.error.message}`,
+    );
+  if (!saved.data || saved.data.race_date < oldest) return true;
+  // race_series の開始日が古い（順延で節の初日がずれた等）と、保存行が前の節の名簿のことがある。
+  // その日の出走選手が最新の保存行に1人でも無ければ、その会場をその日1回取り直す（BOA-1150 の審査 P2-2）
+  const savedRacers = await client
+    .from("motor_pretest_stats")
+    .select("racer_id")
+    .eq("venue_code", venue.venueCode)
+    .eq("race_date", saved.data.race_date);
+  if (savedRacers.error)
+    throw new Error(
+      `前検タイム: 保存済みの選手の取得に失敗しました: ${savedRacers.error.message}`,
+    );
+  const savedIds = new Set(
+    (savedRacers.data ?? []).map((r) => Number(r.racer_id)),
+  );
+  const expectedIds =
+    expected.expectedByVenue.get(venue.venueCode) ?? new Set();
+  return [...expectedIds].some((id) => !savedIds.has(Number(id)));
+}
+
 /**
  * @param {Object} ctx 共通ラッパが渡す実行の文脈（cronWrapper.js の ctx。targetDate は日次ジョブで解決済み）
  * @param {Object} [deps] テスト用の差し替え
@@ -191,90 +273,25 @@ export async function runMotorPretestJob(
     alerts: [],
     ...extra,
   });
+  const waiting = (what) => ({
+    rowsWritten: 0,
+    incomplete: true,
+    report: carry({ waiting: what }),
+    body: { waiting: what },
+  });
 
   // 朝の初期化（races_init）が live のとき、その日の分が完了する前は、対象の会場が揃っていない
-  const initState = await ctx.client
-    .from("scrape_job_state")
-    .select("mode, last_target_date")
-    .eq("job", "races_init")
-    .maybeSingle();
-  if (initState.error) {
-    throw new Error(
-      `前検タイム: races_init の状態の取得に失敗しました: ${initState.error.message}`,
-    );
-  }
-  if (
-    initState.data?.mode === "live" &&
-    initState.data.last_target_date !== date
-  ) {
-    return {
-      rowsWritten: 0,
-      incomplete: true,
-      report: carry({ waiting: "races_init" }),
-      body: { waiting: "races_init" },
-    };
-  }
+  if (await waitingForRacesInit(ctx.client, date)) return waiting("races_init");
 
   const expected = await load(ctx.client, date);
-  if (expected.venues.length === 0) {
-    // races が無い（朝の初期化の前。休催日は、日次の未処理として、監視が知らせる）
-    return {
-      rowsWritten: 0,
-      incomplete: true,
-      report: carry({ waiting: "races" }),
-      body: { waiting: "races" },
-    };
-  }
+  // races が無い（朝の初期化の前。休催日は、日次の未処理として、監視が知らせる）
+  if (expected.venues.length === 0) return waiting("races");
 
-  // 会場ごとに最新1行だけ読む。前の節・未来の保存行を今回の節の取得済みと扱わない。
-  const dayMs = Date.parse(`${date}T00:00:00Z`);
-  const nextDate = new Date(dayMs + 86400000).toISOString().slice(0, 10);
-  const oldest = new Date(dayMs - 6 * 86400000).toISOString().slice(0, 10);
+  const window = fetchWindow(date);
   const venues = [];
   for (const venue of expected.venues) {
-    const series = await ctx.client
-      .from("race_series")
-      .select("start_date, end_date")
-      .eq("venue_code", venue.venueCode)
-      .lt("start_date", nextDate)
-      .order("start_date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (series.error)
-      throw new Error(`前検タイム: 節の取得に失敗しました: ${series.error.message}`);
-    // 節が引けない（race_series の取り込み前・取りこぼし）会場は、その会場だけ従来どおり取る。
-    // 1会場の欠けで全会場を止めない（BOA-1150 の審査 P2）
-    if (!series.data || series.data.end_date < date || series.data.start_date === date) {
+    if (await venueNeedsFetch(ctx.client, venue, date, expected, window))
       venues.push(venue);
-      continue;
-    }
-    const saved = await ctx.client
-      .from("motor_pretest_stats")
-      .select("race_date")
-      .eq("venue_code", venue.venueCode)
-      .gte("race_date", series.data.start_date)
-      .lt("race_date", nextDate)
-      .order("race_date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (saved.error)
-      throw new Error(`前検タイム: 保存日の取得に失敗しました: ${saved.error.message}`);
-    if (!saved.data || saved.data.race_date < oldest) {
-      venues.push(venue);
-      continue;
-    }
-    // race_series の開始日が古い（順延で節の初日がずれた等）と、保存行が前の節の名簿のことがある。
-    // その日の出走選手が最新の保存行に1人でも無ければ、その会場をその日1回取り直す（BOA-1150 の審査 P2-2）
-    const savedRacers = await ctx.client
-      .from("motor_pretest_stats")
-      .select("racer_id")
-      .eq("venue_code", venue.venueCode)
-      .eq("race_date", saved.data.race_date);
-    if (savedRacers.error)
-      throw new Error(`前検タイム: 保存済みの選手の取得に失敗しました: ${savedRacers.error.message}`);
-    const savedIds = new Set((savedRacers.data ?? []).map((r) => Number(r.racer_id)));
-    const expectedIds = expected.expectedByVenue.get(venue.venueCode) ?? new Set();
-    if ([...expectedIds].some((id) => !savedIds.has(Number(id)))) venues.push(venue);
   }
 
   /** @type {Map<number, ReturnType<typeof summarizeVenueCoverage>>} */
@@ -308,54 +325,25 @@ export async function runMotorPretestJob(
     concurrency,
   });
 
-  // 同じ日の補足の起動は、書き込み済みの会場を再取得しない。その会場の集計は、前回の last_report から引き継ぐ
-  const settled = new Set(result.report.settledVenues);
-  const sameDayLive =
-    previousReport?.date === date && previousReport?.mode === ctx.mode;
-  const carried = (sameDayLive ? (previousReport.coverage ?? []) : [])
-    .filter(
-      (c) => settled.has(c.venueCode) && !coverageByVenue.has(c.venueCode),
-    )
-    .map((c) => ({ ...c, pageRows: c.pageRows ?? 0 }));
-  const coverage = [
-    ...carried,
-    ...[...coverageByVenue.entries()].map(([venueCode, c]) => ({
-      venueCode,
-      ...c,
-    })),
-  ].sort((a, b) => a.venueCode - b.venueCode);
-  const expectedRacers = coverage.reduce((n, c) => n + c.expected, 0);
-  const expectedPresent = coverage.reduce(
-    (n, c) => n + (c.expected - c.missing.length),
-    0,
-  );
+  const coverage = mergeCoverage({
+    settledVenues: result.report.settledVenues,
+    previousReport,
+    date,
+    mode: ctx.mode,
+    coverageByVenue,
+  });
   const alerts = [
     ...findMotorPretestDriftAlerts(result.report.health),
     ...buildCoverageAlerts(date, coverage, ctx.now()),
   ];
-  const summary = {
-    venuesInRaces: expected.venues.length,
-    racesInDb: expected.raceCount,
-    excludedCancelledRaces: expected.excludedCancelledRaces,
-    expectedRacers,
-    expectedRacersOnPage: expectedPresent,
-    pageRows: coverage.reduce((n, c) => n + c.pageRows, 0),
-    pretestFilled: coverage.reduce((n, c) => n + c.pretestFilled, 0),
-  };
+  const summary = coverageSummary(expected, coverage);
   return {
     ...result,
     report: {
       ...result.report,
       alerts,
       summary,
-      coverage: coverage.map((c) => ({
-        venueCode: c.venueCode,
-        pageRows: c.pageRows,
-        expected: c.expected,
-        // 通知の判定に使うため、人数分を残す（1会場で数人。上限は念のため）
-        missing: c.missing.slice(0, 30),
-        pretestFilled: c.pretestFilled,
-      })),
+      coverage: reportCoverage(coverage),
     },
     body: { ...result.body, ...summary, alerts: alerts.length },
   };

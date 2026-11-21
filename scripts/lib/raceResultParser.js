@@ -342,27 +342,9 @@ export function classifyRaceStatus(payoutRows, refundBoats) {
   return "normal";
 }
 
-/**
- * 結果ページのHTMLを、全項目つきで解析する（純関数）。
- * 着順表・払戻表のどちらも無い（未公開・構造の違い）ページでも、例外にせず、空の項目を返す
- * （公開済みかの判断は、呼び出し側が boats・payouts の有無で行う）。解析中の想定外は握りつぶさず、
- * anomalies に残す（呼び出し側がログ・監視に出す）。
- *
- * @param {string} html
- */
-export function parseRaceResultPage(html) {
-  const $ = cheerio.load(html);
+/** 着順表の行の想定外（未知の着欄の表記・艇番の重複・スタート情報に行が無い艇）。純粋 */
+function boatAnomalies(boats, startInfo) {
   const anomalies = [];
-
-  const resultTable = findTable($, ["着", "ボートレーサー"]);
-  const startTable = findTable($, ["スタート情報"]);
-  const payoutTable = findTable($, ["勝式", "組番"]);
-  const refundTable = findTable($, ["返還"]);
-  const techniqueTable = findTable($, ["決まり手"]);
-  const remarkTable = findTable($, ["備考"]);
-
-  const startInfo = parseStartInfo($, startTable);
-  const boats = parseBoats($, resultTable, startInfo);
   for (const boat of boats) {
     const mark = boat.finish_mark;
     if (mark !== null && boat.finish_rank === null && !(mark in FINISH_MARKS)) {
@@ -386,7 +368,11 @@ export function parseRaceResultPage(html) {
       }
     }
   }
+  return anomalies;
+}
 
+/** 返還表の返還艇の枠番（1〜6、重複なし、昇順）。表が無ければ空 */
+function parseRefundBoats($, refundTable) {
   const refundBoats = [];
   if (refundTable) {
     refundTable.find(".numberSet1_number").each((_, el) => {
@@ -395,6 +381,38 @@ export function parseRaceResultPage(html) {
     });
     refundBoats.sort((a, b) => a - b);
   }
+  return refundBoats;
+}
+
+/** 表の tbody の最初のセルの字（そのまま）。表が無ければ "" */
+function firstCellText(table) {
+  return table ? table.find("tbody td").first().text() : "";
+}
+
+/**
+ * 結果ページのHTMLを、全項目つきで解析する（純関数）。
+ * 着順表・払戻表のどちらも無い（未公開・構造の違い）ページでも、例外にせず、空の項目を返す
+ * （公開済みかの判断は、呼び出し側が boats・payouts の有無で行う）。解析中の想定外は握りつぶさず、
+ * anomalies に残す（呼び出し側がログ・監視に出す）。
+ *
+ * @param {string} html
+ */
+export function parseRaceResultPage(html) {
+  const $ = cheerio.load(html);
+  const anomalies = [];
+
+  const resultTable = findTable($, ["着", "ボートレーサー"]);
+  const startTable = findTable($, ["スタート情報"]);
+  const payoutTable = findTable($, ["勝式", "組番"]);
+  const refundTable = findTable($, ["返還"]);
+  const techniqueTable = findTable($, ["決まり手"]);
+  const remarkTable = findTable($, ["備考"]);
+
+  const startInfo = parseStartInfo($, startTable);
+  const boats = parseBoats($, resultTable, startInfo);
+  anomalies.push(...boatAnomalies(boats, startInfo));
+
+  const refundBoats = parseRefundBoats($, refundTable);
 
   const { rows: payoutRows, anomalies: payoutAnomalies } = parsePayouts(
     $,
@@ -402,12 +420,9 @@ export function parseRaceResultPage(html) {
   );
   anomalies.push(...payoutAnomalies);
 
-  const winningTechnique =
-    (techniqueTable
-      ? techniqueTable.find("tbody td").first().text().trim()
-      : "") || null;
+  const winningTechnique = firstCellText(techniqueTable).trim() || null;
   const remarkText = remarkTable
-    ? normalizeText(remarkTable.find("tbody td").first().text())
+    ? normalizeText(firstCellText(remarkTable))
     : "";
 
   return {

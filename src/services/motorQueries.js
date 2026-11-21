@@ -3,7 +3,7 @@
 
 import { getTodayJST } from "../utils/dateUtils.js";
 import { supabase } from "./supabaseClient";
-import { addDaysToDateString } from "../../scripts/lib/dateUtils.js";
+import { shiftDate } from "../utils/pretestRows.js";
 import { meetStartFromRows } from "../utils/meetGrouping";
 import { currentMotorGenerationStart } from "../utils/motorGeneration";
 import { motorWindowFrom } from "../utils/motorPowerIndex.js";
@@ -204,7 +204,7 @@ export async function getVenueMeetStart(venueCode, date) {
       const { data } = await supabase
         .from("race_conditions")
         .select("race_id, series_day, is_final_day")
-        .gte("race_id", addDaysToDateString(date, -12))
+        .gte("race_id", shiftDate(date, -12))
         .lte("race_id", `${date}-zz`)
         .like("race_id", `__________-${vv}-__`);
       // 開催日は種別の行の日付（出走表は読まない）

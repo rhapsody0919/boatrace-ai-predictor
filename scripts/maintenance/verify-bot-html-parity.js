@@ -166,12 +166,8 @@ async function waitForParity(page, bot, timeoutMs) {
   return { snapshot, missing };
 }
 
-async function main() {
-  const failures = [];
-  const notes = [];
-  console.log(`照合先: ${ORIGIN}`);
-
-  // ---- 開催中の会場を選ぶ ----
+/** 開催中の会場を選び、照合するページを決める（notes へ注記を足す） */
+async function selectPaths(notes) {
   const today = await get("/api/races/today", UA.human);
   if (today.status !== 200) {
     throw new Error(`/api/races/today が HTTP ${today.status}`);
@@ -199,8 +195,11 @@ async function main() {
   console.log(
     `照合するページ: ${paths.join(" ")}${venues.length ? `（${venues.map((v) => v.name).join("・")}）` : ""}`,
   );
+  return { venues, paths };
+}
 
-  // ---- 取り違え（ボットの直後に人）と、ボット向け HTML の取得 ----
+/** 取り違え（ボットの直後に人）と、ボット向け HTML の取得 */
+async function fetchBotHtml(paths, failures) {
   const botHtml = new Map();
   for (const p of paths) {
     const bot = await get(p, UA.bingbot);
@@ -225,8 +224,10 @@ async function main() {
       );
     }
   }
+  return botHtml;
+}
 
-  // ---- Googlebot ----
+async function checkGooglebot(failures) {
   const gb = await get("/", UA.googlebot);
   const gbKind = classifyHtml(gb.body);
   console.log(`[Googlebot] /: HTTP ${gb.status} ${gbKind}`);
@@ -235,8 +236,10 @@ async function main() {
       `[Googlebot] / に SPA の外枠が返らない（${gbKind}、HTTP ${gb.status}）`,
     );
   }
+}
 
-  // ---- スナップショット生成の結果（status.json） ----
+/** スナップショット生成の結果（status.json） */
+async function checkSnapshotStatus(failures, notes) {
   const st = await get("/ai-snapshots/status.json", UA.human);
   const stResult = evaluateSnapshotStatus(st.status, st.body);
   console.log(`[スナップショット] ${stResult.message}`);
@@ -255,8 +258,50 @@ async function main() {
     if (racer.summary) console.log(`[スナップショット] ${racer.summary}`);
     for (const p of racer.problems) failures.push(`[選手ページ] ${p}`);
   }
+}
 
-  // ---- 部分集合の照合 ----
+/** 1ページ分の部分集合の照合（人の画面を開いて、ボット向け HTML の中身が揃うまで待つ） */
+async function parityOnePage(page, p, html, failures) {
+  let bot = extractBotItems(html);
+  await page.goto(`${ORIGIN}${p}`, { waitUntil: "domcontentloaded" });
+  let { snapshot, missing } = await waitForParity(page, bot, RENDER_TIMEOUT_MS);
+  if (missing.length > 0) {
+    // 材料の更新（5分ごと）をボットと人で別の時点で読んだだけかもしれないので、1回だけ両方を取り直す
+    const again = await get(p, UA.bingbot);
+    if (again.status === 200 && classifyHtml(again.body) === "bot") {
+      bot = extractBotItems(again.body);
+      await page.goto(`${ORIGIN}${p}`, { waitUntil: "domcontentloaded" });
+      ({ snapshot, missing } = await waitForParity(
+        page,
+        bot,
+        RENDER_TIMEOUT_MS,
+      ));
+    }
+  }
+  save(
+    `${fixtureName(p)}.human-dom.json`,
+    `${JSON.stringify(snapshot, null, 2)}\n`,
+  );
+  const total =
+    bot.texts.length +
+    bot.hrefs.length +
+    3 +
+    bot.head.alternates.length +
+    bot.head.jsonLd.length;
+  console.log(
+    `[照合] ${p}: ${total - missing.length}/${total} 件が人の画面にある（本文 ${bot.texts.length}・リンク ${bot.hrefs.length}・head 3・hreflang ${bot.head.alternates.length}・JSON-LD ${bot.head.jsonLd.length}）`,
+  );
+  if (missing.length > 0) {
+    failures.push(
+      `[照合] ${p}: 人の画面に無いもの ${missing.length} 件\n${missing
+        .map((m) => `  - ${m.kind}: ${m.value}`)
+        .join("\n")}`,
+    );
+  }
+}
+
+/** 部分集合の照合 */
+async function checkSubsetParity(paths, botHtml, failures) {
   const browser = await chromium.launch();
   try {
     const context = await browser.newContext({
@@ -269,52 +314,15 @@ async function main() {
     for (const p of paths) {
       const html = botHtml.get(p);
       if (!html) continue;
-      let bot = extractBotItems(html);
-      await page.goto(`${ORIGIN}${p}`, { waitUntil: "domcontentloaded" });
-      let { snapshot, missing } = await waitForParity(
-        page,
-        bot,
-        RENDER_TIMEOUT_MS,
-      );
-      if (missing.length > 0) {
-        // 材料の更新（5分ごと）をボットと人で別の時点で読んだだけかもしれないので、1回だけ両方を取り直す
-        const again = await get(p, UA.bingbot);
-        if (again.status === 200 && classifyHtml(again.body) === "bot") {
-          bot = extractBotItems(again.body);
-          await page.goto(`${ORIGIN}${p}`, { waitUntil: "domcontentloaded" });
-          ({ snapshot, missing } = await waitForParity(
-            page,
-            bot,
-            RENDER_TIMEOUT_MS,
-          ));
-        }
-      }
-      save(
-        `${fixtureName(p)}.human-dom.json`,
-        `${JSON.stringify(snapshot, null, 2)}\n`,
-      );
-      const total =
-        bot.texts.length +
-        bot.hrefs.length +
-        3 +
-        bot.head.alternates.length +
-        bot.head.jsonLd.length;
-      console.log(
-        `[照合] ${p}: ${total - missing.length}/${total} 件が人の画面にある（本文 ${bot.texts.length}・リンク ${bot.hrefs.length}・head 3・hreflang ${bot.head.alternates.length}・JSON-LD ${bot.head.jsonLd.length}）`,
-      );
-      if (missing.length > 0) {
-        failures.push(
-          `[照合] ${p}: 人の画面に無いもの ${missing.length} 件\n${missing
-            .map((m) => `  - ${m.kind}: ${m.value}`)
-            .join("\n")}`,
-        );
-      }
+      await parityOnePage(page, p, html, failures);
     }
   } finally {
     await browser.close();
   }
+}
 
-  // ---- TTFB（記録だけ） ----
+/** TTFB（記録だけ） */
+async function reportTtfb(venues) {
   // /en/ と /race/{本日} は、言語版・レース詳細の配線（BOA-848 第2段）の前後で middleware を通るかが変わるので、
   // 比べられるよう毎日残す。middleware を通らない比較用は /about（レース詳細の配線後は /race も middleware を通る）
   const ttfbPaths = [
@@ -335,6 +343,19 @@ async function main() {
     const note = p === "/about" ? "（middleware を通らない比較用）" : "";
     console.log(`  ${p}: ${median(samples[p]).toFixed(0)}ms${note}`);
   }
+}
+
+async function main() {
+  const failures = [];
+  const notes = [];
+  console.log(`照合先: ${ORIGIN}`);
+
+  const { venues, paths } = await selectPaths(notes);
+  const botHtml = await fetchBotHtml(paths, failures);
+  await checkGooglebot(failures);
+  await checkSnapshotStatus(failures, notes);
+  await checkSubsetParity(paths, botHtml, failures);
+  await reportTtfb(venues);
 
   for (const n of notes) console.log(`[注記] ${n}`);
   if (failures.length > 0) {

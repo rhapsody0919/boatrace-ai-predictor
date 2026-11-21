@@ -139,6 +139,86 @@ export function competitionRanks(values) {
   );
 }
 
+/** 場・日・節の題（見出しと日のタブから）。parseMotorPretestHtml の一部 */
+function readPretestMeta($) {
+  const venueImage = $(".heading2_area img").first().attr("src") ?? "";
+  const venueMatch = /text_place2_(\d{2})\./.exec(venueImage);
+  const hdMatch = /[?&]hd=(\d{4})(\d{2})(\d{2})/.exec(
+    $(".tab3_tabs a[href*='hd=']").first().attr("href") ?? "",
+  );
+  return {
+    venueCode: venueMatch ? Number(venueMatch[1]) : null,
+    date: hdMatch ? `${hdMatch[1]}-${hdMatch[2]}-${hdMatch[3]}` : null,
+    seriesTitle: squash($(".heading2_titleName").first().text()) || null,
+  };
+}
+
+/** 見出しの字 → 列ごとの項目名（知らない見出しは null）と、知らない・欠けた見出しの異常 */
+function mapHeaderFields(labels) {
+  const anomalies = [];
+  const fieldByColumn = labels.map((label) => {
+    if (!(label in KNOWN_HEADERS)) {
+      anomalies.push(`unknown_header:${label || "(空)"}`);
+      return null;
+    }
+    return KNOWN_HEADERS[label];
+  });
+  for (const field of REQUIRED_FIELDS) {
+    if (!fieldByColumn.includes(field))
+      anomalies.push(`missing_header:${field}`);
+  }
+  return { fieldByColumn, anomalies };
+}
+
+/**
+ * 表の1行（列の数は見出しと同じ）→ 行。読めないセルがあれば problem（bad_cell の異常の字）
+ * @returns {{row: Object, problem: null} | {row: null, problem: string}}
+ */
+function parsePretestRow(cells, fieldByColumn, i) {
+  const raw = {};
+  fieldByColumn.forEach((field, c) => {
+    if (field) raw[field] = cells[c];
+  });
+  const racerId = /^\d{4}$/.test(raw.racer_id) ? Number(raw.racer_id) : null;
+  const racerClass = /^(A1|A2|B1|B2)$/.test(raw.racer_class)
+    ? raw.racer_class
+    : null;
+  const motorNumber = /^\d{1,3}$/.test(raw.motor_number)
+    ? Number(raw.motor_number)
+    : null;
+  const boatNumber = /^\d{1,3}$/.test(raw.boat_number)
+    ? Number(raw.boat_number)
+    : null;
+  const motor2 = parsePercent(raw.motor_2rate);
+  const boat2 = parsePercent(raw.boat_2rate);
+  const time = parseTime(raw.pretest_time);
+  const problems = [
+    racerId === null && `登録番号=${raw.racer_id}`,
+    racerClass === null && `級別=${raw.racer_class}`,
+    motorNumber === null && `モーター番号=${raw.motor_number}`,
+    boatNumber === null && `ボート番号=${raw.boat_number}`,
+    motor2 === undefined && `モーター2連対率=${raw.motor_2rate}`,
+    boat2 === undefined && `ボート2連対率=${raw.boat_2rate}`,
+    time === undefined && `前検タイム=${raw.pretest_time}`,
+  ].filter(Boolean);
+  if (problems.length > 0) {
+    return { row: null, problem: `bad_cell:${i + 1}:${problems.join(",")}` };
+  }
+  return {
+    row: {
+      racer_id: racerId,
+      racer_class: racerClass,
+      motor_number: motorNumber,
+      motor_2rate: motor2,
+      boat_number: boatNumber,
+      boat_2rate: boat2,
+      pretest_time: time,
+      pretest_rank: null,
+    },
+    problem: null,
+  };
+}
+
 /**
  * @param {string} html
  * @returns {{
@@ -177,30 +257,9 @@ export function parseMotorPretestHtml(html) {
     };
   }
 
-  const venueImage = $(".heading2_area img").first().attr("src") ?? "";
-  const venueMatch = /text_place2_(\d{2})\./.exec(venueImage);
-  const hdMatch = /[?&]hd=(\d{4})(\d{2})(\d{2})/.exec(
-    $(".tab3_tabs a[href*='hd=']").first().attr("href") ?? "",
-  );
-  const meta = {
-    venueCode: venueMatch ? Number(venueMatch[1]) : null,
-    date: hdMatch ? `${hdMatch[1]}-${hdMatch[2]}-${hdMatch[3]}` : null,
-    seriesTitle: squash($(".heading2_titleName").first().text()) || null,
-  };
-
-  const anomalies = [];
+  const meta = readPretestMeta($);
   const labels = readHeaderLabels($, table.find("thead").first());
-  const fieldByColumn = labels.map((label) => {
-    if (!(label in KNOWN_HEADERS)) {
-      anomalies.push(`unknown_header:${label || "(空)"}`);
-      return null;
-    }
-    return KNOWN_HEADERS[label];
-  });
-  for (const field of REQUIRED_FIELDS) {
-    if (!fieldByColumn.includes(field))
-      anomalies.push(`missing_header:${field}`);
-  }
+  const { fieldByColumn, anomalies } = mapHeaderFields(labels);
   if (anomalies.length > 0) {
     return {
       ...base,
@@ -221,51 +280,17 @@ export function parseMotorPretestHtml(html) {
       anomalies.push(`row_shape:${i + 1}:${cells.length}列`);
       return;
     }
-    const raw = {};
-    fieldByColumn.forEach((field, c) => {
-      if (field) raw[field] = cells[c];
-    });
-    const racerId = /^\d{4}$/.test(raw.racer_id) ? Number(raw.racer_id) : null;
-    const racerClass = /^(A1|A2|B1|B2)$/.test(raw.racer_class)
-      ? raw.racer_class
-      : null;
-    const motorNumber = /^\d{1,3}$/.test(raw.motor_number)
-      ? Number(raw.motor_number)
-      : null;
-    const boatNumber = /^\d{1,3}$/.test(raw.boat_number)
-      ? Number(raw.boat_number)
-      : null;
-    const motor2 = parsePercent(raw.motor_2rate);
-    const boat2 = parsePercent(raw.boat_2rate);
-    const time = parseTime(raw.pretest_time);
-    const problems = [
-      racerId === null && `登録番号=${raw.racer_id}`,
-      racerClass === null && `級別=${raw.racer_class}`,
-      motorNumber === null && `モーター番号=${raw.motor_number}`,
-      boatNumber === null && `ボート番号=${raw.boat_number}`,
-      motor2 === undefined && `モーター2連対率=${raw.motor_2rate}`,
-      boat2 === undefined && `ボート2連対率=${raw.boat_2rate}`,
-      time === undefined && `前検タイム=${raw.pretest_time}`,
-    ].filter(Boolean);
-    if (problems.length > 0) {
-      anomalies.push(`bad_cell:${i + 1}:${problems.join(",")}`);
+    const { row, problem } = parsePretestRow(cells, fieldByColumn, i);
+    if (problem) {
+      anomalies.push(problem);
       return;
     }
-    if (seen.has(racerId)) {
-      anomalies.push(`duplicate_racer:${racerId}`);
+    if (seen.has(row.racer_id)) {
+      anomalies.push(`duplicate_racer:${row.racer_id}`);
       return;
     }
-    seen.add(racerId);
-    rows.push({
-      racer_id: racerId,
-      racer_class: racerClass,
-      motor_number: motorNumber,
-      motor_2rate: motor2,
-      boat_number: boatNumber,
-      boat_2rate: boat2,
-      pretest_time: time,
-      pretest_rank: null,
-    });
+    seen.add(row.racer_id);
+    rows.push(row);
   });
 
   if (anomalies.length === 0 && rows.length === 0) {

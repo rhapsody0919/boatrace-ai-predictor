@@ -37,7 +37,8 @@ import {
 } from "./verifyData/fakeServiceSupabase.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { withMotorChartPure } from "./verifyData/motorChartSource.js";
+import { SMALL_SAMPLE_THRESHOLD } from "../../src/pure/basicInfoStats.js";
+import { formatGenerationDate } from "../../src/utils/motorGeneration.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -373,21 +374,43 @@ const EMPTY_ROWS = [1, 2, 3, 4, 5, 6].map((course) => ({
   );
 }
 
-// 画面
-const grid = read("src/components/analysis/MotorWakuStatsGrid.jsx");
+// 画面: 本文の字でなく、ドリルダウンの部品（MotorMain）を ja の文言で描いた DOM で見る（verifyData/motorWakuDrill.js）
+const { drawMotorDrill, t } = await import("./verifyData/motorWakuDrill.js");
+const drill = (generationStart, course) =>
+  drawMotorDrill(M, generationStart, course);
+const unknown = await drill(null);
+const known = await drill(GEN);
 check(
-  "枠番別成績の表: 世代不明なら表を出さず「表示していません」に倒す",
-  grid.includes("generationStart === null") &&
-    grid.includes("analysis.motor.wakuStatsUnknownGeneration"),
+  "枠番別成績の表: 世代不明なら表を出さず「表示していません」に倒す（世代が分かれば .rows の行を出す）",
+  unknown.text.includes(t("analysis.motor.wakuStatsUnknownGeneration")) &&
+    unknown.tableRows === 0 &&
+    known.tableRows === 2 &&
+    !known.text.includes(t("analysis.motor.wakuStatsUnknownGeneration")),
 );
-const chart = withMotorChartPure(
-  read("src/components/analysis/MotorConditionChart.jsx"),
+const racers = await drill(GEN, 1);
+check(
+  "モータ情報: 新しい形（.rows / generationStart）で受け取る。選手×枠は選んだ枠の .rows だけを出す",
+  same(racers.racers.length, 2) && known.tableRows === 2,
 );
 check(
-  "モータ情報: 新しい形（.rows / generationStart）で受け取る",
-  chart.includes("motorWakuStats.rows") &&
-    chart.includes("motorWakuStats.generationStart") &&
-    chart.includes("motorRacerWakuStats.rows"),
+  "wakuStatsWindowNote・racerWakuNote: 注記に小標本の閾値（SMALL_SAMPLE_THRESHOLD）を渡している",
+  known.notes.includes(
+    t("analysis.motor.wakuStatsWindowNote", {
+      n: SMALL_SAMPLE_THRESHOLD,
+      date: formatGenerationDate(GEN, { short: true }),
+    }),
+  ) &&
+    racers.notes.includes(
+      t("analysis.motor.racerWakuNote", { n: SMALL_SAMPLE_THRESHOLD }),
+    ),
+);
+// 選手別でも率に参考値の色を付ける（nだけだと大きな緑の率が目立つ。ファン評価2周目）
+check(
+  "選手×枠: 率（1着率・2連率・3連率）にも小標本の色を付ける",
+  same(racers.racers, [3, 0]) &&
+    read("src/components/analysis/MotorConditionChart.css").includes(
+      ".usage-history-rate.is-small-sample",
+    ),
 );
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
@@ -403,30 +426,6 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   );
 }
 
-// 小標本の色（--color-warning-text、n<SMALL_SAMPLE_THRESHOLD）は凡例が無いと
-// 「不調」の色に読める（2026-09-28 ファン評価 P2）。入れ替え直後はほぼ全行が該当する
-for (const [file, key] of [
-  ["src/components/analysis/MotorWakuStatsGrid.jsx", "wakuStatsWindowNote"],
-  ["src/components/analysis/MotorRacerWakuDrillDown.jsx", "racerWakuNote"],
-]) {
-  const jsx = read(file);
-  check(
-    `${key}: 注記に小標本の閾値（SMALL_SAMPLE_THRESHOLD）を渡している`,
-    new RegExp(`${key}",\\s*\\{\\s*n: SMALL_SAMPLE_THRESHOLD`).test(jsx),
-  );
-}
-// 選手別でも率に参考値の色を付ける（nだけだと大きな緑の率が目立つ。ファン評価2周目）
-check(
-  "選手×枠: 率（1着率・2連率・3連率）にも小標本の色を付ける",
-  (
-    read("src/components/analysis/MotorRacerWakuDrillDown.jsx").match(
-      /usage-history-rate \$\{isSmallSample \? "is-small-sample" : ""\}/g,
-    ) ?? []
-  ).length === 3 &&
-    read("src/components/analysis/MotorConditionChart.css").includes(
-      ".usage-history-rate.is-small-sample",
-    ),
-);
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;

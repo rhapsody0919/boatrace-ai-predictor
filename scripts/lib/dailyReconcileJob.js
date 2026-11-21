@@ -167,77 +167,75 @@ export function updateHistory(previous, entry) {
     .slice(-HISTORY_DAYS);
 }
 
-/**
- * @param {Object} ctx 共通ラッパが渡す実行の文脈（cronWrapper.js の ctx。targetDate は日次ジョブで解決済み）
- * @param {Object} [deps] テスト用の差し替え
- */
-export async function runDailyReconcileJob(
-  ctx,
-  { fetchText = fetchKFileText, load = loadReconcileInputs } = {},
-) {
-  const base = ctx.targetDate;
-  if (!base || !DATE_RE.test(base)) {
-    throw new Error(`対象日を解決できません: ${String(base)}`);
-  }
-  const date = addDays(base, -1);
-  const now = ctx.now();
-  const final = jstMinutesOfDay(now) >= FINAL_ATTEMPT_MINUTES_OF_DAY;
-  const live = ctx.mode === "live";
-  const previous = ctx.state?.last_report ?? null;
-  const history = previous?.history ?? [];
-  const head = { date, base, mode: ctx.mode, final };
+const emptyKDay = () => ({
+  facts: new Map(),
+  completeVenues: new Set(),
+  pendingVenues: new Set(),
+});
 
-  const inputs = await load(ctx.client, date);
-  const candidates = inputs.races.filter(
-    (r) => !isCancellationConfirmed(r.cancellation_status),
-  );
-  if (inputs.races.length === 0) {
-    // その日にレースが無い（全会場の休催）。照合するものが無い
-    return {
-      rowsWritten: 0,
-      report: { ...head, kStatus: "not_needed", racesInDb: 0, history },
-      body: { date, racesInDb: 0 },
-    };
-  }
+/** 通知の出し分け: live は通知を出し、shadow は would_alert に記録する */
+const alertFields = (live, alerts) => ({
+  alerts: live ? alerts : [],
+  wouldAlert: live ? undefined : alerts,
+});
 
-  // 1) Kファイル（404 = 未公開。会場ごとの未展開は、parseKDay が pending として返す）
-  const text = await fetchText(date, { fetchImpl: ctx.politeFetch });
-  const kDay = text === null ? null : parseKDay(text, date);
-  if (kDay === null || (kDay.facts.size === 0 && kDay.pendingVenues.size > 0)) {
-    const kStatus = kDay === null ? "unpublished" : "all_venues_pending";
-    const result = reconcileDay({
-      date,
-      kDay: kDay ?? {
-        facts: new Map(),
-        completeVenues: new Set(),
-        pendingVenues: new Set(),
-      },
-      races: inputs.races,
-      results: inputs.results,
-      payouts: inputs.payouts,
-      final,
-    });
-    const alerts = buildReconcileAlerts(result, { final, now });
-    return {
-      rowsWritten: 0,
-      // 最後の照合まで、対象日を処理済みにせず、次の起動がもう一度処理する
-      incomplete: !final,
-      report: {
-        ...head,
-        kStatus,
-        summary: summaryOf(result),
-        history: final ? updateHistory(history, historyEntry(result)) : history,
-        alerts: live ? alerts : [],
-        wouldAlert: live ? undefined : alerts,
-      },
-      body: { date, kStatus, incomplete: !final },
-    };
-  }
+/** その日にレースが無い（全会場の休催）。照合するものが無い */
+function noRacesOutcome({ date, head, history }) {
+  return {
+    rowsWritten: 0,
+    report: { ...head, kStatus: "not_needed", racesInDb: 0, history },
+    body: { date, racesInDb: 0 },
+  };
+}
 
-  // 0件エラー: 照合するレースがあるのに、Kファイルからレースを1件も抽出できない（構造の変化）は、共通ラッパが失敗にする
-  const rowsExpected = candidates.length;
+/** Kファイルが未公開（404）・全会場が未展開のとき。最後の照合まで、対象日を処理済みにしない */
+function kUnavailableOutcome(env, inputs, kDay) {
+  const { date, now, final, live, head, history } = env;
+  const kStatus = kDay === null ? "unpublished" : "all_venues_pending";
+  const result = reconcileDay({
+    date,
+    kDay: kDay ?? emptyKDay(),
+    races: inputs.races,
+    results: inputs.results,
+    payouts: inputs.payouts,
+    final,
+  });
+  const alerts = buildReconcileAlerts(result, { final, now });
+  return {
+    rowsWritten: 0,
+    // 最後の照合まで、対象日を処理済みにせず、次の起動がもう一度処理する
+    incomplete: !final,
+    report: {
+      ...head,
+      kStatus,
+      summary: summaryOf(result),
+      history: final ? updateHistory(history, historyEntry(result)) : history,
+      ...alertFields(live, alerts),
+    },
+    body: { date, kStatus, incomplete: !final },
+  };
+}
+
+/** 照合の結果が出たときの共通ラッパ向けの戻り値の本体 */
+function reconciledBody(env, result, incomplete, alerts) {
+  return {
+    date: env.date,
+    final: env.final,
+    incomplete,
+    compared: result.compared,
+    matched: result.matched,
+    mismatchRaces: result.mismatchRaces,
+    unverifiable: result.unverifiable.total,
+    syncPending: result.syncPending.races,
+    excludedCancelled: result.excludedCancelled,
+    alerts: alerts.length,
+  };
+}
+
+/** Kファイルがあるとき。照合し、通知・履歴・再照合（incomplete）を決める */
+function reconciledOutcome(env, inputs, kDay, rowsExpected) {
+  const { date, now, final, live, head, history } = env;
   const rowsParsed = kDay.facts.size;
-
   const result = reconcileDay({
     date,
     kDay,
@@ -263,22 +261,52 @@ export async function runDailyReconcileJob(
       history: incomplete
         ? history
         : updateHistory(history, historyEntry(result)),
-      alerts: live ? alerts : [],
-      wouldAlert: live ? undefined : alerts,
+      ...alertFields(live, alerts),
     },
-    body: {
-      date,
-      final,
-      incomplete,
-      compared: result.compared,
-      matched: result.matched,
-      mismatchRaces: result.mismatchRaces,
-      unverifiable: result.unverifiable.total,
-      syncPending: result.syncPending.races,
-      excludedCancelled: result.excludedCancelled,
-      alerts: alerts.length,
-    },
+    body: reconciledBody(env, result, incomplete, alerts),
   };
+}
+
+/**
+ * @param {Object} ctx 共通ラッパが渡す実行の文脈（cronWrapper.js の ctx。targetDate は日次ジョブで解決済み）
+ * @param {Object} [deps] テスト用の差し替え
+ */
+export async function runDailyReconcileJob(
+  ctx,
+  { fetchText = fetchKFileText, load = loadReconcileInputs } = {},
+) {
+  const base = ctx.targetDate;
+  if (!base || !DATE_RE.test(base)) {
+    throw new Error(`対象日を解決できません: ${String(base)}`);
+  }
+  const date = addDays(base, -1);
+  const now = ctx.now();
+  const final = jstMinutesOfDay(now) >= FINAL_ATTEMPT_MINUTES_OF_DAY;
+  const previous = ctx.state?.last_report ?? null;
+  const env = {
+    date,
+    now,
+    final,
+    live: ctx.mode === "live",
+    history: previous?.history ?? [],
+    head: { date, base, mode: ctx.mode, final },
+  };
+
+  const inputs = await load(ctx.client, date);
+  const candidates = inputs.races.filter(
+    (r) => !isCancellationConfirmed(r.cancellation_status),
+  );
+  if (inputs.races.length === 0) return noRacesOutcome(env);
+
+  // 1) Kファイル（404 = 未公開。会場ごとの未展開は、parseKDay が pending として返す）
+  const text = await fetchText(date, { fetchImpl: ctx.politeFetch });
+  const kDay = text === null ? null : parseKDay(text, date);
+  if (kDay === null || (kDay.facts.size === 0 && kDay.pendingVenues.size > 0)) {
+    return kUnavailableOutcome(env, inputs, kDay);
+  }
+
+  // 0件エラー: 照合するレースがあるのに、Kファイルからレースを1件も抽出できない（構造の変化）は、共通ラッパが失敗にする
+  return reconciledOutcome(env, inputs, kDay, candidates.length);
 }
 
 /** last_report に残す要約（不一致の明細は別に持つ） */

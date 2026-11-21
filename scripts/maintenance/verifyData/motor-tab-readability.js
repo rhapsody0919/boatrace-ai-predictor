@@ -123,3 +123,23 @@ export const rankingTables = (day) => {
   };
   return tables;
 };
+
+/** 選手ページの今節のモーター（getRacerCurrentMotorStatus）の場面: 選手4500が2日前に2走（2R・9R）、前日に1走（4R） */
+export const racerStatusScene = (day, rid) => {
+  const ids = [rid(-2, 2), rid(-2, 9), rid(-1, 4)];
+  const times = [6.81, 6.9, 6.7];
+  const tables = {
+    venue_motor_start_dates: startRows(V, day(-400)),
+    races: ids.map(race),
+    race_entries: ids.map((id, i) => ent(id, i + 1, 4500)),
+    race_conditions: ids.map((race_id, i) => ({ race_id, series_day: i < 2 ? 1 : 2, is_final_day: false })),
+    exhibition_data: ids.map((race_id, i) => ({
+      race_id,
+      boat_number: i + 1,
+      exhibition_time: times[i],
+      propeller_change: false,
+      parts_changed: null,
+    })),
+  };
+  return { racerId: 4500, tables };
+};

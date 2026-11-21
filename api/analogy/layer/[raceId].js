@@ -42,13 +42,21 @@ export default async function handler(req) {
       return json(
         { status },
         200,
-        cacheControl(status === "not_saved" ? "not_saved" : status, passed),
+        cacheControl(
+          status === "not_saved" ? "not_saved" : status,
+          passed,
+          raceId,
+        ),
       );
     const layer = await readObject(
       objectPath(raceId, state.racecard.run_id, "layer", raceId),
     );
     if (!layer) return json({ status: "not_saved" }, 200, "no-store");
-    return json({ status, ...layer }, 200, cacheControl(status, passed));
+    return json(
+      { status, ...layer },
+      200,
+      cacheControl(status, passed, raceId),
+    );
   } catch (e) {
     console.error("analogy v16 layer:", e);
     return json({ error: "upstream" }, 502, "no-store");

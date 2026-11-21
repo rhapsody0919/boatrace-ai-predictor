@@ -9,8 +9,9 @@
  *   createRefreshingCronHandler   api/cron/race-info.js   スロットの処理後に、変更を書いたレースの予測を再計算する（案1）
  *   createExhibitionCronHandler   api/cron/exhibition.js  mode（off・shadow・live）で、スロットの経路を動かすかを決める
  *
- * 取得・解析・書き込みの本体は、既存の scripts/daily/update-race-info.js・scrape-exhibition-data.js の
- * runForRaces を再利用する（二重実装しない。GitHub Actions・CLIの入口 run と、解析・行の組み立て・書き込みを共有する）。
+ * 取得・解析・書き込みの本体は、scripts/lib/raceInfoRunForRaces.js・exhibitionRunForRaces.js の runForRaces
+ * （入口 scripts/daily/update-race-info.js・scrape-exhibition-data.js から移した物。入口は再 export する）を再利用する
+ * （二重実装しない。GitHub Actions・CLIの入口 run と、解析・行の組み立て・書き込みを共有する）。
  * shadow のとき、データテーブルへは一切書かない（runForRaces が mode で守る）。
  *
  * D2（beforeinfo の重複取得）の解消: レース情報は出走表（racelist）だけを取り、直前情報（beforeinfo）は展示が、
@@ -19,8 +20,8 @@
  * 依存（runForRaces 等）は引数で差し替えられる（scripts/maintenance/verify-scrape-pre-race-job.js が、DB・取得先なしで検証する）。
  */
 import { waitUntil } from "@vercel/functions";
-import { runForRaces as runRaceInfoForRaces } from "../../daily/update-race-info.js";
-import { runForRaces as runExhibitionForRaces } from "../../daily/scrape-exhibition-data.js";
+import { runForRaces as runRaceInfoForRaces } from "../raceInfoRunForRaces.js";
+import { runForRaces as runExhibitionForRaces } from "../exhibitionRunForRaces.js";
 import { getRaceSchedule } from "../raceSchedule.js";
 import { loadSeriesDayByVenue } from "../raceSeriesLookup.js";
 import { refreshAfterChange } from "../predictionRefresh.js";
@@ -286,7 +287,7 @@ export function createExhibitionSlotHandler({
 
 /** mainRefresh を、必要なときだけ読み込む（無効なときは、従来と完全に同じ動作にする） */
 const defaultRefresh = async (args) =>
-  (await import("../../daily/generate-predictions.js")).mainRefresh(args);
+  (await import("../predictionRun.js")).mainRefresh(args);
 
 /**
  * スロットの処理（runScrapeJob）の後に、変更を書いたレースの予測を再計算する（案1。plan.md §5）。

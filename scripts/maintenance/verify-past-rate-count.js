@@ -19,6 +19,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { row } from "./verifyData/past-rate-count-fixtures.js";
 import { countSuite } from "./verifyData/past-rate-count-count.js";
 import { storageSuite } from "./verifyData/past-rate-count-storage.js";
+import { runMutants, showKnownGaps } from "./verifyData/past-rate-count-tail.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
@@ -33,7 +34,6 @@ const TARGETS = {
 };
 
 const show = (v) => JSON.stringify(v);
-
 // 進入: 4号艇のコース = 4,4,4,4,4,4,4,4,3,5,4,4 → 3コース以内1、4コース以内11、枠なり10
 // 6号艇のコース = 6×9, 6, 5, 6 → 枠なり11
 
@@ -428,50 +428,10 @@ for (const [target, suite] of Object.entries(SUITES)) {
 }
 
 console.log("\n## 変異検証");
-for (const [i, [target, name, from, to]] of MUTANTS.entries()) {
-  let killed = false;
-  let detail = "検出されなかった（この変異を入れても検証が通る）";
-  try {
-    const mod = await loadMutant(i, target, from, to);
-    let failed = 0;
-    console.error = () => {}; // 保存の失敗の console.error を変異検証では黙らせる
-    try {
-      SUITES[target](mod, (_label, actual, expected) => {
-        if (show(actual) !== show(expected)) failed++;
-      });
-    } catch {
-      failed++;
-    } finally {
-      console.error = quiet;
-    }
-    killed = failed > 0;
-  } catch (error) {
-    detail = error.message;
-  }
-  if (killed) console.log(`✅ 変異検証（${target}）: 「${name}」を検出できる`);
-  else {
-    failures++;
-    console.error(`❌ 変異検証（${target}）: 「${name}」\n  ${detail}`);
-  }
-}
+failures += await runMutants({ MUTANTS, SUITES, loadMutant, show, quiet });
 
 fs.rmSync(MUTANT_DIR, { recursive: true, force: true });
 // 仕様が未定の入力は観測だけ行い、SUITES・変異検証・failures には含めない。
-const KNOWN_GAPS = [
-  { input: { first: 2, second: [1, 1], third: [3] }, spec: "欄内の重複の扱いは未定（画面では足し外し）" },
-  { input: { first: "1", second: [1], third: [2] }, spec: "1着が文字列のときの同一艇判定は未定" },
-  { input: undefined, spec: "入力がundefinedのときの扱いは未定" },
-];
-const countModule = await import(pathToFileURL(path.join(ROOT, TARGETS.count)).href);
-console.log(`\n## KNOWN_GAPS（${KNOWN_GAPS.length}件、合否判定の対象外）`);
-for (const { input, spec } of KNOWN_GAPS) {
-  let current;
-  try {
-    current = { combos: countModule.orderCombos(input), points: countModule.orderPoints(input) };
-  } catch (error) {
-    current = { exception: error.name };
-  }
-  console.log(`- 入力: ${show(input) ?? "undefined"} / 仕様: ${spec} / 今の値: ${show(current)}`);
-}
+await showKnownGaps({ ROOT, TARGETS, show });
 console.log(failures === 0 ? "\n✅ 全テスト成功" : `\n❌ ${failures}件失敗`);
 process.exit(failures === 0 ? 0 : 1);

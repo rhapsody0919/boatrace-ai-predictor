@@ -8,15 +8,8 @@ import {
   parseLangFromPath,
   getHreflangAlternates,
 } from "../src/config/languages.js";
-import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
-import {
-  isRacerIndexable,
-  RACER_INDEX_ACTIVE_DAYS,
-} from "../src/utils/racerIndexPolicy.js";
+import { RACER_INDEX_ACTIVE_DAYS } from "../src/utils/racerIndexPolicy.js";
 import { getDaysAgoJST } from "../src/utils/dateUtils.js";
-import { VENUE_REGIONS } from "../src/data/venueRegions.js";
-import { VENUE_GUIDES_ZH_TW } from "../src/data/venueGuidesZhTw.js";
-import { VENUE_GUIDES_KO } from "../src/data/venueGuidesKo.js";
 import { blogPostsEn } from "../src/data/blogPostsEn.js";
 import { blogPostsZhTw } from "../src/data/blogPostsZhTw.js";
 import { blogPostsKo } from "../src/data/blogPostsKo.js";
@@ -26,16 +19,21 @@ import {
   laterDate,
   renderUrlEntry,
 } from "./lib/sitemapLastmod.js";
+import { isDirectRun } from "./lib/isDirectRun.js";
+import {
+  LANGUAGE_ONLY_PAGES,
+  LOCALIZED_PAGES,
+} from "./lib/sitemapLanguagePages.js";
+import { racerSitemapEntry } from "./lib/sitemapRacerPages.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SITE_URL = "https://www.boat-ai.jp";
 const PUBLIC_DIR = path.join(__dirname, "../public");
 const BLOG_DIR = path.join(PUBLIC_DIR, "blog");
 
 // 静的ページの定義
-const staticPages = [
+export const staticPages = [
   {
     loc: "/",
     lastmodFrom: "raceData",
@@ -146,31 +144,6 @@ const staticPages = [
   })),
 ];
 
-// 全言語で翻訳提供済みのページ（デフォルト言語以外の各言語 URL を登録。未翻訳の blog 等は含めない）
-const LOCALIZED_PAGES = [
-  {
-    basePath: "/",
-    changefreq: "daily",
-    priority: "0.9",
-    lastmodFrom: "raceData",
-  },
-  { basePath: "/guide", changefreq: "monthly", priority: "0.8" },
-  {
-    basePath: "/winning-technique",
-    changefreq: "daily",
-    priority: "0.8",
-    lastmodFrom: "raceData",
-  },
-  // 会場別レース一覧（本日）は4言語対応（venue-list-redesign）
-  ...Array.from({ length: 24 }, (_, i) => ({
-    basePath: `/venue/${i + 1}`,
-    changefreq: "daily",
-    priority: "0.6",
-    lastmodFrom: "venueRaceData",
-    venueCode: i + 1,
-  })),
-];
-
 // 翻訳版の JSON（src/data/blog-posts/{lang}/{id}.json）はあるが対応する -{suffix}.md が存在しない場合、sitemapが
 // 実体の無いURLを配信してしまう（code-reviewで発見: エントリ追加と-en.md作成が
 // 別PRになるケースを想定した検知）。生成時に警告のみ出し、処理は止めない
@@ -189,111 +162,6 @@ BLOG_TRANSLATION_CHECKS.forEach(({ label, posts, mdSuffix }) => {
     }
   });
 });
-
-// 特定言語にのみ存在するページ（会場別ビジターガイド: 英語版 BOA-133 / 繁体字版 BOA-134）
-const LANGUAGE_ONLY_PAGES = {
-  en: [
-    ...["", ...VENUE_GUIDES_EN.map((v) => v.slug)].map((slug) => ({
-      basePath: slug ? `/venues/${slug}` : "/venues",
-      changefreq: "monthly",
-      priority: "0.7",
-    })),
-    // 会場が1件も無い地域ハブは実際には/venuesへリダイレクトされるため、sitemapには含めない
-    ...VENUE_REGIONS.filter((r) =>
-      VENUE_GUIDES_EN.some((v) => v.regionGroup === r.slug),
-    ).map((r) => ({
-      basePath: `/venues/region/${r.slug}`,
-      changefreq: "monthly",
-      priority: "0.6",
-    })),
-    // ブログはja専用が原則だが、featured記事の一部のみ英語版を用意している
-    // （languages.js の PARTIALLY_TRANSLATED_PATHS 参照）。記事リストは
-    // 英語版の JSON（blogPostsEn.js が読む）から動的に生成し、新規記事追加時の登録漏れを防ぐ
-    {
-      basePath: "/blog",
-      changefreq: "weekly",
-      priority: "0.6",
-      lastmodFrom: "blogIndex",
-    },
-    ...blogPostsEn.map((post) => ({
-      basePath: `/blog/${post.id}`,
-      changefreq: "monthly",
-      priority: "0.6",
-      lastmodFrom: "blogPost",
-      postId: post.id,
-    })),
-  ],
-  "zh-TW": [
-    ...["", ...VENUE_GUIDES_ZH_TW.map((v) => v.slug)].map((slug) => ({
-      basePath: slug ? `/venues/${slug}` : "/venues",
-      changefreq: "monthly",
-      priority: "0.7",
-    })),
-    // 会場が1件も無い地域ハブは実際には/venuesへリダイレクトされるため、sitemapには含めない
-    ...VENUE_REGIONS.filter((r) =>
-      VENUE_GUIDES_ZH_TW.some((v) => v.regionGroup === r.slug),
-    ).map((r) => ({
-      basePath: `/venues/region/${r.slug}`,
-      changefreq: "monthly",
-      priority: "0.6",
-    })),
-    // ブログはfeatured記事の一部のみzh-TW版を展開中。languages.jsの
-    // getAvailableLanguages("/blog")は記事が1件も無い言語では一覧ページ自体を
-    // 未提供と判定するため、それと矛盾しないよう記事0件の間は一覧ページも含めない
-    ...(blogPostsZhTw.length > 0
-      ? [
-          {
-            basePath: "/blog",
-            changefreq: "weekly",
-            priority: "0.6",
-            lastmodFrom: "blogIndex",
-          },
-          ...blogPostsZhTw.map((post) => ({
-            basePath: `/blog/${post.id}`,
-            changefreq: "monthly",
-            priority: "0.6",
-            lastmodFrom: "blogPost",
-            postId: post.id,
-          })),
-        ]
-      : []),
-  ],
-  ko: [
-    ...["", ...VENUE_GUIDES_KO.map((v) => v.slug)].map((slug) => ({
-      basePath: slug ? `/venues/${slug}` : "/venues",
-      changefreq: "monthly",
-      priority: "0.7",
-    })),
-    // 会場が1件も無い地域ハブは実際には/venuesへリダイレクトされるため、sitemapには含めない
-    ...VENUE_REGIONS.filter((r) =>
-      VENUE_GUIDES_KO.some((v) => v.regionGroup === r.slug),
-    ).map((r) => ({
-      basePath: `/venues/region/${r.slug}`,
-      changefreq: "monthly",
-      priority: "0.6",
-    })),
-    // ブログはfeatured記事の一部のみko版を展開中。languages.jsの
-    // getAvailableLanguages("/blog")は記事が1件も無い言語では一覧ページ自体を
-    // 未提供と判定するため、それと矛盾しないよう記事0件の間は一覧ページも含めない
-    ...(blogPostsKo.length > 0
-      ? [
-          {
-            basePath: "/blog",
-            changefreq: "weekly",
-            priority: "0.6",
-            lastmodFrom: "blogIndex",
-          },
-          ...blogPostsKo.map((post) => ({
-            basePath: `/blog/${post.id}`,
-            changefreq: "monthly",
-            priority: "0.6",
-            lastmodFrom: "blogPost",
-            postId: post.id,
-          })),
-        ]
-      : []),
-  ],
-};
 
 // デフォルト言語以外の言語別ページを生成
 const localizedPages = SUPPORTED_LANGUAGES.filter(
@@ -360,7 +228,7 @@ function getBlogPosts() {
 // 直近7日分のレースページをSupabaseから取得
 // 過去の日別レースページ（/races/YYYY-MM-DD）は検索需要がほぼゼロで大半が未インデックスのまま
 // クロールバジェットを消費していたため、直近7日分のみに限定する（BOA-84）
-async function getRacePages() {
+export async function getRacePages() {
   const racePages = [];
 
   try {
@@ -421,7 +289,7 @@ async function getRacePages() {
 // BOA-1186: 検索露出のある詳細を、日本語・JSTの本日を含む7日だけ追加。
 // 結果の存在は画面と同じ rank1 で判定する（confirmed が残っていても結果を優先）。
 // 最大24会場×12R×7日=2016 URL。失敗時は生成を止め、既存の sitemap を保つ。
-async function getRaceDetailPages() {
+export async function getRaceDetailPages() {
   const { isSupabaseEnabled, fetchAll } =
     await import("./lib/supabaseClient.js");
   if (!isSupabaseEnabled()) return [];
@@ -447,7 +315,7 @@ async function getRaceDetailPages() {
 // 対象はページ側の noindex 判定（RacerProfile.jsx）と同じ isRacerIndexable（src/utils/racerIndexPolicy.js）:
 // ニュースがある選手、または現役の A1 選手（最新の出走が A1 で直近30日以内。集客レーン、2026-10-02）。
 // lastmod は、ニュースの最新日と最新の出走日の新しい方（ページの中身が変わった日）
-async function getRacerPages() {
+export async function getRacerPages() {
   const racerPages = [];
 
   try {
@@ -499,31 +367,11 @@ async function getRacerPages() {
     let byNews = 0;
     let byGrade = 0;
     for (const racerId of racerIds) {
-      const latest = latestByRacerId.get(racerId);
-      const latestRaceDate = latest ? latest.race_id.slice(0, 10) : null;
-      const hasNews = newsDateByRacerId.has(racerId);
-      if (
-        !isRacerIndexable({
-          hasNews,
-          latestGrade: latest?.grade ?? null,
-          latestRaceDate,
-          activeSince,
-        })
-      ) {
-        continue;
-      }
-      if (hasNews) byNews += 1;
+      const entry = racerSitemapEntry(racerId, newsDateByRacerId, latestByRacerId, activeSince);
+      if (!entry) continue;
+      if (entry.hasNews) byNews += 1;
       else byGrade += 1;
-      const lastmod = [newsDateByRacerId.get(racerId), latestRaceDate]
-        .filter(Boolean)
-        .sort()
-        .at(-1);
-      racerPages.push({
-        loc: `/racer/${racerId}`,
-        lastmod,
-        changefreq: "weekly",
-        priority: "0.5",
-      });
+      racerPages.push(entry.page);
     }
     racerPages.sort((a, b) => a.loc.localeCompare(b.loc));
 
@@ -547,7 +395,7 @@ async function getRacerPages() {
 // 黙って sitemap から落ちると、気づかないまま索引から消える。design-reviewer 指摘4）
 const MEET_PAGE_DATA_FROM = "2025-12-02";
 
-async function getMeetPages(latest) {
+export async function getMeetPages(latest) {
   const { supabase, isSupabaseEnabled, fetchAll } =
     await import("./lib/supabaseClient.js");
   if (!isSupabaseEnabled()) {
@@ -646,7 +494,7 @@ async function getMeetPages(latest) {
 }
 
 // 開催日（JSTの今日以前で最新）。全体と会場別。取れなければ null（lastmod を出さない）
-async function getLatestRaceDates() {
+export async function getLatestRaceDates() {
   const result = { overall: null, byVenue: new Map() };
   try {
     const { supabase, isSupabaseEnabled } =
@@ -689,7 +537,7 @@ function alternatesFor(loc) {
 }
 
 // sitemap.xmlの生成
-async function generateSitemap() {
+export async function generateSitemap() {
   const blogPosts = getBlogPosts();
   const racePages = await getRacePages();
   const raceDetailPages = await getRaceDetailPages();
@@ -789,4 +637,5 @@ async function main() {
   }
 }
 
-main();
+// 直接起動のときだけ main を回す（import されただけなら DB の読み・sitemap.xml の書きは走らない。verify が生成の関数を偽の DB で呼ぶため）
+if (isDirectRun(import.meta.url)) main();

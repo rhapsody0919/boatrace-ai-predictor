@@ -94,6 +94,54 @@ export async function loadOfficialRowTargets(client, from, to) {
     }));
 }
 
+/** 対象の行をレースごとにまとめる（最初に出た順） */
+function groupByRace(targets) {
+  const byRace = new Map();
+  for (const t of targets) {
+    if (!byRace.has(t.race_id)) byRace.set(t.race_id, []);
+    byRace.get(t.race_id).push(t);
+  }
+  return byRace;
+}
+
+/** 1レースの結果ページを取る。{html}・{stopped}（時間外・429・503 で全体を止める）・{anomaly}（このレースだけ飛ばす） */
+async function fetchRace(raceId, venue, race, date, fetchHtml, canFetch) {
+  try {
+    if (!canFetch()) {
+      return { stopped: `${raceId}: 取得の時間外（JST 6時）のため中止` };
+    }
+    return { html: await fetchHtml(raceResultUrl(venue, race, date)) };
+  } catch (error) {
+    if (error.status === 429 || error.status === 503) {
+      return { stopped: `${raceId}: HTTP ${error.status} のため中止` };
+    }
+    return { anomaly: `${raceId}: 取得に失敗 ${error.message}` };
+  }
+}
+
+/** 結果ページの着順から、着欄（失格）と行の順の行を plan に足す。着順表を読めなければ異常に足して false */
+function addRaceRows(plan, raceId, html, raceTargets) {
+  const { boats } = parseRaceResultPage(html);
+  if (boats.length === 0) {
+    plan.anomalies.push(`${raceId}: 着順表を読めない`);
+    return false;
+  }
+  const marks = buildDisqualifiedMarkRows(
+    raceId,
+    boats,
+    raceTargets.filter((t) => t.kind !== "row"),
+  );
+  const order = buildOfficialRowRows(
+    raceId,
+    boats,
+    raceTargets.filter((t) => t.kind === "row"),
+  );
+  plan.rows.push(...marks.rows);
+  plan.officialRows.push(...order.rows);
+  plan.anomalies.push(...marks.anomalies, ...order.anomalies);
+  return true;
+}
+
 /**
  * 計画を作る（結果ページの取得と解析。DBへは書かない）。
  * 依存（fetchHtml・wait・canFetch）は差し替え可能（検証用）。
@@ -109,11 +157,7 @@ export async function buildPlan(
     log = console.log,
   } = {},
 ) {
-  const byRace = new Map();
-  for (const t of targets) {
-    if (!byRace.has(t.race_id)) byRace.set(t.race_id, []);
-    byRace.get(t.race_id).push(t);
-  }
+  const byRace = groupByRace(targets);
   const plan = {
     rows: [],
     officialRows: [],
@@ -131,40 +175,17 @@ export async function buildPlan(
       Number(raceId.slice(11, 13)),
       Number(raceId.slice(14, 16)),
     ];
-    let html;
-    try {
-      if (!canFetch()) {
-        plan.stopped = `${raceId}: 取得の時間外（JST 6時）のため中止`;
-        break;
-      }
-      html = await fetchHtml(raceResultUrl(venue, race, date));
-    } catch (error) {
-      if (error.status === 429 || error.status === 503) {
-        plan.stopped = `${raceId}: HTTP ${error.status} のため中止`;
-        break;
-      }
-      plan.anomalies.push(`${raceId}: 取得に失敗 ${error.message}`);
+    const got = await fetchRace(raceId, venue, race, date, fetchHtml, canFetch);
+    if (got.stopped) {
+      plan.stopped = got.stopped;
+      break;
+    }
+    if (got.anomaly) {
+      plan.anomalies.push(got.anomaly);
       continue;
     }
     plan.races++;
-    const { boats } = parseRaceResultPage(html);
-    if (boats.length === 0) {
-      plan.anomalies.push(`${raceId}: 着順表を読めない`);
-      continue;
-    }
-    const marks = buildDisqualifiedMarkRows(
-      raceId,
-      boats,
-      raceTargets.filter((t) => t.kind !== "row"),
-    );
-    const order = buildOfficialRowRows(
-      raceId,
-      boats,
-      raceTargets.filter((t) => t.kind === "row"),
-    );
-    plan.rows.push(...marks.rows);
-    plan.officialRows.push(...order.rows);
-    plan.anomalies.push(...marks.anomalies, ...order.anomalies);
+    if (!addRaceRows(plan, raceId, got.html, raceTargets)) continue;
     if (index % 100 === 0) log(`  ${index}/${byRace.size}レース`);
   }
   return plan;
@@ -213,26 +234,8 @@ function getArg(name) {
 const tallyBy = (rows, key) =>
   rows.reduce((acc, r) => ({ ...acc, [r[key]]: (acc[r[key]] ?? 0) + 1 }), {});
 
-async function main() {
-  if (!isSupabaseEnabled()) throw new Error("Supabaseが設定されていません");
-  if (process.argv.includes("--apply")) {
-    const planPath = getArg("plan");
-    if (!planPath) throw new Error("--apply には --plan=FILE が必要です");
-    const plan = JSON.parse(fs.readFileSync(planPath, "utf8"));
-    const officialRows = plan.officialRows ?? [];
-    const total = plan.rows.length + officialRows.length;
-    const confirm = Number(getArg("confirm"));
-    if (confirm !== total) {
-      throw new Error(
-        `--confirm=${getArg("confirm")} が計画の行数 ${total}（着欄 ${plan.rows.length}・行の順 ${officialRows.length}）と一致しません`,
-      );
-    }
-    const result = await applyPlan(plan.rows, { officialRows });
-    console.log(
-      `[APPLY] 書いた行 ${result.written}・書かなかった行（計画の後に値が入った・行が無い） ${result.skipped}`,
-    );
-    return;
-  }
+/** 計画の引数（--from・--to・--out・--max-races）。形が違えば例外 */
+function parsePlanArgs() {
   const from = getArg("from") ?? DEFAULT_FROM;
   const to = getArg("to") ?? DEFAULT_TO;
   const out = getArg("out");
@@ -241,6 +244,35 @@ async function main() {
   }
   if (!out) throw new Error("--out=FILE（計画の保存先）を指定してください");
   const maxRaces = getArg("max-races") ? Number(getArg("max-races")) : Infinity;
+  return { from, to, out, maxRaces };
+}
+
+/** --apply: 保存した計画を、--confirm の行数を確かめてから書く */
+async function runApply() {
+  const planPath = getArg("plan");
+  if (!planPath) throw new Error("--apply には --plan=FILE が必要です");
+  const plan = JSON.parse(fs.readFileSync(planPath, "utf8"));
+  const officialRows = plan.officialRows ?? [];
+  const total = plan.rows.length + officialRows.length;
+  const confirm = Number(getArg("confirm"));
+  if (confirm !== total) {
+    throw new Error(
+      `--confirm=${getArg("confirm")} が計画の行数 ${total}（着欄 ${plan.rows.length}・行の順 ${officialRows.length}）と一致しません`,
+    );
+  }
+  const result = await applyPlan(plan.rows, { officialRows });
+  console.log(
+    `[APPLY] 書いた行 ${result.written}・書かなかった行（計画の後に値が入った・行が無い） ${result.skipped}`,
+  );
+}
+
+async function main() {
+  if (!isSupabaseEnabled()) throw new Error("Supabaseが設定されていません");
+  if (process.argv.includes("--apply")) {
+    await runApply();
+    return;
+  }
+  const { from, to, out, maxRaces } = parsePlanArgs();
   // 公式への取得は JST 0〜6時だけ（開催時間帯の負荷を避ける。オーケストレーターの指示、BOA-667）
   const anyTime = process.argv.includes("--any-time");
   const now = new Date();

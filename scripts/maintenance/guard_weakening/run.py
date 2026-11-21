@@ -6,7 +6,9 @@ HEAD（commit 済みの作業場所）を --base（PR の base の SHA）との�
      scripts/maintenance/*-allowlist.json のうち形の表（PARSERS）に無い物の変更は向きを言えないので赤
   3. verify の変異検査（verify_guard.py。hq の scripts/verify_guard.py の写し）。verify-*.js・verify-registry.json・verifyData/ の変更があるときだけ
      （verifyData/ は読む verify-*.js を逆に辿って比べる。どれを拾うかは verify_guard.is_verify_path）。
-     registry への行の追加は、同じ PR で新しく足した verify-*.js の行だけ通す
+     registry への行の追加は、同じ PR で新しく足した verify-*.js の行だけ通す。
+     「比べられない（人が見る）」（base の木でも旧の verify が製品を import しない・変異なしで通らない・変異を1つも落とさない。verify_guard の Verdict.incomparable）は
+     赤にせず警告にする（result は incomparable、終了コード 0）。弱めていない証明ではないので、この結果を緑として機械マージの条件に使わない（人が差分を見る）
 判定器が読めない・例外のときは赤（握りつぶさない）。理由は1行ずつ出す（GitHub Actions では ::error:: の注記も付ける）。
 verify の実行の囲い（sandbox-exec）は macOS だけにある。GitHub Actions の上（GITHUB_ACTIONS=true）では囲いなしで回す:
   その job は使い捨ての VM・権限は contents: read・secrets を渡さない・checkout の資格を残さないので、囲いが守る物（手元の鍵・ネット）が無い。
@@ -117,9 +119,12 @@ def evaluate(repo: Path, base: str) -> Tuple[List[str], List[str], Dict[str, obj
         if why:
             errors.append(f"VERIFY {why}")
         else:
-            v = vg.evaluate(repo, changes, base_text, {**VERIFY_CFG, "sandbox": use_sb})
-            errors += [f"VERIFY {h}" for h in v.human] + registry_additions_problems(changes, base_text, head_text)
+            v = vg.evaluate(repo, changes, base_text, {**VERIFY_CFG, "sandbox": use_sb}, base_ref=mb)
+            inc = set(v.incomparable)
+            errors += [f"VERIFY {h}" for h in v.human if h not in inc] + registry_additions_problems(changes, base_text, head_text)
+            warnings += [f"VERIFY {h}" for h in v.incomparable]
             record["verify"] = {"excused": sorted(v.excused), **v.record}
+            record["incomparable"] = len(v.incomparable)
     return errors, warnings, record
 
 
@@ -137,7 +142,8 @@ def main(argv: Sequence[str]) -> int:
         print(f"::warning::{w}" if gha else f"警告 {w}")
     for e in errors:
         print(f"::error::{e}" if gha else f"赤 {e}")
-    print(json.dumps({"result": "red" if errors else "green", "errors": len(errors), "warnings": len(warnings), **record}, ensure_ascii=False, default=str))
+    result = "red" if errors else ("incomparable" if record.get("incomparable") else "green")
+    print(json.dumps({"result": result, "errors": len(errors), "warnings": len(warnings), **record}, ensure_ascii=False, default=str))
     return 1 if errors else 0
 
 

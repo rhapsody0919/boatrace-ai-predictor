@@ -3,7 +3,7 @@
 
 import { getTodayJST } from "../utils/dateUtils.js";
 import { supabase } from "./supabaseClient";
-import { addDaysToDateString } from "../../scripts/lib/dateUtils.js";
+import { shiftDate } from "../utils/pretestRows.js";
 import { competitionRank } from "../utils/competitionRank.js";
 import {
   VENUE_SITE_STATS_HIDDEN,
@@ -160,7 +160,7 @@ function fetchPretestAndEntries(venue, pretestDate) {
       .from("race_entries")
       .select("race_id, racer_id, motor_number, motor_2rate, player_name")
       .like("race_id", `____-__-__-${venuePart}-%`)
-      .gte("race_id", addDaysToDateString(pretestDate, -8))
+      .gte("race_id", shiftDate(pretestDate, -8))
       .lte("race_id", `${getTodayJST()}-99`),
   ]);
 }

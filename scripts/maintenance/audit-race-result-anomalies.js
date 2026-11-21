@@ -160,26 +160,54 @@ function compareWithKDir(rows, kDir) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** 結果ページの URL（runApply から移した。parseRaceId の誤りはここで投げる） */
+function resultPageUrl(raceId) {
+  const { date, venue, race } = parseRaceId(raceId);
+  return `https://www.boatrace.jp/owpc/pc/race/raceresult?rno=${race}&jcd=${String(venue).padStart(2, "0")}&hd=${date.replaceAll("-", "")}`;
+}
+
+/** 既存の race_results の行の読み取り（問い合わせは await せずそのまま返す。await は呼び元に残す。runApply から移した） */
+function readExistingRow(client, raceId, schema) {
+  return client
+    .from("race_results")
+    .select(
+      [
+        ...FIX_RESULT_COLUMNS,
+        ...FILL_ONLY_COLUMNS,
+        ...(schema.results ? ["race_status", "refund_boats", "remark"] : []),
+      ].join(","),
+    )
+    .eq("race_id", raceId)
+    .maybeSingle();
+}
+
+/** 1レースの結果のログの行（runApply から移した） */
+function outcomeLogLine(raceId, outcome, plan) {
+  return `  ${raceId}: ${outcome.error ? `失敗 ${outcome.error}` : `更新 results=${outcome.wrote.results ? Object.keys(plan.resultUpdate).join("/") : "変更なし"} timings=${outcome.wrote.timings} payouts=${outcome.wrote.payouts}`}`;
+}
+
+/** runApply の依存の既定（runApply の引数の既定から移した。未指定（undefined）のときだけ既定になる） */
+function applyDefaults({
+  client,
+  fetchHtml = (url) => fetchRaceResultHtml(url),
+  wait = sleep,
+  intervalMs = APPLY_INTERVAL_MS,
+  log = (m) => console.log(m),
+}) {
+  return { client, fetchHtml, wait, intervalMs, log };
+}
+
 /**
  * 修正の実行（--apply）。1リクエストずつ、間隔を空けて、429・503で即中止する。
  * 依存（client・fetchHtml・sleep・schema）は差し替え可能（検証用。本番では実物）。
  */
-export async function runApply(
-  raceIds,
-  {
-    client,
-    fetchHtml = (url) => fetchRaceResultHtml(url),
-    wait = sleep,
-    intervalMs = APPLY_INTERVAL_MS,
-    log = (m) => console.log(m),
-  },
-) {
+export async function runApply(raceIds, options) {
+  const { client, fetchHtml, wait, intervalMs, log } = applyDefaults(options);
   const schema = await detectResultSchema(client);
   const results = [];
   let stopped = null;
   for (const [index, raceId] of raceIds.entries()) {
-    const { date, venue, race } = parseRaceId(raceId);
-    const url = `https://www.boatrace.jp/owpc/pc/race/raceresult?rno=${race}&jcd=${String(venue).padStart(2, "0")}&hd=${date.replaceAll("-", "")}`;
+    const url = resultPageUrl(raceId);
     if (index > 0) await wait(intervalMs + Math.floor(Math.random() * 1000));
     let html;
     try {
@@ -203,17 +231,11 @@ export async function runApply(
       });
       continue;
     }
-    const { data: existing, error: readError } = await client
-      .from("race_results")
-      .select(
-        [
-          ...FIX_RESULT_COLUMNS,
-          ...FILL_ONLY_COLUMNS,
-          ...(schema.results ? ["race_status", "refund_boats", "remark"] : []),
-        ].join(","),
-      )
-      .eq("race_id", raceId)
-      .maybeSingle();
+    const { data: existing, error: readError } = await readExistingRow(
+      client,
+      raceId,
+      schema,
+    );
     if (readError || !existing) {
       results.push({
         race_id: raceId,
@@ -224,9 +246,7 @@ export async function runApply(
     const newRow = buildRaceResultRow(raceId, parsed);
     const plan = buildFixPlan(existing, newRow, parsed, schema);
     const outcome = await applyFixPlan(client, plan);
-    log(
-      `  ${raceId}: ${outcome.error ? `失敗 ${outcome.error}` : `更新 results=${outcome.wrote.results ? Object.keys(plan.resultUpdate).join("/") : "変更なし"} timings=${outcome.wrote.timings} payouts=${outcome.wrote.payouts}`}`,
-    );
+    log(outcomeLogLine(raceId, outcome, plan));
     results.push(outcome);
   }
   return { results, stopped, schema };

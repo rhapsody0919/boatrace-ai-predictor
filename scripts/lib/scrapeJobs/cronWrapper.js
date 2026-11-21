@@ -44,25 +44,42 @@
  *     },
  *   });
  */
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import { SCRAPE_JOBS, SOFT_DEADLINE_MARGIN_SEC } from "./registry.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { resolveTargetDate } from "./dailyJob.js";
-import {
-  BreakerOpenError,
-  FetchStoppedError,
-  createCircuitBreaker,
-} from "./circuitBreaker.js";
-import { createPoliteFetch, hostKeyOf, pathKeyOf } from "./politeFetch.js";
-import {
-  applyZeroRowGuard,
-  computeRetryAt,
-  isFinalOutcome,
-  truncateError,
-} from "./outcomes.js";
+import { createCircuitBreaker } from "./circuitBreaker.js";
+import { createPoliteFetch } from "./politeFetch.js";
+import { applyZeroRowGuard, truncateError } from "./outcomes.js";
 import { jstStartOfDay, toJstDateString } from "./time.js";
 import { createSupabaseStore } from "./store.js";
 import { createFetchCounter } from "./fetchCounter.js";
+import {
+  CLAIM_FALLBACK_ALERT_KEY,
+  alreadyDoneResult,
+  breakerSkipResult,
+  createRecordFailure,
+  createSettle,
+  createShouldStop,
+  createSlotWorker,
+  defaultWorker,
+  failed,
+  isBreakerOpen,
+  isDoneForTarget,
+  leasedSuccessBody,
+  leasedSuccessRecord,
+  ok,
+  recordClaimFallback,
+  scrapeJobOptions,
+  shouldRunTick,
+  summaryVerdict,
+  tallySlotResults,
+  throttledKeys,
+  tickFailureInfo,
+} from "./cronWrapperParts.js";
+
+// フォールバックのアラートの key・既定のワーカー名は cronWrapperParts.js へ移した（ここから従来どおり import できる）
+export { CLAIM_FALLBACK_ALERT_KEY, defaultWorker };
 
 /** 予定表を生成し直す間隔（分）。races が後から増えた場合の追従（plan.md §3.5） */
 export const ENSURE_SLOTS_EVERY_MIN = 10;
@@ -77,13 +94,6 @@ export function isAuthorized(authHeader, expected) {
   return timingSafeEqual(expectedBuf, actualBuf);
 }
 
-export function defaultWorker(job) {
-  return `${process.env.VERCEL_REGION ?? "local"}:${job}:${randomUUID()}`;
-}
-
-const ok = (body) => ({ status: 200, body: { success: true, ...body } });
-const failed = (body) => ({ status: 500, body: { success: false, ...body } });
-
 /** 予定表を生成するか: 10分に1回、または、その日の最初の起動（ジョブを日中に有効化した場合を含む） */
 export function shouldEnsureSlots(now, lastTickAt) {
   if (now.getUTCMinutes() % ENSURE_SLOTS_EVERY_MIN === 0) return true;
@@ -91,58 +101,20 @@ export function shouldEnsureSlots(now, lastTickAt) {
   return new Date(lastTickAt) < jstStartOfDay(now);
 }
 
-/**
- * ジョブのブレーカーが開いているか。ホスト（definition.hosts）と、ページのパス（definition.breakerUrls。403 の拒否で
- * 開くパス単位のブレーカー。BOA-1145）の両方を見る。開いていれば、claim せずにこの起動を終える
- */
-async function isBreakerOpen(breaker, definition, nowMs) {
-  const keys = [
-    ...(definition.hosts ?? []).map((host) => ({
-      key: hostKeyOf(`https://${host}/`),
-      host,
-    })),
-    ...(definition.breakerUrls ?? []).map((url) => ({
-      key: pathKeyOf(url),
-      host: pathKeyOf(url),
-    })),
-  ];
-  for (const { key, host } of keys) {
-    try {
-      // 開いているかだけを見る（半開の試行を DB で予約しない。予約すると、この起動で取らないのに全体の試行を2分止める）
-      await breaker.check(key, { reserve: false });
-    } catch (error) {
-      if (error instanceof BreakerOpenError) {
-        return {
-          open: true,
-          until: error.until,
-          host,
-          // 非常停止（fetch_stop、178）は応答で breaker_open と分ける（人が立てたものか、ブレーカーが開いたものか）
-          skipped:
-            error instanceof FetchStoppedError ? "fetch_stop" : "breaker_open",
-        };
-      }
-      throw error;
-    }
-  }
-  return { open: false, until: nowMs };
-}
-
-/**
- * 閉じた後24時間の絞り（spec §5.2）にあるブレーカーのキー（ホスト・ページのパス）。isBreakerOpen の後に呼ぶ
- * （check の読み取りで DB の段階を同期済み）。1つでもあれば、その起動の1起動の上限（claimLimit）を半分にする
- */
-function throttledKeys(breaker, definition) {
-  if (typeof breaker.isThrottled !== "function") return [];
-  const keys = [
-    ...(definition.hosts ?? []).map((host) => hostKeyOf(`https://${host}/`)),
-    ...(definition.breakerUrls ?? []).map(pathKeyOf),
-  ];
-  return keys.filter((key) => breaker.isThrottled(key));
-}
-
 /** 絞りのときの1起動の上限（半分、切り上げ。1未満にしない） */
 export const throttledClaimLimit = (claimLimit) =>
   Math.max(1, Math.ceil(claimLimit / 2));
+
+/** 絞りのブレーカーがあるときの応答の足し（throttled と、半分にした claimLimit）。無ければ空 */
+function throttleInfoOf(breaker, definition) {
+  const throttled = throttledKeys(breaker, definition);
+  return throttled.length > 0
+    ? {
+        throttled,
+        claimLimit: throttledClaimLimit(definition.claimLimit),
+      }
+    : {};
+}
 
 /**
  * Cron の1回の起動の取得の道具（ブレーカー・politeFetch・取得の数え。BOA-1145 P3）。Cron の口（createScrapeCronHandler と、
@@ -203,29 +175,24 @@ export async function runScrapeJob(options) {
   }
 }
 
-async function runScrapeJobWith({
-  job,
-  definition = SCRAPE_JOBS[job],
-  store,
-  handleSlot,
-  run,
-  onTick,
-  now = () => new Date(),
-  worker = defaultWorker(job),
-  modeGated = true,
-  client = null,
-  query = {},
-  breaker = createCircuitBreaker({
-    store: store.breakerStore,
-    now: () => now().getTime(),
-  }),
-  politeFetch,
-}) {
+async function runScrapeJobWith(options) {
+  const {
+    job,
+    definition,
+    store,
+    handleSlot,
+    run,
+    onTick,
+    now,
+    worker,
+    modeGated,
+    client,
+    query,
+    breaker,
+    politeFetch,
+  } = scrapeJobOptions(options);
   if (!definition) return failed({ job, error: `未登録のジョブです: ${job}` });
-  const startedMs = now().getTime();
-  const softDeadlineMs =
-    startedMs + (definition.maxDurationSec - SOFT_DEADLINE_MARGIN_SEC) * 1000;
-  const shouldStop = () => now().getTime() >= softDeadlineMs;
+  const shouldStop = createShouldStop(now, definition, SOFT_DEADLINE_MARGIN_SEC);
 
   // 1) ジョブ状態とモード
   let state;
@@ -269,99 +236,40 @@ async function runScrapeJobWith({
     query,
     state: state.row,
   };
-  const previousFailures = state.row?.consecutive_failures ?? 0;
-  const recordFailure = async (error) => {
-    try {
-      await store.recordFailure(job, {
-        now: now(),
-        error,
-        previousFailures,
-      });
-    } catch (e) {
-      console.error(`❌ ${job}: 失敗の記録に失敗: ${e.message}`);
-    }
-  };
+  const recordFailure = createRecordFailure({ store, job, now, state });
 
   try {
     // live のときだけ、スロットの取得の前に呼ぶ（tick のフック）。失敗しても、スロットの処理は続ける
     let tickInfo = {};
     let tickError = null;
-    if (onTick && mode === "live") {
+    if (shouldRunTick(onTick, mode)) {
       try {
         tickInfo = { tick: await onTick(ctx) };
       } catch (error) {
-        console.error(`❌ ${job}: onTick のエラー:`, error);
         tickError = error;
-        tickInfo = { tickError: truncateError(error) };
+        tickInfo = tickFailureInfo(job, error);
       }
     }
-    const summary =
-      definition.kind === "window"
-        ? await runWindow({
-            job,
-            definition,
-            ctx,
-            store,
-            handleSlot,
-            breaker,
-            state,
-          })
-        : await runLeased({
-            job,
-            definition,
-            ctx,
-            store,
-            run,
-            breaker,
-            state,
-            recordFailure,
-          });
-    if (summary.failed) {
-      if (definition.kind === "window") await recordFailure(summary.firstError);
-      return failed({ job, mode, ...summary.body, ...tickInfo });
-    }
-    if (tickError) {
-      await recordFailure(tickError);
-      return failed({ job, mode, ...summary.body, ...tickInfo });
-    }
-    return ok({ job, mode, ...summary.body, ...tickInfo });
+    const runKind = definition.kind === "window" ? runWindow : runLeased;
+    const summary = await runKind({
+      job,
+      definition,
+      ctx,
+      store,
+      handleSlot,
+      run,
+      breaker,
+      state,
+      recordFailure,
+    });
+    const verdict = summaryVerdict({ job, mode, definition, summary, tickInfo, tickError });
+    if (verdict.record) await recordFailure(verdict.error);
+    return verdict.result;
   } catch (error) {
     console.error(`❌ ${job}: 実行エラー:`, error);
     await recordFailure(error);
     return failed({ job, mode, error: truncateError(error) });
   }
-}
-
-/** フォールバックのアラートの key（scrape_job_state.last_report.alerts。監視が report:{job}:{key} として通知する） */
-export const CLAIM_FALLBACK_ALERT_KEY = "claim_fallback";
-
-/**
- * claim が上書きなしの既存の関数へフォールバックしたかを、ジョブ状態（last_report）に反映する。
- *   フォールバックした: last_report.alerts にアラートを入れる（成功の記録を伴う。既にあれば、書き直さない）
- *   正常に取れた・前回のアラートが残っている: アラートを消す
- * 記録の失敗は、本処理を止めない（ログのみ）。応答の body に足す値を返す
- */
-async function recordClaimFallback({ job, definition, store, state, now }) {
-  const fallback = store.takeClaimFallback?.() ?? null;
-  const previousAlerts = state.row?.last_report?.alerts;
-  const hadAlert =
-    Array.isArray(previousAlerts) &&
-    previousAlerts.some((a) => a?.key === CLAIM_FALLBACK_ALERT_KEY);
-  try {
-    if (fallback && !hadAlert) {
-      await store.recordSuccess(job, {
-        now: now(),
-        report: {
-          alerts: [{ key: CLAIM_FALLBACK_ALERT_KEY, text: fallback.reason }],
-        },
-      });
-    } else if (!fallback && hadAlert && definition.graceMinByOffset) {
-      await store.recordSuccess(job, { now: now(), report: { alerts: [] } });
-    }
-  } catch (error) {
-    console.error(`❌ ${job}: フォールバックの記録に失敗: ${error.message}`);
-  }
-  return fallback ? { claimFallback: fallback.reason } : {};
 }
 
 /** 窓型: 期限が来たスロットを取り、ハンドラーで処理して、完了・再試行を記録する */
@@ -376,16 +284,7 @@ async function runWindow({
 }) {
   const { now, mode, worker, shouldStop } = ctx;
   const brk = await isBreakerOpen(breaker, definition, now().getTime());
-  if (brk.open) {
-    return {
-      failed: false,
-      body: {
-        skipped: brk.skipped,
-        host: brk.host,
-        until: new Date(brk.until).toISOString(),
-      },
-    };
-  }
+  if (brk.open) return breakerSkipResult(brk);
 
   let ensured = 0;
   if (shouldEnsureSlots(now(), state.row?.last_tick_at)) {
@@ -396,14 +295,7 @@ async function runWindow({
     });
   }
 
-  const throttled = throttledKeys(breaker, definition);
-  const throttleInfo =
-    throttled.length > 0
-      ? {
-          throttled,
-          claimLimit: throttledClaimLimit(definition.claimLimit),
-        }
-      : {};
+  const throttleInfo = throttleInfoOf(breaker, definition);
   const slots = await store.claimSlots({
     job,
     worker,
@@ -427,129 +319,14 @@ async function runWindow({
     };
   }
 
-  const settle = async (slot, result) => {
-    const at = now();
-    let applied;
-    if (isFinalOutcome(result.outcome)) {
-      applied = await store.completeSlot(slot, {
-        worker,
-        now: at,
-        outcome: result.outcome,
-        rowsWritten: result.rowsWritten,
-        resultDigest: result.resultDigest,
-      });
-    } else {
-      applied = await store.retrySlot(slot, {
-        worker,
-        now: at,
-        outcome: result.outcome,
-        error: result.error,
-        // 取得せずに戻した（展示の not_due。BOA-1145）: 試行回数を戻す
-        releaseAttempt: result.releaseAttempt === true,
-        retryAt:
-          result.retryAt ??
-          computeRetryAt({
-            now: at,
-            claimedAt: slot.last_attempt_at,
-            retrySec: definition.retrySec,
-          }),
-      });
-    }
-    if (!applied) {
-      // リースを奪われていた（処理が遅くリースが切れ、別の実行が引き継いだ）。データ側は冪等な書き込み済みで無害
-      console.warn(
-        `⚠️ ${job}: リースを失っていたため記録しませんでした（${slot.race_id} ${slot.offset_min}）`,
-      );
-    }
-    return applied;
-  };
-
+  const settle = createSettle({ store, worker, now, job, definition });
   const results = await mapWithConcurrency(
     slots,
     definition.concurrency,
-    async (slot) => {
-      // 着手しない場合: ソフトデッドライン（maxDuration−30秒）を超えた、または、リースが処理の完了前に
-      // 切れる見込み（別の実行が同じスロットを取って二重に取得するのを避ける）。すぐ次の起動が取れるよう、
-      // pending に戻す（試行回数は戻す）
-      const leaseEndMs = slot.lease_until
-        ? new Date(slot.lease_until).getTime()
-        : Infinity;
-      if (
-        shouldStop() ||
-        now().getTime() + (definition.slotSecEstimate ?? 0) * 1000 > leaseEndMs
-      ) {
-        try {
-          await store.retrySlot(slot, {
-            worker,
-            now: now(),
-            retryAt: now(),
-            releaseAttempt: true,
-          });
-        } catch (error) {
-          console.error(
-            `❌ ${job}: スロットを戻せませんでした（${slot.race_id}）:`,
-            error,
-          );
-        }
-        return { outcome: "deferred" };
-      }
-      // このスロットの処理・記録の失敗は、他のスロットを止めない（1つの例外で、claim済みの全スロットが
-      // リース失効まで running のまま残るのを避ける）
-      try {
-        let result;
-        try {
-          result = await handleSlot(slot, ctx);
-        } catch (error) {
-          if (error instanceof BreakerOpenError) {
-            result = {
-              outcome: "breaker_open",
-              retryAt: new Date(error.until),
-              error: error.message,
-            };
-          } else {
-            console.error(
-              `❌ ${job}: スロットの処理エラー（${slot.race_id}）:`,
-              error,
-            );
-            result = { outcome: "error", error: truncateError(error) };
-          }
-        }
-        if (
-          result === null ||
-          typeof result !== "object" ||
-          typeof result.outcome !== "string"
-        ) {
-          result = {
-            outcome: "error",
-            error: `ハンドラーが不正な結果を返しました: ${String(result)}`,
-          };
-        }
-        result = applyZeroRowGuard(result);
-        await settle(slot, result);
-        return result;
-      } catch (error) {
-        console.error(
-          `❌ ${job}: スロットの記録エラー（${slot.race_id}）:`,
-          error,
-        );
-        return { outcome: "error", error: truncateError(error) };
-      }
-    },
+    createSlotWorker({ job, definition, store, worker, now, shouldStop, handleSlot, ctx, settle }),
   );
 
-  const tally = {};
-  let rowsWritten = 0;
-  for (const r of results) {
-    tally[r.outcome] = (tally[r.outcome] ?? 0) + 1;
-    rowsWritten += r.rowsWritten ?? 0;
-  }
-  // 着手しなかった（deferred）・予定の時刻より前で取得しなかった（not_due）スロットは、処理に数えない
-  const processed = results.filter(
-    (r) => r.outcome !== "deferred" && r.outcome !== "not_due",
-  );
-  // 処理したスロットが全て error なら、この実行は失敗（HTTP 500・連続失敗数を増やす）
-  const allFailed =
-    processed.length > 0 && processed.every((r) => r.outcome === "error");
+  const { tally, rowsWritten, processed, allFailed } = tallySlotResults(results);
   const body = {
     claimed: slots.length,
     ensured,
@@ -583,25 +360,12 @@ async function runLeased({
   if (definition.kind === "daily") {
     ctx.targetDate = resolveTargetDate(now(), definition.targetTimeJst);
     if (state.row?.last_target_date === ctx.targetDate) {
-      // 補足の起動が、既に成功した対象日を再処理しない（冪等）
-      return {
-        failed: false,
-        body: { skipped: "already_done", targetDate: ctx.targetDate },
-      };
+      return alreadyDoneResult(ctx.targetDate);
     }
   }
 
   const brk = await isBreakerOpen(breaker, definition, now().getTime());
-  if (brk.open) {
-    return {
-      failed: false,
-      body: {
-        skipped: brk.skipped,
-        host: brk.host,
-        until: new Date(brk.until).toISOString(),
-      },
-    };
-  }
+  if (brk.open) return breakerSkipResult(brk);
 
   const acquired = await store.acquireLease(
     job,
@@ -616,11 +380,8 @@ async function runLeased({
       // リースを取った後に、対象日が処理済みでないかを再確認する（読み取りとリース取得の間に、
       // 別の実行が完了した場合の二重実行を避ける）
       const fresh = await store.readState(job);
-      if (fresh.available && fresh.row?.last_target_date === ctx.targetDate) {
-        return {
-          failed: false,
-          body: { skipped: "already_done", targetDate: ctx.targetDate },
-        };
+      if (isDoneForTarget(fresh, ctx.targetDate)) {
+        return alreadyDoneResult(ctx.targetDate);
       }
     }
     const result = applyZeroRowGuard({ outcome: "ok", ...(await run(ctx)) });
@@ -631,26 +392,11 @@ async function runLeased({
         body: { error: result.error, targetDate: ctx.targetDate },
       };
     }
-    await store.recordSuccess(job, {
-      now: now(),
-      rowsWritten: result.rowsWritten,
-      // shadow は書き込まないため、対象日を済みにしない（live に切り替えたとき、その日の分を処理できるように）。
-      // incomplete（未公開のデータを待っている等）も、対象日を済みにしない（補足の起動がもう一度処理する）
-      targetDate:
-        mode === "live" && !result.incomplete ? ctx.targetDate : undefined,
-      report: result.report,
-      // チャンク処理の進捗（racer_profiles 等）。undefined なら cursor は変更しない
-      cursor: result.cursor,
-    });
-    return {
-      failed: false,
-      body: {
-        targetDate: ctx.targetDate,
-        rowsWritten: result.rowsWritten ?? 0,
-        ...(result.incomplete ? { incomplete: true } : {}),
-        ...(result.body ?? {}),
-      },
-    };
+    await store.recordSuccess(
+      job,
+      leasedSuccessRecord(now(), mode, ctx.targetDate, result),
+    );
+    return { failed: false, body: leasedSuccessBody(ctx.targetDate, result) };
   } finally {
     try {
       await store.releaseLease(job, worker);

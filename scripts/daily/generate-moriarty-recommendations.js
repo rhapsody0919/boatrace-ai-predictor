@@ -164,6 +164,143 @@ function evaluateCandidate({ betType, calibrator, score, odds, extra }) {
   };
 }
 
+// 1つの基本モデルの予想から、単勝・3連単・3連複の候補を評価する（null は評価できない候補）
+function modelCandidates(p, { oddsRow, predOddsRow, entriesForRace, calibrators }) {
+  const modelId = p.model_id;
+  const boatNumber = p.top_pick;
+  const col = MODEL_TO_COLUMN[modelId];
+  // 代表スコア = top_pick 艇のAIスコア（train-moriarty-calibration.js と同一定義）
+  const topScore = getBoatScore(entriesForRace, modelId, boatNumber);
+  const candidates = [];
+
+  // win: boat-level score vs win odds
+  if (oddsRow) {
+    candidates.push(
+      evaluateCandidate({
+        betType: "win",
+        calibrator: calibrators[modelId]?.win,
+        score: topScore,
+        odds: getOddsForBoat(oddsRow, boatNumber),
+        extra: { boat_number: boatNumber, based_on_model: modelId },
+      }),
+    );
+  }
+
+  // trifecta / trio: prediction_odds の予想買い目オッズを使用
+  if (predOddsRow && col) {
+    for (const betType of ["trifecta", "trio"]) {
+      candidates.push(
+        evaluateCandidate({
+          betType,
+          calibrator: calibrators[modelId]?.[betType],
+          score: topScore,
+          odds: predOddsRow[`${betType}_odds_${col}`],
+          extra: {
+            combo: predOddsRow[`${betType}_pred_${col}`],
+            based_on_model: modelId,
+          },
+        }),
+      );
+    }
+  }
+  return candidates;
+}
+
+// Collect best EV candidate across all base models and bet types
+function bestCandidate(racePreds, ctx) {
+  let bestEv = 0;
+  let bestReason = null;
+  for (const p of racePreds) {
+    for (const cand of modelCandidates(p, ctx)) {
+      if (cand && cand.ev > bestEv) {
+        bestEv = cand.ev;
+        bestReason = cand.reason;
+      }
+    }
+  }
+  return { bestEv, bestReason };
+}
+
+function toRecommendation(raceId, { bestEv, bestReason }) {
+  let recommendation;
+  let betFraction = null;
+
+  if (bestReason && bestEv >= EV_STRONG_THRESHOLD) {
+    recommendation = "strong_bet";
+  } else if (bestReason && bestEv >= EV_THRESHOLD) {
+    recommendation = "bet";
+  } else {
+    recommendation = "skip";
+  }
+
+  if (recommendation !== "skip") {
+    // 単勝はHalf Kelly、3連単・3連複は推定誤差が大きいためQuarter Kelly
+    const kellyFn = bestReason.bet_type === "win" ? halfKelly : quarterKelly;
+    betFraction = kellyFn(
+      bestReason.calibrated_probability,
+      bestReason.effective_odds,
+    );
+  }
+
+  return {
+    race_id: raceId,
+    model_id: MODEL_ID,
+    recommendation,
+    reasons: bestReason ?? null,
+    expected_value: bestEv > 0 ? Math.round(bestEv * 100) / 100 : null,
+    bet_fraction:
+      betFraction != null ? Math.round(betFraction * 10000) / 10000 : null,
+  };
+}
+
+function buildRecommendations(raceIds, predictions, maps) {
+  // Group predictions by race
+  const byRace = {};
+  for (const p of predictions) {
+    if (!byRace[p.race_id]) byRace[p.race_id] = [];
+    byRace[p.race_id].push(p);
+  }
+  return raceIds.map((raceId) =>
+    toRecommendation(
+      raceId,
+      bestCandidate(byRace[raceId], {
+        oddsRow: maps.oddsMap.get(raceId),
+        predOddsRow: maps.predOddsMap[raceId],
+        entriesForRace: maps.entryScoresMap[raceId],
+        calibrators: maps.calibrators,
+      }),
+    ),
+  );
+}
+
+async function readCalibratorsJson() {
+  const calibratorsPath = path.join(
+    __dirname,
+    "../../data/moriarty/calibrators.json",
+  );
+  try {
+    return JSON.parse(await fs.readFile(calibratorsPath, "utf-8"));
+  } catch {
+    console.error(
+      `calibrators.json not found at ${calibratorsPath}. Run train-moriarty-calibration.js first.`,
+    );
+    process.exit(1);
+  }
+}
+
+function logDryRun(recommendations) {
+  for (const r of recommendations.filter(
+    (x) => x.recommendation !== "skip",
+  )) {
+    console.log(
+      `  [dry-run] ${r.race_id}: ${r.recommendation} EV=${r.expected_value} fraction=${r.bet_fraction} ${JSON.stringify(r.reasons)}`,
+    );
+  }
+  console.log(
+    `[dry-run] upsert をスキップしました (${recommendations.length} rows)`,
+  );
+}
+
 async function main() {
   if (!isSupabaseEnabled()) {
     console.error(
@@ -179,19 +316,7 @@ async function main() {
     `Generating Moriarty recommendations for ${date}${isDryRun ? " (dry-run)" : ""}`,
   );
 
-  const calibratorsPath = path.join(
-    __dirname,
-    "../../data/moriarty/calibrators.json",
-  );
-  let calibratorsJson;
-  try {
-    calibratorsJson = JSON.parse(await fs.readFile(calibratorsPath, "utf-8"));
-  } catch {
-    console.error(
-      `calibrators.json not found at ${calibratorsPath}. Run train-moriarty-calibration.js first.`,
-    );
-    process.exit(1);
-  }
+  const calibratorsJson = await readCalibratorsJson();
 
   const calibrators = loadCalibrators(calibratorsJson);
 
@@ -212,115 +337,12 @@ async function main() {
     fetchEntryScores(raceIds),
   ]);
 
-  // Group predictions by race
-  const byRace = {};
-  for (const p of predictions) {
-    if (!byRace[p.race_id]) byRace[p.race_id] = [];
-    byRace[p.race_id].push(p);
-  }
-
-  const recommendations = [];
-
-  for (const raceId of raceIds) {
-    const racePreds = byRace[raceId];
-    const oddsRow = oddsMap.get(raceId);
-    const predOddsRow = predOddsMap[raceId];
-
-    // Collect best EV candidate across all base models and bet types
-    let bestEv = 0;
-    let bestReason = null;
-
-    for (const p of racePreds) {
-      const modelId = p.model_id;
-      const boatNumber = p.top_pick;
-      const col = MODEL_TO_COLUMN[modelId];
-      // 代表スコア = top_pick 艇のAIスコア（train-moriarty-calibration.js と同一定義）
-      const topScore = getBoatScore(
-        entryScoresMap[raceId],
-        modelId,
-        boatNumber,
-      );
-      const candidates = [];
-
-      // win: boat-level score vs win odds
-      if (oddsRow) {
-        candidates.push(
-          evaluateCandidate({
-            betType: "win",
-            calibrator: calibrators[modelId]?.win,
-            score: topScore,
-            odds: getOddsForBoat(oddsRow, boatNumber),
-            extra: { boat_number: boatNumber, based_on_model: modelId },
-          }),
-        );
-      }
-
-      // trifecta / trio: prediction_odds の予想買い目オッズを使用
-      if (predOddsRow && col) {
-        candidates.push(
-          evaluateCandidate({
-            betType: "trifecta",
-            calibrator: calibrators[modelId]?.trifecta,
-            score: topScore,
-            odds: predOddsRow[`trifecta_odds_${col}`],
-            extra: {
-              combo: predOddsRow[`trifecta_pred_${col}`],
-              based_on_model: modelId,
-            },
-          }),
-        );
-        candidates.push(
-          evaluateCandidate({
-            betType: "trio",
-            calibrator: calibrators[modelId]?.trio,
-            score: topScore,
-            odds: predOddsRow[`trio_odds_${col}`],
-            extra: {
-              combo: predOddsRow[`trio_pred_${col}`],
-              based_on_model: modelId,
-            },
-          }),
-        );
-      }
-
-      for (const cand of candidates) {
-        if (cand && cand.ev > bestEv) {
-          bestEv = cand.ev;
-          bestReason = cand.reason;
-        }
-      }
-    }
-
-    let recommendation;
-    let betFraction = null;
-
-    if (bestReason && bestEv >= EV_STRONG_THRESHOLD) {
-      recommendation = "strong_bet";
-    } else if (bestReason && bestEv >= EV_THRESHOLD) {
-      recommendation = "bet";
-    } else {
-      recommendation = "skip";
-    }
-
-    if (recommendation !== "skip") {
-      // 単勝はHalf Kelly、3連単・3連複は推定誤差が大きいためQuarter Kelly
-      const kellyFn = bestReason.bet_type === "win" ? halfKelly : quarterKelly;
-      betFraction = kellyFn(
-        bestReason.calibrated_probability,
-        bestReason.effective_odds,
-      );
-    }
-
-    recommendations.push({
-      race_id: raceId,
-      model_id: MODEL_ID,
-      recommendation,
-      reasons: bestReason ?? null,
-      expected_value: bestEv > 0 ? Math.round(bestEv * 100) / 100 : null,
-      bet_fraction:
-        betFraction != null ? Math.round(betFraction * 10000) / 10000 : null,
-    });
-  }
+  const recommendations = buildRecommendations(raceIds, predictions, {
+    oddsMap,
+    predOddsMap,
+    entryScoresMap,
+    calibrators,
+  });
 
   const betCount = recommendations.filter(
     (r) => r.recommendation !== "skip",
@@ -330,16 +352,7 @@ async function main() {
   );
 
   if (isDryRun) {
-    for (const r of recommendations.filter(
-      (x) => x.recommendation !== "skip",
-    )) {
-      console.log(
-        `  [dry-run] ${r.race_id}: ${r.recommendation} EV=${r.expected_value} fraction=${r.bet_fraction} ${JSON.stringify(r.reasons)}`,
-      );
-    }
-    console.log(
-      `[dry-run] upsert をスキップしました (${recommendations.length} rows)`,
-    );
+    logDryRun(recommendations);
     return;
   }
 
