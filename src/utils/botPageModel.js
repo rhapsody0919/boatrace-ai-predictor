@@ -19,7 +19,7 @@
  *
  * Node から import するため、ブラウザ専用の依存を持ち込まない。検証: scripts/maintenance/verify-bot-page-model.js
  */
-import { ALL_VENUE_CODES } from "../constants/index.js";
+import { ALL_VENUE_CODES, OPERATOR_NAME } from "../constants/index.js";
 import { transformTodayRaces } from "./todayRaces.js";
 import {
   getTopPageMeta,
@@ -38,7 +38,11 @@ import { getVenueSeriesDayLabel } from "./raceDetailHeading.js";
 import { isRaceCancelled } from "./raceCancellation.js";
 import { venueSummaryLines } from "./venueSummary.js";
 import { getRaceId } from "./raceId.js";
-import { formatDateShortLocalized, formatCapturedAtJst } from "./formatters.js";
+import {
+  formatDateShortLocalized,
+  formatCapturedAtJst,
+  formatUpdatedAtJstParts,
+} from "./formatters.js";
 import { localizePath } from "../pure/localizePath.js";
 import { buildFaqItems, isAssistShown, toFaqPageLd } from "./homeAiIntroFaq.js";
 import { getHomeBlogPosts } from "../data/blogPosts.js";
@@ -114,14 +118,45 @@ function updatedText(t, scrapedAt) {
   return t("updateStatus.updatedLabel", { dataType: t("home.dataType"), time });
 }
 
+// 説明文の直後の運営・データ・成績の3行（PV09 T2）。人の HomeAiIntro と同じキー・同じ並び・同じ年つき JST の時刻。
+// /profile・/accuracy・/hit-races は ja だけのページなので、人の画面と同じく言語の接頭辞を付けない。
+// 運営者の名は OPERATOR_NAME（/profile と同じ字、全言語で訳さない）。時刻が読めなければ updated は null（行は残す）
+function buildAiIntroFacts(t, scrapedAt) {
+  const updated = formatUpdatedAtJstParts(scrapedAt);
+  return {
+    operator: {
+      text: t("home.aiIntro.operator", { name: OPERATOR_NAME }),
+      link: { text: t("home.aiIntro.profileLink"), href: "/profile" },
+    },
+    data: {
+      text: t("home.aiIntro.data"),
+      updated: updated
+        ? {
+            datetime: updated.datetime,
+            text: t("home.aiIntro.updated", updated),
+          }
+        : null,
+    },
+    results: {
+      text: t("home.aiIntro.results"),
+      links: [
+        { text: t("home.aiIntro.accuracyLink"), href: "/accuracy" },
+        { text: t("home.aiIntro.hitRacesLink"), href: "/hit-races" },
+      ],
+      note: t("home.aiIntro.hitRacesNote"),
+    },
+  };
+}
+
 // 人のトップの HomeAiIntro と同じ文言・同じ並び。思考アシストのカードと文は ja だけ（isAssistShown）
-function buildAiIntro(t, lang) {
+function buildAiIntro(t, lang, scrapedAt) {
   const showAssist = isAssistShown(lang);
   const faqItems = buildFaqItems(t, showAssist);
   return {
     title: t("home.aiIntro.title"),
+    lead: t("home.aiIntro.lead"),
+    facts: buildAiIntroFacts(t, scrapedAt),
     paragraphs: [
-      t("home.aiIntro.lead"),
       t("home.aiIntro.method"),
       showAssist
         ? t("home.aiIntro.toolsIntro")
@@ -155,11 +190,6 @@ function buildAiIntro(t, lang) {
     // 人の画面と同じページ内リンク（本日開催中のレースの欄）
     venuesLink: { text: t("home.aiIntro.venuesLink"), href: "#today-venues" },
     note: t("home.aiIntro.disclaimer"),
-    // /accuracy・/hit-races は ja だけのページなので、人の画面と同じく言語の接頭辞を付けない
-    links: [
-      { text: t("home.aiIntro.accuracyLink"), href: "/accuracy" },
-      { text: t("home.aiIntro.hitRacesLink"), href: "/hit-races" },
-    ],
     faqTitle: t("home.aiIntro.faqTitle"),
     faqItems,
     faqPageLd: toFaqPageLd(faqItems),
@@ -248,7 +278,7 @@ export function buildTopModel(todayJson, { t, today, nowHHMM, lang = DEFAULT_LAN
     openVenueCount: venues.filter((v) => v.isOpen).length,
     venues,
     introBanner: buildIntroBanner(t, lang),
-    aiIntro: buildAiIntro(t, lang),
+    aiIntro: buildAiIntro(t, lang, transformed.scrapedAt),
     blog: buildBlog(t, lang),
   };
 }

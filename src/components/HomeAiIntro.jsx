@@ -5,6 +5,8 @@ import {
   isAssistShown,
   toFaqPageLd,
 } from "../utils/homeAiIntroFaq.js";
+import { formatUpdatedAtJstParts } from "../utils/formatters.js";
+import { OPERATOR_NAME } from "../constants/index.js";
 import "./HomeAiIntro.css";
 
 /**
@@ -30,16 +32,48 @@ import "./HomeAiIntro.css";
  * （api/_lib/botPage.js の renderTopHtml）と共有する。ボット向けトップはこのセクションの文言を
  * 同じ i18n のキーで出す（src/utils/botPageModel.js の buildTopModel）。ここで文言・キーを変えたら、
  * あちらも合わせる（照合 verify-bot-html-parity.js が食い違いを見つける）
+ *
+ * 説明文の直後の運営・データ・成績の3行（PV09 T2、BOA-1689）: 検索から初めて来た人が、誰が作り、
+ * どのデータを使い、成績をどこで確かめられるかを最初に読めるようにする（信用の側の手当て）。
+ * 「公式」はデータの出どころにだけ使い、集計は当サイトと書く。更新の時刻は年つきの JST
+ * （formatUpdatedAtJstParts）で、ボット向けも同じ部品から組む。/profile も ja だけのページなので接頭辞を付けない。
+ * /accuracy・/hit-races のリンクはこの③の行だけに置き、節の中で2回出さない
+ *
+ * @param {{lastUpdated?: string|null}} props lastUpdated は VenueGridPage の getRaces() の scrapedAt
  */
-function HomeAiIntro() {
+function HomeAiIntro({ lastUpdated = null }) {
   const { t, i18n } = useTranslation();
   const showAssist = isAssistShown(i18n.resolvedLanguage);
   const faqItems = buildFaqItems(t, showAssist);
+  const updated = formatUpdatedAtJstParts(lastUpdated);
 
   return (
     <section className="home-ai-intro" aria-labelledby="home-ai-intro-title">
       <h2 id="home-ai-intro-title">{t("home.aiIntro.title")}</h2>
       <p>{t("home.aiIntro.lead")}</p>
+      <ul className="home-ai-intro__facts">
+        <li>
+          <span>{t("home.aiIntro.operator", { name: OPERATOR_NAME })}</span>{" "}
+          <Link to="/profile">{t("home.aiIntro.profileLink")}</Link>
+        </li>
+        <li>
+          <span>{t("home.aiIntro.data")}</span>
+          {updated && (
+            <>
+              {" "}
+              <time dateTime={updated.datetime}>
+                {t("home.aiIntro.updated", updated)}
+              </time>
+            </>
+          )}
+        </li>
+        <li>
+          <span>{t("home.aiIntro.results")}</span>{" "}
+          <Link to="/accuracy">{t("home.aiIntro.accuracyLink")}</Link>{" "}
+          <Link to="/hit-races">{t("home.aiIntro.hitRacesLink")}</Link>{" "}
+          <span>{t("home.aiIntro.hitRacesNote")}</span>
+        </li>
+      </ul>
       <p>{t("home.aiIntro.method")}</p>
       <p className="home-ai-intro__tools-intro">
         {showAssist
@@ -89,15 +123,6 @@ function HomeAiIntro() {
         </a>
         <p className="home-ai-intro__note">{t("home.aiIntro.disclaimer")}</p>
       </div>
-
-      <ul className="home-ai-intro__links">
-        <li>
-          <Link to="/accuracy">{t("home.aiIntro.accuracyLink")}</Link>
-        </li>
-        <li>
-          <Link to="/hit-races">{t("home.aiIntro.hitRacesLink")}</Link>
-        </li>
-      </ul>
 
       <div className="home-ai-intro__faq">
         <h3>{t("home.aiIntro.faqTitle")}</h3>

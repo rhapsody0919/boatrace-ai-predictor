@@ -193,7 +193,7 @@ function TodayVenueGridPage() {
           />
 
           {/* 何のサイトかを説明する本文と実績（集客レーン Phase3。検索向けにクロールできる本文として置く） */}
-          <HomeAiIntro />
+          <HomeAiIntro lastUpdated={lastUpdated} />
 
           <HomeBlogSection t={t} i18n={i18n} localize={localize} />
         </main>
