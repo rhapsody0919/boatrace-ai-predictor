@@ -9,10 +9,15 @@
 }
 
 .racer-summary__stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--spacing-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2) var(--spacing-4);
   margin: 0 0 var(--spacing-2);
+}
+
+.racer-summary__stat {
+  flex: 1 1 4.5rem;
+  min-width: 0;
 }
 
 .racer-summary__stat dt {
