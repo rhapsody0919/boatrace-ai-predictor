@@ -308,6 +308,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/releaseDispatch.js` | 本番のデプロイをまとめて出す（ADR-0106、オーナー 2026-11-06 決定）。Vercel Cron（api/cron/release-dispatc… | staleReleaseAlerts, summarizeGates, fetchMasterHead, fetchCompare, fetchGateRuns ほか8件 |
 | `scripts/lib/renderJsx.js` | verify から React の部品（.jsx）を jsdom に描き、DOM を返す（hq のオーナー決定 2026-11-09）。 | resolve, load, renderJsx |
 | `scripts/lib/renderWithFreshPage.js` | 新しいページを開く関数を作る。ブラウザが落ちていたら起動し直してから開く。 | createPageOpener, renderWithFreshPage |
+| `scripts/lib/repoPaths.js` | repoPaths.js - リポジトリのパスの一覧と、ある ref の版のファイルを git から読む（HR74）。読むだけで、書かない・ネットワークに触れな… | listRepoPaths, showAtRef |
 | `scripts/lib/reportComparison.js` | 定点観測レポート（search-console-report.js / i18n-demand-report.js）の | findPreviousReport, findRecentReports, detectTrend, perDay, formatDelta |
 | `scripts/lib/riskRuleMatcher.js` | SNSリスクルールの部分一致判定（Node・Edge共通の純粋関数）。 | matchRiskRules, draftRiskFields, bundleRiskFields |
 | `scripts/lib/riskRules.js` | SNSマーケティングハブ Phase 2用 risk-rules.json 決定的照合ユーティリティ | checkRiskRules |
@@ -644,4 +645,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 602 ファイル / export 3237 件。
+対象 603 ファイル / export 3239 件。
