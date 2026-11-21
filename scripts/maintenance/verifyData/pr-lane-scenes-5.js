@@ -94,7 +94,8 @@ export function prlCli4({ g, put }) {
 }
 
 /** { の中身を割った 6/19 */
-export function prlCli6({ g, put }) {
+// verify-relative-imports.js の字の正規表現（export … from "../"）が、中の文字列の import 文に当たるので export は後ろで
+function prlCli6({ g, put }) {
   put(
     "sns-video-studio/remotion/src/Root.jsx",
     'import { a } from "../../../src/utils/shared.js";\nexport default a;\n',
@@ -124,6 +125,7 @@ export function prlCli6({ g, put }) {
   put("src/empty.js", "");
   return { start, master, docs, utils };
 }
+export { prlCli6 };
 
 /** { の中身を割った 9/19 */
 export function prlCli9({ g, put, start }) {
