@@ -133,7 +133,7 @@ BOA-1189 GS02-b（/venue/N に会場の常設の要約を出す）の前段の�
 
 ## 画面（/venue/N）での使い方と、数字の更新（BOA-1189 GS02-b）
 
-- 見出しの直下の要約2行（`src/components/venue/VenueSummaryLines.jsx`）・「この会場の特徴」カード（`VenueCharacteristicsCard.jsx`、直近1年・進入コース別）・ボット向け HTML（`src/utils/botPageModel.js` の `buildVenueModel`）が、同じ静的な値 `src/data/venueSummaryStats.js` と同じ文の関数 `src/utils/venueSummary.js` を使う
+- 見出しの直下の要約2行（`src/components/venue/VenueSummaryLines.jsx`）・出走表の後の「<会場>のコース別成績と特徴（直近1年）」の節（`VenueCharacteristicsCard.jsx`、進入コース別の表、BOA-1687 で畳まずに出走表の後へ移した）・ボット向け HTML（`src/utils/botPageModel.js` の `buildVenueModel`）が、同じ静的な値 `src/data/venueSummaryStats.js` と同じ文の関数 `src/utils/venueSummary.js` を使う
 - 1行目: 1コースの1着率と全国の値。「全国より高い／低い」は上の Bonferroni の表の会場だけ、ほかは「差ははっきりしない」。2行目: 逃げ以外の決まり手の上位3つと、それぞれの全国の値。「全国より多い／少ない」は Bonferroni を通った決まり手（まくり・まくり差し）だけで、ほかは「全国との差がはっきりしない」（1つも無ければ「全国との差がはっきりした決まり手は無い」）と書く（2026-11-01 オーナー決定・wording-editor。会場の上位は全国の順とほぼ同じで、値だけだと全国より多いと読まれた）。逃げは1行目と重なるので文に入れず、カードの表に載せる
 - 決まり手も同じ JSON（12か月の窓）から出す。日次の表 `venue_technique_period_stats`（前日まで365日）は窓の取り方が違うので画面には使っていない（コースと決まり手の期間をそろえるため）
 - 数字は JS の定数で持つ（JSON を Vite・Node・Vercel 関数の3つから import する前例が無い。`src/constants/inCautionConfig.js` と同じ理由）

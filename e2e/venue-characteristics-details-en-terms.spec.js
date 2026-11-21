@@ -56,24 +56,17 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-// 発走前のレースがある日は会場カードごと折りたたまれる（BOA-546）ので、そのときは先に開く
+// 会場の特徴は出走表の後に開いて出す（BOA-1687）ので、「もっと詳しく」が付くのを待つだけ
 async function openDetails(page, path) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
   const details = page.getByTestId("venue-details");
   await details.waitFor({ state: "attached", timeout: 30000 });
-  const cardFold = page.locator(
-    ".venue-characteristics-card .collapsible-section",
-  );
-  if (
-    (await cardFold.count()) > 0 &&
-    !(await cardFold.evaluate((el) => el.open))
-  ) {
-    await cardFold.locator("summary").first().click();
-  }
   return details;
 }
 
-test("英語のもっと詳しくでは枠番を Lane で統一する（BOA-1369）", async ({ page }) => {
+test("英語のもっと詳しくでは枠番を Lane で統一する（BOA-1369）", async ({
+  page,
+}) => {
   const details = await openDetails(page, `/en/venue/${VENUE}`);
   await details.locator("summary").click();
 

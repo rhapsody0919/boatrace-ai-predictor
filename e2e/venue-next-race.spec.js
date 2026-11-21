@@ -1,8 +1,8 @@
 import { test, expect } from "./fixtures.js";
 
 /**
- * 会場ページ（本日）を開いたら、次の発走レースへスクロールし、会場カード2枚（この会場の特徴・この日の水面傾向）を
- * その直上に出す（BOA-546）。
+ * 会場ページ（本日）を開いたら、次の発走レースへスクロールし、会場カード（この日の水面傾向）を
+ * その直上に出す（BOA-546）。直近1年の「コース別成績と特徴」は畳まずに出走表の後へ移した（BOA-1687）。
  *
  * - 次の発走レース＝開いた時点で最初の発走前（UPCOMING）のレース。締切後・結果待ちのレースはカードの上に残る
  * - 1Rが発走前・全レース締切後・過去日付は、従来どおりカードは最上部でスクロールしない
@@ -65,20 +65,21 @@ async function open(page, { at, path = `/venue/${VENUE}`, install = false }) {
   );
   await page.goto(path);
   await expect(page.locator(".race-card")).toHaveCount(12, { timeout: 20000 });
-  await expect(page.locator(".venue-characteristics-card")).toBeVisible({
+  await expect(page.getByTestId("venue-course-section")).toBeAttached({
     timeout: 20000,
   });
 }
 
-// 会場カード（この会場の特徴）が、何枚目のレースカードの前にあるか（最上部なら -1）
+// 差し込んだ会場カード（この日の水面傾向）が、何枚目のレースカードの前にあるか（差し込みが無く最上部なら -1）
 const cardsPosition = (page) =>
   page.evaluate(() => {
-    const cards = document.querySelector(".venue-characteristics-card");
     const grid = document.querySelector(".race-grid");
-    if (!cards || !grid) return null;
-    if (!grid.contains(cards)) return -1;
+    if (!grid) return null;
+    const holder = grid.querySelector(
+      ':scope > [data-testid="venue-next-race-cards"]',
+    );
+    if (!holder) return -1;
     const children = [...grid.children];
-    const holder = children.find((c) => c.contains(cards));
     return children
       .slice(children.indexOf(holder) + 1)
       .find((c) => c.classList.contains("race-card"))
@@ -99,7 +100,9 @@ for (const width of [375, 1440]) {
       // 全幅（グリッドの幅いっぱい）
       const [hw, gw] = await Promise.all([
         holder.evaluate((e) => e.getBoundingClientRect().width),
-        page.locator(".race-grid").evaluate((e) => e.getBoundingClientRect().width),
+        page
+          .locator(".race-grid")
+          .evaluate((e) => e.getBoundingClientRect().width),
       ]);
       expect(Math.abs(hw - gw)).toBeLessThan(1);
       // スクロールして、会場カード（折りたたみ）の先頭がヘッダーのすぐ下に来て、目印と次のレース（9R）が1画面目に入る
@@ -167,20 +170,17 @@ test.describe("着いた位置の目印（ファン評価1・2周目）", () => 
     // （押した後に会場カードの読み込みでページが伸びることがあるため、どちらかを満たせばよい）
     await expect
       .poll(() =>
-        twelveR.evaluate(
-          (e, hb) => {
-            const top = e.getBoundingClientRect().top;
-            const atBottom =
-              window.scrollY + window.innerHeight >=
-              document.documentElement.scrollHeight - 2;
-            return (
-              top >= hb - 1 &&
-              top < window.innerHeight &&
-              (atBottom || top < hb + 40)
-            );
-          },
-          headerBottom,
-        ),
+        twelveR.evaluate((e, hb) => {
+          const top = e.getBoundingClientRect().top;
+          const atBottom =
+            window.scrollY + window.innerHeight >=
+            document.documentElement.scrollHeight - 2;
+          return (
+            top >= hb - 1 &&
+            top < window.innerHeight &&
+            (atBottom || top < hb + 40)
+          );
+        }, headerBottom),
       )
       .toBe(true);
   });
@@ -240,20 +240,16 @@ test.describe("目印の近道（「9Rへ」）の着地", () => {
 test.describe("差し込んだ会場カードの折りたたみ（ユーザー判断）", () => {
   test.use({ viewport: { width: 375, height: 800 } });
 
-  test("見出しと要約1行に折りたたみ、目印と次のレース（9R）と一緒に1画面に入る", async ({
+  test("この日の水面傾向を見出しと要約1行に折りたたみ、目印と次のレース（9R）と一緒に1画面に入る", async ({
     page,
   }) => {
     await open(page, { at: "14:00" });
     const holder = page.getByTestId("venue-next-race-cards");
+    // 直近1年の会場の特徴は差し込みに入れない（出走表の後の節、BOA-1687）
     const details = holder.locator("details.collapsible-section");
-    await expect(details).toHaveCount(2);
-    for (const d of await details.all()) {
-      expect(await d.evaluate((e) => e.open)).toBe(false);
-    }
-    // 畳んだ1行は、開くと何が出るか（見出しの直下の要約と同じ数字を繰り返さない、BOA-1189）
-    await expect(page.getByTestId("venue-characteristics-teaser")).toContainText(
-      "進入コース別の1着率と決まり手の表を開く",
-    );
+    await expect(details).toHaveCount(1);
+    expect(await details.first().evaluate((e) => e.open)).toBe(false);
+    await expect(holder.locator(".venue-characteristics-card")).toHaveCount(0);
     await expect(page.getByTestId("venue-day-summary-teaser")).toContainText(
       "確定",
     );
@@ -280,12 +276,12 @@ test.describe("差し込んだ会場カードの折りたたみ（ユーザー�
       .getByTestId("venue-next-race-cards")
       .locator("details.collapsible-section")
       .first();
-    // カードの中に「もっと詳しく」の折りたたみ（BOA-269）があるので、直下の見出しだけを押す
     await first.locator(":scope > summary").click();
     expect(await first.evaluate((e) => e.open)).toBe(true);
-    await expect(first.locator(".venue-hud-row")).toHaveCount(6);
     await page.reload();
-    await expect(page.locator(".race-card")).toHaveCount(12, { timeout: 20000 });
+    await expect(page.locator(".race-card")).toHaveCount(12, {
+      timeout: 20000,
+    });
     const again = page
       .getByTestId("venue-next-race-cards")
       .locator("details.collapsible-section")
@@ -294,18 +290,26 @@ test.describe("差し込んだ会場カードの折りたたみ（ユーザー�
     expect(await again.evaluate((e) => e.open)).toBe(true);
   });
 
-  test("最上部に置くとき（1R発走前）は、この日の水面傾向は全部を出し、会場の特徴だけ畳む（BOA-1189）", async ({
+  test("最上部に置くとき（1R発走前）は、この日の水面傾向を全部出し、会場の特徴は出走表の後に開いて出す（BOA-1687）", async ({
     page,
   }) => {
     await open(page, { at: "09:00" });
-    // 会場の特徴は見出しの直下の要約2行と重なるので、どの位置でも最初は畳む（BOA-1189 ファン評価 P2）
-    const folds = page.locator("details.collapsible-section");
-    await expect(folds).toHaveCount(1);
-    expect(await folds.first().evaluate((e) => e.open)).toBe(false);
+    await expect(page.locator("details.collapsible-section")).toHaveCount(0);
+    const section = page.getByTestId("venue-course-section");
     await expect(
-      page.locator(".venue-characteristics-card details.collapsible-section"),
-    ).toHaveCount(1);
-    await expect(page.locator(".venue-hud-row")).toHaveCount(6);
+      section.locator('[data-testid^="venue-course-row-"]'),
+    ).toHaveCount(6);
+    const after = await page.evaluate(() => {
+      const cards = [...document.querySelectorAll(".race-card")];
+      const sec = document.querySelector(
+        '[data-testid="venue-course-section"]',
+      );
+      return Boolean(
+        cards.at(-1).compareDocumentPosition(sec) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
+    expect(after).toBe(true);
   });
 });
 
@@ -359,7 +363,9 @@ test.describe("カードを動かさない・スクロールしない場合", ()
       )
       .toBe("1200");
     await page.reload();
-    await expect(page.locator(".race-card")).toHaveCount(12, { timeout: 20000 });
+    await expect(page.locator(".race-card")).toHaveCount(12, {
+      timeout: 20000,
+    });
     await expect
       .poll(() => page.evaluate(() => window.scrollY))
       .toBeGreaterThan(1150);
@@ -381,7 +387,9 @@ test.describe("カードを動かさない・スクロールしない場合", ()
       .click();
     await expect(page).toHaveURL(/\/race\//);
     await page.goBack();
-    await expect(page.locator(".race-card")).toHaveCount(12, { timeout: 20000 });
+    await expect(page.locator(".race-card")).toHaveCount(12, {
+      timeout: 20000,
+    });
     await page.waitForTimeout(500);
     // 目印（9Rの直上、ページの下のほう）まで自動スクロールしていない（1Rを押した位置のまま）
     const markerTop = await page

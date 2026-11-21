@@ -383,7 +383,7 @@ test("会場のページの印（snsScreenMarkers の venue）は画面の部品
   }
   assert.deepEqual(SCREEN_MARKERS.venue, [
     '[data-testid="venue-summary-lines"]',
-    '[data-testid="venue-characteristics-teaser"]',
+    '[data-testid="venue-course-section"]',
   ]);
 });
 

@@ -145,45 +145,16 @@ test("英語のレース詳細に公式の記号・円・日本語のラベル�
 
 // BOA-656: 会場特性の要約は「水面・傾向」を日本語の中黒で連結していた（全言語で「Freshwater ・ Balanced」）
 // BOA-1202: 傾向（venues.cluster）の表示を外したので、要約は水面だけ。中黒・傾向の語が出ないことを守る
-test("会場特性の要約に日本語の中黒と傾向の語が出ない（BOA-656・BOA-1202）", async ({
+// BOA-1687: 水面の文は出走表の後の節（畳まない）に移した。発走前のレースの有無に関わらず出る
+test("会場特性の水面の文に日本語の中黒と傾向の語が出ない（BOA-656・BOA-1202）", async ({
   page,
 }) => {
-  // venue-characteristics-teaser は VenueCharacteristicsCard が collapsible
-  // （VenueRaceListPage の showCardsInGrid＝その日にまだ発走前のレースがある。
-  // getRaceStatus は race.result.finished を最優先で見るため、時計を戸田の
-  // 開催中時刻に固定するだけでは不十分（BOA-688）。2026-09-29は実際の開催日から
-  // 日が経つほど全レースの結果が確定済みになり、BOA-608・#1080と同じ時刻固定を
-  // 真似ても「当日まだ発走前のレースがある」状態そのものが時間とともに崩れて
-  // record モード（本番）で再現できなくなる。そこで /api/predictions/2026-09-29
-  // の応答を差し替え、戸田の最終レースだけ未発走（result null・発走前の時刻）に
-  // 固定し、実際のレース結果の経過に左右されないようにする
-  const DATE = "2026-09-29";
-  await page.clock.setFixedTime(new Date(`${DATE}T15:04:00+09:00`));
-  await page.route(`**/api/predictions/${DATE}*`, async (route) => {
-    // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
-    const response = await fetchRecorded(route);
-    const body = await response.json();
-    const todaRaceNumbers = (body.races || [])
-      .filter((r) => r.venueCode === 2)
-      .map((r) => r.raceNumber);
-    const lastRaceNumber = Math.max(...todaRaceNumbers);
-    const races = (body.races || []).map((race) =>
-      race.venueCode === 2 && race.raceNumber === lastRaceNumber
-        ? { ...race, result: null, startTime: "23:59" }
-        : race,
-    );
-    await route.fulfill({
-      status: response.status(),
-      headers: response.headers(),
-      json: { ...body, races },
-    });
-  });
   for (const path of ["/en/venue/2", "/zh-TW/venue/2"]) {
     await page.goto(path);
-    const teaser = page.getByTestId("venue-characteristics-teaser");
-    await teaser.waitFor({ timeout: 30000 });
-    await expect(teaser).not.toContainText("・");
-    await expect(teaser).not.toContainText(/Balanced|Inside|Outside/i);
+    const water = page.locator(".venue-characteristics-water");
+    await water.waitFor({ state: "attached", timeout: 30000 });
+    await expect(water).not.toContainText("・");
+    await expect(water).not.toContainText(/Balanced|Inside|Outside/i);
   }
 });
 

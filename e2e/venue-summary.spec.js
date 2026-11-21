@@ -64,7 +64,10 @@ test("24場で要約2行と title が出て、全国と比べる文は差が確�
     route.fulfill({ json: { generatedAt: null, updatedAt: null, races: [] } }),
   );
   const venueNames = JSON.parse(
-    readFileSync(new URL("../src/locales/ja/common.json", import.meta.url), "utf8"),
+    readFileSync(
+      new URL("../src/locales/ja/common.json", import.meta.url),
+      "utf8",
+    ),
   ).venues;
   // 24場を1回の読み込みで回る（アプリ内の移動。1場ずつ読み込み直すと CI で時間が足りない）
   await page.goto("/venue/1", { waitUntil: "domcontentloaded" });
@@ -122,22 +125,19 @@ test("カードは直近1年・進入コース別で、過去90日の枠番別�
   await openVenue(page, 22);
   const card = page.locator(".venue-characteristics-card");
   await expect(card).toBeVisible();
-  // 折りたたまれていたら開く
-  const fold = card.locator(".collapsible-section");
-  if ((await fold.count()) > 0 && !(await fold.evaluate((el) => el.open))) {
-    await fold.locator("summary").first().click();
-  }
   await expect(card.locator("h2")).toContainText("直近1年");
   const v = S.venues[22];
-  await expect(page.getByTestId("venue-hud-course-1")).toContainText(
+  await expect(page.getByTestId("venue-course-row-1")).toContainText(
     `1コース${r1(v)}%`,
   );
-  // 福岡の6コースは1着が30回未満なので回数を添える
+  // 1着の回数は列に出す（福岡の6コースのように30回未満でも、回数で母数の小ささが読める。BOA-1687）
   const c6 = v.courses[5];
-  expect(c6.wins).toBeLessThan(30);
-  await expect(page.getByTestId("venue-hud-course-6")).toContainText(
-    `6コース${c6.rate.toFixed(1)}%${n(v.courseRaces)}レース中${c6.wins}回`,
+  await expect(page.getByTestId("venue-course-row-6")).toContainText(
+    `6コース${c6.rate.toFixed(1)}%`,
   );
+  await expect(
+    page.getByTestId("venue-course-row-6").locator("td").last(),
+  ).toHaveText(String(c6.wins));
   // 決まり手の表は全レースのうちの割合（逃げも載せる）
   const table = page.getByTestId("venue-technique-table");
   await expect(table.locator("tbody tr")).toHaveCount(5);
@@ -150,7 +150,9 @@ test("カードは直近1年・進入コース別で、過去90日の枠番別�
   await expect(footnote).toContainText(S.from.replaceAll("-", "/"));
   await expect(footnote).not.toContainText("走");
   // 全国の値の母数も脚注に書く
-  await expect(footnote).toContainText(`全国の値は同じ期間の${n(S.national.races)}レース`);
+  await expect(footnote).toContainText(
+    `全国の値は同じ期間の${n(S.national.races)}レース`,
+  );
   // もっと詳しくの表に1着率の列を出さない（上の直近1年と期間の違う同じ指標になる）
   const details = page.getByTestId("venue-details");
   await details.waitFor({ state: "attached", timeout: 30000 });
@@ -163,7 +165,20 @@ test("SG・G1・G2 の開催中だけ節のページへの帯を出す（BOA-118
   page,
 }) => {
   await page.route("**/rest/v1/race_series*", (route) =>
-    route.fulfill({ json: [{ venue_code: 13, start_date: "2026-09-25", end_date: "2026-09-30", total_days: 6, class_code: "SG", kind: "sg", title: null, grade: "SG" }] }),
+    route.fulfill({
+      json: [
+        {
+          venue_code: 13,
+          start_date: "2026-09-25",
+          end_date: "2026-09-30",
+          total_days: 6,
+          class_code: "SG",
+          kind: "sg",
+          title: null,
+          grade: "SG",
+        },
+      ],
+    }),
   );
   await openVenue(page, 13, {
     grade: "SG",
@@ -219,7 +234,20 @@ for (const width of [375, 768, 1440]) {
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.route("**/rest/v1/race_series*", (route) =>
-      route.fulfill({ json: [{ venue_code: 13, start_date: "2026-09-25", end_date: "2026-09-30", total_days: 6, class_code: "SG", kind: "sg", title: null, grade: "SG" }] }),
+      route.fulfill({
+        json: [
+          {
+            venue_code: 13,
+            start_date: "2026-09-25",
+            end_date: "2026-09-30",
+            total_days: 6,
+            class_code: "SG",
+            kind: "sg",
+            title: null,
+            grade: "SG",
+          },
+        ],
+      }),
     );
     await openVenue(page, 13, {
       grade: "SG",
@@ -228,11 +256,6 @@ for (const width of [375, 768, 1440]) {
     await expect(page.getByTestId("venue-meet-banner")).toBeVisible({
       timeout: 20000,
     });
-    const card = page.locator(".venue-characteristics-card");
-    const fold = card.locator(".collapsible-section");
-    if ((await fold.count()) > 0 && !(await fold.evaluate((el) => el.open))) {
-      await fold.locator("summary").first().click();
-    }
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth,
     );
@@ -249,52 +272,62 @@ for (const width of [375, 768, 1440]) {
   });
 }
 
-test("375pxの英語で、コース名と30回未満の回数がそれぞれの列からはみ出さない（BOA-1189）", async ({
+test("375pxの英語で、進入コースの表の見出し・値がそれぞれのセルからはみ出さない（BOA-1687）", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 900 });
-  // 福岡は6コースの1着が30回未満（回数の行が出る）
   await openVenue(page, 22, {}, "/en/venue/22");
-  const card = page.locator(".venue-characteristics-card");
-  const fold = card.locator(".collapsible-section");
-  if ((await fold.count()) > 0 && !(await fold.evaluate((el) => el.open))) {
-    await fold.locator("summary").first().click();
-  }
-  await expect(page.locator(".venue-hud-count")).toHaveCount(1);
+  await expect(page.locator('[data-testid^="venue-course-row-"]')).toHaveCount(
+    6,
+  );
   const overflows = await page.evaluate(() =>
-    [...document.querySelectorAll(".venue-hud-lane, .venue-hud-values > span")]
-      .filter((el) => el.scrollWidth > el.parentElement.clientWidth + 0.5 || el.scrollWidth > el.clientWidth + 0.5)
+    [
+      ...document.querySelectorAll(
+        ".venue-course-table th, .venue-course-table td",
+      ),
+    ]
+      .filter((el) => el.scrollWidth > el.clientWidth + 0.5)
       .map((el) => el.textContent),
   );
   expect(overflows).toEqual([]);
 });
 
-// BOA-1189 ファン評価 P2: 会場の特徴を最初から全部見せると、出走表が本番より約500px 下がった（375px で
-// 尼崎の最初のレースカードが 1331px → 1825px）。最初は畳み、開くと中身が出る。最初のレースカードは
+// BOA-1189 ファン評価 P2: 会場の特徴を出走表の上に全部見せると、出走表が本番より約500px 下がった（375px で
+// 尼崎の最初のレースカードが 1331px → 1825px）。BOA-1687 で、畳まずに出走表の後へ移した。最初のレースカードは
 // 本番（1331px、2026-10-31 のファン評価で測った値）+200px 以内に置く
 const PROD_FIRST_CARD_Y_375 = 1331;
 
-test("会場の特徴は最初は畳まれ、開くと中身が出る。375px で最初のレースカードが本番+200px 以内（BOA-1189）", async ({
+test("会場の特徴は出走表の後に畳まずに出す。375px で最初のレースカードが本番+200px 以内（BOA-1687）", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.route("**/rest/v1/race_series*", (route) =>
-    route.fulfill({ json: [{ venue_code: 13, start_date: "2026-09-25", end_date: "2026-09-30", total_days: 6, class_code: "SG", kind: "sg", title: null, grade: "SG" }] }),
+    route.fulfill({
+      json: [
+        {
+          venue_code: 13,
+          start_date: "2026-09-25",
+          end_date: "2026-09-30",
+          total_days: 6,
+          class_code: "SG",
+          kind: "sg",
+          title: null,
+          grade: "SG",
+        },
+      ],
+    }),
   );
-  await openVenue(page, 13, { grade: "SG", title: "第７３回ボートレースダービー" });
+  await openVenue(page, 13, {
+    grade: "SG",
+    title: "第７３回ボートレースダービー",
+  });
   await expect(page.getByTestId("venue-meet-banner")).toBeVisible({
     timeout: 20000,
   });
-  const fold = page.locator(
-    ".venue-characteristics-card details.collapsible-section",
-  );
-  await expect(fold).toHaveCount(1);
-  expect(await fold.evaluate((el) => el.open)).toBe(false);
-  // 畳んだ1行は開くと何が出るかを書き、要約と同じ1コースの値を繰り返さない（ファン評価2周目）
-  const teaser = page.getByTestId("venue-characteristics-teaser");
-  await expect(teaser).toContainText("進入コース別の1着率と決まり手の表を開く");
-  await expect(teaser).not.toContainText(`${r1(S.venues[13])}%`);
-  await expect(page.getByTestId("venue-hud-course-1")).toBeHidden();
+  await expect(
+    page.locator(".venue-characteristics-card details.collapsible-section"),
+  ).toHaveCount(0);
+  await expect(page.getByTestId("venue-characteristics-teaser")).toHaveCount(0);
 
   const firstCardY = await page
     .locator(".race-grid > .race-card")
@@ -302,26 +335,29 @@ test("会場の特徴は最初は畳まれ、開くと中身が出る。375px �
     .evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
   expect(firstCardY).toBeLessThanOrEqual(PROD_FIRST_CARD_Y_375 + 200);
 
-  await fold.locator(":scope > summary").click();
-  expect(await fold.evaluate((el) => el.open)).toBe(true);
-  await expect(page.getByTestId("venue-hud-course-1")).toBeVisible();
+  await expect(page.getByTestId("venue-course-row-1")).toBeVisible();
   await expect(page.getByTestId("venue-technique-table")).toBeVisible();
-  // 縦の線（全国の値）の凡例
-  await expect(page.locator(".venue-hud-legend")).toHaveText("縦の線は全国の値");
   // 直近1年の脚注は、1年の表の直後・過去90日の「もっと詳しく」より上
   const order = await page.evaluate(() => {
     const foot = document.querySelector(".venue-characteristics-footnote");
     const details = document.querySelector('[data-testid="venue-details"]');
-    const table = document.querySelector('[data-testid="venue-technique-table"]');
+    const table = document.querySelector(
+      '[data-testid="venue-technique-table"]',
+    );
     const before = (a, b) =>
-      Boolean(a && b && a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      Boolean(
+        a &&
+        b &&
+        a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
     return {
       tableBeforeFoot: before(table, foot),
       footBeforeDetails: details ? before(foot, details) : null,
     };
   });
   expect(order.tableBeforeFoot).toBe(true);
-  if (order.footBeforeDetails !== null) expect(order.footBeforeDetails).toBe(true);
+  if (order.footBeforeDetails !== null)
+    expect(order.footBeforeDetails).toBe(true);
 });
 
 test("英語の決まり手は用語集どおり「Nige (Escape)」の形で、要約と表でそろう（BOA-1189）", async ({
@@ -331,10 +367,6 @@ test("英語の決まり手は用語集どおり「Nige (Escape)」の形で、�
   await expect(page.getByTestId("venue-summary-lines")).toContainText(
     "Makuri (Outside sweep)",
   );
-  const fold = page.locator(
-    ".venue-characteristics-card details.collapsible-section",
-  );
-  await fold.locator(":scope > summary").click();
   const table = page.getByTestId("venue-technique-table");
   await expect(table).toContainText("Nige (Escape)");
   await expect(table).not.toContainText(/^Escape/);
@@ -371,22 +403,20 @@ test("要約2行目の決まり手に全国の値を添え、多い・少ない�
   const tamagawa = page.getByTestId("venue-summary-lines").locator("p").nth(1);
   await expect(tamagawa).toContainText(`（全国${nat("makuri")}%）`);
   await expect(tamagawa).not.toContainText(/全国より(多い|少ない)/);
-  await expect(tamagawa).toContainText("全国との差がはっきりした決まり手は無い");
+  await expect(tamagawa).toContainText(
+    "全国との差がはっきりした決まり手は無い",
+  );
 });
 
 // ファン評価3周目: 1440px で棒が列いっぱいに広がり、6コースの棒から値まで約1000px 離れた。
-// 棒と値の行は 720px を上限にする（docs/knowledge/ui-layout.md）
-test("1440pxで進入コース別の棒と値が離れすぎない（720px 以内、BOA-1189）", async ({
+// 進入コースの表（BOA-1687）も 720px を上限にする（docs/knowledge/ui-layout.md）
+test("1440pxで進入コースの表が横に広がりすぎない（720px 以内、BOA-1687）", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openVenue(page, 13);
-  const fold = page.locator(
-    ".venue-characteristics-card details.collapsible-section",
-  );
-  await fold.locator(":scope > summary").click();
-  const row = page.getByTestId("venue-hud-course-6");
-  await expect(row).toBeVisible();
-  const width = await row.evaluate((el) => el.getBoundingClientRect().width);
+  const table = page.getByTestId("venue-course-table");
+  await expect(table).toBeVisible();
+  const width = await table.evaluate((el) => el.getBoundingClientRect().width);
   expect(width).toBeLessThanOrEqual(720);
 });
