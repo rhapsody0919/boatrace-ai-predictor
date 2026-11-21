@@ -1175,7 +1175,7 @@
   - `scripts/daily/calculate-accuracy.js:94` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-model-accuracy.js:187` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-volatility-accuracy.js:126` select(helper:fetchAll)
-  - `scripts/daily/calculate-venue-grade-stats.js:176` select(embed) [is_cancelled, payout_trio, race_status, rank1, rank2, rank3, refund_boats, winning_technique]
+  - `scripts/daily/calculate-venue-grade-stats.js:177` select(embed) [is_cancelled, payout_trio, race_status, rank1, rank2, rank3, refund_boats, winning_technique]
   - `scripts/daily/scrape-odds.js:70` select [payout_win, race_id]
   - `scripts/daily/scrape-results.js:167` select [payout_win, race_id, winning_technique]
   - `scripts/daily/update-exhibition-time-top-stats.js:185` select(helper:fetchAll)
@@ -1498,7 +1498,7 @@
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:83` select [race_id, venue_code]
   - `scripts/analysis/verify-volatility-predictive-power.js:65` select [race_id, venue_code]
   - `scripts/daily/calculate-accuracy.js:85` select(helper:fetchAll)
-  - `scripts/daily/calculate-venue-grade-stats.js:176` select [race_date, race_grade, race_id, venue_code]
+  - `scripts/daily/calculate-venue-grade-stats.js:177` select [race_date, race_grade, race_id, venue_code]
   - `scripts/daily/generate-morning-digest.js:130` select [race_date, race_grade, race_id, race_number, start_time, venue_code]
   - `scripts/daily/morning-init.js:86` select [race_id, venue_code]
   - `scripts/daily/morning-init.js:173` select [*, race_id]
@@ -2209,11 +2209,11 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_nightly_freshness
 - 読み手（3）: 
-  - `scripts/daily/calculate-venue-grade-stats.js:210` select(helper:upsertChangedRows)
+  - `scripts/daily/calculate-venue-grade-stats.js:211` select(helper:upsertChangedRows)
   - `src/services/venueQueries3.js:172` select [boat_number, manshu_count, payout_count, payout_trio_sum, race_count, race_grade, technique_breakdown, top2, top3, venue_code, wins]
   - `src/services/venueQueries3.js:189` select [venue_code]
 - 書き手（1）: 
-  - `scripts/daily/calculate-venue-grade-stats.js:210` upsert(helper:upsertChangedRows) [?]
+  - `scripts/daily/calculate-venue-grade-stats.js:211` upsert(helper:upsertChangedRows) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-venue_motor_start_dates"></a>venue_motor_start_dates
