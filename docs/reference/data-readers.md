@@ -10,8 +10,8 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 2710 |
-| 読み書きのあるファイル | 319 |
+| 読んだファイル | 2711 |
+| 読み書きのあるファイル | 320 |
 | 表の読み手（箇所） | 949 |
 | 表の書き手（箇所） | 195 |
 | RPC の呼び手（箇所） | 56 |
@@ -152,7 +152,7 @@
 | compute_nige_second_by_course | service だけ |  | scripts/daily/update-course-baseline-stats.js:184 |  | race_results, races |  |  |
 | compute_racer_course_technique_stats | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:374 |  | race_entries, race_results, races, venue_course_technique_baseline |  |  |
 | compute_st_course_baseline | service だけ |  | scripts/daily/update-course-baseline-stats.js:170 |  | race_entries, race_results, race_start_timings, races |  |  |
-| compute_today_course_win_stats | service だけ |  | scripts/daily/generate-morning-digest.js:253 |  | race_entries, race_results, races |  |  |
+| compute_today_course_win_stats | service だけ |  | scripts/lib/morningDigestFetch.js:180 |  | race_entries, race_results, races |  |  |
 | compute_venue_course_entry_baseline | service だけ |  | なし |  | race_entries, race_results, races |  |  |
 | compute_venue_course_technique_baseline | service だけ |  | scripts/daily/update-racer-course-technique-stats.js:349 |  | race_entries, race_results, races |  |  |
 | data_health_cancellation_with_result | service だけ |  | 名前の文字列: scripts/lib/dataHealth/checks.js:349, scripts/lib/dataHealth/functions.js:118 |  | race_results, races |  |  |
@@ -237,7 +237,7 @@
 | in_caution_today_health | api/cron/in-caution-today-health.js | 31 | scrape_job_state, scrape_slots |
 | key_canary_dispatch | api/cron/key-canary-dispatch.js | 23 | scrape_job_state, scrape_slots |
 | kfile_sync | api/cron/kfile-sync.js | 51 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
-| morning_digest | api/cron/morning-digest.js | 30 | morning_digest_days, morning_digest_rows, scrape_job_state, scrape_slots |
+| morning_digest | api/cron/morning-digest.js | 31 | morning_digest_days, morning_digest_rows, scrape_job_state, scrape_slots |
 | motor_pretest | api/cron/motor-pretest.js | 33 | scrape_job_state, scrape_slots |
 | odds | api/cron/odds.js | 36 | prediction_odds, race_odds, scrape_job_state, scrape_slots |
 | odds_final | api/cron/odds-final.js | 26 | race_odds_final, scrape_job_state, scrape_slots |
@@ -575,8 +575,8 @@
   - `scripts/maintenance/verify-morning-digest.js:40` select [digest_date, generated_at, notes, race_count, venue_count] （検査）
   - `src/services/scheduleQueries.js:278` select [*, digest_date]
 - 書き手（2）: 
-  - `scripts/daily/generate-morning-digest.js:510` upsert [?]
-  - `scripts/daily/generate-morning-digest.js:539` update [generated_at]
+  - `scripts/daily/generate-morning-digest.js:280` upsert [?]
+  - `scripts/daily/generate-morning-digest.js:309` update [generated_at]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-morning_digest_rows"></a>morning_digest_rows
@@ -587,9 +587,9 @@
   - `scripts/maintenance/verify-morning-digest.js:58` select [*, digest_date] （検査）
   - `src/services/scheduleQueries.js:283` select [*, digest_date, rank, section]
 - 書き手（3）: 
-  - `scripts/daily/generate-morning-digest.js:515` delete
-  - `scripts/daily/generate-morning-digest.js:524` insert [?]
-  - `scripts/daily/generate-morning-digest.js:532` insert [?]
+  - `scripts/daily/generate-morning-digest.js:285` delete
+  - `scripts/daily/generate-morning-digest.js:294` insert [?]
+  - `scripts/daily/generate-morning-digest.js:302` insert [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-motor_pretest_stats"></a>motor_pretest_stats
@@ -710,12 +710,12 @@
   - `scripts/daily/calculate-unified-model-accuracy.js:179` select(helper:fetchAll)
   - `scripts/daily/calculate-unified-volatility-accuracy.js:115` select(helper:fetchAll)
   - `scripts/daily/generate-moriarty-recommendations.js:81` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
-  - `scripts/daily/generate-morning-digest.js:298` select [feature_contributions, model_id, race_id]
   - `scripts/daily/generate-unified-trifecta-reference.js:44` select [feature_contributions, is_shadow, model_id, race_id]
   - `scripts/daily/scrape-prediction-odds.js:40` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/daily/todays-volatility-digest.js:124` select [feature_contributions, model_id, race_id]
   - `scripts/daily/update-race-history-cache.js:27` select(helper:fetchAll)
   - `scripts/lib/inCautionHealth.js:127` select [feature_contributions, model_id, race_id]
+  - `scripts/lib/morningDigestFetch.js:225` select [feature_contributions, model_id, race_id]
   - `scripts/lib/predictionHitFix.js:24` select(helper:fetchAll)
   - `scripts/lib/raceResultPersist.js:39` select [feature_contributions, model_id, prediction_id, race_id, top_2nd, top_3rd, top_pick]
   - `scripts/lib/scrapeJobs/predictionOddsHandlers.js:50` select [is_shadow, model_id, race_id, top_2nd, top_3rd, top_pick]
@@ -852,10 +852,10 @@
   - `scripts/analysis/verify-turn-prediction-accuracy-v6.js:74` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/analysis/verify-volatility-predictive-power.js:58` select [boat_number, race_id, racer_id, win_rate]
   - `scripts/daily/generate-moriarty-recommendations.js:122` select [ai_score_safe_bet, ai_score_standard, ai_score_upset_focus, boat_number, race_id]
-  - `scripts/daily/generate-morning-digest.js:152` select [boat_number, grade, is_absent, motor_2rate, motor_number, player_name, race_id, racer_id]
   - `scripts/daily/generate-unified-trifecta-reference.js:71` select [boat_number, grade, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
   - `scripts/daily/morning-init.js:259` select(helper:fetchAll)
   - `scripts/lib/analogyV16Exhibition.js:261` rest(rest) [is_absent, race_id]
+  - `scripts/lib/morningDigestFetch.js:79` select [boat_number, grade, is_absent, motor_2rate, motor_number, player_name, race_id, racer_id]
   - `scripts/lib/motorPretestRows.js:134` select [race_id, racer_id]
   - `scripts/lib/pitReportWrite.js:75` select [boat_number, race_id, racer_id]
   - `scripts/lib/predictionRaceFetch.js:151` select(helper:selectByRaceIds)
@@ -1290,7 +1290,7 @@
 - 本体で読む RPC: data_health_table_rows
 - 取得のジョブ: race_notices
 - 読み手（1）: 
-  - `scripts/daily/generate-morning-digest.js:482` select [category, detail_text, race_date, racer_id, venue_code]
+  - `scripts/daily/generate-morning-digest.js:252` select [category, detail_text, race_date, racer_id, venue_code]
 - 書き手（1）: 
   - `scripts/lib/raceNoticesRun.js:115` upsert [?]
 - コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: boat_number, structured_data, scraped_at
@@ -1308,7 +1308,7 @@
   - `scripts/analysis/series-points-scoring-hypotheses.mjs:70` select(helper:fetchAllByRaceId)
   - `scripts/analysis/verify-race-analysis-rpc.js:74` select(helper:fetchAll)
   - `scripts/analysis/verify-racer-season-stats-accuracy.js:169` select(helper:fetchInChunks)
-  - `scripts/daily/generate-morning-digest.js:391` select [boat_number, finish_mark, race_id, start_timing]
+  - `scripts/daily/generate-morning-digest.js:161` select [boat_number, finish_mark, race_id, start_timing]
   - `scripts/daily/update-top-start-stats.js:173` select(helper:fetchAll)
   - `scripts/lib/kfileSync.js:43` select [?, boat_number, race_id]
   - `scripts/lib/raceResultPersist.js:124` select(helper:upsertChangedRows)
@@ -1365,9 +1365,9 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 取得のジョブ: racer_course_technique_stats
 - 読み手（4）: 
-  - `scripts/daily/generate-morning-digest.js:222` select [*, course, racer_id]
-  - `scripts/daily/generate-morning-digest.js:355` select [window_end]
+  - `scripts/daily/generate-morning-digest.js:125` select [window_end]
   - `scripts/daily/update-racer-course-technique-stats.js:386` select(helper:upsertStamped)
+  - `scripts/lib/morningDigestFetch.js:149` select [*, course, racer_id]
   - `scripts/lib/snsTodayDigestV3.js:113` rest(rest) [course, makuri_rate, nigashi_rate, nige_rate, racer_id, runs, window_end, window_start]
 - 書き手（1）: 
   - `scripts/daily/update-racer-course-technique-stats.js:386` upsert(helper:upsertStamped) [?]
@@ -1499,7 +1499,6 @@
   - `scripts/analysis/verify-volatility-predictive-power.js:65` select [race_id, venue_code]
   - `scripts/daily/calculate-accuracy.js:85` select(helper:fetchAll)
   - `scripts/daily/calculate-venue-grade-stats.js:177` select [race_date, race_grade, race_id, venue_code]
-  - `scripts/daily/generate-morning-digest.js:130` select [race_date, race_grade, race_id, race_number, start_time, venue_code]
   - `scripts/daily/morning-init.js:86` select [race_id, venue_code]
   - `scripts/daily/morning-init.js:173` select [*, race_id]
   - `scripts/daily/morning-init.js:221` select [race_id, updated_at]
@@ -1518,6 +1517,7 @@
   - `scripts/lib/dailyReconcileJob.js:91` select(helper:fetchAll)
   - `scripts/lib/eveDeadlinesJob.js:387` select [race_date, race_id, start_time]
   - `scripts/lib/inCautionHealth.js:137` select [cancellation_status, race_id]
+  - `scripts/lib/morningDigestFetch.js:57` select [race_date, race_grade, race_id, race_number, start_time, venue_code]
   - `scripts/lib/motorPretestRows.js:112` select [cancellation_status, race_date, race_id, venue_code]
   - `scripts/lib/pitReportJob.js:157` select [race_date, race_grade, race_id, race_number, start_time]
   - `scripts/lib/pitReportJob.js:232` select [race_date, race_grade, race_id, race_number, start_time]
@@ -2185,9 +2185,9 @@
 - 本体で読む RPC: compute_racer_course_technique_stats
 - 取得のジョブ: racer_course_technique_stats
 - 読み手（5）: 
-  - `scripts/daily/generate-morning-digest.js:237` select [*]
   - `scripts/daily/update-racer-course-technique-stats.js:262` select [*]
   - `scripts/daily/update-racer-course-technique-stats.js:361` select(helper:upsertStamped)
+  - `scripts/lib/morningDigestFetch.js:164` select [*]
   - `scripts/maintenance/verifyData/full-picture-scene2-b-12.js:202` rest(rest)
   - `scripts/maintenance/verifyData/full-picture-scene2-b-6.js:75` rest(rest)
 - 書き手（1）: 
@@ -2235,7 +2235,7 @@
 - 本体で読む RPC: data_health_table_rows
 - 取得のジョブ: venue_motor_stats
 - 読み手（4）: 
-  - `scripts/daily/generate-morning-digest.js:193` select [motor_number, race_count, scraped_date, venue_code]
+  - `scripts/lib/morningDigestFetch.js:120` select [motor_number, race_count, scraped_date, venue_code]
   - `src/services/motorQueries3.js:55` select [*, motor_number, scraped_date, venue_code]
   - `src/services/motorQueries3.js:368` select [scraped_date, venue_code]
   - `src/services/motorQueries3.js:378` select [accident_rate, championship_count, final_count, motor_number, race_count, scraped_date, stats_period_end, top2_rate, top3_rate, venue_code, win_rate]
