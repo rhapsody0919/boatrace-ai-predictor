@@ -5,11 +5,11 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 2721,
-    "filesWithAccess": 320,
-    "tableReaders": 949,
+    "sourceFiles": 2731,
+    "filesWithAccess": 321,
+    "tableReaders": 952,
     "tableWriters": 195,
-    "rpcCallers": 56,
+    "rpcCallers": 57,
     "nameMentions": 283,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
@@ -41,6 +41,12 @@
             "data",
             "key"
           ]
+        },
+        {
+          "ref": "scripts/verification/verify-cache-config.js:31",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
         },
         {
           "ref": "src/services/predictionQueries3.js:441",
@@ -4819,6 +4825,12 @@
           "columns": []
         },
         {
+          "ref": "scripts/verification/verify-cache-config.js:33",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
+        },
+        {
           "ref": "src/services/venueQueries.js:98",
           "op": "select",
           "via": "client",
@@ -9107,6 +9119,12 @@
             "data",
             "key"
           ]
+        },
+        {
+          "ref": "scripts/verification/verify-cache-config.js:32",
+          "op": "rest",
+          "via": "rest",
+          "columns": []
         },
         {
           "ref": "src/services/scheduleQueries.js:187",
@@ -27937,6 +27955,10 @@
         },
         {
           "ref": "scripts/maintenance/verify-display-coverage.js:175",
+          "via": "rest"
+        },
+        {
+          "ref": "scripts/verification/verify-cache-config.js:36",
           "via": "rest"
         },
         {
