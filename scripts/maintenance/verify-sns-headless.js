@@ -9,7 +9,7 @@ import {
 } from "../../api/_lib/snsDeadlineQueue.js";
 import { SCREEN_MARKERS, SCREEN_TABS } from "../lib/snsScreenMarkers.js";
 import { runSnsHeadlessScenes1 } from "./verifyData/sns-headless-scenes.js";
-import { renderJsx } from "../lib/renderJsx.js";
+import { analogyControlsShape } from "./verifyData/sns-headless-analogy-controls.js";
 
 function fakeBrowser({ visible = [], finalUrl } = {}) {
   const log = {
@@ -125,43 +125,12 @@ test("race-sonar の印は展示の前後どちらでも出る要素だけ（段
     !SCREEN_MARKERS["race-sonar"].some((s) => s.includes("analogy-stage-chip")),
   );
   // 箱は展示の有無で分かれる前の外側にある（段の表示とボタンはその中で入れ替わる）。部品を展示の前・後で描いて見る
-  const controls = new URL(
-    "../../src/components/race/analogy/AnalogyControls.jsx",
-    import.meta.url,
-  );
-  // 訳は読まない（i18next の無い useTranslation は鍵を返す。その案内は黙らせる）
-  const drawn = async (exhibitionReady) => {
-    const warn = console.warn;
-    console.warn = () => {};
-    const view = await renderJsx(controls, {
-      stage: "racecard",
-      exhibitionReady,
-      stageChipKey: "chipBefore",
-      onStage() {},
-      target: 1,
-      onTarget() {},
-      showTarget: true,
-    }).finally(() => {
-      console.warn = warn;
-    });
-    const box = view.container.querySelector(
-      '[data-testid="analogy-controls"]',
-    );
-    const shape = {
-      box: Boolean(box),
-      chip: Boolean(box?.querySelector('[data-testid="analogy-stage-chip"]')),
-      stageButtons:
-        box?.querySelectorAll('[data-af-control="stage"] button').length ?? 0,
-    };
-    await view.unmount();
-    return shape;
-  };
-  assert.deepEqual(await drawn(false), {
+  assert.deepEqual(await analogyControlsShape(false), {
     box: true,
     chip: true,
     stageButtons: 0,
   });
-  assert.deepEqual(await drawn(true), {
+  assert.deepEqual(await analogyControlsShape(true), {
     box: true,
     chip: false,
     stageButtons: 2,
